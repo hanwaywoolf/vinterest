@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Vinterest — Wireframes</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;600;700&family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet" />
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'DM Sans', sans-serif; background: #E8E4DF; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel" src="design-canvas.jsx"></script>
+  <script type="text/babel" src="wireframe-kit.jsx"></script>
+  <script type="text/babel" src="screens-core.jsx"></script>
+  <script type="text/babel" src="screens-detail.jsx"></script>
+  <script type="text/babel" src="screens-modes.jsx"></script>
+  <script type="text/babel" src="screens-growth.jsx"></script>
+
+  <script type="text/babel">
+    const W = 320;
+    const H = 692;
+
+    function App() {
+      return (
+        <DesignCanvas>
+          {/* ─── HOME SCREEN ─── */}
+          <DCSection id="home" title="Home Screen" subtitle="Three approaches to the primary landing experience">
+            <DCArtboard id="home-a" label="A · The Scanner — action-first" width={W} height={H}>
+              <HomeScanner />
+            </DCArtboard>
+            <DCArtboard id="home-b" label="B · The Journal — personal diary" width={W} height={H}>
+              <HomeJournal />
+            </DCArtboard>
+            <DCArtboard id="home-c" label="C · The Guide — learning-forward" width={W} height={H}>
+              <HomeGuide />
+            </DCArtboard>
+          </DCSection>
+
+          {/* ─── SCAN FLOW ─── */}
+          <DCSection id="scan" title="Scan Flow" subtitle="Camera → Identification → Quick Result">
+            <DCArtboard id="scan-camera" label="Camera / Viewfinder" width={W} height={H}>
+              <ScanCamera />
+            </DCArtboard>
+            <DCArtboard id="scan-result" label="Wine Identified — Quick Result" width={W} height={H}>
+              <ScanResult />
+            </DCArtboard>
+          </DCSection>
+
+          {/* ─── WINE DETAIL ─── */}
+          <DCSection id="detail" title="Wine Detail" subtitle="Three layouts for presenting wine information after scan">
+            <DCArtboard id="detail-a" label="A · The Card — stacked info cards" width={W} height={H}>
+              <WineDetailCard />
+            </DCArtboard>
+            <DCArtboard id="detail-b" label="B · The Story — narrative format" width={W} height={H}>
+              <WineDetailStory />
+            </DCArtboard>
+            <DCArtboard id="detail-c" label="C · The Dashboard — data-forward, tabbed" width={W} height={H}>
+              <WineDetailDash />
+            </DCArtboard>
+          </DCSection>
+
+          {/* ─── TASTE PROFILE ─── */}
+          <DCSection id="profile" title="Taste Profile" subtitle="Personal wine DNA and sommelier script">
+            <DCArtboard id="taste-profile" label="Taste Profile Overview" width={W} height={H}>
+              <TasteProfile />
+            </DCArtboard>
+          </DCSection>
+
+          {/* ─── RESTAURANT MODE ─── */}
+          <DCSection id="restaurant" title="Restaurant Mode" subtitle="Wine list scan → preferences → sommelier script">
+            <DCArtboard id="rest-entry" label="Restaurant Mode Entry" width={W} height={H}>
+              <RestaurantEntry />
+            </DCArtboard>
+            <DCArtboard id="rest-setup" label="Budget, Food & Preferences" width={W} height={H}>
+              <RestaurantSetup />
+            </DCArtboard>
+            <DCArtboard id="rest-script" label="Sommelier Script + Picks" width={W} height={H}>
+              <RestaurantScript />
+            </DCArtboard>
+          </DCSection>
+
+          {/* ─── SHOPPING MODE ─── */}
+          <DCSection id="shopping" title="Shopping Mode" subtitle="In-store scanning with match scores and history">
+            <DCArtboard id="shop-scan" label="Bottle Scan + Match Score" width={W} height={H}>
+              <ShoppingScan />
+            </DCArtboard>
+            <DCArtboard id="shop-history" label="Wine History / Collection" width={W} height={H}>
+              <ShoppingHistory />
+            </DCArtboard>
+          </DCSection>
+
+          {/* ─── EDUCATION ─── */}
+          <DCSection id="learn" title="Education & Quizzes" subtitle="Duolingo-style learning with streaks and progression">
+            <DCArtboard id="learn-hub" label="Learn Hub — Topics & Progress" width={W} height={H}>
+              <LearnHub />
+            </DCArtboard>
+            <DCArtboard id="quiz-active" label="Quiz — Active Question" width={W} height={H}>
+              <QuizActive />
+            </DCArtboard>
+            <DCArtboard id="quiz-result" label="Quiz Complete — Results" width={W} height={H}>
+              <QuizResult />
+            </DCArtboard>
+          </DCSection>
+
+          {/* ─── SOCIAL & SHARING ─── */}
+          <DCSection id="social" title="Social & Sharing" subtitle="Profiles, sharing wines, and friend discovery">
+            <DCArtboard id="social-profile" label="Your Profile" width={W} height={H}>
+              <SocialProfile />
+            </DCArtboard>
+            <DCArtboard id="share-wine" label="Share a Wine" width={W} height={H}>
+              <ShareWine />
+            </DCArtboard>
+          </DCSection>
+
+          {/* ─── DISCOVERY ─── */}
+          <DCSection id="discover" title="Discovery — Similar Wines" subtitle="Adjacent varietals and pivot recommendations">
+            <DCArtboard id="discover-similar" label="If You Like Pinot Grigio..." width={W} height={H}>
+              <DiscoverSimilar />
+            </DCArtboard>
+          </DCSection>
+        </DesignCanvas>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+  </script>
+</body>
+</html>

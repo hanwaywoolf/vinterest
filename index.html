@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover"/>
+<title>Vinterest</title>
+
+<!-- PWA -->
+<link rel="manifest" href="/manifest.json"/>
+<meta name="theme-color" content="#8B1A2F"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="default"/>
+<meta name="apple-mobile-web-app-title" content="Vinterest"/>
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png"/>
+
+<!-- SEO / Share -->
+<meta name="description" content="Scan wine labels, build your taste profile, and order with confidence."/>
+<meta property="og:title" content="Vinterest"/>
+<meta property="og:description" content="Scan wine labels, build your taste profile, and order with confidence."/>
+<meta property="og:image" content="/icons/icon-512.png"/>
+
+<!-- Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet"/>
+
+<!-- React + Babel -->
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%;overscroll-behavior:none}
+  body{
+    font-family:'Poppins',sans-serif;
+    background:#1A1A1A;
+    display:flex;
+    justify-content:center;
+    -webkit-tap-highlight-color:transparent;
+    -webkit-font-smoothing:antialiased;
+  }
+  #root{
+    width:100%;
+    max-width:430px;
+    min-height:100dvh;
+    background:#FAFAFA;
+    display:flex;
+    flex-direction:column;
+    position:relative;
+  }
+  /* On actual mobile, body matches app bg */
+  @media(max-width:430px){body{background:#FAFAFA;}}
+
+  /* Smooth screen transitions */
+  .screen-enter{animation:slideIn .22s ease-out both}
+  @keyframes slideIn{from{opacity:0;transform:translateX(18px)}to{opacity:1;transform:none}}
+
+  /* Remove scrollbar on webkit */
+  ::-webkit-scrollbar{display:none}
+  *{scrollbar-width:none}
+
+  /* Safe area for notch devices */
+  .safe-top{padding-top:env(safe-area-inset-top,0)}
+  .safe-bot{padding-bottom:env(safe-area-inset-bottom,0)}
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<!-- Load components in dependency order -->
+<script type="text/babel" src="pwa-components.jsx"></script>
+<script type="text/babel" src="pwa-screens-main.jsx"></script>
+<script type="text/babel" src="pwa-screens-detail.jsx"></script>
+<script type="text/babel" src="pwa-screens-aux.jsx"></script>
+<script type="text/babel" src="pwa-app.jsx"></script>
+
+<script>
+  // Register service worker
+  if('serviceWorker' in navigator){
+    window.addEventListener('load',()=>{
+      navigator.serviceWorker.register('/sw.js')
+        .then(r=>console.log('SW registered:',r.scope))
+        .catch(e=>console.log('SW failed:',e));
+    });
+  }
+
+  // iOS install prompt hint (shown once)
+  window.addEventListener('load',()=>{
+    const isIOS=/iphone|ipad|ipod/i.test(navigator.userAgent);
+    const isStandalone=window.matchMedia('(display-mode:standalone)').matches||window.navigator.standalone;
+    const shown=localStorage.getItem('vinterest_install_hint');
+    if(isIOS&&!isStandalone&&!shown){
+      localStorage.setItem('vinterest_install_hint','1');
+      // Hint banner injected after React mounts
+      setTimeout(()=>{
+        const b=document.createElement('div');
+        b.style.cssText='position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#0F0F0F;color:#fff;padding:10px 16px;border-radius:12px;font-size:11px;font-family:Poppins,sans-serif;max-width:300px;text-align:center;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,0.4)';
+        b.innerHTML='Tap <strong>Share</strong> then <strong>"Add to Home Screen"</strong> to install Vinterest';
+        document.body.appendChild(b);
+        setTimeout(()=>b.remove(),5000);
+      },3000);
+    }
+  });
+</script>
+</body>
+</html>
