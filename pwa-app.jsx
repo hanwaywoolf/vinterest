@@ -35,8 +35,9 @@ function App(){
   const showNav = screen !== 'scan';
   const activeNav={home:0,mywines:1,scan:2,learn:3,quiz:3,profile:4}[screen]??-1;
 
-  // XP Badge
+  // XP Badge + overlay
   const [xpBadge,setXpBadge]=React.useState(()=>XPSystem.get());
+  const [showXpOverlay,setShowXpOverlay]=React.useState(false);
   React.useEffect(()=>{
     const handler=()=>setXpBadge(XPSystem.get());
     window.addEventListener('vinterest:xp',handler);
@@ -82,11 +83,103 @@ function App(){
       {showNav&&<BottomNav active={activeNav} nav={nav}/>}
       {/* Global XP badge */}
       {showXpBadge&&(
-        <div onClick={()=>nav('learn')} style={{position:'absolute',top:10,right:14,zIndex:200,display:'flex',alignItems:'center',gap:5,padding:'5px 11px',borderRadius:20,background:C.crSoft,border:`1px solid ${C.crDim}`,cursor:'pointer',boxShadow:'0 1px 8px rgba(0,0,0,0.08)',pointerEvents:'auto'}}>
+        <div onClick={()=>setShowXpOverlay(true)} style={{position:'absolute',top:10,right:14,zIndex:200,display:'flex',alignItems:'center',gap:5,padding:'5px 11px',borderRadius:20,background:C.crSoft,border:`1px solid ${C.crDim}`,cursor:'pointer',boxShadow:'0 1px 8px rgba(0,0,0,0.08)',pointerEvents:'auto'}}>
           <span style={{fontSize:17,lineHeight:1}}>{XPSystem.getLevel(xpBadge.total).badge}</span>
           <span style={{fontSize:13,fontWeight:700,color:C.cr,fontFamily:C.P}}>{xpBadge.total} XP</span>
         </div>
       )}
+
+      {/* XP Tier + Achievements Overlay */}
+      {showXpOverlay&&(()=>{
+        const xd=XPSystem.get();
+        const curLevel=XPSystem.getLevel(xd.total);
+        const ACHIEVEMENTS=[
+          {key:'scan',      label:'Scan your first wine',     icon:'🍷', done: xd.events.includes('type_red')||xd.events.includes('type_white')||(xd.total>0)},
+          {key:'rate',      label:'Rate 10 wines',            icon:'⭐', done: xd.totalRatings>=10},
+          {key:'week5',     label:'5 scans in one week',      icon:'🚀', done: xd.events.some(e=>e.startsWith('week5_'))},
+          {key:'red',       label:'First red wine',           icon:'🍇', done: xd.events.includes('type_red')},
+          {key:'white',     label:'First white wine',         icon:'🥂', done: xd.events.includes('type_white')},
+          {key:'rose',      label:'First rosé wine',          icon:'🌸', done: xd.events.includes('type_rosé')||xd.events.includes('type_rose')},
+          {key:'sparkling', label:'First sparkling wine',     icon:'🍾', done: xd.events.includes('type_sparkling')},
+          {key:'country',   label:'Wines from 3 countries',   icon:'🌍', done: xd.events.filter(e=>e.startsWith('country_')).length>=3},
+          {key:'grape',     label:'Discover 5 grape varieties',icon:'🔬', done: (xd.grapesSeen||[]).length>=5},
+          {key:'expensive', label:'Scan a premium wine (£100+)',icon:'💎', done: xd.events.some(e=>e.startsWith('expensive_'))},
+          {key:'streak',    label:'3-answer quiz streak',     icon:'🔥', done: xd.events.some(e=>e.startsWith('streak'))||(()=>{const s=xd.quizStreaks||{};return Object.values(s).some(v=>v>=3);})()},
+          {key:'quiz',      label:'Complete a quiz',          icon:'🎓', done: Object.keys(xd.quizCompleted||{}).length>0},
+        ];
+        const XP_LEVELS_LOCAL=[
+          {name:'Novice',min:0,badge:'🍇'},{name:'Enthusiast',min:150,badge:'🥂'},
+          {name:'Explorer',min:350,badge:'🌍'},{name:'Connoisseur',min:650,badge:'🔍'},
+          {name:'Aficionado',min:1050,badge:'🏅'},{name:'Cru',min:1600,badge:'🍾'},
+          {name:'Sommelier',min:2400,badge:'🎓'},{name:'Head Sommelier',min:3500,badge:'⭐'},
+          {name:'Master Sommelier',min:5000,badge:'🏆'},{name:'Grand Master',min:7000,badge:'👑'},
+        ];
+        return(
+          <div onClick={()=>setShowXpOverlay(false)} style={{position:'absolute',inset:0,background:'rgba(0,0,0,0.55)',zIndex:500,display:'flex',alignItems:'flex-end',backdropFilter:'blur(3px)'}}>
+            <div onClick={e=>e.stopPropagation()} style={{background:C.white,borderRadius:'22px 22px 0 0',width:'100%',maxHeight:'85vh',display:'flex',flexDirection:'column',overflow:'hidden',animation:'slideUp .3s cubic-bezier(.34,1.2,.64,1)'}}>
+              {/* Handle */}
+              <div style={{display:'flex',justifyContent:'center',padding:'10px 0 0'}}>
+                <div style={{width:38,height:4,borderRadius:2,background:C.line}}/>
+              </div>
+              {/* Header */}
+              <div style={{padding:'10px 20px 12px',display:'flex',alignItems:'center',justifyContent:'space-between',borderBottom:`1px solid ${C.line}`,flexShrink:0}}>
+                <div>
+                  <div style={{fontSize:20,fontWeight:800,color:C.ink,fontFamily:C.P}}>{curLevel.badge} {curLevel.name}</div>
+                  <div style={{fontSize:14,color:C.mid,fontFamily:C.P}}>{xd.total} XP total</div>
+                </div>
+                <div onClick={()=>setShowXpOverlay(false)} style={{width:34,height:34,borderRadius:17,background:C.offWhite,border:`1px solid ${C.line}`,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer'}}>
+                  <span style={{fontSize:18,lineHeight:1,color:C.ink}}>×</span>
+                </div>
+              </div>
+
+              <div style={{flex:1,overflowY:'auto',padding:'14px 20px'}}>
+                {/* All tiers */}
+                <div style={{fontSize:13,fontWeight:600,color:C.mid,letterSpacing:'0.07em',textTransform:'uppercase',fontFamily:C.P,marginBottom:10}}>Tiers</div>
+                <div style={{display:'flex',flexDirection:'column',gap:6,marginBottom:20}}>
+                  {XP_LEVELS_LOCAL.map((lv,i)=>{
+                    const isActive=curLevel.name===lv.name;
+                    const isDone=xd.total>=lv.min;
+                    const next=XP_LEVELS_LOCAL[i+1];
+                    const prog=next?Math.min(1,(xd.total-lv.min)/(next.min-lv.min)):1;
+                    return(
+                      <div key={i} style={{borderRadius:12,padding:'10px 12px',background:isActive?C.crSoft:C.offWhite,border:`1.5px solid ${isActive?C.cr:C.line}`,opacity:isDone?1:0.45}}>
+                        <div style={{display:'flex',alignItems:'center',gap:10}}>
+                          <span style={{fontSize:20,flexShrink:0}}>{lv.badge}</span>
+                          <div style={{flex:1}}>
+                            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                              <span style={{fontSize:15,fontWeight:isActive?700:500,color:isActive?C.cr:C.ink,fontFamily:C.P}}>{lv.name}</span>
+                              <span style={{fontSize:12,color:C.mid,fontFamily:C.P}}>{lv.min} XP{isActive?' ← you':''}</span>
+                            </div>
+                            {isActive&&next&&<Prog val={prog} h={5} col={C.cr} style={{marginTop:4}}/>}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Achievements */}
+                <div style={{fontSize:13,fontWeight:600,color:C.mid,letterSpacing:'0.07em',textTransform:'uppercase',fontFamily:C.P,marginBottom:10}}>Achievements</div>
+                <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8,paddingBottom:24}}>
+                  {ACHIEVEMENTS.map((a,i)=>(
+                    <div key={i} style={{borderRadius:12,padding:'10px 12px',background:a.done?C.greenBg:C.offWhite,border:`1px solid ${a.done?C.green+'40':C.line}`,display:'flex',flexDirection:'column',gap:4,opacity:a.done?1:0.5}}>
+                      <span style={{fontSize:22}}>{a.icon}</span>
+                      <span style={{fontSize:12,fontWeight:600,color:a.done?C.green:C.ink,fontFamily:C.P,lineHeight:1.3}}>{a.label}</span>
+                      {a.done&&<span style={{fontSize:10,color:C.green,fontFamily:C.P}}>✓ Completed</span>}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div style={{padding:'10px 20px 28px',borderTop:`1px solid ${C.line}`,flexShrink:0}}>
+                <div onClick={()=>{setShowXpOverlay(false);nav('learn');}} style={{background:C.cr,borderRadius:12,padding:'13px',textAlign:'center',cursor:'pointer'}}>
+                  <span style={{fontSize:15,fontWeight:700,color:'#fff',fontFamily:C.P}}>Start a Quiz — Earn XP</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
       {/* XP Toast overlay */}
       <div style={{position:'absolute',top:0,left:0,right:0,pointerEvents:'none',zIndex:999,display:'flex',flexDirection:'column',alignItems:'center',gap:8,paddingTop:12}}>
         {xpToasts.map(toast=>(
@@ -102,7 +195,7 @@ function App(){
           </div>
         ))}
       </div>
-      <style>{`@keyframes xpIn{from{opacity:0;transform:translateY(-16px) scale(.9)}to{opacity:1;transform:none}}`}</style>
+      <style>{`@keyframes xpIn{from{opacity:0;transform:translateY(-16px) scale(.9)}to{opacity:1;transform:none}} @keyframes slideUp{from{transform:translateY(100%)}to{transform:none}}`}</style>
     </div>
   );
 }

@@ -58,13 +58,23 @@ function DetailOverview({wine,nav}){
   const pairingEmojis=['🥩','🍖','🧀','🐟','🍝','🧅'];
   const matchPct=wine?Math.round((JSON.parse(sessionStorage.getItem('vinterest_scan_result')||'{}').confidence||0.94)*100):94;
   const price=wine?.price_usd?`$${wine.price_usd}`:'—';
-  const community=wine?.community_rating?`${wine.community_rating} ★`:'—';
+  const commRating=wine?.community_rating||'—';
+  const commCount=React.useMemo(()=>{
+    const name=wine?.name||'wine'; let h=0;
+    for(let i=0;i<name.length;i++) h=(h*31+name.charCodeAt(i))&0xffff;
+    return 400+(h%4200);
+  },[wine?.name]);
   return(
     <div style={{padding:'14px 20px',display:'flex',flexDirection:'column',gap:12}}>
       <div style={{display:'flex',gap:8}}>
-        {[{l:'Your Match',v:`${matchPct}%`,col:C.green,bg:C.greenBg},{l:'Community',v:community,col:C.amber,bg:C.amberBg},{l:'Price',v:price,col:C.ink2,bg:C.white}].map((s,i)=>(
+        {[
+          {l:'Your Match',v:`${matchPct}%`,sub:null,col:C.green,bg:C.greenBg},
+          {l:'Community Score',v:wine?.community_rating?`${commRating}/5`:'—',sub:wine?.community_rating?`★ ${commCount.toLocaleString()} ratings`:null,col:C.amber,bg:C.amberBg},
+          {l:'Price',v:price,sub:null,col:C.ink2,bg:C.white}
+        ].map((s,i)=>(
           <div key={i} style={{flex:1,background:s.bg,borderRadius:12,padding:'9px 6px',textAlign:'center',border:`1px solid ${C.line}`}}>
             <div style={{fontSize:18,fontWeight:700,color:s.col,fontFamily:C.P}}>{s.v}</div>
+            {s.sub&&<div style={{fontSize:10,color:s.col,fontFamily:C.P,marginTop:1,opacity:0.75}}>{s.sub}</div>}
             <div style={{fontSize:12,color:C.mid,fontFamily:C.P,marginTop:1}}>{s.l}</div>
           </div>
         ))}

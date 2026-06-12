@@ -328,22 +328,26 @@ function ScanScreen({nav,back}){
 function WineIdentifiedScreen({nav,back}){
   const existingRating=(scanData&&scanData.existingRating)||0;
   const [score,setScore]=React.useState(existingRating);
+  const pendingScore=React.useRef(existingRating);
   const [saved,setSaved]=React.useState(existingRating>0);
+  const ratedOnce=React.useRef(existingRating>0);
   const scoreLabel=score===0?'':score<=20?'Not for me':score<=40?"It's ok":score<=60?'Good':score<=80?'Really good':'Exceptional';
 
-  function handleScore(val){
-    const v=Number(val);
-    setScore(v);
-    if(v>0&&wine&&!scanData.demo){
-      if(existingRating>0){
-        WineHistory.rate(wine.name,wine.vintage,v);
-      } else {
-        WineHistory.add(wine,v);
-        XPSystem.awardAndToast([{type:'rate'}]);
-      }
+  // Only called on mouseup/touchend — commits rating + awards XP once
+  function commitScore(v){
+    if(!v) v=pendingScore.current;
+    const n=Number(v);
+    if(n>0&&wine&&!scanData.demo){
+      if(existingRating>0){ WineHistory.rate(wine.name,wine.vintage,n); }
+      else { WineHistory.add(wine,n); }
+      if(!ratedOnce.current){ XPSystem.awardAndToast([{type:'rate'}]); ratedOnce.current=true; }
       setSaved(true);
     }
   }
+  // onChange: visual only — no XP, no save
+  function handleSliderChange(e){ const n=Number(e.target.value); setScore(n); pendingScore.current=n; }
+  // Preset buttons commit immediately
+  function handlePreset(p){ setScore(p); pendingScore.current=p; commitScore(p); }
 
   // Read scan result written by ScanScreen
   const scanData=React.useMemo(()=>{
@@ -360,7 +364,13 @@ function WineIdentifiedScreen({nav,back}){
     : '2018 · Bordeaux, France';
   const displayGrape = wine?.grapes?.[0]  || 'Cabernet Blend';
   const displayPrice = wine ? `$${wine.price_usd}` : '$180–220';
-  const displayRating= wine ? `${wine.community_rating}★` : '4.7★';
+  const commRating   = wine?.community_rating || 4.7;
+  // Deterministic fake ratings count seeded from wine name
+  const commCount    = React.useMemo(()=>{
+    const name=wine?.name||'Château Margaux';
+    let h=0; for(let i=0;i<name.length;i++) h=(h*31+name.charCodeAt(i))&0xffff;
+    return 180+(h%2820);
+  },[wine?.name]);
   const matchPct     = confidence ? Math.round(Math.min(0.98,confidence)*100) : 94;
 
   const isDemo = scanData.demo === true;
@@ -422,10 +432,13 @@ function WineIdentifiedScreen({nav,back}){
         </Card>
 
         <div style={{display:'flex',gap:8}}>
-          {[{l:'Your Match',v:`${matchPct}%`,col:C.green,bg:C.greenBg},{l:'Community',v:displayRating,col:C.amber,bg:C.amberBg},{l:'Price Range',v:displayPrice,col:C.ink2,bg:C.white}].map((s,i)=>(
+          {[{l:'Your Match',v:`${matchPct}%`,sub:null,col:C.green,bg:C.greenBg},
+            {l:'Community Score',v:`${commRating}/5`,sub:`★ ${commCount.toLocaleString()} ratings`,col:C.amber,bg:C.amberBg},
+            {l:'Price Range',v:displayPrice,sub:null,col:C.ink2,bg:C.white}].map((s,i)=>(
             <div key={i} style={{flex:1,background:s.bg,borderRadius:12,padding:'10px 6px',textAlign:'center',border:`1px solid ${C.line}`}}>
               <div style={{fontSize:19,fontWeight:700,color:s.col,fontFamily:C.P}}>{s.v}</div>
-              <div style={{fontSize:8.5,color:C.mid,fontFamily:C.P,marginTop:1}}>{s.l}</div>
+              <div style={{fontSize:9.5,color:C.mid,fontFamily:C.P,marginTop:1,lineHeight:1.3}}>{s.l}</div>
+              {s.sub&&<div style={{fontSize:9,color:C.mid,fontFamily:C.P,opacity:0.75}}>{s.sub}</div>}
             </div>
           ))}
         </div>
@@ -441,14 +454,14 @@ function WineIdentifiedScreen({nav,back}){
           {/* Quick preset buttons */}
           <div style={{display:'flex',gap:5,marginBottom:12}}>
             {[20,40,60,80,100].map(p=>(
-              <div key={p} onClick={()=>handleScore(p)} style={{flex:1,padding:'7px 2px',borderRadius:9,border:`1.5px solid ${score===p?C.cr:C.line}`,background:score===p?C.cr:'transparent',textAlign:'center',cursor:'pointer',transition:'all .15s'}}>
+              <div key={p} onClick={()=>handlePreset(p)} style={{flex:1,padding:'7px 2px',borderRadius:9,border:`1.5px solid ${score===p?C.cr:C.line}`,background:score===p?C.cr:'transparent',textAlign:'center',cursor:'pointer',transition:'all .15s'}}>
                 <span style={{fontSize:16,fontWeight:700,color:score===p?'#fff':C.mid,fontFamily:C.P}}>{p}</span>
               </div>
             ))}
           </div>
-          {/* Slider */}
+          {/* Slider — onChange updates display only; tap Save to commit */}
           <input type="range" min="0" max="100" step="1" value={score}
-            onChange={e=>handleScore(e.target.value)}
+            onChange={handleSliderChange}
             style={{width:'100%',accentColor:C.cr,cursor:'pointer',marginBottom:10,display:'block'}}/>
           {/* Score display */}
           <div style={{textAlign:'center',minHeight:52,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:2}}>
@@ -464,6 +477,11 @@ function WineIdentifiedScreen({nav,back}){
               <span style={{fontSize:14,color:C.mid,fontFamily:C.P}}>Drag slider or tap a preset to rate</span>
             )}
           </div>
+          {score>0&&!saved&&(
+            <div onClick={()=>commitScore()} style={{marginTop:10,background:C.cr,borderRadius:12,padding:'12px',textAlign:'center',cursor:'pointer',userSelect:'none',WebkitUserSelect:'none'}}>
+              <span style={{fontSize:15,fontWeight:700,color:'#fff',fontFamily:C.P}}>Save Rating</span>
+            </div>
+          )}
           {saved&&<div style={{textAlign:'center',fontSize:14,color:C.green,fontFamily:C.P,fontWeight:600,marginTop:8}}>✓ Saved to My Wines</div>}
         </Card>
 
