@@ -198,6 +198,13 @@ function ScanScreen({nav,back}){
       const wine=JSON.parse(text.replace(/```json|```/g,'').trim());
       if(wine.error==='no_wine_label') throw new Error('no_wine_label');
       sessionStorage.setItem('vinterest_scan_result',JSON.stringify({demo:false,wine,confidence:0.95}));
+      XPSystem.awardAndToast([
+        {type:'scan'},{type:'weekly_scans'},
+        {type:'first_type',value:wine.type},
+        {type:'first_country',value:wine.country},
+        {type:'new_grape',value:(wine.grapes||[])[0]},
+        ...((wine.price_usd||0)>=100?[{type:'expensive_wine',wineKey:(wine.name||'')+'_'+(wine.vintage||'')}]:[])
+      ]);
     }catch(e){
       sessionStorage.setItem('vinterest_scan_result',JSON.stringify({demo:true,reason:e.message}));
     }finally{ nav('identified'); }
@@ -332,10 +339,10 @@ function WineIdentifiedScreen({nav,back}){
     setScore(v);
     if(v>0&&wine&&!scanData.demo){
       if(existingRating>0){
-        // Re-rating an existing wine — update without incrementing times_consumed
         WineHistory.rate(wine.name,wine.vintage,v);
       } else {
         WineHistory.add(wine,v);
+        XPSystem.awardAndToast([{type:'rate'}]);
       }
       setSaved(true);
     }

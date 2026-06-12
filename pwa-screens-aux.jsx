@@ -449,67 +449,8 @@ function RestaurantScript({back}){
 }
 
 /* ── LEARN SCREEN ── */
-function LearnScreen({nav,back}){
-  return(
-    <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden'}}>
-      <div style={{background:C.white,padding:'14px 20px',display:'flex',alignItems:'center',gap:12,borderBottom:`1px solid ${C.line}`,flexShrink:0}}>
-        <div onClick={back} style={{width:34,height:34,borderRadius:17,background:C.offWhite,border:`1px solid ${C.line}`,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer'}}>
-          <Icon n="back" sz={16} col={C.ink}/>
-        </div>
-        <span style={{fontSize:20,fontWeight:700,color:C.ink,fontFamily:C.P,flex:1}}>Learn</span>
-        <div style={{display:'flex',alignItems:'center',gap:4}}>
-          <Icon n="flame" sz={16} col="#E8A838"/>
-          <span style={{fontSize:17,fontWeight:700,color:'#E8A838',fontFamily:C.P}}>5</span>
-        </div>
-      </div>
-      <div style={{flex:1,overflowY:'auto',padding:'14px 20px',display:'flex',flexDirection:'column',gap:12}}>
-        <Card style={{background:C.crSoft,border:`1px solid ${C.crDim}`,padding:14}}>
-          <div style={{display:'flex',alignItems:'center',gap:12}}>
-            <div style={{width:42,height:42,borderRadius:21,background:C.cr,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
-              <Icon n="trophy" sz={20} col="#fff"/>
-            </div>
-            <div style={{flex:1}}>
-              <div style={{fontSize:17,fontWeight:700,color:C.ink,fontFamily:C.P}}>Wine Explorer — Level 3</div>
-              <Prog val={0.65} h={5} style={{marginTop:5}}/>
-              <div style={{fontSize:13,color:C.mid,fontFamily:C.P,marginTop:3}}>180 / 280 XP — 55 XP to "Connoisseur"</div>
-            </div>
-          </div>
-        </Card>
-        <Card style={{background:'#FFF8E1',border:'1px solid #F5E6B8',padding:12}}>
-          <div style={{display:'flex',alignItems:'center',gap:10}}>
-            <div style={{width:36,height:36,borderRadius:9,background:'#E8A838',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
-              <Icon n="star" sz={18} col="#fff"/>
-            </div>
-            <div style={{flex:1}}>
-              <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>Daily Challenge</div>
-              <div style={{fontSize:14,color:C.mid,fontFamily:C.P}}>Can you name the 5 Bordeaux grapes?</div>
-            </div>
-            <Btn primary small style={{background:'#E8A838',boxShadow:'none',whiteSpace:'nowrap'}}>Start</Btn>
-          </div>
-        </Card>
-        <div style={{fontSize:15,fontWeight:600,color:C.ink,fontFamily:C.P}}>Topics</div>
-        {[{t:'Red Grapes',p:.8,col:'#8B1A2F',n:'8/10'},{t:'White Grapes',p:.5,col:'#B8963E',n:'5/10'},{t:'French Regions',p:.3,col:'#3D6B3D',n:'3/10'},{t:'Tasting Technique',p:.1,col:'#5E8FA8',n:'1/10'},{t:'Food Pairing',p:0,col:'#E8A838',n:'0/8',locked:true}].map((tp,i)=>(
-          <Card key={i} style={{padding:10,opacity:tp.locked?.5:1}}>
-            <div style={{display:'flex',alignItems:'center',gap:10}}>
-              <div style={{width:36,height:36,borderRadius:9,background:tp.col+'18',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
-                <Icon n={tp.locked?'lock':'book'} sz={16} col={tp.col}/>
-              </div>
-              <div style={{flex:1}}>
-                <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-                  <span style={{fontSize:16,fontWeight:600,color:C.ink,fontFamily:C.P}}>{tp.t}</span>
-                  <span style={{fontSize:13,fontWeight:600,color:tp.col,fontFamily:C.P}}>{tp.locked?'Locked':'+20 XP'}</span>
-                </div>
-                <Prog val={tp.p} col={tp.col} h={4} style={{marginTop:4}}/>
-                <span style={{fontSize:13,color:C.mid,fontFamily:C.P}}>{tp.n} lessons</span>
-              </div>
-            </div>
-          </Card>
-        ))}
-        <div style={{height:8}}/>
-      </div>
-    </div>
-  );
-}
+// LearnScreen is now QuizHubScreen (defined in pwa-screens-quiz.jsx)
+function LearnScreen(props){ return React.createElement(QuizHubScreen, props); }
 
 /* ── WINE LIST RESULTS SCREEN ── */
 function WineListScreen({nav,back}){

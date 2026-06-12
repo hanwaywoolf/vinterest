@@ -37,10 +37,10 @@ function Icon({n,sz=20,col=C.ink,style:s}){
 
 function BottomNav({active=0, nav}){
   const items=[
-    {l:'Home',i:'home',s:'home'},
+    {l:'Home',   i:'home',s:'home'},
     {l:'My Wines',i:'list',s:'mywines'},
-    {l:'',i:'scan',fab:true,s:'scan'},
-    {l:'Restaurant',i:'fork',s:'restaurant'},
+    {l:'',       i:'scan',fab:true,s:'scan'},
+    {l:'Learn',  i:'book',s:'learn'},
     {l:'Profile',i:'user',s:'profile'}
   ];
   return(

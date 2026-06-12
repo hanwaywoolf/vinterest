@@ -33,9 +33,21 @@ function App(){
 
   const navTab=['home','discover','scan','learn','profile'].indexOf(screen);
   const showNav = screen !== 'scan';
+  const activeNav={home:0,mywines:1,scan:2,learn:3,quiz:3,profile:4}[screen]??-1;
 
-  // Active bottom nav index
-  const activeNav={home:0,mywines:1,scan:2,restaurant:3,profile:4}[screen]??-1;
+  // XP Toast
+  const [xpToasts,setXpToasts]=React.useState([]);
+  React.useEffect(()=>{
+    const handler=e=>{
+      const {awards}=e.detail||{};
+      if(!awards||!awards.length) return;
+      const id=Date.now()+Math.random();
+      setXpToasts(t=>[...t,{id,awards}]);
+      setTimeout(()=>setXpToasts(t=>t.filter(x=>x.id!==id)),3200);
+    };
+    window.addEventListener('vinterest:xp',handler);
+    return ()=>window.removeEventListener('vinterest:xp',handler);
+  },[]);
 
   const ctx={nav,back};
 
@@ -44,8 +56,8 @@ function App(){
       <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden',minHeight:0}}>
         {screen==='home'      && <HomeScreen {...ctx}/>}
         {screen==='scan'      && <ScanScreen {...ctx}/>}
-        {screen==='identified'&& <WineIdentifiedScreen {...ctx}/> }
-        {screen==='winelist'   && <WineListScreen {...ctx}/>}
+        {screen==='identified'&& <WineIdentifiedScreen {...ctx}/>}
+        {screen==='winelist'  && <WineListScreen {...ctx}/>}
         {screen==='detail'    && <WineDetailScreen {...ctx}/>}
         {screen==='region'    && <RegionScreen {...ctx}/>}
         {screen==='varietal'  && <VarietalScreen {...ctx}/>}
@@ -53,11 +65,28 @@ function App(){
         {screen==='profile'   && <TasteProfileScreen {...ctx}/>}
         {screen==='mywines'   && <MyWinesScreen {...ctx}/>}
         {screen==='restaurant'&& <RestaurantScreen {...ctx}/>}
-        {screen==='learn'     && <LearnScreen {...ctx}/>}
+        {screen==='learn'     && <QuizHubScreen {...ctx}/>}
+        {screen==='quiz'      && <QuizScreen {...ctx}/>}
         {screen==='discover'  && <DiscoverScreen {...ctx}/>}
         {screen==='shopping'  && <ShoppingScreen {...ctx}/>}
       </div>
       {showNav&&<BottomNav active={activeNav} nav={nav}/>}
+      {/* XP Toast overlay */}
+      <div style={{position:'absolute',top:0,left:0,right:0,pointerEvents:'none',zIndex:999,display:'flex',flexDirection:'column',alignItems:'center',gap:8,paddingTop:12}}>
+        {xpToasts.map(toast=>(
+          <div key={toast.id} style={{display:'flex',flexDirection:'column',alignItems:'center',gap:4,animation:'xpIn .35s cubic-bezier(.34,1.56,.64,1) both'}}>
+            {toast.awards.map((a,i)=>(
+              <div key={i} style={{display:'inline-flex',alignItems:'center',gap:8,background:a.levelUp?'#0F0F0F':a.bonus?C.cr:'rgba(15,15,15,0.88)',borderRadius:30,padding:'8px 16px',backdropFilter:'blur(8px)',boxShadow:'0 4px 20px rgba(0,0,0,0.3)'}}>
+                {a.levelUp&&<span style={{fontSize:16}}>🏆</span>}
+                {a.bonus&&!a.levelUp&&<span style={{fontSize:14}}>⭐</span>}
+                {!a.levelUp&&!a.bonus&&<span style={{fontSize:14,fontWeight:700,color:C.amber,fontFamily:C.P}}>+{a.amount} XP</span>}
+                <span style={{fontSize:13,fontWeight:600,color:'#fff',fontFamily:C.P}}>{a.label}</span>
+              </div>
+            ))}
+          </div>
+        ))}
+      </div>
+      <style>{`@keyframes xpIn{from{opacity:0;transform:translateY(-16px) scale(.9)}to{opacity:1;transform:none}}`}</style>
     </div>
   );
 }
