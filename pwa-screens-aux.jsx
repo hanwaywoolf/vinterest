@@ -169,14 +169,59 @@ function TasteProfileScreen({nav,back}){
           ))}
         </Card>
 
-        {/* Progress */}
+        {/* XP Progress — live from XPSystem */}
+        {(()=>{
+          const xd=XPSystem.get();
+          const lv=XPSystem.getLevel(xd.total);
+          const nx=XPSystem.nextLevel(xd.total);
+          const pg=XPSystem.levelProgress(xd.total);
+          return(
+            <Card style={{padding:12}} onClick={()=>nav('learn')}>
+              <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:6}}>
+                <span style={{fontSize:15,fontWeight:600,color:C.ink,fontFamily:C.P}}>{lv.badge} {lv.name}</span>
+                <span style={{fontSize:14,color:C.cr,fontWeight:600,fontFamily:C.P}}>{xd.total} XP</span>
+              </div>
+              <Prog val={pg} h={7} col={lv.color}/>
+              {nx&&<div style={{fontSize:13,color:C.mid,fontFamily:C.P,marginTop:4}}>{nx.min-xd.total} XP to {nx.name} — tap to quiz</div>}
+            </Card>
+          );
+        })()}
+
+        {/* Data backup */}
         <Card style={{padding:12}}>
-          <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:6}}>
-            <span style={{fontSize:15,fontWeight:600,color:C.ink,fontFamily:C.P}}>Wine Explorer — Level 3</span>
-            <span style={{fontSize:14,color:C.cr,fontWeight:600,fontFamily:C.P}}>180/280 XP</span>
+          <div style={{fontSize:15,fontWeight:600,color:C.ink,fontFamily:C.P,marginBottom:10}}>Data Backup</div>
+          <div style={{display:'flex',gap:8}}>
+            <Btn full style={{flex:1,fontSize:13}} onClick={()=>{
+              const data={wines:WineHistory.getAll(),xp:XPSystem.get(),exported:new Date().toISOString()};
+              const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+              const url=URL.createObjectURL(blob);
+              const a=document.createElement('a');
+              a.href=url;
+              a.download='vinterest-backup-'+new Date().toISOString().slice(0,10)+'.json';
+              a.click();
+              URL.revokeObjectURL(url);
+            }}>⬇ Export</Btn>
+            <Btn full style={{flex:1,fontSize:13}} onClick={()=>{
+              const inp=document.createElement('input');
+              inp.type='file'; inp.accept='.json,application/json';
+              inp.onchange=e=>{
+                const file=e.target.files[0]; if(!file) return;
+                const reader=new FileReader();
+                reader.onload=ev=>{
+                  try{
+                    const d=JSON.parse(ev.target.result);
+                    if(d.wines) WineHistory.save(d.wines);
+                    if(d.xp) localStorage.setItem(XPSystem.KEY,JSON.stringify(d.xp));
+                    alert('Restored! '+((d.wines||[]).length)+' wines imported.');
+                    window.location.reload();
+                  }catch(err){ alert('Could not read backup file.'); }
+                };
+                reader.readAsText(file);
+              };
+              inp.click();
+            }}>⬆ Import</Btn>
           </div>
-          <Prog val={0.65} h={7}/>
-          <div style={{fontSize:13,color:C.mid,fontFamily:C.P,marginTop:4}}>55 more XP to unlock "Connoisseur"</div>
+          <div style={{fontSize:12,color:C.mid,fontFamily:C.P,marginTop:8,lineHeight:1.5}}>Export saves your wines &amp; XP to a JSON file on your phone. Import restores from a previous backup.</div>
         </Card>
         <div style={{height:8}}/>
       </div>
