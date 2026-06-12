@@ -20,7 +20,7 @@ function HomeScreen({nav}){
     <div style={{flex:1,display:'flex',flexDirection:'column',overflowY:'auto'}}>
       {/* Header */}
       <div style={{padding:'16px 20px 0',display:'flex',justifyContent:'space-between',alignItems:'center',background:C.white}}>
-        <div>
+        <div onClick={()=>window.location.reload(true)} style={{cursor:'pointer'}}>
           <div style={{fontSize:15,color:C.mid,fontFamily:C.P}}>Good evening</div>
           <div style={{fontSize:24,fontWeight:800,color:C.ink,fontFamily:C.P,letterSpacing:'-0.5px'}}>Vinterest</div>
         </div>
