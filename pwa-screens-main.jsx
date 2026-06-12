@@ -322,15 +322,21 @@ function ScanScreen({nav,back}){
 
 /* ── WINE IDENTIFIED ── */
 function WineIdentifiedScreen({nav,back}){
-  const [score,setScore]=React.useState(0);
-  const [saved,setSaved]=React.useState(false);
+  const existingRating=(scanData&&scanData.existingRating)||0;
+  const [score,setScore]=React.useState(existingRating);
+  const [saved,setSaved]=React.useState(existingRating>0);
   const scoreLabel=score===0?'':score<=20?'Not for me':score<=40?"It's ok":score<=60?'Good':score<=80?'Really good':'Exceptional';
 
   function handleScore(val){
     const v=Number(val);
     setScore(v);
     if(v>0&&wine&&!scanData.demo){
-      WineHistory.add(wine,v);
+      if(existingRating>0){
+        // Re-rating an existing wine — update without incrementing times_consumed
+        WineHistory.rate(wine.name,wine.vintage,v);
+      } else {
+        WineHistory.add(wine,v);
+      }
       setSaved(true);
     }
   }

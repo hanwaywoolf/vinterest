@@ -261,7 +261,10 @@ function MyWinesScreen({nav,back}){
               const date=w.last_scanned||w.scanned_at;
               const dateStr=date?new Date(date).toLocaleDateString('en',{month:'short',day:'numeric',year:'numeric'}):'';
               return(
-                <Card key={i} style={{padding:12,cursor:'pointer'}} onClick={()=>nav('detail')}>
+                <Card key={i} style={{padding:12,cursor:'pointer'}} onClick={()=>{
+                  sessionStorage.setItem('vinterest_scan_result',JSON.stringify({demo:false,wine:w,confidence:0.9,existingRating:w.rating||0}));
+                  nav('identified');
+                }}>
                   <div style={{display:'flex',gap:12,alignItems:'flex-start'}}>
                     {/* Wine icon */}
                     <div style={{width:44,height:60,borderRadius:8,background:col+'15',flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center',border:`1px solid ${col}25`}}>

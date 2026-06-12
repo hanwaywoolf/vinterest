@@ -10,7 +10,6 @@ function WineDetailScreen({back,nav}){
 
   return(
     <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden'}}>
-      {/* Header */}
       <div style={{background:C.white,padding:'14px 20px 0',flexShrink:0,borderBottom:`1px solid ${C.line}`}}>
         <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:14}}>
           <div onClick={back} style={{width:34,height:34,borderRadius:17,background:C.offWhite,border:`1px solid ${C.line}`,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer'}}>
@@ -37,12 +36,10 @@ function WineDetailScreen({back,nav}){
           ))}
         </div>
       </div>
-
-      {/* Tab content */}
       <div style={{flex:1,overflowY:'auto'}}>
         {tab===0&&<DetailOverview wine={wine} nav={nav}/>}
         {tab===1&&<DetailStory wine={wine} nav={nav}/>}
-        {tab===2&&<DetailData wine={wine}/>}
+        {tab===2&&<DetailData wine={wine} nav={nav}/>}
       </div>
     </div>
   );
@@ -51,34 +48,31 @@ function WineDetailScreen({back,nav}){
 function DetailOverview({wine,nav}){
   const notes=wine?.tasting_notes||['Black Cassis','Cedar','Violets','Tobacco','Graphite'];
   const pairings=wine?.food_pairings||['Grilled Steak','Rack of Lamb','Hard Cheese'];
-  const matchPct=94;
   const tiles=[
-    {name:'Body',   plain:wine?.body_plain   ||'How heavy it feels in your mouth', lo:'Light',    hi:'Full',    val:wine?.body     ??0.85,col:'#8B1A2F'},
-    {name:'Tannins',plain:wine?.tannins_plain||'That drying grip on your gums',     lo:'Silky',    hi:'Grippy',  val:wine?.tannins  ??0.80,col:'#7B5EA7'},
-    {name:'Acidity',plain:wine?.acidity_plain||'How zingy and fresh it tastes',      lo:'Mellow',   hi:'Zingy',   val:wine?.acidity  ??0.60,col:C.green},
-    {name:'Sweetness',plain:wine?.sweetness_plain||'Dry = barely any sugar',         lo:'Bone Dry', hi:'Sweet',   val:wine?.sweetness??0.10,col:C.amber},
+    {name:'Body',   plain:wine?.body_plain   ||'How heavy it feels in your mouth',lo:'Light',   hi:'Full',   val:wine?.body     ??0.85,col:'#8B1A2F'},
+    {name:'Tannins',plain:wine?.tannins_plain||'That drying grip on your gums',    lo:'Silky',   hi:'Grippy', val:wine?.tannins  ??0.80,col:'#7B5EA7'},
+    {name:'Acidity',plain:wine?.acidity_plain||'How zingy and fresh it tastes',    lo:'Mellow',  hi:'Zingy',  val:wine?.acidity  ??0.60,col:C.green},
+    {name:'Sweetness',plain:wine?.sweetness_plain||'Dry = barely any sugar',       lo:'Bone Dry',hi:'Sweet',  val:wine?.sweetness??0.10,col:C.amber},
   ];
   const whyText=wine?.why_you_will_like_this||'Full-bodied with dark fruit and earthy notes — aligns with your preference for structured Bordeaux-style reds.';
   const pairingEmojis=['🥩','🍖','🧀','🐟','🍝','🧅'];
+  const matchPct=wine?Math.round((JSON.parse(sessionStorage.getItem('vinterest_scan_result')||'{}').confidence||0.94)*100):94;
+  const price=wine?.price_usd?`$${wine.price_usd}`:'—';
+  const community=wine?.community_rating?`${wine.community_rating} ★`:'—';
   return(
     <div style={{padding:'14px 20px',display:'flex',flexDirection:'column',gap:12}}>
-      {/* Stats */}
       <div style={{display:'flex',gap:8}}>
-        {[{l:'Your Match',v:'94%',col:C.green,bg:C.greenBg},{l:'Community',v:'4.7 ★',col:C.amber,bg:C.amberBg},{l:'Price',v:'$180',col:C.ink2,bg:C.white}].map((s,i)=>(
+        {[{l:'Your Match',v:`${matchPct}%`,col:C.green,bg:C.greenBg},{l:'Community',v:community,col:C.amber,bg:C.amberBg},{l:'Price',v:price,col:C.ink2,bg:C.white}].map((s,i)=>(
           <div key={i} style={{flex:1,background:s.bg,borderRadius:12,padding:'9px 6px',textAlign:'center',border:`1px solid ${C.line}`}}>
             <div style={{fontSize:18,fontWeight:700,color:s.col,fontFamily:C.P}}>{s.v}</div>
             <div style={{fontSize:12,color:C.mid,fontFamily:C.P,marginTop:1}}>{s.l}</div>
           </div>
         ))}
       </div>
-
-      {/* Why match */}
       <Card style={{background:C.greenBg,boxShadow:'none',border:`1px solid ${C.green}25`,padding:12}}>
         <div style={{fontSize:15,fontWeight:600,color:C.green,fontFamily:C.P,marginBottom:3}}>Why this matches you</div>
         <div style={{fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.55}}>{whyText}</div>
       </Card>
-
-      {/* Educational taste tiles */}
       <div>
         <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:8}}>
           <span style={{fontSize:16,fontWeight:600,color:C.ink,fontFamily:C.P}}>What Does It Taste Like?</span>
@@ -104,8 +98,6 @@ function DetailOverview({wine,nav}){
           ))}
         </div>
       </div>
-
-      {/* Tasting notes */}
       <Card style={{padding:12}}>
         <div style={{fontSize:15,fontWeight:600,color:C.ink,fontFamily:C.P,marginBottom:8}}>Tasting Notes</div>
         <div style={{display:'flex',flexWrap:'wrap',gap:5}}>
@@ -114,8 +106,6 @@ function DetailOverview({wine,nav}){
           ))}
         </div>
       </Card>
-
-      {/* Food pairing */}
       <Card style={{padding:12}}>
         <div style={{fontSize:15,fontWeight:600,color:C.ink,fontFamily:C.P,marginBottom:8}}>Pairs With</div>
         <div style={{display:'flex',gap:8}}>
@@ -127,8 +117,6 @@ function DetailOverview({wine,nav}){
           ))}
         </div>
       </Card>
-
-      {/* Deep dive */}
       <Card style={{padding:0,overflow:'hidden'}}>
         {[
           {icon:'globe', t:wine?.sub_region||wine?.region||'Region', s:`Explore ${wine?.region||'this region'}`, screen:'region'},
@@ -147,7 +135,7 @@ function DetailOverview({wine,nav}){
           </div>
         ))}
       </Card>
-      <Btn primary full>Rate This Wine</Btn>
+      <Btn primary full onClick={()=>nav('identified')}>Rate This Wine</Btn>
       <div style={{height:8}}/>
     </div>
   );
@@ -194,13 +182,13 @@ function DetailStory({wine,nav}){
           ))}
         </div>
       </div>
-      <Btn primary full>Rate This Wine</Btn>
+      <Btn primary full onClick={()=>nav('identified')}>Rate This Wine</Btn>
       <div style={{height:8}}/>
     </div>
   );
 }
 
-function DetailData({wine}){
+function DetailData({wine,nav}){
   const notes=wine?.tasting_notes||['Black Cassis','Cedar','Violets','Tobacco','Graphite','Dark Plum'];
   const vintage=wine?.vintage;
   return(
@@ -210,7 +198,7 @@ function DetailData({wine}){
           <span style={{fontSize:24,fontWeight:800,color:C.green,fontFamily:C.P,lineHeight:1}}>94</span>
           <span style={{fontSize:12,color:C.green,fontFamily:C.P,opacity:.7}}>% match</span>
         </div>
-        <div style={{fontSize:14,color:C.mid,fontFamily:C.P,marginTop:5}}>Bordeaux · Cabernet Blend · Red · Dry</div>
+        <div style={{fontSize:14,color:C.mid,fontFamily:C.P,marginTop:5}}>{[wine?.region,wine?.grapes?.[0],wine?.type,'Dry'].filter(Boolean).join(' · ')}</div>
       </div>
       <Card style={{padding:12}}>
         <div style={{fontSize:15,fontWeight:600,color:C.ink,fontFamily:C.P,marginBottom:8}}>Taste Profile</div>
@@ -227,9 +215,9 @@ function DetailData({wine}){
         </div>
       </Card>
       <Card style={{padding:12}}>
-        <div style={{fontSize:15,fontWeight:600,color:C.ink,fontFamily:C.P,marginBottom:8}}>2018 Vintage</div>
+        <div style={{fontSize:15,fontWeight:600,color:C.ink,fontFamily:C.P,marginBottom:8}}>{vintage?`${vintage} Vintage`:'Vintage'}</div>
         <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8}}>
-          {[{l:'Vintage Rating',v:'Exceptional'},{l:'Drink Window',v:vintage?`Now – ${vintage+30}`:'Now – 2050'},{l:'Peak',v:vintage?`${vintage+12} – ${vintage+22}`:'2030 – 2040'},{l:'ABV',v:wine?.abv?`${wine.abv}%`:'13.5%'}].map((d,i)=>(
+          {[{l:'Vintage Rating',v:'Exceptional'},{l:'Drink Window',v:vintage?`Now – ${vintage+30}`:'Now – 2050'},{l:'Peak',v:vintage?`${vintage+12} – ${vintage+22}`:'2030 – 2040'},{l:'ABV',v:wine?.abv?`${wine.abv}%`:'—'}].map((d,i)=>(
             <div key={i} style={{background:C.offWhite,borderRadius:8,padding:'8px 10px'}}>
               <div style={{fontSize:13,color:C.mid,fontFamily:C.P,marginBottom:2}}>{d.l}</div>
               <div style={{fontSize:16,fontWeight:600,color:C.ink,fontFamily:C.P}}>{d.v}</div>
@@ -246,7 +234,7 @@ function DetailData({wine}){
         </div>
       </Card>
       <div style={{display:'flex',gap:8,marginBottom:8}}>
-        <Btn primary full style={{flex:1}}>Rate Wine</Btn>
+        <Btn primary full style={{flex:1}} onClick={()=>nav('identified')}>Rate Wine</Btn>
         <Btn full style={{flex:1}}>Add to List</Btn>
       </div>
     </div>
