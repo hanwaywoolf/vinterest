@@ -1,10 +1,11 @@
 /* Vinterest PWA — Taste Profile, Restaurant, Learn screens */
 
-function TasteProfileScreen({nav,back}){
+function TasteProfileScreen({nav,back,showPro}){
   const [tab,setTab]=React.useState(0);
   const [genScripts,setGenScripts]=React.useState({});
   const [generating,setGenerating]=React.useState(null);
   const [copied,setCopied]=React.useState(false);
+
 
   const allWines=React.useMemo(()=>WineHistory.getAll(),[]);
   const profile=React.useMemo(()=>WineHistory.getProfile(),[]);
@@ -63,6 +64,32 @@ function TasteProfileScreen({nav,back}){
       .finally(()=>setGenerating(null));
   },[tab,allWines.length]);
 
+  if(allWines.length===0) return(
+    <div style={{flex:1,display:'flex',flexDirection:'column',background:C.bg,overflow:'hidden'}}>
+      <div style={{background:C.white,padding:'18px 20px',borderBottom:'1px solid '+C.line,flexShrink:0}}>
+        <div style={{fontSize:22,fontWeight:800,color:C.ink,fontFamily:C.P}}>Profile</div>
+      </div>
+      <div style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'32px 24px',textAlign:'center',gap:16}}>
+        <div style={{width:88,height:88,borderRadius:22,background:C.crSoft,display:'flex',alignItems:'center',justifyContent:'center',border:'1px solid '+C.crDim}}>
+          <Icon n="wine" sz={42} col={C.cr}/>
+        </div>
+        <div>
+          <div style={{fontSize:22,fontWeight:800,color:C.ink,fontFamily:C.P,marginBottom:8,lineHeight:1.2}}>Your profile is waiting</div>
+          <div style={{fontSize:16,color:C.mid,fontFamily:C.P,lineHeight:1.65,maxWidth:280}}>Scan and rate bottles to build your personal taste profile. The more you scan, the smarter it gets.</div>
+        </div>
+        <Btn primary full onClick={()=>nav('camera')}>Scan Your First Bottle</Btn>
+        <Card style={{display:'flex',alignItems:'center',gap:12,padding:14,cursor:'pointer',width:'100%'}} onClick={()=>nav('learn')}>
+          <span style={{fontSize:24}}>🎓</span>
+          <div style={{flex:1,textAlign:'left'}}>
+            <div style={{fontSize:16,fontWeight:600,color:C.ink,fontFamily:C.P}}>Take a quiz first</div>
+            <div style={{fontSize:14,color:C.mid,fontFamily:C.P,marginTop:1}}>Earn XP while you build your collection</div>
+          </div>
+          <Icon n="chevron" sz={14} col={C.mid}/>
+        </Card>
+      </div>
+    </div>
+  );
+
   return(
     <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden'}}>
       {/* Header */}
@@ -104,7 +131,7 @@ function TasteProfileScreen({nav,back}){
               <div style={{fontSize:14,color:C.mid,fontFamily:C.P,fontStyle:'italic',lineHeight:1.6}}>
                 Scan and rate some {c.label.toLowerCase()} to generate your personalised sommelier script.
               </div>
-              <Btn primary small onClick={()=>nav('scan')} style={{background:c.col,boxShadow:`0 3px 12px ${c.col}40`}}>Scan a Bottle</Btn>
+              <Btn primary small onClick={()=>nav('camera')} style={{background:c.col,boxShadow:`0 3px 12px ${c.col}40`}}>Scan a Bottle</Btn>
             </div>
           ):isGenerating?(
             <div style={{display:'flex',alignItems:'center',gap:10,padding:'6px 0 10px'}}>
@@ -145,7 +172,7 @@ function TasteProfileScreen({nav,back}){
         </Card>
 
         {/* Top wines — real data only */}
-        <Card style={{padding:0,overflow:'hidden'}}>
+        <Card style={{padding:0}}>
           <div style={{padding:'12px 14px 8px',fontSize:15,fontWeight:600,color:C.ink,fontFamily:C.P}}>Your Top {c.label}</div>
           {topWines.length===0?(
             <div style={{padding:'10px 14px 14px',fontSize:14,color:C.mid,fontFamily:C.P,fontStyle:'italic'}}>Scan some {c.label.toLowerCase()} to see your top bottles here</div>
@@ -166,7 +193,7 @@ function TasteProfileScreen({nav,back}){
               </div>
               <Icon n="chevron" sz={12} col={C.mid}/>
             </div>
-          ))}
+          ))}          
         </Card>
 
         {/* XP Progress — live from XPSystem */}
@@ -290,7 +317,7 @@ function MyWinesScreen({nav,back}){
                 <div style={{fontSize:48}}>🍷</div>
                 <div style={{fontSize:20,fontWeight:700,color:C.ink,fontFamily:C.P}}>No wines yet</div>
                 <div style={{fontSize:16,color:C.mid,fontFamily:C.P,lineHeight:1.5}}>Scan your first bottle to start building your collection</div>
-                <Btn primary onClick={()=>nav('scan')}>Scan a Bottle</Btn>
+                <Btn primary onClick={()=>nav('camera')}>Scan a Bottle</Btn>
               </>
             ):(
               <>
@@ -535,7 +562,7 @@ function WineListScreen({nav,back}){
           <div style={{fontSize:19,fontWeight:700,color:'#fff',fontFamily:C.P}}>Wine List Results</div>
           <div style={{fontSize:14,color:'rgba(255,255,255,0.65)',fontFamily:C.P}}>{wines.length} wines · ranked by your taste profile</div>
         </div>
-        <div onClick={()=>nav('scan')} style={{padding:'6px 14px',borderRadius:20,background:'rgba(255,255,255,0.18)',cursor:'pointer'}}>
+        <div onClick={()=>nav('camera')} style={{padding:'6px 14px',borderRadius:20,background:'rgba(255,255,255,0.18)',cursor:'pointer'}}>
           <span style={{fontSize:15,fontWeight:600,color:'#fff',fontFamily:C.P}}>Rescan</span>
         </div>
       </div>
@@ -545,7 +572,7 @@ function WineListScreen({nav,back}){
           <span style={{fontSize:19,flexShrink:0}}>⚠️</span>
           <div style={{flex:1}}>
             <div style={{fontSize:15,fontWeight:600,color:'#7A5200',fontFamily:C.P}}>List not detected — ensure the full page is in frame</div>
-            <div onClick={()=>nav('scan')} style={{marginTop:6,display:'inline-flex',alignItems:'center',gap:5,padding:'6px 14px',borderRadius:20,background:'#8B1A2F',cursor:'pointer'}}>
+            <div onClick={()=>nav('camera')} style={{marginTop:6,display:'inline-flex',alignItems:'center',gap:5,padding:'6px 14px',borderRadius:20,background:'#8B1A2F',cursor:'pointer'}}>
               <Icon n="camera" sz={12} col="#fff"/>
               <span style={{fontSize:14,fontWeight:700,color:'#fff',fontFamily:C.P}}>Try Again</span>
             </div>
@@ -588,7 +615,7 @@ function WineListScreen({nav,back}){
             </Card>
           );
         })}
-        <Btn primary full onClick={()=>nav('scan')} style={{marginTop:4}}>Scan Another</Btn>
+        <Btn primary full onClick={()=>nav('camera')} style={{marginTop:4}}>Scan Another</Btn>
         <div style={{height:8}}/>
       </div>
     </div>

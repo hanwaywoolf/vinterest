@@ -35,28 +35,131 @@ function Icon({n,sz=20,col=C.ink,style:s}){
   return <svg viewBox="0 0 20 20" width={sz} height={sz} style={{display:'block',flexShrink:0,...s}}>{d[n]||<circle cx="10" cy="10" r="7" stroke={col} strokeWidth="1.5" fill="none"/>}</svg>;
 }
 
-function BottomNav({active=0, nav}){
-  const items=[
-    {l:'Home',   i:'home',s:'home'},
-    {l:'My Wines',i:'list',s:'mywines'},
-    {l:'',       i:'scan',fab:true,s:'scan'},
-    {l:'Learn',  i:'book',s:'learn'},
-    {l:'Profile',i:'user',s:'profile'}
-  ];
+function BottomNav({active=0, nav, showPro}){
+  const [scanOpen,setScanOpen]=React.useState(false);
+  const isPro=!!localStorage.getItem('vinterest_pro');
   return(
-    <div style={{display:'flex',alignItems:'flex-end',padding:'8px 8px env(safe-area-inset-bottom, 12px)',background:C.white,borderTop:`1px solid ${C.line}`,flexShrink:0,position:'sticky',bottom:0,zIndex:100}}>
-      {items.map((it,i)=>(
-        <div key={i} onClick={()=>it.s&&nav(it.s)} style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',gap:3,cursor:'pointer'}}>
-          {it.fab?(
-            <div style={{width:50,height:50,borderRadius:25,background:C.cr,display:'flex',alignItems:'center',justifyContent:'center',marginTop:-20,boxShadow:`0 4px 20px ${C.cr}60`}}>
-              <Icon n="scan" sz={22} col="#fff"/>
+    <div style={{position:'relative',flexShrink:0}}>
+      {/* Scan picker — floats above FAB */}
+      {scanOpen&&(
+        <>
+          <div onClick={()=>setScanOpen(false)} style={{position:'fixed',inset:0,zIndex:200}}/>
+          <div style={{position:'absolute',bottom:'100%',left:'50%',transform:'translateX(-50%)',marginBottom:12,display:'flex',flexDirection:'column',gap:8,zIndex:201,minWidth:200}}>
+            <div onClick={()=>{setScanOpen(false);nav('camera');}} style={{background:C.ink,borderRadius:14,padding:'12px 18px',display:'flex',alignItems:'center',gap:12,cursor:'pointer',boxShadow:'0 8px 32px rgba(0,0,0,0.35)'}}>
+              <div style={{width:36,height:36,borderRadius:10,background:C.cr,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+                <Icon n="camera" sz={18} col="#fff"/>
+              </div>
+              <div>
+                <div style={{fontSize:15,fontWeight:700,color:'#fff',fontFamily:C.P}}>Scan Bottle</div>
+                <div style={{fontSize:12,color:'rgba(255,255,255,0.45)',fontFamily:C.P}}>Identify any wine label</div>
+              </div>
             </div>
-          ):(
-            <Icon n={it.i} sz={20} col={i===active?C.cr:C.mid}/>
-          )}
-          {it.l&&<span style={{fontSize:13,fontWeight:500,color:i===active?C.cr:C.mid,fontFamily:C.P}}>{it.l}</span>}
+            {isPro?(
+              <div onClick={()=>{setScanOpen(false);nav('camera');}} style={{background:C.white,borderRadius:14,padding:'12px 18px',display:'flex',alignItems:'center',gap:12,cursor:'pointer',boxShadow:'0 8px 32px rgba(0,0,0,0.2)',border:`1px solid ${C.green}30`}}>
+                <div style={{width:36,height:36,borderRadius:10,background:C.greenBg,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+                  <Icon n="list" sz={18} col={C.green}/>
+                </div>
+                <div style={{flex:1}}>
+                  <div style={{display:'flex',alignItems:'center',gap:6}}>
+                    <span style={{fontSize:15,fontWeight:700,color:C.ink,fontFamily:C.P}}>Wine List</span>
+                    <span style={{fontSize:10,fontWeight:700,color:'#fff',background:'linear-gradient(135deg,#9B5E00,#C4870A)',borderRadius:6,padding:'1px 6px'}}>UNLOCKED</span>
+                  </div>
+                  <div style={{fontSize:12,color:C.mid,fontFamily:C.P}}>Scan a restaurant menu</div>
+                </div>
+              </div>
+            ):(
+              <div onClick={()=>{setScanOpen(false);showPro('wine-list');}} style={{background:C.white,borderRadius:14,padding:'12px 18px',display:'flex',alignItems:'center',gap:12,cursor:'pointer',boxShadow:'0 8px 32px rgba(0,0,0,0.2)',border:`1px solid ${C.line}`,opacity:0.8}}>
+                <div style={{width:36,height:36,borderRadius:10,background:C.offWhite,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+                  <Icon n="list" sz={18} col={C.mid}/>
+                </div>
+                <div style={{flex:1}}>
+                  <div style={{display:'flex',alignItems:'center',gap:6}}>
+                    <span style={{fontSize:15,fontWeight:700,color:C.ink2,fontFamily:C.P}}>Wine List</span>
+                    <ProBadge/>
+                  </div>
+                  <div style={{fontSize:12,color:C.mid,fontFamily:C.P}}>Upgrade to scan menus</div>
+                </div>
+                <Icon n="lock" sz={14} col={C.mid}/>
+              </div>
+            )}
+          </div>
+        </>
+      )}
+      {/* Nav bar */}
+      <div style={{display:'flex',alignItems:'flex-end',padding:'8px 8px env(safe-area-inset-bottom, 12px)',background:C.white,borderTop:`1px solid ${C.line}`,zIndex:100}}>
+        {/* Learn */}
+        <div onClick={()=>{setScanOpen(false);nav('learn');}} style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',gap:3,cursor:'pointer',padding:'2px 0'}}>
+          <Icon n="book" sz={22} col={active===0?C.cr:C.mid}/>
+          <span style={{fontSize:12,fontWeight:active===0?600:400,color:active===0?C.cr:C.mid,fontFamily:C.P}}>Learn</span>
         </div>
-      ))}
+        {/* Scan FAB */}
+        <div style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',cursor:'pointer'}} onClick={()=>setScanOpen(o=>!o)}>
+          <div style={{width:58,height:58,borderRadius:29,background:scanOpen?C.crL:C.cr,display:'flex',alignItems:'center',justifyContent:'center',marginTop:-28,boxShadow:`0 4px 24px ${C.cr}60`,border:'3px solid #fff',transition:'background .15s'}}>
+            <Icon n="camera" sz={24} col="#fff"/>
+          </div>
+          <span style={{fontSize:12,fontWeight:600,color:C.cr,fontFamily:C.P,marginTop:2}}>Scan</span>
+        </div>
+        {/* Profile */}
+        <div onClick={()=>{setScanOpen(false);nav('profile');}} style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',gap:3,cursor:'pointer',padding:'2px 0'}}>
+          <Icon n="user" sz={22} col={active===2?C.cr:C.mid}/>
+          <span style={{fontSize:12,fontWeight:active===2?600:400,color:active===2?C.cr:C.mid,fontFamily:C.P}}>Profile</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ProBadge({style:s}){
+  return(
+    <span style={{display:'inline-flex',alignItems:'center',padding:'2px 7px',borderRadius:8,background:'linear-gradient(135deg,#9B5E00,#C4870A)',fontSize:10,fontWeight:700,color:'#fff',fontFamily:C.P,letterSpacing:'0.05em',flexShrink:0,...s}}>PRO</span>
+  );
+}
+
+function ProGate({feature,onClose}){
+  const FEAT={
+    'wine-list':{icon:'📋',title:'Wine List Scanning',desc:'Snap any restaurant menu and get instant match scores for every bottle.',bullets:['Scan full wine lists in seconds','AI ranks every wine by your taste profile','Works at any restaurant worldwide']},
+    'unlimited-scans':{icon:'♾️',title:'Unlimited Scans',desc:"You've used your 10 free scans. Pro gives you unlimited.",bullets:['Scan as many bottles as you like','Your full scan history never expires','Priority AI label recognition']},
+    'taste-depth':{icon:'🎭',title:'Full Taste Profile',desc:'Unlock your complete taste breakdown across all wine types.',bullets:['Whites, Rosé & Sparkling profiles','Personalised sommelier scripts for each','Full food pairing analysis']},
+    'expert-quiz':{icon:'🎓',title:'Expert Quizzes',desc:'Advanced wine knowledge questions with bigger XP rewards.',bullets:['WSET-inspired question sets','200 XP per completed quiz','Unlock Expert badge on your profile']},
+  };
+  const f=FEAT[feature]||FEAT['wine-list'];
+  return(
+    <div onClick={onClose} style={{position:'absolute',inset:0,background:'rgba(0,0,0,0.62)',zIndex:600,display:'flex',alignItems:'flex-end',backdropFilter:'blur(4px)'}}>
+      <div onClick={e=>e.stopPropagation()} style={{background:C.white,borderRadius:'22px 22px 0 0',width:'100%',paddingBottom:'max(env(safe-area-inset-bottom,0px),20px)',animation:'slideUp .3s cubic-bezier(.34,1.2,.64,1)'}}>
+        <div style={{display:'flex',justifyContent:'center',padding:'10px 0 0'}}>
+          <div style={{width:36,height:4,borderRadius:2,background:C.line}}/>
+        </div>
+        <div style={{textAlign:'center',padding:'6px 0 8px'}}>
+          <span style={{display:'inline-flex',alignItems:'center',gap:5,padding:'4px 14px',borderRadius:20,background:'linear-gradient(135deg,#9B5E00,#C4870A)'}}>
+            <span style={{fontSize:13,fontWeight:700,color:'#fff',fontFamily:C.P,letterSpacing:'0.08em'}}>VINTEREST PRO</span>
+          </span>
+        </div>
+        <div style={{padding:'6px 24px 4px',display:'flex',flexDirection:'column',gap:14}}>
+          <div style={{textAlign:'center'}}>
+            <div style={{fontSize:42,marginBottom:8}}>{f.icon}</div>
+            <div style={{fontSize:22,fontWeight:800,color:C.ink,fontFamily:C.P,lineHeight:1.2,marginBottom:6}}>{f.title}</div>
+            <div style={{fontSize:15,color:C.mid,fontFamily:C.P,lineHeight:1.55}}>{f.desc}</div>
+          </div>
+          <div style={{display:'flex',flexDirection:'column',gap:8}}>
+            {f.bullets.map((b,i)=>(
+              <div key={i} style={{display:'flex',alignItems:'center',gap:10}}>
+                <div style={{width:20,height:20,borderRadius:10,background:C.greenBg,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+                  <Icon n="check" sz={12} col={C.green}/>
+                </div>
+                <span style={{fontSize:15,color:C.ink2,fontFamily:C.P}}>{b}</span>
+              </div>
+            ))}
+          </div>
+          <div onClick={()=>{localStorage.setItem('vinterest_pro','1');window.dispatchEvent(new Event('vinterest:pro'));onClose();}}
+            style={{background:`linear-gradient(135deg,${C.cr},${C.crL})`,borderRadius:14,padding:'15px',textAlign:'center',cursor:'pointer',boxShadow:`0 6px 28px ${C.cr}45`,marginTop:2}}>
+            <div style={{fontSize:18,fontWeight:700,color:'#fff',fontFamily:C.P}}>Upgrade to Pro</div>
+            <div style={{fontSize:13,color:'rgba(255,255,255,0.68)',fontFamily:C.P,marginTop:2}}>£4.99/month · Cancel anytime</div>
+          </div>
+          <div onClick={onClose} style={{textAlign:'center',cursor:'pointer',paddingBottom:4}}>
+            <span style={{fontSize:15,color:C.mid,fontFamily:C.P}}>Maybe later</span>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -110,4 +213,4 @@ const WineHistory = {
   }
 };
 
-Object.assign(window,{C,Icon,BottomNav,Pill,Prog,Card,Btn,WineHistory});
+Object.assign(window,{C,Icon,BottomNav,Pill,Prog,Card,Btn,WineHistory,ProBadge,ProGate});

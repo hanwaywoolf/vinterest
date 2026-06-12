@@ -1,8 +1,10 @@
 /* Vinterest — Quiz Hub + Quiz Screens */
 
 /* ── QUIZ HUB ── */
-function QuizHubScreen({nav,back}){
+function QuizHubScreen({nav,back,showPro}){
   const [xpData,setXpData]=React.useState(()=>XPSystem.get());
+  const [isPro,setIsPro]=React.useState(()=>!!localStorage.getItem('vinterest_pro'));
+  React.useEffect(()=>{const h=()=>setIsPro(true);window.addEventListener('vinterest:pro',h);return()=>window.removeEventListener('vinterest:pro',h);},[]);
   const qc=xpData.quizCompleted||{};
   const level=XPSystem.getLevel(xpData.total);
   const nextLvl=XPSystem.nextLevel(xpData.total);
@@ -46,7 +48,16 @@ function QuizHubScreen({nav,back}){
       </div>
 
       <div style={{flex:1,overflowY:'auto',padding:'14px 16px',display:'flex',flexDirection:'column',gap:14}}>
-        <div style={{fontSize:13,fontWeight:600,color:C.mid,letterSpacing:'0.08em',textTransform:'uppercase',fontFamily:C.P}}>Choose a Topic</div>
+        {/* Featured article */}
+        <div onClick={()=>nav('article')} style={{background:'linear-gradient(135deg,#1a1a2e,#16213e)',borderRadius:16,padding:'16px',display:'flex',alignItems:'center',gap:12,cursor:'pointer',border:'1px solid rgba(255,255,255,0.06)'}}>
+          <div style={{width:46,height:46,borderRadius:12,background:'rgba(255,255,255,0.08)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,fontSize:22}}>📖</div>
+          <div style={{flex:1}}>
+            <div style={{fontSize:11,fontWeight:600,color:'rgba(255,255,255,0.4)',fontFamily:C.P,textTransform:'uppercase',letterSpacing:'0.06em',marginBottom:3}}>Quick Read · 2 min</div>
+            <div style={{fontSize:15,fontWeight:700,color:'#fff',fontFamily:C.P,lineHeight:1.3}}>5 taste terms every wine drinker should know</div>
+          </div>
+          <Icon n="chevron" sz={13} col="rgba(255,255,255,0.3)"/>
+        </div>
+        <div style={{fontSize:13,fontWeight:600,color:C.mid,letterSpacing:'0.08em',textTransform:'uppercase',fontFamily:C.P}}>Quizzes</div>
 
         {QUIZ_TOPICS.map((topic,ti)=>{
           const completedCount=DIFFS.filter(d=>qc[topic.id+'_'+d.id]).length;
@@ -69,19 +80,21 @@ function QuizHubScreen({nav,back}){
               {DIFFS.map((d,di)=>{
                 const done=!!qc[topic.id+'_'+d.id];
                 const xpEarned=qc[topic.id+'_'+d.id]||0;
+                const locked=d.id==='expert'&&!isPro;
                 return(
-                  <div key={di} onClick={()=>startQuiz(topic.id,d.id)}
-                    style={{padding:'11px 14px',display:'flex',alignItems:'center',gap:10,borderBottom:di<2?`1px solid ${C.line}`:'none',cursor:'pointer',background:done?d.bg:'transparent',transition:'background .15s'}}>
-                    <div style={{width:30,height:30,borderRadius:8,background:done?d.col:'rgba(0,0,0,0.04)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
-                      <span style={{fontSize:14}}>{done?'✓':'▷'}</span>
+                  <div key={di} onClick={()=>{if(locked){showPro('expert-quiz');return;}startQuiz(topic.id,d.id);}}
+                    style={{padding:'11px 14px',display:'flex',alignItems:'center',gap:10,borderBottom:di<2?`1px solid ${C.line}`:'none',cursor:'pointer',background:locked?'rgba(0,0,0,0.01)':done?d.bg:'transparent',transition:'background .15s',opacity:locked?0.6:1}}>
+                    <div style={{width:30,height:30,borderRadius:8,background:locked?'rgba(0,0,0,0.04)':done?d.col:'rgba(0,0,0,0.04)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+                      <span style={{fontSize:14}}>{locked?'🔒':done?'✓':'▷'}</span>
                     </div>
-                    <div style={{flex:1}}>
-                      <span style={{fontSize:16,fontWeight:600,color:done?d.col:C.ink,fontFamily:C.P}}>{d.label}</span>
-                      {done&&<span style={{fontSize:12,color:d.col,fontFamily:C.P,marginLeft:8,fontWeight:500}}>+{xpEarned} XP earned</span>}
+                    <div style={{flex:1,display:'flex',alignItems:'center',gap:8}}>
+                      <span style={{fontSize:16,fontWeight:600,color:locked?C.mid:done?d.col:C.ink,fontFamily:C.P}}>{d.label}</span>
+                      {locked&&<ProBadge/>}
+                      {done&&!locked&&<span style={{fontSize:12,color:d.col,fontFamily:C.P,fontWeight:500}}>+{xpEarned} XP earned</span>}
                     </div>
                     <div style={{display:'flex',alignItems:'center',gap:4}}>
-                      {!done&&<span style={{fontSize:13,fontWeight:600,color:C.mid,fontFamily:C.P}}>+{d.xp} XP</span>}
-                      <Icon n="chevron" sz={13} col={C.mid}/>
+                      {!done&&!locked&&<span style={{fontSize:13,fontWeight:600,color:C.mid,fontFamily:C.P}}>+{d.xp} XP</span>}
+                      {locked?<Icon n="lock" sz={13} col={C.mid}/>:<Icon n="chevron" sz={13} col={C.mid}/>}
                     </div>
                   </div>
                 );
@@ -166,22 +179,23 @@ function QuizScreen({nav,back}){
     }];
     setResults(newResults);
 
-    setTimeout(()=>{
-      if(qIdx+1>=allQs.length){
-        // complete
-        const finalScore=newResults.filter(r=>r.correct).length;
-        const finalReasons=[{type:'quiz_complete',topic:topic.id,difficulty}];
-        const a2=XPSystem.award(finalReasons);
-        const g2=a2.filter(x=>!x.levelUp).reduce((s,a)=>s+a.amount,0);
-        setXpGained(xp=>xp+g2);
-        XPSystem.toast(a2);
-        setPhase('results');
-      } else {
-        setQIdx(i=>i+1);
-        setSelected(null);
-        setPhase('question');
-      }
-    },1800);
+  }
+
+  function advance(){
+    if(phase!=='feedback') return;
+    if(qIdx+1>=allQs.length){
+      const finalScore=results.filter(r=>r.correct).length;
+      const finalReasons=[{type:'quiz_complete',topic:topic.id,difficulty}];
+      const a2=XPSystem.award(finalReasons);
+      const g2=a2.filter(x=>!x.levelUp).reduce((s,a)=>s+a.amount,0);
+      setXpGained(xp=>xp+g2);
+      XPSystem.toast(a2);
+      setPhase('results');
+    } else {
+      setQIdx(i=>i+1);
+      setSelected(null);
+      setPhase('question');
+    }
   }
 
   // Results screen
@@ -267,7 +281,7 @@ function QuizScreen({nav,back}){
       </div>
 
       {/* Question */}
-      <div style={{flex:1,overflowY:'auto',padding:'20px 16px',display:'flex',flexDirection:'column',gap:14}}>
+      <div onClick={phase==='feedback'?advance:undefined} style={{flex:1,overflowY:'auto',padding:'20px 16px',display:'flex',flexDirection:'column',gap:14,cursor:phase==='feedback'?'pointer':'default'}}>
         <div style={{fontSize:21,fontWeight:700,color:C.ink,fontFamily:C.P,lineHeight:1.4}}>{q.q}</div>
 
         {/* Options */}
@@ -288,13 +302,20 @@ function QuizScreen({nav,back}){
           })}
         </div>
 
-        {/* Fact reveal */}
+        {/* Fact reveal + Next button */}
         {phase==='feedback'&&(
-          <div style={{background:selected===q.a?C.greenBg:'#FFF8F0',borderRadius:14,padding:'12px 14px',border:`1px solid ${selected===q.a?C.green+'40':'#F5C07040'}`,animation:'fadeIn .3s ease'}}>
-            <div style={{fontSize:15,fontWeight:700,color:selected===q.a?C.green:'#B87000',fontFamily:C.P,marginBottom:4}}>
-              {selected===q.a?'Correct! 🎉':'Not quite'}
+          <div style={{animation:'fadeIn .3s ease'}}>
+            <div style={{background:selected===q.a?C.greenBg:'#FFF8F0',borderRadius:14,padding:'12px 14px',border:`1px solid ${selected===q.a?C.green+'40':'#F5C07040'}`,marginBottom:12}}>
+              <div style={{fontSize:15,fontWeight:700,color:selected===q.a?C.green:'#B87000',fontFamily:C.P,marginBottom:4}}>
+                {selected===q.a?'Correct! 🎉':'Not quite'}
+              </div>
+              {q.fact&&<div style={{fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.5}}>{q.fact}</div>}
             </div>
-            {q.fact&&<div style={{fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.5}}>{q.fact}</div>}
+            <div onClick={advance} style={{background:C.cr,borderRadius:14,padding:'15px',textAlign:'center',cursor:'pointer',boxShadow:`0 6px 22px ${C.cr}45`,userSelect:'none',WebkitUserSelect:'none'}}>
+              <span style={{fontSize:17,fontWeight:700,color:'#fff',fontFamily:C.P}}>
+                {qIdx+1>=allQs.length?'See Results →':'Next Question →'}
+              </span>
+            </div>
           </div>
         )}
         <div style={{height:12}}/>
