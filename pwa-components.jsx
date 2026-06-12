@@ -36,7 +36,13 @@ function Icon({n,sz=20,col=C.ink,style:s}){
 }
 
 function BottomNav({active=0, nav}){
-  const items=[{l:'Home',i:'home',s:'home'},{l:'Discover',i:'compass',s:'discover'},{l:'',i:'scan',fab:true,s:'scan'},{l:'Learn',i:'book',s:'learn'},{l:'Profile',i:'user',s:'profile'}];
+  const items=[
+    {l:'Home',i:'home',s:'home'},
+    {l:'My Wines',i:'list',s:'mywines'},
+    {l:'',i:'scan',fab:true,s:'scan'},
+    {l:'Restaurant',i:'fork',s:'restaurant'},
+    {l:'Profile',i:'user',s:'profile'}
+  ];
   return(
     <div style={{display:'flex',alignItems:'flex-end',padding:'8px 8px env(safe-area-inset-bottom, 12px)',background:C.white,borderTop:`1px solid ${C.line}`,flexShrink:0,position:'sticky',bottom:0,zIndex:100}}>
       {items.map((it,i)=>(
@@ -48,7 +54,7 @@ function BottomNav({active=0, nav}){
           ):(
             <Icon n={it.i} sz={20} col={i===active?C.cr:C.mid}/>
           )}
-          {it.l&&<span style={{fontSize:9,fontWeight:500,color:i===active?C.cr:C.mid,fontFamily:C.P}}>{it.l}</span>}
+          {it.l&&<span style={{fontSize:13,fontWeight:500,color:i===active?C.cr:C.mid,fontFamily:C.P}}>{it.l}</span>}
         </div>
       ))}
     </div>
@@ -68,4 +74,40 @@ function Btn({children,primary,full,small,style:s,onClick}){
   return <div onClick={onClick} style={{padding:small?'8px 14px':'12px 20px',borderRadius:12,background:primary?C.cr:C.white,color:primary?'#fff':C.ink,border:primary?'none':`1px solid ${C.line}`,fontFamily:C.P,fontSize:small?11:13,fontWeight:600,textAlign:'center',width:full?'100%':'auto',boxShadow:primary?`0 4px 16px ${C.cr}40`:'none',cursor:'pointer',boxSizing:'border-box',...s}}>{children}</div>;
 }
 
-Object.assign(window,{C,Icon,BottomNav,Pill,Prog,Card,Btn});
+/* ── Wine History ── */
+const WineHistory = {
+  KEY: 'vinterest_wines',
+  getAll(){ try{ return JSON.parse(localStorage.getItem(this.KEY)||'[]'); }catch(e){ return []; } },
+  save(wines){ localStorage.setItem(this.KEY, JSON.stringify(wines.slice(0,500))); },
+  add(wine, rating){
+    // Only persist wines that have been scored
+    if(!rating || rating <= 0) return this.getAll();
+    const wines = this.getAll();
+    const idx = wines.findIndex(w => w.name===wine.name && String(w.vintage)===String(wine.vintage));
+    const now = new Date().toISOString();
+    if(idx>=0){
+      wines[idx].times_consumed = (wines[idx].times_consumed||1) + 1;
+      wines[idx].last_scanned = now;
+      wines[idx].rating = rating;
+    } else {
+      wines.unshift({...wine, rating, times_consumed:1, scanned_at:now, last_scanned:now});
+    }
+    this.save(wines);
+    return wines;
+  },
+  rate(name, vintage, rating){
+    const wines = this.getAll();
+    const w = wines.find(w => w.name===name && String(w.vintage)===String(vintage));
+    if(w){ w.rating=rating; this.save(wines); }
+  },
+  getProfile(){
+    const wines = this.getAll();
+    if(!wines.length) return {red:0,white:0,rose:0,sparkling:0,total:0};
+    const counts={red:0,white:0,rose:0,sparkling:0};
+    wines.forEach(w=>{ const t=(w.type||'').toLowerCase().replace('é','e'); if(counts[t]!==undefined) counts[t]++; else counts.red++; });
+    const total=wines.length;
+    return {...counts,total,redPct:counts.red/total,whitePct:counts.white/total,rosePct:counts.rose/total,sparklingPct:counts.sparkling/total};
+  }
+};
+
+Object.assign(window,{C,Icon,BottomNav,Pill,Prog,Card,Btn,WineHistory});
