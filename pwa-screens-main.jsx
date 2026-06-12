@@ -24,9 +24,6 @@ function HomeScreen({nav}){
           <div style={{fontSize:15,color:C.mid,fontFamily:C.P}}>Good evening</div>
           <div style={{fontSize:24,fontWeight:800,color:C.ink,fontFamily:C.P,letterSpacing:'-0.5px'}}>Vinterest</div>
         </div>
-        <div onClick={()=>nav('profile')} style={{width:40,height:40,borderRadius:20,background:C.crSoft,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer'}}>
-          <Icon n="user" sz={20} col={C.cr}/>
-        </div>
       </div>
 
       <div style={{padding:'16px 20px 0',display:'flex',flexDirection:'column',gap:12}}>

@@ -35,6 +35,15 @@ function App(){
   const showNav = screen !== 'scan';
   const activeNav={home:0,mywines:1,scan:2,learn:3,quiz:3,profile:4}[screen]??-1;
 
+  // XP Badge
+  const [xpBadge,setXpBadge]=React.useState(()=>XPSystem.get());
+  React.useEffect(()=>{
+    const handler=()=>setXpBadge(XPSystem.get());
+    window.addEventListener('vinterest:xp',handler);
+    return ()=>window.removeEventListener('vinterest:xp',handler);
+  },[]);
+  const showXpBadge=!['scan','learn','quiz'].includes(screen);
+
   // XP Toast
   const [xpToasts,setXpToasts]=React.useState([]);
   React.useEffect(()=>{
@@ -71,6 +80,13 @@ function App(){
         {screen==='shopping'  && <ShoppingScreen {...ctx}/>}
       </div>
       {showNav&&<BottomNav active={activeNav} nav={nav}/>}
+      {/* Global XP badge */}
+      {showXpBadge&&(
+        <div onClick={()=>nav('learn')} style={{position:'absolute',top:10,right:14,zIndex:200,display:'flex',alignItems:'center',gap:5,padding:'5px 11px',borderRadius:20,background:C.crSoft,border:`1px solid ${C.crDim}`,cursor:'pointer',boxShadow:'0 1px 8px rgba(0,0,0,0.08)',pointerEvents:'auto'}}>
+          <span style={{fontSize:17,lineHeight:1}}>{XPSystem.getLevel(xpBadge.total).badge}</span>
+          <span style={{fontSize:13,fontWeight:700,color:C.cr,fontFamily:C.P}}>{xpBadge.total} XP</span>
+        </div>
+      )}
       {/* XP Toast overlay */}
       <div style={{position:'absolute',top:0,left:0,right:0,pointerEvents:'none',zIndex:999,display:'flex',flexDirection:'column',alignItems:'center',gap:8,paddingTop:12}}>
         {xpToasts.map(toast=>(

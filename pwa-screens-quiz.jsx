@@ -52,7 +52,7 @@ function QuizHubScreen({nav,back}){
           const completedCount=DIFFS.filter(d=>qc[topic.id+'_'+d.id]).length;
           const allDone=completedCount===3;
           return(
-            <div key={ti} style={{background:C.white,borderRadius:18,border:`1px solid ${C.line}`,overflow:'hidden',boxShadow:'0 1px 4px rgba(0,0,0,0.04)'}}>
+            <div key={ti} style={{background:C.white,borderRadius:18,border:`1px solid ${C.line}`,overflow:'hidden',boxShadow:'0 1px 4px rgba(0,0,0,0.04)',flexShrink:0}}>
               {/* Topic header */}
               <div style={{padding:'12px 14px',display:'flex',alignItems:'center',gap:10,borderBottom:`1px solid ${C.line}`}}>
                 <div style={{width:42,height:42,borderRadius:12,background:topic.color+'15',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,border:`1px solid ${topic.color}25`,fontSize:22}}>
@@ -111,9 +111,15 @@ function QuizScreen({nav,back}){
   const difficulty=config?.difficulty||'beginner';
   const allQs=React.useMemo(()=>{
     const qs=[...(topic.questions[difficulty]||[])];
-    // Shuffle
+    // Shuffle questions
     for(let i=qs.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [qs[i],qs[j]]=[qs[j],qs[i]]; }
-    return qs.slice(0,6);
+    // Shuffle each question's options, keeping correct answer tracked
+    return qs.slice(0,6).map(q=>{
+      const correctText=q.opts[q.a];
+      const shuffled=[...q.opts];
+      for(let i=shuffled.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [shuffled[i],shuffled[j]]=[shuffled[j],shuffled[i]]; }
+      return {...q, opts:shuffled, a:shuffled.indexOf(correctText)};
+    });
   },[topic,difficulty]);
 
   const [qIdx,setQIdx]=React.useState(0);
