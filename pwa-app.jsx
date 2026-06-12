@@ -32,7 +32,7 @@ function App(){
   },[]);
 
   const navTab=['home','discover','scan','learn','profile'].indexOf(screen);
-  const showNav=['home','mywines','discover','learn','profile','shopping','restaurant'].includes(screen);
+  const showNav = screen !== 'scan';
 
   // Active bottom nav index
   const activeNav={home:0,mywines:1,scan:2,restaurant:3,profile:4}[screen]??-1;
@@ -40,7 +40,7 @@ function App(){
   const ctx={nav,back};
 
   return(
-    <div style={{width:'100%',maxWidth:430,minHeight:'100dvh',margin:'0 auto',background:C.bg,display:'flex',flexDirection:'column',position:'relative',overflow:'hidden'}}>
+    <div style={{width:'100%',maxWidth:430,height:'100dvh',margin:'0 auto',background:C.bg,display:'flex',flexDirection:'column',position:'relative',overflow:'hidden'}}>
       <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden',minHeight:0}}>
         {screen==='home'      && <HomeScreen {...ctx}/>}
         {screen==='scan'      && <ScanScreen {...ctx}/>}
