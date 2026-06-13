@@ -364,8 +364,8 @@ function WineIdentifiedScreen({nav,back}){
   const displaySub   = wine
     ? `${wine.vintage||'NV'} · ${wine.region}, ${wine.country}`
     : '2018 · Bordeaux, France';
-  const displayGrape = wine?.grapes?.[0]  || 'Cabernet Blend';
-  const displayPrice = wine ? `$${wine.price_usd}` : '$180–220';
+  const displayGrape = wine?.grapes?.[0]  || null;
+  const displayPrice = wine?.price_usd != null ? `$${wine.price_usd}` : (wine ? '—' : '$180–220');
   const commRating   = wine?.community_rating || 4.7;
   // Deterministic fake ratings count seeded from wine name
   const commCount    = React.useMemo(()=>{
@@ -421,7 +421,7 @@ function WineIdentifiedScreen({nav,back}){
               <div style={{fontSize:22,fontWeight:700,color:C.ink,fontFamily:C.P,lineHeight:1.2}}>{displayName}</div>
               <div style={{fontSize:15,color:C.mid,fontFamily:C.P,marginTop:2}}>{displaySub}</div>
               <div style={{display:'flex',gap:5,marginTop:8,flexWrap:'wrap'}}>
-                <Pill active sm style={{textTransform:'capitalize'}}>{wine?.type||'Red'}</Pill><Pill sm>{displayGrape}</Pill>
+                <Pill active sm style={{textTransform:'capitalize'}}>{wine?.type||'Red'}</Pill>{displayGrape&&<Pill sm>{displayGrape}</Pill>}
               </div>
             </div>
           </div>
@@ -441,7 +441,7 @@ function WineIdentifiedScreen({nav,back}){
 
         <Card style={{background:C.greenBg,boxShadow:'none',border:`1px solid ${C.green}25`,padding:12}}>
           <div style={{fontSize:15,fontWeight:600,color:C.green,fontFamily:C.P,marginBottom:4}}>Why you'll love this</div>
-          <div style={{fontSize:15,color:C.ink2,fontFamily:C.P,lineHeight:1.55}}>Full-bodied with dark fruit and earthy notes — matches your preference for structured Bordeaux-style reds.</div>
+          <div style={{fontSize:15,color:C.ink2,fontFamily:C.P,lineHeight:1.55}}>{wine?.why_you_will_like_this?.trim()||(wine?`This ${wine.type||'red'} from ${wine.region||wine.country||'the region'} aligns well with your taste profile.`:'Full-bodied with dark fruit and earthy notes — matches your preference for structured reds.')}</div>
         </Card>
 
         {/* Score slider rating */}

@@ -31,78 +31,45 @@ function Icon({n,sz=20,col=C.ink,style:s}){
     lock:<><rect x="5.5" y="9.5" width="9" height="7.5" rx="1.5" stroke={col} strokeWidth="1.5" fill="none"/><path d="M7.5 9.5V7C7.5 5 8.5 3.5 10 3.5S12.5 5 12.5 7v2.5" stroke={col} strokeWidth="1.5" fill="none"/><circle cx="10" cy="13" r="1" fill={col}/></>,
     star:<polygon points="10,2 12.4,7.6 18.5,8.2 14,12.3 15.4,18.3 10,15.1 4.6,18.3 6,12.3 1.5,8.2 7.6,7.6" fill={col}/>,
     list:<><line x1="7" y1="5" x2="17" y2="5" stroke={col} strokeWidth="1.5" strokeLinecap="round"/><line x1="7" y1="10" x2="17" y2="10" stroke={col} strokeWidth="1.5" strokeLinecap="round"/><line x1="7" y1="15" x2="17" y2="15" stroke={col} strokeWidth="1.5" strokeLinecap="round"/><circle cx="4" cy="5" r="1" fill={col}/><circle cx="4" cy="10" r="1" fill={col}/><circle cx="4" cy="15" r="1" fill={col}/></>,
+    brain:<><path d="M10 15V7.5" stroke={col} strokeWidth="1.2" strokeLinecap="round" strokeDasharray="1.2 1.8" opacity=".4"/><path d="M10 7.5C10 5.5 8.5 4 7 4C5.3 4 4 5.2 4 6.8C3.1 7.1 2.4 8 2.4 9.2C2.4 10.4 3.2 11.4 4.3 11.7C4.1 12.2 4 12.7 4 13.3C4 14.9 5.3 16.1 7 16.2L10 16.3" stroke={col} strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round"/><path d="M10 7.5C10 5.5 11.5 4 13 4C14.7 4 16 5.2 16 6.8C16.9 7.1 17.6 8 17.6 9.2C17.6 10.4 16.8 11.4 15.7 11.7C15.9 12.2 16 12.7 16 13.3C16 14.9 14.7 16.1 13 16.2L10 16.3" stroke={col} strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round"/><path d="M5.5 8.2C6 7.8 7 7.7 7.8 8.2" stroke={col} strokeWidth="1" strokeLinecap="round" opacity=".55"/><path d="M5.5 11C6 10.6 7 10.6 7.8 11" stroke={col} strokeWidth="1" strokeLinecap="round" opacity=".55"/></>,
   };
   return <svg viewBox="0 0 20 20" width={sz} height={sz} style={{display:'block',flexShrink:0,...s}}>{d[n]||<circle cx="10" cy="10" r="7" stroke={col} strokeWidth="1.5" fill="none"/>}</svg>;
 }
 
-function BottomNav({active=0, nav, showPro}){
-  const [scanOpen,setScanOpen]=React.useState(false);
-  const isPro=!!localStorage.getItem('vinterest_pro');
+function BottomNav({active, nav, showPro}){
+  const homeActive=active==='home'||active==='scan';
+  const cellarActive=active==='mywines';
+  const learnActive=active==='learn'||active==='quiz'||active==='article';
+  const profileActive=active==='profile';
   return(
-    <div style={{position:'relative',flexShrink:0}}>
-      {/* Scan picker — floats above FAB */}
-      {scanOpen&&(
-        <>
-          <div onClick={()=>setScanOpen(false)} style={{position:'fixed',inset:0,zIndex:200}}/>
-          <div style={{position:'absolute',bottom:'100%',left:'50%',transform:'translateX(-50%)',marginBottom:12,display:'flex',flexDirection:'column',gap:8,zIndex:201,minWidth:200}}>
-            <div onClick={()=>{setScanOpen(false);nav('camera');}} style={{background:C.ink,borderRadius:14,padding:'12px 18px',display:'flex',alignItems:'center',gap:12,cursor:'pointer',boxShadow:'0 8px 32px rgba(0,0,0,0.35)'}}>
-              <div style={{width:36,height:36,borderRadius:10,background:C.cr,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
-                <Icon n="camera" sz={18} col="#fff"/>
-              </div>
-              <div>
-                <div style={{fontSize:15,fontWeight:700,color:'#fff',fontFamily:C.P}}>Scan Bottle</div>
-                <div style={{fontSize:12,color:'rgba(255,255,255,0.45)',fontFamily:C.P}}>Identify any wine label</div>
-              </div>
-            </div>
-            {isPro?(
-              <div onClick={()=>{setScanOpen(false);nav('camera');}} style={{background:C.white,borderRadius:14,padding:'12px 18px',display:'flex',alignItems:'center',gap:12,cursor:'pointer',boxShadow:'0 8px 32px rgba(0,0,0,0.2)',border:`1px solid ${C.green}30`}}>
-                <div style={{width:36,height:36,borderRadius:10,background:C.greenBg,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
-                  <Icon n="list" sz={18} col={C.green}/>
-                </div>
-                <div style={{flex:1}}>
-                  <div style={{display:'flex',alignItems:'center',gap:6}}>
-                    <span style={{fontSize:15,fontWeight:700,color:C.ink,fontFamily:C.P}}>Wine List</span>
-                    <span style={{fontSize:10,fontWeight:700,color:'#fff',background:'linear-gradient(135deg,#9B5E00,#C4870A)',borderRadius:6,padding:'1px 6px'}}>UNLOCKED</span>
-                  </div>
-                  <div style={{fontSize:12,color:C.mid,fontFamily:C.P}}>Scan a restaurant menu</div>
-                </div>
-              </div>
-            ):(
-              <div onClick={()=>{setScanOpen(false);showPro('wine-list');}} style={{background:C.white,borderRadius:14,padding:'12px 18px',display:'flex',alignItems:'center',gap:12,cursor:'pointer',boxShadow:'0 8px 32px rgba(0,0,0,0.2)',border:`1px solid ${C.line}`,opacity:0.8}}>
-                <div style={{width:36,height:36,borderRadius:10,background:C.offWhite,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
-                  <Icon n="list" sz={18} col={C.mid}/>
-                </div>
-                <div style={{flex:1}}>
-                  <div style={{display:'flex',alignItems:'center',gap:6}}>
-                    <span style={{fontSize:15,fontWeight:700,color:C.ink2,fontFamily:C.P}}>Wine List</span>
-                    <ProBadge/>
-                  </div>
-                  <div style={{fontSize:12,color:C.mid,fontFamily:C.P}}>Upgrade to scan menus</div>
-                </div>
-                <Icon n="lock" sz={14} col={C.mid}/>
-              </div>
-            )}
-          </div>
-        </>
-      )}
-      {/* Nav bar */}
-      <div style={{display:'flex',alignItems:'flex-end',padding:'8px 8px env(safe-area-inset-bottom, 12px)',background:C.white,borderTop:`1px solid ${C.line}`,zIndex:100}}>
-        {/* Learn */}
-        <div onClick={()=>{setScanOpen(false);nav('learn');}} style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',gap:3,cursor:'pointer',padding:'2px 0'}}>
-          <Icon n="book" sz={22} col={active===0?C.cr:C.mid}/>
-          <span style={{fontSize:12,fontWeight:active===0?600:400,color:active===0?C.cr:C.mid,fontFamily:C.P}}>Learn</span>
+    <div style={{flexShrink:0}}>
+      <div style={{display:'flex',background:C.white,borderTop:`1px solid ${C.line}`,zIndex:100}}>
+        {/* Home */}
+        <div onClick={()=>nav('home')} style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:3,cursor:'pointer',padding:'9px 0 max(env(safe-area-inset-bottom,9px),9px)'}}>
+          <Icon n="home" sz={22} col={homeActive?C.cr:C.mid}/>
+          <span style={{fontSize:11,fontWeight:homeActive?600:400,color:homeActive?C.cr:C.mid,fontFamily:C.P}}>Home</span>
+        </div>
+        {/* My Wines */}
+        <div onClick={()=>nav('mywines')} style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:3,cursor:'pointer',padding:'9px 0 max(env(safe-area-inset-bottom,9px),9px)'}}>
+          <Icon n="wine" sz={22} col={cellarActive?C.cr:C.mid}/>
+          <span style={{fontSize:11,fontWeight:cellarActive?600:400,color:cellarActive?C.cr:C.mid,fontFamily:C.P}}>My Wines</span>
         </div>
         {/* Scan FAB */}
-        <div style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',cursor:'pointer'}} onClick={()=>setScanOpen(o=>!o)}>
-          <div style={{width:58,height:58,borderRadius:29,background:scanOpen?C.crL:C.cr,display:'flex',alignItems:'center',justifyContent:'center',marginTop:-28,boxShadow:`0 4px 24px ${C.cr}60`,border:'3px solid #fff',transition:'background .15s'}}>
-            <Icon n="camera" sz={24} col="#fff"/>
+        <div style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'flex-end',cursor:'pointer',paddingBottom:'max(env(safe-area-inset-bottom,9px),9px)'}} onClick={()=>nav('camera')}>
+          <div style={{width:54,height:54,borderRadius:27,background:C.cr,display:'flex',alignItems:'center',justifyContent:'center',marginTop:-20,boxShadow:`0 4px 22px ${C.cr}60`,border:'3px solid #fff'}}>
+            <Icon n="camera" sz={22} col="#fff"/>
           </div>
-          <span style={{fontSize:12,fontWeight:600,color:C.cr,fontFamily:C.P,marginTop:2}}>Scan</span>
+          <span style={{fontSize:11,fontWeight:600,color:C.cr,fontFamily:C.P,marginTop:3}}>Scan</span>
         </div>
-        {/* Profile */}
-        <div onClick={()=>{setScanOpen(false);nav('profile');}} style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',gap:3,cursor:'pointer',padding:'2px 0'}}>
-          <Icon n="user" sz={22} col={active===2?C.cr:C.mid}/>
-          <span style={{fontSize:12,fontWeight:active===2?600:400,color:active===2?C.cr:C.mid,fontFamily:C.P}}>Profile</span>
+        {/* Learn */}
+        <div onClick={()=>nav('learn')} style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:3,cursor:'pointer',padding:'9px 0 max(env(safe-area-inset-bottom,9px),9px)'}}>
+          <Icon n="book" sz={22} col={learnActive?C.cr:C.mid}/>
+          <span style={{fontSize:11,fontWeight:learnActive?600:400,color:learnActive?C.cr:C.mid,fontFamily:C.P}}>Learn</span>
+        </div>
+        {/* WineIQ */}
+        <div onClick={()=>nav('profile')} style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:3,cursor:'pointer',padding:'9px 0 max(env(safe-area-inset-bottom,9px),9px)'}}>
+          <Icon n="brain" sz={22} col={profileActive?C.cr:C.mid}/>
+          <span style={{fontSize:11,fontWeight:profileActive?600:400,color:profileActive?C.cr:C.mid,fontFamily:C.P}}>WineIQ</span>
         </div>
       </div>
     </div>
@@ -213,4 +180,6 @@ const WineHistory = {
   }
 };
 
-Object.assign(window,{C,Icon,BottomNav,Pill,Prog,Card,Btn,WineHistory,ProBadge,ProGate});
+const WINE_SKILL_ID='skill_01HwDtvyycyi3BdVMiaWuYJ9';
+
+Object.assign(window,{C,Icon,BottomNav,Pill,Prog,Card,Btn,WineHistory,ProBadge,ProGate,WINE_SKILL_ID});

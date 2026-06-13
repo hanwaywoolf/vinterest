@@ -54,7 +54,7 @@ function TasteProfileScreen({nav,back,showPro}){
       `${w.name}${w.vintage?' '+w.vintage:''} from ${w.region||w.country||'unknown'}${w.rating?' (rated '+w.rating+'/100)':''}`
     ).join('; ');
     const prompt=`I've scanned and rated these ${c.label.toLowerCase()} wines: ${wineList}. Based only on this data, write a short natural first-person sommelier script (2 sentences max) I could say to a restaurant sommelier. Reflect my apparent style, preferred regions, and price range. Return ONLY the script text in double quotes — nothing else.`;
-    window.claude.complete({messages:[{role:'user',content:prompt}]})
+    window.claude.complete({messages:[{role:'user',content:prompt}],skill_id:WINE_SKILL_ID})
       .then(text=>{
         const script=text.trim();
         localStorage.setItem(cacheKey,script);
@@ -335,7 +335,7 @@ function MyWinesScreen({nav,back}){
               return(
                 <Card key={i} style={{padding:12,cursor:'pointer'}} onClick={()=>{
                   sessionStorage.setItem('vinterest_scan_result',JSON.stringify({demo:false,wine:w,confidence:0.9,existingRating:w.rating||0}));
-                  nav('identified');
+                  nav('detail');
                 }}>
                   <div style={{display:'flex',gap:12,alignItems:'flex-start'}}>
                     {/* Wine icon */}

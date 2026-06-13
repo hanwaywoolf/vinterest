@@ -3,10 +3,12 @@
 function WineDetailScreen({back,nav}){
   const [tab,setTab]=React.useState(0);
   const tabs=['Overview','Story','Data'];
-  const wine=React.useMemo(()=>{
-    try{ return JSON.parse(sessionStorage.getItem('vinterest_scan_result')||'{}').wine||null; }
-    catch(e){ return null; }
+  const scanData=React.useMemo(()=>{
+    try{ return JSON.parse(sessionStorage.getItem('vinterest_scan_result')||'{}'); }
+    catch(e){ return {}; }
   },[]);
+  const wine=scanData.wine||null;
+  const existingRating=scanData.existingRating||0;
 
   return(
     <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden'}}>
@@ -27,7 +29,7 @@ function WineDetailScreen({back,nav}){
           <div>
             <div style={{fontSize:24,fontWeight:700,color:C.ink,fontFamily:C.P,lineHeight:1.15}}>{wine?.name||'Château Margaux'}</div>
             <div style={{fontSize:15,color:C.mid,fontFamily:C.P,marginTop:3}}>{wine?`${wine.vintage||'NV'} · ${wine.region}, ${wine.country}`:'2018 · Bordeaux, France'}</div>
-            <div style={{display:'flex',gap:5,marginTop:8}}><Pill active sm style={{textTransform:'capitalize'}}>{wine?.type||'Red'}</Pill><Pill sm>{wine?.grapes?.[0]||'Cabernet Blend'}</Pill></div>
+            <div style={{display:'flex',gap:5,marginTop:8,flexWrap:'wrap'}}><Pill active sm style={{textTransform:'capitalize'}}>{wine?.type||'Red'}</Pill>{wine?.grapes?.[0]&&<Pill sm>{wine.grapes[0]}</Pill>}</div>
           </div>
         </div>
         <div style={{display:'flex',borderBottom:`1px solid ${C.line}`}}>
@@ -37,15 +39,15 @@ function WineDetailScreen({back,nav}){
         </div>
       </div>
       <div style={{flex:1,overflowY:'auto'}}>
-        {tab===0&&<DetailOverview wine={wine} nav={nav}/>}
-        {tab===1&&<DetailStory wine={wine} nav={nav}/>}
-        {tab===2&&<DetailData wine={wine} nav={nav}/>}
+        {tab===0&&<DetailOverview wine={wine} nav={nav} existingRating={existingRating}/>}
+        {tab===1&&<DetailStory wine={wine} nav={nav} existingRating={existingRating}/>}
+        {tab===2&&<DetailData wine={wine} nav={nav} existingRating={existingRating}/>}
       </div>
     </div>
   );
 }
 
-function DetailOverview({wine,nav}){
+function DetailOverview({wine,nav,existingRating=0}){
   const notes=wine?.tasting_notes||['Black Cassis','Cedar','Violets','Tobacco','Graphite'];
   const pairings=wine?.food_pairings||['Grilled Steak','Rack of Lamb','Hard Cheese'];
   const tiles=[
@@ -79,6 +81,17 @@ function DetailOverview({wine,nav}){
           </div>
         ))}
       </div>
+      {existingRating>0&&(
+        <div style={{display:'flex',alignItems:'center',gap:14,padding:'12px 14px',borderRadius:14,background:C.greenBg,border:`1px solid ${C.green}30`}}>
+          <div style={{flexShrink:0,padding:'6px 12px',borderRadius:10,background:C.green+'18',border:`1px solid ${C.green}30`,display:'flex',alignItems:'center',gap:3}}>
+            <span style={{fontSize:28,fontWeight:800,color:C.green,fontFamily:C.P,lineHeight:1}}>{existingRating}</span><span style={{fontSize:13,fontWeight:500,color:C.green,fontFamily:C.P,opacity:.65}}>/100</span>
+          </div>
+          <div>
+            <div style={{fontSize:15,fontWeight:700,color:C.green,fontFamily:C.P}}>Your Rating</div>
+            <div style={{fontSize:13,color:C.ink2,fontFamily:C.P,marginTop:2,lineHeight:1.4}}>{existingRating>=80?'Exceptional — one of your top bottles.':existingRating>=60?'A solid bottle you enjoyed.':'Noted — not quite your style.'}</div>
+          </div>
+        </div>
+      )}
       <Card style={{background:C.greenBg,boxShadow:'none',border:`1px solid ${C.green}25`,padding:12}}>
         <div style={{fontSize:15,fontWeight:600,color:C.green,fontFamily:C.P,marginBottom:3}}>Why this matches you</div>
         <div style={{fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.55}}>{whyText}</div>
@@ -97,11 +110,10 @@ function DetailOverview({wine,nav}){
                   <span style={{fontSize:13,fontWeight:700,color:C.mid,fontFamily:C.P}}>?</span>
                 </div>
               </div>
-              <div style={{fontSize:13,color:C.mid,fontFamily:C.P,lineHeight:1.35,marginBottom:7}}>{t.plain}</div>
+              <div style={{fontSize:13,color:C.mid,fontFamily:C.P,lineHeight:1.4,marginBottom:7,minHeight:'2.7em',display:'-webkit-box',WebkitLineClamp:2,WebkitBoxOrient:'vertical',overflow:'hidden'}}>{t.plain}</div>
               <Prog val={t.val} col={t.col} h={5}/>
               <div style={{display:'flex',justifyContent:'space-between',marginTop:4}}>
                 <span style={{fontSize:12,color:'#bbb',fontFamily:C.P}}>{t.lo}</span>
-                <span style={{fontSize:12,fontWeight:700,color:t.col,fontFamily:C.P}}>{t.val>=.7?t.hi:t.val>=.4?'Medium':t.lo}</span>
                 <span style={{fontSize:12,color:'#bbb',fontFamily:C.P}}>{t.hi}</span>
               </div>
             </div>
@@ -145,21 +157,38 @@ function DetailOverview({wine,nav}){
           </div>
         ))}
       </Card>
-      <Btn primary full onClick={()=>nav('identified')}>Rate This Wine</Btn>
+      {existingRating>0
+        ?<div style={{textAlign:'center',padding:'12px',borderRadius:12,background:C.greenBg,border:`1px solid ${C.green}25`}}><span style={{fontSize:14,fontWeight:600,color:C.green,fontFamily:C.P}}>✓ You rated this wine {existingRating}/100</span></div>
+        :<Btn primary full onClick={()=>nav('identified')}>Rate This Wine</Btn>
+      }
       <div style={{height:8}}/>
     </div>
   );
 }
 
-function DetailStory({wine,nav}){
-  const description=wine?.description||'A flagship Bordeaux that opens with layers of dark cassis, violets, and subtle cedar. The tannins are structured but polished — grippy enough to age beautifully, approachable right now with a long minerally finish.';
-  const whyText=wine?.why_you_will_like_this||'You rated Pauillac 4.5★ and love structured tannins. Cabernet Sauvignon is your #2 grape. This is a natural progression in your red wine journey.';
+function DetailStory({wine,nav,existingRating=0}){
+  function buildDescription(w){
+    if(!w) return null;
+    const region=[w.sub_region,w.region,w.country].filter(Boolean).join(', ');
+    const grape=w.grapes?.length?w.grapes.slice(0,2).join(' and '):null;
+    const notes=w.tasting_notes?.length?w.tasting_notes.slice(0,3).join(', '):null;
+    const parts=[];
+    parts.push(`${w.name} is a ${w.type||'red'} wine from ${region||'an acclaimed region'}.`);
+    if(grape) parts.push(`Crafted from ${grape}.`);
+    if(notes) parts.push(`Expect notes of ${notes}.`);
+    return parts.join(' ');
+  }
+  function buildWhy(w){
+    if(!w) return null;
+    const grape=w.grapes?.[0];
+    return `This ${w.type||'red'} from ${w.region||w.country||'the region'} offers the ${grape||'varietal'} character that aligns well with your taste profile.`;
+  }
+  const description=(wine?.description?.trim())||buildDescription(wine)||'An exceptional wine with refined character and depth.';
+  const whyText=(wine?.why_you_will_like_this?.trim())||buildWhy(wine)||'A great match for your evolving palate.';
   const tags=[...(wine?.tasting_notes||[]).slice(0,3),'Full Body','Dry',...(wine?.food_pairings||[]).slice(0,2).map(f=>`Pairs: ${f}`)];
   return(
     <div style={{padding:'16px 20px',display:'flex',flexDirection:'column',gap:12}}>
-      <div style={{height:110,borderRadius:12,background:C.offWhite,display:'flex',alignItems:'center',justifyContent:'center',gap:10,border:`1px solid ${C.line}`}}>
-        <Icon n="wine" sz={32} col={C.line}/><span style={{fontSize:14,color:'#ccc',fontFamily:C.P}}>Vineyard / Label Photo</span>
-      </div>
+
       <div>
         <div style={{display:'flex',gap:5,marginBottom:6,flexWrap:'wrap'}}>
           <Pill active sm>94% Match</Pill><Pill sm>Full Body</Pill><Pill sm>Dry</Pill>
@@ -192,13 +221,16 @@ function DetailStory({wine,nav}){
           ))}
         </div>
       </div>
-      <Btn primary full onClick={()=>nav('identified')}>Rate This Wine</Btn>
+      {existingRating>0
+        ?<div style={{textAlign:'center',padding:'12px',borderRadius:12,background:C.greenBg,border:`1px solid ${C.green}25`}}><span style={{fontSize:14,fontWeight:600,color:C.green,fontFamily:C.P}}>✓ You rated this wine {existingRating}/100</span></div>
+        :<Btn primary full onClick={()=>nav('identified')}>Rate This Wine</Btn>
+      }
       <div style={{height:8}}/>
     </div>
   );
 }
 
-function DetailData({wine,nav}){
+function DetailData({wine,nav,existingRating=0}){
   const notes=wine?.tasting_notes||['Black Cassis','Cedar','Violets','Tobacco','Graphite','Dark Plum'];
   const vintage=wine?.vintage;
   return(
@@ -244,7 +276,10 @@ function DetailData({wine,nav}){
         </div>
       </Card>
       <div style={{display:'flex',gap:8,marginBottom:8}}>
-        <Btn primary full style={{flex:1}} onClick={()=>nav('identified')}>Rate Wine</Btn>
+        {existingRating>0
+          ?<div style={{flex:2,textAlign:'center',padding:'12px',borderRadius:12,background:C.greenBg,border:`1px solid ${C.green}25`}}><span style={{fontSize:14,fontWeight:600,color:C.green,fontFamily:C.P}}>✓ Rated {existingRating}/100</span></div>
+          :<Btn primary full style={{flex:1}} onClick={()=>nav('identified')}>Rate Wine</Btn>
+        }
         <Btn full style={{flex:1}}>Add to List</Btn>
       </div>
     </div>

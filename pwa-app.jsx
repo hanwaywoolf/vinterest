@@ -4,10 +4,10 @@ function App(){
   const [screen,setScreen]=React.useState(()=>{
     if(!localStorage.getItem('vinterest_onboarded')) return 'onboarding';
     const h=window.location.hash.replace('#','').toLowerCase();
-    return (h&&h!=='onboarding')?h:'scan';
+    return (h&&h!=='onboarding')?h:'home';
   });
   const [stack,setStack]=React.useState(()=>{
-    const init=localStorage.getItem('vinterest_onboarded')?'scan':'onboarding';
+    const init=localStorage.getItem('vinterest_onboarded')?'home':'onboarding';
     return [init];
   });
   const [proGate,setProGate]=React.useState(null);
@@ -18,7 +18,7 @@ function App(){
     setScreen(to);
   }
   function back(){
-    if(stack.length<=1){setScreen('scan');setStack(['scan']);window.location.hash='scan';return;}
+    if(stack.length<=1){setScreen('home');setStack(['home']);window.location.hash='home';return;}
     const ns=stack.slice(0,-1);
     setStack(ns);
     const prev=ns[ns.length-1];
@@ -37,7 +37,6 @@ function App(){
   },[]);
 
   const showNav=!['camera','onboarding'].includes(screen);
-  const activeNav={scan:null,camera:null,identified:null,winelist:null,detail:null,region:null,varietal:null,similar:null,learn:0,quiz:0,article:0,profile:2,mywines:2}[screen]??null;
 
   // XP Badge + overlay
   const [xpBadge,setXpBadge]=React.useState(()=>XPSystem.get());
@@ -47,7 +46,7 @@ function App(){
     window.addEventListener('vinterest:xp',handler);
     return ()=>window.removeEventListener('vinterest:xp',handler);
   },[]);
-  const showXpBadge=!['camera','onboarding','learn','quiz','article'].includes(screen);
+  const showXpBadge=!['camera','onboarding','learn','quiz','article','identified','detail','mywines','scan','profile'].includes(screen);
 
   // XP Toast
   const [xpToasts,setXpToasts]=React.useState([]);
@@ -68,7 +67,8 @@ function App(){
   return(
     <div style={{width:'100%',maxWidth:430,height:'100dvh',margin:'0 auto',background:C.bg,display:'flex',flexDirection:'column',position:'relative',overflow:'hidden'}}>
       <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden',minHeight:0}}>
-        {screen==='onboarding' && <OnboardingScreen onComplete={()=>{localStorage.setItem('vinterest_onboarded','1');nav('scan');}}/>}
+        {screen==='onboarding' && <OnboardingScreen onComplete={()=>{localStorage.setItem('vinterest_onboarded','1');nav('home');}}/>}
+        {screen==='home'      && <HomeScreen {...ctx}/>}
         {screen==='scan'      && <ScanHomeScreen {...ctx}/>}
         {screen==='camera'    && <ScanScreen {...ctx}/>}
         {screen==='identified'&& <WineIdentifiedScreen {...ctx}/>}
@@ -77,16 +77,16 @@ function App(){
         {screen==='region'    && <RegionScreen {...ctx}/>}
         {screen==='varietal'  && <VarietalScreen {...ctx}/>}
         {screen==='similar'   && <SimilarWinesScreen {...ctx}/>}
-        {screen==='profile'   && <TasteProfileScreen {...ctx}/>}
+        {screen==='profile'   && <WineIQScreen {...ctx}/>}
         {screen==='mywines'   && <MyWinesScreen {...ctx}/>}
         {screen==='learn'     && <QuizHubScreen {...ctx}/>}
         {screen==='quiz'      && <QuizScreen {...ctx}/>}
         {screen==='article'   && <LearnArticleScreen {...ctx}/>}
       </div>
-      {showNav&&<BottomNav active={activeNav} nav={nav} showPro={setProGate}/>}
+      {showNav&&<BottomNav active={screen} nav={nav} showPro={setProGate}/>}
       {/* Global XP badge */}
       {showXpBadge&&(
-        <div onClick={()=>setShowXpOverlay(true)} style={{position:'absolute',top:18,right:14,zIndex:200,display:'flex',alignItems:'center',gap:5,padding:'5px 11px',borderRadius:20,background:C.crSoft,border:`1px solid ${C.crDim}`,cursor:'pointer',boxShadow:'0 1px 8px rgba(0,0,0,0.08)',pointerEvents:'auto'}}>
+        <div onClick={()=>setShowXpOverlay(true)} style={{position:'absolute',top:15,right:14,zIndex:200,display:'flex',alignItems:'center',gap:5,padding:'5px 11px',borderRadius:20,background:C.crSoft,border:`1px solid ${C.crDim}`,cursor:'pointer',boxShadow:'0 1px 8px rgba(0,0,0,0.08)',pointerEvents:'auto'}}>
           <span style={{fontSize:17,lineHeight:1}}>{XPSystem.getLevel(xpBadge.total).badge}</span>
           <span style={{fontSize:13,fontWeight:700,color:C.cr,fontFamily:C.P}}>{xpBadge.total} XP</span>
           {!!localStorage.getItem('vinterest_pro')&&<span style={{fontSize:10,fontWeight:700,color:'#fff',background:'linear-gradient(135deg,#9B5E00,#C4870A)',borderRadius:8,padding:'2px 6px',marginLeft:2}}>PRO</span>}

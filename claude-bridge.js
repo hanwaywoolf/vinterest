@@ -34,7 +34,7 @@
         res = await fetch(ENDPOINT, {
           method: "POST",
           headers: { "content-type": "application/json" },
-          body: JSON.stringify({ messages: toMessages(arg), max_tokens: (arg && arg.max_tokens) || undefined })
+          body: JSON.stringify({ messages: toMessages(arg), max_tokens: (arg && arg.max_tokens) || undefined, skill_id: (arg && arg.skill_id) || undefined })
         });
       } catch (e) {
         throw new Error("Couldn’t reach the wine-ID service. Check your connection and that the API proxy is deployed.");
