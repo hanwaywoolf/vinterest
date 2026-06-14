@@ -28,10 +28,11 @@ function HomeScreen({nav, showPro}){
   const tabWines=allWines.filter(w=>(w.type||'').toLowerCase().replace('é','e')===c.typeKey);
   const topWines=[...tabWines].sort((a,b)=>(b.rating||0)-(a.rating||0)).slice(0,3);
 
-  /* Recently scanned — any type, by date */
-  const recentWines=[...allWines]
+  /* Recently scanned — any type, by date, show even if dates missing */
+  const recentWines=React.useMemo(()=>[...allWines]
     .sort((a,b)=>new Date(b.last_scanned||b.scanned_at||0)-new Date(a.last_scanned||a.scanned_at||0))
-    .slice(0,3);
+    .slice(0,3)
+  ,[allWines.length]);
 
   /* Explore suggestion based on dominant type */
   const typeCounts={red:0,white:0,rose:0,sparkling:0};
@@ -72,32 +73,38 @@ function HomeScreen({nav, showPro}){
   return(
     <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden',background:C.bg}}>
 
-      {/* Fixed header: logo only */}
-      <div style={{background:C.white,flexShrink:0,borderBottom:`1px solid ${C.line}`,padding:'16px 20px 14px'}}>
-        <img src="logo.png" alt="Vinterest" style={{height:28,width:'auto',display:'block'}}/>
-      </div>
-
-      {/* Scrollable body */}
-      <div style={{flex:1,overflowY:'auto',padding:'14px 20px',display:'flex',flexDirection:'column',gap:12}}>
-
-        {/* 1. Scan CTA — first */}
-        <div onClick={()=>atLimit?showPro('unlimited-scans'):nav('camera')} style={{background:C.ink,borderRadius:20,padding:'20px 22px',display:'flex',alignItems:'center',gap:16,cursor:'pointer',position:'relative',overflow:'hidden'}}>
-          <div style={{position:'absolute',right:-24,top:-24,width:140,height:140,borderRadius:70,background:`${C.cr}28`,pointerEvents:'none'}}/>
-          <div style={{width:58,height:58,borderRadius:16,background:atLimit?'#444':C.cr,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,zIndex:1,boxShadow:atLimit?'none':`0 6px 24px ${C.cr}55`}}>
-            {atLimit?<Icon n="lock" sz={24} col="#888"/>:<Icon n="camera" sz={28} col="#fff"/>}
+      {/* ── Fixed header: logo + always-visible Scan CTA ── */}
+      <div style={{background:C.white,flexShrink:0,borderBottom:`1px solid ${C.line}`}}>
+        {/* Logo row */}
+        <div style={{padding:'14px 20px 10px'}}>
+          <img src="logo.png" alt="Vinterest" style={{height:28,width:'auto',display:'block'}}/>
+        </div>
+        {/* Compact scan CTA — never scrolls away */}
+        <div onClick={()=>atLimit?showPro('unlimited-scans'):nav('camera')} style={{
+          background:C.ink,borderRadius:14,margin:'0 16px 14px',padding:'13px 16px',
+          display:'flex',alignItems:'center',gap:14,cursor:'pointer',
+          position:'relative',overflow:'hidden'
+        }}>
+          <div style={{position:'absolute',right:-16,top:-16,width:100,height:100,borderRadius:50,background:`${C.cr}28`,pointerEvents:'none'}}/>
+          <div style={{width:44,height:44,borderRadius:12,background:atLimit?'#444':C.cr,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,zIndex:1,boxShadow:atLimit?'none':`0 4px 18px ${C.cr}55`}}>
+            {atLimit?<Icon n="lock" sz={20} col="#888"/>:<Icon n="camera" sz={22} col="#fff"/>}
           </div>
           <div style={{flex:1,zIndex:1}}>
-            <div style={{fontSize:22,fontWeight:700,color:atLimit?'rgba(255,255,255,0.4)':'#fff',fontFamily:C.P,lineHeight:1.2}}>
+            <div style={{fontSize:18,fontWeight:700,color:atLimit?'rgba(255,255,255,0.4)':'#fff',fontFamily:C.P,lineHeight:1.2}}>
               {atLimit?'Free scans used up':isPro?'Scan a Bottle or List':'Scan a Bottle'}
             </div>
-            <div style={{fontSize:15,color:'rgba(255,255,255,0.4)',fontFamily:C.P,marginTop:3}}>
+            <div style={{fontSize:13,color:'rgba(255,255,255,0.4)',fontFamily:C.P,marginTop:2}}>
               {atLimit?'Upgrade for unlimited scans':isPro?'Point at a label or restaurant wine list':'Point at any wine label to identify'}
             </div>
           </div>
-          {!atLimit&&<Icon n="chevron" sz={16} col="rgba(255,255,255,0.3)"/>}
+          {!atLimit&&<Icon n="chevron" sz={14} col="rgba(255,255,255,0.3)"/>}
         </div>
+      </div>
 
-        {/* 2. Recently Scanned */}
+      {/* ── Scrollable body ── */}
+      <div style={{flex:1,overflowY:'auto',padding:'14px 20px',display:'flex',flexDirection:'column',gap:12}}>
+
+        {/* Recently Scanned */}
         {recentWines.length>0&&(
           <Card style={{padding:0,overflow:'hidden',paddingBottom:4}}>
             <div style={{padding:'12px 14px 7px',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
@@ -124,7 +131,7 @@ function HomeScreen({nav, showPro}){
           </Card>
         )}
 
-        {/* 3. Type selector + script + top wines */}
+        {/* Type selector + script + top wines */}
         <div style={{display:'flex',flexDirection:'column',gap:10}}>
           {/* Type tabs */}
           <div style={{display:'flex',gap:6}}>
@@ -180,17 +187,17 @@ function HomeScreen({nav, showPro}){
           )}
         </div>
 
-        {/* 4. Expand your palate */}
+        {/* Expand your palate */}
         {allWines.length>=3&&(
           <div onClick={()=>nav('learn')} style={{background:`linear-gradient(135deg,${C.ink} 0%,#2A1A0E 100%)`,borderRadius:16,padding:'16px 18px',cursor:'pointer',position:'relative',overflow:'hidden'}}>
             <div style={{position:'absolute',right:-20,bottom:-20,width:90,height:90,borderRadius:45,background:'rgba(139,26,47,0.25)',pointerEvents:'none'}}/>
             <div style={{fontSize:11,fontWeight:600,color:'rgba(255,255,255,0.4)',fontFamily:C.P,letterSpacing:'0.09em',textTransform:'uppercase',marginBottom:4}}>Expand Your Palate</div>
             <div style={{fontSize:17,fontWeight:700,color:'#fff',fontFamily:C.P,marginBottom:5}}>{explore.title}</div>
-            <div style={{fontSize:13,color:'rgba(255,255,255,0.5)',fontFamily:C.P,lineHeight:1.5,zIndex:1,position:'relative'}}>{explore.body}</div>
+            <div style={{fontSize:13,color:'rgba(255,255,255,0.5)',fontFamily:C.P,lineHeight:1.5,position:'relative',zIndex:1}}>{explore.body}</div>
           </div>
         )}
 
-        {/* 5. Quiz + XP row */}
+        {/* Quiz + XP row */}
         <div style={{display:'flex',gap:8}}>
           <Card style={{flex:1,padding:12,cursor:'pointer'}} onClick={()=>nav('learn')}>
             <div style={{fontSize:13,fontWeight:700,color:C.ink,fontFamily:C.P,marginBottom:2}}>Take a Quiz</div>
