@@ -85,7 +85,7 @@ function ScanHomeScreen({nav,showPro}){
             {wines.map((w,i)=>(
               <Card key={i} style={{padding:10,cursor:'pointer'}} onClick={()=>{
                 sessionStorage.setItem('vinterest_scan_result',JSON.stringify({demo:false,wine:w,confidence:0.9,existingRating:w.rating||0}));
-                nav('identified');
+                nav('detail');
               }}>
                 <div style={{display:'flex',alignItems:'center',gap:10}}>
                   <div style={{width:38,height:52,borderRadius:8,background:colFor(w)+'15',flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center',border:`1px solid ${colFor(w)}25`}}>
@@ -206,7 +206,10 @@ function ScanScreen({nav,back}){
       ]);
     }catch(e){
       sessionStorage.setItem('vinterest_scan_result',JSON.stringify({demo:true,reason:e.message}));
-    }finally{ nav('identified'); }
+      nav('identified');
+      return;
+    }
+    nav('detail');
   }
 
   async function processListCapture(b64){
@@ -466,18 +469,33 @@ function WineIdentifiedScreen({nav,back}){
           const avgA=typeWines.filter(w=>w.acidity!=null).reduce((s,w)=>s+w.acidity,0)/(typeWines.filter(w=>w.acidity!=null).length||1);
           const diff=Math.abs((wine.body||0.65)-avgB)+Math.abs((wine.tannins||0.55)-avgT)+Math.abs((wine.acidity||0.60)-avgA);
           const isClose=diff<0.30, isMed=diff<0.60;
+          const lbl=v=>v>=0.68?'High':v>=0.38?'Med':'Low';
+          const attrMatch=(a,b)=>Math.abs(a-b)<0.22;
           const label=isClose?'Close match':isMed?'Familiar territory':'Style stretch';
-          const note=isClose?`Aligns with your ${wine.type||'red'} DNA — expect it to land in your comfort zone.`:isMed?`Near your usual style with slight differences — worth trying.`:`Outside your usual ${wine.type||'red'} profile — may surprise you.`;
           const accentCol=isClose?C.green:isMed?C.amber:'#7B5EA7';
           const accentBg=isClose?C.greenBg:isMed?C.amberBg:'#F0EBF8';
+          const dnaAttrs=[
+            {l:'Body',    w:wine.body??0.65,    u:avgB},
+            {l:'Tannins', w:wine.tannins??0.55, u:avgT},
+            {l:'Acidity', w:wine.acidity??0.60, u:avgA},
+          ];
           return(
-            <div style={{display:'flex',alignItems:'center',gap:10,padding:'10px 14px',borderRadius:14,background:accentBg,border:`1px solid ${accentCol}25`}}>
-              <div style={{width:32,height:32,borderRadius:8,background:`${accentCol}18`,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
-                <svg viewBox="0 0 24 24" width={16} height={16}><path d="M8 4C8 4 13 7 13 12C13 17 8 20 8 20" stroke={accentCol} strokeWidth="1.8" fill="none" strokeLinecap="round"/><path d="M16 4C16 4 11 7 11 12C11 17 16 20 16 20" stroke={accentCol} strokeWidth="1.8" fill="none" strokeLinecap="round"/><line x1="8.5" y1="12" x2="15.5" y2="12" stroke={accentCol} strokeWidth="1.2" strokeLinecap="round" opacity="0.5"/></svg>
-              </div>
-              <div style={{flex:1}}>
+            <div style={{padding:'12px 14px',borderRadius:14,background:accentBg,border:`1px solid ${accentCol}25`}}>
+              <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:10}}>
+                <svg viewBox="0 0 24 24" width={15} height={15}><path d="M8 4C8 4 13 7 13 12C13 17 8 20 8 20" stroke={accentCol} strokeWidth="1.8" fill="none" strokeLinecap="round"/><path d="M16 4C16 4 11 7 11 12C11 17 16 20 16 20" stroke={accentCol} strokeWidth="1.8" fill="none" strokeLinecap="round"/><line x1="8.5" y1="12" x2="15.5" y2="12" stroke={accentCol} strokeWidth="1.2" strokeLinecap="round" opacity="0.5"/></svg>
                 <div style={{fontSize:13,fontWeight:700,color:accentCol,fontFamily:C.P}}>WineDNA · {label}</div>
-                <div style={{fontSize:12,color:C.mid,fontFamily:C.P,marginTop:1}}>{note}</div>
+              </div>
+              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:5}}>
+                {dnaAttrs.map((a,i)=>{
+                  const match=attrMatch(a.w,a.u);
+                  return(
+                    <div key={i} style={{textAlign:'center',padding:'6px 4px',borderRadius:8,background:match?`${C.green}10`:`${accentCol}08`,border:`1px solid ${match?C.green:accentCol}20`}}>
+                      <div style={{fontSize:10,color:C.mid,fontFamily:C.P,marginBottom:1}}>{a.l}</div>
+                      <div style={{fontSize:11,fontWeight:700,color:match?C.green:C.ink2,fontFamily:C.P}}>You {lbl(a.u)}</div>
+                      <div style={{fontSize:10,color:C.mid,fontFamily:C.P}}>Wine {lbl(a.w)}{match?' ✓':''}</div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           );

@@ -177,6 +177,7 @@ function WineDNAScreen({nav,back,showPro}){
   const [generatingScript,setGeneratingScript]=React.useState(null);
   const [copied,setCopied]=React.useState(null);
   const touchX=React.useRef(null);
+  const touchY=React.useRef(null);
 
   const allWines=WineHistory.getAll();
   const xd=XPSystem.get();
@@ -237,16 +238,24 @@ function WineDNAScreen({nav,back,showPro}){
   },[typeIdx,allWines.length]);
 
   /* Swipe */
-  function onTouchStart(e){touchX.current=e.touches[0].clientX;}
+  function onTouchStart(e){touchX.current=e.touches[0].clientX;touchY.current=e.touches[0].clientY;}
   function onTouchEnd(e){
     if(touchX.current===null)return;
     const dx=e.changedTouches[0].clientX-touchX.current;
-    if(Math.abs(dx)>50){
+    const dy=e.changedTouches[0].clientY-(touchY.current||0);
+    if(Math.abs(dx)>Math.abs(dy)&&Math.abs(dx)>40){
       if(dx<0)setTypeIdx(i=>Math.min(i+1,_TYPES.length-1));
       else setTypeIdx(i=>Math.max(i-1,0));
     }
-    touchX.current=null;
+    touchX.current=null;touchY.current=null;
   }
+
+  /* Per-type stats */
+  const tRated=t.wines.filter(w=>w.rating>0);
+  const tAvgRating=tRated.length?Math.round(tRated.reduce((s,w)=>s+w.rating,0)/tRated.length):0;
+  const tCountries=new Set(t.wines.map(w=>w.country).filter(Boolean)).size;
+  const tAvgPrice=_avg(t.wines,'price_usd',0);
+  const SH=({label})=>(<div style={{fontSize:11,fontWeight:700,color:C.mid,letterSpacing:'0.09em',textTransform:'uppercase',fontFamily:C.P,marginTop:6,marginBottom:-4}}>{label}</div>);
 
   /* Empty state */
   if(!allWines.length) return(
@@ -306,10 +315,11 @@ function WineDNAScreen({nav,back,showPro}){
       </div>
 
       <div style={{flex:1,overflowY:'auto'}}>
-      <div style={{padding:'14px 20px',display:'flex',flexDirection:'column',gap:12}}>
+      <div style={{padding:'14px 20px',display:'flex',flexDirection:'column',gap:12}} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
 
+        <SH label="Your WineDNA"/>
         {/* ── Synthesis Card ── */}
-        <Card style={{padding:0,overflow:'hidden'}} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
+        <Card style={{padding:0,overflow:'hidden'}}>
 
           {/* Type-distribution bar */}
           <div style={{height:5,background:`linear-gradient(90deg,#8B1A2F 0% ${typeStats[0].pct}%,#B8963E ${typeStats[0].pct}% ${typeStats[0].pct+typeStats[1].pct}%,#C47A8A ${typeStats[0].pct+typeStats[1].pct}% ${typeStats[0].pct+typeStats[1].pct+typeStats[2].pct}%,#5E8FA8 ${typeStats[0].pct+typeStats[1].pct+typeStats[2].pct}% 100%)`}}/>
@@ -404,6 +414,7 @@ function WineDNAScreen({nav,back,showPro}){
           </div>
         </Card>
 
+        {t.wines.length>0&&<SH label="Taste Breakdown"/>}
         {/* ── Wine DNA attributes + why lines ── */}
         {t.wines.length>0&&(
           <Card style={{padding:14}}>
@@ -431,6 +442,7 @@ function WineDNAScreen({nav,back,showPro}){
           </Card>
         )}
 
+        {t.wines.length>=3&&t.gaps.length>0&&<SH label="Explore"/>}
         {/* ── Explore Next / Gap Map ── */}
         {t.wines.length>=3&&t.gaps.length>0&&(
           <Card style={{padding:14}}>
@@ -475,6 +487,7 @@ function WineDNAScreen({nav,back,showPro}){
           </Card>
         )}
 
+        {evolution.length>=3&&<SH label="Your Journey"/>}
         {/* ── Palate Evolution ── */}
         {evolution.length>=3&&(
           <Card style={{padding:14}}>
@@ -507,6 +520,7 @@ function WineDNAScreen({nav,back,showPro}){
           </Card>
         )}
 
+        {t.wines.length>0&&<SH label="At the Restaurant"/>}
         {/* ── Sommelier Script ── */}
         {t.wines.length>0&&(
           <Card style={{padding:14}}>
@@ -539,13 +553,14 @@ function WineDNAScreen({nav,back,showPro}){
           </Card>
         )}
 
+        <SH label="Your Collection"/>
         {/* ── Stats grid ── */}
         <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8}}>
           {[
-            {icon:'wine',  label:'Bottles Scanned',   val:allWines.length,                     col:C.cr,      bg:C.crSoft},
-            {icon:'star',  label:'Average Rating',    val:avgRatingAll?`${avgRatingAll}/100`:'—',col:C.amber,   bg:C.amberBg},
-            {icon:'globe', label:'Countries Explored',val:uniqueCountries||'—',                col:C.green,   bg:C.greenBg},
-            {icon:'trophy',label:'XP Earned',         val:`${xd.total} XP`,                   col:'#7B5EA7', bg:'#F0EBF8'},
+            {icon:'wine',  label:`${t.label} Scanned`, val:t.wines.length,                    col:t.col,     bg:t.col+'15'},
+            {icon:'star',  label:'Avg Rating',           val:tAvgRating?`${tAvgRating}/100`:'—', col:C.amber,  bg:C.amberBg},
+            {icon:'globe', label:'Countries',            val:tCountries||'—',                   col:C.green,  bg:C.greenBg},
+            {icon:'trophy',label:'XP Earned',            val:`${xd.total} XP`,                  col:'#7B5EA7', bg:'#F0EBF8'},
           ].map((s,i)=>(
             <div key={i} style={{background:s.bg,borderRadius:14,padding:'12px 14px',border:`1px solid ${s.col}20`,display:'flex',flexDirection:'column',gap:6}}>
               <div style={{display:'flex',alignItems:'center',gap:7}}>
@@ -560,21 +575,20 @@ function WineDNAScreen({nav,back,showPro}){
         </div>
 
         {/* ── Average price if available ── */}
-        {avgPrice>0&&(
+        {tAvgPrice>0&&(
           <Card style={{background:C.amberBg,border:`1px solid ${C.amber}25`,padding:12,boxShadow:'none'}}>
-            <div style={{fontSize:13,fontWeight:600,color:C.amber,fontFamily:C.P,marginBottom:2}}>Typical Price Point</div>
-            <div style={{fontSize:22,fontWeight:800,color:C.amber,fontFamily:C.P}}>${Math.round(avgPrice)}<span style={{fontSize:13,fontWeight:400,color:C.mid,marginLeft:4}}>per bottle avg</span></div>
+            <div style={{fontSize:13,fontWeight:600,color:C.amber,fontFamily:C.P,marginBottom:2}}>Avg Price · {t.label}</div>
+            <div style={{fontSize:22,fontWeight:800,color:C.amber,fontFamily:C.P}}>${Math.round(tAvgPrice)}<span style={{fontSize:13,fontWeight:400,color:C.mid,marginLeft:4}}>per bottle</span></div>
           </Card>
         )}
 
-        {/* ── Top Rated ── */}
-        {topRated.length>0&&(
+        {t.topWines.length>0&&(
           <Card style={{padding:0,overflow:'hidden'}}>
             <div style={{padding:'12px 14px 8px',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-              <span style={{fontSize:15,fontWeight:700,color:C.ink,fontFamily:C.P}}>Your Top Wines</span>
+              <span style={{fontSize:15,fontWeight:700,color:C.ink,fontFamily:C.P}}>Top {t.label}</span>
               <span onClick={()=>nav('mywines')} style={{fontSize:13,fontWeight:600,color:C.cr,fontFamily:C.P,cursor:'pointer'}}>See all →</span>
             </div>
-            {topRated.map((w,i)=>{
+            {t.topWines.map((w,i)=>{
               const col=_TYPE_COLORS[_norm(w.type)]||C.cr;
               return(
                 <div key={i} onClick={()=>{

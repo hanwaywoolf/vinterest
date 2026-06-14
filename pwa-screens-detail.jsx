@@ -48,7 +48,35 @@ function WineDetailScreen({back,nav}){
 }
 
 function DetailOverview({wine,nav,existingRating=0}){
-  const notes=wine?.tasting_notes||['Black Cassis','Cedar','Violets','Tobacco','Graphite'];
+  const [genWhy,setGenWhy]=React.useState(null);
+  const [generatingWhy,setGeneratingWhy]=React.useState(false);
+
+  React.useEffect(()=>{
+    if(!wine) return;
+    const userWines=WineHistory.getAll();
+    if(!userWines.length) return;
+    const cacheKey=`vinterest_why_${(wine.name||'').replace(/\s/g,'_')}_${wine.vintage||'nv'}`;
+    const cached=localStorage.getItem(cacheKey);
+    if(cached){setGenWhy(cached);return;}
+    const typeKey=(wine.type||'red').toLowerCase().replace('é','e');
+    const typeWines=userWines.filter(w=>(w.type||'red').toLowerCase().replace('é','e')===typeKey);
+    if(!typeWines.length) return;
+    const avgB=typeWines.filter(w=>w.body!=null).reduce((s,w)=>s+w.body,0)/(typeWines.filter(w=>w.body!=null).length||1);
+    const avgT=typeWines.filter(w=>w.tannins!=null).reduce((s,w)=>s+w.tannins,0)/(typeWines.filter(w=>w.tannins!=null).length||1);
+    const avgA=typeWines.filter(w=>w.acidity!=null).reduce((s,w)=>s+w.acidity,0)/(typeWines.filter(w=>w.acidity!=null).length||1);
+    const topWines=[...typeWines].filter(w=>w.rating>0).sort((a,b)=>(b.rating||0)-(a.rating||0)).slice(0,4).map(w=>w.name+(w.vintage?' '+w.vintage:'')).join(', ');
+    const gCounts={}; typeWines.forEach(w=>(w.grapes||[]).forEach(g=>{if(g)gCounts[g]=(gCounts[g]||0)+1;}));
+    const topGrapes=Object.entries(gCounts).sort((a,b)=>b[1]-a[1]).slice(0,3).map(e=>e[0]).join(', ');
+    const lbl=v=>v>=0.68?'high':v>=0.38?'medium':'low';
+    setGeneratingWhy(true);
+    const prompt=`The user is looking at: ${wine.name}${wine.vintage?' '+wine.vintage:''}, a ${wine.type||'red'} from ${wine.region||wine.country||'unknown'} with body=${(wine.body??0.65).toFixed(2)}, tannins=${(wine.tannins??0.55).toFixed(2)}, acidity=${(wine.acidity??0.60).toFixed(2)}. Their ${wine.type||'red'} DNA: body ${lbl(avgB)}, tannins ${lbl(avgT)}, acidity ${lbl(avgA)}. Top rated: ${topWines||'none yet'}. Favourite grapes: ${topGrapes||'still discovering'}. Write ONE sentence (max 30 words) explaining specifically why this wine matches this user — compare attributes or reference their actual top wines by name. Be concrete, not generic. Return ONLY the sentence, no quotes.`;
+    window.claude.complete({messages:[{role:'user',content:prompt}]})
+      .then(text=>{const s=text.trim();localStorage.setItem(cacheKey,s);setGenWhy(s);})
+      .catch(()=>{})
+      .finally(()=>setGeneratingWhy(false));
+  },[wine?.name,wine?.vintage]);
+
+  const whyDisplay=genWhy||(generatingWhy?null:wine?.why_you_will_like_this)||null;
   const pairings=wine?.food_pairings||['Grilled Steak','Rack of Lamb','Hard Cheese'];
   const tiles=[
     {name:'Body',   plain:wine?.body_plain   ||'How heavy it feels in your mouth',lo:'Light',   hi:'Full',   val:wine?.body     ??0.85,col:'#8B1A2F'},
@@ -56,7 +84,7 @@ function DetailOverview({wine,nav,existingRating=0}){
     {name:'Acidity',plain:wine?.acidity_plain||'How zingy and fresh it tastes',    lo:'Mellow',  hi:'Zingy',  val:wine?.acidity  ??0.60,col:C.green},
     {name:'Sweetness',plain:wine?.sweetness_plain||'Dry = barely any sugar',       lo:'Bone Dry',hi:'Sweet',  val:wine?.sweetness??0.10,col:C.amber},
   ];
-  const whyText=wine?.why_you_will_like_this||'Full-bodied with dark fruit and earthy notes — aligns with your preference for structured Bordeaux-style reds.';
+  const whyText=whyDisplay;
   const pairingEmojis=['🥩','🍖','🧀','🐟','🍝','🧅'];
   const matchPct=wine?Math.round((JSON.parse(sessionStorage.getItem('vinterest_scan_result')||'{}').confidence||0.94)*100):94;
   const price=wine?.price_usd?`$${wine.price_usd}`:'—';
@@ -94,7 +122,14 @@ function DetailOverview({wine,nav,existingRating=0}){
       )}
       <Card style={{background:C.greenBg,boxShadow:'none',border:`1px solid ${C.green}25`,padding:12}}>
         <div style={{fontSize:15,fontWeight:600,color:C.green,fontFamily:C.P,marginBottom:3}}>Why this matches you</div>
-        <div style={{fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.55}}>{whyText}</div>
+        {generatingWhy?(
+          <div style={{display:'flex',alignItems:'center',gap:8}}>
+            <div style={{width:12,height:12,borderRadius:6,border:'2px solid rgba(0,0,0,0.08)',borderTopColor:C.green,animation:'detailSpin .8s linear infinite',flexShrink:0}}/>
+            <span style={{fontSize:13,color:C.mid,fontFamily:C.P,fontStyle:'italic'}}>Analysing your taste profile…</span>
+          </div>
+        ):(
+          <div style={{fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.55}}>{whyText||wine?.why_you_will_like_this||'A great match for your taste profile.'}</div>
+        )}
       </Card>
       <div>
         <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:8}}>
@@ -161,6 +196,7 @@ function DetailOverview({wine,nav,existingRating=0}){
         ?<div style={{textAlign:'center',padding:'12px',borderRadius:12,background:C.greenBg,border:`1px solid ${C.green}25`}}><span style={{fontSize:14,fontWeight:600,color:C.green,fontFamily:C.P}}>✓ You rated this wine {existingRating}/100</span></div>
         :<Btn primary full onClick={()=>nav('identified')}>Rate This Wine</Btn>
       }
+      <style>{`@keyframes detailSpin{to{transform:rotate(360deg)}}`}</style>
       <div style={{height:8}}/>
     </div>
   );

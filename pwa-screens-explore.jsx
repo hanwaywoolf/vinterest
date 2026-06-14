@@ -62,7 +62,8 @@ function RegionScreen({nav,back}){
       </div>
 
       {loading?<ExploreLoading/>:(
-        <div style={{flex:1,overflowY:'auto',padding:'14px 16px',display:'flex',flexDirection:'column',gap:12}}>
+        <div style={{flex:1,overflowY:'auto'}}>
+<div style={{padding:'14px 16px',display:'flex',flexDirection:'column',gap:12}}>
           <Card style={{padding:14}}>
             <div style={{fontSize:14,fontWeight:700,color:C.ink,fontFamily:C.P,marginBottom:8}}>About {region}</div>
             <div style={{fontSize:15,color:C.ink2,fontFamily:C.P,lineHeight:1.65}}>{data?.about||'Information unavailable.'}</div>
@@ -118,6 +119,7 @@ function RegionScreen({nav,back}){
           <Btn full onClick={()=>nav('similar')}>See Similar Wines</Btn>
           <div style={{height:8}}/>
         </div>
+</div>
       )}
     </div>
   );
@@ -156,7 +158,8 @@ function VarietalScreen({nav,back}){
       </div>
 
       {loading?<ExploreLoading/>:(
-        <div style={{flex:1,overflowY:'auto',padding:'14px 16px',display:'flex',flexDirection:'column',gap:12}}>
+        <div style={{flex:1,overflowY:'auto'}}>
+<div style={{padding:'14px 16px',display:'flex',flexDirection:'column',gap:12}}>
           <Card style={{padding:14}}>
             <div style={{fontSize:15,color:C.ink2,fontFamily:C.P,lineHeight:1.65}}>{data?.about}</div>
           </Card>
@@ -226,6 +229,7 @@ function VarietalScreen({nav,back}){
           <Btn full onClick={()=>nav('similar')}>See Similar Wines</Btn>
           <div style={{height:8}}/>
         </div>
+</div>
       )}
     </div>
   );
@@ -263,7 +267,8 @@ function SimilarWinesScreen({nav,back}){
       </div>
 
       {loading?<ExploreLoading/>:(
-        <div style={{flex:1,overflowY:'auto',padding:'12px 16px',display:'flex',flexDirection:'column',gap:10}}>
+        <div style={{flex:1,overflowY:'auto'}}>
+<div style={{padding:'12px 16px',display:'flex',flexDirection:'column',gap:10}}>
           {(data?.wines||[]).map((w,i)=>{
             const col=colFor(w.type);
             const b=badge[w.step]||{l:'',bg:'',col:''};
@@ -301,6 +306,7 @@ function SimilarWinesScreen({nav,back}){
           })}
           <div style={{height:8}}/>
         </div>
+</div>
       )}
     </div>
   );

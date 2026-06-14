@@ -47,7 +47,8 @@ function QuizHubScreen({nav,back,showPro}){
         </div>
       </div>
 
-      <div style={{flex:1,overflowY:'auto',padding:'14px 16px',display:'flex',flexDirection:'column',gap:14}}>
+      <div style={{flex:1,overflowY:'auto'}}>
+<div style={{padding:'14px 16px',display:'flex',flexDirection:'column',gap:14}}>
         {/* Featured article */}
         <div onClick={()=>nav('article')} style={{background:'linear-gradient(135deg,#1a1a2e,#16213e)',borderRadius:16,padding:'16px',display:'flex',alignItems:'center',gap:12,cursor:'pointer',border:'1px solid rgba(255,255,255,0.06)'}}>
           <div style={{width:46,height:46,borderRadius:12,background:'rgba(255,255,255,0.08)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,fontSize:22}}>📖</div>
@@ -109,6 +110,7 @@ function QuizHubScreen({nav,back,showPro}){
         </div>
         <div style={{height:16}}/>
       </div>
+</div>
     </div>
   );
 }
@@ -221,7 +223,8 @@ function QuizScreen({nav,back}){
             </div>
           </div>
         </div>
-        <div style={{flex:1,overflowY:'auto',padding:'16px',display:'flex',flexDirection:'column',gap:10}}>
+        <div style={{flex:1,overflowY:'auto'}}>
+<div style={{padding:'16px',display:'flex',flexDirection:'column',gap:10}}>
           <div style={{fontSize:14,fontWeight:600,color:C.mid,letterSpacing:'0.07em',textTransform:'uppercase',fontFamily:C.P}}>Review</div>
           {results.map((r,i)=>(
             <div key={i} style={{background:r.correct?C.greenBg:'#FFF0F0',borderRadius:12,padding:'10px 14px',border:`1px solid ${r.correct?C.green+'30':'#F5A0A0'}`}}>
@@ -242,6 +245,7 @@ function QuizScreen({nav,back}){
           </div>
           <div style={{height:8}}/>
         </div>
+</div>
       </div>
     );
   }

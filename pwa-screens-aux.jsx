@@ -117,7 +117,8 @@ function TasteProfileScreen({nav,back,showPro}){
       </div>
 
       {/* Content */}
-      <div style={{flex:1,overflowY:'auto',padding:'14px 20px',display:'flex',flexDirection:'column',gap:12}}>
+      <div style={{flex:1,overflowY:'auto'}}>
+<div style={{padding:'14px 20px',display:'flex',flexDirection:'column',gap:12}}>
 
         {/* Sommelier script card */}
         <Card style={{background:c.col+'0D',border:`1.5px solid ${c.col}30`,padding:14}}>
@@ -252,6 +253,7 @@ function TasteProfileScreen({nav,back,showPro}){
         </Card>
         <div style={{height:8}}/>
       </div>
+</div>
 
       <style>{`@keyframes vspin{to{transform:rotate(360deg)}}`}</style>
     </div>
@@ -274,8 +276,17 @@ function MyWinesScreen({nav,back}){
     return new Date(b.last_scanned||b.scanned_at||0)-new Date(a.last_scanned||a.scanned_at||0);
   });
 
+  const TYPE_COLS={all:C.cr,red:'#8B1A2F',white:'#B8963E',rose:'#C47A8A',sparkling:'#5E8FA8'};
   const filterTabs=[{k:'all',l:'All'},{k:'red',l:'Reds'},{k:'white',l:'Whites'},{k:'rose',l:'Rosé'},{k:'sparkling',l:'Sparkling'}];
   const colFor=w=>typeColors[(w.type||'red').toLowerCase().replace('é','e')]||C.cr;
+
+  /* Stats for current filter */
+  const statsRated=filtered.filter(w=>w.rating>0);
+  const statsAvgRating=statsRated.length?Math.round(statsRated.reduce((s,w)=>s+w.rating,0)/statsRated.length):0;
+  const statsCountries=new Set(filtered.map(w=>w.country).filter(Boolean)).size;
+  const statsPrices=filtered.filter(w=>w.price_usd>0);
+  const statsAvgPrice=statsPrices.length?Math.round(statsPrices.reduce((s,w)=>s+w.price_usd,0)/statsPrices.length):0;
+  const activeCol=TYPE_COLS[filter]||C.cr;
 
   return(
     <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden'}}>
@@ -298,11 +309,27 @@ function MyWinesScreen({nav,back}){
             ))}
           </div>
         </div>
+        {/* Stats strip */}
+        {wines.length>0&&(
+          <div style={{display:'flex',borderBottom:`1px solid ${C.line}`,padding:'10px 0',marginBottom:0}}>
+            {[
+              {val:filtered.length, label:filter==='all'?'All Bottles':filterTabs.find(f=>f.k===filter)?.l||filter, col:activeCol},
+              {val:statsAvgRating?`${statsAvgRating}/100`:'—', label:'Avg Rating', col:C.amber},
+              {val:statsCountries||'—', label:'Countries', col:C.green},
+              ...(statsAvgPrice>0?[{val:`${statsAvgPrice}`,label:'Avg Price',col:C.ink2}]:[]),
+            ].map((s,i,arr)=>(
+              <div key={i} style={{flex:1,textAlign:'center',borderRight:i<arr.length-1?`1px solid ${C.line}`:'none'}}>
+                <div style={{fontSize:17,fontWeight:800,color:s.col,fontFamily:C.P,lineHeight:1}}>{s.val}</div>
+                <div style={{fontSize:10,color:C.mid,fontFamily:C.P,marginTop:3}}>{s.label}</div>
+              </div>
+            ))}
+          </div>
+        )}
         {/* Filter tabs */}
         <div style={{display:'flex',gap:0,marginBottom:0}}>
           {filterTabs.map((t,i)=>(
-            <div key={i} onClick={()=>setFilter(t.k)} style={{flex:1,textAlign:'center',padding:'8px 4px',cursor:'pointer',borderBottom:filter===t.k?`2px solid ${C.cr}`:'2px solid transparent',marginBottom:-1}}>
-              <span style={{fontSize:14,fontWeight:filter===t.k?700:400,color:filter===t.k?C.cr:C.mid,fontFamily:C.P}}>{t.l}</span>
+            <div key={i} onClick={()=>setFilter(t.k)} style={{flex:1,textAlign:'center',padding:'8px 4px',cursor:'pointer',borderBottom:filter===t.k?`2px solid ${TYPE_COLS[t.k]||C.cr}`:'2px solid transparent',marginBottom:-1}}>
+              <span style={{fontSize:14,fontWeight:filter===t.k?700:400,color:filter===t.k?TYPE_COLS[t.k]||C.cr:C.mid,fontFamily:C.P}}>{t.l}</span>
             </div>
           ))}
         </div>
@@ -415,7 +442,8 @@ function RestaurantScreen({nav,back}){
       </div>
 
       {step===0&&(
-        <div style={{flex:1,overflowY:'auto',padding:'20px 20px',display:'flex',flexDirection:'column',gap:12}}>
+        <div style={{flex:1,overflowY:'auto'}}>
+<div style={{padding:'20px 20px',display:'flex',flexDirection:'column',gap:12}}>
           <div style={{background:C.ink,borderRadius:20,padding:'20px',textAlign:'center'}}>
             <Icon n="fork" sz={32} col="rgba(255,255,255,0.5)" style={{margin:'0 auto 10px'}}/>
             <div style={{fontSize:20,fontWeight:700,color:'#fff',fontFamily:C.P}}>Dining Tonight?</div>
@@ -437,10 +465,12 @@ function RestaurantScreen({nav,back}){
             </Card>
           ))}
         </div>
+</div>
       )}
 
       {step===1&&(
-        <div style={{flex:1,overflowY:'auto',padding:'16px 20px',display:'flex',flexDirection:'column',gap:14}}>
+        <div style={{flex:1,overflowY:'auto'}}>
+<div style={{padding:'16px 20px',display:'flex',flexDirection:'column',gap:14}}>
           <div>
             <div style={{fontSize:16,fontWeight:600,color:C.ink,fontFamily:C.P,marginBottom:8}}>Budget per bottle</div>
             <div style={{display:'flex',gap:8}}>
@@ -463,6 +493,7 @@ function RestaurantScreen({nav,back}){
           <Btn primary full onClick={()=>setStep(2)}>Get Recommendations</Btn>
           <div style={{height:8}}/>
         </div>
+</div>
       )}
     </div>
   );
@@ -482,7 +513,8 @@ function RestaurantScript({back}){
         <div style={{flex:1}}/>
         <Icon n="share" sz={18} col={C.mid}/>
       </div>
-      <div style={{flex:1,overflowY:'auto',padding:'16px 20px',display:'flex',flexDirection:'column',gap:12}}>
+      <div style={{flex:1,overflowY:'auto'}}>
+<div style={{padding:'16px 20px',display:'flex',flexDirection:'column',gap:12}}>
         <Card style={{background:C.crSoft,border:`1.5px solid ${C.crDim}`,padding:14}}>
           <div style={{display:'flex',alignItems:'center',gap:6,marginBottom:8}}>
             <Icon n="message" sz={16} col={C.cr}/>
@@ -516,6 +548,7 @@ function RestaurantScript({back}){
         ))}
         <div style={{height:8}}/>
       </div>
+</div>
     </div>
   );
 }
@@ -580,7 +613,8 @@ function WineListScreen({nav,back}){
         </div>
       )}
 
-      <div style={{flex:1,overflowY:'auto',padding:'12px 16px',display:'flex',flexDirection:'column',gap:8}}>
+      <div style={{flex:1,overflowY:'auto'}}>
+<div style={{padding:'12px 16px',display:'flex',flexDirection:'column',gap:8}}>
         <div style={{fontSize:14,fontWeight:600,color:C.mid,letterSpacing:'0.08em',textTransform:'uppercase',fontFamily:C.P,marginBottom:2}}>Best Matches for You</div>
         {wines.map((w,i)=>{
           const col=colFor(w.type);
@@ -618,6 +652,7 @@ function WineListScreen({nav,back}){
         <Btn primary full onClick={()=>nav('camera')} style={{marginTop:4}}>Scan Another</Btn>
         <div style={{height:8}}/>
       </div>
+</div>
     </div>
   );
 }

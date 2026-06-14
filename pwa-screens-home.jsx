@@ -74,9 +74,9 @@ function HomeScreen({nav, showPro}){
     <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden',background:C.bg}}>
 
       {/* ── Fixed header: logo + always-visible Scan CTA ── */}
-      <div style={{background:C.white,flexShrink:0,borderBottom:`1px solid ${C.line}`}}>
+      <div style={{background:C.white,flexShrink:0}}>
         {/* Logo row */}
-        <div style={{padding:'14px 20px 10px'}}>
+        <div style={{padding:'18px 20px 10px',paddingRight:'120px'}}>
           <img src="logo.png" alt="Vinterest" style={{height:28,width:'auto',display:'block'}}/>
         </div>
         {/* Compact scan CTA — never scrolls away */}
@@ -102,7 +102,8 @@ function HomeScreen({nav, showPro}){
       </div>
 
       {/* ── Scrollable body ── */}
-      <div style={{flex:1,overflowY:'auto',padding:'14px 20px',display:'flex',flexDirection:'column',gap:12}}>
+      <div style={{flex:1,overflowY:'auto',overscrollBehavior:'contain'}}>
+      <div style={{padding:'14px 20px',display:'flex',flexDirection:'column',gap:12}}>
 
         {/* Recently Scanned */}
         {recentWines.length>0&&(
@@ -216,6 +217,7 @@ function HomeScreen({nav, showPro}){
         </div>
 
         <div style={{height:8}}/>
+      </div>
       </div>
       <style>{`@keyframes homeSpin{to{transform:rotate(360deg)}}`}</style>
     </div>
