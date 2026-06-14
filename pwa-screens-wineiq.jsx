@@ -208,13 +208,13 @@ function WineDNAScreen({nav,back,showPro}){
   /* LLM summary */
   React.useEffect(()=>{
     if(!t.wines.length) return;
-    const key=`vinterest_dna_v1_${t.key}_n${t.wines.length}`;
+    const key=`vinterest_dna_v3_${t.key}_n${t.wines.length}`;
     const cached=localStorage.getItem(key);
     if(cached){setGenSummaries(s=>({...s,[t.key]:cached}));return;}
     if(genSummaries[t.key]||generatingSummary===t.key) return;
     setGeneratingSummary(t.key);
     const wineList=t.wines.slice(0,10).map(w=>`${w.name}${w.vintage?' '+w.vintage:''}${w.region?' from '+w.region:''}${w.rating?' rated '+w.rating+'/100':''}`).join('; ');
-    const prompt=`My ${t.label.toLowerCase()} wine personality is "${t.personality}". I've rated these wines: ${wineList}. In 2-3 sentences explain what drives my ${t.label.toLowerCase()} preferences — reference my actual top grapes and regions. End with one specific wine or region I should explore next that builds naturally on my existing preferences. Return ONLY the paragraph — no labels, no quotes.`;
+    const prompt=`My ${t.label.toLowerCase()} wine personality is "${t.personality}". I've rated: ${wineList}. Return ONLY raw JSON — no markdown, no code fences, no extra text, just the JSON object: {"preference":"one sentence on what I gravitate toward — max 18 words","why":"one sentence on why using specific grape or region names from my list — max 18 words","next":"one specific wine or region to explore next and a brief reason — max 18 words"}`;
     window.claude.complete({messages:[{role:'user',content:prompt}]})
       .then(text=>{const s=text.trim();localStorage.setItem(key,s);setGenSummaries(g=>({...g,[t.key]:s}));})
       .catch(()=>{})
@@ -297,16 +297,22 @@ function WineDNAScreen({nav,back,showPro}){
 
       {/* Header */}
       <div style={{background:C.white,padding:'14px 20px 12px',borderBottom:`1px solid ${C.line}`,flexShrink:0}}>
-        <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start'}}>
-          <div>
-            <div style={{fontSize:22,fontWeight:800,color:C.ink,fontFamily:C.P,letterSpacing:'-0.3px'}}>WineDNA</div>
-            <div style={{fontSize:13,color:C.mid,fontFamily:C.P,marginTop:1}}>{allWines.length} bottle{allWines.length!==1?'s':''} · {lv.badge} {lv.name}</div>
-          </div>
+        {/* Title row: WineDNA ←→ personality badge, baseline aligned */}
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline',marginBottom:4}}>
+          <div style={{fontSize:22,fontWeight:800,color:C.ink,fontFamily:C.P,letterSpacing:'-0.3px'}}>WineDNA</div>
           {t.wines.length>0&&(
-            <div style={{padding:'5px 12px',borderRadius:20,background:`${t.col}15`,border:`1px solid ${t.col}35`}}>
+            <div style={{padding:'4px 11px',borderRadius:20,background:`${t.col}15`,border:`1px solid ${t.col}35`,flexShrink:0}}>
               <span style={{fontSize:13,fontWeight:700,color:t.col,fontFamily:C.P}}>{t.personality}</span>
             </div>
           )}
+        </div>
+        {/* Subtitle row: type pill + bottle count */}
+        <div style={{display:'flex',alignItems:'center',gap:8}}>
+          <div style={{display:'inline-flex',alignItems:'center',gap:4,padding:'2px 8px',borderRadius:20,background:`${t.col}15`,border:`1px solid ${t.col}35`}}>
+            <div style={{width:5,height:5,borderRadius:3,background:t.col,flexShrink:0}}/>
+            <span style={{fontSize:11,fontWeight:700,color:t.col,fontFamily:C.P,letterSpacing:'0.05em'}}>{t.label.toUpperCase()}</span>
+          </div>
+          <span style={{fontSize:13,color:C.mid,fontFamily:C.P}}>{allWines.length} bottle{allWines.length!==1?'s':''} · {lv.badge} {lv.name}</span>
         </div>
         <div style={{marginTop:10}}>
           <Prog val={pg} h={5} col={C.cr}/>
@@ -369,26 +375,34 @@ function WineDNAScreen({nav,back,showPro}){
                     </div>
                     <div style={{fontSize:20,fontWeight:800,color:C.ink,fontFamily:C.P,letterSpacing:'-0.3px',lineHeight:1.15}}>{t.personality}</div>
                   </div>
-                  <div style={{width:40,height:40,borderRadius:11,background:`${t.col}10`,border:`1px solid ${t.col}25`,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
-                    <svg viewBox="0 0 24 24" width={20} height={20}>
-                      <path d="M8 4C8 4 13 7 13 12C13 17 8 20 8 20" stroke={t.col} strokeWidth="1.8" fill="none" strokeLinecap="round"/>
-                      <path d="M16 4C16 4 11 7 11 12C11 17 16 20 16 20" stroke={t.col} strokeWidth="1.8" fill="none" strokeLinecap="round"/>
-                      <line x1="8.5" y1="7.5" x2="15.5" y2="8.5" stroke={t.col} strokeWidth="1.2" strokeLinecap="round" opacity="0.5"/>
-                      <line x1="8.5" y1="12" x2="15.5" y2="12" stroke={t.col} strokeWidth="1.2" strokeLinecap="round" opacity="0.5"/>
-                      <line x1="8.5" y1="16.5" x2="15.5" y2="15.5" stroke={t.col} strokeWidth="1.2" strokeLinecap="round" opacity="0.5"/>
-                    </svg>
-                  </div>
                 </div>
 
-                {/* Narrative */}
+                {/* Narrative — 3 labelled sections */}
                 {generatingSummary===t.key?(
                   <div style={{display:'flex',alignItems:'center',gap:8}}>
                     <div style={{width:14,height:14,borderRadius:7,border:'2px solid rgba(0,0,0,0.08)',borderTopColor:t.col,animation:'dnaSpin .8s linear infinite',flexShrink:0}}/>
                     <span style={{fontSize:13,color:C.mid,fontFamily:C.P,fontStyle:'italic'}}>Analysing your palate…</span>
                   </div>
-                ):(
-                  <p style={{fontSize:13.5,color:C.ink2,fontFamily:C.P,lineHeight:1.68,margin:0,textWrap:'pretty'}}>{genSummaries[t.key]||'Generating your WineDNA summary…'}</p>
-                )}
+                ):(()=>{
+                  const raw=genSummaries[t.key];
+                  let sections=null;
+                  if(raw){try{sections=JSON.parse(raw.replace(/```json|```/g,'').trim());}catch(e){sections=null;}}
+                  if(!sections) return <p style={{fontSize:13.5,color:C.ink2,fontFamily:C.P,lineHeight:1.68,margin:0}}>{raw||'Generating your WineDNA summary…'}</p>;
+                  return(
+                    <div style={{display:'flex',flexDirection:'column',gap:9}}>
+                      {[
+                        {label:'Your Preference',text:sections.preference},
+                        {label:'Why You Like It', text:sections.why},
+                        {label:'Try Next',         text:sections.next},
+                      ].filter(s=>s.text).map((s,i)=>(
+                        <div key={i}>
+                          <div style={{fontSize:10,fontWeight:700,color:t.col,letterSpacing:'0.08em',textTransform:'uppercase',fontFamily:C.P,marginBottom:2}}>{s.label}</div>
+                          <div style={{fontSize:13.5,color:C.ink2,fontFamily:C.P,lineHeight:1.6,textWrap:'pretty'}}>{s.text}</div>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })()}
 
                 {/* Fact chips */}
                 <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
@@ -404,7 +418,7 @@ function WineDNAScreen({nav,back,showPro}){
                 <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginTop:2}}>
                   <span style={{fontSize:11,color:C.mid,fontFamily:C.P}}>{t.wines.length} {t.label.toLowerCase()} scanned</span>
                   <span style={{fontSize:12,fontWeight:600,color:t.col,fontFamily:C.P,cursor:'pointer'}} onClick={()=>{
-                    const key=`vinterest_dna_v1_${t.key}_n${t.wines.length}`;
+                    const key=`vinterest_dna_v3_${t.key}_n${t.wines.length}`;
                     localStorage.removeItem(key);
                     setGenSummaries(s=>{const n={...s};delete n[t.key];return n;});
                   }}>↺ Regenerate</span>

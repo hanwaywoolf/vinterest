@@ -76,12 +76,12 @@ function HomeScreen({nav, showPro}){
       {/* ── Fixed header: logo + always-visible Scan CTA ── */}
       <div style={{background:C.white,flexShrink:0}}>
         {/* Logo row */}
-        <div style={{padding:'18px 20px 10px',paddingRight:'120px'}}>
+        <div style={{padding:'14px 20px 14px',paddingRight:'120px'}}>
           <img src="logo.png" alt="Vinterest" style={{height:28,width:'auto',display:'block'}}/>
         </div>
         {/* Compact scan CTA — never scrolls away */}
         <div onClick={()=>atLimit?showPro('unlimited-scans'):nav('camera')} style={{
-          background:C.ink,borderRadius:14,margin:'0 16px 14px',padding:'13px 16px',
+          background:C.ink,borderRadius:14,margin:'0 16px 8px',padding:'13px 16px',
           display:'flex',alignItems:'center',gap:14,cursor:'pointer',
           position:'relative',overflow:'hidden'
         }}>
@@ -103,7 +103,7 @@ function HomeScreen({nav, showPro}){
 
       {/* ── Scrollable body ── */}
       <div style={{flex:1,overflowY:'auto',overscrollBehavior:'contain'}}>
-      <div style={{padding:'14px 20px',display:'flex',flexDirection:'column',gap:12}}>
+      <div style={{padding:'8px 20px',display:'flex',flexDirection:'column',gap:12}}>
 
         {/* Recently Scanned */}
         {recentWines.length>0&&(

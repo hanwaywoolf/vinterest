@@ -77,6 +77,7 @@ function DetailOverview({wine,nav,existingRating=0}){
   },[wine?.name,wine?.vintage]);
 
   const whyDisplay=genWhy||(generatingWhy?null:wine?.why_you_will_like_this)||null;
+  const notes=wine?.tasting_notes||['Black Cassis','Cedar','Violets','Tobacco','Graphite'];
   const pairings=wine?.food_pairings||['Grilled Steak','Rack of Lamb','Hard Cheese'];
   const tiles=[
     {name:'Body',   plain:wine?.body_plain   ||'How heavy it feels in your mouth',lo:'Light',   hi:'Full',   val:wine?.body     ??0.85,col:'#8B1A2F'},
