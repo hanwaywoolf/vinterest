@@ -66,10 +66,10 @@ function BottomNav({active, nav, showPro}){
           <Icon n="book" sz={22} col={learnActive?C.cr:C.mid}/>
           <span style={{fontSize:11,fontWeight:learnActive?600:400,color:learnActive?C.cr:C.mid,fontFamily:C.P}}>Learn</span>
         </div>
-        {/* WineIQ */}
+        {/* WineDNA */}
         <div onClick={()=>nav('profile')} style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:3,cursor:'pointer',padding:'9px 0 max(env(safe-area-inset-bottom,9px),9px)'}}>
           <Icon n="brain" sz={22} col={profileActive?C.cr:C.mid}/>
-          <span style={{fontSize:11,fontWeight:profileActive?600:400,color:profileActive?C.cr:C.mid,fontFamily:C.P}}>WineIQ</span>
+          <span style={{fontSize:11,fontWeight:profileActive?600:400,color:profileActive?C.cr:C.mid,fontFamily:C.P}}>WineDNA</span>
         </div>
       </div>
     </div>
@@ -180,6 +180,4 @@ const WineHistory = {
   }
 };
 
-const WINE_SKILL_ID='skill_01HwDtvyycyi3BdVMiaWuYJ9';
-
-Object.assign(window,{C,Icon,BottomNav,Pill,Prog,Card,Btn,WineHistory,ProBadge,ProGate,WINE_SKILL_ID});
+Object.assign(window,{C,Icon,BottomNav,Pill,Prog,Card,Btn,WineHistory,ProBadge,ProGate});

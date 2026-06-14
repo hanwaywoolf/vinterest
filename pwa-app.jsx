@@ -77,7 +77,7 @@ function App(){
         {screen==='region'    && <RegionScreen {...ctx}/>}
         {screen==='varietal'  && <VarietalScreen {...ctx}/>}
         {screen==='similar'   && <SimilarWinesScreen {...ctx}/>}
-        {screen==='profile'   && <WineIQScreen {...ctx}/>}
+        {screen==='profile'   && <WineDNAScreen {...ctx}/>}
         {screen==='mywines'   && <MyWinesScreen {...ctx}/>}
         {screen==='learn'     && <QuizHubScreen {...ctx}/>}
         {screen==='quiz'      && <QuizScreen {...ctx}/>}

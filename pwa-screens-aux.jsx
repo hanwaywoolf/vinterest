@@ -54,7 +54,7 @@ function TasteProfileScreen({nav,back,showPro}){
       `${w.name}${w.vintage?' '+w.vintage:''} from ${w.region||w.country||'unknown'}${w.rating?' (rated '+w.rating+'/100)':''}`
     ).join('; ');
     const prompt=`I've scanned and rated these ${c.label.toLowerCase()} wines: ${wineList}. Based only on this data, write a short natural first-person sommelier script (2 sentences max) I could say to a restaurant sommelier. Reflect my apparent style, preferred regions, and price range. Return ONLY the script text in double quotes — nothing else.`;
-    window.claude.complete({messages:[{role:'user',content:prompt}],skill_id:WINE_SKILL_ID})
+    window.claude.complete({messages:[{role:'user',content:prompt}]})
       .then(text=>{
         const script=text.trim();
         localStorage.setItem(cacheKey,script);
@@ -252,11 +252,11 @@ function TasteProfileScreen({nav,back,showPro}){
         </Card>
         <div style={{height:8}}/>
       </div>
+
       <style>{`@keyframes vspin{to{transform:rotate(360deg)}}`}</style>
     </div>
   );
 }
-/* ── MY WINES SCREEN ── */
 function MyWinesScreen({nav,back}){
   const [filter,setFilter]=React.useState('all');
   const [sort,setSort]=React.useState('recent');

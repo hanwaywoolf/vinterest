@@ -11,7 +11,7 @@ function useClaudeData(cacheKey, prompt, wine){
     if(cached){try{setData(JSON.parse(cached));setLoading(false);return;}catch(e){}}
     (async()=>{
       try{
-        const text=await window.claude.complete({messages:[{role:'user',content:prompt}],skill_id:WINE_SKILL_ID});
+        const text=await window.claude.complete({messages:[{role:'user',content:prompt}]});
         let cleaned=text.replace(/```json|```/g,'').trim();
         const s=cleaned.indexOf('{'),e=cleaned.lastIndexOf('}');
         if(s>=0&&e>s) cleaned=cleaned.slice(s,e+1);

@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>WineDNA — Synthesis Card (Revised)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet"/>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Poppins', sans-serif;
+    background: #EEEBE7;
+    min-height: 100vh;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 48px 24px 72px;
+  }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+
+const C = {
+  cr:'#8B1A2F', crDim:'rgba(139,26,47,0.13)', crSoft:'rgba(139,26,47,0.07)',
+  ink:'#0F0F0F', ink2:'#3A3A3A', mid:'#8A8A8A', line:'#E8E8E8',
+  bg:'#FAFAFA', white:'#FFFFFF', offWhite:'#F5F3F0',
+  P:"'Poppins',sans-serif",
+};
+
+/* ── Per-type sample data ── */
+const TYPES = [
+  {
+    key:'red', label:'Reds', col:'#8B1A2F', pct:62,
+    personality:'Bold & Structured',
+    narrative:'You gravitate toward full-bodied reds with grippy tannins — Barolo and Bordeaux consistently score highest. Sangiovese is your signature grape, driven by that structured, earthy core. Aged Rioja Gran Reserva is the logical next step: same architecture, new dimension.',
+    chips:[{label:'Top grape',value:'Sangiovese'},{label:'Lead region',value:'Tuscany'},{label:'Body pref.',value:'Full'}],
+  },
+  {
+    key:'white', label:'Whites', col:'#B8963E', pct:22,
+    personality:'Crisp & Mineral',
+    narrative:'Your whites lean consistently lean-and-taut — Chablis and Sancerre sit at the top, both bone-dry and driven by chalk. Chardonnay and Sauvignon Blanc dominate, always on the austere end. Grüner Veltliner from Wachau is a natural next move: same piercing acidity, with a white pepper edge you haven\'t explored yet.',
+    chips:[{label:'Top grape',value:'Chardonnay'},{label:'Lead region',value:'Burgundy'},{label:'Acidity pref.',value:'High'}],
+  },
+  {
+    key:'rose', label:'Rosé', col:'#C47A8A', pct:10,
+    personality:'Dry & Delicate',
+    narrative:'Your rosé choices are uncommonly precise — every bottle is bone-dry, pale, and Provençal. Grenache is the throughline, and Whispering Angel sits at the top by a margin. Bandol Rosé from Domaine Tempier would push you into richer, more saline territory while staying true to your southern French instinct.',
+    chips:[{label:'Top grape',value:'Grenache'},{label:'Lead region',value:'Provence'},{label:'Style',value:'Bone Dry'}],
+  },
+  {
+    key:'sparkling', label:'Sparkling', col:'#5E8FA8', pct:6,
+    personality:'Classic & Toasty',
+    narrative:'Your sparkling selections skew toward aged, bready Champagne — Pinot Noir-driven cuvées with biscuit and brioche topping your ratings. You\'re not chasing freshness; you\'re chasing complexity. Blanc de Noirs from a small Meunier grower in Vallée de la Marne is your next logical pour.',
+    chips:[{label:'Top grape',value:'Pinot Noir'},{label:'Lead region',value:'Champagne'},{label:'Style',value:'Aged Brut'}],
+  },
+];
+
+const ALL_TYPES = TYPES; // for the split bar
+
+function SynthesisCard() {
+  const [activeIdx, setActiveIdx] = React.useState(0);
+  const t = TYPES[activeIdx];
+
+  return (
+    <div style={{width:400, display:'flex', flexDirection:'column', gap:24}}>
+
+      {/* Page label */}
+      <div>
+        <div style={{fontSize:22, fontWeight:800, color:C.ink, letterSpacing:'-0.3px', fontFamily:C.P}}>WineDNA — Synthesis Card</div>
+        <div style={{fontSize:13, color:C.mid, fontFamily:C.P, marginTop:3}}>Revised direction — tap through the wine types</div>
+      </div>
+
+      {/* Card */}
+      <div style={{background:C.white, borderRadius:18, border:`1.5px solid ${C.line}`, overflow:'hidden', boxShadow:'0 2px 20px rgba(0,0,0,0.06)'}}>
+
+        {/* Type-coloured accent bar — proportional to all types */}
+        <div style={{
+          height:5,
+          background:`linear-gradient(90deg,
+            #8B1A2F 0% ${TYPES[0].pct}%,
+            #B8963E ${TYPES[0].pct}% ${TYPES[0].pct+TYPES[1].pct}%,
+            #C47A8A ${TYPES[0].pct+TYPES[1].pct}% ${TYPES[0].pct+TYPES[1].pct+TYPES[2].pct}%,
+            #5E8FA8 ${TYPES[0].pct+TYPES[1].pct+TYPES[2].pct}% 100%)`,
+        }}/>
+
+        <div style={{padding:'16px 18px 18px', display:'flex', flexDirection:'column', gap:14}}>
+
+          {/* Type tabs + % splits */}
+          <div style={{display:'flex', flexDirection:'column', gap:10}}>
+            {/* Tabs */}
+            <div style={{display:'flex', gap:5}}>
+              {TYPES.map((tp,i)=>(
+                <button key={i} onClick={()=>setActiveIdx(i)} style={{
+                  flex:1, padding:'7px 4px', borderRadius:10, border:'none',
+                  background: i===activeIdx ? tp.col+'18' : C.offWhite,
+                  outline: i===activeIdx ? `1.5px solid ${tp.col}55` : '1.5px solid transparent',
+                  cursor:'pointer', transition:'all .15s',
+                }}>
+                  <div style={{width:7, height:7, borderRadius:4, background:tp.col, margin:'0 auto 3px'}}/>
+                  <div style={{fontSize:11, fontWeight:i===activeIdx?700:500, color:i===activeIdx?tp.col:C.mid, fontFamily:C.P}}>{tp.label}</div>
+                  <div style={{fontSize:10, color:i===activeIdx?tp.col:C.mid, fontFamily:C.P, opacity:0.7}}>{tp.pct}%</div>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div style={{height:1, background:C.line}}/>
+
+          {/* Header: WineDNA label + personality + type badge + icon */}
+          <div style={{display:'flex', justifyContent:'space-between', alignItems:'flex-start', gap:12}}>
+            <div style={{flex:1}}>
+              {/* WineDNA label + type pill inline */}
+              <div style={{display:'flex', alignItems:'center', gap:7, marginBottom:5}}>
+                <span style={{fontSize:11, fontWeight:600, color:C.mid, fontFamily:C.P, letterSpacing:'0.09em', textTransform:'uppercase'}}>WineDNA</span>
+                <div style={{
+                  display:'inline-flex', alignItems:'center', gap:4,
+                  padding:'2px 9px', borderRadius:20,
+                  background:`${t.col}15`, border:`1px solid ${t.col}35`,
+                }}>
+                  <div style={{width:5, height:5, borderRadius:3, background:t.col}}/>
+                  <span style={{fontSize:10, fontWeight:700, color:t.col, fontFamily:C.P}}>{t.label}</span>
+                </div>
+              </div>
+              <div style={{fontSize:21, fontWeight:800, color:C.ink, fontFamily:C.P, letterSpacing:'-0.3px', lineHeight:1.15}}>
+                {t.personality}
+              </div>
+            </div>
+            {/* DNA icon in type color */}
+            <div style={{
+              width:44, height:44, borderRadius:12, flexShrink:0,
+              background:`${t.col}10`, border:`1px solid ${t.col}25`,
+              display:'flex', alignItems:'center', justifyContent:'center',
+            }}>
+              <svg viewBox="0 0 24 24" width={22} height={22}>
+                <path d="M8 4C8 4 13 7 13 12C13 17 8 20 8 20" stroke={t.col} strokeWidth="1.8" fill="none" strokeLinecap="round"/>
+                <path d="M16 4C16 4 11 7 11 12C11 17 16 20 16 20" stroke={t.col} strokeWidth="1.8" fill="none" strokeLinecap="round"/>
+                <line x1="8.5" y1="7.5" x2="15.5" y2="8.5" stroke={t.col} strokeWidth="1.2" strokeLinecap="round" opacity="0.5"/>
+                <line x1="8.5" y1="12" x2="15.5" y2="12" stroke={t.col} strokeWidth="1.2" strokeLinecap="round" opacity="0.5"/>
+                <line x1="8.5" y1="16.5" x2="15.5" y2="15.5" stroke={t.col} strokeWidth="1.2" strokeLinecap="round" opacity="0.5"/>
+              </svg>
+            </div>
+          </div>
+
+          {/* Narrative */}
+          <p style={{fontSize:13.5, color:C.ink2, fontFamily:C.P, lineHeight:1.68, margin:0}}>
+            {t.narrative}
+          </p>
+
+          {/* Fact chips */}
+          <div style={{display:'flex', gap:6, flexWrap:'wrap'}}>
+            {t.chips.map((ch,i)=>(
+              <div key={i} style={{
+                padding:'5px 11px', borderRadius:20,
+                background: i===0 ? `${t.col}10` : C.offWhite,
+                border:`1px solid ${i===0 ? t.col+'30' : C.line}`,
+                display:'flex', gap:5, alignItems:'center',
+              }}>
+                <span style={{fontSize:11, color:C.mid, fontFamily:C.P, whiteSpace:'nowrap'}}>{ch.label}</span>
+                <span style={{fontSize:12, fontWeight:700, color:i===0?t.col:C.ink2, fontFamily:C.P, whiteSpace:'nowrap'}}>{ch.value}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* Footer */}
+          <div style={{display:'flex', justifyContent:'space-between', alignItems:'center'}}>
+            <span style={{fontSize:11, color:C.mid, fontFamily:C.P}}>24 bottles · updated now</span>
+            <span style={{fontSize:12, fontWeight:600, color:t.col, fontFamily:C.P, cursor:'pointer'}}>↺ Regenerate</span>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<SynthesisCard/>);
+</script>
+</body>
+</html>

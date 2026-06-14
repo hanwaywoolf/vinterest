@@ -444,6 +444,45 @@ function WineIdentifiedScreen({nav,back}){
           <div style={{fontSize:15,color:C.ink2,fontFamily:C.P,lineHeight:1.55}}>{wine?.why_you_will_like_this?.trim()||(wine?`This ${wine.type||'red'} from ${wine.region||wine.country||'the region'} aligns well with your taste profile.`:'Full-bodied with dark fruit and earthy notes — matches your preference for structured reds.')}</div>
         </Card>
 
+        {/* WineDNA fit score */}
+        {(()=>{
+          if(!wine||scanData.demo) return null;
+          const userWines=WineHistory.getAll();
+          const typeKey=(wine.type||'red').toLowerCase().replace('é','e');
+          const typeWines=userWines.filter(w=>(w.type||'red').toLowerCase().replace('é','e')===typeKey);
+          if(!typeWines.length) return(
+            <div style={{display:'flex',alignItems:'center',gap:10,padding:'10px 14px',borderRadius:14,background:'#F0EBF8',border:'1px solid rgba(123,94,167,0.2)'}}>
+              <div style={{width:32,height:32,borderRadius:8,background:'rgba(123,94,167,0.12)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+                <svg viewBox="0 0 24 24" width={16} height={16}><path d="M8 4C8 4 13 7 13 12C13 17 8 20 8 20" stroke="#7B5EA7" strokeWidth="1.8" fill="none" strokeLinecap="round"/><path d="M16 4C16 4 11 7 11 12C11 17 16 20 16 20" stroke="#7B5EA7" strokeWidth="1.8" fill="none" strokeLinecap="round"/><line x1="8.5" y1="12" x2="15.5" y2="12" stroke="#7B5EA7" strokeWidth="1.2" strokeLinecap="round" opacity="0.5"/></svg>
+              </div>
+              <div style={{flex:1}}>
+                <div style={{fontSize:13,fontWeight:700,color:'#7B5EA7',fontFamily:C.P}}>WineDNA · New Territory</div>
+                <div style={{fontSize:12,color:C.mid,fontFamily:C.P,marginTop:1}}>First {wine.type||'red'} in your collection — a blank slate.</div>
+              </div>
+            </div>
+          );
+          const avgB=typeWines.filter(w=>w.body!=null).reduce((s,w)=>s+w.body,0)/(typeWines.filter(w=>w.body!=null).length||1);
+          const avgT=typeWines.filter(w=>w.tannins!=null).reduce((s,w)=>s+w.tannins,0)/(typeWines.filter(w=>w.tannins!=null).length||1);
+          const avgA=typeWines.filter(w=>w.acidity!=null).reduce((s,w)=>s+w.acidity,0)/(typeWines.filter(w=>w.acidity!=null).length||1);
+          const diff=Math.abs((wine.body||0.65)-avgB)+Math.abs((wine.tannins||0.55)-avgT)+Math.abs((wine.acidity||0.60)-avgA);
+          const isClose=diff<0.30, isMed=diff<0.60;
+          const label=isClose?'Close match':isMed?'Familiar territory':'Style stretch';
+          const note=isClose?`Aligns with your ${wine.type||'red'} DNA — expect it to land in your comfort zone.`:isMed?`Near your usual style with slight differences — worth trying.`:`Outside your usual ${wine.type||'red'} profile — may surprise you.`;
+          const accentCol=isClose?C.green:isMed?C.amber:'#7B5EA7';
+          const accentBg=isClose?C.greenBg:isMed?C.amberBg:'#F0EBF8';
+          return(
+            <div style={{display:'flex',alignItems:'center',gap:10,padding:'10px 14px',borderRadius:14,background:accentBg,border:`1px solid ${accentCol}25`}}>
+              <div style={{width:32,height:32,borderRadius:8,background:`${accentCol}18`,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+                <svg viewBox="0 0 24 24" width={16} height={16}><path d="M8 4C8 4 13 7 13 12C13 17 8 20 8 20" stroke={accentCol} strokeWidth="1.8" fill="none" strokeLinecap="round"/><path d="M16 4C16 4 11 7 11 12C11 17 16 20 16 20" stroke={accentCol} strokeWidth="1.8" fill="none" strokeLinecap="round"/><line x1="8.5" y1="12" x2="15.5" y2="12" stroke={accentCol} strokeWidth="1.2" strokeLinecap="round" opacity="0.5"/></svg>
+              </div>
+              <div style={{flex:1}}>
+                <div style={{fontSize:13,fontWeight:700,color:accentCol,fontFamily:C.P}}>WineDNA · {label}</div>
+                <div style={{fontSize:12,color:C.mid,fontFamily:C.P,marginTop:1}}>{note}</div>
+              </div>
+            </div>
+          );
+        })()}
+
         {/* Score slider rating */}
         <Card style={{padding:'14px 16px'}}>
           <div style={{fontSize:15,fontWeight:600,color:C.ink,fontFamily:C.P,marginBottom:12}}>Rate This Wine</div>
