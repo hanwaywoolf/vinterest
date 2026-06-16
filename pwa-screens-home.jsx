@@ -3,6 +3,7 @@
 function HomeScreen({nav, showPro}){
   const [typeTab,setTypeTab]=React.useState(0);
   const [genScripts,setGenScripts]=React.useState({});
+  const [scriptLength,setScriptLength]=React.useState(localStorage.getItem('vinterest_script_length')||'long');
   const [generating,setGenerating]=React.useState(null);
   const [xpData,setXpData]=React.useState(()=>XPSystem.get());
 
@@ -54,18 +55,21 @@ function HomeScreen({nav, showPro}){
   /* Script generation */
   React.useEffect(()=>{
     if(!tabWines.length) return;
-    const key=`vinterest_script_v2_${c.typeKey}_n${tabWines.length}`;
+    const keyLong=`vinterest_script_long_${c.typeKey}_n${tabWines.length}`;
+    const keyShort=`vinterest_script_short_${c.typeKey}_n${tabWines.length}`;
+    const key=scriptLength==='long'?keyLong:keyShort;
     const cached=localStorage.getItem(key);
     if(cached){setGenScripts(s=>({...s,[c.typeKey]:cached}));return;}
-    if(genScripts[c.typeKey]||generating===c.typeKey) return;
+    if(generating===c.typeKey) return;
     setGenerating(c.typeKey);
-    const wineList=tabWines.slice(0,8).map(w=>`${w.name}${w.vintage?' '+w.vintage:''} from ${w.region||w.country||'unknown'}${w.rating?' (rated '+w.rating+'/100)':''}`).join('; ');
-    const prompt=`I've scanned and rated these ${c.label.toLowerCase()} wines: ${wineList}. Based only on this data, write a short natural first-person sommelier script (2 sentences max) I could say to a restaurant sommelier. Reflect my apparent style, preferred regions, and price range. Return ONLY the script text in double quotes — nothing else.`;
+    const wineList=tabWines.slice(0,8).map(w=>`${w.name}${w.vintage?' '+w.vintage:''} from ${w.region||w.country||'unknown'}`).join('; ');
+    const lengthInstructions=scriptLength==='short'?'1 sentence, ultra-concise (under 20 words), and mention your typical budget range':'2 sentences max';
+    const prompt=`I've scanned these ${c.label.toLowerCase()} wines: ${wineList}. Based ONLY on the wines I've chosen and their regions, write a ${lengthInstructions} natural first-person sommelier script I could say to a restaurant sommelier. Reflect my apparent style and preferred regions. Return ONLY the script text in double quotes — nothing else.`;
     window.claude.complete({messages:[{role:'user',content:prompt}]})
       .then(text=>{const sc=text.trim();localStorage.setItem(key,sc);setGenScripts(g=>({...g,[c.typeKey]:sc}));})
       .catch(()=>{})
       .finally(()=>setGenerating(null));
-  },[typeTab,allWines.length]);
+  },[typeTab,allWines.length,scriptLength]);
 
   const typeColors={red:'#8B1A2F',white:'#B8963E',rosé:'#C47A8A',rose:'#C47A8A',sparkling:'#5E8FA8'};
   const colFor=w=>typeColors[(w.type||'red').toLowerCase().replace('é','e')]||C.cr;
@@ -146,9 +150,20 @@ function HomeScreen({nav, showPro}){
 
           {/* Script */}
           <Card style={{background:c.col+'0D',border:`1.5px solid ${c.col}25`,padding:14}}>
-            <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:7}}>
-              <Icon n="message" sz={14} col={c.col}/>
-              <span style={{fontSize:15,fontWeight:700,color:C.ink,fontFamily:C.P}}>Your {c.label} Script</span>
+            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:10}}>
+              <div style={{display:'flex',alignItems:'center',gap:8}}>
+                <Icon n="message" sz={14} col={c.col}/>
+                <span style={{fontSize:15,fontWeight:700,color:C.ink,fontFamily:C.P}}>Your {c.label} Script</span>
+              </div>
+              {tabWines.length>0&&!generating&&(
+                <div style={{display:'flex',gap:4,background:C.offWhite,borderRadius:6,padding:'3px 4px',border:`1px solid ${C.line}`}}>
+                  {['short','long'].map(len=>(
+                    <div key={len} onClick={()=>{setScriptLength(len);localStorage.setItem('vinterest_script_length',len);}} style={{padding:'4px 8px',borderRadius:4,background:scriptLength===len?C.cr:'transparent',cursor:'pointer'}}>
+                      <span style={{fontSize:13,fontWeight:600,color:scriptLength===len?'#fff':C.mid,fontFamily:C.P}}>{len.charAt(0).toUpperCase()+len.slice(1)}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
             {tabWines.length===0?(
               <div style={{fontSize:15,color:C.mid,fontFamily:C.P,fontStyle:'italic',lineHeight:1.6}}>Scan and rate some {c.label.toLowerCase()} to generate your personalised sommelier script.</div>

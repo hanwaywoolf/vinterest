@@ -1,8 +1,8 @@
-/* Vinterest PWA — Wine Detail screen (tabbed: Overview / Story / Data) */
+/* Vinterest PWA — Wine Detail screen (tabbed: Details / Story / Buy) */
 
 function WineDetailScreen({back,nav}){
   const [tab,setTab]=React.useState(0);
-  const tabs=['Overview','Story','Data'];
+  const tabs=['Details','Story','Buy'];
   const scanData=React.useMemo(()=>{
     try{ return JSON.parse(sessionStorage.getItem('vinterest_scan_result')||'{}'); }
     catch(e){ return {}; }
@@ -10,7 +10,6 @@ function WineDetailScreen({back,nav}){
   const wine=scanData.wine||null;
   const existingRating=scanData.existingRating||0;
 
-  // Computed taste-match (DNA-based, falls back to scan confidence)
   const matchPct=React.useMemo(()=>{
     if(!wine) return null;
     const dna=calcMatchScore(wine,WineHistory.getAll());
@@ -19,7 +18,6 @@ function WineDetailScreen({back,nav}){
     return conf?Math.round(Math.min(0.98,conf)*100):null;
   },[wine?.name,wine?.vintage]);
 
-  // Favourites
   const [isFav,setIsFav]=React.useState(()=>{
     try{
       const favs=JSON.parse(localStorage.getItem('vinterest_favorites')||'[]');
@@ -36,7 +34,6 @@ function WineDetailScreen({back,nav}){
     }catch(e){}
   }
 
-  // Share
   const [shared,setShared]=React.useState(false);
   function shareWine(){
     const title=wine?.name||(wine?.vintage?wine.name+' '+wine.vintage:'Wine on Vinterest');
@@ -56,11 +53,9 @@ function WineDetailScreen({back,nav}){
             <Icon n="back" sz={16} col={C.ink}/>
           </div>
           <div style={{display:'flex',gap:8}}>
-            {/* Heart — toggles favourite */}
             <div onClick={toggleFav} style={{width:34,height:34,borderRadius:17,background:isFav?C.crSoft:C.offWhite,border:`1px solid ${isFav?C.crDim:C.line}`,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',transition:'all .15s'}}>
               <svg viewBox="0 0 20 20" width={18} height={18}><path d="M10 16.5C10 16.5 3 12 3 7.5C3 5 5 3.2 7.2 3.2c1.5 0 2.5 1 2.8 1.8.3-.8 1.3-1.8 2.8-1.8C15 3.2 17 5 17 7.5c0 4.5-7 9-7 9z" stroke={isFav?C.cr:C.mid} strokeWidth="1.6" fill={isFav?C.cr:'none'}/></svg>
             </div>
-            {/* Share */}
             <div onClick={shareWine} style={{width:34,height:34,borderRadius:17,background:shared?C.greenBg:C.offWhite,border:`1px solid ${shared?C.green:C.line}`,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',transition:'all .15s'}}>
               <Icon n={shared?'check':'share'} sz={17} col={shared?C.green:C.mid}/>
             </div>
@@ -83,191 +78,18 @@ function WineDetailScreen({back,nav}){
         </div>
       </div>
       <div style={{flex:1,overflowY:'auto'}}>
-        {tab===0&&<DetailOverview wine={wine} nav={nav} existingRating={existingRating} matchPct={matchPct}/>}
+        {tab===0&&<DetailMerged wine={wine} nav={nav} existingRating={existingRating} matchPct={matchPct}/>}
         {tab===1&&<DetailStory wine={wine} nav={nav} existingRating={existingRating}/>}
-        {tab===2&&<DetailData wine={wine} nav={nav} existingRating={existingRating} matchPct={matchPct}/>}
+        {tab===2&&<DetailBuy wine={wine} nav={nav}/>}
       </div>
     </div>
   );
 }
 
-function DetailOverview({wine,nav,existingRating=0,matchPct}){
-  const [genWhy,setGenWhy]=React.useState(null);
-  const [generatingWhy,setGeneratingWhy]=React.useState(false);
-  const [retailData, setRetailData] = React.useState(function() {
-    const region = localStorage.getItem('vinterest_region') || 'uk';
-    const cacheKey = 'vinterest_retail_' + ((wine && wine.name) ? wine.name.replace(/\s/g,'_') : '') + '_' + (wine && wine.vintage ? wine.vintage : 'nv') + '_' + region;
-    try { return JSON.parse(localStorage.getItem(cacheKey)); } catch(e) { return null; }
-  });
-  const [loadingRetail, setLoadingRetail] = React.useState(false);
-
-  React.useEffect(function() {
-    if (!wine || !wine.name || retailData) return;
-    setLoadingRetail(true);
-    fetchRetailData(wine.name, wine.vintage)
-      .then(function(d){ setRetailData(d); })
-      .catch(function(){})
-      .finally(function(){ setLoadingRetail(false); });
-  }, [wine && wine.name, wine && wine.vintage]);
-
-  React.useEffect(()=>{
-    if(!wine) return;
-    const userWines=WineHistory.getAll();
-    if(!userWines.length) return;
-    const cacheKey=`vinterest_why_${(wine.name||'').replace(/\s/g,'_')}_${wine.vintage||'nv'}`;
-    const cached=localStorage.getItem(cacheKey);
-    if(cached){setGenWhy(cached);return;}
-    const typeKey=(wine.type||'red').toLowerCase().replace('é','e');
-    const typeWines=userWines.filter(w=>(w.type||'red').toLowerCase().replace('é','e')===typeKey);
-    if(!typeWines.length) return;
-    const avgB=typeWines.filter(w=>w.body!=null).reduce((s,w)=>s+w.body,0)/(typeWines.filter(w=>w.body!=null).length||1);
-    const avgT=typeWines.filter(w=>w.tannins!=null).reduce((s,w)=>s+w.tannins,0)/(typeWines.filter(w=>w.tannins!=null).length||1);
-    const avgA=typeWines.filter(w=>w.acidity!=null).reduce((s,w)=>s+w.acidity,0)/(typeWines.filter(w=>w.acidity!=null).length||1);
-    const topWines=[...typeWines].filter(w=>w.rating>0).sort((a,b)=>(b.rating||0)-(a.rating||0)).slice(0,4).map(w=>w.name+(w.vintage?' '+w.vintage:'')).join(', ');
-    const gCounts={}; typeWines.forEach(w=>(w.grapes||[]).forEach(g=>{if(g)gCounts[g]=(gCounts[g]||0)+1;}));
-    const topGrapes=Object.entries(gCounts).sort((a,b)=>b[1]-a[1]).slice(0,3).map(e=>e[0]).join(', ');
-    const lbl=v=>v>=0.68?'high':v>=0.38?'medium':'low';
-    setGeneratingWhy(true);
-    const prompt=`The user is looking at: ${wine.name}${wine.vintage?' '+wine.vintage:''}, a ${wine.type||'red'} from ${wine.region||wine.country||'unknown'} with body=${(wine.body??0.65).toFixed(1)}, tannins=${(wine.tannins??0.55).toFixed(1)}, acidity=${(wine.acidity??0.60).toFixed(1)}. Their ${wine.type||'red'} DNA: body ${lbl(avgB)}, tannins ${lbl(avgT)}, acidity ${lbl(avgA)}. Top rated: ${topWines||'none yet'}. Favourite grapes: ${topGrapes||'still discovering'}. Write ONE sentence (max 30 words) explaining specifically why this wine matches this user — compare attributes or reference their actual top wines by name. Be concrete, not generic. Do NOT include any numbers, decimals, or specific wine attribute values in your response. Return ONLY the sentence, no quotes.`;
-    window.claude.complete({messages:[{role:'user',content:prompt}]})
-      .then(text=>{const s=text.trim();localStorage.setItem(cacheKey,s);setGenWhy(s);})
-      .catch(()=>{})
-      .finally(()=>setGeneratingWhy(false));
-  },[wine?.name,wine?.vintage]);
-
-  const whyDisplay=genWhy||(generatingWhy?null:wine?.why_you_will_like_this)||null;
-  const notes=wine?.tasting_notes||['Black Cassis','Cedar','Violets','Tobacco','Graphite'];
-  const pairings=wine?.food_pairings||['Grilled Steak','Rack of Lamb','Hard Cheese'];
-  const tiles=[
-    {name:'Body',   plain:wine?.body_plain   ||'How heavy it feels in your mouth',lo:'Light',   hi:'Full',   val:wine?.body     ??0.85,col:'#8B1A2F'},
-    {name:'Tannins',plain:wine?.tannins_plain||'That drying grip on your gums',    lo:'Silky',   hi:'Grippy', val:wine?.tannins  ??0.80,col:'#7B5EA7'},
-    {name:'Acidity',plain:wine?.acidity_plain||'How zingy and fresh it tastes',    lo:'Mellow',  hi:'Zingy',  val:wine?.acidity  ??0.60,col:C.green},
-    {name:'Sweetness',plain:wine?.sweetness_plain||'Dry = barely any sugar',       lo:'Bone Dry',hi:'Sweet',  val:wine?.sweetness??0.10,col:C.amber},
-  ];
-  const whyText=whyDisplay;
-  const pairingEmojis=['🥩','🍖','🧀','🐟','🍝','🧅'];
-  // matchPct arrives as prop from WineDetailScreen — no local recompute
-  var wsMinPrice = retailData && retailData.priceData ? retailData.priceData.price_range : null;
-  var priceDisplay = wsMinPrice || (wine && wine.price_usd ? '$' + wine.price_usd : '—');
-  const commRating=wine?.community_rating||'—';
-  const commCount=React.useMemo(()=>{
-    const name=wine?.name||'wine'; let h=0;
-    for(let i=0;i<name.length;i++) h=(h*31+name.charCodeAt(i))&0xffff;
-    return 400+(h%4200);
-  },[wine?.name]);
-  return(
-    <div style={{padding:'14px 20px',display:'flex',flexDirection:'column',gap:12}}>
-      <div style={{display:'flex',gap:8}}>
-        {[
-          {l:'Your Match',v:`${matchPct}%`,sub:null,col:C.green,bg:C.greenBg},
-          {l:'Community Score',v:wine?.community_rating?`${commRating}/5`:'—',sub:wine?.community_rating?`★ ${commCount.toLocaleString()} ratings`:null,col:C.amber,bg:C.amberBg},
-          {l:'Price',v:priceDisplay,sub:null,col:C.ink2,bg:C.white}
-        ].map((s,i)=>(
-          <div key={i} style={{flex:1,background:s.bg,borderRadius:12,padding:'9px 6px',textAlign:'center',border:`1px solid ${C.line}`}}>
-            <div style={{fontSize:18,fontWeight:700,color:s.col,fontFamily:C.P}}>{s.v}</div>
-            {s.sub&&<div style={{fontSize:12,color:s.col,fontFamily:C.P,marginTop:1,opacity:0.75}}>{s.sub}</div>}
-            <div style={{fontSize:13,color:C.mid,fontFamily:C.P,marginTop:1}}>{s.l}</div>
-          </div>
-        ))}
-      </div>
-      {existingRating>0&&(
-        <div style={{display:'flex',alignItems:'center',gap:14,padding:'12px 14px',borderRadius:14,background:C.greenBg,border:`1px solid ${C.green}30`}}>
-          <div style={{flexShrink:0,padding:'6px 12px',borderRadius:10,background:C.green+'18',border:`1px solid ${C.green}30`,display:'flex',alignItems:'center',gap:3}}>
-            <span style={{fontSize:28,fontWeight:800,color:C.green,fontFamily:C.P,lineHeight:1}}>{existingRating}</span><span style={{fontSize:15,fontWeight:500,color:C.green,fontFamily:C.P,opacity:.65}}>/100</span>
-          </div>
-          <div>
-            <div style={{fontSize:16,fontWeight:700,color:C.green,fontFamily:C.P}}>Your Rating</div>
-            <div style={{fontSize:15,color:C.ink2,fontFamily:C.P,marginTop:2,lineHeight:1.4}}>{existingRating>=80?'Exceptional — one of your top bottles.':existingRating>=60?'A solid bottle you enjoyed.':'Noted — not quite your style.'}</div>
-          </div>
-        </div>
-      )}
-      <Card style={{background:C.greenBg,boxShadow:'none',border:`1px solid ${C.green}25`,padding:12}}>
-        <div style={{fontSize:16,fontWeight:600,color:C.green,fontFamily:C.P,marginBottom:3}}>Why this matches you</div>
-        {generatingWhy?(
-          <div style={{display:'flex',alignItems:'center',gap:8}}>
-            <div style={{width:12,height:12,borderRadius:6,border:'2px solid rgba(0,0,0,0.08)',borderTopColor:C.green,animation:'detailSpin .8s linear infinite',flexShrink:0}}/>
-            <span style={{fontSize:15,color:C.mid,fontFamily:C.P,fontStyle:'italic'}}>Analysing your taste profile…</span>
-          </div>
-        ):(
-          <div style={{fontSize:15,color:C.ink2,fontFamily:C.P,lineHeight:1.55}}>{whyText||wine?.why_you_will_like_this||'A great match for your taste profile.'}</div>
-        )}
-      </Card>
-      <div>
-        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:8}}>
-          <span style={{fontSize:17,fontWeight:600,color:C.ink,fontFamily:C.P}}>What Does It Taste Like?</span>
-          <span style={{fontSize:15,color:C.cr,fontFamily:C.P,fontWeight:500}}>Tap any term</span>
-        </div>
-        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8}}>
-          {tiles.map((t,i)=>(
-            <div key={i} style={{background:C.white,borderRadius:14,padding:'10px',border:`1px solid ${C.line}`,cursor:'pointer'}}>
-              <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:3}}>
-                <span style={{fontSize:17,fontWeight:600,color:C.ink,fontFamily:C.P}}>{t.name}</span>
-                <div style={{width:16,height:16,borderRadius:8,background:C.offWhite,display:'flex',alignItems:'center',justifyContent:'center',border:`1px solid ${C.line}`}}>
-                  <span style={{fontSize:15,fontWeight:700,color:C.mid,fontFamily:C.P}}>?</span>
-                </div>
-              </div>
-              <div style={{fontSize:15,color:C.mid,fontFamily:C.P,lineHeight:1.4,marginBottom:7,minHeight:'2.7em',display:'-webkit-box',WebkitLineClamp:2,WebkitBoxOrient:'vertical',overflow:'hidden'}}>{t.plain}</div>
-              <Prog val={t.val} col={t.col} h={5}/>
-              <div style={{display:'flex',justifyContent:'space-between',marginTop:4}}>
-                <span style={{fontSize:13,color:'#bbb',fontFamily:C.P}}>{t.lo}</span>
-                <span style={{fontSize:13,color:'#bbb',fontFamily:C.P}}>{t.hi}</span>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-      <Card style={{padding:12}}>
-        <div style={{fontSize:16,fontWeight:600,color:C.ink,fontFamily:C.P,marginBottom:8}}>Tasting Notes</div>
-        <div style={{display:'flex',flexWrap:'wrap',gap:5}}>
-          {notes.map((n,i)=>(
-            <span key={i} style={{padding:'4px 10px',borderRadius:20,background:i<3?C.crSoft:C.offWhite,color:i<3?C.cr:C.ink2,fontSize:15,fontWeight:500,fontFamily:C.P,border:`1px solid ${i<3?C.crDim:C.line}`}}>{n}</span>
-          ))}
-        </div>
-      </Card>
-      <Card style={{padding:12}}>
-        <div style={{fontSize:16,fontWeight:600,color:C.ink,fontFamily:C.P,marginBottom:8}}>Pairs With</div>
-        <div style={{display:'flex',gap:8}}>
-          {pairings.slice(0,3).map((f,i)=>(
-            <div key={i} style={{flex:1,background:C.offWhite,borderRadius:10,padding:'10px 6px',textAlign:'center'}}>
-              <div style={{fontSize:24,marginBottom:4}}>{pairingEmojis[i]||'🍽️'}</div>
-              <div style={{fontSize:15,color:C.ink2,fontFamily:C.P,fontWeight:500}}>{f}</div>
-            </div>
-          ))}
-        </div>
-      </Card>
-      <Card style={{padding:0,overflow:'hidden'}}>
-        {[
-          {icon:'globe', t:wine?.sub_region||wine?.region||'Region', s:`Explore ${wine?.region||'this region'}`, screen:'region'},
-          {icon:'wine',  t:wine?.grapes?.[0]||'Varietal', s:'Grape varietal & style guide', screen:'varietal'},
-          {icon:'compass',t:'Similar Wines', s:'Wines you might also enjoy', screen:'similar'}
-        ].map((l,i)=>(
-          <div key={i} onClick={()=>nav(l.screen)} style={{display:'flex',alignItems:'center',gap:12,padding:'12px 14px',borderBottom:i<2?`1px solid ${C.line}`:'none',cursor:'pointer'}}>
-            <div style={{width:36,height:36,borderRadius:9,background:C.crSoft,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
-              <Icon n={l.icon} sz={17} col={C.cr}/>
-            </div>
-            <div style={{flex:1}}>
-              <div style={{fontSize:17,fontWeight:600,color:C.ink,fontFamily:C.P}}>{l.t}</div>
-              <div style={{fontSize:15,color:C.mid,fontFamily:C.P}}>{l.s}</div>
-            </div>
-            <Icon n="chevron" sz={13} col={C.mid}/>
-          </div>
-        ))}
-      </Card>
-      {existingRating>0
-        ?<div style={{textAlign:'center',padding:'12px',borderRadius:12,background:C.greenBg,border:`1px solid ${C.green}25`}}><span style={{fontSize:15,fontWeight:600,color:C.green,fontFamily:C.P}}>✓ You rated this wine {existingRating}/100</span></div>
-        :<Btn primary full onClick={()=>nav('identified')}>Rate This Wine</Btn>
-      }
-      <style>{`@keyframes detailSpin{to{transform:rotate(360deg)}}`}</style>
-      <div style={{height:8}}/>
-    </div>
-  );
-}
-
-function DetailStory({wine,nav,existingRating=0}){
+function DetailMerged({wine,nav,existingRating=0,matchPct}){
   const [genWhy,setGenWhy]=React.useState(null);
   const [generatingWhy,setGeneratingWhy]=React.useState(false);
 
-  // Reads from the same localStorage cache as DetailOverview — no double fetch
   React.useEffect(()=>{
     if(!wine) return;
     const cacheKey=`vinterest_why_${(wine.name||'').replace(/\s/g,'_')}_${wine.vintage||'nv'}`;
@@ -286,17 +108,35 @@ function DetailStory({wine,nav,existingRating=0}){
     const topGrapes=Object.entries(gCounts).sort((a,b)=>b[1]-a[1]).slice(0,3).map(e=>e[0]).join(', ');
     const lbl=v=>v>=0.68?'high':v>=0.38?'medium':'low';
     setGeneratingWhy(true);
-    const prompt=`The user is looking at: ${wine.name}${wine.vintage?' '+wine.vintage:''}, a ${wine.type||'red'} from ${wine.region||wine.country||'unknown'} with body=${(wine.body??0.65).toFixed(1)}, tannins=${(wine.tannins??0.55).toFixed(1)}, acidity=${(wine.acidity??0.60).toFixed(1)}. Their ${wine.type||'red'} DNA: body ${lbl(avgB)}, tannins ${lbl(avgT)}, acidity ${lbl(avgA)}. Top rated: ${topWines||'none yet'}. Favourite grapes: ${topGrapes||'still discovering'}. Write ONE sentence (max 30 words) explaining specifically why this wine matches this user — compare attributes or reference their actual top wines by name. Be concrete, not generic. Do NOT include any numbers, decimals, or specific wine attribute values in your response. Return ONLY the sentence, no quotes.`;
+    const prompt=`The user is looking at: ${wine.name}${wine.vintage?' '+wine.vintage:''}, a ${wine.type||'red'} from ${wine.region||wine.country||'unknown'} with body=${(wine.body??0.65).toFixed(1)}, tannins=${(wine.tannins??0.55).toFixed(1)}, acidity=${(wine.acidity??0.60).toFixed(1)}. Their ${wine.type||'red'} DNA: body ${lbl(avgB)}, tannins ${lbl(avgT)}, acidity ${lbl(avgA)}. Top rated: ${topWines||'none yet'}. Favourite grapes: ${topGrapes||'still discovering'}. Write ONE sentence (max 30 words) explaining specifically why this wine matches this user — compare attributes or reference their actual top wines by name. Be concrete, not generic. IMPORTANT: Do NOT include ANY numbers, decimals, percentages, or specific wine attribute values (like "0.88" or "82%") anywhere in your response. Use only descriptive words like high, low, medium, bold, light, etc. Return ONLY the sentence, no quotes.`;
     window.claude.complete({messages:[{role:'user',content:prompt}]})
       .then(text=>{const s=text.trim();localStorage.setItem(cacheKey,s);setGenWhy(s);})
       .catch(()=>{})
       .finally(()=>setGeneratingWhy(false));
   },[wine?.name,wine?.vintage]);
 
-  const description=(wine?.description?.trim())||'An exceptional wine with refined character and depth.';
-  const notes=wine?.tasting_notes||[];
-  const pairings=wine?.food_pairings||[];
-  const pairingEmojis=['🥩','🍖','🧀','🐟','🍝','🧅','🥗','🍗'];
+  const [vintageInfo,setVintageInfo]=React.useState(null);
+  const [loadingVintage,setLoadingVintage]=React.useState(false);
+  React.useEffect(()=>{
+    if(!wine||!wine.vintage) return;
+    const cacheKey=`vinterest_vintage_${(wine.name||'').replace(/\s/g,'_')}_${wine.vintage}`;
+    const cached=localStorage.getItem(cacheKey);
+    if(cached){try{setVintageInfo(JSON.parse(cached));return;}catch(e){}}
+    setLoadingVintage(true);
+    const yr=new Date().getFullYear();
+    const prompt=`You are a sommelier. Assess the vintage quality and realistic drinking window for this specific wine. Wine: ${wine.name} ${wine.vintage}. Type: ${wine.type||'red'}, Region: ${wine.region||''}, Country: ${wine.country||''}. Grapes: ${(wine.grapes||[]).join(', ')||'unknown'}. Body: ${(wine.body??0.65).toFixed(1)}, Tannins: ${(wine.tannins??0.55).toFixed(1)}, Acidity: ${(wine.acidity??0.60).toFixed(1)}, ABV: ${wine.abv||13}%. Return ONLY valid JSON (no markdown): {"vintage_rating":"Exceptional|Outstanding|Very Good|Good|Average","drink_from":${yr},"drink_to":2032,"peak_from":2025,"peak_to":2029,"note":"one concrete sentence on how this wine is developing right now and why. IMPORTANT: Do NOT include ANY numbers, decimals, percentages, or specific attribute values (like '0.82 tannins' or '82%') anywhere in the sentence. Use only descriptive words like high, low, medium, bold, structured, etc."}`;
+    window.claude.complete({messages:[{role:'user',content:prompt}]})
+      .then(text=>{
+        let c=text.replace(/```json|```/g,'').trim();
+        const s=c.indexOf('{'),e=c.lastIndexOf('}');
+        if(s>=0&&e>s) c=c.slice(s,e+1);
+        const d=JSON.parse(c);
+        localStorage.setItem(cacheKey,JSON.stringify(d));
+        setVintageInfo(d);
+      })
+      .catch(()=>{})
+      .finally(()=>setLoadingVintage(false));
+  },[wine?.name,wine?.vintage]);
 
   const charLbl=(v,lo,hi)=>v>=0.68?hi:v>=0.38?'Medium':lo;
   const chars=wine?[
@@ -311,49 +151,133 @@ function DetailStory({wine,nav,existingRating=0}){
     <div style={{fontSize:13,fontWeight:700,color:C.mid,letterSpacing:'0.07em',textTransform:'uppercase',fontFamily:C.P,marginBottom:8}}>{label}</div>
   );
 
+  const notes=wine?.tasting_notes||[];
+  const pairings=wine?.food_pairings||[];
+  const pairingEmojis=['🥩','🍖','🧀','🐟','🍝','🧅','🥗','🍗'];
+
   return(
-    <div style={{padding:'16px 20px',display:'flex',flexDirection:'column',gap:20}}>
+    <div style={{padding:'16px 20px',display:'flex',flexDirection:'column',gap:16}}>
+      {/* Your Match + Your Rating — side by side */}
+      <div style={{display:'flex',gap:10}}>
+        <div style={{flex:1,background:C.greenBg,border:`1px solid ${C.green}25`,borderRadius:14,padding:'12px 10px',textAlign:'center'}}>
+          <div style={{fontSize:28,fontWeight:800,color:C.green,fontFamily:C.P,lineHeight:1}}>{matchPct!=null?`${matchPct}%`:'—'}</div>
+          <div style={{fontSize:13,fontWeight:600,color:C.green,fontFamily:C.P,marginTop:4}}>Your Match</div>
+        </div>
+        {existingRating>0&&(
+          <div style={{flex:1,background:C.amberBg,border:`1px solid ${C.amber}25`,borderRadius:14,padding:'12px 10px',textAlign:'center'}}>
+            <div style={{fontSize:28,fontWeight:800,color:C.amber,fontFamily:C.P,lineHeight:1}}>{existingRating}</div>
+            <div style={{fontSize:13,fontWeight:600,color:C.amber,fontFamily:C.P,marginTop:4}}>Your Rating</div>
+          </div>
+        )}
+      </div>
 
-      {/* Description */}
-      <div style={{fontSize:16,color:C.ink2,fontFamily:C.P,lineHeight:1.75}}>{description}</div>
+      {/* Why This Matches You */}
+      <Card style={{background:C.greenBg,border:`1px solid ${C.green}25`,padding:14}}>
+        <div style={{fontSize:13,fontWeight:700,color:C.green,letterSpacing:'0.07em',textTransform:'uppercase',fontFamily:C.P,marginBottom:6}}>Why This Matches You</div>
+        {generatingWhy?(
+          <div style={{display:'flex',alignItems:'center',gap:6}}>
+            <div style={{width:10,height:10,borderRadius:5,border:`2px solid ${C.green}40`,borderTopColor:C.green,animation:'storySpin .8s linear infinite'}}/>
+            <span style={{fontSize:14,color:C.green,fontFamily:C.P,fontStyle:'italic'}}>Analyzing your taste…</span>
+          </div>
+        ):(
+          <span style={{fontSize:15,color:C.green,fontFamily:C.P,lineHeight:1.6}}>{genWhy||'(personalizing…)'}</span>
+        )}
+      </Card>
 
-      {/* Your Connection — personalised via AI */}
+      {/* Taste Profile */}
       <div>
-        <SL label="Your Connection"/>
-        <Card style={{background:C.crSoft,boxShadow:'none',border:`1px solid ${C.crDim}`,padding:14}}>
-          {generatingWhy?(
-            <div style={{display:'flex',alignItems:'center',gap:8}}>
-              <div style={{width:13,height:13,borderRadius:7,border:'2px solid rgba(0,0,0,0.08)',borderTopColor:C.cr,animation:'storySpin .8s linear infinite',flexShrink:0}}/>
-              <span style={{fontSize:15,color:C.mid,fontFamily:C.P,fontStyle:'italic'}}>Personalising…</span>
+        <SL label="Taste Profile"/>
+        <div style={{fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.5,marginBottom:12,padding:'10px 12px',borderRadius:10,background:C.offWhite,border:`1px solid ${C.line}`}}>
+          These four dimensions describe how this wine will feel in your mouth — they help you understand what to expect and find wines you'll enjoy.
+        </div>
+        <div style={{display:'flex',flexDirection:'column',gap:20}}>
+          {/* Body */}
+          <div>
+            <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:12}}>
+              <div style={{fontSize:15,fontWeight:700,color:C.cr,fontFamily:C.P}}>Body</div>
+              <button onClick={()=>{alert('Body describes how a wine feels in your mouth — how heavy or light it is. Light wines are crisp and refreshing; full wines coat your mouth with richness.')}} style={{width:20,height:20,borderRadius:10,background:C.crSoft,border:`1px solid ${C.cr}`,color:C.cr,fontSize:12,fontWeight:400,cursor:'pointer',padding:0,display:'flex',alignItems:'center',justifyContent:'center',fontFamily:C.P}}>?</button>
             </div>
-          ):(
-            <div style={{fontSize:15,color:C.ink2,fontFamily:C.P,lineHeight:1.65}}>{genWhy||'Scan and rate more wines to unlock a personalised connection.'}</div>
+            <div style={{display:'flex',justifyContent:'space-between',fontSize:13,color:C.mid,fontFamily:C.P,marginBottom:8}}>
+              <span>Light</span>
+              <span>Full</span>
+            </div>
+            <div style={{width:'100%',height:8,background:`linear-gradient(to right, ${C.white}, ${C.ink2}40, ${C.cr})`,borderRadius:4,position:'relative',marginBottom:12,border:`1px solid ${C.line}`}}>
+              <div style={{position:'absolute',left:`${(wine?.body??0.65)*100}%`,top:'-6px',width:20,height:20,background:C.cr,borderRadius:10,transform:'translateX(-50%)',border:`3px solid ${C.white}`,boxShadow:`0 2px 4px rgba(0,0,0,0.15)`}}/>
+            </div>
+            <div style={{fontSize:16,color:C.ink2,fontFamily:C.P,lineHeight:1.5,paddingLeft:8,borderLeft:`2px solid ${C.crSoft}`}}>This wine is <strong>{chars.find(c=>c.label==='Body')?.value.toLowerCase()}</strong> — {(wine?.body??0.65)>=0.68?'it coats your mouth like whole milk or cream, full and rich':'it feels crisp and refreshing in your mouth, like skim milk'}. {(wine?.body??0.65)>=0.68?'Perfect for hearty foods and contemplative sipping.':'Great as an aperitif or with lighter dishes.'}</div>
+          </div>
+
+          {/* Tannins */}
+          <div>
+            <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:12}}>
+              <div style={{fontSize:15,fontWeight:700,color:C.cr,fontFamily:C.P}}>Tannins</div>
+              <button onClick={()=>{alert('Tannins are compounds found mostly in red wines that create a drying sensation in your mouth. Silky tannins feel smooth; grippy tannins feel textured and astringent.')}} style={{width:20,height:20,borderRadius:10,background:C.crSoft,border:`1px solid ${C.cr}`,color:C.cr,fontSize:12,fontWeight:400,cursor:'pointer',padding:0,display:'flex',alignItems:'center',justifyContent:'center',fontFamily:C.P}}>?</button>
+            </div>
+            <div style={{display:'flex',justifyContent:'space-between',fontSize:13,color:C.mid,fontFamily:C.P,marginBottom:8}}>
+              <span>Silky</span>
+              <span>Grippy</span>
+            </div>
+            <div style={{width:'100%',height:8,background:`linear-gradient(to right, ${C.white}, ${C.ink2}40, ${C.cr})`,borderRadius:4,position:'relative',marginBottom:12,border:`1px solid ${C.line}`}}>
+              <div style={{position:'absolute',left:`${(wine?.tannins??0.55)*100}%`,top:'-6px',width:20,height:20,background:C.cr,borderRadius:10,transform:'translateX(-50%)',border:`3px solid ${C.white}`,boxShadow:`0 2px 4px rgba(0,0,0,0.15)`}}/>
+            </div>
+            <div style={{fontSize:16,color:C.ink2,fontFamily:C.P,lineHeight:1.5,paddingLeft:8,borderLeft:`2px solid ${C.crSoft}`}}>This wine has <strong>{chars.find(c=>c.label==='Tannins')?.value.toLowerCase()}</strong> tannins — {(wine?.tannins??0.55)>=0.68?'you\'ll feel a textured, drying sensation in your mouth, like biting grape skins. These wines age beautifully.':'the sensation in your mouth is smooth and soft, without much grip. These are drinking wines, ready to enjoy now.'}</div>
+          </div>
+
+          {/* Acidity */}
+          <div>
+            <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:12}}>
+              <div style={{fontSize:15,fontWeight:700,color:C.cr,fontFamily:C.P}}>Acidity</div>
+              <button onClick={()=>{alert('Acidity is the tartness you taste in wine, like lemon or vinegar. Mellow acidity feels smooth; zingy acidity tastes crisp and bright.')}} style={{width:20,height:20,borderRadius:10,background:C.crSoft,border:`1px solid ${C.cr}`,color:C.cr,fontSize:12,fontWeight:400,cursor:'pointer',padding:0,display:'flex',alignItems:'center',justifyContent:'center',fontFamily:C.P}}>?</button>
+            </div>
+            <div style={{display:'flex',justifyContent:'space-between',fontSize:13,color:C.mid,fontFamily:C.P,marginBottom:8}}>
+              <span>Mellow</span>
+              <span>Zingy</span>
+            </div>
+            <div style={{width:'100%',height:8,background:`linear-gradient(to right, ${C.white}, ${C.ink2}40, ${C.cr})`,borderRadius:4,position:'relative',marginBottom:12,border:`1px solid ${C.line}`}}>
+              <div style={{position:'absolute',left:`${(wine?.acidity??0.60)*100}%`,top:'-6px',width:20,height:20,background:C.cr,borderRadius:10,transform:'translateX(-50%)',border:`3px solid ${C.white}`,boxShadow:`0 2px 4px rgba(0,0,0,0.15)`}}/>
+            </div>
+            <div style={{fontSize:16,color:C.ink2,fontFamily:C.P,lineHeight:1.5,paddingLeft:8,borderLeft:`2px solid ${C.crSoft}`}}>This wine is <strong>{chars.find(c=>c.label==='Acidity')?.value.toLowerCase()}</strong> — {(wine?.acidity??0.60)>=0.68?'it tastes fresh and bright, like lemon juice. High acidity makes this wine a food-friendly pairing partner and helps it age.':'it feels smooth and soft on your palate, without much crispness. These wines are approachable and easy-drinking.'}</div>
+          </div>
+
+          {/* Sweetness */}
+          <div>
+            <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:12}}>
+              <div style={{fontSize:15,fontWeight:700,color:C.cr,fontFamily:C.P}}>Sweetness</div>
+              <button onClick={()=>{alert('Sweetness measures residual sugar left in wine after fermentation. Bone dry wines have minimal sugar; sweet wines are noticeably sugary, often enjoyed as dessert wines.')}} style={{width:20,height:20,borderRadius:10,background:C.crSoft,border:`1px solid ${C.cr}`,color:C.cr,fontSize:12,fontWeight:400,cursor:'pointer',padding:0,display:'flex',alignItems:'center',justifyContent:'center',fontFamily:C.P}}>?</button>
+            </div>
+            <div style={{display:'flex',justifyContent:'space-between',fontSize:13,color:C.mid,fontFamily:C.P,marginBottom:8}}>
+              <span>Bone Dry</span>
+              <span>Sweet</span>
+            </div>
+            <div style={{width:'100%',height:8,background:`linear-gradient(to right, ${C.white}, ${C.ink2}40, ${C.cr})`,borderRadius:4,position:'relative',marginBottom:12,border:`1px solid ${C.line}`}}>
+              <div style={{position:'absolute',left:`${(wine?.sweetness??0.10)*100}%`,top:'-6px',width:20,height:20,background:C.cr,borderRadius:10,transform:'translateX(-50%)',border:`3px solid ${C.white}`,boxShadow:`0 2px 4px rgba(0,0,0,0.15)`}}/>
+            </div>
+            <div style={{fontSize:16,color:C.ink2,fontFamily:C.P,lineHeight:1.5,paddingLeft:8,borderLeft:`2px solid ${C.crSoft}`}}>This wine is <strong>{chars.find(c=>c.label==='Sweetness')?.value.toLowerCase()}</strong> — {(wine?.sweetness??0.10)>=0.68?'noticeably sweet with residual sugar. Perfect as a dessert wine or for those who prefer sweeter flavours.':wine?.sweetness>0.38?'off-dry with a touch of sweetness that balances the acidity. Approachable without being overly sweet.':'nearly all the sugar was fermented out. This is a dry wine with no perceptible sweetness.'}</div>
+          </div>
+
+          {/* ABV */}
+          {chars.find(c=>c.label==='ABV')&&(
+            <div>
+              <div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline',marginBottom:8}}>
+                <span style={{fontSize:15,fontWeight:700,color:C.cr,fontFamily:C.P}}>Alcohol Content</span>
+                <span style={{fontSize:13,color:C.mid,fontFamily:C.P}}>{chars.find(c=>c.label==='ABV')?.value}</span>
+              </div>
+              <div style={{fontSize:16,color:C.ink2,fontFamily:C.P,lineHeight:1.5,paddingLeft:8,borderLeft:`2px solid ${C.crSoft}`}}>At {wine?.abv}%, this wine has {wine?.abv<10?'lower alcohol, making it light and crisp':wine?.abv<13?'moderate alcohol, typical for most wines':wine?.abv<15?'higher alcohol, which adds warmth and body':'very high alcohol, which adds significant warmth and weight to the wine'}. Higher alcohol also affects aging potential.</div>
+            </div>
           )}
-        </Card>
+        </div>
       </div>
 
       {/* Tasting Notes */}
       {notes.length>0&&(
         <div>
           <SL label="Tasting Notes"/>
+          <div style={{fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.5,marginBottom:12,padding:'10px 12px',borderRadius:10,background:C.offWhite,border:`1px solid ${C.line}`}}>
+            These flavours are what you'll taste when you drink it — look for these clues as you sip. Tasting notes help you build your palate and remember wines you love.
+          </div>
           <div style={{display:'flex',flexWrap:'wrap',gap:6}}>
             {notes.map((n,i)=>(
               <span key={i} style={{padding:'5px 13px',borderRadius:20,background:i<2?C.crSoft:C.offWhite,color:i<2?C.cr:C.ink2,fontSize:15,fontWeight:500,fontFamily:C.P,border:`1px solid ${i<2?C.crDim:C.line}`}}>{n}</span>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Characteristics */}
-      {chars.length>0&&(
-        <div>
-          <SL label="Characteristics"/>
-          <div style={{display:'flex',flexWrap:'wrap',gap:7}}>
-            {chars.map((ch,i)=>(
-              <div key={i} style={{display:'inline-flex',alignItems:'center',gap:5,padding:'6px 13px',borderRadius:20,background:C.offWhite,border:`1px solid ${C.line}`}}>
-                <span style={{fontSize:13,color:C.mid,fontFamily:C.P}}>{ch.label}</span>
-                <span style={{fontSize:15,fontWeight:700,color:C.ink,fontFamily:C.P}}>{ch.value}</span>
-              </div>
             ))}
           </div>
         </div>
@@ -374,7 +298,111 @@ function DetailStory({wine,nav,existingRating=0}){
         </div>
       )}
 
-      {/* Where to Buy */}
+      {/* Vintage Info */}
+      {wine?.vintage&&(
+        <div>
+          <SL label={`About the ${wine.vintage} Vintage`}/>
+          {loadingVintage?(
+            <Card style={{padding:14,display:'flex',alignItems:'center',gap:8}}>
+              <div style={{width:12,height:12,borderRadius:6,border:'2px solid rgba(0,0,0,0.08)',borderTopColor:C.cr,animation:'detailSpin .8s linear infinite',flexShrink:0}}/>
+              <span style={{fontSize:15,color:C.mid,fontFamily:C.P,fontStyle:'italic'}}>Analysing vintage…</span>
+            </Card>
+          ):vintageInfo?(
+            <Card style={{padding:14}}>
+              <div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline',marginBottom:12}}>
+                <span style={{fontSize:16,fontWeight:600,color:C.ink,fontFamily:C.P}}>Quality Rating</span>
+                <span style={{fontSize:17,fontWeight:700,color:C.cr,fontFamily:C.P}}>{vintageInfo.vintage_rating}</span>
+              </div>
+              <div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline',marginBottom:12}}>
+                <span style={{fontSize:16,fontWeight:600,color:C.ink,fontFamily:C.P}}>Drinking Now</span>
+                <span style={{fontSize:15,color:C.ink2,fontFamily:C.P}}>{vintageInfo.drink_from}–{vintageInfo.drink_to}</span>
+              </div>
+              <div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline',marginBottom:12}}>
+                <span style={{fontSize:16,fontWeight:600,color:C.ink,fontFamily:C.P}}>Peak Years</span>
+                <span style={{fontSize:15,color:C.ink2,fontFamily:C.P}}>{vintageInfo.peak_from}–{vintageInfo.peak_to}</span>
+              </div>
+              <div style={{fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.5,paddingTop:12,borderTop:`1px solid ${C.line}`,marginTop:12}}>💡 {vintageInfo.note}</div>
+            </Card>
+          ):null}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function DetailStory({wine,nav,existingRating=0}){
+  const description=(wine?.description?.trim())||'A wine with character and depth.';
+
+  const SL=({label})=>(
+    <div style={{fontSize:13,fontWeight:700,color:C.mid,letterSpacing:'0.07em',textTransform:'uppercase',fontFamily:C.P,marginBottom:8}}>{label}</div>
+  );
+
+  return(
+    <div style={{padding:'16px 20px',display:'flex',flexDirection:'column',gap:20}}>
+      {/* Wine Story/Description */}
+      <div>
+        <SL label="The Story"/>
+        <div style={{fontSize:16,color:C.ink2,fontFamily:C.P,lineHeight:1.75}}>{description}</div>
+      </div>
+
+      {/* Grape Varietal */}
+      {wine?.grapes&&wine.grapes.length>0&&(
+        <div>
+          <SL label="Grape Varietal"/>
+          <div style={{display:'flex',flexWrap:'wrap',gap:8}}>
+            {wine.grapes.map((g,i)=>(
+              <div key={i} style={{padding:'8px 14px',borderRadius:10,background:C.crSoft,border:`1px solid ${C.crDim}`}}>
+                <span style={{fontSize:15,fontWeight:600,color:C.cr,fontFamily:C.P}}>{g}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Wine Type */}
+      {wine?.type&&(
+        <div>
+          <SL label="Wine Type"/>
+          <div style={{fontSize:16,fontWeight:600,color:C.ink,fontFamily:C.P,textTransform:'capitalize'}}>{wine.type}</div>
+        </div>
+      )}
+
+      {/* Region */}
+      {(wine?.region||wine?.country)&&(
+        <div>
+          <SL label="Region"/>
+          <div style={{fontSize:16,fontWeight:600,color:C.ink,fontFamily:C.P}}>{wine.region}{wine.region&&wine.country?', ':''}{wine.country}</div>
+        </div>
+      )}
+
+      <style>{`@keyframes storySpin{to{transform:rotate(360deg)}}`}</style>
+    </div>
+  );
+}
+
+function DetailBuy({wine,nav}){
+  const [retailData, setRetailData] = React.useState(function() {
+    const region = localStorage.getItem('vinterest_region') || 'uk';
+    const cacheKey = 'vinterest_retail_' + ((wine && wine.name) ? wine.name.replace(/\s/g,'_') : '') + '_' + (wine && wine.vintage ? wine.vintage : 'nv') + '_' + region;
+    try { return JSON.parse(localStorage.getItem(cacheKey)); } catch(e) { return null; }
+  });
+  const [loadingRetail, setLoadingRetail] = React.useState(false);
+
+  React.useEffect(function() {
+    if (!wine || !wine.name || retailData) return;
+    setLoadingRetail(true);
+    fetchRetailData(wine.name, wine.vintage)
+      .then(function(d){ setRetailData(d); })
+      .catch(function(){})
+      .finally(function(){ setLoadingRetail(false); });
+  }, [wine && wine.name, wine && wine.vintage]);
+
+  const SL=({label})=>(
+    <div style={{fontSize:13,fontWeight:700,color:C.mid,letterSpacing:'0.07em',textTransform:'uppercase',fontFamily:C.P,marginBottom:8}}>{label}</div>
+  );
+
+  return(
+    <div style={{padding:'16px 20px',display:'flex',flexDirection:'column',gap:20}}>
       <div>
         <SL label="Where to Buy"/>
         {loadingRetail ? (
@@ -429,139 +457,8 @@ function DetailStory({wine,nav,existingRating=0}){
           </Card>
         ) : null}
       </div>
-
-      {/* Go Deeper */}
-      <div>
-        <SL label="Go Deeper"/>
-        <div style={{display:'flex',gap:8}}>
-          {[
-            {i:'globe',   l:wine?.region||'Region',           screen:'region'},
-            {i:'wine',    l:wine?.grapes?.[0]||'Varietal',    screen:'varietal'},
-            {i:'compass', l:'Similar Wines',                  screen:'similar'},
-          ].map((l,i)=>(
-            <Card key={i} onClick={()=>nav(l.screen)} style={{flex:1,padding:10,textAlign:'center',cursor:'pointer'}}>
-              <div style={{width:34,height:34,borderRadius:9,background:C.crSoft,display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 7px'}}>
-                <Icon n={l.i} sz={16} col={C.cr}/>
-              </div>
-              <div style={{fontSize:13,fontWeight:600,color:C.ink,fontFamily:C.P,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{l.l}</div>
-            </Card>
-          ))}
-        </div>
-      </div>
-
-      {existingRating>0
-        ?<div style={{textAlign:'center',padding:'12px',borderRadius:12,background:C.greenBg,border:`1px solid ${C.green}25`}}><span style={{fontSize:15,fontWeight:600,color:C.green,fontFamily:C.P}}>✓ You rated this wine {existingRating}/100</span></div>
-        :<Btn primary full onClick={()=>nav('identified')}>Rate This Wine</Btn>
-      }
-      <style>{`@keyframes storySpin{to{transform:rotate(360deg)}}`}</style>
-      <div style={{height:8}}/>
     </div>
   );
 }
 
-function DetailData({wine,nav,existingRating=0,matchPct}){
-  const notes=wine?.tasting_notes||['Black Cassis','Cedar','Violets','Tobacco','Graphite','Dark Plum'];
-  const vintage=wine?.vintage;
-
-  // Characteristics (same as DetailStory)
-  const charLbl=(v,lo,hi)=>v>=0.68?hi:v>=0.38?'Medium':lo;
-  const chars=wine?[
-    {label:'Body',      value:charLbl(wine.body??0.65,    'Light',    'Full')},
-    {label:'Tannins',   value:charLbl(wine.tannins??0.55, 'Silky',    'Grippy')},
-    {label:'Acidity',   value:charLbl(wine.acidity??0.60, 'Mellow',   'Zingy')},
-    {label:'Sweetness', value:charLbl(wine.sweetness??0.10,'Bone Dry','Sweet')},
-    ...(wine.abv?[{label:'ABV', value:`${wine.abv}%`}]:[]),
-  ]:[];
-
-  const [vintageInfo,setVintageInfo]=React.useState(null);
-  const [loadingVintage,setLoadingVintage]=React.useState(false);
-  React.useEffect(()=>{
-    if(!wine||!vintage) return;
-    const cacheKey=`vinterest_vintage_${(wine.name||'').replace(/\s/g,'_')}_${vintage}`;
-    const cached=localStorage.getItem(cacheKey);
-    if(cached){try{setVintageInfo(JSON.parse(cached));return;}catch(e){}}
-    setLoadingVintage(true);
-    const yr=new Date().getFullYear();
-    const prompt=`You are a sommelier. Assess the vintage quality and realistic drinking window for this specific wine. Wine: ${wine.name} ${vintage}. Type: ${wine.type||'red'}, Region: ${wine.region||''}, Country: ${wine.country||''}. Grapes: ${(wine.grapes||[]).join(', ')||'unknown'}. Body: ${(wine.body??0.65).toFixed(1)}, Tannins: ${(wine.tannins??0.55).toFixed(1)}, Acidity: ${(wine.acidity??0.60).toFixed(1)}, ABV: ${wine.abv||13}%. Return ONLY valid JSON (no markdown): {"vintage_rating":"Exceptional|Outstanding|Very Good|Good|Average","drink_from":${yr},"drink_to":2032,"peak_from":2025,"peak_to":2029,"note":"one concrete sentence on how this wine is developing right now and why. Do NOT include any numbers, decimals, or specific attribute values in the sentence."}`;
-    window.claude.complete({messages:[{role:'user',content:prompt}]})
-      .then(text=>{
-        let c=text.replace(/```json|```/g,'').trim();
-        const s=c.indexOf('{'),e=c.lastIndexOf('}');
-        if(s>=0&&e>s) c=c.slice(s,e+1);
-        const d=JSON.parse(c);
-        localStorage.setItem(cacheKey,JSON.stringify(d));
-        setVintageInfo(d);
-      })
-      .catch(()=>{})
-      .finally(()=>setLoadingVintage(false));
-  },[wine?.name,vintage]);
-  return(
-    <div style={{padding:'14px 20px',display:'flex',flexDirection:'column',gap:12}}>
-      {/* Match + Rating — side by side */}
-      <div style={{display:'flex',gap:10}}>
-        <div style={{flex:1,background:C.greenBg,borderRadius:16,padding:'18px 8px',textAlign:'center',border:`1px solid ${C.green}25`}}>
-          <div style={{fontSize:32,fontWeight:800,color:C.green,fontFamily:C.P,lineHeight:1}}>{matchPct!=null?`${matchPct}%`:'—'}</div>
-          <div style={{fontSize:13,fontWeight:600,color:C.green,fontFamily:C.P,marginTop:5,opacity:.8}}>Your Match</div>
-        </div>
-        {existingRating>0&&(
-          <div style={{flex:1,background:C.amberBg,borderRadius:16,padding:'18px 8px',textAlign:'center',border:`1px solid ${C.amber}25`}}>
-            <div style={{fontSize:32,fontWeight:800,color:C.amber,fontFamily:C.P,lineHeight:1}}>{existingRating}</div>
-            <div style={{fontSize:13,fontWeight:600,color:C.amber,fontFamily:C.P,marginTop:5,opacity:.8}}>Your Rating</div>
-          </div>
-        )}
-      </div>
-      <div style={{fontSize:15,color:C.mid,fontFamily:C.P,marginTop:2,textAlign:'center'}}>{[wine?.region,wine?.grapes?.[0],wine?.type?wine.type.charAt(0).toUpperCase()+wine.type.slice(1):null].filter(Boolean).join(' · ')}</div>
-      <Card style={{padding:12}}>
-        <div style={{fontSize:16,fontWeight:600,color:C.ink,fontFamily:C.P,marginBottom:8}}>Taste Profile</div>
-        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'6px 16px'}}>
-          {chars.map((ch,i)=>{
-            const val=wine[ch.label.toLowerCase()]??({Body:0.65,Tannins:0.55,Acidity:0.60,Sweetness:0.10}[ch.label]||0.5);
-            return(
-              <div key={i}>
-                <div style={{display:'flex',justifyContent:'space-between',marginBottom:3}}>
-                  <span style={{fontSize:13,color:C.mid,fontFamily:C.P}}>{ch.label}</span>
-                  <span style={{fontSize:13,fontWeight:600,color:C.ink,fontFamily:C.P}}>{ch.value}</span>
-                </div>
-                <Prog val={val} col={C.cr} h={4}/>
-              </div>
-            );
-          })}
-        </div>
-      </Card>
-      <Card style={{padding:12}}>
-        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:8}}>
-          <div style={{fontSize:16,fontWeight:600,color:C.ink,fontFamily:C.P}}>{vintage?`${vintage} Vintage`:'Vintage'}</div>
-          {loadingVintage&&<div style={{width:13,height:13,borderRadius:7,border:'2px solid rgba(0,0,0,0.07)',borderTopColor:C.cr,animation:'dataSpin .8s linear infinite'}}/>}
-        </div>
-        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8}}>
-          {[
-            {l:'Vintage Rating', v:vintageInfo?.vintage_rating||'—'},
-            {l:'Drink Window',   v:vintageInfo?(()=>{const yr=new Date().getFullYear();return`${vintageInfo.drink_from<=yr?'Now':vintageInfo.drink_from} – ${vintageInfo.drink_to}`;})():'—'},
-            {l:'Peak',           v:vintageInfo?`${vintageInfo.peak_from} – ${vintageInfo.peak_to}`:'—'},
-            {l:'ABV',            v:wine?.abv?`${wine.abv}%`:'—'},
-          ].map((d,i)=>(
-            <div key={i} style={{background:C.offWhite,borderRadius:8,padding:'8px 10px'}}>
-              <div style={{fontSize:15,color:C.mid,fontFamily:C.P,marginBottom:2}}>{d.l}</div>
-              <div style={{fontSize:17,fontWeight:600,color:C.ink,fontFamily:C.P}}>{d.v}</div>
-            </div>
-          ))}
-        </div>
-        {vintageInfo?.note&&(
-          <div style={{fontSize:15,color:C.ink2,fontFamily:C.P,lineHeight:1.55,marginTop:10,padding:'8px 10px',borderRadius:8,background:C.offWhite}}>{vintageInfo.note}</div>
-        )}
-        <style>{`@keyframes dataSpin{to{transform:rotate(360deg)}}`}</style>
-      </Card>
-      <Card style={{padding:12}}>
-        <div style={{fontSize:16,fontWeight:600,color:C.ink,fontFamily:C.P,marginBottom:7}}>Tasting Notes</div>
-        <div style={{display:'flex',flexWrap:'wrap',gap:5}}>
-          {notes.map((n,i)=>(
-            <span key={i} style={{padding:'4px 10px',borderRadius:20,background:i<3?C.crSoft:C.offWhite,color:i<3?C.cr:C.ink2,fontSize:15,fontFamily:C.P,fontWeight:500,border:`1px solid ${i<3?C.crDim:C.line}`}}>{n}</span>
-          ))}
-        </div>
-      </Card>
-      <div style={{height:8}}/>
-    </div>
-  );
-}
-
-Object.assign(window,{WineDetailScreen});
+Object.assign(window,{WineDetailScreen,DetailMerged,DetailStory,DetailBuy});

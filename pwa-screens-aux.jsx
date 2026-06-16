@@ -3,6 +3,7 @@
 function TasteProfileScreen({nav,back,showPro}){
   const [tab,setTab]=React.useState(0);
   const [genScripts,setGenScripts]=React.useState({});
+  const [scriptLength,setScriptLength]=React.useState(localStorage.getItem('vinterest_script_length')||'long');
   const [generating,setGenerating]=React.useState(null);
   const [copied,setCopied]=React.useState(false);
 
@@ -45,15 +46,18 @@ function TasteProfileScreen({nav,back,showPro}){
   // Auto-generate script from real wine data when tab opens
   React.useEffect(()=>{
     if(!tabWines.length) return;
-    const cacheKey=`vinterest_script_v2_${c.typeKey}_n${tabWines.length}`;
+    const keyLong=`vinterest_script_long_${c.typeKey}_n${tabWines.length}`;
+    const keyShort=`vinterest_script_short_${c.typeKey}_n${tabWines.length}`;
+    const cacheKey=scriptLength==='long'?keyLong:keyShort;
     const cached=localStorage.getItem(cacheKey);
     if(cached){setGenScripts(s=>({...s,[c.typeKey]:cached}));return;}
-    if(genScripts[c.typeKey]||generating===c.typeKey) return;
+    if(generating===c.typeKey) return;
     setGenerating(c.typeKey);
     const wineList=tabWines.slice(0,8).map(w=>
-      `${w.name}${w.vintage?' '+w.vintage:''} from ${w.region||w.country||'unknown'}${w.rating?' (rated '+w.rating+'/100)':''}`
+      `${w.name}${w.vintage?' '+w.vintage:''} from ${w.region||w.country||'unknown'}`
     ).join('; ');
-    const prompt=`I've scanned and rated these ${c.label.toLowerCase()} wines: ${wineList}. Based only on this data, write a short natural first-person sommelier script (2 sentences max) I could say to a restaurant sommelier. Reflect my apparent style, preferred regions, and price range. Return ONLY the script text in double quotes — nothing else.`;
+    const lengthInstructions=scriptLength==='short'?'1 sentence, ultra-concise (under 20 words), and mention your typical budget range':'2 sentences max';
+    const prompt=`I've scanned these ${c.label.toLowerCase()} wines: ${wineList}. Based ONLY on the wines I've chosen and their regions, write a ${lengthInstructions} natural first-person sommelier script I could say to a restaurant sommelier. Reflect my apparent style and preferred regions. Return ONLY the script text in double quotes — nothing else.`;
     window.claude.complete({messages:[{role:'user',content:prompt}]})
       .then(text=>{
         const script=text.trim();
@@ -62,7 +66,7 @@ function TasteProfileScreen({nav,back,showPro}){
       })
       .catch(()=>{})
       .finally(()=>setGenerating(null));
-  },[tab,allWines.length]);
+  },[tab,allWines.length,scriptLength]);
 
   if(allWines.length===0) return(
     <div style={{flex:1,display:'flex',flexDirection:'column',background:C.bg,overflow:'hidden'}}>
@@ -122,9 +126,20 @@ function TasteProfileScreen({nav,back,showPro}){
 
         {/* Sommelier script card */}
         <Card style={{background:c.col+'0D',border:`1.5px solid ${c.col}30`,padding:14}}>
-          <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:10}}>
-            <Icon n="message" sz={15} col={c.col}/>
-            <span style={{fontSize:17,fontWeight:700,color:C.ink,fontFamily:C.P}}>Your {c.label} Script</span>
+          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:10}}>
+            <div style={{display:'flex',alignItems:'center',gap:8}}>
+              <Icon n="message" sz={15} col={c.col}/>
+              <span style={{fontSize:17,fontWeight:700,color:C.ink,fontFamily:C.P}}>Your {c.label} Script</span>
+            </div>
+            {tabWines.length>0&&!isGenerating&&(
+              <div style={{display:'flex',gap:4,background:C.offWhite,borderRadius:6,padding:'3px 4px',border:`1px solid ${C.line}`}}>
+                {['short','long'].map(len=>(
+                  <div key={len} onClick={()=>{setScriptLength(len);localStorage.setItem('vinterest_script_length',len);}} style={{padding:'4px 8px',borderRadius:4,background:scriptLength===len?C.cr:'transparent',cursor:'pointer'}}>
+                    <span style={{fontSize:13,fontWeight:600,color:scriptLength===len?'#fff':C.mid,fontFamily:C.P}}>{len.charAt(0).toUpperCase()+len.slice(1)}</span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {tabWines.length===0?(
@@ -263,18 +278,41 @@ function MyWinesScreen({nav,back}){
   const [filter,setFilter]=React.useState('all');
   const [sort,setSort]=React.useState('recent');
   const [wines,setWines]=React.useState(()=>WineHistory.getAll());
+  const [activePills,setActivePills]=React.useState([]);
 
   const typeColors={red:'#8B1A2F',white:'#B8963E',rosé:'#C47A8A',rose:'#C47A8A',sparkling:'#5E8FA8'};
 
   const filtered=wines.filter(w=>{
-    if(filter==='all') return true;
-    const t=(w.type||'').toLowerCase().replace('é','e');
-    return t===filter;
+    if(filter!=='all'){
+      const t=(w.type||'').toLowerCase().replace('é','e');
+      if(t!==filter) return false;
+    }
+    if(activePills.length===0) return true;
+    return activePills.every(p=>{
+      if(p.type==='grape') return w.grapes&&w.grapes.includes(p.value);
+      if(p.type==='region') return w.region===p.value;
+      if(p.type==='country') return w.country===p.value;
+      if(p.type==='vintage') return w.vintage===p.value;
+      return true;
+    });
   }).sort((a,b)=>{
     if(sort==='rating') return (b.rating||0)-(a.rating||0);
     if(sort==='name') return (a.name||'').localeCompare(b.name||'');
     return new Date(b.last_scanned||b.scanned_at||0)-new Date(a.last_scanned||a.scanned_at||0);
   });
+
+  const togglePill=(type,value)=>{
+    const existing=activePills.find(p=>p.type===type&&p.value===value);
+    if(existing){
+      setActivePills(activePills.filter(p=>!(p.type===type&&p.value===value)));
+    }else{
+      setActivePills([...activePills,{type,value}]);
+    }
+  };
+
+  const removePill=(type,value)=>{
+    setActivePills(activePills.filter(p=>!(p.type===type&&p.value===value)));
+  };
 
   const TYPE_COLS={all:C.cr,red:'#8B1A2F',white:'#B8963E',rose:'#C47A8A',sparkling:'#5E8FA8'};
   const filterTabs=[{k:'all',l:'All'},{k:'red',l:'Reds'},{k:'white',l:'Whites'},{k:'rose',l:'Rosé'},{k:'sparkling',l:'Sparkling'}];
@@ -309,6 +347,17 @@ function MyWinesScreen({nav,back}){
             ))}
           </div>
         </div>
+        {/* Active pill filters */}
+        {activePills.length>0&&(
+          <div style={{marginBottom:12,display:'flex',flexWrap:'wrap',gap:6}}>
+            {activePills.map((p,i)=>(
+              <div key={i} style={{display:'flex',alignItems:'center',gap:6,padding:'4px 10px',borderRadius:20,background:C.crSoft,border:`1px solid ${C.crDim}`}}>
+                <span style={{fontSize:14,fontWeight:600,color:C.cr,fontFamily:C.P}}>{p.value}</span>
+                <div onClick={()=>removePill(p.type,p.value)} style={{width:18,height:18,borderRadius:9,background:C.cr,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',color:'#fff',fontSize:12,fontWeight:700}}>×</div>
+              </div>
+            ))}
+          </div>
+        )}
         {/* Stats strip */}
         {wines.length>0&&(
           <div style={{display:'flex',borderBottom:`1px solid ${C.line}`,padding:'10px 0',marginBottom:0}}>
@@ -375,8 +424,27 @@ function MyWinesScreen({nav,back}){
                         <div style={{fontSize:17,fontWeight:700,color:C.ink,fontFamily:C.P,lineHeight:1.2,flex:1}}>{w.name||'Unknown Wine'}</div>
                         <div style={{fontSize:15,fontWeight:600,color:col,fontFamily:C.P,textTransform:'capitalize',flexShrink:0,padding:'2px 8px',borderRadius:20,background:col+'12'}}>{w.type||'Red'}</div>
                       </div>
-                      <div style={{fontSize:15,color:C.mid,fontFamily:C.P,marginTop:2}}>
-                        {[w.region,w.country].filter(Boolean).join(' · ')}{w.vintage?` · ${w.vintage}`:''}
+                      <div style={{fontSize:15,color:C.mid,fontFamily:C.P,marginTop:4,display:'flex',flexWrap:'wrap',gap:6}}>
+                        {w.grapes&&w.grapes.length>0&&(
+                          <div onClick={e=>{e.stopPropagation();togglePill('grape',w.grapes[0]);}} style={{padding:'4px 10px',borderRadius:20,background:activePills.find(p=>p.type==='grape'&&p.value===w.grapes[0])?'#D5C0E840':'#D5C0E815',border:`1px solid ${activePills.find(p=>p.type==='grape'&&p.value===w.grapes[0])?'#9B4C6F':'#9B4C6F40'}`,cursor:'pointer'}}>
+                            <span style={{fontSize:13,fontWeight:500,color:activePills.find(p=>p.type==='grape'&&p.value===w.grapes[0])?'#9B4C6F':C.ink2,fontFamily:C.P}}>{w.grapes[0]}</span>
+                          </div>
+                        )}
+                        {w.region&&(
+                          <div onClick={e=>{e.stopPropagation();togglePill('region',w.region);}} style={{padding:'4px 10px',borderRadius:20,background:activePills.find(p=>p.type==='region'&&p.value===w.region)?'#E8D5C440':'#E8D5C415',border:`1px solid ${activePills.find(p=>p.type==='region'&&p.value===w.region)?'#B8963E':'#B8963E40'}`,cursor:'pointer'}}>
+                            <span style={{fontSize:13,fontWeight:500,color:activePills.find(p=>p.type==='region'&&p.value===w.region)?'#B8963E':C.ink2,fontFamily:C.P}}>{w.region}</span>
+                          </div>
+                        )}
+                        {w.country&&(
+                          <div onClick={e=>{e.stopPropagation();togglePill('country',w.country);}} style={{padding:'4px 10px',borderRadius:20,background:activePills.find(p=>p.type==='country'&&p.value===w.country)?'#C5E5E240':'#C5E5E215',border:`1px solid ${activePills.find(p=>p.type==='country'&&p.value===w.country)?'#5E8FA8':'#5E8FA840'}`,cursor:'pointer'}}>
+                            <span style={{fontSize:13,fontWeight:500,color:activePills.find(p=>p.type==='country'&&p.value===w.country)?'#5E8FA8':C.ink2,fontFamily:C.P}}>{w.country}</span>
+                          </div>
+                        )}
+                        {w.vintage&&(
+                          <div onClick={e=>{e.stopPropagation();togglePill('vintage',w.vintage);}} style={{padding:'4px 10px',borderRadius:20,background:activePills.find(p=>p.type==='vintage'&&p.value===w.vintage)?C.greenBg:C.greenBg.replace('0.15','0.08'),border:`1px solid ${activePills.find(p=>p.type==='vintage'&&p.value===w.vintage)?C.green:C.green+'40'}`,cursor:'pointer'}}>
+                            <span style={{fontSize:13,fontWeight:500,color:activePills.find(p=>p.type==='vintage'&&p.value===w.vintage)?C.green:C.ink2,fontFamily:C.P}}>{w.vintage}</span>
+                          </div>
+                        )}
                       </div>
                       {/* Score */}
                       <div style={{display:'flex',alignItems:'center',gap:8,marginTop:5}}>
