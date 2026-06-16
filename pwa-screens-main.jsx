@@ -16,10 +16,10 @@ function ScanHomeScreen({nav,showPro}){
       <div style={{padding:'18px 20px 16px',display:'flex',justifyContent:'space-between',alignItems:'center',background:C.white,borderBottom:`1px solid ${C.line}`}}>
         <img src="logo.png" alt="Vinterest" style={{height:28,width:'auto',display:'block'}}/>
         {!isPro&&!atLimit&&scansLeft<=3&&scansLeft>0&&(
-          <div style={{fontSize:12,color:C.amber,fontWeight:600,fontFamily:C.P,background:C.amberBg,padding:'4px 10px',borderRadius:20,border:`1px solid ${C.amber}30`}}>{scansLeft} scan{scansLeft!==1?'s':''} left</div>
+          <div style={{fontSize:13,color:C.amber,fontWeight:600,fontFamily:C.P,background:C.amberBg,padding:'4px 10px',borderRadius:20,border:`1px solid ${C.amber}30`}}>{scansLeft} scan{scansLeft!==1?'s':''} left</div>
         )}
         {!isPro&&atLimit&&(
-          <div onClick={()=>showPro('unlimited-scans')} style={{fontSize:12,fontWeight:700,fontFamily:C.P,background:'linear-gradient(135deg,#9B5E00,#C4870A)',padding:'5px 12px',borderRadius:20,cursor:'pointer',color:'#fff'}}>Upgrade</div>
+          <div onClick={()=>showPro('unlimited-scans')} style={{fontSize:13,fontWeight:700,fontFamily:C.P,background:'linear-gradient(135deg,#9B5E00,#C4870A)',padding:'5px 12px',borderRadius:20,cursor:'pointer',color:'#fff'}}>Upgrade</div>
         )}
       </div>
       <div style={{padding:'16px 20px',display:'flex',flexDirection:'column',gap:12}}>
@@ -31,7 +31,7 @@ function ScanHomeScreen({nav,showPro}){
           </div>
           <div style={{flex:1,zIndex:1}}>
             <div style={{fontSize:22,fontWeight:700,color:atLimit?'rgba(255,255,255,0.4)':'#fff',fontFamily:C.P,lineHeight:1.2}}>{atLimit?'Free scans used up':'Scan a Bottle'}</div>
-            <div style={{fontSize:15,color:'rgba(255,255,255,0.4)',fontFamily:C.P,marginTop:3}}>{atLimit?'Upgrade for unlimited scans':'Point at any wine label to identify'}</div>
+            <div style={{fontSize:16,color:'rgba(255,255,255,0.4)',fontFamily:C.P,marginTop:3}}>{atLimit?'Upgrade for unlimited scans':'Point at any wine label to identify'}</div>
           </div>
           {!atLimit&&<Icon n="chevron" sz={16} col="rgba(255,255,255,0.3)"/>}
         </div>
@@ -43,10 +43,10 @@ function ScanHomeScreen({nav,showPro}){
             </div>
             <div style={{flex:1}}>
               <div style={{display:'flex',alignItems:'center',gap:8}}>
-                <span style={{fontSize:16,fontWeight:600,color:C.ink,fontFamily:C.P}}>Wine List Scan</span>
-                <span style={{fontSize:10,fontWeight:700,color:'#fff',background:'linear-gradient(135deg,#9B5E00,#C4870A)',borderRadius:8,padding:'2px 7px'}}>UNLOCKED</span>
+                <span style={{fontSize:17,fontWeight:600,color:C.ink,fontFamily:C.P}}>Wine List Scan</span>
+                <span style={{fontSize:12,fontWeight:700,color:'#fff',background:'linear-gradient(135deg,#9B5E00,#C4870A)',borderRadius:8,padding:'2px 7px'}}>UNLOCKED</span>
               </div>
-              <div style={{fontSize:13,color:C.mid,fontFamily:C.P,marginTop:1}}>Snap a restaurant menu for instant picks</div>
+              <div style={{fontSize:15,color:C.mid,fontFamily:C.P,marginTop:1}}>Snap a restaurant menu for instant picks</div>
             </div>
             <Icon n="chevron" sz={14} col={C.mid}/>
           </div>
@@ -57,10 +57,10 @@ function ScanHomeScreen({nav,showPro}){
             </div>
             <div style={{flex:1}}>
               <div style={{display:'flex',alignItems:'center',gap:8}}>
-                <span style={{fontSize:16,fontWeight:600,color:C.ink2,fontFamily:C.P}}>Wine List Scan</span>
+                <span style={{fontSize:17,fontWeight:600,color:C.ink2,fontFamily:C.P}}>Wine List Scan</span>
                 <ProBadge/>
               </div>
-              <div style={{fontSize:13,color:C.mid,fontFamily:C.P,marginTop:1}}>Snap a restaurant menu for instant picks</div>
+              <div style={{fontSize:15,color:C.mid,fontFamily:C.P,marginTop:1}}>Snap a restaurant menu for instant picks</div>
             </div>
             <Icon n="lock" sz={14} col={C.mid}/>
           </div>
@@ -70,7 +70,7 @@ function ScanHomeScreen({nav,showPro}){
           <div style={{background:C.white,borderRadius:16,padding:'28px 20px',textAlign:'center',border:`1px solid ${C.line}`}}>
             <div style={{fontSize:46,marginBottom:10}}>🍷</div>
             <div style={{fontSize:20,fontWeight:700,color:C.ink,fontFamily:C.P,marginBottom:6}}>Your cellar is empty</div>
-            <div style={{fontSize:15,color:C.mid,fontFamily:C.P,lineHeight:1.65,marginBottom:16}}>Scan and rate your first bottle to start building your personal taste profile.</div>
+            <div style={{fontSize:16,color:C.mid,fontFamily:C.P,lineHeight:1.65,marginBottom:16}}>Scan and rate your first bottle to start building your personal taste profile.</div>
             <div style={{display:'flex',gap:10,justifyContent:'center'}}>
               <Btn primary onClick={handleScanCTA}>Scan First Bottle</Btn>
               <Btn onClick={()=>nav('learn')}>Take a Quiz</Btn>
@@ -79,8 +79,8 @@ function ScanHomeScreen({nav,showPro}){
         ):(
           <>
             <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginTop:4}}>
-              <span style={{fontSize:13,fontWeight:600,color:C.mid,letterSpacing:'0.08em',textTransform:'uppercase',fontFamily:C.P}}>My Wines · {wines.length}</span>
-              <span onClick={()=>nav('mywines')} style={{fontSize:14,fontWeight:600,color:C.cr,fontFamily:C.P,cursor:'pointer'}}>Manage →</span>
+              <span style={{fontSize:15,fontWeight:600,color:C.mid,letterSpacing:'0.08em',textTransform:'uppercase',fontFamily:C.P}}>My Wines · {wines.length}</span>
+              <span onClick={()=>nav('mywines')} style={{fontSize:15,fontWeight:600,color:C.cr,fontFamily:C.P,cursor:'pointer'}}>Manage →</span>
             </div>
             {wines.map((w,i)=>(
               <Card key={i} style={{padding:10,cursor:'pointer'}} onClick={()=>{
@@ -92,16 +92,16 @@ function ScanHomeScreen({nav,showPro}){
                     <Icon n="wine" sz={17} col={colFor(w)}/>
                   </div>
                   <div style={{flex:1,minWidth:0}}>
-                    <div style={{fontSize:16,fontWeight:600,color:C.ink,fontFamily:C.P,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{w.name}</div>
-                    <div style={{fontSize:13,color:C.mid,fontFamily:C.P}}>{[w.region,w.country].filter(Boolean)[0]||''} · {w.vintage||'NV'}</div>
-                    {w.type&&<div style={{fontSize:11,color:colFor(w),fontFamily:C.P,fontWeight:600,textTransform:'capitalize',marginTop:1}}>{w.type}</div>}
+                    <div style={{fontSize:17,fontWeight:600,color:C.ink,fontFamily:C.P,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{w.name}</div>
+                    <div style={{fontSize:15,color:C.mid,fontFamily:C.P}}>{[w.region,w.country].filter(Boolean)[0]||''} · {w.vintage||'NV'}</div>
+                    {w.type&&<div style={{fontSize:13,color:colFor(w),fontFamily:C.P,fontWeight:600,textTransform:'capitalize',marginTop:1}}>{w.type}</div>}
                   </div>
                   <div style={{display:'flex',flexDirection:'column',alignItems:'flex-end',gap:3,flexShrink:0}}>
                     {w.rating>0&&<div style={{display:'flex',alignItems:'baseline',gap:1}}>
                       <span style={{fontSize:17,fontWeight:700,color:C.amber,fontFamily:C.P}}>{w.rating}</span>
-                      <span style={{fontSize:11,color:C.mid,fontFamily:C.P}}>/100</span>
+                      <span style={{fontSize:13,color:C.mid,fontFamily:C.P}}>/100</span>
                     </div>}
-                    {w.times_consumed>1&&<span style={{fontSize:11,color:C.mid,fontFamily:C.P}}>×{w.times_consumed}</span>}
+                    {w.times_consumed>1&&<span style={{fontSize:13,color:C.mid,fontFamily:C.P}}>×{w.times_consumed}</span>}
                   </div>
                 </div>
               </Card>
@@ -110,7 +110,7 @@ function ScanHomeScreen({nav,showPro}){
         )}
         {wines.length===0&&(
           <>
-            <div style={{fontSize:13,fontWeight:600,color:C.mid,letterSpacing:'0.08em',textTransform:'uppercase',fontFamily:C.P,marginTop:4}}>Get Started</div>
+            <div style={{fontSize:15,fontWeight:600,color:C.mid,letterSpacing:'0.08em',textTransform:'uppercase',fontFamily:C.P,marginTop:4}}>Get Started</div>
             {[
               {emoji:'🎓',t:'Take a Wine Quiz',s:'Earn XP and learn something new',dest:'learn'},
               {emoji:'📖',t:'5 taste terms to know',s:'Understand any wine in 2 minutes',dest:'article'},
@@ -118,8 +118,8 @@ function ScanHomeScreen({nav,showPro}){
               <Card key={i} onClick={()=>nav(a.dest)} style={{display:'flex',alignItems:'center',gap:12,padding:14,cursor:'pointer'}}>
                 <div style={{width:44,height:44,borderRadius:12,background:C.offWhite,display:'flex',alignItems:'center',justifyContent:'center',fontSize:22,flexShrink:0}}>{a.emoji}</div>
                 <div style={{flex:1}}>
-                  <div style={{fontSize:16,fontWeight:600,color:C.ink,fontFamily:C.P}}>{a.t}</div>
-                  <div style={{fontSize:13,color:C.mid,fontFamily:C.P,marginTop:1}}>{a.s}</div>
+                  <div style={{fontSize:17,fontWeight:600,color:C.ink,fontFamily:C.P}}>{a.t}</div>
+                  <div style={{fontSize:15,color:C.mid,fontFamily:C.P,marginTop:1}}>{a.s}</div>
                 </div>
                 <Icon n="chevron" sz={14} col={C.mid}/>
               </Card>
@@ -256,7 +256,7 @@ function ScanScreen({nav,back}){
         <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:12}}>
           <div style={{width:44,height:44,borderRadius:22,border:'3px solid rgba(255,255,255,0.1)',borderTopColor:C.cr,animation:'vspin 0.85s linear infinite'}}/>
           <span style={{fontSize:19,fontWeight:700,color:'#fff',fontFamily:C.P}}>{mode==='list'?'Analysing wine list…':'Analysing label…'}</span>
-          <span style={{fontSize:15,color:'rgba(255,255,255,0.4)',fontFamily:C.P}}>Identifying {mode==='list'?'wines':'wine'} with AI</span>
+          <span style={{fontSize:16,color:'rgba(255,255,255,0.4)',fontFamily:C.P}}>Identifying {mode==='list'?'wines':'wine'} with AI</span>
         </div>
         <style>{`@keyframes vspin{to{transform:rotate(360deg)}}`}</style>
       </div>
@@ -272,7 +272,7 @@ function ScanScreen({nav,back}){
       ):(
         <div style={{position:'absolute',inset:0,background:'linear-gradient(135deg,#1a1a1a,#2d1b2e)',display:'flex',alignItems:'center',justifyContent:'center',flexDirection:'column',gap:8}}>
           <Icon n="camera" sz={42} col="rgba(255,255,255,0.18)"/>
-          <span style={{fontSize:15,color:'rgba(255,255,255,0.3)',fontFamily:C.P}}>Camera unavailable in preview</span>
+          <span style={{fontSize:16,color:'rgba(255,255,255,0.3)',fontFamily:C.P}}>Camera unavailable in preview</span>
         </div>
       )}
 
@@ -305,7 +305,7 @@ function ScanScreen({nav,back}){
           ))}
           {/* Instruction inside frame */}
           <div style={{position:'absolute',bottom:16,left:0,right:0,textAlign:'center',zIndex:2}}>
-            <span style={{fontSize:15,color:'rgba(255,255,255,0.7)',fontFamily:C.P,background:'rgba(0,0,0,0.48)',padding:'5px 14px',borderRadius:20,backdropFilter:'blur(4px)'}}>
+            <span style={{fontSize:16,color:'rgba(255,255,255,0.7)',fontFamily:C.P,background:'rgba(0,0,0,0.48)',padding:'5px 14px',borderRadius:20,backdropFilter:'blur(4px)'}}>
               {mode==='list'?'Frame the wine list':'Frame the wine label'}
             </span>
           </div>
@@ -317,7 +317,7 @@ function ScanScreen({nav,back}){
         {/* Mode toggle */}
         <div style={{display:'inline-flex',background:'rgba(0,0,0,0.55)',borderRadius:10,overflow:'hidden',backdropFilter:'blur(12px)'}}>
           {['Bottle','Wine List'].map((m,i)=>(
-            <div key={i} onClick={()=>setMode(i===0?'bottle':'list')} style={{padding:'10px 24px',background:(i===0?mode==='bottle':mode==='list')?C.cr:'transparent',fontSize:16,fontWeight:600,color:(i===0?mode==='bottle':mode==='list')?'#fff':'rgba(255,255,255,0.45)',fontFamily:C.P,cursor:'pointer',transition:'background .18s'}}>{m}</div>
+            <div key={i} onClick={()=>setMode(i===0?'bottle':'list')} style={{padding:'10px 24px',background:(i===0?mode==='bottle':mode==='list')?C.cr:'transparent',fontSize:17,fontWeight:600,color:(i===0?mode==='bottle':mode==='list')?'#fff':'rgba(255,255,255,0.45)',fontFamily:C.P,cursor:'pointer',transition:'background .18s'}}>{m}</div>
           ))}
         </div>
         {/* Capture button */}
@@ -376,7 +376,11 @@ function WineIdentifiedScreen({nav,back}){
     let h=0; for(let i=0;i<name.length;i++) h=(h*31+name.charCodeAt(i))&0xffff;
     return 180+(h%2820);
   },[wine?.name]);
-  const matchPct     = confidence ? Math.round(Math.min(0.98,confidence)*100) : 94;
+  const matchPct=React.useMemo(()=>{
+    if(!wine) return 94;
+    const dna=calcMatchScore(wine,WineHistory.getAll());
+    return dna??(confidence?Math.round(Math.min(0.98,confidence)*100):94);
+  },[wine?.name]);
 
   const isDemo = scanData.demo === true;
   const scanReason = scanData.reason || '';
@@ -388,7 +392,7 @@ function WineIdentifiedScreen({nav,back}){
         <div style={{background:'#FFF3CD',borderBottom:'1px solid #FFE082',padding:'10px 16px',display:'flex',alignItems:'flex-start',gap:10,flexShrink:0}}>
           <span style={{fontSize:19,flexShrink:0}}>⚠️</span>
           <div style={{flex:1}}>
-            <div style={{fontSize:15,fontWeight:600,color:'#7A5200',fontFamily:C.P}}>
+            <div style={{fontSize:16,fontWeight:600,color:'#7A5200',fontFamily:C.P}}>
               {scanReason==='no_wine_label'&&'Label not detected — move closer and retake'}
               {scanReason==='camera_not_ready'&&'Point camera at a label and tap capture'}
               {scanReason&&!['camera_not_ready','no_wine_label'].includes(scanReason)&&`Error: ${scanReason.slice(0,80)}`}
@@ -397,7 +401,7 @@ function WineIdentifiedScreen({nav,back}){
             {(scanReason==='no_wine_label'||scanReason==='camera_not_ready')&&(
               <div onClick={()=>nav('camera')} style={{marginTop:6,display:'inline-flex',alignItems:'center',gap:5,padding:'6px 14px',borderRadius:20,background:'#8B1A2F',cursor:'pointer'}}>
                 <Icon n="camera" sz={12} col="#fff"/>
-                <span style={{fontSize:14,fontWeight:700,color:'#fff',fontFamily:C.P}}>Try Again</span>
+                <span style={{fontSize:15,fontWeight:700,color:'#fff',fontFamily:C.P}}>Try Again</span>
               </div>
             )}
           </div>
@@ -409,7 +413,7 @@ function WineIdentifiedScreen({nav,back}){
         </div>
         <div style={{flex:1}}>
           <div style={{fontSize:19,fontWeight:700,color:'#fff',fontFamily:C.P}}>Wine Identified!</div>
-          <div style={{fontSize:14,color:'rgba(255,255,255,0.65)',fontFamily:C.P}}>Tap for full details</div>
+          <div style={{fontSize:15,color:'rgba(255,255,255,0.65)',fontFamily:C.P}}>Tap for full details</div>
         </div>
         <div onClick={back} style={{cursor:'pointer'}}><Icon n="back" sz={20} col="rgba(255,255,255,0.6)"/></div>
       </div>
@@ -422,7 +426,7 @@ function WineIdentifiedScreen({nav,back}){
             </div>
             <div style={{flex:1}}>
               <div style={{fontSize:22,fontWeight:700,color:C.ink,fontFamily:C.P,lineHeight:1.2}}>{displayName}</div>
-              <div style={{fontSize:15,color:C.mid,fontFamily:C.P,marginTop:2}}>{displaySub}</div>
+              <div style={{fontSize:16,color:C.mid,fontFamily:C.P,marginTop:2}}>{displaySub}</div>
               <div style={{display:'flex',gap:5,marginTop:8,flexWrap:'wrap'}}>
                 <Pill active sm style={{textTransform:'capitalize'}}>{wine?.type||'Red'}</Pill>{displayGrape&&<Pill sm>{displayGrape}</Pill>}
               </div>
@@ -436,15 +440,15 @@ function WineIdentifiedScreen({nav,back}){
             {l:'Price Range',v:displayPrice,sub:null,col:C.ink2,bg:C.white}].map((s,i)=>(
             <div key={i} style={{flex:1,background:s.bg,borderRadius:12,padding:'10px 6px',textAlign:'center',border:`1px solid ${C.line}`}}>
               <div style={{fontSize:19,fontWeight:700,color:s.col,fontFamily:C.P}}>{s.v}</div>
-              <div style={{fontSize:9.5,color:C.mid,fontFamily:C.P,marginTop:1,lineHeight:1.3}}>{s.l}</div>
-              {s.sub&&<div style={{fontSize:9,color:C.mid,fontFamily:C.P,opacity:0.75}}>{s.sub}</div>}
+              <div style={{fontSize:12,color:C.mid,fontFamily:C.P,marginTop:1,lineHeight:1.3}}>{s.l}</div>
+              {s.sub&&<div style={{fontSize:12,color:C.mid,fontFamily:C.P,opacity:0.75}}>{s.sub}</div>}
             </div>
           ))}
         </div>
 
         <Card style={{background:C.greenBg,boxShadow:'none',border:`1px solid ${C.green}25`,padding:12}}>
-          <div style={{fontSize:15,fontWeight:600,color:C.green,fontFamily:C.P,marginBottom:4}}>Why you'll love this</div>
-          <div style={{fontSize:15,color:C.ink2,fontFamily:C.P,lineHeight:1.55}}>{wine?.why_you_will_like_this?.trim()||(wine?`This ${wine.type||'red'} from ${wine.region||wine.country||'the region'} aligns well with your taste profile.`:'Full-bodied with dark fruit and earthy notes — matches your preference for structured reds.')}</div>
+          <div style={{fontSize:16,fontWeight:600,color:C.green,fontFamily:C.P,marginBottom:4}}>Why you'll love this</div>
+          <div style={{fontSize:16,color:C.ink2,fontFamily:C.P,lineHeight:1.55}}>{wine?.why_you_will_like_this?.trim()||(wine?`This ${wine.type||'red'} from ${wine.region||wine.country||'the region'} aligns well with your taste profile.`:'Full-bodied with dark fruit and earthy notes — matches your preference for structured reds.')}</div>
         </Card>
 
         {/* WineDNA fit score */}
@@ -459,8 +463,8 @@ function WineIdentifiedScreen({nav,back}){
                 <svg viewBox="0 0 24 24" width={16} height={16}><path d="M8 4C8 4 13 7 13 12C13 17 8 20 8 20" stroke="#7B5EA7" strokeWidth="1.8" fill="none" strokeLinecap="round"/><path d="M16 4C16 4 11 7 11 12C11 17 16 20 16 20" stroke="#7B5EA7" strokeWidth="1.8" fill="none" strokeLinecap="round"/><line x1="8.5" y1="12" x2="15.5" y2="12" stroke="#7B5EA7" strokeWidth="1.2" strokeLinecap="round" opacity="0.5"/></svg>
               </div>
               <div style={{flex:1}}>
-                <div style={{fontSize:13,fontWeight:700,color:'#7B5EA7',fontFamily:C.P}}>WineDNA · New Territory</div>
-                <div style={{fontSize:12,color:C.mid,fontFamily:C.P,marginTop:1}}>First {wine.type||'red'} in your collection — a blank slate.</div>
+                <div style={{fontSize:15,fontWeight:700,color:'#7B5EA7',fontFamily:C.P}}>WineDNA · New Territory</div>
+                <div style={{fontSize:13,color:C.mid,fontFamily:C.P,marginTop:1}}>First {wine.type||'red'} in your collection — a blank slate.</div>
               </div>
             </div>
           );
@@ -483,16 +487,16 @@ function WineIdentifiedScreen({nav,back}){
             <div style={{padding:'12px 14px',borderRadius:14,background:accentBg,border:`1px solid ${accentCol}25`}}>
               <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:10}}>
                 <svg viewBox="0 0 24 24" width={15} height={15}><path d="M8 4C8 4 13 7 13 12C13 17 8 20 8 20" stroke={accentCol} strokeWidth="1.8" fill="none" strokeLinecap="round"/><path d="M16 4C16 4 11 7 11 12C11 17 16 20 16 20" stroke={accentCol} strokeWidth="1.8" fill="none" strokeLinecap="round"/><line x1="8.5" y1="12" x2="15.5" y2="12" stroke={accentCol} strokeWidth="1.2" strokeLinecap="round" opacity="0.5"/></svg>
-                <div style={{fontSize:13,fontWeight:700,color:accentCol,fontFamily:C.P}}>WineDNA · {label}</div>
+                <div style={{fontSize:15,fontWeight:700,color:accentCol,fontFamily:C.P}}>WineDNA · {label}</div>
               </div>
               <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:5}}>
                 {dnaAttrs.map((a,i)=>{
                   const match=attrMatch(a.w,a.u);
                   return(
                     <div key={i} style={{textAlign:'center',padding:'6px 4px',borderRadius:8,background:match?`${C.green}10`:`${accentCol}08`,border:`1px solid ${match?C.green:accentCol}20`}}>
-                      <div style={{fontSize:10,color:C.mid,fontFamily:C.P,marginBottom:1}}>{a.l}</div>
-                      <div style={{fontSize:11,fontWeight:700,color:match?C.green:C.ink2,fontFamily:C.P}}>You {lbl(a.u)}</div>
-                      <div style={{fontSize:10,color:C.mid,fontFamily:C.P}}>Wine {lbl(a.w)}{match?' ✓':''}</div>
+                      <div style={{fontSize:12,color:C.mid,fontFamily:C.P,marginBottom:1}}>{a.l}</div>
+                      <div style={{fontSize:13,fontWeight:700,color:match?C.green:C.ink2,fontFamily:C.P}}>You {lbl(a.u)}</div>
+                      <div style={{fontSize:12,color:C.mid,fontFamily:C.P}}>Wine {lbl(a.w)}{match?' ✓':''}</div>
                     </div>
                   );
                 })}
@@ -503,12 +507,12 @@ function WineIdentifiedScreen({nav,back}){
 
         {/* Score slider rating */}
         <Card style={{padding:'14px 16px'}}>
-          <div style={{fontSize:15,fontWeight:600,color:C.ink,fontFamily:C.P,marginBottom:12}}>Rate This Wine</div>
+          <div style={{fontSize:16,fontWeight:600,color:C.ink,fontFamily:C.P,marginBottom:12}}>Rate This Wine</div>
           {/* Quick preset buttons */}
           <div style={{display:'flex',gap:5,marginBottom:12}}>
             {[20,40,60,80,100].map(p=>(
               <div key={p} onClick={()=>handlePreset(p)} style={{flex:1,padding:'7px 2px',borderRadius:9,border:`1.5px solid ${score===p?C.cr:C.line}`,background:score===p?C.cr:'transparent',textAlign:'center',cursor:'pointer',transition:'all .15s'}}>
-                <span style={{fontSize:16,fontWeight:700,color:score===p?'#fff':C.mid,fontFamily:C.P}}>{p}</span>
+                <span style={{fontSize:17,fontWeight:700,color:score===p?'#fff':C.mid,fontFamily:C.P}}>{p}</span>
               </div>
             ))}
           </div>
@@ -524,18 +528,18 @@ function WineIdentifiedScreen({nav,back}){
                   <span style={{fontSize:38,fontWeight:800,color:C.cr,fontFamily:C.P,lineHeight:1}}>{score}</span>
                   <span style={{fontSize:17,color:C.mid,fontFamily:C.P}}>/100</span>
                 </div>
-                <span style={{fontSize:15,fontWeight:600,color:C.amber,fontFamily:C.P}}>{scoreLabel}</span>
+                <span style={{fontSize:16,fontWeight:600,color:C.amber,fontFamily:C.P}}>{scoreLabel}</span>
               </>
             ):(
-              <span style={{fontSize:14,color:C.mid,fontFamily:C.P}}>Drag slider or tap a preset to rate</span>
+              <span style={{fontSize:15,color:C.mid,fontFamily:C.P}}>Drag slider or tap a preset to rate</span>
             )}
           </div>
           {score>0&&!saved&&(
             <div onClick={()=>commitScore()} style={{marginTop:10,background:C.cr,borderRadius:12,padding:'12px',textAlign:'center',cursor:'pointer',userSelect:'none',WebkitUserSelect:'none'}}>
-              <span style={{fontSize:15,fontWeight:700,color:'#fff',fontFamily:C.P}}>Save Rating</span>
+              <span style={{fontSize:16,fontWeight:700,color:'#fff',fontFamily:C.P}}>Save Rating</span>
             </div>
           )}
-          {saved&&<div style={{textAlign:'center',fontSize:14,color:C.green,fontFamily:C.P,fontWeight:600,marginTop:8}}>✓ Saved to My Wines</div>}
+          {saved&&<div style={{textAlign:'center',fontSize:15,color:C.green,fontFamily:C.P,fontWeight:600,marginTop:8}}>✓ Saved to My Wines</div>}
         </Card>
 
         <Btn primary full onClick={()=>nav('detail')}>See Full Details &amp; Learn More</Btn>

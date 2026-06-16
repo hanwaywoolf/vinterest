@@ -1,0 +1,38 @@
+# Dependencies
+node_modules/
+package-lock.json
+yarn.lock
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Build & dist
+dist/
+build/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Project files (development only)
+/uploads/
+/screenshots/
+Vinterest*.html
+wireframe*.html
+design-canvas.jsx
+wireframe-kit.jsx
+screens-*.jsx
+*.v2.html

@@ -1,0 +1,17 @@
+{
+  "name": "vinterest",
+  "version": "1.0.0",
+  "description": "Scan wine labels, build your taste profile, and order with confidence.",
+  "scripts": {
+    "dev": "open index.html",
+    "deploy": "netlify deploy --prod"
+  },
+  "keywords": [
+    "wine",
+    "pwa",
+    "education",
+    "recommendations"
+  ],
+  "author": "Vinterest",
+  "license": "MIT"
+}

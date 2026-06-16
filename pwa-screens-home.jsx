@@ -93,7 +93,7 @@ function HomeScreen({nav, showPro}){
             <div style={{fontSize:18,fontWeight:700,color:atLimit?'rgba(255,255,255,0.4)':'#fff',fontFamily:C.P,lineHeight:1.2}}>
               {atLimit?'Free scans used up':isPro?'Scan a Bottle or List':'Scan a Bottle'}
             </div>
-            <div style={{fontSize:13,color:'rgba(255,255,255,0.4)',fontFamily:C.P,marginTop:2}}>
+            <div style={{fontSize:15,color:'rgba(255,255,255,0.4)',fontFamily:C.P,marginTop:2}}>
               {atLimit?'Upgrade for unlimited scans':isPro?'Point at a label or restaurant wine list':'Point at any wine label to identify'}
             </div>
           </div>
@@ -109,8 +109,8 @@ function HomeScreen({nav, showPro}){
         {recentWines.length>0&&(
           <Card style={{padding:0,overflow:'hidden',paddingBottom:4}}>
             <div style={{padding:'12px 14px 7px',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-              <span style={{fontSize:15,fontWeight:600,color:C.ink,fontFamily:C.P}}>Recently Scanned</span>
-              <span onClick={()=>nav('mywines')} style={{fontSize:13,fontWeight:600,color:C.cr,fontFamily:C.P,cursor:'pointer'}}>All →</span>
+              <span style={{fontSize:16,fontWeight:600,color:C.ink,fontFamily:C.P}}>Recently Scanned</span>
+              <span onClick={()=>nav('mywines')} style={{fontSize:15,fontWeight:600,color:C.cr,fontFamily:C.P,cursor:'pointer'}}>All →</span>
             </div>
             {recentWines.map((w,i)=>(
               <div key={i} onClick={()=>{
@@ -121,12 +121,12 @@ function HomeScreen({nav, showPro}){
                   <Icon n="wine" sz={14} col={colFor(w)}/>
                 </div>
                 <div style={{flex:1,minWidth:0}}>
-                  <div style={{fontSize:15,fontWeight:600,color:C.ink,fontFamily:C.P,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{w.name}</div>
-                  <div style={{fontSize:12,color:C.mid,fontFamily:C.P}}>{[w.region,w.vintage?String(w.vintage):null].filter(Boolean).join(' · ')}</div>
+                  <div style={{fontSize:16,fontWeight:600,color:C.ink,fontFamily:C.P,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{w.name}</div>
+                  <div style={{fontSize:13,color:C.mid,fontFamily:C.P}}>{[w.region,w.vintage?String(w.vintage):null].filter(Boolean).join(' · ')}</div>
                 </div>
                 {w.rating>0
-                  ?<span style={{fontSize:14,fontWeight:700,color:C.amber,fontFamily:C.P,flexShrink:0}}>{w.rating}</span>
-                  :<span style={{fontSize:12,color:C.cr,fontFamily:C.P,flexShrink:0,fontWeight:600}}>Rate →</span>}
+                  ?<span style={{fontSize:15,fontWeight:700,color:C.amber,fontFamily:C.P,flexShrink:0}}>{w.rating}</span>
+                  :<span style={{fontSize:13,color:C.cr,fontFamily:C.P,flexShrink:0,fontWeight:600}}>Rate →</span>}
               </div>
             ))}
           </Card>
@@ -139,7 +139,7 @@ function HomeScreen({nav, showPro}){
             {cats.map((ct,i)=>(
               <div key={i} onClick={()=>setTypeTab(i)} style={{flex:1,textAlign:'center',padding:'8px 4px',borderRadius:10,background:i===typeTab?ct.col+'18':C.offWhite,border:`1.5px solid ${i===typeTab?ct.col+'55':'transparent'}`,cursor:'pointer',transition:'all .15s'}}>
                 <div style={{width:7,height:7,borderRadius:4,background:ct.col,margin:'0 auto 3px'}}/>
-                <div style={{fontSize:11,fontWeight:i===typeTab?700:500,color:i===typeTab?ct.col:C.mid,fontFamily:C.P}}>{ct.label}</div>
+                <div style={{fontSize:13,fontWeight:i===typeTab?700:500,color:i===typeTab?ct.col:C.mid,fontFamily:C.P}}>{ct.label}</div>
               </div>
             ))}
           </div>
@@ -148,17 +148,17 @@ function HomeScreen({nav, showPro}){
           <Card style={{background:c.col+'0D',border:`1.5px solid ${c.col}25`,padding:14}}>
             <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:7}}>
               <Icon n="message" sz={14} col={c.col}/>
-              <span style={{fontSize:14,fontWeight:700,color:C.ink,fontFamily:C.P}}>Your {c.label} Script</span>
+              <span style={{fontSize:15,fontWeight:700,color:C.ink,fontFamily:C.P}}>Your {c.label} Script</span>
             </div>
             {tabWines.length===0?(
-              <div style={{fontSize:13,color:C.mid,fontFamily:C.P,fontStyle:'italic',lineHeight:1.6}}>Scan and rate some {c.label.toLowerCase()} to generate your personalised sommelier script.</div>
+              <div style={{fontSize:15,color:C.mid,fontFamily:C.P,fontStyle:'italic',lineHeight:1.6}}>Scan and rate some {c.label.toLowerCase()} to generate your personalised sommelier script.</div>
             ):generating===c.typeKey?(
               <div style={{display:'flex',alignItems:'center',gap:8}}>
                 <div style={{width:14,height:14,borderRadius:7,border:'2px solid rgba(0,0,0,0.08)',borderTopColor:c.col,animation:'homeSpin .8s linear infinite',flexShrink:0}}/>
-                <span style={{fontSize:13,color:C.mid,fontFamily:C.P,fontStyle:'italic'}}>Writing…</span>
+                <span style={{fontSize:15,color:C.mid,fontFamily:C.P,fontStyle:'italic'}}>Writing…</span>
               </div>
             ):(
-              <div style={{fontSize:14,color:C.ink2,fontFamily:C.P,fontStyle:'italic',lineHeight:1.65}}>{genScripts[c.typeKey]||'Script generating…'}</div>
+              <div style={{fontSize:15,color:C.ink2,fontFamily:C.P,fontStyle:'italic',lineHeight:1.65}}>{genScripts[c.typeKey]||'Script generating…'}</div>
             )}
           </Card>
 
@@ -166,8 +166,8 @@ function HomeScreen({nav, showPro}){
           {topWines.length>0&&(
             <Card style={{padding:0,overflow:'hidden'}}>
               <div style={{padding:'10px 14px 6px',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-                <span style={{fontSize:14,fontWeight:600,color:C.ink,fontFamily:C.P}}>Top {c.label}</span>
-                <span onClick={()=>nav('mywines')} style={{fontSize:13,fontWeight:600,color:C.cr,fontFamily:C.P,cursor:'pointer'}}>See all →</span>
+                <span style={{fontSize:15,fontWeight:600,color:C.ink,fontFamily:C.P}}>Top {c.label}</span>
+                <span onClick={()=>nav('mywines')} style={{fontSize:15,fontWeight:600,color:C.cr,fontFamily:C.P,cursor:'pointer'}}>See all →</span>
               </div>
               {topWines.map((w,i)=>(
                 <div key={i} onClick={()=>{
@@ -178,38 +178,28 @@ function HomeScreen({nav, showPro}){
                     <Icon n="wine" sz={12} col={c.col}/>
                   </div>
                   <div style={{flex:1,minWidth:0}}>
-                    <div style={{fontSize:14,fontWeight:600,color:C.ink,fontFamily:C.P,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{w.name}</div>
-                    <div style={{fontSize:12,color:C.mid,fontFamily:C.P}}>{[w.region,w.vintage?String(w.vintage):null].filter(Boolean).join(' · ')}</div>
+                    <div style={{fontSize:15,fontWeight:600,color:C.ink,fontFamily:C.P,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{w.name}</div>
+                    <div style={{fontSize:13,color:C.mid,fontFamily:C.P}}>{[w.region,w.vintage?String(w.vintage):null].filter(Boolean).join(' · ')}</div>
                   </div>
-                  {w.rating>0&&<span style={{fontSize:14,fontWeight:700,color:C.amber,fontFamily:C.P,flexShrink:0}}>{w.rating}</span>}
+                  {w.rating>0&&<span style={{fontSize:15,fontWeight:700,color:C.amber,fontFamily:C.P,flexShrink:0}}>{w.rating}</span>}
                 </div>
               ))}
             </Card>
           )}
         </div>
 
-        {/* Expand your palate */}
-        {allWines.length>=3&&(
-          <div onClick={()=>nav('learn')} style={{background:`linear-gradient(135deg,${C.ink} 0%,#2A1A0E 100%)`,borderRadius:16,padding:'16px 18px',cursor:'pointer',position:'relative',overflow:'hidden'}}>
-            <div style={{position:'absolute',right:-20,bottom:-20,width:90,height:90,borderRadius:45,background:'rgba(139,26,47,0.25)',pointerEvents:'none'}}/>
-            <div style={{fontSize:11,fontWeight:600,color:'rgba(255,255,255,0.4)',fontFamily:C.P,letterSpacing:'0.09em',textTransform:'uppercase',marginBottom:4}}>Expand Your Palate</div>
-            <div style={{fontSize:17,fontWeight:700,color:'#fff',fontFamily:C.P,marginBottom:5}}>{explore.title}</div>
-            <div style={{fontSize:13,color:'rgba(255,255,255,0.5)',fontFamily:C.P,lineHeight:1.5,position:'relative',zIndex:1}}>{explore.body}</div>
-          </div>
-        )}
-
         {/* Quiz + XP row */}
         <div style={{display:'flex',gap:8}}>
           <Card style={{flex:1,padding:12,cursor:'pointer'}} onClick={()=>nav('learn')}>
-            <div style={{fontSize:13,fontWeight:700,color:C.ink,fontFamily:C.P,marginBottom:2}}>Take a Quiz</div>
-            <div style={{fontSize:12,color:C.mid,fontFamily:C.P,marginBottom:7}}>Learn wine · Earn XP</div>
+            <div style={{fontSize:15,fontWeight:700,color:C.ink,fontFamily:C.P,marginBottom:2}}>Take a Quiz</div>
+            <div style={{fontSize:13,color:C.mid,fontFamily:C.P,marginBottom:7}}>Learn wine · Earn XP</div>
             <div style={{display:'inline-flex',alignItems:'center',gap:4,padding:'3px 9px',borderRadius:20,background:C.crSoft,border:`1px solid ${C.crDim}`}}>
-              <span style={{fontSize:12,fontWeight:700,color:C.cr,fontFamily:C.P}}>+ XP</span>
+              <span style={{fontSize:13,fontWeight:700,color:C.cr,fontFamily:C.P}}>+ XP</span>
             </div>
           </Card>
           <Card style={{flex:1,padding:12}}>
-            <div style={{fontSize:13,fontWeight:700,color:C.ink,fontFamily:C.P,marginBottom:2}}>{lv.badge} {lv.name}</div>
-            <div style={{fontSize:12,color:C.mid,fontFamily:C.P,marginBottom:7}}>
+            <div style={{fontSize:15,fontWeight:700,color:C.ink,fontFamily:C.P,marginBottom:2}}>{lv.badge} {lv.name}</div>
+            <div style={{fontSize:13,color:C.mid,fontFamily:C.P,marginBottom:7}}>
               {xpData.total} XP{nx?` · ${nx.min-xpData.total} to go`:''}
             </div>
             <Prog val={pg} h={5} col={C.cr}/>

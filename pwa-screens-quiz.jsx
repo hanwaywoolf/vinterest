@@ -32,14 +32,14 @@ function QuizHubScreen({nav,back,showPro}){
           <span style={{fontSize:22,fontWeight:800,color:C.ink,fontFamily:C.P,flex:1,letterSpacing:'-0.4px'}}>Learn</span>
           <div style={{display:'flex',alignItems:'center',gap:4,padding:'5px 10px',borderRadius:20,background:C.crSoft,border:`1px solid ${C.crDim}`}}>
             <span style={{fontSize:18}}>{level.badge}</span>
-            <span style={{fontSize:15,fontWeight:700,color:C.cr,fontFamily:C.P}}>{xpData.total} XP</span>
+            <span style={{fontSize:16,fontWeight:700,color:C.cr,fontFamily:C.P}}>{xpData.total} XP</span>
           </div>
         </div>
         {/* Level progress bar */}
         <div style={{marginBottom:14}}>
           <div style={{display:'flex',justifyContent:'space-between',marginBottom:4}}>
-            <span style={{fontSize:15,fontWeight:700,color:C.ink,fontFamily:C.P}}>{level.name}</span>
-            {nextLvl&&<span style={{fontSize:13,color:C.mid,fontFamily:C.P}}>{nextLvl.min - xpData.total} XP to {nextLvl.name}</span>}
+            <span style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>{level.name}</span>
+            {nextLvl&&<span style={{fontSize:15,color:C.mid,fontFamily:C.P}}>{nextLvl.min - xpData.total} XP to {nextLvl.name}</span>}
           </div>
           <div style={{height:7,borderRadius:4,background:C.offWhite,overflow:'hidden'}}>
             <div style={{height:'100%',borderRadius:4,background:level.color,width:`${Math.round(prog*100)}%`,transition:'width .6s ease'}}/>
@@ -53,12 +53,12 @@ function QuizHubScreen({nav,back,showPro}){
         <div onClick={()=>nav('article')} style={{background:'linear-gradient(135deg,#1a1a2e,#16213e)',borderRadius:16,padding:'16px',display:'flex',alignItems:'center',gap:12,cursor:'pointer',border:'1px solid rgba(255,255,255,0.06)'}}>
           <div style={{width:46,height:46,borderRadius:12,background:'rgba(255,255,255,0.08)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,fontSize:22}}>📖</div>
           <div style={{flex:1}}>
-            <div style={{fontSize:11,fontWeight:600,color:'rgba(255,255,255,0.4)',fontFamily:C.P,textTransform:'uppercase',letterSpacing:'0.06em',marginBottom:3}}>Quick Read · 2 min</div>
-            <div style={{fontSize:15,fontWeight:700,color:'#fff',fontFamily:C.P,lineHeight:1.3}}>5 taste terms every wine drinker should know</div>
+            <div style={{fontSize:13,fontWeight:600,color:'rgba(255,255,255,0.4)',fontFamily:C.P,textTransform:'uppercase',letterSpacing:'0.06em',marginBottom:3}}>Quick Read · 2 min</div>
+            <div style={{fontSize:16,fontWeight:700,color:'#fff',fontFamily:C.P,lineHeight:1.3}}>5 taste terms every wine drinker should know</div>
           </div>
           <Icon n="chevron" sz={13} col="rgba(255,255,255,0.3)"/>
         </div>
-        <div style={{fontSize:13,fontWeight:600,color:C.mid,letterSpacing:'0.08em',textTransform:'uppercase',fontFamily:C.P}}>Quizzes</div>
+        <div style={{fontSize:15,fontWeight:600,color:C.mid,letterSpacing:'0.08em',textTransform:'uppercase',fontFamily:C.P}}>Quizzes</div>
 
         {QUIZ_TOPICS.map((topic,ti)=>{
           const completedCount=DIFFS.filter(d=>qc[topic.id+'_'+d.id]).length;
@@ -72,10 +72,10 @@ function QuizHubScreen({nav,back,showPro}){
                 </div>
                 <div style={{flex:1}}>
                   <div style={{fontSize:17,fontWeight:700,color:C.ink,fontFamily:C.P}}>{topic.label}</div>
-                  <div style={{fontSize:13,color:C.mid,fontFamily:C.P}}>{topic.desc}</div>
+                  <div style={{fontSize:15,color:C.mid,fontFamily:C.P}}>{topic.desc}</div>
                 </div>
                 {allDone&&<span style={{fontSize:18}}>✅</span>}
-                {!allDone&&completedCount>0&&<span style={{fontSize:13,fontWeight:600,color:C.amber,fontFamily:C.P}}>{completedCount}/3</span>}
+                {!allDone&&completedCount>0&&<span style={{fontSize:15,fontWeight:600,color:C.amber,fontFamily:C.P}}>{completedCount}/3</span>}
               </div>
               {/* Difficulty rows */}
               {DIFFS.map((d,di)=>{
@@ -86,15 +86,15 @@ function QuizHubScreen({nav,back,showPro}){
                   <div key={di} onClick={()=>{if(locked){showPro('expert-quiz');return;}startQuiz(topic.id,d.id);}}
                     style={{padding:'11px 14px',display:'flex',alignItems:'center',gap:10,borderBottom:di<2?`1px solid ${C.line}`:'none',cursor:'pointer',background:locked?'rgba(0,0,0,0.01)':done?d.bg:'transparent',transition:'background .15s',opacity:locked?0.6:1}}>
                     <div style={{width:30,height:30,borderRadius:8,background:locked?'rgba(0,0,0,0.04)':done?d.col:'rgba(0,0,0,0.04)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
-                      <span style={{fontSize:14}}>{locked?'🔒':done?'✓':'▷'}</span>
+                      <span style={{fontSize:15}}>{locked?'🔒':done?'✓':'▷'}</span>
                     </div>
                     <div style={{flex:1,display:'flex',alignItems:'center',gap:8}}>
-                      <span style={{fontSize:16,fontWeight:600,color:locked?C.mid:done?d.col:C.ink,fontFamily:C.P}}>{d.label}</span>
+                      <span style={{fontSize:17,fontWeight:600,color:locked?C.mid:done?d.col:C.ink,fontFamily:C.P}}>{d.label}</span>
                       {locked&&<ProBadge/>}
-                      {done&&!locked&&<span style={{fontSize:12,color:d.col,fontFamily:C.P,fontWeight:500}}>+{xpEarned} XP earned</span>}
+                      {done&&!locked&&<span style={{fontSize:13,color:d.col,fontFamily:C.P,fontWeight:500}}>+{xpEarned} XP earned</span>}
                     </div>
                     <div style={{display:'flex',alignItems:'center',gap:4}}>
-                      {!done&&!locked&&<span style={{fontSize:13,fontWeight:600,color:C.mid,fontFamily:C.P}}>+{d.xp} XP</span>}
+                      {!done&&!locked&&<span style={{fontSize:15,fontWeight:600,color:C.mid,fontFamily:C.P}}>+{d.xp} XP</span>}
                       {locked?<Icon n="lock" sz={13} col={C.mid}/>:<Icon n="chevron" sz={13} col={C.mid}/>}
                     </div>
                   </div>
@@ -106,7 +106,7 @@ function QuizHubScreen({nav,back,showPro}){
         <div style={{height:8}}/>
         {/* Reset XP */}
         <div onClick={()=>{localStorage.removeItem(XPSystem.KEY);setXpData(XPSystem.fresh());}} style={{textAlign:'center',padding:'8px',cursor:'pointer'}}>
-          <span style={{fontSize:12,color:C.mid,fontFamily:C.P,textDecoration:'underline'}}>Reset XP &amp; progress</span>
+          <span style={{fontSize:13,color:C.mid,fontFamily:C.P,textDecoration:'underline'}}>Reset XP &amp; progress</span>
         </div>
         <div style={{height:16}}/>
       </div>
@@ -210,31 +210,31 @@ function QuizScreen({nav,back}){
         <div style={{background:diffCol,padding:'48px 24px 32px',display:'flex',flexDirection:'column',alignItems:'center',gap:8,flexShrink:0}}>
           <div style={{fontSize:56,lineHeight:1}}>{pct===100?'🏆':pct>=80?'🎉':pct>=60?'👍':'📚'}</div>
           <div style={{fontSize:28,fontWeight:800,color:'#fff',fontFamily:C.P}}>{msg}</div>
-          <div style={{fontSize:16,color:'rgba(255,255,255,0.8)',fontFamily:C.P}}>{topic.label} · {DIFF_LABELS[difficulty]}</div>
+          <div style={{fontSize:17,color:'rgba(255,255,255,0.8)',fontFamily:C.P}}>{topic.label} · {DIFF_LABELS[difficulty]}</div>
           <div style={{display:'flex',gap:16,marginTop:8}}>
             <div style={{textAlign:'center'}}>
               <div style={{fontSize:36,fontWeight:800,color:'#fff',fontFamily:C.P}}>{finalScore}/{allQs.length}</div>
-              <div style={{fontSize:12,color:'rgba(255,255,255,0.7)',fontFamily:C.P}}>Correct</div>
+              <div style={{fontSize:13,color:'rgba(255,255,255,0.7)',fontFamily:C.P}}>Correct</div>
             </div>
             <div style={{width:1,background:'rgba(255,255,255,0.25)'}}/>
             <div style={{textAlign:'center'}}>
               <div style={{fontSize:36,fontWeight:800,color:'#fff',fontFamily:C.P}}>+{xpGained}</div>
-              <div style={{fontSize:12,color:'rgba(255,255,255,0.7)',fontFamily:C.P}}>XP earned</div>
+              <div style={{fontSize:13,color:'rgba(255,255,255,0.7)',fontFamily:C.P}}>XP earned</div>
             </div>
           </div>
         </div>
         <div style={{flex:1,overflowY:'auto'}}>
 <div style={{padding:'16px',display:'flex',flexDirection:'column',gap:10}}>
-          <div style={{fontSize:14,fontWeight:600,color:C.mid,letterSpacing:'0.07em',textTransform:'uppercase',fontFamily:C.P}}>Review</div>
+          <div style={{fontSize:15,fontWeight:600,color:C.mid,letterSpacing:'0.07em',textTransform:'uppercase',fontFamily:C.P}}>Review</div>
           {results.map((r,i)=>(
             <div key={i} style={{background:r.correct?C.greenBg:'#FFF0F0',borderRadius:12,padding:'10px 14px',border:`1px solid ${r.correct?C.green+'30':'#F5A0A0'}`}}>
               <div style={{display:'flex',gap:8,alignItems:'flex-start'}}>
                 <span style={{fontSize:18,flexShrink:0}}>{r.correct?'✓':'✗'}</span>
                 <div>
-                  <div style={{fontSize:14,fontWeight:600,color:C.ink,fontFamily:C.P,lineHeight:1.3}}>{r.qText}</div>
-                  {!r.correct&&<div style={{fontSize:13,color:'#C0392B',fontFamily:C.P,marginTop:3}}>Your answer: {r.selectedOpt}</div>}
-                  {!r.correct&&<div style={{fontSize:13,color:C.green,fontFamily:C.P}}>Correct: {r.correctOpt}</div>}
-                  {r.fact&&<div style={{fontSize:13,color:C.mid,fontFamily:C.P,marginTop:4,lineHeight:1.4,fontStyle:'italic'}}>💡 {r.fact}</div>}
+                  <div style={{fontSize:15,fontWeight:600,color:C.ink,fontFamily:C.P,lineHeight:1.3}}>{r.qText}</div>
+                  {!r.correct&&<div style={{fontSize:15,color:'#C0392B',fontFamily:C.P,marginTop:3}}>Your answer: {r.selectedOpt}</div>}
+                  {!r.correct&&<div style={{fontSize:15,color:C.green,fontFamily:C.P}}>Correct: {r.correctOpt}</div>}
+                  {r.fact&&<div style={{fontSize:15,color:C.mid,fontFamily:C.P,marginTop:4,lineHeight:1.4,fontStyle:'italic'}}>💡 {r.fact}</div>}
                 </div>
               </div>
             </div>
@@ -270,12 +270,12 @@ function QuizScreen({nav,back}){
             <Icon n="back" sz={14} col={C.ink}/>
           </div>
           <div style={{flex:1}}>
-            <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>{topic.label}</div>
-            <div style={{fontSize:12,color:diffCol,fontFamily:C.P,fontWeight:600,textTransform:'capitalize'}}>{DIFF_LABELS[difficulty]}</div>
+            <div style={{fontSize:17,fontWeight:700,color:C.ink,fontFamily:C.P}}>{topic.label}</div>
+            <div style={{fontSize:13,color:diffCol,fontFamily:C.P,fontWeight:600,textTransform:'capitalize'}}>{DIFF_LABELS[difficulty]}</div>
           </div>
           <div style={{display:'flex',alignItems:'center',gap:5}}>
             {streak>=2&&<span style={{fontSize:20}}>🔥</span>}
-            <span style={{fontSize:15,fontWeight:700,color:C.ink,fontFamily:C.P}}>{qIdx+1}/{allQs.length}</span>
+            <span style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>{qIdx+1}/{allQs.length}</span>
           </div>
         </div>
         {/* Progress bar */}
@@ -296,11 +296,11 @@ function QuizScreen({nav,back}){
               <div key={i} onClick={()=>choose(i)}
                 style={{padding:'15px 16px',borderRadius:14,border:`2px solid ${s.border}`,background:s.bg,cursor:phase==='question'?'pointer':'default',transition:'all .2s',display:'flex',alignItems:'center',gap:10}}>
                 <div style={{width:28,height:28,borderRadius:14,background:s.border+'25',flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center'}}>
-                  <span style={{fontSize:14,fontWeight:700,color:s.text,fontFamily:C.P}}>
+                  <span style={{fontSize:15,fontWeight:700,color:s.text,fontFamily:C.P}}>
                     {phase==='feedback'&&i===q.a?'✓':phase==='feedback'&&i===selected&&selected!==q.a?'✗':String.fromCharCode(65+i)}
                   </span>
                 </div>
-                <span style={{fontSize:16,fontWeight:500,color:s.text,fontFamily:C.P,lineHeight:1.35}}>{opt}</span>
+                <span style={{fontSize:17,fontWeight:500,color:s.text,fontFamily:C.P,lineHeight:1.35}}>{opt}</span>
               </div>
             );
           })}
@@ -310,10 +310,10 @@ function QuizScreen({nav,back}){
         {phase==='feedback'&&(
           <div style={{animation:'fadeIn .3s ease'}}>
             <div style={{background:selected===q.a?C.greenBg:'#FFF8F0',borderRadius:14,padding:'12px 14px',border:`1px solid ${selected===q.a?C.green+'40':'#F5C07040'}`,marginBottom:12}}>
-              <div style={{fontSize:15,fontWeight:700,color:selected===q.a?C.green:'#B87000',fontFamily:C.P,marginBottom:4}}>
+              <div style={{fontSize:16,fontWeight:700,color:selected===q.a?C.green:'#B87000',fontFamily:C.P,marginBottom:4}}>
                 {selected===q.a?'Correct! 🎉':'Not quite'}
               </div>
-              {q.fact&&<div style={{fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.5}}>{q.fact}</div>}
+              {q.fact&&<div style={{fontSize:15,color:C.ink2,fontFamily:C.P,lineHeight:1.5}}>{q.fact}</div>}
             </div>
             <div onClick={e=>{e.stopPropagation();advance();}} style={{background:C.cr,borderRadius:14,padding:'15px',textAlign:'center',cursor:'pointer',boxShadow:`0 6px 22px ${C.cr}45`,userSelect:'none',WebkitUserSelect:'none'}}>
               <span style={{fontSize:17,fontWeight:700,color:'#fff',fontFamily:C.P}}>

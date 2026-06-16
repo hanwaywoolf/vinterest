@@ -47,29 +47,29 @@ function BottomNav({active, nav, showPro}){
         {/* Home */}
         <div onClick={()=>nav('home')} style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:3,cursor:'pointer',padding:'9px 0 max(env(safe-area-inset-bottom,9px),9px)'}}>
           <Icon n="home" sz={22} col={homeActive?C.cr:C.mid}/>
-          <span style={{fontSize:11,fontWeight:homeActive?600:400,color:homeActive?C.cr:C.mid,fontFamily:C.P}}>Home</span>
+          <span style={{fontSize:13,fontWeight:homeActive?600:400,color:homeActive?C.cr:C.mid,fontFamily:C.P}}>Home</span>
         </div>
         {/* My Wines */}
         <div onClick={()=>nav('mywines')} style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:3,cursor:'pointer',padding:'9px 0 max(env(safe-area-inset-bottom,9px),9px)'}}>
           <Icon n="wine" sz={22} col={cellarActive?C.cr:C.mid}/>
-          <span style={{fontSize:11,fontWeight:cellarActive?600:400,color:cellarActive?C.cr:C.mid,fontFamily:C.P}}>My Wines</span>
+          <span style={{fontSize:13,fontWeight:cellarActive?600:400,color:cellarActive?C.cr:C.mid,fontFamily:C.P}}>My Wines</span>
         </div>
         {/* Scan FAB */}
         <div style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'flex-end',cursor:'pointer',paddingBottom:'max(env(safe-area-inset-bottom,9px),9px)'}} onClick={()=>nav('camera')}>
           <div style={{width:54,height:54,borderRadius:27,background:C.cr,display:'flex',alignItems:'center',justifyContent:'center',marginTop:-20,boxShadow:`0 4px 22px ${C.cr}60`,border:'3px solid #fff'}}>
             <Icon n="camera" sz={22} col="#fff"/>
           </div>
-          <span style={{fontSize:11,fontWeight:600,color:C.cr,fontFamily:C.P,marginTop:3}}>Scan</span>
+          <span style={{fontSize:13,fontWeight:600,color:C.cr,fontFamily:C.P,marginTop:3}}>Scan</span>
         </div>
         {/* Learn */}
         <div onClick={()=>nav('learn')} style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:3,cursor:'pointer',padding:'9px 0 max(env(safe-area-inset-bottom,9px),9px)'}}>
           <Icon n="book" sz={22} col={learnActive?C.cr:C.mid}/>
-          <span style={{fontSize:11,fontWeight:learnActive?600:400,color:learnActive?C.cr:C.mid,fontFamily:C.P}}>Learn</span>
+          <span style={{fontSize:13,fontWeight:learnActive?600:400,color:learnActive?C.cr:C.mid,fontFamily:C.P}}>Learn</span>
         </div>
         {/* WineDNA */}
         <div onClick={()=>nav('profile')} style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:3,cursor:'pointer',padding:'9px 0 max(env(safe-area-inset-bottom,9px),9px)'}}>
           <Icon n="brain" sz={22} col={profileActive?C.cr:C.mid}/>
-          <span style={{fontSize:11,fontWeight:profileActive?600:400,color:profileActive?C.cr:C.mid,fontFamily:C.P}}>WineDNA</span>
+          <span style={{fontSize:13,fontWeight:profileActive?600:400,color:profileActive?C.cr:C.mid,fontFamily:C.P}}>WineDNA</span>
         </div>
       </div>
     </div>
@@ -78,7 +78,7 @@ function BottomNav({active, nav, showPro}){
 
 function ProBadge({style:s}){
   return(
-    <span style={{display:'inline-flex',alignItems:'center',padding:'2px 7px',borderRadius:8,background:'linear-gradient(135deg,#9B5E00,#C4870A)',fontSize:10,fontWeight:700,color:'#fff',fontFamily:C.P,letterSpacing:'0.05em',flexShrink:0,...s}}>PRO</span>
+    <span style={{display:'inline-flex',alignItems:'center',padding:'2px 7px',borderRadius:8,background:'linear-gradient(135deg,#9B5E00,#C4870A)',fontSize:12,fontWeight:700,color:'#fff',fontFamily:C.P,letterSpacing:'0.05em',flexShrink:0,...s}}>PRO</span>
   );
 }
 
@@ -98,14 +98,14 @@ function ProGate({feature,onClose}){
         </div>
         <div style={{textAlign:'center',padding:'6px 0 8px'}}>
           <span style={{display:'inline-flex',alignItems:'center',gap:5,padding:'4px 14px',borderRadius:20,background:'linear-gradient(135deg,#9B5E00,#C4870A)'}}>
-            <span style={{fontSize:13,fontWeight:700,color:'#fff',fontFamily:C.P,letterSpacing:'0.08em'}}>VINTEREST PRO</span>
+            <span style={{fontSize:15,fontWeight:700,color:'#fff',fontFamily:C.P,letterSpacing:'0.08em'}}>VINTEREST PRO</span>
           </span>
         </div>
         <div style={{padding:'6px 24px 4px',display:'flex',flexDirection:'column',gap:14}}>
           <div style={{textAlign:'center'}}>
             <div style={{fontSize:42,marginBottom:8}}>{f.icon}</div>
             <div style={{fontSize:22,fontWeight:800,color:C.ink,fontFamily:C.P,lineHeight:1.2,marginBottom:6}}>{f.title}</div>
-            <div style={{fontSize:15,color:C.mid,fontFamily:C.P,lineHeight:1.55}}>{f.desc}</div>
+            <div style={{fontSize:16,color:C.mid,fontFamily:C.P,lineHeight:1.55}}>{f.desc}</div>
           </div>
           <div style={{display:'flex',flexDirection:'column',gap:8}}>
             {f.bullets.map((b,i)=>(
@@ -113,17 +113,17 @@ function ProGate({feature,onClose}){
                 <div style={{width:20,height:20,borderRadius:10,background:C.greenBg,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
                   <Icon n="check" sz={12} col={C.green}/>
                 </div>
-                <span style={{fontSize:15,color:C.ink2,fontFamily:C.P}}>{b}</span>
+                <span style={{fontSize:16,color:C.ink2,fontFamily:C.P}}>{b}</span>
               </div>
             ))}
           </div>
           <div onClick={()=>{localStorage.setItem('vinterest_pro','1');window.dispatchEvent(new Event('vinterest:pro'));onClose();}}
             style={{background:`linear-gradient(135deg,${C.cr},${C.crL})`,borderRadius:14,padding:'15px',textAlign:'center',cursor:'pointer',boxShadow:`0 6px 28px ${C.cr}45`,marginTop:2}}>
             <div style={{fontSize:18,fontWeight:700,color:'#fff',fontFamily:C.P}}>Upgrade to Pro</div>
-            <div style={{fontSize:13,color:'rgba(255,255,255,0.68)',fontFamily:C.P,marginTop:2}}>£4.99/month · Cancel anytime</div>
+            <div style={{fontSize:15,color:'rgba(255,255,255,0.68)',fontFamily:C.P,marginTop:2}}>£4.99/month · Cancel anytime</div>
           </div>
           <div onClick={onClose} style={{textAlign:'center',cursor:'pointer',paddingBottom:4}}>
-            <span style={{fontSize:15,color:C.mid,fontFamily:C.P}}>Maybe later</span>
+            <span style={{fontSize:16,color:C.mid,fontFamily:C.P}}>Maybe later</span>
           </div>
         </div>
       </div>
@@ -132,7 +132,7 @@ function ProGate({feature,onClose}){
 }
 
 function Pill({children,active,sm,style:s}){
-  return <span style={{display:'inline-flex',alignItems:'center',padding:sm?'3px 9px':'5px 12px',borderRadius:20,background:active?C.cr:'transparent',color:active?'#fff':C.mid,border:`1px solid ${active?C.cr:C.line}`,fontSize:sm?9:11,fontWeight:500,fontFamily:C.P,...s}}>{children}</span>;
+  return <span style={{display:'inline-flex',alignItems:'center',padding:sm?'3px 9px':'5px 12px',borderRadius:20,background:active?C.cr:'transparent',color:active?'#fff':C.mid,border:`1px solid ${active?C.cr:C.line}`,fontSize:sm?12:13,fontWeight:500,fontFamily:C.P,...s}}>{children}</span>;
 }
 function Prog({val=0.5,col,h=4,style:s}){
   return <div style={{height:h,borderRadius:h,background:'rgba(0,0,0,0.07)',overflow:'hidden',...s}}><div style={{height:'100%',width:`${Math.min(1,val)*100}%`,borderRadius:h,background:col||C.cr}}/></div>;
@@ -141,7 +141,7 @@ function Card({children,style:s,onClick}){
   return <div onClick={onClick} style={{background:C.white,borderRadius:16,padding:14,boxShadow:'0 1px 4px rgba(0,0,0,0.06)',...s}}>{children}</div>;
 }
 function Btn({children,primary,full,small,style:s,onClick}){
-  return <div onClick={onClick} style={{padding:small?'8px 14px':'12px 20px',borderRadius:12,background:primary?C.cr:C.white,color:primary?'#fff':C.ink,border:primary?'none':`1px solid ${C.line}`,fontFamily:C.P,fontSize:small?11:13,fontWeight:600,textAlign:'center',width:full?'100%':'auto',boxShadow:primary?`0 4px 16px ${C.cr}40`:'none',cursor:'pointer',boxSizing:'border-box',...s}}>{children}</div>;
+  return <div onClick={onClick} style={{padding:small?'8px 14px':'12px 20px',borderRadius:12,background:primary?C.cr:C.white,color:primary?'#fff':C.ink,border:primary?'none':`1px solid ${C.line}`,fontFamily:C.P,fontSize:small?13:15,fontWeight:600,textAlign:'center',width:full?'100%':'auto',boxShadow:primary?`0 4px 16px ${C.cr}40`:'none',cursor:'pointer',boxSizing:'border-box',...s}}>{children}</div>;
 }
 
 /* ── Wine History ── */
@@ -180,4 +180,30 @@ const WineHistory = {
   }
 };
 
-Object.assign(window,{C,Icon,BottomNav,Pill,Prog,Card,Btn,WineHistory,ProBadge,ProGate});
+/* ── Taste-match score (WineDNA vs. wine attributes) ──
+   Compares wine's body/tannins/acidity/sweetness against the user's
+   average for that type. Returns 35–98, or null if no data yet. */
+function calcMatchScore(wine,userWines){
+  if(!wine||!userWines) return null;
+  const typeKey=(wine.type||'red').toLowerCase().replace(/é/g,'e');
+  const typeWines=userWines.filter(w=>(w.type||'red').toLowerCase().replace(/é/g,'e')===typeKey);
+  const withAttrs=typeWines.filter(w=>w.body!=null);
+  if(!withAttrs.length) return null;
+  const avg=field=>{const ws=withAttrs.filter(w=>w[field]!=null);return ws.length?ws.reduce((s,w)=>s+w[field],0)/ws.length:null;};
+  const avgB=avg('body'),avgT=avg('tannins'),avgA=avg('acidity'),avgS=avg('sweetness');
+  // prox: 1 = perfect match, 0 = ≥0.6 units apart
+  const prox=(wv,uv)=>uv==null?null:Math.max(0,1-Math.abs((wv??0.5)-uv)/0.6);
+  const scores=[
+    [prox(wine.body??0.65,avgB),0.30],
+    [prox(wine.tannins??0.55,avgT),0.25],
+    [prox(wine.acidity??0.60,avgA),0.25],
+    [prox(wine.sweetness??0.10,avgS),0.20],
+  ].filter(([s])=>s!=null);
+  if(!scores.length) return null;
+  const totalW=scores.reduce((s,[,w])=>s+w,0);
+  const raw=scores.reduce((s,[sc,w])=>s+sc*(w/totalW),0);
+  // Scale: 0 raw → 35 %, 1.0 raw → 98 %
+  return Math.round(35+raw*63);
+}
+
+Object.assign(window,{C,Icon,BottomNav,Pill,Prog,Card,Btn,WineHistory,ProBadge,ProGate,calcMatchScore});

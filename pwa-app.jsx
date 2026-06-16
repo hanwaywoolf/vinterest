@@ -88,8 +88,8 @@ function App(){
       {showXpBadge&&(
         <div onClick={()=>setShowXpOverlay(true)} style={{position:'absolute',top:15,right:14,zIndex:200,display:'flex',alignItems:'center',gap:5,padding:'5px 11px',borderRadius:20,background:C.crSoft,border:`1px solid ${C.crDim}`,cursor:'pointer',boxShadow:'0 1px 8px rgba(0,0,0,0.08)',pointerEvents:'auto'}}>
           <span style={{fontSize:17,lineHeight:1}}>{XPSystem.getLevel(xpBadge.total).badge}</span>
-          <span style={{fontSize:13,fontWeight:700,color:C.cr,fontFamily:C.P}}>{xpBadge.total} XP</span>
-          {!!localStorage.getItem('vinterest_pro')&&<span style={{fontSize:10,fontWeight:700,color:'#fff',background:'linear-gradient(135deg,#9B5E00,#C4870A)',borderRadius:8,padding:'2px 6px',marginLeft:2}}>PRO</span>}
+          <span style={{fontSize:15,fontWeight:700,color:C.cr,fontFamily:C.P}}>{xpBadge.total} XP</span>
+          {!!localStorage.getItem('vinterest_pro')&&<span style={{fontSize:12,fontWeight:700,color:'#fff',background:'linear-gradient(135deg,#9B5E00,#C4870A)',borderRadius:8,padding:'2px 6px',marginLeft:2}}>PRO</span>}
         </div>
       )}
 
@@ -129,7 +129,7 @@ function App(){
               <div style={{padding:'10px 20px 12px',display:'flex',alignItems:'center',justifyContent:'space-between',borderBottom:`1px solid ${C.line}`,flexShrink:0}}>
                 <div>
                   <div style={{fontSize:20,fontWeight:800,color:C.ink,fontFamily:C.P}}>{curLevel.badge} {curLevel.name}</div>
-                  <div style={{fontSize:14,color:C.mid,fontFamily:C.P}}>{xd.total} XP total</div>
+                  <div style={{fontSize:15,color:C.mid,fontFamily:C.P}}>{xd.total} XP total</div>
                 </div>
                 <div onClick={()=>setShowXpOverlay(false)} style={{width:34,height:34,borderRadius:17,background:C.offWhite,border:`1px solid ${C.line}`,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer'}}>
                   <span style={{fontSize:18,lineHeight:1,color:C.ink}}>×</span>
@@ -138,7 +138,7 @@ function App(){
 
               <div style={{flex:1,overflowY:'auto',padding:'14px 20px'}}>
                 {/* All tiers */}
-                <div style={{fontSize:13,fontWeight:600,color:C.mid,letterSpacing:'0.07em',textTransform:'uppercase',fontFamily:C.P,marginBottom:10}}>Tiers</div>
+                <div style={{fontSize:15,fontWeight:600,color:C.mid,letterSpacing:'0.07em',textTransform:'uppercase',fontFamily:C.P,marginBottom:10}}>Tiers</div>
                 <div style={{display:'flex',flexDirection:'column',gap:6,marginBottom:20}}>
                   {XP_LEVELS_LOCAL.map((lv,i)=>{
                     const isActive=curLevel.name===lv.name;
@@ -151,8 +151,8 @@ function App(){
                           <span style={{fontSize:20,flexShrink:0}}>{lv.badge}</span>
                           <div style={{flex:1}}>
                             <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-                              <span style={{fontSize:15,fontWeight:isActive?700:500,color:isActive?C.cr:C.ink,fontFamily:C.P}}>{lv.name}</span>
-                              <span style={{fontSize:12,color:C.mid,fontFamily:C.P}}>{lv.min} XP{isActive?' ← you':''}</span>
+                              <span style={{fontSize:16,fontWeight:isActive?700:500,color:isActive?C.cr:C.ink,fontFamily:C.P}}>{lv.name}</span>
+                              <span style={{fontSize:13,color:C.mid,fontFamily:C.P}}>{lv.min} XP{isActive?' ← you':''}</span>
                             </div>
                             {isActive&&next&&<Prog val={prog} h={5} col={C.cr} style={{marginTop:4}}/>}
                           </div>
@@ -163,13 +163,13 @@ function App(){
                 </div>
 
                 {/* Achievements */}
-                <div style={{fontSize:13,fontWeight:600,color:C.mid,letterSpacing:'0.07em',textTransform:'uppercase',fontFamily:C.P,marginBottom:10}}>Achievements</div>
+                <div style={{fontSize:15,fontWeight:600,color:C.mid,letterSpacing:'0.07em',textTransform:'uppercase',fontFamily:C.P,marginBottom:10}}>Achievements</div>
                 <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8,paddingBottom:24}}>
                   {ACHIEVEMENTS.map((a,i)=>(
                     <div key={i} style={{borderRadius:12,padding:'10px 12px',background:a.done?C.greenBg:C.offWhite,border:`1px solid ${a.done?C.green+'40':C.line}`,display:'flex',flexDirection:'column',gap:4,opacity:a.done?1:0.5}}>
                       <span style={{fontSize:22}}>{a.icon}</span>
-                      <span style={{fontSize:12,fontWeight:600,color:a.done?C.green:C.ink,fontFamily:C.P,lineHeight:1.3}}>{a.label}</span>
-                      {a.done&&<span style={{fontSize:10,color:C.green,fontFamily:C.P}}>✓ Completed</span>}
+                      <span style={{fontSize:13,fontWeight:600,color:a.done?C.green:C.ink,fontFamily:C.P,lineHeight:1.3}}>{a.label}</span>
+                      {a.done&&<span style={{fontSize:12,color:C.green,fontFamily:C.P}}>✓ Completed</span>}
                     </div>
                   ))}
                 </div>
@@ -177,7 +177,7 @@ function App(){
 
               <div style={{padding:'10px 20px 28px',borderTop:`1px solid ${C.line}`,flexShrink:0}}>
                 <div onClick={()=>{setShowXpOverlay(false);nav('learn');}} style={{background:C.cr,borderRadius:12,padding:'13px',textAlign:'center',cursor:'pointer'}}>
-                  <span style={{fontSize:15,fontWeight:700,color:'#fff',fontFamily:C.P}}>Start a Quiz — Earn XP</span>
+                  <span style={{fontSize:16,fontWeight:700,color:'#fff',fontFamily:C.P}}>Start a Quiz — Earn XP</span>
                 </div>
               </div>
             </div>
@@ -190,10 +190,10 @@ function App(){
           <div key={toast.id} style={{display:'flex',flexDirection:'column',alignItems:'center',gap:4,animation:'xpIn .35s cubic-bezier(.34,1.56,.64,1) both'}}>
             {toast.awards.map((a,i)=>(
               <div key={i} style={{display:'inline-flex',alignItems:'center',gap:8,background:a.levelUp?'#0F0F0F':a.bonus?C.cr:'rgba(15,15,15,0.88)',borderRadius:30,padding:'8px 16px',backdropFilter:'blur(8px)',boxShadow:'0 4px 20px rgba(0,0,0,0.3)'}}>
-                {a.levelUp&&<span style={{fontSize:16}}>🏆</span>}
-                {a.bonus&&!a.levelUp&&<span style={{fontSize:14}}>⭐</span>}
-                {!a.levelUp&&!a.bonus&&<span style={{fontSize:14,fontWeight:700,color:C.amber,fontFamily:C.P}}>+{a.amount} XP</span>}
-                <span style={{fontSize:13,fontWeight:600,color:'#fff',fontFamily:C.P}}>{a.label}</span>
+                {a.levelUp&&<span style={{fontSize:17}}>🏆</span>}
+                {a.bonus&&!a.levelUp&&<span style={{fontSize:15}}>⭐</span>}
+                {!a.levelUp&&!a.bonus&&<span style={{fontSize:15,fontWeight:700,color:C.amber,fontFamily:C.P}}>+{a.amount} XP</span>}
+                <span style={{fontSize:15,fontWeight:600,color:'#fff',fontFamily:C.P}}>{a.label}</span>
               </div>
             ))}
           </div>
@@ -211,10 +211,10 @@ function DiscoverScreen({nav,back}){
     <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden'}}>
       <div style={{background:C.white,padding:'14px 20px',borderBottom:`1px solid ${C.line}`,flexShrink:0}}>
         <div style={{fontSize:24,fontWeight:800,color:C.ink,fontFamily:C.P,letterSpacing:'-0.5px'}}>Discover</div>
-        <div style={{fontSize:15,color:C.mid,fontFamily:C.P}}>Wines matched to your taste profile</div>
+        <div style={{fontSize:16,color:C.mid,fontFamily:C.P}}>Wines matched to your taste profile</div>
       </div>
       <div style={{flex:1,overflowY:'auto',padding:'14px 20px',display:'flex',flexDirection:'column',gap:12}}>
-        <div style={{fontSize:14,fontWeight:600,color:C.mid,letterSpacing:'0.08em',textTransform:'uppercase',fontFamily:C.P}}>If You Like Pinot Grigio…</div>
+        <div style={{fontSize:15,fontWeight:600,color:C.mid,letterSpacing:'0.08em',textTransform:'uppercase',fontFamily:C.P}}>If You Like Pinot Grigio…</div>
         {[{name:'Pinot Gris',region:'Alsace, France',note:'Same grape, richer style — more body and texture',score:95},
           {name:'Pinot Blanc',region:'Alsace / Alto Adige',note:'Crisp and clean with subtle apple notes',score:91},
           {name:'Soave Classico',region:'Veneto, Italy',note:'Similar weight and minerality to Pinot Grigio',score:88},
@@ -230,18 +230,18 @@ function DiscoverScreen({nav,back}){
                 <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
                   <span style={{fontSize:17,fontWeight:600,color:C.ink,fontFamily:C.P}}>{w.name}</span>
                   <div style={{display:'inline-flex',alignItems:'center',gap:2,padding:'3px 8px',borderRadius:7,background:C.greenBg}}>
-                    <span style={{fontSize:15,fontWeight:700,color:C.green,fontFamily:C.P}}>{w.score}%</span>
+                    <span style={{fontSize:16,fontWeight:700,color:C.green,fontFamily:C.P}}>{w.score}%</span>
                   </div>
                 </div>
-                <div style={{fontSize:14,color:C.mid,fontFamily:C.P}}>{w.region}</div>
-                <div style={{fontSize:14,color:C.ink2,fontFamily:C.P,marginTop:3,lineHeight:1.4}}>{w.note}</div>
+                <div style={{fontSize:15,color:C.mid,fontFamily:C.P}}>{w.region}</div>
+                <div style={{fontSize:15,color:C.ink2,fontFamily:C.P,marginTop:3,lineHeight:1.4}}>{w.note}</div>
               </div>
             </div>
           </Card>
         ))}
         <Card style={{background:C.greenBg,border:`1px solid ${C.green}25`,padding:12,boxShadow:'none'}}>
-          <div style={{fontSize:15,fontWeight:700,color:C.green,fontFamily:C.P,marginBottom:4}}>💡 Menu Tip</div>
-          <div style={{fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.5}}>Don't see Pinot Grigio on the list? Ask for Soave or Vermentino — same flavour family and often better value.</div>
+          <div style={{fontSize:16,fontWeight:700,color:C.green,fontFamily:C.P,marginBottom:4}}>💡 Menu Tip</div>
+          <div style={{fontSize:15,color:C.ink2,fontFamily:C.P,lineHeight:1.5}}>Don't see Pinot Grigio on the list? Ask for Soave or Vermentino — same flavour family and often better value.</div>
         </Card>
         <div style={{height:8}}/>
       </div>
@@ -260,7 +260,7 @@ function ShoppingScreen({nav,back}){
           <Icon n="back" sz={16} col={C.ink}/>
         </div>
         <span style={{fontSize:20,fontWeight:700,color:C.ink,fontFamily:C.P,flex:1}}>Shopping Mode</span>
-        <span style={{fontSize:14,fontWeight:600,color:C.cr,fontFamily:C.P,padding:'4px 10px',borderRadius:20,background:C.crSoft}}>In Store</span>
+        <span style={{fontSize:15,fontWeight:600,color:C.cr,fontFamily:C.P,padding:'4px 10px',borderRadius:20,background:C.crSoft}}>In Store</span>
       </div>
       <div style={{flex:1,overflowY:'auto',padding:'14px 20px',display:'flex',flexDirection:'column',gap:12}}>
         <Card style={{padding:14,border:`1.5px solid ${C.green}`}}>
@@ -272,10 +272,10 @@ function ShoppingScreen({nav,back}){
               <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start'}}>
                 <div>
                   <div style={{fontSize:18,fontWeight:700,color:C.ink,fontFamily:C.P}}>Meiomi Pinot Noir</div>
-                  <div style={{fontSize:14,color:C.mid,fontFamily:C.P}}>California · Pinot Noir</div>
+                  <div style={{fontSize:15,color:C.mid,fontFamily:C.P}}>California · Pinot Noir</div>
                 </div>
                 <div style={{display:'inline-flex',alignItems:'center',gap:2,padding:'3px 8px',borderRadius:7,background:C.greenBg}}>
-                  <span style={{fontSize:15,fontWeight:700,color:C.green,fontFamily:C.P}}>88%</span>
+                  <span style={{fontSize:16,fontWeight:700,color:C.green,fontFamily:C.P}}>88%</span>
                 </div>
               </div>
               <div style={{display:'flex',gap:5,marginTop:6}}><Pill active sm>Red</Pill><Pill sm>Medium Body</Pill></div>
@@ -286,7 +286,7 @@ function ShoppingScreen({nav,back}){
             <Btn primary small>Add to Cart</Btn>
           </div>
         </Card>
-        <div style={{fontSize:14,fontWeight:600,color:C.mid,letterSpacing:'0.08em',textTransform:'uppercase',fontFamily:C.P}}>Also on This Shelf</div>
+        <div style={{fontSize:15,fontWeight:600,color:C.mid,letterSpacing:'0.08em',textTransform:'uppercase',fontFamily:C.P}}>Also on This Shelf</div>
         {[{name:'Elouan Pinot Noir',sub:'Oregon · $22',score:92,note:'Higher match — try this one!'},
           {name:'La Crema Pinot Noir',sub:'Sonoma · $19',score:85,note:'Similar style, great value'}].map((w,i)=>(
           <Card key={i} style={{padding:10}}>
@@ -295,12 +295,12 @@ function ShoppingScreen({nav,back}){
                 <Icon n="wine" sz={14} col={C.cr}/>
               </div>
               <div style={{flex:1}}>
-                <div style={{fontSize:16,fontWeight:600,color:C.ink,fontFamily:C.P}}>{w.name}</div>
-                <div style={{fontSize:14,color:C.mid,fontFamily:C.P}}>{w.sub}</div>
-                <div style={{fontSize:13,color:C.cr,fontFamily:C.P,marginTop:2,fontWeight:500}}>{w.note}</div>
+                <div style={{fontSize:17,fontWeight:600,color:C.ink,fontFamily:C.P}}>{w.name}</div>
+                <div style={{fontSize:15,color:C.mid,fontFamily:C.P}}>{w.sub}</div>
+                <div style={{fontSize:15,color:C.cr,fontFamily:C.P,marginTop:2,fontWeight:500}}>{w.note}</div>
               </div>
               <div style={{display:'inline-flex',alignItems:'center',gap:2,padding:'3px 8px',borderRadius:7,background:C.greenBg}}>
-                <span style={{fontSize:15,fontWeight:700,color:C.green,fontFamily:C.P}}>{w.score}%</span>
+                <span style={{fontSize:16,fontWeight:700,color:C.green,fontFamily:C.P}}>{w.score}%</span>
               </div>
             </div>
           </Card>

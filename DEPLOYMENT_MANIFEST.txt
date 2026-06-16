@@ -1,0 +1,31 @@
+# Vinterest Deployment Package
+
+## Files:
+- index.html
+- manifest.json
+- sw.js
+- wines-db.json
+- claude-bridge.js
+- netlify.toml
+- _headers
+- _redirects
+- DEPLOYMENT_PACKAGE.md
+- API_REQUIREMENTS.md
+- CLAUDE.md
+- .env.example
+- pwa-app.jsx
+- pwa-components.jsx
+- pwa-onboarding.jsx
+- pwa-screens-home.jsx
+- pwa-screens-detail.jsx
+- pwa-screens-explore.jsx
+- pwa-screens-aux.jsx
+- pwa-screens-main.jsx
+- pwa-screens-learn.jsx
+- pwa-screens-quiz.jsx
+- pwa-screens-wineiq.jsx
+- pwa-quiz-questions.js
+- pwa-xp.js
+- logo.png (binary)
+- icons/icon-192.png (binary)
+- icons/icon-512.png (binary)

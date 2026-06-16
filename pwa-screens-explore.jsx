@@ -29,7 +29,7 @@ function ExploreLoading(){
   return(
     <div style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:14}}>
       <div style={{width:44,height:44,borderRadius:22,border:'3px solid rgba(0,0,0,0.07)',borderTopColor:C.cr,animation:'vspin 0.85s linear infinite'}}/>
-      <span style={{fontSize:15,color:C.mid,fontFamily:C.P}}>Loading…</span>
+      <span style={{fontSize:16,color:C.mid,fontFamily:C.P}}>Loading…</span>
       <style>{`@keyframes vspin{to{transform:rotate(360deg)}}`}</style>
     </div>
   );
@@ -56,7 +56,7 @@ function RegionScreen({nav,back}){
         </div>
         <div style={{flex:1}}>
           <div style={{fontSize:19,fontWeight:700,color:'#fff',fontFamily:C.P,lineHeight:1.2}}>{region}</div>
-          <div style={{fontSize:13,color:'rgba(255,255,255,0.65)',fontFamily:C.P}}>{country}</div>
+          <div style={{fontSize:15,color:'rgba(255,255,255,0.65)',fontFamily:C.P}}>{country}</div>
         </div>
         <Icon n="globe" sz={22} col="rgba(255,255,255,0.35)"/>
       </div>
@@ -65,22 +65,22 @@ function RegionScreen({nav,back}){
         <div style={{flex:1,overflowY:'auto'}}>
 <div style={{padding:'14px 16px',display:'flex',flexDirection:'column',gap:12}}>
           <Card style={{padding:14}}>
-            <div style={{fontSize:14,fontWeight:700,color:C.ink,fontFamily:C.P,marginBottom:8}}>About {region}</div>
-            <div style={{fontSize:15,color:C.ink2,fontFamily:C.P,lineHeight:1.65}}>{data?.about||'Information unavailable.'}</div>
+            <div style={{fontSize:15,fontWeight:700,color:C.ink,fontFamily:C.P,marginBottom:8}}>About {region}</div>
+            <div style={{fontSize:16,color:C.ink2,fontFamily:C.P,lineHeight:1.65}}>{data?.about||'Information unavailable.'}</div>
             {data?.climate&&(
               <div style={{marginTop:10,padding:'10px 12px',borderRadius:10,background:C.offWhite,border:`1px solid ${C.line}`}}>
-                <div style={{fontSize:12,fontWeight:600,color:C.mid,fontFamily:C.P,marginBottom:3}}>Climate &amp; Terroir</div>
-                <div style={{fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.5}}>{data.climate}</div>
+                <div style={{fontSize:13,fontWeight:600,color:C.mid,fontFamily:C.P,marginBottom:3}}>Climate &amp; Terroir</div>
+                <div style={{fontSize:15,color:C.ink2,fontFamily:C.P,lineHeight:1.5}}>{data.climate}</div>
               </div>
             )}
           </Card>
 
           {data?.key_varietals?.length>0&&(
             <Card style={{padding:12}}>
-              <div style={{fontSize:14,fontWeight:700,color:C.ink,fontFamily:C.P,marginBottom:8}}>Key Varietals</div>
+              <div style={{fontSize:15,fontWeight:700,color:C.ink,fontFamily:C.P,marginBottom:8}}>Key Varietals</div>
               <div style={{display:'flex',flexWrap:'wrap',gap:6}}>
                 {data.key_varietals.map((g,i)=>(
-                  <span key={i} onClick={()=>nav('varietal')} style={{padding:'5px 14px',borderRadius:20,background:i===0?C.crSoft:C.offWhite,color:i===0?C.cr:C.ink2,fontSize:14,fontWeight:i===0?600:500,fontFamily:C.P,border:`1px solid ${i===0?C.crDim:C.line}`,cursor:'pointer'}}>{g}</span>
+                  <span key={i} onClick={()=>nav('varietal')} style={{padding:'5px 14px',borderRadius:20,background:i===0?C.crSoft:C.offWhite,color:i===0?C.cr:C.ink2,fontSize:15,fontWeight:i===0?600:500,fontFamily:C.P,border:`1px solid ${i===0?C.crDim:C.line}`,cursor:'pointer'}}>{g}</span>
                 ))}
               </div>
             </Card>
@@ -88,14 +88,14 @@ function RegionScreen({nav,back}){
 
           {data?.notable_producers?.length>0&&(
             <Card style={{padding:12}}>
-              <div style={{fontSize:14,fontWeight:700,color:C.ink,fontFamily:C.P,marginBottom:8}}>Notable Producers</div>
+              <div style={{fontSize:15,fontWeight:700,color:C.ink,fontFamily:C.P,marginBottom:8}}>Notable Producers</div>
               <div style={{display:'flex',flexDirection:'column',gap:6}}>
                 {data.notable_producers.map((p,i)=>(
                   <div key={i} style={{display:'flex',alignItems:'center',gap:10,padding:'8px 10px',borderRadius:10,background:C.offWhite}}>
                     <div style={{width:30,height:30,borderRadius:7,background:C.crSoft,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
                       <Icon n="wine" sz={14} col={C.cr}/>
                     </div>
-                    <span style={{fontSize:15,fontWeight:500,color:C.ink,fontFamily:C.P}}>{p}</span>
+                    <span style={{fontSize:16,fontWeight:500,color:C.ink,fontFamily:C.P}}>{p}</span>
                   </div>
                 ))}
               </div>
@@ -104,15 +104,15 @@ function RegionScreen({nav,back}){
 
           {data?.food_culture&&(
             <Card style={{background:C.greenBg,boxShadow:'none',border:`1px solid ${C.green}25`,padding:12}}>
-              <div style={{fontSize:13,fontWeight:600,color:C.green,fontFamily:C.P,marginBottom:4}}>Food &amp; Wine Culture</div>
-              <div style={{fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.55}}>{data.food_culture}</div>
+              <div style={{fontSize:15,fontWeight:600,color:C.green,fontFamily:C.P,marginBottom:4}}>Food &amp; Wine Culture</div>
+              <div style={{fontSize:15,color:C.ink2,fontFamily:C.P,lineHeight:1.55}}>{data.food_culture}</div>
             </Card>
           )}
 
           {data?.fun_fact&&(
             <Card style={{background:C.amberBg,boxShadow:'none',border:`1px solid ${C.amber}25`,padding:12}}>
-              <div style={{fontSize:13,fontWeight:600,color:C.amber,fontFamily:C.P,marginBottom:4}}>Did You Know?</div>
-              <div style={{fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.55}}>{data.fun_fact}</div>
+              <div style={{fontSize:15,fontWeight:600,color:C.amber,fontFamily:C.P,marginBottom:4}}>Did You Know?</div>
+              <div style={{fontSize:15,color:C.ink2,fontFamily:C.P,lineHeight:1.55}}>{data.fun_fact}</div>
             </Card>
           )}
 
@@ -152,7 +152,7 @@ function VarietalScreen({nav,back}){
         </div>
         <div style={{flex:1}}>
           <div style={{fontSize:19,fontWeight:700,color:'#fff',fontFamily:C.P}}>{grape}</div>
-          <div style={{fontSize:13,color:'rgba(255,255,255,0.45)',fontFamily:C.P}}>Grape Varietal</div>
+          <div style={{fontSize:15,color:'rgba(255,255,255,0.45)',fontFamily:C.P}}>Grape Varietal</div>
         </div>
         <Icon n="wine" sz={22} col="rgba(255,255,255,0.25)"/>
       </div>
@@ -161,22 +161,22 @@ function VarietalScreen({nav,back}){
         <div style={{flex:1,overflowY:'auto'}}>
 <div style={{padding:'14px 16px',display:'flex',flexDirection:'column',gap:12}}>
           <Card style={{padding:14}}>
-            <div style={{fontSize:15,color:C.ink2,fontFamily:C.P,lineHeight:1.65}}>{data?.about}</div>
+            <div style={{fontSize:16,color:C.ink2,fontFamily:C.P,lineHeight:1.65}}>{data?.about}</div>
           </Card>
 
           {tasteTiles.length>0&&(
             <div>
-              <div style={{fontSize:14,fontWeight:700,color:C.ink,fontFamily:C.P,marginBottom:8}}>Taste Characteristics</div>
+              <div style={{fontSize:15,fontWeight:700,color:C.ink,fontFamily:C.P,marginBottom:8}}>Taste Characteristics</div>
               <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8}}>
                 {tasteTiles.map((t,i)=>(
                   <div key={i} style={{background:C.white,borderRadius:14,padding:'10px',border:`1px solid ${C.line}`}}>
-                    <div style={{fontSize:14,fontWeight:600,color:C.ink,fontFamily:C.P,marginBottom:2}}>{t.name}</div>
-                    {t.desc&&<div style={{fontSize:12,color:C.mid,fontFamily:C.P,lineHeight:1.3,marginBottom:6}}>{t.desc}</div>}
+                    <div style={{fontSize:15,fontWeight:600,color:C.ink,fontFamily:C.P,marginBottom:2}}>{t.name}</div>
+                    {t.desc&&<div style={{fontSize:13,color:C.mid,fontFamily:C.P,lineHeight:1.3,marginBottom:6}}>{t.desc}</div>}
                     <Prog val={t.val} col={t.col} h={5}/>
                     <div style={{display:'flex',justifyContent:'space-between',marginTop:3}}>
-                      <span style={{fontSize:11,color:'#bbb',fontFamily:C.P}}>{t.lo}</span>
-                      <span style={{fontSize:11,fontWeight:700,color:t.col,fontFamily:C.P}}>{t.val>=.7?t.hi:t.val>=.4?'Medium':t.lo}</span>
-                      <span style={{fontSize:11,color:'#bbb',fontFamily:C.P}}>{t.hi}</span>
+                      <span style={{fontSize:13,color:'#bbb',fontFamily:C.P}}>{t.lo}</span>
+                      <span style={{fontSize:13,fontWeight:700,color:t.col,fontFamily:C.P}}>{t.val>=.7?t.hi:t.val>=.4?'Medium':t.lo}</span>
+                      <span style={{fontSize:13,color:'#bbb',fontFamily:C.P}}>{t.hi}</span>
                     </div>
                   </div>
                 ))}
@@ -186,10 +186,10 @@ function VarietalScreen({nav,back}){
 
           {data?.typical_regions?.length>0&&(
             <Card style={{padding:12}}>
-              <div style={{fontSize:14,fontWeight:700,color:C.ink,fontFamily:C.P,marginBottom:8}}>Famous In</div>
+              <div style={{fontSize:15,fontWeight:700,color:C.ink,fontFamily:C.P,marginBottom:8}}>Famous In</div>
               <div style={{display:'flex',flexWrap:'wrap',gap:6}}>
                 {data.typical_regions.map((r,i)=>(
-                  <span key={i} style={{padding:'5px 13px',borderRadius:20,background:C.offWhite,color:C.ink2,fontSize:13,fontWeight:500,fontFamily:C.P,border:`1px solid ${C.line}`}}>{r}</span>
+                  <span key={i} style={{padding:'5px 13px',borderRadius:20,background:C.offWhite,color:C.ink2,fontSize:15,fontWeight:500,fontFamily:C.P,border:`1px solid ${C.line}`}}>{r}</span>
                 ))}
               </div>
             </Card>
@@ -197,11 +197,11 @@ function VarietalScreen({nav,back}){
 
           {data?.food_pairings?.length>0&&(
             <Card style={{padding:12}}>
-              <div style={{fontSize:14,fontWeight:700,color:C.ink,fontFamily:C.P,marginBottom:8}}>Food Pairings</div>
+              <div style={{fontSize:15,fontWeight:700,color:C.ink,fontFamily:C.P,marginBottom:8}}>Food Pairings</div>
               <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:7}}>
                 {data.food_pairings.map((f,i)=>(
                   <div key={i} style={{background:C.offWhite,borderRadius:10,padding:'10px 8px',textAlign:'center',border:`1px solid ${C.line}`}}>
-                    <div style={{fontSize:13,color:C.ink2,fontFamily:C.P,fontWeight:500}}>{f}</div>
+                    <div style={{fontSize:15,color:C.ink2,fontFamily:C.P,fontWeight:500}}>{f}</div>
                   </div>
                 ))}
               </div>
@@ -210,10 +210,10 @@ function VarietalScreen({nav,back}){
 
           {data?.similar_varietals?.length>0&&(
             <Card style={{padding:12}}>
-              <div style={{fontSize:14,fontWeight:700,color:C.ink,fontFamily:C.P,marginBottom:8}}>If You Like This, Try…</div>
+              <div style={{fontSize:15,fontWeight:700,color:C.ink,fontFamily:C.P,marginBottom:8}}>If You Like This, Try…</div>
               <div style={{display:'flex',flexWrap:'wrap',gap:6}}>
                 {data.similar_varietals.map((g,i)=>(
-                  <span key={i} style={{padding:'5px 13px',borderRadius:20,background:C.crSoft,color:C.cr,fontSize:13,fontWeight:600,fontFamily:C.P,border:`1px solid ${C.crDim}`}}>{g}</span>
+                  <span key={i} style={{padding:'5px 13px',borderRadius:20,background:C.crSoft,color:C.cr,fontSize:15,fontWeight:600,fontFamily:C.P,border:`1px solid ${C.crDim}`}}>{g}</span>
                 ))}
               </div>
             </Card>
@@ -221,8 +221,8 @@ function VarietalScreen({nav,back}){
 
           {data?.aging_note&&(
             <Card style={{background:C.amberBg,boxShadow:'none',border:`1px solid ${C.amber}25`,padding:12}}>
-              <div style={{fontSize:13,fontWeight:600,color:C.amber,fontFamily:C.P,marginBottom:4}}>Aging Potential</div>
-              <div style={{fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.55}}>{data.aging_note}</div>
+              <div style={{fontSize:15,fontWeight:600,color:C.amber,fontFamily:C.P,marginBottom:4}}>Aging Potential</div>
+              <div style={{fontSize:15,color:C.ink2,fontFamily:C.P,lineHeight:1.55}}>{data.aging_note}</div>
             </Card>
           )}
 
@@ -260,7 +260,7 @@ function SimilarWinesScreen({nav,back}){
           </div>
           <div style={{flex:1,minWidth:0}}>
             <div style={{fontSize:19,fontWeight:700,color:C.ink,fontFamily:C.P}}>Similar Wines</div>
-            <div style={{fontSize:13,color:C.mid,fontFamily:C.P,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>Based on {wineName}</div>
+            <div style={{fontSize:15,color:C.mid,fontFamily:C.P,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>Based on {wineName}</div>
           </div>
           <Icon n="compass" sz={20} col={C.mid}/>
         </div>
@@ -289,15 +289,15 @@ function SimilarWinesScreen({nav,back}){
                   </div>
                   <div style={{flex:1,minWidth:0}}>
                     <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',gap:6}}>
-                      <div style={{fontSize:15,fontWeight:700,color:C.ink,fontFamily:C.P,lineHeight:1.2,flex:1}}>{w.name}</div>
-                      {w.approx_price_usd&&<span style={{fontSize:14,fontWeight:700,color:C.ink2,fontFamily:C.P,flexShrink:0}}>${w.approx_price_usd}</span>}
+                      <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P,lineHeight:1.2,flex:1}}>{w.name}</div>
+                      {w.approx_price_usd&&<span style={{fontSize:15,fontWeight:700,color:C.ink2,fontFamily:C.P,flexShrink:0}}>${w.approx_price_usd}</span>}
                     </div>
-                    <div style={{fontSize:13,color:C.mid,fontFamily:C.P,marginTop:2}}>{[w.region,w.country].filter(Boolean).join(' · ')}</div>
-                    <div style={{fontSize:13,color:C.ink2,fontFamily:C.P,marginTop:4,lineHeight:1.45,fontStyle:'italic'}}>{w.why_similar}</div>
+                    <div style={{fontSize:15,color:C.mid,fontFamily:C.P,marginTop:2}}>{[w.region,w.country].filter(Boolean).join(' · ')}</div>
+                    <div style={{fontSize:15,color:C.ink2,fontFamily:C.P,marginTop:4,lineHeight:1.45,fontStyle:'italic'}}>{w.why_similar}</div>
                     <div style={{display:'flex',gap:6,marginTop:6,alignItems:'center',flexWrap:'wrap'}}>
                       <Pill sm style={{background:col+'12',color:col,border:`1px solid ${col}25`,textTransform:'capitalize'}}>{w.type||'Red'}</Pill>
                       {w.grapes?.[0]&&<Pill sm>{w.grapes[0]}</Pill>}
-                      {b.l&&<span style={{fontSize:11,fontWeight:600,color:b.col,fontFamily:C.P,padding:'2px 8px',borderRadius:20,background:b.bg,marginLeft:'auto'}}>{b.l}</span>}
+                      {b.l&&<span style={{fontSize:13,fontWeight:600,color:b.col,fontFamily:C.P,padding:'2px 8px',borderRadius:20,background:b.bg,marginLeft:'auto'}}>{b.l}</span>}
                     </div>
                   </div>
                 </div>
