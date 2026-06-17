@@ -149,18 +149,30 @@ const WineHistory = {
   KEY: 'vinterest_wines',
   getAll(){ try{ return JSON.parse(localStorage.getItem(this.KEY)||'[]'); }catch(e){ return []; } },
   save(wines){ localStorage.setItem(this.KEY, JSON.stringify(wines.slice(0,500))); },
-  add(wine, rating){
-    // Only persist wines that have been scored
-    if(!rating || rating <= 0) return this.getAll();
+  track(wine){
+    // Save a scanned wine immediately, even before rating
+    if(!wine||!wine.name) return;
     const wines = this.getAll();
     const idx = wines.findIndex(w => w.name===wine.name && String(w.vintage)===String(wine.vintage));
     const now = new Date().toISOString();
     if(idx>=0){
       wines[idx].times_consumed = (wines[idx].times_consumed||1) + 1;
       wines[idx].last_scanned = now;
-      wines[idx].rating = rating;
     } else {
-      wines.unshift({...wine, rating, times_consumed:1, scanned_at:now, last_scanned:now});
+      wines.unshift({...wine, rating:0, times_consumed:1, scanned_at:now, last_scanned:now});
+    }
+    this.save(wines);
+  },
+  add(wine, rating){
+    const wines = this.getAll();
+    const idx = wines.findIndex(w => w.name===wine.name && String(w.vintage)===String(wine.vintage));
+    const now = new Date().toISOString();
+    if(idx>=0){
+      wines[idx].times_consumed = (wines[idx].times_consumed||1) + 1;
+      wines[idx].last_scanned = now;
+      if(rating>0) wines[idx].rating = rating;
+    } else {
+      wines.unshift({...wine, rating:rating||0, times_consumed:1, scanned_at:now, last_scanned:now});
     }
     this.save(wines);
     return wines;

@@ -339,6 +339,11 @@ function WineIdentifiedScreen({nav,back}){
   const wine=scanData.wine||null;
   const confidence=scanData.confidence||null;
 
+  // Track scan immediately — saves to history even before rating
+  React.useEffect(()=>{
+    if(wine&&!scanData.demo) WineHistory.track(wine);
+  },[wine?.name,wine?.vintage]);
+
   const existingRating=(scanData&&scanData.existingRating)||0;
   const [score,setScore]=React.useState(existingRating);
   const pendingScore=React.useRef(existingRating);

@@ -91,18 +91,25 @@ function DetailMerged({wine,nav,existingRating=0,matchPct}){
   const [generatingWhy,setGeneratingWhy]=React.useState(false);
   const [userRating,setUserRating]=React.useState(existingRating);
   const [showRatingUI,setShowRatingUI]=React.useState(existingRating===0);
+  const [saved,setSaved]=React.useState(existingRating>0);
+  const pendingScore=React.useRef(existingRating);
+  const ratedOnce=React.useRef(existingRating>0);
+  const scoreLabel=userRating===0?'':userRating<=20?'Not for me':userRating<=40?"It's ok":userRating<=60?'Good':userRating<=80?'Really good':'Exceptional';
 
-  function saveRating(rating){
-    setUserRating(rating);
-    setShowRatingUI(false);
-    // Save to WineHistory
-    const all=WineHistory.getAll();
-    const idx=all.findIndex(w=>w.name===wine.name&&String(w.vintage)===String(wine.vintage));
-    if(idx>=0){
-      all[idx].rating=rating;
-      WineHistory.save(all);
+  function commitScore(v){
+    if(!v) v=pendingScore.current;
+    const n=Number(v);
+    if(n>0&&wine){
+      if(existingRating>0){ WineHistory.rate(wine.name,wine.vintage,n); }
+      else { WineHistory.add(wine,n); }
+      if(!ratedOnce.current){ XPSystem.awardAndToast([{type:'rate'}]); ratedOnce.current=true; }
+      setUserRating(n);
+      setSaved(true);
+      setShowRatingUI(false);
     }
   }
+  function handleSliderChange(e){ const n=Number(e.target.value); setUserRating(n); pendingScore.current=n; }
+  function handlePreset(p){ setUserRating(p); pendingScore.current=p; commitScore(p); }
 
   React.useEffect(()=>{
     if(!wine) return;
@@ -187,25 +194,47 @@ function DetailMerged({wine,nav,existingRating=0,matchPct}){
 
       {/* Rating UI */}
       {showRatingUI&&(
-        <Card style={{padding:14,background:C.amberBg,border:`1px solid ${C.amber}25`}}>
-          <div style={{fontSize:15,fontWeight:700,color:C.cr,fontFamily:C.P,marginBottom:12}}>Rate This Wine</div>
-          <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
-            {[1,2,3,4,5,6,7,8,9,10].map(n=>(
-              <div key={n} onClick={()=>saveRating(n)} style={{width:'calc(20% - 5px)',aspectRatio:'1',borderRadius:10,background:userRating===n?C.cr:C.white,border:`1px solid ${userRating===n?C.cr:C.line}`,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer'}}>
-                <span style={{fontSize:16,fontWeight:700,color:userRating===n?'#fff':C.ink,fontFamily:C.P}}>{n}</span>
+        <Card style={{padding:'14px 16px'}}>
+          <div style={{fontSize:16,fontWeight:600,color:C.ink,fontFamily:C.P,marginBottom:12}}>Rate This Wine</div>
+          <div style={{display:'flex',gap:5,marginBottom:12}}>
+            {[20,40,60,80,100].map(p=>(
+              <div key={p} onClick={()=>handlePreset(p)} style={{flex:1,padding:'7px 2px',borderRadius:9,border:`1.5px solid ${userRating===p?C.cr:C.line}`,background:userRating===p?C.cr:'transparent',textAlign:'center',cursor:'pointer',transition:'all .15s'}}>
+                <span style={{fontSize:17,fontWeight:700,color:userRating===p?'#fff':C.mid,fontFamily:C.P}}>{p}</span>
               </div>
             ))}
           </div>
-          <div style={{fontSize:13,color:C.mid,fontFamily:C.P,marginTop:10,textAlign:'center'}}>Scale of 1–10</div>
+          <input type="range" min="0" max="100" step="1" value={userRating}
+            onChange={handleSliderChange}
+            onMouseUp={()=>commitScore()}
+            onTouchEnd={()=>commitScore()}
+            style={{width:'100%',accentColor:C.cr,cursor:'pointer',marginBottom:10,display:'block'}}/>
+          <div style={{textAlign:'center',minHeight:48,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:2}}>
+            {userRating>0?(
+              <>
+                <div style={{display:'flex',alignItems:'baseline',gap:3}}>
+                  <span style={{fontSize:36,fontWeight:800,color:C.cr,fontFamily:C.P,lineHeight:1}}>{userRating}</span>
+                  <span style={{fontSize:16,color:C.mid,fontFamily:C.P}}>/100</span>
+                </div>
+                <span style={{fontSize:15,fontWeight:600,color:C.amber,fontFamily:C.P}}>{scoreLabel}</span>
+              </>
+            ):(
+              <span style={{fontSize:14,color:C.mid,fontFamily:C.P}}>Drag slider or tap a preset to rate</span>
+            )}
+          </div>
+          {userRating>0&&!saved&&(
+            <div onClick={()=>commitScore()} style={{marginTop:10,background:C.cr,borderRadius:12,padding:'12px',textAlign:'center',cursor:'pointer'}}>
+              <span style={{fontSize:16,fontWeight:700,color:'#fff',fontFamily:C.P}}>Save Rating</span>
+            </div>
+          )}
+          {saved&&<div style={{textAlign:'center',fontSize:15,color:C.green,fontFamily:C.P,fontWeight:600,marginTop:8}}>✓ Saved to My Wines</div>}
         </Card>
       )}
 
-      {/* If no rating yet, show prompt */}
-      {!showRatingUI&&userRating===0&&(
-        <Card style={{padding:14,background:C.amberBg,border:`1px solid ${C.amber}25`,textAlign:'center',cursor:'pointer'}} onClick={()=>setShowRatingUI(true)}>
-          <div style={{fontSize:15,fontWeight:700,color:C.cr,fontFamily:C.P}}>Rate This Wine</div>
-          <div style={{fontSize:13,color:C.mid,fontFamily:C.P,marginTop:4}}>Tap to give it a score</div>
-        </Card>
+      {/* If rated, show compact rating + edit option */}
+      {!showRatingUI&&userRating>0&&saved&&(
+        <div onClick={()=>setShowRatingUI(true)} style={{display:'flex',alignItems:'center',justifyContent:'center',gap:8,padding:'10px',cursor:'pointer'}}>
+          <span style={{fontSize:13,color:C.mid,fontFamily:C.P}}>✓ Rated {userRating}/100 · tap to edit</span>
+        </div>
       )}
 
       {/* Why This Matches You */}
