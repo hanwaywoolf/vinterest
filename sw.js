@@ -1,9 +1,75 @@
 // sw.js — Vinterest PWA service worker
-// Network-first for app shell (always gets latest deployment)
-// Cache-first only for icons (rarely change)
+const CACHE = 'vinterest-v5';
 
-const CACHE = 'vinterest-v4';
-const APP_VERSION = '34';
+const ICONS = [
+  '/icons/icon-192.png',
+  '/icons/icon-512.png',
+  '/icons/apple-touch-icon.png',
+];
+
+// Install: pre-cache icons, skip waiting immediately
+self.addEventListener('install', e => {
+  e.waitUntil(
+    caches.open(CACHE)
+      .then(c => c.addAll(ICONS))
+      // DO NOT skipWaiting here — let the page control when to activate
+  );
+});
+
+// Activate: delete old caches, claim clients
+self.addEventListener('activate', e => {
+  e.waitUntil(
+    caches.keys()
+      .then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k))))
+      .then(() => self.clients.claim())
+  );
+});
+
+// Message from page: page is telling SW to activate now
+self.addEventListener('message', e => {
+  if (e.data && e.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
+});
+
+self.addEventListener('fetch', e => {
+  const url = new URL(e.request.url);
+
+  // External CDN — cache-first (versioned URLs)
+  if (url.origin !== location.origin) {
+    e.respondWith(
+      caches.match(e.request).then(cached => cached || fetch(e.request).then(res => {
+        const clone = res.clone();
+        caches.open(CACHE).then(c => c.put(e.request, clone));
+        return res;
+      }))
+    );
+    return;
+  }
+
+  // Icons — cache-first
+  if (url.pathname.startsWith('/icons/')) {
+    e.respondWith(
+      caches.match(e.request).then(cached => cached || fetch(e.request).then(res => {
+        const clone = res.clone();
+        caches.open(CACHE).then(c => c.put(e.request, clone));
+        return res;
+      }))
+    );
+    return;
+  }
+
+  // Everything else — network-first, fallback to cache
+  e.respondWith(
+    fetch(e.request)
+      .then(res => {
+        const clone = res.clone();
+        caches.open(CACHE).then(c => c.put(e.request, clone));
+        return res;
+      })
+      .catch(() => caches.match(e.request))
+  );
+});
 
 const ICONS = [
   '/icons/icon-192.png',
