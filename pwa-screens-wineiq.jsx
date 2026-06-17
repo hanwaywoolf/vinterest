@@ -659,6 +659,11 @@ function WineDNAScreen({nav,back,showPro}){
           <div style={{fontSize:13,color:C.mid,fontFamily:C.P,marginTop:8,lineHeight:1.5}}>Export saves your wines &amp; XP as a JSON file. Import restores from a previous backup.</div>
         </Card>
 
+        {/* App version */}
+        <div style={{textAlign:'center',padding:'12px 0 4px',opacity:0.45}}>
+          <span style={{fontSize:13,color:C.mid,fontFamily:C.P}}>Vinterest v1.0.38</span>
+        </div>
+
         <div style={{height:8}}/>
       </div>
       </div>
