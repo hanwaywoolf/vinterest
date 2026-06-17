@@ -109,7 +109,8 @@ function DetailMerged({wine,nav,existingRating=0,matchPct}){
     }
   }
   function handleSliderChange(e){ const n=Number(e.target.value); setUserRating(n); pendingScore.current=n; }
-  function handlePreset(p){ setUserRating(p); pendingScore.current=p; commitScore(p); }
+  // Preset buttons update slider position only — user taps Save to commit
+  function handlePreset(p){ setUserRating(p); pendingScore.current=p; }
 
   React.useEffect(()=>{
     if(!wine) return;
@@ -205,8 +206,6 @@ function DetailMerged({wine,nav,existingRating=0,matchPct}){
           </div>
           <input type="range" min="0" max="100" step="1" value={userRating}
             onChange={handleSliderChange}
-            onMouseUp={()=>commitScore()}
-            onTouchEnd={()=>commitScore()}
             style={{width:'100%',accentColor:C.cr,cursor:'pointer',marginBottom:10,display:'block'}}/>
           <div style={{textAlign:'center',minHeight:48,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:2}}>
             {userRating>0?(

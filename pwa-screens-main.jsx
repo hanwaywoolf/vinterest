@@ -364,8 +364,8 @@ function WineIdentifiedScreen({nav,back}){
   }
   // onChange: visual only — no XP, no save
   function handleSliderChange(e){ const n=Number(e.target.value); setScore(n); pendingScore.current=n; }
-  // Preset buttons commit immediately
-  function handlePreset(p){ setScore(p); pendingScore.current=p; commitScore(p); }
+  // Preset buttons update slider position only — user taps Save to commit
+  function handlePreset(p){ setScore(p); pendingScore.current=p; }
 
   // Display values — real data when available, sensible demo fallback otherwise
   const displayName  = wine?.name         || 'Château Margaux';
