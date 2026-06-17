@@ -81,7 +81,29 @@ function HomeScreen({nav, showPro}){
       <div style={{background:C.white,flexShrink:0}}>
         {/* Logo row */}
         <div style={{padding:'14px 20px 14px',paddingRight:'120px'}}>
-          <img src="logo.png" alt="Vinterest" style={{height:28,width:'auto',display:'block'}}/>
+          <img src="logo.png" alt="Vinterest" style={{height:28,width:'auto',display:'block',cursor:'pointer'}} onClick={()=>{
+            if(!('serviceWorker' in navigator)) return;
+            navigator.serviceWorker.getRegistration().then(function(reg){
+              if(!reg) return;
+              reg.update().then(function(){
+                if(reg.waiting){
+                  var banner=document.getElementById('vinterest-update-banner');
+                  if(banner) banner.style.display='flex';
+                } else {
+                  // Listen for a new SW found after update check
+                  reg.addEventListener('updatefound',function(){
+                    var nw=reg.installing;
+                    nw.addEventListener('statechange',function(){
+                      if(nw.state==='installed'&&navigator.serviceWorker.controller){
+                        var banner=document.getElementById('vinterest-update-banner');
+                        if(banner) banner.style.display='flex';
+                      }
+                    });
+                  });
+                }
+              });
+            });
+          }}/>
         </div>
         {/* Compact scan CTA — never scrolls away */}
         <div onClick={()=>atLimit?showPro('unlimited-scans'):nav('camera')} style={{
