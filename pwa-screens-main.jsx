@@ -331,6 +331,14 @@ function ScanScreen({nav,back}){
 
 /* ── WINE IDENTIFIED ── */
 function WineIdentifiedScreen({nav,back}){
+  // Read scan result first — everything else depends on it
+  const scanData=React.useMemo(()=>{
+    try{ return JSON.parse(sessionStorage.getItem('vinterest_scan_result')||'{}'); }
+    catch(e){ return {}; }
+  },[]);
+  const wine=scanData.wine||null;
+  const confidence=scanData.confidence||null;
+
   const existingRating=(scanData&&scanData.existingRating)||0;
   const [score,setScore]=React.useState(existingRating);
   const pendingScore=React.useRef(existingRating);
@@ -353,14 +361,6 @@ function WineIdentifiedScreen({nav,back}){
   function handleSliderChange(e){ const n=Number(e.target.value); setScore(n); pendingScore.current=n; }
   // Preset buttons commit immediately
   function handlePreset(p){ setScore(p); pendingScore.current=p; commitScore(p); }
-
-  // Read scan result written by ScanScreen
-  const scanData=React.useMemo(()=>{
-    try{ return JSON.parse(sessionStorage.getItem('vinterest_scan_result')||'{}'); }
-    catch(e){ return {}; }
-  },[]);
-  const wine=scanData.wine||null;
-  const confidence=scanData.confidence||null;
 
   // Display values — real data when available, sensible demo fallback otherwise
   const displayName  = wine?.name         || 'Château Margaux';

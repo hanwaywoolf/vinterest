@@ -89,6 +89,20 @@ function WineDetailScreen({back,nav}){
 function DetailMerged({wine,nav,existingRating=0,matchPct}){
   const [genWhy,setGenWhy]=React.useState(null);
   const [generatingWhy,setGeneratingWhy]=React.useState(false);
+  const [userRating,setUserRating]=React.useState(existingRating);
+  const [showRatingUI,setShowRatingUI]=React.useState(existingRating===0);
+
+  function saveRating(rating){
+    setUserRating(rating);
+    setShowRatingUI(false);
+    // Save to WineHistory
+    const all=WineHistory.getAll();
+    const idx=all.findIndex(w=>w.name===wine.name&&String(w.vintage)===String(wine.vintage));
+    if(idx>=0){
+      all[idx].rating=rating;
+      WineHistory.save(all);
+    }
+  }
 
   React.useEffect(()=>{
     if(!wine) return;
@@ -163,13 +177,36 @@ function DetailMerged({wine,nav,existingRating=0,matchPct}){
           <div style={{fontSize:28,fontWeight:800,color:C.green,fontFamily:C.P,lineHeight:1}}>{matchPct!=null?`${matchPct}%`:'—'}</div>
           <div style={{fontSize:13,fontWeight:600,color:C.green,fontFamily:C.P,marginTop:4}}>Your Match</div>
         </div>
-        {existingRating>0&&(
-          <div style={{flex:1,background:C.amberBg,border:`1px solid ${C.amber}25`,borderRadius:14,padding:'12px 10px',textAlign:'center'}}>
-            <div style={{fontSize:28,fontWeight:800,color:C.amber,fontFamily:C.P,lineHeight:1}}>{existingRating}</div>
+        {userRating>0&&(
+          <div style={{flex:1,background:C.amberBg,border:`1px solid ${C.amber}25`,borderRadius:14,padding:'12px 10px',textAlign:'center',cursor:'pointer'}} onClick={()=>setShowRatingUI(true)}>
+            <div style={{fontSize:28,fontWeight:800,color:C.amber,fontFamily:C.P,lineHeight:1}}>{userRating}</div>
             <div style={{fontSize:13,fontWeight:600,color:C.amber,fontFamily:C.P,marginTop:4}}>Your Rating</div>
           </div>
         )}
       </div>
+
+      {/* Rating UI */}
+      {showRatingUI&&(
+        <Card style={{padding:14,background:C.amberBg,border:`1px solid ${C.amber}25`}}>
+          <div style={{fontSize:15,fontWeight:700,color:C.cr,fontFamily:C.P,marginBottom:12}}>Rate This Wine</div>
+          <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
+            {[1,2,3,4,5,6,7,8,9,10].map(n=>(
+              <div key={n} onClick={()=>saveRating(n)} style={{width:'calc(20% - 5px)',aspectRatio:'1',borderRadius:10,background:userRating===n?C.cr:C.white,border:`1px solid ${userRating===n?C.cr:C.line}`,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer'}}>
+                <span style={{fontSize:16,fontWeight:700,color:userRating===n?'#fff':C.ink,fontFamily:C.P}}>{n}</span>
+              </div>
+            ))}
+          </div>
+          <div style={{fontSize:13,color:C.mid,fontFamily:C.P,marginTop:10,textAlign:'center'}}>Scale of 1–10</div>
+        </Card>
+      )}
+
+      {/* If no rating yet, show prompt */}
+      {!showRatingUI&&userRating===0&&(
+        <Card style={{padding:14,background:C.amberBg,border:`1px solid ${C.amber}25`,textAlign:'center',cursor:'pointer'}} onClick={()=>setShowRatingUI(true)}>
+          <div style={{fontSize:15,fontWeight:700,color:C.cr,fontFamily:C.P}}>Rate This Wine</div>
+          <div style={{fontSize:13,color:C.mid,fontFamily:C.P,marginTop:4}}>Tap to give it a score</div>
+        </Card>
+      )}
 
       {/* Why This Matches You */}
       <Card style={{background:C.greenBg,border:`1px solid ${C.green}25`,padding:14}}>

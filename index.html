@@ -74,6 +74,28 @@
 </style>
 </head>
 <body>
+<div id="vinterest-update-banner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:99999;background:#8B1A2F;padding:12px 16px;display:none;align-items:center;gap:12px;box-shadow:0 2px 12px rgba(0,0,0,0.3);">
+  <span style="flex:1;font-size:15px;font-weight:600;color:#fff;font-family:system-ui,sans-serif;">A new version of Vinterest is ready</span>
+  <button onclick="window.location.reload()" style="background:#fff;color:#8B1A2F;border:none;border-radius:8px;padding:8px 16px;font-size:14px;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;">Update</button>
+  <button onclick="document.getElementById('vinterest-update-banner').style.display='none'" style="background:transparent;border:none;color:rgba(255,255,255,0.7);font-size:20px;cursor:pointer;padding:0 4px;line-height:1;">×</button>
+</div>
+<script>
+  // Listen for SW update messages
+  if('serviceWorker' in navigator){
+    navigator.serviceWorker.addEventListener('message', function(e){
+      if(e.data && e.data.type === 'SW_UPDATED'){
+        var banner = document.getElementById('vinterest-update-banner');
+        if(banner) banner.style.display = 'flex';
+      }
+    });
+    // Also check for SW updates periodically (every 60s when app is open)
+    setInterval(function(){
+      navigator.serviceWorker.getRegistration().then(function(reg){
+        if(reg) reg.update();
+      });
+    }, 60000);
+  }
+</script>
 <div id="root"></div>
 
 <!-- Preview seed: injects your real wine data on first load -->
@@ -91,9 +113,9 @@
 </script>
 
 <!-- Load components in dependency order -->
-<script src="claude-bridge.js?v=33"></script>
-<script src="pwa-xp.js?v=33"></script>
-<script src="pwa-quiz-questions.js?v=33"></script>
+<script src="claude-bridge.js?v=34"></script>
+<script src="pwa-xp.js?v=34"></script>
+<script src="pwa-quiz-questions.js?v=34"></script>
 <script>
 /* ── Global utility functions ── */
 
@@ -150,17 +172,17 @@ Use realistic UK retail prices if region is uk, or CAD prices if ontario. Return
 }
 </script>
 
-<script type="text/babel" src="pwa-components.jsx?v=33"></script>
-<script type="text/babel" src="pwa-screens-main.jsx?v=33"></script>
-<script type="text/babel" src="pwa-screens-detail.jsx?v=33"></script>
-<script type="text/babel" src="pwa-screens-explore.jsx?v=33"></script>
-<script type="text/babel" src="pwa-screens-quiz.jsx?v=33"></script>
-<script type="text/babel" src="pwa-screens-aux.jsx?v=33"></script>
-<script type="text/babel" src="pwa-onboarding.jsx?v=33"></script>
-<script type="text/babel" src="pwa-screens-learn.jsx?v=33"></script>
-<script type="text/babel" src="pwa-screens-home.jsx?v=33"></script>
-<script type="text/babel" src="pwa-screens-wineiq.jsx?v=33"></script>
-<script type="text/babel" src="pwa-app.jsx?v=33"></script>
+<script type="text/babel" src="pwa-components.jsx?v=34"></script>
+<script type="text/babel" src="pwa-screens-main.jsx?v=34"></script>
+<script type="text/babel" src="pwa-screens-detail.jsx?v=34"></script>
+<script type="text/babel" src="pwa-screens-explore.jsx?v=34"></script>
+<script type="text/babel" src="pwa-screens-quiz.jsx?v=34"></script>
+<script type="text/babel" src="pwa-screens-aux.jsx?v=34"></script>
+<script type="text/babel" src="pwa-onboarding.jsx?v=34"></script>
+<script type="text/babel" src="pwa-screens-learn.jsx?v=34"></script>
+<script type="text/babel" src="pwa-screens-home.jsx?v=34"></script>
+<script type="text/babel" src="pwa-screens-wineiq.jsx?v=34"></script>
+<script type="text/babel" src="pwa-app.jsx?v=34"></script>
 
 <script>
   // Register service worker
