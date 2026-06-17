@@ -1,5 +1,5 @@
 // sw.js — Vinterest PWA service worker
-const CACHE = 'vinterest-v5';
+const CACHE = 'vinterest-v6';
 
 const ICONS = [
   '/icons/icon-192.png',
@@ -7,10 +7,10 @@ const ICONS = [
   '/icons/apple-touch-icon.png',
 ];
 
-// Install: pre-cache icons, do NOT skipWaiting — let page control activation
+// Install: pre-cache icons, activate immediately on fresh install
 self.addEventListener('install', e => {
   e.waitUntil(
-    caches.open(CACHE).then(c => c.addAll(ICONS))
+    caches.open(CACHE).then(c => c.addAll(ICONS)).then(() => self.skipWaiting())
   );
 });
 
