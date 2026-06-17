@@ -9,6 +9,50 @@ function QuizHubScreen({nav,back,showPro}){
   const level=XPSystem.getLevel(xpData.total);
   const nextLvl=XPSystem.nextLevel(xpData.total);
   const prog=XPSystem.levelProgress(xpData.total);
+  const article1Done=!!localStorage.getItem('vinterest_article_1_done');
+
+  // Personalized article stubs — generated once after article_1 is read
+  const [genStubs,setGenStubs]=React.useState(()=>{
+    try{ return JSON.parse(localStorage.getItem('vinterest_gen_stubs')||'null'); }catch(e){ return null; }
+  });
+  const [generatingStubs,setGeneratingStubs]=React.useState(false);
+
+  React.useEffect(()=>{
+    if(!article1Done||genStubs||generatingStubs) return;
+    const wines=WineHistory.getAll();
+    if(!wines.length) return;
+    setGeneratingStubs(true);
+    const types=[...new Set(wines.map(w=>(w.type||'red').toLowerCase()))].join(', ');
+    const regions=[...new Set(wines.map(w=>w.region||w.country).filter(Boolean))].slice(0,6).join(', ');
+    const grapes=[...new Set(wines.flatMap(w=>w.grapes||[]).filter(Boolean))].slice(0,8).join(', ');
+    const countries=[...new Set(wines.map(w=>w.country).filter(Boolean))].slice(0,5).join(', ');
+    const topRated=[...wines].filter(w=>w.rating>0).sort((a,b)=>(b.rating||0)-(a.rating||0)).slice(0,3).map(w=>w.name).join(', ');
+    const prompt=`A wine app user has scanned these wines. Their profile: types tried: ${types}. Regions: ${regions}. Grapes: ${grapes}. Countries: ${countries}. Top-rated: ${topRated||'none yet'}.
+
+Based on their actual experience, suggest 3 short educational wine articles that would genuinely expand their knowledge — focus on gaps, adjacent regions, or varietals they haven't explored yet. Each should be specific and actionable, not generic.
+
+Return ONLY valid JSON array, no markdown:
+[
+  {"id":"gen_1","iconName":"read","title":"Article title here","subtitle":"One sentence teaser","readTime":"3 min","topic":"the specific wine topic to cover in full detail"},
+  {"id":"gen_2","iconName":"map","title":"Article title here","subtitle":"One sentence teaser","readTime":"2 min","topic":"the specific wine topic to cover in full detail"},
+  {"id":"gen_3","iconName":"leaf","title":"Article title here","subtitle":"One sentence teaser","readTime":"4 min","topic":"the specific wine topic to cover in full detail"}
+]
+
+For iconName use only one of: read, map, leaf, book, globe, wine, compass. Pick the most relevant for each article topic.`;
+    window.claude.complete({messages:[{role:'user',content:prompt}]})
+      .then(text=>{
+        try{
+          let clean=text.replace(/```json|```/g,'').trim();
+          const s=clean.indexOf('['),e=clean.lastIndexOf(']');
+          if(s>=0&&e>s) clean=clean.slice(s,e+1);
+          const stubs=JSON.parse(clean);
+          localStorage.setItem('vinterest_gen_stubs',JSON.stringify(stubs));
+          setGenStubs(stubs);
+        }catch(err){}
+      })
+      .catch(()=>{})
+      .finally(()=>setGeneratingStubs(false));
+  },[article1Done]);
 
   const DIFFS=[
     {id:'beginner',    label:'Beginner',    xp:50,  col:'#1E7B4B', bg:'#E8F5EE'},
@@ -56,8 +100,42 @@ function QuizHubScreen({nav,back,showPro}){
             <div style={{fontSize:13,fontWeight:600,color:'rgba(255,255,255,0.4)',fontFamily:C.P,textTransform:'uppercase',letterSpacing:'0.06em',marginBottom:3}}>Quick Read · 2 min</div>
             <div style={{fontSize:16,fontWeight:700,color:'#fff',fontFamily:C.P,lineHeight:1.3}}>5 taste terms every wine drinker should know</div>
           </div>
-          <Icon n="chevron" sz={13} col="rgba(255,255,255,0.3)"/>
+          {article1Done
+            ? <span style={{fontSize:14,fontWeight:700,color:'#4ade80',fontFamily:C.P}}>✓</span>
+            : <Icon n="chevron" sz={13} col="rgba(255,255,255,0.3)"/>}
         </div>
+
+        {/* Personalized reading list */}
+        {article1Done&&(
+          <div>
+            <div style={{fontSize:15,fontWeight:600,color:C.mid,letterSpacing:'0.08em',textTransform:'uppercase',fontFamily:C.P,marginBottom:10}}>Your Reading List</div>
+            {generatingStubs&&(
+              <div style={{display:'flex',alignItems:'center',gap:10,padding:'16px',background:C.white,borderRadius:14,border:`1px solid ${C.line}`}}>
+                <div style={{width:14,height:14,borderRadius:7,border:`2px solid ${C.cr}`,borderTopColor:'transparent',animation:'storySpin .8s linear infinite',flexShrink:0}}/>
+                <span style={{fontSize:15,color:C.mid,fontFamily:C.P,fontStyle:'italic'}}>Personalising your reading list…</span>
+              </div>
+            )}
+            {genStubs&&genStubs.map((stub,i)=>{
+              const done=!!localStorage.getItem('vinterest_gen_article_'+stub.id+'_done');
+              return(
+                <div key={i} onClick={()=>{sessionStorage.setItem('vinterest_gen_article',JSON.stringify(stub));nav('gen-article');}}
+                  style={{background:C.white,borderRadius:14,padding:'14px 16px',display:'flex',alignItems:'center',gap:12,cursor:'pointer',border:`1px solid ${C.line}`,marginBottom:8,opacity:done?0.7:1}}>
+                  <div style={{width:44,height:44,borderRadius:12,background:C.crSoft,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,border:`1px solid ${C.crDim}`}}>
+                    <Icon n={stub.iconName||'read'} sz={20} col={C.cr}/>
+                  </div>
+                  <div style={{flex:1}}>
+                    <div style={{fontSize:12,fontWeight:600,color:C.mid,fontFamily:C.P,textTransform:'uppercase',letterSpacing:'0.06em',marginBottom:2}}>Quick Read · {stub.readTime}</div>
+                    <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P,lineHeight:1.3}}>{stub.title}</div>
+                    <div style={{fontSize:14,color:C.mid,fontFamily:C.P,marginTop:2}}>{stub.subtitle}</div>
+                  </div>
+                  {done
+                    ? <span style={{fontSize:14,fontWeight:700,color:C.green,fontFamily:C.P}}>✓</span>
+                    : <Icon n="chevron" sz={13} col={C.mid}/>}
+                </div>
+              );
+            })}
+          </div>
+        )}
         <div style={{fontSize:15,fontWeight:600,color:C.mid,letterSpacing:'0.08em',textTransform:'uppercase',fontFamily:C.P}}>Quizzes</div>
 
         {QUIZ_TOPICS.map((topic,ti)=>{

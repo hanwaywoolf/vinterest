@@ -175,7 +175,19 @@ function DetailMerged({wine,nav,existingRating=0,matchPct}){
 
   const notes=wine?.tasting_notes||[];
   const pairings=wine?.food_pairings||[];
-  const pairingEmojis=['🥩','🍖','🧀','🐟','🍝','🧅','🥗','🍗'];
+  function pairingIcon(text){
+    const t=(text||'').toLowerCase();
+    if(/lamb|mutton|sheep/.test(t)) return 'food-lamb';
+    if(/beef|steak|rib|brisket|burger|daube|braised/.test(t)) return 'food-beef';
+    if(/chicken|poultry|duck|turkey/.test(t)) return 'food-chicken';
+    if(/fish|salmon|tuna|halibut|cod|seafood|prawn|shrimp|oyster|mussel|clam/.test(t)) return 'food-fish';
+    if(/cheese|brie|camembert|gouda|cheddar|parmesan|comt|manchego|aged/.test(t)) return 'food-cheese';
+    if(/pasta|risotto|noodle|gnocchi|pizza/.test(t)) return 'food-pasta';
+    if(/bread|pastry|charcuterie|cured/.test(t)) return 'food-bread';
+    if(/vegetable|veg|mushroom|truffle|salad|onion|herb/.test(t)) return 'food-veg';
+    if(/pork|ham|bacon|sausage/.test(t)) return 'food-meat';
+    return 'food-generic';
+  }
 
   return(
     <div style={{padding:'16px 20px',display:'flex',flexDirection:'column',gap:16}}>
@@ -355,7 +367,7 @@ function DetailMerged({wine,nav,existingRating=0,matchPct}){
           <div style={{display:'flex',gap:8}}>
             {pairings.slice(0,3).map((f,i)=>(
               <div key={i} style={{flex:1,background:C.offWhite,borderRadius:12,padding:'12px 6px',textAlign:'center',border:`1px solid ${C.line}`}}>
-                <div style={{fontSize:24,marginBottom:5}}>{pairingEmojis[i]||'🍽️'}</div>
+                <div style={{display:'flex',justifyContent:'center',marginBottom:6}}><Icon n={pairingIcon(f)} sz={22} col={C.cr}/></div>
                 <div style={{fontSize:13,color:C.ink2,fontFamily:C.P,fontWeight:500,lineHeight:1.3}}>{f}</div>
               </div>
             ))}

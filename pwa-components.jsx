@@ -32,6 +32,49 @@ function Icon({n,sz=20,col=C.ink,style:s}){
     star:<polygon points="10,2 12.4,7.6 18.5,8.2 14,12.3 15.4,18.3 10,15.1 4.6,18.3 6,12.3 1.5,8.2 7.6,7.6" fill={col}/>,
     list:<><line x1="7" y1="5" x2="17" y2="5" stroke={col} strokeWidth="1.5" strokeLinecap="round"/><line x1="7" y1="10" x2="17" y2="10" stroke={col} strokeWidth="1.5" strokeLinecap="round"/><line x1="7" y1="15" x2="17" y2="15" stroke={col} strokeWidth="1.5" strokeLinecap="round"/><circle cx="4" cy="5" r="1" fill={col}/><circle cx="4" cy="10" r="1" fill={col}/><circle cx="4" cy="15" r="1" fill={col}/></>,
     brain:<><path d="M10 15V7.5" stroke={col} strokeWidth="1.2" strokeLinecap="round" strokeDasharray="1.2 1.8" opacity=".4"/><path d="M10 7.5C10 5.5 8.5 4 7 4C5.3 4 4 5.2 4 6.8C3.1 7.1 2.4 8 2.4 9.2C2.4 10.4 3.2 11.4 4.3 11.7C4.1 12.2 4 12.7 4 13.3C4 14.9 5.3 16.1 7 16.2L10 16.3" stroke={col} strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round"/><path d="M10 7.5C10 5.5 11.5 4 13 4C14.7 4 16 5.2 16 6.8C16.9 7.1 17.6 8 17.6 9.2C17.6 10.4 16.8 11.4 15.7 11.7C15.9 12.2 16 12.7 16 13.3C16 14.9 14.7 16.1 13 16.2L10 16.3" stroke={col} strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round"/><path d="M5.5 8.2C6 7.8 7 7.7 7.8 8.2" stroke={col} strokeWidth="1" strokeLinecap="round" opacity=".55"/><path d="M5.5 11C6 10.6 7 10.6 7.8 11" stroke={col} strokeWidth="1" strokeLinecap="round" opacity=".55"/></>,
+    // Food pairing icons — clean 1px line art
+    'food-lamb':<>
+      {/* sheep body */}
+      <ellipse cx="9" cy="10" rx="5.5" ry="3.5" stroke={col} strokeWidth="1.4" fill="none"/>
+      {/* head */}
+      <circle cx="15" cy="8.5" r="2" stroke={col} strokeWidth="1.3" fill="none"/>
+      {/* ear */}
+      <path d="M14 6.8L13.5 5.5" stroke={col} strokeWidth="1.2" strokeLinecap="round"/>
+      {/* legs */}
+      <line x1="6" y1="13.5" x2="5.5" y2="17" stroke={col} strokeWidth="1.3" strokeLinecap="round"/>
+      <line x1="9" y1="13.5" x2="9" y2="17" stroke={col} strokeWidth="1.3" strokeLinecap="round"/>
+      <line x1="12" y1="13.5" x2="12.5" y2="17" stroke={col} strokeWidth="1.3" strokeLinecap="round"/>
+    </>,
+    'food-beef':<>
+      {/* steak cut */}
+      <path d="M5.5 6C4.8 7 4.5 9 5 12C5.5 15 7.5 16 10 16C12.5 16 14.5 15 15 12C15.5 9 15.2 7 14.5 6C13.5 5 11.5 4.5 10 4.5C8.5 4.5 6.5 5 5.5 6Z" stroke={col} strokeWidth="1.4" fill="none"/>
+      {/* T-bone */}
+      <line x1="10" y1="4.5" x2="10" y2="16" stroke={col} strokeWidth="1.1" strokeLinecap="round" opacity=".45"/>
+      <path d="M7.5 8.5C8.5 8 11.5 8 12.5 8.5" stroke={col} strokeWidth="1" strokeLinecap="round" opacity=".35"/>
+    </>,
+    'food-meat':<>
+      {/* generic meat / drumstick */}
+      <path d="M8 4.5C8 4.5 5.5 5.5 5 8C4.5 10.5 6 13 8.5 13.5L10 16.5" stroke={col} strokeWidth="1.4" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d="M10 16.5C10 16.5 9 17.5 10.5 18C12 18.5 13 17 13 17L14.5 14.5C14.5 14.5 15 13 14 12.5L11.5 11.5C10 11 8.5 13.5 8.5 13.5" stroke={col} strokeWidth="1.4" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
+    </>,
+    'food-cheese':<>
+      {/* wedge from side */}
+      <path d="M2.5 15.5L10 4.5L17.5 15.5H2.5Z" stroke={col} strokeWidth="1.4" fill="none" strokeLinejoin="round"/>
+      {/* holes */}
+      <circle cx="9" cy="12" r="1.1" fill={col} opacity=".45"/>
+      <circle cx="12.5" cy="12.5" r="0.9" fill={col} opacity=".45"/>
+      <circle cx="7" cy="13.5" r="0.7" fill={col} opacity=".35"/>
+    </>,
+    'food-fish':<><path d="M3 10C3 10 5.5 5.5 10 5.5C14.5 5.5 17 10 17 10C17 10 14.5 14.5 10 14.5C5.5 14.5 3 10 3 10Z" stroke={col} strokeWidth="1.4" fill="none"/><circle cx="13" cy="9.5" r="0.9" fill={col}/><path d="M3 10L1 7.5M3 10L1 12.5" stroke={col} strokeWidth="1.3" strokeLinecap="round"/></>,
+    'food-pasta':<><ellipse cx="10" cy="9" rx="6.5" ry="3" stroke={col} strokeWidth="1.4" fill="none"/><path d="M3.5 9v2c0 2 3 3.5 6.5 3.5s6.5-1.5 6.5-3.5V9" stroke={col} strokeWidth="1.4" fill="none"/><path d="M7 9.5c.8 1 2 1.5 3 1.5s2.2-.5 3-1.5" stroke={col} strokeWidth="1.2" fill="none" strokeLinecap="round"/></>,
+    'food-veg':<><path d="M10 16V8" stroke={col} strokeWidth="1.4" strokeLinecap="round"/><path d="M10 11C10 11 7 9 6 6C8 5.5 10 7 10 7" stroke={col} strokeWidth="1.3" fill="none" strokeLinecap="round" strokeLinejoin="round"/><path d="M10 9C10 9 13 7 14 4C12 3.5 10 5 10 5" stroke={col} strokeWidth="1.3" fill="none" strokeLinecap="round" strokeLinejoin="round"/></>,
+    'food-chicken':<><path d="M8 4.5C8 4.5 6 5 5.5 7C5 9 6.5 10.5 8 11L12 15.5" stroke={col} strokeWidth="1.4" fill="none" strokeLinecap="round" strokeLinejoin="round"/><path d="M12 15.5C12 15.5 10.5 17 12 17.5C13.5 18 14.5 16.5 14.5 16.5L16 14C16 14 16.5 12.5 15.5 12L13 11C11.5 10.5 8 11 8 11" stroke={col} strokeWidth="1.4" fill="none" strokeLinecap="round" strokeLinejoin="round"/></>,
+    'food-bread':<><path d="M4 13.5C4 13.5 3 12 3 10C3 7.5 5 5.5 7.5 5.5H12.5C15 5.5 17 7.5 17 10C17 12 16 13.5 16 13.5H4Z" stroke={col} strokeWidth="1.4" fill="none" strokeLinejoin="round"/><line x1="4" y1="13.5" x2="16" y2="13.5" stroke={col} strokeWidth="1.4" strokeLinecap="round"/></>,
+    'food-generic':<><circle cx="10" cy="10" r="7" stroke={col} strokeWidth="1.4" fill="none"/><path d="M7 10h6M10 7v6" stroke={col} strokeWidth="1.3" strokeLinecap="round" opacity=".5"/></>,
+    // Article/reading icons
+    'read':<><path d="M4 5h12v11a1 1 0 01-1 1H5a1 1 0 01-1-1V5Z" stroke={col} strokeWidth="1.4" fill="none"/><line x1="7" y1="9" x2="13" y2="9" stroke={col} strokeWidth="1.2" strokeLinecap="round"/><line x1="7" y1="12" x2="11" y2="12" stroke={col} strokeWidth="1.2" strokeLinecap="round"/><path d="M7.5 5V3.5" stroke={col} strokeWidth="1.2" strokeLinecap="round"/><path d="M12.5 5V3.5" stroke={col} strokeWidth="1.2" strokeLinecap="round"/></>,
+    'map':<><path d="M7 3.5L3 5.5v11l4-2 6 2 4-2v-11l-4 2-6-2Z" stroke={col} strokeWidth="1.4" fill="none" strokeLinejoin="round"/><line x1="7" y1="3.5" x2="7" y2="14.5" stroke={col} strokeWidth="1.2"/><line x1="13" y1="5.5" x2="13" y2="16.5" stroke={col} strokeWidth="1.2"/></>,
+    'leaf':<><path d="M10 17C10 17 4 14 4 8C4 8 8 5 14 6C14 6 15 12 10 17Z" stroke={col} strokeWidth="1.4" fill="none" strokeLinejoin="round"/><path d="M10 17C10 17 10 12 7 9" stroke={col} strokeWidth="1.2" strokeLinecap="round"/></>,
   };
   return <svg viewBox="0 0 20 20" width={sz} height={sz} style={{display:'block',flexShrink:0,...s}}>{d[n]||<circle cx="10" cy="10" r="7" stroke={col} strokeWidth="1.5" fill="none"/>}</svg>;
 }

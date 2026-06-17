@@ -82,6 +82,7 @@ function App(){
         {screen==='learn'     && <QuizHubScreen {...ctx}/>}
         {screen==='quiz'      && <QuizScreen {...ctx}/>}
         {screen==='article'   && <LearnArticleScreen {...ctx}/>}
+        {screen==='gen-article'&& <GenArticleScreen {...ctx}/>}
       </div>
       {showNav&&<BottomNav active={screen} nav={nav} showPro={setProGate}/>}
       {/* Global XP badge */}
