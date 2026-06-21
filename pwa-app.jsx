@@ -73,7 +73,7 @@ function App(){
   const ctx={nav,back,showPro:setProGate,isTablet};
 
   return(
-    <div style={{width:'100%',maxWidth:isTablet?880:430,height:'100dvh',margin:'0 auto',background:C.bg,display:'flex',flexDirection:isTablet?'row':'column',position:'relative',overflow:'hidden'}}>
+    <div style={{width:'100%',maxWidth:isTablet?'100%':430,height:'100dvh',margin:'0 auto',background:C.bg,display:'flex',flexDirection:isTablet?'row':'column',position:'relative',overflow:'hidden'}}>
       {isTablet&&showNav&&<SideNav active={screen} nav={nav} showPro={setProGate} xpBadge={xpBadge} onXpClick={()=>setShowXpOverlay(true)}/>}
       <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden',minHeight:0}}>
         {screen==='onboarding' && <OnboardingScreen onComplete={()=>{localStorage.setItem('vinterest_onboarded','1');nav('home');}}/>}
