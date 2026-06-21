@@ -105,8 +105,8 @@ function HomeScreen({nav, showPro, isTablet}){
             });
           }}/>
         </div>
-        {/* Compact scan CTA — never scrolls away */}
-        <div onClick={()=>atLimit?showPro('unlimited-scans'):nav('camera')} style={{
+        {/* Compact scan CTA — phone only; tablet uses sidebar */}
+        {!isTablet&&<div onClick={()=>atLimit?showPro('unlimited-scans'):nav('camera')} style={{
           background:C.ink,borderRadius:14,margin:'0 16px 8px',padding:'13px 16px',
           display:'flex',alignItems:'center',gap:14,cursor:'pointer',
           position:'relative',overflow:'hidden'
@@ -124,7 +124,7 @@ function HomeScreen({nav, showPro, isTablet}){
             </div>
           </div>
           {!atLimit&&<Icon n="chevron" sz={14} col="rgba(255,255,255,0.3)"/>}
-        </div>
+        </div>}
       </div>
 
       {/* ── Scrollable body ── */}

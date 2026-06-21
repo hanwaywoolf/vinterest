@@ -130,45 +130,48 @@ function SideNav({active,nav,showPro,xpBadge,onXpClick}){
   const lv=xpBadge?XPSystem.getLevel(xpBadge.total):null;
   const items=[
     {key:'home',   icon:'home',  label:'Home',     isActive:homeActive},
+    {key:'scan',   icon:'camera',label:'Scan',     isActive:active==='scan'||active==='camera'},
     {key:'mywines',icon:'wine',  label:'My Wines', isActive:cellarActive},
     {key:'learn',  icon:'book',  label:'Learn',    isActive:learnActive},
     {key:'profile',icon:'brain', label:'WineDNA',  isActive:profileActive},
   ];
+  const navItems=items.filter(i=>i.key!=='scan');
   return(
     <div style={{width:200,flexShrink:0,height:'100%',background:C.white,borderRight:`1px solid ${C.line}`,display:'flex',flexDirection:'column',overflow:'hidden'}}>
-      {/* Logo */}
-      <div style={{padding:'18px 16px 14px',borderBottom:`1px solid ${C.line}`}}>
-        <img src="logo.png" alt="Vinterest" style={{height:26,width:'auto',display:'block'}}/>
+      {/* Logo + XP */}
+      <div style={{padding:'18px 16px 12px'}}>
+        <img src="logo.png" alt="Vinterest" style={{height:26,width:'auto',display:'block',marginBottom:10}}/>
+        {xpBadge&&lv&&(
+          <div onClick={onXpClick} style={{padding:'6px 8px',borderRadius:8,background:C.crSoft,border:`1px solid ${C.crDim}`,cursor:'pointer',display:'flex',alignItems:'center',gap:8}}>
+            <span style={{fontSize:15,lineHeight:1}}>{lv.badge}</span>
+            <div style={{flex:1,minWidth:0}}>
+              <div style={{fontSize:13,fontWeight:700,color:C.cr,fontFamily:C.P,lineHeight:1.2}}>{xpBadge.total} XP</div>
+              <div style={{fontSize:11,fontWeight:400,color:C.mid,fontFamily:C.P,lineHeight:1.3,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{lv.name}</div>
+            </div>
+            {!!localStorage.getItem('vinterest_pro')&&<span style={{fontSize:10,fontWeight:700,color:'#fff',background:'linear-gradient(135deg,#9B5E00,#C4870A)',borderRadius:6,padding:'2px 5px',flexShrink:0}}>PRO</span>}
+          </div>
+        )}
       </div>
+      {/* Divider */}
+      <div style={{height:1,background:C.line,margin:'0 0 8px'}}/>
       {/* Nav items */}
-      <div style={{padding:'10px 10px 0',display:'flex',flexDirection:'column',gap:2}}>
-        {items.map(item=>(
+      <div style={{padding:'2px 10px 0',display:'flex',flexDirection:'column',gap:2}}>
+        {navItems.map(item=>(
           <div key={item.key} onClick={()=>nav(item.key)} style={{display:'flex',alignItems:'center',gap:10,padding:'10px 12px',borderRadius:10,background:item.isActive?C.crSoft:'transparent',cursor:'pointer',transition:'background .15s'}}>
             <Icon n={item.icon} sz={19} col={item.isActive?C.cr:C.mid}/>
             <span style={{fontSize:14,fontWeight:item.isActive?600:400,color:item.isActive?C.cr:C.ink2,fontFamily:C.P}}>{item.label}</span>
           </div>
         ))}
       </div>
-      {/* Scan CTA */}
-      <div style={{padding:'12px 10px 0'}}>
-        <div onClick={()=>atLimit?showPro('unlimited-scans'):nav('camera')} style={{background:atLimit?'#666':C.cr,borderRadius:12,padding:'12px 14px',display:'flex',alignItems:'center',gap:9,cursor:'pointer',boxShadow:atLimit?'none':`0 4px 16px ${C.cr}40`}}>
-          <Icon n={atLimit?'lock':'camera'} sz={17} col="#fff"/>
-          <span style={{fontSize:14,fontWeight:700,color:'#fff',fontFamily:C.P}}>{atLimit?'Upgrade':'Scan Wine'}</span>
-        </div>
-      </div>
       {/* Spacer */}
       <div style={{flex:1}}/>
-      {/* XP display */}
-      {xpBadge&&lv&&(
-        <div onClick={onXpClick} style={{margin:'0 10px 20px',padding:'10px 12px',borderRadius:12,background:C.crSoft,border:`1px solid ${C.crDim}`,cursor:'pointer',display:'flex',alignItems:'center',gap:8}}>
-          <span style={{fontSize:18,lineHeight:1}}>{lv.badge}</span>
-          <div style={{flex:1,minWidth:0}}>
-            <div style={{fontSize:14,fontWeight:700,color:C.cr,fontFamily:C.P}}>{xpBadge.total} XP</div>
-            <div style={{fontSize:11,color:C.mid,fontFamily:C.P,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{lv.name}</div>
-          </div>
-          {!!localStorage.getItem('vinterest_pro')&&<span style={{fontSize:10,fontWeight:700,color:'#fff',background:'linear-gradient(135deg,#9B5E00,#C4870A)',borderRadius:6,padding:'2px 5px',flexShrink:0}}>PRO</span>}
+      {/* Scan CTA at bottom */}
+      <div style={{padding:'0 10px 20px'}}>
+        <div onClick={()=>atLimit?showPro('unlimited-scans'):nav('camera')} style={{background:atLimit?'#999':C.cr,borderRadius:8,padding:'10px 12px',display:'flex',alignItems:'center',gap:10,cursor:'pointer',boxShadow:atLimit?'none':`0 3px 10px ${C.cr}40`}}>
+          <Icon n={atLimit?'lock':'camera'} sz={19} col="#fff"/>
+          <span style={{fontSize:14,fontWeight:500,color:'#fff',fontFamily:C.P}}>Scan</span>
         </div>
-      )}
+      </div>
     </div>
   );
 }
