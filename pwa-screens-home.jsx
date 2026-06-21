@@ -1,6 +1,6 @@
 /* Vinterest PWA — Home screen */
 
-function HomeScreen({nav, showPro}){
+function HomeScreen({nav, showPro, isTablet}){
   const [typeTab,setTypeTab]=React.useState(0);
   const [genScripts,setGenScripts]=React.useState({});
   const [scriptLength,setScriptLength]=React.useState(localStorage.getItem('vinterest_script_length')||'long');
@@ -79,8 +79,8 @@ function HomeScreen({nav, showPro}){
 
       {/* ── Fixed header: logo + always-visible Scan CTA ── */}
       <div style={{background:C.white,flexShrink:0}}>
-        {/* Logo row */}
-        <div style={{padding:'14px 20px 14px',paddingRight:'120px'}}>
+        {/* Logo row — hidden on tablet (sidebar has logo + XP badge) */}
+        <div style={{padding:'14px 20px 14px',paddingRight:'120px',display:isTablet?'none':undefined}}>
           <img src="logo.png" alt="Vinterest" style={{height:28,width:'auto',display:'block',cursor:'pointer'}} onClick={()=>{
             if(!('serviceWorker' in navigator)) return;
             navigator.serviceWorker.getRegistration().then(function(reg){

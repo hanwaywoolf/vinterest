@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Vinterest — Know your wine</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;0,800;1,400;1,700&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --ink:#0C0608;
+  --cr:#8B1A2F;
+  --cr2:#B82840;
+  --gold:#C4A45A;
+  --cream:#FAF6F1;
+  --warm:#F2EDE6;
+  --mid:#7A6E6B;
+  --line:rgba(0,0,0,0.08);
+  --P:'Poppins',sans-serif;
+  --S:'Playfair Display',serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:var(--P);background:var(--cream);color:var(--ink);-webkit-font-smoothing:antialiased;overflow-x:hidden}
+
+/* ── NAV ── */
+nav{position:fixed;top:0;left:0;right:0;z-index:100;padding:18px 48px;display:flex;align-items:center;justify-content:space-between;mix-blend-mode:normal;transition:background .3s,backdrop-filter .3s}
+nav.scrolled{background:rgba(12,6,8,.85);backdrop-filter:blur(16px)}
+.nav-logo{text-decoration:none;display:flex;align-items:center}.nav-logo img{height:28px;width:auto;filter:brightness(0) invert(1)}
+.nav-cta{font-family:var(--P);font-size:14px;font-weight:600;color:#fff;background:var(--cr);padding:9px 22px;border-radius:100px;text-decoration:none;transition:background .2s,transform .2s}
+.nav-cta:hover{background:var(--cr2);transform:translateY(-1px)}
+
+/* ── HERO ── */
+.hero{min-height:100vh;background:var(--ink);display:flex;flex-direction:column;position:relative;overflow:hidden}
+.hero-grain{position:absolute;inset:0;opacity:.04;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");background-size:200px}
+.hero-glow{position:absolute;top:-200px;right:-100px;width:700px;height:700px;background:radial-gradient(circle,rgba(139,26,47,.35) 0%,transparent 70%);pointer-events:none}
+.hero-glow2{position:absolute;bottom:-300px;left:-200px;width:600px;height:600px;background:radial-gradient(circle,rgba(139,26,47,.18) 0%,transparent 70%);pointer-events:none}
+.hero-inner{flex:1;display:grid;grid-template-columns:1fr 1fr;gap:0;max-width:1200px;margin:0 auto;padding:140px 48px 80px;align-items:center;width:100%}
+.hero-copy{display:flex;flex-direction:column;gap:24px;z-index:2}
+.hero-label{font-family:var(--P);font-size:12px;font-weight:600;color:var(--gold);letter-spacing:.18em;text-transform:uppercase}
+.hero-headline{font-family:var(--P);font-size:clamp(44px,5.5vw,76px);font-weight:800;color:#fff;line-height:1.08;letter-spacing:-.03em}
+.hero-headline em{color:var(--cr2);font-style:normal}
+.hero-sub{font-family:var(--P);font-size:18px;font-weight:300;color:rgba(255,255,255,.55);line-height:1.75;max-width:420px}
+.hero-actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:8px}
+.btn-primary{font-family:var(--P);font-size:15px;font-weight:600;color:#fff;background:var(--cr);padding:14px 28px;border-radius:100px;text-decoration:none;display:inline-flex;align-items:center;gap:8px;transition:all .2s}
+.btn-primary:hover{background:var(--cr2);transform:translateY(-2px);box-shadow:0 12px 32px rgba(139,26,47,.4)}
+.btn-ghost{font-family:var(--P);font-size:15px;font-weight:500;color:rgba(255,255,255,.65);padding:14px 22px;border-radius:100px;text-decoration:none;border:1px solid rgba(255,255,255,.12);transition:all .2s}
+.btn-ghost:hover{color:#fff;border-color:rgba(255,255,255,.3)}
+.hero-stats{display:flex;gap:32px;margin-top:16px;padding-top:24px;border-top:1px solid rgba(255,255,255,.08)}
+.hero-stat-val{font-family:var(--P);font-size:28px;font-weight:700;color:#fff}
+.hero-stat-label{font-family:var(--P);font-size:12px;color:rgba(255,255,255,.4);margin-top:2px}
+
+/* ── PHONE MOCKUP ── */
+.phone-wrap{display:flex;justify-content:center;align-items:center;z-index:2;position:relative}
+/* Hero iPhone frame */
+.hero-iphone{position:relative;width:272px;background:linear-gradient(160deg,#2C2C2E,#1C1C1E);border-radius:56px;padding:8px;box-shadow:0 0 0 1px #4A4A4C,0 0 0 3px #111,0 70px 140px rgba(0,0,0,.75),inset 0 1px 0 rgba(255,255,255,.10),inset 0 -1px 0 rgba(0,0,0,.3)}
+.hero-iphone::before{content:'';position:absolute;left:-4px;top:100px;width:4px;height:30px;background:#3A3A3C;border-radius:2px 0 0 2px;box-shadow:0 46px 0 #3A3A3C}
+.hero-iphone::after{content:'';position:absolute;right:-4px;top:150px;width:4px;height:66px;background:#3A3A3C;border-radius:0 2px 2px 0}
+.hero-iphone-screen{border-radius:22px;overflow:hidden;display:flex;flex-direction:column}
+.hero-iphone-status{background:#8B1A2F;height:40px;display:flex;justify-content:space-between;align-items:center;padding:0 16px;flex-shrink:0}
+.hero-iphone-home{background:#000;padding:8px 0 12px;display:flex;justify-content:center;flex-shrink:0}
+.phone{width:248px;height:520px;background:#111;border-radius:40px;border:2px solid rgba(255,255,255,.1);box-shadow:0 40px 100px rgba(0,0,0,.6),0 0 0 1px rgba(255,255,255,.04),inset 0 0 0 1px rgba(255,255,255,.03);position:relative;overflow:hidden;animation:phoneFloat 4s ease-in-out infinite}
+@keyframes phoneFloat{0%,100%{transform:translateY(0) rotate(2deg)}50%{transform:translateY(-12px) rotate(2deg)}}
+.phone-notch{position:absolute;top:0;left:50%;transform:translateX(-50%);width:80px;height:26px;background:#111;border-radius:0 0 20px 20px;z-index:10}
+.phone-screen{position:absolute;inset:0;background:#FAFAFA;border-radius:38px;overflow:hidden;display:flex;flex-direction:column}
+
+/* Scan UI */
+.scan-header{background:#fff;padding:12px 14px 10px;border-bottom:1px solid #F0EDED;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.scan-logo{font-family:'Playfair Display',serif;font-size:14px;font-weight:700;color:#0C0608}
+.scan-body{flex:1;display:flex;flex-direction:column;padding:10px;gap:8px;overflow:hidden}
+.scan-viewfinder{flex:1;background:linear-gradient(135deg,#1a1a2e,#0d0d1a);border-radius:14px;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center}
+.vf-corner{position:absolute;width:22px;height:22px;border-color:#8B1A2F;border-style:solid;opacity:.8}
+.vf-tl{top:10px;left:10px;border-width:2px 0 0 2px;border-radius:4px 0 0 0}
+.vf-tr{top:10px;right:10px;border-width:2px 2px 0 0;border-radius:0 4px 0 0}
+.vf-bl{bottom:10px;left:10px;border-width:0 0 2px 2px;border-radius:0 0 0 4px}
+.vf-br{bottom:10px;right:10px;border-width:0 2px 2px 0;border-radius:0 0 4px 0}
+.vf-label{font-family:'Poppins',sans-serif;font-size:10px;font-weight:600;color:rgba(255,255,255,.5);letter-spacing:.1em;text-transform:uppercase}
+.vf-dot{width:40px;height:40px;border-radius:50%;border:2px solid rgba(139,26,47,.6);animation:pulse 2s ease-in-out infinite;position:absolute}
+@keyframes pulse{0%,100%{transform:scale(1);opacity:.6}50%{transform:scale(1.4);opacity:.2}}
+.scan-result{background:#fff;border-radius:12px;padding:10px 12px;border:1px solid #F0EDED;flex-shrink:0}
+.sr-name{font-family:'Poppins',sans-serif;font-size:12px;font-weight:700;color:#0C0608}
+.sr-sub{font-family:'Poppins',sans-serif;font-size:10px;color:#7A6E6B;margin-top:1px}
+.sr-badge{display:inline-flex;align-items:center;gap:4px;background:#8B1A2F;padding:3px 8px;border-radius:20px;margin-top:5px}
+.sr-badge span{font-family:'Poppins',sans-serif;font-size:10px;font-weight:700;color:#fff}
+
+/* DNA UI */
+.dna-screen{background:#FAFAFA;flex:1;display:flex;flex-direction:column;overflow:hidden}
+.dna-header{background:#fff;padding:12px 14px 10px;border-bottom:1px solid #F0EDED;flex-shrink:0}
+.dna-title{font-family:'Poppins',sans-serif;font-size:12px;font-weight:700;color:#0C0608}
+.dna-sub{font-family:'Poppins',sans-serif;font-size:9px;color:#7A6E6B}
+.dna-body{flex:1;padding:10px;display:flex;flex-direction:column;gap:8px;overflow:hidden}
+.dna-type{display:flex;gap:6px}
+.dna-chip{padding:4px 10px;border-radius:20px;font-family:'Poppins',sans-serif;font-size:9px;font-weight:600}
+.dna-bar-row{display:flex;flex-direction:column;gap:3px}
+.dna-bar-label{display:flex;justify-content:space-between}
+.dna-bar-label span{font-family:'Poppins',sans-serif;font-size:9px;color:#0C0608;font-weight:500}
+.dna-bar-label small{font-family:'Poppins',sans-serif;font-size:9px;color:#8B1A2F;font-weight:700}
+.dna-track{height:4px;background:#F0EDED;border-radius:2px;overflow:hidden}
+.dna-fill{height:100%;border-radius:2px;background:linear-gradient(to right,#F0EDED,#C4394F)}
+.dna-script{background:#fff;border-radius:10px;padding:8px 10px;border-left:2px solid #8B1A2F;margin-top:4px;flex-shrink:0}
+.dna-script p{font-family:'Poppins',sans-serif;font-size:9px;color:#4A3E3E;line-height:1.5;font-style:italic}
+
+/* Script UI */
+.scr-screen{background:#FAFAFA;flex:1;display:flex;flex-direction:column;overflow:hidden}
+.scr-header{background:#fff;padding:12px 14px 10px;border-bottom:1px solid #F0EDED;flex-shrink:0}
+.scr-title{font-family:'Poppins',sans-serif;font-size:12px;font-weight:700;color:#0C0608}
+.scr-body{flex:1;padding:10px;display:flex;flex-direction:column;gap:8px;overflow:hidden}
+.scr-card{background:#fff;border-radius:12px;border:1px solid #F0EDED;overflow:hidden}
+.scr-card-top{background:#8B1A2F;padding:8px 12px}
+.scr-card-top p{font-family:'Poppins',sans-serif;font-size:9px;font-weight:600;color:rgba(255,255,255,.7);text-transform:uppercase;letter-spacing:.08em}
+.scr-card-top h4{font-family:'Poppins',sans-serif;font-size:10px;font-weight:700;color:#fff;margin-top:2px}
+.scr-card-body{padding:10px 12px}
+.scr-card-body p{font-family:'Poppins',sans-serif;font-size:9px;color:#4A3E3E;line-height:1.6;font-style:italic}
+.scr-tabs{display:flex;gap:0;background:#F8F4F0;border-radius:8px;padding:2px;flex-shrink:0}
+.scr-tab{flex:1;text-align:center;padding:5px;border-radius:6px;font-family:'Poppins',sans-serif;font-size:9px;font-weight:600}
+
+/* ── SECTIONS ── */
+section{padding:100px 48px}
+.max{max-width:1200px;margin:0 auto}
+
+/* How it works */
+.how{background:var(--cream)}
+.section-label{font-family:var(--P);font-size:11px;font-weight:600;color:var(--cr);letter-spacing:.18em;text-transform:uppercase;margin-bottom:16px}
+.section-title{font-family:var(--S);font-size:clamp(36px,4vw,54px);font-weight:700;color:var(--ink);line-height:1.1;letter-spacing:-.02em}
+.section-title em{font-style:italic;color:var(--cr)}
+.how-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:40px;margin-top:60px}
+.how-step{display:flex;flex-direction:column;gap:16px}
+.how-num{font-family:var(--S);font-size:64px;font-weight:700;color:rgba(139,26,47,.1);line-height:1}
+.how-icon{width:48px;height:48px;border-radius:14px;background:var(--cr);display:flex;align-items:center;justify-content:center}
+.how-h{font-family:var(--S);font-size:22px;font-weight:700;color:var(--ink)}
+.how-p{font-family:var(--P);font-size:16px;color:var(--mid);line-height:1.7}
+
+/* DNA */
+.dna-sect{background:#0C0608;position:relative;overflow:hidden}
+.dna-grain{position:absolute;inset:0;opacity:.035;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");background-size:200px}
+.dna-glow{position:absolute;right:-200px;top:50%;transform:translateY(-50%);width:600px;height:600px;background:radial-gradient(circle,rgba(139,26,47,.3) 0%,transparent 70%);pointer-events:none}
+.dna-split{display:grid;grid-template-columns:1fr 1fr;gap:80px;align-items:center;position:relative;z-index:2}
+.dna-copy{display:flex;flex-direction:column;gap:24px}
+.dna-label{font-family:var(--P);font-size:11px;font-weight:600;color:var(--gold);letter-spacing:.18em;text-transform:uppercase}
+.dna-headline{font-family:var(--S);font-size:clamp(36px,4vw,56px);font-weight:800;color:#fff;line-height:1.1;letter-spacing:-.02em}
+.dna-headline em{font-style:italic;color:rgba(196,164,90,.9)}
+.dna-body{font-family:var(--P);font-size:17px;color:rgba(255,255,255,.5);line-height:1.8}
+.dna-features{display:flex;flex-direction:column;gap:12px;margin-top:8px}
+.dna-feat{display:flex;align-items:flex-start;gap:12px}
+.dna-feat-dot{width:6px;height:6px;border-radius:50%;background:var(--cr2);flex-shrink:0;margin-top:7px}
+.dna-feat p{font-family:var(--P);font-size:15px;color:rgba(255,255,255,.6);line-height:1.5}
+.dna-feat strong{color:rgba(255,255,255,.85);font-weight:600}
+
+/* Script */
+.script-sect{background:var(--warm)}
+.script-split{display:grid;grid-template-columns:1fr 1fr;gap:80px;align-items:center}
+.script-copy{display:flex;flex-direction:column;gap:24px}
+.script-quote{font-family:var(--S);font-size:18px;font-style:italic;color:var(--cr);line-height:1.7;padding-left:20px;border-left:2px solid var(--cr);margin-top:8px}
+
+/* Features */
+.feat-sect{background:#fff}
+.feat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:20px;overflow:hidden;margin-top:60px}
+.feat-card{background:#fff;padding:32px;display:flex;flex-direction:column;gap:14px;transition:background .2s}
+.feat-card:hover{background:var(--cream)}
+.feat-icon{width:44px;height:44px;border-radius:12px;background:var(--cr);display:flex;align-items:center;justify-content:center}
+.feat-h{font-family:var(--S);font-size:20px;font-weight:700;color:var(--ink)}
+.feat-p{font-family:var(--P);font-size:15px;color:var(--mid);line-height:1.65}
+
+/* Learning */
+.learn-sect{background:var(--cream)}
+.learn-split{display:grid;grid-template-columns:1fr 1fr;gap:80px;align-items:center}
+.learn-cards{display:flex;flex-direction:column;gap:12px}
+.learn-card{background:#fff;border-radius:16px;padding:18px 20px;display:flex;align-items:center;gap:16px;border:1px solid var(--line);transition:transform .2s,box-shadow .2s}
+.learn-card:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.08)}
+.learn-card-icon{width:40px;height:40px;border-radius:11px;background:var(--cr);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.learn-card-h{font-family:var(--P);font-size:15px;font-weight:700;color:var(--ink)}
+.learn-card-p{font-family:var(--P);font-size:13px;color:var(--mid);margin-top:2px}
+.learn-xp{font-family:var(--P);font-size:12px;font-weight:700;color:var(--cr)}
+
+/* CTA */
+.cta-sect{background:var(--cr);position:relative;overflow:hidden;text-align:center}
+.cta-grain{position:absolute;inset:0;opacity:.08;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");background-size:200px}
+.cta-inner{position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;gap:28px}
+.cta-headline{font-family:var(--S);font-size:clamp(40px,5vw,72px);font-weight:800;color:#fff;line-height:1.05;letter-spacing:-.02em;max-width:700px}
+.cta-sub{font-family:var(--P);font-size:18px;color:rgba(255,255,255,.7);max-width:440px;line-height:1.7}
+.cta-actions{display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
+.btn-white{font-family:var(--P);font-size:15px;font-weight:700;color:var(--cr);background:#fff;padding:15px 32px;border-radius:100px;text-decoration:none;display:inline-flex;align-items:center;gap:8px;transition:all .2s}
+.btn-white:hover{transform:translateY(-2px);box-shadow:0 12px 32px rgba(0,0,0,.2)}
+.btn-white-ghost{font-family:var(--P);font-size:15px;font-weight:500;color:rgba(255,255,255,.8);padding:15px 28px;border-radius:100px;text-decoration:none;border:1px solid rgba(255,255,255,.3);transition:all .2s}
+.btn-white-ghost:hover{color:#fff;border-color:rgba(255,255,255,.7)}
+
+/* Footer */
+footer{background:var(--ink);padding:48px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:20px}
+.footer-logo{font-family:var(--S);font-size:20px;font-weight:700;color:#fff}
+.footer-tagline{font-family:var(--P);font-size:13px;color:rgba(255,255,255,.35);margin-top:4px}
+.footer-link{font-family:var(--P);font-size:14px;color:rgba(255,255,255,.4);text-decoration:none;transition:color .2s}
+.footer-link:hover{color:rgba(255,255,255,.8)}
+
+/* Reveal animations */
+.reveal{opacity:0;transform:translateY(28px);transition:opacity .7s ease,transform .7s ease}
+.reveal.visible{opacity:1;transform:none}
+.reveal-delay-1{transition-delay:.1s}
+.reveal-delay-2{transition-delay:.2s}
+.reveal-delay-3{transition-delay:.3s}
+
+/* SVG icons inline */
+.icon-svg{display:block}
+
+/* Responsive */
+@media(max-width:900px){
+  nav{padding:16px 24px}
+  .hero-inner{grid-template-columns:1fr;padding:100px 24px 60px;text-align:center}
+  .hero-sub{max-width:100%}
+  .hero-stats{justify-content:center}
+  .hero-actions{justify-content:center}
+  .phone-wrap{margin-top:40px}
+  section{padding:72px 24px}
+  .how-grid,.dna-split,.script-split,.learn-split{grid-template-columns:1fr;gap:40px}
+  .feat-grid{grid-template-columns:1fr 1fr}
+  .phone-wrap.reverse{order:-1}
+  footer{padding:32px 24px;flex-direction:column;align-items:flex-start}
+}
+@media(max-width:600px){
+  .feat-grid{grid-template-columns:1fr}
+}
+</style>
+<link id="gfont-Poppins" rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&amp;display=swap">
+</head>
+<body>
+
+<!-- NAV -->
+<nav id="nav">
+  <a href="#" class="nav-logo"><img src="uploads/vinterest-wordmark-logo--all-capital-letters--clea-3c2c6ad7.png" alt="Vinterest"></a>
+  <a href="https://vinterest.pages.dev" target="_blank" class="nav-cta">Open App</a>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-grain"></div>
+  <div class="hero-glow"></div>
+  <div class="hero-glow2"></div>
+  <div class="hero-inner">
+    <div class="hero-copy">
+      <div class="hero-label reveal">Your personal wine companion</div>
+      <h1 class="hero-headline reveal reveal-delay-1">Gain a little con<em>vin</em>dence<br/>with every sip.</h1>
+      <p class="hero-sub reveal reveal-delay-2">Every bottle you scan teaches you something. Your taste, your style, your words. Vinterest builds a wine profile that's uniquely yours — so you always know what to order, what to buy, and what to say.</p>
+      <div class="hero-actions reveal reveal-delay-3">
+        <a href="https://vinterest.pages.dev" target="_blank" class="btn-primary">
+          <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M10 3v10M6 9l4 4 4-4" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 16h12" stroke="#fff" stroke-width="1.7" stroke-linecap="round"/></svg>
+          Download free
+        </a>
+
+      </div>
+      <div class="hero-stats reveal reveal-delay-3">
+        <div>
+          <div class="hero-stat-val">Free</div>
+          <div class="hero-stat-label">to get started</div>
+        </div>
+        <div>
+          <div class="hero-stat-val">AI</div>
+          <div class="hero-stat-label">personalised for you</div>
+        </div>
+        <div>
+          <div class="hero-stat-val">WineDNA</div>
+          <div class="hero-stat-label">built around your taste</div>
+        </div>
+      </div>
+    </div>
+    <!-- Hero phone: App mockup -->
+    <div class="phone-wrap reveal reveal-delay-2">
+      <img src="uploads/app-mockup-nobg.png" alt="Vinterest app" style="width:300px;height:auto;display:block;filter:drop-shadow(0 40px 80px rgba(0,0,0,0.6));"/>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="how">
+  <div class="max">
+    <div class="section-label reveal">How it works</div>
+    <h2 class="section-title reveal reveal-delay-1">Three steps to knowing your wine — and yourself.</h2>
+    <div class="how-grid">
+      <div class="how-step reveal">
+        <div class="how-num">01</div>
+        <div class="how-icon">
+          <svg width="22" height="22" viewBox="0 0 20 20" fill="none"><rect x="2.5" y="6" width="15" height="11" rx="2" stroke="#fff" stroke-width="1.5" fill="none"/><circle cx="10" cy="11.5" r="3" stroke="#fff" stroke-width="1.5" fill="none"/><path d="M7.5 6L8.5 4h3l1 2" stroke="#fff" stroke-width="1.4" fill="none" stroke-linejoin="round"/></svg>
+        </div>
+        <h3 class="how-h">Scan</h3>
+        <p class="how-p">Point your camera at any bottle. Vinterest identifies it in seconds — no typing, no searching, no guessing.</p>
+      </div>
+      <div class="how-step reveal reveal-delay-1">
+        <div class="how-num">02</div>
+        <div class="how-icon">
+          <svg width="22" height="22" viewBox="0 0 20 20" fill="none"><path d="M7.5 2.5h5v5c0 3.5-1.8 5-2.5 5S7.5 11 7.5 8V2.5z" stroke="#fff" stroke-width="1.5" fill="none" stroke-linejoin="round"/><line x1="10" y1="12.5" x2="10" y2="17" stroke="#fff" stroke-width="1.5"/><line x1="7" y1="17" x2="13" y2="17" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/></svg>
+        </div>
+        <h3 class="how-h">Discover</h3>
+        <p class="how-p">Tasting notes, food pairings, vintage quality, and real retail prices — every detail explained in plain language, matched to your taste.</p>
+      </div>
+      <div class="how-step reveal reveal-delay-2">
+        <div class="how-num">03</div>
+        <div class="how-icon">
+          <svg width="22" height="22" viewBox="0 0 20 20" fill="none"><path d="M10 15V7.5" stroke="#fff" stroke-width="1.2" stroke-linecap="round" stroke-dasharray="1.2 1.8" opacity=".4"/><path d="M10 7.5C10 5.5 8.5 4 7 4C5.3 4 4 5.2 4 6.8C3.1 7.1 2.4 8 2.4 9.2C2.4 10.4 3.2 11.4 4.3 11.7C4.1 12.2 4 12.7 4 13.3C4 14.9 5.3 16.1 7 16.2L10 16.3" stroke="#fff" stroke-width="1.5" fill="none" stroke-linecap="round"/><path d="M10 7.5C10 5.5 11.5 4 13 4C14.7 4 16 5.2 16 6.8C16.9 7.1 17.6 8 17.6 9.2C17.6 10.4 16.8 11.4 15.7 11.7C15.9 12.2 16 12.7 16 13.3C16 14.9 14.7 16.1 13 16.2L10 16.3" stroke="#fff" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>
+        </div>
+        <h3 class="how-h">Grow</h3>
+        <p class="how-p">Every bottle you scan deepens your WineDNA — a living portrait of your palate that gets sharper, and more uniquely yours, with every pour.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- WINE DNA -->
+<section class="dna-sect">
+  <div class="dna-grain"></div>
+  <div class="dna-glow"></div>
+  <div class="max">
+    <div class="dna-split">
+      <!-- Phone: DNA screen -->
+      <div class="phone-wrap reveal" style="animation:none">
+        <div class="phone" style="animation:none;transform:rotate(-2deg)">
+          <div class="phone-notch"></div>
+          <div class="phone-screen">
+            <div class="dna-header">
+              <div class="dna-title">Wine DNA</div>
+              <div class="dna-sub">Your taste fingerprint</div>
+            </div>
+            <div class="dna-body">
+              <div class="dna-type">
+                <div class="dna-chip" style="background:#8B1A2F;color:#fff">Reds</div>
+                <div class="dna-chip" style="background:#F8F4F0;color:#7A6E6B">Whites</div>
+                <div class="dna-chip" style="background:#F8F4F0;color:#7A6E6B">Rosé</div>
+                <div class="dna-chip" style="background:#F8F4F0;color:#7A6E6B">Sparkling</div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:8px">
+                <div class="dna-bar-row"><div class="dna-bar-label"><span>Body</span><small>Full</small></div><div class="dna-track"><div class="dna-fill" style="width:85%"></div></div></div>
+                <div class="dna-bar-row"><div class="dna-bar-label"><span>Tannins</span><small>Grippy</small></div><div class="dna-track"><div class="dna-fill" style="width:72%"></div></div></div>
+                <div class="dna-bar-row"><div class="dna-bar-label"><span>Acidity</span><small>Medium</small></div><div class="dna-track"><div class="dna-fill" style="width:55%"></div></div></div>
+                <div class="dna-bar-row"><div class="dna-bar-label"><span>Sweetness</span><small>Dry</small></div><div class="dna-track"><div class="dna-fill" style="width:12%"></div></div></div>
+              </div>
+              <div class="dna-script">
+                <p style="font-family:'Poppins',sans-serif;font-size:8px;font-weight:700;color:#8B1A2F;text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px">Your Red Script</p>
+                <p>"I love full-bodied reds with structure — Châteauneuf-du-Pape, Barolo, and aged Rioja are my touchstones."</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Copy -->
+      <div class="dna-copy reveal reveal-delay-1">
+        <div class="dna-label">WineDNA</div>
+        <h2 class="dna-headline">Your taste, finally understood.</h2>
+        <p class="dna-body">Most people drink what they know because they don't know what they like. WineDNA changes that. Every bottle you scan adds another layer to a portrait of your palate — your favourite regions, your go-to grapes, your body preferences, your flavour signatures — built entirely around you.</p>
+        <div class="dna-features">
+          <div class="dna-feat"><div class="dna-feat-dot"></div><p><strong>It goes deep</strong> — Not just what you like, but why. WineDNA explains your taste in plain language — so you understand yourself as a wine drinker, not just what's in your glass.</p></div>
+          <div class="dna-feat"><div class="dna-feat-dot"></div><p><strong>It evolves with you</strong> — Your palate isn't static and neither is your WineDNA. Scan more, explore more, and watch your taste profile sharpen with every pour.</p></div>
+          <div class="dna-feat"><div class="dna-feat-dot"></div><p><strong>It covers everything</strong> — Separate profiles for reds, whites, rosé, and sparkling — because your taste in a Burgundy and your taste in a Blanc de Blancs are two very different conversations.</p></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SOMMELIER SCRIPT -->
+<section class="script-sect">
+  <div class="max">
+    <div class="script-split">
+      <div class="script-copy reveal">
+        <div class="section-label">Sommelier Script</div>
+        <h2 class="section-title">Always know what to say.</h2>
+        <p class="how-p" style="margin-top:0">Most people freeze when a sommelier asks what they like. Or they point at a price point and hope for the best. Your Sommelier Script changes that — a personalised, WineDNA-powered description of your taste, in your own words, ready whenever you need it.</p>
+        <p class="how-p" style="margin-top:16px">Short enough to say at the table. Long enough to impress at the cellar door. Separate scripts for reds, whites, rosé, and sparkling — so whatever you're ordering, you sound exactly like someone who knows their wine.</p>
+        <p class="how-p" style="margin-top:8px;font-style:italic">Because you do.</p>
+      </div>
+      <!-- Phone: Script screen -->
+      <div class="phone-wrap reveal reveal-delay-1">
+        <div class="phone" style="animation:none;transform:rotate(1.5deg)">
+          <div class="phone-notch"></div>
+          <div class="phone-screen">
+            <div class="scan-header"><span class="scan-logo">Home</span></div>
+            <div style="padding:10px;display:flex;flex-direction:column;gap:8px;flex:1;overflow:hidden">
+              <div style="display:flex;gap:0;background:#F8F4F0;border-radius:8px;padding:2px">
+                <div style="flex:1;text-align:center;padding:5px;border-radius:6px;background:#8B1A2F"><span style="font-family:'Poppins',sans-serif;font-size:9px;font-weight:600;color:#fff">Reds</span></div>
+                <div style="flex:1;text-align:center;padding:5px"><span style="font-family:'Poppins',sans-serif;font-size:9px;font-weight:600;color:#7A6E6B">Whites</span></div>
+                <div style="flex:1;text-align:center;padding:5px"><span style="font-family:'Poppins',sans-serif;font-size:9px;font-weight:600;color:#7A6E6B">Rosé</span></div>
+                <div style="flex:1;text-align:center;padding:5px"><span style="font-family:'Poppins',sans-serif;font-size:8px;font-weight:600;color:#7A6E6B">Sparkling</span></div>
+              </div>
+              <div style="background:rgba(139,26,47,.06);border:1.5px solid rgba(139,26,47,.15);border-radius:12px;padding:10px 12px">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+                  <div style="display:flex;align-items:center;gap:6px">
+                    <svg width="12" height="12" viewBox="0 0 20 20" fill="none"><path d="M3 5h14a1 1 0 011 1v8a1 1 0 01-1 1H5l-3 2V6a1 1 0 011-1z" stroke="#8B1A2F" stroke-width="1.5" fill="none" stroke-linejoin="round"/></svg>
+                    <span style="font-family:'Poppins',sans-serif;font-size:9px;font-weight:700;color:#0C0608">Your Red Script</span>
+                  </div>
+                  <div style="display:flex;gap:2px;background:#F8F4F0;border-radius:4px;padding:2px">
+                    <div style="padding:2px 5px;border-radius:3px;background:#8B1A2F"><span style="font-family:'Poppins',sans-serif;font-size:8px;font-weight:600;color:#fff">Short</span></div>
+                    <div style="padding:2px 5px;border-radius:3px"><span style="font-family:'Poppins',sans-serif;font-size:8px;font-weight:600;color:#7A6E6B">Long</span></div>
+                  </div>
+                </div>
+                <p style="font-family:'Poppins',sans-serif;font-size:9px;color:#4A3E3E;line-height:1.6;font-style:italic">"Full-bodied Grenache-forward reds from southern Rhône — my benchmarks are Châteauneuf and aged Rioja."</p>
+              </div>
+              <div style="background:#fff;border-radius:12px;border:1px solid #F0EDED;padding:8px 12px">
+                <div style="font-family:'Poppins',sans-serif;font-size:9px;color:#7A6E6B;font-weight:500;margin-bottom:6px">Recently scanned</div>
+                <div style="display:flex;flex-direction:column;gap:5px">
+                  <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-family:'Poppins',sans-serif;font-size:9px;font-weight:600;color:#0C0608">Châteauneuf-du-Pape Jean XXII</span><span style="font-family:'Poppins',sans-serif;font-size:9px;font-weight:700;color:#8B1A2F">80</span></div>
+                  <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-family:'Poppins',sans-serif;font-size:9px;font-weight:600;color:#0C0608">Banda Azul Rioja 1985</span><span style="font-family:'Poppins',sans-serif;font-size:9px;font-weight:700;color:#8B1A2F">95</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section class="feat-sect">
+  <div class="max">
+    <div class="section-label reveal">Features</div>
+    <h2 class="section-title reveal reveal-delay-1">Built for the <em>curious drinker.</em></h2>
+    <div class="feat-grid reveal reveal-delay-1">
+      <div class="feat-card">
+        <div class="feat-icon">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M10 16.5C10 16.5 3 12 3 7.5C3 5 5 3.2 7.2 3.2c1.5 0 2.5 1 2.8 1.8.3-.8 1.3-1.8 2.8-1.8C15 3.2 17 5 17 7.5c0 4.5-7 9-7 9z" stroke="#fff" stroke-width="1.6" fill="none"/></svg>
+        </div>
+        <h3 class="feat-h">Match Score</h3>
+        <p class="feat-p">Every wine scored against your actual WineDNA — not generic critic ratings. Know before you buy whether it's really your style.</p>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 5h12M4 9h12M4 13h7" stroke="#fff" stroke-width="1.6" stroke-linecap="round" fill="none"/><circle cx="15" cy="14.5" r="2.8" stroke="#fff" stroke-width="1.5" fill="none"/><path d="M16.8 16.3l1.8 1.8" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/></svg>
+        </div>
+        <h3 class="feat-h">Scan the wine list</h3>
+        <p class="feat-p">At a restaurant and not sure where to start? Scan the wine list and Vinterest highlights the bottles that match your WineDNA — so you order with confidence, every time.</p>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M7 2v5c0 1.5.8 2.5 2 3v8" stroke="#fff" stroke-width="1.6" fill="none" stroke-linecap="round"/><path d="M5 2v3M9 2v3" stroke="#fff" stroke-width="1.6" fill="none" stroke-linecap="round"/><path d="M14 2v4l2-1v-3" stroke="#fff" stroke-width="1.6" fill="none" stroke-linecap="round"/><path d="M14 6c0 2.5 2 3 2 5v7" stroke="#fff" stroke-width="1.6" fill="none" stroke-linecap="round"/></svg>
+        </div>
+        <h3 class="feat-h">Food Pairings</h3>
+        <p class="feat-p">Intelligent pairing suggestions matched to the wine's profile — so every meal becomes a better experience.</p>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="7.5" stroke="#fff" stroke-width="1.5" fill="none"/><ellipse cx="10" cy="10" rx="3.5" ry="7.5" stroke="#fff" stroke-width="1.2" fill="none"/><line x1="2.5" y1="10" x2="17.5" y2="10" stroke="#fff" stroke-width="1.2"/></svg>
+        </div>
+        <h3 class="feat-h">Vintage Data</h3>
+        <p class="feat-p">Quality ratings, drinking windows, and peak years for every vintage — so you always know when to open it.</p>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M2 3h2.5l2.2 10h8.6l1.8-7H6.5" stroke="#fff" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/><circle cx="9" cy="17" r="1.2" fill="#fff"/><circle cx="14.5" cy="17" r="1.2" fill="#fff"/></svg>
+        </div>
+        <h3 class="feat-h">Where to Buy</h3>
+        <p class="feat-p">Real prices and local stockists based on where you are — so you never overpay for a bottle you could find cheaper down the road.</p>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 4.5C4 4.5 7 3.5 10 5C13 3.5 16 4.5 16 4.5V15C16 15 13 14 10 15.5C7 14 4 15 4 15V4.5Z" stroke="#fff" stroke-width="1.6" fill="none" stroke-linejoin="round"/><line x1="10" y1="5" x2="10" y2="15.5" stroke="#fff" stroke-width="1.2"/></svg>
+        </div>
+        <h3 class="feat-h">Wine Stories</h3>
+        <p class="feat-p">The winemaker's story, the grape's history, the region's character — beautifully written for every bottle you scan.</p>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M5.5 3h9v5c0 3-2 5-4.5 5S5.5 11 5.5 8V3z" stroke="#fff" stroke-width="1.5" fill="none"/><line x1="10" y1="13" x2="10" y2="16.5" stroke="#fff" stroke-width="1.5"/><line x1="7" y1="16.5" x2="13" y2="16.5" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/></svg>
+        </div>
+        <h3 class="feat-h">XP &amp; Progress</h3>
+        <p class="feat-p">Earn points for scanning, rating, and learning. Watch your wine knowledge grow with every bottle.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- LEARNING HUB -->
+<section class="learn-sect">
+  <div class="max">
+    <div class="learn-split">
+      <div class="reveal">
+        <div class="section-label">Learn</div>
+        <h2 class="section-title">Every sip makes you <em>sharper.</em></h2>
+        <p class="how-p" style="margin-top:20px">Vinterest learns as you drink — and so do you. AI-personalised articles, wine quizzes, and tasting deep-dives, all tailored to your WineDNA and knowledge level. The more you explore, the more you earn. The more you earn, the more you unlock.</p>
+        <p class="how-p" style="margin-top:16px">Start as a Novice. Work your way through Explorer, Connoisseur, Sommelier, and beyond. Every scan, every quiz, every rating earns you XP — and every XP brings you closer to Grand Master.</p>
+        <p class="how-p" style="margin-top:16px">Wine knowledge shouldn't feel like homework. With Vinterest, it feels like the next glass.</p>
+        <a href="https://vinterest.pages.dev" target="_blank" class="btn-primary" style="margin-top:28px;display:inline-flex">Start learning →</a>
+      </div>
+      <div class="learn-cards reveal reveal-delay-1">
+        <div class="learn-card">
+          <div class="learn-card-icon">
+            <svg width="18" height="18" viewBox="0 0 20 20" fill="none"><path d="M4 4.5C4 4.5 7 3.5 10 5C13 3.5 16 4.5 16 4.5V15C16 15 13 14 10 15.5C7 14 4 15 4 15V4.5Z" stroke="#fff" stroke-width="1.6" fill="none" stroke-linejoin="round"/><line x1="10" y1="5" x2="10" y2="15.5" stroke="#fff" stroke-width="1.2"/></svg>
+          </div>
+          <div>
+            <div class="learn-card-h">5 taste terms every wine drinker should know</div>
+            <div class="learn-card-p">Body, tannins, acidity, finish — explained simply</div>
+          </div>
+          <div class="learn-xp" style="margin-left:auto;flex-shrink:0">+25 XP</div>
+        </div>
+        <div class="learn-card">
+          <div class="learn-card-icon" style="background:#C4A45A">
+            <svg width="18" height="18" viewBox="0 0 20 20" fill="none"><path d="M5.5 3h9v5c0 3-2 5-4.5 5S5.5 11 5.5 8V3z" stroke="#fff" stroke-width="1.5" fill="none"/><line x1="10" y1="13" x2="10" y2="16.5" stroke="#fff" stroke-width="1.5"/><line x1="7" y1="16.5" x2="13" y2="16.5" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/></svg>
+          </div>
+          <div>
+            <div class="learn-card-h">Regions quiz — Beginner</div>
+            <div class="learn-card-p">France, Italy, Spain — can you name the wines?</div>
+          </div>
+          <div class="learn-xp" style="margin-left:auto;flex-shrink:0">+50 XP</div>
+        </div>
+        <div class="learn-card" style="opacity:.6">
+          <div class="learn-card-icon" style="background:#C4394F">
+            <svg width="18" height="18" viewBox="0 0 20 20" fill="none"><path d="M7.5 2.5h5v5c0 3.5-1.8 5-2.5 5S7.5 11 7.5 8V2.5z" stroke="#fff" stroke-width="1.5" fill="none" stroke-linejoin="round"/><line x1="10" y1="12.5" x2="10" y2="17" stroke="#fff" stroke-width="1.5"/><line x1="7" y1="17" x2="13" y2="17" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/></svg>
+          </div>
+          <div>
+            <div class="learn-card-h">Your personalised reading list</div>
+            <div class="learn-card-p">AI-curated articles based on your wine history</div>
+          </div>
+          <div class="learn-xp" style="margin-left:auto;flex-shrink:0;color:var(--mid)">Unlocks →</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta-sect">
+  <div class="cta-grain"></div>
+  <div class="max">
+    <div class="cta-inner">
+      <h2 class="cta-headline reveal">Every great wine has a story. Now so do you.</h2>
+      <p class="cta-sub reveal reveal-delay-1">You don't need to be an expert to drink like one. You just need Vinterest. Scan your first bottle, start building your WineDNA, and gain a little con<em style="font-style:italic">vin</em>dence with every sip.</p>
+      <div class="cta-actions reveal reveal-delay-2">
+        <a href="https://vinterest.pages.dev" target="_blank" class="btn-white">Download free</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div>
+    <div class="footer-logo">Vinterest</div>
+    <div class="footer-tagline">Know your wine. Every pour.</div>
+  </div>
+  <div style="display:flex;gap:28px;flex-wrap:wrap">
+    <a href="https://vinterest.pages.dev" target="_blank" class="footer-link">Open App</a>
+    <a href="https://vinterest.pages.dev" target="_blank" class="footer-link">Install</a>
+  </div>
+</footer>
+
+<script>
+// Nav scroll state
+const nav=document.getElementById('nav');
+window.addEventListener('scroll',()=>{nav.classList.toggle('scrolled',window.scrollY>60);},{ passive:true });
+
+// Reveal on scroll
+const reveals=document.querySelectorAll('.reveal');
+const io=new IntersectionObserver((entries)=>{
+  entries.forEach(e=>{if(e.isIntersecting){e.target.classList.add('visible');io.unobserve(e.target);}});
+},{threshold:.12});
+reveals.forEach(r=>io.observe(r));
+
+// Trigger hero elements immediately
+document.querySelectorAll('.hero .reveal').forEach((el,i)=>{
+  setTimeout(()=>el.classList.add('visible'), i*150+200);
+});
+</script>
+
+<template id="__bundler_thumbnail">
+  <svg viewBox="0 0 400 300" xmlns="http://www.w3.org/2000/svg">
+    <rect width="400" height="300" fill="#0C0608"/>
+    <text x="200" y="140" text-anchor="middle" font-family="Georgia,serif" font-size="36" font-weight="700" fill="#8B1A2F">Vinterest</text>
+    <text x="200" y="175" text-anchor="middle" font-family="Georgia,serif" font-size="14" fill="rgba(255,255,255,0.4)">Know your wine. Every pour.</text>
+  </svg>
+</template>
+
+</body>
+</html>

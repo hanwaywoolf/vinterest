@@ -56,6 +56,11 @@
   /* On actual mobile, body matches app bg */
   @media(max-width:430px){body{background:#FAFAFA;}}
 
+  /* Tablet layout — wider container */
+  @media(min-width:768px){
+    #root{max-width:880px;}
+  }
+
   /* Prevent text selection on tap (mobile) */
   * { -webkit-user-select: none; user-select: none; }
   input, textarea, [contenteditable] { -webkit-user-select: text; user-select: text; }
