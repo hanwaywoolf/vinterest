@@ -79,8 +79,8 @@ function HomeScreen({nav, showPro, isTablet}){
 
       {/* ── Fixed header: logo + always-visible Scan CTA ── */}
       <div style={{background:C.white,flexShrink:0}}>
-        {/* Logo row — hidden on tablet (sidebar has logo + XP badge) */}
-        <div style={{padding:'14px 20px 14px',paddingRight:'120px',display:isTablet?'none':undefined}}>
+        {/* Logo row */}
+        <div style={{padding:'14px 20px 14px',paddingRight:'120px'}}>
           <img src="logo.png" alt="Vinterest" style={{height:28,width:'auto',display:'block',cursor:'pointer'}} onClick={()=>{
             if(!('serviceWorker' in navigator)) return;
             navigator.serviceWorker.getRegistration().then(function(reg){

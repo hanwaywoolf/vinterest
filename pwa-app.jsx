@@ -12,10 +12,11 @@ function App(){
   });
   const [proGate,setProGate]=React.useState(null);
 
-  // Tablet / iPad detection
-  const [isTablet,setIsTablet]=React.useState(()=>window.innerWidth>=768);
+  // Tablet / iPad detection (localStorage 'vinterest_force_mobile'=1 overrides for preview)
+  const forceMobile=()=>localStorage.getItem('vinterest_force_mobile')==='1';
+  const [isTablet,setIsTablet]=React.useState(()=>!forceMobile()&&window.innerWidth>=768);
   React.useEffect(()=>{
-    const h=()=>setIsTablet(window.innerWidth>=768);
+    const h=()=>setIsTablet(!forceMobile()&&window.innerWidth>=768);
     window.addEventListener('resize',h);
     return()=>window.removeEventListener('resize',h);
   },[]);
@@ -73,8 +74,7 @@ function App(){
   const ctx={nav,back,showPro:setProGate,isTablet};
 
   return(
-    <div style={{width:'100%',maxWidth:isTablet?'100%':430,height:'100dvh',margin:'0 auto',background:C.bg,display:'flex',flexDirection:isTablet?'row':'column',position:'relative',overflow:'hidden'}}>
-      {isTablet&&showNav&&<SideNav active={screen} nav={nav} showPro={setProGate} xpBadge={xpBadge} onXpClick={()=>setShowXpOverlay(true)}/>}
+    <div style={{width:'100%',maxWidth:isTablet?'100%':430,height:'100dvh',margin:'0 auto',background:C.bg,display:'flex',flexDirection:'column',position:'relative',overflow:'hidden'}}>
       <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden',minHeight:0}}>
         {screen==='onboarding' && <OnboardingScreen onComplete={()=>{localStorage.setItem('vinterest_onboarded','1');nav('home');}}/>}
         {screen==='home'      && <HomeScreen {...ctx}/>}
@@ -93,9 +93,8 @@ function App(){
         {screen==='article'   && <LearnArticleScreen {...ctx}/>}
         {screen==='gen-article'&& <GenArticleScreen {...ctx}/>}
       </div>
-      {showNav&&!isTablet&&<BottomNav active={screen} nav={nav} showPro={setProGate}/>}
-      {/* Global XP badge — phone only; tablet shows it in SideNav */}
-      {showXpBadge&&!isTablet&&(
+      {showNav&&<BottomNav active={screen} nav={nav} showPro={setProGate}/>}
+      {showXpBadge&&(
         <div onClick={()=>setShowXpOverlay(true)} style={{position:'absolute',top:15,right:14,zIndex:200,display:'flex',alignItems:'center',gap:5,padding:'5px 11px',borderRadius:20,background:C.crSoft,border:`1px solid ${C.crDim}`,cursor:'pointer',boxShadow:'0 1px 8px rgba(0,0,0,0.08)',pointerEvents:'auto'}}>
           <span style={{fontSize:17,lineHeight:1}}>{XPSystem.getLevel(xpBadge.total).badge}</span>
           <span style={{fontSize:15,fontWeight:700,color:C.cr,fontFamily:C.P}}>{xpBadge.total} XP</span>

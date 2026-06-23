@@ -13,11 +13,8 @@ function ScanHomeScreen({nav,showPro,isTablet}){
   function handleScanCTA(){ if(atLimit){showPro('unlimited-scans');return;} nav('camera'); }
   return(
     <div style={{flex:1,display:'flex',flexDirection:'column',overflowY:'auto',background:C.bg}}>
-      <div style={{padding:'14px 20px 14px',display:'flex',justifyContent:'space-between',alignItems:'center',background:C.white,borderBottom:`1px solid ${C.line}`}}>
-        {isTablet
-          ? <span style={{fontSize:18,fontWeight:700,color:C.ink,fontFamily:C.P}}>Scan</span>
-          : <img src="logo.png" alt="Vinterest" style={{height:28,width:'auto',display:'block'}}/>
-        }
+      <div style={{padding:'18px 20px 16px',display:'flex',justifyContent:'space-between',alignItems:'center',background:C.white,borderBottom:`1px solid ${C.line}`}}>
+        <img src="logo.png" alt="Vinterest" style={{height:28,width:'auto',display:'block'}}/>
         {!isPro&&!atLimit&&scansLeft<=3&&scansLeft>0&&(
           <div style={{fontSize:13,color:C.amber,fontWeight:600,fontFamily:C.P,background:C.amberBg,padding:'4px 10px',borderRadius:20,border:`1px solid ${C.amber}30`}}>{scansLeft} scan{scansLeft!==1?'s':''} left</div>
         )}

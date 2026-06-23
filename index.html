@@ -10,7 +10,7 @@
 <meta name="theme-color" content="#8B1A2F"/>
 <meta name="mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-capable" content="yes"/>
-<meta name="apple-mobile-web-app-status-bar-style" content="default"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
 <meta name="apple-mobile-web-app-title" content="Vinterest"/>
 <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png"/>
 
@@ -202,6 +202,7 @@ Use realistic UK retail prices if region is uk, or CAD prices if ontario. Return
 </script>
 
 <script type="text/babel" src="pwa-components.jsx?v=39"></script>
+<script type="text/babel" src="tweaks-panel.jsx"></script>
 <script type="text/babel" src="pwa-screens-main.jsx?v=39"></script>
 <script type="text/babel" src="pwa-screens-detail.jsx?v=39"></script>
 <script type="text/babel" src="pwa-screens-explore.jsx?v=39"></script>
@@ -212,6 +213,38 @@ Use realistic UK retail prices if region is uk, or CAD prices if ontario. Return
 <script type="text/babel" src="pwa-screens-home.jsx?v=39"></script>
 <script type="text/babel" src="pwa-screens-wineiq.jsx?v=39"></script>
 <script type="text/babel" src="pwa-app.jsx?v=39"></script>
+
+<div id="tweaks-root"></div>
+<script type="text/babel">
+(function(){
+  const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+    "layout": localStorage.getItem('vinterest_force_mobile')==='1' ? 'Phone' : 'Tablet'
+  }/*EDITMODE-END*/;
+
+  function VinterestTweaks(){
+    const [t, setTweak] = useTweaks(TWEAK_DEFAULTS);
+    React.useEffect(()=>{
+      const isMobile = t.layout === 'Phone';
+      const current = localStorage.getItem('vinterest_force_mobile') === '1';
+      if(isMobile !== current){
+        if(isMobile) localStorage.setItem('vinterest_force_mobile','1');
+        else localStorage.removeItem('vinterest_force_mobile');
+        location.reload();
+      }
+    },[t.layout]);
+    return(
+      <TweaksPanel>
+        <TweakSection label="Preview"/>
+        <TweakRadio label="Layout" value={t.layout} options={['Phone','Tablet']}
+          onChange={v=>setTweak('layout',v)}/>
+      </TweaksPanel>
+    );
+  }
+
+  const tweaksRoot = ReactDOM.createRoot(document.getElementById('tweaks-root'));
+  tweaksRoot.render(<VinterestTweaks/>);
+})();
+</script>
 
 <script>
   // iOS install prompt hint (shown once)
