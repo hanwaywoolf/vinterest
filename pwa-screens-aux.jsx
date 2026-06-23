@@ -736,11 +736,6 @@ function SettingsScreen({nav,back}){
   function saveRegion(r) {
     setRegion(r);
     localStorage.setItem('vinterest_region', r);
-    // Clear all cached retail data so next fetch uses new region
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (key && key.startsWith('vinterest_retail_')) localStorage.removeItem(key);
-    }
   }
 
   return (

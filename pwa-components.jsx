@@ -85,8 +85,8 @@ function BottomNav({active, nav, showPro}){
   const learnActive=active==='learn'||active==='quiz'||active==='article';
   const profileActive=active==='profile';
   return(
-    <div style={{flexShrink:0}}>
-      <div style={{display:'flex',background:C.white,borderTop:`1px solid ${C.line}`,zIndex:100}}>
+    <div style={{flexShrink:0,position:'relative',zIndex:50,overflow:'visible'}}>
+      <div style={{display:'flex',background:C.white,borderTop:`1px solid ${C.line}`,zIndex:100,overflow:'visible'}}>
         {/* Home */}
         <div onClick={()=>nav('home')} style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:3,cursor:'pointer',padding:'9px 0 max(env(safe-area-inset-bottom,9px),9px)'}}>
           <Icon n="home" sz={22} col={homeActive?C.cr:C.mid}/>

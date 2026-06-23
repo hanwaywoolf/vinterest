@@ -458,25 +458,56 @@ function DetailStory({wine,nav,existingRating=0}){
 }
 
 function DetailBuy({wine,nav}){
-  const [retailData, setRetailData] = React.useState(function() {
-    const region = localStorage.getItem('vinterest_region') || 'uk';
-    const cacheKey = 'vinterest_retail_' + ((wine && wine.name) ? wine.name.replace(/\s/g,'_') : '') + '_' + (wine && wine.vintage ? wine.vintage : 'nv') + '_' + region;
-    try { return JSON.parse(localStorage.getItem(cacheKey)); } catch(e) { return null; }
-  });
+  const [retailData, setRetailData]       = React.useState(null);
   const [loadingRetail, setLoadingRetail] = React.useState(false);
+  const [fetchDone, setFetchDone]         = React.useState(false);
+  const [retailers, setRetailers]         = React.useState(null);
+  const [loadingRetailers, setLoadingRetailers] = React.useState(false);
+
+  const region = localStorage.getItem('vinterest_region') || 'uk';
 
   React.useEffect(function() {
-    if (!wine || !wine.name || retailData) return;
+    if (!wine || !wine.name) return;
+    setRetailData(null);
+    setRetailers(null);
+    setFetchDone(false);
     setLoadingRetail(true);
+
     fetchRetailData(wine.name, wine.vintage)
-      .then(function(d){ setRetailData(d); })
+      .then(function(d){
+        setRetailData(d);
+        // Once we have a price, ask Claude for suggested stockists
+        if (d && d.retail && d.retail.price != null) {
+          const sym = d.retail.currency === 'GBP' ? '£' : 'CA$';
+          const priceStr = sym + d.retail.price;
+          const regionLabel = region === 'ontario' ? 'Ontario, Canada' : 'the UK';
+          const pool = region === 'ontario'
+            ? 'LCBO, Wine Rack, private wine boutiques'
+            : 'Berry Bros, Hedonism, Majestic, Waitrose Cellar, Laithwaites, The Wine Society';
+          const prompt = 'List 3-5 likely stockists for ' + (wine.name) + (wine.vintage ? ' ' + wine.vintage : '') + ' (' + priceStr + ') in ' + regionLabel + '. Choose only from: ' + pool + '. Reply with ONLY a plain comma-separated list of names — no descriptions, no links, no URLs.';
+          setLoadingRetailers(true);
+          window.claude.complete({ messages: [{ role: 'user', content: prompt }] })
+            .then(function(text){
+              if (text) {
+                const list = text.split(',').map(function(s){ return s.trim().replace(/^["'\-•]+|["'\-•]+$/g,''); }).filter(Boolean);
+                setRetailers(list);
+              }
+            })
+            .catch(function(){})
+            .finally(function(){ setLoadingRetailers(false); });
+        }
+      })
       .catch(function(){})
-      .finally(function(){ setLoadingRetail(false); });
+      .finally(function(){ setLoadingRetail(false); setFetchDone(true); });
   }, [wine && wine.name, wine && wine.vintage]);
 
   const SL=({label})=>(
     <div style={{fontSize:13,fontWeight:700,color:C.mid,letterSpacing:'0.07em',textTransform:'uppercase',fontFamily:C.P,marginBottom:8}}>{label}</div>
   );
+
+  const currSym = retailData && retailData.retail
+    ? (retailData.retail.currency === 'GBP' ? '£' : 'CA$')
+    : (region === 'uk' ? '£' : 'CA$');
 
   return(
     <div style={{padding:'16px 20px',display:'flex',flexDirection:'column',gap:20}}>
@@ -487,50 +518,40 @@ function DetailBuy({wine,nav}){
             <div style={{width:13,height:13,borderRadius:7,border:'2px solid rgba(0,0,0,0.08)',borderTopColor:C.cr,animation:'storySpin .8s linear infinite',flexShrink:0}}/>
             <span style={{fontSize:15,color:C.mid,fontFamily:C.P,fontStyle:'italic'}}>Finding best prices…</span>
           </Card>
-        ) : retailData && retailData.priceData && retailData.priceData.retailers && retailData.priceData.retailers.length ? (
+        ) : fetchDone && retailData && retailData.retail && retailData.retail.price != null ? (
           <Card style={{padding:0,overflow:'hidden'}}>
-            <div style={{padding:'10px 14px',background:C.offWhite,borderBottom:'1px solid '+C.line,display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-              <span style={{fontSize:15,fontWeight:600,color:C.ink,fontFamily:C.P}}>Typical price</span>
-              <span style={{fontSize:17,fontWeight:700,color:C.cr,fontFamily:C.P}}>{retailData.priceData.price_range}</span>
-            </div>
-            {retailData.priceData.retailers.map(function(m,i){
-              const isLast = i === retailData.priceData.retailers.length - 1;
-              return (
-                <div key={i} style={{display:'flex',alignItems:'center',gap:12,padding:'11px 14px',borderBottom:isLast?'none':'1px solid '+C.line}}>
-                  <div style={{flex:1}}>
-                    <div style={{fontSize:16,fontWeight:600,color:C.ink,fontFamily:C.P}}>{m.name}</div>
-                    {m.note&&<div style={{fontSize:13,color:C.mid,fontFamily:C.P}}>{m.note}</div>}
-                  </div>
-                  <div style={{fontSize:17,fontWeight:700,color:C.ink,fontFamily:C.P}}>{m.price}</div>
-                </div>
-              );
-            })}
-            {retailData.priceData.buy_tip&&(
-              <div style={{padding:'10px 14px',borderTop:'1px solid '+C.line,background:C.crSoft}}>
-                <span style={{fontSize:14,color:C.cr,fontFamily:C.P,lineHeight:1.5}}>💡 {retailData.priceData.buy_tip}</span>
+            {/* LCBO price row — Ontario only */}
+            {region === 'ontario' && retailData.lcbo && retailData.lcbo.price != null && (
+              <div style={{padding:'11px 14px',background:C.crSoft,borderBottom:'1px solid '+C.crDim,display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                <span style={{fontSize:15,fontWeight:600,color:C.cr,fontFamily:C.P}}>Available at LCBO</span>
+                <span style={{fontSize:17,fontWeight:700,color:C.cr,fontFamily:C.P}}>CA${Number(retailData.lcbo.price).toFixed(2)}</span>
               </div>
             )}
-          </Card>
-        ) : retailData && retailData.lcboData && retailData.lcboData.length ? (
-          <Card style={{padding:0,overflow:'hidden'}}>
-            <div style={{padding:'8px 14px',background:C.crSoft,borderBottom:'1px solid '+C.crDim}}>
-              <span style={{fontSize:13,fontWeight:700,color:C.cr,fontFamily:C.P,letterSpacing:'0.05em'}}>LCBO</span>
+            {/* Market price row */}
+            <div style={{padding:'11px 14px',background:C.offWhite,borderBottom:'1px solid '+C.line,display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+              <span style={{fontSize:15,fontWeight:600,color:C.ink,fontFamily:C.P}}>Typical market price</span>
+              <span style={{fontSize:17,fontWeight:700,color:C.cr,fontFamily:C.P}}>{currSym}{retailData.retail.price}</span>
             </div>
-            {retailData.lcboData.slice(0,3).map(function(e,i){
-              const isLast = i === Math.min(retailData.lcboData.length,3) - 1;
-              return (
-                <div key={i} style={{display:'flex',alignItems:'center',gap:12,padding:'11px 14px',borderBottom:isLast?'none':'1px solid '+C.line}}>
-                  <div style={{flex:1}}>
-                    <div style={{fontSize:16,fontWeight:600,color:C.ink,fontFamily:C.P}}>{e.node.name}</div>
+            {/* Suggested retailers */}
+            {loadingRetailers ? (
+              <div style={{padding:'11px 14px',display:'flex',alignItems:'center',gap:8}}>
+                <div style={{width:11,height:11,borderRadius:6,border:'2px solid rgba(0,0,0,0.08)',borderTopColor:C.cr,animation:'storySpin .8s linear infinite',flexShrink:0}}/>
+                <span style={{fontSize:14,color:C.mid,fontFamily:C.P,fontStyle:'italic'}}>Finding stockists…</span>
+              </div>
+            ) : retailers && retailers.length ? (
+              retailers.map(function(name,i){
+                const isLast = i === retailers.length - 1;
+                return (
+                  <div key={i} style={{padding:'11px 14px',borderBottom:isLast?'none':'1px solid '+C.line}}>
+                    <span style={{fontSize:16,color:C.ink,fontFamily:C.P}}>{name}</span>
                   </div>
-                  <div style={{fontSize:17,fontWeight:700,color:C.ink,fontFamily:C.P}}>C${(e.node.priceInCents/100).toFixed(2)}</div>
-                </div>
-              );
-            })}
+                );
+              })
+            ) : null}
           </Card>
-        ) : retailData && retailData.priceData && retailData.priceData.availability === 'not typically sold in this region' ? (
-          <Card style={{padding:12}}>
-            <span style={{fontSize:15,color:C.mid,fontFamily:C.P,fontStyle:'italic'}}>This wine isn't commonly available in your region.</span>
+        ) : fetchDone ? (
+          <Card style={{padding:14}}>
+            <span style={{fontSize:15,color:C.mid,fontFamily:C.P,fontStyle:'italic'}}>Pricing unavailable for this wine.</span>
           </Card>
         ) : null}
       </div>

@@ -34,7 +34,7 @@
 
 <style>
   *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-  html,body{height:100%}
+  html,body{height:100%;overflow:hidden}
   body{overscroll-behavior-x:none;overscroll-behavior-y:none}
   body{
     font-family:'Poppins',sans-serif;
@@ -170,56 +170,15 @@
 <script>
 /* ── Global utility functions ── */
 
-async function fetchRetailData(wineName, vintage, region) {
-  region = region || localStorage.getItem('vinterest_region') || 'uk';
-  const cacheKey = 'vinterest_retail_' + wineName.replace(/\s/g,'_') + '_' + (vintage||'nv') + '_' + region;
-  const cached = localStorage.getItem(cacheKey);
-  if (cached) {
-    try {
-      const parsed = JSON.parse(cached);
-      if (Date.now() - parsed.fetchedAt < 86400000 * 7) return parsed;
-    } catch(e) {}
-  }
-
-  const regionLabel = region === 'ontario' ? 'Ontario, Canada' : 'the UK';
-  const prompt = `You are a wine pricing assistant. For the wine "${wineName}${vintage ? ' ' + vintage : ''}", return ONLY valid JSON with no markdown, no preamble:
-{
-  "price_range": "£18–£25",
-  "price_mid": 22,
-  "currency_symbol": "£",
-  "retailers": [
-    { "name": "Majestic Wine", "price": "£21.99", "note": "widely available" },
-    { "name": "Berry Bros. & Rudd", "price": "£24.50", "note": "reliable stock" },
-    { "name": "The Wine Society", "price": "£19.95", "note": "members only" }
-  ],
-  "availability": "widely available|specialist only|rare|not typically sold in this region",
-  "buy_tip": "One short sentence of practical buying advice for this wine in ${regionLabel}."
-}
-Use realistic UK retail prices if region is uk, or CAD prices if ontario. Return 2–4 retailers typical for ${regionLabel}. If the wine is not typically sold in ${regionLabel}, return an empty retailers array and set availability accordingly. Return ONLY the JSON object.`;
-
-  const text = await window.claude.complete({ messages: [{ role: 'user', content: prompt }] }).catch(function(){ return null; });
-
-  let priceData = null;
-  if (text) {
-    try {
-      let clean = text.replace(/```json|```/g, '').trim();
-      const s = clean.indexOf('{'), e = clean.lastIndexOf('}');
-      if (s >= 0 && e > s) clean = clean.slice(s, e + 1);
-      priceData = JSON.parse(clean);
-    } catch(e) {}
-  }
-
-  let lcboData = null;
-  if (region === 'ontario') {
-    const lcbo = await fetch('https://vinterest.pages.dev/api/lcbo?name=' + encodeURIComponent(wineName))
-      .then(function(r){ return r.json(); })
-      .catch(function(){ return null; });
-    lcboData = lcbo && lcbo.data && lcbo.data.products ? lcbo.data.products.edges : null;
-  }
-
-  const result = { priceData: priceData, lcboData: lcboData, fetchedAt: Date.now() };
-  localStorage.setItem(cacheKey, JSON.stringify(result));
-  return result;
+async function fetchRetailData(wineName, vintage) {
+  const region = localStorage.getItem('vinterest_region') || 'uk';
+  const url = 'https://vinterest-retail.carey-copeling.workers.dev'
+    + '?wine=' + encodeURIComponent(wineName)
+    + '&vintage=' + encodeURIComponent(vintage || '')
+    + '&region=' + encodeURIComponent(region);
+  return fetch(url)
+    .then(function(r){ return r.ok ? r.json() : null; })
+    .catch(function(){ return null; });
 }
 </script>
 

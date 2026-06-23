@@ -128,7 +128,7 @@ function HomeScreen({nav, showPro, isTablet}){
       </div>
 
       {/* ── Scrollable body ── */}
-      <div style={{flex:1,overflowY:'auto',overscrollBehavior:'contain'}}>
+      <div style={{flex:1,overflowY:'auto',overscrollBehavior:'none',WebkitOverflowScrolling:'touch'}}>
       <div style={{padding:'8px 20px',display:'flex',flexDirection:'column',gap:12}}>
 
         {/* Recently Scanned */}
