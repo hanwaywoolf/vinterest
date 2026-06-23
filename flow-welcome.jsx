@@ -12,7 +12,7 @@ function WelcomeScreen({next}){
       <div style={{position:'absolute',top:-80,right:-80,width:300,height:300,borderRadius:150,background:`${C.cr}22`,pointerEvents:'none'}}></div>
       <div style={{position:'absolute',bottom:120,left:-60,width:200,height:200,borderRadius:100,background:`${C.cr}12`,pointerEvents:'none'}}></div>
 
-      <div style={{flex:1,overflowY:'auto',padding:'64px 28px 16px',position:'relative',zIndex:1}}>
+      <div style={{flex:1,overflowY:'auto',padding:'calc(env(safe-area-inset-top) + 24px) 28px 16px',position:'relative',zIndex:1}}>
         <img src="logo.png" alt="Vinterest" style={{height:30,width:'auto',display:'block',marginBottom:36,filter:'invert(1) brightness(2)'}}/>
         <div style={{fontSize:34,fontWeight:800,color:'#fff',fontFamily:C.P,letterSpacing:'-1px',lineHeight:1.1,marginBottom:14}}>Wine, finally<br/>uncomplicated.</div>
         <div style={{fontSize:16,color:'rgba(255,255,255,0.45)',fontFamily:C.P,lineHeight:1.6,marginBottom:34,maxWidth:300}}>Scan a bottle and get an instant read — what it is, whether it’s for you, and why.</div>
@@ -62,7 +62,7 @@ function DemoScanScreen({next}){
   return(
     <div style={{flex:1,background:'#0A0A0A',display:'flex',flexDirection:'column',position:'relative',overflow:'hidden'}}>
       {/* top bar */}
-      <div style={{padding:'52px 22px 0',display:'flex',alignItems:'center',justifyContent:'space-between',position:'relative',zIndex:2}}>
+      <div style={{padding:'calc(env(safe-area-inset-top) + 16px) 22px 0',display:'flex',alignItems:'center',justifyContent:'space-between',position:'relative',zIndex:2}}>
         <span style={{fontSize:15,color:'rgba(255,255,255,0.5)',fontFamily:C.P,fontWeight:500}}>Try a scan</span>
         <span style={{fontSize:13,color:'rgba(255,255,255,0.35)',fontFamily:C.P,background:'rgba(255,255,255,0.08)',padding:'4px 10px',borderRadius:20}}>Demo</span>
       </div>
@@ -115,7 +115,7 @@ function DemoScanScreen({next}){
 function DemoResult({next}){
   return(
     <div style={{flex:1,background:C.bg,display:'flex',flexDirection:'column',overflow:'hidden'}}>
-      <div style={{flex:1,overflowY:'auto',padding:'52px 22px 16px'}}>
+      <div style={{flex:1,overflowY:'auto',padding:'calc(env(safe-area-inset-top) + 16px) 22px 16px'}}>
         <div style={{display:'flex',alignItems:'center',gap:7,marginBottom:18}}>
           <div style={{width:22,height:22,borderRadius:11,background:C.green,display:'flex',alignItems:'center',justifyContent:'center'}}>
             <Icon n="check" sz={12} col="#fff"/>

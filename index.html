@@ -106,7 +106,10 @@
     };
   }
 
-  navigator.serviceWorker.register('/sw.js').then(function(reg){
+  navigator.serviceWorker.register('/sw.js', {updateViaCache:'none'}).then(function(reg){
+    // Force a check immediately on every launch (relaunching the installed PWA hits this)
+    reg.update();
+
     // Already waiting on load (e.g. user refreshed)
     if(reg.waiting){ showBanner(reg); return; }
 
@@ -120,8 +123,13 @@
       });
     });
 
-    // Poll for updates every 60s
+    // Poll for updates every 60s while open
     setInterval(function(){ reg.update(); }, 60000);
+
+    // Check whenever the app is brought back to the foreground
+    document.addEventListener('visibilitychange', function(){
+      if(document.visibilityState === 'visible'){ reg.update(); }
+    });
   }).catch(function(){/* sw not available in preview */});
 })();
 </script>
@@ -223,6 +231,11 @@ Use realistic UK retail prices if region is uk, or CAD prices if ontario. Return
 <script type="text/babel" src="pwa-screens-quiz.jsx?v=40"></script>
 <script type="text/babel" src="pwa-screens-aux.jsx?v=40"></script>
 <script type="text/babel" src="pwa-onboarding.jsx?v=40"></script>
+<script type="text/babel" src="flow-welcome.jsx?v=40"></script>
+<script type="text/babel" src="flow-auth.jsx?v=40"></script>
+<script type="text/babel" src="flow-onboard.jsx?v=40"></script>
+<script type="text/babel" src="flow-paywall.jsx?v=40"></script>
+<script type="text/babel" src="pwa-newflow.jsx?v=40"></script>
 <script type="text/babel" src="pwa-screens-learn.jsx?v=40"></script>
 <script type="text/babel" src="pwa-screens-home.jsx?v=40"></script>
 <script type="text/babel" src="pwa-screens-wineiq.jsx?v=40"></script>

@@ -66,7 +66,7 @@ function AuthVariantA({next,mode,setMode}){
   const signup=mode==='signup';
   return(
     <div style={{flex:1,background:C.bg,display:'flex',flexDirection:'column',overflow:'hidden'}}>
-      <div style={{flex:1,overflowY:'auto',padding:'60px 26px 16px'}}>
+      <div style={{flex:1,overflowY:'auto',padding:'calc(env(safe-area-inset-top) + 22px) 26px 16px'}}>
         <img src="logo.png" alt="Vinterest" style={{height:26,width:'auto',display:'block',marginBottom:30}}/>
         <div style={{fontSize:28,fontWeight:800,color:C.ink,fontFamily:C.P,letterSpacing:'-0.6px',lineHeight:1.12,marginBottom:8}}>
           {signup?'Save your scans':'Welcome back'}
@@ -106,7 +106,7 @@ function AuthVariantB({next,mode,setMode}){
     <div style={{flex:1,background:'#0F0F0F',display:'flex',flexDirection:'column',overflow:'hidden',position:'relative'}}>
       <div style={{position:'absolute',top:-70,right:-70,width:260,height:260,borderRadius:130,background:`${C.cr}28`,pointerEvents:'none'}}></div>
 
-      <div style={{flex:1,overflowY:'auto',padding:'64px 26px 16px',position:'relative',zIndex:1}}>
+      <div style={{flex:1,overflowY:'auto',padding:'calc(env(safe-area-inset-top) + 24px) 26px 16px',position:'relative',zIndex:1}}>
         <img src="logo.png" alt="Vinterest" style={{height:26,width:'auto',display:'block',marginBottom:30,filter:'invert(1) brightness(2)'}}/>
         <div style={{fontSize:30,fontWeight:800,color:'#fff',fontFamily:C.P,letterSpacing:'-0.7px',lineHeight:1.1,marginBottom:8}}>
           {signup?'Keep your wines\nforever.':'Welcome back.'}

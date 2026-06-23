@@ -88,7 +88,7 @@ function PaywallVariantA({next}){
   const [plan,setPlan]=React.useState('annual');
   return(
     <div style={{flex:1,background:C.bg,display:'flex',flexDirection:'column',overflow:'hidden'}}>
-      <div style={{flex:1,overflowY:'auto',padding:'46px 24px 16px'}}>
+      <div style={{flex:1,overflowY:'auto',padding:'calc(env(safe-area-inset-top) + 18px) 24px 16px'}}>
         <div style={{textAlign:'right',marginBottom:8}}>
           <span onClick={next} style={{fontSize:14,color:C.mid,fontFamily:C.P,fontWeight:500,cursor:'pointer'}}>Not now</span>
         </div>
@@ -154,7 +154,7 @@ function PaywallVariantB({next}){
     <div style={{flex:1,background:'#0F0F0F',display:'flex',flexDirection:'column',overflow:'hidden',position:'relative'}}>
       <div style={{position:'absolute',top:-80,right:-80,width:280,height:280,borderRadius:140,background:`${C.cr}26`,pointerEvents:'none'}}></div>
 
-      <div style={{flex:1,overflowY:'auto',padding:'46px 24px 16px',position:'relative',zIndex:1}}>
+      <div style={{flex:1,overflowY:'auto',padding:'calc(env(safe-area-inset-top) + 18px) 24px 16px',position:'relative',zIndex:1}}>
         <div style={{textAlign:'right',marginBottom:10}}>
           <span onClick={next} style={{fontSize:14,color:'rgba(255,255,255,0.45)',fontFamily:C.P,fontWeight:500,cursor:'pointer'}}>Not now</span>
         </div>

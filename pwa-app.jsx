@@ -74,9 +74,9 @@ function App(){
   const ctx={nav,back,showPro:setProGate,isTablet};
 
   return(
-    <div style={{width:'100%',maxWidth:isTablet?'100%':430,height:'100dvh',margin:'0 auto',background:(screen==='camera')?'#0A0A0A':C.bg,display:'flex',flexDirection:'column',position:'relative',overflow:'hidden',boxSizing:'border-box',paddingTop:'env(safe-area-inset-top)',paddingBottom:'env(safe-area-inset-bottom)'}}>
+    <div style={{width:'100%',maxWidth:isTablet?'100%':430,height:'100dvh',margin:'0 auto',background:(screen==='camera')?'#0A0A0A':C.bg,display:'flex',flexDirection:'column',position:'relative',overflow:'hidden',boxSizing:'border-box',paddingTop:(screen==='onboarding'||screen==='camera')?0:'env(safe-area-inset-top)'}}>
       <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden',minHeight:0}}>
-        {screen==='onboarding' && <OnboardingScreen onComplete={()=>{localStorage.setItem('vinterest_onboarded','1');nav('home');}}/>}
+        {screen==='onboarding' && <NewUserFlow onComplete={()=>{localStorage.setItem('vinterest_onboarded','1');nav('home');}}/>}
         {screen==='home'      && <HomeScreen {...ctx}/>}
         {screen==='scan'      && <ScanHomeScreen {...ctx}/>}
         {screen==='camera'    && <ScanScreen {...ctx}/>}

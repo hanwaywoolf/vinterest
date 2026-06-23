@@ -1,6 +1,6 @@
 /* Vinterest — New User Flow: Onboarding questions (post-signup, minimal) */
 
-function OnboardQuestions({next}){
+function OnboardQuestions({next,onAnswers}){
   const QS=[
     {
       key:'types', multi:true, title:'What do you drink?', sub:'Pick any — or all of them.',
@@ -71,7 +71,7 @@ function OnboardQuestions({next}){
   function setLoc(field,val){
     setAnswers(a=>({...a,[q.key]:{...(a[q.key]||{}),[field]:val}}));
   }
-  function advance(){ if(step<QS.length-1){ setStep(step+1); } else { next(); } }
+  function advance(){ if(step<QS.length-1){ setStep(step+1); } else { if(onAnswers){ onAnswers(answers); } else { next(); } } }
   function isSel(id){ return q.multi?sel.includes(id):sel===id; }
 
   const COUNTRIES=['United States','Canada','United Kingdom','Australia','France','Germany','Italy','Spain','Other'];
@@ -79,7 +79,7 @@ function OnboardQuestions({next}){
   return(
     <div style={{flex:1,background:C.bg,display:'flex',flexDirection:'column',overflow:'hidden'}}>
       {/* header: progress + back */}
-      <div style={{padding:'52px 22px 8px',flexShrink:0}}>
+      <div style={{padding:'calc(env(safe-area-inset-top) + 16px) 22px 8px',flexShrink:0}}>
         <div style={{display:'flex',alignItems:'center',gap:14,marginBottom:18}}>
           <div onClick={()=>step>0?setStep(step-1):null} style={{opacity:step>0?1:0.25,cursor:step>0?'pointer':'default',padding:4,marginLeft:-4}}>
             <Icon n="back" sz={22} col={C.ink}/>
