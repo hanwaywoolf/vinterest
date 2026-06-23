@@ -17,6 +17,8 @@ function NewUserFlow({onComplete}){
       // App supports these retail regions: uk · us · ontario · australia
       const map={'united states':'us','canada':'ontario','united kingdom':'uk','australia':'australia'};
       localStorage.setItem('vinterest_region', map[c]||'uk');
+      const curMap={'united kingdom':'GBP','united states':'USD','canada':'CAD','australia':'AUD','france':'EUR','germany':'EUR','italy':'EUR','spain':'EUR'};
+      localStorage.setItem('vinterest_currency', curMap[c]||'USD');
       if(loc.country) localStorage.setItem('vinterest_country', loc.country);
       if(loc.region)  localStorage.setItem('vinterest_state', loc.region);
       if(loc.city)    localStorage.setItem('vinterest_city', loc.city);
@@ -32,7 +34,7 @@ function NewUserFlow({onComplete}){
 
   switch(step){
     case 'welcome': return <WelcomeScreen next={()=>go('scan')}/>;
-    case 'scan':    return <DemoScanScreen next={()=>go('auth')}/>;
+    case 'scan':    return <ScanScreen nav={()=>{}} back={()=>go('welcome')} onComplete={()=>go('auth')}/>;
     case 'auth':    return <AuthScreen variant="A" next={()=>go('onboard')}/>;
     case 'onboard': return <OnboardQuestions next={()=>go('paywall')} onAnswers={a=>{persist(a);go('paywall');}}/>;
     case 'paywall': return <PaywallScreen variant="A" next={finish}/>;

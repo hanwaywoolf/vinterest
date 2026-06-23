@@ -1,5 +1,5 @@
 // sw.js — Vinterest PWA service worker
-const CACHE = 'vinterest-v8';
+const CACHE = 'vinterest-v10';
 
 const ICONS = [
   '/icons/icon-192.png',

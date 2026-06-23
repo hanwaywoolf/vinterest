@@ -1,9 +1,37 @@
 /* Vinterest — New User Flow: Onboarding questions (post-signup, minimal) */
 
 function OnboardQuestions({next,onAnswers}){
+  const [step,setStep]=React.useState(0);
+  const [answers,setAnswers]=React.useState({});
+
+  // Currency + budget bands follow the country chosen in the location step (asked before budget).
+  const CURRENCIES={
+    'United Kingdom':{sym:'£',code:'GBP',bands:['Under £12','£12 – £25','£25 – £50','£50+']},
+    'United States' :{sym:'$',code:'USD',bands:['Under $15','$15 – $30','$30 – $60','$60+']},
+    'Canada'        :{sym:'$',code:'CAD',bands:['Under $20','$20 – $40','$40 – $70','$70+']},
+    'Australia'     :{sym:'$',code:'AUD',bands:['Under $20','$20 – $40','$40 – $70','$70+']},
+    'France'        :{sym:'€',code:'EUR',bands:['Under €12','€12 – €30','€30 – €60','€60+']},
+    'Germany'       :{sym:'€',code:'EUR',bands:['Under €12','€12 – €30','€30 – €60','€60+']},
+    'Italy'         :{sym:'€',code:'EUR',bands:['Under €12','€12 – €30','€30 – €60','€60+']},
+    'Spain'         :{sym:'€',code:'EUR',bands:['Under €12','€12 – €30','€30 – €60','€60+']},
+    'Other'         :{sym:'$',code:'USD',bands:['Under $15','$15 – $30','$30 – $60','$60+']},
+  };
+  const cur=CURRENCIES[(answers.location&&answers.location.country)||'']||CURRENCIES['Other'];
+  const budgetDescs=['Everyday value','A reliable step up','Something special','Going all out'];
+  const budgetOpts=cur.bands.map((b,i)=>({id:['value','mid','premium','splurge'][i],label:b,d:budgetDescs[i]}));
+
+  // Address fields depend on the country (UK: city only · US: state+city · Canada: province+city · etc.)
+  const LOC_FIELDS=(country)=>{
+    if(!country) return [];
+    if(country==='United States')  return [{k:'region',label:'State',ph:'e.g. California'},{k:'city',label:'City',ph:'e.g. San Francisco'}];
+    if(country==='Canada')         return [{k:'region',label:'Province',ph:'e.g. Ontario'},{k:'city',label:'City',ph:'e.g. Toronto'}];
+    if(country==='Australia')      return [{k:'region',label:'State / Territory',ph:'e.g. Victoria'},{k:'city',label:'City',ph:'e.g. Melbourne'}];
+    if(country==='United Kingdom') return [{k:'city',label:'City / Town',ph:'e.g. Manchester'}];
+    return [{k:'city',label:'City',ph:'e.g. your city'}]; // France / Germany / Italy / Spain / Other
+  };
+
   const QS=[
-    {
-      key:'types', multi:true, title:'What do you drink?', sub:'Pick any — or all of them.',
+    { key:'types', multi:true, title:'What do you drink?', sub:'Pick any — or all of them.',
       opts:[
         {id:'red',label:'Red',icon:'wine',col:'#8B1A2F'},
         {id:'white',label:'White',icon:'wine',col:'#B8963E'},
@@ -11,8 +39,7 @@ function OnboardQuestions({next,onAnswers}){
         {id:'sparkling',label:'Sparkling',icon:'wine',col:'#5E8FA8'},
       ],
     },
-    {
-      key:'experience', multi:false, title:'How well do you know wine?', sub:'No wrong answer — it just tunes the depth.',
+    { key:'experience', multi:false, title:'How well do you know wine?', sub:'No wrong answer — it just tunes the depth.',
       opts:[
         {id:'novice',label:'Just getting started',d:'Keep it simple and clear'},
         {id:'casual',label:'I know what I like',d:'A little more detail'},
@@ -20,8 +47,7 @@ function OnboardQuestions({next,onAnswers}){
         {id:'expert',label:'Borderline obsessed',d:'Full depth, no hand-holding'},
       ],
     },
-    {
-      key:'frequency', multi:false, title:'How often do you drink wine?', sub:'No judgement — we’ll never tell.',
+    { key:'frequency', multi:false, title:'How often do you drink wine?', sub:'No judgement — we’ll never tell.',
       opts:[
         {id:'daily',label:'Most days'},
         {id:'weekly',label:'A few times a week'},
@@ -29,20 +55,11 @@ function OnboardQuestions({next,onAnswers}){
         {id:'rarely',label:'Now and then'},
       ],
     },
-    {
-      key:'budget', multi:false, title:'Typical spend per bottle?', sub:'We’ll point you to the sweet spot.',
-      opts:[
-        {id:'value',label:'Under $15',d:'Everyday value'},
-        {id:'mid',label:'$15 – $30',d:'A reliable step up'},
-        {id:'premium',label:'$30 – $60',d:'Something special'},
-        {id:'splurge',label:'$60+',d:'Going all out'},
-      ],
+    { key:'location', type:'location', title:'Where are you based?', sub:'So we can show where to buy — and price everything in your local currency.' },
+    { key:'budget', multi:false, title:'Typical spend per bottle?', sub:`We’ll point you to the sweet spot in ${cur.sym}.`,
+      opts:budgetOpts,
     },
-    {
-      key:'location', type:'location', title:'Where are you based?', sub:'So we can show where to buy — and price everything in your currency.',
-    },
-    {
-      key:'goals', multi:true, title:'What are you here for?', sub:'Pick all that apply.',
+    { key:'goals', multi:true, title:'What are you here for?', sub:'Pick all that apply.',
       opts:[
         {id:'learn',label:'Learn about wine',icon:'book',col:'#1E7B4B'},
         {id:'value',label:'Find great value',icon:'cart',col:'#B06C00'},
@@ -51,9 +68,6 @@ function OnboardQuestions({next,onAnswers}){
       ],
     },
   ];
-
-  const [step,setStep]=React.useState(0);
-  const [answers,setAnswers]=React.useState({});
   const q=QS[step];
   const isLoc=q.type==='location';
   const sel=answers[q.key]||(isLoc?{}:(q.multi?[]:null));
@@ -114,16 +128,14 @@ function OnboardQuestions({next,onAnswers}){
                 </div>
               </div>
             </div>
-            <div>
-              <div style={{fontSize:13,fontWeight:600,color:C.ink2,fontFamily:C.P,marginBottom:7}}>Province / State</div>
-              <input value={sel.region||''} onChange={e=>setLoc('region',e.target.value)} placeholder="e.g. Ontario"
-                style={{width:'100%',boxSizing:'border-box',padding:'15px 16px',borderRadius:13,border:`1px solid ${C.line}`,background:C.white,fontSize:15.5,fontFamily:C.P,color:C.ink,outline:'none'}}/>
-            </div>
-            <div>
-              <div style={{fontSize:13,fontWeight:600,color:C.ink2,fontFamily:C.P,marginBottom:7}}>City</div>
-              <input value={sel.city||''} onChange={e=>setLoc('city',e.target.value)} placeholder="e.g. Toronto"
-                style={{width:'100%',boxSizing:'border-box',padding:'15px 16px',borderRadius:13,border:`1px solid ${C.line}`,background:C.white,fontSize:15.5,fontFamily:C.P,color:C.ink,outline:'none'}}/>
-            </div>
+            {LOC_FIELDS(sel.country).map(f=>(
+              <div key={f.k}>
+                <div style={{fontSize:13,fontWeight:600,color:C.ink2,fontFamily:C.P,marginBottom:7}}>{f.label}</div>
+                <input value={sel[f.k]||''} onChange={e=>setLoc(f.k,e.target.value)} placeholder={f.ph}
+                  style={{width:'100%',boxSizing:'border-box',padding:'15px 16px',borderRadius:13,border:`1px solid ${C.line}`,background:C.white,fontSize:15.5,fontFamily:C.P,color:C.ink,outline:'none'}}/>
+              </div>
+            ))}
+            {sel.country&&<div style={{fontSize:13,color:C.mid,fontFamily:C.P,lineHeight:1.4}}>Prices and retailers will show in {cur.sym} ({cur.code}).</div>}
           </div>
         ):(
           /* ── Option rows ── */

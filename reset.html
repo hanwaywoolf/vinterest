@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Resetting Vinterest…</title>
+<style>
+  html,body{height:100%;margin:0}
+  body{background:#1A1A1D;color:#fff;font-family:system-ui,-apple-system,sans-serif;
+    display:flex;align-items:center;justify-content:center;text-align:center;padding:24px}
+  .t{font-size:18px;font-weight:600}
+  .s{font-size:14px;opacity:.55;margin-top:8px}
+  .dot{display:inline-block;width:34px;height:34px;border-radius:50%;border:3px solid rgba(255,255,255,.18);
+    border-top-color:#8B1A2F;animation:spin .8s linear infinite;margin-bottom:18px}
+  @keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<div>
+  <div class="dot"></div>
+  <div class="t">Resetting Vinterest…</div>
+  <div class="s">Clearing local data and starting a fresh onboarding</div>
+</div>
+<script>
+(function(){
+  try{
+    // Remove every Vinterest key from THIS browser only.
+    Object.keys(localStorage)
+      .filter(function(k){ return k.indexOf('vinterest_')===0; })
+      .forEach(function(k){ localStorage.removeItem(k); });
+  }catch(e){}
+  // Demo seeding is opt-in (?demo=1), so a plain reload lands on onboarding.
+  setTimeout(function(){ location.replace('/'); }, 350);
+})();
+</script>
+</body>
+</html>

@@ -136,7 +136,8 @@ function ScanHomeScreen({nav,showPro,isTablet}){
 
 
 /* ── SCAN CAMERA ── */
-function ScanScreen({nav,back}){
+function ScanScreen({nav,back,onComplete}){
+  const onboarding=!!onComplete; // onboarding: save the scan & advance the flow instead of navigating
   const videoRef=React.useRef(null);
   const streamRef=React.useRef(null);
   const [phase,setPhase]=React.useState('viewfinder'); // viewfinder | processing
@@ -159,6 +160,11 @@ function ScanScreen({nav,back}){
     if(!videoRef.current||!videoRef.current.videoWidth){
       if(streamRef.current) streamRef.current.getTracks().forEach(t=>t.stop());
       setPhase('processing');
+      if(onboarding){
+        sessionStorage.setItem('vinterest_scan_result',JSON.stringify({demo:true,reason:'camera_not_ready'}));
+        setTimeout(()=>onComplete(null),1200);
+        return;
+      }
       if(mode==='list'){
         sessionStorage.setItem('vinterest_winelist_result',JSON.stringify({demo:true,reason:'camera_not_ready'}));
         setTimeout(()=>nav('winelist'),1600);
@@ -206,7 +212,9 @@ function ScanScreen({nav,back}){
         {type:'new_grape',value:(wine.grapes||[])[0]},
         ...((wine.price_usd||0)>=100?[{type:'expensive_wine',wineKey:(wine.name||'')+'_'+(wine.vintage||'')}]:[])
       ]);
+      if(onboarding){ try{ WineHistory.track(wine); }catch(e){} onComplete(wine); return; }
     }catch(e){
+      if(onboarding){ onComplete(null); return; }
       sessionStorage.setItem('vinterest_scan_result',JSON.stringify({demo:true,reason:e.message}));
       nav('identified');
       return;
@@ -247,7 +255,7 @@ function ScanScreen({nav,back}){
   if(phase==='processing'){
     return(
       <div style={{flex:1,background:'#0A0A0A',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:28,padding:'0 32px',position:'relative'}}>
-        <div onClick={back} style={{position:'absolute',top:16,left:20,width:38,height:38,borderRadius:19,background:'rgba(255,255,255,0.08)',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer'}}>
+        <div onClick={back} style={{position:'absolute',top:'calc(env(safe-area-inset-top) + 12px)',left:20,width:38,height:38,borderRadius:19,background:'rgba(255,255,255,0.08)',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer'}}>
           <Icon n="back" sz={18} col="#fff"/>
         </div>
         {capturedImg&&(
@@ -279,17 +287,17 @@ function ScanScreen({nav,back}){
       )}
 
       {/* Top bar */}
-      <div style={{position:'relative',zIndex:3,display:'flex',justifyContent:'space-between',alignItems:'center',padding:'16px 20px',flexShrink:0}}>
+      <div style={{position:'relative',zIndex:3,display:'flex',justifyContent:'space-between',alignItems:'center',padding:'calc(env(safe-area-inset-top) + 12px) 20px 16px',flexShrink:0}}>
         <div onClick={back} style={{width:38,height:38,borderRadius:19,background:'rgba(0,0,0,0.45)',backdropFilter:'blur(8px)',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer'}}>
           <Icon n="back" sz={18} col="#fff"/>
         </div>
-        <span style={{fontSize:18,fontWeight:600,color:'#fff',fontFamily:C.P}}>Scan Wine</span>
+        <span style={{fontSize:18,fontWeight:600,color:'#fff',fontFamily:C.P,whiteSpace:'nowrap'}}>{onboarding?'Scan your first bottle':'Scan Wine'}</span>
         <div style={{width:38,height:38}}/>
       </div>
 
       {/* Large portrait framing box */}
       <div style={{flex:1,position:'relative',zIndex:2,display:'flex',alignItems:'center',justifyContent:'center'}}>
-        <div style={{width:mode==='list'?'95%':'80%',aspectRatio:mode==='list'?'2/3':'2/3.2',maxHeight:mode==='list'?'87vh':'64vh',position:'relative'}}>
+        <div style={{width:mode==='list'?'95%':'94%',height:mode==='list'?'auto':'100%',aspectRatio:mode==='list'?'2/3':'auto',maxHeight:mode==='list'?'87vh':'none',position:'relative'}}>
           {/* Dim overlay outside frame */}
           <div style={{position:'absolute',top:0,left:0,right:0,bottom:0,boxShadow:'0 0 0 2000px rgba(0,0,0,0.52)',pointerEvents:'none',zIndex:1}}/>
           {/* Corner brackets */}
@@ -316,12 +324,12 @@ function ScanScreen({nav,back}){
 
       {/* Bottom controls */}
       <div style={{position:'relative',zIndex:3,padding:'0 20px 44px',display:'flex',flexDirection:'column',alignItems:'center',gap:20,flexShrink:0}}>
-        {/* Mode toggle */}
-        <div style={{display:'inline-flex',background:'rgba(0,0,0,0.55)',borderRadius:10,overflow:'hidden',backdropFilter:'blur(12px)'}}>
+        {/* Mode toggle — hidden during onboarding (bottle only) */}
+        {!onboarding&&<div style={{display:'inline-flex',background:'rgba(0,0,0,0.55)',borderRadius:10,overflow:'hidden',backdropFilter:'blur(12px)'}}>
           {['Bottle','Wine List'].map((m,i)=>(
             <div key={i} onClick={()=>setMode(i===0?'bottle':'list')} style={{padding:'10px 24px',background:(i===0?mode==='bottle':mode==='list')?C.cr:'transparent',fontSize:17,fontWeight:600,color:(i===0?mode==='bottle':mode==='list')?'#fff':'rgba(255,255,255,0.45)',fontFamily:C.P,cursor:'pointer',transition:'background .18s'}}>{m}</div>
           ))}
-        </div>
+        </div>}
         {/* Capture button */}
         <div onClick={capturePhoto} style={{width:74,height:74,borderRadius:37,background:'rgba(255,255,255,0.92)',border:'4px solid rgba(255,255,255,0.35)',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',boxShadow:'0 4px 28px rgba(0,0,0,0.5)'}}>
           <div style={{width:56,height:56,borderRadius:28,background:C.cr}}/>
