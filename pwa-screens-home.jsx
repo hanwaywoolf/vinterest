@@ -55,16 +55,21 @@ function HomeScreen({nav, showPro, isTablet}){
   /* Script generation */
   React.useEffect(()=>{
     if(!tabWines.length) return;
-    const keyLong=`vinterest_script_long_${c.typeKey}_n${tabWines.length}`;
-    const keyShort=`vinterest_script_short_${c.typeKey}_n${tabWines.length}`;
+    const _reg=localStorage.getItem('vinterest_region')||'uk';
+    const _CBASE2={uk:'£',us:'$',ontario:'$',canada:'$',australia:'$',nz:'$',eu:'€',france:'€',germany:'€',italy:'€',spain:'€'};
+    const _CCODE2={uk:'GBP',us:'USD',ontario:'CAD',canada:'CAD',australia:'AUD',nz:'NZD',eu:'EUR',france:'EUR',germany:'EUR',italy:'EUR',spain:'EUR'};
+    const _base=_CBASE2[_reg]||'£';
+    const _code=_CCODE2[_reg]||'GBP';
+    const keyLong=`vinterest_script_long_${c.typeKey}_n${tabWines.length}_${_reg}_v2`;
+    const keyShort=`vinterest_script_short_${c.typeKey}_n${tabWines.length}_${_reg}_v2`;
     const key=scriptLength==='long'?keyLong:keyShort;
     const cached=localStorage.getItem(key);
     if(cached){setGenScripts(s=>({...s,[c.typeKey]:cached}));return;}
     if(generating===c.typeKey) return;
     setGenerating(c.typeKey);
     const wineList=tabWines.slice(0,8).map(w=>`${w.name}${w.vintage?' '+w.vintage:''} from ${w.region||w.country||'unknown'}`).join('; ');
-    const lengthInstructions=scriptLength==='short'?'1 sentence, ultra-concise (under 20 words), and mention your typical budget range':'2 sentences max';
-    const prompt=`I've scanned these ${c.label.toLowerCase()} wines: ${wineList}. Based ONLY on the wines I've chosen and their regions, write a ${lengthInstructions} natural first-person sommelier script I could say to a restaurant sommelier. Reflect my apparent style and preferred regions. Return ONLY the script text in double quotes — nothing else.`;
+    const lengthInstructions=scriptLength==='short'?`1 sentence, ultra-concise (under 20 words), and mention your typical budget range formatted EXACTLY like "${_base}40–${_base}80 ${_code}" (plain symbol, a number range, then the ${_code} currency code — never a country-prefixed symbol like CA$ or C$)`:'2 sentences max';
+    const prompt=`I've scanned these ${c.label.toLowerCase()} wines: ${wineList}. Based ONLY on the wines I've chosen and their regions, write a ${lengthInstructions} natural first-person sommelier script I could say to a restaurant sommelier. Reflect my apparent style and preferred regions. If you mention a budget or price range, it MUST use the plain ${_base} symbol plus the ${_code} code (e.g. "${_base}40–${_base}80 ${_code}") — never a country-prefixed symbol. Return ONLY the script text in double quotes — nothing else.`;
     window.claude.complete({messages:[{role:'user',content:prompt}]})
       .then(text=>{const sc=text.trim();localStorage.setItem(key,sc);setGenScripts(g=>({...g,[c.typeKey]:sc}));})
       .catch(()=>{})
@@ -203,7 +208,7 @@ function HomeScreen({nav, showPro, isTablet}){
           {topWines.length>0&&(
             <Card style={{padding:0,overflow:'hidden'}}>
               <div style={{padding:'10px 14px 6px',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-                <span style={{fontSize:15,fontWeight:600,color:C.ink,fontFamily:C.P}}>Top {c.label}</span>
+                <span style={{fontSize:16,fontWeight:600,color:C.ink,fontFamily:C.P}}>Top {c.label}</span>
                 <span onClick={()=>nav('mywines')} style={{fontSize:15,fontWeight:600,color:C.cr,fontFamily:C.P,cursor:'pointer'}}>See all →</span>
               </div>
               {topWines.map((w,i)=>(
@@ -215,7 +220,7 @@ function HomeScreen({nav, showPro, isTablet}){
                     <Icon n="wine" sz={12} col={c.col}/>
                   </div>
                   <div style={{flex:1,minWidth:0}}>
-                    <div style={{fontSize:15,fontWeight:600,color:C.ink,fontFamily:C.P,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{w.name}</div>
+                    <div style={{fontSize:16,fontWeight:600,color:C.ink,fontFamily:C.P,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{w.name}</div>
                     <div style={{fontSize:13,color:C.mid,fontFamily:C.P}}>{[w.region,w.vintage?String(w.vintage):null].filter(Boolean).join(' · ')}</div>
                   </div>
                   {w.rating>0&&<span style={{fontSize:15,fontWeight:700,color:C.amber,fontFamily:C.P,flexShrink:0}}>{w.rating}</span>}

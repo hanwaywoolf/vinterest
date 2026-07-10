@@ -2,7 +2,7 @@
 
 function WineDetailScreen({back,nav}){
   const [tab,setTab]=React.useState(0);
-  const tabs=['Details','Story','Buy'];
+  const tabs=['Details','Story','Price'];
   const scanData=React.useMemo(()=>{
     try{ return JSON.parse(sessionStorage.getItem('vinterest_scan_result')||'{}'); }
     catch(e){ return {}; }
@@ -80,7 +80,7 @@ function WineDetailScreen({back,nav}){
       <div style={{flex:1,overflowY:'auto'}}>
         {tab===0&&<DetailMerged wine={wine} nav={nav} existingRating={existingRating} matchPct={matchPct}/>}
         {tab===1&&<DetailStory wine={wine} nav={nav} existingRating={existingRating}/>}
-        {tab===2&&<DetailBuy wine={wine} nav={nav}/>}
+        {tab===2&&<DetailPrice wine={wine} nav={nav}/>}
       </div>
     </div>
   );
@@ -92,6 +92,8 @@ function DetailMerged({wine,nav,existingRating=0,matchPct}){
   const [userRating,setUserRating]=React.useState(existingRating);
   const [showRatingUI,setShowRatingUI]=React.useState(existingRating===0);
   const [saved,setSaved]=React.useState(existingRating>0);
+  const [sliderAnimated,setSliderAnimated]=React.useState(false);
+  React.useEffect(()=>{const t=setTimeout(()=>setSliderAnimated(true),80);return()=>clearTimeout(t);},[]);
   const pendingScore=React.useRef(existingRating);
   const ratedOnce=React.useRef(existingRating>0);
   const scoreLabel=userRating===0?'':userRating<=20?'Not for me':userRating<=40?"It's ok":userRating<=60?'Good':userRating<=80?'Really good':'Exceptional';
@@ -114,7 +116,9 @@ function DetailMerged({wine,nav,existingRating=0,matchPct}){
 
   React.useEffect(()=>{
     if(!wine) return;
-    const cacheKey=`vinterest_why_${(wine.name||'').replace(/\s/g,'_')}_${wine.vintage||'nv'}`;
+    const isGoodMatch=matchPct==null||matchPct>=55;
+    const matchRange=matchPct==null?'x':matchPct>=85?'hi':matchPct>=55?'mid':'lo';
+    const cacheKey=`vinterest_why_${(wine.name||'').replace(/\s/g,'_')}_${wine.vintage||'nv'}_${matchRange}`;
     const cached=localStorage.getItem(cacheKey);
     if(cached){setGenWhy(cached);return;}
     const userWines=WineHistory.getAll();
@@ -130,12 +134,16 @@ function DetailMerged({wine,nav,existingRating=0,matchPct}){
     const topGrapes=Object.entries(gCounts).sort((a,b)=>b[1]-a[1]).slice(0,3).map(e=>e[0]).join(', ');
     const lbl=v=>v>=0.68?'high':v>=0.38?'medium':'low';
     setGeneratingWhy(true);
-    const prompt=`The user is looking at: ${wine.name}${wine.vintage?' '+wine.vintage:''}, a ${wine.type||'red'} from ${wine.region||wine.country||'unknown'} with body=${(wine.body??0.65).toFixed(1)}, tannins=${(wine.tannins??0.55).toFixed(1)}, acidity=${(wine.acidity??0.60).toFixed(1)}. Their ${wine.type||'red'} DNA: body ${lbl(avgB)}, tannins ${lbl(avgT)}, acidity ${lbl(avgA)}. Top rated: ${topWines||'none yet'}. Favourite grapes: ${topGrapes||'still discovering'}. Write ONE sentence (max 30 words) explaining specifically why this wine matches this user — compare attributes or reference their actual top wines by name. Be concrete, not generic. IMPORTANT: Do NOT include ANY numbers, decimals, percentages, or specific wine attribute values (like "0.88" or "82%") anywhere in your response. Use only descriptive words like high, low, medium, bold, light, etc. Return ONLY the sentence, no quotes.`;
+    const wineCtx=`${wine.name}${wine.vintage?' '+wine.vintage:''}, a ${wine.type||'red'} from ${wine.region||wine.country||'unknown'} with body=${(wine.body??0.65).toFixed(1)}, tannins=${(wine.tannins??0.55).toFixed(1)}, acidity=${(wine.acidity??0.60).toFixed(1)}`;
+    const userCtx=`Their ${wine.type||'red'} DNA: body ${lbl(avgB)}, tannins ${lbl(avgT)}, acidity ${lbl(avgA)}. Top rated: ${topWines||'none yet'}. Favourite grapes: ${topGrapes||'still discovering'}.`;
+    const prompt=isGoodMatch
+      ?`The user is looking at: ${wineCtx}. ${userCtx} Write ONE sentence (max 30 words) explaining specifically why this wine matches this user — compare attributes or reference their actual top wines by name. Be concrete, not generic. IMPORTANT: Do NOT include ANY numbers, decimals, percentages, or specific wine attribute values anywhere in your response. Use only descriptive words like high, low, medium, bold, light, etc. Return ONLY the sentence, no quotes.`
+      :`The user is looking at: ${wineCtx}. ${userCtx} This wine scores ${matchPct}% against their taste profile. Write ONE sentence (max 30 words) explaining honestly and constructively why this wine contrasts with their usual preferences — be specific about the key difference (e.g. body, tannins, acidity, style). IMPORTANT: No numbers, decimals, percentages in your response. Use only descriptive words. Return ONLY the sentence, no quotes.`;
     window.claude.complete({messages:[{role:'user',content:prompt}]})
       .then(text=>{const s=text.trim();localStorage.setItem(cacheKey,s);setGenWhy(s);})
       .catch(()=>{})
       .finally(()=>setGeneratingWhy(false));
-  },[wine?.name,wine?.vintage]);
+  },[wine?.name,wine?.vintage,matchPct]);
 
   const [vintageInfo,setVintageInfo]=React.useState(null);
   const [loadingVintage,setLoadingVintage]=React.useState(false);
@@ -160,12 +168,17 @@ function DetailMerged({wine,nav,existingRating=0,matchPct}){
       .finally(()=>setLoadingVintage(false));
   },[wine?.name,wine?.vintage]);
 
+  const isRed=((wine?.type||'').toLowerCase().replace('é','e'))==='red';
+  const isWhite=((wine?.type||'').toLowerCase().replace('é','e'))==='white';
+  const isSparkling=((wine?.type||'').toLowerCase().replace('é','e'))==='sparkling';
   const charLbl=(v,lo,hi)=>v>=0.68?hi:v>=0.38?'Medium':lo;
   const chars=wine?[
     {label:'Body',      value:charLbl(wine.body??0.65,    'Light',    'Full')},
-    {label:'Tannins',   value:charLbl(wine.tannins??0.55, 'Silky',    'Grippy')},
+    ...(isRed?[{label:'Tannins', value:charLbl(wine.tannins??0.55, 'Silky',    'Grippy')}]:[]),
     {label:'Acidity',   value:charLbl(wine.acidity??0.60, 'Mellow',   'Zingy')},
+    ...(isWhite?[{label:'Texture', value:charLbl(wine.texture??0.3, 'Crisp & Steely', 'Rich & Creamy')}]:[]),
     {label:'Sweetness', value:charLbl(wine.sweetness??0.10,'Bone Dry','Sweet')},
+    ...(isSparkling?[{label:'Effervescence', value:charLbl(wine.effervescence??0.6, 'Soft & Delicate', 'Vigorous & Persistent')}]:[]),
     ...(wine.abv?[{label:'ABV', value:`${wine.abv}%`}]:[]),
   ]:[];
 
@@ -175,6 +188,15 @@ function DetailMerged({wine,nav,existingRating=0,matchPct}){
 
   const notes=wine?.tasting_notes||[];
   const pairings=wine?.food_pairings||[];
+
+  /* Match sentiment — sliding scale */
+  const matchConfig=React.useMemo(()=>{
+    if(matchPct==null||matchPct>=85) return {descriptor:matchPct!=null?"You'll love this":null,title:'Why This Matches You',bg:C.greenBg,border:`1px solid ${C.green}25`,col:C.green};
+    if(matchPct>=70) return {descriptor:'A great match',title:'Why This Works for You',bg:C.greenBg,border:`1px solid ${C.green}25`,col:C.green};
+    if(matchPct>=55) return {descriptor:'Worth exploring',title:'What to Expect',bg:'#EEF6FF',border:'1px solid #4A90D930',col:'#2563A8'};
+    if(matchPct>=38) return {descriptor:'Outside your comfort zone',title:'Where It Differs',bg:C.amberBg,border:`1px solid ${C.amber}35`,col:C.amber};
+    return {descriptor:'Not your usual style',title:'Why This Might Not Be for You',bg:C.crSoft,border:`1px solid ${C.crDim}`,col:C.cr};
+  },[matchPct]);
   function pairingIcon(text){
     const t=(text||'').toLowerCase();
     if(/lamb|mutton|sheep/.test(t)) return 'food-lamb';
@@ -191,20 +213,59 @@ function DetailMerged({wine,nav,existingRating=0,matchPct}){
 
   return(
     <div style={{padding:'16px 20px',display:'flex',flexDirection:'column',gap:16}}>
-      {/* Your Match + Your Rating — side by side */}
-      <div style={{display:'flex',gap:10}}>
-        <div style={{flex:1,background:C.greenBg,border:`1px solid ${C.green}25`,borderRadius:14,padding:'12px 10px',textAlign:'center'}}>
-          <div style={{fontSize:28,fontWeight:800,color:C.green,fontFamily:C.P,lineHeight:1}}>{matchPct!=null?`${matchPct}%`:'—'}</div>
-          <div style={{fontSize:13,fontWeight:600,color:C.green,fontFamily:C.P,marginTop:4}}>Your Match</div>
-        </div>
-        {userRating>0&&(
-          <div style={{flex:1,background:C.amberBg,border:`1px solid ${C.amber}25`,borderRadius:14,padding:'12px 10px',textAlign:'center',cursor:'pointer'}} onClick={()=>setShowRatingUI(true)}>
-            <div style={{fontSize:28,fontWeight:800,color:C.amber,fontFamily:C.P,lineHeight:1}}>{userRating}</div>
-            <div style={{fontSize:13,fontWeight:600,color:C.amber,fontFamily:C.P,marginTop:4}}>Your Rating</div>
-          </div>
-        )}
-      </div>
-
+      {/* Your Match + Your Rating — slider style with entrance animation */}
+      {(()=>{
+        const dotStyle=(pct,col,delay='0s')=>({
+          position:'absolute',
+          left:`${sliderAnimated?pct:0}%`,
+          top:'-6px',
+          width:20,height:20,
+          background:col,
+          borderRadius:10,
+          transform:'translateX(-50%)',
+          border:`3px solid ${C.white}`,
+          boxShadow:`0 2px 8px ${col}55`,
+          transition:`left 0.75s cubic-bezier(0.34,1.1,0.64,1) ${delay}`,
+        });
+        return(
+          <Card style={{padding:'14px 16px',display:'flex',flexDirection:'column',gap:16}}>
+            {/* Match row */}
+            <div>
+              <div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline',marginBottom:8}}>
+                <div style={{display:'flex',alignItems:'baseline',gap:5}}>
+                  <span style={{fontSize:10,fontWeight:700,color:C.green,fontFamily:C.P,letterSpacing:'0.1em',textTransform:'uppercase',opacity:0.55}}>Your Match</span>
+                  {matchConfig.descriptor&&<span style={{fontSize:12,fontWeight:600,color:matchConfig.col,fontFamily:C.P,opacity:0.8}}>· {matchConfig.descriptor}</span>}
+                </div>
+                <span style={{fontSize:17,fontWeight:800,color:C.green,fontFamily:C.P,letterSpacing:'-0.02em'}}>{matchPct!=null?`${matchPct}%`:'—'}</span>
+              </div>
+              <div style={{width:'100%',height:8,background:`linear-gradient(to right,${C.white},${C.green}50,${C.green})`,borderRadius:4,position:'relative',border:`1px solid ${C.green}25`}}>
+                {matchPct!=null&&<div style={dotStyle(matchPct,C.green)}/>}
+              </div>
+            </div>
+            {/* Rating row */}
+            <div onClick={()=>{setShowRatingUI(true);setSaved(false);}} style={{cursor:'pointer'}}>
+              <div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline',marginBottom:8}}>
+                <div style={{display:'flex',alignItems:'baseline',gap:5}}>
+                  <span style={{fontSize:10,fontWeight:700,color:C.amber,fontFamily:C.P,letterSpacing:'0.1em',textTransform:'uppercase',opacity:0.55}}>Your Rating</span>
+                  {userRating>0&&scoreLabel&&<span style={{fontSize:12,fontWeight:600,color:C.amber,fontFamily:C.P,opacity:0.65}}>· {scoreLabel}</span>}
+                </div>
+                {userRating>0?(
+                  <div style={{display:'flex',alignItems:'baseline',gap:1}}>
+                    <span style={{fontSize:17,fontWeight:800,color:C.amber,fontFamily:C.P,letterSpacing:'-0.02em'}}>{userRating}</span>
+                    <span style={{fontSize:10,fontWeight:700,color:C.amber,fontFamily:C.P,opacity:0.6,marginLeft:2}}>pts</span>
+                  </div>
+                ):(
+                  <span style={{fontSize:12,fontWeight:600,color:C.mid,fontFamily:C.P,opacity:0.5}}>tap to rate</span>
+                )}
+              </div>
+              <div style={{width:'100%',height:8,background:userRating>0?`linear-gradient(to right,${C.white},${C.amber}50,${C.amber})`:`linear-gradient(to right,${C.white},${C.line})`,borderRadius:4,position:'relative',border:`1px solid ${C.amber}25`}}>
+                {userRating>0&&<div style={dotStyle(userRating,C.amber,'0.12s')}/>}
+              </div>
+              {userRating>0&&<div style={{fontSize:10,color:C.mid,fontFamily:C.P,marginTop:5,opacity:0.4,textAlign:'center'}}>tap to edit</div>}
+            </div>
+          </Card>
+        );
+      })()}
       {/* Rating UI */}
       {showRatingUI&&(
         <Card style={{padding:'14px 16px'}}>
@@ -222,9 +283,9 @@ function DetailMerged({wine,nav,existingRating=0,matchPct}){
           <div style={{textAlign:'center',minHeight:48,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:2}}>
             {userRating>0?(
               <>
-                <div style={{display:'flex',alignItems:'baseline',gap:3}}>
+                <div style={{display:'flex',alignItems:'baseline',gap:2}}>
                   <span style={{fontSize:36,fontWeight:800,color:C.cr,fontFamily:C.P,lineHeight:1}}>{userRating}</span>
-                  <span style={{fontSize:16,color:C.mid,fontFamily:C.P}}>/100</span>
+                  <span style={{fontSize:13,fontWeight:700,color:C.mid,fontFamily:C.P,marginLeft:2,opacity:0.7}}>pts</span>
                 </div>
                 <span style={{fontSize:15,fontWeight:600,color:C.amber,fontFamily:C.P}}>{scoreLabel}</span>
               </>
@@ -241,23 +302,16 @@ function DetailMerged({wine,nav,existingRating=0,matchPct}){
         </Card>
       )}
 
-      {/* If rated, show compact rating + edit option */}
-      {!showRatingUI&&userRating>0&&saved&&(
-        <div onClick={()=>setShowRatingUI(true)} style={{display:'flex',alignItems:'center',justifyContent:'center',gap:8,padding:'10px',cursor:'pointer'}}>
-          <span style={{fontSize:13,color:C.mid,fontFamily:C.P}}>✓ Rated {userRating}/100 · tap to edit</span>
-        </div>
-      )}
-
-      {/* Why This Matches You */}
-      <Card style={{background:C.greenBg,border:`1px solid ${C.green}25`,padding:14}}>
-        <div style={{fontSize:13,fontWeight:700,color:C.green,letterSpacing:'0.07em',textTransform:'uppercase',fontFamily:C.P,marginBottom:6}}>Why This Matches You</div>
+      {/* Why This Matches You — dynamic based on match level */}
+      <Card style={{background:matchConfig.bg,border:matchConfig.border,padding:14}}>
+        <div style={{fontSize:13,fontWeight:700,color:matchConfig.col,letterSpacing:'0.07em',textTransform:'uppercase',fontFamily:C.P,marginBottom:6}}>{matchConfig.title}</div>
         {generatingWhy?(
           <div style={{display:'flex',alignItems:'center',gap:6}}>
-            <div style={{width:10,height:10,borderRadius:5,border:`2px solid ${C.green}40`,borderTopColor:C.green,animation:'storySpin .8s linear infinite'}}/>
-            <span style={{fontSize:14,color:C.green,fontFamily:C.P,fontStyle:'italic'}}>Analyzing your taste…</span>
+            <div style={{width:10,height:10,borderRadius:5,border:`2px solid ${matchConfig.col}40`,borderTopColor:matchConfig.col,animation:'storySpin .8s linear infinite'}}/>
+            <span style={{fontSize:14,color:matchConfig.col,fontFamily:C.P,fontStyle:'italic'}}>Analyzing your taste…</span>
           </div>
         ):(
-          <span style={{fontSize:15,color:C.green,fontFamily:C.P,lineHeight:1.6}}>{genWhy||'(personalizing…)'}</span>
+          <span style={{fontSize:15,color:matchConfig.col,fontFamily:C.P,lineHeight:1.6}}>{genWhy||'(personalizing…)'}</span>
         )}
       </Card>
 
@@ -265,9 +319,27 @@ function DetailMerged({wine,nav,existingRating=0,matchPct}){
       <div>
         <SL label="Taste Profile"/>
         <div style={{fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.5,marginBottom:12,padding:'10px 12px',borderRadius:10,background:C.offWhite,border:`1px solid ${C.line}`}}>
-          These four dimensions describe how this wine will feel in your mouth — they help you understand what to expect and find wines you'll enjoy.
+          These {isRed||isWhite||isSparkling?'four':'three'} dimensions describe how this wine will feel in your mouth — they help you understand what to expect and find wines you'll enjoy.{!isRed&&!isWhite&&!isSparkling?' Tannins aren\'t shown here since they\'re only a meaningful factor in red wines.':''}
         </div>
         <div style={{display:'flex',flexDirection:'column',gap:20}}>
+          {/* Effervescence — sparkling only, shown first since it's the defining trait */}
+          {isSparkling&&(
+          <div>
+            <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:12}}>
+              <div style={{fontSize:15,fontWeight:700,color:C.cr,fontFamily:C.P}}>Effervescence</div>
+              <button onClick={()=>{alert('Effervescence describes the intensity and persistence of the bubbles. A soft, delicate mousse feels gentle on the tongue; vigorous effervescence has a fine, energetic, long-lasting fizz.')}} style={{width:20,height:20,borderRadius:10,background:C.crSoft,border:`1px solid ${C.cr}`,color:C.cr,fontSize:12,fontWeight:400,cursor:'pointer',padding:0,display:'flex',alignItems:'center',justifyContent:'center',fontFamily:C.P}}>?</button>
+            </div>
+            <div style={{display:'flex',justifyContent:'space-between',fontSize:13,color:C.mid,fontFamily:C.P,marginBottom:8}}>
+              <span>Soft & Delicate</span>
+              <span>Vigorous & Persistent</span>
+            </div>
+            <div style={{width:'100%',height:8,background:`linear-gradient(to right, ${C.white}, ${C.ink2}40, ${C.cr})`,borderRadius:4,position:'relative',marginBottom:12,border:`1px solid ${C.line}`}}>
+              <div style={{position:'absolute',left:`${(wine?.effervescence??0.6)*100}%`,top:'-6px',width:20,height:20,background:C.cr,borderRadius:10,transform:'translateX(-50%)',border:`3px solid ${C.white}`,boxShadow:`0 2px 4px rgba(0,0,0,0.15)`}}/>
+            </div>
+            <div style={{fontSize:16,color:C.ink2,fontFamily:C.P,lineHeight:1.5,paddingLeft:8,borderLeft:`2px solid ${C.crSoft}`}}>This wine's bubbles are <strong>{chars.find(c=>c.label==='Effervescence')?.value.toLowerCase()}</strong> — {(wine?.effervescence??0.6)>=0.68?'expect a fine, persistent, energetic fizz that lingers on the palate, typical of traditional-method production.':'the mousse is soft and gentle, with larger, quicker-fading bubbles that feel easy-drinking rather than intense.'}</div>
+          </div>
+          )}
+
           {/* Body */}
           <div>
             <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:12}}>
@@ -285,6 +357,7 @@ function DetailMerged({wine,nav,existingRating=0,matchPct}){
           </div>
 
           {/* Tannins */}
+          {isRed&&(
           <div>
             <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:12}}>
               <div style={{fontSize:15,fontWeight:700,color:C.cr,fontFamily:C.P}}>Tannins</div>
@@ -299,6 +372,7 @@ function DetailMerged({wine,nav,existingRating=0,matchPct}){
             </div>
             <div style={{fontSize:16,color:C.ink2,fontFamily:C.P,lineHeight:1.5,paddingLeft:8,borderLeft:`2px solid ${C.crSoft}`}}>This wine has <strong>{chars.find(c=>c.label==='Tannins')?.value.toLowerCase()}</strong> tannins — {(wine?.tannins??0.55)>=0.68?'you\'ll feel a textured, drying sensation in your mouth, like biting grape skins. These wines age beautifully.':'the sensation in your mouth is smooth and soft, without much grip. These are drinking wines, ready to enjoy now.'}</div>
           </div>
+          )}
 
           {/* Acidity */}
           <div>
@@ -315,6 +389,24 @@ function DetailMerged({wine,nav,existingRating=0,matchPct}){
             </div>
             <div style={{fontSize:16,color:C.ink2,fontFamily:C.P,lineHeight:1.5,paddingLeft:8,borderLeft:`2px solid ${C.crSoft}`}}>This wine is <strong>{chars.find(c=>c.label==='Acidity')?.value.toLowerCase()}</strong> — {(wine?.acidity??0.60)>=0.68?'it tastes fresh and bright, like lemon juice. High acidity makes this wine a food-friendly pairing partner and helps it age.':'it feels smooth and soft on your palate, without much crispness. These wines are approachable and easy-drinking.'}</div>
           </div>
+
+          {/* Texture — white only */}
+          {isWhite&&(
+          <div>
+            <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:12}}>
+              <div style={{fontSize:15,fontWeight:700,color:C.cr,fontFamily:C.P}}>Texture</div>
+              <button onClick={()=>{alert('Texture describes how oak aging, lees contact, or malolactic fermentation shape a white wine mouthfeel. Crisp and steely wines taste clean and mineral; rich and creamy wines feel rounder and softer.')}} style={{width:20,height:20,borderRadius:10,background:C.crSoft,border:`1px solid ${C.cr}`,color:C.cr,fontSize:12,fontWeight:400,cursor:'pointer',padding:0,display:'flex',alignItems:'center',justifyContent:'center',fontFamily:C.P}}>?</button>
+            </div>
+            <div style={{display:'flex',justifyContent:'space-between',fontSize:13,color:C.mid,fontFamily:C.P,marginBottom:8}}>
+              <span>Crisp & Steely</span>
+              <span>Rich & Creamy</span>
+            </div>
+            <div style={{width:'100%',height:8,background:`linear-gradient(to right, ${C.white}, ${C.ink2}40, ${C.cr})`,borderRadius:4,position:'relative',marginBottom:12,border:`1px solid ${C.line}`}}>
+              <div style={{position:'absolute',left:`${(wine?.texture??0.3)*100}%`,top:'-6px',width:20,height:20,background:C.cr,borderRadius:10,transform:'translateX(-50%)',border:`3px solid ${C.white}`,boxShadow:`0 2px 4px rgba(0,0,0,0.15)`}}/>
+            </div>
+            <div style={{fontSize:16,color:C.ink2,fontFamily:C.P,lineHeight:1.5,paddingLeft:8,borderLeft:`2px solid ${C.crSoft}`}}>This wine's texture is <strong>{chars.find(c=>c.label==='Texture')?.value.toLowerCase()}</strong> — {(wine?.texture??0.3)>=0.68?'oak aging and/or lees contact give it a rounder, creamier mouthfeel, often with notes of butter or vanilla.':'it stays clean, precise and mineral-driven, with little to no oak influence.'}</div>
+          </div>
+          )}
 
           {/* Sweetness */}
           <div>
@@ -457,106 +549,174 @@ function DetailStory({wine,nav,existingRating=0}){
   );
 }
 
-function DetailBuy({wine,nav}){
-  const [retailData, setRetailData]       = React.useState(null);
-  const [loadingRetail, setLoadingRetail] = React.useState(false);
-  const [fetchDone, setFetchDone]         = React.useState(false);
-  const [retailers, setRetailers]         = React.useState(null);
-  const [loadingRetailers, setLoadingRetailers] = React.useState(false);
+/* Region → currency config */
+const REGION_CURRENCY = {
+  uk:        { sym:'£',   base:'£', code:'GBP', label:'United Kingdom' },
+  us:        { sym:'$',   base:'$', code:'USD', label:'United States' },
+  ontario:   { sym:'CA$', base:'$', code:'CAD', label:'Ontario, Canada' },
+  canada:    { sym:'CA$', base:'$', code:'CAD', label:'Canada' },
+  australia: { sym:'A$',  base:'$', code:'AUD', label:'Australia' },
+  nz:        { sym:'NZ$', base:'$', code:'NZD', label:'New Zealand' },
+  eu:        { sym:'€',   base:'€', code:'EUR', label:'Europe' },
+  france:    { sym:'€',   base:'€', code:'EUR', label:'France' },
+  germany:   { sym:'€',   base:'€', code:'EUR', label:'Germany' },
+  italy:     { sym:'€',   base:'€', code:'EUR', label:'Italy' },
+  spain:     { sym:'€',   base:'€', code:'EUR', label:'Spain' },
+};
+/* base = plain currency symbol shown on-screen (e.g. "$"); code = abbreviation shown as a small caption
+   (e.g. "CAD") underneath the amount, so "CA$24" becomes "$24" with "CAD" below it. sym (with country
+   prefix) is kept only for use inside LLM prompts, where the disambiguation matters. */
 
-  const region = localStorage.getItem('vinterest_region') || 'uk';
+function DetailPrice({wine,nav}){
+  const region = (localStorage.getItem('vinterest_region') || 'uk').toLowerCase();
+  const curr   = REGION_CURRENCY[region] || REGION_CURRENCY.uk;
 
-  React.useEffect(function() {
+  const [priceData,  setPriceData]  = React.useState(null);
+  const [loading,    setLoading]    = React.useState(false);
+  const [done,       setDone]       = React.useState(false);
+
+  const cacheKey = wine
+    ? 'vinterest_price_v2_' + (wine.name||'').replace(/\s/g,'_') + '_' + (wine.vintage||'nv') + '_' + curr.code
+    : null;
+
+  React.useEffect(function(){
     if (!wine || !wine.name) return;
-    setRetailData(null);
-    setRetailers(null);
-    setFetchDone(false);
-    setLoadingRetail(true);
+    setPriceData(null);
+    setDone(false);
 
-    fetchRetailData(wine.name, wine.vintage)
-      .then(function(d){
-        setRetailData(d);
-        // Once we have a price, ask Claude for suggested stockists
-        if (d && d.retail && d.retail.price != null) {
-          const sym = d.retail.currency === 'GBP' ? '£' : 'CA$';
-          const priceStr = sym + d.retail.price;
-          const regionLabel = region === 'ontario' ? 'Ontario, Canada' : 'the UK';
-          const pool = region === 'ontario'
-            ? 'LCBO, Wine Rack, private wine boutiques'
-            : 'Berry Bros, Hedonism, Majestic, Waitrose Cellar, Laithwaites, The Wine Society';
-          const prompt = 'List 3-5 likely stockists for ' + (wine.name) + (wine.vintage ? ' ' + wine.vintage : '') + ' (' + priceStr + ') in ' + regionLabel + '. Choose only from: ' + pool + '. Reply with ONLY a plain comma-separated list of names — no descriptions, no links, no URLs.';
-          setLoadingRetailers(true);
-          window.claude.complete({ messages: [{ role: 'user', content: prompt }] })
-            .then(function(text){
-              if (text) {
-                const list = text.split(',').map(function(s){ return s.trim().replace(/^["'\-•]+|["'\-•]+$/g,''); }).filter(Boolean);
-                setRetailers(list);
-              }
-            })
-            .catch(function(){})
-            .finally(function(){ setLoadingRetailers(false); });
-        }
+    if (cacheKey) {
+      const cached = localStorage.getItem(cacheKey);
+      if (cached) {
+        try { setPriceData(JSON.parse(cached)); setDone(true); return; } catch(e){}
+      }
+    }
+
+    setLoading(true);
+    const prompt =
+      'You are a wine market pricing expert with deep knowledge of actual retail prices worldwide.' +
+      ' Your task: find the ACTUAL known retail price for this SPECIFIC wine — look up this exact producer and label, do NOT average by appellation.' +
+      ' Prestigious named wines (e.g. Guigal single-vineyard La Mouline/La Turque/La Landonne, DRC, Leroy, Screaming Eagle, Petrus, Opus One, cult Burgundy) retail for ' + curr.sym + '50–' + curr.sym + '5000+; use the real figure.' +
+      ' Wine: ' + wine.name + (wine.vintage ? ' ' + wine.vintage : '') + '.' +
+      ' Type: ' + (wine.type||'red') + '.' +
+      ' Region: ' + (wine.region||'') + ', ' + (wine.country||'') + '.' +
+      ' Grapes: ' + ((wine.grapes||[]).join(', ')||'unknown') + '.' +
+      (wine.abv ? ' ABV: ' + wine.abv + '%.' : '') +
+      ' Currency: ' + curr.label + ' (' + curr.code + ').' +
+      ' Return ONLY valid JSON, no markdown: {"low":NUMBER,"mid":NUMBER,"high":NUMBER,"currency":"' + curr.code + '","tier":"entry|everyday|premium|luxury|ultra-luxury","note":"one sentence — what drives this specific wine price (producer rep, rarity, appellation, etc)"}.' +
+      ' Integers only. Return null values only if the wine is genuinely unidentifiable.';
+
+    window.claude.complete({ messages: [{ role:'user', content: prompt }] })
+      .then(function(text){
+        let c = text.replace(/```json|```/g,'').trim();
+        const s = c.indexOf('{'), e = c.lastIndexOf('}');
+        if (s >= 0 && e > s) c = c.slice(s, e+1);
+        const d = JSON.parse(c);
+        if (cacheKey) localStorage.setItem(cacheKey, JSON.stringify(d));
+        setPriceData(d);
       })
       .catch(function(){})
-      .finally(function(){ setLoadingRetail(false); setFetchDone(true); });
-  }, [wine && wine.name, wine && wine.vintage]);
+      .finally(function(){ setLoading(false); setDone(true); });
+  }, [wine && wine.name, wine && wine.vintage, curr.code]);
 
   const SL=({label})=>(
     <div style={{fontSize:13,fontWeight:700,color:C.mid,letterSpacing:'0.07em',textTransform:'uppercase',fontFamily:C.P,marginBottom:8}}>{label}</div>
   );
 
-  const currSym = retailData && retailData.retail
-    ? (retailData.retail.currency === 'GBP' ? '£' : 'CA$')
-    : (region === 'uk' ? '£' : 'CA$');
+  const tierColor = {
+    'entry':       C.mid,
+    'everyday':    C.ink2,
+    'premium':     C.cr,
+    'luxury':      '#9B6B00',
+    'ultra-luxury':'#6B2D8B',
+  };
+  const tierLabel = {
+    'entry':       'Entry-level',
+    'everyday':    'Everyday',
+    'premium':     'Premium',
+    'luxury':      'Luxury',
+    'ultra-luxury':'Ultra-luxury',
+  };
+
+  const fmtPrice = (n) => n != null ? curr.base + n.toLocaleString() : '—';
+
+  const hasPrice = priceData && priceData.mid != null;
 
   return(
     <div style={{padding:'16px 20px',display:'flex',flexDirection:'column',gap:20}}>
-      <div>
-        <SL label="Where to Buy"/>
-        {loadingRetail ? (
-          <Card style={{padding:14,display:'flex',alignItems:'center',gap:8}}>
-            <div style={{width:13,height:13,borderRadius:7,border:'2px solid rgba(0,0,0,0.08)',borderTopColor:C.cr,animation:'storySpin .8s linear infinite',flexShrink:0}}/>
-            <span style={{fontSize:15,color:C.mid,fontFamily:C.P,fontStyle:'italic'}}>Finding best prices…</span>
-          </Card>
-        ) : fetchDone && retailData && retailData.retail && retailData.retail.price != null ? (
-          <Card style={{padding:0,overflow:'hidden'}}>
-            {/* LCBO price row — Ontario only */}
-            {region === 'ontario' && retailData.lcbo && retailData.lcbo.price != null && (
-              <div style={{padding:'11px 14px',background:C.crSoft,borderBottom:'1px solid '+C.crDim,display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-                <span style={{fontSize:15,fontWeight:600,color:C.cr,fontFamily:C.P}}>Available at LCBO</span>
-                <span style={{fontSize:17,fontWeight:700,color:C.cr,fontFamily:C.P}}>CA${Number(retailData.lcbo.price).toFixed(2)}</span>
+
+      {loading && (
+        <Card style={{padding:14,display:'flex',alignItems:'center',gap:10}}>
+          <div style={{width:13,height:13,borderRadius:7,border:'2px solid rgba(0,0,0,0.08)',borderTopColor:C.cr,animation:'storySpin .8s linear infinite',flexShrink:0}}/>
+          <span style={{fontSize:15,color:C.mid,fontFamily:C.P,fontStyle:'italic'}}>Estimating price…</span>
+        </Card>
+      )}
+
+      {done && hasPrice && (
+        <>
+          {/* Price range card */}
+          <div>
+            <SL label="Estimated Retail Price"/>
+            <Card style={{padding:0,overflow:'hidden'}}>
+              {/* Mid price hero */}
+              <div style={{padding:'18px 16px',background:C.crSoft,display:'flex',justifyContent:'space-between',alignItems:'center',borderBottom:'1px solid '+C.crDim}}>
+                <div>
+                  <div style={{fontSize:13,fontWeight:600,color:C.cr,fontFamily:C.P,marginBottom:2}}>Typical bottle price</div>
+                  <div style={{fontSize:11,color:C.cr+'99',fontFamily:C.P}}>{curr.label}</div>
+                </div>
+                <div style={{textAlign:'right'}}>
+                  <div style={{fontSize:26,fontWeight:800,color:C.cr,fontFamily:C.P,lineHeight:1}}>{fmtPrice(priceData.mid)}</div>
+                  <div style={{fontSize:11,fontWeight:700,color:C.cr+'99',fontFamily:C.P,marginTop:3,letterSpacing:'0.04em'}}>{curr.code}</div>
+                </div>
               </div>
-            )}
-            {/* Market price row */}
-            <div style={{padding:'11px 14px',background:C.offWhite,borderBottom:'1px solid '+C.line,display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-              <span style={{fontSize:15,fontWeight:600,color:C.ink,fontFamily:C.P}}>Typical market price</span>
-              <span style={{fontSize:17,fontWeight:700,color:C.cr,fontFamily:C.P}}>{currSym}{retailData.retail.price}</span>
-            </div>
-            {/* Suggested retailers */}
-            {loadingRetailers ? (
-              <div style={{padding:'11px 14px',display:'flex',alignItems:'center',gap:8}}>
-                <div style={{width:11,height:11,borderRadius:6,border:'2px solid rgba(0,0,0,0.08)',borderTopColor:C.cr,animation:'storySpin .8s linear infinite',flexShrink:0}}/>
-                <span style={{fontSize:14,color:C.mid,fontFamily:C.P,fontStyle:'italic'}}>Finding stockists…</span>
-              </div>
-            ) : retailers && retailers.length ? (
-              retailers.map(function(name,i){
-                const isLast = i === retailers.length - 1;
-                return (
-                  <div key={i} style={{padding:'11px 14px',borderBottom:isLast?'none':'1px solid '+C.line}}>
-                    <span style={{fontSize:16,color:C.ink,fontFamily:C.P}}>{name}</span>
+              {/* Low / High row */}
+              {(priceData.low != null || priceData.high != null) && (
+                <div style={{display:'flex',borderBottom:'1px solid '+C.line}}>
+                  <div style={{flex:1,padding:'11px 14px',borderRight:'1px solid '+C.line}}>
+                    <div style={{fontSize:12,color:C.mid,fontFamily:C.P,marginBottom:2}}>Budget end</div>
+                    <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>{fmtPrice(priceData.low)}</div>
+                    <div style={{fontSize:10,fontWeight:600,color:C.mid,fontFamily:C.P,marginTop:2,letterSpacing:'0.04em'}}>{curr.code}</div>
                   </div>
-                );
-              })
-            ) : null}
-          </Card>
-        ) : fetchDone ? (
-          <Card style={{padding:14}}>
-            <span style={{fontSize:15,color:C.mid,fontFamily:C.P,fontStyle:'italic'}}>Pricing unavailable for this wine.</span>
-          </Card>
-        ) : null}
-      </div>
+                  <div style={{flex:1,padding:'11px 14px'}}>
+                    <div style={{fontSize:12,color:C.mid,fontFamily:C.P,marginBottom:2}}>Premium end</div>
+                    <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>{fmtPrice(priceData.high)}</div>
+                    <div style={{fontSize:10,fontWeight:600,color:C.mid,fontFamily:C.P,marginTop:2,letterSpacing:'0.04em'}}>{curr.code}</div>
+                  </div>
+                </div>
+              )}
+              {/* Tier badge */}
+              {priceData.tier && (
+                <div style={{padding:'10px 14px',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                  <span style={{fontSize:14,color:C.mid,fontFamily:C.P}}>Price tier</span>
+                  <span style={{fontSize:14,fontWeight:700,color:tierColor[priceData.tier]||C.cr,fontFamily:C.P}}>{tierLabel[priceData.tier]||priceData.tier}</span>
+                </div>
+              )}
+            </Card>
+          </div>
+
+          {/* Note */}
+          {priceData.note && (
+            <div>
+              <SL label="Price Context"/>
+              <div style={{fontSize:15,color:C.ink2,fontFamily:C.P,lineHeight:1.6,padding:'12px 14px',borderRadius:12,background:C.offWhite,border:'1px solid '+C.line}}>
+                {priceData.note}
+              </div>
+            </div>
+          )}
+
+          {/* Disclaimer */}
+          <div style={{fontSize:12,color:C.mid,fontFamily:C.P,lineHeight:1.5,textAlign:'center',padding:'0 8px'}}>
+            Prices are estimates based on publicly available market data and may vary by retailer, vintage condition, and availability.
+          </div>
+        </>
+      )}
+
+      {done && !hasPrice && (
+        <Card style={{padding:14}}>
+          <span style={{fontSize:15,color:C.mid,fontFamily:C.P,fontStyle:'italic'}}>Price estimate unavailable for this wine.</span>
+        </Card>
+      )}
     </div>
   );
 }
 
-Object.assign(window,{WineDetailScreen,DetailMerged,DetailStory,DetailBuy});
+Object.assign(window,{WineDetailScreen,DetailMerged,DetailStory,DetailPrice});

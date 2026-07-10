@@ -749,27 +749,34 @@ function SettingsScreen({nav,back}){
         <div style={{marginBottom:24}}>
           <div style={{fontSize:16,fontWeight:600,color:C.ink,fontFamily:C.P,marginBottom:12}}>Region</div>
           <div style={{display:'flex',flexDirection:'column',gap:8}}>
-            {['uk', 'us', 'ontario', 'australia'].map(r => (
+            {[
+              {id:'uk',label:'United Kingdom',sym:'£'},
+              {id:'eu',label:'Europe',sym:'€'},
+              {id:'us',label:'United States',sym:'$'},
+              {id:'ontario',label:'Canada',sym:'CA$'},
+              {id:'australia',label:'Australia',sym:'A$'},
+              {id:'nz',label:'New Zealand',sym:'NZ$'},
+            ].map(r => (
               <div
-                key={r}
-                onClick={() => saveRegion(r)}
+                key={r.id}
+                onClick={() => saveRegion(r.id)}
                 style={{
                   padding:'12px 14px',
                   borderRadius:12,
-                  background: region === r ? C.crSoft : C.white,
-                  border: `1px solid ${region === r ? C.cr : C.line}`,
+                  background: region === r.id ? C.crSoft : C.white,
+                  border: `1px solid ${region === r.id ? C.cr : C.line}`,
                   cursor:'pointer',
                   display:'flex',
                   alignItems:'center',
                   justifyContent:'space-between'
                 }}
               >
-                <span style={{fontSize:15,fontWeight:600,color:C.ink,fontFamily:C.P}}>{r.toUpperCase()}</span>
-                {region === r && <span style={{fontSize:14,color:C.cr}}>✓</span>}
+                <span style={{fontSize:15,fontWeight:600,color:C.ink,fontFamily:C.P}}>{r.label} <span style={{color:C.mid,fontWeight:400}}>({r.sym})</span></span>
+                {region === r.id && <span style={{fontSize:14,color:C.cr}}>✓</span>}
               </div>
             ))}
           </div>
-          <div style={{fontSize:12,color:C.mid,fontFamily:C.P,marginTop:8}}>Prices and retailers are shown based on your region.</div>
+          <div style={{fontSize:12,color:C.mid,fontFamily:C.P,marginTop:8}}>Prices, budgets and sommelier scripts across the app use this currency.</div>
         </div>
         <div style={{marginBottom:24}}>
           <div style={{fontSize:16,fontWeight:600,color:C.ink,fontFamily:C.P,marginBottom:12}}>Debug</div>

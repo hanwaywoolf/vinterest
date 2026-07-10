@@ -170,16 +170,7 @@
 <script>
 /* ── Global utility functions ── */
 
-async function fetchRetailData(wineName, vintage) {
-  const region = localStorage.getItem('vinterest_region') || 'uk';
-  const url = 'https://vinterest-retail.carey-copeling.workers.dev'
-    + '?wine=' + encodeURIComponent(wineName)
-    + '&vintage=' + encodeURIComponent(vintage || '')
-    + '&region=' + encodeURIComponent(region);
-  return fetch(url)
-    .then(function(r){ return r.ok ? r.json() : null; })
-    .catch(function(){ return null; });
-}
+/* fetchRetailData removed — price estimation now handled by Claude in DetailPrice */
 </script>
 
 <script type="text/babel" src="pwa-components.jsx?v=42"></script>

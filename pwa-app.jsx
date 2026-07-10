@@ -55,7 +55,7 @@ function App(){
     window.addEventListener('vinterest:xp',handler);
     return ()=>window.removeEventListener('vinterest:xp',handler);
   },[]);
-  const showXpBadge=!['camera','onboarding','learn','quiz','article','identified','detail','mywines','scan','profile'].includes(screen);
+  const showXpBadge=!['camera','onboarding','learn','quiz','article','identified','detail','mywines','scan','profile','style-explore'].includes(screen);
 
   // XP Toast
   const [xpToasts,setXpToasts]=React.useState([]);
@@ -86,6 +86,7 @@ function App(){
         {screen==='region'    && <RegionScreen {...ctx}/>}
         {screen==='varietal'  && <VarietalScreen {...ctx}/>}
         {screen==='similar'   && <SimilarWinesScreen {...ctx}/>}
+        {screen==='style-explore' && <StyleExploreScreen {...ctx}/>}
         {screen==='profile'   && <WineDNAScreen {...ctx}/>}
         {screen==='mywines'   && <MyWinesScreen {...ctx}/>}
         {screen==='learn'     && <QuizHubScreen {...ctx}/>}

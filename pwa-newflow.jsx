@@ -14,11 +14,12 @@ function NewUserFlow({onComplete}){
       localStorage.setItem('vinterest_prefs', JSON.stringify(answers));
       const loc=answers.location||{};
       const c=(loc.country||'').toLowerCase();
-      // App supports these retail regions: uk · us · ontario · australia
-      const map={'united states':'us','canada':'ontario','united kingdom':'uk','australia':'australia'};
-      localStorage.setItem('vinterest_region', map[c]||'uk');
-      const curMap={'united kingdom':'GBP','united states':'USD','canada':'CAD','australia':'AUD','france':'EUR','germany':'EUR','italy':'EUR','spain':'EUR'};
-      localStorage.setItem('vinterest_currency', curMap[c]||'USD');
+      // App supports these retail regions: uk · us · ontario · australia · nz · eu (France/Germany/Italy/Spain all price in EUR)
+      const map={'united states':'us','canada':'ontario','united kingdom':'uk','australia':'australia','new zealand':'nz','france':'eu','germany':'eu','italy':'eu','spain':'eu'};
+      localStorage.setItem('vinterest_region', map[c]||'us');
+      // vinterest_currency mirrors vinterest_region's currency — kept in sync so nothing reads a stale value
+      const curMap={'uk':'GBP','us':'USD','ontario':'CAD','australia':'AUD','nz':'NZD','eu':'EUR'};
+      localStorage.setItem('vinterest_currency', curMap[map[c]||'us']);
       if(loc.country) localStorage.setItem('vinterest_country', loc.country);
       if(loc.region)  localStorage.setItem('vinterest_state', loc.region);
       if(loc.city)    localStorage.setItem('vinterest_city', loc.city);
