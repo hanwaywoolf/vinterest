@@ -639,6 +639,12 @@ function DetailPrice({wine,nav}){
 
   const fmtPrice = (n) => n != null ? curr.base + n.toLocaleString() : '—';
 
+  function handleFindItForMe(){
+    if(!wine) return;
+    const q=`${wine.producer?wine.producer+' ':''}${wine.name}${wine.vintage&&wine.vintage!=='NV'?' '+wine.vintage:''} ${wine.type||''} wine buy near me`;
+    window.open('https://www.google.com/search?q='+encodeURIComponent(q),'_blank','noopener');
+  }
+
   const hasPrice = priceData && priceData.mid != null;
 
   return(
@@ -703,6 +709,9 @@ function DetailPrice({wine,nav}){
             </div>
           )}
 
+          {/* Find It For Me */}
+          <Btn primary full style={{background:C.cr,boxShadow:`0 3px 12px ${C.cr}35`}} onClick={handleFindItForMe}>Find It For Me</Btn>
+
           {/* Disclaimer */}
           <div style={{fontSize:12,color:C.mid,fontFamily:C.P,lineHeight:1.5,textAlign:'center',padding:'0 8px'}}>
             Prices are estimates based on publicly available market data and may vary by retailer, vintage condition, and availability.
@@ -711,9 +720,12 @@ function DetailPrice({wine,nav}){
       )}
 
       {done && !hasPrice && (
-        <Card style={{padding:14}}>
-          <span style={{fontSize:15,color:C.mid,fontFamily:C.P,fontStyle:'italic'}}>Price estimate unavailable for this wine.</span>
-        </Card>
+        <>
+          <Card style={{padding:14}}>
+            <span style={{fontSize:15,color:C.mid,fontFamily:C.P,fontStyle:'italic'}}>Price estimate unavailable for this wine.</span>
+          </Card>
+          <Btn primary full style={{background:C.cr,boxShadow:`0 3px 12px ${C.cr}35`}} onClick={handleFindItForMe}>Find It For Me</Btn>
+        </>
       )}
     </div>
   );

@@ -153,24 +153,51 @@ function _evolution(wines){
   const rated=wines.filter(w=>w.rating>0&&(w.scanned_at||w.last_scanned));
   if(rated.length<3) return [];
   const sorted=[...rated].sort((a,b)=>new Date(a.scanned_at||a.last_scanned||0)-new Date(b.scanned_at||b.last_scanned||0));
-  const sz=Math.max(2,Math.ceil(sorted.length/4));
   const firstD=new Date(sorted[0].scanned_at||sorted[0].last_scanned||0);
   const lastD=new Date(sorted[sorted.length-1].scanned_at||sorted[sorted.length-1].last_scanned||0);
   const spanDays=(lastD-firstD)/86400000;
-  // Pick label granularity to match how tightly the scans are clustered — otherwise scans
-  // a few days apart all render the same "MMM YY" label and look identical.
-  const fmtOpts=spanDays>700?{year:'numeric'}:spanDays>45?{month:'short',year:'2-digit'}:{month:'short',day:'numeric'};
-  const chunks=[];
-  for(let i=0;i<sorted.length;i+=sz){
-    const ch=sorted.slice(i,i+sz);
-    const avgR=Math.round(ch.reduce((s,w)=>s+w.rating,0)/ch.length);
-    const date=new Date(ch[0].scanned_at||ch[0].last_scanned);
-    const label=date.toLocaleDateString('en',fmtOpts);
-    const tc={red:0,white:0,rose:0,sparkling:0};
-    ch.forEach(w=>{const t=_norm(w.type);if(tc[t]!==undefined)tc[t]++;else tc.red++;});
-    const dom=Object.entries(tc).sort((a,b)=>b[1]-a[1])[0][0];
-    chunks.push({label,avgR,dom,count:ch.length});
+
+  // Bucket by REAL calendar period (not by equal wine-count chunks) so bars always
+  // reflect actual scan dates — a handful of new scans this month always shows up
+  // as its own bar instead of getting merged into an old chunk's date range.
+  function weekKey(d){
+    const onejan=new Date(d.getFullYear(),0,1);
+    const wk=Math.ceil((((d-onejan)/86400000)+onejan.getDay()+1)/7);
+    return d.getFullYear()+'-W'+wk;
   }
+  const granularity=spanDays<=10?'day':spanDays<=70?'week':spanDays<=700?'month':'year';
+  function bucketKey(d){
+    if(granularity==='day')   return d.toISOString().slice(0,10);
+    if(granularity==='week')  return weekKey(d);
+    if(granularity==='month') return d.getFullYear()+'-'+d.getMonth();
+    return String(d.getFullYear());
+  }
+  function labelFor(d){
+    if(granularity==='year') return d.toLocaleDateString('en',{year:'numeric'});
+    if(granularity==='month') return d.toLocaleDateString('en',{month:'short',year:'2-digit'});
+    return d.toLocaleDateString('en',{month:'short',day:'numeric'});
+  }
+
+  const buckets=new Map();
+  sorted.forEach(w=>{
+    const d=new Date(w.scanned_at||w.last_scanned);
+    const key=bucketKey(d);
+    if(!buckets.has(key)) buckets.set(key,{sum:0,count:0,lastDate:d,types:{red:0,white:0,rose:0,sparkling:0},order:d.getTime()});
+    const b=buckets.get(key);
+    b.sum+=w.rating; b.count++;
+    if(d>b.lastDate) b.lastDate=d;
+    const t=_norm(w.type); if(b.types[t]!==undefined) b.types[t]++; else b.types.red++;
+  });
+
+  let chunks=[...buckets.values()].sort((a,b)=>a.order-b.order).map(b=>({
+    label:labelFor(b.lastDate),
+    avgR:Math.round(b.sum/b.count),
+    count:b.count,
+    dom:Object.entries(b.types).sort((a,b2)=>b2[1]-a[1])[0][0],
+  }));
+
+  // Keep the chart readable — cap to the most recent 6 periods.
+  if(chunks.length>6) chunks=chunks.slice(chunks.length-6);
   return chunks;
 }
 
@@ -577,12 +604,12 @@ function WineDNAScreen({nav,back,showPro}){
           </Card>
         )}
 
-        {evolution.length>=3&&<CSH label="Your Journey" cKey="journey" collapsed={collapsed} toggle={toggle} summary={`Your average rating is now ${evolution[evolution.length-1].avgR}/100 across ${evolution.length} checkpoints. ${evolution[evolution.length-1].avgR>evolution[0].avgR?'Your palate has been getting sharper over time.':'Your taste has stayed consistent throughout.'}`}/>}
+        {evolution.length>=3&&<CSH label="Your Journey" cKey="journey" collapsed={collapsed} toggle={toggle} summary={`Your most recent ${t.label.toLowerCase()} scans (${evolution[evolution.length-1].label}) average ${evolution[evolution.length-1].avgR}/100, across ${evolution.length} time periods. ${evolution[evolution.length-1].avgR>evolution[0].avgR?'Your palate has been getting sharper over time.':'Your taste has stayed consistent throughout.'}`}/>}
         {/* ── Palate Evolution ── */}
         {evolution.length>=3&&!collapsed.journey&&(
           <Card style={{padding:14}}>
             <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P,marginBottom:4}}>Palate Evolution</div>
-            <div style={{fontSize:15,color:C.mid,fontFamily:C.P,marginBottom:14}}>How your {t.label.toLowerCase()} ratings have shifted over time</div>
+            <div style={{fontSize:15,color:C.mid,fontFamily:C.P,marginBottom:14}}>Average rating of your {t.label.toLowerCase()} wines, grouped by when you scanned them</div>
             <div style={{display:'flex',gap:4,alignItems:'flex-end',height:72,marginBottom:6}}>
               {evolution.map((e,i)=>{
                 const h=Math.round((e.avgR/100)*100);
@@ -599,13 +626,14 @@ function WineDNAScreen({nav,back,showPro}){
               {evolution.map((e,i)=>(
                 <div key={i} style={{flex:1,textAlign:'center'}}>
                   <span style={{fontSize:12,color:C.mid,fontFamily:C.P}}>{e.label}</span>
+                  <div style={{fontSize:10,color:C.mid,fontFamily:C.P,opacity:0.6}}>{e.count} bottle{e.count!==1?'s':''}</div>
                 </div>
               ))}
             </div>
             <div style={{fontSize:13,color:C.mid,fontFamily:C.P,marginTop:10,lineHeight:1.55}}>
               {evolution[evolution.length-1].avgR>evolution[0].avgR
-                ?`Your average rating has climbed from ${evolution[0].avgR} to ${evolution[evolution.length-1].avgR} — your palate is getting sharper.`
-                :`Consistent scores across your collection show a clear, settled sense of what you love.`}
+                ?`Your average rating has climbed from ${evolution[0].avgR} to ${evolution[evolution.length-1].avgR} across these periods — your palate is getting sharper.`
+                :`Consistent scores across these periods show a clear, settled sense of what you love.`} Each bar is the average of just the {t.label.toLowerCase()} you rated in that period, so it can run higher or lower than your all-time average.
             </div>
           </Card>
         )}
