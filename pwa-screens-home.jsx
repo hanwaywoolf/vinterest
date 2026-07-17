@@ -28,8 +28,11 @@ function WineChatWidget(){
         </button>
       </form>
       <div style={{maxHeight:(asking||answer||err)?400:0,opacity:(asking||answer||err)?1:0,overflow:'hidden',transition:'max-height 0.35s ease,opacity 0.3s ease,margin-top 0.35s ease',marginTop:(asking||answer||err)?10:0}}>
-        <Card style={{padding:14}}>
-          <div style={{fontSize:14,fontWeight:600,color:C.mid,fontFamily:C.P,marginBottom:6}}>{asked}</div>
+        <Card style={{padding:14,position:'relative'}}>
+          <div onClick={()=>{setAnswer('');setAsked('');setErr(false);}} style={{position:'absolute',top:10,right:10,width:24,height:24,borderRadius:12,background:C.bg,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer'}}>
+            <svg width="11" height="11" viewBox="0 0 20 20"><path d="M4 4l12 12M16 4L4 16" stroke={C.mid} strokeWidth="1.8" strokeLinecap="round"/></svg>
+          </div>
+          <div style={{fontSize:14,fontWeight:600,color:C.mid,fontFamily:C.P,marginBottom:6,paddingRight:24}}>{asked}</div>
           {asking?(
             <div style={{fontSize:15,color:C.mid,fontFamily:C.P,fontStyle:'italic'}}>Thinking…</div>
           ):err?(

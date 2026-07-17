@@ -656,6 +656,14 @@ function WineListScreen({nav,back}){
     return 68+Math.floor((h%100)*0.26);
   }));
 
+  const [sortMode,setSortMode]=React.useState('list'); // 'list' | 'match'
+  const [typeFilter,setTypeFilter]=React.useState(null); // null = all
+  const types=['red','white','rosé','sparkling'];
+
+  const indexed=wines.map((w,i)=>({w,i,score:scores[i]||78}));
+  const filtered=typeFilter?indexed.filter(x=>(x.w.type||'red').toLowerCase().replace('é','e')===typeFilter.replace('é','e')):indexed;
+  const shown=sortMode==='match'?[...filtered].sort((a,b)=>b.score-a.score):filtered;
+
   return(
     <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden'}}>
       {/* Header */}
@@ -665,7 +673,7 @@ function WineListScreen({nav,back}){
         </div>
         <div style={{flex:1}}>
           <div style={{fontSize:19,fontWeight:700,color:'#fff',fontFamily:C.P}}>Wine List Results</div>
-          <div style={{fontSize:15,color:'rgba(255,255,255,0.65)',fontFamily:C.P}}>{wines.length} wines · ranked by your taste profile</div>
+          <div style={{fontSize:15,color:'rgba(255,255,255,0.65)',fontFamily:C.P}}>{wines.length} wines · in wine list order · match scores included</div>
         </div>
         <div onClick={()=>nav('camera')} style={{padding:'6px 14px',borderRadius:20,background:'rgba(255,255,255,0.18)',cursor:'pointer'}}>
           <span style={{fontSize:16,fontWeight:600,color:'#fff',fontFamily:C.P}}>Rescan</span>
@@ -685,12 +693,36 @@ function WineListScreen({nav,back}){
         </div>
       )}
 
+      {/* Sort + filter controls */}
+      <div style={{padding:'10px 16px 0',display:'flex',flexDirection:'column',gap:8,flexShrink:0}}>
+        <div style={{display:'flex',gap:6}}>
+          {[{k:'list',l:'List Order'},{k:'match',l:'Match Rate'}].map(o=>(
+            <div key={o.k} onClick={()=>setSortMode(o.k)} style={{flex:1,textAlign:'center',padding:'8px 6px',borderRadius:10,border:`1.5px solid ${sortMode===o.k?C.cr:C.line}`,background:sortMode===o.k?C.cr:'transparent',cursor:'pointer'}}>
+              <span style={{fontSize:15,fontWeight:600,color:sortMode===o.k?'#fff':C.mid,fontFamily:C.P}}>Sort: {o.l}</span>
+            </div>
+          ))}
+        </div>
+        <div style={{display:'flex',gap:6,overflowX:'auto'}}>
+          <div onClick={()=>setTypeFilter(null)} style={{flexShrink:0,padding:'6px 12px',borderRadius:20,border:`1.5px solid ${!typeFilter?C.ink:C.line}`,background:!typeFilter?C.ink:'transparent',cursor:'pointer'}}>
+            <span style={{fontSize:14,fontWeight:600,color:!typeFilter?'#fff':C.mid,fontFamily:C.P,textTransform:'capitalize'}}>All Types</span>
+          </div>
+          {types.map(t=>{
+            const active=typeFilter===t;
+            const col=colFor(t);
+            return(
+              <div key={t} onClick={()=>setTypeFilter(active?null:t)} style={{flexShrink:0,padding:'6px 12px',borderRadius:20,border:`1.5px solid ${active?col:C.line}`,background:active?col:'transparent',cursor:'pointer'}}>
+                <span style={{fontSize:14,fontWeight:600,color:active?'#fff':C.mid,fontFamily:C.P,textTransform:'capitalize'}}>{t}</span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
       <div style={{flex:1,overflowY:'auto'}}>
 <div style={{padding:'12px 16px',display:'flex',flexDirection:'column',gap:8}}>
-        <div style={{fontSize:15,fontWeight:600,color:C.mid,letterSpacing:'0.08em',textTransform:'uppercase',fontFamily:C.P,marginBottom:2}}>Best Matches for You</div>
-        {wines.map((w,i)=>{
+        <div style={{fontSize:15,fontWeight:600,color:C.mid,letterSpacing:'0.08em',textTransform:'uppercase',fontFamily:C.P,marginBottom:2}}>{sortMode==='match'?'Sorted by Match Rate':'Wine List Order'}</div>
+        {shown.map(({w,i,score})=>{
           const col=colFor(w.type);
-          const score=scores[i]||78;
           return(
             <Card key={i} style={{padding:12,cursor:'pointer'}} onClick={()=>{
               sessionStorage.setItem('vinterest_scan_result',JSON.stringify({demo:false,wine:{...w,body:0.75,tannins:0.7,acidity:0.6,sweetness:0.1},confidence:score/100}));

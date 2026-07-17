@@ -146,7 +146,10 @@ function ScanScreen({nav,back,onComplete}){
   const [camErr,setCamErr]=React.useState(false);
 
   React.useEffect(()=>{
-    navigator.mediaDevices?.getUserMedia({video:{facingMode:'environment',width:{ideal:1080},height:{ideal:1920},zoom:1}})
+    // No explicit width/height — forcing a portrait resolution can push some
+    // phones' camera stacks into a cropped/digitally-zoomed capture mode.
+    // Native resolution + CSS object-fit:cover handles framing instead.
+    navigator.mediaDevices?.getUserMedia({video:{facingMode:'environment'}})
       .then(s=>{
         streamRef.current=s; if(videoRef.current) videoRef.current.srcObject=s;
         // Some phones default multi-camera systems to a 2x telephoto lens — force back to native 1x.
@@ -347,71 +350,27 @@ function ScanScreen({nav,back,onComplete}){
   );
 }
 
-/* ── WINE IDENTIFIED ── */
+/* ── WINE IDENTIFIED ──
+   Goes straight to the same full wine-detail presentation used everywhere
+   else in the app — no separate "Wine Identified!" holding screen. */
 function WineIdentifiedScreen({nav,back}){
-  // Read scan result first — everything else depends on it
   const scanData=React.useMemo(()=>{
     try{ return JSON.parse(sessionStorage.getItem('vinterest_scan_result')||'{}'); }
     catch(e){ return {}; }
   },[]);
   const wine=scanData.wine||null;
-  const confidence=scanData.confidence||null;
 
   // Track scan immediately — saves to history even before rating
   React.useEffect(()=>{
     if(wine&&!scanData.demo) WineHistory.track(wine);
   },[wine?.name,wine?.vintage]);
 
-  const existingRating=(scanData&&scanData.existingRating)||0;
-  const [score,setScore]=React.useState(existingRating);
-  const pendingScore=React.useRef(existingRating);
-  const [saved,setSaved]=React.useState(existingRating>0);
-  const ratedOnce=React.useRef(existingRating>0);
-  const scoreLabel=score===0?'':score<=20?'Not for me':score<=40?"It's ok":score<=60?'Good':score<=80?'Really good':'Exceptional';
-
-  // Only called on mouseup/touchend — commits rating + awards XP once
-  function commitScore(v){
-    if(!v) v=pendingScore.current;
-    const n=Number(v);
-    if(n>0&&wine&&!scanData.demo){
-      if(existingRating>0){ WineHistory.rate(wine.name,wine.vintage,n); }
-      else { WineHistory.add(wine,n); }
-      if(!ratedOnce.current){ XPSystem.awardAndToast([{type:'rate'}]); ratedOnce.current=true; }
-      setSaved(true);
-    }
-  }
-  // onChange: visual only — no XP, no save
-  function handleSliderChange(e){ const n=Number(e.target.value); setScore(n); pendingScore.current=n; }
-  // Preset buttons update slider position only — user taps Save to commit
-  function handlePreset(p){ setScore(p); pendingScore.current=p; }
-
-  // Display values — real data when available, sensible demo fallback otherwise
-  const displayName  = wine?.name         || 'Château Margaux';
-  const displaySub   = wine
-    ? `${wine.vintage||'NV'} · ${wine.region}, ${wine.country}`
-    : '2018 · Bordeaux, France';
-  const displayGrape = wine?.grapes?.[0]  || null;
-  const displayPrice = wine?.price_usd != null ? `$${wine.price_usd}` : (wine ? '—' : '$180–220');
-  const commRating   = wine?.community_rating || 4.7;
-  // Deterministic fake ratings count seeded from wine name
-  const commCount    = React.useMemo(()=>{
-    const name=wine?.name||'Château Margaux';
-    let h=0; for(let i=0;i<name.length;i++) h=(h*31+name.charCodeAt(i))&0xffff;
-    return 180+(h%2820);
-  },[wine?.name]);
-  const matchPct=React.useMemo(()=>{
-    if(!wine) return 94;
-    const dna=calcMatchScore(wine,WineHistory.getAll());
-    return dna??(confidence?Math.round(Math.min(0.98,confidence)*100):94);
-  },[wine?.name]);
-
-  const isDemo = scanData.demo === true;
-  const scanReason = scanData.reason || '';
+  const isDemo=scanData.demo===true;
+  const scanReason=scanData.reason||'';
 
   return(
-    <div style={{flex:1,display:'flex',flexDirection:'column',background:C.bg,overflowY:'auto'}}>
-      {/* Debug / status banner — shows what actually happened */}
-      {isDemo && (
+    <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden'}}>
+      {isDemo&&(
         <div style={{background:'#FFF3CD',borderBottom:'1px solid #FFE082',padding:'10px 16px',display:'flex',alignItems:'flex-start',gap:10,flexShrink:0}}>
           <span style={{fontSize:19,flexShrink:0}}>⚠️</span>
           <div style={{flex:1}}>
@@ -430,145 +389,7 @@ function WineIdentifiedScreen({nav,back}){
           </div>
         </div>
       )}
-      <div style={{background:C.cr,padding:'16px 20px',display:'flex',alignItems:'center',gap:12,flexShrink:0}}>
-        <div style={{width:34,height:34,borderRadius:17,background:'rgba(255,255,255,0.2)',display:'flex',alignItems:'center',justifyContent:'center'}}>
-          <Icon n="check" sz={18} col="#fff"/>
-        </div>
-        <div style={{flex:1}}>
-          <div style={{fontSize:19,fontWeight:700,color:'#fff',fontFamily:C.P}}>Wine Identified!</div>
-          <div style={{fontSize:15,color:'rgba(255,255,255,0.65)',fontFamily:C.P}}>Tap for full details</div>
-        </div>
-        <div onClick={back} style={{cursor:'pointer'}}><Icon n="back" sz={20} col="rgba(255,255,255,0.6)"/></div>
-      </div>
-
-      <div style={{padding:'16px 20px',display:'flex',flexDirection:'column',gap:12}}>
-        <Card style={{padding:16}}>
-          <div style={{display:'flex',gap:14,alignItems:'flex-start'}}>
-            <div style={{width:54,height:76,borderRadius:10,background:C.crSoft,flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center',border:`1px solid ${C.crDim}`}}>
-              <Icon n="wine" sz={26} col={C.cr}/>
-            </div>
-            <div style={{flex:1}}>
-              <div style={{fontSize:22,fontWeight:700,color:C.ink,fontFamily:C.P,lineHeight:1.2}}>{displayName}</div>
-              <div style={{fontSize:16,color:C.mid,fontFamily:C.P,marginTop:2}}>{displaySub}</div>
-              <div style={{display:'flex',gap:5,marginTop:8,flexWrap:'wrap'}}>
-                <Pill active sm style={{textTransform:'capitalize'}}>{wine?.type||'Red'}</Pill>{displayGrape&&<Pill sm>{displayGrape}</Pill>}
-              </div>
-            </div>
-          </div>
-        </Card>
-
-        <div style={{display:'flex',gap:8}}>
-          {[{l:'Your Match',v:`${matchPct}%`,sub:null,col:C.green,bg:C.greenBg},
-            {l:'Community Score',v:`${commRating}/5`,sub:`★ ${commCount.toLocaleString()} ratings`,col:C.amber,bg:C.amberBg},
-            {l:'Price Range',v:displayPrice,sub:null,col:C.ink2,bg:C.white}].map((s,i)=>(
-            <div key={i} style={{flex:1,background:s.bg,borderRadius:12,padding:'10px 6px',textAlign:'center',border:`1px solid ${C.line}`}}>
-              <div style={{fontSize:19,fontWeight:700,color:s.col,fontFamily:C.P}}>{s.v}</div>
-              <div style={{fontSize:12,color:C.mid,fontFamily:C.P,marginTop:1,lineHeight:1.3}}>{s.l}</div>
-              {s.sub&&<div style={{fontSize:12,color:C.mid,fontFamily:C.P,opacity:0.75}}>{s.sub}</div>}
-            </div>
-          ))}
-        </div>
-
-        <Card style={{background:C.greenBg,boxShadow:'none',border:`1px solid ${C.green}25`,padding:12}}>
-          <div style={{fontSize:16,fontWeight:600,color:C.green,fontFamily:C.P,marginBottom:4}}>Why you'll love this</div>
-          <div style={{fontSize:16,color:C.ink2,fontFamily:C.P,lineHeight:1.55}}>{wine?.why_you_will_like_this?.trim()||(wine?`This ${wine.type||'red'} from ${wine.region||wine.country||'the region'} aligns well with your taste profile.`:'Full-bodied with dark fruit and earthy notes — matches your preference for structured reds.')}</div>
-        </Card>
-
-        {/* WineDNA fit score */}
-        {(()=>{
-          if(!wine||scanData.demo) return null;
-          const userWines=WineHistory.getAll();
-          const typeKey=(wine.type||'red').toLowerCase().replace('é','e');
-          const typeWines=userWines.filter(w=>(w.type||'red').toLowerCase().replace('é','e')===typeKey);
-          if(!typeWines.length) return(
-            <div style={{display:'flex',alignItems:'center',gap:10,padding:'10px 14px',borderRadius:14,background:'#F0EBF8',border:'1px solid rgba(123,94,167,0.2)'}}>
-              <div style={{width:32,height:32,borderRadius:8,background:'rgba(123,94,167,0.12)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
-                <svg viewBox="0 0 24 24" width={16} height={16}><path d="M8 4C8 4 13 7 13 12C13 17 8 20 8 20" stroke="#7B5EA7" strokeWidth="1.8" fill="none" strokeLinecap="round"/><path d="M16 4C16 4 11 7 11 12C11 17 16 20 16 20" stroke="#7B5EA7" strokeWidth="1.8" fill="none" strokeLinecap="round"/><line x1="8.5" y1="12" x2="15.5" y2="12" stroke="#7B5EA7" strokeWidth="1.2" strokeLinecap="round" opacity="0.5"/></svg>
-              </div>
-              <div style={{flex:1}}>
-                <div style={{fontSize:15,fontWeight:700,color:'#7B5EA7',fontFamily:C.P}}>WineDNA · New Territory</div>
-                <div style={{fontSize:13,color:C.mid,fontFamily:C.P,marginTop:1}}>First {wine.type||'red'} in your collection — a blank slate.</div>
-              </div>
-            </div>
-          );
-          const avgB=typeWines.filter(w=>w.body!=null).reduce((s,w)=>s+w.body,0)/(typeWines.filter(w=>w.body!=null).length||1);
-          const avgT=typeWines.filter(w=>w.tannins!=null).reduce((s,w)=>s+w.tannins,0)/(typeWines.filter(w=>w.tannins!=null).length||1);
-          const avgA=typeWines.filter(w=>w.acidity!=null).reduce((s,w)=>s+w.acidity,0)/(typeWines.filter(w=>w.acidity!=null).length||1);
-          const diff=Math.abs((wine.body||0.65)-avgB)+Math.abs((wine.tannins||0.55)-avgT)+Math.abs((wine.acidity||0.60)-avgA);
-          const isClose=diff<0.30, isMed=diff<0.60;
-          const lbl=v=>v>=0.68?'High':v>=0.38?'Med':'Low';
-          const attrMatch=(a,b)=>Math.abs(a-b)<0.22;
-          const label=isClose?'Close match':isMed?'Familiar territory':'Style stretch';
-          const accentCol=isClose?C.green:isMed?C.amber:'#7B5EA7';
-          const accentBg=isClose?C.greenBg:isMed?C.amberBg:'#F0EBF8';
-          const dnaAttrs=[
-            {l:'Body',    w:wine.body??0.65,    u:avgB},
-            {l:'Tannins', w:wine.tannins??0.55, u:avgT},
-            {l:'Acidity', w:wine.acidity??0.60, u:avgA},
-          ];
-          return(
-            <div style={{padding:'12px 14px',borderRadius:14,background:accentBg,border:`1px solid ${accentCol}25`}}>
-              <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:10}}>
-                <svg viewBox="0 0 24 24" width={15} height={15}><path d="M8 4C8 4 13 7 13 12C13 17 8 20 8 20" stroke={accentCol} strokeWidth="1.8" fill="none" strokeLinecap="round"/><path d="M16 4C16 4 11 7 11 12C11 17 16 20 16 20" stroke={accentCol} strokeWidth="1.8" fill="none" strokeLinecap="round"/><line x1="8.5" y1="12" x2="15.5" y2="12" stroke={accentCol} strokeWidth="1.2" strokeLinecap="round" opacity="0.5"/></svg>
-                <div style={{fontSize:15,fontWeight:700,color:accentCol,fontFamily:C.P}}>WineDNA · {label}</div>
-              </div>
-              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:5}}>
-                {dnaAttrs.map((a,i)=>{
-                  const match=attrMatch(a.w,a.u);
-                  return(
-                    <div key={i} style={{textAlign:'center',padding:'6px 4px',borderRadius:8,background:match?`${C.green}10`:`${accentCol}08`,border:`1px solid ${match?C.green:accentCol}20`}}>
-                      <div style={{fontSize:12,color:C.mid,fontFamily:C.P,marginBottom:1}}>{a.l}</div>
-                      <div style={{fontSize:13,fontWeight:700,color:match?C.green:C.ink2,fontFamily:C.P}}>You {lbl(a.u)}</div>
-                      <div style={{fontSize:12,color:C.mid,fontFamily:C.P}}>Wine {lbl(a.w)}{match?' ✓':''}</div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          );
-        })()}
-
-        {/* Score slider rating */}
-        <Card style={{padding:'14px 16px'}}>
-          <div style={{fontSize:16,fontWeight:600,color:C.ink,fontFamily:C.P,marginBottom:12}}>Rate This Wine</div>
-          {/* Quick preset buttons */}
-          <div style={{display:'flex',gap:5,marginBottom:12}}>
-            {[20,40,60,80,100].map(p=>(
-              <div key={p} onClick={()=>handlePreset(p)} style={{flex:1,padding:'7px 2px',borderRadius:9,border:`1.5px solid ${score===p?C.cr:C.line}`,background:score===p?C.cr:'transparent',textAlign:'center',cursor:'pointer',transition:'all .15s'}}>
-                <span style={{fontSize:17,fontWeight:700,color:score===p?'#fff':C.mid,fontFamily:C.P}}>{p}</span>
-              </div>
-            ))}
-          </div>
-          {/* Slider — onChange updates display only; tap Save to commit */}
-          <input type="range" min="0" max="100" step="1" value={score}
-            onChange={handleSliderChange}
-            style={{width:'100%',accentColor:C.cr,cursor:'pointer',marginBottom:10,display:'block'}}/>
-          {/* Score display */}
-          <div style={{textAlign:'center',minHeight:52,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:2}}>
-            {score>0?(
-              <>
-                <div style={{display:'flex',alignItems:'baseline',gap:3}}>
-                  <span style={{fontSize:38,fontWeight:800,color:C.cr,fontFamily:C.P,lineHeight:1}}>{score}</span>
-                  <span style={{fontSize:17,color:C.mid,fontFamily:C.P}}>/100</span>
-                </div>
-                <span style={{fontSize:16,fontWeight:600,color:C.amber,fontFamily:C.P}}>{scoreLabel}</span>
-              </>
-            ):(
-              <span style={{fontSize:15,color:C.mid,fontFamily:C.P}}>Drag slider or tap a preset to rate</span>
-            )}
-          </div>
-          {score>0&&!saved&&(
-            <div onClick={()=>commitScore()} style={{marginTop:10,background:C.cr,borderRadius:12,padding:'12px',textAlign:'center',cursor:'pointer',userSelect:'none',WebkitUserSelect:'none'}}>
-              <span style={{fontSize:16,fontWeight:700,color:'#fff',fontFamily:C.P}}>Save Rating</span>
-            </div>
-          )}
-          {saved&&<div style={{textAlign:'center',fontSize:15,color:C.green,fontFamily:C.P,fontWeight:600,marginTop:8}}>✓ Saved to My Wines</div>}
-        </Card>
-
-        <Btn primary full onClick={()=>nav('detail')}>See Full Details &amp; Learn More</Btn>
-        <Btn full onClick={()=>{try{navigator.share&&navigator.share({title:'Château Margaux 2018 on Vinterest',text:'Check out this wine I found! 🍷',url:'https://vinterest.app'})}catch(e){}}}>Share This Wine</Btn>
-        <div style={{height:8}}/>
-      </div>
+      <WineDetailScreen nav={nav} back={back}/>
     </div>
   );
 }
