@@ -48,6 +48,7 @@
     width:100%;
     max-width:430px;
     height:100dvh;
+    height:calc(var(--app-height,100dvh));
     background:#FAFAFA;
     display:flex;
     flex-direction:column;
@@ -79,6 +80,14 @@
 </style>
 </head>
 <body>
+<script>
+(function(){
+  function setAppHeight(){document.documentElement.style.setProperty('--app-height', window.innerHeight+'px');}
+  setAppHeight();
+  window.addEventListener('resize',setAppHeight);
+  window.addEventListener('orientationchange',function(){setTimeout(setAppHeight,50);});
+})();
+</script>
 <div id="vinterest-update-banner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:99999;background:#8B1A2F;padding:12px 16px;align-items:center;gap:12px;box-shadow:0 2px 12px rgba(0,0,0,0.3);">
   <span style="flex:1;font-size:15px;font-weight:600;color:#fff;font-family:system-ui,sans-serif;">A new version of Vinterest is ready</span>
   <button id="vinterest-update-btn" style="background:#fff;color:#8B1A2F;border:none;border-radius:8px;padding:8px 16px;font-size:14px;font-weight:700;cursor:pointer;font-family:system-ui,sans-serif;">Update</button>

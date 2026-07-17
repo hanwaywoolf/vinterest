@@ -654,7 +654,12 @@ function WineListScreen({nav,back}){
   // Value vs. typical retail — parse the printed list price and compare to the model's retail estimate
   function valueInfo(w){
     if(w.retailEst==null||!w.price) return null;
-    const listNum=Number(String(w.price).replace(/[^0-9.]/g,''));
+    const priceStr=String(w.price);
+    // Multi-tier lists ("GLASS:16 / 1/2LTR:33 / BOTTLE:59") — pull the bottle price specifically,
+    // never concatenate every digit in the string (that produced wildly wrong ratios).
+    const bottleMatch=priceStr.match(/bottle\s*:?\s*([0-9]+(?:\.[0-9]+)?)/i);
+    const anyNums=priceStr.match(/[0-9]+(?:\.[0-9]+)?/g);
+    const listNum=bottleMatch?Number(bottleMatch[1]):(anyNums?Number(anyNums[anyNums.length-1]):NaN);
     if(!listNum||!w.retailEst) return null;
     const ratio=listNum/w.retailEst;
     if(ratio<=2) return {label:'Good Value',col:C.green,bg:C.greenBg,ratio};
