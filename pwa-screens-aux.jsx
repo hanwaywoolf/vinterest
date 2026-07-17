@@ -650,6 +650,20 @@ function WineListScreen({nav,back}){
   const listCurrency=data.currency||Regional.current().code||localStorage.getItem('vinterest_currency')||'GBP';
   const typeColors={red:'#8B1A2F',white:'#B8963E',rosé:'#C47A8A',rose:'#C47A8A',sparkling:'#5E8FA8'};
   const colFor=t=>typeColors[(t||'red').toLowerCase().replace('é','e')]||C.cr;
+  const currSym=(CURRENCY_LIST.find(c=>c.code===listCurrency)||{}).sym||'';
+  // Parse tiered list prices ("GLASS:16 / 1/2LTR:33 / BOTTLE:59") into clean labeled segments.
+  // Markup/value badges always compare against the BOTTLE price specifically.
+  function parsePriceTiers(priceStr){
+    const s=String(priceStr||'');
+    const patterns=[{label:'Glass',re:/glass\s*:?\s*([0-9]+(?:\.[0-9]+)?)/i},{label:'1/2 L',re:/(?:1\s*\/\s*2\s*ltr|1\s*\/\s*2\s*litre|half)\s*:?\s*([0-9]+(?:\.[0-9]+)?)/i},{label:'Bottle',re:/bottle\s*:?\s*([0-9]+(?:\.[0-9]+)?)/i}];
+    const tiers=[];
+    patterns.forEach(p=>{const m=s.match(p.re); if(m) tiers.push({label:p.label,value:m[1]});});
+    if(!tiers.length){
+      const any=s.match(/[0-9]+(?:\.[0-9]+)?/);
+      if(any) tiers.push({label:null,value:any[0]});
+    }
+    return tiers;
+  }
 
   // Real per-wine retail estimates — same source of truth as the Detail screen's Price tab
   // (shared cache key), fetched lazily so the badge is only ever as accurate as that lookup.
@@ -791,9 +805,25 @@ function WineListScreen({nav,back}){
                   <div style={{display:'flex',gap:5,marginTop:6,alignItems:'center',flexWrap:'wrap'}}>
                     <Pill sm style={{background:col+'12',color:col,border:`1px solid ${col}25`,textTransform:'capitalize'}}>{w.type||'Red'}</Pill>
                     {w.grapes?.[0]&&<Pill sm>{w.grapes[0]}</Pill>}
-                    {val&&<span style={{fontSize:12,fontWeight:700,color:val.col,background:val.bg,borderRadius:6,padding:'2px 7px'}}>{val.label} · {val.ratio.toFixed(1)}x retail</span>}
-                    {w.price&&<span style={{fontSize:15,fontWeight:600,color:C.ink2,fontFamily:C.P,marginLeft:'auto'}}>{w.price} {listCurrency}</span>}
+                    {val&&<span style={{fontSize:12,fontWeight:700,color:val.col,background:val.bg,borderRadius:6,padding:'2px 7px'}}>{val.label} · {val.ratio.toFixed(1)}x bottle</span>}
                   </div>
+                  {w.price&&(()=>{
+                    const tiers=parsePriceTiers(w.price);
+                    return(
+                      <div style={{display:'flex',alignItems:'baseline',gap:12,marginTop:7,paddingTop:7,borderTop:`1px solid ${C.line}`}}>
+                        {tiers.map((t,ti)=>{
+                          const isBottle=t.label==='Bottle'||tiers.length===1;
+                          return(
+                            <div key={ti} style={{display:'flex',alignItems:'baseline',gap:4}}>
+                              {t.label&&<span style={{fontSize:11,fontWeight:600,color:C.mid,fontFamily:C.P,textTransform:'uppercase',letterSpacing:'0.04em'}}>{t.label}</span>}
+                              <span style={{fontSize:isBottle?16:14,fontWeight:isBottle?700:500,color:isBottle?C.ink:C.ink2,fontFamily:C.P}}>{currSym}{t.value}</span>
+                            </div>
+                          );
+                        })}
+                        <span style={{fontSize:12,color:C.mid,fontFamily:C.P,marginLeft:'auto'}}>{listCurrency}</span>
+                      </div>
+                    );
+                  })()}
                 </div>
               </div>
             </Card>
