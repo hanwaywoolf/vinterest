@@ -574,9 +574,7 @@ function DetailPrice({wine,nav}){
   const [loading,    setLoading]    = React.useState(false);
   const [done,       setDone]       = React.useState(false);
 
-  const cacheKey = wine
-    ? 'vinterest_price_v2_' + (wine.name||'').replace(/\s/g,'_') + '_' + (wine.vintage||'nv') + '_' + curr.code
-    : null;
+  const cacheKey = wine ? retailPriceCacheKey(wine,curr.code) : null;
 
   React.useEffect(function(){
     if (!wine || !wine.name) return;
@@ -591,28 +589,8 @@ function DetailPrice({wine,nav}){
     }
 
     setLoading(true);
-    const prompt =
-      'You are a wine market pricing expert with deep knowledge of actual retail prices worldwide.' +
-      ' Your task: find the ACTUAL known retail price for this SPECIFIC wine — look up this exact producer and label, do NOT average by appellation.' +
-      ' Prestigious named wines (e.g. Guigal single-vineyard La Mouline/La Turque/La Landonne, DRC, Leroy, Screaming Eagle, Petrus, Opus One, cult Burgundy) retail for ' + curr.sym + '50–' + curr.sym + '5000+; use the real figure.' +
-      ' Wine: ' + wine.name + (wine.vintage ? ' ' + wine.vintage : '') + '.' +
-      ' Type: ' + (wine.type||'red') + '.' +
-      ' Region: ' + (wine.region||'') + ', ' + (wine.country||'') + '.' +
-      ' Grapes: ' + ((wine.grapes||[]).join(', ')||'unknown') + '.' +
-      (wine.abv ? ' ABV: ' + wine.abv + '%.' : '') +
-      ' Currency: ' + curr.label + ' (' + curr.code + ').' +
-      ' Return ONLY valid JSON, no markdown: {"low":NUMBER,"mid":NUMBER,"high":NUMBER,"currency":"' + curr.code + '","tier":"entry|everyday|premium|luxury|ultra-luxury","note":"one sentence — what drives this specific wine price (producer rep, rarity, appellation, etc)"}.' +
-      ' Integers only. Return null values only if the wine is genuinely unidentifiable.';
-
-    window.claude.complete({ messages: [{ role:'user', content: prompt }] })
-      .then(function(text){
-        let c = text.replace(/```json|```/g,'').trim();
-        const s = c.indexOf('{'), e = c.lastIndexOf('}');
-        if (s >= 0 && e > s) c = c.slice(s, e+1);
-        const d = JSON.parse(c);
-        if (cacheKey) localStorage.setItem(cacheKey, JSON.stringify(d));
-        setPriceData(d);
-      })
+    fetchRetailEstimate(wine,curr)
+      .then(function(d){ setPriceData(d); })
       .catch(function(){})
       .finally(function(){ setLoading(false); setDone(true); });
   }, [wine && wine.name, wine && wine.vintage, curr.code]);

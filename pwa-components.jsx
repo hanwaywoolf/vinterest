@@ -369,4 +369,36 @@ const Regional={
   }
 };
 
-Object.assign(window,{C,Icon,BottomNav,SideNav,Pill,Prog,Card,Btn,WineHistory,ProBadge,ProGate,calcMatchScore,Regional,CURRENCY_LIST,lookupCountryCurrency});
+/* ── Shared retail-price estimate: single source of truth used by both the
+   Wine Detail price tab and the wine-list value/markup badges, so the two
+   screens never disagree on what a wine "should" cost. Cached per wine+currency. */
+function retailPriceCacheKey(wine,code){
+  return 'vinterest_price_v2_'+((wine&&wine.name)||'').replace(/\s/g,'_')+'_'+((wine&&wine.vintage)||'nv')+'_'+code;
+}
+function fetchRetailEstimate(wine,curr){
+  const cacheKey=retailPriceCacheKey(wine,curr.code);
+  const cached=localStorage.getItem(cacheKey);
+  if(cached){ try{ return Promise.resolve(JSON.parse(cached)); }catch(e){} }
+  const prompt=
+    'You are a wine market pricing expert with deep knowledge of actual retail prices worldwide.'+
+    ' Your task: find the ACTUAL known retail price for this SPECIFIC wine — look up this exact producer and label, do NOT average by appellation.'+
+    ' Prestigious named wines (e.g. Guigal single-vineyard La Mouline/La Turque/La Landonne, DRC, Leroy, Screaming Eagle, Petrus, Opus One, cult Burgundy) retail for '+curr.sym+'50–'+curr.sym+'5000+; use the real figure.'+
+    ' Wine: '+(wine.name||'')+(wine.vintage?' '+wine.vintage:'')+'.'+
+    ' Type: '+(wine.type||'red')+'.'+
+    ' Region: '+(wine.region||'')+', '+(wine.country||'')+'.'+
+    ' Grapes: '+((wine.grapes||[]).join(', ')||'unknown')+'.'+
+    (wine.abv?' ABV: '+wine.abv+'%.':'')+
+    ' Currency: '+curr.label+' ('+curr.code+').'+
+    ' Return ONLY valid JSON, no markdown: {"low":NUMBER,"mid":NUMBER,"high":NUMBER,"currency":"'+curr.code+'","tier":"entry|everyday|premium|luxury|ultra-luxury","note":"one sentence — what drives this specific wine price (producer rep, rarity, appellation, etc)"}.'+
+    ' Integers only. Return null values only if the wine is genuinely unidentifiable.';
+  return window.claude.complete({messages:[{role:'user',content:prompt}]}).then(text=>{
+    let c=text.replace(/```json|```/g,'').trim();
+    const s=c.indexOf('{'),e=c.lastIndexOf('}');
+    if(s>=0&&e>s) c=c.slice(s,e+1);
+    const d=JSON.parse(c);
+    localStorage.setItem(cacheKey,JSON.stringify(d));
+    return d;
+  });
+}
+
+Object.assign(window,{C,Icon,BottomNav,SideNav,Pill,Prog,Card,Btn,WineHistory,ProBadge,ProGate,calcMatchScore,Regional,CURRENCY_LIST,lookupCountryCurrency,fetchRetailEstimate,retailPriceCacheKey});

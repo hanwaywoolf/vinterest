@@ -651,17 +651,39 @@ function WineListScreen({nav,back}){
   const typeColors={red:'#8B1A2F',white:'#B8963E',rosé:'#C47A8A',rose:'#C47A8A',sparkling:'#5E8FA8'};
   const colFor=t=>typeColors[(t||'red').toLowerCase().replace('é','e')]||C.cr;
 
-  // Value vs. typical retail — parse the printed list price and compare to the model's retail estimate
-  function valueInfo(w){
-    if(w.retailEst==null||!w.price) return null;
+  // Real per-wine retail estimates — same source of truth as the Detail screen's Price tab
+  // (shared cache key), fetched lazily so the badge is only ever as accurate as that lookup.
+  const [retailMap,setRetailMap]=React.useState({});
+  React.useEffect(()=>{
+    let cancelled=false;
+    const curr={sym:{GBP:'£',USD:'$',CAD:'CA$',AUD:'A$',NZD:'NZ$',EUR:'€'}[listCurrency]||listCurrency,label:listCurrency,code:listCurrency};
+    (async()=>{
+      for(let i=0;i<wines.length;i++){
+        if(cancelled) return;
+        const w=wines[i];
+        if(!w||!w.price) continue;
+        try{
+          const d=await fetchRetailEstimate(w,curr);
+          if(cancelled) return;
+          if(d&&d.mid!=null) setRetailMap(m=>({...m,[i]:d.mid}));
+        }catch(e){}
+      }
+    })();
+    return ()=>{cancelled=true;};
+  },[data.wines]);
+
+  // Value vs. typical retail — parse the printed list price and compare to the fetched retail estimate
+  function valueInfo(w,i){
+    const est=retailMap[i];
+    if(est==null||!w.price) return null;
     const priceStr=String(w.price);
     // Multi-tier lists ("GLASS:16 / 1/2LTR:33 / BOTTLE:59") — pull the bottle price specifically,
     // never concatenate every digit in the string (that produced wildly wrong ratios).
     const bottleMatch=priceStr.match(/bottle\s*:?\s*([0-9]+(?:\.[0-9]+)?)/i);
     const anyNums=priceStr.match(/[0-9]+(?:\.[0-9]+)?/g);
     const listNum=bottleMatch?Number(bottleMatch[1]):(anyNums?Number(anyNums[anyNums.length-1]):NaN);
-    if(!listNum||!w.retailEst) return null;
-    const ratio=listNum/w.retailEst;
+    if(!listNum||!est) return null;
+    const ratio=listNum/est;
     if(ratio<=2) return {label:'Good Value',col:C.green,bg:C.greenBg,ratio};
     if(ratio<=3) return {label:'Fair Markup',col:C.amber,bg:C.amberBg,ratio};
     return {label:'Marked Up',col:'#B04A3A',bg:'#F7E4E0',ratio};
@@ -745,7 +767,7 @@ function WineListScreen({nav,back}){
         <div style={{fontSize:15,fontWeight:600,color:C.mid,letterSpacing:'0.08em',textTransform:'uppercase',fontFamily:C.P,marginBottom:2}}>{sortMode==='match'?'Sorted by Match Rate':'Wine List Order'}</div>
         {shown.map(({w,i,score})=>{
           const col=colFor(w.type);
-          const val=valueInfo(w);
+          const val=valueInfo(w,i);
           return(
             <Card key={i} style={{padding:12,cursor:'pointer'}} onClick={()=>{
               sessionStorage.setItem('vinterest_scan_result',JSON.stringify({demo:false,wine:{...w,body:0.75,tannins:0.7,acidity:0.6,sweetness:0.1},confidence:score/100}));
