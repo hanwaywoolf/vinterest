@@ -318,4 +318,55 @@ function calcMatchScore(wine,userWines){
   return Math.round(35+raw*63);
 }
 
-Object.assign(window,{C,Icon,BottomNav,SideNav,Pill,Prog,Card,Btn,WineHistory,ProBadge,ProGate,calcMatchScore});
+/* ── Regions, currencies, Travel Mode ── */
+const CURRENCY_LIST=[{code:'USD',sym:'$'},{code:'GBP',sym:'£'},{code:'EUR',sym:'€'},{code:'CAD',sym:'CA$'},{code:'AUD',sym:'A$'},{code:'NZD',sym:'NZ$'},{code:'JPY',sym:'¥'},{code:'CNY',sym:'¥'},{code:'CHF',sym:'CHF'},{code:'ZAR',sym:'R'},{code:'SGD',sym:'S$'},{code:'HKD',sym:'HK$'},{code:'MXN',sym:'MX$'},{code:'BRL',sym:'R$'},{code:'INR',sym:'₹'},{code:'AED',sym:'AED'},{code:'SEK',sym:'kr'},{code:'NOK',sym:'kr'},{code:'DKK',sym:'kr'}];
+const COUNTRY_CURRENCY={'united states':'USD','usa':'USD','us':'USD','united kingdom':'GBP','uk':'GBP','england':'GBP','scotland':'GBP','wales':'GBP','canada':'CAD','australia':'AUD','new zealand':'NZD','france':'EUR','germany':'EUR','italy':'EUR','spain':'EUR','portugal':'EUR','ireland':'EUR','netherlands':'EUR','belgium':'EUR','austria':'EUR','greece':'EUR','japan':'JPY','china':'CNY','switzerland':'CHF','south africa':'ZAR','singapore':'SGD','hong kong':'HKD','mexico':'MXN','brazil':'BRL','india':'INR','uae':'AED','united arab emirates':'AED','dubai':'AED','sweden':'SEK','norway':'NOK','denmark':'DKK'};
+function lookupCountryCurrency(name){
+  const key=(name||'').trim().toLowerCase();
+  const code=COUNTRY_CURRENCY[key];
+  if(!code) return null;
+  return CURRENCY_LIST.find(c=>c.code===code)||null;
+}
+const HOME_REGION_CURRENCY={uk:{sym:'£',code:'GBP',label:'United Kingdom'},us:{sym:'$',code:'USD',label:'United States'},ontario:{sym:'CA$',code:'CAD',label:'Canada'},canada:{sym:'CA$',code:'CAD',label:'Canada'},australia:{sym:'A$',code:'AUD',label:'Australia'},nz:{sym:'NZ$',code:'NZD',label:'New Zealand'},eu:{sym:'€',code:'EUR',label:'Europe'},france:{sym:'€',code:'EUR',label:'France'},germany:{sym:'€',code:'EUR',label:'Germany'},italy:{sym:'€',code:'EUR',label:'Italy'},spain:{sym:'€',code:'EUR',label:'Spain'}};
+const Regional={
+  TRAVEL_KEY:'vinterest_travel',
+  travel(){
+    let t;
+    try{ t=JSON.parse(localStorage.getItem(this.TRAVEL_KEY)||'null'); }catch(e){ return null; }
+    if(!t||!t.active) return null;
+    if(t.until){
+      const untilEnd=new Date(t.until+'T23:59:59');
+      if(!isNaN(untilEnd.getTime())&&Date.now()>untilEnd.getTime()){
+        t.active=false; localStorage.setItem(this.TRAVEL_KEY,JSON.stringify(t));
+        window.dispatchEvent(new Event('vinterest:travel'));
+        return null;
+      }
+    }
+    return t;
+  },
+  home(){
+    const region=(localStorage.getItem('vinterest_region')||'uk').toLowerCase();
+    return HOME_REGION_CURRENCY[region]||HOME_REGION_CURRENCY.uk;
+  },
+  current(){
+    const t=this.travel();
+    if(t) return {sym:t.sym,base:t.sym,code:t.code,label:t.country,isTravel:true};
+    const h=this.home();
+    return {sym:h.sym,base:h.sym,code:h.code,label:h.label,isTravel:false};
+  },
+  setTravel(country,until,codeOverride){
+    const match=codeOverride?CURRENCY_LIST.find(c=>c.code===codeOverride):lookupCountryCurrency(country);
+    const cur=match||{code:'USD',sym:'$'};
+    const t={active:true,country:(country||'').trim(),sym:cur.sym,code:cur.code,until:until||''};
+    localStorage.setItem(this.TRAVEL_KEY,JSON.stringify(t));
+    window.dispatchEvent(new Event('vinterest:travel'));
+    return t;
+  },
+  disableTravel(){
+    let t; try{ t=JSON.parse(localStorage.getItem(this.TRAVEL_KEY)||'null'); }catch(e){ t=null; }
+    if(t){ t.active=false; localStorage.setItem(this.TRAVEL_KEY,JSON.stringify(t)); }
+    window.dispatchEvent(new Event('vinterest:travel'));
+  }
+};
+
+Object.assign(window,{C,Icon,BottomNav,SideNav,Pill,Prog,Card,Btn,WineHistory,ProBadge,ProGate,calcMatchScore,Regional,CURRENCY_LIST,lookupCountryCurrency});

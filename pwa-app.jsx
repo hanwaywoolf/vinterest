@@ -55,7 +55,7 @@ function App(){
     window.addEventListener('vinterest:xp',handler);
     return ()=>window.removeEventListener('vinterest:xp',handler);
   },[]);
-  const showXpBadge=!['camera','onboarding','learn','quiz','article','identified','detail','mywines','scan','profile','style-explore','winelist'].includes(screen);
+  const showXpBadge=!['camera','onboarding','learn','quiz','article','identified','detail','mywines','scan','profile','style-explore','winelist','account','settings'].includes(screen);
 
   // XP Toast
   const [xpToasts,setXpToasts]=React.useState([]);
@@ -93,6 +93,8 @@ function App(){
         {screen==='quiz'      && <QuizScreen {...ctx}/>}
         {screen==='article'   && <LearnArticleScreen {...ctx}/>}
         {screen==='gen-article'&& <GenArticleScreen {...ctx}/>}
+        {screen==='account'   && <AccountProfileScreen {...ctx}/>}
+        {screen==='settings'  && <SettingsScreen {...ctx}/>}
       </div>
       {showNav&&<BottomNav active={screen} nav={nav} showPro={setProGate}/>}
       {showXpBadge&&(

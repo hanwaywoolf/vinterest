@@ -144,6 +144,10 @@ function ScanScreen({nav,back,onComplete}){
   const [capturedImg,setCapturedImg]=React.useState(null);
   const [mode,setMode]=React.useState('bottle'); // bottle | list
   const [camErr,setCamErr]=React.useState(false);
+  const CURRENCIES=[{code:'GBP',sym:'£'},{code:'USD',sym:'$'},{code:'CAD',sym:'CA$'},{code:'AUD',sym:'A$'},{code:'NZD',sym:'NZ$'},{code:'EUR',sym:'€'}];
+  const homeCurrency=(Regional.current().code)||localStorage.getItem('vinterest_currency')||'GBP';
+  const [listCurrency,setListCurrency]=React.useState(homeCurrency);
+  const [currPickerOpen,setCurrPickerOpen]=React.useState(false);
 
   React.useEffect(()=>{
     // No explicit width/height — forcing a portrait resolution can push some
@@ -165,7 +169,7 @@ function ScanScreen({nav,back,onComplete}){
 
   const LABEL_PROMPT=`You are an expert sommelier with exceptional vision. Analyse this photo and identify any wine bottle label visible — even if partially obscured, at an angle, or in low light. Do your best with whatever text or imagery you can make out. Return ONLY valid JSON (no markdown, no code fences) with these fields: {"name":"full wine name","producer":"winery","vintage":2018,"region":"region","sub_region":"sub-region or empty string","country":"country","type":"red|white|rosé|sparkling","grapes":["Primary Grape"],"body":0.85,"tannins":0.80,"acidity":0.60,"sweetness":0.05,"texture":0.5,"effervescence":0.5,"abv":13.5,"tasting_notes":["Note1","Note2","Note3"],"food_pairings":["Food1","Food2","Food3"],"price_usd":50,"community_rating":4.5,"description":"2-3 sentence approachable description.","why_you_will_like_this":"1-2 sentences personalised to a wine lover.","body_plain":"How heavy it feels in your mouth","tannins_plain":"That drying grip on your gums","acidity_plain":"How zingy and fresh it tastes","sweetness_plain":"Dry means barely any sugar","texture_plain":"Steely and clean, or rich and creamy","effervescence_plain":"How soft or vigorous the bubbles feel"}. For "texture" (0=crisp/steely/unoaked, 1=rich/creamy/oaked from oak aging, lees contact, or malolactic fermentation): ONLY include a real value when type is "white"; use null for all other types. For "effervescence" (0=soft/delicate mousse, 1=vigorous/fine/persistent bubbles): ONLY include a real value when type is "sparkling"; use null for all other types. Only return {"error":"no_wine_label"} if there is absolutely no wine bottle or label anywhere in the image.`;
 
-  const LIST_PROMPT=`You are a sommelier reading a wine list. Extract EVERY wine from this image in the order they appear — do not skip any. Return ONLY valid JSON (no markdown): {"wines":[{"n":"wine name","t":"red|white|rosé|sparkling","r":"region","c":"country","v":2020,"p":"price as shown e.g. £85"}]}. Include ALL wines visible. Do not stop early.`;
+  const LIST_PROMPT=`You are a sommelier reading a wine list, printed in ${listCurrency}. Extract EVERY wine from this image in the order they appear — do not skip any. Return ONLY valid JSON (no markdown): {"wines":[{"n":"wine name","t":"red|white|rosé|sparkling","r":"region","c":"country","v":2020,"p":"price as printed on the list, verbatim, e.g. 85","rp":65}]}. "rp" is your best-estimate typical RETAIL bottle price for this exact wine, as an integer in ${listCurrency} (no symbol) — used only to compare against the list price, so give your real best guess even if uncertain. Include ALL wines visible. Do not stop early.`;
 
   function capturePhoto(){
     if(!videoRef.current||!videoRef.current.videoWidth){
@@ -253,10 +257,11 @@ function ScanScreen({nav,back,onComplete}){
         region:w.region||w.r||'',
         country:w.country||w.c||'',
         vintage:w.vintage||w.v||null,
-        price:w.price||w.p||''
+        price:w.price||w.p||'',
+        retailEst:w.rp!=null?Number(w.rp):null
       }));
       if(!wines.length) throw new Error('no_wines_found');
-      sessionStorage.setItem('vinterest_winelist_result',JSON.stringify({demo:false,wines}));
+      sessionStorage.setItem('vinterest_winelist_result',JSON.stringify({demo:false,wines,currency:listCurrency}));
     }catch(e){
       sessionStorage.setItem('vinterest_winelist_result',JSON.stringify({demo:true,reason:e.message}));
     }finally{ nav('winelist'); }
@@ -335,6 +340,25 @@ function ScanScreen({nav,back,onComplete}){
 
       {/* Bottom controls */}
       <div style={{position:'relative',zIndex:3,padding:'0 20px 44px',display:'flex',flexDirection:'column',alignItems:'center',gap:20,flexShrink:0}}>
+        {/* List currency picker — only relevant when scanning a wine list, e.g. while travelling */}
+        {!onboarding&&mode==='list'&&(
+          <div style={{position:'relative'}}>
+            <div onClick={()=>setCurrPickerOpen(o=>!o)} style={{display:'flex',alignItems:'center',gap:6,padding:'8px 14px',borderRadius:20,background:'rgba(0,0,0,0.55)',backdropFilter:'blur(12px)',cursor:'pointer'}}>
+              <span style={{fontSize:15,fontWeight:600,color:'#fff',fontFamily:C.P}}>List prices in {listCurrency}</span>
+              <Icon n="chevron" sz={11} col="rgba(255,255,255,0.6)" style={{transform:currPickerOpen?'rotate(-90deg)':'rotate(90deg)'}}/>
+            </div>
+            {currPickerOpen&&(
+              <div style={{position:'absolute',bottom:'calc(100% + 8px)',left:'50%',transform:'translateX(-50%)',background:'rgba(20,20,20,0.92)',backdropFilter:'blur(12px)',borderRadius:12,padding:6,display:'flex',flexDirection:'column',gap:2,minWidth:150}}>
+                {CURRENCIES.map(c=>(
+                  <div key={c.code} onClick={()=>{setListCurrency(c.code);setCurrPickerOpen(false);}} style={{padding:'8px 12px',borderRadius:8,background:listCurrency===c.code?C.cr:'transparent',display:'flex',justifyContent:'space-between',cursor:'pointer'}}>
+                    <span style={{fontSize:15,fontWeight:600,color:'#fff',fontFamily:C.P}}>{c.code}</span>
+                    <span style={{fontSize:15,color:'rgba(255,255,255,0.6)',fontFamily:C.P}}>{c.sym}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
         {/* Mode toggle — hidden during onboarding (bottle only) */}
         {!onboarding&&<div style={{display:'inline-flex',background:'rgba(0,0,0,0.55)',borderRadius:10,overflow:'hidden',backdropFilter:'blur(12px)'}}>
           {['Bottle','Wine List'].map((m,i)=>(

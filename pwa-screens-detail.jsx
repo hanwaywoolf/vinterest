@@ -568,8 +568,7 @@ const REGION_CURRENCY = {
    prefix) is kept only for use inside LLM prompts, where the disambiguation matters. */
 
 function DetailPrice({wine,nav}){
-  const region = (localStorage.getItem('vinterest_region') || 'uk').toLowerCase();
-  const curr   = REGION_CURRENCY[region] || REGION_CURRENCY.uk;
+  const curr = (()=>{ const rc=Regional.current(); return {sym:rc.sym,base:rc.base,code:rc.code,label:rc.label}; })();
 
   const [priceData,  setPriceData]  = React.useState(null);
   const [loading,    setLoading]    = React.useState(false);

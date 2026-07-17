@@ -647,14 +647,31 @@ function WineListScreen({nav,back}){
   ];
 
   const wines=(data.wines&&data.wines.length>0)?data.wines:demoWines;
+  const listCurrency=data.currency||Regional.current().code||localStorage.getItem('vinterest_currency')||'GBP';
   const typeColors={red:'#8B1A2F',white:'#B8963E',rosé:'#C47A8A',rose:'#C47A8A',sparkling:'#5E8FA8'};
   const colFor=t=>typeColors[(t||'red').toLowerCase().replace('é','e')]||C.cr;
 
-  // Stable match scores seeded per wine name
-  const [scores]=React.useState(()=>wines.map(w=>{
-    let h=0; for(let i=0;i<(w.name||'').length;i++) h=(h*31+w.name.charCodeAt(i))&0xffff;
-    return 68+Math.floor((h%100)*0.26);
-  }));
+  // Value vs. typical retail — parse the printed list price and compare to the model's retail estimate
+  function valueInfo(w){
+    if(w.retailEst==null||!w.price) return null;
+    const listNum=Number(String(w.price).replace(/[^0-9.]/g,''));
+    if(!listNum||!w.retailEst) return null;
+    const ratio=listNum/w.retailEst;
+    if(ratio<=2) return {label:'Good Value',col:C.green,bg:C.greenBg,ratio};
+    if(ratio<=3) return {label:'Fair Markup',col:C.amber,bg:C.amberBg,ratio};
+    return {label:'Marked Up',col:'#B04A3A',bg:'#F7E4E0',ratio};
+  }
+
+  // Same WineDNA calc used on the detail screen, so scores match everywhere
+  const [scores]=React.useState(()=>{
+    const userWines=WineHistory.getAll();
+    return wines.map(w=>{
+      const dna=calcMatchScore(w,userWines);
+      if(dna!=null) return dna;
+      let h=0; for(let i=0;i<(w.name||'').length;i++) h=(h*31+w.name.charCodeAt(i))&0xffff;
+      return 68+Math.floor((h%100)*0.26);
+    });
+  });
 
   const [sortMode,setSortMode]=React.useState('list'); // 'list' | 'match'
   const [typeFilter,setTypeFilter]=React.useState(null); // null = all
@@ -673,7 +690,7 @@ function WineListScreen({nav,back}){
         </div>
         <div style={{flex:1}}>
           <div style={{fontSize:19,fontWeight:700,color:'#fff',fontFamily:C.P}}>Wine List Results</div>
-          <div style={{fontSize:15,color:'rgba(255,255,255,0.65)',fontFamily:C.P}}>{wines.length} wines · in wine list order · match scores included</div>
+          <div style={{fontSize:15,color:'rgba(255,255,255,0.65)',fontFamily:C.P}}>{wines.length} wines · prices in {listCurrency} · match scores included</div>
         </div>
         <div onClick={()=>nav('camera')} style={{padding:'6px 14px',borderRadius:20,background:'rgba(255,255,255,0.18)',cursor:'pointer'}}>
           <span style={{fontSize:16,fontWeight:600,color:'#fff',fontFamily:C.P}}>Rescan</span>
@@ -723,6 +740,7 @@ function WineListScreen({nav,back}){
         <div style={{fontSize:15,fontWeight:600,color:C.mid,letterSpacing:'0.08em',textTransform:'uppercase',fontFamily:C.P,marginBottom:2}}>{sortMode==='match'?'Sorted by Match Rate':'Wine List Order'}</div>
         {shown.map(({w,i,score})=>{
           const col=colFor(w.type);
+          const val=valueInfo(w);
           return(
             <Card key={i} style={{padding:12,cursor:'pointer'}} onClick={()=>{
               sessionStorage.setItem('vinterest_scan_result',JSON.stringify({demo:false,wine:{...w,body:0.75,tannins:0.7,acidity:0.6,sweetness:0.1},confidence:score/100}));
@@ -746,7 +764,8 @@ function WineListScreen({nav,back}){
                   <div style={{display:'flex',gap:5,marginTop:6,alignItems:'center',flexWrap:'wrap'}}>
                     <Pill sm style={{background:col+'12',color:col,border:`1px solid ${col}25`,textTransform:'capitalize'}}>{w.type||'Red'}</Pill>
                     {w.grapes?.[0]&&<Pill sm>{w.grapes[0]}</Pill>}
-                    {w.price&&<span style={{fontSize:15,fontWeight:600,color:C.ink2,fontFamily:C.P,marginLeft:'auto'}}>{w.price}</span>}
+                    {val&&<span style={{fontSize:12,fontWeight:700,color:val.col,background:val.bg,borderRadius:6,padding:'2px 7px'}}>{val.label} · {val.ratio.toFixed(1)}x retail</span>}
+                    {w.price&&<span style={{fontSize:15,fontWeight:600,color:C.ink2,fontFamily:C.P,marginLeft:'auto'}}>{w.price} {listCurrency}</span>}
                   </div>
                 </div>
               </div>

@@ -48,6 +48,12 @@ function WineChatWidget(){
 
 function HomeScreen({nav, showPro, isTablet}){
   const [typeTab,setTypeTab]=React.useState(0);
+  const [travel,setTravel]=React.useState(()=>Regional.travel());
+  React.useEffect(()=>{
+    const h=()=>setTravel(Regional.travel());
+    window.addEventListener('vinterest:travel',h);
+    return()=>window.removeEventListener('vinterest:travel',h);
+  },[]);
   const [genScripts,setGenScripts]=React.useState({});
   const [scriptLength,setScriptLength]=React.useState(localStorage.getItem('vinterest_script_length')||'long');
   const [generating,setGenerating]=React.useState(null);
@@ -101,13 +107,11 @@ function HomeScreen({nav, showPro, isTablet}){
   /* Script generation */
   React.useEffect(()=>{
     if(!tabWines.length) return;
-    const _reg=localStorage.getItem('vinterest_region')||'uk';
-    const _CBASE2={uk:'£',us:'$',ontario:'$',canada:'$',australia:'$',nz:'$',eu:'€',france:'€',germany:'€',italy:'€',spain:'€'};
-    const _CCODE2={uk:'GBP',us:'USD',ontario:'CAD',canada:'CAD',australia:'AUD',nz:'NZD',eu:'EUR',france:'EUR',germany:'EUR',italy:'EUR',spain:'EUR'};
-    const _base=_CBASE2[_reg]||'£';
-    const _code=_CCODE2[_reg]||'GBP';
-    const keyLong=`vinterest_script_long_${c.typeKey}_n${tabWines.length}_${_reg}_v2`;
-    const keyShort=`vinterest_script_short_${c.typeKey}_n${tabWines.length}_${_reg}_v2`;
+    const _rc=Regional.current();
+    const _base=_rc.base;
+    const _code=_rc.code;
+    const keyLong=`vinterest_script_long_${c.typeKey}_n${tabWines.length}_${_rc.code}_v2`;
+    const keyShort=`vinterest_script_short_${c.typeKey}_n${tabWines.length}_${_rc.code}_v2`;
     const key=scriptLength==='long'?keyLong:keyShort;
     const cached=localStorage.getItem(key);
     if(cached){setGenScripts(s=>({...s,[c.typeKey]:cached}));return;}
@@ -131,7 +135,10 @@ function HomeScreen({nav, showPro, isTablet}){
       {/* ── Fixed header: logo + always-visible Scan CTA ── */}
       <div style={{background:C.white,flexShrink:0}}>
         {/* Logo row */}
-        <div style={{padding:'14px 20px 14px',paddingRight:'120px'}}>
+        <div style={{padding:'14px 20px 14px',paddingRight:'120px',display:'flex',alignItems:'center',gap:12}}>
+          <div onClick={()=>nav('account')} style={{width:34,height:34,borderRadius:17,background:C.offWhite,border:`1px solid ${C.line}`,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',flexShrink:0}}>
+            <Icon n="user" sz={16} col={C.ink}/>
+          </div>
           <img src="logo.png" alt="Vinterest" style={{height:28,width:'auto',display:'block',cursor:'pointer'}} onClick={()=>{
             if(!('serviceWorker' in navigator)) return;
             navigator.serviceWorker.getRegistration().then(function(reg){
@@ -159,6 +166,13 @@ function HomeScreen({nav, showPro, isTablet}){
         {/* Wine chat widget — phone only; tablet uses sidebar */}
         {!isTablet&&<WineChatWidget/>}
       </div>
+
+      {travel&&(
+        <div onClick={()=>nav('account')} style={{background:C.cr,padding:'6px 20px',display:'flex',alignItems:'center',justifyContent:'center',gap:6,cursor:'pointer',flexShrink:0}}>
+          <Icon n="compass" sz={12} col="#fff"/>
+          <span style={{fontSize:12,fontWeight:600,color:'#fff',fontFamily:C.P}}>Travel Mode On — {travel.country}</span>
+        </div>
+      )}
 
       {/* ── Scrollable body ── */}
       <div style={{flex:1,overflowY:'auto',overscrollBehavior:'none',WebkitOverflowScrolling:'touch'}}>

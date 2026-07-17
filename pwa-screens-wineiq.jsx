@@ -260,15 +260,12 @@ function WineDNAScreen({nav,back,showPro}){
 
   const allWines=WineHistory.getAll();
   /* Currency helpers */
-  const _uReg=localStorage.getItem('vinterest_region')||'uk';
-  const _FX={GBP:0.79,CAD:1.36,AUD:1.53,NZD:1.64,EUR:0.92,USD:1.0};
-  const _CSYM={uk:'£',us:'$',ontario:'CA$',canada:'CA$',australia:'A$',nz:'NZ$',eu:'€',france:'€',germany:'€',italy:'€',spain:'€'};
-  const _CBASE={uk:'£',us:'$',ontario:'$',canada:'$',australia:'$',nz:'$',eu:'€',france:'€',germany:'€',italy:'€',spain:'€'};
-  const _CCODE={uk:'GBP',us:'USD',ontario:'CAD',canada:'CAD',australia:'AUD',nz:'NZD',eu:'EUR',france:'EUR',germany:'EUR',italy:'EUR',spain:'EUR'};
-  const _csym=_CSYM[_uReg]||'£';
-  const _cbase=_CBASE[_uReg]||'£';
-  const _ccode=_CCODE[_uReg]||'GBP';
-  const _cfx=_FX[_CCODE[_uReg]||'GBP']||0.79;
+  const _FX={GBP:0.79,CAD:1.36,AUD:1.53,NZD:1.64,EUR:0.92,USD:1.0,JPY:150,CNY:7.2,CHF:0.88,ZAR:18.5,SGD:1.34,HKD:7.8,MXN:18,BRL:5.4,INR:83,AED:3.67,SEK:10.4,NOK:10.6,DKK:6.9};
+  const _rc=Regional.current();
+  const _csym=_rc.sym;
+  const _cbase=_rc.base;
+  const _ccode=_rc.code;
+  const _cfx=_FX[_rc.code]||1.0;
   const xd=XPSystem.get();
   const lv=XPSystem.getLevel(xd.total);
   const nx=XPSystem.nextLevel(xd.total);
@@ -315,7 +312,7 @@ function WineDNAScreen({nav,back,showPro}){
   /* LLM sommelier script — short + long variants (shared cache with Home) */
   React.useEffect(()=>{
     if(!t.wines.length) return;
-    const key=`vinterest_script_${scriptLength}_${t.key}_n${t.wines.length}_${_uReg}_v2`;
+    const key=`vinterest_script_${scriptLength}_${t.key}_n${t.wines.length}_${_ccode}_v2`;
     const cached=localStorage.getItem(key);
     if(cached){setGenScripts(s=>({...s,[t.key]:cached}));return;}
     if(generatingScript===t.key) return;
