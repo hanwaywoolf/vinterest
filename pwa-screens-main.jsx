@@ -146,8 +146,16 @@ function ScanScreen({nav,back,onComplete}){
   const [camErr,setCamErr]=React.useState(false);
 
   React.useEffect(()=>{
-    navigator.mediaDevices?.getUserMedia({video:{facingMode:'environment',width:{ideal:1080},height:{ideal:1920}}})
-      .then(s=>{ streamRef.current=s; if(videoRef.current) videoRef.current.srcObject=s; })
+    navigator.mediaDevices?.getUserMedia({video:{facingMode:'environment',width:{ideal:1080},height:{ideal:1920},zoom:1}})
+      .then(s=>{
+        streamRef.current=s; if(videoRef.current) videoRef.current.srcObject=s;
+        // Some phones default multi-camera systems to a 2x telephoto lens — force back to native 1x.
+        const track=s.getVideoTracks()[0];
+        const caps=track&&track.getCapabilities?track.getCapabilities():null;
+        if(caps&&caps.zoom&&typeof caps.zoom.min==='number'){
+          track.applyConstraints({advanced:[{zoom:caps.zoom.min}]}).catch(()=>{});
+        }
+      })
       .catch(()=>setCamErr(true));
     return ()=>{ if(streamRef.current) streamRef.current.getTracks().forEach(t=>t.stop()); };
   },[]);

@@ -1,5 +1,48 @@
 /* Vinterest PWA — Home screen */
 
+function WineChatWidget(){
+  const [q,setQ]=React.useState('');
+  const [asking,setAsking]=React.useState(false);
+  const [asked,setAsked]=React.useState('');
+  const [answer,setAnswer]=React.useState('');
+  const [err,setErr]=React.useState(false);
+
+  function ask(e){
+    e.preventDefault();
+    const question=q.trim();
+    if(!question||asking) return;
+    setAsking(true);setErr(false);setAnswer('');setAsked(question);setQ('');
+    const prompt=`You are a concise wine assistant inside a wine app's home screen. Answer ONLY questions about wine — grape varieties, tasting, pairing, service, regions, production. You may also address food pairing and other alcoholic drinks, but only in service of a wine question (e.g. "what beer pairs with steak alongside a Malbec" is fine). If the question is unrelated to wine, food pairing, or alcohol, do not answer it — instead respond with one short, friendly sentence redirecting back to wine topics. Otherwise answer in 2-4 clear, conversational sentences. Plain prose, no markdown, no lists, no headers.\n\nQuestion: "${question}"`;
+    window.claude.complete({messages:[{role:'user',content:prompt}]})
+      .then(text=>setAnswer(text.trim()))
+      .catch(()=>setErr(true))
+      .finally(()=>setAsking(false));
+  }
+
+  return(
+    <div style={{margin:'0 16px 8px'}}>
+      <form onSubmit={ask} style={{display:'flex',alignItems:'center',gap:8,background:C.bg,border:`1px solid ${C.line}`,borderRadius:24,padding:'6px 6px 6px 18px'}}>
+        <input value={q} onChange={e=>setQ(e.target.value)} placeholder="Ask Vinny about a wine..." style={{flex:1,minWidth:0,border:'none',outline:'none',background:'transparent',fontSize:16,fontFamily:C.P,color:C.ink}}/>
+        <button type="submit" disabled={asking||!q.trim()} aria-label="Ask" style={{width:38,height:38,borderRadius:19,border:'none',background:q.trim()?C.cr:C.line,flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center',cursor:q.trim()?'pointer':'default',padding:0}}>
+          <svg width="16" height="16" viewBox="0 0 20 20"><path d="M3 10h13M10 4l6.5 6L10 16" stroke="#fff" strokeWidth="1.8" fill="none" strokeLinecap="round" strokeLinejoin="round"/></svg>
+        </button>
+      </form>
+      <div style={{maxHeight:(asking||answer||err)?400:0,opacity:(asking||answer||err)?1:0,overflow:'hidden',transition:'max-height 0.35s ease,opacity 0.3s ease,margin-top 0.35s ease',marginTop:(asking||answer||err)?10:0}}>
+        <Card style={{padding:14}}>
+          <div style={{fontSize:14,fontWeight:600,color:C.mid,fontFamily:C.P,marginBottom:6}}>{asked}</div>
+          {asking?(
+            <div style={{fontSize:15,color:C.mid,fontFamily:C.P,fontStyle:'italic'}}>Thinking…</div>
+          ):err?(
+            <div style={{fontSize:15,color:C.mid,fontFamily:C.P}}>Couldn't get an answer — try again.</div>
+          ):(
+            <div style={{fontSize:16,color:C.ink,fontFamily:C.P,lineHeight:1.5}}>{answer}</div>
+          )}
+        </Card>
+      </div>
+    </div>
+  );
+}
+
 function HomeScreen({nav, showPro, isTablet}){
   const [typeTab,setTypeTab]=React.useState(0);
   const [genScripts,setGenScripts]=React.useState({});
@@ -110,26 +153,8 @@ function HomeScreen({nav, showPro, isTablet}){
             });
           }}/>
         </div>
-        {/* Compact scan CTA — phone only; tablet uses sidebar */}
-        {!isTablet&&<div onClick={()=>atLimit?showPro('unlimited-scans'):nav('camera')} style={{
-          background:C.ink,borderRadius:14,margin:'0 16px 8px',padding:'13px 16px',
-          display:'flex',alignItems:'center',gap:14,cursor:'pointer',
-          position:'relative',overflow:'hidden'
-        }}>
-          <div style={{position:'absolute',right:-16,top:-16,width:100,height:100,borderRadius:50,background:`${C.cr}28`,pointerEvents:'none'}}/>
-          <div style={{width:44,height:44,borderRadius:12,background:atLimit?'#444':C.cr,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,zIndex:1,boxShadow:atLimit?'none':`0 4px 18px ${C.cr}55`}}>
-            {atLimit?<Icon n="lock" sz={20} col="#888"/>:<Icon n="camera" sz={22} col="#fff"/>}
-          </div>
-          <div style={{flex:1,zIndex:1}}>
-            <div style={{fontSize:18,fontWeight:700,color:atLimit?'rgba(255,255,255,0.4)':'#fff',fontFamily:C.P,lineHeight:1.2}}>
-              {atLimit?'Free scans used up':isPro?'Scan a Bottle or List':'Scan a Bottle'}
-            </div>
-            <div style={{fontSize:15,color:'rgba(255,255,255,0.4)',fontFamily:C.P,marginTop:2}}>
-              {atLimit?'Upgrade for unlimited scans':isPro?'Point at a label or restaurant wine list':'Point at any wine label to identify'}
-            </div>
-          </div>
-          {!atLimit&&<Icon n="chevron" sz={14} col="rgba(255,255,255,0.3)"/>}
-        </div>}
+        {/* Wine chat widget — phone only; tablet uses sidebar */}
+        {!isTablet&&<WineChatWidget/>}
       </div>
 
       {/* ── Scrollable body ── */}
