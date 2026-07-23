@@ -45,7 +45,7 @@ function App(){
     return ()=>window.removeEventListener('popstate',onPop);
   },[]);
 
-  const showNav=!['camera','onboarding'].includes(screen);
+  const showNav=!['camera','onboarding','identified'].includes(screen);
 
   // XP Badge + overlay
   const [xpBadge,setXpBadge]=React.useState(()=>XPSystem.get());

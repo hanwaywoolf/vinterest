@@ -315,8 +315,42 @@ function calcMatchScore(wine,userWines){
   const totalW=scores.reduce((s,[,w])=>s+w,0);
   const raw=scores.reduce((s,[sc,w])=>s+sc*(w/totalW),0);
   // Scale: 0 raw → 35 %, 1.0 raw → 98 %
-  return Math.round(35+raw*63);
+  const base=35+raw*63;
+  const delta=WineAffinity.scoreFor(wine); // saved-card signals nudge match ±
+  return Math.max(20,Math.min(98,Math.round(base+delta)));
 }
+
+/* ── Affinity: signals from cards the user saves in the scan-results deck.
+   Saving a "why you'll like it" / origin / grape card records a small positive
+   lean toward that wine's grapes, region and country, which then nudges the
+   match score everywhere (list + detail agree, since both call calcMatchScore). */
+const WineAffinity={
+  KEY:'vinterest_affinity',
+  get(){ try{ return JSON.parse(localStorage.getItem(this.KEY)||'{}'); }catch(e){ return {}; } },
+  _save(a){ try{ localStorage.setItem(this.KEY,JSON.stringify(a)); }catch(e){} },
+  norm(s){ return (s||'').trim().toLowerCase(); },
+  bump(wine,weight){
+    if(!wine) return;
+    const a=this.get();
+    const add=(bucket,key)=>{ key=this.norm(key); if(!key) return; a[bucket]=a[bucket]||{}; a[bucket][key]=Math.max(-3,Math.min(6,(a[bucket][key]||0)+weight)); };
+    (wine.grapes||[]).forEach(g=>add('grapes',g));
+    add('regions',wine.region);
+    add('countries',wine.country);
+    this._save(a);
+    window.dispatchEvent(new Event('vinterest:affinity'));
+  },
+  scoreFor(wine){
+    if(!wine) return 0;
+    const a=this.get(); let s=0,n=0;
+    const grab=(bucket,key)=>{ key=this.norm(key); if(!key) return; const v=(a[bucket]||{})[key]; if(v!=null){ s+=v; n++; } };
+    (wine.grapes||[]).forEach(g=>grab('grapes',g));
+    grab('regions',wine.region);
+    grab('countries',wine.country);
+    if(!n) return 0;
+    // Each unit of stored lean ≈ 1.2 match points, capped so it stays a nudge.
+    return Math.max(-8,Math.min(10,(s/Math.max(1,n))*1.2 + (s>0?Math.min(3,n*0.4):0)));
+  }
+};
 
 /* ── Regions, currencies, Travel Mode ── */
 const CURRENCY_LIST=[{code:'USD',sym:'$'},{code:'GBP',sym:'£'},{code:'EUR',sym:'€'},{code:'CAD',sym:'CA$'},{code:'AUD',sym:'A$'},{code:'NZD',sym:'NZ$'},{code:'JPY',sym:'¥'},{code:'CNY',sym:'¥'},{code:'CHF',sym:'CHF'},{code:'ZAR',sym:'R'},{code:'SGD',sym:'S$'},{code:'HKD',sym:'HK$'},{code:'MXN',sym:'MX$'},{code:'BRL',sym:'R$'},{code:'INR',sym:'₹'},{code:'AED',sym:'AED'},{code:'SEK',sym:'kr'},{code:'NOK',sym:'kr'},{code:'DKK',sym:'kr'}];
@@ -401,4 +435,4 @@ function fetchRetailEstimate(wine,curr){
   });
 }
 
-Object.assign(window,{C,Icon,BottomNav,SideNav,Pill,Prog,Card,Btn,WineHistory,ProBadge,ProGate,calcMatchScore,Regional,CURRENCY_LIST,lookupCountryCurrency,fetchRetailEstimate,retailPriceCacheKey});
+Object.assign(window,{C,Icon,BottomNav,SideNav,Pill,Prog,Card,Btn,WineHistory,ProBadge,ProGate,calcMatchScore,WineAffinity,Regional,CURRENCY_LIST,lookupCountryCurrency,fetchRetailEstimate,retailPriceCacheKey});

@@ -169,7 +169,7 @@ function ScanScreen({nav,back,onComplete}){
 
   const LABEL_PROMPT=`You are an expert sommelier with exceptional vision. Analyse this photo and identify any wine bottle label visible — even if partially obscured, at an angle, or in low light. Do your best with whatever text or imagery you can make out. Return ONLY valid JSON (no markdown, no code fences) with these fields: {"name":"full wine name","producer":"winery","vintage":2018,"region":"region","sub_region":"sub-region or empty string","country":"country","type":"red|white|rosé|sparkling","grapes":["Primary Grape"],"body":0.85,"tannins":0.80,"acidity":0.60,"sweetness":0.05,"texture":0.5,"effervescence":0.5,"abv":13.5,"tasting_notes":["Note1","Note2","Note3"],"food_pairings":["Food1","Food2","Food3"],"price_usd":50,"community_rating":4.5,"description":"2-3 sentence approachable description.","why_you_will_like_this":"1-2 sentences personalised to a wine lover.","body_plain":"How heavy it feels in your mouth","tannins_plain":"That drying grip on your gums","acidity_plain":"How zingy and fresh it tastes","sweetness_plain":"Dry means barely any sugar","texture_plain":"Steely and clean, or rich and creamy","effervescence_plain":"How soft or vigorous the bubbles feel"}. For "texture" (0=crisp/steely/unoaked, 1=rich/creamy/oaked from oak aging, lees contact, or malolactic fermentation): ONLY include a real value when type is "white"; use null for all other types. For "effervescence" (0=soft/delicate mousse, 1=vigorous/fine/persistent bubbles): ONLY include a real value when type is "sparkling"; use null for all other types. Only return {"error":"no_wine_label"} if there is absolutely no wine bottle or label anywhere in the image.`;
 
-  const LIST_PROMPT=`You are a sommelier reading a wine list, printed in ${listCurrency}. Extract EVERY wine from this image in the order they appear — do not skip any. Return ONLY valid JSON (no markdown): {"wines":[{"n":"wine name","t":"red|white|rosé|sparkling","r":"region","c":"country","v":2020,"p":"price as printed on the list, verbatim, e.g. 85"}]}. Include ALL wines visible. Do not stop early.`;
+  const LIST_PROMPT=`You are a sommelier reading a wine list, printed in ${listCurrency}. Extract EVERY wine from this image in the order they appear — do not skip any. Return ONLY valid JSON (no markdown): {"wines":[{"n":"wine name","t":"red|white|rosé|sparkling","r":"region","c":"country","v":2020,"p":"price as printed on the list, verbatim, e.g. 85"}]}. PRICE RULES — read carefully: many lists price by pour tier (e.g. "GLASS:16", "1/2LTR:33", "BOTTLE:59" printed below or beside the wine name). When those tiered lines are present, set "p" to the FULL tiered string verbatim (e.g. "GLASS:16 / 1/2LTR:33 / BOTTLE:59") — the bottle figure is the one that matters, so never drop it. DISAMBIGUATING SHORT NUMBERS NEAR THE NAME: a wine name is sometimes followed by one or two short (1–2 digit) numbers rather than a separate price column. Reason about which they are: (a) if there are TWO such numbers and one is roughly 1.5–3x the other, both landing in a plausible drink-price range (e.g. teens/twenties and thirties/fifties), treat them as a glass price and a bottle price, NOT vintages — use them for "p" (e.g. "GLASS:16 / BOTTLE:45"); (b) if there is a single short number with no such pairing, and no separate GLASS/BOTTLE lines exist elsewhere for that wine, it is more likely a vintage only if it reads like a year shorthand (e.g. preceded by an apostrophe, or clearly grouped with other vintage-looking numbers in that column) — otherwise leave vintage null rather than guessing. Never use a 2-digit index/price as vintage. Only ever set "v" to a plausible 4-digit year (or a 2-digit year you are genuinely confident denotes one, e.g. '18 for 2018) — when genuinely ambiguous, prefer leaving "v" null over guessing wrong. Include ALL wines visible. Do not stop early.`;
 
   function capturePhoto(){
     if(!videoRef.current||!videoRef.current.videoWidth){
@@ -388,33 +388,7 @@ function WineIdentifiedScreen({nav,back}){
     if(wine&&!scanData.demo) WineHistory.track(wine);
   },[wine?.name,wine?.vintage]);
 
-  const isDemo=scanData.demo===true;
-  const scanReason=scanData.reason||'';
-
-  return(
-    <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden'}}>
-      {isDemo&&(
-        <div style={{background:'#FFF3CD',borderBottom:'1px solid #FFE082',padding:'10px 16px',display:'flex',alignItems:'flex-start',gap:10,flexShrink:0}}>
-          <span style={{fontSize:19,flexShrink:0}}>⚠️</span>
-          <div style={{flex:1}}>
-            <div style={{fontSize:16,fontWeight:600,color:'#7A5200',fontFamily:C.P}}>
-              {scanReason==='no_wine_label'&&'Label not detected — move closer and retake'}
-              {scanReason==='camera_not_ready'&&'Point camera at a label and tap capture'}
-              {scanReason&&!['camera_not_ready','no_wine_label'].includes(scanReason)&&`Error: ${scanReason.slice(0,80)}`}
-              {!scanReason&&'Add ANTHROPIC_API_KEY in Netlify → Environment variables'}
-            </div>
-            {(scanReason==='no_wine_label'||scanReason==='camera_not_ready')&&(
-              <div onClick={()=>nav('camera')} style={{marginTop:6,display:'inline-flex',alignItems:'center',gap:5,padding:'6px 14px',borderRadius:20,background:'#8B1A2F',cursor:'pointer'}}>
-                <Icon n="camera" sz={12} col="#fff"/>
-                <span style={{fontSize:15,fontWeight:700,color:'#fff',fontFamily:C.P}}>Try Again</span>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-      <WineDetailScreen nav={nav} back={back}/>
-    </div>
-  );
+  return <ScanCardsScreen nav={nav} back={back}/>;
 }
 
 Object.assign(window,{ScanHomeScreen,ScanScreen,WineIdentifiedScreen});

@@ -502,6 +502,34 @@ function DetailMerged({wine,nav,existingRating=0,matchPct}){
 function DetailStory({wine,nav,existingRating=0}){
   const description=(wine?.description?.trim())||'A wine with character and depth.';
 
+  // ── Education: grape deep-dive, growing-season context, vocab terms (batched + cached) ──
+  const [edu,setEdu]=React.useState(null);
+  const [eduLoading,setEduLoading]=React.useState(false);
+  React.useEffect(()=>{
+    if(!wine||!wine.name) return;
+    const key='vinterest_edu_v1_'+(wine.name||'').replace(/\s/g,'_')+'_'+(wine.vintage||'nv');
+    const cached=localStorage.getItem(key);
+    if(cached){ try{ setEdu(JSON.parse(cached)); return; }catch(e){} }
+    if(!window.claude||!window.claude.complete) return;
+    setEduLoading(true);
+    const g=(wine.grapes&&wine.grapes[0])||(wine.type||'red');
+    const prompt=
+      'You are a wine educator. For the drinker looking at this specific wine, teach them something useful. '+
+      'Wine: '+(wine.name||'')+(wine.vintage&&wine.vintage!==0?' '+wine.vintage:'')+'. Type: '+(wine.type||'red')+'. '+
+      'Region: '+(wine.region||'')+', '+(wine.country||'')+'. Grapes: '+((wine.grapes||[]).join(', ')||'unknown')+'. '+
+      'Return ONLY valid JSON, no markdown, concrete and specific, NO numbers/percentages/decimals anywhere: '+
+      '{'+
+      '"grape":"two sentences on what defines '+g+' as a grape/style and how it typically tastes (max 44 words)",'+
+      '"season":"one sentence of growing-season or climate context for '+(wine.region||wine.country||'this region')+(wine.vintage&&wine.vintage!==0?' around the '+wine.vintage+' vintage':'')+' and what it means in the glass (max 30 words)",'+
+      '"terms":[{"term":"a wine word this bottle teaches","meaning":"plain-English meaning in this wine\'s context (max 16 words)"}]'+
+      '}. Give exactly three terms.';
+    window.claude.complete({messages:[{role:'user',content:prompt}]})
+      .then(text=>{ let c=text.replace(/```json|```/g,'').trim(); const s=c.indexOf('{'),e=c.lastIndexOf('}'); if(s>=0&&e>s)c=c.slice(s,e+1); const d=JSON.parse(c); localStorage.setItem(key,JSON.stringify(d)); setEdu(d); })
+      .catch(()=>{})
+      .finally(()=>setEduLoading(false));
+  },[wine?.name,wine?.vintage]);
+  const eduSpin=<div style={{display:'flex',alignItems:'center',gap:7}}><div style={{width:11,height:11,borderRadius:6,border:`2px solid ${C.cr}33`,borderTopColor:C.cr,animation:'storySpin .8s linear infinite'}}/><span style={{fontSize:14,color:C.mid,fontFamily:C.P,fontStyle:'italic'}}>Pulling together the lesson…</span></div>;
+
   const SL=({label})=>(
     <div style={{fontSize:13,fontWeight:700,color:C.mid,letterSpacing:'0.07em',textTransform:'uppercase',fontFamily:C.P,marginBottom:8}}>{label}</div>
   );
@@ -541,6 +569,59 @@ function DetailStory({wine,nav,existingRating=0}){
         <div>
           <SL label="Region"/>
           <div style={{fontSize:16,fontWeight:600,color:C.ink,fontFamily:C.P}}>{wine.region}{wine.region&&wine.country?', ':''}{wine.country}</div>
+        </div>
+      )}
+
+      {/* ── Further your palate — education ── */}
+      {(edu||eduLoading)&&(
+        <div>
+          <SL label="Further Your Palate"/>
+          <div style={{display:'flex',flexDirection:'column',gap:12}}>
+            {/* Grape deep-dive */}
+            <Card style={{padding:14}}>
+              <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:8}}>
+                <Icon n="wine" sz={16} col={C.cr}/>
+                <span style={{fontSize:15,fontWeight:700,color:C.ink,fontFamily:C.P}}>{(wine?.grapes&&wine.grapes[0])||'The grape'}, up close</span>
+              </div>
+              <div style={{fontSize:15,color:C.ink2,fontFamily:C.P,lineHeight:1.6}}>{eduLoading&&!edu?eduSpin:(edu&&edu.grape)||''}</div>
+            </Card>
+            {/* Growing-season / weather context */}
+            {(edu&&edu.season)&&(
+              <Card style={{padding:14}}>
+                <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:8}}>
+                  <Icon n="globe" sz={16} col={C.cr}/>
+                  <span style={{fontSize:15,fontWeight:700,color:C.ink,fontFamily:C.P}}>{wine?.vintage&&wine.vintage!==0?`The ${wine.vintage} growing season`:'Climate & place'}</span>
+                </div>
+                <div style={{fontSize:15,color:C.ink2,fontFamily:C.P,lineHeight:1.6}}>{edu.season}</div>
+              </Card>
+            )}
+            {/* Vocab this bottle teaches */}
+            {(edu&&Array.isArray(edu.terms)&&edu.terms.length>0)&&(
+              <Card style={{padding:14}}>
+                <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:10}}>
+                  <Icon n="book" sz={16} col={C.cr}/>
+                  <span style={{fontSize:15,fontWeight:700,color:C.ink,fontFamily:C.P}}>Words this bottle teaches</span>
+                </div>
+                <div style={{display:'flex',flexDirection:'column',gap:10}}>
+                  {edu.terms.slice(0,3).map((tm,i)=>(
+                    <div key={i} style={{display:'flex',gap:10}}>
+                      <div style={{width:6,height:6,borderRadius:3,background:C.cr,marginTop:7,flexShrink:0}}/>
+                      <div><span style={{fontSize:15,fontWeight:700,color:C.cr,fontFamily:C.P}}>{tm.term}</span><span style={{fontSize:15,color:C.ink2,fontFamily:C.P,lineHeight:1.55}}> — {tm.meaning}</span></div>
+                    </div>
+                  ))}
+                </div>
+              </Card>
+            )}
+            {/* Learn hand-off */}
+            <div onClick={()=>nav('learn')} style={{display:'flex',alignItems:'center',gap:12,padding:'13px 15px',borderRadius:14,background:C.crSoft,border:`1px solid ${C.crDim}`,cursor:'pointer'}}>
+              <div style={{width:38,height:38,borderRadius:11,background:C.white,border:`1px solid ${C.crDim}`,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><Icon n="book" sz={19} col={C.cr}/></div>
+              <div style={{flex:1}}>
+                <div style={{fontSize:15,fontWeight:700,color:C.cr,fontFamily:C.P}}>Keep learning</div>
+                <div style={{fontSize:13,color:C.cr,opacity:0.75,fontFamily:C.P}}>Quizzes & lessons on {(wine?.grapes&&wine.grapes[0])||wine?.region||'wine'}</div>
+              </div>
+              <Icon n="chevron" sz={15} col={C.cr}/>
+            </div>
+          </div>
         </div>
       )}
 
