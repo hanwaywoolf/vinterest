@@ -25,13 +25,13 @@ function useScanContent(wine){
       'Return ONLY valid JSON, no markdown, all sentences concrete and specific to THIS wine (no generic filler), and NO numbers/percentages/decimals anywhere: '+
       '{'+
       '"fact":"one genuinely surprising, memorable fact about this wine, its producer, grape, or region (max 28 words)",'+
-      '"fit":"one vivid sentence on who will love this and why (max 24 words)",'+
+      '"fit":"one vivid sentence on the FLAVOR/STYLE reasons this suits their palate — texture, body, fruit, oak, tannin, acidity (max 24 words). Do not discuss confidence or how good a match this is, only taste.",'+
       '"caution":"one honest sentence on who might not enjoy it and why — be kind but specific (max 24 words)",'+
       '"origin":"one sentence painting the place this comes from — landscape, climate or culture (max 26 words)",'+
       '"region_style":"one sentence on what makes wines from here distinctive (max 24 words)",'+
       '"talk":["three SHORT quotable phrases (each max 12 words) a drinker could say out loud to sound clued-in about this exact wine"],'+
       '"term":"one wine term this bottle teaches, formatted as \\"Term — plain-English meaning\\" (max 18 words)",'+
-      '"matchNote":"one sentence giving an overall verdict on this wine as an experience — distinct from and complementary to the fit sentence, not repeating its wording or reasoning (max 22 words)"'+
+      '"matchNote":"one sentence giving an honest confidence verdict on THIS PAIRING — how sure a bet it is for their palate, any tradeoff or risk, framed like a sommelier hedging or vouching (max 22 words). Never mention flavor, texture, tannin, oak, or acidity — that is covered elsewhere. No overlap with a sentence about who will love it and why."'+
       '}';
     window.claude.complete({messages:[{role:'user',content:prompt}]})
       .then(text=>{
@@ -204,7 +204,7 @@ function CardFace({card,ctx,expanded}){
 
   if(card.kind==='match'){
     const pct=matchPct;
-    const verdict=pct==null?'New for your palate':pct>=85?'A near-perfect match':pct>=70?'Right up your street':pct>=55?'Worth a try':pct>=40?'A bit of a stretch':'Outside your usual';
+    const verdict=pct==null?'New for your palate':pct>=90?'A near-perfect match':pct>=78?'A strong match':pct>=63?'A solid match, worth it':pct>=48?'Worth a try':pct>=32?'A bit of a stretch':'Outside your usual';
     const r=52,circ=2*Math.PI*r,off=circ*(1-(pct||0)/100);
     const affNote=WineAffinity.scoreFor(wine);
     return <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:16,textAlign:'center'}}>

@@ -292,17 +292,27 @@ const WineHistory = {
   }
 };
 
-/* ── Taste-match score (WineDNA vs. wine attributes) ──
-   Compares wine's body/tannins/acidity/sweetness against the user's
-   average for that type. Returns 35–98, or null if no data yet. */
+/* ── Taste-match score (WineDNA vs. rating history) ──
+   Compares wine's body/tannins/acidity/sweetness against a RATING-WEIGHTED
+   average for that type from WineHistory — wines you rated higher pull the
+   target profile toward them, ones you rated low pull away. Pure function
+   of (wine, userWines): same inputs always produce the same score, and a
+   type/grape you haven't rated yet returns null (shown as "New for your
+   palate") rather than a padded mid-range number. Returns 15–98, or null. */
 function calcMatchScore(wine,userWines){
   if(!wine||!userWines) return null;
   const typeKey=(wine.type||'red').toLowerCase().replace(/é/g,'e');
-  const typeWines=userWines.filter(w=>(w.type||'red').toLowerCase().replace(/é/g,'e')===typeKey);
-  const withAttrs=typeWines.filter(w=>w.body!=null);
-  if(!withAttrs.length) return null;
-  const avg=field=>{const ws=withAttrs.filter(w=>w[field]!=null);return ws.length?ws.reduce((s,w)=>s+w[field],0)/ws.length:null;};
-  const avgB=avg('body'),avgT=avg('tannins'),avgA=avg('acidity'),avgS=avg('sweetness');
+  const rated=userWines.filter(w=>(w.type||'red').toLowerCase().replace(/é/g,'e')===typeKey&&w.body!=null&&w.rating!=null&&w.rating>0);
+  if(!rated.length) return null;
+  // rating is out of 100: a 20/100 wine weighs 0.1, a 100/100 wine weighs 1.0 — loved wines shape the profile far more than tolerated ones
+  const wt=w=>Math.max(0.1,w.rating/100);
+  const wAvg=field=>{
+    const ws=rated.filter(w=>w[field]!=null);
+    if(!ws.length) return null;
+    const sw=ws.reduce((s,w)=>s+wt(w),0);
+    return ws.reduce((s,w)=>s+wt(w)*w[field],0)/sw;
+  };
+  const avgB=wAvg('body'),avgT=wAvg('tannins'),avgA=wAvg('acidity'),avgS=wAvg('sweetness');
   // prox: 1 = perfect match, 0 = ≥0.6 units apart
   const prox=(wv,uv)=>uv==null?null:Math.max(0,1-Math.abs((wv??0.5)-uv)/0.6);
   const scores=[
@@ -314,10 +324,8 @@ function calcMatchScore(wine,userWines){
   if(!scores.length) return null;
   const totalW=scores.reduce((s,[,w])=>s+w,0);
   const raw=scores.reduce((s,[sc,w])=>s+sc*(w/totalW),0);
-  // Scale: 0 raw → 35 %, 1.0 raw → 98 %
-  const base=35+raw*63;
-  const delta=WineAffinity.scoreFor(wine); // saved-card signals nudge match ±
-  return Math.max(20,Math.min(98,Math.round(base+delta)));
+  // Scale: 0 raw → 15 %, 1.0 raw → 98 % — a genuine mismatch reads low, not "worth a try"
+  return Math.max(15,Math.min(98,Math.round(15+raw*83)));
 }
 
 /* ── Affinity: signals from cards the user saves in the scan-results deck.
