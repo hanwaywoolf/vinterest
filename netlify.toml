@@ -2,22 +2,58 @@
   publish = "."
   functions = "netlify/functions"
 
+# ── API proxy (must be forced so it beats any static file) ──
 [[redirects]]
   from = "/claude"
   to = "/.netlify/functions/claude"
   status = 200
   force = true
 
+# ── PWA + static passthroughs — MUST come before the SPA catch-all ──
+# These guarantee the real file is served (correct Content-Type) and is never
+# rewritten to index.html, which is what silently breaks installability.
+[[redirects]]
+  from = "/manifest.json"
+  to = "/manifest.json"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/sw.js"
+  to = "/sw.js"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/icons/*"
+  to = "/icons/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/reset"
+  to = "/reset.html"
+  status = 200
+
+# ── SPA catch-all (last) ──
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
 
+# ── Headers ──
 [[headers]]
   for = "/sw.js"
   [headers.values]
     Cache-Control = "no-cache, no-store, must-revalidate"
     Service-Worker-Allowed = "/"
+    Content-Type = "application/javascript"
+
+[[headers]]
+  for = "/manifest.json"
+  [headers.values]
+    Cache-Control = "no-cache, must-revalidate"
+    Content-Type = "application/manifest+json"
 
 [[headers]]
   for = "/*.jsx"
