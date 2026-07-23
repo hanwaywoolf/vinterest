@@ -234,7 +234,7 @@ function ScanScreen({nav,back,onComplete}){
       nav('identified');
       return;
     }
-    nav('detail');
+    nav('identified');
   }
 
   async function processListCapture(b64){
