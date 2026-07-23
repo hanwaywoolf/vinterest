@@ -770,7 +770,7 @@ function WineDNAScreen({nav,back,showPro}){
 
         {/* App version */}
         <div style={{textAlign:'center',padding:'12px 0 4px',opacity:0.45}}>
-          <span style={{fontSize:13,color:C.mid,fontFamily:C.P}}>Vinterest v1.0.41</span>
+          <span style={{fontSize:13,color:C.mid,fontFamily:C.P}}>Vinterest v1.0.42</span>
         </div>
 
         <div style={{height:8}}/>

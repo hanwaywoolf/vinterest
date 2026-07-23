@@ -8,7 +8,11 @@ function WineDetailScreen({back,nav}){
     catch(e){ return {}; }
   },[]);
   const wine=scanData.wine||null;
-  const existingRating=scanData.existingRating||0;
+  const existingRating=React.useMemo(()=>{
+    if(!wine) return 0;
+    const saved=WineHistory.getAll().find(w=>w.name===wine.name&&String(w.vintage)===String(wine.vintage));
+    return (saved&&saved.rating)||scanData.existingRating||0;
+  },[wine?.name,wine?.vintage]);
 
   const matchPct=React.useMemo(()=>{
     if(!wine) return null;

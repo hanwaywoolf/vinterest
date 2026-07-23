@@ -30,7 +30,8 @@ function useScanContent(wine){
       '"origin":"one sentence painting the place this comes from — landscape, climate or culture (max 26 words)",'+
       '"region_style":"one sentence on what makes wines from here distinctive (max 24 words)",'+
       '"talk":["three SHORT quotable phrases (each max 12 words) a drinker could say out loud to sound clued-in about this exact wine"],'+
-      '"term":"one wine term this bottle teaches, formatted as \\"Term — plain-English meaning\\" (max 18 words)"'+
+      '"term":"one wine term this bottle teaches, formatted as \\"Term — plain-English meaning\\" (max 18 words)",'+
+      '"matchNote":"one sentence giving an overall verdict on this wine as an experience — distinct from and complementary to the fit sentence, not repeating its wording or reasoning (max 22 words)"'+
       '}';
     window.claude.complete({messages:[{role:'user',content:prompt}]})
       .then(text=>{
@@ -71,7 +72,11 @@ function ScanCardsScreen({nav,back}){
     try{ return JSON.parse(sessionStorage.getItem('vinterest_scan_result')||'{}'); }catch(e){ return {}; }
   },[]);
   const wine=scanData.wine||null;
-  const existingRating=scanData.existingRating||0;
+  const existingRating=React.useMemo(()=>{
+    if(!wine) return 0;
+    const saved=WineHistory.getAll().find(w=>w.name===wine.name&&String(w.vintage)===String(wine.vintage));
+    return (saved&&saved.rating)||scanData.existingRating||0;
+  },[wine?.name,wine?.vintage]);
   const isDemo=scanData.demo===true;
   const scanReason=scanData.reason||'';
 
@@ -214,7 +219,7 @@ function CardFace({card,ctx,expanded}){
         </div>
       </div>
       <H>{verdict}</H>
-      <Body>{loading&&!gen?<ScanShimmer col={a}/>:(gen&&gen.fit)||'Scan builds your taste profile — the more you rate, the sharper this gets.'}</Body>
+      <Body>{loading&&!gen?<ScanShimmer col={a}/>:(gen&&gen.matchNote)||'Scan builds your taste profile — the more you rate, the sharper this gets.'}</Body>
       {expanded&&<div style={{width:'100%',marginTop:4,padding:'12px 14px',borderRadius:12,background:C.offWhite,border:`1px solid ${C.line}`,textAlign:'left'}}>
         <div style={{fontSize:13,fontWeight:700,color:C.mid,fontFamily:P,letterSpacing:'0.06em',textTransform:'uppercase',marginBottom:6}}>How we got this</div>
         <div style={{fontSize:14.5,color:C.ink2,fontFamily:P,lineHeight:1.55}}>We compare this wine's body, tannins, acidity and sweetness against the average of the {wine.type||'red'}s you've rated highly.{affNote>0.5?' Cards you\'ve saved have nudged this up a little.':affNote<-0.5?' Some saved signals pulled this down slightly.':''}</div>
@@ -370,6 +375,12 @@ function FinishFace({wine,intent,existingRating,nav,accent}){
     if(existingRating>0) WineHistory.rate(wine.name,wine.vintage,score);
     else WineHistory.add(wine,score);
     try{ if(window.XPSystem) XPSystem.awardAndToast([{type:'rate'}]); }catch(e){}
+    // carry the new rating into the session snapshot so Detail/list screens agree immediately
+    try{
+      const sd=JSON.parse(sessionStorage.getItem('vinterest_scan_result')||'{}');
+      sd.existingRating=score;
+      sessionStorage.setItem('vinterest_scan_result',JSON.stringify(sd));
+    }catch(e){}
     setSaved(true);
   }
   if(!canRate){
@@ -475,18 +486,59 @@ function CardShell({card,children,onExpand,onSave,saved,intent,existingRating,na
 function SwipeDeck({deck,ctx,idx,setIdx,go,savedKeys,saveCard,onExpand,onSwipeSave,intent,existingRating,nav}){
   const [drag,setDrag]=React.useState({dx:0,dy:0,active:false});
   const start=React.useRef(null);
+  const dragRef=React.useRef({dx:0,dy:0});
+  const topRef=React.useRef(null);
+  const cardRef=React.useRef(null);
   const top=deck[idx];
   const isFinish=top&&top.kind==='finish';
-  function down(e){ if(isFinish) return; const p=e.touches?e.touches[0]:e; start.current={x:p.clientX,y:p.clientY}; setDrag({dx:0,dy:0,active:true}); }
-  function move(e){ if(!start.current) return; const p=e.touches?e.touches[0]:e; setDrag({dx:p.clientX-start.current.x,dy:p.clientY-start.current.y,active:true}); }
-  function up(){
-    if(!start.current) return;
-    const {dx,dy}=drag; start.current=null;
-    if(dy<-90&&Math.abs(dy)>Math.abs(dx)){ setDrag({dx:0,dy:0,active:false}); onExpand(top); return; }
-    if(dx>110){ if(onSwipeSave&&!savedKeys.includes(top.key)) onSwipeSave(top); setDrag({dx:0,dy:0,active:false}); setTimeout(()=>go(1),10); return; }
-    if(dx<-110){ setDrag({dx:0,dy:0,active:false}); setTimeout(()=>go(1),10); return; }
-    setDrag({dx:0,dy:0,active:false});
-  }
+  topRef.current=top;
+
+  React.useEffect(()=>{
+    const el=cardRef.current;
+    if(!el) return;
+    function pt(e){ return e.touches?e.touches[0]:e; }
+    function onDown(e){
+      if(topRef.current&&topRef.current.kind==='finish') return;
+      const p=pt(e);
+      start.current={x:p.clientX,y:p.clientY};
+      dragRef.current={dx:0,dy:0};
+      setDrag({dx:0,dy:0,active:true});
+    }
+    function onMove(e){
+      if(!start.current) return;
+      const p=pt(e);
+      const dx=p.clientX-start.current.x, dy=p.clientY-start.current.y;
+      dragRef.current={dx,dy};
+      if(Math.abs(dx)>8||Math.abs(dy)>8) e.preventDefault();
+      setDrag({dx,dy,active:true});
+    }
+    function onUp(){
+      if(!start.current) return;
+      const {dx,dy}=dragRef.current;
+      start.current=null;
+      if(dy<-90&&Math.abs(dy)>Math.abs(dx)){ setDrag({dx:0,dy:0,active:false}); onExpand(topRef.current); return; }
+      if(dx>110){ if(onSwipeSave&&!savedKeys.includes(topRef.current.key)) onSwipeSave(topRef.current); setDrag({dx:0,dy:0,active:false}); setTimeout(()=>go(1),10); return; }
+      if(dx<-110){ setDrag({dx:0,dy:0,active:false}); setTimeout(()=>go(1),10); return; }
+      setDrag({dx:0,dy:0,active:false});
+    }
+    el.addEventListener('touchstart',onDown,{passive:true});
+    el.addEventListener('touchmove',onMove,{passive:false});
+    el.addEventListener('touchend',onUp,{passive:true});
+    el.addEventListener('touchcancel',onUp,{passive:true});
+    el.addEventListener('mousedown',onDown);
+    window.addEventListener('mousemove',onMove);
+    window.addEventListener('mouseup',onUp);
+    return()=>{
+      el.removeEventListener('touchstart',onDown);
+      el.removeEventListener('touchmove',onMove);
+      el.removeEventListener('touchend',onUp);
+      el.removeEventListener('touchcancel',onUp);
+      el.removeEventListener('mousedown',onDown);
+      window.removeEventListener('mousemove',onMove);
+      window.removeEventListener('mouseup',onUp);
+    };
+  },[idx,savedKeys]);
+
   return <div style={{flex:1,display:'flex',flexDirection:'column',padding:'8px 16px 14px',minHeight:0}}>
     <div style={{position:'relative',flex:1,minHeight:0}}>
       {deck.map((c,i)=>{
@@ -495,8 +547,8 @@ function SwipeDeck({deck,ctx,idx,setIdx,go,savedKeys,saveCard,onExpand,onSwipeSa
         const isTop=depth===0;
         const tf=isTop?`translate(${drag.dx}px,${drag.dy<0?drag.dy:drag.dy*0.4}px) rotate(${drag.dx*0.04}deg)`:`translateY(${depth*12}px) scale(${1-depth*0.045})`;
         const cc={...c,_wine:ctx.wine};
-        return <div key={c.key} onMouseDown={isTop?down:undefined} onMouseMove={isTop&&drag.active?move:undefined} onMouseUp={isTop?up:undefined} onMouseLeave={isTop&&drag.active?up:undefined} onTouchStart={isTop?down:undefined} onTouchMove={isTop?move:undefined} onTouchEnd={isTop?up:undefined}
-          style={{position:'absolute',inset:0,zIndex:10-depth,transform:tf,transition:drag.active&&isTop?'none':'transform .3s cubic-bezier(.34,1.1,.64,1)',opacity:depth>1?0:1,touchAction:'none',cursor:isTop&&!isFinish?'grab':'default'}}>
+        return <div key={c.key} ref={isTop?cardRef:undefined}
+          style={{position:'absolute',inset:0,zIndex:10-depth,transform:tf,transition:drag.active&&isTop?'none':'transform .3s cubic-bezier(.34,1.1,.64,1)',opacity:depth>1?0:1,touchAction:isTop&&!isFinish?'none':'auto',cursor:isTop&&!isFinish?'grab':'default'}}>
           <CardShell card={cc} onExpand={isTop&&!isFinish?()=>onExpand(c):undefined} onSave={()=>saveCard(c)} saved={savedKeys.includes(c.key)} intent={intent} existingRating={existingRating} nav={nav} style={{height:'100%'}}>
             <CardFace card={c} ctx={ctx}/>
           </CardShell>
