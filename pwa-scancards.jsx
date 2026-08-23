@@ -583,7 +583,7 @@ function CardShell({card,children,onSave,saved,intent,existingRating,nav,style})
 }
 
 /* deck style A — swipeable stack */
-function SwipeDeck({deck,ctx,idx,setIdx,go,savedKeys,saveCard,intent,existingRating,nav}){
+function SwipeDeck({deck,ctx,idx,setIdx,go,savedKeys,saveCard,onSwipeSave,intent,existingRating,nav}){
   const [drag,setDrag]=React.useState({dx:0,dy:0,active:false});
   const start=React.useRef(null);
   const dragRef=React.useRef({dx:0,dy:0});
