@@ -3,10 +3,13 @@
 /* ── helpers ── */
 function _norm(s){return(s||'').toLowerCase().replace('é','e');}
 function _avg(wines,field,fb){const ws=wines.filter(w=>w[field]!=null);return ws.length?ws.reduce((s,w)=>s+w[field],0)/ws.length:fb;}
-function _topByCount(arr){const c={};arr.forEach(v=>{if(v)c[v]=(c[v]||0)+1});return Object.entries(c).sort((a,b)=>b[1]-a[1]).map(e=>e[0]);}
-function _topGrapes(wines,n){const all=[];wines.forEach(w=>(w.grapes||[]).forEach(g=>{if(g)all.push(g)}));return _topByCount(all).slice(0,n);}
-function _topRegions(wines,n){return _topByCount(wines.map(w=>w.region).filter(Boolean)).slice(0,n);}
-function _topNotes(wines,n){const all=[];wines.forEach(w=>(w.tasting_notes||[]).forEach(t=>{if(t)all.push(t)}));return _topByCount(all).slice(0,n);}
+/* Rating-weighted average — wines you rated higher count for more of the profile than ones you scanned but rated low/not at all. */
+function _wavg(wines,field,fb){const ws=wines.filter(w=>w[field]!=null);if(!ws.length)return fb;let num=0,den=0;ws.forEach(w=>{const wt=Math.max(w.rating||55,5)/100;num+=w[field]*wt;den+=wt;});return den?num/den:fb;}
+/* Rating-weighted tally — an attribute (grape/region/note) earns weight from every wine it appears in, scaled by that wine's rating, so one obscure low-rated bottle can't outrank several wines you actually rated well. */
+function _topByWeightedCount(items){const c={};items.forEach(({v,rating})=>{if(v)c[v]=(c[v]||0)+Math.max(rating||55,5);});return Object.entries(c).sort((a,b)=>b[1]-a[1]).map(e=>e[0]);}
+function _topGrapes(wines,n){const all=[];wines.forEach(w=>(w.grapes||[]).forEach(g=>{if(g)all.push({v:g,rating:w.rating});}));return _topByWeightedCount(all).slice(0,n);}
+function _topRegions(wines,n){const all=wines.filter(w=>w.region).map(w=>({v:w.region,rating:w.rating}));return _topByWeightedCount(all).slice(0,n);}
+function _topNotes(wines,n){const all=[];wines.forEach(w=>(w.tasting_notes||[]).forEach(t=>{if(t)all.push({v:t,rating:w.rating});}));return _topByWeightedCount(all).slice(0,n);}
 
 /* ── Personality labels ── */
 function _personality(key,b,ta,ac,sw){
@@ -275,12 +278,12 @@ function WineDNAScreen({nav,back,showPro}){
   const typeStats=React.useMemo(()=>_TYPES.map(tp=>{
     const wines=allWines.filter(w=>_norm(w.type)===tp.key);
     const pct=allWines.length?Math.round(wines.length/allWines.length*100):0;
-    const avgB=_avg(wines,'body',0.65);
-    const avgT=_avg(wines,'tannins',0.55);
-    const avgA=_avg(wines,'acidity',0.60);
-    const avgS=_avg(wines,'sweetness',0.10);
-    const avgX=_avg(wines,'texture',0.3);
-    const avgE=_avg(wines,'effervescence',0.6);
+    const avgB=_wavg(wines,'body',0.65);
+    const avgT=_wavg(wines,'tannins',0.55);
+    const avgA=_wavg(wines,'acidity',0.60);
+    const avgS=_wavg(wines,'sweetness',0.10);
+    const avgX=_wavg(wines,'texture',0.3);
+    const avgE=_wavg(wines,'effervescence',0.6);
     const topGrapes=_topGrapes(wines,4);
     const topRegions=_topRegions(wines,4);
     const topNotes=_topNotes(wines,14);
@@ -296,13 +299,16 @@ function WineDNAScreen({nav,back,showPro}){
   /* LLM summary */
   React.useEffect(()=>{
     if(!t.wines.length) return;
-    const key=`vinterest_dna_v3_${t.key}_n${t.wines.length}`;
+    const key=`vinterest_dna_v4_${t.key}_n${t.wines.length}`;
     const cached=localStorage.getItem(key);
     if(cached){setGenSummaries(s=>({...s,[t.key]:cached}));return;}
     if(genSummaries[t.key]||generatingSummary===t.key) return;
     setGeneratingSummary(t.key);
     const wineList=t.wines.slice(0,10).map(w=>`${w.name}${w.vintage?' '+w.vintage:''}${w.region?' from '+w.region:''}${w.rating?' rated '+w.rating+'/100':''}`).join('; ');
-    const prompt=`My ${t.label.toLowerCase()} wine personality is "${t.personality}". I've rated: ${wineList}. Return ONLY raw JSON — no markdown, no code fences, no extra text, just the JSON object: {"preference":"one sentence on what I gravitate toward — max 18 words","why":"one sentence on why using specific grape or region names from my list — max 18 words","next":"one specific wine or region to explore next and a brief reason — max 18 words"}`;
+    const ratedAsc=[...t.wines].filter(w=>w.rating>0).sort((a,b)=>(a.rating||0)-(b.rating||0));
+    const hasLow=ratedAsc.length>=4;
+    const lowList=hasLow?ratedAsc.slice(0,3).map(w=>`${w.name}${w.vintage?' '+w.vintage:''}${w.region?' from '+w.region:''}${w.rating?' rated '+w.rating+'/100':''}`).join('; '):null;
+    const prompt=`My ${t.label.toLowerCase()} wine personality is "${t.personality}". I've rated: ${wineList}.${hasLow?` My lowest-rated ${t.label.toLowerCase()} wines are: ${lowList}.`:''} Return ONLY raw JSON — no markdown, no code fences, no extra text, just the JSON object: {"preference":"one sentence on what I gravitate toward — max 18 words","like":"one sentence on specifically what I like, using specific grape or region names from my highest-rated wines — max 18 words"${hasLow?',"dislike":"one sentence on what I tend to rate lower, using specific grape, region, or style traits from my lowest-rated wines — max 18 words"':''}}`;
     window.claude.complete({messages:[{role:'user',content:prompt}]})
       .then(text=>{const s=text.trim();localStorage.setItem(key,s);setGenSummaries(g=>({...g,[t.key]:s}));})
       .catch(()=>{})
@@ -490,9 +496,10 @@ function WineDNAScreen({nav,back,showPro}){
                   return(
                     <div style={{display:'flex',flexDirection:'column',gap:9}}>
                       {[
-                        {label:'Your Preference',text:sections.preference},
-                        {label:'Why You Like It', text:sections.why},
-                        {label:'Try Next',         text:sections.next},
+                        {label:'Your Preference',    text:sections.preference},
+                        {label:'What You Like',      text:sections.like||sections.why},
+                        {label:'What You Don\u2019t Like', text:sections.dislike},
+                        ...(t.gaps.length>0?[{label:'Try Next', text:`${t.gaps[0].wine}${t.gaps[0].region?' from '+t.gaps[0].region:''} \u2014 ${t.gaps[0].why}`}]:[]),
                       ].filter(s=>s.text).map((s,i)=>(
                         <div key={i}>
                           <div style={{fontSize:12,fontWeight:700,color:t.col,letterSpacing:'0.08em',textTransform:'uppercase',fontFamily:C.P,marginBottom:2}}>{s.label}</div>
@@ -770,7 +777,7 @@ function WineDNAScreen({nav,back,showPro}){
 
         {/* App version */}
         <div style={{textAlign:'center',padding:'12px 0 4px',opacity:0.45}}>
-          <span style={{fontSize:13,color:C.mid,fontFamily:C.P}}>Vinterest v1.0.47</span>
+          <span style={{fontSize:13,color:C.mid,fontFamily:C.P}}>Vinterest v1.0.49</span>
         </div>
 
         <div style={{height:8}}/>
