@@ -23,6 +23,7 @@ function Icon({n,sz=20,col=C.ink,style:s}){
     share:<><circle cx="14.5" cy="4.5" r="2" stroke={col} strokeWidth="1.5" fill="none"/><circle cx="5.5" cy="10" r="2" stroke={col} strokeWidth="1.5" fill="none"/><circle cx="14.5" cy="15.5" r="2" stroke={col} strokeWidth="1.5" fill="none"/><line x1="7.4" y1="9" x2="12.6" y2="5.5" stroke={col} strokeWidth="1.5"/><line x1="7.4" y1="11" x2="12.6" y2="14.5" stroke={col} strokeWidth="1.5"/></>,
     camera:<><rect x="2.5" y="6" width="15" height="11" rx="2" stroke={col} strokeWidth="1.6" fill="none"/><circle cx="10" cy="11.5" r="3" stroke={col} strokeWidth="1.6" fill="none"/><path d="M7.5 6L8.5 4h3l1 2" stroke={col} strokeWidth="1.4" fill="none" strokeLinejoin="round"/></>,
     check:<polyline points="3.5,10 7.5,14.5 16.5,5" stroke={col} strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"/>,
+    trash:<><path d="M4 6h12" stroke={col} strokeWidth="1.6" strokeLinecap="round"/><path d="M8 6V4.5a1 1 0 011-1h2a1 1 0 011 1V6" stroke={col} strokeWidth="1.6" fill="none"/><path d="M5.5 6l.7 9.5a1.5 1.5 0 001.5 1.4h4.6a1.5 1.5 0 001.5-1.4L14.5 6" stroke={col} strokeWidth="1.6" fill="none" strokeLinejoin="round"/><line x1="8.3" y1="9" x2="8.6" y2="14" stroke={col} strokeWidth="1.3" strokeLinecap="round"/><line x1="11.7" y1="9" x2="11.4" y2="14" stroke={col} strokeWidth="1.3" strokeLinecap="round"/></>,
     wine:<><path d="M7.5 2.5h5v5c0 3.5-1.8 5-2.5 5S7.5 11 7.5 8V2.5z" stroke={col} strokeWidth="1.5" fill="none" strokeLinejoin="round"/><line x1="10" y1="12.5" x2="10" y2="17" stroke={col} strokeWidth="1.5"/><line x1="7" y1="17" x2="13" y2="17" stroke={col} strokeWidth="1.5" strokeLinecap="round"/></>,
     globe:<><circle cx="10" cy="10" r="7.5" stroke={col} strokeWidth="1.5" fill="none"/><ellipse cx="10" cy="10" rx="3.5" ry="7.5" stroke={col} strokeWidth="1.2" fill="none"/><line x1="2.5" y1="10" x2="17.5" y2="10" stroke={col} strokeWidth="1.2"/></>,
     message:<><path d="M3 5h14a1 1 0 011 1v8a1 1 0 01-1 1H5l-3 2V6a1 1 0 011-1z" stroke={col} strokeWidth="1.5" fill="none" strokeLinejoin="round"/></>,
@@ -297,6 +298,11 @@ const WineHistory = {
     const wines = this.getAll();
     const w = wines.find(w => w.name===name && String(w.vintage)===String(vintage));
     if(w){ w.scan_intent=intent; this.save(wines); }
+  },
+  /* Permanently remove a scan (e.g. an accidental scan) from history. */
+  remove(name, vintage){
+    const wines = this.getAll().filter(w => !(w.name===name && String(w.vintage)===String(vintage)));
+    this.save(wines);
   },
   getProfile(){
     const wines = this.getAll();

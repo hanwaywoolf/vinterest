@@ -83,6 +83,14 @@ function WineDetailScreen({back,nav}){
     }
   }
 
+  const [confirmDelete,setConfirmDelete]=React.useState(false);
+  function deleteWine(){
+    if(!wine) return;
+    WineHistory.remove(wine.name,wine.vintage);
+    setConfirmDelete(false);
+    nav('mywines');
+  }
+
   return(
     <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden'}}>
       <div style={{background:C.white,padding:'14px 20px 0',flexShrink:0,borderBottom:`1px solid ${C.line}`}}>
@@ -97,6 +105,9 @@ function WineDetailScreen({back,nav}){
             <div onClick={shareWine} style={{width:34,height:34,borderRadius:17,background:shared?C.greenBg:C.offWhite,border:`1px solid ${shared?C.green:C.line}`,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',transition:'all .15s'}}>
               <Icon n={shared?'check':'share'} sz={17} col={shared?C.green:C.mid}/>
             </div>
+            {wine&&<div onClick={()=>setConfirmDelete(true)} style={{width:34,height:34,borderRadius:17,background:C.offWhite,border:`1px solid ${C.line}`,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer'}}>
+              <Icon n="trash" sz={16} col={C.mid}/>
+            </div>}
           </div>
         </div>
         <div style={{display:'flex',gap:14,alignItems:'flex-end',marginBottom:14}}>
@@ -120,6 +131,15 @@ function WineDetailScreen({back,nav}){
         {tab===1&&<DetailStory wine={wine} nav={nav} existingRating={existingRating}/>}
         {tab===2&&<DetailPrice wine={wine} nav={nav}/>}
       </div>
+      {confirmDelete&&<div onClick={()=>setConfirmDelete(false)} style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.5)',display:'flex',alignItems:'flex-end',zIndex:80}}>
+        <div onClick={e=>e.stopPropagation()} style={{background:C.white,borderRadius:'22px 22px 0 0',width:'100%',padding:'22px 20px 28px',display:'flex',flexDirection:'column',gap:14}}>
+          <div style={{width:40,height:4,borderRadius:2,background:C.line,margin:'0 auto 4px'}}/>
+          <div style={{fontSize:19,fontWeight:800,color:C.ink,fontFamily:C.P,textAlign:'center'}}>Delete this scan?</div>
+          <div style={{fontSize:15,color:C.mid,fontFamily:C.P,textAlign:'center',lineHeight:1.5}}>{wine?.name} will be permanently removed from your wine history, including any rating.</div>
+          <Btn full style={{background:C.cr,color:'#fff',border:'none'}} onClick={deleteWine}>Delete</Btn>
+          <Btn full onClick={()=>setConfirmDelete(false)}>Cancel</Btn>
+        </div>
+      </div>}
     </div>
   );
 }

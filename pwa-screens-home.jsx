@@ -118,33 +118,60 @@ function HomeScreen({nav, showPro, isTablet}){
   const nx=XPSystem.nextLevel(xpData.total);
   const pg=XPSystem.levelProgress(xpData.total);
 
-  /* Script generation */
+  /* Script generation — the LONG script is the single source of truth; the SHORT script is always
+     derived by condensing that exact long text (never generated independently), so facts like the
+     budget range can never disagree between the two lengths. */
   React.useEffect(()=>{
     if(!tabWines.length) return;
     const _rc=Regional.current();
     const _base=_rc.base;
     const _code=_rc.code;
-    const keyLong=`vinterest_script_long_${c.typeKey}_n${tabWines.length}_${_rc.code}_v2`;
-    const keyShort=`vinterest_script_short_${c.typeKey}_n${tabWines.length}_${_rc.code}_v2`;
-    const key=scriptLength==='long'?keyLong:keyShort;
-    const cached=localStorage.getItem(key);
-    if(cached){setGenScripts(s=>({...s,[c.typeKey]:cached}));return;}
+    const keyLong=`vinterest_script_long_${c.typeKey}_n${tabWines.length}_${_rc.code}_v3`;
+    const keyShort=`vinterest_script_short_${c.typeKey}_n${tabWines.length}_${_rc.code}_v3`;
+    const cachedLong=localStorage.getItem(keyLong);
+    const cachedShort=localStorage.getItem(keyShort);
+
+    function makeShortFrom(longText){
+      if(generating===c.typeKey+'_short') return;
+      setGenerating(c.typeKey+'_short');
+      const prompt=`Condense this sommelier script into ONE ultra-concise sentence (under 20 words), keeping the SAME facts, style, regions and budget range verbatim — do not invent a new budget number, only reuse the one already stated (or omit it if none was stated). Script: ${longText} Return ONLY the condensed script text in double quotes — nothing else.`;
+      window.claude.complete({messages:[{role:'user',content:prompt}]})
+        .then(text=>{const sc=text.trim();localStorage.setItem(keyShort,sc);if(scriptLength==='short')setGenScripts(g=>({...g,[c.typeKey]:sc}));})
+        .catch(()=>{})
+        .finally(()=>setGenerating(null));
+    }
+
+    if(scriptLength==='long'){
+      if(cachedLong){ setGenScripts(s=>({...s,[c.typeKey]:cachedLong})); return; }
+      if(generating===c.typeKey) return;
+      setGenerating(c.typeKey);
+      const wineList=tabWines.slice(0,8).map(w=>`${w.name}${w.vintage?' '+w.vintage:''} from ${w.region||w.country||'unknown'}`).join('; ');
+      const prompt=`I've scanned these ${c.label.toLowerCase()} wines: ${wineList}. Based ONLY on the wines I've chosen and their regions, write a 2 sentences max natural first-person sommelier script I could say to a restaurant sommelier. Reflect my apparent style and preferred regions. If you mention a budget or price range, it MUST use the plain ${_base} symbol plus the ${_code} code (e.g. "${_base}40–${_base}80 ${_code}") — never a country-prefixed symbol. Return ONLY the script text in double quotes — nothing else.`;
+      window.claude.complete({messages:[{role:'user',content:prompt}]})
+        .then(text=>{const sc=text.trim();localStorage.setItem(keyLong,sc);setGenScripts(g=>({...g,[c.typeKey]:sc}));})
+        .catch(()=>{})
+        .finally(()=>setGenerating(null));
+      return;
+    }
+
+    // scriptLength==='short'
+    if(cachedShort){ setGenScripts(s=>({...s,[c.typeKey]:cachedShort})); return; }
+    if(cachedLong){ makeShortFrom(cachedLong); return; }
+    // No long script yet — generate it first, then derive short from it.
     if(generating===c.typeKey) return;
     setGenerating(c.typeKey);
     const wineList=tabWines.slice(0,8).map(w=>`${w.name}${w.vintage?' '+w.vintage:''} from ${w.region||w.country||'unknown'}`).join('; ');
-    const lengthInstructions=scriptLength==='short'?`1 sentence, ultra-concise (under 20 words), and mention your typical budget range formatted EXACTLY like "${_base}40–${_base}80 ${_code}" (plain symbol, a number range, then the ${_code} currency code — never a country-prefixed symbol like CA$ or C$)`:'2 sentences max';
-    const prompt=`I've scanned these ${c.label.toLowerCase()} wines: ${wineList}. Based ONLY on the wines I've chosen and their regions, write a ${lengthInstructions} natural first-person sommelier script I could say to a restaurant sommelier. Reflect my apparent style and preferred regions. If you mention a budget or price range, it MUST use the plain ${_base} symbol plus the ${_code} code (e.g. "${_base}40–${_base}80 ${_code}") — never a country-prefixed symbol. Return ONLY the script text in double quotes — nothing else.`;
+    const prompt=`I've scanned these ${c.label.toLowerCase()} wines: ${wineList}. Based ONLY on the wines I've chosen and their regions, write a 2 sentences max natural first-person sommelier script I could say to a restaurant sommelier. Reflect my apparent style and preferred regions. If you mention a budget or price range, it MUST use the plain ${_base} symbol plus the ${_code} code (e.g. "${_base}40–${_base}80 ${_code}") — never a country-prefixed symbol. Return ONLY the script text in double quotes — nothing else.`;
     window.claude.complete({messages:[{role:'user',content:prompt}]})
-      .then(text=>{const sc=text.trim();localStorage.setItem(key,sc);setGenScripts(g=>({...g,[c.typeKey]:sc}));})
-      .catch(()=>{})
-      .finally(()=>setGenerating(null));
+      .then(text=>{const sc=text.trim();localStorage.setItem(keyLong,sc);setGenerating(null);makeShortFrom(sc);})
+      .catch(()=>setGenerating(null));
   },[activeType,allWines.length,scriptLength]);
 
   const typeColors={red:'#8B1A2F',white:'#B8963E',rosé:'#C47A8A',rose:'#C47A8A',sparkling:'#5E8FA8',orange:'#C1652B',dessert:'#8A5A2B',fortified:'#5C2A1E'};
   const colFor=w=>typeColors[(w.type||'red').toLowerCase().replace('é','e')]||C.cr;
 
   return(
-    <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden',background:C.bg}}>
+    <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden',background:C.bg,position:'relative'}}>
 
       {/* ── Fixed header: logo + always-visible Scan CTA ── */}
       <div style={{background:C.white,flexShrink:0}}>
@@ -221,20 +248,27 @@ function HomeScreen({nav, showPro, isTablet}){
 
         {/* Type selector + script + top wines */}
         <div style={{display:'flex',flexDirection:'column',gap:10}}>
-          {/* Type tabs — equal width sized to the longest visible label; wraps to a second row once more than 4 show */}
-          <div style={{position:'relative'}}>
-            <div style={{display:'flex',flexWrap:'wrap',gap:6}}>
-              {visibleCats.map((ct,i)=>{
+          {/* Type tabs — base four always fill one row; Orange/Dessert/Fortified (once scanned) sit on a second row below */}
+          <div style={{position:'relative',display:'flex',flexDirection:'column',gap:6}}>
+            <div style={{display:'flex',gap:6}}>
+              {cats.slice(0,4).map((ct,i)=>{
                 const disabled=typeCounts[ct.typeKey]===0;
                 const active=ct.typeKey===activeType;
-                const maxLen=Math.max(...visibleCats.map(x=>x.label.length));
-                return <div key={i} onClick={()=>pickType(ct)} style={{flex:`0 0 ${maxLen+3}ch`,textAlign:'center',padding:'8px 4px',borderRadius:10,background:active?ct.col+'18':C.offWhite,border:`1.5px solid ${active?ct.col+'55':'transparent'}`,cursor:'pointer',transition:'all .15s',opacity:disabled?0.4:1}}>
+                return <div key={i} onClick={()=>pickType(ct)} style={{flex:1,textAlign:'center',padding:'8px 4px',borderRadius:10,background:active?ct.col+'18':C.offWhite,border:`1.5px solid ${active?ct.col+'55':'transparent'}`,cursor:'pointer',transition:'all .15s',opacity:disabled?0.4:1}}>
                   <div style={{width:7,height:7,borderRadius:4,background:ct.col,margin:'0 auto 3px'}}/>
                   <div style={{fontSize:13,fontWeight:active?700:500,color:active?ct.col:C.mid,fontFamily:C.P}}>{ct.label}</div>
                 </div>;
               })}
             </div>
-            {tabToast&&<div style={{position:'absolute',top:'calc(100% + 6px)',left:0,right:0,textAlign:'center',fontSize:13,fontWeight:600,color:C.mid,fontFamily:C.P,background:C.offWhite,border:`1px solid ${C.line}`,borderRadius:8,padding:'6px 10px',zIndex:5}}>{tabToast}</div>}
+            {visibleCats.length>4&&<div style={{display:'flex',gap:6}}>
+              {visibleCats.slice(4).map((ct,i)=>{
+                const active=ct.typeKey===activeType;
+                return <div key={i} onClick={()=>pickType(ct)} style={{flex:1,textAlign:'center',padding:'8px 4px',borderRadius:10,background:active?ct.col+'18':C.offWhite,border:`1.5px solid ${active?ct.col+'55':'transparent'}`,cursor:'pointer',transition:'all .15s'}}>
+                  <div style={{width:7,height:7,borderRadius:4,background:ct.col,margin:'0 auto 3px'}}/>
+                  <div style={{fontSize:13,fontWeight:active?700:500,color:active?ct.col:C.mid,fontFamily:C.P}}>{ct.label}</div>
+                </div>;
+              })}
+            </div>}
           </div>
 
           {/* Script */}
@@ -256,7 +290,7 @@ function HomeScreen({nav, showPro, isTablet}){
             </div>
             {tabWines.length===0?(
               <div style={{fontSize:15,color:C.mid,fontFamily:C.P,fontStyle:'italic',lineHeight:1.6}}>Scan and rate some {c.label.toLowerCase()} to generate your personalised sommelier script.</div>
-            ):generating===c.typeKey?(
+            ):(generating===c.typeKey||generating===c.typeKey+'_short')?(
               <div style={{display:'flex',alignItems:'center',gap:8}}>
                 <div style={{width:14,height:14,borderRadius:7,border:'2px solid rgba(0,0,0,0.08)',borderTopColor:c.col,animation:'homeSpin .8s linear infinite',flexShrink:0}}/>
                 <span style={{fontSize:15,color:C.mid,fontFamily:C.P,fontStyle:'italic'}}>Writing…</span>
@@ -313,7 +347,9 @@ function HomeScreen({nav, showPro, isTablet}){
         <div style={{height:8}}/>
       </div>
       </div>
-      <style>{`@keyframes homeSpin{to{transform:rotate(360deg)}}`}</style>
+      {tabToast&&<div style={{position:'absolute',top:14,left:16,right:16,textAlign:'center',fontSize:14.5,fontWeight:700,color:'#fff',fontFamily:C.P,background:C.cr,borderRadius:12,padding:'12px 16px',zIndex:250,boxShadow:'0 6px 18px rgba(139,26,47,0.35)',animation:'homeToast 1.8s ease forwards'}}>{tabToast}</div>}
+      <style>{`@keyframes homeSpin{to{transform:rotate(360deg)}}
+@keyframes homeToast{0%{opacity:0;transform:translateY(-8px)}12%{opacity:1;transform:translateY(0)}80%{opacity:1}100%{opacity:0}}`}</style>
     </div>
   );
 }
