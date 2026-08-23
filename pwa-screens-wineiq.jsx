@@ -7,6 +7,8 @@ function _avg(wines,field,fb){const ws=wines.filter(w=>w[field]!=null);return ws
 function _wavg(wines,field,fb){const ws=wines.filter(w=>w[field]!=null);if(!ws.length)return fb;let num=0,den=0;ws.forEach(w=>{const wt=Math.max(w.rating||55,5)/100;num+=w[field]*wt;den+=wt;});return den?num/den:fb;}
 /* Rating-weighted tally — an attribute (grape/region/note) earns weight from every wine it appears in, scaled by that wine's rating, so one obscure low-rated bottle can't outrank several wines you actually rated well. */
 function _topByWeightedCount(items){const c={};items.forEach(({v,rating})=>{if(v)c[v]=(c[v]||0)+Math.max(rating||55,5);});return Object.entries(c).sort((a,b)=>b[1]-a[1]).map(e=>e[0]);}
+/* Traits (grapes/regions) that skew toward your lowest-rated bottles — used to keep "Explore Next" from recommending things anchored to what you don't like. */
+function _lowTraits(wines,pluck){const rated=wines.filter(w=>w.rating>0);if(rated.length<4)return new Set();const sorted=[...rated].sort((a,b)=>a.rating-b.rating);const cutoff=sorted[Math.max(0,Math.floor(sorted.length/3)-1)].rating;const low=sorted.filter(w=>w.rating<=cutoff);const set=new Set();low.forEach(w=>pluck(w).forEach(v=>{if(v)set.add(v.toLowerCase());}));return set;}
 function _topGrapes(wines,n){const all=[];wines.forEach(w=>(w.grapes||[]).forEach(g=>{if(g)all.push({v:g,rating:w.rating});}));return _topByWeightedCount(all).slice(0,n);}
 function _topRegions(wines,n){const all=wines.filter(w=>w.region).map(w=>({v:w.region,rating:w.rating}));return _topByWeightedCount(all).slice(0,n);}
 function _topNotes(wines,n){const all=[];wines.forEach(w=>(w.tasting_notes||[]).forEach(t=>{if(t)all.push({v:t,rating:w.rating});}));return _topByWeightedCount(all).slice(0,n);}
@@ -93,32 +95,44 @@ function _dnaWhy(axis,val,topGrapes,topRegions){
 }
 
 /* ── Gap map ── */
-function _gaps(typeKey,avgB,avgT,avgA,topGrapes,topRegions){
+function _gaps(typeKey,avgB,avgT,avgA,topGrapes,topRegions,wines){
   const rgs=new Set(topRegions.map(r=>(r||'').toLowerCase()));
   const gps=new Set(topGrapes.map(g=>(g||'').toLowerCase()));
+  const lowRgs=_lowTraits(wines,w=>[w.region]);
+  const lowGps=_lowTraits(wines,w=>w.grapes||[]);
+  const topG=topGrapes[0],topR=topRegions[0];
+  // Every suggestion's copy names only your OWN top grape/region as the reason — never a comparison to a specific
+  // third-party bottle, so it can't accidentally sell a wine by likening it to something you rated low.
   const pool={
     red:[
-      {wine:'Ribera del Duero Reserva',region:'Spain',why:'Shares Barolo\'s grip and earthy depth with brighter red fruit and a more sun-baked savannah note.',cond:avgT>=0.60&&!rgs.has('ribera del duero')},
-      {wine:'Côte-Rôtie (Syrah)',region:'Northern Rhône, France',why:'If you love structured reds, Côte-Rôtie Syrah adds violet and smoked-meat complexity entirely absent from your collection.',cond:avgB>=0.65&&!gps.has('syrah')},
-      {wine:'Baga from Bairrada',region:'Portugal',why:'High tannins and acidity like Nebbiolo, but with a wild Atlantic character completely new to your cellar.',cond:avgT>=0.65&&!rgs.has('portugal')},
-      {wine:'Etna Rosso (Nerello Mascalese)',region:'Sicily',why:'Volcanic reds with Burgundy elegance — earthy, high-acid, with a mineral lift none of your current picks have.',cond:avgA>=0.60&&!rgs.has('sicily')},
+      {wine:'Aglianico from Taurasi',region:'Campania, Italy',anchorGrapes:['tempranillo','sangiovese','cabernet sauvignon','merlot'],why:`Similar grip and structure to your ${topG||'favorite reds'}, with a smoky, volcanic character you haven't explored.`,cond:avgT>=0.60&&!rgs.has('campania')},
+      {wine:'Côte-Rôtie (Syrah)',region:'Northern Rhône, France',anchorGrapes:['syrah','shiraz'],why:`Builds on your love of ${topG||'Syrah'} with violet and smoked-meat notes your current bottles don't have.`,cond:avgB>=0.65&&(gps.has('syrah')||gps.has('shiraz'))},
+      {wine:'Douro Red Blend',region:'Portugal',anchorGrapes:['tempranillo','touriga nacional'],why:`Rooted in the same grip and dark fruit as your ${topG||'top reds'}, from a region you haven't scanned yet.`,cond:avgT>=0.60&&!rgs.has('douro')&&!rgs.has('portugal')},
+      {wine:'Etna Rosso (Nerello Mascalese)',region:'Sicily',anchorRegions:['tuscany','piedmont'],why:`Shares the high-acid, earthy backbone of your ${topR||'top region'} reds, with a volcanic mineral edge that's new.`,cond:avgA>=0.60&&!rgs.has('sicily')},
     ],
     white:[
-      {wine:'Grüner Veltliner Smaragd',region:'Wachau, Austria',why:'Same piercing acidity as your Chablis, with a white pepper and herb dimension you haven\'t tried yet.',cond:avgA>=0.65&&!rgs.has('austria')},
-      {wine:'Assyrtiko from Santorini',region:'Greece',why:'Bone-dry, volcanic, searingly precise — takes your mineral instinct beyond what Burgundy offers.',cond:avgA>=0.62&&!rgs.has('greece')},
-      {wine:'Aged White Rioja',region:'Spain',why:'If you\'ve never tried oxidatively-aged white wine, White Rioja is a revelation — nutty, complex, textural.',cond:!rgs.has('rioja')},
+      {wine:'Grüner Veltliner Smaragd',region:'Wachau, Austria',anchorRegions:['burgundy','chablis','loire'],why:`Matches the piercing acidity you go for in ${topR||'your top whites'}, with a white pepper note you haven't tried.`,cond:avgA>=0.65&&!rgs.has('austria')},
+      {wine:'Assyrtiko from Santorini',region:'Greece',anchorRegions:['chablis','burgundy'],why:`Takes the mineral drive of your ${topR||'top whites'} to a bone-dry, volcanic extreme.`,cond:avgA>=0.62&&!rgs.has('greece')},
+      {wine:'Aged White Rioja',region:'Spain',anchorRegions:['rioja'],why:`From the same region as your ${topR||'favorite'} reds, but oxidatively aged for a nutty, textural white style you haven't tried.`,cond:!rgs.has('rioja')&&rgs.has('spain')},
     ],
     rose:[
-      {wine:'Bandol Rosé (Mourvèdre)',region:'Provence, France',why:'Pushes your bone-dry Provençal instinct into richer, more saline, garrigue-scented territory.',cond:!gps.has('mourvèdre')},
-      {wine:'Tavel Rosé',region:'Rhône Valley, France',why:'The boldest dry rosé in France — challenges your light Provençal palette with real structure and food-worthiness.',cond:avgB<0.55},
+      {wine:'Bandol Rosé (Mourvèdre)',region:'Provence, France',anchorRegions:['provence'],why:`Pushes your bone-dry ${topR||'Provençal'} instinct into richer, more saline territory.`,cond:rgs.has('provence')&&!lowGps.has('mourvèdre')&&!lowGps.has('mourvedre')},
+      {wine:'Tavel Rosé',region:'Rhône Valley, France',why:'The boldest dry rosé in France — challenges a lighter palate with real structure and food-worthiness.',cond:avgB<0.55},
     ],
     sparkling:[
-      {wine:'Blanc de Noirs (Meunier grower)',region:'Vallée de la Marne',why:'A grower Meunier Champagne takes your bready instinct toward wilder, earthier complexity.',cond:avgB>=0.55},
-      {wine:'Aged Vintage Champagne',region:'Champagne',why:'Ten-plus years on lees pushes your toasty preference to its extreme — deep oxidative notes and extraordinary length.',cond:true},
-      {wine:'Pét-Nat from Loire',region:'France',why:'The structural opposite of your picks — wild, cloudy, funky. A useful contrast to define what you love about your favourites.',cond:avgA>=0.65},
+      {wine:'Blanc de Noirs (Meunier grower)',region:'Vallée de la Marne',why:'A grower Meunier Champagne takes a bready, toasty preference toward wilder, earthier complexity.',cond:avgB>=0.55},
+      {wine:'Aged Vintage Champagne',region:'Champagne',why:'Ten-plus years on lees pushes a toasty preference to its extreme — deep oxidative notes and extraordinary length.',cond:true},
+      {wine:'Pét-Nat from Loire',region:'France',why:'A useful contrast to your polished picks — wild, cloudy, funky, and structurally the opposite.',cond:avgA>=0.65},
     ],
   };
-  return (pool[typeKey]||[]).filter(s=>s.cond).slice(0,2);
+  return (pool[typeKey]||[]).filter(s=>{
+    if(!s.cond) return false;
+    if(s.anchorGrapes&&!s.anchorGrapes.some(g=>gps.has(g))) return false;
+    if(s.anchorRegions&&!s.anchorRegions.some(r=>rgs.has(r))) return false;
+    if(s.avoidGrapes&&s.avoidGrapes.some(g=>lowGps.has(g))) return false;
+    if(s.avoidRegions&&s.avoidRegions.some(r=>lowRgs.has(r))) return false;
+    return true;
+  }).slice(0,2);
 }
 
 /* ── Flavour clusters ── */
@@ -289,7 +303,7 @@ function WineDNAScreen({nav,back,showPro}){
     const topNotes=_topNotes(wines,14);
     const noteClusters=_clusterNotes(topNotes);
     const personality=_personality(tp.key,avgB,avgT,avgA,avgS);
-    const gaps=_gaps(tp.key,avgB,avgT,avgA,topGrapes,topRegions);
+    const gaps=_gaps(tp.key,avgB,avgT,avgA,topGrapes,topRegions,wines);
     const topWines=[...wines].filter(w=>w.rating>0).sort((a,b)=>(b.rating||0)-(a.rating||0)).slice(0,3);
     return{...tp,wines,pct,avgB,avgT,avgA,avgS,avgX,avgE,topGrapes,topRegions,topNotes,noteClusters,personality,gaps,topWines};
   }),[allWines.length]);
@@ -299,16 +313,18 @@ function WineDNAScreen({nav,back,showPro}){
   /* LLM summary */
   React.useEffect(()=>{
     if(!t.wines.length) return;
-    const key=`vinterest_dna_v4_${t.key}_n${t.wines.length}`;
+    const key=`vinterest_dna_v5_${t.key}_n${t.wines.length}`;
     const cached=localStorage.getItem(key);
     if(cached){setGenSummaries(s=>({...s,[t.key]:cached}));return;}
     if(genSummaries[t.key]||generatingSummary===t.key) return;
     setGeneratingSummary(t.key);
-    const wineList=t.wines.slice(0,10).map(w=>`${w.name}${w.vintage?' '+w.vintage:''}${w.region?' from '+w.region:''}${w.rating?' rated '+w.rating+'/100':''}`).join('; ');
     const ratedAsc=[...t.wines].filter(w=>w.rating>0).sort((a,b)=>(a.rating||0)-(b.rating||0));
     const hasLow=ratedAsc.length>=4;
-    const lowList=hasLow?ratedAsc.slice(0,3).map(w=>`${w.name}${w.vintage?' '+w.vintage:''}${w.region?' from '+w.region:''}${w.rating?' rated '+w.rating+'/100':''}`).join('; '):null;
-    const prompt=`My ${t.label.toLowerCase()} wine personality is "${t.personality}". I've rated: ${wineList}.${hasLow?` My lowest-rated ${t.label.toLowerCase()} wines are: ${lowList}.`:''} Return ONLY raw JSON — no markdown, no code fences, no extra text, just the JSON object: {"preference":"one sentence on what I gravitate toward — max 18 words","like":"one sentence on specifically what I like, using specific grape or region names from my highest-rated wines — max 18 words"${hasLow?',"dislike":"one sentence on what I tend to rate lower, using specific grape, region, or style traits from my lowest-rated wines — max 18 words"':''}}`;
+    const topWinesForPrompt=[...t.wines].filter(w=>w.rating>0).sort((a,b)=>(b.rating||0)-(a.rating||0)).slice(0,5);
+    const lowWinesForPrompt=hasLow?ratedAsc.slice(0,3):[];
+    const wineList=topWinesForPrompt.map(w=>`${w.name}${w.vintage?' '+w.vintage:''}${w.region?' from '+w.region:''}${w.rating?' rated '+w.rating+'/100':''}`).join('; ');
+    const lowList=lowWinesForPrompt.map(w=>`${w.name}${w.vintage?' '+w.vintage:''}${w.region?' from '+w.region:''}${w.rating?' rated '+w.rating+'/100':''}`).join('; ');
+    const prompt=`My ${t.label.toLowerCase()} wine personality is "${t.personality}". My computed top grapes are: ${t.topGrapes.join(', ')||'none'}. My computed top regions are: ${t.topRegions.join(', ')||'none'}. My highest-rated ${t.label.toLowerCase()} wines: ${wineList||'none'}.${hasLow?` My lowest-rated ${t.label.toLowerCase()} wines: ${lowList}.`:''} Return ONLY raw JSON — no markdown, no code fences, no extra text, just the JSON object: {"preference":"one sentence on what I gravitate toward — max 18 words","like":"one sentence on specifically what I like — you MUST only name grapes/regions from the computed top grapes/regions or highest-rated wines lists above, never invent or infer any other grape or region — max 18 words"${hasLow?',"dislike":"one sentence on what I tend to rate lower — you MUST only name grapes, regions, or style traits drawn from my lowest-rated wines list above, never invent others — max 18 words"':''}}`;
     window.claude.complete({messages:[{role:'user',content:prompt}]})
       .then(text=>{const s=text.trim();localStorage.setItem(key,s);setGenSummaries(g=>({...g,[t.key]:s}));})
       .catch(()=>{})
@@ -777,7 +793,7 @@ function WineDNAScreen({nav,back,showPro}){
 
         {/* App version */}
         <div style={{textAlign:'center',padding:'12px 0 4px',opacity:0.45}}>
-          <span style={{fontSize:13,color:C.mid,fontFamily:C.P}}>Vinterest v1.0.49</span>
+          <span style={{fontSize:13,color:C.mid,fontFamily:C.P}}>Vinterest v1.0.52</span>
         </div>
 
         <div style={{height:8}}/>
