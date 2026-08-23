@@ -283,7 +283,6 @@ function CardFace({card,ctx}){
     const pct=matchPct;
     const verdict=pct==null?'New for your palate':pct>=90?'A near-perfect match':pct>=78?'A strong match':pct>=63?'A solid match, worth it':pct>=48?'Worth a try':pct>=32?'A bit of a stretch':'Outside your usual';
     const r=52,circ=2*Math.PI*r,off=circ*(1-(pct||0)/100);
-    const affNote=WineAffinity.scoreFor(wine);
     const dnaFallback=dna&&dna.topGrape?`Your ${(wine.type||'red')}s lean ${dna.topGrape}${dna.topRegion?' from '+dna.topRegion:''} — ${(wine.grapes||[]).some(g=>(g||'').toLowerCase()===dna.topGrape.toLowerCase())?'this bottle lines up with that.':'this one branches out a bit from that.'}`:'Scan and rate a few more to sharpen this.';
     return <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:16,textAlign:'center'}}>
       <div style={{position:'relative',width:150,height:150}}>
@@ -300,7 +299,7 @@ function CardFace({card,ctx}){
       <Body big>{loading&&!gen?<ScanShimmer col={a}/>:(gen&&gen.matchNote)||dnaFallback}</Body>
       {expanded&&<div style={{width:'100%',marginTop:4,padding:'12px 14px',borderRadius:12,background:C.offWhite,border:`1px solid ${C.line}`,textAlign:'left'}}>
         <div style={{fontSize:13,fontWeight:700,color:C.mid,fontFamily:P,letterSpacing:'0.06em',textTransform:'uppercase',marginBottom:6}}>How we got this</div>
-        <div style={{fontSize:14.5,color:C.ink2,fontFamily:P,lineHeight:1.55}}>We compare this wine's body, tannins, acidity and sweetness against the average of the {wine.type||'red'}s you've rated highly{dna&&dna.topGrape?` — right now that's mostly ${dna.topGrape}${dna.topRegion?' from '+dna.topRegion:''}`:''}.{affNote>0.5?' Cards you\'ve saved have nudged this up a little.':affNote<-0.5?' Some saved signals pulled this down slightly.':''}</div>
+        <div style={{fontSize:14.5,color:C.ink2,fontFamily:P,lineHeight:1.55}}>We compare this wine's body, tannins, acidity and sweetness against the average of the {wine.type||'red'}s you've rated highly{dna&&dna.topGrape?` — right now that's mostly ${dna.topGrape}${dna.topRegion?' from '+dna.topRegion:''}`:''}.</div>
       </div>}
     </div>;
   }
@@ -526,25 +525,11 @@ function CardDeck({deckStyle,wine,gen,loading,matchPct,curr,scanData,intent,canR
   const cards=React.useMemo(()=>buildCards({wine,gen,matchPct,curr,scanData,intent}),[wine&&wine.name,gen,matchPct,intent]);
   const ctx={wine,gen,loading,matchPct,curr,scanData,intent,dna};
   const [idx,setIdx]=React.useState(()=>startAtEnd?Math.max(0,cards.length-1):0);
-  const [savedKeys,setSavedKeys]=React.useState(()=>{ try{ return JSON.parse(sessionStorage.getItem('vinterest_scan_saved_'+((wine&&wine.name)||''))||'[]'); }catch(e){ return []; } });
-  const [toast,setToast]=React.useState(null);
-
-  function saveCard(card){
-    if(card.key==='finish') return;
-    if(savedKeys.includes(card.key)){ // unsave
-      const next=savedKeys.filter(k=>k!==card.key); setSavedKeys(next); persistSaved(next); return;
-    }
-    const next=[...savedKeys,card.key]; setSavedKeys(next); persistSaved(next);
-    // saving positive-signal cards feeds the match engine
-    if(['fit','origin','fact','match','taste','talk'].includes(card.key)) WineAffinity.bump(wine,card.key==='fit'?1:0.5);
-    setToast('Saved — this shapes your matches'); setTimeout(()=>setToast(null),1600);
-  }
-  function persistSaved(arr){ try{ sessionStorage.setItem('vinterest_scan_saved_'+((wine&&wine.name)||''),JSON.stringify(arr)); }catch(e){} }
 
   const total=cards.length;
   const go=d=>setIdx(i=>Math.max(0,Math.min(total-1,i+d)));
 
-  const common={cards,ctx,savedKeys,saveCard,intent,existingRating,nav,accent:C.cr};
+  const common={cards,ctx,intent,existingRating,nav,accent:C.cr};
 
   return <div style={{flex:1,display:'flex',flexDirection:'column',minHeight:0,position:'relative'}}>
     {/* progress dots */}
@@ -554,27 +539,20 @@ function CardDeck({deckStyle,wine,gen,loading,matchPct,curr,scanData,intent,canR
       ))}
     </div>
 
-    {deckStyle==='deck'&&<SwipeDeck idx={idx} setIdx={setIdx} go={go} {...common} deck={cards} onSwipeSave={saveCard}/>}
+    {deckStyle==='deck'&&<SwipeDeck idx={idx} setIdx={setIdx} go={go} {...common} deck={cards}/>}
     {deckStyle==='carousel'&&<Carousel {...common}/>}
     {deckStyle==='feed'&&<Feed {...common}/>}
-
-    {toast&&<div style={{position:'absolute',bottom:20,left:'50%',transform:'translateX(-50%)',background:C.ink,color:'#fff',padding:'9px 16px',borderRadius:22,fontSize:13.5,fontWeight:600,fontFamily:C.P,zIndex:40,animation:'scPop .2s ease',display:'flex',alignItems:'center',gap:7,whiteSpace:'nowrap'}}><Icon n="check" sz={14} col="#fff"/>{toast}</div>}
   </div>;
 }
 
 /* shared card chrome */
-function CardShell({card,children,onSave,saved,intent,existingRating,nav,style}){
+function CardShell({card,children,intent,existingRating,nav,style}){
   const isFinish=card.kind==='finish';
   return <div style={{background:C.white,borderRadius:22,border:`1px solid ${C.line}`,boxShadow:'0 6px 22px rgba(0,0,0,0.08)',display:'flex',flexDirection:'column',overflow:'hidden',...style}}>
     <div style={{height:5,background:card.accent,flexShrink:0}}/>
     <div style={{padding:'16px 18px 6px',display:'flex',alignItems:'center',gap:9,flexShrink:0}}>
       <div style={{width:30,height:30,borderRadius:9,background:card.soft,display:'flex',alignItems:'center',justifyContent:'center'}}><Icon n={card.icon} sz={16} col={card.accent}/></div>
       <span style={{fontSize:12.5,fontWeight:700,color:card.accent,fontFamily:C.P,letterSpacing:'0.09em',textTransform:'uppercase'}}>{card.eyebrow}</span>
-      {!isFinish&&<div style={{marginLeft:'auto',display:'flex',gap:6}}>
-        <div onClick={e=>{e.stopPropagation();onSave&&onSave();}} title="Save" style={{width:32,height:32,borderRadius:16,background:saved?card.soft:C.offWhite,border:`1px solid ${saved?card.accent+'44':C.line}`,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer'}}>
-          <svg viewBox="0 0 20 20" width={16} height={16}><path d="M10 16.5C10 16.5 3 12 3 7.5C3 5 5 3.2 7.2 3.2c1.5 0 2.5 1 2.8 1.8.3-.8 1.3-1.8 2.8-1.8C15 3.2 17 5 17 7.5c0 4.5-7 9-7 9z" stroke={saved?card.accent:C.mid} strokeWidth="1.6" fill={saved?card.accent:'none'}/></svg>
-        </div>
-      </div>}
     </div>
     <div className="sc-scroll" style={{padding:'8px 18px 18px',overflowY:'auto',flex:1,minHeight:0}}>
       {isFinish?<FinishFace wine={card._wine} intent={intent} existingRating={existingRating} nav={nav} accent={card.accent}/>:children}
@@ -583,7 +561,7 @@ function CardShell({card,children,onSave,saved,intent,existingRating,nav,style})
 }
 
 /* deck style A — swipeable stack */
-function SwipeDeck({deck,ctx,idx,setIdx,go,savedKeys,saveCard,onSwipeSave,intent,existingRating,nav}){
+function SwipeDeck({deck,ctx,idx,setIdx,go,intent,existingRating,nav}){
   const [drag,setDrag]=React.useState({dx:0,dy:0,active:false});
   const start=React.useRef(null);
   const dragRef=React.useRef({dx:0,dy:0});
@@ -609,15 +587,17 @@ function SwipeDeck({deck,ctx,idx,setIdx,go,savedKeys,saveCard,onSwipeSave,intent
       const p=pt(e);
       const dx=p.clientX-start.current.x, dy=p.clientY-start.current.y;
       dragRef.current={dx,dy};
-      if(Math.abs(dx)>8||Math.abs(dy)>8) e.preventDefault();
+      // Only hijack the gesture once it's clearly a horizontal drag — otherwise let the browser's
+      // native vertical scroll handle it so long card content stays scrollable.
+      if(Math.abs(dx)>8&&Math.abs(dx)>Math.abs(dy)) e.preventDefault();
       setDrag({dx,dy,active:true});
     }
     function onUp(){
       if(!start.current) return;
       const {dx}=dragRef.current;
       start.current=null;
-      if(dx>110){ if(onSwipeSave&&!savedKeys.includes(topRef.current.key)) onSwipeSave(topRef.current); setDrag({dx:0,dy:0,active:false}); setTimeout(()=>go(1),10); return; }
-      if(dx<-110){ setDrag({dx:0,dy:0,active:false}); setTimeout(()=>go(-1),10); return; }
+      if(dx<-110){ setDrag({dx:0,dy:0,active:false}); setTimeout(()=>go(1),10); return; }
+      if(dx>110){ setDrag({dx:0,dy:0,active:false}); setTimeout(()=>go(-1),10); return; }
       setDrag({dx:0,dy:0,active:false});
     }
     el.addEventListener('touchstart',onDown,{passive:true});
@@ -636,7 +616,7 @@ function SwipeDeck({deck,ctx,idx,setIdx,go,savedKeys,saveCard,onSwipeSave,intent
       window.removeEventListener('mousemove',onMove);
       window.removeEventListener('mouseup',onUp);
     };
-  },[idx,savedKeys]);
+  },[idx]);
 
   return <div style={{flex:1,display:'flex',flexDirection:'column',padding:'8px 16px 14px',minHeight:0}}>
     <div style={{position:'relative',flex:1,minHeight:0}}>
@@ -647,11 +627,11 @@ function SwipeDeck({deck,ctx,idx,setIdx,go,savedKeys,saveCard,onSwipeSave,intent
         const tf=isTop?`translate(${drag.dx}px,${drag.dy<0?drag.dy:drag.dy*0.4}px) rotate(${drag.dx*0.04}deg)`:`translateY(${depth*12}px) scale(${1-depth*0.045})`;
         const cc={...c,_wine:ctx.wine};
         return <div key={c.key} ref={isTop?cardRef:undefined}
-          style={{position:'absolute',inset:0,zIndex:10-depth,transform:tf,transition:drag.active&&isTop?'none':'transform .3s cubic-bezier(.34,1.1,.64,1)',opacity:depth>1?0:1,touchAction:isTop&&!isFinish?'none':'auto',cursor:isTop&&!isFinish?'grab':'default'}}>
-          <CardShell card={cc} onSave={()=>saveCard(c)} saved={savedKeys.includes(c.key)} intent={intent} existingRating={existingRating} nav={nav} style={{height:'100%'}}>
+          style={{position:'absolute',inset:0,zIndex:10-depth,transform:tf,transition:drag.active&&isTop?'none':'transform .3s cubic-bezier(.34,1.1,.64,1)',opacity:depth>1?0:1,touchAction:isTop&&!isFinish?'pan-y':'auto',cursor:isTop&&!isFinish?'grab':'default'}}>
+          <CardShell card={cc} intent={intent} existingRating={existingRating} nav={nav} style={{height:'100%'}}>
             <CardFace card={c} ctx={ctx}/>
           </CardShell>
-          {isTop&&Math.abs(drag.dx)>40&&!isFinish&&<div style={{position:'absolute',top:24,[drag.dx>0?'left':'right']:24,padding:'6px 14px',borderRadius:10,border:`2.5px solid ${drag.dx>0?C.green:C.mid}`,color:drag.dx>0?C.green:C.mid,fontSize:15,fontWeight:800,fontFamily:C.P,transform:`rotate(${drag.dx>0?-12:12}deg)`,background:'rgba(255,255,255,0.9)',letterSpacing:'0.05em'}}>{drag.dx>0?'SAVE':'BACK'}</div>}
+          {isTop&&Math.abs(drag.dx)>40&&!isFinish&&<div style={{position:'absolute',top:24,[drag.dx<0?'right':'left']:24,padding:'6px 14px',borderRadius:10,border:`2.5px solid ${C.mid}`,color:C.mid,fontSize:15,fontWeight:800,fontFamily:C.P,transform:`rotate(${drag.dx<0?12:-12}deg)`,background:'rgba(255,255,255,0.9)',letterSpacing:'0.05em'}}>{drag.dx<0?'NEXT':'BACK'}</div>}
         </div>;
       })}
     </div>
@@ -665,12 +645,12 @@ function SwipeDeck({deck,ctx,idx,setIdx,go,savedKeys,saveCard,onSwipeSave,intent
 }
 
 /* deck style B — horizontal carousel */
-function Carousel({cards,ctx,savedKeys,saveCard,intent,existingRating,nav}){
+function Carousel({cards,ctx,intent,existingRating,nav}){
   return <div className="sc-scroll" style={{flex:1,display:'flex',overflowX:'auto',scrollSnapType:'x mandatory',gap:14,padding:'8px 16px 18px',minHeight:0}}>
     {cards.map(c=>{
       const cc={...c,_wine:ctx.wine};
       return <div key={c.key} style={{scrollSnapAlign:'center',flex:'0 0 86%',maxWidth:360,display:'flex'}}>
-        <CardShell card={cc} onSave={()=>saveCard(c)} saved={savedKeys.includes(c.key)} intent={intent} existingRating={existingRating} nav={nav} style={{width:'100%',minHeight:0}}>
+        <CardShell card={cc} intent={intent} existingRating={existingRating} nav={nav} style={{width:'100%',minHeight:0}}>
           <CardFace card={c} ctx={ctx}/>
         </CardShell>
       </div>;
@@ -679,12 +659,12 @@ function Carousel({cards,ctx,savedKeys,saveCard,intent,existingRating,nav}){
 }
 
 /* deck style C — vertical feed */
-function Feed({cards,ctx,savedKeys,saveCard,intent,existingRating,nav}){
+function Feed({cards,ctx,intent,existingRating,nav}){
   return <div className="sc-scroll" style={{flex:1,overflowY:'auto',padding:'8px 16px 24px',display:'flex',flexDirection:'column',gap:14,minHeight:0}}>
     {cards.map(c=>{
       const cc={...c,_wine:ctx.wine};
       return <div key={c.key} style={{animation:'scPop .3s ease both'}}>
-        <CardShell card={cc} onSave={()=>saveCard(c)} saved={savedKeys.includes(c.key)} intent={intent} existingRating={existingRating} nav={nav}>
+        <CardShell card={cc} intent={intent} existingRating={existingRating} nav={nav}>
           <CardFace card={c} ctx={ctx}/>
         </CardShell>
       </div>;
