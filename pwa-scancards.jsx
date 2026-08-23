@@ -212,8 +212,9 @@ function buildCards({wine,gen,matchPct,curr,scanData,intent}){
   return cards;
 }
 
-/* renders the body of one card. `expanded` = full-screen sheet mode. */
-function CardFace({card,ctx,expanded}){
+/* renders the body of one card — always at full detail; there is no separate expand/collapse mode, everything ships on the main screen. */
+function CardFace({card,ctx}){
+  const expanded=true;
   const {wine,gen,loading,matchPct,curr,scanData,intent,dna}=ctx;
   const a=card.accent;
   const P=C.P;
@@ -421,12 +422,18 @@ function FinishFace({wine,intent,existingRating,nav,accent}){
   }
   if(confirmStep){
     return <div style={{display:'flex',flexDirection:'column',gap:16,alignItems:'center',textAlign:'center'}}>
-      <div style={{width:56,height:56,borderRadius:28,background:C.amberBg,border:`1px solid ${C.amber}35`,display:'flex',alignItems:'center',justifyContent:'center'}}><Icon n="star" sz={26} col={C.amber}/></div>
-      <div style={{fontSize:21,fontWeight:800,color:C.ink,fontFamily:C.P,lineHeight:1.2}}>You already rated this one</div>
-      <div style={{fontSize:15.5,color:C.ink2,fontFamily:C.P,lineHeight:1.55}}>You gave {wine.name}{wine.vintage&&wine.vintage!==0?' '+wine.vintage:''} a {existingRating} last time. Leave it as is, or rate it again.</div>
+      <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:4}}>
+        <div style={{display:'flex',alignItems:'baseline',gap:4}}>
+          <span style={{fontSize:64,fontWeight:800,color:C.amber,fontFamily:C.P,lineHeight:1}}>{existingRating}</span>
+          <span style={{fontSize:16,fontWeight:700,color:C.mid,fontFamily:C.P}}>/100</span>
+        </div>
+        <div style={{fontSize:12.5,fontWeight:700,color:C.mid,fontFamily:C.P,letterSpacing:'0.1em',textTransform:'uppercase'}}>Your previous rating</div>
+      </div>
+      <div style={{fontSize:19,fontWeight:800,color:C.ink,fontFamily:C.P,lineHeight:1.25}}>You already rated this one</div>
+      <div style={{fontSize:15.5,color:C.ink2,fontFamily:C.P,lineHeight:1.55}}>Leave your score for {wine.name}{wine.vintage&&wine.vintage!==0?' '+wine.vintage:''} as is, or rate it again.</div>
       <div style={{display:'flex',flexDirection:'column',gap:10,width:'100%',marginTop:4}}>
-        <Btn full onClick={()=>setConfirmStep(false)}>Re-rate it</Btn>
         <Btn primary full onClick={()=>nav('detail')}>Leave it at {existingRating} — see full details →</Btn>
+        <Btn full onClick={()=>setConfirmStep(false)}>Re-rate it</Btn>
       </div>
     </div>;
   }
@@ -457,7 +464,6 @@ function CardDeck({deckStyle,wine,gen,loading,matchPct,curr,scanData,intent,canR
   const cards=React.useMemo(()=>buildCards({wine,gen,matchPct,curr,scanData,intent}),[wine&&wine.name,gen,matchPct,intent]);
   const ctx={wine,gen,loading,matchPct,curr,scanData,intent,dna};
   const [idx,setIdx]=React.useState(0);
-  const [expanded,setExpanded]=React.useState(null);
   const [savedKeys,setSavedKeys]=React.useState(()=>{ try{ return JSON.parse(sessionStorage.getItem('vinterest_scan_saved_'+((wine&&wine.name)||''))||'[]'); }catch(e){ return []; } });
   const [toast,setToast]=React.useState(null);
 
@@ -476,7 +482,7 @@ function CardDeck({deckStyle,wine,gen,loading,matchPct,curr,scanData,intent,canR
   const total=cards.length;
   const go=d=>setIdx(i=>Math.max(0,Math.min(total-1,i+d)));
 
-  const common={cards,ctx,savedKeys,saveCard,onExpand:setExpanded,intent,existingRating,nav,accent:C.cr};
+  const common={cards,ctx,savedKeys,saveCard,intent,existingRating,nav,accent:C.cr};
 
   return <div style={{flex:1,display:'flex',flexDirection:'column',minHeight:0,position:'relative'}}>
     {/* progress dots */}
@@ -491,13 +497,11 @@ function CardDeck({deckStyle,wine,gen,loading,matchPct,curr,scanData,intent,canR
     {deckStyle==='feed'&&<Feed {...common}/>}
 
     {toast&&<div style={{position:'absolute',bottom:20,left:'50%',transform:'translateX(-50%)',background:C.ink,color:'#fff',padding:'9px 16px',borderRadius:22,fontSize:13.5,fontWeight:600,fontFamily:C.P,zIndex:40,animation:'scPop .2s ease',display:'flex',alignItems:'center',gap:7,whiteSpace:'nowrap'}}><Icon n="check" sz={14} col="#fff"/>{toast}</div>}
-
-    {expanded&&<ExpandSheet card={expanded} ctx={ctx} intent={intent} existingRating={existingRating} nav={nav} saved={savedKeys.includes(expanded.key)} onSave={()=>saveCard(expanded)} onClose={()=>setExpanded(null)}/>}
   </div>;
 }
 
 /* shared card chrome */
-function CardShell({card,children,onExpand,onSave,saved,intent,existingRating,nav,style}){
+function CardShell({card,children,onSave,saved,intent,existingRating,nav,style}){
   const isFinish=card.kind==='finish';
   return <div style={{background:C.white,borderRadius:22,border:`1px solid ${C.line}`,boxShadow:'0 6px 22px rgba(0,0,0,0.08)',display:'flex',flexDirection:'column',overflow:'hidden',...style}}>
     <div style={{height:5,background:card.accent,flexShrink:0}}/>
@@ -508,9 +512,6 @@ function CardShell({card,children,onExpand,onSave,saved,intent,existingRating,na
         <div onClick={e=>{e.stopPropagation();onSave&&onSave();}} title="Save" style={{width:32,height:32,borderRadius:16,background:saved?card.soft:C.offWhite,border:`1px solid ${saved?card.accent+'44':C.line}`,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer'}}>
           <svg viewBox="0 0 20 20" width={16} height={16}><path d="M10 16.5C10 16.5 3 12 3 7.5C3 5 5 3.2 7.2 3.2c1.5 0 2.5 1 2.8 1.8.3-.8 1.3-1.8 2.8-1.8C15 3.2 17 5 17 7.5c0 4.5-7 9-7 9z" stroke={saved?card.accent:C.mid} strokeWidth="1.6" fill={saved?card.accent:'none'}/></svg>
         </div>
-        {onExpand&&<div onClick={e=>{e.stopPropagation();onExpand();}} title="Expand" style={{width:32,height:32,borderRadius:16,background:C.offWhite,border:`1px solid ${C.line}`,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer'}}>
-          <svg viewBox="0 0 20 20" width={15} height={15}><path d="M4 8V4h4M16 12v4h-4M12 4h4v4M8 16H4v-4" stroke={C.mid} strokeWidth="1.6" fill="none" strokeLinecap="round"/></svg>
-        </div>}
       </div>}
     </div>
     <div className="sc-scroll" style={{padding:'8px 18px 18px',overflowY:'auto',flex:1,minHeight:0}}>
@@ -520,7 +521,7 @@ function CardShell({card,children,onExpand,onSave,saved,intent,existingRating,na
 }
 
 /* deck style A — swipeable stack */
-function SwipeDeck({deck,ctx,idx,setIdx,go,savedKeys,saveCard,onExpand,onSwipeSave,intent,existingRating,nav}){
+function SwipeDeck({deck,ctx,idx,setIdx,go,savedKeys,saveCard,intent,existingRating,nav}){
   const [drag,setDrag]=React.useState({dx:0,dy:0,active:false});
   const start=React.useRef(null);
   const dragRef=React.useRef({dx:0,dy:0});
@@ -551,9 +552,8 @@ function SwipeDeck({deck,ctx,idx,setIdx,go,savedKeys,saveCard,onExpand,onSwipeSa
     }
     function onUp(){
       if(!start.current) return;
-      const {dx,dy}=dragRef.current;
+      const {dx}=dragRef.current;
       start.current=null;
-      if(dy<-90&&Math.abs(dy)>Math.abs(dx)){ setDrag({dx:0,dy:0,active:false}); onExpand(topRef.current); return; }
       if(dx>110){ if(onSwipeSave&&!savedKeys.includes(topRef.current.key)) onSwipeSave(topRef.current); setDrag({dx:0,dy:0,active:false}); setTimeout(()=>go(1),10); return; }
       if(dx<-110){ setDrag({dx:0,dy:0,active:false}); setTimeout(()=>go(1),10); return; }
       setDrag({dx:0,dy:0,active:false});
@@ -586,7 +586,7 @@ function SwipeDeck({deck,ctx,idx,setIdx,go,savedKeys,saveCard,onExpand,onSwipeSa
         const cc={...c,_wine:ctx.wine};
         return <div key={c.key} ref={isTop?cardRef:undefined}
           style={{position:'absolute',inset:0,zIndex:10-depth,transform:tf,transition:drag.active&&isTop?'none':'transform .3s cubic-bezier(.34,1.1,.64,1)',opacity:depth>1?0:1,touchAction:isTop&&!isFinish?'none':'auto',cursor:isTop&&!isFinish?'grab':'default'}}>
-          <CardShell card={cc} onExpand={isTop&&!isFinish?()=>onExpand(c):undefined} onSave={()=>saveCard(c)} saved={savedKeys.includes(c.key)} intent={intent} existingRating={existingRating} nav={nav} style={{height:'100%'}}>
+          <CardShell card={cc} onSave={()=>saveCard(c)} saved={savedKeys.includes(c.key)} intent={intent} existingRating={existingRating} nav={nav} style={{height:'100%'}}>
             <CardFace card={c} ctx={ctx}/>
           </CardShell>
           {isTop&&Math.abs(drag.dx)>40&&!isFinish&&<div style={{position:'absolute',top:24,[drag.dx>0?'left':'right']:24,padding:'6px 14px',borderRadius:10,border:`2.5px solid ${drag.dx>0?C.green:C.mid}`,color:drag.dx>0?C.green:C.mid,fontSize:15,fontWeight:800,fontFamily:C.P,transform:`rotate(${drag.dx>0?-12:12}deg)`,background:'rgba(255,255,255,0.9)',letterSpacing:'0.05em'}}>{drag.dx>0?'SAVE':'NEXT'}</div>}
@@ -603,12 +603,12 @@ function SwipeDeck({deck,ctx,idx,setIdx,go,savedKeys,saveCard,onExpand,onSwipeSa
 }
 
 /* deck style B — horizontal carousel */
-function Carousel({cards,ctx,savedKeys,saveCard,onExpand,intent,existingRating,nav}){
+function Carousel({cards,ctx,savedKeys,saveCard,intent,existingRating,nav}){
   return <div className="sc-scroll" style={{flex:1,display:'flex',overflowX:'auto',scrollSnapType:'x mandatory',gap:14,padding:'8px 16px 18px',minHeight:0}}>
     {cards.map(c=>{
       const cc={...c,_wine:ctx.wine};
       return <div key={c.key} style={{scrollSnapAlign:'center',flex:'0 0 86%',maxWidth:360,display:'flex'}}>
-        <CardShell card={cc} onExpand={c.kind!=='finish'?()=>onExpand(c):undefined} onSave={()=>saveCard(c)} saved={savedKeys.includes(c.key)} intent={intent} existingRating={existingRating} nav={nav} style={{width:'100%',minHeight:0}}>
+        <CardShell card={cc} onSave={()=>saveCard(c)} saved={savedKeys.includes(c.key)} intent={intent} existingRating={existingRating} nav={nav} style={{width:'100%',minHeight:0}}>
           <CardFace card={c} ctx={ctx}/>
         </CardShell>
       </div>;
@@ -617,39 +617,16 @@ function Carousel({cards,ctx,savedKeys,saveCard,onExpand,intent,existingRating,n
 }
 
 /* deck style C — vertical feed */
-function Feed({cards,ctx,savedKeys,saveCard,onExpand,intent,existingRating,nav}){
+function Feed({cards,ctx,savedKeys,saveCard,intent,existingRating,nav}){
   return <div className="sc-scroll" style={{flex:1,overflowY:'auto',padding:'8px 16px 24px',display:'flex',flexDirection:'column',gap:14,minHeight:0}}>
     {cards.map(c=>{
       const cc={...c,_wine:ctx.wine};
       return <div key={c.key} style={{animation:'scPop .3s ease both'}}>
-        <CardShell card={cc} onExpand={c.kind!=='finish'?()=>onExpand(c):undefined} onSave={()=>saveCard(c)} saved={savedKeys.includes(c.key)} intent={intent} existingRating={existingRating} nav={nav}>
+        <CardShell card={cc} onSave={()=>saveCard(c)} saved={savedKeys.includes(c.key)} intent={intent} existingRating={existingRating} nav={nav}>
           <CardFace card={c} ctx={ctx}/>
         </CardShell>
       </div>;
     })}
-  </div>;
-}
-
-/* ── expand-to-fullscreen sheet ── */
-function ExpandSheet({card,ctx,intent,existingRating,nav,saved,onSave,onClose}){
-  const isFinish=card.kind==='finish';
-  return <div onClick={onClose} style={{position:'absolute',inset:0,zIndex:60,background:'rgba(0,0,0,0.5)',display:'flex',alignItems:'flex-end',animation:'scFade .2s ease'}}>
-    <div onClick={e=>e.stopPropagation()} style={{background:C.white,borderRadius:'24px 24px 0 0',width:'100%',maxHeight:'92%',display:'flex',flexDirection:'column',overflow:'hidden',animation:'scSheet .28s cubic-bezier(.34,1.1,.64,1)'}}>
-      <div style={{height:5,background:card.accent,flexShrink:0}}/>
-      <div style={{display:'flex',justifyContent:'center',padding:'10px 0 2px',flexShrink:0}}><div style={{width:40,height:4,borderRadius:2,background:C.line}}/></div>
-      <div style={{padding:'6px 20px 4px',display:'flex',alignItems:'center',gap:9,flexShrink:0}}>
-        <div style={{width:32,height:32,borderRadius:10,background:card.soft,display:'flex',alignItems:'center',justifyContent:'center'}}><Icon n={card.icon} sz={17} col={card.accent}/></div>
-        <span style={{fontSize:13,fontWeight:700,color:card.accent,fontFamily:C.P,letterSpacing:'0.09em',textTransform:'uppercase'}}>{card.eyebrow}</span>
-        {!isFinish&&<div onClick={onSave} style={{marginLeft:'auto',display:'flex',alignItems:'center',gap:6,padding:'7px 13px',borderRadius:20,background:saved?card.soft:C.offWhite,border:`1px solid ${saved?card.accent+'44':C.line}`,cursor:'pointer'}}>
-          <svg viewBox="0 0 20 20" width={15} height={15}><path d="M10 16.5C10 16.5 3 12 3 7.5C3 5 5 3.2 7.2 3.2c1.5 0 2.5 1 2.8 1.8.3-.8 1.3-1.8 2.8-1.8C15 3.2 17 5 17 7.5c0 4.5-7 9-7 9z" stroke={saved?card.accent:C.mid} strokeWidth="1.6" fill={saved?card.accent:'none'}/></svg>
-          <span style={{fontSize:13,fontWeight:600,color:saved?card.accent:C.ink2,fontFamily:C.P}}>{saved?'Saved':'Save'}</span>
-        </div>}
-        <div onClick={onClose} style={{marginLeft:isFinish?'auto':0,width:32,height:32,borderRadius:16,background:C.offWhite,border:`1px solid ${C.line}`,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer'}}><span style={{fontSize:18,color:C.ink,lineHeight:1}}>×</span></div>
-      </div>
-      <div className="sc-scroll" style={{padding:'12px 20px 28px',overflowY:'auto',flex:1,minHeight:0}}>
-        {isFinish?<FinishFace wine={ctx.wine} intent={intent} existingRating={existingRating} nav={nav} accent={card.accent}/>:<CardFace card={card} ctx={ctx} expanded/>}
-      </div>
-    </div>
   </div>;
 }
 
