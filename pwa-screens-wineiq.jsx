@@ -38,6 +38,20 @@ function _personality(key,b,ta,ac,sw){
     if(ac>=0.70)          return 'Taut & Precise';
     return 'Elegant & Fine';
   }
+  if(key==='orange'){
+    if(ta>=0.50)          return 'Textured & Tannic';
+    if(ac>=0.65)          return 'Bright & Funky';
+    return 'Amber & Aromatic';
+  }
+  if(key==='dessert'){
+    if(sw>=0.70)          return 'Lusciously Sweet';
+    if(ac>=0.65)          return 'Honeyed & Vibrant';
+    return 'Rich & Nectarous';
+  }
+  if(key==='fortified'){
+    if(sw>=0.50)          return 'Sweet & Fortified';
+    return 'Dry & Nutty';
+  }
   return 'Eclectic Palate';
 }
 
@@ -124,6 +138,21 @@ function _gaps(typeKey,avgB,avgT,avgA,topGrapes,topRegions,wines){
       {wine:'Aged Vintage Champagne',region:'Champagne',why:'Ten-plus years on lees pushes a toasty preference to its extreme — deep oxidative notes and extraordinary length.',cond:true},
       {wine:'Pét-Nat from Loire',region:'France',why:'A useful contrast to your polished picks — wild, cloudy, funky, and structurally the opposite.',cond:avgA>=0.65},
     ],
+    orange:[
+      {wine:'Ramato Pinot Grigio',region:'Friuli, Italy',anchorRegions:['friuli','collio'],why:`Builds on your love of ${topR||'Friulian skin-contact whites'} with a lighter, rosé-hued take on extended maceration.`,cond:avgT>=0.40},
+      {wine:'Rkatsiteli, Qvevri-aged',region:'Georgia',anchorGrapes:['rkatsiteli'],why:`Georgia is the birthplace of skin-contact winemaking, aged in buried clay qvevri instead of steel or oak.`,cond:!rgs.has('georgia')},
+      {wine:'Amber Riesling',region:'Wachau, Austria',anchorGrapes:['riesling'],why:`Takes the acidity you like in ${topG||'aromatic whites'} and adds real tannic grip from skin contact.`,cond:avgA>=0.60&&(gps.has('riesling'))},
+    ],
+    dessert:[
+      {wine:'Tokaji Aszú (5 Puttonyos)',region:'Tokaj, Hungary',why:`Botrytis-affected and intensely honeyed, with the piercing acidity that keeps ${topR||'great dessert wines'} from feeling cloying.`,cond:avgA>=0.55},
+      {wine:'Vin Santo',region:'Tuscany, Italy',why:'Dried-grape sweetness with a nutty, oxidative edge — a different path to richness than botrytis wines.',cond:avgB>=0.5},
+      {wine:'Eiswein',region:'Mosel, Germany',why:'Grapes frozen on the vine concentrate sugar and acid alike — searingly sweet but never flabby.',cond:avgA>=0.65},
+    ],
+    fortified:[
+      {wine:'Amontillado Sherry',region:'Jerez, Spain',why:'Starts biologically aged like a Fino, then oxidizes further in barrel — dry, nutty, and complex.',cond:avgS<0.4},
+      {wine:'10-Year Tawny Port',region:'Douro, Portugal',why:'Barrel-aged oxidatively for a decade, trading Vintage Port\u2019s fruit for dried fig, caramel and walnut.',cond:avgS>=0.3},
+      {wine:'Rare Madeira',region:'Madeira, Portugal',why:'Deliberately heated and oxidized during production — the only fortified wine that improves for centuries once opened.',cond:true},
+    ],
   };
   return (pool[typeKey]||[]).filter(s=>{
     if(!s.cond) return false;
@@ -199,7 +228,7 @@ function _evolution(wines){
   sorted.forEach(w=>{
     const d=new Date(w.scanned_at||w.last_scanned);
     const key=bucketKey(d);
-    if(!buckets.has(key)) buckets.set(key,{sum:0,count:0,lastDate:d,types:{red:0,white:0,rose:0,sparkling:0},order:d.getTime()});
+    if(!buckets.has(key)) buckets.set(key,{sum:0,count:0,lastDate:d,types:{red:0,white:0,rose:0,sparkling:0,orange:0,dessert:0,fortified:0},order:d.getTime()});
     const b=buckets.get(key);
     b.sum+=w.rating; b.count++;
     if(d>b.lastDate) b.lastDate=d;
@@ -218,12 +247,15 @@ function _evolution(wines){
   return chunks;
 }
 
-const _TYPE_COLORS={red:'#8B1A2F',white:'#B8963E',rose:'#C47A8A',sparkling:'#5E8FA8'};
+const _TYPE_COLORS={red:'#8B1A2F',white:'#B8963E',rose:'#C47A8A',sparkling:'#5E8FA8',orange:'#C1652B',dessert:'#8A5A2B',fortified:'#5C2A1E'};
 const _TYPES=[
   {key:'red',       label:'Reds',     col:'#8B1A2F'},
   {key:'white',     label:'Whites',   col:'#B8963E'},
   {key:'rose',      label:'Rosé',     col:'#C47A8A'},
   {key:'sparkling', label:'Sparkling',col:'#5E8FA8'},
+  {key:'orange',    label:'Orange',   col:'#C1652B'},
+  {key:'dessert',   label:'Dessert',  col:'#8A5A2B'},
+  {key:'fortified', label:'Fortified',col:'#5C2A1E'},
 ];
 
 /* Collapsible section header — collapsed state shows a short useful summary + expand CTA below the title */
@@ -554,9 +586,9 @@ function WineDNAScreen({nav,back,showPro}){
               {[
                 {l:'Body',     v:t.avgB, lo:'Light',    hi:'Full',   col:t.col,     axis:'body'},
                 ...(t.key==='sparkling'?[{l:'Effervescence', v:t.avgE, lo:'Soft & Delicate', hi:'Vigorous', col:'#5E8FA8', axis:'effervescence'}]:[]),
-                ...(t.key==='red'?[{l:'Tannins',  v:t.avgT, lo:'Silky',    hi:'Grippy', col:'#7B5EA7', axis:'tannins'}]:[]),
+                ...(['red','orange','fortified'].includes(t.key)?[{l:'Tannins',  v:t.avgT, lo:'Silky',    hi:'Grippy', col:'#7B5EA7', axis:'tannins'}]:[]),
                 {l:'Acidity',  v:t.avgA, lo:'Mellow',   hi:'Zingy',  col:C.green,   axis:'acidity'},
-                ...(t.key==='white'?[{l:'Texture', v:t.avgX, lo:'Crisp & Steely', hi:'Rich & Creamy', col:'#B8963E', axis:'texture'}]:[]),
+                ...(['white','orange','dessert','fortified'].includes(t.key)?[{l:'Texture', v:t.avgX, lo:'Crisp & Steely', hi:'Rich & Creamy', col:'#B8963E', axis:'texture'}]:[]),
                 {l:'Sweetness',v:t.avgS, lo:'Bone Dry', hi:'Sweet',  col:C.amber,   axis:'sweetness'},
               ].map((attr,i)=>{
                 const why=t.wines.length>=2?_dnaWhy(attr.axis,attr.v,t.topGrapes,t.topRegions):null;
@@ -793,7 +825,7 @@ function WineDNAScreen({nav,back,showPro}){
 
         {/* App version */}
         <div style={{textAlign:'center',padding:'12px 0 4px',opacity:0.45}}>
-          <span style={{fontSize:13,color:C.mid,fontFamily:C.P}}>Vinterest v1.0.65</span>
+          <span style={{fontSize:13,color:C.mid,fontFamily:C.P}}>Vinterest v1.0.70</span>
         </div>
 
         <div style={{height:8}}/>

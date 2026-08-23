@@ -149,9 +149,10 @@ wine_scans (
 
 taste_profile (
   user_id,
-  red_pct, white_pct, rose_pct, sparkling_pct,  -- sum to 100
+  red_pct, white_pct, rose_pct, sparkling_pct, orange_pct, dessert_pct, fortified_pct,  -- sum to 100
   red_script text, white_script text,
   rose_script text, sparkling_script text,
+  orange_script text, dessert_script text, fortified_script text,
   flavour_tags text[],
   last_updated_at timestamptz
 )

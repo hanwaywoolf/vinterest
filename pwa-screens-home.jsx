@@ -47,7 +47,6 @@ function WineChatWidget(){
 }
 
 function HomeScreen({nav, showPro, isTablet}){
-  const [typeTab,setTypeTab]=React.useState(0);
   const [travel,setTravel]=React.useState(()=>Regional.travel());
   React.useEffect(()=>{
     const h=()=>setTravel(Regional.travel());
@@ -76,8 +75,23 @@ function HomeScreen({nav, showPro, isTablet}){
     {col:'#B8963E',label:'Whites',    typeKey:'white'},
     {col:'#C47A8A',label:'Rosé',      typeKey:'rose'},
     {col:'#5E8FA8',label:'Sparkling', typeKey:'sparkling'},
+    {col:'#C1652B',label:'Orange',    typeKey:'orange'},
+    {col:'#8A5A2B',label:'Dessert',   typeKey:'dessert'},
+    {col:'#5C2A1E',label:'Fortified', typeKey:'fortified'},
   ];
-  const c=cats[typeTab];
+  const _BASE_TYPES=['red','white','rose','sparkling'];
+  /* Explore suggestion based on dominant type */
+  const typeCounts={red:0,white:0,rose:0,sparkling:0,orange:0,dessert:0,fortified:0};
+  allWines.forEach(w=>{const t=(w.type||'').toLowerCase().replace('é','e');if(typeCounts[t]!==undefined)typeCounts[t]++;});
+  // The original four always show (greyed out if unscanned); Orange/Dessert/Fortified only appear once you've actually scanned one.
+  const visibleCats=cats.filter(ct=>_BASE_TYPES.includes(ct.typeKey)||typeCounts[ct.typeKey]>0);
+  const [activeType,setActiveType]=React.useState('red');
+  const [tabToast,setTabToast]=React.useState(null);
+  function pickType(ct){
+    if(typeCounts[ct.typeKey]===0){ setTabToast(`You haven't scanned a ${ct.label.toLowerCase()} yet`); setTimeout(()=>setTabToast(null),1800); return; }
+    setActiveType(ct.typeKey);
+  }
+  const c=cats.find(ct=>ct.typeKey===activeType)||cats[0];
   const tabWines=allWines.filter(w=>(w.type||'').toLowerCase().replace('é','e')===c.typeKey);
   const topWines=[...tabWines].sort((a,b)=>(b.rating||0)-(a.rating||0)).slice(0,3);
 
@@ -87,15 +101,15 @@ function HomeScreen({nav, showPro, isTablet}){
     .slice(0,3)
   ,[allWines.length]);
 
-  /* Explore suggestion based on dominant type */
-  const typeCounts={red:0,white:0,rose:0,sparkling:0};
-  allWines.forEach(w=>{const t=(w.type||'').toLowerCase().replace('é','e');if(typeCounts[t]!==undefined)typeCounts[t]++;});
   const primaryType=Object.entries(typeCounts).sort((a,b)=>b[1]-a[1])[0]?.[0]||'red';
   const exploreSuggestions={
     red:      {title:'Try a White This Week',  body:'Your structured palate would suit a bone-dry Chablis or aged white Burgundy.'},
     white:    {title:'Venture into Reds',      body:'White lovers often find a match in elegant Pinot Noir or light Beaujolais.'},
     rose:     {title:'Go Sparkling',           body:'Dry rosé lovers frequently enjoy Champagne — similar freshness, better stories.'},
     sparkling:{title:'Explore Still Wines',    body:'Your palate for fine bubbles translates beautifully to quality Burgundy stills.'},
+    orange:   {title:'Try a Classic White',    body:'If you love skin-contact texture, an aged white Rioja offers a similar depth without the funk.'},
+    dessert:  {title:'Try a Fortified Wine',   body:'Dessert wine lovers often enjoy a Tawny Port — same richness, more nutty complexity.'},
+    fortified:{title:'Try a Dessert Wine',     body:'If you love Port or Sherry, a Sauternes or Tokaji offers similar richness without the fortification.'},
   };
   const explore=exploreSuggestions[primaryType]||exploreSuggestions.red;
 
@@ -124,9 +138,9 @@ function HomeScreen({nav, showPro, isTablet}){
       .then(text=>{const sc=text.trim();localStorage.setItem(key,sc);setGenScripts(g=>({...g,[c.typeKey]:sc}));})
       .catch(()=>{})
       .finally(()=>setGenerating(null));
-  },[typeTab,allWines.length,scriptLength]);
+  },[activeType,allWines.length,scriptLength]);
 
-  const typeColors={red:'#8B1A2F',white:'#B8963E',rosé:'#C47A8A',rose:'#C47A8A',sparkling:'#5E8FA8'};
+  const typeColors={red:'#8B1A2F',white:'#B8963E',rosé:'#C47A8A',rose:'#C47A8A',sparkling:'#5E8FA8',orange:'#C1652B',dessert:'#8A5A2B',fortified:'#5C2A1E'};
   const colFor=w=>typeColors[(w.type||'red').toLowerCase().replace('é','e')]||C.cr;
 
   return(
@@ -207,14 +221,20 @@ function HomeScreen({nav, showPro, isTablet}){
 
         {/* Type selector + script + top wines */}
         <div style={{display:'flex',flexDirection:'column',gap:10}}>
-          {/* Type tabs */}
-          <div style={{display:'flex',gap:6}}>
-            {cats.map((ct,i)=>(
-              <div key={i} onClick={()=>setTypeTab(i)} style={{flex:1,textAlign:'center',padding:'8px 4px',borderRadius:10,background:i===typeTab?ct.col+'18':C.offWhite,border:`1.5px solid ${i===typeTab?ct.col+'55':'transparent'}`,cursor:'pointer',transition:'all .15s'}}>
-                <div style={{width:7,height:7,borderRadius:4,background:ct.col,margin:'0 auto 3px'}}/>
-                <div style={{fontSize:13,fontWeight:i===typeTab?700:500,color:i===typeTab?ct.col:C.mid,fontFamily:C.P}}>{ct.label}</div>
-              </div>
-            ))}
+          {/* Type tabs — equal width sized to the longest visible label; wraps to a second row once more than 4 show */}
+          <div style={{position:'relative'}}>
+            <div style={{display:'flex',flexWrap:'wrap',gap:6}}>
+              {visibleCats.map((ct,i)=>{
+                const disabled=typeCounts[ct.typeKey]===0;
+                const active=ct.typeKey===activeType;
+                const maxLen=Math.max(...visibleCats.map(x=>x.label.length));
+                return <div key={i} onClick={()=>pickType(ct)} style={{flex:`0 0 ${maxLen+3}ch`,textAlign:'center',padding:'8px 4px',borderRadius:10,background:active?ct.col+'18':C.offWhite,border:`1.5px solid ${active?ct.col+'55':'transparent'}`,cursor:'pointer',transition:'all .15s',opacity:disabled?0.4:1}}>
+                  <div style={{width:7,height:7,borderRadius:4,background:ct.col,margin:'0 auto 3px'}}/>
+                  <div style={{fontSize:13,fontWeight:active?700:500,color:active?ct.col:C.mid,fontFamily:C.P}}>{ct.label}</div>
+                </div>;
+              })}
+            </div>
+            {tabToast&&<div style={{position:'absolute',top:'calc(100% + 6px)',left:0,right:0,textAlign:'center',fontSize:13,fontWeight:600,color:C.mid,fontFamily:C.P,background:C.offWhite,border:`1px solid ${C.line}`,borderRadius:8,padding:'6px 10px',zIndex:5}}>{tabToast}</div>}
           </div>
 
           {/* Script */}

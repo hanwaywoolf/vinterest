@@ -1,6 +1,6 @@
 /* Vinterest — Account / Profile screen: onboarding summary (editable) + Travel Mode */
 
-const ACC_TYPE_OPTS=[{id:'red',label:'Red',col:'#8B1A2F'},{id:'white',label:'White',col:'#B8963E'},{id:'rose',label:'Rosé',col:'#C47A8A'},{id:'sparkling',label:'Sparkling',col:'#5E8FA8'}];
+const ACC_TYPE_OPTS=[{id:'red',label:'Red',col:'#8B1A2F'},{id:'white',label:'White',col:'#B8963E'},{id:'rose',label:'Rosé',col:'#C47A8A'},{id:'sparkling',label:'Sparkling',col:'#5E8FA8'},{id:'orange',label:'Orange',col:'#C1652B'},{id:'dessert',label:'Dessert',col:'#8A5A2B'},{id:'fortified',label:'Fortified',col:'#5C2A1E'}];
 const ACC_EXP_OPTS=[{id:'novice',label:'Just getting started'},{id:'casual',label:'I know what I like'},{id:'enthusiast',label:'Pretty into it'},{id:'expert',label:'Borderline obsessed'}];
 const ACC_FREQ_OPTS=[{id:'daily',label:'Most days'},{id:'weekly',label:'A few times a week'},{id:'occasion',label:'Weekends & occasions'},{id:'rarely',label:'Now and then'}];
 const ACC_GOAL_OPTS=[{id:'learn',label:'Learn about wine',icon:'book',col:'#1E7B4B'},{id:'value',label:'Find great value',icon:'cart',col:'#B06C00'},{id:'pair',label:'Pair with food',icon:'fork',col:'#8B1A2F'},{id:'impress',label:'Impress at dinner',icon:'trophy',col:'#3B6FB0'}];

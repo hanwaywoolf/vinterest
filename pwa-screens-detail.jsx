@@ -209,12 +209,17 @@ function DetailMerged({wine,nav,existingRating=0,matchPct}){
   const isRed=((wine?.type||'').toLowerCase().replace('é','e'))==='red';
   const isWhite=((wine?.type||'').toLowerCase().replace('é','e'))==='white';
   const isSparkling=((wine?.type||'').toLowerCase().replace('é','e'))==='sparkling';
+  const isOrange=((wine?.type||'').toLowerCase().replace('é','e'))==='orange';
+  const isDessert=((wine?.type||'').toLowerCase().replace('é','e'))==='dessert';
+  const isFortified=((wine?.type||'').toLowerCase().replace('é','e'))==='fortified';
+  const showTannins=isRed||isOrange||isFortified;
+  const showTexture=isWhite||isOrange||isDessert||isFortified;
   const charLbl=(v,lo,hi)=>v>=0.68?hi:v>=0.38?'Medium':lo;
   const chars=wine?[
     {label:'Body',      value:charLbl(wine.body??0.65,    'Light',    'Full')},
-    ...(isRed?[{label:'Tannins', value:charLbl(wine.tannins??0.55, 'Silky',    'Grippy')}]:[]),
+    ...(showTannins?[{label:'Tannins', value:charLbl(wine.tannins??0.55, 'Silky',    'Grippy')}]:[]),
     {label:'Acidity',   value:charLbl(wine.acidity??0.60, 'Mellow',   'Zingy')},
-    ...(isWhite?[{label:'Texture', value:charLbl(wine.texture??0.3, 'Crisp & Steely', 'Rich & Creamy')}]:[]),
+    ...(showTexture?[{label:'Texture', value:charLbl(wine.texture??0.3, 'Crisp & Steely', 'Rich & Creamy')}]:[]),
     {label:'Sweetness', value:charLbl(wine.sweetness??0.10,'Bone Dry','Sweet')},
     ...(isSparkling?[{label:'Effervescence', value:charLbl(wine.effervescence??0.6, 'Soft & Delicate', 'Vigorous & Persistent')}]:[]),
     ...(wine.abv?[{label:'ABV', value:`${wine.abv}%`}]:[]),
@@ -360,7 +365,7 @@ function DetailMerged({wine,nav,existingRating=0,matchPct}){
       <div>
         <SL label="Taste Profile"/>
         <div style={{fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.5,marginBottom:12,padding:'10px 12px',borderRadius:10,background:C.offWhite,border:`1px solid ${C.line}`}}>
-          These {isRed||isWhite||isSparkling?'four':'three'} dimensions describe how this wine will feel in your mouth — they help you understand what to expect and find wines you'll enjoy.{!isRed&&!isWhite&&!isSparkling?' Tannins aren\'t shown here since they\'re only a meaningful factor in red wines.':''}
+          These {chars.length} dimensions describe how this wine will feel in your mouth — they help you understand what to expect and find wines you'll enjoy.{!showTannins?' Tannins aren\'t shown here since they\'re not a meaningful factor for this style.':''}
         </div>
         <div style={{display:'flex',flexDirection:'column',gap:20}}>
           {/* Effervescence — sparkling only, shown first since it's the defining trait */}

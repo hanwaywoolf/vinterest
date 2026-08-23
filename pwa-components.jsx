@@ -300,11 +300,11 @@ const WineHistory = {
   },
   getProfile(){
     const wines = this.getAll();
-    if(!wines.length) return {red:0,white:0,rose:0,sparkling:0,total:0};
-    const counts={red:0,white:0,rose:0,sparkling:0};
+    if(!wines.length) return {red:0,white:0,rose:0,sparkling:0,orange:0,dessert:0,fortified:0,total:0};
+    const counts={red:0,white:0,rose:0,sparkling:0,orange:0,dessert:0,fortified:0};
     wines.forEach(w=>{ const t=(w.type||'').toLowerCase().replace('é','e'); if(counts[t]!==undefined) counts[t]++; else counts.red++; });
     const total=wines.length;
-    return {...counts,total,redPct:counts.red/total,whitePct:counts.white/total,rosePct:counts.rose/total,sparklingPct:counts.sparkling/total};
+    return {...counts,total,redPct:counts.red/total,whitePct:counts.white/total,rosePct:counts.rose/total,sparklingPct:counts.sparkling/total,orangePct:counts.orange/total,dessertPct:counts.dessert/total,fortifiedPct:counts.fortified/total};
   }
 };
 

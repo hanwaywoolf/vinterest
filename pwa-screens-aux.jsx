@@ -284,7 +284,7 @@ function MyWinesScreen({nav,back}){
   const [wines,setWines]=React.useState(()=>WineHistory.getAll());
   const [activePills,setActivePills]=React.useState([]);
 
-  const typeColors={red:'#8B1A2F',white:'#B8963E',rosé:'#C47A8A',rose:'#C47A8A',sparkling:'#5E8FA8'};
+  const typeColors={red:'#8B1A2F',white:'#B8963E',rosé:'#C47A8A',rose:'#C47A8A',sparkling:'#5E8FA8',orange:'#C1652B',dessert:'#8A5A2B',fortified:'#5C2A1E'};
 
   const filtered=wines.filter(w=>{
     if(filter!=='all'){
@@ -318,8 +318,8 @@ function MyWinesScreen({nav,back}){
     setActivePills(activePills.filter(p=>!(p.type===type&&p.value===value)));
   };
 
-  const TYPE_COLS={all:C.cr,red:'#8B1A2F',white:'#B8963E',rose:'#C47A8A',sparkling:'#5E8FA8'};
-  const filterTabs=[{k:'all',l:'All'},{k:'red',l:'Reds'},{k:'white',l:'Whites'},{k:'rose',l:'Rosé'},{k:'sparkling',l:'Sparkling'}];
+  const TYPE_COLS={all:C.cr,red:'#8B1A2F',white:'#B8963E',rose:'#C47A8A',sparkling:'#5E8FA8',orange:'#C1652B',dessert:'#8A5A2B',fortified:'#5C2A1E'};
+  const filterTabs=[{k:'all',l:'All'},{k:'red',l:'Reds'},{k:'white',l:'Whites'},{k:'rose',l:'Rosé'},{k:'sparkling',l:'Sparkling'},{k:'orange',l:'Orange'},{k:'dessert',l:'Dessert'},{k:'fortified',l:'Fortified'}];
   const colFor=w=>typeColors[(w.type||'red').toLowerCase().replace('é','e')]||C.cr;
 
   /* Stats for current filter */
@@ -648,7 +648,7 @@ function WineListScreen({nav,back}){
 
   const wines=(data.wines&&data.wines.length>0)?data.wines:demoWines;
   const listCurrency=data.currency||Regional.current().code||localStorage.getItem('vinterest_currency')||'GBP';
-  const typeColors={red:'#8B1A2F',white:'#B8963E',rosé:'#C47A8A',rose:'#C47A8A',sparkling:'#5E8FA8'};
+  const typeColors={red:'#8B1A2F',white:'#B8963E',rosé:'#C47A8A',rose:'#C47A8A',sparkling:'#5E8FA8',orange:'#C1652B',dessert:'#8A5A2B',fortified:'#5C2A1E'};
   const colFor=t=>typeColors[(t||'red').toLowerCase().replace('é','e')]||C.cr;
   const currSym=(CURRENCY_LIST.find(c=>c.code===listCurrency)||{}).sym||'';
   // Parse tiered list prices ("GLASS:16 / 1/2LTR:33 / BOTTLE:59") into clean labeled segments.

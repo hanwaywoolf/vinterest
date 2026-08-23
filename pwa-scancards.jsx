@@ -355,12 +355,14 @@ function CardFace({card,ctx}){
 
   if(card.kind==='taste'){
     const cues=[];
+    const type=(wine.type||'red').toLowerCase().replace('é','e');
+    const showTannins=['red','orange','fortified'].includes(type);
     const b=wine.body??0.65,tn=wine.tannins??0.55,ac=wine.acidity??0.6,tx=wine.texture,sw=wine.sweetness??0.1;
     cues.push({l:'Body',v:lvl(b,'Light & lithe','Medium-weight','Full & mouth-coating'),tip:'Notice how heavy it feels — does it linger or refresh?'});
-    if((wine.type||'red').toLowerCase().replace('é','e')==='red') cues.push({l:'Tannins',v:lvl(tn,'Silky, low grip','Gentle grip','Firm, drying grip'),tip:'That drying feel on your gums and cheeks — is it soft or grippy?'});
+    if(showTannins) cues.push({l:'Tannins',v:lvl(tn,'Silky, low grip','Gentle grip','Firm, drying grip'),tip:'That drying feel on your gums and cheeks — is it soft or grippy?'});
     cues.push({l:'Acidity',v:lvl(ac,'Round & mellow','Fresh','Zippy & mouth-watering'),tip:'Does it make you salivate? That\'s acidity.'});
     if(tx!=null) cues.push({l:'Oak / texture',v:lvl(tx,'Clean & steely','Subtle','Creamy, vanilla, toast'),tip:'Any butter, vanilla or toast? That\'s oak.'});
-    if(sw>=0.2) cues.push({l:'Sweetness',v:lvl(sw,'Dry','Off-dry','Noticeably sweet'),tip:'Sense of sugar on the tip of your tongue.'});
+    if(sw>=0.2||type==='dessert'||type==='fortified') cues.push({l:'Sweetness',v:lvl(sw,'Dry','Off-dry','Noticeably sweet'),tip:'Sense of sugar on the tip of your tongue.'});
     const notes=(wine.tasting_notes||[]).slice(0,4);
     return <div style={{display:'flex',flexDirection:'column',gap:14}}>
       <H>What to look for</H>
@@ -589,50 +591,29 @@ function SwipeDeck({deck,ctx,idx,setIdx,go,intent,existingRating,nav}){
   const isFinish=top&&top.kind==='finish';
   topRef.current=top;
 
-  React.useEffect(()=>{
-    const el=cardRef.current;
-    if(!el) return;
-    function pt(e){ return e.touches?e.touches[0]:e; }
-    function onDown(e){
-      if(topRef.current&&topRef.current.kind==='finish') return;
-      const p=pt(e);
-      start.current={x:p.clientX,y:p.clientY};
-      dragRef.current={dx:0,dy:0};
-      setDrag({dx:0,dy:0,active:true});
-    }
-    function onMove(e){
-      if(!start.current) return;
-      const p=pt(e);
-      const dx=p.clientX-start.current.x, dy=p.clientY-start.current.y;
-      dragRef.current={dx,dy};
-      if(Math.abs(dx)>8||Math.abs(dy)>8) e.preventDefault();
-      setDrag({dx,dy,active:true});
-    }
-    function onUp(){
-      if(!start.current) return;
-      const {dx}=dragRef.current;
-      start.current=null;
-      if(dx<-110){ setDrag({dx:0,dy:0,active:false}); setTimeout(()=>go(1),10); return; }
-      if(dx>110){ setDrag({dx:0,dy:0,active:false}); setTimeout(()=>go(-1),10); return; }
-      setDrag({dx:0,dy:0,active:false});
-    }
-    el.addEventListener('touchstart',onDown,{passive:true});
-    el.addEventListener('touchmove',onMove,{passive:false});
-    el.addEventListener('touchend',onUp,{passive:true});
-    el.addEventListener('touchcancel',onUp,{passive:true});
-    el.addEventListener('mousedown',onDown);
-    window.addEventListener('mousemove',onMove);
-    window.addEventListener('mouseup',onUp);
-    return()=>{
-      el.removeEventListener('touchstart',onDown);
-      el.removeEventListener('touchmove',onMove);
-      el.removeEventListener('touchend',onUp);
-      el.removeEventListener('touchcancel',onUp);
-      el.removeEventListener('mousedown',onDown);
-      window.removeEventListener('mousemove',onMove);
-      window.removeEventListener('mouseup',onUp);
-    };
-  },[idx]);
+  const ptrId=React.useRef(null);
+  function onPointerDown(e){
+    if(isFinish) return;
+    e.currentTarget.setPointerCapture(e.pointerId);
+    ptrId.current=e.pointerId;
+    start.current={x:e.clientX,y:e.clientY};
+    dragRef.current={dx:0,dy:0};
+    setDrag({dx:0,dy:0,active:true});
+  }
+  function onPointerMove(e){
+    if(!start.current||e.pointerId!==ptrId.current) return;
+    const dx=e.clientX-start.current.x, dy=e.clientY-start.current.y;
+    dragRef.current={dx,dy};
+    setDrag({dx,dy,active:true});
+  }
+  function onPointerUp(e){
+    if(!start.current||e.pointerId!==ptrId.current) return;
+    const {dx}=dragRef.current;
+    start.current=null; ptrId.current=null;
+    if(dx<-110){ setDrag({dx:0,dy:0,active:false}); setTimeout(()=>go(1),10); return; }
+    if(dx>110){ setDrag({dx:0,dy:0,active:false}); setTimeout(()=>go(-1),10); return; }
+    setDrag({dx:0,dy:0,active:false});
+  }
 
   return <div style={{flex:1,display:'flex',flexDirection:'column',padding:'8px 16px 14px',minHeight:0}}>
     <div style={{position:'relative',flex:1,minHeight:0}}>
@@ -642,8 +623,9 @@ function SwipeDeck({deck,ctx,idx,setIdx,go,intent,existingRating,nav}){
         const isTop=depth===0;
         const tf=isTop?`translate(${drag.dx}px,${drag.dy<0?drag.dy:drag.dy*0.4}px) rotate(${drag.dx*0.04}deg)`:`translateY(${depth*12}px) scale(${1-depth*0.045})`;
         const cc={...c,_wine:ctx.wine};
-        return <div key={c.key} ref={isTop?cardRef:undefined}
-          style={{position:'absolute',inset:0,zIndex:10-depth,transform:tf,transition:drag.active&&isTop?'none':'transform .3s cubic-bezier(.34,1.1,.64,1)',opacity:depth>1?0:1,touchAction:isTop&&!isFinish?'none':'auto',cursor:isTop&&!isFinish?'grab':'default'}}>
+        return <div key={c.key}
+          onPointerDown={isTop?onPointerDown:undefined} onPointerMove={isTop?onPointerMove:undefined} onPointerUp={isTop?onPointerUp:undefined} onPointerCancel={isTop?onPointerUp:undefined}
+          style={{position:'absolute',inset:0,zIndex:10-depth,transform:tf,transition:drag.active&&isTop?'none':'transform .3s cubic-bezier(.34,1.1,.64,1)',opacity:depth>1?0:1,touchAction:isTop&&!isFinish?'none':'auto',cursor:isTop&&!isFinish?'grab':'default',userSelect:isTop&&!isFinish?'none':'auto',WebkitUserSelect:isTop&&!isFinish?'none':'auto',WebkitTouchCallout:isTop&&!isFinish?'none':'default'}}>
           <CardShell card={cc} intent={intent} existingRating={existingRating} nav={nav} style={{height:'100%'}}>
             <CardFace card={c} ctx={ctx}/>
           </CardShell>
