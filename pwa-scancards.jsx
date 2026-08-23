@@ -10,7 +10,7 @@ function useScanContent(wine,matchPct,dna){
   const [loading,setLoading]=React.useState(false);
   React.useEffect(()=>{
     if(!wine||!wine.name) return;
-    const key='vinterest_scancards_v2_'+(wine.name||'').replace(/\s/g,'_')+'_'+(wine.vintage||'nv')+'_'+(matchPct??'x');
+    const key='vinterest_scancards_v3_'+(wine.name||'').replace(/\s/g,'_')+'_'+(wine.vintage||'nv')+'_'+(matchPct??'x');
     const cached=localStorage.getItem(key);
     if(cached){ try{ setGen(JSON.parse(cached)); return; }catch(e){} }
     if(!window.claude||!window.claude.complete) return;
@@ -35,7 +35,7 @@ function useScanContent(wine,matchPct,dna){
       '"region_style":"one sentence on what makes wines from here distinctive (max 24 words)",'+
       '"estate":"one sentence on the producer/winemaker and the estate\'s history or reputation — if producer is unknown, describe the typical winemaking approach in this region instead (max 26 words)",'+
       '"talk":["three SHORT quotable phrases (each max 12 words) a drinker could say out loud to sound clued-in about this exact wine"],'+
-      '"term":"one wine term this bottle teaches, formatted as \\"Term — plain-English meaning\\" (max 18 words)",'+
+      '"fact2":"one specific, memorable aging/classification/production fact that helps this bottle make sense — e.g. what its official classification (Reserva/Crianza/Gran Reserva, AOC tier, etc.) actually requires in barrel and bottle time, how that compares to a neighboring classification, or another concrete production detail. Plain sentence, not a term-definition format (max 22 words)",'+
       '"matchNote":"one sentence giving an honest confidence verdict on THIS PAIRING, grounded in the WineDNA facts above — if I have a top grape/region for this type, name it explicitly and say whether this bottle aligns with or departs from it; never invent a grape/region I do not have (max 24 words). Never mention flavor, texture, tannin, oak, or acidity — that is covered elsewhere."'+
       '}';
     window.claude.complete({messages:[{role:'user',content:prompt}]})
@@ -381,9 +381,9 @@ function CardFace({card,ctx}){
           </div>
         ))}
       </div>
-      {expanded&&gen&&gen.term&&<div style={{padding:'12px 14px',borderRadius:12,background:C.offWhite,border:`1px solid ${C.line}`}}>
-        <div style={{fontSize:13,fontWeight:700,color:a,fontFamily:C.P,letterSpacing:'0.06em',textTransform:'uppercase',marginBottom:5}}>Drop this term</div>
-        <div style={{fontSize:15,color:C.ink2,fontFamily:C.P,lineHeight:1.55}}>{gen.term}</div>
+      {gen&&gen.fact2&&<div style={{padding:'12px 14px',borderRadius:12,background:C.offWhite,border:`1px solid ${C.line}`}}>
+        <div style={{fontSize:13,fontWeight:700,color:a,fontFamily:C.P,letterSpacing:'0.06em',textTransform:'uppercase',marginBottom:5}}>Drop this fact</div>
+        <div style={{fontSize:15,color:C.ink2,fontFamily:C.P,lineHeight:1.55}}>{gen.fact2}</div>
       </div>}
     </div>;
   }
@@ -488,7 +488,7 @@ function FinishFace({wine,intent,existingRating,nav,accent}){
         </svg>
         <div style={{position:'absolute',inset:0,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center'}}>
           <div style={{fontSize:40,fontWeight:800,color:C.green,fontFamily:C.P,lineHeight:1}}>{existingRating}<span style={{fontSize:16,fontWeight:700}}> pts</span></div>
-          <div style={{fontSize:11,fontWeight:700,color:C.mid,fontFamily:C.P,letterSpacing:'0.12em',textTransform:'uppercase',marginTop:2}}>previous rating</div>
+          <div style={{fontSize:9.5,fontWeight:700,color:C.mid,fontFamily:C.P,letterSpacing:'0.06em',textTransform:'uppercase',marginTop:2,textAlign:'center',padding:'0 8px',lineHeight:1.2}}>Previous<br/>rating</div>
         </div>
       </div>
       <div style={{fontSize:19,fontWeight:800,color:C.ink,fontFamily:C.P,lineHeight:1.25}}>You already rated this one</div>
@@ -617,7 +617,7 @@ function SwipeDeck({deck,ctx,idx,setIdx,go,savedKeys,saveCard,intent,existingRat
       const {dx}=dragRef.current;
       start.current=null;
       if(dx>110){ if(onSwipeSave&&!savedKeys.includes(topRef.current.key)) onSwipeSave(topRef.current); setDrag({dx:0,dy:0,active:false}); setTimeout(()=>go(1),10); return; }
-      if(dx<-110){ setDrag({dx:0,dy:0,active:false}); setTimeout(()=>go(1),10); return; }
+      if(dx<-110){ setDrag({dx:0,dy:0,active:false}); setTimeout(()=>go(-1),10); return; }
       setDrag({dx:0,dy:0,active:false});
     }
     el.addEventListener('touchstart',onDown,{passive:true});
@@ -651,7 +651,7 @@ function SwipeDeck({deck,ctx,idx,setIdx,go,savedKeys,saveCard,intent,existingRat
           <CardShell card={cc} onSave={()=>saveCard(c)} saved={savedKeys.includes(c.key)} intent={intent} existingRating={existingRating} nav={nav} style={{height:'100%'}}>
             <CardFace card={c} ctx={ctx}/>
           </CardShell>
-          {isTop&&Math.abs(drag.dx)>40&&!isFinish&&<div style={{position:'absolute',top:24,[drag.dx>0?'left':'right']:24,padding:'6px 14px',borderRadius:10,border:`2.5px solid ${drag.dx>0?C.green:C.mid}`,color:drag.dx>0?C.green:C.mid,fontSize:15,fontWeight:800,fontFamily:C.P,transform:`rotate(${drag.dx>0?-12:12}deg)`,background:'rgba(255,255,255,0.9)',letterSpacing:'0.05em'}}>{drag.dx>0?'SAVE':'NEXT'}</div>}
+          {isTop&&Math.abs(drag.dx)>40&&!isFinish&&<div style={{position:'absolute',top:24,[drag.dx>0?'left':'right']:24,padding:'6px 14px',borderRadius:10,border:`2.5px solid ${drag.dx>0?C.green:C.mid}`,color:drag.dx>0?C.green:C.mid,fontSize:15,fontWeight:800,fontFamily:C.P,transform:`rotate(${drag.dx>0?-12:12}deg)`,background:'rgba(255,255,255,0.9)',letterSpacing:'0.05em'}}>{drag.dx>0?'SAVE':'BACK'}</div>}
         </div>;
       })}
     </div>
