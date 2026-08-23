@@ -5,33 +5,38 @@
    Deck interaction is tweakable: swipe deck / carousel / feed. */
 
 /* ── content generation (batched, cached) ── */
-function useScanContent(wine){
+function useScanContent(wine,matchPct,dna){
   const [gen,setGen]=React.useState(null);
   const [loading,setLoading]=React.useState(false);
   React.useEffect(()=>{
     if(!wine||!wine.name) return;
-    const key='vinterest_scancards_v1_'+(wine.name||'').replace(/\s/g,'_')+'_'+(wine.vintage||'nv');
+    const key='vinterest_scancards_v2_'+(wine.name||'').replace(/\s/g,'_')+'_'+(wine.vintage||'nv')+'_'+(matchPct??'x');
     const cached=localStorage.getItem(key);
     if(cached){ try{ setGen(JSON.parse(cached)); return; }catch(e){} }
     if(!window.claude||!window.claude.complete) return;
     setLoading(true);
     const w=wine;
+    const dnaLine=dna?`My WineDNA for ${(w.type||'red')}s, from ${dna.count} rated wine(s): top grape ${dna.topGrape||'none yet'}, top region ${dna.topRegion||'none yet'}, average rating I give this type is ${dna.avgRating}/100.`:`I have no rating history for ${(w.type||'red')}s yet.`;
+    const matchLine=matchPct!=null?`Their computed match score for this exact bottle is ${matchPct}/100.`:'No match score is available yet.';
     const prompt=
       'You are a warm, knowledgeable sommelier writing quick-hit cards for a wine app. '+
       'Wine: '+(w.name||'')+(w.vintage&&w.vintage!=='NV'&&w.vintage!==0?' '+w.vintage:'')+'. '+
       'Type: '+(w.type||'red')+'. Region: '+(w.region||'')+((w.sub_region)?' ('+w.sub_region+')':'')+', '+(w.country||'')+'. '+
+      'Producer: '+(w.producer||'unknown')+'. '+
       'Grapes: '+((w.grapes||[]).join(', ')||'unknown')+'. '+
       'Tasting notes: '+((w.tasting_notes||[]).join(', ')||'n/a')+'. '+
+      dnaLine+' '+matchLine+' '+
       'Return ONLY valid JSON, no markdown, all sentences concrete and specific to THIS wine (no generic filler), and NO numbers/percentages/decimals anywhere: '+
       '{'+
       '"fact":"one genuinely surprising, memorable fact about this wine, its producer, grape, or region (max 28 words)",'+
-      '"fit":"one vivid sentence on the FLAVOR/STYLE reasons this suits their palate — texture, body, fruit, oak, tannin, acidity (max 24 words). Do not discuss confidence or how good a match this is, only taste.",'+
-      '"caution":"one honest sentence on who might not enjoy it and why — be kind but specific (max 24 words)",'+
+      '"fit":"one vivid sentence on the FLAVOR/STYLE reasons this suits their palate — texture, body, fruit, oak, tannin, acidity. If my WineDNA above has a top grape or region, explicitly tie this wine to it by name (e.g. building on my known love of that grape/region) — never invent a grape or region I do not have in my profile (max 26 words)",'+
+      '"caution":"one specific, practical thing worth knowing before or while drinking THIS bottle — e.g. decanting, serving temperature, food pairing risk, or how it will develop with age. Do NOT use hedging phrases like \\"if you prefer\\" or \\"if you like\\" — you already know their taste profile from the data above, so speak to them directly and confidently. If the match score is high, this should read as a helpful tip for someone who will enjoy the wine, never as a warning that it might not suit them (max 24 words)",'+
       '"origin":"one sentence painting the place this comes from — landscape, climate or culture (max 26 words)",'+
       '"region_style":"one sentence on what makes wines from here distinctive (max 24 words)",'+
+      '"estate":"one sentence on the producer/winemaker and the estate\'s history or reputation — if producer is unknown, describe the typical winemaking approach in this region instead (max 26 words)",'+
       '"talk":["three SHORT quotable phrases (each max 12 words) a drinker could say out loud to sound clued-in about this exact wine"],'+
       '"term":"one wine term this bottle teaches, formatted as \\"Term — plain-English meaning\\" (max 18 words)",'+
-      '"matchNote":"one sentence giving an honest confidence verdict on THIS PAIRING — how sure a bet it is for their palate, any tradeoff or risk, framed like a sommelier hedging or vouching (max 22 words). Never mention flavor, texture, tannin, oak, or acidity — that is covered elsewhere. No overlap with a sentence about who will love it and why."'+
+      '"matchNote":"one sentence giving an honest confidence verdict on THIS PAIRING, grounded in the WineDNA facts above — if I have a top grape/region for this type, name it explicitly and say whether this bottle aligns with or departs from it; never invent a grape/region I do not have (max 24 words). Never mention flavor, texture, tannin, oak, or acidity — that is covered elsewhere."'+
       '}';
     window.claude.complete({messages:[{role:'user',content:prompt}]})
       .then(text=>{
@@ -44,12 +49,24 @@ function useScanContent(wine){
       })
       .catch(()=>{})
       .finally(()=>setLoading(false));
-  },[wine&&wine.name,wine&&wine.vintage]);
+  },[wine&&wine.name,wine&&wine.vintage,matchPct,dna&&dna.topGrape,dna&&dna.topRegion]);
   return {gen,loading};
 }
 
 /* ── small helpers ── */
 const lvl=(v,lo,mid,hi)=>v>=0.68?hi:v>=0.38?mid:lo;
+/* Rating-weighted top grape/region for this wine's type, straight from rating history — used to ground
+   personalization on the scan cards so it can never contradict what WineDNA actually shows. */
+function _dnaSnapshot(type){
+  const rated=WineHistory.getAll().filter(w=>w.rating>0&&(w.type||'red').toLowerCase().replace('é','e')===type);
+  if(!rated.length) return null;
+  const gCount={},rCount={};
+  rated.forEach(w=>{const wt=Math.max(w.rating||55,5);(w.grapes||[]).forEach(g=>{if(g)gCount[g]=(gCount[g]||0)+wt;});if(w.region)rCount[w.region]=(rCount[w.region]||0)+wt;});
+  const topGrape=Object.entries(gCount).sort((a,b)=>b[1]-a[1])[0]?.[0]||null;
+  const topRegion=Object.entries(rCount).sort((a,b)=>b[1]-a[1])[0]?.[0]||null;
+  const avgRating=Math.round(rated.reduce((s,w)=>s+w.rating,0)/rated.length);
+  return {topGrape,topRegion,count:rated.length,avgRating};
+}
 function ScanShimmer({col}){
   return <span style={{display:'inline-flex',alignItems:'center',gap:7}}>
     <span style={{width:11,height:11,borderRadius:6,border:`2px solid ${col}33`,borderTopColor:col,animation:'scSpin .8s linear infinite'}}/>
@@ -82,10 +99,6 @@ function ScanCardsScreen({nav,back}){
 
   const deckStyle=useDeckStyle();
   const curr=React.useMemo(()=>Regional.current(),[]);
-  const {gen,loading}=useScanContent(wine);
-
-  // track scan immediately (even before rating)
-  React.useEffect(()=>{ if(wine&&!isDemo) WineHistory.track(wine); },[wine&&wine.name,wine&&wine.vintage]);
 
   // intent gate — remembered per scan so returning doesn't re-ask
   const intentKey='vinterest_scan_intent_'+((wine&&wine.name)||'').replace(/\s/g,'_')+'_'+((wine&&wine.vintage)||'nv');
@@ -103,6 +116,11 @@ function ScanCardsScreen({nav,back}){
     const conf=scanData.confidence;
     return conf?Math.round(Math.min(0.98,conf)*100):null;
   },[wine&&wine.name,intent]);
+  const dnaSnapshot=React.useMemo(()=>wine?_dnaSnapshot((wine.type||'red').toLowerCase().replace('é','e')):null,[wine&&wine.name]);
+  const {gen,loading}=useScanContent(wine,matchPct,dnaSnapshot);
+
+  // track scan immediately (even before rating)
+  React.useEffect(()=>{ if(wine&&!isDemo) WineHistory.track(wine); },[wine&&wine.name,wine&&wine.vintage]);
 
   if(!wine){
     return <div style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:14,padding:32}}>
@@ -120,7 +138,7 @@ function ScanCardsScreen({nav,back}){
       ? <IntentGate wine={wine} onPick={pickIntent} nav={nav}/>
       : <CardDeck key={deckStyle} deckStyle={deckStyle} wine={wine} gen={gen} loading={loading}
           matchPct={matchPct} curr={curr} scanData={scanData} intent={intent} canRate={canRate}
-          existingRating={existingRating} nav={nav}/>}
+          existingRating={existingRating} dna={dnaSnapshot} nav={nav}/>}
     <style>{`
       @keyframes scSpin{to{transform:rotate(360deg)}}
       @keyframes scSheet{from{transform:translateY(100%)}to{transform:translateY(0)}}
@@ -196,7 +214,7 @@ function buildCards({wine,gen,matchPct,curr,scanData,intent}){
 
 /* renders the body of one card. `expanded` = full-screen sheet mode. */
 function CardFace({card,ctx,expanded}){
-  const {wine,gen,loading,matchPct,curr,scanData,intent}=ctx;
+  const {wine,gen,loading,matchPct,curr,scanData,intent,dna}=ctx;
   const a=card.accent;
   const P=C.P;
   const H=({children})=><div style={{fontSize:expanded?24:20,fontWeight:800,color:C.ink,fontFamily:P,lineHeight:1.2,letterSpacing:'-0.01em'}}>{children}</div>;
@@ -207,6 +225,7 @@ function CardFace({card,ctx,expanded}){
     const verdict=pct==null?'New for your palate':pct>=90?'A near-perfect match':pct>=78?'A strong match':pct>=63?'A solid match, worth it':pct>=48?'Worth a try':pct>=32?'A bit of a stretch':'Outside your usual';
     const r=52,circ=2*Math.PI*r,off=circ*(1-(pct||0)/100);
     const affNote=WineAffinity.scoreFor(wine);
+    const dnaFallback=dna&&dna.topGrape?`Your ${(wine.type||'red')}s lean ${dna.topGrape}${dna.topRegion?' from '+dna.topRegion:''} — ${(wine.grapes||[]).some(g=>(g||'').toLowerCase()===dna.topGrape.toLowerCase())?'this bottle lines up with that.':'this one branches out a bit from that.'}`:'Scan and rate a few more to sharpen this.';
     return <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:16,textAlign:'center'}}>
       <div style={{position:'relative',width:150,height:150}}>
         <svg width="150" height="150" viewBox="0 0 130 130" style={{transform:'rotate(-90deg)'}}>
@@ -219,10 +238,10 @@ function CardFace({card,ctx,expanded}){
         </div>
       </div>
       <H>{verdict}</H>
-      <Body>{loading&&!gen?<ScanShimmer col={a}/>:(gen&&gen.matchNote)||'Scan builds your taste profile — the more you rate, the sharper this gets.'}</Body>
+      <Body big>{loading&&!gen?<ScanShimmer col={a}/>:(gen&&gen.matchNote)||dnaFallback}</Body>
       {expanded&&<div style={{width:'100%',marginTop:4,padding:'12px 14px',borderRadius:12,background:C.offWhite,border:`1px solid ${C.line}`,textAlign:'left'}}>
         <div style={{fontSize:13,fontWeight:700,color:C.mid,fontFamily:P,letterSpacing:'0.06em',textTransform:'uppercase',marginBottom:6}}>How we got this</div>
-        <div style={{fontSize:14.5,color:C.ink2,fontFamily:P,lineHeight:1.55}}>We compare this wine's body, tannins, acidity and sweetness against the average of the {wine.type||'red'}s you've rated highly.{affNote>0.5?' Cards you\'ve saved have nudged this up a little.':affNote<-0.5?' Some saved signals pulled this down slightly.':''}</div>
+        <div style={{fontSize:14.5,color:C.ink2,fontFamily:P,lineHeight:1.55}}>We compare this wine's body, tannins, acidity and sweetness against the average of the {wine.type||'red'}s you've rated highly{dna&&dna.topGrape?` — right now that's mostly ${dna.topGrape}${dna.topRegion?' from '+dna.topRegion:''}`:''}.{affNote>0.5?' Cards you\'ve saved have nudged this up a little.':affNote<-0.5?' Some saved signals pulled this down slightly.':''}</div>
       </div>}
     </div>;
   }
@@ -233,7 +252,7 @@ function CardFace({card,ctx,expanded}){
       <H>{card.field==='fact'?'A little story':card.field==='fit'?'This is your kind of bottle':'One thing to know'}</H>
       <Body big>{loading&&!val?<ScanShimmer col={a}/>:(val||'—')}</Body>
       {expanded&&card.field==='fit'&&<AttrReasons wine={wine} accent={a}/>}
-      {expanded&&card.field==='caution'&&<div style={{fontSize:14.5,color:C.mid,fontFamily:C.P,lineHeight:1.55}}>Not a dealbreaker — just what to expect so nothing catches you off guard.</div>}
+      {expanded&&card.field==='caution'&&<div style={{fontSize:14.5,color:C.mid,fontFamily:C.P,lineHeight:1.55}}>{matchPct!=null&&matchPct>=63?'Just a tip to get the most out of it — not a reason to hesitate.':'Worth knowing so nothing catches you off guard.'}</div>}
     </div>;
   }
 
@@ -245,11 +264,15 @@ function CardFace({card,ctx,expanded}){
           <span key={i} style={{padding:'5px 12px',borderRadius:20,background:card.soft,color:a,fontSize:14,fontWeight:600,fontFamily:C.P,border:`1px solid ${a}22`}}>{t}</span>
         ))}
       </div>
-      <Body>{loading&&!(gen&&gen.origin)?<ScanShimmer col={a}/>:((gen&&gen.origin)||`${wine.region?wine.region+', ':''}${wine.country} — a classic home for ${(wine.grapes&&wine.grapes[0])||'this style'}.`)}</Body>
-      {expanded&&<div style={{padding:'12px 14px',borderRadius:12,background:card.soft,border:`1px solid ${a}22`}}>
+      <Body big>{loading&&!(gen&&gen.origin)?<ScanShimmer col={a}/>:((gen&&gen.origin)||`${wine.region?wine.region+', ':''}${wine.country} — a classic home for ${(wine.grapes&&wine.grapes[0])||'this style'}.`)}</Body>
+      <div style={{padding:'12px 14px',borderRadius:12,background:card.soft,border:`1px solid ${a}22`}}>
         <div style={{fontSize:13,fontWeight:700,color:a,fontFamily:C.P,letterSpacing:'0.06em',textTransform:'uppercase',marginBottom:6}}>The regional signature</div>
-        <div style={{fontSize:15,color:C.ink2,fontFamily:C.P,lineHeight:1.55}}>{(gen&&gen.region_style)||`Wines from ${wine.region||wine.country} are prized for their sense of place.`}</div>
-      </div>}
+        <div style={{fontSize:17,color:C.ink2,fontFamily:C.P,lineHeight:1.55}}>{(gen&&gen.region_style)||`Wines from ${wine.region||wine.country} are prized for their sense of place.`}</div>
+      </div>
+      <div style={{padding:'12px 14px',borderRadius:12,background:C.offWhite,border:`1px solid ${C.line}`}}>
+        <div style={{fontSize:13,fontWeight:700,color:C.mid,fontFamily:C.P,letterSpacing:'0.06em',textTransform:'uppercase',marginBottom:6}}>{wine.producer||'The winemaker'}</div>
+        <div style={{fontSize:17,color:C.ink2,fontFamily:C.P,lineHeight:1.55}}>{loading&&!(gen&&gen.estate)?<ScanShimmer col={a}/>:((gen&&gen.estate)||`A producer working in the traditional style of ${wine.region||wine.country}.`)}</div>
+      </div>
     </div>;
   }
 
@@ -367,6 +390,8 @@ function ValueFace({wine,curr,scanData,accent,soft,expanded}){
 /* ── finish / rating card ── */
 function FinishFace({wine,intent,existingRating,nav,accent}){
   const canRate=intent==='tasting'||intent==='tasted';
+  const alreadyRated=existingRating>0;
+  const [confirmStep,setConfirmStep]=React.useState(alreadyRated);
   const [score,setScore]=React.useState(existingRating||0);
   const [saved,setSaved]=React.useState(existingRating>0);
   const label=score===0?'':score<=20?'Not for me':score<=40?"It's ok":score<=60?'Good':score<=80?'Really good':'Exceptional';
@@ -389,8 +414,19 @@ function FinishFace({wine,intent,existingRating,nav,accent}){
       <div style={{fontSize:21,fontWeight:800,color:C.ink,fontFamily:C.P,lineHeight:1.2}}>Saved to My Wines</div>
       <div style={{fontSize:15.5,color:C.ink2,fontFamily:C.P,lineHeight:1.55}}>When you pour it, come back and rate it in a tap — that's what sharpens your matches.</div>
       <div style={{display:'flex',flexDirection:'column',gap:10,width:'100%',marginTop:4}}>
-        <Btn primary full onClick={()=>nav('detail')}>See full details</Btn>
+        <Btn primary full onClick={()=>nav('detail')}>See full details →</Btn>
         <Btn full onClick={()=>nav('mywines')}>Go to My Wines</Btn>
+      </div>
+    </div>;
+  }
+  if(confirmStep){
+    return <div style={{display:'flex',flexDirection:'column',gap:16,alignItems:'center',textAlign:'center'}}>
+      <div style={{width:56,height:56,borderRadius:28,background:C.amberBg,border:`1px solid ${C.amber}35`,display:'flex',alignItems:'center',justifyContent:'center'}}><Icon n="star" sz={26} col={C.amber}/></div>
+      <div style={{fontSize:21,fontWeight:800,color:C.ink,fontFamily:C.P,lineHeight:1.2}}>You already rated this one</div>
+      <div style={{fontSize:15.5,color:C.ink2,fontFamily:C.P,lineHeight:1.55}}>You gave {wine.name}{wine.vintage&&wine.vintage!==0?' '+wine.vintage:''} a {existingRating} last time. Leave it as is, or rate it again.</div>
+      <div style={{display:'flex',flexDirection:'column',gap:10,width:'100%',marginTop:4}}>
+        <Btn full onClick={()=>setConfirmStep(false)}>Re-rate it</Btn>
+        <Btn primary full onClick={()=>nav('detail')}>Leave it at {existingRating} — see full details →</Btn>
       </div>
     </div>;
   }
@@ -411,14 +447,15 @@ function FinishFace({wine,intent,existingRating,nav,accent}){
       </div>:<span style={{fontSize:14.5,color:C.mid,fontFamily:C.P}}>Slide or tap a score</span>}
     </div>
     {score>0&&!saved&&<Btn primary full onClick={commit}>Save rating</Btn>}
-    {saved&&<><div style={{textAlign:'center',fontSize:15,fontWeight:600,color:C.green,fontFamily:C.P}}>✓ Saved to My Wines</div><Btn full onClick={()=>nav('detail')}>See full details</Btn></>}
+    {saved&&<><div style={{textAlign:'center',fontSize:15,fontWeight:600,color:C.green,fontFamily:C.P}}>✓ Saved to My Wines</div><Btn primary full onClick={()=>nav('detail')}>See full details →</Btn></>}
+    {!saved&&score===0&&<div onClick={()=>nav('detail')} style={{textAlign:'center',fontSize:14,fontWeight:600,color:C.mid,fontFamily:C.P,cursor:'pointer'}}>Skip rating — see full details →</div>}
   </div>;
 }
 
 /* ── the deck (three interaction styles) ── */
-function CardDeck({deckStyle,wine,gen,loading,matchPct,curr,scanData,intent,canRate,existingRating,nav}){
+function CardDeck({deckStyle,wine,gen,loading,matchPct,curr,scanData,intent,canRate,existingRating,dna,nav}){
   const cards=React.useMemo(()=>buildCards({wine,gen,matchPct,curr,scanData,intent}),[wine&&wine.name,gen,matchPct,intent]);
-  const ctx={wine,gen,loading,matchPct,curr,scanData,intent};
+  const ctx={wine,gen,loading,matchPct,curr,scanData,intent,dna};
   const [idx,setIdx]=React.useState(0);
   const [expanded,setExpanded]=React.useState(null);
   const [savedKeys,setSavedKeys]=React.useState(()=>{ try{ return JSON.parse(sessionStorage.getItem('vinterest_scan_saved_'+((wine&&wine.name)||''))||'[]'); }catch(e){ return []; } });
