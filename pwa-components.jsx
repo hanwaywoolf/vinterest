@@ -282,6 +282,22 @@ const WineHistory = {
     const w = wines.find(w => w.name===name && String(w.vintage)===String(vintage));
     if(w){ w.rating=rating; this.save(wines); }
   },
+  /* Optional, user-entered scan location — manual text only for now (no geolocation/reverse-geocoding yet). */
+  setLocation(name, vintage, location){
+    const wines = this.getAll();
+    const w = wines.find(w => w.name===name && String(w.vintage)===String(vintage));
+    if(!w) return;
+    if(location&&location.trim()) w.scan_location={name:location.trim(),added_at:new Date().toISOString()};
+    else delete w.scan_location;
+    this.save(wines);
+  },
+  /* 'checking' (deciding whether to buy), 'tasting' (about to drink), 'tasted' (already had it) \u2014 lets Wine Detail
+     phrase the location prompt as \"where did you see/buy this\" vs \"where did you have this\". */
+  setScanIntent(name, vintage, intent){
+    const wines = this.getAll();
+    const w = wines.find(w => w.name===name && String(w.vintage)===String(vintage));
+    if(w){ w.scan_intent=intent; this.save(wines); }
+  },
   getProfile(){
     const wines = this.getAll();
     if(!wines.length) return {red:0,white:0,rose:0,sparkling:0,total:0};

@@ -5,12 +5,27 @@
    Deck interaction is tweakable: swipe deck / carousel / feed. */
 
 /* ── content generation (batched, cached) ── */
+/* Verified aging-classification facts — given to the model verbatim so it can never invent wrong numbers
+   for well-known denominations (a learning platform can't afford to misstate these). */
+const _AGING_FACTS=[
+  {test:/riserva/i,fact:'Chianti Classico Riserva must age at least 24 months, with a minimum of 3 months in bottle, before release.'},
+  {test:/gran\s*reserva/i,fact:'Rioja Gran Reserva reds require a minimum of 5 years aging before release, with at least 2 years in oak barrel and 2 more years in bottle.'},
+  {test:/reserva/i,fact:'Rioja Reserva reds require a minimum of 3 years aging before release, with at least 1 year in oak barrel and at least 6 months in bottle.'},
+  {test:/crianza/i,fact:'Rioja Crianza reds require a minimum of 2 years aging before release, with at least 1 year in oak barrel.'},
+  {test:/vintage\s*champagne|champagne.*vintage/i,fact:'Vintage Champagne must age on its lees for a minimum of 3 years before release, versus 15 months for non-vintage.'},
+  {test:/vintage\s*port/i,fact:'Vintage Port is bottled after only about 2 years in barrel, then does most of its aging in bottle for decades.'},
+];
+function _agingFactFor(w){
+  const hay=[w.name,w.producer].filter(Boolean).join(' ');
+  const hit=_AGING_FACTS.find(f=>f.test.test(hay));
+  return hit?hit.fact:null;
+}
 function useScanContent(wine,matchPct,dna){
   const [gen,setGen]=React.useState(null);
   const [loading,setLoading]=React.useState(false);
   React.useEffect(()=>{
     if(!wine||!wine.name) return;
-    const key='vinterest_scancards_v3_'+(wine.name||'').replace(/\s/g,'_')+'_'+(wine.vintage||'nv')+'_'+(matchPct??'x');
+    const key='vinterest_scancards_v4_'+(wine.name||'').replace(/\s/g,'_')+'_'+(wine.vintage||'nv')+'_'+(matchPct??'x');
     const cached=localStorage.getItem(key);
     if(cached){ try{ setGen(JSON.parse(cached)); return; }catch(e){} }
     if(!window.claude||!window.claude.complete) return;
@@ -18,6 +33,8 @@ function useScanContent(wine,matchPct,dna){
     const w=wine;
     const dnaLine=dna?`My WineDNA for ${(w.type||'red')}s, from ${dna.count} rated wine(s): top grape ${dna.topGrape||'none yet'}, top region ${dna.topRegion||'none yet'}, average rating I give this type is ${dna.avgRating}/100.`:`I have no rating history for ${(w.type||'red')}s yet.`;
     const matchLine=matchPct!=null?`Their computed match score for this exact bottle is ${matchPct}/100.`:'No match score is available yet.';
+    const agingFact=_agingFactFor(w);
+    const agingLine=agingFact?`REFERENCE AGING FACTS (use verbatim, do not alter the numbers): ${agingFact}`:'REFERENCE AGING FACTS: none available for this wine\u2019s classification \u2014 do not state specific aging durations you are not certain of.';
     const prompt=
       'You are a warm, knowledgeable sommelier writing quick-hit cards for a wine app. '+
       'Wine: '+(w.name||'')+(w.vintage&&w.vintage!=='NV'&&w.vintage!==0?' '+w.vintage:'')+'. '+
@@ -25,7 +42,7 @@ function useScanContent(wine,matchPct,dna){
       'Producer: '+(w.producer||'unknown')+'. '+
       'Grapes: '+((w.grapes||[]).join(', ')||'unknown')+'. '+
       'Tasting notes: '+((w.tasting_notes||[]).join(', ')||'n/a')+'. '+
-      dnaLine+' '+matchLine+' '+
+      dnaLine+' '+matchLine+' '+agingLine+' '+
       'Return ONLY valid JSON, no markdown, all sentences concrete and specific to THIS wine (no generic filler), and NO numbers/percentages/decimals anywhere: '+
       '{'+
       '"fact":"one genuinely surprising, memorable fact about this wine, its producer, grape, or region (max 28 words)",'+
@@ -35,7 +52,7 @@ function useScanContent(wine,matchPct,dna){
       '"region_style":"one sentence on what makes wines from here distinctive (max 24 words)",'+
       '"estate":"one sentence on the producer/winemaker and the estate\'s history or reputation — if producer is unknown, describe the typical winemaking approach in this region instead (max 26 words)",'+
       '"talk":["three SHORT quotable phrases (each max 12 words) a drinker could say out loud to sound clued-in about this exact wine"],'+
-      '"fact2":"one specific, memorable aging/classification/production fact that helps this bottle make sense — e.g. what its official classification (Reserva/Crianza/Gran Reserva, AOC tier, etc.) actually requires in barrel and bottle time, how that compares to a neighboring classification, or another concrete production detail. Plain sentence, not a term-definition format (max 22 words)",'+
+      '"fact2":"one specific, memorable aging/classification/production fact that helps this bottle make sense. If REFERENCE AGING FACTS are given below, you MUST use those exact figures verbatim (paraphrase the wording only, never change the numbers) — do not invent different aging periods. If no reference facts are given for this wine\'s classification, give a general production fact that does NOT state specific aging durations you are not certain of (max 22 words)",'+
       '"matchNote":"one sentence giving an honest confidence verdict on THIS PAIRING, grounded in the WineDNA facts above — if I have a top grape/region for this type, name it explicitly and say whether this bottle aligns with or departs from it; never invent a grape/region I do not have (max 24 words). Never mention flavor, texture, tannin, oak, or acidity — that is covered elsewhere."'+
       '}';
     window.claude.complete({messages:[{role:'user',content:prompt}]})
@@ -114,7 +131,7 @@ function ScanCardsScreen({nav,back}){
     if(existingRating>0) return 'tasted';
     return sessionStorage.getItem(intentKey)||null;
   });
-  function pickIntent(v){ setIntent(v); try{ sessionStorage.setItem(intentKey,v); }catch(e){} }
+  function pickIntent(v){ setIntent(v); try{ sessionStorage.setItem(intentKey,v); }catch(e){} if(wine) WineHistory.setScanIntent(wine.name,wine.vintage,v); }
   const canRate=intent==='tasting'||intent==='tasted';
 
   // duplicate scan gate — a wine you've already rated (exact vintage match) can skip straight to re-rating
@@ -315,7 +332,7 @@ function CardFace({card,ctx}){
   }
 
   if(card.kind==='origin'){
-    return <div style={{display:'flex',flexDirection:'column',gap:14}}>
+    return <div style={{display:'flex',flexDirection:'column',gap:12}}>
       <H>{wine.region||wine.country}</H>
       <div style={{display:'flex',flexWrap:'wrap',gap:7}}>
         {[wine.sub_region,wine.region,wine.country].filter(Boolean).filter((v,i,arr)=>arr.indexOf(v)===i).map((t,i)=>(
@@ -323,13 +340,15 @@ function CardFace({card,ctx}){
         ))}
       </div>
       <Body big>{loading&&!(gen&&gen.origin)?<ScanShimmer col={a}/>:((gen&&gen.origin)||`${wine.region?wine.region+', ':''}${wine.country} — a classic home for ${(wine.grapes&&wine.grapes[0])||'this style'}.`)}</Body>
-      <div style={{padding:'12px 14px',borderRadius:12,background:card.soft,border:`1px solid ${a}22`}}>
-        <div style={{fontSize:13,fontWeight:700,color:a,fontFamily:C.P,letterSpacing:'0.06em',textTransform:'uppercase',marginBottom:6}}>The regional signature</div>
-        <div style={{fontSize:17,color:C.ink2,fontFamily:C.P,lineHeight:1.55}}>{(gen&&gen.region_style)||`Wines from ${wine.region||wine.country} are prized for their sense of place.`}</div>
-      </div>
-      <div style={{padding:'12px 14px',borderRadius:12,background:C.offWhite,border:`1px solid ${C.line}`}}>
-        <div style={{fontSize:13,fontWeight:700,color:C.mid,fontFamily:C.P,letterSpacing:'0.06em',textTransform:'uppercase',marginBottom:6}}>{wine.producer||'The winemaker'}</div>
-        <div style={{fontSize:17,color:C.ink2,fontFamily:C.P,lineHeight:1.55}}>{loading&&!(gen&&gen.estate)?<ScanShimmer col={a}/>:((gen&&gen.estate)||`A producer working in the traditional style of ${wine.region||wine.country}.`)}</div>
+      <div style={{padding:'12px 14px',borderRadius:12,background:card.soft,border:`1px solid ${a}22`,display:'flex',flexDirection:'column',gap:10}}>
+        <div>
+          <div style={{fontSize:12,fontWeight:700,color:a,fontFamily:C.P,letterSpacing:'0.06em',textTransform:'uppercase',marginBottom:3}}>The regional signature</div>
+          <div style={{fontSize:15.5,color:C.ink2,fontFamily:C.P,lineHeight:1.45}}>{(gen&&gen.region_style)||`Wines from ${wine.region||wine.country} are prized for their sense of place.`}</div>
+        </div>
+        <div style={{borderTop:`1px solid ${a}22`,paddingTop:10}}>
+          <div style={{fontSize:12,fontWeight:700,color:a,fontFamily:C.P,letterSpacing:'0.06em',textTransform:'uppercase',marginBottom:3}}>{wine.producer||'The winemaker'}</div>
+          <div style={{fontSize:15.5,color:C.ink2,fontFamily:C.P,lineHeight:1.45}}>{loading&&!(gen&&gen.estate)?<ScanShimmer col={a}/>:((gen&&gen.estate)||`A producer working in the traditional style of ${wine.region||wine.country}.`)}</div>
+        </div>
       </div>
     </div>;
   }
@@ -342,24 +361,23 @@ function CardFace({card,ctx}){
     cues.push({l:'Acidity',v:lvl(ac,'Round & mellow','Fresh','Zippy & mouth-watering'),tip:'Does it make you salivate? That\'s acidity.'});
     if(tx!=null) cues.push({l:'Oak / texture',v:lvl(tx,'Clean & steely','Subtle','Creamy, vanilla, toast'),tip:'Any butter, vanilla or toast? That\'s oak.'});
     if(sw>=0.2) cues.push({l:'Sweetness',v:lvl(sw,'Dry','Off-dry','Noticeably sweet'),tip:'Sense of sugar on the tip of your tongue.'});
-    const notes=(wine.tasting_notes||[]).slice(0,expanded?6:4);
+    const notes=(wine.tasting_notes||[]).slice(0,4);
     return <div style={{display:'flex',flexDirection:'column',gap:14}}>
       <H>What to look for</H>
-      <div style={{display:'flex',flexDirection:'column',gap:expanded?12:9}}>
-        {cues.slice(0,expanded?6:3).map((c,i)=>(
+      <div style={{display:'flex',flexDirection:'column',gap:12}}>
+        {cues.slice(0,4).map((c,i)=>(
           <div key={i} style={{display:'flex',gap:10,alignItems:'baseline'}}>
-            <span style={{fontSize:14,fontWeight:700,color:a,fontFamily:C.P,minWidth:expanded?96:78,flexShrink:0}}>{c.l}</span>
+            <span style={{fontSize:15,fontWeight:700,color:a,fontFamily:C.P,minWidth:92,flexShrink:0}}>{c.l}</span>
             <div style={{flex:1}}>
-              <div style={{fontSize:15.5,color:C.ink,fontFamily:C.P,fontWeight:600}}>{c.v}</div>
-              {expanded&&<div style={{fontSize:13.5,color:C.mid,fontFamily:C.P,lineHeight:1.45,marginTop:2}}>{c.tip}</div>}
+              <div style={{fontSize:17,color:C.ink,fontFamily:C.P,fontWeight:600}}>{c.v}</div>
             </div>
           </div>
         ))}
       </div>
       {notes.length>0&&<div>
-        <div style={{fontSize:12.5,fontWeight:700,color:C.mid,fontFamily:C.P,letterSpacing:'0.06em',textTransform:'uppercase',marginBottom:7,marginTop:2}}>Hunt for these flavours</div>
+        <div style={{fontSize:13,fontWeight:700,color:C.mid,fontFamily:C.P,letterSpacing:'0.06em',textTransform:'uppercase',marginBottom:7,marginTop:2}}>Hunt for these flavours</div>
         <div style={{display:'flex',flexWrap:'wrap',gap:6}}>
-          {notes.map((n,i)=>(<span key={i} style={{padding:'5px 11px',borderRadius:20,background:C.offWhite,color:C.ink2,fontSize:13.5,fontWeight:500,fontFamily:C.P,border:`1px solid ${C.line}`}}>{n}</span>))}
+          {notes.map((n,i)=>(<span key={i} style={{padding:'5px 11px',borderRadius:20,background:C.offWhite,color:C.ink2,fontSize:15,fontWeight:500,fontFamily:C.P,border:`1px solid ${C.line}`}}>{n}</span>))}
         </div>
       </div>}
     </div>;
@@ -554,7 +572,7 @@ function CardShell({card,children,intent,existingRating,nav,style}){
       <div style={{width:30,height:30,borderRadius:9,background:card.soft,display:'flex',alignItems:'center',justifyContent:'center'}}><Icon n={card.icon} sz={16} col={card.accent}/></div>
       <span style={{fontSize:12.5,fontWeight:700,color:card.accent,fontFamily:C.P,letterSpacing:'0.09em',textTransform:'uppercase'}}>{card.eyebrow}</span>
     </div>
-    <div className="sc-scroll" style={{padding:'8px 18px 18px',overflowY:'auto',flex:1,minHeight:0}}>
+    <div className="sc-scroll" style={{padding:'8px 18px 18px',overflowY:'hidden',flex:1,minHeight:0}}>
       {isFinish?<FinishFace wine={card._wine} intent={intent} existingRating={existingRating} nav={nav} accent={card.accent}/>:children}
     </div>
   </div>;
@@ -587,9 +605,7 @@ function SwipeDeck({deck,ctx,idx,setIdx,go,intent,existingRating,nav}){
       const p=pt(e);
       const dx=p.clientX-start.current.x, dy=p.clientY-start.current.y;
       dragRef.current={dx,dy};
-      // Only hijack the gesture once it's clearly a horizontal drag — otherwise let the browser's
-      // native vertical scroll handle it so long card content stays scrollable.
-      if(Math.abs(dx)>8&&Math.abs(dx)>Math.abs(dy)) e.preventDefault();
+      if(Math.abs(dx)>8||Math.abs(dy)>8) e.preventDefault();
       setDrag({dx,dy,active:true});
     }
     function onUp(){
@@ -627,7 +643,7 @@ function SwipeDeck({deck,ctx,idx,setIdx,go,intent,existingRating,nav}){
         const tf=isTop?`translate(${drag.dx}px,${drag.dy<0?drag.dy:drag.dy*0.4}px) rotate(${drag.dx*0.04}deg)`:`translateY(${depth*12}px) scale(${1-depth*0.045})`;
         const cc={...c,_wine:ctx.wine};
         return <div key={c.key} ref={isTop?cardRef:undefined}
-          style={{position:'absolute',inset:0,zIndex:10-depth,transform:tf,transition:drag.active&&isTop?'none':'transform .3s cubic-bezier(.34,1.1,.64,1)',opacity:depth>1?0:1,touchAction:isTop&&!isFinish?'pan-y':'auto',cursor:isTop&&!isFinish?'grab':'default'}}>
+          style={{position:'absolute',inset:0,zIndex:10-depth,transform:tf,transition:drag.active&&isTop?'none':'transform .3s cubic-bezier(.34,1.1,.64,1)',opacity:depth>1?0:1,touchAction:isTop&&!isFinish?'none':'auto',cursor:isTop&&!isFinish?'grab':'default'}}>
           <CardShell card={cc} intent={intent} existingRating={existingRating} nav={nav} style={{height:'100%'}}>
             <CardFace card={c} ctx={ctx}/>
           </CardShell>

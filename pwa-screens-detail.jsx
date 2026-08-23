@@ -1,5 +1,39 @@
 /* Vinterest PWA — Wine Detail screen (tabbed: Details / Story / Buy) */
 
+function ScanLocationCard({wine}){
+  const [editing,setEditing]=React.useState(false);
+  const [val,setVal]=React.useState(wine?.scan_location?.name||'');
+  const [savedName,setSavedName]=React.useState(wine?.scan_location?.name||'');
+  React.useEffect(()=>{ setVal(wine?.scan_location?.name||''); setSavedName(wine?.scan_location?.name||''); },[wine?.name,wine?.vintage]);
+  if(!wine) return null;
+  const dateStr=wine.scanned_at?new Date(wine.scanned_at).toLocaleDateString('en',{month:'short',day:'numeric',year:'numeric'}):null;
+  // Copy matches how they met the wine: buying/considering vs. actually drinking it.
+  const copy=wine.scan_intent==='checking'
+    ? {label:'Where You Found It',placeholder:"e.g. a wine shop, grocery store, a friend recommended it",empty:'Add where you saw this — shop, store, a recommendation…'}
+    : {label:'Where You Had It',placeholder:"e.g. a restaurant, a friend's house",empty:"Add where this was — restaurant, a friend's house…"};
+  function commit(){
+    WineHistory.setLocation(wine.name,wine.vintage,val);
+    setSavedName(val.trim());
+    setEditing(false);
+  }
+  return <Card style={{padding:'12px 14px',display:'flex',flexDirection:'column',gap:8}}>
+    <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+      <span style={{fontSize:12,fontWeight:700,color:C.mid,letterSpacing:'0.08em',textTransform:'uppercase',fontFamily:C.P}}>{copy.label}</span>
+      {dateStr&&<span style={{fontSize:12.5,color:C.mid,fontFamily:C.P}}>Scanned {dateStr}</span>}
+    </div>
+    {editing?(
+      <div style={{display:'flex',gap:8}}>
+        <input autoFocus value={val} onChange={e=>setVal(e.target.value)} onKeyDown={e=>{if(e.key==='Enter')commit();}} placeholder={copy.placeholder} style={{flex:1,fontSize:15,fontFamily:C.P,padding:'8px 10px',borderRadius:9,border:`1px solid ${C.line}`,color:C.ink}}/>
+        <Btn primary onClick={commit}>Save</Btn>
+      </div>
+    ):(
+      <div onClick={()=>setEditing(true)} style={{cursor:'pointer',fontSize:15.5,fontFamily:C.P,color:savedName?C.ink:C.mid,fontWeight:savedName?600:400}}>
+        {savedName||copy.empty}
+      </div>
+    )}
+  </Card>;
+}
+
 function WineDetailScreen({back,nav}){
   const [tab,setTab]=React.useState(0);
   const tabs=['Details','Story','Price'];
@@ -318,6 +352,9 @@ function DetailMerged({wine,nav,existingRating=0,matchPct}){
           <span style={{fontSize:15,color:matchConfig.col,fontFamily:C.P,lineHeight:1.6}}>{genWhy||'(personalizing…)'}</span>
         )}
       </Card>
+
+      {/* Scan location — optional manual note on where/when this was had (full geolocation is backlogged) */}
+      <ScanLocationCard wine={wine}/>
 
       {/* Taste Profile */}
       <div>
