@@ -55,6 +55,14 @@ function useScanContent(wine,matchPct,dna){
 
 /* ── small helpers ── */
 const lvl=(v,lo,mid,hi)=>v>=0.68?hi:v>=0.38?mid:lo;
+/* Wine name + vintage for display — skips appending the vintage again when it's already part of the name string (e.g. "Viña Ardanza Reserva 2020"). */
+function _wineTitle(w){
+  if(!w) return '';
+  const name=(w.name||'').trim();
+  const vy=(w.vintage&&w.vintage!==0&&w.vintage!=='NV')?String(w.vintage):null;
+  if(!vy||name.endsWith(vy)) return name;
+  return `${name} ${vy}`;
+}
 /* Rating-weighted top grape/region for this wine's type, straight from rating history — used to ground
    personalization on the scan cards so it can never contradict what WineDNA actually shows. */
 function _dnaSnapshot(type){
@@ -109,6 +117,12 @@ function ScanCardsScreen({nav,back}){
   function pickIntent(v){ setIntent(v); try{ sessionStorage.setItem(intentKey,v); }catch(e){} }
   const canRate=intent==='tasting'||intent==='tasted';
 
+  // duplicate scan gate — a wine you've already rated (exact vintage match) can skip straight to re-rating
+  // instead of walking the full card sequence again; remembered per scan so returning doesn't re-ask.
+  const dupKey='vinterest_scan_dup_'+((wine&&wine.name)||'').replace(/\s/g,'_')+'_'+((wine&&wine.vintage)||'nv');
+  const [duplicateChoice,setDuplicateChoice]=React.useState(()=>existingRating>0?(sessionStorage.getItem(dupKey)||null):'na');
+  function pickDuplicate(v){ setDuplicateChoice(v); try{ sessionStorage.setItem(dupKey,v); }catch(e){} }
+
   const matchPct=React.useMemo(()=>{
     if(!wine) return null;
     const dna=calcMatchScore(wine,WineHistory.getAll());
@@ -136,9 +150,11 @@ function ScanCardsScreen({nav,back}){
     {isDemo&&<div style={{background:'#FFF3CD',borderBottom:'1px solid #FFE082',padding:'8px 16px',fontSize:13,color:'#7A5200',fontFamily:C.P,flexShrink:0}}>Demo data — add ANTHROPIC_API_KEY to scan for real.</div>}
     {!intent
       ? <IntentGate wine={wine} onPick={pickIntent} nav={nav}/>
-      : <CardDeck key={deckStyle} deckStyle={deckStyle} wine={wine} gen={gen} loading={loading}
-          matchPct={matchPct} curr={curr} scanData={scanData} intent={intent} canRate={canRate}
-          existingRating={existingRating} dna={dnaSnapshot} nav={nav}/>}
+      : existingRating>0&&!duplicateChoice
+        ? <DuplicateGate wine={wine} existingRating={existingRating} onPick={pickDuplicate} nav={nav}/>
+        : <CardDeck key={deckStyle} deckStyle={deckStyle} wine={wine} gen={gen} loading={loading}
+            matchPct={matchPct} curr={curr} scanData={scanData} intent={intent} canRate={canRate}
+            existingRating={existingRating} dna={dnaSnapshot} startAtEnd={duplicateChoice==='skip'} nav={nav}/>}
     <style>{`
       @keyframes scSpin{to{transform:rotate(360deg)}}
       @keyframes scSheet{from{transform:translateY(100%)}to{transform:translateY(0)}}
@@ -189,6 +205,48 @@ function IntentGate({wine,onPick,nav}){
           <Icon n="chevron" sz={16} col={C.mid}/>
         </div>
       ))}
+    </div>
+    <div onClick={()=>nav('detail')} style={{textAlign:'center',marginTop:22,fontSize:14,fontWeight:600,color:C.mid,fontFamily:C.P,cursor:'pointer'}}>Skip to full details</div>
+  </div>;
+}
+
+/* ── duplicate-scan gate: you've rated this exact bottle before ── */
+function DuplicateGate({wine,existingRating,onPick,nav}){
+  const r=44,circ=2*Math.PI*r;
+  return <div className="sc-scroll" style={{flex:1,overflowY:'auto',padding:'22px 20px 28px',display:'flex',flexDirection:'column',alignItems:'center',textAlign:'center',animation:'scFade .25s ease'}}>
+    <div style={{position:'relative',width:120,height:120,marginTop:6}}>
+      <svg width="120" height="120" viewBox="0 0 104 104" style={{transform:'rotate(-90deg)'}}>
+        <circle cx="52" cy="52" r={r} fill="none" stroke={C.line} strokeWidth="9"/>
+        <circle cx="52" cy="52" r={r} fill="none" stroke={C.green} strokeWidth="9" strokeLinecap="round" strokeDasharray={circ} strokeDashoffset={circ*(1-existingRating/100)}/>
+      </svg>
+      <div style={{position:'absolute',inset:0,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center'}}>
+        <div style={{fontSize:28,fontWeight:800,color:C.green,fontFamily:C.P,lineHeight:1}}>{existingRating}</div>
+        <div style={{fontSize:10,fontWeight:700,color:C.mid,fontFamily:C.P,letterSpacing:'0.1em',textTransform:'uppercase'}}>pts</div>
+      </div>
+    </div>
+    <div style={{fontSize:23,fontWeight:800,color:C.ink,fontFamily:C.P,lineHeight:1.2,marginTop:16}}>You've already scanned<br/>this one</div>
+    <div style={{fontSize:14.5,color:C.mid,fontFamily:C.P,lineHeight:1.5,marginTop:8}}>You rated {_wineTitle(wine)} a {existingRating} last time. Want the quick path, or the full rundown again?</div>
+    <div style={{display:'flex',flexDirection:'column',gap:12,marginTop:22,width:'100%'}}>
+      <div onClick={()=>onPick('skip')} style={{display:'flex',alignItems:'center',gap:14,padding:'16px 16px',borderRadius:16,background:C.white,border:`1.5px solid ${C.line}`,cursor:'pointer',boxShadow:'0 1px 4px rgba(0,0,0,0.05)'}}>
+        <div style={{width:46,height:46,borderRadius:14,background:C.crSoft,border:`1px solid ${C.crDim}`,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+          <Icon n="star" sz={22} col={C.cr}/>
+        </div>
+        <div style={{flex:1,minWidth:0,textAlign:'left'}}>
+          <div style={{fontSize:16.5,fontWeight:700,color:C.ink,fontFamily:C.P,lineHeight:1.2}}>Just re-rate it</div>
+          <div style={{fontSize:13.5,color:C.mid,fontFamily:C.P,lineHeight:1.45,marginTop:3}}>Skip straight to rating — no need to see the cards again.</div>
+        </div>
+        <Icon n="chevron" sz={16} col={C.mid}/>
+      </div>
+      <div onClick={()=>onPick('full')} style={{display:'flex',alignItems:'center',gap:14,padding:'16px 16px',borderRadius:16,background:C.white,border:`1.5px solid ${C.line}`,cursor:'pointer',boxShadow:'0 1px 4px rgba(0,0,0,0.05)'}}>
+        <div style={{width:46,height:46,borderRadius:14,background:C.crSoft,border:`1px solid ${C.crDim}`,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+          <Icon n="compass" sz={22} col={C.cr}/>
+        </div>
+        <div style={{flex:1,minWidth:0,textAlign:'left'}}>
+          <div style={{fontSize:16.5,fontWeight:700,color:C.ink,fontFamily:C.P,lineHeight:1.2}}>Go through it again</div>
+          <div style={{fontSize:13.5,color:C.mid,fontFamily:C.P,lineHeight:1.45,marginTop:3}}>See the match, tasting notes and everything else fresh.</div>
+        </div>
+        <Icon n="chevron" sz={16} col={C.mid}/>
+      </div>
     </div>
     <div onClick={()=>nav('detail')} style={{textAlign:'center',marginTop:22,fontSize:14,fontWeight:600,color:C.mid,fontFamily:C.P,cursor:'pointer'}}>Skip to full details</div>
   </div>;
@@ -421,16 +479,20 @@ function FinishFace({wine,intent,existingRating,nav,accent}){
     </div>;
   }
   if(confirmStep){
-    return <div style={{display:'flex',flexDirection:'column',gap:16,alignItems:'center',textAlign:'center'}}>
-      <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:4}}>
-        <div style={{display:'flex',alignItems:'baseline',gap:4}}>
-          <span style={{fontSize:64,fontWeight:800,color:C.amber,fontFamily:C.P,lineHeight:1}}>{existingRating}</span>
-          <span style={{fontSize:16,fontWeight:700,color:C.mid,fontFamily:C.P}}>/100</span>
+    const r=52,circ=2*Math.PI*r;
+    return <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:16,textAlign:'center'}}>
+      <div style={{position:'relative',width:150,height:150}}>
+        <svg width="150" height="150" viewBox="0 0 130 130" style={{transform:'rotate(-90deg)'}}>
+          <circle cx="65" cy="65" r={r} fill="none" stroke={C.line} strokeWidth="10"/>
+          <circle cx="65" cy="65" r={r} fill="none" stroke={C.green} strokeWidth="10" strokeLinecap="round" strokeDasharray={circ} strokeDashoffset={circ*(1-existingRating/100)}/>
+        </svg>
+        <div style={{position:'absolute',inset:0,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center'}}>
+          <div style={{fontSize:40,fontWeight:800,color:C.green,fontFamily:C.P,lineHeight:1}}>{existingRating}<span style={{fontSize:16,fontWeight:700}}> pts</span></div>
+          <div style={{fontSize:11,fontWeight:700,color:C.mid,fontFamily:C.P,letterSpacing:'0.12em',textTransform:'uppercase',marginTop:2}}>previous rating</div>
         </div>
-        <div style={{fontSize:12.5,fontWeight:700,color:C.mid,fontFamily:C.P,letterSpacing:'0.1em',textTransform:'uppercase'}}>Your previous rating</div>
       </div>
       <div style={{fontSize:19,fontWeight:800,color:C.ink,fontFamily:C.P,lineHeight:1.25}}>You already rated this one</div>
-      <div style={{fontSize:15.5,color:C.ink2,fontFamily:C.P,lineHeight:1.55}}>Leave your score for {wine.name}{wine.vintage&&wine.vintage!==0?' '+wine.vintage:''} as is, or rate it again.</div>
+      <div style={{fontSize:15.5,color:C.ink2,fontFamily:C.P,lineHeight:1.55}}>Leave your score for {_wineTitle(wine)} as is, or rate it again.</div>
       <div style={{display:'flex',flexDirection:'column',gap:10,width:'100%',marginTop:4}}>
         <Btn primary full onClick={()=>nav('detail')}>Leave it at {existingRating} — see full details →</Btn>
         <Btn full onClick={()=>setConfirmStep(false)}>Re-rate it</Btn>
@@ -460,10 +522,10 @@ function FinishFace({wine,intent,existingRating,nav,accent}){
 }
 
 /* ── the deck (three interaction styles) ── */
-function CardDeck({deckStyle,wine,gen,loading,matchPct,curr,scanData,intent,canRate,existingRating,dna,nav}){
+function CardDeck({deckStyle,wine,gen,loading,matchPct,curr,scanData,intent,canRate,existingRating,dna,startAtEnd,nav}){
   const cards=React.useMemo(()=>buildCards({wine,gen,matchPct,curr,scanData,intent}),[wine&&wine.name,gen,matchPct,intent]);
   const ctx={wine,gen,loading,matchPct,curr,scanData,intent,dna};
-  const [idx,setIdx]=React.useState(0);
+  const [idx,setIdx]=React.useState(()=>startAtEnd?Math.max(0,cards.length-1):0);
   const [savedKeys,setSavedKeys]=React.useState(()=>{ try{ return JSON.parse(sessionStorage.getItem('vinterest_scan_saved_'+((wine&&wine.name)||''))||'[]'); }catch(e){ return []; } });
   const [toast,setToast]=React.useState(null);
 
