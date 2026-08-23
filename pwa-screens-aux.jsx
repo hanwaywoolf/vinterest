@@ -274,7 +274,7 @@ function TasteProfileScreen({nav,back,showPro}){
       </div>
 </div>
 
-      <style>{`@keyframes vspin{to{transform:rotate(360deg)}}`}</style>
+      <style>{`@keyframes vspin{to{transform:rotate(360deg)}} .sc-scroll::-webkit-scrollbar{display:none} .sc-scroll{scrollbar-width:none}`}</style>
     </div>
   );
 }
@@ -379,9 +379,9 @@ function MyWinesScreen({nav,back}){
           </div>
         )}
         {/* Filter tabs */}
-        <div style={{display:'flex',gap:0,marginBottom:0}}>
+        <div className="sc-scroll" style={{display:'flex',gap:0,marginBottom:0,overflowX:'auto',WebkitOverflowScrolling:'touch'}}>
           {filterTabs.map((t,i)=>(
-            <div key={i} onClick={()=>setFilter(t.k)} style={{flex:1,textAlign:'center',padding:'8px 4px',cursor:'pointer',borderBottom:filter===t.k?`2px solid ${TYPE_COLS[t.k]||C.cr}`:'2px solid transparent',marginBottom:-1}}>
+            <div key={i} onClick={()=>setFilter(t.k)} style={{flex:'0 0 auto',textAlign:'center',padding:'8px 14px',cursor:'pointer',borderBottom:filter===t.k?`2px solid ${TYPE_COLS[t.k]||C.cr}`:'2px solid transparent',marginBottom:-1,whiteSpace:'nowrap'}}>
               <span style={{fontSize:15,fontWeight:filter===t.k?700:400,color:filter===t.k?TYPE_COLS[t.k]||C.cr:C.mid,fontFamily:C.P}}>{t.l}</span>
             </div>
           ))}

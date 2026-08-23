@@ -109,7 +109,7 @@ function _dnaWhy(axis,val,topGrapes,topRegions){
 }
 
 /* ── Gap map ── */
-function _gaps(typeKey,avgB,avgT,avgA,topGrapes,topRegions,wines){
+function _gaps(typeKey,avgB,avgT,avgA,avgS,topGrapes,topRegions,wines){
   const rgs=new Set(topRegions.map(r=>(r||'').toLowerCase()));
   const gps=new Set(topGrapes.map(g=>(g||'').toLowerCase()));
   const lowRgs=_lowTraits(wines,w=>[w.region]);
@@ -284,6 +284,7 @@ function CSH({label,cKey,collapsed,toggle,summary}){
 ────────────────────────────────────────────────── */
 function WineDNAScreen({nav,back,showPro}){
   const [typeIdx,setTypeIdx]=React.useState(0);
+  const [tabToast,setTabToast]=React.useState(null);
   const [genSummaries,setGenSummaries]=React.useState({});
   const [generatingSummary,setGeneratingSummary]=React.useState(null);
   const [genScripts,setGenScripts]=React.useState({});
@@ -335,12 +336,22 @@ function WineDNAScreen({nav,back,showPro}){
     const topNotes=_topNotes(wines,14);
     const noteClusters=_clusterNotes(topNotes);
     const personality=_personality(tp.key,avgB,avgT,avgA,avgS);
-    const gaps=_gaps(tp.key,avgB,avgT,avgA,topGrapes,topRegions,wines);
+    const gaps=_gaps(tp.key,avgB,avgT,avgA,avgS,topGrapes,topRegions,wines);
     const topWines=[...wines].filter(w=>w.rating>0).sort((a,b)=>(b.rating||0)-(a.rating||0)).slice(0,3);
     return{...tp,wines,pct,avgB,avgT,avgA,avgS,avgX,avgE,topGrapes,topRegions,topNotes,noteClusters,personality,gaps,topWines};
   }),[allWines.length]);
 
   const t=typeStats[typeIdx];
+  const visibleIdxs=typeStats.reduce((arr,ts,i)=>{ if(i<4||ts.wines.length>0) arr.push(i); return arr; },[]);
+  function pickType(i){
+    if(i<4&&typeStats[i].wines.length===0){ setTabToast(`You haven't scanned a ${typeStats[i].label.toLowerCase()} yet`); setTimeout(()=>setTabToast(null),1800); return; }
+    setTypeIdx(i);
+  }
+  function stepType(dir){
+    const pos=visibleIdxs.indexOf(typeIdx);
+    const next=visibleIdxs[Math.min(visibleIdxs.length-1,Math.max(0,pos+dir))];
+    setTypeIdx(next);
+  }
 
   /* LLM summary */
   React.useEffect(()=>{
@@ -387,8 +398,8 @@ function WineDNAScreen({nav,back,showPro}){
     const dx=e.changedTouches[0].clientX-touchX.current;
     const dy=e.changedTouches[0].clientY-(touchY.current||0);
     if(Math.abs(dx)>Math.abs(dy)&&Math.abs(dx)>40){
-      if(dx<0)setTypeIdx(i=>Math.min(i+1,_TYPES.length-1));
-      else setTypeIdx(i=>Math.max(i-1,0));
+      if(dx<0)stepType(1);
+      else stepType(-1);
     }
     touchX.current=null;touchY.current=null;
   }
@@ -485,25 +496,38 @@ function WineDNAScreen({nav,back,showPro}){
 
           <div style={{padding:'14px 16px 16px',display:'flex',flexDirection:'column',gap:12}}>
 
-            {/* Type tabs */}
-            <div style={{display:'flex',gap:5}}>
-              {_TYPES.map((tp,i)=>(
-                <div key={i} onClick={()=>setTypeIdx(i)} style={{flex:1,textAlign:'center',padding:'7px 4px',borderRadius:10,background:i===typeIdx?tp.col+'18':C.offWhite,border:`1.5px solid ${i===typeIdx?tp.col+'55':'transparent'}`,cursor:'pointer',transition:'all .15s'}}>
-                  <div style={{width:7,height:7,borderRadius:4,background:tp.col,margin:'0 auto 3px'}}/>
-                  <div style={{fontSize:13,fontWeight:i===typeIdx?700:500,color:i===typeIdx?tp.col:C.mid,fontFamily:C.P}}>{tp.label}</div>
-                  <div style={{fontSize:12,color:i===typeIdx?tp.col:C.mid,fontFamily:C.P,opacity:0.75}}>{typeStats[i].pct}%</div>
-                </div>
-              ))}
+            {/* Type tabs — base four always shown (greyed out + toast if unscanned, matching Home); Orange/Dessert/Fortified only appear, on a second row, once scanned */}
+            <div style={{position:'relative'}}>
+              <div style={{display:'flex',gap:5}}>
+                {_TYPES.slice(0,4).map((tp,i)=>(
+                  <div key={i} onClick={()=>pickType(i)} style={{flex:1,textAlign:'center',padding:'7px 4px',borderRadius:10,background:i===typeIdx?tp.col+'18':C.offWhite,border:`1.5px solid ${i===typeIdx?tp.col+'55':'transparent'}`,cursor:'pointer',transition:'all .15s',opacity:typeStats[i].wines.length===0?0.4:1}}>
+                    <div style={{width:7,height:7,borderRadius:4,background:tp.col,margin:'0 auto 3px'}}/>
+                    <div style={{fontSize:13,fontWeight:i===typeIdx?700:500,color:i===typeIdx?tp.col:C.mid,fontFamily:C.P}}>{tp.label}</div>
+                    <div style={{fontSize:12,color:i===typeIdx?tp.col:C.mid,fontFamily:C.P,opacity:0.75}}>{typeStats[i].pct}%</div>
+                  </div>
+                ))}
+              </div>
+              {visibleIdxs.length>4&&<div style={{display:'flex',gap:5,marginTop:5}}>
+                {visibleIdxs.filter(i=>i>=4).map(i=>{
+                  const tp=_TYPES[i];
+                  return <div key={i} onClick={()=>pickType(i)} style={{flex:1,textAlign:'center',padding:'7px 4px',borderRadius:10,background:i===typeIdx?tp.col+'18':C.offWhite,border:`1.5px solid ${i===typeIdx?tp.col+'55':'transparent'}`,cursor:'pointer',transition:'all .15s'}}>
+                    <div style={{width:7,height:7,borderRadius:4,background:tp.col,margin:'0 auto 3px'}}/>
+                    <div style={{fontSize:13,fontWeight:i===typeIdx?700:500,color:i===typeIdx?tp.col:C.mid,fontFamily:C.P}}>{tp.label}</div>
+                    <div style={{fontSize:12,color:i===typeIdx?tp.col:C.mid,fontFamily:C.P,opacity:0.75}}>{typeStats[i].pct}%</div>
+                  </div>;
+                })}
+              </div>}
+              {tabToast&&<div style={{position:'absolute',top:'calc(100% + 8px)',left:0,right:0,textAlign:'center',fontSize:14,fontWeight:700,color:'#fff',fontFamily:C.P,background:C.cr,borderRadius:10,padding:'10px 14px',zIndex:20,boxShadow:'0 6px 18px rgba(139,26,47,0.35)',animation:'dnaToast 1.8s ease forwards'}}>{tabToast}</div>}
             </div>
 
             {/* Nav arrows */}
             <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-              <div onClick={()=>setTypeIdx(i=>Math.max(i-1,0))} style={{width:30,height:30,borderRadius:15,background:typeIdx>0?t.col+'15':C.offWhite,border:`1px solid ${typeIdx>0?t.col+'35':C.line}`,display:'flex',alignItems:'center',justifyContent:'center',cursor:typeIdx>0?'pointer':'default',opacity:typeIdx>0?1:0.35,transition:'all .15s'}}>
-                <svg viewBox="0 0 20 20" width={14} height={14}><polyline points="12,4 6,10 12,16" stroke={typeIdx>0?t.col:C.mid} strokeWidth="1.8" fill="none" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              <div onClick={()=>stepType(-1)} style={{width:30,height:30,borderRadius:15,background:visibleIdxs.indexOf(typeIdx)>0?t.col+'15':C.offWhite,border:`1px solid ${visibleIdxs.indexOf(typeIdx)>0?t.col+'35':C.line}`,display:'flex',alignItems:'center',justifyContent:'center',cursor:visibleIdxs.indexOf(typeIdx)>0?'pointer':'default',opacity:visibleIdxs.indexOf(typeIdx)>0?1:0.35,transition:'all .15s'}}>
+                <svg viewBox="0 0 20 20" width={14} height={14}><polyline points="12,4 6,10 12,16" stroke={t.col} strokeWidth="1.8" fill="none" strokeLinecap="round" strokeLinejoin="round"/></svg>
               </div>
-              <span style={{fontSize:13,color:C.mid,fontFamily:C.P}}>{typeIdx+1} of {_TYPES.length} · swipe or tap</span>
-              <div onClick={()=>setTypeIdx(i=>Math.min(i+1,_TYPES.length-1))} style={{width:30,height:30,borderRadius:15,background:typeIdx<_TYPES.length-1?t.col+'15':C.offWhite,border:`1px solid ${typeIdx<_TYPES.length-1?t.col+'35':C.line}`,display:'flex',alignItems:'center',justifyContent:'center',cursor:typeIdx<_TYPES.length-1?'pointer':'default',opacity:typeIdx<_TYPES.length-1?1:0.35,transition:'all .15s'}}>
-                <svg viewBox="0 0 20 20" width={14} height={14}><polyline points="8,4 14,10 8,16" stroke={typeIdx<_TYPES.length-1?t.col:C.mid} strokeWidth="1.8" fill="none" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              <span style={{fontSize:13,color:C.mid,fontFamily:C.P}}>{visibleIdxs.indexOf(typeIdx)+1} of {visibleIdxs.length} · swipe or tap</span>
+              <div onClick={()=>stepType(1)} style={{width:30,height:30,borderRadius:15,background:visibleIdxs.indexOf(typeIdx)<visibleIdxs.length-1?t.col+'15':C.offWhite,border:`1px solid ${visibleIdxs.indexOf(typeIdx)<visibleIdxs.length-1?t.col+'35':C.line}`,display:'flex',alignItems:'center',justifyContent:'center',cursor:visibleIdxs.indexOf(typeIdx)<visibleIdxs.length-1?'pointer':'default',opacity:visibleIdxs.indexOf(typeIdx)<visibleIdxs.length-1?1:0.35,transition:'all .15s'}}>
+                <svg viewBox="0 0 20 20" width={14} height={14}><polyline points="8,4 14,10 8,16" stroke={t.col} strokeWidth="1.8" fill="none" strokeLinecap="round" strokeLinejoin="round"/></svg>
               </div>
             </div>
 
@@ -825,13 +849,13 @@ function WineDNAScreen({nav,back,showPro}){
 
         {/* App version */}
         <div style={{textAlign:'center',padding:'12px 0 4px',opacity:0.45}}>
-          <span style={{fontSize:13,color:C.mid,fontFamily:C.P}}>Vinterest v1.0.73</span>
+          <span style={{fontSize:13,color:C.mid,fontFamily:C.P}}>Vinterest v1.0.77</span>
         </div>
 
         <div style={{height:8}}/>
       </div>
       </div>
-      <style>{`@keyframes dnaSpin{to{transform:rotate(360deg)}}`}</style>
+      <style>{`@keyframes dnaSpin{to{transform:rotate(360deg)}}\n@keyframes dnaToast{0%{opacity:0;transform:translateY(-6px)}12%{opacity:1;transform:translateY(0)}80%{opacity:1}100%{opacity:0}}`}</style>
     </div>
   );
 }

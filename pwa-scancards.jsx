@@ -357,17 +357,19 @@ function CardFace({card,ctx}){
     const cues=[];
     const type=(wine.type||'red').toLowerCase().replace('é','e');
     const showTannins=['red','orange','fortified'].includes(type);
+    const isDessertOrFortified=['dessert','fortified'].includes(type);
     const b=wine.body??0.65,tn=wine.tannins??0.55,ac=wine.acidity??0.6,tx=wine.texture,sw=wine.sweetness??0.1;
     cues.push({l:'Body',v:lvl(b,'Light & lithe','Medium-weight','Full & mouth-coating'),tip:'Notice how heavy it feels — does it linger or refresh?'});
     if(showTannins) cues.push({l:'Tannins',v:lvl(tn,'Silky, low grip','Gentle grip','Firm, drying grip'),tip:'That drying feel on your gums and cheeks — is it soft or grippy?'});
     cues.push({l:'Acidity',v:lvl(ac,'Round & mellow','Fresh','Zippy & mouth-watering'),tip:'Does it make you salivate? That\'s acidity.'});
     if(tx!=null) cues.push({l:'Oak / texture',v:lvl(tx,'Clean & steely','Subtle','Creamy, vanilla, toast'),tip:'Any butter, vanilla or toast? That\'s oak.'});
-    if(sw>=0.2||type==='dessert'||type==='fortified') cues.push({l:'Sweetness',v:lvl(sw,'Dry','Off-dry','Noticeably sweet'),tip:'Sense of sugar on the tip of your tongue.'});
+    if(sw>=0.2||isDessertOrFortified) cues.push({l:'Sweetness',v:lvl(sw,'Dry','Off-dry','Noticeably sweet'),tip:'Sense of sugar on the tip of your tongue.'});
+    if(isDessertOrFortified) cues.push({l:'Serving size',v:'A smaller 2–3oz pour',tip:'These are richer and higher in alcohol — a small glass goes further.'});
     const notes=(wine.tasting_notes||[]).slice(0,4);
     return <div style={{display:'flex',flexDirection:'column',gap:14}}>
       <H>What to look for</H>
       <div style={{display:'flex',flexDirection:'column',gap:12}}>
-        {cues.slice(0,4).map((c,i)=>(
+        {cues.slice(0,isDessertOrFortified?5:4).map((c,i)=>(
           <div key={i} style={{display:'flex',gap:10,alignItems:'baseline'}}>
             <span style={{fontSize:15,fontWeight:700,color:a,fontFamily:C.P,minWidth:92,flexShrink:0}}>{c.l}</span>
             <div style={{flex:1}}>
