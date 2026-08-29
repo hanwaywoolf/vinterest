@@ -1,0 +1,5 @@
+[
+{"id":"region_knowledge","label":"Your [Region] Knowledge","uses":"wineHistory_region","concepts":["appellation_hierarchy","vintage_variation"]},
+{"id":"words_met","label":"Words You've Met","uses":"vocab_ledger"},
+{"id":"blind_spot","label":"Your Blind Spot","uses":"weakest_concept"}
+]

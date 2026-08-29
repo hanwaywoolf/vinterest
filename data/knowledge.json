@@ -1,1 +1,38 @@
-
+{
+"regions":{
+"Rioja":{"country":"Spain","classification":"DOCa","keyGrapes":["Tempranillo","Garnacha"],"climate":"Continental, tempered by the Atlantic via the Ebro valley","agingRules":"Crianza: 2yr total, min 1 in oak. Reserva: 3yr, min 1 in oak. Gran Reserva: 5yr, min 2 in oak.","classicProducers":["López de Heredia","CVNE","Muga","La Rioja Alta"]},
+"Ribera del Duero":{"country":"Spain","classification":"DO","keyGrapes":["Tempranillo (locally Tinto Fino)"],"climate":"High-altitude continental — big diurnal swings concentrate skins","agingRules":"Same Crianza/Reserva/Gran Reserva ladder as Rioja","classicProducers":["Vega Sicilia","Pingus","Emilio Moro"]},
+"Burgundy":{"country":"France","classification":"AOC, with Grand Cru/Premier Cru/Village/Regional tiers","keyGrapes":["Pinot Noir","Chardonnay"],"climate":"Cool continental — vintage variation is large and prices track it","agingRules":"No fixed cellar mandate; single-vineyard Grand Cru sits atop a strict site-based hierarchy, not a time-in-barrel rule","classicProducers":["Domaine Leroy","Louis Jadot","Armand Rousseau"]},
+"Bordeaux":{"country":"France","classification":"AOC, Left Bank vs Right Bank, 1855 Classification for Médoc","keyGrapes":["Cabernet Sauvignon","Merlot","Cabernet Franc","Petit Verdot"],"climate":"Maritime, moderated by the Gironde estuary","agingRules":"Blends vary by bank: Left Bank (gravel, Médoc) leans Cabernet-dominant; Right Bank (clay, Pomerol/St-Émilion) leans Merlot-dominant","classicProducers":["Château Margaux","Château Latour","Pétrus"]},
+"Napa Valley":{"country":"USA","classification":"AVA","keyGrapes":["Cabernet Sauvignon","Chardonnay"],"climate":"Warm days, fog-cooled nights off San Pablo Bay","agingRules":"No formal aging mandate — house style sets it, often riper and more oak-forward than Bordeaux","classicProducers":["Caymus","Opus One","Screaming Eagle"]},
+"Piedmont":{"country":"Italy","classification":"DOCG (Barolo, Barbaresco)","keyGrapes":["Nebbiolo"],"climate":"Foggy, cool continental in the Langhe hills","agingRules":"Barolo: min 38 months aging, 18 in wood. Barbaresco: min 26 months, 9 in wood.","classicProducers":["Giacomo Conterno","Bartolo Mascarello","Gaja"]},
+"Marlborough":{"country":"New Zealand","classification":"GI (Geographical Indication)","keyGrapes":["Sauvignon Blanc"],"climate":"Sunny days, cold nights, maritime — locks in high acidity and pyrazine aromatics","agingRules":"Not aging-focused — drunk young for freshness","classicProducers":["Cloudy Bay","Villa Maria"]},
+"Champagne":{"country":"France","classification":"AOC","keyGrapes":["Chardonnay","Pinot Noir","Pinot Meunier"],"climate":"Marginal cool climate — grapes barely ripen, which is what makes the base wine right for sparkling","agingRules":"Non-vintage: min 15 months on lees (12 by law, house minimums run higher). Vintage: min 3 years.","classicProducers":["Veuve Clicquot","Krug","Bollinger"]},
+"Loire Valley":{"country":"France","classification":"AOC (Sancerre, Pouilly-Fumé, etc.)","keyGrapes":["Sauvignon Blanc","Cabernet Franc","Melon de Bourgogne"],"climate":"Cool maritime-continental along the river","agingRules":"No aging mandate; Sancerre is a flint-and-citrus style meant young","classicProducers":["Henri Bourgeois","Didier Dagueneau"]},
+"Provence":{"country":"France","classification":"AOC (Côtes de Provence)","keyGrapes":["Grenache","Cinsault","Rolle (Vermentino)"],"climate":"Hot, dry Mediterranean","agingRules":"No aging mandate — pale, dry rosé built for immediate drinking","classicProducers":["Château d'Esclans","Domaines Ott"]}
+},
+"grapes":{
+"Tempranillo":{"profile":"Medium-high tannin, red cherry and plum, leather and tobacco with bottle age","famousIn":["Rioja","Ribera del Duero"]},
+"Cabernet Sauvignon":{"profile":"High tannin, high acid, blackcurrant and cedar; thick skin gives deep color and structure","famousIn":["Bordeaux","Napa Valley"]},
+"Pinot Noir":{"profile":"Light body, high acid, low tannin; red cherry and forest floor, thin-skinned and site-transparent","famousIn":["Burgundy","Napa Valley"]},
+"Chardonnay":{"profile":"Neutral grape that takes on winemaking choices readily — oak gives vanilla/butter, steel keeps it lean and citrus","famousIn":["Burgundy","Champagne"]},
+"Sauvignon Blanc":{"profile":"High acid, herbaceous, gooseberry and passionfruit; pyrazines drive the grassy, cut-grass note","famousIn":["Marlborough","Loire Valley"]},
+"Nebbiolo":{"profile":"High tannin AND high acid, pale color despite intensity; tar and rose petal aromatics, needs years to soften","famousIn":["Piedmont"]},
+"Grenache":{"profile":"Low tannin, high alcohol, red berry and white pepper; base grape of most dry Provençal rosé","famousIn":["Provence","Rioja"]},
+"Syrah":{"profile":"Deep color, medium-high tannin, black pepper and blackberry, smoky at altitude","famousIn":["Northern Rhône","South Australia (as Shiraz)"]},
+"Riesling":{"profile":"High acid, aromatic, can be bone-dry to very sweet; ages into petrol/TDN character that's a feature, not a fault","famousIn":["Mosel","Alsace"]},
+"Merlot":{"profile":"Softer tannin than Cabernet, plum and cocoa, ripens earlier; the backbone of Right Bank Bordeaux","famousIn":["Bordeaux (Pomerol, St-Émilion)"]}
+},
+"descriptors":{
+"vanilla":{"cause":"Lactones from oak barrel aging, concentrated in American oak"},
+"coconut":{"cause":"Same oak-lactone family as vanilla — a signature of American oak specifically"},
+"butter":{"cause":"Diacetyl, a byproduct of malolactic fermentation converting malic acid to lactic acid"},
+"petrol":{"cause":"TDN (a naphthalene compound) forming as Riesling ages — a hallmark of mature examples, not a flaw"},
+"smoke":{"cause":"Guaiacol and related phenols from toasted oak, or naturally in grapes grown in volcanic/mineral soils"},
+"leather":{"cause":"Tertiary aromas from prolonged bottle age and slow oxidation, common in aged Tempranillo and Nebbiolo"},
+"green pepper":{"cause":"Pyrazines, most concentrated in Cabernet Franc, Sauvignon Blanc, and under-ripe Cabernet Sauvignon"},
+"tropical fruit":{"cause":"Thiols released during fermentation, especially pronounced in warm-climate Sauvignon Blanc and Chenin Blanc"},
+"honey":{"cause":"Botrytis (noble rot) concentrating sugars, or simple bottle-age oxidation in aromatic whites"},
+"brioche":{"cause":"Autolysis — dead yeast cells breaking down during extended lees aging, classic in traditional-method sparkling"}
+}
+}

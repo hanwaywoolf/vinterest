@@ -1,0 +1,8 @@
+[
+{"id":"tannin_source","label":"Tannin","prereq":[]},
+{"id":"acidity_and_food","label":"Acidity & Food","prereq":[]},
+{"id":"appellation_hierarchy","label":"Appellation Hierarchy","prereq":[]},
+{"id":"oak_influence","label":"Oak Influence","prereq":[]},
+{"id":"vintage_variation","label":"Vintage Variation","prereq":[]},
+{"id":"malolactic","label":"Malolactic Fermentation","prereq":["oak_influence"]}
+]

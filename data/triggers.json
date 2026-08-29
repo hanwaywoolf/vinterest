@@ -1,0 +1,10 @@
+[
+{"event":"new_region","archetypeIds":["new_region_intro","palate_vs_textbook","region_rules","beyond_region"]},
+{"event":"new_type","archetypeIds":["new_type_entry"]},
+{"event":"grape_multi","archetypeIds":["grape_thread","grape_deep_dive"]},
+{"event":"producer_repeat","archetypeIds":["producer_gap"]},
+{"event":"contradiction","archetypeIds":["contradiction_piece"]},
+{"event":"quiz_failed_concept","archetypeIds":["blind_spot_concept"]},
+{"event":"trait_signature","archetypeIds":["trait_signature_piece"]},
+{"event":"vocab_match","archetypeIds":["flavor_signature"]}
+]

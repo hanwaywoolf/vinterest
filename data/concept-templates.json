@@ -1,0 +1,50 @@
+[
+{"conceptId":"tannin_source","templates":[
+ {"id":"tannin_source_A","dynamic":false,
+  "early":{"q":"Which of these is where tannin actually comes from?","opts":["Grape skins, seeds, and stems","Yeast during fermentation","Sulfur dioxide added at bottling","The color of the grape juice"],"a":0,"fact":"Tannin is extracted from skins, seeds, stems, and oak barrels — not created by fermentation itself."},
+  "late":{"q":"Which winemaking choice increases tannin extraction the most?","opts":["Longer skin contact during fermentation","Fermenting at a lower temperature","Filtering the wine before bottling","Adding sulfur dioxide"],"a":0,"fact":"Extended maceration keeps skins in contact with the juice longer, pulling more tannin into the wine."}},
+ {"id":"tannin_source_B","dynamic":true,
+  "early":{"q":"Which grape is known for high tannin?","opts":["Nebbiolo","Pinot Noir","Gamay","Grenache"],"a":0,"fact":"Nebbiolo (Barolo, Barbaresco) is famous for high tannin alongside high acidity."},
+  "late":{"q":"Which of these reds is typically higher in tannin?","opts":["Cabernet Sauvignon","Pinot Noir","Gamay","Beaujolais"],"a":0,"fact":"Cabernet Sauvignon's thick skins give it more tannin than thin-skinned Pinot Noir or Gamay."}}
+]},
+{"conceptId":"acidity_and_food","templates":[
+ {"id":"acidity_and_food_A","dynamic":false,
+  "early":{"q":"What does high acidity in wine actually do?","opts":["Makes your mouth water and cuts through fat","Makes the wine taste sweeter","Makes the wine feel heavier","Lowers the alcohol you perceive"],"a":0,"fact":"Acidity is what makes wine food-friendly — it cuts through richness and cleanses the palate."},
+  "late":{"q":"Why should tannic red wine generally be avoided with fish?","opts":["Tannin reacts with fish oils to taste metallic","Fish is too acidic for red wine","Fish overpowers red wine's aroma","There's no real reason, it's just tradition"],"a":0,"fact":"Tannin binds with the oils in fish, creating an unpleasant metallic taste."}},
+ {"id":"acidity_and_food_B","dynamic":true,
+  "early":{"q":"Which of these wines is typically highest in acidity?","opts":["Riesling","Viognier","Gewürztraminer","Oaked Chardonnay"],"a":0,"fact":"Riesling is prized for vivid, energetic acidity across nearly every style it's made in."},
+  "late":{"q":"Which pairing follows \"acid loves acid\"?","opts":["A crisp Sauvignon Blanc with a lemony vinaigrette salad","A soft, low-acid red with the same salad","A sweet dessert wine with the same salad","Acidity in wine doesn't interact with food acidity"],"a":0,"fact":"Matching or exceeding a dish's acidity keeps the wine from tasting flat next to it."}}
+]},
+{"conceptId":"appellation_hierarchy","templates":[
+ {"id":"appellation_hierarchy_A","dynamic":false,
+  "early":{"q":"On a European wine label, what does the region name usually tell you?","opts":["The grape variety, because it's implied by law","The price of the bottle","The exact vintage style every year","Nothing useful"],"a":0,"fact":"A Chablis is legally Chardonnay, a Barolo is legally Nebbiolo — the region implies the grape."},
+  "late":{"q":"Which is more specific: a single named vineyard or a broad regional appellation?","opts":["A single named vineyard","A broad regional appellation","They're equally specific","Neither is more specific than the other"],"a":0,"fact":"Appellation systems nest from broad region down to village, then single vineyard — each step narrower."}},
+ {"id":"appellation_hierarchy_B","dynamic":true,
+  "early":{"q":"Which of these is a wine region, not a grape?","opts":["Chablis","Merlot","Riesling","Tempranillo"],"a":0,"fact":"Chablis is a place in Burgundy; the grape grown there is Chardonnay."},
+  "late":{"q":"Rioja wines are legally required to be made mostly from which grape?","opts":["Tempranillo","Garnacha","Albariño","Verdejo"],"a":0,"fact":"Tempranillo is Rioja's backbone grape, though blends can include others."}}
+]},
+{"conceptId":"oak_influence","templates":[
+ {"id":"oak_influence_A","dynamic":false,
+  "early":{"q":"What does oak ageing typically add to a wine?","opts":["Vanilla, toast, and spice notes","More sweetness from sugar in the wood","Higher alcohol","More natural fruit acidity"],"a":0,"fact":"Oak contributes flavour compounds like vanillin and lactones — not sugar or alcohol."},
+  "late":{"q":"Which oak type leans toward coconut and dill rather than vanilla and baking spice?","opts":["American oak","French oak","Hungarian oak","Stainless steel"],"a":0,"fact":"American oak's chemistry leans coconut and dill; French oak leans vanilla and baking spice."}},
+ {"id":"oak_influence_B","dynamic":true,
+  "early":{"q":"Which wine style is most likely to show noticeable oak?","opts":["Buttery, oaked Chardonnay","Crisp Sauvignon Blanc","Light Pinot Grigio","Dry rosé"],"a":0,"fact":"Classic buttery Chardonnay gets that character from oak ageing plus malolactic fermentation."},
+  "late":{"q":"A wine aged in stainless steel instead of oak will typically taste:","opts":["Sharper and more purely fruity","Sweeter","More tannic","Higher in alcohol"],"a":0,"fact":"Steel is neutral and airtight — it preserves fruit character without adding flavour."}}
+]},
+{"conceptId":"vintage_variation","templates":[
+ {"id":"vintage_variation_A","dynamic":false,
+  "early":{"q":"What does the vintage year on a label actually represent?","opts":["The year the grapes were picked","The year the wine was bottled","The year the wine will taste best","A quality grade the wine earns"],"a":0,"fact":"Vintage simply records the harvest year — a weather report, not a fixed grade."},
+  "late":{"q":"In which kind of climate does vintage variation matter most?","opts":["Cool, marginal climates like Burgundy or Mosel","Warm, reliable climates like much of California","It matters equally everywhere","It never really matters"],"a":0,"fact":"Marginal climates swing more between a great year and a difficult one."}},
+ {"id":"vintage_variation_B","dynamic":true,
+  "early":{"q":"What does \"NV\" mean on a Champagne label?","opts":["Non-vintage — a blend of multiple years","No value","Not verified","New vintage"],"a":0,"fact":"NV wines blend several years deliberately, to keep a consistent house style."},
+  "late":{"q":"An older vintage of the same wine, all else equal, is generally:","opts":["Further along in its development","Always better","Always worse","Impossible to say without tasting"],"a":0,"fact":"Age moves a wine along its development curve — not automatically up or down in quality."}}
+]},
+{"conceptId":"malolactic","templates":[
+ {"id":"malolactic_A","dynamic":false,
+  "early":{"q":"What does malolactic fermentation (MLF) do?","opts":["Converts sharp malic acid into softer lactic acid","Adds sugar to the wine","Removes alcohol","Adds tannin from oak"],"a":0,"fact":"MLF is a bacterial conversion that softens a wine's acidity and can add a creamy texture."},
+  "late":{"q":"Which wine style most reliably signals malolactic fermentation?","opts":["Buttery, creamy Chardonnay","Crisp unoaked Sauvignon Blanc","Bone-dry Champagne Blanc de Blancs","Light Pinot Grigio"],"a":0,"fact":"That buttery, creamy character in Chardonnay is a textbook MLF signature."}},
+ {"id":"malolactic_B","dynamic":false,
+  "early":{"q":"MLF is sometimes called wine's \"second fermentation.\" Is that accurate?","opts":["Yes — it's a secondary conversion after alcoholic fermentation","No — it happens before alcoholic fermentation","No — it's the same process as alcoholic fermentation","Yes, and it produces more alcohol"],"a":0,"fact":"MLF is a separate, secondary conversion, usually happening after primary alcoholic fermentation."},
+  "late":{"q":"Which wines almost always skip MLF to preserve zesty acidity?","opts":["Riesling and most Sauvignon Blanc","Chardonnay","Viognier","Oaked Chenin Blanc"],"a":0,"fact":"Winemakers deliberately block MLF in aromatic, high-acid whites like Riesling to keep that zing."}}
+]}
+]
