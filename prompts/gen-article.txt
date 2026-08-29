@@ -1,0 +1,22 @@
+Write a short educational wine article for a user with this profile: types tried: {{types}}, regions: {{regions}}, grapes: {{grapes}}.
+
+Article title: "{{title}}"
+Editorial brief: {{brief}}
+
+Retrieved facts — use ONLY these for anything factual (regions, rules, grapes, causes). Do not invent facts beyond them or rely on general memory for specifics:
+{{facts}}
+
+Return ONLY valid JSON, no markdown:
+{
+  "sections": [
+    {
+      "term": "Key concept or subheading",
+      "iconName": "one of: glass, grape, leaf, drop, flame, book, globe, compass, read, map",
+      "plain": "One-line plain English summary of this concept",
+      "detail": "2-3 sentences of clear, engaging explanation grounded in the retrieved facts above. Assume curious beginner.",
+      "examples": ["Specific example 1", "Specific example 2", "Specific example 3"]
+    }
+  ]
+}
+
+Include 3-5 sections. Each should teach something concrete and traceable to the retrieved facts. Make it feel personal and directly relevant to what this user already drinks. Return ONLY the JSON object.
