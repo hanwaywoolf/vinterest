@@ -1,5 +1,5 @@
 // sw.js — Vinterest PWA service worker
-const CACHE = 'vinterest-v12';
+const CACHE = 'vinterest-v13';
 
 const ICONS = [
   '/icons/icon-192.png',
@@ -32,6 +32,9 @@ self.addEventListener('message', e => {
 
 self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);
+
+  // Only GET requests on http(s) are cacheable — chrome-extension:// and non-GET (POST to /claude) throw on cache.put
+  if (e.request.method !== 'GET' || !url.protocol.startsWith('http')) return;
 
   // External CDN — cache-first (they use versioned URLs)
   if (url.origin !== location.origin) {
