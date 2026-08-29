@@ -316,6 +316,42 @@ function assembleWordsQuiz(){
     return {q:`What does "${t.term}" mean?`,opts,a:opts.indexOf(t.meaning),fact:null,conceptId:null,vocabTerm:t.term};
   });
 }
+function assembleRegionQuiz(region){
+  const info=KNOWLEDGE.regions[region];
+  const wines=WineHistory.getAll();
+  const regionWines=wines.filter(w=>w.region===region);
+  const otherWines=_shuffle(wines.filter(w=>w.region&&w.region!==region)).slice(0,3);
+  const otherRegionIds=Object.keys(KNOWLEDGE.regions).filter(r=>r!==region);
+  const qs=[];
+  if(info){
+    const distractClass=[...new Set(otherRegionIds.map(r=>KNOWLEDGE.regions[r].classification).filter(c=>c&&c!==info.classification))];
+    if(distractClass.length>=2){
+      const opts=_shuffle([info.classification,..._shuffle(distractClass).slice(0,3)]);
+      qs.push({q:`What classification does ${region} wine fall under?`,opts,a:opts.indexOf(info.classification),fact:`${region} (${info.country}): ${info.classification}.`,conceptId:null,vocabTerm:null});
+    }
+    if(info.keyGrapes&&info.keyGrapes[0]){
+      const correct=info.keyGrapes[0];
+      const distractGrapes=[...new Set(otherRegionIds.flatMap(r=>KNOWLEDGE.regions[r].keyGrapes||[]).filter(g=>g&&!info.keyGrapes.includes(g)))];
+      if(distractGrapes.length>=2){
+        const opts=_shuffle([correct,..._shuffle(distractGrapes).slice(0,3)]);
+        qs.push({q:`Which grape is the backbone of ${region}?`,opts,a:opts.indexOf(correct),fact:`${region}'s key grape(s): ${info.keyGrapes.join(', ')}.`,conceptId:null,vocabTerm:null});
+      }
+    }
+    if(info.climate){
+      const distractClimate=_shuffle(otherRegionIds.map(r=>KNOWLEDGE.regions[r].climate).filter(Boolean)).slice(0,3);
+      if(distractClimate.length>=2){
+        const opts=_shuffle([info.climate,...distractClimate]);
+        qs.push({q:`Which climate description matches ${region}?`,opts,a:opts.indexOf(info.climate),fact:`${region}: ${info.climate}.`,conceptId:null,vocabTerm:null});
+      }
+    }
+  }
+  if(regionWines.length&&otherWines.length>=3){
+    const target=_shuffle(regionWines)[0];
+    const opts=_shuffle([target.name,...otherWines.map(w=>w.name)]);
+    qs.push({q:`Which of these bottles in your cellar is from ${region}?`,opts,a:opts.indexOf(target.name),fact:`${target.name} is the ${region} bottle in your history.`,conceptId:null,vocabTerm:null});
+  }
+  return _shuffle(qs).map(q=>_shuffleOpts(q));
+}
 function assemblePracticeQuiz(topicId){
   const topic=QUIZ_TOPICS.find(t=>t.id===topicId)||QUIZ_TOPICS[0];
   const qs=_shuffle(topic.questions.beginner||[]).slice(0,6);
@@ -332,7 +368,7 @@ function QuizScreen({nav,back}){
   const buildQs=React.useCallback(()=>{
     if(mode==='practice') return assemblePracticeQuiz(config.topicId);
     if(mode==='words') return assembleWordsQuiz();
-    if(mode==='region') return assembleConceptQuiz(['appellation_hierarchy','vintage_variation']);
+    if(mode==='region') return assembleRegionQuiz(config.region);
     return assembleConceptQuiz(MasterySystem.selectConcepts(6));
   },[mode,config]);
 
@@ -441,7 +477,7 @@ function QuizScreen({nav,back}){
             </div>
           ))}
           <div style={{display:'flex',gap:8,marginTop:4}}>
-            <Btn full style={{flex:1}} onClick={()=>{if(scrollRef.current)scrollRef.current.scrollTop=0;}}>{pct<100?'See what you missed':'Practice more'}</Btn>
+            <Btn full style={{flex:1}} onClick={()=>{if(pct<100){if(scrollRef.current)scrollRef.current.scrollTop=0;}else nav('learn');}}>{pct<100?'See what you missed':'Practice more'}</Btn>
             <Btn primary full style={{flex:1}} onClick={newQuiz}>New quiz</Btn>
           </div>
           <div style={{height:8}}/>

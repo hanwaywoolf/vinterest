@@ -159,12 +159,12 @@ function HomeScreen({nav, showPro, isTablet}){
   const primaryType=Object.entries(typeCounts).sort((a,b)=>b[1]-a[1])[0]?.[0]||'red';
   const exploreSuggestions={
     red:      {title:'Try a White This Week',  body:'Your structured palate would suit a bone-dry Chablis or aged white Burgundy.'},
-    white:    {title:'Venture into Reds',      body:'White lovers often find a match in elegant Pinot Noir or light Beaujolais.'},
-    rose:     {title:'Go Sparkling',           body:'Dry rosé lovers frequently enjoy Champagne — similar freshness, better stories.'},
+    white:    {title:'Venture into Reds',      body:'Your palate for whites points toward elegant Pinot Noir or light Beaujolais.'},
+    rose:     {title:'Go Sparkling',           body:'Your dry rosé palate points to Champagne — similar freshness, better stories.'},
     sparkling:{title:'Explore Still Wines',    body:'Your palate for fine bubbles translates beautifully to quality Burgundy stills.'},
-    orange:   {title:'Try a Classic White',    body:'If you love skin-contact texture, an aged white Rioja offers a similar depth without the funk.'},
-    dessert:  {title:'Try a Fortified Wine',   body:'Dessert wine lovers often enjoy a Tawny Port — same richness, more nutty complexity.'},
-    fortified:{title:'Try a Dessert Wine',     body:'If you love Port or Sherry, a Sauternes or Tokaji offers similar richness without the fortification.'},
+    orange:   {title:'Try a Classic White',    body:'Your taste for skin-contact texture points to aged white Rioja — similar depth, without the funk.'},
+    dessert:  {title:'Try a Fortified Wine',   body:'Your dessert wine palate points to Tawny Port — same richness, more nutty complexity.'},
+    fortified:{title:'Try a Dessert Wine',     body:'Your taste for Port or Sherry points to Sauternes or Tokaji — similar richness, without the fortification.'},
   };
   const explore=exploreSuggestions[primaryType]||exploreSuggestions.red;
 

@@ -55,7 +55,7 @@ function App(){
     window.addEventListener('vinterest:xp',handler);
     return ()=>window.removeEventListener('vinterest:xp',handler);
   },[]);
-  const showXpBadge=!['camera','onboarding','learn','quiz','article','identified','detail','mywines','scan','profile','style-explore','winelist','account','settings'].includes(screen);
+  const showXpBadge=!['camera','onboarding','learn','quiz','article','gen-article','identified','detail','mywines','scan','profile','style-explore','winelist','account','settings','mastery-map'].includes(screen);
 
   // XP Toast
   const [xpToasts,setXpToasts]=React.useState([]);
