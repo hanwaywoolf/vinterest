@@ -6,6 +6,7 @@ const C = {
   bg:'#FAFAFA', white:'#FFFFFF', offWhite:'#F5F3F0',
   green:'#1E7B4B', greenBg:'#EAF7F0', amber:'#B06C00', amberBg:'#FFF4E0',
   P:"'Poppins',sans-serif",
+  serif:"'Instrument Serif',serif",
 };
 
 function Icon({n,sz=20,col=C.ink,style:s}){
@@ -76,6 +77,9 @@ function Icon({n,sz=20,col=C.ink,style:s}){
     'read':<><path d="M4 5h12v11a1 1 0 01-1 1H5a1 1 0 01-1-1V5Z" stroke={col} strokeWidth="1.4" fill="none"/><line x1="7" y1="9" x2="13" y2="9" stroke={col} strokeWidth="1.2" strokeLinecap="round"/><line x1="7" y1="12" x2="11" y2="12" stroke={col} strokeWidth="1.2" strokeLinecap="round"/><path d="M7.5 5V3.5" stroke={col} strokeWidth="1.2" strokeLinecap="round"/><path d="M12.5 5V3.5" stroke={col} strokeWidth="1.2" strokeLinecap="round"/></>,
     'map':<><path d="M7 3.5L3 5.5v11l4-2 6 2 4-2v-11l-4 2-6-2Z" stroke={col} strokeWidth="1.4" fill="none" strokeLinejoin="round"/><line x1="7" y1="3.5" x2="7" y2="14.5" stroke={col} strokeWidth="1.2"/><line x1="13" y1="5.5" x2="13" y2="16.5" stroke={col} strokeWidth="1.2"/></>,
     'leaf':<><path d="M10 17C10 17 4 14 4 8C4 8 8 5 14 6C14 6 15 12 10 17Z" stroke={col} strokeWidth="1.4" fill="none" strokeLinejoin="round"/><path d="M10 17C10 17 10 12 7 9" stroke={col} strokeWidth="1.2" strokeLinecap="round"/></>,
+    'glass':<><path d="M6 3h8l-1 7.5c-.3 2.3-2.2 4-3 4s-2.7-1.7-3-4L6 3Z" stroke={col} strokeWidth="1.4" fill="none" strokeLinejoin="round"/><line x1="10" y1="14.5" x2="10" y2="17.5" stroke={col} strokeWidth="1.4"/><line x1="6.5" y1="17.5" x2="13.5" y2="17.5" stroke={col} strokeWidth="1.4" strokeLinecap="round"/></>,
+    'grape':<><circle cx="7" cy="8" r="2" stroke={col} strokeWidth="1.3" fill="none"/><circle cx="10.5" cy="6" r="2" stroke={col} strokeWidth="1.3" fill="none"/><circle cx="10.5" cy="10" r="2" stroke={col} strokeWidth="1.3" fill="none"/><circle cx="14" cy="8" r="2" stroke={col} strokeWidth="1.3" fill="none"/><circle cx="10.5" cy="14" r="2" stroke={col} strokeWidth="1.3" fill="none"/><path d="M10.5 4V2" stroke={col} strokeWidth="1.3" strokeLinecap="round"/></>,
+    'drop':<path d="M10 3C10 3 5.5 9 5.5 12.5C5.5 15.5 7.5 17.5 10 17.5C12.5 17.5 14.5 15.5 14.5 12.5C14.5 9 10 3 10 3Z" stroke={col} strokeWidth="1.4" fill="none" strokeLinejoin="round"/>,
   };
   return <svg viewBox="0 0 20 20" width={sz} height={sz} style={{display:'block',flexShrink:0,...s}}>{d[n]||<circle cx="10" cy="10" r="7" stroke={col} strokeWidth="1.5" fill="none"/>}</svg>;
 }

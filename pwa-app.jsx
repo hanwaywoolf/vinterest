@@ -91,6 +91,7 @@ function App(){
         {screen==='mywines'   && <MyWinesScreen {...ctx}/>}
         {screen==='learn'     && <QuizHubScreen {...ctx}/>}
         {screen==='quiz'      && <QuizScreen {...ctx}/>}
+        {screen==='mastery-map' && <MasteryMapScreen {...ctx}/>}
         {screen==='article'   && <LearnArticleScreen {...ctx}/>}
         {screen==='gen-article'&& <GenArticleScreen {...ctx}/>}
         {screen==='account'   && <AccountProfileScreen {...ctx}/>}

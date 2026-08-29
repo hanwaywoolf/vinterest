@@ -579,18 +579,14 @@ function DetailStory({wine,nav,existingRating=0}){
     if(!window.claude||!window.claude.complete) return;
     setEduLoading(true);
     const g=(wine.grapes&&wine.grapes[0])||(wine.type||'red');
-    const prompt=
-      'You are a wine educator. For the drinker looking at this specific wine, teach them something useful. '+
-      'Wine: '+(wine.name||'')+(wine.vintage&&wine.vintage!==0?' '+wine.vintage:'')+'. Type: '+(wine.type||'red')+'. '+
-      'Region: '+(wine.region||'')+', '+(wine.country||'')+'. Grapes: '+((wine.grapes||[]).join(', ')||'unknown')+'. '+
-      'Return ONLY valid JSON, no markdown, concrete and specific, NO numbers/percentages/decimals anywhere: '+
-      '{'+
-      '"grape":"two sentences on what defines '+g+' as a grape/style and how it typically tastes (max 44 words)",'+
-      '"season":"one sentence of growing-season or climate context for '+(wine.region||wine.country||'this region')+(wine.vintage&&wine.vintage!==0?' around the '+wine.vintage+' vintage':'')+' and what it means in the glass (max 30 words)",'+
-      '"terms":[{"term":"a wine word this bottle teaches","meaning":"plain-English meaning in this wine\'s context (max 16 words)"}]'+
-      '}. Give exactly three terms.';
+    const prompt=_fillTpl(_loadText('prompts/vocabulary.txt'),{
+      name:wine.name||'', vintage:(wine.vintage&&wine.vintage!==0)?' '+wine.vintage:'', type:wine.type||'red',
+      region:wine.region||'', country:wine.country||'', grapes:(wine.grapes||[]).join(', ')||'unknown',
+      grapeOrType:g, regionOrCountry:wine.region||wine.country||'this region',
+      vintageContext:(wine.vintage&&wine.vintage!==0)?' around the '+wine.vintage+' vintage':''
+    });
     window.claude.complete({messages:[{role:'user',content:prompt}]})
-      .then(text=>{ let c=text.replace(/```json|```/g,'').trim(); const s=c.indexOf('{'),e=c.lastIndexOf('}'); if(s>=0&&e>s)c=c.slice(s,e+1); const d=JSON.parse(c); localStorage.setItem(key,JSON.stringify(d)); setEdu(d); })
+      .then(text=>{ let c=text.replace(/```json|```/g,'').trim(); const s=c.indexOf('{'),e=c.lastIndexOf('}'); if(s>=0&&e>s)c=c.slice(s,e+1); const d=JSON.parse(c); localStorage.setItem(key,JSON.stringify(d)); setEdu(d); if(d.terms&&d.terms.length) VocabLedger.addTerms((wine.name||'')+'_'+(wine.vintage||'nv'), d.terms); })
       .catch(()=>{})
       .finally(()=>setEduLoading(false));
   },[wine?.name,wine?.vintage]);
