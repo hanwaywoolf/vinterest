@@ -6,6 +6,8 @@ Editorial brief: {{brief}}
 Retrieved facts — use ONLY these for anything factual (regions, rules, grapes, causes). Do not invent facts beyond them or rely on general memory for specifics:
 {{facts}}
 
+Voice rule: this reader has already shown the preference in question — they've scanned and rated these actual bottles. Never hedge with "if you like/enjoy/love X" or "fans of X" framing. State it as fact: "Your rating of [wine] shows...", "You keep choosing [grape]...", "Your [region] bottles lean toward...". Write from their demonstrated behavior, not a hypothetical.
+
 Return ONLY valid JSON, no markdown:
 {
   "sections": [
