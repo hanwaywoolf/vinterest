@@ -29,6 +29,7 @@ function Icon({n,sz=20,col=C.ink,style:s}){
     globe:<><circle cx="10" cy="10" r="7.5" stroke={col} strokeWidth="1.5" fill="none"/><ellipse cx="10" cy="10" rx="3.5" ry="7.5" stroke={col} strokeWidth="1.2" fill="none"/><line x1="2.5" y1="10" x2="17.5" y2="10" stroke={col} strokeWidth="1.2"/></>,
     message:<><path d="M3 5h14a1 1 0 011 1v8a1 1 0 01-1 1H5l-3 2V6a1 1 0 011-1z" stroke={col} strokeWidth="1.5" fill="none" strokeLinejoin="round"/></>,
     flame:<path d="M10 2C10 2 14.5 6.5 14.5 10.5C14.5 13.5 12.5 16 10 16C7.5 16 5.5 13.5 5.5 10.5C5.5 6.5 10 2 10 2Z" stroke={col} strokeWidth="1.5" fill="none"/>,
+    bolt:<path d="M11 2L4.5 11.5H9.5L8.5 18L15.5 8H10.5L11 2Z" stroke={col} strokeWidth="1.4" strokeLinejoin="round" fill="none"/>,
     trophy:<><path d="M5.5 3h9v5c0 3-2 5-4.5 5S5.5 11 5.5 8V3z" stroke={col} strokeWidth="1.5" fill="none"/><path d="M5.5 5H3c0 3 1.5 4.5 2.5 4.5" stroke={col} strokeWidth="1.3" fill="none"/><path d="M14.5 5H17c0 3-1.5 4.5-2.5 4.5" stroke={col} strokeWidth="1.3" fill="none"/><line x1="10" y1="13" x2="10" y2="16.5" stroke={col} strokeWidth="1.5"/><line x1="7" y1="16.5" x2="13" y2="16.5" stroke={col} strokeWidth="1.5" strokeLinecap="round"/></>,
     lock:<><rect x="5.5" y="9.5" width="9" height="7.5" rx="1.5" stroke={col} strokeWidth="1.5" fill="none"/><path d="M7.5 9.5V7C7.5 5 8.5 3.5 10 3.5S12.5 5 12.5 7v2.5" stroke={col} strokeWidth="1.5" fill="none"/><circle cx="10" cy="13" r="1" fill={col}/></>,
     star:<polygon points="10,2 12.4,7.6 18.5,8.2 14,12.3 15.4,18.3 10,15.1 4.6,18.3 6,12.3 1.5,8.2 7.6,7.6" fill={col}/>,
@@ -280,12 +281,13 @@ const WineHistory = {
       wines.unshift({...wine, rating:rating||0, times_consumed:1, scanned_at:now, last_scanned:now});
     }
     this.save(wines);
+    if(rating>0){ try{ GrapeUnlocks.unlockViaRating((wine.grapes||[])[0]); }catch(e){} }
     return wines;
   },
   rate(name, vintage, rating){
     const wines = this.getAll();
     const w = wines.find(w => w.name===name && String(w.vintage)===String(vintage));
-    if(w){ w.rating=rating; this.save(wines); }
+    if(w){ w.rating=rating; this.save(wines); if(rating>0){ try{ GrapeUnlocks.unlockViaRating((w.grapes||[])[0]); }catch(e){} } }
   },
   /* Optional, user-entered scan location — manual text only for now (no geolocation/reverse-geocoding yet). */
   setLocation(name, vintage, location){

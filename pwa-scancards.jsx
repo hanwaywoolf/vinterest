@@ -25,7 +25,7 @@ function useScanContent(wine,matchPct,dna){
   const [loading,setLoading]=React.useState(false);
   React.useEffect(()=>{
     if(!wine||!wine.name) return;
-    const key='vinterest_scancards_v4_'+(wine.name||'').replace(/\s/g,'_')+'_'+(wine.vintage||'nv')+'_'+(matchPct??'x');
+    const key='vinterest_scancards_v5_'+(wine.name||'').replace(/\s/g,'_')+'_'+(wine.vintage||'nv')+'_'+(matchPct??'x');
     const cached=localStorage.getItem(key);
     if(cached){ try{ setGen(JSON.parse(cached)); return; }catch(e){} }
     if(!window.claude||!window.claude.complete) return;
@@ -43,7 +43,7 @@ function useScanContent(wine,matchPct,dna){
       'Grapes: '+((w.grapes||[]).join(', ')||'unknown')+'. '+
       'Tasting notes: '+((w.tasting_notes||[]).join(', ')||'n/a')+'. '+
       dnaLine+' '+matchLine+' '+agingLine+' '+
-      'Return ONLY valid JSON, no markdown, all sentences concrete and specific to THIS wine (no generic filler), and NO numbers/percentages/decimals anywhere: '+
+      'Return ONLY valid JSON, no markdown, all sentences concrete and specific to THIS wine (no generic filler), and NO numbers/percentages/decimals anywhere EXCEPT when referencing a specific year/vintage — years must always be written as numerals (e.g. "2010", never "twenty ten"): '+
       '{'+
       '"fact":"one genuinely surprising, memorable fact about this wine, its producer, grape, or region (max 28 words)",'+
       '"fit":"one vivid sentence on the FLAVOR/STYLE reasons this suits their palate — texture, body, fruit, oak, tannin, acidity. If my WineDNA above has a top grape or region, explicitly tie this wine to it by name (e.g. building on my known love of that grape/region) — never invent a grape or region I do not have in my profile (max 26 words)",'+
@@ -132,7 +132,7 @@ function ScanCardsScreen({nav,back}){
     return sessionStorage.getItem(intentKey)||null;
   });
   function pickIntent(v){ setIntent(v); try{ sessionStorage.setItem(intentKey,v); }catch(e){} if(wine) WineHistory.setScanIntent(wine.name,wine.vintage,v); }
-  const canRate=intent==='tasting'||intent==='tasted';
+  const canRate=intent==='tasting'||intent==='tasted'||intent==='quickrate';
 
   // duplicate scan gate — a wine you've already rated (exact vintage match) can skip straight to re-rating
   // instead of walking the full card sequence again; remembered per scan so returning doesn't re-ask.
@@ -142,10 +142,7 @@ function ScanCardsScreen({nav,back}){
 
   const matchPct=React.useMemo(()=>{
     if(!wine) return null;
-    const dna=calcMatchScore(wine,WineHistory.getAll());
-    if(dna!=null) return dna;
-    const conf=scanData.confidence;
-    return conf?Math.round(Math.min(0.98,conf)*100):null;
+    return calcMatchScore(wine,WineHistory.getAll());
   },[wine&&wine.name,intent]);
   const dnaSnapshot=React.useMemo(()=>wine?_dnaSnapshot((wine.type||'red').toLowerCase().replace('é','e')):null,[wine&&wine.name]);
   const {gen,loading}=useScanContent(wine,matchPct,dnaSnapshot);
@@ -204,6 +201,7 @@ function IntentGate({wine,onPick,nav}){
     {k:'checking',icon:'compass',t:'Just checking the match',s:'Deciding whether to buy or order it — no rating yet.'},
     {k:'tasting',icon:'wine',t:'About to drink it',s:'Walk me through it, then let me rate after tasting.'},
     {k:'tasted',icon:'star',t:'Already had a sip',s:'I want to talk about it — and rate what I tasted.'},
+    {k:'quickrate',icon:'bolt',t:'Match & Rate',s:'Just the match score, then straight to rating. No cards.'},
   ];
   return <div className="sc-scroll" style={{flex:1,overflowY:'auto',padding:'22px 20px 28px',display:'flex',flexDirection:'column',animation:'scFade .25s ease'}}>
     <div style={{fontSize:13,fontWeight:700,color:C.cr,letterSpacing:'0.1em',textTransform:'uppercase',fontFamily:C.P}}>Matched</div>
@@ -276,6 +274,10 @@ function buildCards({wine,gen,matchPct,curr,scanData,intent}){
   const cards=[];
 
   cards.push({key:'match',accent:C.green,soft:C.greenBg,icon:'compass',eyebrow:'Your match',kind:'match'});
+  if(intent==='quickrate'){
+    cards.push({key:'finish',accent:C.cr,soft:C.crSoft,icon:'star',eyebrow:'Rate it',kind:'finish'});
+    return cards;
+  }
   cards.push({key:'fit',accent:C.green,soft:C.greenBg,icon:'heart',eyebrow:matchPct!=null&&matchPct>=70?'Why you\'ll love it':'Why it could click',kind:'gen',field:'fit'});
   cards.push({key:'caution',accent:C.amber,soft:C.amberBg,icon:'message',eyebrow:'Heads up',kind:'gen',field:'caution'});
   cards.push({key:'origin',accent:C.cr,soft:C.crSoft,icon:'globe',eyebrow:'Where it\'s from',kind:'origin'});
@@ -284,7 +286,70 @@ function buildCards({wine,gen,matchPct,curr,scanData,intent}){
   cards.push({key:'talk',accent:C.cr,soft:C.crSoft,icon:'message',eyebrow:'Sound clued-in',kind:'talk'});
   cards.push({key:'value',accent:'#6B2D8B',soft:'#F3ECF8',icon:'cart',eyebrow:'Price check',kind:'value'});
   cards.push({key:'finish',accent:C.cr,soft:C.crSoft,icon:intent==='checking'?'heart':'star',eyebrow:intent==='checking'?'Save it':'Rate it',kind:'finish'});
+  cards.push({key:'learn',accent:C.green,soft:C.greenBg,icon:'book',eyebrow:'Keep the streak',kind:'learn'});
   return cards;
+}
+
+/* one question grounded in this specific bottle — descriptor cause, then region fact, in that priority. Free forever, no PRO gate. */
+function _scanFlowQuestion(wine){
+  const notes=(wine.tasting_notes||[]).join(' ').toLowerCase();
+  const descKeys=Object.keys(KNOWLEDGE.descriptors||{});
+  const hit=descKeys.find(k=>notes.includes(k));
+  if(hit){
+    const correct=KNOWLEDGE.descriptors[hit].cause;
+    const others=_shuffle(descKeys.filter(k=>k!==hit)).slice(0,3).map(k=>KNOWLEDGE.descriptors[k].cause);
+    return {q:`You noted "${hit}" on this bottle. What's actually responsible for that?`,opts:_shuffle([correct,...others]),a:0,_correct:correct};
+  }
+  const info=KNOWLEDGE.regions&&KNOWLEDGE.regions[wine.region];
+  if(info&&info.keyGrapes&&info.keyGrapes[0]){
+    const correct=info.keyGrapes[0];
+    const allGrapes=Object.values(KNOWLEDGE.regions||{}).flatMap(r=>r.keyGrapes||[]);
+    const others=_shuffle(allGrapes.filter(g=>g!==correct)).slice(0,3);
+    return {q:`What grape carries ${wine.region}?`,opts:_shuffle([correct,...others]),a:0,_correct:correct};
+  }
+  return null;
+}
+
+function LearnCardFace({wine,gen,accent,soft}){
+  const wineKey=(wine.name||'')+'_'+(wine.vintage||'nv');
+  const doneKey='vinterest_scanflow_'+wineKey.replace(/\s/g,'_');
+  const question=React.useMemo(()=>_scanFlowQuestion(wine),[wine&&wine.name]);
+  const [selected,setSelected]=React.useState(null);
+  const [awarded,setAwarded]=React.useState(()=>!!localStorage.getItem(doneKey));
+
+  function choose(i){
+    if(selected!==null) return;
+    setSelected(i);
+    if(i===question.a&&!awarded){
+      localStorage.setItem(doneKey,'1');
+      setAwarded(true);
+      XPSystem.awardAndToast([{type:'quiz_correct',topic:'scan_flow',difficulty:'habit'}]);
+    }
+  }
+
+  if(!question){
+    const fact=(gen&&gen.fact)||`${wine.region||wine.country} wines like this one reward a slower first sip.`;
+    return <div style={{display:'flex',flexDirection:'column',gap:12}}>
+      <div style={{fontSize:20,fontWeight:800,color:C.ink,fontFamily:C.P,lineHeight:1.2}}>Before you go</div>
+      <div style={{fontSize:17,color:C.ink2,fontFamily:C.P,lineHeight:1.6}}>{fact}</div>
+    </div>;
+  }
+
+  return <div style={{display:'flex',flexDirection:'column',gap:14}}>
+    <div style={{fontSize:20,fontWeight:800,color:C.ink,fontFamily:C.P,lineHeight:1.2}}>Quick one before you go</div>
+    <div style={{fontSize:17,fontWeight:600,color:C.ink,fontFamily:C.P,lineHeight:1.4}}>{question.q}</div>
+    <div style={{display:'flex',flexDirection:'column',gap:8}}>
+      {question.opts.map((opt,i)=>{
+        let bg=C.white,border=C.line,text=C.ink;
+        if(selected!==null){
+          if(i===question.a){bg=C.greenBg;border=C.green;text=C.green;}
+          else if(i===selected){bg='#FFF0F0';border='#E88080';text='#C0392B';}
+        }
+        return <div key={i} onClick={()=>choose(i)} style={{padding:'12px 14px',borderRadius:12,border:`2px solid ${border}`,background:bg,cursor:selected===null?'pointer':'default',fontSize:15,fontWeight:500,color:text,fontFamily:C.P,lineHeight:1.4}}>{opt}</div>;
+      })}
+    </div>
+    {selected!==null&&<div style={{fontSize:14,fontWeight:700,color:selected===question.a?C.green:C.mid,fontFamily:C.P}}>{selected===question.a?(awarded?'Nice — +10 XP':'Correct'):'Not quite — see it highlighted above'}</div>}
+  </div>;
 }
 
 /* renders the body of one card — always at full detail; there is no separate expand/collapse mode, everything ships on the main screen. */
@@ -354,37 +419,8 @@ function CardFace({card,ctx}){
   }
 
   if(card.kind==='taste'){
-    const cues=[];
-    const type=(wine.type||'red').toLowerCase().replace('é','e');
-    const showTannins=['red','orange','fortified'].includes(type);
-    const isDessertOrFortified=['dessert','fortified'].includes(type);
-    const b=wine.body??0.65,tn=wine.tannins??0.55,ac=wine.acidity??0.6,tx=wine.texture,sw=wine.sweetness??0.1;
-    cues.push({l:'Body',v:lvl(b,'Light & lithe','Medium-weight','Full & mouth-coating'),tip:'Notice how heavy it feels — does it linger or refresh?'});
-    if(showTannins) cues.push({l:'Tannins',v:lvl(tn,'Silky, low grip','Gentle grip','Firm, drying grip'),tip:'That drying feel on your gums and cheeks — is it soft or grippy?'});
-    cues.push({l:'Acidity',v:lvl(ac,'Round & mellow','Fresh','Zippy & mouth-watering'),tip:'Does it make you salivate? That\'s acidity.'});
-    if(tx!=null) cues.push({l:'Oak / texture',v:lvl(tx,'Clean & steely','Subtle','Creamy, vanilla, toast'),tip:'Any butter, vanilla or toast? That\'s oak.'});
-    if(sw>=0.2||isDessertOrFortified) cues.push({l:'Sweetness',v:lvl(sw,'Dry','Off-dry','Noticeably sweet'),tip:'Sense of sugar on the tip of your tongue.'});
-    if(isDessertOrFortified) cues.push({l:'Serving size',v:'A smaller 2–3oz pour',tip:'These are richer and higher in alcohol — a small glass goes further.'});
-    const notes=(wine.tasting_notes||[]).slice(0,4);
-    return <div style={{display:'flex',flexDirection:'column',gap:14}}>
-      <H>What to look for</H>
-      <div style={{display:'flex',flexDirection:'column',gap:12}}>
-        {cues.slice(0,isDessertOrFortified?5:4).map((c,i)=>(
-          <div key={i} style={{display:'flex',gap:10,alignItems:'baseline'}}>
-            <span style={{fontSize:15,fontWeight:700,color:a,fontFamily:C.P,minWidth:92,flexShrink:0}}>{c.l}</span>
-            <div style={{flex:1}}>
-              <div style={{fontSize:17,color:C.ink,fontFamily:C.P,fontWeight:600}}>{c.v}</div>
-            </div>
-          </div>
-        ))}
-      </div>
-      {notes.length>0&&<div>
-        <div style={{fontSize:13,fontWeight:700,color:C.mid,fontFamily:C.P,letterSpacing:'0.06em',textTransform:'uppercase',marginBottom:7,marginTop:2}}>Hunt for these flavours</div>
-        <div style={{display:'flex',flexWrap:'wrap',gap:6}}>
-          {notes.map((n,i)=>(<span key={i} style={{padding:'5px 11px',borderRadius:20,background:C.offWhite,color:C.ink2,fontSize:15,fontWeight:500,fontFamily:C.P,border:`1px solid ${C.line}`}}>{n}</span>))}
-        </div>
-      </div>}
-    </div>;
+    if(intent==='tasting') return <BlindCallCard wine={wine} gen={gen} accent={a}/>;
+    return <TasteCues wine={wine} accent={a}/>;
   }
 
   if(card.kind==='talk'){
@@ -410,8 +446,167 @@ function CardFace({card,ctx}){
   }
 
   if(card.kind==='value') return <ValueFace wine={wine} curr={curr} scanData={scanData} accent={a} soft={card.soft} expanded={expanded}/>;
+  if(card.kind==='learn') return <LearnCardFace wine={wine} gen={gen} accent={a} soft={card.soft}/>;
   if(card.kind==='finish') return null; // rendered specially by deck (needs actions)
   return null;
+}
+
+/* ── static taste cues (checking / tasted / post-Blind-Call summary) ── */
+function TasteCues({wine,accent}){
+  const a=accent||C.ink;
+  const cues=[];
+  const type=(wine.type||'red').toLowerCase().replace('é','e');
+  const showTannins=['red','orange','fortified'].includes(type);
+  const isDessertOrFortified=['dessert','fortified'].includes(type);
+  const b=wine.body??0.65,tn=wine.tannins??0.55,ac=wine.acidity??0.6,tx=wine.texture,sw=wine.sweetness??0.1;
+  cues.push({l:'Body',v:lvl(b,'Light & lithe','Medium-weight','Full & mouth-coating'),tip:'Notice how heavy it feels — does it linger or refresh?'});
+  if(showTannins) cues.push({l:'Tannins',v:lvl(tn,'Silky, low grip','Gentle grip','Firm, drying grip'),tip:'That drying feel on your gums and cheeks — is it soft or grippy?'});
+  cues.push({l:'Acidity',v:lvl(ac,'Round & mellow','Fresh','Zippy & mouth-watering'),tip:'Does it make you salivate? That\'s acidity.'});
+  if(tx!=null) cues.push({l:'Oak / texture',v:lvl(tx,'Clean & steely','Subtle','Creamy, vanilla, toast'),tip:'Any butter, vanilla or toast? That\'s oak.'});
+  if(sw>=0.2||isDessertOrFortified) cues.push({l:'Sweetness',v:lvl(sw,'Dry','Off-dry','Noticeably sweet'),tip:'Sense of sugar on the tip of your tongue.'});
+  if(isDessertOrFortified) cues.push({l:'Serving size',v:'A smaller 2–3oz pour',tip:'These are richer and higher in alcohol — a small glass goes further.'});
+  const notes=(wine.tasting_notes||[]).slice(0,4);
+  return <div style={{display:'flex',flexDirection:'column',gap:14}}>
+    <div style={{fontSize:24,fontWeight:800,color:C.ink,fontFamily:C.P,lineHeight:1.2,letterSpacing:'-0.01em'}}>What to look for</div>
+    <div style={{display:'flex',flexDirection:'column',gap:12}}>
+      {cues.slice(0,isDessertOrFortified?5:4).map((c,i)=>(
+        <div key={i} style={{display:'flex',gap:10,alignItems:'baseline'}}>
+          <span style={{fontSize:15,fontWeight:700,color:a,fontFamily:C.P,minWidth:92,flexShrink:0}}>{c.l}</span>
+          <div style={{flex:1}}>
+            <div style={{fontSize:17,color:C.ink,fontFamily:C.P,fontWeight:600}}>{c.v}</div>
+          </div>
+        </div>
+      ))}
+    </div>
+    {notes.length>0&&<div>
+      <div style={{fontSize:13,fontWeight:700,color:C.mid,fontFamily:C.P,letterSpacing:'0.06em',textTransform:'uppercase',marginBottom:7,marginTop:2}}>Hunt for these flavours</div>
+      <div style={{display:'flex',flexWrap:'wrap',gap:6}}>
+        {notes.map((n,i)=>(<span key={i} style={{padding:'5px 11px',borderRadius:20,background:C.offWhite,color:C.ink2,fontSize:15,fontWeight:500,fontFamily:C.P,border:`1px solid ${C.line}`}}>{n}</span>))}
+      </div>
+    </div>}
+  </div>;
+}
+
+/* ── Blind Call ── */
+const DIM_LABEL={body:'Body',acidity:'Acidity',tannins:'Tannins',texture:'Texture'};
+const DIM_LO={body:'Light',acidity:'Mellow',tannins:'Silky',texture:'Crisp & steely'};
+const DIM_HI={body:'Full',acidity:'Zingy',tannins:'Grippy',texture:'Rich & creamy'};
+const DIM_CONCEPT={tannins:'tannin_source',acidity:'acidity_and_food',texture:'oak_influence'};
+function dimsFor(wine){
+  const type=(wine.type||'red').toLowerCase().replace('é','e');
+  const showTannins=['red','orange','fortified'].includes(type);
+  return showTannins?['body','acidity','tannins']:['body','acidity','texture'];
+}
+function _bcKey(wine){ return (wine.name||'')+'_'+(wine.vintage||'nv'); }
+
+function BlindCallCard({wine,gen,accent}){
+  const wineKey=_bcKey(wine).replace(/\s/g,'_');
+  const doneKey='vinterest_blindcall_'+wineKey;
+  const savedKey='vinterest_blindcall_result_'+wineKey;
+  const [phase,setPhase]=React.useState(()=>localStorage.getItem(doneKey)?'summary':'predict');
+  const [guess,setGuess]=React.useState(null);
+  const [score,setScore]=React.useState(()=>{ try{ return JSON.parse(localStorage.getItem(savedKey)||'null'); }catch(e){ return null; } });
+  const dims=React.useMemo(()=>dimsFor(wine),[wine&&wine.name]);
+
+  function finalizeReveal(g,missed,accuracy){
+    if(!localStorage.getItem(doneKey)){
+      localStorage.setItem(doneKey,'1');
+      missed.forEach(d=>{ const cid=DIM_CONCEPT[d]; if(cid) MasterySystem.recordResult(cid,false); });
+      const awards=XPSystem.awardAndToast([{type:'blind_call',accuracy}]);
+      const amount=awards.filter(x=>!x.levelUp).reduce((s,x)=>s+x.amount,0);
+      localStorage.setItem(savedKey,JSON.stringify({accuracy,amount}));
+      setScore({accuracy,amount});
+    }
+    setPhase('result');
+  }
+
+  if(phase==='predict') return <BlindCallPredict dims={dims} onSubmit={g=>{setGuess(g);setPhase('reveal');}}/>;
+  if(phase==='reveal') return <BlindCallReveal wine={wine} dims={dims} guess={guess} onDone={finalizeReveal}/>;
+  if(phase==='result') return <>
+    {ReactDOM.createPortal(<BlindCallResult score={score} onClose={()=>setPhase('summary')}/>, document.body)}
+    <div style={{minHeight:120}}/>
+  </>;
+  return <div style={{display:'flex',flexDirection:'column',gap:16}}>
+    <div style={{padding:'12px 14px',borderRadius:12,background:C.greenBg,border:`1px solid ${C.green}30`,display:'flex',alignItems:'center',gap:10}}>
+      <Icon n="check" sz={18} col={C.green}/>
+      <span style={{fontSize:14.5,fontWeight:600,color:C.green,fontFamily:C.P}}>You called it {score?Math.round(score.accuracy*100):'—'}% accurate{score?` · +${score.amount} XP`:''}</span>
+    </div>
+    <TasteCues wine={wine} accent={accent}/>
+  </div>;
+}
+
+function BlindCallPredict({dims,onSubmit}){
+  const [vals,setVals]=React.useState(()=>Object.fromEntries(dims.map(d=>[d,0.5])));
+  return <div style={{display:'flex',flexDirection:'column',gap:16}}>
+    <div style={{fontSize:24,fontWeight:800,color:C.ink,fontFamily:C.P,lineHeight:1.2,letterSpacing:'-0.01em'}}>Call it before you look</div>
+    <div style={{fontSize:15,color:C.mid,fontFamily:C.P,lineHeight:1.5}}>Drag each slider to where you think this wine lands — no penalty for missing.</div>
+    <div style={{display:'flex',flexDirection:'column',gap:20,marginTop:4}}>
+      {dims.map(d=>(
+        <div key={d}>
+          <div style={{display:'flex',justifyContent:'space-between',fontSize:12.5,color:C.mid,fontFamily:C.P,marginBottom:6,fontWeight:600,textTransform:'uppercase',letterSpacing:'0.04em'}}>
+            <span>{DIM_LO[d]}</span><span style={{color:C.ink,fontWeight:700}}>{DIM_LABEL[d]}</span><span>{DIM_HI[d]}</span>
+          </div>
+          <input type="range" min="0" max="100" value={Math.round(vals[d]*100)} style={{width:'100%',accentColor:C.cr,cursor:'pointer',display:'block'}}
+            onChange={e=>setVals(v=>({...v,[d]:Number(e.target.value)/100}))}/>
+        </div>
+      ))}
+    </div>
+    <Btn primary full onClick={()=>onSubmit(vals)}>Lock in my call</Btn>
+  </div>;
+}
+
+function BlindCallReveal({wine,dims,guess,onDone}){
+  const deltas=dims.map(d=>Math.abs(guess[d]-(wine[d]??0.5)));
+  const avgDelta=deltas.reduce((s,x)=>s+x,0)/deltas.length;
+  const accuracy=Math.max(0,1-avgDelta*1.6);
+  const missed=dims.filter((d,i)=>deltas[i]>0.22);
+  return <div style={{display:'flex',flexDirection:'column',gap:16}}>
+    <div style={{fontSize:24,fontWeight:800,color:C.ink,fontFamily:C.P,lineHeight:1.2,letterSpacing:'-0.01em'}}>How you called it</div>
+    <div style={{display:'flex',flexDirection:'column',gap:20}}>
+      {dims.map(d=>{
+        const g=guess[d],act=wine[d]??0.5;
+        return <div key={d}>
+          <div style={{fontSize:14,fontWeight:700,color:C.ink,fontFamily:C.P,marginBottom:8}}>{DIM_LABEL[d]}</div>
+          <div style={{position:'relative',height:8,borderRadius:4,background:C.line}}>
+            <div style={{position:'absolute',left:`${act*100}%`,top:-4,width:16,height:16,borderRadius:8,background:C.green,border:'2px solid #fff',boxShadow:'0 1px 4px rgba(0,0,0,0.3)',transform:'translateX(-50%)'}}/>
+            <div style={{position:'absolute',left:`${g*100}%`,top:-4,width:16,height:16,borderRadius:8,background:C.cr,border:'2px solid #fff',boxShadow:'0 1px 4px rgba(0,0,0,0.3)',transform:'translateX(-50%)',opacity:0.85}}/>
+          </div>
+          <div style={{display:'flex',justifyContent:'space-between',fontSize:12,color:C.mid,fontFamily:C.P,marginTop:6}}>
+            <span style={{color:C.cr,fontWeight:600}}>● your call</span>
+            <span style={{color:C.green,fontWeight:600}}>● actual</span>
+          </div>
+        </div>;
+      })}
+    </div>
+    {missed.length>0&&<div style={{padding:'12px 14px',borderRadius:12,background:C.amberBg,border:`1px solid ${C.amber}30`}}>
+      <div style={{fontSize:14,fontWeight:700,color:C.amber,fontFamily:C.P,marginBottom:3}}>Worth a closer look: {missed.map(d=>DIM_LABEL[d]).join(', ')}</div>
+      <div style={{fontSize:13.5,color:C.ink2,fontFamily:C.P,lineHeight:1.5}}>No cost to missing — we'll queue a short read on this for your shelf.</div>
+    </div>}
+    <Btn primary full onClick={()=>onDone(guess,missed,accuracy)}>See my score</Btn>
+  </div>;
+}
+
+function BlindCallResult({score,onClose}){
+  const amount=score?score.amount:0;
+  const accuracy=score?score.accuracy:0;
+  const [shown,setShown]=React.useState(0);
+  React.useEffect(()=>{
+    const start=performance.now();
+    function tick(t){
+      const p=Math.min(1,(t-start)/900);
+      setShown(Math.round(p*amount));
+      if(p<1) requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+  },[amount]);
+  const label=accuracy>=0.85?'Uncanny':accuracy>=0.65?'Sharp call':accuracy>=0.4?'Decent read':'A learning moment';
+  return <div style={{position:'fixed',inset:0,background:C.ink,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:14,zIndex:9999}}>
+    <div style={{fontSize:13,fontWeight:600,color:'rgba(255,255,255,0.4)',fontFamily:C.P,letterSpacing:'0.1em',textTransform:'uppercase'}}>Blind Call</div>
+    <div style={{fontSize:38,fontWeight:800,fontFamily:C.P,color:'#D4AF6A',lineHeight:1}}>{label}</div>
+    <div style={{fontSize:16,color:'rgba(255,255,255,0.55)',fontFamily:C.P,marginTop:2}}>{Math.round(accuracy*100)}% accurate</div>
+    <div style={{fontSize:48,fontWeight:800,fontFamily:C.P,color:'#D4AF6A',marginTop:18,fontVariantNumeric:'tabular-nums'}}>+{shown} XP</div>
+    <div style={{marginTop:32}}><Btn primary onClick={onClose}>Continue</Btn></div>
+  </div>;
 }
 
 function AttrReasons({wine,accent}){
@@ -469,7 +664,7 @@ function ValueFace({wine,curr,scanData,accent,soft,expanded}){
 
 /* ── finish / rating card ── */
 function FinishFace({wine,intent,existingRating,nav,accent}){
-  const canRate=intent==='tasting'||intent==='tasted';
+  const canRate=intent==='tasting'||intent==='tasted'||intent==='quickrate';
   const alreadyRated=existingRating>0;
   const [confirmStep,setConfirmStep]=React.useState(alreadyRated);
   const [score,setScore]=React.useState(existingRating||0);

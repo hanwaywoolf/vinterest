@@ -1,4 +1,4 @@
-/* Vinterest PWA — Wine Detail screen (tabbed: Details / Story / Buy) */
+/* Vinterest PWA — Wine Detail screen (tabbed: Details / Learn / Price) */
 
 function ScanLocationCard({wine}){
   const [editing,setEditing]=React.useState(false);
@@ -23,8 +23,8 @@ function ScanLocationCard({wine}){
     </div>
     {editing?(
       <div style={{display:'flex',gap:8}}>
-        <input autoFocus value={val} onChange={e=>setVal(e.target.value)} onKeyDown={e=>{if(e.key==='Enter')commit();}} placeholder={copy.placeholder} style={{flex:1,fontSize:15,fontFamily:C.P,padding:'8px 10px',borderRadius:9,border:`1px solid ${C.line}`,color:C.ink}}/>
-        <Btn primary onClick={commit}>Save</Btn>
+        <input autoFocus value={val} onChange={e=>setVal(e.target.value)} onKeyDown={e=>{if(e.key==='Enter')commit();}} placeholder={copy.placeholder} style={{flex:1,minWidth:0,fontSize:15,fontFamily:C.P,padding:'8px 10px',borderRadius:9,border:`1px solid ${C.line}`,color:C.ink}}/>
+        <Btn primary style={{flexShrink:0}} onClick={commit}>Save</Btn>
       </div>
     ):(
       <div onClick={()=>setEditing(true)} style={{cursor:'pointer',fontSize:15.5,fontFamily:C.P,color:savedName?C.ink:C.mid,fontWeight:savedName?600:400}}>
@@ -36,7 +36,7 @@ function ScanLocationCard({wine}){
 
 function WineDetailScreen({back,nav}){
   const [tab,setTab]=React.useState(0);
-  const tabs=['Details','Story','Price'];
+  const tabs=['Details','Learn','Price'];
   const scanData=React.useMemo(()=>{
     try{ return JSON.parse(sessionStorage.getItem('vinterest_scan_result')||'{}'); }
     catch(e){ return {}; }
@@ -50,10 +50,7 @@ function WineDetailScreen({back,nav}){
 
   const matchPct=React.useMemo(()=>{
     if(!wine) return null;
-    const dna=calcMatchScore(wine,WineHistory.getAll());
-    if(dna!=null) return dna;
-    const conf=scanData.confidence;
-    return conf?Math.round(Math.min(0.98,conf)*100):null;
+    return calcMatchScore(wine,WineHistory.getAll());
   },[wine?.name,wine?.vintage]);
 
   const [isFav,setIsFav]=React.useState(()=>{
@@ -573,7 +570,7 @@ function DetailStory({wine,nav,existingRating=0}){
   const [eduLoading,setEduLoading]=React.useState(false);
   React.useEffect(()=>{
     if(!wine||!wine.name) return;
-    const key='vinterest_edu_v1_'+(wine.name||'').replace(/\s/g,'_')+'_'+(wine.vintage||'nv');
+    const key='vinterest_edu_v2_'+(wine.name||'').replace(/\s/g,'_')+'_'+(wine.vintage||'nv');
     const cached=localStorage.getItem(key);
     if(cached){ try{ setEdu(JSON.parse(cached)); return; }catch(e){} }
     if(!window.claude||!window.claude.complete) return;
@@ -603,6 +600,14 @@ function DetailStory({wine,nav,existingRating=0}){
         <SL label="The Story"/>
         <div style={{fontSize:16,color:C.ink2,fontFamily:C.P,lineHeight:1.75}}>{description}</div>
       </div>
+
+      {/* Producer */}
+      {wine?.producer&&(
+        <div>
+          <SL label="Producer"/>
+          <div style={{fontSize:16,fontWeight:600,color:C.ink,fontFamily:C.P}}>{wine.producer}</div>
+        </div>
+      )}
 
       {/* Grape Varietal */}
       {wine?.grapes&&wine.grapes.length>0&&(
@@ -665,24 +670,20 @@ function DetailStory({wine,nav,existingRating=0}){
                   <span style={{fontSize:15,fontWeight:700,color:C.ink,fontFamily:C.P}}>Words this bottle teaches</span>
                 </div>
                 <div style={{display:'flex',flexDirection:'column',gap:10}}>
-                  {edu.terms.slice(0,3).map((tm,i)=>(
-                    <div key={i} style={{display:'flex',gap:10}}>
-                      <div style={{width:6,height:6,borderRadius:3,background:C.cr,marginTop:7,flexShrink:0}}/>
-                      <div><span style={{fontSize:15,fontWeight:700,color:C.cr,fontFamily:C.P}}>{tm.term}</span><span style={{fontSize:15,color:C.ink2,fontFamily:C.P,lineHeight:1.55}}> — {tm.meaning}</span></div>
+                  {edu.terms.slice(0,3).map((tm,i)=>{
+                    const term=(tm.term||'').trim();
+                    const capTerm=term?term.charAt(0).toUpperCase()+term.slice(1):term;
+                    return(
+                    <div key={i} style={{display:'flex',gap:10,alignItems:'center'}}>
+                      <div style={{width:6,height:6,borderRadius:3,background:C.cr,flexShrink:0}}/>
+                      <div><span style={{fontSize:15,fontWeight:700,color:C.cr,fontFamily:C.P}}>{capTerm}</span><span style={{fontSize:15,color:C.ink2,fontFamily:C.P,lineHeight:1.55}}> — {tm.meaning}</span></div>
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </Card>
             )}
-            {/* Learn hand-off */}
-            <div onClick={()=>nav('learn')} style={{display:'flex',alignItems:'center',gap:12,padding:'13px 15px',borderRadius:14,background:C.crSoft,border:`1px solid ${C.crDim}`,cursor:'pointer'}}>
-              <div style={{width:38,height:38,borderRadius:11,background:C.white,border:`1px solid ${C.crDim}`,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><Icon n="book" sz={19} col={C.cr}/></div>
-              <div style={{flex:1}}>
-                <div style={{fontSize:15,fontWeight:700,color:C.cr,fontFamily:C.P}}>Keep learning</div>
-                <div style={{fontSize:13,color:C.cr,opacity:0.75,fontFamily:C.P}}>Quizzes & lessons on {(wine?.grapes&&wine.grapes[0])||wine?.region||'wine'}</div>
-              </div>
-              <Icon n="chevron" sz={15} col={C.cr}/>
-            </div>
+            {/* Grape unlocks automatically once this wine is rated — no hand-off tap needed here. */}
           </div>
         </div>
       )}

@@ -1,7 +1,5 @@
 /* Vinterest — Quiz Hub + Quiz Screens */
 
-// Emoji badge → line icon, until pwa-xp.js itself drops emoji (tracked separately).
-const _LEVEL_ICONS={'🍇':'wine','🥂':'leaf','🌍':'compass','🔍':'book','🏅':'star','🍾':'flame','🎓':'trophy','⭐':'brain','🏆':'trophy','👑':'trophy'};
 
 const _RING_TYPES=[
   {key:'red',label:'Reds',col:'#8B1A2F'},{key:'white',label:'Whites',col:'#B8963E'},
@@ -37,7 +35,7 @@ function WineDNAUnlockCelebration({onDone}){
   return(
     <div style={{position:'absolute',inset:0,background:C.ink,zIndex:200,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:32,gap:14}}>
       <div style={{animation:'dnaRise 1.1s ease both'}}><Icon n="brain" sz={40} col="#D4AF6A"/></div>
-      <div style={{fontSize:34,fontWeight:400,color:'#fff',fontFamily:C.serif,textAlign:'center',animation:'dnaRise 1.1s .1s ease both'}}>WineDNA unlocked</div>
+      <div style={{fontSize:34,fontWeight:400,color:'#fff',fontFamily:C.P,textAlign:'center',animation:'dnaRise 1.1s .1s ease both'}}>WineDNA unlocked</div>
       <div style={{fontSize:16,color:'rgba(255,255,255,0.55)',fontFamily:C.P,textAlign:'center',lineHeight:1.5,maxWidth:280,animation:'dnaRise 1.1s .2s ease both'}}>Your palate has enough range now — Explore Next recommendations start today.</div>
       <div onClick={onDone} style={{marginTop:14,background:'#D4AF6A',borderRadius:14,padding:'13px 28px',cursor:'pointer',animation:'dnaRise 1.1s .3s ease both'}}>
         <span style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>See WineDNA</span>
@@ -99,6 +97,20 @@ function QuizHubScreen({nav,back,showPro}){
   const region=_dominantRegion(wines);
   const wordsCount=VocabLedger.getAll().length;
   const startQuiz=cfg=>{ sessionStorage.setItem('vinterest_quiz_config2',JSON.stringify(cfg)); nav('quiz'); };
+  const [grapeUnlocks,setGrapeUnlocks]=React.useState(()=>GrapeUnlocks.all());
+  const [grapeLoading,setGrapeLoading]=React.useState(null);
+  function handleGrapeTap(grape){
+    if(!grapeUnlocks[grape]){
+      if(isPro){ GrapeUnlocks.unlockManual(grape); setGrapeUnlocks(GrapeUnlocks.all()); }
+      else showPro('grape-library');
+      return;
+    }
+    setGrapeLoading(grape);
+    getGrapeQuiz(grape,qs=>{
+      setGrapeLoading(null);
+      if(qs&&qs.length) startQuiz({mode:'grape',grape,questions:qs});
+    });
+  }
 
   return(
     <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden'}}>
@@ -109,7 +121,7 @@ function QuizHubScreen({nav,back,showPro}){
           </div>
           <span style={{fontSize:22,fontWeight:800,color:C.ink,fontFamily:C.P,flex:1,letterSpacing:'-0.4px'}}>Learn</span>
           <div style={{display:'flex',alignItems:'center',gap:6,padding:'5px 10px',borderRadius:20,background:C.crSoft,border:`1px solid ${C.crDim}`}}>
-            <Icon n={_LEVEL_ICONS[level.badge]||'wine'} sz={15} col={C.cr}/>
+            <Icon n={XPSystem.iconFor(level)} sz={15} col={C.cr}/>
             <span style={{fontSize:16,fontWeight:700,color:C.cr,fontFamily:C.P}}>{xpData.total} XP</span>
           </div>
         </div>
@@ -228,6 +240,21 @@ function QuizHubScreen({nav,back,showPro}){
         )}
         </div>
 
+        <div style={zoneLabel}>Your Grapes</div>
+        <div style={{fontSize:14,color:C.mid,fontFamily:C.P,marginTop:2}}>{Object.keys(grapeUnlocks).length}/{GRAPE_ALLOWLIST.length} unlocked{!isPro?` · rate a wine to unlock more (${FREE_GRAPE_CAP} free)`:' · tap any to unlock instantly'}</div>
+        <div style={{display:'flex',gap:8,overflowX:'auto',marginTop:8,paddingBottom:2}}>
+        {GRAPE_ALLOWLIST.map(g=>{
+          const unlocked=!!grapeUnlocks[g];
+          const loading=grapeLoading===g;
+          return(
+            <div key={g} onClick={()=>handleGrapeTap(g)} style={{flex:'0 0 auto',padding:'10px 14px',borderRadius:14,background:unlocked?C.crSoft:C.white,border:`1px solid ${unlocked?C.crDim:C.line}`,cursor:'pointer',display:'flex',alignItems:'center',gap:6,opacity:unlocked?1:0.8}}>
+              {loading?<div style={{width:12,height:12,borderRadius:6,border:`2px solid ${C.cr}33`,borderTopColor:C.cr,animation:'storySpin .8s linear infinite'}}/>:!unlocked&&<Icon n="lock" sz={13} col={C.mid}/>}
+              <span style={{fontSize:14.5,fontWeight:600,color:unlocked?C.cr:C.ink,fontFamily:C.P,whiteSpace:'nowrap'}}>{g}</span>
+            </div>
+          );
+        })}
+        </div>
+
         <div style={zoneLabel}>Your Progress</div>
         <div onClick={()=>isPro?nav('mastery-map'):showPro('mastery-map')} style={{background:C.white,borderRadius:16,border:`1px solid ${C.line}`,padding:'14px 16px',display:'flex',alignItems:'center',gap:12,marginTop:8,cursor:'pointer'}}>
           <div style={{width:42,height:42,borderRadius:12,background:C.offWhite,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><Icon n="list" sz={19} col={C.ink}/></div>
@@ -256,6 +283,7 @@ function QuizHubScreen({nav,back,showPro}){
         <div style={{height:16}}/>
       </div>
 </div>
+<style>{`@keyframes storySpin{to{transform:rotate(360deg)}}`}</style>
     </div>
   );
 }
@@ -348,13 +376,17 @@ function assembleRegionQuiz(region){
   if(regionWines.length&&otherWines.length>=3){
     const target=_shuffle(regionWines)[0];
     const opts=_shuffle([target.name,...otherWines.map(w=>w.name)]);
-    qs.push({q:`Which of these bottles in your cellar is from ${region}?`,opts,a:opts.indexOf(target.name),fact:`${target.name} is the ${region} bottle in your history.`,conceptId:null,vocabTerm:null});
+    qs.push({q:`Which of these bottles in your wine history is from ${region}?`,opts,a:opts.indexOf(target.name),fact:`${target.name} is the ${region} bottle in your history.`,conceptId:null,vocabTerm:null});
   }
   return _shuffle(qs).map(q=>_shuffleOpts(q));
 }
 function assemblePracticeQuiz(topicId){
   const topic=QUIZ_TOPICS.find(t=>t.id===topicId)||QUIZ_TOPICS[0];
   const qs=_shuffle(topic.questions.beginner||[]).slice(0,6);
+  return qs.map(q=>_shuffleOpts(q));
+}
+function assembleGrapeQuiz(bank){
+  const qs=_shuffle(bank||[]).slice(0,6).map(q=>({q:q.q,opts:q.opts,a:q.a,fact:q.fact,conceptId:null,vocabTerm:null}));
   return qs.map(q=>_shuffleOpts(q));
 }
 
@@ -369,6 +401,7 @@ function QuizScreen({nav,back}){
     if(mode==='practice') return assemblePracticeQuiz(config.topicId);
     if(mode==='words') return assembleWordsQuiz();
     if(mode==='region') return assembleRegionQuiz(config.region);
+    if(mode==='grape') return assembleGrapeQuiz(config.questions);
     return assembleConceptQuiz(MasterySystem.selectConcepts(6));
   },[mode,config]);
 
@@ -384,6 +417,7 @@ function QuizScreen({nav,back}){
   const title=mode==='practice'?(QUIZ_TOPICS.find(t=>t.id===config.topicId)||QUIZ_TOPICS[0]).label
     :mode==='words'?"Words You've Met"
     :mode==='region'?'Your '+config.region+' Knowledge'
+    :mode==='grape'?'The '+config.grape+' Quiz'
     :'Concept Check';
 
   const q=allQs[qIdx];
@@ -444,19 +478,19 @@ function QuizScreen({nav,back}){
     const msg=pct===100?'Perfect!':pct>=80?'Excellent!':pct>=60?'Good work!':'Keep practising';
     return(
       <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden'}}>
-        <div style={{background:C.cr,padding:'48px 24px 32px',display:'flex',flexDirection:'column',alignItems:'center',gap:8,flexShrink:0}}>
-          <Icon n={pct===100?'trophy':pct>=80?'star':pct>=60?'check':'book'} sz={44} col="#fff"/>
-          <div style={{fontSize:28,fontWeight:800,color:'#fff',fontFamily:C.P}}>{msg}</div>
-          <div style={{fontSize:17,color:'rgba(255,255,255,0.8)',fontFamily:C.P}}>{title}</div>
-          <div style={{display:'flex',gap:16,marginTop:8}}>
+        <div style={{background:C.cr,padding:'26px 24px 20px',display:'flex',flexDirection:'column',alignItems:'center',gap:5,flexShrink:0}}>
+          <Icon n={pct===100?'trophy':pct>=80?'star':pct>=60?'check':'book'} sz={32} col="#fff"/>
+          <div style={{fontSize:22,fontWeight:800,color:'#fff',fontFamily:C.P}}>{msg}</div>
+          <div style={{fontSize:15,color:'rgba(255,255,255,0.8)',fontFamily:C.P}}>{title}</div>
+          <div style={{display:'flex',gap:16,marginTop:6}}>
             <div style={{textAlign:'center'}}>
-              <div style={{fontSize:36,fontWeight:800,color:'#fff',fontFamily:C.P}}>{finalScore}/{allQs.length}</div>
-              <div style={{fontSize:13,color:'rgba(255,255,255,0.7)',fontFamily:C.P}}>Correct</div>
+              <div style={{fontSize:28,fontWeight:800,color:'#fff',fontFamily:C.P}}>{finalScore}/{allQs.length}</div>
+              <div style={{fontSize:12,color:'rgba(255,255,255,0.7)',fontFamily:C.P}}>Correct</div>
             </div>
             <div style={{width:1,background:'rgba(255,255,255,0.25)'}}/>
             <div style={{textAlign:'center'}}>
-              <div style={{fontSize:36,fontWeight:800,color:'#fff',fontFamily:C.P}}>+{xpGained}</div>
-              <div style={{fontSize:13,color:'rgba(255,255,255,0.7)',fontFamily:C.P}}>XP earned</div>
+              <div style={{fontSize:28,fontWeight:800,color:'#fff',fontFamily:C.P}}>+{xpGained}</div>
+              <div style={{fontSize:12,color:'rgba(255,255,255,0.7)',fontFamily:C.P}}>XP earned</div>
             </div>
           </div>
         </div>
@@ -477,8 +511,8 @@ function QuizScreen({nav,back}){
             </div>
           ))}
           <div style={{display:'flex',gap:8,marginTop:4}}>
-            <Btn full style={{flex:1}} onClick={()=>{if(pct<100){if(scrollRef.current)scrollRef.current.scrollTop=0;}else nav('learn');}}>{pct<100?'See what you missed':'Practice more'}</Btn>
-            <Btn primary full style={{flex:1}} onClick={newQuiz}>New quiz</Btn>
+            <Btn style={{flex:1,width:'auto'}} onClick={()=>{if(pct<100){if(scrollRef.current)scrollRef.current.scrollTop=0;}else nav('learn');}}>{pct<100?'See what you missed':'Practice more'}</Btn>
+            <Btn primary style={{flex:1,width:'auto'}} onClick={newQuiz}>New quiz</Btn>
           </div>
           <div style={{height:8}}/>
         </div>

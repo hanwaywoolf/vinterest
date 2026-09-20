@@ -96,6 +96,9 @@ const ContentEngine = {
     if(ev.event==='new_region'||ev.event==='trait_signature'||ev.event==='contradiction'||ev.event==='quiz_failed_concept'||ev.event==='vocab_match') s.region=ev.subject;
     if(ev.event==='new_region'){
       s.region=ev.subject;
+      const match=wines.find(w=>w.region===ev.subject&&w.country);
+      if(match) s.country=match.country;
+      else if(KNOWLEDGE.regions[ev.subject]) s.country=KNOWLEDGE.regions[ev.subject].country;
       const others={};
       wines.forEach(w=>{ if(w.region&&w.region!==ev.subject) others[w.region]=(others[w.region]||0)+1; });
       const top=Object.entries(others).sort((a,b)=>b[1]-a[1])[0];
@@ -142,6 +145,32 @@ const ContentEngine = {
       if(d) lines.push(`${slots.descriptor}: ${d.cause}`);
     }
     return lines.join('\n')||'No specific retrieved facts for this subject — keep claims general and hedge appropriately.';
+  },
+
+  /* Pushed directly when a grape gets unlocked (via rating or manual Pro unlock) — reuses the
+     grape_thread archetype rather than the trigger/event queue, since unlocking is the event. */
+  addGrapeArticle(grape, wines){
+    const archetype=ARTICLE_ARCHETYPES.find(a=>a.id==='grape_unlock_intro');
+    if(!archetype) return;
+    const key='grapeunlock:'+grape;
+    if(ExposureLedger.has(key)) return;
+    const slots={grape,count:Math.max(1,wines.filter(w=>(w.grapes||[]).includes(grape)).length)};
+    const stub={
+      id:'ev_'+key.replace(/[^a-z0-9]+/gi,'_'),
+      archetypeId:archetype.id,
+      iconName:archetype.iconName,
+      readTime:archetype.readTime,
+      title:this.fillTpl(archetype.titleTpl,slots),
+      subtitle:this.fillTpl(archetype.subtitleTpl,slots),
+      brief:archetype.brief,
+      slots,
+      facts:this.retrieveFacts(archetype,slots)
+    };
+    let stubs=[];
+    try{ stubs=JSON.parse(localStorage.getItem('vinterest_gen_stubs')||'[]')||[]; }catch(e){}
+    stubs.push(stub);
+    localStorage.setItem('vinterest_gen_stubs',JSON.stringify(stubs));
+    ExposureLedger.mark(key);
   },
 
   buildStub(archetype, ev, wines){

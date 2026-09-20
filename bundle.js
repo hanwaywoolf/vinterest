@@ -474,6 +474,9 @@ const ContentEngine = {
     if(ev.event==='new_region'||ev.event==='trait_signature'||ev.event==='contradiction'||ev.event==='quiz_failed_concept'||ev.event==='vocab_match') s.region=ev.subject;
     if(ev.event==='new_region'){
       s.region=ev.subject;
+      const match=wines.find(w=>w.region===ev.subject&&w.country);
+      if(match) s.country=match.country;
+      else if(KNOWLEDGE.regions[ev.subject]) s.country=KNOWLEDGE.regions[ev.subject].country;
       const others={};
       wines.forEach(w=>{ if(w.region&&w.region!==ev.subject) others[w.region]=(others[w.region]||0)+1; });
       const top=Object.entries(others).sort((a,b)=>b[1]-a[1])[0];
@@ -522,6 +525,32 @@ const ContentEngine = {
     return lines.join('\n')||'No specific retrieved facts for this subject — keep claims general and hedge appropriately.';
   },
 
+  /* Pushed directly when a grape gets unlocked (via rating or manual Pro unlock) — reuses the
+     grape_thread archetype rather than the trigger/event queue, since unlocking is the event. */
+  addGrapeArticle(grape, wines){
+    const archetype=ARTICLE_ARCHETYPES.find(a=>a.id==='grape_unlock_intro');
+    if(!archetype) return;
+    const key='grapeunlock:'+grape;
+    if(ExposureLedger.has(key)) return;
+    const slots={grape,count:Math.max(1,wines.filter(w=>(w.grapes||[]).includes(grape)).length)};
+    const stub={
+      id:'ev_'+key.replace(/[^a-z0-9]+/gi,'_'),
+      archetypeId:archetype.id,
+      iconName:archetype.iconName,
+      readTime:archetype.readTime,
+      title:this.fillTpl(archetype.titleTpl,slots),
+      subtitle:this.fillTpl(archetype.subtitleTpl,slots),
+      brief:archetype.brief,
+      slots,
+      facts:this.retrieveFacts(archetype,slots)
+    };
+    let stubs=[];
+    try{ stubs=JSON.parse(localStorage.getItem('vinterest_gen_stubs')||'[]')||[]; }catch(e){}
+    stubs.push(stub);
+    localStorage.setItem('vinterest_gen_stubs',JSON.stringify(stubs));
+    ExposureLedger.mark(key);
+  },
+
   buildStub(archetype, ev, wines){
     const slots=this.buildSlots(ev,wines);
     return {
@@ -560,6 +589,68 @@ const ContentEngine = {
     return stubs;
   }
 };
+
+
+/* ---- pwa-grape-learning.js ---- */
+/* Vinterest — Grape Learning: allowlist, per-grape unlock state, and generated practice quizzes.
+   Account-keyed like pwa-mastery.js. Auto-unlocks on RATING a wine of that grape (free + paid) —
+   scanning alone never unlocks. Paid users can also unlock manually from the Learn tab, uncapped.
+   Free users are capped at FREE_GRAPE_CAP unlocks, earned only via rating. */
+
+const GRAPE_ALLOWLIST = _loadJSON('data/grapes-allowlist.json');
+const FREE_GRAPE_CAP = 5;
+
+function _loadTextSync(path){ const x=new XMLHttpRequest(); x.open('GET',path,false); x.send(); return x.responseText; }
+
+const GrapeUnlocks = Object.assign(_accountStore('vinterest_grape_unlocks_v1'), {
+  fresh(){ return {unlocked:{}}; },
+  all(){ return this.get().unlocked; },
+  isUnlocked(g){ return !!this.get().unlocked[g]; },
+  count(){ return Object.keys(this.get().unlocked).length; },
+  unlockViaRating(grape){
+    if(!grape||!GRAPE_ALLOWLIST.includes(grape)) return false;
+    const d=this.get();
+    if(d.unlocked[grape]) return false;
+    const isPro=!!localStorage.getItem('vinterest_pro');
+    if(!isPro && this.count()>=FREE_GRAPE_CAP) return false;
+    d.unlocked[grape]={via:'rated',at:Date.now()};
+    this.save(d);
+    try{ ContentEngine.addGrapeArticle(grape,WineHistory.getAll()); }catch(e){}
+    return true;
+  },
+  unlockManual(grape){
+    if(!grape||!GRAPE_ALLOWLIST.includes(grape)) return false;
+    if(!localStorage.getItem('vinterest_pro')) return false;
+    const d=this.get();
+    if(d.unlocked[grape]) return true;
+    d.unlocked[grape]={via:'manual',at:Date.now()};
+    this.save(d);
+    try{ ContentEngine.addGrapeArticle(grape,WineHistory.getAll()); }catch(e){}
+    return true;
+  }
+});
+
+/* Generated once per grape, cached forever (facts don't change) — 15 questions (5 easy/5 medium/5
+   hard), grounded in data/knowledge.json so the model summarizes real facts rather than inventing. */
+function _grapeQuizCacheKey(grape){ return 'vinterest_grape_quiz_'+grape.replace(/\s+/g,'_'); }
+function getGrapeQuiz(grape, onReady){
+  const key=_grapeQuizCacheKey(grape);
+  const cached=localStorage.getItem(key);
+  if(cached){ try{ onReady(JSON.parse(cached)); return; }catch(e){} }
+  const g=KNOWLEDGE.grapes[grape];
+  const facts=g?`${grape}: ${g.profile} Famous in: ${g.famousIn.join(', ')}.`:`${grape}: no specific retrieved facts — keep questions general and safely factual.`;
+  const prompt=ContentEngine.fillTpl(_loadTextSync('prompts/grape-quiz.txt'),{grape,facts});
+  window.claude.complete({max_tokens:4096,messages:[{role:'user',content:prompt}]})
+    .then(text=>{
+      let cleaned=text.replace(/```json|```/g,'').trim();
+      const s=cleaned.indexOf('['); const e=cleaned.lastIndexOf(']');
+      if(s>=0&&e>s) cleaned=cleaned.slice(s,e+1);
+      const qs=JSON.parse(cleaned);
+      localStorage.setItem(key,JSON.stringify(qs));
+      onReady(qs);
+    })
+    .catch(()=>onReady(null));
+}
 
 
 /* ---- pwa-quiz-questions.js ---- */
@@ -924,6 +1015,13 @@ function Icon({
       d: "M10 2C10 2 14.5 6.5 14.5 10.5C14.5 13.5 12.5 16 10 16C7.5 16 5.5 13.5 5.5 10.5C5.5 6.5 10 2 10 2Z",
       stroke: col,
       strokeWidth: "1.5",
+      fill: "none"
+    }),
+    bolt: /*#__PURE__*/React.createElement("path", {
+      d: "M11 2L4.5 11.5H9.5L8.5 18L15.5 8H10.5L11 2Z",
+      stroke: col,
+      strokeWidth: "1.4",
+      strokeLinejoin: "round",
       fill: "none"
     }),
     trophy: /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("path", {
@@ -2116,6 +2214,11 @@ const WineHistory = {
       });
     }
     this.save(wines);
+    if (rating > 0) {
+      try {
+        GrapeUnlocks.unlockViaRating((wine.grapes || [])[0]);
+      } catch (e) {}
+    }
     return wines;
   },
   rate(name, vintage, rating) {
@@ -2124,6 +2227,11 @@ const WineHistory = {
     if (w) {
       w.rating = rating;
       this.save(wines);
+      if (rating > 0) {
+        try {
+          GrapeUnlocks.unlockViaRating((w.grapes || [])[0]);
+        } catch (e) {}
+      }
     }
   },
   /* Optional, user-entered scan location — manual text only for now (no geolocation/reverse-geocoding yet). */
@@ -2570,6 +2678,7 @@ Object.assign(window, {
   fetchRetailEstimate,
   retailPriceCacheKey
 });
+
 
 /* ---- tweaks-panel.jsx (precompiled) ---- */
 // @ds-adherence-ignore -- omelette starter scaffold (raw elements/hex/px by design)
@@ -3530,7 +3639,7 @@ function ScanHomeScreen({
       fontFamily: C.P,
       marginBottom: 6
     }
-  }, "Your cellar is empty"), /*#__PURE__*/React.createElement("div", {
+  }, "My Wines is empty"), /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 16,
       color: C.mid,
@@ -3746,6 +3855,94 @@ function ScanHomeScreen({
 }
 
 /* ── SCAN CAMERA ── */
+// Preview has no camera — capturePhoto's "camera not ready" branch simulates a real scan of one
+// of these three real bottles instead of the old generic demo fallback, so testing doesn't need
+// an actual label. Picked at random each time the shutter is tapped.
+const DEMO_WINES = [{
+  name: 'Sassicaia',
+  producer: 'Tenuta San Guido',
+  vintage: 2010,
+  region: 'Bolgheri',
+  sub_region: '',
+  country: 'Italy',
+  type: 'red',
+  grapes: ['Cabernet Sauvignon', 'Cabernet Franc'],
+  body: 0.85,
+  tannins: 0.75,
+  acidity: 0.65,
+  sweetness: 0.02,
+  texture: null,
+  effervescence: null,
+  abv: 13.5,
+  tasting_notes: ['Blackcurrant', 'Cedar', 'Graphite', 'Dried herbs'],
+  food_pairings: ['Grilled steak', 'Aged pecorino', 'Wild boar ragù'],
+  price_usd: 280,
+  community_rating: 4.7,
+  description: 'A Super Tuscan built on Cabernet Sauvignon and Cabernet Franc, aged in French oak for structure and length. Dense and savoury with real ageing potential.',
+  why_you_will_like_this: 'A benchmark for structured, cellar-worthy reds with Bordeaux-like backbone.',
+  body_plain: 'Full and weighty in the mouth',
+  tannins_plain: 'Firm, drying grip that softens with age',
+  acidity_plain: 'Bright enough to balance the richness',
+  sweetness_plain: 'Bone dry',
+  texture_plain: null,
+  effervescence_plain: null
+}, {
+  name: 'Bourgogne Blanc',
+  producer: 'Domaine Comte Georges de Vogüé',
+  vintage: 2010,
+  region: 'Burgundy',
+  sub_region: 'Chambolle-Musigny',
+  country: 'France',
+  type: 'white',
+  grapes: ['Chardonnay'],
+  body: 0.55,
+  tannins: null,
+  acidity: 0.7,
+  sweetness: 0.02,
+  texture: 0.55,
+  effervescence: null,
+  abv: 13.5,
+  tasting_notes: ['Green apple', 'Brioche', 'Wet stone', 'Citrus zest'],
+  food_pairings: ['Roast chicken', 'Goat cheese', 'Grilled sole'],
+  price_usd: 90,
+  community_rating: 4.3,
+  description: 'A village-level white from a producer better known for its Musigny reds — taut and mineral with a creamy edge from time in barrel.',
+  why_you_will_like_this: 'A precise, food-friendly Chardonnay if you like your whites lean rather than buttery.',
+  body_plain: 'Medium weight, not heavy',
+  tannins_plain: null,
+  acidity_plain: 'Crisp and mouth-watering',
+  sweetness_plain: 'Bone dry',
+  texture_plain: 'A touch creamy from barrel ageing, still fresh',
+  effervescence_plain: null
+}, {
+  name: 'Southing',
+  producer: 'Sea Smoke',
+  vintage: 2021,
+  region: 'Sta. Rita Hills',
+  sub_region: 'Sea Smoke Estate Vineyard',
+  country: 'United States',
+  type: 'red',
+  grapes: ['Pinot Noir'],
+  body: 0.5,
+  tannins: 0.4,
+  acidity: 0.65,
+  sweetness: 0.02,
+  texture: null,
+  effervescence: null,
+  abv: 14.1,
+  tasting_notes: ['Red cherry', 'Rose petal', 'Sandalwood', 'Baking spice'],
+  food_pairings: ['Duck breast', 'Mushroom risotto', 'Grilled salmon'],
+  price_usd: 75,
+  community_rating: 4.5,
+  description: 'A cool-climate Santa Barbara Pinot Noir from a single estate vineyard near the Pacific — perfumed and silky with real fruit concentration.',
+  why_you_will_like_this: 'A polished, fruit-forward Pinot if you like New World reds with finesse rather than weight.',
+  body_plain: 'Light-to-medium, silky rather than heavy',
+  tannins_plain: 'Soft, fine-grained',
+  acidity_plain: 'Fresh, keeps it lively',
+  sweetness_plain: 'Bone dry',
+  texture_plain: null,
+  effervescence_plain: null
+}];
 function ScanScreen({
   nav,
   back,
@@ -3806,18 +4003,20 @@ function ScanScreen({
       if (streamRef.current) streamRef.current.getTracks().forEach(t => t.stop());
     };
   }, []);
-  const LABEL_PROMPT = `You are an expert sommelier with exceptional vision. Analyse this photo and identify any wine bottle label visible — even if partially obscured, at an angle, or in low light. Do your best with whatever text or imagery you can make out. Return ONLY valid JSON (no markdown, no code fences) with these fields: {"name":"full wine name","producer":"winery","vintage":2018,"region":"region","sub_region":"sub-region or empty string","country":"country","type":"red|white|rosé|sparkling|orange|dessert|fortified","grapes":["Primary Grape"],"body":0.85,"tannins":0.80,"acidity":0.60,"sweetness":0.05,"texture":0.5,"effervescence":0.5,"abv":13.5,"tasting_notes":["Note1","Note2","Note3"],"food_pairings":["Food1","Food2","Food3"],"price_usd":50,"community_rating":4.5,"description":"2-3 sentence approachable description.","why_you_will_like_this":"1-2 sentences personalised to a wine lover.","body_plain":"How heavy it feels in your mouth","tannins_plain":"That drying grip on your gums","acidity_plain":"How zingy and fresh it tastes","sweetness_plain":"Dry means barely any sugar","texture_plain":"Steely and clean, or rich and creamy","effervescence_plain":"How soft or vigorous the bubbles feel"}. "type" guide: "orange" is a white/amber grape fermented with extended skin contact like a red (has real tannins, from the same territory as natural/amber wines); "dessert" is a sweet, non-fortified wine (botrytis/noble rot, late harvest, ice wine — e.g. Sauternes, Tokaji); "fortified" has spirit added during production (Port, Sherry, Madeira, Marsala) and can range from bone dry to very sweet — judge from the label, do not assume fortified always means sweet. For "texture" (0=crisp/steely/unoaked, 1=rich/creamy/oaked from oak aging, lees contact, or malolactic fermentation): include a real value when type is "white", "orange", "dessert", or "fortified"; use null for "red", "rosé", and "sparkling". For "effervescence" (0=soft/delicate mousse, 1=vigorous/fine/persistent bubbles): ONLY include a real value when type is "sparkling"; use null for all other types. For "tannins": include a real value for "red", "orange", and "fortified" (many fortified reds like Port have real tannic structure); use null for "white", "rosé", "sparkling", and "dessert". Only return {"error":"no_wine_label"} if there is absolutely no wine bottle or label anywhere in the image.`;
+  const LABEL_PROMPT = `You are an expert sommelier with exceptional vision. Analyse this photo and identify any wine bottle label visible — even if partially obscured, at an angle, or in low light. Do your best with whatever text or imagery you can make out. Return ONLY valid JSON (no markdown, no code fences) with these fields: {"name":"full wine name","producer":"winery","vintage":2018,"region":"region","sub_region":"sub-region or empty string","country":"country","type":"red|white|rosé|sparkling|orange|dessert|fortified","grapes":["Primary Grape"],"body":0.85,"tannins":0.80,"acidity":0.60,"sweetness":0.05,"texture":0.5,"effervescence":0.5,"abv":13.5,"tasting_notes":["Note1","Note2","Note3"],"food_pairings":["Food1","Food2","Food3"],"price_usd":50,"community_rating":4.5,"description":"2-3 sentence approachable description.","why_you_will_like_this":"1-2 sentences personalised to a wine lover.","body_plain":"How heavy it feels in your mouth","tannins_plain":"That drying grip on your gums","acidity_plain":"How zingy and fresh it tastes","sweetness_plain":"Dry means barely any sugar","texture_plain":"Steely and clean, or rich and creamy","effervescence_plain":"How soft or vigorous the bubbles feel"}. "type" guide: "orange" is a white/amber grape fermented with extended skin contact like a red (has real tannins, from the same territory as natural/amber wines); "dessert" is a sweet, non-fortified wine (botrytis/noble rot, late harvest, ice wine — e.g. Sauternes, Tokaji); "fortified" has spirit added during production (Port, Sherry, Madeira, Marsala) and can range from bone dry to very sweet — judge from the label, do not assume fortified always means sweet. For "texture" (0=crisp/steely/unoaked, 1=rich/creamy/oaked from oak aging, lees contact, or malolactic fermentation): include a real value when type is "white", "orange", "dessert", or "fortified"; use null for "red", "rosé", and "sparkling". For "effervescence" (0=soft/delicate mousse, 1=vigorous/fine/persistent bubbles): ONLY include a real value when type is "sparkling"; use null for all other types. For "tannins": include a real value for "red", "orange", and "fortified" (many fortified reds like Port have real tannic structure); use null for "white", "rosé", "sparkling", and "dessert". For "tasting_notes": only list a specific descriptor (e.g. a named fruit, spice, or aromatic note) if it is genuinely typical of this producer/region/grape/vintage style you recognize — when you don't have real basis for the specific bottle, fall back to broader, honest descriptors typical of the grape and region rather than inventing precise-sounding specifics. Only return {"error":"no_wine_label"} if there is absolutely no wine bottle or label anywhere in the image.`;
   const LIST_PROMPT = `You are a sommelier reading a wine list, printed in ${listCurrency}. Extract EVERY wine from this image in the order they appear — do not skip any. Return ONLY valid JSON (no markdown): {"wines":[{"n":"wine name","t":"red|white|rosé|sparkling|orange|dessert|fortified","r":"region","c":"country","v":2020,"p":"price as printed on the list, verbatim, e.g. 85"}]}. PRICE RULES — read carefully: many lists price by pour tier (e.g. "GLASS:16", "1/2LTR:33", "BOTTLE:59" printed below or beside the wine name). When those tiered lines are present, set "p" to the FULL tiered string verbatim (e.g. "GLASS:16 / 1/2LTR:33 / BOTTLE:59") — the bottle figure is the one that matters, so never drop it. DISAMBIGUATING SHORT NUMBERS NEAR THE NAME: a wine name is sometimes followed by one or two short (1–2 digit) numbers rather than a separate price column. Reason about which they are: (a) if there are TWO such numbers and one is roughly 1.5–3x the other, both landing in a plausible drink-price range (e.g. teens/twenties and thirties/fifties), treat them as a glass price and a bottle price, NOT vintages — use them for "p" (e.g. "GLASS:16 / BOTTLE:45"); (b) if there is a single short number with no such pairing, and no separate GLASS/BOTTLE lines exist elsewhere for that wine, it is more likely a vintage only if it reads like a year shorthand (e.g. preceded by an apostrophe, or clearly grouped with other vintage-looking numbers in that column) — otherwise leave vintage null rather than guessing. Never use a 2-digit index/price as vintage. Only ever set "v" to a plausible 4-digit year (or a 2-digit year you are genuinely confident denotes one, e.g. '18 for 2018) — when genuinely ambiguous, prefer leaving "v" null over guessing wrong. Include ALL wines visible. Do not stop early.`;
   function capturePhoto() {
     if (!videoRef.current || !videoRef.current.videoWidth) {
       if (streamRef.current) streamRef.current.getTracks().forEach(t => t.stop());
       setPhase('processing');
+      const demoWine = DEMO_WINES[Math.floor(Math.random() * DEMO_WINES.length)];
       if (onboarding) {
-        sessionStorage.setItem('vinterest_scan_result', JSON.stringify({
-          demo: true,
-          reason: 'camera_not_ready'
-        }));
-        setTimeout(() => onComplete(null), 1200);
+        setTimeout(() => {
+          try {
+            WineHistory.track(demoWine);
+          } catch (e) {}
+          onComplete(demoWine);
+        }, 1200);
         return;
       }
       if (mode === 'list') {
@@ -3828,9 +4027,31 @@ function ScanScreen({
         setTimeout(() => nav('winelist'), 1600);
       } else {
         sessionStorage.setItem('vinterest_scan_result', JSON.stringify({
-          demo: true,
-          reason: 'camera_not_ready'
+          demo: false,
+          wine: demoWine,
+          confidence: 0.95
         }));
+        const _sc = parseInt(localStorage.getItem('vinterest_scan_count') || '0');
+        localStorage.setItem('vinterest_scan_count', _sc + 1);
+        try {
+          XPSystem.awardAndToast([{
+            type: 'scan'
+          }, {
+            type: 'weekly_scans'
+          }, {
+            type: 'first_type',
+            value: demoWine.type
+          }, {
+            type: 'first_country',
+            value: demoWine.country
+          }, {
+            type: 'new_grape',
+            value: (demoWine.grapes || [])[0]
+          }, ...((demoWine.price_usd || 0) >= 100 ? [{
+            type: 'expensive_wine',
+            wineKey: (demoWine.name || '') + '_' + (demoWine.vintage || '')
+          }] : [])]);
+        } catch (e) {}
         setTimeout(() => nav('identified'), 1600);
       }
       return;
@@ -4340,12 +4561,8 @@ function WineIdentifiedScreen({
       return {};
     }
   }, []);
-  const wine = scanData.wine || null;
-
-  // Track scan immediately — saves to history even before rating
-  React.useEffect(() => {
-    if (wine && !scanData.demo) WineHistory.track(wine);
-  }, [wine?.name, wine?.vintage]);
+  // No tracking here — ScanCardsScreen (rendered below) already calls WineHistory.track() once
+  // per scan. Tracking twice was double-incrementing times_consumed on every single scan.
   return /*#__PURE__*/React.createElement(ScanCardsScreen, {
     nav: nav,
     back: back
@@ -4356,6 +4573,7 @@ Object.assign(window, {
   ScanScreen,
   WineIdentifiedScreen
 });
+
 
 /* ---- pwa-scancards.jsx (precompiled) ---- */
 function _extends() { return _extends = Object.assign ? Object.assign.bind() : function (n) { for (var e = 1; e < arguments.length; e++) { var t = arguments[e]; for (var r in t) ({}).hasOwnProperty.call(t, r) && (n[r] = t[r]); } return n; }, _extends.apply(null, arguments); }
@@ -4397,7 +4615,7 @@ function useScanContent(wine, matchPct, dna) {
   const [loading, setLoading] = React.useState(false);
   React.useEffect(() => {
     if (!wine || !wine.name) return;
-    const key = 'vinterest_scancards_v4_' + (wine.name || '').replace(/\s/g, '_') + '_' + (wine.vintage || 'nv') + '_' + (matchPct ?? 'x');
+    const key = 'vinterest_scancards_v5_' + (wine.name || '').replace(/\s/g, '_') + '_' + (wine.vintage || 'nv') + '_' + (matchPct ?? 'x');
     const cached = localStorage.getItem(key);
     if (cached) {
       try {
@@ -4412,7 +4630,7 @@ function useScanContent(wine, matchPct, dna) {
     const matchLine = matchPct != null ? `Their computed match score for this exact bottle is ${matchPct}/100.` : 'No match score is available yet.';
     const agingFact = _agingFactFor(w);
     const agingLine = agingFact ? `REFERENCE AGING FACTS (use verbatim, do not alter the numbers): ${agingFact}` : 'REFERENCE AGING FACTS: none available for this wine\u2019s classification \u2014 do not state specific aging durations you are not certain of.';
-    const prompt = 'You are a warm, knowledgeable sommelier writing quick-hit cards for a wine app. ' + 'Wine: ' + (w.name || '') + (w.vintage && w.vintage !== 'NV' && w.vintage !== 0 ? ' ' + w.vintage : '') + '. ' + 'Type: ' + (w.type || 'red') + '. Region: ' + (w.region || '') + (w.sub_region ? ' (' + w.sub_region + ')' : '') + ', ' + (w.country || '') + '. ' + 'Producer: ' + (w.producer || 'unknown') + '. ' + 'Grapes: ' + ((w.grapes || []).join(', ') || 'unknown') + '. ' + 'Tasting notes: ' + ((w.tasting_notes || []).join(', ') || 'n/a') + '. ' + dnaLine + ' ' + matchLine + ' ' + agingLine + ' ' + 'Return ONLY valid JSON, no markdown, all sentences concrete and specific to THIS wine (no generic filler), and NO numbers/percentages/decimals anywhere: ' + '{' + '"fact":"one genuinely surprising, memorable fact about this wine, its producer, grape, or region (max 28 words)",' + '"fit":"one vivid sentence on the FLAVOR/STYLE reasons this suits their palate — texture, body, fruit, oak, tannin, acidity. If my WineDNA above has a top grape or region, explicitly tie this wine to it by name (e.g. building on my known love of that grape/region) — never invent a grape or region I do not have in my profile (max 26 words)",' + '"caution":"one specific, practical thing worth knowing before or while drinking THIS bottle — e.g. decanting, serving temperature, food pairing risk, or how it will develop with age. Do NOT use hedging phrases like \\"if you prefer\\" or \\"if you like\\" — you already know their taste profile from the data above, so speak to them directly and confidently. If the match score is high, this should read as a helpful tip for someone who will enjoy the wine, never as a warning that it might not suit them (max 24 words)",' + '"origin":"one sentence painting the place this comes from — landscape, climate or culture (max 26 words)",' + '"region_style":"one sentence on what makes wines from here distinctive (max 24 words)",' + '"estate":"one sentence on the producer/winemaker and the estate\'s history or reputation — if producer is unknown, describe the typical winemaking approach in this region instead (max 26 words)",' + '"talk":["three SHORT quotable phrases (each max 12 words) a drinker could say out loud to sound clued-in about this exact wine"],' + '"fact2":"one specific, memorable aging/classification/production fact that helps this bottle make sense. If REFERENCE AGING FACTS are given below, you MUST use those exact figures verbatim (paraphrase the wording only, never change the numbers) — do not invent different aging periods. If no reference facts are given for this wine\'s classification, give a general production fact that does NOT state specific aging durations you are not certain of (max 22 words)",' + '"matchNote":"one sentence giving an honest confidence verdict on THIS PAIRING, grounded in the WineDNA facts above — if I have a top grape/region for this type, name it explicitly and say whether this bottle aligns with or departs from it; never invent a grape/region I do not have (max 24 words). Never mention flavor, texture, tannin, oak, or acidity — that is covered elsewhere."' + '}';
+    const prompt = 'You are a warm, knowledgeable sommelier writing quick-hit cards for a wine app. ' + 'Wine: ' + (w.name || '') + (w.vintage && w.vintage !== 'NV' && w.vintage !== 0 ? ' ' + w.vintage : '') + '. ' + 'Type: ' + (w.type || 'red') + '. Region: ' + (w.region || '') + (w.sub_region ? ' (' + w.sub_region + ')' : '') + ', ' + (w.country || '') + '. ' + 'Producer: ' + (w.producer || 'unknown') + '. ' + 'Grapes: ' + ((w.grapes || []).join(', ') || 'unknown') + '. ' + 'Tasting notes: ' + ((w.tasting_notes || []).join(', ') || 'n/a') + '. ' + dnaLine + ' ' + matchLine + ' ' + agingLine + ' ' + 'Return ONLY valid JSON, no markdown, all sentences concrete and specific to THIS wine (no generic filler), and NO numbers/percentages/decimals anywhere EXCEPT when referencing a specific year/vintage — years must always be written as numerals (e.g. "2010", never "twenty ten"): ' + '{' + '"fact":"one genuinely surprising, memorable fact about this wine, its producer, grape, or region (max 28 words)",' + '"fit":"one vivid sentence on the FLAVOR/STYLE reasons this suits their palate — texture, body, fruit, oak, tannin, acidity. If my WineDNA above has a top grape or region, explicitly tie this wine to it by name (e.g. building on my known love of that grape/region) — never invent a grape or region I do not have in my profile (max 26 words)",' + '"caution":"one specific, practical thing worth knowing before or while drinking THIS bottle — e.g. decanting, serving temperature, food pairing risk, or how it will develop with age. Do NOT use hedging phrases like \\"if you prefer\\" or \\"if you like\\" — you already know their taste profile from the data above, so speak to them directly and confidently. If the match score is high, this should read as a helpful tip for someone who will enjoy the wine, never as a warning that it might not suit them (max 24 words)",' + '"origin":"one sentence painting the place this comes from — landscape, climate or culture (max 26 words)",' + '"region_style":"one sentence on what makes wines from here distinctive (max 24 words)",' + '"estate":"one sentence on the producer/winemaker and the estate\'s history or reputation — if producer is unknown, describe the typical winemaking approach in this region instead (max 26 words)",' + '"talk":["three SHORT quotable phrases (each max 12 words) a drinker could say out loud to sound clued-in about this exact wine"],' + '"fact2":"one specific, memorable aging/classification/production fact that helps this bottle make sense. If REFERENCE AGING FACTS are given below, you MUST use those exact figures verbatim (paraphrase the wording only, never change the numbers) — do not invent different aging periods. If no reference facts are given for this wine\'s classification, give a general production fact that does NOT state specific aging durations you are not certain of (max 22 words)",' + '"matchNote":"one sentence giving an honest confidence verdict on THIS PAIRING, grounded in the WineDNA facts above — if I have a top grape/region for this type, name it explicitly and say whether this bottle aligns with or departs from it; never invent a grape/region I do not have (max 24 words). Never mention flavor, texture, tannin, oak, or acidity — that is covered elsewhere."' + '}';
     window.claude.complete({
       messages: [{
         role: 'user',
@@ -4542,7 +4760,7 @@ function ScanCardsScreen({
     } catch (e) {}
     if (wine) WineHistory.setScanIntent(wine.name, wine.vintage, v);
   }
-  const canRate = intent === 'tasting' || intent === 'tasted';
+  const canRate = intent === 'tasting' || intent === 'tasted' || intent === 'quickrate';
 
   // duplicate scan gate — a wine you've already rated (exact vintage match) can skip straight to re-rating
   // instead of walking the full card sequence again; remembered per scan so returning doesn't re-ask.
@@ -4556,10 +4774,7 @@ function ScanCardsScreen({
   }
   const matchPct = React.useMemo(() => {
     if (!wine) return null;
-    const dna = calcMatchScore(wine, WineHistory.getAll());
-    if (dna != null) return dna;
-    const conf = scanData.confidence;
-    return conf ? Math.round(Math.min(0.98, conf) * 100) : null;
+    return calcMatchScore(wine, WineHistory.getAll());
   }, [wine && wine.name, intent]);
   const dnaSnapshot = React.useMemo(() => wine ? _dnaSnapshot((wine.type || 'red').toLowerCase().replace('é', 'e')) : null, [wine && wine.name]);
   const {
@@ -4768,6 +4983,11 @@ function IntentGate({
     icon: 'star',
     t: 'Already had a sip',
     s: 'I want to talk about it — and rate what I tasted.'
+  }, {
+    k: 'quickrate',
+    icon: 'bolt',
+    t: 'Match & Rate',
+    s: 'Just the match score, then straight to rating. No cards.'
   }];
   return /*#__PURE__*/React.createElement("div", {
     className: "sc-scroll",
@@ -5132,6 +5352,17 @@ function buildCards({
     eyebrow: 'Your match',
     kind: 'match'
   });
+  if (intent === 'quickrate') {
+    cards.push({
+      key: 'finish',
+      accent: C.cr,
+      soft: C.crSoft,
+      icon: 'star',
+      eyebrow: 'Rate it',
+      kind: 'finish'
+    });
+    return cards;
+  }
   cards.push({
     key: 'fit',
     accent: C.green,
@@ -5199,7 +5430,162 @@ function buildCards({
     eyebrow: intent === 'checking' ? 'Save it' : 'Rate it',
     kind: 'finish'
   });
+  cards.push({
+    key: 'learn',
+    accent: C.green,
+    soft: C.greenBg,
+    icon: 'book',
+    eyebrow: 'Keep the streak',
+    kind: 'learn'
+  });
   return cards;
+}
+
+/* one question grounded in this specific bottle — descriptor cause, then region fact, in that priority. Free forever, no PRO gate. */
+function _scanFlowQuestion(wine) {
+  const notes = (wine.tasting_notes || []).join(' ').toLowerCase();
+  const descKeys = Object.keys(KNOWLEDGE.descriptors || {});
+  const hit = descKeys.find(k => notes.includes(k));
+  if (hit) {
+    const correct = KNOWLEDGE.descriptors[hit].cause;
+    const others = _shuffle(descKeys.filter(k => k !== hit)).slice(0, 3).map(k => KNOWLEDGE.descriptors[k].cause);
+    return {
+      q: `You noted "${hit}" on this bottle. What's actually responsible for that?`,
+      opts: _shuffle([correct, ...others]),
+      a: 0,
+      _correct: correct
+    };
+  }
+  const info = KNOWLEDGE.regions && KNOWLEDGE.regions[wine.region];
+  if (info && info.keyGrapes && info.keyGrapes[0]) {
+    const correct = info.keyGrapes[0];
+    const allGrapes = Object.values(KNOWLEDGE.regions || {}).flatMap(r => r.keyGrapes || []);
+    const others = _shuffle(allGrapes.filter(g => g !== correct)).slice(0, 3);
+    return {
+      q: `What grape carries ${wine.region}?`,
+      opts: _shuffle([correct, ...others]),
+      a: 0,
+      _correct: correct
+    };
+  }
+  return null;
+}
+function LearnCardFace({
+  wine,
+  gen,
+  accent,
+  soft
+}) {
+  const wineKey = (wine.name || '') + '_' + (wine.vintage || 'nv');
+  const doneKey = 'vinterest_scanflow_' + wineKey.replace(/\s/g, '_');
+  const question = React.useMemo(() => _scanFlowQuestion(wine), [wine && wine.name]);
+  const [selected, setSelected] = React.useState(null);
+  const [awarded, setAwarded] = React.useState(() => !!localStorage.getItem(doneKey));
+  function choose(i) {
+    if (selected !== null) return;
+    setSelected(i);
+    if (i === question.a && !awarded) {
+      localStorage.setItem(doneKey, '1');
+      setAwarded(true);
+      XPSystem.awardAndToast([{
+        type: 'quiz_correct',
+        topic: 'scan_flow',
+        difficulty: 'habit'
+      }]);
+    }
+  }
+  if (!question) {
+    const fact = gen && gen.fact || `${wine.region || wine.country} wines like this one reward a slower first sip.`;
+    return /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 12
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontSize: 20,
+        fontWeight: 800,
+        color: C.ink,
+        fontFamily: C.P,
+        lineHeight: 1.2
+      }
+    }, "Before you go"), /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontSize: 17,
+        color: C.ink2,
+        fontFamily: C.P,
+        lineHeight: 1.6
+      }
+    }, fact));
+  }
+  return /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      flexDirection: 'column',
+      gap: 14
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 20,
+      fontWeight: 800,
+      color: C.ink,
+      fontFamily: C.P,
+      lineHeight: 1.2
+    }
+  }, "Quick one before you go"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 17,
+      fontWeight: 600,
+      color: C.ink,
+      fontFamily: C.P,
+      lineHeight: 1.4
+    }
+  }, question.q), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      flexDirection: 'column',
+      gap: 8
+    }
+  }, question.opts.map((opt, i) => {
+    let bg = C.white,
+      border = C.line,
+      text = C.ink;
+    if (selected !== null) {
+      if (i === question.a) {
+        bg = C.greenBg;
+        border = C.green;
+        text = C.green;
+      } else if (i === selected) {
+        bg = '#FFF0F0';
+        border = '#E88080';
+        text = '#C0392B';
+      }
+    }
+    return /*#__PURE__*/React.createElement("div", {
+      key: i,
+      onClick: () => choose(i),
+      style: {
+        padding: '12px 14px',
+        borderRadius: 12,
+        border: `2px solid ${border}`,
+        background: bg,
+        cursor: selected === null ? 'pointer' : 'default',
+        fontSize: 15,
+        fontWeight: 500,
+        color: text,
+        fontFamily: C.P,
+        lineHeight: 1.4
+      }
+    }, opt);
+  })), selected !== null && /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 14,
+      fontWeight: 700,
+      color: selected === question.a ? C.green : C.mid,
+      fontFamily: C.P
+    }
+  }, selected === question.a ? awarded ? 'Nice — +10 XP' : 'Correct' : 'Not quite — see it highlighted above'));
 }
 
 /* renders the body of one card — always at full detail; there is no separate expand/collapse mode, everything ships on the main screen. */
@@ -5463,115 +5849,15 @@ function CardFace({
     }) : gen && gen.estate || `A producer working in the traditional style of ${wine.region || wine.country}.`))));
   }
   if (card.kind === 'taste') {
-    const cues = [];
-    const type = (wine.type || 'red').toLowerCase().replace('é', 'e');
-    const showTannins = ['red', 'orange', 'fortified'].includes(type);
-    const isDessertOrFortified = ['dessert', 'fortified'].includes(type);
-    const b = wine.body ?? 0.65,
-      tn = wine.tannins ?? 0.55,
-      ac = wine.acidity ?? 0.6,
-      tx = wine.texture,
-      sw = wine.sweetness ?? 0.1;
-    cues.push({
-      l: 'Body',
-      v: lvl(b, 'Light & lithe', 'Medium-weight', 'Full & mouth-coating'),
-      tip: 'Notice how heavy it feels — does it linger or refresh?'
+    if (intent === 'tasting') return /*#__PURE__*/React.createElement(BlindCallCard, {
+      wine: wine,
+      gen: gen,
+      accent: a
     });
-    if (showTannins) cues.push({
-      l: 'Tannins',
-      v: lvl(tn, 'Silky, low grip', 'Gentle grip', 'Firm, drying grip'),
-      tip: 'That drying feel on your gums and cheeks — is it soft or grippy?'
+    return /*#__PURE__*/React.createElement(TasteCues, {
+      wine: wine,
+      accent: a
     });
-    cues.push({
-      l: 'Acidity',
-      v: lvl(ac, 'Round & mellow', 'Fresh', 'Zippy & mouth-watering'),
-      tip: 'Does it make you salivate? That\'s acidity.'
-    });
-    if (tx != null) cues.push({
-      l: 'Oak / texture',
-      v: lvl(tx, 'Clean & steely', 'Subtle', 'Creamy, vanilla, toast'),
-      tip: 'Any butter, vanilla or toast? That\'s oak.'
-    });
-    if (sw >= 0.2 || isDessertOrFortified) cues.push({
-      l: 'Sweetness',
-      v: lvl(sw, 'Dry', 'Off-dry', 'Noticeably sweet'),
-      tip: 'Sense of sugar on the tip of your tongue.'
-    });
-    if (isDessertOrFortified) cues.push({
-      l: 'Serving size',
-      v: 'A smaller 2–3oz pour',
-      tip: 'These are richer and higher in alcohol — a small glass goes further.'
-    });
-    const notes = (wine.tasting_notes || []).slice(0, 4);
-    return /*#__PURE__*/React.createElement("div", {
-      style: {
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 14
-      }
-    }, /*#__PURE__*/React.createElement(H, null, "What to look for"), /*#__PURE__*/React.createElement("div", {
-      style: {
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 12
-      }
-    }, cues.slice(0, isDessertOrFortified ? 5 : 4).map((c, i) => /*#__PURE__*/React.createElement("div", {
-      key: i,
-      style: {
-        display: 'flex',
-        gap: 10,
-        alignItems: 'baseline'
-      }
-    }, /*#__PURE__*/React.createElement("span", {
-      style: {
-        fontSize: 15,
-        fontWeight: 700,
-        color: a,
-        fontFamily: C.P,
-        minWidth: 92,
-        flexShrink: 0
-      }
-    }, c.l), /*#__PURE__*/React.createElement("div", {
-      style: {
-        flex: 1
-      }
-    }, /*#__PURE__*/React.createElement("div", {
-      style: {
-        fontSize: 17,
-        color: C.ink,
-        fontFamily: C.P,
-        fontWeight: 600
-      }
-    }, c.v))))), notes.length > 0 && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
-      style: {
-        fontSize: 13,
-        fontWeight: 700,
-        color: C.mid,
-        fontFamily: C.P,
-        letterSpacing: '0.06em',
-        textTransform: 'uppercase',
-        marginBottom: 7,
-        marginTop: 2
-      }
-    }, "Hunt for these flavours"), /*#__PURE__*/React.createElement("div", {
-      style: {
-        display: 'flex',
-        flexWrap: 'wrap',
-        gap: 6
-      }
-    }, notes.map((n, i) => /*#__PURE__*/React.createElement("span", {
-      key: i,
-      style: {
-        padding: '5px 11px',
-        borderRadius: 20,
-        background: C.offWhite,
-        color: C.ink2,
-        fontSize: 15,
-        fontWeight: 500,
-        fontFamily: C.P,
-        border: `1px solid ${C.line}`
-      }
-    }, n)))));
   }
   if (card.kind === 'talk') {
     const lines = gen && Array.isArray(gen.talk) && gen.talk.length ? gen.talk : [`A ${wine.type || 'red'} that really speaks of ${wine.region || wine.country}.`, wine.grapes && wine.grapes[0] ? `Lovely example of ${wine.grapes[0]}.` : 'Nicely made, plenty of character.', 'Great with the right plate of food.'];
@@ -5647,8 +5933,538 @@ function CardFace({
     soft: card.soft,
     expanded: expanded
   });
+  if (card.kind === 'learn') return /*#__PURE__*/React.createElement(LearnCardFace, {
+    wine: wine,
+    gen: gen,
+    accent: a,
+    soft: card.soft
+  });
   if (card.kind === 'finish') return null; // rendered specially by deck (needs actions)
   return null;
+}
+
+/* ── static taste cues (checking / tasted / post-Blind-Call summary) ── */
+function TasteCues({
+  wine,
+  accent
+}) {
+  const a = accent || C.ink;
+  const cues = [];
+  const type = (wine.type || 'red').toLowerCase().replace('é', 'e');
+  const showTannins = ['red', 'orange', 'fortified'].includes(type);
+  const isDessertOrFortified = ['dessert', 'fortified'].includes(type);
+  const b = wine.body ?? 0.65,
+    tn = wine.tannins ?? 0.55,
+    ac = wine.acidity ?? 0.6,
+    tx = wine.texture,
+    sw = wine.sweetness ?? 0.1;
+  cues.push({
+    l: 'Body',
+    v: lvl(b, 'Light & lithe', 'Medium-weight', 'Full & mouth-coating'),
+    tip: 'Notice how heavy it feels — does it linger or refresh?'
+  });
+  if (showTannins) cues.push({
+    l: 'Tannins',
+    v: lvl(tn, 'Silky, low grip', 'Gentle grip', 'Firm, drying grip'),
+    tip: 'That drying feel on your gums and cheeks — is it soft or grippy?'
+  });
+  cues.push({
+    l: 'Acidity',
+    v: lvl(ac, 'Round & mellow', 'Fresh', 'Zippy & mouth-watering'),
+    tip: 'Does it make you salivate? That\'s acidity.'
+  });
+  if (tx != null) cues.push({
+    l: 'Oak / texture',
+    v: lvl(tx, 'Clean & steely', 'Subtle', 'Creamy, vanilla, toast'),
+    tip: 'Any butter, vanilla or toast? That\'s oak.'
+  });
+  if (sw >= 0.2 || isDessertOrFortified) cues.push({
+    l: 'Sweetness',
+    v: lvl(sw, 'Dry', 'Off-dry', 'Noticeably sweet'),
+    tip: 'Sense of sugar on the tip of your tongue.'
+  });
+  if (isDessertOrFortified) cues.push({
+    l: 'Serving size',
+    v: 'A smaller 2–3oz pour',
+    tip: 'These are richer and higher in alcohol — a small glass goes further.'
+  });
+  const notes = (wine.tasting_notes || []).slice(0, 4);
+  return /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      flexDirection: 'column',
+      gap: 14
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 24,
+      fontWeight: 800,
+      color: C.ink,
+      fontFamily: C.P,
+      lineHeight: 1.2,
+      letterSpacing: '-0.01em'
+    }
+  }, "What to look for"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      flexDirection: 'column',
+      gap: 12
+    }
+  }, cues.slice(0, isDessertOrFortified ? 5 : 4).map((c, i) => /*#__PURE__*/React.createElement("div", {
+    key: i,
+    style: {
+      display: 'flex',
+      gap: 10,
+      alignItems: 'baseline'
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: 15,
+      fontWeight: 700,
+      color: a,
+      fontFamily: C.P,
+      minWidth: 92,
+      flexShrink: 0
+    }
+  }, c.l), /*#__PURE__*/React.createElement("div", {
+    style: {
+      flex: 1
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 17,
+      color: C.ink,
+      fontFamily: C.P,
+      fontWeight: 600
+    }
+  }, c.v))))), notes.length > 0 && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 13,
+      fontWeight: 700,
+      color: C.mid,
+      fontFamily: C.P,
+      letterSpacing: '0.06em',
+      textTransform: 'uppercase',
+      marginBottom: 7,
+      marginTop: 2
+    }
+  }, "Hunt for these flavours"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      flexWrap: 'wrap',
+      gap: 6
+    }
+  }, notes.map((n, i) => /*#__PURE__*/React.createElement("span", {
+    key: i,
+    style: {
+      padding: '5px 11px',
+      borderRadius: 20,
+      background: C.offWhite,
+      color: C.ink2,
+      fontSize: 15,
+      fontWeight: 500,
+      fontFamily: C.P,
+      border: `1px solid ${C.line}`
+    }
+  }, n)))));
+}
+
+/* ── Blind Call ── */
+const DIM_LABEL = {
+  body: 'Body',
+  acidity: 'Acidity',
+  tannins: 'Tannins',
+  texture: 'Texture'
+};
+const DIM_LO = {
+  body: 'Light',
+  acidity: 'Mellow',
+  tannins: 'Silky',
+  texture: 'Crisp & steely'
+};
+const DIM_HI = {
+  body: 'Full',
+  acidity: 'Zingy',
+  tannins: 'Grippy',
+  texture: 'Rich & creamy'
+};
+const DIM_CONCEPT = {
+  tannins: 'tannin_source',
+  acidity: 'acidity_and_food',
+  texture: 'oak_influence'
+};
+function dimsFor(wine) {
+  const type = (wine.type || 'red').toLowerCase().replace('é', 'e');
+  const showTannins = ['red', 'orange', 'fortified'].includes(type);
+  return showTannins ? ['body', 'acidity', 'tannins'] : ['body', 'acidity', 'texture'];
+}
+function _bcKey(wine) {
+  return (wine.name || '') + '_' + (wine.vintage || 'nv');
+}
+function BlindCallCard({
+  wine,
+  gen,
+  accent
+}) {
+  const wineKey = _bcKey(wine).replace(/\s/g, '_');
+  const doneKey = 'vinterest_blindcall_' + wineKey;
+  const savedKey = 'vinterest_blindcall_result_' + wineKey;
+  const [phase, setPhase] = React.useState(() => localStorage.getItem(doneKey) ? 'summary' : 'predict');
+  const [guess, setGuess] = React.useState(null);
+  const [score, setScore] = React.useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem(savedKey) || 'null');
+    } catch (e) {
+      return null;
+    }
+  });
+  const dims = React.useMemo(() => dimsFor(wine), [wine && wine.name]);
+  function finalizeReveal(g, missed, accuracy) {
+    if (!localStorage.getItem(doneKey)) {
+      localStorage.setItem(doneKey, '1');
+      missed.forEach(d => {
+        const cid = DIM_CONCEPT[d];
+        if (cid) MasterySystem.recordResult(cid, false);
+      });
+      const awards = XPSystem.awardAndToast([{
+        type: 'blind_call',
+        accuracy
+      }]);
+      const amount = awards.filter(x => !x.levelUp).reduce((s, x) => s + x.amount, 0);
+      localStorage.setItem(savedKey, JSON.stringify({
+        accuracy,
+        amount
+      }));
+      setScore({
+        accuracy,
+        amount
+      });
+    }
+    setPhase('result');
+  }
+  if (phase === 'predict') return /*#__PURE__*/React.createElement(BlindCallPredict, {
+    dims: dims,
+    onSubmit: g => {
+      setGuess(g);
+      setPhase('reveal');
+    }
+  });
+  if (phase === 'reveal') return /*#__PURE__*/React.createElement(BlindCallReveal, {
+    wine: wine,
+    dims: dims,
+    guess: guess,
+    onDone: finalizeReveal
+  });
+  if (phase === 'result') return /*#__PURE__*/React.createElement(React.Fragment, null, ReactDOM.createPortal(/*#__PURE__*/React.createElement(BlindCallResult, {
+    score: score,
+    onClose: () => setPhase('summary')
+  }), document.body), /*#__PURE__*/React.createElement("div", {
+    style: {
+      minHeight: 120
+    }
+  }));
+  return /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      flexDirection: 'column',
+      gap: 16
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      padding: '12px 14px',
+      borderRadius: 12,
+      background: C.greenBg,
+      border: `1px solid ${C.green}30`,
+      display: 'flex',
+      alignItems: 'center',
+      gap: 10
+    }
+  }, /*#__PURE__*/React.createElement(Icon, {
+    n: "check",
+    sz: 18,
+    col: C.green
+  }), /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: 14.5,
+      fontWeight: 600,
+      color: C.green,
+      fontFamily: C.P
+    }
+  }, "You called it ", score ? Math.round(score.accuracy * 100) : '—', "% accurate", score ? ` · +${score.amount} XP` : '')), /*#__PURE__*/React.createElement(TasteCues, {
+    wine: wine,
+    accent: accent
+  }));
+}
+function BlindCallPredict({
+  dims,
+  onSubmit
+}) {
+  const [vals, setVals] = React.useState(() => Object.fromEntries(dims.map(d => [d, 0.5])));
+  return /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      flexDirection: 'column',
+      gap: 16
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 24,
+      fontWeight: 800,
+      color: C.ink,
+      fontFamily: C.P,
+      lineHeight: 1.2,
+      letterSpacing: '-0.01em'
+    }
+  }, "Call it before you look"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 15,
+      color: C.mid,
+      fontFamily: C.P,
+      lineHeight: 1.5
+    }
+  }, "Drag each slider to where you think this wine lands \u2014 no penalty for missing."), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      flexDirection: 'column',
+      gap: 20,
+      marginTop: 4
+    }
+  }, dims.map(d => /*#__PURE__*/React.createElement("div", {
+    key: d
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      justifyContent: 'space-between',
+      fontSize: 12.5,
+      color: C.mid,
+      fontFamily: C.P,
+      marginBottom: 6,
+      fontWeight: 600,
+      textTransform: 'uppercase',
+      letterSpacing: '0.04em'
+    }
+  }, /*#__PURE__*/React.createElement("span", null, DIM_LO[d]), /*#__PURE__*/React.createElement("span", {
+    style: {
+      color: C.ink,
+      fontWeight: 700
+    }
+  }, DIM_LABEL[d]), /*#__PURE__*/React.createElement("span", null, DIM_HI[d])), /*#__PURE__*/React.createElement("input", {
+    type: "range",
+    min: "0",
+    max: "100",
+    value: Math.round(vals[d] * 100),
+    style: {
+      width: '100%',
+      accentColor: C.cr,
+      cursor: 'pointer',
+      display: 'block'
+    },
+    onChange: e => setVals(v => ({
+      ...v,
+      [d]: Number(e.target.value) / 100
+    }))
+  })))), /*#__PURE__*/React.createElement(Btn, {
+    primary: true,
+    full: true,
+    onClick: () => onSubmit(vals)
+  }, "Lock in my call"));
+}
+function BlindCallReveal({
+  wine,
+  dims,
+  guess,
+  onDone
+}) {
+  const deltas = dims.map(d => Math.abs(guess[d] - (wine[d] ?? 0.5)));
+  const avgDelta = deltas.reduce((s, x) => s + x, 0) / deltas.length;
+  const accuracy = Math.max(0, 1 - avgDelta * 1.6);
+  const missed = dims.filter((d, i) => deltas[i] > 0.22);
+  return /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      flexDirection: 'column',
+      gap: 16
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 24,
+      fontWeight: 800,
+      color: C.ink,
+      fontFamily: C.P,
+      lineHeight: 1.2,
+      letterSpacing: '-0.01em'
+    }
+  }, "How you called it"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      flexDirection: 'column',
+      gap: 20
+    }
+  }, dims.map(d => {
+    const g = guess[d],
+      act = wine[d] ?? 0.5;
+    return /*#__PURE__*/React.createElement("div", {
+      key: d
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontSize: 14,
+        fontWeight: 700,
+        color: C.ink,
+        fontFamily: C.P,
+        marginBottom: 8
+      }
+    }, DIM_LABEL[d]), /*#__PURE__*/React.createElement("div", {
+      style: {
+        position: 'relative',
+        height: 8,
+        borderRadius: 4,
+        background: C.line
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        position: 'absolute',
+        left: `${act * 100}%`,
+        top: -4,
+        width: 16,
+        height: 16,
+        borderRadius: 8,
+        background: C.green,
+        border: '2px solid #fff',
+        boxShadow: '0 1px 4px rgba(0,0,0,0.3)',
+        transform: 'translateX(-50%)'
+      }
+    }), /*#__PURE__*/React.createElement("div", {
+      style: {
+        position: 'absolute',
+        left: `${g * 100}%`,
+        top: -4,
+        width: 16,
+        height: 16,
+        borderRadius: 8,
+        background: C.cr,
+        border: '2px solid #fff',
+        boxShadow: '0 1px 4px rgba(0,0,0,0.3)',
+        transform: 'translateX(-50%)',
+        opacity: 0.85
+      }
+    })), /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: 'flex',
+        justifyContent: 'space-between',
+        fontSize: 12,
+        color: C.mid,
+        fontFamily: C.P,
+        marginTop: 6
+      }
+    }, /*#__PURE__*/React.createElement("span", {
+      style: {
+        color: C.cr,
+        fontWeight: 600
+      }
+    }, "\u25CF your call"), /*#__PURE__*/React.createElement("span", {
+      style: {
+        color: C.green,
+        fontWeight: 600
+      }
+    }, "\u25CF actual")));
+  })), missed.length > 0 && /*#__PURE__*/React.createElement("div", {
+    style: {
+      padding: '12px 14px',
+      borderRadius: 12,
+      background: C.amberBg,
+      border: `1px solid ${C.amber}30`
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 14,
+      fontWeight: 700,
+      color: C.amber,
+      fontFamily: C.P,
+      marginBottom: 3
+    }
+  }, "Worth a closer look: ", missed.map(d => DIM_LABEL[d]).join(', ')), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 13.5,
+      color: C.ink2,
+      fontFamily: C.P,
+      lineHeight: 1.5
+    }
+  }, "No cost to missing \u2014 we'll queue a short read on this for your shelf.")), /*#__PURE__*/React.createElement(Btn, {
+    primary: true,
+    full: true,
+    onClick: () => onDone(guess, missed, accuracy)
+  }, "See my score"));
+}
+function BlindCallResult({
+  score,
+  onClose
+}) {
+  const amount = score ? score.amount : 0;
+  const accuracy = score ? score.accuracy : 0;
+  const [shown, setShown] = React.useState(0);
+  React.useEffect(() => {
+    const start = performance.now();
+    function tick(t) {
+      const p = Math.min(1, (t - start) / 900);
+      setShown(Math.round(p * amount));
+      if (p < 1) requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+  }, [amount]);
+  const label = accuracy >= 0.85 ? 'Uncanny' : accuracy >= 0.65 ? 'Sharp call' : accuracy >= 0.4 ? 'Decent read' : 'A learning moment';
+  return /*#__PURE__*/React.createElement("div", {
+    style: {
+      position: 'fixed',
+      inset: 0,
+      background: C.ink,
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 14,
+      zIndex: 9999
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 13,
+      fontWeight: 600,
+      color: 'rgba(255,255,255,0.4)',
+      fontFamily: C.P,
+      letterSpacing: '0.1em',
+      textTransform: 'uppercase'
+    }
+  }, "Blind Call"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 38,
+      fontWeight: 800,
+      fontFamily: C.P,
+      color: '#D4AF6A',
+      lineHeight: 1
+    }
+  }, label), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 16,
+      color: 'rgba(255,255,255,0.55)',
+      fontFamily: C.P,
+      marginTop: 2
+    }
+  }, Math.round(accuracy * 100), "% accurate"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 48,
+      fontWeight: 800,
+      fontFamily: C.P,
+      color: '#D4AF6A',
+      marginTop: 18,
+      fontVariantNumeric: 'tabular-nums'
+    }
+  }, "+", shown, " XP"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginTop: 32
+    }
+  }, /*#__PURE__*/React.createElement(Btn, {
+    primary: true,
+    onClick: onClose
+  }, "Continue")));
 }
 function AttrReasons({
   wine,
@@ -5863,7 +6679,7 @@ function FinishFace({
   nav,
   accent
 }) {
-  const canRate = intent === 'tasting' || intent === 'tasted';
+  const canRate = intent === 'tasting' || intent === 'tasted' || intent === 'quickrate';
   const alreadyRated = existingRating > 0;
   const [confirmStep, setConfirmStep] = React.useState(alreadyRated);
   const [score, setScore] = React.useState(existingRating || 0);
@@ -6652,8 +7468,9 @@ Object.assign(window, {
   ScanCardsScreen
 });
 
+
 /* ---- pwa-screens-detail.jsx (precompiled) ---- */
-/* Vinterest PWA — Wine Detail screen (tabbed: Details / Story / Buy) */
+/* Vinterest PWA — Wine Detail screen (tabbed: Details / Learn / Price) */
 
 function ScanLocationCard({
   wine
@@ -6729,6 +7546,7 @@ function ScanLocationCard({
     placeholder: copy.placeholder,
     style: {
       flex: 1,
+      minWidth: 0,
       fontSize: 15,
       fontFamily: C.P,
       padding: '8px 10px',
@@ -6738,6 +7556,9 @@ function ScanLocationCard({
     }
   }), /*#__PURE__*/React.createElement(Btn, {
     primary: true,
+    style: {
+      flexShrink: 0
+    },
     onClick: commit
   }, "Save")) : /*#__PURE__*/React.createElement("div", {
     onClick: () => setEditing(true),
@@ -6755,7 +7576,7 @@ function WineDetailScreen({
   nav
 }) {
   const [tab, setTab] = React.useState(0);
-  const tabs = ['Details', 'Story', 'Price'];
+  const tabs = ['Details', 'Learn', 'Price'];
   const scanData = React.useMemo(() => {
     try {
       return JSON.parse(sessionStorage.getItem('vinterest_scan_result') || '{}');
@@ -6771,10 +7592,7 @@ function WineDetailScreen({
   }, [wine?.name, wine?.vintage]);
   const matchPct = React.useMemo(() => {
     if (!wine) return null;
-    const dna = calcMatchScore(wine, WineHistory.getAll());
-    if (dna != null) return dna;
-    const conf = scanData.confidence;
-    return conf ? Math.round(Math.min(0.98, conf) * 100) : null;
+    return calcMatchScore(wine, WineHistory.getAll());
   }, [wine?.name, wine?.vintage]);
   const [isFav, setIsFav] = React.useState(() => {
     try {
@@ -8313,7 +9131,7 @@ function DetailStory({
   const [eduLoading, setEduLoading] = React.useState(false);
   React.useEffect(() => {
     if (!wine || !wine.name) return;
-    const key = 'vinterest_edu_v1_' + (wine.name || '').replace(/\s/g, '_') + '_' + (wine.vintage || 'nv');
+    const key = 'vinterest_edu_v2_' + (wine.name || '').replace(/\s/g, '_') + '_' + (wine.vintage || 'nv');
     const cached = localStorage.getItem(key);
     if (cached) {
       try {
@@ -8403,7 +9221,16 @@ function DetailStory({
       fontFamily: C.P,
       lineHeight: 1.75
     }
-  }, description)), wine?.grapes && wine.grapes.length > 0 && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement(SL, {
+  }, description)), wine?.producer && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement(SL, {
+    label: "Producer"
+  }), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 16,
+      fontWeight: 600,
+      color: C.ink,
+      fontFamily: C.P
+    }
+  }, wine.producer)), wine?.grapes && wine.grapes.length > 0 && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement(SL, {
     label: "Grape Varietal"
   }), /*#__PURE__*/React.createElement("div", {
     style: {
@@ -8539,86 +9366,40 @@ function DetailStory({
       flexDirection: 'column',
       gap: 10
     }
-  }, edu.terms.slice(0, 3).map((tm, i) => /*#__PURE__*/React.createElement("div", {
-    key: i,
-    style: {
-      display: 'flex',
-      gap: 10
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      width: 6,
-      height: 6,
-      borderRadius: 3,
-      background: C.cr,
-      marginTop: 7,
-      flexShrink: 0
-    }
-  }), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("span", {
-    style: {
-      fontSize: 15,
-      fontWeight: 700,
-      color: C.cr,
-      fontFamily: C.P
-    }
-  }, tm.term), /*#__PURE__*/React.createElement("span", {
-    style: {
-      fontSize: 15,
-      color: C.ink2,
-      fontFamily: C.P,
-      lineHeight: 1.55
-    }
-  }, " \u2014 ", tm.meaning)))))), /*#__PURE__*/React.createElement("div", {
-    onClick: () => nav('learn'),
-    style: {
-      display: 'flex',
-      alignItems: 'center',
-      gap: 12,
-      padding: '13px 15px',
-      borderRadius: 14,
-      background: C.crSoft,
-      border: `1px solid ${C.crDim}`,
-      cursor: 'pointer'
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      width: 38,
-      height: 38,
-      borderRadius: 11,
-      background: C.white,
-      border: `1px solid ${C.crDim}`,
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      flexShrink: 0
-    }
-  }, /*#__PURE__*/React.createElement(Icon, {
-    n: "book",
-    sz: 19,
-    col: C.cr
-  })), /*#__PURE__*/React.createElement("div", {
-    style: {
-      flex: 1
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: 15,
-      fontWeight: 700,
-      color: C.cr,
-      fontFamily: C.P
-    }
-  }, "Keep learning"), /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: 13,
-      color: C.cr,
-      opacity: 0.75,
-      fontFamily: C.P
-    }
-  }, "Quizzes & lessons on ", wine?.grapes && wine.grapes[0] || wine?.region || 'wine')), /*#__PURE__*/React.createElement(Icon, {
-    n: "chevron",
-    sz: 15,
-    col: C.cr
-  })))), /*#__PURE__*/React.createElement("style", null, `@keyframes storySpin{to{transform:rotate(360deg)}}`));
+  }, edu.terms.slice(0, 3).map((tm, i) => {
+    const term = (tm.term || '').trim();
+    const capTerm = term ? term.charAt(0).toUpperCase() + term.slice(1) : term;
+    return /*#__PURE__*/React.createElement("div", {
+      key: i,
+      style: {
+        display: 'flex',
+        gap: 10,
+        alignItems: 'center'
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        width: 6,
+        height: 6,
+        borderRadius: 3,
+        background: C.cr,
+        flexShrink: 0
+      }
+    }), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("span", {
+      style: {
+        fontSize: 15,
+        fontWeight: 700,
+        color: C.cr,
+        fontFamily: C.P
+      }
+    }, capTerm), /*#__PURE__*/React.createElement("span", {
+      style: {
+        fontSize: 15,
+        color: C.ink2,
+        fontFamily: C.P,
+        lineHeight: 1.55
+      }
+    }, " \u2014 ", tm.meaning)));
+  }))))), /*#__PURE__*/React.createElement("style", null, `@keyframes storySpin{to{transform:rotate(360deg)}}`));
 }
 
 /* Region → currency config */
@@ -8988,6 +9769,7 @@ Object.assign(window, {
   DetailStory,
   DetailPrice
 });
+
 
 /* ---- pwa-screens-explore.jsx (precompiled) ---- */
 /* Vinterest PWA — Region, Varietal, Similar Wines explore screens */
@@ -10394,19 +11176,6 @@ Object.assign(window, {
 /* ---- pwa-screens-quiz.jsx (precompiled) ---- */
 /* Vinterest — Quiz Hub + Quiz Screens */
 
-// Emoji badge → line icon, until pwa-xp.js itself drops emoji (tracked separately).
-const _LEVEL_ICONS = {
-  '🍇': 'wine',
-  '🥂': 'leaf',
-  '🌍': 'compass',
-  '🔍': 'book',
-  '🏅': 'star',
-  '🍾': 'flame',
-  '🎓': 'trophy',
-  '⭐': 'brain',
-  '🏆': 'trophy',
-  '👑': 'trophy'
-};
 const _RING_TYPES = [{
   key: 'red',
   label: 'Reds',
@@ -10515,7 +11284,7 @@ function WineDNAUnlockCelebration({
       fontSize: 34,
       fontWeight: 400,
       color: '#fff',
-      fontFamily: C.serif,
+      fontFamily: C.P,
       textAlign: 'center',
       animation: 'dnaRise 1.1s .1s ease both'
     }
@@ -10645,6 +11414,26 @@ function QuizHubScreen({
     sessionStorage.setItem('vinterest_quiz_config2', JSON.stringify(cfg));
     nav('quiz');
   };
+  const [grapeUnlocks, setGrapeUnlocks] = React.useState(() => GrapeUnlocks.all());
+  const [grapeLoading, setGrapeLoading] = React.useState(null);
+  function handleGrapeTap(grape) {
+    if (!grapeUnlocks[grape]) {
+      if (isPro) {
+        GrapeUnlocks.unlockManual(grape);
+        setGrapeUnlocks(GrapeUnlocks.all());
+      } else showPro('grape-library');
+      return;
+    }
+    setGrapeLoading(grape);
+    getGrapeQuiz(grape, qs => {
+      setGrapeLoading(null);
+      if (qs && qs.length) startQuiz({
+        mode: 'grape',
+        grape,
+        questions: qs
+      });
+    });
+  }
   return /*#__PURE__*/React.createElement("div", {
     style: {
       flex: 1,
@@ -10703,7 +11492,7 @@ function QuizHubScreen({
       border: `1px solid ${C.crDim}`
     }
   }, /*#__PURE__*/React.createElement(Icon, {
-    n: _LEVEL_ICONS[level.badge] || 'wine',
+    n: XPSystem.iconFor(level),
     sz: 15,
     col: C.cr
   }), /*#__PURE__*/React.createElement("span", {
@@ -11171,6 +11960,63 @@ function QuizHubScreen({
     col: C.mid
   })))), /*#__PURE__*/React.createElement("div", {
     style: zoneLabel
+  }, "Your Grapes"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 14,
+      color: C.mid,
+      fontFamily: C.P,
+      marginTop: 2
+    }
+  }, Object.keys(grapeUnlocks).length, "/", GRAPE_ALLOWLIST.length, " unlocked", !isPro ? ` · rate a wine to unlock more (${FREE_GRAPE_CAP} free)` : ' · tap any to unlock instantly'), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      gap: 8,
+      overflowX: 'auto',
+      marginTop: 8,
+      paddingBottom: 2
+    }
+  }, GRAPE_ALLOWLIST.map(g => {
+    const unlocked = !!grapeUnlocks[g];
+    const loading = grapeLoading === g;
+    return /*#__PURE__*/React.createElement("div", {
+      key: g,
+      onClick: () => handleGrapeTap(g),
+      style: {
+        flex: '0 0 auto',
+        padding: '10px 14px',
+        borderRadius: 14,
+        background: unlocked ? C.crSoft : C.white,
+        border: `1px solid ${unlocked ? C.crDim : C.line}`,
+        cursor: 'pointer',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 6,
+        opacity: unlocked ? 1 : 0.8
+      }
+    }, loading ? /*#__PURE__*/React.createElement("div", {
+      style: {
+        width: 12,
+        height: 12,
+        borderRadius: 6,
+        border: `2px solid ${C.cr}33`,
+        borderTopColor: C.cr,
+        animation: 'storySpin .8s linear infinite'
+      }
+    }) : !unlocked && /*#__PURE__*/React.createElement(Icon, {
+      n: "lock",
+      sz: 13,
+      col: C.mid
+    }), /*#__PURE__*/React.createElement("span", {
+      style: {
+        fontSize: 14.5,
+        fontWeight: 600,
+        color: unlocked ? C.cr : C.ink,
+        fontFamily: C.P,
+        whiteSpace: 'nowrap'
+      }
+    }, g));
+  })), /*#__PURE__*/React.createElement("div", {
+    style: zoneLabel
   }, "Your Progress"), /*#__PURE__*/React.createElement("div", {
     onClick: () => isPro ? nav('mastery-map') : showPro('mastery-map'),
     style: {
@@ -11291,7 +12137,7 @@ function QuizHubScreen({
     style: {
       height: 16
     }
-  }))));
+  }))), /*#__PURE__*/React.createElement("style", null, `@keyframes storySpin{to{transform:rotate(360deg)}}`));
 }
 
 /* ── CONCEPT MASTERY MAP (PRO) ── */
@@ -11507,7 +12353,7 @@ function assembleRegionQuiz(region) {
     const target = _shuffle(regionWines)[0];
     const opts = _shuffle([target.name, ...otherWines.map(w => w.name)]);
     qs.push({
-      q: `Which of these bottles in your cellar is from ${region}?`,
+      q: `Which of these bottles in your wine history is from ${region}?`,
       opts,
       a: opts.indexOf(target.name),
       fact: `${target.name} is the ${region} bottle in your history.`,
@@ -11520,6 +12366,17 @@ function assembleRegionQuiz(region) {
 function assemblePracticeQuiz(topicId) {
   const topic = QUIZ_TOPICS.find(t => t.id === topicId) || QUIZ_TOPICS[0];
   const qs = _shuffle(topic.questions.beginner || []).slice(0, 6);
+  return qs.map(q => _shuffleOpts(q));
+}
+function assembleGrapeQuiz(bank) {
+  const qs = _shuffle(bank || []).slice(0, 6).map(q => ({
+    q: q.q,
+    opts: q.opts,
+    a: q.a,
+    fact: q.fact,
+    conceptId: null,
+    vocabTerm: null
+  }));
   return qs.map(q => _shuffleOpts(q));
 }
 
@@ -11540,6 +12397,7 @@ function QuizScreen({
     if (mode === 'practice') return assemblePracticeQuiz(config.topicId);
     if (mode === 'words') return assembleWordsQuiz();
     if (mode === 'region') return assembleRegionQuiz(config.region);
+    if (mode === 'grape') return assembleGrapeQuiz(config.questions);
     return assembleConceptQuiz(MasterySystem.selectConcepts(6));
   }, [mode, config]);
   const [allQs, setAllQs] = React.useState(buildQs);
@@ -11550,7 +12408,7 @@ function QuizScreen({
   const [xpGained, setXpGained] = React.useState(0);
   const [results, setResults] = React.useState([]);
   const scrollRef = React.useRef(null);
-  const title = mode === 'practice' ? (QUIZ_TOPICS.find(t => t.id === config.topicId) || QUIZ_TOPICS[0]).label : mode === 'words' ? "Words You've Met" : mode === 'region' ? 'Your ' + config.region + ' Knowledge' : 'Concept Check';
+  const title = mode === 'practice' ? (QUIZ_TOPICS.find(t => t.id === config.topicId) || QUIZ_TOPICS[0]).label : mode === 'words' ? "Words You've Met" : mode === 'region' ? 'Your ' + config.region + ' Knowledge' : mode === 'grape' ? 'The ' + config.grape + ' Quiz' : 'Concept Check';
   const q = allQs[qIdx];
   function choose(i) {
     if (phase !== 'question') return;
@@ -11651,27 +12509,27 @@ function QuizScreen({
     }, /*#__PURE__*/React.createElement("div", {
       style: {
         background: C.cr,
-        padding: '48px 24px 32px',
+        padding: '26px 24px 20px',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
-        gap: 8,
+        gap: 5,
         flexShrink: 0
       }
     }, /*#__PURE__*/React.createElement(Icon, {
       n: pct === 100 ? 'trophy' : pct >= 80 ? 'star' : pct >= 60 ? 'check' : 'book',
-      sz: 44,
+      sz: 32,
       col: "#fff"
     }), /*#__PURE__*/React.createElement("div", {
       style: {
-        fontSize: 28,
+        fontSize: 22,
         fontWeight: 800,
         color: '#fff',
         fontFamily: C.P
       }
     }, msg), /*#__PURE__*/React.createElement("div", {
       style: {
-        fontSize: 17,
+        fontSize: 15,
         color: 'rgba(255,255,255,0.8)',
         fontFamily: C.P
       }
@@ -11679,7 +12537,7 @@ function QuizScreen({
       style: {
         display: 'flex',
         gap: 16,
-        marginTop: 8
+        marginTop: 6
       }
     }, /*#__PURE__*/React.createElement("div", {
       style: {
@@ -11687,14 +12545,14 @@ function QuizScreen({
       }
     }, /*#__PURE__*/React.createElement("div", {
       style: {
-        fontSize: 36,
+        fontSize: 28,
         fontWeight: 800,
         color: '#fff',
         fontFamily: C.P
       }
     }, finalScore, "/", allQs.length), /*#__PURE__*/React.createElement("div", {
       style: {
-        fontSize: 13,
+        fontSize: 12,
         color: 'rgba(255,255,255,0.7)',
         fontFamily: C.P
       }
@@ -11709,14 +12567,14 @@ function QuizScreen({
       }
     }, /*#__PURE__*/React.createElement("div", {
       style: {
-        fontSize: 36,
+        fontSize: 28,
         fontWeight: 800,
         color: '#fff',
         fontFamily: C.P
       }
     }, "+", xpGained), /*#__PURE__*/React.createElement("div", {
       style: {
-        fontSize: 13,
+        fontSize: 12,
         color: 'rgba(255,255,255,0.7)',
         fontFamily: C.P
       }
@@ -11798,9 +12656,9 @@ function QuizScreen({
         marginTop: 4
       }
     }, /*#__PURE__*/React.createElement(Btn, {
-      full: true,
       style: {
-        flex: 1
+        flex: 1,
+        width: 'auto'
       },
       onClick: () => {
         if (pct < 100) {
@@ -11809,9 +12667,9 @@ function QuizScreen({
       }
     }, pct < 100 ? 'See what you missed' : 'Practice more'), /*#__PURE__*/React.createElement(Btn, {
       primary: true,
-      full: true,
       style: {
-        flex: 1
+        flex: 1,
+        width: 'auto'
       },
       onClick: newQuiz
     }, "New quiz")), /*#__PURE__*/React.createElement("div", {
@@ -12056,6 +12914,7 @@ Object.assign(window, {
   QuizScreen,
   MasteryMapScreen
 });
+
 
 /* ---- pwa-screens-aux.jsx (precompiled) ---- */
 /* Vinterest PWA — Taste Profile, Restaurant, Learn screens */
@@ -22171,7 +23030,7 @@ function WineDNAScreen({
       color: C.mid,
       fontFamily: C.P
     }
-  }, "Vinterest v1.0.92")), /*#__PURE__*/React.createElement("div", {
+  }, "Vinterest v1.1.0")), /*#__PURE__*/React.createElement("div", {
     style: {
       height: 8
     }
