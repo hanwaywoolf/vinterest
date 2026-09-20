@@ -69,6 +69,10 @@ function _cellarMaster(n){
   return {name:'Cellar Master '+_romanize(n), min:Math.round(base*Math.pow(ratio,n-1)), badge, color, roman:n};
 }
 
+// Emoji→Icon map: xp-curve.json still stores legacy emoji as a data value; this is the single
+// place that translates them to the line-icon set so no component hardcodes its own table.
+const LEVEL_ICON_MAP={'🍇':'wine','🥂':'glass','🌍':'globe','🔍':'compass','🏅':'star','🍾':'grape','🎓':'book','⭐':'flame','🏆':'trophy'};
+
 const XPSystem = {
   KEY:'vinterest_xp_v3',
   LEGACY_KEY:'vinterest_xp_v2',
@@ -112,6 +116,13 @@ const XPSystem = {
       if(xp>=XP_LEVELS[i].min) return {...XP_LEVELS[i], index:i};
     }
     return {...XP_LEVELS[0], index:0};
+  },
+  iconFor(level){ return LEVEL_ICON_MAP[level.badge]||'wine'; },
+  tierList(xp){
+    const list=XP_LEVELS.map((l,i)=>({...l,index:i}));
+    const curN=xp>=XP_CURVE.cellarMaster.base?this.getLevel(xp).roman:0;
+    for(let n=1;n<=Math.max(3,curN+2);n++) list.push(_cellarMaster(n));
+    return list;
   },
   nextLevel(xp){
     const cur=this.getLevel(xp);
@@ -19007,6 +19018,165 @@ function onRampDone(id) {
 function onRampProgress() {
   return ON_RAMP.filter(a => onRampDone(a.id)).length;
 }
+
+/* ── shared comprehension check — replaces pay-for-button markRead().
+   XP only fires once every question has been answered correctly (retries allowed, never penalized). ── */
+function ComprehensionCheck({
+  questions,
+  onPass
+}) {
+  const [idx, setIdx] = React.useState(0);
+  const [selected, setSelected] = React.useState(null);
+  const [phase, setPhase] = React.useState('question');
+  const q = questions[idx];
+  const correct = selected === q.a;
+  function choose(i) {
+    if (phase !== 'question') return;
+    setSelected(i);
+    setPhase('feedback');
+  }
+  function next() {
+    if (!correct) {
+      setSelected(null);
+      setPhase('question');
+      return;
+    }
+    if (idx + 1 >= questions.length) {
+      onPass();
+      return;
+    }
+    setIdx(i => i + 1);
+    setSelected(null);
+    setPhase('question');
+  }
+  const optColors = phase === 'question' ? q.opts.map(() => ({
+    bg: C.white,
+    border: C.line,
+    text: C.ink
+  })) : q.opts.map((_, i) => {
+    if (i === q.a) return {
+      bg: C.greenBg,
+      border: C.green,
+      text: C.green
+    };
+    if (i === selected) return {
+      bg: '#FFF0F0',
+      border: '#E88080',
+      text: '#C0392B'
+    };
+    return {
+      bg: C.white,
+      border: C.line,
+      text: C.ink
+    };
+  });
+  return /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: C.white,
+      borderRadius: 16,
+      border: `1px solid ${C.line}`,
+      padding: '16px 16px 14px',
+      display: 'flex',
+      flexDirection: 'column',
+      gap: 12
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      justifyContent: 'space-between',
+      alignItems: 'center'
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: 13,
+      fontWeight: 700,
+      color: C.mid,
+      letterSpacing: '0.06em',
+      textTransform: 'uppercase',
+      fontFamily: C.P
+    }
+  }, "Quick check"), /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: 14,
+      fontWeight: 600,
+      color: C.mid,
+      fontFamily: C.P
+    }
+  }, idx + 1, "/", questions.length)), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 18,
+      fontWeight: 700,
+      color: C.ink,
+      fontFamily: C.P,
+      lineHeight: 1.4
+    }
+  }, q.q), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      flexDirection: 'column',
+      gap: 8
+    }
+  }, q.opts.map((opt, i) => {
+    const s = optColors[i];
+    return /*#__PURE__*/React.createElement("div", {
+      key: i,
+      onClick: () => choose(i),
+      style: {
+        padding: '12px 14px',
+        borderRadius: 12,
+        border: `2px solid ${s.border}`,
+        background: s.bg,
+        cursor: phase === 'question' ? 'pointer' : 'default',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 10
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        width: 24,
+        height: 24,
+        borderRadius: 12,
+        background: s.border + '25',
+        flexShrink: 0,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center'
+      }
+    }, /*#__PURE__*/React.createElement("span", {
+      style: {
+        fontSize: 13,
+        fontWeight: 700,
+        color: s.text,
+        fontFamily: C.P
+      }
+    }, phase === 'feedback' && i === q.a ? '✓' : phase === 'feedback' && i === selected ? '✗' : String.fromCharCode(65 + i))), /*#__PURE__*/React.createElement("span", {
+      style: {
+        fontSize: 15.5,
+        fontWeight: 500,
+        color: s.text,
+        fontFamily: C.P,
+        lineHeight: 1.35
+      }
+    }, opt));
+  })), phase === 'feedback' && /*#__PURE__*/React.createElement("div", {
+    onClick: next,
+    style: {
+      background: correct ? C.green : C.cr,
+      borderRadius: 12,
+      padding: '13px',
+      textAlign: 'center',
+      cursor: 'pointer',
+      userSelect: 'none'
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: 16,
+      fontWeight: 700,
+      color: '#fff',
+      fontFamily: C.P
+    }
+  }, correct ? idx + 1 >= questions.length ? 'Done →' : 'Next →' : 'Try again →')));
+}
 function LearnArticleScreen({
   nav,
   back
@@ -19017,7 +19187,8 @@ function LearnArticleScreen({
   }, []);
   const article = ON_RAMP[idx];
   const [completed, setCompleted] = React.useState(() => onRampDone(article.id));
-  function markRead() {
+  const [checking, setChecking] = React.useState(false);
+  function passCheck() {
     if (completed) return;
     XPSystem.awardAndToast([{
       type: 'article',
@@ -19025,6 +19196,7 @@ function LearnArticleScreen({
     }]);
     localStorage.setItem('vinterest_' + article.id + '_done', '1');
     setCompleted(true);
+    setChecking(false);
   }
   const nextArticle = ON_RAMP.find(a => !onRampDone(a.id) && a.id !== article.id);
   return /*#__PURE__*/React.createElement("div", {
@@ -19115,7 +19287,7 @@ function LearnArticleScreen({
       fontSize: 28,
       fontWeight: 400,
       color: '#fff',
-      fontFamily: C.serif,
+      fontFamily: C.P,
       lineHeight: 1.2,
       marginBottom: 10
     }
@@ -19227,7 +19399,10 @@ function LearnArticleScreen({
       fontFamily: C.P,
       lineHeight: 1.5
     }
-  }, ex))))))), /*#__PURE__*/React.createElement("div", {
+  }, ex))))))), checking && !completed && /*#__PURE__*/React.createElement(ComprehensionCheck, {
+    questions: article.check,
+    onPass: passCheck
+  }), !checking && /*#__PURE__*/React.createElement("div", {
     style: {
       background: completed ? C.greenBg : C.crSoft,
       borderRadius: 16,
@@ -19296,11 +19471,11 @@ function LearnArticleScreen({
       lineHeight: 1.5,
       marginBottom: 14
     }
-  }, "Mark as complete to earn +50 XP"), /*#__PURE__*/React.createElement(Btn, {
+  }, "Answer 2 quick questions to earn +50 XP"), /*#__PURE__*/React.createElement(Btn, {
     primary: true,
     full: true,
-    onClick: markRead
-  }, "Mark as Read \xB7 +50 XP"))), /*#__PURE__*/React.createElement("div", {
+    onClick: () => setChecking(true)
+  }, "Test what you learned"))), /*#__PURE__*/React.createElement("div", {
     style: {
       height: 16
     }
@@ -19325,6 +19500,7 @@ function GenArticleScreen({
   const doneKey = stub ? `vinterest_gen_article_${stub.id}_done` : null;
   const cacheKey = stub ? `vinterest_gen_article_${stub.id}_content` : null;
   const [completed, setCompleted] = React.useState(() => !!localStorage.getItem(doneKey));
+  const [checking, setChecking] = React.useState(false);
   const [sections, setSections] = React.useState(() => {
     if (!cacheKey) return null;
     try {
@@ -19333,6 +19509,7 @@ function GenArticleScreen({
       return null;
     }
   });
+  const [check, setCheck] = React.useState(null);
   const [generating, setGenerating] = React.useState(false);
   React.useEffect(() => {
     if (!stub || sections || generating) return;
@@ -19362,12 +19539,22 @@ function GenArticleScreen({
         if (s >= 0 && e > s) clean = clean.slice(s, e + 1);
         const parsed = JSON.parse(clean);
         const secs = parsed.sections || [];
+        const chk = Array.isArray(parsed.check) && parsed.check.length ? parsed.check : null;
         localStorage.setItem(cacheKey, JSON.stringify(secs));
+        if (chk) localStorage.setItem(cacheKey + '_check', JSON.stringify(chk));
         setSections(secs);
+        setCheck(chk);
       } catch (err) {}
     }).catch(() => {}).finally(() => setGenerating(false));
   }, [stub?.id]);
-  function markRead() {
+  React.useEffect(() => {
+    if (!cacheKey || check) return;
+    try {
+      const c = JSON.parse(localStorage.getItem(cacheKey + '_check') || 'null');
+      if (c) setCheck(c);
+    } catch (e) {}
+  }, [cacheKey]);
+  function passCheck() {
     if (completed || !doneKey) return;
     XPSystem.awardAndToast([{
       type: 'article',
@@ -19375,6 +19562,7 @@ function GenArticleScreen({
     }]);
     localStorage.setItem(doneKey, '1');
     setCompleted(true);
+    setChecking(false);
   }
   if (!stub) return /*#__PURE__*/React.createElement("div", {
     style: {
@@ -19617,7 +19805,10 @@ function GenArticleScreen({
       fontFamily: C.P,
       lineHeight: 1.5
     }
-  }, ex))))))), sections && /*#__PURE__*/React.createElement("div", {
+  }, ex))))))), checking && !completed && check && /*#__PURE__*/React.createElement(ComprehensionCheck, {
+    questions: check,
+    onPass: passCheck
+  }), sections && !checking && /*#__PURE__*/React.createElement("div", {
     style: {
       background: completed ? C.greenBg : C.crSoft,
       borderRadius: 16,
@@ -19667,7 +19858,7 @@ function GenArticleScreen({
   }, "Reading List"), /*#__PURE__*/React.createElement(Btn, {
     primary: true,
     onClick: () => nav('camera')
-  }, "Scan a bottle"))) : /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+  }, "Scan a bottle"))) : check ? /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 17,
       fontWeight: 700,
@@ -19683,11 +19874,18 @@ function GenArticleScreen({
       lineHeight: 1.5,
       marginBottom: 14
     }
-  }, "Mark as complete to earn +50 XP"), /*#__PURE__*/React.createElement(Btn, {
+  }, "Answer 2 quick questions to earn +50 XP"), /*#__PURE__*/React.createElement(Btn, {
     primary: true,
     full: true,
-    onClick: markRead
-  }, "Mark as Read \xB7 +50 XP"))), /*#__PURE__*/React.createElement("div", {
+    onClick: () => setChecking(true)
+  }, "Test what you learned")) : /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 15,
+      color: C.mid,
+      fontFamily: C.P,
+      lineHeight: 1.5
+    }
+  }, "Loading your comprehension check\u2026")), /*#__PURE__*/React.createElement("div", {
     style: {
       height: 16
     }
@@ -19695,7 +19893,8 @@ function GenArticleScreen({
 }
 Object.assign(window, {
   LearnArticleScreen,
-  GenArticleScreen
+  GenArticleScreen,
+  ComprehensionCheck
 });
 
 /* ---- pwa-screens-home.jsx (precompiled) ---- */
@@ -23178,12 +23377,11 @@ function App() {
       boxShadow: '0 1px 8px rgba(0,0,0,0.08)',
       pointerEvents: 'auto'
     }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      fontSize: 17,
-      lineHeight: 1
-    }
-  }, XPSystem.getLevel(xpBadge.total).badge), /*#__PURE__*/React.createElement("span", {
+  }, /*#__PURE__*/React.createElement(Icon, {
+    n: XPSystem.iconFor(XPSystem.getLevel(xpBadge.total)),
+    sz: 16,
+    col: C.cr
+  }), /*#__PURE__*/React.createElement("span", {
     style: {
       fontSize: 15,
       fontWeight: 700,
@@ -23206,57 +23404,57 @@ function App() {
     const ACHIEVEMENTS = [{
       key: 'scan',
       label: 'Scan your first wine',
-      icon: '🍷',
+      icon: 'wine',
       done: xd.events.includes('type_red') || xd.events.includes('type_white') || xd.total > 0
     }, {
       key: 'rate',
       label: 'Rate 10 wines',
-      icon: '⭐',
+      icon: 'star',
       done: xd.totalRatings >= 10
     }, {
       key: 'week5',
       label: '5 scans in one week',
-      icon: '🚀',
+      icon: 'flame',
       done: xd.events.some(e => e.startsWith('week5_'))
     }, {
       key: 'red',
       label: 'First red wine',
-      icon: '🍇',
+      icon: 'grape',
       done: xd.events.includes('type_red')
     }, {
       key: 'white',
       label: 'First white wine',
-      icon: '🥂',
+      icon: 'glass',
       done: xd.events.includes('type_white')
     }, {
       key: 'rose',
       label: 'First rosé wine',
-      icon: '🌸',
+      icon: 'drop',
       done: xd.events.includes('type_rosé') || xd.events.includes('type_rose')
     }, {
       key: 'sparkling',
       label: 'First sparkling wine',
-      icon: '🍾',
+      icon: 'drop',
       done: xd.events.includes('type_sparkling')
     }, {
       key: 'country',
       label: 'Wines from 3 countries',
-      icon: '🌍',
+      icon: 'globe',
       done: xd.events.filter(e => e.startsWith('country_')).length >= 3
     }, {
       key: 'grape',
       label: 'Discover 5 grape varieties',
-      icon: '🔬',
+      icon: 'leaf',
       done: (xd.grapesSeen || []).length >= 5
     }, {
-      key: 'expensive',
-      label: 'Scan a premium wine (£100+)',
-      icon: '💎',
-      done: xd.events.some(e => e.startsWith('expensive_'))
+      key: 'rarity',
+      label: 'Scan a rare bottle',
+      icon: 'trophy',
+      done: xd.events.some(e => e.startsWith('rarity_'))
     }, {
       key: 'streak',
       label: '3-answer quiz streak',
-      icon: '🔥',
+      icon: 'flame',
       done: xd.events.some(e => e.startsWith('streak')) || (() => {
         const s = xd.quizStreaks || {};
         return Object.values(s).some(v => v >= 3);
@@ -23264,50 +23462,10 @@ function App() {
     }, {
       key: 'quiz',
       label: 'Complete a quiz',
-      icon: '🎓',
+      icon: 'book',
       done: Object.keys(xd.quizCompleted || {}).length > 0
     }];
-    const XP_LEVELS_LOCAL = [{
-      name: 'Novice',
-      min: 0,
-      badge: '🍇'
-    }, {
-      name: 'Enthusiast',
-      min: 150,
-      badge: '🥂'
-    }, {
-      name: 'Explorer',
-      min: 350,
-      badge: '🌍'
-    }, {
-      name: 'Connoisseur',
-      min: 650,
-      badge: '🔍'
-    }, {
-      name: 'Aficionado',
-      min: 1050,
-      badge: '🏅'
-    }, {
-      name: 'Cru',
-      min: 1600,
-      badge: '🍾'
-    }, {
-      name: 'Sommelier',
-      min: 2400,
-      badge: '🎓'
-    }, {
-      name: 'Head Sommelier',
-      min: 3500,
-      badge: '⭐'
-    }, {
-      name: 'Master Sommelier',
-      min: 5000,
-      badge: '🏆'
-    }, {
-      name: 'Grand Master',
-      min: 7000,
-      badge: '👑'
-    }];
+    const XP_LEVELS_LOCAL = XPSystem.tierList(xd.total);
     return /*#__PURE__*/React.createElement("div", {
       onClick: () => setShowXpOverlay(false),
       style: {
@@ -23358,9 +23516,16 @@ function App() {
         fontSize: 20,
         fontWeight: 800,
         color: C.ink,
-        fontFamily: C.P
+        fontFamily: C.P,
+        display: 'flex',
+        alignItems: 'center',
+        gap: 8
       }
-    }, curLevel.badge, " ", curLevel.name), /*#__PURE__*/React.createElement("div", {
+    }, /*#__PURE__*/React.createElement(Icon, {
+      n: XPSystem.iconFor(curLevel),
+      sz: 20,
+      col: curLevel.color || C.cr
+    }), curLevel.name), /*#__PURE__*/React.createElement("div", {
       style: {
         fontSize: 15,
         color: C.mid,
@@ -23428,12 +23593,14 @@ function App() {
           alignItems: 'center',
           gap: 10
         }
-      }, /*#__PURE__*/React.createElement("span", {
+      }, /*#__PURE__*/React.createElement(Icon, {
+        n: XPSystem.iconFor(lv),
+        sz: 20,
+        col: lv.color || C.cr,
         style: {
-          fontSize: 20,
           flexShrink: 0
         }
-      }, lv.badge), /*#__PURE__*/React.createElement("div", {
+      }), /*#__PURE__*/React.createElement("div", {
         style: {
           flex: 1
         }
@@ -23493,11 +23660,11 @@ function App() {
         gap: 4,
         opacity: a.done ? 1 : 0.5
       }
-    }, /*#__PURE__*/React.createElement("span", {
-      style: {
-        fontSize: 22
-      }
-    }, a.icon), /*#__PURE__*/React.createElement("span", {
+    }, /*#__PURE__*/React.createElement(Icon, {
+      n: a.icon,
+      sz: 22,
+      col: a.done ? C.green : C.mid
+    }), /*#__PURE__*/React.createElement("span", {
       style: {
         fontSize: 13,
         fontWeight: 600,
@@ -23549,7 +23716,7 @@ function App() {
       flexDirection: 'column',
       alignItems: 'center',
       gap: 8,
-      paddingTop: 'calc(env(safe-area-inset-top) + 12px)'
+      paddingTop: 'calc(env(safe-area-inset-top) + 70px)'
     }
   }, xpToasts.map(toast => /*#__PURE__*/React.createElement("div", {
     key: toast.id,
@@ -23572,15 +23739,15 @@ function App() {
       backdropFilter: 'blur(8px)',
       boxShadow: '0 4px 20px rgba(0,0,0,0.3)'
     }
-  }, a.levelUp && /*#__PURE__*/React.createElement("span", {
-    style: {
-      fontSize: 17
-    }
-  }, "\uD83C\uDFC6"), a.bonus && !a.levelUp && /*#__PURE__*/React.createElement("span", {
-    style: {
-      fontSize: 15
-    }
-  }, "\u2B50"), !a.levelUp && !a.bonus && /*#__PURE__*/React.createElement("span", {
+  }, a.levelUp && /*#__PURE__*/React.createElement(Icon, {
+    n: "trophy",
+    sz: 16,
+    col: "#fff"
+  }), a.bonus && !a.levelUp && /*#__PURE__*/React.createElement(Icon, {
+    n: "star",
+    sz: 14,
+    col: "#fff"
+  }), !a.levelUp && !a.bonus && /*#__PURE__*/React.createElement("span", {
     style: {
       fontSize: 15,
       fontWeight: 700,

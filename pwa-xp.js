@@ -13,6 +13,10 @@ function _cellarMaster(n){
   return {name:'Cellar Master '+_romanize(n), min:Math.round(base*Math.pow(ratio,n-1)), badge, color, roman:n};
 }
 
+// Emoji→Icon map: xp-curve.json still stores legacy emoji as a data value; this is the single
+// place that translates them to the line-icon set so no component hardcodes its own table.
+const LEVEL_ICON_MAP={'🍇':'wine','🥂':'glass','🌍':'globe','🔍':'compass','🏅':'star','🍾':'grape','🎓':'book','⭐':'flame','🏆':'trophy'};
+
 const XPSystem = {
   KEY:'vinterest_xp_v3',
   LEGACY_KEY:'vinterest_xp_v2',
@@ -56,6 +60,14 @@ const XPSystem = {
       if(xp>=XP_LEVELS[i].min) return {...XP_LEVELS[i], index:i};
     }
     return {...XP_LEVELS[0], index:0};
+  },
+  iconFor(level){ return LEVEL_ICON_MAP[level.badge]||'wine'; },
+  // Finite ladder plus enough Cellar Master ranks to always show a couple ahead of wherever xp is.
+  tierList(xp){
+    const list=XP_LEVELS.map((l,i)=>({...l,index:i}));
+    const curN=xp>=XP_CURVE.cellarMaster.base?this.getLevel(xp).roman:0;
+    for(let n=1;n<=Math.max(3,curN+2);n++) list.push(_cellarMaster(n));
+    return list;
   },
   nextLevel(xp){
     const cur=this.getLevel(xp);
