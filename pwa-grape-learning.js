@@ -3,7 +3,8 @@
    scanning alone never unlocks. Paid users can also unlock manually from the Learn tab, uncapped.
    Free users are capped at FREE_GRAPE_CAP unlocks, earned only via rating. */
 
-const GRAPE_ALLOWLIST = _loadJSON('data/grapes-allowlist.json');
+let GRAPE_ALLOWLIST=[];
+try{ GRAPE_ALLOWLIST=_loadJSON('data/grapes-allowlist.json')||[]; }catch(e){ console.error('[Vinterest] grapes-allowlist.json failed to load — Your Grapes will be empty until it is deployed.',e); }
 const FREE_GRAPE_CAP = 5;
 
 function _loadTextSync(path){ const x=new XMLHttpRequest(); x.open('GET',path,false); x.send(); return x.responseText; }
