@@ -334,11 +334,40 @@ function assembleConceptQuiz(conceptIds){
     return t?_shuffleOpts(t):null;
   }).filter(Boolean);
 }
+const _GLOSSARY_FALLBACK=[
+  {term:'Tannin',meaning:'The dry, gripping sensation on your gums and tongue, mainly from grape skins and seeds'},
+  {term:'Acidity',meaning:'The tart, mouthwatering edge that keeps a wine feeling fresh rather than flat'},
+  {term:'Body',meaning:'How light or heavy a wine feels in the mouth, from watery to viscous'},
+  {term:'Finish',meaning:'How long the flavor lingers on your palate after you swallow'},
+  {term:'Terroir',meaning:'The combination of soil, climate, and site that shapes a wine\u2019s character'},
+  {term:'Vintage',meaning:'The year the grapes were harvested'},
+  {term:'Oxidation',meaning:'Flavor and color changes caused by a wine\u2019s exposure to air'},
+  {term:'Malolactic fermentation',meaning:'A process that converts sharp malic acid into softer lactic acid'},
+  {term:'Decanting',meaning:'Pouring wine into a separate vessel to aerate it or separate it from sediment'},
+  {term:'Sommelier',meaning:'A trained wine professional who advises on selection and service'},
+  {term:'Appellation',meaning:'A legally defined region whose name a wine can carry on its label'},
+  {term:'Varietal',meaning:'A wine named for the single grape variety it\u2019s made from'},
+  {term:'Legs',meaning:'The streaks that run down a glass after swirling, related to alcohol and sugar content'},
+  {term:'Corked',meaning:'A wine fault from a contaminated cork that gives musty, wet-cardboard smells'},
+  {term:'Sulfites',meaning:'Preservatives, naturally present or added, that protect wine from oxidation and spoilage'}
+];
 function assembleWordsQuiz(){
   const terms=VocabLedger.getAll();
   const pool=_shuffle(terms).slice(0,6);
+  const usedMeanings=new Set(pool.map(t=>t.meaning));
   return pool.map(t=>{
-    const distractors=_shuffle(terms.filter(x=>x.term!==t.term)).slice(0,3).map(x=>x.meaning);
+    const candidates=_shuffle([
+      ...terms.filter(x=>x.term!==t.term),
+      ..._GLOSSARY_FALLBACK.filter(x=>x.term!==t.term)
+    ]);
+    const distractors=[];
+    for(const c of candidates){
+      if(distractors.length>=3) break;
+      if(c.meaning===t.meaning) continue;
+      if(usedMeanings.has(c.meaning)) continue;
+      distractors.push(c.meaning);
+      usedMeanings.add(c.meaning);
+    }
     while(distractors.length<3) distractors.push('None of these');
     const opts=_shuffle([t.meaning,...distractors]);
     return {q:`What does "${t.term}" mean?`,opts,a:opts.indexOf(t.meaning),fact:null,conceptId:null,vocabTerm:t.term};
@@ -386,7 +415,7 @@ function assemblePracticeQuiz(topicId){
   return qs.map(q=>_shuffleOpts(q));
 }
 function assembleGrapeQuiz(bank){
-  const qs=_shuffle(bank||[]).slice(0,6).map(q=>({q:q.q,opts:q.opts,a:q.a,fact:q.fact,conceptId:null,vocabTerm:null}));
+  const qs=_shuffle(bank||[]).map(q=>({q:q.q,opts:q.opts,a:q.a,fact:q.fact,conceptId:null,vocabTerm:null}));
   return qs.map(q=>_shuffleOpts(q));
 }
 
@@ -510,9 +539,9 @@ function QuizScreen({nav,back}){
               </div>
             </div>
           ))}
-          <div style={{display:'flex',gap:8,marginTop:4}}>
-            <Btn style={{flex:1,width:'auto'}} onClick={()=>{if(pct<100){if(scrollRef.current)scrollRef.current.scrollTop=0;}else nav('learn');}}>{pct<100?'See what you missed':'Practice more'}</Btn>
-            <Btn primary style={{flex:1,width:'auto'}} onClick={newQuiz}>New quiz</Btn>
+          <div style={{display:'flex',flexDirection:'column',gap:8,marginTop:4}}>
+            <Btn primary full onClick={newQuiz}>New quiz</Btn>
+            <Btn full onClick={()=>{if(pct<100){if(scrollRef.current)scrollRef.current.scrollTop=0;}else nav('learn');}}>{pct<100?'See what you missed':'Practice more'}</Btn>
           </div>
           <div style={{height:8}}/>
         </div>

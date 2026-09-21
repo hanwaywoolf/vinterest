@@ -490,8 +490,8 @@ const ContentEngine = {
       else if(KNOWLEDGE.regions[ev.subject]) s.country=KNOWLEDGE.regions[ev.subject].country;
       const others={};
       wines.forEach(w=>{ if(w.region&&w.region!==ev.subject) others[w.region]=(others[w.region]||0)+1; });
-      const top=Object.entries(others).sort((a,b)=>b[1]-a[1])[0];
-      if(top) s.regionB=top[0];
+      const entries=Object.entries(others);
+      if(entries.length){ const pick=entries[Math.floor(Math.random()*entries.length)]; s.regionB=pick[0]; }
     }
     if(ev.event==='new_type') s.type=ev.subject[0].toUpperCase()+ev.subject.slice(1);
     if(ev.event==='grape_multi'){ s.grape=ev.subject; s.count=wines.filter(w=>(w.grapes||[]).includes(ev.subject)).length; }
@@ -577,10 +577,24 @@ const ContentEngine = {
     };
   },
 
+  _healStubs(stubs){
+    let changed=false;
+    stubs.forEach(stub=>{
+      if(!stub.slots) return;
+      const archetype=ARTICLE_ARCHETYPES.find(a=>a.id===stub.archetypeId);
+      if(!archetype) return;
+      const title=this.fillTpl(archetype.titleTpl,stub.slots);
+      const subtitle=this.fillTpl(archetype.subtitleTpl,stub.slots);
+      if(title!==stub.title||subtitle!==stub.subtitle){ stub.title=title; stub.subtitle=subtitle; changed=true; }
+    });
+    return changed;
+  },
+
   refreshShelf(wines, maxUnread){
     maxUnread=maxUnread||6;
     let stubs=[];
     try{ stubs=JSON.parse(localStorage.getItem('vinterest_gen_stubs')||'[]')||[]; }catch(e){}
+    let healed=this._healStubs(stubs);
     const unreadCount=stubs.filter(s=>!localStorage.getItem('vinterest_gen_article_'+s.id+'_done')).length;
     const need=maxUnread-unreadCount;
     if(need<=0||!wines.length) return stubs;
@@ -596,7 +610,7 @@ const ContentEngine = {
       ExposureLedger.mark(ev.key);
       added++;
     }
-    if(added>0) localStorage.setItem('vinterest_gen_stubs',JSON.stringify(stubs));
+    if(added>0||healed) localStorage.setItem('vinterest_gen_stubs',JSON.stringify(stubs));
     return stubs;
   }
 };
@@ -12294,11 +12308,40 @@ function assembleConceptQuiz(conceptIds) {
     return t ? _shuffleOpts(t) : null;
   }).filter(Boolean);
 }
+const _GLOSSARY_FALLBACK = [
+  { term: 'Tannin', meaning: 'The dry, gripping sensation on your gums and tongue, mainly from grape skins and seeds' },
+  { term: 'Acidity', meaning: 'The tart, mouthwatering edge that keeps a wine feeling fresh rather than flat' },
+  { term: 'Body', meaning: 'How light or heavy a wine feels in the mouth, from watery to viscous' },
+  { term: 'Finish', meaning: 'How long the flavor lingers on your palate after you swallow' },
+  { term: 'Terroir', meaning: 'The combination of soil, climate, and site that shapes a wine\u2019s character' },
+  { term: 'Vintage', meaning: 'The year the grapes were harvested' },
+  { term: 'Oxidation', meaning: 'Flavor and color changes caused by a wine\u2019s exposure to air' },
+  { term: 'Malolactic fermentation', meaning: 'A process that converts sharp malic acid into softer lactic acid' },
+  { term: 'Decanting', meaning: 'Pouring wine into a separate vessel to aerate it or separate it from sediment' },
+  { term: 'Sommelier', meaning: 'A trained wine professional who advises on selection and service' },
+  { term: 'Appellation', meaning: 'A legally defined region whose name a wine can carry on its label' },
+  { term: 'Varietal', meaning: 'A wine named for the single grape variety it\u2019s made from' },
+  { term: 'Legs', meaning: 'The streaks that run down a glass after swirling, related to alcohol and sugar content' },
+  { term: 'Corked', meaning: 'A wine fault from a contaminated cork that gives musty, wet-cardboard smells' },
+  { term: 'Sulfites', meaning: 'Preservatives, naturally present or added, that protect wine from oxidation and spoilage' }
+];
 function assembleWordsQuiz() {
   const terms = VocabLedger.getAll();
   const pool = _shuffle(terms).slice(0, 6);
+  const usedMeanings = new Set(pool.map(t => t.meaning));
   return pool.map(t => {
-    const distractors = _shuffle(terms.filter(x => x.term !== t.term)).slice(0, 3).map(x => x.meaning);
+    const candidates = _shuffle([
+      ...terms.filter(x => x.term !== t.term),
+      ..._GLOSSARY_FALLBACK.filter(x => x.term !== t.term)
+    ]);
+    const distractors = [];
+    for (const c of candidates) {
+      if (distractors.length >= 3) break;
+      if (c.meaning === t.meaning) continue;
+      if (usedMeanings.has(c.meaning)) continue;
+      distractors.push(c.meaning);
+      usedMeanings.add(c.meaning);
+    }
     while (distractors.length < 3) distractors.push('None of these');
     const opts = _shuffle([t.meaning, ...distractors]);
     return {
@@ -12381,7 +12424,7 @@ function assemblePracticeQuiz(topicId) {
   return qs.map(q => _shuffleOpts(q));
 }
 function assembleGrapeQuiz(bank) {
-  const qs = _shuffle(bank || []).slice(0, 6).map(q => ({
+  const qs = _shuffle(bank || []).map(q => ({
     q: q.q,
     opts: q.opts,
     a: q.a,
@@ -12664,27 +12707,22 @@ function QuizScreen({
     }, r.fact))))), /*#__PURE__*/React.createElement("div", {
       style: {
         display: 'flex',
+        flexDirection: 'column',
         gap: 8,
         marginTop: 4
       }
     }, /*#__PURE__*/React.createElement(Btn, {
-      style: {
-        flex: 1,
-        width: 'auto'
-      },
+      primary: true,
+      full: true,
+      onClick: newQuiz
+    }, "New quiz"), /*#__PURE__*/React.createElement(Btn, {
+      full: true,
       onClick: () => {
         if (pct < 100) {
           if (scrollRef.current) scrollRef.current.scrollTop = 0;
         } else nav('learn');
       }
-    }, pct < 100 ? 'See what you missed' : 'Practice more'), /*#__PURE__*/React.createElement(Btn, {
-      primary: true,
-      style: {
-        flex: 1,
-        width: 'auto'
-      },
-      onClick: newQuiz
-    }, "New quiz")), /*#__PURE__*/React.createElement("div", {
+    }, pct < 100 ? 'See what you missed' : 'Practice more')), /*#__PURE__*/React.createElement("div", {
       style: {
         height: 8
       }
@@ -23230,7 +23268,7 @@ function WineDNAScreen({
       color: C.mid,
       fontFamily: C.P
     }
-  }, "Vinterest v1.1.0")), /*#__PURE__*/React.createElement("div", {
+  }, "Vinterest v1.1.2")), /*#__PURE__*/React.createElement("div", {
     style: {
       height: 8
     }

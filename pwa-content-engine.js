@@ -101,8 +101,8 @@ const ContentEngine = {
       else if(KNOWLEDGE.regions[ev.subject]) s.country=KNOWLEDGE.regions[ev.subject].country;
       const others={};
       wines.forEach(w=>{ if(w.region&&w.region!==ev.subject) others[w.region]=(others[w.region]||0)+1; });
-      const top=Object.entries(others).sort((a,b)=>b[1]-a[1])[0];
-      if(top) s.regionB=top[0];
+      const entries=Object.entries(others);
+      if(entries.length){ const pick=entries[Math.floor(Math.random()*entries.length)]; s.regionB=pick[0]; }
     }
     if(ev.event==='new_type') s.type=ev.subject[0].toUpperCase()+ev.subject.slice(1);
     if(ev.event==='grape_multi'){ s.grape=ev.subject; s.count=wines.filter(w=>(w.grapes||[]).includes(ev.subject)).length; }
@@ -188,10 +188,26 @@ const ContentEngine = {
     };
   },
 
+  /* Re-fills title/subtitle from stored slots for every stub — heals any stub persisted before a
+     template or slot-resolution fix, without needing to wipe the user's saved article list. */
+  _healStubs(stubs){
+    let changed=false;
+    stubs.forEach(stub=>{
+      if(!stub.slots) return;
+      const archetype=ARTICLE_ARCHETYPES.find(a=>a.id===stub.archetypeId);
+      if(!archetype) return;
+      const title=this.fillTpl(archetype.titleTpl,stub.slots);
+      const subtitle=this.fillTpl(archetype.subtitleTpl,stub.slots);
+      if(title!==stub.title||subtitle!==stub.subtitle){ stub.title=title; stub.subtitle=subtitle; changed=true; }
+    });
+    return changed;
+  },
+
   refreshShelf(wines, maxUnread){
     maxUnread=maxUnread||6;
     let stubs=[];
     try{ stubs=JSON.parse(localStorage.getItem('vinterest_gen_stubs')||'[]')||[]; }catch(e){}
+    let healed=this._healStubs(stubs);
     const unreadCount=stubs.filter(s=>!localStorage.getItem('vinterest_gen_article_'+s.id+'_done')).length;
     const need=maxUnread-unreadCount;
     if(need<=0||!wines.length) return stubs;
@@ -207,7 +223,7 @@ const ContentEngine = {
       ExposureLedger.mark(ev.key);
       added++;
     }
-    if(added>0) localStorage.setItem('vinterest_gen_stubs',JSON.stringify(stubs));
+    if(added>0||healed) localStorage.setItem('vinterest_gen_stubs',JSON.stringify(stubs));
     return stubs;
   }
 };
