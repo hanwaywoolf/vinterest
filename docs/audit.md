@@ -90,26 +90,24 @@ There's also a third, unused proxy for the same model call: `functions/recognise
 
 ### Cloudflare
 
-Cloudflare Pages *is* the hosting/backend, not a separate integration — `_worker.js` (root) and everything under `functions/` are Cloudflare Pages Functions. Routes:
-- `/claude` → Anthropic proxy (`_worker.js`, `functions/claude.js`).
-- `/recognise` → duplicate Anthropic label-recognition proxy (`functions/recognise.js`), unused.
-- `/api/claude`, `/api/lcbo`, `/api/retail` → `functions/api/[[route]].js` (catch-all router).
-- `functions/retail.js` and `functions/retail-data.js`/`functions/api/retail-data.js` implement the same `/api/retail`-style Supabase+Apify logic a second and third time, outside the `[[route]].js` router. Only `functions/api/[[route]].js` is on the path Cloudflare actually routes `/api/*` requests through; the standalone `retail.js`/`retail-data.js` files are dead unless something outside this repo routes to them directly by filename.
+Cloudflare Pages *is* the hosting/backend, not a separate integration — `_worker.js` (root) is now the only thing here. Routes:
+- `/claude` → Anthropic proxy (`_worker.js`), hardened with an origin allowlist, a `purpose` allowlist with per-purpose `max_tokens` caps, a body-size cap, and per-IP rate limiting.
+- Everything else falls through to static asset serving.
 
-### Supabase
+**Removed** (as of the `/claude`-hardening and retail-cleanup PRs): the `functions/` directory — `functions/claude.js`, `functions/recognise.js`, `functions/retail.js`, `functions/retail-data.js`, `functions/api/retail-data.js`, `functions/api/[[route]].js`, `functions/health.js`, `functions/ping.js` — none of it, but described below for the historical record, was ever reachable anyway once `_worker.js` existed (Cloudflare Pages advanced mode ignores file-based Functions for every path once a `_worker.js` is present). The `/api/lcbo`, `/api/retail`, and `/api/claude` routes it held, and the Supabase (`wine_cache`) and Apify integrations described in this section, no longer exist in the codebase. Retail/price is Claude-only now (§5).
 
-Server-side only, never called from client code. Used purely as a 7-day pricing cache (`wine_cache` table):
-- Read: `functions/api/[[route]].js:65-84` (inside the `/api/retail` handler) and duplicated in `functions/retail.js:27-51` / `functions/api/retail-data.js`. `GET {SUPABASE_URL}/rest/v1/wine_cache?wine_key=eq.<cacheKey>&select=*` with `apikey`/`Authorization: Bearer` headers from `SUPABASE_ANON_KEY`.
-- Write: `functions/api/[[route]].js:126-148` and duplicates — `POST {SUPABASE_URL}/rest/v1/wine_cache` after a fresh Apify lookup.
+### Supabase (removed)
 
-### Apify
+Was server-side only, never called from client code. Used purely as a 7-day pricing cache (`wine_cache` table), read and written from the now-deleted `functions/api/[[route]].js` (and its now-deleted duplicates `functions/retail.js` / `functions/api/retail-data.js`).
 
-Server-side only, never called from client code. `functions/api/[[route]].js:90-104` (and duplicated in `functions/retail.js:56-71` / `functions/api/retail-data.js`): `POST https://api.apify.com/v2/acts/abotapi~wine-searcher-scraper/run-sync-get-dataset-items?token=<APIFY_API_TOKEN>` — runs the Wine-Searcher scraper actor synchronously to get retail listings for a wine+vintage.
+### Apify (removed)
+
+Was server-side only, never called from client code — ran the Wine-Searcher scraper actor synchronously to get retail listings for a wine+vintage, from the now-deleted `functions/api/[[route]].js` (and duplicates).
 
 ### Other
 
-- **LCBO** (Ontario liquor board) — `functions/api/[[route]].js:37-45`: `POST https://api.lcbo.dev/graphql`, unauthenticated, unrelated to Supabase/Apify. Also unused by any client code found.
-- No client-side calls to Supabase, Apify, or LCBO exist anywhere in the `.jsx`/`.js` source files that feed `bundle.js`.
+- **LCBO** (Ontario liquor board) — removed in an earlier cleanup pass (it was a work-in-progress integration never shipped), before the Supabase/Apify removal above.
+- No client-side calls to Supabase, Apify, or LCBO ever existed anywhere in the `.jsx`/`.js` source files that feed `bundle.js` — all of it was dead, unreachable server-side code from the start.
 
 ## 4. What data comes from `data/*.json` vs. is user-generated
 
@@ -126,13 +124,11 @@ Server-side only, never called from client code. `functions/api/[[route]].js:90-
 
 ## 5. What currently feeds the retail/pricing lookup
 
-The Supabase/Apify/LCBO backend described in §3 is fully implemented server-side but **not called by the shipped client**. In practice, every price the user sees comes directly from Claude:
+The Supabase/Apify/LCBO backend described in §3 was fully implemented server-side but **never called by the shipped client**, and has since been deleted entirely (see §3). Every price the user sees comes directly from Claude, and that's the whole feature going forward — not a fallback pending a real lookup:
 
 - The initial `price_usd` on a scanned wine comes from the label-recognition prompt itself (`pwa-screens-main.jsx`'s `LABEL_PROMPT`), which asks Claude to include a `price_usd` field in its JSON response — a model estimate, not a lookup.
 - The Wine Detail price tab and wine-list value/markup badges both go through `fetchRetailEstimate` (`pwa-components.jsx:448-`), which sends a dedicated prompt asking Claude for "the ACTUAL known retail price for this SPECIFIC wine" in the user's currency, and caches the answer in `vinterest_price_v2_*`.
 - The Explore screen's 4-tier bottle suggestions (`pwa-screens-explore.jsx:368`) likewise ask Claude directly for `price_local` per suggested bottle, caching to `vinterest_se3_*`.
-
-So the Supabase cache table, the Apify Wine-Searcher scrape, and the LCBO GraphQL proxy are a built-but-unwired backend — real infrastructure sitting behind routes nothing in the app currently requests.
 
 ## 6. What will break in a Capacitor WebView
 
