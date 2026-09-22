@@ -90,6 +90,15 @@ function QuizHubScreen({nav,back,showPro}){
   const quizRegions=React.useMemo(()=>regionQuizCandidates(wines),[wines]);
   const wordsCount=VocabLedger.getAll().length;
   const startQuiz=cfg=>{ sessionStorage.setItem('vinterest_quiz_config2',JSON.stringify(cfg)); nav('quiz'); };
+  const [topicsExpanded,setTopicsExpanded]=React.useState(false);
+  // Wine Basics always shows — it's the entry point for someone new to wine, not just a
+  // pre-WineDNA-unlock placeholder. Finished topics move behind the toggle instead of
+  // disappearing, so handing the phone to someone else still surfaces them.
+  const {topicsToShow,doneTopics}=React.useMemo(()=>{
+    const todo=[],done=[];
+    QUIZ_TOPICS.forEach(t=>{ (TopicQuizLedger.isDone(t.id)?done:todo).push(t); });
+    return {topicsToShow:todo,doneTopics:done};
+  },[]);
   const [grapeUnlocks,setGrapeUnlocks]=React.useState(()=>GrapeUnlocks.all());
   const [grapeLoading,setGrapeLoading]=React.useState(null);
   const [grapesExpanded,setGrapesExpanded]=React.useState(false);
@@ -203,57 +212,79 @@ function QuizHubScreen({nav,back,showPro}){
 
         <div style={zoneLabel}>Test Yourself</div>
         <div style={{display:'flex',flexDirection:'column',gap:8,marginTop:8}}>
-        {!coverage.unlocked ? QUIZ_TOPICS.map((topic,ti)=>(
-          <div key={ti} onClick={()=>startQuiz({mode:'practice',topicId:topic.id})}
-            style={{background:C.white,borderRadius:14,padding:'12px 14px',display:'flex',alignItems:'center',gap:12,cursor:'pointer',border:`1px solid ${C.line}`}}>
-            <div style={{width:42,height:42,borderRadius:12,background:topic.color+'15',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,border:`1px solid ${topic.color}25`}}>
-              <Icon n={topic.iconName||'book'} sz={20} col={topic.color}/>
-            </div>
-            <div style={{flex:1}}>
-              <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>{topic.label}</div>
-              <div style={{fontSize:14,color:C.mid,fontFamily:C.P}}>{topic.desc}</div>
-            </div>
-            <Icon n="chevron" sz={13} col={C.mid}/>
-          </div>
-        )):(
-          <>
-            <div onClick={()=>startQuiz({mode:'concept'})} style={{background:C.white,borderRadius:14,padding:'12px 14px',display:'flex',alignItems:'center',gap:12,cursor:'pointer',border:`1px solid ${C.line}`}}>
-              <div style={{width:42,height:42,borderRadius:12,background:C.crSoft,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,border:`1px solid ${C.crDim}`}}><Icon n="brain" sz={20} col={C.cr}/></div>
+          <div style={{fontSize:13,fontWeight:600,color:C.mid,fontFamily:C.P,textTransform:'uppercase',letterSpacing:'0.06em'}}>Wine Basics</div>
+          {topicsToShow.map(topic=>(
+            <div key={topic.id} onClick={()=>startQuiz({mode:'practice',topicId:topic.id})}
+              style={{background:C.white,borderRadius:14,padding:'12px 14px',display:'flex',alignItems:'center',gap:12,cursor:'pointer',border:`1px solid ${C.line}`}}>
+              <div style={{width:42,height:42,borderRadius:12,background:topic.color+'15',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,border:`1px solid ${topic.color}25`}}>
+                <Icon n={topic.iconName||'book'} sz={20} col={topic.color}/>
+              </div>
               <div style={{flex:1}}>
-                <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>Concept Check</div>
-                <div style={{fontSize:14,color:C.mid,fontFamily:C.P}}>{mastery.encountered}/{mastery.total} concepts met · {mastery.mastered} mastered</div>
+                <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>{topic.label}</div>
+                <div style={{fontSize:14,color:C.mid,fontFamily:C.P}}>{topic.desc}</div>
               </div>
               <Icon n="chevron" sz={13} col={C.mid}/>
             </div>
-            {wordsCount>=4&&(
-              <div onClick={()=>startQuiz({mode:'words'})} style={{background:C.white,borderRadius:14,padding:'12px 14px',display:'flex',alignItems:'center',gap:12,cursor:'pointer',border:`1px solid ${C.line}`}}>
-                <div style={{width:42,height:42,borderRadius:12,background:C.offWhite,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><Icon n="read" sz={20} col={C.ink}/></div>
+          ))}
+          {doneTopics.length>0&&(
+            <div onClick={()=>setTopicsExpanded(e=>!e)} style={{background:C.white,borderRadius:14,padding:'10px 14px',display:'flex',alignItems:'center',gap:8,cursor:'pointer',border:`1px dashed ${C.line}`}}>
+              <Icon n="chevron" sz={12} col={C.mid} style={topicsExpanded?{transform:'rotate(-90deg)'}:undefined}/>
+              <span style={{fontSize:14,fontWeight:600,color:C.mid,fontFamily:C.P}}>{topicsExpanded?'Show less':`${doneTopics.length} completed — show`}</span>
+            </div>
+          )}
+          {topicsExpanded&&doneTopics.map(topic=>(
+            <div key={topic.id} onClick={()=>startQuiz({mode:'practice',topicId:topic.id})}
+              style={{background:C.white,borderRadius:14,padding:'12px 14px',display:'flex',alignItems:'center',gap:12,cursor:'pointer',border:`1px solid ${C.line}`,opacity:0.7}}>
+              <div style={{width:42,height:42,borderRadius:12,background:topic.color+'15',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,border:`1px solid ${topic.color}25`}}>
+                <Icon n={topic.iconName||'book'} sz={20} col={topic.color}/>
+              </div>
+              <div style={{flex:1}}>
+                <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>{topic.label}</div>
+                <div style={{fontSize:14,color:C.mid,fontFamily:C.P}}>{topic.desc}</div>
+              </div>
+              <span style={{fontSize:14,fontWeight:700,color:C.green,fontFamily:C.P}}>✓</span>
+            </div>
+          ))}
+          {coverage.unlocked&&(
+            <>
+              <div style={{fontSize:13,fontWeight:600,color:C.mid,fontFamily:C.P,textTransform:'uppercase',letterSpacing:'0.06em',marginTop:6}}>Personalised For You</div>
+              <div onClick={()=>startQuiz({mode:'concept'})} style={{background:C.white,borderRadius:14,padding:'12px 14px',display:'flex',alignItems:'center',gap:12,cursor:'pointer',border:`1px solid ${C.line}`}}>
+                <div style={{width:42,height:42,borderRadius:12,background:C.crSoft,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,border:`1px solid ${C.crDim}`}}><Icon n="brain" sz={20} col={C.cr}/></div>
                 <div style={{flex:1}}>
-                  <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>Words You've Met</div>
-                  <div style={{fontSize:14,color:C.mid,fontFamily:C.P}}>{wordsCount} terms from bottles you've actually had</div>
+                  <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>Concept Check</div>
+                  <div style={{fontSize:14,color:C.mid,fontFamily:C.P}}>{mastery.encountered}/{mastery.total} concepts met · {mastery.mastered} mastered</div>
                 </div>
                 <Icon n="chevron" sz={13} col={C.mid}/>
               </div>
-            )}
-            {quizRegions.length>0&&(
-              <div style={{fontSize:13,fontWeight:600,color:C.mid,fontFamily:C.P,textTransform:'uppercase',letterSpacing:'0.06em',marginTop:6}}>Regional Knowledge</div>
-            )}
-            {quizRegions.map(region=>{
-              const info=KNOWLEDGE.regions[region];
-              const sub=info?[info.keyGrapes&&info.keyGrapes[0],info.classification].filter(Boolean).join(' · '):"Grounded in bottles you've scanned from there";
-              return(
-                <div key={region} onClick={()=>startQuiz({mode:'region',region})} style={{background:C.white,borderRadius:14,padding:'12px 14px',display:'flex',alignItems:'center',gap:12,cursor:'pointer',border:`1px solid ${C.line}`}}>
-                  <div style={{width:42,height:42,borderRadius:12,background:C.offWhite,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><Icon n="map" sz={20} col={C.ink}/></div>
+              {wordsCount>=4&&(
+                <div onClick={()=>startQuiz({mode:'words'})} style={{background:C.white,borderRadius:14,padding:'12px 14px',display:'flex',alignItems:'center',gap:12,cursor:'pointer',border:`1px solid ${C.line}`}}>
+                  <div style={{width:42,height:42,borderRadius:12,background:C.offWhite,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><Icon n="read" sz={20} col={C.ink}/></div>
                   <div style={{flex:1}}>
-                    <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>{region}</div>
-                    <div style={{fontSize:14,color:C.mid,fontFamily:C.P}}>{sub}</div>
+                    <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>Words You've Met</div>
+                    <div style={{fontSize:14,color:C.mid,fontFamily:C.P}}>{wordsCount} terms from bottles you've actually had</div>
                   </div>
                   <Icon n="chevron" sz={13} col={C.mid}/>
                 </div>
-              );
-            })}
-          </>
-        )}
+              )}
+              {quizRegions.length>0&&(
+                <div style={{fontSize:13,fontWeight:600,color:C.mid,fontFamily:C.P,textTransform:'uppercase',letterSpacing:'0.06em',marginTop:6}}>Regional Knowledge</div>
+              )}
+              {quizRegions.map(region=>{
+                const info=KNOWLEDGE.regions[region];
+                const sub=info?[info.keyGrapes&&info.keyGrapes[0],info.classification].filter(Boolean).join(' · '):"Grounded in bottles you've scanned from there";
+                return(
+                  <div key={region} onClick={()=>startQuiz({mode:'region',region})} style={{background:C.white,borderRadius:14,padding:'12px 14px',display:'flex',alignItems:'center',gap:12,cursor:'pointer',border:`1px solid ${C.line}`}}>
+                    <div style={{width:42,height:42,borderRadius:12,background:C.offWhite,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><Icon n="map" sz={20} col={C.ink}/></div>
+                    <div style={{flex:1}}>
+                      <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>{region}</div>
+                      <div style={{fontSize:14,color:C.mid,fontFamily:C.P}}>{sub}</div>
+                    </div>
+                    <Icon n="chevron" sz={13} col={C.mid}/>
+                  </div>
+                );
+              })}
+            </>
+          )}
         </div>
 
         <div style={zoneLabel}>Your Grapes</div>
@@ -535,6 +566,7 @@ function QuizScreen({nav,back}){
       setXpGained(xp=>xp+g2);
       XPSystem.toast(a2);
       if(mode==='region'&&results.filter(r=>r.correct).length===allQs.length) RegionQuizLedger.markAced(config.region);
+      if(mode==='practice') TopicQuizLedger.markDone(config.topicId);
       setPhase('results');
     } else {
       setQIdx(i=>i+1); setSelected(null); setPhase('question');
