@@ -11452,6 +11452,15 @@ function QuizHubScreen({
   };
   const [grapeUnlocks, setGrapeUnlocks] = React.useState(() => GrapeUnlocks.all());
   const [grapeLoading, setGrapeLoading] = React.useState(null);
+  // Unlocked grapes first (most-recently-unlocked first), locked grapes after in their
+  // existing allowlist order. Recomputed from current unlock state on every render (not
+  // just at mount) so a grape unlocked mid-session jumps to the front immediately.
+  const sortedGrapes = React.useMemo(() => {
+    const unlocked = [], locked = [];
+    GRAPE_ALLOWLIST.forEach(g => { (grapeUnlocks[g] ? unlocked : locked).push(g); });
+    unlocked.sort((a, b) => (grapeUnlocks[b].at || 0) - (grapeUnlocks[a].at || 0));
+    return unlocked.concat(locked);
+  }, [grapeUnlocks]);
   function handleGrapeTap(grape) {
     if (!grapeUnlocks[grape]) {
       if (isPro) {
@@ -12011,7 +12020,7 @@ function QuizHubScreen({
       marginTop: 8,
       paddingBottom: 2
     }
-  }, GRAPE_ALLOWLIST.map(g => {
+  }, sortedGrapes.map(g => {
     const unlocked = !!grapeUnlocks[g];
     const loading = grapeLoading === g;
     return /*#__PURE__*/React.createElement("div", {
@@ -23286,7 +23295,7 @@ function WineDNAScreen({
       color: C.mid,
       fontFamily: C.P
     }
-  }, "Vinterest v1.1.6")), /*#__PURE__*/React.createElement("div", {
+  }, "Vinterest v1.1.7")), /*#__PURE__*/React.createElement("div", {
     style: {
       height: 8
     }

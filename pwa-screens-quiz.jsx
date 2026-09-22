@@ -99,6 +99,15 @@ function QuizHubScreen({nav,back,showPro}){
   const startQuiz=cfg=>{ sessionStorage.setItem('vinterest_quiz_config2',JSON.stringify(cfg)); nav('quiz'); };
   const [grapeUnlocks,setGrapeUnlocks]=React.useState(()=>GrapeUnlocks.all());
   const [grapeLoading,setGrapeLoading]=React.useState(null);
+  // Unlocked grapes first (most-recently-unlocked first), locked grapes after in their
+  // existing allowlist order. Recomputed from current unlock state on every render (not
+  // just at mount) so a grape unlocked mid-session jumps to the front immediately.
+  const sortedGrapes=React.useMemo(()=>{
+    const unlocked=[],locked=[];
+    GRAPE_ALLOWLIST.forEach(g=>{ (grapeUnlocks[g]?unlocked:locked).push(g); });
+    unlocked.sort((a,b)=>(grapeUnlocks[b].at||0)-(grapeUnlocks[a].at||0));
+    return unlocked.concat(locked);
+  },[grapeUnlocks]);
   function handleGrapeTap(grape){
     if(!grapeUnlocks[grape]){
       if(isPro){ GrapeUnlocks.unlockManual(grape); setGrapeUnlocks(GrapeUnlocks.all()); }
@@ -243,7 +252,7 @@ function QuizHubScreen({nav,back,showPro}){
         <div style={zoneLabel}>Your Grapes</div>
         <div style={{fontSize:14,color:C.mid,fontFamily:C.P,marginTop:2}}>{Object.keys(grapeUnlocks).length}/{GRAPE_ALLOWLIST.length} unlocked{!isPro?` · rate a wine to unlock more (${FREE_GRAPE_CAP} free)`:' · tap any to unlock instantly'}</div>
         <div style={{display:'flex',gap:8,overflowX:'auto',marginTop:8,paddingBottom:2}}>
-        {GRAPE_ALLOWLIST.map(g=>{
+        {sortedGrapes.map(g=>{
           const unlocked=!!grapeUnlocks[g];
           const loading=grapeLoading===g;
           return(
