@@ -580,12 +580,19 @@ const ContentEngine = {
     };
   },
 
-  _healStubs(stubs){
+  _healStubs(stubs, wines){
     let changed=false;
     stubs.forEach(stub=>{
       if(!stub.slots) return;
       const archetype=ARTICLE_ARCHETYPES.find(a=>a.id===stub.archetypeId);
       if(!archetype) return;
+      (archetype.needs||[]).forEach(n=>{
+        if(stub.slots[n]!=null&&stub.slots[n]!=='') return;
+        if(n==='country'&&stub.slots.region){
+          const match=(wines||[]).find(w=>w.region===stub.slots.region&&w.country);
+          stub.slots.country=match?match.country:KNOWLEDGE.regions[stub.slots.region]?.country;
+        }
+      });
       const title=this.fillTpl(archetype.titleTpl,stub.slots);
       const subtitle=this.fillTpl(archetype.subtitleTpl,stub.slots);
       if(title!==stub.title||subtitle!==stub.subtitle){ stub.title=title; stub.subtitle=subtitle; changed=true; }
@@ -597,7 +604,7 @@ const ContentEngine = {
     maxUnread=maxUnread||6;
     let stubs=[];
     try{ stubs=JSON.parse(localStorage.getItem('vinterest_gen_stubs')||'[]')||[]; }catch(e){}
-    let healed=this._healStubs(stubs);
+    let healed=this._healStubs(stubs,wines);
     const unreadCount=stubs.filter(s=>!localStorage.getItem('vinterest_gen_article_'+s.id+'_done')).length;
     const need=maxUnread-unreadCount;
     if(need<=0||!wines.length) return stubs;
@@ -23267,7 +23274,7 @@ function WineDNAScreen({
       color: C.mid,
       fontFamily: C.P
     }
-  }, "Vinterest v1.2.4")), /*#__PURE__*/React.createElement("div", {
+  }, "Vinterest v1.2.5")), /*#__PURE__*/React.createElement("div", {
     style: {
       height: 8
     }

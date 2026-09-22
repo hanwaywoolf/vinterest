@@ -190,13 +190,23 @@ const ContentEngine = {
   },
 
   /* Re-fills title/subtitle from stored slots for every stub — heals any stub persisted before a
-     template or slot-resolution fix, without needing to wipe the user's saved article list. */
-  _healStubs(stubs){
+     template or slot-resolution fix, without needing to wipe the user's saved article list.
+     Also backfills any `needs` slot the stub's saved slots are missing (e.g. `country`, added to
+     buildSlots after some stubs already existed) — otherwise re-filling with the current template
+     just swaps in a fresh, still-unresolved {{placeholder}} instead of fixing it. */
+  _healStubs(stubs, wines){
     let changed=false;
     stubs.forEach(stub=>{
       if(!stub.slots) return;
       const archetype=ARTICLE_ARCHETYPES.find(a=>a.id===stub.archetypeId);
       if(!archetype) return;
+      (archetype.needs||[]).forEach(n=>{
+        if(stub.slots[n]!=null&&stub.slots[n]!=='') return;
+        if(n==='country'&&stub.slots.region){
+          const match=(wines||[]).find(w=>w.region===stub.slots.region&&w.country);
+          stub.slots.country=match?match.country:KNOWLEDGE.regions[stub.slots.region]?.country;
+        }
+      });
       const title=this.fillTpl(archetype.titleTpl,stub.slots);
       const subtitle=this.fillTpl(archetype.subtitleTpl,stub.slots);
       if(title!==stub.title||subtitle!==stub.subtitle){ stub.title=title; stub.subtitle=subtitle; changed=true; }
@@ -208,7 +218,7 @@ const ContentEngine = {
     maxUnread=maxUnread||6;
     let stubs=[];
     try{ stubs=JSON.parse(localStorage.getItem('vinterest_gen_stubs')||'[]')||[]; }catch(e){}
-    let healed=this._healStubs(stubs);
+    let healed=this._healStubs(stubs,wines);
     const unreadCount=stubs.filter(s=>!localStorage.getItem('vinterest_gen_article_'+s.id+'_done')).length;
     const need=maxUnread-unreadCount;
     if(need<=0||!wines.length) return stubs;
