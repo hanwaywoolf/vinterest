@@ -23286,7 +23286,7 @@ function WineDNAScreen({
       color: C.mid,
       fontFamily: C.P
     }
-  }, "Vinterest v1.1.3")), /*#__PURE__*/React.createElement("div", {
+  }, "Vinterest v1.1.4")), /*#__PURE__*/React.createElement("div", {
     style: {
       height: 8
     }

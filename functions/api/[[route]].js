@@ -30,23 +30,7 @@ export async function onRequest(ctx) {
     return new Response(JSON.stringify(data), { headers: CORS });
   }
 
-  // ── /api/lcbo proxy ───────────────────────────────────────
-  if (path === '/api/lcbo') {
-    const name = url.searchParams.get('name') || '';
-    const res = await fetch('https://api.lcbo.dev/graphql', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        query: `query { products(search:"${name}", first:3) {
-          edges { node { name brand price volume alcoholContent } }
-        }}`
-      })
-    });
-    const data = await res.json();
-    return new Response(JSON.stringify(data), { headers: CORS });
-  }
-
-  // ── /api/retail — Supabase cache + Apify lookup ───────────
+  // ── /api/retail — Supabase cache + Apify lookup for estimated retail pricing ──
   if (path === '/api/retail') {
     const wine = url.searchParams.get('wine') || '';
     const vintage = url.searchParams.get('vintage') || '';
@@ -75,8 +59,7 @@ export async function onRequest(ctx) {
         if (age < SEVEN_DAYS) {
           return new Response(JSON.stringify({
             source: 'cache',
-            retail: cached[0].retail_data,
-            lcbo: cached[0].lcbo_data
+            retail: cached[0].retail_data
           }), { headers: CORS });
         }
       }
@@ -104,33 +87,13 @@ export async function onRequest(ctx) {
       console.error('Apify error:', e);
     }
 
-    // 3. Ontario: also fetch LCBO
-    let lcboData = null;
-    if (region === 'ontario') {
-      try {
-        const lcboRes = await fetch('https://api.lcbo.dev/graphql', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            query: `query { products(search:"${wine}", first:3) {
-              edges { node { name brand price volume alcoholContent } }
-            }}`
-          })
-        });
-        lcboData = await lcboRes.json();
-      } catch (e) {
-        console.error('LCBO error:', e);
-      }
-    }
-
-    // 4. Store in Supabase
+    // 3. Store in Supabase
     try {
       const row = {
         wine_key: cacheKey,
         wine_name: wine,
         vintage: vintage,
         retail_data: retailData,
-        lcbo_data: lcboData,
         fetched_at: new Date().toISOString()
       };
 
@@ -150,8 +113,7 @@ export async function onRequest(ctx) {
 
     return new Response(JSON.stringify({
       source: 'live',
-      retail: retailData,
-      lcbo: lcboData
+      retail: retailData
     }), { headers: CORS });
   }
 
