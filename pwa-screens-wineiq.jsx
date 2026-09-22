@@ -368,7 +368,7 @@ function WineDNAScreen({nav,back,showPro}){
     const wineList=topWinesForPrompt.map(w=>`${w.name}${w.vintage?' '+w.vintage:''}${w.region?' from '+w.region:''}${w.rating?' rated '+w.rating+'/100':''}`).join('; ');
     const lowList=lowWinesForPrompt.map(w=>`${w.name}${w.vintage?' '+w.vintage:''}${w.region?' from '+w.region:''}${w.rating?' rated '+w.rating+'/100':''}`).join('; ');
     const prompt=`My ${t.label.toLowerCase()} wine personality is "${t.personality}". My computed top grapes are: ${t.topGrapes.join(', ')||'none'}. My computed top regions are: ${t.topRegions.join(', ')||'none'}. My highest-rated ${t.label.toLowerCase()} wines: ${wineList||'none'}.${hasLow?` My lowest-rated ${t.label.toLowerCase()} wines: ${lowList}.`:''} Return ONLY raw JSON — no markdown, no code fences, no extra text, just the JSON object: {"preference":"one sentence on what I gravitate toward — max 18 words","like":"one sentence on specifically what I like — you MUST only name grapes/regions from the computed top grapes/regions or highest-rated wines lists above, never invent or infer any other grape or region — max 18 words"${hasLow?',"dislike":"one sentence on what I tend to rate lower — you MUST only name grapes, regions, or style traits drawn from my lowest-rated wines list above, never invent others — max 18 words"':''}}`;
-    window.claude.complete({messages:[{role:'user',content:prompt}]})
+    window.claude.complete({purpose:'winedna_summary',messages:[{role:'user',content:prompt}]})
       .then(text=>{const s=text.trim();localStorage.setItem(key,s);setGenSummaries(g=>({...g,[t.key]:s}));})
       .catch(()=>{})
       .finally(()=>setGeneratingSummary(null));
@@ -385,7 +385,7 @@ function WineDNAScreen({nav,back,showPro}){
     const wineList=t.wines.slice(0,8).map(w=>`${w.name}${w.vintage?' '+w.vintage:''} from ${w.region||w.country||'unknown'}${w.rating?' (rated '+w.rating+'/100)':''}`).join('; ');
     const lengthInst=scriptLength==='short'?`1 sentence, ultra-concise (under 20 words), mention your typical budget range formatted EXACTLY like "${_cbase}40-${_cbase}80 ${_ccode}" (plain symbol, a number range, then the ${_ccode} currency code, never a country-prefixed symbol like CA$ or C$)`:'2 sentences max';
     const prompt=`I've scanned and rated these ${t.label.toLowerCase()} wines: ${wineList}. Based ONLY on the wines I've chosen and their regions, write a ${lengthInst} natural first-person sommelier script I could say to a restaurant sommelier. Reflect my apparent style and preferred regions. If you mention a budget or price range, it MUST use the plain ${_cbase} symbol plus the ${_ccode} code, formatted like "${_cbase}40-${_cbase}80 ${_ccode}" — never a country-prefixed symbol. Return ONLY the script text in double quotes — nothing else.`;
-    window.claude.complete({messages:[{role:'user',content:prompt}]})
+    window.claude.complete({purpose:'sommelier_script',messages:[{role:'user',content:prompt}]})
       .then(text=>{const s=text.trim();localStorage.setItem(key,s);setGenScripts(g=>({...g,[t.key]:s}));})
       .catch(()=>{})
       .finally(()=>setGeneratingScript(null));
@@ -849,7 +849,7 @@ function WineDNAScreen({nav,back,showPro}){
 
         {/* App version */}
         <div style={{textAlign:'center',padding:'12px 0 4px',opacity:0.45}}>
-          <span style={{fontSize:13,color:C.mid,fontFamily:C.P}}>Vinterest v1.1.2</span>
+          <span style={{fontSize:13,color:C.mid,fontFamily:C.P}}>Vinterest v1.1.3</span>
         </div>
 
         <div style={{height:8}}/>

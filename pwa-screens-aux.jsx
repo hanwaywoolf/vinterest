@@ -58,7 +58,7 @@ function TasteProfileScreen({nav,back,showPro}){
     ).join('; ');
     const lengthInstructions=scriptLength==='short'?'1 sentence, ultra-concise (under 20 words), and mention your typical budget range':'2 sentences max';
     const prompt=`I've scanned these ${c.label.toLowerCase()} wines: ${wineList}. Based ONLY on the wines I've chosen and their regions, write a ${lengthInstructions} natural first-person sommelier script I could say to a restaurant sommelier. Reflect my apparent style and preferred regions. Return ONLY the script text in double quotes — nothing else.`;
-    window.claude.complete({messages:[{role:'user',content:prompt}]})
+    window.claude.complete({purpose:'sommelier_script',messages:[{role:'user',content:prompt}]})
       .then(text=>{
         const script=text.trim();
         localStorage.setItem(cacheKey,script);

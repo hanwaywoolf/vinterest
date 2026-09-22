@@ -60,7 +60,7 @@ function WineChatWidget({wines}){
     if(!question||asking) return;
     setAsking(true);setErr(false);setAnswer('');setAsked(question);setQ('');
     const prompt=`You are a concise wine assistant inside a wine app's home screen. Answer ONLY questions about wine — grape varieties, tasting, pairing, service, regions, production. You may also address food pairing and other alcoholic drinks, but only in service of a wine question (e.g. "what beer pairs with steak alongside a Malbec" is fine). If the question is unrelated to wine, food pairing, or alcohol, do not answer it — instead respond with one short, friendly sentence redirecting back to wine topics. Otherwise answer in 2-4 clear, conversational sentences. Plain prose, no markdown, no lists, no headers.\n\nQuestion: "${question}"`;
-    window.claude.complete({messages:[{role:'user',content:prompt}]})
+    window.claude.complete({purpose:'wine_qa',messages:[{role:'user',content:prompt}]})
       .then(text=>setAnswer(text.trim()))
       .catch(()=>setErr(true))
       .finally(()=>setAsking(false));
@@ -190,7 +190,7 @@ function HomeScreen({nav, showPro, isTablet}){
       if(generating===c.typeKey+'_short') return;
       setGenerating(c.typeKey+'_short');
       const prompt=`Condense this sommelier script into ONE ultra-concise sentence (under 20 words), keeping the SAME facts, style, regions and budget range verbatim — do not invent a new budget number, only reuse the one already stated (or omit it if none was stated). Script: ${longText} Return ONLY the condensed script text in double quotes — nothing else.`;
-      window.claude.complete({messages:[{role:'user',content:prompt}]})
+      window.claude.complete({purpose:'sommelier_script',messages:[{role:'user',content:prompt}]})
         .then(text=>{const sc=text.trim();localStorage.setItem(keyShort,sc);if(scriptLength==='short')setGenScripts(g=>({...g,[c.typeKey]:sc}));})
         .catch(()=>{})
         .finally(()=>setGenerating(null));
@@ -202,7 +202,7 @@ function HomeScreen({nav, showPro, isTablet}){
       setGenerating(c.typeKey);
       const wineList=tabWines.slice(0,8).map(w=>`${w.name}${w.vintage?' '+w.vintage:''} from ${w.region||w.country||'unknown'}`).join('; ');
       const prompt=`I've scanned these ${c.label.toLowerCase()} wines: ${wineList}. Based ONLY on the wines I've chosen and their regions, write a 2 sentences max natural first-person sommelier script I could say to a restaurant sommelier. Reflect my apparent style and preferred regions. If you mention a budget or price range, it MUST use the plain ${_base} symbol plus the ${_code} code (e.g. "${_base}40–${_base}80 ${_code}") — never a country-prefixed symbol. Return ONLY the script text in double quotes — nothing else.`;
-      window.claude.complete({messages:[{role:'user',content:prompt}]})
+      window.claude.complete({purpose:'sommelier_script',messages:[{role:'user',content:prompt}]})
         .then(text=>{const sc=text.trim();localStorage.setItem(keyLong,sc);setGenScripts(g=>({...g,[c.typeKey]:sc}));})
         .catch(()=>{})
         .finally(()=>setGenerating(null));
@@ -217,7 +217,7 @@ function HomeScreen({nav, showPro, isTablet}){
     setGenerating(c.typeKey);
     const wineList=tabWines.slice(0,8).map(w=>`${w.name}${w.vintage?' '+w.vintage:''} from ${w.region||w.country||'unknown'}`).join('; ');
     const prompt=`I've scanned these ${c.label.toLowerCase()} wines: ${wineList}. Based ONLY on the wines I've chosen and their regions, write a 2 sentences max natural first-person sommelier script I could say to a restaurant sommelier. Reflect my apparent style and preferred regions. If you mention a budget or price range, it MUST use the plain ${_base} symbol plus the ${_code} code (e.g. "${_base}40–${_base}80 ${_code}") — never a country-prefixed symbol. Return ONLY the script text in double quotes — nothing else.`;
-    window.claude.complete({messages:[{role:'user',content:prompt}]})
+    window.claude.complete({purpose:'sommelier_script',messages:[{role:'user',content:prompt}]})
       .then(text=>{const sc=text.trim();localStorage.setItem(keyLong,sc);setGenerating(null);makeShortFrom(sc);})
       .catch(()=>setGenerating(null));
   },[activeType,allWines.length,scriptLength]);

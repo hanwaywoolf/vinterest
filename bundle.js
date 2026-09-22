@@ -36,7 +36,8 @@
         res = await fetch(ENDPOINT, {
           method: "POST",
           headers: { "content-type": "application/json" },
-          body: JSON.stringify({ messages: toMessages(arg), max_tokens: (arg && arg.max_tokens) || undefined, skill_id: (arg && arg.skill_id) || undefined })
+          body: JSON.stringify({ messages: toMessages(arg), max_tokens: (arg && arg.max_tokens) || undefined,
+          purpose: (arg && arg.purpose) || undefined, skill_id: (arg && arg.skill_id) || undefined })
         });
       } catch (e) {
         throw new Error("Couldn’t reach the wine-ID service. Check your connection and that the API proxy is deployed.");
@@ -666,7 +667,7 @@ function getGrapeQuiz(grape, onReady){
   const g=KNOWLEDGE.grapes[grape];
   const facts=g?`${grape}: ${g.profile} Famous in: ${g.famousIn.join(', ')}.`:`${grape}: no specific retrieved facts — keep questions general and safely factual.`;
   const prompt=ContentEngine.fillTpl(_loadTextSync('prompts/grape-quiz.txt'),{grape,facts});
-  window.claude.complete({max_tokens:4096,messages:[{role:'user',content:prompt}]})
+  window.claude.complete({purpose:'grape_quiz',max_tokens:4096,messages:[{role:'user',content:prompt}]})
     .then(text=>{
       let cleaned=text.replace(/```json|```/g,'').trim();
       const s=cleaned.indexOf('['); const e=cleaned.lastIndexOf(']');
@@ -2670,6 +2671,7 @@ function fetchRetailEstimate(wine, curr) {
   }
   const prompt = 'You are a wine market pricing expert with deep knowledge of actual retail prices worldwide.' + ' Your task: find the ACTUAL known retail price for this SPECIFIC wine — look up this exact producer and label, do NOT average by appellation.' + ' Prestigious named wines (e.g. Guigal single-vineyard La Mouline/La Turque/La Landonne, DRC, Leroy, Screaming Eagle, Petrus, Opus One, cult Burgundy) retail for ' + curr.sym + '50–' + curr.sym + '5000+; use the real figure.' + ' Wine: ' + (wine.name || '') + (wine.vintage ? ' ' + wine.vintage : '') + '.' + ' Type: ' + (wine.type || 'red') + '.' + ' Region: ' + (wine.region || '') + ', ' + (wine.country || '') + '.' + ' Grapes: ' + ((wine.grapes || []).join(', ') || 'unknown') + '.' + (wine.abv ? ' ABV: ' + wine.abv + '%.' : '') + ' Currency: ' + curr.label + ' (' + curr.code + ').' + ' Return ONLY valid JSON, no markdown: {"low":NUMBER,"mid":NUMBER,"high":NUMBER,"currency":"' + curr.code + '","tier":"entry|everyday|premium|luxury|ultra-luxury","note":"one sentence — what drives this specific wine price (producer rep, rarity, appellation, etc)"}.' + ' Integers only. Return null values only if the wine is genuinely unidentifiable.';
   return window.claude.complete({
+    purpose: 'price',
     messages: [{
       role: 'user',
       content: prompt
@@ -4103,6 +4105,7 @@ function ScanScreen({
   async function processLabelCapture(b64) {
     try {
       const text = await window.claude.complete({
+        purpose: 'label_scan',
         messages: [{
           role: 'user',
           content: [{
@@ -4168,6 +4171,7 @@ function ScanScreen({
   async function processListCapture(b64) {
     try {
       const text = await window.claude.complete({
+        purpose: 'list_scan',
         max_tokens: 8192,
         messages: [{
           role: 'user',
@@ -4658,6 +4662,7 @@ function useScanContent(wine, matchPct, dna) {
     const agingLine = agingFact ? `REFERENCE AGING FACTS (use verbatim, do not alter the numbers): ${agingFact}` : 'REFERENCE AGING FACTS: none available for this wine\u2019s classification \u2014 do not state specific aging durations you are not certain of.';
     const prompt = 'You are a warm, knowledgeable sommelier writing quick-hit cards for a wine app. ' + 'Wine: ' + (w.name || '') + (w.vintage && w.vintage !== 'NV' && w.vintage !== 0 ? ' ' + w.vintage : '') + '. ' + 'Type: ' + (w.type || 'red') + '. Region: ' + (w.region || '') + (w.sub_region ? ' (' + w.sub_region + ')' : '') + ', ' + (w.country || '') + '. ' + 'Producer: ' + (w.producer || 'unknown') + '. ' + 'Grapes: ' + ((w.grapes || []).join(', ') || 'unknown') + '. ' + 'Tasting notes: ' + ((w.tasting_notes || []).join(', ') || 'n/a') + '. ' + dnaLine + ' ' + matchLine + ' ' + agingLine + ' ' + 'Return ONLY valid JSON, no markdown, all sentences concrete and specific to THIS wine (no generic filler), and NO numbers/percentages/decimals anywhere EXCEPT when referencing a specific year/vintage — years must always be written as numerals (e.g. "2010", never "twenty ten"): ' + '{' + '"fact":"one genuinely surprising, memorable fact about this wine, its producer, grape, or region (max 28 words)",' + '"fit":"one vivid sentence on the FLAVOR/STYLE reasons this suits their palate — texture, body, fruit, oak, tannin, acidity. If my WineDNA above has a top grape or region, explicitly tie this wine to it by name (e.g. building on my known love of that grape/region) — never invent a grape or region I do not have in my profile (max 26 words)",' + '"caution":"one specific, practical thing worth knowing before or while drinking THIS bottle — e.g. decanting, serving temperature, food pairing risk, or how it will develop with age. Do NOT use hedging phrases like \\"if you prefer\\" or \\"if you like\\" — you already know their taste profile from the data above, so speak to them directly and confidently. If the match score is high, this should read as a helpful tip for someone who will enjoy the wine, never as a warning that it might not suit them (max 24 words)",' + '"origin":"one sentence painting the place this comes from — landscape, climate or culture (max 26 words)",' + '"region_style":"one sentence on what makes wines from here distinctive (max 24 words)",' + '"estate":"one sentence on the producer/winemaker and the estate\'s history or reputation — if producer is unknown, describe the typical winemaking approach in this region instead (max 26 words)",' + '"talk":["three SHORT quotable phrases (each max 12 words) a drinker could say out loud to sound clued-in about this exact wine"],' + '"fact2":"one specific, memorable aging/classification/production fact that helps this bottle make sense. If REFERENCE AGING FACTS are given below, you MUST use those exact figures verbatim (paraphrase the wording only, never change the numbers) — do not invent different aging periods. If no reference facts are given for this wine\'s classification, give a general production fact that does NOT state specific aging durations you are not certain of (max 22 words)",' + '"matchNote":"one sentence giving an honest confidence verdict on THIS PAIRING, grounded in the WineDNA facts above — if I have a top grape/region for this type, name it explicitly and say whether this bottle aligns with or departs from it; never invent a grape/region I do not have (max 24 words). Never mention flavor, texture, tannin, oak, or acidity — that is covered elsewhere."' + '}';
     window.claude.complete({
+      purpose: 'scancard',
       messages: [{
         role: 'user',
         content: prompt
@@ -7998,6 +8003,7 @@ function DetailMerged({
     const userCtx = `Their ${wine.type || 'red'} DNA: body ${lbl(avgB)}, tannins ${lbl(avgT)}, acidity ${lbl(avgA)}. Top rated: ${topWines || 'none yet'}. Favourite grapes: ${topGrapes || 'still discovering'}.`;
     const prompt = isGoodMatch ? `The user is looking at: ${wineCtx}. ${userCtx} Write ONE sentence (max 30 words) explaining specifically why this wine matches this user — compare attributes or reference their actual top wines by name. Be concrete, not generic. IMPORTANT: Do NOT include ANY numbers, decimals, percentages, or specific wine attribute values anywhere in your response. Use only descriptive words like high, low, medium, bold, light, etc. Return ONLY the sentence, no quotes.` : `The user is looking at: ${wineCtx}. ${userCtx} This wine scores ${matchPct}% against their taste profile. Write ONE sentence (max 30 words) explaining honestly and constructively why this wine contrasts with their usual preferences — be specific about the key difference (e.g. body, tannins, acidity, style). IMPORTANT: No numbers, decimals, percentages in your response. Use only descriptive words. Return ONLY the sentence, no quotes.`;
     window.claude.complete({
+      purpose: 'match_explain',
       messages: [{
         role: 'user',
         content: prompt
@@ -8024,6 +8030,7 @@ function DetailMerged({
     const yr = new Date().getFullYear();
     const prompt = `You are a sommelier. Assess the vintage quality and realistic drinking window for this specific wine. Wine: ${wine.name} ${wine.vintage}. Type: ${wine.type || 'red'}, Region: ${wine.region || ''}, Country: ${wine.country || ''}. Grapes: ${(wine.grapes || []).join(', ') || 'unknown'}. Body: ${(wine.body ?? 0.65).toFixed(1)}, Tannins: ${(wine.tannins ?? 0.55).toFixed(1)}, Acidity: ${(wine.acidity ?? 0.60).toFixed(1)}, ABV: ${wine.abv || 13}%. Return ONLY valid JSON (no markdown): {"vintage_rating":"Exceptional|Outstanding|Very Good|Good|Average","drink_from":${yr},"drink_to":2032,"peak_from":2025,"peak_to":2029,"note":"one concrete sentence on how this wine is developing right now and why. IMPORTANT: Do NOT include ANY numbers, decimals, percentages, or specific attribute values (like '0.82 tannins' or '82%') anywhere in the sentence. Use only descriptive words like high, low, medium, bold, structured, etc."}`;
     window.claude.complete({
+      purpose: 'vintage_info',
       messages: [{
         role: 'user',
         content: prompt
@@ -9180,6 +9187,7 @@ function DetailStory({
       vintageContext: wine.vintage && wine.vintage !== 0 ? ' around the ' + wine.vintage + ' vintage' : ''
     });
     window.claude.complete({
+      purpose: 'education',
       messages: [{
         role: 'user',
         content: prompt
@@ -9801,7 +9809,7 @@ Object.assign(window, {
 /* Vinterest PWA — Region, Varietal, Similar Wines explore screens */
 
 /* Shared Claude-fetch hook with sessionStorage cache */
-function useClaudeData(cacheKey, prompt, wine) {
+function useClaudeData(cacheKey, prompt, wine, purpose) {
   const [data, setData] = React.useState(null);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState(null);
@@ -9821,6 +9829,7 @@ function useClaudeData(cacheKey, prompt, wine) {
     (async () => {
       try {
         const text = await window.claude.complete({
+          purpose: purpose || 'explore_info',
           messages: [{
             role: 'user',
             content: prompt
@@ -10818,6 +10827,7 @@ function StyleExploreScreen({
     const aLbl = avgA >= 0.68 ? 'high-acidity' : avgA >= 0.38 ? 'medium-acidity' : 'low-acidity';
     const prompt = `You are a sommelier and wine pricing expert. The user loves ${typeKey} wines: ${bLbl}, ${tLbl}, ${aLbl}. Suggest exactly 4 specific named bottles in the ${gap.wine} style from ${gap.region}, one for EACH of these four tiers (use these exact tier keys):\n- "budget": cheap and cheerful, wallet-friendly\n- "value": high community rating relative to its price — excellent quality for what you pay\n- "mid-range": a great rating at a reasonable, everyday-special price\n- "top-tier": outstanding rating, premium price to match\nIMPORTANT for price_local: use the ACTUAL known retail price for each specific producer and wine in ${clabel} (${ccode}) — do NOT average by appellation. Prestigious wines can be ${csym}50–${csym}2000+; use real figures. Also include a realistic community rating out of 100 for each. Return ONLY valid JSON, no markdown: {"wines":[{"tier":"budget|value|mid-range|top-tier","name":"Full wine name","producer":"Producer","vintage":"year or NV","region":"${gap.region}","grapes":["Grape"],"price_local":NUMBER,"rating":NUMBER,"why":"1 sentence referencing body/tannins/acidity, and for value/top-tier the quality-to-price relationship"}]}`;
     window.claude.complete({
+      purpose: 'explore',
       messages: [{
         role: 'user',
         content: prompt
@@ -13044,6 +13054,7 @@ function TasteProfileScreen({
     const lengthInstructions = scriptLength === 'short' ? '1 sentence, ultra-concise (under 20 words), and mention your typical budget range' : '2 sentences max';
     const prompt = `I've scanned these ${c.label.toLowerCase()} wines: ${wineList}. Based ONLY on the wines I've chosen and their regions, write a ${lengthInstructions} natural first-person sommelier script I could say to a restaurant sommelier. Reflect my apparent style and preferred regions. Return ONLY the script text in double quotes — nothing else.`;
     window.claude.complete({
+      purpose: 'sommelier_script',
       messages: [{
         role: 'user',
         content: prompt
@@ -19565,6 +19576,7 @@ function GenArticleScreen({
       facts: stub.facts || 'No specific retrieved facts — keep claims general and hedge appropriately.'
     });
     window.claude.complete({
+      purpose: 'learn_article',
       messages: [{
         role: 'user',
         content: prompt
@@ -20022,6 +20034,7 @@ function WineChatWidget({
     setQ('');
     const prompt = `You are a concise wine assistant inside a wine app's home screen. Answer ONLY questions about wine — grape varieties, tasting, pairing, service, regions, production. You may also address food pairing and other alcoholic drinks, but only in service of a wine question (e.g. "what beer pairs with steak alongside a Malbec" is fine). If the question is unrelated to wine, food pairing, or alcohol, do not answer it — instead respond with one short, friendly sentence redirecting back to wine topics. Otherwise answer in 2-4 clear, conversational sentences. Plain prose, no markdown, no lists, no headers.\n\nQuestion: "${question}"`;
     window.claude.complete({
+      purpose: 'wine_qa',
       messages: [{
         role: 'user',
         content: prompt
@@ -20344,6 +20357,7 @@ function HomeScreen({
       setGenerating(c.typeKey + '_short');
       const prompt = `Condense this sommelier script into ONE ultra-concise sentence (under 20 words), keeping the SAME facts, style, regions and budget range verbatim — do not invent a new budget number, only reuse the one already stated (or omit it if none was stated). Script: ${longText} Return ONLY the condensed script text in double quotes — nothing else.`;
       window.claude.complete({
+        purpose: 'sommelier_script',
         messages: [{
           role: 'user',
           content: prompt
@@ -20370,6 +20384,7 @@ function HomeScreen({
       const wineList = tabWines.slice(0, 8).map(w => `${w.name}${w.vintage ? ' ' + w.vintage : ''} from ${w.region || w.country || 'unknown'}`).join('; ');
       const prompt = `I've scanned these ${c.label.toLowerCase()} wines: ${wineList}. Based ONLY on the wines I've chosen and their regions, write a 2 sentences max natural first-person sommelier script I could say to a restaurant sommelier. Reflect my apparent style and preferred regions. If you mention a budget or price range, it MUST use the plain ${_base} symbol plus the ${_code} code (e.g. "${_base}40–${_base}80 ${_code}") — never a country-prefixed symbol. Return ONLY the script text in double quotes — nothing else.`;
       window.claude.complete({
+        purpose: 'sommelier_script',
         messages: [{
           role: 'user',
           content: prompt
@@ -20403,6 +20418,7 @@ function HomeScreen({
     const wineList = tabWines.slice(0, 8).map(w => `${w.name}${w.vintage ? ' ' + w.vintage : ''} from ${w.region || w.country || 'unknown'}`).join('; ');
     const prompt = `I've scanned these ${c.label.toLowerCase()} wines: ${wineList}. Based ONLY on the wines I've chosen and their regions, write a 2 sentences max natural first-person sommelier script I could say to a restaurant sommelier. Reflect my apparent style and preferred regions. If you mention a budget or price range, it MUST use the plain ${_base} symbol plus the ${_code} code (e.g. "${_base}40–${_base}80 ${_code}") — never a country-prefixed symbol. Return ONLY the script text in double quotes — nothing else.`;
     window.claude.complete({
+      purpose: 'sommelier_script',
       messages: [{
         role: 'user',
         content: prompt
@@ -21716,6 +21732,7 @@ function WineDNAScreen({
     const lowList = lowWinesForPrompt.map(w => `${w.name}${w.vintage ? ' ' + w.vintage : ''}${w.region ? ' from ' + w.region : ''}${w.rating ? ' rated ' + w.rating + '/100' : ''}`).join('; ');
     const prompt = `My ${t.label.toLowerCase()} wine personality is "${t.personality}". My computed top grapes are: ${t.topGrapes.join(', ') || 'none'}. My computed top regions are: ${t.topRegions.join(', ') || 'none'}. My highest-rated ${t.label.toLowerCase()} wines: ${wineList || 'none'}.${hasLow ? ` My lowest-rated ${t.label.toLowerCase()} wines: ${lowList}.` : ''} Return ONLY raw JSON — no markdown, no code fences, no extra text, just the JSON object: {"preference":"one sentence on what I gravitate toward — max 18 words","like":"one sentence on specifically what I like — you MUST only name grapes/regions from the computed top grapes/regions or highest-rated wines lists above, never invent or infer any other grape or region — max 18 words"${hasLow ? ',"dislike":"one sentence on what I tend to rate lower — you MUST only name grapes, regions, or style traits drawn from my lowest-rated wines list above, never invent others — max 18 words"' : ''}}`;
     window.claude.complete({
+      purpose: 'winedna_summary',
       messages: [{
         role: 'user',
         content: prompt
@@ -21748,6 +21765,7 @@ function WineDNAScreen({
     const lengthInst = scriptLength === 'short' ? `1 sentence, ultra-concise (under 20 words), mention your typical budget range formatted EXACTLY like "${_cbase}40-${_cbase}80 ${_ccode}" (plain symbol, a number range, then the ${_ccode} currency code, never a country-prefixed symbol like CA$ or C$)` : '2 sentences max';
     const prompt = `I've scanned and rated these ${t.label.toLowerCase()} wines: ${wineList}. Based ONLY on the wines I've chosen and their regions, write a ${lengthInst} natural first-person sommelier script I could say to a restaurant sommelier. Reflect my apparent style and preferred regions. If you mention a budget or price range, it MUST use the plain ${_cbase} symbol plus the ${_ccode} code, formatted like "${_cbase}40-${_cbase}80 ${_ccode}" — never a country-prefixed symbol. Return ONLY the script text in double quotes — nothing else.`;
     window.claude.complete({
+      purpose: 'sommelier_script',
       messages: [{
         role: 'user',
         content: prompt
@@ -23268,7 +23286,7 @@ function WineDNAScreen({
       color: C.mid,
       fontFamily: C.P
     }
-  }, "Vinterest v1.1.2")), /*#__PURE__*/React.createElement("div", {
+  }, "Vinterest v1.1.3")), /*#__PURE__*/React.createElement("div", {
     style: {
       height: 8
     }

@@ -461,7 +461,7 @@ function fetchRetailEstimate(wine,curr){
     ' Currency: '+curr.label+' ('+curr.code+').'+
     ' Return ONLY valid JSON, no markdown: {"low":NUMBER,"mid":NUMBER,"high":NUMBER,"currency":"'+curr.code+'","tier":"entry|everyday|premium|luxury|ultra-luxury","note":"one sentence — what drives this specific wine price (producer rep, rarity, appellation, etc)"}.'+
     ' Integers only. Return null values only if the wine is genuinely unidentifiable.';
-  return window.claude.complete({messages:[{role:'user',content:prompt}]}).then(text=>{
+  return window.claude.complete({purpose:'price',messages:[{role:'user',content:prompt}]}).then(text=>{
     let c=text.replace(/```json|```/g,'').trim();
     const s=c.indexOf('{'),e=c.lastIndexOf('}');
     if(s>=0&&e>s) c=c.slice(s,e+1);
