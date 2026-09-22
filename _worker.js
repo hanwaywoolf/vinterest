@@ -144,44 +144,44 @@ function rateLimited(ip) {
 async function handleClaude(request, env) {
   const key = env.ANTHROPIC_API_KEY;
   if (!key) {
-    return json(500, { error: "Server is missing ANTHROPIC_API_KEY. Add it in Cloudflare Pages → Settings → Variables and secrets, then redeploy." });
+    return json(500, { error: "Server is missing ANTHROPIC_API_KEY. Add it in Cloudflare Pages → Settings → Variables and secrets, then redeploy.", code: "missing_api_key" });
   }
 
   const origin = request.headers.get("origin");
   if (!originAllowed(origin)) {
-    return json(403, { error: "Origin not allowed." });
+    return json(403, { error: "Origin not allowed.", code: "origin_denied" });
   }
 
   const ip = clientIp(request);
   if (rateLimited(ip)) {
-    return json(429, { error: "Too many requests. Please slow down and try again shortly." });
+    return json(429, { error: "Too many requests. Please slow down and try again shortly.", code: "rate_limited" });
   }
 
   const contentLength = request.headers.get("content-length");
   if (contentLength && Number(contentLength) > MAX_BODY_BYTES) {
-    return json(413, { error: "Request body too large." });
+    return json(413, { error: "Request body too large.", code: "body_too_large" });
   }
 
   let rawBody;
   try { rawBody = await request.text(); }
-  catch (e) { return json(400, { error: "Could not read request body." }); }
+  catch (e) { return json(400, { error: "Could not read request body.", code: "unreadable_body" }); }
   if (rawBody.length > MAX_BODY_BYTES) {
-    return json(413, { error: "Request body too large." });
+    return json(413, { error: "Request body too large.", code: "body_too_large" });
   }
 
   let payload;
   try { payload = JSON.parse(rawBody); }
-  catch (e) { return json(400, { error: "Invalid JSON body." }); }
+  catch (e) { return json(400, { error: "Invalid JSON body.", code: "invalid_json" }); }
 
   const purpose = payload.purpose;
   const purposeCap = CLAUDE_PURPOSE_LIMITS[purpose];
   if (!purposeCap) {
-    return json(400, { error: "Request must include a valid purpose." });
+    return json(400, { error: "Request must include a valid purpose.", code: "invalid_purpose" });
   }
 
   const messages = payload.messages;
   if (!Array.isArray(messages) || messages.length === 0) {
-    return json(400, { error: "Request must include a non-empty messages[] array." });
+    return json(400, { error: "Request must include a non-empty messages[] array.", code: "invalid_messages" });
   }
 
   // The model always comes from the environment — never from the request.
@@ -201,7 +201,7 @@ async function handleClaude(request, env) {
     const data = await r.json();
     if (!r.ok) {
       const msg = (data && data.error && data.error.message) || "Anthropic API error.";
-      return json(r.status, { error: msg });
+      return json(r.status, { error: msg, code: "anthropic_error" });
     }
     const text = (data.content || [])
       .filter((b) => b.type === "text")
@@ -209,7 +209,7 @@ async function handleClaude(request, env) {
       .join("");
     return json(200, { text });
   } catch (e) {
-    return json(502, { error: "Failed to reach Anthropic: " + (e && e.message ? e.message : String(e)) });
+    return json(502, { error: "Failed to reach Anthropic: " + (e && e.message ? e.message : String(e)), code: "upstream_unreachable" });
   }
 }
 

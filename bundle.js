@@ -44,7 +44,7 @@
       }
       if (!res.ok) {
         var msg = "The wine-ID service returned an error (" + res.status + ").";
-        try { var j = await res.json(); if (j && j.error) msg = j.error; } catch (e) {}
+        try { var j = await res.json(); if (j && j.error) msg = j.error + (j.code ? " [" + j.code + "]" : ""); } catch (e) {}
         throw new Error(msg);
       }
       var data = await res.json();
@@ -23286,7 +23286,7 @@ function WineDNAScreen({
       color: C.mid,
       fontFamily: C.P
     }
-  }, "Vinterest v1.1.5")), /*#__PURE__*/React.createElement("div", {
+  }, "Vinterest v1.1.6")), /*#__PURE__*/React.createElement("div", {
     style: {
       height: 8
     }

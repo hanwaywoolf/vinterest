@@ -41,7 +41,7 @@
       }
       if (!res.ok) {
         var msg = "The wine-ID service returned an error (" + res.status + ").";
-        try { var j = await res.json(); if (j && j.error) msg = j.error; } catch (e) {}
+        try { var j = await res.json(); if (j && j.error) msg = j.error + (j.code ? " [" + j.code + "]" : ""); } catch (e) {}
         throw new Error(msg);
       }
       var data = await res.json();
