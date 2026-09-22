@@ -19225,171 +19225,16 @@ function _fillTpl(tpl, vars) {
   return s;
 }
 let ON_RAMP = [];
-try { ON_RAMP = _loadJSON('data/onramp.json') || []; } catch (e) { console.error('[Vinterest] onramp.json failed to load — the Learn tab will be missing its on-ramp articles until it is deployed.', e); }
+try {
+  ON_RAMP = _loadJSON('data/onramp.json') || [];
+} catch (e) {
+  console.error('[Vinterest] onramp.json failed to load — the Learn tab will be missing its on-ramp articles until it is deployed.', e);
+}
 function onRampDone(id) {
   return !!localStorage.getItem('vinterest_' + id + '_done');
 }
 function onRampProgress() {
   return ON_RAMP.filter(a => onRampDone(a.id)).length;
-}
-
-/* ── shared comprehension check — replaces pay-for-button markRead().
-   XP only fires once every question has been answered correctly (retries allowed, never penalized). ── */
-function ComprehensionCheck({
-  questions,
-  onPass
-}) {
-  const [idx, setIdx] = React.useState(0);
-  const [selected, setSelected] = React.useState(null);
-  const [phase, setPhase] = React.useState('question');
-  const q = questions[idx];
-  const correct = selected === q.a;
-  function choose(i) {
-    if (phase !== 'question') return;
-    setSelected(i);
-    setPhase('feedback');
-  }
-  function next() {
-    if (!correct) {
-      setSelected(null);
-      setPhase('question');
-      return;
-    }
-    if (idx + 1 >= questions.length) {
-      onPass();
-      return;
-    }
-    setIdx(i => i + 1);
-    setSelected(null);
-    setPhase('question');
-  }
-  const optColors = phase === 'question' ? q.opts.map(() => ({
-    bg: C.white,
-    border: C.line,
-    text: C.ink
-  })) : q.opts.map((_, i) => {
-    if (i === q.a) return {
-      bg: C.greenBg,
-      border: C.green,
-      text: C.green
-    };
-    if (i === selected) return {
-      bg: '#FFF0F0',
-      border: '#E88080',
-      text: '#C0392B'
-    };
-    return {
-      bg: C.white,
-      border: C.line,
-      text: C.ink
-    };
-  });
-  return /*#__PURE__*/React.createElement("div", {
-    style: {
-      background: C.white,
-      borderRadius: 16,
-      border: `1px solid ${C.line}`,
-      padding: '16px 16px 14px',
-      display: 'flex',
-      flexDirection: 'column',
-      gap: 12
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: 'flex',
-      justifyContent: 'space-between',
-      alignItems: 'center'
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      fontSize: 13,
-      fontWeight: 700,
-      color: C.mid,
-      letterSpacing: '0.06em',
-      textTransform: 'uppercase',
-      fontFamily: C.P
-    }
-  }, "Quick check"), /*#__PURE__*/React.createElement("span", {
-    style: {
-      fontSize: 14,
-      fontWeight: 600,
-      color: C.mid,
-      fontFamily: C.P
-    }
-  }, idx + 1, "/", questions.length)), /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: 18,
-      fontWeight: 700,
-      color: C.ink,
-      fontFamily: C.P,
-      lineHeight: 1.4
-    }
-  }, q.q), /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: 'flex',
-      flexDirection: 'column',
-      gap: 8
-    }
-  }, q.opts.map((opt, i) => {
-    const s = optColors[i];
-    return /*#__PURE__*/React.createElement("div", {
-      key: i,
-      onClick: () => choose(i),
-      style: {
-        padding: '12px 14px',
-        borderRadius: 12,
-        border: `2px solid ${s.border}`,
-        background: s.bg,
-        cursor: phase === 'question' ? 'pointer' : 'default',
-        display: 'flex',
-        alignItems: 'center',
-        gap: 10
-      }
-    }, /*#__PURE__*/React.createElement("div", {
-      style: {
-        width: 24,
-        height: 24,
-        borderRadius: 12,
-        background: s.border + '25',
-        flexShrink: 0,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center'
-      }
-    }, /*#__PURE__*/React.createElement("span", {
-      style: {
-        fontSize: 13,
-        fontWeight: 700,
-        color: s.text,
-        fontFamily: C.P
-      }
-    }, phase === 'feedback' && i === q.a ? '✓' : phase === 'feedback' && i === selected ? '✗' : String.fromCharCode(65 + i))), /*#__PURE__*/React.createElement("span", {
-      style: {
-        fontSize: 15.5,
-        fontWeight: 500,
-        color: s.text,
-        fontFamily: C.P,
-        lineHeight: 1.35
-      }
-    }, opt));
-  })), phase === 'feedback' && /*#__PURE__*/React.createElement("div", {
-    onClick: next,
-    style: {
-      background: correct ? C.green : C.cr,
-      borderRadius: 12,
-      padding: '13px',
-      textAlign: 'center',
-      cursor: 'pointer',
-      userSelect: 'none'
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      fontSize: 16,
-      fontWeight: 700,
-      color: '#fff',
-      fontFamily: C.P
-    }
-  }, correct ? idx + 1 >= questions.length ? 'Done →' : 'Next →' : 'Try again →')));
 }
 function LearnArticleScreen({
   nav,
@@ -19401,8 +19246,7 @@ function LearnArticleScreen({
   }, []);
   const article = ON_RAMP[idx];
   const [completed, setCompleted] = React.useState(() => onRampDone(article.id));
-  const [checking, setChecking] = React.useState(false);
-  function passCheck() {
+  function markRead() {
     if (completed) return;
     XPSystem.awardAndToast([{
       type: 'article',
@@ -19410,7 +19254,6 @@ function LearnArticleScreen({
     }]);
     localStorage.setItem('vinterest_' + article.id + '_done', '1');
     setCompleted(true);
-    setChecking(false);
   }
   const nextArticle = ON_RAMP.find(a => !onRampDone(a.id) && a.id !== article.id);
   return /*#__PURE__*/React.createElement("div", {
@@ -19458,14 +19301,14 @@ function LearnArticleScreen({
       fontFamily: C.P,
       fontWeight: 500
     }
-  }, "On-Ramp \xB7 ", article.readTime)), completed && /*#__PURE__*/React.createElement("span", {
+  }, "On-Ramp · ", article.readTime)), completed && /*#__PURE__*/React.createElement("span", {
     style: {
       fontSize: 15,
       fontWeight: 700,
       color: C.green,
       fontFamily: C.P
     }
-  }, "\u2713 +50 XP")), /*#__PURE__*/React.createElement("div", {
+  }, "✓ +50 XP")), /*#__PURE__*/React.createElement("div", {
     style: {
       flex: 1,
       overflowY: 'auto'
@@ -19501,7 +19344,7 @@ function LearnArticleScreen({
       fontSize: 28,
       fontWeight: 400,
       color: '#fff',
-      fontFamily: C.P,
+      fontFamily: C.serif,
       lineHeight: 1.2,
       marginBottom: 10
     }
@@ -19613,10 +19456,7 @@ function LearnArticleScreen({
       fontFamily: C.P,
       lineHeight: 1.5
     }
-  }, ex))))))), checking && !completed && /*#__PURE__*/React.createElement(ComprehensionCheck, {
-    questions: article.check,
-    onPass: passCheck
-  }), !checking && /*#__PURE__*/React.createElement("div", {
+  }, ex))))))), /*#__PURE__*/React.createElement("div", {
     style: {
       background: completed ? C.greenBg : C.crSoft,
       borderRadius: 16,
@@ -19685,11 +19525,11 @@ function LearnArticleScreen({
       lineHeight: 1.5,
       marginBottom: 14
     }
-  }, "Answer 2 quick questions to earn +50 XP"), /*#__PURE__*/React.createElement(Btn, {
+  }, "Mark as complete to earn +50 XP"), /*#__PURE__*/React.createElement(Btn, {
     primary: true,
     full: true,
-    onClick: () => setChecking(true)
-  }, "Test what you learned"))), /*#__PURE__*/React.createElement("div", {
+    onClick: markRead
+  }, "Mark as Read · +50 XP"))), /*#__PURE__*/React.createElement("div", {
     style: {
       height: 16
     }
@@ -19714,7 +19554,6 @@ function GenArticleScreen({
   const doneKey = stub ? `vinterest_gen_article_${stub.id}_done` : null;
   const cacheKey = stub ? `vinterest_gen_article_${stub.id}_content` : null;
   const [completed, setCompleted] = React.useState(() => !!localStorage.getItem(doneKey));
-  const [checking, setChecking] = React.useState(false);
   const [sections, setSections] = React.useState(() => {
     if (!cacheKey) return null;
     try {
@@ -19723,7 +19562,6 @@ function GenArticleScreen({
       return null;
     }
   });
-  const [check, setCheck] = React.useState(null);
   const [generating, setGenerating] = React.useState(false);
   React.useEffect(() => {
     if (!stub || sections || generating) return;
@@ -19754,22 +19592,12 @@ function GenArticleScreen({
         if (s >= 0 && e > s) clean = clean.slice(s, e + 1);
         const parsed = JSON.parse(clean);
         const secs = parsed.sections || [];
-        const chk = Array.isArray(parsed.check) && parsed.check.length ? parsed.check : null;
         localStorage.setItem(cacheKey, JSON.stringify(secs));
-        if (chk) localStorage.setItem(cacheKey + '_check', JSON.stringify(chk));
         setSections(secs);
-        setCheck(chk);
       } catch (err) {}
     }).catch(() => {}).finally(() => setGenerating(false));
   }, [stub?.id]);
-  React.useEffect(() => {
-    if (!cacheKey || check) return;
-    try {
-      const c = JSON.parse(localStorage.getItem(cacheKey + '_check') || 'null');
-      if (c) setCheck(c);
-    } catch (e) {}
-  }, [cacheKey]);
-  function passCheck() {
+  function markRead() {
     if (completed || !doneKey) return;
     XPSystem.awardAndToast([{
       type: 'article',
@@ -19777,7 +19605,6 @@ function GenArticleScreen({
     }]);
     localStorage.setItem(doneKey, '1');
     setCompleted(true);
-    setChecking(false);
   }
   if (!stub) return /*#__PURE__*/React.createElement("div", {
     style: {
@@ -19839,14 +19666,14 @@ function GenArticleScreen({
       fontFamily: C.P,
       fontWeight: 500
     }
-  }, "Your Reading List \xB7 ", stub.readTime)), completed && /*#__PURE__*/React.createElement("span", {
+  }, "Your Reading List · ", stub.readTime)), completed && /*#__PURE__*/React.createElement("span", {
     style: {
       fontSize: 15,
       fontWeight: 700,
       color: C.green,
       fontFamily: C.P
     }
-  }, "\u2713 +50 XP")), /*#__PURE__*/React.createElement("div", {
+  }, "✓ +50 XP")), /*#__PURE__*/React.createElement("div", {
     style: {
       flex: 1,
       overflowY: 'auto'
@@ -19926,7 +19753,7 @@ function GenArticleScreen({
       fontStyle: 'italic',
       textAlign: 'center'
     }
-  }, "Writing your personalised article\u2026")), sections && sections.map((s, i) => /*#__PURE__*/React.createElement("div", {
+  }, "Writing your personalised article…")), sections && sections.map((s, i) => /*#__PURE__*/React.createElement("div", {
     key: i,
     style: {
       background: C.white,
@@ -20020,10 +19847,7 @@ function GenArticleScreen({
       fontFamily: C.P,
       lineHeight: 1.5
     }
-  }, ex))))))), checking && !completed && check && /*#__PURE__*/React.createElement(ComprehensionCheck, {
-    questions: check,
-    onPass: passCheck
-  }), sections && !checking && /*#__PURE__*/React.createElement("div", {
+  }, ex))))))), sections && /*#__PURE__*/React.createElement("div", {
     style: {
       background: completed ? C.greenBg : C.crSoft,
       borderRadius: 16,
@@ -20073,7 +19897,7 @@ function GenArticleScreen({
   }, "Reading List"), /*#__PURE__*/React.createElement(Btn, {
     primary: true,
     onClick: () => nav('camera')
-  }, "Scan a bottle"))) : check ? /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+  }, "Scan a bottle"))) : /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 17,
       fontWeight: 700,
@@ -20089,18 +19913,11 @@ function GenArticleScreen({
       lineHeight: 1.5,
       marginBottom: 14
     }
-  }, "Answer 2 quick questions to earn +50 XP"), /*#__PURE__*/React.createElement(Btn, {
+  }, "Mark as complete to earn +50 XP"), /*#__PURE__*/React.createElement(Btn, {
     primary: true,
     full: true,
-    onClick: () => setChecking(true)
-  }, "Test what you learned")) : /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: 15,
-      color: C.mid,
-      fontFamily: C.P,
-      lineHeight: 1.5
-    }
-  }, "Loading your comprehension check\u2026")), /*#__PURE__*/React.createElement("div", {
+    onClick: markRead
+  }, "Mark as Read · +50 XP"))), /*#__PURE__*/React.createElement("div", {
     style: {
       height: 16
     }
@@ -20108,8 +19925,7 @@ function GenArticleScreen({
 }
 Object.assign(window, {
   LearnArticleScreen,
-  GenArticleScreen,
-  ComprehensionCheck
+  GenArticleScreen
 });
 
 /* ---- pwa-screens-home.jsx (precompiled) ---- */
@@ -23451,7 +23267,7 @@ function WineDNAScreen({
       color: C.mid,
       fontFamily: C.P
     }
-  }, "Vinterest v1.2.0")), /*#__PURE__*/React.createElement("div", {
+  }, "Vinterest v1.2.1")), /*#__PURE__*/React.createElement("div", {
     style: {
       height: 8
     }
@@ -23576,7 +23392,7 @@ function App() {
       localStorage.setItem('vinterest_onboarded', '1');
       nav('home');
     }
-  }), screen === 'home' && /*#__PURE__*/React.createElement(HomeScreen, ctx), screen === 'scan' && /*#__PURE__*/React.createElement(ScanHomeScreen, ctx), screen === 'camera' && /*#__PURE__*/React.createElement(ScanScreen, ctx), screen === 'identified' && /*#__PURE__*/React.createElement(WineIdentifiedScreen, ctx), screen === 'winelist' && /*#__PURE__*/React.createElement(WineListScreen, ctx), screen === 'detail' && /*#__PURE__*/React.createElement(WineDetailScreen, ctx), screen === 'region' && /*#__PURE__*/React.createElement(RegionScreen, ctx), screen === 'varietal' && /*#__PURE__*/React.createElement(VarietalScreen, ctx), screen === 'similar' && /*#__PURE__*/React.createElement(SimilarWinesScreen, ctx), screen === 'style-explore' && /*#__PURE__*/React.createElement(StyleExploreScreen, ctx), screen === 'profile' && /*#__PURE__*/React.createElement(WineDNAScreen, ctx), screen === 'mywines' && /*#__PURE__*/React.createElement(MyWinesScreen, ctx), screen === 'learn' && /*#__PURE__*/React.createElement(ScreenErrorBoundary, null, /*#__PURE__*/React.createElement(QuizHubScreen, ctx)), screen === 'quiz' && /*#__PURE__*/React.createElement(QuizScreen, ctx), screen === 'mastery-map' && /*#__PURE__*/React.createElement(MasteryMapScreen, ctx), screen === 'article' && /*#__PURE__*/React.createElement(LearnArticleScreen, ctx), screen === 'gen-article' && /*#__PURE__*/React.createElement(GenArticleScreen, ctx), screen === 'account' && /*#__PURE__*/React.createElement(AccountProfileScreen, ctx), screen === 'settings' && /*#__PURE__*/React.createElement(SettingsScreen, ctx)), showNav && /*#__PURE__*/React.createElement(BottomNav, {
+  }), screen === 'home' && /*#__PURE__*/React.createElement(HomeScreen, ctx), screen === 'scan' && /*#__PURE__*/React.createElement(ScanHomeScreen, ctx), screen === 'camera' && /*#__PURE__*/React.createElement(ScanScreen, ctx), screen === 'identified' && /*#__PURE__*/React.createElement(WineIdentifiedScreen, ctx), screen === 'winelist' && /*#__PURE__*/React.createElement(WineListScreen, ctx), screen === 'detail' && /*#__PURE__*/React.createElement(WineDetailScreen, ctx), screen === 'region' && /*#__PURE__*/React.createElement(RegionScreen, ctx), screen === 'varietal' && /*#__PURE__*/React.createElement(VarietalScreen, ctx), screen === 'similar' && /*#__PURE__*/React.createElement(SimilarWinesScreen, ctx), screen === 'style-explore' && /*#__PURE__*/React.createElement(StyleExploreScreen, ctx), screen === 'profile' && /*#__PURE__*/React.createElement(WineDNAScreen, ctx), screen === 'mywines' && /*#__PURE__*/React.createElement(MyWinesScreen, ctx), screen === 'learn' && /*#__PURE__*/React.createElement(ScreenErrorBoundary, null, /*#__PURE__*/React.createElement(QuizHubScreen, ctx)), screen === 'quiz' && /*#__PURE__*/React.createElement(QuizScreen, ctx), screen === 'mastery-map' && /*#__PURE__*/React.createElement(MasteryMapScreen, ctx), screen === 'article' && /*#__PURE__*/React.createElement(ScreenErrorBoundary, null, /*#__PURE__*/React.createElement(LearnArticleScreen, ctx)), screen === 'gen-article' && /*#__PURE__*/React.createElement(ScreenErrorBoundary, null, /*#__PURE__*/React.createElement(GenArticleScreen, ctx)), screen === 'account' && /*#__PURE__*/React.createElement(AccountProfileScreen, ctx), screen === 'settings' && /*#__PURE__*/React.createElement(SettingsScreen, ctx)), showNav && /*#__PURE__*/React.createElement(BottomNav, {
     active: screen,
     nav: nav,
     showPro: setProGate
