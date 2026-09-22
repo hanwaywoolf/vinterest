@@ -404,6 +404,21 @@ const ExposureLedger = Object.assign(_accountStore('vinterest_exposure_v1'), {
   mark(key){ const d=this.get(); d.keys[key]=Date.now(); this.save(d); }
 });
 
+const RegionQuizLedger = Object.assign(_accountStore('vinterest_region_quiz_v1'), {
+  fresh(){ return {aced:{}}; },
+  isAced(region){ return !!this.get().aced[region]; },
+  markAced(region){ const d=this.get(); d.aced[region]=Date.now(); this.save(d); }
+});
+
+function regionQuizCandidates(wines){
+  const counts={};
+  wines.forEach(w=>{ if(w.region) counts[w.region]=(counts[w.region]||0)+1; });
+  return Object.entries(counts)
+    .filter(([region,n])=>n>=2&&!RegionQuizLedger.isAced(region))
+    .sort((a,b)=>b[1]-a[1])
+    .map(([region])=>region);
+}
+
 const ContentEngine = {
   TRAIT_BASELINE:{body:0.5,tannins:0.5,acidity:0.5,sweetness:0.15},
   TRAIT_LABEL:{body:'Full-Bodied',tannins:'Tannic',acidity:'High-Acid',sweetness:'Sweet'},
@@ -11442,15 +11457,6 @@ function WineDNAUnlockCelebration({
     }
   }, "See WineDNA")), /*#__PURE__*/React.createElement("style", null, `@keyframes dnaRise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}`));
 }
-function _dominantRegion(wines) {
-  const c = {};
-  wines.forEach(w => {
-    if (w.region) c[w.region] = (c[w.region] || 0) + 1;
-  });
-  const top = Object.entries(c).sort((a, b) => b[1] - a[1])[0];
-  return top && top[1] >= 2 ? top[0] : null;
-}
-
 /* ── QUIZ HUB / LEARN TAB ── */
 function QuizHubScreen({
   nav,
@@ -11533,7 +11539,7 @@ function QuizHubScreen({
     action: () => nav('camera')
   };
   const mastery = MasterySystem.summary();
-  const region = _dominantRegion(wines);
+  const quizRegions = React.useMemo(() => regionQuizCandidates(wines), [wines]);
   const wordsCount = VocabLedger.getAll().length;
   const startQuiz = cfg => {
     sessionStorage.setItem('vinterest_quiz_config2', JSON.stringify(cfg));
@@ -12048,7 +12054,8 @@ function QuizHubScreen({
     n: "chevron",
     sz: 13,
     col: C.mid
-  })), region && /*#__PURE__*/React.createElement("div", {
+  })), quizRegions.map(region => /*#__PURE__*/React.createElement("div", {
+    key: region,
     onClick: () => startQuiz({
       mode: 'region',
       region
@@ -12099,7 +12106,7 @@ function QuizHubScreen({
     n: "chevron",
     sz: 13,
     col: C.mid
-  })))), /*#__PURE__*/React.createElement("div", {
+  }))))), /*#__PURE__*/React.createElement("div", {
   style: zoneLabel
 }, "Your Grapes"), /*#__PURE__*/React.createElement("div", {
   style: {
@@ -12724,6 +12731,7 @@ function QuizScreen({
       const g2 = a2.filter(x => !x.levelUp).reduce((s, a) => s + a.amount, 0);
       setXpGained(xp => xp + g2);
       XPSystem.toast(a2);
+      if (mode === 'region' && results.filter(r => r.correct).length === allQs.length) RegionQuizLedger.markAced(config.region);
       setPhase('results');
     } else {
       setQIdx(i => i + 1);
@@ -23304,7 +23312,7 @@ function WineDNAScreen({
       color: C.mid,
       fontFamily: C.P
     }
-  }, "Vinterest v1.2.6")), /*#__PURE__*/React.createElement("div", {
+  }, "Vinterest v1.2.7")), /*#__PURE__*/React.createElement("div", {
     style: {
       height: 8
     }

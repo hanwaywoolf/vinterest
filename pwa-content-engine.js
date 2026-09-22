@@ -13,6 +13,26 @@ const ExposureLedger = Object.assign(_accountStore('vinterest_exposure_v1'), {
   mark(key){ const d=this.get(); d.keys[key]=Date.now(); this.save(d); }
 });
 
+/* Tracks which region quizzes a user has aced (100%) so QuizHubScreen can retire them and
+   surface the next newly-eligible region instead of re-serving an already-mastered one. */
+const RegionQuizLedger = Object.assign(_accountStore('vinterest_region_quiz_v1'), {
+  fresh(){ return {aced:{}}; },
+  isAced(region){ return !!this.get().aced[region]; },
+  markAced(region){ const d=this.get(); d.aced[region]=Date.now(); this.save(d); }
+});
+
+/* Regions with 2+ scans that haven't been aced yet — most-scanned first. A region drops off
+   this list the moment its quiz is aced, and a newly-scanned region (e.g. a first Bordeaux)
+   slots in on its own once it crosses the 2-scan threshold. */
+function regionQuizCandidates(wines){
+  const counts={};
+  wines.forEach(w=>{ if(w.region) counts[w.region]=(counts[w.region]||0)+1; });
+  return Object.entries(counts)
+    .filter(([region,n])=>n>=2&&!RegionQuizLedger.isAced(region))
+    .sort((a,b)=>b[1]-a[1])
+    .map(([region])=>region);
+}
+
 const ContentEngine = {
   TRAIT_BASELINE:{body:0.5,tannins:0.5,acidity:0.5,sweetness:0.15},
   TRAIT_LABEL:{body:'Full-Bodied',tannins:'Tannic',acidity:'High-Acid',sweetness:'Sweet'},

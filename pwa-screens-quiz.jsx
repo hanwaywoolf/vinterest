@@ -45,13 +45,6 @@ function WineDNAUnlockCelebration({onDone}){
   );
 }
 
-function _dominantRegion(wines){
-  const c={};
-  wines.forEach(w=>{ if(w.region) c[w.region]=(c[w.region]||0)+1; });
-  const top=Object.entries(c).sort((a,b)=>b[1]-a[1])[0];
-  return top&&top[1]>=2?top[0]:null;
-}
-
 /* ── QUIZ HUB / LEARN TAB ── */
 function QuizHubScreen({nav,back,showPro}){
   const [xpData,setXpData]=React.useState(()=>XPSystem.get());
@@ -94,7 +87,7 @@ function QuizHubScreen({nav,back,showPro}){
       : {kind:'scan',title:'Scan a bottle for your next read',sub:"Your shelf restocks based on what you try.",action:()=>nav('camera')};
 
   const mastery=MasterySystem.summary();
-  const region=_dominantRegion(wines);
+  const quizRegions=React.useMemo(()=>regionQuizCandidates(wines),[wines]);
   const wordsCount=VocabLedger.getAll().length;
   const startQuiz=cfg=>{ sessionStorage.setItem('vinterest_quiz_config2',JSON.stringify(cfg)); nav('quiz'); };
   const [grapeUnlocks,setGrapeUnlocks]=React.useState(()=>GrapeUnlocks.all());
@@ -242,8 +235,8 @@ function QuizHubScreen({nav,back,showPro}){
                 <Icon n="chevron" sz={13} col={C.mid}/>
               </div>
             )}
-            {region&&(
-              <div onClick={()=>startQuiz({mode:'region',region})} style={{background:C.white,borderRadius:14,padding:'12px 14px',display:'flex',alignItems:'center',gap:12,cursor:'pointer',border:`1px solid ${C.line}`}}>
+            {quizRegions.map(region=>(
+              <div key={region} onClick={()=>startQuiz({mode:'region',region})} style={{background:C.white,borderRadius:14,padding:'12px 14px',display:'flex',alignItems:'center',gap:12,cursor:'pointer',border:`1px solid ${C.line}`}}>
                 <div style={{width:42,height:42,borderRadius:12,background:C.offWhite,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><Icon n="map" sz={20} col={C.ink}/></div>
                 <div style={{flex:1}}>
                   <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>Your {region} Knowledge</div>
@@ -251,7 +244,7 @@ function QuizHubScreen({nav,back,showPro}){
                 </div>
                 <Icon n="chevron" sz={13} col={C.mid}/>
               </div>
-            )}
+            ))}
           </>
         )}
         </div>
@@ -534,6 +527,7 @@ function QuizScreen({nav,back}){
       const g2=a2.filter(x=>!x.levelUp).reduce((s,a)=>s+a.amount,0);
       setXpGained(xp=>xp+g2);
       XPSystem.toast(a2);
+      if(mode==='region'&&results.filter(r=>r.correct).length===allQs.length) RegionQuizLedger.markAced(config.region);
       setPhase('results');
     } else {
       setQIdx(i=>i+1); setSelected(null); setPhase('question');
