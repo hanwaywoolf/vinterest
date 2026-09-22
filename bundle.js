@@ -629,6 +629,28 @@ let GRAPE_ALLOWLIST=[];
 try{ GRAPE_ALLOWLIST=_loadJSON('data/grapes-allowlist.json')||[]; }catch(e){ console.error('[Vinterest] grapes-allowlist.json failed to load — Your Grapes will be empty until it is deployed.',e); }
 const FREE_GRAPE_CAP = 5;
 
+/* Primary wine-style association per grape, for color-coding in the Learn tab's grape tiles —
+   matches the type keys _TYPE_COLORS (pwa-screens-wineiq.jsx) already uses. A grape can make more
+   than one style (Grenache rosé, Chardonnay sparkling); this is its single best-known default, not
+   an exhaustive list. Sparkling and orange aren't styles any of these 50 grapes are most famous
+   for on their own, so neither appears here. */
+const GRAPE_TYPES = {
+  'Cabernet Sauvignon':'red','Merlot':'red','Pinot Noir':'red','Syrah':'red','Malbec':'red',
+  'Zinfandel':'red','Sangiovese':'red','Tempranillo':'red','Nebbiolo':'red','Grenache':'red',
+  'Cabernet Franc':'red','Petit Verdot':'red','Carignan':'red','Mourvèdre':'red','Barbera':'red',
+  'Gamay':'red','Montepulciano':'red','Primitivo':'red','Touriga Nacional':'fortified',
+  'Carmenère':'red','Pinotage':'red','Petite Sirah':'red','Aglianico':'red','Corvina':'red',
+  'Cinsault':'red','Xinomavro':'red','Zweigelt':'red',
+  'Chardonnay':'white','Sauvignon Blanc':'white','Riesling':'white','Pinot Grigio':'white',
+  'Viognier':'white','Gewürztraminer':'white','Chenin Blanc':'white','Albariño':'white',
+  'Grüner Veltliner':'white','Sémillon':'white','Vermentino':'white','Verdejo':'white',
+  'Torrontés':'white','Marsanne':'white','Roussanne':'white','Assyrtiko':'white',
+  'Garganega':'white','Fiano':'white','Pinot Blanc':'white','Melon de Bourgogne':'white',
+  'Trebbiano':'white',
+  'Muscat':'dessert','Furmint':'dessert'
+};
+function grapeTypeColor(grape){ return (_TYPE_COLORS&&_TYPE_COLORS[GRAPE_TYPES[grape]])||C.mid; }
+
 function _loadTextSync(path){ const x=new XMLHttpRequest(); x.open('GET',path,false); x.send(); return x.responseText; }
 
 const GrapeUnlocks = Object.assign(_accountStore('vinterest_grape_unlocks_v1'), {
@@ -645,6 +667,7 @@ const GrapeUnlocks = Object.assign(_accountStore('vinterest_grape_unlocks_v1'), 
     d.unlocked[grape]={via:'rated',at:Date.now()};
     this.save(d);
     try{ ContentEngine.addGrapeArticle(grape,WineHistory.getAll()); }catch(e){}
+    try{ prefetchGrapeQuiz(grape); }catch(e){}
     return true;
   },
   unlockManual(grape){
@@ -655,17 +678,35 @@ const GrapeUnlocks = Object.assign(_accountStore('vinterest_grape_unlocks_v1'), 
     d.unlocked[grape]={via:'manual',at:Date.now()};
     this.save(d);
     try{ ContentEngine.addGrapeArticle(grape,WineHistory.getAll()); }catch(e){}
+    try{ prefetchGrapeQuiz(grape); }catch(e){}
     return true;
   }
 });
 
 /* Generated once per grape, cached forever (facts don't change) — 15 questions (5 easy/5 medium/5
-   hard), grounded in data/knowledge.json so the model summarizes real facts rather than inventing. */
+   hard), grounded in data/knowledge.json so the model summarizes real facts rather than inventing.
+   Generation itself takes a real few seconds (15 questions with explanations, out of Claude) — the
+   _grapeQuizInFlight guard means a background prefetch (fired the moment a grape unlocks, or for
+   already-unlocked grapes when the Learn tab mounts) and a later tap on the same grape share one
+   request instead of firing a duplicate, so by the time someone actually opens a grape's quiz it
+   has often already finished generating in the background. */
 function _grapeQuizCacheKey(grape){ return 'vinterest_grape_quiz_'+grape.replace(/\s+/g,'_'); }
+const _grapeQuizInFlight=new Set();
 function getGrapeQuiz(grape, onReady){
   const key=_grapeQuizCacheKey(grape);
   const cached=localStorage.getItem(key);
   if(cached){ try{ onReady(JSON.parse(cached)); return; }catch(e){} }
+  if(_grapeQuizInFlight.has(grape)){
+    const wait=()=>{
+      const c=localStorage.getItem(key);
+      if(c){ try{ onReady(JSON.parse(c)); return; }catch(e){} }
+      if(_grapeQuizInFlight.has(grape)) setTimeout(wait,300);
+      else onReady(null);
+    };
+    wait();
+    return;
+  }
+  _grapeQuizInFlight.add(grape);
   const g=KNOWLEDGE.grapes[grape];
   const facts=g?`${grape}: ${g.profile} Famous in: ${g.famousIn.join(', ')}.`:`${grape}: no specific retrieved facts — keep questions general and safely factual.`;
   const prompt=ContentEngine.fillTpl(_loadTextSync('prompts/grape-quiz.txt'),{grape,facts});
@@ -678,7 +719,14 @@ function getGrapeQuiz(grape, onReady){
       localStorage.setItem(key,JSON.stringify(qs));
       onReady(qs);
     })
-    .catch(()=>onReady(null));
+    .catch(()=>onReady(null))
+    .finally(()=>_grapeQuizInFlight.delete(grape));
+}
+/* Fire-and-forget: warms the cache so a later tap on this grape is instant. Safe to call redundantly. */
+function prefetchGrapeQuiz(grape){
+  if(!grape||!GRAPE_ALLOWLIST.includes(grape)) return;
+  if(localStorage.getItem(_grapeQuizCacheKey(grape))) return;
+  getGrapeQuiz(grape,()=>{});
 }
 
 
@@ -11514,6 +11562,12 @@ function QuizHubScreen({
       });
     });
   }
+  // Warm the quiz cache for already-unlocked grapes so opening one is instant if it's had time to
+  // generate — new unlocks warm themselves immediately via GrapeUnlocks. Capped so a big backlog
+  // (e.g. a restored account) doesn't fire a burst of requests at once.
+  React.useEffect(() => {
+    unlockedGrapes.slice(0, 5).forEach(g => { try { prefetchGrapeQuiz(g); } catch (e) {} });
+  }, []);
   return /*#__PURE__*/React.createElement("div", {
     style: {
       flex: 1,
@@ -12049,129 +12103,119 @@ function QuizHubScreen({
   }
 }, unlockedGrapes.length, "/", GRAPE_ALLOWLIST.length, " unlocked", !isPro ? ` · rate a wine to unlock more (${FREE_GRAPE_CAP} free)` : ' · tap any to unlock instantly'), /*#__PURE__*/React.createElement("div", {
   style: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(3,1fr)',
+    display: 'flex',
+    flexWrap: 'wrap',
     gap: 8,
     marginTop: 8
   }
 }, unlockedGrapes.map(g => {
   const loading = grapeLoading === g;
+  const col = grapeTypeColor(g);
   return /*#__PURE__*/React.createElement("div", {
     key: g,
     onClick: () => handleGrapeTap(g),
     style: {
-      minHeight: 60,
-      padding: '10px 8px',
-      borderRadius: 14,
-      background: C.crSoft,
-      border: `1px solid ${C.crDim}`,
+      flex: '0 0 auto',
+      padding: '10px 18px',
+      borderRadius: 999,
+      background: col + '15',
+      border: `1px solid ${col}40`,
       cursor: 'pointer',
       display: 'flex',
       alignItems: 'center',
-      justifyContent: 'center',
-      textAlign: 'center'
+      justifyContent: 'center'
     }
   }, loading ? /*#__PURE__*/React.createElement("div", {
     style: {
       width: 14,
       height: 14,
       borderRadius: 7,
-      border: `2px solid ${C.cr}33`,
-      borderTopColor: C.cr,
+      border: `2px solid ${col}33`,
+      borderTopColor: col,
       animation: 'storySpin .8s linear infinite'
     }
   }) : /*#__PURE__*/React.createElement("span", {
     style: {
       fontSize: 14,
       fontWeight: 600,
-      color: C.cr,
+      color: col,
       fontFamily: C.P,
-      lineHeight: 1.25
+      whiteSpace: 'nowrap'
     }
   }, g));
-}), !grapesExpanded && lockedGrapes.length > 0 && /*#__PURE__*/React.createElement("div", {
-  onClick: () => setGrapesExpanded(true),
+}), lockedGrapes.length > 0 && /*#__PURE__*/React.createElement("div", {
+  onClick: () => setGrapesExpanded(e => !e),
   style: {
-    minHeight: 60,
-    padding: '10px 8px',
-    borderRadius: 14,
+    flex: '0 0 auto',
+    padding: '10px 18px',
+    borderRadius: 999,
     background: C.white,
     border: `1px dashed ${C.line}`,
     cursor: 'pointer',
     display: 'flex',
-    flexDirection: 'column',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: 4,
-    textAlign: 'center'
+    gap: 6
   }
-}, /*#__PURE__*/React.createElement(Icon, {
+}, grapesExpanded ? /*#__PURE__*/React.createElement(Icon, {
+  n: "chevron",
+  sz: 12,
+  col: C.mid,
+  style: {
+    transform: 'rotate(-90deg)'
+  }
+}) : /*#__PURE__*/React.createElement(Icon, {
   n: "lock",
-  sz: 15,
+  sz: 12,
   col: C.mid
 }), /*#__PURE__*/React.createElement("span", {
   style: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: 600,
     color: C.mid,
-    fontFamily: C.P
+    fontFamily: C.P,
+    whiteSpace: 'nowrap'
   }
-}, "+", lockedGrapes.length, " more")), grapesExpanded && lockedGrapes.map(g => {
+}, grapesExpanded ? 'Show less' : `+${lockedGrapes.length} more`)), grapesExpanded && lockedGrapes.map(g => {
   const loading = grapeLoading === g;
+  const col = grapeTypeColor(g);
   return /*#__PURE__*/React.createElement("div", {
     key: g,
     onClick: () => handleGrapeTap(g),
     style: {
-      minHeight: 60,
-      padding: '10px 8px',
-      borderRadius: 14,
+      flex: '0 0 auto',
+      padding: '10px 18px',
+      borderRadius: 999,
       background: C.white,
-      border: `1px solid ${C.line}`,
+      border: `1px solid ${col}30`,
       cursor: 'pointer',
       display: 'flex',
-      flexDirection: 'column',
       alignItems: 'center',
-      justifyContent: 'center',
-      gap: 4,
-      opacity: 0.8,
-      textAlign: 'center'
+      gap: 6,
+      opacity: 0.75
     }
   }, loading ? /*#__PURE__*/React.createElement("div", {
     style: {
       width: 14,
       height: 14,
       borderRadius: 7,
-      border: `2px solid ${C.cr}33`,
-      borderTopColor: C.cr,
+      border: `2px solid ${col}33`,
+      borderTopColor: col,
       animation: 'storySpin .8s linear infinite'
     }
   }) : /*#__PURE__*/React.createElement(Icon, {
     n: "lock",
-    sz: 13,
+    sz: 11,
     col: C.mid
   }), /*#__PURE__*/React.createElement("span", {
     style: {
-      fontSize: 13,
+      fontSize: 14,
       fontWeight: 600,
       color: C.ink,
       fontFamily: C.P,
-      lineHeight: 1.25
+      whiteSpace: 'nowrap'
     }
   }, g));
-})), grapesExpanded && lockedGrapes.length > 0 && /*#__PURE__*/React.createElement("div", {
-  onClick: () => setGrapesExpanded(false),
-  style: {
-    textAlign: 'center',
-    cursor: 'pointer'
-  }
-}, /*#__PURE__*/React.createElement("span", {
-  style: {
-    fontSize: 13,
-    fontWeight: 600,
-    color: C.mid,
-    fontFamily: C.P
-  }
-}, "Show less")), /*#__PURE__*/React.createElement("div", {
+})), /*#__PURE__*/React.createElement("div", {
     style: zoneLabel
   }, "Your Progress"), /*#__PURE__*/React.createElement("div", {
     onClick: () => isPro ? nav('mastery-map') : showPro('mastery-map'),
@@ -23407,7 +23451,7 @@ function WineDNAScreen({
       color: C.mid,
       fontFamily: C.P
     }
-  }, "Vinterest v1.1.9")), /*#__PURE__*/React.createElement("div", {
+  }, "Vinterest v1.2.0")), /*#__PURE__*/React.createElement("div", {
     style: {
       height: 8
     }

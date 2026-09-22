@@ -121,6 +121,12 @@ function QuizHubScreen({nav,back,showPro}){
       if(qs&&qs.length) startQuiz({mode:'grape',grape,questions:qs});
     });
   }
+  // Warm the quiz cache for already-unlocked grapes so opening one is instant if it's had time to
+  // generate — new unlocks warm themselves immediately via GrapeUnlocks. Capped so a big backlog
+  // (e.g. a restored account) doesn't fire a burst of requests at once.
+  React.useEffect(()=>{
+    unlockedGrapes.slice(0,5).forEach(g=>{ try{ prefetchGrapeQuiz(g); }catch(e){} });
+  },[]);
 
   return(
     <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden'}}>
@@ -252,37 +258,34 @@ function QuizHubScreen({nav,back,showPro}){
 
         <div style={zoneLabel}>Your Grapes</div>
         <div style={{fontSize:14,color:C.mid,fontFamily:C.P,marginTop:2}}>{unlockedGrapes.length}/{GRAPE_ALLOWLIST.length} unlocked{!isPro?` · rate a wine to unlock more (${FREE_GRAPE_CAP} free)`:' · tap any to unlock instantly'}</div>
-        <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:8,marginTop:8}}>
+        <div style={{display:'flex',flexWrap:'wrap',gap:8,marginTop:8}}>
         {unlockedGrapes.map(g=>{
           const loading=grapeLoading===g;
+          const col=grapeTypeColor(g);
           return(
-            <div key={g} onClick={()=>handleGrapeTap(g)} style={{minHeight:60,padding:'10px 8px',borderRadius:14,background:C.crSoft,border:`1px solid ${C.crDim}`,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',textAlign:'center'}}>
-              {loading?<div style={{width:14,height:14,borderRadius:7,border:`2px solid ${C.cr}33`,borderTopColor:C.cr,animation:'storySpin .8s linear infinite'}}/>:
-                <span style={{fontSize:14,fontWeight:600,color:C.cr,fontFamily:C.P,lineHeight:1.25}}>{g}</span>}
+            <div key={g} onClick={()=>handleGrapeTap(g)} style={{flex:'0 0 auto',padding:'10px 18px',borderRadius:999,background:col+'15',border:`1px solid ${col}40`,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}>
+              {loading?<div style={{width:14,height:14,borderRadius:7,border:`2px solid ${col}33`,borderTopColor:col,animation:'storySpin .8s linear infinite'}}/>:
+                <span style={{fontSize:14,fontWeight:600,color:col,fontFamily:C.P,whiteSpace:'nowrap'}}>{g}</span>}
             </div>
           );
         })}
-        {!grapesExpanded&&lockedGrapes.length>0&&(
-          <div onClick={()=>setGrapesExpanded(true)} style={{minHeight:60,padding:'10px 8px',borderRadius:14,background:C.white,border:`1px dashed ${C.line}`,cursor:'pointer',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:4,textAlign:'center'}}>
-            <Icon n="lock" sz={15} col={C.mid}/>
-            <span style={{fontSize:13,fontWeight:600,color:C.mid,fontFamily:C.P}}>+{lockedGrapes.length} more</span>
+        {lockedGrapes.length>0&&(
+          <div onClick={()=>setGrapesExpanded(e=>!e)} style={{flex:'0 0 auto',padding:'10px 18px',borderRadius:999,background:C.white,border:`1px dashed ${C.line}`,cursor:'pointer',display:'flex',alignItems:'center',gap:6}}>
+            {grapesExpanded?<Icon n="chevron" sz={12} col={C.mid} style={{transform:'rotate(-90deg)'}}/>:<Icon n="lock" sz={12} col={C.mid}/>}
+            <span style={{fontSize:14,fontWeight:600,color:C.mid,fontFamily:C.P,whiteSpace:'nowrap'}}>{grapesExpanded?'Show less':`+${lockedGrapes.length} more`}</span>
           </div>
         )}
         {grapesExpanded&&lockedGrapes.map(g=>{
           const loading=grapeLoading===g;
+          const col=grapeTypeColor(g);
           return(
-            <div key={g} onClick={()=>handleGrapeTap(g)} style={{minHeight:60,padding:'10px 8px',borderRadius:14,background:C.white,border:`1px solid ${C.line}`,cursor:'pointer',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:4,opacity:0.8,textAlign:'center'}}>
-              {loading?<div style={{width:14,height:14,borderRadius:7,border:`2px solid ${C.cr}33`,borderTopColor:C.cr,animation:'storySpin .8s linear infinite'}}/>:<Icon n="lock" sz={13} col={C.mid}/>}
-              <span style={{fontSize:13,fontWeight:600,color:C.ink,fontFamily:C.P,lineHeight:1.25}}>{g}</span>
+            <div key={g} onClick={()=>handleGrapeTap(g)} style={{flex:'0 0 auto',padding:'10px 18px',borderRadius:999,background:C.white,border:`1px solid ${col}30`,cursor:'pointer',display:'flex',alignItems:'center',gap:6,opacity:0.75}}>
+              {loading?<div style={{width:14,height:14,borderRadius:7,border:`2px solid ${col}33`,borderTopColor:col,animation:'storySpin .8s linear infinite'}}/>:<Icon n="lock" sz={11} col={C.mid}/>}
+              <span style={{fontSize:14,fontWeight:600,color:C.ink,fontFamily:C.P,whiteSpace:'nowrap'}}>{g}</span>
             </div>
           );
         })}
         </div>
-        {grapesExpanded&&lockedGrapes.length>0&&(
-          <div onClick={()=>setGrapesExpanded(false)} style={{textAlign:'center',cursor:'pointer'}}>
-            <span style={{fontSize:13,fontWeight:600,color:C.mid,fontFamily:C.P}}>Show less</span>
-          </div>
-        )}
 
         <div style={zoneLabel}>Your Progress</div>
         <div onClick={()=>isPro?nav('mastery-map'):showPro('mastery-map')} style={{background:C.white,borderRadius:16,border:`1px solid ${C.line}`,padding:'14px 16px',display:'flex',alignItems:'center',gap:12,marginTop:8,cursor:'pointer'}}>
