@@ -433,13 +433,31 @@ function assembleRegionQuiz(region){
         qs.push({q:`Which climate description matches ${region}?`,opts,a:opts.indexOf(info.climate),fact:`${region}: ${info.climate}.`,conceptId:null,vocabTerm:null});
       }
     }
+    if(info.agingRules){
+      const distractAging=_shuffle(otherRegionIds.map(r=>KNOWLEDGE.regions[r].agingRules).filter(Boolean)).slice(0,3);
+      if(distractAging.length>=2){
+        const opts=_shuffle([info.agingRules,...distractAging]);
+        qs.push({q:`Which aging rule applies to ${region}?`,opts,a:opts.indexOf(info.agingRules),fact:`${region}: ${info.agingRules}.`,conceptId:null,vocabTerm:null});
+      }
+    }
+    if(info.classicProducers&&info.classicProducers[0]){
+      const correct=info.classicProducers[0];
+      const distractProducers=[...new Set(otherRegionIds.flatMap(r=>KNOWLEDGE.regions[r].classicProducers||[]).filter(p=>p&&!info.classicProducers.includes(p)))];
+      if(distractProducers.length>=2){
+        const opts=_shuffle([correct,..._shuffle(distractProducers).slice(0,3)]);
+        qs.push({q:`Which producer is a classic name in ${region}?`,opts,a:opts.indexOf(correct),fact:`Classic ${region} producers include ${info.classicProducers.join(', ')}.`,conceptId:null,vocabTerm:null});
+      }
+    }
   }
   if(regionWines.length&&otherWines.length>=3){
     const target=_shuffle(regionWines)[0];
     const opts=_shuffle([target.name,...otherWines.map(w=>w.name)]);
     qs.push({q:`Which of these bottles in your wine history is from ${region}?`,opts,a:opts.indexOf(target.name),fact:`${target.name} is the ${region} bottle in your history.`,conceptId:null,vocabTerm:null});
   }
-  return _shuffle(qs).map(q=>_shuffleOpts(q));
+  // Sample a rotating subset rather than always returning the whole fixed pool, so hitting
+  // "New quiz" back to back doesn't just reshuffle the identical set of questions.
+  const picked=_shuffle(qs).slice(0,Math.min(5,qs.length));
+  return picked.map(q=>_shuffleOpts(q));
 }
 function assemblePracticeQuiz(topicId){
   const topic=QUIZ_TOPICS.find(t=>t.id===topicId)||QUIZ_TOPICS[0];

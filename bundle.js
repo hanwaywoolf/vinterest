@@ -12584,6 +12584,35 @@ function assembleRegionQuiz(region) {
         });
       }
     }
+    if (info.agingRules) {
+      const distractAging = _shuffle(otherRegionIds.map(r => KNOWLEDGE.regions[r].agingRules).filter(Boolean)).slice(0, 3);
+      if (distractAging.length >= 2) {
+        const opts = _shuffle([info.agingRules, ...distractAging]);
+        qs.push({
+          q: `Which aging rule applies to ${region}?`,
+          opts,
+          a: opts.indexOf(info.agingRules),
+          fact: `${region}: ${info.agingRules}.`,
+          conceptId: null,
+          vocabTerm: null
+        });
+      }
+    }
+    if (info.classicProducers && info.classicProducers[0]) {
+      const correct = info.classicProducers[0];
+      const distractProducers = [...new Set(otherRegionIds.flatMap(r => KNOWLEDGE.regions[r].classicProducers || []).filter(p => p && !info.classicProducers.includes(p)))];
+      if (distractProducers.length >= 2) {
+        const opts = _shuffle([correct, ..._shuffle(distractProducers).slice(0, 3)]);
+        qs.push({
+          q: `Which producer is a classic name in ${region}?`,
+          opts,
+          a: opts.indexOf(correct),
+          fact: `Classic ${region} producers include ${info.classicProducers.join(', ')}.`,
+          conceptId: null,
+          vocabTerm: null
+        });
+      }
+    }
   }
   if (regionWines.length && otherWines.length >= 3) {
     const target = _shuffle(regionWines)[0];
@@ -12597,7 +12626,8 @@ function assembleRegionQuiz(region) {
       vocabTerm: null
     });
   }
-  return _shuffle(qs).map(q => _shuffleOpts(q));
+  const picked = _shuffle(qs).slice(0, Math.min(5, qs.length));
+  return picked.map(q => _shuffleOpts(q));
 }
 function assemblePracticeQuiz(topicId) {
   const topic = QUIZ_TOPICS.find(t => t.id === topicId) || QUIZ_TOPICS[0];
@@ -23274,7 +23304,7 @@ function WineDNAScreen({
       color: C.mid,
       fontFamily: C.P
     }
-  }, "Vinterest v1.2.5")), /*#__PURE__*/React.createElement("div", {
+  }, "Vinterest v1.2.6")), /*#__PURE__*/React.createElement("div", {
     style: {
       height: 8
     }
