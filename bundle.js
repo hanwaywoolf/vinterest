@@ -19341,10 +19341,10 @@ function LearnArticleScreen({
     }
   }, "Quick Read")), /*#__PURE__*/React.createElement("div", {
     style: {
-      fontSize: 28,
-      fontWeight: 400,
+      fontSize: 26,
+      fontWeight: 800,
       color: '#fff',
-      fontFamily: C.serif,
+      fontFamily: C.P,
       lineHeight: 1.2,
       marginBottom: 10
     }
@@ -23267,7 +23267,7 @@ function WineDNAScreen({
       color: C.mid,
       fontFamily: C.P
     }
-  }, "Vinterest v1.2.2")), /*#__PURE__*/React.createElement("div", {
+  }, "Vinterest v1.2.3")), /*#__PURE__*/React.createElement("div", {
     style: {
       height: 8
     }
