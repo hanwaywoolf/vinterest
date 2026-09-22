@@ -23,12 +23,15 @@ const RegionQuizLedger = Object.assign(_accountStore('vinterest_region_quiz_v1')
 
 /* Regions with 2+ scans that haven't been aced yet — most-scanned first. A region drops off
    this list the moment its quiz is aced, and a newly-scanned region (e.g. a first Bordeaux)
-   slots in on its own once it crosses the 2-scan threshold. */
+   slots in on its own once it crosses the 2-scan threshold. Requires a data/knowledge.json
+   entry — without one, assembleRegionQuiz has no facts to quiz on beyond a single
+   wine-history question, so a region the KB doesn't cover is left off rather than
+   surfacing a near-empty quiz. */
 function regionQuizCandidates(wines){
   const counts={};
   wines.forEach(w=>{ if(w.region) counts[w.region]=(counts[w.region]||0)+1; });
   return Object.entries(counts)
-    .filter(([region,n])=>n>=2&&!RegionQuizLedger.isAced(region))
+    .filter(([region,n])=>n>=2&&KNOWLEDGE.regions[region]&&!RegionQuizLedger.isAced(region))
     .sort((a,b)=>b[1]-a[1])
     .map(([region])=>region);
 }

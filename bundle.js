@@ -414,7 +414,7 @@ function regionQuizCandidates(wines){
   const counts={};
   wines.forEach(w=>{ if(w.region) counts[w.region]=(counts[w.region]||0)+1; });
   return Object.entries(counts)
-    .filter(([region,n])=>n>=2&&!RegionQuizLedger.isAced(region))
+    .filter(([region,n])=>n>=2&&KNOWLEDGE.regions[region]&&!RegionQuizLedger.isAced(region))
     .sort((a,b)=>b[1]-a[1])
     .map(([region])=>region);
 }
@@ -12054,59 +12054,73 @@ function QuizHubScreen({
     n: "chevron",
     sz: 13,
     col: C.mid
-  })), quizRegions.map(region => /*#__PURE__*/React.createElement("div", {
-    key: region,
-    onClick: () => startQuiz({
-      mode: 'region',
-      region
-    }),
+  })), quizRegions.length > 0 && /*#__PURE__*/React.createElement("div", {
     style: {
-      background: C.white,
-      borderRadius: 14,
-      padding: '12px 14px',
-      display: 'flex',
-      alignItems: 'center',
-      gap: 12,
-      cursor: 'pointer',
-      border: `1px solid ${C.line}`
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      width: 42,
-      height: 42,
-      borderRadius: 12,
-      background: C.offWhite,
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      flexShrink: 0
-    }
-  }, /*#__PURE__*/React.createElement(Icon, {
-    n: "map",
-    sz: 20,
-    col: C.ink
-  })), /*#__PURE__*/React.createElement("div", {
-    style: {
-      flex: 1
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: 16,
-      fontWeight: 700,
-      color: C.ink,
-      fontFamily: C.P
-    }
-  }, "Your ", region, " Knowledge"), /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: 14,
+      fontSize: 13,
+      fontWeight: 600,
       color: C.mid,
-      fontFamily: C.P
+      fontFamily: C.P,
+      textTransform: 'uppercase',
+      letterSpacing: '0.06em',
+      marginTop: 6
     }
-  }, "Grounded in bottles you've scanned from there")), /*#__PURE__*/React.createElement(Icon, {
-    n: "chevron",
-    sz: 13,
-    col: C.mid
-  }))))), /*#__PURE__*/React.createElement("div", {
+  }, "Regional Knowledge"), quizRegions.map(region => {
+    const info = KNOWLEDGE.regions[region];
+    const sub = info ? [info.keyGrapes && info.keyGrapes[0], info.classification].filter(Boolean).join(' · ') : "Grounded in bottles you've scanned from there";
+    return /*#__PURE__*/React.createElement("div", {
+      key: region,
+      onClick: () => startQuiz({
+        mode: 'region',
+        region
+      }),
+      style: {
+        background: C.white,
+        borderRadius: 14,
+        padding: '12px 14px',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 12,
+        cursor: 'pointer',
+        border: `1px solid ${C.line}`
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        width: 42,
+        height: 42,
+        borderRadius: 12,
+        background: C.offWhite,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        flexShrink: 0
+      }
+    }, /*#__PURE__*/React.createElement(Icon, {
+      n: "map",
+      sz: 20,
+      col: C.ink
+    })), /*#__PURE__*/React.createElement("div", {
+      style: {
+        flex: 1
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontSize: 16,
+        fontWeight: 700,
+        color: C.ink,
+        fontFamily: C.P
+      }
+    }, region), /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontSize: 14,
+        color: C.mid,
+        fontFamily: C.P
+      }
+    }, sub)), /*#__PURE__*/React.createElement(Icon, {
+      n: "chevron",
+      sz: 13,
+      col: C.mid
+    }));
+  }))), /*#__PURE__*/React.createElement("div", {
   style: zoneLabel
 }, "Your Grapes"), /*#__PURE__*/React.createElement("div", {
   style: {
@@ -23312,7 +23326,7 @@ function WineDNAScreen({
       color: C.mid,
       fontFamily: C.P
     }
-  }, "Vinterest v1.2.7")), /*#__PURE__*/React.createElement("div", {
+  }, "Vinterest v1.2.8")), /*#__PURE__*/React.createElement("div", {
     style: {
       height: 8
     }

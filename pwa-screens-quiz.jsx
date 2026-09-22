@@ -235,16 +235,23 @@ function QuizHubScreen({nav,back,showPro}){
                 <Icon n="chevron" sz={13} col={C.mid}/>
               </div>
             )}
-            {quizRegions.map(region=>(
-              <div key={region} onClick={()=>startQuiz({mode:'region',region})} style={{background:C.white,borderRadius:14,padding:'12px 14px',display:'flex',alignItems:'center',gap:12,cursor:'pointer',border:`1px solid ${C.line}`}}>
-                <div style={{width:42,height:42,borderRadius:12,background:C.offWhite,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><Icon n="map" sz={20} col={C.ink}/></div>
-                <div style={{flex:1}}>
-                  <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>Your {region} Knowledge</div>
-                  <div style={{fontSize:14,color:C.mid,fontFamily:C.P}}>Grounded in bottles you've scanned from there</div>
+            {quizRegions.length>0&&(
+              <div style={{fontSize:13,fontWeight:600,color:C.mid,fontFamily:C.P,textTransform:'uppercase',letterSpacing:'0.06em',marginTop:6}}>Regional Knowledge</div>
+            )}
+            {quizRegions.map(region=>{
+              const info=KNOWLEDGE.regions[region];
+              const sub=info?[info.keyGrapes&&info.keyGrapes[0],info.classification].filter(Boolean).join(' · '):"Grounded in bottles you've scanned from there";
+              return(
+                <div key={region} onClick={()=>startQuiz({mode:'region',region})} style={{background:C.white,borderRadius:14,padding:'12px 14px',display:'flex',alignItems:'center',gap:12,cursor:'pointer',border:`1px solid ${C.line}`}}>
+                  <div style={{width:42,height:42,borderRadius:12,background:C.offWhite,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><Icon n="map" sz={20} col={C.ink}/></div>
+                  <div style={{flex:1}}>
+                    <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>{region}</div>
+                    <div style={{fontSize:14,color:C.mid,fontFamily:C.P}}>{sub}</div>
+                  </div>
+                  <Icon n="chevron" sz={13} col={C.mid}/>
                 </div>
-                <Icon n="chevron" sz={13} col={C.mid}/>
-              </div>
-            ))}
+              );
+            })}
           </>
         )}
         </div>
