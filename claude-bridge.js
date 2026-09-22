@@ -34,14 +34,14 @@
         res = await fetch(ENDPOINT, {
           method: "POST",
           headers: { "content-type": "application/json" },
-          body: JSON.stringify({ messages: toMessages(arg), max_tokens: (arg && arg.max_tokens) || undefined, skill_id: (arg && arg.skill_id) || undefined })
+          body: JSON.stringify({ messages: toMessages(arg), max_tokens: (arg && arg.max_tokens) || undefined, purpose: (arg && arg.purpose) || undefined, skill_id: (arg && arg.skill_id) || undefined })
         });
       } catch (e) {
         throw new Error("Couldn’t reach the wine-ID service. Check your connection and that the API proxy is deployed.");
       }
       if (!res.ok) {
         var msg = "The wine-ID service returned an error (" + res.status + ").";
-        try { var j = await res.json(); if (j && j.error) msg = j.error; } catch (e) {}
+        try { var j = await res.json(); if (j && j.error) msg = j.error + (j.code ? " [" + j.code + "]" : ""); } catch (e) {}
         throw new Error(msg);
       }
       var data = await res.json();

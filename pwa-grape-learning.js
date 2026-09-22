@@ -47,7 +47,7 @@ function getGrapeQuiz(grape, onReady){
   const g=KNOWLEDGE.grapes[grape];
   const facts=g?`${grape}: ${g.profile} Famous in: ${g.famousIn.join(', ')}.`:`${grape}: no specific retrieved facts — keep questions general and safely factual.`;
   const prompt=ContentEngine.fillTpl(_loadTextSync('prompts/grape-quiz.txt'),{grape,facts});
-  window.claude.complete({max_tokens:4096,messages:[{role:'user',content:prompt}]})
+  window.claude.complete({purpose:'grape_quiz',max_tokens:4096,messages:[{role:'user',content:prompt}]})
     .then(text=>{
       let cleaned=text.replace(/```json|```/g,'').trim();
       const s=cleaned.indexOf('['); const e=cleaned.lastIndexOf(']');

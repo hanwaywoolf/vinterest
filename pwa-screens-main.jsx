@@ -228,7 +228,7 @@ function ScanScreen({nav,back,onComplete}){
 
   async function processLabelCapture(b64){
     try{
-      const text=await window.claude.complete({messages:[{role:'user',content:[
+      const text=await window.claude.complete({purpose:'label_scan',messages:[{role:'user',content:[
         {type:'image',source:{type:'base64',media_type:'image/jpeg',data:b64}},
         {type:'text',text:LABEL_PROMPT}
       ]}]});
@@ -256,7 +256,7 @@ function ScanScreen({nav,back,onComplete}){
 
   async function processListCapture(b64){
     try{
-      const text=await window.claude.complete({max_tokens:8192,messages:[{role:'user',content:[
+      const text=await window.claude.complete({purpose:'list_scan',max_tokens:8192,messages:[{role:'user',content:[
         {type:'image',source:{type:'base64',media_type:'image/jpeg',data:b64}},
         {type:'text',text:LIST_PROMPT}
       ]}]});

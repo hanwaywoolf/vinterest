@@ -1,7 +1,7 @@
 /* Vinterest PWA — Region, Varietal, Similar Wines explore screens */
 
 /* Shared Claude-fetch hook with sessionStorage cache */
-function useClaudeData(cacheKey, prompt, wine){
+function useClaudeData(cacheKey, prompt, wine, purpose){
   const [data,setData]=React.useState(null);
   const [loading,setLoading]=React.useState(true);
   const [error,setError]=React.useState(null);
@@ -11,7 +11,7 @@ function useClaudeData(cacheKey, prompt, wine){
     if(cached){try{setData(JSON.parse(cached));setLoading(false);return;}catch(e){}}
     (async()=>{
       try{
-        const text=await window.claude.complete({messages:[{role:'user',content:prompt}]});
+        const text=await window.claude.complete({purpose:purpose||'explore_info',messages:[{role:'user',content:prompt}]});
         let cleaned=text.replace(/```json|```/g,'').trim();
         const s=cleaned.indexOf('{'),e=cleaned.lastIndexOf('}');
         if(s>=0&&e>s) cleaned=cleaned.slice(s,e+1);
@@ -366,7 +366,7 @@ function StyleExploreScreen({nav,back}){
     const tLbl=avgT>=0.68?'high-tannin':avgT>=0.38?'medium-tannin':'low-tannin';
     const aLbl=avgA>=0.68?'high-acidity':avgA>=0.38?'medium-acidity':'low-acidity';
     const prompt=`You are a sommelier and wine pricing expert. The user loves ${typeKey} wines: ${bLbl}, ${tLbl}, ${aLbl}. Suggest exactly 4 specific named bottles in the ${gap.wine} style from ${gap.region}, one for EACH of these four tiers (use these exact tier keys):\n- "budget": cheap and cheerful, wallet-friendly\n- "value": high community rating relative to its price — excellent quality for what you pay\n- "mid-range": a great rating at a reasonable, everyday-special price\n- "top-tier": outstanding rating, premium price to match\nIMPORTANT for price_local: use the ACTUAL known retail price for each specific producer and wine in ${clabel} (${ccode}) — do NOT average by appellation. Prestigious wines can be ${csym}50–${csym}2000+; use real figures. Also include a realistic community rating out of 100 for each. Return ONLY valid JSON, no markdown: {"wines":[{"tier":"budget|value|mid-range|top-tier","name":"Full wine name","producer":"Producer","vintage":"year or NV","region":"${gap.region}","grapes":["Grape"],"price_local":NUMBER,"rating":NUMBER,"why":"1 sentence referencing body/tannins/acidity, and for value/top-tier the quality-to-price relationship"}]}`;
-    window.claude.complete({messages:[{role:'user',content:prompt}]})
+    window.claude.complete({purpose:'explore',messages:[{role:'user',content:prompt}]})
       .then(text=>{
         let c=text.replace(/```json|```/g,'').trim();
         const s=c.indexOf('{'),e=c.lastIndexOf('}');

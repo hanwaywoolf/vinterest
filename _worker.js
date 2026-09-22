@@ -14,6 +14,57 @@
 // That silently stripped manifest.json/sw.js of the headers PWA installability
 // depends on, even though the files themselves validate fine offline.
 // So: headers for the PWA-critical paths are set explicitly, right here.
+//
+// IMPORTANT: because this file exists, Cloudflare Pages runs entirely through
+// this fetch() handler — the file-based routing in functions/ is NOT used at
+// all (Cloudflare ignores the functions/ directory whenever _worker.js is
+// present, for every path, not just the ones this file special-cases). Any
+// request this handler doesn't recognise falls through to env.ASSETS.fetch()
+// (static asset serving), never to a functions/*.js file. See docs/audit.md
+// section 3 and docs/native-migration-spec.md section 1.3 for the routing
+// investigation this depends on.
+
+// Per-purpose max_tokens ceilings for /claude. The client sends `purpose`;
+// the server picks the model (env var, never the client) and clamps
+// max_tokens to this table — a client can ask for less, never more.
+// One entry per real call site in the shipped app (see PR description for
+// the full inventory of call sites this was checked against).
+const CLAUDE_PURPOSE_LIMITS = {
+  label_scan: 4096,       // pwa-screens-main.jsx — photo -> wine JSON
+  list_scan: 8192,         // pwa-screens-main.jsx — photo of a wine list -> wine[]
+  scancard: 4096,          // pwa-scancards.jsx — post-scan card deck copy
+  price: 4096,             // pwa-components.jsx fetchRetailEstimate — retail price estimate
+  explore: 4096,           // pwa-screens-explore.jsx — 4-tier bottle suggestions for a gap
+  explore_info: 4096,      // pwa-screens-explore.jsx useClaudeData — region/varietal/similar-wines
+  grape_quiz: 4096,        // pwa-grape-learning.js — generated grape quiz questions
+  match_explain: 4096,     // pwa-screens-detail.jsx — "why this wine matches you"
+  vintage_info: 4096,      // pwa-screens-detail.jsx — vintage quality + drinking window
+  education: 4096,         // pwa-screens-detail.jsx — grape/vocabulary deep-dive
+  wine_qa: 4096,           // pwa-screens-home.jsx — "Ask Vinny" free-form wine Q&A
+  sommelier_script: 4096,  // pwa-screens-home.jsx / pwa-screens-aux.jsx / pwa-screens-wineiq.jsx
+  learn_article: 4096,     // pwa-screens-learn.jsx — generated learning article body
+  winedna_summary: 4096    // pwa-screens-wineiq.jsx — Wine DNA personality summary
+};
+
+const ALLOWED_ORIGINS = [
+  "https://vinterest.app",
+  "https://vinterest.pages.dev",
+  "capacitor://localhost",
+  "https://localhost"
+];
+// Cloudflare Pages preview deployments get a per-build subdomain
+// (<hash>.vinterest.pages.dev). The review workflow in
+// docs/native-migration-spec.md section 6 depends on exercising those
+// previews, so they're allowed too.
+const PREVIEW_ORIGIN_RE = /^https:\/\/[a-z0-9-]+\.vinterest\.pages\.dev$/;
+
+const MAX_BODY_BYTES = 6 * 1024 * 1024; // headroom above a 1024px-JPEG scan payload
+
+const RATE_LIMIT_WINDOW_MS = 5 * 60 * 1000;
+const RATE_LIMIT_MAX = 40; // generous fair-use cap, per spec D5 — a cost guard, not a product limit
+// Best-effort, per-isolate. Not durable across Cloudflare's many isolates/colos —
+// a real per-user limit needs the JWT + usage_counters work in prompt 5.
+const _rateLimitBuckets = new Map();
 
 export default {
   async fetch(request, env) {
@@ -64,23 +115,78 @@ export default {
   }
 };
 
+function originAllowed(origin) {
+  if (!origin) return true; // no Origin header — native/webview clients; rate limiting is the backstop
+  return ALLOWED_ORIGINS.includes(origin) || PREVIEW_ORIGIN_RE.test(origin);
+}
+
+function clientIp(request) {
+  return request.headers.get("cf-connecting-ip") || "unknown";
+}
+
+function rateLimited(ip) {
+  const now = Date.now();
+  let hits = _rateLimitBuckets.get(ip);
+  if (!hits) { hits = []; _rateLimitBuckets.set(ip, hits); }
+  while (hits.length && now - hits[0] > RATE_LIMIT_WINDOW_MS) hits.shift();
+  if (hits.length >= RATE_LIMIT_MAX) return true;
+  hits.push(now);
+  // Opportunistic cleanup so the map doesn't grow unbounded under distributed traffic.
+  if (_rateLimitBuckets.size > 5000) {
+    for (const [key, arr] of _rateLimitBuckets) {
+      while (arr.length && now - arr[0] > RATE_LIMIT_WINDOW_MS) arr.shift();
+      if (arr.length === 0) _rateLimitBuckets.delete(key);
+    }
+  }
+  return false;
+}
+
 async function handleClaude(request, env) {
   const key = env.ANTHROPIC_API_KEY;
   if (!key) {
-    return json(500, { error: "Server is missing ANTHROPIC_API_KEY. Add it in Cloudflare Pages → Settings → Variables and secrets, then redeploy." });
+    return json(500, { error: "Server is missing ANTHROPIC_API_KEY. Add it in Cloudflare Pages → Settings → Variables and secrets, then redeploy.", code: "missing_api_key" });
+  }
+
+  const origin = request.headers.get("origin");
+  if (!originAllowed(origin)) {
+    return json(403, { error: "Origin not allowed.", code: "origin_denied" });
+  }
+
+  const ip = clientIp(request);
+  if (rateLimited(ip)) {
+    return json(429, { error: "Too many requests. Please slow down and try again shortly.", code: "rate_limited" });
+  }
+
+  const contentLength = request.headers.get("content-length");
+  if (contentLength && Number(contentLength) > MAX_BODY_BYTES) {
+    return json(413, { error: "Request body too large.", code: "body_too_large" });
+  }
+
+  let rawBody;
+  try { rawBody = await request.text(); }
+  catch (e) { return json(400, { error: "Could not read request body.", code: "unreadable_body" }); }
+  if (rawBody.length > MAX_BODY_BYTES) {
+    return json(413, { error: "Request body too large.", code: "body_too_large" });
   }
 
   let payload;
-  try { payload = await request.json(); }
-  catch (e) { return json(400, { error: "Invalid JSON body." }); }
+  try { payload = JSON.parse(rawBody); }
+  catch (e) { return json(400, { error: "Invalid JSON body.", code: "invalid_json" }); }
+
+  const purpose = payload.purpose;
+  const purposeCap = CLAUDE_PURPOSE_LIMITS[purpose];
+  if (!purposeCap) {
+    return json(400, { error: "Request must include a valid purpose.", code: "invalid_purpose" });
+  }
 
   const messages = payload.messages;
   if (!Array.isArray(messages) || messages.length === 0) {
-    return json(400, { error: "Request must include a non-empty messages[] array." });
+    return json(400, { error: "Request must include a non-empty messages[] array.", code: "invalid_messages" });
   }
 
-  const model = payload.model || env.CLAUDE_MODEL || "claude-sonnet-4-6";
-  const max_tokens = Math.min(Number(payload.max_tokens) || 4096, 8192);
+  // The model always comes from the environment — never from the request.
+  const model = env.CLAUDE_MODEL || "claude-sonnet-4-6";
+  const max_tokens = Math.min(Number(payload.max_tokens) || purposeCap, purposeCap);
 
   try {
     const r = await fetch("https://api.anthropic.com/v1/messages", {
@@ -95,7 +201,7 @@ async function handleClaude(request, env) {
     const data = await r.json();
     if (!r.ok) {
       const msg = (data && data.error && data.error.message) || "Anthropic API error.";
-      return json(r.status, { error: msg });
+      return json(r.status, { error: msg, code: "anthropic_error" });
     }
     const text = (data.content || [])
       .filter((b) => b.type === "text")
@@ -103,7 +209,7 @@ async function handleClaude(request, env) {
       .join("");
     return json(200, { text });
   } catch (e) {
-    return json(502, { error: "Failed to reach Anthropic: " + (e && e.message ? e.message : String(e)) });
+    return json(502, { error: "Failed to reach Anthropic: " + (e && e.message ? e.message : String(e)), code: "upstream_unreachable" });
   }
 }
 

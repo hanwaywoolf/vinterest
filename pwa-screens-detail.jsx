@@ -194,7 +194,7 @@ function DetailMerged({wine,nav,existingRating=0,matchPct}){
     const prompt=isGoodMatch
       ?`The user is looking at: ${wineCtx}. ${userCtx} Write ONE sentence (max 30 words) explaining specifically why this wine matches this user — compare attributes or reference their actual top wines by name. Be concrete, not generic. IMPORTANT: Do NOT include ANY numbers, decimals, percentages, or specific wine attribute values anywhere in your response. Use only descriptive words like high, low, medium, bold, light, etc. Return ONLY the sentence, no quotes.`
       :`The user is looking at: ${wineCtx}. ${userCtx} This wine scores ${matchPct}% against their taste profile. Write ONE sentence (max 30 words) explaining honestly and constructively why this wine contrasts with their usual preferences — be specific about the key difference (e.g. body, tannins, acidity, style). IMPORTANT: No numbers, decimals, percentages in your response. Use only descriptive words. Return ONLY the sentence, no quotes.`;
-    window.claude.complete({messages:[{role:'user',content:prompt}]})
+    window.claude.complete({purpose:'match_explain',messages:[{role:'user',content:prompt}]})
       .then(text=>{const s=text.trim();localStorage.setItem(cacheKey,s);setGenWhy(s);})
       .catch(()=>{})
       .finally(()=>setGeneratingWhy(false));
@@ -210,7 +210,7 @@ function DetailMerged({wine,nav,existingRating=0,matchPct}){
     setLoadingVintage(true);
     const yr=new Date().getFullYear();
     const prompt=`You are a sommelier. Assess the vintage quality and realistic drinking window for this specific wine. Wine: ${wine.name} ${wine.vintage}. Type: ${wine.type||'red'}, Region: ${wine.region||''}, Country: ${wine.country||''}. Grapes: ${(wine.grapes||[]).join(', ')||'unknown'}. Body: ${(wine.body??0.65).toFixed(1)}, Tannins: ${(wine.tannins??0.55).toFixed(1)}, Acidity: ${(wine.acidity??0.60).toFixed(1)}, ABV: ${wine.abv||13}%. Return ONLY valid JSON (no markdown): {"vintage_rating":"Exceptional|Outstanding|Very Good|Good|Average","drink_from":${yr},"drink_to":2032,"peak_from":2025,"peak_to":2029,"note":"one concrete sentence on how this wine is developing right now and why. IMPORTANT: Do NOT include ANY numbers, decimals, percentages, or specific attribute values (like '0.82 tannins' or '82%') anywhere in the sentence. Use only descriptive words like high, low, medium, bold, structured, etc."}`;
-    window.claude.complete({messages:[{role:'user',content:prompt}]})
+    window.claude.complete({purpose:'vintage_info',messages:[{role:'user',content:prompt}]})
       .then(text=>{
         let c=text.replace(/```json|```/g,'').trim();
         const s=c.indexOf('{'),e=c.lastIndexOf('}');
@@ -582,7 +582,7 @@ function DetailStory({wine,nav,existingRating=0}){
       grapeOrType:g, regionOrCountry:wine.region||wine.country||'this region',
       vintageContext:(wine.vintage&&wine.vintage!==0)?' around the '+wine.vintage+' vintage':''
     });
-    window.claude.complete({messages:[{role:'user',content:prompt}]})
+    window.claude.complete({purpose:'education',messages:[{role:'user',content:prompt}]})
       .then(text=>{ let c=text.replace(/```json|```/g,'').trim(); const s=c.indexOf('{'),e=c.lastIndexOf('}'); if(s>=0&&e>s)c=c.slice(s,e+1); const d=JSON.parse(c); localStorage.setItem(key,JSON.stringify(d)); setEdu(d); if(d.terms&&d.terms.length) VocabLedger.addTerms((wine.name||'')+'_'+(wine.vintage||'nv'), d.terms); })
       .catch(()=>{})
       .finally(()=>setEduLoading(false));
