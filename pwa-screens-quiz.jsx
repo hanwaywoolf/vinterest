@@ -60,7 +60,7 @@ function QuizHubScreen({nav,back,showPro}){
   const level=XPSystem.getLevel(xpData.total);
   const nextLvl=XPSystem.nextLevel(xpData.total);
   const prog=XPSystem.levelProgress(xpData.total);
-  const article1Done=onRampDone(ON_RAMP[0].id);
+  const article1Done=ON_RAMP.length>0&&onRampDone(ON_RAMP[0].id);
   const wines=React.useMemo(()=>WineHistory.getAll(),[]);
   const coverage=React.useMemo(()=>getCoverage(wines),[wines]);
   const [showUnlock,setShowUnlock]=React.useState(false);
@@ -99,6 +99,16 @@ function QuizHubScreen({nav,back,showPro}){
   const startQuiz=cfg=>{ sessionStorage.setItem('vinterest_quiz_config2',JSON.stringify(cfg)); nav('quiz'); };
   const [grapeUnlocks,setGrapeUnlocks]=React.useState(()=>GrapeUnlocks.all());
   const [grapeLoading,setGrapeLoading]=React.useState(null);
+  const [grapesExpanded,setGrapesExpanded]=React.useState(false);
+  // Unlocked grapes first (most-recently-unlocked first), locked grapes after in their
+  // existing allowlist order. Recomputed from current unlock state on every render (not
+  // just at mount) so a grape unlocked mid-session jumps to the front immediately.
+  const {unlockedGrapes,lockedGrapes}=React.useMemo(()=>{
+    const unlocked=[],locked=[];
+    GRAPE_ALLOWLIST.forEach(g=>{ (grapeUnlocks[g]?unlocked:locked).push(g); });
+    unlocked.sort((a,b)=>(grapeUnlocks[b].at||0)-(grapeUnlocks[a].at||0));
+    return {unlockedGrapes:unlocked,lockedGrapes:locked};
+  },[grapeUnlocks]);
   function handleGrapeTap(grape){
     if(!grapeUnlocks[grape]){
       if(isPro){ GrapeUnlocks.unlockManual(grape); setGrapeUnlocks(GrapeUnlocks.all()); }
@@ -111,6 +121,12 @@ function QuizHubScreen({nav,back,showPro}){
       if(qs&&qs.length) startQuiz({mode:'grape',grape,questions:qs});
     });
   }
+  // Warm the quiz cache for already-unlocked grapes so opening one is instant if it's had time to
+  // generate — new unlocks warm themselves immediately via GrapeUnlocks. Capped so a big backlog
+  // (e.g. a restored account) doesn't fire a burst of requests at once.
+  React.useEffect(()=>{
+    unlockedGrapes.slice(0,5).forEach(g=>{ try{ prefetchGrapeQuiz(g); }catch(e){} });
+  },[]);
 
   return(
     <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden'}}>
@@ -241,15 +257,31 @@ function QuizHubScreen({nav,back,showPro}){
         </div>
 
         <div style={zoneLabel}>Your Grapes</div>
-        <div style={{fontSize:14,color:C.mid,fontFamily:C.P,marginTop:2}}>{Object.keys(grapeUnlocks).length}/{GRAPE_ALLOWLIST.length} unlocked{!isPro?` · rate a wine to unlock more (${FREE_GRAPE_CAP} free)`:' · tap any to unlock instantly'}</div>
-        <div style={{display:'flex',gap:8,overflowX:'auto',marginTop:8,paddingBottom:2}}>
-        {GRAPE_ALLOWLIST.map(g=>{
-          const unlocked=!!grapeUnlocks[g];
+        <div style={{fontSize:14,color:C.mid,fontFamily:C.P,marginTop:2}}>{unlockedGrapes.length}/{GRAPE_ALLOWLIST.length} unlocked{!isPro?` · rate a wine to unlock more (${FREE_GRAPE_CAP} free)`:' · tap any to unlock instantly'}</div>
+        <div style={{display:'flex',flexWrap:'wrap',gap:8,marginTop:8}}>
+        {unlockedGrapes.map(g=>{
           const loading=grapeLoading===g;
+          const col=grapeTypeColor(g);
           return(
-            <div key={g} onClick={()=>handleGrapeTap(g)} style={{flex:'0 0 auto',padding:'10px 14px',borderRadius:14,background:unlocked?C.crSoft:C.white,border:`1px solid ${unlocked?C.crDim:C.line}`,cursor:'pointer',display:'flex',alignItems:'center',gap:6,opacity:unlocked?1:0.8}}>
-              {loading?<div style={{width:12,height:12,borderRadius:6,border:`2px solid ${C.cr}33`,borderTopColor:C.cr,animation:'storySpin .8s linear infinite'}}/>:!unlocked&&<Icon n="lock" sz={13} col={C.mid}/>}
-              <span style={{fontSize:14.5,fontWeight:600,color:unlocked?C.cr:C.ink,fontFamily:C.P,whiteSpace:'nowrap'}}>{g}</span>
+            <div key={g} onClick={()=>handleGrapeTap(g)} style={{flex:'0 0 auto',padding:'10px 18px',borderRadius:999,background:col+'15',border:`1px solid ${col}40`,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}>
+              {loading?<div style={{width:14,height:14,borderRadius:7,border:`2px solid ${col}33`,borderTopColor:col,animation:'storySpin .8s linear infinite'}}/>:
+                <span style={{fontSize:14,fontWeight:600,color:col,fontFamily:C.P,whiteSpace:'nowrap'}}>{g}</span>}
+            </div>
+          );
+        })}
+        {lockedGrapes.length>0&&(
+          <div onClick={()=>setGrapesExpanded(e=>!e)} style={{flex:'0 0 auto',padding:'10px 18px',borderRadius:999,background:C.white,border:`1px dashed ${C.line}`,cursor:'pointer',display:'flex',alignItems:'center',gap:6}}>
+            {grapesExpanded?<Icon n="chevron" sz={12} col={C.mid} style={{transform:'rotate(-90deg)'}}/>:<Icon n="lock" sz={12} col={C.mid}/>}
+            <span style={{fontSize:14,fontWeight:600,color:C.mid,fontFamily:C.P,whiteSpace:'nowrap'}}>{grapesExpanded?'Show less':`+${lockedGrapes.length} more`}</span>
+          </div>
+        )}
+        {grapesExpanded&&lockedGrapes.map(g=>{
+          const loading=grapeLoading===g;
+          const col=grapeTypeColor(g);
+          return(
+            <div key={g} onClick={()=>handleGrapeTap(g)} style={{flex:'0 0 auto',padding:'10px 18px',borderRadius:999,background:C.white,border:`1px solid ${col}30`,cursor:'pointer',display:'flex',alignItems:'center',gap:6,opacity:0.75}}>
+              {loading?<div style={{width:14,height:14,borderRadius:7,border:`2px solid ${col}33`,borderTopColor:col,animation:'storySpin .8s linear infinite'}}/>:<Icon n="lock" sz={11} col={C.mid}/>}
+              <span style={{fontSize:14,fontWeight:600,color:C.ink,fontFamily:C.P,whiteSpace:'nowrap'}}>{g}</span>
             </div>
           );
         })}

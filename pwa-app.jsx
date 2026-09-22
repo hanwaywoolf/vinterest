@@ -89,7 +89,7 @@ function App(){
         {screen==='style-explore' && <StyleExploreScreen {...ctx}/>}
         {screen==='profile'   && <WineDNAScreen {...ctx}/>}
         {screen==='mywines'   && <MyWinesScreen {...ctx}/>}
-        {screen==='learn'     && <QuizHubScreen {...ctx}/>}
+        {screen==='learn'     && <ScreenErrorBoundary><QuizHubScreen {...ctx}/></ScreenErrorBoundary>}
         {screen==='quiz'      && <QuizScreen {...ctx}/>}
         {screen==='mastery-map' && <MasteryMapScreen {...ctx}/>}
         {screen==='article'   && <LearnArticleScreen {...ctx}/>}

@@ -286,9 +286,10 @@ const XPSystem = {
 /* Vinterest — Concept mastery, spaced repetition, question exposure, vocabulary ledger.
    All account-keyed (same shape convention as pwa-xp.js) for the eventual native-port transport swap. */
 
-const CONCEPTS = _loadJSON('data/concepts.json');
-const CONCEPT_TEMPLATES = _loadJSON('data/concept-templates.json');
-const QUIZ_ARCHETYPES = _loadJSON('data/quiz-archetypes.json');
+let CONCEPTS = [], CONCEPT_TEMPLATES = [], QUIZ_ARCHETYPES = [];
+try { CONCEPTS = _loadJSON('data/concepts.json') || []; } catch (e) { console.error('[Vinterest] concepts.json failed to load — Concept Mastery will be empty until it is deployed.', e); }
+try { CONCEPT_TEMPLATES = _loadJSON('data/concept-templates.json') || []; } catch (e) { console.error('[Vinterest] concept-templates.json failed to load — Concept Mastery will be empty until it is deployed.', e); }
+try { QUIZ_ARCHETYPES = _loadJSON('data/quiz-archetypes.json') || []; } catch (e) { console.error('[Vinterest] quiz-archetypes.json failed to load — Concept Mastery will be empty until it is deployed.', e); }
 
 function _accountStore(key){
   return {
@@ -392,9 +393,10 @@ const VocabLedger = Object.assign(_accountStore('vinterest_vocab_v1'), {
    Deterministic: stub metadata (title/subtitle) is template-filled from WineDNA, never LLM-invented.
    Only the article body (GenArticleScreen) calls the model, and only with retrieved facts attached. */
 
-const KNOWLEDGE = _loadJSON('data/knowledge.json');
-const ARTICLE_ARCHETYPES = _loadJSON('data/archetypes.json');
-const TRIGGERS = _loadJSON('data/triggers.json');
+let KNOWLEDGE = { descriptors: {}, regions: {}, grapes: {} }, ARTICLE_ARCHETYPES = [], TRIGGERS = [];
+try { KNOWLEDGE = _loadJSON('data/knowledge.json') || KNOWLEDGE; } catch (e) { console.error('[Vinterest] knowledge.json failed to load — generated Learn content will be generic until it is deployed.', e); }
+try { ARTICLE_ARCHETYPES = _loadJSON('data/archetypes.json') || []; } catch (e) { console.error('[Vinterest] archetypes.json failed to load — the Learn shelf will stay empty until it is deployed.', e); }
+try { TRIGGERS = _loadJSON('data/triggers.json') || []; } catch (e) { console.error('[Vinterest] triggers.json failed to load — the Learn shelf will stay empty until it is deployed.', e); }
 
 const ExposureLedger = Object.assign(_accountStore('vinterest_exposure_v1'), {
   fresh(){ return {keys:{}}; },
@@ -627,6 +629,28 @@ let GRAPE_ALLOWLIST=[];
 try{ GRAPE_ALLOWLIST=_loadJSON('data/grapes-allowlist.json')||[]; }catch(e){ console.error('[Vinterest] grapes-allowlist.json failed to load — Your Grapes will be empty until it is deployed.',e); }
 const FREE_GRAPE_CAP = 5;
 
+/* Primary wine-style association per grape, for color-coding in the Learn tab's grape tiles —
+   matches the type keys _TYPE_COLORS (pwa-screens-wineiq.jsx) already uses. A grape can make more
+   than one style (Grenache rosé, Chardonnay sparkling); this is its single best-known default, not
+   an exhaustive list. Sparkling and orange aren't styles any of these 50 grapes are most famous
+   for on their own, so neither appears here. */
+const GRAPE_TYPES = {
+  'Cabernet Sauvignon':'red','Merlot':'red','Pinot Noir':'red','Syrah':'red','Malbec':'red',
+  'Zinfandel':'red','Sangiovese':'red','Tempranillo':'red','Nebbiolo':'red','Grenache':'red',
+  'Cabernet Franc':'red','Petit Verdot':'red','Carignan':'red','Mourvèdre':'red','Barbera':'red',
+  'Gamay':'red','Montepulciano':'red','Primitivo':'red','Touriga Nacional':'fortified',
+  'Carmenère':'red','Pinotage':'red','Petite Sirah':'red','Aglianico':'red','Corvina':'red',
+  'Cinsault':'red','Xinomavro':'red','Zweigelt':'red',
+  'Chardonnay':'white','Sauvignon Blanc':'white','Riesling':'white','Pinot Grigio':'white',
+  'Viognier':'white','Gewürztraminer':'white','Chenin Blanc':'white','Albariño':'white',
+  'Grüner Veltliner':'white','Sémillon':'white','Vermentino':'white','Verdejo':'white',
+  'Torrontés':'white','Marsanne':'white','Roussanne':'white','Assyrtiko':'white',
+  'Garganega':'white','Fiano':'white','Pinot Blanc':'white','Melon de Bourgogne':'white',
+  'Trebbiano':'white',
+  'Muscat':'dessert','Furmint':'dessert'
+};
+function grapeTypeColor(grape){ return (_TYPE_COLORS&&_TYPE_COLORS[GRAPE_TYPES[grape]])||C.mid; }
+
 function _loadTextSync(path){ const x=new XMLHttpRequest(); x.open('GET',path,false); x.send(); return x.responseText; }
 
 const GrapeUnlocks = Object.assign(_accountStore('vinterest_grape_unlocks_v1'), {
@@ -643,6 +667,7 @@ const GrapeUnlocks = Object.assign(_accountStore('vinterest_grape_unlocks_v1'), 
     d.unlocked[grape]={via:'rated',at:Date.now()};
     this.save(d);
     try{ ContentEngine.addGrapeArticle(grape,WineHistory.getAll()); }catch(e){}
+    try{ prefetchGrapeQuiz(grape); }catch(e){}
     return true;
   },
   unlockManual(grape){
@@ -653,17 +678,35 @@ const GrapeUnlocks = Object.assign(_accountStore('vinterest_grape_unlocks_v1'), 
     d.unlocked[grape]={via:'manual',at:Date.now()};
     this.save(d);
     try{ ContentEngine.addGrapeArticle(grape,WineHistory.getAll()); }catch(e){}
+    try{ prefetchGrapeQuiz(grape); }catch(e){}
     return true;
   }
 });
 
 /* Generated once per grape, cached forever (facts don't change) — 15 questions (5 easy/5 medium/5
-   hard), grounded in data/knowledge.json so the model summarizes real facts rather than inventing. */
+   hard), grounded in data/knowledge.json so the model summarizes real facts rather than inventing.
+   Generation itself takes a real few seconds (15 questions with explanations, out of Claude) — the
+   _grapeQuizInFlight guard means a background prefetch (fired the moment a grape unlocks, or for
+   already-unlocked grapes when the Learn tab mounts) and a later tap on the same grape share one
+   request instead of firing a duplicate, so by the time someone actually opens a grape's quiz it
+   has often already finished generating in the background. */
 function _grapeQuizCacheKey(grape){ return 'vinterest_grape_quiz_'+grape.replace(/\s+/g,'_'); }
+const _grapeQuizInFlight=new Set();
 function getGrapeQuiz(grape, onReady){
   const key=_grapeQuizCacheKey(grape);
   const cached=localStorage.getItem(key);
   if(cached){ try{ onReady(JSON.parse(cached)); return; }catch(e){} }
+  if(_grapeQuizInFlight.has(grape)){
+    const wait=()=>{
+      const c=localStorage.getItem(key);
+      if(c){ try{ onReady(JSON.parse(c)); return; }catch(e){} }
+      if(_grapeQuizInFlight.has(grape)) setTimeout(wait,300);
+      else onReady(null);
+    };
+    wait();
+    return;
+  }
+  _grapeQuizInFlight.add(grape);
   const g=KNOWLEDGE.grapes[grape];
   const facts=g?`${grape}: ${g.profile} Famous in: ${g.famousIn.join(', ')}.`:`${grape}: no specific retrieved facts — keep questions general and safely factual.`;
   const prompt=ContentEngine.fillTpl(_loadTextSync('prompts/grape-quiz.txt'),{grape,facts});
@@ -676,13 +719,21 @@ function getGrapeQuiz(grape, onReady){
       localStorage.setItem(key,JSON.stringify(qs));
       onReady(qs);
     })
-    .catch(()=>onReady(null));
+    .catch(()=>onReady(null))
+    .finally(()=>_grapeQuizInFlight.delete(grape));
+}
+/* Fire-and-forget: warms the cache so a later tap on this grape is instant. Safe to call redundantly. */
+function prefetchGrapeQuiz(grape){
+  if(!grape||!GRAPE_ALLOWLIST.includes(grape)) return;
+  if(localStorage.getItem(_grapeQuizCacheKey(grape))) return;
+  getGrapeQuiz(grape,()=>{});
 }
 
 
 /* ---- pwa-quiz-questions.js ---- */
 /* Vinterest — Quiz Question Bank. Loaded from data/quiz-bank.json (source of truth for native port). */
-const QUIZ_TOPICS = _loadJSON('data/quiz-bank.json');
+let QUIZ_TOPICS = [];
+try { QUIZ_TOPICS = _loadJSON('data/quiz-bank.json') || []; } catch (e) { console.error('[Vinterest] quiz-bank.json failed to load — quizzes will be empty until it is deployed.', e); }
 
 
 /* ---- pwa-components.jsx (precompiled) ---- */
@@ -2190,6 +2241,36 @@ function Btn({
   }, children);
 }
 
+/* Catches a render-time exception in a screen (e.g. static data that failed to load) so the
+   screen shows a recoverable message instead of leaving the app permanently blank — there's no
+   page refresh to fall back on once this is wrapped in a native shell. "Try Again" just re-attempts
+   the render; it doesn't re-fetch anything, so pair it with safe fallback values at the data layer. */
+class ScreenErrorBoundary extends React.Component {
+  constructor(p) {
+    super(p);
+    this.state = { hasError: false };
+  }
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+  componentDidCatch(err, info) {
+    console.error('[Vinterest] screen failed to render:', err, info);
+  }
+  render() {
+    if (this.state.hasError) {
+      return /*#__PURE__*/React.createElement("div", {
+        style: { flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 14, padding: 32 }
+      }, /*#__PURE__*/React.createElement("div", {
+        style: { fontSize: 16, color: C.mid, fontFamily: C.P, textAlign: 'center' }
+      }, "Something didn't load right."), /*#__PURE__*/React.createElement(Btn, {
+        primary: true,
+        onClick: () => this.setState({ hasError: false })
+      }, "Try Again"));
+    }
+    return this.props.children;
+  }
+}
+
 /* ── Wine History ── */
 const WineHistory = {
   KEY: 'vinterest_wines',
@@ -2695,6 +2776,7 @@ Object.assign(window, {
   Prog,
   Card,
   Btn,
+  ScreenErrorBoundary,
   WineHistory,
   ProBadge,
   ProGate,
@@ -11378,7 +11460,7 @@ function QuizHubScreen({
   const level = XPSystem.getLevel(xpData.total);
   const nextLvl = XPSystem.nextLevel(xpData.total);
   const prog = XPSystem.levelProgress(xpData.total);
-  const article1Done = onRampDone(ON_RAMP[0].id);
+  const article1Done = ON_RAMP.length > 0 && onRampDone(ON_RAMP[0].id);
   const wines = React.useMemo(() => WineHistory.getAll(), []);
   const coverage = React.useMemo(() => getCoverage(wines), [wines]);
   const [showUnlock, setShowUnlock] = React.useState(false);
@@ -11452,6 +11534,16 @@ function QuizHubScreen({
   };
   const [grapeUnlocks, setGrapeUnlocks] = React.useState(() => GrapeUnlocks.all());
   const [grapeLoading, setGrapeLoading] = React.useState(null);
+  const [grapesExpanded, setGrapesExpanded] = React.useState(false);
+  // Unlocked grapes first (most-recently-unlocked first), locked grapes after in their
+  // existing allowlist order. Recomputed from current unlock state on every render (not
+  // just at mount) so a grape unlocked mid-session jumps to the front immediately.
+  const { unlockedGrapes, lockedGrapes } = React.useMemo(() => {
+    const unlocked = [], locked = [];
+    GRAPE_ALLOWLIST.forEach(g => { (grapeUnlocks[g] ? unlocked : locked).push(g); });
+    unlocked.sort((a, b) => (grapeUnlocks[b].at || 0) - (grapeUnlocks[a].at || 0));
+    return { unlockedGrapes: unlocked, lockedGrapes: locked };
+  }, [grapeUnlocks]);
   function handleGrapeTap(grape) {
     if (!grapeUnlocks[grape]) {
       if (isPro) {
@@ -11470,6 +11562,12 @@ function QuizHubScreen({
       });
     });
   }
+  // Warm the quiz cache for already-unlocked grapes so opening one is instant if it's had time to
+  // generate — new unlocks warm themselves immediately via GrapeUnlocks. Capped so a big backlog
+  // (e.g. a restored account) doesn't fire a burst of requests at once.
+  React.useEffect(() => {
+    unlockedGrapes.slice(0, 5).forEach(g => { try { prefetchGrapeQuiz(g); } catch (e) {} });
+  }, []);
   return /*#__PURE__*/React.createElement("div", {
     style: {
       flex: 1,
@@ -11995,63 +12093,129 @@ function QuizHubScreen({
     sz: 13,
     col: C.mid
   })))), /*#__PURE__*/React.createElement("div", {
-    style: zoneLabel
-  }, "Your Grapes"), /*#__PURE__*/React.createElement("div", {
+  style: zoneLabel
+}, "Your Grapes"), /*#__PURE__*/React.createElement("div", {
+  style: {
+    fontSize: 14,
+    color: C.mid,
+    fontFamily: C.P,
+    marginTop: 2
+  }
+}, unlockedGrapes.length, "/", GRAPE_ALLOWLIST.length, " unlocked", !isPro ? ` · rate a wine to unlock more (${FREE_GRAPE_CAP} free)` : ' · tap any to unlock instantly'), /*#__PURE__*/React.createElement("div", {
+  style: {
+    display: 'flex',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 8
+  }
+}, unlockedGrapes.map(g => {
+  const loading = grapeLoading === g;
+  const col = grapeTypeColor(g);
+  return /*#__PURE__*/React.createElement("div", {
+    key: g,
+    onClick: () => handleGrapeTap(g),
+    style: {
+      flex: '0 0 auto',
+      padding: '10px 18px',
+      borderRadius: 999,
+      background: col + '15',
+      border: `1px solid ${col}40`,
+      cursor: 'pointer',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center'
+    }
+  }, loading ? /*#__PURE__*/React.createElement("div", {
+    style: {
+      width: 14,
+      height: 14,
+      borderRadius: 7,
+      border: `2px solid ${col}33`,
+      borderTopColor: col,
+      animation: 'storySpin .8s linear infinite'
+    }
+  }) : /*#__PURE__*/React.createElement("span", {
     style: {
       fontSize: 14,
-      color: C.mid,
+      fontWeight: 600,
+      color: col,
       fontFamily: C.P,
-      marginTop: 2
+      whiteSpace: 'nowrap'
     }
-  }, Object.keys(grapeUnlocks).length, "/", GRAPE_ALLOWLIST.length, " unlocked", !isPro ? ` · rate a wine to unlock more (${FREE_GRAPE_CAP} free)` : ' · tap any to unlock instantly'), /*#__PURE__*/React.createElement("div", {
+  }, g));
+}), lockedGrapes.length > 0 && /*#__PURE__*/React.createElement("div", {
+  onClick: () => setGrapesExpanded(e => !e),
+  style: {
+    flex: '0 0 auto',
+    padding: '10px 18px',
+    borderRadius: 999,
+    background: C.white,
+    border: `1px dashed ${C.line}`,
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    gap: 6
+  }
+}, grapesExpanded ? /*#__PURE__*/React.createElement(Icon, {
+  n: "chevron",
+  sz: 12,
+  col: C.mid,
+  style: {
+    transform: 'rotate(-90deg)'
+  }
+}) : /*#__PURE__*/React.createElement(Icon, {
+  n: "lock",
+  sz: 12,
+  col: C.mid
+}), /*#__PURE__*/React.createElement("span", {
+  style: {
+    fontSize: 14,
+    fontWeight: 600,
+    color: C.mid,
+    fontFamily: C.P,
+    whiteSpace: 'nowrap'
+  }
+}, grapesExpanded ? 'Show less' : `+${lockedGrapes.length} more`)), grapesExpanded && lockedGrapes.map(g => {
+  const loading = grapeLoading === g;
+  const col = grapeTypeColor(g);
+  return /*#__PURE__*/React.createElement("div", {
+    key: g,
+    onClick: () => handleGrapeTap(g),
     style: {
+      flex: '0 0 auto',
+      padding: '10px 18px',
+      borderRadius: 999,
+      background: C.white,
+      border: `1px solid ${col}30`,
+      cursor: 'pointer',
       display: 'flex',
-      gap: 8,
-      overflowX: 'auto',
-      marginTop: 8,
-      paddingBottom: 2
+      alignItems: 'center',
+      gap: 6,
+      opacity: 0.75
     }
-  }, GRAPE_ALLOWLIST.map(g => {
-    const unlocked = !!grapeUnlocks[g];
-    const loading = grapeLoading === g;
-    return /*#__PURE__*/React.createElement("div", {
-      key: g,
-      onClick: () => handleGrapeTap(g),
-      style: {
-        flex: '0 0 auto',
-        padding: '10px 14px',
-        borderRadius: 14,
-        background: unlocked ? C.crSoft : C.white,
-        border: `1px solid ${unlocked ? C.crDim : C.line}`,
-        cursor: 'pointer',
-        display: 'flex',
-        alignItems: 'center',
-        gap: 6,
-        opacity: unlocked ? 1 : 0.8
-      }
-    }, loading ? /*#__PURE__*/React.createElement("div", {
-      style: {
-        width: 12,
-        height: 12,
-        borderRadius: 6,
-        border: `2px solid ${C.cr}33`,
-        borderTopColor: C.cr,
-        animation: 'storySpin .8s linear infinite'
-      }
-    }) : !unlocked && /*#__PURE__*/React.createElement(Icon, {
-      n: "lock",
-      sz: 13,
-      col: C.mid
-    }), /*#__PURE__*/React.createElement("span", {
-      style: {
-        fontSize: 14.5,
-        fontWeight: 600,
-        color: unlocked ? C.cr : C.ink,
-        fontFamily: C.P,
-        whiteSpace: 'nowrap'
-      }
-    }, g));
-  })), /*#__PURE__*/React.createElement("div", {
+  }, loading ? /*#__PURE__*/React.createElement("div", {
+    style: {
+      width: 14,
+      height: 14,
+      borderRadius: 7,
+      border: `2px solid ${col}33`,
+      borderTopColor: col,
+      animation: 'storySpin .8s linear infinite'
+    }
+  }) : /*#__PURE__*/React.createElement(Icon, {
+    n: "lock",
+    sz: 11,
+    col: C.mid
+  }), /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: 14,
+      fontWeight: 600,
+      color: C.ink,
+      fontFamily: C.P,
+      whiteSpace: 'nowrap'
+    }
+  }, g));
+})), /*#__PURE__*/React.createElement("div", {
     style: zoneLabel
   }, "Your Progress"), /*#__PURE__*/React.createElement("div", {
     onClick: () => isPro ? nav('mastery-map') : showPro('mastery-map'),
@@ -19060,7 +19224,8 @@ function _fillTpl(tpl, vars) {
   });
   return s;
 }
-const ON_RAMP = _loadJSON('data/onramp.json');
+let ON_RAMP = [];
+try { ON_RAMP = _loadJSON('data/onramp.json') || []; } catch (e) { console.error('[Vinterest] onramp.json failed to load — the Learn tab will be missing its on-ramp articles until it is deployed.', e); }
 function onRampDone(id) {
   return !!localStorage.getItem('vinterest_' + id + '_done');
 }
@@ -23286,7 +23451,7 @@ function WineDNAScreen({
       color: C.mid,
       fontFamily: C.P
     }
-  }, "Vinterest v1.1.6")), /*#__PURE__*/React.createElement("div", {
+  }, "Vinterest v1.2.0")), /*#__PURE__*/React.createElement("div", {
     style: {
       height: 8
     }
@@ -23411,7 +23576,7 @@ function App() {
       localStorage.setItem('vinterest_onboarded', '1');
       nav('home');
     }
-  }), screen === 'home' && /*#__PURE__*/React.createElement(HomeScreen, ctx), screen === 'scan' && /*#__PURE__*/React.createElement(ScanHomeScreen, ctx), screen === 'camera' && /*#__PURE__*/React.createElement(ScanScreen, ctx), screen === 'identified' && /*#__PURE__*/React.createElement(WineIdentifiedScreen, ctx), screen === 'winelist' && /*#__PURE__*/React.createElement(WineListScreen, ctx), screen === 'detail' && /*#__PURE__*/React.createElement(WineDetailScreen, ctx), screen === 'region' && /*#__PURE__*/React.createElement(RegionScreen, ctx), screen === 'varietal' && /*#__PURE__*/React.createElement(VarietalScreen, ctx), screen === 'similar' && /*#__PURE__*/React.createElement(SimilarWinesScreen, ctx), screen === 'style-explore' && /*#__PURE__*/React.createElement(StyleExploreScreen, ctx), screen === 'profile' && /*#__PURE__*/React.createElement(WineDNAScreen, ctx), screen === 'mywines' && /*#__PURE__*/React.createElement(MyWinesScreen, ctx), screen === 'learn' && /*#__PURE__*/React.createElement(QuizHubScreen, ctx), screen === 'quiz' && /*#__PURE__*/React.createElement(QuizScreen, ctx), screen === 'mastery-map' && /*#__PURE__*/React.createElement(MasteryMapScreen, ctx), screen === 'article' && /*#__PURE__*/React.createElement(LearnArticleScreen, ctx), screen === 'gen-article' && /*#__PURE__*/React.createElement(GenArticleScreen, ctx), screen === 'account' && /*#__PURE__*/React.createElement(AccountProfileScreen, ctx), screen === 'settings' && /*#__PURE__*/React.createElement(SettingsScreen, ctx)), showNav && /*#__PURE__*/React.createElement(BottomNav, {
+  }), screen === 'home' && /*#__PURE__*/React.createElement(HomeScreen, ctx), screen === 'scan' && /*#__PURE__*/React.createElement(ScanHomeScreen, ctx), screen === 'camera' && /*#__PURE__*/React.createElement(ScanScreen, ctx), screen === 'identified' && /*#__PURE__*/React.createElement(WineIdentifiedScreen, ctx), screen === 'winelist' && /*#__PURE__*/React.createElement(WineListScreen, ctx), screen === 'detail' && /*#__PURE__*/React.createElement(WineDetailScreen, ctx), screen === 'region' && /*#__PURE__*/React.createElement(RegionScreen, ctx), screen === 'varietal' && /*#__PURE__*/React.createElement(VarietalScreen, ctx), screen === 'similar' && /*#__PURE__*/React.createElement(SimilarWinesScreen, ctx), screen === 'style-explore' && /*#__PURE__*/React.createElement(StyleExploreScreen, ctx), screen === 'profile' && /*#__PURE__*/React.createElement(WineDNAScreen, ctx), screen === 'mywines' && /*#__PURE__*/React.createElement(MyWinesScreen, ctx), screen === 'learn' && /*#__PURE__*/React.createElement(ScreenErrorBoundary, null, /*#__PURE__*/React.createElement(QuizHubScreen, ctx)), screen === 'quiz' && /*#__PURE__*/React.createElement(QuizScreen, ctx), screen === 'mastery-map' && /*#__PURE__*/React.createElement(MasteryMapScreen, ctx), screen === 'article' && /*#__PURE__*/React.createElement(LearnArticleScreen, ctx), screen === 'gen-article' && /*#__PURE__*/React.createElement(GenArticleScreen, ctx), screen === 'account' && /*#__PURE__*/React.createElement(AccountProfileScreen, ctx), screen === 'settings' && /*#__PURE__*/React.createElement(SettingsScreen, ctx)), showNav && /*#__PURE__*/React.createElement(BottomNav, {
     active: screen,
     nav: nav,
     showPro: setProGate

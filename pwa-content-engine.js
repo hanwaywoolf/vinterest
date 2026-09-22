@@ -2,9 +2,10 @@
    Deterministic: stub metadata (title/subtitle) is template-filled from WineDNA, never LLM-invented.
    Only the article body (GenArticleScreen) calls the model, and only with retrieved facts attached. */
 
-const KNOWLEDGE = _loadJSON('data/knowledge.json');
-const ARTICLE_ARCHETYPES = _loadJSON('data/archetypes.json');
-const TRIGGERS = _loadJSON('data/triggers.json');
+let KNOWLEDGE={descriptors:{},regions:{},grapes:{}},ARTICLE_ARCHETYPES=[],TRIGGERS=[];
+try{ KNOWLEDGE=_loadJSON('data/knowledge.json')||KNOWLEDGE; }catch(e){ console.error('[Vinterest] knowledge.json failed to load — generated Learn content will be generic until it is deployed.',e); }
+try{ ARTICLE_ARCHETYPES=_loadJSON('data/archetypes.json')||[]; }catch(e){ console.error('[Vinterest] archetypes.json failed to load — the Learn shelf will stay empty until it is deployed.',e); }
+try{ TRIGGERS=_loadJSON('data/triggers.json')||[]; }catch(e){ console.error('[Vinterest] triggers.json failed to load — the Learn shelf will stay empty until it is deployed.',e); }
 
 const ExposureLedger = Object.assign(_accountStore('vinterest_exposure_v1'), {
   fresh(){ return {keys:{}}; },
