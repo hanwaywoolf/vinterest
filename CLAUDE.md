@@ -20,3 +20,4 @@ No build step. React 18 + ReactDOM load from CDN in `index.html`; JSX is pre-com
 
 ## Backlog
 - **Wine Lists**: Create and manage named lists (e.g. "Want to Try", "Restaurant picks"). "Add to List" button removed from Wine Detail → Data tab pending full build-out.
+- **Anthropic prompt-caching**: `_worker.js`'s /claude proxy now sends a distinct, fairly stable prompt template per `purpose` (see the CLAUDE_PURPOSE_LIMITS table). Most of these are a large fixed instruction block plus a small variable part (the specific wine, the specific quiz answer). Worth adding `cache_control` to the fixed portion of each purpose's prompt to cut cost and latency — cache hits are shared across all users hitting the same purpose, not per-user, so it scales with traffic. Do this after the core migration (auth/sync/Capacitor) is stable, not before — it's a cost/speed optimization, not launch-blocking.
