@@ -60,7 +60,7 @@ function QuizHubScreen({nav,back,showPro}){
   const level=XPSystem.getLevel(xpData.total);
   const nextLvl=XPSystem.nextLevel(xpData.total);
   const prog=XPSystem.levelProgress(xpData.total);
-  const article1Done=onRampDone(ON_RAMP[0].id);
+  const article1Done=ON_RAMP.length>0&&onRampDone(ON_RAMP[0].id);
   const wines=React.useMemo(()=>WineHistory.getAll(),[]);
   const coverage=React.useMemo(()=>getCoverage(wines),[wines]);
   const [showUnlock,setShowUnlock]=React.useState(false);

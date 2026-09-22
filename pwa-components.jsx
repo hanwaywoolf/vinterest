@@ -250,6 +250,25 @@ function Btn({children,primary,full,small,style:s,onClick}){
   return <div onClick={onClick} style={{padding:small?'8px 14px':'12px 20px',borderRadius:12,background:primary?C.cr:C.white,color:primary?'#fff':C.ink,border:primary?'none':`1px solid ${C.line}`,fontFamily:C.P,fontSize:small?13:15,fontWeight:600,textAlign:'center',width:full?'100%':'auto',boxShadow:primary?`0 4px 16px ${C.cr}40`:'none',cursor:'pointer',boxSizing:'border-box',...s}}>{children}</div>;
 }
 
+/* Catches a render-time exception in a screen (e.g. static data that failed to load) so the
+   screen shows a recoverable message instead of leaving the app permanently blank — there's no
+   page refresh to fall back on once this is wrapped in a native shell. "Try Again" just re-attempts
+   the render; it doesn't re-fetch anything, so pair it with safe fallback values at the data layer. */
+class ScreenErrorBoundary extends React.Component{
+  constructor(p){ super(p); this.state={hasError:false}; }
+  static getDerivedStateFromError(){ return {hasError:true}; }
+  componentDidCatch(err,info){ console.error('[Vinterest] screen failed to render:',err,info); }
+  render(){
+    if(this.state.hasError){
+      return <div style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:14,padding:32}}>
+        <div style={{fontSize:16,color:C.mid,fontFamily:C.P,textAlign:'center'}}>Something didn't load right.</div>
+        <Btn primary onClick={()=>this.setState({hasError:false})}>Try Again</Btn>
+      </div>;
+    }
+    return this.props.children;
+  }
+}
+
 /* ── Wine History ── */
 const WineHistory = {
   KEY: 'vinterest_wines',
@@ -471,4 +490,4 @@ function fetchRetailEstimate(wine,curr){
   });
 }
 
-Object.assign(window,{C,Icon,BottomNav,SideNav,Pill,Prog,Card,Btn,WineHistory,ProBadge,ProGate,calcMatchScore,WineAffinity,Regional,CURRENCY_LIST,lookupCountryCurrency,fetchRetailEstimate,retailPriceCacheKey});
+Object.assign(window,{C,Icon,BottomNav,SideNav,Pill,Prog,Card,Btn,ScreenErrorBoundary,WineHistory,ProBadge,ProGate,calcMatchScore,WineAffinity,Regional,CURRENCY_LIST,lookupCountryCurrency,fetchRetailEstimate,retailPriceCacheKey});

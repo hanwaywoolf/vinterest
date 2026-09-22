@@ -1,7 +1,8 @@
 /* Vinterest — On-Ramp Article Screen (data-driven from data/onramp.json) */
 function _loadText(path){ const x=new XMLHttpRequest(); x.open('GET',path,false); x.send(); return x.responseText; }
 function _fillTpl(tpl,vars){ let s=tpl; Object.keys(vars).forEach(k=>{ s=s.split('{{'+k+'}}').join(vars[k]??''); }); return s; }
-const ON_RAMP=_loadJSON('data/onramp.json');
+let ON_RAMP=[];
+try{ ON_RAMP=_loadJSON('data/onramp.json')||[]; }catch(e){ console.error('[Vinterest] onramp.json failed to load — the Learn tab will be missing its on-ramp articles until it is deployed.',e); }
 function onRampDone(id){ return !!localStorage.getItem('vinterest_'+id+'_done'); }
 function onRampProgress(){ return ON_RAMP.filter(a=>onRampDone(a.id)).length; }
 

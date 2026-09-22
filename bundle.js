@@ -286,9 +286,10 @@ const XPSystem = {
 /* Vinterest — Concept mastery, spaced repetition, question exposure, vocabulary ledger.
    All account-keyed (same shape convention as pwa-xp.js) for the eventual native-port transport swap. */
 
-const CONCEPTS = _loadJSON('data/concepts.json');
-const CONCEPT_TEMPLATES = _loadJSON('data/concept-templates.json');
-const QUIZ_ARCHETYPES = _loadJSON('data/quiz-archetypes.json');
+let CONCEPTS = [], CONCEPT_TEMPLATES = [], QUIZ_ARCHETYPES = [];
+try { CONCEPTS = _loadJSON('data/concepts.json') || []; } catch (e) { console.error('[Vinterest] concepts.json failed to load — Concept Mastery will be empty until it is deployed.', e); }
+try { CONCEPT_TEMPLATES = _loadJSON('data/concept-templates.json') || []; } catch (e) { console.error('[Vinterest] concept-templates.json failed to load — Concept Mastery will be empty until it is deployed.', e); }
+try { QUIZ_ARCHETYPES = _loadJSON('data/quiz-archetypes.json') || []; } catch (e) { console.error('[Vinterest] quiz-archetypes.json failed to load — Concept Mastery will be empty until it is deployed.', e); }
 
 function _accountStore(key){
   return {
@@ -392,9 +393,10 @@ const VocabLedger = Object.assign(_accountStore('vinterest_vocab_v1'), {
    Deterministic: stub metadata (title/subtitle) is template-filled from WineDNA, never LLM-invented.
    Only the article body (GenArticleScreen) calls the model, and only with retrieved facts attached. */
 
-const KNOWLEDGE = _loadJSON('data/knowledge.json');
-const ARTICLE_ARCHETYPES = _loadJSON('data/archetypes.json');
-const TRIGGERS = _loadJSON('data/triggers.json');
+let KNOWLEDGE = { descriptors: {}, regions: {}, grapes: {} }, ARTICLE_ARCHETYPES = [], TRIGGERS = [];
+try { KNOWLEDGE = _loadJSON('data/knowledge.json') || KNOWLEDGE; } catch (e) { console.error('[Vinterest] knowledge.json failed to load — generated Learn content will be generic until it is deployed.', e); }
+try { ARTICLE_ARCHETYPES = _loadJSON('data/archetypes.json') || []; } catch (e) { console.error('[Vinterest] archetypes.json failed to load — the Learn shelf will stay empty until it is deployed.', e); }
+try { TRIGGERS = _loadJSON('data/triggers.json') || []; } catch (e) { console.error('[Vinterest] triggers.json failed to load — the Learn shelf will stay empty until it is deployed.', e); }
 
 const ExposureLedger = Object.assign(_accountStore('vinterest_exposure_v1'), {
   fresh(){ return {keys:{}}; },
@@ -682,7 +684,8 @@ function getGrapeQuiz(grape, onReady){
 
 /* ---- pwa-quiz-questions.js ---- */
 /* Vinterest — Quiz Question Bank. Loaded from data/quiz-bank.json (source of truth for native port). */
-const QUIZ_TOPICS = _loadJSON('data/quiz-bank.json');
+let QUIZ_TOPICS = [];
+try { QUIZ_TOPICS = _loadJSON('data/quiz-bank.json') || []; } catch (e) { console.error('[Vinterest] quiz-bank.json failed to load — quizzes will be empty until it is deployed.', e); }
 
 
 /* ---- pwa-components.jsx (precompiled) ---- */
@@ -2190,6 +2193,36 @@ function Btn({
   }, children);
 }
 
+/* Catches a render-time exception in a screen (e.g. static data that failed to load) so the
+   screen shows a recoverable message instead of leaving the app permanently blank — there's no
+   page refresh to fall back on once this is wrapped in a native shell. "Try Again" just re-attempts
+   the render; it doesn't re-fetch anything, so pair it with safe fallback values at the data layer. */
+class ScreenErrorBoundary extends React.Component {
+  constructor(p) {
+    super(p);
+    this.state = { hasError: false };
+  }
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+  componentDidCatch(err, info) {
+    console.error('[Vinterest] screen failed to render:', err, info);
+  }
+  render() {
+    if (this.state.hasError) {
+      return /*#__PURE__*/React.createElement("div", {
+        style: { flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 14, padding: 32 }
+      }, /*#__PURE__*/React.createElement("div", {
+        style: { fontSize: 16, color: C.mid, fontFamily: C.P, textAlign: 'center' }
+      }, "Something didn't load right."), /*#__PURE__*/React.createElement(Btn, {
+        primary: true,
+        onClick: () => this.setState({ hasError: false })
+      }, "Try Again"));
+    }
+    return this.props.children;
+  }
+}
+
 /* ── Wine History ── */
 const WineHistory = {
   KEY: 'vinterest_wines',
@@ -2695,6 +2728,7 @@ Object.assign(window, {
   Prog,
   Card,
   Btn,
+  ScreenErrorBoundary,
   WineHistory,
   ProBadge,
   ProGate,
@@ -11378,7 +11412,7 @@ function QuizHubScreen({
   const level = XPSystem.getLevel(xpData.total);
   const nextLvl = XPSystem.nextLevel(xpData.total);
   const prog = XPSystem.levelProgress(xpData.total);
-  const article1Done = onRampDone(ON_RAMP[0].id);
+  const article1Done = ON_RAMP.length > 0 && onRampDone(ON_RAMP[0].id);
   const wines = React.useMemo(() => WineHistory.getAll(), []);
   const coverage = React.useMemo(() => getCoverage(wines), [wines]);
   const [showUnlock, setShowUnlock] = React.useState(false);
@@ -19069,7 +19103,8 @@ function _fillTpl(tpl, vars) {
   });
   return s;
 }
-const ON_RAMP = _loadJSON('data/onramp.json');
+let ON_RAMP = [];
+try { ON_RAMP = _loadJSON('data/onramp.json') || []; } catch (e) { console.error('[Vinterest] onramp.json failed to load — the Learn tab will be missing its on-ramp articles until it is deployed.', e); }
 function onRampDone(id) {
   return !!localStorage.getItem('vinterest_' + id + '_done');
 }
@@ -23295,7 +23330,7 @@ function WineDNAScreen({
       color: C.mid,
       fontFamily: C.P
     }
-  }, "Vinterest v1.1.7")), /*#__PURE__*/React.createElement("div", {
+  }, "Vinterest v1.1.8")), /*#__PURE__*/React.createElement("div", {
     style: {
       height: 8
     }
@@ -23420,7 +23455,7 @@ function App() {
       localStorage.setItem('vinterest_onboarded', '1');
       nav('home');
     }
-  }), screen === 'home' && /*#__PURE__*/React.createElement(HomeScreen, ctx), screen === 'scan' && /*#__PURE__*/React.createElement(ScanHomeScreen, ctx), screen === 'camera' && /*#__PURE__*/React.createElement(ScanScreen, ctx), screen === 'identified' && /*#__PURE__*/React.createElement(WineIdentifiedScreen, ctx), screen === 'winelist' && /*#__PURE__*/React.createElement(WineListScreen, ctx), screen === 'detail' && /*#__PURE__*/React.createElement(WineDetailScreen, ctx), screen === 'region' && /*#__PURE__*/React.createElement(RegionScreen, ctx), screen === 'varietal' && /*#__PURE__*/React.createElement(VarietalScreen, ctx), screen === 'similar' && /*#__PURE__*/React.createElement(SimilarWinesScreen, ctx), screen === 'style-explore' && /*#__PURE__*/React.createElement(StyleExploreScreen, ctx), screen === 'profile' && /*#__PURE__*/React.createElement(WineDNAScreen, ctx), screen === 'mywines' && /*#__PURE__*/React.createElement(MyWinesScreen, ctx), screen === 'learn' && /*#__PURE__*/React.createElement(QuizHubScreen, ctx), screen === 'quiz' && /*#__PURE__*/React.createElement(QuizScreen, ctx), screen === 'mastery-map' && /*#__PURE__*/React.createElement(MasteryMapScreen, ctx), screen === 'article' && /*#__PURE__*/React.createElement(LearnArticleScreen, ctx), screen === 'gen-article' && /*#__PURE__*/React.createElement(GenArticleScreen, ctx), screen === 'account' && /*#__PURE__*/React.createElement(AccountProfileScreen, ctx), screen === 'settings' && /*#__PURE__*/React.createElement(SettingsScreen, ctx)), showNav && /*#__PURE__*/React.createElement(BottomNav, {
+  }), screen === 'home' && /*#__PURE__*/React.createElement(HomeScreen, ctx), screen === 'scan' && /*#__PURE__*/React.createElement(ScanHomeScreen, ctx), screen === 'camera' && /*#__PURE__*/React.createElement(ScanScreen, ctx), screen === 'identified' && /*#__PURE__*/React.createElement(WineIdentifiedScreen, ctx), screen === 'winelist' && /*#__PURE__*/React.createElement(WineListScreen, ctx), screen === 'detail' && /*#__PURE__*/React.createElement(WineDetailScreen, ctx), screen === 'region' && /*#__PURE__*/React.createElement(RegionScreen, ctx), screen === 'varietal' && /*#__PURE__*/React.createElement(VarietalScreen, ctx), screen === 'similar' && /*#__PURE__*/React.createElement(SimilarWinesScreen, ctx), screen === 'style-explore' && /*#__PURE__*/React.createElement(StyleExploreScreen, ctx), screen === 'profile' && /*#__PURE__*/React.createElement(WineDNAScreen, ctx), screen === 'mywines' && /*#__PURE__*/React.createElement(MyWinesScreen, ctx), screen === 'learn' && /*#__PURE__*/React.createElement(ScreenErrorBoundary, null, /*#__PURE__*/React.createElement(QuizHubScreen, ctx)), screen === 'quiz' && /*#__PURE__*/React.createElement(QuizScreen, ctx), screen === 'mastery-map' && /*#__PURE__*/React.createElement(MasteryMapScreen, ctx), screen === 'article' && /*#__PURE__*/React.createElement(LearnArticleScreen, ctx), screen === 'gen-article' && /*#__PURE__*/React.createElement(GenArticleScreen, ctx), screen === 'account' && /*#__PURE__*/React.createElement(AccountProfileScreen, ctx), screen === 'settings' && /*#__PURE__*/React.createElement(SettingsScreen, ctx)), showNav && /*#__PURE__*/React.createElement(BottomNav, {
     active: screen,
     nav: nav,
     showPro: setProGate

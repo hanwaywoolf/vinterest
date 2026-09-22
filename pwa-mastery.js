@@ -1,9 +1,10 @@
 /* Vinterest — Concept mastery, spaced repetition, question exposure, vocabulary ledger.
    All account-keyed (same shape convention as pwa-xp.js) for the eventual native-port transport swap. */
 
-const CONCEPTS = _loadJSON('data/concepts.json');
-const CONCEPT_TEMPLATES = _loadJSON('data/concept-templates.json');
-const QUIZ_ARCHETYPES = _loadJSON('data/quiz-archetypes.json');
+let CONCEPTS=[],CONCEPT_TEMPLATES=[],QUIZ_ARCHETYPES=[];
+try{ CONCEPTS=_loadJSON('data/concepts.json')||[]; }catch(e){ console.error('[Vinterest] concepts.json failed to load — Concept Mastery will be empty until it is deployed.',e); }
+try{ CONCEPT_TEMPLATES=_loadJSON('data/concept-templates.json')||[]; }catch(e){ console.error('[Vinterest] concept-templates.json failed to load — Concept Mastery will be empty until it is deployed.',e); }
+try{ QUIZ_ARCHETYPES=_loadJSON('data/quiz-archetypes.json')||[]; }catch(e){ console.error('[Vinterest] quiz-archetypes.json failed to load — Concept Mastery will be empty until it is deployed.',e); }
 
 function _accountStore(key){
   return {
