@@ -623,16 +623,9 @@ function WineListScreen({nav,back}){
   },[]);
   const isDemo=data.demo===true;
 
-  const demoWines=[
-    {name:'Barolo Giacomo Conterno',type:'red',region:'Piedmont',country:'Italy',vintage:2018,price_usd:75,community_rating:4.7,grapes:['Nebbiolo'],description:'Rich, structured Barolo with dried roses, tar and earthy depth.'},
-    {name:'Chablis 1er Cru Montée de Tonnerre',type:'white',region:'Burgundy',country:'France',vintage:2021,price_usd:48,community_rating:4.5,grapes:['Chardonnay'],description:'Taut, mineral Chablis with oyster shell and lemon zest.'},
-    {name:'Whispering Angel Rosé',type:'rosé',region:'Provence',country:'France',vintage:2022,price_usd:28,community_rating:4.4,grapes:['Grenache'],description:'Pale, bone-dry Provençal rosé with delicate strawberry and herbs.'},
-    {name:'Chianti Classico Riserva',type:'red',region:'Tuscany',country:'Italy',vintage:2019,price_usd:38,community_rating:4.2,grapes:['Sangiovese'],description:'Sour cherry, leather and tobacco with firm tannins.'},
-    {name:'Sancerre Henri Bourgeois',type:'white',region:'Loire Valley',country:'France',vintage:2022,price_usd:35,community_rating:4.5,grapes:['Sauvignon Blanc'],description:'Crisp and herbaceous with grapefruit and flinty minerality.'},
-    {name:'Châteauneuf-du-Pape Vieux Télégraphe',type:'red',region:'Rhône Valley',country:'France',vintage:2019,price_usd:68,community_rating:4.6,grapes:['Grenache'],description:'Garrigue, dark fruit and spice — powerful yet elegant.'},
-  ];
 
-  const wines=(data.wines&&data.wines.length>0)?data.wines:demoWines;
+  // A failed read shows the retry banner and no wines: made-up wines with made-up scores would mislead.
+  const wines=(data.wines&&data.wines.length>0)?data.wines:[];
   const listCurrency=data.currency||Regional.current().code||localStorage.getItem('vinterest_currency')||'GBP';
   const typeColors={red:'#8B1A2F',white:'#B8963E',rosé:'#C47A8A',rose:'#C47A8A',sparkling:'#5E8FA8',orange:'#C1652B',dessert:'#8A5A2B',fortified:'#5C2A1E'};
   const colFor=t=>typeColors[(t||'red').toLowerCase().replace('é','e')]||C.cr;
@@ -689,24 +682,21 @@ function WineListScreen({nav,back}){
     return {label:'Marked Up',col:'#B04A3A',bg:'#F7E4E0',ratio};
   }
 
-  // Same WineDNA calc used on the detail screen, so scores match everywhere
-  const [scores]=React.useState(()=>{
-    const userWines=WineHistory.getAll();
-    return wines.map(w=>{
-      const dna=calcMatchScore(w,userWines);
-      if(dna!=null) return dna;
-      let h=0; for(let i=0;i<(w.name||'').length;i++) h=(h*31+w.name.charCodeAt(i))&0xffff;
-      return 68+Math.floor((h%100)*0.26);
-    });
+  // TasteMatch, the same engine as the scan result and detail screen. Each list entry carries
+  // Claude's rough style estimate and main grape; without enough scored history it's "too early".
+  const [matches]=React.useState(()=>{
+    const all=WineHistory.getAll(), cache={};
+    return wines.map(w=>TasteMatch.assess(TasteMatch.fromListEntry(w),all,cache));
   });
 
   const [sortMode,setSortMode]=React.useState('list'); // 'list' | 'match'
   const [typeFilter,setTypeFilter]=React.useState(null); // null = all
   const types=['red','white','rosé','sparkling'];
 
-  const indexed=wines.map((w,i)=>({w,i,score:scores[i]||78}));
+  const indexed=wines.map((w,i)=>({w,i,m:matches[i]}));
   const filtered=typeFilter?indexed.filter(x=>(x.w.type||'red').toLowerCase().replace('é','e')===typeFilter.replace('é','e')):indexed;
-  const shown=sortMode==='match'?[...filtered].sort((a,b)=>b.score-a.score):filtered;
+  const shown=sortMode==='match'?[...filtered].sort((a,b)=>((b.m&&b.m.pct)??-1)-((a.m&&a.m.pct)??-1)):filtered;
+  const toneCol={good:C.green,neutral:C.amber,bad:'#B04A3A'};
 
   return(
     <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden'}}>
@@ -765,12 +755,16 @@ function WineListScreen({nav,back}){
       <div style={{flex:1,overflowY:'auto'}}>
 <div style={{padding:'12px 16px',display:'flex',flexDirection:'column',gap:8}}>
         <div style={{fontSize:15,fontWeight:600,color:C.mid,letterSpacing:'0.08em',textTransform:'uppercase',fontFamily:C.P,marginBottom:2}}>{sortMode==='match'?'Sorted by Match Rate':'Wine List Order'}</div>
-        {shown.map(({w,i,score})=>{
+        {shown.map(({w,i,m})=>{
           const col=colFor(w.type);
           const val=valueInfo(w,i);
+          const mCol=m&&m.pct!=null?toneCol[m.tone]:C.mid;
+          const bottle=(parsePriceTiers(w.price).find(t=>t.label==='Bottle')||parsePriceTiers(w.price)[0]||{}).value;
           return(
             <Card key={i} style={{padding:12,cursor:'pointer'}} onClick={()=>{
-              sessionStorage.setItem('vinterest_scan_result',JSON.stringify({demo:false,wine:{...w,body:0.75,tannins:0.7,acidity:0.6,sweetness:0.1},confidence:score/100}));
+              // A wine picked from a list is a look, not a purchase: it's saved as a shelf check.
+              const {style,grape,...rest}=TasteMatch.fromListEntry(w);
+              sessionStorage.setItem('vinterest_scan_result',JSON.stringify({demo:false,source:'list',wine:rest,listPrice:bottle?Number(bottle):null,listCurrency}));
               nav('identified');
             }}>
               <div style={{display:'flex',gap:12,alignItems:'flex-start'}}>
@@ -780,17 +774,21 @@ function WineListScreen({nav,back}){
                 <div style={{flex:1,minWidth:0}}>
                   <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',gap:6}}>
                     <div style={{fontSize:17,fontWeight:700,color:C.ink,fontFamily:C.P,lineHeight:1.2,flex:1}}>{w.name}</div>
-                    <div style={{display:'inline-flex',alignItems:'center',padding:'3px 8px',borderRadius:7,background:score>=80?C.greenBg:C.amberBg,flexShrink:0}}>
-                      <span style={{fontSize:16,fontWeight:700,color:score>=80?C.green:C.amber,fontFamily:C.P}}>{score}%</span>
-                    </div>
+                    {m&&m.pct!=null
+                      ?<div style={{display:'inline-flex',alignItems:'center',padding:'3px 8px',borderRadius:7,background:mCol+'14',flexShrink:0}}>
+                        <span style={{fontSize:16,fontWeight:700,color:mCol,fontFamily:C.P}}>{m.pct}%</span>
+                      </div>
+                      :<span style={{fontSize:13,fontWeight:600,color:C.mid,fontFamily:C.P,flexShrink:0}}>{m&&m.verdict==='early'?'Too early':'No read'}</span>}
                   </div>
                   <div style={{fontSize:15,color:C.mid,fontFamily:C.P,marginTop:2}}>
                     {[w.region,w.country].filter(Boolean).join(' · ')}{w.vintage?` · ${w.vintage}`:''}
                   </div>
-                  {w.description&&<div style={{fontSize:15,color:C.ink2,fontFamily:C.P,marginTop:3,lineHeight:1.4,fontStyle:'italic'}}>{w.description}</div>}
+                  {m&&m.pct!=null&&<div style={{fontSize:14,fontWeight:600,color:mCol,fontFamily:C.P,marginTop:3}}>{m.label}{m.confidence==='low'?' · rough guess':''}</div>}
+                  {m&&m.reasons[0]&&<div style={{fontSize:13,color:C.ink2,fontFamily:C.P,marginTop:2,lineHeight:1.4}}>{m.reasons[0].text}</div>}
+                  {m&&!m.reasons[0]&&m.style&&<div style={{fontSize:13,color:C.ink2,fontFamily:C.P,marginTop:2,lineHeight:1.4}}>{m.style}</div>}
                   <div style={{display:'flex',gap:5,marginTop:6,alignItems:'center',flexWrap:'wrap'}}>
                     <Pill sm style={{background:col+'12',color:col,border:`1px solid ${col}25`,textTransform:'capitalize'}}>{w.type||'Red'}</Pill>
-                    {w.grapes?.[0]&&<Pill sm>{w.grapes[0]}</Pill>}
+                    {(w.grape||w.grapes?.[0])&&<Pill sm>{w.grape||w.grapes[0]}</Pill>}
                     {val&&<span style={{fontSize:12,fontWeight:700,color:val.col,background:val.bg,borderRadius:6,padding:'2px 7px'}}>{val.label} · {val.ratio.toFixed(1)}x bottle</span>}
                   </div>
                   {w.price&&(()=>{

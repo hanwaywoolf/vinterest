@@ -274,11 +274,45 @@ const WineHistory = {
   KEY: 'vinterest_wines',
   getAll(){ try{ return JSON.parse(localStorage.getItem(this.KEY)||'[]'); }catch(e){ return []; } },
   save(wines){ localStorage.setItem(this.KEY, JSON.stringify(wines.slice(0,500))); },
+
+  /* Identity. Claude doesn't always name a bottle the same way twice ("Muga Reserva" vs "Muga
+     Rioja Reserva"), so a rescan matches an existing entry when the vintage agrees, the producers
+     share a word, and neither name has a word the other wine doesn't account for in its own
+     name, producer, region, country or grapes. "Muga Gran Reserva" stays a different wine. */
+  _STOP: new Set(['de','du','des','la','le','les','di','del','della','da','do','the','and','of','y','e','et','wine','vino','vin','wines','doc','docg','aoc','aop','igt','igp','doca','dop']),
+  _tokens(...parts){
+    const out=new Set();
+    parts.flat().filter(Boolean).forEach(p=>String(p).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase()
+      .replace(/[^a-z0-9]+/g,' ').split(' ').forEach(t=>{ if(t&&!this._STOP.has(t)) out.add(t); }));
+    return out;
+  },
+  _vintageKey(v){ return (!v||v===0||String(v).toUpperCase()==='NV')?'nv':String(v); },
+  _t(w){ return (w.type||'').toLowerCase().replace('é','e'); },
+  same(a,b){
+    if(!a||!b) return false;
+    const pa=this._tokens(a.producer), pb=this._tokens(b.producer);
+    if(pa.size&&pb.size&&![...pa].some(t=>pb.has(t))) return false;
+    if(a.name===b.name&&String(a.vintage)===String(b.vintage)) return true;
+    if(this._vintageKey(a.vintage)!==this._vintageKey(b.vintage)) return false;
+    if(this._t(a)&&this._t(b)&&this._t(a)!==this._t(b)) return false;
+    const na=this._tokens(a.name), nb=this._tokens(b.name);
+    if(![...na].some(t=>nb.has(t))) return false;
+    const ctx=w=>this._tokens(w.name,w.producer,w.region,w.sub_region,w.country,w.grapes||[]);
+    const ca=ctx(a), cb=ctx(b);
+    return [...nb].every(t=>ca.has(t))&&[...na].every(t=>cb.has(t));
+  },
+  _index(wines,wine){
+    const i=wines.findIndex(w=>w.name===wine.name&&String(w.vintage)===String(wine.vintage)&&this.same(w,wine));
+    return i>=0?i:wines.findIndex(w=>this.same(w,wine));
+  },
+  /* The saved entry for this wine (exact or a rescan under a slightly different name), or null. */
+  find(wine){ if(!wine||!wine.name) return null; const wines=this.getAll(); const i=this._index(wines,wine); return i>=0?wines[i]:null; },
+
   track(wine){
     // Save a scanned wine immediately, even before rating
     if(!wine||!wine.name) return;
     const wines = this.getAll();
-    const idx = wines.findIndex(w => w.name===wine.name && String(w.vintage)===String(wine.vintage));
+    const idx = this._index(wines,wine);
     const now = new Date().toISOString();
     if(idx>=0){
       wines[idx].times_consumed = (wines[idx].times_consumed||1) + 1;
@@ -290,7 +324,7 @@ const WineHistory = {
   },
   add(wine, rating){
     const wines = this.getAll();
-    const idx = wines.findIndex(w => w.name===wine.name && String(w.vintage)===String(wine.vintage));
+    const idx = this._index(wines,wine);
     const now = new Date().toISOString();
     if(idx>=0){
       wines[idx].times_consumed = (wines[idx].times_consumed||1) + 1;
@@ -307,6 +341,36 @@ const WineHistory = {
     const wines = this.getAll();
     const w = wines.find(w => w.name===name && String(w.vintage)===String(vintage));
     if(w){ w.rating=rating; this.save(wines); if(rating>0){ try{ GrapeUnlocks.unlockViaRating((w.grapes||[])[0]); }catch(e){} } }
+  },
+  /* Merge fields into a saved wine: corrections to a misread label (name, vintage, grapes...),
+     tasting details, a purchase. Returns the updated entry. */
+  update(name, vintage, patch){
+    const wines = this.getAll();
+    const w = wines.find(w => w.name===name && String(w.vintage)===String(vintage));
+    if(!w) return null;
+    Object.assign(w, patch);
+    this.save(wines);
+    return w;
+  },
+  /* What the user noticed when they drank it: tasted[axis] is -1 / 0 / 1 against the label
+     estimate (lighter / as expected / fuller, and so on), price_paid {amount, code}, buy_again. */
+  setTasting(name, vintage, {tasted, price_paid, buy_again}={}){
+    const patch={};
+    if(tasted) patch.tasted=tasted;
+    if(price_paid!==undefined) patch.price_paid=price_paid;
+    if(buy_again!==undefined) patch.buy_again=buy_again;
+    return this.update(name, vintage, patch);
+  },
+  setBought(name, vintage, bought){ return this.update(name, vintage, {bought, bought_answered_at:new Date().toISOString()}); },
+  /* Bottles waiting on the user: ones they've drunk (or bought) but not scored, and shelf checks
+     from a while ago that we should ask about. `now` is injectable for tests. */
+  pending(now=Date.now()){
+    const wines=this.getAll();
+    const age=w=>now-new Date(w.last_scanned||w.scanned_at||0).getTime();
+    return {
+      toScore:wines.filter(w=>!(w.rating>0)&&((w.scan_intent==='tasting'||w.scan_intent==='tasted')||w.bought===true)),
+      toAsk:wines.filter(w=>!(w.rating>0)&&w.scan_intent==='checking'&&w.bought==null&&age(w)>=3*3600*1000),
+    };
   },
   /* Optional, user-entered scan location — manual text only for now (no geolocation/reverse-geocoding yet). */
   setLocation(name, vintage, location){
@@ -339,73 +403,13 @@ const WineHistory = {
   }
 };
 
-/* ── Taste-match score (WineDNA vs. rating history) ──
-   Compares wine's body/tannins/acidity/sweetness against a RATING-WEIGHTED
-   average for that type from WineHistory — wines you rated higher pull the
-   target profile toward them, ones you rated low pull away. Pure function
-   of (wine, userWines): same inputs always produce the same score, and a
-   type/grape you haven't rated yet returns null (shown as "New for your
-   palate") rather than a padded mid-range number. Returns 15–98, or null. */
+/* ── Taste-match score ──
+   The match percentage for a wine, or null when there's too little scored history to say
+   ("too early to call"). TasteMatch (pwa-match.js) owns the model; this is the number alone. */
 function calcMatchScore(wine,userWines){
-  if(!wine||!userWines) return null;
-  const typeKey=(wine.type||'red').toLowerCase().replace(/é/g,'e');
-  const rated=userWines.filter(w=>(w.type||'red').toLowerCase().replace(/é/g,'e')===typeKey&&w.body!=null&&w.rating!=null&&w.rating>0);
-  if(!rated.length) return null;
-  // rating is out of 100: a 20/100 wine weighs 0.1, a 100/100 wine weighs 1.0 — loved wines shape the profile far more than tolerated ones
-  const wt=w=>Math.max(0.1,w.rating/100);
-  const wAvg=field=>{
-    const ws=rated.filter(w=>w[field]!=null);
-    if(!ws.length) return null;
-    const sw=ws.reduce((s,w)=>s+wt(w),0);
-    return ws.reduce((s,w)=>s+wt(w)*w[field],0)/sw;
-  };
-  const avgB=wAvg('body'),avgT=wAvg('tannins'),avgA=wAvg('acidity'),avgS=wAvg('sweetness');
-  // prox: 1 = perfect match, 0 = ≥0.6 units apart
-  const prox=(wv,uv)=>uv==null?null:Math.max(0,1-Math.abs((wv??0.5)-uv)/0.6);
-  const scores=[
-    [prox(wine.body??0.65,avgB),0.30],
-    [prox(wine.tannins??0.55,avgT),0.25],
-    [prox(wine.acidity??0.60,avgA),0.25],
-    [prox(wine.sweetness??0.10,avgS),0.20],
-  ].filter(([s])=>s!=null);
-  if(!scores.length) return null;
-  const totalW=scores.reduce((s,[,w])=>s+w,0);
-  const raw=scores.reduce((s,[sc,w])=>s+sc*(w/totalW),0);
-  // Scale: 0 raw → 15 %, 1.0 raw → 98 % — a genuine mismatch reads low, not "worth a try"
-  return Math.max(15,Math.min(98,Math.round(15+raw*83)));
+  const m=TasteMatch.assess(wine,userWines||[]);
+  return m?m.pct:null;
 }
-
-/* ── Affinity: signals from cards the user saves in the scan-results deck.
-   Saving a "why you'll like it" / origin / grape card records a small positive
-   lean toward that wine's grapes, region and country, which then nudges the
-   match score everywhere (list + detail agree, since both call calcMatchScore). */
-const WineAffinity={
-  KEY:'vinterest_affinity',
-  get(){ try{ return JSON.parse(localStorage.getItem(this.KEY)||'{}'); }catch(e){ return {}; } },
-  _save(a){ try{ localStorage.setItem(this.KEY,JSON.stringify(a)); }catch(e){} },
-  norm(s){ return (s||'').trim().toLowerCase(); },
-  bump(wine,weight){
-    if(!wine) return;
-    const a=this.get();
-    const add=(bucket,key)=>{ key=this.norm(key); if(!key) return; a[bucket]=a[bucket]||{}; a[bucket][key]=Math.max(-3,Math.min(6,(a[bucket][key]||0)+weight)); };
-    (wine.grapes||[]).forEach(g=>add('grapes',g));
-    add('regions',wine.region);
-    add('countries',wine.country);
-    this._save(a);
-    window.dispatchEvent(new Event('vinterest:affinity'));
-  },
-  scoreFor(wine){
-    if(!wine) return 0;
-    const a=this.get(); let s=0,n=0;
-    const grab=(bucket,key)=>{ key=this.norm(key); if(!key) return; const v=(a[bucket]||{})[key]; if(v!=null){ s+=v; n++; } };
-    (wine.grapes||[]).forEach(g=>grab('grapes',g));
-    grab('regions',wine.region);
-    grab('countries',wine.country);
-    if(!n) return 0;
-    // Each unit of stored lean ≈ 1.2 match points, capped so it stays a nudge.
-    return Math.max(-8,Math.min(10,(s/Math.max(1,n))*1.2 + (s>0?Math.min(3,n*0.4):0)));
-  }
-};
 
 /* ── Regions, currencies, Travel Mode ── */
 const CURRENCY_LIST=[{code:'USD',sym:'$'},{code:'GBP',sym:'£'},{code:'EUR',sym:'€'},{code:'CAD',sym:'CA$'},{code:'AUD',sym:'A$'},{code:'NZD',sym:'NZ$'},{code:'JPY',sym:'¥'},{code:'CNY',sym:'¥'},{code:'CHF',sym:'CHF'},{code:'ZAR',sym:'R'},{code:'SGD',sym:'S$'},{code:'HKD',sym:'HK$'},{code:'MXN',sym:'MX$'},{code:'BRL',sym:'R$'},{code:'INR',sym:'₹'},{code:'AED',sym:'AED'},{code:'SEK',sym:'kr'},{code:'NOK',sym:'kr'},{code:'DKK',sym:'kr'}];
@@ -523,4 +527,4 @@ function fetchRetailEstimate(wine,curr){
   });
 }
 
-Object.assign(window,{C,Icon,BottomNav,SideNav,Pill,Prog,Card,Btn,ScreenErrorBoundary,WineHistory,ProBadge,ProGate,calcMatchScore,WineAffinity,Regional,FindOnline,CURRENCY_LIST,lookupCountryCurrency,fetchRetailEstimate,retailPriceCacheKey});
+Object.assign(window,{C,Icon,BottomNav,SideNav,Pill,Prog,Card,Btn,ScreenErrorBoundary,WineHistory,ProBadge,ProGate,calcMatchScore,Regional,FindOnline,CURRENCY_LIST,lookupCountryCurrency,fetchRetailEstimate,retailPriceCacheKey});

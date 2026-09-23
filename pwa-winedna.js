@@ -62,6 +62,17 @@ const WineDNA = {
     return raw===k?raw.split(' ').map(w=>w.charAt(0).toUpperCase()+w.slice(1)).join(' '):raw;
   },
   _t(v){ return (v||'').toLowerCase().replace('é','e'); },
+  /* A wine's value on one axis: Claude's label estimate, nudged by the user's own tasting where
+     they told us it was lighter/fuller (etc.) than the label suggested (w.tasted[k] = -1, 0 or 1). */
+  TASTED_STEP:0.15,
+  axisValue(w,k){
+    const v=w&&w[k]; if(typeof v!=='number') return null;
+    const d=w.tasted&&typeof w.tasted[k]==='number'?w.tasted[k]:0;
+    return Math.max(0,Math.min(1,v+d*this.TASTED_STEP));
+  },
+  /* Scans that count as the user's choices: everything except a shelf check they didn't buy
+     (a "just checking" scan counts once they say they bought it, or once they score it). */
+  chosen(w){ return w.scan_intent!=='checking'||w.bought===true||w.rating>0; },
   // "1 white", "3 whites", "7 sparkling wines": wine-type nouns for counts in copy.
   NOUNS:{red:['red','reds'],white:['white','whites'],rose:['rosé','rosés'],sparkling:['sparkling wine','sparkling wines'],
     orange:['orange wine','orange wines'],dessert:['dessert wine','dessert wines'],fortified:['fortified wine','fortified wines']},
@@ -80,9 +91,10 @@ const WineDNA = {
     const loved=scored.filter(w=>w.rating>=ParkerScale.LOVED);
     const disliked=scored.filter(w=>w.rating<ParkerScale.DISLIKED);
     const axes=this.AXES_FOR[typeKey]||['body','acidity','sweetness'];
-    const avgOf=(ws,k)=>this._mean(ws.map(w=>w[k]).filter(v=>typeof v==='number'));
+    const chosen=wines.filter(w=>this.chosen(w));
+    const avgOf=(ws,k)=>this._mean(ws.map(w=>this.axisValue(w,k)).filter(v=>typeof v==='number'));
     const avg={}, lovedAvg={};
-    axes.forEach(k=>{ avg[k]=avgOf(wines,k); lovedAvg[k]=loved.length>=3?avgOf(loved,k):null; });
+    axes.forEach(k=>{ avg[k]=avgOf(chosen,k); lovedAvg[k]=loved.length>=3?avgOf(loved,k):null; });
     // The personality describes what they love once there are 3+ Outstanding wines to go on.
     const basis=loved.length>=3?'loved':'chosen';
     const dnaAvg=basis==='loved'?lovedAvg:avg;
@@ -91,7 +103,7 @@ const WineDNA = {
     const grapeStats=stats(wines.flatMap(w=>[...new Set((w.grapes||[]).map(g=>this.grape(g)).filter(Boolean))].map(g=>[g,w.rating])));
     const regionStats=stats(wines.map(w=>[w.region,w.rating]));
     const byCount=(a,b)=>b.count-a.count||(b.avg||0)-(a.avg||0);
-    const p={typeKey,label,wines,scored,loved,disliked,axes,avg,lovedAvg,dnaAvg,basis,
+    const p={typeKey,label,wines,chosen,scored,loved,disliked,axes,avg,lovedAvg,dnaAvg,basis,
       topGrapes:[...grapeStats].sort(byCount).map(g=>g.name).slice(0,4),
       topRegions:[...regionStats].sort(byCount).map(r=>r.name).slice(0,4),
       grapeStats,regionStats};
@@ -146,11 +158,11 @@ const WineDNA = {
     if(p.scored.length<8) return [];
     const out=[];
     p.axes.forEach(k=>{
-      const ws=p.scored.filter(w=>typeof w[k]==='number');
+      const ws=p.scored.filter(w=>typeof this.axisValue(w,k)==='number');
       const hi=ws.filter(w=>w.rating>=ParkerScale.LOVED), rest=ws.filter(w=>w.rating<ParkerScale.LOVED);
       if(ws.length<8||hi.length<3||rest.length<3) return;
-      const r=this._r(ws.map(w=>w[k]),ws.map(w=>w.rating));
-      const hiM=this._mean(hi.map(w=>w[k])), restM=this._mean(rest.map(w=>w[k]));
+      const r=this._r(ws.map(w=>this.axisValue(w,k)),ws.map(w=>w.rating));
+      const hiM=this._mean(hi.map(w=>this.axisValue(w,k))), restM=this._mean(rest.map(w=>this.axisValue(w,k)));
       if(Math.abs(r)<0.3||Math.abs(hiM-restM)<0.03) return;
       const dir=hiM>restM?'high':'low', A=this.AXES[k];
       out.push({axis:k,dir,r,strength:Math.abs(r)>=0.5?'consistently':'tend to',
@@ -178,18 +190,27 @@ const WineDNA = {
     };
   },
 
-  /* Price against score, in local currency. Prices are Claude's estimates at scan time, so
-     everything here is labelled as an estimate. Needs 6+ scored, priced wines. */
+  /* A wine's price in the user's currency: what they paid when they told us, otherwise Claude's
+     shop-price estimate from the scan. */
+  priceOf(w,rc){
+    rc=rc||Regional.current(); const fx=USD_FX[rc.code]||1;
+    const pp=w.price_paid;
+    if(pp&&pp.amount>0) return pp.code===rc.code?pp.amount:pp.amount/(USD_FX[pp.code]||1)*fx;
+    return w.price_usd>0?w.price_usd*fx:null;
+  },
+
+  /* Price against score, in local currency. Prices are what the user paid where they said,
+     otherwise estimates, and are labelled that way. Needs 6+ scored, priced wines. */
   value(p){
-    const rc=Regional.current(), fx=USD_FX[rc.code]||1;
-    const ws=p.scored.filter(w=>w.price_usd>0).map(w=>({w,price:w.price_usd*fx}));
+    const rc=Regional.current();
+    const ws=p.scored.map(w=>({w,price:this.priceOf(w,rc)})).filter(x=>x.price>0);
     if(ws.length<6) return null;
     const hi=ws.filter(x=>x.w.rating>=ParkerScale.LOVED), rest=ws.filter(x=>x.w.rating<ParkerScale.LOVED);
     const money=v=>`${rc.base}${Math.round(v)}`;
     const sorted=[...ws].sort((a,b)=>a.price-b.price);
     const median=sorted[Math.floor(sorted.length/2)].price;
     const bestValue=hi.filter(x=>x.price<=median).sort((a,b)=>b.w.rating-a.w.rating||a.price-b.price).slice(0,3)
-      .map(x=>({wine:x.w,price:money(x.price)}));
+      .map(x=>({wine:x.w,price:money(x.price),paid:!!(x.w.price_paid&&x.w.price_paid.amount>0)}));
     const r=this._r(ws.map(x=>x.price),ws.map(x=>x.w.rating));
     let verdict=null;
     if(hi.length>=2&&rest.length>=2){
@@ -203,7 +224,7 @@ const WineDNA = {
             ?{kind:'pays',text:`Your Outstanding ${L} cost more on average ${cmp}, and higher prices have tended to mean higher scores for you. Stepping up can pay off, especially within your sweet spot.`}
             :{kind:'loose',text:`Your Outstanding ${L} cost a little more on average ${cmp}, but across all your ${L} price and score barely move together. A higher price hasn't reliably meant a better bottle for you.`};
     }
-    return {n:ws.length,code:rc.code,sweetSpot:hi.length>=2?SommelierScript.budget(hi.map(x=>x.w),rc):null,bestValue,verdict};
+    return {n:ws.length,paid:ws.filter(x=>x.w.price_paid&&x.w.price_paid.amount>0).length,code:rc.code,sweetSpot:hi.length>=2?SommelierScript.budget(hi.map(x=>x.w),rc):null,bestValue,verdict};
   },
 
   // Blind Call guesses made after scanning these wines (accuracy 0–1 per wine).
@@ -218,10 +239,10 @@ const WineDNA = {
 
   // One plain sentence per bar, from the user's own wines only (no generic grape claims).
   axisNote(p,k){
-    const ws=p.wines.filter(w=>typeof w[k]==='number');
+    const ws=p.chosen.filter(w=>typeof this.axisValue(w,k)==='number');
     if(ws.length<2) return null;
     const A=this.AXES[k], lvl=this.level(p.avg[k]);
-    const sorted=[...ws].sort((a,b)=>b[k]-a[k]);
+    const sorted=[...ws].sort((a,b)=>this.axisValue(b,k)-this.axisValue(a,k));
     const top=sorted[0], bottom=sorted[sorted.length-1];
     const word={high:A.high.toLowerCase(),mid:'medium',low:A.low.toLowerCase()}[lvl];
     let s=`The ${p.label.toLowerCase()} you choose are ${word} on average, from ${bottom.name} at the ${A.lowAdj.split(',')[0]} end to ${top.name} at the ${A.highAdj.split(',')[0]} end.`;

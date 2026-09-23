@@ -459,14 +459,14 @@ function WineDNAScreen({nav,back,showPro}){
                 {t.value.bestValue.map(b=>(
                   <div key={b.wine.name} style={{display:'flex',alignItems:'center',gap:8,padding:'6px 0',borderTop:`1px solid ${C.line}`}}>
                     <span style={{fontSize:15,color:C.ink,fontFamily:C.P,flex:1}}>{b.wine.name}</span>
-                    <span style={{fontSize:13,color:C.mid,fontFamily:C.P}}>{b.price} est.</span>
+                    <span style={{fontSize:13,color:C.mid,fontFamily:C.P}}>{b.price}{b.paid?' paid':' est.'}</span>
                     <span style={{fontSize:15,fontWeight:800,color:C.green,fontFamily:C.P,width:30,textAlign:'right'}}>{b.wine.rating}</span>
                   </div>
                 ))}
                 <div style={{fontSize:13,color:C.mid,fontFamily:C.P,lineHeight:1.5,marginTop:8}}>Scored 90+ at or below your typical price. Remember these producers: they're good bets on a list or in a shop.</div>
               </>
             )}
-            <div style={{fontSize:13,color:C.mid,fontFamily:C.P,marginTop:10,opacity:0.8}}>Prices are estimates from your scans ({t.value.code}).</div>
+            <div style={{fontSize:13,color:C.mid,fontFamily:C.P,marginTop:10,opacity:0.8}}>{t.value.paid?`Prices are what you paid for ${t.value.paid} of these, and estimates from your scans for the rest (${t.value.code}).`:`Prices are estimates from your scans (${t.value.code}). Add what you paid when you rate a bottle to make this exact.`}</div>
           </Card>
         )}
 

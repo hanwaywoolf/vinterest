@@ -41,17 +41,23 @@ function WineDetailScreen({back,nav}){
     try{ return JSON.parse(sessionStorage.getItem('vinterest_scan_result')||'{}'); }
     catch(e){ return {}; }
   },[]);
-  const wine=scanData.wine||null;
+  const [wine,setWine]=React.useState(scanData.wine||null);
+  const [editing,setEditing]=React.useState(false);
+  // Correct a misread label: the saved entry and this screen both take the fix.
+  function saveEdit(patch){
+    const e=WineHistory.find(wine);
+    if(e) WineHistory.update(e.name,e.vintage,patch);
+    const next={...wine,...patch};
+    try{ const sd=JSON.parse(sessionStorage.getItem('vinterest_scan_result')||'{}'); sd.wine=next; sessionStorage.setItem('vinterest_scan_result',JSON.stringify(sd)); }catch(err){}
+    setWine(next); setEditing(false);
+  }
   const existingRating=React.useMemo(()=>{
     if(!wine) return 0;
-    const saved=WineHistory.getAll().find(w=>w.name===wine.name&&String(w.vintage)===String(wine.vintage));
+    const saved=WineHistory.find(wine);
     return (saved&&saved.rating)||scanData.existingRating||0;
   },[wine?.name,wine?.vintage]);
 
-  const matchPct=React.useMemo(()=>{
-    if(!wine) return null;
-    return calcMatchScore(wine,WineHistory.getAll());
-  },[wine?.name,wine?.vintage]);
+  const match=React.useMemo(()=>wine?TasteMatch.assess(wine,WineHistory.getAll()):null,[wine]);
 
   const [isFav,setIsFav]=React.useState(()=>{
     try{
@@ -114,7 +120,7 @@ function WineDetailScreen({back,nav}){
           <div>
             <div style={{fontSize:24,fontWeight:700,color:C.ink,fontFamily:C.P,lineHeight:1.15}}>{wine?.name||'Château Margaux'}</div>
             <div style={{fontSize:16,color:C.mid,fontFamily:C.P,marginTop:3}}>{wine?`${wine.vintage||'NV'} · ${wine.region}, ${wine.country}`:'2018 · Bordeaux, France'}</div>
-            <div style={{display:'flex',gap:5,marginTop:8,flexWrap:'wrap'}}><Pill active sm style={{textTransform:'capitalize'}}>{wine?.type||'Red'}</Pill>{wine?.grapes?.[0]&&<Pill sm>{wine.grapes[0]}</Pill>}</div>
+            <div style={{display:'flex',gap:5,marginTop:8,flexWrap:'wrap',alignItems:'center'}}><Pill active sm style={{textTransform:'capitalize'}}>{wine?.type||'Red'}</Pill>{wine?.grapes?.[0]&&<Pill sm>{wine.grapes[0]}</Pill>}{wine&&<span onClick={()=>setEditing(true)} style={{fontSize:13,fontWeight:600,color:C.cr,fontFamily:C.P,cursor:'pointer',marginLeft:4}}>Edit details</span>}</div>
           </div>
         </div>
         <div style={{display:'flex',borderBottom:`1px solid ${C.line}`}}>
@@ -124,7 +130,8 @@ function WineDetailScreen({back,nav}){
         </div>
       </div>
       <div style={{flex:1,overflowY:'auto'}}>
-        {tab===0&&<DetailMerged wine={wine} nav={nav} existingRating={existingRating} matchPct={matchPct}/>}
+        {editing&&<EditWineSheet wine={wine} onSave={saveEdit} onClose={()=>setEditing(false)}/>}
+        {tab===0&&<DetailMerged key={wine&&wine.name} wine={wine} nav={nav} existingRating={existingRating} match={match}/>}
         {tab===1&&<DetailStory wine={wine} nav={nav} existingRating={existingRating}/>}
         {tab===2&&<DetailPrice wine={wine} nav={nav}/>}
       </div>
@@ -141,9 +148,8 @@ function WineDetailScreen({back,nav}){
   );
 }
 
-function DetailMerged({wine,nav,existingRating=0,matchPct}){
-  const [genWhy,setGenWhy]=React.useState(null);
-  const [generatingWhy,setGeneratingWhy]=React.useState(false);
+function DetailMerged({wine,nav,existingRating=0,match}){
+  const matchPct=match?match.pct:null;
   const [userRating,setUserRating]=React.useState(existingRating);
   const [showRatingUI,setShowRatingUI]=React.useState(existingRating===0);
   const [saved,setSaved]=React.useState(existingRating>0);
@@ -168,37 +174,6 @@ function DetailMerged({wine,nav,existingRating=0,matchPct}){
   function handleSliderChange(e){ const n=Number(e.target.value); setUserRating(n); pendingScore.current=n; }
   // Preset buttons update slider position only — user taps Save to commit
   function handlePreset(p){ setUserRating(p); pendingScore.current=p; }
-
-  React.useEffect(()=>{
-    if(!wine) return;
-    const isGoodMatch=matchPct==null||matchPct>=55;
-    const matchRange=matchPct==null?'x':matchPct>=85?'hi':matchPct>=55?'mid':'lo';
-    const cacheKey=`vinterest_why_${(wine.name||'').replace(/\s/g,'_')}_${wine.vintage||'nv'}_${matchRange}`;
-    const cached=localStorage.getItem(cacheKey);
-    if(cached){setGenWhy(cached);return;}
-    const userWines=WineHistory.getAll();
-    if(!userWines.length) return;
-    const typeKey=(wine.type||'red').toLowerCase().replace('é','e');
-    const typeWines=userWines.filter(w=>(w.type||'red').toLowerCase().replace('é','e')===typeKey);
-    if(!typeWines.length) return;
-    const avgB=typeWines.filter(w=>w.body!=null).reduce((s,w)=>s+w.body,0)/(typeWines.filter(w=>w.body!=null).length||1);
-    const avgT=typeWines.filter(w=>w.tannins!=null).reduce((s,w)=>s+w.tannins,0)/(typeWines.filter(w=>w.tannins!=null).length||1);
-    const avgA=typeWines.filter(w=>w.acidity!=null).reduce((s,w)=>s+w.acidity,0)/(typeWines.filter(w=>w.acidity!=null).length||1);
-    const topWines=[...typeWines].filter(w=>w.rating>0).sort((a,b)=>(b.rating||0)-(a.rating||0)).slice(0,4).map(w=>w.name+(w.vintage?' '+w.vintage:'')).join(', ');
-    const gCounts={}; typeWines.forEach(w=>(w.grapes||[]).forEach(g=>{if(g)gCounts[g]=(gCounts[g]||0)+1;}));
-    const topGrapes=Object.entries(gCounts).sort((a,b)=>b[1]-a[1]).slice(0,3).map(e=>e[0]).join(', ');
-    const lbl=v=>v>=0.68?'high':v>=0.38?'medium':'low';
-    setGeneratingWhy(true);
-    const wineCtx=`${wine.name}${wine.vintage?' '+wine.vintage:''}, a ${wine.type||'red'} from ${wine.region||wine.country||'unknown'} with body=${(wine.body??0.65).toFixed(1)}, tannins=${(wine.tannins??0.55).toFixed(1)}, acidity=${(wine.acidity??0.60).toFixed(1)}`;
-    const userCtx=`Their ${wine.type||'red'} DNA: body ${lbl(avgB)}, tannins ${lbl(avgT)}, acidity ${lbl(avgA)}. Top rated: ${topWines||'none yet'}. Favourite grapes: ${topGrapes||'still discovering'}.`;
-    const prompt=isGoodMatch
-      ?`The user is looking at: ${wineCtx}. ${userCtx} Write ONE sentence (max 30 words) explaining specifically why this wine matches this user — compare attributes or reference their actual top wines by name. Be concrete, not generic. IMPORTANT: Do NOT include ANY numbers, decimals, percentages, or specific wine attribute values anywhere in your response. Use only descriptive words like high, low, medium, bold, light, etc. Return ONLY the sentence, no quotes.`
-      :`The user is looking at: ${wineCtx}. ${userCtx} This wine scores ${matchPct}% against their taste profile. Write ONE sentence (max 30 words) explaining honestly and constructively why this wine contrasts with their usual preferences — be specific about the key difference (e.g. body, tannins, acidity, style). IMPORTANT: No numbers, decimals, percentages in your response. Use only descriptive words. Return ONLY the sentence, no quotes.`;
-    window.claude.complete({purpose:'match_explain',messages:[{role:'user',content:prompt}]})
-      .then(text=>{const s=text.trim();localStorage.setItem(cacheKey,s);setGenWhy(s);})
-      .catch(()=>{})
-      .finally(()=>setGeneratingWhy(false));
-  },[wine?.name,wine?.vintage,matchPct]);
 
   const [vintageInfo,setVintageInfo]=React.useState(null);
   const [loadingVintage,setLoadingVintage]=React.useState(false);
@@ -231,16 +206,17 @@ function DetailMerged({wine,nav,existingRating=0,matchPct}){
   const isFortified=((wine?.type||'').toLowerCase().replace('é','e'))==='fortified';
   const showTannins=isRed||isOrange||isFortified;
   const showTexture=isWhite||isOrange||isDessert||isFortified;
-  const charLbl=(v,lo,hi)=>v>=0.68?hi:v>=0.38?'Medium':lo;
+  // Only what the label estimate actually gave: a missing figure is left out, not defaulted.
+  const charLbl=(v,lo,hi)=>typeof v!=='number'?null:v>=0.68?hi:v>=0.38?'Medium':lo;
   const chars=wine?[
-    {label:'Body',      value:charLbl(wine.body??0.65,    'Light',    'Full')},
-    ...(showTannins?[{label:'Tannins', value:charLbl(wine.tannins??0.55, 'Silky',    'Grippy')}]:[]),
-    {label:'Acidity',   value:charLbl(wine.acidity??0.60, 'Mellow',   'Zingy')},
-    ...(showTexture?[{label:'Texture', value:charLbl(wine.texture??0.3, 'Crisp & Steely', 'Rich & Creamy')}]:[]),
-    {label:'Sweetness', value:charLbl(wine.sweetness??0.10,'Bone Dry','Sweet')},
-    ...(isSparkling?[{label:'Effervescence', value:charLbl(wine.effervescence??0.6, 'Soft & Delicate', 'Vigorous & Persistent')}]:[]),
+    {label:'Body',      value:charLbl(wine.body,    'Light',    'Full')},
+    ...(showTannins?[{label:'Tannins', value:charLbl(wine.tannins, 'Silky',    'Grippy')}]:[]),
+    {label:'Acidity',   value:charLbl(wine.acidity, 'Mellow',   'Zingy')},
+    ...(showTexture?[{label:'Texture', value:charLbl(wine.texture, 'Crisp & Steely', 'Rich & Creamy')}]:[]),
+    {label:'Sweetness', value:charLbl(wine.sweetness,'Bone Dry','Sweet')},
+    ...(isSparkling?[{label:'Effervescence', value:charLbl(wine.effervescence, 'Soft & Delicate', 'Vigorous & Persistent')}]:[]),
     ...(wine.abv?[{label:'ABV', value:`${wine.abv}%`}]:[]),
-  ]:[];
+  ].filter(c=>c.value):[];
 
   const SL=({label})=>(
     <div style={{fontSize:13,fontWeight:700,color:C.mid,letterSpacing:'0.07em',textTransform:'uppercase',fontFamily:C.P,marginBottom:8}}>{label}</div>
@@ -249,14 +225,13 @@ function DetailMerged({wine,nav,existingRating=0,matchPct}){
   const notes=wine?.tasting_notes||[];
   const pairings=wine?.food_pairings||[];
 
-  /* Match sentiment — sliding scale */
+  /* Match sentiment, from TasteMatch's verdict */
   const matchConfig=React.useMemo(()=>{
-    if(matchPct==null||matchPct>=85) return {descriptor:matchPct!=null?"You'll love this":null,title:'Why This Matches You',bg:C.greenBg,border:`1px solid ${C.green}25`,col:C.green};
-    if(matchPct>=70) return {descriptor:'A great match',title:'Why This Works for You',bg:C.greenBg,border:`1px solid ${C.green}25`,col:C.green};
-    if(matchPct>=55) return {descriptor:'Worth exploring',title:'What to Expect',bg:'#EEF6FF',border:'1px solid #4A90D930',col:'#2563A8'};
-    if(matchPct>=38) return {descriptor:'Outside your comfort zone',title:'Where It Differs',bg:C.amberBg,border:`1px solid ${C.amber}35`,col:C.amber};
-    return {descriptor:'Not your usual style',title:'Why This Might Not Be for You',bg:C.crSoft,border:`1px solid ${C.crDim}`,col:C.cr};
-  },[matchPct]);
+    const v=match?match.verdict:'unknown';
+    if(v==='hit'||v==='good') return {descriptor:match.label,title:'Why it should suit you',bg:C.greenBg,border:`1px solid ${C.green}25`,col:C.green};
+    if(v==='miss') return {descriptor:match.label,title:'Why it might not be for you',bg:C.crSoft,border:`1px solid ${C.crDim}`,col:C.cr};
+    return {descriptor:match?match.label:null,title:'What to expect',bg:'#EEF6FF',border:'1px solid #4A90D930',col:'#2563A8'};
+  },[match]);
   function pairingIcon(text){
     const t=(text||'').toLowerCase();
     if(/lamb|mutton|sheep/.test(t)) return 'food-lamb';
@@ -363,17 +338,10 @@ function DetailMerged({wine,nav,existingRating=0,matchPct}){
         </Card>
       )}
 
-      {/* Why This Matches You — dynamic based on match level */}
+      {/* Why it should (or shouldn't) suit you — TasteMatch's summary and reasons */}
       <Card style={{background:matchConfig.bg,border:matchConfig.border,padding:14}}>
         <div style={{fontSize:13,fontWeight:700,color:matchConfig.col,letterSpacing:'0.07em',textTransform:'uppercase',fontFamily:C.P,marginBottom:6}}>{matchConfig.title}</div>
-        {generatingWhy?(
-          <div style={{display:'flex',alignItems:'center',gap:6}}>
-            <div style={{width:10,height:10,borderRadius:5,border:`2px solid ${matchConfig.col}40`,borderTopColor:matchConfig.col,animation:'storySpin .8s linear infinite'}}/>
-            <span style={{fontSize:14,color:matchConfig.col,fontFamily:C.P,fontStyle:'italic'}}>Analyzing your taste…</span>
-          </div>
-        ):(
-          <span style={{fontSize:15,color:matchConfig.col,fontFamily:C.P,lineHeight:1.6}}>{genWhy||'(personalizing…)'}</span>
-        )}
+        {match&&<MatchReasons match={match} col={matchConfig.col}/>}
       </Card>
 
       {/* Scan location — optional manual note on where/when this was had (full geolocation is backlogged) */}

@@ -14,6 +14,8 @@ export const APP_SOURCES = [
   'pwa-grape-learning.js',
   'pwa-quiz-questions.js',
   'pwa-winedna.js',
+  'pwa-match.js',
+  'pwa-scan.js',
   'pwa-components.jsx',
   'tweaks-panel.jsx',
   'pwa-screens-main.jsx',

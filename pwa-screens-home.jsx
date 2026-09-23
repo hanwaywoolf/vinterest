@@ -101,6 +101,42 @@ function WineChatWidget({wines}){
   );
 }
 
+/* Bottles waiting on the user: shelf checks to confirm ("Did you buy it?") and wines they've
+   drunk or bought but not scored. Each score sharpens WineDNA and every match. */
+function WaitingOnYou({nav}){
+  const [v,setV]=React.useState(0);
+  const {toScore,toAsk}=React.useMemo(()=>WineHistory.pending(),[v]);
+  if(!toScore.length&&!toAsk.length) return null;
+  const ask=toAsk[0];
+  const open=w=>{
+    sessionStorage.setItem('vinterest_scan_result',JSON.stringify({demo:false,source:'history',view:'rate',wine:w}));
+    nav('identified');
+  };
+  return <Card style={{padding:0,overflow:'hidden'}}>
+    <div style={{padding:'12px 14px 8px'}}>
+      <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>Waiting on you</div>
+      <div style={{fontSize:13,color:C.mid,fontFamily:C.P,marginTop:1}}>Every score sharpens your matches.</div>
+    </div>
+    {ask&&<div style={{padding:'10px 14px 12px',borderTop:`1px solid ${C.line}`}}>
+      <div style={{fontSize:15,color:C.ink,fontFamily:C.P,lineHeight:1.45}}>Did you buy the <b>{ask.name}</b>{ask.vintage?` ${ask.vintage}`:''}?</div>
+      <div style={{display:'flex',gap:8,marginTop:8}}>
+        <Btn small primary onClick={()=>{ WineHistory.setBought(ask.name,ask.vintage,true); setV(x=>x+1); }}>Yes, I bought it</Btn>
+        <Btn small onClick={()=>{ WineHistory.setBought(ask.name,ask.vintage,false); setV(x=>x+1); }}>No</Btn>
+      </div>
+    </div>}
+    {toScore.slice(0,3).map(w=>(
+      <div key={w.name+'|'+w.vintage} onClick={()=>open(w)} style={{display:'flex',alignItems:'center',gap:10,padding:'10px 14px',borderTop:`1px solid ${C.line}`,cursor:'pointer'}}>
+        <div style={{flex:1,minWidth:0}}>
+          <div style={{fontSize:15,fontWeight:600,color:C.ink,fontFamily:C.P,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{w.name}</div>
+          <div style={{fontSize:13,color:C.mid,fontFamily:C.P}}>{w.bought&&w.scan_intent==='checking'?'Bought':'Tasted'}, not scored yet</div>
+        </div>
+        <span style={{fontSize:13,fontWeight:700,color:C.cr,fontFamily:C.P,flexShrink:0}}>Score it →</span>
+      </div>
+    ))}
+    {toScore.length>3&&<div onClick={()=>nav('mywines')} style={{padding:'8px 14px 12px',borderTop:`1px solid ${C.line}`,fontSize:13,fontWeight:600,color:C.mid,fontFamily:C.P,cursor:'pointer'}}>{toScore.length-3} more in My Wines →</div>}
+  </Card>;
+}
+
 function HomeScreen({nav, showPro, isTablet}){
   const [travel,setTravel]=React.useState(()=>Regional.travel());
   React.useEffect(()=>{
@@ -236,6 +272,8 @@ function HomeScreen({nav, showPro, isTablet}){
       {/* ── Scrollable body ── */}
       <div style={{flex:1,overflowY:'auto',overscrollBehavior:'none',WebkitOverflowScrolling:'touch'}}>
       <div style={{padding:'8px 20px',display:'flex',flexDirection:'column',gap:12}}>
+
+        <WaitingOnYou nav={nav}/>
 
         {/* Recently Scanned */}
         {recentWines.length>0&&(
