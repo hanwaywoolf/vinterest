@@ -313,208 +313,155 @@ function SimilarWinesScreen({nav,back}){
 }
 
 /* ── STYLE EXPLORE SCREEN ── */
+/* Explore Next detail: teaches one style (what it tastes like, why, how to spot it, what to ask
+   for) from the curated catalogue, then suggests real bottles priced around the user's usual
+   spend. Opened from WineDNA's Explore Next; the style and reasoning come from ExploreNext. */
 function StyleExploreScreen({nav,back}){
-  const gap=React.useMemo(()=>{
+  const cfg=React.useMemo(()=>{
     try{return JSON.parse(sessionStorage.getItem('vinterest_style_explore')||'null');}
     catch(e){return null;}
   },[]);
-
   const allWines=WineHistory.getAll();
-  const typeKey=gap?.typeKey||'red';
+  const fit=React.useMemo(()=>cfg&&cfg.id?ExploreNext.forStyle(cfg.id,allWines,cfg.label):null,[]);
+  const style=fit&&fit.style;
+  const typeKey=style?style.type:(cfg&&cfg.typeKey)||'red';
   const typeWines=allWines.filter(w=>(w.type||'').toLowerCase().replace('é','e')===typeKey);
 
-  /* User DNA */
-  const avgArr=(arr,field,fb)=>{const ws=arr.filter(w=>w[field]!=null);return ws.length?ws.reduce((s,w)=>s+w[field],0)/ws.length:fb;};
-  const avgB=avgArr(typeWines,'body',0.65);
-  const avgT=avgArr(typeWines,'tannins',0.55);
-  const avgA=avgArr(typeWines,'acidity',0.60);
-
-  /* Currency */
-  const userRegion=localStorage.getItem('vinterest_region')||'uk';
-  const FX={GBP:0.79,CAD:1.36,AUD:1.53,NZD:1.64,EUR:0.92,USD:1.0};
-  const CBASE={uk:'£',us:'$',ontario:'$',canada:'$',australia:'$',nz:'$',eu:'€',france:'€',germany:'€',italy:'€',spain:'€'};
-  const CCODE={uk:'GBP',us:'USD',ontario:'CAD',canada:'CAD',australia:'AUD',nz:'NZD',eu:'EUR',france:'EUR',germany:'EUR',italy:'EUR',spain:'EUR'};
-  const CLABEL={uk:'the UK',us:'the US',ontario:'Ontario, Canada',canada:'Canada',australia:'Australia',nz:'New Zealand',eu:'Europe',france:'France',germany:'Germany',italy:'Italy',spain:'Spain'};
-  const csym=CBASE[userRegion]||'£';
-  const ccode=CCODE[userRegion]||'GBP';
-  const clabel=CLABEL[userRegion]||'the UK';
-  const fx=FX[ccode]||0.79;
-
-  /* Avg spend from scan history */
-  const priceWines=allWines.filter(w=>w.price_usd>0);
-  const avgUsd=priceWines.length?Math.round(priceWines.reduce((s,w)=>s+w.price_usd,0)/priceWines.length):30;
-  const avgLocal=Math.round(avgUsd*fx);
-
-  const [wines,setWines]=React.useState(null);
+  const rc=Regional.current();
+  const budget=SommelierScript.budget(typeWines,rc);
+  const [bottles,setBottles]=React.useState(null);
   const [loading,setLoading]=React.useState(false);
-  const [addedToLearn,setAddedToLearn]=React.useState(()=>{
-    if(!gap) return false;
-    try{const is=JSON.parse(localStorage.getItem('vinterest_learn_interests')||'[]');return is.some(i=>i.label===gap.wine&&i.wineType===typeKey);}
-    catch(e){return false;}
-  });
-
-  const cacheKey=gap?`vinterest_se3_${(gap.wine||'').replace(/\W/g,'_').slice(0,30)}_${ccode}`:null;
+  const [inLearn,setInLearn]=React.useState(()=>!!style&&ExploreNext.inLearn(style.id));
+  const [copied,setCopied]=React.useState(false);
+  const cacheKey=style?`vinterest_se4_${style.id}_${rc.code}_${budget||'nob'}`:null;
 
   React.useEffect(()=>{
-    if(!gap) return;
-    if(cacheKey){
-      const cached=localStorage.getItem(cacheKey);
-      if(cached){try{setWines(JSON.parse(cached));return;}catch(e){}}
-    }
+    if(!style) return;
+    const cached=localStorage.getItem(cacheKey);
+    if(cached){ try{ setBottles(JSON.parse(cached)); return; }catch(e){} }
     setLoading(true);
-    const bLbl=avgB>=0.68?'full-bodied':avgB>=0.38?'medium-bodied':'light-bodied';
-    const tLbl=avgT>=0.68?'high-tannin':avgT>=0.38?'medium-tannin':'low-tannin';
-    const aLbl=avgA>=0.68?'high-acidity':avgA>=0.38?'medium-acidity':'low-acidity';
-    const prompt=`You are a sommelier and wine pricing expert. The user loves ${typeKey} wines: ${bLbl}, ${tLbl}, ${aLbl}. Suggest exactly 4 specific named bottles in the ${gap.wine} style from ${gap.region}, one for EACH of these four tiers (use these exact tier keys):\n- "budget": cheap and cheerful, wallet-friendly\n- "value": high community rating relative to its price — excellent quality for what you pay\n- "mid-range": a great rating at a reasonable, everyday-special price\n- "top-tier": outstanding rating, premium price to match\nIMPORTANT for price_local: use the ACTUAL known retail price for each specific producer and wine in ${clabel} (${ccode}) — do NOT average by appellation. Prestigious wines can be ${csym}50–${csym}2000+; use real figures. Also include a realistic community rating out of 100 for each. Return ONLY valid JSON, no markdown: {"wines":[{"tier":"budget|value|mid-range|top-tier","name":"Full wine name","producer":"Producer","vintage":"year or NV","region":"${gap.region}","grapes":["Grape"],"price_local":NUMBER,"rating":NUMBER,"why":"1 sentence referencing body/tannins/acidity, and for value/top-tier the quality-to-price relationship"}]}`;
+    const spend=budget
+      ?`My usual spend on ${typeKey} wine is ${budget}. Make "value" a good bottle at the low end of that range or just below it, "mid-range" squarely inside it, "step-up" a little above it, and "splurge" a special-occasion bottle.`
+      :`Spread the four across everyday, good-value, special and splurge prices.`;
+    const prompt=`You are a sommelier helping someone try ${style.name} (${style.region}, ${style.country}; grapes: ${style.grapes.join(', ')}) for the first time. Suggest exactly 4 specific, real, widely available bottles of this style that someone in ${rc.label} could actually buy, one for each tier: "value", "mid-range", "step-up", "splurge". ${spend} Prices must be realistic current retail prices in ${rc.code}, as plain numbers. For each, give one sentence on what makes that bottle a good introduction to the style. Return ONLY valid JSON, no markdown: {"wines":[{"tier":"value|mid-range|step-up|splurge","name":"Full wine name","producer":"Producer","vintage":"year or NV","price_local":NUMBER,"why":"one sentence"}]}`;
     window.claude.complete({purpose:'explore',messages:[{role:'user',content:prompt}]})
       .then(text=>{
         let c=text.replace(/```json|```/g,'').trim();
-        const s=c.indexOf('{'),e=c.lastIndexOf('}');
-        if(s>=0&&e>s) c=c.slice(s,e+1);
-        const d=JSON.parse(c);
-        const order={budget:0,value:1,'mid-range':2,'top-tier':3};
-        const list=(d.wines||[]).slice().sort((a,b)=>(order[a.tier]??9)-(order[b.tier]??9));
-        if(cacheKey) localStorage.setItem(cacheKey,JSON.stringify(list));
-        setWines(list);
+        const i=c.indexOf('{'),j=c.lastIndexOf('}');
+        if(i>=0&&j>i) c=c.slice(i,j+1);
+        const order={value:0,'mid-range':1,'step-up':2,splurge:3};
+        const list=(JSON.parse(c).wines||[]).filter(w=>w&&w.name).sort((a,b)=>(order[a.tier]??9)-(order[b.tier]??9));
+        if(list.length) localStorage.setItem(cacheKey,JSON.stringify(list));
+        setBottles(list);
       })
-      .catch(()=>setWines([]))
+      .catch(()=>setBottles([]))
       .finally(()=>setLoading(false));
   },[]);
 
-  function handleAddToLearn(){
-    try{
-      const is=JSON.parse(localStorage.getItem('vinterest_learn_interests')||'[]');
-      const entry={region:gap.region,wineType:typeKey,label:gap.wine,addedAt:new Date().toISOString()};
-      if(!is.some(i=>i.label===entry.label&&i.wineType===entry.wineType)){
-        is.push(entry);
-        localStorage.setItem('vinterest_learn_interests',JSON.stringify(is));
-      }
-      setAddedToLearn(true);
-    }catch(e){}
-  }
-
-  function handleFindItForMe(wine){
-    const q=`${wine.producer?wine.producer+' ':''}${wine.name}${wine.vintage&&wine.vintage!=='NV'?' '+wine.vintage:''} ${typeKey} wine buy near me`;
+  function findIt(wine){
+    const q=`${wine.producer&&!wine.name.includes(wine.producer)?wine.producer+' ':''}${wine.name}${wine.vintage&&wine.vintage!=='NV'?' '+wine.vintage:''} buy`;
     window.open('https://www.google.com/search?q='+encodeURIComponent(q),'_blank','noopener');
   }
 
-  const TYPE_COL={red:'#8B1A2F',white:'#B8963E',rose:'#C47A8A',sparkling:'#5E8FA8'};
+  const TYPE_COL={red:'#8B1A2F',white:'#B8963E',rose:'#C47A8A',sparkling:'#5E8FA8',orange:'#C1652B',dessert:'#8A5A2B',fortified:'#5C2A1E'};
   const col=TYPE_COL[typeKey]||C.cr;
+  const section=(title,children)=>(
+    <div style={{padding:'12px 14px',borderRadius:12,background:C.white,border:`1px solid ${C.line}`}}>
+      <div style={{fontSize:12,fontWeight:700,color:col,fontFamily:C.P,marginBottom:5,letterSpacing:'0.08em',textTransform:'uppercase'}}>{title}</div>
+      {children}
+    </div>
+  );
+  const body=t=><div style={{fontSize:15,color:C.ink2,fontFamily:C.P,lineHeight:1.6}}>{t}</div>;
+  const TIER={value:'Value','mid-range':'Your usual','step-up':'Step up',splurge:'Splurge'};
+
+  if(!style) return(
+    <div style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:12,padding:32}}>
+      <span style={{fontSize:16,color:C.mid,fontFamily:C.P,textAlign:'center'}}>This suggestion has been updated. Open Explore Next on your WineDNA to see the latest picks.</span>
+      <Btn primary onClick={()=>nav('profile')}>Go to WineDNA</Btn>
+    </div>
+  );
 
   return(
     <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden'}}>
-      {/* Header */}
       <div style={{background:col,padding:'14px 20px',display:'flex',alignItems:'center',gap:12,flexShrink:0}}>
         <div onClick={back} style={{width:34,height:34,borderRadius:17,background:'rgba(255,255,255,0.2)',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer'}}>
           <Icon n="back" sz={16} col="#fff"/>
         </div>
         <div style={{flex:1}}>
-          <div style={{fontSize:19,fontWeight:700,color:'#fff',fontFamily:C.P,lineHeight:1.2}}>{gap?.wine||'Style Explore'}</div>
-          <div style={{fontSize:14,color:'rgba(255,255,255,0.65)',fontFamily:C.P}}>{gap?.region||''}</div>
+          <div style={{fontSize:19,fontWeight:700,color:'#fff',fontFamily:C.P,lineHeight:1.2}}>{style.name}</div>
+          <div style={{fontSize:14,color:'rgba(255,255,255,0.75)',fontFamily:C.P}}>{style.region} · {style.country} · {style.grapes.join(', ')}</div>
         </div>
         <Icon n="compass" sz={20} col="rgba(255,255,255,0.35)"/>
       </div>
 
-      {loading?<ExploreLoading/>:(
-        <div style={{flex:1,overflowY:'auto'}}>
-          <div style={{padding:'14px 16px',display:'flex',flexDirection:'column',gap:12}}>
-
-            {/* Why this matches */}
-            {gap?.why&&(
-              <div style={{padding:'12px 14px',borderRadius:12,background:col+'10',border:`1px solid ${col}25`}}>
-                <div style={{fontSize:12,fontWeight:700,color:col,fontFamily:C.P,marginBottom:4,letterSpacing:'0.08em',textTransform:'uppercase'}}>Why this matches your DNA</div>
-                <div style={{fontSize:15,color:C.ink2,fontFamily:C.P,lineHeight:1.6}}>{gap.why}</div>
-              </div>
-            )}
-
-            {/* Budget + region badges */}
-            <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
-              <div style={{padding:'5px 12px',borderRadius:20,background:C.amberBg,border:`1px solid ${C.amber}25`}}>
-                <span style={{fontSize:13,fontWeight:600,color:C.amber,fontFamily:C.P}}>Avg spend · {csym}{avgLocal} <span style={{fontWeight:700,opacity:0.7}}>{ccode}</span></span>
-              </div>
-              <div style={{padding:'5px 12px',borderRadius:20,background:C.offWhite,border:`1px solid ${C.line}`}}>
-                <span style={{fontSize:13,color:C.mid,fontFamily:C.P}}>{clabel}</span>
-              </div>
-            </div>
-
-            {/* Wine cards */}
-            {wines&&wines.map((wine,i)=>{
-              const TIER={
-                'budget':    {label:'Budget',    col:C.mid},
-                'value':     {label:'Value',     col:C.green},
-                'mid-range': {label:'Mid-Range', col:col},
-                'top-tier':  {label:'Top-Tier',  col:'#9B6B00'},
-              };
-              const tier=TIER[wine.tier]||null;
-              return(
-              <Card key={i} style={{padding:14}}>
-                {tier&&(
-                  <div style={{display:'inline-flex',padding:'3px 10px',borderRadius:20,background:tier.col+'15',border:`1px solid ${tier.col}35`,marginBottom:8}}>
-                    <span style={{fontSize:12,fontWeight:700,color:tier.col,fontFamily:C.P,letterSpacing:'0.05em',textTransform:'uppercase'}}>{tier.label}</span>
-                  </div>
-                )}
-                <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',gap:8,marginBottom:6}}>
-                  <div style={{flex:1}}>
-                    <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P,lineHeight:1.2,marginBottom:2}}>{wine.name}</div>
-                    {wine.producer&&wine.producer!==wine.name&&(
-                      <div style={{fontSize:14,color:C.mid,fontFamily:C.P}}>{wine.producer}</div>
-                    )}
-                  </div>
-                  <div style={{flexShrink:0,textAlign:'right'}}>
-                    {wine.price_local&&(
-                      <>
-                        <div style={{fontSize:20,fontWeight:800,color:col,fontFamily:C.P,lineHeight:1}}>{csym}{wine.price_local}</div>
-                        <div style={{fontSize:10,fontWeight:700,color:col+'99',fontFamily:C.P,marginTop:2,letterSpacing:'0.04em'}}>{ccode}</div>
-                      </>
-                    )}
-                    {wine.vintage&&<div style={{fontSize:13,color:C.mid,fontFamily:C.P,marginTop:2}}>{wine.vintage}</div>}
-                  </div>
-                </div>
-
-                <div style={{display:'flex',gap:5,flexWrap:'wrap',marginBottom:8,alignItems:'center'}}>
-                  <Pill sm style={{background:col+'12',color:col,border:`1px solid ${col}25`,textTransform:'capitalize'}}>{typeKey}</Pill>
-                  {(wine.grapes||[]).slice(0,2).map((g,j)=><Pill key={j} sm>{g}</Pill>)}
-                  {wine.rating>0&&(
-                    <span style={{display:'inline-flex',alignItems:'center',gap:3,marginLeft:'auto'}}>
-                      <Icon n="star" sz={12} col={C.amber}/>
-                      <span style={{fontSize:13,fontWeight:700,color:C.amber,fontFamily:C.P}}>{wine.rating}/100</span>
-                    </span>
-                  )}
-                </div>
-
-                {wine.why&&(
-                  <div style={{fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.55,fontStyle:'italic',marginBottom:10}}>{wine.why}</div>
-                )}
-
-                <Btn primary small full style={{background:col,boxShadow:`0 3px 10px ${col}35`}}
-                  onClick={()=>handleFindItForMe(wine)}>Find It For Me</Btn>
-              </Card>
-              );
-            })}
-
-            {wines&&wines.length===0&&(
-              <Card style={{padding:14}}>
-                <span style={{fontSize:15,color:C.mid,fontFamily:C.P,fontStyle:'italic'}}>No suggestions available for this style.</span>
-              </Card>
-            )}
-
-            {/* Add to Learn */}
-            <Card style={{padding:14,background:addedToLearn?C.greenBg:C.offWhite,border:`1px solid ${addedToLearn?C.green+'40':C.line}`,transition:'background .3s'}}>
-              <div style={{fontSize:15,fontWeight:700,color:addedToLearn?C.green:C.ink,fontFamily:C.P,marginBottom:4}}>
-                {addedToLearn?'✓ Added to your Learn portal':'Learn more about this region'}
-              </div>
-              <div style={{fontSize:14,color:C.mid,fontFamily:C.P,lineHeight:1.55,marginBottom:addedToLearn?0:12}}>
-                {addedToLearn
-                  ?`Personalised articles about ${gap?.region} will appear in your Learn tab.`
-                  :`Add ${gap?.region||'this region'} & ${typeKey} wines to your learning interests — Vinterest will generate personalised articles to help you explore this style.`}
-              </div>
-              {!addedToLearn&&<Btn full onClick={handleAddToLearn}>Add to Learn</Btn>}
-            </Card>
-
-            <div style={{height:8}}/>
+      <div style={{flex:1,overflowY:'auto'}}>
+        <div style={{padding:'14px 16px',display:'flex',flexDirection:'column',gap:10}}>
+          <div style={{padding:'12px 14px',borderRadius:12,background:col+'10',border:`1px solid ${col}25`}}>
+            <div style={{fontSize:12,fontWeight:700,color:col,fontFamily:C.P,marginBottom:5,letterSpacing:'0.08em',textTransform:'uppercase'}}>Why it's next for you</div>
+            {body(fit.why)}
           </div>
+          {section('What it tastes like',body(style.learn.taste))}
+          {section('Why it tastes that way',body(style.learn.why))}
+          {section('How to spot it',body(style.learn.label))}
+          {section('What to ask for',(
+            <div style={{display:'flex',alignItems:'flex-start',gap:10}}>
+              <div style={{flex:1,fontSize:15,color:C.ink2,fontFamily:C.P,lineHeight:1.6,fontStyle:'italic'}}>"{style.learn.ask}"</div>
+              <span onClick={()=>{try{navigator.clipboard.writeText(style.learn.ask);setCopied(true);setTimeout(()=>setCopied(false),2000);}catch(e){}}}
+                style={{fontSize:13,fontWeight:600,color:col,fontFamily:C.P,cursor:'pointer',flexShrink:0}}>{copied?'Copied':'Copy'}</span>
+            </div>
+          ))}
+
+          <div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline',marginTop:6}}>
+            <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>Bottles to try</div>
+            {budget&&<span style={{fontSize:13,color:C.amber,fontFamily:C.P,fontWeight:600}}>Your usual: {budget}</span>}
+          </div>
+          {loading&&(
+            <div style={{display:'flex',alignItems:'center',gap:10,padding:'10px 2px'}}>
+              <div style={{width:16,height:16,borderRadius:8,border:`2px solid ${col}30`,borderTopColor:col,animation:'storySpin .8s linear infinite'}}/>
+              <span style={{fontSize:14,color:C.mid,fontFamily:C.P}}>Finding bottles you can buy in {rc.label}…</span>
+            </div>
+          )}
+          {bottles&&bottles.map((wine,i)=>(
+            <Card key={i} style={{padding:14}}>
+              <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',gap:8,marginBottom:6}}>
+                <div style={{flex:1}}>
+                  {TIER[wine.tier]&&<div style={{fontSize:12,fontWeight:700,color:col,fontFamily:C.P,letterSpacing:'0.05em',textTransform:'uppercase',marginBottom:3}}>{TIER[wine.tier]}</div>}
+                  <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P,lineHeight:1.2}}>{wine.name}</div>
+                  {wine.producer&&!wine.name.includes(wine.producer)&&<div style={{fontSize:14,color:C.mid,fontFamily:C.P}}>{wine.producer}</div>}
+                </div>
+                {wine.price_local>0&&(
+                  <div style={{flexShrink:0,textAlign:'right'}}>
+                    <div style={{fontSize:19,fontWeight:800,color:col,fontFamily:C.P,lineHeight:1}}>{rc.base}{Math.round(wine.price_local)}</div>
+                    <div style={{fontSize:10,fontWeight:700,color:col+'99',fontFamily:C.P,marginTop:2}}>{rc.code} · est.</div>
+                  </div>
+                )}
+              </div>
+              {wine.why&&<div style={{fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.55,marginBottom:10}}>{wine.why}</div>}
+              <Btn small full onClick={()=>findIt(wine)}>Find it online</Btn>
+            </Card>
+          ))}
+          {bottles&&bottles.length===0&&(
+            <Card style={{padding:14}}>
+              <span style={{fontSize:15,color:C.mid,fontFamily:C.P}}>Couldn't load bottle suggestions right now. The label tips above are enough to find one in a shop or on a wine list.</span>
+            </Card>
+          )}
+
+          <Card style={{padding:14,background:C.offWhite,border:`1px solid ${C.line}`}}>
+            <div style={{fontSize:15,fontWeight:700,color:C.ink,fontFamily:C.P,marginBottom:4}}>Found one? Scan it</div>
+            <div style={{fontSize:14,color:C.mid,fontFamily:C.P,lineHeight:1.55,marginBottom:10}}>Scan and rate it and it'll move to "Already explored" on your WineDNA, and your next suggestions will learn from what you thought.</div>
+            <Btn primary full style={{background:col}} onClick={()=>nav('camera')}>Scan a bottle</Btn>
+          </Card>
+
+          <Card style={{padding:14,background:inLearn?C.greenBg:C.offWhite,border:`1px solid ${inLearn?C.green+'40':C.line}`}}>
+            <div style={{fontSize:15,fontWeight:700,color:inLearn?C.green:C.ink,fontFamily:C.P,marginBottom:4}}>{inLearn?'✓ On your Learn shelf':'Read up before you buy'}</div>
+            <div style={{fontSize:14,color:C.mid,fontFamily:C.P,lineHeight:1.55,marginBottom:inLearn?0:10}}>
+              {inLearn?`"Explore Next: ${style.name}" is waiting on your Learn tab.`:`Add a short article on ${style.name} to your Learn tab: the story behind it, what to eat with it, and how to order it.`}
+            </div>
+            {!inLearn&&<Btn full onClick={()=>{ExploreNext.addToLearn(style.id);setInLearn(true);}}>Add to Learn</Btn>}
+          </Card>
+          <div style={{height:8}}/>
         </div>
-      )}
+      </div>
     </div>
   );
 }

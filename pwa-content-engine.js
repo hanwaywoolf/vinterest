@@ -187,6 +187,120 @@ const SommelierScript = {
   }
 };
 
+let EXPLORE_STYLES=[];
+try{ EXPLORE_STYLES=_loadJSON('data/explore-styles.json')||[]; }catch(e){ console.error('[Vinterest] explore-styles.json failed to load — Explore Next will be empty until it is deployed.',e); }
+
+/* Explore Next (WineDNA): which styles to try next for one wine type, and the teaching content for
+   each. Styles come from data/explore-styles.json, a curated catalogue with a taste profile on the
+   same 0–1 scale as scanned wines, the grapes/regions each one builds on, and what it tastes like,
+   why, how to spot it and what to ask for.
+
+   Ranking: closeness of the style's profile to the user's averages for that type, a bonus when it
+   builds on a grape or region they already rate highly, a penalty when it leans on one they rate
+   low, and a spread across countries. A style the user has already scanned isn't suggested again;
+   it's returned as "explored" with their rating, so trying a suggestion visibly closes the loop. */
+const ExploreNext = {
+  AXES:{body:['full body','light body','medium body'],tannins:['firm tannins','soft tannins','medium tannins'],
+        acidity:['fresh, high acidity','softer acidity','balanced acidity'],sweetness:['sweetness','a dry style','a touch of sweetness']},
+  _t(v){ return (v||'').toLowerCase().replace('é','e'); },
+  _typeWines(typeKey,wines){ return wines.filter(w=>this._t(w.type)===typeKey); },
+  _hay(w){ return [w.name,w.region,w.sub_region,...(w.grapes||[])].filter(Boolean).join(' | ').toLowerCase(); },
+  // Whole-word matches against the wine's name, region and grapes, so 'kent' doesn't match
+  // 'Kentucky'. Match terms are places/appellations, or the grape only where the grape is the style.
+  matches(style,w){
+    const h=this._hay(w);
+    return (style.match||[]).some(m=>{ const i=h.indexOf(m); if(i<0) return false;
+      const edge=c=>!c||!/[a-z0-9\u00c0-\u024f]/.test(c);
+      for(let k=i;k>=0;k=h.indexOf(m,k+1)) if(edge(h[k-1])&&edge(h[k+m.length])) return true;
+      return false; });
+  },
+  _weighted(pairs){ const c={}; pairs.forEach(([v,r])=>{ if(v){ const k=v.toLowerCase(); c[k]=(c[k]||0)+Math.max(r||55,5); } }); return Object.entries(c).sort((a,b)=>b[1]-a[1]).map(e=>e[0]); },
+  // Grapes/regions in the bottom third of a user's ratings (needs 4+ rated wines to mean anything).
+  _low(wines,pluck){
+    const rated=wines.filter(w=>w.rating>0); if(rated.length<4) return new Set();
+    const sorted=[...rated].sort((a,b)=>a.rating-b.rating);
+    const cutoff=sorted[Math.max(0,Math.floor(sorted.length/3)-1)].rating;
+    const low=new Set(); sorted.filter(w=>w.rating<=cutoff).forEach(w=>pluck(w).forEach(v=>v&&low.add(v.toLowerCase())));
+    const high=new Set(); sorted.filter(w=>w.rating>cutoff).forEach(w=>pluck(w).forEach(v=>v&&high.add(v.toLowerCase())));
+    return new Set([...low].filter(v=>!high.has(v)));
+  },
+  // The user's DNA for one type: averages per axis (only where scans have data), rating-weighted
+  // top grapes/regions, low-rated traits and their best bottle.
+  dna(typeKey,wines){
+    const ws=this._typeWines(typeKey,wines);
+    const avg={};
+    Object.keys(this.AXES).forEach(k=>{ const v=ws.filter(w=>typeof w[k]==='number'); if(v.length) avg[k]=v.reduce((s,w)=>s+w[k],0)/v.length; });
+    return {wines:ws,avg,
+      topGrapes:this._weighted(ws.flatMap(w=>(w.grapes||[]).map(g=>[g,w.rating]))).slice(0,4),
+      topRegions:this._weighted(ws.map(w=>[w.region,w.rating])).slice(0,4),
+      lowGrapes:this._low(ws,w=>w.grapes||[]),lowRegions:this._low(ws,w=>[w.region])};
+  },
+  _level(v){ return v>=0.62?0:v<=0.4?1:2; },
+  _cap(s){ return s.replace(/\b\w/g,c=>c.toUpperCase()); },
+  // How one style relates to the user: score, the trait it shares, what it builds on, and a
+  // plain-English reason naming only the user's own wines, grapes and regions.
+  assess(style,dna,label){
+    const axes=Object.keys(style.profile).filter(k=>dna.avg[k]!=null);
+    const diffs=axes.map(k=>({k,d:Math.abs(style.profile[k]-dna.avg[k]),u:dna.avg[k]}));
+    const sim=diffs.length?1-diffs.reduce((s,x)=>s+x.d,0)/diffs.length:0.5;
+    const notable=diffs.filter(x=>Math.abs(x.u-0.5)>=0.12);
+    const sharedAxis=(notable.length?notable:diffs).sort((a,b)=>a.d-b.d)[0];
+    const shares=sharedAxis?this.AXES[sharedAxis.k][this._level(sharedAxis.u)]:null;
+    // The user's best-rated bottle that actually shows the shared trait, as a concrete example.
+    const ex=sharedAxis&&[...dna.wines].filter(w=>w.rating>0&&typeof w[sharedAxis.k]==='number'&&this._level(w[sharedAxis.k])===this._level(sharedAxis.u)).sort((a,b)=>b.rating-a.rating)[0];
+    const has=(list,val)=>list.some(x=>x.includes(val)||val.includes(x));
+    const bridge=(style.bridge.grapes||[]).find(g=>has(dna.topGrapes,g))||(style.bridge.regions||[]).find(r=>has(dna.topRegions,r))||null;
+    const low=style.grapes.some(g=>dna.lowGrapes.has(g.toLowerCase()))||(style.match||[]).some(m=>[...dna.lowRegions].some(r=>r.includes(m)));
+    const score=sim+(bridge?0.12:0)-(low?0.3:0);
+    const lbl=label.toLowerCase();
+    const why=[
+      shares
+        ?`${style.name} has the ${shares.replace(/^(a |an )/,'')} you go for in your ${lbl}${ex?` (think ${ex.name}, which you rated ${ex.rating})`:''}, and brings ${style.adds}.`
+        :`${style.name} brings ${style.adds}, a new corner of ${lbl} for your map.`,
+      bridge?`A natural next step if you enjoy ${this._cap(bridge)}.`:''
+    ].filter(Boolean).join(' ');
+    return {style,score,shares,bridge:bridge&&this._cap(bridge),why};
+  },
+  // {picks:[assessments], explored:[{style,wine}]} for one type.
+  suggest(typeKey,wines,label,n=3){
+    const dna=this.dna(typeKey,wines);
+    const styles=EXPLORE_STYLES.filter(s=>s.type===typeKey);
+    const explored=[], open=[];
+    styles.forEach(s=>{
+      const tried=dna.wines.filter(w=>this.matches(s,w)).sort((a,b)=>(b.rating||0)-(a.rating||0))[0];
+      if(tried) explored.push({style:s,wine:tried}); else open.push(this.assess(s,dna,label));
+    });
+    open.sort((a,b)=>b.score-a.score);
+    const picks=[], countries=new Set();
+    open.forEach(a=>{ if(picks.length<n&&!countries.has(a.style.country)){ picks.push(a); countries.add(a.style.country); } });
+    open.forEach(a=>{ if(picks.length<n&&!picks.includes(a)) picks.push(a); });
+    return {picks,explored};
+  },
+  style(id){ return EXPLORE_STYLES.find(s=>s.id===id)||null; },
+  forStyle(id,wines,label){ const s=this.style(id); return s?this.assess(s,this.dna(s.type,wines),label||s.type):null; },
+  // "Add to Learn": a real article on the Learn shelf, written from the style's curated facts,
+  // the same way unlocking a grape adds one.
+  inLearn(id){ return ExposureLedger.has('explore:'+id); },
+  addToLearn(id){
+    const style=this.style(id);
+    const archetype=ARTICLE_ARCHETYPES.find(a=>a.id==='explore_style_intro');
+    if(!style||!archetype||this.inLearn(id)) return false;
+    const slots={style:style.name,region:null};
+    const L=style.learn;
+    const stub={
+      id:'ev_explore_'+id, archetypeId:archetype.id, iconName:archetype.iconName, readTime:archetype.readTime,
+      title:ContentEngine.fillTpl(archetype.titleTpl,slots), subtitle:ContentEngine.fillTpl(archetype.subtitleTpl,slots),
+      brief:archetype.brief, slots,
+      facts:`${style.name} — ${style.region}, ${style.country}. Grapes: ${style.grapes.join(', ')}. Taste: ${L.taste} Why it tastes that way: ${L.why} On the label: ${L.label}`
+    };
+    let stubs=[]; try{ stubs=JSON.parse(localStorage.getItem('vinterest_gen_stubs')||'[]')||[]; }catch(e){}
+    stubs.push(stub);
+    localStorage.setItem('vinterest_gen_stubs',JSON.stringify(stubs));
+    ExposureLedger.mark('explore:'+id);
+    return true;
+  }
+};
+
 const ContentEngine = {
   TRAIT_BASELINE:{body:0.5,tannins:0.5,acidity:0.5,sweetness:0.15},
   TRAIT_LABEL:{body:'Full-Bodied',tannins:'Tannic',acidity:'High-Acid',sweetness:'Sweet'},

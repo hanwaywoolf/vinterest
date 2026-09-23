@@ -16,7 +16,9 @@ const DIST = 'http://localhost:4173';
 
 test.skip(!fs.existsSync(path.join(ROOT, 'bundle.js')), 'bundle.js has been removed');
 
-const SCREENS = ['home', 'mywines', 'learn', 'profile', 'scan', 'settings', 'account', 'mastery-map'];
+// #profile (WineDNA) isn't compared: its Explore Next section was redesigned (ExploreNext,
+// tests/explore-next.spec.js) and deliberately differs from bundle.js.
+const SCREENS = ['home', 'mywines', 'learn', 'scan', 'settings', 'account', 'mastery-map'];
 
 // Intended differences on these screens: the version line is generated now, and the legacy build's
 // QuizHubScreen crashes on the first Learn visit after WineDNA unlocks (fixed in this build),
@@ -26,7 +28,7 @@ const SEED = { vinterest_wineDNA_unlock_seen: '1' };
 const ADDED_SINCE_BUNDLE = [
   'RegionQuizBank', 'QUIZ_SIZE', 'QuizMastery', '_ceShuffle', '_regionsWithScans', 'completedRegionQuizzes',
   'grapeQuizBank', 'grapeQuizComplete', 'CompletedToggle', 'CompletedMark', '_drawQuiz', 'quizSetFor',
-  'buildQuizQuestions', 'quizTitle', 'nextQuizSuggestion', 'USD_FX', 'SommelierScript',
+  'buildQuizQuestions', 'quizTitle', 'nextQuizSuggestion', 'USD_FX', 'SommelierScript', 'EXPLORE_STYLES', 'ExploreNext',
 ];
 const normalise = (text) => text.replace(/Vinterest v[^\n]*/g, 'Vinterest v<version>');
 

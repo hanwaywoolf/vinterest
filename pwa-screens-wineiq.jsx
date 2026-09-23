@@ -7,8 +7,6 @@ function _avg(wines,field,fb){const ws=wines.filter(w=>w[field]!=null);return ws
 function _wavg(wines,field,fb){const ws=wines.filter(w=>w[field]!=null);if(!ws.length)return fb;let num=0,den=0;ws.forEach(w=>{const wt=Math.max(w.rating||55,5)/100;num+=w[field]*wt;den+=wt;});return den?num/den:fb;}
 /* Rating-weighted tally — an attribute (grape/region/note) earns weight from every wine it appears in, scaled by that wine's rating, so one obscure low-rated bottle can't outrank several wines you actually rated well. */
 function _topByWeightedCount(items){const c={};items.forEach(({v,rating})=>{if(v)c[v]=(c[v]||0)+Math.max(rating||55,5);});return Object.entries(c).sort((a,b)=>b[1]-a[1]).map(e=>e[0]);}
-/* Traits (grapes/regions) that skew toward your lowest-rated bottles — used to keep "Explore Next" from recommending things anchored to what you don't like. */
-function _lowTraits(wines,pluck){const rated=wines.filter(w=>w.rating>0);if(rated.length<4)return new Set();const sorted=[...rated].sort((a,b)=>a.rating-b.rating);const cutoff=sorted[Math.max(0,Math.floor(sorted.length/3)-1)].rating;const low=sorted.filter(w=>w.rating<=cutoff);const set=new Set();low.forEach(w=>pluck(w).forEach(v=>{if(v)set.add(v.toLowerCase());}));return set;}
 function _topGrapes(wines,n){const all=[];wines.forEach(w=>(w.grapes||[]).forEach(g=>{if(g)all.push({v:g,rating:w.rating});}));return _topByWeightedCount(all).slice(0,n);}
 function _topRegions(wines,n){const all=wines.filter(w=>w.region).map(w=>({v:w.region,rating:w.rating}));return _topByWeightedCount(all).slice(0,n);}
 function _topNotes(wines,n){const all=[];wines.forEach(w=>(w.tasting_notes||[]).forEach(t=>{if(t)all.push({v:t,rating:w.rating});}));return _topByWeightedCount(all).slice(0,n);}
@@ -106,62 +104,6 @@ function _dnaWhy(axis,val,topGrapes,topRegions){
     },
   };
   return T[axis]?.[hi?'hi':lo?'lo':'md']||'';
-}
-
-/* ── Gap map ── */
-function _gaps(typeKey,avgB,avgT,avgA,avgS,topGrapes,topRegions,wines){
-  const rgs=new Set(topRegions.map(r=>(r||'').toLowerCase()));
-  const gps=new Set(topGrapes.map(g=>(g||'').toLowerCase()));
-  const lowRgs=_lowTraits(wines,w=>[w.region]);
-  const lowGps=_lowTraits(wines,w=>w.grapes||[]);
-  const topG=topGrapes[0],topR=topRegions[0];
-  // Every suggestion's copy names only your OWN top grape/region as the reason — never a comparison to a specific
-  // third-party bottle, so it can't accidentally sell a wine by likening it to something you rated low.
-  const pool={
-    red:[
-      {wine:'Aglianico from Taurasi',region:'Campania, Italy',anchorGrapes:['tempranillo','sangiovese','cabernet sauvignon','merlot'],why:`Similar grip and structure to your ${topG||'favorite reds'}, with a smoky, volcanic character you haven't explored.`,cond:avgT>=0.60&&!rgs.has('campania')},
-      {wine:'Côte-Rôtie (Syrah)',region:'Northern Rhône, France',anchorGrapes:['syrah','shiraz'],why:`Builds on your love of ${topG||'Syrah'} with violet and smoked-meat notes your current bottles don't have.`,cond:avgB>=0.65&&(gps.has('syrah')||gps.has('shiraz'))},
-      {wine:'Douro Red Blend',region:'Portugal',anchorGrapes:['tempranillo','touriga nacional'],why:`Rooted in the same grip and dark fruit as your ${topG||'top reds'}, from a region you haven't scanned yet.`,cond:avgT>=0.60&&!rgs.has('douro')&&!rgs.has('portugal')},
-      {wine:'Etna Rosso (Nerello Mascalese)',region:'Sicily',anchorRegions:['tuscany','piedmont'],why:`Shares the high-acid, earthy backbone of your ${topR||'top region'} reds, with a volcanic mineral edge that's new.`,cond:avgA>=0.60&&!rgs.has('sicily')},
-    ],
-    white:[
-      {wine:'Grüner Veltliner Smaragd',region:'Wachau, Austria',anchorRegions:['burgundy','chablis','loire'],why:`Matches the piercing acidity you go for in ${topR||'your top whites'}, with a white pepper note you haven't tried.`,cond:avgA>=0.65&&!rgs.has('austria')},
-      {wine:'Assyrtiko from Santorini',region:'Greece',anchorRegions:['chablis','burgundy'],why:`Takes the mineral drive of your ${topR||'top whites'} to a bone-dry, volcanic extreme.`,cond:avgA>=0.62&&!rgs.has('greece')},
-      {wine:'Aged White Rioja',region:'Spain',anchorRegions:['rioja'],why:`From the same region as your ${topR||'favorite'} reds, but oxidatively aged for a nutty, textural white style you haven't tried.`,cond:!rgs.has('rioja')&&rgs.has('spain')},
-    ],
-    rose:[
-      {wine:'Bandol Rosé (Mourvèdre)',region:'Provence, France',anchorRegions:['provence'],why:`Pushes your bone-dry ${topR||'Provençal'} instinct into richer, more saline territory.`,cond:rgs.has('provence')&&!lowGps.has('mourvèdre')&&!lowGps.has('mourvedre')},
-      {wine:'Tavel Rosé',region:'Rhône Valley, France',why:'The boldest dry rosé in France — challenges a lighter palate with real structure and food-worthiness.',cond:avgB<0.55},
-    ],
-    sparkling:[
-      {wine:'Blanc de Noirs (Meunier grower)',region:'Vallée de la Marne',why:'A grower Meunier Champagne takes a bready, toasty preference toward wilder, earthier complexity.',cond:avgB>=0.55},
-      {wine:'Aged Vintage Champagne',region:'Champagne',why:'Ten-plus years on lees pushes a toasty preference to its extreme — deep oxidative notes and extraordinary length.',cond:true},
-      {wine:'Pét-Nat from Loire',region:'France',why:'A useful contrast to your polished picks — wild, cloudy, funky, and structurally the opposite.',cond:avgA>=0.65},
-    ],
-    orange:[
-      {wine:'Ramato Pinot Grigio',region:'Friuli, Italy',anchorRegions:['friuli','collio'],why:`Builds on your love of ${topR||'Friulian skin-contact whites'} with a lighter, rosé-hued take on extended maceration.`,cond:avgT>=0.40},
-      {wine:'Rkatsiteli, Qvevri-aged',region:'Georgia',anchorGrapes:['rkatsiteli'],why:`Georgia is the birthplace of skin-contact winemaking, aged in buried clay qvevri instead of steel or oak.`,cond:!rgs.has('georgia')},
-      {wine:'Amber Riesling',region:'Wachau, Austria',anchorGrapes:['riesling'],why:`Takes the acidity you like in ${topG||'aromatic whites'} and adds real tannic grip from skin contact.`,cond:avgA>=0.60&&(gps.has('riesling'))},
-    ],
-    dessert:[
-      {wine:'Tokaji Aszú (5 Puttonyos)',region:'Tokaj, Hungary',why:`Botrytis-affected and intensely honeyed, with the piercing acidity that keeps ${topR||'great dessert wines'} from feeling cloying.`,cond:avgA>=0.55},
-      {wine:'Vin Santo',region:'Tuscany, Italy',why:'Dried-grape sweetness with a nutty, oxidative edge — a different path to richness than botrytis wines.',cond:avgB>=0.5},
-      {wine:'Eiswein',region:'Mosel, Germany',why:'Grapes frozen on the vine concentrate sugar and acid alike — searingly sweet but never flabby.',cond:avgA>=0.65},
-    ],
-    fortified:[
-      {wine:'Amontillado Sherry',region:'Jerez, Spain',why:'Starts biologically aged like a Fino, then oxidizes further in barrel — dry, nutty, and complex.',cond:avgS<0.4},
-      {wine:'10-Year Tawny Port',region:'Douro, Portugal',why:'Barrel-aged oxidatively for a decade, trading Vintage Port\u2019s fruit for dried fig, caramel and walnut.',cond:avgS>=0.3},
-      {wine:'Rare Madeira',region:'Madeira, Portugal',why:'Deliberately heated and oxidized during production — the only fortified wine that improves for centuries once opened.',cond:true},
-    ],
-  };
-  return (pool[typeKey]||[]).filter(s=>{
-    if(!s.cond) return false;
-    if(s.anchorGrapes&&!s.anchorGrapes.some(g=>gps.has(g))) return false;
-    if(s.anchorRegions&&!s.anchorRegions.some(r=>rgs.has(r))) return false;
-    if(s.avoidGrapes&&s.avoidGrapes.some(g=>lowGps.has(g))) return false;
-    if(s.avoidRegions&&s.avoidRegions.some(r=>lowRgs.has(r))) return false;
-    return true;
-  }).slice(0,2);
 }
 
 /* ── Flavour clusters ── */
@@ -336,9 +278,9 @@ function WineDNAScreen({nav,back,showPro}){
     const topNotes=_topNotes(wines,14);
     const noteClusters=_clusterNotes(topNotes);
     const personality=_personality(tp.key,avgB,avgT,avgA,avgS);
-    const gaps=_gaps(tp.key,avgB,avgT,avgA,avgS,topGrapes,topRegions,wines);
+    const explore=ExploreNext.suggest(tp.key,allWines,tp.label);
     const topWines=[...wines].filter(w=>w.rating>0).sort((a,b)=>(b.rating||0)-(a.rating||0)).slice(0,3);
-    return{...tp,wines,pct,avgB,avgT,avgA,avgS,avgX,avgE,topGrapes,topRegions,topNotes,noteClusters,personality,gaps,topWines};
+    return{...tp,wines,pct,avgB,avgT,avgA,avgS,avgX,avgE,topGrapes,topRegions,topNotes,noteClusters,personality,explore,topWines};
   }),[allWines.length]);
 
   const t=typeStats[typeIdx];
@@ -566,7 +508,7 @@ function WineDNAScreen({nav,back,showPro}){
                         {label:'Your Preference',    text:sections.preference},
                         {label:'What You Like',      text:sections.like||sections.why},
                         {label:'What You Don\u2019t Like', text:sections.dislike},
-                        ...(t.gaps.length>0?[{label:'Try Next', text:`${t.gaps[0].wine}${t.gaps[0].region?' from '+t.gaps[0].region:''} \u2014 ${t.gaps[0].why}`}]:[]),
+                        ...(t.explore.picks.length>0?[{label:'Try Next', text:`${t.explore.picks[0].style.name} from ${t.explore.picks[0].style.region} \u2014 brings ${t.explore.picks[0].style.adds}`}]:[]),
                       ].filter(s=>s.text).map((s,i)=>(
                         <div key={i}>
                           <div style={{fontSize:12,fontWeight:700,color:t.col,letterSpacing:'0.08em',textTransform:'uppercase',fontFamily:C.P,marginBottom:2}}>{s.label}</div>
@@ -626,26 +568,42 @@ function WineDNAScreen({nav,back,showPro}){
           </Card>
         )}
 
-        {t.wines.length>=3&&t.gaps.length>0&&<CSH label="Explore" cKey="explore" collapsed={collapsed} toggle={toggle} summary={`We spotted ${t.gaps.length} new direction${t.gaps.length!==1?'s':''} that share your ${t.label.toLowerCase()} DNA. Top pick: ${t.gaps[0].wine}${t.gaps[0].region?' from '+t.gaps[0].region:''}.`}/>}
-        {/* ── Explore Next / Gap Map ── */}
-        {t.wines.length>=3&&t.gaps.length>0&&!collapsed.explore&&(
+        {t.wines.length>=3&&t.explore.picks.length>0&&<CSH label="Explore" cKey="explore" collapsed={collapsed} toggle={toggle} summary={`${t.explore.picks.length} styles picked from your ${t.label.toLowerCase()} DNA. Top pick: ${t.explore.picks[0].style.name} (${t.explore.picks[0].style.country}).${t.explore.explored.length?` You've explored ${t.explore.explored.length} so far.`:''}`}/>}
+        {/* ── Explore Next: styles to try, ranked from this type's WineDNA (ExploreNext, pwa-content-engine.js) ── */}
+        {t.wines.length>=3&&t.explore.picks.length>0&&!collapsed.explore&&(
           <Card style={{padding:14}}>
             <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P,marginBottom:4}}>Explore Next</div>
-            <div style={{fontSize:15,color:C.mid,fontFamily:C.P,marginBottom:12}}>Styles that share your {t.label.toLowerCase()} DNA but introduce new territory</div>
+            <div style={{fontSize:15,color:C.mid,fontFamily:C.P,marginBottom:12,lineHeight:1.5}}>Styles that share your {t.label.toLowerCase()} DNA but take you somewhere new. Tap one to learn what it's like and how to find it.</div>
             <div style={{display:'flex',flexDirection:'column',gap:10}}>
-              {t.gaps.map((s,i)=>(
-                <div key={i}
-                  onClick={()=>{sessionStorage.setItem('vinterest_style_explore',JSON.stringify({wine:s.wine,region:s.region,why:s.why,typeKey:t.key}));nav('style-explore');}}
-                  style={{padding:'10px 12px',borderRadius:12,background:i===0?`${t.col}08`:C.offWhite,border:`1px solid ${i===0?t.col+'25':C.line}`,cursor:'pointer'}}>
-                  <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',gap:8,marginBottom:4}}>
-                    <div style={{fontSize:15,fontWeight:700,color:C.ink,fontFamily:C.P,flex:1}}>{s.wine}</div>
-                    <span style={{fontSize:13,color:C.mid,fontFamily:C.P,flexShrink:0}}>{s.region}</span>
+              {t.explore.picks.map((p,i)=>(
+                <div key={p.style.id}
+                  onClick={()=>{sessionStorage.setItem('vinterest_style_explore',JSON.stringify({id:p.style.id,typeKey:t.key,label:t.label}));nav('style-explore');}}
+                  style={{padding:'12px 12px',borderRadius:12,background:i===0?`${t.col}08`:C.offWhite,border:`1px solid ${i===0?t.col+'25':C.line}`,cursor:'pointer'}}>
+                  <div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline',gap:8,marginBottom:6}}>
+                    <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P,flex:1}}>{p.style.name}</div>
+                    <span style={{fontSize:13,color:C.mid,fontFamily:C.P,flexShrink:0}}>{p.style.country}</span>
                   </div>
-                  <div style={{fontSize:13,color:C.ink2,fontFamily:C.P,lineHeight:1.55,textWrap:'pretty',marginBottom:6}}>{s.why}</div>
-                  <div style={{fontSize:13,fontWeight:600,color:t.col,fontFamily:C.P}}>Explore wines →</div>
+                  <div style={{display:'flex',flexWrap:'wrap',gap:5,marginBottom:8}}>
+                    {p.shares&&<span style={{fontSize:12,fontWeight:600,color:C.green,background:C.greenBg,border:`1px solid ${C.green}30`,borderRadius:20,padding:'2px 9px',fontFamily:C.P}}>Shares: {p.shares}</span>}
+                    <span style={{fontSize:12,fontWeight:600,color:t.col,background:`${t.col}10`,border:`1px solid ${t.col}30`,borderRadius:20,padding:'2px 9px',fontFamily:C.P}}>New: {p.style.adds}</span>
+                  </div>
+                  <div style={{fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.55,textWrap:'pretty',marginBottom:6}}>{p.why}</div>
+                  <div style={{fontSize:13,fontWeight:600,color:t.col,fontFamily:C.P}}>Learn about it & find a bottle →</div>
                 </div>
               ))}
             </div>
+            {t.explore.explored.length>0&&(
+              <div style={{marginTop:12,paddingTop:10,borderTop:`1px solid ${C.line}`}}>
+                <div style={{fontSize:13,fontWeight:600,color:C.mid,fontFamily:C.P,textTransform:'uppercase',letterSpacing:'0.06em',marginBottom:6}}>Already explored</div>
+                {t.explore.explored.map(e=>(
+                  <div key={e.style.id} style={{display:'flex',alignItems:'center',gap:8,padding:'4px 0'}}>
+                    <span style={{fontSize:14,fontWeight:700,color:C.green,fontFamily:C.P}}>✓</span>
+                    <span style={{fontSize:14,color:C.ink,fontFamily:C.P,flex:1}}>{e.style.name}</span>
+                    <span style={{fontSize:13,color:C.mid,fontFamily:C.P}}>{e.wine.rating?`you rated it ${e.wine.rating}`:'scanned'}</span>
+                  </div>
+                ))}
+              </div>
+            )}
           </Card>
         )}
 

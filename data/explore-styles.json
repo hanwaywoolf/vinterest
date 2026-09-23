@@ -1,0 +1,1361 @@
+[
+ {
+  "id": "etna_rosso",
+  "type": "red",
+  "name": "Etna Rosso",
+  "region": "Mount Etna, Sicily",
+  "country": "Italy",
+  "grapes": [
+   "Nerello Mascalese"
+  ],
+  "profile": {
+   "body": 0.5,
+   "tannins": 0.6,
+   "acidity": 0.75
+  },
+  "bridge": {
+   "grapes": [
+    "pinot noir",
+    "nebbiolo",
+    "sangiovese"
+   ],
+   "regions": [
+    "burgundy",
+    "piedmont",
+    "tuscany"
+   ]
+  },
+  "adds": "a smoky, volcanic minerality",
+  "learn": {
+   "taste": "Red cherry, dried herbs and a smoky, flinty edge. Light to medium body with fine but firm tannins.",
+   "why": "The vines grow on the slopes of an active volcano, some above 1,000 metres. The altitude keeps acidity high, and the black volcanic soils give the smoky, mineral streak.",
+   "label": "Look for 'Etna Rosso DOC'. Nerello Mascalese is the main grape, often with a little Nerello Cappuccio.",
+   "ask": "Something like a Pinot Noir or Nebbiolo but more mineral: do you have an Etna Rosso?"
+  },
+  "match": [
+   "etna",
+   "nerello"
+  ]
+ },
+ {
+  "id": "aglianico",
+  "type": "red",
+  "name": "Aglianico (Taurasi)",
+  "region": "Campania",
+  "country": "Italy",
+  "grapes": [
+   "Aglianico"
+  ],
+  "profile": {
+   "body": 0.8,
+   "tannins": 0.85,
+   "acidity": 0.7
+  },
+  "bridge": {
+   "grapes": [
+    "nebbiolo",
+    "cabernet sauvignon",
+    "tempranillo",
+    "syrah"
+   ],
+   "regions": [
+    "piedmont",
+    "bordeaux",
+    "rioja"
+   ]
+  },
+  "adds": "dark, smoky savouriness",
+  "learn": {
+   "taste": "Black cherry, plum, tar and smoke, with powerful tannins and fresh acidity.",
+   "why": "Aglianico ripens late on volcanic soils, so it keeps high acidity alongside big tannins. That combination makes it one of Italy's longest-lived reds.",
+   "label": "'Taurasi DOCG' and 'Aglianico del Vulture' are the classic names. Younger, cheaper bottles just say 'Aglianico'.",
+   "ask": "I'd like something big and structured. Is there an Aglianico or a Taurasi on the list?"
+  },
+  "match": [
+   "aglianico",
+   "taurasi",
+   "vulture"
+  ]
+ },
+ {
+  "id": "northern_rhone_syrah",
+  "type": "red",
+  "name": "Northern Rhône Syrah",
+  "region": "Northern Rhône",
+  "country": "France",
+  "grapes": [
+   "Syrah"
+  ],
+  "profile": {
+   "body": 0.65,
+   "tannins": 0.65,
+   "acidity": 0.65
+  },
+  "bridge": {
+   "grapes": [
+    "syrah",
+    "shiraz",
+    "grenache",
+    "malbec"
+   ],
+   "regions": [
+    "rhône",
+    "rhone",
+    "barossa"
+   ]
+  },
+  "adds": "black pepper, olive and smoked-meat notes",
+  "learn": {
+   "taste": "Blackberry, black pepper, olive and smoky, meaty notes. Medium to full body with firm tannins.",
+   "why": "The cooler Northern Rhône gives Syrah a peppery, savoury style, very different from riper Australian Shiraz. The pepper comes from a compound called rotundone.",
+   "label": "Crozes-Hermitage and Saint-Joseph are the affordable way in; Côte-Rôtie, Hermitage and Cornas are the top names. They're all Syrah, though the grape is rarely on the label.",
+   "ask": "I'd like a Northern Rhône Syrah: a Crozes-Hermitage or a Saint-Joseph."
+  },
+  "match": [
+   "crozes",
+   "saint-joseph",
+   "st-joseph",
+   "côte-rôtie",
+   "cote-rotie",
+   "hermitage",
+   "cornas"
+  ]
+ },
+ {
+  "id": "douro_red",
+  "type": "red",
+  "name": "Douro Red",
+  "region": "Douro Valley",
+  "country": "Portugal",
+  "grapes": [
+   "Touriga Nacional",
+   "Touriga Franca",
+   "Tinta Roriz"
+  ],
+  "profile": {
+   "body": 0.8,
+   "tannins": 0.75,
+   "acidity": 0.6
+  },
+  "bridge": {
+   "grapes": [
+    "tempranillo",
+    "cabernet sauvignon",
+    "syrah"
+   ],
+   "regions": [
+    "rioja",
+    "ribera del duero"
+   ]
+  },
+  "adds": "floral, violet-scented dark fruit",
+  "learn": {
+   "taste": "Dark plum, blackberry and violets, with firm tannins and a full body.",
+   "why": "It's the same steep valley and the same grapes that make Port, fermented dry instead of fortified. Tinta Roriz is the local name for Tempranillo.",
+   "label": "Look for 'Douro DOC', with Touriga Nacional named on the back label.",
+   "ask": "Do you have a dry red from the Douro?"
+  },
+  "match": [
+   "douro"
+  ]
+ },
+ {
+  "id": "cru_beaujolais",
+  "type": "red",
+  "name": "Cru Beaujolais",
+  "region": "Beaujolais",
+  "country": "France",
+  "grapes": [
+   "Gamay"
+  ],
+  "profile": {
+   "body": 0.4,
+   "tannins": 0.35,
+   "acidity": 0.7
+  },
+  "bridge": {
+   "grapes": [
+    "pinot noir",
+    "gamay"
+   ],
+   "regions": [
+    "burgundy",
+    "loire"
+   ]
+  },
+  "adds": "juicy, floral fruit at a friendly price",
+  "learn": {
+   "taste": "Crunchy red cherry, raspberry and violets. Light body, low tannin and fresh acidity.",
+   "why": "Gamay grown on granite in the ten Beaujolais 'crus' makes far more serious wine than Beaujolais Nouveau, and the best age like lighter Burgundy.",
+   "label": "Look for a village name rather than just 'Beaujolais': Morgon, Fleurie, Moulin-à-Vent or Brouilly.",
+   "ask": "Something light and fresh, like a Morgon or a Fleurie?"
+  },
+  "match": [
+   "morgon",
+   "fleurie",
+   "moulin-à-vent",
+   "moulin-a-vent",
+   "brouilly",
+   "beaujolais",
+   "gamay",
+   "chiroubles",
+   "juliénas",
+   "julienas",
+   "saint-amour",
+   "régnié",
+   "regnie",
+   "chénas",
+   "chenas"
+  ]
+ },
+ {
+  "id": "barbera",
+  "type": "red",
+  "name": "Barbera",
+  "region": "Piedmont",
+  "country": "Italy",
+  "grapes": [
+   "Barbera"
+  ],
+  "profile": {
+   "body": 0.55,
+   "tannins": 0.3,
+   "acidity": 0.8
+  },
+  "bridge": {
+   "grapes": [
+    "sangiovese",
+    "pinot noir",
+    "nebbiolo"
+   ],
+   "regions": [
+    "piedmont",
+    "tuscany"
+   ]
+  },
+  "adds": "bright acidity with soft tannins",
+  "learn": {
+   "taste": "Sour cherry, plum and a juicy, mouth-watering finish, with very gentle tannins.",
+   "why": "Barbera is naturally high in acid but low in tannin, which makes it one of Italy's most food-friendly everyday reds.",
+   "label": "The grape is in the name: 'Barbera d'Asti' or 'Barbera d'Alba'.",
+   "ask": "A Barbera for the table, something fresh to go with the food."
+  },
+  "match": [
+   "barbera"
+  ]
+ },
+ {
+  "id": "mencia",
+  "type": "red",
+  "name": "Mencía",
+  "region": "Bierzo",
+  "country": "Spain",
+  "grapes": [
+   "Mencía"
+  ],
+  "profile": {
+   "body": 0.55,
+   "tannins": 0.5,
+   "acidity": 0.65
+  },
+  "bridge": {
+   "grapes": [
+    "pinot noir",
+    "tempranillo",
+    "cabernet franc",
+    "grenache"
+   ],
+   "regions": [
+    "rioja",
+    "burgundy"
+   ]
+  },
+  "adds": "floral, peppery freshness",
+  "learn": {
+   "taste": "Red and black fruit, violets, a hint of pepper and slate. Medium body with fresh acidity.",
+   "why": "Grown on steep slate slopes in north-west Spain, Mencía sits somewhere between Pinot Noir and Cabernet Franc in style.",
+   "label": "Look for 'Bierzo DO' or 'Ribeira Sacra'. Mencía is usually named on the label.",
+   "ask": "Do you have a Mencía from Bierzo or Ribeira Sacra?"
+  },
+  "match": [
+   "mencía",
+   "mencia",
+   "bierzo",
+   "ribeira sacra"
+  ]
+ },
+ {
+  "id": "uco_malbec",
+  "type": "red",
+  "name": "High-altitude Malbec",
+  "region": "Uco Valley, Mendoza",
+  "country": "Argentina",
+  "grapes": [
+   "Malbec"
+  ],
+  "profile": {
+   "body": 0.8,
+   "tannins": 0.6,
+   "acidity": 0.55
+  },
+  "bridge": {
+   "grapes": [
+    "merlot",
+    "cabernet sauvignon",
+    "syrah",
+    "shiraz"
+   ],
+   "regions": [
+    "bordeaux",
+    "napa valley",
+    "barossa"
+   ]
+  },
+  "adds": "plush dark fruit with a violet lift",
+  "learn": {
+   "taste": "Blackberry, plum, cocoa and violet. Full body with smooth, medium tannins.",
+   "why": "Vineyards up to 1,500 metres in the Andes get intense sun but cold nights, giving deep colour and ripe fruit that still tastes fresh.",
+   "label": "'Mendoza' or a sub-region like 'Uco Valley' or 'Luján de Cuyo', with Malbec on the front label.",
+   "ask": "A Malbec from the Uco Valley, if you have one."
+  },
+  "match": [
+   "mendoza",
+   "uco",
+   "luján de cuyo",
+   "lujan de cuyo",
+   "salta"
+  ]
+ },
+ {
+  "id": "loire_cab_franc",
+  "type": "red",
+  "name": "Loire Cabernet Franc",
+  "region": "Chinon, Loire Valley",
+  "country": "France",
+  "grapes": [
+   "Cabernet Franc"
+  ],
+  "profile": {
+   "body": 0.5,
+   "tannins": 0.55,
+   "acidity": 0.7
+  },
+  "bridge": {
+   "grapes": [
+    "cabernet sauvignon",
+    "merlot",
+    "pinot noir"
+   ],
+   "regions": [
+    "bordeaux",
+    "loire"
+   ]
+  },
+  "adds": "leafy, graphite freshness",
+  "learn": {
+   "taste": "Raspberry, red pepper and pencil shavings. Medium body and fresh.",
+   "why": "Cabernet Franc is a parent of Cabernet Sauvignon. In the cool Loire it's lighter and more herbal than in Bordeaux blends.",
+   "label": "Chinon, Bourgueil and Saumur-Champigny are Loire Cabernet Franc, though the grape rarely appears on the label.",
+   "ask": "I'd like to try a Chinon or another Loire Cabernet Franc."
+  },
+  "match": [
+   "chinon",
+   "bourgueil",
+   "saumur-champigny",
+   "saint-nicolas-de-bourgueil"
+  ]
+ },
+ {
+  "id": "gruner",
+  "type": "white",
+  "name": "Grüner Veltliner",
+  "region": "Wachau & Kamptal",
+  "country": "Austria",
+  "grapes": [
+   "Grüner Veltliner"
+  ],
+  "profile": {
+   "body": 0.5,
+   "acidity": 0.75,
+   "sweetness": 0.05
+  },
+  "bridge": {
+   "grapes": [
+    "sauvignon blanc",
+    "riesling",
+    "chardonnay",
+    "pinot grigio"
+   ],
+   "regions": [
+    "chablis",
+    "loire",
+    "marlborough"
+   ]
+  },
+  "adds": "a white-pepper spice",
+  "learn": {
+   "taste": "Green apple, lime, white pepper and a savoury, lentil-like note. Crisp and dry.",
+   "why": "Austria's signature grape. Its peppery note comes from rotundone, the same compound that makes Syrah peppery.",
+   "label": "Grüner Veltliner is on the label. Wachau wines are graded Steinfeder, Federspiel and Smaragd, from lightest to richest.",
+   "ask": "Something crisp and dry, like a Grüner Veltliner?"
+  },
+  "match": [
+   "grüner",
+   "gruner",
+   "wachau",
+   "kamptal"
+  ]
+ },
+ {
+  "id": "assyrtiko",
+  "type": "white",
+  "name": "Santorini Assyrtiko",
+  "region": "Santorini",
+  "country": "Greece",
+  "grapes": [
+   "Assyrtiko"
+  ],
+  "profile": {
+   "body": 0.55,
+   "acidity": 0.9,
+   "sweetness": 0.02
+  },
+  "bridge": {
+   "grapes": [
+    "sauvignon blanc",
+    "riesling",
+    "chardonnay",
+    "albariño"
+   ],
+   "regions": [
+    "chablis"
+   ]
+  },
+  "adds": "a salty, volcanic intensity",
+  "learn": {
+   "taste": "Lemon, sea salt and flint. Bone dry with searing acidity and surprising weight.",
+   "why": "Santorini's vines are trained into low baskets called 'kouloura' to shelter the grapes from the wind. Volcanic soil and sea air give the salty edge.",
+   "label": "'Santorini PDO' on the label means Assyrtiko.",
+   "ask": "Do you have an Assyrtiko from Santorini?"
+  },
+  "match": [
+   "assyrtiko",
+   "santorini"
+  ]
+ },
+ {
+  "id": "albarino",
+  "type": "white",
+  "name": "Albariño",
+  "region": "Rías Baixas",
+  "country": "Spain",
+  "grapes": [
+   "Albariño"
+  ],
+  "profile": {
+   "body": 0.4,
+   "acidity": 0.8,
+   "sweetness": 0.05
+  },
+  "bridge": {
+   "grapes": [
+    "sauvignon blanc",
+    "pinot grigio",
+    "riesling"
+   ],
+   "regions": [
+    "marlborough",
+    "loire"
+   ]
+  },
+  "adds": "peachy, sea-breeze freshness",
+  "learn": {
+   "taste": "Peach, lemon and a salty tang. Light and zesty.",
+   "why": "Grown in rainy, Atlantic-facing Galicia, often on high pergolas to keep air around the grapes, which keeps it fresh and aromatic.",
+   "label": "'Rías Baixas' and 'Albariño'. Over the border in Portugal the same grape is Alvarinho, in Vinho Verde.",
+   "ask": "A crisp coastal white, like an Albariño from Rías Baixas."
+  },
+  "match": [
+   "albariño",
+   "albarino",
+   "alvarinho",
+   "rías baixas",
+   "rias baixas"
+  ]
+ },
+ {
+  "id": "chenin",
+  "type": "white",
+  "name": "Chenin Blanc",
+  "region": "Vouvray, Loire Valley",
+  "country": "France",
+  "grapes": [
+   "Chenin Blanc"
+  ],
+  "profile": {
+   "body": 0.6,
+   "acidity": 0.8,
+   "sweetness": 0.2
+  },
+  "bridge": {
+   "grapes": [
+    "chardonnay",
+    "riesling",
+    "sauvignon blanc"
+   ],
+   "regions": [
+    "loire",
+    "burgundy"
+   ]
+  },
+  "adds": "honeyed apple and a waxy richness",
+  "learn": {
+   "taste": "Quince, baked apple, honey and chamomile. It can be dry, off-dry or sweet.",
+   "why": "Chenin's high acidity lets it be made in every style, from dry to sweet to sparkling. Vouvray labels say 'sec' (dry), 'demi-sec' (off-dry) or 'moelleux' (sweet).",
+   "label": "Vouvray or Savennières in the Loire, or 'Chenin Blanc' from South Africa's Swartland and Stellenbosch.",
+   "ask": "Do you have a dry Chenin Blanc? A Vouvray sec or something from South Africa?"
+  },
+  "match": [
+   "chenin",
+   "vouvray",
+   "savennières",
+   "savennieres",
+   "swartland"
+  ]
+ },
+ {
+  "id": "chablis",
+  "type": "white",
+  "name": "Chablis",
+  "region": "Chablis, Burgundy",
+  "country": "France",
+  "grapes": [
+   "Chardonnay"
+  ],
+  "profile": {
+   "body": 0.5,
+   "acidity": 0.8,
+   "sweetness": 0.02
+  },
+  "bridge": {
+   "grapes": [
+    "chardonnay",
+    "sauvignon blanc",
+    "pinot grigio"
+   ],
+   "regions": [
+    "burgundy",
+    "loire",
+    "marlborough"
+   ]
+  },
+  "adds": "chalky, oyster-shell minerality",
+  "learn": {
+   "taste": "Green apple, lemon and oyster shell. Little or no oak, and taut.",
+   "why": "Chablis is Chardonnay grown on limestone full of fossilised oyster shells, in Burgundy's coolest corner.",
+   "label": "Plain 'Chablis', then 'Premier Cru' and 'Grand Cru' for single vineyards.",
+   "ask": "I'd like an unoaked Chardonnay. Is there a Chablis?"
+  },
+  "match": [
+   "chablis"
+  ]
+ },
+ {
+  "id": "dry_riesling",
+  "type": "white",
+  "name": "Dry German Riesling",
+  "region": "Mosel & Rheingau",
+  "country": "Germany",
+  "grapes": [
+   "Riesling"
+  ],
+  "profile": {
+   "body": 0.4,
+   "acidity": 0.9,
+   "sweetness": 0.1
+  },
+  "bridge": {
+   "grapes": [
+    "sauvignon blanc",
+    "pinot grigio",
+    "albariño",
+    "riesling"
+   ],
+   "regions": [
+    "alsace",
+    "clare valley"
+   ]
+  },
+  "adds": "piercing, stony acidity",
+  "learn": {
+   "taste": "Lime, green apple and wet slate, with very high acidity. The best age for decades, picking up honeyed and petrol notes.",
+   "why": "The steep slate slopes of the Mosel reflect heat onto the vines. 'Trocken' on the label means dry.",
+   "label": "'Trocken' means dry. 'Kabinett' is lighter and often off-dry. 'Grosses Gewächs' (GG) are the top dry wines.",
+   "ask": "A dry Riesling, a Trocken from the Mosel or Rheingau."
+  },
+  "match": [
+   "mosel",
+   "rheingau",
+   "pfalz",
+   "nahe",
+   "trocken"
+  ]
+ },
+ {
+  "id": "viognier",
+  "type": "white",
+  "name": "Viognier",
+  "region": "Condrieu, Northern Rhône",
+  "country": "France",
+  "grapes": [
+   "Viognier"
+  ],
+  "profile": {
+   "body": 0.75,
+   "acidity": 0.45,
+   "sweetness": 0.05
+  },
+  "bridge": {
+   "grapes": [
+    "chardonnay",
+    "pinot gris",
+    "gewürztraminer",
+    "gewurztraminer"
+   ],
+   "regions": [
+    "burgundy",
+    "california"
+   ]
+  },
+  "adds": "an apricot and honeysuckle perfume",
+  "learn": {
+   "taste": "Apricot, peach and honeysuckle. Full and rich, with low acidity.",
+   "why": "Condrieu in the Northern Rhône is Viognier's home. The grape almost vanished in the 1960s before being revived.",
+   "label": "Condrieu for the classic, or 'Viognier' from the Languedoc, California or Australia.",
+   "ask": "Something rich and aromatic. Do you have a Viognier?"
+  },
+  "match": [
+   "viognier",
+   "condrieu"
+  ]
+ },
+ {
+  "id": "tavel",
+  "type": "rose",
+  "name": "Tavel",
+  "region": "Southern Rhône",
+  "country": "France",
+  "grapes": [
+   "Grenache",
+   "Cinsault"
+  ],
+  "profile": {
+   "body": 0.6,
+   "acidity": 0.55,
+   "sweetness": 0.05
+  },
+  "bridge": {
+   "grapes": [
+    "grenache",
+    "syrah",
+    "cinsault"
+   ],
+   "regions": [
+    "provence",
+    "rhône",
+    "rhone"
+   ]
+  },
+  "adds": "deeper colour and real structure",
+  "learn": {
+   "taste": "Strawberry, raspberry and spice. Fuller and darker than Provence rosé.",
+   "why": "Tavel is France's only appellation that makes nothing but rosé. Longer skin contact gives it colour and grip.",
+   "label": "'Tavel AOC' on the label.",
+   "ask": "A rosé with some weight to it. Do you have a Tavel?"
+  },
+  "match": [
+   "tavel"
+  ]
+ },
+ {
+  "id": "bandol_rose",
+  "type": "rose",
+  "name": "Bandol Rosé",
+  "region": "Bandol, Provence",
+  "country": "France",
+  "grapes": [
+   "Mourvèdre"
+  ],
+  "profile": {
+   "body": 0.55,
+   "acidity": 0.6,
+   "sweetness": 0.03
+  },
+  "bridge": {
+   "grapes": [
+    "grenache",
+    "cinsault",
+    "mourvèdre"
+   ],
+   "regions": [
+    "provence"
+   ]
+  },
+  "adds": "savoury, herbal depth",
+  "learn": {
+   "taste": "Red fruit, orange peel, herbs and a salty minerality. Dry and structured.",
+   "why": "Mourvèdre needs Bandol's hot, sea-facing slopes to ripen. Bandol rosé ages better than most.",
+   "label": "'Bandol AOC' on the label.",
+   "ask": "A more serious dry rosé, like a Bandol."
+  },
+  "match": [
+   "bandol",
+   "mourvèdre",
+   "mourvedre"
+  ]
+ },
+ {
+  "id": "navarra_rosado",
+  "type": "rose",
+  "name": "Navarra Rosado",
+  "region": "Navarra",
+  "country": "Spain",
+  "grapes": [
+   "Garnacha"
+  ],
+  "profile": {
+   "body": 0.55,
+   "acidity": 0.55,
+   "sweetness": 0.08
+  },
+  "bridge": {
+   "grapes": [
+    "grenache",
+    "garnacha",
+    "tempranillo"
+   ],
+   "regions": [
+    "rioja",
+    "provence"
+   ]
+  },
+  "adds": "juicy, vivid fruit",
+  "learn": {
+   "taste": "Watermelon, strawberry and cherry. Fruity and bright.",
+   "why": "Navarra built its name on Garnacha rosado, made by giving red grapes a short time on their skins.",
+   "label": "'Navarra DO' and 'rosado'.",
+   "ask": "A fruity Spanish rosado, from Navarra if you have one."
+  },
+  "match": [
+   "navarra",
+   "rosado"
+  ]
+ },
+ {
+  "id": "cerasuolo",
+  "type": "rose",
+  "name": "Cerasuolo d'Abruzzo",
+  "region": "Abruzzo",
+  "country": "Italy",
+  "grapes": [
+   "Montepulciano"
+  ],
+  "profile": {
+   "body": 0.55,
+   "acidity": 0.6,
+   "sweetness": 0.05
+  },
+  "bridge": {
+   "grapes": [
+    "montepulciano",
+    "sangiovese",
+    "grenache"
+   ],
+   "regions": [
+    "abruzzo",
+    "tuscany"
+   ]
+  },
+  "adds": "cherry depth between rosé and light red",
+  "learn": {
+   "taste": "Cherry, blood orange and herbs. A deep cherry-coloured rosé with some grip.",
+   "why": "Cerasuolo means 'cherry-red'. It's made from Montepulciano and sits somewhere between rosé and a light red.",
+   "label": "'Cerasuolo d'Abruzzo DOC' on the label.",
+   "ask": "A darker, food-friendly rosé, like a Cerasuolo d'Abruzzo."
+  },
+  "match": [
+   "cerasuolo"
+  ]
+ },
+ {
+  "id": "cremant",
+  "type": "sparkling",
+  "name": "Crémant",
+  "region": "Burgundy, Loire, Alsace",
+  "country": "France",
+  "grapes": [
+   "Chardonnay",
+   "Chenin Blanc",
+   "Pinot Noir"
+  ],
+  "profile": {
+   "body": 0.5,
+   "acidity": 0.75
+  },
+  "bridge": {
+   "grapes": [
+    "chardonnay",
+    "pinot noir"
+   ],
+   "regions": [
+    "champagne",
+    "burgundy"
+   ]
+  },
+  "adds": "the Champagne method at a fraction of the price",
+  "learn": {
+   "taste": "Apple, citrus and a light brioche note, with fine bubbles.",
+   "why": "Crémant uses the same traditional method as Champagne, a second fermentation in the bottle, but comes from other French regions.",
+   "label": "'Crémant de Bourgogne', 'Crémant de Loire' or 'Crémant d'Alsace'.",
+   "ask": "Something like Champagne but better value. Do you have a Crémant?"
+  },
+  "match": [
+   "crémant",
+   "cremant"
+  ]
+ },
+ {
+  "id": "franciacorta",
+  "type": "sparkling",
+  "name": "Franciacorta",
+  "region": "Lombardy",
+  "country": "Italy",
+  "grapes": [
+   "Chardonnay",
+   "Pinot Noir"
+  ],
+  "profile": {
+   "body": 0.6,
+   "acidity": 0.65
+  },
+  "bridge": {
+   "grapes": [
+    "chardonnay",
+    "pinot noir"
+   ],
+   "regions": [
+    "champagne"
+   ]
+  },
+  "adds": "a rounder, creamier Italian style",
+  "learn": {
+   "taste": "Ripe apple, almond and brioche, with a creamy mousse.",
+   "why": "Italy's top traditional-method sparkling. It must spend at least 18 months ageing on its lees.",
+   "label": "'Franciacorta DOCG' on the label.",
+   "ask": "An Italian traditional-method sparkling. Is there a Franciacorta?"
+  },
+  "match": [
+   "franciacorta"
+  ]
+ },
+ {
+  "id": "english_sparkling",
+  "type": "sparkling",
+  "name": "English Sparkling Wine",
+  "region": "Sussex, Kent & Hampshire",
+  "country": "England",
+  "grapes": [
+   "Chardonnay",
+   "Pinot Noir",
+   "Pinot Meunier"
+  ],
+  "profile": {
+   "body": 0.5,
+   "acidity": 0.85
+  },
+  "bridge": {
+   "grapes": [
+    "chardonnay",
+    "pinot noir"
+   ],
+   "regions": [
+    "champagne"
+   ]
+  },
+  "adds": "razor-sharp, cool-climate acidity",
+  "learn": {
+   "taste": "Green apple, lemon and hedgerow flowers. Very fresh.",
+   "why": "Southern England's chalk is part of the same geological seam as Champagne's, and the cool climate gives very high acidity.",
+   "label": "Look for Sussex, Kent or Hampshire. Most use Champagne's three grapes.",
+   "ask": "Do you have an English sparkling wine?"
+  },
+  "match": [
+   "sussex",
+   "kent",
+   "hampshire",
+   "england",
+   "english"
+  ]
+ },
+ {
+  "id": "cava_reserva",
+  "type": "sparkling",
+  "name": "Cava Reserva",
+  "region": "Penedès, Catalonia",
+  "country": "Spain",
+  "grapes": [
+   "Macabeo",
+   "Xarel·lo",
+   "Parellada"
+  ],
+  "profile": {
+   "body": 0.55,
+   "acidity": 0.65
+  },
+  "bridge": {
+   "grapes": [
+    "chardonnay"
+   ],
+   "regions": [
+    "champagne"
+   ]
+  },
+  "adds": "a savoury, toasty edge from long ageing",
+  "learn": {
+   "taste": "Lemon, apple, almond and a savoury, toasty note.",
+   "why": "Cava is made by the traditional method. Reserva spends at least 18 months on its lees and Gran Reserva 30, which builds the toastiness.",
+   "label": "'Cava' plus 'Reserva' or 'Gran Reserva'. Some top growers now label as 'Corpinnat'.",
+   "ask": "A Cava with some age on it, a Reserva or Gran Reserva."
+  },
+  "match": [
+   "cava",
+   "corpinnat"
+  ]
+ },
+ {
+  "id": "pet_nat",
+  "type": "sparkling",
+  "name": "Pét-Nat",
+  "region": "Loire Valley and beyond",
+  "country": "France",
+  "grapes": [
+   "Chenin Blanc",
+   "Gamay"
+  ],
+  "profile": {
+   "body": 0.35,
+   "acidity": 0.75
+  },
+  "bridge": {
+   "grapes": [
+    "chenin blanc",
+    "gamay"
+   ],
+   "regions": [
+    "loire"
+   ]
+  },
+  "adds": "a wild, cloudy, playful style",
+  "learn": {
+   "taste": "Fresh fruit, a little yeastiness and gentle, sometimes cloudy bubbles.",
+   "why": "Pétillant naturel is bottled before its first fermentation finishes, so the bubbles come from that one fermentation. It's the oldest way of making sparkling wine.",
+   "label": "'Pét-Nat', 'Pétillant Naturel' or 'Méthode Ancestrale' on the label.",
+   "ask": "Do you have a Pét-Nat? I'd like to try something different."
+  },
+  "match": [
+   "pét-nat",
+   "pet-nat",
+   "pet nat",
+   "pétillant naturel",
+   "ancestrale"
+  ]
+ },
+ {
+  "id": "georgian_qvevri",
+  "type": "orange",
+  "name": "Georgian Qvevri Amber",
+  "region": "Kakheti",
+  "country": "Georgia",
+  "grapes": [
+   "Rkatsiteli",
+   "Mtsvane"
+  ],
+  "profile": {
+   "tannins": 0.6,
+   "acidity": 0.6,
+   "body": 0.6
+  },
+  "bridge": {
+   "grapes": [
+    "rkatsiteli"
+   ],
+   "regions": [
+    "friuli"
+   ]
+  },
+  "adds": "the ancient original of skin-contact wine",
+  "learn": {
+   "taste": "Dried apricot, orange peel, walnut and tea, with real tannic grip.",
+   "why": "Georgia has made wine in buried clay jars called qvevri for around 8,000 years. White grapes ferment on their skins for months.",
+   "label": "'Qvevri' or 'Kakheti' on the label, with Rkatsiteli or Mtsvane.",
+   "ask": "Do you have a Georgian qvevri wine?"
+  },
+  "match": [
+   "qvevri",
+   "rkatsiteli",
+   "kakheti",
+   "georgia"
+  ]
+ },
+ {
+  "id": "ramato",
+  "type": "orange",
+  "name": "Ramato Pinot Grigio",
+  "region": "Friuli",
+  "country": "Italy",
+  "grapes": [
+   "Pinot Grigio"
+  ],
+  "profile": {
+   "tannins": 0.35,
+   "acidity": 0.55,
+   "body": 0.5
+  },
+  "bridge": {
+   "grapes": [
+    "pinot grigio",
+    "pinot gris"
+   ],
+   "regions": [
+    "friuli"
+   ]
+  },
+  "adds": "a lighter, copper-hued take on skin contact",
+  "learn": {
+   "taste": "Pear, red apple, spice and a light grip. Copper-pink in the glass.",
+   "why": "Pinot Grigio has pinkish-grey skins. A short time on the skins gives 'ramato' (copper) its colour, the traditional Venetian way to make it.",
+   "label": "'Ramato' on the label, usually from Friuli.",
+   "ask": "Do you have a ramato Pinot Grigio?"
+  },
+  "match": [
+   "ramato"
+  ]
+ },
+ {
+  "id": "ribolla",
+  "type": "orange",
+  "name": "Macerated Ribolla Gialla",
+  "region": "Collio / Brda",
+  "country": "Italy & Slovenia",
+  "grapes": [
+   "Ribolla Gialla"
+  ],
+  "profile": {
+   "tannins": 0.55,
+   "acidity": 0.65,
+   "body": 0.55
+  },
+  "bridge": {
+   "grapes": [
+    "ribolla gialla",
+    "pinot grigio"
+   ],
+   "regions": [
+    "friuli",
+    "collio"
+   ]
+  },
+  "adds": "the modern classic of skin-contact whites",
+  "learn": {
+   "taste": "Dried apricot, honey, herbs and firm tannins, with bright acidity.",
+   "why": "In the 1990s growers in Collio, on the Italy–Slovenia border, revived long skin contact inspired by Georgian qvevri wines.",
+   "label": "Collio (Italy) or Brda (Slovenia), with Ribolla Gialla (Rebula in Slovenian).",
+   "ask": "Is there a skin-contact Ribolla Gialla on the list?"
+  },
+  "match": [
+   "ribolla",
+   "rebula",
+   "collio",
+   "brda"
+  ]
+ },
+ {
+  "id": "sauternes",
+  "type": "dessert",
+  "name": "Sauternes",
+  "region": "Bordeaux",
+  "country": "France",
+  "grapes": [
+   "Sémillon",
+   "Sauvignon Blanc"
+  ],
+  "profile": {
+   "sweetness": 0.9,
+   "acidity": 0.6,
+   "body": 0.85
+  },
+  "bridge": {
+   "grapes": [
+    "sémillon",
+    "semillon",
+    "sauvignon blanc"
+   ],
+   "regions": [
+    "bordeaux"
+   ]
+  },
+  "adds": "rich, noble-rot honey",
+  "learn": {
+   "taste": "Apricot, honey, marmalade and saffron. Rich and luscious, with enough acidity to stay fresh.",
+   "why": "Autumn mists encourage 'noble rot', a fungus that shrivels the grapes and concentrates their sugar and acid.",
+   "label": "Sauternes or neighbouring Barsac.",
+   "ask": "A glass of Sauternes with dessert, please."
+  },
+  "match": [
+   "sauternes",
+   "barsac"
+  ]
+ },
+ {
+  "id": "tokaji",
+  "type": "dessert",
+  "name": "Tokaji Aszú",
+  "region": "Tokaj",
+  "country": "Hungary",
+  "grapes": [
+   "Furmint"
+  ],
+  "profile": {
+   "sweetness": 0.85,
+   "acidity": 0.85,
+   "body": 0.75
+  },
+  "bridge": {
+   "grapes": [
+    "furmint",
+    "riesling"
+   ],
+   "regions": [
+    "sauternes",
+    "bordeaux"
+   ]
+  },
+  "adds": "sweetness with a searing, lively acidity",
+  "learn": {
+   "taste": "Apricot, orange peel, honey and tea. Intensely sweet but vivid.",
+   "why": "Aszú berries are shrivelled by noble rot and added to base wine. 'Puttonyos' on older labels measures how sweet it is.",
+   "label": "'Tokaji Aszú', often with 5 or 6 puttonyos.",
+   "ask": "Do you have a Tokaji Aszú?"
+  },
+  "match": [
+   "tokaj",
+   "tokaji"
+  ]
+ },
+ {
+  "id": "auslese",
+  "type": "dessert",
+  "name": "Riesling Auslese",
+  "region": "Mosel",
+  "country": "Germany",
+  "grapes": [
+   "Riesling"
+  ],
+  "profile": {
+   "sweetness": 0.75,
+   "acidity": 0.9,
+   "body": 0.5
+  },
+  "bridge": {
+   "grapes": [
+    "riesling"
+   ],
+   "regions": [
+    "mosel"
+   ]
+  },
+  "adds": "lighter sweetness balanced by piercing acidity",
+  "learn": {
+   "taste": "Peach, lime, honey and slate. Sweet but light and low in alcohol.",
+   "why": "German Prädikat levels measure grape ripeness at harvest: Kabinett, Spätlese, Auslese, then Beerenauslese and Trockenbeerenauslese.",
+   "label": "'Auslese' or 'Spätlese' on a German Riesling label.",
+   "ask": "A sweet Riesling, like an Auslese from the Mosel."
+  },
+  "match": [
+   "auslese",
+   "beerenauslese",
+   "spätlese",
+   "spatlese"
+  ]
+ },
+ {
+  "id": "moscato_asti",
+  "type": "dessert",
+  "name": "Moscato d'Asti",
+  "region": "Piedmont",
+  "country": "Italy",
+  "grapes": [
+   "Moscato Bianco"
+  ],
+  "profile": {
+   "sweetness": 0.6,
+   "acidity": 0.6,
+   "body": 0.3
+  },
+  "bridge": {
+   "grapes": [
+    "moscato",
+    "muscat"
+   ],
+   "regions": [
+    "piedmont"
+   ]
+  },
+  "adds": "light, gently fizzy sweetness",
+  "learn": {
+   "taste": "Grape, peach, orange blossom. Gently sparkling, sweet and only about 5% alcohol.",
+   "why": "Fermentation is stopped early, leaving natural grape sugar and a soft fizz.",
+   "label": "'Moscato d'Asti DOCG'.",
+   "ask": "Something light and sweet with dessert, like a Moscato d'Asti."
+  },
+  "match": [
+   "moscato"
+  ]
+ },
+ {
+  "id": "fino",
+  "type": "fortified",
+  "name": "Fino & Manzanilla Sherry",
+  "region": "Jerez",
+  "country": "Spain",
+  "grapes": [
+   "Palomino"
+  ],
+  "profile": {
+   "sweetness": 0.02,
+   "body": 0.3
+  },
+  "bridge": {
+   "grapes": [
+    "palomino"
+   ],
+   "regions": [
+    "jerez"
+   ]
+  },
+  "adds": "a bone-dry, salty tang",
+  "learn": {
+   "taste": "Almond, bread dough, green apple and sea salt. Bone dry and light.",
+   "why": "It ages under a layer of yeast called 'flor', which protects it from oxygen and gives the salty, bready tang. Manzanilla is Fino aged by the sea in Sanlúcar.",
+   "label": "'Fino' or 'Manzanilla' on the label. Serve chilled, and drink within a few days of opening.",
+   "ask": "A chilled glass of Fino or Manzanilla, please."
+  },
+  "match": [
+   "fino",
+   "manzanilla"
+  ]
+ },
+ {
+  "id": "amontillado",
+  "type": "fortified",
+  "name": "Amontillado Sherry",
+  "region": "Jerez",
+  "country": "Spain",
+  "grapes": [
+   "Palomino"
+  ],
+  "profile": {
+   "sweetness": 0.05,
+   "body": 0.55
+  },
+  "bridge": {
+   "grapes": [
+    "palomino"
+   ],
+   "regions": [
+    "jerez"
+   ]
+  },
+  "adds": "a nutty depth from two kinds of ageing",
+  "learn": {
+   "taste": "Hazelnut, caramel, orange peel and a savoury finish. Dry.",
+   "why": "It starts ageing under flor like a Fino, then the flor dies away and it ages in contact with air, turning amber and nutty.",
+   "label": "'Amontillado' on the label. Check it says dry ('seco') if you want the classic style.",
+   "ask": "Do you have a dry Amontillado?"
+  },
+  "match": [
+   "amontillado"
+  ]
+ },
+ {
+  "id": "tawny",
+  "type": "fortified",
+  "name": "10-Year Tawny Port",
+  "region": "Douro",
+  "country": "Portugal",
+  "grapes": [
+   "Touriga Nacional",
+   "Touriga Franca"
+  ],
+  "profile": {
+   "sweetness": 0.75,
+   "body": 0.7
+  },
+  "bridge": {
+   "grapes": [
+    "touriga nacional"
+   ],
+   "regions": [
+    "douro"
+   ]
+  },
+  "adds": "dried fig, caramel and walnut",
+  "learn": {
+   "taste": "Dried fig, caramel, walnut and orange peel. Sweet and mellow.",
+   "why": "Aged for years in small casks, where slow exposure to air turns its colour tawny and trades fresh fruit for nutty flavours.",
+   "label": "'10 Year Old Tawny' (or 20, 30, 40) on the label.",
+   "ask": "A glass of 10-year tawny Port."
+  },
+  "match": [
+   "tawny"
+  ]
+ },
+ {
+  "id": "madeira",
+  "type": "fortified",
+  "name": "Madeira",
+  "region": "Madeira",
+  "country": "Portugal",
+  "grapes": [
+   "Sercial",
+   "Verdelho",
+   "Bual",
+   "Malmsey"
+  ],
+  "profile": {
+   "sweetness": 0.5,
+   "body": 0.6
+  },
+  "bridge": {
+   "grapes": [],
+   "regions": [
+    "douro",
+    "jerez"
+   ]
+  },
+  "adds": "a tangy, near-indestructible richness",
+  "learn": {
+   "taste": "Caramel, toffee, citrus peel and walnut, always with a tangy acidity.",
+   "why": "Madeira is deliberately heated as it ages, so it barely changes once opened. Sercial is the driest style, then Verdelho, Bual and Malmsey, the sweetest.",
+   "label": "The grape on the label tells you the sweetness: Sercial, Verdelho, Bual or Malmsey.",
+   "ask": "Do you have a Madeira? A Bual or Verdelho, perhaps?"
+  },
+  "match": [
+   "madeira",
+   "sercial",
+   "malmsey",
+   "bual",
+   "boal"
+  ]
+ }
+]
