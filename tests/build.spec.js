@@ -12,8 +12,10 @@ test('source order matches the precompiled markers in bundle.js', async () => {
   const { APP_SOURCES } = await load('scripts/app-sources.mjs');
   const bundle = fs.readFileSync(path.join(ROOT, 'bundle.js'), 'utf8');
   const markers = [...bundle.matchAll(/^\/\* ---- (\S+?)(?: \(precompiled\))? ---- \*\/$/gm)].map((m) => m[1]);
-  // Modules added since bundle.js was last compiled aren't in it; the rest must keep its order.
-  expect(APP_SOURCES.filter((f) => markers.includes(f))).toEqual(markers);
+  // Modules added since bundle.js was last compiled aren't in it, and some it had are no longer
+  // shipped (the old sign-up, paywall and onboarding screens); the files both have keep its order.
+  const REMOVED = ['flow-auth.jsx', 'flow-paywall.jsx', 'pwa-onboarding.jsx'];
+  expect(APP_SOURCES.filter((f) => markers.includes(f))).toEqual(markers.filter((m) => !REMOVED.includes(m)));
 });
 
 test('dist/app.js has no synchronous XHR and inlines every loader path', async () => {

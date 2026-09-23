@@ -89,7 +89,11 @@ function DnaBar({v,loved,col}){
    WineDNA Screen — renders WineDNA.profile (pwa-winedna.js) for each wine type
 ────────────────────────────────────────────────── */
 function WineDNAScreen({nav,back,showPro}){
-  const [typeIdx,setTypeIdx]=React.useState(0);
+  // Opens on the type they said they drink most (onboarding), once they've scanned one.
+  const [typeIdx,setTypeIdx]=React.useState(()=>{
+    const p=UserPrefs.preferredType(), i=_TYPES.findIndex(t=>t.key===p);
+    return i>0&&WineHistory.getAll().some(w=>WineDNA._t(w.type)===p)?i:0;
+  });
   const [tabToast,setTabToast]=React.useState(null);
   const [genSummaries,setGenSummaries]=React.useState({});
   const [generatingSummary,setGeneratingSummary]=React.useState(null);

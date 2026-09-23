@@ -280,11 +280,11 @@ function EditWineSheet({wine,onSave,onClose}){
   return ReactDOM.createPortal(<div onClick={onClose} style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.45)',zIndex:9000,display:'flex',alignItems:'flex-end',justifyContent:'center'}}>
     <div onClick={e=>e.stopPropagation()} className="sc-scroll" style={{width:'100%',maxWidth:520,maxHeight:'88vh',overflowY:'auto',background:C.bg,borderRadius:'20px 20px 0 0',padding:'18px 20px 28px',animation:'scSheet .25s ease',display:'flex',flexDirection:'column',gap:12}}>
       <div style={{fontSize:19,fontWeight:800,color:C.ink,fontFamily:C.P}}>Edit wine details</div>
-      <div><div style={lab}>Wine name</div><input style={input} value={f.name} onChange={set('name')}/></div>
-      <div><div style={lab}>Producer</div><input style={input} value={f.producer} onChange={set('producer')}/></div>
+      <div><div style={lab}>Wine name</div><input style={input} aria-label="Wine name" value={f.name} onChange={set('name')}/></div>
+      <div><div style={lab}>Producer</div><input style={input} aria-label="Producer" value={f.producer} onChange={set('producer')}/></div>
       <div style={{display:'flex',gap:10}}>
-        <div style={{flex:1}}><div style={lab}>Vintage</div><input style={input} inputMode="numeric" placeholder="NV" value={f.vintage} onChange={set('vintage')}/></div>
-        <div style={{flex:2}}><div style={lab}>Grapes</div><input style={input} placeholder="e.g. Grenache, Syrah" value={f.grapes} onChange={set('grapes')}/></div>
+        <div style={{flex:1}}><div style={lab}>Vintage</div><input style={input} inputMode="numeric" placeholder="NV" aria-label="Vintage" value={f.vintage} onChange={set('vintage')}/></div>
+        <div style={{flex:2}}><div style={lab}>Grapes</div><input style={input} placeholder="e.g. Grenache, Syrah" aria-label="Grapes" value={f.grapes} onChange={set('grapes')}/></div>
       </div>
       <div>
         <div style={lab}>Type</div>
@@ -293,8 +293,8 @@ function EditWineSheet({wine,onSave,onClose}){
         </div>
       </div>
       <div style={{display:'flex',gap:10}}>
-        <div style={{flex:1}}><div style={lab}>Region</div><input style={input} value={f.region} onChange={set('region')}/></div>
-        <div style={{flex:1}}><div style={lab}>Country</div><input style={input} value={f.country} onChange={set('country')}/></div>
+        <div style={{flex:1}}><div style={lab}>Region</div><input style={input} aria-label="Region" value={f.region} onChange={set('region')}/></div>
+        <div style={{flex:1}}><div style={lab}>Country</div><input style={input} aria-label="Country" value={f.country} onChange={set('country')}/></div>
       </div>
       <div style={{fontSize:13,color:C.mid,fontFamily:C.P,lineHeight:1.5}}>The style estimates (body, acidity and so on) stay as read from the label.</div>
       <Btn primary full onClick={save}>Save</Btn>
@@ -359,6 +359,9 @@ function ScanResult({wine,match,curr,scanData,existingRating,nav,view,setView,on
         </div>}
         {mk&&<div style={{fontSize:13,color:C.ink2,fontFamily:C.P,marginTop:4}}>{mk.text}</div>}
         {sweet&&<div style={{fontSize:13,color:C.mid,fontFamily:C.P,marginTop:6}}>Your Outstanding {match.profile.label.toLowerCase()} usually cost {sweet}.</div>}
+        {/* Until WineDNA has a sweet spot from their own scores, compare with the spend they gave. */}
+        {!sweet&&shop&&(()=>{ const fit=UserPrefs.spendFit(shop,curr), b=UserPrefs.budget(curr); if(!fit) return null;
+          return <div style={{fontSize:13,color:C.mid,fontFamily:C.P,marginTop:6}}>{fit==='within'?`Within your usual spend (${b.label}).`:fit==='above'?`Above your usual spend (${b.label}).`:`Below your usual spend (${b.label}).`}</div>; })()}
       </div>}
     </Card>}
 

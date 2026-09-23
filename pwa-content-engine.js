@@ -145,7 +145,8 @@ const SommelierScript = {
   budget(wines,rc){
     const fx=USD_FX[rc.code]||1;
     const ps=wines.map(w=>w.price_usd).filter(p=>typeof p==='number'&&p>0).map(p=>p*fx).sort((a,b)=>a-b);
-    if(ps.length<2) return null;
+    // Too few priced wines of their own: fall back to the usual spend they gave at onboarding.
+    if(ps.length<2){ const b=UserPrefs.budget(rc); return !b?null:b.max==null?`${rc.base}${b.min} and up ${rc.code}`:b.min===0?`under ${rc.base}${b.max} ${rc.code}`:`${rc.base}${b.min}–${rc.base}${b.max} ${rc.code}`; }
     const at=q=>ps[Math.min(ps.length-1,Math.max(0,Math.round(q*(ps.length-1))))];
     const step=v=>v<50?5:v<200?10:50;
     const lo=Math.max(step(at(0.25)),Math.floor(at(0.25)/step(at(0.25)))*step(at(0.25)));

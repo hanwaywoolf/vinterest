@@ -72,7 +72,9 @@ function QuizHubScreen({nav,back,showPro}){
   const level=XPSystem.getLevel(xpData.total);
   const nextLvl=XPSystem.nextLevel(xpData.total);
   const prog=XPSystem.levelProgress(xpData.total);
-  const article1Done=ON_RAMP.length>0&&onRampDone(ON_RAMP[0].id);
+  // The shelf opens after the first on-ramp article, or straight away for enthusiasts and
+  // experts (their onboarding answer), who don't need the beginner on-ramp first.
+  const article1Done=(ON_RAMP.length>0&&onRampDone(ON_RAMP[0].id))||UserPrefs.skipsOnRamp();
   const wines=React.useMemo(()=>WineHistory.getAll(),[]);
   const coverage=React.useMemo(()=>getCoverage(wines),[wines]);
   const [showUnlock,setShowUnlock]=React.useState(false);
@@ -97,7 +99,7 @@ function QuizHubScreen({nav,back,showPro}){
   const zoneLabel={fontSize:15,fontWeight:600,color:C.mid,letterSpacing:'0.08em',textTransform:'uppercase',fontFamily:C.P,marginBottom:2};
   const unreadShelf=(genStubs||[]).filter(s=>!localStorage.getItem('vinterest_gen_article_'+s.id+'_done'));
   const nextOnRamp=ON_RAMP.find(a=>!onRampDone(a.id));
-  const nextBest=nextOnRamp
+  const nextBest=nextOnRamp&&!(UserPrefs.skipsOnRamp()&&unreadShelf.length)
     ? {kind:'onramp',title:nextOnRamp.title,sub:nextOnRamp.subtitle,readTime:nextOnRamp.readTime,action:()=>{sessionStorage.setItem('vinterest_onramp_idx',String(ON_RAMP.indexOf(nextOnRamp)));nav('article');}}
     : unreadShelf.length
       ? {kind:'shelf',stub:unreadShelf[0],title:unreadShelf[0].title,sub:unreadShelf[0].subtitle,action:()=>{sessionStorage.setItem('vinterest_gen_article',JSON.stringify(unreadShelf[0]));nav('gen-article');}}

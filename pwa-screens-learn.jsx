@@ -121,7 +121,7 @@ function GenArticleScreen({nav,back}){
     const types=[...new Set(wines.map(w=>(w.type||'red').toLowerCase()))].join(', ');
     const regions=[...new Set(wines.map(w=>w.region||w.country).filter(Boolean))].slice(0,5).join(', ');
     const grapes=[...new Set(wines.flatMap(w=>w.grapes||[]).filter(Boolean))].slice(0,6).join(', ');
-    const prompt=_fillTpl(_loadText('prompts/gen-article.txt'),{types,regions,grapes,title:stub.title,brief:stub.brief||'Write a clear, specific educational piece on the title above.',facts:stub.facts||'No specific retrieved facts — keep claims general and hedge appropriately.'});
+    const prompt=_fillTpl(_loadText('prompts/gen-article.txt'),{depth:UserPrefs.depthLine(),types,regions,grapes,title:stub.title,brief:stub.brief||'Write a clear, specific educational piece on the title above.',facts:stub.facts||'No specific retrieved facts — keep claims general and hedge appropriately.'});
 
     window.claude.complete({purpose:'learn_article',messages:[{role:'user',content:prompt}]})
       .then(text=>{

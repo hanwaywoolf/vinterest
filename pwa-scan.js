@@ -25,16 +25,21 @@ const ScanFlow = {
     return source!=='list'&&!!wine&&(wine.confidence==='low'||wine.confidence==='medium');
   },
 
-  /* XP for a scan: the scan itself, weekly streak, and firsts (type, country, grape). */
-  awardScanXP(wine){
-    try{ XPSystem.awardAndToast([
+  /* XP for a scan: the scan itself, weekly streak, and firsts (type, country, grape). With
+     {defer:true} (onboarding) the toasts wait for flushToasts(), so they don't cover the
+     questions and instead greet the user on Home. */
+  _deferred:[],
+  flushToasts(){ const a=this._deferred; this._deferred=[]; if(a.length) setTimeout(()=>XPSystem.toast(a),600); },
+  awardScanXP(wine,opts){
+    const defer=opts&&opts.defer;
+    try{ const a=XPSystem[defer?'award':'awardAndToast']([
       {type:'scan'},{type:'weekly_scans'},
       {type:'first_type',value:wine.type},
       {type:'first_country',value:wine.country},
       // A grape that was only guessed for the wine isn't a grape they've met.
       ...(wine.grapes_basis==='typical'?[]:[{type:'new_grape',value:(wine.grapes||[])[0]}]),
       ...((wine.price_usd||0)>=100?[{type:'expensive_wine',wineKey:(wine.name||'')+'_'+(wine.vintage||'')}]:[])
-    ]); }catch(e){}
+    ]); if(defer&&a) this._deferred.push(...a); }catch(e){}
   },
 
   /* Claude's shop-price estimate from the label scan, converted to the user's currency, or null. */

@@ -1,13 +1,6 @@
 /* Vinterest — Account / Profile screen: onboarding summary (editable) + Travel Mode */
 
 const ACC_TYPE_OPTS=[{id:'red',label:'Red',col:'#8B1A2F'},{id:'white',label:'White',col:'#B8963E'},{id:'rose',label:'Rosé',col:'#C47A8A'},{id:'sparkling',label:'Sparkling',col:'#5E8FA8'},{id:'orange',label:'Orange',col:'#C1652B'},{id:'dessert',label:'Dessert',col:'#8A5A2B'},{id:'fortified',label:'Fortified',col:'#5C2A1E'}];
-const ACC_EXP_OPTS=[{id:'novice',label:'Just getting started'},{id:'casual',label:'I know what I like'},{id:'enthusiast',label:'Pretty into it'},{id:'expert',label:'Borderline obsessed'}];
-const ACC_FREQ_OPTS=[{id:'daily',label:'Most days'},{id:'weekly',label:'A few times a week'},{id:'occasion',label:'Weekends & occasions'},{id:'rarely',label:'Now and then'}];
-const ACC_GOAL_OPTS=[{id:'learn',label:'Learn about wine',icon:'book',col:'#1E7B4B'},{id:'value',label:'Find great value',icon:'cart',col:'#B06C00'},{id:'pair',label:'Pair with food',icon:'fork',col:'#8B1A2F'},{id:'impress',label:'Impress at dinner',icon:'trophy',col:'#3B6FB0'}];
-const ACC_COUNTRIES=['United States','Canada','United Kingdom','Australia','France','Germany','Italy','Spain','Other'];
-const ACC_COUNTRY_TO_REGION={'united states':'us','canada':'ontario','united kingdom':'uk','australia':'australia','new zealand':'nz','france':'eu','germany':'eu','italy':'eu','spain':'eu'};
-const ACC_COUNTRY_TO_CUR={'united states':'USD','canada':'CAD','united kingdom':'GBP','australia':'AUD','new zealand':'NZD','france':'EUR','germany':'EUR','italy':'EUR','spain':'EUR'};
-
 function AccSection({title,children,onEdit,editing}){
   return(
     <Card style={{padding:14}}>
@@ -43,11 +36,10 @@ function AccChips({opts,sel,editing,onToggle}){
 }
 
 function AccountProfileScreen({nav,back}){
-  const [prefs,setPrefs]=React.useState(()=>{try{return JSON.parse(localStorage.getItem('vinterest_prefs')||'{}');}catch(e){return {};}});
+  const [prefs,setPrefs]=React.useState(()=>UserPrefs.get());
   const [editSection,setEditSection]=React.useState(null);
-  const [country,setCountry]=React.useState(()=>localStorage.getItem('vinterest_country')||'');
-  const [region,setRegionField]=React.useState(()=>localStorage.getItem('vinterest_state')||'');
-  const [city,setCity]=React.useState(()=>localStorage.getItem('vinterest_city')||'');
+  const [country,setCountry]=React.useState(()=>UserPrefs.location().country||'');
+  const [region,setRegionField]=React.useState(()=>UserPrefs.location().state||'');
 
   const [travel,setTravelState]=React.useState(()=>Regional.travel());
   const [travelForm,setTravelForm]=React.useState({country:'',until:'',code:''});
@@ -60,25 +52,12 @@ function AccountProfileScreen({nav,back}){
     return()=>window.removeEventListener('vinterest:travel',h);
   },[]);
 
-  function savePrefField(key,val){
-    setPrefs(p=>{const np={...p,[key]:val};localStorage.setItem('vinterest_prefs',JSON.stringify(np));return np;});
-  }
+  function savePrefField(key,val){ setPrefs(UserPrefs.set(key,val)); }
   function toggleMulti(key,id){
     const cur=prefs[key]||[];
-    const next=cur.includes(id)?cur.filter(x=>x!==id):[...cur,id];
-    savePrefField(key,next);
+    savePrefField(key,cur.includes(id)?cur.filter(x=>x!==id):[...cur,id]);
   }
-
-  function saveLocation(){
-    localStorage.setItem('vinterest_country',country);
-    localStorage.setItem('vinterest_state',region);
-    localStorage.setItem('vinterest_city',city);
-    savePrefField('location',{country,region,city});
-    const k=country.trim().toLowerCase();
-    localStorage.setItem('vinterest_region',ACC_COUNTRY_TO_REGION[k]||'us');
-    localStorage.setItem('vinterest_currency',ACC_COUNTRY_TO_CUR[k]||'USD');
-    setEditSection(null);
-  }
+  function saveLocation(){ UserPrefs.setLocation({country,state:region}); setEditSection(null); }
 
   function enableTravel(){
     if(!travelForm.country.trim()) return;
@@ -146,50 +125,39 @@ function AccountProfileScreen({nav,back}){
           )}
         </Card>
 
-        {/* Home location */}
-        <AccSection title="Home Location" onEdit={()=>setEditSection(editSection==='loc'?null:'loc')} editing={editSection==='loc'}>
+        {/* Each preference says what it changes: only answers the app uses are asked or shown. */}
+        <AccSection title="Where You Buy Wine" onEdit={()=>setEditSection(editSection==='loc'?null:'loc')} editing={editSection==='loc'}>
           {editSection==='loc'?(
             <div style={{display:'flex',flexDirection:'column',gap:10}}>
-              <select value={country} onChange={e=>setCountry(e.target.value)} style={{width:'100%',boxSizing:'border-box',padding:'12px 14px',borderRadius:11,border:`1px solid ${C.line}`,background:C.white,fontSize:15,fontFamily:C.P,color:C.ink,outline:'none',appearance:'none',WebkitAppearance:'none'}}>
+              <select value={country} onChange={e=>setCountry(e.target.value)} aria-label="Country" style={{width:'100%',boxSizing:'border-box',padding:'12px 14px',borderRadius:11,border:`1px solid ${C.line}`,background:C.white,fontSize:15,fontFamily:C.P,color:C.ink,outline:'none',appearance:'none',WebkitAppearance:'none'}}>
                 <option value="" disabled>Select country</option>
-                {ACC_COUNTRIES.map(c=><option key={c} value={c}>{c}</option>)}
+                {UserPrefs.COUNTRIES.map(c=><option key={c.name} value={c.name}>{c.name}</option>)}
               </select>
-              <input value={region} onChange={e=>setRegionField(e.target.value)} placeholder="State / Province (optional)"
-                style={{width:'100%',boxSizing:'border-box',padding:'12px 14px',borderRadius:11,border:`1px solid ${C.line}`,background:C.white,fontSize:15,fontFamily:C.P,color:C.ink,outline:'none'}}/>
-              <input value={city} onChange={e=>setCity(e.target.value)} placeholder="City"
-                style={{width:'100%',boxSizing:'border-box',padding:'12px 14px',borderRadius:11,border:`1px solid ${C.line}`,background:C.white,fontSize:15,fontFamily:C.P,color:C.ink,outline:'none'}}/>
+              {(UserPrefs.country(country)||{}).stateLabel&&<input value={region} onChange={e=>setRegionField(e.target.value)} placeholder={`${UserPrefs.country(country).stateLabel} (optional)`}
+                style={{width:'100%',boxSizing:'border-box',padding:'12px 14px',borderRadius:11,border:`1px solid ${C.line}`,background:C.white,fontSize:15,fontFamily:C.P,color:C.ink,outline:'none'}}/>}
               <Btn primary full onClick={saveLocation}>Save</Btn>
             </div>
           ):(
             <div style={{fontSize:15,color:C.ink,fontFamily:C.P}}>
-              {[city,region,country].filter(Boolean).join(', ')||'Not set'}
-              <div style={{fontSize:13,color:C.mid,marginTop:4}}>Home currency: {home.sym} ({home.code})</div>
+              {[region,country].filter(Boolean).join(', ')||'Not set'}
+              <div style={{fontSize:13,color:C.mid,marginTop:4}}>Prices show in {home.sym} ({home.code}).</div>
             </div>
           )}
         </AccSection>
 
-        {/* Wine types */}
         <AccSection title="What You Drink" onEdit={()=>setEditSection(editSection==='types'?null:'types')} editing={editSection==='types'}>
           <AccChips opts={ACC_TYPE_OPTS} sel={prefs.types||[]} editing={editSection==='types'} onToggle={id=>toggleMulti('types',id)}/>
+          <div style={{fontSize:13,color:C.mid,fontFamily:C.P,marginTop:8}}>Home and WineDNA open on your first pick.</div>
         </AccSection>
 
-        {/* Experience */}
+        <AccSection title="Usual Spend" onEdit={()=>setEditSection(editSection==='budget'?null:'budget')} editing={editSection==='budget'}>
+          <AccChips opts={UserPrefs.budgetOptions()} sel={prefs.budget} editing={editSection==='budget'} onToggle={id=>savePrefField('budget',id)}/>
+          <div style={{fontSize:13,color:C.mid,fontFamily:C.P,marginTop:8}}>Used for price suggestions until you've scored a few wines with prices.</div>
+        </AccSection>
+
         <AccSection title="Wine Knowledge" onEdit={()=>setEditSection(editSection==='experience'?null:'experience')} editing={editSection==='experience'}>
-          {editSection==='experience'
-            ?<AccChips opts={ACC_EXP_OPTS} sel={prefs.experience} editing onToggle={id=>savePrefField('experience',id)}/>
-            :<div style={{fontSize:15,color:C.ink,fontFamily:C.P}}>{(ACC_EXP_OPTS.find(o=>o.id===prefs.experience)||{}).label||'Not set'}</div>}
-        </AccSection>
-
-        {/* Frequency */}
-        <AccSection title="How Often You Drink" onEdit={()=>setEditSection(editSection==='frequency'?null:'frequency')} editing={editSection==='frequency'}>
-          {editSection==='frequency'
-            ?<AccChips opts={ACC_FREQ_OPTS} sel={prefs.frequency} editing onToggle={id=>savePrefField('frequency',id)}/>
-            :<div style={{fontSize:15,color:C.ink,fontFamily:C.P}}>{(ACC_FREQ_OPTS.find(o=>o.id===prefs.frequency)||{}).label||'Not set'}</div>}
-        </AccSection>
-
-        {/* Goals */}
-        <AccSection title="Why You're Here" onEdit={()=>setEditSection(editSection==='goals'?null:'goals')} editing={editSection==='goals'}>
-          <AccChips opts={ACC_GOAL_OPTS} sel={prefs.goals||[]} editing={editSection==='goals'} onToggle={id=>toggleMulti('goals',id)}/>
+          <AccChips opts={UserPrefs.EXPERIENCE} sel={prefs.experience} editing={editSection==='experience'} onToggle={id=>savePrefField('experience',id)}/>
+          <div style={{fontSize:13,color:C.mid,fontFamily:C.P,marginTop:8}}>Sets where Learn starts and how deep articles go.</div>
         </AccSection>
 
         <div onClick={()=>nav('settings')} style={{padding:'14px 4px',display:'flex',justifyContent:'space-between',alignItems:'center',cursor:'pointer'}}>

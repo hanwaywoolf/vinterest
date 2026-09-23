@@ -176,7 +176,8 @@ function HomeScreen({nav, showPro, isTablet}){
   allWines.forEach(w=>{const t=(w.type||'').toLowerCase().replace('é','e');if(typeCounts[t]!==undefined)typeCounts[t]++;});
   // The original four always show (greyed out if unscanned); Orange/Dessert/Fortified only appear once you've actually scanned one.
   const visibleCats=cats.filter(ct=>_BASE_TYPES.includes(ct.typeKey)||typeCounts[ct.typeKey]>0);
-  const [activeType,setActiveType]=React.useState('red');
+  // Opens on the type they said they drink most (onboarding), once they've scanned one.
+  const [activeType,setActiveType]=React.useState(()=>{ const p=UserPrefs.preferredType(); return p&&typeCounts[p]>0?p:'red'; });
   const [tabToast,setTabToast]=React.useState(null);
   function pickType(ct){
     if(typeCounts[ct.typeKey]===0){ setTabToast(`You haven't scanned a ${ct.label.toLowerCase()} yet`); setTimeout(()=>setTabToast(null),1800); return; }

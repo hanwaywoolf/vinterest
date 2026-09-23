@@ -139,7 +139,7 @@ function ScanHomeScreen({nav,showPro,isTablet}){
 // Preview has no camera — capturePhoto's "camera not ready" branch simulates a real scan of one
 // of these three real bottles instead of the old generic demo fallback, so testing doesn't need
 // an actual label. Picked at random each time the shutter is tapped.
-function ScanScreen({nav,back,onComplete}){
+function ScanScreen({nav,back,onComplete,onSkip}){
   const onboarding=!!onComplete; // onboarding: save the scan & advance the flow instead of navigating
   const videoRef=React.useRef(null);
   const streamRef=React.useRef(null);
@@ -223,7 +223,7 @@ function ScanScreen({nav,back,onComplete}){
       localStorage.setItem('vinterest_scan_count',_sc+1);
       // Scan XP is awarded once the wine is confirmed and saved (ScanFlow.awardScanXP), so a
       // misread label never earns a "new grape" for the wrong grape.
-      if(onboarding){ try{ WineHistory.track(wine); ScanFlow.awardScanXP(wine); }catch(e){} onComplete(wine); return; }
+      if(onboarding){ try{ WineHistory.track(wine); ScanFlow.awardScanXP(wine,{defer:true}); }catch(e){} onComplete(wine); return; }
     }catch(e){
       if(onboarding){ onComplete(null); return; }
       sessionStorage.setItem('vinterest_scan_result',JSON.stringify({demo:true,reason:e.message}));
@@ -306,7 +306,9 @@ function ScanScreen({nav,back,onComplete}){
           <Icon n="back" sz={18} col="#fff"/>
         </div>
         <span style={{fontSize:18,fontWeight:600,color:'#fff',fontFamily:C.P,whiteSpace:'nowrap'}}>{onboarding?'Scan your first bottle':'Scan Wine'}</span>
-        <div style={{width:38,height:38}}/>
+        {onSkip
+          ?<span onClick={onSkip} style={{minWidth:38,textAlign:'right',fontSize:15,fontWeight:600,color:'rgba(255,255,255,0.75)',fontFamily:C.P,cursor:'pointer'}}>Skip</span>
+          :<div style={{width:38,height:38}}/>}
       </div>
 
       {/* Large portrait framing box */}
