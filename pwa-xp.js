@@ -1,6 +1,13 @@
 /* Vinterest — XP Engine. Data-driven from data/xp-curve.json (source of truth for native port). */
 
-function _loadJSON(path){ const x=new XMLHttpRequest(); x.open('GET',path,false); x.send(); return JSON.parse(x.responseText); }
+/* Static data (data/*.json, prompts/*.txt) is inlined into the bundle by scripts/build.mjs as
+   __VINTEREST_ASSETS__ (path → file text), so these stay synchronous with no network request. The
+   build fails if a call passes a path it can't resolve at build time. */
+function _loadTextSync(path){
+  if(!Object.prototype.hasOwnProperty.call(__VINTEREST_ASSETS__,path)) throw new Error('[Vinterest] '+path+' was not inlined at build time');
+  return __VINTEREST_ASSETS__[path];
+}
+function _loadJSON(path){ return JSON.parse(_loadTextSync(path)); }
 const XP_CURVE = _loadJSON('data/xp-curve.json');
 const XP_LEVELS = XP_CURVE.levels; // finite tiers only — Cellar Master is computed, not listed
 

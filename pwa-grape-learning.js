@@ -29,8 +29,6 @@ const GRAPE_TYPES = {
 };
 function grapeTypeColor(grape){ return (_TYPE_COLORS&&_TYPE_COLORS[GRAPE_TYPES[grape]])||C.mid; }
 
-function _loadTextSync(path){ const x=new XMLHttpRequest(); x.open('GET',path,false); x.send(); return x.responseText; }
-
 const GrapeUnlocks = Object.assign(_accountStore('vinterest_grape_unlocks_v1'), {
   fresh(){ return {unlocked:{}}; },
   all(){ return this.get().unlocked; },
