@@ -616,67 +616,57 @@ function WineDNAScreen({nav,back,showPro}){
         )}
 
         <CSH label="Your History" cKey="history" collapsed={collapsed} toggle={toggle} summary={`You've scanned ${t.wines.length} ${tLabel} across ${tCountries} countr${tCountries!==1?'ies':'y'}${tAvgScore?`, scoring them ${tAvgScore} on average`:''}.`}/>
-        {/* ── Stats grid ── */}
-        {!collapsed.history&&<div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8}}>
-          {[
-            {icon:'wine',  label:`${t.label} scanned`, val:t.wines.length,                         col:t.col,     bg:t.col+'15'},
-            {icon:'star',  label:'Average score',        val:tAvgScore?`${tAvgScore}`:'—',            col:C.amber,  bg:C.amberBg, note:tAvgScore?ParkerScale.label(tAvgScore):null},
-            {icon:'globe', label:'Countries',            val:tCountries||'—',                         col:C.green,  bg:C.greenBg},
-            {icon:'bolt',label:'Blind Call accuracy',  val:t.blindCall?`${t.blindCall.accuracy}%`:'—', col:'#7B5EA7', bg:'#F0EBF8', note:t.blindCall?`${t.blindCall.played} played`:'Play after a scan'},
-          ].map((s,i)=>(
-            <div key={i} style={{background:s.bg,borderRadius:14,padding:'12px 14px',border:`1px solid ${s.col}20`,display:'flex',flexDirection:'column',gap:6}}>
-              <div style={{display:'flex',alignItems:'center',gap:7}}>
-                <div style={{width:24,height:24,borderRadius:6,background:`${s.col}25`,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
-                  <Icon n={s.icon} sz={13} col={s.col}/>
-                </div>
-                <div style={{fontSize:20,fontWeight:800,color:s.col,fontFamily:C.P,lineHeight:1}}>{s.val}</div>
+        {/* ── History: one card in the same style as the sections above ── */}
+        {!collapsed.history&&(()=>{
+          const stats=[
+            {label:`${t.label} scanned`,  val:t.wines.length},
+            {label:'Average score',       val:tAvgScore||'—', note:tAvgScore?ParkerScale.label(tAvgScore):null, col:tAvgScore>=ParkerScale.LOVED?C.green:tAvgScore?C.amber:null},
+            {label:'Countries',           val:tCountries||'—'},
+            {label:'Blind Call accuracy', val:t.blindCall?`${t.blindCall.accuracy}%`:'—', note:t.blindCall?`${t.blindCall.played} played`:'Play after a scan'},
+          ];
+          return(
+            <Card style={{padding:14}}>
+              <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P,marginBottom:10}}>Your {tLabel} so far</div>
+              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',borderTop:`1px solid ${C.line}`}}>
+                {stats.map((x,i)=>(
+                  <div key={x.label} style={{padding:'12px 0',paddingLeft:i%2?14:0,borderLeft:i%2?`1px solid ${C.line}`:'none',borderBottom:i<2?`1px solid ${C.line}`:'none'}}>
+                    <div style={{fontSize:22,fontWeight:800,color:x.val==='—'?C.mid:(x.col||t.col),fontFamily:C.P,lineHeight:1.1}}>{x.val}</div>
+                    <div style={{fontSize:13,color:C.mid,fontFamily:C.P,marginTop:4}}>{x.label}</div>
+                    {x.note&&<div style={{fontSize:12,color:C.mid,fontFamily:C.P,opacity:0.75,marginTop:1}}>{x.note}</div>}
+                  </div>
+                ))}
               </div>
-              <div style={{fontSize:13,color:C.mid,fontFamily:C.P}}>{s.label}{s.note?<span style={{opacity:0.75}}> · {s.note}</span>:null}</div>
-            </div>
-          ))}
-        </div>}
-
-        {/* ── Average price if available ── */}
-        {!collapsed.history&&tAvgPrice>0&&(
-          <Card style={{background:C.amberBg,border:`1px solid ${C.amber}25`,padding:12,boxShadow:'none'}}>
-            <div style={{fontSize:15,fontWeight:600,color:C.amber,fontFamily:C.P,marginBottom:2}}>Avg Price · {t.label}</div>
-            <div style={{display:'flex',alignItems:'baseline',gap:6}}>
-              <div style={{fontSize:19,fontWeight:800,color:C.amber,fontFamily:C.P}}>{_cbase}{Math.round(tAvgPrice*_cfx)}</div>
-              <span style={{fontSize:11,fontWeight:700,color:C.amber+'99',fontFamily:C.P,letterSpacing:'0.04em'}}>{_ccode}</span>
-              <span style={{fontSize:15,fontWeight:400,color:C.mid,marginLeft:2}}>per bottle, est.</span>
-            </div>
-          </Card>
-        )}
-
-        {!collapsed.history&&t.topWines.length>0&&(
-          <Card style={{padding:0,overflow:'hidden'}}>
-            <div style={{padding:'12px 14px 8px',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-              <span style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>Top {t.label}</span>
-              <span onClick={()=>nav('mywines')} style={{fontSize:15,fontWeight:600,color:C.cr,fontFamily:C.P,cursor:'pointer'}}>See all →</span>
-            </div>
-            {t.topWines.map((w,i)=>{
-              const col=_TYPE_COLORS[_norm(w.type)]||C.cr;
-              return(
-                <div key={i} onClick={()=>{
-                  sessionStorage.setItem('vinterest_scan_result',JSON.stringify({demo:false,wine:w,confidence:0.9,existingRating:w.rating||0}));
-                  nav('detail');
-                }} style={{display:'flex',alignItems:'center',gap:12,padding:'10px 14px',borderTop:`1px solid ${C.line}`,cursor:'pointer'}}>
-                  <div style={{width:24,height:24,borderRadius:12,background:C.crSoft,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
-                    <span style={{fontSize:13,fontWeight:800,color:C.cr,fontFamily:C.P}}>#{i+1}</span>
-                  </div>
-                  <div style={{flex:1,minWidth:0}}>
-                    <div style={{fontSize:16,fontWeight:600,color:C.ink,fontFamily:C.P,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{w.name}</div>
-                    <div style={{fontSize:13,color:C.mid,fontFamily:C.P}}>{[w.region,w.vintage?String(w.vintage):null,ParkerScale.label(w.rating)].filter(Boolean).join(' · ')}</div>
-                  </div>
-                  <div style={{display:'flex',alignItems:'baseline',gap:1,flexShrink:0}}>
-                    <span style={{fontSize:18,fontWeight:800,color:C.amber,fontFamily:C.P}}>{w.rating}</span>
-                    <span style={{fontSize:13,color:C.mid,fontFamily:C.P}}>/100</span>
-                  </div>
+              {tAvgPrice>0&&(
+                <div style={{display:'flex',alignItems:'baseline',gap:8,padding:'10px 0',borderTop:`1px solid ${C.line}`}}>
+                  <span style={{fontSize:15,color:C.ink,fontFamily:C.P,flex:1}}>Average price</span>
+                  <span style={{fontSize:15,fontWeight:800,color:C.ink,fontFamily:C.P}}>{_cbase}{Math.round(tAvgPrice*_cfx)}</span>
+                  <span style={{fontSize:13,color:C.mid,fontFamily:C.P}}>{_ccode} per bottle, est.</span>
                 </div>
-              );
-            })}
-          </Card>
-        )}
+              )}
+              {t.topWines.length>0&&(
+                <>
+                  <div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline',marginTop:10,marginBottom:6}}>
+                    <span style={sub}>Top {t.label}</span>
+                    <span onClick={()=>nav('mywines')} style={{fontSize:13,fontWeight:600,color:t.col,fontFamily:C.P,cursor:'pointer'}}>See all →</span>
+                  </div>
+                  {t.topWines.map((w,i)=>(
+                    <div key={i} onClick={()=>{
+                      sessionStorage.setItem('vinterest_scan_result',JSON.stringify({demo:false,wine:w,confidence:0.9,existingRating:w.rating||0}));
+                      nav('detail');
+                    }} style={{display:'flex',alignItems:'center',gap:10,padding:'8px 0',borderTop:`1px solid ${C.line}`,cursor:'pointer'}}>
+                      <span style={{fontSize:13,fontWeight:700,color:C.mid,fontFamily:C.P,width:22,flexShrink:0}}>#{i+1}</span>
+                      <div style={{flex:1,minWidth:0}}>
+                        <div style={{fontSize:15,fontWeight:600,color:C.ink,fontFamily:C.P,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{w.name}</div>
+                        <div style={{fontSize:13,color:C.mid,fontFamily:C.P,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{[w.region,w.vintage?String(w.vintage):null,ParkerScale.label(w.rating)].filter(Boolean).join(' · ')}</div>
+                      </div>
+                      <span style={{fontSize:15,fontWeight:800,color:w.rating>=ParkerScale.LOVED?C.green:C.amber,fontFamily:C.P,width:30,textAlign:'right',flexShrink:0}}>{w.rating}</span>
+                    </div>
+                  ))}
+                </>
+              )}
+            </Card>
+          );
+        })()}
 
         {/* ── Data Backup ── */}
         <Card style={{padding:14}}>
