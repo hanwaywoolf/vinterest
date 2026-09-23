@@ -598,9 +598,11 @@ function DetailStory({wine,nav,existingRating=0}){
                     const term=(tm.term||'').trim();
                     const capTerm=term?term.charAt(0).toUpperCase()+term.slice(1):term;
                     return(
-                    <div key={i} style={{display:'flex',gap:10,alignItems:'center'}}>
-                      <div style={{width:6,height:6,borderRadius:3,background:C.cr,flexShrink:0}}/>
-                      <div><span style={{fontSize:15,fontWeight:700,color:C.cr,fontFamily:C.P}}>{capTerm}</span><span style={{fontSize:15,color:C.ink2,fontFamily:C.P,lineHeight:1.55}}> — {tm.meaning}</span></div>
+                    <div key={i} style={{display:'flex',gap:10,alignItems:'flex-start',fontSize:15,lineHeight:1.55}}>
+                      {/* The dot sits in a box one line tall, so it lines up with the term on the
+                          first line however many lines the definition wraps to. */}
+                      <div style={{height:'1.55em',display:'flex',alignItems:'center',flexShrink:0}}><div style={{width:6,height:6,borderRadius:3,background:C.cr}}/></div>
+                      <div style={{fontFamily:C.P}}><span style={{fontWeight:700,color:C.cr}}>{capTerm}</span><span style={{color:C.ink2}}> — {tm.meaning}</span></div>
                     </div>
                     );
                   })}

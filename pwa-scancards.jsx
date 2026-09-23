@@ -117,9 +117,9 @@ function MatchReasons({match,col,showSummary=true}){
   return <div style={{display:'flex',flexDirection:'column',gap:8}}>
     {showSummary&&<div style={{fontSize:15,color:col||C.ink2,fontFamily:C.P,lineHeight:1.55}}>{match.summary}</div>}
     {match.reasons.map((r,i)=>(
-      <div key={i} style={{display:'flex',gap:9,alignItems:'baseline'}}>
-        <span style={{width:8,height:8,borderRadius:4,background:_TONE_COL[r.tone],flexShrink:0,transform:'translateY(-1px)'}}/>
-        <span style={{fontSize:15,color:C.ink2,fontFamily:C.P,lineHeight:1.5}}>{r.text}</span>
+      <div key={i} style={{display:'flex',gap:9,alignItems:'flex-start',fontSize:15,lineHeight:1.5}}>
+        <span style={{height:'1.5em',display:'flex',alignItems:'center',flexShrink:0}}><span style={{width:8,height:8,borderRadius:4,background:_TONE_COL[r.tone]}}/></span>
+        <span style={{color:C.ink2,fontFamily:C.P}}>{r.text}</span>
       </div>
     ))}
   </div>;
