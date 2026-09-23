@@ -212,6 +212,11 @@ function ScanCardsScreen({nav,back}){
       @keyframes scFade{from{opacity:0}to{opacity:1}}
       @keyframes scPop{from{opacity:0;transform:translateY(10px) scale(.98)}to{opacity:1;transform:none}}
       .sc-scroll::-webkit-scrollbar{display:none}
+      /* Every element in the swipe deck leaves horizontal drags to the deck (vertical scrolling
+         still works); touch-action is decided where the finger lands, so the card alone isn't
+         enough. Sliders keep their own drag. */
+      .sc-swipe,.sc-swipe *{touch-action:pan-y}
+      .sc-swipe input[type=range]{touch-action:none}
     `}</style>
   </div>;
 }
@@ -849,7 +854,9 @@ function CardShell({card,children,ctx,style}){
       <div style={{width:30,height:30,borderRadius:9,background:card.soft,display:'flex',alignItems:'center',justifyContent:'center'}}><Icon n={card.icon} sz={16} col={card.accent}/></div>
       <span style={{fontSize:12.5,fontWeight:700,color:card.accent,fontFamily:C.P,letterSpacing:'0.09em',textTransform:'uppercase'}}>{card.eyebrow}</span>
     </div>
-    <div className="sc-scroll" style={{padding:'8px 18px 18px',overflowY:isFinish?'auto':'hidden',flex:1,minHeight:0}}>
+    {/* overflow:clip, not hidden: a hidden-overflow box is a scroll container, and on touch
+        screens the browser claims horizontal drags that start inside one, cancelling the swipe. */}
+    <div className="sc-scroll" style={{padding:'8px 18px 18px',overflowX:'clip',overflowY:isFinish?'auto':'clip',flex:1,minHeight:0}}>
       {isFinish?ctx.finish():children}
     </div>
   </div>;
@@ -857,8 +864,8 @@ function CardShell({card,children,ctx,style}){
 
 /* deck style A — swipeable stack. A drag starts anywhere on the card except on a control
    (slider, input, button), only once the finger moves sideways more than it moves down, and
-   moves the card directly rather than re-rendering the deck every frame. A drag past a quarter
-   of the card, or a quick flick, turns it. */
+   moves the card directly rather than re-rendering the deck every frame. A drag past a fifth
+   of the card, or a short flick, turns it; it works both ways, including back from the last card. */
 function SwipeDeck({deck,ctx,idx,setIdx,go}){
   const g=React.useRef(null);
   const hintRef=React.useRef(0);
@@ -872,7 +879,7 @@ function SwipeDeck({deck,ctx,idx,setIdx,go}){
     el.style.transform=`translate(${dx}px,${dy*0.25}px) rotate(${dx*0.04}deg)`;
   }
   function onPointerDown(e){
-    if(isFinish||e.button>0||(e.target.closest&&e.target.closest(CONTROL))) return;
+    if(e.button>0||(e.target.closest&&e.target.closest(CONTROL))) return;
     g.current={id:e.pointerId,x:e.clientX,y:e.clientY,t:performance.now(),dragging:false,el:e.currentTarget,w:e.currentTarget.offsetWidth||320,dx:0};
   }
   function onPointerMove(e){
@@ -893,7 +900,7 @@ function SwipeDeck({deck,ctx,idx,setIdx,go}){
     justDragged.current=true; setTimeout(()=>{ justDragged.current=false; },0);
     hintRef.current=0; setHint(0);
     const speed=Math.abs(s.dx)/Math.max(1,performance.now()-s.t);
-    const turn=Math.abs(s.dx)>s.w*0.25||(Math.abs(s.dx)>36&&speed>0.4);
+    const turn=Math.abs(s.dx)>s.w*0.2||(Math.abs(s.dx)>30&&speed>0.25);
     const dir=turn?(s.dx<0?1:-1):0;
     const ok=dir===1?idx<deck.length-1:dir===-1?idx>0:false;
     if(ok){ place(s.el,(s.dx<0?-1:1)*s.w*1.3,0,true); setTimeout(()=>go(dir),170); }
@@ -901,7 +908,7 @@ function SwipeDeck({deck,ctx,idx,setIdx,go}){
   }
   const drag={dx:hint*50};
 
-  return <div style={{flex:1,display:'flex',flexDirection:'column',padding:'8px 16px 14px',minHeight:0}}>
+  return <div className="sc-swipe" style={{flex:1,display:'flex',flexDirection:'column',padding:'8px 16px 14px',minHeight:0}}>
     <div style={{position:'relative',flex:1,minHeight:0}}>
       {deck.map((c,i)=>{
         if(i<idx||i>idx+2) return null;
@@ -912,11 +919,11 @@ function SwipeDeck({deck,ctx,idx,setIdx,go}){
         return <div key={c.key}
           onPointerDown={isTop?onPointerDown:undefined} onPointerMove={isTop?onPointerMove:undefined} onPointerUp={isTop?onPointerUp:undefined} onPointerCancel={isTop?onPointerUp:undefined}
           onClickCapture={isTop?(e=>{ if(justDragged.current){ e.stopPropagation(); e.preventDefault(); } }):undefined}
-          style={{position:'absolute',inset:0,zIndex:10-depth,transform:tf,transition:'transform .3s cubic-bezier(.34,1.1,.64,1)',opacity:depth>1?0:1,touchAction:isTop&&!isFinish?'pan-y':'auto',cursor:isTop&&!isFinish?'grab':'default',userSelect:isTop&&!isFinish?'none':'auto',WebkitUserSelect:isTop&&!isFinish?'none':'auto',WebkitTouchCallout:isTop&&!isFinish?'none':'default'}}>
+          style={{position:'absolute',inset:0,zIndex:10-depth,transform:tf,transition:'transform .3s cubic-bezier(.34,1.1,.64,1)',opacity:depth>1?0:1,cursor:isTop?'grab':'default',userSelect:isTop&&!isFinish?'none':'auto',WebkitUserSelect:isTop&&!isFinish?'none':'auto',WebkitTouchCallout:isTop&&!isFinish?'none':'default'}}>
           <CardShell card={cc} ctx={ctx} style={{height:'100%'}}>
             <CardFace card={c} ctx={ctx}/>
           </CardShell>
-          {isTop&&Math.abs(drag.dx)>40&&!isFinish&&<div style={{position:'absolute',top:24,[drag.dx<0?'right':'left']:24,padding:'6px 14px',borderRadius:10,border:`2.5px solid ${C.mid}`,color:C.mid,fontSize:15,fontWeight:800,fontFamily:C.P,transform:`rotate(${drag.dx<0?12:-12}deg)`,background:'rgba(255,255,255,0.9)',letterSpacing:'0.05em'}}>{drag.dx<0?'NEXT':'BACK'}</div>}
+          {isTop&&Math.abs(drag.dx)>40&&<div style={{position:'absolute',top:24,[drag.dx<0?'right':'left']:24,padding:'6px 14px',borderRadius:10,border:`2.5px solid ${C.mid}`,color:C.mid,fontSize:15,fontWeight:800,fontFamily:C.P,transform:`rotate(${drag.dx<0?12:-12}deg)`,background:'rgba(255,255,255,0.9)',letterSpacing:'0.05em'}}>{drag.dx<0?'NEXT':'BACK'}</div>}
         </div>;
       })}
     </div>

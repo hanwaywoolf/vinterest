@@ -360,3 +360,45 @@ test('wine detail: taste bars use WineDNA\'s scale, skip missing figures, and sa
   await expect(root).not.toContainText('tannins:');
   await expect(root).toContainText('Your 90+ reds');
 });
+
+// Real touch input (through the browser's own gesture handling, unlike a mouse): a gentle swipe
+// turns the card either way, from anywhere on it, including back from the last card, and a
+// touch-drag on a Blind Call slider moves the slider, not the card.
+test.describe('the deck on a touch screen', () => {
+  test.use({ hasTouch: true, isMobile: true, viewport: { width: 400, height: 860 } });
+  test('gentle swipes both ways, sliders stay sliders', async ({ context, page }) => {
+    await setup(context, page, { label: PRIORAT, seed: { vinterest_scan_path: JSON.stringify({ deck: 2, quick: 0 }) } });
+    await page.goto(`${BASE}/?demo=1#camera`);
+    await page.getByTestId('scan-file').setInputFiles({ name: 'label.png', mimeType: 'image/png', buffer: PNG });
+    const root = page.locator('#root');
+    await expect(root).toContainText('1 / 9');
+    const cdp = await context.newCDPSession(page);
+    const drag = async (x0, y, dx, ms) => {
+      await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: x0, y }] });
+      for (let i = 1; i <= 8; i++) {
+        await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: x0 + dx * i / 8, y: y + i }] });
+        await page.waitForTimeout(ms / 8);
+      }
+      await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+      await page.waitForTimeout(400);
+    };
+    const y = (await root.getByText('How we got this').boundingBox()).y + 40;
+    await drag(300, y, -100, 300);
+    await expect(root).toContainText('2 / 9');
+    await drag(100, y, 100, 300);
+    await expect(root).toContainText('1 / 9');
+    for (let i = 0; i < 5; i++) await drag(320, 400, -110, 250);
+    await expect(root).toContainText('6 / 9');
+    await root.getByText('Tasting it now? Play Blind Call').click();
+    const slider = root.locator('input[type=range]').first();
+    const s = await slider.boundingBox();
+    await drag(s.x + s.width * 0.5, s.y + s.height / 2, s.width * 0.4, 300);
+    await expect(root).toContainText('6 / 9');
+    expect(Number(await slider.inputValue())).toBeGreaterThan(70);
+    // From the Blind Call card on, swipe on the card heading (a swipe starting on a slider is the slider's).
+    for (let i = 0; i < 3; i++) await drag(320, (await root.getByText(/^(While you taste|Sound clued-in|Price check)$/).first().boundingBox()).y + 5, -110, 250);
+    await expect(root).toContainText('9 / 9');
+    await drag(60, (await root.getByText('How was it?').boundingBox()).y + 5, 110, 250);
+    await expect(root).toContainText('8 / 9');
+  });
+});
