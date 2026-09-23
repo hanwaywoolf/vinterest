@@ -92,8 +92,8 @@ function App(){
         {screen==='learn'     && <ScreenErrorBoundary><QuizHubScreen {...ctx}/></ScreenErrorBoundary>}
         {screen==='quiz'      && <QuizScreen {...ctx}/>}
         {screen==='mastery-map' && <MasteryMapScreen {...ctx}/>}
-        {screen==='article'   && <LearnArticleScreen {...ctx}/>}
-        {screen==='gen-article'&& <GenArticleScreen {...ctx}/>}
+        {screen==='article'   && <ScreenErrorBoundary><LearnArticleScreen {...ctx}/></ScreenErrorBoundary>}
+        {screen==='gen-article'&& <ScreenErrorBoundary><GenArticleScreen {...ctx}/></ScreenErrorBoundary>}
         {screen==='account'   && <AccountProfileScreen {...ctx}/>}
         {screen==='settings'  && <SettingsScreen {...ctx}/>}
       </div>

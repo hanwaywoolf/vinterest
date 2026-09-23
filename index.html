@@ -68,6 +68,7 @@
   /* Smooth screen transitions */
   .screen-enter{animation:slideIn .22s ease-out both}
   @keyframes slideIn{from{opacity:0;transform:translateX(18px)}to{opacity:1;transform:none}}
+  @keyframes storySpin{to{transform:rotate(360deg)}}
 
   /* Remove scrollbar on webkit */
   ::-webkit-scrollbar{display:none}
@@ -172,7 +173,7 @@
 </script>
 
 <!-- Precompiled bundle (JSX stripped ahead of time — no in-browser Babel transform) -->
-<script src="bundle.js?v=62"></script>
+<script src="bundle.js?v=71"></script>
 
 <div id="tweaks-root"></div>
 <script src="tweaks-inline.compiled.js?v=49"></script>

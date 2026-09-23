@@ -13,6 +13,29 @@ const ExposureLedger = Object.assign(_accountStore('vinterest_exposure_v1'), {
   mark(key){ const d=this.get(); d.keys[key]=Date.now(); this.save(d); }
 });
 
+/* Tracks which region quizzes a user has aced (100%) so QuizHubScreen can retire them and
+   surface the next newly-eligible region instead of re-serving an already-mastered one. */
+const RegionQuizLedger = Object.assign(_accountStore('vinterest_region_quiz_v1'), {
+  fresh(){ return {aced:{}}; },
+  isAced(region){ return !!this.get().aced[region]; },
+  markAced(region){ const d=this.get(); d.aced[region]=Date.now(); this.save(d); }
+});
+
+/* Regions with 2+ scans that haven't been aced yet — most-scanned first. A region drops off
+   this list the moment its quiz is aced, and a newly-scanned region (e.g. a first Bordeaux)
+   slots in on its own once it crosses the 2-scan threshold. Requires a data/knowledge.json
+   entry — without one, assembleRegionQuiz has no facts to quiz on beyond a single
+   wine-history question, so a region the KB doesn't cover is left off rather than
+   surfacing a near-empty quiz. */
+function regionQuizCandidates(wines){
+  const counts={};
+  wines.forEach(w=>{ if(w.region) counts[w.region]=(counts[w.region]||0)+1; });
+  return Object.entries(counts)
+    .filter(([region,n])=>n>=2&&KNOWLEDGE.regions[region]&&!RegionQuizLedger.isAced(region))
+    .sort((a,b)=>b[1]-a[1])
+    .map(([region])=>region);
+}
+
 const ContentEngine = {
   TRAIT_BASELINE:{body:0.5,tannins:0.5,acidity:0.5,sweetness:0.15},
   TRAIT_LABEL:{body:'Full-Bodied',tannins:'Tannic',acidity:'High-Acid',sweetness:'Sweet'},
@@ -190,13 +213,23 @@ const ContentEngine = {
   },
 
   /* Re-fills title/subtitle from stored slots for every stub — heals any stub persisted before a
-     template or slot-resolution fix, without needing to wipe the user's saved article list. */
-  _healStubs(stubs){
+     template or slot-resolution fix, without needing to wipe the user's saved article list.
+     Also backfills any `needs` slot the stub's saved slots are missing (e.g. `country`, added to
+     buildSlots after some stubs already existed) — otherwise re-filling with the current template
+     just swaps in a fresh, still-unresolved {{placeholder}} instead of fixing it. */
+  _healStubs(stubs, wines){
     let changed=false;
     stubs.forEach(stub=>{
       if(!stub.slots) return;
       const archetype=ARTICLE_ARCHETYPES.find(a=>a.id===stub.archetypeId);
       if(!archetype) return;
+      (archetype.needs||[]).forEach(n=>{
+        if(stub.slots[n]!=null&&stub.slots[n]!=='') return;
+        if(n==='country'&&stub.slots.region){
+          const match=(wines||[]).find(w=>w.region===stub.slots.region&&w.country);
+          stub.slots.country=match?match.country:KNOWLEDGE.regions[stub.slots.region]?.country;
+        }
+      });
       const title=this.fillTpl(archetype.titleTpl,stub.slots);
       const subtitle=this.fillTpl(archetype.subtitleTpl,stub.slots);
       if(title!==stub.title||subtitle!==stub.subtitle){ stub.title=title; stub.subtitle=subtitle; changed=true; }
@@ -208,7 +241,7 @@ const ContentEngine = {
     maxUnread=maxUnread||6;
     let stubs=[];
     try{ stubs=JSON.parse(localStorage.getItem('vinterest_gen_stubs')||'[]')||[]; }catch(e){}
-    let healed=this._healStubs(stubs);
+    let healed=this._healStubs(stubs,wines);
     const unreadCount=stubs.filter(s=>!localStorage.getItem('vinterest_gen_article_'+s.id+'_done')).length;
     const need=maxUnread-unreadCount;
     if(need<=0||!wines.length) return stubs;

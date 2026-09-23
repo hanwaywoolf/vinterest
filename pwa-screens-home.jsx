@@ -59,7 +59,7 @@ function WineChatWidget({wines}){
   function doAsk(question){
     if(!question||asking) return;
     setAsking(true);setErr(false);setAnswer('');setAsked(question);setQ('');
-    const prompt=`You are a concise wine assistant inside a wine app's home screen. Answer ONLY questions about wine — grape varieties, tasting, pairing, service, regions, production. You may also address food pairing and other alcoholic drinks, but only in service of a wine question (e.g. "what beer pairs with steak alongside a Malbec" is fine). If the question is unrelated to wine, food pairing, or alcohol, do not answer it — instead respond with one short, friendly sentence redirecting back to wine topics. Otherwise answer in 2-4 clear, conversational sentences. Plain prose, no markdown, no lists, no headers.\n\nQuestion: "${question}"`;
+    const prompt=`You are a concise wine assistant inside a wine app's home screen. Answer ONLY questions about wine — grape varieties, tasting, pairing, service, regions, production. You may also address food pairing and other alcoholic drinks, but only in service of a wine question (e.g. "what beer pairs with steak alongside a Malbec" is fine). If the question is unrelated to wine, food pairing, or alcohol, do not answer it — instead respond with one short, friendly sentence redirecting back to wine topics. Otherwise answer in exactly 1-2 short sentences, no more than about 35 words total — this is a quick-hit answer box, not a full explanation, so be direct and skip caveats. Plain prose, no markdown, no lists, no headers.\n\nQuestion: "${question}"`;
     window.claude.complete({purpose:'wine_qa',messages:[{role:'user',content:prompt}]})
       .then(text=>setAnswer(text.trim()))
       .catch(()=>setErr(true))

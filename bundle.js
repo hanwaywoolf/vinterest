@@ -404,6 +404,21 @@ const ExposureLedger = Object.assign(_accountStore('vinterest_exposure_v1'), {
   mark(key){ const d=this.get(); d.keys[key]=Date.now(); this.save(d); }
 });
 
+const RegionQuizLedger = Object.assign(_accountStore('vinterest_region_quiz_v1'), {
+  fresh(){ return {aced:{}}; },
+  isAced(region){ return !!this.get().aced[region]; },
+  markAced(region){ const d=this.get(); d.aced[region]=Date.now(); this.save(d); }
+});
+
+function regionQuizCandidates(wines){
+  const counts={};
+  wines.forEach(w=>{ if(w.region) counts[w.region]=(counts[w.region]||0)+1; });
+  return Object.entries(counts)
+    .filter(([region,n])=>n>=2&&KNOWLEDGE.regions[region]&&!RegionQuizLedger.isAced(region))
+    .sort((a,b)=>b[1]-a[1])
+    .map(([region])=>region);
+}
+
 const ContentEngine = {
   TRAIT_BASELINE:{body:0.5,tannins:0.5,acidity:0.5,sweetness:0.15},
   TRAIT_LABEL:{body:'Full-Bodied',tannins:'Tannic',acidity:'High-Acid',sweetness:'Sweet'},
@@ -580,12 +595,19 @@ const ContentEngine = {
     };
   },
 
-  _healStubs(stubs){
+  _healStubs(stubs, wines){
     let changed=false;
     stubs.forEach(stub=>{
       if(!stub.slots) return;
       const archetype=ARTICLE_ARCHETYPES.find(a=>a.id===stub.archetypeId);
       if(!archetype) return;
+      (archetype.needs||[]).forEach(n=>{
+        if(stub.slots[n]!=null&&stub.slots[n]!=='') return;
+        if(n==='country'&&stub.slots.region){
+          const match=(wines||[]).find(w=>w.region===stub.slots.region&&w.country);
+          stub.slots.country=match?match.country:KNOWLEDGE.regions[stub.slots.region]?.country;
+        }
+      });
       const title=this.fillTpl(archetype.titleTpl,stub.slots);
       const subtitle=this.fillTpl(archetype.subtitleTpl,stub.slots);
       if(title!==stub.title||subtitle!==stub.subtitle){ stub.title=title; stub.subtitle=subtitle; changed=true; }
@@ -597,7 +619,7 @@ const ContentEngine = {
     maxUnread=maxUnread||6;
     let stubs=[];
     try{ stubs=JSON.parse(localStorage.getItem('vinterest_gen_stubs')||'[]')||[]; }catch(e){}
-    let healed=this._healStubs(stubs);
+    let healed=this._healStubs(stubs,wines);
     const unreadCount=stubs.filter(s=>!localStorage.getItem('vinterest_gen_article_'+s.id+'_done')).length;
     const need=maxUnread-unreadCount;
     if(need<=0||!wines.length) return stubs;
@@ -734,6 +756,12 @@ function prefetchGrapeQuiz(grape){
 /* Vinterest — Quiz Question Bank. Loaded from data/quiz-bank.json (source of truth for native port). */
 let QUIZ_TOPICS = [];
 try { QUIZ_TOPICS = _loadJSON('data/quiz-bank.json') || []; } catch (e) { console.error('[Vinterest] quiz-bank.json failed to load — quizzes will be empty until it is deployed.', e); }
+
+const TopicQuizLedger = Object.assign(_accountStore('vinterest_topic_quiz_v1'), {
+  fresh(){ return {done:{}}; },
+  isDone(topicId){ return !!this.get().done[topicId]; },
+  markDone(topicId){ const d=this.get(); d.done[topicId]=Date.now(); this.save(d); }
+});
 
 
 /* ---- pwa-components.jsx (precompiled) ---- */
@@ -11435,15 +11463,6 @@ function WineDNAUnlockCelebration({
     }
   }, "See WineDNA")), /*#__PURE__*/React.createElement("style", null, `@keyframes dnaRise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}`));
 }
-function _dominantRegion(wines) {
-  const c = {};
-  wines.forEach(w => {
-    if (w.region) c[w.region] = (c[w.region] || 0) + 1;
-  });
-  const top = Object.entries(c).sort((a, b) => b[1] - a[1])[0];
-  return top && top[1] >= 2 ? top[0] : null;
-}
-
 /* ── QUIZ HUB / LEARN TAB ── */
 function QuizHubScreen({
   nav,
@@ -11526,23 +11545,50 @@ function QuizHubScreen({
     action: () => nav('camera')
   };
   const mastery = MasterySystem.summary();
-  const region = _dominantRegion(wines);
+  const quizRegions = React.useMemo(() => regionQuizCandidates(wines), [wines]);
   const wordsCount = VocabLedger.getAll().length;
   const startQuiz = cfg => {
     sessionStorage.setItem('vinterest_quiz_config2', JSON.stringify(cfg));
     nav('quiz');
   };
+  const [topicsExpanded, setTopicsExpanded] = React.useState(false);
+  // Wine Basics always shows — it's the entry point for someone new to wine, not just a
+  // pre-WineDNA-unlock placeholder. Finished topics move behind the toggle instead of
+  // disappearing, so handing the phone to someone else still surfaces them.
+  const {
+    topicsToShow,
+    doneTopics
+  } = React.useMemo(() => {
+    const todo = [],
+      done = [];
+    QUIZ_TOPICS.forEach(t => {
+      (TopicQuizLedger.isDone(t.id) ? done : todo).push(t);
+    });
+    return {
+      topicsToShow: todo,
+      doneTopics: done
+    };
+  }, []);
   const [grapeUnlocks, setGrapeUnlocks] = React.useState(() => GrapeUnlocks.all());
   const [grapeLoading, setGrapeLoading] = React.useState(null);
   const [grapesExpanded, setGrapesExpanded] = React.useState(false);
   // Unlocked grapes first (most-recently-unlocked first), locked grapes after in their
   // existing allowlist order. Recomputed from current unlock state on every render (not
   // just at mount) so a grape unlocked mid-session jumps to the front immediately.
-  const { unlockedGrapes, lockedGrapes } = React.useMemo(() => {
-    const unlocked = [], locked = [];
-    GRAPE_ALLOWLIST.forEach(g => { (grapeUnlocks[g] ? unlocked : locked).push(g); });
+  const {
+    unlockedGrapes,
+    lockedGrapes
+  } = React.useMemo(() => {
+    const unlocked = [],
+      locked = [];
+    GRAPE_ALLOWLIST.forEach(g => {
+      (grapeUnlocks[g] ? unlocked : locked).push(g);
+    });
     unlocked.sort((a, b) => (grapeUnlocks[b].at || 0) - (grapeUnlocks[a].at || 0));
-    return { unlockedGrapes: unlocked, lockedGrapes: locked };
+    return {
+      unlockedGrapes: unlocked,
+      lockedGrapes: locked
+    };
   }, [grapeUnlocks]);
   function handleGrapeTap(grape) {
     if (!grapeUnlocks[grape]) {
@@ -11566,7 +11612,11 @@ function QuizHubScreen({
   // generate — new unlocks warm themselves immediately via GrapeUnlocks. Capped so a big backlog
   // (e.g. a restored account) doesn't fire a burst of requests at once.
   React.useEffect(() => {
-    unlockedGrapes.slice(0, 5).forEach(g => { try { prefetchGrapeQuiz(g); } catch (e) {} });
+    unlockedGrapes.slice(0, 5).forEach(g => {
+      try {
+        prefetchGrapeQuiz(g);
+      } catch (e) {}
+    });
   }, []);
   return /*#__PURE__*/React.createElement("div", {
     style: {
@@ -11851,7 +11901,7 @@ function QuizHubScreen({
         letterSpacing: '0.06em',
         marginBottom: 2
       }
-    }, "Quick Read \xB7 ", stub.readTime), /*#__PURE__*/React.createElement("div", {
+    }, "Quick Read · ", stub.readTime), /*#__PURE__*/React.createElement("div", {
       style: {
         fontSize: 16,
         fontWeight: 700,
@@ -11873,7 +11923,7 @@ function QuizHubScreen({
         color: C.green,
         fontFamily: C.P
       }
-    }, "\u2713") : /*#__PURE__*/React.createElement(Icon, {
+    }, "✓") : /*#__PURE__*/React.createElement(Icon, {
       n: "chevron",
       sz: 13,
       col: C.mid
@@ -11887,8 +11937,17 @@ function QuizHubScreen({
       gap: 8,
       marginTop: 8
     }
-  }, !coverage.unlocked ? QUIZ_TOPICS.map((topic, ti) => /*#__PURE__*/React.createElement("div", {
-    key: ti,
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 13,
+      fontWeight: 600,
+      color: C.mid,
+      fontFamily: C.P,
+      textTransform: 'uppercase',
+      letterSpacing: '0.06em'
+    }
+  }, "Wine Basics"), topicsToShow.map(topic => /*#__PURE__*/React.createElement("div", {
+    key: topic.id,
     onClick: () => startQuiz({
       mode: 'practice',
       topicId: topic.id
@@ -11940,7 +11999,100 @@ function QuizHubScreen({
     n: "chevron",
     sz: 13,
     col: C.mid
-  }))) : /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+  }))), doneTopics.length > 0 && /*#__PURE__*/React.createElement("div", {
+    onClick: () => setTopicsExpanded(e => !e),
+    style: {
+      background: C.white,
+      borderRadius: 14,
+      padding: '10px 14px',
+      display: 'flex',
+      alignItems: 'center',
+      gap: 8,
+      cursor: 'pointer',
+      border: `1px dashed ${C.line}`
+    }
+  }, /*#__PURE__*/React.createElement(Icon, {
+    n: "chevron",
+    sz: 12,
+    col: C.mid,
+    style: topicsExpanded ? {
+      transform: 'rotate(-90deg)'
+    } : undefined
+  }), /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: 14,
+      fontWeight: 600,
+      color: C.mid,
+      fontFamily: C.P
+    }
+  }, topicsExpanded ? 'Show less' : `${doneTopics.length} completed — show`)), topicsExpanded && doneTopics.map(topic => /*#__PURE__*/React.createElement("div", {
+    key: topic.id,
+    onClick: () => startQuiz({
+      mode: 'practice',
+      topicId: topic.id
+    }),
+    style: {
+      background: C.white,
+      borderRadius: 14,
+      padding: '12px 14px',
+      display: 'flex',
+      alignItems: 'center',
+      gap: 12,
+      cursor: 'pointer',
+      border: `1px solid ${C.line}`,
+      opacity: 0.7
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      width: 42,
+      height: 42,
+      borderRadius: 12,
+      background: topic.color + '15',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      flexShrink: 0,
+      border: `1px solid ${topic.color}25`
+    }
+  }, /*#__PURE__*/React.createElement(Icon, {
+    n: topic.iconName || 'book',
+    sz: 20,
+    col: topic.color
+  })), /*#__PURE__*/React.createElement("div", {
+    style: {
+      flex: 1
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 16,
+      fontWeight: 700,
+      color: C.ink,
+      fontFamily: C.P
+    }
+  }, topic.label), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 14,
+      color: C.mid,
+      fontFamily: C.P
+    }
+  }, topic.desc)), /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: 14,
+      fontWeight: 700,
+      color: C.green,
+      fontFamily: C.P
+    }
+  }, "✓"))), coverage.unlocked && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 13,
+      fontWeight: 600,
+      color: C.mid,
+      fontFamily: C.P,
+      textTransform: 'uppercase',
+      letterSpacing: '0.06em',
+      marginTop: 6
+    }
+  }, "Personalised For You"), /*#__PURE__*/React.createElement("div", {
     onClick: () => startQuiz({
       mode: 'concept'
     }),
@@ -11987,7 +12139,7 @@ function QuizHubScreen({
       color: C.mid,
       fontFamily: C.P
     }
-  }, mastery.encountered, "/", mastery.total, " concepts met \xB7 ", mastery.mastered, " mastered")), /*#__PURE__*/React.createElement(Icon, {
+  }, mastery.encountered, "/", mastery.total, " concepts met · ", mastery.mastered, " mastered")), /*#__PURE__*/React.createElement(Icon, {
     n: "chevron",
     sz: 13,
     col: C.mid
@@ -12041,181 +12193,196 @@ function QuizHubScreen({
     n: "chevron",
     sz: 13,
     col: C.mid
-  })), region && /*#__PURE__*/React.createElement("div", {
-    onClick: () => startQuiz({
-      mode: 'region',
-      region
-    }),
+  })), quizRegions.length > 0 && /*#__PURE__*/React.createElement("div", {
     style: {
-      background: C.white,
-      borderRadius: 14,
-      padding: '12px 14px',
-      display: 'flex',
-      alignItems: 'center',
-      gap: 12,
-      cursor: 'pointer',
-      border: `1px solid ${C.line}`
+      fontSize: 13,
+      fontWeight: 600,
+      color: C.mid,
+      fontFamily: C.P,
+      textTransform: 'uppercase',
+      letterSpacing: '0.06em',
+      marginTop: 6
     }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      width: 42,
-      height: 42,
-      borderRadius: 12,
-      background: C.offWhite,
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      flexShrink: 0
-    }
-  }, /*#__PURE__*/React.createElement(Icon, {
-    n: "map",
-    sz: 20,
-    col: C.ink
-  })), /*#__PURE__*/React.createElement("div", {
-    style: {
-      flex: 1
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: 16,
-      fontWeight: 700,
-      color: C.ink,
-      fontFamily: C.P
-    }
-  }, "Your ", region, " Knowledge"), /*#__PURE__*/React.createElement("div", {
+  }, "Regional Knowledge"), quizRegions.map(region => {
+    const info = KNOWLEDGE.regions[region];
+    const sub = info ? [info.keyGrapes && info.keyGrapes[0], info.classification].filter(Boolean).join(' · ') : "Grounded in bottles you've scanned from there";
+    return /*#__PURE__*/React.createElement("div", {
+      key: region,
+      onClick: () => startQuiz({
+        mode: 'region',
+        region
+      }),
+      style: {
+        background: C.white,
+        borderRadius: 14,
+        padding: '12px 14px',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 12,
+        cursor: 'pointer',
+        border: `1px solid ${C.line}`
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        width: 42,
+        height: 42,
+        borderRadius: 12,
+        background: C.offWhite,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        flexShrink: 0
+      }
+    }, /*#__PURE__*/React.createElement(Icon, {
+      n: "map",
+      sz: 20,
+      col: C.ink
+    })), /*#__PURE__*/React.createElement("div", {
+      style: {
+        flex: 1
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontSize: 16,
+        fontWeight: 700,
+        color: C.ink,
+        fontFamily: C.P
+      }
+    }, region), /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontSize: 14,
+        color: C.mid,
+        fontFamily: C.P
+      }
+    }, sub)), /*#__PURE__*/React.createElement(Icon, {
+      n: "chevron",
+      sz: 13,
+      col: C.mid
+    }));
+  }))), /*#__PURE__*/React.createElement("div", {
+    style: zoneLabel
+  }, "Your Grapes"), /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 14,
       color: C.mid,
-      fontFamily: C.P
-    }
-  }, "Grounded in bottles you've scanned from there")), /*#__PURE__*/React.createElement(Icon, {
-    n: "chevron",
-    sz: 13,
-    col: C.mid
-  })))), /*#__PURE__*/React.createElement("div", {
-  style: zoneLabel
-}, "Your Grapes"), /*#__PURE__*/React.createElement("div", {
-  style: {
-    fontSize: 14,
-    color: C.mid,
-    fontFamily: C.P,
-    marginTop: 2
-  }
-}, unlockedGrapes.length, "/", GRAPE_ALLOWLIST.length, " unlocked", !isPro ? ` · rate a wine to unlock more (${FREE_GRAPE_CAP} free)` : ' · tap any to unlock instantly'), /*#__PURE__*/React.createElement("div", {
-  style: {
-    display: 'flex',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginTop: 8
-  }
-}, unlockedGrapes.map(g => {
-  const loading = grapeLoading === g;
-  const col = grapeTypeColor(g);
-  return /*#__PURE__*/React.createElement("div", {
-    key: g,
-    onClick: () => handleGrapeTap(g),
-    style: {
-      flex: '0 0 auto',
-      padding: '10px 18px',
-      borderRadius: 999,
-      background: col + '15',
-      border: `1px solid ${col}40`,
-      cursor: 'pointer',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center'
-    }
-  }, loading ? /*#__PURE__*/React.createElement("div", {
-    style: {
-      width: 14,
-      height: 14,
-      borderRadius: 7,
-      border: `2px solid ${col}33`,
-      borderTopColor: col,
-      animation: 'storySpin .8s linear infinite'
-    }
-  }) : /*#__PURE__*/React.createElement("span", {
-    style: {
-      fontSize: 14,
-      fontWeight: 600,
-      color: col,
       fontFamily: C.P,
-      whiteSpace: 'nowrap'
+      marginTop: 2
     }
-  }, g));
-}), lockedGrapes.length > 0 && /*#__PURE__*/React.createElement("div", {
-  onClick: () => setGrapesExpanded(e => !e),
-  style: {
-    flex: '0 0 auto',
-    padding: '10px 18px',
-    borderRadius: 999,
-    background: C.white,
-    border: `1px dashed ${C.line}`,
-    cursor: 'pointer',
-    display: 'flex',
-    alignItems: 'center',
-    gap: 6
-  }
-}, grapesExpanded ? /*#__PURE__*/React.createElement(Icon, {
-  n: "chevron",
-  sz: 12,
-  col: C.mid,
-  style: {
-    transform: 'rotate(-90deg)'
-  }
-}) : /*#__PURE__*/React.createElement(Icon, {
-  n: "lock",
-  sz: 12,
-  col: C.mid
-}), /*#__PURE__*/React.createElement("span", {
-  style: {
-    fontSize: 14,
-    fontWeight: 600,
-    color: C.mid,
-    fontFamily: C.P,
-    whiteSpace: 'nowrap'
-  }
-}, grapesExpanded ? 'Show less' : `+${lockedGrapes.length} more`)), grapesExpanded && lockedGrapes.map(g => {
-  const loading = grapeLoading === g;
-  const col = grapeTypeColor(g);
-  return /*#__PURE__*/React.createElement("div", {
-    key: g,
-    onClick: () => handleGrapeTap(g),
+  }, unlockedGrapes.length, "/", GRAPE_ALLOWLIST.length, " unlocked", !isPro ? ` · rate a wine to unlock more (${FREE_GRAPE_CAP} free)` : ' · tap any to unlock instantly'), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      flexWrap: 'wrap',
+      gap: 8,
+      marginTop: 8
+    }
+  }, unlockedGrapes.map(g => {
+    const loading = grapeLoading === g;
+    const col = grapeTypeColor(g);
+    return /*#__PURE__*/React.createElement("div", {
+      key: g,
+      onClick: () => handleGrapeTap(g),
+      style: {
+        flex: '0 0 auto',
+        padding: '10px 18px',
+        borderRadius: 999,
+        background: col + '15',
+        border: `1px solid ${col}40`,
+        cursor: 'pointer',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center'
+      }
+    }, loading ? /*#__PURE__*/React.createElement("div", {
+      style: {
+        width: 14,
+        height: 14,
+        borderRadius: 7,
+        border: `2px solid ${col}33`,
+        borderTopColor: col,
+        animation: 'storySpin .8s linear infinite'
+      }
+    }) : /*#__PURE__*/React.createElement("span", {
+      style: {
+        fontSize: 14,
+        fontWeight: 600,
+        color: col,
+        fontFamily: C.P,
+        whiteSpace: 'nowrap'
+      }
+    }, g));
+  }), lockedGrapes.length > 0 && /*#__PURE__*/React.createElement("div", {
+    onClick: () => setGrapesExpanded(e => !e),
     style: {
       flex: '0 0 auto',
       padding: '10px 18px',
       borderRadius: 999,
       background: C.white,
-      border: `1px solid ${col}30`,
+      border: `1px dashed ${C.line}`,
       cursor: 'pointer',
       display: 'flex',
       alignItems: 'center',
-      gap: 6,
-      opacity: 0.75
+      gap: 6
     }
-  }, loading ? /*#__PURE__*/React.createElement("div", {
+  }, grapesExpanded ? /*#__PURE__*/React.createElement(Icon, {
+    n: "chevron",
+    sz: 12,
+    col: C.mid,
     style: {
-      width: 14,
-      height: 14,
-      borderRadius: 7,
-      border: `2px solid ${col}33`,
-      borderTopColor: col,
-      animation: 'storySpin .8s linear infinite'
+      transform: 'rotate(-90deg)'
     }
   }) : /*#__PURE__*/React.createElement(Icon, {
     n: "lock",
-    sz: 11,
+    sz: 12,
     col: C.mid
   }), /*#__PURE__*/React.createElement("span", {
     style: {
       fontSize: 14,
       fontWeight: 600,
-      color: C.ink,
+      color: C.mid,
       fontFamily: C.P,
       whiteSpace: 'nowrap'
     }
-  }, g));
-})), /*#__PURE__*/React.createElement("div", {
+  }, grapesExpanded ? 'Show less' : `+${lockedGrapes.length} more`)), grapesExpanded && lockedGrapes.map(g => {
+    const loading = grapeLoading === g;
+    const col = grapeTypeColor(g);
+    return /*#__PURE__*/React.createElement("div", {
+      key: g,
+      onClick: () => handleGrapeTap(g),
+      style: {
+        flex: '0 0 auto',
+        padding: '10px 18px',
+        borderRadius: 999,
+        background: C.white,
+        border: `1px solid ${col}30`,
+        cursor: 'pointer',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 6,
+        opacity: 0.75
+      }
+    }, loading ? /*#__PURE__*/React.createElement("div", {
+      style: {
+        width: 14,
+        height: 14,
+        borderRadius: 7,
+        border: `2px solid ${col}33`,
+        borderTopColor: col,
+        animation: 'storySpin .8s linear infinite'
+      }
+    }) : /*#__PURE__*/React.createElement(Icon, {
+      n: "lock",
+      sz: 11,
+      col: C.mid
+    }), /*#__PURE__*/React.createElement("span", {
+      style: {
+        fontSize: 14,
+        fontWeight: 600,
+        color: C.ink,
+        fontFamily: C.P,
+        whiteSpace: 'nowrap'
+      }
+    }, g));
+  })), /*#__PURE__*/React.createElement("div", {
     style: zoneLabel
   }, "Your Progress"), /*#__PURE__*/React.createElement("div", {
     onClick: () => isPro ? nav('mastery-map') : showPro('mastery-map'),
@@ -12262,7 +12429,7 @@ function QuizHubScreen({
       color: C.mid,
       fontFamily: C.P
     }
-  }, mastery.mastered, "/", mastery.total, " mastered \u2014 see the whole picture")), !isPro && /*#__PURE__*/React.createElement(ProBadge, null), /*#__PURE__*/React.createElement(Icon, {
+  }, mastery.mastered, "/", mastery.total, " mastered — see the whole picture")), !isPro && /*#__PURE__*/React.createElement(ProBadge, null), /*#__PURE__*/React.createElement(Icon, {
     n: "chevron",
     sz: 13,
     col: C.mid
@@ -12577,6 +12744,35 @@ function assembleRegionQuiz(region) {
         });
       }
     }
+    if (info.agingRules) {
+      const distractAging = _shuffle(otherRegionIds.map(r => KNOWLEDGE.regions[r].agingRules).filter(Boolean)).slice(0, 3);
+      if (distractAging.length >= 2) {
+        const opts = _shuffle([info.agingRules, ...distractAging]);
+        qs.push({
+          q: `Which aging rule applies to ${region}?`,
+          opts,
+          a: opts.indexOf(info.agingRules),
+          fact: `${region}: ${info.agingRules}.`,
+          conceptId: null,
+          vocabTerm: null
+        });
+      }
+    }
+    if (info.classicProducers && info.classicProducers[0]) {
+      const correct = info.classicProducers[0];
+      const distractProducers = [...new Set(otherRegionIds.flatMap(r => KNOWLEDGE.regions[r].classicProducers || []).filter(p => p && !info.classicProducers.includes(p)))];
+      if (distractProducers.length >= 2) {
+        const opts = _shuffle([correct, ..._shuffle(distractProducers).slice(0, 3)]);
+        qs.push({
+          q: `Which producer is a classic name in ${region}?`,
+          opts,
+          a: opts.indexOf(correct),
+          fact: `Classic ${region} producers include ${info.classicProducers.join(', ')}.`,
+          conceptId: null,
+          vocabTerm: null
+        });
+      }
+    }
   }
   if (regionWines.length && otherWines.length >= 3) {
     const target = _shuffle(regionWines)[0];
@@ -12590,7 +12786,8 @@ function assembleRegionQuiz(region) {
       vocabTerm: null
     });
   }
-  return _shuffle(qs).map(q => _shuffleOpts(q));
+  const picked = _shuffle(qs).slice(0, Math.min(5, qs.length));
+  return picked.map(q => _shuffleOpts(q));
 }
 function assemblePracticeQuiz(topicId) {
   const topic = QUIZ_TOPICS.find(t => t.id === topicId) || QUIZ_TOPICS[0];
@@ -12687,6 +12884,8 @@ function QuizScreen({
       const g2 = a2.filter(x => !x.levelUp).reduce((s, a) => s + a.amount, 0);
       setXpGained(xp => xp + g2);
       XPSystem.toast(a2);
+      if (mode === 'region' && results.filter(r => r.correct).length === allQs.length) RegionQuizLedger.markAced(config.region);
+      if (mode === 'practice') TopicQuizLedger.markDone(config.topicId);
       setPhase('results');
     } else {
       setQIdx(i => i + 1);
@@ -19225,171 +19424,16 @@ function _fillTpl(tpl, vars) {
   return s;
 }
 let ON_RAMP = [];
-try { ON_RAMP = _loadJSON('data/onramp.json') || []; } catch (e) { console.error('[Vinterest] onramp.json failed to load — the Learn tab will be missing its on-ramp articles until it is deployed.', e); }
+try {
+  ON_RAMP = _loadJSON('data/onramp.json') || [];
+} catch (e) {
+  console.error('[Vinterest] onramp.json failed to load — the Learn tab will be missing its on-ramp articles until it is deployed.', e);
+}
 function onRampDone(id) {
   return !!localStorage.getItem('vinterest_' + id + '_done');
 }
 function onRampProgress() {
   return ON_RAMP.filter(a => onRampDone(a.id)).length;
-}
-
-/* ── shared comprehension check — replaces pay-for-button markRead().
-   XP only fires once every question has been answered correctly (retries allowed, never penalized). ── */
-function ComprehensionCheck({
-  questions,
-  onPass
-}) {
-  const [idx, setIdx] = React.useState(0);
-  const [selected, setSelected] = React.useState(null);
-  const [phase, setPhase] = React.useState('question');
-  const q = questions[idx];
-  const correct = selected === q.a;
-  function choose(i) {
-    if (phase !== 'question') return;
-    setSelected(i);
-    setPhase('feedback');
-  }
-  function next() {
-    if (!correct) {
-      setSelected(null);
-      setPhase('question');
-      return;
-    }
-    if (idx + 1 >= questions.length) {
-      onPass();
-      return;
-    }
-    setIdx(i => i + 1);
-    setSelected(null);
-    setPhase('question');
-  }
-  const optColors = phase === 'question' ? q.opts.map(() => ({
-    bg: C.white,
-    border: C.line,
-    text: C.ink
-  })) : q.opts.map((_, i) => {
-    if (i === q.a) return {
-      bg: C.greenBg,
-      border: C.green,
-      text: C.green
-    };
-    if (i === selected) return {
-      bg: '#FFF0F0',
-      border: '#E88080',
-      text: '#C0392B'
-    };
-    return {
-      bg: C.white,
-      border: C.line,
-      text: C.ink
-    };
-  });
-  return /*#__PURE__*/React.createElement("div", {
-    style: {
-      background: C.white,
-      borderRadius: 16,
-      border: `1px solid ${C.line}`,
-      padding: '16px 16px 14px',
-      display: 'flex',
-      flexDirection: 'column',
-      gap: 12
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: 'flex',
-      justifyContent: 'space-between',
-      alignItems: 'center'
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      fontSize: 13,
-      fontWeight: 700,
-      color: C.mid,
-      letterSpacing: '0.06em',
-      textTransform: 'uppercase',
-      fontFamily: C.P
-    }
-  }, "Quick check"), /*#__PURE__*/React.createElement("span", {
-    style: {
-      fontSize: 14,
-      fontWeight: 600,
-      color: C.mid,
-      fontFamily: C.P
-    }
-  }, idx + 1, "/", questions.length)), /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: 18,
-      fontWeight: 700,
-      color: C.ink,
-      fontFamily: C.P,
-      lineHeight: 1.4
-    }
-  }, q.q), /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: 'flex',
-      flexDirection: 'column',
-      gap: 8
-    }
-  }, q.opts.map((opt, i) => {
-    const s = optColors[i];
-    return /*#__PURE__*/React.createElement("div", {
-      key: i,
-      onClick: () => choose(i),
-      style: {
-        padding: '12px 14px',
-        borderRadius: 12,
-        border: `2px solid ${s.border}`,
-        background: s.bg,
-        cursor: phase === 'question' ? 'pointer' : 'default',
-        display: 'flex',
-        alignItems: 'center',
-        gap: 10
-      }
-    }, /*#__PURE__*/React.createElement("div", {
-      style: {
-        width: 24,
-        height: 24,
-        borderRadius: 12,
-        background: s.border + '25',
-        flexShrink: 0,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center'
-      }
-    }, /*#__PURE__*/React.createElement("span", {
-      style: {
-        fontSize: 13,
-        fontWeight: 700,
-        color: s.text,
-        fontFamily: C.P
-      }
-    }, phase === 'feedback' && i === q.a ? '✓' : phase === 'feedback' && i === selected ? '✗' : String.fromCharCode(65 + i))), /*#__PURE__*/React.createElement("span", {
-      style: {
-        fontSize: 15.5,
-        fontWeight: 500,
-        color: s.text,
-        fontFamily: C.P,
-        lineHeight: 1.35
-      }
-    }, opt));
-  })), phase === 'feedback' && /*#__PURE__*/React.createElement("div", {
-    onClick: next,
-    style: {
-      background: correct ? C.green : C.cr,
-      borderRadius: 12,
-      padding: '13px',
-      textAlign: 'center',
-      cursor: 'pointer',
-      userSelect: 'none'
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      fontSize: 16,
-      fontWeight: 700,
-      color: '#fff',
-      fontFamily: C.P
-    }
-  }, correct ? idx + 1 >= questions.length ? 'Done →' : 'Next →' : 'Try again →')));
 }
 function LearnArticleScreen({
   nav,
@@ -19401,8 +19445,7 @@ function LearnArticleScreen({
   }, []);
   const article = ON_RAMP[idx];
   const [completed, setCompleted] = React.useState(() => onRampDone(article.id));
-  const [checking, setChecking] = React.useState(false);
-  function passCheck() {
+  function markRead() {
     if (completed) return;
     XPSystem.awardAndToast([{
       type: 'article',
@@ -19410,7 +19453,6 @@ function LearnArticleScreen({
     }]);
     localStorage.setItem('vinterest_' + article.id + '_done', '1');
     setCompleted(true);
-    setChecking(false);
   }
   const nextArticle = ON_RAMP.find(a => !onRampDone(a.id) && a.id !== article.id);
   return /*#__PURE__*/React.createElement("div", {
@@ -19458,14 +19500,14 @@ function LearnArticleScreen({
       fontFamily: C.P,
       fontWeight: 500
     }
-  }, "On-Ramp \xB7 ", article.readTime)), completed && /*#__PURE__*/React.createElement("span", {
+  }, "On-Ramp · ", article.readTime)), completed && /*#__PURE__*/React.createElement("span", {
     style: {
       fontSize: 15,
       fontWeight: 700,
       color: C.green,
       fontFamily: C.P
     }
-  }, "\u2713 +50 XP")), /*#__PURE__*/React.createElement("div", {
+  }, "✓ +50 XP")), /*#__PURE__*/React.createElement("div", {
     style: {
       flex: 1,
       overflowY: 'auto'
@@ -19498,8 +19540,8 @@ function LearnArticleScreen({
     }
   }, "Quick Read")), /*#__PURE__*/React.createElement("div", {
     style: {
-      fontSize: 28,
-      fontWeight: 400,
+      fontSize: 26,
+      fontWeight: 800,
       color: '#fff',
       fontFamily: C.P,
       lineHeight: 1.2,
@@ -19613,10 +19655,7 @@ function LearnArticleScreen({
       fontFamily: C.P,
       lineHeight: 1.5
     }
-  }, ex))))))), checking && !completed && /*#__PURE__*/React.createElement(ComprehensionCheck, {
-    questions: article.check,
-    onPass: passCheck
-  }), !checking && /*#__PURE__*/React.createElement("div", {
+  }, ex))))))), /*#__PURE__*/React.createElement("div", {
     style: {
       background: completed ? C.greenBg : C.crSoft,
       borderRadius: 16,
@@ -19685,11 +19724,11 @@ function LearnArticleScreen({
       lineHeight: 1.5,
       marginBottom: 14
     }
-  }, "Answer 2 quick questions to earn +50 XP"), /*#__PURE__*/React.createElement(Btn, {
+  }, "Mark as complete to earn +50 XP"), /*#__PURE__*/React.createElement(Btn, {
     primary: true,
     full: true,
-    onClick: () => setChecking(true)
-  }, "Test what you learned"))), /*#__PURE__*/React.createElement("div", {
+    onClick: markRead
+  }, "Mark as Read · +50 XP"))), /*#__PURE__*/React.createElement("div", {
     style: {
       height: 16
     }
@@ -19714,7 +19753,6 @@ function GenArticleScreen({
   const doneKey = stub ? `vinterest_gen_article_${stub.id}_done` : null;
   const cacheKey = stub ? `vinterest_gen_article_${stub.id}_content` : null;
   const [completed, setCompleted] = React.useState(() => !!localStorage.getItem(doneKey));
-  const [checking, setChecking] = React.useState(false);
   const [sections, setSections] = React.useState(() => {
     if (!cacheKey) return null;
     try {
@@ -19723,7 +19761,6 @@ function GenArticleScreen({
       return null;
     }
   });
-  const [check, setCheck] = React.useState(null);
   const [generating, setGenerating] = React.useState(false);
   React.useEffect(() => {
     if (!stub || sections || generating) return;
@@ -19754,22 +19791,12 @@ function GenArticleScreen({
         if (s >= 0 && e > s) clean = clean.slice(s, e + 1);
         const parsed = JSON.parse(clean);
         const secs = parsed.sections || [];
-        const chk = Array.isArray(parsed.check) && parsed.check.length ? parsed.check : null;
         localStorage.setItem(cacheKey, JSON.stringify(secs));
-        if (chk) localStorage.setItem(cacheKey + '_check', JSON.stringify(chk));
         setSections(secs);
-        setCheck(chk);
       } catch (err) {}
     }).catch(() => {}).finally(() => setGenerating(false));
   }, [stub?.id]);
-  React.useEffect(() => {
-    if (!cacheKey || check) return;
-    try {
-      const c = JSON.parse(localStorage.getItem(cacheKey + '_check') || 'null');
-      if (c) setCheck(c);
-    } catch (e) {}
-  }, [cacheKey]);
-  function passCheck() {
+  function markRead() {
     if (completed || !doneKey) return;
     XPSystem.awardAndToast([{
       type: 'article',
@@ -19777,7 +19804,6 @@ function GenArticleScreen({
     }]);
     localStorage.setItem(doneKey, '1');
     setCompleted(true);
-    setChecking(false);
   }
   if (!stub) return /*#__PURE__*/React.createElement("div", {
     style: {
@@ -19839,14 +19865,14 @@ function GenArticleScreen({
       fontFamily: C.P,
       fontWeight: 500
     }
-  }, "Your Reading List \xB7 ", stub.readTime)), completed && /*#__PURE__*/React.createElement("span", {
+  }, "Your Reading List · ", stub.readTime)), completed && /*#__PURE__*/React.createElement("span", {
     style: {
       fontSize: 15,
       fontWeight: 700,
       color: C.green,
       fontFamily: C.P
     }
-  }, "\u2713 +50 XP")), /*#__PURE__*/React.createElement("div", {
+  }, "✓ +50 XP")), /*#__PURE__*/React.createElement("div", {
     style: {
       flex: 1,
       overflowY: 'auto'
@@ -19926,7 +19952,7 @@ function GenArticleScreen({
       fontStyle: 'italic',
       textAlign: 'center'
     }
-  }, "Writing your personalised article\u2026")), sections && sections.map((s, i) => /*#__PURE__*/React.createElement("div", {
+  }, "Writing your personalised article…")), sections && sections.map((s, i) => /*#__PURE__*/React.createElement("div", {
     key: i,
     style: {
       background: C.white,
@@ -20020,10 +20046,7 @@ function GenArticleScreen({
       fontFamily: C.P,
       lineHeight: 1.5
     }
-  }, ex))))))), checking && !completed && check && /*#__PURE__*/React.createElement(ComprehensionCheck, {
-    questions: check,
-    onPass: passCheck
-  }), sections && !checking && /*#__PURE__*/React.createElement("div", {
+  }, ex))))))), sections && /*#__PURE__*/React.createElement("div", {
     style: {
       background: completed ? C.greenBg : C.crSoft,
       borderRadius: 16,
@@ -20073,7 +20096,7 @@ function GenArticleScreen({
   }, "Reading List"), /*#__PURE__*/React.createElement(Btn, {
     primary: true,
     onClick: () => nav('camera')
-  }, "Scan a bottle"))) : check ? /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+  }, "Scan a bottle"))) : /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 17,
       fontWeight: 700,
@@ -20089,18 +20112,11 @@ function GenArticleScreen({
       lineHeight: 1.5,
       marginBottom: 14
     }
-  }, "Answer 2 quick questions to earn +50 XP"), /*#__PURE__*/React.createElement(Btn, {
+  }, "Mark as complete to earn +50 XP"), /*#__PURE__*/React.createElement(Btn, {
     primary: true,
     full: true,
-    onClick: () => setChecking(true)
-  }, "Test what you learned")) : /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: 15,
-      color: C.mid,
-      fontFamily: C.P,
-      lineHeight: 1.5
-    }
-  }, "Loading your comprehension check\u2026")), /*#__PURE__*/React.createElement("div", {
+    onClick: markRead
+  }, "Mark as Read · +50 XP"))), /*#__PURE__*/React.createElement("div", {
     style: {
       height: 16
     }
@@ -20108,8 +20124,7 @@ function GenArticleScreen({
 }
 Object.assign(window, {
   LearnArticleScreen,
-  GenArticleScreen,
-  ComprehensionCheck
+  GenArticleScreen
 });
 
 /* ---- pwa-screens-home.jsx (precompiled) ---- */
@@ -20197,7 +20212,7 @@ function WineChatWidget({
     setAnswer('');
     setAsked(question);
     setQ('');
-    const prompt = `You are a concise wine assistant inside a wine app's home screen. Answer ONLY questions about wine — grape varieties, tasting, pairing, service, regions, production. You may also address food pairing and other alcoholic drinks, but only in service of a wine question (e.g. "what beer pairs with steak alongside a Malbec" is fine). If the question is unrelated to wine, food pairing, or alcohol, do not answer it — instead respond with one short, friendly sentence redirecting back to wine topics. Otherwise answer in 2-4 clear, conversational sentences. Plain prose, no markdown, no lists, no headers.\n\nQuestion: "${question}"`;
+    const prompt = `You are a concise wine assistant inside a wine app's home screen. Answer ONLY questions about wine — grape varieties, tasting, pairing, service, regions, production. You may also address food pairing and other alcoholic drinks, but only in service of a wine question (e.g. "what beer pairs with steak alongside a Malbec" is fine). If the question is unrelated to wine, food pairing, or alcohol, do not answer it — instead respond with one short, friendly sentence redirecting back to wine topics. Otherwise answer in exactly 1-2 short sentences, no more than about 35 words total — this is a quick-hit answer box, not a full explanation, so be direct and skip caveats. Plain prose, no markdown, no lists, no headers.\n\nQuestion: "${question}"`;
     window.claude.complete({
       purpose: 'wine_qa',
       messages: [{
@@ -23451,7 +23466,7 @@ function WineDNAScreen({
       color: C.mid,
       fontFamily: C.P
     }
-  }, "Vinterest v1.2.0")), /*#__PURE__*/React.createElement("div", {
+  }, "Vinterest v1.2.9")), /*#__PURE__*/React.createElement("div", {
     style: {
       height: 8
     }
@@ -23576,7 +23591,7 @@ function App() {
       localStorage.setItem('vinterest_onboarded', '1');
       nav('home');
     }
-  }), screen === 'home' && /*#__PURE__*/React.createElement(HomeScreen, ctx), screen === 'scan' && /*#__PURE__*/React.createElement(ScanHomeScreen, ctx), screen === 'camera' && /*#__PURE__*/React.createElement(ScanScreen, ctx), screen === 'identified' && /*#__PURE__*/React.createElement(WineIdentifiedScreen, ctx), screen === 'winelist' && /*#__PURE__*/React.createElement(WineListScreen, ctx), screen === 'detail' && /*#__PURE__*/React.createElement(WineDetailScreen, ctx), screen === 'region' && /*#__PURE__*/React.createElement(RegionScreen, ctx), screen === 'varietal' && /*#__PURE__*/React.createElement(VarietalScreen, ctx), screen === 'similar' && /*#__PURE__*/React.createElement(SimilarWinesScreen, ctx), screen === 'style-explore' && /*#__PURE__*/React.createElement(StyleExploreScreen, ctx), screen === 'profile' && /*#__PURE__*/React.createElement(WineDNAScreen, ctx), screen === 'mywines' && /*#__PURE__*/React.createElement(MyWinesScreen, ctx), screen === 'learn' && /*#__PURE__*/React.createElement(ScreenErrorBoundary, null, /*#__PURE__*/React.createElement(QuizHubScreen, ctx)), screen === 'quiz' && /*#__PURE__*/React.createElement(QuizScreen, ctx), screen === 'mastery-map' && /*#__PURE__*/React.createElement(MasteryMapScreen, ctx), screen === 'article' && /*#__PURE__*/React.createElement(LearnArticleScreen, ctx), screen === 'gen-article' && /*#__PURE__*/React.createElement(GenArticleScreen, ctx), screen === 'account' && /*#__PURE__*/React.createElement(AccountProfileScreen, ctx), screen === 'settings' && /*#__PURE__*/React.createElement(SettingsScreen, ctx)), showNav && /*#__PURE__*/React.createElement(BottomNav, {
+  }), screen === 'home' && /*#__PURE__*/React.createElement(HomeScreen, ctx), screen === 'scan' && /*#__PURE__*/React.createElement(ScanHomeScreen, ctx), screen === 'camera' && /*#__PURE__*/React.createElement(ScanScreen, ctx), screen === 'identified' && /*#__PURE__*/React.createElement(WineIdentifiedScreen, ctx), screen === 'winelist' && /*#__PURE__*/React.createElement(WineListScreen, ctx), screen === 'detail' && /*#__PURE__*/React.createElement(WineDetailScreen, ctx), screen === 'region' && /*#__PURE__*/React.createElement(RegionScreen, ctx), screen === 'varietal' && /*#__PURE__*/React.createElement(VarietalScreen, ctx), screen === 'similar' && /*#__PURE__*/React.createElement(SimilarWinesScreen, ctx), screen === 'style-explore' && /*#__PURE__*/React.createElement(StyleExploreScreen, ctx), screen === 'profile' && /*#__PURE__*/React.createElement(WineDNAScreen, ctx), screen === 'mywines' && /*#__PURE__*/React.createElement(MyWinesScreen, ctx), screen === 'learn' && /*#__PURE__*/React.createElement(ScreenErrorBoundary, null, /*#__PURE__*/React.createElement(QuizHubScreen, ctx)), screen === 'quiz' && /*#__PURE__*/React.createElement(QuizScreen, ctx), screen === 'mastery-map' && /*#__PURE__*/React.createElement(MasteryMapScreen, ctx), screen === 'article' && /*#__PURE__*/React.createElement(ScreenErrorBoundary, null, /*#__PURE__*/React.createElement(LearnArticleScreen, ctx)), screen === 'gen-article' && /*#__PURE__*/React.createElement(ScreenErrorBoundary, null, /*#__PURE__*/React.createElement(GenArticleScreen, ctx)), screen === 'account' && /*#__PURE__*/React.createElement(AccountProfileScreen, ctx), screen === 'settings' && /*#__PURE__*/React.createElement(SettingsScreen, ctx)), showNav && /*#__PURE__*/React.createElement(BottomNav, {
     active: screen,
     nav: nav,
     showPro: setProGate

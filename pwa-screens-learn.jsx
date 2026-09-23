@@ -40,7 +40,7 @@ function LearnArticleScreen({nav,back}){
             <Icon n="book" sz={12} col="rgba(255,255,255,0.55)"/>
             <span style={{fontSize:13,fontWeight:600,color:'rgba(255,255,255,0.55)',fontFamily:C.P}}>Quick Read</span>
           </div>
-          <div style={{fontSize:28,fontWeight:400,color:'#fff',fontFamily:C.serif,lineHeight:1.2,marginBottom:10}}>{article.title}</div>
+          <div style={{fontSize:26,fontWeight:800,color:'#fff',fontFamily:C.P,lineHeight:1.2,marginBottom:10}}>{article.title}</div>
           <div style={{fontSize:16,color:'rgba(255,255,255,0.42)',fontFamily:C.P,lineHeight:1.65}}>{article.subtitle}</div>
         </div>
 
