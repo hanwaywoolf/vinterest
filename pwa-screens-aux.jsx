@@ -43,29 +43,15 @@ function TasteProfileScreen({nav,back,showPro}){
   const displayScript=genScripts[c.typeKey]||null;
   const isGenerating=generating===c.typeKey;
 
-  // Auto-generate script from real wine data when tab opens
+  // Sommelier script — the same shared script Home and WineDNA show (SommelierScript).
   React.useEffect(()=>{
     if(!tabWines.length) return;
-    const keyLong=`vinterest_script_long_${c.typeKey}_n${tabWines.length}`;
-    const keyShort=`vinterest_script_short_${c.typeKey}_n${tabWines.length}`;
-    const cacheKey=scriptLength==='long'?keyLong:keyShort;
-    const cached=localStorage.getItem(cacheKey);
-    if(cached){setGenScripts(s=>({...s,[c.typeKey]:cached}));return;}
-    if(generating===c.typeKey) return;
-    setGenerating(c.typeKey);
-    const wineList=tabWines.slice(0,8).map(w=>
-      `${w.name}${w.vintage?' '+w.vintage:''} from ${w.region||w.country||'unknown'}`
-    ).join('; ');
-    const lengthInstructions=scriptLength==='short'?'1 sentence, ultra-concise (under 20 words), and mention your typical budget range':'2 sentences max';
-    const prompt=`I've scanned these ${c.label.toLowerCase()} wines: ${wineList}. Based ONLY on the wines I've chosen and their regions, write a ${lengthInstructions} natural first-person sommelier script I could say to a restaurant sommelier. Reflect my apparent style and preferred regions. Return ONLY the script text in double quotes — nothing else.`;
-    window.claude.complete({purpose:'sommelier_script',messages:[{role:'user',content:prompt}]})
-      .then(text=>{
-        const script=text.trim();
-        localStorage.setItem(cacheKey,script);
-        setGenScripts(s=>({...s,[c.typeKey]:script}));
-      })
-      .catch(()=>{})
-      .finally(()=>setGenerating(null));
+    const typeKey=c.typeKey;
+    setGenerating(typeKey);
+    SommelierScript.get(scriptLength,typeKey,c.label,tabWines,text=>{
+      setGenerating(g=>g===typeKey?null:g);
+      if(text) setGenScripts(s=>({...s,[typeKey]:text}));
+    });
   },[tab,allWines.length,scriptLength]);
 
   if(allWines.length===0) return(

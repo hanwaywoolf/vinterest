@@ -128,6 +128,65 @@ function _regionsWithScans(wines){
 function regionQuizCandidates(wines){ return _regionsWithScans(wines).filter(r=>!RegionQuizBank.isComplete(r)); }
 function completedRegionQuizzes(wines){ return _regionsWithScans(wines).filter(r=>RegionQuizBank.isComplete(r)); }
 
+/* USD → local currency, the one table every screen uses to show prices (WineDNA's average price,
+   the sommelier script budget). Scan prices are stored as price_usd. */
+const USD_FX={GBP:0.79,CAD:1.36,AUD:1.53,NZD:1.64,EUR:0.92,USD:1.0,JPY:150,CNY:7.2,CHF:0.88,ZAR:18.5,SGD:1.34,HKD:7.8,MXN:18,BRL:5.4,INR:83,AED:3.67,SEK:10.4,NOK:10.6,DKK:6.9};
+
+/* The sommelier script for one wine type ("I tend to go for… around £20–£35 GBP"), shared by
+   Home, WineDNA and the profile screen so they always show the same text. One cache per
+   type/wine count/currency; the long script is the source of truth and the short one is
+   condensed from it. The budget is computed from the prices of the scanned wines, not left to
+   the model, so it's grounded and identical everywhere. */
+const SommelierScript = {
+  _inFlight:{},
+  key(length,typeKey,n,code){ return `vinterest_script_${length}_${typeKey}_n${n}_${code}_v4`; },
+  // Middle half of the scanned prices in local currency, rounded outward to friendly steps.
+  // null with fewer than two priced wines: one bottle is no basis for a "typical" range.
+  budget(wines,rc){
+    const fx=USD_FX[rc.code]||1;
+    const ps=wines.map(w=>w.price_usd).filter(p=>typeof p==='number'&&p>0).map(p=>p*fx).sort((a,b)=>a-b);
+    if(ps.length<2) return null;
+    const at=q=>ps[Math.min(ps.length-1,Math.max(0,Math.round(q*(ps.length-1))))];
+    const step=v=>v<50?5:v<200?10:50;
+    const lo=Math.max(step(at(0.25)),Math.floor(at(0.25)/step(at(0.25)))*step(at(0.25)));
+    let hi=Math.ceil(at(0.75)/step(at(0.75)))*step(at(0.75));
+    if(hi<=lo) hi=lo+step(lo);
+    return `${rc.base}${lo}–${rc.base}${hi} ${rc.code}`;
+  },
+  cached(length,typeKey,wines){ return localStorage.getItem(this.key(length,typeKey,wines.length,Regional.current().code)); },
+  // Calls onReady(text) once the script exists (immediately if cached), or onReady(null) on failure.
+  get(length,typeKey,label,wines,onReady){
+    const rc=Regional.current();
+    const kLong=this.key('long',typeKey,wines.length,rc.code), kShort=this.key('short',typeKey,wines.length,rc.code);
+    const want=length==='short'?kShort:kLong;
+    const hit=localStorage.getItem(want);
+    if(hit){ onReady(hit); return; }
+    if(this._inFlight[want]){ this._inFlight[want].push(onReady); return; }
+    const waiters=this._inFlight[want]=[onReady];
+    const done=text=>{ delete this._inFlight[want]; waiters.forEach(f=>f(text)); };
+    const ask=prompt=>window.claude.complete({purpose:'sommelier_script',messages:[{role:'user',content:prompt}]}).then(t=>{ t=(t||'').trim(); if(!t) throw new Error('empty script'); return t; });
+    const makeLong=()=>{
+      const cachedLong=localStorage.getItem(kLong);
+      if(cachedLong) return Promise.resolve(cachedLong);
+      const wineList=wines.slice(0,8).map(w=>`${w.name}${w.vintage?' '+w.vintage:''} from ${w.region||w.country||'unknown'}${w.rating?' (rated '+w.rating+'/100)':''}`).join('; ');
+      const budget=this.budget(wines,rc);
+      const budgetInst=budget
+        ?`Include my typical budget, written exactly as "${budget}" — do not change the numbers, symbol or currency code.`
+        :'Do not mention a budget or price.';
+      return ask(`I've scanned these ${label.toLowerCase()} wines: ${wineList}. Based ONLY on the wines I've chosen and their regions, write a 2 sentences max natural first-person sommelier script I could say to a restaurant sommelier. Reflect my apparent style and preferred regions. ${budgetInst} Return ONLY the script text in double quotes — nothing else.`)
+        .then(t=>{ localStorage.setItem(kLong,t); return t; });
+    };
+    makeLong()
+      .then(longText=>{
+        if(length!=='short') return longText;
+        return ask(`Condense this sommelier script into ONE ultra-concise sentence (under 20 words), keeping the SAME style, regions and budget — copy any budget range exactly as written, never change or invent one. Script: ${longText} Return ONLY the condensed script text in double quotes — nothing else.`)
+          .then(t=>{ localStorage.setItem(kShort,t); return t; });
+      })
+      .then(done)
+      .catch(()=>done(null));
+  }
+};
+
 const ContentEngine = {
   TRAIT_BASELINE:{body:0.5,tannins:0.5,acidity:0.5,sweetness:0.15},
   TRAIT_LABEL:{body:'Full-Bodied',tannins:'Tannic',acidity:'High-Acid',sweetness:'Sweet'},

@@ -26,7 +26,7 @@ const SEED = { vinterest_wineDNA_unlock_seen: '1' };
 const ADDED_SINCE_BUNDLE = [
   'RegionQuizBank', 'QUIZ_SIZE', 'QuizMastery', '_ceShuffle', '_regionsWithScans', 'completedRegionQuizzes',
   'grapeQuizBank', 'grapeQuizComplete', 'CompletedToggle', 'CompletedMark', '_drawQuiz', 'quizSetFor',
-  'buildQuizQuestions', 'quizTitle', 'nextQuizSuggestion',
+  'buildQuizQuestions', 'quizTitle', 'nextQuizSuggestion', 'USD_FX', 'SommelierScript',
 ];
 const normalise = (text) => text.replace(/Vinterest v[^\n]*/g, 'Vinterest v<version>');
 
@@ -44,9 +44,11 @@ async function snapshot(browser, base, run) {
   await page.waitForLoadState('networkidle');
   const state = {
     text: normalise(await page.locator('#root').innerText()),
-    localStorage: await page.evaluate(() => Object.fromEntries(Object.entries(localStorage).sort())),
+    // Sommelier scripts are now shared between screens with a computed budget (SommelierScript),
+    // so their prompts and cache keys deliberately differ from bundle.js.
+    localStorage: await page.evaluate(() => Object.fromEntries(Object.entries(localStorage).filter(([k]) => !k.startsWith('vinterest_script_')).sort())),
     // dist also pre-generates region quiz banks (added after bundle.js); legacy never asks for them.
-    claude: claudeRequests.filter((r) => r.purpose !== 'region_quiz'),
+    claude: claudeRequests.filter((r) => r.purpose !== 'region_quiz' && r.purpose !== 'sommelier_script'),
     result,
     // React's dev build (legacy) warns where the production build (dist) is silent, so only
     // count app errors, not React warnings.

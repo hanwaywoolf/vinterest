@@ -310,7 +310,7 @@ function WineDNAScreen({nav,back,showPro}){
 
   const allWines=WineHistory.getAll();
   /* Currency helpers */
-  const _FX={GBP:0.79,CAD:1.36,AUD:1.53,NZD:1.64,EUR:0.92,USD:1.0,JPY:150,CNY:7.2,CHF:0.88,ZAR:18.5,SGD:1.34,HKD:7.8,MXN:18,BRL:5.4,INR:83,AED:3.67,SEK:10.4,NOK:10.6,DKK:6.9};
+  const _FX=USD_FX;
   const _rc=Regional.current();
   const _csym=_rc.sym;
   const _cbase=_rc.base;
@@ -374,21 +374,16 @@ function WineDNAScreen({nav,back,showPro}){
       .finally(()=>setGeneratingSummary(null));
   },[typeIdx,allWines.length]);
 
-  /* LLM sommelier script — short + long variants (shared cache with Home) */
+  /* Sommelier script — shared with Home through SommelierScript (pwa-content-engine.js), so
+     both screens show the same text and the same budget. */
   React.useEffect(()=>{
     if(!t.wines.length) return;
-    const key=`vinterest_script_${scriptLength}_${t.key}_n${t.wines.length}_${_ccode}_v2`;
-    const cached=localStorage.getItem(key);
-    if(cached){setGenScripts(s=>({...s,[t.key]:cached}));return;}
-    if(generatingScript===t.key) return;
-    setGeneratingScript(t.key);
-    const wineList=t.wines.slice(0,8).map(w=>`${w.name}${w.vintage?' '+w.vintage:''} from ${w.region||w.country||'unknown'}${w.rating?' (rated '+w.rating+'/100)':''}`).join('; ');
-    const lengthInst=scriptLength==='short'?`1 sentence, ultra-concise (under 20 words), mention your typical budget range formatted EXACTLY like "${_cbase}40-${_cbase}80 ${_ccode}" (plain symbol, a number range, then the ${_ccode} currency code, never a country-prefixed symbol like CA$ or C$)`:'2 sentences max';
-    const prompt=`I've scanned and rated these ${t.label.toLowerCase()} wines: ${wineList}. Based ONLY on the wines I've chosen and their regions, write a ${lengthInst} natural first-person sommelier script I could say to a restaurant sommelier. Reflect my apparent style and preferred regions. If you mention a budget or price range, it MUST use the plain ${_cbase} symbol plus the ${_ccode} code, formatted like "${_cbase}40-${_cbase}80 ${_ccode}" — never a country-prefixed symbol. Return ONLY the script text in double quotes — nothing else.`;
-    window.claude.complete({purpose:'sommelier_script',messages:[{role:'user',content:prompt}]})
-      .then(text=>{const s=text.trim();localStorage.setItem(key,s);setGenScripts(g=>({...g,[t.key]:s}));})
-      .catch(()=>{})
-      .finally(()=>setGeneratingScript(null));
+    const typeKey=t.key;
+    setGeneratingScript(typeKey);
+    SommelierScript.get(scriptLength,typeKey,t.label,t.wines,text=>{
+      setGeneratingScript(g=>g===typeKey?null:g);
+      if(text) setGenScripts(g=>({...g,[typeKey]:text}));
+    });
   },[typeIdx,allWines.length,scriptLength]);
 
   /* Swipe */
