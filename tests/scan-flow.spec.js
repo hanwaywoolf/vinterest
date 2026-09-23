@@ -207,3 +207,41 @@ test('after a couple of deck visits the deck opens straight after a scan', async
   await page.locator('#root div[style*="border-radius: 17px"]').first().click();
   await expect(root).toContainText('Tell me about it');
 });
+
+const LIST_ABROAD = { wines: [{ n: 'Pauillac Test', t: 'red', r: 'Bordeaux', c: 'France', v: 2016, p: 'BOTTLE:60', g: 'Cabernet Sauvignon', s: '885' }] };
+
+test('Travel Mode: a list abroad is compared with the local shop price, in the local currency', async ({ context, page }) => {
+  const travel = JSON.stringify({ active: true, country: 'France', sym: '€', code: 'EUR', until: '' });
+  const requests = [];
+  await makeDeterministic(page);
+  await seedLocalStorage(page, { vinterest_wineDNA_unlock_seen: '1', vinterest_travel: travel });
+  await stubNetwork(context, { claudeRequests: requests, claudeText: (b) => b.purpose === 'list_scan' ? JSON.stringify(LIST_ABROAD)
+    : b.purpose === 'price' ? JSON.stringify({ low: 20, mid: 24, high: 30, currency: 'EUR', tier: 'premium', note: 'Test.' }) : '' });
+  await page.goto(`${BASE}/?demo=1#camera`);
+  await page.getByText('Wine List', { exact: true }).click();
+  await expect(page.getByText('List prices in EUR')).toBeVisible();
+  await page.getByTestId('scan-file').setInputFiles({ name: 'list.png', mimeType: 'image/png', buffer: PNG });
+  const root = page.locator('#root');
+  await root.getByText('Pauillac Test').click();
+  // Local retail (asked for in EUR for France), list price unconverted: 60 / 24 = 2.5×.
+  await expect(root).toContainText('In shops in France');
+  await expect(root).toContainText('about €24');
+  await expect(root).toContainText('€60');
+  await expect(root).toContainText('2.5× shop');
+  const price = requests.find((r) => r.purpose === 'price');
+  expect(JSON.stringify(price)).toContain('(EUR)');
+});
+
+test('at home, a list priced in another currency is converted before comparing', async ({ context, page }) => {
+  await setup(context, page, { list: LIST_ABROAD });
+  await page.goto(`${BASE}/?demo=1#home`);
+  const fx = await page.evaluate(() => ({ eur: USD_FX.EUR, gbp: USD_FX.GBP }));
+  await page.goto(`${BASE}/?demo=1#camera`);
+  await page.getByText('Wine List', { exact: true }).click();
+  await page.getByText('List prices in GBP').click();
+  await page.getByText('EUR', { exact: true }).click();
+  await page.getByTestId('scan-file').setInputFiles({ name: 'list.png', mimeType: 'image/png', buffer: PNG });
+  const root = page.locator('#root');
+  await root.getByText('Pauillac Test').click();
+  await expect(root).toContainText(`£${Math.round(60 / fx.eur * fx.gbp)}`);
+});

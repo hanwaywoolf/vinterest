@@ -298,7 +298,8 @@ function EditWineSheet({wine,onSave,onClose}){
 /* ── the result: everything needed to decide, on one screen ── */
 function ScanResult({wine,match,curr,scanData,existingRating,nav,view,setView,onEdit,onRated,onSaveForLater,onDeck}){
   const col=_TONE_COL[match?match.tone:'neutral'];
-  const shop=ScanFlow.shopPrice(wine,curr);
+  const [shop,setShop]=React.useState(()=>curr.isTravel?null:ScanFlow.shopPrice(wine,curr));
+  React.useEffect(()=>{ let live=true; ScanFlow.shopEstimate(wine,curr).then(d=>{ if(live&&d) setShop(d.mid); }); return()=>{ live=false; }; },[wine&&wine.name,curr.code]);
   // A list read abroad is priced in its own currency: compare like with like.
   const lc=scanData.listCurrency;
   const list=scanData.listPrice?(lc&&lc!==curr.code?scanData.listPrice/(USD_FX[lc]||1)*(USD_FX[curr.code]||1):scanData.listPrice):null;
@@ -339,7 +340,7 @@ function ScanResult({wine,match,curr,scanData,existingRating,nav,view,setView,on
       {(shop||list)&&<div style={{paddingTop:match&&match.style?10:0,borderTop:match&&match.style?`1px solid ${C.line}`:'none'}}>
         <div style={{...sub,marginBottom:6}}>Price</div>
         {shop&&<div style={{display:'flex',alignItems:'baseline',gap:8}}>
-          <span style={{fontSize:15,color:C.ink,fontFamily:C.P,flex:1}}>In shops</span>
+          <span style={{fontSize:15,color:C.ink,fontFamily:C.P,flex:1}}>{curr.isTravel?`In shops in ${curr.label}`:'In shops'}</span>
           <span style={{fontSize:15,fontWeight:800,color:C.ink,fontFamily:C.P}}>about {ScanFlow.money(shop,curr)}</span>
           <span style={{fontSize:13,color:C.mid,fontFamily:C.P}}>est.</span>
         </div>}
@@ -709,11 +710,8 @@ function ValueFace({wine,curr,scanData,accent,soft,expanded}){
   const [loading,setLoading]=React.useState(false);
   React.useEffect(()=>{
     if(!wine||!wine.name) return;
-    // The label scan already estimated a shop price; only ask Claude when it didn't.
-    const shop=ScanFlow.shopPrice(wine,curr);
-    if(shop!=null){ setPd({mid:shop}); return; }
     setLoading(true);
-    fetchRetailEstimate(wine,curr).then(d=>setPd(d)).catch(()=>{}).finally(()=>setLoading(false));
+    ScanFlow.shopEstimate(wine,curr).then(d=>setPd(d)).finally(()=>setLoading(false));
   },[wine&&wine.name,curr.code]);
   const fmt=n=>n!=null?curr.base+Number(n).toLocaleString():'—';
   // Present when opened from a wine list; converted when the list is in another currency.

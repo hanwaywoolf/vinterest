@@ -36,10 +36,19 @@ const ScanFlow = {
     ]); }catch(e){}
   },
 
-  /* Claude's shop-price estimate in the user's currency, or null. */
+  /* Claude's shop-price estimate from the label scan, converted to the user's currency, or null. */
   shopPrice(wine,curr){
     curr=curr||Regional.current();
     return wine&&wine.price_usd>0?Math.round(wine.price_usd*(USD_FX[curr.code]||1)):null;
+  },
+  /* The shop price to compare against: {mid, tier?, note?}. At home the label scan's estimate is
+     enough (no extra call). In Travel Mode prices differ by market (Bordeaux costs less in France
+     than a converted US price suggests), so ask for the local retail price in that currency. */
+  shopEstimate(wine,curr){
+    curr=curr||Regional.current();
+    const label=this.shopPrice(wine,curr);
+    if(label!=null&&!curr.isTravel) return Promise.resolve({mid:label});
+    return fetchRetailEstimate(wine,curr).then(d=>d&&d.mid!=null?d:(label!=null?{mid:label}:null)).catch(()=>label!=null?{mid:label}:null);
   },
   money(v,curr){ curr=curr||Regional.current(); return v!=null?`${curr.base}${Math.round(v).toLocaleString()}`:null; },
   /* A restaurant list price against the shop estimate. */
