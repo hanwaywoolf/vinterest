@@ -46,6 +46,25 @@ function WineDNAUnlockCelebration({onDone}){
 }
 
 /* ── QUIZ HUB / LEARN TAB ── */
+/* Dashed "N completed — show" row that expands a completed section (Wine Basics, regions). */
+function CompletedToggle({count,expanded,onToggle}){
+  return(
+    <div onClick={onToggle} style={{background:C.white,borderRadius:14,padding:'10px 14px',display:'flex',alignItems:'center',gap:8,cursor:'pointer',border:`1px dashed ${C.line}`}}>
+      <Icon n="chevron" sz={12} col={C.mid} style={expanded?{transform:'rotate(-90deg)'}:undefined}/>
+      <span style={{fontSize:14,fontWeight:600,color:C.mid,fontFamily:C.P}}>{expanded?'Show less':`${count} completed — show`}</span>
+    </div>
+  );
+}
+/* ✓ plus a Reset link, for a completed quiz row. The row itself stays tappable to retake it. */
+function CompletedMark({onReset}){
+  return(
+    <div style={{display:'flex',flexDirection:'column',alignItems:'flex-end',gap:2,flexShrink:0}}>
+      <span style={{fontSize:14,fontWeight:700,color:C.green,fontFamily:C.P}}>✓</span>
+      <span onClick={e=>{e.stopPropagation();onReset();}} style={{fontSize:13,fontWeight:600,color:C.mid,fontFamily:C.P,textDecoration:'underline',cursor:'pointer'}}>Reset</span>
+    </div>
+  );
+}
+
 function QuizHubScreen({nav,back,showPro}){
   const [xpData,setXpData]=React.useState(()=>XPSystem.get());
   const [isPro,setIsPro]=React.useState(()=>!!localStorage.getItem('vinterest_pro'));
@@ -53,7 +72,9 @@ function QuizHubScreen({nav,back,showPro}){
   const level=XPSystem.getLevel(xpData.total);
   const nextLvl=XPSystem.nextLevel(xpData.total);
   const prog=XPSystem.levelProgress(xpData.total);
-  const article1Done=ON_RAMP.length>0&&onRampDone(ON_RAMP[0].id);
+  // The shelf opens after the first on-ramp article, or straight away for enthusiasts and
+  // experts (their onboarding answer), who don't need the beginner on-ramp first.
+  const article1Done=(ON_RAMP.length>0&&onRampDone(ON_RAMP[0].id))||UserPrefs.skipsOnRamp();
   const wines=React.useMemo(()=>WineHistory.getAll(),[]);
   const coverage=React.useMemo(()=>getCoverage(wines),[wines]);
   const [showUnlock,setShowUnlock]=React.useState(false);
@@ -65,7 +86,7 @@ function QuizHubScreen({nav,back,showPro}){
   },[coverage.unlocked]);
 
   const [genStubs,setGenStubs]=React.useState(()=>{
-    try{ return JSON.parse(localStorage.getItem('vinterest_gen_stubs')||'null'); }catch(e){ return null; }
+    try{ return ContentEngine.shelf(); }catch(e){ return null; }
   });
   React.useEffect(()=>{
     if(!article1Done) return;
@@ -75,32 +96,57 @@ function QuizHubScreen({nav,back,showPro}){
     setGenStubs(updated);
   },[article1Done]);
 
-  if(showUnlock) return <WineDNAUnlockCelebration onDone={()=>{setShowUnlock(false);nav('profile');}}/>;
-
   const zoneLabel={fontSize:15,fontWeight:600,color:C.mid,letterSpacing:'0.08em',textTransform:'uppercase',fontFamily:C.P,marginBottom:2};
   const unreadShelf=(genStubs||[]).filter(s=>!localStorage.getItem('vinterest_gen_article_'+s.id+'_done'));
   const nextOnRamp=ON_RAMP.find(a=>!onRampDone(a.id));
-  const nextBest=nextOnRamp
+  const nextBest=nextOnRamp&&!(UserPrefs.skipsOnRamp()&&unreadShelf.length)
     ? {kind:'onramp',title:nextOnRamp.title,sub:nextOnRamp.subtitle,readTime:nextOnRamp.readTime,action:()=>{sessionStorage.setItem('vinterest_onramp_idx',String(ON_RAMP.indexOf(nextOnRamp)));nav('article');}}
     : unreadShelf.length
       ? {kind:'shelf',stub:unreadShelf[0],title:unreadShelf[0].title,sub:unreadShelf[0].subtitle,action:()=>{sessionStorage.setItem('vinterest_gen_article',JSON.stringify(unreadShelf[0]));nav('gen-article');}}
       : {kind:'scan',title:'Scan a bottle for your next read',sub:"Your shelf restocks based on what you try.",action:()=>nav('camera')};
 
   const mastery=MasterySystem.summary();
-  const quizRegions=React.useMemo(()=>regionQuizCandidates(wines),[wines]);
+  // Bumped after a progress reset so the to-do/completed splits below recompute.
+  const [progressTick,setProgressTick]=React.useState(0);
+  const quizRegions=React.useMemo(()=>regionQuizCandidates(wines),[wines,progressTick]);
+  const doneRegions=React.useMemo(()=>completedRegionQuizzes(wines),[wines,progressTick]);
+  const [regionsExpanded,setRegionsExpanded]=React.useState(false);
+  function resetProgress(name,doReset){
+    if(!window.confirm(`Reset your progress on ${name}? Its questions start from scratch.`)) return;
+    doReset();
+    setProgressTick(t=>t+1);
+  }
   const wordsCount=VocabLedger.getAll().length;
   const startQuiz=cfg=>{ sessionStorage.setItem('vinterest_quiz_config2',JSON.stringify(cfg)); nav('quiz'); };
   const [topicsExpanded,setTopicsExpanded]=React.useState(false);
   // Wine Basics always shows — it's the entry point for someone new to wine, not just a
-  // pre-WineDNA-unlock placeholder. Finished topics move behind the toggle instead of
-  // disappearing, so handing the phone to someone else still surfaces them.
+  // pre-WineDNA-unlock placeholder. Completed topics (every question answered correctly at
+  // least once) move behind the toggle instead of disappearing, so they can still be retaken
+  // or handed to someone else.
+  const topicProgress=id=>QuizMastery.progress('topic:'+id,QuizMastery.topicPool(id));
   const {topicsToShow,doneTopics}=React.useMemo(()=>{
     const todo=[],done=[];
-    QUIZ_TOPICS.forEach(t=>{ (TopicQuizLedger.isDone(t.id)?done:todo).push(t); });
+    QUIZ_TOPICS.forEach(t=>{ (QuizMastery.isComplete('topic:'+t.id,QuizMastery.topicPool(t.id))?done:todo).push(t); });
     return {topicsToShow:todo,doneTopics:done};
-  },[]);
+  },[progressTick]);
   const [grapeUnlocks,setGrapeUnlocks]=React.useState(()=>GrapeUnlocks.all());
   const [grapeLoading,setGrapeLoading]=React.useState(null);
+  const [regionLoading,setRegionLoading]=React.useState(null);
+  // Generate question banks for the regions on offer in the background, so a tap is usually instant.
+  React.useEffect(()=>{ quizRegions.slice(0,3).forEach(r=>RegionQuizBank.prefetch(r)); },[quizRegions]);
+  const mountedRef=React.useRef(true);
+  React.useEffect(()=>()=>{ mountedRef.current=false; },[]);
+  // First tap on a region whose bank isn't ready waits for generation (spinner on the tile);
+  // if it fails, the quiz falls back to the fixed knowledge-base questions.
+  function handleRegionTap(region){
+    if(regionLoading) return;
+    setRegionLoading(region);
+    RegionQuizBank.load(region,()=>{
+      if(!mountedRef.current) return; // left Learn while it generated — don't yank them into a quiz
+      setRegionLoading(null);
+      startQuiz({mode:'region',region});
+    });
+  }
   const [grapesExpanded,setGrapesExpanded]=React.useState(false);
   // Unlocked grapes first (most-recently-unlocked first), locked grapes after in their
   // existing allowlist order. Recomputed from current unlock state on every render (not
@@ -111,17 +157,31 @@ function QuizHubScreen({nav,back,showPro}){
     unlocked.sort((a,b)=>(grapeUnlocks[b].at||0)-(grapeUnlocks[a].at||0));
     return {unlockedGrapes:unlocked,lockedGrapes:locked};
   },[grapeUnlocks]);
+  const [grapeError,setGrapeError]=React.useState(null);
+  // One tap opens the quiz: a locked grape (Pro) is unlocked and opened in the same tap, and
+  // the pill keeps its name with a spinner while the questions generate. A failed generation
+  // says so instead of silently doing nothing.
   function handleGrapeTap(grape){
+    if(grapeLoading) return;
     if(!grapeUnlocks[grape]){
-      if(isPro){ GrapeUnlocks.unlockManual(grape); setGrapeUnlocks(GrapeUnlocks.all()); }
-      else showPro('grape-library');
-      return;
+      if(!isPro){ showPro('grape-library'); return; }
+      GrapeUnlocks.unlockManual(grape); setGrapeUnlocks(GrapeUnlocks.all());
     }
+    setGrapeError(null);
     setGrapeLoading(grape);
     getGrapeQuiz(grape,qs=>{
+      if(!mountedRef.current) return;
       setGrapeLoading(null);
       if(qs&&qs.length) startQuiz({mode:'grape',grape,questions:qs});
+      else setGrapeError(grape);
     });
+  }
+  // "3/15" on a pill once its questions exist; a tick once every one is answered.
+  function grapePillStatus(g){
+    const bank=grapeQuizBank(g);
+    if(!bank) return null;
+    const p=QuizMastery.progress('grape:'+g,bank);
+    return p.correct===p.total?{done:true}:{text:`${p.correct}/${p.total}`};
   }
   // Warm the quiz cache for already-unlocked grapes so opening one is instant if it's had time to
   // generate — new unlocks warm themselves immediately via GrapeUnlocks. Capped so a big backlog
@@ -129,6 +189,10 @@ function QuizHubScreen({nav,back,showPro}){
   React.useEffect(()=>{
     unlockedGrapes.slice(0,5).forEach(g=>{ try{ prefetchGrapeQuiz(g); }catch(e){} });
   },[]);
+
+  // After every hook above: returning early before one of them changes the hook count between
+  // renders, and React throws the moment the unlock effect flips showUnlock.
+  if(showUnlock) return <WineDNAUnlockCelebration onDone={()=>{setShowUnlock(false);nav('profile');}}/>;
 
   return(
     <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden'}}>
@@ -198,7 +262,7 @@ function QuizHubScreen({nav,back,showPro}){
                     <Icon n={stub.iconName||'read'} sz={20} col={C.cr}/>
                   </div>
                   <div style={{flex:1}}>
-                    <div style={{fontSize:12,fontWeight:600,color:C.mid,fontFamily:C.P,textTransform:'uppercase',letterSpacing:'0.06em',marginBottom:2}}>Quick Read · {stub.readTime}</div>
+                    <div style={{fontSize:12,fontWeight:600,color:C.mid,fontFamily:C.P,textTransform:'uppercase',letterSpacing:'0.06em',marginBottom:2}}>{stub.series?`${stub.series} series`:'Quick Read'} · {stub.readTime}</div>
                     <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P,lineHeight:1.3}}>{stub.title}</div>
                     <div style={{fontSize:14,color:C.mid,fontFamily:C.P,marginTop:2}}>{stub.subtitle}</div>
                   </div>
@@ -213,7 +277,9 @@ function QuizHubScreen({nav,back,showPro}){
         <div style={zoneLabel}>Test Yourself</div>
         <div style={{display:'flex',flexDirection:'column',gap:8,marginTop:8}}>
           <div style={{fontSize:13,fontWeight:600,color:C.mid,fontFamily:C.P,textTransform:'uppercase',letterSpacing:'0.06em'}}>Wine Basics</div>
-          {topicsToShow.map(topic=>(
+          {topicsToShow.map(topic=>{
+            const p=topicProgress(topic.id);
+            return(
             <div key={topic.id} onClick={()=>startQuiz({mode:'practice',topicId:topic.id})}
               style={{background:C.white,borderRadius:14,padding:'12px 14px',display:'flex',alignItems:'center',gap:12,cursor:'pointer',border:`1px solid ${C.line}`}}>
               <div style={{width:42,height:42,borderRadius:12,background:topic.color+'15',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,border:`1px solid ${topic.color}25`}}>
@@ -221,17 +287,13 @@ function QuizHubScreen({nav,back,showPro}){
               </div>
               <div style={{flex:1}}>
                 <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>{topic.label}</div>
-                <div style={{fontSize:14,color:C.mid,fontFamily:C.P}}>{topic.desc}</div>
+                <div style={{fontSize:14,color:C.mid,fontFamily:C.P}}>{topic.desc}{p.correct>0?` · ${p.correct}/${p.total} correct`:''}</div>
               </div>
               <Icon n="chevron" sz={13} col={C.mid}/>
             </div>
-          ))}
-          {doneTopics.length>0&&(
-            <div onClick={()=>setTopicsExpanded(e=>!e)} style={{background:C.white,borderRadius:14,padding:'10px 14px',display:'flex',alignItems:'center',gap:8,cursor:'pointer',border:`1px dashed ${C.line}`}}>
-              <Icon n="chevron" sz={12} col={C.mid} style={topicsExpanded?{transform:'rotate(-90deg)'}:undefined}/>
-              <span style={{fontSize:14,fontWeight:600,color:C.mid,fontFamily:C.P}}>{topicsExpanded?'Show less':`${doneTopics.length} completed — show`}</span>
-            </div>
-          )}
+            );
+          })}
+          {doneTopics.length>0&&<CompletedToggle count={doneTopics.length} expanded={topicsExpanded} onToggle={()=>setTopicsExpanded(e=>!e)}/>}
           {topicsExpanded&&doneTopics.map(topic=>(
             <div key={topic.id} onClick={()=>startQuiz({mode:'practice',topicId:topic.id})}
               style={{background:C.white,borderRadius:14,padding:'12px 14px',display:'flex',alignItems:'center',gap:12,cursor:'pointer',border:`1px solid ${C.line}`,opacity:0.7}}>
@@ -242,7 +304,7 @@ function QuizHubScreen({nav,back,showPro}){
                 <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>{topic.label}</div>
                 <div style={{fontSize:14,color:C.mid,fontFamily:C.P}}>{topic.desc}</div>
               </div>
-              <span style={{fontSize:14,fontWeight:700,color:C.green,fontFamily:C.P}}>✓</span>
+              <CompletedMark onReset={()=>resetProgress(topic.label,()=>QuizMastery.reset('topic:'+topic.id))}/>
             </div>
           ))}
           {coverage.unlocked&&(
@@ -266,37 +328,57 @@ function QuizHubScreen({nav,back,showPro}){
                   <Icon n="chevron" sz={13} col={C.mid}/>
                 </div>
               )}
-              {quizRegions.length>0&&(
+              {(quizRegions.length>0||doneRegions.length>0)&&(
                 <div style={{fontSize:13,fontWeight:600,color:C.mid,fontFamily:C.P,textTransform:'uppercase',letterSpacing:'0.06em',marginTop:6}}>Regional Knowledge</div>
               )}
               {quizRegions.map(region=>{
                 const info=KNOWLEDGE.regions[region];
-                const sub=info?[info.keyGrapes&&info.keyGrapes[0],info.classification].filter(Boolean).join(' · '):"Grounded in bottles you've scanned from there";
+                // Progress only once the region's generated bank exists, so the count doesn't
+                // jump from the fallback's /6 to /15 when it arrives.
+                const p=RegionQuizBank.get(region)&&RegionQuizBank.progress(region);
+                const sub=[info&&info.keyGrapes&&info.keyGrapes[0],info&&info.classification,p&&p.correct>0&&`${p.correct}/${p.total} correct`].filter(Boolean).join(' · ');
                 return(
-                  <div key={region} onClick={()=>startQuiz({mode:'region',region})} style={{background:C.white,borderRadius:14,padding:'12px 14px',display:'flex',alignItems:'center',gap:12,cursor:'pointer',border:`1px solid ${C.line}`}}>
+                  <div key={region} onClick={()=>handleRegionTap(region)} style={{background:C.white,borderRadius:14,padding:'12px 14px',display:'flex',alignItems:'center',gap:12,cursor:'pointer',border:`1px solid ${C.line}`}}>
                     <div style={{width:42,height:42,borderRadius:12,background:C.offWhite,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><Icon n="map" sz={20} col={C.ink}/></div>
                     <div style={{flex:1}}>
                       <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>{region}</div>
                       <div style={{fontSize:14,color:C.mid,fontFamily:C.P}}>{sub}</div>
                     </div>
-                    <Icon n="chevron" sz={13} col={C.mid}/>
+                    {regionLoading===region
+                      ?<div style={{width:14,height:14,borderRadius:7,border:`2px solid ${C.line}`,borderTopColor:C.cr,animation:'storySpin .8s linear infinite'}}/>
+                      :<Icon n="chevron" sz={13} col={C.mid}/>}
                   </div>
                 );
               })}
+              {doneRegions.length>0&&<CompletedToggle count={doneRegions.length} expanded={regionsExpanded} onToggle={()=>setRegionsExpanded(e=>!e)}/>}
+              {regionsExpanded&&doneRegions.map(region=>(
+                <div key={region} onClick={()=>handleRegionTap(region)} style={{background:C.white,borderRadius:14,padding:'12px 14px',display:'flex',alignItems:'center',gap:12,cursor:'pointer',border:`1px solid ${C.line}`,opacity:0.7}}>
+                  <div style={{width:42,height:42,borderRadius:12,background:C.offWhite,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><Icon n="map" sz={20} col={C.ink}/></div>
+                  <div style={{flex:1}}>
+                    <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>{region}</div>
+                    <div style={{fontSize:14,color:C.mid,fontFamily:C.P}}>Every question answered · tap to practise</div>
+                  </div>
+                  <CompletedMark onReset={()=>resetProgress(region,()=>RegionQuizBank.reset(region))}/>
+                </div>
+              ))}
             </>
           )}
         </div>
 
         <div style={zoneLabel}>Your Grapes</div>
-        <div style={{fontSize:14,color:C.mid,fontFamily:C.P,marginTop:2}}>{unlockedGrapes.length}/{GRAPE_ALLOWLIST.length} unlocked{!isPro?` · rate a wine to unlock more (${FREE_GRAPE_CAP} free)`:' · tap any to unlock instantly'}</div>
+        <div style={{fontSize:14,color:C.mid,fontFamily:C.P,marginTop:2}}>{unlockedGrapes.length}/{GRAPE_ALLOWLIST.length} unlocked · {isPro?'tap any grape for its quiz; locked ones unlock as you tap':`${unlockedGrapes.length?'tap one for its quiz · ':''}rate a wine to unlock more (${FREE_GRAPE_CAP} free)`}</div>
         <div style={{display:'flex',flexWrap:'wrap',gap:8,marginTop:8}}>
         {unlockedGrapes.map(g=>{
           const loading=grapeLoading===g;
           const col=grapeTypeColor(g);
+          const status=grapePillStatus(g);
           return(
-            <div key={g} onClick={()=>handleGrapeTap(g)} style={{flex:'0 0 auto',padding:'10px 18px',borderRadius:999,background:col+'15',border:`1px solid ${col}40`,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}>
-              {loading?<div style={{width:14,height:14,borderRadius:7,border:`2px solid ${col}33`,borderTopColor:col,animation:'storySpin .8s linear infinite'}}/>:
-                <span style={{fontSize:14,fontWeight:600,color:col,fontFamily:C.P,whiteSpace:'nowrap'}}>{g}</span>}
+            <div key={g} onClick={()=>handleGrapeTap(g)} style={{flex:'0 0 auto',padding:'10px 16px',borderRadius:999,background:col+'15',border:`1px solid ${col}40`,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:7}}>
+              {status&&status.done&&<span style={{fontSize:14,fontWeight:700,color:C.green,fontFamily:C.P}}>✓</span>}
+              <span style={{fontSize:14,fontWeight:600,color:col,fontFamily:C.P,whiteSpace:'nowrap'}}>{g}</span>
+              {loading
+                ?<div style={{width:13,height:13,borderRadius:7,border:`2px solid ${col}33`,borderTopColor:col,animation:'storySpin .8s linear infinite'}}/>
+                :status&&!status.done&&<span style={{fontSize:12,fontWeight:700,color:col,fontFamily:C.P,background:'#fff',borderRadius:999,padding:'1px 7px'}}>{status.text}</span>}
             </div>
           );
         })}
@@ -311,12 +393,15 @@ function QuizHubScreen({nav,back,showPro}){
           const col=grapeTypeColor(g);
           return(
             <div key={g} onClick={()=>handleGrapeTap(g)} style={{flex:'0 0 auto',padding:'10px 18px',borderRadius:999,background:C.white,border:`1px solid ${col}30`,cursor:'pointer',display:'flex',alignItems:'center',gap:6,opacity:0.75}}>
-              {loading?<div style={{width:14,height:14,borderRadius:7,border:`2px solid ${col}33`,borderTopColor:col,animation:'storySpin .8s linear infinite'}}/>:<Icon n="lock" sz={11} col={C.mid}/>}
+              {!loading&&<Icon n="lock" sz={11} col={C.mid}/>}
               <span style={{fontSize:14,fontWeight:600,color:C.ink,fontFamily:C.P,whiteSpace:'nowrap'}}>{g}</span>
+              {loading&&<div style={{width:13,height:13,borderRadius:7,border:`2px solid ${col}33`,borderTopColor:col,animation:'storySpin .8s linear infinite'}}/>}
             </div>
           );
         })}
         </div>
+        {grapeLoading&&<div style={{fontSize:14,color:C.mid,fontFamily:C.P,marginTop:8}}>Preparing your {grapeLoading} quiz… the first time takes a few seconds.</div>}
+        {grapeError&&!grapeLoading&&<div style={{fontSize:14,color:'#C0392B',fontFamily:C.P,marginTop:8}}>Couldn't load the {grapeError} quiz. Check your connection and tap it again.</div>}
 
         <div style={zoneLabel}>Your Progress</div>
         <div onClick={()=>isPro?nav('mastery-map'):showPro('mastery-map')} style={{background:C.white,borderRadius:16,border:`1px solid ${C.line}`,padding:'14px 16px',display:'flex',alignItems:'center',gap:12,marginTop:8,cursor:'pointer'}}>
@@ -436,99 +521,72 @@ function assembleWordsQuiz(){
     return {q:`What does "${t.term}" mean?`,opts,a:opts.indexOf(t.meaning),fact:null,conceptId:null,vocabTerm:t.term};
   });
 }
-function assembleRegionQuiz(region){
-  const info=KNOWLEDGE.regions[region];
+/* Region, Wine Basics and grape quizzes all draw QUIZ_SIZE questions from their full pool via
+   QuizMastery: unanswered questions first, then review. Options are reshuffled every time. */
+function _drawQuiz(setId,pool){
+  return QuizMastery.draw(setId,pool).map(q=>_shuffleOpts({...q,fact:q.fact||null,conceptId:null,vocabTerm:null}));
+}
+function quizSetFor(mode,config){
+  if(mode==='region') return {id:RegionQuizBank.setId(config.region),pool:()=>RegionQuizBank.pool(config.region)};
+  if(mode==='practice') return {id:'topic:'+config.topicId,pool:()=>QuizMastery.topicPool(config.topicId)};
+  if(mode==='grape') return {id:'grape:'+config.grape,pool:()=>config.questions||[]};
+  return null;
+}
+function buildQuizQuestions(config){
+  const mode=config?.mode||'concept';
+  const set=quizSetFor(mode,config);
+  if(set) return _drawQuiz(set.id,set.pool());
+  if(mode==='words') return assembleWordsQuiz();
+  return assembleConceptQuiz(MasterySystem.selectConcepts(6));
+}
+function quizTitle(config){
+  const mode=config?.mode||'concept';
+  return mode==='practice'?(QUIZ_TOPICS.find(t=>t.id===config.topicId)||QUIZ_TOPICS[0]).label
+    :mode==='words'?"Words You've Met"
+    :mode==='region'?'Your '+config.region+' Knowledge'
+    :mode==='grape'?'The '+config.grape+' Quiz'
+    :'Concept Check';
+}
+/* What to offer once a set is complete: the next unfinished set of the same kind, then Wine
+   Basics, then regions (only once WineDNA has unlocked them, as on the Learn tab), then
+   unlocked grapes. null means everything on offer is done. */
+function nextQuizSuggestion(config){
   const wines=WineHistory.getAll();
-  const regionWines=wines.filter(w=>w.region===region);
-  const otherWines=_shuffle(wines.filter(w=>w.region&&w.region!==region)).slice(0,3);
-  const otherRegionIds=Object.keys(KNOWLEDGE.regions).filter(r=>r!==region);
-  const qs=[];
-  if(info){
-    const distractClass=[...new Set(otherRegionIds.map(r=>KNOWLEDGE.regions[r].classification).filter(c=>c&&c!==info.classification))];
-    if(distractClass.length>=2){
-      const opts=_shuffle([info.classification,..._shuffle(distractClass).slice(0,3)]);
-      qs.push({q:`What classification does ${region} wine fall under?`,opts,a:opts.indexOf(info.classification),fact:`${region} (${info.country}): ${info.classification}.`,conceptId:null,vocabTerm:null});
-    }
-    if(info.keyGrapes&&info.keyGrapes[0]){
-      const correct=info.keyGrapes[0];
-      const distractGrapes=[...new Set(otherRegionIds.flatMap(r=>KNOWLEDGE.regions[r].keyGrapes||[]).filter(g=>g&&!info.keyGrapes.includes(g)))];
-      if(distractGrapes.length>=2){
-        const opts=_shuffle([correct,..._shuffle(distractGrapes).slice(0,3)]);
-        qs.push({q:`Which grape is the backbone of ${region}?`,opts,a:opts.indexOf(correct),fact:`${region}'s key grape(s): ${info.keyGrapes.join(', ')}.`,conceptId:null,vocabTerm:null});
-      }
-    }
-    if(info.climate){
-      const distractClimate=_shuffle(otherRegionIds.map(r=>KNOWLEDGE.regions[r].climate).filter(Boolean)).slice(0,3);
-      if(distractClimate.length>=2){
-        const opts=_shuffle([info.climate,...distractClimate]);
-        qs.push({q:`Which climate description matches ${region}?`,opts,a:opts.indexOf(info.climate),fact:`${region}: ${info.climate}.`,conceptId:null,vocabTerm:null});
-      }
-    }
-    if(info.agingRules){
-      const distractAging=_shuffle(otherRegionIds.map(r=>KNOWLEDGE.regions[r].agingRules).filter(Boolean)).slice(0,3);
-      if(distractAging.length>=2){
-        const opts=_shuffle([info.agingRules,...distractAging]);
-        qs.push({q:`Which aging rule applies to ${region}?`,opts,a:opts.indexOf(info.agingRules),fact:`${region}: ${info.agingRules}.`,conceptId:null,vocabTerm:null});
-      }
-    }
-    if(info.classicProducers&&info.classicProducers[0]){
-      const correct=info.classicProducers[0];
-      const distractProducers=[...new Set(otherRegionIds.flatMap(r=>KNOWLEDGE.regions[r].classicProducers||[]).filter(p=>p&&!info.classicProducers.includes(p)))];
-      if(distractProducers.length>=2){
-        const opts=_shuffle([correct,..._shuffle(distractProducers).slice(0,3)]);
-        qs.push({q:`Which producer is a classic name in ${region}?`,opts,a:opts.indexOf(correct),fact:`Classic ${region} producers include ${info.classicProducers.join(', ')}.`,conceptId:null,vocabTerm:null});
-      }
-    }
-  }
-  if(regionWines.length&&otherWines.length>=3){
-    const target=_shuffle(regionWines)[0];
-    const opts=_shuffle([target.name,...otherWines.map(w=>w.name)]);
-    qs.push({q:`Which of these bottles in your wine history is from ${region}?`,opts,a:opts.indexOf(target.name),fact:`${target.name} is the ${region} bottle in your history.`,conceptId:null,vocabTerm:null});
-  }
-  // Sample a rotating subset rather than always returning the whole fixed pool, so hitting
-  // "New quiz" back to back doesn't just reshuffle the identical set of questions.
-  const picked=_shuffle(qs).slice(0,Math.min(5,qs.length));
-  return picked.map(q=>_shuffleOpts(q));
-}
-function assemblePracticeQuiz(topicId){
-  const topic=QUIZ_TOPICS.find(t=>t.id===topicId)||QUIZ_TOPICS[0];
-  const qs=_shuffle(topic.questions.beginner||[]).slice(0,6);
-  return qs.map(q=>_shuffleOpts(q));
-}
-function assembleGrapeQuiz(bank){
-  const qs=_shuffle(bank||[]).map(q=>({q:q.q,opts:q.opts,a:q.a,fact:q.fact,conceptId:null,vocabTerm:null}));
-  return qs.map(q=>_shuffleOpts(q));
+  const topics=QUIZ_TOPICS.filter(t=>t.id!==config.topicId&&!QuizMastery.isComplete('topic:'+t.id,QuizMastery.topicPool(t.id)))
+    .map(t=>({config:{mode:'practice',topicId:t.id},label:t.label}));
+  const regions=(getCoverage(wines).unlocked?regionQuizCandidates(wines):[]).filter(r=>r!==config.region)
+    .map(r=>({config:{mode:'region',region:r},label:r}));
+  const grapes=Object.keys(GrapeUnlocks.all()).filter(g=>g!==config.grape&&!grapeQuizComplete(g))
+    .map(g=>({config:{mode:'grape',grape:g},label:g}));
+  const order=config.mode==='region'?[regions,topics,grapes]:config.mode==='grape'?[grapes,topics,regions]:[topics,regions,grapes];
+  for(const list of order) if(list.length) return list[0];
+  return null;
 }
 
 /* ── QUIZ SCREEN ── */
 function QuizScreen({nav,back}){
-  const config=React.useMemo(()=>{
+  // Config is state so the results screen can move straight on to the next quiz or set.
+  const [config,setConfig]=React.useState(()=>{
     try{ return JSON.parse(sessionStorage.getItem('vinterest_quiz_config2')||'null'); }catch(e){ return null; }
-  },[]);
+  });
   const mode=config?.mode||'concept';
+  const quizSet=React.useMemo(()=>quizSetFor(mode,config),[mode,config]);
 
-  const buildQs=React.useCallback(()=>{
-    if(mode==='practice') return assemblePracticeQuiz(config.topicId);
-    if(mode==='words') return assembleWordsQuiz();
-    if(mode==='region') return assembleRegionQuiz(config.region);
-    if(mode==='grape') return assembleGrapeQuiz(config.questions);
-    return assembleConceptQuiz(MasterySystem.selectConcepts(6));
-  },[mode,config]);
-
-  const [allQs,setAllQs]=React.useState(buildQs);
+  const [allQs,setAllQs]=React.useState(()=>buildQuizQuestions(config));
+  // Whether this set was already complete when the quiz started, so the results screen can
+  // tell "you just completed it" apart from practising a finished set.
+  const [startedComplete,setStartedComplete]=React.useState(()=>{ const qs=quizSetFor(mode,config); return !!qs&&QuizMastery.isComplete(qs.id,qs.pool()); });
+  const [nextLoading,setNextLoading]=React.useState(false);
   const [qIdx,setQIdx]=React.useState(0);
   const [selected,setSelected]=React.useState(null);
   const [phase,setPhase]=React.useState(allQs.length?'question':'empty');
   const [streak,setStreak]=React.useState(0);
   const [xpGained,setXpGained]=React.useState(0);
   const [results,setResults]=React.useState([]);
+  const [, setResetTick]=React.useState(0);
   const scrollRef=React.useRef(null);
 
-  const title=mode==='practice'?(QUIZ_TOPICS.find(t=>t.id===config.topicId)||QUIZ_TOPICS[0]).label
-    :mode==='words'?"Words You've Met"
-    :mode==='region'?'Your '+config.region+' Knowledge'
-    :mode==='grape'?'The '+config.grape+' Quiz'
-    :'Concept Check';
+  const title=quizTitle(config);
 
   const q=allQs[qIdx];
 
@@ -549,6 +607,7 @@ function QuizScreen({nav,back}){
       }
     }
     if(q.vocabTerm) VocabLedger.recordTest(q.vocabTerm,correct);
+    if(quizSet) QuizMastery.recordAnswer(quizSet.id,q.q,correct);
     if(gained){ setXpGained(xp=>xp+gained); }
 
     setResults(rs=>[...rs,{correct,qText:q.q,selectedOpt:q.opts[i],correctOpt:q.opts[q.a],fact:q.fact}]);
@@ -565,21 +624,32 @@ function QuizScreen({nav,back}){
       const g2=a2.filter(x=>!x.levelUp).reduce((s,a)=>s+a.amount,0);
       setXpGained(xp=>xp+g2);
       XPSystem.toast(a2);
-      if(mode==='region'&&results.filter(r=>r.correct).length===allQs.length) RegionQuizLedger.markAced(config.region);
-      if(mode==='practice') TopicQuizLedger.markDone(config.topicId);
       setPhase('results');
     } else {
       setQIdx(i=>i+1); setSelected(null); setPhase('question');
     }
   }
 
-  function newQuiz(){
-    setAllQs(buildQs()); setQIdx(0); setSelected(null); setPhase('question'); setStreak(0); setXpGained(0); setResults([]);
+  function startQuiz(cfg){
+    const qs=buildQuizQuestions(cfg);
+    const set=quizSetFor(cfg?.mode||'concept',cfg);
+    sessionStorage.setItem('vinterest_quiz_config2',JSON.stringify(cfg));
+    setConfig(cfg); setAllQs(qs); setStartedComplete(!!set&&QuizMastery.isComplete(set.id,set.pool()));
+    setQIdx(0); setSelected(null); setPhase(qs.length?'question':'empty'); setStreak(0); setXpGained(0); setResults([]);
+    if(scrollRef.current) scrollRef.current.scrollTop=0;
+  }
+  // Region and grape banks may still need generating before the next set can start.
+  function startSuggested(cfg){
+    if(cfg.mode==='region'){ setNextLoading(true); RegionQuizBank.load(cfg.region,()=>{ setNextLoading(false); startQuiz(cfg); }); }
+    else if(cfg.mode==='grape'){ setNextLoading(true); getGrapeQuiz(cfg.grape,qs=>{ setNextLoading(false); if(qs&&qs.length) startQuiz({...cfg,questions:qs}); }); }
+    else startQuiz(cfg);
   }
 
   if(phase==='empty') return(
     <div style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:12,padding:32}}>
-      <span style={{fontSize:16,color:C.mid,fontFamily:C.P,textAlign:'center'}}>Nothing to test yet — scan and rate a few more bottles first.</span>
+      <span style={{fontSize:16,color:C.mid,fontFamily:C.P,textAlign:'center'}}>{mode==='concept'&&MasterySystem.summary().mastered===MasterySystem.summary().total&&MasterySystem.summary().total>0
+        ?'Every concept is mastered. Nice work.'
+        :'Nothing to test yet — scan and rate a few more bottles first.'}</span>
       <Btn primary onClick={()=>nav('learn')}>Back to Learn</Btn>
     </div>
   );
@@ -587,13 +657,41 @@ function QuizScreen({nav,back}){
   if(phase==='results'){
     const finalScore=results.filter(r=>r.correct).length;
     const pct=Math.round(finalScore/allQs.length*100);
-    const msg=pct===100?'Perfect!':pct>=80?'Excellent!':pct>=60?'Good work!':'Keep practising';
+    const pool=quizSet&&quizSet.pool();
+    const setProgress=quizSet&&QuizMastery.progress(quizSet.id,pool);
+    const setDone=!!setProgress&&setProgress.total>0&&setProgress.correct===setProgress.total;
+    const justCompleted=setDone&&!startedComplete;
+    const setName=mode==='practice'?title:mode==='region'?config.region:mode==='grape'?config.grape:title;
+    const concepts=mode==='concept'&&MasterySystem.summary();
+    const msg=justCompleted?`${setName} complete!`:pct===100?'Perfect!':pct>=80?'Excellent!':pct>=60?'Good work!':'Keep practising';
+
+    // One primary action, then "Back to Learn" whenever the primary isn't already that.
+    //  - unfinished set: keep going on it (questions not yet answered come first)
+    //  - finished set: suggest the next unfinished topic/region/grape, else back to Learn
+    //  - Concept Check / Words: another round while there's anything left
+    let primary=null;
+    if(quizSet&&!setDone) primary={label:`Keep going · ${setProgress.total-setProgress.correct} to go`,go:()=>startQuiz(config)};
+    else if(quizSet&&setDone){ const next=nextQuizSuggestion(config); if(next) primary={label:`Next: ${next.label}`,go:()=>startSuggested(next.config)}; }
+    else if(mode==='concept'){ if(MasterySystem.selectConcepts(6).length) primary={label:'Keep going',go:()=>startQuiz(config)}; }
+    else primary={label:'Keep going',go:()=>startQuiz(config)};
+
+    function resetSet(){
+      if(!window.confirm(`Reset your progress on ${setName}? Its questions start from scratch.`)) return;
+      if(mode==='region') RegionQuizBank.reset(config.region); else QuizMastery.reset(quizSet.id);
+      startQuiz(config);
+    }
+    const card=(done,headline,sub)=>(
+      <div style={{background:done?C.greenBg:C.offWhite,borderRadius:12,padding:'12px 14px',border:`1px solid ${done?C.green+'40':C.line}`}}>
+        <div style={{fontSize:15,fontWeight:700,color:done?C.green:C.ink,fontFamily:C.P}}>{headline}</div>
+        {sub&&<div style={{fontSize:14,color:C.mid,fontFamily:C.P,marginTop:2,lineHeight:1.4}}>{sub}</div>}
+      </div>
+    );
     return(
       <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden'}}>
         <div style={{background:C.cr,padding:'26px 24px 20px',display:'flex',flexDirection:'column',alignItems:'center',gap:5,flexShrink:0}}>
-          <Icon n={pct===100?'trophy':pct>=80?'star':pct>=60?'check':'book'} sz={32} col="#fff"/>
-          <div style={{fontSize:22,fontWeight:800,color:'#fff',fontFamily:C.P}}>{msg}</div>
-          <div style={{fontSize:15,color:'rgba(255,255,255,0.8)',fontFamily:C.P}}>{title}</div>
+          <Icon n={justCompleted||pct===100?'trophy':pct>=80?'star':pct>=60?'check':'book'} sz={32} col="#fff"/>
+          <div style={{fontSize:22,fontWeight:800,color:'#fff',fontFamily:C.P,textAlign:'center'}}>{msg}</div>
+          {!justCompleted&&<div style={{fontSize:15,color:'rgba(255,255,255,0.8)',fontFamily:C.P}}>{title}</div>}
           <div style={{display:'flex',gap:16,marginTop:6}}>
             <div style={{textAlign:'center'}}>
               <div style={{fontSize:28,fontWeight:800,color:'#fff',fontFamily:C.P}}>{finalScore}/{allQs.length}</div>
@@ -607,28 +705,40 @@ function QuizScreen({nav,back}){
           </div>
         </div>
         <div ref={scrollRef} style={{flex:1,overflowY:'auto'}}>
-<div style={{padding:'16px',display:'flex',flexDirection:'column',gap:10}}>
-          <div style={{fontSize:15,fontWeight:600,color:C.mid,letterSpacing:'0.07em',textTransform:'uppercase',fontFamily:C.P}}>Review</div>
-          {results.map((r,i)=>(
-            <div key={i} style={{background:r.correct?C.greenBg:'#FFF0F0',borderRadius:12,padding:'10px 14px',border:`1px solid ${r.correct?C.green+'30':'#F5A0A0'}`}}>
-              <div style={{display:'flex',gap:8,alignItems:'flex-start'}}>
-                <span style={{fontSize:18,flexShrink:0}}>{r.correct?'✓':'✗'}</span>
-                <div>
-                  <div style={{fontSize:15,fontWeight:600,color:C.ink,fontFamily:C.P,lineHeight:1.3}}>{r.qText}</div>
-                  {!r.correct&&<div style={{fontSize:15,color:'#C0392B',fontFamily:C.P,marginTop:3}}>Your answer: {r.selectedOpt}</div>}
-                  {!r.correct&&<div style={{fontSize:15,color:C.green,fontFamily:C.P}}>Correct: {r.correctOpt}</div>}
-                  {r.fact&&<div style={{fontSize:15,color:C.mid,fontFamily:C.P,marginTop:4,lineHeight:1.4,fontStyle:'italic'}}>{r.fact}</div>}
+          <div style={{padding:'16px',display:'flex',flexDirection:'column',gap:10}}>
+            {setProgress&&(setDone
+              ?card(true,justCompleted?`All ${setProgress.total} questions answered correctly`:'Complete — every question answered correctly',
+                justCompleted?'This one moves to your completed list on the Learn tab.':null)
+              :card(false,`${setProgress.correct} of ${setProgress.total} questions answered correctly`,"Questions you haven't got right yet come first in your next quiz."))}
+            {concepts&&card(concepts.mastered===concepts.total,`${concepts.mastered} of ${concepts.total} concepts mastered`,
+              concepts.mastered===concepts.total?null:'Each right answer moves a concept up a step and a miss moves it back one; five steps masters it.')}
+            {setDone&&(
+              <div style={{display:'flex',justifyContent:'center',gap:18}}>
+                <span onClick={()=>startQuiz(config)} style={{fontSize:14,fontWeight:600,color:C.mid,fontFamily:C.P,textDecoration:'underline',cursor:'pointer'}}>Practise again</span>
+                <span onClick={resetSet} style={{fontSize:14,fontWeight:600,color:C.mid,fontFamily:C.P,textDecoration:'underline',cursor:'pointer'}}>Reset progress</span>
+              </div>
+            )}
+            <div style={{fontSize:15,fontWeight:600,color:C.mid,letterSpacing:'0.07em',textTransform:'uppercase',fontFamily:C.P,marginTop:4}}>Review</div>
+            {results.map((r,i)=>(
+              <div key={i} style={{background:r.correct?C.greenBg:'#FFF0F0',borderRadius:12,padding:'10px 14px',border:`1px solid ${r.correct?C.green+'30':'#F5A0A0'}`}}>
+                <div style={{display:'flex',gap:8,alignItems:'flex-start'}}>
+                  <span style={{fontSize:18,flexShrink:0}}>{r.correct?'✓':'✗'}</span>
+                  <div>
+                    <div style={{fontSize:15,fontWeight:600,color:C.ink,fontFamily:C.P,lineHeight:1.3}}>{r.qText}</div>
+                    {!r.correct&&<div style={{fontSize:15,color:'#C0392B',fontFamily:C.P,marginTop:3}}>Your answer: {r.selectedOpt}</div>}
+                    {!r.correct&&<div style={{fontSize:15,color:C.green,fontFamily:C.P}}>Correct: {r.correctOpt}</div>}
+                    {r.fact&&<div style={{fontSize:15,color:C.mid,fontFamily:C.P,marginTop:4,lineHeight:1.4,fontStyle:'italic'}}>{r.fact}</div>}
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
-          <div style={{display:'flex',flexDirection:'column',gap:8,marginTop:4}}>
-            <Btn primary full onClick={newQuiz}>New quiz</Btn>
-            <Btn full onClick={()=>{if(pct<100){if(scrollRef.current)scrollRef.current.scrollTop=0;}else nav('learn');}}>{pct<100?'See what you missed':'Practice more'}</Btn>
+            ))}
           </div>
-          <div style={{height:8}}/>
         </div>
-</div>
+        {/* Actions stay pinned below the review so they're visible without scrolling. */}
+        <div style={{flexShrink:0,padding:'12px 16px calc(12px + env(safe-area-inset-bottom))',borderTop:`1px solid ${C.line}`,background:C.white,display:'flex',flexDirection:'column',gap:8}}>
+          {primary&&<Btn primary full onClick={nextLoading?undefined:primary.go}>{nextLoading?'Getting it ready…':primary.label}</Btn>}
+          <Btn primary={!primary} full onClick={()=>nav('learn')}>Back to Learn</Btn>
+        </div>
       </div>
     );
   }

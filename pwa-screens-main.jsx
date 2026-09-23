@@ -139,12 +139,7 @@ function ScanHomeScreen({nav,showPro,isTablet}){
 // Preview has no camera — capturePhoto's "camera not ready" branch simulates a real scan of one
 // of these three real bottles instead of the old generic demo fallback, so testing doesn't need
 // an actual label. Picked at random each time the shutter is tapped.
-const DEMO_WINES=[
-  {name:'Sassicaia',producer:'Tenuta San Guido',vintage:2010,region:'Bolgheri',sub_region:'',country:'Italy',type:'red',grapes:['Cabernet Sauvignon','Cabernet Franc'],body:0.85,tannins:0.75,acidity:0.65,sweetness:0.02,texture:null,effervescence:null,abv:13.5,tasting_notes:['Blackcurrant','Cedar','Graphite','Dried herbs'],food_pairings:['Grilled steak','Aged pecorino','Wild boar ragù'],price_usd:280,community_rating:4.7,description:'A Super Tuscan built on Cabernet Sauvignon and Cabernet Franc, aged in French oak for structure and length. Dense and savoury with real ageing potential.',why_you_will_like_this:'A benchmark for structured, cellar-worthy reds with Bordeaux-like backbone.',body_plain:'Full and weighty in the mouth',tannins_plain:'Firm, drying grip that softens with age',acidity_plain:'Bright enough to balance the richness',sweetness_plain:'Bone dry',texture_plain:null,effervescence_plain:null},
-  {name:'Bourgogne Blanc',producer:'Domaine Comte Georges de Vogüé',vintage:2010,region:'Burgundy',sub_region:'Chambolle-Musigny',country:'France',type:'white',grapes:['Chardonnay'],body:0.55,tannins:null,acidity:0.7,sweetness:0.02,texture:0.55,effervescence:null,abv:13.5,tasting_notes:['Green apple','Brioche','Wet stone','Citrus zest'],food_pairings:['Roast chicken','Goat cheese','Grilled sole'],price_usd:90,community_rating:4.3,description:'A village-level white from a producer better known for its Musigny reds — taut and mineral with a creamy edge from time in barrel.',why_you_will_like_this:'A precise, food-friendly Chardonnay if you like your whites lean rather than buttery.',body_plain:'Medium weight, not heavy',tannins_plain:null,acidity_plain:'Crisp and mouth-watering',sweetness_plain:'Bone dry',texture_plain:'A touch creamy from barrel ageing, still fresh',effervescence_plain:null},
-  {name:'Southing',producer:'Sea Smoke',vintage:2021,region:'Sta. Rita Hills',sub_region:'Sea Smoke Estate Vineyard',country:'United States',type:'red',grapes:['Pinot Noir'],body:0.5,tannins:0.4,acidity:0.65,sweetness:0.02,texture:null,effervescence:null,abv:14.1,tasting_notes:['Red cherry','Rose petal','Sandalwood','Baking spice'],food_pairings:['Duck breast','Mushroom risotto','Grilled salmon'],price_usd:75,community_rating:4.5,description:'A cool-climate Santa Barbara Pinot Noir from a single estate vineyard near the Pacific — perfumed and silky with real fruit concentration.',why_you_will_like_this:'A polished, fruit-forward Pinot if you like New World reds with finesse rather than weight.',body_plain:'Light-to-medium, silky rather than heavy',tannins_plain:'Soft, fine-grained',acidity_plain:'Fresh, keeps it lively',sweetness_plain:'Bone dry',texture_plain:null,effervescence_plain:null}
-];
-function ScanScreen({nav,back,onComplete}){
+function ScanScreen({nav,back,onComplete,onSkip}){
   const onboarding=!!onComplete; // onboarding: save the scan & advance the flow instead of navigating
   const videoRef=React.useRef(null);
   const streamRef=React.useRef(null);
@@ -175,76 +170,60 @@ function ScanScreen({nav,back,onComplete}){
     return ()=>{ if(streamRef.current) streamRef.current.getTracks().forEach(t=>t.stop()); };
   },[]);
 
-  const LABEL_PROMPT=`You are an expert sommelier with exceptional vision. Analyse this photo and identify any wine bottle label visible — even if partially obscured, at an angle, or in low light. Do your best with whatever text or imagery you can make out. Return ONLY valid JSON (no markdown, no code fences) with these fields: {"name":"full wine name","producer":"winery","vintage":2018,"region":"region","sub_region":"sub-region or empty string","country":"country","type":"red|white|rosé|sparkling|orange|dessert|fortified","grapes":["Primary Grape"],"body":0.85,"tannins":0.80,"acidity":0.60,"sweetness":0.05,"texture":0.5,"effervescence":0.5,"abv":13.5,"tasting_notes":["Note1","Note2","Note3"],"food_pairings":["Food1","Food2","Food3"],"price_usd":50,"community_rating":4.5,"description":"2-3 sentence approachable description.","why_you_will_like_this":"1-2 sentences personalised to a wine lover.","body_plain":"How heavy it feels in your mouth","tannins_plain":"That drying grip on your gums","acidity_plain":"How zingy and fresh it tastes","sweetness_plain":"Dry means barely any sugar","texture_plain":"Steely and clean, or rich and creamy","effervescence_plain":"How soft or vigorous the bubbles feel"}. "type" guide: "orange" is a white/amber grape fermented with extended skin contact like a red (has real tannins, from the same territory as natural/amber wines); "dessert" is a sweet, non-fortified wine (botrytis/noble rot, late harvest, ice wine — e.g. Sauternes, Tokaji); "fortified" has spirit added during production (Port, Sherry, Madeira, Marsala) and can range from bone dry to very sweet — judge from the label, do not assume fortified always means sweet. For "texture" (0=crisp/steely/unoaked, 1=rich/creamy/oaked from oak aging, lees contact, or malolactic fermentation): include a real value when type is "white", "orange", "dessert", or "fortified"; use null for "red", "rosé", and "sparkling". For "effervescence" (0=soft/delicate mousse, 1=vigorous/fine/persistent bubbles): ONLY include a real value when type is "sparkling"; use null for all other types. For "tannins": include a real value for "red", "orange", and "fortified" (many fortified reds like Port have real tannic structure); use null for "white", "rosé", "sparkling", and "dessert". For "tasting_notes": only list a specific descriptor (e.g. a named fruit, spice, or aromatic note) if it is genuinely typical of this producer/region/grape/vintage style you recognize — when you don't have real basis for the specific bottle, fall back to broader, honest descriptors typical of the grape and region rather than inventing precise-sounding specifics. Only return {"error":"no_wine_label"} if there is absolutely no wine bottle or label anywhere in the image.`;
 
-  const LIST_PROMPT=`You are a sommelier reading a wine list, printed in ${listCurrency}. Extract EVERY wine from this image in the order they appear — do not skip any. Return ONLY valid JSON (no markdown): {"wines":[{"n":"wine name","t":"red|white|rosé|sparkling|orange|dessert|fortified","r":"region","c":"country","v":2020,"p":"price as printed on the list, verbatim, e.g. 85"}]}. PRICE RULES — read carefully: many lists price by pour tier (e.g. "GLASS:16", "1/2LTR:33", "BOTTLE:59" printed below or beside the wine name). When those tiered lines are present, set "p" to the FULL tiered string verbatim (e.g. "GLASS:16 / 1/2LTR:33 / BOTTLE:59") — the bottle figure is the one that matters, so never drop it. DISAMBIGUATING SHORT NUMBERS NEAR THE NAME: a wine name is sometimes followed by one or two short (1–2 digit) numbers rather than a separate price column. Reason about which they are: (a) if there are TWO such numbers and one is roughly 1.5–3x the other, both landing in a plausible drink-price range (e.g. teens/twenties and thirties/fifties), treat them as a glass price and a bottle price, NOT vintages — use them for "p" (e.g. "GLASS:16 / BOTTLE:45"); (b) if there is a single short number with no such pairing, and no separate GLASS/BOTTLE lines exist elsewhere for that wine, it is more likely a vintage only if it reads like a year shorthand (e.g. preceded by an apostrophe, or clearly grouped with other vintage-looking numbers in that column) — otherwise leave vintage null rather than guessing. Never use a 2-digit index/price as vintage. Only ever set "v" to a plausible 4-digit year (or a 2-digit year you are genuinely confident denotes one, e.g. '18 for 2018) — when genuinely ambiguous, prefer leaving "v" null over guessing wrong. Include ALL wines visible. Do not stop early.`;
 
-  function capturePhoto(){
-    if(!videoRef.current||!videoRef.current.videoWidth){
-      if(streamRef.current) streamRef.current.getTracks().forEach(t=>t.stop());
-      setPhase('processing');
-      const demoWine=DEMO_WINES[Math.floor(Math.random()*DEMO_WINES.length)];
-      if(onboarding){
-        setTimeout(()=>{ try{ WineHistory.track(demoWine); }catch(e){} onComplete(demoWine); },1200);
-        return;
-      }
-      if(mode==='list'){
-        sessionStorage.setItem('vinterest_winelist_result',JSON.stringify({demo:true,reason:'camera_not_ready'}));
-        setTimeout(()=>nav('winelist'),1600);
-      } else {
-        sessionStorage.setItem('vinterest_scan_result',JSON.stringify({demo:false,wine:demoWine,confidence:0.95}));
-        const _sc=parseInt(localStorage.getItem('vinterest_scan_count')||'0');
-        localStorage.setItem('vinterest_scan_count',_sc+1);
-        try{ XPSystem.awardAndToast([
-          {type:'scan'},{type:'weekly_scans'},
-          {type:'first_type',value:demoWine.type},
-          {type:'first_country',value:demoWine.country},
-          {type:'new_grape',value:(demoWine.grapes||[])[0]},
-          ...((demoWine.price_usd||0)>=100?[{type:'expensive_wine',wineKey:(demoWine.name||'')+'_'+(demoWine.vintage||'')}]:[])
-        ]); }catch(e){}
-        setTimeout(()=>nav('identified'),1600);
-      }
-      return;
-    }
-    // Capture frame FIRST, then stop stream (stopping first can blank the frame on mobile)
-    const vw=videoRef.current.videoWidth;
-    const vh=videoRef.current.videoHeight;
-    // Resize to max 1024px longest side — keeps payload lean without losing label detail
+  const fileRef=React.useRef(null);
+  // Resize to max 1024px longest side, keeping label detail without a heavy payload.
+  function processSource(src,w,h){
     const maxDim=1024;
-    const scale=Math.min(1,maxDim/Math.max(vw,vh));
+    const scale=Math.min(1,maxDim/Math.max(w,h));
     const canvas=document.createElement('canvas');
-    canvas.width=Math.round(vw*scale);
-    canvas.height=Math.round(vh*scale);
-    canvas.getContext('2d').drawImage(videoRef.current,0,0,canvas.width,canvas.height);
+    canvas.width=Math.round(w*scale);
+    canvas.height=Math.round(h*scale);
+    canvas.getContext('2d').drawImage(src,0,0,canvas.width,canvas.height);
     const dataUrl=canvas.toDataURL('image/jpeg',0.82);
-    const b64=dataUrl.split(',')[1];
-    // Stop stream after capture
     if(streamRef.current) streamRef.current.getTracks().forEach(t=>t.stop());
     setCapturedImg(dataUrl);
     setPhase('processing');
+    const b64=dataUrl.split(',')[1];
     if(mode==='list') processListCapture(b64);
     else processLabelCapture(b64);
+  }
+  /* A photo from the library: the fallback when the camera isn't available, and handy for a
+     label photographed earlier. */
+  function onPickFile(e){
+    const file=e.target.files&&e.target.files[0];
+    if(!file) return;
+    const url=URL.createObjectURL(file);
+    const img=new Image();
+    img.onload=()=>{ processSource(img,img.naturalWidth,img.naturalHeight); URL.revokeObjectURL(url); };
+    img.src=url;
+  }
+  function capturePhoto(){
+    // No live camera (permission denied, no camera, not ready yet): pick a photo instead.
+    // Never substitute a sample wine: it would be saved as a real scan.
+    if(!videoRef.current||!videoRef.current.videoWidth){
+      if(fileRef.current) fileRef.current.click();
+      return;
+    }
+    // Capture the frame before stopping the stream (stopping first can blank the frame on mobile).
+    processSource(videoRef.current,videoRef.current.videoWidth,videoRef.current.videoHeight);
   }
 
   async function processLabelCapture(b64){
     try{
       const text=await window.claude.complete({purpose:'label_scan',messages:[{role:'user',content:[
         {type:'image',source:{type:'base64',media_type:'image/jpeg',data:b64}},
-        {type:'text',text:LABEL_PROMPT}
+        {type:'text',text:_loadTextSync('prompts/label-scan.txt')}
       ]}]});
-      const wine=JSON.parse(text.replace(/```json|```/g,'').trim());
+      const wine=WineDNA.cleanWine(JSON.parse(text.replace(/```json|```/g,'').trim()));
       if(wine.error==='no_wine_label') throw new Error('no_wine_label');
       sessionStorage.setItem('vinterest_scan_result',JSON.stringify({demo:false,wine,confidence:0.95}));
       const _sc=parseInt(localStorage.getItem('vinterest_scan_count')||'0');
       localStorage.setItem('vinterest_scan_count',_sc+1);
-      XPSystem.awardAndToast([
-        {type:'scan'},{type:'weekly_scans'},
-        {type:'first_type',value:wine.type},
-        {type:'first_country',value:wine.country},
-        {type:'new_grape',value:(wine.grapes||[])[0]},
-        ...((wine.price_usd||0)>=100?[{type:'expensive_wine',wineKey:(wine.name||'')+'_'+(wine.vintage||'')}]:[])
-      ]);
-      if(onboarding){ try{ WineHistory.track(wine); }catch(e){} onComplete(wine); return; }
+      // Scan XP is awarded once the wine is confirmed and saved (ScanFlow.awardScanXP), so a
+      // misread label never earns a "new grape" for the wrong grape.
+      if(onboarding){ try{ WineHistory.track(wine); ScanFlow.awardScanXP(wine,{defer:true}); }catch(e){} onComplete(wine); return; }
     }catch(e){
       if(onboarding){ onComplete(null); return; }
       sessionStorage.setItem('vinterest_scan_result',JSON.stringify({demo:true,reason:e.message}));
@@ -258,7 +237,7 @@ function ScanScreen({nav,back,onComplete}){
     try{
       const text=await window.claude.complete({purpose:'list_scan',max_tokens:8192,messages:[{role:'user',content:[
         {type:'image',source:{type:'base64',media_type:'image/jpeg',data:b64}},
-        {type:'text',text:LIST_PROMPT}
+        {type:'text',text:ContentEngine.fillTpl(_loadTextSync('prompts/list-scan.txt'),{currency:listCurrency})}
       ]}]});
       // Robustly extract JSON — handles extra prose, code fences, truncation
       let cleaned=text.replace(/```json|```/g,'').trim();
@@ -274,7 +253,9 @@ function ScanScreen({nav,back,onComplete}){
         region:w.region||w.r||'',
         country:w.country||w.c||'',
         vintage:w.vintage||w.v||null,
-        price:w.price||w.p||''
+        price:w.price||w.p||'',
+        grape:w.grape||w.g||'',
+        style:w.style||w.s||''
       }));
       if(!wines.length) throw new Error('no_wines_found');
       sessionStorage.setItem('vinterest_winelist_result',JSON.stringify({demo:false,wines,currency:listCurrency}));
@@ -314,7 +295,8 @@ function ScanScreen({nav,back,onComplete}){
       ):(
         <div style={{position:'absolute',inset:0,background:'linear-gradient(135deg,#1a1a1a,#2d1b2e)',display:'flex',alignItems:'center',justifyContent:'center',flexDirection:'column',gap:8}}>
           <Icon n="camera" sz={42} col="rgba(255,255,255,0.18)"/>
-          <span style={{fontSize:16,color:'rgba(255,255,255,0.3)',fontFamily:C.P}}>Camera unavailable in preview</span>
+          <span style={{fontSize:16,color:'rgba(255,255,255,0.6)',fontFamily:C.P,textAlign:'center',padding:'0 32px'}}>Camera unavailable. Choose a photo of the {mode==='list'?'wine list':'label'} instead.</span>
+          <div onClick={()=>fileRef.current&&fileRef.current.click()} style={{marginTop:8,padding:'10px 20px',borderRadius:22,background:C.cr,color:'#fff',fontSize:16,fontWeight:700,fontFamily:C.P,cursor:'pointer',position:'relative',zIndex:4}}>Choose a photo</div>
         </div>
       )}
 
@@ -324,7 +306,9 @@ function ScanScreen({nav,back,onComplete}){
           <Icon n="back" sz={18} col="#fff"/>
         </div>
         <span style={{fontSize:18,fontWeight:600,color:'#fff',fontFamily:C.P,whiteSpace:'nowrap'}}>{onboarding?'Scan your first bottle':'Scan Wine'}</span>
-        <div style={{width:38,height:38}}/>
+        {onSkip
+          ?<span onClick={onSkip} style={{minWidth:38,textAlign:'right',fontSize:15,fontWeight:600,color:'rgba(255,255,255,0.75)',fontFamily:C.P,cursor:'pointer'}}>Skip</span>
+          :<div style={{width:38,height:38}}/>}
       </div>
 
       {/* Large portrait framing box */}
@@ -381,10 +365,17 @@ function ScanScreen({nav,back,onComplete}){
             <div key={i} onClick={()=>setMode(i===0?'bottle':'list')} style={{padding:'10px 24px',background:(i===0?mode==='bottle':mode==='list')?C.cr:'transparent',fontSize:17,fontWeight:600,color:(i===0?mode==='bottle':mode==='list')?'#fff':'rgba(255,255,255,0.45)',fontFamily:C.P,cursor:'pointer',transition:'background .18s'}}>{m}</div>
           ))}
         </div>}
-        {/* Capture button */}
-        <div onClick={capturePhoto} style={{width:74,height:74,borderRadius:37,background:'rgba(255,255,255,0.92)',border:'4px solid rgba(255,255,255,0.35)',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',boxShadow:'0 4px 28px rgba(0,0,0,0.5)'}}>
-          <div style={{width:56,height:56,borderRadius:28,background:C.cr}}/>
+        {/* Capture button, with a photo-library picker beside it */}
+        <div style={{display:'flex',alignItems:'center',justifyContent:'center',gap:28,width:'100%'}}>
+          <div style={{width:48}}/>
+          <div onClick={capturePhoto} aria-label="Take photo" style={{width:74,height:74,borderRadius:37,background:'rgba(255,255,255,0.92)',border:'4px solid rgba(255,255,255,0.35)',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',boxShadow:'0 4px 28px rgba(0,0,0,0.5)'}}>
+            <div style={{width:56,height:56,borderRadius:28,background:C.cr}}/>
+          </div>
+          <div onClick={()=>fileRef.current&&fileRef.current.click()} aria-label="Choose a photo" style={{width:48,height:48,borderRadius:12,background:'rgba(0,0,0,0.55)',backdropFilter:'blur(12px)',border:'1.5px solid rgba(255,255,255,0.35)',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer'}}>
+            <span style={{fontSize:11,fontWeight:700,color:'#fff',fontFamily:C.P,textAlign:'center',lineHeight:1.1}}>Photo<br/>library</span>
+          </div>
         </div>
+        <input ref={fileRef} type="file" accept="image/*" onChange={onPickFile} data-testid="scan-file" style={{display:'none'}}/>
       </div>
     </div>
   );

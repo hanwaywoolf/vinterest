@@ -1,4 +1,4 @@
-Write a short educational wine article for a user with this profile: types tried: {{types}}, regions: {{regions}}, grapes: {{grapes}}.
+Write a short educational wine article for a user with this profile: types tried: {{types}}, regions: {{regions}}, grapes: {{grapes}}. {{depth}}
 
 Article title: "{{title}}"
 Editorial brief: {{brief}}

@@ -24,6 +24,10 @@ function Icon({n,sz=20,col=C.ink,style:s}){
     share:<><circle cx="14.5" cy="4.5" r="2" stroke={col} strokeWidth="1.5" fill="none"/><circle cx="5.5" cy="10" r="2" stroke={col} strokeWidth="1.5" fill="none"/><circle cx="14.5" cy="15.5" r="2" stroke={col} strokeWidth="1.5" fill="none"/><line x1="7.4" y1="9" x2="12.6" y2="5.5" stroke={col} strokeWidth="1.5"/><line x1="7.4" y1="11" x2="12.6" y2="14.5" stroke={col} strokeWidth="1.5"/></>,
     camera:<><rect x="2.5" y="6" width="15" height="11" rx="2" stroke={col} strokeWidth="1.6" fill="none"/><circle cx="10" cy="11.5" r="3" stroke={col} strokeWidth="1.6" fill="none"/><path d="M7.5 6L8.5 4h3l1 2" stroke={col} strokeWidth="1.4" fill="none" strokeLinejoin="round"/></>,
     check:<polyline points="3.5,10 7.5,14.5 16.5,5" stroke={col} strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"/>,
+    search:<><circle cx="9" cy="9" r="5.5" stroke={col} strokeWidth="1.6" fill="none"/><path d="M13 13l4 4" stroke={col} strokeWidth="1.6" strokeLinecap="round"/></>,
+    bookmark:<><path d="M6 3.5h8a1 1 0 011 1V17l-5-3.2L5 17V4.5a1 1 0 011-1z" stroke={col} strokeWidth="1.6" fill="none" strokeLinejoin="round"/></>,
+    edit:<><path d="M13.5 3.5l3 3L7 16H4v-3l9.5-9.5z" stroke={col} strokeWidth="1.6" fill="none" strokeLinejoin="round"/></>,
+    sort:<><path d="M4 6h12M6 10h8M8 14h4" stroke={col} strokeWidth="1.6" strokeLinecap="round"/></>,
     trash:<><path d="M4 6h12" stroke={col} strokeWidth="1.6" strokeLinecap="round"/><path d="M8 6V4.5a1 1 0 011-1h2a1 1 0 011 1V6" stroke={col} strokeWidth="1.6" fill="none"/><path d="M5.5 6l.7 9.5a1.5 1.5 0 001.5 1.4h4.6a1.5 1.5 0 001.5-1.4L14.5 6" stroke={col} strokeWidth="1.6" fill="none" strokeLinejoin="round"/><line x1="8.3" y1="9" x2="8.6" y2="14" stroke={col} strokeWidth="1.3" strokeLinecap="round"/><line x1="11.7" y1="9" x2="11.4" y2="14" stroke={col} strokeWidth="1.3" strokeLinecap="round"/></>,
     wine:<><path d="M7.5 2.5h5v5c0 3.5-1.8 5-2.5 5S7.5 11 7.5 8V2.5z" stroke={col} strokeWidth="1.5" fill="none" strokeLinejoin="round"/><line x1="10" y1="12.5" x2="10" y2="17" stroke={col} strokeWidth="1.5"/><line x1="7" y1="17" x2="13" y2="17" stroke={col} strokeWidth="1.5" strokeLinecap="round"/></>,
     globe:<><circle cx="10" cy="10" r="7.5" stroke={col} strokeWidth="1.5" fill="none"/><ellipse cx="10" cy="10" rx="3.5" ry="7.5" stroke={col} strokeWidth="1.2" fill="none"/><line x1="2.5" y1="10" x2="17.5" y2="10" stroke={col} strokeWidth="1.2"/></>,
@@ -272,29 +276,70 @@ class ScreenErrorBoundary extends React.Component{
 /* ── Wine History ── */
 const WineHistory = {
   KEY: 'vinterest_wines',
-  getAll(){ try{ return JSON.parse(localStorage.getItem(this.KEY)||'[]'); }catch(e){ return []; } },
+  // Grapes are cleaned on the way out, so older scans saved as "Blend - likely Grenache, Syrah, or
+  // Cinsault" read as real varieties everywhere (see WineDNA.cleanGrapes).
+  getAll(){ try{ return JSON.parse(localStorage.getItem(this.KEY)||'[]').map(w=>WineDNA.cleanWine(w)); }catch(e){ return []; } },
   save(wines){ localStorage.setItem(this.KEY, JSON.stringify(wines.slice(0,500))); },
+
+  /* Identity. Claude doesn't always name a bottle the same way twice ("Muga Reserva" vs "Muga
+     Rioja Reserva"), so a rescan matches an existing entry when the vintage agrees, the producers
+     share a word, and neither name has a word the other wine doesn't account for in its own
+     name, producer, region, country or grapes. "Muga Gran Reserva" stays a different wine. */
+  _STOP: new Set(['de','du','des','la','le','les','di','del','della','da','do','the','and','of','y','e','et','wine','vino','vin','wines','doc','docg','aoc','aop','igt','igp','doca','dop']),
+  _tokens(...parts){
+    const out=new Set();
+    parts.flat().filter(Boolean).forEach(p=>String(p).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase()
+      .replace(/[^a-z0-9]+/g,' ').split(' ').forEach(t=>{ if(t&&!this._STOP.has(t)) out.add(t); }));
+    return out;
+  },
+  _vintageKey(v){ return (!v||v===0||String(v).toUpperCase()==='NV')?'nv':String(v); },
+  _t(w){ return (w.type||'').toLowerCase().replace('é','e'); },
+  same(a,b){
+    if(!a||!b) return false;
+    const pa=this._tokens(a.producer), pb=this._tokens(b.producer);
+    if(pa.size&&pb.size&&![...pa].some(t=>pb.has(t))) return false;
+    if(a.name===b.name&&String(a.vintage)===String(b.vintage)) return true;
+    if(this._vintageKey(a.vintage)!==this._vintageKey(b.vintage)) return false;
+    if(this._t(a)&&this._t(b)&&this._t(a)!==this._t(b)) return false;
+    const na=this._tokens(a.name), nb=this._tokens(b.name);
+    if(![...na].some(t=>nb.has(t))) return false;
+    const ctx=w=>this._tokens(w.name,w.producer,w.region,w.sub_region,w.country,w.grapes||[]);
+    const ca=ctx(a), cb=ctx(b);
+    return [...nb].every(t=>ca.has(t))&&[...na].every(t=>cb.has(t));
+  },
+  _index(wines,wine){
+    const i=wines.findIndex(w=>w.name===wine.name&&String(w.vintage)===String(wine.vintage)&&this.same(w,wine));
+    return i>=0?i:wines.findIndex(w=>this.same(w,wine));
+  },
+  /* The saved entry for this wine (exact or a rescan under a slightly different name), or null. */
+  find(wine){ if(!wine||!wine.name) return null; const wines=this.getAll(); const i=this._index(wines,wine); return i>=0?wines[i]:null; },
+
   track(wine){
     // Save a scanned wine immediately, even before rating
     if(!wine||!wine.name) return;
     const wines = this.getAll();
-    const idx = wines.findIndex(w => w.name===wine.name && String(w.vintage)===String(wine.vintage));
+    const idx = this._index(wines,wine);
     const now = new Date().toISOString();
     if(idx>=0){
-      wines[idx].times_consumed = (wines[idx].times_consumed||1) + 1;
+      // times_consumed is how many times they've had the wine, not how many times the camera saw
+      // it: rescanning the same bottle within a few hours (a scan left half-way and done again)
+      // is the same occasion.
+      const last=new Date(wines[idx].last_scanned||wines[idx].scanned_at||0).getTime();
+      if(!(Date.now()-last<this.SAME_OCCASION_MS)) wines[idx].times_consumed = (wines[idx].times_consumed||1) + 1;
       wines[idx].last_scanned = now;
     } else {
       wines.unshift({...wine, rating:0, times_consumed:1, scanned_at:now, last_scanned:now});
     }
     this.save(wines);
   },
+  SAME_OCCASION_MS: 12*3600*1000,
   add(wine, rating){
     const wines = this.getAll();
-    const idx = wines.findIndex(w => w.name===wine.name && String(w.vintage)===String(wine.vintage));
+    const idx = this._index(wines,wine);
     const now = new Date().toISOString();
     if(idx>=0){
-      wines[idx].times_consumed = (wines[idx].times_consumed||1) + 1;
-      wines[idx].last_scanned = now;
+      // Scoring a wine that's already saved (the usual case: it was saved when scanned) is not
+      // another scan, so times_consumed stays put. Only track() counts scans.
       if(rating>0) wines[idx].rating = rating;
     } else {
       wines.unshift({...wine, rating:rating||0, times_consumed:1, scanned_at:now, last_scanned:now});
@@ -307,6 +352,36 @@ const WineHistory = {
     const wines = this.getAll();
     const w = wines.find(w => w.name===name && String(w.vintage)===String(vintage));
     if(w){ w.rating=rating; this.save(wines); if(rating>0){ try{ GrapeUnlocks.unlockViaRating((w.grapes||[])[0]); }catch(e){} } }
+  },
+  /* Merge fields into a saved wine: corrections to a misread label (name, vintage, grapes...),
+     tasting details, a purchase. Returns the updated entry. */
+  update(name, vintage, patch){
+    const wines = this.getAll();
+    const w = wines.find(w => w.name===name && String(w.vintage)===String(vintage));
+    if(!w) return null;
+    Object.assign(w, patch);
+    this.save(wines);
+    return w;
+  },
+  /* What the user noticed when they drank it: tasted[axis] is -1 / 0 / 1 against the label
+     estimate (lighter / as expected / fuller, and so on), price_paid {amount, code}, buy_again. */
+  setTasting(name, vintage, {tasted, price_paid, buy_again}={}){
+    const patch={};
+    if(tasted) patch.tasted=tasted;
+    if(price_paid!==undefined) patch.price_paid=price_paid;
+    if(buy_again!==undefined) patch.buy_again=buy_again;
+    return this.update(name, vintage, patch);
+  },
+  setBought(name, vintage, bought){ return this.update(name, vintage, {bought, bought_answered_at:new Date().toISOString()}); },
+  /* Bottles waiting on the user: ones they've drunk (or bought) but not scored, and shelf checks
+     from a while ago that we should ask about. `now` is injectable for tests. */
+  pending(now=Date.now()){
+    const wines=this.getAll();
+    const age=w=>now-new Date(w.last_scanned||w.scanned_at||0).getTime();
+    return {
+      toScore:wines.filter(w=>!(w.rating>0)&&((w.scan_intent==='tasting'||w.scan_intent==='tasted')||w.bought===true)),
+      toAsk:wines.filter(w=>!(w.rating>0)&&w.scan_intent==='checking'&&w.bought==null&&age(w)>=3*3600*1000),
+    };
   },
   /* Optional, user-entered scan location — manual text only for now (no geolocation/reverse-geocoding yet). */
   setLocation(name, vintage, location){
@@ -324,6 +399,13 @@ const WineHistory = {
     const w = wines.find(w => w.name===name && String(w.vintage)===String(vintage));
     if(w){ w.scan_intent=intent; this.save(wines); }
   },
+  /* Put a removed wine back where it was (My Wines' Undo). */
+  restore(wine, index){
+    if(!wine||this.find(wine)) return;
+    const wines = this.getAll();
+    wines.splice(Math.max(0,Math.min(index==null?0:index,wines.length)),0,wine);
+    this.save(wines);
+  },
   /* Permanently remove a scan (e.g. an accidental scan) from history. */
   remove(name, vintage){
     const wines = this.getAll().filter(w => !(w.name===name && String(w.vintage)===String(vintage)));
@@ -339,73 +421,13 @@ const WineHistory = {
   }
 };
 
-/* ── Taste-match score (WineDNA vs. rating history) ──
-   Compares wine's body/tannins/acidity/sweetness against a RATING-WEIGHTED
-   average for that type from WineHistory — wines you rated higher pull the
-   target profile toward them, ones you rated low pull away. Pure function
-   of (wine, userWines): same inputs always produce the same score, and a
-   type/grape you haven't rated yet returns null (shown as "New for your
-   palate") rather than a padded mid-range number. Returns 15–98, or null. */
+/* ── Taste-match score ──
+   The match percentage for a wine, or null when there's too little scored history to say
+   ("too early to call"). TasteMatch (pwa-match.js) owns the model; this is the number alone. */
 function calcMatchScore(wine,userWines){
-  if(!wine||!userWines) return null;
-  const typeKey=(wine.type||'red').toLowerCase().replace(/é/g,'e');
-  const rated=userWines.filter(w=>(w.type||'red').toLowerCase().replace(/é/g,'e')===typeKey&&w.body!=null&&w.rating!=null&&w.rating>0);
-  if(!rated.length) return null;
-  // rating is out of 100: a 20/100 wine weighs 0.1, a 100/100 wine weighs 1.0 — loved wines shape the profile far more than tolerated ones
-  const wt=w=>Math.max(0.1,w.rating/100);
-  const wAvg=field=>{
-    const ws=rated.filter(w=>w[field]!=null);
-    if(!ws.length) return null;
-    const sw=ws.reduce((s,w)=>s+wt(w),0);
-    return ws.reduce((s,w)=>s+wt(w)*w[field],0)/sw;
-  };
-  const avgB=wAvg('body'),avgT=wAvg('tannins'),avgA=wAvg('acidity'),avgS=wAvg('sweetness');
-  // prox: 1 = perfect match, 0 = ≥0.6 units apart
-  const prox=(wv,uv)=>uv==null?null:Math.max(0,1-Math.abs((wv??0.5)-uv)/0.6);
-  const scores=[
-    [prox(wine.body??0.65,avgB),0.30],
-    [prox(wine.tannins??0.55,avgT),0.25],
-    [prox(wine.acidity??0.60,avgA),0.25],
-    [prox(wine.sweetness??0.10,avgS),0.20],
-  ].filter(([s])=>s!=null);
-  if(!scores.length) return null;
-  const totalW=scores.reduce((s,[,w])=>s+w,0);
-  const raw=scores.reduce((s,[sc,w])=>s+sc*(w/totalW),0);
-  // Scale: 0 raw → 15 %, 1.0 raw → 98 % — a genuine mismatch reads low, not "worth a try"
-  return Math.max(15,Math.min(98,Math.round(15+raw*83)));
+  const m=TasteMatch.assess(wine,userWines||[]);
+  return m?m.pct:null;
 }
-
-/* ── Affinity: signals from cards the user saves in the scan-results deck.
-   Saving a "why you'll like it" / origin / grape card records a small positive
-   lean toward that wine's grapes, region and country, which then nudges the
-   match score everywhere (list + detail agree, since both call calcMatchScore). */
-const WineAffinity={
-  KEY:'vinterest_affinity',
-  get(){ try{ return JSON.parse(localStorage.getItem(this.KEY)||'{}'); }catch(e){ return {}; } },
-  _save(a){ try{ localStorage.setItem(this.KEY,JSON.stringify(a)); }catch(e){} },
-  norm(s){ return (s||'').trim().toLowerCase(); },
-  bump(wine,weight){
-    if(!wine) return;
-    const a=this.get();
-    const add=(bucket,key)=>{ key=this.norm(key); if(!key) return; a[bucket]=a[bucket]||{}; a[bucket][key]=Math.max(-3,Math.min(6,(a[bucket][key]||0)+weight)); };
-    (wine.grapes||[]).forEach(g=>add('grapes',g));
-    add('regions',wine.region);
-    add('countries',wine.country);
-    this._save(a);
-    window.dispatchEvent(new Event('vinterest:affinity'));
-  },
-  scoreFor(wine){
-    if(!wine) return 0;
-    const a=this.get(); let s=0,n=0;
-    const grab=(bucket,key)=>{ key=this.norm(key); if(!key) return; const v=(a[bucket]||{})[key]; if(v!=null){ s+=v; n++; } };
-    (wine.grapes||[]).forEach(g=>grab('grapes',g));
-    grab('regions',wine.region);
-    grab('countries',wine.country);
-    if(!n) return 0;
-    // Each unit of stored lean ≈ 1.2 match points, capped so it stays a nudge.
-    return Math.max(-8,Math.min(10,(s/Math.max(1,n))*1.2 + (s>0?Math.min(3,n*0.4):0)));
-  }
-};
 
 /* ── Regions, currencies, Travel Mode ── */
 const CURRENCY_LIST=[{code:'USD',sym:'$'},{code:'GBP',sym:'£'},{code:'EUR',sym:'€'},{code:'CAD',sym:'CA$'},{code:'AUD',sym:'A$'},{code:'NZD',sym:'NZ$'},{code:'JPY',sym:'¥'},{code:'CNY',sym:'¥'},{code:'CHF',sym:'CHF'},{code:'ZAR',sym:'R'},{code:'SGD',sym:'S$'},{code:'HKD',sym:'HK$'},{code:'MXN',sym:'MX$'},{code:'BRL',sym:'R$'},{code:'INR',sym:'₹'},{code:'AED',sym:'AED'},{code:'SEK',sym:'kr'},{code:'NOK',sym:'kr'},{code:'DKK',sym:'kr'}];
@@ -417,6 +439,39 @@ function lookupCountryCurrency(name){
   return CURRENCY_LIST.find(c=>c.code===code)||null;
 }
 const HOME_REGION_CURRENCY={uk:{sym:'£',code:'GBP',label:'United Kingdom'},us:{sym:'$',code:'USD',label:'United States'},ontario:{sym:'CA$',code:'CAD',label:'Canada'},canada:{sym:'CA$',code:'CAD',label:'Canada'},australia:{sym:'A$',code:'AUD',label:'Australia'},nz:{sym:'NZ$',code:'NZD',label:'New Zealand'},eu:{sym:'€',code:'EUR',label:'Europe'},france:{sym:'€',code:'EUR',label:'France'},germany:{sym:'€',code:'EUR',label:'Germany'},italy:{sym:'€',code:'EUR',label:'Italy'},spain:{sym:'€',code:'EUR',label:'Spain'}};
+/* "Find it online" for any bottle, from anywhere in the app: one query recipe and one way of
+   opening it. The query leads with what a retailer lists (producer once, wine name, vintage),
+   adds "wine" and "buy", and leaves out "near me", which makes Google answer with a map of
+   shops instead of listings for the bottle. Local results come from Google's gl (country)
+   parameter, following the user's region or travel mode. */
+const FindOnline={
+  GL_BY_LABEL:{'united kingdom':'gb','united states':'us','canada':'ca','australia':'au','new zealand':'nz','france':'fr','germany':'de','italy':'it','spain':'es','portugal':'pt','ireland':'ie','japan':'jp','switzerland':'ch','south africa':'za','singapore':'sg','hong kong':'hk','mexico':'mx','brazil':'br','india':'in','united arab emirates':'ae','sweden':'se','norway':'no','denmark':'dk','china':'cn'},
+  GL_BY_CURRENCY:{GBP:'gb',USD:'us',CAD:'ca',AUD:'au',NZD:'nz',JPY:'jp',CHF:'ch',ZAR:'za',SGD:'sg',HKD:'hk',MXN:'mx',BRL:'br',INR:'in',AED:'ae',SEK:'se',NOK:'no',DKK:'dk',CNY:'cn'},
+  country(){ const rc=Regional.current(); return this.GL_BY_LABEL[(rc.label||'').toLowerCase()]||this.GL_BY_CURRENCY[rc.code]||null; },
+  _fold(s){ return (s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase(); },
+  query(wine){
+    const clean=s=>(s||'').replace(/\([^)]*\)/g,' ').replace(/\s+/g,' ').trim();
+    const name=clean(wine.name), producer=clean(wine.producer);
+    const parts=[];
+    if(producer&&!this._fold(name).includes(this._fold(producer))) parts.push(producer);
+    parts.push(name);
+    const vintage=String(wine.vintage||'').match(/\b(19|20)\d{2}\b/);
+    if(vintage&&!name.includes(vintage[0])) parts.push(vintage[0]);
+    if(!/\bwine\b/i.test(parts.join(' '))) parts.push('wine');
+    parts.push('buy');
+    return parts.join(' ');
+  },
+  url(wine){ const gl=this.country(); return 'https://www.google.com/search?q='+encodeURIComponent(this.query(wine))+(gl?'&gl='+gl:''); },
+  // A real link click, not window.open with window features: installed apps hand a plain
+  // target=_blank link to the platform's in-app browser (Safari's sheet with Done on iOS, a
+  // Custom Tab with a close button on Android), whereas a "popup" request can open a bare
+  // window with no way back.
+  open(wine){
+    const a=document.createElement('a');
+    a.href=this.url(wine); a.target='_blank'; a.rel='noopener noreferrer';
+    document.body.appendChild(a); a.click(); a.remove();
+  }
+};
 const Regional={
   TRAVEL_KEY:'vinterest_travel',
   travel(){
@@ -462,7 +517,7 @@ const Regional={
    Wine Detail price tab and the wine-list value/markup badges, so the two
    screens never disagree on what a wine "should" cost. Cached per wine+currency. */
 function retailPriceCacheKey(wine,code){
-  return 'vinterest_price_v2_'+((wine&&wine.name)||'').replace(/\s/g,'_')+'_'+((wine&&wine.vintage)||'nv')+'_'+code;
+  return 'vinterest_price_v3_'+((wine&&wine.name)||'').replace(/\s/g,'_')+'_'+((wine&&wine.vintage)||'nv')+'_'+code;
 }
 function fetchRetailEstimate(wine,curr){
   const cacheKey=retailPriceCacheKey(wine,curr.code);
@@ -473,6 +528,8 @@ function fetchRetailEstimate(wine,curr){
     ' Your task: find the ACTUAL known retail price for this SPECIFIC wine — look up this exact producer and label, do NOT average by appellation.'+
     ' Prestigious named wines (e.g. Guigal single-vineyard La Mouline/La Turque/La Landonne, DRC, Leroy, Screaming Eagle, Petrus, Opus One, cult Burgundy) retail for '+curr.sym+'50–'+curr.sym+'5000+; use the real figure.'+
     ' Wine: '+(wine.name||'')+(wine.vintage?' '+wine.vintage:'')+'.'+
+    (wine.producer?' Producer: '+wine.producer+'.':'')+
+    ' If the name looks misspelled, price the wine it most plausibly is (e.g. "Cevero della Salla" is Antinori\'s Cervaro della Sala).'+
     ' Type: '+(wine.type||'red')+'.'+
     ' Region: '+(wine.region||'')+', '+(wine.country||'')+'.'+
     ' Grapes: '+((wine.grapes||[]).join(', ')||'unknown')+'.'+
@@ -490,4 +547,4 @@ function fetchRetailEstimate(wine,curr){
   });
 }
 
-Object.assign(window,{C,Icon,BottomNav,SideNav,Pill,Prog,Card,Btn,ScreenErrorBoundary,WineHistory,ProBadge,ProGate,calcMatchScore,WineAffinity,Regional,CURRENCY_LIST,lookupCountryCurrency,fetchRetailEstimate,retailPriceCacheKey});
+Object.assign(window,{C,Icon,BottomNav,SideNav,Pill,Prog,Card,Btn,ScreenErrorBoundary,WineHistory,ProBadge,ProGate,calcMatchScore,Regional,FindOnline,CURRENCY_LIST,lookupCountryCurrency,fetchRetailEstimate,retailPriceCacheKey});

@@ -13,28 +13,285 @@ const ExposureLedger = Object.assign(_accountStore('vinterest_exposure_v1'), {
   mark(key){ const d=this.get(); d.keys[key]=Date.now(); this.save(d); }
 });
 
-/* Tracks which region quizzes a user has aced (100%) so QuizHubScreen can retire them and
-   surface the next newly-eligible region instead of re-serving an already-mastered one. */
+/* Legacy: regions aced under the old rule (one perfect quiz retired the region). Still honoured
+   so nobody loses a region they'd already retired; progress now lives in QuizMastery
+   (pwa-quiz-questions.js), and resetting a region clears both. */
 const RegionQuizLedger = Object.assign(_accountStore('vinterest_region_quiz_v1'), {
   fresh(){ return {aced:{}}; },
   isAced(region){ return !!this.get().aced[region]; },
-  markAced(region){ const d=this.get(); d.aced[region]=Date.now(); this.save(d); }
+  clear(region){ const d=this.get(); if(d.aced[region]){ delete d.aced[region]; this.save(d); } }
 });
 
-/* Regions with 2+ scans that haven't been aced yet — most-scanned first. A region drops off
-   this list the moment its quiz is aced, and a newly-scanned region (e.g. a first Bordeaux)
-   slots in on its own once it crosses the 2-scan threshold. Requires a data/knowledge.json
-   entry — without one, assembleRegionQuiz has no facts to quiz on beyond a single
-   wine-history question, so a region the KB doesn't cover is left off rather than
-   surfacing a near-empty quiz. */
-function regionQuizCandidates(wines){
+function _ceShuffle(arr){ const a=[...arr]; for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+
+/* Per-region question bank: 15 questions (5 easy/5 medium/5 hard) generated once from the
+   region's data/knowledge.json facts and cached forever, same approach as the grape quizzes.
+   The cache is shared across accounts (it's reference content); each account's progress
+   through it lives in QuizMastery under 'region:<name>'. */
+const RegionQuizBank = {
+  _inFlight:new Set(),
+  key(region){ return 'vinterest_region_quiz_bank_'+region.replace(/\s+/g,'_'); },
+  get(region){
+    try{ const qs=JSON.parse(localStorage.getItem(this.key(region))||'null'); return Array.isArray(qs)&&qs.length>=QUIZ_SIZE?qs:null; }catch(e){ return null; }
+  },
+  // A question is kept only if it's well-formed; a bank with too few survivors isn't cached,
+  // so the next tap retries generation rather than locking in a short bank.
+  _valid(q){ return q&&typeof q.q==='string'&&Array.isArray(q.opts)&&q.opts.length===4&&Number.isInteger(q.a)&&q.a>=0&&q.a<4; },
+  load(region,onReady){
+    const cached=this.get(region);
+    if(cached){ onReady(cached); return; }
+    if(this._inFlight.has(region)){
+      const wait=()=>{ if(this._inFlight.has(region)) setTimeout(wait,300); else onReady(this.get(region)); };
+      wait();
+      return;
+    }
+    const info=KNOWLEDGE.regions[region];
+    if(!info){ onReady(null); return; }
+    this._inFlight.add(region);
+    const facts=`${region} (${info.country}). Classification: ${info.classification}. Key grapes: ${(info.keyGrapes||[]).join(', ')}. Climate: ${info.climate}. Aging rules: ${info.agingRules||'none specific'}. Classic producers: ${(info.classicProducers||[]).join(', ')}.`;
+    const prompt=ContentEngine.fillTpl(_loadTextSync('prompts/region-quiz.txt'),{region,facts});
+    window.claude.complete({purpose:'region_quiz',max_tokens:4096,messages:[{role:'user',content:prompt}]})
+      .then(text=>{
+        let cleaned=text.replace(/```json|```/g,'').trim();
+        const s=cleaned.indexOf('['); const e=cleaned.lastIndexOf(']');
+        if(s>=0&&e>s) cleaned=cleaned.slice(s,e+1);
+        const seen=new Set();
+        const qs=JSON.parse(cleaned).filter(q=>this._valid(q)&&!seen.has(q.q)&&seen.add(q.q));
+        if(qs.length>=QUIZ_SIZE) localStorage.setItem(this.key(region),JSON.stringify(qs));
+      })
+      .catch(()=>{})
+      .finally(()=>{ this._inFlight.delete(region); onReady(this.get(region)); });
+  },
+  prefetch(region){ if(!this.get(region)) this.load(region,()=>{}); },
+  /* Every question a region quiz can draw from: the generated bank, or — with no bank yet
+     (offline, or generation failed) — the ~6 fixed questions built from the region's
+     knowledge-base facts plus one about the user's own bottles. Completion is judged against
+     whichever pool is current. */
+  pool(region){
+    return this.get(region)||this._fallbackPool(region);
+  },
+  _fallbackPool(region){
+    const info=KNOWLEDGE.regions[region];
+    const wines=WineHistory.getAll();
+    const regionWines=wines.filter(w=>w.region===region);
+    const otherWines=_ceShuffle(wines.filter(w=>w.region&&w.region!==region)).slice(0,3);
+    const otherRegionIds=Object.keys(KNOWLEDGE.regions).filter(r=>r!==region);
+    const qs=[];
+    const add=(q,correct,distractors,fact)=>{
+      const opts=_ceShuffle([correct,...distractors]);
+      qs.push({q,opts,a:opts.indexOf(correct),fact});
+    };
+    if(info){
+      const distractClass=[...new Set(otherRegionIds.map(r=>KNOWLEDGE.regions[r].classification).filter(c=>c&&c!==info.classification))];
+      if(distractClass.length>=2) add(`What classification does ${region} wine fall under?`,info.classification,_ceShuffle(distractClass).slice(0,3),`${region} (${info.country}): ${info.classification}.`);
+      if(info.keyGrapes&&info.keyGrapes[0]){
+        const distractGrapes=[...new Set(otherRegionIds.flatMap(r=>KNOWLEDGE.regions[r].keyGrapes||[]).filter(g=>g&&!info.keyGrapes.includes(g)))];
+        if(distractGrapes.length>=2) add(`Which grape is the backbone of ${region}?`,info.keyGrapes[0],_ceShuffle(distractGrapes).slice(0,3),`${region}'s key grape(s): ${info.keyGrapes.join(', ')}.`);
+      }
+      if(info.climate){
+        const distractClimate=_ceShuffle(otherRegionIds.map(r=>KNOWLEDGE.regions[r].climate).filter(Boolean)).slice(0,3);
+        if(distractClimate.length>=2) add(`Which climate description matches ${region}?`,info.climate,distractClimate,`${region}: ${info.climate}.`);
+      }
+      if(info.agingRules){
+        const distractAging=_ceShuffle(otherRegionIds.map(r=>KNOWLEDGE.regions[r].agingRules).filter(Boolean)).slice(0,3);
+        if(distractAging.length>=2) add(`Which aging rule applies to ${region}?`,info.agingRules,distractAging,`${region}: ${info.agingRules}.`);
+      }
+      if(info.classicProducers&&info.classicProducers[0]){
+        const distractProducers=[...new Set(otherRegionIds.flatMap(r=>KNOWLEDGE.regions[r].classicProducers||[]).filter(p=>p&&!info.classicProducers.includes(p)))];
+        if(distractProducers.length>=2) add(`Which producer is a classic name in ${region}?`,info.classicProducers[0],_ceShuffle(distractProducers).slice(0,3),`Classic ${region} producers include ${info.classicProducers.join(', ')}.`);
+      }
+    }
+    if(regionWines.length&&otherWines.length>=3){
+      const target=_ceShuffle(regionWines)[0];
+      add(`Which of these bottles in your wine history is from ${region}?`,target.name,otherWines.map(w=>w.name),`${target.name} is the ${region} bottle in your history.`);
+    }
+    return qs;
+  },
+  setId(region){ return 'region:'+region; },
+  isComplete(region){ return RegionQuizLedger.isAced(region)||QuizMastery.isComplete(this.setId(region),this.pool(region)); },
+  progress(region){ return QuizMastery.progress(this.setId(region),this.pool(region)); },
+  reset(region){ QuizMastery.reset(this.setId(region)); RegionQuizLedger.clear(region); }
+};
+
+/* Regions with 2+ scans, most-scanned first, split into ones still being worked through and
+   ones completed (every question answered correctly at least once). A newly-scanned region
+   (e.g. a first Bordeaux) slots in once it crosses the 2-scan threshold. Requires a
+   data/knowledge.json entry — without one there are no facts to ground a quiz in. */
+function _regionsWithScans(wines){
   const counts={};
   wines.forEach(w=>{ if(w.region) counts[w.region]=(counts[w.region]||0)+1; });
   return Object.entries(counts)
-    .filter(([region,n])=>n>=2&&KNOWLEDGE.regions[region]&&!RegionQuizLedger.isAced(region))
+    .filter(([region,n])=>n>=2&&KNOWLEDGE.regions[region])
     .sort((a,b)=>b[1]-a[1])
     .map(([region])=>region);
 }
+function regionQuizCandidates(wines){ return _regionsWithScans(wines).filter(r=>!RegionQuizBank.isComplete(r)); }
+function completedRegionQuizzes(wines){ return _regionsWithScans(wines).filter(r=>RegionQuizBank.isComplete(r)); }
+
+/* USD → local currency, the one table every screen uses to show prices (WineDNA's average price,
+   the sommelier script budget). Scan prices are stored as price_usd. */
+const USD_FX={GBP:0.79,CAD:1.36,AUD:1.53,NZD:1.64,EUR:0.92,USD:1.0,JPY:150,CNY:7.2,CHF:0.88,ZAR:18.5,SGD:1.34,HKD:7.8,MXN:18,BRL:5.4,INR:83,AED:3.67,SEK:10.4,NOK:10.6,DKK:6.9};
+
+/* The sommelier script for one wine type ("I tend to go for… around £20–£35 GBP"), shared by
+   Home, WineDNA and the profile screen so they always show the same text. One cache per
+   type/wine count/currency; the long script is the source of truth and the short one is
+   condensed from it. The budget is computed from the prices of the scanned wines, not left to
+   the model, so it's grounded and identical everywhere. */
+const SommelierScript = {
+  _inFlight:{},
+  key(length,typeKey,n,code){ return `vinterest_script_${length}_${typeKey}_n${n}_${code}_v4`; },
+  // Middle half of the scanned prices in local currency, rounded outward to friendly steps.
+  // null with fewer than two priced wines: one bottle is no basis for a "typical" range.
+  budget(wines,rc){
+    const fx=USD_FX[rc.code]||1;
+    const ps=wines.map(w=>w.price_usd).filter(p=>typeof p==='number'&&p>0).map(p=>p*fx).sort((a,b)=>a-b);
+    // Too few priced wines of their own: fall back to the usual spend they gave at onboarding.
+    if(ps.length<2){ const b=UserPrefs.budget(rc); return !b?null:b.max==null?`${rc.base}${b.min} and up ${rc.code}`:b.min===0?`under ${rc.base}${b.max} ${rc.code}`:`${rc.base}${b.min}–${rc.base}${b.max} ${rc.code}`; }
+    const at=q=>ps[Math.min(ps.length-1,Math.max(0,Math.round(q*(ps.length-1))))];
+    const step=v=>v<50?5:v<200?10:50;
+    const lo=Math.max(step(at(0.25)),Math.floor(at(0.25)/step(at(0.25)))*step(at(0.25)));
+    let hi=Math.ceil(at(0.75)/step(at(0.75)))*step(at(0.75));
+    if(hi<=lo) hi=lo+step(lo);
+    return `${rc.base}${lo}–${rc.base}${hi} ${rc.code}`;
+  },
+  cached(length,typeKey,wines){ return localStorage.getItem(this.key(length,typeKey,wines.length,Regional.current().code)); },
+  // Calls onReady(text) once the script exists (immediately if cached), or onReady(null) on failure.
+  get(length,typeKey,label,wines,onReady){
+    const rc=Regional.current();
+    const kLong=this.key('long',typeKey,wines.length,rc.code), kShort=this.key('short',typeKey,wines.length,rc.code);
+    const want=length==='short'?kShort:kLong;
+    const hit=localStorage.getItem(want);
+    if(hit){ onReady(hit); return; }
+    if(this._inFlight[want]){ this._inFlight[want].push(onReady); return; }
+    const waiters=this._inFlight[want]=[onReady];
+    const done=text=>{ delete this._inFlight[want]; waiters.forEach(f=>f(text)); };
+    const ask=prompt=>window.claude.complete({purpose:'sommelier_script',messages:[{role:'user',content:prompt}]}).then(t=>{ t=(t||'').trim(); if(!t) throw new Error('empty script'); return t; });
+    const makeLong=()=>{
+      const cachedLong=localStorage.getItem(kLong);
+      if(cachedLong) return Promise.resolve(cachedLong);
+      const wineList=wines.slice(0,8).map(w=>`${w.name}${w.vintage?' '+w.vintage:''} from ${w.region||w.country||'unknown'}${w.rating?' (rated '+w.rating+'/100)':''}`).join('; ');
+      const budget=this.budget(wines,rc);
+      const budgetInst=budget
+        ?`Include my typical budget, written exactly as "${budget}" — do not change the numbers, symbol or currency code.`
+        :'Do not mention a budget or price.';
+      return ask(`I've scanned these ${label.toLowerCase()} wines: ${wineList}. Based ONLY on the wines I've chosen and their regions, write a 2 sentences max natural first-person sommelier script I could say to a restaurant sommelier. Reflect my apparent style and preferred regions. ${budgetInst} Return ONLY the script text in double quotes — nothing else.`)
+        .then(t=>{ localStorage.setItem(kLong,t); return t; });
+    };
+    makeLong()
+      .then(longText=>{
+        if(length!=='short') return longText;
+        return ask(`Condense this sommelier script into ONE ultra-concise sentence (under 20 words), keeping the SAME style, regions and budget — copy any budget range exactly as written, never change or invent one. Script: ${longText} Return ONLY the condensed script text in double quotes — nothing else.`)
+          .then(t=>{ localStorage.setItem(kShort,t); return t; });
+      })
+      .then(done)
+      .catch(()=>done(null));
+  }
+};
+
+let EXPLORE_STYLES=[];
+try{ EXPLORE_STYLES=_loadJSON('data/explore-styles.json')||[]; }catch(e){ console.error('[Vinterest] explore-styles.json failed to load — Explore Next will be empty until it is deployed.',e); }
+
+/* Explore Next (WineDNA): which styles to try next for one wine type, and the teaching content for
+   each. Styles come from data/explore-styles.json, a curated catalogue with a taste profile on the
+   same 0–1 scale as scanned wines, the grapes/regions each one builds on, and what it tastes like,
+   why, how to spot it and what to ask for.
+
+   Ranking: closeness of the style's profile to the user's averages for that type, a bonus when it
+   builds on a grape or region they already rate highly, a penalty when it leans on one they rate
+   low, and a spread across countries. A style the user has already scanned isn't suggested again;
+   it's returned as "explored" with their rating, so trying a suggestion visibly closes the loop. */
+const ExploreNext = {
+  AXES:{body:['full body','light body','medium body'],tannins:['firm tannins','soft tannins','medium tannins'],
+        acidity:['fresh, high acidity','softer acidity','balanced acidity'],sweetness:['sweetness','a dry style','a touch of sweetness']},
+  _t(v){ return (v||'').toLowerCase().replace('é','e'); },
+  _typeWines(typeKey,wines){ return wines.filter(w=>this._t(w.type)===typeKey); },
+  _hay(w){ return [w.name,w.region,w.sub_region,...(w.grapes||[])].filter(Boolean).join(' | ').toLowerCase(); },
+  // Whole-word matches against the wine's name, region and grapes, so 'kent' doesn't match
+  // 'Kentucky'. Match terms are places/appellations, or the grape only where the grape is the style.
+  matches(style,w){
+    const h=this._hay(w);
+    return (style.match||[]).some(m=>{ const i=h.indexOf(m); if(i<0) return false;
+      const edge=c=>!c||!/[a-z0-9\u00c0-\u024f]/.test(c);
+      for(let k=i;k>=0;k=h.indexOf(m,k+1)) if(edge(h[k-1])&&edge(h[k+m.length])) return true;
+      return false; });
+  },
+  // The user's DNA for one type, from WineDNA so Explore Next reads the same profile, grape
+  // names and scale as the rest of the tab: their 90+ wines once they have 3, else everything
+  // they chose; wines scored under 80 mark the grapes/regions to steer away from.
+  dna(typeKey,wines){
+    const p=WineDNA.profile(typeKey,wines,typeKey);
+    const lc=a=>a.map(x=>x.toLowerCase());
+    const lovedSet=k=>new Set(p.loved.flatMap(k).map(x=>x.toLowerCase()));
+    const lowOf=(pluck)=>{ const keep=lovedSet(pluck); return new Set(p.disliked.flatMap(pluck).map(x=>x.toLowerCase()).filter(x=>!keep.has(x))); };
+    const grapes=w=>(w.grapes||[]).map(g=>WineDNA.grape(g)).filter(Boolean), region=w=>w.region?[w.region]:[];
+    const avg={}; Object.keys(this.AXES).forEach(k=>{ const v=p.dnaAvg[k]!=null?p.dnaAvg[k]:p.avg[k]; if(v!=null) avg[k]=v; });
+    return {wines:p.wines,avg,topGrapes:lc(p.topGrapes),topRegions:lc(p.topRegions),lowGrapes:lowOf(grapes),lowRegions:lowOf(region)};
+  },
+  _level(v){ return {high:0,low:1,mid:2}[WineDNA.level(v)]; },
+  _cap(s){ return s.replace(/\b\w/g,c=>c.toUpperCase()); },
+  // How one style relates to the user: score, the trait it shares, what it builds on, and a
+  // plain-English reason naming only the user's own wines, grapes and regions.
+  assess(style,dna,label){
+    const axes=Object.keys(style.profile).filter(k=>dna.avg[k]!=null);
+    const diffs=axes.map(k=>({k,d:Math.abs(style.profile[k]-dna.avg[k]),u:dna.avg[k]}));
+    const sim=diffs.length?1-diffs.reduce((s,x)=>s+x.d,0)/diffs.length:0.5;
+    const notable=diffs.filter(x=>this._level(x.u)!==2);
+    const sharedAxis=(notable.length?notable:diffs).sort((a,b)=>a.d-b.d)[0];
+    const shares=sharedAxis?this.AXES[sharedAxis.k][this._level(sharedAxis.u)]:null;
+    // The user's best-rated bottle that actually shows the shared trait, as a concrete example.
+    const ex=sharedAxis&&[...dna.wines].filter(w=>w.rating>0&&typeof w[sharedAxis.k]==='number'&&this._level(w[sharedAxis.k])===this._level(sharedAxis.u)).sort((a,b)=>b.rating-a.rating)[0];
+    const has=(list,val)=>list.some(x=>x.includes(val)||val.includes(x));
+    const bridge=(style.bridge.grapes||[]).find(g=>has(dna.topGrapes,g))||(style.bridge.regions||[]).find(r=>has(dna.topRegions,r))||null;
+    const low=style.grapes.some(g=>dna.lowGrapes.has(g.toLowerCase()))||(style.match||[]).some(m=>[...dna.lowRegions].some(r=>r.includes(m)));
+    const score=sim+(bridge?0.12:0)-(low?0.3:0);
+    const lbl=label.toLowerCase();
+    const why=[
+      shares
+        ?`${style.name} has the ${shares.replace(/^(a |an )/,'')} you go for in your ${lbl}${ex?` (think ${ex.name}, which you scored ${ex.rating})`:''}, and brings ${style.adds}.`
+        :`${style.name} brings ${style.adds}, a new corner of ${lbl} for your map.`,
+      bridge?`A natural next step if you enjoy ${this._cap(bridge)}.`:''
+    ].filter(Boolean).join(' ');
+    return {style,score,shares,bridge:bridge&&this._cap(bridge),why};
+  },
+  // {picks:[assessments], explored:[{style,wine}]} for one type.
+  suggest(typeKey,wines,label,n=3){
+    const dna=this.dna(typeKey,wines);
+    const styles=EXPLORE_STYLES.filter(s=>s.type===typeKey);
+    const explored=[], open=[];
+    styles.forEach(s=>{
+      const tried=dna.wines.filter(w=>this.matches(s,w)).sort((a,b)=>(b.rating||0)-(a.rating||0))[0];
+      if(tried) explored.push({style:s,wine:tried}); else open.push(this.assess(s,dna,label));
+    });
+    open.sort((a,b)=>b.score-a.score);
+    const picks=[], countries=new Set();
+    open.forEach(a=>{ if(picks.length<n&&!countries.has(a.style.country)){ picks.push(a); countries.add(a.style.country); } });
+    open.forEach(a=>{ if(picks.length<n&&!picks.includes(a)) picks.push(a); });
+    return {picks,explored};
+  },
+  style(id){ return EXPLORE_STYLES.find(s=>s.id===id)||null; },
+  forStyle(id,wines,label){ const s=this.style(id); return s?this.assess(s,this.dna(s.type,wines),label||s.type):null; },
+  // "Add to Learn": a real article on the Learn shelf, written from the style's curated facts,
+  // the same way unlocking a grape adds one.
+  inLearn(id){ return ExposureLedger.has('explore:'+id); },
+  addToLearn(id){
+    const style=this.style(id);
+    const archetype=ARTICLE_ARCHETYPES.find(a=>a.id==='explore_style_intro');
+    if(!style||!archetype||this.inLearn(id)) return false;
+    const slots={style:style.name,region:null};
+    const L=style.learn;
+    const stub={
+      id:'ev_explore_'+id, archetypeId:archetype.id, iconName:archetype.iconName, readTime:archetype.readTime,
+      title:ContentEngine.fillTpl(archetype.titleTpl,slots), subtitle:ContentEngine.fillTpl(archetype.subtitleTpl,slots),
+      brief:archetype.brief, slots,
+      facts:`${style.name} — ${style.region}, ${style.country}. Grapes: ${style.grapes.join(', ')}. Taste: ${L.taste} Why it tastes that way: ${L.why} On the label: ${L.label}`
+    };
+    let stubs=[]; try{ stubs=JSON.parse(localStorage.getItem('vinterest_gen_stubs')||'[]')||[]; }catch(e){}
+    stubs.push(stub);
+    localStorage.setItem('vinterest_gen_stubs',JSON.stringify(stubs));
+    ExposureLedger.mark('explore:'+id);
+    return true;
+  }
+};
 
 const ContentEngine = {
   TRAIT_BASELINE:{body:0.5,tannins:0.5,acidity:0.5,sweetness:0.15},
@@ -197,6 +454,31 @@ const ContentEngine = {
     ExposureLedger.mark(key);
   },
 
+  /* Region pieces come in series (every new region gets a "First taste", every region with enough
+     scans a "vs. the textbook"), so the title carries the series and the subtitle says something
+     about this region in particular: its grapes and climate or rules from the knowledge base,
+     otherwise what the user has actually picked from there. Never leaves a {{placeholder}}. */
+  subtitleFor(archetype, slots, wines){
+    const region=slots.region, K=region&&KNOWLEDGE.regions[region];
+    const list=a=>a.length>1?a.slice(0,-1).join(', ')+' and '+a[a.length-1]:a[0];
+    const mine=(wines||[]).filter(w=>w.region===region);
+    const grapeCounts={}; mine.forEach(w=>(w.grapes||[]).slice(0,1).forEach(g=>{ const k=WineDNA.grape(g); if(k) grapeCounts[k]=(grapeCounts[k]||0)+1; }));
+    const myGrape=Object.entries(grapeCounts).sort((a,b)=>b[1]-a[1])[0];
+    const lower=t=>t?t.charAt(0).toLowerCase()+t.slice(1):t;
+    if(archetype.id==='new_region_intro'&&region){
+      if(K) return `Home of ${list(K.keyGrapes)}, with a ${lower(K.climate)} climate`;
+      if(myGrape) return `Where your ${myGrape[0]} came from, and what the place gives the wine`;
+    }
+    if(archetype.id==='palate_vs_textbook'&&region){
+      const yours=mine.length===1?'does the bottle you picked':mine.length?`do the ${mine.length} bottles you picked`:'do your picks';
+      if(K) return `Textbook ${region} is ${list(K.keyGrapes)}. How ${yours} compare?`;
+      if(myGrape) return `You've picked ${mine.length} from here, mostly ${myGrape[0]}. How classic ${mine.length===1?'is it':'are they'}?`;
+    }
+    if(archetype.id==='region_rules'&&K) return `${K.classification}: what the words on a ${region} label promise`;
+    const out=this.fillTpl(archetype.subtitleTpl,slots);
+    return /\{\{/.test(out)?out.replace(/[,:—-]?\s*[^,:—-]*\{\{[^}]*\}\}[^,:—-]*/g,'').trim():out;
+  },
+
   buildStub(archetype, ev, wines){
     const slots=this.buildSlots(ev,wines);
     return {
@@ -204,8 +486,9 @@ const ContentEngine = {
       archetypeId:archetype.id,
       iconName:archetype.iconName,
       readTime:archetype.readTime,
+      series:archetype.series||null,
       title:this.fillTpl(archetype.titleTpl,slots),
-      subtitle:this.fillTpl(archetype.subtitleTpl,slots),
+      subtitle:this.subtitleFor(archetype,slots,wines),
       brief:archetype.brief,
       slots,
       facts:this.retrieveFacts(archetype,slots)
@@ -230,11 +513,23 @@ const ContentEngine = {
           stub.slots.country=match?match.country:KNOWLEDGE.regions[stub.slots.region]?.country;
         }
       });
+      if(archetype.id==='explore_style_intro') return;
       const title=this.fillTpl(archetype.titleTpl,stub.slots);
-      const subtitle=this.fillTpl(archetype.subtitleTpl,stub.slots);
-      if(title!==stub.title||subtitle!==stub.subtitle){ stub.title=title; stub.subtitle=subtitle; changed=true; }
+      const subtitle=this.subtitleFor(archetype,stub.slots,wines);
+      const series=archetype.series||null;
+      if(title!==stub.title||subtitle!==stub.subtitle||series!==(stub.series||null)){ stub.title=title; stub.subtitle=subtitle; stub.series=series; changed=true; }
     });
     return changed;
+  },
+
+  /* The saved shelf, healed (templates and subtitles as they are now) every time it's read, not
+     only when new articles are added: otherwise old cards keep a leaked {{country}}. */
+  shelf(wines){
+    let stubs=null;
+    try{ stubs=JSON.parse(localStorage.getItem('vinterest_gen_stubs')||'null'); }catch(e){}
+    if(!Array.isArray(stubs)) return stubs;
+    if(this._healStubs(stubs,wines||WineHistory.getAll())) localStorage.setItem('vinterest_gen_stubs',JSON.stringify(stubs));
+    return stubs;
   },
 
   refreshShelf(wines, maxUnread){

@@ -20,40 +20,45 @@ function _agingFactFor(w){
   const hit=_AGING_FACTS.find(f=>f.test.test(hay));
   return hit?hit.fact:null;
 }
-function useScanContent(wine,matchPct,dna){
+function useScanContent(wine,match){
   const [gen,setGen]=React.useState(null);
   const [loading,setLoading]=React.useState(false);
+  const verdict=match?match.verdict:'x';
   React.useEffect(()=>{
     if(!wine||!wine.name) return;
-    const key='vinterest_scancards_v5_'+(wine.name||'').replace(/\s/g,'_')+'_'+(wine.vintage||'nv')+'_'+(matchPct??'x');
+    const key='vinterest_scancards_v6_'+(wine.name||'').replace(/\s/g,'_')+'_'+(wine.vintage||'nv')+'_'+verdict;
     const cached=localStorage.getItem(key);
     if(cached){ try{ setGen(JSON.parse(cached)); return; }catch(e){} }
     if(!window.claude||!window.claude.complete) return;
     setLoading(true);
     const w=wine;
-    const dnaLine=dna?`My WineDNA for ${(w.type||'red')}s, from ${dna.count} rated wine(s): top grape ${dna.topGrape||'none yet'}, top region ${dna.topRegion||'none yet'}, average rating I give this type is ${dna.avgRating}/100.`:`I have no rating history for ${(w.type||'red')}s yet.`;
-    const matchLine=matchPct!=null?`Their computed match score for this exact bottle is ${matchPct}/100.`:'No match score is available yet.';
+    // The cards may only restate what TasteMatch computed from the user's own scores.
+    const matchFacts=match?[
+      `Match verdict for this user: "${match.label}".`,
+      match.style?`Style from the label estimate: ${match.style}.`:'',
+      ...match.reasons.map(r=>`Fact about their history: ${r.text}`),
+    ].filter(Boolean).join(' '):'No rating history yet.';
     const agingFact=_agingFactFor(w);
-    const agingLine=agingFact?`REFERENCE AGING FACTS (use verbatim, do not alter the numbers): ${agingFact}`:'REFERENCE AGING FACTS: none available for this wine\u2019s classification \u2014 do not state specific aging durations you are not certain of.';
+    const agingLine=agingFact?`REFERENCE AGING FACTS (use verbatim, do not alter the numbers): ${agingFact}`:'REFERENCE AGING FACTS: none available for this wine’s classification — do not state specific aging durations you are not certain of.';
     const prompt=
-      'You are a warm, knowledgeable sommelier writing quick-hit cards for a wine app. '+
+      'You are a warm, knowledgeable sommelier writing quick-hit cards for a wine app that teaches people about wine and helps them buy well. '+
       'Wine: '+(w.name||'')+(w.vintage&&w.vintage!=='NV'&&w.vintage!==0?' '+w.vintage:'')+'. '+
       'Type: '+(w.type||'red')+'. Region: '+(w.region||'')+((w.sub_region)?' ('+w.sub_region+')':'')+', '+(w.country||'')+'. '+
       'Producer: '+(w.producer||'unknown')+'. '+
-      'Grapes: '+((w.grapes||[]).join(', ')||'unknown')+'. '+
+      'Grapes: '+(WineDNA.grapeLine(w)||'unknown')+(w.grapes_basis==='typical'?' (not stated on the label: what this wine usually contains)':'')+'. '+
+      (w.blend||(w.grapes||[]).length>1?'This is a blend: call it a blend led by its main grape, never a single-grape wine. ':'')+
       'Tasting notes: '+((w.tasting_notes||[]).join(', ')||'n/a')+'. '+
-      dnaLine+' '+matchLine+' '+agingLine+' '+
+      matchFacts+' '+agingLine+' '+
       'Return ONLY valid JSON, no markdown, all sentences concrete and specific to THIS wine (no generic filler), and NO numbers/percentages/decimals anywhere EXCEPT when referencing a specific year/vintage — years must always be written as numerals (e.g. "2010", never "twenty ten"): '+
       '{'+
       '"fact":"one genuinely surprising, memorable fact about this wine, its producer, grape, or region (max 28 words)",'+
-      '"fit":"one vivid sentence on the FLAVOR/STYLE reasons this suits their palate — texture, body, fruit, oak, tannin, acidity. If my WineDNA above has a top grape or region, explicitly tie this wine to it by name (e.g. building on my known love of that grape/region) — never invent a grape or region I do not have in my profile (max 26 words)",'+
-      '"caution":"one specific, practical thing worth knowing before or while drinking THIS bottle — e.g. decanting, serving temperature, food pairing risk, or how it will develop with age. Do NOT use hedging phrases like \\"if you prefer\\" or \\"if you like\\" — you already know their taste profile from the data above, so speak to them directly and confidently. If the match score is high, this should read as a helpful tip for someone who will enjoy the wine, never as a warning that it might not suit them (max 24 words)",'+
+      '"fit":"one vivid sentence about this wine\'s style for this drinker, consistent with the match verdict above: for a likely favourite or good bet, why it suits them; for could go either way, what might win them over; for probably not for you, how it differs from what they usually love and when it could still be worth trying. Honest, never oversold. Only name grapes, regions or wines that appear in the facts above (max 28 words)",'+
+      '"caution":"one specific, practical thing worth knowing before or while drinking THIS bottle — e.g. decanting, serving temperature, food pairing, or how it will develop with age. Speak directly, no hedging like \\"if you prefer\\" (max 24 words)",'+
       '"origin":"one sentence painting the place this comes from — landscape, climate or culture (max 26 words)",'+
       '"region_style":"one sentence on what makes wines from here distinctive (max 24 words)",'+
       '"estate":"one sentence on the producer/winemaker and the estate\'s history or reputation — if producer is unknown, describe the typical winemaking approach in this region instead (max 26 words)",'+
       '"talk":["three SHORT quotable phrases (each max 12 words) a drinker could say out loud to sound clued-in about this exact wine"],'+
-      '"fact2":"one specific, memorable aging/classification/production fact that helps this bottle make sense. If REFERENCE AGING FACTS are given below, you MUST use those exact figures verbatim (paraphrase the wording only, never change the numbers) — do not invent different aging periods. If no reference facts are given for this wine\'s classification, give a general production fact that does NOT state specific aging durations you are not certain of (max 22 words)",'+
-      '"matchNote":"one sentence giving an honest confidence verdict on THIS PAIRING, grounded in the WineDNA facts above — if I have a top grape/region for this type, name it explicitly and say whether this bottle aligns with or departs from it; never invent a grape/region I do not have (max 24 words). Never mention flavor, texture, tannin, oak, or acidity — that is covered elsewhere."'+
+      '"fact2":"one specific, memorable aging/classification/production fact that helps this bottle make sense. If REFERENCE AGING FACTS are given, you MUST use those exact figures verbatim (paraphrase the wording only, never change the numbers). If none are given, give a general production fact that does NOT state specific aging durations you are not certain of (max 22 words)"'+
       '}';
     window.claude.complete({purpose:'scancard',messages:[{role:'user',content:prompt}]})
       .then(text=>{
@@ -66,7 +71,7 @@ function useScanContent(wine,matchPct,dna){
       })
       .catch(()=>{})
       .finally(()=>setLoading(false));
-  },[wine&&wine.name,wine&&wine.vintage,matchPct,dna&&dna.topGrape,dna&&dna.topRegion]);
+  },[wine&&wine.name,wine&&wine.vintage,verdict]);
   return {gen,loading};
 }
 
@@ -80,23 +85,44 @@ function _wineTitle(w){
   if(!vy||name.endsWith(vy)) return name;
   return `${name} ${vy}`;
 }
-/* Rating-weighted top grape/region for this wine's type, straight from rating history — used to ground
-   personalization on the scan cards so it can never contradict what WineDNA actually shows. */
-function _dnaSnapshot(type){
-  const rated=WineHistory.getAll().filter(w=>w.rating>0&&(w.type||'red').toLowerCase().replace('é','e')===type);
-  if(!rated.length) return null;
-  const gCount={},rCount={};
-  rated.forEach(w=>{const wt=Math.max(w.rating||55,5);(w.grapes||[]).forEach(g=>{if(g)gCount[g]=(gCount[g]||0)+wt;});if(w.region)rCount[w.region]=(rCount[w.region]||0)+wt;});
-  const topGrape=Object.entries(gCount).sort((a,b)=>b[1]-a[1])[0]?.[0]||null;
-  const topRegion=Object.entries(rCount).sort((a,b)=>b[1]-a[1])[0]?.[0]||null;
-  const avgRating=Math.round(rated.reduce((s,w)=>s+w.rating,0)/rated.length);
-  return {topGrape,topRegion,count:rated.length,avgRating};
-}
 function ScanShimmer({col}){
   return <span style={{display:'inline-flex',alignItems:'center',gap:7}}>
     <span style={{width:11,height:11,borderRadius:6,border:`2px solid ${col}33`,borderTopColor:col,animation:'scSpin .8s linear infinite'}}/>
     <span style={{fontSize:14,color:col,fontFamily:C.P,fontStyle:'italic',opacity:.8}}>Pouring the details…</span>
   </span>;
+}
+const _TONE_COL={good:C.green,neutral:C.amber,bad:'#B04A3A'};
+/* The wine-type colour WineDNA uses (_TYPE_COLORS), for sliders and selections on this wine. */
+function _typeCol(w){ return (typeof _TYPE_COLORS!=='undefined'&&_TYPE_COLORS[WineDNA._t(w&&w.type)])||C.cr; }
+
+/* The match ring: TasteMatch's percentage, or a dash when it's too early to call. */
+function MatchRing({match,size=96}){
+  const pct=match?match.pct:null, col=_TONE_COL[match?match.tone:'neutral'];
+  const r=52,circ=2*Math.PI*r;
+  return <div style={{position:'relative',width:size,height:size,flexShrink:0}}>
+    <svg width={size} height={size} viewBox="0 0 130 130" style={{transform:'rotate(-90deg)'}}>
+      <circle cx="65" cy="65" r={r} fill="none" stroke={C.line} strokeWidth="10"/>
+      {pct!=null&&<circle cx="65" cy="65" r={r} fill="none" stroke={col} strokeWidth="10" strokeLinecap="round" strokeDasharray={circ} strokeDashoffset={circ*(1-pct/100)} style={{transition:'stroke-dashoffset 1s cubic-bezier(.34,1.1,.64,1)'}}/>}
+    </svg>
+    <div style={{position:'absolute',inset:0,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center'}}>
+      <div style={{fontSize:size*0.27,fontWeight:800,color:pct!=null?col:C.mid,fontFamily:C.P,lineHeight:1}}>{pct!=null?pct:'—'}{pct!=null&&<span style={{fontSize:size*0.12,fontWeight:700}}>%</span>}</div>
+      <div style={{fontSize:11,fontWeight:700,color:C.mid,fontFamily:C.P,letterSpacing:'0.1em',textTransform:'uppercase',marginTop:2}}>match</div>
+    </div>
+  </div>;
+}
+
+/* TasteMatch's reasons: one line each, with a dot for whether it counts for or against. */
+function MatchReasons({match,col,showSummary=true}){
+  if(!match) return null;
+  return <div style={{display:'flex',flexDirection:'column',gap:8}}>
+    {showSummary&&<div style={{fontSize:15,color:col||C.ink2,fontFamily:C.P,lineHeight:1.55}}>{match.summary}</div>}
+    {match.reasons.map((r,i)=>(
+      <div key={i} style={{display:'flex',gap:9,alignItems:'flex-start',fontSize:15,lineHeight:1.5}}>
+        <span style={{height:'1.5em',display:'flex',alignItems:'center',flexShrink:0}}><span style={{width:8,height:8,borderRadius:4,background:_TONE_COL[r.tone]}}/></span>
+        <span style={{color:C.ink2,fontFamily:C.P}}>{r.text}</span>
+      </div>
+    ))}
+  </div>;
 }
 
 /* ── the screen ── */
@@ -109,72 +135,89 @@ function useDeckStyle(){
   },[]);
   return s;
 }
+/* After a scan: an "Is this it?" check when the label was hard to read, then the result (match,
+   reasons, style, price, and Rate / Save for later / Tell me about it). The card deck is the
+   optional deep dive, opened straight away for people who usually want it. */
 function ScanCardsScreen({nav,back}){
   const scanData=React.useMemo(()=>{
     try{ return JSON.parse(sessionStorage.getItem('vinterest_scan_result')||'{}'); }catch(e){ return {}; }
   },[]);
-  const wine=scanData.wine||null;
-  const existingRating=React.useMemo(()=>{
-    if(!wine) return 0;
-    const saved=WineHistory.getAll().find(w=>w.name===wine.name&&String(w.vintage)===String(wine.vintage));
-    return (saved&&saved.rating)||scanData.existingRating||0;
-  },[wine?.name,wine?.vintage]);
-  const isDemo=scanData.demo===true;
-  const scanReason=scanData.reason||'';
-
+  const source=scanData.source||'camera';
+  const [wine,setWine]=React.useState(()=>ScanFlow.resolve(scanData.wine||null).wine);
+  const [ratingsVersion,setRatingsVersion]=React.useState(0);
+  const saved=React.useMemo(()=>wine?WineHistory.find(wine):null,[wine,ratingsVersion]);
+  const existingRating=(saved&&saved.rating)||0;
+  const confirmKey='vinterest_scan_confirmed_'+((scanData.wine&&scanData.wine.name)||'').replace(/\s/g,'_');
+  const [confirmed,setConfirmed]=React.useState(()=>!!saved||!ScanFlow.needsConfirm(scanData.wine,source)||!!sessionStorage.getItem(confirmKey));
+  const [editing,setEditing]=React.useState(false);
+  const [view,setView]=React.useState(()=>scanData.view||(ScanFlow.prefersDeck()?'deck':'result'));
   const deckStyle=useDeckStyle();
   const curr=React.useMemo(()=>Regional.current(),[]);
+  const match=React.useMemo(()=>wine?TasteMatch.assess(wine,WineHistory.getAll()):null,[wine,ratingsVersion]);
+  const {gen,loading}=useScanContent(confirmed?wine:null,match);
 
-  // intent gate — remembered per scan so returning doesn't re-ask
-  const intentKey='vinterest_scan_intent_'+((wine&&wine.name)||'').replace(/\s/g,'_')+'_'+((wine&&wine.vintage)||'nv');
-  const [intent,setIntent]=React.useState(()=>{
-    if(existingRating>0) return 'tasted';
-    return sessionStorage.getItem(intentKey)||null;
-  });
-  function pickIntent(v){ setIntent(v); try{ sessionStorage.setItem(intentKey,v); }catch(e){} if(wine) WineHistory.setScanIntent(wine.name,wine.vintage,v); }
-  const canRate=intent==='tasting'||intent==='tasted'||intent==='quickrate';
+  // Save the scan once we know which wine it is. A wine picked from a list is a shelf check.
+  const trackedRef=React.useRef(false);
+  React.useEffect(()=>{
+    // Opened from history (a Home reminder): it's already saved, and reopening isn't a rescan.
+    if(!wine||!confirmed||trackedRef.current||source==='history'||source==='suggestion'||scanData.tracked) return;
+    trackedRef.current=true;
+    // Coming back to this screen (from Details, say) isn't another scan.
+    try{ const sd=JSON.parse(sessionStorage.getItem('vinterest_scan_result')||'{}'); sd.tracked=true; sessionStorage.setItem('vinterest_scan_result',JSON.stringify(sd)); }catch(e){}
+    const isNew=!WineHistory.find(wine);
+    WineHistory.track(wine);
+    if(isNew&&source==='list') WineHistory.setScanIntent(wine.name,wine.vintage,'checking');
+    if(source==='camera') ScanFlow.awardScanXP(wine);
+  },[wine,confirmed]);
 
-  // duplicate scan gate — a wine you've already rated (exact vintage match) can skip straight to re-rating
-  // instead of walking the full card sequence again; remembered per scan so returning doesn't re-ask.
-  const dupKey='vinterest_scan_dup_'+((wine&&wine.name)||'').replace(/\s/g,'_')+'_'+((wine&&wine.vintage)||'nv');
-  const [duplicateChoice,setDuplicateChoice]=React.useState(()=>existingRating>0?(sessionStorage.getItem(dupKey)||null):'na');
-  function pickDuplicate(v){ setDuplicateChoice(v); try{ sessionStorage.setItem(dupKey,v); }catch(e){} }
-
-  const matchPct=React.useMemo(()=>{
-    if(!wine) return null;
-    return calcMatchScore(wine,WineHistory.getAll());
-  },[wine&&wine.name,intent]);
-  const dnaSnapshot=React.useMemo(()=>wine?_dnaSnapshot((wine.type||'red').toLowerCase().replace('é','e')):null,[wine&&wine.name]);
-  const {gen,loading}=useScanContent(wine,matchPct,dnaSnapshot);
-
-  // track scan immediately (even before rating)
-  React.useEffect(()=>{ if(wine&&!isDemo) WineHistory.track(wine); },[wine&&wine.name,wine&&wine.vintage]);
+  function applyEdit(patch){
+    const before=wine, next={...wine,...patch,confidence:'high'};
+    if(WineHistory.find(before)) WineHistory.update(WineHistory.find(before).name,WineHistory.find(before).vintage,patch);
+    try{ const sd=JSON.parse(sessionStorage.getItem('vinterest_scan_result')||'{}'); sd.wine=next; sessionStorage.setItem('vinterest_scan_result',JSON.stringify(sd)); }catch(e){}
+    setWine(next); setEditing(false); confirm();
+  }
+  function confirm(){ try{ sessionStorage.setItem(confirmKey,'1'); }catch(e){} setConfirmed(true); }
+  // A suggestion isn't saved until the user acts on it (save for later, rate, Blind Call).
+  function setIntent(v){ if(!wine) return; if(!WineHistory.find(wine)) WineHistory.track(wine); const e=WineHistory.find(wine); WineHistory.setScanIntent(e.name,e.vintage,v); }
 
   if(!wine){
+    const failed=scanData.reason&&scanData.reason!=='no_wine_label';
     return <div style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:14,padding:32}}>
       <Icon n="camera" sz={40} col={C.mid}/>
-      <div style={{fontSize:17,fontWeight:600,color:C.ink,fontFamily:C.P,textAlign:'center'}}>{isDemo&&scanReason==='no_wine_label'?'No label detected':'Nothing scanned yet'}</div>
-      <div style={{fontSize:14,color:C.mid,fontFamily:C.P,textAlign:'center',lineHeight:1.5}}>Point the camera straight at a wine label and hold steady.</div>
-      <Btn primary onClick={()=>nav('camera')}>Try Again</Btn>
+      <div style={{fontSize:17,fontWeight:600,color:C.ink,fontFamily:C.P,textAlign:'center'}}>{scanData.reason==='no_wine_label'?'No label detected':failed?'The scan didn\'t go through':'Nothing scanned yet'}</div>
+      <div style={{fontSize:15,color:C.mid,fontFamily:C.P,textAlign:'center',lineHeight:1.5}}>{failed?'We couldn\'t reach the wine reader. Check your connection and try again.':'Point the camera straight at the front label and hold steady.'}</div>
+      <Btn primary onClick={()=>nav('camera')}>Try again</Btn>
     </div>;
   }
 
   return <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden',background:C.bg}}>
-    <ScanHeader wine={wine} nav={nav} back={back}/>
-    {isDemo&&<div style={{background:'#FFF3CD',borderBottom:'1px solid #FFE082',padding:'8px 16px',fontSize:13,color:'#7A5200',fontFamily:C.P,flexShrink:0}}>Demo data — add ANTHROPIC_API_KEY to scan for real.</div>}
-    {!intent
-      ? <IntentGate wine={wine} onPick={pickIntent} nav={nav}/>
-      : existingRating>0&&!duplicateChoice
-        ? <DuplicateGate wine={wine} existingRating={existingRating} onPick={pickDuplicate} nav={nav}/>
-        : <CardDeck key={deckStyle} deckStyle={deckStyle} wine={wine} gen={gen} loading={loading}
-            matchPct={matchPct} curr={curr} scanData={scanData} intent={intent} canRate={canRate}
-            existingRating={existingRating} dna={dnaSnapshot} startAtEnd={duplicateChoice==='skip'} nav={nav}/>}
+    <ScanHeader wine={wine} nav={nav} back={view==='deck'&&confirmed?()=>setView('result'):back}/>
+    {!confirmed
+      ? <ConfirmGate wine={wine} onYes={confirm} onEdit={()=>setEditing(true)} nav={nav}
+          onAlt={()=>applyEdit({name:wine.alternative,producer:''})}/>
+      : view==='deck'
+        ? <CardDeck key={deckStyle} deckStyle={deckStyle} wine={wine} gen={gen} loading={loading} match={match}
+            curr={curr} scanData={scanData} existingRating={existingRating} nav={nav}
+            onRated={()=>{ setIntent('tasted'); setRatingsVersion(v=>v+1); }}
+            onSaveForLater={()=>{ setIntent('checking'); setView('saved'); }}
+            onBlindCall={()=>setIntent('tasting')}/>
+        : <ScanResult wine={wine} match={match} curr={curr} scanData={scanData} existingRating={existingRating} nav={nav}
+            view={view} setView={setView} onEdit={()=>setEditing(true)}
+            onRated={()=>{ setIntent('tasted'); setRatingsVersion(v=>v+1); }}
+            onSaveForLater={()=>{ ScanFlow.recordPath('quick'); setIntent('checking'); setView('saved'); }}
+            onDeck={()=>{ ScanFlow.recordPath('deck'); setView('deck'); }}/>}
+    {editing&&<EditWineSheet wine={wine} onSave={applyEdit} onClose={()=>setEditing(false)}/>}
     <style>{`
       @keyframes scSpin{to{transform:rotate(360deg)}}
       @keyframes scSheet{from{transform:translateY(100%)}to{transform:translateY(0)}}
       @keyframes scFade{from{opacity:0}to{opacity:1}}
       @keyframes scPop{from{opacity:0;transform:translateY(10px) scale(.98)}to{opacity:1;transform:none}}
       .sc-scroll::-webkit-scrollbar{display:none}
+      /* Every element in the swipe deck leaves horizontal drags to the deck (vertical scrolling
+         still works); touch-action is decided where the finger lands, so the card alone isn't
+         enough. Sliders keep their own drag. */
+      .sc-swipe,.sc-swipe *{touch-action:pan-y}
+      .sc-swipe input[type=range]{touch-action:none}
     `}</style>
   </div>;
 }
@@ -186,7 +229,7 @@ function ScanHeader({wine,nav,back}){
     </div>
     <div style={{flex:1,minWidth:0}}>
       <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P,lineHeight:1.15,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{wine.name}</div>
-      <div style={{fontSize:12.5,color:C.mid,fontFamily:C.P,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{[wine.vintage&&wine.vintage!==0?wine.vintage:'NV',wine.region,wine.country].filter(Boolean).join(' · ')}</div>
+      <div style={{fontSize:13,color:C.mid,fontFamily:C.P,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{[wine.vintage&&wine.vintage!==0?wine.vintage:'NV',wine.region!==wine.country?wine.region:null,wine.country].filter(Boolean).join(' · ')}</div>
     </div>
     <div onClick={()=>nav('detail')} style={{flexShrink:0,display:'flex',alignItems:'center',gap:4,padding:'7px 12px',borderRadius:20,background:C.offWhite,border:`1px solid ${C.line}`,cursor:'pointer',whiteSpace:'nowrap'}}>
       <span style={{fontSize:13,fontWeight:600,color:C.ink2,fontFamily:C.P}}>Details</span>
@@ -195,204 +238,205 @@ function ScanHeader({wine,nav,back}){
   </div>;
 }
 
-/* ── intent gate ── */
-function IntentGate({wine,onPick,nav}){
-  const opts=[
-    {k:'checking',icon:'compass',t:'Just checking the match',s:'Deciding whether to buy or order it — no rating yet.'},
-    {k:'tasting',icon:'wine',t:'About to drink it',s:'Walk me through it, then let me rate after tasting.'},
-    {k:'tasted',icon:'star',t:'Already had a sip',s:'I want to talk about it — and rate what I tasted.'},
-    {k:'quickrate',icon:'bolt',t:'Match & Rate',s:'Just the match score, then straight to rating. No cards.'},
-  ];
-  return <div className="sc-scroll" style={{flex:1,overflowY:'auto',padding:'22px 20px 28px',display:'flex',flexDirection:'column',animation:'scFade .25s ease'}}>
-    <div style={{fontSize:13,fontWeight:700,color:C.cr,letterSpacing:'0.1em',textTransform:'uppercase',fontFamily:C.P}}>Matched</div>
-    <div style={{fontSize:23,fontWeight:800,color:C.ink,fontFamily:C.P,lineHeight:1.2,marginTop:4}}>How are you meeting<br/>this wine?</div>
-    <div style={{fontSize:14.5,color:C.mid,fontFamily:C.P,lineHeight:1.5,marginTop:8}}>So we only ask you to rate a wine you've actually tasted.</div>
-    <div style={{display:'flex',flexDirection:'column',gap:12,marginTop:22}}>
-      {opts.map(o=>(
-        <div key={o.k} onClick={()=>onPick(o.k)} style={{display:'flex',alignItems:'center',gap:14,padding:'16px 16px',borderRadius:16,background:C.white,border:`1.5px solid ${C.line}`,cursor:'pointer',boxShadow:'0 1px 4px rgba(0,0,0,0.05)',transition:'transform .12s'}} onMouseDown={e=>e.currentTarget.style.transform='scale(0.985)'} onMouseUp={e=>e.currentTarget.style.transform='none'} onMouseLeave={e=>e.currentTarget.style.transform='none'}>
-          <div style={{width:46,height:46,borderRadius:14,background:C.crSoft,border:`1px solid ${C.crDim}`,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
-            <Icon n={o.icon} sz={22} col={C.cr}/>
-          </div>
-          <div style={{flex:1,minWidth:0}}>
-            <div style={{fontSize:16.5,fontWeight:700,color:C.ink,fontFamily:C.P,lineHeight:1.2}}>{o.t}</div>
-            <div style={{fontSize:13.5,color:C.mid,fontFamily:C.P,lineHeight:1.45,marginTop:3}}>{o.s}</div>
-          </div>
-          <Icon n="chevron" sz={16} col={C.mid}/>
-        </div>
-      ))}
-    </div>
-    <div onClick={()=>nav('detail')} style={{textAlign:'center',marginTop:22,fontSize:14,fontWeight:600,color:C.mid,fontFamily:C.P,cursor:'pointer'}}>Skip to full details</div>
+/* Name, producer, vintage and place, as read from the label. */
+function WineIdentity({wine}){
+  const col=_typeCol(wine);
+  return <div>
+    <div style={{fontSize:13,fontWeight:700,color:col,fontFamily:C.P,letterSpacing:'0.08em',textTransform:'uppercase'}}>{[wine.type||'Red',wine.country].filter(Boolean).join(' · ')}</div>
+    <div style={{fontSize:21,fontWeight:800,color:C.ink,fontFamily:C.P,lineHeight:1.2,marginTop:3}}>{_wineTitle(wine)}</div>
+    <div style={{fontSize:15,color:C.mid,fontFamily:C.P,lineHeight:1.45,marginTop:2}}>{[wine.producer,WineDNA.grapeLine(wine),wine.region!==wine.country?wine.region:null].filter(Boolean).join(' · ')}</div>
   </div>;
 }
 
-/* ── duplicate-scan gate: you've rated this exact bottle before ── */
-function DuplicateGate({wine,existingRating,onPick,nav}){
-  const r=44,circ=2*Math.PI*r;
-  return <div className="sc-scroll" style={{flex:1,overflowY:'auto',padding:'22px 20px 28px',display:'flex',flexDirection:'column',alignItems:'center',textAlign:'center',animation:'scFade .25s ease'}}>
-    <div style={{position:'relative',width:120,height:120,marginTop:6}}>
-      <svg width="120" height="120" viewBox="0 0 104 104" style={{transform:'rotate(-90deg)'}}>
-        <circle cx="52" cy="52" r={r} fill="none" stroke={C.line} strokeWidth="9"/>
-        <circle cx="52" cy="52" r={r} fill="none" stroke={C.green} strokeWidth="9" strokeLinecap="round" strokeDasharray={circ} strokeDashoffset={circ*(1-existingRating/100)}/>
-      </svg>
-      <div style={{position:'absolute',inset:0,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center'}}>
-        <div style={{fontSize:28,fontWeight:800,color:C.green,fontFamily:C.P,lineHeight:1}}>{existingRating}</div>
-        <div style={{fontSize:10,fontWeight:700,color:C.mid,fontFamily:C.P,letterSpacing:'0.1em',textTransform:'uppercase'}}>pts</div>
-      </div>
+/* ── "Is this it?" — only when Claude couldn't read the label clearly ── */
+function ConfirmGate({wine,onYes,onAlt,onEdit,nav}){
+  return <div className="sc-scroll" style={{flex:1,overflowY:'auto',padding:'22px 20px 28px',display:'flex',flexDirection:'column',gap:16,animation:'scFade .25s ease'}}>
+    <div>
+      <div style={{fontSize:13,fontWeight:700,color:C.amber,letterSpacing:'0.1em',textTransform:'uppercase',fontFamily:C.P}}>Check the label</div>
+      <div style={{fontSize:23,fontWeight:800,color:C.ink,fontFamily:C.P,lineHeight:1.2,marginTop:4}}>Is this the right wine?</div>
+      <div style={{fontSize:15,color:C.mid,fontFamily:C.P,lineHeight:1.5,marginTop:6}}>We couldn't read all of the label, so we're not certain. A wrong wine would skew your WineDNA, so it's worth a second.</div>
     </div>
-    <div style={{fontSize:23,fontWeight:800,color:C.ink,fontFamily:C.P,lineHeight:1.2,marginTop:16}}>You've already scanned<br/>this one</div>
-    <div style={{fontSize:14.5,color:C.mid,fontFamily:C.P,lineHeight:1.5,marginTop:8}}>You rated {_wineTitle(wine)} a {existingRating} last time. Want the quick path, or the full rundown again?</div>
-    <div style={{display:'flex',flexDirection:'column',gap:12,marginTop:22,width:'100%'}}>
-      <div onClick={()=>onPick('skip')} style={{display:'flex',alignItems:'center',gap:14,padding:'16px 16px',borderRadius:16,background:C.white,border:`1.5px solid ${C.line}`,cursor:'pointer',boxShadow:'0 1px 4px rgba(0,0,0,0.05)'}}>
-        <div style={{width:46,height:46,borderRadius:14,background:C.crSoft,border:`1px solid ${C.crDim}`,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
-          <Icon n="star" sz={22} col={C.cr}/>
-        </div>
-        <div style={{flex:1,minWidth:0,textAlign:'left'}}>
-          <div style={{fontSize:16.5,fontWeight:700,color:C.ink,fontFamily:C.P,lineHeight:1.2}}>Just re-rate it</div>
-          <div style={{fontSize:13.5,color:C.mid,fontFamily:C.P,lineHeight:1.45,marginTop:3}}>Skip straight to rating — no need to see the cards again.</div>
-        </div>
-        <Icon n="chevron" sz={16} col={C.mid}/>
+    <Card style={{padding:16}}><WineIdentity wine={wine}/></Card>
+    <Btn primary full onClick={onYes}>Yes, that's it</Btn>
+    {wine.alternative&&<Btn full onClick={onAlt}>It's {wine.alternative}</Btn>}
+    <Btn full onClick={onEdit}>Edit the details</Btn>
+    <div onClick={()=>nav('camera')} style={{textAlign:'center',fontSize:15,fontWeight:600,color:C.mid,fontFamily:C.P,cursor:'pointer'}}>Scan again</div>
+  </div>;
+}
+
+/* ── correct a misread label ── */
+function EditWineSheet({wine,onSave,onClose}){
+  const TYPES=['red','white','rosé','sparkling','orange','dessert','fortified'];
+  const [f,setF]=React.useState(()=>({name:wine.name||'',producer:wine.producer||'',vintage:wine.vintage&&wine.vintage!==0?String(wine.vintage):'',
+    type:(wine.type||'red').toLowerCase(),grapes:(wine.grapes||[]).join(', '),region:wine.region||'',country:wine.country||''}));
+  const set=k=>e=>setF(x=>({...x,[k]:e.target.value}));
+  const input={width:'100%',boxSizing:'border-box',padding:'10px 12px',borderRadius:10,border:`1.5px solid ${C.line}`,fontSize:16,fontFamily:C.P,color:C.ink,background:C.white};
+  const lab={fontSize:13,fontWeight:700,color:C.mid,fontFamily:C.P,marginBottom:4};
+  function save(){
+    const v=f.vintage.trim(), y=/^\d{4}$/.test(v)?Number(v):null;
+    onSave({name:f.name.trim()||wine.name,producer:f.producer.trim(),vintage:y,type:f.type,
+      grapes:f.grapes.split(',').map(g=>g.trim()).filter(Boolean),region:f.region.trim(),country:f.country.trim()});
+  }
+  return ReactDOM.createPortal(<div onClick={onClose} style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.45)',zIndex:9000,display:'flex',alignItems:'flex-end',justifyContent:'center'}}>
+    <div onClick={e=>e.stopPropagation()} className="sc-scroll" style={{width:'100%',maxWidth:520,maxHeight:'88vh',overflowY:'auto',background:C.bg,borderRadius:'20px 20px 0 0',padding:'18px 20px 28px',animation:'scSheet .25s ease',display:'flex',flexDirection:'column',gap:12}}>
+      <div style={{fontSize:19,fontWeight:800,color:C.ink,fontFamily:C.P}}>Edit wine details</div>
+      <div><div style={lab}>Wine name</div><input style={input} aria-label="Wine name" value={f.name} onChange={set('name')}/></div>
+      <div><div style={lab}>Producer</div><input style={input} aria-label="Producer" value={f.producer} onChange={set('producer')}/></div>
+      <div style={{display:'flex',gap:10}}>
+        <div style={{flex:1}}><div style={lab}>Vintage</div><input style={input} inputMode="numeric" placeholder="NV" aria-label="Vintage" value={f.vintage} onChange={set('vintage')}/></div>
+        <div style={{flex:2}}><div style={lab}>Grapes</div><input style={input} placeholder="e.g. Grenache, Syrah" aria-label="Grapes" value={f.grapes} onChange={set('grapes')}/></div>
       </div>
-      <div onClick={()=>onPick('full')} style={{display:'flex',alignItems:'center',gap:14,padding:'16px 16px',borderRadius:16,background:C.white,border:`1.5px solid ${C.line}`,cursor:'pointer',boxShadow:'0 1px 4px rgba(0,0,0,0.05)'}}>
-        <div style={{width:46,height:46,borderRadius:14,background:C.crSoft,border:`1px solid ${C.crDim}`,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
-          <Icon n="compass" sz={22} col={C.cr}/>
+      <div>
+        <div style={lab}>Type</div>
+        <div style={{display:'flex',flexWrap:'wrap',gap:6}}>
+          {TYPES.map(t=><div key={t} onClick={()=>setF(x=>({...x,type:t}))} style={{padding:'7px 12px',borderRadius:20,border:`1.5px solid ${f.type===t?C.cr:C.line}`,background:f.type===t?C.cr:C.white,color:f.type===t?'#fff':C.ink2,fontSize:14,fontWeight:600,fontFamily:C.P,cursor:'pointer',textTransform:'capitalize'}}>{t}</div>)}
         </div>
-        <div style={{flex:1,minWidth:0,textAlign:'left'}}>
-          <div style={{fontSize:16.5,fontWeight:700,color:C.ink,fontFamily:C.P,lineHeight:1.2}}>Go through it again</div>
-          <div style={{fontSize:13.5,color:C.mid,fontFamily:C.P,lineHeight:1.45,marginTop:3}}>See the match, tasting notes and everything else fresh.</div>
-        </div>
-        <Icon n="chevron" sz={16} col={C.mid}/>
       </div>
+      <div style={{display:'flex',gap:10}}>
+        <div style={{flex:1}}><div style={lab}>Region</div><input style={input} aria-label="Region" value={f.region} onChange={set('region')}/></div>
+        <div style={{flex:1}}><div style={lab}>Country</div><input style={input} aria-label="Country" value={f.country} onChange={set('country')}/></div>
+      </div>
+      <div style={{fontSize:13,color:C.mid,fontFamily:C.P,lineHeight:1.5}}>The style estimates (body, acidity and so on) stay as read from the label.</div>
+      <Btn primary full onClick={save}>Save</Btn>
+      <div onClick={onClose} style={{textAlign:'center',fontSize:15,fontWeight:600,color:C.mid,fontFamily:C.P,cursor:'pointer'}}>Cancel</div>
     </div>
-    <div onClick={()=>nav('detail')} style={{textAlign:'center',marginTop:22,fontSize:14,fontWeight:600,color:C.mid,fontFamily:C.P,cursor:'pointer'}}>Skip to full details</div>
+  </div>,document.body);
+}
+
+/* ── the result: everything needed to decide, on one screen ── */
+function ScanResult({wine,match,curr,scanData,existingRating,nav,view,setView,onEdit,onRated,onSaveForLater,onDeck}){
+  const col=_TONE_COL[match?match.tone:'neutral'];
+  const [shop,setShop]=React.useState(()=>curr.isTravel?null:ScanFlow.shopPrice(wine,curr));
+  React.useEffect(()=>{ let live=true; ScanFlow.shopEstimate(wine,curr).then(d=>{ if(live&&d) setShop(d.mid); }); return()=>{ live=false; }; },[wine&&wine.name,curr.code]);
+  // A list read abroad is priced in its own currency: compare like with like.
+  const lc=scanData.listCurrency;
+  const list=scanData.listPrice?(lc&&lc!==curr.code?scanData.listPrice/(USD_FX[lc]||1)*(USD_FX[curr.code]||1):scanData.listPrice):null;
+  const mk=ScanFlow.markup(list,shop);
+  const sweet=match&&match.profile&&match.profile.value&&match.profile.value.sweetSpot;
+  const sub={fontSize:13,fontWeight:700,color:C.mid,fontFamily:C.P,textTransform:'uppercase',letterSpacing:'0.06em'};
+  return <div className="sc-scroll" style={{flex:1,overflowY:'auto',padding:'16px 16px 28px',display:'flex',flexDirection:'column',gap:12,animation:'scFade .25s ease'}}>
+    <Card style={{padding:16}}>
+      <WineIdentity wine={wine}/>
+      <div style={{display:'flex',alignItems:'center',gap:10,marginTop:10,flexWrap:'wrap'}}>
+        {existingRating>0&&<span style={{fontSize:13,fontWeight:700,color:C.green,background:C.greenBg,border:`1px solid ${C.green}30`,borderRadius:20,padding:'3px 10px',fontFamily:C.P}}>You scored it {existingRating} · {ParkerScale.label(existingRating)}</span>}
+        <span onClick={onEdit} style={{fontSize:13,fontWeight:600,color:C.cr,fontFamily:C.P,cursor:'pointer'}}>Not right? Edit</span>
+      </div>
+    </Card>
+
+    <Card style={{padding:16}}>
+      <div style={{display:'flex',alignItems:'center',gap:14}}>
+        <MatchRing match={match}/>
+        <div style={{flex:1,minWidth:0}}>
+          <div style={{fontSize:20,fontWeight:800,color:match&&match.pct!=null?col:C.ink,fontFamily:C.P,lineHeight:1.2}}>{match?match.label:'—'}</div>
+          {match&&match.expected!=null
+            ?<div style={{fontSize:15,color:C.mid,fontFamily:C.P,marginTop:3}}>{existingRating>0?`We predicted ${match.expectedLabel} · you scored ${existingRating}`:`Likely ${match.expectedLabel} for you`}</div>
+            :<div style={{fontSize:15,color:C.mid,fontFamily:C.P,marginTop:3,lineHeight:1.45}}>{match&&match.summary}</div>}
+          {match&&match.confidence==='low'&&<div style={{fontSize:13,color:C.mid,fontFamily:C.P,marginTop:2}}>Rough guess</div>}
+        </div>
+      </div>
+      {match&&(match.reasons.length>0||match.expected!=null)&&<div style={{marginTop:14,paddingTop:12,borderTop:`1px solid ${C.line}`}}>
+        <MatchReasons match={match} showSummary={match.expected!=null}/>
+      </div>}
+    </Card>
+
+    {(match&&match.style||shop||list)&&<Card style={{padding:16,display:'flex',flexDirection:'column',gap:10}}>
+      {match&&match.style&&<div>
+        <div style={{...sub,marginBottom:4}}>Style</div>
+        <div style={{fontSize:15,color:C.ink,fontFamily:C.P,lineHeight:1.5}}>{match.style}</div>
+        <div style={{fontSize:13,color:C.mid,fontFamily:C.P,marginTop:2}}>Estimated from the label: what this wine is typically like.</div>
+      </div>}
+      {(shop||list)&&<div style={{paddingTop:match&&match.style?10:0,borderTop:match&&match.style?`1px solid ${C.line}`:'none'}}>
+        <div style={{...sub,marginBottom:6}}>Price</div>
+        {shop&&<div style={{display:'flex',alignItems:'baseline',gap:8}}>
+          <span style={{fontSize:15,color:C.ink,fontFamily:C.P,flex:1}}>{curr.isTravel?`In shops in ${curr.label}`:'In shops'}</span>
+          <span style={{fontSize:15,fontWeight:800,color:C.ink,fontFamily:C.P}}>about {ScanFlow.money(shop,curr)}</span>
+          <span style={{fontSize:13,color:C.mid,fontFamily:C.P}}>est.</span>
+        </div>}
+        {list&&<div style={{display:'flex',alignItems:'baseline',gap:8,marginTop:4}}>
+          <span style={{fontSize:15,color:C.ink,fontFamily:C.P,flex:1}}>On this list</span>
+          <span style={{fontSize:15,fontWeight:800,color:C.ink,fontFamily:C.P}}>{ScanFlow.money(list,curr)}</span>
+          {mk&&<span style={{fontSize:13,color:C.mid,fontFamily:C.P}}>{mk.ratio.toFixed(1)}× shop</span>}
+        </div>}
+        {mk&&<div style={{fontSize:13,color:C.ink2,fontFamily:C.P,marginTop:4}}>{mk.text}</div>}
+        {sweet&&<div style={{fontSize:13,color:C.mid,fontFamily:C.P,marginTop:6}}>Your Outstanding {match.profile.label.toLowerCase()} usually cost {sweet}.</div>}
+        {/* Until WineDNA has a sweet spot from their own scores, compare with the spend they gave. */}
+        {!sweet&&shop&&(()=>{ const fit=UserPrefs.spendFit(shop,curr), b=UserPrefs.budget(curr); if(!fit) return null;
+          return <div style={{fontSize:13,color:C.mid,fontFamily:C.P,marginTop:6}}>{fit==='within'?`Within your usual spend (${b.label}).`:fit==='above'?`Above your usual spend (${b.label}).`:`Below your usual spend (${b.label}).`}</div>; })()}
+      </div>}
+    </Card>}
+
+    {view==='rate'
+      ? <Card style={{padding:16}}><RatingPanel wine={wine} existingRating={existingRating} nav={nav} curr={curr} onRated={onRated} onSaveForLater={existingRating?null:onSaveForLater}/></Card>
+      : view==='saved'
+        ? <Card style={{padding:16,display:'flex',flexDirection:'column',gap:10,alignItems:'center',textAlign:'center'}}>
+            <div style={{width:48,height:48,borderRadius:24,background:C.crSoft,display:'flex',alignItems:'center',justifyContent:'center'}}><Icon n="check" sz={22} col={C.cr}/></div>
+            <div style={{fontSize:18,fontWeight:800,color:C.ink,fontFamily:C.P}}>Saved for later</div>
+            <div style={{fontSize:15,color:C.ink2,fontFamily:C.P,lineHeight:1.5}}>It won't count towards your WineDNA until you buy or taste it. Next time you open the app we'll ask whether you bought it.</div>
+            <div style={{display:'flex',gap:10,width:'100%',marginTop:4}}>
+              <Btn full onClick={()=>nav('mywines')}>My Wines</Btn>
+              <Btn primary full onClick={()=>nav('camera')}>Scan another</Btn>
+            </div>
+          </Card>
+        : <>
+            <Btn primary full onClick={()=>{ ScanFlow.recordPath('quick'); setView('rate'); }}>{existingRating?`Re-rate it (${existingRating})`:'I\'ve tasted it: rate it'}</Btn>
+            {!existingRating&&<Btn full onClick={onSaveForLater}>Save for later</Btn>}
+            <Card onClick={onDeck} style={{padding:'14px 16px',display:'flex',alignItems:'center',gap:12,cursor:'pointer'}}>
+              <div style={{width:40,height:40,borderRadius:12,background:C.crSoft,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><Icon n="book" sz={19} col={C.cr}/></div>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>Tell me about it</div>
+                <div style={{fontSize:13,color:C.mid,fontFamily:C.P,lineHeight:1.4}}>The story, where it's from, how to taste it and what to say about it</div>
+              </div>
+              <Icon n="chevron" sz={15} col={C.mid}/>
+            </Card>
+          </>}
   </div>;
 }
 
 /* ── card content model ── */
-function buildCards({wine,gen,matchPct,curr,scanData,intent}){
-  const type=(wine.type||'red').toLowerCase().replace('é','e');
-  const isRed=type==='red';
-  const cards=[];
-
-  cards.push({key:'match',accent:C.green,soft:C.greenBg,icon:'compass',eyebrow:'Your match',kind:'match'});
-  if(intent==='quickrate'){
-    cards.push({key:'finish',accent:C.cr,soft:C.crSoft,icon:'star',eyebrow:'Rate it',kind:'finish'});
-    return cards;
-  }
-  cards.push({key:'fit',accent:C.green,soft:C.greenBg,icon:'heart',eyebrow:matchPct!=null&&matchPct>=70?'Why you\'ll love it':'Why it could click',kind:'gen',field:'fit'});
-  cards.push({key:'caution',accent:C.amber,soft:C.amberBg,icon:'message',eyebrow:'Heads up',kind:'gen',field:'caution'});
-  cards.push({key:'origin',accent:C.cr,soft:C.crSoft,icon:'globe',eyebrow:'Where it\'s from',kind:'origin'});
-  cards.push({key:'fact',accent:'#9B6B00',soft:'#FBF3E0',icon:'star',eyebrow:'Did you know',kind:'gen',field:'fact'});
-  cards.push({key:'taste',accent:C.ink,soft:C.offWhite,icon:'wine',eyebrow:'While you taste',kind:'taste'});
-  cards.push({key:'talk',accent:C.cr,soft:C.crSoft,icon:'message',eyebrow:'Sound clued-in',kind:'talk'});
-  cards.push({key:'value',accent:'#6B2D8B',soft:'#F3ECF8',icon:'cart',eyebrow:'Price check',kind:'value'});
-  cards.push({key:'finish',accent:C.cr,soft:C.crSoft,icon:intent==='checking'?'heart':'star',eyebrow:intent==='checking'?'Save it':'Rate it',kind:'finish'});
-  cards.push({key:'learn',accent:C.green,soft:C.greenBg,icon:'book',eyebrow:'Keep the streak',kind:'learn'});
-  return cards;
-}
-
-/* one question grounded in this specific bottle — descriptor cause, then region fact, in that priority. Free forever, no PRO gate. */
-function _scanFlowQuestion(wine){
-  const notes=(wine.tasting_notes||[]).join(' ').toLowerCase();
-  const descKeys=Object.keys(KNOWLEDGE.descriptors||{});
-  const hit=descKeys.find(k=>notes.includes(k));
-  if(hit){
-    const correct=KNOWLEDGE.descriptors[hit].cause;
-    const others=_shuffle(descKeys.filter(k=>k!==hit)).slice(0,3).map(k=>KNOWLEDGE.descriptors[k].cause);
-    return {q:`You noted "${hit}" on this bottle. What's actually responsible for that?`,opts:_shuffle([correct,...others]),a:0,_correct:correct};
-  }
-  const info=KNOWLEDGE.regions&&KNOWLEDGE.regions[wine.region];
-  if(info&&info.keyGrapes&&info.keyGrapes[0]){
-    const correct=info.keyGrapes[0];
-    const allGrapes=Object.values(KNOWLEDGE.regions||{}).flatMap(r=>r.keyGrapes||[]);
-    const others=_shuffle(allGrapes.filter(g=>g!==correct)).slice(0,3);
-    return {q:`What grape carries ${wine.region}?`,opts:_shuffle([correct,...others]),a:0,_correct:correct};
-  }
-  return null;
-}
-
-function LearnCardFace({wine,gen,accent,soft}){
-  const wineKey=(wine.name||'')+'_'+(wine.vintage||'nv');
-  const doneKey='vinterest_scanflow_'+wineKey.replace(/\s/g,'_');
-  const question=React.useMemo(()=>_scanFlowQuestion(wine),[wine&&wine.name]);
-  const [selected,setSelected]=React.useState(null);
-  const [awarded,setAwarded]=React.useState(()=>!!localStorage.getItem(doneKey));
-
-  function choose(i){
-    if(selected!==null) return;
-    setSelected(i);
-    if(i===question.a&&!awarded){
-      localStorage.setItem(doneKey,'1');
-      setAwarded(true);
-      XPSystem.awardAndToast([{type:'quiz_correct',topic:'scan_flow',difficulty:'habit'}]);
-    }
-  }
-
-  if(!question){
-    const fact=(gen&&gen.fact)||`${wine.region||wine.country} wines like this one reward a slower first sip.`;
-    return <div style={{display:'flex',flexDirection:'column',gap:12}}>
-      <div style={{fontSize:20,fontWeight:800,color:C.ink,fontFamily:C.P,lineHeight:1.2}}>Before you go</div>
-      <div style={{fontSize:17,color:C.ink2,fontFamily:C.P,lineHeight:1.6}}>{fact}</div>
-    </div>;
-  }
-
-  return <div style={{display:'flex',flexDirection:'column',gap:14}}>
-    <div style={{fontSize:20,fontWeight:800,color:C.ink,fontFamily:C.P,lineHeight:1.2}}>Quick one before you go</div>
-    <div style={{fontSize:17,fontWeight:600,color:C.ink,fontFamily:C.P,lineHeight:1.4}}>{question.q}</div>
-    <div style={{display:'flex',flexDirection:'column',gap:8}}>
-      {question.opts.map((opt,i)=>{
-        let bg=C.white,border=C.line,text=C.ink;
-        if(selected!==null){
-          if(i===question.a){bg=C.greenBg;border=C.green;text=C.green;}
-          else if(i===selected){bg='#FFF0F0';border='#E88080';text='#C0392B';}
-        }
-        return <div key={i} onClick={()=>choose(i)} style={{padding:'12px 14px',borderRadius:12,border:`2px solid ${border}`,background:bg,cursor:selected===null?'pointer':'default',fontSize:15,fontWeight:500,color:text,fontFamily:C.P,lineHeight:1.4}}>{opt}</div>;
-      })}
-    </div>
-    {selected!==null&&<div style={{fontSize:14,fontWeight:700,color:selected===question.a?C.green:C.mid,fontFamily:C.P}}>{selected===question.a?(awarded?'Nice — +10 XP':'Correct'):'Not quite — see it highlighted above'}</div>}
-  </div>;
+function buildCards({match}){
+  const tone=match?match.tone:'neutral';
+  return [
+    {key:'match',accent:C.green,soft:C.greenBg,icon:'compass',eyebrow:'Your match',kind:'match'},
+    {key:'fit',accent:tone==='bad'?C.amber:C.green,soft:tone==='bad'?C.amberBg:C.greenBg,icon:'heart',eyebrow:tone==='good'?'Why you\'ll like it':tone==='bad'?'How it\'s different':'Why it could click',kind:'gen',field:'fit'},
+    {key:'caution',accent:C.amber,soft:C.amberBg,icon:'message',eyebrow:'Heads up',kind:'gen',field:'caution'},
+    {key:'origin',accent:C.cr,soft:C.crSoft,icon:'globe',eyebrow:'Where it\'s from',kind:'origin'},
+    {key:'fact',accent:'#9B6B00',soft:'#FBF3E0',icon:'star',eyebrow:'Did you know',kind:'gen',field:'fact'},
+    {key:'taste',accent:C.ink,soft:C.offWhite,icon:'wine',eyebrow:'While you taste',kind:'taste'},
+    {key:'talk',accent:C.cr,soft:C.crSoft,icon:'message',eyebrow:'Sound clued-in',kind:'talk'},
+    {key:'value',accent:'#6B2D8B',soft:'#F3ECF8',icon:'cart',eyebrow:'Price check',kind:'value'},
+    {key:'finish',accent:C.cr,soft:C.crSoft,icon:'star',eyebrow:'Rate it',kind:'finish'},
+  ];
 }
 
 /* renders the body of one card — always at full detail; there is no separate expand/collapse mode, everything ships on the main screen. */
 function CardFace({card,ctx}){
   const expanded=true;
-  const {wine,gen,loading,matchPct,curr,scanData,intent,dna}=ctx;
+  const {wine,gen,loading,match,curr,scanData}=ctx;
   const a=card.accent;
   const P=C.P;
   const H=({children})=><div style={{fontSize:expanded?24:20,fontWeight:800,color:C.ink,fontFamily:P,lineHeight:1.2,letterSpacing:'-0.01em'}}>{children}</div>;
   const Body=({children,big})=><div style={{fontSize:big?(expanded?20:18):(expanded?17:16),color:C.ink2,fontFamily:P,lineHeight:1.55}}>{children}</div>;
 
   if(card.kind==='match'){
-    const pct=matchPct;
-    const verdict=pct==null?'New for your palate':pct>=90?'A near-perfect match':pct>=78?'A strong match':pct>=63?'A solid match, worth it':pct>=48?'Worth a try':pct>=32?'A bit of a stretch':'Outside your usual';
-    const r=52,circ=2*Math.PI*r,off=circ*(1-(pct||0)/100);
-    const dnaFallback=dna&&dna.topGrape?`Your ${(wine.type||'red')}s lean ${dna.topGrape}${dna.topRegion?' from '+dna.topRegion:''} — ${(wine.grapes||[]).some(g=>(g||'').toLowerCase()===dna.topGrape.toLowerCase())?'this bottle lines up with that.':'this one branches out a bit from that.'}`:'Scan and rate a few more to sharpen this.';
-    return <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:16,textAlign:'center'}}>
-      <div style={{position:'relative',width:150,height:150}}>
-        <svg width="150" height="150" viewBox="0 0 130 130" style={{transform:'rotate(-90deg)'}}>
-          <circle cx="65" cy="65" r={r} fill="none" stroke={C.line} strokeWidth="10"/>
-          <circle cx="65" cy="65" r={r} fill="none" stroke={a} strokeWidth="10" strokeLinecap="round" strokeDasharray={circ} strokeDashoffset={pct==null?circ:off} style={{transition:'stroke-dashoffset 1s cubic-bezier(.34,1.1,.64,1)'}}/>
-        </svg>
-        <div style={{position:'absolute',inset:0,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center'}}>
-          <div style={{fontSize:40,fontWeight:800,color:a,fontFamily:P,lineHeight:1}}>{pct!=null?pct:'—'}<span style={{fontSize:18,fontWeight:700}}>%</span></div>
-          <div style={{fontSize:11,fontWeight:700,color:C.mid,fontFamily:P,letterSpacing:'0.12em',textTransform:'uppercase',marginTop:2}}>match</div>
-        </div>
-      </div>
-      <H>{verdict}</H>
-      <Body big>{loading&&!gen?<ScanShimmer col={a}/>:(gen&&gen.matchNote)||dnaFallback}</Body>
-      {expanded&&<div style={{width:'100%',marginTop:4,padding:'12px 14px',borderRadius:12,background:C.offWhite,border:`1px solid ${C.line}`,textAlign:'left'}}>
+    const col=_TONE_COL[match?match.tone:'neutral'];
+    return <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:14,textAlign:'center'}}>
+      <MatchRing match={match} size={150}/>
+      <H>{match?match.label:'—'}</H>
+      {match&&match.expected!=null&&<div style={{fontSize:16,color:C.mid,fontFamily:P,marginTop:-6}}>Likely {match.expectedLabel} for you</div>}
+      <div style={{width:'100%',textAlign:'left',padding:'12px 14px',borderRadius:12,background:C.offWhite,border:`1px solid ${C.line}`}}>
         <div style={{fontSize:13,fontWeight:700,color:C.mid,fontFamily:P,letterSpacing:'0.06em',textTransform:'uppercase',marginBottom:6}}>How we got this</div>
-        <div style={{fontSize:14.5,color:C.ink2,fontFamily:P,lineHeight:1.55}}>We compare this wine's body, tannins, acidity and sweetness against the average of the {wine.type||'red'}s you've rated highly{dna&&dna.topGrape?` — right now that's mostly ${dna.topGrape}${dna.topRegion?' from '+dna.topRegion:''}`:''}.</div>
-      </div>}
+        <MatchReasons match={match} col={C.ink2}/>
+      </div>
     </div>;
   }
 
   if(card.kind==='gen'){
     const val=gen&&gen[card.field];
     return <div style={{display:'flex',flexDirection:'column',gap:14}}>
-      <H>{card.field==='fact'?'A little story':card.field==='fit'?'This is your kind of bottle':'One thing to know'}</H>
+      <H>{card.field==='fact'?'A little story':card.field==='fit'?(match&&match.tone==='good'?'Your kind of bottle':match&&match.tone==='bad'?'Not your usual style':'What might win you over'):'One thing to know'}</H>
       <Body big>{loading&&!val?<ScanShimmer col={a}/>:(val||'—')}</Body>
-      {expanded&&card.field==='fit'&&<AttrReasons wine={wine} accent={a}/>}
-      {expanded&&card.field==='caution'&&<div style={{fontSize:14.5,color:C.mid,fontFamily:C.P,lineHeight:1.55}}>{matchPct!=null&&matchPct>=63?'Just a tip to get the most out of it — not a reason to hesitate.':'Worth knowing so nothing catches you off guard.'}</div>}
+      {expanded&&card.field==='fit'&&match&&match.reasons.length>0&&<div style={{padding:'12px 14px',borderRadius:12,background:C.offWhite,border:`1px solid ${C.line}`}}><MatchReasons match={match} showSummary={false}/></div>}
+      {expanded&&card.field==='caution'&&<div style={{fontSize:15,color:C.mid,fontFamily:C.P,lineHeight:1.55}}>{match&&match.tone==='good'?'Just a tip to get the most out of it, not a reason to hesitate.':'Worth knowing so nothing catches you off guard.'}</div>}
     </div>;
   }
 
@@ -418,15 +462,12 @@ function CardFace({card,ctx}){
     </div>;
   }
 
-  if(card.kind==='taste'){
-    if(intent==='tasting') return <BlindCallCard wine={wine} gen={gen} accent={a}/>;
-    return <TasteCues wine={wine} accent={a}/>;
-  }
+  if(card.kind==='taste') return <TasteCard wine={wine} gen={gen} accent={a} onBlindCall={ctx.onBlindCall}/>;
 
   if(card.kind==='talk'){
     const lines=(gen&&Array.isArray(gen.talk)&&gen.talk.length)?gen.talk:[
       `A ${wine.type||'red'} that really speaks of ${wine.region||wine.country}.`,
-      (wine.grapes&&wine.grapes[0])?`Lovely example of ${wine.grapes[0]}.`:'Nicely made, plenty of character.',
+      (wine.grapes&&wine.grapes[0])?((wine.blend||wine.grapes.length>1)?`A lovely ${wine.grapes[0]}-led blend.`:`Lovely example of ${wine.grapes[0]}.`):'Nicely made, plenty of character.',
       'Great with the right plate of food.'];
     return <div style={{display:'flex',flexDirection:'column',gap:14}}>
       <H>Say it out loud</H>
@@ -446,7 +487,6 @@ function CardFace({card,ctx}){
   }
 
   if(card.kind==='value') return <ValueFace wine={wine} curr={curr} scanData={scanData} accent={a} soft={card.soft} expanded={expanded}/>;
-  if(card.kind==='learn') return <LearnCardFace wine={wine} gen={gen} accent={a} soft={card.soft}/>;
   if(card.kind==='finish') return null; // rendered specially by deck (needs actions)
   return null;
 }
@@ -499,7 +539,7 @@ function dimsFor(wine){
 }
 function _bcKey(wine){ return (wine.name||'')+'_'+(wine.vintage||'nv'); }
 
-function BlindCallCard({wine,gen,accent}){
+function BlindCallCard({wine,gen,accent,onStart}){
   const wineKey=_bcKey(wine).replace(/\s/g,'_');
   const doneKey='vinterest_blindcall_'+wineKey;
   const savedKey='vinterest_blindcall_result_'+wineKey;
@@ -511,17 +551,20 @@ function BlindCallCard({wine,gen,accent}){
   function finalizeReveal(g,missed,accuracy){
     if(!localStorage.getItem(doneKey)){
       localStorage.setItem(doneKey,'1');
-      missed.forEach(d=>{ const cid=DIM_CONCEPT[d]; if(cid) MasterySystem.recordResult(cid,false); });
+      // Misjudging one wine's tannin/acidity/texture flags the concept for review; it isn't a
+      // wrong answer to a Concept Check question, so it doesn't cost mastery progress.
+      missed.forEach(d=>{ const cid=DIM_CONCEPT[d]; if(cid) MasterySystem.flagForReview(cid); });
       const awards=XPSystem.awardAndToast([{type:'blind_call',accuracy}]);
       const amount=awards.filter(x=>!x.levelUp).reduce((s,x)=>s+x.amount,0);
-      localStorage.setItem(savedKey,JSON.stringify({accuracy,amount}));
+      // The guess is kept: it's the user's own read of the wine, used to pre-fill the rating step.
+      localStorage.setItem(savedKey,JSON.stringify({accuracy,amount,guess:g}));
       setScore({accuracy,amount});
     }
     setPhase('result');
   }
 
-  if(phase==='predict') return <BlindCallPredict dims={dims} onSubmit={g=>{setGuess(g);setPhase('reveal');}}/>;
-  if(phase==='reveal') return <BlindCallReveal wine={wine} dims={dims} guess={guess} onDone={finalizeReveal}/>;
+  if(phase==='predict') return <BlindCallPredict dims={dims} col={_typeCol(wine)} onSubmit={g=>{setGuess(g);setPhase('reveal');if(onStart) onStart();}}/>;
+  if(phase==='reveal') return <BlindCallReveal wine={wine} dims={dims} guess={guess} col={_typeCol(wine)} onDone={finalizeReveal}/>;
   if(phase==='result') return <>
     {ReactDOM.createPortal(<BlindCallResult score={score} onClose={()=>setPhase('summary')}/>, document.body)}
     <div style={{minHeight:120}}/>
@@ -535,7 +578,7 @@ function BlindCallCard({wine,gen,accent}){
   </div>;
 }
 
-function BlindCallPredict({dims,onSubmit}){
+function BlindCallPredict({dims,col,onSubmit}){
   const [vals,setVals]=React.useState(()=>Object.fromEntries(dims.map(d=>[d,0.5])));
   return <div style={{display:'flex',flexDirection:'column',gap:16}}>
     <div style={{fontSize:24,fontWeight:800,color:C.ink,fontFamily:C.P,lineHeight:1.2,letterSpacing:'-0.01em'}}>Call it before you look</div>
@@ -546,7 +589,7 @@ function BlindCallPredict({dims,onSubmit}){
           <div style={{display:'flex',justifyContent:'space-between',fontSize:12.5,color:C.mid,fontFamily:C.P,marginBottom:6,fontWeight:600,textTransform:'uppercase',letterSpacing:'0.04em'}}>
             <span>{DIM_LO[d]}</span><span style={{color:C.ink,fontWeight:700}}>{DIM_LABEL[d]}</span><span>{DIM_HI[d]}</span>
           </div>
-          <input type="range" min="0" max="100" value={Math.round(vals[d]*100)} style={{width:'100%',accentColor:C.cr,cursor:'pointer',display:'block'}}
+          <input type="range" min="0" max="100" value={Math.round(vals[d]*100)} style={{width:'100%',accentColor:col||C.cr,cursor:'pointer',display:'block',touchAction:'pan-y'}}
             onChange={e=>setVals(v=>({...v,[d]:Number(e.target.value)/100}))}/>
         </div>
       ))}
@@ -555,7 +598,7 @@ function BlindCallPredict({dims,onSubmit}){
   </div>;
 }
 
-function BlindCallReveal({wine,dims,guess,onDone}){
+function BlindCallReveal({wine,dims,guess,col,onDone}){
   const deltas=dims.map(d=>Math.abs(guess[d]-(wine[d]??0.5)));
   const avgDelta=deltas.reduce((s,x)=>s+x,0)/deltas.length;
   const accuracy=Math.max(0,1-avgDelta*1.6);
@@ -569,10 +612,10 @@ function BlindCallReveal({wine,dims,guess,onDone}){
           <div style={{fontSize:14,fontWeight:700,color:C.ink,fontFamily:C.P,marginBottom:8}}>{DIM_LABEL[d]}</div>
           <div style={{position:'relative',height:8,borderRadius:4,background:C.line}}>
             <div style={{position:'absolute',left:`${act*100}%`,top:-4,width:16,height:16,borderRadius:8,background:C.green,border:'2px solid #fff',boxShadow:'0 1px 4px rgba(0,0,0,0.3)',transform:'translateX(-50%)'}}/>
-            <div style={{position:'absolute',left:`${g*100}%`,top:-4,width:16,height:16,borderRadius:8,background:C.cr,border:'2px solid #fff',boxShadow:'0 1px 4px rgba(0,0,0,0.3)',transform:'translateX(-50%)',opacity:0.85}}/>
+            <div style={{position:'absolute',left:`${g*100}%`,top:-4,width:16,height:16,borderRadius:8,background:col||C.cr,border:'2px solid #fff',boxShadow:'0 1px 4px rgba(0,0,0,0.3)',transform:'translateX(-50%)',opacity:0.85}}/>
           </div>
           <div style={{display:'flex',justifyContent:'space-between',fontSize:12,color:C.mid,fontFamily:C.P,marginTop:6}}>
-            <span style={{color:C.cr,fontWeight:600}}>● your call</span>
+            <span style={{color:col||C.cr,fontWeight:600}}>● your call</span>
             <span style={{color:C.green,fontWeight:600}}>● actual</span>
           </div>
         </div>;
@@ -609,27 +652,18 @@ function BlindCallResult({score,onClose}){
   </div>;
 }
 
-function AttrReasons({wine,accent}){
-  const users=WineHistory.getAll().filter(w=>w.rating>0);
-  const type=(wine.type||'red').toLowerCase().replace('é','e');
-  const same=users.filter(w=>(w.type||'red').toLowerCase().replace('é','e')===type);
-  const top=[...same].sort((x,y)=>(y.rating||0)-(x.rating||0)).slice(0,3).map(w=>w.name).filter(Boolean);
-  return <div style={{padding:'12px 14px',borderRadius:12,background:C.offWhite,border:`1px solid ${C.line}`}}>
-    <div style={{fontSize:13,fontWeight:700,color:accent,fontFamily:C.P,letterSpacing:'0.06em',textTransform:'uppercase',marginBottom:6}}>Because you rated</div>
-    <div style={{fontSize:15,color:C.ink2,fontFamily:C.P,lineHeight:1.55}}>{top.length?top.join(', ')+'.':'Keep rating wines and this gets personal.'}</div>
-  </div>;
-}
-
 function ValueFace({wine,curr,scanData,accent,soft,expanded}){
   const [pd,setPd]=React.useState(null);
   const [loading,setLoading]=React.useState(false);
   React.useEffect(()=>{
     if(!wine||!wine.name) return;
     setLoading(true);
-    fetchRetailEstimate(wine,curr).then(d=>setPd(d)).catch(()=>{}).finally(()=>setLoading(false));
+    ScanFlow.shopEstimate(wine,curr).then(d=>setPd(d)).finally(()=>setLoading(false));
   },[wine&&wine.name,curr.code]);
   const fmt=n=>n!=null?curr.base+Number(n).toLocaleString():'—';
-  const restaurant=scanData.listPrice||scanData.restaurantPrice||null; // present when opened from a wine list
+  // Present when opened from a wine list; converted when the list is in another currency.
+  const lc=scanData.listCurrency, rawList=scanData.listPrice||scanData.restaurantPrice||null;
+  const restaurant=rawList&&lc&&lc!==curr.code?Math.round(rawList/(USD_FX[lc]||1)*(USD_FX[curr.code]||1)):rawList;
   const mid=pd&&pd.mid;
   const estListLo=mid!=null?Math.round(mid*2.2):null;
   const estListHi=mid!=null?Math.round(mid*2.8):null;
@@ -662,91 +696,144 @@ function ValueFace({wine,curr,scanData,accent,soft,expanded}){
   </div>;
 }
 
-/* ── finish / rating card ── */
-function FinishFace({wine,intent,existingRating,nav,accent}){
-  const canRate=intent==='tasting'||intent==='tasted'||intent==='quickrate';
-  const alreadyRated=existingRating>0;
-  const [confirmStep,setConfirmStep]=React.useState(alreadyRated);
+/* ── rating: the score, then optional tasting details that sharpen future matches ── */
+function RatingPanel({wine,existingRating,nav,curr,onRated,onSaveForLater}){
   const [score,setScore]=React.useState(existingRating||0);
-  const [saved,setSaved]=React.useState(existingRating>0);
-  const label=score===0?'':score<=20?'Not for me':score<=40?"It's ok":score<=60?'Good':score<=80?'Really good':'Exceptional';
+  const [saved,setSaved]=React.useState(false);
+  const label=ParkerScale.label(score);
+  const tc=_typeCol(wine);
   function commit(){
     if(!score||!wine) return;
-    if(existingRating>0) WineHistory.rate(wine.name,wine.vintage,score);
+    if(existingRating>0){ const e=WineHistory.find(wine); WineHistory.rate(e?e.name:wine.name,e?e.vintage:wine.vintage,score); }
     else WineHistory.add(wine,score);
-    try{ if(window.XPSystem) XPSystem.awardAndToast([{type:'rate'}]); }catch(e){}
-    // carry the new rating into the session snapshot so Detail/list screens agree immediately
+    try{ if(window.XPSystem&&!existingRating) XPSystem.awardAndToast([{type:'rate'}]); }catch(e){}
     try{
       const sd=JSON.parse(sessionStorage.getItem('vinterest_scan_result')||'{}');
       sd.existingRating=score;
       sessionStorage.setItem('vinterest_scan_result',JSON.stringify(sd));
     }catch(e){}
     setSaved(true);
+    if(onRated) onRated(score);
   }
-  if(!canRate){
-    return <div style={{display:'flex',flexDirection:'column',gap:16,alignItems:'center',textAlign:'center'}}>
-      <div style={{width:56,height:56,borderRadius:28,background:C.crSoft,border:`1px solid ${C.crDim}`,display:'flex',alignItems:'center',justifyContent:'center'}}><Icon n="check" sz={26} col={C.cr}/></div>
-      <div style={{fontSize:21,fontWeight:800,color:C.ink,fontFamily:C.P,lineHeight:1.2}}>Saved to My Wines</div>
-      <div style={{fontSize:15.5,color:C.ink2,fontFamily:C.P,lineHeight:1.55}}>When you pour it, come back and rate it in a tap — that's what sharpens your matches.</div>
-      <div style={{display:'flex',flexDirection:'column',gap:10,width:'100%',marginTop:4}}>
-        <Btn primary full onClick={()=>nav('detail')}>See full details →</Btn>
-        <Btn full onClick={()=>nav('mywines')}>Go to My Wines</Btn>
+  if(saved) return <div style={{display:'flex',flexDirection:'column',gap:14}}>
+    <div style={{display:'flex',alignItems:'center',gap:10}}>
+      <div style={{width:36,height:36,borderRadius:18,background:C.greenBg,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><Icon n="check" sz={18} col={C.green}/></div>
+      <div>
+        <div style={{fontSize:17,fontWeight:800,color:C.ink,fontFamily:C.P}}>Scored {score} · {label}</div>
+        <div style={{fontSize:13,color:C.mid,fontFamily:C.P}}>Saved to My Wines</div>
       </div>
-    </div>;
-  }
-  if(confirmStep){
-    const r=52,circ=2*Math.PI*r;
-    return <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:16,textAlign:'center'}}>
-      <div style={{position:'relative',width:150,height:150}}>
-        <svg width="150" height="150" viewBox="0 0 130 130" style={{transform:'rotate(-90deg)'}}>
-          <circle cx="65" cy="65" r={r} fill="none" stroke={C.line} strokeWidth="10"/>
-          <circle cx="65" cy="65" r={r} fill="none" stroke={C.green} strokeWidth="10" strokeLinecap="round" strokeDasharray={circ} strokeDashoffset={circ*(1-existingRating/100)}/>
-        </svg>
-        <div style={{position:'absolute',inset:0,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center'}}>
-          <div style={{fontSize:40,fontWeight:800,color:C.green,fontFamily:C.P,lineHeight:1}}>{existingRating}<span style={{fontSize:16,fontWeight:700}}> pts</span></div>
-          <div style={{fontSize:9.5,fontWeight:700,color:C.mid,fontFamily:C.P,letterSpacing:'0.06em',textTransform:'uppercase',marginTop:2,textAlign:'center',padding:'0 8px',lineHeight:1.2}}>Previous<br/>rating</div>
-        </div>
-      </div>
-      <div style={{fontSize:19,fontWeight:800,color:C.ink,fontFamily:C.P,lineHeight:1.25}}>You already rated this one</div>
-      <div style={{fontSize:15.5,color:C.ink2,fontFamily:C.P,lineHeight:1.55}}>Leave your score for {_wineTitle(wine)} as is, or rate it again.</div>
-      <div style={{display:'flex',flexDirection:'column',gap:10,width:'100%',marginTop:4}}>
-        <Btn primary full onClick={()=>nav('detail')}>Leave it at {existingRating} — see full details →</Btn>
-        <Btn full onClick={()=>setConfirmStep(false)}>Re-rate it</Btn>
-      </div>
-    </div>;
-  }
-  return <div style={{display:'flex',flexDirection:'column',gap:16}}>
-    <div style={{fontSize:21,fontWeight:800,color:C.ink,fontFamily:C.P,lineHeight:1.2,textAlign:'center'}}>How was it?</div>
+    </div>
+    <TastingExtras wine={wine} curr={curr}/>
+    {/* End of the flow: set apart from the optional details above so it doesn't read as one of them. */}
+    <div style={{marginTop:10,paddingTop:16,borderTop:`2px solid ${C.line}`,display:'flex',flexDirection:'column',gap:10}}>
+      <div style={{fontSize:13,fontWeight:700,color:C.mid,fontFamily:C.P,letterSpacing:'0.06em',textTransform:'uppercase',textAlign:'center'}}>All done</div>
+      <Btn primary full onClick={()=>nav('home')}>Finish</Btn>
+      <Btn full onClick={()=>nav('detail')}>See full wine details</Btn>
+      <div onClick={()=>nav('camera')} style={{textAlign:'center',fontSize:15,fontWeight:600,color:C.mid,fontFamily:C.P,cursor:'pointer',padding:'2px 0'}}>Scan another bottle</div>
+    </div>
+  </div>;
+  return <div style={{display:'flex',flexDirection:'column',gap:14}}>
+    <div style={{fontSize:20,fontWeight:800,color:C.ink,fontFamily:C.P,lineHeight:1.2,textAlign:'center'}}>How was it?</div>
     <div style={{display:'flex',gap:6}}>
-      {[20,40,60,80,100].map(p=>(
-        <div key={p} onClick={()=>{setScore(p);setSaved(false);}} style={{flex:1,padding:'9px 2px',borderRadius:11,border:`1.5px solid ${score===p?C.cr:C.line}`,background:score===p?C.cr:C.white,textAlign:'center',cursor:'pointer',transition:'all .12s'}}>
+      {ParkerScale.PRESETS.map(p=>(
+        <div key={p} onClick={()=>setScore(p)} style={{flex:1,padding:'9px 2px',borderRadius:11,border:`1.5px solid ${score===p?tc:C.line}`,background:score===p?tc:C.white,textAlign:'center',cursor:'pointer',transition:'all .12s'}}>
           <span style={{fontSize:17,fontWeight:700,color:score===p?'#fff':C.mid,fontFamily:C.P}}>{p}</span>
         </div>
       ))}
     </div>
-    <input type="range" min="0" max="100" step="1" value={score} onChange={e=>{setScore(Number(e.target.value));setSaved(false);}} style={{width:'100%',accentColor:C.cr,cursor:'pointer'}}/>
+    <input type="range" min={ParkerScale.MIN} max="100" step="1" value={Math.max(score,ParkerScale.MIN)} onChange={e=>setScore(Number(e.target.value))} style={{width:'100%',accentColor:tc,cursor:'pointer'}}/>
     <div style={{textAlign:'center',minHeight:40}}>
       {score>0?<div style={{display:'flex',flexDirection:'column',alignItems:'center'}}>
-        <div style={{display:'flex',alignItems:'baseline',gap:3}}><span style={{fontSize:34,fontWeight:800,color:C.cr,fontFamily:C.P,lineHeight:1}}>{score}</span><span style={{fontSize:13,fontWeight:700,color:C.mid,fontFamily:C.P}}>pts</span></div>
+        <div style={{display:'flex',alignItems:'baseline',gap:3}}><span style={{fontSize:34,fontWeight:800,color:tc,fontFamily:C.P,lineHeight:1}}>{score}</span><span style={{fontSize:13,fontWeight:700,color:C.mid,fontFamily:C.P}}>pts</span></div>
         <span style={{fontSize:15,fontWeight:600,color:C.amber,fontFamily:C.P}}>{label}</span>
-      </div>:<span style={{fontSize:14.5,color:C.mid,fontFamily:C.P}}>Slide or tap a score</span>}
+      </div>:<span style={{fontSize:15,color:C.mid,fontFamily:C.P}}>Slide or tap a score</span>}
     </div>
-    {score>0&&!saved&&<Btn primary full onClick={commit}>Save rating</Btn>}
-    {saved&&<><div style={{textAlign:'center',fontSize:15,fontWeight:600,color:C.green,fontFamily:C.P}}>✓ Saved to My Wines</div><Btn primary full onClick={()=>nav('detail')}>See full details →</Btn></>}
-    {!saved&&score===0&&<div onClick={()=>nav('detail')} style={{textAlign:'center',fontSize:14,fontWeight:600,color:C.mid,fontFamily:C.P,cursor:'pointer'}}>Skip rating — see full details →</div>}
+    <div style={{fontSize:12,color:C.mid,fontFamily:C.P,textAlign:'center',lineHeight:1.5,opacity:0.8}}>100-point scale: 96+ Extraordinary · 90–95 Outstanding · 80–89 Very good · 70–79 Average · under 70 Below average</div>
+    {score>0&&<Btn primary full onClick={commit}>Save rating</Btn>}
+    {onSaveForLater&&<div onClick={onSaveForLater} style={{textAlign:'center',fontSize:15,fontWeight:600,color:C.mid,fontFamily:C.P,cursor:'pointer'}}>Not tasted it yet? Save for later</div>}
+  </div>;
+}
+
+/* Optional, after a score: how it compared with the label estimate (feeds WineDNA and matches
+   through WineDNA.axisValue), what they paid (feeds Value), and whether they'd buy it again.
+   Each tap saves straight away. A Blind Call on this bottle pre-fills the comparison. */
+function TastingExtras({wine,curr}){
+  const entry=WineHistory.find(wine)||wine;
+  const axes=ScanFlow.compareAxes(entry);
+  const [tasted,setTasted]=React.useState(()=>entry.tasted||ScanFlow.tastedFromBlindCall(entry)||{});
+  const [paid,setPaid]=React.useState(()=>entry.price_paid&&entry.price_paid.amount?String(entry.price_paid.amount):'');
+  const [again,setAgain]=React.useState(entry.buy_again);
+  const save=patch=>{ const e=WineHistory.find(wine); if(e) WineHistory.setTasting(e.name,e.vintage,patch); };
+  React.useEffect(()=>{ if(!entry.tasted&&Object.keys(tasted).length) save({tasted}); },[]);
+  const tc=_typeCol(entry);
+  const seg=(active)=>({flex:1,padding:'8px 4px',borderRadius:10,border:`1.5px solid ${active?tc:C.line}`,background:active?tc:C.white,color:active?'#fff':C.ink2,fontSize:14,fontWeight:600,fontFamily:C.P,textAlign:'center',cursor:'pointer'});
+  return <div style={{display:'flex',flexDirection:'column',gap:12,paddingTop:12,borderTop:`1px solid ${C.line}`}}>
+    <div>
+      <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>What did you notice?</div>
+      <div style={{fontSize:13,color:C.mid,fontFamily:C.P,lineHeight:1.45,marginTop:2}}>Optional. Compared with the label estimate, so your WineDNA and matches reflect what you actually tasted.</div>
+    </div>
+    {axes.map(k=>{
+      const [lo,hi]=ScanFlow.COMPARE[k]||['Less','More'];
+      const pick=v=>{ const next={...tasted,[k]:v}; setTasted(next); save({tasted:next}); };
+      return <div key={k}>
+        <div style={{fontSize:13,fontWeight:700,color:C.mid,fontFamily:C.P,marginBottom:5}}>{WineDNA.AXES[k].name}</div>
+        <div style={{display:'flex',gap:6}}>
+          <div onClick={()=>pick(-1)} style={seg(tasted[k]===-1)}>{lo}</div>
+          <div onClick={()=>pick(0)} style={seg(tasted[k]===0)}>As expected</div>
+          <div onClick={()=>pick(1)} style={seg(tasted[k]===1)}>{hi}</div>
+        </div>
+      </div>;
+    })}
+    <div style={{display:'flex',flexDirection:'column',gap:12}}>
+      <div>
+        <div style={{fontSize:13,fontWeight:700,color:C.mid,fontFamily:C.P,marginBottom:5}}>What you paid</div>
+        <div style={{display:'flex',alignItems:'center',gap:6,padding:'8px 10px',borderRadius:10,border:`1.5px solid ${C.line}`,background:C.white}}>
+          <span style={{fontSize:15,color:C.mid,fontFamily:C.P}}>{curr.base}</span>
+          <input inputMode="decimal" placeholder="0" value={paid} aria-label="What you paid"
+            onChange={e=>setPaid(e.target.value.replace(/[^0-9.]/g,''))}
+            onBlur={()=>{ const n=Number(paid); save({price_paid:n>0?{amount:n,code:curr.code}:null}); }}
+            style={{flex:1,minWidth:0,border:'none',outline:'none',fontSize:16,fontFamily:C.P,color:C.ink,background:'transparent'}}/>
+        </div>
+      </div>
+      <div>
+        <div style={{fontSize:13,fontWeight:700,color:C.mid,fontFamily:C.P,marginBottom:5}}>Would you buy it again?</div>
+        <div style={{display:'flex',gap:6}}>
+          <div onClick={()=>{ setAgain(true); save({buy_again:true}); }} style={seg(again===true)}>Yes</div>
+          <div onClick={()=>{ setAgain(false); save({buy_again:false}); }} style={seg(again===false)}>No</div>
+        </div>
+      </div>
+    </div>
+  </div>;
+}
+
+/* The "while you taste" card: taste cues, with Blind Call on offer for someone drinking it now. */
+function TasteCard({wine,gen,accent,onBlindCall}){
+  const played=!!localStorage.getItem('vinterest_blindcall_'+_bcKey(wine).replace(/\s/g,'_'));
+  const [blind,setBlind]=React.useState(played);
+  if(blind) return <BlindCallCard wine={wine} gen={gen} accent={accent} onStart={onBlindCall}/>;
+  return <div style={{display:'flex',flexDirection:'column',gap:14}}>
+    <TasteCues wine={wine} accent={accent}/>
+    <div onClick={()=>setBlind(true)} style={{padding:'12px 14px',borderRadius:12,background:C.crSoft,border:`1px solid ${C.crDim}`,cursor:'pointer',display:'flex',alignItems:'center',gap:10}}>
+      <Icon n="bolt" sz={18} col={C.cr}/>
+      <div style={{flex:1}}>
+        <div style={{fontSize:15,fontWeight:700,color:C.cr,fontFamily:C.P}}>Tasting it now? Play Blind Call</div>
+        <div style={{fontSize:13,color:C.ink2,fontFamily:C.P}}>Call the body, acidity and more before you see the answer.</div>
+      </div>
+    </div>
   </div>;
 }
 
 /* ── the deck (three interaction styles) ── */
-function CardDeck({deckStyle,wine,gen,loading,matchPct,curr,scanData,intent,canRate,existingRating,dna,startAtEnd,nav}){
-  const cards=React.useMemo(()=>buildCards({wine,gen,matchPct,curr,scanData,intent}),[wine&&wine.name,gen,matchPct,intent]);
-  const ctx={wine,gen,loading,matchPct,curr,scanData,intent,dna};
-  const [idx,setIdx]=React.useState(()=>startAtEnd?Math.max(0,cards.length-1):0);
+function CardDeck({deckStyle,wine,gen,loading,match,curr,scanData,existingRating,nav,onRated,onSaveForLater,onBlindCall}){
+  const cards=React.useMemo(()=>buildCards({match}),[match&&match.tone]);
+  const ctx={wine,gen,loading,match,curr,scanData,onBlindCall,
+    finish:()=><RatingPanel wine={wine} existingRating={existingRating} nav={nav} curr={curr} onRated={onRated} onSaveForLater={existingRating?null:onSaveForLater}/>};
+  const [idx,setIdx]=React.useState(0);
 
   const total=cards.length;
   const go=d=>setIdx(i=>Math.max(0,Math.min(total-1,i+d)));
 
-  const common={cards,ctx,intent,existingRating,nav,accent:C.cr};
+  const common={cards,ctx};
 
   return <div style={{flex:1,display:'flex',flexDirection:'column',minHeight:0,position:'relative'}}>
     {/* progress dots */}
@@ -763,7 +850,7 @@ function CardDeck({deckStyle,wine,gen,loading,matchPct,curr,scanData,intent,canR
 }
 
 /* shared card chrome */
-function CardShell({card,children,intent,existingRating,nav,style}){
+function CardShell({card,children,ctx,style}){
   const isFinish=card.kind==='finish';
   return <div style={{background:C.white,borderRadius:22,border:`1px solid ${C.line}`,boxShadow:'0 6px 22px rgba(0,0,0,0.08)',display:'flex',flexDirection:'column',overflow:'hidden',...style}}>
     <div style={{height:5,background:card.accent,flexShrink:0}}/>
@@ -771,62 +858,76 @@ function CardShell({card,children,intent,existingRating,nav,style}){
       <div style={{width:30,height:30,borderRadius:9,background:card.soft,display:'flex',alignItems:'center',justifyContent:'center'}}><Icon n={card.icon} sz={16} col={card.accent}/></div>
       <span style={{fontSize:12.5,fontWeight:700,color:card.accent,fontFamily:C.P,letterSpacing:'0.09em',textTransform:'uppercase'}}>{card.eyebrow}</span>
     </div>
-    <div className="sc-scroll" style={{padding:'8px 18px 18px',overflowY:'hidden',flex:1,minHeight:0}}>
-      {isFinish?<FinishFace wine={card._wine} intent={intent} existingRating={existingRating} nav={nav} accent={card.accent}/>:children}
+    {/* overflow:clip, not hidden: a hidden-overflow box is a scroll container, and on touch
+        screens the browser claims horizontal drags that start inside one, cancelling the swipe. */}
+    <div className="sc-scroll" style={{padding:'8px 18px 18px',overflowX:'clip',overflowY:isFinish?'auto':'clip',flex:1,minHeight:0}}>
+      {isFinish?ctx.finish():children}
     </div>
   </div>;
 }
 
-/* deck style A — swipeable stack */
-function SwipeDeck({deck,ctx,idx,setIdx,go,intent,existingRating,nav}){
-  const [drag,setDrag]=React.useState({dx:0,dy:0,active:false});
-  const start=React.useRef(null);
-  const dragRef=React.useRef({dx:0,dy:0});
-  const topRef=React.useRef(null);
-  const cardRef=React.useRef(null);
+/* deck style A — swipeable stack. A drag starts anywhere on the card except on a control
+   (slider, input, button), only once the finger moves sideways more than it moves down, and
+   moves the card directly rather than re-rendering the deck every frame. A drag past a fifth
+   of the card, or a short flick, turns it; it works both ways, including back from the last card. */
+function SwipeDeck({deck,ctx,idx,setIdx,go}){
+  const g=React.useRef(null);
+  const hintRef=React.useRef(0);
+  const justDragged=React.useRef(false);
+  const [hint,setHint]=React.useState(0);
   const top=deck[idx];
   const isFinish=top&&top.kind==='finish';
-  topRef.current=top;
-
-  const ptrId=React.useRef(null);
+  const CONTROL='input,textarea,select,button,a,[role="slider"],[data-noswipe]';
+  function place(el,dx,dy,anim){
+    el.style.transition=anim?'transform .26s cubic-bezier(.34,1.1,.64,1)':'none';
+    el.style.transform=`translate(${dx}px,${dy*0.25}px) rotate(${dx*0.04}deg)`;
+  }
   function onPointerDown(e){
-    if(isFinish) return;
-    e.currentTarget.setPointerCapture(e.pointerId);
-    ptrId.current=e.pointerId;
-    start.current={x:e.clientX,y:e.clientY};
-    dragRef.current={dx:0,dy:0};
-    setDrag({dx:0,dy:0,active:true});
+    if(e.button>0||(e.target.closest&&e.target.closest(CONTROL))) return;
+    g.current={id:e.pointerId,x:e.clientX,y:e.clientY,t:performance.now(),dragging:false,el:e.currentTarget,w:e.currentTarget.offsetWidth||320,dx:0};
   }
   function onPointerMove(e){
-    if(!start.current||e.pointerId!==ptrId.current) return;
-    const dx=e.clientX-start.current.x, dy=e.clientY-start.current.y;
-    dragRef.current={dx,dy};
-    setDrag({dx,dy,active:true});
+    const s=g.current; if(!s||e.pointerId!==s.id) return;
+    const dx=e.clientX-s.x, dy=e.clientY-s.y;
+    if(!s.dragging){
+      if(Math.abs(dy)>14&&Math.abs(dy)>Math.abs(dx)){ g.current=null; return; }
+      if(Math.abs(dx)<8) return;
+      s.dragging=true; try{ s.el.setPointerCapture(e.pointerId); }catch(err){}
+    }
+    s.dx=dx; place(s.el,dx,dy,false);
+    const h=Math.abs(dx)>40?Math.sign(dx):0;
+    if(h!==hintRef.current){ hintRef.current=h; setHint(h); }
   }
   function onPointerUp(e){
-    if(!start.current||e.pointerId!==ptrId.current) return;
-    const {dx}=dragRef.current;
-    start.current=null; ptrId.current=null;
-    if(dx<-110){ setDrag({dx:0,dy:0,active:false}); setTimeout(()=>go(1),10); return; }
-    if(dx>110){ setDrag({dx:0,dy:0,active:false}); setTimeout(()=>go(-1),10); return; }
-    setDrag({dx:0,dy:0,active:false});
+    const s=g.current; g.current=null;
+    if(!s||e.pointerId!==s.id||!s.dragging) return;
+    justDragged.current=true; setTimeout(()=>{ justDragged.current=false; },0);
+    hintRef.current=0; setHint(0);
+    const speed=Math.abs(s.dx)/Math.max(1,performance.now()-s.t);
+    const turn=Math.abs(s.dx)>s.w*0.2||(Math.abs(s.dx)>30&&speed>0.25);
+    const dir=turn?(s.dx<0?1:-1):0;
+    const ok=dir===1?idx<deck.length-1:dir===-1?idx>0:false;
+    if(ok){ place(s.el,(s.dx<0?-1:1)*s.w*1.3,0,true); setTimeout(()=>go(dir),170); }
+    else place(s.el,0,0,true);
   }
+  const drag={dx:hint*50};
 
-  return <div style={{flex:1,display:'flex',flexDirection:'column',padding:'8px 16px 14px',minHeight:0}}>
+  return <div className="sc-swipe" style={{flex:1,display:'flex',flexDirection:'column',padding:'8px 16px 14px',minHeight:0}}>
     <div style={{position:'relative',flex:1,minHeight:0}}>
       {deck.map((c,i)=>{
         if(i<idx||i>idx+2) return null;
         const depth=i-idx;
         const isTop=depth===0;
-        const tf=isTop?`translate(${drag.dx}px,${drag.dy<0?drag.dy:drag.dy*0.4}px) rotate(${drag.dx*0.04}deg)`:`translateY(${depth*12}px) scale(${1-depth*0.045})`;
+        const tf=isTop?'translate(0px,0px) rotate(0deg)':`translateY(${depth*12}px) scale(${1-depth*0.045})`;
         const cc={...c,_wine:ctx.wine};
         return <div key={c.key}
           onPointerDown={isTop?onPointerDown:undefined} onPointerMove={isTop?onPointerMove:undefined} onPointerUp={isTop?onPointerUp:undefined} onPointerCancel={isTop?onPointerUp:undefined}
-          style={{position:'absolute',inset:0,zIndex:10-depth,transform:tf,transition:drag.active&&isTop?'none':'transform .3s cubic-bezier(.34,1.1,.64,1)',opacity:depth>1?0:1,touchAction:isTop&&!isFinish?'none':'auto',cursor:isTop&&!isFinish?'grab':'default',userSelect:isTop&&!isFinish?'none':'auto',WebkitUserSelect:isTop&&!isFinish?'none':'auto',WebkitTouchCallout:isTop&&!isFinish?'none':'default'}}>
-          <CardShell card={cc} intent={intent} existingRating={existingRating} nav={nav} style={{height:'100%'}}>
+          onClickCapture={isTop?(e=>{ if(justDragged.current){ e.stopPropagation(); e.preventDefault(); } }):undefined}
+          style={{position:'absolute',inset:0,zIndex:10-depth,transform:tf,transition:'transform .3s cubic-bezier(.34,1.1,.64,1)',opacity:depth>1?0:1,cursor:isTop?'grab':'default',userSelect:isTop&&!isFinish?'none':'auto',WebkitUserSelect:isTop&&!isFinish?'none':'auto',WebkitTouchCallout:isTop&&!isFinish?'none':'default'}}>
+          <CardShell card={cc} ctx={ctx} style={{height:'100%'}}>
             <CardFace card={c} ctx={ctx}/>
           </CardShell>
-          {isTop&&Math.abs(drag.dx)>40&&!isFinish&&<div style={{position:'absolute',top:24,[drag.dx<0?'right':'left']:24,padding:'6px 14px',borderRadius:10,border:`2.5px solid ${C.mid}`,color:C.mid,fontSize:15,fontWeight:800,fontFamily:C.P,transform:`rotate(${drag.dx<0?12:-12}deg)`,background:'rgba(255,255,255,0.9)',letterSpacing:'0.05em'}}>{drag.dx<0?'NEXT':'BACK'}</div>}
+          {isTop&&Math.abs(drag.dx)>40&&<div style={{position:'absolute',top:24,[drag.dx<0?'right':'left']:24,padding:'6px 14px',borderRadius:10,border:`2.5px solid ${C.mid}`,color:C.mid,fontSize:15,fontWeight:800,fontFamily:C.P,transform:`rotate(${drag.dx<0?12:-12}deg)`,background:'rgba(255,255,255,0.9)',letterSpacing:'0.05em'}}>{drag.dx<0?'NEXT':'BACK'}</div>}
         </div>;
       })}
     </div>
@@ -840,12 +941,12 @@ function SwipeDeck({deck,ctx,idx,setIdx,go,intent,existingRating,nav}){
 }
 
 /* deck style B — horizontal carousel */
-function Carousel({cards,ctx,intent,existingRating,nav}){
+function Carousel({cards,ctx}){
   return <div className="sc-scroll" style={{flex:1,display:'flex',overflowX:'auto',scrollSnapType:'x mandatory',gap:14,padding:'8px 16px 18px',minHeight:0}}>
     {cards.map(c=>{
       const cc={...c,_wine:ctx.wine};
       return <div key={c.key} style={{scrollSnapAlign:'center',flex:'0 0 86%',maxWidth:360,display:'flex'}}>
-        <CardShell card={cc} intent={intent} existingRating={existingRating} nav={nav} style={{width:'100%',minHeight:0}}>
+        <CardShell card={cc} ctx={ctx} style={{width:'100%',minHeight:0}}>
           <CardFace card={c} ctx={ctx}/>
         </CardShell>
       </div>;
@@ -854,12 +955,12 @@ function Carousel({cards,ctx,intent,existingRating,nav}){
 }
 
 /* deck style C — vertical feed */
-function Feed({cards,ctx,intent,existingRating,nav}){
+function Feed({cards,ctx}){
   return <div className="sc-scroll" style={{flex:1,overflowY:'auto',padding:'8px 16px 24px',display:'flex',flexDirection:'column',gap:14,minHeight:0}}>
     {cards.map(c=>{
       const cc={...c,_wine:ctx.wine};
       return <div key={c.key} style={{animation:'scPop .3s ease both'}}>
-        <CardShell card={cc} intent={intent} existingRating={existingRating} nav={nav}>
+        <CardShell card={cc} ctx={ctx}>
           <CardFace card={c} ctx={ctx}/>
         </CardShell>
       </div>;

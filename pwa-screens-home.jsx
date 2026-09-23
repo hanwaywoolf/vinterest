@@ -101,6 +101,42 @@ function WineChatWidget({wines}){
   );
 }
 
+/* Bottles waiting on the user: shelf checks to confirm ("Did you buy it?") and wines they've
+   drunk or bought but not scored. Each score sharpens WineDNA and every match. */
+function WaitingOnYou({nav}){
+  const [v,setV]=React.useState(0);
+  const {toScore,toAsk}=React.useMemo(()=>WineHistory.pending(),[v]);
+  if(!toScore.length&&!toAsk.length) return null;
+  const ask=toAsk[0];
+  const open=w=>{
+    sessionStorage.setItem('vinterest_scan_result',JSON.stringify({demo:false,source:'history',view:'rate',wine:w}));
+    nav('identified');
+  };
+  return <Card style={{padding:0,overflow:'hidden'}}>
+    <div style={{padding:'12px 14px 8px'}}>
+      <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>Waiting on you</div>
+      <div style={{fontSize:13,color:C.mid,fontFamily:C.P,marginTop:1}}>Every score sharpens your matches.</div>
+    </div>
+    {ask&&<div style={{padding:'10px 14px 12px',borderTop:`1px solid ${C.line}`}}>
+      <div style={{fontSize:15,color:C.ink,fontFamily:C.P,lineHeight:1.45}}>Did you buy the <b>{ask.name}</b>{ask.vintage?` ${ask.vintage}`:''}?</div>
+      <div style={{display:'flex',gap:8,marginTop:8}}>
+        <Btn small primary onClick={()=>{ WineHistory.setBought(ask.name,ask.vintage,true); setV(x=>x+1); }}>Yes, I bought it</Btn>
+        <Btn small onClick={()=>{ WineHistory.setBought(ask.name,ask.vintage,false); setV(x=>x+1); }}>No</Btn>
+      </div>
+    </div>}
+    {toScore.slice(0,3).map(w=>(
+      <div key={w.name+'|'+w.vintage} onClick={()=>open(w)} style={{display:'flex',alignItems:'center',gap:10,padding:'10px 14px',borderTop:`1px solid ${C.line}`,cursor:'pointer'}}>
+        <div style={{flex:1,minWidth:0}}>
+          <div style={{fontSize:15,fontWeight:600,color:C.ink,fontFamily:C.P,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{w.name}</div>
+          <div style={{fontSize:13,color:C.mid,fontFamily:C.P}}>{w.bought&&w.scan_intent==='checking'?'Bought':'Tasted'}, not scored yet</div>
+        </div>
+        <span style={{fontSize:13,fontWeight:700,color:C.cr,fontFamily:C.P,flexShrink:0}}>Score it →</span>
+      </div>
+    ))}
+    {toScore.length>3&&<div onClick={()=>nav('mywines')} style={{padding:'8px 14px 12px',borderTop:`1px solid ${C.line}`,fontSize:13,fontWeight:600,color:C.mid,fontFamily:C.P,cursor:'pointer'}}>{toScore.length-3} more in My Wines →</div>}
+  </Card>;
+}
+
 function HomeScreen({nav, showPro, isTablet}){
   const [travel,setTravel]=React.useState(()=>Regional.travel());
   React.useEffect(()=>{
@@ -140,7 +176,8 @@ function HomeScreen({nav, showPro, isTablet}){
   allWines.forEach(w=>{const t=(w.type||'').toLowerCase().replace('é','e');if(typeCounts[t]!==undefined)typeCounts[t]++;});
   // The original four always show (greyed out if unscanned); Orange/Dessert/Fortified only appear once you've actually scanned one.
   const visibleCats=cats.filter(ct=>_BASE_TYPES.includes(ct.typeKey)||typeCounts[ct.typeKey]>0);
-  const [activeType,setActiveType]=React.useState('red');
+  // Opens on the type they said they drink most (onboarding), once they've scanned one.
+  const [activeType,setActiveType]=React.useState(()=>{ const p=UserPrefs.preferredType(); return p&&typeCounts[p]>0?p:'red'; });
   const [tabToast,setTabToast]=React.useState(null);
   function pickType(ct){
     if(typeCounts[ct.typeKey]===0){ setTabToast(`You haven't scanned a ${ct.label.toLowerCase()} yet`); setTimeout(()=>setTabToast(null),1800); return; }
@@ -173,53 +210,16 @@ function HomeScreen({nav, showPro, isTablet}){
   const nx=XPSystem.nextLevel(xpData.total);
   const pg=XPSystem.levelProgress(xpData.total);
 
-  /* Script generation — the LONG script is the single source of truth; the SHORT script is always
-     derived by condensing that exact long text (never generated independently), so facts like the
-     budget range can never disagree between the two lengths. */
+  /* Sommelier script — shared with WineDNA through SommelierScript (pwa-content-engine.js), so
+     both screens show the same text and the same budget. */
   React.useEffect(()=>{
     if(!tabWines.length) return;
-    const _rc=Regional.current();
-    const _base=_rc.base;
-    const _code=_rc.code;
-    const keyLong=`vinterest_script_long_${c.typeKey}_n${tabWines.length}_${_rc.code}_v3`;
-    const keyShort=`vinterest_script_short_${c.typeKey}_n${tabWines.length}_${_rc.code}_v3`;
-    const cachedLong=localStorage.getItem(keyLong);
-    const cachedShort=localStorage.getItem(keyShort);
-
-    function makeShortFrom(longText){
-      if(generating===c.typeKey+'_short') return;
-      setGenerating(c.typeKey+'_short');
-      const prompt=`Condense this sommelier script into ONE ultra-concise sentence (under 20 words), keeping the SAME facts, style, regions and budget range verbatim — do not invent a new budget number, only reuse the one already stated (or omit it if none was stated). Script: ${longText} Return ONLY the condensed script text in double quotes — nothing else.`;
-      window.claude.complete({purpose:'sommelier_script',messages:[{role:'user',content:prompt}]})
-        .then(text=>{const sc=text.trim();localStorage.setItem(keyShort,sc);if(scriptLength==='short')setGenScripts(g=>({...g,[c.typeKey]:sc}));})
-        .catch(()=>{})
-        .finally(()=>setGenerating(null));
-    }
-
-    if(scriptLength==='long'){
-      if(cachedLong){ setGenScripts(s=>({...s,[c.typeKey]:cachedLong})); return; }
-      if(generating===c.typeKey) return;
-      setGenerating(c.typeKey);
-      const wineList=tabWines.slice(0,8).map(w=>`${w.name}${w.vintage?' '+w.vintage:''} from ${w.region||w.country||'unknown'}`).join('; ');
-      const prompt=`I've scanned these ${c.label.toLowerCase()} wines: ${wineList}. Based ONLY on the wines I've chosen and their regions, write a 2 sentences max natural first-person sommelier script I could say to a restaurant sommelier. Reflect my apparent style and preferred regions. If you mention a budget or price range, it MUST use the plain ${_base} symbol plus the ${_code} code (e.g. "${_base}40–${_base}80 ${_code}") — never a country-prefixed symbol. Return ONLY the script text in double quotes — nothing else.`;
-      window.claude.complete({purpose:'sommelier_script',messages:[{role:'user',content:prompt}]})
-        .then(text=>{const sc=text.trim();localStorage.setItem(keyLong,sc);setGenScripts(g=>({...g,[c.typeKey]:sc}));})
-        .catch(()=>{})
-        .finally(()=>setGenerating(null));
-      return;
-    }
-
-    // scriptLength==='short'
-    if(cachedShort){ setGenScripts(s=>({...s,[c.typeKey]:cachedShort})); return; }
-    if(cachedLong){ makeShortFrom(cachedLong); return; }
-    // No long script yet — generate it first, then derive short from it.
-    if(generating===c.typeKey) return;
-    setGenerating(c.typeKey);
-    const wineList=tabWines.slice(0,8).map(w=>`${w.name}${w.vintage?' '+w.vintage:''} from ${w.region||w.country||'unknown'}`).join('; ');
-    const prompt=`I've scanned these ${c.label.toLowerCase()} wines: ${wineList}. Based ONLY on the wines I've chosen and their regions, write a 2 sentences max natural first-person sommelier script I could say to a restaurant sommelier. Reflect my apparent style and preferred regions. If you mention a budget or price range, it MUST use the plain ${_base} symbol plus the ${_code} code (e.g. "${_base}40–${_base}80 ${_code}") — never a country-prefixed symbol. Return ONLY the script text in double quotes — nothing else.`;
-    window.claude.complete({purpose:'sommelier_script',messages:[{role:'user',content:prompt}]})
-      .then(text=>{const sc=text.trim();localStorage.setItem(keyLong,sc);setGenerating(null);makeShortFrom(sc);})
-      .catch(()=>setGenerating(null));
+    const typeKey=c.typeKey;
+    setGenerating(typeKey);
+    SommelierScript.get(scriptLength,typeKey,c.label,tabWines,text=>{
+      setGenerating(g=>g===typeKey?null:g);
+      if(text) setGenScripts(g=>({...g,[typeKey]:text}));
+    });
   },[activeType,allWines.length,scriptLength]);
 
   const typeColors={red:'#8B1A2F',white:'#B8963E',rosé:'#C47A8A',rose:'#C47A8A',sparkling:'#5E8FA8',orange:'#C1652B',dessert:'#8A5A2B',fortified:'#5C2A1E'};
@@ -273,6 +273,8 @@ function HomeScreen({nav, showPro, isTablet}){
       {/* ── Scrollable body ── */}
       <div style={{flex:1,overflowY:'auto',overscrollBehavior:'none',WebkitOverflowScrolling:'touch'}}>
       <div style={{padding:'8px 20px',display:'flex',flexDirection:'column',gap:12}}>
+
+        <WaitingOnYou nav={nav}/>
 
         {/* Recently Scanned */}
         {recentWines.length>0&&(
@@ -360,7 +362,7 @@ function HomeScreen({nav, showPro, isTablet}){
             <Card style={{padding:0,overflow:'hidden'}}>
               <div style={{padding:'10px 14px 6px',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
                 <span style={{fontSize:16,fontWeight:600,color:C.ink,fontFamily:C.P}}>Top {c.label}</span>
-                <span onClick={()=>nav('mywines')} style={{fontSize:15,fontWeight:600,color:C.cr,fontFamily:C.P,cursor:'pointer'}}>See all →</span>
+                <span onClick={()=>{ try{ sessionStorage.setItem('vinterest_mywines_view',JSON.stringify({type:c.typeKey,sort:'rating'})); }catch(e){} nav('mywines'); }} style={{fontSize:15,fontWeight:600,color:C.cr,fontFamily:C.P,cursor:'pointer'}}>See all →</span>
               </div>
               {topWines.map((w,i)=>(
                 <div key={i} onClick={()=>{
