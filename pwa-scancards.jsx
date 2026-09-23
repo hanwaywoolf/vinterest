@@ -671,7 +671,7 @@ function FinishFace({wine,intent,existingRating,nav,accent}){
   const [confirmStep,setConfirmStep]=React.useState(alreadyRated);
   const [score,setScore]=React.useState(existingRating||0);
   const [saved,setSaved]=React.useState(existingRating>0);
-  const label=score===0?'':score<=20?'Not for me':score<=40?"It's ok":score<=60?'Good':score<=80?'Really good':'Exceptional';
+  const label=ParkerScale.label(score);
   function commit(){
     if(!score||!wine) return;
     if(existingRating>0) WineHistory.rate(wine.name,wine.vintage,score);
@@ -720,19 +720,20 @@ function FinishFace({wine,intent,existingRating,nav,accent}){
   return <div style={{display:'flex',flexDirection:'column',gap:16}}>
     <div style={{fontSize:21,fontWeight:800,color:C.ink,fontFamily:C.P,lineHeight:1.2,textAlign:'center'}}>How was it?</div>
     <div style={{display:'flex',gap:6}}>
-      {[20,40,60,80,100].map(p=>(
+      {ParkerScale.PRESETS.map(p=>(
         <div key={p} onClick={()=>{setScore(p);setSaved(false);}} style={{flex:1,padding:'9px 2px',borderRadius:11,border:`1.5px solid ${score===p?C.cr:C.line}`,background:score===p?C.cr:C.white,textAlign:'center',cursor:'pointer',transition:'all .12s'}}>
           <span style={{fontSize:17,fontWeight:700,color:score===p?'#fff':C.mid,fontFamily:C.P}}>{p}</span>
         </div>
       ))}
     </div>
-    <input type="range" min="0" max="100" step="1" value={score} onChange={e=>{setScore(Number(e.target.value));setSaved(false);}} style={{width:'100%',accentColor:C.cr,cursor:'pointer'}}/>
+    <input type="range" min={ParkerScale.MIN} max="100" step="1" value={Math.max(score,ParkerScale.MIN)} onChange={e=>{setScore(Number(e.target.value));setSaved(false);}} style={{width:'100%',accentColor:C.cr,cursor:'pointer'}}/>
     <div style={{textAlign:'center',minHeight:40}}>
       {score>0?<div style={{display:'flex',flexDirection:'column',alignItems:'center'}}>
         <div style={{display:'flex',alignItems:'baseline',gap:3}}><span style={{fontSize:34,fontWeight:800,color:C.cr,fontFamily:C.P,lineHeight:1}}>{score}</span><span style={{fontSize:13,fontWeight:700,color:C.mid,fontFamily:C.P}}>pts</span></div>
         <span style={{fontSize:15,fontWeight:600,color:C.amber,fontFamily:C.P}}>{label}</span>
       </div>:<span style={{fontSize:14.5,color:C.mid,fontFamily:C.P}}>Slide or tap a score</span>}
     </div>
+    <div style={{fontSize:12,color:C.mid,fontFamily:C.P,textAlign:'center',lineHeight:1.5,opacity:0.8}}>100-point scale: 96+ Extraordinary · 90–95 Outstanding · 80–89 Very good · 70–79 Average · under 70 Below average</div>
     {score>0&&!saved&&<Btn primary full onClick={commit}>Save rating</Btn>}
     {saved&&<><div style={{textAlign:'center',fontSize:15,fontWeight:600,color:C.green,fontFamily:C.P}}>✓ Saved to My Wines</div><Btn primary full onClick={()=>nav('detail')}>See full details →</Btn></>}
     {!saved&&score===0&&<div onClick={()=>nav('detail')} style={{textAlign:'center',fontSize:14,fontWeight:600,color:C.mid,fontFamily:C.P,cursor:'pointer'}}>Skip rating — see full details →</div>}

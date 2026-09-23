@@ -214,28 +214,19 @@ const ExploreNext = {
       for(let k=i;k>=0;k=h.indexOf(m,k+1)) if(edge(h[k-1])&&edge(h[k+m.length])) return true;
       return false; });
   },
-  _weighted(pairs){ const c={}; pairs.forEach(([v,r])=>{ if(v){ const k=v.toLowerCase(); c[k]=(c[k]||0)+Math.max(r||55,5); } }); return Object.entries(c).sort((a,b)=>b[1]-a[1]).map(e=>e[0]); },
-  // Grapes/regions in the bottom third of a user's ratings (needs 4+ rated wines to mean anything).
-  _low(wines,pluck){
-    const rated=wines.filter(w=>w.rating>0); if(rated.length<4) return new Set();
-    const sorted=[...rated].sort((a,b)=>a.rating-b.rating);
-    const cutoff=sorted[Math.max(0,Math.floor(sorted.length/3)-1)].rating;
-    const low=new Set(); sorted.filter(w=>w.rating<=cutoff).forEach(w=>pluck(w).forEach(v=>v&&low.add(v.toLowerCase())));
-    const high=new Set(); sorted.filter(w=>w.rating>cutoff).forEach(w=>pluck(w).forEach(v=>v&&high.add(v.toLowerCase())));
-    return new Set([...low].filter(v=>!high.has(v)));
-  },
-  // The user's DNA for one type: averages per axis (only where scans have data), rating-weighted
-  // top grapes/regions, low-rated traits and their best bottle.
+  // The user's DNA for one type, from WineDNA so Explore Next reads the same profile, grape
+  // names and scale as the rest of the tab: their 90+ wines once they have 3, else everything
+  // they chose; wines scored under 80 mark the grapes/regions to steer away from.
   dna(typeKey,wines){
-    const ws=this._typeWines(typeKey,wines);
-    const avg={};
-    Object.keys(this.AXES).forEach(k=>{ const v=ws.filter(w=>typeof w[k]==='number'); if(v.length) avg[k]=v.reduce((s,w)=>s+w[k],0)/v.length; });
-    return {wines:ws,avg,
-      topGrapes:this._weighted(ws.flatMap(w=>(w.grapes||[]).map(g=>[g,w.rating]))).slice(0,4),
-      topRegions:this._weighted(ws.map(w=>[w.region,w.rating])).slice(0,4),
-      lowGrapes:this._low(ws,w=>w.grapes||[]),lowRegions:this._low(ws,w=>[w.region])};
+    const p=WineDNA.profile(typeKey,wines,typeKey);
+    const lc=a=>a.map(x=>x.toLowerCase());
+    const lovedSet=k=>new Set(p.loved.flatMap(k).map(x=>x.toLowerCase()));
+    const lowOf=(pluck)=>{ const keep=lovedSet(pluck); return new Set(p.disliked.flatMap(pluck).map(x=>x.toLowerCase()).filter(x=>!keep.has(x))); };
+    const grapes=w=>(w.grapes||[]).map(g=>WineDNA.grape(g)).filter(Boolean), region=w=>w.region?[w.region]:[];
+    const avg={}; Object.keys(this.AXES).forEach(k=>{ const v=p.dnaAvg[k]!=null?p.dnaAvg[k]:p.avg[k]; if(v!=null) avg[k]=v; });
+    return {wines:p.wines,avg,topGrapes:lc(p.topGrapes),topRegions:lc(p.topRegions),lowGrapes:lowOf(grapes),lowRegions:lowOf(region)};
   },
-  _level(v){ return v>=0.62?0:v<=0.4?1:2; },
+  _level(v){ return {high:0,low:1,mid:2}[WineDNA.level(v)]; },
   _cap(s){ return s.replace(/\b\w/g,c=>c.toUpperCase()); },
   // How one style relates to the user: score, the trait it shares, what it builds on, and a
   // plain-English reason naming only the user's own wines, grapes and regions.
@@ -243,7 +234,7 @@ const ExploreNext = {
     const axes=Object.keys(style.profile).filter(k=>dna.avg[k]!=null);
     const diffs=axes.map(k=>({k,d:Math.abs(style.profile[k]-dna.avg[k]),u:dna.avg[k]}));
     const sim=diffs.length?1-diffs.reduce((s,x)=>s+x.d,0)/diffs.length:0.5;
-    const notable=diffs.filter(x=>Math.abs(x.u-0.5)>=0.12);
+    const notable=diffs.filter(x=>this._level(x.u)!==2);
     const sharedAxis=(notable.length?notable:diffs).sort((a,b)=>a.d-b.d)[0];
     const shares=sharedAxis?this.AXES[sharedAxis.k][this._level(sharedAxis.u)]:null;
     // The user's best-rated bottle that actually shows the shared trait, as a concrete example.
@@ -255,7 +246,7 @@ const ExploreNext = {
     const lbl=label.toLowerCase();
     const why=[
       shares
-        ?`${style.name} has the ${shares.replace(/^(a |an )/,'')} you go for in your ${lbl}${ex?` (think ${ex.name}, which you rated ${ex.rating})`:''}, and brings ${style.adds}.`
+        ?`${style.name} has the ${shares.replace(/^(a |an )/,'')} you go for in your ${lbl}${ex?` (think ${ex.name}, which you scored ${ex.rating})`:''}, and brings ${style.adds}.`
         :`${style.name} brings ${style.adds}, a new corner of ${lbl} for your map.`,
       bridge?`A natural next step if you enjoy ${this._cap(bridge)}.`:''
     ].filter(Boolean).join(' ');

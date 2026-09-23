@@ -151,7 +151,7 @@ function DetailMerged({wine,nav,existingRating=0,matchPct}){
   React.useEffect(()=>{const t=setTimeout(()=>setSliderAnimated(true),80);return()=>clearTimeout(t);},[]);
   const pendingScore=React.useRef(existingRating);
   const ratedOnce=React.useRef(existingRating>0);
-  const scoreLabel=userRating===0?'':userRating<=20?'Not for me':userRating<=40?"It's ok":userRating<=60?'Good':userRating<=80?'Really good':'Exceptional';
+  const scoreLabel=ParkerScale.label(userRating);
 
   function commitScore(v){
     if(!v) v=pendingScore.current;
@@ -331,13 +331,13 @@ function DetailMerged({wine,nav,existingRating=0,matchPct}){
         <Card style={{padding:'14px 16px'}}>
           <div style={{fontSize:16,fontWeight:600,color:C.ink,fontFamily:C.P,marginBottom:12}}>Rate This Wine</div>
           <div style={{display:'flex',gap:5,marginBottom:12}}>
-            {[20,40,60,80,100].map(p=>(
+            {ParkerScale.PRESETS.map(p=>(
               <div key={p} onClick={()=>handlePreset(p)} style={{flex:1,padding:'7px 2px',borderRadius:9,border:`1.5px solid ${userRating===p?C.cr:C.line}`,background:userRating===p?C.cr:'transparent',textAlign:'center',cursor:'pointer',transition:'all .15s'}}>
                 <span style={{fontSize:17,fontWeight:700,color:userRating===p?'#fff':C.mid,fontFamily:C.P}}>{p}</span>
               </div>
             ))}
           </div>
-          <input type="range" min="0" max="100" step="1" value={userRating}
+          <input type="range" min={ParkerScale.MIN} max="100" step="1" value={Math.max(userRating,ParkerScale.MIN)}
             onChange={handleSliderChange}
             style={{width:'100%',accentColor:C.cr,cursor:'pointer',marginBottom:10,display:'block'}}/>
           <div style={{textAlign:'center',minHeight:48,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:2}}>
@@ -353,6 +353,7 @@ function DetailMerged({wine,nav,existingRating=0,matchPct}){
               <span style={{fontSize:14,color:C.mid,fontFamily:C.P}}>Drag slider or tap a preset to rate</span>
             )}
           </div>
+          <div style={{fontSize:12,color:C.mid,fontFamily:C.P,textAlign:'center',lineHeight:1.5,opacity:0.8,marginTop:4}}>100-point scale: 96+ Extraordinary · 90–95 Outstanding · 80–89 Very good · 70–79 Average · under 70 Below average</div>
           {userRating>0&&!saved&&(
             <div onClick={()=>commitScore()} style={{marginTop:10,background:C.cr,borderRadius:12,padding:'12px',textAlign:'center',cursor:'pointer'}}>
               <span style={{fontSize:16,fontWeight:700,color:'#fff',fontFamily:C.P}}>Save Rating</span>

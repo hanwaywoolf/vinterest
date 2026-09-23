@@ -4,7 +4,8 @@
 // wrapping each file in its own module.
 //
 // This list mirrors the `/* ---- file ---- */` markers in the legacy hand-compiled bundle.js;
-// tests/build.spec.js fails if the two drift while bundle.js still exists.
+// tests/build.spec.js fails if the two drift while bundle.js still exists (files added since,
+// like pwa-winedna.js, are allowed; the ones bundle.js has must stay in its order).
 export const APP_SOURCES = [
   'claude-bridge.js',
   'pwa-xp.js',
@@ -12,6 +13,7 @@ export const APP_SOURCES = [
   'pwa-content-engine.js',
   'pwa-grape-learning.js',
   'pwa-quiz-questions.js',
+  'pwa-winedna.js',
   'pwa-components.jsx',
   'tweaks-panel.jsx',
   'pwa-screens-main.jsx',

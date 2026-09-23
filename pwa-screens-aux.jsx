@@ -460,7 +460,7 @@ function MyWinesScreen({nav,back}){
                     <div style={{marginTop:8,paddingTop:8,borderTop:`1px solid ${C.line}`,display:'flex',alignItems:'center',gap:6}}>
                       <span style={{fontSize:15,color:C.mid,fontFamily:C.P,flexShrink:0}}>Rate:</span>
                       <div style={{display:'flex',gap:4,flex:1}}>
-                        {[20,40,60,80,100].map(p=>(
+                        {ParkerScale.PRESETS.map(p=>(
                           <div key={p} onClick={e=>{e.stopPropagation();WineHistory.rate(w.name,w.vintage,p);setWines(WineHistory.getAll());}}
                             style={{flex:1,padding:'5px 2px',borderRadius:7,border:`1px solid ${C.line}`,textAlign:'center',cursor:'pointer'}}>
                             <span style={{fontSize:15,fontWeight:600,color:C.mid,fontFamily:C.P}}>{p}</span>

@@ -3,108 +3,9 @@
 /* ── helpers ── */
 function _norm(s){return(s||'').toLowerCase().replace('é','e');}
 function _avg(wines,field,fb){const ws=wines.filter(w=>w[field]!=null);return ws.length?ws.reduce((s,w)=>s+w[field],0)/ws.length:fb;}
-/* Rating-weighted average — wines you rated higher count for more of the profile than ones you scanned but rated low/not at all. */
-function _wavg(wines,field,fb){const ws=wines.filter(w=>w[field]!=null);if(!ws.length)return fb;let num=0,den=0;ws.forEach(w=>{const wt=Math.max(w.rating||55,5)/100;num+=w[field]*wt;den+=wt;});return den?num/den:fb;}
 /* Rating-weighted tally — an attribute (grape/region/note) earns weight from every wine it appears in, scaled by that wine's rating, so one obscure low-rated bottle can't outrank several wines you actually rated well. */
 function _topByWeightedCount(items){const c={};items.forEach(({v,rating})=>{if(v)c[v]=(c[v]||0)+Math.max(rating||55,5);});return Object.entries(c).sort((a,b)=>b[1]-a[1]).map(e=>e[0]);}
-function _topGrapes(wines,n){const all=[];wines.forEach(w=>(w.grapes||[]).forEach(g=>{if(g)all.push({v:g,rating:w.rating});}));return _topByWeightedCount(all).slice(0,n);}
-function _topRegions(wines,n){const all=wines.filter(w=>w.region).map(w=>({v:w.region,rating:w.rating}));return _topByWeightedCount(all).slice(0,n);}
 function _topNotes(wines,n){const all=[];wines.forEach(w=>(w.tasting_notes||[]).forEach(t=>{if(t)all.push({v:t,rating:w.rating});}));return _topByWeightedCount(all).slice(0,n);}
-
-/* ── Personality labels ── */
-function _personality(key,b,ta,ac,sw){
-  if(key==='red'){
-    if(b>=0.72&&ta>=0.68) return 'Bold & Structured';
-    if(b>=0.70&&ta<0.52)  return 'Full & Velvety';
-    if(b<0.48)            return 'Light & Elegant';
-    if(ac>=0.68)          return 'Bright & Earthy';
-    return 'Classic & Balanced';
-  }
-  if(key==='white'){
-    if(ac>=0.70&&b<0.52)  return 'Crisp & Mineral';
-    if(b>=0.68)           return 'Rich & Textured';
-    if(ac>=0.65)          return 'Zingy & Aromatic';
-    return 'Clean & Precise';
-  }
-  if(key==='rose'){
-    if(sw<0.18)           return 'Bone Dry & Delicate';
-    if(b>=0.55)           return 'Fruity & Expressive';
-    return 'Fresh & Crisp';
-  }
-  if(key==='sparkling'){
-    if(b>=0.60)           return 'Classic & Toasty';
-    if(ac>=0.70)          return 'Taut & Precise';
-    return 'Elegant & Fine';
-  }
-  if(key==='orange'){
-    if(ta>=0.50)          return 'Textured & Tannic';
-    if(ac>=0.65)          return 'Bright & Funky';
-    return 'Amber & Aromatic';
-  }
-  if(key==='dessert'){
-    if(sw>=0.70)          return 'Lusciously Sweet';
-    if(ac>=0.65)          return 'Honeyed & Vibrant';
-    return 'Rich & Nectarous';
-  }
-  if(key==='fortified'){
-    if(sw>=0.50)          return 'Sweet & Fortified';
-    return 'Dry & Nutty';
-  }
-  return 'Eclectic Palate';
-}
-
-/* ── DNA "why" lines ── */
-function _dnaWhy(axis,val,topGrapes,topRegions){
-  const g=topGrapes.slice(0,2);
-  const r=topRegions[0];
-  const gs=g.length?g.join(' and '):null;
-  const hi=val>=0.68,lo=val<=0.38;
-  const T={
-    body:{
-      hi:gs?`${gs} ${g.length>1?'are':'is'} a naturally full-bodied grape — your instinct for weight and presence runs deep.`
-           :r?`${r} wines are known for their presence — your ratings confirm the pattern.`
-             :'You consistently favour wines with body — it\'s become your comfort zone.',
-      md:gs?`${gs} sit in the middle of the body spectrum — you gravitate toward balance over extremes.`
-           :'Your palate finds medium body most satisfying — structured but never heavy.',
-      lo:gs?`${gs} ${g.length>1?'are':'is'} naturally light — you favour finesse and precision over power.`
-           :'Lighter body is a consistent thread — you reach for elegance over weight.',
-    },
-    tannins:{
-      hi:gs?`${gs} ${g.length>1?'are':'is'} grippy by nature — you gravitate toward wines built to age.`
-           :'Firm tannins run through your collection — you value structure and backbone.',
-      md:gs?`${gs} deliver just enough grip to be interesting without being stern.`
-           :'You sit in the moderate-tannin zone — structure without severity.',
-      lo:gs?`Silky tannins define your style — ${gs} ${g.length>1?'are':'is'} smooth by design, not dilution.`
-           :'You prefer wines that are smooth and approachable rather than grippy.',
-    },
-    acidity:{
-      hi:gs?`${gs} ${g.length>1?'are':'is'} high-acid by nature — you\'re drawn to tension, freshness, and wines that cut through food.`
-           :'High acidity is a running theme — you reach for wines with energy and bite.',
-      md:gs?`${gs} sit in a comfortable acid balance — enough freshness without bite.`
-           :'Balanced acidity is your sweet spot — not tart, not flat.',
-      lo:gs?`You favour rounder wines — ${gs} lean toward richness over tartness.`
-           :'Low acidity is the common thread — richer, rounder wines that don\'t bite.',
-    },
-    sweetness:{
-      hi:gs?`A touch of sweetness recurs in your highest-rated wines — ${gs} reflect that preference.`
-           :'Off-dry to sweet is clearly welcome — residual sugar is a positive in your book.',
-      md:'Off-dry is your comfort zone — a hint of sweetness that frames the acidity.',
-      lo:gs?`Bone dry is your default — ${gs} ${g.length>1?'are':'is'} grown for austerity, and you appreciate it.`
-           :'Bone dry, consistently — sweetness doesn\'t register as a positive for you.',
-    },
-    texture:{
-      hi:'Rich, creamy textures show up again and again — oak aging and lees contact are clearly a plus for you.',
-      md:'You land in the middle on texture — a little roundness without going fully creamy or oaky.',
-      lo:'Crisp, steely whites are your throughline — you favour precision and minerality over oak or creaminess.',
-    },
-    effervescence:{
-      hi:'Fine, persistent bubbles are your pattern — you gravitate toward traditional-method fizz built for texture and length.',
-      md:'A moderate, easy mousse suits you best — enough energy without demanding too much attention.',
-      lo:'Soft, gentle bubbles are your preference — approachable fizz over intense, aggressive mousse.',
-    },
-  };
-  return T[axis]?.[hi?'hi':lo?'lo':'md']||'';
-}
 
 /* ── Flavour clusters ── */
 const _NOTE_CLUSTERS=[
@@ -131,62 +32,12 @@ function _clusterNotes(notes){
   const result=[];const used=new Set();
   _NOTE_CLUSTERS.forEach(cl=>{
     const matches=notes.filter(n=>{const nl=n.toLowerCase();return cl.kw.some(k=>nl.includes(k))&&!used.has(n);});
-    if(matches.length>=1){matches.forEach(m=>used.add(m));result.push({name:cl.name,notes:matches.slice(0,4)});}
+    // Drop near-duplicates ("Dark cherry and blackberry" next to "…blackberry fruit").
+    const core=n=>n.toLowerCase().replace(/\b(fruit|fruits|notes?|flavou?rs?|aromas?)\b/g,'').replace(/\s+/g,' ').trim();
+    const kept=[]; matches.forEach(m=>{ const c=core(m); if(!kept.some(k=>{const kc=core(k);return kc.includes(c)||c.includes(kc);})) kept.push(m); });
+    if(kept.length>=1){matches.forEach(m=>used.add(m));result.push({name:cl.name,notes:kept.slice(0,4)});}
   });
   return result.slice(0,3);
-}
-
-/* ── Palate evolution ── */
-function _evolution(wines){
-  const rated=wines.filter(w=>w.rating>0&&(w.scanned_at||w.last_scanned));
-  if(rated.length<3) return [];
-  const sorted=[...rated].sort((a,b)=>new Date(a.scanned_at||a.last_scanned||0)-new Date(b.scanned_at||b.last_scanned||0));
-  const firstD=new Date(sorted[0].scanned_at||sorted[0].last_scanned||0);
-  const lastD=new Date(sorted[sorted.length-1].scanned_at||sorted[sorted.length-1].last_scanned||0);
-  const spanDays=(lastD-firstD)/86400000;
-
-  // Bucket by REAL calendar period (not by equal wine-count chunks) so bars always
-  // reflect actual scan dates — a handful of new scans this month always shows up
-  // as its own bar instead of getting merged into an old chunk's date range.
-  function weekKey(d){
-    const onejan=new Date(d.getFullYear(),0,1);
-    const wk=Math.ceil((((d-onejan)/86400000)+onejan.getDay()+1)/7);
-    return d.getFullYear()+'-W'+wk;
-  }
-  const granularity=spanDays<=10?'day':spanDays<=70?'week':spanDays<=700?'month':'year';
-  function bucketKey(d){
-    if(granularity==='day')   return d.toISOString().slice(0,10);
-    if(granularity==='week')  return weekKey(d);
-    if(granularity==='month') return d.getFullYear()+'-'+d.getMonth();
-    return String(d.getFullYear());
-  }
-  function labelFor(d){
-    if(granularity==='year') return d.toLocaleDateString('en',{year:'numeric'});
-    if(granularity==='month') return d.toLocaleDateString('en',{month:'short',year:'2-digit'});
-    return d.toLocaleDateString('en',{month:'short',day:'numeric'});
-  }
-
-  const buckets=new Map();
-  sorted.forEach(w=>{
-    const d=new Date(w.scanned_at||w.last_scanned);
-    const key=bucketKey(d);
-    if(!buckets.has(key)) buckets.set(key,{sum:0,count:0,lastDate:d,types:{red:0,white:0,rose:0,sparkling:0,orange:0,dessert:0,fortified:0},order:d.getTime()});
-    const b=buckets.get(key);
-    b.sum+=w.rating; b.count++;
-    if(d>b.lastDate) b.lastDate=d;
-    const t=_norm(w.type); if(b.types[t]!==undefined) b.types[t]++; else b.types.red++;
-  });
-
-  let chunks=[...buckets.values()].sort((a,b)=>a.order-b.order).map(b=>({
-    label:labelFor(b.lastDate),
-    avgR:Math.round(b.sum/b.count),
-    count:b.count,
-    dom:Object.entries(b.types).sort((a,b2)=>b2[1]-a[1])[0][0],
-  }));
-
-  // Keep the chart readable — cap to the most recent 6 periods.
-  if(chunks.length>6) chunks=chunks.slice(chunks.length-6);
-  return chunks;
 }
 
 const _TYPE_COLORS={red:'#8B1A2F',white:'#B8963E',rose:'#C47A8A',sparkling:'#5E8FA8',orange:'#C1652B',dessert:'#8A5A2B',fortified:'#5C2A1E'};
@@ -221,8 +72,21 @@ function CSH({label,cKey,collapsed,toggle,summary}){
   );
 }
 
+/* A taste bar with two readings: the fill is the average of the wines you choose; the diamond is
+   where your Outstanding (90+) wines sit, shown once there are three of them. */
+function DnaBar({v,loved,col}){
+  return(
+    <div style={{position:'relative',height:14,display:'flex',alignItems:'center'}}>
+      <div style={{position:'absolute',left:0,right:0,height:6,borderRadius:6,background:'rgba(0,0,0,0.07)',overflow:'hidden'}}>
+        <div style={{height:'100%',width:`${Math.min(1,v||0)*100}%`,borderRadius:6,background:col,opacity:0.85}}/>
+      </div>
+      {loved!=null&&<div title="Your 90+ wines" style={{position:'absolute',left:`calc(${Math.min(1,loved)*100}% - 6px)`,width:12,height:12,transform:'rotate(45deg)',background:C.ink,border:'2px solid #fff',borderRadius:2,boxShadow:'0 1px 3px rgba(0,0,0,0.25)'}}/>}
+    </div>
+  );
+}
+
 /* ──────────────────────────────────────────────────
-   WineDNA Screen
+   WineDNA Screen — renders WineDNA.profile (pwa-winedna.js) for each wine type
 ────────────────────────────────────────────────── */
 function WineDNAScreen({nav,back,showPro}){
   const [typeIdx,setTypeIdx]=React.useState(0);
@@ -235,7 +99,7 @@ function WineDNAScreen({nav,back,showPro}){
   const [scriptLength,setScriptLength]=React.useState(localStorage.getItem('vinterest_script_length')||'long');
   const COLLAPSE_KEY='vinterest_dna_collapsed_v1';
   const [collapsed,setCollapsed]=React.useState(()=>{
-    const def={taste:false,explore:false,flavour:false,journey:false,scripts:false,history:false};
+    const def={love:false,taste:false,value:false,explore:false,flavour:false,journey:false,scripts:false,history:false};
     try{
       const saved=JSON.parse(localStorage.getItem(COLLAPSE_KEY)||'null');
       if(saved) return {...def,...saved};
@@ -251,37 +115,22 @@ function WineDNAScreen({nav,back,showPro}){
   const touchY=React.useRef(null);
 
   const allWines=WineHistory.getAll();
-  /* Currency helpers */
-  const _FX=USD_FX;
+  // Recompute whenever a wine is added or re-scored, not just when the count changes.
+  const sig=WineDNA.signature(allWines);
   const _rc=Regional.current();
-  const _csym=_rc.sym;
   const _cbase=_rc.base;
   const _ccode=_rc.code;
-  const _cfx=_FX[_rc.code]||1.0;
-  const xd=XPSystem.get();
-  const lv=XPSystem.getLevel(xd.total);
-  const nx=XPSystem.nextLevel(xd.total);
-  const pg=XPSystem.levelProgress(xd.total);
+  const _cfx=USD_FX[_rc.code]||1.0;
 
-  /* Per-type stats */
+  /* Per-type profiles */
   const typeStats=React.useMemo(()=>_TYPES.map(tp=>{
-    const wines=allWines.filter(w=>_norm(w.type)===tp.key);
-    const pct=allWines.length?Math.round(wines.length/allWines.length*100):0;
-    const avgB=_wavg(wines,'body',0.65);
-    const avgT=_wavg(wines,'tannins',0.55);
-    const avgA=_wavg(wines,'acidity',0.60);
-    const avgS=_wavg(wines,'sweetness',0.10);
-    const avgX=_wavg(wines,'texture',0.3);
-    const avgE=_wavg(wines,'effervescence',0.6);
-    const topGrapes=_topGrapes(wines,4);
-    const topRegions=_topRegions(wines,4);
-    const topNotes=_topNotes(wines,14);
-    const noteClusters=_clusterNotes(topNotes);
-    const personality=_personality(tp.key,avgB,avgT,avgA,avgS);
+    const p=WineDNA.profile(tp.key,allWines,tp.label);
+    const pct=allWines.length?Math.round(p.wines.length/allWines.length*100):0;
+    const topNotes=_topNotes(p.wines,14);
     const explore=ExploreNext.suggest(tp.key,allWines,tp.label);
-    const topWines=[...wines].filter(w=>w.rating>0).sort((a,b)=>(b.rating||0)-(a.rating||0)).slice(0,3);
-    return{...tp,wines,pct,avgB,avgT,avgA,avgS,avgX,avgE,topGrapes,topRegions,topNotes,noteClusters,personality,explore,topWines};
-  }),[allWines.length]);
+    const topWines=[...p.scored].sort((a,b)=>b.rating-a.rating).slice(0,3);
+    return{...tp,...p,pct,topNotes,noteClusters:_clusterNotes(topNotes),explore,topWines};
+  }),[sig]);
 
   const t=typeStats[typeIdx];
   const visibleIdxs=typeStats.reduce((arr,ts,i)=>{ if(i<4||ts.wines.length>0) arr.push(i); return arr; },[]);
@@ -295,26 +144,22 @@ function WineDNAScreen({nav,back,showPro}){
     setTypeIdx(next);
   }
 
-  /* LLM summary */
+  /* Written summary: Claude restates the computed facts (WineDNA.summaryFacts) in plain language.
+     Keyed on the wine signature so a new scan or a changed score refreshes it. */
   React.useEffect(()=>{
     if(!t.wines.length) return;
-    const key=`vinterest_dna_v5_${t.key}_n${t.wines.length}`;
+    const key=`vinterest_dna_v6_${t.key}_${sig}`;
     const cached=localStorage.getItem(key);
     if(cached){setGenSummaries(s=>({...s,[t.key]:cached}));return;}
-    if(genSummaries[t.key]||generatingSummary===t.key) return;
+    if(generatingSummary===t.key) return;
     setGeneratingSummary(t.key);
-    const ratedAsc=[...t.wines].filter(w=>w.rating>0).sort((a,b)=>(a.rating||0)-(b.rating||0));
-    const hasLow=ratedAsc.length>=4;
-    const topWinesForPrompt=[...t.wines].filter(w=>w.rating>0).sort((a,b)=>(b.rating||0)-(a.rating||0)).slice(0,5);
-    const lowWinesForPrompt=hasLow?ratedAsc.slice(0,3):[];
-    const wineList=topWinesForPrompt.map(w=>`${w.name}${w.vintage?' '+w.vintage:''}${w.region?' from '+w.region:''}${w.rating?' rated '+w.rating+'/100':''}`).join('; ');
-    const lowList=lowWinesForPrompt.map(w=>`${w.name}${w.vintage?' '+w.vintage:''}${w.region?' from '+w.region:''}${w.rating?' rated '+w.rating+'/100':''}`).join('; ');
-    const prompt=`My ${t.label.toLowerCase()} wine personality is "${t.personality}". My computed top grapes are: ${t.topGrapes.join(', ')||'none'}. My computed top regions are: ${t.topRegions.join(', ')||'none'}. My highest-rated ${t.label.toLowerCase()} wines: ${wineList||'none'}.${hasLow?` My lowest-rated ${t.label.toLowerCase()} wines: ${lowList}.`:''} Return ONLY raw JSON — no markdown, no code fences, no extra text, just the JSON object: {"preference":"one sentence on what I gravitate toward — max 18 words","like":"one sentence on specifically what I like — you MUST only name grapes/regions from the computed top grapes/regions or highest-rated wines lists above, never invent or infer any other grape or region — max 18 words"${hasLow?',"dislike":"one sentence on what I tend to rate lower — you MUST only name grapes, regions, or style traits drawn from my lowest-rated wines list above, never invent others — max 18 words"':''}}`;
+    const hasDislikes=t.favourites.disliked.length>0;
+    const prompt=`You write the summary at the top of a wine drinker's WineDNA profile. The app is educational: be warm, specific and confidence-building, and help them buy better next time. Use ONLY these facts, computed from their own scans and 100-point scores; never invent grapes, regions, wines or numbers, and don't claim a preference the facts don't state. If they've scored fewer than 8, say gently that the picture is still forming.\n\nFacts:\n${WineDNA.summaryFacts(t)}\n\nReturn ONLY raw JSON, no markdown: {"style":"one sentence on the style of ${t.label.toLowerCase()} they reach for, max 22 words","love":"one sentence on what their highest scores have in common and what to look for next, max 26 words"${hasDislikes?',"miss":"one sentence on what the wines they scored under 80 share, framed as useful to know when buying, max 22 words"':''}}`;
     window.claude.complete({purpose:'winedna_summary',messages:[{role:'user',content:prompt}]})
-      .then(text=>{const s=text.trim();localStorage.setItem(key,s);setGenSummaries(g=>({...g,[t.key]:s}));})
+      .then(text=>{const s=(text||'').trim(); if(s){localStorage.setItem(key,s);setGenSummaries(g=>({...g,[t.key]:s}));}})
       .catch(()=>{})
       .finally(()=>setGeneratingSummary(null));
-  },[typeIdx,allWines.length]);
+  },[typeIdx,sig]);
 
   /* Sommelier script — shared with Home through SommelierScript (pwa-content-engine.js), so
      both screens show the same text and the same budget. */
@@ -342,16 +187,17 @@ function WineDNAScreen({nav,back,showPro}){
   }
 
   /* Per-type stats */
-  const tRated=t.wines.filter(w=>w.rating>0);
-  const tAvgRating=tRated.length?Math.round(tRated.reduce((s,w)=>s+w.rating,0)/tRated.length):0;
+  const tLabel=t.label.toLowerCase();
+  const tAvgScore=t.scored.length?Math.round(t.scored.reduce((s,w)=>s+w.rating,0)/t.scored.length):0;
   const tCountries=new Set(t.wines.map(w=>w.country).filter(Boolean)).size;
   const tAvgPrice=_avg(t.wines,'price_usd',0);
   const SH=({label})=>(<div style={{fontSize:13,fontWeight:700,color:C.mid,letterSpacing:'0.09em',textTransform:'uppercase',fontFamily:C.P,marginTop:6,marginBottom:-4}}>{label}</div>);
+  const sub={fontSize:13,fontWeight:700,color:C.mid,fontFamily:C.P,textTransform:'uppercase',letterSpacing:'0.06em'};
 
   /* Empty state */
   if(!allWines.length) return(
-    <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden',background:C.bg}}>
-      <div style={{background:C.white,padding:'16px 20px',borderBottom:`1px solid ${C.line}`,flexShrink:0}}>
+    <div style={{flex:1,display:'flex',flexDirection:'column',background:C.bg,overflow:'hidden'}}>
+      <div style={{background:C.white,padding:'16px 20px 14px',borderBottom:`1px solid ${C.line}`,flexShrink:0}}>
         <div style={{display:'flex',alignItems:'center',gap:12,marginBottom:2}}>
           <div onClick={back} style={{width:34,height:34,borderRadius:17,background:C.offWhite,border:`1px solid ${C.line}`,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',flexShrink:0}}>
             <Icon n="back" sz={16} col={C.ink}/>
@@ -366,58 +212,37 @@ function WineDNAScreen({nav,back,showPro}){
         </div>
         <div>
           <div style={{fontSize:22,fontWeight:800,color:C.ink,fontFamily:C.P,marginBottom:8,lineHeight:1.2}}>Your WineDNA is waiting</div>
-          <div style={{fontSize:17,color:C.mid,fontFamily:C.P,lineHeight:1.65,maxWidth:280}}>Scan and rate bottles to unlock your personal taste profile, sommelier scripts, and wine intelligence.</div>
+          <div style={{fontSize:17,color:C.mid,fontFamily:C.P,lineHeight:1.65,maxWidth:280}}>Scan and score bottles to unlock your personal taste profile: what you love, where to find more of it, and how to buy with confidence.</div>
         </div>
         <Btn primary full onClick={()=>nav('camera')}>Scan Your First Bottle</Btn>
       </div>
     </div>
   );
 
-  /* Global stats */
-  const ratedAll=allWines.filter(w=>w.rating>0);
-  const avgRatingAll=ratedAll.length?Math.round(ratedAll.reduce((s,w)=>s+w.rating,0)/ratedAll.length):0;
-  const ccounts={};allWines.forEach(w=>{if(w.country)ccounts[w.country]=(ccounts[w.country]||0)+1;});
-  const uniqueCountries=Object.keys(ccounts).length;
-  const topRated=[...allWines].filter(w=>w.rating>0).sort((a,b)=>(b.rating||0)-(a.rating||0)).slice(0,5);
-  const avgPrice=_avg(allWines,'price_usd',0);
-  const evolution=_evolution(t.wines);
-
-  /* Synthesis chips */
+  /* Summary chips: what you drink most next to what you score highest */
+  const fav=t.favourites;
   const chips=[];
   if(t.topGrapes[0]) chips.push({label:'Top grape',value:t.topGrapes[0]});
-  if(t.topRegions[0]) chips.push({label:'Lead region',value:t.topRegions[0]});
-  chips.push({label:'Body',value:t.avgB>=0.72?'Full':t.avgB>=0.42?'Medium':'Light'});
+  if(t.topRegions[0]) chips.push({label:'Most scanned',value:t.topRegions[0]});
+  if(fav.regions[0]) chips.push({label:'Top-scoring region',value:`${fav.regions[0].name} · ${fav.regions[0].avg}`});
+  const conf=t.confidence;
+  const basisLine=t.basis==='loved'
+    ?`Based on your ${t.loved.length} Outstanding (90+) ${tLabel}`
+    :`Based on the ${WineDNA.noun(t.key,t.wines.length)} you've ${conf.n>0?'chosen':'scanned'}`;
 
   return(
     <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden',background:C.bg}}>
 
       {/* Header */}
       <div style={{background:C.white,padding:'14px 20px 12px',borderBottom:`1px solid ${C.line}`,flexShrink:0}}>
-        {/* Title row: back ←→ WineDNA ←→ personality badge, baseline aligned */}
-        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:4,gap:10}}>
-          <div style={{display:'flex',alignItems:'center',gap:12,minWidth:0}}>
-            <div onClick={back} style={{width:34,height:34,borderRadius:17,background:C.offWhite,border:`1px solid ${C.line}`,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',flexShrink:0}}>
-              <Icon n="back" sz={16} col={C.ink}/>
-            </div>
-            <div style={{fontSize:22,fontWeight:800,color:C.ink,fontFamily:C.P,letterSpacing:'-0.3px'}}>WineDNA</div>
+        <div style={{display:'flex',alignItems:'center',gap:12,marginBottom:4}}>
+          <div onClick={back} style={{width:34,height:34,borderRadius:17,background:C.offWhite,border:`1px solid ${C.line}`,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',flexShrink:0}}>
+            <Icon n="back" sz={16} col={C.ink}/>
           </div>
-          {t.wines.length>0&&(
-            <div style={{padding:'4px 11px',borderRadius:20,background:`${t.col}15`,border:`1px solid ${t.col}35`,flexShrink:0}}>
-              <span style={{fontSize:15,fontWeight:700,color:t.col,fontFamily:C.P}}>{t.personality}</span>
-            </div>
-          )}
+          <div style={{fontSize:22,fontWeight:800,color:C.ink,fontFamily:C.P,letterSpacing:'-0.3px'}}>WineDNA</div>
         </div>
-        {/* Subtitle row: type pill + bottle count */}
-        <div style={{display:'flex',alignItems:'center',gap:8}}>
-          <div style={{display:'inline-flex',alignItems:'center',gap:4,padding:'2px 8px',borderRadius:20,background:`${t.col}15`,border:`1px solid ${t.col}35`}}>
-            <div style={{width:5,height:5,borderRadius:3,background:t.col,flexShrink:0}}/>
-            <span style={{fontSize:13,fontWeight:700,color:t.col,fontFamily:C.P,letterSpacing:'0.05em'}}>{t.label.toUpperCase()}</span>
-          </div>
-          <span style={{fontSize:15,color:C.mid,fontFamily:C.P}}>{allWines.length} bottle{allWines.length!==1?'s':''} · {lv.badge} {lv.name}</span>
-        </div>
-        <div style={{marginTop:10}}>
-          <Prog val={pg} h={5} col={C.cr}/>
-          {nx&&<div style={{fontSize:13,color:C.mid,fontFamily:C.P,marginTop:3}}>{xd.total} XP · {nx.min-xd.total} to {nx.name}</div>}
+        <div style={{display:'flex',alignItems:'center',gap:8,marginLeft:46}}>
+          <span style={{fontSize:15,color:C.mid,fontFamily:C.P}}>{allWines.length} bottle{allWines.length!==1?'s':''} scanned · {allWines.filter(w=>w.rating>0).length} scored</span>
         </div>
       </div>
 
@@ -429,86 +254,69 @@ function WineDNAScreen({nav,back,showPro}){
         <Card style={{padding:0,overflow:'hidden'}}>
 
           {/* Type-distribution bar */}
-          <div style={{height:5,background:`linear-gradient(90deg,#8B1A2F 0% ${typeStats[0].pct}%,#B8963E ${typeStats[0].pct}% ${typeStats[0].pct+typeStats[1].pct}%,#C47A8A ${typeStats[0].pct+typeStats[1].pct}% ${typeStats[0].pct+typeStats[1].pct+typeStats[2].pct}%,#5E8FA8 ${typeStats[0].pct+typeStats[1].pct+typeStats[2].pct}% 100%)`}}/>
+          <div style={{height:5,display:'flex'}}>
+            {typeStats.filter(ts=>ts.pct>0).map(ts=><div key={ts.key} style={{width:`${ts.pct}%`,background:ts.col}}/>)}
+          </div>
 
           <div style={{padding:'14px 16px 16px',display:'flex',flexDirection:'column',gap:12}}>
 
             {/* Type tabs — base four always shown (greyed out + toast if unscanned, matching Home); Orange/Dessert/Fortified only appear, on a second row, once scanned */}
             <div style={{position:'relative'}}>
-              <div style={{display:'flex',gap:5}}>
-                {_TYPES.slice(0,4).map((tp,i)=>(
-                  <div key={i} onClick={()=>pickType(i)} style={{flex:1,textAlign:'center',padding:'7px 4px',borderRadius:10,background:i===typeIdx?tp.col+'18':C.offWhite,border:`1.5px solid ${i===typeIdx?tp.col+'55':'transparent'}`,cursor:'pointer',transition:'all .15s',opacity:typeStats[i].wines.length===0?0.4:1}}>
-                    <div style={{width:7,height:7,borderRadius:4,background:tp.col,margin:'0 auto 3px'}}/>
-                    <div style={{fontSize:13,fontWeight:i===typeIdx?700:500,color:i===typeIdx?tp.col:C.mid,fontFamily:C.P}}>{tp.label}</div>
-                    <div style={{fontSize:12,color:i===typeIdx?tp.col:C.mid,fontFamily:C.P,opacity:0.75}}>{typeStats[i].pct}%</div>
-                  </div>
-                ))}
-              </div>
-              {visibleIdxs.length>4&&<div style={{display:'flex',gap:5,marginTop:5}}>
-                {visibleIdxs.filter(i=>i>=4).map(i=>{
-                  const tp=_TYPES[i];
-                  return <div key={i} onClick={()=>pickType(i)} style={{flex:1,textAlign:'center',padding:'7px 4px',borderRadius:10,background:i===typeIdx?tp.col+'18':C.offWhite,border:`1.5px solid ${i===typeIdx?tp.col+'55':'transparent'}`,cursor:'pointer',transition:'all .15s'}}>
-                    <div style={{width:7,height:7,borderRadius:4,background:tp.col,margin:'0 auto 3px'}}/>
-                    <div style={{fontSize:13,fontWeight:i===typeIdx?700:500,color:i===typeIdx?tp.col:C.mid,fontFamily:C.P}}>{tp.label}</div>
-                    <div style={{fontSize:12,color:i===typeIdx?tp.col:C.mid,fontFamily:C.P,opacity:0.75}}>{typeStats[i].pct}%</div>
-                  </div>;
-                })}
-              </div>}
-              {tabToast&&<div style={{position:'absolute',top:'calc(100% + 8px)',left:0,right:0,textAlign:'center',fontSize:14,fontWeight:700,color:'#fff',fontFamily:C.P,background:C.cr,borderRadius:10,padding:'10px 14px',zIndex:20,boxShadow:'0 6px 18px rgba(139,26,47,0.35)',animation:'dnaToast 1.8s ease forwards'}}>{tabToast}</div>}
-            </div>
-
-            {/* Nav arrows */}
-            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-              <div onClick={()=>stepType(-1)} style={{width:30,height:30,borderRadius:15,background:visibleIdxs.indexOf(typeIdx)>0?t.col+'15':C.offWhite,border:`1px solid ${visibleIdxs.indexOf(typeIdx)>0?t.col+'35':C.line}`,display:'flex',alignItems:'center',justifyContent:'center',cursor:visibleIdxs.indexOf(typeIdx)>0?'pointer':'default',opacity:visibleIdxs.indexOf(typeIdx)>0?1:0.35,transition:'all .15s'}}>
-                <svg viewBox="0 0 20 20" width={14} height={14}><polyline points="12,4 6,10 12,16" stroke={t.col} strokeWidth="1.8" fill="none" strokeLinecap="round" strokeLinejoin="round"/></svg>
-              </div>
-              <span style={{fontSize:13,color:C.mid,fontFamily:C.P}}>{visibleIdxs.indexOf(typeIdx)+1} of {visibleIdxs.length} · swipe or tap</span>
-              <div onClick={()=>stepType(1)} style={{width:30,height:30,borderRadius:15,background:visibleIdxs.indexOf(typeIdx)<visibleIdxs.length-1?t.col+'15':C.offWhite,border:`1px solid ${visibleIdxs.indexOf(typeIdx)<visibleIdxs.length-1?t.col+'35':C.line}`,display:'flex',alignItems:'center',justifyContent:'center',cursor:visibleIdxs.indexOf(typeIdx)<visibleIdxs.length-1?'pointer':'default',opacity:visibleIdxs.indexOf(typeIdx)<visibleIdxs.length-1?1:0.35,transition:'all .15s'}}>
-                <svg viewBox="0 0 20 20" width={14} height={14}><polyline points="8,4 14,10 8,16" stroke={t.col} strokeWidth="1.8" fill="none" strokeLinecap="round" strokeLinejoin="round"/></svg>
-              </div>
+              {[visibleIdxs.filter(i=>i<4),visibleIdxs.filter(i=>i>=4)].filter(row=>row.length).map((row,ri)=>(
+                <div key={ri} style={{display:'flex',gap:5,marginTop:ri?5:0}}>
+                  {row.map(i=>{
+                    const tp=_TYPES[i];
+                    return(
+                      <div key={i} onClick={()=>pickType(i)} style={{flex:1,textAlign:'center',padding:'7px 4px',borderRadius:10,background:i===typeIdx?tp.col+'18':C.offWhite,border:`1.5px solid ${i===typeIdx?tp.col+'55':'transparent'}`,cursor:'pointer',opacity:typeStats[i].wines.length?1:0.45}}>
+                        <div style={{width:7,height:7,borderRadius:4,background:tp.col,margin:'0 auto 3px'}}/>
+                        <div style={{fontSize:13,fontWeight:i===typeIdx?700:500,color:i===typeIdx?tp.col:C.mid,fontFamily:C.P}}>{tp.label}</div>
+                        <div style={{fontSize:12,color:i===typeIdx?tp.col:C.mid,fontFamily:C.P,opacity:0.75}}>{typeStats[i].pct}%</div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ))}
+              {tabToast&&<div style={{position:'absolute',top:'calc(100% + 8px)',left:0,right:0,textAlign:'center',fontSize:14,fontWeight:700,color:'#fff',fontFamily:C.P,background:C.cr,borderRadius:10,padding:'10px 14px',zIndex:20,boxShadow:'0 4px 16px rgba(0,0,0,0.15)',animation:'dnaToast 1.8s ease both'}}>{tabToast}</div>}
             </div>
 
             <div style={{height:1,background:C.line}}/>
 
             {t.wines.length===0?(
               <div style={{textAlign:'center',padding:'8px 0'}}>
-                <div style={{fontSize:15,color:C.mid,fontFamily:C.P,fontStyle:'italic',lineHeight:1.6}}>No {t.label.toLowerCase()} scanned yet.</div>
+                <div style={{fontSize:15,color:C.mid,fontFamily:C.P,fontStyle:'italic',lineHeight:1.6}}>No {tLabel} scanned yet.</div>
                 <Btn primary small onClick={()=>nav('camera')} style={{background:t.col,boxShadow:`0 3px 12px ${t.col}40`,marginTop:10}}>Scan a Bottle</Btn>
               </div>
             ):(
               <>
-                {/* WineDNA label + type pill + personality */}
-                <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',gap:10}}>
-                  <div style={{flex:1}}>
-                    <div style={{display:'flex',alignItems:'center',gap:7,marginBottom:4}}>
-                      <span style={{fontSize:13,fontWeight:600,color:C.mid,fontFamily:C.P,letterSpacing:'0.09em',textTransform:'uppercase'}}>WineDNA</span>
-                      <div style={{display:'inline-flex',alignItems:'center',gap:4,padding:'2px 8px',borderRadius:20,background:`${t.col}15`,border:`1px solid ${t.col}35`}}>
-                        <div style={{width:5,height:5,borderRadius:3,background:t.col}}/>
-                        <span style={{fontSize:12,fontWeight:700,color:t.col,fontFamily:C.P}}>{t.label}</span>
-                      </div>
+                <div>
+                  <div style={{display:'flex',alignItems:'center',gap:7,marginBottom:4}}>
+                    <span style={{fontSize:13,fontWeight:600,color:C.mid,fontFamily:C.P,letterSpacing:'0.09em',textTransform:'uppercase'}}>WineDNA</span>
+                    <div style={{display:'inline-flex',alignItems:'center',gap:4,padding:'2px 8px',borderRadius:20,background:`${t.col}15`,border:`1px solid ${t.col}35`}}>
+                      <div style={{width:5,height:5,borderRadius:3,background:t.col}}/>
+                      <span style={{fontSize:12,fontWeight:700,color:t.col,fontFamily:C.P}}>{t.label}</span>
                     </div>
-                    <div style={{fontSize:20,fontWeight:800,color:C.ink,fontFamily:C.P,letterSpacing:'-0.3px',lineHeight:1.15}}>{t.personality}</div>
                   </div>
+                  <div style={{fontSize:20,fontWeight:800,color:C.ink,fontFamily:C.P,letterSpacing:'-0.3px',lineHeight:1.15}}>{t.personality}</div>
+                  <div style={{fontSize:13,color:C.mid,fontFamily:C.P,marginTop:3}}>{basisLine}</div>
                 </div>
 
-                {/* Narrative — 3 labelled sections */}
-                {generatingSummary===t.key?(
+                {/* Written summary (Claude, from computed facts only) */}
+                {generatingSummary===t.key&&!genSummaries[t.key]?(
                   <div style={{display:'flex',alignItems:'center',gap:8}}>
                     <div style={{width:14,height:14,borderRadius:7,border:'2px solid rgba(0,0,0,0.08)',borderTopColor:t.col,animation:'dnaSpin .8s linear infinite',flexShrink:0}}/>
-                    <span style={{fontSize:15,color:C.mid,fontFamily:C.P,fontStyle:'italic'}}>Analysing your palate…</span>
+                    <span style={{fontSize:15,color:C.mid,fontFamily:C.P,fontStyle:'italic'}}>Reading your palate…</span>
                   </div>
                 ):(()=>{
                   const raw=genSummaries[t.key];
                   let sections=null;
                   if(raw){try{sections=JSON.parse(raw.replace(/```json|```/g,'').trim());}catch(e){sections=null;}}
-                  if(!sections) return <p style={{fontSize:15,color:C.ink2,fontFamily:C.P,lineHeight:1.68,margin:0}}>{raw||'Generating your WineDNA summary…'}</p>;
+                  if(!sections) return raw?<p style={{fontSize:15,color:C.ink2,fontFamily:C.P,lineHeight:1.68,margin:0}}>{raw}</p>:null;
                   return(
                     <div style={{display:'flex',flexDirection:'column',gap:9}}>
                       {[
-                        {label:'Your Preference',    text:sections.preference},
-                        {label:'What You Like',      text:sections.like||sections.why},
-                        {label:'What You Don\u2019t Like', text:sections.dislike},
-                        ...(t.explore.picks.length>0?[{label:'Try Next', text:`${t.explore.picks[0].style.name} from ${t.explore.picks[0].style.region} \u2014 brings ${t.explore.picks[0].style.adds}`}]:[]),
+                        {label:'Your Style',text:sections.style},
+                        {label:'What You Love',text:sections.love},
+                        {label:'What Didn’t Work',text:t.favourites.disliked.length?sections.miss:null},
                       ].filter(s=>s.text).map((s,i)=>(
                         <div key={i}>
                           <div style={{fontSize:12,fontWeight:700,color:t.col,letterSpacing:'0.08em',textTransform:'uppercase',fontFamily:C.P,marginBottom:2}}>{s.label}</div>
@@ -529,51 +337,145 @@ function WineDNAScreen({nav,back,showPro}){
                   ))}
                 </div>
 
-                {/* Footer */}
-                <div style={{marginTop:2}}>
-                  <span style={{fontSize:13,color:C.mid,fontFamily:C.P}}>{t.wines.length} {t.label.toLowerCase()} scanned</span>
+                {/* How much to trust this, and what sharpens it */}
+                <div style={{display:'flex',alignItems:'center',gap:8}}>
+                  <div style={{display:'flex',gap:3}}>
+                    {['early','good','strong'].map((l,i)=><div key={l} style={{width:16,height:5,borderRadius:3,background:['early','good','strong'].indexOf(conf.level)>=i?t.col:C.line}}/>)}
+                  </div>
+                  <span style={{fontSize:13,color:C.mid,fontFamily:C.P}}>
+                    {conf.n} scored{conf.next?` · ${conf.next}`:' · a strong read'}
+                  </span>
                 </div>
               </>
             )}
           </div>
         </Card>
 
-        {t.wines.length>0&&<CSH label="Taste Breakdown" cKey="taste" collapsed={collapsed} toggle={toggle} summary={`Your ${t.label.toLowerCase()} run ${t.avgB>=.72?'full-bodied':t.avgB>=.38?'medium-bodied':'light-bodied'}${t.key==='red'?` with ${t.avgT>=.72?'grippy':t.avgT>=.38?'medium':'silky'} tannins`:''} and ${t.avgA>=.72?'zingy':t.avgA>=.38?'balanced':'mellow'} acidity${t.key==='white'?`, leaning ${t.avgX>=.55?'rich and creamy':'crisp and steely'}`:''}${t.key==='sparkling'?`, with ${t.avgE>=.55?'fine, persistent':'soft, gentle'} bubbles`:''}. That puts your palate in ${t.personality} territory.`}/>}
-        {/* ── Wine DNA attributes + why lines ── */}
+        {/* ── What You Love: what separates your best-scored wines, and where they come from ── */}
+        {t.wines.length>0&&<CSH label="What You Love" cKey="love" collapsed={collapsed} toggle={toggle} summary={t.signals.length?t.signals[0].text+(t.signals[1]?' '+t.signals[1].text:''):fav.regions.length?`${fav.regions[0].name} is where your highest scores come from.`:`Score more ${tLabel} to see what your favourites have in common.`}/>}
+        {t.wines.length>0&&!collapsed.love&&(
+          <Card style={{padding:14}}>
+            <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P,marginBottom:4}}>What you love</div>
+            <div style={{fontSize:14,color:C.mid,fontFamily:C.P,lineHeight:1.5,marginBottom:12}}>What your Outstanding (90+) {tLabel} have in common, compared with the rest.</div>
+            {t.signals.length>0?(
+              <div style={{display:'flex',flexDirection:'column',gap:10,marginBottom:14}}>
+                {t.signals.map(s=>(
+                  <div key={s.axis} style={{padding:'10px 12px',borderRadius:12,background:`${t.col}08`,border:`1px solid ${t.col}25`}}>
+                    <div style={{fontSize:15,fontWeight:700,color:C.ink,fontFamily:C.P,marginBottom:3}}>{s.text}</div>
+                    <div style={{fontSize:13,color:C.mid,fontFamily:C.P,lineHeight:1.5,marginBottom:6}}>{s.detail}</div>
+                    <div style={{fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.5}}><span style={{fontWeight:700,color:t.col}}>Where to look: </span>{s.tip}</div>
+                  </div>
+                ))}
+              </div>
+            ):(
+              <div style={{fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.55,marginBottom:14,padding:'10px 12px',borderRadius:12,background:C.offWhite}}>
+                {conf.n<8
+                  ?`Score ${WineDNA.noun(t.key,8-conf.n)} more and this will show what separates the ones you love from the rest: ${t.axes.map(k=>WineDNA.AXES[k].name.toLowerCase()).join(', ')}.`
+                  :t.loved.length<3
+                    ?`You haven't scored ${WineDNA.noun(t.key,3)} at 90 or above yet. Once you do, this will show what they have in common.`
+                    :`No single trait separates your favourites yet: you enjoy ${tLabel} across a range of styles. That's a strength when choosing from a wine list.`}
+              </div>
+            )}
+
+            {(fav.regions.length>0||fav.grapes.length>0)&&(
+              <>
+                <div style={{...sub,marginBottom:6}}>Where your best scores come from</div>
+                {[...fav.regions.map(r=>({...r,kind:'Region'})),...fav.grapes.map(g=>({...g,kind:'Grape'}))].map(x=>(
+                  <div key={x.kind+x.name} style={{display:'flex',alignItems:'center',gap:8,padding:'6px 0',borderTop:`1px solid ${C.line}`}}>
+                    <span style={{fontSize:12,color:C.mid,fontFamily:C.P,width:48,flexShrink:0}}>{x.kind}</span>
+                    <span style={{fontSize:15,fontWeight:600,color:C.ink,fontFamily:C.P,flex:1}}>{x.name}</span>
+                    <span style={{fontSize:13,color:C.mid,fontFamily:C.P}}>{x.count} bottle{x.count!==1?'s':''}</span>
+                    <span style={{fontSize:15,fontWeight:800,color:x.avg>=ParkerScale.LOVED?C.green:C.amber,fontFamily:C.P,width:30,textAlign:'right'}}>{x.avg}</span>
+                  </div>
+                ))}
+                {fav.mostScanned&&fav.regions[0]&&fav.mostScanned.name!==fav.regions[0].name&&(
+                  <div style={{fontSize:13,color:C.ink2,fontFamily:C.P,lineHeight:1.5,marginTop:8}}>You scan {fav.mostScanned.name} most, but {fav.regions[0].name} scores highest. Worth seeking out more of it.</div>
+                )}
+              </>
+            )}
+
+            {(fav.rethink.length>0||fav.disliked.length>0)&&(
+              <div style={{marginTop:14}}>
+                <div style={{...sub,marginBottom:6}}>Worth knowing before you buy</div>
+                {fav.rethink.map(x=>(
+                  <div key={'r'+x.name} style={{fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.5,marginBottom:4}}>{x.name}{x.also?` (${x.also})`:''} averages {x.avg} across {x.count} bottles, below your usual. Try a different producer or style before writing it off.</div>
+                ))}
+                {fav.disliked.map(w=>(
+                  <div key={'d'+w.name} style={{display:'flex',alignItems:'center',gap:8,padding:'5px 0',borderTop:`1px solid ${C.line}`}}>
+                    <span style={{fontSize:14,color:C.ink,fontFamily:C.P,flex:1}}>{w.name}</span>
+                    <span style={{fontSize:13,color:C.mid,fontFamily:C.P}}>{w.region||''}</span>
+                    <span style={{fontSize:15,fontWeight:800,color:'#C0392B',fontFamily:C.P}}>{w.rating}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </Card>
+        )}
+
+        {/* ── Taste profile: the style of what you choose, with your 90+ wines marked ── */}
+        {t.wines.length>0&&<CSH label="Taste Profile" cKey="taste" collapsed={collapsed} toggle={toggle} summary={t.axes.filter(t.showAxis).map(k=>`${WineDNA.AXES[k].name}: ${WineDNA.AXES[k][WineDNA.level(t.avg[k])]}`).join(' · ')}/>}
         {t.wines.length>0&&!collapsed.taste&&(
           <Card style={{padding:14}}>
-            <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P,marginBottom:12}}>Wine DNA · {t.label}</div>
-            <div style={{display:'flex',flexDirection:'column',gap:12}}>
-              {[
-                {l:'Body',     v:t.avgB, lo:'Light',    hi:'Full',   col:t.col,     axis:'body'},
-                ...(t.key==='sparkling'?[{l:'Effervescence', v:t.avgE, lo:'Soft & Delicate', hi:'Vigorous', col:'#5E8FA8', axis:'effervescence'}]:[]),
-                ...(['red','orange','fortified'].includes(t.key)?[{l:'Tannins',  v:t.avgT, lo:'Silky',    hi:'Grippy', col:'#7B5EA7', axis:'tannins'}]:[]),
-                {l:'Acidity',  v:t.avgA, lo:'Mellow',   hi:'Zingy',  col:C.green,   axis:'acidity'},
-                ...(['white','orange','dessert','fortified'].includes(t.key)?[{l:'Texture', v:t.avgX, lo:'Crisp & Steely', hi:'Rich & Creamy', col:'#B8963E', axis:'texture'}]:[]),
-                {l:'Sweetness',v:t.avgS, lo:'Bone Dry', hi:'Sweet',  col:C.amber,   axis:'sweetness'},
-              ].map((attr,i)=>{
-                const why=t.wines.length>=2?_dnaWhy(attr.axis,attr.v,t.topGrapes,t.topRegions):null;
+            <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P,marginBottom:4}}>Your {tLabel} style</div>
+            <div style={{display:'flex',flexWrap:'wrap',gap:12,fontSize:12,color:C.mid,fontFamily:C.P,marginBottom:12}}>
+              <span style={{display:'inline-flex',alignItems:'center',gap:5}}><span style={{width:16,height:5,borderRadius:3,background:t.col,display:'inline-block'}}/>The {tLabel} you choose</span>
+              {t.loved.length>=3&&<span style={{display:'inline-flex',alignItems:'center',gap:5}}><span style={{width:8,height:8,background:C.ink,transform:'rotate(45deg)',display:'inline-block'}}/>Your 90+ {tLabel}</span>}
+            </div>
+            <div style={{display:'flex',flexDirection:'column',gap:14}}>
+              {t.axes.filter(t.showAxis).map(k=>{
+                const A=WineDNA.AXES[k];
                 return(
-                  <div key={i}>
+                  <div key={k}>
                     <div style={{display:'flex',justifyContent:'space-between',marginBottom:4}}>
-                      <span style={{fontSize:15,color:C.mid,fontFamily:C.P}}>{attr.l}</span>
-                      <span style={{fontSize:13,fontWeight:600,color:attr.col,fontFamily:C.P}}>{attr.v>=.72?attr.hi:attr.v>=.38?'Medium':attr.lo}</span>
+                      <span style={{fontSize:15,color:C.mid,fontFamily:C.P}}>{A.name}</span>
+                      <span style={{fontSize:13,fontWeight:600,color:t.col,fontFamily:C.P}}>{A[WineDNA.level(t.avg[k])]}</span>
                     </div>
-                    <Prog val={attr.v} col={attr.col} h={5}/>
-                    {why&&<div style={{fontSize:13,color:C.mid,fontFamily:C.P,marginTop:5,lineHeight:1.55,fontStyle:'italic',textWrap:'pretty'}}>{why}</div>}
+                    <DnaBar v={t.avg[k]} loved={t.lovedAvg[k]} col={t.col}/>
+                    <div style={{display:'flex',justifyContent:'space-between',fontSize:11,color:C.mid,fontFamily:C.P,opacity:0.7,marginTop:2}}><span>{A.low}</span><span>{A.high}</span></div>
+                    {t.axisNotes[k]&&<div style={{fontSize:13,color:C.mid,fontFamily:C.P,marginTop:4,lineHeight:1.55,textWrap:'pretty'}}>{t.axisNotes[k]}</div>}
                   </div>
                 );
               })}
             </div>
+            <div style={{fontSize:12,color:C.mid,fontFamily:C.P,marginTop:12,lineHeight:1.5,opacity:0.8}}>Each wine's style is estimated from its label when you scan it: what the wine is typically like, not a tasting note.</div>
           </Card>
         )}
 
-        {t.wines.length>=3&&t.explore.picks.length>0&&<CSH label="Explore" cKey="explore" collapsed={collapsed} toggle={toggle} summary={`${t.explore.picks.length} styles picked from your ${t.label.toLowerCase()} DNA. Top pick: ${t.explore.picks[0].style.name} (${t.explore.picks[0].style.country}).${t.explore.explored.length?` You've explored ${t.explore.explored.length} so far.`:''}`}/>}
+        {/* ── Value: price against score ── */}
+        {t.value&&<CSH label="Value" cKey="value" collapsed={collapsed} toggle={toggle} summary={t.value.verdict?t.value.verdict.text:`Your best-value ${tLabel}, from ${t.value.n} scored bottles with prices.`}/>}
+        {t.value&&!collapsed.value&&(
+          <Card style={{padding:14}}>
+            <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P,marginBottom:8}}>Getting value</div>
+            {t.value.verdict&&<div style={{fontSize:15,color:C.ink2,fontFamily:C.P,lineHeight:1.55,marginBottom:10}}>{t.value.verdict.text}</div>}
+            {t.value.sweetSpot&&(
+              <div style={{padding:'8px 12px',borderRadius:10,background:C.amberBg,border:`1px solid ${C.amber}25`,marginBottom:10}}>
+                <span style={{fontSize:14,color:C.amber,fontFamily:C.P,fontWeight:700}}>Your sweet spot: {t.value.sweetSpot}</span>
+                <div style={{fontSize:13,color:C.mid,fontFamily:C.P,marginTop:2}}>Where most of your Outstanding {tLabel} are priced.</div>
+              </div>
+            )}
+            {t.value.bestValue.length>0&&(
+              <>
+                <div style={{...sub,marginBottom:6}}>Best value so far</div>
+                {t.value.bestValue.map(b=>(
+                  <div key={b.wine.name} style={{display:'flex',alignItems:'center',gap:8,padding:'6px 0',borderTop:`1px solid ${C.line}`}}>
+                    <span style={{fontSize:14,color:C.ink,fontFamily:C.P,flex:1}}>{b.wine.name}</span>
+                    <span style={{fontSize:13,color:C.mid,fontFamily:C.P}}>{b.price} est.</span>
+                    <span style={{fontSize:15,fontWeight:800,color:C.green,fontFamily:C.P,width:30,textAlign:'right'}}>{b.wine.rating}</span>
+                  </div>
+                ))}
+                <div style={{fontSize:13,color:C.mid,fontFamily:C.P,lineHeight:1.5,marginTop:8}}>Scored 90+ at or below your typical price. Remember these producers: they're good bets on a list or in a shop.</div>
+              </>
+            )}
+            <div style={{fontSize:12,color:C.mid,fontFamily:C.P,marginTop:10,opacity:0.8}}>Prices are estimates from your scans ({t.value.code}).</div>
+          </Card>
+        )}
+
+        {t.wines.length>=3&&t.explore.picks.length>0&&<CSH label="Explore" cKey="explore" collapsed={collapsed} toggle={toggle} summary={`${t.explore.picks.length} styles picked from your ${tLabel} DNA. Top pick: ${t.explore.picks[0].style.name} (${t.explore.picks[0].style.country}).${t.explore.explored.length?` You've explored ${t.explore.explored.length} so far.`:''}`}/>}
         {/* ── Explore Next: styles to try, ranked from this type's WineDNA (ExploreNext, pwa-content-engine.js) ── */}
         {t.wines.length>=3&&t.explore.picks.length>0&&!collapsed.explore&&(
           <Card style={{padding:14}}>
             <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P,marginBottom:4}}>Explore Next</div>
-            <div style={{fontSize:15,color:C.mid,fontFamily:C.P,marginBottom:12,lineHeight:1.5}}>Styles that share your {t.label.toLowerCase()} DNA but take you somewhere new. Tap one to learn what it's like and how to find it.</div>
+            <div style={{fontSize:15,color:C.mid,fontFamily:C.P,marginBottom:12,lineHeight:1.5}}>Styles that share your {tLabel} DNA but take you somewhere new. Tap one to learn what it's like and how to find it.</div>
             <div style={{display:'flex',flexDirection:'column',gap:10}}>
               {t.explore.picks.map((p,i)=>(
                 <div key={p.style.id}
@@ -594,12 +496,12 @@ function WineDNAScreen({nav,back,showPro}){
             </div>
             {t.explore.explored.length>0&&(
               <div style={{marginTop:12,paddingTop:10,borderTop:`1px solid ${C.line}`}}>
-                <div style={{fontSize:13,fontWeight:600,color:C.mid,fontFamily:C.P,textTransform:'uppercase',letterSpacing:'0.06em',marginBottom:6}}>Already explored</div>
+                <div style={{...sub,marginBottom:6}}>Already explored</div>
                 {t.explore.explored.map(e=>(
                   <div key={e.style.id} style={{display:'flex',alignItems:'center',gap:8,padding:'4px 0'}}>
                     <span style={{fontSize:14,fontWeight:700,color:C.green,fontFamily:C.P}}>✓</span>
                     <span style={{fontSize:14,color:C.ink,fontFamily:C.P,flex:1}}>{e.style.name}</span>
-                    <span style={{fontSize:13,color:C.mid,fontFamily:C.P}}>{e.wine.rating?`you rated it ${e.wine.rating}`:'scanned'}</span>
+                    <span style={{fontSize:13,color:C.mid,fontFamily:C.P}}>{e.wine.rating?`you scored it ${e.wine.rating}`:'scanned'}</span>
                   </div>
                 ))}
               </div>
@@ -608,10 +510,11 @@ function WineDNAScreen({nav,back,showPro}){
         )}
 
         {/* ── Flavour Signatures ── */}
-        {t.wines.length>=2&&t.noteClusters.length>0&&<CSH label="Flavour Signatures" cKey="flavour" collapsed={collapsed} toggle={toggle} summary={`${t.noteClusters[0].name} is your most common flavour signature across ${t.label.toLowerCase()} bottles.${t.noteClusters[1]?' '+t.noteClusters[1].name+' shows up often too.':''}`}/>}
+        {t.wines.length>=2&&t.noteClusters.length>0&&<CSH label="Flavour Signatures" cKey="flavour" collapsed={collapsed} toggle={toggle} summary={`${t.noteClusters[0].name} is the most common flavour family across your ${tLabel}.${t.noteClusters[1]?' '+t.noteClusters[1].name+' shows up often too.':''}`}/>}
         {t.wines.length>=2&&t.noteClusters.length>0&&!collapsed.flavour&&(
           <Card style={{padding:14}}>
-            <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P,marginBottom:12}}>Flavour Signatures</div>
+            <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P,marginBottom:4}}>Flavour Signatures</div>
+            <div style={{fontSize:14,color:C.mid,fontFamily:C.P,lineHeight:1.5,marginBottom:12}}>The flavour families that come up most in your {tLabel}, and food that suits them.</div>
             <div style={{display:'flex',flexDirection:'column',gap:10}}>
               {t.noteClusters.map((cl,i)=>(
                 <div key={i} style={{padding:'10px 12px',borderRadius:12,background:C.offWhite,border:`1px solid ${C.line}`}}>
@@ -633,41 +536,49 @@ function WineDNAScreen({nav,back,showPro}){
           </Card>
         )}
 
-        {evolution.length>=3&&<CSH label="Your Journey" cKey="journey" collapsed={collapsed} toggle={toggle} summary={`Your most recent ${t.label.toLowerCase()} scans (${evolution[evolution.length-1].label}) average ${evolution[evolution.length-1].avgR}/100, across ${evolution.length} time periods. ${evolution[evolution.length-1].avgR>evolution[0].avgR?'Your palate has been getting sharper over time.':'Your taste has stayed consistent throughout.'}`}/>}
-        {/* ── Palate Evolution ── */}
-        {evolution.length>=3&&!collapsed.journey&&(
-          <Card style={{padding:14}}>
-            <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P,marginBottom:4}}>Palate Evolution</div>
-            <div style={{fontSize:15,color:C.mid,fontFamily:C.P,marginBottom:14}}>Average rating of your {t.label.toLowerCase()} wines, grouped by when you scanned them</div>
-            <div style={{display:'flex',gap:4,alignItems:'flex-end',height:72,marginBottom:6}}>
-              {evolution.map((e,i)=>{
-                const h=Math.round((e.avgR/100)*100);
-                const col=_TYPE_COLORS[e.dom]||C.cr;
-                return(
-                  <div key={i} style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',gap:3}}>
-                    <span style={{fontSize:13,fontWeight:600,color:col,fontFamily:C.P}}>{e.avgR}</span>
-                    <div style={{width:'55%',height:`${h}%`,minHeight:4,background:col,borderRadius:'4px 4px 0 0',opacity:0.72,transition:'height .3s'}}/>
+        {/* ── Your Journey: how your choices are changing ── */}
+        {t.journey.length>=2&&(()=>{
+          const J=t.journey, last=J[J.length-1];
+          const totalRegions=new Set(t.wines.map(w=>w.region).filter(Boolean)).size;
+          const totalGrapes=t.grapeStats.length;
+          const maxN=Math.max(...J.map(b=>b.count));
+          const lastNew=[...last.newRegions];
+          const summary=lastNew.length
+            ?`${['day','week'].includes(last.unit)?(last.unit==='day'?'On':'The week of'):'In'} ${last.label} you tried ${lastNew.length} new region${lastNew.length!==1?'s':''}: ${lastNew.slice(0,3).join(', ')}${lastNew.length>3?` and ${lastNew.length-3} more`:''}.`
+            :`You've explored ${totalRegions} regions and ${totalGrapes} grapes in your ${tLabel} so far.`;
+          return(
+            <>
+              <CSH label="Your Journey" cKey="journey" collapsed={collapsed} toggle={toggle} summary={summary}/>
+              {!collapsed.journey&&(
+                <Card style={{padding:14}}>
+                  <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P,marginBottom:4}}>How your choices are changing</div>
+                  <div style={{fontSize:14,color:C.mid,fontFamily:C.P,marginBottom:14,lineHeight:1.5}}>{tLabel.charAt(0).toUpperCase()+tLabel.slice(1)} scanned over time, and how many regions each period was your first taste of.</div>
+                  <div style={{display:'flex',gap:4,alignItems:'flex-end',height:72,marginBottom:6}}>
+                    {J.map((b,i)=>(
+                      <div key={i} style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',gap:3,height:'100%',justifyContent:'flex-end'}}>
+                        <span style={{fontSize:13,fontWeight:600,color:t.col,fontFamily:C.P}}>{b.count}</span>
+                        <div style={{width:'55%',height:`${Math.max(8,Math.round(b.count/maxN*100))}%`,background:t.col,borderRadius:'4px 4px 0 0',opacity:0.72}}/>
+                      </div>
+                    ))}
                   </div>
-                );
-              })}
-            </div>
-            <div style={{display:'flex',gap:4}}>
-              {evolution.map((e,i)=>(
-                <div key={i} style={{flex:1,textAlign:'center'}}>
-                  <span style={{fontSize:12,color:C.mid,fontFamily:C.P}}>{e.label}</span>
-                  <div style={{fontSize:10,color:C.mid,fontFamily:C.P,opacity:0.6}}>{e.count} bottle{e.count!==1?'s':''}</div>
-                </div>
-              ))}
-            </div>
-            <div style={{fontSize:13,color:C.mid,fontFamily:C.P,marginTop:10,lineHeight:1.55}}>
-              {evolution[evolution.length-1].avgR>evolution[0].avgR
-                ?`Your average rating has climbed from ${evolution[0].avgR} to ${evolution[evolution.length-1].avgR} across these periods — your palate is getting sharper.`
-                :`Consistent scores across these periods show a clear, settled sense of what you love.`} Each bar is the average of just the {t.label.toLowerCase()} you rated in that period, so it can run higher or lower than your all-time average.
-            </div>
-          </Card>
-        )}
+                  <div style={{display:'flex',gap:4}}>
+                    {J.map((b,i)=>(
+                      <div key={i} style={{flex:1,textAlign:'center'}}>
+                        <span style={{fontSize:12,color:C.mid,fontFamily:C.P}}>{b.label}</span>
+                        <div style={{fontSize:11,fontWeight:600,color:b.newRegions.length?C.green:C.mid,fontFamily:C.P,opacity:b.newRegions.length?1:0.6}}>{b.newRegions.length?`+${b.newRegions.length} new`:'—'}</div>
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{fontSize:13,color:C.ink2,fontFamily:C.P,marginTop:10,lineHeight:1.55}}>
+                    {summary} {totalRegions<6?'Every new region teaches your palate something: Explore Next above has ideas.':'That breadth is what makes your scores meaningful: you know what you like because you have tried the alternatives.'}
+                  </div>
+                </Card>
+              )}
+            </>
+          );
+        })()}
 
-        {t.wines.length>0&&<CSH label="Scripts" cKey="scripts" collapsed={collapsed} toggle={toggle} summary={genScripts[t.key]?`Your ${t.label.toLowerCase()} sommelier script is ready to use at your next dinner. "${genScripts[t.key].replace(/^"|"$/g,'').slice(0,90)}${genScripts[t.key].replace(/^"|"$/g,'').length>90?'…':''}"`:`We're writing a personalised sommelier script based on your ${t.label.toLowerCase()} history — expand to see it.`}/>}
+        {t.wines.length>0&&<CSH label="Scripts" cKey="scripts" collapsed={collapsed} toggle={toggle} summary={genScripts[t.key]?`Your ${tLabel} sommelier script is ready to use at your next dinner. "${genScripts[t.key].replace(/^"|"$/g,'').slice(0,90)}${genScripts[t.key].length>92?'…':''}"`:`What to say to a sommelier about the ${tLabel} you like.`}/>}
         {/* ── Sommelier Script ── */}
         {t.wines.length>0&&!collapsed.scripts&&(
           <Card style={{padding:14}}>
@@ -704,14 +615,14 @@ function WineDNAScreen({nav,back,showPro}){
           </Card>
         )}
 
-        <CSH label="Your History" cKey="history" collapsed={collapsed} toggle={toggle} summary={`You've scanned ${t.wines.length} ${t.label.toLowerCase()} bottle${t.wines.length!==1?'s':''} across ${tCountries} countr${tCountries!==1?'ies':'y'}, averaging ${tAvgRating||'—'}/100.${tAvgPrice>0?' You typically spend around '+_csym+Math.round(tAvgPrice*_cfx)+' per bottle.':''}`} />
+        <CSH label="Your History" cKey="history" collapsed={collapsed} toggle={toggle} summary={`You've scanned ${t.wines.length} ${tLabel} across ${tCountries} countr${tCountries!==1?'ies':'y'}${tAvgScore?`, scoring them ${tAvgScore} on average`:''}.`}/>
         {/* ── Stats grid ── */}
         {!collapsed.history&&<div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8}}>
           {[
-            {icon:'wine',  label:`${t.label} Scanned`, val:t.wines.length,                    col:t.col,     bg:t.col+'15'},
-            {icon:'star',  label:'Avg Rating',           val:tAvgRating?`${tAvgRating}/100`:'—', col:C.amber,  bg:C.amberBg},
-            {icon:'globe', label:'Countries',            val:tCountries||'—',                   col:C.green,  bg:C.greenBg},
-            {icon:'trophy',label:'XP Earned',            val:`${xd.total} XP`,                  col:'#7B5EA7', bg:'#F0EBF8'},
+            {icon:'wine',  label:`${t.label} scanned`, val:t.wines.length,                         col:t.col,     bg:t.col+'15'},
+            {icon:'star',  label:'Average score',        val:tAvgScore?`${tAvgScore}`:'—',            col:C.amber,  bg:C.amberBg, note:tAvgScore?ParkerScale.label(tAvgScore):null},
+            {icon:'globe', label:'Countries',            val:tCountries||'—',                         col:C.green,  bg:C.greenBg},
+            {icon:'bolt',label:'Blind Call accuracy',  val:t.blindCall?`${t.blindCall.accuracy}%`:'—', col:'#7B5EA7', bg:'#F0EBF8', note:t.blindCall?`${t.blindCall.played} played`:'Play after a scan'},
           ].map((s,i)=>(
             <div key={i} style={{background:s.bg,borderRadius:14,padding:'12px 14px',border:`1px solid ${s.col}20`,display:'flex',flexDirection:'column',gap:6}}>
               <div style={{display:'flex',alignItems:'center',gap:7}}>
@@ -720,7 +631,7 @@ function WineDNAScreen({nav,back,showPro}){
                 </div>
                 <div style={{fontSize:20,fontWeight:800,color:s.col,fontFamily:C.P,lineHeight:1}}>{s.val}</div>
               </div>
-              <div style={{fontSize:13,color:C.mid,fontFamily:C.P}}>{s.label}</div>
+              <div style={{fontSize:13,color:C.mid,fontFamily:C.P}}>{s.label}{s.note?<span style={{opacity:0.75}}> · {s.note}</span>:null}</div>
             </div>
           ))}
         </div>}
@@ -732,7 +643,7 @@ function WineDNAScreen({nav,back,showPro}){
             <div style={{display:'flex',alignItems:'baseline',gap:6}}>
               <div style={{fontSize:19,fontWeight:800,color:C.amber,fontFamily:C.P}}>{_cbase}{Math.round(tAvgPrice*_cfx)}</div>
               <span style={{fontSize:11,fontWeight:700,color:C.amber+'99',fontFamily:C.P,letterSpacing:'0.04em'}}>{_ccode}</span>
-              <span style={{fontSize:15,fontWeight:400,color:C.mid,marginLeft:2}}>per bottle</span>
+              <span style={{fontSize:15,fontWeight:400,color:C.mid,marginLeft:2}}>per bottle, est.</span>
             </div>
           </Card>
         )}
@@ -755,7 +666,7 @@ function WineDNAScreen({nav,back,showPro}){
                   </div>
                   <div style={{flex:1,minWidth:0}}>
                     <div style={{fontSize:16,fontWeight:600,color:C.ink,fontFamily:C.P,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{w.name}</div>
-                    <div style={{fontSize:13,color:C.mid,fontFamily:C.P}}>{[w.region,w.vintage?String(w.vintage):null].filter(Boolean).join(' · ')}</div>
+                    <div style={{fontSize:13,color:C.mid,fontFamily:C.P}}>{[w.region,w.vintage?String(w.vintage):null,ParkerScale.label(w.rating)].filter(Boolean).join(' · ')}</div>
                   </div>
                   <div style={{display:'flex',alignItems:'baseline',gap:1,flexShrink:0}}>
                     <span style={{fontSize:18,fontWeight:800,color:C.amber,fontFamily:C.P}}>{w.rating}</span>
