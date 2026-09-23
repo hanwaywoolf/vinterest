@@ -160,7 +160,7 @@ function ScanCardsScreen({nav,back}){
   const trackedRef=React.useRef(false);
   React.useEffect(()=>{
     // Opened from history (a Home reminder): it's already saved, and reopening isn't a rescan.
-    if(!wine||!confirmed||trackedRef.current||source==='history'||scanData.tracked) return;
+    if(!wine||!confirmed||trackedRef.current||source==='history'||source==='suggestion'||scanData.tracked) return;
     trackedRef.current=true;
     // Coming back to this screen (from Details, say) isn't another scan.
     try{ const sd=JSON.parse(sessionStorage.getItem('vinterest_scan_result')||'{}'); sd.tracked=true; sessionStorage.setItem('vinterest_scan_result',JSON.stringify(sd)); }catch(e){}
@@ -177,7 +177,8 @@ function ScanCardsScreen({nav,back}){
     setWine(next); setEditing(false); confirm();
   }
   function confirm(){ try{ sessionStorage.setItem(confirmKey,'1'); }catch(e){} setConfirmed(true); }
-  function setIntent(v){ if(wine) WineHistory.setScanIntent(wine.name,wine.vintage,v); }
+  // A suggestion isn't saved until the user acts on it (save for later, rate, Blind Call).
+  function setIntent(v){ if(!wine) return; if(!WineHistory.find(wine)) WineHistory.track(wine); const e=WineHistory.find(wine); WineHistory.setScanIntent(e.name,e.vintage,v); }
 
   if(!wine){
     const failed=scanData.reason&&scanData.reason!=='no_wine_label';

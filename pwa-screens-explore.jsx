@@ -274,12 +274,12 @@ function SimilarWinesScreen({nav,back}){
             const b=badge[w.step]||{l:'',bg:'',col:''};
             return(
               <Card key={i} style={{padding:12,cursor:'pointer'}} onClick={()=>{
+                // A suggestion, not a scan: nothing is saved to history and no style figures are
+                // invented for it (the match reads its grape and region instead).
                 sessionStorage.setItem('vinterest_scan_result',JSON.stringify({
-                  demo:false,
-                  wine:{...w,body:0.7,tannins:0.65,acidity:0.6,sweetness:0.1,
-                    tasting_notes:[],food_pairings:[],price_usd:w.approx_price_usd,
-                    description:w.why_similar,why_you_will_like_this:w.why_similar},
-                  confidence:0.88
+                  demo:false,source:'suggestion',
+                  wine:{...w,tasting_notes:[],food_pairings:[],price_usd:w.approx_price_usd,
+                    description:w.why_similar,why_you_will_like_this:w.why_similar,confidence:'high'},
                 }));
                 nav('identified');
               }}>

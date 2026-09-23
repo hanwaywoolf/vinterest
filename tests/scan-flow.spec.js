@@ -143,7 +143,7 @@ test('a rescan under a new name lands on the saved entry, and Save for later is 
   const root = page.locator('#root');
   await expect(root).toContainText('You scored it 92');
   const matches = (await history(page)).filter((w) => /Clos Test/.test(w.name));
-  expect(matches.map((w) => [w.name, w.times_consumed])).toEqual([['Clos Test Priorat', 2]]);
+  expect(matches.map((w) => [w.name, w.times_consumed])).toEqual([['Clos Test Priorat', 1]]);
 
   await page.evaluate(() => WineHistory.remove('Clos Test Priorat', 2019));
   await page.goto(`${BASE}/?demo=1#camera`);
@@ -401,4 +401,33 @@ test.describe('the deck on a touch screen', () => {
     await drag(60, (await root.getByText('How was it?').boundingBox()).y + 5, 110, 250);
     await expect(root).toContainText('8 / 9');
   });
+});
+
+test('a rescan within a few hours is the same occasion; a suggestion is not a scan', async ({ context, page }) => {
+  await setup(context, page, { label: PRIORAT });
+  const scan = async () => {
+    await page.goto(`${BASE}/?demo=1#camera`);
+    await page.getByTestId('scan-file').setInputFiles({ name: 'label.png', mimeType: 'image/png', buffer: PNG });
+    await expect(page.locator('#root')).toContainText('Clos Test Priorat 2019');
+  };
+  // Started, left half-way, scanned again to finish: one bottle.
+  await scan();
+  await page.evaluate(() => sessionStorage.clear());
+  await scan();
+  expect((await history(page)).find((w) => w.name === 'Clos Test Priorat').times_consumed).toBe(1);
+  // A day later it's another bottle.
+  await page.evaluate(() => { const all = WineHistory.getAll(); all.find((w) => w.name === 'Clos Test Priorat').last_scanned = new Date(Date.now() - 86400000).toISOString(); WineHistory.save(all); sessionStorage.clear(); });
+  await scan();
+  expect((await history(page)).find((w) => w.name === 'Clos Test Priorat').times_consumed).toBe(2);
+
+  // Opening a suggested wine saves nothing until the user acts on it.
+  await page.goto(`${BASE}/?demo=1#home`);
+  await page.evaluate(() => sessionStorage.setItem('vinterest_scan_result', JSON.stringify({ source: 'suggestion',
+    wine: { name: 'Suggested Test', type: 'red', region: 'Priorat', country: 'Spain', grapes: ['Garnacha'], confidence: 'high' } })));
+  await page.goto(`${BASE}/?demo=1#identified`);
+  await expect(page.locator('#root')).toContainText('Suggested Test');
+  expect((await history(page)).some((w) => w.name === 'Suggested Test')).toBe(false);
+  await page.locator('#root').getByText('Save for later', { exact: true }).click();
+  const s = (await history(page)).find((w) => w.name === 'Suggested Test');
+  expect([s.scan_intent, s.body]).toEqual(['checking', undefined]);
 });

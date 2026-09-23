@@ -317,13 +317,18 @@ const WineHistory = {
     const idx = this._index(wines,wine);
     const now = new Date().toISOString();
     if(idx>=0){
-      wines[idx].times_consumed = (wines[idx].times_consumed||1) + 1;
+      // times_consumed is how many times they've had the wine, not how many times the camera saw
+      // it: rescanning the same bottle within a few hours (a scan left half-way and done again)
+      // is the same occasion.
+      const last=new Date(wines[idx].last_scanned||wines[idx].scanned_at||0).getTime();
+      if(!(Date.now()-last<this.SAME_OCCASION_MS)) wines[idx].times_consumed = (wines[idx].times_consumed||1) + 1;
       wines[idx].last_scanned = now;
     } else {
       wines.unshift({...wine, rating:0, times_consumed:1, scanned_at:now, last_scanned:now});
     }
     this.save(wines);
   },
+  SAME_OCCASION_MS: 12*3600*1000,
   add(wine, rating){
     const wines = this.getAll();
     const idx = this._index(wines,wine);
