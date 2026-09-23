@@ -99,6 +99,22 @@ function QuizHubScreen({nav,back,showPro}){
   },[]);
   const [grapeUnlocks,setGrapeUnlocks]=React.useState(()=>GrapeUnlocks.all());
   const [grapeLoading,setGrapeLoading]=React.useState(null);
+  const [regionLoading,setRegionLoading]=React.useState(null);
+  // Generate question banks for the regions on offer in the background, so a tap is usually instant.
+  React.useEffect(()=>{ quizRegions.slice(0,3).forEach(r=>RegionQuizBank.prefetch(r)); },[quizRegions]);
+  const mountedRef=React.useRef(true);
+  React.useEffect(()=>()=>{ mountedRef.current=false; },[]);
+  // First tap on a region whose bank isn't ready waits for generation (spinner on the tile);
+  // if it fails, the quiz falls back to the fixed knowledge-base questions.
+  function handleRegionTap(region){
+    if(regionLoading) return;
+    setRegionLoading(region);
+    RegionQuizBank.load(region,()=>{
+      if(!mountedRef.current) return; // left Learn while it generated — don't yank them into a quiz
+      setRegionLoading(null);
+      startQuiz({mode:'region',region});
+    });
+  }
   const [grapesExpanded,setGrapesExpanded]=React.useState(false);
   // Unlocked grapes first (most-recently-unlocked first), locked grapes after in their
   // existing allowlist order. Recomputed from current unlock state on every render (not
@@ -275,13 +291,15 @@ function QuizHubScreen({nav,back,showPro}){
                 const info=KNOWLEDGE.regions[region];
                 const sub=info?[info.keyGrapes&&info.keyGrapes[0],info.classification].filter(Boolean).join(' · '):"Grounded in bottles you've scanned from there";
                 return(
-                  <div key={region} onClick={()=>startQuiz({mode:'region',region})} style={{background:C.white,borderRadius:14,padding:'12px 14px',display:'flex',alignItems:'center',gap:12,cursor:'pointer',border:`1px solid ${C.line}`}}>
+                  <div key={region} onClick={()=>handleRegionTap(region)} style={{background:C.white,borderRadius:14,padding:'12px 14px',display:'flex',alignItems:'center',gap:12,cursor:'pointer',border:`1px solid ${C.line}`}}>
                     <div style={{width:42,height:42,borderRadius:12,background:C.offWhite,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><Icon n="map" sz={20} col={C.ink}/></div>
                     <div style={{flex:1}}>
                       <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>{region}</div>
                       <div style={{fontSize:14,color:C.mid,fontFamily:C.P}}>{sub}</div>
                     </div>
-                    <Icon n="chevron" sz={13} col={C.mid}/>
+                    {regionLoading===region
+                      ?<div style={{width:14,height:14,borderRadius:7,border:`2px solid ${C.line}`,borderTopColor:C.cr,animation:'storySpin .8s linear infinite'}}/>
+                      :<Icon n="chevron" sz={13} col={C.mid}/>}
                   </div>
                 );
               })}
@@ -439,6 +457,10 @@ function assembleWordsQuiz(){
   });
 }
 function assembleRegionQuiz(region){
+  const drawn=RegionQuizBank.draw(region);
+  if(drawn) return drawn.map(q=>_shuffleOpts({q:q.q,opts:q.opts,a:q.a,fact:q.fact||null,conceptId:null,vocabTerm:null}));
+  // No generated bank yet (offline, or generation failed): fall back to the fixed questions
+  // built straight from data/knowledge.json.
   const info=KNOWLEDGE.regions[region];
   const wines=WineHistory.getAll();
   const regionWines=wines.filter(w=>w.region===region);
@@ -487,9 +509,7 @@ function assembleRegionQuiz(region){
     const opts=_shuffle([target.name,...otherWines.map(w=>w.name)]);
     qs.push({q:`Which of these bottles in your wine history is from ${region}?`,opts,a:opts.indexOf(target.name),fact:`${target.name} is the ${region} bottle in your history.`,conceptId:null,vocabTerm:null});
   }
-  // Sample a rotating subset rather than always returning the whole fixed pool, so hitting
-  // "New quiz" back to back doesn't just reshuffle the identical set of questions.
-  const picked=_shuffle(qs).slice(0,Math.min(5,qs.length));
+  const picked=_shuffle(qs).slice(0,Math.min(REGION_QUIZ_SIZE,qs.length));
   return picked.map(q=>_shuffleOpts(q));
 }
 function assemblePracticeQuiz(topicId){
@@ -625,7 +645,8 @@ function QuizScreen({nav,back}){
             </div>
           ))}
           <div style={{display:'flex',flexDirection:'column',gap:8,marginTop:4}}>
-            <Btn primary full onClick={newQuiz}>New quiz</Btn>
+            {/* A region quiz with no generated bank only has its fixed ~6 questions to draw from, so a retake is a retry, not a new set. */}
+            <Btn primary full onClick={newQuiz}>{mode==='region'&&!RegionQuizBank.get(config.region)?'Try again':'New quiz'}</Btn>
             <Btn full onClick={()=>{if(pct<100){if(scrollRef.current)scrollRef.current.scrollTop=0;}else nav('learn');}}>{pct<100?'See what you missed':'Practice more'}</Btn>
           </div>
           <div style={{height:8}}/>

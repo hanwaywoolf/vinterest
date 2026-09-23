@@ -37,6 +37,7 @@ const CLAUDE_PURPOSE_LIMITS = {
   explore: 4096,           // pwa-screens-explore.jsx — 4-tier bottle suggestions for a gap
   explore_info: 4096,      // pwa-screens-explore.jsx useClaudeData — region/varietal/similar-wines
   grape_quiz: 4096,        // pwa-grape-learning.js — generated grape quiz questions
+  region_quiz: 4096,       // pwa-content-engine.js RegionQuizBank — generated region quiz questions
   match_explain: 4096,     // pwa-screens-detail.jsx — "why this wine matches you"
   vintage_info: 4096,      // pwa-screens-detail.jsx — vintage quality + drinking window
   education: 4096,         // pwa-screens-detail.jsx — grape/vocabulary deep-dive

@@ -18,8 +18,72 @@ const ExposureLedger = Object.assign(_accountStore('vinterest_exposure_v1'), {
 const RegionQuizLedger = Object.assign(_accountStore('vinterest_region_quiz_v1'), {
   fresh(){ return {aced:{}}; },
   isAced(region){ return !!this.get().aced[region]; },
-  markAced(region){ const d=this.get(); d.aced[region]=Date.now(); this.save(d); }
+  markAced(region){ const d=this.get(); d.aced[region]=Date.now(); this.save(d); },
+  /* When each bank question was last served, per region, keyed by question text — so a retake
+     draws the questions this user has seen least recently instead of repeating the last set. */
+  lastServed(region){ return (this.get().served||{})[region]||{}; },
+  markServed(region,qTexts){
+    const d=this.get(); d.served=d.served||{}; const r=d.served[region]=d.served[region]||{};
+    const now=Date.now(); qTexts.forEach(q=>{ r[q]=now; }); this.save(d);
+  }
 });
+
+/* Per-region question bank: 15 questions (5 easy/5 medium/5 hard) generated once from the
+   region's data/knowledge.json facts and cached forever, same approach as the grape quizzes.
+   A quiz draws REGION_QUIZ_SIZE of them, least-recently-served first, so three retakes in a
+   row see all 15 before any repeats. The cache is shared across accounts (it's reference
+   content); what each account has been served lives in RegionQuizLedger. */
+const REGION_QUIZ_SIZE=5;
+const RegionQuizBank = {
+  _inFlight:new Set(),
+  key(region){ return 'vinterest_region_quiz_bank_'+region.replace(/\s+/g,'_'); },
+  get(region){
+    try{ const qs=JSON.parse(localStorage.getItem(this.key(region))||'null'); return Array.isArray(qs)&&qs.length>=REGION_QUIZ_SIZE?qs:null; }catch(e){ return null; }
+  },
+  // A question is kept only if it's well-formed; a bank with too few survivors isn't cached,
+  // so the next tap retries generation rather than locking in a short bank.
+  _valid(q){ return q&&typeof q.q==='string'&&Array.isArray(q.opts)&&q.opts.length===4&&Number.isInteger(q.a)&&q.a>=0&&q.a<4; },
+  load(region,onReady){
+    const cached=this.get(region);
+    if(cached){ onReady(cached); return; }
+    if(this._inFlight.has(region)){
+      const wait=()=>{ if(this._inFlight.has(region)) setTimeout(wait,300); else onReady(this.get(region)); };
+      wait();
+      return;
+    }
+    const info=KNOWLEDGE.regions[region];
+    if(!info){ onReady(null); return; }
+    this._inFlight.add(region);
+    const facts=`${region} (${info.country}). Classification: ${info.classification}. Key grapes: ${(info.keyGrapes||[]).join(', ')}. Climate: ${info.climate}. Aging rules: ${info.agingRules||'none specific'}. Classic producers: ${(info.classicProducers||[]).join(', ')}.`;
+    const prompt=ContentEngine.fillTpl(_loadTextSync('prompts/region-quiz.txt'),{region,facts});
+    window.claude.complete({purpose:'region_quiz',max_tokens:4096,messages:[{role:'user',content:prompt}]})
+      .then(text=>{
+        let cleaned=text.replace(/```json|```/g,'').trim();
+        const s=cleaned.indexOf('['); const e=cleaned.lastIndexOf(']');
+        if(s>=0&&e>s) cleaned=cleaned.slice(s,e+1);
+        const seen=new Set();
+        const qs=JSON.parse(cleaned).filter(q=>this._valid(q)&&!seen.has(q.q)&&seen.add(q.q));
+        if(qs.length>=REGION_QUIZ_SIZE) localStorage.setItem(this.key(region),JSON.stringify(qs));
+      })
+      .catch(()=>{})
+      .finally(()=>{ this._inFlight.delete(region); onReady(this.get(region)); });
+  },
+  prefetch(region){ if(!this.get(region)) this.load(region,()=>{}); },
+  // The questions for one quiz, or null when there's no bank yet (the caller falls back to the
+  // fixed knowledge-base questions). Marks what it returns as served.
+  draw(region){
+    const bank=this.get(region);
+    if(!bank) return null;
+    const served=RegionQuizLedger.lastServed(region);
+    const picked=bank
+      .map(q=>({q,at:served[q.q]||0,tie:Math.random()}))
+      .sort((x,y)=>x.at-y.at||x.tie-y.tie)
+      .slice(0,REGION_QUIZ_SIZE)
+      .map(x=>x.q);
+    RegionQuizLedger.markServed(region,picked.map(q=>q.q));
+    return picked;
+  }
+};
 
 /* Regions with 2+ scans that haven't been aced yet — most-scanned first. A region drops off
    this list the moment its quiz is aced, and a newly-scanned region (e.g. a first Bordeaux)

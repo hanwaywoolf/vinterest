@@ -22,6 +22,8 @@ const SCREENS = ['home', 'mywines', 'learn', 'profile', 'scan', 'settings', 'acc
 // QuizHubScreen crashes on the first Learn visit after WineDNA unlocks (fixed in this build),
 // so both runs start with that one-off celebration already seen.
 const SEED = { vinterest_wineDNA_unlock_seen: '1' };
+// Globals added to the sources after bundle.js was last compiled. They exist only in dist.
+const ADDED_SINCE_BUNDLE = ['RegionQuizBank', 'REGION_QUIZ_SIZE'];
 const normalise = (text) => text.replace(/Vinterest v[^\n]*/g, 'Vinterest v<version>');
 
 async function snapshot(browser, base, run) {
@@ -39,7 +41,8 @@ async function snapshot(browser, base, run) {
   const state = {
     text: normalise(await page.locator('#root').innerText()),
     localStorage: await page.evaluate(() => Object.fromEntries(Object.entries(localStorage).sort())),
-    claude: claudeRequests,
+    // dist also pre-generates region quiz banks (added after bundle.js); legacy never asks for them.
+    claude: claudeRequests.filter((r) => r.purpose !== 'region_quiz'),
     result,
     // React's dev build (legacy) warns where the production build (dist) is silent, so only
     // count app errors, not React warnings.
@@ -103,7 +106,7 @@ test('every top-level name in the sources is defined the same way in both builds
   const names = new Set();
   for (const file of APP_SOURCES) {
     const src = fs.readFileSync(path.join(ROOT, file), 'utf8');
-    for (const m of src.matchAll(/^(?:async\s+)?(?:function\*?|const|let|var|class)\s+([A-Za-z_$][\w$]*)/gm)) names.add(m[1]);
+    for (const m of src.matchAll(/^(?:async\s+)?(?:function\*?|const|let|var|class)\s+([A-Za-z_$][\w$]*)/gm)) if (!ADDED_SINCE_BUNDLE.includes(m[1])) names.add(m[1]);
   }
   expect(names.size).toBeGreaterThan(100);
   const types = async (base) => {

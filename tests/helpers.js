@@ -12,7 +12,9 @@ const UMD = {
   'unpkg.com/react-dom@': 'node_modules/react-dom/umd/react-dom.development.js',
 };
 
-async function stubNetwork(context, { claudeRequests = [] } = {}) {
+// claudeText(body) returns the text the stubbed /claude answers with; the default is empty,
+// which every caller treats as a failed generation.
+async function stubNetwork(context, { claudeRequests = [], claudeText = () => '' } = {}) {
   await context.route(/^https?:\/\/(?!localhost[:/])/, (route) => {
     const url = route.request().url();
     const umd = Object.entries(UMD).find(([k]) => url.includes(k));
@@ -24,7 +26,8 @@ async function stubNetwork(context, { claudeRequests = [] } = {}) {
   });
   await context.route('**/claude', (route) => {
     claudeRequests.push(JSON.parse(route.request().postData() || '{}'));
-    return route.fulfill({ contentType: 'application/json', body: JSON.stringify({ text: '' }) });
+    const body = JSON.parse(route.request().postData() || '{}');
+    return route.fulfill({ contentType: 'application/json', body: JSON.stringify({ text: claudeText(body) }) });
   });
 }
 
