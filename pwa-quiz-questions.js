@@ -9,7 +9,8 @@ try{ QUIZ_TOPICS=_loadJSON('data/quiz-bank.json')||[]; }catch(e){ console.error(
    generated banks (cached once, never regenerated).
 
    draw() builds each quiz: questions not yet answered correctly come first (least recently
-   served first), and any remaining slots are filled with already-correct questions as review.
+   served first, then easier before harder where the pool ranks them), and any remaining slots
+   are filled with already-correct questions as review.
    So a user on 14/15 gets their one missing question in every quiz until they get it right,
    alongside 4 review questions; a completed set keeps rotating through its questions for
    practice. */
@@ -20,8 +21,8 @@ const QuizMastery = Object.assign(_accountStore('vinterest_quiz_mastery_v1'), {
   draw(setId,pool,n=QUIZ_SIZE){
     const s=this.get().sets[setId]||{correct:{},served:{}};
     const picked=pool
-      .map(q=>({q,done:s.correct[q.q]?1:0,at:s.served[q.q]||0,tie:Math.random()}))
-      .sort((x,y)=>x.done-y.done||x.at-y.at||x.tie-y.tie)
+      .map(q=>({q,done:s.correct[q.q]?1:0,at:s.served[q.q]||0,rank:q.rank??({easy:0,medium:1,hard:2}[q.difficulty]||0),tie:Math.random()}))
+      .sort((x,y)=>x.done-y.done||x.at-y.at||x.rank-y.rank||x.tie-y.tie)
       .slice(0,n)
       .map(x=>x.q);
     const d=this.get(); const set=this._set(d,setId); const now=Date.now();
@@ -41,5 +42,12 @@ const QuizMastery = Object.assign(_accountStore('vinterest_quiz_mastery_v1'), {
   },
   isComplete(setId,pool){ const p=this.progress(setId,pool); return p.total>0&&p.correct===p.total; },
   reset(setId){ const d=this.get(); delete d.sets[setId]; this.save(d); },
-  topicPool(topicId){ const t=QUIZ_TOPICS.find(x=>x.id===topicId); return (t&&t.questions.beginner)||[]; }
+  /* A Wine Basics topic's pool: its beginner and intermediate questions from data/quiz-bank.json
+     (16 per topic). rank makes unseen beginner questions come before intermediate ones, so a
+     first quiz stays easy. The expert level isn't used; it's beyond "basics". */
+  topicPool(topicId){
+    const t=QUIZ_TOPICS.find(x=>x.id===topicId);
+    if(!t) return [];
+    return [...(t.questions.beginner||[]).map(q=>({...q,rank:0})),...(t.questions.intermediate||[]).map(q=>({...q,rank:1}))];
+  }
 });

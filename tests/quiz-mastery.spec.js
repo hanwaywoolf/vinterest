@@ -42,7 +42,7 @@ async function answerQuiz(page, pick) {
     const correctText = await page.evaluate(
       (text) => {
         // The option marked correct in the pool — works for generated banks and the static bank.
-        const all = [...QUIZ_TOPICS.flatMap((t) => t.questions.beginner)];
+        const all = QUIZ_TOPICS.flatMap((t) => QuizMastery.topicPool(t.id));
         const hit = all.find((x) => x.q === text);
         return hit ? hit.opts[hit.a] : 'Right';
       },
@@ -118,18 +118,28 @@ test('a region completes only when every question is answered correctly, then co
   expect(errors).toEqual([]);
 });
 
-test('a Wine Basics topic completes after every one of its 8 questions is answered correctly', async ({ page }) => {
+test('a Wine Basics topic draws from 16 questions, easy first, and completes once all are answered', async ({ page }) => {
   const errors = collectErrors(page);
   await page.goto(`${BASE}/?demo=1#learn`);
-  const label = await page.evaluate(() => QUIZ_TOPICS[0].label);
+  const { label, beginner } = await page.evaluate(() => ({
+    label: QUIZ_TOPICS[0].label,
+    beginner: QUIZ_TOPICS[0].questions.beginner.map((q) => q.q),
+  }));
   await root(page).getByText(label, { exact: true }).click();
   const first = await answerQuiz(page, () => true);
   expect(first).toHaveLength(5);
-  await expect(root(page)).toContainText('5 of 8 questions answered correctly');
-  await root(page).getByText('New quiz', { exact: true }).click();
-  const second = await answerQuiz(page, () => true);
-  // The 3 not yet answered come first, then 2 review questions.
-  expect(second.slice(0, 3).every((q) => !first.includes(q))).toBe(true);
+  expect(first.every((q) => beginner.includes(q))).toBe(true); // beginner questions come first
+  await expect(root(page)).toContainText('5 of 16 questions answered correctly');
+  const seen = new Set(first);
+  for (let round = 0; round < 3; round++) {
+    await root(page).getByText('New quiz', { exact: true }).click();
+    const qs = await answerQuiz(page, () => true);
+    const fresh = qs.filter((q) => !seen.has(q));
+    // Unanswered questions always lead the quiz.
+    expect(qs.slice(0, fresh.length)).toEqual(fresh);
+    qs.forEach((q) => seen.add(q));
+  }
+  expect(seen.size).toBe(16);
   await expect(root(page)).toContainText('Complete — every question answered correctly');
 
   await page.goto(`${BASE}/?demo=1#learn`);
