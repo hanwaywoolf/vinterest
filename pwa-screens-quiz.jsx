@@ -155,17 +155,31 @@ function QuizHubScreen({nav,back,showPro}){
     unlocked.sort((a,b)=>(grapeUnlocks[b].at||0)-(grapeUnlocks[a].at||0));
     return {unlockedGrapes:unlocked,lockedGrapes:locked};
   },[grapeUnlocks]);
+  const [grapeError,setGrapeError]=React.useState(null);
+  // One tap opens the quiz: a locked grape (Pro) is unlocked and opened in the same tap, and
+  // the pill keeps its name with a spinner while the questions generate. A failed generation
+  // says so instead of silently doing nothing.
   function handleGrapeTap(grape){
+    if(grapeLoading) return;
     if(!grapeUnlocks[grape]){
-      if(isPro){ GrapeUnlocks.unlockManual(grape); setGrapeUnlocks(GrapeUnlocks.all()); }
-      else showPro('grape-library');
-      return;
+      if(!isPro){ showPro('grape-library'); return; }
+      GrapeUnlocks.unlockManual(grape); setGrapeUnlocks(GrapeUnlocks.all());
     }
+    setGrapeError(null);
     setGrapeLoading(grape);
     getGrapeQuiz(grape,qs=>{
+      if(!mountedRef.current) return;
       setGrapeLoading(null);
       if(qs&&qs.length) startQuiz({mode:'grape',grape,questions:qs});
+      else setGrapeError(grape);
     });
+  }
+  // "3/15" on a pill once its questions exist; a tick once every one is answered.
+  function grapePillStatus(g){
+    const bank=grapeQuizBank(g);
+    if(!bank) return null;
+    const p=QuizMastery.progress('grape:'+g,bank);
+    return p.correct===p.total?{done:true}:{text:`${p.correct}/${p.total}`};
   }
   // Warm the quiz cache for already-unlocked grapes so opening one is instant if it's had time to
   // generate — new unlocks warm themselves immediately via GrapeUnlocks. Capped so a big backlog
@@ -350,15 +364,19 @@ function QuizHubScreen({nav,back,showPro}){
         </div>
 
         <div style={zoneLabel}>Your Grapes</div>
-        <div style={{fontSize:14,color:C.mid,fontFamily:C.P,marginTop:2}}>{unlockedGrapes.length}/{GRAPE_ALLOWLIST.length} unlocked{!isPro?` · rate a wine to unlock more (${FREE_GRAPE_CAP} free)`:' · tap any to unlock instantly'}</div>
+        <div style={{fontSize:14,color:C.mid,fontFamily:C.P,marginTop:2}}>{unlockedGrapes.length}/{GRAPE_ALLOWLIST.length} unlocked · {isPro?'tap any grape for its quiz; locked ones unlock as you tap':`${unlockedGrapes.length?'tap one for its quiz · ':''}rate a wine to unlock more (${FREE_GRAPE_CAP} free)`}</div>
         <div style={{display:'flex',flexWrap:'wrap',gap:8,marginTop:8}}>
         {unlockedGrapes.map(g=>{
           const loading=grapeLoading===g;
           const col=grapeTypeColor(g);
+          const status=grapePillStatus(g);
           return(
-            <div key={g} onClick={()=>handleGrapeTap(g)} style={{flex:'0 0 auto',padding:'10px 18px',borderRadius:999,background:col+'15',border:`1px solid ${col}40`,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}>
-              {loading?<div style={{width:14,height:14,borderRadius:7,border:`2px solid ${col}33`,borderTopColor:col,animation:'storySpin .8s linear infinite'}}/>:
-                <span style={{fontSize:14,fontWeight:600,color:col,fontFamily:C.P,whiteSpace:'nowrap'}}>{grapeQuizComplete(g)?'✓ ':''}{g}</span>}
+            <div key={g} onClick={()=>handleGrapeTap(g)} style={{flex:'0 0 auto',padding:'10px 16px',borderRadius:999,background:col+'15',border:`1px solid ${col}40`,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:7}}>
+              {status&&status.done&&<span style={{fontSize:14,fontWeight:700,color:C.green,fontFamily:C.P}}>✓</span>}
+              <span style={{fontSize:14,fontWeight:600,color:col,fontFamily:C.P,whiteSpace:'nowrap'}}>{g}</span>
+              {loading
+                ?<div style={{width:13,height:13,borderRadius:7,border:`2px solid ${col}33`,borderTopColor:col,animation:'storySpin .8s linear infinite'}}/>
+                :status&&!status.done&&<span style={{fontSize:12,fontWeight:700,color:col,fontFamily:C.P,background:'#fff',borderRadius:999,padding:'1px 7px'}}>{status.text}</span>}
             </div>
           );
         })}
@@ -373,12 +391,15 @@ function QuizHubScreen({nav,back,showPro}){
           const col=grapeTypeColor(g);
           return(
             <div key={g} onClick={()=>handleGrapeTap(g)} style={{flex:'0 0 auto',padding:'10px 18px',borderRadius:999,background:C.white,border:`1px solid ${col}30`,cursor:'pointer',display:'flex',alignItems:'center',gap:6,opacity:0.75}}>
-              {loading?<div style={{width:14,height:14,borderRadius:7,border:`2px solid ${col}33`,borderTopColor:col,animation:'storySpin .8s linear infinite'}}/>:<Icon n="lock" sz={11} col={C.mid}/>}
+              {!loading&&<Icon n="lock" sz={11} col={C.mid}/>}
               <span style={{fontSize:14,fontWeight:600,color:C.ink,fontFamily:C.P,whiteSpace:'nowrap'}}>{g}</span>
+              {loading&&<div style={{width:13,height:13,borderRadius:7,border:`2px solid ${col}33`,borderTopColor:col,animation:'storySpin .8s linear infinite'}}/>}
             </div>
           );
         })}
         </div>
+        {grapeLoading&&<div style={{fontSize:14,color:C.mid,fontFamily:C.P,marginTop:8}}>Preparing your {grapeLoading} quiz… the first time takes a few seconds.</div>}
+        {grapeError&&!grapeLoading&&<div style={{fontSize:14,color:'#C0392B',fontFamily:C.P,marginTop:8}}>Couldn't load the {grapeError} quiz. Check your connection and tap it again.</div>}
 
         <div style={zoneLabel}>Your Progress</div>
         <div onClick={()=>isPro?nav('mastery-map'):showPro('mastery-map')} style={{background:C.white,borderRadius:16,border:`1px solid ${C.line}`,padding:'14px 16px',display:'flex',alignItems:'center',gap:12,marginTop:8,cursor:'pointer'}}>

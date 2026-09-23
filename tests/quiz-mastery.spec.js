@@ -166,7 +166,9 @@ test('grape quizzes serve 5 of the 15 questions and show a tick once complete', 
   expect(new Set(asked).size).toBe(15);
   await expect(root(page)).toContainText(/All \d+ questions answered correctly/);
   await page.goto(`${BASE}/?demo=1#learn`);
-  await expect(root(page).getByText(`✓ ${grape}`, { exact: true })).toBeVisible();
+  const pill = root(page).locator('div', { has: page.getByText(grape, { exact: true }) }).last();
+  await expect(pill).toContainText('✓');
+  await expect(pill).not.toContainText('/15');
   expect(errors).toEqual([]);
 });
 
@@ -240,4 +242,37 @@ test('Concept Check fills every quiz, a miss steps back one box, and Blind Call 
   expect(out.after.box).toBe(out.before.box);
   expect(out.after.wrong).toBe(out.before.wrong);
   expect(out.after.nextDue).toBeLessThanOrEqual(out.now);
+});
+
+test('one tap on a locked grape (Pro) unlocks it and opens its quiz; the pill then shows progress', async ({ page }) => {
+  const errors = collectErrors(page);
+  await page.goto(`${BASE}/?demo=1#learn`);
+  await page.evaluate(() => localStorage.setItem('vinterest_pro', '1'));
+  await page.reload();
+  await root(page).getByText(/^\+\d+ more$/).click();
+  await root(page).getByText('Merlot', { exact: true }).click();
+  // Straight into the quiz, no second tap.
+  await expect(root(page)).toContainText('The Merlot Quiz');
+  await answerQuiz(page, () => true);
+  await root(page).getByText('Back to Learn', { exact: true }).click();
+  await expect(root(page).getByText('5/15', { exact: true })).toBeVisible();
+  await expect(root(page).getByText('Merlot', { exact: true })).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
+test('a grape quiz that fails to generate says so instead of doing nothing', async ({ context, page }) => {
+  await context.unroute('**/claude');
+  await stubNetwork(context); // empty responses: generation fails
+  await page.goto(`${BASE}/?demo=1#learn`);
+  await page.evaluate(() => { localStorage.setItem('vinterest_pro', '1'); GrapeUnlocks.unlockManual('Merlot'); });
+  await page.reload();
+  await root(page).getByText('Merlot', { exact: true }).click();
+  await expect(root(page)).toContainText("Couldn't load the Merlot quiz");
+  await expect(root(page).getByText('Merlot', { exact: true })).toBeVisible();
+});
+
+test('every Concept Check concept has 12 questions', async ({ page }) => {
+  await page.goto(`${BASE}/?demo=1#learn`);
+  const counts = await page.evaluate(() => CONCEPT_TEMPLATES.map((c) => c.templates.length * 2));
+  expect(counts).toEqual([12, 12, 12, 12, 12, 12]);
 });
