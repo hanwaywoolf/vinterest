@@ -26,6 +26,7 @@ const SEED = { vinterest_wineDNA_unlock_seen: '1' };
 const ADDED_SINCE_BUNDLE = [
   'RegionQuizBank', 'QUIZ_SIZE', 'QuizMastery', '_ceShuffle', '_regionsWithScans', 'completedRegionQuizzes',
   'grapeQuizBank', 'grapeQuizComplete', 'CompletedToggle', 'CompletedMark', '_drawQuiz', 'quizSetFor',
+  'buildQuizQuestions', 'quizTitle', 'nextQuizSuggestion',
 ];
 const normalise = (text) => text.replace(/Vinterest v[^\n]*/g, 'Vinterest v<version>');
 

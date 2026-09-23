@@ -30,27 +30,43 @@ const MasterySystem = Object.assign(_accountStore('vinterest_mastery_v1'), {
       if(c.box===5){ c.mastered=true; c.nextDue=null; justMastered=true; }
       else c.nextDue=Date.now()+this.INTERVAL_DAYS[c.box]*this.DAY;
     } else {
+      // A miss drops one box rather than all the way back to box 1: with only a handful of
+      // questions per concept, a full reset made one slip undo several right answers.
       c.wrong=(c.wrong||0)+1;
-      c.box=1; c.mastered=false;
+      c.box=Math.max((c.box||0)-1,1); c.mastered=false;
       c.nextDue=Date.now()+1*this.DAY;
     }
     d[conceptId]=c;
     this.save(d);
     return {box:c.box, mastered:c.mastered, justMastered};
   },
+  /* A signal from outside Concept Check (e.g. a missed Blind Call guess) that a concept is
+     worth revisiting: puts it at the front of the next quiz without counting as a wrong
+     answer or touching its box. */
+  flagForReview(conceptId){
+    const d=this.get();
+    const c=d[conceptId];
+    if(!c||c.mastered) return; // unseen concepts are picked up anyway; mastered ones stay mastered
+    c.nextDue=Date.now();
+    this.save(d);
+  },
+  /* Up to n concepts for one quiz, every quiz filled as far as there are unmastered concepts:
+     due for review first, then weak (box 1), then new ones whose prerequisites are met, then
+     the rest, lowest box and longest-unseen first. It used to return only the due/weak/new
+     group when that was non-empty, so one weak concept could mean a one-question quiz on
+     repeat while every other concept sat untouched. */
   selectConcepts(n){
     n=n||6;
     const d=this.get(), now=Date.now();
     const ids=CONCEPTS.map(c=>c.id);
-    const isSeen=id=>!!d[id];
+    const open=id=>!(d[id]&&d[id].mastered);
     const prereqsMet=c=>(c.prereq||[]).every(p=>d[p]&&d[p].box>=1);
-    const due=ids.filter(id=>d[id]&&!d[id].mastered&&d[id].nextDue&&d[id].nextDue<=now);
-    const weak=ids.filter(id=>d[id]&&!d[id].mastered&&d[id].box<=1&&!due.includes(id));
-    const adjacent=CONCEPTS.filter(c=>!isSeen(c.id)&&prereqsMet(c)).map(c=>c.id);
-    const combined=[...due,...weak,...adjacent];
-    const uniq=[...new Set(combined)];
-    if(uniq.length) return uniq.slice(0,n);
-    return ids.filter(id=>!(d[id]&&d[id].mastered)).slice(0,n);
+    const due=ids.filter(id=>d[id]&&open(id)&&d[id].nextDue&&d[id].nextDue<=now);
+    const weak=ids.filter(id=>d[id]&&open(id)&&d[id].box<=1);
+    const fresh=CONCEPTS.filter(c=>!d[c.id]&&prereqsMet(c)).map(c=>c.id);
+    const rest=ids.filter(id=>d[id]&&open(id))
+      .sort((a,b)=>(d[a].box-d[b].box)||((d[a].lastSeen||0)-(d[b].lastSeen||0)));
+    return [...new Set([...due,...weak,...fresh,...rest])].slice(0,n);
   },
   weakestConcept(){
     const d=this.get();
@@ -73,8 +89,10 @@ const QExposure = Object.assign(_accountStore('vinterest_qexp_v1'), {
     if(!bank.length) return null;
     const d=this.get(), now=Date.now(), cd=this.COOLDOWN_DAYS*24*60*60*1000;
     const eligible=bank.filter(t=>!d[t.id+'_'+tier]||now-d[t.id+'_'+tier]>cd);
-    const pool=eligible.length?eligible:bank;
-    const chosen=pool[Math.floor(Math.random()*pool.length)];
+    // All on cooldown: take the one asked longest ago rather than a random repeat.
+    const chosen=eligible.length
+      ?eligible[Math.floor(Math.random()*eligible.length)]
+      :[...bank].sort((a,b)=>(d[a.id+'_'+tier]||0)-(d[b.id+'_'+tier]||0))[0];
     d[chosen.id+'_'+tier]=now;
     this.save(d);
     return {...chosen[tier], templateId:chosen.id, conceptId};

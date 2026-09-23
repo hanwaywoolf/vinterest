@@ -74,7 +74,7 @@ test('region quizzes rotate through all 15 bank questions before repeating', asy
     // Miss the first question each round so the region isn't completed yet.
     let first = true;
     all.push(...(await answerQuiz(page, () => { const r = !first; first = false; return r; })));
-    if (round < 2) await root(page).getByText('New quiz', { exact: true }).click();
+    if (round < 2) await root(page).getByText(/^Keep going/).click();
   }
   expect(all.filter((q) => q.startsWith(region))).toHaveLength(15);
   expect(new Set(all).size).toBe(15);
@@ -102,11 +102,11 @@ test('a region completes only when every question is answered correctly, then co
   // Acing one quiz doesn't complete the region any more.
   await answerQuiz(page, () => true);
   await expect(root(page)).toContainText('5 of 15 questions answered correctly');
-  await root(page).getByText('New quiz', { exact: true }).click();
+  await root(page).getByText(/^Keep going/).click();
   await answerQuiz(page, () => true);
-  await root(page).getByText('New quiz', { exact: true }).click();
+  await root(page).getByText(/^Keep going/).click();
   await answerQuiz(page, () => true);
-  await expect(root(page)).toContainText('Complete — every question answered correctly');
+  await expect(root(page)).toContainText(/All \d+ questions answered correctly/);
 
   await page.goto(`${BASE}/?demo=1#learn`);
   await expect(root(page).getByText(region, { exact: true })).toHaveCount(0); // collapsed by default
@@ -132,7 +132,7 @@ test('a Wine Basics topic draws from 16 questions, easy first, and completes onc
   await expect(root(page)).toContainText('5 of 16 questions answered correctly');
   const seen = new Set(first);
   for (let round = 0; round < 3; round++) {
-    await root(page).getByText('New quiz', { exact: true }).click();
+    await root(page).getByText(/^Keep going/).click();
     const qs = await answerQuiz(page, () => true);
     const fresh = qs.filter((q) => !seen.has(q));
     // Unanswered questions always lead the quiz.
@@ -140,7 +140,7 @@ test('a Wine Basics topic draws from 16 questions, easy first, and completes onc
     qs.forEach((q) => seen.add(q));
   }
   expect(seen.size).toBe(16);
-  await expect(root(page)).toContainText('Complete — every question answered correctly');
+  await expect(root(page)).toContainText(/All \d+ questions answered correctly/);
 
   await page.goto(`${BASE}/?demo=1#learn`);
   await root(page).getByText(/^1 completed — show$/).first().click();
@@ -161,10 +161,10 @@ test('grape quizzes serve 5 of the 15 questions and show a tick once complete', 
   const asked = [];
   for (let round = 0; round < 3; round++) {
     asked.push(...(await answerQuiz(page, () => true)));
-    if (round < 2) await root(page).getByText('New quiz', { exact: true }).click();
+    if (round < 2) await root(page).getByText(/^Keep going/).click();
   }
   expect(new Set(asked).size).toBe(15);
-  await expect(root(page)).toContainText('Complete — every question answered correctly');
+  await expect(root(page)).toContainText(/All \d+ questions answered correctly/);
   await page.goto(`${BASE}/?demo=1#learn`);
   await expect(root(page).getByText(`✓ ${grape}`, { exact: true })).toBeVisible();
   expect(errors).toEqual([]);
@@ -180,4 +180,64 @@ test('without a generated bank a region quiz uses the fixed knowledge-base quest
   expect(asked.some((q) => /^Which grape is the backbone of /.test(q) || /^Which climate description matches /.test(q))).toBe(true);
   await expect(root(page)).toContainText(/\d of 6 questions answered correctly/);
   expect(errors).toEqual([]);
+});
+
+test('every results screen has Back to Learn, and a finished set suggests the next one', async ({ page }) => {
+  const errors = collectErrors(page);
+  await page.goto(`${BASE}/?demo=1#learn`);
+  const [first, second] = await page.evaluate(() => QUIZ_TOPICS.slice(0, 2).map((t) => t.label));
+  await root(page).getByText(first, { exact: true }).click();
+  await answerQuiz(page, () => true);
+  // Unfinished set: keep going on it, or go back to Learn. No "See what you missed".
+  await expect(root(page).getByText('Keep going · 11 to go', { exact: true })).toBeVisible();
+  await expect(root(page).getByText('See what you missed')).toHaveCount(0);
+  for (let i = 0; i < 3; i++) {
+    await root(page).getByText(/^Keep going/).click();
+    await answerQuiz(page, () => true);
+  }
+  await expect(root(page)).toContainText(`${first} complete!`);
+  await root(page).getByText(`Next: ${second}`, { exact: true }).click();
+  await expect(root(page)).toContainText(`${second}`);
+  await answerQuiz(page, () => true);
+  await root(page).getByText('Back to Learn', { exact: true }).click();
+  await expect(root(page)).toContainText('Test Yourself');
+  expect(errors).toEqual([]);
+});
+
+test('Concept Check and Words results also offer Back to Learn', async ({ page }) => {
+  await page.goto(`${BASE}/?demo=1#learn`);
+  await root(page).getByText('Concept Check', { exact: true }).click();
+  for (let i = 0; i < 10; i++) {
+    await root(page).getByText('A', { exact: true }).click();
+    const next = root(page).getByText(/^(Next Question|See Results) →$/);
+    const last = (await next.innerText()).startsWith('See Results');
+    await next.click();
+    if (last) break;
+  }
+  await expect(root(page)).toContainText(/\d of 6 concepts mastered/);
+  await expect(root(page).getByText('Keep going', { exact: true })).toBeVisible();
+  await root(page).getByText('Back to Learn', { exact: true }).click();
+  await expect(root(page)).toContainText('Test Yourself');
+});
+
+test('Concept Check fills every quiz, a miss steps back one box, and Blind Call misses only flag for review', async ({ page }) => {
+  await page.goto(`${BASE}/?demo=1#learn`);
+  const out = await page.evaluate(() => {
+    const ids = CONCEPTS.map((c) => c.id);
+    // Two correct answers each, then one weak concept: the next quiz still covers all six.
+    ids.forEach((id) => { MasterySystem.recordResult(id, true); MasterySystem.recordResult(id, true); });
+    MasterySystem.recordResult(ids[0], false);
+    const afterMiss = MasterySystem.get()[ids[0]];
+    const picked = MasterySystem.selectConcepts(6);
+    const before = { ...MasterySystem.get()[ids[1]] };
+    MasterySystem.flagForReview(ids[1]);
+    const after = MasterySystem.get()[ids[1]];
+    return { box: afterMiss.box, picked, before, after, now: Date.now() };
+  });
+  expect(out.box).toBe(1); // 2 -> 1, not reset
+  expect(out.picked).toHaveLength(6);
+  expect(out.picked[0]).toBe('tannin_source');
+  expect(out.after.box).toBe(out.before.box);
+  expect(out.after.wrong).toBe(out.before.wrong);
+  expect(out.after.nextDue).toBeLessThanOrEqual(out.now);
 });

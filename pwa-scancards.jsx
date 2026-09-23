@@ -511,7 +511,9 @@ function BlindCallCard({wine,gen,accent}){
   function finalizeReveal(g,missed,accuracy){
     if(!localStorage.getItem(doneKey)){
       localStorage.setItem(doneKey,'1');
-      missed.forEach(d=>{ const cid=DIM_CONCEPT[d]; if(cid) MasterySystem.recordResult(cid,false); });
+      // Misjudging one wine's tannin/acidity/texture flags the concept for review; it isn't a
+      // wrong answer to a Concept Check question, so it doesn't cost mastery progress.
+      missed.forEach(d=>{ const cid=DIM_CONCEPT[d]; if(cid) MasterySystem.flagForReview(cid); });
       const awards=XPSystem.awardAndToast([{type:'blind_call',accuracy}]);
       const amount=awards.filter(x=>!x.levelUp).reduce((s,x)=>s+x.amount,0);
       localStorage.setItem(savedKey,JSON.stringify({accuracy,amount}));

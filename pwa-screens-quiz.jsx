@@ -509,22 +509,51 @@ function quizSetFor(mode,config){
   if(mode==='grape') return {id:'grape:'+config.grape,pool:()=>config.questions||[]};
   return null;
 }
+function buildQuizQuestions(config){
+  const mode=config?.mode||'concept';
+  const set=quizSetFor(mode,config);
+  if(set) return _drawQuiz(set.id,set.pool());
+  if(mode==='words') return assembleWordsQuiz();
+  return assembleConceptQuiz(MasterySystem.selectConcepts(6));
+}
+function quizTitle(config){
+  const mode=config?.mode||'concept';
+  return mode==='practice'?(QUIZ_TOPICS.find(t=>t.id===config.topicId)||QUIZ_TOPICS[0]).label
+    :mode==='words'?"Words You've Met"
+    :mode==='region'?'Your '+config.region+' Knowledge'
+    :mode==='grape'?'The '+config.grape+' Quiz'
+    :'Concept Check';
+}
+/* What to offer once a set is complete: the next unfinished set of the same kind, then Wine
+   Basics, then regions (only once WineDNA has unlocked them, as on the Learn tab), then
+   unlocked grapes. null means everything on offer is done. */
+function nextQuizSuggestion(config){
+  const wines=WineHistory.getAll();
+  const topics=QUIZ_TOPICS.filter(t=>t.id!==config.topicId&&!QuizMastery.isComplete('topic:'+t.id,QuizMastery.topicPool(t.id)))
+    .map(t=>({config:{mode:'practice',topicId:t.id},label:t.label}));
+  const regions=(getCoverage(wines).unlocked?regionQuizCandidates(wines):[]).filter(r=>r!==config.region)
+    .map(r=>({config:{mode:'region',region:r},label:r}));
+  const grapes=Object.keys(GrapeUnlocks.all()).filter(g=>g!==config.grape&&!grapeQuizComplete(g))
+    .map(g=>({config:{mode:'grape',grape:g},label:g}));
+  const order=config.mode==='region'?[regions,topics,grapes]:config.mode==='grape'?[grapes,topics,regions]:[topics,regions,grapes];
+  for(const list of order) if(list.length) return list[0];
+  return null;
+}
 
 /* ── QUIZ SCREEN ── */
 function QuizScreen({nav,back}){
-  const config=React.useMemo(()=>{
+  // Config is state so the results screen can move straight on to the next quiz or set.
+  const [config,setConfig]=React.useState(()=>{
     try{ return JSON.parse(sessionStorage.getItem('vinterest_quiz_config2')||'null'); }catch(e){ return null; }
-  },[]);
+  });
   const mode=config?.mode||'concept';
-
   const quizSet=React.useMemo(()=>quizSetFor(mode,config),[mode,config]);
-  const buildQs=React.useCallback(()=>{
-    if(quizSet) return _drawQuiz(quizSet.id,quizSet.pool());
-    if(mode==='words') return assembleWordsQuiz();
-    return assembleConceptQuiz(MasterySystem.selectConcepts(6));
-  },[mode,quizSet]);
 
-  const [allQs,setAllQs]=React.useState(buildQs);
+  const [allQs,setAllQs]=React.useState(()=>buildQuizQuestions(config));
+  // Whether this set was already complete when the quiz started, so the results screen can
+  // tell "you just completed it" apart from practising a finished set.
+  const [startedComplete,setStartedComplete]=React.useState(()=>{ const qs=quizSetFor(mode,config); return !!qs&&QuizMastery.isComplete(qs.id,qs.pool()); });
+  const [nextLoading,setNextLoading]=React.useState(false);
   const [qIdx,setQIdx]=React.useState(0);
   const [selected,setSelected]=React.useState(null);
   const [phase,setPhase]=React.useState(allQs.length?'question':'empty');
@@ -534,11 +563,7 @@ function QuizScreen({nav,back}){
   const [, setResetTick]=React.useState(0);
   const scrollRef=React.useRef(null);
 
-  const title=mode==='practice'?(QUIZ_TOPICS.find(t=>t.id===config.topicId)||QUIZ_TOPICS[0]).label
-    :mode==='words'?"Words You've Met"
-    :mode==='region'?'Your '+config.region+' Knowledge'
-    :mode==='grape'?'The '+config.grape+' Quiz'
-    :'Concept Check';
+  const title=quizTitle(config);
 
   const q=allQs[qIdx];
 
@@ -582,13 +607,26 @@ function QuizScreen({nav,back}){
     }
   }
 
-  function newQuiz(){
-    setAllQs(buildQs()); setQIdx(0); setSelected(null); setPhase('question'); setStreak(0); setXpGained(0); setResults([]);
+  function startQuiz(cfg){
+    const qs=buildQuizQuestions(cfg);
+    const set=quizSetFor(cfg?.mode||'concept',cfg);
+    sessionStorage.setItem('vinterest_quiz_config2',JSON.stringify(cfg));
+    setConfig(cfg); setAllQs(qs); setStartedComplete(!!set&&QuizMastery.isComplete(set.id,set.pool()));
+    setQIdx(0); setSelected(null); setPhase(qs.length?'question':'empty'); setStreak(0); setXpGained(0); setResults([]);
+    if(scrollRef.current) scrollRef.current.scrollTop=0;
+  }
+  // Region and grape banks may still need generating before the next set can start.
+  function startSuggested(cfg){
+    if(cfg.mode==='region'){ setNextLoading(true); RegionQuizBank.load(cfg.region,()=>{ setNextLoading(false); startQuiz(cfg); }); }
+    else if(cfg.mode==='grape'){ setNextLoading(true); getGrapeQuiz(cfg.grape,qs=>{ setNextLoading(false); if(qs&&qs.length) startQuiz({...cfg,questions:qs}); }); }
+    else startQuiz(cfg);
   }
 
   if(phase==='empty') return(
     <div style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:12,padding:32}}>
-      <span style={{fontSize:16,color:C.mid,fontFamily:C.P,textAlign:'center'}}>Nothing to test yet — scan and rate a few more bottles first.</span>
+      <span style={{fontSize:16,color:C.mid,fontFamily:C.P,textAlign:'center'}}>{mode==='concept'&&MasterySystem.summary().mastered===MasterySystem.summary().total&&MasterySystem.summary().total>0
+        ?'Every concept is mastered. Nice work.'
+        :'Nothing to test yet — scan and rate a few more bottles first.'}</span>
       <Btn primary onClick={()=>nav('learn')}>Back to Learn</Btn>
     </div>
   );
@@ -596,21 +634,41 @@ function QuizScreen({nav,back}){
   if(phase==='results'){
     const finalScore=results.filter(r=>r.correct).length;
     const pct=Math.round(finalScore/allQs.length*100);
-    const msg=pct===100?'Perfect!':pct>=80?'Excellent!':pct>=60?'Good work!':'Keep practising';
     const pool=quizSet&&quizSet.pool();
     const setProgress=quizSet&&QuizMastery.progress(quizSet.id,pool);
-    const setDone=setProgress&&setProgress.total>0&&setProgress.correct===setProgress.total;
+    const setDone=!!setProgress&&setProgress.total>0&&setProgress.correct===setProgress.total;
+    const justCompleted=setDone&&!startedComplete;
+    const setName=mode==='practice'?title:mode==='region'?config.region:mode==='grape'?config.grape:title;
+    const concepts=mode==='concept'&&MasterySystem.summary();
+    const msg=justCompleted?`${setName} complete!`:pct===100?'Perfect!':pct>=80?'Excellent!':pct>=60?'Good work!':'Keep practising';
+
+    // One primary action, then "Back to Learn" whenever the primary isn't already that.
+    //  - unfinished set: keep going on it (questions not yet answered come first)
+    //  - finished set: suggest the next unfinished topic/region/grape, else back to Learn
+    //  - Concept Check / Words: another round while there's anything left
+    let primary=null;
+    if(quizSet&&!setDone) primary={label:`Keep going · ${setProgress.total-setProgress.correct} to go`,go:()=>startQuiz(config)};
+    else if(quizSet&&setDone){ const next=nextQuizSuggestion(config); if(next) primary={label:`Next: ${next.label}`,go:()=>startSuggested(next.config)}; }
+    else if(mode==='concept'){ if(MasterySystem.selectConcepts(6).length) primary={label:'Keep going',go:()=>startQuiz(config)}; }
+    else primary={label:'Keep going',go:()=>startQuiz(config)};
+
     function resetSet(){
-      if(!window.confirm(`Reset your progress on ${title}? Its questions start from scratch.`)) return;
+      if(!window.confirm(`Reset your progress on ${setName}? Its questions start from scratch.`)) return;
       if(mode==='region') RegionQuizBank.reset(config.region); else QuizMastery.reset(quizSet.id);
-      setResetTick(t=>t+1);
+      startQuiz(config);
     }
+    const card=(done,headline,sub)=>(
+      <div style={{background:done?C.greenBg:C.offWhite,borderRadius:12,padding:'12px 14px',border:`1px solid ${done?C.green+'40':C.line}`}}>
+        <div style={{fontSize:15,fontWeight:700,color:done?C.green:C.ink,fontFamily:C.P}}>{headline}</div>
+        {sub&&<div style={{fontSize:14,color:C.mid,fontFamily:C.P,marginTop:2,lineHeight:1.4}}>{sub}</div>}
+      </div>
+    );
     return(
       <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden'}}>
         <div style={{background:C.cr,padding:'26px 24px 20px',display:'flex',flexDirection:'column',alignItems:'center',gap:5,flexShrink:0}}>
-          <Icon n={pct===100?'trophy':pct>=80?'star':pct>=60?'check':'book'} sz={32} col="#fff"/>
-          <div style={{fontSize:22,fontWeight:800,color:'#fff',fontFamily:C.P}}>{msg}</div>
-          <div style={{fontSize:15,color:'rgba(255,255,255,0.8)',fontFamily:C.P}}>{title}</div>
+          <Icon n={justCompleted||pct===100?'trophy':pct>=80?'star':pct>=60?'check':'book'} sz={32} col="#fff"/>
+          <div style={{fontSize:22,fontWeight:800,color:'#fff',fontFamily:C.P,textAlign:'center'}}>{msg}</div>
+          {!justCompleted&&<div style={{fontSize:15,color:'rgba(255,255,255,0.8)',fontFamily:C.P}}>{title}</div>}
           <div style={{display:'flex',gap:16,marginTop:6}}>
             <div style={{textAlign:'center'}}>
               <div style={{fontSize:28,fontWeight:800,color:'#fff',fontFamily:C.P}}>{finalScore}/{allQs.length}</div>
@@ -624,38 +682,40 @@ function QuizScreen({nav,back}){
           </div>
         </div>
         <div ref={scrollRef} style={{flex:1,overflowY:'auto'}}>
-<div style={{padding:'16px',display:'flex',flexDirection:'column',gap:10}}>
-          {setProgress&&(
-            <div style={{background:setDone?C.greenBg:C.offWhite,borderRadius:12,padding:'12px 14px',border:`1px solid ${setDone?C.green+'40':C.line}`,display:'flex',alignItems:'center',gap:10}}>
-              <div style={{flex:1}}>
-                <div style={{fontSize:15,fontWeight:700,color:setDone?C.green:C.ink,fontFamily:C.P}}>{setDone?'Complete — every question answered correctly':`${setProgress.correct} of ${setProgress.total} questions answered correctly`}</div>
-                {!setDone&&<div style={{fontSize:14,color:C.mid,fontFamily:C.P,marginTop:2}}>Questions you haven't got right yet come first in your next quiz.</div>}
+          <div style={{padding:'16px',display:'flex',flexDirection:'column',gap:10}}>
+            {setProgress&&(setDone
+              ?card(true,justCompleted?`All ${setProgress.total} questions answered correctly`:'Complete — every question answered correctly',
+                justCompleted?'This one moves to your completed list on the Learn tab.':null)
+              :card(false,`${setProgress.correct} of ${setProgress.total} questions answered correctly`,"Questions you haven't got right yet come first in your next quiz."))}
+            {concepts&&card(concepts.mastered===concepts.total,`${concepts.mastered} of ${concepts.total} concepts mastered`,
+              concepts.mastered===concepts.total?null:'Each right answer moves a concept up a step and a miss moves it back one; five steps masters it.')}
+            {setDone&&(
+              <div style={{display:'flex',justifyContent:'center',gap:18}}>
+                <span onClick={()=>startQuiz(config)} style={{fontSize:14,fontWeight:600,color:C.mid,fontFamily:C.P,textDecoration:'underline',cursor:'pointer'}}>Practise again</span>
+                <span onClick={resetSet} style={{fontSize:14,fontWeight:600,color:C.mid,fontFamily:C.P,textDecoration:'underline',cursor:'pointer'}}>Reset progress</span>
               </div>
-              {setDone&&<span onClick={resetSet} style={{fontSize:14,fontWeight:600,color:C.mid,fontFamily:C.P,textDecoration:'underline',cursor:'pointer',flexShrink:0}}>Reset progress</span>}
-            </div>
-          )}
-          <div style={{fontSize:15,fontWeight:600,color:C.mid,letterSpacing:'0.07em',textTransform:'uppercase',fontFamily:C.P}}>Review</div>
-          {results.map((r,i)=>(
-            <div key={i} style={{background:r.correct?C.greenBg:'#FFF0F0',borderRadius:12,padding:'10px 14px',border:`1px solid ${r.correct?C.green+'30':'#F5A0A0'}`}}>
-              <div style={{display:'flex',gap:8,alignItems:'flex-start'}}>
-                <span style={{fontSize:18,flexShrink:0}}>{r.correct?'✓':'✗'}</span>
-                <div>
-                  <div style={{fontSize:15,fontWeight:600,color:C.ink,fontFamily:C.P,lineHeight:1.3}}>{r.qText}</div>
-                  {!r.correct&&<div style={{fontSize:15,color:'#C0392B',fontFamily:C.P,marginTop:3}}>Your answer: {r.selectedOpt}</div>}
-                  {!r.correct&&<div style={{fontSize:15,color:C.green,fontFamily:C.P}}>Correct: {r.correctOpt}</div>}
-                  {r.fact&&<div style={{fontSize:15,color:C.mid,fontFamily:C.P,marginTop:4,lineHeight:1.4,fontStyle:'italic'}}>{r.fact}</div>}
+            )}
+            <div style={{fontSize:15,fontWeight:600,color:C.mid,letterSpacing:'0.07em',textTransform:'uppercase',fontFamily:C.P,marginTop:4}}>Review</div>
+            {results.map((r,i)=>(
+              <div key={i} style={{background:r.correct?C.greenBg:'#FFF0F0',borderRadius:12,padding:'10px 14px',border:`1px solid ${r.correct?C.green+'30':'#F5A0A0'}`}}>
+                <div style={{display:'flex',gap:8,alignItems:'flex-start'}}>
+                  <span style={{fontSize:18,flexShrink:0}}>{r.correct?'✓':'✗'}</span>
+                  <div>
+                    <div style={{fontSize:15,fontWeight:600,color:C.ink,fontFamily:C.P,lineHeight:1.3}}>{r.qText}</div>
+                    {!r.correct&&<div style={{fontSize:15,color:'#C0392B',fontFamily:C.P,marginTop:3}}>Your answer: {r.selectedOpt}</div>}
+                    {!r.correct&&<div style={{fontSize:15,color:C.green,fontFamily:C.P}}>Correct: {r.correctOpt}</div>}
+                    {r.fact&&<div style={{fontSize:15,color:C.mid,fontFamily:C.P,marginTop:4,lineHeight:1.4,fontStyle:'italic'}}>{r.fact}</div>}
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
-          <div style={{display:'flex',flexDirection:'column',gap:8,marginTop:4}}>
-            {/* With no more questions in the pool than one quiz holds, a retake is the same set again. */}
-            <Btn primary full onClick={newQuiz}>{pool&&pool.length<=QUIZ_SIZE?'Try again':'New quiz'}</Btn>
-            <Btn full onClick={()=>{if(pct<100){if(scrollRef.current)scrollRef.current.scrollTop=0;}else nav('learn');}}>{pct<100?'See what you missed':'Practice more'}</Btn>
+            ))}
           </div>
-          <div style={{height:8}}/>
         </div>
-</div>
+        {/* Actions stay pinned below the review so they're visible without scrolling. */}
+        <div style={{flexShrink:0,padding:'12px 16px calc(12px + env(safe-area-inset-bottom))',borderTop:`1px solid ${C.line}`,background:C.white,display:'flex',flexDirection:'column',gap:8}}>
+          {primary&&<Btn primary full onClick={nextLoading?undefined:primary.go}>{nextLoading?'Getting it ready…':primary.label}</Btn>}
+          <Btn primary={!primary} full onClick={()=>nav('learn')}>Back to Learn</Btn>
+        </div>
       </div>
     );
   }
