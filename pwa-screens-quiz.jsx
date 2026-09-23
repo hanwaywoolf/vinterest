@@ -75,8 +75,6 @@ function QuizHubScreen({nav,back,showPro}){
     setGenStubs(updated);
   },[article1Done]);
 
-  if(showUnlock) return <WineDNAUnlockCelebration onDone={()=>{setShowUnlock(false);nav('profile');}}/>;
-
   const zoneLabel={fontSize:15,fontWeight:600,color:C.mid,letterSpacing:'0.08em',textTransform:'uppercase',fontFamily:C.P,marginBottom:2};
   const unreadShelf=(genStubs||[]).filter(s=>!localStorage.getItem('vinterest_gen_article_'+s.id+'_done'));
   const nextOnRamp=ON_RAMP.find(a=>!onRampDone(a.id));
@@ -129,6 +127,10 @@ function QuizHubScreen({nav,back,showPro}){
   React.useEffect(()=>{
     unlockedGrapes.slice(0,5).forEach(g=>{ try{ prefetchGrapeQuiz(g); }catch(e){} });
   },[]);
+
+  // After every hook above: returning early before one of them changes the hook count between
+  // renders, and React throws the moment the unlock effect flips showUnlock.
+  if(showUnlock) return <WineDNAUnlockCelebration onDone={()=>{setShowUnlock(false);nav('profile');}}/>;
 
   return(
     <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden'}}>
