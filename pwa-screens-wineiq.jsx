@@ -72,7 +72,7 @@ function CSH({label,cKey,collapsed,toggle,summary}){
   );
 }
 
-/* A taste bar with two readings: the fill is the average of the wines you choose; the diamond is
+/* A taste bar with two readings: the fill is the average of the wines you choose; the dot is
    where your Outstanding (90+) wines sit, shown once there are three of them. */
 function DnaBar({v,loved,col}){
   return(
@@ -80,7 +80,7 @@ function DnaBar({v,loved,col}){
       <div style={{position:'absolute',left:0,right:0,height:6,borderRadius:6,background:'rgba(0,0,0,0.07)',overflow:'hidden'}}>
         <div style={{height:'100%',width:`${Math.min(1,v||0)*100}%`,borderRadius:6,background:col,opacity:0.85}}/>
       </div>
-      {loved!=null&&<div title="Your 90+ wines" style={{position:'absolute',left:`calc(${Math.min(1,loved)*100}% - 6px)`,width:12,height:12,transform:'rotate(45deg)',background:C.ink,border:'2px solid #fff',borderRadius:2,boxShadow:'0 1px 3px rgba(0,0,0,0.25)'}}/>}
+      {loved!=null&&<div title="Your 90+ wines" style={{position:'absolute',left:`calc(${Math.min(1,loved)*100}% - 6px)`,width:12,height:12,borderRadius:'50%',background:C.ink,boxShadow:'0 1px 2px rgba(0,0,0,0.2)'}}/>}
     </div>
   );
 }
@@ -419,7 +419,7 @@ function WineDNAScreen({nav,back,showPro}){
             <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P,marginBottom:4}}>Your {tLabel} style</div>
             <div style={{display:'flex',flexWrap:'wrap',gap:12,fontSize:12,color:C.mid,fontFamily:C.P,marginBottom:12}}>
               <span style={{display:'inline-flex',alignItems:'center',gap:5}}><span style={{width:16,height:5,borderRadius:3,background:t.col,display:'inline-block'}}/>The {tLabel} you choose</span>
-              {t.loved.length>=3&&<span style={{display:'inline-flex',alignItems:'center',gap:5}}><span style={{width:8,height:8,background:C.ink,transform:'rotate(45deg)',display:'inline-block'}}/>Your 90+ {tLabel}</span>}
+              {t.loved.length>=3&&<span style={{display:'inline-flex',alignItems:'center',gap:5}}><span style={{width:9,height:9,borderRadius:'50%',background:C.ink,display:'inline-block'}}/>Your 90+ {tLabel}</span>}
             </div>
             <div style={{display:'flex',flexDirection:'column',gap:14}}>
               {t.axes.filter(t.showAxis).map(k=>{
