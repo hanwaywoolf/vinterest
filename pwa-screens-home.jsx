@@ -361,7 +361,7 @@ function HomeScreen({nav, showPro, isTablet}){
             <Card style={{padding:0,overflow:'hidden'}}>
               <div style={{padding:'10px 14px 6px',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
                 <span style={{fontSize:16,fontWeight:600,color:C.ink,fontFamily:C.P}}>Top {c.label}</span>
-                <span onClick={()=>nav('mywines')} style={{fontSize:15,fontWeight:600,color:C.cr,fontFamily:C.P,cursor:'pointer'}}>See all →</span>
+                <span onClick={()=>{ try{ sessionStorage.setItem('vinterest_mywines_view',JSON.stringify({type:c.typeKey,sort:'rating'})); }catch(e){} nav('mywines'); }} style={{fontSize:15,fontWeight:600,color:C.cr,fontFamily:C.P,cursor:'pointer'}}>See all →</span>
               </div>
               {topWines.map((w,i)=>(
                 <div key={i} onClick={()=>{

@@ -216,7 +216,7 @@ function ScanScreen({nav,back,onComplete}){
         {type:'image',source:{type:'base64',media_type:'image/jpeg',data:b64}},
         {type:'text',text:_loadTextSync('prompts/label-scan.txt')}
       ]}]});
-      const wine=JSON.parse(text.replace(/```json|```/g,'').trim());
+      const wine=WineDNA.cleanWine(JSON.parse(text.replace(/```json|```/g,'').trim()));
       if(wine.error==='no_wine_label') throw new Error('no_wine_label');
       sessionStorage.setItem('vinterest_scan_result',JSON.stringify({demo:false,wine,confidence:0.95}));
       const _sc=parseInt(localStorage.getItem('vinterest_scan_count')||'0');

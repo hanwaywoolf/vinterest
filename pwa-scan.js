@@ -31,7 +31,8 @@ const ScanFlow = {
       {type:'scan'},{type:'weekly_scans'},
       {type:'first_type',value:wine.type},
       {type:'first_country',value:wine.country},
-      {type:'new_grape',value:(wine.grapes||[])[0]},
+      // A grape that was only guessed for the wine isn't a grape they've met.
+      ...(wine.grapes_basis==='typical'?[]:[{type:'new_grape',value:(wine.grapes||[])[0]}]),
       ...((wine.price_usd||0)>=100?[{type:'expensive_wine',wineKey:(wine.name||'')+'_'+(wine.vintage||'')}]:[])
     ]); }catch(e){}
   },
@@ -41,13 +42,14 @@ const ScanFlow = {
     curr=curr||Regional.current();
     return wine&&wine.price_usd>0?Math.round(wine.price_usd*(USD_FX[curr.code]||1)):null;
   },
-  /* The shop price to compare against: {mid, tier?, note?}. At home the label scan's estimate is
-     enough (no extra call). In Travel Mode prices differ by market (Bordeaux costs less in France
-     than a converted US price suggests), so ask for the local retail price in that currency. */
+  /* The shop price to compare against: {mid, tier?, note?}. The label scan's price is one rough
+     field among twenty, so the dedicated price lookup (fetchRetailEstimate: this producer and
+     cuvée, in the user's market and currency, cached per wine) is used whenever it answers; the
+     label figure is the instant placeholder and the fallback. In Travel Mode that lookup is what
+     gives local prices (Bordeaux costs less in France than a converted US price suggests). */
   shopEstimate(wine,curr){
     curr=curr||Regional.current();
     const label=this.shopPrice(wine,curr);
-    if(label!=null&&!curr.isTravel) return Promise.resolve({mid:label});
     return fetchRetailEstimate(wine,curr).then(d=>d&&d.mid!=null?d:(label!=null?{mid:label}:null)).catch(()=>label!=null?{mid:label}:null);
   },
   money(v,curr){ curr=curr||Regional.current(); return v!=null?`${curr.base}${Math.round(v).toLocaleString()}`:null; },

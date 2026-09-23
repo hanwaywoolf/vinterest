@@ -265,8 +265,10 @@ function TasteProfileScreen({nav,back,showPro}){
   );
 }
 function MyWinesScreen({nav,back}){
-  const [filter,setFilter]=React.useState('all');
-  const [sort,setSort]=React.useState('recent');
+  // Opened from a type's "See all" (WineDNA, Home): start on that type, sorted by score.
+  const [entry]=React.useState(()=>{ try{ const v=JSON.parse(sessionStorage.getItem('vinterest_mywines_view')||'null'); sessionStorage.removeItem('vinterest_mywines_view'); return v||{}; }catch(e){ return {}; } });
+  const [filter,setFilter]=React.useState(entry.type||'all');
+  const [sort,setSort]=React.useState(entry.sort||'recent');
   const [wines,setWines]=React.useState(()=>WineHistory.getAll());
   const [activePills,setActivePills]=React.useState([]);
 
@@ -417,10 +419,10 @@ function MyWinesScreen({nav,back}){
                       <div style={{fontSize:15,color:C.mid,fontFamily:C.P,marginTop:4,display:'flex',flexWrap:'wrap',gap:6}}>
                         {w.grapes&&w.grapes.length>0&&(
                           <div onClick={e=>{e.stopPropagation();togglePill('grape',w.grapes[0]);}} style={{padding:'4px 10px',borderRadius:20,background:activePills.find(p=>p.type==='grape'&&p.value===w.grapes[0])?'#D5C0E840':'#D5C0E815',border:`1px solid ${activePills.find(p=>p.type==='grape'&&p.value===w.grapes[0])?'#9B4C6F':'#9B4C6F40'}`,cursor:'pointer'}}>
-                            <span style={{fontSize:13,fontWeight:500,color:activePills.find(p=>p.type==='grape'&&p.value===w.grapes[0])?'#9B4C6F':C.ink2,fontFamily:C.P}}>{w.grapes[0]}</span>
+                            <span style={{fontSize:13,fontWeight:500,color:activePills.find(p=>p.type==='grape'&&p.value===w.grapes[0])?'#9B4C6F':C.ink2,fontFamily:C.P}}>{w.grapes[0]}{w.blend||w.grapes.length>1?' blend':''}</span>
                           </div>
                         )}
-                        {w.region&&(
+                        {w.region&&w.region!==w.country&&(
                           <div onClick={e=>{e.stopPropagation();togglePill('region',w.region);}} style={{padding:'4px 10px',borderRadius:20,background:activePills.find(p=>p.type==='region'&&p.value===w.region)?'#E8D5C440':'#E8D5C415',border:`1px solid ${activePills.find(p=>p.type==='region'&&p.value===w.region)?'#B8963E':'#B8963E40'}`,cursor:'pointer'}}>
                             <span style={{fontSize:13,fontWeight:500,color:activePills.find(p=>p.type==='region'&&p.value===w.region)?'#B8963E':C.ink2,fontFamily:C.P}}>{w.region}</span>
                           </div>

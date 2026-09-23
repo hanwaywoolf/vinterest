@@ -86,6 +86,11 @@ function WineDetailScreen({back,nav}){
     }
   }
 
+  // Each tab starts at its top: otherwise switching tabs keeps the old scroll position and the
+  // new tab opens part-way down (The Story's heading scrolled out of view).
+  const scrollRef=React.useRef(null);
+  React.useEffect(()=>{ if(scrollRef.current) scrollRef.current.scrollTop=0; },[tab]);
+
   const [confirmDelete,setConfirmDelete]=React.useState(false);
   function deleteWine(){
     if(!wine) return;
@@ -119,8 +124,8 @@ function WineDetailScreen({back,nav}){
           </div>
           <div>
             <div style={{fontSize:24,fontWeight:700,color:C.ink,fontFamily:C.P,lineHeight:1.15}}>{wine?.name||'Château Margaux'}</div>
-            <div style={{fontSize:16,color:C.mid,fontFamily:C.P,marginTop:3}}>{wine?`${wine.vintage||'NV'} · ${wine.region}, ${wine.country}`:'2018 · Bordeaux, France'}</div>
-            <div style={{display:'flex',gap:5,marginTop:8,flexWrap:'wrap',alignItems:'center'}}><Pill active sm style={{textTransform:'capitalize'}}>{wine?.type||'Red'}</Pill>{wine?.grapes?.[0]&&<Pill sm>{wine.grapes[0]}</Pill>}{wine&&<span onClick={()=>setEditing(true)} style={{fontSize:13,fontWeight:600,color:C.cr,fontFamily:C.P,cursor:'pointer',marginLeft:4}}>Edit details</span>}</div>
+            <div style={{fontSize:16,color:C.mid,fontFamily:C.P,marginTop:3}}>{wine?[wine.vintage||'NV',[wine.region!==wine.country?wine.region:null,wine.country].filter(Boolean).join(', ')].filter(Boolean).join(' · '):'2018 · Bordeaux, France'}</div>
+            <div style={{display:'flex',gap:5,marginTop:8,flexWrap:'wrap',alignItems:'center'}}><Pill active sm style={{textTransform:'capitalize'}}>{wine?.type||'Red'}</Pill>{wine?.grapes?.[0]&&<Pill sm>{wine.grapes[0]}{wine.blend||wine.grapes.length>1?' blend':''}</Pill>}{wine&&<span onClick={()=>setEditing(true)} style={{fontSize:13,fontWeight:600,color:C.cr,fontFamily:C.P,cursor:'pointer',marginLeft:4}}>Edit details</span>}</div>
           </div>
         </div>
         <div style={{display:'flex',borderBottom:`1px solid ${C.line}`}}>
@@ -129,7 +134,7 @@ function WineDetailScreen({back,nav}){
           ))}
         </div>
       </div>
-      <div style={{flex:1,overflowY:'auto'}}>
+      <div ref={scrollRef} style={{flex:1,overflowY:'auto'}}>
         {editing&&<EditWineSheet wine={wine} onSave={saveEdit} onClose={()=>setEditing(false)}/>}
         {tab===0&&<DetailMerged key={wine&&wine.name} wine={wine} nav={nav} existingRating={existingRating} match={match}/>}
         {tab===1&&<DetailStory wine={wine} nav={nav} existingRating={existingRating}/>}
@@ -147,6 +152,29 @@ function WineDetailScreen({back,nav}){
     </div>
   );
 }
+
+/* The sentence under each taste bar, at WineDNA's three levels (so a medium wine gets a medium
+   sentence, not the light one). */
+const _TASTE_COPY={
+  body:{lead:'This wine is ',tail:'',word:{low:'light-bodied',mid:'medium-bodied',high:'full-bodied'},
+    say:{low:'light on the palate, like skim milk, and easy to drink',mid:'present without being heavy, like whole milk',high:'rich and mouth-coating, like cream'},
+    about:'Body describes how a wine feels in your mouth: how heavy or light it is. Light wines are crisp and refreshing; full wines coat your mouth with richness.'},
+  tannins:{lead:'It has ',tail:' tannins',word:{low:'silky',mid:'medium',high:'grippy'},
+    say:{low:'smooth, with barely any drying grip',mid:'a gentle grip on your gums that food softens',high:'a firm, drying grip, like strong black tea, that softens with food and age'},
+    about:'Tannins come from grape skins, seeds and oak, and create a drying sensation in your mouth. Silky tannins feel smooth; grippy tannins feel textured and astringent.'},
+  acidity:{lead:'Acidity is ',tail:'',word:{low:'mellow',mid:'medium',high:'zingy'},
+    say:{low:'soft and round, with little tartness',mid:'balanced freshness that keeps it lively',high:'bright and mouth-watering, like a squeeze of lemon, which makes it great with food'},
+    about:'Acidity is the tartness in wine, like lemon. Mellow acidity feels smooth; zingy acidity tastes crisp and bright and makes your mouth water.'},
+  texture:{lead:'The texture is ',tail:'',word:{low:'crisp and steely',mid:'medium',high:'rich and creamy'},
+    say:{low:'clean and precise, usually from stainless steel rather than oak',mid:'some roundness without heaviness',high:'round and creamy, often from oak, lees ageing or malolactic fermentation'},
+    about:'Texture describes how oak ageing, lees contact or malolactic fermentation shape the mouthfeel. Crisp, steely wines taste clean and mineral; rich, creamy ones feel rounder and softer.'},
+  sweetness:{lead:'It\'s ',tail:'',word:{low:'dry',mid:'off-dry',high:'sweet'},
+    say:{low:'little or no sugar left after fermentation',mid:'a touch of sweetness that rounds off the edges',high:'noticeably sweet, lovely with dessert or blue cheese'},
+    about:'Sweetness is the sugar left in the wine after fermentation. Dry wines have almost none; sweet wines are noticeably sugary.'},
+  effervescence:{lead:'The bubbles are ',tail:'',word:{low:'soft and delicate',mid:'lively',high:'vigorous and persistent'},
+    say:{low:'a gentle, creamy mousse',mid:'a steady, refreshing fizz',high:'a fine, energetic fizz that lingers, typical of traditional-method sparkling'},
+    about:'Effervescence is the intensity and persistence of the bubbles. A soft mousse feels gentle on the tongue; vigorous bubbles are fine, energetic and long-lasting.'},
+};
 
 function DetailMerged({wine,nav,existingRating=0,match}){
   const matchPct=match?match.pct:null;
@@ -221,6 +249,12 @@ function DetailMerged({wine,nav,existingRating=0,match}){
   const SL=({label})=>(
     <div style={{fontSize:13,fontWeight:700,color:C.mid,letterSpacing:'0.07em',textTransform:'uppercase',fontFamily:C.P,marginBottom:8}}>{label}</div>
   );
+  // The axes WineDNA uses for this type (bubbles first for sparkling), only where the scan gave a figure.
+  const tc=_typeCol(wine);
+  const typeKey=WineDNA._t(wine&&wine.type);
+  const tasteAxes=wine?(WineDNA.AXES_FOR[typeKey]||['body','acidity','sweetness']).slice().sort((x,y)=>(y==='effervescence')-(x==='effervescence')).filter(k=>typeof wine[k]==='number'):[];
+  const lovedAvg=match&&match.profile&&match.profile.loved.length>=3?match.profile.lovedAvg:null;
+  const typeNoun=((WineDNA.NOUNS[typeKey]||['wine','wines'])[1]);
 
   const notes=wine?.tasting_notes||[];
   const pairings=wine?.food_pairings||[];
@@ -273,9 +307,9 @@ function DetailMerged({wine,nav,existingRating=0,match}){
                 </div>
                 <span style={{fontSize:17,fontWeight:800,color:C.green,fontFamily:C.P,letterSpacing:'-0.02em'}}>{matchPct!=null?`${matchPct}%`:'—'}</span>
               </div>
-              <div style={{width:'100%',height:8,background:`linear-gradient(to right,${C.white},${C.green}50,${C.green})`,borderRadius:4,position:'relative',border:`1px solid ${C.green}25`}}>
-                {matchPct!=null&&<div style={dotStyle(matchPct,C.green)}/>}
-              </div>
+              {matchPct!=null&&<div style={{width:'100%',height:8,background:`linear-gradient(to right,${C.white},${C.green}50,${C.green})`,borderRadius:4,position:'relative',border:`1px solid ${C.green}25`}}>
+                <div style={dotStyle(matchPct,C.green)}/>
+              </div>}
             </div>
             {/* Rating row */}
             <div onClick={()=>{setShowRatingUI(true);setSaved(false);}} style={{cursor:'pointer'}}>
@@ -307,19 +341,19 @@ function DetailMerged({wine,nav,existingRating=0,match}){
           <div style={{fontSize:16,fontWeight:600,color:C.ink,fontFamily:C.P,marginBottom:12}}>Rate This Wine</div>
           <div style={{display:'flex',gap:5,marginBottom:12}}>
             {ParkerScale.PRESETS.map(p=>(
-              <div key={p} onClick={()=>handlePreset(p)} style={{flex:1,padding:'7px 2px',borderRadius:9,border:`1.5px solid ${userRating===p?C.cr:C.line}`,background:userRating===p?C.cr:'transparent',textAlign:'center',cursor:'pointer',transition:'all .15s'}}>
+              <div key={p} onClick={()=>handlePreset(p)} style={{flex:1,padding:'7px 2px',borderRadius:9,border:`1.5px solid ${userRating===p?_typeCol(wine):C.line}`,background:userRating===p?_typeCol(wine):'transparent',textAlign:'center',cursor:'pointer',transition:'all .15s'}}>
                 <span style={{fontSize:17,fontWeight:700,color:userRating===p?'#fff':C.mid,fontFamily:C.P}}>{p}</span>
               </div>
             ))}
           </div>
           <input type="range" min={ParkerScale.MIN} max="100" step="1" value={Math.max(userRating,ParkerScale.MIN)}
             onChange={handleSliderChange}
-            style={{width:'100%',accentColor:C.cr,cursor:'pointer',marginBottom:10,display:'block'}}/>
+            style={{width:'100%',accentColor:_typeCol(wine),cursor:'pointer',marginBottom:10,display:'block'}}/>
           <div style={{textAlign:'center',minHeight:48,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:2}}>
             {userRating>0?(
               <>
                 <div style={{display:'flex',alignItems:'baseline',gap:2}}>
-                  <span style={{fontSize:36,fontWeight:800,color:C.cr,fontFamily:C.P,lineHeight:1}}>{userRating}</span>
+                  <span style={{fontSize:36,fontWeight:800,color:_typeCol(wine),fontFamily:C.P,lineHeight:1}}>{userRating}</span>
                   <span style={{fontSize:13,fontWeight:700,color:C.mid,fontFamily:C.P,marginLeft:2,opacity:0.7}}>pts</span>
                 </div>
                 <span style={{fontSize:15,fontWeight:600,color:C.amber,fontFamily:C.P}}>{scoreLabel}</span>
@@ -347,114 +381,35 @@ function DetailMerged({wine,nav,existingRating=0,match}){
       {/* Scan location — optional manual note on where/when this was had (full geolocation is backlogged) */}
       <ScanLocationCard wine={wine}/>
 
-      {/* Taste Profile */}
+      {/* Taste Profile: WineDNA's bars and scale, so a wine reads the same here as on the WineDNA
+          tab. The fill is this wine (label estimate, adjusted by your own tasting taps); the dot is
+          where your 90+ wines of this type sit, once you have three. */}
       <div>
         <SL label="Taste Profile"/>
         <div style={{fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.5,marginBottom:12,padding:'10px 12px',borderRadius:10,background:C.offWhite,border:`1px solid ${C.line}`}}>
-          These {chars.length} dimensions describe how this wine will feel in your mouth — they help you understand what to expect and find wines you'll enjoy.{!showTannins?' Tannins aren\'t shown here since they\'re not a meaningful factor for this style.':''}
+          How this wine typically feels, estimated from the label.{lovedAvg?` The dot shows where your Outstanding (90+) ${typeNoun} sit, so you can see how it compares.`:''}
         </div>
         <div style={{display:'flex',flexDirection:'column',gap:20}}>
-          {/* Effervescence — sparkling only, shown first since it's the defining trait */}
-          {isSparkling&&(
-          <div>
-            <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:12}}>
-              <div style={{fontSize:15,fontWeight:700,color:C.cr,fontFamily:C.P}}>Effervescence</div>
-              <button onClick={()=>{alert('Effervescence describes the intensity and persistence of the bubbles. A soft, delicate mousse feels gentle on the tongue; vigorous effervescence has a fine, energetic, long-lasting fizz.')}} style={{width:20,height:20,borderRadius:10,background:C.crSoft,border:`1px solid ${C.cr}`,color:C.cr,fontSize:12,fontWeight:400,cursor:'pointer',padding:0,display:'flex',alignItems:'center',justifyContent:'center',fontFamily:C.P}}>?</button>
-            </div>
-            <div style={{display:'flex',justifyContent:'space-between',fontSize:13,color:C.mid,fontFamily:C.P,marginBottom:8}}>
-              <span>Soft & Delicate</span>
-              <span>Vigorous & Persistent</span>
-            </div>
-            <div style={{width:'100%',height:8,background:`linear-gradient(to right, ${C.white}, ${C.ink2}40, ${C.cr})`,borderRadius:4,position:'relative',marginBottom:12,border:`1px solid ${C.line}`}}>
-              <div style={{position:'absolute',left:`${(wine?.effervescence??0.6)*100}%`,top:'-6px',width:20,height:20,background:C.cr,borderRadius:10,transform:'translateX(-50%)',border:`3px solid ${C.white}`,boxShadow:`0 2px 4px rgba(0,0,0,0.15)`}}/>
-            </div>
-            <div style={{fontSize:16,color:C.ink2,fontFamily:C.P,lineHeight:1.5,paddingLeft:8,borderLeft:`2px solid ${C.crSoft}`}}>This wine's bubbles are <strong>{chars.find(c=>c.label==='Effervescence')?.value.toLowerCase()}</strong> — {(wine?.effervescence??0.6)>=0.68?'expect a fine, persistent, energetic fizz that lingers on the palate, typical of traditional-method production.':'the mousse is soft and gentle, with larger, quicker-fading bubbles that feel easy-drinking rather than intense.'}</div>
-          </div>
-          )}
-
-          {/* Body */}
-          <div>
-            <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:12}}>
-              <div style={{fontSize:15,fontWeight:700,color:C.cr,fontFamily:C.P}}>Body</div>
-              <button onClick={()=>{alert('Body describes how a wine feels in your mouth — how heavy or light it is. Light wines are crisp and refreshing; full wines coat your mouth with richness.')}} style={{width:20,height:20,borderRadius:10,background:C.crSoft,border:`1px solid ${C.cr}`,color:C.cr,fontSize:12,fontWeight:400,cursor:'pointer',padding:0,display:'flex',alignItems:'center',justifyContent:'center',fontFamily:C.P}}>?</button>
-            </div>
-            <div style={{display:'flex',justifyContent:'space-between',fontSize:13,color:C.mid,fontFamily:C.P,marginBottom:8}}>
-              <span>Light</span>
-              <span>Full</span>
-            </div>
-            <div style={{width:'100%',height:8,background:`linear-gradient(to right, ${C.white}, ${C.ink2}40, ${C.cr})`,borderRadius:4,position:'relative',marginBottom:12,border:`1px solid ${C.line}`}}>
-              <div style={{position:'absolute',left:`${(wine?.body??0.65)*100}%`,top:'-6px',width:20,height:20,background:C.cr,borderRadius:10,transform:'translateX(-50%)',border:`3px solid ${C.white}`,boxShadow:`0 2px 4px rgba(0,0,0,0.15)`}}/>
-            </div>
-            <div style={{fontSize:16,color:C.ink2,fontFamily:C.P,lineHeight:1.5,paddingLeft:8,borderLeft:`2px solid ${C.crSoft}`}}>This wine is <strong>{chars.find(c=>c.label==='Body')?.value.toLowerCase()}</strong> — {(wine?.body??0.65)>=0.68?'it coats your mouth like whole milk or cream, full and rich':'it feels crisp and refreshing in your mouth, like skim milk'}. {(wine?.body??0.65)>=0.68?'Perfect for hearty foods and contemplative sipping.':'Great as an aperitif or with lighter dishes.'}</div>
-          </div>
-
-          {/* Tannins */}
-          {isRed&&(
-          <div>
-            <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:12}}>
-              <div style={{fontSize:15,fontWeight:700,color:C.cr,fontFamily:C.P}}>Tannins</div>
-              <button onClick={()=>{alert('Tannins are compounds found mostly in red wines that create a drying sensation in your mouth. Silky tannins feel smooth; grippy tannins feel textured and astringent.')}} style={{width:20,height:20,borderRadius:10,background:C.crSoft,border:`1px solid ${C.cr}`,color:C.cr,fontSize:12,fontWeight:400,cursor:'pointer',padding:0,display:'flex',alignItems:'center',justifyContent:'center',fontFamily:C.P}}>?</button>
-            </div>
-            <div style={{display:'flex',justifyContent:'space-between',fontSize:13,color:C.mid,fontFamily:C.P,marginBottom:8}}>
-              <span>Silky</span>
-              <span>Grippy</span>
-            </div>
-            <div style={{width:'100%',height:8,background:`linear-gradient(to right, ${C.white}, ${C.ink2}40, ${C.cr})`,borderRadius:4,position:'relative',marginBottom:12,border:`1px solid ${C.line}`}}>
-              <div style={{position:'absolute',left:`${(wine?.tannins??0.55)*100}%`,top:'-6px',width:20,height:20,background:C.cr,borderRadius:10,transform:'translateX(-50%)',border:`3px solid ${C.white}`,boxShadow:`0 2px 4px rgba(0,0,0,0.15)`}}/>
-            </div>
-            <div style={{fontSize:16,color:C.ink2,fontFamily:C.P,lineHeight:1.5,paddingLeft:8,borderLeft:`2px solid ${C.crSoft}`}}>This wine has <strong>{chars.find(c=>c.label==='Tannins')?.value.toLowerCase()}</strong> tannins — {(wine?.tannins??0.55)>=0.68?'you\'ll feel a textured, drying sensation in your mouth, like biting grape skins. These wines age beautifully.':'the sensation in your mouth is smooth and soft, without much grip. These are drinking wines, ready to enjoy now.'}</div>
-          </div>
-          )}
-
-          {/* Acidity */}
-          <div>
-            <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:12}}>
-              <div style={{fontSize:15,fontWeight:700,color:C.cr,fontFamily:C.P}}>Acidity</div>
-              <button onClick={()=>{alert('Acidity is the tartness you taste in wine, like lemon or vinegar. Mellow acidity feels smooth; zingy acidity tastes crisp and bright.')}} style={{width:20,height:20,borderRadius:10,background:C.crSoft,border:`1px solid ${C.cr}`,color:C.cr,fontSize:12,fontWeight:400,cursor:'pointer',padding:0,display:'flex',alignItems:'center',justifyContent:'center',fontFamily:C.P}}>?</button>
-            </div>
-            <div style={{display:'flex',justifyContent:'space-between',fontSize:13,color:C.mid,fontFamily:C.P,marginBottom:8}}>
-              <span>Mellow</span>
-              <span>Zingy</span>
-            </div>
-            <div style={{width:'100%',height:8,background:`linear-gradient(to right, ${C.white}, ${C.ink2}40, ${C.cr})`,borderRadius:4,position:'relative',marginBottom:12,border:`1px solid ${C.line}`}}>
-              <div style={{position:'absolute',left:`${(wine?.acidity??0.60)*100}%`,top:'-6px',width:20,height:20,background:C.cr,borderRadius:10,transform:'translateX(-50%)',border:`3px solid ${C.white}`,boxShadow:`0 2px 4px rgba(0,0,0,0.15)`}}/>
-            </div>
-            <div style={{fontSize:16,color:C.ink2,fontFamily:C.P,lineHeight:1.5,paddingLeft:8,borderLeft:`2px solid ${C.crSoft}`}}>This wine is <strong>{chars.find(c=>c.label==='Acidity')?.value.toLowerCase()}</strong> — {(wine?.acidity??0.60)>=0.68?'it tastes fresh and bright, like lemon juice. High acidity makes this wine a food-friendly pairing partner and helps it age.':'it feels smooth and soft on your palate, without much crispness. These wines are approachable and easy-drinking.'}</div>
-          </div>
-
-          {/* Texture — white only */}
-          {isWhite&&(
-          <div>
-            <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:12}}>
-              <div style={{fontSize:15,fontWeight:700,color:C.cr,fontFamily:C.P}}>Texture</div>
-              <button onClick={()=>{alert('Texture describes how oak aging, lees contact, or malolactic fermentation shape a white wine mouthfeel. Crisp and steely wines taste clean and mineral; rich and creamy wines feel rounder and softer.')}} style={{width:20,height:20,borderRadius:10,background:C.crSoft,border:`1px solid ${C.cr}`,color:C.cr,fontSize:12,fontWeight:400,cursor:'pointer',padding:0,display:'flex',alignItems:'center',justifyContent:'center',fontFamily:C.P}}>?</button>
-            </div>
-            <div style={{display:'flex',justifyContent:'space-between',fontSize:13,color:C.mid,fontFamily:C.P,marginBottom:8}}>
-              <span>Crisp & Steely</span>
-              <span>Rich & Creamy</span>
-            </div>
-            <div style={{width:'100%',height:8,background:`linear-gradient(to right, ${C.white}, ${C.ink2}40, ${C.cr})`,borderRadius:4,position:'relative',marginBottom:12,border:`1px solid ${C.line}`}}>
-              <div style={{position:'absolute',left:`${(wine?.texture??0.3)*100}%`,top:'-6px',width:20,height:20,background:C.cr,borderRadius:10,transform:'translateX(-50%)',border:`3px solid ${C.white}`,boxShadow:`0 2px 4px rgba(0,0,0,0.15)`}}/>
-            </div>
-            <div style={{fontSize:16,color:C.ink2,fontFamily:C.P,lineHeight:1.5,paddingLeft:8,borderLeft:`2px solid ${C.crSoft}`}}>This wine's texture is <strong>{chars.find(c=>c.label==='Texture')?.value.toLowerCase()}</strong> — {(wine?.texture??0.3)>=0.68?'oak aging and/or lees contact give it a rounder, creamier mouthfeel, often with notes of butter or vanilla.':'it stays clean, precise and mineral-driven, with little to no oak influence.'}</div>
-          </div>
-          )}
-
-          {/* Sweetness */}
-          <div>
-            <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:12}}>
-              <div style={{fontSize:15,fontWeight:700,color:C.cr,fontFamily:C.P}}>Sweetness</div>
-              <button onClick={()=>{alert('Sweetness measures residual sugar left in wine after fermentation. Bone dry wines have minimal sugar; sweet wines are noticeably sugary, often enjoyed as dessert wines.')}} style={{width:20,height:20,borderRadius:10,background:C.crSoft,border:`1px solid ${C.cr}`,color:C.cr,fontSize:12,fontWeight:400,cursor:'pointer',padding:0,display:'flex',alignItems:'center',justifyContent:'center',fontFamily:C.P}}>?</button>
-            </div>
-            <div style={{display:'flex',justifyContent:'space-between',fontSize:13,color:C.mid,fontFamily:C.P,marginBottom:8}}>
-              <span>Bone Dry</span>
-              <span>Sweet</span>
-            </div>
-            <div style={{width:'100%',height:8,background:`linear-gradient(to right, ${C.white}, ${C.ink2}40, ${C.cr})`,borderRadius:4,position:'relative',marginBottom:12,border:`1px solid ${C.line}`}}>
-              <div style={{position:'absolute',left:`${(wine?.sweetness??0.10)*100}%`,top:'-6px',width:20,height:20,background:C.cr,borderRadius:10,transform:'translateX(-50%)',border:`3px solid ${C.white}`,boxShadow:`0 2px 4px rgba(0,0,0,0.15)`}}/>
-            </div>
-            <div style={{fontSize:16,color:C.ink2,fontFamily:C.P,lineHeight:1.5,paddingLeft:8,borderLeft:`2px solid ${C.crSoft}`}}>This wine is <strong>{chars.find(c=>c.label==='Sweetness')?.value.toLowerCase()}</strong> — {(wine?.sweetness??0.10)>=0.68?'noticeably sweet with residual sugar. Perfect as a dessert wine or for those who prefer sweeter flavours.':wine?.sweetness>0.38?'off-dry with a touch of sweetness that balances the acidity. Approachable without being overly sweet.':'nearly all the sugar was fermented out. This is a dry wine with no perceptible sweetness.'}</div>
-          </div>
+          {tasteAxes.map(k=>{
+            const v=WineDNA.axisValue(wine,k), lvl=WineDNA.level(v), A=WineDNA.AXES[k], copy=_TASTE_COPY[k];
+            const felt=wine.tasted&&wine.tasted[k];
+            return <div key={k}>
+              <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:8}}>
+                <div style={{fontSize:15,fontWeight:700,color:tc,fontFamily:C.P}}>{A.name}</div>
+                <button onClick={()=>{alert(copy.about)}} style={{width:20,height:20,borderRadius:10,background:tc+'18',border:`1px solid ${tc}`,color:tc,fontSize:12,fontWeight:400,cursor:'pointer',padding:0,display:'flex',alignItems:'center',justifyContent:'center',fontFamily:C.P}}>?</button>
+              </div>
+              <DnaBar v={v} loved={lovedAvg?lovedAvg[k]:null} col={tc}/>
+              <div style={{display:'flex',justifyContent:'space-between',fontSize:12,color:C.mid,fontFamily:C.P,marginTop:2,marginBottom:8}}><span>{A.low}</span><span>{A.high}</span></div>
+              <div style={{fontSize:16,color:C.ink2,fontFamily:C.P,lineHeight:1.5,paddingLeft:8,borderLeft:`2px solid ${tc}40`}}>
+                {copy.lead}<strong>{copy.word[lvl]}</strong>{copy.tail}: {copy.say[lvl]}.
+                {felt?<span style={{color:C.mid}}> You found it {ScanFlow.COMPARE[k][felt<0?0:1].toLowerCase()} than the label suggested.</span>:null}
+              </div>
+            </div>;
+          })}
+          {lovedAvg&&<div style={{display:'flex',flexWrap:'wrap',gap:12,fontSize:13,color:C.mid,fontFamily:C.P}}>
+            <span style={{display:'inline-flex',alignItems:'center',gap:5}}><span style={{width:16,height:5,borderRadius:3,background:tc,display:'inline-block'}}/>This wine</span>
+            <span style={{display:'inline-flex',alignItems:'center',gap:5}}><span style={{width:9,height:9,borderRadius:'50%',background:C.ink,display:'inline-block'}}/>Your 90+ {typeNoun}</span>
+          </div>}
 
           {/* ABV */}
           {chars.find(c=>c.label==='ABV')&&(

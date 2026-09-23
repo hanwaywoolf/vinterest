@@ -272,7 +272,9 @@ class ScreenErrorBoundary extends React.Component{
 /* ── Wine History ── */
 const WineHistory = {
   KEY: 'vinterest_wines',
-  getAll(){ try{ return JSON.parse(localStorage.getItem(this.KEY)||'[]'); }catch(e){ return []; } },
+  // Grapes are cleaned on the way out, so older scans saved as "Blend - likely Grenache, Syrah, or
+  // Cinsault" read as real varieties everywhere (see WineDNA.cleanGrapes).
+  getAll(){ try{ return JSON.parse(localStorage.getItem(this.KEY)||'[]').map(w=>WineDNA.cleanWine(w)); }catch(e){ return []; } },
   save(wines){ localStorage.setItem(this.KEY, JSON.stringify(wines.slice(0,500))); },
 
   /* Identity. Claude doesn't always name a bottle the same way twice ("Muga Reserva" vs "Muga
@@ -327,8 +329,8 @@ const WineHistory = {
     const idx = this._index(wines,wine);
     const now = new Date().toISOString();
     if(idx>=0){
-      wines[idx].times_consumed = (wines[idx].times_consumed||1) + 1;
-      wines[idx].last_scanned = now;
+      // Scoring a wine that's already saved (the usual case: it was saved when scanned) is not
+      // another scan, so times_consumed stays put. Only track() counts scans.
       if(rating>0) wines[idx].rating = rating;
     } else {
       wines.unshift({...wine, rating:rating||0, times_consumed:1, scanned_at:now, last_scanned:now});
@@ -499,7 +501,7 @@ const Regional={
    Wine Detail price tab and the wine-list value/markup badges, so the two
    screens never disagree on what a wine "should" cost. Cached per wine+currency. */
 function retailPriceCacheKey(wine,code){
-  return 'vinterest_price_v2_'+((wine&&wine.name)||'').replace(/\s/g,'_')+'_'+((wine&&wine.vintage)||'nv')+'_'+code;
+  return 'vinterest_price_v3_'+((wine&&wine.name)||'').replace(/\s/g,'_')+'_'+((wine&&wine.vintage)||'nv')+'_'+code;
 }
 function fetchRetailEstimate(wine,curr){
   const cacheKey=retailPriceCacheKey(wine,curr.code);
@@ -510,6 +512,8 @@ function fetchRetailEstimate(wine,curr){
     ' Your task: find the ACTUAL known retail price for this SPECIFIC wine — look up this exact producer and label, do NOT average by appellation.'+
     ' Prestigious named wines (e.g. Guigal single-vineyard La Mouline/La Turque/La Landonne, DRC, Leroy, Screaming Eagle, Petrus, Opus One, cult Burgundy) retail for '+curr.sym+'50–'+curr.sym+'5000+; use the real figure.'+
     ' Wine: '+(wine.name||'')+(wine.vintage?' '+wine.vintage:'')+'.'+
+    (wine.producer?' Producer: '+wine.producer+'.':'')+
+    ' If the name looks misspelled, price the wine it most plausibly is (e.g. "Cevero della Salla" is Antinori\'s Cervaro della Sala).'+
     ' Type: '+(wine.type||'red')+'.'+
     ' Region: '+(wine.region||'')+', '+(wine.country||'')+'.'+
     ' Grapes: '+((wine.grapes||[]).join(', ')||'unknown')+'.'+

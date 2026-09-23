@@ -61,6 +61,38 @@ const WineDNA = {
     if(this.GRAPE_SYNONYMS[k]) return this.GRAPE_SYNONYMS[k];
     return raw===k?raw.split(' ').map(w=>w.charAt(0).toUpperCase()+w.slice(1)).join(' '):raw;
   },
+  /* Grapes are variety names only. Scans sometimes return phrases ("Blend - likely Grenache,
+     Syrah, or Cinsault", "Red blend", "Mostly Merlot"): split them into varieties, and note
+     whether the wine is a blend and whether the grapes were guessed ("typical" for that wine
+     or appellation) rather than printed on the label. Idempotent. */
+  _NOT_GRAPE:/^(blend|blends|red|white|rose|rosé|wine|grapes?|varieties|variety|various|unknown|other|others|field|cuvee|cuvée|assemblage|traditional|local|indigenous|mostly|mainly|primarily|predominantly|likely|probably|possibly|typically|usually|based|led|e\.?g\.?|etc\.?|of|with|the|a|an|some|may|include|includes|including)$/i,
+  cleanGrapes(list){
+    const raw=(Array.isArray(list)?list:list?[list]:[]).filter(g=>typeof g==='string'&&g.trim());
+    const text=raw.join(', ');
+    const blend=/\bblend|assemblage|cuv[ée]e\b/i.test(text)||raw.length>1;
+    const typical=/\b(likely|probably|possibly|typically|usually|may include|e\.?g\.?)\b/i.test(text);
+    const out=[];
+    raw.forEach(g=>{
+      g.replace(/\([^)]*\)/g,' ').replace(/\d+\s*%/g,' ').split(/,|;|\/|&|\+|\bor\b|\band\b|\s[-–—]\s|:/i).forEach(part=>{
+        const words=part.trim().split(/\s+/).filter(w=>w&&!this._NOT_GRAPE.test(w.replace(/[.'"]/g,'')));
+        const name=words.join(' ').replace(/^[-–—\s]+|[-–—\s.]+$/g,'').trim();
+        if(name.length>=3&&!out.some(x=>x.toLowerCase()===name.toLowerCase())) out.push(name);
+      });
+    });
+    return {grapes:out,blend,typical};
+  },
+  cleanWine(w){
+    if(!w||!Array.isArray(w.grapes)||!w.grapes.some(g=>/[,;/&+]|\b(or|and|blend|likely|probably|possibly|typically|usually|mostly)\b|\s[-–—]\s|:|\(|%/i.test(g||''))) return w;
+    const c=this.cleanGrapes(w.grapes);
+    return {...w,grapes:c.grapes,blend:w.blend||c.blend,grapes_basis:w.grapes_basis||(c.typical?'typical':undefined)};
+  },
+  /* "Grenache, Syrah, Cinsault" / "Usually Grenache, Syrah and Cinsault" for display. */
+  grapeLine(w){
+    const g=(w&&w.grapes||[]).filter(Boolean);
+    if(!g.length) return '';
+    const list=g.length>1?g.slice(0,-1).join(', ')+' and '+g[g.length-1]:g[0];
+    return w.grapes_basis==='typical'?`Usually ${list}`:g.join(', ');
+  },
   _t(v){ return (v||'').toLowerCase().replace('é','e'); },
   /* A wine's value on one axis: Claude's label estimate, nudged by the user's own tasting where
      they told us it was lighter/fuller (etc.) than the label suggested (w.tasted[k] = -1, 0 or 1). */

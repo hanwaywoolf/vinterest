@@ -64,10 +64,17 @@ const TasteMatch = {
     // Name the grape as the label does, with the name it's filed under when that differs.
     const rawGrape=((wine.grapes||[])[0]||'').trim(), grapeName=[...grapes][0];
     const grapeLabel=rawGrape&&grapeName&&rawGrape.toLowerCase()!==grapeName.toLowerCase()?`${rawGrape} (${grapeName})`:grapeName;
-    const gT=grapes.size?tally(w=>[...this._grapes(w)].some(g=>grapes.has(g))):null;
+    // A blend is described by its lead grape, and a grape that was only guessed ("typical" for the
+    // wine, not printed on the label) is never announced as a new grape.
+    const typical=wine.grapes_basis==='typical', blend=!!wine.blend||(wine.grapes||[]).length>1;
+    const gT=grapeName?tally(w=>this._grapes(w).has(grapeName)):null;
+    const scoredLine=t=>`you've scored ${t.n===1?'one':t.n}${blend||typical?` ${grapeName} wine${t.n===1?'':'s'}`:''}, ${t.n===1?'at':'averaging'} ${t.avg}`;
     if(gT) reasons.push({kind:'grape',tone:tone(gT.avg),weight:1+gT.n,
-      text:`${grapeLabel}: you've scored ${gT.n===1?'one':gT.n}, ${gT.n===1?'at':'averaging'} ${gT.avg}.`});
-    else if(grapeName&&!p.wines.some(w=>this._grapes(w).has(grapeName))) reasons.push({kind:'grape',tone:'neutral',weight:0.5,text:`${grapeLabel} is a new grape for you.`});
+      text:typical?`Usually made mainly from ${grapeLabel}: ${scoredLine(gT)}.`
+        :blend?`${grapeLabel} leads this blend: ${scoredLine(gT)}.`
+        :`${grapeLabel}: ${scoredLine(gT)}.`});
+    else if(grapeName&&!typical&&!p.wines.some(w=>this._grapes(w).has(grapeName))) reasons.push({kind:'grape',tone:'neutral',weight:0.5,
+      text:blend?`${grapeLabel}, the lead grape in this blend, is new to you.`:`${grapeLabel} is a new grape for you.`});
     const rT=region?tally(w=>this._region(w)===region):null;
     if(rT) reasons.push({kind:'region',tone:tone(rT.avg),weight:0.8+rT.n*0.8,
       text:`${wine.region}: you've scored ${rT.n===1?'one':rT.n}, ${rT.n===1?'at':'averaging'} ${rT.avg}.`});
@@ -124,7 +131,8 @@ const TasteMatch = {
     const basis=`Based on the ${WineDNA.noun(typeKey,scored.length)} you've scored`;
     return {...base,verdict,...this.VERDICTS[verdict],pct,expected:e,expectedLabel:ParkerScale.label(e),confidence,
       reasons:reasons.sort((a,b)=>b.weight-a.weight).slice(0,3),
-      summary:`${basis}, we'd expect you to score this around ${e} (${ParkerScale.label(e)}).${confidence==='low'?' It\'s a rough guess: nothing you\'ve scored is very like it.':''}`};
+      // One number on screen (the match %); the prediction is said in Parker-band words.
+      summary:`${basis}, we think you'd rate it ${ParkerScale.label(e)}.${confidence==='low'?' It\'s a rough guess: nothing you\'ve scored is very like it.':''}`};
   },
 
   /* Wine-list entries carry a compact style estimate ("s":"738": body, tannins, acidity on 1–9,
@@ -137,6 +145,6 @@ const TasteMatch = {
       out.body=v(s[0]); out.tannins=v(s[1]); out.acidity=v(s[2]);
     }
     if(w.grape&&!(w.grapes&&w.grapes.length)) out.grapes=[w.grape];
-    return out;
+    return WineDNA.cleanWine(out);
   },
 };

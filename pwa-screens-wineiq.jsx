@@ -647,7 +647,7 @@ function WineDNAScreen({nav,back,showPro}){
                 <>
                   <div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline',marginTop:10,marginBottom:6}}>
                     <span style={sub}>Top {t.label}</span>
-                    <span onClick={()=>nav('mywines')} style={{fontSize:13,fontWeight:600,color:t.col,fontFamily:C.P,cursor:'pointer'}}>See all →</span>
+                    <span onClick={()=>{ try{ sessionStorage.setItem('vinterest_mywines_view',JSON.stringify({type:t.key,sort:'rating'})); }catch(e){} nav('mywines'); }} style={{fontSize:13,fontWeight:600,color:t.col,fontFamily:C.P,cursor:'pointer'}}>See all →</span>
                   </div>
                   {t.topWines.map((w,i)=>(
                     <div key={i} onClick={()=>{

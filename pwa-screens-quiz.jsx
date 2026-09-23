@@ -84,7 +84,7 @@ function QuizHubScreen({nav,back,showPro}){
   },[coverage.unlocked]);
 
   const [genStubs,setGenStubs]=React.useState(()=>{
-    try{ return JSON.parse(localStorage.getItem('vinterest_gen_stubs')||'null'); }catch(e){ return null; }
+    try{ return ContentEngine.shelf(); }catch(e){ return null; }
   });
   React.useEffect(()=>{
     if(!article1Done) return;
@@ -260,7 +260,7 @@ function QuizHubScreen({nav,back,showPro}){
                     <Icon n={stub.iconName||'read'} sz={20} col={C.cr}/>
                   </div>
                   <div style={{flex:1}}>
-                    <div style={{fontSize:12,fontWeight:600,color:C.mid,fontFamily:C.P,textTransform:'uppercase',letterSpacing:'0.06em',marginBottom:2}}>Quick Read · {stub.readTime}</div>
+                    <div style={{fontSize:12,fontWeight:600,color:C.mid,fontFamily:C.P,textTransform:'uppercase',letterSpacing:'0.06em',marginBottom:2}}>{stub.series?`${stub.series} series`:'Quick Read'} · {stub.readTime}</div>
                     <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P,lineHeight:1.3}}>{stub.title}</div>
                     <div style={{fontSize:14,color:C.mid,fontFamily:C.P,marginTop:2}}>{stub.subtitle}</div>
                   </div>

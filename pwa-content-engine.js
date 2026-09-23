@@ -453,6 +453,31 @@ const ContentEngine = {
     ExposureLedger.mark(key);
   },
 
+  /* Region pieces come in series (every new region gets a "First taste", every region with enough
+     scans a "vs. the textbook"), so the title carries the series and the subtitle says something
+     about this region in particular: its grapes and climate or rules from the knowledge base,
+     otherwise what the user has actually picked from there. Never leaves a {{placeholder}}. */
+  subtitleFor(archetype, slots, wines){
+    const region=slots.region, K=region&&KNOWLEDGE.regions[region];
+    const list=a=>a.length>1?a.slice(0,-1).join(', ')+' and '+a[a.length-1]:a[0];
+    const mine=(wines||[]).filter(w=>w.region===region);
+    const grapeCounts={}; mine.forEach(w=>(w.grapes||[]).slice(0,1).forEach(g=>{ const k=WineDNA.grape(g); if(k) grapeCounts[k]=(grapeCounts[k]||0)+1; }));
+    const myGrape=Object.entries(grapeCounts).sort((a,b)=>b[1]-a[1])[0];
+    const lower=t=>t?t.charAt(0).toLowerCase()+t.slice(1):t;
+    if(archetype.id==='new_region_intro'&&region){
+      if(K) return `Home of ${list(K.keyGrapes)}, with a ${lower(K.climate)} climate`;
+      if(myGrape) return `Where your ${myGrape[0]} came from, and what the place gives the wine`;
+    }
+    if(archetype.id==='palate_vs_textbook'&&region){
+      const yours=mine.length===1?'does the bottle you picked':mine.length?`do the ${mine.length} bottles you picked`:'do your picks';
+      if(K) return `Textbook ${region} is ${list(K.keyGrapes)}. How ${yours} compare?`;
+      if(myGrape) return `You've picked ${mine.length} from here, mostly ${myGrape[0]}. How classic ${mine.length===1?'is it':'are they'}?`;
+    }
+    if(archetype.id==='region_rules'&&K) return `${K.classification}: what the words on a ${region} label promise`;
+    const out=this.fillTpl(archetype.subtitleTpl,slots);
+    return /\{\{/.test(out)?out.replace(/[,:—-]?\s*[^,:—-]*\{\{[^}]*\}\}[^,:—-]*/g,'').trim():out;
+  },
+
   buildStub(archetype, ev, wines){
     const slots=this.buildSlots(ev,wines);
     return {
@@ -460,8 +485,9 @@ const ContentEngine = {
       archetypeId:archetype.id,
       iconName:archetype.iconName,
       readTime:archetype.readTime,
+      series:archetype.series||null,
       title:this.fillTpl(archetype.titleTpl,slots),
-      subtitle:this.fillTpl(archetype.subtitleTpl,slots),
+      subtitle:this.subtitleFor(archetype,slots,wines),
       brief:archetype.brief,
       slots,
       facts:this.retrieveFacts(archetype,slots)
@@ -486,11 +512,23 @@ const ContentEngine = {
           stub.slots.country=match?match.country:KNOWLEDGE.regions[stub.slots.region]?.country;
         }
       });
+      if(archetype.id==='explore_style_intro') return;
       const title=this.fillTpl(archetype.titleTpl,stub.slots);
-      const subtitle=this.fillTpl(archetype.subtitleTpl,stub.slots);
-      if(title!==stub.title||subtitle!==stub.subtitle){ stub.title=title; stub.subtitle=subtitle; changed=true; }
+      const subtitle=this.subtitleFor(archetype,stub.slots,wines);
+      const series=archetype.series||null;
+      if(title!==stub.title||subtitle!==stub.subtitle||series!==(stub.series||null)){ stub.title=title; stub.subtitle=subtitle; stub.series=series; changed=true; }
     });
     return changed;
+  },
+
+  /* The saved shelf, healed (templates and subtitles as they are now) every time it's read, not
+     only when new articles are added: otherwise old cards keep a leaked {{country}}. */
+  shelf(wines){
+    let stubs=null;
+    try{ stubs=JSON.parse(localStorage.getItem('vinterest_gen_stubs')||'null'); }catch(e){}
+    if(!Array.isArray(stubs)) return stubs;
+    if(this._healStubs(stubs,wines||WineHistory.getAll())) localStorage.setItem('vinterest_gen_stubs',JSON.stringify(stubs));
+    return stubs;
   },
 
   refreshShelf(wines, maxUnread){
