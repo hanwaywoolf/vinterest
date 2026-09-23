@@ -358,10 +358,6 @@ function StyleExploreScreen({nav,back}){
       .finally(()=>setLoading(false));
   },[]);
 
-  function findIt(wine){
-    const q=`${wine.producer&&!wine.name.includes(wine.producer)?wine.producer+' ':''}${wine.name}${wine.vintage&&wine.vintage!=='NV'?' '+wine.vintage:''} buy`;
-    window.open('https://www.google.com/search?q='+encodeURIComponent(q),'_blank','noopener');
-  }
 
   const TYPE_COL={red:'#8B1A2F',white:'#B8963E',rose:'#C47A8A',sparkling:'#5E8FA8',orange:'#C1652B',dessert:'#8A5A2B',fortified:'#5C2A1E'};
   const col=TYPE_COL[typeKey]||C.cr;
@@ -437,7 +433,7 @@ function StyleExploreScreen({nav,back}){
                 )}
               </div>
               {wine.why&&<div style={{fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.55,marginBottom:10}}>{wine.why}</div>}
-              <Btn small full onClick={()=>findIt(wine)}>Find it online</Btn>
+              <Btn small full onClick={()=>FindOnline.open(wine)}>Find it online</Btn>
             </Card>
           ))}
           {bottles&&bottles.length===0&&(

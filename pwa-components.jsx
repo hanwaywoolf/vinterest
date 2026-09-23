@@ -417,6 +417,39 @@ function lookupCountryCurrency(name){
   return CURRENCY_LIST.find(c=>c.code===code)||null;
 }
 const HOME_REGION_CURRENCY={uk:{sym:'£',code:'GBP',label:'United Kingdom'},us:{sym:'$',code:'USD',label:'United States'},ontario:{sym:'CA$',code:'CAD',label:'Canada'},canada:{sym:'CA$',code:'CAD',label:'Canada'},australia:{sym:'A$',code:'AUD',label:'Australia'},nz:{sym:'NZ$',code:'NZD',label:'New Zealand'},eu:{sym:'€',code:'EUR',label:'Europe'},france:{sym:'€',code:'EUR',label:'France'},germany:{sym:'€',code:'EUR',label:'Germany'},italy:{sym:'€',code:'EUR',label:'Italy'},spain:{sym:'€',code:'EUR',label:'Spain'}};
+/* "Find it online" for any bottle, from anywhere in the app: one query recipe and one way of
+   opening it. The query leads with what a retailer lists (producer once, wine name, vintage),
+   adds "wine" and "buy", and leaves out "near me", which makes Google answer with a map of
+   shops instead of listings for the bottle. Local results come from Google's gl (country)
+   parameter, following the user's region or travel mode. */
+const FindOnline={
+  GL_BY_LABEL:{'united kingdom':'gb','united states':'us','canada':'ca','australia':'au','new zealand':'nz','france':'fr','germany':'de','italy':'it','spain':'es','portugal':'pt','ireland':'ie','japan':'jp','switzerland':'ch','south africa':'za','singapore':'sg','hong kong':'hk','mexico':'mx','brazil':'br','india':'in','united arab emirates':'ae','sweden':'se','norway':'no','denmark':'dk','china':'cn'},
+  GL_BY_CURRENCY:{GBP:'gb',USD:'us',CAD:'ca',AUD:'au',NZD:'nz',JPY:'jp',CHF:'ch',ZAR:'za',SGD:'sg',HKD:'hk',MXN:'mx',BRL:'br',INR:'in',AED:'ae',SEK:'se',NOK:'no',DKK:'dk',CNY:'cn'},
+  country(){ const rc=Regional.current(); return this.GL_BY_LABEL[(rc.label||'').toLowerCase()]||this.GL_BY_CURRENCY[rc.code]||null; },
+  _fold(s){ return (s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase(); },
+  query(wine){
+    const clean=s=>(s||'').replace(/\([^)]*\)/g,' ').replace(/\s+/g,' ').trim();
+    const name=clean(wine.name), producer=clean(wine.producer);
+    const parts=[];
+    if(producer&&!this._fold(name).includes(this._fold(producer))) parts.push(producer);
+    parts.push(name);
+    const vintage=String(wine.vintage||'').match(/\b(19|20)\d{2}\b/);
+    if(vintage&&!name.includes(vintage[0])) parts.push(vintage[0]);
+    if(!/\bwine\b/i.test(parts.join(' '))) parts.push('wine');
+    parts.push('buy');
+    return parts.join(' ');
+  },
+  url(wine){ const gl=this.country(); return 'https://www.google.com/search?q='+encodeURIComponent(this.query(wine))+(gl?'&gl='+gl:''); },
+  // A real link click, not window.open with window features: installed apps hand a plain
+  // target=_blank link to the platform's in-app browser (Safari's sheet with Done on iOS, a
+  // Custom Tab with a close button on Android), whereas a "popup" request can open a bare
+  // window with no way back.
+  open(wine){
+    const a=document.createElement('a');
+    a.href=this.url(wine); a.target='_blank'; a.rel='noopener noreferrer';
+    document.body.appendChild(a); a.click(); a.remove();
+  }
+};
 const Regional={
   TRAVEL_KEY:'vinterest_travel',
   travel(){
@@ -490,4 +523,4 @@ function fetchRetailEstimate(wine,curr){
   });
 }
 
-Object.assign(window,{C,Icon,BottomNav,SideNav,Pill,Prog,Card,Btn,ScreenErrorBoundary,WineHistory,ProBadge,ProGate,calcMatchScore,WineAffinity,Regional,CURRENCY_LIST,lookupCountryCurrency,fetchRetailEstimate,retailPriceCacheKey});
+Object.assign(window,{C,Icon,BottomNav,SideNav,Pill,Prog,Card,Btn,ScreenErrorBoundary,WineHistory,ProBadge,ProGate,calcMatchScore,WineAffinity,Regional,FindOnline,CURRENCY_LIST,lookupCountryCurrency,fetchRetailEstimate,retailPriceCacheKey});

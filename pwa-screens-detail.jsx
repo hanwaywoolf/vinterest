@@ -762,8 +762,7 @@ function DetailPrice({wine,nav}){
 
   function handleFindItForMe(){
     if(!wine) return;
-    const q=`${wine.producer?wine.producer+' ':''}${wine.name}${wine.vintage&&wine.vintage!=='NV'?' '+wine.vintage:''} ${wine.type||''} wine buy near me`;
-    window.open('https://www.google.com/search?q='+encodeURIComponent(q),'_blank','noopener');
+    FindOnline.open(wine);
   }
 
   const hasPrice = priceData && priceData.mid != null;
