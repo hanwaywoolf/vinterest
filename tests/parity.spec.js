@@ -18,12 +18,15 @@ test.skip(!fs.existsSync(path.join(ROOT, 'bundle.js')), 'bundle.js has been remo
 
 const SCREENS = ['home', 'mywines', 'learn', 'profile', 'scan', 'settings', 'account', 'mastery-map'];
 
-// The only intended differences: the version line is generated now, and the legacy build's
+// Intended differences on these screens: the version line is generated now, and the legacy build's
 // QuizHubScreen crashes on the first Learn visit after WineDNA unlocks (fixed in this build),
 // so both runs start with that one-off celebration already seen.
 const SEED = { vinterest_wineDNA_unlock_seen: '1' };
 // Globals added to the sources after bundle.js was last compiled. They exist only in dist.
-const ADDED_SINCE_BUNDLE = ['RegionQuizBank', 'REGION_QUIZ_SIZE'];
+const ADDED_SINCE_BUNDLE = [
+  'RegionQuizBank', 'QUIZ_SIZE', 'QuizMastery', '_ceShuffle', '_regionsWithScans', 'completedRegionQuizzes',
+  'grapeQuizBank', 'grapeQuizComplete', 'CompletedToggle', 'CompletedMark', '_drawQuiz', 'quizSetFor',
+];
 const normalise = (text) => text.replace(/Vinterest v[^\n]*/g, 'Vinterest v<version>');
 
 async function snapshot(browser, base, run) {
@@ -71,25 +74,8 @@ for (const screen of SCREENS) {
   });
 }
 
-test('taking a Wine Basics quiz behaves the same as bundle.js', async ({ browser }) => {
-  await compare(browser, async (page, base) => {
-    await page.goto(`${base}/?demo=1#learn`);
-    const root = page.locator('#root');
-    const label = await page.evaluate(() => QUIZ_TOPICS[0].label);
-    await root.getByText(label, { exact: true }).click();
-    // Rotate through answers A, B, C… so the run mixes right and wrong answers, then advance.
-    let answered = 0;
-    for (; answered < 30; answered++) {
-      await root.getByText(String.fromCharCode(65 + (answered % 3)), { exact: true }).click();
-      const next = root.getByText(/^(Next Question|See Results) →$/);
-      const isLast = (await next.innerText()).startsWith('See Results');
-      await next.click();
-      if (isLast) break;
-    }
-    expect(answered).toBeGreaterThan(0);
-    return { answered: answered + 1, xp: await page.evaluate(() => XPSystem.get().total) };
-  });
-});
+// No Wine Basics quiz parity test: those quizzes now draw 5 questions by mastery (tests/
+// quiz-mastery.spec.js) instead of 6 at random, so they deliberately differ from bundle.js.
 
 // Exercises the XP badge and tier/achievement overlay in pwa-app.jsx.
 test('the XP overlay renders the same as bundle.js', async ({ browser }) => {

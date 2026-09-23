@@ -98,6 +98,10 @@ function getGrapeQuiz(grape, onReady){
     .catch(()=>onReady(null))
     .finally(()=>_grapeQuizInFlight.delete(grape));
 }
+/* Progress through a grape's cached 15-question bank lives in QuizMastery under 'grape:<name>';
+   a grape is complete once every question in its bank has been answered correctly. */
+function grapeQuizBank(grape){ try{ const qs=JSON.parse(localStorage.getItem(_grapeQuizCacheKey(grape))||'null'); return Array.isArray(qs)?qs:null; }catch(e){ return null; } }
+function grapeQuizComplete(grape){ const bank=grapeQuizBank(grape); return !!bank&&QuizMastery.isComplete('grape:'+grape,bank); }
 /* Fire-and-forget: warms the cache so a later tap on this grape is instant. Safe to call redundantly. */
 function prefetchGrapeQuiz(grape){
   if(!grape||!GRAPE_ALLOWLIST.includes(grape)) return;

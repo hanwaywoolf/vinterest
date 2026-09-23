@@ -13,32 +13,26 @@ const ExposureLedger = Object.assign(_accountStore('vinterest_exposure_v1'), {
   mark(key){ const d=this.get(); d.keys[key]=Date.now(); this.save(d); }
 });
 
-/* Tracks which region quizzes a user has aced (100%) so QuizHubScreen can retire them and
-   surface the next newly-eligible region instead of re-serving an already-mastered one. */
+/* Legacy: regions aced under the old rule (one perfect quiz retired the region). Still honoured
+   so nobody loses a region they'd already retired; progress now lives in QuizMastery
+   (pwa-quiz-questions.js), and resetting a region clears both. */
 const RegionQuizLedger = Object.assign(_accountStore('vinterest_region_quiz_v1'), {
   fresh(){ return {aced:{}}; },
   isAced(region){ return !!this.get().aced[region]; },
-  markAced(region){ const d=this.get(); d.aced[region]=Date.now(); this.save(d); },
-  /* When each bank question was last served, per region, keyed by question text — so a retake
-     draws the questions this user has seen least recently instead of repeating the last set. */
-  lastServed(region){ return (this.get().served||{})[region]||{}; },
-  markServed(region,qTexts){
-    const d=this.get(); d.served=d.served||{}; const r=d.served[region]=d.served[region]||{};
-    const now=Date.now(); qTexts.forEach(q=>{ r[q]=now; }); this.save(d);
-  }
+  clear(region){ const d=this.get(); if(d.aced[region]){ delete d.aced[region]; this.save(d); } }
 });
+
+function _ceShuffle(arr){ const a=[...arr]; for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
 
 /* Per-region question bank: 15 questions (5 easy/5 medium/5 hard) generated once from the
    region's data/knowledge.json facts and cached forever, same approach as the grape quizzes.
-   A quiz draws REGION_QUIZ_SIZE of them, least-recently-served first, so three retakes in a
-   row see all 15 before any repeats. The cache is shared across accounts (it's reference
-   content); what each account has been served lives in RegionQuizLedger. */
-const REGION_QUIZ_SIZE=5;
+   The cache is shared across accounts (it's reference content); each account's progress
+   through it lives in QuizMastery under 'region:<name>'. */
 const RegionQuizBank = {
   _inFlight:new Set(),
   key(region){ return 'vinterest_region_quiz_bank_'+region.replace(/\s+/g,'_'); },
   get(region){
-    try{ const qs=JSON.parse(localStorage.getItem(this.key(region))||'null'); return Array.isArray(qs)&&qs.length>=REGION_QUIZ_SIZE?qs:null; }catch(e){ return null; }
+    try{ const qs=JSON.parse(localStorage.getItem(this.key(region))||'null'); return Array.isArray(qs)&&qs.length>=QUIZ_SIZE?qs:null; }catch(e){ return null; }
   },
   // A question is kept only if it's well-formed; a bank with too few survivors isn't cached,
   // so the next tap retries generation rather than locking in a short bank.
@@ -63,42 +57,76 @@ const RegionQuizBank = {
         if(s>=0&&e>s) cleaned=cleaned.slice(s,e+1);
         const seen=new Set();
         const qs=JSON.parse(cleaned).filter(q=>this._valid(q)&&!seen.has(q.q)&&seen.add(q.q));
-        if(qs.length>=REGION_QUIZ_SIZE) localStorage.setItem(this.key(region),JSON.stringify(qs));
+        if(qs.length>=QUIZ_SIZE) localStorage.setItem(this.key(region),JSON.stringify(qs));
       })
       .catch(()=>{})
       .finally(()=>{ this._inFlight.delete(region); onReady(this.get(region)); });
   },
   prefetch(region){ if(!this.get(region)) this.load(region,()=>{}); },
-  // The questions for one quiz, or null when there's no bank yet (the caller falls back to the
-  // fixed knowledge-base questions). Marks what it returns as served.
-  draw(region){
-    const bank=this.get(region);
-    if(!bank) return null;
-    const served=RegionQuizLedger.lastServed(region);
-    const picked=bank
-      .map(q=>({q,at:served[q.q]||0,tie:Math.random()}))
-      .sort((x,y)=>x.at-y.at||x.tie-y.tie)
-      .slice(0,REGION_QUIZ_SIZE)
-      .map(x=>x.q);
-    RegionQuizLedger.markServed(region,picked.map(q=>q.q));
-    return picked;
-  }
+  /* Every question a region quiz can draw from: the generated bank, or — with no bank yet
+     (offline, or generation failed) — the ~6 fixed questions built from the region's
+     knowledge-base facts plus one about the user's own bottles. Completion is judged against
+     whichever pool is current. */
+  pool(region){
+    return this.get(region)||this._fallbackPool(region);
+  },
+  _fallbackPool(region){
+    const info=KNOWLEDGE.regions[region];
+    const wines=WineHistory.getAll();
+    const regionWines=wines.filter(w=>w.region===region);
+    const otherWines=_ceShuffle(wines.filter(w=>w.region&&w.region!==region)).slice(0,3);
+    const otherRegionIds=Object.keys(KNOWLEDGE.regions).filter(r=>r!==region);
+    const qs=[];
+    const add=(q,correct,distractors,fact)=>{
+      const opts=_ceShuffle([correct,...distractors]);
+      qs.push({q,opts,a:opts.indexOf(correct),fact});
+    };
+    if(info){
+      const distractClass=[...new Set(otherRegionIds.map(r=>KNOWLEDGE.regions[r].classification).filter(c=>c&&c!==info.classification))];
+      if(distractClass.length>=2) add(`What classification does ${region} wine fall under?`,info.classification,_ceShuffle(distractClass).slice(0,3),`${region} (${info.country}): ${info.classification}.`);
+      if(info.keyGrapes&&info.keyGrapes[0]){
+        const distractGrapes=[...new Set(otherRegionIds.flatMap(r=>KNOWLEDGE.regions[r].keyGrapes||[]).filter(g=>g&&!info.keyGrapes.includes(g)))];
+        if(distractGrapes.length>=2) add(`Which grape is the backbone of ${region}?`,info.keyGrapes[0],_ceShuffle(distractGrapes).slice(0,3),`${region}'s key grape(s): ${info.keyGrapes.join(', ')}.`);
+      }
+      if(info.climate){
+        const distractClimate=_ceShuffle(otherRegionIds.map(r=>KNOWLEDGE.regions[r].climate).filter(Boolean)).slice(0,3);
+        if(distractClimate.length>=2) add(`Which climate description matches ${region}?`,info.climate,distractClimate,`${region}: ${info.climate}.`);
+      }
+      if(info.agingRules){
+        const distractAging=_ceShuffle(otherRegionIds.map(r=>KNOWLEDGE.regions[r].agingRules).filter(Boolean)).slice(0,3);
+        if(distractAging.length>=2) add(`Which aging rule applies to ${region}?`,info.agingRules,distractAging,`${region}: ${info.agingRules}.`);
+      }
+      if(info.classicProducers&&info.classicProducers[0]){
+        const distractProducers=[...new Set(otherRegionIds.flatMap(r=>KNOWLEDGE.regions[r].classicProducers||[]).filter(p=>p&&!info.classicProducers.includes(p)))];
+        if(distractProducers.length>=2) add(`Which producer is a classic name in ${region}?`,info.classicProducers[0],_ceShuffle(distractProducers).slice(0,3),`Classic ${region} producers include ${info.classicProducers.join(', ')}.`);
+      }
+    }
+    if(regionWines.length&&otherWines.length>=3){
+      const target=_ceShuffle(regionWines)[0];
+      add(`Which of these bottles in your wine history is from ${region}?`,target.name,otherWines.map(w=>w.name),`${target.name} is the ${region} bottle in your history.`);
+    }
+    return qs;
+  },
+  setId(region){ return 'region:'+region; },
+  isComplete(region){ return RegionQuizLedger.isAced(region)||QuizMastery.isComplete(this.setId(region),this.pool(region)); },
+  progress(region){ return QuizMastery.progress(this.setId(region),this.pool(region)); },
+  reset(region){ QuizMastery.reset(this.setId(region)); RegionQuizLedger.clear(region); }
 };
 
-/* Regions with 2+ scans that haven't been aced yet — most-scanned first. A region drops off
-   this list the moment its quiz is aced, and a newly-scanned region (e.g. a first Bordeaux)
-   slots in on its own once it crosses the 2-scan threshold. Requires a data/knowledge.json
-   entry — without one, assembleRegionQuiz has no facts to quiz on beyond a single
-   wine-history question, so a region the KB doesn't cover is left off rather than
-   surfacing a near-empty quiz. */
-function regionQuizCandidates(wines){
+/* Regions with 2+ scans, most-scanned first, split into ones still being worked through and
+   ones completed (every question answered correctly at least once). A newly-scanned region
+   (e.g. a first Bordeaux) slots in once it crosses the 2-scan threshold. Requires a
+   data/knowledge.json entry — without one there are no facts to ground a quiz in. */
+function _regionsWithScans(wines){
   const counts={};
   wines.forEach(w=>{ if(w.region) counts[w.region]=(counts[w.region]||0)+1; });
   return Object.entries(counts)
-    .filter(([region,n])=>n>=2&&KNOWLEDGE.regions[region]&&!RegionQuizLedger.isAced(region))
+    .filter(([region,n])=>n>=2&&KNOWLEDGE.regions[region])
     .sort((a,b)=>b[1]-a[1])
     .map(([region])=>region);
 }
+function regionQuizCandidates(wines){ return _regionsWithScans(wines).filter(r=>!RegionQuizBank.isComplete(r)); }
+function completedRegionQuizzes(wines){ return _regionsWithScans(wines).filter(r=>RegionQuizBank.isComplete(r)); }
 
 const ContentEngine = {
   TRAIT_BASELINE:{body:0.5,tannins:0.5,acidity:0.5,sweetness:0.15},

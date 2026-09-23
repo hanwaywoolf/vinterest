@@ -46,6 +46,25 @@ function WineDNAUnlockCelebration({onDone}){
 }
 
 /* ── QUIZ HUB / LEARN TAB ── */
+/* Dashed "N completed — show" row that expands a completed section (Wine Basics, regions). */
+function CompletedToggle({count,expanded,onToggle}){
+  return(
+    <div onClick={onToggle} style={{background:C.white,borderRadius:14,padding:'10px 14px',display:'flex',alignItems:'center',gap:8,cursor:'pointer',border:`1px dashed ${C.line}`}}>
+      <Icon n="chevron" sz={12} col={C.mid} style={expanded?{transform:'rotate(-90deg)'}:undefined}/>
+      <span style={{fontSize:14,fontWeight:600,color:C.mid,fontFamily:C.P}}>{expanded?'Show less':`${count} completed — show`}</span>
+    </div>
+  );
+}
+/* ✓ plus a Reset link, for a completed quiz row. The row itself stays tappable to retake it. */
+function CompletedMark({onReset}){
+  return(
+    <div style={{display:'flex',flexDirection:'column',alignItems:'flex-end',gap:2,flexShrink:0}}>
+      <span style={{fontSize:14,fontWeight:700,color:C.green,fontFamily:C.P}}>✓</span>
+      <span onClick={e=>{e.stopPropagation();onReset();}} style={{fontSize:13,fontWeight:600,color:C.mid,fontFamily:C.P,textDecoration:'underline',cursor:'pointer'}}>Reset</span>
+    </div>
+  );
+}
+
 function QuizHubScreen({nav,back,showPro}){
   const [xpData,setXpData]=React.useState(()=>XPSystem.get());
   const [isPro,setIsPro]=React.useState(()=>!!localStorage.getItem('vinterest_pro'));
@@ -85,18 +104,29 @@ function QuizHubScreen({nav,back,showPro}){
       : {kind:'scan',title:'Scan a bottle for your next read',sub:"Your shelf restocks based on what you try.",action:()=>nav('camera')};
 
   const mastery=MasterySystem.summary();
-  const quizRegions=React.useMemo(()=>regionQuizCandidates(wines),[wines]);
+  // Bumped after a progress reset so the to-do/completed splits below recompute.
+  const [progressTick,setProgressTick]=React.useState(0);
+  const quizRegions=React.useMemo(()=>regionQuizCandidates(wines),[wines,progressTick]);
+  const doneRegions=React.useMemo(()=>completedRegionQuizzes(wines),[wines,progressTick]);
+  const [regionsExpanded,setRegionsExpanded]=React.useState(false);
+  function resetProgress(name,doReset){
+    if(!window.confirm(`Reset your progress on ${name}? Its questions start from scratch.`)) return;
+    doReset();
+    setProgressTick(t=>t+1);
+  }
   const wordsCount=VocabLedger.getAll().length;
   const startQuiz=cfg=>{ sessionStorage.setItem('vinterest_quiz_config2',JSON.stringify(cfg)); nav('quiz'); };
   const [topicsExpanded,setTopicsExpanded]=React.useState(false);
   // Wine Basics always shows — it's the entry point for someone new to wine, not just a
-  // pre-WineDNA-unlock placeholder. Finished topics move behind the toggle instead of
-  // disappearing, so handing the phone to someone else still surfaces them.
+  // pre-WineDNA-unlock placeholder. Completed topics (every question answered correctly at
+  // least once) move behind the toggle instead of disappearing, so they can still be retaken
+  // or handed to someone else.
+  const topicProgress=id=>QuizMastery.progress('topic:'+id,QuizMastery.topicPool(id));
   const {topicsToShow,doneTopics}=React.useMemo(()=>{
     const todo=[],done=[];
-    QUIZ_TOPICS.forEach(t=>{ (TopicQuizLedger.isDone(t.id)?done:todo).push(t); });
+    QUIZ_TOPICS.forEach(t=>{ (QuizMastery.isComplete('topic:'+t.id,QuizMastery.topicPool(t.id))?done:todo).push(t); });
     return {topicsToShow:todo,doneTopics:done};
-  },[]);
+  },[progressTick]);
   const [grapeUnlocks,setGrapeUnlocks]=React.useState(()=>GrapeUnlocks.all());
   const [grapeLoading,setGrapeLoading]=React.useState(null);
   const [regionLoading,setRegionLoading]=React.useState(null);
@@ -231,7 +261,9 @@ function QuizHubScreen({nav,back,showPro}){
         <div style={zoneLabel}>Test Yourself</div>
         <div style={{display:'flex',flexDirection:'column',gap:8,marginTop:8}}>
           <div style={{fontSize:13,fontWeight:600,color:C.mid,fontFamily:C.P,textTransform:'uppercase',letterSpacing:'0.06em'}}>Wine Basics</div>
-          {topicsToShow.map(topic=>(
+          {topicsToShow.map(topic=>{
+            const p=topicProgress(topic.id);
+            return(
             <div key={topic.id} onClick={()=>startQuiz({mode:'practice',topicId:topic.id})}
               style={{background:C.white,borderRadius:14,padding:'12px 14px',display:'flex',alignItems:'center',gap:12,cursor:'pointer',border:`1px solid ${C.line}`}}>
               <div style={{width:42,height:42,borderRadius:12,background:topic.color+'15',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,border:`1px solid ${topic.color}25`}}>
@@ -239,17 +271,13 @@ function QuizHubScreen({nav,back,showPro}){
               </div>
               <div style={{flex:1}}>
                 <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>{topic.label}</div>
-                <div style={{fontSize:14,color:C.mid,fontFamily:C.P}}>{topic.desc}</div>
+                <div style={{fontSize:14,color:C.mid,fontFamily:C.P}}>{topic.desc}{p.correct>0?` · ${p.correct}/${p.total} correct`:''}</div>
               </div>
               <Icon n="chevron" sz={13} col={C.mid}/>
             </div>
-          ))}
-          {doneTopics.length>0&&(
-            <div onClick={()=>setTopicsExpanded(e=>!e)} style={{background:C.white,borderRadius:14,padding:'10px 14px',display:'flex',alignItems:'center',gap:8,cursor:'pointer',border:`1px dashed ${C.line}`}}>
-              <Icon n="chevron" sz={12} col={C.mid} style={topicsExpanded?{transform:'rotate(-90deg)'}:undefined}/>
-              <span style={{fontSize:14,fontWeight:600,color:C.mid,fontFamily:C.P}}>{topicsExpanded?'Show less':`${doneTopics.length} completed — show`}</span>
-            </div>
-          )}
+            );
+          })}
+          {doneTopics.length>0&&<CompletedToggle count={doneTopics.length} expanded={topicsExpanded} onToggle={()=>setTopicsExpanded(e=>!e)}/>}
           {topicsExpanded&&doneTopics.map(topic=>(
             <div key={topic.id} onClick={()=>startQuiz({mode:'practice',topicId:topic.id})}
               style={{background:C.white,borderRadius:14,padding:'12px 14px',display:'flex',alignItems:'center',gap:12,cursor:'pointer',border:`1px solid ${C.line}`,opacity:0.7}}>
@@ -260,7 +288,7 @@ function QuizHubScreen({nav,back,showPro}){
                 <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>{topic.label}</div>
                 <div style={{fontSize:14,color:C.mid,fontFamily:C.P}}>{topic.desc}</div>
               </div>
-              <span style={{fontSize:14,fontWeight:700,color:C.green,fontFamily:C.P}}>✓</span>
+              <CompletedMark onReset={()=>resetProgress(topic.label,()=>QuizMastery.reset('topic:'+topic.id))}/>
             </div>
           ))}
           {coverage.unlocked&&(
@@ -284,12 +312,15 @@ function QuizHubScreen({nav,back,showPro}){
                   <Icon n="chevron" sz={13} col={C.mid}/>
                 </div>
               )}
-              {quizRegions.length>0&&(
+              {(quizRegions.length>0||doneRegions.length>0)&&(
                 <div style={{fontSize:13,fontWeight:600,color:C.mid,fontFamily:C.P,textTransform:'uppercase',letterSpacing:'0.06em',marginTop:6}}>Regional Knowledge</div>
               )}
               {quizRegions.map(region=>{
                 const info=KNOWLEDGE.regions[region];
-                const sub=info?[info.keyGrapes&&info.keyGrapes[0],info.classification].filter(Boolean).join(' · '):"Grounded in bottles you've scanned from there";
+                // Progress only once the region's generated bank exists, so the count doesn't
+                // jump from the fallback's /6 to /15 when it arrives.
+                const p=RegionQuizBank.get(region)&&RegionQuizBank.progress(region);
+                const sub=[info&&info.keyGrapes&&info.keyGrapes[0],info&&info.classification,p&&p.correct>0&&`${p.correct}/${p.total} correct`].filter(Boolean).join(' · ');
                 return(
                   <div key={region} onClick={()=>handleRegionTap(region)} style={{background:C.white,borderRadius:14,padding:'12px 14px',display:'flex',alignItems:'center',gap:12,cursor:'pointer',border:`1px solid ${C.line}`}}>
                     <div style={{width:42,height:42,borderRadius:12,background:C.offWhite,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><Icon n="map" sz={20} col={C.ink}/></div>
@@ -303,6 +334,17 @@ function QuizHubScreen({nav,back,showPro}){
                   </div>
                 );
               })}
+              {doneRegions.length>0&&<CompletedToggle count={doneRegions.length} expanded={regionsExpanded} onToggle={()=>setRegionsExpanded(e=>!e)}/>}
+              {regionsExpanded&&doneRegions.map(region=>(
+                <div key={region} onClick={()=>handleRegionTap(region)} style={{background:C.white,borderRadius:14,padding:'12px 14px',display:'flex',alignItems:'center',gap:12,cursor:'pointer',border:`1px solid ${C.line}`,opacity:0.7}}>
+                  <div style={{width:42,height:42,borderRadius:12,background:C.offWhite,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><Icon n="map" sz={20} col={C.ink}/></div>
+                  <div style={{flex:1}}>
+                    <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>{region}</div>
+                    <div style={{fontSize:14,color:C.mid,fontFamily:C.P}}>Every question answered · tap to practise</div>
+                  </div>
+                  <CompletedMark onReset={()=>resetProgress(region,()=>RegionQuizBank.reset(region))}/>
+                </div>
+              ))}
             </>
           )}
         </div>
@@ -316,7 +358,7 @@ function QuizHubScreen({nav,back,showPro}){
           return(
             <div key={g} onClick={()=>handleGrapeTap(g)} style={{flex:'0 0 auto',padding:'10px 18px',borderRadius:999,background:col+'15',border:`1px solid ${col}40`,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}>
               {loading?<div style={{width:14,height:14,borderRadius:7,border:`2px solid ${col}33`,borderTopColor:col,animation:'storySpin .8s linear infinite'}}/>:
-                <span style={{fontSize:14,fontWeight:600,color:col,fontFamily:C.P,whiteSpace:'nowrap'}}>{g}</span>}
+                <span style={{fontSize:14,fontWeight:600,color:col,fontFamily:C.P,whiteSpace:'nowrap'}}>{grapeQuizComplete(g)?'✓ ':''}{g}</span>}
             </div>
           );
         })}
@@ -456,70 +498,16 @@ function assembleWordsQuiz(){
     return {q:`What does "${t.term}" mean?`,opts,a:opts.indexOf(t.meaning),fact:null,conceptId:null,vocabTerm:t.term};
   });
 }
-function assembleRegionQuiz(region){
-  const drawn=RegionQuizBank.draw(region);
-  if(drawn) return drawn.map(q=>_shuffleOpts({q:q.q,opts:q.opts,a:q.a,fact:q.fact||null,conceptId:null,vocabTerm:null}));
-  // No generated bank yet (offline, or generation failed): fall back to the fixed questions
-  // built straight from data/knowledge.json.
-  const info=KNOWLEDGE.regions[region];
-  const wines=WineHistory.getAll();
-  const regionWines=wines.filter(w=>w.region===region);
-  const otherWines=_shuffle(wines.filter(w=>w.region&&w.region!==region)).slice(0,3);
-  const otherRegionIds=Object.keys(KNOWLEDGE.regions).filter(r=>r!==region);
-  const qs=[];
-  if(info){
-    const distractClass=[...new Set(otherRegionIds.map(r=>KNOWLEDGE.regions[r].classification).filter(c=>c&&c!==info.classification))];
-    if(distractClass.length>=2){
-      const opts=_shuffle([info.classification,..._shuffle(distractClass).slice(0,3)]);
-      qs.push({q:`What classification does ${region} wine fall under?`,opts,a:opts.indexOf(info.classification),fact:`${region} (${info.country}): ${info.classification}.`,conceptId:null,vocabTerm:null});
-    }
-    if(info.keyGrapes&&info.keyGrapes[0]){
-      const correct=info.keyGrapes[0];
-      const distractGrapes=[...new Set(otherRegionIds.flatMap(r=>KNOWLEDGE.regions[r].keyGrapes||[]).filter(g=>g&&!info.keyGrapes.includes(g)))];
-      if(distractGrapes.length>=2){
-        const opts=_shuffle([correct,..._shuffle(distractGrapes).slice(0,3)]);
-        qs.push({q:`Which grape is the backbone of ${region}?`,opts,a:opts.indexOf(correct),fact:`${region}'s key grape(s): ${info.keyGrapes.join(', ')}.`,conceptId:null,vocabTerm:null});
-      }
-    }
-    if(info.climate){
-      const distractClimate=_shuffle(otherRegionIds.map(r=>KNOWLEDGE.regions[r].climate).filter(Boolean)).slice(0,3);
-      if(distractClimate.length>=2){
-        const opts=_shuffle([info.climate,...distractClimate]);
-        qs.push({q:`Which climate description matches ${region}?`,opts,a:opts.indexOf(info.climate),fact:`${region}: ${info.climate}.`,conceptId:null,vocabTerm:null});
-      }
-    }
-    if(info.agingRules){
-      const distractAging=_shuffle(otherRegionIds.map(r=>KNOWLEDGE.regions[r].agingRules).filter(Boolean)).slice(0,3);
-      if(distractAging.length>=2){
-        const opts=_shuffle([info.agingRules,...distractAging]);
-        qs.push({q:`Which aging rule applies to ${region}?`,opts,a:opts.indexOf(info.agingRules),fact:`${region}: ${info.agingRules}.`,conceptId:null,vocabTerm:null});
-      }
-    }
-    if(info.classicProducers&&info.classicProducers[0]){
-      const correct=info.classicProducers[0];
-      const distractProducers=[...new Set(otherRegionIds.flatMap(r=>KNOWLEDGE.regions[r].classicProducers||[]).filter(p=>p&&!info.classicProducers.includes(p)))];
-      if(distractProducers.length>=2){
-        const opts=_shuffle([correct,..._shuffle(distractProducers).slice(0,3)]);
-        qs.push({q:`Which producer is a classic name in ${region}?`,opts,a:opts.indexOf(correct),fact:`Classic ${region} producers include ${info.classicProducers.join(', ')}.`,conceptId:null,vocabTerm:null});
-      }
-    }
-  }
-  if(regionWines.length&&otherWines.length>=3){
-    const target=_shuffle(regionWines)[0];
-    const opts=_shuffle([target.name,...otherWines.map(w=>w.name)]);
-    qs.push({q:`Which of these bottles in your wine history is from ${region}?`,opts,a:opts.indexOf(target.name),fact:`${target.name} is the ${region} bottle in your history.`,conceptId:null,vocabTerm:null});
-  }
-  const picked=_shuffle(qs).slice(0,Math.min(REGION_QUIZ_SIZE,qs.length));
-  return picked.map(q=>_shuffleOpts(q));
+/* Region, Wine Basics and grape quizzes all draw QUIZ_SIZE questions from their full pool via
+   QuizMastery: unanswered questions first, then review. Options are reshuffled every time. */
+function _drawQuiz(setId,pool){
+  return QuizMastery.draw(setId,pool).map(q=>_shuffleOpts({...q,fact:q.fact||null,conceptId:null,vocabTerm:null}));
 }
-function assemblePracticeQuiz(topicId){
-  const topic=QUIZ_TOPICS.find(t=>t.id===topicId)||QUIZ_TOPICS[0];
-  const qs=_shuffle(topic.questions.beginner||[]).slice(0,6);
-  return qs.map(q=>_shuffleOpts(q));
-}
-function assembleGrapeQuiz(bank){
-  const qs=_shuffle(bank||[]).map(q=>({q:q.q,opts:q.opts,a:q.a,fact:q.fact,conceptId:null,vocabTerm:null}));
-  return qs.map(q=>_shuffleOpts(q));
+function quizSetFor(mode,config){
+  if(mode==='region') return {id:RegionQuizBank.setId(config.region),pool:()=>RegionQuizBank.pool(config.region)};
+  if(mode==='practice') return {id:'topic:'+config.topicId,pool:()=>QuizMastery.topicPool(config.topicId)};
+  if(mode==='grape') return {id:'grape:'+config.grape,pool:()=>config.questions||[]};
+  return null;
 }
 
 /* ── QUIZ SCREEN ── */
@@ -529,13 +517,12 @@ function QuizScreen({nav,back}){
   },[]);
   const mode=config?.mode||'concept';
 
+  const quizSet=React.useMemo(()=>quizSetFor(mode,config),[mode,config]);
   const buildQs=React.useCallback(()=>{
-    if(mode==='practice') return assemblePracticeQuiz(config.topicId);
+    if(quizSet) return _drawQuiz(quizSet.id,quizSet.pool());
     if(mode==='words') return assembleWordsQuiz();
-    if(mode==='region') return assembleRegionQuiz(config.region);
-    if(mode==='grape') return assembleGrapeQuiz(config.questions);
     return assembleConceptQuiz(MasterySystem.selectConcepts(6));
-  },[mode,config]);
+  },[mode,quizSet]);
 
   const [allQs,setAllQs]=React.useState(buildQs);
   const [qIdx,setQIdx]=React.useState(0);
@@ -544,6 +531,7 @@ function QuizScreen({nav,back}){
   const [streak,setStreak]=React.useState(0);
   const [xpGained,setXpGained]=React.useState(0);
   const [results,setResults]=React.useState([]);
+  const [, setResetTick]=React.useState(0);
   const scrollRef=React.useRef(null);
 
   const title=mode==='practice'?(QUIZ_TOPICS.find(t=>t.id===config.topicId)||QUIZ_TOPICS[0]).label
@@ -571,6 +559,7 @@ function QuizScreen({nav,back}){
       }
     }
     if(q.vocabTerm) VocabLedger.recordTest(q.vocabTerm,correct);
+    if(quizSet) QuizMastery.recordAnswer(quizSet.id,q.q,correct);
     if(gained){ setXpGained(xp=>xp+gained); }
 
     setResults(rs=>[...rs,{correct,qText:q.q,selectedOpt:q.opts[i],correctOpt:q.opts[q.a],fact:q.fact}]);
@@ -587,8 +576,6 @@ function QuizScreen({nav,back}){
       const g2=a2.filter(x=>!x.levelUp).reduce((s,a)=>s+a.amount,0);
       setXpGained(xp=>xp+g2);
       XPSystem.toast(a2);
-      if(mode==='region'&&results.filter(r=>r.correct).length===allQs.length) RegionQuizLedger.markAced(config.region);
-      if(mode==='practice') TopicQuizLedger.markDone(config.topicId);
       setPhase('results');
     } else {
       setQIdx(i=>i+1); setSelected(null); setPhase('question');
@@ -610,6 +597,14 @@ function QuizScreen({nav,back}){
     const finalScore=results.filter(r=>r.correct).length;
     const pct=Math.round(finalScore/allQs.length*100);
     const msg=pct===100?'Perfect!':pct>=80?'Excellent!':pct>=60?'Good work!':'Keep practising';
+    const pool=quizSet&&quizSet.pool();
+    const setProgress=quizSet&&QuizMastery.progress(quizSet.id,pool);
+    const setDone=setProgress&&setProgress.total>0&&setProgress.correct===setProgress.total;
+    function resetSet(){
+      if(!window.confirm(`Reset your progress on ${title}? Its questions start from scratch.`)) return;
+      if(mode==='region') RegionQuizBank.reset(config.region); else QuizMastery.reset(quizSet.id);
+      setResetTick(t=>t+1);
+    }
     return(
       <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden'}}>
         <div style={{background:C.cr,padding:'26px 24px 20px',display:'flex',flexDirection:'column',alignItems:'center',gap:5,flexShrink:0}}>
@@ -630,6 +625,15 @@ function QuizScreen({nav,back}){
         </div>
         <div ref={scrollRef} style={{flex:1,overflowY:'auto'}}>
 <div style={{padding:'16px',display:'flex',flexDirection:'column',gap:10}}>
+          {setProgress&&(
+            <div style={{background:setDone?C.greenBg:C.offWhite,borderRadius:12,padding:'12px 14px',border:`1px solid ${setDone?C.green+'40':C.line}`,display:'flex',alignItems:'center',gap:10}}>
+              <div style={{flex:1}}>
+                <div style={{fontSize:15,fontWeight:700,color:setDone?C.green:C.ink,fontFamily:C.P}}>{setDone?'Complete — every question answered correctly':`${setProgress.correct} of ${setProgress.total} questions answered correctly`}</div>
+                {!setDone&&<div style={{fontSize:14,color:C.mid,fontFamily:C.P,marginTop:2}}>Questions you haven't got right yet come first in your next quiz.</div>}
+              </div>
+              {setDone&&<span onClick={resetSet} style={{fontSize:14,fontWeight:600,color:C.mid,fontFamily:C.P,textDecoration:'underline',cursor:'pointer',flexShrink:0}}>Reset progress</span>}
+            </div>
+          )}
           <div style={{fontSize:15,fontWeight:600,color:C.mid,letterSpacing:'0.07em',textTransform:'uppercase',fontFamily:C.P}}>Review</div>
           {results.map((r,i)=>(
             <div key={i} style={{background:r.correct?C.greenBg:'#FFF0F0',borderRadius:12,padding:'10px 14px',border:`1px solid ${r.correct?C.green+'30':'#F5A0A0'}`}}>
@@ -645,8 +649,8 @@ function QuizScreen({nav,back}){
             </div>
           ))}
           <div style={{display:'flex',flexDirection:'column',gap:8,marginTop:4}}>
-            {/* A region quiz with no generated bank only has its fixed ~6 questions to draw from, so a retake is a retry, not a new set. */}
-            <Btn primary full onClick={newQuiz}>{mode==='region'&&!RegionQuizBank.get(config.region)?'Try again':'New quiz'}</Btn>
+            {/* With no more questions in the pool than one quiz holds, a retake is the same set again. */}
+            <Btn primary full onClick={newQuiz}>{pool&&pool.length<=QUIZ_SIZE?'Try again':'New quiz'}</Btn>
             <Btn full onClick={()=>{if(pct<100){if(scrollRef.current)scrollRef.current.scrollTop=0;}else nav('learn');}}>{pct<100?'See what you missed':'Practice more'}</Btn>
           </div>
           <div style={{height:8}}/>
