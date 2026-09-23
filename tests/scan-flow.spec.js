@@ -431,3 +431,15 @@ test('a rescan within a few hours is the same occasion; a suggestion is not a sc
   const s = (await history(page)).find((w) => w.name === 'Suggested Test');
   expect([s.scan_intent, s.body]).toEqual(['checking', undefined]);
 });
+
+test('a non-vintage wine (vintage 0) shows no stray "0"', async ({ context, page }) => {
+  await setup(context, page);
+  await page.goto(`${BASE}/?demo=1#home`);
+  await page.evaluate(() => { const all = WineHistory.getAll(); all.unshift({ name: 'NV Test Brut', type: 'sparkling', region: 'Champagne', country: 'France', grapes: ['Pinot Noir', 'Chardonnay'], vintage: 0, rating: 84, times_consumed: 1, scanned_at: new Date().toISOString() }); WineHistory.save(all);
+    sessionStorage.setItem('vinterest_scan_result', JSON.stringify({ wine: WineHistory.getAll()[0] })); });
+  await page.goto(`${BASE}/?demo=1#mywines`);
+  const card = page.locator('#root').getByText('NV Test Brut').locator('xpath=ancestor::div[.//text()[contains(.,"/100")]][1]');
+  expect((await card.innerText()).split('\n').map((l) => l.trim())).not.toContain('0');
+  await page.goto(`${BASE}/?demo=1#detail`);
+  expect((await page.locator('#root').innerText()).split('\n').map((l) => l.trim())).not.toContain('0');
+});

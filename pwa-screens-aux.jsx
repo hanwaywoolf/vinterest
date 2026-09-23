@@ -432,7 +432,8 @@ function MyWinesScreen({nav,back}){
                             <span style={{fontSize:13,fontWeight:500,color:activePills.find(p=>p.type==='country'&&p.value===w.country)?'#5E8FA8':C.ink2,fontFamily:C.P}}>{w.country}</span>
                           </div>
                         )}
-                        {w.vintage&&(
+                        {/* vintage 0 means NV: a bare {w.vintage&&…} would render a stray "0" */}
+                        {w.vintage>0&&(
                           <div onClick={e=>{e.stopPropagation();togglePill('vintage',w.vintage);}} style={{padding:'4px 10px',borderRadius:20,background:activePills.find(p=>p.type==='vintage'&&p.value===w.vintage)?C.greenBg:C.greenBg.replace('0.15','0.08'),border:`1px solid ${activePills.find(p=>p.type==='vintage'&&p.value===w.vintage)?C.green:C.green+'40'}`,cursor:'pointer'}}>
                             <span style={{fontSize:13,fontWeight:500,color:activePills.find(p=>p.type==='vintage'&&p.value===w.vintage)?C.green:C.ink2,fontFamily:C.P}}>{w.vintage}</span>
                           </div>

@@ -455,7 +455,7 @@ function DetailMerged({wine,nav,existingRating=0,match}){
       )}
 
       {/* Vintage Info */}
-      {wine?.vintage&&(
+      {wine?.vintage>0&&(
         <div>
           <SL label={`About the ${wine.vintage} Vintage`}/>
           {loadingVintage?(
