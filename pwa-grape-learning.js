@@ -34,8 +34,16 @@ const GrapeUnlocks = Object.assign(_accountStore('vinterest_grape_unlocks_v1'), 
   all(){ return this.get().unlocked; },
   isUnlocked(g){ return !!this.get().unlocked[g]; },
   count(){ return Object.keys(this.get().unlocked).length; },
+  /* The allowlist name for a grape as it appears on a label, through synonyms: "Shiraz" is
+     Syrah, "Garnacha" is Grenache, "Pinot Gris" is Pinot Grigio. null if it isn't one of the 50. */
+  key(grape){
+    if(!grape) return null;
+    const c=WineDNA.grape(grape), low=String(grape).toLowerCase();
+    return GRAPE_ALLOWLIST.find(g=>g.toLowerCase()===low)||GRAPE_ALLOWLIST.find(g=>WineDNA.grape(g)===c)||null;
+  },
   unlockViaRating(grape){
-    if(!grape||!GRAPE_ALLOWLIST.includes(grape)) return false;
+    grape=this.key(grape);
+    if(!grape) return false;
     const d=this.get();
     if(d.unlocked[grape]) return false;
     const isPro=!!localStorage.getItem('vinterest_pro');
@@ -45,6 +53,12 @@ const GrapeUnlocks = Object.assign(_accountStore('vinterest_grape_unlocks_v1'), 
     try{ ContentEngine.addGrapeArticle(grape,WineHistory.getAll()); }catch(e){}
     try{ prefetchGrapeQuiz(grape); }catch(e){}
     return true;
+  },
+  /* Scanning a bottle opens its grape too (someone shopping may not rate it yet), within the same
+     free allowance. A grape only guessed for the wine (grapes_basis 'typical') doesn't count. */
+  unlockViaScan(wine){
+    if(!wine||wine.grapes_basis==='typical') return false;
+    return this.unlockViaRating((wine.grapes||[])[0]);
   },
   unlockManual(grape){
     if(!grape||!GRAPE_ALLOWLIST.includes(grape)) return false;

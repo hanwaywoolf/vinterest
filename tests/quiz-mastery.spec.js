@@ -36,7 +36,8 @@ const root = (page) => page.locator('#root');
 async function answerQuiz(page, pick) {
   const asked = [];
   for (let i = 0; i < 10; i++) {
-    const q = (await root(page).locator('div', { hasText: /\?$/ }).last().innerText()).trim();
+    // Questions end in "?" or, for "… range in style from:", a colon.
+    const q = (await root(page).locator('div', { hasText: /[?:]$/ }).last().innerText()).trim();
     asked.push(q);
     const right = pick(q);
     const correctText = await page.evaluate(

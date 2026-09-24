@@ -218,7 +218,9 @@ const WineDNA = {
       // A low-scoring region and the grape that makes it are usually the same bottles: show one line.
       rethink:(()=>{ const out=[]; const low=[...regions.map(x=>({...x,kind:'region'})),...grapes.map(x=>({...x,kind:'grape'}))].filter(x=>x.avg<ParkerScale.DISLIKED).sort((a,b)=>a.avg-b.avg);
         low.forEach(x=>{ const same=out.find(o=>bottles(o)===bottles(x)); if(same){ same.also=x.name; } else if(out.length<2) out.push({...x}); }); return out; })(),
-      disliked:[...p.disliked].sort((a,b)=>a.rating-b.rating).slice(0,3)
+      disliked:[...p.disliked].sort((a,b)=>a.rating-b.rating).slice(0,3),
+      // Bottles they said they'd buy again: their own shortlist for the next shop.
+      buyAgain:p.wines.filter(w=>w.buy_again===true).sort((a,b)=>(b.rating||0)-(a.rating||0)).slice(0,4)
     };
   },
 

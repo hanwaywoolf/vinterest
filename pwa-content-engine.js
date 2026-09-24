@@ -22,6 +22,54 @@ const RegionQuizLedger = Object.assign(_accountStore('vinterest_region_quiz_v1')
   clear(region){ const d=this.get(); if(d.aced[region]){ delete d.aced[region]; this.save(d); } }
 });
 
+/* Which knowledge-base region a wine belongs to: its region, sub-region or name matched against
+   each region's name and aliases ("Rioja Alta" → Rioja, "Châteauneuf-du-Pape" → Rhône Valley).
+   null when none match: there are no checked facts to teach from. */
+const Regions = {
+  _norm(s){ return String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim(); },
+  _index:null,
+  index(){
+    if(this._index) return this._index;
+    const list=[];
+    Object.entries(KNOWLEDGE.regions||{}).forEach(([key,r])=>{ [key,...(r.aliases||[])].forEach(n=>{ const t=this._norm(n); if(t) list.push({t,key}); }); });
+    return this._index=list.sort((a,b)=>b.t.length-a.t.length); // longest first: "Rioja Alta" before "Rioja"
+  },
+  _match(text){
+    const x=' '+this._norm(text)+' ';
+    if(x.trim()==='') return null;
+    const hit=this.index().find(e=>x.includes(' '+e.t+' '));
+    return hit?hit.key:null;
+  },
+  resolve(w){ if(!w) return null; return this._match(w.sub_region)||this._match(w.region)||this._match(w.name)||null; },
+  /* The region a wine is filed under for learning: the knowledge-base region when there is one. */
+  of(w){ return this.resolve(w)||(w&&w.region)||null; },
+};
+
+/* Regions open up as they're scanned: the first FREE_REGION_CAP for everyone, the rest with Pro
+   (their quizzes and region articles show as "Unlock with Pro"). Existing history is backfilled
+   in scan order, so nobody loses a region they already had. */
+const FREE_REGION_CAP=5;
+const RegionUnlocks = Object.assign(_accountStore('vinterest_region_unlocks_v1'), {
+  fresh(){ return {unlocked:{}}; },
+  all(){ return this.get().unlocked; },
+  count(){ return Object.keys(this.all()).length; },
+  _pro(){ return !!localStorage.getItem('vinterest_pro'); },
+  isUnlocked(region){ return this._pro()||!!this.all()[region]; },
+  unlock(region){
+    if(!region||!KNOWLEDGE.regions[region]) return false;
+    const d=this.get();
+    if(d.unlocked[region]) return true;
+    if(!this._pro()&&Object.keys(d.unlocked).length>=FREE_REGION_CAP) return false;
+    d.unlocked[region]={at:Date.now()};
+    this.save(d);
+    try{ RegionQuizBank.prefetch(region); }catch(e){}
+    return true;
+  },
+  sync(wines){
+    [...wines].sort((a,b)=>new Date(a.scanned_at||0)-new Date(b.scanned_at||0)).forEach(w=>{ const r=Regions.resolve(w); if(r&&!this.all()[r]) this.unlock(r); });
+  },
+});
+
 function _ceShuffle(arr){ const a=[...arr]; for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
 
 /* Per-region question bank: 15 questions (5 easy/5 medium/5 hard) generated once from the
@@ -73,7 +121,7 @@ const RegionQuizBank = {
   _fallbackPool(region){
     const info=KNOWLEDGE.regions[region];
     const wines=WineHistory.getAll();
-    const regionWines=wines.filter(w=>w.region===region);
+    const regionWines=wines.filter(w=>Regions.of(w)===region);
     const otherWines=_ceShuffle(wines.filter(w=>w.region&&w.region!==region)).slice(0,3);
     const otherRegionIds=Object.keys(KNOWLEDGE.regions).filter(r=>r!==region);
     const qs=[];
@@ -119,11 +167,15 @@ const RegionQuizBank = {
    data/knowledge.json entry — without one there are no facts to ground a quiz in. */
 function _regionsWithScans(wines){
   const counts={};
-  wines.forEach(w=>{ if(w.region) counts[w.region]=(counts[w.region]||0)+1; });
-  return Object.entries(counts)
-    .filter(([region,n])=>n>=2&&KNOWLEDGE.regions[region])
-    .sort((a,b)=>b[1]-a[1])
-    .map(([region])=>region);
+  wines.forEach(w=>{ const r=Regions.resolve(w); if(r) counts[r]=(counts[r]||0)+1; });
+  RegionUnlocks.sync(wines);
+  return Object.entries(counts).sort((a,b)=>b[1]-a[1]).map(([region])=>region).filter(r=>RegionUnlocks.isUnlocked(r));
+}
+/* Scanned regions past the free allowance: shown with "Unlock with Pro". */
+function lockedRegions(wines){
+  const seen=new Set(); wines.forEach(w=>{ const r=Regions.resolve(w); if(r) seen.add(r); });
+  RegionUnlocks.sync(wines);
+  return [...seen].filter(r=>!RegionUnlocks.isUnlocked(r));
 }
 function regionQuizCandidates(wines){ return _regionsWithScans(wines).filter(r=>!RegionQuizBank.isComplete(r)); }
 function completedRegionQuizzes(wines){ return _regionsWithScans(wines).filter(r=>RegionQuizBank.isComplete(r)); }
@@ -139,26 +191,37 @@ const USD_FX={GBP:0.79,CAD:1.36,AUD:1.53,NZD:1.64,EUR:0.92,USD:1.0,JPY:150,CNY:7
    the model, so it's grounded and identical everywhere. */
 const SommelierScript = {
   _inFlight:{},
-  key(length,typeKey,n,code){ return `vinterest_script_${length}_${typeKey}_n${n}_${code}_v4`; },
-  // Middle half of the scanned prices in local currency, rounded outward to friendly steps.
-  // null with fewer than two priced wines: one bottle is no basis for a "typical" range.
+  // The script is cached until the wines behind it change: a new scan, a score, a price paid
+  // or a "buy again" all write a new one (a script written at scan time used to outlive the score).
+  key(length,typeKey,sig,code){ return `vinterest_script_${length}_${typeKey}_${sig}_${code}_v5`; },
+  sig(wines){
+    const extra=wines.map(w=>`${(w.price_paid&&w.price_paid.amount)||''}|${w.buy_again?1:0}|${w.price_usd||''}`).join(';');
+    let h=0; for(let i=0;i<extra.length;i++) h=(h*31+extra.charCodeAt(i))|0;
+    return WineDNA.signature(wines)+(h>>>0).toString(36);
+  },
+  /* The typical spend for these wines, in local currency, rounded to friendly steps. Their own
+     wines come first: what they paid where they said, otherwise the scan's estimate, leaving out
+     shelf checks they didn't buy and wines they scored below 80 (a bottle they didn't enjoy isn't
+     a budget to aim for). One priced wine gives "around £90"; more give the middle half of their
+     prices. Only with no priced wine at all does the usual spend from onboarding stand in. */
   budget(wines,rc){
-    const fx=USD_FX[rc.code]||1;
-    const ps=wines.map(w=>w.price_usd).filter(p=>typeof p==='number'&&p>0).map(p=>p*fx).sort((a,b)=>a-b);
-    // Too few priced wines of their own: fall back to the usual spend they gave at onboarding.
-    if(ps.length<2){ const b=UserPrefs.budget(rc); return !b?null:b.max==null?`${rc.base}${b.min} and up ${rc.code}`:b.min===0?`under ${rc.base}${b.max} ${rc.code}`:`${rc.base}${b.min}–${rc.base}${b.max} ${rc.code}`; }
-    const at=q=>ps[Math.min(ps.length-1,Math.max(0,Math.round(q*(ps.length-1))))];
+    const ps=wines.filter(w=>WineDNA.chosen(w)&&!(w.rating>0&&w.rating<ParkerScale.DISLIKED))
+      .map(w=>WineDNA.priceOf(w,rc)).filter(p=>p>0).sort((a,b)=>a-b);
     const step=v=>v<50?5:v<200?10:50;
+    if(!ps.length){ const b=UserPrefs.budget(rc); return !b?null:b.max==null?`${rc.base}${b.min} and up ${rc.code}`:b.min===0?`under ${rc.base}${b.max} ${rc.code}`:`${rc.base}${b.min}–${rc.base}${b.max} ${rc.code}`; }
+    if(ps.length===1){ const v=Math.max(step(ps[0]),Math.round(ps[0]/step(ps[0]))*step(ps[0])); return `around ${rc.base}${v} ${rc.code}`; }
+    const at=q=>ps[Math.min(ps.length-1,Math.max(0,Math.round(q*(ps.length-1))))];
     const lo=Math.max(step(at(0.25)),Math.floor(at(0.25)/step(at(0.25)))*step(at(0.25)));
     let hi=Math.ceil(at(0.75)/step(at(0.75)))*step(at(0.75));
     if(hi<=lo) hi=lo+step(lo);
     return `${rc.base}${lo}–${rc.base}${hi} ${rc.code}`;
   },
-  cached(length,typeKey,wines){ return localStorage.getItem(this.key(length,typeKey,wines.length,Regional.current().code)); },
+  cached(length,typeKey,wines){ return localStorage.getItem(this.key(length,typeKey,this.sig(wines),Regional.current().code)); },
   // Calls onReady(text) once the script exists (immediately if cached), or onReady(null) on failure.
   get(length,typeKey,label,wines,onReady){
     const rc=Regional.current();
-    const kLong=this.key('long',typeKey,wines.length,rc.code), kShort=this.key('short',typeKey,wines.length,rc.code);
+    const sig=this.sig(wines);
+    const kLong=this.key('long',typeKey,sig,rc.code), kShort=this.key('short',typeKey,sig,rc.code);
     const want=length==='short'?kShort:kLong;
     const hit=localStorage.getItem(want);
     if(hit){ onReady(hit); return; }
@@ -169,7 +232,9 @@ const SommelierScript = {
     const makeLong=()=>{
       const cachedLong=localStorage.getItem(kLong);
       if(cachedLong) return Promise.resolve(cachedLong);
-      const wineList=wines.slice(0,8).map(w=>`${w.name}${w.vintage?' '+w.vintage:''} from ${w.region||w.country||'unknown'}${w.rating?' (rated '+w.rating+'/100)':''}`).join('; ');
+      // Best-loved first, so the script leans on what they enjoyed (and would buy again).
+      const ranked=[...wines].sort((a,b)=>(b.buy_again?1:0)-(a.buy_again?1:0)||(b.rating||0)-(a.rating||0));
+      const wineList=ranked.slice(0,8).map(w=>`${w.name}${w.vintage>0?' '+w.vintage:''} from ${w.region||w.country||'unknown'}${w.rating?' (rated '+w.rating+'/100)':''}${w.buy_again?', would buy again':''}`).join('; ');
       const budget=this.budget(wines,rc);
       const budgetInst=budget
         ?`Include my typical budget, written exactly as "${budget}" — do not change the numbers, symbol or currency code.`
@@ -302,7 +367,7 @@ const ContentEngine = {
     const rated=wines.filter(w=>w.rating>0);
     const regionCounts={},typeCounts={},grapeCounts={},producerCounts={};
     wines.forEach(w=>{
-      if(w.region) regionCounts[w.region]=(regionCounts[w.region]||0)+1;
+      const reg=Regions.of(w); if(reg) regionCounts[reg]=(regionCounts[reg]||0)+1;
       const t=(w.type||'').toLowerCase(); if(t) typeCounts[t]=(typeCounts[t]||0)+1;
       (w.grapes||[]).forEach(g=>{if(g) grapeCounts[g]=(grapeCounts[g]||0)+1;});
       if(w.producer) producerCounts[w.producer]=(producerCounts[w.producer]||0)+1;
@@ -377,7 +442,7 @@ const ContentEngine = {
     if(ev.event==='new_region'||ev.event==='trait_signature'||ev.event==='contradiction'||ev.event==='quiz_failed_concept'||ev.event==='vocab_match') s.region=ev.subject;
     if(ev.event==='new_region'){
       s.region=ev.subject;
-      const match=wines.find(w=>w.region===ev.subject&&w.country);
+      const match=wines.find(w=>Regions.of(w)===ev.subject&&w.country);
       if(match) s.country=match.country;
       else if(KNOWLEDGE.regions[ev.subject]) s.country=KNOWLEDGE.regions[ev.subject].country;
       const others={};
@@ -461,7 +526,7 @@ const ContentEngine = {
   subtitleFor(archetype, slots, wines){
     const region=slots.region, K=region&&KNOWLEDGE.regions[region];
     const list=a=>a.length>1?a.slice(0,-1).join(', ')+' and '+a[a.length-1]:a[0];
-    const mine=(wines||[]).filter(w=>w.region===region);
+    const mine=(wines||[]).filter(w=>Regions.of(w)===region);
     const grapeCounts={}; mine.forEach(w=>(w.grapes||[]).slice(0,1).forEach(g=>{ const k=WineDNA.grape(g); if(k) grapeCounts[k]=(grapeCounts[k]||0)+1; }));
     const myGrape=Object.entries(grapeCounts).sort((a,b)=>b[1]-a[1])[0];
     const lower=t=>t?t.charAt(0).toLowerCase()+t.slice(1):t;
@@ -509,7 +574,7 @@ const ContentEngine = {
       (archetype.needs||[]).forEach(n=>{
         if(stub.slots[n]!=null&&stub.slots[n]!=='') return;
         if(n==='country'&&stub.slots.region){
-          const match=(wines||[]).find(w=>w.region===stub.slots.region&&w.country);
+          const match=(wines||[]).find(w=>Regions.of(w)===stub.slots.region&&w.country);
           stub.slots.country=match?match.country:KNOWLEDGE.regions[stub.slots.region]?.country;
         }
       });
@@ -521,6 +586,9 @@ const ContentEngine = {
     });
     return changed;
   },
+
+  /* A region piece about a region past the free allowance is shown locked, with Pro. */
+  stubLocked(stub){ const r=stub&&stub.slots&&stub.slots.region; return !!(r&&KNOWLEDGE.regions[r]&&!RegionUnlocks.isUnlocked(r)); },
 
   /* The saved shelf, healed (templates and subtitles as they are now) every time it's read, not
      only when new articles are added: otherwise old cards keep a leaked {{country}}. */

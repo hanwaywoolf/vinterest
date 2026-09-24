@@ -54,7 +54,30 @@ test('the budget is the middle of the scanned prices, rounded outward', async ({
     };
   });
   expect(out.spread).toBe('$20–$35 USD');
-  expect(out.one).toBeNull();
+  expect(out.one).toBe('around $30 USD');
   expect(out.none).toBeNull();
   expect(out.gbp).toBe('£15–£35 GBP');
+});
+
+// The bug: a first red scored 94 that cost £90 (label estimate £70), with "£12–£25" given at
+// onboarding, produced a script saying £12–£25. Their own wine wins, at what they paid.
+test('the budget comes from their own wines: price paid first, wines they disliked left out', async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem('vinterest_prefs', JSON.stringify({ budget: 'mid' })));
+  await page.goto(`${BASE}/?demo=1#home`);
+  const out = await page.evaluate(() => {
+    const rc = { base: '£', code: 'GBP' };
+    const fx = USD_FX.GBP;
+    const riojaAlta = { name: '904', rating: 94, price_usd: 70 / fx, price_paid: { amount: 90, code: 'GBP' } };
+    return {
+      first: SommelierScript.budget([riojaAlta], rc),
+      disliked: SommelierScript.budget([riojaAlta, { rating: 66, price_usd: 10 / fx }], rc),
+      shelfCheck: SommelierScript.budget([{ price_usd: 300 / fx, scan_intent: 'checking' }], rc),
+      noPrices: SommelierScript.budget([{ rating: 90 }], rc),
+    };
+  });
+  expect(out.first).toBe('around £90 GBP');
+  expect(out.disliked).toBe('around £90 GBP');
+  // A bottle only looked at on a shelf isn't their budget; with nothing priced, onboarding stands in.
+  expect(out.shelfCheck).toBe('£12–£25 GBP');
+  expect(out.noPrices).toBe('£12–£25 GBP');
 });

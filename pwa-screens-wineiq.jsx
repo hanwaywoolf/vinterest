@@ -398,6 +398,19 @@ function WineDNAScreen({nav,back,showPro}){
               </>
             )}
 
+            {fav.buyAgain.length>0&&(
+              <div style={{marginTop:14}}>
+                <div style={{...sub,marginBottom:6}}>Worth buying again</div>
+                {fav.buyAgain.map(w=>{ const pr=WineDNA.priceOf(w); return (
+                  <div key={'b'+w.name} style={{display:'flex',alignItems:'center',gap:8,padding:'6px 0',borderTop:`1px solid ${C.line}`}}>
+                    <Icon n="cart" sz={15} col={C.green}/>
+                    <span style={{fontSize:15,color:C.ink,fontFamily:C.P,flex:1,minWidth:0,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{w.name}</span>
+                    {pr>0&&<span style={{fontSize:13,color:C.mid,fontFamily:C.P}}>{Regional.current().base}{Math.round(pr)}{w.price_paid&&w.price_paid.amount>0?' paid':' est.'}</span>}
+                    {w.rating>0&&<span style={{fontSize:15,fontWeight:800,color:w.rating>=ParkerScale.LOVED?C.green:C.amber,fontFamily:C.P,width:30,textAlign:'right'}}>{w.rating}</span>}
+                  </div>); })}
+              </div>
+            )}
+
             {(fav.rethink.length>0||fav.disliked.length>0)&&(
               <div style={{marginTop:14}}>
                 <div style={{...sub,marginBottom:6}}>Worth knowing before you buy</div>

@@ -109,7 +109,7 @@ test('no camera: the shutter never saves a sample wine, and a library photo scan
   await root.getByText('Save rating').click();
   await expect(root).toContainText('Scored 90 · Outstanding');
   await root.getByText('Fuller', { exact: true }).click();
-  await root.getByText('Yes', { exact: true }).click();
+  await root.getByText('I\'d buy this again').click();
   await root.getByLabel('What you paid').fill('32');
   await root.getByLabel('What you paid').blur();
   const rated = (await history(page)).find((w) => w.name === 'Clos Test Priorat');
@@ -318,7 +318,8 @@ test('the deck: sliders move sliders, a flick turns the card, and it ends on rat
   await expect(root).toContainText('9 / 9');
   await root.getByText('90', { exact: true }).click();
   await root.getByText('Save rating').click();
-  await expect(root).toContainText('All done');
+  await root.getByText('Done: what\'s next?').click();
+  await expect(root).toContainText('Keep learning');
   await expect(root.getByText('Finish', { exact: true })).toBeVisible();
   await expect(root.getByText('See full wine details')).toBeVisible();
 });

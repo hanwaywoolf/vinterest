@@ -20,7 +20,9 @@ test.skip(!fs.existsSync(path.join(ROOT, 'bundle.js')), 'bundle.js has been remo
 // tests/explore-next.spec.js) and deliberately differs from bundle.js.
 // #mywines isn't either: multi-grape wines are now labelled as blends ("Grenache blend").
 // #account isn't either: the profile shows only the preferences the app uses (UserPrefs).
-const SCREENS = ['home', 'learn', 'scan', 'settings', 'mastery-map'];
+// #learn isn't either: regions open from their first scan, and there are Wine Basics topics for
+// every wine type.
+const SCREENS = ['home', 'scan', 'settings', 'mastery-map'];
 
 // Intended differences on these screens: the version line is generated now, and the legacy build's
 // QuizHubScreen crashes on the first Learn visit after WineDNA unlocks (fixed in this build),
@@ -30,7 +32,7 @@ const SEED = { vinterest_wineDNA_unlock_seen: '1' };
 const ADDED_SINCE_BUNDLE = [
   'RegionQuizBank', 'QUIZ_SIZE', 'QuizMastery', '_ceShuffle', '_regionsWithScans', 'completedRegionQuizzes',
   'grapeQuizBank', 'grapeQuizComplete', 'CompletedToggle', 'CompletedMark', '_drawQuiz', 'quizSetFor',
-  'buildQuizQuestions', 'quizTitle', 'nextQuizSuggestion', 'USD_FX', 'SommelierScript', 'EXPLORE_STYLES', 'ExploreNext', 'FindOnline', 'ParkerScale', 'WineDNA', 'DnaBar', 'TasteMatch', 'ScanFlow', 'UserPrefs', 'MyWines',
+  'buildQuizQuestions', 'quizTitle', 'nextQuizSuggestion', 'USD_FX', 'SommelierScript', 'EXPLORE_STYLES', 'ExploreNext', 'FindOnline', 'ParkerScale', 'WineDNA', 'DnaBar', 'TasteMatch', 'ScanFlow', 'UserPrefs', 'MyWines', 'LearnNext', 'Regions', 'RegionUnlocks', 'FREE_REGION_CAP', 'lockedRegions', 'KeepLearning', '_NOTICE',
   '_TONE_COL', '_typeCol', 'MatchRing', 'MatchReasons', 'WineIdentity', 'ConfirmGate', 'EditWineSheet', 'ScanResult',
   'RatingPanel', 'TastingExtras', 'TasteCard', 'WaitingOnYou', '_TASTE_COPY', 'OnboardHeader', 'OnboardFooter', 'OnboardSetup', 'OnboardTaste', '_MW_TONE', '_MW_TYPES', 'WineRow',
 ];

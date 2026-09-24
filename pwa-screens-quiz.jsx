@@ -97,7 +97,7 @@ function QuizHubScreen({nav,back,showPro}){
   },[article1Done]);
 
   const zoneLabel={fontSize:15,fontWeight:600,color:C.mid,letterSpacing:'0.08em',textTransform:'uppercase',fontFamily:C.P,marginBottom:2};
-  const unreadShelf=(genStubs||[]).filter(s=>!localStorage.getItem('vinterest_gen_article_'+s.id+'_done'));
+  const unreadShelf=(genStubs||[]).filter(s=>!localStorage.getItem('vinterest_gen_article_'+s.id+'_done')&&!ContentEngine.stubLocked(s));
   const nextOnRamp=ON_RAMP.find(a=>!onRampDone(a.id));
   const nextBest=nextOnRamp&&!(UserPrefs.skipsOnRamp()&&unreadShelf.length)
     ? {kind:'onramp',title:nextOnRamp.title,sub:nextOnRamp.subtitle,readTime:nextOnRamp.readTime,action:()=>{sessionStorage.setItem('vinterest_onramp_idx',String(ON_RAMP.indexOf(nextOnRamp)));nav('article');}}
@@ -110,6 +110,7 @@ function QuizHubScreen({nav,back,showPro}){
   const [progressTick,setProgressTick]=React.useState(0);
   const quizRegions=React.useMemo(()=>regionQuizCandidates(wines),[wines,progressTick]);
   const doneRegions=React.useMemo(()=>completedRegionQuizzes(wines),[wines,progressTick]);
+  const proRegions=React.useMemo(()=>isPro?[]:lockedRegions(wines),[wines,isPro]);
   const [regionsExpanded,setRegionsExpanded]=React.useState(false);
   function resetProgress(name,doReset){
     if(!window.confirm(`Reset your progress on ${name}? Its questions start from scratch.`)) return;
@@ -255,8 +256,9 @@ function QuizHubScreen({nav,back,showPro}){
             )}
             {genStubs&&genStubs.map((stub,i)=>{
               const done=!!localStorage.getItem('vinterest_gen_article_'+stub.id+'_done');
+              const locked=ContentEngine.stubLocked(stub);
               return(
-                <div key={i} onClick={()=>{sessionStorage.setItem('vinterest_gen_article',JSON.stringify(stub));nav('gen-article');}}
+                <div key={i} onClick={()=>{ if(locked){ showPro('regions'); return; } sessionStorage.setItem('vinterest_gen_article',JSON.stringify(stub));nav('gen-article');}}
                   style={{background:C.white,borderRadius:14,padding:'14px 16px',display:'flex',alignItems:'center',gap:12,cursor:'pointer',border:`1px solid ${C.line}`,marginBottom:8,opacity:done?0.7:1}}>
                   <div style={{width:44,height:44,borderRadius:12,background:C.crSoft,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,border:`1px solid ${C.crDim}`}}>
                     <Icon n={stub.iconName||'read'} sz={20} col={C.cr}/>
@@ -266,7 +268,7 @@ function QuizHubScreen({nav,back,showPro}){
                     <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P,lineHeight:1.3}}>{stub.title}</div>
                     <div style={{fontSize:14,color:C.mid,fontFamily:C.P,marginTop:2}}>{stub.subtitle}</div>
                   </div>
-                  {done ? <span style={{fontSize:14,fontWeight:700,color:C.green,fontFamily:C.P}}>✓</span> : <Icon n="chevron" sz={13} col={C.mid}/>}
+                  {locked ? <ProBadge/> : done ? <span style={{fontSize:14,fontWeight:700,color:C.green,fontFamily:C.P}}>✓</span> : <Icon n="chevron" sz={13} col={C.mid}/>}
                 </div>
               );
             })}
@@ -328,7 +330,12 @@ function QuizHubScreen({nav,back,showPro}){
                   <Icon n="chevron" sz={13} col={C.mid}/>
                 </div>
               )}
-              {(quizRegions.length>0||doneRegions.length>0)&&(
+            </>
+          )}
+          {/* Regions open from their first scan (5 free, then Pro), not only once WineDNA unlocks. */}
+          {(quizRegions.length>0||doneRegions.length>0||proRegions.length>0)&&(
+            <>
+              {(quizRegions.length>0||doneRegions.length>0||proRegions.length>0)&&(
                 <div style={{fontSize:13,fontWeight:600,color:C.mid,fontFamily:C.P,textTransform:'uppercase',letterSpacing:'0.06em',marginTop:6}}>Regional Knowledge</div>
               )}
               {quizRegions.map(region=>{
@@ -350,6 +357,17 @@ function QuizHubScreen({nav,back,showPro}){
                   </div>
                 );
               })}
+              {/* Scanned regions past the free allowance */}
+              {proRegions.map(region=>(
+                <div key={region} onClick={()=>showPro('regions')} style={{background:C.white,borderRadius:14,padding:'12px 14px',display:'flex',alignItems:'center',gap:12,cursor:'pointer',border:`1px solid ${C.line}`}}>
+                  <div style={{width:42,height:42,borderRadius:12,background:C.offWhite,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><Icon n="lock" sz={18} col={C.mid}/></div>
+                  <div style={{flex:1}}>
+                    <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>{region}</div>
+                    <div style={{fontSize:14,color:C.mid,fontFamily:C.P}}>Unlock with Pro</div>
+                  </div>
+                  <ProBadge/>
+                </div>
+              ))}
               {doneRegions.length>0&&<CompletedToggle count={doneRegions.length} expanded={regionsExpanded} onToggle={()=>setRegionsExpanded(e=>!e)}/>}
               {regionsExpanded&&doneRegions.map(region=>(
                 <div key={region} onClick={()=>handleRegionTap(region)} style={{background:C.white,borderRadius:14,padding:'12px 14px',display:'flex',alignItems:'center',gap:12,cursor:'pointer',border:`1px solid ${C.line}`,opacity:0.7}}>
@@ -366,7 +384,7 @@ function QuizHubScreen({nav,back,showPro}){
         </div>
 
         <div style={zoneLabel}>Your Grapes</div>
-        <div style={{fontSize:14,color:C.mid,fontFamily:C.P,marginTop:2}}>{unlockedGrapes.length}/{GRAPE_ALLOWLIST.length} unlocked · {isPro?'tap any grape for its quiz; locked ones unlock as you tap':`${unlockedGrapes.length?'tap one for its quiz · ':''}rate a wine to unlock more (${FREE_GRAPE_CAP} free)`}</div>
+        <div style={{fontSize:14,color:C.mid,fontFamily:C.P,marginTop:2}}>{unlockedGrapes.length}/{GRAPE_ALLOWLIST.length} unlocked · {isPro?'tap any grape for its quiz; locked ones unlock as you tap':`${unlockedGrapes.length?'tap one for its quiz · ':''}scan or rate a wine to unlock more (${FREE_GRAPE_CAP} free)`}</div>
         <div style={{display:'flex',flexWrap:'wrap',gap:8,marginTop:8}}>
         {unlockedGrapes.map(g=>{
           const loading=grapeLoading===g;
@@ -554,7 +572,7 @@ function nextQuizSuggestion(config){
   const wines=WineHistory.getAll();
   const topics=QUIZ_TOPICS.filter(t=>t.id!==config.topicId&&!QuizMastery.isComplete('topic:'+t.id,QuizMastery.topicPool(t.id)))
     .map(t=>({config:{mode:'practice',topicId:t.id},label:t.label}));
-  const regions=(getCoverage(wines).unlocked?regionQuizCandidates(wines):[]).filter(r=>r!==config.region)
+  const regions=regionQuizCandidates(wines).filter(r=>r!==config.region)
     .map(r=>({config:{mode:'region',region:r},label:r}));
   const grapes=Object.keys(GrapeUnlocks.all()).filter(g=>g!==config.grape&&!grapeQuizComplete(g))
     .map(g=>({config:{mode:'grape',grape:g},label:g}));

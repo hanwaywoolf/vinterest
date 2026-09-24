@@ -42,6 +42,13 @@ const ScanFlow = {
     ]); if(defer&&a) this._deferred.push(...a); }catch(e){}
   },
 
+  /* A confirmed scan opens the learning around the wine: its grape and region, within the free
+     allowance (5 each, then Pro). */
+  unlockLearning(wine){
+    try{ GrapeUnlocks.unlockViaScan(wine); }catch(e){}
+    try{ RegionUnlocks.unlock(Regions.resolve(wine)); }catch(e){}
+  },
+
   /* Claude's shop-price estimate from the label scan, converted to the user's currency, or null. */
   shopPrice(wine,curr){
     curr=curr||Regional.current();

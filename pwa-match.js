@@ -101,7 +101,8 @@ const TasteMatch = {
       }
       const sameGrape=[...this._grapes(w)].some(g=>grapes.has(g));
       const sameRegion=!!region&&this._region(w)===region;
-      const sim=(styleSim??0.3)*(sameGrape?2:1)*(sameRegion?1.5:1);
+      // A wine they'd buy again is a stronger signal than a score alone.
+      const sim=(styleSim??0.3)*(sameGrape?2:1)*(sameRegion?1.5:1)*(w.buy_again?1.5:1);
       return {w,sim,styleSim};
     });
     const avg=WineDNA._mean(scored.map(w=>w.rating));
@@ -112,7 +113,7 @@ const TasteMatch = {
     // The most similar wine they've scored, when it's genuinely close in style.
     const near=[...sims].filter(x=>x.styleSim!=null&&x.styleSim>=0.6).sort((a,b)=>b.sim-a.sim)[0];
     if(near) reasons.push({kind:'similar',tone:tone(near.w.rating),weight:2+near.styleSim,
-      text:`Closest in style to ${near.w.name}, which you scored ${near.w.rating}.`});
+      text:`Closest in style to ${near.w.name}, which you scored ${near.w.rating}${near.w.buy_again?' and would buy again':''}.`});
 
     // The traits that separate their 90+ wines from the rest (WineDNA's signals): each one nudges
     // the expectation by up to two points and becomes a reason.

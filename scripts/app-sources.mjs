@@ -18,6 +18,7 @@ export const APP_SOURCES = [
   'pwa-scan.js',
   'pwa-prefs.js',
   'pwa-mywines.js',
+  'pwa-learnnext.js',
   'pwa-components.jsx',
   'tweaks-panel.jsx',
   'pwa-screens-main.jsx',
