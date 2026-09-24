@@ -11,13 +11,16 @@
    "lighter / fuller than the label" taps where they've given them (WineDNA.axisValue). */
 const TasteMatch = {
   MIN_SCORED:3,     // below this many scored wines of the type: "too early to call"
-  STYLE_SCALE:0.2,  // style distance at which similarity falls to about a third
+  // Every scored wine of the type counts, weighted by how alike it is: no cut-off, so no wine
+  // drops out at a line and a small change in the label's style estimates only nudges weights.
+  STYLE_SCALE:0.2,  // style distance at which the style weight falls to about a third
+  STYLE_FLOOR:0.02, // style weight of a wine nothing like it: it still counts, a little
+  NO_STYLE_SIM:0.3, // style weight when there's no style to compare
+  GRAPE_X:4,        // the same grape counts this many times more
+  REGION_X:2,       // the same region (knowledge-base region) this many times more
+  BUY_X:1.5,        // a wine they'd buy again is a stronger signal than a score alone
   PRIOR:0.6,        // how hard thin evidence is pulled toward their average
-  K_MAX:8,          // at most this many
-  NEAR_FRAC:0.5,    // "nearly as similar": at least this share of the closest wine's similarity
-  K:3,              // predict from this many most-similar scored wines, not all of them
-  NO_STYLE_SIM:0.1, // similarity when there's no style to compare (grape/region can still lift it)
-  SD_FLOOR:4,       // a user who scores everything 88–90 still needs a few points to stand out
+  REF_SD_FLOOR:2,   // the % never treats predictions closer than this as far apart
   PCT_BANDS:{hit:[77,99],good:[60,76],mixed:[16,59],miss:[5,15]},
   VERDICTS:{
     hit:  {label:'Likely a favourite',   tone:'good'},
@@ -101,7 +104,60 @@ const TasteMatch = {
         summary:`We couldn't read enough about this wine's style to compare it with your ${L}.`};
     }
 
-    // Similarity to each scored wine.
+    const avg=WineDNA._mean(scored.map(w=>w.rating));
+    const P=this._predict(wine,scored,avg,p.signals);
+    const {sims,mass,expected,nudge}=P, nearest=[...sims].sort((a,b)=>b.sim-a.sim);
+    const confidence=mass>=2.5&&scored.length>=8?'high':mass>=1.2?'medium':'low';
+
+    // The most similar wine they've scored, when it's genuinely close in style.
+    const near=nearest.find(x=>x.styleSim!=null&&x.styleSim>=0.6);
+    if(near) reasons.push({kind:'similar',tone:tone(near.w.rating),weight:2+near.styleSim,
+      text:`Closest in style to ${near.w.name}, which you scored ${near.w.rating}${near.w.buy_again?' and would buy again':''}.`});
+
+    // The traits that separate their 90+ wines from the rest (WineDNA's signals) nudge the
+    // prediction by up to two points each and become reasons.
+    const signalPts=P.signals.map(({s,towardLoved,pts})=>{
+      const A=WineDNA.AXES[s.axis];
+      reasons.push({kind:'signal',tone:towardLoved?'good':'bad',weight:3*Math.abs(s.r)+1,
+        text:towardLoved?`${A.name}: your 90+ ${L} lean ${s.adj}, and so does this one.`:`${A.name}: your 90+ ${L} lean ${s.adj}; this one doesn't.`});
+      return {text:`${A.name}: your 90+ ${L} lean ${s.adj}${towardLoved?', and so does this one':'; this one doesn\'t'}`,pts};
+    });
+
+    const e=Math.round(expected+nudge);
+    // The % ranks this prediction among the predictions for the wines of this type they've
+    // scored (each against the rest): "80%" means it looks better for them than 80% of their
+    // reds. Predictions made from a whole history bunch up near their average, so ranking them
+    // against each other, not against their raw scores, is what lets a wine stand out.
+    const ref=this._reference(p,scored);
+    // Smoothed, not a raw rank: those predictions sit close together, and half a point shouldn't
+    // jump the % by twenty. Where it sits on a normal curve fitted to them (spread at least
+    // REF_SD_FLOOR points).
+    const refMean=WineDNA._mean(ref), refSd=Math.max(this.REF_SD_FLOOR,Math.sqrt(WineDNA._mean(ref.map(v=>(v-refMean)**2))));
+    const rank=ref.length?1/(1+Math.exp(-1.702*(expected+nudge-refMean)/refSd)):0.5;
+    const verdict=rank>=0.8&&e>=ParkerScale.LOVED?'hit'
+      :e<ParkerScale.DISLIKED||(rank<0.2&&e<ParkerScale.LOVED)?'miss'
+      :rank>=0.55||e>=ParkerScale.LOVED?'good':'mixed';
+    // Kept inside the verdict's band so the number and the words never disagree.
+    const [lo,hi]=this.PCT_BANDS[verdict];
+    const pct=Math.max(lo,Math.min(hi,Math.round(rank*100)));
+    const spreadAll=Math.sqrt(WineDNA._mean(scored.map(w=>(w.rating-avg)**2)));
+    const nMean=mass?sims.reduce((t,x)=>t+x.sim*x.w.rating,0)/mass:avg;
+    const spreadNear=mass?Math.sqrt(sims.reduce((t,x)=>t+x.sim*(x.w.rating-nMean)**2,0)/mass):spreadAll;
+    const basis=`Based on the ${WineDNA.noun(typeKey,scored.length)} you've scored`;
+    const styleT=style?tally(w=>{ const x=sims.find(y=>y.w===w); return !!x&&x.styleSim!=null&&x.styleSim>=0.5; }):null;
+    const breakdown=this._breakdown({nearest,n:scored.length,nMean,spreadNear,avg,spreadAll,rank,refN:ref.length,e,pct,signalPts,L,style,styleT,gT,grapeLabel,grapeName,typical,rT,regionName:this._regionName(wine)});
+    return {...base,verdict,...this.VERDICTS[verdict],pct,expected:e,expectedLabel:ParkerScale.label(e),confidence,breakdown,breakdownLabel:L,
+      reasons:reasons.sort((a,b)=>b.weight-a.weight).slice(0,3),
+      // One number on screen (the match %); the prediction is said in Parker-band words.
+      summary:`${basis}, we think you'd rate it ${ParkerScale.label(e)}.${confidence==='low'?' It\'s a rough guess: nothing you\'ve scored is very like it.':''}`};
+  },
+
+  /* The predicted score for one wine from the scored wines of its type: every one counts,
+     weighted by how alike it is (style, grape, region, buy again), pulled toward their average
+     when the evidence is thin, then nudged by WineDNA's signals. */
+  _predict(wine,scored,avg,signals){
+    const axes=(WineDNA.AXES_FOR[this._typeKey(wine)]||[]).filter(k=>typeof WineDNA.axisValue(wine,k)==='number');
+    const grapes=this._grapes(wine), region=this._region(wine);
     const sims=scored.map(w=>{
       const shared=axes.filter(k=>typeof WineDNA.axisValue(w,k)==='number');
       let styleSim=null;
@@ -109,73 +165,43 @@ const TasteMatch = {
         const d=Math.sqrt(WineDNA._mean(shared.map(k=>(WineDNA.axisValue(wine,k)-WineDNA.axisValue(w,k))**2)));
         styleSim=Math.exp(-((d/this.STYLE_SCALE)**2));
       }
+      const styleW=styleSim==null?this.NO_STYLE_SIM:this.STYLE_FLOOR+(1-this.STYLE_FLOOR)*styleSim;
       const sameGrape=[...this._grapes(w)].some(g=>grapes.has(g));
       const sameRegion=!!region&&this._region(w)===region;
-      // A wine they'd buy again is a stronger signal than a score alone.
-      const sim=(styleSim??this.NO_STYLE_SIM)*(sameGrape?2:1)*(sameRegion?1.5:1)*(w.buy_again?1.5:1);
+      const sim=styleW*(sameGrape?this.GRAPE_X:1)*(sameRegion?this.REGION_X:1)*(w.buy_again?this.BUY_X:1);
       return {w,sim,styleSim,sameGrape,sameRegion};
     });
-    const avg=WineDNA._mean(scored.map(w=>w.rating));
-    // Only the closest wines speak: averaging the whole history pulls every prediction to their
-    // average, which made nearly everything "Likely a favourite" for a generous scorer.
-    // Every wine nearly as similar as the closest counts (at least K, at most K_MAX), so equally
-    // relevant wines go in together and a small change in the label's style estimates can't swap
-    // one of them out and swing the %.
-    const ranked=[...sims].sort((a,b)=>b.sim-a.sim), topSim=ranked.length?ranked[0].sim:0;
-    const nearest=ranked.filter((x,i)=>i<this.K||(i<this.K_MAX&&x.sim>=topSim*this.NEAR_FRAC));
-    const mass=nearest.reduce((s,x)=>s+x.sim,0);
-    const expected=(nearest.reduce((s,x)=>s+x.sim*x.w.rating,0)+this.PRIOR*avg)/(mass+this.PRIOR);
-    const confidence=mass>=2.5&&scored.length>=8?'high':mass>=1.2?'medium':'low';
-
-    // The most similar wine they've scored, when it's genuinely close in style.
-    const near=[...sims].filter(x=>x.styleSim!=null&&x.styleSim>=0.6).sort((a,b)=>b.sim-a.sim)[0];
-    if(near) reasons.push({kind:'similar',tone:tone(near.w.rating),weight:2+near.styleSim,
-      text:`Closest in style to ${near.w.name}, which you scored ${near.w.rating}${near.w.buy_again?' and would buy again':''}.`});
-
-    // The traits that separate their 90+ wines from the rest (WineDNA's signals): each one nudges
-    // the expectation by up to two points and becomes a reason.
-    let nudge=0; const signalPts=[];
-    p.signals.forEach(s=>{
+    const mass=sims.reduce((t,x)=>t+x.sim,0);
+    const expected=(sims.reduce((t,x)=>t+x.sim*x.w.rating,0)+this.PRIOR*avg)/(mass+this.PRIOR);
+    let nudge=0; const sig=[];
+    (signals||[]).forEach(s=>{
       const v=WineDNA.axisValue(wine,s.axis); if(typeof v!=='number') return;
-      const A=WineDNA.AXES[s.axis], towardLoved=Math.abs(v-s.lovedMean)<=Math.abs(v-s.restMean);
+      const towardLoved=Math.abs(v-s.lovedMean)<=Math.abs(v-s.restMean);
       const pts=(towardLoved?2:-2)*Math.min(1,Math.abs(s.r));
-      nudge+=pts; signalPts.push({text:`${A.name}: your 90+ ${L} lean ${s.adj}${towardLoved?', and so does this one':'; this one doesn\'t'}`,pts});
-      reasons.push({kind:'signal',tone:towardLoved?'good':'bad',weight:3*Math.abs(s.r)+1,
-        text:towardLoved?`${A.name}: your 90+ ${L} lean ${s.adj}, and so does this one.`:`${A.name}: your 90+ ${L} lean ${s.adj}; this one doesn't.`});
+      nudge+=pts; sig.push({s,towardLoved,pts});
     });
-
-    const e=Math.round(expected+nudge);
-    // The verdict and the % are relative to how they score: for someone whose reds average 90, a
-    // predicted 90 is an ordinary night, not "Likely a favourite". z is how far above their own
-    // average (in their own spread, never under SD_FLOOR points) we expect this one to land.
-    // The yardstick is halfway between how widely they score overall and how closely the wines
-    // it's built from agree: three close matches scored 93–99 make a surer call than 80 and 100.
-    const spreadAll=Math.sqrt(WineDNA._mean(scored.map(w=>(w.rating-avg)**2)));
-    const nMean=mass?nearest.reduce((s,x)=>s+x.sim*x.w.rating,0)/mass:avg;
-    const spreadNear=mass?Math.sqrt(nearest.reduce((s,x)=>s+x.sim*(x.w.rating-nMean)**2,0)/mass):spreadAll;
-    const sd=Math.max(this.SD_FLOOR,(spreadAll+spreadNear)/2);
-    const z=(expected+nudge-avg)/sd;
-    const verdict=z>=0.5&&e>=ParkerScale.LOVED?'hit'
-      :e<ParkerScale.DISLIKED||(z<=-1&&e<ParkerScale.LOVED)?'miss'
-      :z>=0.25||e>=ParkerScale.LOVED?'good':'mixed';
-    // The chance it beats their typical bottle (normal curve on z), kept inside the verdict's band
-    // so the number and the words never disagree.
-    const [lo,hi]=this.PCT_BANDS[verdict];
-    const pct=Math.max(lo,Math.min(hi,Math.round(100/(1+Math.exp(-2.5*z)))));
-    const basis=`Based on the ${WineDNA.noun(typeKey,scored.length)} you've scored`;
-    const styleT=style?tally(w=>{ const x=sims.find(y=>y.w===w); return !!x&&x.styleSim!=null&&x.styleSim>=0.5; }):null;
-    const breakdown=this._breakdown({nearest,avg,spreadAll,sd,z,e,pct,signalPts,L,style,styleT,gT,grapeLabel,grapeName,typical,rT,regionName:this._regionName(wine)});
-    return {...base,verdict,...this.VERDICTS[verdict],pct,expected:e,expectedLabel:ParkerScale.label(e),confidence,breakdown,breakdownLabel:L,
-      reasons:reasons.sort((a,b)=>b.weight-a.weight).slice(0,3),
-      // One number on screen (the match %); the prediction is said in Parker-band words.
-      summary:`${basis}, we think you'd rate it ${ParkerScale.label(e)}.${confidence==='low'?' It\'s a rough guess: nothing you\'ve scored is very like it.':''}`};
+    return {sims,mass,expected,nudge,signals:sig};
+  },
+  /* What we'd predict for each wine of this type they've scored, from the rest: the yardstick the
+     % ranks a new wine against. Cached per history, since a wine list asks for it many times. */
+  _refCache:new Map(),
+  _reference(p,scored){
+    const sig=scored.map(w=>this._key(w)+':'+w.rating+':'+(w.buy_again?1:0)).join('|')+'#'+[this.STYLE_SCALE,this.STYLE_FLOOR,this.GRAPE_X,this.REGION_X,this.BUY_X,this.PRIOR].join(',');
+    if(this._refCache.has(sig)) return this._refCache.get(sig);
+    const out=scored.map((w,i)=>{
+      const rest=scored.filter((_,j)=>j!==i), a=WineDNA._mean(rest.map(x=>x.rating));
+      const r=this._predict(w,rest,a,p.signals); return r.expected+r.nudge;
+    });
+    if(this._refCache.size>20) this._refCache.clear();
+    this._refCache.set(sig,out);
+    return out;
   },
 
   /* "Why N%?" in plain terms: which things about this wine lift the prediction above their average
      for the type and which hold it back, each from their own scores (its grape, its region, its
      style, and the traits their 90+ wines share), then the wines most like it as the evidence,
      and how the prediction becomes the %. */
-  _breakdown({nearest,avg,spreadAll,sd,z,e,pct,signalPts,L,style,styleT,gT,grapeLabel,grapeName,typical,rT,regionName}){
+  _breakdown({nearest,n,nMean,spreadNear,avg,spreadAll,rank,refN,e,pct,signalPts,L,style,styleT,gT,grapeLabel,grapeName,typical,rT,regionName}){
     const avgR=Math.round(avg), up=[], down=[], even=[];
     const put=(diff,text)=>(diff>=1.5?up:diff<=-1.5?down:even).push({text,diff:Math.round(diff)});
     const your=(t,what)=>`your ${t.n===1?'one':t.n} ${what} ${t.n===1?'scored':'average'} ${t.avg}`;
@@ -185,15 +211,15 @@ const TasteMatch = {
     if(style&&styleT) put(styleT.avg-avg,`Its style (${style.toLowerCase()}): ${your(styleT,`${L} like that`)}`);
     signalPts.forEach(x=>(x.pts>0?up:down).push({text:x.text,diff:x.pts}));
     up.sort((a,b)=>b.diff-a.diff); down.sort((a,b)=>a.diff-b.diff);
-    const closest=nearest.length?`The ${L} you've scored most like it: ${nearest.map(x=>`${x.w.name} (${x.w.rating})`).join(', ')}.`:'';
-    const gap=e-avgR, rs=nearest.map(x=>x.w.rating), lo=Math.min(...rs), hi=Math.max(...rs);
-    const agree=nearest.length>1?(hi-lo<=6?`The ${L} most like it agree closely (${lo}–${hi}), so we're fairly sure.`
-      :hi-lo>=15?`The ${L} most like it disagree (${lo}–${hi}), so it's less certain.`:`The ${L} most like it scored ${lo}–${hi}.`):'';
-    const step=Math.abs(z)<0.25?'about your usual':Math.abs(z)<0.5?'a small step':Math.abs(z)<1?'a clear step':'a big step';
-    const need=Math.ceil(avg+0.88*sd); // where the % reaches 90 (2.5·z ≈ 2.2)
-    const pctWhy=gap===0?`We predict ${e}, right on your average of ${avgR} for ${L}, so ${pct}%.`
-      :`We predict ${e}, ${Math.abs(gap)} point${Math.abs(gap)===1?'':'s'} ${gap>0?'above':'below'} your average of ${avgR} for ${L}, where your scores usually vary by about ${Math.round(spreadAll)} points. ${agree} Together that's ${step} ${gap>0?'up':'down'}: ${pct}%.`
-        +(pct<90&&need<=100&&gap>0?` A prediction of ${need} or more would be 90%+.`:'');
+    const top=nearest.slice(0,3);
+    const closest=top.length?`All ${n} ${L} you've scored count, the ones most like it most: ${top.map(x=>`${x.w.name} (${x.w.rating})`).join(', ')}.`:'';
+    const gap=e-avgR, lo=Math.max(50,Math.round(nMean-spreadNear)), hi=Math.min(100,Math.round(nMean+spreadNear));
+    const agree=n>1?(hi-lo<=8?`The ${L} most like it mostly scored ${lo}–${hi}, close together, so we're fairly sure.`
+      :hi-lo>=18?`The ${L} most like it scored anywhere from ${lo} to ${hi}, so it's less certain.`:`The ${L} most like it mostly scored ${lo}–${hi}.`):'';
+    const share=Math.round(rank*100);
+    const pctWhy=`We predict you'd score it ${e} (your ${L} average ${avgR}). ${agree} `
+      +(share>=50?`That's higher than we'd predict for ${share}% of the ${refN} ${L} you've scored`:`That's lower than we'd predict for ${100-share}% of the ${refN} ${L} you've scored`)
+      +(pct!==share?`, so ${pct}% (${e>=ParkerScale.LOVED&&pct>share?`anything we expect you to score 90+ is at least a good bet`:e<ParkerScale.DISLIKED&&pct<share?`anything we expect under 80 is at most ${pct}%`:`kept in line with the verdict`}).`:`: ${pct}%.`);
     return {avg:avgR,up,down,even,closest,predicted:e,pctWhy};
   },
 

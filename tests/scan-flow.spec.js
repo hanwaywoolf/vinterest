@@ -577,11 +577,12 @@ test('"Why N%?" says which of the wine\'s traits bring it up or hold it back, in
   expect(out.up.join(' | ')).toContain('Its style (full body');
   // Every wine here is Tuscan, so the region tells us nothing.
   expect(out.even).toContain('Tuscany: your 7 from there average 90');
-  expect(out.closest).toMatch(/most like it: Close [ABC] \(\d+\), Close [ABC]/);
-  // Close matches that agree make a surer call than the user's wide overall range alone.
-  expect(out.why).toContain('agree closely (93–99)');
+  // Every scored wine counts; the ones most like it are named as the evidence.
+  expect(out.closest).toMatch(/^All 7 reds you've scored count, the ones most like it most: Close [ABC] \(\d+\), Close [ABC]/);
+  // The % ranks the prediction among what we'd predict for their other reds.
+  expect(out.why).toMatch(/We predict you'd score it \d+ .* than we'd predict for \d+% of the 7 reds you've scored/);
   expect(out.verdict).toBe('hit');
-  expect(out.pct).toBeGreaterThanOrEqual(85);
+  expect(out.pct).toBeGreaterThanOrEqual(80);
 });
 
 test('a wine far above their usual spend is called out, and the match doesn\'t change', async ({ context, page }) => {
