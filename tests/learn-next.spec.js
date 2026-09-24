@@ -121,15 +121,15 @@ test('"buy again" is used: WineDNA shortlist, the match reasons and the sommelie
   expect(prompts.some((p) => p.includes('Banda Azul Rioja') && p.includes('would buy again'))).toBe(true);
 });
 
-test('after a scan, Learn about it sits beside Rate it and Save for later, above style and price', async ({ context, page }) => {
+test('after a scan, Learn about it leads the next steps, above Rate it, Save for later, style and price', async ({ context, page }) => {
   await newUser(context, page);
   await scan(page);
   const root = page.locator('#root');
   const y = async (t) => (await root.getByText(t, { exact: true }).first().boundingBox()).y;
   const [learn, rate, save, style] = [await y('Learn about it'), await y('Rate it'), await y('Save for later'), await y('Style')];
-  expect(Math.abs(learn - rate)).toBeLessThan(2);
-  expect(Math.abs(learn - save)).toBeLessThan(2);
-  expect(learn).toBeLessThan(style);
+  expect(learn).toBeLessThan(rate);
+  expect(rate).toBeLessThan(save);
+  expect(save).toBeLessThan(style);
   await root.getByText('Learn about it', { exact: true }).click();
   await expect(root).toContainText('How we got this');
 });
