@@ -55,7 +55,13 @@ const WineDNA = {
     'mourvedre':'Mourvèdre','cot':'Malbec','côt':'Malbec','spätburgunder':'Pinot Noir','spatburgunder':'Pinot Noir','pinot nero':'Pinot Noir',
     'mazuelo':'Carignan','cariñena':'Carignan','carignane':'Carignan','montepulciano d\'abruzzo':'Montepulciano','plavac':'Plavac Mali','mlavac':'Plavac Mali',
     'blaufränkisch':'Blaufränkisch','lemberger':'Blaufränkisch','alvarinho':'Albariño','albarino':'Albariño','gruner veltliner':'Grüner Veltliner',
-    'ugni blanc':'Trebbiano','moscato':'Muscat','moscatel':'Muscat','sémillon':'Sémillon','semillon':'Sémillon'},
+    'ugni blanc':'Trebbiano','moscato':'Muscat','moscatel':'Muscat','sémillon':'Sémillon','semillon':'Sémillon',
+    // Local names and clones: Brunello's "Sangiovese Grosso" and Montepulciano's "Prugnolo Gentile" are Sangiovese.
+    'sangiovese grosso':'Sangiovese','brunello':'Sangiovese','prugnolo gentile':'Sangiovese','prugnolo':'Sangiovese','morellino':'Sangiovese',
+    'nielluccio':'Sangiovese','sangioveto':'Sangiovese','sangiovese piccolo':'Sangiovese','chiavennasca':'Nebbiolo','spanna':'Nebbiolo',
+    'tinta del pais':'Tempranillo','tinta del país':'Tempranillo','tinta fina':'Tempranillo','ull de llebre':'Tempranillo','aragonez':'Tempranillo',
+    'grenache noir':'Grenache','garnacha negra':'Grenache','blauburgunder':'Pinot Noir','pinot noir précoce':'Pinot Noir','weissburgunder':'Pinot Blanc',
+    'pinot bianco':'Pinot Blanc','fumé blanc':'Sauvignon Blanc','fume blanc':'Sauvignon Blanc','steen':'Chenin Blanc','pinot grigio ramato':'Pinot Grigio'},
   /* The one name a grape goes by everywhere (WineDNA, matching, unlocks, quizzes, articles, XP):
      label synonyms first ("Shiraz" is Syrah, "Pinot Gris" is Pinot Grigio), then the spelling
      on the 50-grape Learn list, ignoring case and accents ("Gewurztraminer", "Albarino"), so a

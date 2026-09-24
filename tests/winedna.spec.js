@@ -153,3 +153,18 @@ test('wines named in WineDNA open their details', async ({ page }) => {
   await expect(root.getByText('Details', { exact: true })).toBeVisible();
   await expect(root).toContainText(name);
 });
+
+test('local grape names and clones go by their variety: Sangiovese Grosso is Sangiovese', async ({ page }) => {
+  await page.goto('http://localhost:4173/?demo=1#home');
+  const out = await page.evaluate(() => [
+    ['Sangiovese Grosso', 'Prugnolo Gentile', 'Spanna', 'Tinta del País', 'Weissburgunder', 'Steen'].map((g) => WineDNA.grape(g)),
+    GrapeUnlocks.key('Sangiovese Grosso'),
+    TasteMatch.assess({ name: 'Brunello di Montalcino', type: 'red', grapes: ['Sangiovese Grosso'], body: 0.8, tannins: 0.8, acidity: 0.75 },
+      [...WineHistory.getAll(), ...[90, 92, 94].map((r, i) => ({ name: `Chianti ${i}`, type: 'red', grapes: ['Sangiovese'], rating: r, body: 0.6, tannins: 0.7, acidity: 0.8 }))])
+      .reasons.map((r) => r.text).join(' '),
+  ]);
+  expect(out[0]).toEqual(['Sangiovese', 'Sangiovese', 'Nebbiolo', 'Tempranillo', 'Pinot Blanc', 'Chenin Blanc']);
+  expect(out[1]).toBe('Sangiovese');
+  expect(out[2]).toContain('Sangiovese Grosso (Sangiovese):');
+  expect(out[2]).not.toContain('new grape');
+});
