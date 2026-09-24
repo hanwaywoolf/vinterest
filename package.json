@@ -7,8 +7,7 @@
     "build": "node scripts/build.mjs",
     "serve": "node scripts/serve.mjs dist 4173",
     "test": "playwright test",
-    "test:smoke": "playwright test tests/smoke.spec.js",
-    "deploy": "netlify deploy --prod"
+    "test:smoke": "playwright test tests/smoke.spec.js"
   },
   "keywords": [
     "wine",
