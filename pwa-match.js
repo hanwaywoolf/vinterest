@@ -13,6 +13,8 @@ const TasteMatch = {
   MIN_SCORED:3,     // below this many scored wines of the type: "too early to call"
   STYLE_SCALE:0.2,  // style distance at which similarity falls to about a third
   PRIOR:0.6,        // how hard thin evidence is pulled toward their average
+  K_MAX:8,          // at most this many
+  NEAR_FRAC:0.5,    // "nearly as similar": at least this share of the closest wine's similarity
   K:3,              // predict from this many most-similar scored wines, not all of them
   NO_STYLE_SIM:0.1, // similarity when there's no style to compare (grape/region can still lift it)
   SD_FLOOR:4,       // a user who scores everything 88–90 still needs a few points to stand out
@@ -116,7 +118,11 @@ const TasteMatch = {
     const avg=WineDNA._mean(scored.map(w=>w.rating));
     // Only the closest wines speak: averaging the whole history pulls every prediction to their
     // average, which made nearly everything "Likely a favourite" for a generous scorer.
-    const nearest=[...sims].sort((a,b)=>b.sim-a.sim).slice(0,this.K);
+    // Every wine nearly as similar as the closest counts (at least K, at most K_MAX), so equally
+    // relevant wines go in together and a small change in the label's style estimates can't swap
+    // one of them out and swing the %.
+    const ranked=[...sims].sort((a,b)=>b.sim-a.sim), topSim=ranked.length?ranked[0].sim:0;
+    const nearest=ranked.filter((x,i)=>i<this.K||(i<this.K_MAX&&x.sim>=topSim*this.NEAR_FRAC));
     const mass=nearest.reduce((s,x)=>s+x.sim,0);
     const expected=(nearest.reduce((s,x)=>s+x.sim*x.w.rating,0)+this.PRIOR*avg)/(mass+this.PRIOR);
     const confidence=mass>=2.5&&scored.length>=8?'high':mass>=1.2?'medium':'low';

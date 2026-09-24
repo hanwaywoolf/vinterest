@@ -601,3 +601,29 @@ test('a wine far above their usual spend is called out, and the match doesn\'t c
   expect(out.dearNote.text).toContain('more than any of the reds you\'ve had (the most was $30)');
   expect(out.samePct).toBe(true);
 });
+
+test('a rescan keeps the saved reading of the label, so the same bottle gets the same match', async ({ context, page }) => {
+  await setup(context, page);
+  await page.goto(`${BASE}/?demo=1#home`);
+  const out = await page.evaluate(() => {
+    const saved = { name: 'Brunello Stable Test', producer: 'Biondi-Santi', type: 'red', region: 'Brunello di Montalcino', country: 'Italy', grapes: ['Sangiovese Grosso'], body: 0.9, tannins: 0.85, acidity: 0.8, scan_date: new Date().toISOString() };
+    WineHistory.save([...WineHistory.getAll(), saved]);
+    const rescan = { ...saved, body: 0.75, tannins: 0.7, acidity: 0.85, region: 'Tuscany', price_usd: 180 };
+    const r = ScanFlow.resolve(rescan).wine;
+    const all = WineHistory.getAll();
+    return { body: r.body, region: r.region, price: r.price_usd, same: TasteMatch.assess(r, all).pct === TasteMatch.assess(saved, all).pct };
+  });
+  expect(out).toEqual({ body: 0.9, region: 'Brunello di Montalcino', price: 180, same: true });
+});
+
+test('equally similar wines count together, so a small change in the style estimate doesn\'t swing the match', async ({ context, page }) => {
+  await setup(context, page);
+  await page.goto(`${BASE}/?demo=1#home`);
+  const pcts = await page.evaluate(() => {
+    const mk = (name, rating, b) => ({ name, type: 'red', rating, region: 'Tuscany', grapes: ['Sangiovese'], body: b, tannins: b, acidity: 0.75 });
+    const all = [mk('S1', 95, 0.86), mk('S2', 93, 0.9), mk('S3', 99, 0.88), mk('S4', 87, 0.8), mk('S5', 80, 0.79), mk('S6', 93, 0.82),
+      { name: 'O1', type: 'red', rating: 80, grapes: ['Merlot'], body: 0.4, tannins: 0.4, acidity: 0.5 }, { name: 'O2', type: 'red', rating: 100, grapes: ['Gamay'], body: 0.3, tannins: 0.3, acidity: 0.6 }];
+    return [0.9, 0.85, 0.8].map((b) => TasteMatch.assess({ name: 'Brunello', type: 'red', region: 'Brunello di Montalcino', grapes: ['Sangiovese Grosso'], body: b, tannins: b, acidity: 0.78 }, all).pct);
+  });
+  expect(Math.max(...pcts) - Math.min(...pcts)).toBeLessThanOrEqual(8);
+});

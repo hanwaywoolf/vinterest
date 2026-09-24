@@ -4,12 +4,17 @@
    guess into the "compared with the label" taps the rating step offers. */
 const ScanFlow = {
   /* A fresh scan of a wine already saved under a slightly different name takes the saved
-     identity, so scores and history stay on one entry. */
+     identity, so scores and history stay on one entry. It also keeps the saved reading of the
+     label (style, grapes, region): Claude's estimates vary a little from scan to scan, and the
+     same bottle shouldn't get a different match each time it's scanned. Corrections go through Edit. */
+  STABLE_FIELDS:['type','body','tannins','acidity','sweetness','texture','effervescence','grapes','blend','grapes_basis','region','sub_region','country'],
   resolve(wine){
     if(!wine||!wine.name) return {wine,existing:null};
     const existing=WineHistory.find(wine);
     if(!existing) return {wine,existing:null};
-    return {wine:{...wine,name:existing.name,vintage:existing.vintage},existing};
+    const kept={};
+    this.STABLE_FIELDS.forEach(k=>{ const v=existing[k]; if(v!=null&&v!==''&&!(Array.isArray(v)&&!v.length)) kept[k]=v; });
+    return {wine:{...wine,...kept,name:existing.name,vintage:existing.vintage},existing};
   },
   /* Only a label Claude couldn't read clearly is worth a "Is this it?" check. */
   needsConfirm(wine,source){
