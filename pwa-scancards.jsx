@@ -136,7 +136,7 @@ function useDeckStyle(){
   return s;
 }
 /* After a scan: an "Is this it?" check when the label was hard to read, then the result (match,
-   reasons, style, price, and Rate / Save for later / Tell me about it). The card deck is the
+   reasons, then three equal next steps: Learn about it / Rate it / Save for later, then style and price). The card deck is the
    optional deep dive, opened straight away for people who usually want it. */
 function ScanCardsScreen({nav,back,showPro}){
   const scanData=React.useMemo(()=>{
@@ -339,6 +339,38 @@ function ScanResult({wine,match,curr,scanData,existingRating,nav,showPro,view,se
       </div>}
     </Card>
 
+    {view==='rate'
+      ? <Card style={{padding:16}}><RatingPanel wine={wine} existingRating={existingRating} nav={nav} showPro={showPro} curr={curr} onRated={onRated} onSaveForLater={existingRating?null:onSaveForLater}/></Card>
+      : view==='saved'
+        ? <><Card style={{padding:16,display:'flex',flexDirection:'column',gap:10,alignItems:'center',textAlign:'center'}}>
+            <div style={{width:48,height:48,borderRadius:24,background:C.crSoft,display:'flex',alignItems:'center',justifyContent:'center'}}><Icon n="check" sz={22} col={C.cr}/></div>
+            <div style={{fontSize:18,fontWeight:800,color:C.ink,fontFamily:C.P}}>Saved for later</div>
+            <div style={{fontSize:15,color:C.ink2,fontFamily:C.P,lineHeight:1.5}}>It won't count towards your WineDNA until you buy or taste it. Next time you open the app we'll ask whether you bought it.</div>
+          </Card>
+          <Card style={{padding:16}}><KeepLearning wine={wine} nav={nav} showPro={showPro} intro="Shopping? Learn a little about it before you decide."/></Card>
+          <div style={{display:'flex',gap:10}}>
+            <Btn full onClick={()=>nav('mywines')}>My Wines</Btn>
+            <Btn primary full onClick={()=>nav('camera')}>Scan another</Btn>
+          </div></>
+        : <div>
+            {/* Three equal next steps, straight under the match: learning about the wine is as easy
+                to reach as rating or saving it. */}
+            <div style={{fontSize:13,fontWeight:700,color:C.mid,letterSpacing:'0.07em',textTransform:'uppercase',fontFamily:C.P,margin:'2px 2px 8px'}}>What next?</div>
+            <div style={{display:'grid',gridTemplateColumns:existingRating?'1fr 1fr':'1fr 1fr 1fr',gap:8}}>
+              {[
+                {key:'learn',icon:'book',label:'Learn about it',sub:'Story, taste, region and grape',on:onDeck},
+                {key:'rate',icon:'star',label:existingRating?`Re-rate it (${existingRating})`:'Rate it',sub:existingRating?'Changed your mind?':'I\'ve tasted it',on:()=>{ ScanFlow.recordPath('quick'); setView('rate'); }},
+                ...(existingRating?[]:[{key:'save',icon:'bookmark',label:'Save for later',sub:'Shopping or not tasted yet',on:onSaveForLater}]),
+              ].map(x=>(
+                <div key={x.key} role="button" onClick={x.on} style={{background:C.white,border:`1.5px solid ${C.crDim}`,borderRadius:14,padding:'14px 8px',display:'flex',flexDirection:'column',alignItems:'center',gap:6,textAlign:'center',cursor:'pointer',boxShadow:'0 1px 3px rgba(0,0,0,0.04)'}}>
+                  <div style={{width:40,height:40,borderRadius:20,background:C.crSoft,display:'flex',alignItems:'center',justifyContent:'center'}}><Icon n={x.icon} sz={19} col={C.cr}/></div>
+                  <div style={{fontSize:15,fontWeight:800,color:C.ink,fontFamily:C.P,lineHeight:1.2}}>{x.label}</div>
+                  <div style={{fontSize:12,color:C.mid,fontFamily:C.P,lineHeight:1.35}}>{x.sub}</div>
+                </div>
+              ))}
+            </div>
+          </div>}
+
     {(match&&match.style||shop||list)&&<Card style={{padding:16,display:'flex',flexDirection:'column',gap:10}}>
       {match&&match.style&&<div>
         <div style={{...sub,marginBottom:4}}>Style</div>
@@ -365,31 +397,6 @@ function ScanResult({wine,match,curr,scanData,existingRating,nav,showPro,view,se
       </div>}
     </Card>}
 
-    {view==='rate'
-      ? <Card style={{padding:16}}><RatingPanel wine={wine} existingRating={existingRating} nav={nav} showPro={showPro} curr={curr} onRated={onRated} onSaveForLater={existingRating?null:onSaveForLater}/></Card>
-      : view==='saved'
-        ? <><Card style={{padding:16,display:'flex',flexDirection:'column',gap:10,alignItems:'center',textAlign:'center'}}>
-            <div style={{width:48,height:48,borderRadius:24,background:C.crSoft,display:'flex',alignItems:'center',justifyContent:'center'}}><Icon n="check" sz={22} col={C.cr}/></div>
-            <div style={{fontSize:18,fontWeight:800,color:C.ink,fontFamily:C.P}}>Saved for later</div>
-            <div style={{fontSize:15,color:C.ink2,fontFamily:C.P,lineHeight:1.5}}>It won't count towards your WineDNA until you buy or taste it. Next time you open the app we'll ask whether you bought it.</div>
-          </Card>
-          <Card style={{padding:16}}><KeepLearning wine={wine} nav={nav} showPro={showPro} intro="Shopping? Learn a little about it before you decide."/></Card>
-          <div style={{display:'flex',gap:10}}>
-            <Btn full onClick={()=>nav('mywines')}>My Wines</Btn>
-            <Btn primary full onClick={()=>nav('camera')}>Scan another</Btn>
-          </div></>
-        : <>
-            <Btn primary full onClick={()=>{ ScanFlow.recordPath('quick'); setView('rate'); }}>{existingRating?`Re-rate it (${existingRating})`:'I\'ve tasted it: rate it'}</Btn>
-            {!existingRating&&<Btn full onClick={onSaveForLater}>Save for later</Btn>}
-            <Card onClick={onDeck} style={{padding:'14px 16px',display:'flex',alignItems:'center',gap:12,cursor:'pointer'}}>
-              <div style={{width:40,height:40,borderRadius:12,background:C.crSoft,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><Icon n="book" sz={19} col={C.cr}/></div>
-              <div style={{flex:1,minWidth:0}}>
-                <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>Tell me about it</div>
-                <div style={{fontSize:13,color:C.mid,fontFamily:C.P,lineHeight:1.4}}>The story, where it's from, how to taste it and what to say about it</div>
-              </div>
-              <Icon n="chevron" sz={15} col={C.mid}/>
-            </Card>
-          </>}
   </div>;
 }
 

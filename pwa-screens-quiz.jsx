@@ -507,15 +507,19 @@ function QuizHubScreen({nav,back,showPro}){
           </div>
         </div>
 
-        <div style={zoneLabel}>Tracks</div>
-        <div style={{background:C.white,borderRadius:16,border:`1px solid ${C.line}`,padding:'14px 16px',display:'flex',alignItems:'center',gap:12,opacity:0.6,marginTop:8}}>
-          <div style={{width:42,height:42,borderRadius:12,background:C.offWhite,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><Icon n="list" sz={19} col={C.mid}/></div>
-          <div style={{flex:1}}>
-            <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>Multi-part courses</div>
-            <div style={{fontSize:14,color:C.mid,fontFamily:C.P}}>Coming soon</div>
+        <div style={zoneLabel}>Courses</div>
+        {[{icon:'globe',title:'Country courses',sub:'A whole country in one course: its regions, grapes, local wines and labels.'},
+          {icon:'map',title:'Travel prep',sub:'Tell us where you\'re going and we\'ll build a course and wine picks for your trip.'}].map(c=>(
+          <div key={c.title} style={{background:C.white,borderRadius:16,border:`1px solid ${C.line}`,padding:'14px 16px',display:'flex',alignItems:'center',gap:12,opacity:0.7,marginTop:-6}}>
+            <div style={{width:42,height:42,borderRadius:12,background:C.offWhite,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><Icon n={c.icon} sz={19} col={C.mid}/></div>
+            <div style={{flex:1}}>
+              <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>{c.title}</div>
+              <div style={{fontSize:14,color:C.mid,fontFamily:C.P,lineHeight:1.4}}>{c.sub}</div>
+              <div style={{fontSize:12,fontWeight:700,color:C.amber,fontFamily:C.P,marginTop:3}}>Coming soon</div>
+            </div>
+            <ProBadge/>
           </div>
-          <ProBadge/>
-        </div>
+        ))}
 
         <div style={{height:8}}/>
         <div onClick={()=>{localStorage.removeItem(XPSystem.KEY);setXpData(XPSystem.fresh());}} style={{textAlign:'center',padding:'8px',cursor:'pointer'}}>

@@ -104,7 +104,7 @@ test('no camera: the shutter never saves a sample wine, and a library photo scan
   expect(saved.confidence).toBe('high');
 
   // Rate it, then the optional tasting details save straight away.
-  await root.getByText('I\'ve tasted it: rate it').click();
+  await root.getByText('Rate it', { exact: true }).click();
   await root.getByText('90', { exact: true }).click();
   await root.getByText('Save rating').click();
   await expect(root).toContainText('Scored 90 · Outstanding');
@@ -205,7 +205,7 @@ test('after a couple of deck visits the deck opens straight after a scan', async
   await expect(root).toContainText('How we got this');
   // Back from the deck goes to the one-screen result.
   await page.locator('#root div[style*="border-radius: 17px"]').first().click();
-  await expect(root).toContainText('Tell me about it');
+  await expect(root).toContainText('Learn about it');
 });
 
 const LIST_ABROAD = { wines: [{ n: 'Pauillac Test', t: 'red', r: 'Bordeaux', c: 'France', v: 2016, p: 'BOTTLE:60', g: 'Cabernet Sauvignon', s: '885' }] };
@@ -251,7 +251,7 @@ test('rating a scanned wine does not count as a second scan', async ({ context, 
   await page.goto(`${BASE}/?demo=1#camera`);
   await page.getByTestId('scan-file').setInputFiles({ name: 'label.png', mimeType: 'image/png', buffer: PNG });
   const root = page.locator('#root');
-  await root.getByText('I\'ve tasted it: rate it').click();
+  await root.getByText('Rate it', { exact: true }).click();
   await root.getByText('90', { exact: true }).click();
   await root.getByText('Save rating').click();
   await expect(root).toContainText('Scored 90');

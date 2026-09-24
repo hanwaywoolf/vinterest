@@ -45,7 +45,7 @@ test('the 904 bug: first scan opens Rioja and Tempranillo; paying £90 sets the 
   const root = page.locator('#root');
   // Scanning alone opens the region and the grape, before any rating.
   expect(await page.evaluate(() => [RegionUnlocks.isUnlocked('Rioja'), GrapeUnlocks.isUnlocked('Tempranillo')])).toEqual([true, true]);
-  await root.getByText('I\'ve tasted it: rate it').click();
+  await root.getByText('Rate it', { exact: true }).click();
   await root.getByText('95', { exact: true }).click();
   await root.getByText('Save rating').click();
   // The tasting questions teach the words.
@@ -90,7 +90,7 @@ test('every wine type has its own basics; beginners see the tasting questions fo
   await scan(page);
   const root = page.locator('#root');
   expect(await page.evaluate(() => ['red', 'white', 'rose', 'sparkling', 'orange', 'dessert', 'fortified'].map((t) => !!QUIZ_TOPICS.find((x) => x.id === LearnNext.TYPE_TOPIC[t])))).toEqual(Array(7).fill(true));
-  await root.getByText('I\'ve tasted it: rate it').click();
+  await root.getByText('Rate it', { exact: true }).click();
   await root.getByText('90', { exact: true }).click();
   await root.getByText('Save rating').click();
   await expect(root).not.toContainText('What did you notice?');
@@ -119,4 +119,17 @@ test('"buy again" is used: WineDNA shortlist, the match reasons and the sommelie
   await expect(page.locator('#root')).toContainText('Worth buying again');
   await expect(page.locator('#root')).toContainText('Banda Azul Rioja');
   expect(prompts.some((p) => p.includes('Banda Azul Rioja') && p.includes('would buy again'))).toBe(true);
+});
+
+test('after a scan, Learn about it sits beside Rate it and Save for later, above style and price', async ({ context, page }) => {
+  await newUser(context, page);
+  await scan(page);
+  const root = page.locator('#root');
+  const y = async (t) => (await root.getByText(t, { exact: true }).first().boundingBox()).y;
+  const [learn, rate, save, style] = [await y('Learn about it'), await y('Rate it'), await y('Save for later'), await y('Style')];
+  expect(Math.abs(learn - rate)).toBeLessThan(2);
+  expect(Math.abs(learn - save)).toBeLessThan(2);
+  expect(learn).toBeLessThan(style);
+  await root.getByText('Learn about it', { exact: true }).click();
+  await expect(root).toContainText('How we got this');
 });
