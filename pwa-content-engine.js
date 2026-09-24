@@ -369,7 +369,7 @@ const ContentEngine = {
     wines.forEach(w=>{
       const reg=Regions.of(w); if(reg) regionCounts[reg]=(regionCounts[reg]||0)+1;
       const t=(w.type||'').toLowerCase(); if(t) typeCounts[t]=(typeCounts[t]||0)+1;
-      (w.grapes||[]).forEach(g=>{if(g) grapeCounts[g]=(grapeCounts[g]||0)+1;});
+      new Set((w.grapes||[]).map(g=>WineDNA.grape(g)).filter(Boolean)).forEach(g=>{ grapeCounts[g]=(grapeCounts[g]||0)+1; });
       if(w.producer) producerCounts[w.producer]=(producerCounts[w.producer]||0)+1;
     });
 
@@ -448,7 +448,7 @@ const ContentEngine = {
       const b=this.compareRegion(ev.subject,wines); if(b) s.regionB=b;
     }
     if(ev.event==='new_type') s.type=ev.subject[0].toUpperCase()+ev.subject.slice(1);
-    if(ev.event==='grape_multi'){ s.grape=ev.subject; s.count=wines.filter(w=>(w.grapes||[]).includes(ev.subject)).length; }
+    if(ev.event==='grape_multi'){ s.grape=ev.subject; s.count=wines.filter(w=>(w.grapes||[]).some(g=>WineDNA.grape(g)===ev.subject)).length; }
     if(ev.event==='producer_repeat'){ s.producer=ev.subject; s.count=ev.meta.count; }
     if(ev.event==='trait_signature') s.trait=ev.subject;
     if(ev.event==='contradiction'){ s.trait=this.TRAIT_LABEL[ev.meta.trait]; s.rating=ev.meta.rating; s.wineName=ev.meta.wineName; }
@@ -514,7 +514,7 @@ const ContentEngine = {
     if(!archetype) return;
     const key='grapeunlock:'+grape;
     if(ExposureLedger.has(key)) return;
-    const slots={grape,count:Math.max(1,wines.filter(w=>(w.grapes||[]).includes(grape)).length)};
+    const slots={grape,count:Math.max(1,wines.filter(w=>(w.grapes||[]).some(g=>WineDNA.grape(g)===grape)).length)};
     const stub={
       id:'ev_'+key.replace(/[^a-z0-9]+/gi,'_'),
       archetypeId:archetype.id,

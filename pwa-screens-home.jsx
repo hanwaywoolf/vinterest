@@ -6,7 +6,7 @@ function _dnaPromptPool(wines){
   if(wines&&wines.length>=3){
     const grapeCounts={},regionCounts={},typeCounts={};
     wines.forEach(w=>{
-      (w.grapes||[]).forEach(g=>{if(g)grapeCounts[g]=(grapeCounts[g]||0)+1;});
+      new Set((w.grapes||[]).map(g=>WineDNA.grape(g)).filter(Boolean)).forEach(g=>{grapeCounts[g]=(grapeCounts[g]||0)+1;});
       if(w.region) regionCounts[w.region]=(regionCounts[w.region]||0)+1;
       const t=(w.type||'').toLowerCase();if(t) typeCounts[t]=(typeCounts[t]||0)+1;
     });

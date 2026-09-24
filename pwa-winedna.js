@@ -51,15 +51,22 @@ const WineDNA = {
                    low:'Gentler bubbles: Moscato d\'Asti, Pét-Nat or a softer Prosecco.'},
   },
   GRAPE_SYNONYMS:{'garnacha':'Grenache','garnacha tinta':'Grenache','cannonau':'Grenache','shiraz':'Syrah','tinta roriz':'Tempranillo','tinto fino':'Tempranillo',
-    'tinta de toro':'Tempranillo','cencibel':'Tempranillo','primitivo':'Zinfandel','pinot grigio':'Pinot Gris','monastrell':'Mourvèdre','mataro':'Mourvèdre',
+    'tinta de toro':'Tempranillo','cencibel':'Tempranillo','pinot gris':'Pinot Grigio','grauburgunder':'Pinot Grigio','monastrell':'Mourvèdre','mataro':'Mourvèdre',
     'mourvedre':'Mourvèdre','cot':'Malbec','côt':'Malbec','spätburgunder':'Pinot Noir','spatburgunder':'Pinot Noir','pinot nero':'Pinot Noir',
     'mazuelo':'Carignan','cariñena':'Carignan','carignane':'Carignan','montepulciano d\'abruzzo':'Montepulciano','plavac':'Plavac Mali','mlavac':'Plavac Mali',
     'blaufränkisch':'Blaufränkisch','lemberger':'Blaufränkisch','alvarinho':'Albariño','albarino':'Albariño','gruner veltliner':'Grüner Veltliner',
     'ugni blanc':'Trebbiano','moscato':'Muscat','moscatel':'Muscat','sémillon':'Sémillon','semillon':'Sémillon'},
+  /* The one name a grape goes by everywhere (WineDNA, matching, unlocks, quizzes, articles, XP):
+     label synonyms first ("Shiraz" is Syrah, "Pinot Gris" is Pinot Grigio), then the spelling
+     on the 50-grape Learn list, ignoring case and accents ("Gewurztraminer", "Albarino"), so a
+     grape never shows under one name in WineDNA and another in Learn. */
+  _fold(s){ return String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim(); },
   grape(g){
     const raw=(g||'').trim(), k=raw.toLowerCase(); if(!k) return null;
-    if(this.GRAPE_SYNONYMS[k]) return this.GRAPE_SYNONYMS[k];
-    return raw===k?raw.split(' ').map(w=>w.charAt(0).toUpperCase()+w.slice(1)).join(' '):raw;
+    const syn=this.GRAPE_SYNONYMS[k]||this.GRAPE_SYNONYMS[this._fold(k)];
+    const name=syn||(raw===k?raw.split(' ').map(w=>w.charAt(0).toUpperCase()+w.slice(1)).join(' '):raw);
+    const list=typeof GRAPE_ALLOWLIST!=='undefined'?GRAPE_ALLOWLIST:[];
+    return list.find(x=>this._fold(x)===this._fold(name))||name;
   },
   /* Grapes are variety names only. Scans sometimes return phrases ("Blend - likely Grenache,
      Syrah, or Cinsault", "Red blend", "Mostly Merlot"): split them into varieties, and note

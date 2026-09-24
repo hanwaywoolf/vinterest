@@ -38,8 +38,8 @@ const GrapeUnlocks = Object.assign(_accountStore('vinterest_grape_unlocks_v1'), 
      Syrah, "Garnacha" is Grenache, "Pinot Gris" is Pinot Grigio. null if it isn't one of the 50. */
   key(grape){
     if(!grape) return null;
-    const c=WineDNA.grape(grape), low=String(grape).toLowerCase();
-    return GRAPE_ALLOWLIST.find(g=>g.toLowerCase()===low)||GRAPE_ALLOWLIST.find(g=>WineDNA.grape(g)===c)||null;
+    const c=WineDNA.grape(grape);
+    return GRAPE_ALLOWLIST.includes(c)?c:null;
   },
   unlockViaRating(grape){
     grape=this.key(grape);

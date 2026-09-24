@@ -102,3 +102,22 @@ test('rating controls use the Parker scale', async ({ page }) => {
   await expect(root).toContainText('100-point scale: 96+ Extraordinary');
   for (const n of ['70', '85', '95']) await expect(root.getByText(n, { exact: true }).first()).toBeVisible();
 });
+
+test('one name per grape: WineDNA, Learn unlocks, articles and XP agree', async ({ page }) => {
+  await page.goto(`${BASE}/?demo=1#home`);
+  const out = await page.evaluate(() => {
+    const self = GRAPE_ALLOWLIST.filter((g) => WineDNA.grape(g) !== g);
+    const syn = [...new Set(Object.values(WineDNA.GRAPE_SYNONYMS))].filter((t) => !GRAPE_ALLOWLIST.includes(t));
+    const labels = ['Pinot Gris', 'pinot grigio', 'Grauburgunder', 'Shiraz', 'Gewurztraminer', 'Albarino', 'Mourvedre', 'Primitivo', 'Zinfandel']
+      .map((g) => [WineDNA.grape(g), GrapeUnlocks.key(g)]);
+    return { self, syn, labels };
+  });
+  // Every Learn grape keeps its own name, and every synonym lands on a Learn grape, except two
+  // that aren't among the 50 (so they have no quiz, and nothing to disagree with).
+  expect(out.self).toEqual([]);
+  expect(out.syn.sort()).toEqual(['Blaufränkisch', 'Plavac Mali']);
+  expect(out.labels).toEqual([
+    ['Pinot Grigio', 'Pinot Grigio'], ['Pinot Grigio', 'Pinot Grigio'], ['Pinot Grigio', 'Pinot Grigio'], ['Syrah', 'Syrah'],
+    ['Gewürztraminer', 'Gewürztraminer'], ['Albariño', 'Albariño'], ['Mourvèdre', 'Mourvèdre'], ['Primitivo', 'Primitivo'], ['Zinfandel', 'Zinfandel'],
+  ]);
+});
