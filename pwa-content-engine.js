@@ -42,12 +42,19 @@ const Regions = {
   },
   resolve(w){ if(!w) return null; return this._match(w.sub_region)||this._match(w.region)||this._match(w.name)||null; },
   /* The region's country flag (emoji), for colour on region quizzes. '' when unknown. */
-  ISO:{'Spain':'ES','France':'FR','USA':'US','United States':'US','Italy':'IT','New Zealand':'NZ','Portugal':'PT','Germany':'DE','Austria':'AT',
-    'Hungary':'HU','Greece':'GR','Canada':'CA','Chile':'CL','Argentina':'AR','Australia':'AU','South Africa':'ZA','Croatia':'HR'},
-  flag(region){
-    const c=(KNOWLEDGE.regions[region]||{}).country, iso=c&&this.ISO[c];
+  ISO:{'Spain':'ES','France':'FR','USA':'US','United States':'US','United States of America':'US','Italy':'IT','New Zealand':'NZ','Portugal':'PT','Germany':'DE','Austria':'AT',
+    'Hungary':'HU','Greece':'GR','Canada':'CA','Chile':'CL','Argentina':'AR','Australia':'AU','South Africa':'ZA','Croatia':'HR',
+    'England':'GB','United Kingdom':'GB','UK':'GB','Wales':'GB','Switzerland':'CH','Slovenia':'SI','Georgia':'GE','Lebanon':'LB','Israel':'IL',
+    'Uruguay':'UY','Brazil':'BR','Mexico':'MX','Romania':'RO','Moldova':'MD','Bulgaria':'BG','Serbia':'RS','Czech Republic':'CZ','Czechia':'CZ',
+    'Slovakia':'SK','Turkey':'TR','Cyprus':'CY','Luxembourg':'LU','Belgium':'BE','Netherlands':'NL','Denmark':'DK','Sweden':'SE','China':'CN',
+    'Japan':'JP','India':'IN','Armenia':'AM','North Macedonia':'MK','Montenegro':'ME','Bosnia and Herzegovina':'BA','Ukraine':'UA','Morocco':'MA'},
+  countryFlag(country){
+    const iso=country&&this.ISO[String(country).trim()];
     return iso?String.fromCodePoint(...[...iso].map(ch=>0x1F1E6+ch.charCodeAt(0)-65)):'';
   },
+  flag(region){ return this.countryFlag((KNOWLEDGE.regions[region]||{}).country); },
+  /* A wine's flag: its own country, else the country of the region it's filed under. */
+  wineFlag(w){ return (w&&this.countryFlag(w.country))||this.flag(this.resolve(w)); },
   /* The region a wine is filed under for learning: the knowledge-base region when there is one. */
   of(w){ return this.resolve(w)||(w&&w.region)||null; },
 };

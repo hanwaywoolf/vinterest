@@ -119,8 +119,12 @@ function WineDetailScreen({back,nav,showPro}){
           </div>
         </div>
         <div style={{display:'flex',gap:14,alignItems:'flex-end',marginBottom:14}}>
-          <div style={{width:52,height:74,borderRadius:10,background:C.crSoft,flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center',border:`1px solid ${C.crDim}`}}>
+          <div style={{width:52,height:74,borderRadius:10,background:C.crSoft,flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center',border:`1px solid ${C.crDim}`,position:'relative'}}>
             <Icon n="wine" sz={24} col={C.cr}/>
+            {/* The wine's country flag (Regions.wineFlag), badged on the bottle */}
+            {wine&&Regions.wineFlag(wine)&&<div role="img" aria-label={wine.country||'Country'} style={{position:'absolute',right:-9,bottom:-9,width:30,height:30,borderRadius:15,background:C.white,border:`1px solid ${C.line}`,boxShadow:'0 1px 3px rgba(0,0,0,0.12)',display:'flex',alignItems:'center',justifyContent:'center'}}>
+              <span style={{fontSize:'18px',lineHeight:1}}>{Regions.wineFlag(wine)}</span>
+            </div>}
           </div>
           <div>
             <div style={{fontSize:24,fontWeight:700,color:C.ink,fontFamily:C.P,lineHeight:1.15}}>{wine?.name||'Château Margaux'}</div>

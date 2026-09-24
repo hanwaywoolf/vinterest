@@ -44,6 +44,9 @@ test('region quizzes show their country\'s flag', async ({ page }) => {
   const flags = await page.evaluate(() => ({ rioja: Regions.flag('Rioja'), napa: Regions.flag('Napa Valley'), mendoza: Regions.flag('Mendoza'), none: Regions.flag('Nowhere'),
     missing: Object.keys(KNOWLEDGE.regions).filter((r) => !Regions.flag(r)) }));
   expect(flags).toEqual({ rioja: '🇪🇸', napa: '🇺🇸', mendoza: '🇦🇷', none: '', missing: [] });
+  // Wine detail: from the wine's own country, else the region it's filed under.
+  const wine = await page.evaluate(() => [Regions.wineFlag({ country: 'England' }), Regions.wineFlag({ region: 'Rioja Alta' }), Regions.wineFlag({ country: 'Atlantis' })]);
+  expect(wine).toEqual(['🇬🇧', '🇪🇸', '']);
   await page.evaluate(() => localStorage.setItem('vinterest_wineDNA_unlock_seen', '1'));
   await page.reload();
   await expect(page.locator('#root').getByRole('img', { name: 'Spain' }).first()).toBeVisible();
