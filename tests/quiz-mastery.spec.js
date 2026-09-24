@@ -63,7 +63,7 @@ async function answerQuiz(page, pick) {
 async function openRegion(page) {
   await page.goto(`${BASE}/?demo=1#learn`);
   const region = await page.evaluate(() => regionQuizCandidates(WineHistory.getAll())[0]);
-  await root(page).getByText(region, { exact: true }).first().click();
+  await root(page).getByText(`${region} quiz`, { exact: true }).first().click();
   return region;
 }
 
@@ -110,11 +110,11 @@ test('a region completes only when every question is answered correctly, then co
   await expect(root(page)).toContainText(/All \d+ questions answered correctly/);
 
   await page.goto(`${BASE}/?demo=1#learn`);
-  await expect(root(page).getByText(region, { exact: true })).toHaveCount(0); // collapsed by default
+  await expect(root(page).getByText(`${region} quiz`, { exact: true })).toHaveCount(0); // collapsed by default
   await root(page).getByText(/^1 completed — show$/).last().click();
-  await expect(root(page).getByText(region, { exact: true })).toHaveCount(1);
+  await expect(root(page).getByText(`${region} quiz`, { exact: true })).toHaveCount(1);
   await root(page).getByText('Reset', { exact: true }).last().click();
-  await expect(root(page).getByText(region, { exact: true })).toHaveCount(1);
+  await expect(root(page).getByText(`${region} quiz`, { exact: true })).toHaveCount(1);
   expect(await page.evaluate((r) => RegionQuizBank.progress(r).correct, region)).toBe(0);
   expect(errors).toEqual([]);
 });

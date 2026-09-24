@@ -367,7 +367,7 @@ function QuizHubScreen({nav,back,showPro}){
           ))}
           {coverage.unlocked&&(
             <>
-              <div style={{fontSize:13,fontWeight:600,color:C.mid,fontFamily:C.P,textTransform:'uppercase',letterSpacing:'0.06em',marginTop:6}}>Personalised For You</div>
+              <div style={{...zoneLabel,marginTop:14}}>Practice</div>
               <div onClick={()=>startQuiz({mode:'concept'})} style={{background:C.white,borderRadius:14,padding:'12px 14px',display:'flex',alignItems:'center',gap:12,cursor:'pointer',border:`1px solid ${C.line}`}}>
                 <div style={{width:42,height:42,borderRadius:12,background:C.crSoft,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,border:`1px solid ${C.crDim}`}}><Icon n="brain" sz={20} col={C.cr}/></div>
                 <div style={{flex:1}}>
@@ -392,7 +392,10 @@ function QuizHubScreen({nav,back,showPro}){
           {(quizRegions.length>0||doneRegions.length>0||proRegions.length>0)&&(
             <>
               {(quizRegions.length>0||doneRegions.length>0||proRegions.length>0)&&(
-                <div ref={secRefs.regions} style={{...zoneLabel,marginTop:14,scrollMarginTop:56}}>Your Regions</div>
+                <div ref={secRefs.regions} style={{marginTop:14,scrollMarginTop:56}}>
+                  <div style={zoneLabel}>Region quizzes</div>
+                  <div style={{fontSize:14,color:C.mid,fontFamily:C.P,lineHeight:1.45,marginTop:2}}>One for each region you've scanned: its grapes, climate, rules and how to read its labels.</div>
+                </div>
               )}
               <ShowMore items={[...quizRegions.map(r=>({r})),...proRegions.map(r=>({r,pro:true}))]} limit={3} noun="regions" render={({r:region,pro})=>pro?(
                 <div key={region} onClick={()=>showPro('regions')} style={{background:C.white,borderRadius:14,padding:'12px 14px',display:'flex',alignItems:'center',gap:12,cursor:'pointer',border:`1px solid ${C.line}`}}>
@@ -408,12 +411,12 @@ function QuizHubScreen({nav,back,showPro}){
                 // Progress only once the region's generated bank exists, so the count doesn't
                 // jump from the fallback's /6 to /15 when it arrives.
                 const p=RegionQuizBank.get(region)&&RegionQuizBank.progress(region);
-                const sub=[info&&info.keyGrapes&&info.keyGrapes[0],info&&info.classification,p&&p.correct>0&&`${p.correct}/${p.total} correct`].filter(Boolean).join(' · ');
+                const sub=p&&p.correct>0?`${p.correct} of ${p.total} answered`:'5 questions a round';
                 return(
                   <div key={region} onClick={()=>handleRegionTap(region)} style={{background:C.white,borderRadius:14,padding:'12px 14px',display:'flex',alignItems:'center',gap:12,cursor:'pointer',border:`1px solid ${C.line}`}}>
                     <div style={{width:42,height:42,borderRadius:12,background:C.offWhite,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><Icon n="map" sz={20} col={C.ink}/></div>
                     <div style={{flex:1}}>
-                      <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>{region}</div>
+                      <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>{region} quiz</div>
                       <div style={{fontSize:14,color:C.mid,fontFamily:C.P}}>{sub}</div>
                     </div>
                     {regionLoading===region
@@ -427,7 +430,7 @@ function QuizHubScreen({nav,back,showPro}){
                 <div key={region} onClick={()=>handleRegionTap(region)} style={{background:C.white,borderRadius:14,padding:'12px 14px',display:'flex',alignItems:'center',gap:12,cursor:'pointer',border:`1px solid ${C.line}`,opacity:0.7}}>
                   <div style={{width:42,height:42,borderRadius:12,background:C.offWhite,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><Icon n="map" sz={20} col={C.ink}/></div>
                   <div style={{flex:1}}>
-                    <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>{region}</div>
+                    <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>{region} quiz</div>
                     <div style={{fontSize:14,color:C.mid,fontFamily:C.P}}>Every question answered · tap to practise</div>
                   </div>
                   <CompletedMark onReset={()=>resetProgress(region,()=>RegionQuizBank.reset(region))}/>
@@ -437,8 +440,9 @@ function QuizHubScreen({nav,back,showPro}){
           )}
         </div>
 
-        <div ref={secRefs.grapes} style={{...zoneLabel,scrollMarginTop:56}}>Your Grapes</div>
-        <div style={{fontSize:14,color:C.mid,fontFamily:C.P,marginTop:2}}>{unlockedGrapes.length}/{GRAPE_ALLOWLIST.length} unlocked · {isPro?'tap any grape for its quiz; locked ones unlock as you tap':`${unlockedGrapes.length?'tap one for its quiz · ':''}scan or rate a wine to unlock more (${FREE_GRAPE_CAP} free)`}</div>
+        <div ref={secRefs.grapes} style={{...zoneLabel,scrollMarginTop:56}}>Grape quizzes</div>
+        <div style={{fontSize:14,color:C.mid,fontFamily:C.P,lineHeight:1.45,marginTop:2}}>Tap a grape for its quiz: what it tastes like, where it grows and how to spot it on a label.</div>
+        <div style={{fontSize:13,fontWeight:600,color:C.ink2,fontFamily:C.P,marginTop:4}}>{unlockedGrapes.length} of {GRAPE_ALLOWLIST.length} unlocked · {isPro?'locked ones unlock as you tap':`scan or rate a wine to unlock more (${FREE_GRAPE_CAP} free)`}</div>
         <div style={{display:'flex',flexWrap:'wrap',gap:8,marginTop:8}}>
         {(grapesExpanded?unlockedGrapes:unlockedGrapes.slice(0,GRAPE_PILLS)).map(g=>{
           const loading=grapeLoading===g;
