@@ -37,10 +37,11 @@ test('TasteMatch: list wines are told apart, dislikes count, and thin history sa
     return { barolo: [barolo.verdict, barolo.pct, barolo.reasons.map((r) => r.text)], rioja: [rioja.verdict, rioja.pct],
       bare: [bare.verdict, bare.pct], white: [white.verdict, white.pct, calcMatchScore({ type: 'white', body: 0.4 }, all)] };
   });
-  // The demo history scored its two Nebbiolos in the low 70s: a Barolo is no "solid match".
-  expect(out.barolo[0]).toBe('mixed');
+  // The demo history scored its two Nebbiolos in the low 70s: a Barolo is probably not for them.
+  expect(out.barolo[0]).toBe('miss');
   expect(out.barolo[2].join(' ')).toContain('Nebbiolo: you\'ve scored 2, averaging 73.');
-  expect(out.rioja[0]).toBe('good');
+  // Tempranillo averages 85 against reds averaging 87: middling for them, not a favourite.
+  expect(out.rioja[0]).toBe('mixed');
   expect(out.rioja[1]).toBeGreaterThan(out.barolo[1]);
   // Nothing to go on: no made-up number.
   expect(out.bare).toEqual(['unknown', null]);
@@ -166,8 +167,8 @@ test('wine list: real match results per wine, and a tapped wine is saved as a sh
   await page.getByTestId('scan-file').setInputFiles({ name: 'list.png', mimeType: 'image/png', buffer: PNG });
   const root = page.locator('#root');
   await expect(root).toContainText('Wine List Results');
+  await expect(root).toContainText('Probably not for you');
   await expect(root).toContainText('Could go either way');
-  await expect(root).toContainText('A good bet');
   await expect(root).toContainText('Too early');
   await root.getByText('Rioja Test Reserva').click();
   await expect(root).toContainText('On this list');
@@ -493,4 +494,22 @@ test('a scan that missed the vintage is the same bottle as the one saved with it
   expect(out.ambiguous).toBe(3);
   expect(out.rescan).toBe(2017);
   expect(out.twoYears).toBe(false);
+});
+
+test('TasteMatch is relative to how they score: a generous scorer isn\'t told everything is a favourite', async ({ context, page }) => {
+  await setup(context, page);
+  await page.goto(`${BASE}/?demo=1#home`);
+  const out = await page.evaluate(() => {
+    const mk = (i, rating, body) => ({ name: `Red ${i}`, type: 'red', rating, body, tannins: body, acidity: 0.5, grapes: [], scan_date: Date.now() - i * 864e5 });
+    // Scores everything 88–92, loves the full-bodied ones most.
+    const all = [mk(1, 88, 0.2), mk(2, 89, 0.25), mk(3, 88, 0.3), mk(4, 90, 0.5), mk(5, 89, 0.45), mk(6, 92, 0.85), mk(7, 92, 0.9), mk(8, 91, 0.8)];
+    const light = TasteMatch.assess({ name: 'Light', type: 'red', body: 0.25, tannins: 0.25, acidity: 0.5 }, all);
+    const full = TasteMatch.assess({ name: 'Full', type: 'red', body: 0.85, tannins: 0.85, acidity: 0.5 }, all);
+    return { light: [light.expected, light.verdict, light.pct], full: [full.expected, full.verdict, full.pct] };
+  });
+  // They'd still rate the light one well, but only the full one is among their favourites.
+  expect(out.light[0]).toBeGreaterThanOrEqual(80);
+  expect(out.light[1]).not.toBe('hit');
+  expect(out.full[1]).toBe('hit');
+  expect(out.full[2] - out.light[2]).toBeGreaterThan(30);
 });

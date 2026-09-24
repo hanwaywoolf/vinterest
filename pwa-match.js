@@ -4,14 +4,19 @@
    same WineDNA profile the WineDNA tab renders, so the two can never disagree.
 
    The prediction is an expected Parker score: a similarity-weighted average of the scores they
-   gave the wines they've scored of this type. Similar style counts, the same grape counts double,
-   the same region half again, and the average is pulled toward their overall average when the
-   evidence is thin. Style figures are Claude's label estimates, adjusted by the user's own
+   gave the K most similar wines they've scored of this type. Similar style counts, the same grape
+   counts double, the same region half again, and the average is pulled toward their overall
+   average when the evidence is thin. The verdict and match % then say where that prediction sits
+   among their own scores, so a generous scorer isn't told everything is a favourite. Style figures are Claude's label estimates, adjusted by the user's own
    "lighter / fuller than the label" taps where they've given them (WineDNA.axisValue). */
 const TasteMatch = {
   MIN_SCORED:3,     // below this many scored wines of the type: "too early to call"
   STYLE_SCALE:0.2,  // style distance at which similarity falls to about a third
   PRIOR:0.6,        // how hard thin evidence is pulled toward their average
+  K:3,              // predict from this many most-similar scored wines, not all of them
+  NO_STYLE_SIM:0.1, // similarity when there's no style to compare (grape/region can still lift it)
+  SD_FLOOR:4,       // a user who scores everything 88–90 still needs a few points to stand out
+  PCT_BANDS:{hit:[77,99],good:[60,76],mixed:[16,59],miss:[5,15]},
   VERDICTS:{
     hit:  {label:'Likely a favourite',   tone:'good'},
     good: {label:'A good bet',           tone:'good'},
@@ -102,12 +107,15 @@ const TasteMatch = {
       const sameGrape=[...this._grapes(w)].some(g=>grapes.has(g));
       const sameRegion=!!region&&this._region(w)===region;
       // A wine they'd buy again is a stronger signal than a score alone.
-      const sim=(styleSim??0.3)*(sameGrape?2:1)*(sameRegion?1.5:1)*(w.buy_again?1.5:1);
+      const sim=(styleSim??this.NO_STYLE_SIM)*(sameGrape?2:1)*(sameRegion?1.5:1)*(w.buy_again?1.5:1);
       return {w,sim,styleSim};
     });
     const avg=WineDNA._mean(scored.map(w=>w.rating));
-    const mass=sims.reduce((s,x)=>s+x.sim,0);
-    const expected=(sims.reduce((s,x)=>s+x.sim*x.w.rating,0)+this.PRIOR*avg)/(mass+this.PRIOR);
+    // Only the closest wines speak: averaging the whole history pulls every prediction to their
+    // average, which made nearly everything "Likely a favourite" for a generous scorer.
+    const nearest=[...sims].sort((a,b)=>b.sim-a.sim).slice(0,this.K);
+    const mass=nearest.reduce((s,x)=>s+x.sim,0);
+    const expected=(nearest.reduce((s,x)=>s+x.sim*x.w.rating,0)+this.PRIOR*avg)/(mass+this.PRIOR);
     const confidence=mass>=2.5&&scored.length>=8?'high':mass>=1.2?'medium':'low';
 
     // The most similar wine they've scored, when it's genuinely close in style.
@@ -127,8 +135,18 @@ const TasteMatch = {
     });
 
     const e=Math.round(expected+nudge);
-    const verdict=e>=ParkerScale.LOVED?'hit':e>=85?'good':e>=ParkerScale.DISLIKED?'mixed':'miss';
-    const pct=Math.max(5,Math.min(99,Math.round((expected+nudge-60)/35*100)));
+    // The verdict and the % are relative to how they score: for someone whose reds average 90, a
+    // predicted 90 is an ordinary night, not "Likely a favourite". z is how far above their own
+    // average (in their own spread, never under SD_FLOOR points) we expect this one to land.
+    const sd=Math.max(this.SD_FLOOR,Math.sqrt(WineDNA._mean(scored.map(w=>(w.rating-avg)**2))));
+    const z=(expected+nudge-avg)/sd;
+    const verdict=z>=0.75&&e>=85?'hit'
+      :e<ParkerScale.DISLIKED||(z<=-1&&e<ParkerScale.LOVED)?'miss'
+      :z>=0.25||e>=ParkerScale.LOVED?'good':'mixed';
+    // The chance it beats their typical bottle (normal curve on z), kept inside the verdict's band
+    // so the number and the words never disagree.
+    const [lo,hi]=this.PCT_BANDS[verdict];
+    const pct=Math.max(lo,Math.min(hi,Math.round(100/(1+Math.exp(-1.702*z)))));
     const basis=`Based on the ${WineDNA.noun(typeKey,scored.length)} you've scored`;
     return {...base,verdict,...this.VERDICTS[verdict],pct,expected:e,expectedLabel:ParkerScale.label(e),confidence,
       reasons:reasons.sort((a,b)=>b.weight-a.weight).slice(0,3),
