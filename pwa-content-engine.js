@@ -642,7 +642,7 @@ const ContentEngine = {
     const s=slots||{};
     const hit=w=>s.wineName?w.name===s.wineName
       :s.region?Regions.of(w)===s.region
-      :s.grape?(w.grapes||[]).some(g=>WineDNA.grape(g)===s.grape)
+      :s.grape?(w.grapes||[]).some(g=>WineDNA.grape(g)===WineDNA.grape(s.grape))
       :s.producer?w.producer===s.producer
       :s.type?WineDNA._t(w.type)===WineDNA._t(s.type)
       :false;
@@ -653,10 +653,21 @@ const ContentEngine = {
     const s=(stub&&stub.slots)||{};
     const w=this._related(s,wines||WineHistory.getAll())[0];
     if(w) return w.rating>0?`Because you gave ${w.name} ${/^(8|11|18)/.test(String(w.rating))?'an':'a'} ${w.rating}`:`Because you scanned ${w.name}`;
+    if(s.grape) return `Because you unlocked ${s.grape}`;
+    if(s.region) return `Because you unlocked ${s.region}`;
     if(s.conceptLabel) return 'Because a quiz question caught you out';
     if(s.descriptor) return `Because "${s.descriptor}" came up in your tasting notes`;
     if(s.trait) return 'Because of a pattern in your scores';
     return 'Picked from your WineDNA';
+  },
+  /* The kind of wine a piece is about: its type slot, its bottles, or its grape's colour. null for
+     pieces about an idea (a concept, a tasting word) rather than a wine. */
+  _subjectType(slots,rel){
+    const s=slots||{};
+    if(s.type) return WineDNA._t(s.type);
+    if(rel&&rel.length) return WineDNA._t(rel[0].type);
+    if(s.grape&&typeof GRAPE_TYPES!=='undefined'){ const k=GrapeUnlocks.key(s.grape); if(k&&GRAPE_TYPES[k]) return GRAPE_TYPES[k]; }
+    return null;
   },
   _typeLabel(k){ const t=typeof _TYPES!=='undefined'&&_TYPES.find(x=>x.key===k); return t?t.label:k; },
   readerBrief(stub,wines){
@@ -675,12 +686,22 @@ const ContentEngine = {
     };
     if(rel.length) out.push('Their own bottles on this subject:\n'+rel.slice(0,5).map(line).join('\n'));
     else out.push('They have no bottles on this subject yet: it is new to them.');
-    const counts={}; wines.forEach(w=>{ const t=WineDNA._t(w.type); if(t) counts[t]=(counts[t]||0)+1; });
-    const typeKey=(rel[0]&&WineDNA._t(rel[0].type))||Object.entries(counts).sort((a,b)=>b[1]-a[1]).map(e=>e[0])[0];
-    if(typeKey){
-      const p=WineDNA.profile(typeKey,wines,this._typeLabel(typeKey));
-      if(p.wines.length) out.push(`Their WineDNA for ${p.label.toLowerCase()}:\n`+WineDNA.summaryFacts(p));
-      const budget=SommelierScript.budget(p.wines,rc); if(budget) out.push(`What they usually spend: ${budget}.`);
+    // Their WineDNA only for the kind of wine the piece is about: a Pinot Grigio piece draws on
+    // their whites, never their reds. Only "Entering <type>" is about the contrast, so it also
+    // gets what they mostly drink.
+    const typeKey=this._subjectType(stub&&stub.slots,rel);
+    const dna=(k,heading)=>{
+      const p=WineDNA.profile(k,wines,this._typeLabel(k));
+      if(!p.wines.length) return false;
+      out.push(`${heading||`Their WineDNA for ${p.label.toLowerCase()}`}:\n`+WineDNA.summaryFacts(p));
+      const budget=SommelierScript.budget(p.wines,rc); if(budget) out.push(`What they usually spend on ${p.label.toLowerCase()}: ${budget}.`);
+      return true;
+    };
+    if(typeKey&&!dna(typeKey)) out.push(`They haven't had any ${this._typeLabel(typeKey).toLowerCase()} yet, so there's no WineDNA for it.`);
+    if(stub&&stub.archetypeId==='new_type_entry'){
+      const counts={}; wines.forEach(w=>{ const t=WineDNA._t(w.type); if(t&&t!==typeKey) counts[t]=(counts[t]||0)+1; });
+      const usual=Object.entries(counts).sort((a,b)=>b[1]-a[1]).map(e=>e[0])[0];
+      if(usual) dna(usual,`What they mostly drink (${this._typeLabel(usual).toLowerCase()}), to contrast with`);
     }
     return out.join('\n\n');
   },

@@ -106,3 +106,40 @@ test('Written for you shows on the Learn shelf, WineDNA and the wine detail Lear
   await expect(root).toContainText('Keep learning');
   await expect(root).toContainText('written from your WineDNA');
 });
+
+test('a white grape piece draws on their whites, never their reds', async ({ context, page }) => {
+  await user(context, page);
+  await page.goto(`${BASE}/#home`);
+  const out = await page.evaluate(() => {
+    const pg = { id: 'g1', archetypeId: 'grape_unlock_intro', slots: { grape: 'Pinot Grigio' } };
+    const none = { brief: ContentEngine.readerBrief(pg), because: ContentEngine.because(pg) };
+    // A bottle labelled Pinot Gris is the same grape.
+    const all = WineHistory.getAll();
+    all.push({ name: 'Trimbach Pinot Gris', region: 'Alsace', country: 'France', type: 'white', grapes: ['Pinot Gris'], rating: 90, body: 0.6, acidity: 0.6, scanned_at: '2026-06-04T12:00:00Z' });
+    WineHistory.save(all);
+    const one = { brief: ContentEngine.readerBrief(pg), because: ContentEngine.because(pg) };
+    const entering = ContentEngine.readerBrief({ id: 't', archetypeId: 'new_type_entry', slots: { type: 'White' } });
+    return { none, one, entering };
+  });
+  expect(out.none.because).toBe('Because you unlocked Pinot Grigio');
+  expect(out.none.brief).not.toMatch(/reds|Tempranillo|Gran Reserva/);
+  expect(out.none.brief).not.toContain('Cloudy Bay');
+  expect(out.none.brief).toContain('WineDNA for whites');
+  expect(out.one.because).toBe('Because you gave Trimbach Pinot Gris a 90');
+  expect(out.one.brief).toContain('Trimbach Pinot Gris (Alsace), scored 90');
+  expect(out.one.brief).not.toMatch(/reds|Gran Reserva/);
+  // "Entering white" is about the contrast, so it does get what they mostly drink.
+  expect(out.entering).toContain('What they mostly drink (reds)');
+});
+
+test('a piece about a type they have never had says so instead of borrowing another type', async ({ context, page }) => {
+  await user(context, page);
+  await page.goto(`${BASE}/#home`);
+  const brief = await page.evaluate(() => {
+    WineHistory.save(WineHistory.getAll().filter((w) => w.type !== 'white'));
+    return ContentEngine.readerBrief({ id: 'g2', archetypeId: 'grape_unlock_intro', slots: { grape: 'Riesling' } });
+  });
+  expect(brief).toContain('They have no bottles on this subject yet');
+  expect(brief).toContain("They haven't had any whites yet");
+  expect(brief).not.toMatch(/reds|Gran Reserva/);
+});

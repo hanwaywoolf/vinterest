@@ -111,7 +111,9 @@ function GenArticleScreen({nav,back}){
   // Cached as {sections, forYou}; articles written before forYou existed are a bare array.
   const [cached,setCached]=React.useState(()=>{
     if(!cacheKey) return null;
-    try{ const c=JSON.parse(localStorage.getItem(cacheKey)||'null'); return Array.isArray(c)?{sections:c}:c; }catch(e){ return null; }
+    // v2: articles written by the first personal brief (a forYou line, no v) could pull in a
+    // different wine type than the piece's, so they're rewritten once.
+    try{ const c=JSON.parse(localStorage.getItem(cacheKey)||'null'); return Array.isArray(c)?{sections:c}:c&&c.forYou&&!c.v?null:c; }catch(e){ return null; }
   });
   const sections=cached&&cached.sections;
   const because=React.useMemo(()=>stub?ContentEngine.because(stub):null,[stub&&stub.id]);
@@ -133,7 +135,7 @@ function GenArticleScreen({nav,back}){
           const s=clean.indexOf('{'),e=clean.lastIndexOf('}');
           if(s>=0&&e>s) clean=clean.slice(s,e+1);
           const parsed=JSON.parse(clean);
-          const out={sections:parsed.sections||[],forYou:typeof parsed.forYou==='string'?parsed.forYou:null};
+          const out={v:2,sections:parsed.sections||[],forYou:typeof parsed.forYou==='string'?parsed.forYou:null};
           localStorage.setItem(cacheKey,JSON.stringify(out));
           setCached(out);
         }catch(err){}
