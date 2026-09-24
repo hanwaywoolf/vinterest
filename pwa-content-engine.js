@@ -41,6 +41,13 @@ const Regions = {
     return hit?hit.key:null;
   },
   resolve(w){ if(!w) return null; return this._match(w.sub_region)||this._match(w.region)||this._match(w.name)||null; },
+  /* The region's country flag (emoji), for colour on region quizzes. '' when unknown. */
+  ISO:{'Spain':'ES','France':'FR','USA':'US','United States':'US','Italy':'IT','New Zealand':'NZ','Portugal':'PT','Germany':'DE','Austria':'AT',
+    'Hungary':'HU','Greece':'GR','Canada':'CA','Chile':'CL','Argentina':'AR','Australia':'AU','South Africa':'ZA','Croatia':'HR'},
+  flag(region){
+    const c=(KNOWLEDGE.regions[region]||{}).country, iso=c&&this.ISO[c];
+    return iso?String.fromCodePoint(...[...iso].map(ch=>0x1F1E6+ch.charCodeAt(0)-65)):'';
+  },
   /* The region a wine is filed under for learning: the knowledge-base region when there is one. */
   of(w){ return this.resolve(w)||(w&&w.region)||null; },
 };

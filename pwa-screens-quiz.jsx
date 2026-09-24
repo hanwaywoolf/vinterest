@@ -81,6 +81,14 @@ function LearnJumpRow({sections,onJump}){
     ))}
   </div>;
 }
+/* A region's country flag in the 42px icon tile (Regions.flag); the map icon when the country is
+   unknown. Locked (Pro) regions show it faded. The flag is a fixed graphic, so its size is px. */
+function RegionFlag({region,locked}){
+  const f=Regions.flag(region);
+  return <div style={{width:42,height:42,borderRadius:12,background:C.offWhite,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,opacity:locked?0.5:1}}>
+    {f?<span role="img" aria-label={(KNOWLEDGE.regions[region]||{}).country} style={{fontSize:'24px',lineHeight:1}}>{f}</span>:<Icon n="map" sz={20} col={C.ink}/>}
+  </div>;
+}
 /* ✓ plus a Reset link, for a completed quiz row. The row itself stays tappable to retake it. */
 function CompletedMark({onReset}){
   return(
@@ -379,7 +387,7 @@ function QuizHubScreen({nav,back,showPro}){
               )}
               <ShowMore items={[...quizRegions.map(r=>({r})),...proRegions.map(r=>({r,pro:true}))]} limit={3} noun="regions" render={({r:region,pro})=>pro?(
                 <div key={region} onClick={()=>showPro('regions')} style={{background:C.white,borderRadius:14,padding:'12px 14px',display:'flex',alignItems:'center',gap:12,cursor:'pointer',border:`1px solid ${C.line}`}}>
-                  <div style={{width:42,height:42,borderRadius:12,background:C.offWhite,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><Icon n="lock" sz={18} col={C.mid}/></div>
+                  <RegionFlag region={region} locked/>
                   <div style={{flex:1}}>
                     <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>{region}</div>
                     <div style={{fontSize:14,color:C.mid,fontFamily:C.P}}>Unlock with Pro</div>
@@ -394,7 +402,7 @@ function QuizHubScreen({nav,back,showPro}){
                 const sub=p&&p.correct>0?`${p.correct} of ${p.total} answered`:'5 questions a round';
                 return(
                   <div key={region} onClick={()=>handleRegionTap(region)} style={{background:C.white,borderRadius:14,padding:'12px 14px',display:'flex',alignItems:'center',gap:12,cursor:'pointer',border:`1px solid ${C.line}`}}>
-                    <div style={{width:42,height:42,borderRadius:12,background:C.offWhite,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><Icon n="map" sz={20} col={C.ink}/></div>
+                    <RegionFlag region={region}/>
                     <div style={{flex:1}}>
                       <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>{region} quiz</div>
                       <div style={{fontSize:14,color:C.mid,fontFamily:C.P}}>{sub}</div>
@@ -408,7 +416,7 @@ function QuizHubScreen({nav,back,showPro}){
               {doneRegions.length>0&&<CompletedToggle count={doneRegions.length} expanded={regionsExpanded} onToggle={()=>setRegionsExpanded(e=>!e)}/>}
               {regionsExpanded&&doneRegions.map(region=>(
                 <div key={region} onClick={()=>handleRegionTap(region)} style={{background:C.white,borderRadius:14,padding:'12px 14px',display:'flex',alignItems:'center',gap:12,cursor:'pointer',border:`1px solid ${C.line}`,opacity:0.7}}>
-                  <div style={{width:42,height:42,borderRadius:12,background:C.offWhite,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><Icon n="map" sz={20} col={C.ink}/></div>
+                  <RegionFlag region={region}/>
                   <div style={{flex:1}}>
                     <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>{region} quiz</div>
                     <div style={{fontSize:14,color:C.mid,fontFamily:C.P}}>Every question answered · tap to practise</div>

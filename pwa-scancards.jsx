@@ -866,7 +866,7 @@ function KeepLearning({wine,nav,showPro,intro}){
     {tiles.map(t=>(
       <div key={t.key} onClick={()=>open(t)} role="button" style={{display:'flex',alignItems:'center',gap:12,padding:'12px 14px',borderRadius:14,background:C.white,border:`1px solid ${C.line}`,cursor:'pointer'}}>
         <div style={{width:40,height:40,borderRadius:12,background:t.locked?C.offWhite:(t.col?t.col+'14':C.crSoft),display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
-          <Icon n={t.locked?'lock':t.icon} sz={19} col={t.locked?C.mid:(t.col||C.cr)}/>
+          {t.kind==='region'&&Regions.flag(t.key.slice(7))?<span role="img" style={{fontSize:'22px',lineHeight:1,opacity:t.locked?0.5:1}}>{Regions.flag(t.key.slice(7))}</span>:<Icon n={t.locked?'lock':t.icon} sz={19} col={t.locked?C.mid:(t.col||C.cr)}/>}
         </div>
         <div style={{flex:1,minWidth:0}}>
           <div style={{fontSize:15,fontWeight:700,color:C.ink,fontFamily:C.P,lineHeight:1.3}}>{t.title}</div>

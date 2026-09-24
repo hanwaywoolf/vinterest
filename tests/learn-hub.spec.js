@@ -38,3 +38,13 @@ test('sections are short, basics follow the wine types, read pieces go to the li
   await expect(root.getByText('Food & Wine', { exact: true })).toBeVisible();
   expect(errors).toEqual([]);
 });
+
+test('region quizzes show their country\'s flag', async ({ page }) => {
+  await page.goto(`${BASE}/?demo=1#learn`);
+  const flags = await page.evaluate(() => ({ rioja: Regions.flag('Rioja'), napa: Regions.flag('Napa Valley'), mendoza: Regions.flag('Mendoza'), none: Regions.flag('Nowhere'),
+    missing: Object.keys(KNOWLEDGE.regions).filter((r) => !Regions.flag(r)) }));
+  expect(flags).toEqual({ rioja: '🇪🇸', napa: '🇺🇸', mendoza: '🇦🇷', none: '', missing: [] });
+  await page.evaluate(() => localStorage.setItem('vinterest_wineDNA_unlock_seen', '1'));
+  await page.reload();
+  await expect(page.locator('#root').getByRole('img', { name: 'Spain' }).first()).toBeVisible();
+});
