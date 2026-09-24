@@ -268,3 +268,27 @@ test('every Concept Check concept has 12 questions', async ({ page }) => {
   const counts = await page.evaluate(() => CONCEPT_TEMPLATES.map((c) => c.templates.length * 2));
   expect(counts).toEqual([12, 12, 12, 12, 12, 12]);
 });
+
+test('a generated bank drops near-duplicates, including a flipped "least likely" copy', async ({ page }) => {
+  await page.goto(`${BASE}/?demo=1#home`);
+  const out = await page.evaluate(() => {
+    const q = (t) => ({ q: t, opts: ['a', 'b', 'c', 'd'], a: 0 });
+    const bank = [
+      q("Which food pairing would best complement Sangiovese's high acidity and savory, earthy edge?"),
+      q("A wine lover describes a Sangiovese as 'savory and earthy.' Which pairing would least likely complement these characteristics?"),
+      q('Which Italian region is most famous for Sangiovese?'),
+      q('What colour is Sangiovese?'),
+      q('Which grape is Brunello di Montalcino made from?'),
+      q('Which grape is Brunello di Montalcino made from, by law?'),
+    ];
+    const numbered = Array.from({ length: 15 }, (_, i) => q(`Sangiovese question ${i + 1}?`));
+    return { kept: QuizMastery.distinct(bank, 'Sangiovese').map((x) => x.q), numbered: QuizMastery.distinct(numbered, 'Sangiovese').length };
+  });
+  expect(out.kept).toEqual([
+    "Which food pairing would best complement Sangiovese's high acidity and savory, earthy edge?",
+    'Which Italian region is most famous for Sangiovese?',
+    'What colour is Sangiovese?',
+    'Which grape is Brunello di Montalcino made from?',
+  ]);
+  expect(out.numbered).toBe(15);
+});

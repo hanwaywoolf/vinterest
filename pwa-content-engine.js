@@ -94,7 +94,8 @@ const RegionQuizBank = {
   _inFlight:new Set(),
   key(region){ return 'vinterest_region_quiz_bank_'+region.replace(/\s+/g,'_'); },
   get(region){
-    try{ const qs=JSON.parse(localStorage.getItem(this.key(region))||'null'); return Array.isArray(qs)&&qs.length>=QUIZ_SIZE?qs:null; }catch(e){ return null; }
+    // Near-duplicates filtered on read, so banks saved before the filter existed are cleaned too.
+    try{ const raw=JSON.parse(localStorage.getItem(this.key(region))||'null'); const qs=Array.isArray(raw)?QuizMastery.distinct(raw,region):null; return qs&&qs.length>=QUIZ_SIZE?qs:null; }catch(e){ return null; }
   },
   // A question is kept only if it's well-formed; a bank with too few survivors isn't cached,
   // so the next tap retries generation rather than locking in a short bank.

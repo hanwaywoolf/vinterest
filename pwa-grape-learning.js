@@ -85,11 +85,11 @@ const _grapeQuizInFlight=new Set();
 function getGrapeQuiz(grape, onReady){
   const key=_grapeQuizCacheKey(grape);
   const cached=localStorage.getItem(key);
-  if(cached){ try{ onReady(JSON.parse(cached)); return; }catch(e){} }
+  if(cached){ const b=grapeQuizBank(grape); if(b){ onReady(b); return; } }
   if(_grapeQuizInFlight.has(grape)){
     const wait=()=>{
-      const c=localStorage.getItem(key);
-      if(c){ try{ onReady(JSON.parse(c)); return; }catch(e){} }
+      const b=localStorage.getItem(key)&&grapeQuizBank(grape);
+      if(b){ onReady(b); return; }
       if(_grapeQuizInFlight.has(grape)) setTimeout(wait,300);
       else onReady(null);
     };
@@ -105,7 +105,7 @@ function getGrapeQuiz(grape, onReady){
       let cleaned=text.replace(/```json|```/g,'').trim();
       const s=cleaned.indexOf('['); const e=cleaned.lastIndexOf(']');
       if(s>=0&&e>s) cleaned=cleaned.slice(s,e+1);
-      const qs=JSON.parse(cleaned);
+      const qs=QuizMastery.distinct(JSON.parse(cleaned),grape);
       localStorage.setItem(key,JSON.stringify(qs));
       onReady(qs);
     })
@@ -114,7 +114,8 @@ function getGrapeQuiz(grape, onReady){
 }
 /* Progress through a grape's cached 15-question bank lives in QuizMastery under 'grape:<name>';
    a grape is complete once every question in its bank has been answered correctly. */
-function grapeQuizBank(grape){ try{ const qs=JSON.parse(localStorage.getItem(_grapeQuizCacheKey(grape))||'null'); return Array.isArray(qs)?qs:null; }catch(e){ return null; } }
+// Near-duplicates are filtered on read too, so banks saved before the filter existed are cleaned.
+function grapeQuizBank(grape){ try{ const qs=JSON.parse(localStorage.getItem(_grapeQuizCacheKey(grape))||'null'); return Array.isArray(qs)?QuizMastery.distinct(qs,grape):null; }catch(e){ return null; } }
 function grapeQuizComplete(grape){ const bank=grapeQuizBank(grape); return !!bank&&QuizMastery.isComplete('grape:'+grape,bank); }
 /* Fire-and-forget: warms the cache so a later tap on this grape is instant. Safe to call redundantly. */
 function prefetchGrapeQuiz(grape){

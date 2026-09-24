@@ -356,19 +356,22 @@ function ScanResult({wine,match,curr,scanData,existingRating,nav,showPro,view,se
             <Btn primary full onClick={()=>nav('camera')}>Scan another</Btn>
           </div></>
         : <div>
-            {/* Three equal next steps, straight under the match: learning about the wine is as easy
-                to reach as rating or saving it. */}
+            {/* Three next steps as full-width rows, straight under the match: learning about the
+                wine is as easy to reach as rating or saving it. */}
             <div style={{fontSize:13,fontWeight:700,color:C.mid,letterSpacing:'0.07em',textTransform:'uppercase',fontFamily:C.P,margin:'2px 2px 8px'}}>What next?</div>
-            <div style={{display:'grid',gridTemplateColumns:existingRating?'1fr 1fr':'1fr 1fr 1fr',gap:8}}>
+            <div style={{display:'flex',flexDirection:'column',gap:8}}>
               {[
                 {key:'learn',icon:'book',label:'Learn about it',sub:'Story, taste, region and grape',on:onDeck},
-                {key:'rate',icon:'star',label:existingRating?`Re-rate it (${existingRating})`:'Rate it',sub:existingRating?'Changed your mind?':'I\'ve tasted it',on:()=>setView('rate')},
-                ...(existingRating?[]:[{key:'save',icon:'bookmark',label:'Save for later',sub:'Shopping or not tasted yet',on:onSaveForLater}]),
+                {key:'rate',icon:'star',label:existingRating?`Re-rate it (${existingRating})`:'Rate it',sub:existingRating?'Changed your mind?':'Score it to sharpen your WineDNA',on:()=>setView('rate')},
+                ...(existingRating?[]:[{key:'save',icon:'bookmark',label:'Save for later',sub:'Shopping, or not tasted yet',on:onSaveForLater}]),
               ].map(x=>(
-                <div key={x.key} role="button" onClick={x.on} style={{background:C.white,border:`1.5px solid ${C.crDim}`,borderRadius:14,padding:'14px 8px',display:'flex',flexDirection:'column',alignItems:'center',gap:6,textAlign:'center',cursor:'pointer',boxShadow:'0 1px 3px rgba(0,0,0,0.04)'}}>
-                  <div style={{width:40,height:40,borderRadius:20,background:C.crSoft,display:'flex',alignItems:'center',justifyContent:'center'}}><Icon n={x.icon} sz={19} col={C.cr}/></div>
-                  <div style={{fontSize:15,fontWeight:800,color:C.ink,fontFamily:C.P,lineHeight:1.2}}>{x.label}</div>
-                  <div style={{fontSize:12,color:C.mid,fontFamily:C.P,lineHeight:1.35}}>{x.sub}</div>
+                <div key={x.key} role="button" onClick={x.on} style={{background:C.white,border:`1.5px solid ${C.crDim}`,borderRadius:14,padding:'12px 14px',display:'flex',alignItems:'center',gap:12,cursor:'pointer',boxShadow:'0 1px 3px rgba(0,0,0,0.04)'}}>
+                  <div style={{width:38,height:38,borderRadius:19,background:C.crSoft,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><Icon n={x.icon} sz={18} col={C.cr}/></div>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontSize:16,fontWeight:800,color:C.ink,fontFamily:C.P,lineHeight:1.25}}>{x.label}</div>
+                    <div style={{fontSize:13,color:C.mid,fontFamily:C.P,lineHeight:1.35}}>{x.sub}</div>
+                  </div>
+                  <Icon n="chevron" sz={14} col={C.mid}/>
                 </div>
               ))}
             </div>
