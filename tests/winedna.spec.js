@@ -121,3 +121,22 @@ test('one name per grape: WineDNA, Learn unlocks, articles and XP agree', async 
     ['Gewürztraminer', 'Gewürztraminer'], ['Albariño', 'Albariño'], ['Mourvèdre', 'Mourvèdre'], ['Primitivo', 'Primitivo'], ['Zinfandel', 'Zinfandel'],
   ]);
 });
+
+test('WineDNA opens on the type they drink most, not the first one ticked at onboarding', async ({ page }) => {
+  await page.goto(`${BASE}/?demo=1#home`);
+  const out = await page.evaluate(() => {
+    UserPrefs.save({ ...UserPrefs.get(), types: ['rose', 'red'] });
+    sessionStorage.removeItem(UserPrefs.TYPE_TAB_KEY);
+    const wines = WineHistory.getAll();
+    const most = UserPrefs.openingType(wines);
+    const none = UserPrefs.openingType([]);
+    UserPrefs.rememberType('white');
+    const picked = UserPrefs.openingType(wines);
+    sessionStorage.removeItem(UserPrefs.TYPE_TAB_KEY);
+    return { most, none, picked };
+  });
+  expect(out).toEqual({ most: 'red', none: 'rose', picked: 'white' });
+  await page.goto(`${BASE}/?demo=1#profile`);
+  const reds = page.locator('#root').getByText('Reds', { exact: true }).first();
+  await expect(reds).toHaveCSS('font-weight', '700');
+});

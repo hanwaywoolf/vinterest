@@ -94,6 +94,18 @@ const UserPrefs = {
   TYPES:['red','white','rose','sparkling','orange','dessert','fortified'],
   types(){ return (this.get().types||[]).filter(t=>this.TYPES.includes(t)); },
   preferredType(){ return this.types()[0]||null; },
+  /* The wine type WineDNA opens on: the one they've actually chosen most (their scans), with
+     their onboarding answer breaking ties and covering someone with no wines yet. A tab they
+     pick is remembered for the rest of the session. */
+  TYPE_TAB_KEY:'vinterest_dna_type',
+  openingType(wines){
+    try{ const s=sessionStorage.getItem(this.TYPE_TAB_KEY); if(s&&(wines||[]).some(w=>WineDNA._t(w.type)===s)) return s; }catch(e){}
+    const counts={}; (wines||[]).filter(w=>WineDNA.chosen(w)).forEach(w=>{ const t=WineDNA._t(w.type); if(t) counts[t]=(counts[t]||0)+1; });
+    const prefs=this.types(), rank=t=>{ const i=prefs.indexOf(t); return i<0?99:i; };
+    const top=Object.keys(counts).sort((a,b)=>counts[b]-counts[a]||rank(a)-rank(b))[0];
+    return top||this.preferredType()||'red';
+  },
+  rememberType(t){ try{ sessionStorage.setItem(this.TYPE_TAB_KEY,t); }catch(e){} },
 
   EXPERIENCE:[{id:'novice',label:'Just getting started',note:'Keep it simple and clear'},{id:'casual',label:'I know what I like',note:'A little more detail'},
     {id:'enthusiast',label:'Pretty into it',note:'Bring on the nuance'},{id:'expert',label:'Borderline obsessed',note:'Full depth, no hand-holding'}],
