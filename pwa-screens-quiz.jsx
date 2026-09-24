@@ -237,7 +237,7 @@ function QuizHubScreen({nav,back,showPro}){
               <Icon n={nextBest.kind==='scan'?'camera':nextBest.kind==='onramp'?'book':(nextBest.stub.iconName||'read')} sz={20} col="rgba(255,255,255,0.7)"/>
             </div>
             <div style={{flex:1}}>
-              <div style={{fontSize:13,fontWeight:600,color:'rgba(255,255,255,0.4)',fontFamily:C.P,textTransform:'uppercase',letterSpacing:'0.06em',marginBottom:3}}>{nextBest.kind==='onramp'?'On-Ramp · '+nextBest.readTime:nextBest.kind==='shelf'?'Quick Read · '+nextBest.stub.readTime:'Free forever'}</div>
+              <div style={{fontSize:13,fontWeight:600,color:'rgba(255,255,255,0.4)',fontFamily:C.P,textTransform:'uppercase',letterSpacing:'0.06em',marginBottom:3}}>{nextBest.kind==='onramp'?'On-Ramp · '+nextBest.readTime:nextBest.kind==='shelf'?'Written for you · '+nextBest.stub.readTime:'Free forever'}</div>
               <div style={{fontSize:16,fontWeight:700,color:'#fff',fontFamily:C.P,lineHeight:1.3,marginBottom:2}}>{nextBest.title}</div>
               <div style={{fontSize:14,color:'rgba(255,255,255,0.5)',fontFamily:C.P,lineHeight:1.4}}>{nextBest.sub}</div>
             </div>
@@ -247,7 +247,8 @@ function QuizHubScreen({nav,back,showPro}){
 
         {article1Done&&(
           <div>
-            <div style={zoneLabel}>Your Shelf</div>
+            <div style={zoneLabel}>Written for you</div>
+            <div style={{fontSize:14,color:C.mid,fontFamily:C.P,lineHeight:1.45,marginTop:4}}>Every piece here is written from your WineDNA: the bottles you've scanned, how you scored them and what you paid. Nobody else gets the same article.</div>
             <div style={{marginTop:8,display:'flex',flexDirection:'column',gap:8}}>
             {(!genStubs||!genStubs.length)&&(
               <div style={{padding:'18px 16px',textAlign:'center',background:C.white,borderRadius:14,border:`1px dashed ${C.line}`}}>
@@ -255,6 +256,7 @@ function QuizHubScreen({nav,back,showPro}){
               </div>
             )}
             {genStubs&&genStubs.map((stub,i)=>{
+              const because=ContentEngine.because(stub,wines);
               const done=!!localStorage.getItem('vinterest_gen_article_'+stub.id+'_done');
               const locked=ContentEngine.stubLocked(stub);
               return(
@@ -264,9 +266,10 @@ function QuizHubScreen({nav,back,showPro}){
                     <Icon n={stub.iconName||'read'} sz={20} col={C.cr}/>
                   </div>
                   <div style={{flex:1}}>
-                    <div style={{fontSize:12,fontWeight:600,color:C.mid,fontFamily:C.P,textTransform:'uppercase',letterSpacing:'0.06em',marginBottom:2}}>{stub.series?`${stub.series} series`:'Quick Read'} · {stub.readTime}</div>
+                    <div style={{fontSize:12,fontWeight:600,color:C.mid,fontFamily:C.P,textTransform:'uppercase',letterSpacing:'0.06em',marginBottom:2}}>{stub.series?`${stub.series} series`:'Written for you'} · {stub.readTime}</div>
                     <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P,lineHeight:1.3}}>{stub.title}</div>
                     <div style={{fontSize:14,color:C.mid,fontFamily:C.P,marginTop:2}}>{stub.subtitle}</div>
+                    <div style={{fontSize:13,fontWeight:600,color:C.cr,fontFamily:C.P,marginTop:4}}>{because}</div>
                   </div>
                   {locked ? <ProBadge/> : done ? <span style={{fontSize:14,fontWeight:700,color:C.green,fontFamily:C.P}}>✓</span> : <Icon n="chevron" sz={13} col={C.mid}/>}
                 </div>

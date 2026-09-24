@@ -445,10 +445,7 @@ const ContentEngine = {
       const match=wines.find(w=>Regions.of(w)===ev.subject&&w.country);
       if(match) s.country=match.country;
       else if(KNOWLEDGE.regions[ev.subject]) s.country=KNOWLEDGE.regions[ev.subject].country;
-      const others={};
-      wines.forEach(w=>{ if(w.region&&w.region!==ev.subject) others[w.region]=(others[w.region]||0)+1; });
-      const entries=Object.entries(others);
-      if(entries.length){ const pick=entries[Math.floor(Math.random()*entries.length)]; s.regionB=pick[0]; }
+      const b=this.compareRegion(ev.subject,wines); if(b) s.regionB=b;
     }
     if(ev.event==='new_type') s.type=ev.subject[0].toUpperCase()+ev.subject.slice(1);
     if(ev.event==='grape_multi'){ s.grape=ev.subject; s.count=wines.filter(w=>(w.grapes||[]).includes(ev.subject)).length; }
@@ -462,14 +459,31 @@ const ContentEngine = {
 
   fillTpl(tpl,slots){ let s=tpl; Object.keys(slots).forEach(k=>{ s=s.split('{{'+k+'}}').join(slots[k]??''); }); return s; },
 
-  pickArchetype(ev, slots){
-    const row=TRIGGERS.find(t=>t.event===ev.event);
-    if(!row) return null;
-    const candidates=row.archetypeIds
-      .map(id=>ARTICLE_ARCHETYPES.find(a=>a.id===id))
-      .filter(a=>a&&a.needs.every(n=>slots[n]!=null&&slots[n]!==''));
+  /* The region a new one is compared with: the knowledge-base region they drink most of the same
+     kind of wine (reds against reds), with 2+ bottles, so "From Rioja to Tuscany" means something.
+     null when there isn't one: a Champagne isn't taught by contrast with their Rioja. */
+  compareRegion(region,wines){
+    const types=new Set((wines||[]).filter(w=>Regions.of(w)===region).map(w=>WineDNA._t(w.type)));
+    const counts={};
+    (wines||[]).forEach(w=>{ const r=Regions.resolve(w); if(r&&r!==region&&types.has(WineDNA._t(w.type))) counts[r]=(counts[r]||0)+1; });
+    const best=Object.entries(counts).filter(([,n])=>n>=2).sort((a,b)=>b[1]-a[1])[0];
+    return best?best[0]:null;
+  },
+
+  /* Which kind of piece to write for an event: the one the shelf has least of, so five new
+     regions become five different kinds of article, not five "Beyond Rioja"s. */
+  _candidates(event,slots){
+    const row=TRIGGERS.find(t=>t.event===event);
+    if(!row) return [];
+    return row.archetypeIds.map(id=>ARTICLE_ARCHETYPES.find(a=>a.id===id)).filter(a=>a&&a.needs.every(n=>slots[n]!=null&&slots[n]!==''));
+  },
+  pickArchetype(ev, slots, stubs){
+    const candidates=this._candidates(ev.event,slots);
     if(!candidates.length) return null;
-    return candidates[Math.floor(Math.random()*candidates.length)];
+    const used=id=>(stubs||[]).filter(s=>s.archetypeId===id).length;
+    const min=Math.min(...candidates.map(a=>used(a.id)));
+    const least=candidates.filter(a=>used(a.id)===min);
+    return least[Math.floor(Math.random()*least.length)];
   },
 
   retrieveFacts(archetype, slots){
@@ -531,7 +545,7 @@ const ContentEngine = {
     const myGrape=Object.entries(grapeCounts).sort((a,b)=>b[1]-a[1])[0];
     const lower=t=>t?t.charAt(0).toLowerCase()+t.slice(1):t;
     if(archetype.id==='new_region_intro'&&region){
-      if(K) return `Home of ${list(K.keyGrapes)}, with a ${lower(K.climate)} climate`;
+      if(K) return `Home of ${list(K.keyGrapes)}. ${K.climate.replace(/\s+—\s+/g,': ').replace(/\.$/,'')}.`;
       if(myGrape) return `Where your ${myGrape[0]} came from, and what the place gives the wine`;
     }
     if(archetype.id==='palate_vs_textbook'&&region){
@@ -540,12 +554,25 @@ const ContentEngine = {
       if(myGrape) return `You've picked ${mine.length} from here, mostly ${myGrape[0]}. How classic ${mine.length===1?'is it':'are they'}?`;
     }
     if(archetype.id==='region_rules'&&K) return `${K.classification}: what the words on a ${region} label promise`;
+    if(archetype.id==='beyond_region'&&region&&slots.regionB){
+      const B=KNOWLEDGE.regions[slots.regionB], gA=K&&K.keyGrapes[0], gB=B&&B.keyGrapes[0];
+      if(gA&&gB) return gA===gB?`Same ${gA} as your ${slots.regionB}, different place. What ${region} does to it.`
+        :`Your ${slots.regionB} is mostly ${gB}. ${region} is ${gA}: what changes in the glass, and why.`;
+      return `You know ${slots.regionB}. Here's what changes in ${region}.`;
+    }
+    if((archetype.id==='grape_unlock_intro'||archetype.id==='grape_deep_dive')&&slots.grape){
+      const mineG=(wines||[]).filter(w=>(w.grapes||[]).some(g=>WineDNA.grape(g)===slots.grape));
+      const top=[...mineG].sort((a,b)=>(b.rating||0)-(a.rating||0))[0];
+      if(top&&archetype.id==='grape_unlock_intro') return top.rating>0?`You scored ${top.name} ${top.rating}. Here's what ${slots.grape} brought to it.`:`You met it in ${top.name}. Here's what makes it taste the way it does.`;
+      const G=KNOWLEDGE.grapes[slots.grape];
+      if(archetype.id==='grape_deep_dive'&&G&&G.famousIn.length>1) return `${slots.grape} in ${list(G.famousIn.slice(0,3))}: what changes when it moves`;
+    }
     const out=this.fillTpl(archetype.subtitleTpl,slots);
     return /\{\{/.test(out)?out.replace(/[,:—-]?\s*[^,:—-]*\{\{[^}]*\}\}[^,:—-]*/g,'').trim():out;
   },
 
-  buildStub(archetype, ev, wines){
-    const slots=this.buildSlots(ev,wines);
+  buildStub(archetype, ev, wines, slots){
+    slots=slots||this.buildSlots(ev,wines);
     return {
       id:'ev_'+ev.key.replace(/[^a-z0-9]+/gi,'_')+'_'+archetype.id,
       archetypeId:archetype.id,
@@ -567,8 +594,9 @@ const ContentEngine = {
      just swaps in a fresh, still-unresolved {{placeholder}} instead of fixing it. */
   _healStubs(stubs, wines){
     let changed=false;
-    stubs.forEach(stub=>{
+    stubs.forEach((stub,i)=>{
       if(!stub.slots) return;
+      if(this._rotate(stub,stubs.slice(0,i),wines)) changed=true;
       const archetype=ARTICLE_ARCHETYPES.find(a=>a.id===stub.archetypeId);
       if(!archetype) return;
       (archetype.needs||[]).forEach(n=>{
@@ -585,6 +613,82 @@ const ContentEngine = {
       if(title!==stub.title||subtitle!==stub.subtitle||series!==(stub.series||null)){ stub.title=title; stub.subtitle=subtitle; stub.series=series; changed=true; }
     });
     return changed;
+  },
+
+  /* A region piece nobody has opened yet (not read, not written) that repeats an earlier piece's
+     kind, or compares with a region that no longer fits (compareRegion), becomes the kind the
+     shelf has least of. Heals shelves built when the kind was picked at random. */
+  _untouched(stub){ return !localStorage.getItem('vinterest_gen_article_'+stub.id+'_done')&&!localStorage.getItem('vinterest_gen_article_'+stub.id+'_content'); },
+  _rotate(stub,before,wines){
+    const row=TRIGGERS.find(t=>t.event==='new_region');
+    if(!row||!row.archetypeIds.includes(stub.archetypeId)||!stub.slots.region||!this._untouched(stub)) return false;
+    const slots={...stub.slots}; delete slots.regionB;
+    const b=this.compareRegion(slots.region,wines||[]); if(b) slots.regionB=b;
+    const repeat=before.some(s=>s.archetypeId===stub.archetypeId);
+    const staleB=stub.archetypeId==='beyond_region'&&slots.regionB!==stub.slots.regionB;
+    if(!repeat&&!staleB) return false;
+    const archetype=this.pickArchetype({event:'new_region'},slots,before);
+    if(!archetype) return false;
+    Object.assign(stub,{archetypeId:archetype.id,iconName:archetype.iconName,readTime:archetype.readTime,series:archetype.series||null,brief:archetype.brief,slots,facts:this.retrieveFacts(archetype,slots)});
+    return true;
+  },
+
+  /* ── Written for you ──
+     Every shelf piece starts from the user's own wines. _related finds the bottles a piece is
+     about; because() is the line that says so on the card; readerBrief() is what the article
+     prompt knows about them (their bottles, scores, prices, WineDNA and usual spend), so the
+     one Claude call per article, cached for good, writes for this reader and nobody else. */
+  _related(slots,wines){
+    const s=slots||{};
+    const hit=w=>s.wineName?w.name===s.wineName
+      :s.region?Regions.of(w)===s.region
+      :s.grape?(w.grapes||[]).some(g=>WineDNA.grape(g)===s.grape)
+      :s.producer?w.producer===s.producer
+      :s.type?WineDNA._t(w.type)===WineDNA._t(s.type)
+      :false;
+    const when=w=>new Date(w.last_scanned||w.scanned_at||0).getTime()||0;
+    return (wines||[]).filter(hit).sort((a,b)=>(b.rating||0)-(a.rating||0)||when(b)-when(a));
+  },
+  because(stub,wines){
+    const s=(stub&&stub.slots)||{};
+    const w=this._related(s,wines||WineHistory.getAll())[0];
+    if(w) return w.rating>0?`Because you gave ${w.name} a ${w.rating}`:`Because you scanned ${w.name}`;
+    if(s.conceptLabel) return 'Because a quiz question caught you out';
+    if(s.descriptor) return `Because "${s.descriptor}" came up in your tasting notes`;
+    if(s.trait) return 'Because of a pattern in your scores';
+    return 'Picked from your WineDNA';
+  },
+  _typeLabel(k){ const t=typeof _TYPES!=='undefined'&&_TYPES.find(x=>x.key===k); return t?t.label:k; },
+  readerBrief(stub,wines){
+    wines=wines||WineHistory.getAll();
+    const rc=Regional.current(), out=[];
+    const rel=this._related(stub&&stub.slots,wines);
+    const cmp=ScanFlow.COMPARE;
+    const line=w=>{
+      const b=[w.name+(w.vintage>0?' '+w.vintage:'')+(w.region?` (${w.region})`:'')];
+      b.push(w.rating>0?`scored ${w.rating}, ${ParkerScale.label(w.rating)}`:'not scored yet');
+      const p=WineDNA.priceOf(w,rc); if(p) b.push(`${w.price_paid&&w.price_paid.amount>0?'paid':'about'} ${rc.base}${Math.round(p)}`);
+      if(w.buy_again) b.push('would buy again');
+      const t=w.tasted?Object.entries(w.tasted).filter(([k,d])=>d&&cmp[k]).map(([k,d])=>`${cmp[k][d>0?1:0].toLowerCase()} than the label suggested`):[];
+      if(t.length) b.push('they found it '+t.join(' and '));
+      return '- '+b.join(', ');
+    };
+    if(rel.length) out.push('Their own bottles on this subject:\n'+rel.slice(0,5).map(line).join('\n'));
+    else out.push('They have no bottles on this subject yet: it is new to them.');
+    const counts={}; wines.forEach(w=>{ const t=WineDNA._t(w.type); if(t) counts[t]=(counts[t]||0)+1; });
+    const typeKey=(rel[0]&&WineDNA._t(rel[0].type))||Object.entries(counts).sort((a,b)=>b[1]-a[1]).map(e=>e[0])[0];
+    if(typeKey){
+      const p=WineDNA.profile(typeKey,wines,this._typeLabel(typeKey));
+      if(p.wines.length) out.push(`Their WineDNA for ${p.label.toLowerCase()}:\n`+WineDNA.summaryFacts(p));
+      const budget=SommelierScript.budget(p.wines,rc); if(budget) out.push(`What they usually spend: ${budget}.`);
+    }
+    return out.join('\n\n');
+  },
+
+  /* Unread pieces about this wine type's bottles, for the WineDNA tab. */
+  forType(typeKey,wines){
+    wines=wines||WineHistory.getAll();
+    return (this.shelf(wines)||[]).filter(s=>!localStorage.getItem('vinterest_gen_article_'+s.id+'_done')&&!this.stubLocked(s)&&this._related(s.slots,wines).some(w=>WineDNA._t(w.type)===typeKey));
   },
 
   /* A region piece about a region past the free allowance is shown locked, with Pro. */
@@ -613,9 +717,9 @@ const ContentEngine = {
     for(const ev of events){
       if(added>=need) break;
       const slots=this.buildSlots(ev,wines);
-      const archetype=this.pickArchetype(ev,slots);
+      const archetype=this.pickArchetype(ev,slots,stubs);
       if(!archetype) continue;
-      const stub=this.buildStub(archetype,ev,wines);
+      const stub=this.buildStub(archetype,ev,wines,slots);
       stubs.push(stub);
       ExposureLedger.mark(ev.key);
       added++;

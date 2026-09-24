@@ -34,7 +34,7 @@ function ScanLocationCard({wine}){
   </Card>;
 }
 
-function WineDetailScreen({back,nav}){
+function WineDetailScreen({back,nav,showPro}){
   const [tab,setTab]=React.useState(0);
   const tabs=['Details','Learn','Price'];
   const scanData=React.useMemo(()=>{
@@ -137,7 +137,7 @@ function WineDetailScreen({back,nav}){
       <div ref={scrollRef} style={{flex:1,overflowY:'auto'}}>
         {editing&&<EditWineSheet wine={wine} onSave={saveEdit} onClose={()=>setEditing(false)}/>}
         {tab===0&&<DetailMerged key={wine&&wine.name} wine={wine} nav={nav} existingRating={existingRating} match={match}/>}
-        {tab===1&&<DetailStory wine={wine} nav={nav} existingRating={existingRating}/>}
+        {tab===1&&<DetailStory wine={wine} nav={nav} showPro={showPro} existingRating={existingRating}/>}
         {tab===2&&<DetailPrice wine={wine} nav={nav}/>}
       </div>
       {confirmDelete&&<div onClick={()=>setConfirmDelete(false)} style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.5)',display:'flex',alignItems:'flex-end',zIndex:80}}>
@@ -486,7 +486,7 @@ function DetailMerged({wine,nav,existingRating=0,match}){
   );
 }
 
-function DetailStory({wine,nav,existingRating=0}){
+function DetailStory({wine,nav,showPro,existingRating=0}){
   const description=(wine?.description?.trim())||'A wine with character and depth.';
 
   // ── Education: grape deep-dive, growing-season context, vocab terms (batched + cached) ──
@@ -524,6 +524,8 @@ function DetailStory({wine,nav,existingRating=0}){
         <SL label="The Story"/>
         <div style={{fontSize:16,color:C.ink2,fontFamily:C.P,lineHeight:1.75}}>{description}</div>
       </div>
+
+      {wine&&<KeepLearning wine={wine} nav={nav} showPro={showPro} intro="Quizzes and articles picked from this wine, and written from your WineDNA."/>}
 
       {/* Producer */}
       {wine?.producer&&(

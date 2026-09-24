@@ -355,6 +355,29 @@ function WineDNAScreen({nav,back,showPro}){
           </div>
         </Card>
 
+        {/* ── Written for you: unread Learn pieces about this type's bottles (ContentEngine.forType) ── */}
+        {(()=>{
+          const reads=ContentEngine.forType(t.key,allWines).slice(0,2);
+          if(!reads.length) return null;
+          const open=stub=>{ sessionStorage.setItem('vinterest_gen_article',JSON.stringify(stub)); nav('gen-article'); };
+          return <Card style={{padding:'14px 16px',display:'flex',flexDirection:'column',gap:10}}>
+            <div>
+              <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>Written from your WineDNA</div>
+              <div style={{fontSize:14,color:C.mid,fontFamily:C.P,lineHeight:1.45,marginTop:2}}>Short reads about your own {tLabel}, written for you and nobody else.</div>
+            </div>
+            {reads.map(stub=>(
+              <div key={stub.id} onClick={()=>open(stub)} role="button" style={{display:'flex',alignItems:'center',gap:12,cursor:'pointer'}}>
+                <div style={{width:38,height:38,borderRadius:11,background:`${t.col}12`,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><Icon n={stub.iconName||'read'} sz={18} col={t.col}/></div>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontSize:15,fontWeight:700,color:C.ink,fontFamily:C.P,lineHeight:1.3}}>{stub.title}</div>
+                  <div style={{fontSize:13,color:C.mid,fontFamily:C.P,lineHeight:1.4,marginTop:1}}>{ContentEngine.because(stub,allWines)}</div>
+                </div>
+                <Icon n="chevron" sz={13} col={C.mid}/>
+              </div>
+            ))}
+          </Card>;
+        })()}
+
         {/* ── What You Love: what separates your best-scored wines, and where they come from ── */}
         {t.wines.length>0&&<CSH label="What You Love" cKey="love" collapsed={collapsed} toggle={toggle} summary={t.signals.length?t.signals[0].text+(t.signals[1]?' '+t.signals[1].text:''):fav.regions.length?`${fav.regions[0].name} is where your highest scores come from.`:`Score more ${tLabel} to see what your favourites have in common.`}/>}
         {t.wines.length>0&&!collapsed.love&&(

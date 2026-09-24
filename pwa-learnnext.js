@@ -58,7 +58,7 @@ const LearnNext = {
     const shelf=ContentEngine.shelf(wines)||[];
     return shelf.filter(s=>!localStorage.getItem('vinterest_gen_article_'+s.id+'_done')&&!ContentEngine.stubLocked(s)
         &&s.slots&&((r&&s.slots.region===r)||(g&&s.slots.grape===g)))
-      .map(s=>({kind:'article',key:'article:'+s.id,stub:s,icon:s.iconName||'read',title:s.title,why:s.subtitle,progress:s.readTime?`${s.readTime} read`:null}));
+      .map(s=>({kind:'article',key:'article:'+s.id,stub:s,icon:s.iconName||'read',title:s.title,why:s.subtitle,progress:`Written for you${s.readTime?` · ${s.readTime} read`:''}`}));
   },
 
   forWine(wine,wines){

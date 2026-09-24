@@ -108,10 +108,13 @@ function GenArticleScreen({nav,back}){
   const cacheKey=stub?`vinterest_gen_article_${stub.id}_content`:null;
 
   const [completed,setCompleted]=React.useState(()=>!!localStorage.getItem(doneKey));
-  const [sections,setSections]=React.useState(()=>{
+  // Cached as {sections, forYou}; articles written before forYou existed are a bare array.
+  const [cached,setCached]=React.useState(()=>{
     if(!cacheKey) return null;
-    try{ return JSON.parse(localStorage.getItem(cacheKey)||'null'); }catch(e){ return null; }
+    try{ const c=JSON.parse(localStorage.getItem(cacheKey)||'null'); return Array.isArray(c)?{sections:c}:c; }catch(e){ return null; }
   });
+  const sections=cached&&cached.sections;
+  const because=React.useMemo(()=>stub?ContentEngine.because(stub):null,[stub&&stub.id]);
   const [generating,setGenerating]=React.useState(false);
 
   React.useEffect(()=>{
@@ -121,7 +124,7 @@ function GenArticleScreen({nav,back}){
     const types=[...new Set(wines.map(w=>(w.type||'red').toLowerCase()))].join(', ');
     const regions=[...new Set(wines.map(w=>w.region||w.country).filter(Boolean))].slice(0,5).join(', ');
     const grapes=[...new Set(wines.flatMap(w=>w.grapes||[]).filter(Boolean))].slice(0,6).join(', ');
-    const prompt=_fillTpl(_loadText('prompts/gen-article.txt'),{depth:UserPrefs.depthLine(),types,regions,grapes,title:stub.title,brief:stub.brief||'Write a clear, specific educational piece on the title above.',facts:stub.facts||'No specific retrieved facts — keep claims general and hedge appropriately.'});
+    const prompt=_fillTpl(_loadText('prompts/gen-article.txt'),{depth:UserPrefs.depthLine(),types,regions,grapes,reader:ContentEngine.readerBrief(stub,wines),title:stub.title,brief:stub.brief||'Write a clear, specific educational piece on the title above.',facts:stub.facts||'No specific retrieved facts — keep claims general and hedge appropriately.'});
 
     window.claude.complete({purpose:'learn_article',messages:[{role:'user',content:prompt}]})
       .then(text=>{
@@ -130,9 +133,9 @@ function GenArticleScreen({nav,back}){
           const s=clean.indexOf('{'),e=clean.lastIndexOf('}');
           if(s>=0&&e>s) clean=clean.slice(s,e+1);
           const parsed=JSON.parse(clean);
-          const secs=parsed.sections||[];
-          localStorage.setItem(cacheKey,JSON.stringify(secs));
-          setSections(secs);
+          const out={sections:parsed.sections||[],forYou:typeof parsed.forYou==='string'?parsed.forYou:null};
+          localStorage.setItem(cacheKey,JSON.stringify(out));
+          setCached(out);
         }catch(err){}
       })
       .catch(()=>{})
@@ -160,7 +163,7 @@ function GenArticleScreen({nav,back}){
           <Icon n="back" sz={16} col={C.ink}/>
         </div>
         <div style={{flex:1}}>
-          <div style={{fontSize:15,color:C.mid,fontFamily:C.P,fontWeight:500}}>Your Reading List · {stub.readTime}</div>
+          <div style={{fontSize:15,color:C.mid,fontFamily:C.P,fontWeight:500}}>Written for you · {stub.readTime}</div>
         </div>
         {completed&&<span style={{fontSize:15,fontWeight:700,color:C.green,fontFamily:C.P}}>✓ +50 XP</span>}
       </div>
@@ -170,10 +173,14 @@ function GenArticleScreen({nav,back}){
         <div style={{background:C.ink,padding:'24px 20px 22px'}}>
           <div style={{display:'inline-flex',alignItems:'center',gap:6,padding:'4px 12px',borderRadius:20,background:'rgba(255,255,255,0.1)',marginBottom:12}}>
             <Icon n={stub.iconName||'read'} sz={14} col="rgba(255,255,255,0.6)"/>
-            <span style={{fontSize:13,fontWeight:600,color:'rgba(255,255,255,0.55)',fontFamily:C.P}}>Personalised for You</span>
+            <span style={{fontSize:13,fontWeight:600,color:'rgba(255,255,255,0.55)',fontFamily:C.P}}>Written for you</span>
           </div>
           <div style={{fontSize:26,fontWeight:800,color:'#fff',fontFamily:C.P,lineHeight:1.2,marginBottom:10}}>{stub.title}</div>
           <div style={{fontSize:16,color:'rgba(255,255,255,0.5)',fontFamily:C.P,lineHeight:1.65}}>{stub.subtitle}</div>
+          {because&&<div style={{fontSize:14,fontWeight:600,color:'rgba(255,255,255,0.75)',fontFamily:C.P,marginTop:12}}>{because}.</div>}
+        </div>
+        <div style={{margin:'14px 20px 0',padding:'12px 14px',borderRadius:14,background:C.crSoft,border:`1px solid ${C.crDim}`}}>
+          <div style={{fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.55}}>{(cached&&cached.forYou)||'Nobody else gets this article. It\'s written from your WineDNA: the wines you\'ve scanned, how you scored them and what you paid.'}</div>
         </div>
 
         <div style={{padding:'16px 20px',display:'flex',flexDirection:'column',gap:12}}>
