@@ -1,11 +1,11 @@
-// Home and WineDNA show the same sommelier script, generated once, with a budget computed from
+// The sommelier script lives in WineDNA (Home links to it), generated once, with a budget computed from
 // the scanned wines' prices rather than invented by the model.
 const { test, expect } = require('@playwright/test');
 const { stubNetwork, makeDeterministic, seedLocalStorage, collectErrors } = require('./helpers');
 
 const BASE = 'http://localhost:4173';
 
-test('Home and WineDNA show the identical script and budget for reds', async ({ context, page }) => {
+test('Home links to the red script in WineDNA, with the budget from their own prices', async ({ context, page }) => {
   const claudeRequests = [];
   // The stub echoes whatever budget the prompt dictates, like a well-behaved model would.
   await stubNetwork(context, {
@@ -28,14 +28,9 @@ test('Home and WineDNA show the identical script and budget for reds', async ({ 
     return SommelierScript.budget(reds, Regional.current());
   });
   expect(expected).toMatch(/^£\d+–£\d+ GBP$/);
-  const homeScript = page.locator('#root').getByText(/I love structured reds/);
-  await expect(homeScript).toContainText(expected);
-  const homeText = await homeScript.innerText();
-
-  await page.locator('#root').getByText('WineDNA', { exact: true }).last().click();
+  await page.locator('#root').getByText('Your red sommelier script', { exact: true }).click();
   const dnaScript = page.locator('#root').getByText(/I love structured reds/);
-  await expect(dnaScript).toBeVisible();
-  expect(await dnaScript.innerText()).toBe(homeText);
+  await expect(dnaScript).toContainText(expected);
   // Generated once and shared, not once per screen.
   expect(claudeRequests.filter((r) => r.purpose === 'sommelier_script' && !r.messages[0].content.startsWith('Condense') && /scanned these reds? wines/.test(r.messages[0].content))).toHaveLength(1);
   expect(errors).toEqual([]);

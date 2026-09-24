@@ -98,7 +98,10 @@ const KnowledgeMap = {
     const m=this.compute(wines);
     const sorted=[...m.areas].sort((a,b)=>b.score-a.score);
     const strongest=sorted[0]&&sorted[0].score>0?sorted[0]:null;
-    const gap=[...m.areas].sort((a,b)=>a.score-b.score)[0]||null;
+    // On a tie (everything at 0% for someone new), the gap is a type they actually drink.
+    const drinks=new Set((wines||WineHistory.getAll()).map(w=>WineDNA._t(w.type)));
+    const mine=a=>{ const T=this.TYPES.find(t=>t.id===a.id); return T&&T.types.some(t=>drinks.has(t))?0:1; };
+    const gap=[...m.areas].sort((a,b)=>a.score-b.score||mine(a)-mine(b))[0]||null;
     return {overall:m.overall,level:m.level,strongest,gap};
   },
 };

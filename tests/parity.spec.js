@@ -22,7 +22,7 @@ test.skip(!fs.existsSync(path.join(ROOT, 'bundle.js')), 'bundle.js has been remo
 // #account isn't either: the profile shows only the preferences the app uses (UserPrefs).
 // #learn isn't either: regions open from their first scan, and there are Wine Basics topics for
 // every wine type.
-const SCREENS = ['home', 'scan', 'settings']; // mastery-map is now Mastery from reading and quizzes (KnowledgeMap)
+const SCREENS = ['scan', 'settings']; // home is now "what next" (LearnNext.home) with Vinny; mastery-map is Mastery (KnowledgeMap)
 
 // Intended differences on these screens: the version line is generated now, and the legacy build's
 // QuizHubScreen crashes on the first Learn visit after WineDNA unlocks (fixed in this build),
@@ -32,7 +32,7 @@ const SEED = { vinterest_wineDNA_unlock_seen: '1' };
 const ADDED_SINCE_BUNDLE = [
   'RegionQuizBank', 'QUIZ_SIZE', 'QuizMastery', '_ceShuffle', '_regionsWithScans', 'completedRegionQuizzes',
   'grapeQuizBank', 'grapeQuizComplete', 'CompletedToggle', 'CompletedMark', '_drawQuiz', 'quizSetFor',
-  'buildQuizQuestions', 'quizTitle', 'nextQuizSuggestion', 'USD_FX', 'SommelierScript', 'EXPLORE_STYLES', 'ExploreNext', 'FindOnline', 'ParkerScale', 'WineDNA', 'DnaBar', 'TasteMatch', 'ScanFlow', 'UserPrefs', 'MyWines', 'LearnNext', 'Regions', 'RegionUnlocks', 'FREE_REGION_CAP', 'lockedRegions', 'KeepLearning', '_NOTICE', 'ShowMore', 'LearnJumpRow', 'GRAPE_PILLS', 'GUIDE_DATA', 'Guides', 'KnowledgeMap', 'GuideScreen', 'MasteryBar',
+  'buildQuizQuestions', 'quizTitle', 'nextQuizSuggestion', 'USD_FX', 'SommelierScript', 'EXPLORE_STYLES', 'ExploreNext', 'FindOnline', 'ParkerScale', 'WineDNA', 'DnaBar', 'TasteMatch', 'ScanFlow', 'UserPrefs', 'MyWines', 'LearnNext', 'Regions', 'RegionUnlocks', 'FREE_REGION_CAP', 'lockedRegions', 'KeepLearning', '_NOTICE', 'ShowMore', 'LearnJumpRow', 'GRAPE_PILLS', 'GUIDE_DATA', 'Guides', 'KnowledgeMap', 'GuideScreen', 'MasteryBar', 'VINNY_PROMPT', 'Vinny', '_openLearn',
   '_TONE_COL', '_typeCol', 'MatchRing', 'MatchReasons', 'WineIdentity', 'ConfirmGate', 'EditWineSheet', 'ScanResult',
   'RatingPanel', 'TastingExtras', 'TasteCard', 'WaitingOnYou', '_TASTE_COPY', 'OnboardHeader', 'OnboardFooter', 'OnboardSetup', 'OnboardTaste', '_MW_TONE', '_MW_TYPES', 'WineRow',
 ];
@@ -88,16 +88,8 @@ for (const screen of SCREENS) {
 // No Wine Basics quiz parity test: those quizzes now draw 5 questions by mastery (tests/
 // quiz-mastery.spec.js) instead of 6 at random, so they deliberately differ from bundle.js.
 
-// Exercises the XP badge and tier/achievement overlay in pwa-app.jsx.
-test('the XP overlay renders the same as bundle.js', async ({ browser }) => {
-  await compare(browser, async (page, base) => {
-    await page.goto(`${base}/?demo=1#home`);
-    await page.locator('#root').getByText('1805 XP', { exact: true }).click();
-    await expect(page.locator('#root')).toContainText('Achievements');
-    return page.locator('#root svg').count();
-  });
-});
-
+// No XP-overlay parity test: the overlay opens from Home, which is now "what next" and
+// deliberately differs; tests/smoke.spec.js checks the overlay opens cleanly instead.
 test('every top-level name in the sources is defined the same way in both builds', async ({ browser }) => {
   const { APP_SOURCES } = await import(pathToFileURL(path.join(ROOT, 'scripts/app-sources.mjs')).href);
   const names = new Set();

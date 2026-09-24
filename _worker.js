@@ -41,9 +41,8 @@ const CLAUDE_PURPOSE_LIMITS = {
   match_explain: 4096,     // pwa-screens-detail.jsx — "why this wine matches you"
   vintage_info: 4096,      // pwa-screens-detail.jsx — vintage quality + drinking window
   education: 4096,         // pwa-screens-detail.jsx — grape/vocabulary deep-dive
-  wine_qa: 200,            // pwa-screens-home.jsx — "Ask Vinny" free-form wine Q&A. The answer
-                            // renders in a fixed-height, non-scrolling box (1-2 sentences by
-                            // design) — this caps it well above what a well-behaved answer needs,
+  wine_qa: 300,            // pwa-vinny.js — "Ask Vinny" wine Q&A (prompts/vinny.txt). Answers are
+                            // up to 3 short sentences (~60 words); this caps it well above that,
                             // as a backstop if the model ever ignores the length instruction.
   sommelier_script: 4096,  // pwa-screens-home.jsx / pwa-screens-aux.jsx / pwa-screens-wineiq.jsx
   learn_article: 4096,     // pwa-screens-learn.jsx — generated learning article body

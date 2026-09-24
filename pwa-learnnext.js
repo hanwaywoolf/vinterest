@@ -61,6 +61,23 @@ const LearnNext = {
       .map(s=>({kind:'article',key:'article:'+s.id,stub:s,icon:s.iconName||'read',title:s.title,why:s.subtitle,progress:`Written for you${s.readTime?` · ${s.readTime} read`:''}`}));
   },
 
+  /* Home's "Up next": one main thing to do and two more. A first scan for someone with no wines;
+     then the next unread Written for you piece, the next beginner article (unless they skip the
+     on-ramp), the step that closes their biggest Mastery gap, and the next Wine Skills guide. */
+  home(wines){
+    wines=wines||WineHistory.getAll();
+    const out=[];
+    if(!wines.length) out.push({kind:'scan',key:'scan',icon:'camera',title:'Scan your first bottle',why:'Your match, your WineDNA and the pieces written for you all start from a label.'});
+    const unread=(()=>{ try{ return (ContentEngine.shelf(wines)||[]).filter(s=>!localStorage.getItem('vinterest_gen_article_'+s.id+'_done')&&!ContentEngine.stubLocked(s)); }catch(e){ return []; } })();
+    if(unread[0]) out.push({kind:'article',key:'article:'+unread[0].id,stub:unread[0],icon:unread[0].iconName||'read',title:unread[0].title,why:ContentEngine.because(unread[0],wines),progress:`Written for you${unread[0].readTime?` · ${unread[0].readTime}`:''}`});
+    if(!UserPrefs.skipsOnRamp()){ const t=this._onRampTile(); if(t) out.push(t); }
+    const gap=wines.length?KnowledgeMap.summary(wines).gap:null;
+    if(gap&&gap.next) out.push({kind:'mastery',key:'gap:'+gap.id,icon:'trophy',title:gap.next.label,why:`Your biggest gap: ${gap.label}. Closing it counts towards your Mastery.`,next:gap.next});
+    const g=Guides.queue()[0];
+    if(g) out.push({kind:'guide',key:'guide:'+g.id,guide:g.id,icon:g.iconName||'book',title:g.title,why:`Wine Skills · ${Guides.group(g.group).label}`,progress:`${g.readTime} read`});
+    return {primary:out[0]||null,more:out.slice(1,3),unread};
+  },
+
   forWine(wine,wines){
     if(!wine) return [];
     wines=wines||WineHistory.getAll();

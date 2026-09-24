@@ -21,6 +21,7 @@ export const APP_SOURCES = [
   'pwa-learnnext.js',
   'pwa-guides.js',
   'pwa-knowledge.js',
+  'pwa-vinny.js',
   'pwa-components.jsx',
   'tweaks-panel.jsx',
   'pwa-screens-main.jsx',
