@@ -33,7 +33,7 @@ User Device (PWA)
 **Request flow:**
 1. Capture JPEG frame from camera → strip `data:image/jpeg;base64,` prefix
 2. `POST /api/recognise` with base64 image + optional taste profile
-3. Netlify Function sends to `api.anthropic.com/v1/messages` with vision prompt
+3. The Cloudflare Pages worker (`_worker.js`, route `/claude`) sends to `api.anthropic.com/v1/messages` with vision prompt
 4. Claude returns structured JSON — wine name, region, grapes, taste scores, notes, pairings
 5. Client displays result on Wine Identified screen
 
@@ -249,7 +249,7 @@ const sub = await registration.pushManager.subscribe({
 
 | Layer | Recommendation | Cost |
 |-------|---------------|------|
-| Hosting | **Netlify** (static PWA) | Free |
+| Hosting | **Cloudflare Pages** (PWA + `_worker.js`) | Free |
 | Auth | **Supabase Auth** | Free / $25/mo |
 | Database | **Supabase PostgreSQL** | Free / $25/mo |
 | Wine recognition | **Google Vision API** | ~$1.50/1k scans |

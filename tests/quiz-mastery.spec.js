@@ -36,7 +36,8 @@ const root = (page) => page.locator('#root');
 async function answerQuiz(page, pick) {
   const asked = [];
   for (let i = 0; i < 10; i++) {
-    const q = (await root(page).locator('div', { hasText: /\?$/ }).last().innerText()).trim();
+    // Questions end in "?" or, for "… range in style from:", a colon.
+    const q = (await root(page).locator('div', { hasText: /[?:]$/ }).last().innerText()).trim();
     asked.push(q);
     const right = pick(q);
     const correctText = await page.evaluate(
@@ -62,7 +63,7 @@ async function answerQuiz(page, pick) {
 async function openRegion(page) {
   await page.goto(`${BASE}/?demo=1#learn`);
   const region = await page.evaluate(() => regionQuizCandidates(WineHistory.getAll())[0]);
-  await root(page).getByText(region, { exact: true }).first().click();
+  await root(page).getByText(`${region} quiz`, { exact: true }).first().click();
   return region;
 }
 
@@ -109,11 +110,11 @@ test('a region completes only when every question is answered correctly, then co
   await expect(root(page)).toContainText(/All \d+ questions answered correctly/);
 
   await page.goto(`${BASE}/?demo=1#learn`);
-  await expect(root(page).getByText(region, { exact: true })).toHaveCount(0); // collapsed by default
+  await expect(root(page).getByText(`${region} quiz`, { exact: true })).toHaveCount(0); // collapsed by default
   await root(page).getByText(/^1 completed — show$/).last().click();
-  await expect(root(page).getByText(region, { exact: true })).toHaveCount(1);
+  await expect(root(page).getByText(`${region} quiz`, { exact: true })).toHaveCount(1);
   await root(page).getByText('Reset', { exact: true }).last().click();
-  await expect(root(page).getByText(region, { exact: true })).toHaveCount(1);
+  await expect(root(page).getByText(`${region} quiz`, { exact: true })).toHaveCount(1);
   expect(await page.evaluate((r) => RegionQuizBank.progress(r).correct, region)).toBe(0);
   expect(errors).toEqual([]);
 });
@@ -202,24 +203,15 @@ test('every results screen has Back to Learn, and a finished set suggests the ne
   await expect(root(page)).toContainText(`${second}`);
   await answerQuiz(page, () => true);
   await root(page).getByText('Back to Learn', { exact: true }).click();
-  await expect(root(page)).toContainText('Test Yourself');
+  await expect(root(page)).toContainText('Wine Basics');
   expect(errors).toEqual([]);
 });
 
-test('Concept Check and Words results also offer Back to Learn', async ({ page }) => {
+test('Concept Check and Words You\'ve Met are gone from Learn', async ({ page }) => {
   await page.goto(`${BASE}/?demo=1#learn`);
-  await root(page).getByText('Concept Check', { exact: true }).click();
-  for (let i = 0; i < 10; i++) {
-    await root(page).getByText('A', { exact: true }).click();
-    const next = root(page).getByText(/^(Next Question|See Results) →$/);
-    const last = (await next.innerText()).startsWith('See Results');
-    await next.click();
-    if (last) break;
-  }
-  await expect(root(page)).toContainText(/\d of 6 concepts mastered/);
-  await expect(root(page).getByText('Keep going', { exact: true })).toBeVisible();
-  await root(page).getByText('Back to Learn', { exact: true }).click();
-  await expect(root(page)).toContainText('Test Yourself');
+  await expect(root(page)).toContainText('Wine Skills');
+  await expect(root(page)).not.toContainText('Concept Check');
+  await expect(root(page)).not.toContainText("Words You've Met");
 });
 
 test('Concept Check fills every quiz, a miss steps back one box, and Blind Call misses only flag for review', async ({ page }) => {
@@ -275,4 +267,28 @@ test('every Concept Check concept has 12 questions', async ({ page }) => {
   await page.goto(`${BASE}/?demo=1#learn`);
   const counts = await page.evaluate(() => CONCEPT_TEMPLATES.map((c) => c.templates.length * 2));
   expect(counts).toEqual([12, 12, 12, 12, 12, 12]);
+});
+
+test('a generated bank drops near-duplicates, including a flipped "least likely" copy', async ({ page }) => {
+  await page.goto(`${BASE}/?demo=1#home`);
+  const out = await page.evaluate(() => {
+    const q = (t) => ({ q: t, opts: ['a', 'b', 'c', 'd'], a: 0 });
+    const bank = [
+      q("Which food pairing would best complement Sangiovese's high acidity and savory, earthy edge?"),
+      q("A wine lover describes a Sangiovese as 'savory and earthy.' Which pairing would least likely complement these characteristics?"),
+      q('Which Italian region is most famous for Sangiovese?'),
+      q('What colour is Sangiovese?'),
+      q('Which grape is Brunello di Montalcino made from?'),
+      q('Which grape is Brunello di Montalcino made from, by law?'),
+    ];
+    const numbered = Array.from({ length: 15 }, (_, i) => q(`Sangiovese question ${i + 1}?`));
+    return { kept: QuizMastery.distinct(bank, 'Sangiovese').map((x) => x.q), numbered: QuizMastery.distinct(numbered, 'Sangiovese').length };
+  });
+  expect(out.kept).toEqual([
+    "Which food pairing would best complement Sangiovese's high acidity and savory, earthy edge?",
+    'Which Italian region is most famous for Sangiovese?',
+    'What colour is Sangiovese?',
+    'Which grape is Brunello di Montalcino made from?',
+  ]);
+  expect(out.numbered).toBe(15);
 });

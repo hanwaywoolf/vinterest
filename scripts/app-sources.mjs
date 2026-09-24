@@ -8,6 +8,7 @@
 // like pwa-winedna.js, are allowed; the ones bundle.js has must stay in its order).
 export const APP_SOURCES = [
   'claude-bridge.js',
+  'pwa-textsize.js',
   'pwa-xp.js',
   'pwa-mastery.js',
   'pwa-content-engine.js',
@@ -18,6 +19,10 @@ export const APP_SOURCES = [
   'pwa-scan.js',
   'pwa-prefs.js',
   'pwa-mywines.js',
+  'pwa-learnnext.js',
+  'pwa-guides.js',
+  'pwa-knowledge.js',
+  'pwa-vinny.js',
   'pwa-components.jsx',
   'tweaks-panel.jsx',
   'pwa-screens-main.jsx',

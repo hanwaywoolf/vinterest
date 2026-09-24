@@ -1,24 +1,20 @@
 /* Vinterest — ScanFlow: the non-UI parts of the scan result screen.
 
-   Which path the user usually takes (the quick result or the full card deck), how a scanned
-   wine maps onto one already saved, price context in their currency, and turning a Blind Call
+   How a scanned wine maps onto one already saved, price context in their currency, and turning a Blind Call
    guess into the "compared with the label" taps the rating step offers. */
 const ScanFlow = {
-  PATH_KEY:'vinterest_scan_path',
-
-  /* Quick (rate/save from the result) vs deck ("Tell me about it"). After a couple of deck
-     visits, and more of those than quick exits, the deck opens straight after a scan. */
-  path(){ try{ return {deck:0,quick:0,...JSON.parse(localStorage.getItem(this.PATH_KEY)||'{}')}; }catch(e){ return {deck:0,quick:0}; } },
-  recordPath(kind){ const p=this.path(); p[kind]=(p[kind]||0)+1; try{ localStorage.setItem(this.PATH_KEY,JSON.stringify(p)); }catch(e){} },
-  prefersDeck(){ const p=this.path(); return p.deck>=2&&p.deck>p.quick; },
-
   /* A fresh scan of a wine already saved under a slightly different name takes the saved
-     identity, so scores and history stay on one entry. */
+     identity, so scores and history stay on one entry. It also keeps the saved reading of the
+     label (style, grapes, region): Claude's estimates vary a little from scan to scan, and the
+     same bottle shouldn't get a different match each time it's scanned. Corrections go through Edit. */
+  STABLE_FIELDS:['type','body','tannins','acidity','sweetness','texture','effervescence','grapes','blend','grapes_basis','region','sub_region','country'],
   resolve(wine){
     if(!wine||!wine.name) return {wine,existing:null};
     const existing=WineHistory.find(wine);
     if(!existing) return {wine,existing:null};
-    return {wine:{...wine,name:existing.name,vintage:existing.vintage},existing};
+    const kept={};
+    this.STABLE_FIELDS.forEach(k=>{ const v=existing[k]; if(v!=null&&v!==''&&!(Array.isArray(v)&&!v.length)) kept[k]=v; });
+    return {wine:{...wine,...kept,name:existing.name,vintage:existing.vintage},existing};
   },
   /* Only a label Claude couldn't read clearly is worth a "Is this it?" check. */
   needsConfirm(wine,source){
@@ -40,6 +36,13 @@ const ScanFlow = {
       ...(wine.grapes_basis==='typical'?[]:[{type:'new_grape',value:(wine.grapes||[])[0]}]),
       ...((wine.price_usd||0)>=100?[{type:'expensive_wine',wineKey:(wine.name||'')+'_'+(wine.vintage||'')}]:[])
     ]); if(defer&&a) this._deferred.push(...a); }catch(e){}
+  },
+
+  /* A confirmed scan opens the learning around the wine: its grape and region, within the free
+     allowance (5 each, then Pro). */
+  unlockLearning(wine){
+    try{ GrapeUnlocks.unlockViaScan(wine); }catch(e){}
+    try{ RegionUnlocks.unlock(Regions.resolve(wine)); }catch(e){}
   },
 
   /* Claude's shop-price estimate from the label scan, converted to the user's currency, or null. */

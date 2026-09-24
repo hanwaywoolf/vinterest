@@ -95,7 +95,8 @@ const _TONE_COL={good:C.green,neutral:C.amber,bad:'#B04A3A'};
 /* The wine-type colour WineDNA uses (_TYPE_COLORS), for sliders and selections on this wine. */
 function _typeCol(w){ return (typeof _TYPE_COLORS!=='undefined'&&_TYPE_COLORS[WineDNA._t(w&&w.type)])||C.cr; }
 
-/* The match ring: TasteMatch's percentage, or a dash when it's too early to call. */
+/* The match ring: TasteMatch's percentage, or a dash when it's too early to call. Its text is
+   sized to the ring in string px, so a larger text size (TextSize) doesn't spill out of it. */
 function MatchRing({match,size=96}){
   const pct=match?match.pct:null, col=_TONE_COL[match?match.tone:'neutral'];
   const r=52,circ=2*Math.PI*r;
@@ -105,14 +106,15 @@ function MatchRing({match,size=96}){
       {pct!=null&&<circle cx="65" cy="65" r={r} fill="none" stroke={col} strokeWidth="10" strokeLinecap="round" strokeDasharray={circ} strokeDashoffset={circ*(1-pct/100)} style={{transition:'stroke-dashoffset 1s cubic-bezier(.34,1.1,.64,1)'}}/>}
     </svg>
     <div style={{position:'absolute',inset:0,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center'}}>
-      <div style={{fontSize:size*0.27,fontWeight:800,color:pct!=null?col:C.mid,fontFamily:C.P,lineHeight:1}}>{pct!=null?pct:'—'}{pct!=null&&<span style={{fontSize:size*0.12,fontWeight:700}}>%</span>}</div>
-      <div style={{fontSize:11,fontWeight:700,color:C.mid,fontFamily:C.P,letterSpacing:'0.1em',textTransform:'uppercase',marginTop:2}}>match</div>
+      <div style={{fontSize:`${size*0.27}px`,fontWeight:800,color:pct!=null?col:C.mid,fontFamily:C.P,lineHeight:1}}>{pct!=null?pct:'—'}{pct!=null&&<span style={{fontSize:`${size*0.12}px`,fontWeight:700}}>%</span>}</div>
+      <div style={{fontSize:'11px',fontWeight:700,color:C.mid,fontFamily:C.P,letterSpacing:'0.1em',textTransform:'uppercase',marginTop:2}}>match</div>
     </div>
   </div>;
 }
 
-/* TasteMatch's reasons: one line each, with a dot for whether it counts for or against. */
-function MatchReasons({match,col,showSummary=true}){
+/* TasteMatch's reasons: one line each, with a dot for whether it counts for or against. A price
+   note (TasteMatch.priceNote) follows them, marked apart: it's said, but it never moves the match. */
+function MatchReasons({match,col,showSummary=true,priceNote}){
   if(!match) return null;
   return <div style={{display:'flex',flexDirection:'column',gap:8}}>
     {showSummary&&<div style={{fontSize:15,color:col||C.ink2,fontFamily:C.P,lineHeight:1.55}}>{match.summary}</div>}
@@ -122,6 +124,34 @@ function MatchReasons({match,col,showSummary=true}){
         <span style={{color:C.ink2,fontFamily:C.P}}>{r.text}</span>
       </div>
     ))}
+    {priceNote&&<div style={{display:'flex',gap:9,alignItems:'flex-start',fontSize:15,lineHeight:1.5}}>
+      <span style={{height:'1.5em',display:'flex',alignItems:'center',flexShrink:0}}><span style={{width:8,height:8,borderRadius:2,background:C.amber}}/></span>
+      <span style={{color:C.ink2,fontFamily:C.P}}>{priceNote.text} <span style={{color:C.mid}}>This doesn't change the match.</span></span>
+    </div>}
+  </div>;
+}
+
+/* "Why 81%?": what about this wine lifts the prediction above their average and what holds it
+   back, the wines most like it, and how that becomes the %. Everything comes from
+   TasteMatch.breakdown; nothing is worked out here. */
+function MatchBreakdown({match}){
+  const [open,setOpen]=React.useState(false);
+  const b=match&&match.breakdown; if(!b||match.pct==null) return null;
+  const line=(it,sym,col,i)=><div key={i} style={{display:'flex',gap:9,alignItems:'baseline',fontSize:15,fontFamily:C.P,lineHeight:1.45}}>
+    <span style={{fontWeight:800,color:col,width:12,flexShrink:0,textAlign:'center'}}>{sym}</span><span style={{color:C.ink2}}>{it.text}</span></div>;
+  const head=t=><div style={{fontSize:13,fontWeight:700,color:C.mid,fontFamily:C.P,textTransform:'uppercase',letterSpacing:'0.06em'}}>{t}</div>;
+  return <div style={{marginTop:12}}>
+    <div role="button" onClick={()=>setOpen(o=>!o)} style={{display:'flex',alignItems:'center',gap:6,fontSize:15,fontWeight:700,color:C.cr,fontFamily:C.P,cursor:'pointer'}}>
+      Why {match.pct}%? <span style={{display:'inline-block',transform:open?'rotate(90deg)':'none',transition:'transform .15s'}}><Icon n="chevron" sz={12} col={C.cr}/></span>
+    </div>
+    {open&&<div style={{marginTop:10,padding:'12px 14px',borderRadius:12,background:C.offWhite,border:`1px solid ${C.line}`,display:'flex',flexDirection:'column',gap:8}}>
+      <div style={{fontSize:15,color:C.ink2,fontFamily:C.P,lineHeight:1.45}}>You score {match.breakdownLabel} {b.avg} on average. Compared with that:</div>
+      {b.up.length>0&&<>{head('Brings it up')}{b.up.map((it,i)=>line(it,'↑',C.green,i))}</>}
+      {b.down.length>0&&<>{head('Holds it back')}{b.down.map((it,i)=>line(it,'↓','#B04A3A',i))}</>}
+      {b.even.length>0&&<>{head('No difference')}{b.even.map((it,i)=>line(it,'·',C.mid,i))}</>}
+      {b.closest&&<div style={{fontSize:13,color:C.mid,fontFamily:C.P,lineHeight:1.45,paddingTop:8,borderTop:`1px solid ${C.line}`}}>{b.closest}</div>}
+      <div style={{fontSize:15,color:C.ink2,fontFamily:C.P,lineHeight:1.5}}>{b.pctWhy}</div>
+    </div>}
   </div>;
 }
 
@@ -136,9 +166,9 @@ function useDeckStyle(){
   return s;
 }
 /* After a scan: an "Is this it?" check when the label was hard to read, then the result (match,
-   reasons, style, price, and Rate / Save for later / Tell me about it). The card deck is the
-   optional deep dive, opened straight away for people who usually want it. */
-function ScanCardsScreen({nav,back}){
+   reasons, then three equal next steps: Learn about it / Rate it / Save for later, then style and price). The card deck is the
+   optional deep dive, one tap away. */
+function ScanCardsScreen({nav,back,showPro}){
   const scanData=React.useMemo(()=>{
     try{ return JSON.parse(sessionStorage.getItem('vinterest_scan_result')||'{}'); }catch(e){ return {}; }
   },[]);
@@ -150,7 +180,8 @@ function ScanCardsScreen({nav,back}){
   const confirmKey='vinterest_scan_confirmed_'+((scanData.wine&&scanData.wine.name)||'').replace(/\s/g,'_');
   const [confirmed,setConfirmed]=React.useState(()=>!!saved||!ScanFlow.needsConfirm(scanData.wine,source)||!!sessionStorage.getItem(confirmKey));
   const [editing,setEditing]=React.useState(false);
-  const [view,setView]=React.useState(()=>scanData.view||(ScanFlow.prefersDeck()?'deck':'result'));
+  // Every scan opens on the result; the deck is one tap away ("Learn about it").
+  const [view,setView]=React.useState(()=>scanData.view||'result');
   const deckStyle=useDeckStyle();
   const curr=React.useMemo(()=>Regional.current(),[]);
   const match=React.useMemo(()=>wine?TasteMatch.assess(wine,WineHistory.getAll()):null,[wine,ratingsVersion]);
@@ -167,7 +198,7 @@ function ScanCardsScreen({nav,back}){
     const isNew=!WineHistory.find(wine);
     WineHistory.track(wine);
     if(isNew&&source==='list') WineHistory.setScanIntent(wine.name,wine.vintage,'checking');
-    if(source==='camera') ScanFlow.awardScanXP(wine);
+    if(source==='camera'){ ScanFlow.awardScanXP(wine); ScanFlow.unlockLearning(wine); }
   },[wine,confirmed]);
 
   function applyEdit(patch){
@@ -196,16 +227,16 @@ function ScanCardsScreen({nav,back}){
       ? <ConfirmGate wine={wine} onYes={confirm} onEdit={()=>setEditing(true)} nav={nav}
           onAlt={()=>applyEdit({name:wine.alternative,producer:''})}/>
       : view==='deck'
-        ? <CardDeck key={deckStyle} deckStyle={deckStyle} wine={wine} gen={gen} loading={loading} match={match}
+        ? <CardDeck key={deckStyle} deckStyle={deckStyle} wine={wine} gen={gen} loading={loading} match={match} showPro={showPro}
             curr={curr} scanData={scanData} existingRating={existingRating} nav={nav}
             onRated={()=>{ setIntent('tasted'); setRatingsVersion(v=>v+1); }}
             onSaveForLater={()=>{ setIntent('checking'); setView('saved'); }}
             onBlindCall={()=>setIntent('tasting')}/>
-        : <ScanResult wine={wine} match={match} curr={curr} scanData={scanData} existingRating={existingRating} nav={nav}
+        : <ScanResult wine={wine} match={match} curr={curr} scanData={scanData} existingRating={existingRating} nav={nav} showPro={showPro}
             view={view} setView={setView} onEdit={()=>setEditing(true)}
             onRated={()=>{ setIntent('tasted'); setRatingsVersion(v=>v+1); }}
-            onSaveForLater={()=>{ ScanFlow.recordPath('quick'); setIntent('checking'); setView('saved'); }}
-            onDeck={()=>{ ScanFlow.recordPath('deck'); setView('deck'); }}/>}
+            onSaveForLater={()=>{ setIntent('checking'); setView('saved'); }}
+            onDeck={()=>setView('deck')}/>}
     {editing&&<EditWineSheet wine={wine} onSave={applyEdit} onClose={()=>setEditing(false)}/>}
     <style>{`
       @keyframes scSpin{to{transform:rotate(360deg)}}
@@ -304,10 +335,11 @@ function EditWineSheet({wine,onSave,onClose}){
 }
 
 /* ── the result: everything needed to decide, on one screen ── */
-function ScanResult({wine,match,curr,scanData,existingRating,nav,view,setView,onEdit,onRated,onSaveForLater,onDeck}){
+function ScanResult({wine,match,curr,scanData,existingRating,nav,showPro,view,setView,onEdit,onRated,onSaveForLater,onDeck}){
   const col=_TONE_COL[match?match.tone:'neutral'];
   const [shop,setShop]=React.useState(()=>curr.isTravel?null:ScanFlow.shopPrice(wine,curr));
-  React.useEffect(()=>{ let live=true; ScanFlow.shopEstimate(wine,curr).then(d=>{ if(live&&d) setShop(d.mid); }); return()=>{ live=false; }; },[wine&&wine.name,curr.code]);
+  const [shopFound,setShopFound]=React.useState(false); // from current shop listings, not an estimate
+  React.useEffect(()=>{ let live=true; ScanFlow.shopEstimate(wine,curr).then(d=>{ if(live&&d){ setShop(d.mid); setShopFound(d.source==='search'); } }); return()=>{ live=false; }; },[wine&&wine.name,curr.code]);
   // A list read abroad is priced in its own currency: compare like with like.
   const lc=scanData.listCurrency;
   const list=scanData.listPrice?(lc&&lc!==curr.code?scanData.listPrice/(USD_FX[lc]||1)*(USD_FX[curr.code]||1):scanData.listPrice):null;
@@ -335,9 +367,46 @@ function ScanResult({wine,match,curr,scanData,existingRating,nav,view,setView,on
         </div>
       </div>
       {match&&(match.reasons.length>0||match.expected!=null)&&<div style={{marginTop:14,paddingTop:12,borderTop:`1px solid ${C.line}`}}>
-        <MatchReasons match={match} showSummary={match.expected!=null}/>
+        <MatchReasons match={match} showSummary={match.expected!=null} priceNote={TasteMatch.priceNote(wine,list||shop,WineHistory.getAll(),curr)}/>
+        <MatchBreakdown match={match}/>
       </div>}
     </Card>
+
+    {view==='rate'
+      ? <Card style={{padding:16}}><RatingPanel wine={wine} existingRating={existingRating} nav={nav} showPro={showPro} curr={curr} onRated={onRated} onSaveForLater={existingRating?null:onSaveForLater}/></Card>
+      : view==='saved'
+        ? <><Card style={{padding:16,display:'flex',flexDirection:'column',gap:10,alignItems:'center',textAlign:'center'}}>
+            <div style={{width:48,height:48,borderRadius:24,background:C.crSoft,display:'flex',alignItems:'center',justifyContent:'center'}}><Icon n="check" sz={22} col={C.cr}/></div>
+            <div style={{fontSize:18,fontWeight:800,color:C.ink,fontFamily:C.P}}>Saved for later</div>
+            <div style={{fontSize:15,color:C.ink2,fontFamily:C.P,lineHeight:1.5}}>It won't count towards your WineDNA until you buy or taste it. Next time you open the app we'll ask whether you bought it.</div>
+            <div role="button" onClick={()=>setView('rate')} style={{fontSize:15,fontWeight:700,color:C.cr,fontFamily:C.P,cursor:'pointer'}}>Already tasted it? Rate it instead →</div>
+          </Card>
+          <Card style={{padding:16}}><KeepLearning wine={wine} nav={nav} showPro={showPro} intro="Shopping? Learn a little about it before you decide."/></Card>
+          <div style={{display:'flex',gap:10}}>
+            <Btn full onClick={()=>nav('mywines')}>My Wines</Btn>
+            <Btn primary full onClick={()=>nav('camera')}>Scan another</Btn>
+          </div></>
+        : <div>
+            {/* Three next steps as full-width rows, straight under the match: learning about the
+                wine is as easy to reach as rating or saving it. */}
+            <div style={{fontSize:13,fontWeight:700,color:C.mid,letterSpacing:'0.07em',textTransform:'uppercase',fontFamily:C.P,margin:'2px 2px 8px'}}>What next?</div>
+            <div style={{display:'flex',flexDirection:'column',gap:8}}>
+              {[
+                {key:'learn',icon:'book',label:'Learn about it',sub:'Story, taste, region and grape',on:onDeck},
+                {key:'rate',icon:'star',label:existingRating?`Re-rate it (${existingRating})`:'Rate it',sub:existingRating?'Changed your mind?':'Score it to sharpen your WineDNA',on:()=>setView('rate')},
+                ...(existingRating?[]:[{key:'save',icon:'bookmark',label:'Save for later',sub:'Shopping, or not tasted yet',on:onSaveForLater}]),
+              ].map(x=>(
+                <div key={x.key} role="button" onClick={x.on} style={{background:C.white,border:`1.5px solid ${C.crDim}`,borderRadius:14,padding:'12px 14px',display:'flex',alignItems:'center',gap:12,cursor:'pointer',boxShadow:'0 1px 3px rgba(0,0,0,0.04)'}}>
+                  <div style={{width:38,height:38,borderRadius:19,background:C.crSoft,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><Icon n={x.icon} sz={18} col={C.cr}/></div>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontSize:16,fontWeight:800,color:C.ink,fontFamily:C.P,lineHeight:1.25}}>{x.label}</div>
+                    <div style={{fontSize:13,color:C.mid,fontFamily:C.P,lineHeight:1.35}}>{x.sub}</div>
+                  </div>
+                  <Icon n="chevron" sz={14} col={C.mid}/>
+                </div>
+              ))}
+            </div>
+          </div>}
 
     {(match&&match.style||shop||list)&&<Card style={{padding:16,display:'flex',flexDirection:'column',gap:10}}>
       {match&&match.style&&<div>
@@ -350,7 +419,7 @@ function ScanResult({wine,match,curr,scanData,existingRating,nav,view,setView,on
         {shop&&<div style={{display:'flex',alignItems:'baseline',gap:8}}>
           <span style={{fontSize:15,color:C.ink,fontFamily:C.P,flex:1}}>{curr.isTravel?`In shops in ${curr.label}`:'In shops'}</span>
           <span style={{fontSize:15,fontWeight:800,color:C.ink,fontFamily:C.P}}>about {ScanFlow.money(shop,curr)}</span>
-          <span style={{fontSize:13,color:C.mid,fontFamily:C.P}}>est.</span>
+          <span style={{fontSize:13,color:C.mid,fontFamily:C.P}}>{shopFound?'in shops now':'est.'}</span>
         </div>}
         {list&&<div style={{display:'flex',alignItems:'baseline',gap:8,marginTop:4}}>
           <span style={{fontSize:15,color:C.ink,fontFamily:C.P,flex:1}}>On this list</span>
@@ -365,30 +434,6 @@ function ScanResult({wine,match,curr,scanData,existingRating,nav,view,setView,on
       </div>}
     </Card>}
 
-    {view==='rate'
-      ? <Card style={{padding:16}}><RatingPanel wine={wine} existingRating={existingRating} nav={nav} curr={curr} onRated={onRated} onSaveForLater={existingRating?null:onSaveForLater}/></Card>
-      : view==='saved'
-        ? <Card style={{padding:16,display:'flex',flexDirection:'column',gap:10,alignItems:'center',textAlign:'center'}}>
-            <div style={{width:48,height:48,borderRadius:24,background:C.crSoft,display:'flex',alignItems:'center',justifyContent:'center'}}><Icon n="check" sz={22} col={C.cr}/></div>
-            <div style={{fontSize:18,fontWeight:800,color:C.ink,fontFamily:C.P}}>Saved for later</div>
-            <div style={{fontSize:15,color:C.ink2,fontFamily:C.P,lineHeight:1.5}}>It won't count towards your WineDNA until you buy or taste it. Next time you open the app we'll ask whether you bought it.</div>
-            <div style={{display:'flex',gap:10,width:'100%',marginTop:4}}>
-              <Btn full onClick={()=>nav('mywines')}>My Wines</Btn>
-              <Btn primary full onClick={()=>nav('camera')}>Scan another</Btn>
-            </div>
-          </Card>
-        : <>
-            <Btn primary full onClick={()=>{ ScanFlow.recordPath('quick'); setView('rate'); }}>{existingRating?`Re-rate it (${existingRating})`:'I\'ve tasted it: rate it'}</Btn>
-            {!existingRating&&<Btn full onClick={onSaveForLater}>Save for later</Btn>}
-            <Card onClick={onDeck} style={{padding:'14px 16px',display:'flex',alignItems:'center',gap:12,cursor:'pointer'}}>
-              <div style={{width:40,height:40,borderRadius:12,background:C.crSoft,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><Icon n="book" sz={19} col={C.cr}/></div>
-              <div style={{flex:1,minWidth:0}}>
-                <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>Tell me about it</div>
-                <div style={{fontSize:13,color:C.mid,fontFamily:C.P,lineHeight:1.4}}>The story, where it's from, how to taste it and what to say about it</div>
-              </div>
-              <Icon n="chevron" sz={15} col={C.mid}/>
-            </Card>
-          </>}
   </div>;
 }
 
@@ -653,12 +698,13 @@ function BlindCallResult({score,onClose}){
 }
 
 function ValueFace({wine,curr,scanData,accent,soft,expanded}){
-  const [pd,setPd]=React.useState(null);
+  // The label's estimate shows straight away; the shop price replaces it when it arrives.
+  const [pd,setPd]=React.useState(()=>{ const l=ScanFlow.shopPrice(wine,curr); return l!=null?{mid:l,source:'label'}:null; });
   const [loading,setLoading]=React.useState(false);
   React.useEffect(()=>{
     if(!wine||!wine.name) return;
     setLoading(true);
-    ScanFlow.shopEstimate(wine,curr).then(d=>setPd(d)).finally(()=>setLoading(false));
+    ScanFlow.shopEstimate(wine,curr).then(d=>{ if(d) setPd(d); }).finally(()=>setLoading(false));
   },[wine&&wine.name,curr.code]);
   const fmt=n=>n!=null?curr.base+Number(n).toLocaleString():'—';
   // Present when opened from a wine list; converted when the list is in another currency.
@@ -687,6 +733,7 @@ function ValueFace({wine,curr,scanData,accent,soft,expanded}){
         <div style={{fontSize:22,fontWeight:800,fontFamily:C.P,lineHeight:1}}>{ratio?ratio.toFixed(1)+'×':'~2.5×'}</div>
         <div style={{fontSize:13.5,fontFamily:C.P,lineHeight:1.4,opacity:.92}}>{ratio?(ratio>=3?'A steep markup versus the shelf price.':ratio>=2?'A fair, typical restaurant markup.':'A gentle markup — good value on a list.'):'Restaurants usually charge two to three times retail.'}</div>
       </div>
+      {loading&&pd.source==='label'&&<div style={{fontSize:13,color:C.mid,fontFamily:C.P,fontStyle:'italic'}}>Checking current shop prices…</div>}
       {pd.tier&&<div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
         <span style={{fontSize:14,color:C.mid,fontFamily:C.P}}>Price tier</span>
         <span style={{fontSize:14,fontWeight:700,color:accent,fontFamily:C.P,textTransform:'capitalize'}}>{String(pd.tier).replace('-',' ')}</span>
@@ -697,9 +744,12 @@ function ValueFace({wine,curr,scanData,accent,soft,expanded}){
 }
 
 /* ── rating: the score, then optional tasting details that sharpen future matches ── */
-function RatingPanel({wine,existingRating,nav,curr,onRated,onSaveForLater}){
+function RatingPanel({wine,existingRating,nav,showPro,curr,onRated,onSaveForLater,onStage}){
   const [score,setScore]=React.useState(existingRating||0);
   const [saved,setSaved]=React.useState(false);
+  const [next,setNext]=React.useState(false);
+  // Tells the deck which step it's on, so the card's label follows (Rate it → Your score → Keep learning).
+  React.useEffect(()=>{ if(onStage) onStage(next?'next':saved?'saved':'rate'); },[saved,next]);
   const label=ParkerScale.label(score);
   const tc=_typeCol(wine);
   function commit(){
@@ -715,6 +765,15 @@ function RatingPanel({wine,existingRating,nav,curr,onRated,onSaveForLater}){
     setSaved(true);
     if(onRated) onRated(score);
   }
+  // After the score and the optional details: what to learn next, then the ways out.
+  if(saved&&next) return <div style={{display:'flex',flexDirection:'column',gap:14}}>
+    <KeepLearning wine={wine} nav={nav} showPro={showPro}/>
+    <div style={{marginTop:6,paddingTop:16,borderTop:`2px solid ${C.line}`,display:'flex',flexDirection:'column',gap:10}}>
+      <Btn primary full onClick={()=>nav('home')}>Finish</Btn>
+      <Btn full onClick={()=>nav('detail')}>See full wine details</Btn>
+      <div onClick={()=>nav('camera')} style={{textAlign:'center',fontSize:15,fontWeight:600,color:C.mid,fontFamily:C.P,cursor:'pointer',padding:'2px 0'}}>Scan another bottle</div>
+    </div>
+  </div>;
   if(saved) return <div style={{display:'flex',flexDirection:'column',gap:14}}>
     <div style={{display:'flex',alignItems:'center',gap:10}}>
       <div style={{width:36,height:36,borderRadius:18,background:C.greenBg,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><Icon n="check" sz={18} col={C.green}/></div>
@@ -724,12 +783,9 @@ function RatingPanel({wine,existingRating,nav,curr,onRated,onSaveForLater}){
       </div>
     </div>
     <TastingExtras wine={wine} curr={curr}/>
-    {/* End of the flow: set apart from the optional details above so it doesn't read as one of them. */}
-    <div style={{marginTop:10,paddingTop:16,borderTop:`2px solid ${C.line}`,display:'flex',flexDirection:'column',gap:10}}>
-      <div style={{fontSize:13,fontWeight:700,color:C.mid,fontFamily:C.P,letterSpacing:'0.06em',textTransform:'uppercase',textAlign:'center'}}>All done</div>
-      <Btn primary full onClick={()=>nav('home')}>Finish</Btn>
-      <Btn full onClick={()=>nav('detail')}>See full wine details</Btn>
-      <div onClick={()=>nav('camera')} style={{textAlign:'center',fontSize:15,fontWeight:600,color:C.mid,fontFamily:C.P,cursor:'pointer',padding:'2px 0'}}>Scan another bottle</div>
+    {/* Set apart from the optional details above so it doesn't read as one of them. */}
+    <div style={{marginTop:10,paddingTop:16,borderTop:`2px solid ${C.line}`}}>
+      <Btn primary full onClick={()=>setNext(true)}>Done: what's next?</Btn>
     </div>
   </div>;
   return <div style={{display:'flex',flexDirection:'column',gap:14}}>
@@ -754,55 +810,114 @@ function RatingPanel({wine,existingRating,nav,curr,onRated,onSaveForLater}){
   </div>;
 }
 
-/* Optional, after a score: how it compared with the label estimate (feeds WineDNA and matches
-   through WineDNA.axisValue), what they paid (feeds Value), and whether they'd buy it again.
-   Each tap saves straight away. A Blind Call on this bottle pre-fills the comparison. */
+/* What each trait means, what the label suggested, and how to notice it on the next sip: the
+   comparison teaches the word as well as asking for it. */
+const _NOTICE={
+  body:{what:'How heavy the wine feels in your mouth.',how:'Think skimmed milk (light) against whole milk (full).',word:{low:'light',mid:'medium-bodied',high:'full-bodied'}},
+  tannins:{what:'The drying, grippy feel on your gums and teeth, from grape skins and oak.',how:'Like a sip of strong black tea.',word:{low:'silky',mid:'gently grippy',high:'firm and grippy'}},
+  acidity:{what:'The freshness that makes your mouth water.',how:'Notice how much your mouth waters after you swallow.',word:{low:'soft',mid:'fresh',high:'zingy'}},
+  texture:{what:'How smooth or rich a white feels.',how:'Crisp like a green apple, or round and creamy like butter.',word:{low:'crisp',mid:'smooth',high:'rich and creamy'}},
+};
+
+/* Optional, after a score. Each answer is used (inputs we ask for must teach, personalise or
+   guide): "buy again" feeds the Buy again list, WineDNA's "Worth buying again", the sommelier
+   script and matching; what they paid feeds Value and their budget; what they noticed adjusts the
+   label estimate (WineDNA.axisValue) for WineDNA and every match. Each tap saves straight away;
+   a Blind Call on this bottle pre-fills the comparison. Beginners see the comparison folded away. */
 function TastingExtras({wine,curr}){
   const entry=WineHistory.find(wine)||wine;
   const axes=ScanFlow.compareAxes(entry);
   const [tasted,setTasted]=React.useState(()=>entry.tasted||ScanFlow.tastedFromBlindCall(entry)||{});
   const [paid,setPaid]=React.useState(()=>entry.price_paid&&entry.price_paid.amount?String(entry.price_paid.amount):'');
-  const [again,setAgain]=React.useState(entry.buy_again);
+  const [again,setAgain]=React.useState(entry.buy_again===true);
+  const [showNotice,setShowNotice]=React.useState(()=>UserPrefs.experience()!=='novice'||!!entry.tasted);
   const save=patch=>{ const e=WineHistory.find(wine); if(e) WineHistory.setTasting(e.name,e.vintage,patch); };
   React.useEffect(()=>{ if(!entry.tasted&&Object.keys(tasted).length) save({tasted}); },[]);
   const tc=_typeCol(entry);
   const seg=(active)=>({flex:1,padding:'8px 4px',borderRadius:10,border:`1.5px solid ${active?tc:C.line}`,background:active?tc:C.white,color:active?'#fff':C.ink2,fontSize:14,fontWeight:600,fontFamily:C.P,textAlign:'center',cursor:'pointer'});
-  return <div style={{display:'flex',flexDirection:'column',gap:12,paddingTop:12,borderTop:`1px solid ${C.line}`}}>
+  const lab={fontSize:13,fontWeight:700,color:C.mid,fontFamily:C.P,marginBottom:5};
+  return <div style={{display:'flex',flexDirection:'column',gap:14,paddingTop:12,borderTop:`1px solid ${C.line}`}}>
+    <div onClick={()=>{ const v=!again; setAgain(v); save({buy_again:v}); }} role="checkbox" aria-checked={again}
+      style={{display:'flex',alignItems:'center',gap:12,padding:'12px 14px',borderRadius:12,border:`1.5px solid ${again?C.green:C.line}`,background:again?C.greenBg:C.white,cursor:'pointer'}}>
+      <div style={{width:34,height:34,borderRadius:17,background:again?C.green:C.offWhite,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><Icon n="cart" sz={18} col={again?'#fff':C.mid}/></div>
+      <div style={{flex:1}}>
+        <div style={{fontSize:15,fontWeight:700,color:again?C.green:C.ink,fontFamily:C.P}}>{again?'On your Buy again list':'I\'d buy this again'}</div>
+        <div style={{fontSize:13,color:C.mid,fontFamily:C.P,lineHeight:1.4}}>We'll keep it handy for your next shop and bring it into your sommelier script.</div>
+      </div>
+    </div>
     <div>
-      <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>What did you notice?</div>
-      <div style={{fontSize:13,color:C.mid,fontFamily:C.P,lineHeight:1.45,marginTop:2}}>Optional. Compared with the label estimate, so your WineDNA and matches reflect what you actually tasted.</div>
-    </div>
-    {axes.map(k=>{
-      const [lo,hi]=ScanFlow.COMPARE[k]||['Less','More'];
-      const pick=v=>{ const next={...tasted,[k]:v}; setTasted(next); save({tasted:next}); };
-      return <div key={k}>
-        <div style={{fontSize:13,fontWeight:700,color:C.mid,fontFamily:C.P,marginBottom:5}}>{WineDNA.AXES[k].name}</div>
-        <div style={{display:'flex',gap:6}}>
-          <div onClick={()=>pick(-1)} style={seg(tasted[k]===-1)}>{lo}</div>
-          <div onClick={()=>pick(0)} style={seg(tasted[k]===0)}>As expected</div>
-          <div onClick={()=>pick(1)} style={seg(tasted[k]===1)}>{hi}</div>
-        </div>
-      </div>;
-    })}
-    <div style={{display:'flex',flexDirection:'column',gap:12}}>
-      <div>
-        <div style={{fontSize:13,fontWeight:700,color:C.mid,fontFamily:C.P,marginBottom:5}}>What you paid</div>
-        <div style={{display:'flex',alignItems:'center',gap:6,padding:'8px 10px',borderRadius:10,border:`1.5px solid ${C.line}`,background:C.white}}>
-          <span style={{fontSize:15,color:C.mid,fontFamily:C.P}}>{curr.base}</span>
-          <input inputMode="decimal" placeholder="0" value={paid} aria-label="What you paid"
-            onChange={e=>setPaid(e.target.value.replace(/[^0-9.]/g,''))}
-            onBlur={()=>{ const n=Number(paid); save({price_paid:n>0?{amount:n,code:curr.code}:null}); }}
-            style={{flex:1,minWidth:0,border:'none',outline:'none',fontSize:16,fontFamily:C.P,color:C.ink,background:'transparent'}}/>
-        </div>
+      <div style={lab}>What you paid (optional)</div>
+      <div style={{display:'flex',alignItems:'center',gap:6,padding:'8px 10px',borderRadius:10,border:`1.5px solid ${C.line}`,background:C.white}}>
+        <span style={{fontSize:15,color:C.mid,fontFamily:C.P}}>{curr.base}</span>
+        <input inputMode="decimal" placeholder="0" value={paid} aria-label="What you paid"
+          onChange={e=>setPaid(e.target.value.replace(/[^0-9.]/g,''))}
+          onBlur={()=>{ const n=Number(paid); save({price_paid:n>0?{amount:n,code:curr.code}:null}); }}
+          style={{flex:1,minWidth:0,border:'none',outline:'none',fontSize:16,fontFamily:C.P,color:C.ink,background:'transparent'}}/>
       </div>
-      <div>
-        <div style={{fontSize:13,fontWeight:700,color:C.mid,fontFamily:C.P,marginBottom:5}}>Would you buy it again?</div>
-        <div style={{display:'flex',gap:6}}>
-          <div onClick={()=>{ setAgain(true); save({buy_again:true}); }} style={seg(again===true)}>Yes</div>
-          <div onClick={()=>{ setAgain(false); save({buy_again:false}); }} style={seg(again===false)}>No</div>
-        </div>
-      </div>
+      <div style={{fontSize:13,color:C.mid,fontFamily:C.P,marginTop:4}}>Sets your usual spend and shows which bottles are good value for you.</div>
     </div>
+    {axes.length>0&&(!showNotice
+      ?<div onClick={()=>setShowNotice(true)} role="button" style={{fontSize:15,fontWeight:600,color:C.cr,fontFamily:C.P,cursor:'pointer'}}>Want to go further? Tell us what you noticed →</div>
+      :<div style={{display:'flex',flexDirection:'column',gap:14}}>
+        <div>
+          <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>What did you notice?</div>
+          <div style={{fontSize:13,color:C.mid,fontFamily:C.P,lineHeight:1.45,marginTop:2}}>Optional. Take another sip: here's what to feel for. Your answers adjust your WineDNA and future matches.</div>
+        </div>
+        {axes.map(k=>{
+          const [lo,hi]=ScanFlow.COMPARE[k]||['Less','More'];
+          const N=_NOTICE[k]||{}, expected=N.word&&N.word[WineDNA.level(entry[k])];
+          const pick=v=>{ const next={...tasted,[k]:v}; setTasted(next); save({tasted:next}); };
+          return <div key={k}>
+            <div style={{fontSize:15,fontWeight:700,color:C.ink,fontFamily:C.P}}>{WineDNA.AXES[k].name}</div>
+            {N.what&&<div style={{fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.45,marginTop:2}}>{N.what} {N.how}</div>}
+            {expected&&<div style={{fontSize:13,color:C.mid,fontFamily:C.P,marginTop:3}}>The label suggests {expected}. How did it feel to you?</div>}
+            <div style={{display:'flex',gap:6,marginTop:7}}>
+              <div onClick={()=>pick(-1)} style={seg(tasted[k]===-1)}>{lo}</div>
+              <div onClick={()=>pick(0)} style={seg(tasted[k]===0)}>As expected</div>
+              <div onClick={()=>pick(1)} style={seg(tasted[k]===1)}>{hi}</div>
+            </div>
+          </div>;
+        })}
+      </div>)}
+  </div>;
+}
+
+/* "Keep learning": LearnNext's tiles for this wine (its type's basics, region, grape, the next
+   beginner article, unread articles about it). Locked ones open the Pro sheet. */
+function KeepLearning({wine,nav,showPro,intro}){
+  const tiles=React.useMemo(()=>LearnNext.forWine(wine),[wine&&wine.name]);
+  const [busy,setBusy]=React.useState(null);
+  const startQuiz=cfg=>{ sessionStorage.setItem('vinterest_quiz_config2',JSON.stringify(cfg)); nav('quiz'); };
+  function open(t){
+    if(busy) return;
+    if(t.locked){ if(showPro) showPro(t.locked); return; }
+    if(t.kind==='topic') return startQuiz(t.config);
+    if(t.kind==='region'){ setBusy(t.key); RegionQuizBank.load(t.region,()=>{ setBusy(null); startQuiz({mode:'region',region:t.region}); }); return; }
+    if(t.kind==='grape'){ setBusy(t.key); getGrapeQuiz(t.grape,qs=>{ setBusy(null); if(qs&&qs.length) startQuiz({mode:'grape',grape:t.grape,questions:qs}); }); return; }
+    if(t.kind==='onramp'){ sessionStorage.setItem('vinterest_onramp_idx',String(t.idx)); nav('article'); return; }
+    if(t.kind==='article'){ sessionStorage.setItem('vinterest_gen_article',JSON.stringify(t.stub)); nav('gen-article'); return; }
+    nav('profile');
+  }
+  return <div style={{display:'flex',flexDirection:'column',gap:10}}>
+    <div>
+      <div style={{fontSize:18,fontWeight:800,color:C.ink,fontFamily:C.P}}>Keep learning</div>
+      <div style={{fontSize:14,color:C.mid,fontFamily:C.P,lineHeight:1.45,marginTop:2}}>{intro||'Picked for the wine you just had. A few minutes each.'}</div>
+    </div>
+    {tiles.map(t=>(
+      <div key={t.key} onClick={()=>open(t)} role="button" style={{display:'flex',alignItems:'center',gap:12,padding:'12px 14px',borderRadius:14,background:C.white,border:`1px solid ${C.line}`,cursor:'pointer'}}>
+        <div style={{width:40,height:40,borderRadius:12,background:t.locked?C.offWhite:(t.col?t.col+'14':C.crSoft),display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+          {t.kind==='region'&&Regions.flag(t.key.slice(7))?<span role="img" style={{fontSize:'22px',lineHeight:1,opacity:t.locked?0.5:1}}>{Regions.flag(t.key.slice(7))}</span>:<Icon n={t.locked?'lock':t.icon} sz={19} col={t.locked?C.mid:(t.col||C.cr)}/>}
+        </div>
+        <div style={{flex:1,minWidth:0}}>
+          <div style={{fontSize:15,fontWeight:700,color:C.ink,fontFamily:C.P,lineHeight:1.3}}>{t.title}</div>
+          <div style={{fontSize:13,color:C.mid,fontFamily:C.P,lineHeight:1.4,marginTop:2}}>{t.why}</div>
+          {(t.progress||t.locked)&&<div style={{fontSize:12,fontWeight:700,color:t.locked?C.amber:C.ink2,fontFamily:C.P,marginTop:4}}>{t.locked?'Unlock with Pro':t.progress}</div>}
+        </div>
+        {busy===t.key
+          ?<div style={{width:14,height:14,borderRadius:7,border:`2px solid ${C.line}`,borderTopColor:C.cr,animation:'scSpin .8s linear infinite',flexShrink:0}}/>
+          :t.locked?<ProBadge/>:<Icon n="chevron" sz={13} col={C.mid}/>}
+      </div>
+    ))}
   </div>;
 }
 
@@ -824,10 +939,11 @@ function TasteCard({wine,gen,accent,onBlindCall}){
 }
 
 /* ── the deck (three interaction styles) ── */
-function CardDeck({deckStyle,wine,gen,loading,match,curr,scanData,existingRating,nav,onRated,onSaveForLater,onBlindCall}){
+function CardDeck({deckStyle,wine,gen,loading,match,curr,scanData,existingRating,nav,showPro,onRated,onSaveForLater,onBlindCall}){
   const cards=React.useMemo(()=>buildCards({match}),[match&&match.tone]);
-  const ctx={wine,gen,loading,match,curr,scanData,onBlindCall,
-    finish:()=><RatingPanel wine={wine} existingRating={existingRating} nav={nav} curr={curr} onRated={onRated} onSaveForLater={existingRating?null:onSaveForLater}/>};
+  const [finishStage,setFinishStage]=React.useState('rate');
+  const ctx={wine,gen,loading,match,curr,scanData,onBlindCall,finishStage,
+    finish:()=><RatingPanel wine={wine} existingRating={existingRating} nav={nav} showPro={showPro} curr={curr} onRated={onRated} onSaveForLater={existingRating?null:onSaveForLater} onStage={setFinishStage}/>};
   const [idx,setIdx]=React.useState(0);
 
   const total=cards.length;
@@ -850,18 +966,31 @@ function CardDeck({deckStyle,wine,gen,loading,match,curr,scanData,existingRating
 }
 
 /* shared card chrome */
+/* The last card's label follows the rating step: Rate it, then Your score, then Keep learning. */
+const _FINISH_HEAD={rate:null,saved:{eyebrow:'Your score',icon:'check'},next:{eyebrow:'Keep learning',icon:'book'}};
 function CardShell({card,children,ctx,style}){
   const isFinish=card.kind==='finish';
+  const head=(isFinish&&ctx&&_FINISH_HEAD[ctx.finishStage])||card;
+  // Long text (a producer story at Extra large) scrolls inside the card; a fade at the bottom
+  // says there's more, since the scrollbar is hidden.
+  const body=React.useRef(null);
+  const [more,setMore]=React.useState(false);
+  const check=React.useCallback(()=>{ const el=body.current; if(el) setMore(el.scrollHeight-el.scrollTop-el.clientHeight>6); },[]);
+  React.useEffect(()=>{ check(); const el=body.current; if(!el||typeof ResizeObserver==='undefined') return;
+    const ro=new ResizeObserver(check); ro.observe(el); if(el.firstElementChild) ro.observe(el.firstElementChild); return()=>ro.disconnect(); },[check]);
   return <div style={{background:C.white,borderRadius:22,border:`1px solid ${C.line}`,boxShadow:'0 6px 22px rgba(0,0,0,0.08)',display:'flex',flexDirection:'column',overflow:'hidden',...style}}>
     <div style={{height:5,background:card.accent,flexShrink:0}}/>
     <div style={{padding:'16px 18px 6px',display:'flex',alignItems:'center',gap:9,flexShrink:0}}>
-      <div style={{width:30,height:30,borderRadius:9,background:card.soft,display:'flex',alignItems:'center',justifyContent:'center'}}><Icon n={card.icon} sz={16} col={card.accent}/></div>
-      <span style={{fontSize:12.5,fontWeight:700,color:card.accent,fontFamily:C.P,letterSpacing:'0.09em',textTransform:'uppercase'}}>{card.eyebrow}</span>
+      <div style={{width:30,height:30,borderRadius:9,background:card.soft,display:'flex',alignItems:'center',justifyContent:'center'}}><Icon n={head.icon} sz={16} col={card.accent}/></div>
+      <span style={{fontSize:12.5,fontWeight:700,color:card.accent,fontFamily:C.P,letterSpacing:'0.09em',textTransform:'uppercase'}}>{head.eyebrow}</span>
     </div>
-    {/* overflow:clip, not hidden: a hidden-overflow box is a scroll container, and on touch
-        screens the browser claims horizontal drags that start inside one, cancelling the swipe. */}
-    <div className="sc-scroll" style={{padding:'8px 18px 18px',overflowX:'clip',overflowY:isFinish?'auto':'clip',flex:1,minHeight:0}}>
-      {isFinish?ctx.finish():children}
+    {/* Scrolls up and down only: the deck sets touch-action:pan-y (.sc-swipe), so the browser
+        takes vertical drags for scrolling and leaves sideways drags to the swipe. */}
+    <div style={{position:'relative',flex:1,minHeight:0,display:'flex',flexDirection:'column'}}>
+      <div ref={body} onScroll={check} className="sc-scroll" style={{padding:'8px 18px 18px',overflowX:'hidden',overflowY:'auto',flex:1,minHeight:0}}>
+        <div>{isFinish?ctx.finish():children}</div>
+      </div>
+      {more&&<div aria-hidden="true" style={{position:'absolute',left:0,right:0,bottom:0,height:44,pointerEvents:'none',background:`linear-gradient(rgba(255,255,255,0),${C.white})`}}/>}
     </div>
   </div>;
 }
@@ -901,7 +1030,9 @@ function SwipeDeck({deck,ctx,idx,setIdx,go}){
   function onPointerUp(e){
     const s=g.current; g.current=null;
     if(!s||e.pointerId!==s.id||!s.dragging) return;
-    justDragged.current=true; setTimeout(()=>{ justDragged.current=false; },0);
+    // Phones can send the tap from a swipe's lift-off well after the swipe ends; swallow it for
+    // long enough that a swipe finishing over a link ("Save for later") doesn't press it.
+    justDragged.current=true; setTimeout(()=>{ justDragged.current=false; },400);
     hintRef.current=0; setHint(0);
     const speed=Math.abs(s.dx)/Math.max(1,performance.now()-s.t);
     const turn=Math.abs(s.dx)>s.w*0.2||(Math.abs(s.dx)>30&&speed>0.25);

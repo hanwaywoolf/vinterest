@@ -34,7 +34,7 @@ function ScanLocationCard({wine}){
   </Card>;
 }
 
-function WineDetailScreen({back,nav}){
+function WineDetailScreen({back,nav,showPro}){
   const [tab,setTab]=React.useState(0);
   const tabs=['Details','Learn','Price'];
   const scanData=React.useMemo(()=>{
@@ -118,14 +118,13 @@ function WineDetailScreen({back,nav}){
             </div>}
           </div>
         </div>
-        <div style={{display:'flex',gap:14,alignItems:'flex-end',marginBottom:14}}>
-          <div style={{width:52,height:74,borderRadius:10,background:C.crSoft,flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center',border:`1px solid ${C.crDim}`}}>
-            <Icon n="wine" sz={24} col={C.cr}/>
-          </div>
+        {/* Name, vintage and place use the full width; the type pill carries the wine's colour. */}
+        <div style={{marginBottom:14}}>
           <div>
             <div style={{fontSize:24,fontWeight:700,color:C.ink,fontFamily:C.P,lineHeight:1.15}}>{wine?.name||'Château Margaux'}</div>
-            <div style={{fontSize:16,color:C.mid,fontFamily:C.P,marginTop:3}}>{wine?[wine.vintage||'NV',[wine.region!==wine.country?wine.region:null,wine.country].filter(Boolean).join(', ')].filter(Boolean).join(' · '):'2018 · Bordeaux, France'}</div>
-            <div style={{display:'flex',gap:5,marginTop:8,flexWrap:'wrap',alignItems:'center'}}><Pill active sm style={{textTransform:'capitalize'}}>{wine?.type||'Red'}</Pill>{wine?.grapes?.[0]&&<Pill sm>{wine.grapes[0]}{wine.blend||wine.grapes.length>1?' blend':''}</Pill>}{wine&&<span onClick={()=>setEditing(true)} style={{fontSize:13,fontWeight:600,color:C.cr,fontFamily:C.P,cursor:'pointer',marginLeft:4}}>Edit details</span>}</div>
+            <div style={{fontSize:16,color:C.mid,fontFamily:C.P,marginTop:3}}>{wine?<>{wine.vintage||'NV'}{(wine.region||wine.country)&&<> · {Regions.wineFlag(wine)&&<span role="img" aria-label={wine.country||'Country'} style={{fontSize:'17px',marginRight:5,verticalAlign:'-1px'}}>{Regions.wineFlag(wine)}</span>}{[wine.region!==wine.country?wine.region:null,wine.country].filter(Boolean).join(', ')}</>}</>:'2018 · Bordeaux, France'}</div>
+            <div style={{display:'flex',gap:5,marginTop:8,flexWrap:'wrap',alignItems:'center'}}>{(()=>{ const t=WineDNA._t(wine?.type)||'red', col=(typeof _TYPE_COLORS!=='undefined'&&_TYPE_COLORS[t])||C.cr;
+              return <Pill active sm style={{background:col,borderColor:col,fontWeight:600}}>{({red:'Red wine',white:'White wine',rose:'Rosé',sparkling:'Sparkling',orange:'Orange wine',dessert:'Dessert wine',fortified:'Fortified'})[t]||wine?.type}</Pill>; })()}{wine?.grapes?.[0]&&<Pill sm>{wine.grapes[0]}{wine.blend||wine.grapes.length>1?' blend':''}</Pill>}{wine&&<span onClick={()=>setEditing(true)} style={{fontSize:13,fontWeight:600,color:C.cr,fontFamily:C.P,cursor:'pointer',marginLeft:4}}>Edit details</span>}</div>
           </div>
         </div>
         <div style={{display:'flex',borderBottom:`1px solid ${C.line}`}}>
@@ -137,7 +136,7 @@ function WineDetailScreen({back,nav}){
       <div ref={scrollRef} style={{flex:1,overflowY:'auto'}}>
         {editing&&<EditWineSheet wine={wine} onSave={saveEdit} onClose={()=>setEditing(false)}/>}
         {tab===0&&<DetailMerged key={wine&&wine.name} wine={wine} nav={nav} existingRating={existingRating} match={match}/>}
-        {tab===1&&<DetailStory wine={wine} nav={nav} existingRating={existingRating}/>}
+        {tab===1&&<DetailStory wine={wine} nav={nav} showPro={showPro} existingRating={existingRating}/>}
         {tab===2&&<DetailPrice wine={wine} nav={nav}/>}
       </div>
       {confirmDelete&&<div onClick={()=>setConfirmDelete(false)} style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.5)',display:'flex',alignItems:'flex-end',zIndex:80}}>
@@ -375,7 +374,8 @@ function DetailMerged({wine,nav,existingRating=0,match}){
       {/* Why it should (or shouldn't) suit you — TasteMatch's summary and reasons */}
       <Card style={{background:matchConfig.bg,border:matchConfig.border,padding:14}}>
         <div style={{fontSize:13,fontWeight:700,color:matchConfig.col,letterSpacing:'0.07em',textTransform:'uppercase',fontFamily:C.P,marginBottom:6}}>{matchConfig.title}</div>
-        {match&&<MatchReasons match={match} col={matchConfig.col}/>}
+        {match&&<MatchReasons match={match} col={matchConfig.col} priceNote={TasteMatch.priceNote(wine,WineDNA.priceOf(wine),WineHistory.getAll())}/>}
+        {match&&<MatchBreakdown match={match}/>}
       </Card>
 
       {/* Scan location — optional manual note on where/when this was had (full geolocation is backlogged) */}
@@ -486,7 +486,7 @@ function DetailMerged({wine,nav,existingRating=0,match}){
   );
 }
 
-function DetailStory({wine,nav,existingRating=0}){
+function DetailStory({wine,nav,showPro,existingRating=0}){
   const description=(wine?.description?.trim())||'A wine with character and depth.';
 
   // ── Education: grape deep-dive, growing-season context, vocab terms (batched + cached) ──
@@ -524,6 +524,8 @@ function DetailStory({wine,nav,existingRating=0}){
         <SL label="The Story"/>
         <div style={{fontSize:16,color:C.ink2,fontFamily:C.P,lineHeight:1.75}}>{description}</div>
       </div>
+
+      {wine&&<KeepLearning wine={wine} nav={nav} showPro={showPro} intro="Quizzes and articles picked from this wine, and written from your WineDNA."/>}
 
       {/* Producer */}
       {wine?.producer&&(
@@ -644,20 +646,13 @@ function DetailPrice({wine,nav}){
   const [loading,    setLoading]    = React.useState(false);
   const [done,       setDone]       = React.useState(false);
 
-  const cacheKey = wine ? retailPriceCacheKey(wine,curr.code) : null;
-
   React.useEffect(function(){
     if (!wine || !wine.name) return;
     setPriceData(null);
     setDone(false);
 
-    if (cacheKey) {
-      const cached = localStorage.getItem(cacheKey);
-      if (cached) {
-        try { setPriceData(JSON.parse(cached)); setDone(true); return; } catch(e){}
-      }
-    }
-
+    // fetchRetailEstimate answers from the device cache straight away, and looks a premium
+    // wine up again if it was only estimated before the shop-price search existed.
     setLoading(true);
     fetchRetailEstimate(wine,curr)
       .then(function(d){ setPriceData(d); })
@@ -707,7 +702,7 @@ function DetailPrice({wine,nav}){
         <>
           {/* Price range card */}
           <div>
-            <SL label="Estimated Retail Price"/>
+            <SL label={priceData&&priceData.source==='search'?'Current shop price':'Estimated retail price'}/>
             <Card style={{padding:0,overflow:'hidden'}}>
               {/* Mid price hero */}
               <div style={{padding:'18px 16px',background:C.crSoft,display:'flex',justifyContent:'space-between',alignItems:'center',borderBottom:'1px solid '+C.crDim}}>

@@ -33,7 +33,8 @@ test('a new user: age and location, first scan, three questions, then Home on th
   await root.getByRole('button', { name: 'Continue' }).click();
   await root.getByText('Pretty into it').click();
   await root.getByRole('button', { name: 'Start exploring' }).click();
-  await expect(root).toContainText('Your Rosé Script');
+  await expect(root).toContainText('Your rosé sommelier script');
+  await expect(root).toContainText('Take the Rosé basics quiz'); // their own type is the first gap
   await expect(root).toContainText('Wine scanned');
   for (const t of ['Create account', 'Continue with Google', 'Start Pro', 'How often do you drink', 'What are you here for']) await expect(root).not.toContainText(t);
   const state = await page.evaluate(() => ({ prefs: UserPrefs.get(), region: localStorage.getItem('vinterest_region'), age: UserPrefs.ageConfirmed(),

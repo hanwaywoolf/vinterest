@@ -1,14 +1,14 @@
 /* claude-bridge.js
  * Provides window.claude.complete when the app is hosted OUTSIDE the Anthropic
- * preview (e.g. on your own Netlify site).
+ * preview (on Cloudflare Pages, where _worker.js serves /claude).
  *
  * - In the Anthropic preview the host already injects window.claude — this
  *   script detects that and does nothing, so the built-in bridge keeps working.
  * - Everywhere else it installs a proxy that POSTs to a serverless endpoint
- *   (default: /.netlify/functions/claude) which holds your Anthropic API key.
+ *   (default: /claude, handled by _worker.js) which holds the Anthropic API key.
  *
  * Override the endpoint with either:
- *   <meta name="claude-proxy" content="https://your-site/.netlify/functions/claude">
+ *   <meta name="claude-proxy" content="/claude">
  *   or  window.CLAUDE_PROXY_URL = "..."  (set before this script runs)
  */
 (function () {
@@ -18,7 +18,7 @@
   var ENDPOINT =
     window.CLAUDE_PROXY_URL ||
     (meta && meta.getAttribute("content")) ||
-    "/.netlify/functions/claude";
+    "/claude";
 
   function toMessages(arg) {
     if (typeof arg === "string") return [{ role: "user", content: arg }];
@@ -46,6 +46,25 @@
       }
       var data = await res.json();
       return (data && data.text) || "";
+    },
+    /* Current shop price for a premium wine: the Worker searches the web and shares the answer
+       between users (purpose "price_search"). Resolves to {low, mid, high, …} or null. */
+    // {pending:true} when the search is still running (its answer is saved for next time).
+    priceSearch: async function (wine, market) {
+      var abort = typeof AbortController !== "undefined" ? new AbortController() : null;
+      var timer = abort ? setTimeout(function () { abort.abort(); }, 25000) : null;
+      try {
+        var res = await fetch(ENDPOINT, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ purpose: "price_search", wine: wine, market: market }),
+          signal: abort ? abort.signal : undefined
+        });
+        if (!res.ok) return null;
+        var data = await res.json();
+        if (data && data.pending) return { pending: true };
+        return data && data.text ? JSON.parse(data.text) : null;
+      } catch (e) { return null; } finally { if (timer) clearTimeout(timer); }
     }
   };
 })();

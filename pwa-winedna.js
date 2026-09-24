@@ -51,15 +51,28 @@ const WineDNA = {
                    low:'Gentler bubbles: Moscato d\'Asti, Pét-Nat or a softer Prosecco.'},
   },
   GRAPE_SYNONYMS:{'garnacha':'Grenache','garnacha tinta':'Grenache','cannonau':'Grenache','shiraz':'Syrah','tinta roriz':'Tempranillo','tinto fino':'Tempranillo',
-    'tinta de toro':'Tempranillo','cencibel':'Tempranillo','primitivo':'Zinfandel','pinot grigio':'Pinot Gris','monastrell':'Mourvèdre','mataro':'Mourvèdre',
+    'tinta de toro':'Tempranillo','cencibel':'Tempranillo','pinot gris':'Pinot Grigio','grauburgunder':'Pinot Grigio','monastrell':'Mourvèdre','mataro':'Mourvèdre',
     'mourvedre':'Mourvèdre','cot':'Malbec','côt':'Malbec','spätburgunder':'Pinot Noir','spatburgunder':'Pinot Noir','pinot nero':'Pinot Noir',
     'mazuelo':'Carignan','cariñena':'Carignan','carignane':'Carignan','montepulciano d\'abruzzo':'Montepulciano','plavac':'Plavac Mali','mlavac':'Plavac Mali',
     'blaufränkisch':'Blaufränkisch','lemberger':'Blaufränkisch','alvarinho':'Albariño','albarino':'Albariño','gruner veltliner':'Grüner Veltliner',
-    'ugni blanc':'Trebbiano','moscato':'Muscat','moscatel':'Muscat','sémillon':'Sémillon','semillon':'Sémillon'},
+    'ugni blanc':'Trebbiano','moscato':'Muscat','moscatel':'Muscat','sémillon':'Sémillon','semillon':'Sémillon',
+    // Local names and clones: Brunello's "Sangiovese Grosso" and Montepulciano's "Prugnolo Gentile" are Sangiovese.
+    'sangiovese grosso':'Sangiovese','brunello':'Sangiovese','prugnolo gentile':'Sangiovese','prugnolo':'Sangiovese','morellino':'Sangiovese',
+    'nielluccio':'Sangiovese','sangioveto':'Sangiovese','sangiovese piccolo':'Sangiovese','chiavennasca':'Nebbiolo','spanna':'Nebbiolo',
+    'tinta del pais':'Tempranillo','tinta del país':'Tempranillo','tinta fina':'Tempranillo','ull de llebre':'Tempranillo','aragonez':'Tempranillo',
+    'grenache noir':'Grenache','garnacha negra':'Grenache','blauburgunder':'Pinot Noir','pinot noir précoce':'Pinot Noir','weissburgunder':'Pinot Blanc',
+    'pinot bianco':'Pinot Blanc','fumé blanc':'Sauvignon Blanc','fume blanc':'Sauvignon Blanc','steen':'Chenin Blanc','pinot grigio ramato':'Pinot Grigio'},
+  /* The one name a grape goes by everywhere (WineDNA, matching, unlocks, quizzes, articles, XP):
+     label synonyms first ("Shiraz" is Syrah, "Pinot Gris" is Pinot Grigio), then the spelling
+     on the 50-grape Learn list, ignoring case and accents ("Gewurztraminer", "Albarino"), so a
+     grape never shows under one name in WineDNA and another in Learn. */
+  _fold(s){ return String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim(); },
   grape(g){
     const raw=(g||'').trim(), k=raw.toLowerCase(); if(!k) return null;
-    if(this.GRAPE_SYNONYMS[k]) return this.GRAPE_SYNONYMS[k];
-    return raw===k?raw.split(' ').map(w=>w.charAt(0).toUpperCase()+w.slice(1)).join(' '):raw;
+    const syn=this.GRAPE_SYNONYMS[k]||this.GRAPE_SYNONYMS[this._fold(k)];
+    const name=syn||(raw===k?raw.split(' ').map(w=>w.charAt(0).toUpperCase()+w.slice(1)).join(' '):raw);
+    const list=typeof GRAPE_ALLOWLIST!=='undefined'?GRAPE_ALLOWLIST:[];
+    return list.find(x=>this._fold(x)===this._fold(name))||name;
   },
   /* Grapes are variety names only. Scans sometimes return phrases ("Blend - likely Grenache,
      Syrah, or Cinsault", "Red blend", "Mostly Merlot"): split them into varieties, and note
@@ -218,7 +231,9 @@ const WineDNA = {
       // A low-scoring region and the grape that makes it are usually the same bottles: show one line.
       rethink:(()=>{ const out=[]; const low=[...regions.map(x=>({...x,kind:'region'})),...grapes.map(x=>({...x,kind:'grape'}))].filter(x=>x.avg<ParkerScale.DISLIKED).sort((a,b)=>a.avg-b.avg);
         low.forEach(x=>{ const same=out.find(o=>bottles(o)===bottles(x)); if(same){ same.also=x.name; } else if(out.length<2) out.push({...x}); }); return out; })(),
-      disliked:[...p.disliked].sort((a,b)=>a.rating-b.rating).slice(0,3)
+      disliked:[...p.disliked].sort((a,b)=>a.rating-b.rating).slice(0,3),
+      // Bottles they said they'd buy again: their own shortlist for the next shop.
+      buyAgain:p.wines.filter(w=>w.buy_again===true).sort((a,b)=>(b.rating||0)-(a.rating||0)).slice(0,4)
     };
   },
 

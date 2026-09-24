@@ -37,10 +37,11 @@ test('TasteMatch: list wines are told apart, dislikes count, and thin history sa
     return { barolo: [barolo.verdict, barolo.pct, barolo.reasons.map((r) => r.text)], rioja: [rioja.verdict, rioja.pct],
       bare: [bare.verdict, bare.pct], white: [white.verdict, white.pct, calcMatchScore({ type: 'white', body: 0.4 }, all)] };
   });
-  // The demo history scored its two Nebbiolos in the low 70s: a Barolo is no "solid match".
-  expect(out.barolo[0]).toBe('mixed');
+  // The demo history scored its two Nebbiolos in the low 70s: a Barolo is probably not for them.
+  expect(out.barolo[0]).toBe('miss');
   expect(out.barolo[2].join(' ')).toContain('Nebbiolo: you\'ve scored 2, averaging 73.');
-  expect(out.rioja[0]).toBe('good');
+  // Tempranillo averages 85 against reds averaging 87: middling for them, not a favourite.
+  expect(out.rioja[0]).toBe('mixed');
   expect(out.rioja[1]).toBeGreaterThan(out.barolo[1]);
   // Nothing to go on: no made-up number.
   expect(out.bare).toEqual(['unknown', null]);
@@ -104,12 +105,12 @@ test('no camera: the shutter never saves a sample wine, and a library photo scan
   expect(saved.confidence).toBe('high');
 
   // Rate it, then the optional tasting details save straight away.
-  await root.getByText('I\'ve tasted it: rate it').click();
+  await root.getByText('Rate it', { exact: true }).click();
   await root.getByText('90', { exact: true }).click();
   await root.getByText('Save rating').click();
   await expect(root).toContainText('Scored 90 · Outstanding');
   await root.getByText('Fuller', { exact: true }).click();
-  await root.getByText('Yes', { exact: true }).click();
+  await root.getByText('I\'d buy this again').click();
   await root.getByLabel('What you paid').fill('32');
   await root.getByLabel('What you paid').blur();
   const rated = (await history(page)).find((w) => w.name === 'Clos Test Priorat');
@@ -166,8 +167,8 @@ test('wine list: real match results per wine, and a tapped wine is saved as a sh
   await page.getByTestId('scan-file').setInputFiles({ name: 'list.png', mimeType: 'image/png', buffer: PNG });
   const root = page.locator('#root');
   await expect(root).toContainText('Wine List Results');
+  await expect(root).toContainText('Probably not for you');
   await expect(root).toContainText('Could go either way');
-  await expect(root).toContainText('A good bet');
   await expect(root).toContainText('Too early');
   await root.getByText('Rioja Test Reserva').click();
   await expect(root).toContainText('On this list');
@@ -197,15 +198,15 @@ test('Home asks about old shelf checks and lists unscored bottles', async ({ con
   await expect(root).toContainText('How was it?');
 });
 
-test('after a couple of deck visits the deck opens straight after a scan', async ({ context, page }) => {
-  await setup(context, page, { label: PRIORAT, seed: { vinterest_scan_path: JSON.stringify({ deck: 2, quick: 0 }) } });
+test('every scan opens on the result, even for someone who usually opens the deck', async ({ context, page }) => {
+  await setup(context, page, { label: PRIORAT, seed: { vinterest_scan_path: JSON.stringify({ deck: 5, quick: 0 }) } });
   await page.goto(`${BASE}/?demo=1#camera`);
   await page.getByTestId('scan-file').setInputFiles({ name: 'label.png', mimeType: 'image/png', buffer: PNG });
   const root = page.locator('#root');
+  await expect(root).toContainText('Learn about it');
+  await expect(root).not.toContainText('How we got this');
+  await root.getByText('Learn about it', { exact: true }).click();
   await expect(root).toContainText('How we got this');
-  // Back from the deck goes to the one-screen result.
-  await page.locator('#root div[style*="border-radius: 17px"]').first().click();
-  await expect(root).toContainText('Tell me about it');
 });
 
 const LIST_ABROAD = { wines: [{ n: 'Pauillac Test', t: 'red', r: 'Bordeaux', c: 'France', v: 2016, p: 'BOTTLE:60', g: 'Cabernet Sauvignon', s: '885' }] };
@@ -251,7 +252,7 @@ test('rating a scanned wine does not count as a second scan', async ({ context, 
   await page.goto(`${BASE}/?demo=1#camera`);
   await page.getByTestId('scan-file').setInputFiles({ name: 'label.png', mimeType: 'image/png', buffer: PNG });
   const root = page.locator('#root');
-  await root.getByText('I\'ve tasted it: rate it').click();
+  await root.getByText('Rate it', { exact: true }).click();
   await root.getByText('90', { exact: true }).click();
   await root.getByText('Save rating').click();
   await expect(root).toContainText('Scored 90');
@@ -282,11 +283,12 @@ test('blends are not grapes: phrases split into varieties, guessed grapes are ne
 });
 
 test('the deck: sliders move sliders, a flick turns the card, and it ends on rating with clear end actions', async ({ context, page }) => {
-  await setup(context, page, { label: PRIORAT, seed: { vinterest_scan_path: JSON.stringify({ deck: 2, quick: 0 }) } });
+  await setup(context, page, { label: PRIORAT });
   await page.setViewportSize({ width: 400, height: 860 });
   await page.goto(`${BASE}/?demo=1#camera`);
   await page.getByTestId('scan-file').setInputFiles({ name: 'label.png', mimeType: 'image/png', buffer: PNG });
   const root = page.locator('#root');
+  await root.getByText('Learn about it', { exact: true }).click();
   await expect(root).toContainText('1 / 9');
   const box = await root.getByText('How we got this').boundingBox();
   // A quick 90px flick is enough; no need to drag a third of the screen.
@@ -316,9 +318,14 @@ test('the deck: sliders move sliders, a flick turns the card, and it ends on rat
   // Last card is the rating; after saving, the end actions sit apart.
   for (let i = 0; i < 3; i++) await page.locator('#root div[style*="scaleX(-1)"]').click();
   await expect(root).toContainText('9 / 9');
+  await expect(root.getByText('Rate it', { exact: true })).toBeVisible();
   await root.getByText('90', { exact: true }).click();
   await root.getByText('Save rating').click();
-  await expect(root).toContainText('All done');
+  // The card's label follows the step.
+  await expect(root.getByText('Your score', { exact: true })).toBeVisible();
+  await root.getByText('Done: what\'s next?').click();
+  await expect(root).toContainText('Keep learning');
+  await expect(root.getByText('Rate it', { exact: true })).toHaveCount(0);
   await expect(root.getByText('Finish', { exact: true })).toBeVisible();
   await expect(root.getByText('See full wine details')).toBeVisible();
 });
@@ -343,6 +350,7 @@ test('the Learn shelf repairs saved cards and gives region pieces their own subt
   const root = page.locator('#root');
   await expect(root).toContainText('Rioja vs. the Textbook');
   await expect(root).toContainText('Textbook Rioja is Tempranillo and Garnacha');
+  await root.getByText(/^Show \d+ more to read$/).click();
   await expect(root).toContainText('Home of Pinot Noir');
   await expect(root).not.toContainText('{{');
   await expect(root).toContainText(/your palate vs\. the textbook series/i);
@@ -367,10 +375,11 @@ test('wine detail: taste bars use WineDNA\'s scale, skip missing figures, and sa
 test.describe('the deck on a touch screen', () => {
   test.use({ hasTouch: true, isMobile: true, viewport: { width: 400, height: 860 } });
   test('gentle swipes both ways, sliders stay sliders', async ({ context, page }) => {
-    await setup(context, page, { label: PRIORAT, seed: { vinterest_scan_path: JSON.stringify({ deck: 2, quick: 0 }) } });
+    await setup(context, page, { label: PRIORAT });
     await page.goto(`${BASE}/?demo=1#camera`);
     await page.getByTestId('scan-file').setInputFiles({ name: 'label.png', mimeType: 'image/png', buffer: PNG });
     const root = page.locator('#root');
+    await root.getByText('Learn about it', { exact: true }).click();
     await expect(root).toContainText('1 / 9');
     const cdp = await context.newCDPSession(page);
     const drag = async (x0, y, dx, ms) => {
@@ -400,6 +409,38 @@ test.describe('the deck on a touch screen', () => {
     await expect(root).toContainText('9 / 9');
     await drag(60, (await root.getByText('How was it?').boundingBox()).y + 5, 110, 250);
     await expect(root).toContainText('8 / 9');
+  });
+});
+
+// A long card (a producer story at Extra large on a small phone) scrolls inside the card, shows a
+// fade while there's more, and a sideways swipe still turns it.
+test.describe('a long deck card at Extra large', () => {
+  test.use({ hasTouch: true, isMobile: true, viewport: { width: 375, height: 560 } });
+  test('scrolls up and down, and still swipes', async ({ context, page }) => {
+    await setup(context, page, { label: PRIORAT, seed: { vinterest_text_size: 'xl' } });
+    await page.goto(`${BASE}/?demo=1#camera`);
+    await page.getByTestId('scan-file').setInputFiles({ name: 'label.png', mimeType: 'image/png', buffer: PNG });
+    const root = page.locator('#root');
+    await root.getByText('Learn about it', { exact: true }).click();
+    for (let i = 1; i < 4; i++) { await root.getByText(`${i} / 9`).waitFor(); await page.locator('.sc-swipe > div').last().locator('> div').last().click(); }
+    await expect(root).toContainText('4 / 9');
+    const body = page.locator('.sc-swipe .sc-scroll').first();
+    const m = await body.evaluate((el) => ({ over: el.scrollHeight > el.clientHeight + 6 }));
+    expect(m.over).toBe(true);
+    await expect(page.locator('.sc-swipe [aria-hidden="true"][style*="linear-gradient"]').first()).toBeVisible();
+    const cdp = await context.newCDPSession(page);
+    const drag = async (x0, y0, dx, dy) => {
+      await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: x0, y: y0 }] });
+      for (let i = 1; i <= 8; i++) { await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: x0 + dx * i / 8, y: y0 + dy * i / 8 }] }); await page.waitForTimeout(30); }
+      await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+      await page.waitForTimeout(400);
+    };
+    const box = await body.boundingBox();
+    await drag(box.x + box.width / 2, box.y + box.height - 20, 0, -150);
+    expect(await body.evaluate((el) => el.scrollTop)).toBeGreaterThan(20);
+    await expect(root).toContainText('4 / 9');
+    await drag(box.x + box.width - 30, box.y + 60, -120, 2);
+    await expect(root).toContainText('5 / 9');
   });
 });
 
@@ -442,4 +483,148 @@ test('a non-vintage wine (vintage 0) shows no stray "0"', async ({ context, page
   expect((await card.innerText()).split('\n').map((l) => l.trim())).not.toContain('0');
   await page.goto(`${BASE}/?demo=1#detail`);
   expect((await page.locator('#root').innerText()).split('\n').map((l) => l.trim())).not.toContain('0');
+});
+
+test('duplicate entries for one bottle merge into one, and a stray "Save for later" gives way to tasting', async ({ context, page }) => {
+  await setup(context, page);
+  await page.goto(`${BASE}/#home`);
+  const out = await page.evaluate(() => {
+    const base = { name: 'Brunello di Montalcino', vintage: 2017, region: 'Brunello di Montalcino', country: 'Italy', type: 'red', grapes: ['Sangiovese'] };
+    localStorage.setItem(WineHistory.KEY, JSON.stringify([
+      { ...base, producer: 'BiondiSanti', scan_intent: 'checking', times_consumed: 1, scanned_at: '2026-09-24T21:00:00Z', last_scanned: '2026-09-24T22:00:00Z', price_usd: 300 },
+      { ...base, producer: 'Biondi-Santi', scan_intent: 'tasting', times_consumed: 2, scanned_at: '2026-09-20T20:00:00Z', last_scanned: '2026-09-20T20:00:00Z', rating: 0 },
+      { ...base, producer: 'Soldera', name: 'Brunello di Montalcino' },
+    ]));
+    const all = WineHistory.getAll();
+    return { n: all.length, stored: JSON.parse(localStorage.getItem(WineHistory.KEY)).length, first: all[0], rescan: WineHistory.same({ ...base, producer: 'Biondi Santi' }, all[0]) };
+  });
+  expect(out.n).toBe(2); // Soldera's Brunello is a different wine
+  expect(out.stored).toBe(2);
+  expect(out.first).toMatchObject({ scan_intent: 'tasting', times_consumed: 2, scanned_at: '2026-09-20T20:00:00Z', last_scanned: '2026-09-24T22:00:00Z', price_usd: 300 });
+  expect(out.rescan).toBe(true);
+});
+
+test('a scan that missed the vintage is the same bottle as the one saved with it', async ({ context, page }) => {
+  await setup(context, page);
+  await page.goto(`${BASE}/#home`);
+  const out = await page.evaluate(() => {
+    const base = { name: 'Brunello di Montalcino', producer: 'Biondi-Santi', region: 'Brunello di Montalcino', country: 'Italy', type: 'red', grapes: ['Sangiovese'] };
+    localStorage.setItem(WineHistory.KEY, JSON.stringify([
+      { ...base, vintage: 0, times_consumed: 1, scanned_at: '2026-09-24T22:00:00Z', last_scanned: '2026-09-24T22:00:00Z' },
+      { ...base, vintage: 2017, times_consumed: 1, scanned_at: '2026-09-24T21:00:00Z', last_scanned: '2026-09-24T21:00:00Z', price_usd: 300 },
+      { ...base, producer: 'Soldera', vintage: 2016, rating: 94 },
+    ]));
+    const healed = WineHistory.getAll().map((w) => w.vintage);
+    // Two dated bottles: a vintage-less scan can't pick one, so it isn't merged.
+    localStorage.setItem(WineHistory.KEY, JSON.stringify([{ ...base, vintage: 'NV' }, { ...base, vintage: 2017 }, { ...base, vintage: 2016 }]));
+    const ambiguous = WineHistory.getAll().length;
+    localStorage.setItem(WineHistory.KEY, JSON.stringify([{ ...base, vintage: 2017 }]));
+    const rescan = ScanFlow.resolve({ ...base, vintage: null }).wine.vintage;
+    return { healed, ambiguous, rescan, twoYears: WineHistory.same({ ...base, vintage: 2016 }, { ...base, vintage: 2017 }) };
+  });
+  expect(out.healed).toEqual([2017, 2016]);
+  expect(out.ambiguous).toBe(3);
+  expect(out.rescan).toBe(2017);
+  expect(out.twoYears).toBe(false);
+});
+
+test('TasteMatch is relative to how they score: a generous scorer isn\'t told everything is a favourite', async ({ context, page }) => {
+  await setup(context, page);
+  await page.goto(`${BASE}/?demo=1#home`);
+  const out = await page.evaluate(() => {
+    const mk = (i, rating, body) => ({ name: `Red ${i}`, type: 'red', rating, body, tannins: body, acidity: 0.5, grapes: [], scan_date: Date.now() - i * 864e5 });
+    // Scores everything 88–92, loves the full-bodied ones most.
+    const all = [mk(1, 88, 0.2), mk(2, 89, 0.25), mk(3, 88, 0.3), mk(4, 90, 0.5), mk(5, 89, 0.45), mk(6, 92, 0.85), mk(7, 92, 0.9), mk(8, 91, 0.8)];
+    const light = TasteMatch.assess({ name: 'Light', type: 'red', body: 0.25, tannins: 0.25, acidity: 0.5 }, all);
+    const full = TasteMatch.assess({ name: 'Full', type: 'red', body: 0.85, tannins: 0.85, acidity: 0.5 }, all);
+    return { light: [light.expected, light.verdict, light.pct], full: [full.expected, full.verdict, full.pct] };
+  });
+  // They'd still rate the light one well, but only the full one is among their favourites.
+  expect(out.light[0]).toBeGreaterThanOrEqual(80);
+  expect(out.light[1]).not.toBe('hit');
+  expect(out.full[1]).toBe('hit');
+  expect(out.full[2] - out.light[2]).toBeGreaterThan(30);
+});
+
+test('TasteMatch counts the same region by the knowledge base: a Brunello draws on their Chianti and Bolgheri', async ({ context, page }) => {
+  await setup(context, page);
+  await page.goto(`${BASE}/?demo=1#home`);
+  const out = await page.evaluate(() => {
+    const mk = (name, rating, region, sub_region, grapes) => ({ name, type: 'red', rating, region, sub_region, grapes, body: 0.85, tannins: 0.8, acidity: 0.7 });
+    const all = [mk('Chianti Classico Riserva', 96, 'Chianti Classico', '', ['Sangiovese']), mk('Sassicaia', 100, 'Tuscany', 'Bolgheri', ['Cabernet Sauvignon']),
+      mk('Le Difese', 97, 'Toscana', '', ['Cabernet Sauvignon', 'Sangiovese']), mk('Barolo', 80, 'Piedmont', '', ['Nebbiolo']), mk('Rioja', 82, 'Rioja', '', ['Tempranillo']),
+      mk('Côtes du Rhône', 80, 'Rhône Valley', '', ['Grenache'])];
+    const m = TasteMatch.assess({ name: 'Brunello di Montalcino', type: 'red', region: 'Brunello di Montalcino', country: 'Italy', grapes: ['Sangiovese Grosso'], body: 0.85, tannins: 0.8, acidity: 0.72 }, all);
+    return { verdict: m.verdict, reasons: m.reasons.map((r) => r.text).join(' ') };
+  });
+  expect(out.reasons).toContain('Tuscany: you\'ve scored 3, averaging 98.');
+  expect(out.verdict).toBe('hit');
+});
+
+test('"Why N%?" says which of the wine\'s traits bring it up or hold it back, in their own scores', async ({ context, page }) => {
+  await setup(context, page);
+  await page.goto(`${BASE}/?demo=1#home`);
+  const out = await page.evaluate(() => {
+    const mk = (name, rating, body, grapes) => ({ name, type: 'red', rating, region: 'Tuscany', grapes, body, tannins: body, acidity: 0.7 });
+    const all = [mk('Close A', 95, 0.85, ['Sangiovese']), mk('Close B', 93, 0.86, ['Sangiovese']), mk('Close C', 99, 0.84, ['Sangiovese']),
+      mk('Far 1', 80, 0.3, ['Merlot']), mk('Far 2', 80, 0.35, ['Gamay']), mk('Far 3', 100, 0.4, ['Pinot Noir']), mk('Far 4', 80, 0.3, ['Gamay'])];
+    const m = TasteMatch.assess({ name: 'Brunello', type: 'red', region: 'Brunello di Montalcino', grapes: ['Sangiovese Grosso'], body: 0.85, tannins: 0.85, acidity: 0.72 }, all);
+    const b = m.breakdown;
+    return { pct: m.pct, verdict: m.verdict, up: b.up.map((x) => x.text), even: b.even.map((x) => x.text), closest: b.closest, why: b.pctWhy };
+  });
+  // Explained by the wine's traits against their average (90), with the closest wines as evidence.
+  expect(out.up.join(' | ')).toContain('Sangiovese Grosso (Sangiovese): your 3 reds average 96');
+  expect(out.up.join(' | ')).toContain('Its style (full body');
+  // Every wine here is Tuscan, so the region tells us nothing.
+  expect(out.even).toContain('Tuscany: your 7 from there average 90');
+  // Every scored wine counts; the ones most like it are named as the evidence.
+  expect(out.closest).toMatch(/^All 7 reds you've scored count, the ones most like it most: Close [ABC] \(\d+\), Close [ABC]/);
+  // The % ranks the prediction among what we'd predict for their other reds.
+  expect(out.why).toMatch(/We predict you'd score it \d+ .* than we'd predict for \d+% of the 7 reds you've scored/);
+  expect(out.verdict).toBe('hit');
+  expect(out.pct).toBeGreaterThanOrEqual(80);
+});
+
+test('a wine far above their usual spend is called out, and the match doesn\'t change', async ({ context, page }) => {
+  await setup(context, page);
+  await page.goto(`${BASE}/?demo=1#home`);
+  const out = await page.evaluate(() => {
+    const us = { code: 'USD', base: '$' };
+    const mk = (name, rating, price_usd) => ({ name, type: 'red', rating, price_usd, grapes: ['Merlot'], body: 0.7, tannins: 0.6, acidity: 0.6 });
+    const all = [mk('A', 90, 18), mk('B', 88, 22), mk('C', 92, 25), mk('D', 85, 30), mk('E', 91, 20)];
+    const cheap = { name: 'Cheap', type: 'red', grapes: ['Merlot'], body: 0.7, tannins: 0.6, acidity: 0.6, price_usd: 25 };
+    const dear = { ...cheap, name: 'Dear', price_usd: 250 };
+    return { cheapNote: TasteMatch.priceNote(cheap, 25, all, us), dearNote: TasteMatch.priceNote(dear, 250, all, us),
+      samePct: TasteMatch.assess(cheap, all).pct === TasteMatch.assess(dear, all).pct };
+  });
+  expect(out.cheapNote).toBeNull();
+  expect(out.dearNote.text).toContain('well above the $20–$25 you usually spend on reds');
+  expect(out.dearNote.text).toContain('more than any of the reds you\'ve had (the most was $30)');
+  expect(out.samePct).toBe(true);
+});
+
+test('a rescan keeps the saved reading of the label, so the same bottle gets the same match', async ({ context, page }) => {
+  await setup(context, page);
+  await page.goto(`${BASE}/?demo=1#home`);
+  const out = await page.evaluate(() => {
+    const saved = { name: 'Brunello Stable Test', producer: 'Biondi-Santi', type: 'red', region: 'Brunello di Montalcino', country: 'Italy', grapes: ['Sangiovese Grosso'], body: 0.9, tannins: 0.85, acidity: 0.8, scan_date: new Date().toISOString() };
+    WineHistory.save([...WineHistory.getAll(), saved]);
+    const rescan = { ...saved, body: 0.75, tannins: 0.7, acidity: 0.85, region: 'Tuscany', price_usd: 180 };
+    const r = ScanFlow.resolve(rescan).wine;
+    const all = WineHistory.getAll();
+    return { body: r.body, region: r.region, price: r.price_usd, same: TasteMatch.assess(r, all).pct === TasteMatch.assess(saved, all).pct };
+  });
+  expect(out).toEqual({ body: 0.9, region: 'Brunello di Montalcino', price: 180, same: true });
+});
+
+test('equally similar wines count together, so a small change in the style estimate doesn\'t swing the match', async ({ context, page }) => {
+  await setup(context, page);
+  await page.goto(`${BASE}/?demo=1#home`);
+  const pcts = await page.evaluate(() => {
+    const mk = (name, rating, b) => ({ name, type: 'red', rating, region: 'Tuscany', grapes: ['Sangiovese'], body: b, tannins: b, acidity: 0.75 });
+    const all = [mk('S1', 95, 0.86), mk('S2', 93, 0.9), mk('S3', 99, 0.88), mk('S4', 87, 0.8), mk('S5', 80, 0.79), mk('S6', 93, 0.82),
+      { name: 'O1', type: 'red', rating: 80, grapes: ['Merlot'], body: 0.4, tannins: 0.4, acidity: 0.5 }, { name: 'O2', type: 'red', rating: 100, grapes: ['Gamay'], body: 0.3, tannins: 0.3, acidity: 0.6 }];
+    return [0.9, 0.85, 0.8].map((b) => TasteMatch.assess({ name: 'Brunello', type: 'red', region: 'Brunello di Montalcino', grapes: ['Sangiovese Grosso'], body: b, tannins: b, acidity: 0.78 }, all).pct);
+  });
+  expect(Math.max(...pcts) - Math.min(...pcts)).toBeLessThanOrEqual(8);
 });

@@ -30,11 +30,11 @@ test('Home, Learn and Wine DNA render with no console errors', async ({ page }) 
 
   await page.goto(`${BASE}/?demo=1`);
   const root = page.locator('#root');
-  await expect(root).toContainText('Recently Scanned');
+  await expect(root).toContainText('Recently scanned');
   await expect(root).toContainText('Châteauneuf-du-Pape Jean XXII');
 
   await tab(page, 'Learn').click();
-  await expect(root).toContainText('Test Yourself');
+  await expect(root).toContainText('Grape quizzes');
   await expect(root).toContainText('Wine Basics');
   await expect(root).not.toContainText("Something didn't load right");
 
@@ -44,7 +44,7 @@ test('Home, Learn and Wine DNA render with no console errors', async ({ page }) 
   await expect(root).toContainText(`Vinterest v${pkg.version}`);
 
   await tab(page, 'Home').click();
-  await expect(root).toContainText('Recently Scanned');
+  await expect(root).toContainText('Recently scanned');
 
   expect(errors).toEqual([]);
   expect(dataRequests, 'data/*.json and prompts/*.txt should be inlined, not fetched').toEqual([]);
@@ -63,7 +63,7 @@ test('a first-time visitor lands on onboarding with no console errors', async ({
   const errors = collectErrors(page);
   await page.goto(`${BASE}/`);
   await expect(page.locator('#root')).not.toBeEmpty();
-  await expect(page.locator('#root')).not.toContainText('Recently Scanned');
+  await expect(page.locator('#root')).not.toContainText('Recently scanned');
   expect(errors).toEqual([]);
 });
 
@@ -74,4 +74,12 @@ test('dist ships the PWA and worker files', async ({ request }) => {
   const html = await (await request.get(`${BASE}/`)).text();
   expect(html).not.toContain('unpkg.com');
   expect(html).toMatch(/<script src="app\.js\?v=[0-9a-f]{10}"><\/script>/);
+});
+
+test('the XP badge on Home opens the achievements overlay with no console errors', async ({ page }) => {
+  const errors = collectErrors(page);
+  await page.goto(`${BASE}/?demo=1#home`);
+  await page.locator('#root').getByText('1805 XP', { exact: true }).click();
+  await expect(page.locator('#root')).toContainText('Achievements');
+  expect(errors).toEqual([]);
 });
