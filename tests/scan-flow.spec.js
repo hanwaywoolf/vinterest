@@ -451,3 +451,46 @@ test('a non-vintage wine (vintage 0) shows no stray "0"', async ({ context, page
   await page.goto(`${BASE}/?demo=1#detail`);
   expect((await page.locator('#root').innerText()).split('\n').map((l) => l.trim())).not.toContain('0');
 });
+
+test('duplicate entries for one bottle merge into one, and a stray "Save for later" gives way to tasting', async ({ context, page }) => {
+  await setup(context, page);
+  await page.goto(`${BASE}/#home`);
+  const out = await page.evaluate(() => {
+    const base = { name: 'Brunello di Montalcino', vintage: 2017, region: 'Brunello di Montalcino', country: 'Italy', type: 'red', grapes: ['Sangiovese'] };
+    localStorage.setItem(WineHistory.KEY, JSON.stringify([
+      { ...base, producer: 'BiondiSanti', scan_intent: 'checking', times_consumed: 1, scanned_at: '2026-09-24T21:00:00Z', last_scanned: '2026-09-24T22:00:00Z', price_usd: 300 },
+      { ...base, producer: 'Biondi-Santi', scan_intent: 'tasting', times_consumed: 2, scanned_at: '2026-09-20T20:00:00Z', last_scanned: '2026-09-20T20:00:00Z', rating: 0 },
+      { ...base, producer: 'Soldera', name: 'Brunello di Montalcino' },
+    ]));
+    const all = WineHistory.getAll();
+    return { n: all.length, stored: JSON.parse(localStorage.getItem(WineHistory.KEY)).length, first: all[0], rescan: WineHistory.same({ ...base, producer: 'Biondi Santi' }, all[0]) };
+  });
+  expect(out.n).toBe(2); // Soldera's Brunello is a different wine
+  expect(out.stored).toBe(2);
+  expect(out.first).toMatchObject({ scan_intent: 'tasting', times_consumed: 2, scanned_at: '2026-09-20T20:00:00Z', last_scanned: '2026-09-24T22:00:00Z', price_usd: 300 });
+  expect(out.rescan).toBe(true);
+});
+
+test('a scan that missed the vintage is the same bottle as the one saved with it', async ({ context, page }) => {
+  await setup(context, page);
+  await page.goto(`${BASE}/#home`);
+  const out = await page.evaluate(() => {
+    const base = { name: 'Brunello di Montalcino', producer: 'Biondi-Santi', region: 'Brunello di Montalcino', country: 'Italy', type: 'red', grapes: ['Sangiovese'] };
+    localStorage.setItem(WineHistory.KEY, JSON.stringify([
+      { ...base, vintage: 0, times_consumed: 1, scanned_at: '2026-09-24T22:00:00Z', last_scanned: '2026-09-24T22:00:00Z' },
+      { ...base, vintage: 2017, times_consumed: 1, scanned_at: '2026-09-24T21:00:00Z', last_scanned: '2026-09-24T21:00:00Z', price_usd: 300 },
+      { ...base, producer: 'Soldera', vintage: 2016, rating: 94 },
+    ]));
+    const healed = WineHistory.getAll().map((w) => w.vintage);
+    // Two dated bottles: a vintage-less scan can't pick one, so it isn't merged.
+    localStorage.setItem(WineHistory.KEY, JSON.stringify([{ ...base, vintage: 'NV' }, { ...base, vintage: 2017 }, { ...base, vintage: 2016 }]));
+    const ambiguous = WineHistory.getAll().length;
+    localStorage.setItem(WineHistory.KEY, JSON.stringify([{ ...base, vintage: 2017 }]));
+    const rescan = ScanFlow.resolve({ ...base, vintage: null }).wine.vintage;
+    return { healed, ambiguous, rescan, twoYears: WineHistory.same({ ...base, vintage: 2016 }, { ...base, vintage: 2017 }) };
+  });
+  expect(out.healed).toEqual([2017, 2016]);
+  expect(out.ambiguous).toBe(3);
+  expect(out.rescan).toBe(2017);
+  expect(out.twoYears).toBe(false);
+});

@@ -281,7 +281,50 @@ const WineHistory = {
   KEY: 'vinterest_wines',
   // Grapes are cleaned on the way out, so older scans saved as "Blend - likely Grenache, Syrah, or
   // Cinsault" read as real varieties everywhere (see WineDNA.cleanGrapes).
-  getAll(){ try{ return JSON.parse(localStorage.getItem(this.KEY)||'[]').map(w=>WineDNA.cleanWine(w)); }catch(e){ return []; } },
+  getAll(){
+    let list; try{ list=JSON.parse(localStorage.getItem(this.KEY)||'[]').map(w=>WineDNA.cleanWine(w)); }catch(e){ return []; }
+    // Two entries for the same bottle (same name and vintage, matching producer) become one.
+    const merged=this._mergeDupes(list);
+    if(merged.length!==list.length){ try{ this.save(merged); }catch(e){} }
+    return merged;
+  },
+  _mergeDupes(list){
+    const seen=new Map(), out=[];
+    list.forEach(w=>{
+      const k=String(w.name||'').toLowerCase()+'|'+this._vintageKey(w.vintage);
+      const i=seen.get(k);
+      if(i!=null&&this.same(out[i],w)) out[i]=this._merge(out[i],w);
+      else { seen.set(k,out.length); out.push(w); }
+    });
+    // An entry saved without a vintage folds into the one dated entry of the same wine.
+    const nv=w=>this._vintageKey(w.vintage)==='nv';
+    if(!out.some(nv)) return out;
+    const drop=new Set();
+    out.forEach((w,i)=>{
+      if(!nv(w)) return;
+      const dated=out.map((d,j)=>j).filter(j=>!drop.has(j)&&!nv(out[j])&&this.same(out[j],w));
+      if(dated.length!==1) return;
+      const j=dated[0], newer=i<j;
+      out[j]={...(newer?this._merge(w,out[j]):this._merge(out[j],w)),vintage:out[j].vintage};
+      drop.add(i);
+    });
+    return out.filter((w,i)=>!drop.has(i));
+  },
+  /* One entry from two: the newer one's filled-in fields win, the score is the higher one, the
+     scan dates span both, and a "Save for later" doesn't override tasting it or scoring it. */
+  _merge(a,b){
+    const filled=o=>Object.fromEntries(Object.entries(o).filter(([,v])=>v!=null&&v!==''&&v!==0));
+    const m={...b,...filled(a)};
+    m.rating=Math.max(a.rating||0,b.rating||0);
+    m.times_consumed=Math.max(a.times_consumed||1,b.times_consumed||1);
+    const t=x=>new Date(x||0).getTime()||0;
+    m.scanned_at=t(a.scanned_at)&&t(b.scanned_at)?(t(a.scanned_at)<t(b.scanned_at)?a.scanned_at:b.scanned_at):(a.scanned_at||b.scanned_at);
+    m.last_scanned=t(a.last_scanned)>=t(b.last_scanned)?a.last_scanned:b.last_scanned;
+    if(a.scan_intent!==b.scan_intent&&[a.scan_intent,b.scan_intent].includes('checking')) m.scan_intent=a.scan_intent==='checking'?b.scan_intent:a.scan_intent;
+    if(m.rating>0&&m.scan_intent==='checking') m.scan_intent='tasted';
+    if(a.buy_again||b.buy_again) m.buy_again=true;
+    return m;
+  },
   save(wines){ localStorage.setItem(this.KEY, JSON.stringify(wines.slice(0,500))); },
 
   /* Identity. Claude doesn't always name a bottle the same way twice ("Muga Reserva" vs "Muga
@@ -295,14 +338,22 @@ const WineHistory = {
       .replace(/[^a-z0-9]+/g,' ').split(' ').forEach(t=>{ if(t&&!this._STOP.has(t)) out.add(t); }));
     return out;
   },
+  // "Biondi-Santi", "Biondi Santi" and "BiondiSanti" are one producer.
+  _squash(s){ return String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]/g,''); },
   _vintageKey(v){ return (!v||v===0||String(v).toUpperCase()==='NV')?'nv':String(v); },
   _t(w){ return (w.type||'').toLowerCase().replace('é','e'); },
   same(a,b){
     if(!a||!b) return false;
     const pa=this._tokens(a.producer), pb=this._tokens(b.producer);
-    if(pa.size&&pb.size&&![...pa].some(t=>pb.has(t))) return false;
+    if(pa.size&&pb.size&&![...pa].some(t=>pb.has(t))){
+      const sa=this._squash(a.producer), sb=this._squash(b.producer);
+      if(!(sa.length>=4&&sb.length>=4&&(sa.includes(sb)||sb.includes(sa)))) return false;
+    }
     if(a.name===b.name&&String(a.vintage)===String(b.vintage)) return true;
-    if(this._vintageKey(a.vintage)!==this._vintageKey(b.vintage)) return false;
+    // A scan that didn't read a vintage matches the same wine saved with one (it takes that
+    // year: ScanFlow.resolve); two different years stay two wines.
+    const va=this._vintageKey(a.vintage), vb=this._vintageKey(b.vintage);
+    if(va!==vb&&va!=='nv'&&vb!=='nv') return false;
     if(this._t(a)&&this._t(b)&&this._t(a)!==this._t(b)) return false;
     const na=this._tokens(a.name), nb=this._tokens(b.name);
     if(![...na].some(t=>nb.has(t))) return false;

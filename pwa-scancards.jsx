@@ -349,6 +349,7 @@ function ScanResult({wine,match,curr,scanData,existingRating,nav,showPro,view,se
             <div style={{width:48,height:48,borderRadius:24,background:C.crSoft,display:'flex',alignItems:'center',justifyContent:'center'}}><Icon n="check" sz={22} col={C.cr}/></div>
             <div style={{fontSize:18,fontWeight:800,color:C.ink,fontFamily:C.P}}>Saved for later</div>
             <div style={{fontSize:15,color:C.ink2,fontFamily:C.P,lineHeight:1.5}}>It won't count towards your WineDNA until you buy or taste it. Next time you open the app we'll ask whether you bought it.</div>
+            <div role="button" onClick={()=>setView('rate')} style={{fontSize:15,fontWeight:700,color:C.cr,fontFamily:C.P,cursor:'pointer'}}>Already tasted it? Rate it instead →</div>
           </Card>
           <Card style={{padding:16}}><KeepLearning wine={wine} nav={nav} showPro={showPro} intro="Shopping? Learn a little about it before you decide."/></Card>
           <div style={{display:'flex',gap:10}}>
@@ -989,7 +990,9 @@ function SwipeDeck({deck,ctx,idx,setIdx,go}){
   function onPointerUp(e){
     const s=g.current; g.current=null;
     if(!s||e.pointerId!==s.id||!s.dragging) return;
-    justDragged.current=true; setTimeout(()=>{ justDragged.current=false; },0);
+    // Phones can send the tap from a swipe's lift-off well after the swipe ends; swallow it for
+    // long enough that a swipe finishing over a link ("Save for later") doesn't press it.
+    justDragged.current=true; setTimeout(()=>{ justDragged.current=false; },400);
     hintRef.current=0; setHint(0);
     const speed=Math.abs(s.dx)/Math.max(1,performance.now()-s.t);
     const turn=Math.abs(s.dx)>s.w*0.2||(Math.abs(s.dx)>30&&speed>0.25);
