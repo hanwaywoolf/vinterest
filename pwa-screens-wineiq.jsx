@@ -194,6 +194,9 @@ function WineDNAScreen({nav,back,showPro}){
     touchX.current=null;touchY.current=null;
   }
 
+  // A wine named in a list (Worth buying again, Best value, Worth knowing) opens its details.
+  const openWine=w=>{ sessionStorage.setItem('vinterest_scan_result',JSON.stringify({demo:false,wine:w,existingRating:w.rating||0})); nav('detail'); };
+
   /* Per-type stats */
   const tLabel=t.label.toLowerCase();
   const tAvgScore=t.scored.length?Math.round(t.scored.reduce((s,w)=>s+w.rating,0)/t.scored.length):0;
@@ -429,11 +432,12 @@ function WineDNAScreen({nav,back,showPro}){
               <div style={{marginTop:14}}>
                 <div style={{...sub,marginBottom:6}}>Worth buying again</div>
                 {fav.buyAgain.map(w=>{ const pr=WineDNA.priceOf(w); return (
-                  <div key={'b'+w.name} style={{display:'flex',alignItems:'center',gap:8,padding:'6px 0',borderTop:`1px solid ${C.line}`}}>
+                  <div key={'b'+w.name} role="button" onClick={()=>openWine(w)} style={{display:'flex',alignItems:'center',gap:8,padding:'6px 0',borderTop:`1px solid ${C.line}`,cursor:'pointer'}}>
                     <Icon n="cart" sz={15} col={C.green}/>
                     <span style={{fontSize:15,color:C.ink,fontFamily:C.P,flex:1,minWidth:0,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{w.name}</span>
                     {pr>0&&<span style={{fontSize:13,color:C.mid,fontFamily:C.P}}>{Regional.current().base}{Math.round(pr)}{w.price_paid&&w.price_paid.amount>0?' paid':' est.'}</span>}
                     {w.rating>0&&<span style={{fontSize:15,fontWeight:800,color:w.rating>=ParkerScale.LOVED?C.green:C.amber,fontFamily:C.P,width:30,textAlign:'right'}}>{w.rating}</span>}
+                    <Icon n="chevron" sz={12} col={C.mid}/>
                   </div>); })}
               </div>
             )}
@@ -445,10 +449,11 @@ function WineDNAScreen({nav,back,showPro}){
                   <div key={'r'+x.name} style={{fontSize:15,color:C.ink2,fontFamily:C.P,lineHeight:1.5,marginBottom:4}}>{x.name}{x.also?` (${x.also})`:''} averages {x.avg} across {x.count} bottles, below your usual. Try a different producer or style before writing it off.</div>
                 ))}
                 {fav.disliked.map(w=>(
-                  <div key={'d'+w.name} style={{display:'flex',alignItems:'center',gap:8,padding:'5px 0',borderTop:`1px solid ${C.line}`}}>
+                  <div key={'d'+w.name} role="button" onClick={()=>openWine(w)} style={{display:'flex',alignItems:'center',gap:8,padding:'5px 0',borderTop:`1px solid ${C.line}`,cursor:'pointer'}}>
                     <span style={{fontSize:15,color:C.ink,fontFamily:C.P,flex:1}}>{w.name}</span>
                     <span style={{fontSize:13,color:C.mid,fontFamily:C.P}}>{w.region||''}</span>
                     <span style={{fontSize:15,fontWeight:800,color:'#C0392B',fontFamily:C.P}}>{w.rating}</span>
+                    <Icon n="chevron" sz={12} col={C.mid}/>
                   </div>
                 ))}
               </div>
@@ -501,10 +506,11 @@ function WineDNAScreen({nav,back,showPro}){
               <>
                 <div style={{...sub,marginBottom:6}}>Best value so far</div>
                 {t.value.bestValue.map(b=>(
-                  <div key={b.wine.name} style={{display:'flex',alignItems:'center',gap:8,padding:'6px 0',borderTop:`1px solid ${C.line}`}}>
+                  <div key={b.wine.name} role="button" onClick={()=>openWine(b.wine)} style={{display:'flex',alignItems:'center',gap:8,padding:'6px 0',borderTop:`1px solid ${C.line}`,cursor:'pointer'}}>
                     <span style={{fontSize:15,color:C.ink,fontFamily:C.P,flex:1}}>{b.wine.name}</span>
                     <span style={{fontSize:13,color:C.mid,fontFamily:C.P}}>{b.price}{b.paid?' paid':' est.'}</span>
                     <span style={{fontSize:15,fontWeight:800,color:C.green,fontFamily:C.P,width:30,textAlign:'right'}}>{b.wine.rating}</span>
+                    <Icon n="chevron" sz={12} col={C.mid}/>
                   </div>
                 ))}
                 <div style={{fontSize:13,color:C.mid,fontFamily:C.P,lineHeight:1.5,marginTop:8}}>Scored 90+ at or below your typical price. Remember these producers: they're good bets on a list or in a shop.</div>

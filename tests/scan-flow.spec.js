@@ -317,10 +317,14 @@ test('the deck: sliders move sliders, a flick turns the card, and it ends on rat
   // Last card is the rating; after saving, the end actions sit apart.
   for (let i = 0; i < 3; i++) await page.locator('#root div[style*="scaleX(-1)"]').click();
   await expect(root).toContainText('9 / 9');
+  await expect(root.getByText('Rate it', { exact: true })).toBeVisible();
   await root.getByText('90', { exact: true }).click();
   await root.getByText('Save rating').click();
+  // The card's label follows the step.
+  await expect(root.getByText('Your score', { exact: true })).toBeVisible();
   await root.getByText('Done: what\'s next?').click();
   await expect(root).toContainText('Keep learning');
+  await expect(root.getByText('Rate it', { exact: true })).toHaveCount(0);
   await expect(root.getByText('Finish', { exact: true })).toBeVisible();
   await expect(root.getByText('See full wine details')).toBeVisible();
 });

@@ -140,3 +140,16 @@ test('WineDNA opens on the type they drink most, not the first one ticked at onb
   const reds = page.locator('#root').getByText('Reds', { exact: true }).first();
   await expect(reds).toHaveCSS('font-weight', '700');
 });
+
+test('wines named in WineDNA open their details', async ({ page }) => {
+  await page.goto(`${BASE}/?demo=1#home`);
+  await page.evaluate(() => { localStorage.setItem('vinterest_wineDNA_unlock_seen', '1');
+    const all = WineHistory.getAll(); const w = all.find((x) => x.type === 'red' && x.rating >= 90); w.buy_again = true; WineHistory.save(all); });
+  await page.goto(`${BASE}/?demo=1#profile`);
+  const root = page.locator('#root');
+  const row = root.getByText('Worth buying again', { exact: true }).locator('xpath=following-sibling::div[1]');
+  const name = (await row.locator('span').first().innerText()).trim();
+  await row.click();
+  await expect(root.getByText('Details', { exact: true })).toBeVisible();
+  await expect(root).toContainText(name);
+});

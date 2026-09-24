@@ -710,10 +710,12 @@ function ValueFace({wine,curr,scanData,accent,soft,expanded}){
 }
 
 /* ── rating: the score, then optional tasting details that sharpen future matches ── */
-function RatingPanel({wine,existingRating,nav,showPro,curr,onRated,onSaveForLater}){
+function RatingPanel({wine,existingRating,nav,showPro,curr,onRated,onSaveForLater,onStage}){
   const [score,setScore]=React.useState(existingRating||0);
   const [saved,setSaved]=React.useState(false);
   const [next,setNext]=React.useState(false);
+  // Tells the deck which step it's on, so the card's label follows (Rate it → Your score → Keep learning).
+  React.useEffect(()=>{ if(onStage) onStage(next?'next':saved?'saved':'rate'); },[saved,next]);
   const label=ParkerScale.label(score);
   const tc=_typeCol(wine);
   function commit(){
@@ -905,8 +907,9 @@ function TasteCard({wine,gen,accent,onBlindCall}){
 /* ── the deck (three interaction styles) ── */
 function CardDeck({deckStyle,wine,gen,loading,match,curr,scanData,existingRating,nav,showPro,onRated,onSaveForLater,onBlindCall}){
   const cards=React.useMemo(()=>buildCards({match}),[match&&match.tone]);
-  const ctx={wine,gen,loading,match,curr,scanData,onBlindCall,
-    finish:()=><RatingPanel wine={wine} existingRating={existingRating} nav={nav} showPro={showPro} curr={curr} onRated={onRated} onSaveForLater={existingRating?null:onSaveForLater}/>};
+  const [finishStage,setFinishStage]=React.useState('rate');
+  const ctx={wine,gen,loading,match,curr,scanData,onBlindCall,finishStage,
+    finish:()=><RatingPanel wine={wine} existingRating={existingRating} nav={nav} showPro={showPro} curr={curr} onRated={onRated} onSaveForLater={existingRating?null:onSaveForLater} onStage={setFinishStage}/>};
   const [idx,setIdx]=React.useState(0);
 
   const total=cards.length;
@@ -929,13 +932,16 @@ function CardDeck({deckStyle,wine,gen,loading,match,curr,scanData,existingRating
 }
 
 /* shared card chrome */
+/* The last card's label follows the rating step: Rate it, then Your score, then Keep learning. */
+const _FINISH_HEAD={rate:null,saved:{eyebrow:'Your score',icon:'check'},next:{eyebrow:'Keep learning',icon:'book'}};
 function CardShell({card,children,ctx,style}){
   const isFinish=card.kind==='finish';
+  const head=(isFinish&&ctx&&_FINISH_HEAD[ctx.finishStage])||card;
   return <div style={{background:C.white,borderRadius:22,border:`1px solid ${C.line}`,boxShadow:'0 6px 22px rgba(0,0,0,0.08)',display:'flex',flexDirection:'column',overflow:'hidden',...style}}>
     <div style={{height:5,background:card.accent,flexShrink:0}}/>
     <div style={{padding:'16px 18px 6px',display:'flex',alignItems:'center',gap:9,flexShrink:0}}>
-      <div style={{width:30,height:30,borderRadius:9,background:card.soft,display:'flex',alignItems:'center',justifyContent:'center'}}><Icon n={card.icon} sz={16} col={card.accent}/></div>
-      <span style={{fontSize:12.5,fontWeight:700,color:card.accent,fontFamily:C.P,letterSpacing:'0.09em',textTransform:'uppercase'}}>{card.eyebrow}</span>
+      <div style={{width:30,height:30,borderRadius:9,background:card.soft,display:'flex',alignItems:'center',justifyContent:'center'}}><Icon n={head.icon} sz={16} col={card.accent}/></div>
+      <span style={{fontSize:12.5,fontWeight:700,color:card.accent,fontFamily:C.P,letterSpacing:'0.09em',textTransform:'uppercase'}}>{head.eyebrow}</span>
     </div>
     {/* overflow:clip, not hidden: a hidden-overflow box is a scroll container, and on touch
         screens the browser claims horizontal drags that start inside one, cancelling the swipe. */}
