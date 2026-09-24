@@ -106,6 +106,11 @@ const UserPrefs = {
     return top||this.preferredType()||'red';
   },
   rememberType(t){ try{ sessionStorage.setItem(this.TYPE_TAB_KEY,t); }catch(e){} },
+  /* Opening WineDNA from elsewhere (Home): straight to a type's tab and, optionally, one section
+     (e.g. 'scripts'), opened and scrolled into view. takeDNASection() reads it once. */
+  DNA_SECTION_KEY:'vinterest_dna_section',
+  openDNA(type,section){ if(type) this.rememberType(type); try{ if(section) sessionStorage.setItem(this.DNA_SECTION_KEY,section); else sessionStorage.removeItem(this.DNA_SECTION_KEY); }catch(e){} },
+  takeDNASection(){ try{ const s=sessionStorage.getItem(this.DNA_SECTION_KEY); sessionStorage.removeItem(this.DNA_SECTION_KEY); return s; }catch(e){ return null; } },
 
   EXPERIENCE:[{id:'novice',label:'Just getting started',note:'Keep it simple and clear'},{id:'casual',label:'I know what I like',note:'A little more detail'},
     {id:'enthusiast',label:'Pretty into it',note:'Bring on the nuance'},{id:'expert',label:'Borderline obsessed',note:'Full depth, no hand-holding'}],

@@ -55,7 +55,7 @@ const _TYPES=[
 function CSH({label,cKey,collapsed,toggle,summary}){
   const isC=collapsed[cKey];
   return(
-    <div style={{marginTop:6,marginBottom:isC?12:6}}>
+    <div data-section={cKey} style={{marginTop:6,marginBottom:isC?12:6,scrollMarginTop:12}}>
       <div onClick={()=>toggle(cKey)} style={{display:'flex',justifyContent:'space-between',alignItems:'center',cursor:'pointer',padding:'2px 0'}}>
         <span style={{fontSize:13,fontWeight:700,color:C.mid,letterSpacing:'0.09em',textTransform:'uppercase',fontFamily:C.P}}>{label}</span>
         <svg viewBox="0 0 20 20" width={16} height={16} style={{transform:isC?'none':'rotate(180deg)',transition:'transform .2s',flexShrink:0,marginLeft:8,opacity:0.45}}>
@@ -113,6 +113,12 @@ function WineDNAScreen({nav,back,showPro}){
     try{localStorage.setItem(COLLAPSE_KEY,JSON.stringify(next));}catch(e){}
     return next;
   }),[]);
+  // Arriving from Home with a section to show (UserPrefs.openDNA): open it and scroll to it.
+  React.useEffect(()=>{
+    const sec=UserPrefs.takeDNASection(); if(!sec) return;
+    setCollapsed(c=>({...c,[sec]:false}));
+    setTimeout(()=>{ const el=document.querySelector(`[data-section="${sec}"]`); if(el) el.scrollIntoView({block:'start'}); },60);
+  },[]);
   const touchX=React.useRef(null);
   const touchY=React.useRef(null);
 

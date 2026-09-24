@@ -79,3 +79,18 @@ test('Home is what next: Up next, Written for you, recent scans, WineDNA, knowle
   expect(fresh.kind).toBe('scan');
   expect(errors).toEqual([]);
 });
+
+test('Home takes you straight there: a type row opens that tab, the script row opens Scripts', async ({ context, page }) => {
+  await demo(context, page, [], { vinterest_dna_collapsed_v1: JSON.stringify({ scripts: true }) });
+  await page.goto(`${BASE}/?demo=1#home`);
+  await root(page).getByText('Rosé', { exact: true }).click();
+  await expect(root(page).getByText('Rosé', { exact: true }).first()).toHaveCSS('font-weight', '700');
+
+  await page.goto(`${BASE}/?demo=1#home`);
+  await root(page).getByText('Your red sommelier script', { exact: true }).click();
+  await expect(root(page).getByText('Reds', { exact: true }).first()).toHaveCSS('font-weight', '700');
+  const scripts = page.locator('[data-section="scripts"]');
+  await expect(scripts).toBeInViewport();
+  // Opened, even though it was collapsed: no "Expand for full details" under it.
+  await expect(scripts).not.toContainText('Expand for full details');
+});

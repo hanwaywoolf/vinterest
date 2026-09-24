@@ -275,11 +275,11 @@ function HomeScreen({nav, showPro, isTablet}){
 
         {/* WineDNA at a glance */}
         {dna.types.length>0&&<Card style={{padding:0,overflow:'hidden'}}>
-          {head('Your WineDNA','Open →',()=>nav('profile'))}
-          {dna.types.map(t=>row(t.key,'wine',t.col,t.label,t.line,()=>nav('profile')))}
+          {head('Your WineDNA','Open →',()=>{ UserPrefs.openDNA(dna.types[0].key); nav('profile'); })}
+          {dna.types.map(t=>row(t.key,'wine',t.col,t.label,t.line,()=>{ UserPrefs.openDNA(t.key); nav('profile'); }))}
           {dna.pick&&row('explore','compass',C.cr,`Try next: ${dna.pick.style.name}`,`Explore Next · ${dna.pick.style.country}`,()=>{
             sessionStorage.setItem('vinterest_style_explore',JSON.stringify({id:dna.pick.style.id,typeKey:dna.pick.typeKey,label:dna.pick.typeLabel})); nav('style-explore'); })}
-          {row('script','message',C.cr,`Your ${(WineDNA.NOUNS[dna.types[0].key]||['wine'])[0]} sommelier script`,'What to say when you order',()=>nav('profile'))}
+          {row('script','message',C.cr,`Your ${(WineDNA.NOUNS[dna.types[0].key]||['wine'])[0]} sommelier script`,'What to say when you order',()=>{ UserPrefs.openDNA(dna.types[0].key,'scripts'); nav('profile'); })}
         </Card>}
 
         {/* Your knowledge: level and XP, and the Mastery teaser (the full map is Pro) */}
