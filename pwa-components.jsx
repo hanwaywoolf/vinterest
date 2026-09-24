@@ -533,14 +533,19 @@ function fetchRetailEstimate(wine,curr){
   const cacheKey=retailPriceCacheKey(wine,curr.code);
   const premium=!!(wine&&wine.price_usd>=PRICE_SEARCH_FROM_USD&&window.claude&&window.claude.priceSearch);
   let cached=null; try{ cached=JSON.parse(localStorage.getItem(cacheKey)||'null'); }catch(e){}
-  // A premium wine estimated before the search existed is looked up again.
-  if(cached&&(!premium||cached.source==='search')) return Promise.resolve(cached);
+  // A premium wine only estimated so far is looked up again: straight away if its search was
+  // still running last time (the Worker has usually saved the answer since), after a week if
+  // the search found nothing, so a miss isn't paid for on every open.
+  const recentMiss=cached&&cached.searchedAt&&Date.now()-cached.searchedAt<SEARCH_MISS_RETRY_MS;
+  if(cached&&(!premium||cached.source==='search'||recentMiss)) return Promise.resolve(cached);
   const save=d=>{ try{ localStorage.setItem(cacheKey,JSON.stringify(d)); }catch(e){} return d; };
   const search=premium
     ?window.claude.priceSearch({name:wine.name,producer:wine.producer,vintage:wine.vintage,region:wine.region,country:wine.country,type:wine.type},_priceMarket(curr)).catch(()=>null)
     :Promise.resolve(null);
-  return search.then(found=>found&&found.mid>0?save(found):_estimatePrice(wine,curr).then(save));
+  return search.then(found=>found&&found.mid>0?save(found)
+    :_estimatePrice(wine,curr).then(d=>save(premium&&!(found&&found.pending)?{...d,searchedAt:Date.now()}:d)));
 }
+const SEARCH_MISS_RETRY_MS=7*24*3600*1000;
 function _estimatePrice(wine,curr){
   const prompt=
     'You are a wine market pricing expert. Estimate what ONE 75cl bottle of this SPECIFIC wine costs today in wine shops in '+(curr.label||'the user\'s market')+', in '+(curr.label?curr.code:'local currency')+' ('+curr.code+').'+

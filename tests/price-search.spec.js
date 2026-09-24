@@ -88,14 +88,10 @@ test('the Worker searches once, then serves every user from the shared cache', a
     expect(upstream).toHaveLength(1);
     expect(kv.ttl).toBe(30 * 24 * 3600);
     const tool = upstream[0].tools[0];
-    expect(tool).toEqual({ type: 'web_search_20260209', name: 'web_search', max_uses: 2, user_location: { type: 'approximate', country: 'GB' } });
+    expect(tool).toEqual({ type: 'web_search_20250305', name: 'web_search', max_uses: 2, user_location: { type: 'approximate', country: 'GB' } });
     expect(upstream[0].messages[0].content).toContain('Antinori Tignanello 2021');
 
-    // Haiku gets the basic search tool; a bad market is refused; nothing found isn't cached.
-    await ask({ ...body, wine: { ...body.wine, vintage: 2020 } }).then(() => 0);
-    const haikuEnv = { ...env, CLAUDE_MODEL: 'claude-haiku-4-5' };
-    await worker.fetch(new Request('https://vinterest.pages.dev/claude', { method: 'POST', headers: { origin: 'https://vinterest.pages.dev' }, body: JSON.stringify({ ...body, wine: { ...body.wine, vintage: 2019 } }) }), haikuEnv);
-    expect(upstream[upstream.length - 1].tools[0].type).toBe('web_search_20250305');
+    // A bad market is refused; nothing found isn't cached.
     const bad = await ask({ ...body, market: { code: 'pounds' } });
     expect(bad.status).toBe(400);
     global.fetch = async () => new Response(JSON.stringify({ stop_reason: 'end_turn', content: [{ type: 'text', text: '{"found":false}' }] }), { status: 200 });
@@ -105,4 +101,31 @@ test('the Worker searches once, then serves every user from the shared cache', a
   } finally {
     global.fetch = realFetch;
   }
+});
+
+test('a search still running shows the estimate now and tries again next time; a miss waits a week', async ({ context, page }) => {
+  const calls = [];
+  await makeDeterministic(page);
+  await seedLocalStorage(page, { vinterest_onboarded: '1', vinterest_region: 'uk' });
+  await stubNetwork(context);
+  let reply = { text: '', pending: true };
+  await context.route('**/claude', (route) => {
+    const b = JSON.parse(route.request().postData() || '{}');
+    calls.push(b.purpose);
+    const body = b.purpose === 'price_search' ? reply : { text: JSON.stringify({ low: 60, mid: 80, high: 100, currency: 'GBP', tier: 'luxury', note: 'Estimate.' }) };
+    return route.fulfill({ contentType: 'application/json', body: JSON.stringify(body) });
+  });
+  await page.goto(`${BASE}/#home`);
+  const run = () => page.evaluate((w) => fetchRetailEstimate(w, Regional.current()).then((d) => d.mid), TIGNANELLO);
+  expect(await run()).toBe(80);            // still running: estimate for now
+  reply = { text: JSON.stringify(FOUND) };
+  expect(await run()).toBe(139);           // next open: the saved search answer
+  expect(calls.filter((c) => c === 'price_search')).toHaveLength(2);
+
+  const other = { ...TIGNANELLO, name: 'Solaia' };
+  reply = { text: '' };                    // nothing found
+  const runOther = () => page.evaluate((w) => fetchRetailEstimate(w, Regional.current()).then((d) => d.mid), other);
+  expect(await runOther()).toBe(80);
+  expect(await runOther()).toBe(80);
+  expect(calls.filter((c) => c === 'price_search')).toHaveLength(3); // not searched again this week
 });

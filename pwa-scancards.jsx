@@ -138,7 +138,7 @@ function useDeckStyle(){
 }
 /* After a scan: an "Is this it?" check when the label was hard to read, then the result (match,
    reasons, then three equal next steps: Learn about it / Rate it / Save for later, then style and price). The card deck is the
-   optional deep dive, opened straight away for people who usually want it. */
+   optional deep dive, one tap away. */
 function ScanCardsScreen({nav,back,showPro}){
   const scanData=React.useMemo(()=>{
     try{ return JSON.parse(sessionStorage.getItem('vinterest_scan_result')||'{}'); }catch(e){ return {}; }
@@ -151,7 +151,8 @@ function ScanCardsScreen({nav,back,showPro}){
   const confirmKey='vinterest_scan_confirmed_'+((scanData.wine&&scanData.wine.name)||'').replace(/\s/g,'_');
   const [confirmed,setConfirmed]=React.useState(()=>!!saved||!ScanFlow.needsConfirm(scanData.wine,source)||!!sessionStorage.getItem(confirmKey));
   const [editing,setEditing]=React.useState(false);
-  const [view,setView]=React.useState(()=>scanData.view||(ScanFlow.prefersDeck()?'deck':'result'));
+  // Every scan opens on the result; the deck is one tap away ("Learn about it").
+  const [view,setView]=React.useState(()=>scanData.view||'result');
   const deckStyle=useDeckStyle();
   const curr=React.useMemo(()=>Regional.current(),[]);
   const match=React.useMemo(()=>wine?TasteMatch.assess(wine,WineHistory.getAll()):null,[wine,ratingsVersion]);
@@ -205,8 +206,8 @@ function ScanCardsScreen({nav,back,showPro}){
         : <ScanResult wine={wine} match={match} curr={curr} scanData={scanData} existingRating={existingRating} nav={nav} showPro={showPro}
             view={view} setView={setView} onEdit={()=>setEditing(true)}
             onRated={()=>{ setIntent('tasted'); setRatingsVersion(v=>v+1); }}
-            onSaveForLater={()=>{ ScanFlow.recordPath('quick'); setIntent('checking'); setView('saved'); }}
-            onDeck={()=>{ ScanFlow.recordPath('deck'); setView('deck'); }}/>}
+            onSaveForLater={()=>{ setIntent('checking'); setView('saved'); }}
+            onDeck={()=>setView('deck')}/>}
     {editing&&<EditWineSheet wine={wine} onSave={applyEdit} onClose={()=>setEditing(false)}/>}
     <style>{`
       @keyframes scSpin{to{transform:rotate(360deg)}}
@@ -361,7 +362,7 @@ function ScanResult({wine,match,curr,scanData,existingRating,nav,showPro,view,se
             <div style={{display:'grid',gridTemplateColumns:existingRating?'1fr 1fr':'1fr 1fr 1fr',gap:8}}>
               {[
                 {key:'learn',icon:'book',label:'Learn about it',sub:'Story, taste, region and grape',on:onDeck},
-                {key:'rate',icon:'star',label:existingRating?`Re-rate it (${existingRating})`:'Rate it',sub:existingRating?'Changed your mind?':'I\'ve tasted it',on:()=>{ ScanFlow.recordPath('quick'); setView('rate'); }},
+                {key:'rate',icon:'star',label:existingRating?`Re-rate it (${existingRating})`:'Rate it',sub:existingRating?'Changed your mind?':'I\'ve tasted it',on:()=>setView('rate')},
                 ...(existingRating?[]:[{key:'save',icon:'bookmark',label:'Save for later',sub:'Shopping or not tasted yet',on:onSaveForLater}]),
               ].map(x=>(
                 <div key={x.key} role="button" onClick={x.on} style={{background:C.white,border:`1.5px solid ${C.crDim}`,borderRadius:14,padding:'14px 8px',display:'flex',flexDirection:'column',alignItems:'center',gap:6,textAlign:'center',cursor:'pointer',boxShadow:'0 1px 3px rgba(0,0,0,0.04)'}}>
@@ -663,12 +664,13 @@ function BlindCallResult({score,onClose}){
 }
 
 function ValueFace({wine,curr,scanData,accent,soft,expanded}){
-  const [pd,setPd]=React.useState(null);
+  // The label's estimate shows straight away; the shop price replaces it when it arrives.
+  const [pd,setPd]=React.useState(()=>{ const l=ScanFlow.shopPrice(wine,curr); return l!=null?{mid:l,source:'label'}:null; });
   const [loading,setLoading]=React.useState(false);
   React.useEffect(()=>{
     if(!wine||!wine.name) return;
     setLoading(true);
-    ScanFlow.shopEstimate(wine,curr).then(d=>setPd(d)).finally(()=>setLoading(false));
+    ScanFlow.shopEstimate(wine,curr).then(d=>{ if(d) setPd(d); }).finally(()=>setLoading(false));
   },[wine&&wine.name,curr.code]);
   const fmt=n=>n!=null?curr.base+Number(n).toLocaleString():'—';
   // Present when opened from a wine list; converted when the list is in another currency.
@@ -697,6 +699,7 @@ function ValueFace({wine,curr,scanData,accent,soft,expanded}){
         <div style={{fontSize:22,fontWeight:800,fontFamily:C.P,lineHeight:1}}>{ratio?ratio.toFixed(1)+'×':'~2.5×'}</div>
         <div style={{fontSize:13.5,fontFamily:C.P,lineHeight:1.4,opacity:.92}}>{ratio?(ratio>=3?'A steep markup versus the shelf price.':ratio>=2?'A fair, typical restaurant markup.':'A gentle markup — good value on a list.'):'Restaurants usually charge two to three times retail.'}</div>
       </div>
+      {loading&&pd.source==='label'&&<div style={{fontSize:13,color:C.mid,fontFamily:C.P,fontStyle:'italic'}}>Checking current shop prices…</div>}
       {pd.tier&&<div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
         <span style={{fontSize:14,color:C.mid,fontFamily:C.P}}>Price tier</span>
         <span style={{fontSize:14,fontWeight:700,color:accent,fontFamily:C.P,textTransform:'capitalize'}}>{String(pd.tier).replace('-',' ')}</span>

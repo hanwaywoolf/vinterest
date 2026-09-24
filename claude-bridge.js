@@ -49,17 +49,22 @@
     },
     /* Current shop price for a premium wine: the Worker searches the web and shares the answer
        between users (purpose "price_search"). Resolves to {low, mid, high, …} or null. */
+    // {pending:true} when the search is still running (its answer is saved for next time).
     priceSearch: async function (wine, market) {
+      var abort = typeof AbortController !== "undefined" ? new AbortController() : null;
+      var timer = abort ? setTimeout(function () { abort.abort(); }, 25000) : null;
       try {
         var res = await fetch(ENDPOINT, {
           method: "POST",
           headers: { "content-type": "application/json" },
-          body: JSON.stringify({ purpose: "price_search", wine: wine, market: market })
+          body: JSON.stringify({ purpose: "price_search", wine: wine, market: market }),
+          signal: abort ? abort.signal : undefined
         });
         if (!res.ok) return null;
         var data = await res.json();
+        if (data && data.pending) return { pending: true };
         return data && data.text ? JSON.parse(data.text) : null;
-      } catch (e) { return null; }
+      } catch (e) { return null; } finally { if (timer) clearTimeout(timer); }
     }
   };
 })();

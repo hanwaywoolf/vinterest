@@ -78,12 +78,12 @@ const RATE_LIMIT_MAX = 40; // generous fair-use cap, per spec D5 — a cost guar
 const _rateLimitBuckets = new Map();
 
 export default {
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
     const url = new URL(request.url);
     if (url.pathname === "/claude") {
       if (request.method === "OPTIONS") return cors(new Response(null, { status: 204 }));
       if (request.method !== "POST") return json(405, { error: "Method not allowed" });
-      return handleClaude(request, env);
+      return handleClaude(request, env, ctx);
     }
 
     const res = await env.ASSETS.fetch(request);
@@ -152,7 +152,7 @@ function rateLimited(ip) {
   return false;
 }
 
-async function handleClaude(request, env) {
+async function handleClaude(request, env, ctx) {
   const key = env.ANTHROPIC_API_KEY;
   if (!key) {
     return json(500, { error: "Server is missing ANTHROPIC_API_KEY. Add it in Cloudflare Pages → Settings → Variables and secrets, then redeploy.", code: "missing_api_key" });
@@ -187,7 +187,7 @@ async function handleClaude(request, env) {
   const purpose = payload.purpose;
   // Premium-wine price search: built here from the wine's fields, never from client prompts,
   // so /claude can't be used as an open web-search proxy.
-  if (purpose === "price_search") return handlePriceSearch(payload, env, key);
+  if (purpose === "price_search") return handlePriceSearch(payload, env, key, ctx);
   const purposeCap = CLAUDE_PURPOSE_LIMITS[purpose];
   if (!purposeCap) {
     return json(400, { error: "Request must include a valid purpose.", code: "invalid_purpose" });
@@ -232,9 +232,13 @@ async function handleClaude(request, env) {
    users (KV PRICE_CACHE if bound, else the Cache API) for PRICE_TTL_S. The first person to scan a
    given wine and vintage in a market pays for the search; everyone after gets it free. Returns
    {text: JSON of {low, mid, high, currency, tier, note, source:'search'}, cached} or {text:''}
-   when nothing could be found (the app then falls back to its ordinary estimate). */
+   when nothing could be found (the app then falls back to its ordinary estimate).
+   The app waits at most PRICE_WAIT_MS: a slower search returns {text:'', pending:true} and keeps
+   running (ctx.waitUntil) so its answer is saved for the next person to open that wine. */
 const PRICE_TTL_S = 30 * 24 * 3600;
 const PRICE_MAX_TOKENS = 2048;
+const PRICE_WAIT_MS = 20000;      // how long the app waits before showing its estimate
+const PRICE_UPSTREAM_MS = 60000;  // give up on the search itself after this
 const MARKET_CODE_RE = /^[A-Z]{3}$/;
 const COUNTRY_RE = /^[A-Z]{2}$/;
 
@@ -262,7 +266,7 @@ async function priceCachePut(env, k, value) {
 }
 function _clean(s, n) { return String(s || "").replace(/[\r\n"]+/g, " ").trim().slice(0, n || 120); }
 
-async function handlePriceSearch(payload, env, key) {
+async function handlePriceSearch(payload, env, key, ctx) {
   const w = payload.wine || {}, m = payload.market || {};
   if (!w.name || !MARKET_CODE_RE.test(String(m.code || ""))) return json(400, { error: "price_search needs wine.name and market.code.", code: "invalid_price_search" });
   const k = priceCacheKey(w, m);
@@ -270,9 +274,9 @@ async function handlePriceSearch(payload, env, key) {
   if (hit) return json(200, { text: hit, cached: true });
 
   const model = env.PRICE_MODEL || env.CLAUDE_MODEL || "claude-sonnet-4-6";
-  // Dynamic-filtering web search needs Sonnet/Opus 4.6+; Haiku gets the basic tool.
-  const toolType = /haiku/.test(model) ? "web_search_20250305" : "web_search_20260209";
-  const tool = { type: toolType, name: "web_search", max_uses: 2 };
+  // The basic search tool: a price is in the result snippets, and it's far quicker than the
+  // dynamic-filtering variant, which runs code over every page it reads.
+  const tool = { type: "web_search_20250305", name: "web_search", max_uses: 2 };
   const country = String(m.country || "").toUpperCase();
   if (COUNTRY_RE.test(country)) tool.user_location = { type: "approximate", country };
   const vintage = /^(19|20)\d{2}$/.test(String(w.vintage || "")) ? String(w.vintage) : "";
@@ -284,39 +288,45 @@ async function handlePriceSearch(payload, env, key) {
     `Return ONLY JSON, no markdown: {"low":INT,"mid":INT,"high":INT,"currency":"${m.code}","tier":"entry|everyday|premium|luxury|ultra-luxury","note":"one sentence on where the range comes from, e.g. which vintage and the kind of shops","found":true}. ` +
     `If you can't find real listings, return {"found":false}.`;
 
-  const messages = [{ role: "user", content: prompt }];
-  try {
-    let data = null;
-    for (let turn = 0; turn < 2; turn++) {
-      const r = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST",
-        headers: { "content-type": "application/json", "x-api-key": key, "anthropic-version": "2023-06-01" },
-        body: JSON.stringify({ model, max_tokens: PRICE_MAX_TOKENS, messages, tools: [tool] })
-      });
-      data = await r.json();
-      if (!r.ok) {
-        const msg = (data && data.error && data.error.message) || "Anthropic API error.";
-        return json(r.status, { error: msg, code: "anthropic_error" });
+  const work = (async () => {
+    const messages = [{ role: "user", content: prompt }];
+    const abort = new AbortController();
+    const timer = setTimeout(() => abort.abort(), PRICE_UPSTREAM_MS);
+    try {
+      let data = null;
+      for (let turn = 0; turn < 2; turn++) {
+        const r = await fetch("https://api.anthropic.com/v1/messages", {
+          method: "POST", signal: abort.signal,
+          headers: { "content-type": "application/json", "x-api-key": key, "anthropic-version": "2023-06-01" },
+          body: JSON.stringify({ model, max_tokens: PRICE_MAX_TOKENS, messages, tools: [tool] })
+        });
+        data = await r.json();
+        if (!r.ok) return { error: (data && data.error && data.error.message) || "Anthropic API error.", status: r.status };
+        // A long search can pause mid-turn; continue it once.
+        if (data.stop_reason !== "pause_turn") break;
+        messages.push({ role: "assistant", content: data.content });
       }
-      // A long search can pause mid-turn; continue it once.
-      if (data.stop_reason !== "pause_turn") break;
-      messages.push({ role: "assistant", content: data.content });
-    }
-    const text = (data.content || []).filter((b) => b.type === "text").map((b) => b.text).join("");
-    const s = text.indexOf("{"), e = text.lastIndexOf("}");
-    let parsed = null;
-    try { parsed = s >= 0 && e > s ? JSON.parse(text.slice(s, e + 1)) : null; } catch (err) {}
-    const ok = parsed && parsed.found !== false && Number(parsed.mid) > 0;
-    if (!ok) return json(200, { text: "" });
-    const out = JSON.stringify({
-      low: Math.round(Number(parsed.low) || Number(parsed.mid)), mid: Math.round(Number(parsed.mid)), high: Math.round(Number(parsed.high) || Number(parsed.mid)),
-      currency: m.code, tier: parsed.tier || null, note: _clean(parsed.note, 240) || null, source: "search", at: Date.now()
-    });
-    await priceCachePut(env, k, out);
-    return json(200, { text: out, cached: false });
-  } catch (e) {
-    return json(502, { error: "Failed to reach Anthropic: " + (e && e.message ? e.message : String(e)), code: "upstream_unreachable" });
-  }
+      const text = (data.content || []).filter((b) => b.type === "text").map((b) => b.text).join("");
+      const s = text.indexOf("{"), e = text.lastIndexOf("}");
+      let parsed = null;
+      try { parsed = s >= 0 && e > s ? JSON.parse(text.slice(s, e + 1)) : null; } catch (err) {}
+      if (!(parsed && parsed.found !== false && Number(parsed.mid) > 0)) return { text: "" };
+      const out = JSON.stringify({
+        low: Math.round(Number(parsed.low) || Number(parsed.mid)), mid: Math.round(Number(parsed.mid)), high: Math.round(Number(parsed.high) || Number(parsed.mid)),
+        currency: m.code, tier: parsed.tier || null, note: _clean(parsed.note, 240) || null, source: "search", at: Date.now()
+      });
+      await priceCachePut(env, k, out);
+      return { text: out };
+    } catch (e) {
+      return { error: "Failed to reach Anthropic: " + (e && e.message ? e.message : String(e)), status: 502 };
+    } finally { clearTimeout(timer); }
+  })();
+  // Let the search finish (and be saved) even after the app stops waiting.
+  if (ctx && ctx.waitUntil) ctx.waitUntil(work.catch(() => {}));
+  const res = await Promise.race([work, new Promise((ok) => setTimeout(() => ok(null), PRICE_WAIT_MS))]);
+  if (!res) return json(200, { text: "", pending: true });
+  if (res.error) return json(res.status || 502, { error: res.error, code: "anthropic_error" });
+  return json(200, { text: res.text, cached: false });
 }
 
 function cors(res) {

@@ -197,15 +197,15 @@ test('Home asks about old shelf checks and lists unscored bottles', async ({ con
   await expect(root).toContainText('How was it?');
 });
 
-test('after a couple of deck visits the deck opens straight after a scan', async ({ context, page }) => {
-  await setup(context, page, { label: PRIORAT, seed: { vinterest_scan_path: JSON.stringify({ deck: 2, quick: 0 }) } });
+test('every scan opens on the result, even for someone who usually opens the deck', async ({ context, page }) => {
+  await setup(context, page, { label: PRIORAT, seed: { vinterest_scan_path: JSON.stringify({ deck: 5, quick: 0 }) } });
   await page.goto(`${BASE}/?demo=1#camera`);
   await page.getByTestId('scan-file').setInputFiles({ name: 'label.png', mimeType: 'image/png', buffer: PNG });
   const root = page.locator('#root');
-  await expect(root).toContainText('How we got this');
-  // Back from the deck goes to the one-screen result.
-  await page.locator('#root div[style*="border-radius: 17px"]').first().click();
   await expect(root).toContainText('Learn about it');
+  await expect(root).not.toContainText('How we got this');
+  await root.getByText('Learn about it', { exact: true }).click();
+  await expect(root).toContainText('How we got this');
 });
 
 const LIST_ABROAD = { wines: [{ n: 'Pauillac Test', t: 'red', r: 'Bordeaux', c: 'France', v: 2016, p: 'BOTTLE:60', g: 'Cabernet Sauvignon', s: '885' }] };
@@ -282,11 +282,12 @@ test('blends are not grapes: phrases split into varieties, guessed grapes are ne
 });
 
 test('the deck: sliders move sliders, a flick turns the card, and it ends on rating with clear end actions', async ({ context, page }) => {
-  await setup(context, page, { label: PRIORAT, seed: { vinterest_scan_path: JSON.stringify({ deck: 2, quick: 0 }) } });
+  await setup(context, page, { label: PRIORAT });
   await page.setViewportSize({ width: 400, height: 860 });
   await page.goto(`${BASE}/?demo=1#camera`);
   await page.getByTestId('scan-file').setInputFiles({ name: 'label.png', mimeType: 'image/png', buffer: PNG });
   const root = page.locator('#root');
+  await root.getByText('Learn about it', { exact: true }).click();
   await expect(root).toContainText('1 / 9');
   const box = await root.getByText('How we got this').boundingBox();
   // A quick 90px flick is enough; no need to drag a third of the screen.
@@ -369,10 +370,11 @@ test('wine detail: taste bars use WineDNA\'s scale, skip missing figures, and sa
 test.describe('the deck on a touch screen', () => {
   test.use({ hasTouch: true, isMobile: true, viewport: { width: 400, height: 860 } });
   test('gentle swipes both ways, sliders stay sliders', async ({ context, page }) => {
-    await setup(context, page, { label: PRIORAT, seed: { vinterest_scan_path: JSON.stringify({ deck: 2, quick: 0 }) } });
+    await setup(context, page, { label: PRIORAT });
     await page.goto(`${BASE}/?demo=1#camera`);
     await page.getByTestId('scan-file').setInputFiles({ name: 'label.png', mimeType: 'image/png', buffer: PNG });
     const root = page.locator('#root');
+    await root.getByText('Learn about it', { exact: true }).click();
     await expect(root).toContainText('1 / 9');
     const cdp = await context.newCDPSession(page);
     const drag = async (x0, y, dx, ms) => {

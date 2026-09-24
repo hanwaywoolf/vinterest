@@ -1,17 +1,8 @@
 /* Vinterest — ScanFlow: the non-UI parts of the scan result screen.
 
-   Which path the user usually takes (the quick result or the full card deck), how a scanned
-   wine maps onto one already saved, price context in their currency, and turning a Blind Call
+   How a scanned wine maps onto one already saved, price context in their currency, and turning a Blind Call
    guess into the "compared with the label" taps the rating step offers. */
 const ScanFlow = {
-  PATH_KEY:'vinterest_scan_path',
-
-  /* Quick (rate/save from the result) vs deck ("Tell me about it"). After a couple of deck
-     visits, and more of those than quick exits, the deck opens straight after a scan. */
-  path(){ try{ return {deck:0,quick:0,...JSON.parse(localStorage.getItem(this.PATH_KEY)||'{}')}; }catch(e){ return {deck:0,quick:0}; } },
-  recordPath(kind){ const p=this.path(); p[kind]=(p[kind]||0)+1; try{ localStorage.setItem(this.PATH_KEY,JSON.stringify(p)); }catch(e){} },
-  prefersDeck(){ const p=this.path(); return p.deck>=2&&p.deck>p.quick; },
-
   /* A fresh scan of a wine already saved under a slightly different name takes the saved
      identity, so scores and history stay on one entry. */
   resolve(wine){
