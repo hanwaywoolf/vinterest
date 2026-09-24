@@ -55,7 +55,7 @@ function App(){
     window.addEventListener('vinterest:xp',handler);
     return ()=>window.removeEventListener('vinterest:xp',handler);
   },[]);
-  const showXpBadge=!['camera','onboarding','learn','quiz','article','gen-article','identified','detail','mywines','scan','profile','style-explore','winelist','account','settings','mastery-map'].includes(screen);
+  const showXpBadge=!['camera','onboarding','learn','quiz','article','gen-article','guide','identified','detail','mywines','scan','profile','style-explore','winelist','account','settings','mastery-map'].includes(screen);
 
   // XP Toast
   const [xpToasts,setXpToasts]=React.useState([]);
@@ -94,6 +94,7 @@ function App(){
         {screen==='mastery-map' && <MasteryMapScreen {...ctx}/>}
         {screen==='article'   && <ScreenErrorBoundary><LearnArticleScreen {...ctx}/></ScreenErrorBoundary>}
         {screen==='gen-article'&& <ScreenErrorBoundary><GenArticleScreen {...ctx}/></ScreenErrorBoundary>}
+        {screen==='guide'&& <ScreenErrorBoundary><GuideScreen {...ctx}/></ScreenErrorBoundary>}
         {screen==='account'   && <AccountProfileScreen {...ctx}/>}
         {screen==='settings'  && <SettingsScreen {...ctx}/>}
       </div>

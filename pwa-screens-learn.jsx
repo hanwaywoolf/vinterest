@@ -98,6 +98,78 @@ function LearnArticleScreen({nav,back}){
 
 Object.assign(window,{LearnArticleScreen});
 
+/* ── WINE SKILLS GUIDE ──
+   A fixed guide (Guides, pwa-guides.js): a line from the reader's own wines, the sections, then
+   three questions and something to try. Read + every question right = finished. */
+function GuideScreen({nav,back}){
+  const guide=React.useMemo(()=>Guides.byId(sessionStorage.getItem('vinterest_guide')||''),[]);
+  const [read,setRead]=React.useState(()=>!!guide&&Guides.isRead(guide.id));
+  const personal=React.useMemo(()=>guide?Guides.personal(guide):null,[guide&&guide.id]);
+  if(!guide) return(
+    <div style={{flex:1,display:'flex',alignItems:'center',justifyContent:'center',padding:32}}>
+      <span style={{fontSize:16,color:C.mid,fontFamily:C.P}}>Guide not found.</span>
+    </div>
+  );
+  const p=Guides.progress(guide.id), passed=p.total>0&&p.correct===p.total;
+  function markRead(){ if(read) return; Guides.markRead(guide.id); XPSystem.awardAndToast([{type:'article',articleKey:'guide_'+guide.id}]); setRead(true); }
+  function check(){ markRead(); sessionStorage.setItem('vinterest_quiz_config2',JSON.stringify({mode:'guide',guideId:guide.id})); nav('quiz'); }
+  return(
+    <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden'}}>
+      <div style={{background:C.white,padding:'14px 20px',display:'flex',alignItems:'center',gap:12,borderBottom:`1px solid ${C.line}`,flexShrink:0}}>
+        <div onClick={back} style={{width:34,height:34,borderRadius:17,background:C.offWhite,border:`1px solid ${C.line}`,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer'}}><Icon n="back" sz={16} col={C.ink}/></div>
+        <div style={{flex:1,fontSize:15,color:C.mid,fontFamily:C.P,fontWeight:500}}>Wine Skills · {Guides.group(guide.group).label} · {guide.readTime}</div>
+        {read&&passed&&<span style={{fontSize:15,fontWeight:700,color:C.green,fontFamily:C.P}}>✓ Done</span>}
+      </div>
+      <div style={{flex:1,overflowY:'auto'}}>
+        <div style={{background:C.ink,padding:'24px 20px 22px'}}>
+          <div style={{fontSize:26,fontWeight:800,color:'#fff',fontFamily:C.P,lineHeight:1.2,marginBottom:10}}>{guide.title}</div>
+          <div style={{fontSize:16,color:'rgba(255,255,255,0.55)',fontFamily:C.P,lineHeight:1.6}}>{guide.subtitle}</div>
+        </div>
+        <div style={{padding:'16px 20px',display:'flex',flexDirection:'column',gap:12}}>
+          {personal&&<div style={{padding:'12px 14px',borderRadius:14,background:C.crSoft,border:`1px solid ${C.crDim}`}}>
+            <div style={{fontSize:12,fontWeight:700,color:C.cr,fontFamily:C.P,textTransform:'uppercase',letterSpacing:'0.06em',marginBottom:3}}>For you</div>
+            <div style={{fontSize:15,color:C.ink2,fontFamily:C.P,lineHeight:1.55}}>{personal}</div>
+          </div>}
+          {guide.sections.map((sec,i)=>(
+            <div key={i} style={{background:C.white,borderRadius:16,border:`1px solid ${C.line}`,padding:'14px 16px',display:'flex',flexDirection:'column',gap:8}}>
+              <div style={{display:'flex',gap:12,alignItems:'flex-start'}}>
+                <div style={{width:42,height:42,borderRadius:12,background:C.offWhite,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><Icon n={sec.iconName||'read'} sz={20} col={C.cr}/></div>
+                <div style={{flex:1}}>
+                  <div style={{fontSize:19,fontWeight:800,color:C.ink,fontFamily:C.P}}>{sec.term}</div>
+                  <div style={{fontSize:15,color:C.mid,fontFamily:C.P,fontStyle:'italic'}}>{sec.plain}</div>
+                </div>
+              </div>
+              <div style={{fontSize:16,color:C.ink2,fontFamily:C.P,lineHeight:1.7}}>{sec.detail}</div>
+              {sec.examples&&sec.examples.length>0&&<div style={{background:C.offWhite,borderRadius:10,padding:'10px 14px'}}>
+                {sec.examples.map((ex,j)=>(
+                  <div key={j} style={{display:'flex',gap:8,alignItems:'flex-start',marginBottom:j<sec.examples.length-1?6:0}}>
+                    <div style={{width:4,height:4,borderRadius:2,background:C.cr,marginTop:10,flexShrink:0}}/>
+                    <span style={{fontSize:15,color:C.ink2,fontFamily:C.P,lineHeight:1.5}}>{ex}</span>
+                  </div>
+                ))}
+              </div>}
+            </div>
+          ))}
+          <div style={{background:passed?C.greenBg:C.crSoft,borderRadius:16,padding:'16px',border:`1px solid ${passed?C.green+'30':C.crDim}`,display:'flex',flexDirection:'column',gap:10}}>
+            <div style={{fontSize:17,fontWeight:700,color:passed?C.green:C.cr,fontFamily:C.P}}>{passed?'You\'ve got this one':'Check yourself'}</div>
+            <div style={{fontSize:15,color:C.ink2,fontFamily:C.P,lineHeight:1.5}}>{passed?'Every question answered. It counts towards your Mastery.':`${p.total} quick questions on this guide${p.correct?` · ${p.correct}/${p.total} answered so far`:''}. Reading it and passing them counts towards your Mastery.`}</div>
+            <Btn primary full onClick={check}>{passed?'Practise again':'Answer the questions'}</Btn>
+            {!read&&<Btn full onClick={markRead}>Mark as read · +50 XP</Btn>}
+          </div>
+          {guide.tryIt&&<div role="button" onClick={()=>{ markRead(); nav(guide.tryIt.nav); }} style={{padding:'12px 14px',borderRadius:14,background:C.white,border:`1px solid ${C.line}`,display:'flex',alignItems:'center',gap:10,cursor:'pointer'}}>
+            <Icon n="bolt" sz={18} col={C.cr}/>
+            <span style={{flex:1,fontSize:15,fontWeight:700,color:C.ink,fontFamily:C.P}}>Try it: {guide.tryIt.label}</span>
+            <Icon n="chevron" sz={13} col={C.mid}/>
+          </div>}
+          <div style={{height:16}}/>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+Object.assign(window,{GuideScreen});
+
 /* ── GENERATED ARTICLE SCREEN ── */
 function GenArticleScreen({nav,back}){
   const stub=React.useMemo(()=>{

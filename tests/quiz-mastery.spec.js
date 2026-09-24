@@ -207,20 +207,11 @@ test('every results screen has Back to Learn, and a finished set suggests the ne
   expect(errors).toEqual([]);
 });
 
-test('Concept Check and Words results also offer Back to Learn', async ({ page }) => {
+test('Concept Check and Words You\'ve Met are gone from Learn', async ({ page }) => {
   await page.goto(`${BASE}/?demo=1#learn`);
-  await root(page).getByText('Concept Check', { exact: true }).click();
-  for (let i = 0; i < 10; i++) {
-    await root(page).getByText('A', { exact: true }).click();
-    const next = root(page).getByText(/^(Next Question|See Results) →$/);
-    const last = (await next.innerText()).startsWith('See Results');
-    await next.click();
-    if (last) break;
-  }
-  await expect(root(page)).toContainText(/\d of 6 concepts mastered/);
-  await expect(root(page).getByText('Keep going', { exact: true })).toBeVisible();
-  await root(page).getByText('Back to Learn', { exact: true }).click();
-  await expect(root(page)).toContainText('Wine Basics');
+  await expect(root(page)).toContainText('Wine Skills');
+  await expect(root(page)).not.toContainText('Concept Check');
+  await expect(root(page)).not.toContainText("Words You've Met");
 });
 
 test('Concept Check fills every quiz, a miss steps back one box, and Blind Call misses only flag for review', async ({ page }) => {

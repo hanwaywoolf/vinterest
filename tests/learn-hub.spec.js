@@ -18,7 +18,7 @@ test('sections are short, basics follow the wine types, read pieces go to the li
   const root = page.locator('#root');
 
   // Every section is one tap away.
-  for (const chip of ['For you', 'Basics', 'Grapes', 'Progress']) await expect(root.getByRole('button', { name: new RegExp('^' + chip) })).toBeVisible();
+  for (const chip of ['For you', 'Basics', 'Grapes', 'Skills', 'Mastery']) await expect(root.getByRole('button', { name: new RegExp('^' + chip) })).toBeVisible();
 
   // Four unread: three shown, then "Show 1 more to read". Two read: in the closed library.
   await expect(root).toContainText('Piece number 3');
