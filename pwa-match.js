@@ -157,41 +157,38 @@ const TasteMatch = {
     const [lo,hi]=this.PCT_BANDS[verdict];
     const pct=Math.max(lo,Math.min(hi,Math.round(100/(1+Math.exp(-2.5*z)))));
     const basis=`Based on the ${WineDNA.noun(typeKey,scored.length)} you've scored`;
-    const breakdown=this._breakdown({nearest,mass,avg,sd,spreadAll,z,e,pct,signalPts,wine,L,typeKey});
+    const styleT=style?tally(w=>{ const x=sims.find(y=>y.w===w); return !!x&&x.styleSim!=null&&x.styleSim>=0.5; }):null;
+    const breakdown=this._breakdown({nearest,avg,spreadAll,sd,z,e,pct,signalPts,L,style,styleT,gT,grapeLabel,grapeName,typical,rT,regionName:this._regionName(wine)});
     return {...base,verdict,...this.VERDICTS[verdict],pct,expected:e,expectedLabel:ParkerScale.label(e),confidence,breakdown,breakdownLabel:L,
       reasons:reasons.sort((a,b)=>b.weight-a.weight).slice(0,3),
       // One number on screen (the match %); the prediction is said in Parker-band words.
       summary:`${basis}, we think you'd rate it ${ParkerScale.label(e)}.${confidence==='low'?' It\'s a rough guess: nothing you\'ve scored is very like it.':''}`};
   },
 
-  /* How the number was reached, for "Why 81%?". The prediction starts at their average for the
-     type; each of the K wines it's built from moves it by sim×(their score − average)/(total
-     weight + PRIOR), which is exactly the weighted average above rewritten, and the style
-     signals add their nudges. Points are rounded so the lines add up to the prediction shown. */
-  _breakdown({nearest,mass,avg,sd,spreadAll,z,e,pct,signalPts,wine,L}){
-    const avgR=Math.round(avg), denom=mass+this.PRIOR;
-    const styleWord=s=>s==null?null:s>=0.8?'very close in style':s>=0.5?'similar style':s>=0.2?'somewhat different style':'different style';
-    const items=nearest.map(x=>{
-      const why=[x.sameGrape&&'same grape',x.sameRegion&&`also ${this._regionName(x.w)}`,styleWord(x.styleSim),x.w.buy_again&&'you\'d buy it again'].filter(Boolean);
-      return {kind:'wine',name:x.w.name,rating:x.w.rating,why,raw:x.sim*(x.w.rating-avg)/denom,share:x.sim/denom};
-    }).concat(signalPts.map(s=>({kind:'signal',text:s.text,raw:s.pts})));
-    // Largest-remainder rounding: whole points that sum to the prediction minus the average.
-    const target=e-avgR, floors=items.map(i=>Math.floor(i.raw));
-    let left=target-floors.reduce((a,b)=>a+b,0);
-    const order=items.map((it,i)=>[it.raw-floors[i],i]).sort((a,b)=>b[0]-a[0]);
-    const pts=[...floors];
-    for(let k=0;left!==0&&k<order.length*4;k++){ const i=order[k%order.length][1]; if(left>0){ pts[i]++; left--; } else { pts[i]--; left++; } }
-    items.forEach((it,i)=>{ it.pts=pts[i]; delete it.raw; });
+  /* "Why N%?" in plain terms: which things about this wine lift the prediction above their average
+     for the type and which hold it back, each from their own scores (its grape, its region, its
+     style, and the traits their 90+ wines share), then the wines most like it as the evidence,
+     and how the prediction becomes the %. */
+  _breakdown({nearest,avg,spreadAll,sd,z,e,pct,signalPts,L,style,styleT,gT,grapeLabel,grapeName,typical,rT,regionName}){
+    const avgR=Math.round(avg), up=[], down=[], even=[];
+    const put=(diff,text)=>(diff>=1.5?up:diff<=-1.5?down:even).push({text,diff:Math.round(diff)});
+    const your=(t,what)=>`your ${t.n===1?'one':t.n} ${what} ${t.n===1?'scored':'average'} ${t.avg}`;
+    if(gT) put(gT.avg-avg,`${typical?'Usually ':''}${grapeLabel}: ${your(gT,gT.n===1?L.replace(/s$/,''):L)}`);
+    else if(grapeName&&!typical) even.push({text:`${grapeLabel} is new to you, so it counts neither way`,diff:0});
+    if(rT) put(rT.avg-avg,`${regionName}: ${your(rT,'from there')}`);
+    if(style&&styleT) put(styleT.avg-avg,`Its style (${style.toLowerCase()}): ${your(styleT,`${L} like that`)}`);
+    signalPts.forEach(x=>(x.pts>0?up:down).push({text:x.text,diff:x.pts}));
+    up.sort((a,b)=>b.diff-a.diff); down.sort((a,b)=>a.diff-b.diff);
+    const closest=nearest.length?`The ${L} you've scored most like it: ${nearest.map(x=>`${x.w.name} (${x.w.rating})`).join(', ')}.`:'';
     const gap=e-avgR, rs=nearest.map(x=>x.w.rating), lo=Math.min(...rs), hi=Math.max(...rs);
-    const agree=nearest.length>1?(hi-lo<=6?`The ${nearest.length} wines most like it agree closely (${lo}–${hi}), so we're fairly sure.`
-      :hi-lo>=15?`The ${nearest.length} wines most like it disagree (${lo}–${hi}), so it's less certain.`:`The ${nearest.length} wines most like it scored ${lo}–${hi}.`):'';
+    const agree=nearest.length>1?(hi-lo<=6?`The ${L} most like it agree closely (${lo}–${hi}), so we're fairly sure.`
+      :hi-lo>=15?`The ${L} most like it disagree (${lo}–${hi}), so it's less certain.`:`The ${L} most like it scored ${lo}–${hi}.`):'';
     const step=Math.abs(z)<0.25?'about your usual':Math.abs(z)<0.5?'a small step':Math.abs(z)<1?'a clear step':'a big step';
     const need=Math.ceil(avg+0.88*sd); // where the % reaches 90 (2.5·z ≈ 2.2)
-    const pctWhy=gap===0?`${e} is right on your average ${L.replace(/s$/,'')} score of ${avgR}, so ${pct}%.`
-      :`${e} is ${Math.abs(gap)} point${Math.abs(gap)===1?'':'s'} ${gap>0?'above':'below'} your average of ${avgR} for ${L}, where your scores usually vary by about ${Math.round(spreadAll)} points. ${agree} Together that's ${step} ${gap>0?'up':'down'}: ${pct}%.`
+    const pctWhy=gap===0?`We predict ${e}, right on your average of ${avgR} for ${L}, so ${pct}%.`
+      :`We predict ${e}, ${Math.abs(gap)} point${Math.abs(gap)===1?'':'s'} ${gap>0?'above':'below'} your average of ${avgR} for ${L}, where your scores usually vary by about ${Math.round(spreadAll)} points. ${agree} Together that's ${step} ${gap>0?'up':'down'}: ${pct}%.`
         +(pct<90&&need<=100&&gap>0?` A prediction of ${need} or more would be 90%+.`:'');
-    const thin=nearest.length?`Built from the ${nearest.length===1?'one wine':nearest.length+' wines'} you've scored most like it, pulled a little toward your average because that's a small sample.`:'';
-    return {avg:avgR,items,predicted:e,pctWhy,thin};
+    return {avg:avgR,up,down,even,closest,predicted:e,pctWhy};
   },
 
   /* A heads-up when a wine costs far more than they usually pay for this type. It never changes

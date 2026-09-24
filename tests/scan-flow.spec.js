@@ -529,7 +529,7 @@ test('TasteMatch counts the same region by the knowledge base: a Brunello draws 
   expect(out.verdict).toBe('hit');
 });
 
-test('"Why N%?" shows the wines the prediction is built from, and their points add up to it', async ({ context, page }) => {
+test('"Why N%?" says which of the wine\'s traits bring it up or hold it back, in their own scores', async ({ context, page }) => {
   await setup(context, page);
   await page.goto(`${BASE}/?demo=1#home`);
   const out = await page.evaluate(() => {
@@ -538,10 +538,14 @@ test('"Why N%?" shows the wines the prediction is built from, and their points a
       mk('Far 1', 80, 0.3, ['Merlot']), mk('Far 2', 80, 0.35, ['Gamay']), mk('Far 3', 100, 0.4, ['Pinot Noir']), mk('Far 4', 80, 0.3, ['Gamay'])];
     const m = TasteMatch.assess({ name: 'Brunello', type: 'red', region: 'Brunello di Montalcino', grapes: ['Sangiovese Grosso'], body: 0.85, tannins: 0.85, acidity: 0.72 }, all);
     const b = m.breakdown;
-    return { pct: m.pct, verdict: m.verdict, sum: b.avg + b.items.reduce((s, i) => s + i.pts, 0), predicted: b.predicted, names: b.items.filter((i) => i.kind === 'wine').map((i) => i.name).sort(), why: b.pctWhy };
+    return { pct: m.pct, verdict: m.verdict, up: b.up.map((x) => x.text), even: b.even.map((x) => x.text), closest: b.closest, why: b.pctWhy };
   });
-  expect(out.sum).toBe(out.predicted);
-  expect(out.names).toEqual(['Close A', 'Close B', 'Close C']);
+  // Explained by the wine's traits against their average (90), with the closest wines as evidence.
+  expect(out.up.join(' | ')).toContain('Sangiovese Grosso (Sangiovese): your 3 reds average 96');
+  expect(out.up.join(' | ')).toContain('Its style (full body');
+  // Every wine here is Tuscan, so the region tells us nothing.
+  expect(out.even).toContain('Tuscany: your 7 from there average 90');
+  expect(out.closest).toMatch(/most like it: Close [ABC] \(\d+\), Close [ABC]/);
   // Close matches that agree make a surer call than the user's wide overall range alone.
   expect(out.why).toContain('agree closely (93–99)');
   expect(out.verdict).toBe('hit');
