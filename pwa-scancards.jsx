@@ -308,7 +308,8 @@ function EditWineSheet({wine,onSave,onClose}){
 function ScanResult({wine,match,curr,scanData,existingRating,nav,showPro,view,setView,onEdit,onRated,onSaveForLater,onDeck}){
   const col=_TONE_COL[match?match.tone:'neutral'];
   const [shop,setShop]=React.useState(()=>curr.isTravel?null:ScanFlow.shopPrice(wine,curr));
-  React.useEffect(()=>{ let live=true; ScanFlow.shopEstimate(wine,curr).then(d=>{ if(live&&d) setShop(d.mid); }); return()=>{ live=false; }; },[wine&&wine.name,curr.code]);
+  const [shopFound,setShopFound]=React.useState(false); // from current shop listings, not an estimate
+  React.useEffect(()=>{ let live=true; ScanFlow.shopEstimate(wine,curr).then(d=>{ if(live&&d){ setShop(d.mid); setShopFound(d.source==='search'); } }); return()=>{ live=false; }; },[wine&&wine.name,curr.code]);
   // A list read abroad is priced in its own currency: compare like with like.
   const lc=scanData.listCurrency;
   const list=scanData.listPrice?(lc&&lc!==curr.code?scanData.listPrice/(USD_FX[lc]||1)*(USD_FX[curr.code]||1):scanData.listPrice):null;
@@ -383,7 +384,7 @@ function ScanResult({wine,match,curr,scanData,existingRating,nav,showPro,view,se
         {shop&&<div style={{display:'flex',alignItems:'baseline',gap:8}}>
           <span style={{fontSize:15,color:C.ink,fontFamily:C.P,flex:1}}>{curr.isTravel?`In shops in ${curr.label}`:'In shops'}</span>
           <span style={{fontSize:15,fontWeight:800,color:C.ink,fontFamily:C.P}}>about {ScanFlow.money(shop,curr)}</span>
-          <span style={{fontSize:13,color:C.mid,fontFamily:C.P}}>est.</span>
+          <span style={{fontSize:13,color:C.mid,fontFamily:C.P}}>{shopFound?'in shops now':'est.'}</span>
         </div>}
         {list&&<div style={{display:'flex',alignItems:'baseline',gap:8,marginTop:4}}>
           <span style={{fontSize:15,color:C.ink,fontFamily:C.P,flex:1}}>On this list</span>

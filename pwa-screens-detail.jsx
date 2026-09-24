@@ -646,20 +646,13 @@ function DetailPrice({wine,nav}){
   const [loading,    setLoading]    = React.useState(false);
   const [done,       setDone]       = React.useState(false);
 
-  const cacheKey = wine ? retailPriceCacheKey(wine,curr.code) : null;
-
   React.useEffect(function(){
     if (!wine || !wine.name) return;
     setPriceData(null);
     setDone(false);
 
-    if (cacheKey) {
-      const cached = localStorage.getItem(cacheKey);
-      if (cached) {
-        try { setPriceData(JSON.parse(cached)); setDone(true); return; } catch(e){}
-      }
-    }
-
+    // fetchRetailEstimate answers from the device cache straight away, and looks a premium
+    // wine up again if it was only estimated before the shop-price search existed.
     setLoading(true);
     fetchRetailEstimate(wine,curr)
       .then(function(d){ setPriceData(d); })
@@ -709,7 +702,7 @@ function DetailPrice({wine,nav}){
         <>
           {/* Price range card */}
           <div>
-            <SL label="Estimated Retail Price"/>
+            <SL label={priceData&&priceData.source==='search'?'Current shop price':'Estimated retail price'}/>
             <Card style={{padding:0,overflow:'hidden'}}>
               {/* Mid price hero */}
               <div style={{padding:'18px 16px',background:C.crSoft,display:'flex',justifyContent:'space-between',alignItems:'center',borderBottom:'1px solid '+C.crDim}}>

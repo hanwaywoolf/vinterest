@@ -522,14 +522,31 @@ const Regional={
 function retailPriceCacheKey(wine,code){
   return 'vinterest_price_v3_'+((wine&&wine.name)||'').replace(/\s/g,'_')+'_'+((wine&&wine.vintage)||'nv')+'_'+code;
 }
+/* The shop price for a wine, in the user's currency, cached on the device.
+   Premium wines (a label estimate of PRICE_SEARCH_FROM_USD or more: about £30 / €37) get a real
+   search of current shop listings through the Worker (window.claude.priceSearch: web search,
+   shared between users for 30 days), because that's where remembered prices go most wrong.
+   Everything else, and any search that finds nothing, gets Claude's estimate. */
+const PRICE_SEARCH_FROM_USD=40;
+function _priceMarket(curr){ return {code:curr.code,label:curr.label,country:(FindOnline.country()||'').toUpperCase()}; }
 function fetchRetailEstimate(wine,curr){
   const cacheKey=retailPriceCacheKey(wine,curr.code);
-  const cached=localStorage.getItem(cacheKey);
-  if(cached){ try{ return Promise.resolve(JSON.parse(cached)); }catch(e){} }
+  const premium=!!(wine&&wine.price_usd>=PRICE_SEARCH_FROM_USD&&window.claude&&window.claude.priceSearch);
+  let cached=null; try{ cached=JSON.parse(localStorage.getItem(cacheKey)||'null'); }catch(e){}
+  // A premium wine estimated before the search existed is looked up again.
+  if(cached&&(!premium||cached.source==='search')) return Promise.resolve(cached);
+  const save=d=>{ try{ localStorage.setItem(cacheKey,JSON.stringify(d)); }catch(e){} return d; };
+  const search=premium
+    ?window.claude.priceSearch({name:wine.name,producer:wine.producer,vintage:wine.vintage,region:wine.region,country:wine.country,type:wine.type},_priceMarket(curr)).catch(()=>null)
+    :Promise.resolve(null);
+  return search.then(found=>found&&found.mid>0?save(found):_estimatePrice(wine,curr).then(save));
+}
+function _estimatePrice(wine,curr){
   const prompt=
-    'You are a wine market pricing expert with deep knowledge of actual retail prices worldwide.'+
-    ' Your task: find the ACTUAL known retail price for this SPECIFIC wine — look up this exact producer and label, do NOT average by appellation.'+
-    ' Prestigious named wines (e.g. Guigal single-vineyard La Mouline/La Turque/La Landonne, DRC, Leroy, Screaming Eagle, Petrus, Opus One, cult Burgundy) retail for '+curr.sym+'50–'+curr.sym+'5000+; use the real figure.'+
+    'You are a wine market pricing expert. Estimate what ONE 75cl bottle of this SPECIFIC wine costs today in wine shops in '+(curr.label||'the user\'s market')+', in '+(curr.label?curr.code:'local currency')+' ('+curr.code+').'+
+    ' Price this exact producer and label, not an average for its region or appellation.'+
+    ' Your memory of prices may be a year or more old: prestige and cult wines (Super Tuscans, classed-growth Bordeaux, top Burgundy, Napa cult Cabernet, prestige Champagne, Barolo and Brunello from famous producers) have risen sharply in recent years, so price them at today\'s levels, not the ones you remember. Everyday wines have moved much less.'+
+    ' Price the '+(wine.vintage?wine.vintage+' vintage':'current release')+' at shop prices (not auction, en primeur or restaurant).'+
     ' Wine: '+(wine.name||'')+(wine.vintage?' '+wine.vintage:'')+'.'+
     (wine.producer?' Producer: '+wine.producer+'.':'')+
     ' If the name looks misspelled, price the wine it most plausibly is (e.g. "Cevero della Salla" is Antinori\'s Cervaro della Sala).'+
@@ -537,17 +554,14 @@ function fetchRetailEstimate(wine,curr){
     ' Region: '+(wine.region||'')+', '+(wine.country||'')+'.'+
     ' Grapes: '+((wine.grapes||[]).join(', ')||'unknown')+'.'+
     (wine.abv?' ABV: '+wine.abv+'%.':'')+
-    ' Currency: '+curr.label+' ('+curr.code+').'+
-    ' Return ONLY valid JSON, no markdown: {"low":NUMBER,"mid":NUMBER,"high":NUMBER,"currency":"'+curr.code+'","tier":"entry|everyday|premium|luxury|ultra-luxury","note":"one sentence — what drives this specific wine price (producer rep, rarity, appellation, etc)"}.'+
+    ' Return ONLY valid JSON, no markdown: {"low":NUMBER,"mid":NUMBER,"high":NUMBER,"currency":"'+curr.code+'","tier":"entry|everyday|premium|luxury|ultra-luxury","note":"one sentence on what drives this wine\'s price (producer, rarity, appellation)"}.'+
     ' Integers only. Return null values only if the wine is genuinely unidentifiable.';
   return window.claude.complete({purpose:'price',messages:[{role:'user',content:prompt}]}).then(text=>{
     let c=text.replace(/```json|```/g,'').trim();
     const s=c.indexOf('{'),e=c.lastIndexOf('}');
     if(s>=0&&e>s) c=c.slice(s,e+1);
-    const d=JSON.parse(c);
-    localStorage.setItem(cacheKey,JSON.stringify(d));
-    return d;
+    return {...JSON.parse(c),source:'estimate'};
   });
 }
 
-Object.assign(window,{C,Icon,BottomNav,SideNav,Pill,Prog,Card,Btn,ScreenErrorBoundary,WineHistory,ProBadge,ProGate,calcMatchScore,Regional,FindOnline,CURRENCY_LIST,lookupCountryCurrency,fetchRetailEstimate,retailPriceCacheKey});
+Object.assign(window,{C,Icon,BottomNav,SideNav,Pill,Prog,Card,Btn,ScreenErrorBoundary,WineHistory,ProBadge,ProGate,calcMatchScore,Regional,FindOnline,CURRENCY_LIST,lookupCountryCurrency,fetchRetailEstimate,retailPriceCacheKey,PRICE_SEARCH_FROM_USD});
