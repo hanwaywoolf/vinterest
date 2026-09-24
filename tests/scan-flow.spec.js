@@ -412,6 +412,38 @@ test.describe('the deck on a touch screen', () => {
   });
 });
 
+// A long card (a producer story at Extra large on a small phone) scrolls inside the card, shows a
+// fade while there's more, and a sideways swipe still turns it.
+test.describe('a long deck card at Extra large', () => {
+  test.use({ hasTouch: true, isMobile: true, viewport: { width: 375, height: 560 } });
+  test('scrolls up and down, and still swipes', async ({ context, page }) => {
+    await setup(context, page, { label: PRIORAT, seed: { vinterest_text_size: 'xl' } });
+    await page.goto(`${BASE}/?demo=1#camera`);
+    await page.getByTestId('scan-file').setInputFiles({ name: 'label.png', mimeType: 'image/png', buffer: PNG });
+    const root = page.locator('#root');
+    await root.getByText('Learn about it', { exact: true }).click();
+    for (let i = 1; i < 4; i++) { await root.getByText(`${i} / 9`).waitFor(); await page.locator('.sc-swipe > div').last().locator('> div').last().click(); }
+    await expect(root).toContainText('4 / 9');
+    const body = page.locator('.sc-swipe .sc-scroll').first();
+    const m = await body.evaluate((el) => ({ over: el.scrollHeight > el.clientHeight + 6 }));
+    expect(m.over).toBe(true);
+    await expect(page.locator('.sc-swipe [aria-hidden="true"][style*="linear-gradient"]').first()).toBeVisible();
+    const cdp = await context.newCDPSession(page);
+    const drag = async (x0, y0, dx, dy) => {
+      await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: x0, y: y0 }] });
+      for (let i = 1; i <= 8; i++) { await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: x0 + dx * i / 8, y: y0 + dy * i / 8 }] }); await page.waitForTimeout(30); }
+      await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+      await page.waitForTimeout(400);
+    };
+    const box = await body.boundingBox();
+    await drag(box.x + box.width / 2, box.y + box.height - 20, 0, -150);
+    expect(await body.evaluate((el) => el.scrollTop)).toBeGreaterThan(20);
+    await expect(root).toContainText('4 / 9');
+    await drag(box.x + box.width - 30, box.y + 60, -120, 2);
+    await expect(root).toContainText('5 / 9');
+  });
+});
+
 test('a rescan within a few hours is the same occasion; a suggestion is not a scan', async ({ context, page }) => {
   await setup(context, page, { label: PRIORAT });
   const scan = async () => {

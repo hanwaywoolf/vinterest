@@ -971,16 +971,26 @@ const _FINISH_HEAD={rate:null,saved:{eyebrow:'Your score',icon:'check'},next:{ey
 function CardShell({card,children,ctx,style}){
   const isFinish=card.kind==='finish';
   const head=(isFinish&&ctx&&_FINISH_HEAD[ctx.finishStage])||card;
+  // Long text (a producer story at Extra large) scrolls inside the card; a fade at the bottom
+  // says there's more, since the scrollbar is hidden.
+  const body=React.useRef(null);
+  const [more,setMore]=React.useState(false);
+  const check=React.useCallback(()=>{ const el=body.current; if(el) setMore(el.scrollHeight-el.scrollTop-el.clientHeight>6); },[]);
+  React.useEffect(()=>{ check(); const el=body.current; if(!el||typeof ResizeObserver==='undefined') return;
+    const ro=new ResizeObserver(check); ro.observe(el); if(el.firstElementChild) ro.observe(el.firstElementChild); return()=>ro.disconnect(); },[check]);
   return <div style={{background:C.white,borderRadius:22,border:`1px solid ${C.line}`,boxShadow:'0 6px 22px rgba(0,0,0,0.08)',display:'flex',flexDirection:'column',overflow:'hidden',...style}}>
     <div style={{height:5,background:card.accent,flexShrink:0}}/>
     <div style={{padding:'16px 18px 6px',display:'flex',alignItems:'center',gap:9,flexShrink:0}}>
       <div style={{width:30,height:30,borderRadius:9,background:card.soft,display:'flex',alignItems:'center',justifyContent:'center'}}><Icon n={head.icon} sz={16} col={card.accent}/></div>
       <span style={{fontSize:12.5,fontWeight:700,color:card.accent,fontFamily:C.P,letterSpacing:'0.09em',textTransform:'uppercase'}}>{head.eyebrow}</span>
     </div>
-    {/* overflow:clip, not hidden: a hidden-overflow box is a scroll container, and on touch
-        screens the browser claims horizontal drags that start inside one, cancelling the swipe. */}
-    <div className="sc-scroll" style={{padding:'8px 18px 18px',overflowX:'clip',overflowY:isFinish?'auto':'clip',flex:1,minHeight:0}}>
-      {isFinish?ctx.finish():children}
+    {/* Scrolls up and down only: the deck sets touch-action:pan-y (.sc-swipe), so the browser
+        takes vertical drags for scrolling and leaves sideways drags to the swipe. */}
+    <div style={{position:'relative',flex:1,minHeight:0,display:'flex',flexDirection:'column'}}>
+      <div ref={body} onScroll={check} className="sc-scroll" style={{padding:'8px 18px 18px',overflowX:'hidden',overflowY:'auto',flex:1,minHeight:0}}>
+        <div>{isFinish?ctx.finish():children}</div>
+      </div>
+      {more&&<div aria-hidden="true" style={{position:'absolute',left:0,right:0,bottom:0,height:44,pointerEvents:'none',background:`linear-gradient(rgba(255,255,255,0),${C.white})`}}/>}
     </div>
   </div>;
 }
