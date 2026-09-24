@@ -51,7 +51,11 @@ function WineChatWidget({wines,nav,showPro}){
   // A suggestion (or recent question) filled in is theirs to send or to clear: the first
   // backspace on it, untouched, empties the box. Anything they type makes it their own text.
   const filled=React.useRef(null);
-  function fill(text){ setQ(text); filled.current=text; setExhausted(true); setTimeout(()=>inputRef.current&&inputRef.current.focus(),0); }
+  function fill(text){ setQ(text); filled.current=text; setExhausted(true);
+    setTimeout(()=>{ const el=inputRef.current; if(el){ el.focus(); el.setSelectionRange(text.length,text.length); } },0); }
+  // Caught on the key itself: a backspace with the cursor at the start deletes nothing, so
+  // onChange alone would miss it.
+  function onKey(e){ if(e.key==='Backspace'&&filled.current&&q===filled.current){ e.preventDefault(); filled.current=null; setQ(''); } }
   function onType(v){
     if(filled.current&&q===filled.current&&v.length<q.length){ filled.current=null; setQ(''); return; }
     filled.current=null; setQ(v);
@@ -78,7 +82,7 @@ function WineChatWidget({wines,nav,showPro}){
           <span style={{fontSize:16,fontWeight:800,color:'#fff',fontFamily:C.P}}>V</span>
         </div>
         <div style={{flex:1,minWidth:0,position:'relative',height:22}}>
-          <input ref={inputRef} value={q} onChange={e=>onType(e.target.value)} onFocus={()=>setFocused(true)} onBlur={()=>setFocused(false)} aria-label="Ask Vinny"
+          <input ref={inputRef} value={q} onChange={e=>onType(e.target.value)} onKeyDown={onKey} onFocus={()=>setFocused(true)} onBlur={()=>setFocused(false)} aria-label="Ask Vinny"
             placeholder={open?'Ask a follow-up…':'Ask Vinny about wine…'} style={{position:'absolute',inset:0,width:'100%',border:'none',outline:'none',background:'transparent',fontSize:16,fontFamily:C.P,color:'#fff'}}/>
           {idle&&(
             <div onClick={()=>fill(prompts[pIdx])} style={{position:'absolute',inset:0,display:'flex',alignItems:'center',background:'#000',cursor:'text'}}>

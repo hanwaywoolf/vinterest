@@ -29,7 +29,10 @@ const TasteMatch = {
   _key(w){ return (w.name||'')+'|'+String(w.vintage||''); },
   _typeKey(w){ const t=WineDNA._t(w&&w.type); return WineDNA.AXES_FOR[t]?t:'red'; },
   _grapes(w){ return new Set((w.grapes||[]).map(g=>WineDNA.grape(g)).filter(Boolean)); },
-  _region(w){ return (w.region||'').trim().toLowerCase(); },
+  // The knowledge-base region a wine belongs to ("Brunello di Montalcino", "Chianti Classico"
+  // and "Toscana" are all Tuscany), else its region as written.
+  _regionName(w){ return (typeof Regions!=='undefined'&&Regions.resolve(w))||(w.region||'').trim(); },
+  _region(w){ return this._regionName(w).toLowerCase(); },
   _cap(s){ return s?s.charAt(0).toUpperCase()+s.slice(1):s; },
 
   /* Plain-English style line from the label estimates, e.g. "Full body, grippy tannins, fresh acidity". */
@@ -82,7 +85,7 @@ const TasteMatch = {
       text:blend?`${grapeLabel}, the lead grape in this blend, is new to you.`:`${grapeLabel} is a new grape for you.`});
     const rT=region?tally(w=>this._region(w)===region):null;
     if(rT) reasons.push({kind:'region',tone:tone(rT.avg),weight:0.8+rT.n*0.8,
-      text:`${wine.region}: you've scored ${rT.n===1?'one':rT.n}, ${rT.n===1?'at':'averaging'} ${rT.avg}.`});
+      text:`${this._regionName(wine)}: you've scored ${rT.n===1?'one':rT.n}, ${rT.n===1?'at':'averaging'} ${rT.avg}.`});
 
     const base={typeKey,label,style,scoredCount:scored.length,profile:p};
     if(scored.length<this.MIN_SCORED){
@@ -140,13 +143,13 @@ const TasteMatch = {
     // average (in their own spread, never under SD_FLOOR points) we expect this one to land.
     const sd=Math.max(this.SD_FLOOR,Math.sqrt(WineDNA._mean(scored.map(w=>(w.rating-avg)**2))));
     const z=(expected+nudge-avg)/sd;
-    const verdict=z>=0.75&&e>=85?'hit'
+    const verdict=z>=0.5&&e>=ParkerScale.LOVED?'hit'
       :e<ParkerScale.DISLIKED||(z<=-1&&e<ParkerScale.LOVED)?'miss'
       :z>=0.25||e>=ParkerScale.LOVED?'good':'mixed';
     // The chance it beats their typical bottle (normal curve on z), kept inside the verdict's band
     // so the number and the words never disagree.
     const [lo,hi]=this.PCT_BANDS[verdict];
-    const pct=Math.max(lo,Math.min(hi,Math.round(100/(1+Math.exp(-1.702*z)))));
+    const pct=Math.max(lo,Math.min(hi,Math.round(100/(1+Math.exp(-2.5*z)))));
     const basis=`Based on the ${WineDNA.noun(typeKey,scored.length)} you've scored`;
     return {...base,verdict,...this.VERDICTS[verdict],pct,expected:e,expectedLabel:ParkerScale.label(e),confidence,
       reasons:reasons.sort((a,b)=>b.weight-a.weight).slice(0,3),

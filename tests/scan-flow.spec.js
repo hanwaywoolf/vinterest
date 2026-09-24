@@ -513,3 +513,18 @@ test('TasteMatch is relative to how they score: a generous scorer isn\'t told ev
   expect(out.full[1]).toBe('hit');
   expect(out.full[2] - out.light[2]).toBeGreaterThan(30);
 });
+
+test('TasteMatch counts the same region by the knowledge base: a Brunello draws on their Chianti and Bolgheri', async ({ context, page }) => {
+  await setup(context, page);
+  await page.goto(`${BASE}/?demo=1#home`);
+  const out = await page.evaluate(() => {
+    const mk = (name, rating, region, sub_region, grapes) => ({ name, type: 'red', rating, region, sub_region, grapes, body: 0.85, tannins: 0.8, acidity: 0.7 });
+    const all = [mk('Chianti Classico Riserva', 96, 'Chianti Classico', '', ['Sangiovese']), mk('Sassicaia', 100, 'Tuscany', 'Bolgheri', ['Cabernet Sauvignon']),
+      mk('Le Difese', 97, 'Toscana', '', ['Cabernet Sauvignon', 'Sangiovese']), mk('Barolo', 80, 'Piedmont', '', ['Nebbiolo']), mk('Rioja', 82, 'Rioja', '', ['Tempranillo']),
+      mk('Côtes du Rhône', 80, 'Rhône Valley', '', ['Grenache'])];
+    const m = TasteMatch.assess({ name: 'Brunello di Montalcino', type: 'red', region: 'Brunello di Montalcino', country: 'Italy', grapes: ['Sangiovese Grosso'], body: 0.85, tannins: 0.8, acidity: 0.72 }, all);
+    return { verdict: m.verdict, reasons: m.reasons.map((r) => r.text).join(' ') };
+  });
+  expect(out.reasons).toContain('Tuscany: you\'ve scored 3, averaging 98.');
+  expect(out.verdict).toBe('hit');
+});
