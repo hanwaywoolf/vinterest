@@ -547,3 +547,21 @@ test('"Why N%?" shows the wines the prediction is built from, and their points a
   expect(out.verdict).toBe('hit');
   expect(out.pct).toBeGreaterThanOrEqual(85);
 });
+
+test('a wine far above their usual spend is called out, and the match doesn\'t change', async ({ context, page }) => {
+  await setup(context, page);
+  await page.goto(`${BASE}/?demo=1#home`);
+  const out = await page.evaluate(() => {
+    const us = { code: 'USD', base: '$' };
+    const mk = (name, rating, price_usd) => ({ name, type: 'red', rating, price_usd, grapes: ['Merlot'], body: 0.7, tannins: 0.6, acidity: 0.6 });
+    const all = [mk('A', 90, 18), mk('B', 88, 22), mk('C', 92, 25), mk('D', 85, 30), mk('E', 91, 20)];
+    const cheap = { name: 'Cheap', type: 'red', grapes: ['Merlot'], body: 0.7, tannins: 0.6, acidity: 0.6, price_usd: 25 };
+    const dear = { ...cheap, name: 'Dear', price_usd: 250 };
+    return { cheapNote: TasteMatch.priceNote(cheap, 25, all, us), dearNote: TasteMatch.priceNote(dear, 250, all, us),
+      samePct: TasteMatch.assess(cheap, all).pct === TasteMatch.assess(dear, all).pct };
+  });
+  expect(out.cheapNote).toBeNull();
+  expect(out.dearNote.text).toContain('well above the $20–$25 you usually spend on reds');
+  expect(out.dearNote.text).toContain('more than any of the reds you\'ve had (the most was $30)');
+  expect(out.samePct).toBe(true);
+});

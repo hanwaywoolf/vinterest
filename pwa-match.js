@@ -194,6 +194,32 @@ const TasteMatch = {
     return {avg:avgR,items,predicted:e,pctWhy,thin};
   },
 
+  /* A heads-up when a wine costs far more than they usually pay for this type. It never changes
+     the match: whether they'd love it and whether it's in their price range are separate questions.
+     "Usually" is the middle half of what they've paid (or the shop estimate) for the wines of this
+     type they chose, from 4 priced wines; before that, the usual spend they gave. Returns
+     {text, tone} or null. */
+  PRICE_WARN_X:2,   // at least this many times the top of their usual range
+  priceNote(wine,price,allWines,rc){
+    rc=rc||Regional.current();
+    if(!wine||!(price>0)) return null;
+    const t=this._typeKey(wine), L=(WineDNA.NOUNS[t]||['wine','wines'])[1];
+    const self=this._key(wine), money=v=>ScanFlow.money(v,rc);
+    const prices=(allWines||[]).filter(w=>this._key(w)!==self&&this._typeKey(w)===t&&WineDNA.chosen(w))
+      .map(w=>WineDNA.priceOf(w,rc)).filter(v=>v>0).sort((a,b)=>a-b);
+    if(prices.length>=4){
+      const q=f=>prices[Math.min(prices.length-1,Math.floor(f*(prices.length-1)+0.5))];
+      const lo=q(0.25), hi=q(0.75), max=prices[prices.length-1];
+      if(price<hi*this.PRICE_WARN_X) return null;
+      const most=price>max?`more than any of the ${L} you've had (the most was ${money(max)})`:`your priciest so far was ${money(max)}`;
+      return {tone:'neutral',text:`Price: about ${money(price)}, well above the ${money(lo)}–${money(hi)} you usually spend on ${L}; ${most}.`};
+    }
+    const b=UserPrefs.budget(rc);
+    if(b&&b.max!=null&&price>=b.max*this.PRICE_WARN_X)
+      return {tone:'neutral',text:`Price: about ${money(price)}, well above your usual spend (${b.label}).`};
+    return null;
+  },
+
   /* Wine-list entries carry a compact style estimate ("s":"738": body, tannins, acidity on 1–9,
      0 = not applicable) and a main grape. Turn them into the fields assess() reads. */
   fromListEntry(w){

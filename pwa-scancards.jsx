@@ -112,8 +112,9 @@ function MatchRing({match,size=96}){
   </div>;
 }
 
-/* TasteMatch's reasons: one line each, with a dot for whether it counts for or against. */
-function MatchReasons({match,col,showSummary=true}){
+/* TasteMatch's reasons: one line each, with a dot for whether it counts for or against. A price
+   note (TasteMatch.priceNote) follows them, marked apart: it's said, but it never moves the match. */
+function MatchReasons({match,col,showSummary=true,priceNote}){
   if(!match) return null;
   return <div style={{display:'flex',flexDirection:'column',gap:8}}>
     {showSummary&&<div style={{fontSize:15,color:col||C.ink2,fontFamily:C.P,lineHeight:1.55}}>{match.summary}</div>}
@@ -123,6 +124,10 @@ function MatchReasons({match,col,showSummary=true}){
         <span style={{color:C.ink2,fontFamily:C.P}}>{r.text}</span>
       </div>
     ))}
+    {priceNote&&<div style={{display:'flex',gap:9,alignItems:'flex-start',fontSize:15,lineHeight:1.5}}>
+      <span style={{height:'1.5em',display:'flex',alignItems:'center',flexShrink:0}}><span style={{width:8,height:8,borderRadius:2,background:C.amber}}/></span>
+      <span style={{color:C.ink2,fontFamily:C.P}}>{priceNote.text} <span style={{color:C.mid}}>This doesn't change the match.</span></span>
+    </div>}
   </div>;
 }
 
@@ -367,7 +372,7 @@ function ScanResult({wine,match,curr,scanData,existingRating,nav,showPro,view,se
         </div>
       </div>
       {match&&(match.reasons.length>0||match.expected!=null)&&<div style={{marginTop:14,paddingTop:12,borderTop:`1px solid ${C.line}`}}>
-        <MatchReasons match={match} showSummary={match.expected!=null}/>
+        <MatchReasons match={match} showSummary={match.expected!=null} priceNote={TasteMatch.priceNote(wine,list||shop,WineHistory.getAll(),curr)}/>
         <MatchBreakdown match={match}/>
       </div>}
     </Card>
