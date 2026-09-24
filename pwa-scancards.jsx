@@ -126,6 +126,35 @@ function MatchReasons({match,col,showSummary=true}){
   </div>;
 }
 
+/* "Why 81%?": the wines the prediction is built from and the points each moved it, then how the
+   prediction becomes the %. Everything comes from TasteMatch.breakdown; nothing is worked out here. */
+function MatchBreakdown({match}){
+  const [open,setOpen]=React.useState(false);
+  const b=match&&match.breakdown; if(!b||match.pct==null) return null;
+  const signed=n=>n>0?`+${n}`:n<0?`−${-n}`:'±0';
+  const ptsCol=n=>n>0?C.green:n<0?C.cr:C.mid;
+  const row={display:'flex',gap:10,alignItems:'baseline',fontSize:15,fontFamily:C.P,lineHeight:1.45};
+  return <div style={{marginTop:12}}>
+    <div role="button" onClick={()=>setOpen(o=>!o)} style={{display:'flex',alignItems:'center',gap:6,fontSize:15,fontWeight:700,color:C.cr,fontFamily:C.P,cursor:'pointer'}}>
+      Why {match.pct}%? <span style={{display:'inline-block',transform:open?'rotate(90deg)':'none',transition:'transform .15s'}}><Icon n="chevron" sz={12} col={C.cr}/></span>
+    </div>
+    {open&&<div style={{marginTop:10,padding:'12px 14px',borderRadius:12,background:C.offWhite,border:`1px solid ${C.line}`,display:'flex',flexDirection:'column',gap:9}}>
+      <div style={row}><span style={{flex:1,color:C.ink2}}>Your average score for {match.breakdownLabel}</span><span style={{fontWeight:800,color:C.ink}}>{b.avg}</span></div>
+      {b.items.map((it,i)=><div key={i} style={row}>
+        <span style={{flex:1,minWidth:0,color:C.ink2}}>
+          {it.kind==='wine'
+            ?<><span style={{fontWeight:700,color:C.ink}}>{it.name}</span>, you scored {it.rating}{it.why.length?<span style={{color:C.mid}}> · {it.why.join(', ')}</span>:null}</>
+            :<span>{it.text}</span>}
+        </span>
+        <span style={{fontWeight:800,color:ptsCol(it.pts),minWidth:34,textAlign:'right'}}>{signed(it.pts)}</span>
+      </div>)}
+      <div style={{...row,paddingTop:8,borderTop:`1px solid ${C.line}`}}><span style={{flex:1,fontWeight:700,color:C.ink}}>We predict you'd score it</span><span style={{fontWeight:800,color:C.ink}}>{b.predicted}</span></div>
+      {b.thin&&<div style={{fontSize:13,color:C.mid,fontFamily:C.P,lineHeight:1.45}}>{b.thin}</div>}
+      <div style={{fontSize:15,color:C.ink2,fontFamily:C.P,lineHeight:1.5}}>{b.pctWhy}</div>
+    </div>}
+  </div>;
+}
+
 /* ── the screen ── */
 function useDeckStyle(){
   const [s,setS]=React.useState(()=>localStorage.getItem('vinterest_scancard_style')||'deck');
@@ -339,6 +368,7 @@ function ScanResult({wine,match,curr,scanData,existingRating,nav,showPro,view,se
       </div>
       {match&&(match.reasons.length>0||match.expected!=null)&&<div style={{marginTop:14,paddingTop:12,borderTop:`1px solid ${C.line}`}}>
         <MatchReasons match={match} showSummary={match.expected!=null}/>
+        <MatchBreakdown match={match}/>
       </div>}
     </Card>
 

@@ -528,3 +528,22 @@ test('TasteMatch counts the same region by the knowledge base: a Brunello draws 
   expect(out.reasons).toContain('Tuscany: you\'ve scored 3, averaging 98.');
   expect(out.verdict).toBe('hit');
 });
+
+test('"Why N%?" shows the wines the prediction is built from, and their points add up to it', async ({ context, page }) => {
+  await setup(context, page);
+  await page.goto(`${BASE}/?demo=1#home`);
+  const out = await page.evaluate(() => {
+    const mk = (name, rating, body, grapes) => ({ name, type: 'red', rating, region: 'Tuscany', grapes, body, tannins: body, acidity: 0.7 });
+    const all = [mk('Close A', 95, 0.85, ['Sangiovese']), mk('Close B', 93, 0.86, ['Sangiovese']), mk('Close C', 99, 0.84, ['Sangiovese']),
+      mk('Far 1', 80, 0.3, ['Merlot']), mk('Far 2', 80, 0.35, ['Gamay']), mk('Far 3', 100, 0.4, ['Pinot Noir']), mk('Far 4', 80, 0.3, ['Gamay'])];
+    const m = TasteMatch.assess({ name: 'Brunello', type: 'red', region: 'Brunello di Montalcino', grapes: ['Sangiovese Grosso'], body: 0.85, tannins: 0.85, acidity: 0.72 }, all);
+    const b = m.breakdown;
+    return { pct: m.pct, verdict: m.verdict, sum: b.avg + b.items.reduce((s, i) => s + i.pts, 0), predicted: b.predicted, names: b.items.filter((i) => i.kind === 'wine').map((i) => i.name).sort(), why: b.pctWhy };
+  });
+  expect(out.sum).toBe(out.predicted);
+  expect(out.names).toEqual(['Close A', 'Close B', 'Close C']);
+  // Close matches that agree make a surer call than the user's wide overall range alone.
+  expect(out.why).toContain('agree closely (93–99)');
+  expect(out.verdict).toBe('hit');
+  expect(out.pct).toBeGreaterThanOrEqual(85);
+});

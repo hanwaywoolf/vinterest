@@ -375,6 +375,7 @@ function DetailMerged({wine,nav,existingRating=0,match}){
       <Card style={{background:matchConfig.bg,border:matchConfig.border,padding:14}}>
         <div style={{fontSize:13,fontWeight:700,color:matchConfig.col,letterSpacing:'0.07em',textTransform:'uppercase',fontFamily:C.P,marginBottom:6}}>{matchConfig.title}</div>
         {match&&<MatchReasons match={match} col={matchConfig.col}/>}
+        {match&&<MatchBreakdown match={match}/>}
       </Card>
 
       {/* Scan location — optional manual note on where/when this was had (full geolocation is backlogged) */}
