@@ -94,3 +94,32 @@ test('Home takes you straight there: a type row opens that tab, the script row o
   // Opened, even though it was collapsed: no "Expand for full details" under it.
   await expect(scripts).not.toContainText('Expand for full details');
 });
+
+test('a filled-in suggestion clears with one backspace; your own words don\'t', async ({ context, page }) => {
+  await demo(context, page, []);
+  await page.goto(`${BASE}/?demo=1#home`);
+  const box = page.getByLabel('Ask Vinny');
+  await root(page).locator('form div[style*="cursor: text"]').click();
+  expect((await box.inputValue()).length).toBeGreaterThan(5);
+  await box.press('Backspace');
+  await expect(box).toHaveValue('');
+
+  // Their own text deletes one letter at a time, as usual.
+  await box.type('Is Rioja oaky');
+  await box.press('Backspace');
+  await expect(box).toHaveValue('Is Rioja oak');
+
+  // A suggestion they've added to is theirs too.
+  await page.evaluate(() => Vinny.remember('What goes with lamb?'));
+  await box.fill('');
+  await box.blur(); await box.focus();
+  await root(page).getByText('What goes with lamb?', { exact: true }).click();
+  await expect(box).toHaveValue('What goes with lamb?');
+  await box.press('End'); await box.type(' tonight');
+  await box.press('Backspace');
+  await expect(box).toHaveValue('What goes with lamb? tonigh');
+
+  // And × clears anything.
+  await page.getByLabel('Clear', { exact: true }).click();
+  await expect(box).toHaveValue('');
+});

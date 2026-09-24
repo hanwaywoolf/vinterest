@@ -48,9 +48,18 @@ function WineChatWidget({wines,nav,showPro}){
     return()=>clearTimeout(timer);
   },[idle,typed,tPhase,pIdx,prompts]);
 
-  function fill(text){ setQ(text); setExhausted(true); setTimeout(()=>inputRef.current&&inputRef.current.focus(),0); }
+  // A suggestion (or recent question) filled in is theirs to send or to clear: the first
+  // backspace on it, untouched, empties the box. Anything they type makes it their own text.
+  const filled=React.useRef(null);
+  function fill(text){ setQ(text); filled.current=text; setExhausted(true); setTimeout(()=>inputRef.current&&inputRef.current.focus(),0); }
+  function onType(v){
+    if(filled.current&&q===filled.current&&v.length<q.length){ filled.current=null; setQ(''); return; }
+    filled.current=null; setQ(v);
+  }
+  function clearQ(){ filled.current=null; setQ(''); inputRef.current&&inputRef.current.focus(); }
   function doAsk(question){
     if(!question||asking) return;
+    filled.current=null;
     Vinny.remember(question);
     setAsking(true); setQ('');
     const prev=turns;
@@ -69,7 +78,7 @@ function WineChatWidget({wines,nav,showPro}){
           <span style={{fontSize:16,fontWeight:800,color:'#fff',fontFamily:C.P}}>V</span>
         </div>
         <div style={{flex:1,minWidth:0,position:'relative',height:22}}>
-          <input ref={inputRef} value={q} onChange={e=>setQ(e.target.value)} onFocus={()=>setFocused(true)} onBlur={()=>setFocused(false)} aria-label="Ask Vinny"
+          <input ref={inputRef} value={q} onChange={e=>onType(e.target.value)} onFocus={()=>setFocused(true)} onBlur={()=>setFocused(false)} aria-label="Ask Vinny"
             placeholder={open?'Ask a follow-up…':'Ask Vinny about wine…'} style={{position:'absolute',inset:0,width:'100%',border:'none',outline:'none',background:'transparent',fontSize:16,fontFamily:C.P,color:'#fff'}}/>
           {idle&&(
             <div onClick={()=>fill(prompts[pIdx])} style={{position:'absolute',inset:0,display:'flex',alignItems:'center',background:'#000',cursor:'text'}}>
@@ -77,6 +86,9 @@ function WineChatWidget({wines,nav,showPro}){
             </div>
           )}
         </div>
+        {q&&<button type="button" onClick={clearQ} aria-label="Clear" style={{width:26,height:26,borderRadius:13,border:'none',background:'rgba(255,255,255,0.14)',flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',padding:0}}>
+          <svg width="10" height="10" viewBox="0 0 20 20"><path d="M4 4l12 12M16 4L4 16" stroke="#fff" strokeWidth="2.2" strokeLinecap="round"/></svg>
+        </button>}
         <button type="submit" disabled={asking||!q.trim()} aria-label="Ask" style={{width:38,height:38,borderRadius:19,border:'none',background:q.trim()?C.cr:'rgba(255,255,255,0.18)',flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center',cursor:q.trim()?'pointer':'default',padding:0}}>
           <svg width="16" height="16" viewBox="0 0 20 20"><path d="M3 10h13M10 4l6.5 6L10 16" stroke="#fff" strokeWidth="1.8" fill="none" strokeLinecap="round" strokeLinejoin="round"/></svg>
         </button>
