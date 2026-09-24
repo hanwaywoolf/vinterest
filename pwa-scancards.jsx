@@ -95,7 +95,8 @@ const _TONE_COL={good:C.green,neutral:C.amber,bad:'#B04A3A'};
 /* The wine-type colour WineDNA uses (_TYPE_COLORS), for sliders and selections on this wine. */
 function _typeCol(w){ return (typeof _TYPE_COLORS!=='undefined'&&_TYPE_COLORS[WineDNA._t(w&&w.type)])||C.cr; }
 
-/* The match ring: TasteMatch's percentage, or a dash when it's too early to call. */
+/* The match ring: TasteMatch's percentage, or a dash when it's too early to call. Its text is
+   sized to the ring in string px, so a larger text size (TextSize) doesn't spill out of it. */
 function MatchRing({match,size=96}){
   const pct=match?match.pct:null, col=_TONE_COL[match?match.tone:'neutral'];
   const r=52,circ=2*Math.PI*r;
@@ -105,8 +106,8 @@ function MatchRing({match,size=96}){
       {pct!=null&&<circle cx="65" cy="65" r={r} fill="none" stroke={col} strokeWidth="10" strokeLinecap="round" strokeDasharray={circ} strokeDashoffset={circ*(1-pct/100)} style={{transition:'stroke-dashoffset 1s cubic-bezier(.34,1.1,.64,1)'}}/>}
     </svg>
     <div style={{position:'absolute',inset:0,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center'}}>
-      <div style={{fontSize:size*0.27,fontWeight:800,color:pct!=null?col:C.mid,fontFamily:C.P,lineHeight:1}}>{pct!=null?pct:'—'}{pct!=null&&<span style={{fontSize:size*0.12,fontWeight:700}}>%</span>}</div>
-      <div style={{fontSize:11,fontWeight:700,color:C.mid,fontFamily:C.P,letterSpacing:'0.1em',textTransform:'uppercase',marginTop:2}}>match</div>
+      <div style={{fontSize:`${size*0.27}px`,fontWeight:800,color:pct!=null?col:C.mid,fontFamily:C.P,lineHeight:1}}>{pct!=null?pct:'—'}{pct!=null&&<span style={{fontSize:`${size*0.12}px`,fontWeight:700}}>%</span>}</div>
+      <div style={{fontSize:'11px',fontWeight:700,color:C.mid,fontFamily:C.P,letterSpacing:'0.1em',textTransform:'uppercase',marginTop:2}}>match</div>
     </div>
   </div>;
 }

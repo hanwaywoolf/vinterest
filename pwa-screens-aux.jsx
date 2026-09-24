@@ -792,6 +792,7 @@ function SettingsScreen({nav,back}){
         <div style={{width:24}}/>
       </div>
       <div style={{flex:1,overflowY:'auto',padding:'16px'}}>
+        <div style={{marginBottom:24}}><TextSizeControl/></div>
         <div style={{marginBottom:24}}>
           <div style={{fontSize:16,fontWeight:600,color:C.ink,fontFamily:C.P,marginBottom:12}}>Region</div>
           <div style={{display:'flex',flexDirection:'column',gap:8}}>

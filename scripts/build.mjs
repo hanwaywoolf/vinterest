@@ -97,7 +97,8 @@ async function buildVendor() {
 async function transformSource(file, version) {
   const { code } = await esbuild.transform(read(file), {
     loader: file.endsWith('.jsx') ? 'jsx' : 'js',
-    jsx: 'transform', // classic React.createElement, against the global React
+    jsx: 'transform', // classic JSX, against the global React
+    jsxFactory: '_h', // React.createElement with the reader's text size (pwa-textsize.js)
     define: { __APP_VERSION__: JSON.stringify(version) },
     sourcefile: file,
     charset: 'utf8',
