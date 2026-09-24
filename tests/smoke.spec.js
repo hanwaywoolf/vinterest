@@ -34,7 +34,7 @@ test('Home, Learn and Wine DNA render with no console errors', async ({ page }) 
   await expect(root).toContainText('Châteauneuf-du-Pape Jean XXII');
 
   await tab(page, 'Learn').click();
-  await expect(root).toContainText('Test Yourself');
+  await expect(root).toContainText('Your Grapes');
   await expect(root).toContainText('Wine Basics');
   await expect(root).not.toContainText("Something didn't load right");
 

@@ -203,7 +203,7 @@ test('every results screen has Back to Learn, and a finished set suggests the ne
   await expect(root(page)).toContainText(`${second}`);
   await answerQuiz(page, () => true);
   await root(page).getByText('Back to Learn', { exact: true }).click();
-  await expect(root(page)).toContainText('Test Yourself');
+  await expect(root(page)).toContainText('Wine Basics');
   expect(errors).toEqual([]);
 });
 
@@ -220,7 +220,7 @@ test('Concept Check and Words results also offer Back to Learn', async ({ page }
   await expect(root(page)).toContainText(/\d of 6 concepts mastered/);
   await expect(root(page).getByText('Keep going', { exact: true })).toBeVisible();
   await root(page).getByText('Back to Learn', { exact: true }).click();
-  await expect(root(page)).toContainText('Test Yourself');
+  await expect(root(page)).toContainText('Wine Basics');
 });
 
 test('Concept Check fills every quiz, a miss steps back one box, and Blind Call misses only flag for review', async ({ page }) => {

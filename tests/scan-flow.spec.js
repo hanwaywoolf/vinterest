@@ -344,6 +344,7 @@ test('the Learn shelf repairs saved cards and gives region pieces their own subt
   const root = page.locator('#root');
   await expect(root).toContainText('Rioja vs. the Textbook');
   await expect(root).toContainText('Textbook Rioja is Tempranillo and Garnacha');
+  await root.getByText(/^Show \d+ more to read$/).click();
   await expect(root).toContainText('Home of Pinot Noir');
   await expect(root).not.toContainText('{{');
   await expect(root).toContainText(/your palate vs\. the textbook series/i);

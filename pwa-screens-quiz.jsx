@@ -55,6 +55,32 @@ function CompletedToggle({count,expanded,onToggle}){
     </div>
   );
 }
+/* A list that shows its first `limit` items and a "Show N more" row, so no one section of Learn
+   turns into a long scroll on the way to the next. */
+const GRAPE_PILLS=10;
+function ShowMore({items,limit=3,render,noun}){
+  const [open,setOpen]=React.useState(false);
+  if(!items||!items.length) return null;
+  const rest=items.length-limit;
+  return <>
+    {(open?items:items.slice(0,limit)).map(render)}
+    {rest>0&&<div role="button" onClick={()=>setOpen(o=>!o)} style={{padding:'8px 4px',display:'flex',alignItems:'center',gap:6,cursor:'pointer'}}>
+      <Icon n="chevron" sz={12} col={C.cr} style={{transform:open?'rotate(-90deg)':'rotate(90deg)'}}/>
+      <span style={{fontSize:14,fontWeight:700,color:C.cr,fontFamily:C.P}}>{open?'Show less':`Show ${rest} more${noun?' '+noun:''}`}</span>
+    </div>}
+  </>;
+}
+/* The row of section chips at the top of Learn: every kind of learning visible at once, one tap away. */
+function LearnJumpRow({sections,onJump}){
+  return <div style={{display:'flex',gap:8,overflowX:'auto',padding:'10px 16px',background:C.bg,position:'sticky',top:0,zIndex:2,borderBottom:`1px solid ${C.line}`,scrollbarWidth:'none'}}>
+    {sections.map(x=>(
+      <div key={x.id} role="button" onClick={()=>onJump(x.id)} style={{flex:'0 0 auto',padding:'7px 13px',borderRadius:999,background:C.white,border:`1px solid ${C.line}`,cursor:'pointer',display:'flex',alignItems:'center',gap:6}}>
+        <span style={{fontSize:14,fontWeight:600,color:C.ink,fontFamily:C.P,whiteSpace:'nowrap'}}>{x.label}</span>
+        {x.count>0&&<span style={{fontSize:12,fontWeight:700,color:C.cr,background:C.crSoft,borderRadius:999,padding:'1px 7px',fontFamily:C.P}}>{x.count}</span>}
+      </div>
+    ))}
+  </div>;
+}
 /* ✓ plus a Reset link, for a completed quiz row. The row itself stays tappable to retake it. */
 function CompletedMark({onReset}){
   return(
@@ -191,6 +217,10 @@ function QuizHubScreen({nav,back,showPro}){
     unlockedGrapes.slice(0,5).forEach(g=>{ try{ prefetchGrapeQuiz(g); }catch(e){} });
   },[]);
 
+  const [libraryOpen,setLibraryOpen]=React.useState(false);
+  const secRefs={shelf:React.useRef(null),basics:React.useRef(null),regions:React.useRef(null),grapes:React.useRef(null),progress:React.useRef(null)};
+  const jump=id=>{ const el=secRefs[id]&&secRefs[id].current; if(el) el.scrollIntoView({behavior:'smooth',block:'start'}); };
+
   // After every hook above: returning early before one of them changes the hook count between
   // renders, and React throws the moment the unlock effect flips showUnlock.
   if(showUnlock) return <WineDNAUnlockCelebration onDone={()=>{setShowUnlock(false);nav('profile');}}/>;
@@ -222,13 +252,20 @@ function QuizHubScreen({nav,back,showPro}){
             <CoverageRing segs={coverage.segs}/>
             <div style={{flex:1}}>
               <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P,marginBottom:3}}>Discovering your palate</div>
-              <div style={{fontSize:14,color:C.mid,fontFamily:C.P,lineHeight:1.4}}>{coverage.nextMissing?`You haven't rated a ${coverage.nextMissing.label.toLowerCase()} yet.`:'Rate a wider spread of body and sweetness to unlock WineDNA.'}</div>
+              <div style={{fontSize:14,color:C.mid,fontFamily:C.P,lineHeight:1.4}}>{coverage.nextMissing?`You haven't rated ${({red:'a red',white:'a white',rose:'a rosé',sparkling:'a sparkling wine'})[coverage.nextMissing.key]||'a '+coverage.nextMissing.label.toLowerCase()} yet.`:'Rate a wider spread of body and sweetness to unlock WineDNA.'}</div>
             </div>
           </div>
         )}
       </div>
 
       <div style={{flex:1,overflowY:'auto'}}>
+<LearnJumpRow onJump={jump} sections={[
+  article1Done&&{id:'shelf',label:'For you',count:unreadShelf.length},
+  {id:'basics',label:'Basics',count:topicsToShow.length},
+  (quizRegions.length+doneRegions.length+proRegions.length)>0&&{id:'regions',label:'Regions',count:quizRegions.length},
+  {id:'grapes',label:'Grapes',count:unlockedGrapes.filter(g=>{ const st=grapePillStatus(g); return !(st&&st.done); }).length},
+  {id:'progress',label:'Progress'},
+].filter(Boolean)}/>
 <div style={{padding:'14px 16px',display:'flex',flexDirection:'column',gap:14}}>
         <div>
           <div style={zoneLabel}>Next Best Thing</div>
@@ -245,44 +282,60 @@ function QuizHubScreen({nav,back,showPro}){
           </div>
         </div>
 
-        {article1Done&&(
-          <div>
+        {article1Done&&(()=>{
+          // Unread pieces stay on the shelf (three at a time); read ones move to the library, so
+          // new pieces get seen and anyone who wants to binge can keep going.
+          const isRead=stub=>!!localStorage.getItem('vinterest_gen_article_'+stub.id+'_done');
+          const all=genStubs||[];
+          const unread=[...all.filter(x=>!isRead(x)&&!ContentEngine.stubLocked(x)),...all.filter(x=>!isRead(x)&&ContentEngine.stubLocked(x))];
+          const read=all.filter(isRead);
+          const card=(stub,i)=>{
+            const done=isRead(stub);
+            const locked=ContentEngine.stubLocked(stub);
+            const because=ContentEngine.because(stub,wines);
+            return(
+              <div key={stub.id||i} onClick={()=>{ if(locked){ showPro('regions'); return; } sessionStorage.setItem('vinterest_gen_article',JSON.stringify(stub));nav('gen-article');}}
+                style={{background:C.white,borderRadius:14,padding:done?'10px 14px':'14px 16px',display:'flex',alignItems:'center',gap:12,cursor:'pointer',border:`1px solid ${C.line}`,opacity:done?0.75:1}}>
+                <div style={{width:done?36:44,height:done?36:44,borderRadius:12,background:C.crSoft,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,border:`1px solid ${C.crDim}`}}>
+                  <Icon n={stub.iconName||'read'} sz={done?17:20} col={C.cr}/>
+                </div>
+                <div style={{flex:1,minWidth:0}}>
+                  {!done&&<div style={{fontSize:12,fontWeight:600,color:C.mid,fontFamily:C.P,textTransform:'uppercase',letterSpacing:'0.06em',marginBottom:2}}>{stub.series?`${stub.series} series`:'Written for you'} · {stub.readTime}</div>}
+                  <div style={{fontSize:done?15:16,fontWeight:700,color:C.ink,fontFamily:C.P,lineHeight:1.3}}>{stub.title}</div>
+                  {!done&&<div style={{fontSize:14,color:C.mid,fontFamily:C.P,marginTop:2}}>{stub.subtitle}</div>}
+                  {!done&&<div style={{fontSize:13,fontWeight:600,color:C.cr,fontFamily:C.P,marginTop:4}}>{because}</div>}
+                </div>
+                {locked ? <ProBadge/> : done ? <span style={{fontSize:14,fontWeight:700,color:C.green,fontFamily:C.P}}>✓</span> : <Icon n="chevron" sz={13} col={C.mid}/>}
+              </div>
+            );
+          };
+          return(
+          <div ref={secRefs.shelf} style={{scrollMarginTop:56}}>
             <div style={zoneLabel}>Written for you</div>
             <div style={{fontSize:14,color:C.mid,fontFamily:C.P,lineHeight:1.45,marginTop:4}}>Every piece here is written from your WineDNA: the bottles you've scanned, how you scored them and what you paid. Nobody else gets the same article.</div>
             <div style={{marginTop:8,display:'flex',flexDirection:'column',gap:8}}>
-            {(!genStubs||!genStubs.length)&&(
+            {!unread.length&&(
               <div style={{padding:'18px 16px',textAlign:'center',background:C.white,borderRadius:14,border:`1px dashed ${C.line}`}}>
-                <span style={{fontSize:15,color:C.mid,fontFamily:C.P,lineHeight:1.5}}>Nothing on your shelf yet. Scan a bottle and we'll have something for you by morning.</span>
+                <span style={{fontSize:15,color:C.mid,fontFamily:C.P,lineHeight:1.5}}>{read.length?"You've read everything written for you so far. Scan or score another bottle and more arrives.":"Nothing on your shelf yet. Scan a bottle and we'll have something for you by morning."}</span>
               </div>
             )}
-            {genStubs&&genStubs.map((stub,i)=>{
-              const because=ContentEngine.because(stub,wines);
-              const done=!!localStorage.getItem('vinterest_gen_article_'+stub.id+'_done');
-              const locked=ContentEngine.stubLocked(stub);
-              return(
-                <div key={i} onClick={()=>{ if(locked){ showPro('regions'); return; } sessionStorage.setItem('vinterest_gen_article',JSON.stringify(stub));nav('gen-article');}}
-                  style={{background:C.white,borderRadius:14,padding:'14px 16px',display:'flex',alignItems:'center',gap:12,cursor:'pointer',border:`1px solid ${C.line}`,marginBottom:8,opacity:done?0.7:1}}>
-                  <div style={{width:44,height:44,borderRadius:12,background:C.crSoft,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,border:`1px solid ${C.crDim}`}}>
-                    <Icon n={stub.iconName||'read'} sz={20} col={C.cr}/>
-                  </div>
-                  <div style={{flex:1}}>
-                    <div style={{fontSize:12,fontWeight:600,color:C.mid,fontFamily:C.P,textTransform:'uppercase',letterSpacing:'0.06em',marginBottom:2}}>{stub.series?`${stub.series} series`:'Written for you'} · {stub.readTime}</div>
-                    <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P,lineHeight:1.3}}>{stub.title}</div>
-                    <div style={{fontSize:14,color:C.mid,fontFamily:C.P,marginTop:2}}>{stub.subtitle}</div>
-                    <div style={{fontSize:13,fontWeight:600,color:C.cr,fontFamily:C.P,marginTop:4}}>{because}</div>
-                  </div>
-                  {locked ? <ProBadge/> : done ? <span style={{fontSize:14,fontWeight:700,color:C.green,fontFamily:C.P}}>✓</span> : <Icon n="chevron" sz={13} col={C.mid}/>}
-                </div>
-              );
-            })}
+            <ShowMore items={unread} limit={3} render={card} noun="to read"/>
+            {read.length>0&&(
+              <div role="button" onClick={()=>setLibraryOpen(o=>!o)} style={{background:C.white,borderRadius:14,padding:'10px 14px',display:'flex',alignItems:'center',gap:8,cursor:'pointer',border:`1px dashed ${C.line}`}}>
+                <Icon n="book" sz={15} col={C.mid}/>
+                <span style={{fontSize:14,fontWeight:600,color:C.mid,fontFamily:C.P,flex:1}}>Your library · {read.length} read</span>
+                <Icon n="chevron" sz={12} col={C.mid} style={{transform:libraryOpen?'rotate(-90deg)':'rotate(90deg)'}}/>
+              </div>
+            )}
+            {libraryOpen&&read.map(card)}
             </div>
           </div>
-        )}
+          );
+        })()}
 
-        <div style={zoneLabel}>Test Yourself</div>
-        <div style={{display:'flex',flexDirection:'column',gap:8,marginTop:8}}>
-          <div style={{fontSize:13,fontWeight:600,color:C.mid,fontFamily:C.P,textTransform:'uppercase',letterSpacing:'0.06em'}}>Wine Basics</div>
-          {topicsToShow.map(topic=>{
+        <div ref={secRefs.basics} style={{...zoneLabel,scrollMarginTop:56}}>Wine Basics</div>
+        <div style={{display:'flex',flexDirection:'column',gap:8,marginTop:-6}}>
+          <ShowMore items={topicsToShow} limit={4} noun="topics" render={topic=>{
             const p=topicProgress(topic.id);
             return(
             <div key={topic.id} onClick={()=>startQuiz({mode:'practice',topicId:topic.id})}
@@ -297,7 +350,7 @@ function QuizHubScreen({nav,back,showPro}){
               <Icon n="chevron" sz={13} col={C.mid}/>
             </div>
             );
-          })}
+          }}/>
           {doneTopics.length>0&&<CompletedToggle count={doneTopics.length} expanded={topicsExpanded} onToggle={()=>setTopicsExpanded(e=>!e)}/>}
           {topicsExpanded&&doneTopics.map(topic=>(
             <div key={topic.id} onClick={()=>startQuiz({mode:'practice',topicId:topic.id})}
@@ -339,9 +392,18 @@ function QuizHubScreen({nav,back,showPro}){
           {(quizRegions.length>0||doneRegions.length>0||proRegions.length>0)&&(
             <>
               {(quizRegions.length>0||doneRegions.length>0||proRegions.length>0)&&(
-                <div style={{fontSize:13,fontWeight:600,color:C.mid,fontFamily:C.P,textTransform:'uppercase',letterSpacing:'0.06em',marginTop:6}}>Regional Knowledge</div>
+                <div ref={secRefs.regions} style={{...zoneLabel,marginTop:14,scrollMarginTop:56}}>Your Regions</div>
               )}
-              {quizRegions.map(region=>{
+              <ShowMore items={[...quizRegions.map(r=>({r})),...proRegions.map(r=>({r,pro:true}))]} limit={3} noun="regions" render={({r:region,pro})=>pro?(
+                <div key={region} onClick={()=>showPro('regions')} style={{background:C.white,borderRadius:14,padding:'12px 14px',display:'flex',alignItems:'center',gap:12,cursor:'pointer',border:`1px solid ${C.line}`}}>
+                  <div style={{width:42,height:42,borderRadius:12,background:C.offWhite,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><Icon n="lock" sz={18} col={C.mid}/></div>
+                  <div style={{flex:1}}>
+                    <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>{region}</div>
+                    <div style={{fontSize:14,color:C.mid,fontFamily:C.P}}>Unlock with Pro</div>
+                  </div>
+                  <ProBadge/>
+                </div>
+              ):(()=>{
                 const info=KNOWLEDGE.regions[region];
                 // Progress only once the region's generated bank exists, so the count doesn't
                 // jump from the fallback's /6 to /15 when it arrives.
@@ -359,18 +421,7 @@ function QuizHubScreen({nav,back,showPro}){
                       :<Icon n="chevron" sz={13} col={C.mid}/>}
                   </div>
                 );
-              })}
-              {/* Scanned regions past the free allowance */}
-              {proRegions.map(region=>(
-                <div key={region} onClick={()=>showPro('regions')} style={{background:C.white,borderRadius:14,padding:'12px 14px',display:'flex',alignItems:'center',gap:12,cursor:'pointer',border:`1px solid ${C.line}`}}>
-                  <div style={{width:42,height:42,borderRadius:12,background:C.offWhite,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><Icon n="lock" sz={18} col={C.mid}/></div>
-                  <div style={{flex:1}}>
-                    <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>{region}</div>
-                    <div style={{fontSize:14,color:C.mid,fontFamily:C.P}}>Unlock with Pro</div>
-                  </div>
-                  <ProBadge/>
-                </div>
-              ))}
+              })()}/>
               {doneRegions.length>0&&<CompletedToggle count={doneRegions.length} expanded={regionsExpanded} onToggle={()=>setRegionsExpanded(e=>!e)}/>}
               {regionsExpanded&&doneRegions.map(region=>(
                 <div key={region} onClick={()=>handleRegionTap(region)} style={{background:C.white,borderRadius:14,padding:'12px 14px',display:'flex',alignItems:'center',gap:12,cursor:'pointer',border:`1px solid ${C.line}`,opacity:0.7}}>
@@ -386,10 +437,10 @@ function QuizHubScreen({nav,back,showPro}){
           )}
         </div>
 
-        <div style={zoneLabel}>Your Grapes</div>
+        <div ref={secRefs.grapes} style={{...zoneLabel,scrollMarginTop:56}}>Your Grapes</div>
         <div style={{fontSize:14,color:C.mid,fontFamily:C.P,marginTop:2}}>{unlockedGrapes.length}/{GRAPE_ALLOWLIST.length} unlocked · {isPro?'tap any grape for its quiz; locked ones unlock as you tap':`${unlockedGrapes.length?'tap one for its quiz · ':''}scan or rate a wine to unlock more (${FREE_GRAPE_CAP} free)`}</div>
         <div style={{display:'flex',flexWrap:'wrap',gap:8,marginTop:8}}>
-        {unlockedGrapes.map(g=>{
+        {(grapesExpanded?unlockedGrapes:unlockedGrapes.slice(0,GRAPE_PILLS)).map(g=>{
           const loading=grapeLoading===g;
           const col=grapeTypeColor(g);
           const status=grapePillStatus(g);
@@ -403,10 +454,10 @@ function QuizHubScreen({nav,back,showPro}){
             </div>
           );
         })}
-        {lockedGrapes.length>0&&(
+        {(lockedGrapes.length>0||unlockedGrapes.length>GRAPE_PILLS)&&(
           <div onClick={()=>setGrapesExpanded(e=>!e)} style={{flex:'0 0 auto',padding:'10px 18px',borderRadius:999,background:C.white,border:`1px dashed ${C.line}`,cursor:'pointer',display:'flex',alignItems:'center',gap:6}}>
             {grapesExpanded?<Icon n="chevron" sz={12} col={C.mid} style={{transform:'rotate(-90deg)'}}/>:<Icon n="lock" sz={12} col={C.mid}/>}
-            <span style={{fontSize:14,fontWeight:600,color:C.mid,fontFamily:C.P,whiteSpace:'nowrap'}}>{grapesExpanded?'Show less':`+${lockedGrapes.length} more`}</span>
+            <span style={{fontSize:14,fontWeight:600,color:C.mid,fontFamily:C.P,whiteSpace:'nowrap'}}>{grapesExpanded?'Show less':`+${lockedGrapes.length+Math.max(0,unlockedGrapes.length-GRAPE_PILLS)} more`}</span>
           </div>
         )}
         {grapesExpanded&&lockedGrapes.map(g=>{
@@ -424,7 +475,7 @@ function QuizHubScreen({nav,back,showPro}){
         {grapeLoading&&<div style={{fontSize:14,color:C.mid,fontFamily:C.P,marginTop:8}}>Preparing your {grapeLoading} quiz… the first time takes a few seconds.</div>}
         {grapeError&&!grapeLoading&&<div style={{fontSize:14,color:'#C0392B',fontFamily:C.P,marginTop:8}}>Couldn't load the {grapeError} quiz. Check your connection and tap it again.</div>}
 
-        <div style={zoneLabel}>Your Progress</div>
+        <div ref={secRefs.progress} style={{...zoneLabel,scrollMarginTop:56}}>Your Progress</div>
         <div onClick={()=>isPro?nav('mastery-map'):showPro('mastery-map')} style={{background:C.white,borderRadius:16,border:`1px solid ${C.line}`,padding:'14px 16px',display:'flex',alignItems:'center',gap:12,marginTop:8,cursor:'pointer'}}>
           <div style={{width:42,height:42,borderRadius:12,background:C.offWhite,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><Icon n="list" sz={19} col={C.ink}/></div>
           <div style={{flex:1}}>

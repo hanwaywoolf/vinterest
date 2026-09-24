@@ -652,7 +652,7 @@ const ContentEngine = {
   because(stub,wines){
     const s=(stub&&stub.slots)||{};
     const w=this._related(s,wines||WineHistory.getAll())[0];
-    if(w) return w.rating>0?`Because you gave ${w.name} a ${w.rating}`:`Because you scanned ${w.name}`;
+    if(w) return w.rating>0?`Because you gave ${w.name} ${/^(8|11|18)/.test(String(w.rating))?'an':'a'} ${w.rating}`:`Because you scanned ${w.name}`;
     if(s.conceptLabel) return 'Because a quiz question caught you out';
     if(s.descriptor) return `Because "${s.descriptor}" came up in your tasting notes`;
     if(s.trait) return 'Because of a pattern in your scores';
