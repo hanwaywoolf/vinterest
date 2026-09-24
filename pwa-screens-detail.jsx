@@ -118,14 +118,13 @@ function WineDetailScreen({back,nav,showPro}){
             </div>}
           </div>
         </div>
-        <div style={{display:'flex',gap:14,alignItems:'flex-end',marginBottom:14}}>
-          <div style={{width:52,height:74,borderRadius:10,background:C.crSoft,flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center',border:`1px solid ${C.crDim}`}}>
-            <Icon n="wine" sz={24} col={C.cr}/>
-          </div>
+        {/* Name, vintage and place use the full width; the type pill carries the wine's colour. */}
+        <div style={{marginBottom:14}}>
           <div>
             <div style={{fontSize:24,fontWeight:700,color:C.ink,fontFamily:C.P,lineHeight:1.15}}>{wine?.name||'Château Margaux'}</div>
             <div style={{fontSize:16,color:C.mid,fontFamily:C.P,marginTop:3}}>{wine?<>{wine.vintage||'NV'}{(wine.region||wine.country)&&<> · {Regions.wineFlag(wine)&&<span role="img" aria-label={wine.country||'Country'} style={{fontSize:'17px',marginRight:5,verticalAlign:'-1px'}}>{Regions.wineFlag(wine)}</span>}{[wine.region!==wine.country?wine.region:null,wine.country].filter(Boolean).join(', ')}</>}</>:'2018 · Bordeaux, France'}</div>
-            <div style={{display:'flex',gap:5,marginTop:8,flexWrap:'wrap',alignItems:'center'}}><Pill active sm style={{textTransform:'capitalize'}}>{wine?.type||'Red'}</Pill>{wine?.grapes?.[0]&&<Pill sm>{wine.grapes[0]}{wine.blend||wine.grapes.length>1?' blend':''}</Pill>}{wine&&<span onClick={()=>setEditing(true)} style={{fontSize:13,fontWeight:600,color:C.cr,fontFamily:C.P,cursor:'pointer',marginLeft:4}}>Edit details</span>}</div>
+            <div style={{display:'flex',gap:5,marginTop:8,flexWrap:'wrap',alignItems:'center'}}>{(()=>{ const t=WineDNA._t(wine?.type)||'red', col=(typeof _TYPE_COLORS!=='undefined'&&_TYPE_COLORS[t])||C.cr;
+              return <Pill active sm style={{background:col,borderColor:col,fontWeight:600}}>{({red:'Red wine',white:'White wine',rose:'Rosé',sparkling:'Sparkling',orange:'Orange wine',dessert:'Dessert wine',fortified:'Fortified'})[t]||wine?.type}</Pill>; })()}{wine?.grapes?.[0]&&<Pill sm>{wine.grapes[0]}{wine.blend||wine.grapes.length>1?' blend':''}</Pill>}{wine&&<span onClick={()=>setEditing(true)} style={{fontSize:13,fontWeight:600,color:C.cr,fontFamily:C.P,cursor:'pointer',marginLeft:4}}>Edit details</span>}</div>
           </div>
         </div>
         <div style={{display:'flex',borderBottom:`1px solid ${C.line}`}}>
