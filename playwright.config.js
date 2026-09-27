@@ -14,7 +14,13 @@ module.exports = defineConfig({
     // Service workers would answer fetches before the test's network stubs see them.
     serviceWorkers: 'block',
   },
-  projects: [{ name: 'chromium', use: { browserName: 'chromium' } }],
+  // WEBKIT=1 (the iPhone and iPad workflow, .github/workflows/tests.yml) runs the layout checks on
+  // Safari's engine at iPhone and iPad sizes instead; WebKit isn't installed in every environment.
+  projects: process.env.WEBKIT
+    ? [['iphone-se', 'iPhone SE (3rd gen)'], ['iphone-15-pro-max', 'iPhone 15 Pro Max'], ['ipad-pro-11', 'iPad Pro 11']].map(([name, device]) => ({
+        name, use: { ...devices[device], browserName: 'webkit' }, testMatch: ['smoke.spec.js', 'devices.spec.js', 'layout-fit.spec.js'],
+      }))
+    : [{ name: 'chromium', use: { browserName: 'chromium' } }],
   webServer: [
     // The built site. Builds first, so `npm test` always tests current sources.
     { command: 'npm run build && node scripts/serve.mjs dist 4173', url: 'http://localhost:4173/', reuseExistingServer: !process.env.CI },
