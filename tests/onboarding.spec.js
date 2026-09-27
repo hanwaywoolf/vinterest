@@ -16,7 +16,7 @@ test('a new user: age and location, first scan, three questions, then Home on th
   await stubNetwork(context, { claudeText: (b) => (b.purpose === 'label_scan' ? JSON.stringify(ROSE) : '') });
   await page.goto(`${BASE}/`);
   const root = page.locator('#root');
-  await root.getByText('Get started').click();
+  await root.getByText('Scan your first bottle').click();
   // The country is guessed from the phone's time zone; Continue waits for the age confirmation.
   await expect(page.getByLabel('Country')).toHaveValue('United Kingdom');
   await expect(root).toContainText('Prices will show in £ (GBP)');
@@ -51,7 +51,7 @@ test('under age stops there; the scan and the questions can be skipped', async (
   await stubNetwork(context);
   await page.goto(`${BASE}/`);
   const root = page.locator('#root');
-  await root.getByText('Get started').click();
+  await root.getByText('Scan your first bottle').click();
   await root.getByText('I\'m not', { exact: true }).click();
   await expect(root).toContainText('only for people of legal drinking age');
   await root.getByText('Go back').click();
@@ -105,7 +105,7 @@ test('the first scan tells the bottle\'s story and shows what Vinterest will do 
   await stubNetwork(context, { claudeText: (b) => (b.purpose === 'label_scan' ? JSON.stringify(ROSE) : '') });
   await page.goto(`${BASE}/`);
   const root = page.locator('#root');
-  await root.getByText('Get started').click();
+  await root.getByText('Scan your first bottle').click();
   await root.getByText('I\'m of legal drinking age where I live').click();
   await root.getByRole('button', { name: 'Continue' }).click();
   await page.getByTestId('scan-file').setInputFiles({ name: 'label.png', mimeType: 'image/png', buffer: PNG });
