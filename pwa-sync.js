@@ -251,17 +251,23 @@ const Sync = {
     return typeof Account!=='undefined'&&Account.available()&&!Account.signedIn()&&(wines||[]).length>=this.OFFER_AFTER&&!Flags.backupOfferDismissed();
   },
 
-  /* The account card's one line about backup, in words. */
-  line(now=this._now()){
-    const st=this.status();
-    if(!st.enabled) return '';
-    if(st.running&&!st.lastSynced) return 'Backing up your wines…';
-    if(st.error) return st.pending?`${st.pending} change${st.pending===1?'':'s'} waiting to back up. We couldn't reach your account just now; trying again shortly.`:'We couldn\'t reach your account just now; trying again shortly.';
-    if(!st.lastSynced) return 'Backing up your wines…';
-    const mins=Math.floor((now-st.lastSynced)/60000);
-    const ago=mins<1?'just now':mins<60?`${mins} minute${mins===1?'':'s'} ago`:mins<48*60?`${Math.floor(mins/60)} hour${mins<120?'':'s'} ago`:`${Math.floor(mins/1440)} days ago`;
-    return st.pending?`Backed up ${ago}. ${st.pending} change${st.pending===1?'':'s'} waiting.`:`Your wines and progress are backed up to your account (${ago}).`;
+  _ago(t,now){
+    const mins=Math.floor((now-t)/60000);
+    return mins<1?'just now':mins<60?`${mins} minute${mins===1?'':'s'} ago`:mins<48*60?`${Math.floor(mins/60)} hour${mins<120?'':'s'} ago`:`${Math.floor(mins/1440)} days ago`;
   },
+  /* The Backup section on Profile: {tone:'on'|'working'|'problem', label, last, detail}. */
+  summary(now=this._now()){
+    const st=this.status();
+    if(!st.enabled) return null;
+    const waiting=st.pending?`${st.pending} change${st.pending===1?'':'s'} waiting to back up.`:'';
+    if(st.error) return {tone:'problem',label:'Not reaching your account',last:st.lastSynced?`Last backed up ${this._ago(st.lastSynced,now)}`:'Not backed up yet',
+      detail:`${waiting} We'll keep trying, and nothing on this phone is lost in the meantime.`.trim()};
+    if(!st.lastSynced) return {tone:'working',label:'Backing up…',last:'Your first backup is on its way',detail:''};
+    return {tone:'on',label:'Backup on',last:`Last backed up ${this._ago(st.lastSynced,now)}`,
+      detail:waiting||'Your wines, WineDNA, XP, progress and settings are saved to your account.'};
+  },
+  /* One line, for places with room for only that. */
+  line(now=this._now()){ const s=this.summary(now); return s?`${s.label}. ${s.last}. ${s.detail}`.trim():''; },
 
   start(){
     if(this._started||typeof window==='undefined') return;

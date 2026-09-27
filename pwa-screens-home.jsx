@@ -164,9 +164,9 @@ function BackupOffer({nav,count}){
   if(gone) return null;
   return <Card style={{padding:14,display:'flex',flexDirection:'column',gap:8,border:`1px solid ${C.line}`}}>
     <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>Keep your {count} wines safe</div>
-    <div style={{fontSize:14,color:C.mid,fontFamily:C.P,lineHeight:1.5}}>They only live on this phone. Sign in with your email and they're backed up, with your WineDNA and progress, ready on any phone.</div>
+    <div style={{fontSize:14,color:C.mid,fontFamily:C.P,lineHeight:1.5}}>They're only on this phone right now. Sign in with your email and they're backed up, with your WineDNA and progress, ready on any phone.</div>
     <div style={{display:'flex',gap:14,alignItems:'center',marginTop:2}}>
-      <div onClick={()=>nav('account')} style={{padding:'10px 16px',borderRadius:12,background:C.cr,color:'#fff',fontSize:15,fontWeight:700,fontFamily:C.P,cursor:'pointer'}}>Back them up</div>
+      <div onClick={()=>{ Handoff.accountIntent.set('backup'); nav('account'); }} style={{padding:'10px 16px',borderRadius:12,background:C.cr,color:'#fff',fontSize:15,fontWeight:700,fontFamily:C.P,cursor:'pointer'}}>Sign in to back up</div>
       <span onClick={()=>{ Flags.dismissBackupOffer(); setGone(true); }} style={{fontSize:14,color:C.mid,fontFamily:C.P,cursor:'pointer'}}>Not now</span>
     </div>
   </Card>;

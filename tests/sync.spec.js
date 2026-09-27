@@ -75,7 +75,7 @@ test('first sign-in: everything goes up, and a copy of the phone is kept first',
   expect(snap.format).toBe('vinterest-backup');
   expect(snap.wines.length).toBe(mine.length);
   // Nothing left waiting, and the card says so.
-  expect(await a.evaluate(() => [Sync.status().pending, Sync.line()])).toEqual([0, expect.stringContaining('backed up to your account')]);
+  expect(await a.evaluate(() => [Sync.status().pending, Sync.line()])).toEqual([0, expect.stringContaining('saved to your account')]);
 });
 
 test('a new phone gets the wines, XP and settings', async ({ browser }) => {
@@ -215,6 +215,11 @@ test('Home offers a backup once there are a few wines, and not to someone signed
   const out = await phone(browser, server, { demo: true, signedIn: false });
   const root = out.locator('#root');
   await expect(root).toContainText(/Keep your \d+ wines safe/);
+  // The button makes it plain that signing in is the step left, and opens it at the email.
+  await root.getByText('Sign in to back up').click();
+  await expect(root).toContainText('One step left: sign in to back up');
+  await expect(out.getByLabel('Email address')).toBeVisible();
+  await out.goBack();
   await root.getByText('Not now').click();
   await expect(root).not.toContainText(/Keep your \d+ wines safe/);
   const signedIn = await phone(browser, server, { demo: true });
@@ -222,4 +227,21 @@ test('Home offers a backup once there are a few wines, and not to someone signed
   await expect(signedIn.locator('#root')).not.toContainText(/Keep your \d+ wines safe/);
   // Signed out, nothing is sent anywhere.
   expect(await out.evaluate(() => Sync.status().enabled)).toBe(false);
+});
+
+test('signed in, Profile has its own Backup section: on, when it last ran, and Upgrade beside Free', async ({ browser }) => {
+  const server = fakeSupabase();
+  const a = await phone(browser, server, { demo: true });
+  await sync(a);
+  await a.evaluate(() => { location.hash = '#account'; });
+  const root = a.locator('#root');
+  await expect(root).toContainText('Backup on');
+  await expect(root).toContainText('Last backed up just now');
+  server.down = true;
+  await a.evaluate((w) => WineHistory.rate(w.name, w.vintage, 90), (await wines(a))[0]);
+  await sync(a);
+  await expect(root).toContainText('Not reaching your account');
+  await expect(root).toContainText('1 change waiting to back up.');
+  await root.getByText('Upgrade', { exact: true }).click();
+  await expect(root).toContainText('Vinterest Pro');
 });
