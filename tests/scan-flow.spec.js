@@ -40,8 +40,8 @@ test('TasteMatch: list wines are told apart, dislikes count, and thin history sa
   // The demo history scored its two Nebbiolos in the low 70s: a Barolo is probably not for them.
   expect(out.barolo[0]).toBe('miss');
   expect(out.barolo[2].join(' ')).toContain('Nebbiolo: you\'ve scored 2, averaging 73.');
-  // Tempranillo averages 85 against reds averaging 87: middling for them, not a favourite.
-  expect(out.rioja[0]).toBe('mixed');
+  // The demo loved (90+) few of its Tempranillos: the % is the chance they'd love it, and low.
+  expect(out.rioja[0]).toBe('miss');
   expect(out.rioja[1]).toBeGreaterThan(out.barolo[1]);
   // Nothing to go on: no made-up number.
   expect(out.bare).toEqual(['unknown', null]);
@@ -168,7 +168,7 @@ test('wine list: real match results per wine, and a tapped wine is saved as a sh
   const root = page.locator('#root');
   await expect(root).toContainText('Wine List Results');
   await expect(root).toContainText('Probably not for you');
-  await expect(root).toContainText('Could go either way');
+  await expect(root.getByText('Rioja Test Reserva')).toBeVisible();
   await expect(root).toContainText('Too early');
   await root.getByText('Rioja Test Reserva').click();
   await expect(root).toContainText('On this list');
@@ -577,10 +577,10 @@ test('"Why N%?" says which of the wine\'s traits bring it up or hold it back, in
   expect(out.up.join(' | ')).toContain('Its style (full body');
   // Every wine here is Tuscan, so the region tells us nothing.
   expect(out.even).toContain('Tuscany: your 7 from there average 90');
-  // Every scored wine counts; the ones most like it are named as the evidence.
-  expect(out.closest).toMatch(/^All 7 reds you've scored count, the ones most like it most: Close [ABC] \(\d+\), Close [ABC]/);
-  // The % ranks the prediction among what we'd predict for their other reds.
-  expect(out.why).toMatch(/We predict you'd score it \d+ .* than we'd predict for \d+% of the 7 reds you've scored/);
+  // The reds most like it are counted out loud; every scored wine still counts, weighted.
+  expect(out.closest).toBe('The 3 reds most like it: you loved all of them.');
+  // The % is the chance they'd love it: the weighted share of wines like it they scored 90+.
+  expect(out.why).toMatch(/Weighing all 7 reds you've scored by how alike they are, you've loved about \d+% of wines like this one \(57% of your reds overall\)/);
   expect(out.verdict).toBe('hit');
   expect(out.pct).toBeGreaterThanOrEqual(80);
 });
@@ -627,4 +627,17 @@ test('equally similar wines count together, so a small change in the style estim
     return [0.9, 0.85, 0.8].map((b) => TasteMatch.assess({ name: 'Brunello', type: 'red', region: 'Brunello di Montalcino', grapes: ['Sangiovese Grosso'], body: b, tannins: b, acidity: 0.78 }, all).pct);
   });
   expect(Math.max(...pcts) - Math.min(...pcts)).toBeLessThanOrEqual(8);
+});
+
+test('the same producer counts: an Antinori Brunello draws on their Tignanello', async ({ context, page }) => {
+  await setup(context, page);
+  await page.goto(`${BASE}/?demo=1#home`);
+  const out = await page.evaluate(() => {
+    const all = WineHistory.getAll().concat([{ name: 'Tignanello', producer: 'Marchesi Antinori', type: 'red', region: 'Tuscany', grapes: ['Sangiovese'], body: 0.85, tannins: 0.8, acidity: 0.7, rating: 97, buy_again: true }]);
+    const wine = (producer) => ({ name: 'Brunello', producer, type: 'red', region: 'Brunello di Montalcino', grapes: ['Sangiovese Grosso'], body: 0.85, tannins: 0.8, acidity: 0.72 });
+    const a = TasteMatch.assess(wine('Antinori'), all), o = TasteMatch.assess(wine('Somebody Else'), all);
+    return { a: a.pct, o: o.pct, up: a.breakdown.up.map((x) => x.text) };
+  });
+  expect(out.a).toBeGreaterThan(out.o);
+  expect(out.up).toContain('Antinori: you scored Tignanello 97');
 });
