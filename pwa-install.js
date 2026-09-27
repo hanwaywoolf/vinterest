@@ -88,7 +88,12 @@ const InstallApp = {
     if(!('serviceWorker' in navigator)) out.push('This browser can\'t install web apps.');
     else if(!navigator.serviceWorker.controller) out.push('The app hasn\'t finished setting up offline support yet. Reload the page once.');
     if(this._relatedInstalled===true) out.push('Chrome says Vinterest is already installed on this phone.');
-    if(!out.length) out.push('Chrome hasn\'t offered an install for this site. It does this when it thinks the app is already installed, or after the install was turned down or removed recently.');
+    if(!out.length){
+      out.push('Chrome hasn\'t offered an install for this site. It does this when it thinks the app is already installed, or after the install was turned down or removed recently.');
+      // Seen on a real phone: every check passed, Chrome offered no install for any site, and
+      // clearing Chrome's cache (not its data) brought "Add to home screen" back.
+      out.push('If every line below has a tick, Chrome itself is stuck: go to your phone\'s Settings → Apps → Chrome → Storage and tap Clear cache (not Clear storage, which would delete your wines). Then reopen Vinterest in Chrome.');
+    }
     return out;
   },
 };
