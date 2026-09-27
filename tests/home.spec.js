@@ -123,3 +123,19 @@ test('a filled-in suggestion clears with one backspace; your own words don\'t', 
   await page.getByLabel('Clear', { exact: true }).click();
   await expect(box).toHaveValue('');
 });
+
+test('typing straight after tapping a suggestion never gets the cursor moved mid-word (slow phone)', async ({ context, page }) => {
+  await demo(context, page, []);
+  await page.goto(`${BASE}/?demo=1#home`);
+  const box = page.getByLabel('Ask Vinny');
+  await page.evaluate(() => Vinny.remember('What goes with lamb?'));
+  await root(page).locator('form div[style*="cursor: text"]').click();
+  await box.press('Backspace'); await box.blur(); await box.focus();
+  // Hold back timers so the "cursor to the end" step runs only after typing, as on a slow phone.
+  await page.evaluate(() => { const st = window.setTimeout; window.__held = []; window.setTimeout = (fn, ms, ...a) => (ms === 0 ? (window.__held.push(() => fn(...a)), 0) : st(fn, ms, ...a)); });
+  await root(page).getByText('What goes with lamb?', { exact: true }).click();
+  await box.press('End'); await box.type(' tonight');
+  await page.evaluate(() => window.__held.forEach((f) => f()));
+  await box.type('!');
+  await expect(box).toHaveValue('What goes with lamb? tonight!');
+});

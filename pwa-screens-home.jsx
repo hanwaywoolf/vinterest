@@ -52,7 +52,10 @@ function WineChatWidget({wines,nav,showPro}){
   // backspace on it, untouched, empties the box. Anything they type makes it their own text.
   const filled=React.useRef(null);
   function fill(text){ setQ(text); filled.current=text; setExhausted(true);
-    setTimeout(()=>{ const el=inputRef.current; if(el){ el.focus(); el.setSelectionRange(text.length,text.length); } },0); }
+    // Cursor to the end once the box shows it, but only while it still holds just the suggestion:
+    // on a slow phone this can run after they've started typing, and moving the cursor then
+    // would drop their next letters into the middle ("lamb?igh ton").
+    setTimeout(()=>{ const el=inputRef.current; if(el&&el.value===text){ el.focus(); el.setSelectionRange(text.length,text.length); } },0); }
   // Caught on the key itself: a backspace with the cursor at the start deletes nothing, so
   // onChange alone would miss it.
   function onKey(e){ if(e.key==='Backspace'&&filled.current&&q===filled.current){ e.preventDefault(); filled.current=null; setQ(''); } }
