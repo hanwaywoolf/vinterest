@@ -23,7 +23,7 @@ Plan in one line: keep the React web app as the single UI codebase, add accounts
 
 | # | Decision | Default |
 |---|---|---|
-| D1 | Sign-in required before first scan, or anonymous-first? | Required, right after onboarding. Apple, Google, email. Simpler and stops free-tier abuse through throwaway accounts. |
+| D1 | Sign-in required before first scan, or anonymous-first? | **Decided: optional, offered later.** Onboarding stays sign-up free. After the first few scans (and in Settings) the app offers "Save your wines to your account"; Pro and server-side fair use need an account. Until someone signs in, limits stay per device. |
 | D2 | Prices | Keep Claude estimates, label them "est." in the UI. |
 | D3 | XP conflict policy across devices | Monotonic merge (max and union). Never lowers a user's XP. Can lose XP earned simultaneously on two offline devices. |
 | D4 | Dead backend (Apify, LCBO, `wine_cache`, `recognise.js`, the duplicate `retail.js`/`retail-data.js` implementations) | Delete. **Done** — all of it, plus the rest of `functions/` (`health.js`, `ping.js`, `api/[[route]].js`), is gone as of the `/claude`-hardening and retail-cleanup PRs. |
@@ -199,7 +199,7 @@ Add supabase/migrations/0001_user_data.sql from the spec, and a supabase/README.
 ```
 Read docs/native-migration-spec.md sections 2, 4 and 5.
 
-Add the Supabase JS client and a sign-in screen shown after onboarding (email OTP or magic link now; Google and Apple buttons present but disabled until native setup). Persist the session. In the Worker: verify the Supabase JWT (use the project's JWKS), meter usage in usage_counters with the service role key, enforce fair-use caps and Pro checks from entitlements, add /me. Make the Entitlement module read tier and usage from /me and cache them for display. Remove any code that treats vinterest_pro or vinterest_scan_count as authoritative. The client must handle 401, 402 and 429 with clear UI. For testing, I will set a tier by hand in the entitlements table.
+Add the Supabase JS client and an optional sign-in (D1: offered after the first few scans and in Settings, required only for Pro; email OTP or magic link now; Google and Apple buttons present but disabled until native setup). Persist the session. In the Worker: verify the Supabase JWT (use the project's JWKS), meter usage in usage_counters with the service role key, enforce fair-use caps and Pro checks from entitlements, add /me. Make the Entitlement module read tier and usage from /me and cache them for display. Remove any code that treats vinterest_pro or vinterest_scan_count as authoritative. The client must handle 401, 402 and 429 with clear UI. For testing, I will set a tier by hand in the entitlements table.
 ```
 
 ### Prompt 6: sync engine
