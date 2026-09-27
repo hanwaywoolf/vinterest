@@ -237,8 +237,8 @@ function AccountCard(){
         <Pill active={pro} sm>{pro?'Pro':'Free'}</Pill>
       </div>
       <div style={{fontSize:13,color:C.mid,fontFamily:C.P,lineHeight:1.5}}>
-        {pro?'You have Pro on any phone you sign in on.':'If you get Pro, it comes with you to any phone you sign in on.'}
-        {' '}Backing up your wines to your account is coming soon. For now, use Export under Data Backup in WineDNA.
+        {pro?'You\'re signed in with Pro, and it works on any phone you sign in on. ':'You\'re signed in. '}
+        Your wines stay on this phone for now: backing them up to your account is coming soon. Until then, use Export under Data Backup in WineDNA.
       </div>
       {me&&me.usage&&me.caps&&me.usage.label_scan>0&&<div style={{fontSize:13,color:C.mid,fontFamily:C.P}}>This week: {me.usage.label_scan} of {me.caps.label_scan} label scans.</div>}
       <span onClick={()=>Account.signOut()} style={{...link,alignSelf:'flex-start',marginTop:2}}>Sign out</span>
