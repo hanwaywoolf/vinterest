@@ -137,7 +137,7 @@ const RegionQuizBank = {
     const info=KNOWLEDGE.regions[region];
     const wines=WineHistory.getAll();
     const regionWines=wines.filter(w=>Regions.of(w)===region);
-    const otherWines=_ceShuffle(wines.filter(w=>w.region&&w.region!==region)).slice(0,3);
+    const otherWines=_ceShuffle(wines.filter(w=>{ const r=WineDNA.region(w); return r&&r!==region; })).slice(0,3);
     const otherRegionIds=Object.keys(KNOWLEDGE.regions).filter(r=>r!==region);
     const qs=[];
     const add=(q,correct,distractors,fact)=>{
@@ -303,7 +303,7 @@ const ExploreNext = {
     const lc=a=>a.map(x=>x.toLowerCase());
     const lovedSet=k=>new Set(p.loved.flatMap(k).map(x=>x.toLowerCase()));
     const lowOf=(pluck)=>{ const keep=lovedSet(pluck); return new Set(p.disliked.flatMap(pluck).map(x=>x.toLowerCase()).filter(x=>!keep.has(x))); };
-    const grapes=w=>(w.grapes||[]).map(g=>WineDNA.grape(g)).filter(Boolean), region=w=>w.region?[w.region]:[];
+    const grapes=w=>(w.grapes||[]).map(g=>WineDNA.grape(g)).filter(Boolean), region=w=>[...new Set([w.region,WineDNA.region(w)].filter(Boolean))]; // both the appellation and its region, so a disliked Bandol steers away from Bandol and from Provence styles
     const avg={}; Object.keys(this.AXES).forEach(k=>{ const v=p.dnaAvg[k]!=null?p.dnaAvg[k]:p.avg[k]; if(v!=null) avg[k]=v; });
     return {wines:p.wines,avg,topGrapes:lc(p.topGrapes),topRegions:lc(p.topRegions),lowGrapes:lowOf(grapes),lowRegions:lowOf(region)};
   },
