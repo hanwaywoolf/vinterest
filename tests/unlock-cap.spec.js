@@ -7,7 +7,8 @@ const { stubNetwork, makeDeterministic, seedLocalStorage } = require('./helpers'
 const BASE = 'http://localhost:4173';
 const GRAPES = ['Tempranillo', 'Sangiovese', 'Grenache', 'Chenin Blanc', 'Pinot Grigio', 'Cabernet Sauvignon'];
 const REGIONS = ['Rioja', 'Tuscany', 'Provence', 'Bordeaux', 'Burgundy', 'Piedmont', 'Champagne'];
-const store = (names) => JSON.stringify({ version: 1, accounts: { local: { unlocked: Object.fromEntries(names.map((n, i) => [n, { at: 1000 + i }])) } } });
+const LATER = Date.UTC(2026, 9, 1); // unlocked after the allowance started holding
+const store = (names, from = LATER) => JSON.stringify({ version: 1, accounts: { local: { unlocked: Object.fromEntries(names.map((n, i) => [n, { at: from + i }])) } } });
 
 test('six stored grapes and seven regions on the free plan: five of each open, the rest held for Pro', async ({ context, page }) => {
   await makeDeterministic(page);
@@ -27,4 +28,15 @@ test('six stored grapes and seven regions on the free plan: five of each open, t
     regions: REGIONS.slice(0, 5), heldR: ['Piedmont', 'Champagne'], champagne: false, more: false });
   expect(out.pro).toEqual({ grapes: 6, cab: true, regions: 7 });
   await expect(page.locator('#root')).toContainText('5 of 50 unlocked · your 5 free grapes are open, 1 more waiting for Pro');
+});
+
+test('grapes and regions unlocked before the allowance started holding stay open on the free plan; new ones still count', async ({ context, page }) => {
+  await makeDeterministic(page);
+  await seedLocalStorage(page, { vinterest_onboarded: '1', vinterest_region: 'uk',
+    vinterest_grape_unlocks_v1: store(GRAPES, Date.UTC(2026, 8, 1)), vinterest_region_unlocks_v1: store(REGIONS, Date.UTC(2026, 8, 1)) });
+  await stubNetwork(context);
+  await page.goto(`${BASE}/#learn`);
+  const out = await page.evaluate(() => ({ grapes: GrapeUnlocks.count(), cab: GrapeUnlocks.isUnlocked('Cabernet Sauvignon'), held: GrapeUnlocks.held(),
+    regions: RegionUnlocks.count(), more: GrapeUnlocks.unlockViaRating('Merlot') }));
+  expect(out).toEqual({ grapes: 6, cab: true, held: [], regions: 7, more: false });
 });

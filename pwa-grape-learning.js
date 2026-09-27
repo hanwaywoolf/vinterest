@@ -29,11 +29,18 @@ const GRAPE_TYPES = {
 };
 function grapeTypeColor(grape){ return (_TYPE_COLORS&&_TYPE_COLORS[GRAPE_TYPES[grape]])||C.mid; }
 
-/* The unlocks that are open: all of them with Pro, otherwise the first `cap` by when they were
-   unlocked (then name, so it's stable). Shared by GrapeUnlocks and RegionUnlocks. */
+/* The unlocks that are open: all of them with Pro. Otherwise everything unlocked before
+   UNLOCKS_KEPT_BEFORE stays open (the allowance used to be checked only when unlocking, so
+   earlier extras are kept), and later unlocks fill whatever is left of `cap`, oldest first.
+   Shared by GrapeUnlocks and RegionUnlocks. */
+const UNLOCKS_KEPT_BEFORE=Date.UTC(2026,8,28); // 28 Sep 2026
 function _openUnlocks(stored,cap,pro){
   if(pro) return stored;
-  return Object.fromEntries(Object.entries(stored||{}).sort(([a,x],[b,y])=>((x&&x.at)||0)-((y&&y.at)||0)||a.localeCompare(b)).slice(0,cap));
+  const at=x=>(x&&x.at)||0;
+  const sorted=Object.entries(stored||{}).sort(([a,x],[b,y])=>at(x)-at(y)||a.localeCompare(b));
+  const kept=sorted.filter(([,x])=>at(x)<UNLOCKS_KEPT_BEFORE);
+  const later=sorted.filter(([,x])=>at(x)>=UNLOCKS_KEPT_BEFORE).slice(0,Math.max(0,cap-kept.length));
+  return Object.fromEntries([...kept,...later]);
 }
 
 const GrapeUnlocks = Object.assign(_accountStore('vinterest_grape_unlocks_v1'), {
