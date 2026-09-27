@@ -642,3 +642,22 @@ test('the same producer counts: an Antinori Brunello draws on their Tignanello',
   expect(out.a).toBeGreaterThan(out.o);
   expect(out.up).toContain('Antinori: you scored Tignanello 97');
 });
+
+test('Keep learning opens at its top, not wherever the rating left the page scrolled', async ({ context, page }) => {
+  await page.setViewportSize({ width: 375, height: 640 });
+  await setup(context, page, { label: PRIORAT });
+  await page.goto(`${BASE}/?demo=1#camera`);
+  await page.getByTestId('scan-file').setInputFiles({ name: 'label.png', mimeType: 'image/png', buffer: PNG });
+  const root = page.locator('#root');
+  await root.getByText('Rate it', { exact: true }).click();
+  await root.getByText('90', { exact: true }).click();
+  await root.getByText('Save rating').click();
+  const scroller = page.locator('.sc-scroll').first();
+  await scroller.evaluate((el) => { el.scrollTop = el.scrollHeight; });
+  await root.getByText('Done: what\'s next?').click();
+  const heading = root.getByText('Keep learning', { exact: true });
+  await expect(heading).toBeVisible();
+  const [h, s] = [await heading.boundingBox(), await scroller.boundingBox()];
+  expect(h.y - s.y).toBeGreaterThanOrEqual(0);
+  expect(h.y - s.y).toBeLessThan(60);
+});

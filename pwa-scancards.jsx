@@ -382,7 +382,7 @@ function ScanResult({wine,match,curr,scanData,existingRating,nav,showPro,view,se
             <div style={{fontSize:15,color:C.ink2,fontFamily:C.P,lineHeight:1.5}}>It won't count towards your WineDNA until you buy or taste it. Next time you open the app we'll ask whether you bought it.</div>
             <div role="button" onClick={()=>setView('rate')} style={{fontSize:15,fontWeight:700,color:C.cr,fontFamily:C.P,cursor:'pointer'}}>Already tasted it? Rate it instead →</div>
           </Card>
-          <Card style={{padding:16}}><KeepLearning wine={wine} nav={nav} showPro={showPro} intro="Shopping? Learn a little about it before you decide."/></Card>
+          <Card style={{padding:16}}><KeepLearning wine={wine} nav={nav} showPro={showPro} reveal intro="Shopping? Learn a little about it before you decide."/></Card>
           <div style={{display:'flex',gap:10}}>
             <Btn full onClick={()=>nav('mywines')}>My Wines</Btn>
             <Btn primary full onClick={()=>nav('camera')}>Scan another</Btn>
@@ -764,7 +764,7 @@ function RatingPanel({wine,existingRating,nav,showPro,curr,onRated,onSaveForLate
   }
   // After the score and the optional details: what to learn next, then the ways out.
   if(saved&&next) return <div style={{display:'flex',flexDirection:'column',gap:14}}>
-    <KeepLearning wine={wine} nav={nav} showPro={showPro}/>
+    <KeepLearning wine={wine} nav={nav} showPro={showPro} reveal/>
     <div style={{marginTop:6,paddingTop:16,borderTop:`2px solid ${C.line}`,display:'flex',flexDirection:'column',gap:10}}>
       <Btn primary full onClick={()=>nav('home')}>Finish</Btn>
       <Btn full onClick={()=>nav('detail')}>See full wine details</Btn>
@@ -881,8 +881,15 @@ function TastingExtras({wine,curr}){
 
 /* "Keep learning": LearnNext's tiles for this wine (its type's basics, region, grape, the next
    beginner article, unread articles about it). Locked ones open the Pro sheet. */
-function KeepLearning({wine,nav,showPro,intro}){
+function KeepLearning({wine,nav,showPro,intro,reveal}){
   const tiles=React.useMemo(()=>LearnNext.forWine(wine),[wine&&wine.name]);
+  // Arriving here from the bottom of the rating (or Save for later) leaves the page scrolled
+  // down; with `reveal` it brings its own first line to the top of the scrolling area.
+  const root=React.useRef(null);
+  React.useLayoutEffect(()=>{
+    const el=root.current, box=el&&el.closest('.sc-scroll'); if(!reveal||!box) return;
+    box.scrollTop=Math.max(0,el.getBoundingClientRect().top-box.getBoundingClientRect().top+box.scrollTop-16);
+  },[]);
   const [busy,setBusy]=React.useState(null);
   const startQuiz=cfg=>{ Handoff.quiz.set(cfg); nav('quiz'); };
   function open(t){
@@ -895,7 +902,7 @@ function KeepLearning({wine,nav,showPro,intro}){
     if(t.kind==='article'){ Handoff.genArticle.set(t.stub); nav('gen-article'); return; }
     nav('profile');
   }
-  return <div style={{display:'flex',flexDirection:'column',gap:10}}>
+  return <div ref={root} style={{display:'flex',flexDirection:'column',gap:10}}>
     <div>
       <div style={{fontSize:18,fontWeight:800,color:C.ink,fontFamily:C.P}}>Keep learning</div>
       <div style={{fontSize:14,color:C.mid,fontFamily:C.P,lineHeight:1.45,marginTop:2}}>{intro||'Picked for the wine you just had. A few minutes each.'}</div>
