@@ -8,6 +8,10 @@
 //                                   (default: claude-sonnet-4-6)
 //   PRICE_MODEL         (optional)  model for the premium-wine price search only
 //                                   (default: CLAUDE_MODEL, then claude-sonnet-4-6)
+//   SUPABASE_URL        (optional)  https://<project-ref>.supabase.co. With it and the two keys
+//   SUPABASE_PUBLISHABLE_KEY          below, signed-in users are verified, metered per week and
+//   SUPABASE_SECRET_KEY (secret)     checked for Pro (supabase/README.md). Without them, every
+//                                   request is treated as signed out, as before.
 // Bindings (Settings → Bindings):
 //   PRICE_CACHE         (optional, KV namespace)  shares price-search results between all
 //                                   users for 30 days. Without it, Cloudflare's per-data-centre
@@ -73,13 +77,18 @@ const MAX_BODY_BYTES = 6 * 1024 * 1024; // headroom above a 1024px-JPEG scan pay
 
 const RATE_LIMIT_WINDOW_MS = 5 * 60 * 1000;
 const RATE_LIMIT_MAX = 40; // generous fair-use cap, per spec D5 — a cost guard, not a product limit
-// Best-effort, per-isolate. Not durable across Cloudflare's many isolates/colos —
-// a real per-user limit needs the JWT + usage_counters work in prompt 5.
+// Best-effort, per-isolate. Not durable across Cloudflare's many isolates/colos; it guards signed-
+// out use. Signed-in users are also metered per week in Supabase (gateAccount).
 const _rateLimitBuckets = new Map();
 
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
+    if (url.pathname === "/me") {
+      if (request.method === "OPTIONS") return cors(new Response(null, { status: 204 }));
+      if (request.method !== "GET") return json(405, { error: "Method not allowed" });
+      return handleMe(request, env);
+    }
     if (url.pathname === "/claude") {
       if (request.method === "OPTIONS") return cors(new Response(null, { status: 204 }));
       if (request.method !== "POST") return json(405, { error: "Method not allowed" });
@@ -185,13 +194,17 @@ async function handleClaude(request, env, ctx) {
   catch (e) { return json(400, { error: "Invalid JSON body.", code: "invalid_json" }); }
 
   const purpose = payload.purpose;
+  if (purpose !== "price_search" && !CLAUDE_PURPOSE_LIMITS[purpose]) {
+    return json(400, { error: "Request must include a valid purpose.", code: "invalid_purpose" });
+  }
+  // Signed in: verified, metered for the week, and checked for Pro. Signed out: as before.
+  const gate = await gateAccount(request, env, purpose);
+  if (gate.response) return gate.response;
+
   // Premium-wine price search: built here from the wine's fields, never from client prompts,
   // so /claude can't be used as an open web-search proxy.
   if (purpose === "price_search") return handlePriceSearch(payload, env, key, ctx);
   const purposeCap = CLAUDE_PURPOSE_LIMITS[purpose];
-  if (!purposeCap) {
-    return json(400, { error: "Request must include a valid purpose.", code: "invalid_purpose" });
-  }
 
   const messages = payload.messages;
   if (!Array.isArray(messages) || messages.length === 0) {
@@ -225,6 +238,92 @@ async function handleClaude(request, env, ctx) {
   } catch (e) {
     return json(502, { error: "Failed to reach Anthropic: " + (e && e.message ? e.message : String(e)), code: "upstream_unreachable" });
   }
+}
+
+/* ── Accounts (Supabase) ──
+   Sign-in is optional (spec D1). A request without a sign-in token is handled as before (the
+   per-IP rate limit above). With one, the token is checked with Supabase, the call is counted
+   against a weekly fair-use cap for that user (use_quota, supabase/migrations/0002), and Pro-only
+   purposes need Pro in `entitlements`, which only the server writes. The caps are cost guards,
+   set generously, never product limits (spec D5). */
+const FAIR_USE = {
+  free: { label_scan: 100, list_scan: 0, price_search: 50, _other: 500 },
+  pro:  { label_scan: 600, list_scan: 150, price_search: 300, _other: 3000 },
+};
+const PRO_ONLY = { list_scan: "Wine list scanning is part of Vinterest Pro." };
+const AUTH_CACHE_MS = 5 * 60 * 1000;
+const _authCache = new Map();
+
+function accountsOn(env) { return !!(env.SUPABASE_URL && env.SUPABASE_PUBLISHABLE_KEY && env.SUPABASE_SECRET_KEY); }
+
+/* The signed-in user ({id, email}), null when signed out, or {invalid:true} for a token Supabase
+   doesn't accept (expired or forged). */
+async function authUser(request, env) {
+  const m = /^Bearer\s+(\S+)$/i.exec(request.headers.get("authorization") || "");
+  if (!m || !accountsOn(env)) return null;
+  const token = m[1], now = Date.now();
+  const hit = _authCache.get(token);
+  if (hit && hit.until > now) return hit.user;
+  const r = await fetch(`${env.SUPABASE_URL}/auth/v1/user`, { headers: { apikey: env.SUPABASE_PUBLISHABLE_KEY, authorization: `Bearer ${token}` } });
+  if (r.status === 401 || r.status === 403) return { invalid: true };
+  if (!r.ok) throw new Error("auth_unavailable");
+  const u = await r.json();
+  const user = { id: u.id, email: u.email || null };
+  _authCache.set(token, { user, until: now + AUTH_CACHE_MS });
+  if (_authCache.size > 5000) for (const [k, v] of _authCache) if (v.until <= now) _authCache.delete(k);
+  return user;
+}
+
+/* The database, as the server (the secret key; never sent to a browser). */
+function db(env, path, init = {}) {
+  return fetch(`${env.SUPABASE_URL}/rest/v1/${path}`, { ...init, headers: { apikey: env.SUPABASE_SECRET_KEY, "content-type": "application/json", ...(init.headers || {}) } });
+}
+async function tierOf(env, userId) {
+  const r = await db(env, `entitlements?user_id=eq.${encodeURIComponent(userId)}&select=tier,expires_at`);
+  if (!r.ok) return "free";
+  const [e] = await r.json();
+  return e && e.tier === "pro" && (!e.expires_at || new Date(e.expires_at) > new Date()) ? "pro" : "free";
+}
+function capFor(tier, kind) { const t = FAIR_USE[tier] || FAIR_USE.free; return kind in t ? t[kind] : t._other; }
+function weekStart(d = new Date()) {
+  const x = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+  x.setUTCDate(x.getUTCDate() - ((x.getUTCDay() + 6) % 7));
+  return x.toISOString().slice(0, 10);
+}
+
+/* {response} to send instead of calling Claude, or {user, tier} to carry on. */
+async function gateAccount(request, env, purpose) {
+  let user;
+  try { user = await authUser(request, env); }
+  catch (e) { return {}; } // Supabase unreachable: don't block the app; the IP limit still applies
+  if (user && user.invalid) return { response: json(401, { error: "Your sign-in has expired. Sign in again to carry on.", code: "auth_expired" }) };
+  if (!user) {
+    if (PRO_ONLY[purpose] && accountsOn(env)) return { response: json(402, { error: `${PRO_ONLY[purpose]} Sign in to use Pro.`, code: "pro_required", signIn: true }) };
+    return {};
+  }
+  const tier = await tierOf(env, user.id);
+  if (PRO_ONLY[purpose] && tier !== "pro") return { response: json(402, { error: PRO_ONLY[purpose], code: "pro_required" }) };
+  const r = await db(env, "rpc/use_quota", { method: "POST", body: JSON.stringify({ p_user: user.id, p_kind: purpose, p_cap: capFor(tier, purpose) }) });
+  if (r.ok && (await r.json()) === null) {
+    return { response: json(429, { error: "You've reached this week's fair-use limit for this. It resets on Monday.", code: "fair_use" }) };
+  }
+  return { user, tier };
+}
+
+/* GET /me: who's signed in, their plan, and this week's usage against the caps. */
+async function handleMe(request, env) {
+  const origin = request.headers.get("origin");
+  if (!originAllowed(origin)) return json(403, { error: "Origin not allowed.", code: "origin_denied" });
+  let user;
+  try { user = await authUser(request, env); }
+  catch (e) { return json(503, { error: "Accounts are unavailable right now.", code: "auth_unavailable" }); }
+  if (user && user.invalid) return json(401, { error: "Your sign-in has expired.", code: "auth_expired" });
+  if (!user) return json(200, { signedIn: false, accounts: accountsOn(env), tier: "free" });
+  const tier = await tierOf(env, user.id);
+  const week = weekStart();
+  const r = await db(env, `usage_counters?user_id=eq.${encodeURIComponent(user.id)}&period_start=eq.${week}&select=kind,count`);
+  const usage = r.ok ? Object.fromEntries((await r.json()).map((u) => [u.kind, u.count])) : {};
+  return json(200, { signedIn: true, accounts: true, email: user.email, tier, week, usage, caps: FAIR_USE[tier] });
 }
 
 /* ── Price search for premium wines ──
@@ -331,8 +430,8 @@ async function handlePriceSearch(payload, env, key, ctx) {
 
 function cors(res) {
   res.headers.set("access-control-allow-origin", "*");
-  res.headers.set("access-control-allow-headers", "content-type");
-  res.headers.set("access-control-allow-methods", "POST, OPTIONS");
+  res.headers.set("access-control-allow-headers", "content-type, authorization");
+  res.headers.set("access-control-allow-methods", "GET, POST, OPTIONS");
   return res;
 }
 function json(status, obj) {
