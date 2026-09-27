@@ -7,10 +7,22 @@ const BASE = 'http://localhost:4173';
 
 test.use({ viewport: { width: 360, height: 640 } });
 
-// Scrolls like a person would until `loc` is on screen (or gives up).
+// Scrolls like a finger can: only containers the page lets scroll (overflow auto or scroll),
+// never ones set to clip, which a script could scroll but a person can't. (The mouse wheel
+// isn't available in mobile WebKit, so this works the same on every engine.)
 async function swipeTo(page, loc) {
   for (let i = 0; i < 25 && !(await loc.isVisible() && await inView(page, loc)); i++) {
-    await page.mouse.move(180, 400); await page.mouse.wheel(0, 250); await page.waitForTimeout(50);
+    const moved = await loc.evaluate((el) => {
+      for (let p = el.parentElement; p; p = p.parentElement) {
+        const o = getComputedStyle(p).overflowY;
+        if (/(auto|scroll)/.test(o) && p.scrollHeight > p.clientHeight && p.scrollTop + p.clientHeight < p.scrollHeight - 1) { p.scrollTop += 250; return true; }
+      }
+      const doc = document.scrollingElement;
+      if (getComputedStyle(document.body).overflowY !== 'hidden' && doc.scrollTop + innerHeight < doc.scrollHeight - 1) { doc.scrollTop += 250; return true; }
+      return false;
+    });
+    if (!moved) return;
+    await page.waitForTimeout(50);
   }
 }
 async function inView(page, loc) {
