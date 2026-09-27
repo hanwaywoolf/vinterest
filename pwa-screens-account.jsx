@@ -83,6 +83,8 @@ function AccountProfileScreen({nav,back}){
 
         <AccountCard/>
 
+        <InstallCard/>
+
         <TextSizeControl/>
 
         {/* Travel Mode */}
@@ -248,7 +250,7 @@ function AccountCard(){
   return <Card style={{padding:14,display:'flex',flexDirection:'column',gap:10}}>
     <div>
       <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>Sign in (optional)</div>
-      <div style={{fontSize:13,color:C.mid,fontFamily:C.P,lineHeight:1.5}}>Everything works without an account. Sign in to take Pro with you to any phone. Soon it will also back up your wines, so they're safe if you lose or change your phone.</div>
+      <div style={{fontSize:13,color:C.mid,fontFamily:C.P,lineHeight:1.5}}>Everything works without an account. Signing in will back up your wines and progress, so a new phone picks up where this one left off. Backup is coming soon.</div>
     </div>
     {step==='idle'&&<div onClick={()=>{setStep('email');setErr('');}} style={primary}>Sign in with email</div>}
     {step==='email'&&<>
@@ -273,3 +275,41 @@ function AccountCard(){
 }
 
 Object.assign(window,{AccountCard});
+
+/* Install to the home screen (InstallApp, pwa-install.js). Offers Chrome's own install dialog when
+   Chrome allows it, and otherwise says plainly why not, so a missing menu option isn't a mystery.
+   Hidden once the app is opened from the home screen. */
+function InstallCard(){
+  const [,tick]=React.useState(0);
+  const [note,setNote]=React.useState('');
+  const [why,setWhy]=React.useState(false);
+  React.useEffect(()=>{ const h=()=>tick(t=>t+1); window.addEventListener('vinterest:install',h); return()=>window.removeEventListener('vinterest:install',h); },[]);
+  const st=InstallApp.status();
+  if(st==='running') return null;
+  const link={fontSize:14,fontWeight:600,color:C.cr,fontFamily:C.P,cursor:'pointer'};
+  const body={fontSize:13,color:C.mid,fontFamily:C.P,lineHeight:1.5};
+  async function install(){
+    const r=await InstallApp.prompt();
+    setNote(r==='accepted'?'Installing. Vinterest will appear on your home screen in a moment.':r==='dismissed'?'No problem. You can install it from here any time.':'Chrome didn\'t show the install this time. Reload the page and try again.');
+  }
+  return <Card style={{padding:14,display:'flex',flexDirection:'column',gap:10}}>
+    <div>
+      <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>Put Vinterest on your home screen</div>
+      <div style={body}>It opens full screen like any other app, straight to the camera when you need it.</div>
+    </div>
+    {st==='available'&&<div onClick={install} style={{width:'100%',padding:'13px',borderRadius:12,background:C.cr,color:'#fff',fontSize:15,fontWeight:700,fontFamily:C.P,textAlign:'center',cursor:'pointer'}}>Install Vinterest</div>}
+    {st==='installed'&&<div style={{...body,color:C.ink2}}>It's already installed on this phone. Open Vinterest from your home screen or app list.</div>}
+    {st==='ios'&&<div style={{...body,color:C.ink2}}>In Safari, tap <b>Share</b> (the square with an arrow), then <b>Add to Home Screen</b>.</div>}
+    {st==='waiting'&&<>
+      <div style={{...body,color:C.ink2}}>Chrome hasn't offered to install Vinterest on this phone yet.</div>
+      <span onClick={()=>setWhy(w=>!w)} style={link}>{why?'Hide details':'Why not?'}</span>
+      {why&&<div style={{display:'flex',flexDirection:'column',gap:6}}>
+        {InstallApp.why().map((w,i)=><div key={i} style={body}>• {w}</div>)}
+        <div style={body}>You can also try Chrome's menu (⋮) → <b>Add to home screen</b>, if it's there.</div>
+      </div>}
+    </>}
+    {note&&<div role="status" style={{...body,color:C.ink2}}>{note}</div>}
+  </Card>;
+}
+
+Object.assign(window,{InstallCard});

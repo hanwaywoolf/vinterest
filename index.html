@@ -7,6 +7,10 @@
 
 <!-- PWA -->
 <link rel="manifest" href="/manifest.json"/>
+<script>
+  // Chrome's install offer can arrive before app.js has loaded; keep it for InstallApp (pwa-install.js).
+  window.addEventListener('beforeinstallprompt',function(e){ e.preventDefault(); window.__vinterestInstallEvent=e; });
+</script>
 <meta name="theme-color" content="#8B1A2F"/>
 <meta name="mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-capable" content="yes"/>
