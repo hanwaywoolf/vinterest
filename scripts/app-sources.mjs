@@ -29,6 +29,7 @@ export const APP_SOURCES = [
   'pwa-userdata.js',
   'pwa-backup.js',
   'pwa-account.js',
+  'pwa-install.js',
   'pwa-components.jsx',
   'tweaks-panel.jsx',
   'pwa-screens-main.jsx',
