@@ -91,7 +91,7 @@ create index wines_user_updated on public.wines (user_id, updated_at);
 create index docs_user_updated  on public.user_docs (user_id, updated_at);
 ```
 
-Secrets: `SUPABASE_URL` and the anon key are public and go in the client. The service role key lives only in the Worker's secrets. Never in the repo, never in a prompt.
+Secrets: `SUPABASE_URL` and the publishable key (`SUPABASE_PUBLISHABLE_KEY`) are public and go in the client. The secret key (`SUPABASE_SECRET_KEY`) lives only in the Worker's secrets. Never in the repo, never in a prompt.
 
 ## 4. What syncs and what doesn't
 
