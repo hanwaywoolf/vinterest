@@ -237,8 +237,8 @@ function AccountCard(){
         <Pill active={pro} sm>{pro?'Pro':'Free'}</Pill>
       </div>
       <div style={{fontSize:13,color:C.mid,fontFamily:C.P,lineHeight:1.5}}>
-        {pro?'Pro is on your account, so it follows you to any phone you sign in on.':'Signed in. Pro, when you get it, goes on your account rather than this phone.'}
-        {' '}Backing up your wines to your account comes next; until then, use Export under Data Backup in WineDNA.
+        {pro?'You\'re signed in with Pro, and it works on any phone you sign in on. ':'You\'re signed in. '}
+        Your wines stay on this phone for now: backing them up to your account is coming soon. Until then, use Export under Data Backup in WineDNA.
       </div>
       {me&&me.usage&&me.caps&&me.usage.label_scan>0&&<div style={{fontSize:13,color:C.mid,fontFamily:C.P}}>This week: {me.usage.label_scan} of {me.caps.label_scan} label scans.</div>}
       <span onClick={()=>Account.signOut()} style={{...link,alignSelf:'flex-start',marginTop:2}}>Sign out</span>
@@ -248,7 +248,7 @@ function AccountCard(){
   return <Card style={{padding:14,display:'flex',flexDirection:'column',gap:10}}>
     <div>
       <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>Sign in (optional)</div>
-      <div style={{fontSize:13,color:C.mid,fontFamily:C.P,lineHeight:1.5}}>Everything works without an account. Signing in puts Pro on your account instead of this phone, and is how your wines will back up and move to a new phone.</div>
+      <div style={{fontSize:13,color:C.mid,fontFamily:C.P,lineHeight:1.5}}>Everything works without an account. Sign in to take Pro with you to any phone. Soon it will also back up your wines, so they're safe if you lose or change your phone.</div>
     </div>
     {step==='idle'&&<div onClick={()=>{setStep('email');setErr('');}} style={primary}>Sign in with email</div>}
     {step==='email'&&<>
