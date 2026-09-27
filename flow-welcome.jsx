@@ -1,5 +1,5 @@
 /* Vinterest — New User Flow: the welcome screen.
-   Says what makes Vinterest different, sets the expectation that it gets better with every bottle
+   Says what makes Vinterest different (seven things, Vinny among them), sets the expectation that it gets better with every bottle
    (so people stay while their match and WineDNA build), then one action: scan your first bottle.
    The age and location step comes next, on the way to the camera. */
 
@@ -7,8 +7,9 @@ const _WELCOME_FEATS=[
   {icon:'heart',  col:'#E0708A',t:'Know if you\'ll like it',d:'A personal match for every bottle, worked out from your own scores, not critics\'.'},
   {icon:'brain',  col:'#7FA7E0',t:'Your WineDNA',d:'Learns what you actually love (styles, grapes, regions, price) and gets sharper with every bottle.'},
   {icon:'book',   col:'#6FCB9A',t:'A learning path that\'s yours',d:'Articles written from your own wines, quizzes that unlock with every new grape and region you drink, and short guides to tasting, ordering and food. Mastery shows how far you\'ve come.'},
+  {icon:'message',col:'#F08C6A',t:'Ask Vinny anything',d:'Your trusted wine assistant, ready for any question, from what to pour with tonight\'s lamb to why you keep picking Grenache. Vinny answers from your own WineDNA.'},
   {icon:'bolt',   col:'#E8B04A',t:'Train your palate',d:'Blind Call: guess what\'s in the glass before you look, and watch your calls get better.'},
-  {icon:'message',col:'#C9A0E0',t:'Order with confidence',d:'Scan a wine list for your best bets, and get a few lines to say to the sommelier.'},
+  {icon:'fork',   col:'#C9A0E0',t:'Order with confidence',d:'Scan a wine list for your best bets, and get a few lines to say to the sommelier.'},
   {icon:'cart',   col:'#8FD0D0',t:'Spend smarter',d:'Real shop prices where you live, and which bottles are good value for you.'},
 ];
 const _WELCOME_STEPS=[
