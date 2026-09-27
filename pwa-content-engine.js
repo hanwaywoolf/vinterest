@@ -65,7 +65,9 @@ const Regions = {
 const FREE_REGION_CAP=5;
 const RegionUnlocks = Object.assign(_accountStore('vinterest_region_unlocks_v1'), {
   fresh(){ return {unlocked:{}}; },
-  all(){ return this.get().unlocked; },
+  // Open now: every stored region with Pro, else the first FREE_REGION_CAP (_openUnlocks).
+  all(){ return _openUnlocks(this.get().unlocked,FREE_REGION_CAP,this._pro()); },
+  held(){ const open=this.all(); return Object.keys(this.get().unlocked).filter(r=>!open[r]); },
   count(){ return Object.keys(this.all()).length; },
   _pro(){ return Entitlement.isPro(); },
   isUnlocked(region){ return this._pro()||!!this.all()[region]; },
@@ -80,7 +82,7 @@ const RegionUnlocks = Object.assign(_accountStore('vinterest_region_unlocks_v1')
     return true;
   },
   sync(wines){
-    [...wines].sort((a,b)=>new Date(a.scanned_at||0)-new Date(b.scanned_at||0)).forEach(w=>{ const r=Regions.resolve(w); if(r&&!this.all()[r]) this.unlock(r); });
+    [...wines].sort((a,b)=>new Date(a.scanned_at||0)-new Date(b.scanned_at||0)).forEach(w=>{ const r=Regions.resolve(w); if(r&&!this.get().unlocked[r]) this.unlock(r); });
   },
 });
 
