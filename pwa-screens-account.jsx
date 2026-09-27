@@ -35,7 +35,7 @@ function AccChips({opts,sel,editing,onToggle}){
   );
 }
 
-function AccountProfileScreen({nav,back}){
+function AccountProfileScreen({nav,back,showPro}){
   const [prefs,setPrefs]=React.useState(()=>UserPrefs.get());
   const [editSection,setEditSection]=React.useState(null);
   const [country,setCountry]=React.useState(()=>UserPrefs.location().country||'');
@@ -81,7 +81,9 @@ function AccountProfileScreen({nav,back}){
 
       <div style={{flex:1,overflowY:'auto',padding:'14px 20px',display:'flex',flexDirection:'column',gap:12}}>
 
-        <AccountCard/>
+        <AccountCard showPro={showPro}/>
+
+        <BackupCard/>
 
         <InstallCard/>
 
@@ -204,14 +206,17 @@ Object.assign(window,{TextSizeControl});
 /* Optional sign-in (Account, pwa-account.js): an email, then the 6-digit code Supabase emails.
    Nothing in the app needs it; signed in, Pro and the weekly fair-use limits are checked by the
    server, and (next) their wines back up to it. Hidden when the build has no sign-in configured. */
-function AccountCard(){
+function AccountCard({showPro}){
   const [,tick]=React.useState(0);
-  const [step,setStep]=React.useState('idle'); // idle | email | code
+  // Opened from Home's backup offer: go straight to the email, and say that's the step left.
+  const [intent]=React.useState(()=>Handoff.accountIntent.take());
+  const [step,setStep]=React.useState(()=>intent==='backup'&&!Account.signedIn()?'email':'idle'); // idle | email | code
   const [email,setEmail]=React.useState('');
   const [code,setCode]=React.useState('');
   const [busy,setBusy]=React.useState(false);
   const [err,setErr]=React.useState('');
-  React.useEffect(()=>{ const h=()=>tick(t=>t+1); window.addEventListener('vinterest:account',h); return()=>window.removeEventListener('vinterest:account',h); },[]);
+  React.useEffect(()=>{ const h=()=>tick(t=>t+1); window.addEventListener('vinterest:account',h); window.addEventListener('vinterest:sync',h);
+    return()=>{ window.removeEventListener('vinterest:account',h); window.removeEventListener('vinterest:sync',h); }; },[]);
   if(!Account.available()) return null;
 
   const box={width:'100%',boxSizing:'border-box',padding:'12px 14px',borderRadius:12,border:`1.5px solid ${C.line}`,fontSize:16,fontFamily:C.P,color:C.ink,background:C.white,outline:'none'};
@@ -236,11 +241,13 @@ function AccountCard(){
           <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>Your account</div>
           <div style={{fontSize:14,color:C.mid,fontFamily:C.P,overflow:'hidden',textOverflow:'ellipsis'}}>{Account.email()}</div>
         </div>
-        <Pill active={pro} sm>{pro?'Pro':'Free'}</Pill>
+        <div style={{display:'flex',flexDirection:'column',alignItems:'flex-end',gap:6,flexShrink:0}}>
+          <Pill active={pro} sm>{pro?'Pro':'Free'}</Pill>
+          {!pro&&showPro&&<span onClick={()=>showPro('upgrade')} style={{...link,fontSize:14}}>Upgrade</span>}
+        </div>
       </div>
       <div style={{fontSize:13,color:C.mid,fontFamily:C.P,lineHeight:1.5}}>
-        {pro?'You\'re signed in with Pro, and it works on any phone you sign in on. ':'You\'re signed in. '}
-        Your wines stay on this phone for now: backing them up to your account is coming soon. Until then, use Export under Data Backup in WineDNA.
+        {pro?'You have Pro on any phone you sign in on. ':''}Sign in on another phone and your wines, WineDNA and progress are there too.
       </div>
       {me&&me.usage&&me.caps&&me.usage.label_scan>0&&<div style={{fontSize:13,color:C.mid,fontFamily:C.P}}>This week: {me.usage.label_scan} of {me.caps.label_scan} label scans.</div>}
       <span onClick={()=>Account.signOut()} style={{...link,alignSelf:'flex-start',marginTop:2}}>Sign out</span>
@@ -248,10 +255,15 @@ function AccountCard(){
   }
 
   return <Card style={{padding:14,display:'flex',flexDirection:'column',gap:10}}>
-    <div>
-      <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>Sign in (optional)</div>
-      <div style={{fontSize:13,color:C.mid,fontFamily:C.P,lineHeight:1.5}}>Everything works without an account. Signing in will back up your wines and progress, so a new phone picks up where this one left off. Backup is coming soon.</div>
-    </div>
+    {intent==='backup'
+      ?<div>
+        <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>One step left: sign in to back up</div>
+        <div style={{fontSize:13,color:C.ink2,fontFamily:C.P,lineHeight:1.5}}>Your wines aren't backed up yet. Enter your email, type in the code we send, and they're backed up straight away.</div>
+      </div>
+      :<div>
+        <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>Sign in (optional)</div>
+        <div style={{fontSize:13,color:C.mid,fontFamily:C.P,lineHeight:1.5}}>Everything works without an account. Signing in backs up your wines and progress, so a new phone picks up where this one left off.</div>
+      </div>}
     {step==='idle'&&<div onClick={()=>{setStep('email');setErr('');}} style={primary}>Sign in with email</div>}
     {step==='email'&&<>
       <input type="email" inputMode="email" autoComplete="email" placeholder="you@example.com" aria-label="Email address" value={email}
@@ -318,3 +330,29 @@ function InstallCard(){
 }
 
 Object.assign(window,{InstallCard});
+
+/* Backup (Sync, pwa-sync.js), its own section once signed in: on or not, when it last ran, what's
+   waiting. "Back up now" runs a sync straight away. */
+function BackupCard(){
+  const [,tick]=React.useState(0);
+  React.useEffect(()=>{ const h=()=>tick(t=>t+1); window.addEventListener('vinterest:sync',h); window.addEventListener('vinterest:account',h);
+    const id=setInterval(h,30000);
+    return()=>{ window.removeEventListener('vinterest:sync',h); window.removeEventListener('vinterest:account',h); clearInterval(id); }; },[]);
+  const s=Sync.summary();
+  if(!s) return null;
+  const col={on:C.green,working:C.amber,problem:'#B04A3A'}[s.tone];
+  return <Card style={{padding:14,display:'flex',flexDirection:'column',gap:6}}>
+    <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:10}}>
+      <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>Backup</div>
+      <span role="status" style={{display:'inline-flex',alignItems:'center',gap:6,padding:'3px 10px',borderRadius:20,background:s.tone==='on'?C.greenBg:C.offWhite,border:`1px solid ${col}40`}}>
+        <span style={{width:8,height:8,borderRadius:4,background:col,flexShrink:0}}/>
+        <span style={{fontSize:13,fontWeight:700,color:col,fontFamily:C.P}}>{s.label}</span>
+      </span>
+    </div>
+    <div style={{fontSize:14,color:C.ink2,fontFamily:C.P}}>{s.last}</div>
+    {s.detail&&<div style={{fontSize:13,color:C.mid,fontFamily:C.P,lineHeight:1.5}}>{s.detail}</div>}
+    <span onClick={()=>Sync.syncNow()} style={{fontSize:14,fontWeight:600,color:C.cr,fontFamily:C.P,cursor:'pointer',alignSelf:'flex-start',marginTop:2}}>Back up now</span>
+  </Card>;
+}
+
+Object.assign(window,{BackupCard});

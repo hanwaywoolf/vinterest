@@ -780,7 +780,7 @@ function DataBackupCard({padding=12}){
 }
 
 /* ── SETTINGS SCREEN ── */
-function SettingsScreen({nav,back}){
+function SettingsScreen({nav,back,showPro}){
   const [region, setRegion] = React.useState(Settings.region() || 'uk');
   
   function saveRegion(r) {
@@ -789,14 +789,14 @@ function SettingsScreen({nav,back}){
   }
 
   return (
-    <div style={{flex:1,display:'flex',flexDirection:'column',background:C.bg}}>
-      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'12px 16px',borderBottom:`1px solid ${C.line}`}}>
+    <div style={{flex:1,display:'flex',flexDirection:'column',background:C.bg,overflow:'hidden',minHeight:0}}>
+      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'12px 16px',borderBottom:`1px solid ${C.line}`,flexShrink:0}}>
         <div onClick={back} style={{cursor:'pointer',fontSize:24}}>←</div>
         <div style={{fontSize:18,fontWeight:700,color:C.ink,fontFamily:C.P}}>Settings</div>
         <div style={{width:24}}/>
       </div>
-      <div style={{flex:1,overflowY:'auto',padding:'16px'}}>
-        {Account.available()&&<div style={{marginBottom:24}}><AccountCard/></div>}
+      <div style={{flex:1,minHeight:0,overflowY:'auto',padding:'16px 16px 48px'}}>
+        {Account.available()&&<div style={{marginBottom:24,display:'flex',flexDirection:'column',gap:12}}><AccountCard showPro={showPro}/><BackupCard/></div>}
         <div style={{marginBottom:24}}><TextSizeControl/></div>
         <div style={{marginBottom:24}}>
           <div style={{fontSize:16,fontWeight:600,color:C.ink,fontFamily:C.P,marginBottom:12}}>Region</div>
@@ -828,7 +828,7 @@ function SettingsScreen({nav,back}){
               </div>
             ))}
           </div>
-          <div style={{fontSize:12,color:C.mid,fontFamily:C.P,marginTop:8}}>Prices, budgets and sommelier scripts across the app use this currency.</div>
+          <div style={{fontSize:12,color:C.mid,fontFamily:C.P,marginTop:8}}>Prices, budgets and sommelier scripts across the app use this currency. Your choice is saved as soon as you tap it.</div>
         </div>
         <div style={{marginBottom:24}}>
           <div style={{fontSize:16,fontWeight:600,color:C.ink,fontFamily:C.P,marginBottom:12}}>Debug</div>

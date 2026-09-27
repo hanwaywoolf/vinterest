@@ -200,12 +200,15 @@ function ProGate({feature,onClose}){
     'grape-library':{icon:'🍇',title:'Every Grape',desc:`You've unlocked your ${typeof FREE_GRAPE_CAP!=='undefined'?FREE_GRAPE_CAP:5} free grapes. Pro opens all 50.`,bullets:['A quiz and article for every grape you meet','Learn what each grape tastes like, and why','New grapes unlock the moment you scan them']},
     'mastery-map':{icon:'🏆',title:'Your Mastery',desc:'See how rounded your wine knowledge is, built from what you\'ve read and the quizzes you\'ve passed.',bullets:['A score for every wine type, region, grape and skill','Your strongest areas and your biggest gaps','The next thing to read or pass in each one']},
     'regions':{icon:'🗺️',title:'Every Region',desc:`You've unlocked your ${typeof FREE_REGION_CAP!=='undefined'?FREE_REGION_CAP:5} free regions. Pro opens every region you scan.`,bullets:['Region quizzes and articles for every wine you scan','How each place shapes the wine in your glass','Personalised pieces on the regions you drink']},
+    'upgrade':{icon:'🍷',title:'Vinterest Pro',desc:'Everything in Vinterest, with nothing held back.',bullets:['Unlimited label scans, and wine list scanning','Every grape and region you meet, with quizzes and articles','Your full Mastery map and every wine type in WineDNA']},
     'expert-quiz':{icon:'🎓',title:'Expert Quizzes',desc:'Advanced wine knowledge questions with bigger XP rewards.',bullets:['WSET-inspired question sets','200 XP per completed quiz','Unlock Expert badge on your profile']},
   };
   const f=FEAT[feature]||FEAT['wine-list'];
   return(
     <div onClick={onClose} style={{position:'absolute',inset:0,background:'rgba(0,0,0,0.62)',zIndex:600,display:'flex',alignItems:'flex-end',backdropFilter:'blur(4px)'}}>
-      <div onClick={e=>e.stopPropagation()} style={{background:C.white,borderRadius:'22px 22px 0 0',width:'100%',paddingBottom:'max(env(safe-area-inset-bottom,0px),20px)',animation:'slideUp .3s cubic-bezier(.34,1.2,.64,1)'}}>
+      {/* A floating card, rounded all round with a gap below, so its end is plain to see; it
+          scrolls inside when a small phone at large text can't fit it. */}
+      <div data-sheet="pro" onClick={e=>e.stopPropagation()} style={{background:C.white,borderRadius:22,width:'calc(100% - 20px)',margin:'0 10px calc(10px + env(safe-area-inset-bottom,0px))',maxHeight:'calc(100% - 30px)',overflowY:'auto',boxSizing:'border-box',paddingBottom:18,boxShadow:'0 10px 40px rgba(0,0,0,0.25)',animation:'slideUp .3s cubic-bezier(.34,1.2,.64,1)'}}>
         <div style={{display:'flex',justifyContent:'center',padding:'10px 0 0'}}>
           <div style={{width:36,height:4,borderRadius:2,background:C.line}}/>
         </div>

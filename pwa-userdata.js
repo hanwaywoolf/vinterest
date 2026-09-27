@@ -70,6 +70,9 @@ const Flags = {
   WINEDNA_UNLOCK_SEEN_KEY:'vinterest_wineDNA_unlock_seen',
   wineDNAUnlockSeen(){ return !!Store.get(this.WINEDNA_UNLOCK_SEEN_KEY); },
   markWineDNAUnlockSeen(){ Store.set(this.WINEDNA_UNLOCK_SEEN_KEY,'1'); },
+  BACKUP_OFFER_KEY:'vinterest_backup_offer_dismissed',
+  backupOfferDismissed(){ return !!Store.get(this.BACKUP_OFFER_KEY); },
+  dismissBackupOffer(){ Store.set(this.BACKUP_OFFER_KEY,'1'); },
 };
 
 /* What they've read: beginner articles (vinterest_<id>_done) and Written for you pieces
@@ -101,6 +104,9 @@ const Handoff = {
   /* How My Wines should open (type and sort), read once. */
   myWinesView:{ set:v=>Store.setJSON('vinterest_mywines_view',v,{session:true}),
     take(){ const v=Store.getJSON('vinterest_mywines_view',null,{session:true}); Store.remove('vinterest_mywines_view',{session:true}); return v||{}; } },
+  /* Why Profile was opened: 'backup' (Home's backup offer) opens the sign-in at the email step. Read once. */
+  accountIntent:{ set:v=>Store.set('vinterest_account_intent',v,{session:true}),
+    take(){ const v=Store.get('vinterest_account_intent',{session:true}); Store.remove('vinterest_account_intent',{session:true}); return v; } },
   /* "Is this it?" answered for this scan. */
   confirmed(key){ return !!Store.get(key,{session:true}); },
   setConfirmed(key){ Store.set(key,'1',{session:true}); },

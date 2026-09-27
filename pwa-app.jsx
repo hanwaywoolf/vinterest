@@ -80,11 +80,20 @@ function App(){
   const [,setAcctTick]=React.useState(0);
   React.useEffect(()=>{ const h=()=>setAcctTick(t=>t+1); window.addEventListener('vinterest:account',h); return()=>window.removeEventListener('vinterest:account',h); },[]);
 
+  // When a sync brings in wines or XP from another phone, redraw the screen being looked at so it
+  // shows them, but only on screens with nothing half-done (never mid-scan, mid-rating or in a quiz).
+  const [dataGen,setDataGen]=React.useState(0);
+  const screenRef=React.useRef(screen); screenRef.current=screen;
+  React.useEffect(()=>{
+    const h=e=>{ if(e.detail&&e.detail.changed&&['home','mywines','profile','learn','account'].includes(screenRef.current)) setDataGen(g=>g+1); };
+    window.addEventListener('vinterest:sync',h); return()=>window.removeEventListener('vinterest:sync',h);
+  },[]);
+
   const ctx={nav,back,showPro:setProGate,isTablet};
 
   return(
     <div style={{width:'100%',maxWidth:isTablet?'100%':430,height:'100dvh',margin:'0 auto',background:(screen==='camera')?'#0A0A0A':C.bg,display:'flex',flexDirection:'column',position:'relative',overflow:'hidden',boxSizing:'border-box',paddingTop:(screen==='onboarding'||screen==='camera')?0:'env(safe-area-inset-top)'}}>
-      <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden',minHeight:0}}>
+      <div key={dataGen} style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden',minHeight:0}}>
         {screen==='onboarding' && <NewUserFlow onComplete={()=>{Settings.setOnboarded();nav('home');}}/>}
         {screen==='home'      && <HomeScreen {...ctx}/>}
         {screen==='scan'      && <ScanHomeScreen {...ctx}/>}
