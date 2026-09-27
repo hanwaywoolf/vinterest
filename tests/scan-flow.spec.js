@@ -40,8 +40,8 @@ test('TasteMatch: list wines are told apart, dislikes count, and thin history sa
   // The demo history scored its two Nebbiolos in the low 70s: a Barolo is probably not for them.
   expect(out.barolo[0]).toBe('miss');
   expect(out.barolo[2].join(' ')).toContain('Nebbiolo: you\'ve scored 2, averaging 73.');
-  // The demo loved (90+) few of its Tempranillos: the % is the chance they'd love it, and low.
-  expect(out.rioja[0]).toBe('miss');
+  // The demo's Tempranillos average 84: the match % is the score we expect, so middling.
+  expect(out.rioja[0]).toBe('mixed');
   expect(out.rioja[1]).toBeGreaterThan(out.barolo[1]);
   // Nothing to go on: no made-up number.
   expect(out.bare).toEqual(['unknown', null]);
@@ -543,7 +543,7 @@ test('TasteMatch is relative to how they score: a generous scorer isn\'t told ev
   expect(out.light[0]).toBeGreaterThanOrEqual(80);
   expect(out.light[1]).not.toBe('hit');
   expect(out.full[1]).toBe('hit');
-  expect(out.full[2] - out.light[2]).toBeGreaterThan(30);
+  expect(out.full[2]).toBeGreaterThan(out.light[2]);
 });
 
 test('TasteMatch counts the same region by the knowledge base: a Brunello draws on their Chianti and Bolgheri', async ({ context, page }) => {
@@ -580,7 +580,8 @@ test('"Why N%?" says which of the wine\'s traits bring it up or hold it back, in
   // The reds most like it are counted out loud; every scored wine still counts, weighted.
   expect(out.closest).toBe('The 3 reds most like it: you loved all of them.');
   // The % is the chance they'd love it: the weighted share of wines like it they scored 90+.
-  expect(out.why).toMatch(/Weighing all 7 reds you've scored by how alike they are, you've loved about \d+% of wines like this one \(57% of your reds overall\)/);
+  // The match % is the score we expect; the chance they'd love it is said alongside.
+  expect(out.why).toMatch(/^We expect you'd score it about (\d+), so a \1% match\. Weighing all 7 reds you've scored by how alike they are, you've loved \(90\+\) about \d+% of wines like this one, against 57% of your reds overall\.$/);
   expect(out.verdict).toBe('hit');
   expect(out.pct).toBeGreaterThanOrEqual(80);
 });

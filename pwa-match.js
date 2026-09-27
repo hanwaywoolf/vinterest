@@ -21,8 +21,10 @@ const TasteMatch = {
   PRODUCER_X:3,     // the same producer (Tignanello and Pian delle Vigne are both Antinori)
   BUY_X:1.5,        // a wine they'd buy again is a stronger signal than a score alone
   PRIOR:0.6,        // how hard thin evidence is pulled toward their average
-  PCT_BANDS:{hit:[75,99],good:[55,74],mixed:[30,54],miss:[5,29]},
-  HIT_AT:0.75,      // "Likely a favourite": they've loved at least 3 in 4 wines like it
+  // Verdicts follow the predicted score (the match %): 94+ "Likely a favourite"; 90–93 too when
+  // they've loved at least 3 in 4 wines like it, else "A good bet" like 87–89; 80–86 "Could go
+  // either way"; under 80 "Probably not for you".
+  SURE_HIT:94, HIT_AT:0.75, GOOD_FROM:87,
   VERDICTS:{
     hit:  {label:'Likely a favourite',   tone:'good'},
     good: {label:'A good bet',           tone:'good'},
@@ -125,25 +127,24 @@ const TasteMatch = {
     });
 
     const e=Math.round(expected+nudge);
-    // The % is the chance they'd love it (score it 90+): of all the wines of this type they've
-    // scored, weighted by how alike each is, the share they loved, pulled toward their overall
-    // share when little is alike. "74%" means wines like this one, they've loved about 3 in 4.
+    // The match % is the score we expect them to give it: "93% match" means we think they'd
+    // score it about 93, so the number and "Likely Outstanding" always agree. Alongside it, the
+    // chance they'd love it (90+): of all the wines of this type they've scored, weighted by how
+    // alike each is, the share they loved, pulled toward their overall share when little is
+    // alike. It decides between "A good bet" and "Likely a favourite" at 90–93.
     const lovedAll=scored.filter(w=>w.rating>=ParkerScale.LOVED).length/scored.length;
     const lovedW=sims.reduce((t,x)=>t+(x.w.rating>=ParkerScale.LOVED?x.sim:0),0);
     const chance=(lovedW+this.PRIOR*lovedAll)/(mass+this.PRIOR);
-    const verdict=chance>=this.HIT_AT&&e>=ParkerScale.LOVED?'hit'
-      :e<ParkerScale.DISLIKED||chance<0.3?'miss'
-      :chance>=0.55||e>=ParkerScale.LOVED?'good':'mixed';
-    // Kept inside the verdict's band so the number and the words never disagree.
-    const [lo,hi]=this.PCT_BANDS[verdict];
-    const pct=Math.max(lo,Math.min(hi,Math.round(chance*100)));
+    const verdict=e>=this.SURE_HIT||(e>=ParkerScale.LOVED&&chance>=this.HIT_AT)?'hit'
+      :e>=this.GOOD_FROM?'good':e>=ParkerScale.DISLIKED?'mixed':'miss';
+    const pct=Math.max(5,Math.min(99,e));
     const spreadAll=Math.sqrt(WineDNA._mean(scored.map(w=>(w.rating-avg)**2)));
     const nMean=mass?sims.reduce((t,x)=>t+x.sim*x.w.rating,0)/mass:avg;
     const spreadNear=mass?Math.sqrt(sims.reduce((t,x)=>t+x.sim*(x.w.rating-nMean)**2,0)/mass):spreadAll;
     const basis=`Based on the ${WineDNA.noun(typeKey,scored.length)} you've scored`;
     const styleT=style?tally(w=>{ const x=sims.find(y=>y.w===w); return !!x&&x.styleSim!=null&&x.styleSim>=0.5; }):null;
     const breakdown=this._breakdown({nearest,n:scored.length,nMean,spreadNear,avg,spreadAll,chance,lovedAll,e,pct,wineProducer:wine.producer,signalPts,L,style,styleT,gT,grapeLabel,grapeName,typical,rT,regionName:this._regionName(wine)});
-    return {...base,verdict,...this.VERDICTS[verdict],pct,expected:e,expectedLabel:ParkerScale.label(e),confidence,breakdown,breakdownLabel:L,
+    return {...base,verdict,...this.VERDICTS[verdict],pct,expected:e,expectedLabel:ParkerScale.label(e),confidence,chance:Math.round(chance*100),breakdown,breakdownLabel:L,
       reasons:reasons.sort((a,b)=>b.weight-a.weight).slice(0,3),
       // One number on screen (the match %); the prediction is said in Parker-band words.
       summary:`${basis}, we think you'd rate it ${ParkerScale.label(e)}.${confidence==='low'?' It\'s a rough guess: nothing you\'ve scored is very like it.':''}`};
@@ -214,8 +215,8 @@ const TasteMatch = {
     const nm=x=>`${x.w.name} (${x.w.rating})`;
     const closest=like.length?`The ${like.length===1?L.replace(/s$/,''):like.length+' '+L} most like it: you loved ${loved.length===like.length?'all of them':`${loved.length} (scored 90+)`}${notLoved.length&&loved.length<like.length?`; not ${notLoved.map(nm).join(', ')}`:''}.`:'';
     const chanceR=Math.round(chance*100);
-    const pctWhy=`We predict you'd score it ${e}. Weighing all ${n} ${L} you've scored by how alike they are, you've loved about ${chanceR}% of wines like this one (${Math.round(lovedAll*100)}% of your ${L} overall)`
-      +(pct!==chanceR?`, shown as ${pct}% because we expect you'd score it ${e>=ParkerScale.LOVED?'90 or more':'under 80'}.`:`: ${pct}%.`);
+    const pctWhy=`We expect you'd score it about ${e}, so ${/^(8|11|18)/.test(String(pct))?'an':'a'} ${pct}% match. Weighing all ${n} ${L} you've scored by how alike they are, you've loved (90+) about ${chanceR}% of wines like this one, against ${Math.round(lovedAll*100)}% of your ${L} overall.`
+      +(e>=ParkerScale.LOVED&&e<this.SURE_HIT?(chance>=this.HIT_AT?' That\'s 3 in 4 or better, so likely a favourite.':' Under 3 in 4, so a good bet rather than a likely favourite.'):'');
     return {avg:avgR,up,down,even,closest,predicted:e,pctWhy};
   },
 
