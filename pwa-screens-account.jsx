@@ -168,10 +168,11 @@ function AccountProfileScreen({nav,back,showPro}){
           <div style={{fontSize:13,color:C.mid,fontFamily:C.P,marginTop:8}}>Sets where Learn starts and how deep articles go.</div>
         </AccSection>
 
-        <div onClick={()=>nav('settings')} style={{padding:'14px 4px',display:'flex',justifyContent:'space-between',alignItems:'center',cursor:'pointer'}}>
-          <span style={{fontSize:15,fontWeight:600,color:C.ink,fontFamily:C.P}}>Settings</span>
-          <Icon n="chevron" sz={14} col={C.mid}/>
-        </div>
+        {/* What went wrong recently, for when something misbehaves (ErrorLog, written by index.html). */}
+        <div onClick={()=>{
+          const errors=ErrorLog.list();
+          alert(errors.length?'Recent errors:\n\n'+errors.slice(-5).map(e=>e.context+': '+e.message).join('\n'):'No errors logged.');
+        }} style={{padding:'14px 4px',fontSize:14,color:C.mid,fontFamily:C.P,cursor:'pointer',textAlign:'center'}}>View error log</div>
         <div style={{height:8}}/>
       </div>
     </div>

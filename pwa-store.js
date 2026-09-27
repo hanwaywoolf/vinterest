@@ -49,7 +49,7 @@ const Cache = {
   remove(key,{session=false}={}){ return Store.remove(key,{session}); },
 };
 
-/* Errors the page caught (written by the error handler in index.html), shown on Settings. */
+/* Errors the page caught (written by the error handler in index.html), shown on Profile (View error log). */
 const ErrorLog = {
   KEY:'vinterest_errors',
   list(){ const v=Store.getJSON(this.KEY,[]); return Array.isArray(v)?v:[]; },
