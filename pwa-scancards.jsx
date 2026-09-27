@@ -27,7 +27,7 @@ function useScanContent(wine,match){
   React.useEffect(()=>{
     if(!wine||!wine.name) return;
     const key='vinterest_scancards_v6_'+(wine.name||'').replace(/\s/g,'_')+'_'+(wine.vintage||'nv')+'_'+verdict;
-    const cached=localStorage.getItem(key);
+    const cached=Cache.getText(key);
     if(cached){ try{ setGen(JSON.parse(cached)); return; }catch(e){} }
     if(!window.claude||!window.claude.complete) return;
     setLoading(true);
@@ -66,7 +66,7 @@ function useScanContent(wine,match){
         const s=c.indexOf('{'),e=c.lastIndexOf('}');
         if(s>=0&&e>s) c=c.slice(s,e+1);
         const d=JSON.parse(c);
-        localStorage.setItem(key,JSON.stringify(d));
+        Cache.set(key,d);
         setGen(d);
       })
       .catch(()=>{})
@@ -157,9 +157,9 @@ function MatchBreakdown({match}){
 
 /* ── the screen ── */
 function useDeckStyle(){
-  const [s,setS]=React.useState(()=>localStorage.getItem('vinterest_scancard_style')||'deck');
+  const [s,setS]=React.useState(()=>Settings.scancardStyle());
   React.useEffect(()=>{
-    const h=()=>setS(localStorage.getItem('vinterest_scancard_style')||'deck');
+    const h=()=>setS(Settings.scancardStyle());
     window.addEventListener('vinterest:scancardstyle',h);
     return()=>window.removeEventListener('vinterest:scancardstyle',h);
   },[]);
@@ -170,7 +170,7 @@ function useDeckStyle(){
    optional deep dive, one tap away. */
 function ScanCardsScreen({nav,back,showPro}){
   const scanData=React.useMemo(()=>{
-    try{ return JSON.parse(sessionStorage.getItem('vinterest_scan_result')||'{}'); }catch(e){ return {}; }
+    try{ return Handoff.scanResult.get({}); }catch(e){ return {}; }
   },[]);
   const source=scanData.source||'camera';
   const [wine,setWine]=React.useState(()=>ScanFlow.resolve(scanData.wine||null).wine);
@@ -178,7 +178,7 @@ function ScanCardsScreen({nav,back,showPro}){
   const saved=React.useMemo(()=>wine?WineHistory.find(wine):null,[wine,ratingsVersion]);
   const existingRating=(saved&&saved.rating)||0;
   const confirmKey='vinterest_scan_confirmed_'+((scanData.wine&&scanData.wine.name)||'').replace(/\s/g,'_');
-  const [confirmed,setConfirmed]=React.useState(()=>!!saved||!ScanFlow.needsConfirm(scanData.wine,source)||!!sessionStorage.getItem(confirmKey));
+  const [confirmed,setConfirmed]=React.useState(()=>!!saved||!ScanFlow.needsConfirm(scanData.wine,source)||Handoff.confirmed(confirmKey));
   const [editing,setEditing]=React.useState(false);
   // Every scan opens on the result; the deck is one tap away ("Learn about it").
   const [view,setView]=React.useState(()=>scanData.view||'result');
@@ -194,7 +194,7 @@ function ScanCardsScreen({nav,back,showPro}){
     if(!wine||!confirmed||trackedRef.current||source==='history'||source==='suggestion'||scanData.tracked) return;
     trackedRef.current=true;
     // Coming back to this screen (from Details, say) isn't another scan.
-    try{ const sd=JSON.parse(sessionStorage.getItem('vinterest_scan_result')||'{}'); sd.tracked=true; sessionStorage.setItem('vinterest_scan_result',JSON.stringify(sd)); }catch(e){}
+    try{ const sd=Handoff.scanResult.get({}); sd.tracked=true; Handoff.openWine(sd); }catch(e){}
     const isNew=!WineHistory.find(wine);
     WineHistory.track(wine);
     if(isNew&&source==='list') WineHistory.setScanIntent(wine.name,wine.vintage,'checking');
@@ -204,10 +204,10 @@ function ScanCardsScreen({nav,back,showPro}){
   function applyEdit(patch){
     const before=wine, next={...wine,...patch,confidence:'high'};
     if(WineHistory.find(before)) WineHistory.update(WineHistory.find(before).name,WineHistory.find(before).vintage,patch);
-    try{ const sd=JSON.parse(sessionStorage.getItem('vinterest_scan_result')||'{}'); sd.wine=next; sessionStorage.setItem('vinterest_scan_result',JSON.stringify(sd)); }catch(e){}
+    try{ const sd=Handoff.scanResult.get({}); sd.wine=next; Handoff.openWine(sd); }catch(e){}
     setWine(next); setEditing(false); confirm();
   }
-  function confirm(){ try{ sessionStorage.setItem(confirmKey,'1'); }catch(e){} setConfirmed(true); }
+  function confirm(){ Handoff.setConfirmed(confirmKey); setConfirmed(true); }
   // A suggestion isn't saved until the user acts on it (save for later, rate, Blind Call).
   function setIntent(v){ if(!wine) return; if(!WineHistory.find(wine)) WineHistory.track(wine); const e=WineHistory.find(wine); WineHistory.setScanIntent(e.name,e.vintage,v); }
 
@@ -583,27 +583,23 @@ function dimsFor(wine){
   const showTannins=['red','orange','fortified'].includes(type);
   return showTannins?['body','acidity','tannins']:['body','acidity','texture'];
 }
-function _bcKey(wine){ return (wine.name||'')+'_'+(wine.vintage||'nv'); }
 
 function BlindCallCard({wine,gen,accent,onStart}){
-  const wineKey=_bcKey(wine).replace(/\s/g,'_');
-  const doneKey='vinterest_blindcall_'+wineKey;
-  const savedKey='vinterest_blindcall_result_'+wineKey;
-  const [phase,setPhase]=React.useState(()=>localStorage.getItem(doneKey)?'summary':'predict');
+  const [phase,setPhase]=React.useState(()=>ScanFlow.blindPlayed(wine)?'summary':'predict');
   const [guess,setGuess]=React.useState(null);
-  const [score,setScore]=React.useState(()=>{ try{ return JSON.parse(localStorage.getItem(savedKey)||'null'); }catch(e){ return null; } });
+  const [score,setScore]=React.useState(()=>ScanFlow.blindResult(wine));
   const dims=React.useMemo(()=>dimsFor(wine),[wine&&wine.name]);
 
   function finalizeReveal(g,missed,accuracy){
-    if(!localStorage.getItem(doneKey)){
-      localStorage.setItem(doneKey,'1');
+    if(!ScanFlow.blindPlayed(wine)){
+      ScanFlow.markBlindPlayed(wine);
       // Misjudging one wine's tannin/acidity/texture flags the concept for review; it isn't a
       // wrong answer to a Concept Check question, so it doesn't cost mastery progress.
       missed.forEach(d=>{ const cid=DIM_CONCEPT[d]; if(cid) MasterySystem.flagForReview(cid); });
       const awards=XPSystem.awardAndToast([{type:'blind_call',accuracy}]);
       const amount=awards.filter(x=>!x.levelUp).reduce((s,x)=>s+x.amount,0);
       // The guess is kept: it's the user's own read of the wine, used to pre-fill the rating step.
-      localStorage.setItem(savedKey,JSON.stringify({accuracy,amount,guess:g}));
+      ScanFlow.saveBlindResult(wine,{accuracy,amount,guess:g});
       setScore({accuracy,amount});
     }
     setPhase('result');
@@ -759,9 +755,9 @@ function RatingPanel({wine,existingRating,nav,showPro,curr,onRated,onSaveForLate
     else WineHistory.add(wine,score);
     try{ if(window.XPSystem&&!existingRating) XPSystem.awardAndToast([{type:'rate'}]); }catch(e){}
     try{
-      const sd=JSON.parse(sessionStorage.getItem('vinterest_scan_result')||'{}');
+      const sd=Handoff.scanResult.get({});
       sd.existingRating=score;
-      sessionStorage.setItem('vinterest_scan_result',JSON.stringify(sd));
+      Handoff.openWine(sd);
     }catch(e){}
     setSaved(true);
     if(onRated) onRated(score);
@@ -888,15 +884,15 @@ function TastingExtras({wine,curr}){
 function KeepLearning({wine,nav,showPro,intro}){
   const tiles=React.useMemo(()=>LearnNext.forWine(wine),[wine&&wine.name]);
   const [busy,setBusy]=React.useState(null);
-  const startQuiz=cfg=>{ sessionStorage.setItem('vinterest_quiz_config2',JSON.stringify(cfg)); nav('quiz'); };
+  const startQuiz=cfg=>{ Handoff.quiz.set(cfg); nav('quiz'); };
   function open(t){
     if(busy) return;
     if(t.locked){ if(showPro) showPro(t.locked); return; }
     if(t.kind==='topic') return startQuiz(t.config);
     if(t.kind==='region'){ setBusy(t.key); RegionQuizBank.load(t.region,()=>{ setBusy(null); startQuiz({mode:'region',region:t.region}); }); return; }
     if(t.kind==='grape'){ setBusy(t.key); getGrapeQuiz(t.grape,qs=>{ setBusy(null); if(qs&&qs.length) startQuiz({mode:'grape',grape:t.grape,questions:qs}); }); return; }
-    if(t.kind==='onramp'){ sessionStorage.setItem('vinterest_onramp_idx',String(t.idx)); nav('article'); return; }
-    if(t.kind==='article'){ sessionStorage.setItem('vinterest_gen_article',JSON.stringify(t.stub)); nav('gen-article'); return; }
+    if(t.kind==='onramp'){ Handoff.onRampIdx.set(String(t.idx)); nav('article'); return; }
+    if(t.kind==='article'){ Handoff.genArticle.set(t.stub); nav('gen-article'); return; }
     nav('profile');
   }
   return <div style={{display:'flex',flexDirection:'column',gap:10}}>
@@ -924,7 +920,7 @@ function KeepLearning({wine,nav,showPro,intro}){
 
 /* The "while you taste" card: taste cues, with Blind Call on offer for someone drinking it now. */
 function TasteCard({wine,gen,accent,onBlindCall}){
-  const played=!!localStorage.getItem('vinterest_blindcall_'+_bcKey(wine).replace(/\s/g,'_'));
+  const played=ScanFlow.blindPlayed(wine);
   const [blind,setBlind]=React.useState(played);
   if(blind) return <BlindCallCard wine={wine} gen={gen} accent={accent} onStart={onBlindCall}/>;
   return <div style={{display:'flex',flexDirection:'column',gap:14}}>

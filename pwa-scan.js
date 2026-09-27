@@ -76,10 +76,16 @@ const ScanFlow = {
     return axes.filter(k=>typeof (wine&&wine[k])==='number');
   },
   blindKey(wine){ return 'vinterest_blindcall_result_'+((wine.name||'')+'_'+(wine.vintage||'nv')).replace(/\s/g,'_'); },
+  /* Blind Call: played once per wine; the result keeps their guess for the rating step. */
+  _blindDoneKey(wine){ return 'vinterest_blindcall_'+((wine.name||'')+'_'+(wine.vintage||'nv')).replace(/\s/g,'_'); },
+  blindPlayed(wine){ return !!Store.get(this._blindDoneKey(wine)); },
+  markBlindPlayed(wine){ Store.set(this._blindDoneKey(wine),'1'); },
+  blindResult(wine){ return Store.getJSON(this.blindKey(wine),null); },
+  saveBlindResult(wine,result){ Store.setJSON(this.blindKey(wine),result); },
   /* A Blind Call is the user's own read of the wine as they taste it, so it pre-fills the
      comparison: more than 0.2 either side of the label estimate counts as lighter/fuller. */
   tastedFromBlindCall(wine){
-    let r=null; try{ r=JSON.parse(localStorage.getItem(this.blindKey(wine))||'null'); }catch(e){}
+    let r=null; try{ r=JSON.parse(Store.get(this.blindKey(wine))||'null'); }catch(e){}
     if(!r||!r.guess) return null;
     const out={};
     this.compareAxes(wine).forEach(k=>{ const g=r.guess[k]; if(typeof g!=='number') return; const d=g-wine[k]; out[k]=d>0.2?1:d<-0.2?-1:0; });

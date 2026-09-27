@@ -31,13 +31,13 @@ const XPSystem = {
 
   get(){
     let all;
-    try{ all=JSON.parse(localStorage.getItem(this.KEY)||'null'); }catch(e){}
+    try{ all=JSON.parse(Store.get(this.KEY)||'null'); }catch(e){}
     if(all&&all.accounts&&all.accounts[this.ACCOUNT_ID]) return all.accounts[this.ACCOUNT_ID];
     return this._migrate();
   },
   _migrate(){
     let legacy=null;
-    try{ legacy=JSON.parse(localStorage.getItem(this.LEGACY_KEY)||'null'); }catch(e){}
+    try{ legacy=JSON.parse(Store.get(this.LEGACY_KEY)||'null'); }catch(e){}
     const d=legacy||this.fresh();
     this.save(d);
     return d;
@@ -47,11 +47,15 @@ const XPSystem = {
   },
   save(d){
     let all;
-    try{ all=JSON.parse(localStorage.getItem(this.KEY)||'null'); }catch(e){}
+    try{ all=JSON.parse(Store.get(this.KEY)||'null'); }catch(e){}
     if(!all||!all.accounts) all={version:1,accounts:{}};
     all.accounts[this.ACCOUNT_ID]=d;
-    localStorage.setItem(this.KEY, JSON.stringify(all));
+    Store.set(this.KEY, JSON.stringify(all));
   },
+  /* Start over (the XP screen's reset). */
+  reset(){ Store.remove(this.KEY); },
+  /* A restored backup's XP blob, stored as it came (Backup.importData). */
+  replaceAll(raw){ Store.set(this.KEY, JSON.stringify(raw)); },
 
   getLevel(xp){
     if(xp>=XP_CURVE.cellarMaster.base){

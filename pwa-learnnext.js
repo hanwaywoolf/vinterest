@@ -35,7 +35,7 @@ const LearnNext = {
     const lead=wine.blend||(wine.grapes||[]).length>1?' leads this blend':' is the grape in this wine';
     if(!GrapeUnlocks.isUnlocked(g)){
       // A guessed grape isn't unlocked by the scan; only offer Pro when the free allowance is the reason.
-      const capped=!localStorage.getItem('vinterest_pro')&&GrapeUnlocks.count()>=FREE_GRAPE_CAP;
+      const capped=!Entitlement.isPro()&&GrapeUnlocks.count()>=FREE_GRAPE_CAP;
       return capped&&wine.grapes_basis!=='typical'?{kind:'grape',key:'grape:'+g,locked:'grape-library',icon:'grape',title:g,why:`${g}${lead}. You've used your ${FREE_GRAPE_CAP} free grapes.`}:null;
     }
     if(grapeQuizComplete(g)) return null;
@@ -46,7 +46,7 @@ const LearnNext = {
 
   _onRampTile(){
     const list=typeof ON_RAMP!=='undefined'?ON_RAMP:[];
-    const i=list.findIndex(a=>!localStorage.getItem('vinterest_'+a.id+'_done'));
+    const i=list.findIndex(a=>!LearnProgress.onRampDone(a.id));
     if(i<0) return null;
     const a=list[i];
     return {kind:'onramp',key:'onramp:'+a.id,idx:i,icon:'book',title:a.title,why:a.subtitle,progress:a.readTime?`${a.readTime} read`:null};
@@ -56,7 +56,7 @@ const LearnNext = {
     try{ ContentEngine.refreshShelf(wines,6); }catch(e){}
     const r=Regions.resolve(wine)||wine.region, g=GrapeUnlocks.key((wine.grapes||[])[0]);
     const shelf=ContentEngine.shelf(wines)||[];
-    return shelf.filter(s=>!localStorage.getItem('vinterest_gen_article_'+s.id+'_done')&&!ContentEngine.stubLocked(s)
+    return shelf.filter(s=>!LearnProgress.articleDone(s.id)&&!ContentEngine.stubLocked(s)
         &&s.slots&&((r&&s.slots.region===r)||(g&&s.slots.grape===g)))
       .map(s=>({kind:'article',key:'article:'+s.id,stub:s,icon:s.iconName||'read',title:s.title,why:s.subtitle,progress:`Written for you${s.readTime?` · ${s.readTime} read`:''}`}));
   },
@@ -68,7 +68,7 @@ const LearnNext = {
     wines=wines||WineHistory.getAll();
     const out=[];
     if(!wines.length) out.push({kind:'scan',key:'scan',icon:'camera',title:'Scan your first bottle',why:'Your match, your WineDNA and the pieces written for you all start from a label.'});
-    const unread=(()=>{ try{ return (ContentEngine.shelf(wines)||[]).filter(s=>!localStorage.getItem('vinterest_gen_article_'+s.id+'_done')&&!ContentEngine.stubLocked(s)); }catch(e){ return []; } })();
+    const unread=(()=>{ try{ return (ContentEngine.shelf(wines)||[]).filter(s=>!LearnProgress.articleDone(s.id)&&!ContentEngine.stubLocked(s)); }catch(e){ return []; } })();
     if(unread[0]) out.push({kind:'article',key:'article:'+unread[0].id,stub:unread[0],icon:unread[0].iconName||'read',title:unread[0].title,why:ContentEngine.because(unread[0],wines),progress:`Written for you${unread[0].readTime?` · ${unread[0].readTime}`:''}`});
     if(!UserPrefs.skipsOnRamp()){ const t=this._onRampTile(); if(t) out.push(t); }
     const gap=wines.length?KnowledgeMap.summary(wines).gap:null;

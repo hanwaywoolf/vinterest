@@ -3,18 +3,18 @@ function _loadText(path){ return _loadTextSync(path); }
 function _fillTpl(tpl,vars){ let s=tpl; Object.keys(vars).forEach(k=>{ s=s.split('{{'+k+'}}').join(vars[k]??''); }); return s; }
 let ON_RAMP=[];
 try{ ON_RAMP=_loadJSON('data/onramp.json')||[]; }catch(e){ console.error('[Vinterest] onramp.json failed to load — the Learn tab will be missing its on-ramp articles until it is deployed.',e); }
-function onRampDone(id){ return !!localStorage.getItem('vinterest_'+id+'_done'); }
+function onRampDone(id){ return LearnProgress.onRampDone(id); }
 function onRampProgress(){ return ON_RAMP.filter(a=>onRampDone(a.id)).length; }
 
 function LearnArticleScreen({nav,back}){
-  const idx=React.useMemo(()=>{ const i=parseInt(sessionStorage.getItem('vinterest_onramp_idx')||'0',10); return isNaN(i)?0:Math.min(i,ON_RAMP.length-1); },[]);
+  const idx=React.useMemo(()=>{ const i=parseInt(Handoff.onRampIdx.get()||'0',10); return isNaN(i)?0:Math.min(i,ON_RAMP.length-1); },[]);
   const article=ON_RAMP[idx];
   const [completed,setCompleted]=React.useState(()=>onRampDone(article.id));
 
   function markRead(){
     if(completed) return;
     XPSystem.awardAndToast([{type:'article',articleKey:article.id}]);
-    localStorage.setItem('vinterest_'+article.id+'_done','1');
+    LearnProgress.markOnRamp(article.id);
     setCompleted(true);
   }
 
@@ -78,7 +78,7 @@ function LearnArticleScreen({nav,back}){
                 <div style={{fontSize:16,color:C.mid,fontFamily:C.P,lineHeight:1.55,marginBottom:14}}>{nextArticle?'On to the next one whenever you\'re ready.':'That\'s the whole on-ramp — your shelf takes it from here.'}</div>
                 <div style={{display:'flex',gap:8,justifyContent:'center'}}>
                   <Btn onClick={()=>nav('learn')}>Back to Learn</Btn>
-                  {nextArticle&&<Btn primary onClick={()=>{sessionStorage.setItem('vinterest_onramp_idx',String(ON_RAMP.indexOf(nextArticle)));nav('article');}}>Next read</Btn>}
+                  {nextArticle&&<Btn primary onClick={()=>{Handoff.onRampIdx.set(String(ON_RAMP.indexOf(nextArticle)));nav('article');}}>Next read</Btn>}
                 </div>
               </>
             ):(
@@ -102,7 +102,7 @@ Object.assign(window,{LearnArticleScreen});
    A fixed guide (Guides, pwa-guides.js): a line from the reader's own wines, the sections, then
    three questions and something to try. Read + every question right = finished. */
 function GuideScreen({nav,back}){
-  const guide=React.useMemo(()=>Guides.byId(sessionStorage.getItem('vinterest_guide')||''),[]);
+  const guide=React.useMemo(()=>Guides.byId(Handoff.guide.get()||''),[]);
   const [read,setRead]=React.useState(()=>!!guide&&Guides.isRead(guide.id));
   const personal=React.useMemo(()=>guide?Guides.personal(guide):null,[guide&&guide.id]);
   if(!guide) return(
@@ -112,7 +112,7 @@ function GuideScreen({nav,back}){
   );
   const p=Guides.progress(guide.id), passed=p.total>0&&p.correct===p.total;
   function markRead(){ if(read) return; Guides.markRead(guide.id); XPSystem.awardAndToast([{type:'article',articleKey:'guide_'+guide.id}]); setRead(true); }
-  function check(){ markRead(); sessionStorage.setItem('vinterest_quiz_config2',JSON.stringify({mode:'guide',guideId:guide.id})); nav('quiz'); }
+  function check(){ markRead(); Handoff.quiz.set({mode:'guide',guideId:guide.id}); nav('quiz'); }
   return(
     <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden'}}>
       <div style={{background:C.white,padding:'14px 20px',display:'flex',alignItems:'center',gap:12,borderBottom:`1px solid ${C.line}`,flexShrink:0}}>
@@ -173,19 +173,18 @@ Object.assign(window,{GuideScreen});
 /* ── GENERATED ARTICLE SCREEN ── */
 function GenArticleScreen({nav,back}){
   const stub=React.useMemo(()=>{
-    try{ return JSON.parse(sessionStorage.getItem('vinterest_gen_article')||'null'); }catch(e){ return null; }
+    try{ return Handoff.genArticle.get(); }catch(e){ return null; }
   },[]);
 
-  const doneKey=stub?`vinterest_gen_article_${stub.id}_done`:null;
   const cacheKey=stub?`vinterest_gen_article_${stub.id}_content`:null;
 
-  const [completed,setCompleted]=React.useState(()=>!!localStorage.getItem(doneKey));
+  const [completed,setCompleted]=React.useState(()=>!!stub&&LearnProgress.articleDone(stub.id));
   // Cached as {sections, forYou}; articles written before forYou existed are a bare array.
   const [cached,setCached]=React.useState(()=>{
     if(!cacheKey) return null;
     // v2: articles written by the first personal brief (a forYou line, no v) could pull in a
     // different wine type than the piece's, so they're rewritten once.
-    try{ const c=JSON.parse(localStorage.getItem(cacheKey)||'null'); return Array.isArray(c)?{sections:c}:c&&c.forYou&&!c.v?null:c; }catch(e){ return null; }
+    const c=Cache.get(cacheKey,null); return Array.isArray(c)?{sections:c}:c&&c.forYou&&!c.v?null:c;
   });
   const sections=cached&&cached.sections;
   const because=React.useMemo(()=>stub?ContentEngine.because(stub):null,[stub&&stub.id]);
@@ -208,7 +207,7 @@ function GenArticleScreen({nav,back}){
           if(s>=0&&e>s) clean=clean.slice(s,e+1);
           const parsed=JSON.parse(clean);
           const out={v:2,sections:parsed.sections||[],forYou:typeof parsed.forYou==='string'?parsed.forYou:null};
-          localStorage.setItem(cacheKey,JSON.stringify(out));
+          Cache.set(cacheKey,out);
           setCached(out);
         }catch(err){}
       })
@@ -217,9 +216,9 @@ function GenArticleScreen({nav,back}){
   },[stub?.id]);
 
   function markRead(){
-    if(completed||!doneKey) return;
+    if(completed||!stub) return;
     XPSystem.awardAndToast([{type:'article',articleKey:stub.id}]);
-    localStorage.setItem(doneKey,'1');
+    LearnProgress.markArticle(stub.id);
     setCompleted(true);
   }
 

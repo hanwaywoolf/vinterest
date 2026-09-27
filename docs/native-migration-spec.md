@@ -36,7 +36,7 @@ Create a new Supabase project for user data (the existing one only holds the dea
 ```sql
 create table public.wines (
   user_id uuid not null references auth.users(id) on delete cascade,
-  wine_key text not null,            -- must match WineHistory's dedupe key (confirm exact formula in Prompt 2 — not stated in the audit)
+  wine_key text not null,            -- lower(name) || '|' || (vintage, or 'nv' when missing/0/'NV'): WineHistory._mergeDupes' key (see §6 Prompt 2 findings)
   data jsonb not null,               -- the full wine object exactly as stored on the device today
   rating int,
   times_consumed int not null default 0,
@@ -126,6 +126,13 @@ Sync behaviour:
 - Origin checks are a speed bump, not security (native apps and scripts can fake headers). The JWT is the real gate.
 
 ## 6. Prompts for Claude Code, in order
+
+Status: prompts 0 (proxy hardening) and 1 (esbuild build, Cloudflare builds `dist/`) are done; prompt 2 (storage behind logic modules) is done. Next: 3, backup format v2.
+
+Prompt 2 findings:
+- **Dedupe key.** WineHistory's exact key is `name.toLowerCase() + '|' + vintageKey`, where `vintageKey` is the vintage as a string, or `'nv'` for a missing, `0` or `'NV'` vintage. On top of that, `WineHistory.same()` matches rescans fuzzily (producer spelled differently, extra words the other wine accounts for, a missing vintage matching the one dated entry), and `ScanFlow.resolve` gives a rescan the saved entry's name and vintage before anything is saved. So a synced `wine_key` from the exact formula is stable per bottle, provided the client resolves identity before pushing. `getAll` still merges any duplicates that slip through.
+- **Photos.** No wine stores an image. The label photo is kept in the camera screen's memory, sent to Claude as base64 and dropped; saved wines hold Claude's JSON only. No file storage is needed.
+- **Seam.** `Store.subscribe(cb)` (pwa-store.js) fires with the key after every device-storage write; each synced key has one owner (CLAUDE.md, "Storage").
 
 Run one per session. Each works on its own branch. Review and merge before starting the next. Before merging anything that touches the app, open the Cloudflare preview deployment and click through scan, quiz and settings.
 

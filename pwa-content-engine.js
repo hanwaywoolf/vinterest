@@ -67,7 +67,7 @@ const RegionUnlocks = Object.assign(_accountStore('vinterest_region_unlocks_v1')
   fresh(){ return {unlocked:{}}; },
   all(){ return this.get().unlocked; },
   count(){ return Object.keys(this.all()).length; },
-  _pro(){ return !!localStorage.getItem('vinterest_pro'); },
+  _pro(){ return Entitlement.isPro(); },
   isUnlocked(region){ return this._pro()||!!this.all()[region]; },
   unlock(region){
     if(!region||!KNOWLEDGE.regions[region]) return false;
@@ -95,7 +95,7 @@ const RegionQuizBank = {
   key(region){ return 'vinterest_region_quiz_bank_'+region.replace(/\s+/g,'_'); },
   get(region){
     // Near-duplicates filtered on read, so banks saved before the filter existed are cleaned too.
-    try{ const raw=JSON.parse(localStorage.getItem(this.key(region))||'null'); const qs=Array.isArray(raw)?QuizMastery.distinct(raw,region):null; return qs&&qs.length>=QUIZ_SIZE?qs:null; }catch(e){ return null; }
+    try{ const raw=JSON.parse(Store.get(this.key(region))||'null'); const qs=Array.isArray(raw)?QuizMastery.distinct(raw,region):null; return qs&&qs.length>=QUIZ_SIZE?qs:null; }catch(e){ return null; }
   },
   // A question is kept only if it's well-formed; a bank with too few survivors isn't cached,
   // so the next tap retries generation rather than locking in a short bank.
@@ -120,7 +120,7 @@ const RegionQuizBank = {
         if(s>=0&&e>s) cleaned=cleaned.slice(s,e+1);
         const seen=new Set();
         const qs=JSON.parse(cleaned).filter(q=>this._valid(q)&&!seen.has(q.q)&&seen.add(q.q));
-        if(qs.length>=QUIZ_SIZE) localStorage.setItem(this.key(region),JSON.stringify(qs));
+        if(qs.length>=QUIZ_SIZE) Store.set(this.key(region),JSON.stringify(qs));
       })
       .catch(()=>{})
       .finally(()=>{ this._inFlight.delete(region); onReady(this.get(region)); });
@@ -231,21 +231,21 @@ const SommelierScript = {
     if(hi<=lo) hi=lo+step(lo);
     return `${rc.base}${lo}–${rc.base}${hi} ${rc.code}`;
   },
-  cached(length,typeKey,wines){ return localStorage.getItem(this.key(length,typeKey,this.sig(wines),Regional.current().code)); },
+  cached(length,typeKey,wines){ return Store.get(this.key(length,typeKey,this.sig(wines),Regional.current().code)); },
   // Calls onReady(text) once the script exists (immediately if cached), or onReady(null) on failure.
   get(length,typeKey,label,wines,onReady){
     const rc=Regional.current();
     const sig=this.sig(wines);
     const kLong=this.key('long',typeKey,sig,rc.code), kShort=this.key('short',typeKey,sig,rc.code);
     const want=length==='short'?kShort:kLong;
-    const hit=localStorage.getItem(want);
+    const hit=Store.get(want);
     if(hit){ onReady(hit); return; }
     if(this._inFlight[want]){ this._inFlight[want].push(onReady); return; }
     const waiters=this._inFlight[want]=[onReady];
     const done=text=>{ delete this._inFlight[want]; waiters.forEach(f=>f(text)); };
     const ask=prompt=>window.claude.complete({purpose:'sommelier_script',messages:[{role:'user',content:prompt}]}).then(t=>{ t=(t||'').trim(); if(!t) throw new Error('empty script'); return t; });
     const makeLong=()=>{
-      const cachedLong=localStorage.getItem(kLong);
+      const cachedLong=Store.get(kLong);
       if(cachedLong) return Promise.resolve(cachedLong);
       // Best-loved first, so the script leans on what they enjoyed (and would buy again).
       const ranked=[...wines].sort((a,b)=>(b.buy_again?1:0)-(a.buy_again?1:0)||(b.rating||0)-(a.rating||0));
@@ -255,13 +255,13 @@ const SommelierScript = {
         ?`Include my typical budget, written exactly as "${budget}" — do not change the numbers, symbol or currency code.`
         :'Do not mention a budget or price.';
       return ask(`I've scanned these ${label.toLowerCase()} wines: ${wineList}. Based ONLY on the wines I've chosen and their regions, write a 2 sentences max natural first-person sommelier script I could say to a restaurant sommelier. Reflect my apparent style and preferred regions. ${budgetInst} Return ONLY the script text in double quotes — nothing else.`)
-        .then(t=>{ localStorage.setItem(kLong,t); return t; });
+        .then(t=>{ Store.set(kLong,t); return t; });
     };
     makeLong()
       .then(longText=>{
         if(length!=='short') return longText;
         return ask(`Condense this sommelier script into ONE ultra-concise sentence (under 20 words), keeping the SAME style, regions and budget — copy any budget range exactly as written, never change or invent one. Script: ${longText} Return ONLY the condensed script text in double quotes — nothing else.`)
-          .then(t=>{ localStorage.setItem(kShort,t); return t; });
+          .then(t=>{ Store.set(kShort,t); return t; });
       })
       .then(done)
       .catch(()=>done(null));
@@ -365,9 +365,9 @@ const ExploreNext = {
       brief:archetype.brief, slots,
       facts:`${style.name} — ${style.region}, ${style.country}. Grapes: ${style.grapes.join(', ')}. Taste: ${L.taste} Why it tastes that way: ${L.why} On the label: ${L.label}`
     };
-    let stubs=[]; try{ stubs=JSON.parse(localStorage.getItem('vinterest_gen_stubs')||'[]')||[]; }catch(e){}
+    let stubs=[]; try{ stubs=JSON.parse(Store.get('vinterest_gen_stubs')||'[]')||[]; }catch(e){}
     stubs.push(stub);
-    localStorage.setItem('vinterest_gen_stubs',JSON.stringify(stubs));
+    Store.set('vinterest_gen_stubs',JSON.stringify(stubs));
     ExposureLedger.mark('explore:'+id);
     return true;
   }
@@ -542,9 +542,9 @@ const ContentEngine = {
       facts:this.retrieveFacts(archetype,slots)
     };
     let stubs=[];
-    try{ stubs=JSON.parse(localStorage.getItem('vinterest_gen_stubs')||'[]')||[]; }catch(e){}
+    try{ stubs=JSON.parse(Store.get('vinterest_gen_stubs')||'[]')||[]; }catch(e){}
     stubs.push(stub);
-    localStorage.setItem('vinterest_gen_stubs',JSON.stringify(stubs));
+    Store.set('vinterest_gen_stubs',JSON.stringify(stubs));
     ExposureLedger.mark(key);
   },
 
@@ -633,7 +633,7 @@ const ContentEngine = {
   /* A region piece nobody has opened yet (not read, not written) that repeats an earlier piece's
      kind, or compares with a region that no longer fits (compareRegion), becomes the kind the
      shelf has least of. Heals shelves built when the kind was picked at random. */
-  _untouched(stub){ return !localStorage.getItem('vinterest_gen_article_'+stub.id+'_done')&&!localStorage.getItem('vinterest_gen_article_'+stub.id+'_content'); },
+  _untouched(stub){ return !LearnProgress.articleDone(stub.id)&&!Store.get('vinterest_gen_article_'+stub.id+'_content'); },
   _rotate(stub,before,wines){
     const row=TRIGGERS.find(t=>t.event==='new_region');
     if(!row||!row.archetypeIds.includes(stub.archetypeId)||!stub.slots.region||!this._untouched(stub)) return false;
@@ -724,7 +724,7 @@ const ContentEngine = {
   /* Unread pieces about this wine type's bottles, for the WineDNA tab. */
   forType(typeKey,wines){
     wines=wines||WineHistory.getAll();
-    return (this.shelf(wines)||[]).filter(s=>!localStorage.getItem('vinterest_gen_article_'+s.id+'_done')&&!this.stubLocked(s)&&this._related(s.slots,wines).some(w=>WineDNA._t(w.type)===typeKey));
+    return (this.shelf(wines)||[]).filter(s=>!LearnProgress.articleDone(s.id)&&!this.stubLocked(s)&&this._related(s.slots,wines).some(w=>WineDNA._t(w.type)===typeKey));
   },
 
   /* A region piece about a region past the free allowance is shown locked, with Pro. */
@@ -734,18 +734,18 @@ const ContentEngine = {
      only when new articles are added: otherwise old cards keep a leaked {{country}}. */
   shelf(wines){
     let stubs=null;
-    try{ stubs=JSON.parse(localStorage.getItem('vinterest_gen_stubs')||'null'); }catch(e){}
+    try{ stubs=JSON.parse(Store.get('vinterest_gen_stubs')||'null'); }catch(e){}
     if(!Array.isArray(stubs)) return stubs;
-    if(this._healStubs(stubs,wines||WineHistory.getAll())) localStorage.setItem('vinterest_gen_stubs',JSON.stringify(stubs));
+    if(this._healStubs(stubs,wines||WineHistory.getAll())) Store.set('vinterest_gen_stubs',JSON.stringify(stubs));
     return stubs;
   },
 
   refreshShelf(wines, maxUnread){
     maxUnread=maxUnread||6;
     let stubs=[];
-    try{ stubs=JSON.parse(localStorage.getItem('vinterest_gen_stubs')||'[]')||[]; }catch(e){}
+    try{ stubs=JSON.parse(Store.get('vinterest_gen_stubs')||'[]')||[]; }catch(e){}
     let healed=this._healStubs(stubs,wines);
-    const unreadCount=stubs.filter(s=>!localStorage.getItem('vinterest_gen_article_'+s.id+'_done')).length;
+    const unreadCount=stubs.filter(s=>!LearnProgress.articleDone(s.id)).length;
     const need=maxUnread-unreadCount;
     if(need<=0||!wines.length) return stubs;
     const events=this.detectEvents(wines);
@@ -760,7 +760,7 @@ const ContentEngine = {
       ExposureLedger.mark(ev.key);
       added++;
     }
-    if(added>0||healed) localStorage.setItem('vinterest_gen_stubs',JSON.stringify(stubs));
+    if(added>0||healed) Store.set('vinterest_gen_stubs',JSON.stringify(stubs));
     return stubs;
   }
 };

@@ -9,8 +9,8 @@ try{ QUIZ_ARCHETYPES=_loadJSON('data/quiz-archetypes.json')||[]; }catch(e){ cons
 function _accountStore(key){
   return {
     KEY:key, ACCOUNT_ID:'local',
-    get(){ let all; try{ all=JSON.parse(localStorage.getItem(this.KEY)||'null'); }catch(e){} return (all&&all.accounts&&all.accounts[this.ACCOUNT_ID])||this.fresh(); },
-    save(d){ let all; try{ all=JSON.parse(localStorage.getItem(this.KEY)||'null'); }catch(e){} if(!all||!all.accounts) all={version:1,accounts:{}}; all.accounts[this.ACCOUNT_ID]=d; localStorage.setItem(this.KEY,JSON.stringify(all)); },
+    get(){ let all; try{ all=JSON.parse(Store.get(this.KEY)||'null'); }catch(e){} return (all&&all.accounts&&all.accounts[this.ACCOUNT_ID])||this.fresh(); },
+    save(d){ let all; try{ all=JSON.parse(Store.get(this.KEY)||'null'); }catch(e){} if(!all||!all.accounts) all={version:1,accounts:{}}; all.accounts[this.ACCOUNT_ID]=d; Store.set(this.KEY,JSON.stringify(all)); },
     fresh(){ return {}; }
   };
 }

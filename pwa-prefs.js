@@ -9,12 +9,12 @@ const UserPrefs = {
   KEY:'vinterest_prefs',
   AGE_KEY:'vinterest_age_ok',
 
-  get(){ try{ return JSON.parse(localStorage.getItem(this.KEY)||'{}')||{}; }catch(e){ return {}; } },
-  save(p){ try{ localStorage.setItem(this.KEY,JSON.stringify(p)); }catch(e){} },
+  get(){ try{ return JSON.parse(Store.get(this.KEY)||'{}')||{}; }catch(e){ return {}; } },
+  save(p){ try{ Store.set(this.KEY,JSON.stringify(p)); }catch(e){} },
   set(key,val){ const p=this.get(); if(val==null) delete p[key]; else p[key]=val; this.save(p); return p; },
 
-  ageConfirmed(){ return !!localStorage.getItem(this.AGE_KEY); },
-  confirmAge(){ try{ localStorage.setItem(this.AGE_KEY,new Date().toISOString()); }catch(e){} },
+  ageConfirmed(){ return !!Store.get(this.AGE_KEY); },
+  confirmAge(){ try{ Store.set(this.AGE_KEY,new Date().toISOString()); }catch(e){} },
 
   /* Countries the app prices in. `region` is the Regional home key. */
   COUNTRIES:[
@@ -46,15 +46,15 @@ const UserPrefs = {
     return c?c.name:null;
   },
 
-  location(){ return {country:localStorage.getItem('vinterest_country')||'',state:localStorage.getItem('vinterest_state')||''}; },
+  location(){ return {country:Store.get('vinterest_country')||'',state:Store.get('vinterest_state')||''}; },
   setLocation({country,state}){
     const c=this.country(country)||this.COUNTRIES[this.COUNTRIES.length-1];
     try{
-      localStorage.setItem('vinterest_country',c.name);
-      if(state&&c.stateLabel) localStorage.setItem('vinterest_state',state.trim()); else localStorage.removeItem('vinterest_state');
-      localStorage.removeItem('vinterest_city'); // never used
-      localStorage.setItem('vinterest_region',c.region);
-      localStorage.setItem('vinterest_currency',(HOME_REGION_CURRENCY[c.region]||{}).code||'USD');
+      Store.set('vinterest_country',c.name);
+      if(state&&c.stateLabel) Store.set('vinterest_state',state.trim()); else Store.remove('vinterest_state');
+      Store.remove('vinterest_city'); // never used
+      Store.set('vinterest_region',c.region);
+      Store.set('vinterest_currency',(HOME_REGION_CURRENCY[c.region]||{}).code||'USD');
     }catch(e){}
   },
 
@@ -99,18 +99,18 @@ const UserPrefs = {
      pick is remembered for the rest of the session. */
   TYPE_TAB_KEY:'vinterest_dna_type',
   openingType(wines){
-    try{ const s=sessionStorage.getItem(this.TYPE_TAB_KEY); if(s&&(wines||[]).some(w=>WineDNA._t(w.type)===s)) return s; }catch(e){}
+    try{ const s=Store.get(this.TYPE_TAB_KEY,{session:true}); if(s&&(wines||[]).some(w=>WineDNA._t(w.type)===s)) return s; }catch(e){}
     const counts={}; (wines||[]).filter(w=>WineDNA.chosen(w)).forEach(w=>{ const t=WineDNA._t(w.type); if(t) counts[t]=(counts[t]||0)+1; });
     const prefs=this.types(), rank=t=>{ const i=prefs.indexOf(t); return i<0?99:i; };
     const top=Object.keys(counts).sort((a,b)=>counts[b]-counts[a]||rank(a)-rank(b))[0];
     return top||this.preferredType()||'red';
   },
-  rememberType(t){ try{ sessionStorage.setItem(this.TYPE_TAB_KEY,t); }catch(e){} },
+  rememberType(t){ try{ Store.set(this.TYPE_TAB_KEY,t,{session:true}); }catch(e){} },
   /* Opening WineDNA from elsewhere (Home): straight to a type's tab and, optionally, one section
      (e.g. 'scripts'), opened and scrolled into view. takeDNASection() reads it once. */
   DNA_SECTION_KEY:'vinterest_dna_section',
-  openDNA(type,section){ if(type) this.rememberType(type); try{ if(section) sessionStorage.setItem(this.DNA_SECTION_KEY,section); else sessionStorage.removeItem(this.DNA_SECTION_KEY); }catch(e){} },
-  takeDNASection(){ try{ const s=sessionStorage.getItem(this.DNA_SECTION_KEY); sessionStorage.removeItem(this.DNA_SECTION_KEY); return s; }catch(e){ return null; } },
+  openDNA(type,section){ if(type) this.rememberType(type); try{ if(section) Store.set(this.DNA_SECTION_KEY,section,{session:true}); else Store.remove(this.DNA_SECTION_KEY,{session:true}); }catch(e){} },
+  takeDNASection(){ try{ const s=Store.get(this.DNA_SECTION_KEY,{session:true}); Store.remove(this.DNA_SECTION_KEY,{session:true}); return s; }catch(e){ return null; } },
 
   EXPERIENCE:[{id:'novice',label:'Just getting started',note:'Keep it simple and clear'},{id:'casual',label:'I know what I like',note:'A little more detail'},
     {id:'enthusiast',label:'Pretty into it',note:'Bring on the nuance'},{id:'expert',label:'Borderline obsessed',note:'Full depth, no hand-holding'}],
