@@ -14,7 +14,9 @@ one user can never read or write another's rows.
    `migrations/0001_user_data.sql`, and Run. You should see "Success. No rows returned". Table
    Editor then shows `wines`, `user_docs`, `entitlements` and `usage_counters`, each with RLS
    enabled. Then do the same with `migrations/0002_use_quota.sql` (the weekly fair-use counter
-   the Worker calls). Run every file in `migrations/` once, in order.
+   the Worker calls) and `migrations/0003_sync_times.sql` (the database stamps each synced row's
+   time, so phones with different clocks never miss each other's changes). Run every file in
+   `migrations/` once, in order.
 3. **Turn on email sign-in with a code.** Go to Authentication → Sign In / Providers → Email:
    enabled, "Confirm email" on, and Email OTP Length **6**. The app signs in with a 6-digit code
    typed into it, not a link (a link opened from the mail app lands in the browser, not the

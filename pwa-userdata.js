@@ -70,6 +70,9 @@ const Flags = {
   WINEDNA_UNLOCK_SEEN_KEY:'vinterest_wineDNA_unlock_seen',
   wineDNAUnlockSeen(){ return !!Store.get(this.WINEDNA_UNLOCK_SEEN_KEY); },
   markWineDNAUnlockSeen(){ Store.set(this.WINEDNA_UNLOCK_SEEN_KEY,'1'); },
+  BACKUP_OFFER_KEY:'vinterest_backup_offer_dismissed',
+  backupOfferDismissed(){ return !!Store.get(this.BACKUP_OFFER_KEY); },
+  dismissBackupOffer(){ Store.set(this.BACKUP_OFFER_KEY,'1'); },
 };
 
 /* What they've read: beginner articles (vinterest_<id>_done) and Written for you pieces

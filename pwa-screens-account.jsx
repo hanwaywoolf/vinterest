@@ -211,7 +211,8 @@ function AccountCard(){
   const [code,setCode]=React.useState('');
   const [busy,setBusy]=React.useState(false);
   const [err,setErr]=React.useState('');
-  React.useEffect(()=>{ const h=()=>tick(t=>t+1); window.addEventListener('vinterest:account',h); return()=>window.removeEventListener('vinterest:account',h); },[]);
+  React.useEffect(()=>{ const h=()=>tick(t=>t+1); window.addEventListener('vinterest:account',h); window.addEventListener('vinterest:sync',h);
+    return()=>{ window.removeEventListener('vinterest:account',h); window.removeEventListener('vinterest:sync',h); }; },[]);
   if(!Account.available()) return null;
 
   const box={width:'100%',boxSizing:'border-box',padding:'12px 14px',borderRadius:12,border:`1.5px solid ${C.line}`,fontSize:16,fontFamily:C.P,color:C.ink,background:C.white,outline:'none'};
@@ -239,9 +240,9 @@ function AccountCard(){
         <Pill active={pro} sm>{pro?'Pro':'Free'}</Pill>
       </div>
       <div style={{fontSize:13,color:C.mid,fontFamily:C.P,lineHeight:1.5}}>
-        {pro?'You\'re signed in with Pro, and it works on any phone you sign in on. ':'You\'re signed in. '}
-        Your wines stay on this phone for now: backing them up to your account is coming soon. Until then, use Export under Data Backup in WineDNA.
+        {pro?'You have Pro on any phone you sign in on. ':''}Sign in on another phone and your wines, WineDNA and progress are there too.
       </div>
+      <div role="status" style={{fontSize:13,color:Sync.status().error?'#B04A3A':C.ink2,fontFamily:C.P,lineHeight:1.5}}>{Sync.line()}</div>
       {me&&me.usage&&me.caps&&me.usage.label_scan>0&&<div style={{fontSize:13,color:C.mid,fontFamily:C.P}}>This week: {me.usage.label_scan} of {me.caps.label_scan} label scans.</div>}
       <span onClick={()=>Account.signOut()} style={{...link,alignSelf:'flex-start',marginTop:2}}>Sign out</span>
     </Card>;
@@ -250,7 +251,7 @@ function AccountCard(){
   return <Card style={{padding:14,display:'flex',flexDirection:'column',gap:10}}>
     <div>
       <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>Sign in (optional)</div>
-      <div style={{fontSize:13,color:C.mid,fontFamily:C.P,lineHeight:1.5}}>Everything works without an account. Signing in will back up your wines and progress, so a new phone picks up where this one left off. Backup is coming soon.</div>
+      <div style={{fontSize:13,color:C.mid,fontFamily:C.P,lineHeight:1.5}}>Everything works without an account. Signing in backs up your wines and progress, so a new phone picks up where this one left off.</div>
     </div>
     {step==='idle'&&<div onClick={()=>{setStep('email');setErr('');}} style={primary}>Sign in with email</div>}
     {step==='email'&&<>

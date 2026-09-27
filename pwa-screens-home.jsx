@@ -158,6 +158,20 @@ function WaitingOnYou({nav}){
   </Card>;
 }
 
+/* Sign in to back up (Sync.offerBackup): once they have a few bottles on the phone. */
+function BackupOffer({nav,count}){
+  const [gone,setGone]=React.useState(false);
+  if(gone) return null;
+  return <Card style={{padding:14,display:'flex',flexDirection:'column',gap:8,border:`1px solid ${C.line}`}}>
+    <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>Keep your {count} wines safe</div>
+    <div style={{fontSize:14,color:C.mid,fontFamily:C.P,lineHeight:1.5}}>They only live on this phone. Sign in with your email and they're backed up, with your WineDNA and progress, ready on any phone.</div>
+    <div style={{display:'flex',gap:14,alignItems:'center',marginTop:2}}>
+      <div onClick={()=>nav('account')} style={{padding:'10px 16px',borderRadius:12,background:C.cr,color:'#fff',fontSize:15,fontWeight:700,fontFamily:C.P,cursor:'pointer'}}>Back them up</div>
+      <span onClick={()=>{ Flags.dismissBackupOffer(); setGone(true); }} style={{fontSize:14,color:C.mid,fontFamily:C.P,cursor:'pointer'}}>Not now</span>
+    </div>
+  </Card>;
+}
+
 /* Home is "what next": Waiting on you, one Up next action and two more (LearnNext.home), the
    pieces written for them, their recent scans, their WineDNA at a glance with an Explore Next
    pick, and their knowledge (level, XP and the Mastery teaser). */
@@ -257,6 +271,7 @@ function HomeScreen({nav, showPro, isTablet}){
       <div style={{padding:'8px 20px',display:'flex',flexDirection:'column',gap:12}}>
 
         <WaitingOnYou nav={nav}/>
+        {Sync.offerBackup(allWines)&&<BackupOffer nav={nav} count={allWines.length}/>}
 
         {/* Up next: one clear thing to do, two more under it */}
         {next.primary&&<div>

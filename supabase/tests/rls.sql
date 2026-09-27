@@ -70,6 +70,12 @@ select pg_temp.check((select count from public.usage_counters where user_id = :B
 select pg_temp.check(pg_temp.count_as('service_role', null, $q$select coalesce(public.use_quota('bbbbbbbb-0000-0000-0000-00000000000b', 'list_scan', 0), -1)$q$) = -1, 'a cap of 0 refuses outright');
 select pg_temp.check(pg_temp.count_as('authenticated', :B, $q$select count::int from public.usage_counters where kind = 'wine_qa'$q$) = 2, 'B can read their own usage');
 
+-- Sync: the database stamps updated_at itself, whatever time a phone sends (0003).
+select pg_temp.check(not pg_temp.refused('authenticated', :B, $q$insert into public.wines (user_id, wine_key, data, updated_at) values ('bbbbbbbb-0000-0000-0000-00000000000b', 'stamped|2020', '{}', '2000-01-01') on conflict (user_id, wine_key) do update set data = excluded.data, updated_at = excluded.updated_at$q$), 'B saves a wine with an old time');
+select pg_temp.check((select updated_at from public.wines where wine_key = 'stamped|2020') > '2020-01-01', 'the database stamps it with its own time');
+update public.user_docs set updated_at = '2000-01-01' where user_id = :A and doc_key = 'xp';
+select pg_temp.check((select updated_at from public.user_docs where user_id = :A and doc_key = 'xp') > '2020-01-01', 'and documents too');
+
 -- Only the three document kinds, and a deleted account takes its rows with it.
 select pg_temp.check(pg_temp.refused('authenticated', :A, $q$insert into public.user_docs (user_id, doc_key, data) values ('aaaaaaaa-0000-0000-0000-00000000000a', 'anything', '{}')$q$), 'unknown document kinds are refused');
 delete from auth.users where id = :A;
