@@ -92,7 +92,7 @@ function App(){
   const ctx={nav,back,showPro:setProGate,isTablet};
 
   return(
-    <div style={{width:'100%',maxWidth:isTablet?'100%':430,height:'100dvh',margin:'0 auto',background:(screen==='camera')?'#0A0A0A':C.bg,display:'flex',flexDirection:'column',position:'relative',overflow:'hidden',boxSizing:'border-box',paddingTop:(screen==='onboarding'||screen==='camera')?0:'env(safe-area-inset-top)'}}>
+    <div style={{width:'100%',maxWidth:isTablet?'100%':430,height:'100%',margin:'0 auto',background:(screen==='camera')?'#0A0A0A':C.bg,display:'flex',flexDirection:'column',position:'relative',overflow:'hidden',boxSizing:'border-box',paddingTop:(screen==='onboarding'||screen==='camera')?0:'env(safe-area-inset-top)'}}>
       <div key={dataGen} style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden',minHeight:0}}>
         {screen==='onboarding' && <NewUserFlow onComplete={()=>{Settings.setOnboarded();nav('home');}}/>}
         {screen==='home'      && <HomeScreen {...ctx}/>}

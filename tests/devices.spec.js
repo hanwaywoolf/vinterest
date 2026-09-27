@@ -30,6 +30,12 @@ for (const size of ['standard', 'xl']) {
       // The app's own typeface, not a fallback (fonts ship in dist/fonts; nothing comes from Google).
       expect(await page.evaluate(async () => { await document.fonts.ready; return ['400', '600', '700'].every((w) => document.fonts.check(`${w} 16px Poppins`)) && [...document.fonts].some((f) => f.family.replace(/"/g, '') === 'Poppins' && f.status === 'loaded'); }), 'Poppins loaded').toBe(true);
       await page.screenshot({ path: path.join(info.project.outputDir, 'screens', info.project.name, `${hash}-${size}.png`) });
+      // The app fills the screen to its bottom edge (a measured height left a white strip under
+      // the nav on iPhone home-screen apps).
+      const fill = await page.evaluate(() => { const r = document.getElementById('root'), app = r.firstElementChild;
+        return { root: r.getBoundingClientRect().bottom, app: app.getBoundingClientRect().bottom, vh: document.documentElement.clientHeight }; });
+      expect(Math.abs(fill.root - fill.vh), 'app root reaches the bottom edge').toBeLessThan(1);
+      expect(Math.abs(fill.app - fill.vh), 'app reaches the bottom edge').toBeLessThan(1);
       // Nothing wider than the screen (a sideways scroll is the classic Safari break).
       const wide = await page.evaluate(() => {
         const vw = document.documentElement.clientWidth;
