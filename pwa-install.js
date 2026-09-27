@@ -81,6 +81,29 @@ const InstallApp = {
     return out;
   },
 
+  /* How this phone is showing the app, for layout problems only a real device has (the space
+     under the nav on iPhone): installed or in the browser, the screen and viewport heights, the
+     safe-area insets iOS reserves, and where #root and the bottom nav actually end. */
+  screenInfo(){
+    const probe=document.createElement('div');
+    probe.style.cssText='position:fixed;visibility:hidden;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)';
+    document.body.appendChild(probe);
+    const cs=getComputedStyle(probe), px=v=>Math.round(parseFloat(v)||0);
+    const inset={top:px(cs.paddingTop),bottom:px(cs.paddingBottom)};
+    probe.remove();
+    const root=document.getElementById('root'), rr=root?root.getBoundingClientRect():null;
+    const nav=[...document.querySelectorAll('#root span')].filter(s=>s.textContent==='WineDNA').pop();
+    const navBar=nav&&nav.closest('div[style*="border-top"]');
+    const vv=window.visualViewport;
+    return {mode:this.standalone()?'installed (home screen)':'in the browser',
+      screen:`${screen.width}×${screen.height}`, window:`${window.innerWidth}×${window.innerHeight}`,
+      visual:vv?`${Math.round(vv.width)}×${Math.round(vv.height)}`:'n/a',
+      page:`${document.documentElement.clientHeight}`, inset:`top ${inset.top}, bottom ${inset.bottom}`,
+      root:rr?`${Math.round(rr.top)}–${Math.round(rr.bottom)}`:'n/a',
+      nav:navBar?`ends at ${Math.round(navBar.getBoundingClientRect().bottom)}`:'not on this screen',
+      ua:(navigator.userAgent.match(/(iPhone OS|CPU OS|Android) [\d_.]+/)||[''])[0]};
+  },
+
   /* What the browser reports, in words, for when the button doesn't appear. */
   why(){
     const out=[];
