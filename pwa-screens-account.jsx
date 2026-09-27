@@ -248,7 +248,7 @@ function AccountCard(){
   return <Card style={{padding:14,display:'flex',flexDirection:'column',gap:10}}>
     <div>
       <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>Sign in (optional)</div>
-      <div style={{fontSize:13,color:C.mid,fontFamily:C.P,lineHeight:1.5}}>Everything works without an account. Sign in to take Pro with you to any phone. Soon it will also back up your wines, so they're safe if you lose or change your phone.</div>
+      <div style={{fontSize:13,color:C.mid,fontFamily:C.P,lineHeight:1.5}}>Everything works without an account. Signing in will back up your wines and progress, so a new phone picks up where this one left off. Backup is coming soon.</div>
     </div>
     {step==='idle'&&<div onClick={()=>{setStep('email');setErr('');}} style={primary}>Sign in with email</div>}
     {step==='email'&&<>
