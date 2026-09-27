@@ -718,36 +718,7 @@ function WineDNAScreen({nav,back,showPro}){
         })()}
 
         {/* ── Data Backup ── */}
-        <Card style={{padding:14}}>
-          <div style={{fontSize:16,fontWeight:600,color:C.ink,fontFamily:C.P,marginBottom:10}}>Data Backup</div>
-          <div style={{display:'flex',gap:8}}>
-            <Btn full style={{flex:1}} onClick={()=>{
-              const data={wines:WineHistory.getAll(),xp:XPSystem.get(),exported:new Date().toISOString()};
-              const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
-              const url=URL.createObjectURL(blob);
-              const a=document.createElement('a');a.href=url;a.download='vinterest-backup-'+new Date().toISOString().slice(0,10)+'.json';a.click();
-              URL.revokeObjectURL(url);
-            }}>⬇ Export</Btn>
-            <Btn full style={{flex:1}} onClick={()=>{
-              const inp=document.createElement('input');inp.type='file';inp.accept='.json,application/json';
-              inp.onchange=e=>{
-                const file=e.target.files[0];if(!file)return;
-                const reader=new FileReader();
-                reader.onload=ev=>{
-                  try{
-                    const d=JSON.parse(ev.target.result);
-                    const n=Backup.importData(d);
-                    alert('Restored! '+n+' wines imported.');
-                    window.location.reload();
-                  }catch(err){alert('Could not read backup file.');}
-                };
-                reader.readAsText(file);
-              };
-              inp.click();
-            }}>⬆ Import</Btn>
-          </div>
-          <div style={{fontSize:13,color:C.mid,fontFamily:C.P,marginTop:8,lineHeight:1.5}}>Export saves your wines &amp; XP as a JSON file. Import restores from a previous backup.</div>
-        </Card>
+        <DataBackupCard padding={14}/>
 
         {/* App version */}
         <div style={{textAlign:'center',padding:'12px 0 4px',opacity:0.45}}>

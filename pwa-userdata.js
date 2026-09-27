@@ -100,13 +100,3 @@ const Handoff = {
   confirmed(key){ return !!Store.get(key,{session:true}); },
   setConfirmed(key){ Store.set(key,'1',{session:true}); },
 };
-
-/* Restoring a backup file: wines and XP, through their owners. (Backup format v2 is the next step
-   in docs/native-migration-spec.md.) Returns the number of wines imported. */
-const Backup = {
-  importData(d){
-    if(d.wines) WineHistory.save(d.wines);
-    if(d.xp) XPSystem.replaceAll(d.xp);
-    return (d.wines||[]).length;
-  },
-};

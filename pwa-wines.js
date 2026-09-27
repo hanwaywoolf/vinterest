@@ -177,6 +177,27 @@ const WineHistory = {
     if(w){ w.scan_intent=intent; this.save(wines); }
   },
   /* Put a removed wine back where it was (My Wines' Undo). */
+  /* A backup's wines against this phone's: which are new and which are bottles already here. */
+  planImport(list){
+    const all=this.getAll(); let added=0, updated=0;
+    (list||[]).forEach(w=>{ if(this._index(all,WineDNA.cleanWine(w))>=0) updated++; else added++; });
+    return {added,updated};
+  },
+  /* Restoring a backup: new bottles are added, ones already here are merged (the more recently
+     scanned side's details win, the higher score and the scan dates from both are kept), and the
+     list stays newest first. */
+  importWines(list){
+    const all=this.getAll(); let added=0, updated=0;
+    const t=w=>new Date(w.last_scanned||w.scanned_at||0).getTime()||0;
+    (list||[]).map(w=>WineDNA.cleanWine(w)).forEach(w=>{
+      const i=this._index(all,w);
+      if(i<0){ all.push(w); added++; return; }
+      all[i]=t(w)>t(all[i])?this._merge(w,all[i]):this._merge(all[i],w); updated++;
+    });
+    all.sort((a,b)=>t(b)-t(a));
+    this.save(all);
+    return {added,updated};
+  },
   restore(wine, index){
     if(!wine||this.find(wine)) return;
     const wines = this.getAll();

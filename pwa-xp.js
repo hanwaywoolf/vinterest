@@ -54,8 +54,18 @@ const XPSystem = {
   },
   /* Start over (the XP screen's reset). */
   reset(){ Store.remove(this.KEY); },
-  /* A restored backup's XP blob, stored as it came (Backup.importData). */
-  replaceAll(raw){ Store.set(this.KEY, JSON.stringify(raw)); },
+  /* XP from two places (a backup and this phone), never lower than either: totals take the
+     larger, lists keep every entry, per-quiz records take the larger (spec D3). */
+  mergedXP(a,b){
+    a=a||this.fresh(); b=b||this.fresh();
+    const union=(x,y)=>[...new Set([...(x||[]),...(y||[])])];
+    const maxMap=(x,y)=>{ const o={...(x||{})}; Object.entries(y||{}).forEach(([k,v])=>{ o[k]=typeof v==='number'&&typeof o[k]==='number'?Math.max(o[k],v):(o[k]??v); }); return o; };
+    return {...b,...a,total:Math.max(a.total||0,b.total||0),totalRatings:Math.max(a.totalRatings||0,b.totalRatings||0),
+      events:union(a.events,b.events),grapesSeen:union(a.grapesSeen,b.grapesSeen),scansThisWeek:union(a.scansThisWeek,b.scansThisWeek),
+      quizCompleted:maxMap(a.quizCompleted,b.quizCompleted),quizStreaks:maxMap(a.quizStreaks,b.quizStreaks)};
+  },
+  /* Restoring a backup's XP (the bare account object): merged into this phone's. */
+  mergeImport(flat){ this.save(this.mergedXP(this.get(),flat)); },
 
   getLevel(xp){
     if(xp>=XP_CURVE.cellarMaster.base){

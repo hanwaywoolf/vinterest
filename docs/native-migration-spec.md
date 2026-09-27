@@ -127,7 +127,7 @@ Sync behaviour:
 
 ## 6. Prompts for Claude Code, in order
 
-Status: prompts 0 (proxy hardening) and 1 (esbuild build, Cloudflare builds `dist/`) are done; prompt 2 (storage behind logic modules) is done. Next: 3, backup format v2.
+Status: prompts 0 (proxy hardening) and 1 (esbuild build, Cloudflare builds `dist/`) are done; prompt 2 (storage behind logic modules) and prompt 3 (backup format v2, `pwa-backup.js`) are done. Next: 4, Supabase migrations.
 
 Prompt 2 findings:
 - **Dedupe key.** WineHistory's exact key is `name.toLowerCase() + '|' + vintageKey`, where `vintageKey` is the vintage as a string, or `'nv'` for a missing, `0` or `'NV'` vintage. On top of that, `WineHistory.same()` matches rescans fuzzily (producer spelled differently, extra words the other wine accounts for, a missing vintage matching the one dated entry), and `ScanFlow.resolve` gives a rescan the saved entry's name and vintage before anything is saved. So a synced `wine_key` from the exact formula is stable per bottle, provided the client resolves identity before pushing. `getAll` still merges any duplicates that slip through.

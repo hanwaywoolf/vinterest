@@ -217,40 +217,7 @@ function TasteProfileScreen({nav,back,showPro}){
         })()}
 
         {/* Data backup */}
-        <Card style={{padding:12}}>
-          <div style={{fontSize:16,fontWeight:600,color:C.ink,fontFamily:C.P,marginBottom:10}}>Data Backup</div>
-          <div style={{display:'flex',gap:8}}>
-            <Btn full style={{flex:1,fontSize:15}} onClick={()=>{
-              const data={wines:WineHistory.getAll(),xp:XPSystem.get(),exported:new Date().toISOString()};
-              const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
-              const url=URL.createObjectURL(blob);
-              const a=document.createElement('a');
-              a.href=url;
-              a.download='vinterest-backup-'+new Date().toISOString().slice(0,10)+'.json';
-              a.click();
-              URL.revokeObjectURL(url);
-            }}>⬇ Export</Btn>
-            <Btn full style={{flex:1,fontSize:15}} onClick={()=>{
-              const inp=document.createElement('input');
-              inp.type='file'; inp.accept='.json,application/json';
-              inp.onchange=e=>{
-                const file=e.target.files[0]; if(!file) return;
-                const reader=new FileReader();
-                reader.onload=ev=>{
-                  try{
-                    const d=JSON.parse(ev.target.result);
-                    const n=Backup.importData(d);
-                    alert('Restored! '+n+' wines imported.');
-                    window.location.reload();
-                  }catch(err){ alert('Could not read backup file.'); }
-                };
-                reader.readAsText(file);
-              };
-              inp.click();
-            }}>⬆ Import</Btn>
-          </div>
-          <div style={{fontSize:13,color:C.mid,fontFamily:C.P,marginTop:8,lineHeight:1.5}}>Export saves your wines &amp; XP to a JSON file on your phone. Import restores from a previous backup.</div>
-        </Card>
+        <DataBackupCard padding={12}/>
         {/* App version */}
         <div style={{textAlign:'center',padding:'12px 0 4px',opacity:0.45}}>
           <span style={{fontSize:13,color:C.mid,fontFamily:C.P}}>Vinterest v1.0.38</span>
@@ -773,6 +740,43 @@ function WineListScreen({nav,back}){
 </div>
     </div>
   );
+}
+
+/* Export and restore a backup (Settings and WineDNA). The file format, checks and merge are
+   Backup's (pwa-backup.js); this only moves the file and asks before restoring. */
+function DataBackupCard({padding=12}){
+  function exportFile(){
+    const blob=new Blob([JSON.stringify(Backup.exportData(),null,2)],{type:'application/json'});
+    const url=URL.createObjectURL(blob), a=document.createElement('a');
+    a.href=url; a.download=Backup.fileName(); a.click();
+    URL.revokeObjectURL(url);
+  }
+  function importFile(){
+    const inp=document.createElement('input'); inp.type='file'; inp.accept='.json,application/json';
+    inp.onchange=e=>{
+      const file=e.target.files[0]; if(!file) return;
+      const reader=new FileReader();
+      reader.onload=ev=>{
+        const r=Backup.read(String(ev.target.result||''));
+        if(!r.ok){ alert(r.error); return; }
+        if(!window.confirm(Backup.describe(r.summary)+'\n\nRestore it?')) return;
+        const done=Backup.apply(r.data);
+        alert(`Restored: ${done.added} new wine${done.added===1?'':'s'}${done.updated?`, ${done.updated} merged`:''}.`);
+        window.location.reload();
+      };
+      reader.onerror=()=>alert('That file couldn\'t be opened. Try saving it to your phone again.');
+      reader.readAsText(file);
+    };
+    inp.click();
+  }
+  return <Card style={{padding}}>
+    <div style={{fontSize:16,fontWeight:600,color:C.ink,fontFamily:C.P,marginBottom:10}}>Data Backup</div>
+    <div style={{display:'flex',gap:8}}>
+      <Btn full style={{flex:1,fontSize:15}} onClick={exportFile}>⬇ Export</Btn>
+      <Btn full style={{flex:1,fontSize:15}} onClick={importFile}>⬆ Import</Btn>
+    </div>
+    <div style={{fontSize:13,color:C.mid,fontFamily:C.P,marginTop:8,lineHeight:1.5}}>Export saves your wines, XP, settings and learning progress to a file on your phone. Import adds a backup to what's here: nothing on this phone is lost.</div>
+  </Card>;
 }
 
 /* ── SETTINGS SCREEN ── */
