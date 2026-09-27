@@ -69,6 +69,11 @@ const Flags = {
   WINEDNA_UNLOCK_SEEN_KEY:'vinterest_wineDNA_unlock_seen',
   wineDNAUnlockSeen(){ return !!Store.get(this.WINEDNA_UNLOCK_SEEN_KEY); },
   markWineDNAUnlockSeen(){ Store.set(this.WINEDNA_UNLOCK_SEEN_KEY,'1'); },
+  /* The camera's "you can pick a photo from your gallery too" tip: shown on the first
+     GALLERY_HINT_TIMES visits to the camera, then never again. */
+  GALLERY_HINT_KEY:'vinterest_gallery_hint_v1', GALLERY_HINT_TIMES:3,
+  galleryHintDue(){ return (parseInt(Store.get(this.GALLERY_HINT_KEY)||'0')||0)<this.GALLERY_HINT_TIMES; },
+  markGalleryHint(){ Store.set(this.GALLERY_HINT_KEY,(parseInt(Store.get(this.GALLERY_HINT_KEY)||'0')||0)+1); },
   BACKUP_OFFER_KEY:'vinterest_backup_offer_dismissed',
   backupOfferDismissed(){ return !!Store.get(this.BACKUP_OFFER_KEY); },
   dismissBackupOffer(){ Store.set(this.BACKUP_OFFER_KEY,'1'); },

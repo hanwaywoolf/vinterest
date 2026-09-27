@@ -1,0 +1,50 @@
+# Runs the test suite on every pull request and on main:
+#   - chrome: the whole suite (npm test), as on a developer's machine.
+#   - iphone-ipad: the layout checks on WebKit, Safari's engine, at iPhone SE, iPhone 15 Pro Max
+#     and iPad Pro 11 sizes, with a screenshot of every main screen kept as the "screens" artifact.
+# WebKit on Linux is close to Safari on an iPhone for layout, not identical: check real devices
+# (a device cloud, or Xcode's Simulator) before a release.
+name: Tests
+on:
+  pull_request:
+  push:
+    branches: [main]
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  chrome:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm test
+        env:
+          CI: '1'
+  iphone-ipad:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps webkit
+      - run: npx playwright test
+        env:
+          CI: '1'
+          WEBKIT: '1'
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: screens
+          path: test-results/screens/
+          retention-days: 14

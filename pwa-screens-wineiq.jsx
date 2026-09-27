@@ -588,7 +588,7 @@ function WineDNAScreen({nav,back,showPro}){
         {/* ── Your Journey: how your choices are changing ── */}
         {t.journey.length>=2&&(()=>{
           const J=t.journey, last=J[J.length-1];
-          const totalRegions=new Set(t.wines.map(w=>w.region).filter(Boolean)).size;
+          const totalRegions=new Set(t.wines.map(w=>WineDNA.region(w)).filter(Boolean)).size;
           const totalGrapes=t.grapeStats.length;
           const maxN=Math.max(...J.map(b=>b.count));
           const lastNew=[...last.newRegions];

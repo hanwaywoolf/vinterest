@@ -111,6 +111,33 @@ async function transformSource(file, version) {
   return code;
 }
 
+// Fonts ship with the app (dist/fonts/) instead of coming from Google Fonts: they work offline and
+// inside a native wrapper, the tests see the real typeface, and no request goes to Google.
+// Latin and latin-ext subsets of the weights the app uses, taken from @fontsource.
+const FONTS = [
+  ['poppins', ['400', '500', '600', '700', '800', '400-italic']],
+  ['instrument-serif', ['400', '400-italic']],
+];
+const FONT_SUBSETS = /\/\* [a-z-]+-(latin|latin-ext)-\d+-(normal|italic) \*\/\n@font-face \{[\s\S]*?\n\}/g;
+function buildFonts() {
+  const dir = path.join(OUT, 'fonts');
+  fs.mkdirSync(dir, { recursive: true });
+  const css = [];
+  for (const [family, styles] of FONTS) {
+    const pkg = path.join(ROOT, 'node_modules/@fontsource', family);
+    for (const style of styles) {
+      const blocks = fs.readFileSync(path.join(pkg, `${style}.css`), 'utf8').match(FONT_SUBSETS) || [];
+      if (!blocks.length) throw new Error(`fonts: no latin faces in @fontsource/${family}/${style}.css`);
+      for (const block of blocks) {
+        const file = block.match(/url\(\.\/files\/([^)]+\.woff2)\)/)[1];
+        fs.copyFileSync(path.join(pkg, 'files', file), path.join(dir, file));
+        css.push(block.replace(/src: [^;]+;/, `src: url(${file}) format('woff2');`));
+      }
+    }
+  }
+  fs.writeFileSync(path.join(dir, 'fonts.css'), css.join('\n\n') + '\n');
+}
+
 function copyStatic(rel) {
   fs.cpSync(path.join(ROOT, rel), path.join(OUT, rel), { recursive: true });
 }
@@ -126,8 +153,15 @@ function buildIndexHtml(appHash) {
     .replace(/<!-- React \+ Babel -->\n/, '')
     .replace(/<script src="https:\/\/unpkg\.com\/react(?:-dom)?@[^"]+"[^>]*><\/script>\n/g, '')
     .replace(/<!-- Precompiled bundle[^\n]*-->\n/, '')
-    .replace(BUNDLE_TAG, `<script src="app.js?v=${appHash}"></script>`);
+    .replace(BUNDLE_TAG, `<script src="app.js?v=${appHash}"></script>`)
+    // Fonts from dist/fonts (buildFonts), not Google.
+    .replace(/<link rel="preconnect" href="https:\/\/fonts\.googleapis\.com"\/>\n/, '')
+    .replace(/<link href="https:\/\/fonts\.googleapis\.com\/css2[^"]*" rel="stylesheet"\/>/,
+      '<link rel="preload" href="fonts/poppins-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin/>\n' +
+      '<link rel="preload" href="fonts/poppins-latin-600-normal.woff2" as="font" type="font/woff2" crossorigin/>\n' +
+      '<link rel="stylesheet" href="fonts/fonts.css"/>');
   if (/unpkg\.com|bundle\.js/.test(html)) throw new Error('index.html: leftover CDN React or bundle.js reference');
+  if (/fonts\.googleapis/.test(html)) throw new Error('index.html: fonts still load from Google');
   return html;
 }
 
@@ -150,6 +184,7 @@ async function build() {
   fs.writeFileSync(path.join(OUT, 'app.js'), app);
   fs.writeFileSync(path.join(OUT, 'index.html'), buildIndexHtml(appHash));
   STATIC_FILES.forEach(copyStatic);
+  buildFonts();
 
   console.log(`Built dist/ — Vinterest ${version}`);
   console.log(`  app.js ${(app.length / 1024).toFixed(0)} KB, ${APP_SOURCES.length} sources, inlined: ${Object.keys(assets).join(', ')}`);

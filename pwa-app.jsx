@@ -82,6 +82,24 @@ function App(){
 
   // When a sync brings in wines or XP from another phone, redraw the screen being looked at so it
   // shows them, but only on screens with nothing half-done (never mid-scan, mid-rating or in a quiz).
+  // Safari paints the strip behind the home indicator (and any toolbar gap) with the page's own
+  // background, not the app's. Keep the page background the colour of whatever sits at the bottom
+  // of the screen: dark under the welcome and camera screens, white under the nav. Otherwise a
+  // dark screen shows a white bar beneath it.
+  React.useEffect(()=>{
+    let raf=0;
+    const sync=()=>{ cancelAnimationFrame(raf); raf=requestAnimationFrame(()=>{
+      let el=document.elementFromPoint(window.innerWidth/2,window.innerHeight-2), c='';
+      for(;el&&el!==document.documentElement;el=el.parentElement){ const b=getComputedStyle(el).backgroundColor; if(b&&b!=='transparent'&&!/,\s*0\)$/.test(b)){ c=b; break; } }
+      if(c){ document.documentElement.style.backgroundColor=c; document.body.style.backgroundColor=c; }
+    }); };
+    sync(); const t=setTimeout(sync,350);
+    const mo=new MutationObserver(sync); const root=document.getElementById('root');
+    if(root) mo.observe(root,{childList:true,subtree:true});
+    window.addEventListener('resize',sync);
+    return()=>{ clearTimeout(t); cancelAnimationFrame(raf); mo.disconnect(); window.removeEventListener('resize',sync); };
+  },[screen]);
+
   const [dataGen,setDataGen]=React.useState(0);
   const screenRef=React.useRef(screen); screenRef.current=screen;
   React.useEffect(()=>{
@@ -92,7 +110,7 @@ function App(){
   const ctx={nav,back,showPro:setProGate,isTablet};
 
   return(
-    <div style={{width:'100%',maxWidth:isTablet?'100%':430,height:'100dvh',margin:'0 auto',background:(screen==='camera')?'#0A0A0A':C.bg,display:'flex',flexDirection:'column',position:'relative',overflow:'hidden',boxSizing:'border-box',paddingTop:(screen==='onboarding'||screen==='camera')?0:'env(safe-area-inset-top)'}}>
+    <div style={{width:'100%',maxWidth:isTablet?'100%':430,height:'100%',margin:'0 auto',background:(screen==='camera')?'#0A0A0A':C.bg,display:'flex',flexDirection:'column',position:'relative',overflow:'hidden',boxSizing:'border-box',paddingTop:(screen==='onboarding'||screen==='camera')?0:'env(safe-area-inset-top)'}}>
       <div key={dataGen} style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden',minHeight:0}}>
         {screen==='onboarding' && <NewUserFlow onComplete={()=>{Settings.setOnboarded();nav('home');}}/>}
         {screen==='home'      && <HomeScreen {...ctx}/>}

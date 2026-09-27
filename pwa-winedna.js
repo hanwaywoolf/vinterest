@@ -62,6 +62,11 @@ const WineDNA = {
     'tinta del pais':'Tempranillo','tinta del país':'Tempranillo','tinta fina':'Tempranillo','ull de llebre':'Tempranillo','aragonez':'Tempranillo',
     'grenache noir':'Grenache','garnacha negra':'Grenache','blauburgunder':'Pinot Noir','pinot noir précoce':'Pinot Noir','weissburgunder':'Pinot Blanc',
     'pinot bianco':'Pinot Blanc','fumé blanc':'Sauvignon Blanc','fume blanc':'Sauvignon Blanc','steen':'Chenin Blanc','pinot grigio ramato':'Pinot Grigio'},
+  /* The region a wine counts under whenever wines are grouped, counted or compared by region: the
+     knowledge-base region (Regions.of: Côtes de Provence and Bandol are Provence, Brunello di
+     Montalcino is Tuscany), else the label's own region. The label's appellation is still what a
+     wine's own screens show; only grouping goes through here, so one region never splits in two. */
+  region(w){ return typeof Regions!=='undefined'?Regions.of(w):((w&&w.region)||null); },
   /* The one name a grape goes by everywhere (WineDNA, matching, unlocks, quizzes, articles, XP):
      label synonyms first ("Shiraz" is Syrah, "Pinot Gris" is Pinot Grigio), then the spelling
      on the 50-grape Learn list, ignoring case and accents ("Gewurztraminer", "Albarino"), so a
@@ -146,7 +151,7 @@ const WineDNA = {
     const stats=(pairs)=>{ const m={}; pairs.forEach(([k,r])=>{ if(!k) return; const e=m[k]=m[k]||{name:k,count:0,scores:[]}; e.count++; if(r>0) e.scores.push(r); });
       return Object.values(m).map(e=>({name:e.name,count:e.count,avg:e.scores.length?Math.round(this._mean(e.scores)):null,scored:e.scores.length})); };
     const grapeStats=stats(wines.flatMap(w=>[...new Set((w.grapes||[]).map(g=>this.grape(g)).filter(Boolean))].map(g=>[g,w.rating])));
-    const regionStats=stats(wines.map(w=>[w.region,w.rating]));
+    const regionStats=stats(wines.map(w=>[this.region(w),w.rating]));
     const byCount=(a,b)=>b.count-a.count||(b.avg||0)-(a.avg||0);
     const p={typeKey,label,wines,chosen,scored,loved,disliked,axes,avg,lovedAvg,dnaAvg,basis,
       topGrapes:[...grapeStats].sort(byCount).map(g=>g.name).slice(0,4),
@@ -223,7 +228,7 @@ const WineDNA = {
   favourites(p){
     const rank=list=>list.filter(x=>x.scored>=2&&x.avg!=null);
     const regions=rank(p.regionStats), grapes=rank(p.grapeStats);
-    const bottles=x=>p.wines.filter(w=>x.kind==='region'?w.region===x.name:(w.grapes||[]).some(g=>this.grape(g)===x.name)).map(w=>w.name).sort().join('|');
+    const bottles=x=>p.wines.filter(w=>x.kind==='region'?this.region(w)===x.name:(w.grapes||[]).some(g=>this.grape(g)===x.name)).map(w=>w.name).sort().join('|');
     const best=list=>[...list].filter(x=>x.avg>=ParkerScale.LOVED-5).sort((a,b)=>b.avg-a.avg||b.count-a.count).slice(0,3);
     return {
       regions:best(regions), grapes:best(grapes),
@@ -310,7 +315,7 @@ const WineDNA = {
     dated.forEach(({w,d})=>{
       const k=key(d); if(!buckets.has(k)) buckets.set(k,{label:lab(d),count:0,newRegions:[],newGrapes:[],scores:[]});
       const b=buckets.get(k); b.count++; if(w.rating>0) b.scores.push(w.rating);
-      if(w.region&&!seenR.has(w.region)){ seenR.add(w.region); b.newRegions.push(w.region); }
+      const r=this.region(w); if(r&&!seenR.has(r)){ seenR.add(r); b.newRegions.push(r); }
       (w.grapes||[]).map(x=>this.grape(x)).filter(Boolean).forEach(x=>{ if(!seenG.has(x)){ seenG.add(x); b.newGrapes.push(x); } });
     });
     return [...buckets.values()].slice(-6).map(b=>({...b,unit:g,avgScore:b.scores.length?Math.round(this._mean(b.scores)):null}));

@@ -139,7 +139,27 @@ function ScanHomeScreen({nav,showPro,isTablet}){
 // Preview has no camera — capturePhoto's "camera not ready" branch simulates a real scan of one
 // of these three real bottles instead of the old generic demo fallback, so testing doesn't need
 // an actual label. Picked at random each time the shutter is tapped.
+/* On the first few camera visits (Flags.galleryHintDue) the framing pill says, for a few seconds,
+   that a photo from the gallery works too, and the gallery button pulses; then the pill goes back
+   to its usual words. Nothing covers the controls. */
+// Only once the camera is live: without it the screen already says to choose a photo, and a visit
+// with no camera doesn't use up one of the showings.
+function useGalleryHint(live){
+  const [on,setOn]=React.useState(false);
+  const done=React.useRef(false);
+  React.useEffect(()=>{
+    if(!live||done.current) return;
+    done.current=true;
+    if(!Flags.galleryHintDue()) return;
+    Flags.markGalleryHint(); setOn(true);
+    const t=setTimeout(()=>setOn(false),5500); return()=>clearTimeout(t);
+  },[live]);
+  return on;
+}
+
 function ScanScreen({nav,back,onComplete,onSkip}){
+  const [camLive,setCamLive]=React.useState(false);
+  const galleryHint=useGalleryHint(camLive);
   const onboarding=!!onComplete; // onboarding: save the scan & advance the flow instead of navigating
   const videoRef=React.useRef(null);
   const streamRef=React.useRef(null);
@@ -158,7 +178,7 @@ function ScanScreen({nav,back,onComplete,onSkip}){
     // Native resolution + CSS object-fit:cover handles framing instead.
     navigator.mediaDevices?.getUserMedia({video:{facingMode:'environment'}})
       .then(s=>{
-        streamRef.current=s; if(videoRef.current) videoRef.current.srcObject=s;
+        streamRef.current=s; if(videoRef.current) videoRef.current.srcObject=s; setCamLive(true);
         // Some phones default multi-camera systems to a 2x telephoto lens — force back to native 1x.
         const track=s.getVideoTracks()[0];
         const caps=track&&track.getCapabilities?track.getCapabilities():null;
@@ -330,8 +350,8 @@ function ScanScreen({nav,back,onComplete,onSkip}){
           ))}
           {/* Instruction inside frame */}
           <div style={{position:'absolute',bottom:16,left:0,right:0,textAlign:'center',zIndex:2}}>
-            <span style={{fontSize:16,color:'rgba(255,255,255,0.7)',fontFamily:C.P,background:'rgba(0,0,0,0.48)',padding:'5px 14px',borderRadius:20,backdropFilter:'blur(4px)'}}>
-              {mode==='list'?'Frame the wine list':'Frame the wine label'}
+            <span role="status" style={{fontSize:16,color:galleryHint?'#fff':'rgba(255,255,255,0.7)',fontWeight:galleryHint?600:400,fontFamily:C.P,background:galleryHint?'rgba(139,26,47,0.85)':'rgba(0,0,0,0.48)',padding:'5px 14px',borderRadius:18,display:'inline-block',maxWidth:'calc(100% - 32px)',lineHeight:1.35,backdropFilter:'blur(4px)',transition:'background .4s, color .4s'}}>
+              {galleryHint?'Or pick a photo from your gallery ↓':mode==='list'?'Frame the wine list':'Frame the wine label'}
             </span>
           </div>
         </div>
@@ -370,8 +390,11 @@ function ScanScreen({nav,back,onComplete,onSkip}){
           <div onClick={capturePhoto} aria-label="Take photo" style={{width:74,height:74,borderRadius:37,background:'rgba(255,255,255,0.92)',border:'4px solid rgba(255,255,255,0.35)',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',boxShadow:'0 4px 28px rgba(0,0,0,0.5)'}}>
             <div style={{width:56,height:56,borderRadius:28,background:C.cr}}/>
           </div>
-          <div onClick={()=>fileRef.current&&fileRef.current.click()} aria-label="Choose a photo" style={{width:48,height:48,borderRadius:12,background:'rgba(0,0,0,0.55)',backdropFilter:'blur(12px)',border:'1.5px solid rgba(255,255,255,0.35)',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer'}}>
-            <span style={{fontSize:11,fontWeight:700,color:'#fff',fontFamily:C.P,textAlign:'center',lineHeight:1.1}}>Photo<br/>library</span>
+          <div style={{position:'relative',width:48,height:48}}>
+            <div onClick={()=>fileRef.current&&fileRef.current.click()} role="button" aria-label="Choose a photo from your gallery" style={{width:48,height:48,borderRadius:12,background:'rgba(0,0,0,0.55)',backdropFilter:'blur(12px)',border:`1.5px solid ${galleryHint?'#fff':'rgba(255,255,255,0.35)'}`,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',animation:galleryHint?'vinGalleryPulse 1.2s ease-in-out 3':'none'}}>
+              <style>{'@keyframes vinGalleryPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.12)}}'}</style>
+              <Icon n="gallery" sz={24} col="#fff"/>
+            </div>
           </div>
         </div>
         <input ref={fileRef} type="file" accept="image/*" onChange={onPickFile} data-testid="scan-file" style={{display:'none'}}/>

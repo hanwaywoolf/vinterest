@@ -29,11 +29,31 @@ const GRAPE_TYPES = {
 };
 function grapeTypeColor(grape){ return (_TYPE_COLORS&&_TYPE_COLORS[GRAPE_TYPES[grape]])||C.mid; }
 
+/* The unlocks that are open: all of them with Pro. Otherwise everything unlocked before
+   UNLOCKS_KEPT_BEFORE stays open (the allowance used to be checked only when unlocking, so
+   earlier extras are kept), and later unlocks fill whatever is left of `cap`, oldest first.
+   Shared by GrapeUnlocks and RegionUnlocks. */
+const UNLOCKS_KEPT_BEFORE=Date.UTC(2026,8,28); // 28 Sep 2026
+function _openUnlocks(stored,cap,pro){
+  if(pro) return stored;
+  const at=x=>(x&&x.at)||0;
+  const sorted=Object.entries(stored||{}).sort(([a,x],[b,y])=>at(x)-at(y)||a.localeCompare(b));
+  const kept=sorted.filter(([,x])=>at(x)<UNLOCKS_KEPT_BEFORE);
+  const later=sorted.filter(([,x])=>at(x)>=UNLOCKS_KEPT_BEFORE).slice(0,Math.max(0,cap-kept.length));
+  return Object.fromEntries([...kept,...later]);
+}
+
 const GrapeUnlocks = Object.assign(_accountStore('vinterest_grape_unlocks_v1'), {
   fresh(){ return {unlocked:{}}; },
-  all(){ return this.get().unlocked; },
-  isUnlocked(g){ return !!this.get().unlocked[g]; },
-  count(){ return Object.keys(this.get().unlocked).length; },
+  /* What's open now. Free: the first FREE_GRAPE_CAP grapes they unlocked, in the order they did,
+     however more came to be stored (unlocked while Pro was on, merged from another phone by sync
+     or a backup). The rest are held, progress and all, and open again with Pro. Everything that
+     asks "is this grape open?" goes through here, so the free allowance holds everywhere. */
+  all(){ return _openUnlocks(this.get().unlocked,FREE_GRAPE_CAP,Entitlement.isPro()); },
+  /* Stored but waiting for Pro. */
+  held(){ const open=this.all(); return Object.keys(this.get().unlocked).filter(g=>!open[g]); },
+  isUnlocked(g){ return !!this.all()[g]; },
+  count(){ return Object.keys(this.all()).length; },
   /* The allowlist name for a grape as it appears on a label, through synonyms: "Shiraz" is
      Syrah, "Garnacha" is Grenache, "Pinot Gris" is Pinot Grigio. null if it isn't one of the 50. */
   key(grape){
@@ -47,7 +67,7 @@ const GrapeUnlocks = Object.assign(_accountStore('vinterest_grape_unlocks_v1'), 
     const d=this.get();
     if(d.unlocked[grape]) return false;
     const isPro=Entitlement.isPro();
-    if(!isPro && this.count()>=FREE_GRAPE_CAP) return false;
+    if(!isPro && Object.keys(d.unlocked).length>=FREE_GRAPE_CAP) return false;
     d.unlocked[grape]={via:'rated',at:Date.now()};
     this.save(d);
     try{ ContentEngine.addGrapeArticle(grape,WineHistory.getAll()); }catch(e){}
