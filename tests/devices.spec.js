@@ -80,24 +80,17 @@ test('the page background matches the bottom of the screen: dark on the welcome 
   expect(lum(light), `home page background ${light}`).toBeGreaterThan(200);
 });
 
-// An iPhone home-screen app is given a window shorter than the screen by the status-bar height;
-// the app extends by exactly that, so there's no white band under the nav. Everywhere else: 0.
-test('installed on iPhone, the app extends over the height iOS withholds; in a browser it does not', async ({ context, page }) => {
+// Installed on an iPhone, a see-through status bar ("black-translucent") left the bottom 59pt of
+// the screen outside the app; extending the app to cover it only got it clipped. The status bar
+// style stays "default", and nothing stretches the app past the window iOS gives it.
+test('the iPhone status bar style is "default", and the app is never stretched past its window', async ({ context, page }) => {
   await stubNetwork(context);
   await seedLocalStorage(page, { vinterest_onboarded: '1', vinterest_region: 'uk' });
-  // Pretend to be an iPhone 16 home-screen app: screen 852 tall, window 793.
-  await page.addInitScript(() => {
-    Object.defineProperty(navigator, 'standalone', { get: () => true });
-    Object.defineProperty(screen, 'height', { get: () => window.innerHeight + 59 });
-  });
   await page.goto(`${BASE}/?demo=1#home`);
   await expect(page.locator('#root')).toContainText('Recently scanned');
-  const installed = await page.evaluate(() => ({ short: getComputedStyle(document.documentElement).getPropertyValue('--ios-short').trim(),
+  const out = await page.evaluate(() => ({ style: document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]').content,
     below: Math.round(document.getElementById('root').getBoundingClientRect().bottom - window.innerHeight) }));
-  expect(installed).toEqual({ short: '59px', below: 59 });
-  const browser = await page.context().newPage();
-  await browser.goto(`${BASE}/?demo=1#home`);
-  expect(await browser.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--ios-short').trim())).toBe('0px');
+  expect(out).toEqual({ style: 'default', below: 0 });
 });
 
 test('#root is pinned to the screen (position fixed), not flowed into the page', async ({ context, page }) => {

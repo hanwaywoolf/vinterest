@@ -101,7 +101,6 @@ const InstallApp = {
       page:`${document.documentElement.clientHeight}`, inset:`top ${inset.top}, bottom ${inset.bottom}`,
       root:rr?`${Math.round(rr.top)}–${Math.round(rr.bottom)}`:'n/a',
       nav:navBar?`ends at ${Math.round(navBar.getBoundingClientRect().bottom)}`:'not on this screen',
-      extended:getComputedStyle(document.documentElement).getPropertyValue('--ios-short').trim()||'0px',
       ua:(navigator.userAgent.match(/(iPhone OS|CPU OS|Android) [\d_.]+/)||[''])[0]};
   },
 

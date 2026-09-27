@@ -175,7 +175,7 @@ function AccountProfileScreen({nav,back,showPro}){
         }} style={{padding:'14px 4px 4px',fontSize:14,color:C.mid,fontFamily:C.P,cursor:'pointer',textAlign:'center'}}>View error log</div>
         {/* For layout problems only a real phone shows: what this phone reports (InstallApp.screenInfo). */}
         <div onClick={()=>{ const i=InstallApp.screenInfo();
-          alert(`Showing: ${i.mode}\nScreen: ${i.screen}\nWindow: ${i.window}\nVisible: ${i.visual}\nPage height: ${i.page}\nReserved by iOS: ${i.inset}\nApp area: ${i.root} (extended ${i.extended})\nBottom nav: ${i.nav}\n${i.ua}`); }}
+          alert(`Showing: ${i.mode}\nScreen: ${i.screen}\nWindow: ${i.window}\nVisible: ${i.visual}\nPage height: ${i.page}\nReserved by iOS: ${i.inset}\nApp area: ${i.root}\nBottom nav: ${i.nav}\n${i.ua}`); }}
           style={{padding:'4px 4px 14px',fontSize:14,color:C.mid,fontFamily:C.P,cursor:'pointer',textAlign:'center'}}>Screen details</div>
         <div style={{height:8}}/>
       </div>
