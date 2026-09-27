@@ -1,5 +1,6 @@
 /* Vinterest — New user onboarding flow
-   welcome → age + location → first scan → three taste questions, then into the app.
+   welcome → age + location → first scan → that bottle's story (FirstScanStory: what the app will
+   do, shown on the bottle in hand) → three taste questions, then into the app.
    No sign-up or paywall here: accounts don't exist yet, and Pro is offered when someone reaches
    the free scan limit or taps a Pro feature. Answers are stored through UserPrefs. */
 
@@ -13,8 +14,9 @@ function NewUserFlow({onComplete}){
   switch(step){
     case 'welcome': return <WelcomeScreen next={()=>go('setup')}/>;
     case 'setup':   return <OnboardSetup step={0} total={TOTAL} onBack={()=>go('welcome')} onDone={()=>go('scan')}/>;
-    case 'scan':    return <ScanScreen nav={()=>{}} back={()=>go('setup')} onSkip={()=>go('taste')} onComplete={w=>{ setScanned(w||null); go('taste'); }}/>;
-    case 'taste':   return <OnboardTaste step={2} total={TOTAL} scanned={scanned} onBack={()=>go('scan')} onDone={()=>{ onComplete(); ScanFlow.flushToasts(); }}/>;
+    case 'scan':    return <ScanScreen nav={()=>{}} back={()=>go('setup')} onSkip={()=>go('taste')} onComplete={w=>{ setScanned(w||null); go(w?'story':'taste'); }}/>;
+    case 'story':   return <FirstScanStory wine={scanned} onDone={()=>go('taste')}/>;
+    case 'taste':   return <OnboardTaste step={2} total={TOTAL} scanned={scanned} onBack={()=>go(scanned?'story':'scan')} onDone={()=>{ onComplete(); ScanFlow.flushToasts(); }}/>;
     default: return null;
   }
 }

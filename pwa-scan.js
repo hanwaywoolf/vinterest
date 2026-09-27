@@ -92,3 +92,26 @@ const ScanFlow = {
     return Object.keys(out).length?out:null;
   },
 };
+
+/* The first scan is the end of onboarding: its story shows what Vinterest will do with this
+   bottle and the ones after it, on the cards where each feature belongs. This is what those
+   cards say, worked out from the user's own data (no Claude call). */
+const FirstScan = {
+  /* Where their WineDNA stands for this wine's type: scored so far and how many a match needs. */
+  progress(wine,allWines){
+    const t=TasteMatch._typeKey(wine), nouns=WineDNA.NOUNS[t]||['wine','wines'];
+    const n=(allWines||[]).filter(w=>TasteMatch._typeKey(w)===t&&w.rating>0).length;
+    const need=TasteMatch.MIN_SCORED;
+    return {n:Math.min(n,need),need,left:Math.max(0,need-n),one:nouns[0],many:nouns[1],ready:n>=need};
+  },
+  /* A labelled example of a personal match, so the promise is concrete. Never shown as theirs. */
+  example(wine){
+    const p=this.progress(wine,[]);
+    return {pct:92,label:'Likely a favourite',line:`You loved 5 of the 6 ${p.many} most like it`};
+  },
+  /* The quizzes this scan just opened in Learn (grape and region), for the "Where it's from" card. */
+  unlocked(wine){
+    const g=GrapeUnlocks.key((wine.grapes||[])[0]), r=Regions.resolve(wine);
+    return {grape:g&&wine.grapes_basis!=='typical'&&GrapeUnlocks.isUnlocked(g)?g:null, region:r&&RegionUnlocks.isUnlocked(r)?r:null};
+  },
+};

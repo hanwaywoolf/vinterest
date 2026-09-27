@@ -238,7 +238,13 @@ function ScanCardsScreen({nav,back,showPro}){
             onSaveForLater={()=>{ setIntent('checking'); setView('saved'); }}
             onDeck={()=>setView('deck')}/>}
     {editing&&<EditWineSheet wine={wine} onSave={applyEdit} onClose={()=>setEditing(false)}/>}
-    <style>{`
+    <ScanStyles/>
+  </div>;
+}
+
+/* Keyframes and the deck's touch rules, shared by the scan screen and the first-scan story. */
+function ScanStyles(){
+  return <style>{`
       @keyframes scSpin{to{transform:rotate(360deg)}}
       @keyframes scSheet{from{transform:translateY(100%)}to{transform:translateY(0)}}
       @keyframes scFade{from{opacity:0}to{opacity:1}}
@@ -249,7 +255,34 @@ function ScanCardsScreen({nav,back,showPro}){
          enough. Sliders keep their own drag. */
       .sc-swipe,.sc-swipe *{touch-action:pan-y}
       .sc-swipe input[type=range]{touch-action:none}
-    `}</style>
+    `}</style>;
+}
+
+/* The first scan, as the last part of onboarding: this bottle's story, with what each feature will
+   do for them stitched into the cards where it belongs (FirstScan, _FIRST_NOTES), ending on their
+   first score or Save for later. Later scans use the ordinary result screen. */
+function FirstScanStory({wine,onDone}){
+  const [ver,setVer]=React.useState(0);
+  const match=React.useMemo(()=>TasteMatch.assess(wine,WineHistory.getAll()),[wine,ver]);
+  const {gen,loading}=useScanContent(wine,match);
+  const curr=React.useMemo(()=>Regional.current(),[]);
+  const deckStyle=useDeckStyle();
+  const intent=v=>{ const e=WineHistory.find(wine); if(e) WineHistory.setScanIntent(e.name,e.vintage,v); };
+  return <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden',background:C.bg,paddingTop:'env(safe-area-inset-top)'}}>
+    <div style={{padding:'14px 18px 8px',flexShrink:0,display:'flex',alignItems:'flex-start',gap:12}}>
+      <div style={{flex:1,minWidth:0}}>
+        <div style={{fontSize:13,fontWeight:700,color:C.cr,fontFamily:C.P,letterSpacing:'0.08em',textTransform:'uppercase'}}>Your first bottle</div>
+        <div style={{fontSize:20,fontWeight:800,color:C.ink,fontFamily:C.P,lineHeight:1.2,marginTop:2}}>{wine.name}</div>
+        <div style={{fontSize:14,color:C.mid,fontFamily:C.P,marginTop:2}}>Here's its story, and what Vinterest will do with every bottle after it.</div>
+      </div>
+      <span onClick={onDone} role="button" style={{fontSize:15,fontWeight:600,color:C.mid,fontFamily:C.P,cursor:'pointer',paddingTop:2}}>Skip</span>
+    </div>
+    <CardDeck key={deckStyle} deckStyle={deckStyle} wine={wine} gen={gen} loading={loading} match={match} curr={curr} scanData={{}} existingRating={0}
+      nav={()=>{}} firstScan onFinish={onDone}
+      onRated={()=>{ intent('tasted'); setVer(v=>v+1); }}
+      onSaveForLater={()=>{ intent('checking'); onDone(); }}
+      onBlindCall={()=>intent('tasting')}/>
+    <ScanStyles/>
   </div>;
 }
 
@@ -362,11 +395,14 @@ function ScanResult({wine,match,curr,scanData,existingRating,nav,showPro,view,se
           <div style={{fontSize:20,fontWeight:800,color:match&&match.pct!=null?col:C.ink,fontFamily:C.P,lineHeight:1.2}}>{match?match.label:'—'}</div>
           {match&&match.expected!=null
             ?<div style={{fontSize:15,color:C.mid,fontFamily:C.P,marginTop:3}}>{existingRating>0?`We predicted ${match.expected} · you scored ${existingRating}`:`Likely ${match.expectedLabel} for you`}</div>
+            :match&&match.verdict==='early'?null
             :<div style={{fontSize:15,color:C.mid,fontFamily:C.P,marginTop:3,lineHeight:1.45}}>{match&&match.summary}</div>}
           {match&&match.expected!=null&&match.chance!=null&&!(existingRating>0)&&<div style={{fontSize:13,color:C.mid,fontFamily:C.P,marginTop:2}}>You've loved {match.chance}% of wines like it</div>}
           {match&&match.confidence==='low'&&<div style={{fontSize:13,color:C.mid,fontFamily:C.P,marginTop:2}}>Rough guess</div>}
         </div>
       </div>
+      {/* Too early for a match: show how close it is and what it unlocks, not just a dash. */}
+      {match&&match.verdict==='early'&&<div style={{marginTop:14}}><MatchComingSoon wine={wine} compact/></div>}
       {match&&(match.reasons.length>0||match.expected!=null)&&<div style={{marginTop:14,paddingTop:12,borderTop:`1px solid ${C.line}`}}>
         <MatchReasons match={match} showSummary={match.expected!=null} priceNote={TasteMatch.priceNote(wine,list||shop,WineHistory.getAll(),curr)}/>
         <MatchBreakdown match={match}/>
@@ -439,10 +475,12 @@ function ScanResult({wine,match,curr,scanData,existingRating,nav,showPro,view,se
 }
 
 /* ── card content model ── */
-function buildCards({match}){
+function buildCards({match,firstScan}){
   const tone=match?match.tone:'neutral';
   return [
-    {key:'match',accent:C.green,soft:C.greenBg,icon:'compass',eyebrow:'Your match',kind:'match'},
+    firstScan&&match&&match.pct==null
+      ?{key:'match',accent:C.green,soft:C.greenBg,icon:'compass',eyebrow:'Your match',kind:'first-match'}
+      :{key:'match',accent:C.green,soft:C.greenBg,icon:'compass',eyebrow:'Your match',kind:'match'},
     {key:'fit',accent:tone==='bad'?C.amber:C.green,soft:tone==='bad'?C.amberBg:C.greenBg,icon:'heart',eyebrow:tone==='good'?'Why you\'ll like it':tone==='bad'?'How it\'s different':'Why it could click',kind:'gen',field:'fit'},
     {key:'caution',accent:C.amber,soft:C.amberBg,icon:'message',eyebrow:'Heads up',kind:'gen',field:'caution'},
     {key:'origin',accent:C.cr,soft:C.crSoft,icon:'globe',eyebrow:'Where it\'s from',kind:'origin'},
@@ -454,6 +492,49 @@ function buildCards({match}){
   ];
 }
 
+/* On the first scan, each card says what it becomes with use. Wording only; the facts come from
+   FirstScan (pwa-scan.js). */
+const _FIRST_NOTES={
+  fit:{title:'This card gets personal',text:w=>`Score a few ${FirstScan.progress(w,[]).many} and it says why you'll like a bottle or won't, from the wines you've loved and the ones you haven't.`},
+  origin:{title:'Open in Learn now',text:w=>{ const u=FirstScan.unlocked(w), open=[u.grape&&`the ${u.grape} quiz`,u.region&&`the ${u.region} quiz`].filter(Boolean);
+    return open.length?`This scan opened ${open.join(' and ')}. Every new grape and region you scan opens its own.`:'Every new grape and region you scan opens its own quiz in Learn.'; }},
+  taste:{title:'Why play Blind Call',text:()=>'Each call trains your palate, and your guesses tell your WineDNA how you really taste, not just what the label says.'},
+  talk:{title:'Your sommelier script',text:()=>'As your WineDNA grows, Vinterest writes you a few lines to say in a restaurant, so the sommelier brings bottles you\'ll love.'},
+  value:{title:'Know a good price',text:()=>'Prices are checked where you live. Tell us what you pay and Vinterest learns your usual spend and which bottles are good value for you.'},
+};
+function FeatureNote({accent,title,children}){
+  return <div style={{padding:'12px 14px',borderRadius:12,background:C.white,border:`1.5px dashed ${accent}55`,display:'flex',gap:10,alignItems:'flex-start'}}>
+    <div style={{width:26,height:26,borderRadius:13,background:C.crSoft,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,marginTop:1}}><Icon n="star" sz={13} col={C.cr}/></div>
+    <div>
+      <div style={{fontSize:13,fontWeight:700,color:C.cr,fontFamily:C.P,letterSpacing:'0.06em',textTransform:'uppercase',marginBottom:3}}>{title}</div>
+      <div style={{fontSize:15,color:C.ink2,fontFamily:C.P,lineHeight:1.5}}>{children}</div>
+    </div>
+  </div>;
+}
+/* Before there are enough scores for a match: a WineDNA meter for this wine's type, what unlocks,
+   and (unless compact) a clearly labelled example of a personal match. */
+function MatchComingSoon({wine,compact}){
+  const p=React.useMemo(()=>FirstScan.progress(wine,WineHistory.getAll()),[wine&&wine.name]);
+  const ex=FirstScan.example(wine), col=_typeCol(wine);
+  return <div style={{display:'flex',flexDirection:'column',gap:12}}>
+    <div style={{fontSize:compact?16:18,fontWeight:800,color:C.ink,fontFamily:C.P,lineHeight:1.3}}>
+      {p.n===0?`Your WineDNA starts with your first score`:`${p.n} of ${p.need} ${p.many} scored`}</div>
+    <div style={{display:'flex',gap:6}} aria-label={`${p.n} of ${p.need} ${p.many} scored`}>
+      {Array.from({length:p.need},(_,i)=><div key={i} style={{flex:1,height:8,borderRadius:4,background:i<p.n?col:C.line}}/>)}
+    </div>
+    <div style={{fontSize:15,color:C.ink2,fontFamily:C.P,lineHeight:1.5}}>
+      Score {p.left===1?'one more':p.left} {p.left===1?p.one:p.many} and every {p.one} you scan shows how much you'll like it before you buy, worked out from your own scores, not critics'.</div>
+    {!compact&&<div style={{padding:'12px 14px',borderRadius:12,background:C.offWhite,border:`1px solid ${C.line}`,display:'flex',alignItems:'center',gap:12}}>
+      <MatchRing match={{pct:ex.pct,tone:'good'}} size={64}/>
+      <div style={{flex:1,minWidth:0}}>
+        <div style={{fontSize:12,fontWeight:700,color:C.mid,fontFamily:C.P,letterSpacing:'0.08em',textTransform:'uppercase'}}>Example</div>
+        <div style={{fontSize:16,fontWeight:800,color:C.green,fontFamily:C.P}}>{ex.label}</div>
+        <div style={{fontSize:13,color:C.mid,fontFamily:C.P,lineHeight:1.4}}>{ex.line}</div>
+      </div>
+    </div>}
+  </div>;
+}
+
 /* renders the body of one card — always at full detail; there is no separate expand/collapse mode, everything ships on the main screen. */
 function CardFace({card,ctx}){
   const expanded=true;
@@ -462,6 +543,15 @@ function CardFace({card,ctx}){
   const P=C.P;
   const H=({children})=><div style={{fontSize:expanded?24:20,fontWeight:800,color:C.ink,fontFamily:P,lineHeight:1.2,letterSpacing:'-0.01em'}}>{children}</div>;
   const Body=({children,big})=><div style={{fontSize:big?(expanded?20:18):(expanded?17:16),color:C.ink2,fontFamily:P,lineHeight:1.55}}>{children}</div>;
+
+  // The first scan: what each card will do for them once they've scored a few bottles.
+  const note=ctx.firstScan?_FIRST_NOTES[card.kind==='gen'?card.field:card.kind]:null;
+  const Note=()=>note?<FeatureNote accent={a} title={note.title}>{note.text(wine)}</FeatureNote>:null;
+
+  if(card.kind==='first-match') return <div style={{display:'flex',flexDirection:'column',gap:16}}>
+    <H>Your match, from your own taste</H>
+    <MatchComingSoon wine={wine}/>
+  </div>;
 
   if(card.kind==='match'){
     const col=_TONE_COL[match?match.tone:'neutral'];
@@ -483,6 +573,7 @@ function CardFace({card,ctx}){
       <Body big>{loading&&!val?<ScanShimmer col={a}/>:(val||'—')}</Body>
       {expanded&&card.field==='fit'&&match&&match.reasons.length>0&&<div style={{padding:'12px 14px',borderRadius:12,background:C.offWhite,border:`1px solid ${C.line}`}}><MatchReasons match={match} showSummary={false}/></div>}
       {expanded&&card.field==='caution'&&<div style={{fontSize:15,color:C.mid,fontFamily:C.P,lineHeight:1.55}}>{match&&match.tone==='good'?'Just a tip to get the most out of it, not a reason to hesitate.':'Worth knowing so nothing catches you off guard.'}</div>}
+      <Note/>
     </div>;
   }
 
@@ -505,10 +596,14 @@ function CardFace({card,ctx}){
           <div style={{fontSize:15.5,color:C.ink2,fontFamily:C.P,lineHeight:1.45}}>{loading&&!(gen&&gen.estate)?<ScanShimmer col={a}/>:((gen&&gen.estate)||`A producer working in the traditional style of ${wine.region||wine.country}.`)}</div>
         </div>
       </div>
+      <Note/>
     </div>;
   }
 
-  if(card.kind==='taste') return <TasteCard wine={wine} gen={gen} accent={a} onBlindCall={ctx.onBlindCall}/>;
+  if(card.kind==='taste') return <div style={{display:'flex',flexDirection:'column',gap:14}}>
+    <TasteCard wine={wine} gen={gen} accent={a} onBlindCall={ctx.onBlindCall}/>
+    <Note/>
+  </div>;
 
   if(card.kind==='talk'){
     const lines=(gen&&Array.isArray(gen.talk)&&gen.talk.length)?gen.talk:[
@@ -529,10 +624,14 @@ function CardFace({card,ctx}){
         <div style={{fontSize:13,fontWeight:700,color:a,fontFamily:C.P,letterSpacing:'0.06em',textTransform:'uppercase',marginBottom:5}}>Drop this fact</div>
         <div style={{fontSize:15,color:C.ink2,fontFamily:C.P,lineHeight:1.55}}>{gen.fact2}</div>
       </div>}
+      <Note/>
     </div>;
   }
 
-  if(card.kind==='value') return <ValueFace wine={wine} curr={curr} scanData={scanData} accent={a} soft={card.soft} expanded={expanded}/>;
+  if(card.kind==='value') return <div style={{display:'flex',flexDirection:'column',gap:14}}>
+    <ValueFace wine={wine} curr={curr} scanData={scanData} accent={a} soft={card.soft} expanded={expanded}/>
+    <Note/>
+  </div>;
   if(card.kind==='finish') return null; // rendered specially by deck (needs actions)
   return null;
 }
@@ -741,7 +840,8 @@ function ValueFace({wine,curr,scanData,accent,soft,expanded}){
 }
 
 /* ── rating: the score, then optional tasting details that sharpen future matches ── */
-function RatingPanel({wine,existingRating,nav,showPro,curr,onRated,onSaveForLater,onStage}){
+/* With `onFinish` (the first scan, inside onboarding) it ends on Continue instead of Keep learning. */
+function RatingPanel({wine,existingRating,nav,showPro,curr,onRated,onSaveForLater,onStage,onFinish}){
   const [score,setScore]=React.useState(existingRating||0);
   const [saved,setSaved]=React.useState(false);
   const [next,setNext]=React.useState(false);
@@ -782,7 +882,7 @@ function RatingPanel({wine,existingRating,nav,showPro,curr,onRated,onSaveForLate
     <TastingExtras wine={wine} curr={curr}/>
     {/* Set apart from the optional details above so it doesn't read as one of them. */}
     <div style={{marginTop:10,paddingTop:16,borderTop:`2px solid ${C.line}`}}>
-      <Btn primary full onClick={()=>setNext(true)}>Done: what's next?</Btn>
+      {onFinish?<Btn primary full onClick={onFinish}>Continue</Btn>:<Btn primary full onClick={()=>setNext(true)}>Done: what's next?</Btn>}
     </div>
   </div>;
   return <div style={{display:'flex',flexDirection:'column',gap:14}}>
@@ -943,11 +1043,14 @@ function TasteCard({wine,gen,accent,onBlindCall}){
 }
 
 /* ── the deck (three interaction styles) ── */
-function CardDeck({deckStyle,wine,gen,loading,match,curr,scanData,existingRating,nav,showPro,onRated,onSaveForLater,onBlindCall}){
-  const cards=React.useMemo(()=>buildCards({match}),[match&&match.tone]);
+function CardDeck({deckStyle,wine,gen,loading,match,curr,scanData,existingRating,nav,showPro,onRated,onSaveForLater,onBlindCall,firstScan,onFinish}){
+  const cards=React.useMemo(()=>buildCards({match,firstScan}),[match&&match.tone,firstScan]);
   const [finishStage,setFinishStage]=React.useState('rate');
-  const ctx={wine,gen,loading,match,curr,scanData,onBlindCall,finishStage,
-    finish:()=><RatingPanel wine={wine} existingRating={existingRating} nav={nav} showPro={showPro} curr={curr} onRated={onRated} onSaveForLater={existingRating?null:onSaveForLater} onStage={setFinishStage}/>};
+  const ctx={wine,gen,loading,match,curr,scanData,onBlindCall,finishStage,firstScan,
+    finish:()=><>
+      {firstScan&&finishStage==='rate'&&<div style={{marginBottom:16}}><MatchComingSoon wine={wine} compact/></div>}
+      <RatingPanel wine={wine} existingRating={existingRating} nav={nav} showPro={showPro} curr={curr} onRated={onRated} onSaveForLater={existingRating?null:onSaveForLater} onStage={setFinishStage} onFinish={onFinish}/>
+    </>};
   const [idx,setIdx]=React.useState(0);
 
   const total=cards.length;
