@@ -523,14 +523,13 @@ function MatchComingSoon({wine,compact}){
       {Array.from({length:p.need},(_,i)=><div key={i} style={{flex:1,height:8,borderRadius:4,background:i<p.n?col:C.line}}/>)}
     </div>
     <div style={{fontSize:15,color:C.ink2,fontFamily:C.P,lineHeight:1.5}}>
-      Score {p.left===1?'one more':p.left} {p.left===1?p.one:p.many} and every {p.one} you scan shows how much you'll like it before you buy, worked out from your own scores, not critics'.</div>
-    {!compact&&<div style={{padding:'12px 14px',borderRadius:12,background:C.offWhite,border:`1px solid ${C.line}`,display:'flex',alignItems:'center',gap:12}}>
-      <MatchRing match={{pct:ex.pct,tone:'good'}} size={64}/>
-      <div style={{flex:1,minWidth:0}}>
-        <div style={{fontSize:12,fontWeight:700,color:C.mid,fontFamily:C.P,letterSpacing:'0.08em',textTransform:'uppercase'}}>Example</div>
-        <div style={{fontSize:16,fontWeight:800,color:C.green,fontFamily:C.P}}>{ex.label}</div>
-        <div style={{fontSize:13,color:C.mid,fontFamily:C.P,lineHeight:1.4}}>{ex.line}</div>
-      </div>
+      Score {p.left===1?'one more':p.left} {p.left===1?p.one:p.many} and every {p.one} you scan shows how much you'll like it, before you buy it or as you try it, worked out from your own scores, not critics'.</div>
+    {/* Laid out like the real match card, ring at near full size, and labelled as an example. */}
+    {!compact&&<div style={{padding:'14px 14px 16px',borderRadius:12,background:C.offWhite,border:`1px solid ${C.line}`,display:'flex',flexDirection:'column',alignItems:'center',gap:8,textAlign:'center'}}>
+      <div style={{fontSize:12,fontWeight:700,color:C.mid,fontFamily:C.P,letterSpacing:'0.08em',textTransform:'uppercase'}}>Example</div>
+      <MatchRing match={{pct:ex.pct,tone:'good'}} size={120}/>
+      <div style={{fontSize:18,fontWeight:800,color:C.green,fontFamily:C.P}}>{ex.label}</div>
+      <div style={{fontSize:14,color:C.mid,fontFamily:C.P,lineHeight:1.4}}>{ex.line}</div>
     </div>}
   </div>;
 }
