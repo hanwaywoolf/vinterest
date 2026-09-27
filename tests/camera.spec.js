@@ -1,0 +1,28 @@
+// The camera screen with a (fake) working camera: the gallery button is an icon, and on the first
+// three visits the framing pill says for a few seconds that a gallery photo works too.
+const { test, expect } = require('@playwright/test');
+const { stubNetwork, seedLocalStorage } = require('./helpers');
+
+const BASE = 'http://localhost:4173';
+test.use({ permissions: ['camera'], launchOptions: { args: ['--use-fake-ui-for-media-stream', '--use-fake-device-for-media-stream'] } });
+
+test('the camera shows a gallery icon, and a fading "pick a photo" tip on the first three visits only', async ({ context, page }) => {
+  await stubNetwork(context);
+  await seedLocalStorage(page, { vinterest_onboarded: '1', vinterest_region: 'uk' });
+  const tip = page.locator('#root').getByText('Or pick a photo from your gallery');
+  const visit = async () => {
+    await page.goto(`${BASE}/#home`); await page.goto(`${BASE}/#camera`);
+    await expect(page.getByRole('button', { name: 'Choose a photo from your gallery' })).toBeVisible();
+    await expect(page.locator('#root')).not.toContainText('Photo library');
+    await page.waitForTimeout(800);
+    return tip.count();
+  };
+  expect([await visit(), await visit(), await visit(), await visit()]).toEqual([1, 1, 1, 0]);
+});
+test('the tip fades back to "Frame the wine label"', async ({ context, page }) => {
+  await stubNetwork(context);
+  await seedLocalStorage(page, { vinterest_onboarded: '1', vinterest_region: 'uk' });
+  await page.goto(`${BASE}/#camera`);
+  await expect(page.locator('#root').getByText('Or pick a photo from your gallery')).toBeVisible();
+  await expect(page.locator('#root').getByText('Frame the wine label')).toBeVisible({ timeout: 8000 });
+});

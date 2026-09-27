@@ -661,3 +661,12 @@ test('Keep learning opens at its top, not wherever the rating left the page scro
   expect(h.y - s.y).toBeGreaterThanOrEqual(0);
   expect(h.y - s.y).toBeLessThan(60);
 });
+
+test('without a camera there is no gallery tip (the screen already says to choose a photo) and no showing is used up', async ({ context, page }) => {
+  await stubNetwork(context);
+  await seedLocalStorage(page, { vinterest_onboarded: '1', vinterest_region: 'uk' });
+  await page.goto(`${BASE}/#camera`);
+  await expect(page.locator('#root')).toContainText('Camera unavailable');
+  await expect(page.locator('#root')).not.toContainText('Or pick a photo from your gallery');
+  expect(await page.evaluate(() => Flags.galleryHintDue())).toBe(true);
+});
