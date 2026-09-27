@@ -302,8 +302,9 @@ function WineRow({w,open,setOpen,onOpen,onScore,onEdit,onDelete}){
       <button onClick={()=>{ setOpen(null); onDelete(w); }} aria-label="Delete" style={{flex:1,border:'none',background:'#B04A3A',color:'#fff',fontFamily:C.P,fontSize:13,fontWeight:700,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:4,cursor:'pointer'}}><Icon n="trash" sz={18} col="#fff"/>Delete</button>
     </div>
     <div ref={ref} onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={up} onClick={tap}
-      style={{position:'relative',background:C.white,display:'flex',alignItems:'center',gap:12,padding:'12px 16px 12px 0',cursor:'pointer',userSelect:'none',WebkitUserSelect:'none'}}>
-      <div style={{width:4,alignSelf:'stretch',borderRadius:'0 3px 3px 0',background:col,flexShrink:0}}/>
+      style={{position:'relative',background:C.white,display:'flex',alignItems:'center',gap:12,padding:'12px 16px 12px 14px',cursor:'pointer',userSelect:'none',WebkitUserSelect:'none'}}>
+      {/* The wine-type strip sits in from the screen edge, where a phone case can hide it. */}
+      <div style={{width:6,alignSelf:'stretch',borderRadius:3,background:col,flexShrink:0}}/>
       <div style={{flex:1,minWidth:0}}>
         <div style={{display:'flex',alignItems:'center',gap:6}}>
           {saved&&<Icon n="bookmark" sz={14} col={C.mid}/>}
@@ -792,6 +793,7 @@ function SettingsScreen({nav,back}){
         <div style={{width:24}}/>
       </div>
       <div style={{flex:1,overflowY:'auto',padding:'16px'}}>
+        <div style={{marginBottom:24}}><TextSizeControl/></div>
         <div style={{marginBottom:24}}>
           <div style={{fontSize:16,fontWeight:600,color:C.ink,fontFamily:C.P,marginBottom:12}}>Region</div>
           <div style={{display:'flex',flexDirection:'column',gap:8}}>

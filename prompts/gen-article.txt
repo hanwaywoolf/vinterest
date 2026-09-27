@@ -6,10 +6,22 @@ Editorial brief: {{brief}}
 Retrieved facts — use ONLY these for anything factual (regions, rules, grapes, causes). Do not invent facts beyond them or rely on general memory for specifics:
 {{facts}}
 
+About this reader, from their own scans and 100-point scores (use it; never invent bottles, scores or prices beyond it):
+{{reader}}
+
+This piece is written for this one reader, not a general audience:
+- Open by connecting the topic to one of their own bottles, by name.
+- Wherever a fact explains something about their bottles (why one tasted the way it did, why they scored it high or low), say so and use their score.
+- Stay with the kind of wine this piece is about. The bottles and WineDNA above are already limited to it; don't bring in their other wine types (no reds in a piece about a white grape) unless the title is about trying a new type. If they have none of this kind yet, write for a first encounter.
+- A low score is useful information about their taste, never a mistake.
+- If they found a wine lighter, fuller, softer or zingier than the label suggested, use that: it's their palate talking.
+- End with a section whose term is "Your next bottle": one specific style, region or grape to try that follows from what they love, within what they usually spend. Name producers only from the retrieved facts.
+
 Voice rule: this reader has already shown the preference in question — they've scanned and rated these actual bottles. Never hedge with "if you like/enjoy/love X" or "fans of X" framing. State it as fact: "Your rating of [wine] shows...", "You keep choosing [grape]...", "Your [region] bottles lean toward...". Write from their demonstrated behavior, not a hypothetical.
 
 Return ONLY valid JSON, no markdown:
 {
+  "forYou": "One sentence, max 25 words, telling the reader why this was written for them, citing one of their own wines or scores.",
   "sections": [
     {
       "term": "Key concept or subheading",

@@ -173,8 +173,9 @@ const XPSystem = {
 
         case 'new_grape':
           if(r.value){
-            const g=(r.value).toLowerCase();
-            if(!(d.grapesSeen||[]).includes(g)){
+            // One grape, one award: Shiraz after Syrah isn't new.
+            const g=WineDNA.grape(r.value).toLowerCase();
+            if(!(d.grapesSeen||[]).some(x=>WineDNA.grape(x).toLowerCase()===g)){
               d.grapesSeen=(d.grapesSeen||[]);
               d.grapesSeen.push(g); d.total+=A.new_grape;
               awards.push({label:'New grape: '+r.value,amount:A.new_grape,bonus:true});

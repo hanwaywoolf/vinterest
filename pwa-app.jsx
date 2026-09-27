@@ -11,6 +11,9 @@ function App(){
     return [init];
   });
   const [proGate,setProGate]=React.useState(null);
+  // A new text size (TextSize, pwa-textsize.js) re-renders every screen at once.
+  const [,setTextTick]=React.useState(0);
+  React.useEffect(()=>{ const h=()=>setTextTick(t=>t+1); window.addEventListener('vinterest:textsize',h); return()=>window.removeEventListener('vinterest:textsize',h); },[]);
 
   // Tablet / iPad detection (localStorage 'vinterest_force_mobile'=1 overrides for preview)
   const forceMobile=()=>localStorage.getItem('vinterest_force_mobile')==='1';
@@ -55,7 +58,7 @@ function App(){
     window.addEventListener('vinterest:xp',handler);
     return ()=>window.removeEventListener('vinterest:xp',handler);
   },[]);
-  const showXpBadge=!['camera','onboarding','learn','quiz','article','gen-article','identified','detail','mywines','scan','profile','style-explore','winelist','account','settings','mastery-map'].includes(screen);
+  const showXpBadge=!['camera','onboarding','learn','quiz','article','gen-article','guide','identified','detail','mywines','scan','profile','style-explore','winelist','account','settings','mastery-map'].includes(screen);
 
   // XP Toast
   const [xpToasts,setXpToasts]=React.useState([]);
@@ -94,6 +97,7 @@ function App(){
         {screen==='mastery-map' && <MasteryMapScreen {...ctx}/>}
         {screen==='article'   && <ScreenErrorBoundary><LearnArticleScreen {...ctx}/></ScreenErrorBoundary>}
         {screen==='gen-article'&& <ScreenErrorBoundary><GenArticleScreen {...ctx}/></ScreenErrorBoundary>}
+        {screen==='guide'&& <ScreenErrorBoundary><GuideScreen {...ctx}/></ScreenErrorBoundary>}
         {screen==='account'   && <AccountProfileScreen {...ctx}/>}
         {screen==='settings'  && <SettingsScreen {...ctx}/>}
       </div>
@@ -101,7 +105,7 @@ function App(){
       {showXpBadge&&(
         <div onClick={()=>setShowXpOverlay(true)} style={{position:'absolute',top:'calc(env(safe-area-inset-top) + 15px)',right:14,zIndex:200,display:'flex',alignItems:'center',gap:5,padding:'5px 11px',borderRadius:20,background:C.crSoft,border:`1px solid ${C.crDim}`,cursor:'pointer',boxShadow:'0 1px 8px rgba(0,0,0,0.08)',pointerEvents:'auto'}}>
           <Icon n={XPSystem.iconFor(XPSystem.getLevel(xpBadge.total))} sz={16} col={C.cr}/>
-          <span style={{fontSize:15,fontWeight:700,color:C.cr,fontFamily:C.P}}>{xpBadge.total} XP</span>
+          <span style={{fontSize:'15px',fontWeight:700,color:C.cr,fontFamily:C.P}}>{xpBadge.total} XP</span>{/* fixed: the badge sits beside the logo */}
           {!!localStorage.getItem('vinterest_pro')&&<span style={{fontSize:12,fontWeight:700,color:'#fff',background:'linear-gradient(135deg,#9B5E00,#C4870A)',borderRadius:8,padding:'2px 6px',marginLeft:2}}>PRO</span>}
         </div>
       )}

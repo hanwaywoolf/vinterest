@@ -55,7 +55,7 @@ const _TYPES=[
 function CSH({label,cKey,collapsed,toggle,summary}){
   const isC=collapsed[cKey];
   return(
-    <div style={{marginTop:6,marginBottom:isC?12:6}}>
+    <div data-section={cKey} style={{marginTop:6,marginBottom:isC?12:6,scrollMarginTop:12}}>
       <div onClick={()=>toggle(cKey)} style={{display:'flex',justifyContent:'space-between',alignItems:'center',cursor:'pointer',padding:'2px 0'}}>
         <span style={{fontSize:13,fontWeight:700,color:C.mid,letterSpacing:'0.09em',textTransform:'uppercase',fontFamily:C.P}}>{label}</span>
         <svg viewBox="0 0 20 20" width={16} height={16} style={{transform:isC?'none':'rotate(180deg)',transition:'transform .2s',flexShrink:0,marginLeft:8,opacity:0.45}}>
@@ -89,11 +89,9 @@ function DnaBar({v,loved,col}){
    WineDNA Screen — renders WineDNA.profile (pwa-winedna.js) for each wine type
 ────────────────────────────────────────────────── */
 function WineDNAScreen({nav,back,showPro}){
-  // Opens on the type they said they drink most (onboarding), once they've scanned one.
-  const [typeIdx,setTypeIdx]=React.useState(()=>{
-    const p=UserPrefs.preferredType(), i=_TYPES.findIndex(t=>t.key===p);
-    return i>0&&WineHistory.getAll().some(w=>WineDNA._t(w.type)===p)?i:0;
-  });
+  // Opens on the type they've chosen most (UserPrefs.openingType), or the tab they last picked.
+  const [typeIdx,setTypeIdxState]=React.useState(()=>Math.max(0,_TYPES.findIndex(t=>t.key===UserPrefs.openingType(WineHistory.getAll()))));
+  const setTypeIdx=i=>{ setTypeIdxState(i); if(_TYPES[i]) UserPrefs.rememberType(_TYPES[i].key); };
   const [tabToast,setTabToast]=React.useState(null);
   const [genSummaries,setGenSummaries]=React.useState({});
   const [generatingSummary,setGeneratingSummary]=React.useState(null);
@@ -115,6 +113,12 @@ function WineDNAScreen({nav,back,showPro}){
     try{localStorage.setItem(COLLAPSE_KEY,JSON.stringify(next));}catch(e){}
     return next;
   }),[]);
+  // Arriving from Home with a section to show (UserPrefs.openDNA): open it and scroll to it.
+  React.useEffect(()=>{
+    const sec=UserPrefs.takeDNASection(); if(!sec) return;
+    setCollapsed(c=>({...c,[sec]:false}));
+    setTimeout(()=>{ const el=document.querySelector(`[data-section="${sec}"]`); if(el) el.scrollIntoView({block:'start'}); },60);
+  },[]);
   const touchX=React.useRef(null);
   const touchY=React.useRef(null);
 
@@ -189,6 +193,9 @@ function WineDNAScreen({nav,back,showPro}){
     }
     touchX.current=null;touchY.current=null;
   }
+
+  // A wine named in a list (Worth buying again, Best value, Worth knowing) opens its details.
+  const openWine=w=>{ sessionStorage.setItem('vinterest_scan_result',JSON.stringify({demo:false,wine:w,existingRating:w.rating||0})); nav('detail'); };
 
   /* Per-type stats */
   const tLabel=t.label.toLowerCase();
@@ -355,6 +362,29 @@ function WineDNAScreen({nav,back,showPro}){
           </div>
         </Card>
 
+        {/* ── Written for you: unread Learn pieces about this type's bottles (ContentEngine.forType) ── */}
+        {(()=>{
+          const reads=ContentEngine.forType(t.key,allWines).slice(0,2);
+          if(!reads.length) return null;
+          const open=stub=>{ sessionStorage.setItem('vinterest_gen_article',JSON.stringify(stub)); nav('gen-article'); };
+          return <Card style={{padding:'14px 16px',display:'flex',flexDirection:'column',gap:10}}>
+            <div>
+              <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>Written from your WineDNA</div>
+              <div style={{fontSize:14,color:C.mid,fontFamily:C.P,lineHeight:1.45,marginTop:2}}>Short reads about your own {tLabel}, written for you and nobody else.</div>
+            </div>
+            {reads.map(stub=>(
+              <div key={stub.id} onClick={()=>open(stub)} role="button" style={{display:'flex',alignItems:'center',gap:12,cursor:'pointer'}}>
+                <div style={{width:38,height:38,borderRadius:11,background:`${t.col}12`,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><Icon n={stub.iconName||'read'} sz={18} col={t.col}/></div>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontSize:15,fontWeight:700,color:C.ink,fontFamily:C.P,lineHeight:1.3}}>{stub.title}</div>
+                  <div style={{fontSize:13,color:C.mid,fontFamily:C.P,lineHeight:1.4,marginTop:1}}>{ContentEngine.because(stub,allWines)}</div>
+                </div>
+                <Icon n="chevron" sz={13} col={C.mid}/>
+              </div>
+            ))}
+          </Card>;
+        })()}
+
         {/* ── What You Love: what separates your best-scored wines, and where they come from ── */}
         {t.wines.length>0&&<CSH label="What You Love" cKey="love" collapsed={collapsed} toggle={toggle} summary={t.signals.length?t.signals[0].text+(t.signals[1]?' '+t.signals[1].text:''):fav.regions.length?`${fav.regions[0].name} is where your highest scores come from.`:`Score more ${tLabel} to see what your favourites have in common.`}/>}
         {t.wines.length>0&&!collapsed.love&&(
@@ -398,6 +428,20 @@ function WineDNAScreen({nav,back,showPro}){
               </>
             )}
 
+            {fav.buyAgain.length>0&&(
+              <div style={{marginTop:14}}>
+                <div style={{...sub,marginBottom:6}}>Worth buying again</div>
+                {fav.buyAgain.map(w=>{ const pr=WineDNA.priceOf(w); return (
+                  <div key={'b'+w.name} role="button" onClick={()=>openWine(w)} style={{display:'flex',alignItems:'center',gap:8,padding:'6px 0',borderTop:`1px solid ${C.line}`,cursor:'pointer'}}>
+                    <Icon n="cart" sz={15} col={C.green}/>
+                    <span style={{fontSize:15,color:C.ink,fontFamily:C.P,flex:1,minWidth:0,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{w.name}</span>
+                    {pr>0&&<span style={{fontSize:13,color:C.mid,fontFamily:C.P}}>{Regional.current().base}{Math.round(pr)}{w.price_paid&&w.price_paid.amount>0?' paid':' est.'}</span>}
+                    {w.rating>0&&<span style={{fontSize:15,fontWeight:800,color:w.rating>=ParkerScale.LOVED?C.green:C.amber,fontFamily:C.P,width:30,textAlign:'right'}}>{w.rating}</span>}
+                    <Icon n="chevron" sz={12} col={C.mid}/>
+                  </div>); })}
+              </div>
+            )}
+
             {(fav.rethink.length>0||fav.disliked.length>0)&&(
               <div style={{marginTop:14}}>
                 <div style={{...sub,marginBottom:6}}>Worth knowing before you buy</div>
@@ -405,10 +449,11 @@ function WineDNAScreen({nav,back,showPro}){
                   <div key={'r'+x.name} style={{fontSize:15,color:C.ink2,fontFamily:C.P,lineHeight:1.5,marginBottom:4}}>{x.name}{x.also?` (${x.also})`:''} averages {x.avg} across {x.count} bottles, below your usual. Try a different producer or style before writing it off.</div>
                 ))}
                 {fav.disliked.map(w=>(
-                  <div key={'d'+w.name} style={{display:'flex',alignItems:'center',gap:8,padding:'5px 0',borderTop:`1px solid ${C.line}`}}>
+                  <div key={'d'+w.name} role="button" onClick={()=>openWine(w)} style={{display:'flex',alignItems:'center',gap:8,padding:'5px 0',borderTop:`1px solid ${C.line}`,cursor:'pointer'}}>
                     <span style={{fontSize:15,color:C.ink,fontFamily:C.P,flex:1}}>{w.name}</span>
                     <span style={{fontSize:13,color:C.mid,fontFamily:C.P}}>{w.region||''}</span>
                     <span style={{fontSize:15,fontWeight:800,color:'#C0392B',fontFamily:C.P}}>{w.rating}</span>
+                    <Icon n="chevron" sz={12} col={C.mid}/>
                   </div>
                 ))}
               </div>
@@ -461,10 +506,11 @@ function WineDNAScreen({nav,back,showPro}){
               <>
                 <div style={{...sub,marginBottom:6}}>Best value so far</div>
                 {t.value.bestValue.map(b=>(
-                  <div key={b.wine.name} style={{display:'flex',alignItems:'center',gap:8,padding:'6px 0',borderTop:`1px solid ${C.line}`}}>
+                  <div key={b.wine.name} role="button" onClick={()=>openWine(b.wine)} style={{display:'flex',alignItems:'center',gap:8,padding:'6px 0',borderTop:`1px solid ${C.line}`,cursor:'pointer'}}>
                     <span style={{fontSize:15,color:C.ink,fontFamily:C.P,flex:1}}>{b.wine.name}</span>
                     <span style={{fontSize:13,color:C.mid,fontFamily:C.P}}>{b.price}{b.paid?' paid':' est.'}</span>
                     <span style={{fontSize:15,fontWeight:800,color:C.green,fontFamily:C.P,width:30,textAlign:'right'}}>{b.wine.rating}</span>
+                    <Icon n="chevron" sz={12} col={C.mid}/>
                   </div>
                 ))}
                 <div style={{fontSize:13,color:C.mid,fontFamily:C.P,lineHeight:1.5,marginTop:8}}>Scored 90+ at or below your typical price. Remember these producers: they're good bets on a list or in a shop.</div>

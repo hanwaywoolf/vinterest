@@ -102,3 +102,69 @@ test('rating controls use the Parker scale', async ({ page }) => {
   await expect(root).toContainText('100-point scale: 96+ Extraordinary');
   for (const n of ['70', '85', '95']) await expect(root.getByText(n, { exact: true }).first()).toBeVisible();
 });
+
+test('one name per grape: WineDNA, Learn unlocks, articles and XP agree', async ({ page }) => {
+  await page.goto(`${BASE}/?demo=1#home`);
+  const out = await page.evaluate(() => {
+    const self = GRAPE_ALLOWLIST.filter((g) => WineDNA.grape(g) !== g);
+    const syn = [...new Set(Object.values(WineDNA.GRAPE_SYNONYMS))].filter((t) => !GRAPE_ALLOWLIST.includes(t));
+    const labels = ['Pinot Gris', 'pinot grigio', 'Grauburgunder', 'Shiraz', 'Gewurztraminer', 'Albarino', 'Mourvedre', 'Primitivo', 'Zinfandel']
+      .map((g) => [WineDNA.grape(g), GrapeUnlocks.key(g)]);
+    return { self, syn, labels };
+  });
+  // Every Learn grape keeps its own name, and every synonym lands on a Learn grape, except two
+  // that aren't among the 50 (so they have no quiz, and nothing to disagree with).
+  expect(out.self).toEqual([]);
+  expect(out.syn.sort()).toEqual(['Blaufränkisch', 'Plavac Mali']);
+  expect(out.labels).toEqual([
+    ['Pinot Grigio', 'Pinot Grigio'], ['Pinot Grigio', 'Pinot Grigio'], ['Pinot Grigio', 'Pinot Grigio'], ['Syrah', 'Syrah'],
+    ['Gewürztraminer', 'Gewürztraminer'], ['Albariño', 'Albariño'], ['Mourvèdre', 'Mourvèdre'], ['Primitivo', 'Primitivo'], ['Zinfandel', 'Zinfandel'],
+  ]);
+});
+
+test('WineDNA opens on the type they drink most, not the first one ticked at onboarding', async ({ page }) => {
+  await page.goto(`${BASE}/?demo=1#home`);
+  const out = await page.evaluate(() => {
+    UserPrefs.save({ ...UserPrefs.get(), types: ['rose', 'red'] });
+    sessionStorage.removeItem(UserPrefs.TYPE_TAB_KEY);
+    const wines = WineHistory.getAll();
+    const most = UserPrefs.openingType(wines);
+    const none = UserPrefs.openingType([]);
+    UserPrefs.rememberType('white');
+    const picked = UserPrefs.openingType(wines);
+    sessionStorage.removeItem(UserPrefs.TYPE_TAB_KEY);
+    return { most, none, picked };
+  });
+  expect(out).toEqual({ most: 'red', none: 'rose', picked: 'white' });
+  await page.goto(`${BASE}/?demo=1#profile`);
+  const reds = page.locator('#root').getByText('Reds', { exact: true }).first();
+  await expect(reds).toHaveCSS('font-weight', '700');
+});
+
+test('wines named in WineDNA open their details', async ({ page }) => {
+  await page.goto(`${BASE}/?demo=1#home`);
+  await page.evaluate(() => { localStorage.setItem('vinterest_wineDNA_unlock_seen', '1');
+    const all = WineHistory.getAll(); const w = all.find((x) => x.type === 'red' && x.rating >= 90); w.buy_again = true; WineHistory.save(all); });
+  await page.goto(`${BASE}/?demo=1#profile`);
+  const root = page.locator('#root');
+  const row = root.getByText('Worth buying again', { exact: true }).locator('xpath=following-sibling::div[1]');
+  const name = (await row.locator('span').first().innerText()).trim();
+  await row.click();
+  await expect(root.getByText('Details', { exact: true })).toBeVisible();
+  await expect(root).toContainText(name);
+});
+
+test('local grape names and clones go by their variety: Sangiovese Grosso is Sangiovese', async ({ page }) => {
+  await page.goto('http://localhost:4173/?demo=1#home');
+  const out = await page.evaluate(() => [
+    ['Sangiovese Grosso', 'Prugnolo Gentile', 'Spanna', 'Tinta del País', 'Weissburgunder', 'Steen'].map((g) => WineDNA.grape(g)),
+    GrapeUnlocks.key('Sangiovese Grosso'),
+    TasteMatch.assess({ name: 'Brunello di Montalcino', type: 'red', grapes: ['Sangiovese Grosso'], body: 0.8, tannins: 0.8, acidity: 0.75 },
+      [...WineHistory.getAll(), ...[90, 92, 94].map((r, i) => ({ name: `Chianti ${i}`, type: 'red', grapes: ['Sangiovese'], rating: r, body: 0.6, tannins: 0.7, acidity: 0.8 }))])
+      .reasons.map((r) => r.text).join(' '),
+  ]);
+  expect(out[0]).toEqual(['Sangiovese', 'Sangiovese', 'Nebbiolo', 'Tempranillo', 'Pinot Blanc', 'Chenin Blanc']);
+  expect(out[1]).toBe('Sangiovese');
+  expect(out[2]).toContain('Sangiovese Grosso (Sangiovese):');
+  expect(out[2]).not.toContain('new grape');
+});

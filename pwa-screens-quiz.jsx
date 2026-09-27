@@ -55,6 +55,40 @@ function CompletedToggle({count,expanded,onToggle}){
     </div>
   );
 }
+/* A list that shows its first `limit` items and a "Show N more" row, so no one section of Learn
+   turns into a long scroll on the way to the next. */
+const GRAPE_PILLS=10;
+function ShowMore({items,limit=3,render,noun}){
+  const [open,setOpen]=React.useState(false);
+  if(!items||!items.length) return null;
+  const rest=items.length-limit;
+  return <>
+    {(open?items:items.slice(0,limit)).map(render)}
+    {rest>0&&<div role="button" onClick={()=>setOpen(o=>!o)} style={{padding:'8px 4px',display:'flex',alignItems:'center',gap:6,cursor:'pointer'}}>
+      <Icon n="chevron" sz={12} col={C.cr} style={{transform:open?'rotate(-90deg)':'rotate(90deg)'}}/>
+      <span style={{fontSize:14,fontWeight:700,color:C.cr,fontFamily:C.P}}>{open?'Show less':`Show ${rest} more${noun?' '+noun:''}`}</span>
+    </div>}
+  </>;
+}
+/* The row of section chips at the top of Learn: every kind of learning visible at once, one tap away. */
+function LearnJumpRow({sections,onJump}){
+  return <div style={{display:'flex',gap:8,overflowX:'auto',padding:'10px 16px',background:C.bg,position:'sticky',top:0,zIndex:2,borderBottom:`1px solid ${C.line}`,scrollbarWidth:'none'}}>
+    {sections.map(x=>(
+      <div key={x.id} role="button" onClick={()=>onJump(x.id)} style={{flex:'0 0 auto',padding:'7px 13px',borderRadius:999,background:C.white,border:`1px solid ${C.line}`,cursor:'pointer',display:'flex',alignItems:'center',gap:6}}>
+        <span style={{fontSize:14,fontWeight:600,color:C.ink,fontFamily:C.P,whiteSpace:'nowrap'}}>{x.label}</span>
+        {x.count>0&&<span style={{fontSize:12,fontWeight:700,color:C.cr,background:C.crSoft,borderRadius:999,padding:'1px 7px',fontFamily:C.P}}>{x.count}</span>}
+      </div>
+    ))}
+  </div>;
+}
+/* A region's country flag in the 42px icon tile (Regions.flag); the map icon when the country is
+   unknown. Locked (Pro) regions show it faded. The flag is a fixed graphic, so its size is px. */
+function RegionFlag({region,locked}){
+  const f=Regions.flag(region);
+  return <div style={{width:42,height:42,borderRadius:12,background:C.offWhite,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,opacity:locked?0.5:1}}>
+    {f?<span role="img" aria-label={(KNOWLEDGE.regions[region]||{}).country} style={{fontSize:'24px',lineHeight:1}}>{f}</span>:<Icon n="map" sz={20} col={C.ink}/>}
+  </div>;
+}
 /* ✓ plus a Reset link, for a completed quiz row. The row itself stays tappable to retake it. */
 function CompletedMark({onReset}){
   return(
@@ -97,7 +131,7 @@ function QuizHubScreen({nav,back,showPro}){
   },[article1Done]);
 
   const zoneLabel={fontSize:15,fontWeight:600,color:C.mid,letterSpacing:'0.08em',textTransform:'uppercase',fontFamily:C.P,marginBottom:2};
-  const unreadShelf=(genStubs||[]).filter(s=>!localStorage.getItem('vinterest_gen_article_'+s.id+'_done'));
+  const unreadShelf=(genStubs||[]).filter(s=>!localStorage.getItem('vinterest_gen_article_'+s.id+'_done')&&!ContentEngine.stubLocked(s));
   const nextOnRamp=ON_RAMP.find(a=>!onRampDone(a.id));
   const nextBest=nextOnRamp&&!(UserPrefs.skipsOnRamp()&&unreadShelf.length)
     ? {kind:'onramp',title:nextOnRamp.title,sub:nextOnRamp.subtitle,readTime:nextOnRamp.readTime,action:()=>{sessionStorage.setItem('vinterest_onramp_idx',String(ON_RAMP.indexOf(nextOnRamp)));nav('article');}}
@@ -105,18 +139,17 @@ function QuizHubScreen({nav,back,showPro}){
       ? {kind:'shelf',stub:unreadShelf[0],title:unreadShelf[0].title,sub:unreadShelf[0].subtitle,action:()=>{sessionStorage.setItem('vinterest_gen_article',JSON.stringify(unreadShelf[0]));nav('gen-article');}}
       : {kind:'scan',title:'Scan a bottle for your next read',sub:"Your shelf restocks based on what you try.",action:()=>nav('camera')};
 
-  const mastery=MasterySystem.summary();
   // Bumped after a progress reset so the to-do/completed splits below recompute.
   const [progressTick,setProgressTick]=React.useState(0);
   const quizRegions=React.useMemo(()=>regionQuizCandidates(wines),[wines,progressTick]);
   const doneRegions=React.useMemo(()=>completedRegionQuizzes(wines),[wines,progressTick]);
+  const proRegions=React.useMemo(()=>isPro?[]:lockedRegions(wines),[wines,isPro]);
   const [regionsExpanded,setRegionsExpanded]=React.useState(false);
   function resetProgress(name,doReset){
     if(!window.confirm(`Reset your progress on ${name}? Its questions start from scratch.`)) return;
     doReset();
     setProgressTick(t=>t+1);
   }
-  const wordsCount=VocabLedger.getAll().length;
   const startQuiz=cfg=>{ sessionStorage.setItem('vinterest_quiz_config2',JSON.stringify(cfg)); nav('quiz'); };
   const [topicsExpanded,setTopicsExpanded]=React.useState(false);
   // Wine Basics always shows — it's the entry point for someone new to wine, not just a
@@ -190,6 +223,14 @@ function QuizHubScreen({nav,back,showPro}){
     unlockedGrapes.slice(0,5).forEach(g=>{ try{ prefetchGrapeQuiz(g); }catch(e){} });
   },[]);
 
+  const [libraryOpen,setLibraryOpen]=React.useState(false);
+  const [guidesExpanded,setGuidesExpanded]=React.useState(false);
+  const guideQueue=Guides.queue(), guidesDone=Guides.finished();
+  const openGuide=id=>{ sessionStorage.setItem('vinterest_guide',id); nav('guide'); };
+  const knowledge=React.useMemo(()=>KnowledgeMap.summary(wines),[wines,progressTick]);
+  const secRefs={shelf:React.useRef(null),basics:React.useRef(null),regions:React.useRef(null),grapes:React.useRef(null),skills:React.useRef(null),progress:React.useRef(null)};
+  const jump=id=>{ const el=secRefs[id]&&secRefs[id].current; if(el) el.scrollIntoView({behavior:'smooth',block:'start'}); };
+
   // After every hook above: returning early before one of them changes the hook count between
   // renders, and React throws the moment the unlock effect flips showUnlock.
   if(showUnlock) return <WineDNAUnlockCelebration onDone={()=>{setShowUnlock(false);nav('profile');}}/>;
@@ -221,13 +262,21 @@ function QuizHubScreen({nav,back,showPro}){
             <CoverageRing segs={coverage.segs}/>
             <div style={{flex:1}}>
               <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P,marginBottom:3}}>Discovering your palate</div>
-              <div style={{fontSize:14,color:C.mid,fontFamily:C.P,lineHeight:1.4}}>{coverage.nextMissing?`You haven't rated a ${coverage.nextMissing.label.toLowerCase()} yet.`:'Rate a wider spread of body and sweetness to unlock WineDNA.'}</div>
+              <div style={{fontSize:14,color:C.mid,fontFamily:C.P,lineHeight:1.4}}>{coverage.nextMissing?`You haven't rated ${({red:'a red',white:'a white',rose:'a rosé',sparkling:'a sparkling wine'})[coverage.nextMissing.key]||'a '+coverage.nextMissing.label.toLowerCase()} yet.`:'Rate a wider spread of body and sweetness to unlock WineDNA.'}</div>
             </div>
           </div>
         )}
       </div>
 
       <div style={{flex:1,overflowY:'auto'}}>
+<LearnJumpRow onJump={jump} sections={[
+  article1Done&&{id:'shelf',label:'For you',count:unreadShelf.length},
+  {id:'basics',label:'Basics',count:topicsToShow.length},
+  (quizRegions.length+doneRegions.length+proRegions.length)>0&&{id:'regions',label:'Regions',count:quizRegions.length},
+  {id:'grapes',label:'Grapes',count:unlockedGrapes.filter(g=>{ const st=grapePillStatus(g); return !(st&&st.done); }).length},
+  {id:'skills',label:'Skills',count:guideQueue.length},
+  {id:'progress',label:'Mastery'},
+].filter(Boolean)}/>
 <div style={{padding:'14px 16px',display:'flex',flexDirection:'column',gap:14}}>
         <div>
           <div style={zoneLabel}>Next Best Thing</div>
@@ -236,7 +285,7 @@ function QuizHubScreen({nav,back,showPro}){
               <Icon n={nextBest.kind==='scan'?'camera':nextBest.kind==='onramp'?'book':(nextBest.stub.iconName||'read')} sz={20} col="rgba(255,255,255,0.7)"/>
             </div>
             <div style={{flex:1}}>
-              <div style={{fontSize:13,fontWeight:600,color:'rgba(255,255,255,0.4)',fontFamily:C.P,textTransform:'uppercase',letterSpacing:'0.06em',marginBottom:3}}>{nextBest.kind==='onramp'?'On-Ramp · '+nextBest.readTime:nextBest.kind==='shelf'?'Quick Read · '+nextBest.stub.readTime:'Free forever'}</div>
+              <div style={{fontSize:13,fontWeight:600,color:'rgba(255,255,255,0.4)',fontFamily:C.P,textTransform:'uppercase',letterSpacing:'0.06em',marginBottom:3}}>{nextBest.kind==='onramp'?'On-Ramp · '+nextBest.readTime:nextBest.kind==='shelf'?'Written for you · '+nextBest.stub.readTime:'Free forever'}</div>
               <div style={{fontSize:16,fontWeight:700,color:'#fff',fontFamily:C.P,lineHeight:1.3,marginBottom:2}}>{nextBest.title}</div>
               <div style={{fontSize:14,color:'rgba(255,255,255,0.5)',fontFamily:C.P,lineHeight:1.4}}>{nextBest.sub}</div>
             </div>
@@ -244,40 +293,60 @@ function QuizHubScreen({nav,back,showPro}){
           </div>
         </div>
 
-        {article1Done&&(
-          <div>
-            <div style={zoneLabel}>Your Shelf</div>
+        {article1Done&&(()=>{
+          // Unread pieces stay on the shelf (three at a time); read ones move to the library, so
+          // new pieces get seen and anyone who wants to binge can keep going.
+          const isRead=stub=>!!localStorage.getItem('vinterest_gen_article_'+stub.id+'_done');
+          const all=genStubs||[];
+          const unread=[...all.filter(x=>!isRead(x)&&!ContentEngine.stubLocked(x)),...all.filter(x=>!isRead(x)&&ContentEngine.stubLocked(x))];
+          const read=all.filter(isRead);
+          const card=(stub,i)=>{
+            const done=isRead(stub);
+            const locked=ContentEngine.stubLocked(stub);
+            const because=ContentEngine.because(stub,wines);
+            return(
+              <div key={stub.id||i} onClick={()=>{ if(locked){ showPro('regions'); return; } sessionStorage.setItem('vinterest_gen_article',JSON.stringify(stub));nav('gen-article');}}
+                style={{background:C.white,borderRadius:14,padding:done?'10px 14px':'14px 16px',display:'flex',alignItems:'center',gap:12,cursor:'pointer',border:`1px solid ${C.line}`,opacity:done?0.75:1}}>
+                <div style={{width:done?36:44,height:done?36:44,borderRadius:12,background:C.crSoft,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,border:`1px solid ${C.crDim}`}}>
+                  <Icon n={stub.iconName||'read'} sz={done?17:20} col={C.cr}/>
+                </div>
+                <div style={{flex:1,minWidth:0}}>
+                  {!done&&<div style={{fontSize:12,fontWeight:600,color:C.mid,fontFamily:C.P,textTransform:'uppercase',letterSpacing:'0.06em',marginBottom:2}}>{stub.series?`${stub.series} series`:'Written for you'} · {stub.readTime}</div>}
+                  <div style={{fontSize:done?15:16,fontWeight:700,color:C.ink,fontFamily:C.P,lineHeight:1.3}}>{stub.title}</div>
+                  {!done&&<div style={{fontSize:14,color:C.mid,fontFamily:C.P,marginTop:2}}>{stub.subtitle}</div>}
+                  {!done&&<div style={{fontSize:13,fontWeight:600,color:C.cr,fontFamily:C.P,marginTop:4}}>{because}</div>}
+                </div>
+                {locked ? <ProBadge/> : done ? <span style={{fontSize:14,fontWeight:700,color:C.green,fontFamily:C.P}}>✓</span> : <Icon n="chevron" sz={13} col={C.mid}/>}
+              </div>
+            );
+          };
+          return(
+          <div ref={secRefs.shelf} style={{scrollMarginTop:56}}>
+            <div style={zoneLabel}>Written for you</div>
+            <div style={{fontSize:14,color:C.mid,fontFamily:C.P,lineHeight:1.45,marginTop:4}}>Every piece here is written from your WineDNA: the bottles you've scanned, how you scored them and what you paid. Nobody else gets the same article.</div>
             <div style={{marginTop:8,display:'flex',flexDirection:'column',gap:8}}>
-            {(!genStubs||!genStubs.length)&&(
+            {!unread.length&&(
               <div style={{padding:'18px 16px',textAlign:'center',background:C.white,borderRadius:14,border:`1px dashed ${C.line}`}}>
-                <span style={{fontSize:15,color:C.mid,fontFamily:C.P,lineHeight:1.5}}>Nothing on your shelf yet. Scan a bottle and we'll have something for you by morning.</span>
+                <span style={{fontSize:15,color:C.mid,fontFamily:C.P,lineHeight:1.5}}>{read.length?"You've read everything written for you so far. Scan or score another bottle and more arrives.":"Nothing on your shelf yet. Scan a bottle and we'll have something for you by morning."}</span>
               </div>
             )}
-            {genStubs&&genStubs.map((stub,i)=>{
-              const done=!!localStorage.getItem('vinterest_gen_article_'+stub.id+'_done');
-              return(
-                <div key={i} onClick={()=>{sessionStorage.setItem('vinterest_gen_article',JSON.stringify(stub));nav('gen-article');}}
-                  style={{background:C.white,borderRadius:14,padding:'14px 16px',display:'flex',alignItems:'center',gap:12,cursor:'pointer',border:`1px solid ${C.line}`,marginBottom:8,opacity:done?0.7:1}}>
-                  <div style={{width:44,height:44,borderRadius:12,background:C.crSoft,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,border:`1px solid ${C.crDim}`}}>
-                    <Icon n={stub.iconName||'read'} sz={20} col={C.cr}/>
-                  </div>
-                  <div style={{flex:1}}>
-                    <div style={{fontSize:12,fontWeight:600,color:C.mid,fontFamily:C.P,textTransform:'uppercase',letterSpacing:'0.06em',marginBottom:2}}>{stub.series?`${stub.series} series`:'Quick Read'} · {stub.readTime}</div>
-                    <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P,lineHeight:1.3}}>{stub.title}</div>
-                    <div style={{fontSize:14,color:C.mid,fontFamily:C.P,marginTop:2}}>{stub.subtitle}</div>
-                  </div>
-                  {done ? <span style={{fontSize:14,fontWeight:700,color:C.green,fontFamily:C.P}}>✓</span> : <Icon n="chevron" sz={13} col={C.mid}/>}
-                </div>
-              );
-            })}
+            <ShowMore items={unread} limit={3} render={card} noun="to read"/>
+            {read.length>0&&(
+              <div role="button" onClick={()=>setLibraryOpen(o=>!o)} style={{background:C.white,borderRadius:14,padding:'10px 14px',display:'flex',alignItems:'center',gap:8,cursor:'pointer',border:`1px dashed ${C.line}`}}>
+                <Icon n="book" sz={15} col={C.mid}/>
+                <span style={{fontSize:14,fontWeight:600,color:C.mid,fontFamily:C.P,flex:1}}>Your library · {read.length} read</span>
+                <Icon n="chevron" sz={12} col={C.mid} style={{transform:libraryOpen?'rotate(-90deg)':'rotate(90deg)'}}/>
+              </div>
+            )}
+            {libraryOpen&&read.map(card)}
             </div>
           </div>
-        )}
+          );
+        })()}
 
-        <div style={zoneLabel}>Test Yourself</div>
-        <div style={{display:'flex',flexDirection:'column',gap:8,marginTop:8}}>
-          <div style={{fontSize:13,fontWeight:600,color:C.mid,fontFamily:C.P,textTransform:'uppercase',letterSpacing:'0.06em'}}>Wine Basics</div>
-          {topicsToShow.map(topic=>{
+        <div ref={secRefs.basics} style={{...zoneLabel,scrollMarginTop:56}}>Wine Basics</div>
+        <div style={{display:'flex',flexDirection:'column',gap:8,marginTop:-6}}>
+          <ShowMore items={topicsToShow} limit={4} noun="topics" render={topic=>{
             const p=topicProgress(topic.id);
             return(
             <div key={topic.id} onClick={()=>startQuiz({mode:'practice',topicId:topic.id})}
@@ -292,7 +361,7 @@ function QuizHubScreen({nav,back,showPro}){
               <Icon n="chevron" sz={13} col={C.mid}/>
             </div>
             );
-          })}
+          }}/>
           {doneTopics.length>0&&<CompletedToggle count={doneTopics.length} expanded={topicsExpanded} onToggle={()=>setTopicsExpanded(e=>!e)}/>}
           {topicsExpanded&&doneTopics.map(topic=>(
             <div key={topic.id} onClick={()=>startQuiz({mode:'practice',topicId:topic.id})}
@@ -307,41 +376,35 @@ function QuizHubScreen({nav,back,showPro}){
               <CompletedMark onReset={()=>resetProgress(topic.label,()=>QuizMastery.reset('topic:'+topic.id))}/>
             </div>
           ))}
-          {coverage.unlocked&&(
+          {/* Regions open from their first scan (5 free, then Pro), not only once WineDNA unlocks. */}
+          {(quizRegions.length>0||doneRegions.length>0||proRegions.length>0)&&(
             <>
-              <div style={{fontSize:13,fontWeight:600,color:C.mid,fontFamily:C.P,textTransform:'uppercase',letterSpacing:'0.06em',marginTop:6}}>Personalised For You</div>
-              <div onClick={()=>startQuiz({mode:'concept'})} style={{background:C.white,borderRadius:14,padding:'12px 14px',display:'flex',alignItems:'center',gap:12,cursor:'pointer',border:`1px solid ${C.line}`}}>
-                <div style={{width:42,height:42,borderRadius:12,background:C.crSoft,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,border:`1px solid ${C.crDim}`}}><Icon n="brain" sz={20} col={C.cr}/></div>
-                <div style={{flex:1}}>
-                  <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>Concept Check</div>
-                  <div style={{fontSize:14,color:C.mid,fontFamily:C.P}}>{mastery.encountered}/{mastery.total} concepts met · {mastery.mastered} mastered</div>
+              {(quizRegions.length>0||doneRegions.length>0||proRegions.length>0)&&(
+                <div ref={secRefs.regions} style={{marginTop:14,scrollMarginTop:56}}>
+                  <div style={zoneLabel}>Region quizzes</div>
+                  <div style={{fontSize:14,color:C.mid,fontFamily:C.P,lineHeight:1.45,marginTop:2}}>One for each region you've scanned: its grapes, climate, rules and how to read its labels.</div>
                 </div>
-                <Icon n="chevron" sz={13} col={C.mid}/>
-              </div>
-              {wordsCount>=4&&(
-                <div onClick={()=>startQuiz({mode:'words'})} style={{background:C.white,borderRadius:14,padding:'12px 14px',display:'flex',alignItems:'center',gap:12,cursor:'pointer',border:`1px solid ${C.line}`}}>
-                  <div style={{width:42,height:42,borderRadius:12,background:C.offWhite,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><Icon n="read" sz={20} col={C.ink}/></div>
+              )}
+              <ShowMore items={[...quizRegions.map(r=>({r})),...proRegions.map(r=>({r,pro:true}))]} limit={3} noun="regions" render={({r:region,pro})=>pro?(
+                <div key={region} onClick={()=>showPro('regions')} style={{background:C.white,borderRadius:14,padding:'12px 14px',display:'flex',alignItems:'center',gap:12,cursor:'pointer',border:`1px solid ${C.line}`}}>
+                  <RegionFlag region={region} locked/>
                   <div style={{flex:1}}>
-                    <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>Words You've Met</div>
-                    <div style={{fontSize:14,color:C.mid,fontFamily:C.P}}>{wordsCount} terms from bottles you've actually had</div>
+                    <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>{region}</div>
+                    <div style={{fontSize:14,color:C.mid,fontFamily:C.P}}>Unlock with Pro</div>
                   </div>
-                  <Icon n="chevron" sz={13} col={C.mid}/>
+                  <ProBadge/>
                 </div>
-              )}
-              {(quizRegions.length>0||doneRegions.length>0)&&(
-                <div style={{fontSize:13,fontWeight:600,color:C.mid,fontFamily:C.P,textTransform:'uppercase',letterSpacing:'0.06em',marginTop:6}}>Regional Knowledge</div>
-              )}
-              {quizRegions.map(region=>{
+              ):(()=>{
                 const info=KNOWLEDGE.regions[region];
                 // Progress only once the region's generated bank exists, so the count doesn't
                 // jump from the fallback's /6 to /15 when it arrives.
                 const p=RegionQuizBank.get(region)&&RegionQuizBank.progress(region);
-                const sub=[info&&info.keyGrapes&&info.keyGrapes[0],info&&info.classification,p&&p.correct>0&&`${p.correct}/${p.total} correct`].filter(Boolean).join(' · ');
+                const sub=p&&p.correct>0?`${p.correct} of ${p.total} answered`:'5 questions a round';
                 return(
                   <div key={region} onClick={()=>handleRegionTap(region)} style={{background:C.white,borderRadius:14,padding:'12px 14px',display:'flex',alignItems:'center',gap:12,cursor:'pointer',border:`1px solid ${C.line}`}}>
-                    <div style={{width:42,height:42,borderRadius:12,background:C.offWhite,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><Icon n="map" sz={20} col={C.ink}/></div>
+                    <RegionFlag region={region}/>
                     <div style={{flex:1}}>
-                      <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>{region}</div>
+                      <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>{region} quiz</div>
                       <div style={{fontSize:14,color:C.mid,fontFamily:C.P}}>{sub}</div>
                     </div>
                     {regionLoading===region
@@ -349,13 +412,13 @@ function QuizHubScreen({nav,back,showPro}){
                       :<Icon n="chevron" sz={13} col={C.mid}/>}
                   </div>
                 );
-              })}
+              })()}/>
               {doneRegions.length>0&&<CompletedToggle count={doneRegions.length} expanded={regionsExpanded} onToggle={()=>setRegionsExpanded(e=>!e)}/>}
               {regionsExpanded&&doneRegions.map(region=>(
                 <div key={region} onClick={()=>handleRegionTap(region)} style={{background:C.white,borderRadius:14,padding:'12px 14px',display:'flex',alignItems:'center',gap:12,cursor:'pointer',border:`1px solid ${C.line}`,opacity:0.7}}>
-                  <div style={{width:42,height:42,borderRadius:12,background:C.offWhite,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><Icon n="map" sz={20} col={C.ink}/></div>
+                  <RegionFlag region={region}/>
                   <div style={{flex:1}}>
-                    <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>{region}</div>
+                    <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>{region} quiz</div>
                     <div style={{fontSize:14,color:C.mid,fontFamily:C.P}}>Every question answered · tap to practise</div>
                   </div>
                   <CompletedMark onReset={()=>resetProgress(region,()=>RegionQuizBank.reset(region))}/>
@@ -365,10 +428,11 @@ function QuizHubScreen({nav,back,showPro}){
           )}
         </div>
 
-        <div style={zoneLabel}>Your Grapes</div>
-        <div style={{fontSize:14,color:C.mid,fontFamily:C.P,marginTop:2}}>{unlockedGrapes.length}/{GRAPE_ALLOWLIST.length} unlocked · {isPro?'tap any grape for its quiz; locked ones unlock as you tap':`${unlockedGrapes.length?'tap one for its quiz · ':''}rate a wine to unlock more (${FREE_GRAPE_CAP} free)`}</div>
+        <div ref={secRefs.grapes} style={{...zoneLabel,scrollMarginTop:56}}>Grape quizzes</div>
+        <div style={{fontSize:14,color:C.mid,fontFamily:C.P,lineHeight:1.45,marginTop:2}}>Tap a grape for its quiz: what it tastes like, where it grows and how to spot it on a label.</div>
+        <div style={{fontSize:13,fontWeight:600,color:C.ink2,fontFamily:C.P,marginTop:4}}>{unlockedGrapes.length} of {GRAPE_ALLOWLIST.length} unlocked · {isPro?'locked ones unlock as you tap':`scan or rate a wine to unlock more (${FREE_GRAPE_CAP} free)`}</div>
         <div style={{display:'flex',flexWrap:'wrap',gap:8,marginTop:8}}>
-        {unlockedGrapes.map(g=>{
+        {(grapesExpanded?unlockedGrapes:unlockedGrapes.slice(0,GRAPE_PILLS)).map(g=>{
           const loading=grapeLoading===g;
           const col=grapeTypeColor(g);
           const status=grapePillStatus(g);
@@ -382,10 +446,10 @@ function QuizHubScreen({nav,back,showPro}){
             </div>
           );
         })}
-        {lockedGrapes.length>0&&(
+        {(lockedGrapes.length>0||unlockedGrapes.length>GRAPE_PILLS)&&(
           <div onClick={()=>setGrapesExpanded(e=>!e)} style={{flex:'0 0 auto',padding:'10px 18px',borderRadius:999,background:C.white,border:`1px dashed ${C.line}`,cursor:'pointer',display:'flex',alignItems:'center',gap:6}}>
             {grapesExpanded?<Icon n="chevron" sz={12} col={C.mid} style={{transform:'rotate(-90deg)'}}/>:<Icon n="lock" sz={12} col={C.mid}/>}
-            <span style={{fontSize:14,fontWeight:600,color:C.mid,fontFamily:C.P,whiteSpace:'nowrap'}}>{grapesExpanded?'Show less':`+${lockedGrapes.length} more`}</span>
+            <span style={{fontSize:14,fontWeight:600,color:C.mid,fontFamily:C.P,whiteSpace:'nowrap'}}>{grapesExpanded?'Show less':`+${lockedGrapes.length+Math.max(0,unlockedGrapes.length-GRAPE_PILLS)} more`}</span>
           </div>
         )}
         {grapesExpanded&&lockedGrapes.map(g=>{
@@ -403,26 +467,67 @@ function QuizHubScreen({nav,back,showPro}){
         {grapeLoading&&<div style={{fontSize:14,color:C.mid,fontFamily:C.P,marginTop:8}}>Preparing your {grapeLoading} quiz… the first time takes a few seconds.</div>}
         {grapeError&&!grapeLoading&&<div style={{fontSize:14,color:'#C0392B',fontFamily:C.P,marginTop:8}}>Couldn't load the {grapeError} quiz. Check your connection and tap it again.</div>}
 
-        <div style={zoneLabel}>Your Progress</div>
-        <div onClick={()=>isPro?nav('mastery-map'):showPro('mastery-map')} style={{background:C.white,borderRadius:16,border:`1px solid ${C.line}`,padding:'14px 16px',display:'flex',alignItems:'center',gap:12,marginTop:8,cursor:'pointer'}}>
-          <div style={{width:42,height:42,borderRadius:12,background:C.offWhite,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><Icon n="list" sz={19} col={C.ink}/></div>
-          <div style={{flex:1}}>
-            <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>Concept Mastery Map</div>
-            <div style={{fontSize:14,color:C.mid,fontFamily:C.P}}>{mastery.mastered}/{mastery.total} mastered — see the whole picture</div>
-          </div>
-          {!isPro&&<ProBadge/>}
-          <Icon n="chevron" sz={13} col={C.mid}/>
+        {/* Wine Skills: fixed guides for tasting, ordering, buying, pairing and hosting (Guides, pwa-guides.js) */}
+        <div ref={secRefs.skills} style={{scrollMarginTop:56}}>
+          <div style={zoneLabel}>Wine Skills</div>
+          <div style={{fontSize:14,color:C.mid,fontFamily:C.P,lineHeight:1.45,marginTop:2}}>Short guides for the moments that matter: tasting, ordering out, buying, pairing and hosting. Each ends with three quick questions.</div>
+        </div>
+        <div style={{display:'flex',flexDirection:'column',gap:8,marginTop:-6}}>
+          <ShowMore items={guideQueue} limit={4} noun="guides" render={g=>{
+            const p=Guides.progress(g.id), read=Guides.isRead(g.id);
+            return(
+              <div key={g.id} onClick={()=>openGuide(g.id)} role="button" style={{background:C.white,borderRadius:14,padding:'12px 14px',display:'flex',alignItems:'center',gap:12,cursor:'pointer',border:`1px solid ${C.line}`}}>
+                <div style={{width:42,height:42,borderRadius:12,background:C.crSoft,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,border:`1px solid ${C.crDim}`}}><Icon n={g.iconName||'book'} sz={20} col={C.cr}/></div>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontSize:12,fontWeight:600,color:C.mid,fontFamily:C.P,textTransform:'uppercase',letterSpacing:'0.06em',marginBottom:2}}>{Guides.group(g.group).label} · {g.readTime}</div>
+                  <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P,lineHeight:1.3}}>{g.title}</div>
+                  {(read||p.correct>0)&&<div style={{fontSize:13,fontWeight:600,color:C.ink2,fontFamily:C.P,marginTop:3}}>{read?'Read':'Not read yet'} · {p.correct}/{p.total} questions</div>}
+                </div>
+                <Icon n="chevron" sz={13} col={C.mid}/>
+              </div>
+            );
+          }}/>
+          {guidesDone.length>0&&<CompletedToggle count={guidesDone.length} expanded={guidesExpanded} onToggle={()=>setGuidesExpanded(e=>!e)}/>}
+          {guidesExpanded&&guidesDone.map(g=>(
+            <div key={g.id} onClick={()=>openGuide(g.id)} role="button" style={{background:C.white,borderRadius:14,padding:'10px 14px',display:'flex',alignItems:'center',gap:12,cursor:'pointer',border:`1px solid ${C.line}`,opacity:0.75}}>
+              <Icon n={g.iconName||'book'} sz={17} col={C.cr}/>
+              <div style={{flex:1,fontSize:15,fontWeight:700,color:C.ink,fontFamily:C.P}}>{g.title}</div>
+              <span style={{fontSize:14,fontWeight:700,color:C.green,fontFamily:C.P}}>✓</span>
+            </div>
+          ))}
         </div>
 
-        <div style={zoneLabel}>Tracks</div>
-        <div style={{background:C.white,borderRadius:16,border:`1px solid ${C.line}`,padding:'14px 16px',display:'flex',alignItems:'center',gap:12,opacity:0.6,marginTop:8}}>
-          <div style={{width:42,height:42,borderRadius:12,background:C.offWhite,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><Icon n="list" sz={19} col={C.mid}/></div>
-          <div style={{flex:1}}>
-            <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>Multi-part courses</div>
-            <div style={{fontSize:14,color:C.mid,fontFamily:C.P}}>Coming soon</div>
+        <div ref={secRefs.progress} style={{...zoneLabel,scrollMarginTop:56}}>Your Mastery</div>
+        <div onClick={()=>isPro?nav('mastery-map'):showPro('mastery-map')} role="button" style={{background:C.white,borderRadius:16,border:`1px solid ${C.line}`,padding:'14px 16px',display:'flex',flexDirection:'column',gap:10,marginTop:-6,cursor:'pointer'}}>
+          <div style={{display:'flex',alignItems:'center',gap:12}}>
+            <div style={{width:42,height:42,borderRadius:12,background:C.offWhite,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><Icon n="trophy" sz={19} col={C.ink}/></div>
+            <div style={{flex:1}}>
+              <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>Your wine knowledge · {knowledge.overall}%</div>
+              <div style={{fontSize:14,color:C.mid,fontFamily:C.P,lineHeight:1.4}}>From the articles you've read and the quizzes you've passed, across every wine type, region, grape and skill.</div>
+            </div>
+            {!isPro&&<ProBadge/>}
+            <Icon n="chevron" sz={13} col={C.mid}/>
           </div>
-          <ProBadge/>
+          <div style={{height:6,borderRadius:3,background:C.offWhite,overflow:'hidden'}}><div style={{height:'100%',width:`${knowledge.overall}%`,background:C.cr,borderRadius:3}}/></div>
+          <div style={{fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.45}}>
+            {knowledge.strongest?<>Strongest: <b>{knowledge.strongest.label}</b> ({knowledge.strongest.level.toLowerCase()}). </>:null}
+            {knowledge.gap?<>Biggest gap: <b>{knowledge.gap.label}</b>.</>:null}
+          </div>
         </div>
+
+        <div style={zoneLabel}>Courses</div>
+        {[{icon:'globe',title:'Country courses',sub:'A whole country in one course: its regions, grapes, local wines and labels.'},
+          {icon:'map',title:'Travel prep',sub:'Tell us where you\'re going and we\'ll build a course and wine picks for your trip.'}].map(c=>(
+          <div key={c.title} style={{background:C.white,borderRadius:16,border:`1px solid ${C.line}`,padding:'14px 16px',display:'flex',alignItems:'center',gap:12,opacity:0.7,marginTop:-6}}>
+            <div style={{width:42,height:42,borderRadius:12,background:C.offWhite,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><Icon n={c.icon} sz={19} col={C.mid}/></div>
+            <div style={{flex:1}}>
+              <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>{c.title}</div>
+              <div style={{fontSize:14,color:C.mid,fontFamily:C.P,lineHeight:1.4}}>{c.sub}</div>
+              <div style={{fontSize:12,fontWeight:700,color:C.amber,fontFamily:C.P,marginTop:3}}>Coming soon</div>
+            </div>
+            <ProBadge/>
+          </div>
+        ))}
 
         <div style={{height:8}}/>
         <div onClick={()=>{localStorage.removeItem(XPSystem.KEY);setXpData(XPSystem.fresh());}} style={{textAlign:'center',padding:'8px',cursor:'pointer'}}>
@@ -436,31 +541,59 @@ function QuizHubScreen({nav,back,showPro}){
   );
 }
 
-/* ── CONCEPT MASTERY MAP (PRO) ── */
+/* ── MASTERY (PRO) ──
+   How rounded their wine knowledge is, from what they've read and passed (KnowledgeMap,
+   pwa-knowledge.js): each area's score, level, what counts, and the next thing to do. */
+function MasteryBar({score,col}){
+  return <div style={{height:6,borderRadius:3,background:C.offWhite,overflow:'hidden'}}><div style={{height:'100%',borderRadius:3,background:score>=100?C.green:(col||C.cr),width:`${score}%`,transition:'width .5s ease'}}/></div>;
+}
 function MasteryMapScreen({nav,back}){
-  const d=MasterySystem.get();
+  const m=React.useMemo(()=>KnowledgeMap.compute(),[]);
+  const [open,setOpen]=React.useState(null);
+  const go=next=>{
+    if(!next) return;
+    if(next.quiz){ sessionStorage.setItem('vinterest_quiz_config2',JSON.stringify(next.quiz)); nav('quiz'); return; }
+    if(next.guide){ sessionStorage.setItem('vinterest_guide',next.guide); nav('guide'); return; }
+    nav(next.nav||'learn');
+  };
+  const GROUPS=[{id:'types',label:'Wine types'},{id:'places',label:'Regions and grapes'},{id:'skills',label:'Wine Skills'}];
+  const gap=[...m.areas].sort((a,b)=>a.score-b.score)[0];
   return(
     <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden'}}>
       <div style={{background:C.white,padding:'14px 20px',display:'flex',alignItems:'center',gap:12,borderBottom:`1px solid ${C.line}`,flexShrink:0}}>
         <div onClick={back} style={{width:34,height:34,borderRadius:17,background:C.offWhite,border:`1px solid ${C.line}`,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer'}}><Icon n="back" sz={16} col={C.ink}/></div>
-        <span style={{fontSize:20,fontWeight:800,color:C.ink,fontFamily:C.P,letterSpacing:'-0.4px'}}>Concept Mastery Map</span>
+        <span style={{fontSize:20,fontWeight:800,color:C.ink,fontFamily:C.P,letterSpacing:'-0.4px'}}>Your Mastery</span>
       </div>
-      <div style={{flex:1,overflowY:'auto',padding:'16px 20px',display:'flex',flexDirection:'column',gap:10}}>
-        {CONCEPTS.map(c=>{
-          const s=d[c.id]||{box:0,right:0,wrong:0,mastered:false};
-          const pct=Math.round((s.box/5)*100);
-          return(
-            <div key={c.id} style={{background:C.white,borderRadius:14,border:`1px solid ${C.line}`,padding:'14px 16px'}}>
-              <div style={{display:'flex',justifyContent:'space-between',marginBottom:8}}>
-                <span style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>{c.label}</span>
-                {s.mastered ? <Icon n="check" sz={16} col={C.green}/> : <span style={{fontSize:14,color:C.mid,fontFamily:C.P}}>{s.right||0} right · {s.wrong||0} wrong</span>}
+      <div style={{flex:1,overflowY:'auto',padding:'16px 20px',display:'flex',flexDirection:'column',gap:12}}>
+        <div style={{background:C.ink,borderRadius:16,padding:'18px 16px',display:'flex',flexDirection:'column',gap:8}}>
+          <div style={{fontSize:13,fontWeight:600,color:'rgba(255,255,255,0.5)',fontFamily:C.P,textTransform:'uppercase',letterSpacing:'0.06em'}}>Your wine knowledge</div>
+          <div style={{fontSize:32,fontWeight:800,color:'#fff',fontFamily:C.P}}>{m.overall}% <span style={{fontSize:16,fontWeight:600,color:'rgba(255,255,255,0.6)'}}>{m.level}</span></div>
+          <div style={{fontSize:14,color:'rgba(255,255,255,0.65)',fontFamily:C.P,lineHeight:1.5}}>Built from the articles you've read and the quizzes you've passed. Only studying and testing move it.{gap&&gap.score<100?` Your biggest gap is ${gap.label}.`:''}</div>
+        </div>
+        {GROUPS.map(G=>(
+          <div key={G.id} style={{display:'flex',flexDirection:'column',gap:8}}>
+            <div style={{fontSize:15,fontWeight:600,color:C.mid,letterSpacing:'0.08em',textTransform:'uppercase',fontFamily:C.P,marginTop:6}}>{G.label}</div>
+            {m.areas.filter(a=>a.group===G.id).map(a=>(
+              <div key={a.id} style={{background:C.white,borderRadius:14,border:`1px solid ${C.line}`,padding:'12px 14px',display:'flex',flexDirection:'column',gap:7}}>
+                <div role="button" onClick={()=>a.items&&setOpen(o=>o===a.id?null:a.id)} style={{display:'flex',justifyContent:'space-between',alignItems:'baseline',cursor:a.items?'pointer':'default'}}>
+                  <span style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>{a.label}</span>
+                  <span style={{fontSize:14,fontWeight:700,color:a.score>=100?C.green:C.ink2,fontFamily:C.P}}>{a.level} · {a.score}%</span>
+                </div>
+                <MasteryBar score={a.score}/>
+                <div style={{fontSize:13,color:C.mid,fontFamily:C.P}}>{a.detail}{a.items&&a.items.length?(open===a.id?' · hide':' · see each'):''}</div>
+                {open===a.id&&a.items.map(i=>(
+                  <div key={i.name} style={{display:'flex',alignItems:'center',gap:10}}>
+                    <span style={{flex:'0 0 42%',fontSize:14,color:C.ink2,fontFamily:C.P,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{i.name}</span>
+                    <div style={{flex:1}}><MasteryBar score={i.score}/></div>
+                    <span style={{fontSize:13,fontWeight:700,color:C.ink2,fontFamily:C.P,width:38,textAlign:'right'}}>{i.score}%</span>
+                  </div>
+                ))}
+                {a.next&&<div role="button" onClick={()=>go(a.next)} style={{fontSize:14,fontWeight:700,color:C.cr,fontFamily:C.P,cursor:'pointer'}}>{a.next.label} →</div>}
               </div>
-              <div style={{height:6,borderRadius:3,background:C.offWhite,overflow:'hidden'}}>
-                <div style={{height:'100%',borderRadius:3,background:s.mastered?C.green:C.cr,width:`${pct}%`,transition:'width .5s ease'}}/>
-              </div>
-            </div>
-          );
-        })}
+            ))}
+          </div>
+        ))}
+        <div style={{height:12}}/>
       </div>
     </div>
   );
@@ -530,6 +663,7 @@ function quizSetFor(mode,config){
   if(mode==='region') return {id:RegionQuizBank.setId(config.region),pool:()=>RegionQuizBank.pool(config.region)};
   if(mode==='practice') return {id:'topic:'+config.topicId,pool:()=>QuizMastery.topicPool(config.topicId)};
   if(mode==='grape') return {id:'grape:'+config.grape,pool:()=>config.questions||[]};
+  if(mode==='guide') return {id:Guides.setId(config.guideId),pool:()=>Guides.pool(config.guideId)};
   return null;
 }
 function buildQuizQuestions(config){
@@ -545,6 +679,7 @@ function quizTitle(config){
     :mode==='words'?"Words You've Met"
     :mode==='region'?'Your '+config.region+' Knowledge'
     :mode==='grape'?'The '+config.grape+' Quiz'
+    :mode==='guide'?((Guides.byId(config.guideId)||{}).title||'Wine Skills')
     :'Concept Check';
 }
 /* What to offer once a set is complete: the next unfinished set of the same kind, then Wine
@@ -554,11 +689,13 @@ function nextQuizSuggestion(config){
   const wines=WineHistory.getAll();
   const topics=QUIZ_TOPICS.filter(t=>t.id!==config.topicId&&!QuizMastery.isComplete('topic:'+t.id,QuizMastery.topicPool(t.id)))
     .map(t=>({config:{mode:'practice',topicId:t.id},label:t.label}));
-  const regions=(getCoverage(wines).unlocked?regionQuizCandidates(wines):[]).filter(r=>r!==config.region)
+  const regions=regionQuizCandidates(wines).filter(r=>r!==config.region)
     .map(r=>({config:{mode:'region',region:r},label:r}));
   const grapes=Object.keys(GrapeUnlocks.all()).filter(g=>g!==config.grape&&!grapeQuizComplete(g))
     .map(g=>({config:{mode:'grape',grape:g},label:g}));
-  const order=config.mode==='region'?[regions,topics,grapes]:config.mode==='grape'?[grapes,topics,regions]:[topics,regions,grapes];
+  const guides=Guides.queue().filter(g=>g.id!==config.guideId&&Guides.isRead(g.id)&&!Guides.passed(g.id))
+    .map(g=>({config:{mode:'guide',guideId:g.id},label:g.title}));
+  const order=config.mode==='region'?[regions,topics,grapes,guides]:config.mode==='grape'?[grapes,topics,regions,guides]:config.mode==='guide'?[guides,topics,regions,grapes]:[topics,regions,grapes,guides];
   for(const list of order) if(list.length) return list[0];
   return null;
 }

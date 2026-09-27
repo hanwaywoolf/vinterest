@@ -223,7 +223,7 @@ function ScanScreen({nav,back,onComplete,onSkip}){
       localStorage.setItem('vinterest_scan_count',_sc+1);
       // Scan XP is awarded once the wine is confirmed and saved (ScanFlow.awardScanXP), so a
       // misread label never earns a "new grape" for the wrong grape.
-      if(onboarding){ try{ WineHistory.track(wine); ScanFlow.awardScanXP(wine,{defer:true}); }catch(e){} onComplete(wine); return; }
+      if(onboarding){ try{ WineHistory.track(wine); ScanFlow.awardScanXP(wine,{defer:true}); ScanFlow.unlockLearning(wine); }catch(e){} onComplete(wine); return; }
     }catch(e){
       if(onboarding){ onComplete(null); return; }
       sessionStorage.setItem('vinterest_scan_result',JSON.stringify({demo:true,reason:e.message}));
@@ -384,14 +384,14 @@ function ScanScreen({nav,back,onComplete,onSkip}){
 /* ── WINE IDENTIFIED ──
    Goes straight to the same full wine-detail presentation used everywhere
    else in the app — no separate "Wine Identified!" holding screen. */
-function WineIdentifiedScreen({nav,back}){
+function WineIdentifiedScreen({nav,back,showPro}){
   const scanData=React.useMemo(()=>{
     try{ return JSON.parse(sessionStorage.getItem('vinterest_scan_result')||'{}'); }
     catch(e){ return {}; }
   },[]);
   // No tracking here — ScanCardsScreen (rendered below) already calls WineHistory.track() once
   // per scan. Tracking twice was double-incrementing times_consumed on every single scan.
-  return <ScanCardsScreen nav={nav} back={back}/>;
+  return <ScanCardsScreen nav={nav} back={back} showPro={showPro}/>;
 }
 
 Object.assign(window,{ScanHomeScreen,ScanScreen,WineIdentifiedScreen});

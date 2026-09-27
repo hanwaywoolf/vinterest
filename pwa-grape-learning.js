@@ -34,8 +34,16 @@ const GrapeUnlocks = Object.assign(_accountStore('vinterest_grape_unlocks_v1'), 
   all(){ return this.get().unlocked; },
   isUnlocked(g){ return !!this.get().unlocked[g]; },
   count(){ return Object.keys(this.get().unlocked).length; },
+  /* The allowlist name for a grape as it appears on a label, through synonyms: "Shiraz" is
+     Syrah, "Garnacha" is Grenache, "Pinot Gris" is Pinot Grigio. null if it isn't one of the 50. */
+  key(grape){
+    if(!grape) return null;
+    const c=WineDNA.grape(grape);
+    return GRAPE_ALLOWLIST.includes(c)?c:null;
+  },
   unlockViaRating(grape){
-    if(!grape||!GRAPE_ALLOWLIST.includes(grape)) return false;
+    grape=this.key(grape);
+    if(!grape) return false;
     const d=this.get();
     if(d.unlocked[grape]) return false;
     const isPro=!!localStorage.getItem('vinterest_pro');
@@ -45,6 +53,12 @@ const GrapeUnlocks = Object.assign(_accountStore('vinterest_grape_unlocks_v1'), 
     try{ ContentEngine.addGrapeArticle(grape,WineHistory.getAll()); }catch(e){}
     try{ prefetchGrapeQuiz(grape); }catch(e){}
     return true;
+  },
+  /* Scanning a bottle opens its grape too (someone shopping may not rate it yet), within the same
+     free allowance. A grape only guessed for the wine (grapes_basis 'typical') doesn't count. */
+  unlockViaScan(wine){
+    if(!wine||wine.grapes_basis==='typical') return false;
+    return this.unlockViaRating((wine.grapes||[])[0]);
   },
   unlockManual(grape){
     if(!grape||!GRAPE_ALLOWLIST.includes(grape)) return false;
@@ -71,11 +85,11 @@ const _grapeQuizInFlight=new Set();
 function getGrapeQuiz(grape, onReady){
   const key=_grapeQuizCacheKey(grape);
   const cached=localStorage.getItem(key);
-  if(cached){ try{ onReady(JSON.parse(cached)); return; }catch(e){} }
+  if(cached){ const b=grapeQuizBank(grape); if(b){ onReady(b); return; } }
   if(_grapeQuizInFlight.has(grape)){
     const wait=()=>{
-      const c=localStorage.getItem(key);
-      if(c){ try{ onReady(JSON.parse(c)); return; }catch(e){} }
+      const b=localStorage.getItem(key)&&grapeQuizBank(grape);
+      if(b){ onReady(b); return; }
       if(_grapeQuizInFlight.has(grape)) setTimeout(wait,300);
       else onReady(null);
     };
@@ -91,7 +105,7 @@ function getGrapeQuiz(grape, onReady){
       let cleaned=text.replace(/```json|```/g,'').trim();
       const s=cleaned.indexOf('['); const e=cleaned.lastIndexOf(']');
       if(s>=0&&e>s) cleaned=cleaned.slice(s,e+1);
-      const qs=JSON.parse(cleaned);
+      const qs=QuizMastery.distinct(JSON.parse(cleaned),grape);
       localStorage.setItem(key,JSON.stringify(qs));
       onReady(qs);
     })
@@ -100,7 +114,8 @@ function getGrapeQuiz(grape, onReady){
 }
 /* Progress through a grape's cached 15-question bank lives in QuizMastery under 'grape:<name>';
    a grape is complete once every question in its bank has been answered correctly. */
-function grapeQuizBank(grape){ try{ const qs=JSON.parse(localStorage.getItem(_grapeQuizCacheKey(grape))||'null'); return Array.isArray(qs)?qs:null; }catch(e){ return null; } }
+// Near-duplicates are filtered on read too, so banks saved before the filter existed are cleaned.
+function grapeQuizBank(grape){ try{ const qs=JSON.parse(localStorage.getItem(_grapeQuizCacheKey(grape))||'null'); return Array.isArray(qs)?QuizMastery.distinct(qs,grape):null; }catch(e){ return null; } }
 function grapeQuizComplete(grape){ const bank=grapeQuizBank(grape); return !!bank&&QuizMastery.isComplete('grape:'+grape,bank); }
 /* Fire-and-forget: warms the cache so a later tap on this grape is instant. Safe to call redundantly. */
 function prefetchGrapeQuiz(grape){

@@ -133,7 +133,7 @@ function BottomNav({active, nav, showPro}){
 function SideNav({active,nav,showPro,xpBadge,onXpClick}){
   const homeActive=['home','scan'].includes(active);
   const cellarActive=active==='mywines';
-  const learnActive=['learn','quiz','article','gen-article'].includes(active);
+  const learnActive=['learn','quiz','article','gen-article','guide','mastery-map'].includes(active);
   const profileActive=active==='profile';
   const isPro=!!localStorage.getItem('vinterest_pro');
   const atLimit=!isPro&&parseInt(localStorage.getItem('vinterest_scan_count')||'0')>=10;
@@ -197,6 +197,9 @@ function ProGate({feature,onClose}){
     'wine-list':{icon:'📋',title:'Wine List Scanning',desc:'Snap any restaurant menu and get instant match scores for every bottle.',bullets:['Scan full wine lists in seconds','AI ranks every wine by your taste profile','Works at any restaurant worldwide']},
     'unlimited-scans':{icon:'♾️',title:'Unlimited Scans',desc:"You've used your 10 free scans. Pro gives you unlimited.",bullets:['Scan as many bottles as you like','Your full scan history never expires','Priority AI label recognition']},
     'taste-depth':{icon:'🎭',title:'Full Taste Profile',desc:'Unlock your complete taste breakdown across all wine types.',bullets:['Whites, Rosé & Sparkling profiles','Personalised sommelier scripts for each','Full food pairing analysis']},
+    'grape-library':{icon:'🍇',title:'Every Grape',desc:`You've unlocked your ${typeof FREE_GRAPE_CAP!=='undefined'?FREE_GRAPE_CAP:5} free grapes. Pro opens all 50.`,bullets:['A quiz and article for every grape you meet','Learn what each grape tastes like, and why','New grapes unlock the moment you scan them']},
+    'mastery-map':{icon:'🏆',title:'Your Mastery',desc:'See how rounded your wine knowledge is, built from what you\'ve read and the quizzes you\'ve passed.',bullets:['A score for every wine type, region, grape and skill','Your strongest areas and your biggest gaps','The next thing to read or pass in each one']},
+    'regions':{icon:'🗺️',title:'Every Region',desc:`You've unlocked your ${typeof FREE_REGION_CAP!=='undefined'?FREE_REGION_CAP:5} free regions. Pro opens every region you scan.`,bullets:['Region quizzes and articles for every wine you scan','How each place shapes the wine in your glass','Personalised pieces on the regions you drink']},
     'expert-quiz':{icon:'🎓',title:'Expert Quizzes',desc:'Advanced wine knowledge questions with bigger XP rewards.',bullets:['WSET-inspired question sets','200 XP per completed quiz','Unlock Expert badge on your profile']},
   };
   const f=FEAT[feature]||FEAT['wine-list'];
@@ -278,7 +281,50 @@ const WineHistory = {
   KEY: 'vinterest_wines',
   // Grapes are cleaned on the way out, so older scans saved as "Blend - likely Grenache, Syrah, or
   // Cinsault" read as real varieties everywhere (see WineDNA.cleanGrapes).
-  getAll(){ try{ return JSON.parse(localStorage.getItem(this.KEY)||'[]').map(w=>WineDNA.cleanWine(w)); }catch(e){ return []; } },
+  getAll(){
+    let list; try{ list=JSON.parse(localStorage.getItem(this.KEY)||'[]').map(w=>WineDNA.cleanWine(w)); }catch(e){ return []; }
+    // Two entries for the same bottle (same name and vintage, matching producer) become one.
+    const merged=this._mergeDupes(list);
+    if(merged.length!==list.length){ try{ this.save(merged); }catch(e){} }
+    return merged;
+  },
+  _mergeDupes(list){
+    const seen=new Map(), out=[];
+    list.forEach(w=>{
+      const k=String(w.name||'').toLowerCase()+'|'+this._vintageKey(w.vintage);
+      const i=seen.get(k);
+      if(i!=null&&this.same(out[i],w)) out[i]=this._merge(out[i],w);
+      else { seen.set(k,out.length); out.push(w); }
+    });
+    // An entry saved without a vintage folds into the one dated entry of the same wine.
+    const nv=w=>this._vintageKey(w.vintage)==='nv';
+    if(!out.some(nv)) return out;
+    const drop=new Set();
+    out.forEach((w,i)=>{
+      if(!nv(w)) return;
+      const dated=out.map((d,j)=>j).filter(j=>!drop.has(j)&&!nv(out[j])&&this.same(out[j],w));
+      if(dated.length!==1) return;
+      const j=dated[0], newer=i<j;
+      out[j]={...(newer?this._merge(w,out[j]):this._merge(out[j],w)),vintage:out[j].vintage};
+      drop.add(i);
+    });
+    return out.filter((w,i)=>!drop.has(i));
+  },
+  /* One entry from two: the newer one's filled-in fields win, the score is the higher one, the
+     scan dates span both, and a "Save for later" doesn't override tasting it or scoring it. */
+  _merge(a,b){
+    const filled=o=>Object.fromEntries(Object.entries(o).filter(([,v])=>v!=null&&v!==''&&v!==0));
+    const m={...b,...filled(a)};
+    m.rating=Math.max(a.rating||0,b.rating||0);
+    m.times_consumed=Math.max(a.times_consumed||1,b.times_consumed||1);
+    const t=x=>new Date(x||0).getTime()||0;
+    m.scanned_at=t(a.scanned_at)&&t(b.scanned_at)?(t(a.scanned_at)<t(b.scanned_at)?a.scanned_at:b.scanned_at):(a.scanned_at||b.scanned_at);
+    m.last_scanned=t(a.last_scanned)>=t(b.last_scanned)?a.last_scanned:b.last_scanned;
+    if(a.scan_intent!==b.scan_intent&&[a.scan_intent,b.scan_intent].includes('checking')) m.scan_intent=a.scan_intent==='checking'?b.scan_intent:a.scan_intent;
+    if(m.rating>0&&m.scan_intent==='checking') m.scan_intent='tasted';
+    if(a.buy_again||b.buy_again) m.buy_again=true;
+    return m;
+  },
   save(wines){ localStorage.setItem(this.KEY, JSON.stringify(wines.slice(0,500))); },
 
   /* Identity. Claude doesn't always name a bottle the same way twice ("Muga Reserva" vs "Muga
@@ -292,14 +338,22 @@ const WineHistory = {
       .replace(/[^a-z0-9]+/g,' ').split(' ').forEach(t=>{ if(t&&!this._STOP.has(t)) out.add(t); }));
     return out;
   },
+  // "Biondi-Santi", "Biondi Santi" and "BiondiSanti" are one producer.
+  _squash(s){ return String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]/g,''); },
   _vintageKey(v){ return (!v||v===0||String(v).toUpperCase()==='NV')?'nv':String(v); },
   _t(w){ return (w.type||'').toLowerCase().replace('é','e'); },
   same(a,b){
     if(!a||!b) return false;
     const pa=this._tokens(a.producer), pb=this._tokens(b.producer);
-    if(pa.size&&pb.size&&![...pa].some(t=>pb.has(t))) return false;
+    if(pa.size&&pb.size&&![...pa].some(t=>pb.has(t))){
+      const sa=this._squash(a.producer), sb=this._squash(b.producer);
+      if(!(sa.length>=4&&sb.length>=4&&(sa.includes(sb)||sb.includes(sa)))) return false;
+    }
     if(a.name===b.name&&String(a.vintage)===String(b.vintage)) return true;
-    if(this._vintageKey(a.vintage)!==this._vintageKey(b.vintage)) return false;
+    // A scan that didn't read a vintage matches the same wine saved with one (it takes that
+    // year: ScanFlow.resolve); two different years stay two wines.
+    const va=this._vintageKey(a.vintage), vb=this._vintageKey(b.vintage);
+    if(va!==vb&&va!=='nv'&&vb!=='nv') return false;
     if(this._t(a)&&this._t(b)&&this._t(a)!==this._t(b)) return false;
     const na=this._tokens(a.name), nb=this._tokens(b.name);
     if(![...na].some(t=>nb.has(t))) return false;
@@ -519,14 +573,36 @@ const Regional={
 function retailPriceCacheKey(wine,code){
   return 'vinterest_price_v3_'+((wine&&wine.name)||'').replace(/\s/g,'_')+'_'+((wine&&wine.vintage)||'nv')+'_'+code;
 }
+/* The shop price for a wine, in the user's currency, cached on the device.
+   Premium wines (a label estimate of PRICE_SEARCH_FROM_USD or more: about £30 / €37) get a real
+   search of current shop listings through the Worker (window.claude.priceSearch: web search,
+   shared between users for 30 days), because that's where remembered prices go most wrong.
+   Everything else, and any search that finds nothing, gets Claude's estimate. */
+const PRICE_SEARCH_FROM_USD=40;
+function _priceMarket(curr){ return {code:curr.code,label:curr.label,country:(FindOnline.country()||'').toUpperCase()}; }
 function fetchRetailEstimate(wine,curr){
   const cacheKey=retailPriceCacheKey(wine,curr.code);
-  const cached=localStorage.getItem(cacheKey);
-  if(cached){ try{ return Promise.resolve(JSON.parse(cached)); }catch(e){} }
+  const premium=!!(wine&&wine.price_usd>=PRICE_SEARCH_FROM_USD&&window.claude&&window.claude.priceSearch);
+  let cached=null; try{ cached=JSON.parse(localStorage.getItem(cacheKey)||'null'); }catch(e){}
+  // A premium wine only estimated so far is looked up again: straight away if its search was
+  // still running last time (the Worker has usually saved the answer since), after a week if
+  // the search found nothing, so a miss isn't paid for on every open.
+  const recentMiss=cached&&cached.searchedAt&&Date.now()-cached.searchedAt<SEARCH_MISS_RETRY_MS;
+  if(cached&&(!premium||cached.source==='search'||recentMiss)) return Promise.resolve(cached);
+  const save=d=>{ try{ localStorage.setItem(cacheKey,JSON.stringify(d)); }catch(e){} return d; };
+  const search=premium
+    ?window.claude.priceSearch({name:wine.name,producer:wine.producer,vintage:wine.vintage,region:wine.region,country:wine.country,type:wine.type},_priceMarket(curr)).catch(()=>null)
+    :Promise.resolve(null);
+  return search.then(found=>found&&found.mid>0?save(found)
+    :_estimatePrice(wine,curr).then(d=>save(premium&&!(found&&found.pending)?{...d,searchedAt:Date.now()}:d)));
+}
+const SEARCH_MISS_RETRY_MS=7*24*3600*1000;
+function _estimatePrice(wine,curr){
   const prompt=
-    'You are a wine market pricing expert with deep knowledge of actual retail prices worldwide.'+
-    ' Your task: find the ACTUAL known retail price for this SPECIFIC wine — look up this exact producer and label, do NOT average by appellation.'+
-    ' Prestigious named wines (e.g. Guigal single-vineyard La Mouline/La Turque/La Landonne, DRC, Leroy, Screaming Eagle, Petrus, Opus One, cult Burgundy) retail for '+curr.sym+'50–'+curr.sym+'5000+; use the real figure.'+
+    'You are a wine market pricing expert. Estimate what ONE 75cl bottle of this SPECIFIC wine costs today in wine shops in '+(curr.label||'the user\'s market')+', in '+(curr.label?curr.code:'local currency')+' ('+curr.code+').'+
+    ' Price this exact producer and label, not an average for its region or appellation.'+
+    ' Your memory of prices may be a year or more old: prestige and cult wines (Super Tuscans, classed-growth Bordeaux, top Burgundy, Napa cult Cabernet, prestige Champagne, Barolo and Brunello from famous producers) have risen sharply in recent years, so price them at today\'s levels, not the ones you remember. Everyday wines have moved much less.'+
+    ' Price the '+(wine.vintage?wine.vintage+' vintage':'current release')+' at shop prices (not auction, en primeur or restaurant).'+
     ' Wine: '+(wine.name||'')+(wine.vintage?' '+wine.vintage:'')+'.'+
     (wine.producer?' Producer: '+wine.producer+'.':'')+
     ' If the name looks misspelled, price the wine it most plausibly is (e.g. "Cevero della Salla" is Antinori\'s Cervaro della Sala).'+
@@ -534,17 +610,14 @@ function fetchRetailEstimate(wine,curr){
     ' Region: '+(wine.region||'')+', '+(wine.country||'')+'.'+
     ' Grapes: '+((wine.grapes||[]).join(', ')||'unknown')+'.'+
     (wine.abv?' ABV: '+wine.abv+'%.':'')+
-    ' Currency: '+curr.label+' ('+curr.code+').'+
-    ' Return ONLY valid JSON, no markdown: {"low":NUMBER,"mid":NUMBER,"high":NUMBER,"currency":"'+curr.code+'","tier":"entry|everyday|premium|luxury|ultra-luxury","note":"one sentence — what drives this specific wine price (producer rep, rarity, appellation, etc)"}.'+
+    ' Return ONLY valid JSON, no markdown: {"low":NUMBER,"mid":NUMBER,"high":NUMBER,"currency":"'+curr.code+'","tier":"entry|everyday|premium|luxury|ultra-luxury","note":"one sentence on what drives this wine\'s price (producer, rarity, appellation)"}.'+
     ' Integers only. Return null values only if the wine is genuinely unidentifiable.';
   return window.claude.complete({purpose:'price',messages:[{role:'user',content:prompt}]}).then(text=>{
     let c=text.replace(/```json|```/g,'').trim();
     const s=c.indexOf('{'),e=c.lastIndexOf('}');
     if(s>=0&&e>s) c=c.slice(s,e+1);
-    const d=JSON.parse(c);
-    localStorage.setItem(cacheKey,JSON.stringify(d));
-    return d;
+    return {...JSON.parse(c),source:'estimate'};
   });
 }
 
-Object.assign(window,{C,Icon,BottomNav,SideNav,Pill,Prog,Card,Btn,ScreenErrorBoundary,WineHistory,ProBadge,ProGate,calcMatchScore,Regional,FindOnline,CURRENCY_LIST,lookupCountryCurrency,fetchRetailEstimate,retailPriceCacheKey});
+Object.assign(window,{C,Icon,BottomNav,SideNav,Pill,Prog,Card,Btn,ScreenErrorBoundary,WineHistory,ProBadge,ProGate,calcMatchScore,Regional,FindOnline,CURRENCY_LIST,lookupCountryCurrency,fetchRetailEstimate,retailPriceCacheKey,PRICE_SEARCH_FROM_USD});

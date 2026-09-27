@@ -2,26 +2,14 @@
 
 A single-file React progressive web app for wine lovers. Scan labels, build your taste profile, get personalized recommendations.
 
-## 🚀 Quick Deploy
+## 🚀 Deploy
 
-### Netlify
-```bash
-netlify deploy --prod
-```
+Cloudflare Pages is the only host. Pushing to GitHub builds it:
 
-### Cloudflare Pages
-1. Push to GitHub
-2. Connect repo at dash.cloudflare.com/pages
-3. Deploy (no build step needed)
-
-## 🔐 Environment Variables
-
-Set these in your deployment platform:
-
-| Variable | Required | Source |
-|----------|----------|--------|
-| `ANTHROPIC_API_KEY` | Yes | console.anthropic.com |
-| `WINE_SEARCHER_API_KEY` | Optional | api.wine-searcher.com |
+- Build command: `npm run build`
+- Output directory: `dist`
+- Secret: `ANTHROPIC_API_KEY` (Settings → Variables and Secrets). `_worker.js` is the only code that reads it.
+- KV binding: `PRICE_CACHE` for shared shop prices (see `docs/price-cache-setup.md`).
 
 ## 📱 Features
 
@@ -36,33 +24,19 @@ Set these in your deployment platform:
 
 ## 📁 Project Structure
 
-```
-.
-├── index.html              # Main PWA (all React components)
-├── manifest.json           # PWA metadata
-├── sw.js                   # Service Worker
-├── wines-db.json           # Local fallback database
-├── netlify.toml            # Deployment config
-├── netlify/functions/      # Serverless API routes
-│   ├── claude.js           # Label recognition
-│   └── lcbo.js             # Ontario pricing
-├── icons/                  # PWA icons (maskable)
-├── pwa-*.jsx               # Component source files
-└── DEPLOYMENT_PACKAGE.md   # Full deployment guide
-```
+See `CLAUDE.md`: `scripts/build.mjs` writes the site to `dist/`, `_worker.js` is the whole backend
+(the `/claude` proxy), and `scripts/app-sources.mjs` lists the sources that ship.
 
 ## 🛠️ Local Development
 
-1. Clone this repo
-2. Open `index.html` in a browser (uses React from CDN, no build step)
-3. Set `ANTHROPIC_API_KEY` in localStorage for label scanning:
-   ```javascript
-   localStorage.setItem('anthropic_key', 'your-key-here');
-   ```
+```bash
+npm install
+npm run build   # writes dist/
+npm test        # build, then the Playwright tests
+```
 
 ## 📚 Documentation
 
-- **DEPLOYMENT_PACKAGE.md** — Complete deployment instructions
 - **API_REQUIREMENTS.md** — Backend architecture & API integration guide
 - **CLAUDE.md** — Project-specific notes
 
@@ -92,7 +66,7 @@ Single-page React app (no build step):
 
 ## 📞 Support
 
-See DEPLOYMENT_PACKAGE.md for troubleshooting and next steps.
+See `CLAUDE.md` for how the app is put together.
 
 ---
 

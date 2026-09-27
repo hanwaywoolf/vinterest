@@ -40,6 +40,29 @@ const QuizMastery = Object.assign(_accountStore('vinterest_quiz_mastery_v1'), {
     const s=this.get().sets[setId];
     return {correct:s?pool.filter(q=>s.correct[q.q]).length:0,total:pool.length};
   },
+  /* Near-duplicates out of a generated bank: a question is dropped when an earlier one shares
+     most of its key words (the subject's own name aside), or, for "least / not / except"
+     questions, a good part of them: those read as a flipped copy of a positive question
+     ("best pairing" vs "least likely pairing") and look like the app contradicting itself. */
+  _STOP:new Set('a an the of and or to in on for with by is are was be it its this that these those which what who why how does do did would could should can will as at from into than then their there your you wine wines'.split(' ')),
+  _words(text,subject){
+    const drop=new Set(String(subject||'').toLowerCase().split(/\s+/));
+    return new Set(String(text||'').toLowerCase().replace(/'s\b/g,'').replace(/[^a-z0-9\s]/g,' ').split(/\s+/)
+      .map(w=>w.length>4&&w.endsWith('s')?w.slice(0,-1):w).filter(w=>(w.length>2||/\d/.test(w))&&!this._STOP.has(w)&&!drop.has(w)));
+  },
+  distinct(qs,subject){
+    const kept=[];
+    const neg=q=>/\b(least|not|except|never|worst|unlikely)\b/i.test(q.q);
+    (qs||[]).forEach(q=>{
+      const w=this._words(q.q,subject);
+      const clash=kept.some(k=>{
+        const kw=k._w, inter=[...w].filter(x=>kw.has(x)).length, sim=inter/((w.size+kw.size-inter)||1);
+        return sim>=0.45||((neg(q)||neg(k.q))&&sim>=0.25);
+      });
+      if(!clash) kept.push({q,_w:w});
+    });
+    return kept.map(k=>k.q);
+  },
   isComplete(setId,pool){ const p=this.progress(setId,pool); return p.total>0&&p.correct===p.total; },
   reset(setId){ const d=this.get(); delete d.sets[setId]; this.save(d); },
   /* A Wine Basics topic's pool: its beginner and intermediate questions from data/quiz-bank.json
