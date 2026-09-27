@@ -114,7 +114,7 @@ function App(){
         {screen==='gen-article'&& <ScreenErrorBoundary><GenArticleScreen {...ctx}/></ScreenErrorBoundary>}
         {screen==='guide'&& <ScreenErrorBoundary><GuideScreen {...ctx}/></ScreenErrorBoundary>}
         {screen==='account'   && <AccountProfileScreen {...ctx}/>}
-        {screen==='settings'  && <SettingsScreen {...ctx}/>}
+        {screen==='settings'  && <AccountProfileScreen {...ctx}/>/* Settings merged into Profile; old links land there */}
       </div>
       {showNav&&<BottomNav active={screen} nav={nav} showPro={setProGate}/>}
       {showXpBadge&&(

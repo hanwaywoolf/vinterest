@@ -32,7 +32,6 @@ const Settings = {
   onboarded(){ return !!Store.get(this.ONBOARDED_KEY); },
   setOnboarded(){ Store.set(this.ONBOARDED_KEY,'1'); },
   region(){ return Store.get(this.REGION_KEY); },
-  setRegion(r){ Store.set(this.REGION_KEY,r); },
   currency(){ return Store.get(this.CURRENCY_KEY); },
   /* How long sommelier scripts run: 'short' | 'long'. */
   scriptLength(){ return Store.get(this.SCRIPT_LENGTH_KEY)||'long'; },

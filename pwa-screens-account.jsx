@@ -168,10 +168,11 @@ function AccountProfileScreen({nav,back,showPro}){
           <div style={{fontSize:13,color:C.mid,fontFamily:C.P,marginTop:8}}>Sets where Learn starts and how deep articles go.</div>
         </AccSection>
 
-        <div onClick={()=>nav('settings')} style={{padding:'14px 4px',display:'flex',justifyContent:'space-between',alignItems:'center',cursor:'pointer'}}>
-          <span style={{fontSize:15,fontWeight:600,color:C.ink,fontFamily:C.P}}>Settings</span>
-          <Icon n="chevron" sz={14} col={C.mid}/>
-        </div>
+        {/* What went wrong recently, for when something misbehaves (ErrorLog, written by index.html). */}
+        <div onClick={()=>{
+          const errors=ErrorLog.list();
+          alert(errors.length?'Recent errors:\n\n'+errors.slice(-5).map(e=>e.context+': '+e.message).join('\n'):'No errors logged.');
+        }} style={{padding:'14px 4px',fontSize:14,color:C.mid,fontFamily:C.P,cursor:'pointer',textAlign:'center'}}>View error log</div>
         <div style={{height:8}}/>
       </div>
     </div>
@@ -241,9 +242,11 @@ function AccountCard({showPro}){
           <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>Your account</div>
           <div style={{fontSize:14,color:C.mid,fontFamily:C.P,overflow:'hidden',textOverflow:'ellipsis'}}>{Account.email()}</div>
         </div>
-        <div style={{display:'flex',flexDirection:'column',alignItems:'flex-end',gap:6,flexShrink:0}}>
+        <div style={{display:'flex',alignItems:'center',gap:6,flexShrink:0}}>
           <Pill active={pro} sm>{pro?'Pro':'Free'}</Pill>
-          {!pro&&showPro&&<span onClick={()=>showPro('upgrade')} style={{...link,fontSize:14}}>Upgrade</span>}
+          {/* Upgrade in the Pro badge's gold, so it reads as the way to Pro. */}
+          {!pro&&showPro&&<span role="button" onClick={()=>showPro('upgrade')} style={{display:'inline-flex',alignItems:'center',padding:'3px 11px',borderRadius:20,
+            background:'linear-gradient(135deg,#9B5E00,#C4870A)',color:'#fff',fontSize:13,fontWeight:700,fontFamily:C.P,cursor:'pointer',boxShadow:'0 1px 4px rgba(155,94,0,0.3)'}}>Upgrade</span>}
         </div>
       </div>
       <div style={{fontSize:13,color:C.mid,fontFamily:C.P,lineHeight:1.5}}>

@@ -25,16 +25,15 @@ async function open(context, page, hash) {
   await page.goto(`${BASE}/?demo=1${hash}`);
 }
 
-test('Settings scrolls to its last region and the error log', async ({ context, page }) => {
+test('Profile scrolls all the way down, and #settings (merged into it) opens it', async ({ context, page }) => {
   await open(context, page, '#settings');
-  const nz = page.locator('#root').getByText('New Zealand');
-  await swipeTo(page, nz);
-  expect(await inView(page, nz)).toBe(true);
-  await nz.click();
-  expect(await page.evaluate(() => Settings.region())).toBe('nz');
-  const log = page.locator('#root').getByText('View Error Log');
+  const root = page.locator('#root');
+  await expect(root).toContainText('Where You Buy Wine');
+  const log = root.getByText('View error log');
   await swipeTo(page, log);
   expect(await inView(page, log)).toBe(true);
+  // One place sets where they buy: region and currency move with the country.
+  expect(await page.evaluate(() => { UserPrefs.setLocation({ country: 'New Zealand' }); return [Settings.region(), Settings.currency()]; })).toEqual(['nz', 'NZD']);
 });
 
 test('the Pro sheet fits the screen, or scrolls, down to "Maybe later"', async ({ context, page }) => {
