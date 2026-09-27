@@ -46,6 +46,41 @@ const InstallApp = {
     catch(err){ this._emit(); return 'unavailable'; }
   },
 
+  /* Checks the live site the way Chrome does before offering an install, from this phone:
+     the manifest (reachable, the right type, readable, the fields Chrome needs), every icon
+     (loads as an image of its stated size) and the service worker. Resolves [{ok, text}]. */
+  async selfCheck(){
+    const out=[], add=(ok,text)=>out.push({ok,text});
+    let m=null;
+    try{
+      const r=await fetch('/manifest.json',{cache:'no-store'});
+      const type=r.headers.get('content-type')||'';
+      add(r.ok,`Manifest: ${r.status}, ${type||'no type'}`);
+      m=await r.json();
+      add(true,'Manifest reads correctly');
+    }catch(e){ add(false,'Manifest can\'t be read: '+(e&&e.message||e)); }
+    if(m){
+      add(!!(m.name||m.short_name),'Name: '+(m.short_name||m.name||'missing'));
+      add(!!m.start_url,'Start page: '+(m.start_url||'missing'));
+      add(['standalone','fullscreen','minimal-ui'].includes(m.display),'Display: '+(m.display||'missing'));
+      add(m.prefer_related_applications!==true,'Prefers another app: '+(m.prefer_related_applications?'yes':'no'));
+      for(const ic of (m.icons||[])){
+        const [w]=String(ic.sizes||'').split('x').map(Number);
+        const got=await new Promise(res=>{ const img=new Image(); img.onload=()=>res(img.naturalWidth); img.onerror=()=>res(0); img.src=ic.src+(ic.src.includes('?')?'&':'?')+'check='+Date.now(); });
+        add(got>0&&(!w||got===w),`Icon ${ic.sizes} ${ic.purpose||'any'}: ${got?got+'px':'didn\'t load'}`);
+      }
+    }
+    try{
+      const reg=navigator.serviceWorker&&await navigator.serviceWorker.getRegistration();
+      add(!!(reg&&reg.active),'Offline support: '+(reg?(reg.active?'running, scope '+new URL(reg.scope).pathname:'installing'):'not registered'));
+      add(!!(navigator.serviceWorker&&navigator.serviceWorker.controller),'This page is using it: '+(navigator.serviceWorker&&navigator.serviceWorker.controller?'yes':'no (reload once)'));
+    }catch(e){ add(false,'Offline support: '+(e&&e.message||e)); }
+    add(this._relatedInstalled!==true,'Chrome thinks it\'s installed: '+(this._relatedInstalled===null?'unknown':this._relatedInstalled?'yes':'no'));
+    add(true,'Install offer from Chrome this visit: '+(this._event?'yes':'no'));
+    add(true,'Browser: '+((navigator.userAgent.match(/(Chrome|CriOS|Firefox|SamsungBrowser|EdgA|Version)\/[\d.]+/)||['unknown'])[0]));
+    return out;
+  },
+
   /* What the browser reports, in words, for when the button doesn't appear. */
   why(){
     const out=[];

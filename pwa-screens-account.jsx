@@ -283,6 +283,8 @@ function InstallCard(){
   const [,tick]=React.useState(0);
   const [note,setNote]=React.useState('');
   const [why,setWhy]=React.useState(false);
+  const [checks,setChecks]=React.useState(null);
+  React.useEffect(()=>{ if(why&&!checks) InstallApp.selfCheck().then(setChecks); },[why]);
   React.useEffect(()=>{ const h=()=>tick(t=>t+1); window.addEventListener('vinterest:install',h); return()=>window.removeEventListener('vinterest:install',h); },[]);
   const st=InstallApp.status();
   if(st==='running') return null;
@@ -306,6 +308,9 @@ function InstallCard(){
       {why&&<div style={{display:'flex',flexDirection:'column',gap:6}}>
         {InstallApp.why().map((w,i)=><div key={i} style={body}>• {w}</div>)}
         <div style={body}>You can also try Chrome's menu (⋮) → <b>Add to home screen</b>, if it's there.</div>
+        <div style={{...body,fontWeight:700,color:C.ink2,marginTop:4}}>What this phone sees</div>
+        {!checks&&<div style={body}>Checking…</div>}
+        {checks&&checks.map((c,i)=><div key={i} style={{...body,color:c.ok?C.mid:'#B04A3A'}}>{c.ok?'✓':'✗'} {c.text}</div>)}
       </div>}
     </>}
     {note&&<div role="status" style={{...body,color:C.ink2}}>{note}</div>}

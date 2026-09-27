@@ -58,6 +58,10 @@ test('when Chrome hasn\'t offered it, Profile says so and explains why', async (
   await expect(root).not.toContainText('Install Vinterest');
   await root.getByText('Why not?').click();
   await expect(root).toContainText('Add to home screen');
+  // The live check runs from the phone: manifest, icons, offline support. On the built site all pass.
+  await expect(root).toContainText('✓ Manifest reads correctly');
+  await expect(root).toContainText('✓ Icon 512x512 any: 512px');
+  await expect(root).toContainText('Install offer from Chrome this visit: no');
 });
 
 test('opened from the home screen, the install card is gone', async ({ context, page }) => {
