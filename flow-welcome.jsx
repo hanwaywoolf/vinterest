@@ -6,15 +6,15 @@
 const _WELCOME_FEATS=[
   {icon:'heart',  col:'#E0708A',t:'Know if you\'ll like it',d:'A personal match for every bottle, worked out from your own scores, not critics\'.'},
   {icon:'brain',  col:'#7FA7E0',t:'Your WineDNA',d:'Learns what you actually love (styles, grapes, regions, price) and gets sharper with every bottle.'},
-  {icon:'book',   col:'#6FCB9A',t:'Learn from every bottle',d:'Each scan tells its story in plain words and opens quizzes for its grape and region, written for you.'},
+  {icon:'book',   col:'#6FCB9A',t:'A learning path that\'s yours',d:'Articles written from your own wines, quizzes that unlock with every new grape and region you drink, and short guides to tasting, ordering and food. Mastery shows how far you\'ve come.'},
   {icon:'bolt',   col:'#E8B04A',t:'Train your palate',d:'Blind Call: guess what\'s in the glass before you look, and watch your calls get better.'},
   {icon:'message',col:'#C9A0E0',t:'Order with confidence',d:'Scan a wine list for your best bets, and get a few lines to say to the sommelier.'},
   {icon:'cart',   col:'#8FD0D0',t:'Spend smarter',d:'Real shop prices where you live, and which bottles are good value for you.'},
 ];
 const _WELCOME_STEPS=[
-  {when:'Today',t:'Your first bottle\'s story, what to look for, and its first quizzes.'},
+  {when:'Today',t:'Your first bottle\'s story, what to look for, and its grape and region quizzes unlocked.'},
   {when:'After 3 scores',t:'Your personal match switches on for that kind of wine.'},
-  {when:'Every bottle after',t:'Your WineDNA sharpens: what you love, your price sweet spot, and a sommelier script.'},
+  {when:'Every bottle after',t:'Your WineDNA sharpens (what you love, your price sweet spot, a sommelier script) and your learning path grows with new articles and quizzes written around your wines.'},
 ];
 
 function WelcomeScreen({next}){
