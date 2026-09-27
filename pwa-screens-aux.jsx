@@ -3,7 +3,7 @@
 function TasteProfileScreen({nav,back,showPro}){
   const [tab,setTab]=React.useState(0);
   const [genScripts,setGenScripts]=React.useState({});
-  const [scriptLength,setScriptLength]=React.useState(localStorage.getItem('vinterest_script_length')||'long');
+  const [scriptLength,setScriptLength]=React.useState(Settings.scriptLength());
   const [generating,setGenerating]=React.useState(null);
   const [copied,setCopied]=React.useState(false);
 
@@ -120,7 +120,7 @@ function TasteProfileScreen({nav,back,showPro}){
             {tabWines.length>0&&!isGenerating&&(
               <div style={{display:'flex',gap:4,background:C.offWhite,borderRadius:6,padding:'3px 4px',border:`1px solid ${C.line}`}}>
                 {['short','long'].map(len=>(
-                  <div key={len} onClick={()=>{setScriptLength(len);localStorage.setItem('vinterest_script_length',len);}} style={{padding:'4px 8px',borderRadius:4,background:scriptLength===len?C.cr:'transparent',cursor:'pointer'}}>
+                  <div key={len} onClick={()=>{setScriptLength(len);Settings.setScriptLength(len);}} style={{padding:'4px 8px',borderRadius:4,background:scriptLength===len?C.cr:'transparent',cursor:'pointer'}}>
                     <span style={{fontSize:13,fontWeight:600,color:scriptLength===len?'#fff':C.mid,fontFamily:C.P}}>{len.charAt(0).toUpperCase()+len.slice(1)}</span>
                   </div>
                 ))}
@@ -151,7 +151,7 @@ function TasteProfileScreen({nav,back,showPro}){
                   style={{background:c.col,boxShadow:`0 3px 12px ${c.col}40`}}>{copied?'Copied!':'Copy Script'}</Btn>
                 <Btn small onClick={()=>{
                   const key=`vinterest_script_v2_${c.typeKey}_n${tabWines.length}`;
-                  localStorage.removeItem(key);
+                  Cache.remove(key);
                   setGenScripts(s=>{const n={...s};delete n[c.typeKey];return n;});
                 }}>Regenerate</Btn>
               </div>
@@ -180,7 +180,7 @@ function TasteProfileScreen({nav,back,showPro}){
             <div style={{padding:'10px 14px 14px',fontSize:15,color:C.mid,fontFamily:C.P,fontStyle:'italic'}}>Scan some {c.label.toLowerCase()} to see your top bottles here</div>
           ):topWines.map((w,i)=>(
             <div key={i} onClick={()=>{
-              sessionStorage.setItem('vinterest_scan_result',JSON.stringify({demo:false,wine:w,confidence:0.9}));
+              Handoff.openWine({demo:false,wine:w,confidence:0.9});
               nav('detail');
             }} style={{display:'flex',alignItems:'center',gap:12,padding:'9px 14px',borderTop:`1px solid ${C.line}`,cursor:'pointer'}}>
               <div style={{width:32,height:44,borderRadius:6,background:c.col+'12',flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center'}}>
@@ -217,41 +217,7 @@ function TasteProfileScreen({nav,back,showPro}){
         })()}
 
         {/* Data backup */}
-        <Card style={{padding:12}}>
-          <div style={{fontSize:16,fontWeight:600,color:C.ink,fontFamily:C.P,marginBottom:10}}>Data Backup</div>
-          <div style={{display:'flex',gap:8}}>
-            <Btn full style={{flex:1,fontSize:15}} onClick={()=>{
-              const data={wines:WineHistory.getAll(),xp:XPSystem.get(),exported:new Date().toISOString()};
-              const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
-              const url=URL.createObjectURL(blob);
-              const a=document.createElement('a');
-              a.href=url;
-              a.download='vinterest-backup-'+new Date().toISOString().slice(0,10)+'.json';
-              a.click();
-              URL.revokeObjectURL(url);
-            }}>⬇ Export</Btn>
-            <Btn full style={{flex:1,fontSize:15}} onClick={()=>{
-              const inp=document.createElement('input');
-              inp.type='file'; inp.accept='.json,application/json';
-              inp.onchange=e=>{
-                const file=e.target.files[0]; if(!file) return;
-                const reader=new FileReader();
-                reader.onload=ev=>{
-                  try{
-                    const d=JSON.parse(ev.target.result);
-                    if(d.wines) WineHistory.save(d.wines);
-                    if(d.xp) localStorage.setItem(XPSystem.KEY,JSON.stringify(d.xp));
-                    alert('Restored! '+((d.wines||[]).length)+' wines imported.');
-                    window.location.reload();
-                  }catch(err){ alert('Could not read backup file.'); }
-                };
-                reader.readAsText(file);
-              };
-              inp.click();
-            }}>⬆ Import</Btn>
-          </div>
-          <div style={{fontSize:13,color:C.mid,fontFamily:C.P,marginTop:8,lineHeight:1.5}}>Export saves your wines &amp; XP to a JSON file on your phone. Import restores from a previous backup.</div>
-        </Card>
+        <DataBackupCard padding={12}/>
         {/* App version */}
         <div style={{textAlign:'center',padding:'12px 0 4px',opacity:0.45}}>
           <span style={{fontSize:13,color:C.mid,fontFamily:C.P}}>Vinterest v1.0.38</span>
@@ -324,7 +290,7 @@ function WineRow({w,open,setOpen,onOpen,onScore,onEdit,onDelete}){
 
 function MyWinesScreen({nav,back}){
   // Opened from a type's "See all" (WineDNA, Home): start on that type, sorted by score.
-  const [entry]=React.useState(()=>{ try{ const v=JSON.parse(sessionStorage.getItem('vinterest_mywines_view')||'null'); sessionStorage.removeItem('vinterest_mywines_view'); return v||{}; }catch(e){ return {}; } });
+  const [entry]=React.useState(()=>Handoff.myWinesView.take());
   const [type,setType]=React.useState(entry.type||'all');
   const [status,setStatus]=React.useState(null);
   const [sort,setSort]=React.useState(entry.sort||'recent');
@@ -342,8 +308,8 @@ function MyWinesScreen({nav,back}){
   const groups=MyWines.groups(list,sort);
   const filtered=type!=='all'||status||q;
 
-  function open(w){ sessionStorage.setItem('vinterest_scan_result',JSON.stringify({demo:false,wine:w,existingRating:w.rating||0})); nav('detail'); }
-  function score(w){ sessionStorage.setItem('vinterest_scan_result',JSON.stringify({demo:false,source:'history',view:'rate',wine:w})); nav('identified'); }
+  function open(w){ Handoff.openWine({demo:false,wine:w,existingRating:w.rating||0}); nav('detail'); }
+  function score(w){ Handoff.openWine({demo:false,source:'history',view:'rate',wine:w}); nav('identified'); }
   function del(w){
     const index=wines.findIndex(x=>x.name===w.name&&String(x.vintage)===String(w.vintage));
     WineHistory.remove(w.name,w.vintage); setVersion(v=>v+1);
@@ -573,7 +539,7 @@ function LearnScreen(props){ return React.createElement(QuizHubScreen, props); }
 /* ── WINE LIST RESULTS SCREEN ── */
 function WineListScreen({nav,back}){
   const data=React.useMemo(()=>{
-    try{ return JSON.parse(sessionStorage.getItem('vinterest_winelist_result')||'{}'); }
+    try{ return Handoff.wineList.get({}); }
     catch(e){ return {}; }
   },[]);
   const isDemo=data.demo===true;
@@ -581,7 +547,7 @@ function WineListScreen({nav,back}){
 
   // A failed read shows the retry banner and no wines: made-up wines with made-up scores would mislead.
   const wines=(data.wines&&data.wines.length>0)?data.wines:[];
-  const listCurrency=data.currency||Regional.current().code||localStorage.getItem('vinterest_currency')||'GBP';
+  const listCurrency=data.currency||Regional.current().code||Settings.currency()||'GBP';
   const typeColors={red:'#8B1A2F',white:'#B8963E',rosé:'#C47A8A',rose:'#C47A8A',sparkling:'#5E8FA8',orange:'#C1652B',dessert:'#8A5A2B',fortified:'#5C2A1E'};
   const colFor=t=>typeColors[(t||'red').toLowerCase().replace('é','e')]||C.cr;
   const currSym=(CURRENCY_LIST.find(c=>c.code===listCurrency)||{}).sym||'';
@@ -719,7 +685,7 @@ function WineListScreen({nav,back}){
             <Card key={i} style={{padding:12,cursor:'pointer'}} onClick={()=>{
               // A wine picked from a list is a look, not a purchase: it's saved as a shelf check.
               const {style,grape,...rest}=TasteMatch.fromListEntry(w);
-              sessionStorage.setItem('vinterest_scan_result',JSON.stringify({demo:false,source:'list',wine:rest,listPrice:bottle?Number(bottle):null,listCurrency}));
+              Handoff.openWine({demo:false,source:'list',wine:rest,listPrice:bottle?Number(bottle):null,listCurrency});
               nav('identified');
             }}>
               <div style={{display:'flex',gap:12,alignItems:'flex-start'}}>
@@ -776,13 +742,50 @@ function WineListScreen({nav,back}){
   );
 }
 
+/* Export and restore a backup (Settings and WineDNA). The file format, checks and merge are
+   Backup's (pwa-backup.js); this only moves the file and asks before restoring. */
+function DataBackupCard({padding=12}){
+  function exportFile(){
+    const blob=new Blob([JSON.stringify(Backup.exportData(),null,2)],{type:'application/json'});
+    const url=URL.createObjectURL(blob), a=document.createElement('a');
+    a.href=url; a.download=Backup.fileName(); a.click();
+    URL.revokeObjectURL(url);
+  }
+  function importFile(){
+    const inp=document.createElement('input'); inp.type='file'; inp.accept='.json,application/json';
+    inp.onchange=e=>{
+      const file=e.target.files[0]; if(!file) return;
+      const reader=new FileReader();
+      reader.onload=ev=>{
+        const r=Backup.read(String(ev.target.result||''));
+        if(!r.ok){ alert(r.error); return; }
+        if(!window.confirm(Backup.describe(r.summary)+'\n\nRestore it?')) return;
+        const done=Backup.apply(r.data);
+        alert(`Restored: ${done.added} new wine${done.added===1?'':'s'}${done.updated?`, ${done.updated} merged`:''}.`);
+        window.location.reload();
+      };
+      reader.onerror=()=>alert('That file couldn\'t be opened. Try saving it to your phone again.');
+      reader.readAsText(file);
+    };
+    inp.click();
+  }
+  return <Card style={{padding}}>
+    <div style={{fontSize:16,fontWeight:600,color:C.ink,fontFamily:C.P,marginBottom:10}}>Data Backup</div>
+    <div style={{display:'flex',gap:8}}>
+      <Btn full style={{flex:1,fontSize:15}} onClick={exportFile}>⬇ Export</Btn>
+      <Btn full style={{flex:1,fontSize:15}} onClick={importFile}>⬆ Import</Btn>
+    </div>
+    <div style={{fontSize:13,color:C.mid,fontFamily:C.P,marginTop:8,lineHeight:1.5}}>Export saves your wines, XP, settings and learning progress to a file on your phone. Import adds a backup to what's here: nothing on this phone is lost.</div>
+  </Card>;
+}
+
 /* ── SETTINGS SCREEN ── */
 function SettingsScreen({nav,back}){
-  const [region, setRegion] = React.useState(localStorage.getItem('vinterest_region') || 'uk');
+  const [region, setRegion] = React.useState(Settings.region() || 'uk');
   
   function saveRegion(r) {
     setRegion(r);
-    localStorage.setItem('vinterest_region', r);
+    Settings.setRegion(r);
   }
 
   return (
@@ -829,7 +832,7 @@ function SettingsScreen({nav,back}){
         <div style={{marginBottom:24}}>
           <div style={{fontSize:16,fontWeight:600,color:C.ink,fontFamily:C.P,marginBottom:12}}>Debug</div>
           <Btn onClick={()=>{
-            const errors = JSON.parse(localStorage.getItem('vinterest_errors') || '[]');
+            const errors = ErrorLog.list();
             if(errors.length===0){alert('No errors logged.');return;}
             alert('Recent errors:\n\n' + errors.slice(-5).map(e => e.context + ': ' + e.message).join('\n'));
           }} style={{width:'100%',padding:'12px',borderRadius:12,background:C.white,border:`1px solid ${C.line}`,fontSize:14,fontWeight:600,color:C.ink,fontFamily:C.P,cursor:'pointer'}}>

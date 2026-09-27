@@ -98,19 +98,18 @@ function WineDNAScreen({nav,back,showPro}){
   const [genScripts,setGenScripts]=React.useState({});
   const [generatingScript,setGeneratingScript]=React.useState(null);
   const [copied,setCopied]=React.useState(null);
-  const [scriptLength,setScriptLength]=React.useState(localStorage.getItem('vinterest_script_length')||'long');
-  const COLLAPSE_KEY='vinterest_dna_collapsed_v1';
+  const [scriptLength,setScriptLength]=React.useState(Settings.scriptLength());
   const [collapsed,setCollapsed]=React.useState(()=>{
     const def={love:false,taste:false,value:false,explore:false,flavour:false,journey:false,scripts:false,history:false};
     try{
-      const saved=JSON.parse(localStorage.getItem(COLLAPSE_KEY)||'null');
+      const saved=Device.dnaCollapsed();
       if(saved) return {...def,...saved};
     }catch(e){}
     return def;
   });
   const toggle=React.useCallback(k=>setCollapsed(c=>{
     const next={...c,[k]:!c[k]};
-    try{localStorage.setItem(COLLAPSE_KEY,JSON.stringify(next));}catch(e){}
+    Device.setDnaCollapsed(next);
     return next;
   }),[]);
   // Arriving from Home with a section to show (UserPrefs.openDNA): open it and scroll to it.
@@ -157,14 +156,14 @@ function WineDNAScreen({nav,back,showPro}){
   React.useEffect(()=>{
     if(!t.wines.length) return;
     const key=`vinterest_dna_v6_${t.key}_${sig}`;
-    const cached=localStorage.getItem(key);
+    const cached=Cache.getText(key);
     if(cached){setGenSummaries(s=>({...s,[t.key]:cached}));return;}
     if(generatingSummary===t.key) return;
     setGeneratingSummary(t.key);
     const hasDislikes=t.favourites.disliked.length>0;
     const prompt=`You write the summary at the top of a wine drinker's WineDNA profile. The app is educational: be warm, specific and confidence-building, and help them buy better next time. Use ONLY these facts, computed from their own scans and 100-point scores; never invent grapes, regions, wines or numbers, and don't claim a preference the facts don't state. If they've scored fewer than 8, say gently that the picture is still forming.\n\nFacts:\n${WineDNA.summaryFacts(t)}\n\nReturn ONLY raw JSON, no markdown: {"style":"one sentence on the style of ${t.label.toLowerCase()} they reach for, max 22 words","love":"one sentence on what their highest scores have in common and what to look for next, max 26 words"${hasDislikes?',"miss":"one sentence on what the wines they scored under 80 share, framed as useful to know when buying, max 22 words"':''}}`;
     window.claude.complete({purpose:'winedna_summary',messages:[{role:'user',content:prompt}]})
-      .then(text=>{const s=(text||'').trim(); if(s){localStorage.setItem(key,s);setGenSummaries(g=>({...g,[t.key]:s}));}})
+      .then(text=>{const s=(text||'').trim(); if(s){Cache.setText(key,s);setGenSummaries(g=>({...g,[t.key]:s}));}})
       .catch(()=>{})
       .finally(()=>setGeneratingSummary(null));
   },[typeIdx,sig]);
@@ -195,7 +194,7 @@ function WineDNAScreen({nav,back,showPro}){
   }
 
   // A wine named in a list (Worth buying again, Best value, Worth knowing) opens its details.
-  const openWine=w=>{ sessionStorage.setItem('vinterest_scan_result',JSON.stringify({demo:false,wine:w,existingRating:w.rating||0})); nav('detail'); };
+  const openWine=w=>{ Handoff.openWine({demo:false,wine:w,existingRating:w.rating||0}); nav('detail'); };
 
   /* Per-type stats */
   const tLabel=t.label.toLowerCase();
@@ -366,7 +365,7 @@ function WineDNAScreen({nav,back,showPro}){
         {(()=>{
           const reads=ContentEngine.forType(t.key,allWines).slice(0,2);
           if(!reads.length) return null;
-          const open=stub=>{ sessionStorage.setItem('vinterest_gen_article',JSON.stringify(stub)); nav('gen-article'); };
+          const open=stub=>{ Handoff.genArticle.set(stub); nav('gen-article'); };
           return <Card style={{padding:'14px 16px',display:'flex',flexDirection:'column',gap:10}}>
             <div>
               <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>Written from your WineDNA</div>
@@ -529,7 +528,7 @@ function WineDNAScreen({nav,back,showPro}){
             <div style={{display:'flex',flexDirection:'column',gap:10}}>
               {t.explore.picks.map((p,i)=>(
                 <div key={p.style.id}
-                  onClick={()=>{sessionStorage.setItem('vinterest_style_explore',JSON.stringify({id:p.style.id,typeKey:t.key,label:t.label}));nav('style-explore');}}
+                  onClick={()=>{Handoff.styleExplore.set({id:p.style.id,typeKey:t.key,label:t.label});nav('style-explore');}}
                   style={{padding:'12px 12px',borderRadius:12,background:i===0?`${t.col}08`:C.offWhite,border:`1px solid ${i===0?t.col+'25':C.line}`,cursor:'pointer'}}>
                   <div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline',gap:8,marginBottom:6}}>
                     <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P,flex:1}}>{p.style.name}</div>
@@ -640,7 +639,7 @@ function WineDNAScreen({nav,back,showPro}){
               {t.wines.length>0&&!generatingScript&&(
                 <div style={{display:'flex',gap:4,background:C.offWhite,borderRadius:6,padding:'3px 4px',border:`1px solid ${C.line}`}}>
                   {['short','long'].map(len=>(
-                    <div key={len} onClick={()=>{setScriptLength(len);localStorage.setItem('vinterest_script_length',len);setGenScripts(s=>{const n={...s};delete n[t.key];return n;});}} style={{padding:'4px 8px',borderRadius:4,background:scriptLength===len?C.cr:'transparent',cursor:'pointer'}}>
+                    <div key={len} onClick={()=>{setScriptLength(len);Settings.setScriptLength(len);setGenScripts(s=>{const n={...s};delete n[t.key];return n;});}} style={{padding:'4px 8px',borderRadius:4,background:scriptLength===len?C.cr:'transparent',cursor:'pointer'}}>
                       <span style={{fontSize:13,fontWeight:600,color:scriptLength===len?'#fff':C.mid,fontFamily:C.P}}>{len.charAt(0).toUpperCase()+len.slice(1)}</span>
                     </div>
                   ))}
@@ -697,11 +696,11 @@ function WineDNAScreen({nav,back,showPro}){
                 <>
                   <div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline',marginTop:10,marginBottom:6}}>
                     <span style={sub}>Top {t.label}</span>
-                    <span onClick={()=>{ try{ sessionStorage.setItem('vinterest_mywines_view',JSON.stringify({type:t.key,sort:'rating'})); }catch(e){} nav('mywines'); }} style={{fontSize:13,fontWeight:600,color:t.col,fontFamily:C.P,cursor:'pointer'}}>See all →</span>
+                    <span onClick={()=>{ try{ Handoff.myWinesView.set({type:t.key,sort:'rating'}); }catch(e){} nav('mywines'); }} style={{fontSize:13,fontWeight:600,color:t.col,fontFamily:C.P,cursor:'pointer'}}>See all →</span>
                   </div>
                   {t.topWines.map((w,i)=>(
                     <div key={i} onClick={()=>{
-                      sessionStorage.setItem('vinterest_scan_result',JSON.stringify({demo:false,wine:w,confidence:0.9,existingRating:w.rating||0}));
+                      Handoff.openWine({demo:false,wine:w,confidence:0.9,existingRating:w.rating||0});
                       nav('detail');
                     }} style={{display:'flex',alignItems:'center',gap:10,padding:'8px 0',borderTop:`1px solid ${C.line}`,cursor:'pointer'}}>
                       <span style={{fontSize:13,fontWeight:700,color:C.mid,fontFamily:C.P,width:22,flexShrink:0}}>#{i+1}</span>
@@ -719,37 +718,7 @@ function WineDNAScreen({nav,back,showPro}){
         })()}
 
         {/* ── Data Backup ── */}
-        <Card style={{padding:14}}>
-          <div style={{fontSize:16,fontWeight:600,color:C.ink,fontFamily:C.P,marginBottom:10}}>Data Backup</div>
-          <div style={{display:'flex',gap:8}}>
-            <Btn full style={{flex:1}} onClick={()=>{
-              const data={wines:WineHistory.getAll(),xp:XPSystem.get(),exported:new Date().toISOString()};
-              const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
-              const url=URL.createObjectURL(blob);
-              const a=document.createElement('a');a.href=url;a.download='vinterest-backup-'+new Date().toISOString().slice(0,10)+'.json';a.click();
-              URL.revokeObjectURL(url);
-            }}>⬇ Export</Btn>
-            <Btn full style={{flex:1}} onClick={()=>{
-              const inp=document.createElement('input');inp.type='file';inp.accept='.json,application/json';
-              inp.onchange=e=>{
-                const file=e.target.files[0];if(!file)return;
-                const reader=new FileReader();
-                reader.onload=ev=>{
-                  try{
-                    const d=JSON.parse(ev.target.result);
-                    if(d.wines)WineHistory.save(d.wines);
-                    if(d.xp)localStorage.setItem(XPSystem.KEY,JSON.stringify(d.xp));
-                    alert('Restored! '+((d.wines||[]).length)+' wines imported.');
-                    window.location.reload();
-                  }catch(err){alert('Could not read backup file.');}
-                };
-                reader.readAsText(file);
-              };
-              inp.click();
-            }}>⬆ Import</Btn>
-          </div>
-          <div style={{fontSize:13,color:C.mid,fontFamily:C.P,marginTop:8,lineHeight:1.5}}>Export saves your wines &amp; XP as a JSON file. Import restores from a previous backup.</div>
-        </Card>
+        <DataBackupCard padding={14}/>
 
         {/* App version */}
         <div style={{textAlign:'center',padding:'12px 0 4px',opacity:0.45}}>

@@ -279,7 +279,7 @@ const WineDNA = {
     const acc=[];
     wines.forEach(w=>{
       const key='vinterest_blindcall_result_'+((w.name||'')+'_'+(w.vintage||'nv')).replace(/\s/g,'_');
-      try{ const r=JSON.parse(localStorage.getItem(key)||'null'); if(r&&typeof r.accuracy==='number') acc.push(r.accuracy); }catch(e){}
+      try{ const r=JSON.parse(Store.get(key)||'null'); if(r&&typeof r.accuracy==='number') acc.push(r.accuracy); }catch(e){}
     });
     return acc.length?{played:acc.length,accuracy:Math.round(this._mean(acc)*100)}:null;
   },

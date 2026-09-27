@@ -3,8 +3,8 @@
 /* ── SCAN HOME (Scan tab content) ── */
 function ScanHomeScreen({nav,showPro,isTablet}){
   const wines=WineHistory.getAll();
-  const isPro=!!localStorage.getItem('vinterest_pro');
-  const scanCount=parseInt(localStorage.getItem('vinterest_scan_count')||'0');
+  const isPro=Entitlement.isPro();
+  const scanCount=Entitlement.scanCount();
   const FREE_SCANS=10;
   const atLimit=!isPro&&scanCount>=FREE_SCANS;
   const scansLeft=Math.max(0,FREE_SCANS-scanCount);
@@ -86,7 +86,7 @@ function ScanHomeScreen({nav,showPro,isTablet}){
             </div>
             {wines.map((w,i)=>(
               <Card key={i} style={{padding:10,cursor:'pointer'}} onClick={()=>{
-                sessionStorage.setItem('vinterest_scan_result',JSON.stringify({demo:false,wine:w,confidence:0.9,existingRating:w.rating||0}));
+                Handoff.openWine({demo:false,wine:w,confidence:0.9,existingRating:w.rating||0});
                 nav('detail');
               }}>
                 <div style={{display:'flex',alignItems:'center',gap:10}}>
@@ -148,7 +148,7 @@ function ScanScreen({nav,back,onComplete,onSkip}){
   const [mode,setMode]=React.useState('bottle'); // bottle | list
   const [camErr,setCamErr]=React.useState(false);
   const CURRENCIES=[{code:'GBP',sym:'£'},{code:'USD',sym:'$'},{code:'CAD',sym:'CA$'},{code:'AUD',sym:'A$'},{code:'NZD',sym:'NZ$'},{code:'EUR',sym:'€'}];
-  const homeCurrency=(Regional.current().code)||localStorage.getItem('vinterest_currency')||'GBP';
+  const homeCurrency=(Regional.current().code)||Settings.currency()||'GBP';
   const [listCurrency,setListCurrency]=React.useState(homeCurrency);
   const [currPickerOpen,setCurrPickerOpen]=React.useState(false);
 
@@ -218,15 +218,14 @@ function ScanScreen({nav,back,onComplete,onSkip}){
       ]}]});
       const wine=WineDNA.cleanWine(JSON.parse(text.replace(/```json|```/g,'').trim()));
       if(wine.error==='no_wine_label') throw new Error('no_wine_label');
-      sessionStorage.setItem('vinterest_scan_result',JSON.stringify({demo:false,wine,confidence:0.95}));
-      const _sc=parseInt(localStorage.getItem('vinterest_scan_count')||'0');
-      localStorage.setItem('vinterest_scan_count',_sc+1);
+      Handoff.openWine({demo:false,wine,confidence:0.95});
+      Entitlement.addScan();
       // Scan XP is awarded once the wine is confirmed and saved (ScanFlow.awardScanXP), so a
       // misread label never earns a "new grape" for the wrong grape.
       if(onboarding){ try{ WineHistory.track(wine); ScanFlow.awardScanXP(wine,{defer:true}); ScanFlow.unlockLearning(wine); }catch(e){} onComplete(wine); return; }
     }catch(e){
       if(onboarding){ onComplete(null); return; }
-      sessionStorage.setItem('vinterest_scan_result',JSON.stringify({demo:true,reason:e.message}));
+      Handoff.openWine({demo:true,reason:e.message});
       nav('identified');
       return;
     }
@@ -258,9 +257,9 @@ function ScanScreen({nav,back,onComplete,onSkip}){
         style:w.style||w.s||''
       }));
       if(!wines.length) throw new Error('no_wines_found');
-      sessionStorage.setItem('vinterest_winelist_result',JSON.stringify({demo:false,wines,currency:listCurrency}));
+      Handoff.wineList.set({demo:false,wines,currency:listCurrency});
     }catch(e){
-      sessionStorage.setItem('vinterest_winelist_result',JSON.stringify({demo:true,reason:e.message}));
+      Handoff.wineList.set({demo:true,reason:e.message});
     }finally{ nav('winelist'); }
   }
 
@@ -386,7 +385,7 @@ function ScanScreen({nav,back,onComplete,onSkip}){
    else in the app — no separate "Wine Identified!" holding screen. */
 function WineIdentifiedScreen({nav,back,showPro}){
   const scanData=React.useMemo(()=>{
-    try{ return JSON.parse(sessionStorage.getItem('vinterest_scan_result')||'{}'); }
+    try{ return Handoff.scanResult.get({}); }
     catch(e){ return {}; }
   },[]);
   // No tracking here — ScanCardsScreen (rendered below) already calls WineHistory.track() once

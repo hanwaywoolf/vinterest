@@ -85,7 +85,7 @@ const Vinny = Object.assign(_accountStore('vinterest_vinny_v1'), {
     for(const text of [question,answer||'']){
       // An unlocked grape or region gets its quiz; one held back only by the free allowance gets
       // the Pro offer; one they haven't met yet falls through to a guide on the topic.
-      const free=!localStorage.getItem('vinterest_pro');
+      const free=!Entitlement.isPro();
       const g=this._grapeIn(text);
       if(g&&GrapeUnlocks.isUnlocked(g)) return {kind:'grape',grape:g,label:`${g} quiz`};
       if(g&&free&&GrapeUnlocks.count()>=FREE_GRAPE_CAP) return {kind:'pro',feature:'grape-library',label:`${g} quiz`};

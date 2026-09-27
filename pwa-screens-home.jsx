@@ -4,15 +4,15 @@
    article, quiz or Mastery step. */
 function _openLearn(item,nav,showPro){
   if(!item) return;
-  const quiz=cfg=>{ sessionStorage.setItem('vinterest_quiz_config2',JSON.stringify(cfg)); nav('quiz'); };
+  const quiz=cfg=>{ Handoff.quiz.set(cfg); nav('quiz'); };
   if(item.kind==='scan') return nav('camera');
   if(item.kind==='pro') return showPro&&showPro(item.feature);
-  if(item.kind==='article'){ sessionStorage.setItem('vinterest_gen_article',JSON.stringify(item.stub)); return nav('gen-article'); }
-  if(item.kind==='guide'){ sessionStorage.setItem('vinterest_guide',item.guide); return nav('guide'); }
-  if(item.kind==='onramp'){ sessionStorage.setItem('vinterest_onramp_idx',String(item.idx)); return nav('article'); }
+  if(item.kind==='article'){ Handoff.genArticle.set(item.stub); return nav('gen-article'); }
+  if(item.kind==='guide'){ Handoff.guide.set(item.guide); return nav('guide'); }
+  if(item.kind==='onramp'){ Handoff.onRampIdx.set(String(item.idx)); return nav('article'); }
   if(item.kind==='region') return RegionQuizBank.load(item.region,()=>quiz({mode:'region',region:item.region}));
   if(item.kind==='grape') return getGrapeQuiz(item.grape,qs=>{ if(qs&&qs.length) quiz({mode:'grape',grape:item.grape,questions:qs}); else nav('learn'); });
-  if(item.kind==='mastery'){ const n=item.next||{}; if(n.quiz) return quiz(n.quiz); if(n.guide){ sessionStorage.setItem('vinterest_guide',n.guide); return nav('guide'); } return nav(n.nav||'learn'); }
+  if(item.kind==='mastery'){ const n=item.next||{}; if(n.quiz) return quiz(n.quiz); if(n.guide){ Handoff.guide.set(n.guide); return nav('guide'); } return nav(n.nav||'learn'); }
   nav('learn');
 }
 
@@ -130,7 +130,7 @@ function WaitingOnYou({nav}){
   if(!toScore.length&&!toAsk.length) return null;
   const ask=toAsk[0];
   const open=w=>{
-    sessionStorage.setItem('vinterest_scan_result',JSON.stringify({demo:false,source:'history',view:'rate',wine:w}));
+    Handoff.openWine({demo:false,source:'history',view:'rate',wine:w});
     nav('identified');
   };
   return <Card style={{padding:0,overflow:'hidden'}}>
@@ -176,7 +176,7 @@ function HomeScreen({nav, showPro, isTablet}){
   },[]);
 
   const allWines=WineHistory.getAll();
-  const isPro=!!localStorage.getItem('vinterest_pro');
+  const isPro=Entitlement.isPro();
   const sig=WineDNA.signature(allWines);
   const next=React.useMemo(()=>LearnNext.home(allWines),[sig]);
   const shelf=next.unread.filter(x=>!(next.primary&&next.primary.stub&&next.primary.stub.id===x.id)).slice(0,2);
@@ -204,7 +204,7 @@ function HomeScreen({nav, showPro, isTablet}){
   const lv=XPSystem.getLevel(xpData.total);
   const nx=XPSystem.nextLevel(xpData.total);
   const pg=XPSystem.levelProgress(xpData.total);
-  const openWine=w=>{ sessionStorage.setItem('vinterest_scan_result',JSON.stringify({demo:false,wine:w,confidence:0.9,existingRating:w.rating||0})); nav('detail'); };
+  const openWine=w=>{ Handoff.openWine({demo:false,wine:w,confidence:0.9,existingRating:w.rating||0}); nav('detail'); };
   const colFor=w=>(typeof _TYPE_COLORS!=='undefined'&&_TYPE_COLORS[WineDNA._t(w.type)||'red'])||C.cr;
   const head=(title,link,onLink)=><div style={{padding:'12px 14px 7px',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
     <span style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>{title}</span>
@@ -294,7 +294,7 @@ function HomeScreen({nav, showPro, isTablet}){
           {head('Your WineDNA','Open →',()=>{ UserPrefs.openDNA(dna.types[0].key); nav('profile'); })}
           {dna.types.map(t=>row(t.key,'wine',t.col,t.label,t.line,()=>{ UserPrefs.openDNA(t.key); nav('profile'); }))}
           {dna.pick&&row('explore','compass',C.cr,`Try next: ${dna.pick.style.name}`,`Explore Next · ${dna.pick.style.country}`,()=>{
-            sessionStorage.setItem('vinterest_style_explore',JSON.stringify({id:dna.pick.style.id,typeKey:dna.pick.typeKey,label:dna.pick.typeLabel})); nav('style-explore'); })}
+            Handoff.styleExplore.set({id:dna.pick.style.id,typeKey:dna.pick.typeKey,label:dna.pick.typeLabel}); nav('style-explore'); })}
           {row('script','message',C.cr,`Your ${(WineDNA.NOUNS[dna.types[0].key]||['wine'])[0]} sommelier script`,'What to say when you order',()=>{ UserPrefs.openDNA(dna.types[0].key,'scripts'); nav('profile'); })}
         </Card>}
 

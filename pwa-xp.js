@@ -31,13 +31,13 @@ const XPSystem = {
 
   get(){
     let all;
-    try{ all=JSON.parse(localStorage.getItem(this.KEY)||'null'); }catch(e){}
+    try{ all=JSON.parse(Store.get(this.KEY)||'null'); }catch(e){}
     if(all&&all.accounts&&all.accounts[this.ACCOUNT_ID]) return all.accounts[this.ACCOUNT_ID];
     return this._migrate();
   },
   _migrate(){
     let legacy=null;
-    try{ legacy=JSON.parse(localStorage.getItem(this.LEGACY_KEY)||'null'); }catch(e){}
+    try{ legacy=JSON.parse(Store.get(this.LEGACY_KEY)||'null'); }catch(e){}
     const d=legacy||this.fresh();
     this.save(d);
     return d;
@@ -47,11 +47,25 @@ const XPSystem = {
   },
   save(d){
     let all;
-    try{ all=JSON.parse(localStorage.getItem(this.KEY)||'null'); }catch(e){}
+    try{ all=JSON.parse(Store.get(this.KEY)||'null'); }catch(e){}
     if(!all||!all.accounts) all={version:1,accounts:{}};
     all.accounts[this.ACCOUNT_ID]=d;
-    localStorage.setItem(this.KEY, JSON.stringify(all));
+    Store.set(this.KEY, JSON.stringify(all));
   },
+  /* Start over (the XP screen's reset). */
+  reset(){ Store.remove(this.KEY); },
+  /* XP from two places (a backup and this phone), never lower than either: totals take the
+     larger, lists keep every entry, per-quiz records take the larger (spec D3). */
+  mergedXP(a,b){
+    a=a||this.fresh(); b=b||this.fresh();
+    const union=(x,y)=>[...new Set([...(x||[]),...(y||[])])];
+    const maxMap=(x,y)=>{ const o={...(x||{})}; Object.entries(y||{}).forEach(([k,v])=>{ o[k]=typeof v==='number'&&typeof o[k]==='number'?Math.max(o[k],v):(o[k]??v); }); return o; };
+    return {...b,...a,total:Math.max(a.total||0,b.total||0),totalRatings:Math.max(a.totalRatings||0,b.totalRatings||0),
+      events:union(a.events,b.events),grapesSeen:union(a.grapesSeen,b.grapesSeen),scansThisWeek:union(a.scansThisWeek,b.scansThisWeek),
+      quizCompleted:maxMap(a.quizCompleted,b.quizCompleted),quizStreaks:maxMap(a.quizStreaks,b.quizStreaks)};
+  },
+  /* Restoring a backup's XP (the bare account object): merged into this phone's. */
+  mergeImport(flat){ this.save(this.mergedXP(this.get(),flat)); },
 
   getLevel(xp){
     if(xp>=XP_CURVE.cellarMaster.base){

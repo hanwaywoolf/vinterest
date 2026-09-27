@@ -16,7 +16,7 @@ test('a new user: age and location, first scan, three questions, then Home on th
   await stubNetwork(context, { claudeText: (b) => (b.purpose === 'label_scan' ? JSON.stringify(ROSE) : '') });
   await page.goto(`${BASE}/`);
   const root = page.locator('#root');
-  await root.getByText('Get started').click();
+  await root.getByText('Scan your first bottle').click();
   // The country is guessed from the phone's time zone; Continue waits for the age confirmation.
   await expect(page.getByLabel('Country')).toHaveValue('United Kingdom');
   await expect(root).toContainText('Prices will show in £ (GBP)');
@@ -24,6 +24,9 @@ test('a new user: age and location, first scan, three questions, then Home on th
   await root.getByText('I\'m of legal drinking age where I live').click();
   await root.getByRole('button', { name: 'Continue' }).click();
   await page.getByTestId('scan-file').setInputFiles({ name: 'label.png', mimeType: 'image/png', buffer: PNG });
+  // The first scan opens its own story (FirstScanStory); skippable straight to the questions.
+  await expect(root).toContainText('Your first bottle');
+  await root.getByText('Skip', { exact: true }).click();
   await expect(root).toContainText('Minuty Prestige Rosé is saved in My Wines.');
   // The scan's XP toasts wait for Home instead of covering the questions.
   await expect(root).not.toContainText('Wine scanned');
@@ -48,7 +51,7 @@ test('under age stops there; the scan and the questions can be skipped', async (
   await stubNetwork(context);
   await page.goto(`${BASE}/`);
   const root = page.locator('#root');
-  await root.getByText('Get started').click();
+  await root.getByText('Scan your first bottle').click();
   await root.getByText('I\'m not', { exact: true }).click();
   await expect(root).toContainText('only for people of legal drinking age');
   await root.getByText('Go back').click();
@@ -92,4 +95,40 @@ test('what the answers change: price fallbacks, spend on the scan result, Learn 
   const root = page.locator('#root');
   for (const t of ['Where You Buy Wine', 'What You Drink', 'Usual Spend', 'Wine Knowledge', 'Home and WineDNA open on your first pick']) await expect(root).toContainText(t);
   for (const t of ['How Often You Drink', 'Why You\'re Here', 'City']) await expect(root).not.toContainText(t);
+});
+
+// The first scan is the end of onboarding: its story shows what the app will do, on the cards
+// where each feature belongs, and ends on the first score.
+test('the first scan tells the bottle\'s story and shows what Vinterest will do with it', async ({ context, page }) => {
+  const errors = collectErrors(page);
+  await makeDeterministic(page);
+  await stubNetwork(context, { claudeText: (b) => (b.purpose === 'label_scan' ? JSON.stringify(ROSE) : '') });
+  await page.goto(`${BASE}/`);
+  const root = page.locator('#root');
+  await root.getByText('Scan your first bottle').click();
+  await root.getByText('I\'m of legal drinking age where I live').click();
+  await root.getByRole('button', { name: 'Continue' }).click();
+  await page.getByTestId('scan-file').setInputFiles({ name: 'label.png', mimeType: 'image/png', buffer: PNG });
+  await expect(root).toContainText('Your first bottle');
+  // Card 1: the match, before there's anything to match against, with a labelled example.
+  await expect(root).toContainText('Your match, from your own taste');
+  await expect(root).toContainText('Your WineDNA starts with your first score');
+  await expect(root).toContainText('Example');
+  await expect(root).toContainText('Score 3 rosés and every rosé you scan shows how much you\'ll like it');
+  const next = async () => { await page.locator('.sc-swipe > div').last().locator('> div').last().click(); await page.waitForTimeout(250); };
+  const seen = new Set();
+  for (let i = 0; i < 12 && !(await root.getByText('9 / 9', { exact: true }).isVisible()); i++) {
+    for (const t of ['This card gets personal', 'Open in Learn now', 'Why play Blind Call', 'Your sommelier script', 'Know a good price']) if (await root.getByText(t, { exact: true }).first().isVisible().catch(() => false)) seen.add(t);
+    if (await root.getByText('This scan opened the Grenache quiz and the Provence quiz.').isVisible().catch(() => false)) seen.add('unlocks named');
+    await next();
+  }
+  expect([...seen].sort()).toEqual(['Know a good price', 'Open in Learn now', 'This card gets personal', 'Why play Blind Call', 'Your sommelier script', 'unlocks named']);
+  // The last card: the WineDNA meter, the first score, then on to the questions.
+  await root.getByText('90', { exact: true }).click();
+  await root.getByText('Save rating').click();
+  await expect(root).toContainText('Scored 90 · Outstanding');
+  await root.getByText('Continue', { exact: true }).click();
+  await expect(root).toContainText('Minuty Prestige Rosé is saved in My Wines.');
+  expect(await page.evaluate(() => WineHistory.getAll()[0].rating)).toBe(90);
+  expect(errors).toEqual([]);
 });

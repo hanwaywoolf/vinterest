@@ -2,12 +2,12 @@
 
 function App(){
   const [screen,setScreen]=React.useState(()=>{
-    if(!localStorage.getItem('vinterest_onboarded')) return 'onboarding';
+    if(!Settings.onboarded()) return 'onboarding';
     const h=window.location.hash.replace('#','').toLowerCase();
     return (h&&h!=='onboarding')?h:'home';
   });
   const [stack,setStack]=React.useState(()=>{
-    const init=localStorage.getItem('vinterest_onboarded')?'home':'onboarding';
+    const init=Settings.onboarded()?'home':'onboarding';
     return [init];
   });
   const [proGate,setProGate]=React.useState(null);
@@ -15,8 +15,8 @@ function App(){
   const [,setTextTick]=React.useState(0);
   React.useEffect(()=>{ const h=()=>setTextTick(t=>t+1); window.addEventListener('vinterest:textsize',h); return()=>window.removeEventListener('vinterest:textsize',h); },[]);
 
-  // Tablet / iPad detection (localStorage 'vinterest_force_mobile'=1 overrides for preview)
-  const forceMobile=()=>localStorage.getItem('vinterest_force_mobile')==='1';
+  // Tablet / iPad detection (Device.forceMobile() overrides it for the preview panel)
+  const forceMobile=()=>Device.forceMobile();
   const [isTablet,setIsTablet]=React.useState(()=>!forceMobile()&&window.innerWidth>=768);
   React.useEffect(()=>{
     const h=()=>setIsTablet(!forceMobile()&&window.innerWidth>=768);
@@ -79,7 +79,7 @@ function App(){
   return(
     <div style={{width:'100%',maxWidth:isTablet?'100%':430,height:'100dvh',margin:'0 auto',background:(screen==='camera')?'#0A0A0A':C.bg,display:'flex',flexDirection:'column',position:'relative',overflow:'hidden',boxSizing:'border-box',paddingTop:(screen==='onboarding'||screen==='camera')?0:'env(safe-area-inset-top)'}}>
       <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden',minHeight:0}}>
-        {screen==='onboarding' && <NewUserFlow onComplete={()=>{localStorage.setItem('vinterest_onboarded','1');nav('home');}}/>}
+        {screen==='onboarding' && <NewUserFlow onComplete={()=>{Settings.setOnboarded();nav('home');}}/>}
         {screen==='home'      && <HomeScreen {...ctx}/>}
         {screen==='scan'      && <ScanHomeScreen {...ctx}/>}
         {screen==='camera'    && <ScanScreen {...ctx}/>}
@@ -106,7 +106,7 @@ function App(){
         <div onClick={()=>setShowXpOverlay(true)} style={{position:'absolute',top:'calc(env(safe-area-inset-top) + 15px)',right:14,zIndex:200,display:'flex',alignItems:'center',gap:5,padding:'5px 11px',borderRadius:20,background:C.crSoft,border:`1px solid ${C.crDim}`,cursor:'pointer',boxShadow:'0 1px 8px rgba(0,0,0,0.08)',pointerEvents:'auto'}}>
           <Icon n={XPSystem.iconFor(XPSystem.getLevel(xpBadge.total))} sz={16} col={C.cr}/>
           <span style={{fontSize:'15px',fontWeight:700,color:C.cr,fontFamily:C.P}}>{xpBadge.total} XP</span>{/* fixed: the badge sits beside the logo */}
-          {!!localStorage.getItem('vinterest_pro')&&<span style={{fontSize:12,fontWeight:700,color:'#fff',background:'linear-gradient(135deg,#9B5E00,#C4870A)',borderRadius:8,padding:'2px 6px',marginLeft:2}}>PRO</span>}
+          {Entitlement.isPro()&&<span style={{fontSize:12,fontWeight:700,color:'#fff',background:'linear-gradient(135deg,#9B5E00,#C4870A)',borderRadius:8,padding:'2px 6px',marginLeft:2}}>PRO</span>}
         </div>
       )}
 

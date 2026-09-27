@@ -1,13 +1,13 @@
 /* Vinterest PWA — Region, Varietal, Similar Wines explore screens */
 
-/* Shared Claude-fetch hook with sessionStorage cache */
+/* Shared Claude-fetch hook, cached for the visit (Cache, session) */
 function useClaudeData(cacheKey, prompt, wine, purpose){
   const [data,setData]=React.useState(null);
   const [loading,setLoading]=React.useState(true);
   const [error,setError]=React.useState(null);
   React.useEffect(()=>{
     if(!wine){setLoading(false);return;}
-    const cached=sessionStorage.getItem(cacheKey);
+    const cached=Cache.getText(cacheKey,{session:true});
     if(cached){try{setData(JSON.parse(cached));setLoading(false);return;}catch(e){}}
     (async()=>{
       try{
@@ -16,7 +16,7 @@ function useClaudeData(cacheKey, prompt, wine, purpose){
         const s=cleaned.indexOf('{'),e=cleaned.lastIndexOf('}');
         if(s>=0&&e>s) cleaned=cleaned.slice(s,e+1);
         const result=JSON.parse(cleaned);
-        sessionStorage.setItem(cacheKey,JSON.stringify(result));
+        Cache.set(cacheKey,result,{session:true});
         setData(result);
       }catch(err){setError(err.message);}
       finally{setLoading(false);}
@@ -38,7 +38,7 @@ function ExploreLoading(){
 /* ── REGION SCREEN ── */
 function RegionScreen({nav,back}){
   const wine=React.useMemo(()=>{
-    try{return JSON.parse(sessionStorage.getItem('vinterest_scan_result')||'{}').wine||null;}
+    try{return Handoff.scanResult.get({}).wine||null;}
     catch(e){return null;}
   },[]);
 
@@ -128,7 +128,7 @@ function RegionScreen({nav,back}){
 /* ── VARIETAL SCREEN ── */
 function VarietalScreen({nav,back}){
   const wine=React.useMemo(()=>{
-    try{return JSON.parse(sessionStorage.getItem('vinterest_scan_result')||'{}').wine||null;}
+    try{return Handoff.scanResult.get({}).wine||null;}
     catch(e){return null;}
   },[]);
 
@@ -238,7 +238,7 @@ function VarietalScreen({nav,back}){
 /* ── SIMILAR WINES SCREEN ── */
 function SimilarWinesScreen({nav,back}){
   const wine=React.useMemo(()=>{
-    try{return JSON.parse(sessionStorage.getItem('vinterest_scan_result')||'{}').wine||null;}
+    try{return Handoff.scanResult.get({}).wine||null;}
     catch(e){return null;}
   },[]);
 
@@ -276,11 +276,11 @@ function SimilarWinesScreen({nav,back}){
               <Card key={i} style={{padding:12,cursor:'pointer'}} onClick={()=>{
                 // A suggestion, not a scan: nothing is saved to history and no style figures are
                 // invented for it (the match reads its grape and region instead).
-                sessionStorage.setItem('vinterest_scan_result',JSON.stringify({
+                Handoff.openWine({
                   demo:false,source:'suggestion',
                   wine:{...w,tasting_notes:[],food_pairings:[],price_usd:w.approx_price_usd,
                     description:w.why_similar,why_you_will_like_this:w.why_similar,confidence:'high'},
-                }));
+                });
                 nav('identified');
               }}>
                 <div style={{display:'flex',gap:12,alignItems:'flex-start'}}>
@@ -318,7 +318,7 @@ function SimilarWinesScreen({nav,back}){
    spend. Opened from WineDNA's Explore Next; the style and reasoning come from ExploreNext. */
 function StyleExploreScreen({nav,back}){
   const cfg=React.useMemo(()=>{
-    try{return JSON.parse(sessionStorage.getItem('vinterest_style_explore')||'null');}
+    try{return Handoff.styleExplore.get();}
     catch(e){return null;}
   },[]);
   const allWines=WineHistory.getAll();
@@ -337,7 +337,7 @@ function StyleExploreScreen({nav,back}){
 
   React.useEffect(()=>{
     if(!style) return;
-    const cached=localStorage.getItem(cacheKey);
+    const cached=Cache.getText(cacheKey);
     if(cached){ try{ setBottles(JSON.parse(cached)); return; }catch(e){} }
     setLoading(true);
     const spend=budget
@@ -351,7 +351,7 @@ function StyleExploreScreen({nav,back}){
         if(i>=0&&j>i) c=c.slice(i,j+1);
         const order={value:0,'mid-range':1,'step-up':2,splurge:3};
         const list=(JSON.parse(c).wines||[]).filter(w=>w&&w.name).sort((a,b)=>(order[a.tier]??9)-(order[b.tier]??9));
-        if(list.length) localStorage.setItem(cacheKey,JSON.stringify(list));
+        if(list.length) Cache.set(cacheKey,list);
         setBottles(list);
       })
       .catch(()=>setBottles([]))

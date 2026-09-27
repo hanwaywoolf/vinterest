@@ -25,7 +25,7 @@ const KnowledgeMap = {
   level(score){ return score>=100?'Mastered':score>=67?'Confident':score>=34?'Developing':score>0?'Getting started':'Not started'; },
   _frac(p){ return p&&p.total?p.correct/p.total:0; },
   _pct(x){ return Math.round(Math.max(0,Math.min(1,x))*100); },
-  _read(stub){ return !!localStorage.getItem('vinterest_gen_article_'+stub.id+'_done'); },
+  _read(stub){ return LearnProgress.articleDone(stub.id); },
   _shelf(wines){ try{ return ContentEngine.shelf(wines)||[]; }catch(e){ return []; } },
   _grapeFrac(g){ const bank=grapeQuizBank(g); return bank?this._frac(QuizMastery.progress('grape:'+g,bank)):0; },
 

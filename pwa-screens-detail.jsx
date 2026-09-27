@@ -38,7 +38,7 @@ function WineDetailScreen({back,nav,showPro}){
   const [tab,setTab]=React.useState(0);
   const tabs=['Details','Learn','Price'];
   const scanData=React.useMemo(()=>{
-    try{ return JSON.parse(sessionStorage.getItem('vinterest_scan_result')||'{}'); }
+    try{ return Handoff.scanResult.get({}); }
     catch(e){ return {}; }
   },[]);
   const [wine,setWine]=React.useState(scanData.wine||null);
@@ -48,7 +48,7 @@ function WineDetailScreen({back,nav,showPro}){
     const e=WineHistory.find(wine);
     if(e) WineHistory.update(e.name,e.vintage,patch);
     const next={...wine,...patch};
-    try{ const sd=JSON.parse(sessionStorage.getItem('vinterest_scan_result')||'{}'); sd.wine=next; sessionStorage.setItem('vinterest_scan_result',JSON.stringify(sd)); }catch(err){}
+    try{ const sd=Handoff.scanResult.get({}); sd.wine=next; Handoff.openWine(sd); }catch(err){}
     setWine(next); setEditing(false);
   }
   const existingRating=React.useMemo(()=>{
@@ -59,21 +59,8 @@ function WineDetailScreen({back,nav,showPro}){
 
   const match=React.useMemo(()=>wine?TasteMatch.assess(wine,WineHistory.getAll()):null,[wine]);
 
-  const [isFav,setIsFav]=React.useState(()=>{
-    try{
-      const favs=JSON.parse(localStorage.getItem('vinterest_favorites')||'[]');
-      return favs.some(f=>f.name===(wine?.name)&&String(f.vintage)===String(wine?.vintage));
-    }catch(e){return false;}
-  });
-  function toggleFav(){
-    try{
-      const favs=JSON.parse(localStorage.getItem('vinterest_favorites')||'[]');
-      const idx=favs.findIndex(f=>f.name===wine?.name&&String(f.vintage)===String(wine?.vintage));
-      if(idx>=0){favs.splice(idx,1);setIsFav(false);}
-      else{favs.push({name:wine?.name,vintage:wine?.vintage});setIsFav(true);}
-      localStorage.setItem('vinterest_favorites',JSON.stringify(favs));
-    }catch(e){}
-  }
+  const [isFav,setIsFav]=React.useState(()=>Favorites.has(wine));
+  function toggleFav(){ setIsFav(Favorites.toggle(wine)); }
 
   const [shared,setShared]=React.useState(false);
   function shareWine(){
@@ -207,7 +194,7 @@ function DetailMerged({wine,nav,existingRating=0,match}){
   React.useEffect(()=>{
     if(!wine||!wine.vintage) return;
     const cacheKey=`vinterest_vintage_${(wine.name||'').replace(/\s/g,'_')}_${wine.vintage}`;
-    const cached=localStorage.getItem(cacheKey);
+    const cached=Cache.getText(cacheKey);
     if(cached){try{setVintageInfo(JSON.parse(cached));return;}catch(e){}}
     setLoadingVintage(true);
     const yr=new Date().getFullYear();
@@ -218,7 +205,7 @@ function DetailMerged({wine,nav,existingRating=0,match}){
         const s=c.indexOf('{'),e=c.lastIndexOf('}');
         if(s>=0&&e>s) c=c.slice(s,e+1);
         const d=JSON.parse(c);
-        localStorage.setItem(cacheKey,JSON.stringify(d));
+        Cache.set(cacheKey,d);
         setVintageInfo(d);
       })
       .catch(()=>{})
@@ -495,7 +482,7 @@ function DetailStory({wine,nav,showPro,existingRating=0}){
   React.useEffect(()=>{
     if(!wine||!wine.name) return;
     const key='vinterest_edu_v2_'+(wine.name||'').replace(/\s/g,'_')+'_'+(wine.vintage||'nv');
-    const cached=localStorage.getItem(key);
+    const cached=Cache.getText(key);
     if(cached){ try{ setEdu(JSON.parse(cached)); return; }catch(e){} }
     if(!window.claude||!window.claude.complete) return;
     setEduLoading(true);
@@ -507,7 +494,7 @@ function DetailStory({wine,nav,showPro,existingRating=0}){
       vintageContext:(wine.vintage&&wine.vintage!==0)?' around the '+wine.vintage+' vintage':''
     });
     window.claude.complete({purpose:'education',messages:[{role:'user',content:prompt}]})
-      .then(text=>{ let c=text.replace(/```json|```/g,'').trim(); const s=c.indexOf('{'),e=c.lastIndexOf('}'); if(s>=0&&e>s)c=c.slice(s,e+1); const d=JSON.parse(c); localStorage.setItem(key,JSON.stringify(d)); setEdu(d); if(d.terms&&d.terms.length) VocabLedger.addTerms((wine.name||'')+'_'+(wine.vintage||'nv'), d.terms); })
+      .then(text=>{ let c=text.replace(/```json|```/g,'').trim(); const s=c.indexOf('{'),e=c.lastIndexOf('}'); if(s>=0&&e>s)c=c.slice(s,e+1); const d=JSON.parse(c); Cache.set(key,d); setEdu(d); if(d.terms&&d.terms.length) VocabLedger.addTerms((wine.name||'')+'_'+(wine.vintage||'nv'), d.terms); })
       .catch(()=>{})
       .finally(()=>setEduLoading(false));
   },[wine?.name,wine?.vintage]);

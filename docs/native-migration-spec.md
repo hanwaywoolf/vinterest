@@ -23,7 +23,7 @@ Plan in one line: keep the React web app as the single UI codebase, add accounts
 
 | # | Decision | Default |
 |---|---|---|
-| D1 | Sign-in required before first scan, or anonymous-first? | Required, right after onboarding. Apple, Google, email. Simpler and stops free-tier abuse through throwaway accounts. |
+| D1 | Sign-in required before first scan, or anonymous-first? | **Decided: optional, offered later.** Onboarding stays sign-up free. After the first few scans (and in Settings) the app offers "Save your wines to your account"; Pro and server-side fair use need an account. Until someone signs in, limits stay per device. |
 | D2 | Prices | Keep Claude estimates, label them "est." in the UI. |
 | D3 | XP conflict policy across devices | Monotonic merge (max and union). Never lowers a user's XP. Can lose XP earned simultaneously on two offline devices. |
 | D4 | Dead backend (Apify, LCBO, `wine_cache`, `recognise.js`, the duplicate `retail.js`/`retail-data.js` implementations) | Delete. **Done** — all of it, plus the rest of `functions/` (`health.js`, `ping.js`, `api/[[route]].js`), is gone as of the `/claude`-hardening and retail-cleanup PRs. |
@@ -36,7 +36,7 @@ Create a new Supabase project for user data (the existing one only holds the dea
 ```sql
 create table public.wines (
   user_id uuid not null references auth.users(id) on delete cascade,
-  wine_key text not null,            -- must match WineHistory's dedupe key (confirm exact formula in Prompt 2 — not stated in the audit)
+  wine_key text not null,            -- lower(name) || '|' || (vintage, or 'nv' when missing/0/'NV'): WineHistory._mergeDupes' key (see §6 Prompt 2 findings)
   data jsonb not null,               -- the full wine object exactly as stored on the device today
   rating int,
   times_consumed int not null default 0,
@@ -127,6 +127,13 @@ Sync behaviour:
 
 ## 6. Prompts for Claude Code, in order
 
+Status: prompts 0 (proxy hardening) and 1 (esbuild build, Cloudflare builds `dist/`) are done; prompt 2 (storage behind logic modules) and prompt 3 (backup format v2, `pwa-backup.js`) and prompt 4 (`supabase/migrations/0001_user_data.sql`, RLS tests via `npm run test:db`, dashboard steps in `supabase/README.md`) are done; `user_docs.doc_key` is `xp`/`settings`/`progress`, the backup's sections. Next: 5, optional sign-in and server-side gating (needs the Supabase project from `supabase/README.md`).
+
+Prompt 2 findings:
+- **Dedupe key.** WineHistory's exact key is `name.toLowerCase() + '|' + vintageKey`, where `vintageKey` is the vintage as a string, or `'nv'` for a missing, `0` or `'NV'` vintage. On top of that, `WineHistory.same()` matches rescans fuzzily (producer spelled differently, extra words the other wine accounts for, a missing vintage matching the one dated entry), and `ScanFlow.resolve` gives a rescan the saved entry's name and vintage before anything is saved. So a synced `wine_key` from the exact formula is stable per bottle, provided the client resolves identity before pushing. `getAll` still merges any duplicates that slip through.
+- **Photos.** No wine stores an image. The label photo is kept in the camera screen's memory, sent to Claude as base64 and dropped; saved wines hold Claude's JSON only. No file storage is needed.
+- **Seam.** `Store.subscribe(cb)` (pwa-store.js) fires with the key after every device-storage write; each synced key has one owner (CLAUDE.md, "Storage").
+
 Run one per session. Each works on its own branch. Review and merge before starting the next. Before merging anything that touches the app, open the Cloudflare preview deployment and click through scan, quiz and settings.
 
 ### Prompt 0: lock down the Claude proxy (do this first)
@@ -192,7 +199,7 @@ Add supabase/migrations/0001_user_data.sql from the spec, and a supabase/README.
 ```
 Read docs/native-migration-spec.md sections 2, 4 and 5.
 
-Add the Supabase JS client and a sign-in screen shown after onboarding (email OTP or magic link now; Google and Apple buttons present but disabled until native setup). Persist the session. In the Worker: verify the Supabase JWT (use the project's JWKS), meter usage in usage_counters with the service role key, enforce fair-use caps and Pro checks from entitlements, add /me. Make the Entitlement module read tier and usage from /me and cache them for display. Remove any code that treats vinterest_pro or vinterest_scan_count as authoritative. The client must handle 401, 402 and 429 with clear UI. For testing, I will set a tier by hand in the entitlements table.
+Add the Supabase JS client and an optional sign-in (D1: offered after the first few scans and in Settings, required only for Pro; email OTP or magic link now; Google and Apple buttons present but disabled until native setup). Persist the session. In the Worker: verify the Supabase JWT (use the project's JWKS), meter usage in usage_counters with the service role key, enforce fair-use caps and Pro checks from entitlements, add /me. Make the Entitlement module read tier and usage from /me and cache them for display. Remove any code that treats vinterest_pro or vinterest_scan_count as authoritative. The client must handle 401, 402 and 429 with clear UI. For testing, I will set a tier by hand in the entitlements table.
 ```
 
 ### Prompt 6: sync engine

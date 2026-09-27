@@ -259,3 +259,12 @@ const TasteMatch = {
     return WineDNA.cleanWine(out);
   },
 };
+
+/* ── Taste-match score ──
+   The match percentage for a wine, or null when there's too little scored history to say
+   ("too early to call"). TasteMatch (pwa-match.js) owns the model; this is the number alone. */
+function calcMatchScore(wine,userWines){
+  const m=TasteMatch.assess(wine,userWines||[]);
+  return m?m.pct:null;
+}
+

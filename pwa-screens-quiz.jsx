@@ -101,7 +101,7 @@ function CompletedMark({onReset}){
 
 function QuizHubScreen({nav,back,showPro}){
   const [xpData,setXpData]=React.useState(()=>XPSystem.get());
-  const [isPro,setIsPro]=React.useState(()=>!!localStorage.getItem('vinterest_pro'));
+  const [isPro,setIsPro]=React.useState(()=>Entitlement.isPro());
   React.useEffect(()=>{const h=()=>setIsPro(true);window.addEventListener('vinterest:pro',h);return()=>window.removeEventListener('vinterest:pro',h);},[]);
   const level=XPSystem.getLevel(xpData.total);
   const nextLvl=XPSystem.nextLevel(xpData.total);
@@ -113,8 +113,8 @@ function QuizHubScreen({nav,back,showPro}){
   const coverage=React.useMemo(()=>getCoverage(wines),[wines]);
   const [showUnlock,setShowUnlock]=React.useState(false);
   React.useEffect(()=>{
-    if(coverage.unlocked && !localStorage.getItem('vinterest_wineDNA_unlock_seen')){
-      localStorage.setItem('vinterest_wineDNA_unlock_seen','1');
+    if(coverage.unlocked && !Flags.wineDNAUnlockSeen()){
+      Flags.markWineDNAUnlockSeen();
       setShowUnlock(true);
     }
   },[coverage.unlocked]);
@@ -131,12 +131,12 @@ function QuizHubScreen({nav,back,showPro}){
   },[article1Done]);
 
   const zoneLabel={fontSize:15,fontWeight:600,color:C.mid,letterSpacing:'0.08em',textTransform:'uppercase',fontFamily:C.P,marginBottom:2};
-  const unreadShelf=(genStubs||[]).filter(s=>!localStorage.getItem('vinterest_gen_article_'+s.id+'_done')&&!ContentEngine.stubLocked(s));
+  const unreadShelf=(genStubs||[]).filter(s=>!LearnProgress.articleDone(s.id)&&!ContentEngine.stubLocked(s));
   const nextOnRamp=ON_RAMP.find(a=>!onRampDone(a.id));
   const nextBest=nextOnRamp&&!(UserPrefs.skipsOnRamp()&&unreadShelf.length)
-    ? {kind:'onramp',title:nextOnRamp.title,sub:nextOnRamp.subtitle,readTime:nextOnRamp.readTime,action:()=>{sessionStorage.setItem('vinterest_onramp_idx',String(ON_RAMP.indexOf(nextOnRamp)));nav('article');}}
+    ? {kind:'onramp',title:nextOnRamp.title,sub:nextOnRamp.subtitle,readTime:nextOnRamp.readTime,action:()=>{Handoff.onRampIdx.set(String(ON_RAMP.indexOf(nextOnRamp)));nav('article');}}
     : unreadShelf.length
-      ? {kind:'shelf',stub:unreadShelf[0],title:unreadShelf[0].title,sub:unreadShelf[0].subtitle,action:()=>{sessionStorage.setItem('vinterest_gen_article',JSON.stringify(unreadShelf[0]));nav('gen-article');}}
+      ? {kind:'shelf',stub:unreadShelf[0],title:unreadShelf[0].title,sub:unreadShelf[0].subtitle,action:()=>{Handoff.genArticle.set(unreadShelf[0]);nav('gen-article');}}
       : {kind:'scan',title:'Scan a bottle for your next read',sub:"Your shelf restocks based on what you try.",action:()=>nav('camera')};
 
   // Bumped after a progress reset so the to-do/completed splits below recompute.
@@ -150,7 +150,7 @@ function QuizHubScreen({nav,back,showPro}){
     doReset();
     setProgressTick(t=>t+1);
   }
-  const startQuiz=cfg=>{ sessionStorage.setItem('vinterest_quiz_config2',JSON.stringify(cfg)); nav('quiz'); };
+  const startQuiz=cfg=>{ Handoff.quiz.set(cfg); nav('quiz'); };
   const [topicsExpanded,setTopicsExpanded]=React.useState(false);
   // Wine Basics always shows — it's the entry point for someone new to wine, not just a
   // pre-WineDNA-unlock placeholder. Completed topics (every question answered correctly at
@@ -226,7 +226,7 @@ function QuizHubScreen({nav,back,showPro}){
   const [libraryOpen,setLibraryOpen]=React.useState(false);
   const [guidesExpanded,setGuidesExpanded]=React.useState(false);
   const guideQueue=Guides.queue(), guidesDone=Guides.finished();
-  const openGuide=id=>{ sessionStorage.setItem('vinterest_guide',id); nav('guide'); };
+  const openGuide=id=>{ Handoff.guide.set(id); nav('guide'); };
   const knowledge=React.useMemo(()=>KnowledgeMap.summary(wines),[wines,progressTick]);
   const secRefs={shelf:React.useRef(null),basics:React.useRef(null),regions:React.useRef(null),grapes:React.useRef(null),skills:React.useRef(null),progress:React.useRef(null)};
   const jump=id=>{ const el=secRefs[id]&&secRefs[id].current; if(el) el.scrollIntoView({behavior:'smooth',block:'start'}); };
@@ -296,7 +296,7 @@ function QuizHubScreen({nav,back,showPro}){
         {article1Done&&(()=>{
           // Unread pieces stay on the shelf (three at a time); read ones move to the library, so
           // new pieces get seen and anyone who wants to binge can keep going.
-          const isRead=stub=>!!localStorage.getItem('vinterest_gen_article_'+stub.id+'_done');
+          const isRead=stub=>LearnProgress.articleDone(stub.id);
           const all=genStubs||[];
           const unread=[...all.filter(x=>!isRead(x)&&!ContentEngine.stubLocked(x)),...all.filter(x=>!isRead(x)&&ContentEngine.stubLocked(x))];
           const read=all.filter(isRead);
@@ -305,7 +305,7 @@ function QuizHubScreen({nav,back,showPro}){
             const locked=ContentEngine.stubLocked(stub);
             const because=ContentEngine.because(stub,wines);
             return(
-              <div key={stub.id||i} onClick={()=>{ if(locked){ showPro('regions'); return; } sessionStorage.setItem('vinterest_gen_article',JSON.stringify(stub));nav('gen-article');}}
+              <div key={stub.id||i} onClick={()=>{ if(locked){ showPro('regions'); return; } Handoff.genArticle.set(stub);nav('gen-article');}}
                 style={{background:C.white,borderRadius:14,padding:done?'10px 14px':'14px 16px',display:'flex',alignItems:'center',gap:12,cursor:'pointer',border:`1px solid ${C.line}`,opacity:done?0.75:1}}>
                 <div style={{width:done?36:44,height:done?36:44,borderRadius:12,background:C.crSoft,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,border:`1px solid ${C.crDim}`}}>
                   <Icon n={stub.iconName||'read'} sz={done?17:20} col={C.cr}/>
@@ -530,7 +530,7 @@ function QuizHubScreen({nav,back,showPro}){
         ))}
 
         <div style={{height:8}}/>
-        <div onClick={()=>{localStorage.removeItem(XPSystem.KEY);setXpData(XPSystem.fresh());}} style={{textAlign:'center',padding:'8px',cursor:'pointer'}}>
+        <div onClick={()=>{XPSystem.reset();setXpData(XPSystem.fresh());}} style={{textAlign:'center',padding:'8px',cursor:'pointer'}}>
           <span style={{fontSize:13,color:C.mid,fontFamily:C.P,textDecoration:'underline'}}>Reset XP &amp; progress</span>
         </div>
         <div style={{height:16}}/>
@@ -552,8 +552,8 @@ function MasteryMapScreen({nav,back}){
   const [open,setOpen]=React.useState(null);
   const go=next=>{
     if(!next) return;
-    if(next.quiz){ sessionStorage.setItem('vinterest_quiz_config2',JSON.stringify(next.quiz)); nav('quiz'); return; }
-    if(next.guide){ sessionStorage.setItem('vinterest_guide',next.guide); nav('guide'); return; }
+    if(next.quiz){ Handoff.quiz.set(next.quiz); nav('quiz'); return; }
+    if(next.guide){ Handoff.guide.set(next.guide); nav('guide'); return; }
     nav(next.nav||'learn');
   };
   const GROUPS=[{id:'types',label:'Wine types'},{id:'places',label:'Regions and grapes'},{id:'skills',label:'Wine Skills'}];
@@ -704,7 +704,7 @@ function nextQuizSuggestion(config){
 function QuizScreen({nav,back}){
   // Config is state so the results screen can move straight on to the next quiz or set.
   const [config,setConfig]=React.useState(()=>{
-    try{ return JSON.parse(sessionStorage.getItem('vinterest_quiz_config2')||'null'); }catch(e){ return null; }
+    try{ return Handoff.quiz.get(); }catch(e){ return null; }
   });
   const mode=config?.mode||'concept';
   const quizSet=React.useMemo(()=>quizSetFor(mode,config),[mode,config]);
@@ -770,7 +770,7 @@ function QuizScreen({nav,back}){
   function startQuiz(cfg){
     const qs=buildQuizQuestions(cfg);
     const set=quizSetFor(cfg?.mode||'concept',cfg);
-    sessionStorage.setItem('vinterest_quiz_config2',JSON.stringify(cfg));
+    Handoff.quiz.set(cfg);
     setConfig(cfg); setAllQs(qs); setStartedComplete(!!set&&QuizMastery.isComplete(set.id,set.pool()));
     setQIdx(0); setSelected(null); setPhase(qs.length?'question':'empty'); setStreak(0); setXpGained(0); setResults([]);
     if(scrollRef.current) scrollRef.current.scrollTop=0;
