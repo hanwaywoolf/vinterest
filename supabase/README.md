@@ -27,7 +27,7 @@ one user can never read or write another's rows.
    - **Publishable key** (`sb_publishable_…`). Public: safe in the app, because row-level security,
      not the key, decides what anyone can see. Keep the `default` one.
    - **Secret key** (`sb_secret_…`). **Secret**: it bypasses row-level security. Create one named
-     `cloudflare-worker` and delete any other secret keys, so the only copy is Cloudflare's.
+     `cloudflare_worker` and delete any other secret keys, so the only copy is Cloudflare's.
    - On the "Legacy anon, service_role API keys" tab, disable the legacy keys: the app doesn't use
      them, and an old service_role key was once used by the retired backend.
 
