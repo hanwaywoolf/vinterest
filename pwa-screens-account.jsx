@@ -241,9 +241,11 @@ function AccountCard({showPro}){
           <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>Your account</div>
           <div style={{fontSize:14,color:C.mid,fontFamily:C.P,overflow:'hidden',textOverflow:'ellipsis'}}>{Account.email()}</div>
         </div>
-        <div style={{display:'flex',flexDirection:'column',alignItems:'flex-end',gap:6,flexShrink:0}}>
+        <div style={{display:'flex',alignItems:'center',gap:6,flexShrink:0}}>
           <Pill active={pro} sm>{pro?'Pro':'Free'}</Pill>
-          {!pro&&showPro&&<span onClick={()=>showPro('upgrade')} style={{...link,fontSize:14}}>Upgrade</span>}
+          {/* Upgrade in the Pro badge's gold, so it reads as the way to Pro. */}
+          {!pro&&showPro&&<span role="button" onClick={()=>showPro('upgrade')} style={{display:'inline-flex',alignItems:'center',padding:'3px 11px',borderRadius:20,
+            background:'linear-gradient(135deg,#9B5E00,#C4870A)',color:'#fff',fontSize:13,fontWeight:700,fontFamily:C.P,cursor:'pointer',boxShadow:'0 1px 4px rgba(155,94,0,0.3)'}}>Upgrade</span>}
         </div>
       </div>
       <div style={{fontSize:13,color:C.mid,fontFamily:C.P,lineHeight:1.5}}>
