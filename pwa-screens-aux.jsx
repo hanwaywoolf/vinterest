@@ -796,6 +796,7 @@ function SettingsScreen({nav,back}){
         <div style={{width:24}}/>
       </div>
       <div style={{flex:1,overflowY:'auto',padding:'16px'}}>
+        {Account.available()&&<div style={{marginBottom:24}}><AccountCard/></div>}
         <div style={{marginBottom:24}}><TextSizeControl/></div>
         <div style={{marginBottom:24}}>
           <div style={{fontSize:16,fontWeight:600,color:C.ink,fontFamily:C.P,marginBottom:12}}>Region</div>

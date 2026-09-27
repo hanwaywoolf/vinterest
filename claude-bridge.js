@@ -7,6 +7,11 @@
  * - Everywhere else it installs a proxy that POSTs to a serverless endpoint
  *   (default: /claude, handled by _worker.js) which holds the Anthropic API key.
  *
+ * Signed in (Account, pwa-account.js), each request carries the user's token so the Worker can
+ * check Pro and the weekly fair-use limits. A 401 means the sign-in has expired: the app signs out
+ * on this device and repeats the request signed out. 402 (needs Pro) and 429 (a limit reached)
+ * reject with the Worker's own words and err.code set.
+ *
  * Override the endpoint with either:
  *   <meta name="claude-proxy" content="/claude">
  *   or  window.CLAUDE_PROXY_URL = "..."  (set before this script runs)
@@ -27,22 +32,37 @@
     return [{ role: "user", content: String(arg) }];
   }
 
+  // Account is declared later in the same bundle; it exists by the time anything calls in.
+  function account() { return typeof Account !== "undefined" && Account.signedIn() ? Account : null; }
+
+  // POSTs with the sign-in token when there is one. On a 401 the sign-in is gone: sign out here
+  // and send the same request once more, signed out.
+  async function post(body, signal) {
+    var acct = account();
+    var token = acct ? await acct.token() : null;
+    var headers = { "content-type": "application/json" };
+    if (token) headers.authorization = "Bearer " + token;
+    var res = await fetch(ENDPOINT, { method: "POST", headers: headers, body: JSON.stringify(body), signal: signal });
+    if (res.status === 401 && token) {
+      acct.expired();
+      res = await fetch(ENDPOINT, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body), signal: signal });
+    }
+    return res;
+  }
+
   window.claude = {
     complete: async function (arg) {
       var res;
       try {
-        res = await fetch(ENDPOINT, {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({ messages: toMessages(arg), max_tokens: (arg && arg.max_tokens) || undefined, purpose: (arg && arg.purpose) || undefined, skill_id: (arg && arg.skill_id) || undefined })
-        });
+        res = await post({ messages: toMessages(arg), max_tokens: (arg && arg.max_tokens) || undefined, purpose: (arg && arg.purpose) || undefined, skill_id: (arg && arg.skill_id) || undefined });
       } catch (e) {
         throw new Error("Couldn’t reach the wine-ID service. Check your connection and that the API proxy is deployed.");
       }
       if (!res.ok) {
-        var msg = "The wine-ID service returned an error (" + res.status + ").";
-        try { var j = await res.json(); if (j && j.error) msg = j.error + (j.code ? " [" + j.code + "]" : ""); } catch (e) {}
-        throw new Error(msg);
+        var msg = "The wine-ID service returned an error (" + res.status + ").", code = null;
+        try { var j = await res.json(); if (j && j.error) { code = j.code || null; msg = j.error; } if (code && res.status !== 402 && res.status !== 429) msg += " [" + code + "]"; } catch (e) {}
+        var err = new Error(msg); err.code = code; err.status = res.status;
+        throw err;
       }
       var data = await res.json();
       return (data && data.text) || "";
@@ -54,12 +74,7 @@
       var abort = typeof AbortController !== "undefined" ? new AbortController() : null;
       var timer = abort ? setTimeout(function () { abort.abort(); }, 25000) : null;
       try {
-        var res = await fetch(ENDPOINT, {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({ purpose: "price_search", wine: wine, market: market }),
-          signal: abort ? abort.signal : undefined
-        });
+        var res = await post({ purpose: "price_search", wine: wine, market: market }, abort ? abort.signal : undefined);
         if (!res.ok) return null;
         var data = await res.json();
         if (data && data.pending) return { pending: true };

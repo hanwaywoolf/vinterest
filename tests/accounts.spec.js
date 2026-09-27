@@ -1,0 +1,208 @@
+// Optional sign-in (step 5): the Worker checks the token, Pro and the weekly fair-use limits
+// against Supabase; the app signs in with an emailed code, sends its token, and falls back to
+// signed out when the server says the sign-in has expired. Supabase and Anthropic are stubbed.
+const { test, expect } = require('@playwright/test');
+const path = require('node:path');
+const { pathToFileURL } = require('node:url');
+const { stubNetwork, makeDeterministic, seedLocalStorage, collectErrors } = require('./helpers');
+
+const BASE = 'http://localhost:4173';
+const SB = 'https://proj.supabase.co';
+
+// ---- The Worker, against a fake Supabase ----
+
+async function loadWorker() {
+  const copy = path.join(require('node:os').tmpdir(), `worker-accounts-${process.pid}.mjs`);
+  require('node:fs').copyFileSync(path.join(__dirname, '..', '_worker.js'), copy);
+  return (await import(pathToFileURL(copy).href)).default;
+}
+
+// A Supabase with two users (free and pro) that meters use_quota as the migration does.
+function fakeSupabase({ down = false } = {}) {
+  const users = { 'tok-free': { id: 'u-free', email: 'free@example.com' }, 'tok-pro': { id: 'u-pro', email: 'pro@example.com' } };
+  const counters = {}, calls = [];
+  const res = (status, body) => new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
+  const fetch = async (url, init = {}) => {
+    url = String(url);
+    const h = new Headers(init.headers || {});
+    if (url.startsWith('https://api.anthropic.com')) return res(200, { content: [{ type: 'text', text: 'ok' }] });
+    calls.push({ url, apikey: h.get('apikey') });
+    if (down) throw new Error('unreachable');
+    if (url === `${SB}/auth/v1/user`) {
+      const u = users[(h.get('authorization') || '').replace('Bearer ', '')];
+      return u ? res(200, u) : res(401, { msg: 'bad jwt' });
+    }
+    if (url.startsWith(`${SB}/rest/v1/entitlements`)) return res(200, url.includes('u-pro') ? [{ tier: 'pro', expires_at: null }] : []);
+    if (url === `${SB}/rest/v1/rpc/use_quota`) {
+      const { p_user, p_kind, p_cap } = JSON.parse(init.body);
+      const k = p_user + ':' + p_kind, n = counters[k] || 0;
+      if (p_cap <= 0 || n >= p_cap) return res(200, null);
+      counters[k] = n + 1; return res(200, n + 1);
+    }
+    if (url.startsWith(`${SB}/rest/v1/usage_counters`)) {
+      const who = /user_id=eq\.([^&]+)/.exec(url)[1];
+      return res(200, Object.entries(counters).filter(([k]) => k.startsWith(who + ':')).map(([k, count]) => ({ kind: k.split(':')[1], count })));
+    }
+    return res(404, {});
+  };
+  return { fetch, calls, counters };
+}
+
+test.describe('Worker', () => {
+  let worker, realFetch, ip = 0;
+  const env = { ANTHROPIC_API_KEY: 'k', SUPABASE_URL: SB, SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_x', SUPABASE_SECRET_KEY: 'sb_secret_x' };
+  const req = (p, { token, body, method = 'POST' } = {}) => new Request('https://vinterest.pages.dev' + p, { method,
+    headers: { 'content-type': 'application/json', origin: 'https://vinterest.pages.dev', 'cf-connecting-ip': '10.0.0.' + (++ip), ...(token ? { authorization: 'Bearer ' + token } : {}) },
+    body: method === 'POST' ? JSON.stringify(body) : undefined });
+  const scan = (purpose, token, e = env) => worker.fetch(req('/claude', { token, body: { purpose, messages: [{ role: 'user', content: 'x' }] } }), e);
+  test.beforeAll(async () => { worker = await loadWorker(); realFetch = globalThis.fetch; });
+  test.afterEach(() => { globalThis.fetch = realFetch; });
+
+  test('signed out: works as before and never asks Supabase; Pro-only features ask them to sign in', async () => {
+    const sb = fakeSupabase(); globalThis.fetch = sb.fetch;
+    expect((await scan('label_scan')).status).toBe(200);
+    expect(sb.calls).toEqual([]);
+    const r = await scan('list_scan');
+    expect(r.status).toBe(402);
+    expect(await r.json()).toMatchObject({ code: 'pro_required', signIn: true });
+    // Without Supabase configured, nothing changes at all.
+    expect((await scan('list_scan', null, { ANTHROPIC_API_KEY: 'k' })).status).toBe(200);
+  });
+
+  test('a token Supabase rejects gets 401 auth_expired; the secret key never goes to the auth check', async () => {
+    const sb = fakeSupabase(); globalThis.fetch = sb.fetch;
+    const r = await scan('label_scan', 'tok-forged');
+    expect(r.status).toBe(401);
+    expect((await r.json()).code).toBe('auth_expired');
+    expect(sb.calls[0]).toEqual({ url: `${SB}/auth/v1/user`, apikey: 'sb_publishable_x' });
+  });
+
+  test('Pro comes from the server: a free account is refused list scans, a Pro one is metered', async () => {
+    const sb = fakeSupabase(); globalThis.fetch = sb.fetch;
+    const free = await scan('list_scan', 'tok-free');
+    expect(free.status).toBe(402);
+    expect((await free.json()).signIn).toBeUndefined();
+    expect((await scan('list_scan', 'tok-pro')).status).toBe(200);
+    expect(sb.counters['u-pro:list_scan']).toBe(1);
+    expect(sb.calls.filter((c) => c.url.includes('/rest/v1/')).every((c) => c.apikey === 'sb_secret_x')).toBe(true);
+  });
+
+  test('the weekly fair-use limit answers 429 once reached, and /me reports usage', async () => {
+    const sb = fakeSupabase(); globalThis.fetch = sb.fetch;
+    sb.counters['u-free:label_scan'] = 99; // the free cap is 100
+    expect((await scan('label_scan', 'tok-free')).status).toBe(200);
+    const r = await scan('label_scan', 'tok-free');
+    expect(r.status).toBe(429);
+    expect((await r.json()).code).toBe('fair_use');
+    const me = await (await worker.fetch(req('/me', { token: 'tok-free', method: 'GET' }), env)).json();
+    expect(me).toMatchObject({ signedIn: true, email: 'free@example.com', tier: 'free', usage: { label_scan: 100 }, caps: { label_scan: 100 } });
+    const out = await (await worker.fetch(req('/me', { method: 'GET' }), env)).json();
+    expect(out).toEqual({ signedIn: false, accounts: true, tier: 'free' });
+  });
+
+  test('Supabase unreachable: scans still go through', async () => {
+    globalThis.fetch = fakeSupabase({ down: true }).fetch;
+    expect((await scan('label_scan', 'tok-free-down')).status).toBe(200);
+  });
+});
+
+// ---- The app ----
+
+async function app(context, page, { me = { signedIn: true, accounts: true, email: 'carey@example.com', tier: 'free', usage: {}, caps: { label_scan: 100 } }, claude } = {}) {
+  const seen = { otp: [], verify: [], claudeAuth: [], me: 0 };
+  await makeDeterministic(page);
+  await page.addInitScript((sb) => { window.VINTEREST_SUPABASE = { url: sb, key: 'sb_publishable_test' }; }, SB);
+  await seedLocalStorage(page, { vinterest_onboarded: '1', vinterest_age_ok: '1', vinterest_region: 'uk' });
+  await stubNetwork(context);
+  await context.route(`${SB}/auth/v1/**`, (route) => {
+    const url = route.request().url(), body = JSON.parse(route.request().postData() || '{}');
+    const reply = (status, b) => route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(b) });
+    if (url.endsWith('/otp')) { seen.otp.push(body); return reply(200, {}); }
+    if (url.endsWith('/verify')) {
+      seen.verify.push(body);
+      return body.token === '123456' ? reply(200, { access_token: 'acc-1', refresh_token: 'ref-1', expires_in: 3600, user: { id: 'u1', email: body.email } }) : reply(403, { msg: 'Token has expired or is invalid' });
+    }
+    if (url.includes('/logout')) return reply(204, {});
+    return reply(404, {});
+  });
+  await context.route('**/me', (route) => { seen.me++; return route.fulfill({ contentType: 'application/json', body: JSON.stringify(me) }); });
+  await context.route('**/claude', (route) => {
+    const auth = route.request().headers().authorization || null;
+    seen.claudeAuth.push(auth);
+    const r = claude ? claude(auth) : { status: 200, body: { text: '' } };
+    return route.fulfill({ status: r.status, contentType: 'application/json', body: JSON.stringify(r.body) });
+  });
+  return seen;
+}
+
+test('sign in with an emailed code from Profile, then sign out', async ({ context, page }) => {
+  const errors = collectErrors(page);
+  const seen = await app(context, page);
+  await page.goto(`${BASE}/#account`);
+  const root = page.locator('#root');
+  await root.getByText('Sign in with email').click();
+  await page.getByLabel('Email address').fill('  Carey@Example.com ');
+  await root.getByText('Email me a code').click();
+  await expect(root).toContainText('We sent a code to');
+  expect(seen.otp).toEqual([{ email: 'carey@example.com', create_user: true }]);
+  await page.getByLabel('Sign-in code').fill('999999');
+  await root.getByText('Sign in', { exact: true }).click();
+  await expect(root).toContainText('That code didn\'t work');
+  await page.getByLabel('Sign-in code').fill('123456');
+  await root.getByText('Sign in', { exact: true }).click();
+  await expect(root).toContainText('Your account');
+  await expect(root).toContainText('carey@example.com');
+  expect(seen.verify.at(-1)).toEqual({ type: 'email', email: 'carey@example.com', token: '123456' });
+  expect(seen.me).toBe(1);
+  // Device-only: the session is never part of a backup.
+  const inBackup = await page.evaluate(() => JSON.stringify(Backup.exportData()).includes('acc-1'));
+  expect(inBackup).toBe(false);
+  await root.getByText('Sign out').click();
+  await expect(root).toContainText('Sign in (optional)');
+  expect(await page.evaluate(() => [Store.get('vinterest_session'), Store.get('vinterest_me')])).toEqual([null, null]);
+  // The wrong code's 403 is logged by the browser itself; nothing else may be.
+  expect(errors.filter((e) => !e.includes('status of 403'))).toEqual([]);
+});
+
+test('signed in, Pro is what the server says, not the device flag', async ({ context, page }) => {
+  await app(context, page, { me: { signedIn: true, accounts: true, email: 'a@b.c', tier: 'pro', usage: {}, caps: {} } });
+  await page.goto(`${BASE}/#home`);
+  const out = await page.evaluate(async () => {
+    const before = Entitlement.isPro();
+    Store.setJSON('vinterest_session', { access_token: 'acc-1', refresh_token: 'ref-1', expires_at: Date.now() / 1000 + 3600, user: { email: 'a@b.c' } });
+    await Account.refreshMe();
+    const pro = Entitlement.isPro();
+    Store.setJSON('vinterest_me', { tier: 'free' });
+    Store.set('vinterest_pro', '1');
+    return { before, pro, flagIgnored: Entitlement.isPro() };
+  });
+  expect(out).toEqual({ before: false, pro: true, flagIgnored: false });
+});
+
+test('requests carry the token; an expired sign-in signs out here and the request still goes through', async ({ context, page }) => {
+  const seen = await app(context, page, { claude: (auth) => auth ? { status: 401, body: { error: 'Your sign-in has expired.', code: 'auth_expired' } } : { status: 200, body: { text: 'hello' } } });
+  await page.goto(`${BASE}/#home`);
+  const out = await page.evaluate(async () => {
+    Store.setJSON('vinterest_session', { access_token: 'acc-1', refresh_token: 'ref-1', expires_at: Date.now() / 1000 + 3600, user: { email: 'a@b.c' } });
+    const text = await window.claude.complete({ purpose: 'wine_qa', messages: [{ role: 'user', content: 'hi' }] });
+    return { text, signedIn: Account.signedIn() };
+  });
+  expect(out).toEqual({ text: 'hello', signedIn: false });
+  expect(seen.claudeAuth.slice(-2)).toEqual(['Bearer acc-1', null]);
+});
+
+test('a fair-use or Pro refusal reaches the screen in the server\'s words', async ({ context, page }) => {
+  await app(context, page, { claude: () => ({ status: 429, body: { error: 'You\'ve reached this week\'s fair-use limit for this. It resets on Monday.', code: 'fair_use' } }) });
+  await page.goto(`${BASE}/#home`);
+  const err = await page.evaluate(() => window.claude.complete({ purpose: 'wine_qa', messages: [{ role: 'user', content: 'hi' }] }).catch((e) => ({ message: e.message, code: e.code })));
+  expect(err).toEqual({ message: 'You\'ve reached this week\'s fair-use limit for this. It resets on Monday.', code: 'fair_use' });
+});
+
+test('without sign-in configured, no account card appears', async ({ context, page }) => {
+  await makeDeterministic(page);
+  await seedLocalStorage(page, { vinterest_onboarded: '1', vinterest_region: 'uk' });
+  await stubNetwork(context);
+  await page.goto(`${BASE}/#account`);
+  await expect(page.locator('#root')).toContainText('Travel Mode');
+  await expect(page.locator('#root')).not.toContainText('Sign in (optional)');
+});

@@ -81,6 +81,8 @@ function AccountProfileScreen({nav,back}){
 
       <div style={{flex:1,overflowY:'auto',padding:'14px 20px',display:'flex',flexDirection:'column',gap:12}}>
 
+        <AccountCard/>
+
         <TextSizeControl/>
 
         {/* Travel Mode */}
@@ -196,3 +198,78 @@ function TextSizeControl(){
 }
 
 Object.assign(window,{TextSizeControl});
+
+/* Optional sign-in (Account, pwa-account.js): an email, then the 6-digit code Supabase emails.
+   Nothing in the app needs it; signed in, Pro and the weekly fair-use limits are checked by the
+   server, and (next) their wines back up to it. Hidden when the build has no sign-in configured. */
+function AccountCard(){
+  const [,tick]=React.useState(0);
+  const [step,setStep]=React.useState('idle'); // idle | email | code
+  const [email,setEmail]=React.useState('');
+  const [code,setCode]=React.useState('');
+  const [busy,setBusy]=React.useState(false);
+  const [err,setErr]=React.useState('');
+  React.useEffect(()=>{ const h=()=>tick(t=>t+1); window.addEventListener('vinterest:account',h); return()=>window.removeEventListener('vinterest:account',h); },[]);
+  if(!Account.available()) return null;
+
+  const box={width:'100%',boxSizing:'border-box',padding:'12px 14px',borderRadius:12,border:`1.5px solid ${C.line}`,fontSize:16,fontFamily:C.P,color:C.ink,background:C.white,outline:'none'};
+  const primary={width:'100%',padding:'13px',borderRadius:12,background:C.cr,color:'#fff',fontSize:15,fontWeight:700,fontFamily:C.P,textAlign:'center',cursor:busy?'default':'pointer',opacity:busy?0.6:1};
+  const link={fontSize:14,fontWeight:600,color:C.cr,fontFamily:C.P,cursor:'pointer'};
+  async function send(){
+    if(busy) return; setBusy(true); setErr('');
+    const r=await Account.requestCode(email); setBusy(false);
+    if(r.ok){ setStep('code'); setCode(''); } else setErr(r.error);
+  }
+  async function verify(){
+    if(busy) return; setBusy(true); setErr('');
+    const r=await Account.verifyCode(email,code); setBusy(false);
+    if(r.ok){ setStep('idle'); setEmail(''); setCode(''); } else setErr(r.error);
+  }
+
+  if(Account.signedIn()){
+    const me=Account.me(), pro=Account.tier()==='pro';
+    return <Card style={{padding:14,display:'flex',flexDirection:'column',gap:8}}>
+      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:10}}>
+        <div style={{minWidth:0}}>
+          <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>Your account</div>
+          <div style={{fontSize:14,color:C.mid,fontFamily:C.P,overflow:'hidden',textOverflow:'ellipsis'}}>{Account.email()}</div>
+        </div>
+        <Pill active={pro} sm>{pro?'Pro':'Free'}</Pill>
+      </div>
+      <div style={{fontSize:13,color:C.mid,fontFamily:C.P,lineHeight:1.5}}>
+        {pro?'Pro is on your account, so it follows you to any phone you sign in on.':'Signed in. Pro, when you get it, goes on your account rather than this phone.'}
+        {' '}Backing up your wines to your account comes next; until then, use Export under Data Backup in WineDNA.
+      </div>
+      {me&&me.usage&&me.caps&&me.usage.label_scan>0&&<div style={{fontSize:13,color:C.mid,fontFamily:C.P}}>This week: {me.usage.label_scan} of {me.caps.label_scan} label scans.</div>}
+      <span onClick={()=>Account.signOut()} style={{...link,alignSelf:'flex-start',marginTop:2}}>Sign out</span>
+    </Card>;
+  }
+
+  return <Card style={{padding:14,display:'flex',flexDirection:'column',gap:10}}>
+    <div>
+      <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>Sign in (optional)</div>
+      <div style={{fontSize:13,color:C.mid,fontFamily:C.P,lineHeight:1.5}}>Everything works without an account. Signing in puts Pro on your account instead of this phone, and is how your wines will back up and move to a new phone.</div>
+    </div>
+    {step==='idle'&&<div onClick={()=>{setStep('email');setErr('');}} style={primary}>Sign in with email</div>}
+    {step==='email'&&<>
+      <input type="email" inputMode="email" autoComplete="email" placeholder="you@example.com" aria-label="Email address" value={email}
+        onChange={e=>setEmail(e.target.value)} onKeyDown={e=>{ if(e.key==='Enter') send(); }} style={box}/>
+      <div onClick={send} style={primary}>{busy?'Sending…':'Email me a code'}</div>
+      <div style={{fontSize:13,color:C.mid,fontFamily:C.P}}>No password: we email a 6-digit code to type in here.</div>
+    </>}
+    {step==='code'&&<>
+      <div style={{fontSize:14,color:C.ink2,fontFamily:C.P}}>We sent a code to <b>{email.trim()}</b>. It can take a minute; check spam too.</div>
+      <input inputMode="numeric" autoComplete="one-time-code" maxLength={6} placeholder="6-digit code" aria-label="Sign-in code" value={code}
+        onChange={e=>setCode(e.target.value.replace(/\D/g,''))} onKeyDown={e=>{ if(e.key==='Enter') verify(); }} style={{...box,letterSpacing:4,fontSize:20,textAlign:'center'}}/>
+      <div onClick={verify} style={primary}>{busy?'Checking…':'Sign in'}</div>
+      <div style={{display:'flex',justifyContent:'space-between'}}>
+        <span onClick={send} style={link}>Send a new code</span>
+        <span onClick={()=>{setStep('email');setErr('');}} style={link}>Different email</span>
+      </div>
+    </>}
+    {err&&<div role="alert" style={{fontSize:14,color:'#B04A3A',fontFamily:C.P}}>{err}</div>}
+    {step!=='idle'&&<span onClick={()=>{setStep('idle');setErr('');}} style={{fontSize:14,color:C.mid,fontFamily:C.P,cursor:'pointer',alignSelf:'center'}}>Not now</span>}
+  </Card>;
+}
+
+Object.assign(window,{AccountCard});

@@ -91,7 +91,7 @@ create index wines_user_updated on public.wines (user_id, updated_at);
 create index docs_user_updated  on public.user_docs (user_id, updated_at);
 ```
 
-Secrets: `SUPABASE_URL` and the anon key are public and go in the client. The service role key lives only in the Worker's secrets. Never in the repo, never in a prompt.
+Secrets: `SUPABASE_URL` and the publishable key (`SUPABASE_PUBLISHABLE_KEY`) are public and go in the client. The secret key (`SUPABASE_SECRET_KEY`) lives only in the Worker's secrets. Never in the repo, never in a prompt.
 
 ## 4. What syncs and what doesn't
 
@@ -127,7 +127,7 @@ Sync behaviour:
 
 ## 6. Prompts for Claude Code, in order
 
-Status: prompts 0 (proxy hardening) and 1 (esbuild build, Cloudflare builds `dist/`) are done; prompt 2 (storage behind logic modules) and prompt 3 (backup format v2, `pwa-backup.js`) and prompt 4 (`supabase/migrations/0001_user_data.sql`, RLS tests via `npm run test:db`, dashboard steps in `supabase/README.md`) are done; `user_docs.doc_key` is `xp`/`settings`/`progress`, the backup's sections. Next: 5, optional sign-in and server-side gating (needs the Supabase project from `supabase/README.md`).
+Status: prompts 0 (proxy hardening) and 1 (esbuild build, Cloudflare builds `dist/`) are done; prompt 2 (storage behind logic modules) and prompt 3 (backup format v2, `pwa-backup.js`) and prompt 4 (`supabase/migrations/0001_user_data.sql`, RLS tests via `npm run test:db`, dashboard steps in `supabase/README.md`) are done; `user_docs.doc_key` is `xp`/`settings`/`progress`, the backup's sections. Prompt 5 (optional email-code sign-in in `pwa-account.js`, the Worker's `gateAccount` and `/me`, weekly metering via `0002_use_quota.sql`) is done. Next: 6, the sync engine, and the 'Save your wines' sign-in offer after the first few scans.
 
 Prompt 2 findings:
 - **Dedupe key.** WineHistory's exact key is `name.toLowerCase() + '|' + vintageKey`, where `vintageKey` is the vintage as a string, or `'nv'` for a missing, `0` or `'NV'` vintage. On top of that, `WineHistory.same()` matches rescans fuzzily (producer spelled differently, extra words the other wine accounts for, a missing vintage matching the one dated entry), and `ScanFlow.resolve` gives a rescan the saved entry's name and vintage before anything is saved. So a synced `wine_key` from the exact formula is stable per bottle, provided the client resolves identity before pushing. `getAll` still merges any duplicates that slip through.

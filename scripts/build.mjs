@@ -94,12 +94,17 @@ async function buildVendor() {
   return result.outputFiles[0].text;
 }
 
+// Sign-in (pwa-account.js): the project URL and publishable key are public, and come from
+// Cloudflare's build variables. Without both, the app is built without sign-in.
+const SUPABASE_CONFIG = JSON.stringify(process.env.SUPABASE_URL && process.env.SUPABASE_PUBLISHABLE_KEY
+  ? { url: process.env.SUPABASE_URL.replace(/\/+$/, ''), key: process.env.SUPABASE_PUBLISHABLE_KEY } : null);
+
 async function transformSource(file, version) {
   const { code } = await esbuild.transform(read(file), {
     loader: file.endsWith('.jsx') ? 'jsx' : 'js',
     jsx: 'transform', // classic JSX, against the global React
     jsxFactory: '_h', // React.createElement with the reader's text size (pwa-textsize.js)
-    define: { __APP_VERSION__: JSON.stringify(version) },
+    define: { __APP_VERSION__: JSON.stringify(version), __SUPABASE__: SUPABASE_CONFIG },
     sourcefile: file,
     charset: 'utf8',
   });

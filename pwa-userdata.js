@@ -11,7 +11,12 @@
 const Entitlement = {
   PRO_KEY:'vinterest_pro', SCANS_KEY:'vinterest_scan_count',
   FREE_SCANS:10,
-  isPro(){ return !!Store.get(this.PRO_KEY); },
+  // Signed in, Pro is whatever the server says (Account.me(), from /me). Signed out, the device
+  // flag the Pro sheet sets (no real purchases exist yet); the server never trusts it.
+  isPro(){
+    if(typeof Account!=='undefined'&&Account.signedIn()) return Account.tier()==='pro';
+    return !!Store.get(this.PRO_KEY);
+  },
   /* The Pro sheet's "Start Pro" (no real purchases yet). Screens listening for vinterest:pro update. */
   startPro(){ Store.set(this.PRO_KEY,'1'); try{ window.dispatchEvent(new Event('vinterest:pro')); }catch(e){} },
   scanCount(){ return parseInt(Store.get(this.SCANS_KEY)||'0'); },
