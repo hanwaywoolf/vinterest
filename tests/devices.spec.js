@@ -62,3 +62,20 @@ for (const size of ['standard', 'xl']) {
     });
   }
 }
+
+// Safari paints the strip behind the home indicator with the page background, so the page
+// background follows whatever is at the bottom of the screen (a dark screen must not get a white bar).
+test('the page background matches the bottom of the screen: dark on the welcome screen, light under the nav', async ({ context, page }) => {
+  await makeDeterministic(page);
+  await stubNetwork(context);
+  await page.goto(`${BASE}/#home`); // first visit: onboarding opens on the dark welcome screen
+  await expect(page.locator('#root')).toContainText('Scan your first bottle');
+  const dark = await page.evaluate(async () => { await new Promise((r) => setTimeout(r, 500)); return getComputedStyle(document.body).backgroundColor; });
+  const lum = (c) => { const [r, g, b] = c.match(/\d+/g).map(Number); return (r + g + b) / 3; };
+  expect(lum(dark), `welcome page background ${dark}`).toBeLessThan(80);
+  await seedLocalStorage(page, { vinterest_onboarded: '1', vinterest_region: 'uk' });
+  await page.goto(`${BASE}/?demo=1#home`);
+  await expect(page.locator('#root')).toContainText('Recently scanned');
+  const light = await page.evaluate(async () => { await new Promise((r) => setTimeout(r, 500)); return getComputedStyle(document.body).backgroundColor; });
+  expect(lum(light), `home page background ${light}`).toBeGreaterThan(200);
+});
