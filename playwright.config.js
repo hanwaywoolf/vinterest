@@ -20,7 +20,11 @@ module.exports = defineConfig({
     ? [['iphone-se', 'iPhone SE (3rd gen)'], ['iphone-15-pro-max', 'iPhone 15 Pro Max'], ['ipad-pro-11', 'iPad Pro 11']].map(([name, device]) => ({
         name, use: { ...devices[device], browserName: 'webkit' }, testMatch: ['smoke.spec.js', 'devices.spec.js', 'layout-fit.spec.js'],
       }))
-    : [{ name: 'chromium', use: { browserName: 'chromium' } }],
+    : [
+        { name: 'chromium', use: { browserName: 'chromium' } },
+        // The main screens again on a 375px-wide phone (iPhone SE width), where text size bites hardest.
+        { name: 'small-phone', use: { browserName: 'chromium', viewport: { width: 375, height: 667 } }, testMatch: ['devices.spec.js'] },
+      ],
   webServer: [
     // The built site. Builds first, so `npm test` always tests current sources.
     { command: 'npm run build && node scripts/serve.mjs dist 4173', url: 'http://localhost:4173/', reuseExistingServer: !process.env.CI },

@@ -38,6 +38,8 @@
 <style>
   *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
   html,body{height:100%;overflow:hidden}
+  /* iOS Safari enlarges text on its own in some layouts; the reader's Text size setting is the only scaling. */
+  html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
   body{overscroll-behavior-x:none;overscroll-behavior-y:none}
   body{
     font-family:'Poppins',sans-serif;

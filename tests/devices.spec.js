@@ -27,6 +27,8 @@ for (const size of ['standard', 'xl']) {
       const root = page.locator('#root');
       await expect(root).toContainText(expectText);
       await page.waitForTimeout(400);
+      // The app's own typeface, not a fallback (fonts ship in dist/fonts; nothing comes from Google).
+      expect(await page.evaluate(async () => { await document.fonts.ready; return ['400', '600', '700'].every((w) => document.fonts.check(`${w} 16px Poppins`)) && [...document.fonts].some((f) => f.family.replace(/"/g, '') === 'Poppins' && f.status === 'loaded'); }), 'Poppins loaded').toBe(true);
       await page.screenshot({ path: path.join(info.project.outputDir, 'screens', info.project.name, `${hash}-${size}.png`) });
       // Nothing wider than the screen (a sideways scroll is the classic Safari break).
       const wide = await page.evaluate(() => {
@@ -44,6 +46,11 @@ for (const size of ['standard', 'xl']) {
       if (hash !== 'scan') {
         const nav = await root.getByText('WineDNA', { exact: true }).last().boundingBox();
         expect(nav && nav.y + nav.height).toBeLessThanOrEqual(page.viewportSize().height + 1);
+        // Each tab label on one line (a wrapped "My Wines" pushes the whole bar up).
+        for (const label of ['Home', 'My Wines', 'Scan', 'Learn', 'WineDNA']) {
+          const box = await root.getByText(label, { exact: true }).last().boundingBox();
+          expect(box.height, `"${label}" tab label wraps`).toBeLessThan(26);
+        }
       }
       expect(errors.filter((e) => !/Failed to load resource/.test(e))).toEqual([]);
     });

@@ -89,6 +89,8 @@ function Icon({n,sz=20,col=C.ink,style:s}){
   return <svg viewBox="0 0 20 20" width={sz} height={sz} style={{display:'block',flexShrink:0,...s}}>{d[n]||<circle cx="10" cy="10" r="7" stroke={col} strokeWidth="1.5" fill="none"/>}</svg>;
 }
 
+/* Tab labels are a fixed 13px (a string size, so Text size doesn't scale them) on one line:
+   five tabs share the width of a small phone, and a wrapped label pushes the whole bar up. */
 function BottomNav({active, nav, showPro}){
   const homeActive=active==='home'||active==='scan';
   const cellarActive=active==='mywines';
@@ -100,29 +102,29 @@ function BottomNav({active, nav, showPro}){
         {/* Home */}
         <div onClick={()=>nav('home')} style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:3,cursor:'pointer',padding:'9px 0 max(env(safe-area-inset-bottom,9px),9px)'}}>
           <Icon n="home" sz={22} col={homeActive?C.cr:C.mid}/>
-          <span style={{fontSize:13,fontWeight:homeActive?600:400,color:homeActive?C.cr:C.mid,fontFamily:C.P}}>Home</span>
+          <span style={{fontSize:'13px',whiteSpace:'nowrap',fontWeight:homeActive?600:400,color:homeActive?C.cr:C.mid,fontFamily:C.P}}>Home</span>
         </div>
         {/* My Wines */}
         <div onClick={()=>nav('mywines')} style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:3,cursor:'pointer',padding:'9px 0 max(env(safe-area-inset-bottom,9px),9px)'}}>
           <Icon n="wine" sz={22} col={cellarActive?C.cr:C.mid}/>
-          <span style={{fontSize:13,fontWeight:cellarActive?600:400,color:cellarActive?C.cr:C.mid,fontFamily:C.P}}>My Wines</span>
+          <span style={{fontSize:'13px',whiteSpace:'nowrap',fontWeight:cellarActive?600:400,color:cellarActive?C.cr:C.mid,fontFamily:C.P}}>My Wines</span>
         </div>
         {/* Scan FAB */}
         <div style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'flex-end',cursor:'pointer',paddingBottom:'max(env(safe-area-inset-bottom,9px),9px)'}} onClick={()=>nav('camera')}>
           <div style={{width:54,height:54,borderRadius:27,background:C.cr,display:'flex',alignItems:'center',justifyContent:'center',marginTop:-20,boxShadow:`0 4px 22px ${C.cr}60`,border:'3px solid #fff'}}>
             <Icon n="camera" sz={22} col="#fff"/>
           </div>
-          <span style={{fontSize:13,fontWeight:600,color:C.cr,fontFamily:C.P,marginTop:3}}>Scan</span>
+          <span style={{fontSize:'13px',whiteSpace:'nowrap',fontWeight:600,color:C.cr,fontFamily:C.P,marginTop:3}}>Scan</span>
         </div>
         {/* Learn */}
         <div onClick={()=>nav('learn')} style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:3,cursor:'pointer',padding:'9px 0 max(env(safe-area-inset-bottom,9px),9px)'}}>
           <Icon n="book" sz={22} col={learnActive?C.cr:C.mid}/>
-          <span style={{fontSize:13,fontWeight:learnActive?600:400,color:learnActive?C.cr:C.mid,fontFamily:C.P}}>Learn</span>
+          <span style={{fontSize:'13px',whiteSpace:'nowrap',fontWeight:learnActive?600:400,color:learnActive?C.cr:C.mid,fontFamily:C.P}}>Learn</span>
         </div>
         {/* WineDNA */}
         <div onClick={()=>nav('profile')} style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:3,cursor:'pointer',padding:'9px 0 max(env(safe-area-inset-bottom,9px),9px)'}}>
           <Icon n="brain" sz={22} col={profileActive?C.cr:C.mid}/>
-          <span style={{fontSize:13,fontWeight:profileActive?600:400,color:profileActive?C.cr:C.mid,fontFamily:C.P}}>WineDNA</span>
+          <span style={{fontSize:'13px',whiteSpace:'nowrap',fontWeight:profileActive?600:400,color:profileActive?C.cr:C.mid,fontFamily:C.P}}>WineDNA</span>
         </div>
       </div>
     </div>

@@ -195,7 +195,8 @@ function TextSizeControl(){
         return <div key={s.id} role="radio" aria-checked={on} onClick={()=>{ TextSize.set(s.id); setCur(s.id); }}
           style={{flex:1,textAlign:'center',padding:'10px 4px',borderRadius:10,cursor:'pointer',background:on?C.crSoft:C.offWhite,border:`1.5px solid ${on?C.cr:'transparent'}`}}>
           <div style={{fontSize:14+i*2,fontWeight:800,color:on?C.cr:C.ink,fontFamily:C.P,lineHeight:1.1}}>Aa</div>
-          <div style={{fontSize:13,fontWeight:on?700:500,color:on?C.cr:C.mid,fontFamily:C.P,marginTop:3}}>{s.label}</div>
+          {/* The labels stay one size so the three tiles line up; the Aa above shows the difference. */}
+          <div style={{fontSize:'13px',fontWeight:on?700:500,color:on?C.cr:C.mid,fontFamily:C.P,marginTop:3,whiteSpace:'nowrap'}}>{s.label}</div>
         </div>;
       })}
     </div>
