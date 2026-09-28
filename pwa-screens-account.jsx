@@ -224,6 +224,10 @@ function AccountCard({showPro}){
   const [confirmDelete,setConfirmDelete]=React.useState(false);
   React.useEffect(()=>{ const h=()=>tick(t=>t+1); window.addEventListener('vinterest:account',h); window.addEventListener('vinterest:sync',h);
     return()=>{ window.removeEventListener('vinterest:account',h); window.removeEventListener('vinterest:sync',h); }; },[]);
+  // The Backup card's "Sign in to back up": open at the email step and bring this card into view.
+  const cardRef=React.useRef(null);
+  React.useEffect(()=>{ const h=()=>{ if(Account.signedIn()) return; setStep('email'); setTimeout(()=>{ const el=cardRef.current; if(el){ el.scrollIntoView({behavior:'smooth',block:'start'}); const i=el.querySelector('input'); i&&i.focus(); } },50); };
+    window.addEventListener('vinterest:signin',h); return()=>window.removeEventListener('vinterest:signin',h); },[]);
   if(!Account.available()) return null;
 
   const box={width:'100%',boxSizing:'border-box',padding:'12px 14px',borderRadius:12,border:`1.5px solid ${C.line}`,fontSize:16,fontFamily:C.P,color:C.ink,background:C.white,outline:'none'};
@@ -274,7 +278,7 @@ function AccountCard({showPro}){
     </Card>;
   }
 
-  return <Card style={{padding:14,display:'flex',flexDirection:'column',gap:10}}>
+  return <div ref={cardRef} style={{scrollMarginTop:12}}><Card style={{padding:14,display:'flex',flexDirection:'column',gap:10}}>
     {intent==='backup'
       ?<div>
         <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>One step left: sign in to back up</div>
@@ -303,7 +307,7 @@ function AccountCard({showPro}){
     </>}
     {err&&<div role="alert" style={{fontSize:14,color:'#B04A3A',fontFamily:C.P}}>{err}</div>}
     {step!=='idle'&&<span onClick={()=>{setStep('idle');setErr('');}} style={{fontSize:14,color:C.mid,fontFamily:C.P,cursor:'pointer',alignSelf:'center'}}>Not now</span>}
-  </Card>;
+  </Card></div>;
 }
 
 /* The confirmation before Account.deleteAccount: what goes (the account, its backup, and everything
@@ -380,7 +384,7 @@ function BackupCard(){
     return()=>{ window.removeEventListener('vinterest:sync',h); window.removeEventListener('vinterest:account',h); clearInterval(id); }; },[]);
   const s=Sync.summary();
   if(!s) return null;
-  const col={on:C.green,working:C.amber,problem:'#B04A3A'}[s.tone];
+  const col={on:C.green,working:C.amber,problem:'#B04A3A',off:'#B04A3A'}[s.tone];
   return <Card style={{padding:14,display:'flex',flexDirection:'column',gap:6}}>
     <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:10}}>
       <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>Backup</div>
@@ -391,7 +395,10 @@ function BackupCard(){
     </div>
     <div style={{fontSize:14,color:C.ink2,fontFamily:C.P}}>{s.last}</div>
     {s.detail&&<div style={{fontSize:13,color:C.mid,fontFamily:C.P,lineHeight:1.5}}>{s.detail}</div>}
-    <span onClick={()=>Sync.syncNow()} style={{fontSize:14,fontWeight:600,color:C.cr,fontFamily:C.P,cursor:'pointer',alignSelf:'flex-start',marginTop:2}}>Back up now</span>
+    {s.signIn
+      // The account card just above opens at its email step (it listens for vinterest:signin).
+      ?<div role="button" onClick={()=>window.dispatchEvent(new Event('vinterest:signin'))} style={{fontSize:14,fontWeight:600,color:C.cr,fontFamily:C.P,cursor:'pointer',alignSelf:'flex-start',marginTop:2}}>Sign in to back up</div>
+      :<span onClick={()=>Sync.syncNow()} style={{fontSize:14,fontWeight:600,color:C.cr,fontFamily:C.P,cursor:'pointer',alignSelf:'flex-start',marginTop:2}}>Back up now</span>}
   </Card>;
 }
 
