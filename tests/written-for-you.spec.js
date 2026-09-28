@@ -24,7 +24,7 @@ async function user(context, page, opts = {}) {
 }
 
 test('new regions get different kinds of piece, and only compare like with like', async ({ context, page }) => {
-  await user(context, page);
+  await user(context, page, { seed: { vinterest_onramp_1_done: '1' } });
   await page.goto(`${BASE}/#home`);
   const stubs = await page.evaluate(() => {
     localStorage.removeItem('vinterest_gen_stubs');
@@ -105,6 +105,42 @@ test('Written for you shows on the Learn shelf, WineDNA and the wine detail Lear
   await root.getByText('Learn', { exact: true }).first().click();
   await expect(root).toContainText('Keep learning');
   await expect(root).toContainText('written from your WineDNA');
+});
+
+test('Learn opens Written for you, and nothing shows it anywhere before Learn does', async ({ context, page }) => {
+  const errors = collectErrors(page);
+  // One Rioja scored, on-ramp not read: an old piece is already saved (as the first test APK did).
+  const stub = { id: 'early1', archetypeId: 'grape_unlock_intro', title: 'Get to Know Tempranillo', subtitle: 'x', readTime: '2 min', slots: { grape: 'Tempranillo' } };
+  await user(context, page, { seed: { vinterest_wines: JSON.stringify([WINES[0]]), vinterest_gen_stubs: JSON.stringify([stub]) } });
+  await page.goto(`${BASE}/#home`);
+  const root = page.locator('#root');
+  await expect(root).toContainText('Up next');
+  await expect(root).not.toContainText('Get to Know Tempranillo');
+  await expect(root).not.toContainText('Try next:'); // Explore Next waits for 3 reds, as on WineDNA
+  const before = await page.evaluate(() => ({
+    open: ContentEngine.shelfOpen(), primary: LearnNext.home().primary.kind,
+    written: ContentEngine.refreshShelf(WineHistory.getAll(), 6).length,
+    keep: LearnNext.forWine(WineHistory.getAll()[0]).filter((t) => t.kind === 'article').length,
+    dna: ContentEngine.forType('red').length,
+  }));
+  expect(before).toEqual({ open: false, primary: 'onramp', written: 1, keep: 0, dna: 0 });
+
+  await page.goto(`${BASE}/#learn`);
+  const locked = page.locator('[data-shelf-locked]');
+  await expect(locked).toContainText('Like a good bottle, these need a little time.');
+  await expect(locked).toContainText('5 taste terms every wine drinker should know');
+  await expect(root).not.toContainText('Get to Know Tempranillo');
+  await locked.getByText(/Read it now/).click();
+  await expect(root).toContainText('5 taste terms');
+
+  // Read it: the shelf opens on Learn, and Home follows.
+  await page.evaluate(() => LearnProgress.markOnRamp('onramp_1'));
+  await page.goto(`${BASE}/#learn`);
+  await expect(root).toContainText('Get to Know Tempranillo');
+  await expect(page.locator('[data-shelf-locked]')).toHaveCount(0);
+  await page.goto(`${BASE}/#home`);
+  await expect(root).toContainText('Get to Know Tempranillo');
+  expect(errors).toEqual([]);
 });
 
 test('a white grape piece draws on their whites, never their reds', async ({ context, page }) => {

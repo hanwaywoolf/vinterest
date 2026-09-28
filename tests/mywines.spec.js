@@ -29,9 +29,9 @@ test('search, filters, sort and grouping', async ({ context, page }) => {
   await expect(root).toContainText(/about £\d+ a bottle/);
   await expect(root).toContainText('June 2026');
   await expect(root).toContainText('May 2026');
-  await root.getByText(/^Whites \d+$/).click();
+  await root.getByText(/^White \d+$/).click();
   expect(await rowNames(page)).toEqual(expect.arrayContaining(['Saved Test Chablis']));
-  await root.getByText(/^Whites \d+$/).click();
+  await root.getByText(/^White \d+$/).click();
   await root.getByText(/^Saved for later \d+$/).click();
   expect(await rowNames(page)).toEqual(['Saved Test Chablis']);
   await root.getByText(/^Saved for later \d+$/).click();
@@ -92,4 +92,22 @@ test.describe('on a touch screen', () => {
     await page.getByText('Save', { exact: true }).click();
     await expect(root.getByText('Renamed Test Chablis')).toBeVisible();
   });
+});
+
+test('a favourite (the heart on the wine\'s screen) shows a red heart on its row and has its own filter; every row shows its country\'s flag', async ({ context, page }) => {
+  const errors = collectErrors(page);
+  await setup(context, page);
+  const root = page.locator('#root');
+  await expect(root.getByText(/^Favourites \d+$/)).toHaveCount(0); // no chip until there's one
+  const row = root.locator('.mw-row', { hasText: 'Unscored Test Rioja' });
+  await expect(row).toContainText('🇪🇸');
+  await expect(row.getByRole('img', { name: 'Favourite' })).toHaveCount(0);
+  await row.click();
+  await root.getByRole('button', { name: 'Add to favourites' }).click();
+  await expect(root.getByRole('button', { name: 'Remove from favourites' })).toBeVisible();
+  await page.goto(`${BASE}/?demo=1#mywines`);
+  await expect(root.locator('.mw-row', { hasText: 'Unscored Test Rioja' }).getByRole('img', { name: 'Favourite' })).toBeVisible();
+  await root.getByText(/^Favourites 1$/).click();
+  expect(await rowNames(page)).toEqual(['Unscored Test Rioja']);
+  expect(errors).toEqual([]);
 });

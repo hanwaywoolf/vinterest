@@ -137,7 +137,7 @@ test('WineDNA opens on the type they drink most, not the first one ticked at onb
   });
   expect(out).toEqual({ most: 'red', none: 'rose', picked: 'white' });
   await page.goto(`${BASE}/?demo=1#profile`);
-  const reds = page.locator('#root').getByText('Reds', { exact: true }).first();
+  const reds = page.locator('#root').getByText('Red', { exact: true }).first();
   await expect(reds).toHaveCSS('font-weight', '700');
 });
 
@@ -167,4 +167,25 @@ test('local grape names and clones go by their variety: Sangiovese Grosso is San
   expect(out[1]).toBe('Sangiovese');
   expect(out[2]).toContain('Sangiovese Grosso (Sangiovese):');
   expect(out[2]).not.toContain('new grape');
+});
+
+test('tapping a type with no wines opens its tab (no pop-up), and tabs name each type in the singular', async ({ page }) => {
+  const errors = collectErrors(page);
+  // beforeEach has already seeded storage once, so this one sets its own after the first load.
+  await page.goto(`${BASE}/#home`);
+  await page.evaluate(() => {
+    localStorage.clear();
+    Object.entries({ vinterest_onboarded: '1', vinterest_age_ok: '1', vinterest_wineDNA_unlock_seen: '1', vinterest_region: 'uk',
+      vinterest_wines: JSON.stringify([{ name: 'Prado Enea Gran Reserva', producer: 'Bodegas Muga', type: 'red', region: 'Rioja', country: 'Spain', grapes: ['Tempranillo'], rating: 96, scanned_at: '2026-09-01T12:00:00Z' }]) })
+      .forEach(([k, v]) => localStorage.setItem(k, v));
+  });
+  await page.goto(`${BASE}/#profile`);
+  const root = page.locator('#root');
+  for (const t of ['Red', 'White', 'Rosé', 'Sparkling']) await expect(root.getByText(t, { exact: true }).first()).toBeVisible();
+  await expect(root.getByText('Reds', { exact: true })).toHaveCount(0);
+  await expect(root.getByText('Whites', { exact: true })).toHaveCount(0);
+  await root.getByText('White', { exact: true }).first().click();
+  await expect(root.getByText('White', { exact: true }).first()).toHaveCSS('font-weight', '700');
+  await expect(root).not.toContainText("You haven't scanned a");
+  expect(errors).toEqual([]);
 });

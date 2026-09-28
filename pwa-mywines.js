@@ -3,9 +3,11 @@
    Filtering (wine type, status, search), sorting, month groups and the summary line are here so
    the screen only renders them. Statuses come from the scan flow: a "Save for later" scan is a
    shelf check (scan_intent 'checking') until they buy or score it, and buy_again comes from the
-   optional tasting details after a score. */
+   optional tasting details after a score. Favourites are the heart on the wine's own screen
+   (Favorites), shown as a red heart on its row. */
 const MyWines = {
   STATUSES:[
+    {id:'favourite',label:'Favourites',test:w=>Favorites.has(w)},
     {id:'unscored',label:'Unscored',test:w=>!(w.rating>0)&&!MyWines.isSaved(w)},
     {id:'saved',label:'Saved for later',test:w=>MyWines.isSaved(w)},
     {id:'again',label:'Buy again',test:w=>w.buy_again===true},

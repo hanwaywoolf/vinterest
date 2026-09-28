@@ -283,6 +283,7 @@ try{ EXPLORE_STYLES=_loadJSON('data/explore-styles.json')||[]; }catch(e){ consol
    low, and a spread across countries. A style the user has already scanned isn't suggested again;
    it's returned as "explored" with their rating, so trying a suggestion visibly closes the loop. */
 const ExploreNext = {
+  READY_AT:3,
   AXES:{body:['full body','light body','medium body'],tannins:['firm tannins','soft tannins','medium tannins'],
         acidity:['fresh, high acidity','softer acidity','balanced acidity'],sweetness:['sweetness','a dry style','a touch of sweetness']},
   _t(v){ return (v||'').toLowerCase().replace('é','e'); },
@@ -337,6 +338,9 @@ const ExploreNext = {
   },
   // {picks:[assessments], explored:[{style,wine}]} for one type.
   suggest(typeKey,wines,label,n=3){
+    // No picks until there's enough to go on (READY_AT wines of the type): WineDNA shows none
+    // before then, and neither does Home.
+    if(this._typeWines(typeKey,wines).length<this.READY_AT) n=0;
     const dna=this.dna(typeKey,wines);
     const styles=EXPLORE_STYLES.filter(s=>s.type===typeKey);
     const explored=[], open=[];
@@ -723,10 +727,21 @@ const ContentEngine = {
     return out.join('\n\n');
   },
 
+  /* Written for you opens on Learn once they've read the first beginner article, or straight away
+     for enthusiasts and experts (who skip the on-ramp). Learn sets the rule and everything else
+     follows it: until then no piece is written, and Home, WineDNA, wine detail and Keep learning
+     show none (openShelf), so nothing turns up elsewhere before Learn has it. */
+  shelfOpen(){
+    const list=typeof ON_RAMP!=='undefined'?ON_RAMP:[];
+    return UserPrefs.skipsOnRamp()||(list.length>0&&LearnProgress.onRampDone(list[0].id));
+  },
+  /* The shelf as every screen but Learn reads it: empty until it's open. */
+  openShelf(wines){ return this.shelfOpen()?(this.shelf(wines)||[]):[]; },
+
   /* Unread pieces about this wine type's bottles, for the WineDNA tab. */
   forType(typeKey,wines){
     wines=wines||WineHistory.getAll();
-    return (this.shelf(wines)||[]).filter(s=>!LearnProgress.articleDone(s.id)&&!this.stubLocked(s)&&this._related(s.slots,wines).some(w=>WineDNA._t(w.type)===typeKey));
+    return this.openShelf(wines).filter(s=>!LearnProgress.articleDone(s.id)&&!this.stubLocked(s)&&this._related(s.slots,wines).some(w=>WineDNA._t(w.type)===typeKey));
   },
 
   /* A region piece about a region past the free allowance is shown locked, with Pro. */
@@ -744,6 +759,7 @@ const ContentEngine = {
 
   refreshShelf(wines, maxUnread){
     maxUnread=maxUnread||6;
+    if(!this.shelfOpen()) return this.shelf(wines)||[];
     let stubs=[];
     try{ stubs=JSON.parse(Store.get('vinterest_gen_stubs')||'[]')||[]; }catch(e){}
     let healed=this._healStubs(stubs,wines);

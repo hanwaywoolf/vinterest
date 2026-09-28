@@ -22,10 +22,10 @@ function TasteProfileScreen({nav,back,showPro}){
   }
 
   const cats=[
-    {col:'#8B1A2F',label:'Reds',      typeKey:'red',
+    {col:'#8B1A2F',label:'Reds',tab:'Red',typeKey:'red',
      defaultTags:['Full Body','Earthy','Dark Fruit','High Tannins','Dry','Cedar'],
      pct:profile.total?Math.round(profile.redPct*100):0},
-    {col:'#B8963E',label:'Whites',    typeKey:'white',
+    {col:'#B8963E',label:'Whites',tab:'White',typeKey:'white',
      defaultTags:['Crisp','Mineral','Citrus','Dry','Light Body','Herbaceous'],
      pct:profile.total?Math.round(profile.whitePct*100):0},
     {col:'#C47A8A',label:'Rosé',      typeKey:'rose',
@@ -100,7 +100,7 @@ function TasteProfileScreen({nav,back,showPro}){
         {cats.map((ct,i)=>(
           <div key={i} onClick={()=>setTab(i)} style={{flex:1,textAlign:'center',padding:'10px 4px',cursor:'pointer',borderBottom:i===tab?`2px solid ${ct.col}`:'2px solid transparent',marginBottom:-1}}>
             <div style={{width:8,height:8,borderRadius:4,background:ct.col,margin:'0 auto 3px'}}/>
-            <div style={{fontSize:15,fontWeight:i===tab?700:400,color:i===tab?ct.col:C.mid,fontFamily:C.P}}>{ct.label}</div>
+            <div style={{fontSize:15,fontWeight:i===tab?700:400,color:i===tab?ct.col:C.mid,fontFamily:C.P}}>{ct.tab||ct.label}</div>
             <div style={{fontSize:13,color:C.mid,fontFamily:C.P}}>{ct.pct>0?`${ct.pct}%`:'—'}</div>
           </div>
         ))}
@@ -232,14 +232,14 @@ function TasteProfileScreen({nav,back,showPro}){
 }
 /* ── MY WINES: a searchable, filterable list. MyWines (pwa-mywines.js) decides what's shown. ── */
 const _MW_TONE={good:C.green,neutral:C.amber,bad:'#B04A3A'};
-const _MW_TYPES=[['red','Reds'],['white','Whites'],['rose','Rosé'],['sparkling','Sparkling'],['orange','Orange'],['dessert','Dessert'],['fortified','Fortified']];
+const _MW_TYPES=[['red','Red'],['white','White'],['rose','Rosé'],['sparkling','Sparkling'],['orange','Orange'],['dessert','Dessert'],['fortified','Fortified']];
 
 /* One wine, as a compact row. Swipe left for Edit and Delete; tap to open. */
 function WineRow({w,open,setOpen,onOpen,onScore,onEdit,onDelete}){
   const ref=React.useRef(null), g=React.useRef(null), moved=React.useRef(false);
   const ACTIONS=144;
   const col=(typeof _TYPE_COLORS!=='undefined'&&_TYPE_COLORS[MyWines.type(w)])||C.cr;
-  const saved=MyWines.isSaved(w);
+  const saved=MyWines.isSaved(w), fav=Favorites.has(w), flag=Regions.wineFlag(w);
   const actionsRef=React.useRef(null);
   // The Edit/Delete buttons are hidden until the row moves, so they never tint the row's edges.
   function place(x,anim){
@@ -276,7 +276,12 @@ function WineRow({w,open,setOpen,onOpen,onScore,onEdit,onDelete}){
           {saved&&<Icon n="bookmark" sz={14} col={C.mid}/>}
           <div style={{fontSize:16,fontWeight:600,color:C.ink,fontFamily:C.P,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{w.name}</div>
         </div>
-        <div style={{fontSize:13,color:C.mid,fontFamily:C.P,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis',marginTop:1}}>{MyWines.subline(w)}</div>
+        {/* Favourite (the heart on the wine's screen), the country's flag, then producer · region · year. */}
+        <div style={{display:'flex',alignItems:'center',gap:5,marginTop:1,minWidth:0}}>
+          {fav&&<svg viewBox="0 0 20 20" width={13} height={13} role="img" aria-label="Favourite" style={{flexShrink:0}}><path d="M10 16.5C10 16.5 3 12 3 7.5C3 5 5 3.2 7.2 3.2c1.5 0 2.5 1 2.8 1.8.3-.8 1.3-1.8 2.8-1.8C15 3.2 17 5 17 7.5c0 4.5-7 9-7 9z" fill={C.cr}/></svg>}
+          {flag&&<span aria-hidden="true" style={{fontSize:13,lineHeight:1,flexShrink:0}}>{flag}</span>}
+          <div style={{fontSize:13,color:C.mid,fontFamily:C.P,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis',minWidth:0}}>{MyWines.subline(w)}</div>
+        </div>
       </div>
       {w.times_consumed>1&&<span style={{fontSize:13,color:C.mid,fontFamily:C.P,flexShrink:0}}>×{w.times_consumed}</span>}
       {w.rating>0

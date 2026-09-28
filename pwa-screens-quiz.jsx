@@ -107,8 +107,9 @@ function QuizHubScreen({nav,back,showPro}){
   const nextLvl=XPSystem.nextLevel(xpData.total);
   const prog=XPSystem.levelProgress(xpData.total);
   // The shelf opens after the first on-ramp article, or straight away for enthusiasts and
-  // experts (their onboarding answer), who don't need the beginner on-ramp first.
-  const article1Done=(ON_RAMP.length>0&&onRampDone(ON_RAMP[0].id))||UserPrefs.skipsOnRamp();
+  // experts (their onboarding answer), who don't need the beginner on-ramp first
+  // (ContentEngine.shelfOpen, which every other screen follows too).
+  const article1Done=ContentEngine.shelfOpen();
   const wines=React.useMemo(()=>WineHistory.getAll(),[]);
   const coverage=React.useMemo(()=>getCoverage(wines),[wines]);
   const [showUnlock,setShowUnlock]=React.useState(false);
@@ -270,7 +271,7 @@ function QuizHubScreen({nav,back,showPro}){
 
       <div style={{flex:1,overflowY:'auto'}}>
 <LearnJumpRow onJump={jump} sections={[
-  article1Done&&{id:'shelf',label:'For you',count:unreadShelf.length},
+  {id:'shelf',label:'For you',count:article1Done?unreadShelf.length:0},
   {id:'basics',label:'Basics',count:topicsToShow.length},
   (quizRegions.length+doneRegions.length+proRegions.length)>0&&{id:'regions',label:'Regions',count:quizRegions.length},
   {id:'grapes',label:'Grapes',count:unlockedGrapes.filter(g=>{ const st=grapePillStatus(g); return !(st&&st.done); }).length},
@@ -292,6 +293,24 @@ function QuizHubScreen({nav,back,showPro}){
             <Icon n="chevron" sz={13} col="rgba(255,255,255,0.3)"/>
           </div>
         </div>
+
+        {/* Before the shelf opens: what it is and the one step that opens it, shown faded. */}
+        {!article1Done&&ON_RAMP[0]&&(
+          <div ref={secRefs.shelf} data-shelf-locked style={{scrollMarginTop:56}}>
+            <div style={zoneLabel}>Written for you</div>
+            <div style={{marginTop:8,background:C.white,borderRadius:14,border:`1px dashed ${C.line}`,padding:'16px',position:'relative',overflow:'hidden'}}>
+              <div aria-hidden="true" style={{opacity:0.35,display:'flex',flexDirection:'column',gap:8,marginBottom:12}}>
+                {[0.9,0.7].map((w,i)=><div key={i} style={{display:'flex',gap:10,alignItems:'center'}}>
+                  <div style={{width:36,height:36,borderRadius:10,background:C.crSoft,flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center'}}><Icon n="read" sz={16} col={C.cr}/></div>
+                  <div style={{flex:1}}><div style={{height:10,width:`${w*100}%`,background:C.line,borderRadius:5,marginBottom:6}}/><div style={{height:8,width:`${w*70}%`,background:C.line,borderRadius:4}}/></div>
+                </div>)}
+              </div>
+              <div style={{fontSize:15,fontWeight:700,color:C.ink,fontFamily:C.P,lineHeight:1.35}}>Like a good bottle, these need a little time.</div>
+              <div style={{fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.5,marginTop:4}}>Pieces here are written from your WineDNA: the bottles you scan, how you score them and what you pay. Read <b>{ON_RAMP[0].title}</b> first and your shelf opens.</div>
+              <div style={{marginTop:12}}><Btn primary onClick={()=>{Handoff.onRampIdx.set('0');nav('article');}}>Read it now · {ON_RAMP[0].readTime}</Btn></div>
+            </div>
+          </div>
+        )}
 
         {article1Done&&(()=>{
           // Unread pieces stay on the shelf (three at a time); read ones move to the library, so

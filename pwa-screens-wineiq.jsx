@@ -41,14 +41,16 @@ function _clusterNotes(notes){
 }
 
 const _TYPE_COLORS={red:'#8B1A2F',white:'#B8963E',rose:'#C47A8A',sparkling:'#5E8FA8',orange:'#C1652B',dessert:'#8A5A2B',fortified:'#5C2A1E'};
+/* label is the plural used in sentences ("your 6 Outstanding reds"); tab is the type's name on
+   tabs, pills and row titles, one word each and never plural (Red, White, Rosé, Sparkling…). */
 const _TYPES=[
-  {key:'red',       label:'Reds',     col:'#8B1A2F'},
-  {key:'white',     label:'Whites',   col:'#B8963E'},
-  {key:'rose',      label:'Rosé',     col:'#C47A8A'},
-  {key:'sparkling', label:'Sparkling',col:'#5E8FA8'},
-  {key:'orange',    label:'Orange',   col:'#C1652B'},
-  {key:'dessert',   label:'Dessert',  col:'#8A5A2B'},
-  {key:'fortified', label:'Fortified',col:'#5C2A1E'},
+  {key:'red',       label:'Reds',     tab:'Red',      col:'#8B1A2F'},
+  {key:'white',     label:'Whites',   tab:'White',    col:'#B8963E'},
+  {key:'rose',      label:'Rosé',     tab:'Rosé',     col:'#C47A8A'},
+  {key:'sparkling', label:'Sparkling',tab:'Sparkling',col:'#5E8FA8'},
+  {key:'orange',    label:'Orange',   tab:'Orange',   col:'#C1652B'},
+  {key:'dessert',   label:'Dessert',  tab:'Dessert',  col:'#8A5A2B'},
+  {key:'fortified', label:'Fortified',tab:'Fortified',col:'#5C2A1E'},
 ];
 
 /* Collapsible section header — collapsed state shows a short useful summary + expand CTA below the title */
@@ -93,7 +95,7 @@ function DnaTitle({t,basisLine}){
       <span style={{fontSize:13,fontWeight:600,color:C.mid,fontFamily:C.P,letterSpacing:'0.09em',textTransform:'uppercase'}}>WineDNA</span>
       <div style={{display:'inline-flex',alignItems:'center',gap:4,padding:'2px 8px',borderRadius:20,background:`${t.col}15`,border:`1px solid ${t.col}35`}}>
         <div style={{width:5,height:5,borderRadius:3,background:t.col}}/>
-        <span style={{fontSize:12,fontWeight:700,color:t.col,fontFamily:C.P}}>{t.label}</span>
+        <span style={{fontSize:12,fontWeight:700,color:t.col,fontFamily:C.P}}>{t.tab||t.label}</span>
       </div>
     </div>
     <div style={{fontSize:20,fontWeight:800,color:C.ink,fontFamily:C.P,letterSpacing:'-0.3px',lineHeight:1.15}}>{t.personality}</div>
@@ -157,7 +159,6 @@ function WineDNAScreen({nav,back,showPro}){
   // Opens on the type they've chosen most (UserPrefs.openingType), or the tab they last picked.
   const [typeIdx,setTypeIdxState]=React.useState(()=>Math.max(0,_TYPES.findIndex(t=>t.key===UserPrefs.openingType(WineHistory.getAll()))));
   const setTypeIdx=i=>{ setTypeIdxState(i); if(_TYPES[i]) UserPrefs.rememberType(_TYPES[i].key); };
-  const [tabToast,setTabToast]=React.useState(null);
   const [genSummaries,setGenSummaries]=React.useState({});
   const [generatingSummary,setGeneratingSummary]=React.useState(null);
   const [genScripts,setGenScripts]=React.useState({});
@@ -206,10 +207,8 @@ function WineDNAScreen({nav,back,showPro}){
 
   const t=typeStats[typeIdx];
   const visibleIdxs=typeStats.reduce((arr,ts,i)=>{ if(i<4||ts.wines.length>0) arr.push(i); return arr; },[]);
-  function pickType(i){
-    if(i<4&&typeStats[i].wines.length===0){ setTabToast(`You haven't scanned a ${typeStats[i].label.toLowerCase()} yet`); setTimeout(()=>setTabToast(null),1800); return; }
-    setTypeIdx(i);
-  }
+  // A type with no wines yet opens like any other: its tab says what to scan (as swiping there does).
+  function pickType(i){ setTypeIdx(i); }
   function stepType(dir){
     const pos=visibleIdxs.indexOf(typeIdx);
     const next=visibleIdxs[Math.min(visibleIdxs.length-1,Math.max(0,pos+dir))];
@@ -344,14 +343,13 @@ function WineDNAScreen({nav,back,showPro}){
                     return(
                       <div key={i} onClick={()=>pickType(i)} style={{flex:1,textAlign:'center',padding:'7px 4px',borderRadius:10,background:i===typeIdx?tp.col+'18':C.offWhite,border:`1.5px solid ${i===typeIdx?tp.col+'55':'transparent'}`,cursor:'pointer',opacity:typeStats[i].wines.length?1:0.45}}>
                         <div style={{width:7,height:7,borderRadius:4,background:tp.col,margin:'0 auto 3px'}}/>
-                        <div style={{fontSize:13,fontWeight:i===typeIdx?700:500,color:i===typeIdx?tp.col:C.mid,fontFamily:C.P}}>{tp.label}</div>
+                        <div style={{fontSize:13,fontWeight:i===typeIdx?700:500,color:i===typeIdx?tp.col:C.mid,fontFamily:C.P}}>{tp.tab}</div>
                         <div style={{fontSize:12,color:i===typeIdx?tp.col:C.mid,fontFamily:C.P,opacity:0.75}}>{typeStats[i].pct}%</div>
                       </div>
                     );
                   })}
                 </div>
               ))}
-              {tabToast&&<div style={{position:'absolute',top:'calc(100% + 8px)',left:0,right:0,textAlign:'center',fontSize:14,fontWeight:700,color:'#fff',fontFamily:C.P,background:C.cr,borderRadius:10,padding:'10px 14px',zIndex:20,boxShadow:'0 4px 16px rgba(0,0,0,0.15)',animation:'dnaToast 1.8s ease both'}}>{tabToast}</div>}
             </div>
 
             <div style={{height:1,background:C.line}}/>
@@ -533,9 +531,9 @@ function WineDNAScreen({nav,back,showPro}){
           </Card>
         )}
 
-        {t.wines.length>=3&&t.explore.picks.length>0&&<CSH label="Explore" cKey="explore" collapsed={collapsed} toggle={toggle} summary={`${t.explore.picks.length} styles picked from your ${tLabel} DNA. Top pick: ${t.explore.picks[0].style.name} (${t.explore.picks[0].style.country}).${t.explore.explored.length?` You've explored ${t.explore.explored.length} so far.`:''}`}/>}
+        {t.explore.picks.length>0&&<CSH label="Explore" cKey="explore" collapsed={collapsed} toggle={toggle} summary={`${t.explore.picks.length} styles picked from your ${tLabel} DNA. Top pick: ${t.explore.picks[0].style.name} (${t.explore.picks[0].style.country}).${t.explore.explored.length?` You've explored ${t.explore.explored.length} so far.`:''}`}/>}
         {/* ── Explore Next: styles to try, ranked from this type's WineDNA (ExploreNext, pwa-content-engine.js) ── */}
-        {t.wines.length>=3&&t.explore.picks.length>0&&!collapsed.explore&&(
+        {t.explore.picks.length>0&&!collapsed.explore&&(
           <Card style={{padding:14}}>
             <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P,marginBottom:4}}>Explore Next</div>
             <div style={{fontSize:15,color:C.mid,fontFamily:C.P,marginBottom:12,lineHeight:1.5}}>Styles that share your {tLabel} DNA but take you somewhere new. Tap one to learn what it's like and how to find it.</div>
@@ -742,7 +740,7 @@ function WineDNAScreen({nav,back,showPro}){
         <div style={{height:8}}/>
       </div>
       </div>
-      <style>{`@keyframes dnaSpin{to{transform:rotate(360deg)}}\n@keyframes dnaToast{0%{opacity:0;transform:translateY(-6px)}12%{opacity:1;transform:translateY(0)}80%{opacity:1}100%{opacity:0}}`}</style>
+      <style>{`@keyframes dnaSpin{to{transform:rotate(360deg)}}`}</style>
     </div>
   );
 }

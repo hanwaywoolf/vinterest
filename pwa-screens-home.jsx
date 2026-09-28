@@ -79,7 +79,7 @@ function WineChatWidget({wines,nav,showPro}){
   const recent=focused&&!q&&!open?Vinny.recent().slice(0,3):[];
 
   return(
-    <div style={{margin:'0 16px 8px'}}>
+    <div style={{margin:'0 16px 4px'}}>
       <VinnyBar onSubmit={()=>doAsk(q.trim())} hasText={!!q} canSend={!asking&&!!q.trim()} lit={!!q.trim()} onClear={clearQ} field={<>
           <input ref={inputRef} value={q} onChange={e=>onType(e.target.value)} onKeyDown={onKey} onFocus={()=>setFocused(true)} onBlur={()=>setFocused(false)} aria-label="Ask Vinny"
             placeholder={open?'Ask a follow-up…':'Ask Vinny about wine…'} style={{position:'absolute',inset:0,width:'100%',border:'none',outline:'none',background:'transparent',fontSize:16,fontFamily:C.P,color:'#fff'}}/>
@@ -225,7 +225,8 @@ function HomeScreen({nav, showPro, isTablet}){
     const types=Object.entries(counts).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([k])=>{
       const label=ContentEngine._typeLabel(k), p=WineDNA.profile(k,allWines,label);
       const best=p.favourites.regions[0]||null;
-      return {key:k,label,col:(typeof _TYPE_COLORS!=='undefined'&&_TYPE_COLORS[k])||C.cr,
+      const tab=((typeof _TYPES!=='undefined'&&_TYPES.find(x=>x.key===k))||{}).tab||label;
+      return {key:k,label,tab,col:(typeof _TYPE_COLORS!=='undefined'&&_TYPE_COLORS[k])||C.cr,
         line:p.scored.length?`${p.personality}${best?` · best from ${best.name}`:''}`:`${WineDNA.noun(k,p.wines.length)} scanned, none scored yet`};
     });
     let pick=null;
@@ -285,8 +286,12 @@ function HomeScreen({nav, showPro, isTablet}){
         </div>
       )}
 
+      {/* Cards scroll up under the Vinny bar and fade into the header rather than being cut off
+          at a hard edge. */}
+      <div style={{flex:1,minHeight:0,position:'relative',display:'flex',flexDirection:'column'}}>
+      <div aria-hidden="true" data-home-fade style={{position:'absolute',top:0,left:0,right:0,height:18,background:`linear-gradient(${C.white},${C.white}00)`,pointerEvents:'none',zIndex:1}}/>
       <div style={{flex:1,overflowY:'auto',overscrollBehavior:'none',WebkitOverflowScrolling:'touch'}}>
-      <div style={{padding:'8px 20px',display:'flex',flexDirection:'column',gap:12}}>
+      <div style={{padding:'10px 20px 8px',display:'flex',flexDirection:'column',gap:12}}>
 
         <WaitingOnYou nav={nav}/>
         {Sync.offerBackup(allWines)&&<BackupOffer nav={nav} count={allWines.length}/>}
@@ -325,7 +330,7 @@ function HomeScreen({nav, showPro, isTablet}){
         {/* WineDNA at a glance */}
         {dna.types.length>0&&<Card style={{padding:0,overflow:'hidden'}}>
           {head('Your WineDNA','Open →',()=>{ UserPrefs.openDNA(dna.types[0].key); nav('profile'); })}
-          {dna.types.map(t=>row(t.key,'wine',t.col,t.label,t.line,()=>{ UserPrefs.openDNA(t.key); nav('profile'); }))}
+          {dna.types.map(t=>row(t.key,'wine',t.col,t.tab,t.line,()=>{ UserPrefs.openDNA(t.key); nav('profile'); }))}
           {dna.pick&&row('explore','compass',C.cr,`Try next: ${dna.pick.style.name}`,`Explore Next · ${dna.pick.style.country}`,()=>{
             Handoff.styleExplore.set({id:dna.pick.style.id,typeKey:dna.pick.typeKey,label:dna.pick.typeLabel}); nav('style-explore'); })}
           {row('script','message',C.cr,`Your ${(WineDNA.NOUNS[dna.types[0].key]||['wine'])[0]} sommelier script`,'What to say when you order',()=>{ UserPrefs.openDNA(dna.types[0].key,'scripts'); nav('profile'); })}
@@ -347,6 +352,7 @@ function HomeScreen({nav, showPro, isTablet}){
         </Card>
 
         <div style={{height:8}}/>
+      </div>
       </div>
       </div>
       <style>{`@keyframes homeCaret{50%{opacity:0}}`}</style>
