@@ -228,7 +228,7 @@ const Sync = {
   },
 
   /* ---- scheduling ---- */
-  enabled(){ return typeof Account!=='undefined'&&Account.available()&&Account.signedIn()&&!!(Account.session().user||{}).id; },
+  enabled(){ return typeof Account!=='undefined'&&Account.available()&&Account.signedIn()&&!Account.deleting&&!!(Account.session().user||{}).id; },
   schedule(ms=this.DEBOUNCE_MS){
     if(!this.enabled()) return;
     clearTimeout(this._timer);

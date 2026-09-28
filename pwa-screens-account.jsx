@@ -221,6 +221,7 @@ function AccountCard({showPro}){
   const [code,setCode]=React.useState('');
   const [busy,setBusy]=React.useState(false);
   const [err,setErr]=React.useState('');
+  const [confirmDelete,setConfirmDelete]=React.useState(false);
   React.useEffect(()=>{ const h=()=>tick(t=>t+1); window.addEventListener('vinterest:account',h); window.addEventListener('vinterest:sync',h);
     return()=>{ window.removeEventListener('vinterest:account',h); window.removeEventListener('vinterest:sync',h); }; },[]);
   if(!Account.available()) return null;
@@ -237,6 +238,13 @@ function AccountCard({showPro}){
     if(busy) return; setBusy(true); setErr('');
     const r=await Account.verifyCode(email,code); setBusy(false);
     if(r.ok){ setStep('idle'); setEmail(''); setCode(''); } else setErr(r.error);
+  }
+
+  async function deleteAccount(){
+    if(busy) return; setBusy(true); setErr('');
+    const r=await Account.deleteAccount();
+    if(r.ok){ window.location.replace('/'); return; } // nothing left on the phone: start again at onboarding
+    setBusy(false); setErr(r.error);
   }
 
   if(Account.signedIn()){
@@ -258,7 +266,11 @@ function AccountCard({showPro}){
         {pro?'You have Pro on any phone you sign in on. ':''}Sign in on another phone and your wines, WineDNA and progress are there too.
       </div>
       {me&&me.usage&&me.caps&&me.usage.label_scan>0&&<div style={{fontSize:13,color:C.mid,fontFamily:C.P}}>This week: {me.usage.label_scan} of {me.caps.label_scan} label scans.</div>}
-      <span onClick={()=>Account.signOut()} style={{...link,alignSelf:'flex-start',marginTop:2}}>Sign out</span>
+      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginTop:2}}>
+        <span onClick={()=>Account.signOut()} style={link}>Sign out</span>
+        {!confirmDelete&&<span onClick={()=>{setConfirmDelete(true);setErr('');}} style={{fontSize:14,color:C.mid,fontFamily:C.P,cursor:'pointer'}}>Delete account</span>}
+      </div>
+      {confirmDelete&&<DeleteAccountPanel busy={busy} err={err} onCancel={()=>{setConfirmDelete(false);setErr('');}} onDelete={deleteAccount}/>}
     </Card>;
   }
 
@@ -294,7 +306,27 @@ function AccountCard({showPro}){
   </Card>;
 }
 
-Object.assign(window,{AccountCard});
+/* The confirmation before Account.deleteAccount: what goes (the account, its backup, and everything
+   on this phone), that it can't be undone, and a backup file first for anyone who wants a copy. */
+function DeleteAccountPanel({busy,err,onCancel,onDelete}){
+  const red='#B04A3A';
+  return <div role="dialog" aria-label="Delete your account" style={{marginTop:6,padding:12,borderRadius:12,background:'#FBEFEC',border:`1px solid ${red}40`,display:'flex',flexDirection:'column',gap:10}}>
+    <div style={{fontSize:15,fontWeight:700,color:C.ink,fontFamily:C.P}}>Delete your account?</div>
+    <div style={{fontSize:13,color:C.ink2,fontFamily:C.P,lineHeight:1.5}}>
+      This deletes your account and everything backed up to it, and clears Vinterest from this phone: your wines, scores, WineDNA, XP and learning progress. It can't be undone.
+    </div>
+    <div style={{fontSize:13,color:C.ink2,fontFamily:C.P,lineHeight:1.5}}>
+      Want a copy first? <span onClick={saveBackupFile} style={{fontWeight:700,color:C.cr,cursor:'pointer'}}>Save a backup file</span> to your phone. You can import it later, with or without an account.
+    </div>
+    <div onClick={onDelete} role="button" style={{width:'100%',boxSizing:'border-box',padding:'13px',borderRadius:12,background:red,color:'#fff',fontSize:15,fontWeight:700,fontFamily:C.P,textAlign:'center',cursor:busy?'default':'pointer',opacity:busy?0.6:1}}>
+      {busy?'Deleting…':'Delete my account'}
+    </div>
+    {err&&<div role="alert" style={{fontSize:14,color:red,fontFamily:C.P}}>{err}</div>}
+    {!busy&&<span onClick={onCancel} style={{fontSize:14,fontWeight:600,color:C.ink2,fontFamily:C.P,cursor:'pointer',alignSelf:'center'}}>Keep my account</span>}
+  </div>;
+}
+
+Object.assign(window,{AccountCard,DeleteAccountPanel});
 
 /* Install to the home screen (InstallApp, pwa-install.js). Offers Chrome's own install dialog when
    Chrome allows it, and otherwise says plainly why not, so a missing menu option isn't a mystery.
