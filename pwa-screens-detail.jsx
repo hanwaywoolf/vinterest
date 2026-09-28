@@ -250,7 +250,7 @@ function DetailMerged({wine,nav,existingRating=0,match}){
     ScanFlow.fillDetails(wine).then(d=>{ if(live) setDetails(d); }).catch(()=>{}).finally(()=>{ if(live) setDetailsLoading(false); });
     return()=>{ live=false; };
   },[wine?.name,wine?.vintage]);
-  const notes=(details||wine)?.tasting_notes||[];
+  const notes=WineDNA.capNotes((details||wine)?.tasting_notes);
   const pairings=(details||wine)?.food_pairings||[];
 
   /* Match sentiment, from TasteMatch's verdict */

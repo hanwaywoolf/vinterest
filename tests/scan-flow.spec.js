@@ -683,7 +683,7 @@ test('a wine from a wine list gets its tasting notes, pairings and grapes once, 
   const veuve = { name: 'Champagne, Veuve Clicquot', producer: 'Veuve Clicquot', type: 'sparkling', region: 'Champagne', country: 'France', vintage: 0, body: 0.6, acidity: 0.7, sweetness: 0.1, rating: 90, scanned_at: '2026-09-01T12:00:00Z', source: 'list' };
   await seedLocalStorage(page, { vinterest_onboarded: '1', vinterest_age_ok: '1', vinterest_region: 'uk', vinterest_wines: JSON.stringify([veuve]) });
   await stubNetwork(context, { claudeRequests, claudeText: (b) => b.purpose === 'wine_details'
-    ? JSON.stringify({ tasting_notes: ['Toasted brioche and almond', 'Crisp green apple', 'Fine, lively bubbles'], food_pairings: ['Oysters', 'Fried chicken', 'Parmesan'], grapes: ['Pinot Noir', 'Chardonnay', 'Pinot Meunier'] }) : '' });
+    ? JSON.stringify({ tasting_notes: ['toasted brioche and almond', 'Crisp green apple', 'Fine, lively bubbles'], food_pairings: ['Oysters', 'Fried chicken', 'Parmesan'], grapes: ['Pinot Noir', 'Chardonnay', 'Pinot Meunier'] }) : '' });
   await page.goto(`${BASE}/#home`);
   await page.evaluate((w) => sessionStorage.setItem('vinterest_scan_result', JSON.stringify({ wine: w, existingRating: 90 })), veuve);
   await page.goto(`${BASE}/#detail`);
@@ -694,6 +694,8 @@ test('a wine from a wine list gets its tasting notes, pairings and grapes once, 
   await expect(root.locator('[data-note]').first()).toHaveCSS('border-color', 'rgba(94, 143, 168, 0.333)');
   const saved = await page.evaluate(() => WineHistory.getAll()[0]);
   expect(saved.tasting_notes).toHaveLength(3);
+  expect(saved.tasting_notes[0]).toBe('Toasted brioche and almond'); // capitalised, as every note is shown
+  expect(await page.evaluate(() => { const all = WineHistory.getAll(); all.push({ name: 'Lower Case Rioja', type: 'red', vintage: 2016, tasting_notes: ['dried cherry and plum'] }); WineHistory.save(all); return WineHistory.getAll().find((w) => w.name === 'Lower Case Rioja').tasting_notes; })).toEqual(['Dried cherry and plum']);
   expect(saved.grapes).toEqual(['Pinot Noir', 'Chardonnay', 'Pinot Meunier']);
   expect(saved.grapes_basis).toBe('typical');
   // Asked once: opening it again uses what was saved.

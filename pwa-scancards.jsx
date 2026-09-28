@@ -268,6 +268,7 @@ function FirstScanStory({wine,onDone}){
   const curr=React.useMemo(()=>Regional.current(),[]);
   const deckStyle=useDeckStyle();
   const intent=v=>{ const e=WineHistory.find(wine); if(e) WineHistory.setScanIntent(e.name,e.vintage,v); };
+  const [scoredAlready]=React.useState(()=>(WineHistory.find(wine)||{}).rating||0);
   return <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden',background:C.bg,paddingTop:'env(safe-area-inset-top)'}}>
     <div style={{padding:'14px 18px 8px',flexShrink:0,display:'flex',alignItems:'flex-start',gap:12}}>
       <div style={{flex:1,minWidth:0}}>
@@ -277,7 +278,9 @@ function FirstScanStory({wine,onDone}){
       </div>
       <span onClick={onDone} role="button" style={{fontSize:15,fontWeight:600,color:C.mid,fontFamily:C.P,cursor:'pointer',paddingTop:2}}>Skip</span>
     </div>
-    <CardDeck key={deckStyle} deckStyle={deckStyle} wine={wine} gen={gen} loading={loading} match={match} curr={curr} scanData={{}} existingRating={0}
+    {/* Coming back from the questions, the bottle is already scored: the deck shows that score
+        rather than asking again beside a meter that already counts it. */}
+    <CardDeck key={deckStyle} deckStyle={deckStyle} wine={wine} gen={gen} loading={loading} match={match} curr={curr} scanData={{}} existingRating={scoredAlready}
       nav={()=>{}} firstScan onFinish={onDone}
       onRated={()=>{ intent('tasted'); setVer(v=>v+1); }}
       onSaveForLater={()=>{ intent('checking'); onDone(); }}
@@ -649,7 +652,7 @@ function TasteCues({wine,accent}){
   if(tx!=null) cues.push({l:'Oak / texture',v:lvl(tx,'Clean & steely','Subtle','Creamy, vanilla, toast'),tip:'Any butter, vanilla or toast? That\'s oak.'});
   if(sw>=0.2||isDessertOrFortified) cues.push({l:'Sweetness',v:lvl(sw,'Dry','Off-dry','Noticeably sweet'),tip:'Sense of sugar on the tip of your tongue.'});
   if(isDessertOrFortified) cues.push({l:'Serving size',v:'A smaller 2–3oz pour',tip:'These are richer and higher in alcohol — a small glass goes further.'});
-  const notes=(wine.tasting_notes||[]).slice(0,4);
+  const notes=WineDNA.capNotes(wine.tasting_notes).slice(0,4);
   return <div style={{display:'flex',flexDirection:'column',gap:14}}>
     <div style={{fontSize:24,fontWeight:800,color:C.ink,fontFamily:C.P,lineHeight:1.2,letterSpacing:'-0.01em'}}>What to look for</div>
     <div style={{display:'flex',flexDirection:'column',gap:12}}>
@@ -865,7 +868,8 @@ function TrackSlider({min,max,step=1,value,onChange,col=C.cr,label,unset=false,s
 
 function RatingPanel({wine,existingRating,nav,showPro,curr,onRated,onSaveForLater,onStage,onFinish}){
   const [score,setScore]=React.useState(existingRating||0);
-  const [saved,setSaved]=React.useState(false);
+  // The first bottle, revisited after scoring it: open on "Your score" (with Continue), not the picker.
+  const [saved,setSaved]=React.useState(()=>!!(onFinish&&existingRating>0));
   const [next,setNext]=React.useState(false);
   // Tells the deck which step it's on, so the card's label follows (Rate it → Your score → Keep learning).
   React.useEffect(()=>{ if(onStage) onStage(next?'next':saved?'saved':'rate'); },[saved,next]);

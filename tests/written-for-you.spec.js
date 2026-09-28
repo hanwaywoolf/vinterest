@@ -59,7 +59,7 @@ test('an old shelf of repeated "Beyond Rioja" pieces heals, but a read one stays
 test('articles say whose they are, and the prompt knows the reader', async ({ context, page }) => {
   const errors = collectErrors(page);
   const claudeRequests = [];
-  const article = { forYou: 'You scored Gran Reserva 904 a 95 and paid £90: this is why it tasted that way.', sections: [{ term: 'Tempranillo', iconName: 'grape', plain: 'Your grape.', detail: 'Detail.', examples: ['One'] }, { term: 'Your next bottle', iconName: 'compass', plain: 'Try Ribera.', detail: 'Detail.', examples: [] }] };
+  const article = { forYou: 'At £90 your Gran Reserva 904 sits at the top of what you spend: here is what the extra ageing buys.', sections: [{ term: 'Tempranillo', iconName: 'grape', plain: 'Your grape.', detail: 'Detail.', examples: ['One'] }, { term: 'Your next bottle', iconName: 'compass', plain: 'Try Ribera.', detail: 'Detail.', examples: [] }] };
   await user(context, page, { claudeRequests, claudeText: (b) => (b.purpose === 'learn_article' ? JSON.stringify(article) : '') });
   await page.goto(`${BASE}/#home`);
   const stub = await page.evaluate(() => {
@@ -77,11 +77,13 @@ test('articles say whose they are, and the prompt knows the reader', async ({ co
   const root = page.locator('#root');
   await expect(root).toContainText('Written for you');
   await expect(root).toContainText('Because you gave Gran Reserva 904 a 95.');
-  await expect(root).toContainText('You scored Gran Reserva 904 a 95 and paid £90');
+  await expect(root).toContainText('here is what the extra ageing buys');
   await expect(root).toContainText('Your next bottle');
   const prompt = claudeRequests.find((r) => r.purpose === 'learn_article').messages[0].content;
   expect(prompt).toContain('About this reader');
   expect(prompt).toContain('Gran Reserva 904 2015');
+  // The intro box is told what the page already says, so it doesn't say it again.
+  expect(prompt).toContain('The page already says \\"Because you gave Gran Reserva 904 a 95\\"');
   expect(prompt).not.toMatch(/\{\{\w+\}\}/);
   // Cached with the forYou line, so reopening doesn't call Claude again.
   expect(await page.evaluate(() => JSON.parse(localStorage.getItem('vinterest_gen_article_ev_region_Rioja_palate_vs_textbook_content')).forYou)).toContain('Gran Reserva 904');
@@ -141,6 +143,24 @@ test('Learn opens Written for you, and nothing shows it anywhere before Learn do
   await page.goto(`${BASE}/#home`);
   await expect(root).toContainText('Get to Know Tempranillo');
   expect(errors).toEqual([]);
+});
+
+test('an article says why it\'s for you once: the subtitle, "because" line and intro box don\'t all repeat the score', async ({ context, page }) => {
+  await user(context, page, { seed: { vinterest_onramp_1_done: '1', vinterest_wines: JSON.stringify([WINES[0]]) } });
+  await page.goto(`${BASE}/#home`);
+  const out = await page.evaluate(() => {
+    const stub = { id: 'g1', archetypeId: 'grape_unlock_intro', slots: { grape: 'Tempranillo' } };
+    return {
+      sub: ContentEngine.subtitleFor(ARTICLE_ARCHETYPES.find((a) => a.id === 'grape_unlock_intro'), { grape: 'Tempranillo' }, WineHistory.getAll()),
+      because: ContentEngine.because(stub),
+      restated: ContentEngine.forYouLine(stub, 'You scored the Gran Reserva 904 2015 a 95, so here is its grape.'),
+      fresh: ContentEngine.forYouLine(stub, 'Next time a list says Crianza, you will know what the oak adds.'),
+    };
+  });
+  expect(out.because).toBe('Because you gave Gran Reserva 904 a 95');
+  expect(out.sub).not.toContain('95');
+  expect(out.restated).toBeNull();
+  expect(out.fresh).toContain('Crianza');
 });
 
 test('a white grape piece draws on their whites, never their reds', async ({ context, page }) => {

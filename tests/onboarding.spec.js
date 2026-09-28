@@ -133,6 +133,19 @@ test('the first scan tells the bottle\'s story and shows what Vinterest will do 
   await root.getByText('Continue', { exact: true }).click();
   await expect(root).toContainText('Minuty Prestige Rosé is saved in My Wines.');
   expect(await page.evaluate(() => WineHistory.getAll()[0].rating)).toBe(90);
+  // The note says it once and fades.
+  await expect(page.locator('[data-saved-note]')).toHaveCSS('opacity', '0', { timeout: 6000 });
+  // Back to the bottle: it shows the score already given (not the picker beside a meter that
+  // already counts it), and forward again doesn't repeat the note.
+  await page.locator('#root svg').first().click();
+  await expect(root).toContainText('Your first bottle');
+  for (let i = 0; i < 12 && !(await root.getByText('9 / 9', { exact: true }).isVisible()); i++) await next();
+  await expect(root).toContainText('Scored 90 · Outstanding');
+  await expect(root).not.toContainText('How was it?');
+  await root.getByText('Continue', { exact: true }).click();
+  await expect(root).toContainText('What do you usually drink?');
+  await expect(root).not.toContainText('is saved in My Wines');
+  expect(await page.evaluate(() => WineHistory.getAll().filter((w) => w.rating > 0).length)).toBe(1);
   expect(errors).toEqual([]);
 });
 

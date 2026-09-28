@@ -21,7 +21,7 @@ const ScanFlow = {
       let c=String(text||'').replace(/```json|```/g,'').trim(); const a=c.indexOf('{'), b=c.lastIndexOf('}');
       const d=JSON.parse(a>=0&&b>a?c.slice(a,b+1):c);
       const list=(x)=>(Array.isArray(x)?x:[]).map(v=>String(v||'').trim()).filter(Boolean).slice(0,3);
-      const patch={tasting_notes:list(d.tasting_notes)};
+      const patch={tasting_notes:WineDNA.capNotes(list(d.tasting_notes))};
       if(!patch.tasting_notes.length) throw new Error('no tasting notes');
       if(!(w.food_pairings||[]).length) patch.food_pairings=list(d.food_pairings);
       if(!(w.grapes||[]).length){ const g=WineDNA.cleanGrapes(Array.isArray(d.grapes)?d.grapes:[]); if(g.grapes.length) Object.assign(patch,{grapes:g.grapes,blend:g.grapes.length>1,grapes_basis:'typical'}); }

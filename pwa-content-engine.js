@@ -584,7 +584,9 @@ const ContentEngine = {
     if((archetype.id==='grape_unlock_intro'||archetype.id==='grape_deep_dive')&&slots.grape){
       const mineG=(wines||[]).filter(w=>(w.grapes||[]).some(g=>WineDNA.grape(g)===slots.grape));
       const top=[...mineG].sort((a,b)=>(b.rating||0)-(a.rating||0))[0];
-      if(top&&archetype.id==='grape_unlock_intro') return top.rating>0?`You scored ${top.name} ${top.rating}. Here's what ${slots.grape} brought to it.`:`You met it in ${top.name}. Here's what makes it taste the way it does.`;
+      // The "Because you gave X a 95" line already names the wine and its score; the subtitle
+      // talks about the grape instead, so the page doesn't say the same thing twice.
+      if(top&&archetype.id==='grape_unlock_intro') return top.rating>0?`What ${slots.grape} tastes like, and why it tasted that way in your glass.`:`You met it in ${top.name}. Here's what makes it taste the way it does.`;
       const G=KNOWLEDGE.grapes[slots.grape];
       if(archetype.id==='grape_deep_dive'&&G&&G.famousIn.length>1) return `${slots.grape} in ${list(G.famousIn.slice(0,3))}: what changes when it moves`;
     }
@@ -680,6 +682,16 @@ const ContentEngine = {
     if(s.descriptor) return `Because "${s.descriptor}" came up in your tasting notes`;
     if(s.trait) return 'Because of a pattern in your scores';
     return 'Picked from your WineDNA';
+  },
+  /* The article's "why this is for you" box. Articles saved before the prompt said otherwise
+     often just restated the "because" line (the same wine and score, a third time on the page);
+     those get the standard line instead. */
+  forYouLine(stub,text,wines){
+    if(!text) return null;
+    const w=this._related((stub&&stub.slots)||{},wines||WineHistory.getAll())[0];
+    const low=String(text).toLowerCase();
+    if(w&&w.rating>0&&low.includes(String(w.name||'').toLowerCase())&&low.includes(String(w.rating))) return null;
+    return text;
   },
   /* The kind of wine a piece is about: its type slot, its bottles, or its grape's colour. null for
      pieces about an idea (a concept, a tasting word) rather than a wine. */

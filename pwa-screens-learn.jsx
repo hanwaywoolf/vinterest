@@ -197,7 +197,7 @@ function GenArticleScreen({nav,back}){
     const types=[...new Set(wines.map(w=>(w.type||'red').toLowerCase()))].join(', ');
     const regions=[...new Set(wines.map(w=>WineDNA.region(w)||w.country).filter(Boolean))].slice(0,5).join(', ');
     const grapes=[...new Set(wines.flatMap(w=>w.grapes||[]).filter(Boolean))].slice(0,6).join(', ');
-    const prompt=_fillTpl(_loadText('prompts/gen-article.txt'),{depth:UserPrefs.depthLine(),types,regions,grapes,reader:ContentEngine.readerBrief(stub,wines),title:stub.title,brief:stub.brief||'Write a clear, specific educational piece on the title above.',facts:stub.facts||'No specific retrieved facts — keep claims general and hedge appropriately.'});
+    const prompt=_fillTpl(_loadText('prompts/gen-article.txt'),{depth:UserPrefs.depthLine(),types,regions,grapes,reader:ContentEngine.readerBrief(stub,wines),because:ContentEngine.because(stub,wines),title:stub.title,brief:stub.brief||'Write a clear, specific educational piece on the title above.',facts:stub.facts||'No specific retrieved facts — keep claims general and hedge appropriately.'});
 
     window.claude.complete({purpose:'learn_article',messages:[{role:'user',content:prompt}]})
       .then(text=>{
@@ -253,7 +253,7 @@ function GenArticleScreen({nav,back}){
           {because&&<div style={{fontSize:14,fontWeight:600,color:'rgba(255,255,255,0.75)',fontFamily:C.P,marginTop:12}}>{because}.</div>}
         </div>
         <div style={{margin:'14px 20px 0',padding:'12px 14px',borderRadius:14,background:C.crSoft,border:`1px solid ${C.crDim}`}}>
-          <div style={{fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.55}}>{(cached&&cached.forYou)||'Nobody else gets this article. It\'s written from your WineDNA: the wines you\'ve scanned, how you scored them and what you paid.'}</div>
+          <div style={{fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.55}}>{(cached&&ContentEngine.forYouLine(stub,cached.forYou))||'Nobody else gets this article. It\'s written from your WineDNA: the wines you\'ve scanned, how you scored them and what you paid.'}</div>
         </div>
 
         <div style={{padding:'16px 20px',display:'flex',flexDirection:'column',gap:12}}>
