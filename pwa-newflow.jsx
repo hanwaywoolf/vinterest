@@ -12,7 +12,7 @@ function NewUserFlow({onComplete}){
   const TOTAL=5;
 
   switch(step){
-    case 'welcome': return <WelcomeScreen next={()=>go('setup')}/>;
+    case 'welcome': return <WelcomeScreen next={()=>go('setup')} returning={onComplete}/>;
     case 'setup':   return <OnboardSetup step={0} total={TOTAL} onBack={()=>go('welcome')} onDone={()=>go('scan')}/>;
     case 'scan':    return <ScanScreen nav={()=>{}} back={()=>go('setup')} onSkip={()=>go('taste')} onComplete={w=>{ setScanned(w||null); go(w?'story':'taste'); }}/>;
     case 'story':   return <FirstScanStory wine={scanned} onDone={()=>go('taste')}/>;

@@ -227,6 +227,14 @@ const Sync = {
     }
   },
 
+  /* Signing in on the welcome screen: brings the account's data down before onboarding goes on.
+     {ok, returning}: returning when the account has finished onboarding before (the flag is one of
+     the synced settings), so the app can go straight to Home with their wines. */
+  async welcomeBack(){
+    const r=await this.syncNow();
+    return {ok:!!(r&&r.ok),returning:!!(r&&r.ok)&&Settings.onboarded()};
+  },
+
   /* ---- scheduling ---- */
   enabled(){ return typeof Account!=='undefined'&&Account.available()&&Account.signedIn()&&!Account.deleting&&!!(Account.session().user||{}).id; },
   schedule(ms=this.DEBOUNCE_MS){

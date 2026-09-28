@@ -16,6 +16,7 @@ test('a new user: age and location, first scan, three questions, then Home on th
   await stubNetwork(context, { claudeText: (b) => (b.purpose === 'label_scan' ? JSON.stringify(ROSE) : '') });
   await page.goto(`${BASE}/`);
   const root = page.locator('#root');
+  await root.getByText('Skip', { exact: true }).click();
   await root.getByText('Scan your first bottle').click();
   // The country is guessed from the phone's time zone; Continue waits for the age confirmation.
   await expect(page.getByLabel('Country')).toHaveValue('United Kingdom');
@@ -51,6 +52,7 @@ test('under age stops there; the scan and the questions can be skipped', async (
   await stubNetwork(context);
   await page.goto(`${BASE}/`);
   const root = page.locator('#root');
+  await root.getByText('Skip', { exact: true }).click();
   await root.getByText('Scan your first bottle').click();
   await root.getByText('I\'m not', { exact: true }).click();
   await expect(root).toContainText('only for people of legal drinking age');
@@ -105,6 +107,7 @@ test('the first scan tells the bottle\'s story and shows what Vinterest will do 
   await stubNetwork(context, { claudeText: (b) => (b.purpose === 'label_scan' ? JSON.stringify(ROSE) : '') });
   await page.goto(`${BASE}/`);
   const root = page.locator('#root');
+  await root.getByText('Skip', { exact: true }).click();
   await root.getByText('Scan your first bottle').click();
   await root.getByText('I\'m of legal drinking age where I live').click();
   await root.getByRole('button', { name: 'Continue' }).click();
@@ -131,4 +134,82 @@ test('the first scan tells the bottle\'s story and shows what Vinterest will do 
   await expect(root).toContainText('Minuty Prestige Rosé is saved in My Wines.');
   expect(await page.evaluate(() => WineHistory.getAll()[0].rating)).toBe(90);
   expect(errors).toEqual([]);
+});
+
+// The welcome: four tiles to swipe through (or Next), Skip to the last, then the scan. Every tile
+// fits the smallest phone at Extra large text without scrolling.
+test('the welcome tiles: Next through four, Skip to the last, and each fits a small phone at Extra large', async ({ context, page }) => {
+  await page.setViewportSize({ width: 375, height: 667 });
+  await makeDeterministic(page);
+  await page.addInitScript(() => localStorage.setItem('vinterest_text_size', 'xl'));
+  await stubNetwork(context);
+  await page.goto(`${BASE}/`);
+  const root = page.locator('#root');
+  await expect(root).toContainText('Wine that fits you');
+  for (const title of ['Learn as you drink', 'In the shop and at the table', 'It gets better with every bottle']) {
+    await root.getByText('Next', { exact: true }).click();
+    await expect(root.getByText(title)).toBeInViewport();
+  }
+  await expect(root.getByText('Next', { exact: true })).toHaveCount(0);
+  await expect(root.getByText('Scan your first bottle')).toBeVisible();
+  const fit = await page.evaluate(() => [...document.querySelectorAll('[aria-roledescription="carousel"] > div')].map((t) => t.scrollHeight - t.clientHeight));
+  expect(fit).toEqual([0, 0, 0, 0]);
+  // Skip from the first tile lands on the last.
+  await page.reload();
+  await root.getByText('Skip', { exact: true }).click();
+  await expect(root.getByText('It gets better with every bottle')).toBeInViewport();
+  // No sign-in configured: no "Already have an account?".
+  await expect(root).not.toContainText('Already have an account');
+});
+
+async function welcomeSignIn(context, page, { returning, ok = true }) {
+  await makeDeterministic(page);
+  await page.addInitScript(() => { window.VINTEREST_SUPABASE = { url: 'https://proj.supabase.co', key: 'sb_publishable_test' }; });
+  await stubNetwork(context);
+  await context.route('https://proj.supabase.co/auth/v1/**', (route) => {
+    const url = route.request().url();
+    const reply = (b) => route.fulfill({ contentType: 'application/json', body: JSON.stringify(b) });
+    if (url.endsWith('/otp')) return reply({});
+    if (url.endsWith('/verify')) return reply({ access_token: 'acc-1', refresh_token: 'ref-1', expires_in: 3600, user: { id: 'u1', email: 'a@b.c' } });
+    return reply({});
+  });
+  await context.route('**/me', (route) => route.fulfill({ contentType: 'application/json', body: JSON.stringify({ signedIn: true, tier: 'free' }) }));
+  await page.goto(`${BASE}/`);
+  // The account's data coming down (Sync is covered by tests/sync.spec.js): a returning account
+  // brings its wines and the onboarded flag with it.
+  await page.evaluate(({ returning, ok }) => {
+    Sync.syncNow = async () => {
+      if (!ok) return { ok: false };
+      if (returning) { Store.set('vinterest_onboarded', '1'); Store.set('vinterest_age_ok', '1'); Store.set('vinterest_region', 'uk');
+        Store.setJSON('vinterest_wines', [{ name: 'Test Rioja', vintage: 2019, type: 'red', score: 92, date: new Date().toISOString() }]); }
+      return { ok: true };
+    };
+  }, { returning, ok });
+  const root = page.locator('#root');
+  await root.getByText('Sign in', { exact: true }).click();
+  await expect(root).toContainText('Welcome back');
+  await page.getByLabel('Email address').fill('a@b.c');
+  await root.getByText('Email me a code').click();
+  await page.getByLabel('Sign-in code').fill('123456');
+  await root.getByText('Sign in', { exact: true }).click();
+  return root;
+}
+
+test('a returning user signs in from the welcome and lands on Home with their wines', async ({ context, page }) => {
+  const errors = collectErrors(page);
+  const root = await welcomeSignIn(context, page, { returning: true });
+  await expect(root).toContainText('Recently scanned');
+  await expect(root).toContainText('Test Rioja');
+  expect(await page.evaluate(() => Account.signedIn())).toBe(true);
+  expect(errors).toEqual([]);
+});
+
+test('a new account signed in from the welcome carries on with onboarding; no signal offers to carry on', async ({ context, page }) => {
+  let root = await welcomeSignIn(context, page, { returning: false });
+  await expect(root).toContainText('I\'m of legal drinking age where I live');
+  await page.evaluate(() => { Store.remove('vinterest_session'); });
+  root = await welcomeSignIn(context, page, { returning: false, ok: false });
+  await expect(root).toContainText('We couldn\'t reach your account just now');
+  await root.getByText('Continue without them for now').click();
+  await expect(root).toContainText('I\'m of legal drinking age where I live');
 });
