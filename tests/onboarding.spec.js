@@ -145,8 +145,8 @@ test('the welcome tiles: Next through four, Skip to the last, and each fits a sm
   await stubNetwork(context);
   await page.goto(`${BASE}/`);
   const root = page.locator('#root');
-  await expect(root).toContainText('Wine that fits you');
-  for (const title of ['Learn as you drink', 'In the shop and at the table', 'It gets better with every bottle']) {
+  await expect(root).toContainText('Know you\'ll love it before you pour');
+  for (const title of ['The right bottle, wherever you are', 'Learn from what\'s in your glass', 'Like good wine, it gets better with time']) {
     await root.getByText('Next', { exact: true }).click();
     await expect(root.getByText(title)).toBeInViewport();
   }
@@ -157,7 +157,7 @@ test('the welcome tiles: Next through four, Skip to the last, and each fits a sm
   // Skip from the first tile lands on the last.
   await page.reload();
   await root.getByText('Skip', { exact: true }).click();
-  await expect(root.getByText('It gets better with every bottle')).toBeInViewport();
+  await expect(root.getByText('Like good wine, it gets better with time')).toBeInViewport();
   // No sign-in configured: no "Already have an account?".
   await expect(root).not.toContainText('Already have an account');
 });

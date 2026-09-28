@@ -1,31 +1,31 @@
 /* Vinterest — New User Flow: the welcome screen.
-   Four tiles to swipe through, three features each, grouped by what they're for: wine that fits
-   you, learning, the shop and the table, and a last tile that sets the expectation it gets better
-   with every bottle (so people stay while their match and WineDNA build). Then one action: scan
+   Four tiles to swipe through, three features each, grouped by what they're for: knowing you'll
+   love it, the right bottle wherever you are, learning from what's in your glass, and a last tile
+   that sets the expectation it gets better with time (so people stay while their match and WineDNA build). Then one action: scan
    your first bottle. Skip jumps to that last tile. The age and location step comes next.
    A returning user signs in from any tile instead (WelcomeSignIn): their account brings back
    their wines and settings, and if they'd finished onboarding before they go straight to Home. */
 
 const _WELCOME_TILES=[
-  {kicker:'Welcome to Vinterest',t:'Wine that fits you',items:[
-    {icon:'heart',  col:'#E0708A',t:'Know if you\'ll like it',d:'A match for every bottle, from your own scores, not critics\'.'},
-    {icon:'brain',  col:'#7FA7E0',t:'Your WineDNA',d:'Learns the styles, grapes, regions and prices you love.'},
-    {icon:'message',col:'#F08C6A',t:'Ask Vinny',d:'Any wine question, answered from your own taste.'},
+  {kicker:'Welcome to Vinterest',t:'Know you\'ll love it before you pour',items:[
+    {icon:'brain',  col:'#7FA7E0',t:'Your WineDNA',d:'Every bottle you score teaches it the grapes, regions, styles and prices you love.'},
+    {icon:'heart',  col:'#E0708A',t:'A match on every bottle',d:'Rated against your palate, not a critic\'s.'},
+    {icon:'compass',col:'#6FCB9A',t:'Know why',d:'See what a wine shares with your favourites, and what to try next.'},
   ]},
-  {t:'Learn as you drink',items:[
-    {icon:'book',   col:'#6FCB9A',t:'Articles written for you',d:'Built around the bottles you\'ve tried, plus short guides to tasting, ordering and food.'},
-    {icon:'check',  col:'#8FD0D0',t:'Quizzes that follow your scans',d:'Each new grape and region you drink opens its own quiz.'},
-    {icon:'bolt',   col:'#E8B04A',t:'Train your palate',d:'Blind Call: guess what\'s in the glass, then see how close you got.'},
+  {t:'The right bottle, wherever you are',items:[
+    {icon:'scan',   col:'#C9A0E0',t:'Scan a bottle, or a wine list',pro:true,d:'Its story, your match, and whether it\'s good value for you.'},
+    {icon:'message',col:'#F08C6A',t:'Ask Vinny',d:'A wine expert who already knows your WineDNA.'},
+    {icon:'fork',   col:'#E8B04A',t:'Talk like you know',d:'The right words for the sommelier, the shop owner and the snob at dinner.'},
   ]},
-  {t:'In the shop and at the table',items:[
-    {icon:'scan',   col:'#C9A0E0',t:'Scan any bottle, or a wine list',pro:true,d:'Get the story of the wine and how it suits you.'},
-    {icon:'fork',   col:'#F08C6A',t:'Order with confidence',d:'Your best bets on the list, and what to say to the sommelier.'},
-    {icon:'cart',   col:'#6FCB9A',t:'Spend smarter',d:'Real shop prices where you live, and which bottles are good value for you.'},
+  {t:'Learn from what\'s in your glass',items:[
+    {icon:'book',   col:'#6FCB9A',t:'Written for your bottles',d:'Articles on the grapes and regions you actually drink.'},
+    {icon:'check',  col:'#8FD0D0',t:'Quizzes that grow with you',d:'Every new wine you score opens new questions.'},
+    {icon:'bolt',   col:'#E8B04A',t:'Blind Call',d:'Guess what\'s in the glass, then see how close you got.'},
   ]},
-  {t:'It gets better with every bottle',steps:[
-    {when:'Today',d:'Your first bottle\'s story, and its grape and region quizzes.'},
-    {when:'After 3 scores',d:'Your personal match switches on for that kind of wine.'},
-    {when:'Every bottle after',d:'Your WineDNA sharpens, and more gets written for you.'},
+  {t:'Like good wine, it gets better with time',sub:'Score every bottle you open. We\'ll do the rest.',steps:[
+    {when:'First bottle',d:'Its story, its quizzes, and the first line of your WineDNA.'},
+    {when:'After 3 reds',d:'Your red matches switch on. The same goes for every other type you drink.'},
+    {when:'Every bottle after',d:'Sharper matches, deeper articles, and a Vinny who knows you better.'},
   ]},
 ];
 
@@ -36,6 +36,7 @@ function _WelcomeTile({tile,k,tileRef}){
   return <div ref={tileRef} style={{flex:'0 0 100%',width:'100%',height:'100%',scrollSnapAlign:'start',overflowY:'auto',boxSizing:'border-box',padding:'8px 28px 12px',display:'flex',flexDirection:'column'}}>
     {tile.kicker&&<div style={{fontSize:z(15),fontWeight:700,color:'#E0708A',fontFamily:C.P,marginBottom:6}}>{tile.kicker}</div>}
     <div style={{fontSize:z(30),fontWeight:800,color:'#fff',fontFamily:C.P,letterSpacing:'-0.8px',lineHeight:1.12}}>{tile.t}</div>
+    {tile.sub&&<div style={{fontSize:z(17),color:_WELCOME_DIM,fontFamily:C.P,lineHeight:1.4,marginTop:z(10)}}>{tile.sub}</div>}
     {/* The three features share the rest of the height, so the tile fills the screen on any phone. */}
     <div style={{flex:1,display:'flex',flexDirection:'column',justifyContent:'space-evenly',gap:z(18),paddingTop:z(18)}}>
       {tile.items&&tile.items.map((f,i)=>(
