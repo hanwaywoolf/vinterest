@@ -89,6 +89,12 @@ export default {
       if (request.method !== "GET") return json(405, { error: "Method not allowed" });
       return handleMe(request, env);
     }
+    if (url.pathname === "/config") {
+      if (request.method === "OPTIONS") return cors(new Response(null, { status: 204 }));
+      if (request.method !== "GET") return json(405, { error: "Method not allowed" });
+      // The public sign-in settings, for an app build that wasn't given them (Account.loadRemoteConfig).
+      return json(200, { supabase: env.SUPABASE_URL && env.SUPABASE_PUBLISHABLE_KEY ? { url: env.SUPABASE_URL, key: env.SUPABASE_PUBLISHABLE_KEY } : null });
+    }
     if (url.pathname === "/account/delete") {
       if (request.method === "OPTIONS") return cors(new Response(null, { status: 204 }));
       if (request.method !== "POST") return json(405, { error: "Method not allowed" });

@@ -82,3 +82,41 @@ test('the native projects get the camera wording (iOS) and permission (Android),
   expect(m1).toContain('<uses-permission android:name="android.permission.CAMERA" />');
   expect(m1).toContain('<uses-feature android:name="android.hardware.camera" android:required="false" />');
 });
+
+test('in the app, the phone\'s font size sets Vinterest\'s text size (until the reader picks one), and the WebView zoom goes back to 100%', async ({ context, page }) => {
+  await asApp(page);
+  await makeDeterministic(page);
+  await seedLocalStorage(page, { vinterest_onboarded: '1', vinterest_region: 'uk' });
+  await stubNetwork(context);
+  await page.goto(`${BASE}/#home`);
+  const run = (preferred) => page.evaluate(async (preferred) => {
+    const sets = [];
+    window.VinterestNative.TextZoom = { getPreferred: async () => ({ value: preferred }), set: async (o) => { sets.push(o.value); } };
+    await Platform.start();
+    return { sets, size: TextSize.get().id };
+  }, preferred);
+  await page.evaluate(() => Store.remove(TextSize.KEY));
+  expect(await run(1.3)).toEqual({ sets: [1], size: 'xl' });
+  await page.evaluate(() => TextSize.set('standard')); // the reader's own choice stands
+  expect(await run(1.3)).toEqual({ sets: [1], size: 'standard' });
+});
+
+test('an app build without sign-in settings gets them from the live site, and Sign in appears', async ({ context, page }) => {
+  await asApp(page);
+  await makeDeterministic(page);
+  await stubNetwork(context);
+  await context.route(`${LIVE}/config`, (r) => r.fulfill({ contentType: 'application/json', body: JSON.stringify({ supabase: { url: 'https://proj.supabase.co/', key: 'sb_publishable_live' } }) }));
+  await page.goto(`${BASE}/`);
+  await expect(page.locator('#root')).toContainText('Already have an account?');
+  expect(await page.evaluate(() => Account.config())).toEqual({ url: 'https://proj.supabase.co', key: 'sb_publishable_live' });
+});
+
+test('the Worker\'s /config gives the public sign-in settings, or null without them', async () => {
+  const copy = path.join(require('node:os').tmpdir(), `worker-config-${process.pid}.mjs`);
+  require('node:fs').copyFileSync(path.join(__dirname, '..', '_worker.js'), copy);
+  const worker = (await import(pathToFileURL(copy).href)).default;
+  const get = (env) => worker.fetch(new Request('https://vinterest.pages.dev/config'), env).then((r) => r.json());
+  expect(await get({ SUPABASE_URL: 'https://p.supabase.co', SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_x', SUPABASE_SECRET_KEY: 'never' }))
+    .toEqual({ supabase: { url: 'https://p.supabase.co', key: 'sb_publishable_x' } });
+  expect(await get({})).toEqual({ supabase: null });
+});

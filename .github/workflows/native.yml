@@ -5,7 +5,8 @@
 #   - android: a debug .apk, kept as "Vinterest-android-debug", installable on any Android phone.
 # The native projects are generated here from capacitor.config.json by scripts/native.mjs, never
 # committed. Sign-in is built in when the repository has SUPABASE_URL and SUPABASE_PUBLISHABLE_KEY
-# set as Actions variables (both are public); without them the apps build without sign-in.
+# set as Actions variables (both are public); without them the apps fetch them from the live site's
+# /config when they open (Account.loadRemoteConfig).
 name: Native apps
 on:
   pull_request:

@@ -10,13 +10,27 @@
    from Cloudflare's SUPABASE_URL and SUPABASE_PUBLISHABLE_KEY (window.VINTEREST_SUPABASE lets a
    test set them). Without them, sign-in simply isn't offered. */
 const Account = {
-  SESSION_KEY:'vinterest_session', ME_KEY:'vinterest_me',
+  SESSION_KEY:'vinterest_session', ME_KEY:'vinterest_me', REMOTE_KEY:'vinterest_remote_config',
   REFRESH_EARLY_S:60,
 
   config(){
     const built=typeof __SUPABASE__!=='undefined'?__SUPABASE__:null;
-    const c=built||(typeof window!=='undefined'&&window.VINTEREST_SUPABASE)||null;
+    const c=built||(typeof window!=='undefined'&&window.VINTEREST_SUPABASE)||Store.getJSON(this.REMOTE_KEY,null)||null;
     return c&&c.url&&c.key?c:null;
+  },
+  /* A build without the sign-in settings (the app's CI build, say) asks the live site's Worker for
+     them (/config: the public project URL and publishable key) and keeps them on this device only.
+     Sign-in then appears (vinterest:account). */
+  async loadRemoteConfig(){
+    if(this.config()) return this.config();
+    try{
+      const r=await fetch(Platform.api('/config')); if(!r.ok) return null;
+      const j=await r.json(), c=j&&j.supabase;
+      if(!c||!c.url||!c.key) return null;
+      Store.setJSON(this.REMOTE_KEY,{url:String(c.url).replace(/\/+$/,''),key:String(c.key)});
+      this._emit();
+      return this.config();
+    }catch(e){ return null; }
   },
   available(){ return !!this.config(); },
   session(){ return Store.getJSON(this.SESSION_KEY,null); },

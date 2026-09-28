@@ -16,6 +16,24 @@ const Platform = {
   /* The URL for one of the Worker's routes: as is on the web, on the live site in the app. */
   api(path){ return this.native()?this.API_ORIGIN.replace(/\/+$/,'')+path:path; },
 
+  /* Once, when the app opens. In the app: Android (and iOS) zoom all text by the phone's own font
+     size, on top of Vinterest's own text size, which spilled text out of fixed shapes like the
+     match ring. So the WebView's zoom goes back to 100% and, until the reader picks a size on
+     Profile, Vinterest's size follows the phone's instead (TextSize). Then the sign-in settings
+     come from the live site if this build doesn't have them (Account.loadRemoteConfig). */
+  async start(){
+    if(!this.native()) return;
+    const TZ=(window.VinterestNative||{}).TextZoom;
+    if(TZ){
+      try{
+        const {value}=await TZ.getPreferred();
+        await TZ.set({value:1});
+        if(typeof TextSize!=='undefined'&&!TextSize.chosen()) TextSize.set(value>=1.15?'xl':value>=1.05?'large':'standard');
+      }catch(e){}
+    }
+    if(typeof Account!=='undefined') Account.loadRemoteConfig();
+  },
+
   /* Saves a text file the reader can keep: a download on the web; in the app, written to the
      app's cache and offered through the share sheet (Files, Drive, email…). Resolves 'saved',
      'shared', 'cancelled' or 'failed'. */
