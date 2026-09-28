@@ -242,8 +242,17 @@ function DetailMerged({wine,nav,existingRating=0,match}){
   const lovedAvg=match&&match.profile&&match.profile.loved.length>=3?match.profile.lovedAvg:null;
   const typeNoun=((WineDNA.NOUNS[typeKey]||['wine','wines'])[1]);
 
-  const notes=wine?.tasting_notes||[];
-  const pairings=wine?.food_pairings||[];
+  // A wine saved from a wine list arrives without tasting notes or pairings: ask once, keep them.
+  const [details,setDetails]=React.useState(null);
+  const [detailsLoading,setDetailsLoading]=React.useState(()=>ScanFlow.needsDetails(wine));
+  React.useEffect(()=>{
+    if(!ScanFlow.needsDetails(wine)){ setDetailsLoading(false); return; }
+    let live=true; setDetailsLoading(true);
+    ScanFlow.fillDetails(wine).then(d=>{ if(live) setDetails(d); }).catch(()=>{}).finally(()=>{ if(live) setDetailsLoading(false); });
+    return()=>{ live=false; };
+  },[wine?.name,wine?.vintage]);
+  const notes=(details||wine)?.tasting_notes||[];
+  const pairings=(details||wine)?.food_pairings||[];
 
   /* Match sentiment, from TasteMatch's verdict */
   const matchConfig=React.useMemo(()=>{
@@ -411,7 +420,15 @@ function DetailMerged({wine,nav,existingRating=0,match}){
         </div>
       </div>
 
-      {/* Tasting Notes */}
+      {/* Tasting Notes (in the wine type's colour, like its sliders) */}
+      {!notes.length&&detailsLoading&&(
+        <div>
+          <SL label="Tasting Notes"/>
+          <div style={{display:'flex',alignItems:'center',gap:8,fontSize:15,color:C.mid,fontFamily:C.P,fontStyle:'italic'}}>
+            <div style={{width:12,height:12,borderRadius:6,border:'2px solid rgba(0,0,0,0.08)',borderTopColor:tc,animation:'spin .8s linear infinite',flexShrink:0}}/>Adding tasting notes…
+          </div>
+        </div>
+      )}
       {notes.length>0&&(
         <div>
           <SL label="Tasting Notes"/>
@@ -420,7 +437,7 @@ function DetailMerged({wine,nav,existingRating=0,match}){
           </div>
           <div style={{display:'flex',flexWrap:'wrap',gap:6}}>
             {notes.map((n,i)=>(
-              <span key={i} style={{padding:'5px 13px',borderRadius:20,background:i<2?C.crSoft:C.offWhite,color:i<2?C.cr:C.ink2,fontSize:15,fontWeight:500,fontFamily:C.P,border:`1px solid ${i<2?C.crDim:C.line}`}}>{n}</span>
+              <span key={i} data-note style={{padding:'5px 13px',borderRadius:20,background:tc+'14',color:C.ink,fontSize:15,fontWeight:500,fontFamily:C.P,border:`1px solid ${tc}55`}}>{n}</span>
             ))}
           </div>
         </div>
@@ -433,7 +450,7 @@ function DetailMerged({wine,nav,existingRating=0,match}){
           <div style={{display:'flex',gap:8}}>
             {pairings.slice(0,3).map((f,i)=>(
               <div key={i} style={{flex:1,background:C.offWhite,borderRadius:12,padding:'12px 6px',textAlign:'center',border:`1px solid ${C.line}`}}>
-                <div style={{display:'flex',justifyContent:'center',marginBottom:6}}><Icon n={pairingIcon(f)} sz={22} col={C.cr}/></div>
+                <div style={{display:'flex',justifyContent:'center',marginBottom:6}}><Icon n={pairingIcon(f)} sz={22} col={tc}/></div>
                 <div style={{fontSize:13,color:C.ink2,fontFamily:C.P,fontWeight:500,lineHeight:1.3}}>{f}</div>
               </div>
             ))}
@@ -447,7 +464,7 @@ function DetailMerged({wine,nav,existingRating=0,match}){
           <SL label={`About the ${wine.vintage} Vintage`}/>
           {loadingVintage?(
             <Card style={{padding:14,display:'flex',alignItems:'center',gap:8}}>
-              <div style={{width:12,height:12,borderRadius:6,border:'2px solid rgba(0,0,0,0.08)',borderTopColor:C.cr,animation:'detailSpin .8s linear infinite',flexShrink:0}}/>
+              <div style={{width:12,height:12,borderRadius:6,border:'2px solid rgba(0,0,0,0.08)',borderTopColor:C.cr,animation:'spin .8s linear infinite',flexShrink:0}}/>
               <span style={{fontSize:15,color:C.mid,fontFamily:C.P,fontStyle:'italic'}}>Analysing vintage…</span>
             </Card>
           ):vintageInfo?(

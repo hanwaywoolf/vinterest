@@ -3,6 +3,37 @@
    How a scanned wine maps onto one already saved, price context in their currency, and turning a Blind Call
    guess into the "compared with the label" taps the rating step offers. */
 const ScanFlow = {
+  /* A wine saved from a wine list has no tasting notes or food pairings (the list prompt only reads
+     name, type, region, grape and style), and often no grapes. Its screen fills them in once
+     (purpose wine_details, prompts/wine-details.txt) and they're saved onto the wine, so it never
+     asks again. Grapes it adds are the ones the wine is usually made from: grapes_basis 'typical'. */
+  needsDetails(w){ return !!(w&&w.name)&&!((w.tasting_notes||[]).length); },
+  _detailsAsked:{},
+  async fillDetails(w){
+    if(!this.needsDetails(w)) return w;
+    const key=(w.name+'|'+(w.vintage||'')).toLowerCase();
+    if(this._detailsAsked[key]) return this._detailsAsked[key];
+    const run=(async()=>{
+      const about=[w.name,w.producer&&`by ${w.producer}`,w.vintage>0?String(w.vintage):'NV',w.type&&`(${w.type})`,
+        [w.region,w.country].filter(Boolean).join(', '),(w.grapes||[]).length?`grapes: ${w.grapes.join(', ')}`:''].filter(Boolean).join(' ');
+      const prompt=ContentEngine.fillTpl(_loadTextSync('prompts/wine-details.txt'),{wine:about});
+      const text=await window.claude.complete({purpose:'wine_details',messages:[{role:'user',content:prompt}]});
+      let c=String(text||'').replace(/```json|```/g,'').trim(); const a=c.indexOf('{'), b=c.lastIndexOf('}');
+      const d=JSON.parse(a>=0&&b>a?c.slice(a,b+1):c);
+      const list=(x)=>(Array.isArray(x)?x:[]).map(v=>String(v||'').trim()).filter(Boolean).slice(0,3);
+      const patch={tasting_notes:list(d.tasting_notes)};
+      if(!patch.tasting_notes.length) throw new Error('no tasting notes');
+      if(!(w.food_pairings||[]).length) patch.food_pairings=list(d.food_pairings);
+      if(!(w.grapes||[]).length){ const g=WineDNA.cleanGrapes(Array.isArray(d.grapes)?d.grapes:[]); if(g.grapes.length) Object.assign(patch,{grapes:g.grapes,blend:g.grapes.length>1,grapes_basis:'typical'}); }
+      const saved=WineHistory.find(w);
+      if(saved) WineHistory.update(saved.name,saved.vintage,patch);
+      return {...w,...patch};
+    })();
+    this._detailsAsked[key]=run;
+    run.catch(()=>{ delete this._detailsAsked[key]; });
+    return run;
+  },
+
   /* A fresh scan of a wine already saved under a slightly different name takes the saved
      identity, so scores and history stay on one entry. It also keeps the saved reading of the
      label (style, grapes, region): Claude's estimates vary a little from scan to scan, and the

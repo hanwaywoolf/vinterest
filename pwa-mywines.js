@@ -18,11 +18,15 @@ const MyWines = {
   type(w){ return WineDNA._t(w.type)||'red'; },
   _norm(s){ return String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase(); },
 
-  counts(wines){
-    const types={}, status={};
+  /* Chip counts. Type counts are over every wine; status counts are within the type picked (so
+     Sparkling + Buy again reads 0 when no sparkling is marked buy again), and a status chip stays
+     on screen (shown) whenever any wine has that status, so picking a type never makes it vanish. */
+  counts(wines,type='all'){
+    const types={}, status={}, shown={};
     wines.forEach(w=>{ const t=this.type(w); types[t]=(types[t]||0)+1; });
-    this.STATUSES.forEach(s=>{ status[s.id]=wines.filter(s.test).length; });
-    return {types,status};
+    const ofType=type==='all'?wines:wines.filter(w=>this.type(w)===type);
+    this.STATUSES.forEach(s=>{ status[s.id]=ofType.filter(s.test).length; shown[s.id]=wines.some(s.test); });
+    return {types,status,shown};
   },
 
   /* Every word typed must appear in the wine's name, producer, grapes, region, country or vintage. */

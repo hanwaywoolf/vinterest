@@ -670,3 +670,31 @@ test('without a camera there is no gallery tip (the screen already says to choos
   await expect(page.locator('#root')).not.toContainText('Or pick a photo from your gallery');
   expect(await page.evaluate(() => Flags.galleryHintDue())).toBe(true);
 });
+
+test('a wine from a wine list gets its tasting notes, pairings and grapes once, in its type\'s colour', async ({ context, page }) => {
+  const errors = collectErrors(page);
+  const claudeRequests = [];
+  await makeDeterministic(page);
+  const veuve = { name: 'Champagne, Veuve Clicquot', producer: 'Veuve Clicquot', type: 'sparkling', region: 'Champagne', country: 'France', vintage: 0, body: 0.6, acidity: 0.7, sweetness: 0.1, rating: 90, scanned_at: '2026-09-01T12:00:00Z', source: 'list' };
+  await seedLocalStorage(page, { vinterest_onboarded: '1', vinterest_age_ok: '1', vinterest_region: 'uk', vinterest_wines: JSON.stringify([veuve]) });
+  await stubNetwork(context, { claudeRequests, claudeText: (b) => b.purpose === 'wine_details'
+    ? JSON.stringify({ tasting_notes: ['Toasted brioche and almond', 'Crisp green apple', 'Fine, lively bubbles'], food_pairings: ['Oysters', 'Fried chicken', 'Parmesan'], grapes: ['Pinot Noir', 'Chardonnay', 'Pinot Meunier'] }) : '' });
+  await page.goto(`${BASE}/#home`);
+  await page.evaluate((w) => sessionStorage.setItem('vinterest_scan_result', JSON.stringify({ wine: w, existingRating: 90 })), veuve);
+  await page.goto(`${BASE}/#detail`);
+  const root = page.locator('#root');
+  await expect(root).toContainText('Toasted brioche and almond');
+  await expect(root).toContainText('Oysters');
+  // Sparkling's blue, not the brand crimson.
+  await expect(root.locator('[data-note]').first()).toHaveCSS('border-color', 'rgba(94, 143, 168, 0.333)');
+  const saved = await page.evaluate(() => WineHistory.getAll()[0]);
+  expect(saved.tasting_notes).toHaveLength(3);
+  expect(saved.grapes).toEqual(['Pinot Noir', 'Chardonnay', 'Pinot Meunier']);
+  expect(saved.grapes_basis).toBe('typical');
+  // Asked once: opening it again uses what was saved.
+  await page.evaluate(() => sessionStorage.setItem('vinterest_scan_result', JSON.stringify({ wine: WineHistory.getAll()[0], existingRating: 90 })));
+  await page.goto(`${BASE}/#detail`);
+  await expect(root).toContainText('Toasted brioche and almond');
+  expect(claudeRequests.filter((r) => r.purpose === 'wine_details')).toHaveLength(1);
+  expect(errors).toEqual([]);
+});

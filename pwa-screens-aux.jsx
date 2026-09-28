@@ -308,7 +308,7 @@ function MyWinesScreen({nav,back}){
   React.useEffect(()=>()=>clearTimeout(undoTimer.current),[]);
   const [version,setVersion]=React.useState(0);
   const wines=React.useMemo(()=>WineHistory.getAll(),[version]);
-  const counts=React.useMemo(()=>MyWines.counts(wines),[wines]);
+  const counts=React.useMemo(()=>MyWines.counts(wines,type),[wines,type]);
   const list=React.useMemo(()=>MyWines.query(wines,{type,status,q,sort}),[wines,type,status,q,sort]);
   const groups=MyWines.groups(list,sort);
   const filtered=type!=='all'||status||q;
@@ -360,7 +360,7 @@ function MyWinesScreen({nav,back}){
                 {type!==k&&<span style={{width:8,height:8,borderRadius:4,background:col}}/>}{l} <span style={{opacity:0.7}}>{counts.types[k]}</span></div>;
             })}
             <div style={{width:1,flexShrink:0,background:C.line,margin:'4px 2px'}}/>
-            {MyWines.STATUSES.filter(s=>counts.status[s.id]).map(s=>(
+            {MyWines.STATUSES.filter(s=>counts.shown[s.id]).map(s=>(
               <div key={s.id} onClick={()=>setStatus(status===s.id?null:s.id)} style={chip(status===s.id,C.cr)}>{s.label} <span style={{opacity:0.7}}>{counts.status[s.id]}</span></div>
             ))}
           </div>
