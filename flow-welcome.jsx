@@ -32,35 +32,37 @@ const _WELCOME_TILES=[
 const _WELCOME_DIM='rgba(255,255,255,0.62)';
 
 function _WelcomeTile({tile,k,tileRef}){
-  const z=n=>Math.round(n*k);
+  // Set sizes (px strings, which the reader's text-size setting leaves alone): the tiles are
+  // designed as a whole, so they look the same for everyone, shrunk together only to fit (k).
+  const z=n=>Math.round(n*k)+'px';
   return <div ref={tileRef} style={{flex:'0 0 100%',width:'100%',height:'100%',scrollSnapAlign:'start',overflowY:'auto',boxSizing:'border-box',padding:'8px 28px 12px',display:'flex',flexDirection:'column'}}>
-    {tile.kicker&&<div style={{fontSize:z(15),fontWeight:700,color:'#E0708A',fontFamily:C.P,marginBottom:6}}>{tile.kicker}</div>}
-    <div style={{fontSize:z(30),fontWeight:800,color:'#fff',fontFamily:C.P,letterSpacing:'-0.8px',lineHeight:1.12}}>{tile.t}</div>
-    {tile.sub&&<div style={{fontSize:z(17),color:_WELCOME_DIM,fontFamily:C.P,lineHeight:1.4,marginTop:z(10)}}>{tile.sub}</div>}
+    {tile.kicker&&<div style={{fontSize:z(14),fontWeight:700,color:'#E0708A',fontFamily:C.P,marginBottom:6}}>{tile.kicker}</div>}
+    <div style={{fontSize:z(28),fontWeight:800,color:'#fff',fontFamily:C.P,letterSpacing:'-0.8px',lineHeight:1.12}}>{tile.t}</div>
+    {tile.sub&&<div style={{fontSize:z(16),color:_WELCOME_DIM,fontFamily:C.P,lineHeight:1.4,marginTop:Math.round(10*k)}}>{tile.sub}</div>}
     {/* The three features share the rest of the height, so the tile fills the screen on any phone. */}
-    <div style={{flex:1,display:'flex',flexDirection:'column',justifyContent:'space-evenly',gap:z(18),paddingTop:z(18)}}>
+    <div style={{flex:1,display:'flex',flexDirection:'column',justifyContent:'space-evenly',gap:Math.round(18*k),paddingTop:Math.round(18*k)}}>
       {tile.items&&tile.items.map((f,i)=>(
-        <div key={i} style={{display:'flex',gap:z(16),alignItems:'flex-start'}}>
-          <div style={{width:z(54),height:z(54),borderRadius:z(16),background:'rgba(255,255,255,0.08)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
-            <Icon n={f.icon} sz={z(26)} col={f.col}/>
+        <div key={i} style={{display:'flex',gap:Math.round(16*k),alignItems:'flex-start'}}>
+          <div style={{width:Math.round(54*k),height:Math.round(54*k),borderRadius:Math.round(16*k),background:'rgba(255,255,255,0.08)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+            <Icon n={f.icon} sz={Math.round(26*k)} col={f.col}/>
           </div>
           <div style={{flex:1,minWidth:0}}>
-            <div style={{fontSize:z(19),fontWeight:700,color:'#fff',fontFamily:C.P,lineHeight:1.25,marginBottom:4}}>
-              {f.t}{f.pro&&<span style={{display:'inline-block',marginLeft:8,padding:'1px 8px',borderRadius:10,background:'linear-gradient(135deg,#9B5E00,#C4870A)',fontSize:12,fontWeight:700,verticalAlign:'middle'}}>Pro</span>}
+            <div style={{fontSize:z(18),fontWeight:700,color:'#fff',fontFamily:C.P,lineHeight:1.25,marginBottom:4}}>
+              {f.pro?f.t.split(' ').slice(0,-2).join(' ')+' ':f.t}{f.pro&&<span style={{whiteSpace:'nowrap'}}>{f.t.split(' ').slice(-2).join(' ')}<span style={{display:'inline-block',marginLeft:8,padding:'1px 8px',borderRadius:10,background:'linear-gradient(135deg,#9B5E00,#C4870A)',fontSize:z(12),fontWeight:700,verticalAlign:'middle'}}>Pro</span></span>}
             </div>
-            <div style={{fontSize:z(16),color:_WELCOME_DIM,fontFamily:C.P,lineHeight:1.45}}>{f.d}</div>
+            <div style={{fontSize:z(15),color:_WELCOME_DIM,fontFamily:C.P,lineHeight:1.45}}>{f.d}</div>
           </div>
         </div>
       ))}
       {tile.steps&&tile.steps.map((s,i)=>(
-        <div key={i} style={{display:'flex',gap:z(16),flex:1,minHeight:0}}>
+        <div key={i} style={{display:'flex',gap:Math.round(16*k),flex:1,minHeight:0}}>
           <div style={{display:'flex',flexDirection:'column',alignItems:'center',flexShrink:0,width:24}}>
             <div style={{width:18,height:18,borderRadius:9,background:i===0?C.cr:'rgba(255,255,255,0.3)',border:i===0?'3px solid rgba(255,255,255,0.25)':'none',boxSizing:'border-box',marginTop:4}}/>
             {i<tile.steps.length-1&&<div style={{width:2,flex:1,background:'rgba(255,255,255,0.14)',marginTop:6}}/>}
           </div>
           <div style={{paddingBottom:10}}>
-            <div style={{fontSize:z(19),fontWeight:700,color:'#fff',fontFamily:C.P,marginBottom:4}}>{s.when}</div>
-            <div style={{fontSize:z(16),color:_WELCOME_DIM,fontFamily:C.P,lineHeight:1.45}}>{s.d}</div>
+            <div style={{fontSize:z(18),fontWeight:700,color:'#fff',fontFamily:C.P,marginBottom:4}}>{s.when}</div>
+            <div style={{fontSize:z(15),color:_WELCOME_DIM,fontFamily:C.P,lineHeight:1.45}}>{s.d}</div>
           </div>
         </div>
       ))}
@@ -88,9 +90,8 @@ function WelcomeScreen({next,returning}){
     if(target.current!=null){ if(i===target.current&&Math.abs(el.scrollLeft-i*el.clientWidth)<2) target.current=null; return; }
     if(i!==page) setPage(i);
   }
-  // One text size for all four tiles: the normal size, stepped down together (never below 80%)
-  // until every tile fits this screen without scrolling, so a small phone at Extra large text
-  // doesn't cut the third feature off. A tall phone spreads the features out instead.
+  // One size for all four tiles: their set size, stepped down together (never below 80%) until
+  // every tile fits this screen without scrolling. A tall phone spreads the features out instead.
   const [k,setK]=React.useState(1);
   const tiles=React.useRef([]);
   React.useLayoutEffect(()=>{
@@ -109,7 +110,7 @@ function WelcomeScreen({next,returning}){
       <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'calc(env(safe-area-inset-top) + 18px) 28px 10px',position:'relative',zIndex:1,flexShrink:0}}>
         <img src="logo.png" alt="Vinterest" style={{height:28,width:'auto',display:'block',filter:'invert(1) brightness(2)'}}/>
         {/* Skip stays in the layout on the last tile (hidden), so the logo doesn't move. */}
-        {<span role="button" aria-hidden={page>=last} onClick={()=>page<last&&goTo(last)} style={{visibility:page<last?'visible':'hidden',fontSize:15,fontWeight:600,color:_WELCOME_DIM,fontFamily:C.P,cursor:'pointer',padding:'6px 0 6px 12px'}}>Skip</span>}
+        {<span role="button" aria-hidden={page>=last} onClick={()=>page<last&&goTo(last)} style={{visibility:page<last?'visible':'hidden',fontSize:'15px',fontWeight:600,color:_WELCOME_DIM,fontFamily:C.P,cursor:'pointer',padding:'6px 0 6px 12px'}}>Skip</span>}
       </div>
 
       <div ref={track} onScroll={onScroll} aria-roledescription="carousel"
@@ -126,15 +127,15 @@ function WelcomeScreen({next,returning}){
         </div>
         {page<last
           ?<div onClick={()=>goTo(page+1)} role="button" style={{background:'rgba(255,255,255,0.1)',border:'1px solid rgba(255,255,255,0.18)',borderRadius:16,padding:'16px',textAlign:'center',cursor:'pointer'}}>
-            <span style={{fontSize:17,fontWeight:700,color:'#fff',fontFamily:C.P}}>Next</span>
+            <span style={{fontSize:'17px',fontWeight:700,color:'#fff',fontFamily:C.P}}>Next</span>
           </div>
           :<div onClick={next} role="button" style={{background:C.cr,borderRadius:16,padding:'16px',textAlign:'center',cursor:'pointer',boxShadow:`0 10px 40px ${C.cr}55`,display:'flex',alignItems:'center',justifyContent:'center',gap:10}}>
             <Icon n="camera" sz={20} col="#fff"/>
-            <span style={{fontSize:17,fontWeight:700,color:'#fff',fontFamily:C.P}}>Scan your first bottle</span>
+            <span style={{fontSize:'17px',fontWeight:700,color:'#fff',fontFamily:C.P}}>Scan your first bottle</span>
           </div>}
         {Account.available()&&<div style={{textAlign:'center',marginTop:14}}>
-          <span style={{fontSize:15,color:_WELCOME_DIM,fontFamily:C.P}}>Already have an account? </span>
-          <span role="button" onClick={()=>setSignIn(true)} style={{fontSize:15,fontWeight:700,color:'#fff',fontFamily:C.P,cursor:'pointer',textDecoration:'underline',textUnderlineOffset:3}}>Sign in</span>
+          <span style={{fontSize:'15px',color:_WELCOME_DIM,fontFamily:C.P}}>Already have an account? </span>
+          <span role="button" onClick={()=>setSignIn(true)} style={{fontSize:'15px',fontWeight:700,color:'#fff',fontFamily:C.P,cursor:'pointer',textDecoration:'underline',textUnderlineOffset:3}}>Sign in</span>
         </div>}
       </div>
     </div>

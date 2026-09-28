@@ -138,7 +138,7 @@ test('the first scan tells the bottle\'s story and shows what Vinterest will do 
 
 // The welcome: four tiles to swipe through (or Next), Skip to the last, then the scan. Every tile
 // fits the smallest phone at Extra large text without scrolling.
-test('the welcome tiles: Next through four, Skip to the last, and each fits a small phone at Extra large', async ({ context, page }) => {
+test('the welcome tiles: Next through four, Skip to the last, and each fits a small phone, at set sizes Extra large doesn\'t change', async ({ context, page }) => {
   await page.setViewportSize({ width: 375, height: 667 });
   await makeDeterministic(page);
   await page.addInitScript(() => localStorage.setItem('vinterest_text_size', 'xl'));
@@ -154,6 +154,8 @@ test('the welcome tiles: Next through four, Skip to the last, and each fits a sm
   await expect(root.getByText('Scan your first bottle')).toBeVisible();
   const fit = await page.evaluate(() => [...document.querySelectorAll('[aria-roledescription="carousel"] > div')].map((t) => t.scrollHeight - t.clientHeight));
   expect(fit).toEqual([0, 0, 0, 0]);
+  // Set sizes: Extra large leaves the tiles' text as designed.
+  expect(await root.getByText('Your WineDNA').first().evaluate((e) => getComputedStyle(e).fontSize)).toBe('18px');
   // Skip from the first tile lands on the last.
   await page.reload();
   await root.getByText('Skip', { exact: true }).click();
