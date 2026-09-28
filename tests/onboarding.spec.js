@@ -282,3 +282,44 @@ test('the welcome previews animate, and reduced motion shows them finished at on
   expect(early).toBeLessThan(87);
   await expect(previews.nth(0)).toContainText('87%');
 });
+
+// One swipe moves one slide, however hard: a fast drag across the whole screen, or a huge
+// trackpad/wheel gesture, moves exactly one; a small drag settles back.
+test('a big fling on the welcome slides moves one slide, not all of them', async ({ context, page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await makeDeterministic(page);
+  await stubNetwork(context);
+  await page.goto(`${BASE}/`);
+  const track = page.locator('[aria-roledescription="carousel"]');
+  const at = () => track.evaluate((el) => Math.round(el.scrollLeft / el.clientWidth));
+  const box = await track.boundingBox();
+  const y = box.y + box.height / 2;
+  // A hard flick right to left, across the whole screen in a few frames.
+  await page.mouse.move(box.x + box.width - 5, y);
+  await page.mouse.down();
+  await page.mouse.move(box.x + 5, y, { steps: 3 });
+  await page.mouse.up();
+  await page.waitForTimeout(900);
+  expect(await at()).toBe(1);
+  // A small nudge settles back.
+  await page.mouse.move(box.x + box.width / 2, y);
+  await page.mouse.down();
+  await page.mouse.move(box.x + box.width / 2 - 25, y, { steps: 10 });
+  await page.waitForTimeout(300);
+  await page.mouse.up();
+  await page.waitForTimeout(900);
+  expect(await at()).toBe(1);
+  // A huge trackpad swipe is one slide too.
+  await page.mouse.move(box.x + box.width / 2, y);
+  await page.mouse.wheel(4000, 0);
+  await page.waitForTimeout(900);
+  expect(await at()).toBe(2);
+  // And back the other way, one at a time.
+  await page.mouse.move(box.x + 5, y);
+  await page.mouse.down();
+  await page.mouse.move(box.x + box.width - 5, y, { steps: 3 });
+  await page.mouse.up();
+  await page.waitForTimeout(900);
+  expect(await at()).toBe(1);
+  await expect(page.locator('#root').getByText('Every bottle builds your WineDNA')).toBeInViewport();
+});

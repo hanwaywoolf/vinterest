@@ -188,7 +188,7 @@ function _WelcomeTile({tile,k,tileRef,active}){
   // Set sizes (px strings, which the reader's text-size setting leaves alone): the slides are
   // designed as a whole, so they look the same for everyone, shrunk together only to fit (k).
   const z=n=>Math.round(n*k)+'px';
-  return <div ref={tileRef} style={{flex:'0 0 100%',width:'100%',height:'100%',scrollSnapAlign:'start',overflowY:'auto',boxSizing:'border-box',padding:'8px 24px 12px',display:'flex',flexDirection:'column'}}>
+  return <div ref={tileRef} style={{flex:'0 0 100%',width:'100%',height:'100%',overflowY:'auto',boxSizing:'border-box',padding:'8px 24px 12px',display:'flex',flexDirection:'column'}}>
     <div style={{fontSize:z(tile.preview?26:28),fontWeight:800,color:'#fff',fontFamily:C.P,letterSpacing:'-0.8px',lineHeight:1.12}}>{tile.t}</div>
     {tile.d&&<div style={{fontSize:z(15),color:_WELCOME_DIM,fontFamily:C.P,lineHeight:1.45,marginTop:Math.round(8*k)}}>{tile.d}</div>}
     {tile.preview&&<div style={{flex:1,minHeight:0,display:'flex',flexDirection:'column',paddingTop:Math.round(16*k)}}><_WelcomePreview kind={tile.preview} active={active}/></div>}
@@ -214,20 +214,40 @@ function WelcomeScreen({next,returning}){
   const [signIn,setSignIn]=React.useState(false);
   const track=React.useRef(null);
   const last=_WELCOME_TILES.length-1;
-  // While Next, Skip or a dot is scrolling to a tile, the scroll position passes through the
-  // tiles in between; don't let those take over the page (quick taps would otherwise lose a step).
-  const target=React.useRef(null);
   function goTo(i){
     const el=track.current; if(!el) return;
-    target.current=i; clearTimeout(target.t); target.t=setTimeout(()=>{ target.current=null; },800);
     el.scrollTo({left:i*el.clientWidth,behavior:'smooth'});
     setPage(i);
   }
-  function onScroll(){
-    const el=track.current; if(!el||!el.clientWidth) return;
-    const i=Math.round(el.scrollLeft/el.clientWidth);
-    if(target.current!=null){ if(i===target.current&&Math.abs(el.scrollLeft-i*el.clientWidth)<2) target.current=null; return; }
-    if(i!==page) setPage(i);
+  // Swiping is ours, not the browser's: the slides follow the finger (or mouse), and on release
+  // move exactly one slide, however hard the flick, or settle back if it was too small. The
+  // browser's own snap scrolling let one fast flick fly through every slide.
+  const drag=React.useRef(null);
+  const clampPage=i=>Math.max(0,Math.min(_WELCOME_TILES.length-1,i));
+  function onPointerDown(e){
+    const el=track.current; if(!el||(e.pointerType==='mouse'&&e.button!==0)) return;
+    drag.current={x:e.clientX,y:e.clientY,t:performance.now(),left:el.scrollLeft,id:e.pointerId,moved:false};
+  }
+  function onPointerMove(e){
+    const d=drag.current, el=track.current; if(!d||!el||e.pointerId!==d.id) return;
+    const dx=e.clientX-d.x, dy=e.clientY-d.y;
+    if(!d.moved){ if(Math.abs(dx)<6||Math.abs(dx)<Math.abs(dy)) return; d.moved=true; try{ el.setPointerCapture(e.pointerId); }catch(err){} }
+    el.scrollLeft=Math.max(0,Math.min(el.scrollWidth-el.clientWidth,d.left-dx));
+  }
+  function onPointerUp(e){
+    const d=drag.current; drag.current=null; if(!d||!d.moved) return;
+    const dx=e.clientX-d.x, v=dx/Math.max(1,performance.now()-d.t); // px per ms
+    const from=page;
+    goTo(clampPage(dx<-60||v<-0.35?from+1:dx>60||v>0.35?from-1:from));
+  }
+  // A rotated or resized screen keeps the current slide in place.
+  React.useEffect(()=>{ const h=()=>{ const el=track.current; if(el) el.scrollLeft=page*el.clientWidth; }; window.addEventListener('resize',h); return()=>window.removeEventListener('resize',h); },[page]);
+  const wheelLock=React.useRef(0);
+  function onWheel(e){
+    if(Math.abs(e.deltaX)<=Math.abs(e.deltaY)||Math.abs(e.deltaX)<15) return;
+    const now=Date.now(); if(now<wheelLock.current) return;
+    wheelLock.current=now+650;
+    goTo(clampPage(page+(e.deltaX>0?1:-1)));
   }
   // One size for all the slides' text: their set size, stepped down together (never below 80%) until
   // every tile fits this screen without scrolling. A tall phone spreads the features out instead.
@@ -253,8 +273,8 @@ function WelcomeScreen({next,returning}){
         {<span role="button" aria-hidden={page>=last} onClick={()=>page<last&&goTo(last)} style={{visibility:page<last?'visible':'hidden',fontSize:'15px',fontWeight:600,color:_WELCOME_DIM,fontFamily:C.P,cursor:'pointer',padding:'6px 0 6px 12px'}}>Skip</span>}
       </div>
 
-      <div ref={track} onScroll={onScroll} aria-roledescription="carousel"
-        style={{flex:1,minHeight:0,display:'flex',overflowX:'auto',overflowY:'hidden',scrollSnapType:'x mandatory',scrollbarWidth:'none',position:'relative',zIndex:1}}>
+      <div ref={track} aria-roledescription="carousel" onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerUp} onWheel={onWheel}
+        style={{flex:1,minHeight:0,display:'flex',overflowX:'hidden',overflowY:'hidden',touchAction:'pan-y',userSelect:'none',scrollbarWidth:'none',position:'relative',zIndex:1}}>
         {_WELCOME_TILES.map((tile,i)=><_WelcomeTile key={i} tile={tile} k={k} active={page===i} tileRef={el=>{tiles.current[i]=el;}}/>)}
       </div>
 
