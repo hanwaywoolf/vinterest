@@ -55,6 +55,21 @@ try {
     const vinnyPrompts = u.vinny.map((v) => Vinny.prompt(v.q, [], wines));
     return { match, dna, vinnyPrompts, article: stub, mastery: grapesArea };
   }, fixture.user);
+  // The Vinny slide's backdrop: the sample user's Home, as the app draws it, in a clean page with
+  // nothing of anyone's own and no calls out (Claude answers nothing).
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, serviceWorkers: 'block' });
+  const home = await ctx.newPage();
+  await ctx.route('**/claude', (r) => r.fulfill({ contentType: 'application/json', body: '{"text":""}' }));
+  await home.addInitScript((wines) => {
+    localStorage.clear();
+    const stamp = Date.now();
+    localStorage.setItem('vinterest_wines', JSON.stringify(wines.filter((w) => w.rating || w.scan_intent).map((w, i) => ({ ...w, scanned_at: new Date(stamp - i * 86400000 * 3).toISOString() }))));
+    Object.entries({ vinterest_onboarded: '1', vinterest_age_ok: '1', vinterest_region: 'uk', vinterest_currency: 'GBP' }).forEach(([k, v]) => localStorage.setItem(k, v));
+  }, fixture.user.wines);
+  await home.goto(`http://localhost:${PORT}/#home`);
+  await home.waitForTimeout(1500);
+  await home.screenshot({ path: path.join(ROOT, 'onboarding-home.jpg'), type: 'jpeg', quality: 72 });
+  await ctx.close();
 } finally {
   await browser.close();
   server.kill();

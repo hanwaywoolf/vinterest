@@ -101,15 +101,45 @@ function _PreviewDna(){
   </div>;
 }
 
-/* Vinny answering the sample user: the question, then the answer typing out. The answer is the
-   one Vinny gave from that user's WineDNA (captured by scripts/onboarding-sample.mjs). The rest of
-   it is already laid out, invisible, so the card doesn't grow as it types. */
+/* Vinny, as on Home: the sample user's Home screen (onboarding-home.jpg, captured by the
+   generator from the real app) faded behind the real Ask Vinny bar (VinnyBar) and answer card
+   (VinnyAnswers). The question types into the bar, the arrow lights, it sends (the bar empties to
+   "Ask a follow-up…" as it does in the app), "Thinking…", then the answer types out. Everything is
+   laid out from the start, invisible, so nothing moves or grows while it plays. */
+const _VINNY_TIMING={start:500,qPerChar:42,beforeSend:450,thinking:900,aPerChar:24};
 function _PreviewVinny(){
-  const v=_WELCOME_SAMPLE.slides.vinny[0];
-  const n=_useCount(v.a.length,v.a.length*28,700);
-  const done=n>=v.a.length;
-  const a=<>{v.a.slice(0,n)}{!done&&<span className="wp-caret"/>}<span style={{opacity:0}}>{v.a.slice(n)}</span></>;
-  return <div className="wp-in"><VinnyAnswers turns={[{q:v.q,a}]} style={{marginTop:0}}/></div>;
+  const v=_WELCOME_SAMPLE.slides.vinny[0], T=_VINNY_TIMING;
+  const still=_reducedMotion();
+  const sendAt=T.start+v.q.length*T.qPerChar+T.beforeSend, answerAt=sendAt+T.thinking;
+  const [ms,setMs]=React.useState(still?1e9:0);
+  React.useEffect(()=>{
+    if(still) return;
+    let raf, t0=null; const end=answerAt+v.a.length*T.aPerChar+100;
+    const step=t=>{ if(t0==null) t0=t; const e=t-t0; setMs(e); if(e<end) raf=requestAnimationFrame(step); };
+    raf=requestAnimationFrame(step);
+    return()=>cancelAnimationFrame(raf);
+  },[]);
+  const sent=ms>=sendAt, typedQ=sent?'':v.q.slice(0,Math.max(0,Math.floor((ms-T.start)/T.qPerChar)));
+  const nA=ms<answerAt?0:Math.min(v.a.length,Math.floor((ms-answerAt)/T.aPerChar));
+  const dim='rgba(255,255,255,0.5)';
+  const field=<div style={{position:'absolute',inset:0,display:'flex',alignItems:'center',overflow:'hidden'}}>
+    <span style={{fontSize:16,fontFamily:C.P,color:typedQ?'#fff':dim,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>
+      {typedQ||(sent?'Ask a follow-up…':'Ask Vinny about wine…')}{!sent&&typedQ&&<span className="wp-caret"/>}
+    </span>
+  </div>;
+  const full=<span style={{opacity:0}}>{v.a}</span>;
+  const a=!sent?full
+    :ms<answerAt?<span style={{position:'relative',display:'block'}}>{full}<span style={{position:'absolute',left:0,top:0,fontSize:15,fontStyle:'italic',color:'rgba(255,255,255,0.7)'}}>Thinking…</span></span>
+    :<>{v.a.slice(0,nA)}{nA<v.a.length&&<span className="wp-caret"/>}<span style={{opacity:0}}>{v.a.slice(nA)}</span></>;
+  return <div style={{position:'relative',width:390,borderRadius:26,overflow:'hidden',background:C.bg,border:'1px solid rgba(255,255,255,0.08)'}}>
+    <img src="onboarding-home.jpg" alt="" style={{position:'absolute',top:0,left:0,width:'100%',height:'auto',opacity:0.32,filter:'blur(1px)'}}/>
+    <div style={{position:'relative',padding:'62px 16px 150px'}}>
+      <VinnyBar field={field} hasText={!!typedQ} canSend={false} lit={!!typedQ&&!sent}/>
+      <div style={{opacity:sent?1:0,transform:sent?'none':'translateY(6px)',transition:'opacity .35s, transform .35s'}}>
+        <VinnyAnswers turns={[{q:v.q,a}]}/>
+      </div>
+    </div>
+  </div>;
 }
 
 function _PreviewLearn(){
@@ -128,11 +158,13 @@ function _welcomeAlt(kind){
   if(kind==='dna'){ const d=S.dna;
     return `Example WineDNA for reds: "${d.personality}", based on ${d.lovedCount} Outstanding reds. ${d.chips.map(c=>`${c.label}: ${c.value}`).join('. ')}. ${d.confidence.n} scored, ${d.confidence.next||'a strong read'}.`; }
   if(kind==='vinny'){ const v=S.vinny[0];
-    return `Example question to Vinny: "${v.q}" Vinny's answer, from this user's WineDNA: "${v.a}"`; }
+    return `Example of asking Vinny from the Home screen. Question: "${v.q}" Vinny's answer, from this user's WineDNA: "${v.a}"`; }
   const st=S.article, a=S.mastery;
   return `Example article written for you: "${st.title}", ${st.because.toLowerCase()}. Below it, the Grapes part of the mastery map: ${a.items.map(i=>`${i.name} ${i.score}%`).join(', ')}.`;
 }
 const _WELCOME_PREVIEWS={match:_PreviewMatch,dna:_PreviewDna,vinny:_PreviewVinny,learn:_PreviewLearn};
+// A preview drawn at a fixed width, in its own frame (the Vinny one lines up with its Home screenshot).
+const _WELCOME_FRAMED={vinny:390};
 
 /* A preview fills the space the slide leaves it: drawn at the width that shows it largest, then
    scaled down (never up) so all of it shows; below _WELCOME_PREVIEW_MIN it stays readable and is
@@ -152,7 +184,7 @@ function _WelcomePreview({kind,active}){
     const measure=()=>{
       const bw=b.clientWidth, H=b.clientHeight; if(!bw||!H) return;
       const prev=g.style.width; let best={s:0,w:bw};
-      for(const f of [1,1.1,1.2,1.35,1.5]){
+      for(const f of (_WELCOME_FRAMED[kind]?[_WELCOME_FRAMED[kind]/bw]:[1,1.1,1.2,1.35,1.5])){
         const W=Math.round(bw*f); g.style.width=W+'px';
         const s=Math.min(1,H/g.scrollHeight,bw/W);
         if(s>best.s+0.01) best={s,w:W};
@@ -160,8 +192,8 @@ function _WelcomePreview({kind,active}){
       let out=best;
       // Never so small it can't be read: below MIN it stays at MIN and is cropped at the bottom.
       if(best.s<_WELCOME_PREVIEW_MIN){
-        const W=Math.round(bw/_WELCOME_PREVIEW_MIN); g.style.width=W+'px';
-        out={s:_WELCOME_PREVIEW_MIN,w:W,crop:true,pan:Math.min(0,Math.round(H/_WELCOME_PREVIEW_MIN-g.scrollHeight))};
+        const W=_WELCOME_FRAMED[kind]||Math.round(bw/_WELCOME_PREVIEW_MIN); g.style.width=W+'px';
+        out={s:_WELCOME_PREVIEW_MIN,w:W,crop:true,pan:_WELCOME_FRAMED[kind]?0:Math.min(0,Math.round(H/_WELCOME_PREVIEW_MIN-g.scrollHeight))}; // a framed preview only loses faded background at the bottom: no scroll
       }
       g.style.width=prev;
       setFit(f=>Math.abs(f.s-out.s)<0.005&&f.w===out.w&&!!f.crop===!!out.crop&&f.pan===out.pan?f:out);
@@ -178,7 +210,7 @@ function _WelcomePreview({kind,active}){
     <div ref={stage} aria-hidden="true" inert="" className={'wp-stage'+(playing?' wp-run':'')} style={{position:'absolute',top:fit.crop?0:'50%',left:'50%',width:fit.w||'100%',
       transform:fit.crop?`translateX(-50%) scale(${fit.s})`:`translate(-50%,-50%) scale(${fit.s})`,transformOrigin:fit.crop?'top center':'center center',pointerEvents:'none',userSelect:'none'}}>
       <div key={run} className={fit.crop&&playing&&fit.pan<0?'wp-pan':''} style={{'--wp-pan':`${fit.pan||0}px`}}>
-        <div style={{background:C.bg,borderRadius:22,padding:12,border:'1px solid rgba(255,255,255,0.08)'}}><Body/></div>
+        {_WELCOME_FRAMED[kind]?<Body/>:<div style={{background:C.bg,borderRadius:22,padding:12,border:'1px solid rgba(255,255,255,0.08)'}}><Body/></div>}
       </div>
     </div>
   </div>;

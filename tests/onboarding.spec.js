@@ -275,6 +275,9 @@ test('the welcome previews animate, and reduced motion shows them finished at on
   expect(anim).toEqual([false, false, false, false]);
   const vinny = await previews.nth(2).evaluate((e) => e.querySelector('.wp-caret') === null && e.innerText.includes('stand up to red meat.'));
   expect(vinny).toBe(true);
+  // The Vinny slide is the real Ask Vinny bar, after sending, over the sample user's Home.
+  await expect(previews.nth(2)).toContainText('Ask a follow-up…');
+  expect(await previews.nth(2).evaluate((e) => { const img = e.querySelector('img'); return img && img.getAttribute('src') === 'onboarding-home.jpg' && img.complete && img.naturalWidth > 0; })).toBe(true);
   // With motion: the match counts up from below 87 on arrival.
   await page.emulateMedia({ reducedMotion: 'no-preference' });
   await page.reload();

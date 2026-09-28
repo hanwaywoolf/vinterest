@@ -80,11 +80,7 @@ function WineChatWidget({wines,nav,showPro}){
 
   return(
     <div style={{margin:'0 16px 8px'}}>
-      <form onSubmit={e=>{e.preventDefault();doAsk(q.trim());}} style={{display:'flex',alignItems:'center',gap:10,background:'#000',borderRadius:24,padding:'6px 6px 6px 6px'}}>
-        <div aria-hidden="true" style={{width:34,height:34,borderRadius:17,background:C.cr,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
-          <span style={{fontSize:16,fontWeight:800,color:'#fff',fontFamily:C.P}}>V</span>
-        </div>
-        <div style={{flex:1,minWidth:0,position:'relative',height:22}}>
+      <VinnyBar onSubmit={()=>doAsk(q.trim())} hasText={!!q} canSend={!asking&&!!q.trim()} lit={!!q.trim()} onClear={clearQ} field={<>
           <input ref={inputRef} value={q} onChange={e=>onType(e.target.value)} onKeyDown={onKey} onFocus={()=>setFocused(true)} onBlur={()=>setFocused(false)} aria-label="Ask Vinny"
             placeholder={open?'Ask a follow-up…':'Ask Vinny about wine…'} style={{position:'absolute',inset:0,width:'100%',border:'none',outline:'none',background:'transparent',fontSize:16,fontFamily:C.P,color:'#fff'}}/>
           {idle&&(
@@ -92,20 +88,33 @@ function WineChatWidget({wines,nav,showPro}){
               <span style={{fontSize:16,color:'rgba(255,255,255,0.75)',fontFamily:C.P,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{typed}<span style={{display:'inline-block',width:1.5,height:15,background:'rgba(255,255,255,0.75)',marginLeft:2,verticalAlign:'-2px',animation:'homeCaret 0.9s step-end infinite'}}/></span>
             </div>
           )}
-        </div>
-        {q&&<button type="button" onClick={clearQ} aria-label="Clear" style={{width:26,height:26,borderRadius:13,border:'none',background:'rgba(255,255,255,0.14)',flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',padding:0}}>
-          <svg width="10" height="10" viewBox="0 0 20 20"><path d="M4 4l12 12M16 4L4 16" stroke="#fff" strokeWidth="2.2" strokeLinecap="round"/></svg>
-        </button>}
-        <button type="submit" disabled={asking||!q.trim()} aria-label="Ask" style={{width:38,height:38,borderRadius:19,border:'none',background:q.trim()?C.cr:'rgba(255,255,255,0.18)',flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center',cursor:q.trim()?'pointer':'default',padding:0}}>
-          <svg width="16" height="16" viewBox="0 0 20 20"><path d="M3 10h13M10 4l6.5 6L10 16" stroke="#fff" strokeWidth="1.8" fill="none" strokeLinecap="round" strokeLinejoin="round"/></svg>
-        </button>
-      </form>
+      </>}/>
       {recent.length>0&&<div style={{display:'flex',gap:6,flexWrap:'wrap',marginTop:8}}>
         {recent.map(r=><div key={r} onMouseDown={e=>{e.preventDefault();fill(r);}} role="button" style={{padding:'6px 11px',borderRadius:999,background:C.offWhite,border:`1px solid ${C.line}`,fontSize:13,color:C.ink2,fontFamily:C.P,cursor:'pointer',maxWidth:'100%',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{r}</div>)}
       </div>}
       {open&&<VinnyAnswers turns={turns} onClose={()=>setTurns([])} onLink={l=>_openLearn(l,nav,showPro)}/>}
     </div>
   );
+}
+
+/* The Ask Vinny bar: Vinny's V, the field, a clear button once there's text, and the send arrow
+   (crimson when there's something to send). Also the welcome slides' preview (flow-welcome.jsx),
+   where the field is the question typing itself and nothing can be tapped. */
+function VinnyBar({field,hasText,canSend,lit=canSend,onSubmit,onClear}){
+  return <form onSubmit={e=>{e.preventDefault(); if(onSubmit) onSubmit();}} style={{display:'flex',alignItems:'center',gap:10,background:'#000',borderRadius:24,padding:'6px 6px 6px 6px'}}>
+    <div aria-hidden="true" style={{width:34,height:34,borderRadius:17,background:C.cr,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+      <span style={{fontSize:16,fontWeight:800,color:'#fff',fontFamily:C.P}}>V</span>
+    </div>
+    <div style={{flex:1,minWidth:0,position:'relative',height:22}}>
+      {field}
+    </div>
+    {hasText&&<button type="button" onClick={onClear} aria-label="Clear" style={{width:26,height:26,borderRadius:13,border:'none',background:'rgba(255,255,255,0.14)',flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',padding:0}}>
+      <svg width="10" height="10" viewBox="0 0 20 20"><path d="M4 4l12 12M16 4L4 16" stroke="#fff" strokeWidth="2.2" strokeLinecap="round"/></svg>
+    </button>}
+    <button type="submit" disabled={!canSend} aria-label="Ask" style={{width:38,height:38,borderRadius:19,border:'none',background:lit?C.cr:'rgba(255,255,255,0.18)',flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center',cursor:canSend?'pointer':'default',padding:0,transition:'background .2s'}}>
+      <svg width="16" height="16" viewBox="0 0 20 20"><path d="M3 10h13M10 4l6.5 6L10 16" stroke="#fff" strokeWidth="1.8" fill="none" strokeLinecap="round" strokeLinejoin="round"/></svg>
+    </button>
+  </form>;
 }
 
 /* Vinny's answers under the box: each question and its answer, with a "Learn more" link on the
