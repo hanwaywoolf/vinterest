@@ -29,59 +29,128 @@ const _WELCOME_TILES=[
 const _WELCOME_DIM='rgba(255,255,255,0.62)';
 const _WELCOME_PREVIEW_MIN=0.65; // smallest a preview is shown; smaller than this it's cropped instead
 
-/* The sample user's screens, as the app draws them, and a sentence saying what each shows. */
-function _welcomePreview(kind){
-  const S=_WELCOME_SAMPLE.slides, U=_WELCOME_SAMPLE.user;
-  if(kind==='match'){
-    const m=S.match, w=U.scanned, col=_TONE_COL[m.tone];
-    const [pro,con]=m.reasons;
-    return {alt:`Example scan result: ${w.producer} ${w.name} ${w.vintage}, a ${m.pct}% match, "${m.label}". For it: ${pro.text} Against it: ${con.text}`,
-      el:<div style={{display:'flex',flexDirection:'column',gap:10}}>
-        <Card style={{padding:16}}><WineIdentity wine={w}/></Card>
-        <Card style={{padding:16}}>
-          <div style={{display:'flex',alignItems:'center',gap:14}}>
-            <MatchRing match={m}/>
-            <div style={{flex:1,minWidth:0}}>
-              <div style={{fontSize:20,fontWeight:800,color:col,fontFamily:C.P,lineHeight:1.2}}>{m.label}</div>
-              <div style={{fontSize:15,color:C.mid,fontFamily:C.P,marginTop:3}}>Likely {m.expectedLabel} for you</div>
-              <div style={{fontSize:13,color:C.mid,fontFamily:C.P,marginTop:2}}>You've loved {m.chance}% of wines like it</div>
-            </div>
-          </div>
-          <div style={{marginTop:14,paddingTop:12,borderTop:`1px solid ${C.line}`}}><MatchReasons match={m} showSummary={false}/></div>
-        </Card>
-      </div>};
-  }
-  if(kind==='dna'){
-    const d=S.dna;
-    const t={...d,col:(typeof _TYPE_COLORS!=='undefined'&&_TYPE_COLORS.red)||C.cr,loved:{length:d.lovedCount},axes:d.axes,showAxis:k=>d.axes.includes(k)};
-    const tLabel=d.label.toLowerCase();
-    return {alt:`Example WineDNA for reds: "${d.personality}", based on ${d.lovedCount} Outstanding reds. ${d.chips.map(c=>`${c.label}: ${c.value}`).join('. ')}. ${d.confidence.n} scored, ${d.confidence.next||'a strong read'}.`,
-      el:<div style={{display:'flex',flexDirection:'column',gap:10}}>
-        <Card style={{padding:16,display:'flex',flexDirection:'column',gap:10}}>
-          <DnaTitle t={t} basisLine={`Based on your ${d.lovedCount} Outstanding (90+) ${tLabel}`}/>
-          <DnaFacts t={t} chips={d.chips} conf={d.confidence}/>
-        </Card>
-        <DnaTasteCard t={t} tLabel={tLabel} notes={false}/>
-      </div>};
-  }
-  if(kind==='vinny'){
-    const v=S.vinny[0];
-    return {alt:`Example question to Vinny: "${v.q}" Vinny's answer: "${v.a}"`,el:<VinnyAnswers turns={S.vinny} style={{marginTop:0}}/>};
-  }
-  const st=S.article, a=S.mastery;
-  return {alt:`Example article written for you: "${st.title}", ${st.because.toLowerCase()}. Below it, the Grapes part of the mastery map: ${a.items.map(i=>`${i.name} ${i.score}%`).join(', ')}.`,
-    el:<div style={{display:'flex',flexDirection:'column',gap:10}}>
-      <ShelfCard stub={st} because={st.because}/>
-      <MasteryAreaCard a={a} open/>
-    </div>};
+/* Motion: each preview plays when its slide arrives (and again if they come back), showing how
+   the screen comes alive; reduced motion skips straight to the finished screen. The CSS moves only
+   what's already laid out (bars growing, rows fading in), so a preview never changes size. */
+const _WELCOME_CSS=`
+@keyframes wpGrow{from{transform:scaleX(0)}}
+@keyframes wpIn{from{opacity:0;transform:translateY(8px)}}
+@keyframes wpDot{0%,55%{opacity:0;transform:scale(.3)}}
+@keyframes wpPan{0%,18%{transform:translateY(0)}55%,72%{transform:translateY(var(--wp-pan))}100%{transform:translateY(0)}}
+@keyframes wpCaret{50%{opacity:0}}
+.wp-run .dna-fill,.wp-run .mastery-fill{transform-origin:left center;animation:wpGrow .9s cubic-bezier(.3,.9,.4,1) both}
+.wp-run .dna-dot{animation:wpDot 1.2s ease both}
+.wp-run .wp-in{animation:wpIn .5s ease both}
+.wp-run .wp-reasons>div>div{animation:wpIn .5s ease both}
+.wp-run .wp-reasons>div>div:nth-child(1){animation-delay:1.25s}
+.wp-run .wp-reasons>div>div:nth-child(2){animation-delay:1.75s}
+.wp-pan{animation:wpPan 7s ease-in-out 1.4s both}
+.wp-caret{display:inline-block;width:2px;height:1em;background:#fff;margin-left:2px;vertical-align:-2px;animation:wpCaret .8s step-end infinite}
+@media (prefers-reduced-motion: reduce){.wp-stage *{animation:none!important;transition:none!important}}
+`;
+function _reducedMotion(){ try{ return window.matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){ return false; } }
+
+/* Counts from 0 to n over ms once mounted (n straight away with reduced motion). */
+function _useCount(n,ms,delay=0){
+  const [v,setV]=React.useState(()=>_reducedMotion()?n:0);
+  React.useEffect(()=>{
+    if(_reducedMotion()) return setV(n);
+    let raf, t0=null;
+    const step=t=>{ if(t0==null) t0=t+delay; const k=Math.max(0,Math.min(1,(t-t0)/ms)); setV(Math.round(n*(1-Math.pow(1-k,3)))); if(k<1) raf=requestAnimationFrame(step); };
+    raf=requestAnimationFrame(step);
+    return()=>cancelAnimationFrame(raf);
+  },[n,ms,delay]);
+  return v;
 }
 
-/* A preview fills the space the slide leaves it: drawn at a phone's width, then scaled down (never
-   up) so all of it shows. Display only: no taps, no focus, and screen readers get its sentence. */
-function _WelcomePreview({kind}){
-  const {alt,el}=React.useMemo(()=>_welcomePreview(kind),[kind]);
+function _PreviewMatch(){
+  const S=_WELCOME_SAMPLE.slides, m=S.match, w=_WELCOME_SAMPLE.user.scanned, col=_TONE_COL[m.tone];
+  const pct=_useCount(m.pct,1100,150);
+  return <div style={{display:'flex',flexDirection:'column',gap:10}}>
+    <Card style={{padding:16}}><WineIdentity wine={w}/></Card>
+    <Card style={{padding:16}}>
+      <div style={{display:'flex',alignItems:'center',gap:14}}>
+        <MatchRing match={{...m,pct}}/>
+        <div className="wp-in" style={{flex:1,minWidth:0,animationDelay:'.9s'}}>
+          <div style={{fontSize:20,fontWeight:800,color:col,fontFamily:C.P,lineHeight:1.2}}>{m.label}</div>
+          <div style={{fontSize:15,color:C.mid,fontFamily:C.P,marginTop:3}}>Likely {m.expectedLabel} for you</div>
+          <div style={{fontSize:13,color:C.mid,fontFamily:C.P,marginTop:2}}>You've loved {m.chance}% of wines like it</div>
+        </div>
+      </div>
+      <div className="wp-reasons" style={{marginTop:14,paddingTop:12,borderTop:`1px solid ${C.line}`}}><MatchReasons match={m} showSummary={false}/></div>
+    </Card>
+  </div>;
+}
+
+function _dnaTab(){
+  const d=_WELCOME_SAMPLE.slides.dna;
+  return {d,tLabel:d.label.toLowerCase(),t:{...d,col:(typeof _TYPE_COLORS!=='undefined'&&_TYPE_COLORS.red)||C.cr,loved:{length:d.lovedCount},axes:d.axes,showAxis:k=>d.axes.includes(k)}};
+}
+function _DnaSummary({style}){
+  const {d,t,tLabel}=_dnaTab();
+  return <div className="wp-in" style={style}><Card style={{padding:16,display:'flex',flexDirection:'column',gap:10}}>
+    <DnaTitle t={t} basisLine={`Based on your ${d.lovedCount} Outstanding (90+) ${tLabel}`}/>
+    <DnaFacts t={t} chips={d.chips} conf={d.confidence}/>
+  </Card></div>;
+}
+function _PreviewDna(){
+  const {t,tLabel}=_dnaTab();
+  return <div style={{display:'flex',flexDirection:'column',gap:10}}>
+    <_DnaSummary/>
+    <div className="wp-dna-bars"><DnaTasteCard t={t} tLabel={tLabel} notes={false}/></div>
+  </div>;
+}
+
+/* Vinny reads their WineDNA, then answers: the question appears, and the answer types out. The
+   rest of the answer is already there, invisible, so the card doesn't grow as it types. */
+function _PreviewVinny(){
+  const v=_WELCOME_SAMPLE.slides.vinny[0];
+  const n=_useCount(v.a.length,v.a.length*28,1500);
+  const done=n>=v.a.length;
+  const a=<>{v.a.slice(0,n)}{!done&&<span className="wp-caret"/>}<span style={{opacity:0}}>{v.a.slice(n)}</span></>;
+  return <div style={{display:'flex',flexDirection:'column',gap:0}}>
+    <_DnaSummary/>
+    <div className="wp-in" style={{display:'flex',alignItems:'center',gap:8,padding:'8px 6px',animationDelay:'.5s'}}>
+      <div style={{width:2,height:22,background:C.cr,borderRadius:1,marginLeft:14}}/>
+      <span style={{fontSize:13,fontWeight:700,color:C.cr,fontFamily:C.P}}>Vinny answers from your WineDNA</span>
+    </div>
+    <div className="wp-in" style={{animationDelay:'.9s'}}><VinnyAnswers turns={[{q:v.q,a}]} style={{marginTop:0}}/></div>
+  </div>;
+}
+
+function _PreviewLearn(){
+  const st=_WELCOME_SAMPLE.slides.article, a=_WELCOME_SAMPLE.slides.mastery;
+  return <div style={{display:'flex',flexDirection:'column',gap:10}}>
+    <div className="wp-in"><ShelfCard stub={st} because={st.because}/></div>
+    <div className="wp-in" style={{animationDelay:'.35s'}}><MasteryAreaCard a={a} open/></div>
+  </div>;
+}
+
+/* What each preview shows, said in a sentence for screen readers. */
+function _welcomeAlt(kind){
+  const S=_WELCOME_SAMPLE.slides, U=_WELCOME_SAMPLE.user;
+  if(kind==='match'){ const m=S.match, w=U.scanned, [pro,con]=m.reasons;
+    return `Example scan result: ${w.producer} ${w.name} ${w.vintage}, a ${m.pct}% match, "${m.label}". For it: ${pro.text} Against it: ${con.text}`; }
+  if(kind==='dna'){ const d=S.dna;
+    return `Example WineDNA for reds: "${d.personality}", based on ${d.lovedCount} Outstanding reds. ${d.chips.map(c=>`${c.label}: ${c.value}`).join('. ')}. ${d.confidence.n} scored, ${d.confidence.next||'a strong read'}.`; }
+  if(kind==='vinny'){ const v=S.vinny[0], d=S.dna;
+    return `Example WineDNA for reds, "${d.personality}", and Vinny answering from it. Question: "${v.q}" Vinny's answer: "${v.a}"`; }
+  const st=S.article, a=S.mastery;
+  return `Example article written for you: "${st.title}", ${st.because.toLowerCase()}. Below it, the Grapes part of the mastery map: ${a.items.map(i=>`${i.name} ${i.score}%`).join(', ')}.`;
+}
+const _WELCOME_PREVIEWS={match:_PreviewMatch,dna:_PreviewDna,vinny:_PreviewVinny,learn:_PreviewLearn};
+
+/* A preview fills the space the slide leaves it: drawn at the width that shows it largest, then
+   scaled down (never up) so all of it shows; below _WELCOME_PREVIEW_MIN it stays readable and is
+   cropped instead, and scrolls down and back once so the rest is seen. Display only: no taps, no
+   focus, and screen readers get its sentence. It plays each time its slide arrives (active). */
+function _WelcomePreview({kind,active}){
+  const alt=React.useMemo(()=>_welcomeAlt(kind),[kind]);
+  const Body=_WELCOME_PREVIEWS[kind];
   const box=React.useRef(null), stage=React.useRef(null);
   const [fit,setFit]=React.useState({s:1,w:0});
+  const [run,setRun]=React.useState(0);
+  React.useEffect(()=>{ if(active) setRun(r=>r+1); },[active]);
   React.useLayoutEffect(()=>{
     const b=box.current, g=stage.current; if(!b||!g) return;
     // Drawn wider, the preview wraps less and gets shorter but must shrink more to fit across:
@@ -94,34 +163,41 @@ function _WelcomePreview({kind}){
         const s=Math.min(1,H/g.scrollHeight,bw/W);
         if(s>best.s+0.01) best={s,w:W};
       }
-      g.style.width=prev;
+      let out=best;
       // Never so small it can't be read: below MIN it stays at MIN and is cropped at the bottom.
-      const out=best.s<_WELCOME_PREVIEW_MIN?{s:_WELCOME_PREVIEW_MIN,w:Math.round(bw/_WELCOME_PREVIEW_MIN),crop:true}:best;
-      setFit(f=>Math.abs(f.s-out.s)<0.005&&f.w===out.w&&!!f.crop===!!out.crop?f:out);
+      if(best.s<_WELCOME_PREVIEW_MIN){
+        const W=Math.round(bw/_WELCOME_PREVIEW_MIN); g.style.width=W+'px';
+        out={s:_WELCOME_PREVIEW_MIN,w:W,crop:true,pan:Math.min(0,Math.round(H/_WELCOME_PREVIEW_MIN-g.scrollHeight))};
+      }
+      g.style.width=prev;
+      setFit(f=>Math.abs(f.s-out.s)<0.005&&f.w===out.w&&!!f.crop===!!out.crop&&f.pan===out.pan?f:out);
     };
     measure();
     const ro=typeof ResizeObserver!=='undefined'?new ResizeObserver(measure):null;
     if(ro) ro.observe(b);
     return()=>ro&&ro.disconnect();
   },[]);
-  const fade='linear-gradient(to bottom,#000 78%,transparent)';
+  const fade='linear-gradient(to bottom,transparent 0,#000 4%,#000 80%,transparent)';
+  const playing=active&&run>0;
   return <div ref={box} role="img" aria-label={alt} data-cropped={fit.crop?'true':undefined}
     style={{flex:1,minHeight:0,position:'relative',overflow:'hidden',...(fit.crop?{WebkitMaskImage:fade,maskImage:fade}:null)}}>
-    <div ref={stage} aria-hidden="true" inert="" style={{position:'absolute',top:fit.crop?0:'50%',left:'50%',width:fit.w||'100%',
+    <div ref={stage} aria-hidden="true" inert="" className={'wp-stage'+(playing?' wp-run':'')} style={{position:'absolute',top:fit.crop?0:'50%',left:'50%',width:fit.w||'100%',
       transform:fit.crop?`translateX(-50%) scale(${fit.s})`:`translate(-50%,-50%) scale(${fit.s})`,transformOrigin:fit.crop?'top center':'center center',pointerEvents:'none',userSelect:'none'}}>
-      <div style={{background:C.bg,borderRadius:22,padding:12,border:'1px solid rgba(255,255,255,0.08)'}}>{el}</div>
+      <div key={run} className={fit.crop&&playing&&fit.pan<0?'wp-pan':''} style={{'--wp-pan':`${fit.pan||0}px`}}>
+        <div style={{background:C.bg,borderRadius:22,padding:12,border:'1px solid rgba(255,255,255,0.08)'}}><Body/></div>
+      </div>
     </div>
   </div>;
 }
 
-function _WelcomeTile({tile,k,tileRef}){
+function _WelcomeTile({tile,k,tileRef,active}){
   // Set sizes (px strings, which the reader's text-size setting leaves alone): the slides are
   // designed as a whole, so they look the same for everyone, shrunk together only to fit (k).
   const z=n=>Math.round(n*k)+'px';
   return <div ref={tileRef} style={{flex:'0 0 100%',width:'100%',height:'100%',scrollSnapAlign:'start',overflowY:'auto',boxSizing:'border-box',padding:'8px 24px 12px',display:'flex',flexDirection:'column'}}>
     <div style={{fontSize:z(tile.preview?26:28),fontWeight:800,color:'#fff',fontFamily:C.P,letterSpacing:'-0.8px',lineHeight:1.12}}>{tile.t}</div>
     {tile.d&&<div style={{fontSize:z(15),color:_WELCOME_DIM,fontFamily:C.P,lineHeight:1.45,marginTop:Math.round(8*k)}}>{tile.d}</div>}
-    {tile.preview&&<div style={{flex:1,minHeight:0,display:'flex',flexDirection:'column',paddingTop:Math.round(16*k)}}><_WelcomePreview kind={tile.preview}/></div>}
+    {tile.preview&&<div style={{flex:1,minHeight:0,display:'flex',flexDirection:'column',paddingTop:Math.round(16*k)}}><_WelcomePreview kind={tile.preview} active={active}/></div>}
     {tile.steps&&<div style={{flex:1,display:'flex',flexDirection:'column',justifyContent:'space-evenly',gap:Math.round(18*k),paddingTop:Math.round(18*k)}}>
       {tile.steps.map((s,i)=>(
         <div key={i} style={{display:'flex',gap:Math.round(16*k),flex:1,minHeight:0}}>
@@ -173,6 +249,7 @@ function WelcomeScreen({next,returning}){
 
   return(
     <div style={{flex:1,background:'#0F0F0F',display:'flex',flexDirection:'column',position:'relative',overflow:'hidden'}}>
+      <style>{_WELCOME_CSS}</style>
       <div style={{position:'absolute',top:-80,right:-80,width:300,height:300,borderRadius:150,background:`${C.cr}22`,pointerEvents:'none'}}></div>
       <div style={{position:'absolute',bottom:120,left:-60,width:200,height:200,borderRadius:100,background:`${C.cr}12`,pointerEvents:'none'}}></div>
 
@@ -184,7 +261,7 @@ function WelcomeScreen({next,returning}){
 
       <div ref={track} onScroll={onScroll} aria-roledescription="carousel"
         style={{flex:1,minHeight:0,display:'flex',overflowX:'auto',overflowY:'hidden',scrollSnapType:'x mandatory',scrollbarWidth:'none',position:'relative',zIndex:1}}>
-        {_WELCOME_TILES.map((tile,i)=><_WelcomeTile key={i} tile={tile} k={k} tileRef={el=>{tiles.current[i]=el;}}/>)}
+        {_WELCOME_TILES.map((tile,i)=><_WelcomeTile key={i} tile={tile} k={k} active={page===i} tileRef={el=>{tiles.current[i]=el;}}/>)}
       </div>
 
       <div style={{padding:'10px 28px calc(env(safe-area-inset-bottom) + 20px)',position:'relative',zIndex:1,flexShrink:0}}>

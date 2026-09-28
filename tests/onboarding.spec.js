@@ -262,3 +262,23 @@ test('a new account signed in from the welcome carries on with onboarding; no si
   await root.getByText('Continue without them for now').click();
   await expect(root).toContainText('I\'m of legal drinking age where I live');
 });
+
+// Motion plays when a slide arrives; with reduced motion the previews are finished straight away.
+test('the welcome previews animate, and reduced motion shows them finished at once', async ({ context, page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await makeDeterministic(page);
+  await stubNetwork(context);
+  await page.goto(`${BASE}/`);
+  const previews = page.locator('#root [role="img"]');
+  await expect(previews.nth(0)).toContainText('87%');
+  const anim = await previews.evaluateAll((els) => els.map((e) => [...e.querySelectorAll('*')].some((n) => getComputedStyle(n).animationName !== 'none')));
+  expect(anim).toEqual([false, false, false, false]);
+  const vinny = await previews.nth(2).evaluate((e) => e.querySelector('.wp-caret') === null && e.innerText.includes('stand up to red meat.'));
+  expect(vinny).toBe(true);
+  // With motion: the match counts up from below 87 on arrival.
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await page.reload();
+  const early = await previews.nth(0).evaluate((e) => parseInt(e.innerText.match(/(\d+)%/)[1], 10));
+  expect(early).toBeLessThan(87);
+  await expect(previews.nth(0)).toContainText('87%');
+});

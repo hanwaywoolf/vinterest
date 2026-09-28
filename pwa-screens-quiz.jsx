@@ -554,7 +554,7 @@ function ShelfCard({stub,done,locked,because,onOpen}){
    How rounded their wine knowledge is, from what they've read and passed (KnowledgeMap,
    pwa-knowledge.js): each area's score, level, what counts, and the next thing to do. */
 function MasteryBar({score,col}){
-  return <div style={{height:6,borderRadius:3,background:C.offWhite,overflow:'hidden'}}><div style={{height:'100%',borderRadius:3,background:score>=100?C.green:(col||C.cr),width:`${score}%`,transition:'width .5s ease'}}/></div>;
+  return <div style={{height:6,borderRadius:3,background:C.offWhite,overflow:'hidden'}}><div className="mastery-fill" style={{height:'100%',borderRadius:3,background:score>=100?C.green:(col||C.cr),width:`${score}%`,transition:'width .5s ease'}}/></div>;
 }
 /* One area of the mastery map: its level and score, and (open) each region or grape in it. Also
    the welcome slides' preview (flow-welcome.jsx), open, with no toggle or next step. */
