@@ -68,6 +68,12 @@ const Sync = {
       const s=this._state(); s.times[key]=this._now(); this._save(s); this.schedule();
     }
   },
+  /* A sync works on the state as it was when it started; setting and progress changes made since
+     were recorded on the phone's copy (_onWrite). Takes the later change time of each. */
+  _freshTimes(s){
+    const cur=this._state(); if(cur.user!==s.user) return;
+    Object.entries(cur.times||{}).forEach(([k,t])=>{ if(!(s.times[k]>=t)) s.times[k]=t; });
+  },
   /* Compares the wine list with what the state last saw: changed or new bottles get a change
      time, removed ones a tombstone. */
   _noteWines(s){
@@ -123,6 +129,9 @@ const Sync = {
       }
       if(this._hash(mine)===this._hash(theirs)){ taken[k]=rt; return; }
       if(!dirty){ here.set(k,theirs); taken[k]=rt; return; }
+      // The cloud's copy is the one this phone last sent (every pull overlaps the last one): only
+      // this side has changed, so it stands.
+      if(e.s&&this._hash(theirs)===e.s) return;
       // Changed on both sides: combine, the more recently scanned side's details first.
       const at=w=>new Date(w.last_scanned||w.scanned_at||0).getTime()||0;
       here.set(k,at(mine)>=at(theirs)?WineHistory._merge(mine,theirs):WineHistory._merge(theirs,mine));
@@ -178,6 +187,9 @@ const Sync = {
       const since=s.lastPull?this._iso(this._ms(s.lastPull)-60*1000):null; // a little overlap: rows are idempotent
       const [rows,docs]=await Promise.all([this._pullWines(since),this._rest('user_docs?select=doc_key,data,updated_at')]);
       const doc=k=>{ const d=(docs||[]).find(x=>x.doc_key===k); return d?d.data:null; };
+      // Anything changed on the phone while that downloaded counts as changed here, or the cloud's
+      // older copy would be written over it.
+      this._noteWines(s); this._freshTimes(s);
 
       // Wines
       const {list,taken}=this._mergeWines(s,rows,uid);
@@ -215,6 +227,7 @@ const Sync = {
       s.deleted={};
       const newest=rows.reduce((m,r)=>r.updated_at>m?r.updated_at:m,s.lastPull||'');
       s.lastPull=newest||null; s.lastSynced=this._now(); s.error=null;
+      this._freshTimes(s); // a setting changed during the upload keeps its change time
       this._save(s);
       const changed=JSON.stringify(list)!==before||JSON.stringify(xp)!==JSON.stringify(xpHere);
       this._emit(changed);
