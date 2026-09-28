@@ -81,7 +81,7 @@ const Account = {
     if(!this.signedIn()) return null;
     const t=await this.token(); if(!t) return this.me();
     try{
-      const r=await fetch('/me',{headers:{authorization:'Bearer '+t}});
+      const r=await fetch(Platform.api('/me'),{headers:{authorization:'Bearer '+t}});
       if(r.status===401){ this.signOut({localOnly:true}); return null; }
       if(!r.ok) return this.me();
       const j=await r.json();
@@ -101,7 +101,7 @@ const Account = {
     try{
       const t=await this.token();
       if(!t) return {ok:false,error:'Your sign-in has expired. Sign in again, then delete your account.'};
-      let r; try{ r=await fetch('/account/delete',{method:'POST',headers:{authorization:'Bearer '+t}}); }
+      let r; try{ r=await fetch(Platform.api('/account/delete'),{method:'POST',headers:{authorization:'Bearer '+t}}); }
       catch(e){ return {ok:false,error:'We couldn\'t reach your account. Check your connection and try again.'}; }
       let j=null; try{ j=await r.json(); }catch(e){}
       if(!r.ok){

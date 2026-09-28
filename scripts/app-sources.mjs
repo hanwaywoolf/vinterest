@@ -7,6 +7,7 @@
 // tests/build.spec.js fails if the two drift while bundle.js still exists (files added since,
 // like pwa-winedna.js, are allowed; the ones bundle.js has must stay in its order).
 export const APP_SOURCES = [
+  'pwa-platform.js',
   'claude-bridge.js',
   'pwa-store.js',
   'pwa-textsize.js',

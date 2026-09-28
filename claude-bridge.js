@@ -24,6 +24,8 @@
     window.CLAUDE_PROXY_URL ||
     (meta && meta.getAttribute("content")) ||
     "/claude";
+  // In the Capacitor app there's no server behind the page: a relative endpoint means the live site.
+  if (ENDPOINT.charAt(0) === "/" && typeof Platform !== "undefined") ENDPOINT = Platform.api(ENDPOINT);
 
   function toMessages(arg) {
     if (typeof arg === "string") return [{ role: "user", content: arg }];

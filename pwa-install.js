@@ -31,7 +31,7 @@ const InstallApp = {
      'ios'       Safari: only Share → Add to Home Screen works
      'waiting'   Chrome hasn't offered it (yet): see why() */
   status(){
-    if(this.standalone()) return 'running';
+    if(this.standalone()||(typeof Platform!=='undefined'&&Platform.native())) return 'running'; // the app is installed already
     if(this._installed||this._relatedInstalled) return 'installed';
     if(this._event) return 'available';
     if(this.ios()) return 'ios';
