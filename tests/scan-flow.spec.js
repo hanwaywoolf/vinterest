@@ -299,22 +299,19 @@ test('the deck: sliders move sliders, a flick turns the card, and it ends on rat
   await page.mouse.up();
   await expect(root).toContainText('2 / 9');
   // Jump to the tasting card and play Blind Call: dragging a slider changes the slider, not the card.
-  await page.locator('#root div[style*="scaleX(-1)"]').click();
-  await page.locator('#root div[style*="scaleX(-1)"]').click();
-  await page.locator('#root div[style*="scaleX(-1)"]').click();
-  await page.locator('#root div[style*="scaleX(-1)"]').click();
+  for (let i = 0; i < 4; i++) await page.locator('#root div[style*="scaleX(-1)"]').click();
   await expect(root).toContainText('6 / 9');
   await root.getByText('Tasting it now? Play Blind Call').click();
-  const slider = root.locator('input[type=range]').first();
+  const slider = root.getByRole('slider').first();
   const s = await slider.boundingBox();
   await page.mouse.move(s.x + s.width * 0.5, s.y + s.height / 2);
   await page.mouse.down();
   await page.mouse.move(s.x + s.width * 0.9, s.y + s.height / 2, { steps: 5 });
   await page.mouse.up();
   await expect(root).toContainText('6 / 9');
-  expect(Number(await slider.inputValue())).toBeGreaterThan(70);
+  expect(Number(await slider.getAttribute('aria-valuenow'))).toBeGreaterThan(70);
   // Slider colour follows the wine type (red here).
-  expect(await slider.evaluate((el) => getComputedStyle(el).accentColor)).toBe('rgb(139, 26, 47)');
+  expect(await slider.evaluate((el) => getComputedStyle(el.children[1]).backgroundColor)).toBe('rgb(139, 26, 47)');
   // Last card is the rating; after saving, the end actions sit apart.
   for (let i = 0; i < 3; i++) await page.locator('#root div[style*="scaleX(-1)"]').click();
   await expect(root).toContainText('9 / 9');
@@ -399,14 +396,22 @@ test.describe('the deck on a touch screen', () => {
     for (let i = 0; i < 5; i++) await drag(320, 400, -110, 250);
     await expect(root).toContainText('6 / 9');
     await root.getByText('Tasting it now? Play Blind Call').click();
-    const slider = root.locator('input[type=range]').first();
+    const slider = root.getByRole('slider').first();
     const s = await slider.boundingBox();
     await drag(s.x + s.width * 0.5, s.y + s.height / 2, s.width * 0.4, 300);
     await expect(root).toContainText('6 / 9');
-    expect(Number(await slider.inputValue())).toBeGreaterThan(70);
+    expect(Number(await slider.getAttribute('aria-valuenow'))).toBeGreaterThan(70);
     // From the Blind Call card on, swipe on the card heading (a swipe starting on a slider is the slider's).
     for (let i = 0; i < 3; i++) await drag(320, (await root.getByText(/^(While you taste|Sound clued-in|Price check)$/).first().boundingBox()).y + 5, -110, 250);
     await expect(root).toContainText('9 / 9');
+    // The score slider takes a touch anywhere on it, before any score is picked (iPhone's own
+    // slider only moved from its knob, parked at the far left, so the touch swiped the card).
+    const score = root.getByRole('slider', { name: 'Score' });
+    expect(await score.getAttribute('aria-valuenow')).toBeNull();
+    const b = await score.boundingBox();
+    await drag(b.x + b.width * 0.75, b.y + b.height / 2, b.width * 0.1, 300);
+    await expect(root).toContainText('9 / 9');
+    expect(Number(await score.getAttribute('aria-valuenow'))).toBeGreaterThanOrEqual(88);
     await drag(60, (await root.getByText('How was it?').boundingBox()).y + 5, 110, 250);
     await expect(root).toContainText('8 / 9');
   });
@@ -697,4 +702,28 @@ test('a wine from a wine list gets its tasting notes, pairings and grapes once, 
   await expect(root).toContainText('Toasted brioche and almond');
   expect(claudeRequests.filter((r) => r.purpose === 'wine_details')).toHaveLength(1);
   expect(errors).toEqual([]);
+});
+
+test('a card always opens at its top, going back to one you had scrolled included', async ({ context, page }) => {
+  await page.setViewportSize({ width: 375, height: 600 });
+  await setup(context, page, { label: PRIORAT, seed: { vinterest_text_size: 'xl' } });
+  await page.goto(`${BASE}/?demo=1#camera`);
+  await page.getByTestId('scan-file').setInputFiles({ name: 'label.png', mimeType: 'image/png', buffer: PNG });
+  const root = page.locator('#root');
+  await root.getByText('Learn about it', { exact: true }).click();
+  await expect(root).toContainText('1 / 9');
+  // The card at the top of the deck has the highest z-index.
+  const topScroll = (set) => page.evaluate((set) => {
+    const cards = [...document.querySelectorAll('#root .sc-swipe [style*="z-index"]')].filter((e) => e.querySelector('.sc-scroll'));
+    const el = cards.sort((a, b) => Number(b.style.zIndex) - Number(a.style.zIndex))[0].querySelector('.sc-scroll');
+    if (set != null) el.scrollTop = set;
+    return el.scrollTop;
+  }, set);
+  expect(await topScroll(9999)).toBeGreaterThan(0);
+  await page.locator('#root div[style*="scaleX(-1)"]').click();
+  await expect(root).toContainText('2 / 9');
+  expect(await topScroll()).toBe(0);
+  await root.getByText('2 / 9', { exact: true }).locator('xpath=preceding-sibling::div[1]').click();
+  await expect(root).toContainText('1 / 9');
+  expect(await topScroll()).toBe(0);
 });

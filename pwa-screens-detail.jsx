@@ -185,7 +185,6 @@ function DetailMerged({wine,nav,existingRating=0,match}){
       setShowRatingUI(false);
     }
   }
-  function handleSliderChange(e){ const n=Number(e.target.value); setUserRating(n); pendingScore.current=n; }
   // Preset buttons update slider position only — user taps Save to commit
   function handlePreset(p){ setUserRating(p); pendingScore.current=p; }
 
@@ -341,9 +340,8 @@ function DetailMerged({wine,nav,existingRating=0,match}){
               </div>
             ))}
           </div>
-          <input type="range" min={ParkerScale.MIN} max="100" step="1" value={Math.max(userRating,ParkerScale.MIN)}
-            onChange={handleSliderChange}
-            style={{width:'100%',accentColor:_typeCol(wine),cursor:'pointer',marginBottom:10,display:'block'}}/>
+          <TrackSlider label="Score" min={ParkerScale.MIN} max={100} value={Math.max(userRating,ParkerScale.MIN)} unset={!(userRating>0)}
+            onChange={n=>{ setUserRating(n); pendingScore.current=n; }} col={_typeCol(wine)} style={{marginBottom:10}}/>
           <div style={{textAlign:'center',minHeight:48,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:2}}>
             {userRating>0?(
               <>

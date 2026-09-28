@@ -254,7 +254,7 @@ function ScanStyles(){
          still works); touch-action is decided where the finger lands, so the card alone isn't
          enough. Sliders keep their own drag. */
       .sc-swipe,.sc-swipe *{touch-action:pan-y}
-      .sc-swipe input[type=range]{touch-action:none}
+      .sc-swipe input[type=range],.sc-swipe [role=slider],.sc-swipe [role=slider] *{touch-action:none}
     `}</style>;
 }
 
@@ -729,8 +729,8 @@ function BlindCallPredict({dims,col,onSubmit}){
           <div style={{display:'flex',justifyContent:'space-between',fontSize:12.5,color:C.mid,fontFamily:C.P,marginBottom:6,fontWeight:600,textTransform:'uppercase',letterSpacing:'0.04em'}}>
             <span>{DIM_LO[d]}</span><span style={{color:C.ink,fontWeight:700}}>{DIM_LABEL[d]}</span><span>{DIM_HI[d]}</span>
           </div>
-          <input type="range" min="0" max="100" value={Math.round(vals[d]*100)} style={{width:'100%',accentColor:col||C.cr,cursor:'pointer',display:'block',touchAction:'pan-y'}}
-            onChange={e=>setVals(v=>({...v,[d]:Number(e.target.value)/100}))}/>
+          <TrackSlider label={DIM_LABEL[d]} min={0} max={100} value={Math.round(vals[d]*100)} col={col||C.cr}
+            onChange={n=>setVals(v=>({...v,[d]:n/100}))}/>
         </div>
       ))}
     </div>
@@ -840,6 +840,29 @@ function ValueFace({wine,curr,scanData,accent,soft,expanded}){
 
 /* ── rating: the score, then optional tasting details that sharpen future matches ── */
 /* With `onFinish` (the first scan, inside onboarding) it ends on Continue instead of Keep learning. */
+/* A slider that answers wherever the finger lands on it, not only on the knob. iPhone Safari's
+   own range input only drags from the knob, which sits at the far edge before a score is picked,
+   so a touch that missed it fell through to the card deck as a swipe. touch-action:none and
+   data-noswipe keep the deck out of it; arrow keys work too. unset draws it without a value yet. */
+function TrackSlider({min,max,step=1,value,onChange,col=C.cr,label,unset=false,style}){
+  const ref=React.useRef(null), drag=React.useRef(null);
+  const clamp=v=>Math.min(max,Math.max(min,v));
+  const pct=(clamp(value)-min)/(max-min);
+  function at(x){ const r=ref.current.getBoundingClientRect(); const p=Math.min(1,Math.max(0,(x-r.left)/(r.width||1))); return clamp(Math.round((min+p*(max-min))/step)*step); }
+  function down(e){ if(e.button>0) return; e.stopPropagation(); drag.current=e.pointerId; try{ ref.current.setPointerCapture(e.pointerId); }catch(err){} onChange(at(e.clientX)); }
+  function move(e){ if(drag.current!==e.pointerId) return; e.stopPropagation(); onChange(at(e.clientX)); }
+  function up(e){ if(drag.current===e.pointerId) drag.current=null; }
+  function key(e){ const d={ArrowRight:step,ArrowUp:step,ArrowLeft:-step,ArrowDown:-step}[e.key]; if(d!=null){ e.preventDefault(); onChange(clamp((unset?min:value)+d)); } }
+  const track={position:'absolute',left:0,top:17,height:6,borderRadius:3};
+  return <div ref={ref} role="slider" tabIndex={0} aria-label={label} aria-valuemin={min} aria-valuemax={max} aria-valuenow={unset?undefined:value} data-noswipe
+    onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={up} onKeyDown={key}
+    style={{position:'relative',height:40,touchAction:'none',cursor:'pointer',userSelect:'none',WebkitUserSelect:'none',WebkitTapHighlightColor:'transparent',...style}}>
+    <div style={{...track,right:0,background:C.line}}/>
+    {!unset&&<div style={{...track,width:`${pct*100}%`,background:col}}/>}
+    <div style={{position:'absolute',left:`calc(${pct*100}% - 14px)`,top:6,width:28,height:28,borderRadius:14,background:'#fff',border:`2px solid ${unset?C.mid:col}`,boxShadow:'0 1px 5px rgba(0,0,0,0.22)',boxSizing:'border-box'}}/>
+  </div>;
+}
+
 function RatingPanel({wine,existingRating,nav,showPro,curr,onRated,onSaveForLater,onStage,onFinish}){
   const [score,setScore]=React.useState(existingRating||0);
   const [saved,setSaved]=React.useState(false);
@@ -893,7 +916,7 @@ function RatingPanel({wine,existingRating,nav,showPro,curr,onRated,onSaveForLate
         </div>
       ))}
     </div>
-    <input type="range" min={ParkerScale.MIN} max="100" step="1" value={Math.max(score,ParkerScale.MIN)} onChange={e=>setScore(Number(e.target.value))} style={{width:'100%',accentColor:tc,cursor:'pointer'}}/>
+    <TrackSlider label="Score" min={ParkerScale.MIN} max={100} value={Math.max(score,ParkerScale.MIN)} unset={!(score>0)} onChange={setScore} col={tc}/>
     <div style={{textAlign:'center',minHeight:40}}>
       {score>0?<div style={{display:'flex',flexDirection:'column',alignItems:'center'}}>
         <div style={{display:'flex',alignItems:'baseline',gap:3}}><span style={{fontSize:34,fontWeight:800,color:tc,fontFamily:C.P,lineHeight:1}}>{score}</span><span style={{fontSize:13,fontWeight:700,color:C.mid,fontFamily:C.P}}>pts</span></div>
@@ -1074,7 +1097,7 @@ function CardDeck({deckStyle,wine,gen,loading,match,curr,scanData,existingRating
 /* shared card chrome */
 /* The last card's label follows the rating step: Rate it, then Your score, then Keep learning. */
 const _FINISH_HEAD={rate:null,saved:{eyebrow:'Your score',icon:'check'},next:{eyebrow:'Keep learning',icon:'book'}};
-function CardShell({card,children,ctx,style}){
+function CardShell({card,children,ctx,style,active}){
   const isFinish=card.kind==='finish';
   const head=(isFinish&&ctx&&_FINISH_HEAD[ctx.finishStage])||card;
   // Long text (a producer story at Extra large) scrolls inside the card; a fade at the bottom
@@ -1082,6 +1105,9 @@ function CardShell({card,children,ctx,style}){
   const body=React.useRef(null);
   const [more,setMore]=React.useState(false);
   const check=React.useCallback(()=>{ const el=body.current; if(el) setMore(el.scrollHeight-el.scrollTop-el.clientHeight>6); },[]);
+  // A card always opens at its top: when it comes to the top of the deck (going back to one you'd
+  // scrolled included), and when the last card moves on from rating to Your score to Keep learning.
+  React.useLayoutEffect(()=>{ const el=body.current; if(el&&active!==false) el.scrollTop=0; check(); },[active,ctx&&ctx.finishStage,check]);
   React.useEffect(()=>{ check(); const el=body.current; if(!el||typeof ResizeObserver==='undefined') return;
     const ro=new ResizeObserver(check); ro.observe(el); if(el.firstElementChild) ro.observe(el.firstElementChild); return()=>ro.disconnect(); },[check]);
   return <div style={{background:C.white,borderRadius:22,border:`1px solid ${C.line}`,boxShadow:'0 6px 22px rgba(0,0,0,0.08)',display:'flex',flexDirection:'column',overflow:'hidden',...style}}>
@@ -1161,7 +1187,7 @@ function SwipeDeck({deck,ctx,idx,setIdx,go}){
           onPointerDown={isTop?onPointerDown:undefined} onPointerMove={isTop?onPointerMove:undefined} onPointerUp={isTop?onPointerUp:undefined} onPointerCancel={isTop?onPointerUp:undefined}
           onClickCapture={isTop?(e=>{ if(justDragged.current){ e.stopPropagation(); e.preventDefault(); } }):undefined}
           style={{position:'absolute',inset:0,zIndex:10-depth,transform:tf,transition:'transform .3s cubic-bezier(.34,1.1,.64,1)',opacity:depth>1?0:1,cursor:isTop?'grab':'default',userSelect:isTop&&!isFinish?'none':'auto',WebkitUserSelect:isTop&&!isFinish?'none':'auto',WebkitTouchCallout:isTop&&!isFinish?'none':'default'}}>
-          <CardShell card={cc} ctx={ctx} style={{height:'100%'}}>
+          <CardShell card={cc} ctx={ctx} style={{height:'100%'}} active={isTop}>
             <CardFace card={c} ctx={ctx}/>
           </CardShell>
           {isTop&&Math.abs(drag.dx)>40&&<div style={{position:'absolute',top:24,[drag.dx<0?'right':'left']:24,padding:'6px 14px',borderRadius:10,border:`2.5px solid ${C.mid}`,color:C.mid,fontSize:15,fontWeight:800,fontFamily:C.P,transform:`rotate(${drag.dx<0?12:-12}deg)`,background:'rgba(255,255,255,0.9)',letterSpacing:'0.05em'}}>{drag.dx<0?'NEXT':'BACK'}</div>}
@@ -1205,4 +1231,4 @@ function Feed({cards,ctx}){
   </div>;
 }
 
-Object.assign(window,{ScanCardsScreen});
+Object.assign(window,{TrackSlider,ScanCardsScreen});
