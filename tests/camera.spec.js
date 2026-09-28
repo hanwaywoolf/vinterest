@@ -26,3 +26,12 @@ test('the tip fades back to "Frame the wine label"', async ({ context, page }) =
   await expect(page.locator('#root').getByText('Or pick a photo from your gallery')).toBeVisible();
   await expect(page.locator('#root').getByText('Frame the wine label')).toBeVisible({ timeout: 8000 });
 });
+
+test('the camera preview has a blank poster and appears once the picture arrives (no Android play button)', async ({ context, page }) => {
+  await stubNetwork(context);
+  await seedLocalStorage(page, { vinterest_onboarded: '1', vinterest_region: 'uk' });
+  await page.goto(`${BASE}/#camera`);
+  const video = page.locator('#root video');
+  expect(await video.getAttribute('poster')).toMatch(/^data:image\/gif/);
+  await expect(video).toHaveCSS('opacity', '0.88');
+});
