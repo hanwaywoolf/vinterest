@@ -260,7 +260,7 @@ function HomeScreen({nav, showPro, isTablet}){
           </div>
           <img src="logo.png" alt="Vinterest" style={{height:28,width:'auto',display:'block',cursor:'pointer'}} onClick={()=>{
             // Tapping the logo checks for a new version of the app (and shows the update banner).
-            if(!('serviceWorker' in navigator)) return;
+            if(!('serviceWorker' in navigator)||Platform.native()) return;
             navigator.serviceWorker.getRegistration().then(function(reg){
               if(!reg) return;
               reg.update().then(function(){

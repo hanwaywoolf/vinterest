@@ -75,7 +75,7 @@ function App(){
   },[]);
 
   // Signed in: fetch the server's word on Pro and this week's usage (Account caches it).
-  React.useEffect(()=>{ if(Account.signedIn()) Account.refreshMe(); },[]);
+  React.useEffect(()=>{ Platform.start(); if(Account.signedIn()) Account.refreshMe(); },[]);
   // Pro can change with sign-in or sign-out; re-render so gates follow.
   const [,setAcctTick]=React.useState(0);
   React.useEffect(()=>{ const h=()=>setAcctTick(t=>t+1); window.addEventListener('vinterest:account',h); return()=>window.removeEventListener('vinterest:account',h); },[]);

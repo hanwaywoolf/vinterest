@@ -105,6 +105,9 @@
 <script data-cfasync="false">
 (function(){
   if(!('serviceWorker' in navigator)) return;
+  // The Capacitor app ships every file inside it: no service worker (Capacitor's bridge is injected
+  // before this runs).
+  if(window.Capacitor&&window.Capacitor.isNativePlatform&&window.Capacitor.isNativePlatform()) return;
 
   function showBanner(reg){
     var banner = document.getElementById('vinterest-update-banner');
@@ -190,6 +193,7 @@
 <script>
   // iOS install prompt hint (shown once)
   window.addEventListener('load',()=>{
+    if(window.Capacitor&&window.Capacitor.isNativePlatform&&window.Capacitor.isNativePlatform()) return; // already an app
     const isIOS=/iphone|ipad|ipod/i.test(navigator.userAgent);
     const isStandalone=window.matchMedia('(display-mode:standalone)').matches||window.navigator.standalone;
     const shown=localStorage.getItem('vinterest_install_hint');

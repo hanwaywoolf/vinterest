@@ -10,13 +10,27 @@
    from Cloudflare's SUPABASE_URL and SUPABASE_PUBLISHABLE_KEY (window.VINTEREST_SUPABASE lets a
    test set them). Without them, sign-in simply isn't offered. */
 const Account = {
-  SESSION_KEY:'vinterest_session', ME_KEY:'vinterest_me',
+  SESSION_KEY:'vinterest_session', ME_KEY:'vinterest_me', REMOTE_KEY:'vinterest_remote_config',
   REFRESH_EARLY_S:60,
 
   config(){
     const built=typeof __SUPABASE__!=='undefined'?__SUPABASE__:null;
-    const c=built||(typeof window!=='undefined'&&window.VINTEREST_SUPABASE)||null;
+    const c=built||(typeof window!=='undefined'&&window.VINTEREST_SUPABASE)||Store.getJSON(this.REMOTE_KEY,null)||null;
     return c&&c.url&&c.key?c:null;
+  },
+  /* A build without the sign-in settings (the app's CI build, say) asks the live site's Worker for
+     them (/config: the public project URL and publishable key) and keeps them on this device only.
+     Sign-in then appears (vinterest:account). */
+  async loadRemoteConfig(){
+    if(this.config()) return this.config();
+    try{
+      const r=await fetch(Platform.api('/config')); if(!r.ok) return null;
+      const j=await r.json(), c=j&&j.supabase;
+      if(!c||!c.url||!c.key) return null;
+      Store.setJSON(this.REMOTE_KEY,{url:String(c.url).replace(/\/+$/,''),key:String(c.key)});
+      this._emit();
+      return this.config();
+    }catch(e){ return null; }
   },
   available(){ return !!this.config(); },
   session(){ return Store.getJSON(this.SESSION_KEY,null); },
@@ -81,7 +95,7 @@ const Account = {
     if(!this.signedIn()) return null;
     const t=await this.token(); if(!t) return this.me();
     try{
-      const r=await fetch('/me',{headers:{authorization:'Bearer '+t}});
+      const r=await fetch(Platform.api('/me'),{headers:{authorization:'Bearer '+t}});
       if(r.status===401){ this.signOut({localOnly:true}); return null; }
       if(!r.ok) return this.me();
       const j=await r.json();
@@ -101,7 +115,7 @@ const Account = {
     try{
       const t=await this.token();
       if(!t) return {ok:false,error:'Your sign-in has expired. Sign in again, then delete your account.'};
-      let r; try{ r=await fetch('/account/delete',{method:'POST',headers:{authorization:'Bearer '+t}}); }
+      let r; try{ r=await fetch(Platform.api('/account/delete'),{method:'POST',headers:{authorization:'Bearer '+t}}); }
       catch(e){ return {ok:false,error:'We couldn\'t reach your account. Check your connection and try again.'}; }
       let j=null; try{ j=await r.json(); }catch(e){}
       if(!r.ok){

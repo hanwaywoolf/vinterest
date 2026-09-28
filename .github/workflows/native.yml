@@ -1,0 +1,72 @@
+# Builds the Capacitor apps on every pull request and on main (docs/native-migration-spec.md step 8),
+# so a change that breaks the native build shows up straight away:
+#   - ios: on a GitHub Mac (free for this public repo), an unsigned iPhone build, kept as the
+#     "Vinterest-ios-unsigned" artifact (an .ipa: signing comes with the Apple Developer account).
+#   - android: a debug .apk, kept as "Vinterest-android-debug", installable on any Android phone.
+# The native projects are generated here from capacitor.config.json by scripts/native.mjs, never
+# committed. Sign-in is built in when the repository has SUPABASE_URL and SUPABASE_PUBLISHABLE_KEY
+# set as Actions variables (both are public); without them the apps fetch them from the live site's
+# /config when they open (Account.loadRemoteConfig).
+name: Native apps
+on:
+  pull_request:
+  push:
+    branches: [main]
+concurrency:
+  group: native-${{ github.ref }}
+  cancel-in-progress: true
+env:
+  SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+  SUPABASE_PUBLISHABLE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
+jobs:
+  ios:
+    runs-on: macos-15
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - run: node scripts/native.mjs ios
+      - name: Build (unsigned, for iPhone)
+        run: |
+          xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Release \
+            -sdk iphoneos -destination 'generic/platform=iOS' -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" build
+      - name: Package .ipa
+        run: |
+          mkdir -p Payload
+          cp -R build/Build/Products/Release-iphoneos/App.app Payload/
+          zip -qr Vinterest-ios-unsigned.ipa Payload
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Vinterest-ios-unsigned
+          path: Vinterest-ios-unsigned.ipa
+          retention-days: 14
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - run: npm ci
+      - run: npm run build
+      - run: node scripts/native.mjs android
+      - name: Build debug .apk
+        working-directory: android
+        run: ./gradlew assembleDebug --no-daemon
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Vinterest-android-debug
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 14

@@ -12,6 +12,8 @@ const TextSize = {
   KEY:'vinterest_text_size',
   MIN:13,
   SIZES:[{id:'standard',label:'Standard',scale:1},{id:'large',label:'Large',scale:1.1},{id:'xl',label:'Extra large',scale:1.2}],
+  /* Whether the reader has picked a size (or the app has, from the phone's own setting). */
+  chosen(){ try{ return !!Store.get(this.KEY); }catch(e){ return false; } },
   get(){ let id=null; try{ id=Store.get(this.KEY); }catch(e){} return this.SIZES.find(s=>s.id===id)||this.SIZES[0]; },
   _scale:null,
   scale(){ if(this._scale==null) this._scale=this.get().scale; return this._scale; },

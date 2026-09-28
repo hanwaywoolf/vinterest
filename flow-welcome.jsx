@@ -305,6 +305,9 @@ function WelcomeScreen({next,returning}){
     const flick=performance.now()-d.lt<120?d.v:0;
     goTo(clampPage(moved>60||flick<-0.35?page+1:moved<-60||flick>0.35?page-1:page));
   }
+  // The app may learn its sign-in settings after opening (Account.loadRemoteConfig): show Sign in then.
+  const [,tick]=React.useState(0);
+  React.useEffect(()=>{ const h=()=>tick(t=>t+1); window.addEventListener('vinterest:account',h); return()=>window.removeEventListener('vinterest:account',h); },[]);
   // A rotated or resized screen keeps the current slide in place.
   React.useEffect(()=>{ const h=()=>{ const el=track.current; if(el) el.scrollLeft=page*el.clientWidth; }; window.addEventListener('resize',h); return()=>window.removeEventListener('resize',h); },[page]);
   const wheelLock=React.useRef(0);

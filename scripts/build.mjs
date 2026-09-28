@@ -80,6 +80,13 @@ async function buildVendor() {
         'window.React = React;',
         // The old UMD build put createRoot on ReactDOM itself; the app calls ReactDOM.createRoot.
         'window.ReactDOM = Object.assign({}, ReactDOM, ReactDOMClient);',
+        // The Capacitor bridge and the plugins the app uses (Platform, pwa-platform.js). On the web
+        // they sit unused: Capacitor.isNativePlatform() is false.
+        "import { Capacitor } from '@capacitor/core';",
+        "import { Share } from '@capacitor/share';",
+        "import { Filesystem } from '@capacitor/filesystem';",
+        "import { TextZoom } from '@capacitor/text-zoom';",
+        'window.VinterestNative = { Capacitor, Share, Filesystem, TextZoom };',
       ].join('\n'),
       resolveDir: ROOT,
       sourcefile: 'vendor-react.js',
@@ -94,6 +101,9 @@ async function buildVendor() {
   return result.outputFiles[0].text;
 }
 
+// The Capacitor app has no server behind it: it calls the Worker on the live site (Platform.api).
+const API_ORIGIN = JSON.stringify((process.env.VINTEREST_API_ORIGIN || 'https://vinterest.pages.dev').replace(/\/+$/, ''));
+
 // Sign-in (pwa-account.js): the project URL and publishable key are public, and come from
 // Cloudflare's build variables. Without both, the app is built without sign-in.
 const SUPABASE_CONFIG = JSON.stringify(process.env.SUPABASE_URL && process.env.SUPABASE_PUBLISHABLE_KEY
@@ -104,7 +114,7 @@ async function transformSource(file, version) {
     loader: file.endsWith('.jsx') ? 'jsx' : 'js',
     jsx: 'transform', // classic JSX, against the global React
     jsxFactory: '_h', // React.createElement with the reader's text size (pwa-textsize.js)
-    define: { __APP_VERSION__: JSON.stringify(version), __SUPABASE__: SUPABASE_CONFIG },
+    define: { __APP_VERSION__: JSON.stringify(version), __SUPABASE__: SUPABASE_CONFIG, __API_ORIGIN__: API_ORIGIN },
     sourcefile: file,
     charset: 'utf8',
   });
