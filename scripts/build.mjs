@@ -44,7 +44,7 @@ const LOADER_CALL = /\b_load(?:JSON|TextSync|Text)\(\s*([^)]*?)\s*\)/g;
 
 // Every loader call must pass a string literal so the file can be inlined here. The loaders'
 // own bodies pass their `path` parameter through, which is the one allowed exception.
-function collectAssetPaths(files) {
+export function collectAssetPaths(files) {
   const paths = new Set();
   for (const file of files) {
     const src = read(file);
@@ -59,7 +59,7 @@ function collectAssetPaths(files) {
   return [...paths].sort();
 }
 
-function inlineAssets(paths) {
+export function inlineAssets(paths) {
   const assets = {};
   for (const p of paths) {
     if (!fs.existsSync(path.join(ROOT, p))) throw new Error(`Loader references ${p}, which does not exist`);
@@ -109,7 +109,7 @@ const API_ORIGIN = JSON.stringify((process.env.VINTEREST_API_ORIGIN || 'https://
 const SUPABASE_CONFIG = JSON.stringify(process.env.SUPABASE_URL && process.env.SUPABASE_PUBLISHABLE_KEY
   ? { url: process.env.SUPABASE_URL.replace(/\/+$/, ''), key: process.env.SUPABASE_PUBLISHABLE_KEY } : null);
 
-async function transformSource(file, version) {
+export async function transformSource(file, version) {
   const { code } = await esbuild.transform(read(file), {
     loader: file.endsWith('.jsx') ? 'jsx' : 'js',
     jsx: 'transform', // classic JSX, against the global React
@@ -129,8 +129,8 @@ const FONTS = [
   ['instrument-serif', ['400', '400-italic']],
 ];
 const FONT_SUBSETS = /\/\* [a-z-]+-(latin|latin-ext)-\d+-(normal|italic) \*\/\n@font-face \{[\s\S]*?\n\}/g;
-function buildFonts() {
-  const dir = path.join(OUT, 'fonts');
+export function buildFonts(outDir = OUT) {
+  const dir = path.join(outDir, 'fonts');
   fs.mkdirSync(dir, { recursive: true });
   const css = [];
   for (const [family, styles] of FONTS) {

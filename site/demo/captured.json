@@ -1,0 +1,8 @@
+{
+  "_about": "Claude's own text for the website demos (site/demo/demos.jsx), written for the imaginary sample user in data/onboarding-sample.json and captured by npm run site:capture through the live /claude proxy. Nothing here is read from a real user or fetched at runtime.",
+  "answers": {
+    "winedna_summary": "{\"style\":\"You reach for medium-bodied, dry reds with balanced tannins and acidity — wines built on harmony rather than power or intensity.\",\"love\":\"Your top scores cluster around softer-tannin, lighter reds from Rioja and the Rhône — seek out Tempranillo and Grenache for your next outstanding bottle.\"}",
+    "sommelier_long": "\"I tend to gravitate toward Rioja Reservas — particularly the classic Haro producers like Ardanza, Tondonia, and Imperial — though I also enjoy the southern Rhône occasionally. I'm usually happy spending somewhere in the £20–£45 GBP range for a bottle with some age and structure.\""
+  },
+  "captured": "2026-09-28"
+}
