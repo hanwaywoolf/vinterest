@@ -69,7 +69,7 @@ test('the page background matches the bottom of the screen: dark on the welcome 
   await makeDeterministic(page);
   await stubNetwork(context);
   await page.goto(`${BASE}/#home`); // first visit: onboarding opens on the dark welcome screen
-  await expect(page.locator('#root')).toContainText('Know you\'ll love it before you pour');
+  await expect(page.locator('#root')).toContainText('Scan a bottle. Know if it\'s for you.');
   const dark = await page.evaluate(async () => { await new Promise((r) => setTimeout(r, 500)); return getComputedStyle(document.body).backgroundColor; });
   const lum = (c) => { const [r, g, b] = c.match(/\d+/g).map(Number); return (r + g + b) / 3; };
   expect(lum(dark), `welcome page background ${dark}`).toBeLessThan(80);

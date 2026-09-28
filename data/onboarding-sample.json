@@ -1,0 +1,437 @@
+{
+  "_about": "The one imaginary user the welcome slides show (flow-welcome.jsx). A red drinker who loves Rioja and is branching into the Rhône. 'user' is written by hand; 'slides' is what the app's own engines (WineDNA.profile, TasteMatch.assess, ContentEngine.because, KnowledgeMap) produce from it, captured by scripts/onboarding-sample.mjs. Regenerate with: npm run sample:onboarding. Nothing here is read from a real user or fetched at runtime.",
+  "user": {
+    "currency": "GBP",
+    "wines": [
+      {
+        "name": "Viña Ardanza Reserva",
+        "producer": "La Rioja Alta",
+        "vintage": 2016,
+        "type": "Red",
+        "country": "Spain",
+        "region": "Rioja",
+        "grapes": [
+          "Tempranillo",
+          "Garnacha"
+        ],
+        "body": 0.62,
+        "tannins": 0.5,
+        "acidity": 0.62,
+        "sweetness": 0.04,
+        "rating": 94,
+        "buy_again": true,
+        "price_paid": {
+          "amount": 32,
+          "code": "GBP"
+        }
+      },
+      {
+        "name": "Imperial Reserva",
+        "producer": "CVNE",
+        "vintage": 2018,
+        "type": "Red",
+        "country": "Spain",
+        "region": "Rioja",
+        "grapes": [
+          "Tempranillo"
+        ],
+        "body": 0.64,
+        "tannins": 0.52,
+        "acidity": 0.6,
+        "sweetness": 0.03,
+        "rating": 93,
+        "price_paid": {
+          "amount": 35,
+          "code": "GBP"
+        }
+      },
+      {
+        "name": "Viña Tondonia Reserva",
+        "producer": "López de Heredia",
+        "vintage": 2011,
+        "type": "Red",
+        "country": "Spain",
+        "region": "Rioja",
+        "grapes": [
+          "Tempranillo",
+          "Garnacha"
+        ],
+        "body": 0.5,
+        "tannins": 0.45,
+        "acidity": 0.72,
+        "sweetness": 0.03,
+        "rating": 92,
+        "price_paid": {
+          "amount": 45,
+          "code": "GBP"
+        }
+      },
+      {
+        "name": "Muga Reserva",
+        "producer": "Bodegas Muga",
+        "vintage": 2019,
+        "type": "Red",
+        "country": "Spain",
+        "region": "Rioja",
+        "grapes": [
+          "Tempranillo"
+        ],
+        "body": 0.66,
+        "tannins": 0.55,
+        "acidity": 0.58,
+        "sweetness": 0.04,
+        "rating": 91,
+        "buy_again": true,
+        "price_paid": {
+          "amount": 22,
+          "code": "GBP"
+        }
+      },
+      {
+        "name": "Châteauneuf-du-Pape La Crau",
+        "producer": "Domaine du Vieux Télégraphe",
+        "vintage": 2019,
+        "type": "Red",
+        "country": "France",
+        "region": "Châteauneuf-du-Pape",
+        "grapes": [
+          "Grenache",
+          "Syrah",
+          "Mourvèdre"
+        ],
+        "body": 0.72,
+        "tannins": 0.5,
+        "acidity": 0.52,
+        "sweetness": 0.05,
+        "rating": 91,
+        "price_paid": {
+          "amount": 48,
+          "code": "GBP"
+        }
+      },
+      {
+        "name": "Reserva",
+        "producer": "Marqués de Murrieta",
+        "vintage": 2018,
+        "type": "Red",
+        "country": "Spain",
+        "region": "Rioja",
+        "grapes": [
+          "Tempranillo"
+        ],
+        "body": 0.66,
+        "tannins": 0.54,
+        "acidity": 0.6,
+        "sweetness": 0.04,
+        "rating": 90,
+        "price_paid": {
+          "amount": 24,
+          "code": "GBP"
+        }
+      },
+      {
+        "name": "Catena Malbec",
+        "producer": "Catena Zapata",
+        "vintage": 2021,
+        "type": "Red",
+        "country": "Argentina",
+        "region": "Mendoza",
+        "grapes": [
+          "Malbec"
+        ],
+        "body": 0.72,
+        "tannins": 0.6,
+        "acidity": 0.5,
+        "sweetness": 0.05,
+        "rating": 89,
+        "price_paid": {
+          "amount": 16,
+          "code": "GBP"
+        }
+      },
+      {
+        "name": "Côtes du Rhône Rouge",
+        "producer": "E. Guigal",
+        "vintage": 2020,
+        "type": "Red",
+        "country": "France",
+        "region": "Côtes du Rhône",
+        "grapes": [
+          "Grenache",
+          "Syrah",
+          "Mourvèdre"
+        ],
+        "body": 0.6,
+        "tannins": 0.56,
+        "acidity": 0.52,
+        "sweetness": 0.05,
+        "rating": 88,
+        "price_paid": {
+          "amount": 14,
+          "code": "GBP"
+        }
+      },
+      {
+        "name": "Crianza",
+        "producer": "Bodegas Montecillo",
+        "vintage": 2019,
+        "type": "Red",
+        "country": "Spain",
+        "region": "Rioja",
+        "grapes": [
+          "Tempranillo"
+        ],
+        "body": 0.55,
+        "tannins": 0.5,
+        "acidity": 0.58,
+        "sweetness": 0.04,
+        "rating": 86,
+        "price_paid": {
+          "amount": 11,
+          "code": "GBP"
+        }
+      },
+      {
+        "name": "Barolo",
+        "producer": "Pio Cesare",
+        "vintage": 2017,
+        "type": "Red",
+        "country": "Italy",
+        "region": "Barolo",
+        "grapes": [
+          "Nebbiolo"
+        ],
+        "body": 0.7,
+        "tannins": 0.9,
+        "acidity": 0.75,
+        "sweetness": 0.02,
+        "rating": 82,
+        "price_paid": {
+          "amount": 48,
+          "code": "GBP"
+        }
+      },
+      {
+        "name": "Bin 407 Cabernet Sauvignon",
+        "producer": "Penfolds",
+        "vintage": 2019,
+        "type": "Red",
+        "country": "Australia",
+        "region": "South Australia",
+        "grapes": [
+          "Cabernet Sauvignon"
+        ],
+        "body": 0.82,
+        "tannins": 0.8,
+        "acidity": 0.5,
+        "sweetness": 0.06,
+        "rating": 80,
+        "price_paid": {
+          "amount": 25,
+          "code": "GBP"
+        }
+      },
+      {
+        "name": "Côte-Rôtie Brune et Blonde",
+        "producer": "E. Guigal",
+        "vintage": 2018,
+        "type": "Red",
+        "country": "France",
+        "region": "Côte-Rôtie",
+        "grapes": [
+          "Syrah",
+          "Viognier"
+        ],
+        "body": 0.75,
+        "tannins": 0.72,
+        "acidity": 0.6,
+        "sweetness": 0.03,
+        "scan_intent": "checking"
+      }
+    ],
+    "scanned": {
+      "name": "Crozes-Hermitage",
+      "producer": "Alain Graillot",
+      "vintage": 2021,
+      "type": "Red",
+      "country": "France",
+      "region": "Crozes-Hermitage",
+      "grapes": [
+        "Syrah"
+      ],
+      "body": 0.66,
+      "tannins": 0.68,
+      "acidity": 0.64,
+      "sweetness": 0.03,
+      "price_usd": 38
+    },
+    "vinny": [
+      {
+        "q": "Steak tonight. What should I look for?",
+        "a": "Try a Malbec. It has the ripe dark fruit you always score highly, and enough grip to stand up to red meat."
+      }
+    ],
+    "article": {
+      "archetype": "beyond_region",
+      "slots": {
+        "regionB": "Rioja",
+        "region": "Rhône Valley"
+      }
+    },
+    "grapes": [
+      {
+        "name": "Tempranillo",
+        "quiz": 1,
+        "reads": 1
+      },
+      {
+        "name": "Grenache",
+        "quiz": 0.6,
+        "reads": 0
+      },
+      {
+        "name": "Syrah",
+        "quiz": 0.2,
+        "reads": 0
+      },
+      {
+        "name": "Malbec",
+        "quiz": 0,
+        "reads": 0
+      }
+    ]
+  },
+  "slides": {
+    "match": {
+      "pct": 87,
+      "tone": "good",
+      "label": "A good bet",
+      "expected": 87,
+      "expectedLabel": "Very good",
+      "chance": 53,
+      "reasons": [
+        {
+          "tone": "good",
+          "text": "Syrah: you've scored 2, averaging 90."
+        },
+        {
+          "tone": "bad",
+          "text": "Tannins: your 90+ reds lean softer-tannin; this one doesn't."
+        }
+      ]
+    },
+    "dna": {
+      "key": "red",
+      "label": "Reds",
+      "personality": "Classic & Balanced",
+      "basis": "loved",
+      "lovedCount": 6,
+      "wineCount": 12,
+      "scoredCount": 11,
+      "confidence": {
+        "n": 11,
+        "level": "good",
+        "next": "Score 1 more to firm it up",
+        "unscored": 1
+      },
+      "chips": [
+        {
+          "label": "Top grape",
+          "value": "Tempranillo"
+        },
+        {
+          "label": "Most scanned",
+          "value": "Rioja"
+        },
+        {
+          "label": "Top-scoring region",
+          "value": "Rioja · 91"
+        }
+      ],
+      "axes": [
+        "body",
+        "tannins",
+        "acidity"
+      ],
+      "avg": {
+        "body": 0.6536363636363636,
+        "tannins": 0.5836363636363637,
+        "acidity": 0.59,
+        "sweetness": 0.04090909090909091
+      },
+      "lovedAvg": {
+        "body": 0.6333333333333333,
+        "tannins": 0.51,
+        "acidity": 0.6066666666666667,
+        "sweetness": 0.03833333333333334
+      },
+      "axisNotes": {
+        "body": "The reds you choose are medium on average, from Viña Tondonia Reserva at the lighter end to Bin 407 Cabernet Sauvignon at the fuller end. Your Outstanding ones lean lighter.",
+        "tannins": "The reds you choose are medium on average, from Viña Tondonia Reserva at the softer-tannin end to Barolo at the firmer-tannin end. Your Outstanding ones lean softer-tannin.",
+        "acidity": "The reds you choose are medium on average, from Bin 407 Cabernet Sauvignon at the softer-acid end to Barolo at the fresher end.",
+        "sweetness": "The reds you choose are bone dry on average, from Barolo at the drier end to Bin 407 Cabernet Sauvignon at the sweeter end."
+      },
+      "sweetSpot": "£20–£45 GBP"
+    },
+    "vinny": [
+      {
+        "q": "Steak tonight. What should I look for?",
+        "a": "Try a Malbec. It has the ripe dark fruit you always score highly, and enough grip to stand up to red meat."
+      }
+    ],
+    "article": {
+      "id": "sample",
+      "title": "From Rioja to Rhône Valley",
+      "subtitle": "You know Rioja. Here's what changes in Rhône Valley",
+      "iconName": "globe",
+      "readTime": "3 min",
+      "series": null,
+      "slots": {
+        "region": "Rhône Valley"
+      },
+      "because": "Because you gave Viña Ardanza Reserva a 94"
+    },
+    "mastery": {
+      "id": "grapes",
+      "group": "places",
+      "label": "Grapes",
+      "score": 35,
+      "level": "Developing",
+      "next": {
+        "label": "Next: the Malbec quiz",
+        "nav": "learn"
+      },
+      "items": [
+        {
+          "name": "Tempranillo",
+          "score": 85,
+          "level": "Confident",
+          "quiz": 100,
+          "reads": 1
+        },
+        {
+          "name": "Grenache",
+          "score": 42,
+          "level": "Developing",
+          "quiz": 60,
+          "reads": 0
+        },
+        {
+          "name": "Syrah",
+          "score": 14,
+          "level": "Getting started",
+          "quiz": 20,
+          "reads": 0
+        },
+        {
+          "name": "Malbec",
+          "score": 0,
+          "level": "Not started",
+          "quiz": 0,
+          "reads": 0
+        }
+      ],
+      "detail": "4 of 50 unlocked · 3 studied"
+    }
+  }
+}

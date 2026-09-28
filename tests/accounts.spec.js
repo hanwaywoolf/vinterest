@@ -278,7 +278,7 @@ test('delete the account from Profile: confirm, then the server deletes it and t
   // Then it goes through: signed out, nothing of Vinterest left on the phone, back to the welcome.
   fail = false;
   await dialog.getByText('Delete my account').click();
-  await expect(page.locator('#root')).toContainText('Know you\'ll love it before you pour');
+  await expect(page.locator('#root')).toContainText('Scan a bottle. Know if it\'s for you.');
   expect(calls).toEqual(['Bearer acc-1', 'Bearer acc-1']);
   const left = await page.evaluate(() => [...Store.keys('vinterest_'), ...Store.keys('vinterest_', { session: true })]);
   // XP writes a fresh, empty record the moment the new start reads it; everything else is gone.

@@ -8,7 +8,8 @@
     "serve": "node scripts/serve.mjs dist 4173",
     "test": "playwright test",
     "test:smoke": "playwright test tests/smoke.spec.js",
-    "test:db": "node scripts/test-db.mjs"
+    "test:db": "node scripts/test-db.mjs",
+    "sample:onboarding": "npm run build && node scripts/onboarding-sample.mjs"
   },
   "keywords": [
     "wine",

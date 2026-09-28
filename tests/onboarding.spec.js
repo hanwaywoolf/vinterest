@@ -136,32 +136,79 @@ test('the first scan tells the bottle\'s story and shows what Vinterest will do 
   expect(errors).toEqual([]);
 });
 
-// The welcome: four tiles to swipe through (or Next), Skip to the last, then the scan. Every tile
-// fits the smallest phone at Extra large text without scrolling.
-test('the welcome tiles: Next through four, Skip to the last, and each fits a small phone, at set sizes Extra large doesn\'t change', async ({ context, page }) => {
-  await page.setViewportSize({ width: 375, height: 667 });
+// The welcome: five slides to swipe through (or Next), Skip to the last, then the scan. Each of
+// the first four shows a preview of the real screen, fed the sample user in
+// data/onboarding-sample.json; every slide fits a small and a tall phone without scrolling.
+const WELCOME_TITLES = ['Scan a bottle. Know if it\'s for you.', 'Every bottle builds your WineDNA', 'The right wine, wherever you\'re buying',
+  'Find out why you like what you like', 'It gets better with every bottle'];
+for (const [w, h] of [[360, 640], [430, 932]]) {
+  test(`the welcome slides at ${w}x${h}: Next through five, previews that fit, Skip to the last`, async ({ context, page }) => {
+    const errors = collectErrors(page);
+    await page.setViewportSize({ width: w, height: h });
+    await makeDeterministic(page);
+    await stubNetwork(context);
+    await page.goto(`${BASE}/`);
+    const root = page.locator('#root');
+    await expect(root.getByText(WELCOME_TITLES[0])).toBeInViewport();
+    for (const title of WELCOME_TITLES.slice(1)) {
+      await root.getByText('Next', { exact: true }).click();
+      await expect(root.getByText(title)).toBeInViewport();
+    }
+    await expect(root.getByText('Next', { exact: true })).toHaveCount(0);
+    await expect(root.getByText('Scan your first bottle')).toBeVisible();
+    const fit = await page.evaluate(() => [...document.querySelectorAll('[aria-roledescription="carousel"] > div')].map((t) => t.scrollHeight - t.clientHeight));
+    expect(fit).toEqual([0, 0, 0, 0, 0]);
+    // No paywall talk in onboarding.
+    await expect(root).not.toContainText('Pro');
+    await page.reload();
+    await root.getByText('Skip', { exact: true }).click();
+    await expect(root.getByText(WELCOME_TITLES[4])).toBeInViewport();
+    await expect(root).not.toContainText('Already have an account'); // no sign-in configured here
+    expect(errors).toEqual([]);
+  });
+}
+
+test('the welcome previews are pictures of the sample user: described, not tappable, never the reader\'s own wines', async ({ context, page }) => {
   await makeDeterministic(page);
-  await page.addInitScript(() => localStorage.setItem('vinterest_text_size', 'xl'));
+  // Someone who reinstalled with wines on the phone: their bottles must not show in the previews.
+  await seedLocalStorage(page, { vinterest_wines: JSON.stringify([{ name: 'My Own Secret Bottle', producer: 'Me', type: 'Red', rating: 95, grapes: ['Syrah'], region: 'Rioja' }]) });
   await stubNetwork(context);
+  const calls = [];
+  page.on('request', (r) => { if (/\/claude|\/me|supabase/.test(r.url())) calls.push(r.url()); });
   await page.goto(`${BASE}/`);
-  const root = page.locator('#root');
-  await expect(root).toContainText('Know you\'ll love it before you pour');
-  for (const title of ['The right bottle, wherever you are', 'Learn from what\'s in your glass', 'Like good wine, it gets better with time']) {
-    await root.getByText('Next', { exact: true }).click();
-    await expect(root.getByText(title)).toBeInViewport();
+  const previews = page.locator('#root [role="img"]');
+  await expect(previews).toHaveCount(4);
+  const alts = await previews.evaluateAll((els) => els.map((e) => e.getAttribute('aria-label')));
+  expect(alts[0]).toContain('87% match');
+  expect(alts[0]).toContain('Against it: Tannins');
+  expect(alts[1]).toContain('WineDNA for reds');
+  expect(alts[2]).toContain('Steak tonight. What should I look for?');
+  expect(alts[3]).toContain('From Rioja to Rhône Valley');
+  const inside = await previews.evaluateAll((els) => els.map((e) => ({ hidden: e.firstChild.getAttribute('aria-hidden'), inert: e.firstChild.hasAttribute('inert'), pe: getComputedStyle(e.firstChild).pointerEvents, text: e.innerText })));
+  for (const p of inside) {
+    expect(p).toMatchObject({ hidden: 'true', inert: true, pe: 'none' });
+    expect(p.text).not.toContain('My Own Secret Bottle');
   }
-  await expect(root.getByText('Next', { exact: true })).toHaveCount(0);
-  await expect(root.getByText('Scan your first bottle')).toBeVisible();
-  const fit = await page.evaluate(() => [...document.querySelectorAll('[aria-roledescription="carousel"] > div')].map((t) => t.scrollHeight - t.clientHeight));
-  expect(fit).toEqual([0, 0, 0, 0]);
-  // Set sizes: Extra large leaves the tiles' text as designed.
-  expect(await root.getByText('Your WineDNA').first().evaluate((e) => getComputedStyle(e).fontSize)).toBe('18px');
-  // Skip from the first tile lands on the last.
-  await page.reload();
-  await root.getByText('Skip', { exact: true }).click();
-  await expect(root.getByText('Like good wine, it gets better with time')).toBeInViewport();
-  // No sign-in configured: no "Already have an account?".
-  await expect(root).not.toContainText('Already have an account');
+  // Slide 1 shows a reason for and a reason against.
+  expect(inside[0].text).toContain('Syrah: you\'ve scored 2, averaging 90.');
+  expect(inside[0].text).toContain('this one doesn\'t');
+  expect(calls).toEqual([]);
+});
+
+// The previews show what the app's engines really produce for the sample user. If an engine
+// changes what it says, this fails: regenerate with npm run sample:onboarding.
+test('the sample user\'s previews are what the engines produce today', async ({ page }) => {
+  await makeDeterministic(page);
+  await seedLocalStorage(page, { vinterest_region: 'uk', vinterest_currency: 'GBP' });
+  await page.goto(`${BASE}/`);
+  const out = await page.evaluate(() => {
+    const S = _WELCOME_SAMPLE, u = S.user;
+    const m = TasteMatch.assess(u.scanned, u.wines), p = WineDNA.profile('red', u.wines, 'Reds');
+    return { pct: m.pct, label: m.label, reasons: m.reasons.map((r) => r.text), personality: p.personality, loved: p.loved.length,
+      want: { pct: S.slides.match.pct, label: S.slides.match.label, reasons: S.slides.match.reasons.map((r) => r.text), personality: S.slides.dna.personality, loved: S.slides.dna.lovedCount } };
+  });
+  expect({ pct: out.pct, label: out.label, personality: out.personality, loved: out.loved }).toEqual({ pct: out.want.pct, label: out.want.label, personality: out.want.personality, loved: out.want.loved });
+  for (const r of out.want.reasons) expect(out.reasons).toContain(r);
 });
 
 async function welcomeSignIn(context, page, { returning, ok = true }) {

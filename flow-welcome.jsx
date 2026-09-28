@@ -1,60 +1,129 @@
 /* Vinterest — New User Flow: the welcome screen.
-   Four tiles to swipe through, three features each, grouped by what they're for: knowing you'll
-   love it, the right bottle wherever you are, learning from what's in your glass, and a last tile
-   that sets the expectation it gets better with time (so people stay while their match and WineDNA build). Then one action: scan
-   your first bottle. Skip jumps to that last tile. The age and location step comes next.
-   A returning user signs in from any tile instead (WelcomeSignIn): their account brings back
+   Five slides to swipe through. The first four each show one thing the app does, with a preview
+   of the real screen that does it (the scan result, WineDNA, Vinny, a Written for you piece and
+   the mastery map); the fifth sets the expectation that it gets better with every bottle (so
+   people stay while their match and WineDNA build). Then one action: scan your first bottle.
+   Skip jumps to that last slide. The age and location step comes next.
+   The previews are the app's own components (MatchRing, MatchReasons, WineIdentity, DnaTitle,
+   DnaFacts, DnaTasteCard, VinnyAnswers, ShelfCard, MasteryAreaCard) fed one imaginary user from
+   data/onboarding-sample.json: what the app's engines really produced for that user, captured by
+   scripts/onboarding-sample.mjs. They're pictures, not controls: nothing in them can be tapped or
+   focused, and they never read the reader's own wines or call anything.
+   A returning user signs in from any slide instead (WelcomeSignIn): their account brings back
    their wines and settings, and if they'd finished onboarding before they go straight to Home. */
 
+const _WELCOME_SAMPLE=_loadJSON('data/onboarding-sample.json');
+
 const _WELCOME_TILES=[
-  {kicker:'Welcome to Vinterest',t:'Know you\'ll love it before you pour',items:[
-    {icon:'brain',  col:'#7FA7E0',t:'Your WineDNA',d:'Every bottle you score teaches it the grapes, regions, styles and prices you love.'},
-    {icon:'heart',  col:'#E0708A',t:'A match on every bottle',d:'Rated against your palate, not a critic\'s.'},
-    {icon:'compass',col:'#6FCB9A',t:'Know why',d:'See what a wine shares with your favourites, and what to try next.'},
-  ]},
-  {t:'The right bottle, wherever you are',items:[
-    {icon:'scan',   col:'#C9A0E0',t:'Scan a bottle, or a wine list',pro:true,d:'Its story, your match, and whether it\'s good value for you.'},
-    {icon:'message',col:'#F08C6A',t:'Ask Vinny',d:'A wine expert who already knows your WineDNA.'},
-    {icon:'fork',   col:'#E8B04A',t:'Talk like you know',d:'The right words for the sommelier, the shop owner and the snob at dinner.'},
-  ]},
-  {t:'Learn from what\'s in your glass',items:[
-    {icon:'book',   col:'#6FCB9A',t:'Written for your bottles',d:'Articles on the grapes and regions you actually drink.'},
-    {icon:'check',  col:'#8FD0D0',t:'Quizzes that grow with you',d:'Every new wine you score opens new questions.'},
-    {icon:'bolt',   col:'#E8B04A',t:'Blind Call',d:'Guess what\'s in the glass, then see how close you got.'},
-  ]},
-  {t:'Like good wine, it gets better with time',sub:'Score every bottle you open. We\'ll do the rest.',steps:[
-    {when:'First bottle',d:'Its story, its quizzes, and the first line of your WineDNA.'},
+  {t:'Scan a bottle. Know if it\'s for you.',d:'Point your camera at any label. You get a match built on your own taste, and the reasons why.',preview:'match'},
+  {t:'Every bottle builds your WineDNA',d:'Your scores add up to a profile of the grapes, regions, styles and prices you love. It remembers everything you\'ve tried, so you don\'t have to.',preview:'dna'},
+  {t:'The right wine, wherever you\'re buying',d:'In the shop, at the restaurant or browsing online, scan and your match tells you if it\'s for you. Got a quick question? Ask Vinny. His answers come from your WineDNA.',preview:'vinny'},
+  {t:'Find out why you like what you like',d:'Articles written for you, from your WineDNA and history, on the grapes and regions behind your favourites and the ones worth trying next. Quizzes make it stick, and your mastery map shows how far you\'ve come.',preview:'learn'},
+  {t:'It gets better with every bottle',steps:[
+    {when:'First bottle',d:'Its story, its quizzes, and the start of your WineDNA.'},
     {when:'After 3 reds',d:'Your red matches switch on. The same goes for every other type you drink.'},
-    {when:'Every bottle after',d:'Sharper matches, deeper articles, and a Vinny who knows you better.'},
+    {when:'Every bottle after',d:'Sharper matches, more written for you, and a Vinny who knows you better.'},
   ]},
 ];
 
 const _WELCOME_DIM='rgba(255,255,255,0.62)';
+const _WELCOME_PREVIEW_MIN=0.65; // smallest a preview is shown; smaller than this it's cropped instead
+
+/* The sample user's screens, as the app draws them, and a sentence saying what each shows. */
+function _welcomePreview(kind){
+  const S=_WELCOME_SAMPLE.slides, U=_WELCOME_SAMPLE.user;
+  if(kind==='match'){
+    const m=S.match, w=U.scanned, col=_TONE_COL[m.tone];
+    const [pro,con]=m.reasons;
+    return {alt:`Example scan result: ${w.producer} ${w.name} ${w.vintage}, a ${m.pct}% match, "${m.label}". For it: ${pro.text} Against it: ${con.text}`,
+      el:<div style={{display:'flex',flexDirection:'column',gap:10}}>
+        <Card style={{padding:16}}><WineIdentity wine={w}/></Card>
+        <Card style={{padding:16}}>
+          <div style={{display:'flex',alignItems:'center',gap:14}}>
+            <MatchRing match={m}/>
+            <div style={{flex:1,minWidth:0}}>
+              <div style={{fontSize:20,fontWeight:800,color:col,fontFamily:C.P,lineHeight:1.2}}>{m.label}</div>
+              <div style={{fontSize:15,color:C.mid,fontFamily:C.P,marginTop:3}}>Likely {m.expectedLabel} for you</div>
+              <div style={{fontSize:13,color:C.mid,fontFamily:C.P,marginTop:2}}>You've loved {m.chance}% of wines like it</div>
+            </div>
+          </div>
+          <div style={{marginTop:14,paddingTop:12,borderTop:`1px solid ${C.line}`}}><MatchReasons match={m} showSummary={false}/></div>
+        </Card>
+      </div>};
+  }
+  if(kind==='dna'){
+    const d=S.dna;
+    const t={...d,col:(typeof _TYPE_COLORS!=='undefined'&&_TYPE_COLORS.red)||C.cr,loved:{length:d.lovedCount},axes:d.axes,showAxis:k=>d.axes.includes(k)};
+    const tLabel=d.label.toLowerCase();
+    return {alt:`Example WineDNA for reds: "${d.personality}", based on ${d.lovedCount} Outstanding reds. ${d.chips.map(c=>`${c.label}: ${c.value}`).join('. ')}. ${d.confidence.n} scored, ${d.confidence.next||'a strong read'}.`,
+      el:<div style={{display:'flex',flexDirection:'column',gap:10}}>
+        <Card style={{padding:16,display:'flex',flexDirection:'column',gap:10}}>
+          <DnaTitle t={t} basisLine={`Based on your ${d.lovedCount} Outstanding (90+) ${tLabel}`}/>
+          <DnaFacts t={t} chips={d.chips} conf={d.confidence}/>
+        </Card>
+        <DnaTasteCard t={t} tLabel={tLabel} notes={false}/>
+      </div>};
+  }
+  if(kind==='vinny'){
+    const v=S.vinny[0];
+    return {alt:`Example question to Vinny: "${v.q}" Vinny's answer: "${v.a}"`,el:<VinnyAnswers turns={S.vinny} style={{marginTop:0}}/>};
+  }
+  const st=S.article, a=S.mastery;
+  return {alt:`Example article written for you: "${st.title}", ${st.because.toLowerCase()}. Below it, the Grapes part of the mastery map: ${a.items.map(i=>`${i.name} ${i.score}%`).join(', ')}.`,
+    el:<div style={{display:'flex',flexDirection:'column',gap:10}}>
+      <ShelfCard stub={st} because={st.because}/>
+      <MasteryAreaCard a={a} open/>
+    </div>};
+}
+
+/* A preview fills the space the slide leaves it: drawn at a phone's width, then scaled down (never
+   up) so all of it shows. Display only: no taps, no focus, and screen readers get its sentence. */
+function _WelcomePreview({kind}){
+  const {alt,el}=React.useMemo(()=>_welcomePreview(kind),[kind]);
+  const box=React.useRef(null), stage=React.useRef(null);
+  const [fit,setFit]=React.useState({s:1,w:0});
+  React.useLayoutEffect(()=>{
+    const b=box.current, g=stage.current; if(!b||!g) return;
+    // Drawn wider, the preview wraps less and gets shorter but must shrink more to fit across:
+    // try a few widths and keep the one that shows it largest.
+    const measure=()=>{
+      const bw=b.clientWidth, H=b.clientHeight; if(!bw||!H) return;
+      const prev=g.style.width; let best={s:0,w:bw};
+      for(const f of [1,1.1,1.2,1.35,1.5]){
+        const W=Math.round(bw*f); g.style.width=W+'px';
+        const s=Math.min(1,H/g.scrollHeight,bw/W);
+        if(s>best.s+0.01) best={s,w:W};
+      }
+      g.style.width=prev;
+      // Never so small it can't be read: below MIN it stays at MIN and is cropped at the bottom.
+      const out=best.s<_WELCOME_PREVIEW_MIN?{s:_WELCOME_PREVIEW_MIN,w:Math.round(bw/_WELCOME_PREVIEW_MIN),crop:true}:best;
+      setFit(f=>Math.abs(f.s-out.s)<0.005&&f.w===out.w&&!!f.crop===!!out.crop?f:out);
+    };
+    measure();
+    const ro=typeof ResizeObserver!=='undefined'?new ResizeObserver(measure):null;
+    if(ro) ro.observe(b);
+    return()=>ro&&ro.disconnect();
+  },[]);
+  const fade='linear-gradient(to bottom,#000 78%,transparent)';
+  return <div ref={box} role="img" aria-label={alt} data-cropped={fit.crop?'true':undefined}
+    style={{flex:1,minHeight:0,position:'relative',overflow:'hidden',...(fit.crop?{WebkitMaskImage:fade,maskImage:fade}:null)}}>
+    <div ref={stage} aria-hidden="true" inert="" style={{position:'absolute',top:fit.crop?0:'50%',left:'50%',width:fit.w||'100%',
+      transform:fit.crop?`translateX(-50%) scale(${fit.s})`:`translate(-50%,-50%) scale(${fit.s})`,transformOrigin:fit.crop?'top center':'center center',pointerEvents:'none',userSelect:'none'}}>
+      <div style={{background:C.bg,borderRadius:22,padding:12,border:'1px solid rgba(255,255,255,0.08)'}}>{el}</div>
+    </div>
+  </div>;
+}
 
 function _WelcomeTile({tile,k,tileRef}){
-  // Set sizes (px strings, which the reader's text-size setting leaves alone): the tiles are
+  // Set sizes (px strings, which the reader's text-size setting leaves alone): the slides are
   // designed as a whole, so they look the same for everyone, shrunk together only to fit (k).
   const z=n=>Math.round(n*k)+'px';
-  return <div ref={tileRef} style={{flex:'0 0 100%',width:'100%',height:'100%',scrollSnapAlign:'start',overflowY:'auto',boxSizing:'border-box',padding:'8px 28px 12px',display:'flex',flexDirection:'column'}}>
-    {tile.kicker&&<div style={{fontSize:z(14),fontWeight:700,color:'#E0708A',fontFamily:C.P,marginBottom:6}}>{tile.kicker}</div>}
-    <div style={{fontSize:z(28),fontWeight:800,color:'#fff',fontFamily:C.P,letterSpacing:'-0.8px',lineHeight:1.12}}>{tile.t}</div>
-    {tile.sub&&<div style={{fontSize:z(16),color:_WELCOME_DIM,fontFamily:C.P,lineHeight:1.4,marginTop:Math.round(10*k)}}>{tile.sub}</div>}
-    {/* The three features share the rest of the height, so the tile fills the screen on any phone. */}
-    <div style={{flex:1,display:'flex',flexDirection:'column',justifyContent:'space-evenly',gap:Math.round(18*k),paddingTop:Math.round(18*k)}}>
-      {tile.items&&tile.items.map((f,i)=>(
-        <div key={i} style={{display:'flex',gap:Math.round(16*k),alignItems:'flex-start'}}>
-          <div style={{width:Math.round(54*k),height:Math.round(54*k),borderRadius:Math.round(16*k),background:'rgba(255,255,255,0.08)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
-            <Icon n={f.icon} sz={Math.round(26*k)} col={f.col}/>
-          </div>
-          <div style={{flex:1,minWidth:0}}>
-            <div style={{fontSize:z(18),fontWeight:700,color:'#fff',fontFamily:C.P,lineHeight:1.25,marginBottom:4}}>
-              {f.pro?f.t.split(' ').slice(0,-2).join(' ')+' ':f.t}{f.pro&&<span style={{whiteSpace:'nowrap'}}>{f.t.split(' ').slice(-2).join(' ')}<span style={{display:'inline-block',marginLeft:8,padding:'1px 8px',borderRadius:10,background:'linear-gradient(135deg,#9B5E00,#C4870A)',fontSize:z(12),fontWeight:700,verticalAlign:'middle'}}>Pro</span></span>}
-            </div>
-            <div style={{fontSize:z(15),color:_WELCOME_DIM,fontFamily:C.P,lineHeight:1.45}}>{f.d}</div>
-          </div>
-        </div>
-      ))}
-      {tile.steps&&tile.steps.map((s,i)=>(
+  return <div ref={tileRef} style={{flex:'0 0 100%',width:'100%',height:'100%',scrollSnapAlign:'start',overflowY:'auto',boxSizing:'border-box',padding:'8px 24px 12px',display:'flex',flexDirection:'column'}}>
+    <div style={{fontSize:z(tile.preview?26:28),fontWeight:800,color:'#fff',fontFamily:C.P,letterSpacing:'-0.8px',lineHeight:1.12}}>{tile.t}</div>
+    {tile.d&&<div style={{fontSize:z(15),color:_WELCOME_DIM,fontFamily:C.P,lineHeight:1.45,marginTop:Math.round(8*k)}}>{tile.d}</div>}
+    {tile.preview&&<div style={{flex:1,minHeight:0,display:'flex',flexDirection:'column',paddingTop:Math.round(16*k)}}><_WelcomePreview kind={tile.preview}/></div>}
+    {tile.steps&&<div style={{flex:1,display:'flex',flexDirection:'column',justifyContent:'space-evenly',gap:Math.round(18*k),paddingTop:Math.round(18*k)}}>
+      {tile.steps.map((s,i)=>(
         <div key={i} style={{display:'flex',gap:Math.round(16*k),flex:1,minHeight:0}}>
           <div style={{display:'flex',flexDirection:'column',alignItems:'center',flexShrink:0,width:24}}>
             <div style={{width:18,height:18,borderRadius:9,background:i===0?C.cr:'rgba(255,255,255,0.3)',border:i===0?'3px solid rgba(255,255,255,0.25)':'none',boxSizing:'border-box',marginTop:4}}/>
@@ -66,7 +135,7 @@ function _WelcomeTile({tile,k,tileRef}){
           </div>
         </div>
       ))}
-    </div>
+    </div>}
   </div>;
 }
 
@@ -90,7 +159,7 @@ function WelcomeScreen({next,returning}){
     if(target.current!=null){ if(i===target.current&&Math.abs(el.scrollLeft-i*el.clientWidth)<2) target.current=null; return; }
     if(i!==page) setPage(i);
   }
-  // One size for all four tiles: their set size, stepped down together (never below 80%) until
+  // One size for all the slides' text: their set size, stepped down together (never below 80%) until
   // every tile fits this screen without scrolling. A tall phone spreads the features out instead.
   const [k,setK]=React.useState(1);
   const tiles=React.useRef([]);
