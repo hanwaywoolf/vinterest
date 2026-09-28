@@ -90,6 +90,34 @@ const Account = {
       return j;
     }catch(e){ return this.me(); }
   },
+  /* Deletes their account for good (Worker /account/delete: the Supabase user and every row of
+     theirs), then everything Vinterest keeps on this phone, so the app starts again at onboarding.
+     Nothing is removed from the phone unless the server confirms the account is gone. Sync stays
+     off while it runs (Sync.enabled checks `deleting`), so nothing is pushed back up meanwhile. */
+  deleting:false,
+  async deleteAccount(){
+    if(!this.signedIn()) return {ok:false,error:'You\'re not signed in.'};
+    this.deleting=true;
+    try{
+      const t=await this.token();
+      if(!t) return {ok:false,error:'Your sign-in has expired. Sign in again, then delete your account.'};
+      let r; try{ r=await fetch('/account/delete',{method:'POST',headers:{authorization:'Bearer '+t}}); }
+      catch(e){ return {ok:false,error:'We couldn\'t reach your account. Check your connection and try again.'}; }
+      let j=null; try{ j=await r.json(); }catch(e){}
+      if(!r.ok){
+        if(r.status===401) this.signOut({localOnly:true});
+        return {ok:false,error:(j&&j.error)||'Your account couldn\'t be deleted just now. Try again in a minute.'};
+      }
+      this.clearDevice();
+      this._emit();
+      return {ok:true};
+    }finally{ this.deleting=false; }
+  },
+  /* Everything Vinterest keeps in this browser, the session first. */
+  clearDevice(){
+    Store.remove(this.SESSION_KEY);
+    for(const session of [false,true]) Store.keys('vinterest_',{session}).forEach(k=>Store.remove(k,{session}));
+  },
   /* The Worker said the sign-in is no longer valid. */
   expired(){ this.signOut({localOnly:true}); },
   async signOut({localOnly=false}={}){

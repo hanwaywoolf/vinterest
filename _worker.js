@@ -89,6 +89,11 @@ export default {
       if (request.method !== "GET") return json(405, { error: "Method not allowed" });
       return handleMe(request, env);
     }
+    if (url.pathname === "/account/delete") {
+      if (request.method === "OPTIONS") return cors(new Response(null, { status: 204 }));
+      if (request.method !== "POST") return json(405, { error: "Method not allowed" });
+      return handleAccountDelete(request, env);
+    }
     if (url.pathname === "/claude") {
       if (request.method === "OPTIONS") return cors(new Response(null, { status: 204 }));
       if (request.method !== "POST") return json(405, { error: "Method not allowed" });
@@ -324,6 +329,36 @@ async function handleMe(request, env) {
   const r = await db(env, `usage_counters?user_id=eq.${encodeURIComponent(user.id)}&period_start=eq.${week}&select=kind,count`);
   const usage = r.ok ? Object.fromEntries((await r.json()).map((u) => [u.kind, u.count])) : {};
   return json(200, { signedIn: true, accounts: true, email: user.email, tier, week, usage, caps: FAIR_USE[tier] });
+}
+
+/* POST /account/delete: deletes the signed-in user for good (Apple requires this inside the app).
+   The auth user goes first: every table references auth.users on delete cascade, so if that fails
+   nothing has changed and the app keeps its data. The row deletes after it are a second guarantee,
+   so no table is ever left holding their rows if a cascade is missing. */
+const USER_TABLES = ["wines", "user_docs", "usage_counters", "entitlements"];
+async function handleAccountDelete(request, env) {
+  const origin = request.headers.get("origin");
+  if (!originAllowed(origin)) return json(403, { error: "Origin not allowed.", code: "origin_denied" });
+  if (!accountsOn(env)) return json(503, { error: "Accounts aren't set up on this server.", code: "accounts_off" });
+  let user;
+  try { user = await authUser(request, env); }
+  catch (e) { return json(503, { error: "We couldn't reach your account. Check your connection and try again.", code: "auth_unavailable" }); }
+  if (!user || user.invalid) return json(401, { error: "Sign in again, then delete your account.", code: "auth_expired" });
+  const id = encodeURIComponent(user.id);
+
+  // TODO(RevenueCat): once purchases go through RevenueCat, cancel or detach this user's
+  // subscription here (DELETE /v1/subscribers/{app_user_id}) before their account goes, and tell
+  // them that an App Store subscription is cancelled in Settings, not by deleting the account.
+  // TODO(Sign in with Apple): once Sign in with Apple exists, revoke the user's Apple token here
+  // (POST https://appleid.apple.com/auth/revoke with the stored refresh token), as Apple requires.
+
+  let r;
+  try { r = await fetch(`${env.SUPABASE_URL}/auth/v1/admin/users/${id}`, { method: "DELETE", headers: { apikey: env.SUPABASE_SECRET_KEY } }); }
+  catch (e) { r = null; }
+  if (!r || (!r.ok && r.status !== 404)) return json(502, { error: "Your account couldn't be deleted just now. Nothing was removed. Try again in a minute.", code: "delete_failed" });
+  await Promise.all(USER_TABLES.map((t) => db(env, `${t}?user_id=eq.${id}`, { method: "DELETE" }).catch(() => null)));
+  for (const [k, v] of _authCache) if (v.user && v.user.id === user.id) _authCache.delete(k);
+  return json(200, { deleted: true });
 }
 
 /* ── Price search for premium wines ──

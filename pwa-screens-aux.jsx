@@ -744,13 +744,15 @@ function WineListScreen({nav,back}){
 
 /* Export and restore a backup (Settings and WineDNA). The file format, checks and merge are
    Backup's (pwa-backup.js); this only moves the file and asks before restoring. */
+/* Saves the backup file (Backup.exportData) to the phone. Also offered before deleting an account. */
+function saveBackupFile(){
+  const blob=new Blob([JSON.stringify(Backup.exportData(),null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob), a=document.createElement('a');
+  a.href=url; a.download=Backup.fileName(); a.click();
+  URL.revokeObjectURL(url);
+}
 function DataBackupCard({padding=12}){
-  function exportFile(){
-    const blob=new Blob([JSON.stringify(Backup.exportData(),null,2)],{type:'application/json'});
-    const url=URL.createObjectURL(blob), a=document.createElement('a');
-    a.href=url; a.download=Backup.fileName(); a.click();
-    URL.revokeObjectURL(url);
-  }
+  const exportFile=saveBackupFile;
   function importFile(){
     const inp=document.createElement('input'); inp.type='file'; inp.accept='.json,application/json';
     inp.onchange=e=>{

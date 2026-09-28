@@ -18,9 +18,9 @@ async function loadWorker() {
 }
 
 // A Supabase with two users (free and pro) that meters use_quota as the migration does.
-function fakeSupabase({ down = false } = {}) {
+function fakeSupabase({ down = false, adminDown = false } = {}) {
   const users = { 'tok-free': { id: 'u-free', email: 'free@example.com' }, 'tok-pro': { id: 'u-pro', email: 'pro@example.com' } };
-  const counters = {}, calls = [];
+  const counters = {}, calls = [], deleted = [];
   const res = (status, body) => new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
   const fetch = async (url, init = {}) => {
     url = String(url);
@@ -31,6 +31,16 @@ function fakeSupabase({ down = false } = {}) {
     if (url === `${SB}/auth/v1/user`) {
       const u = users[(h.get('authorization') || '').replace('Bearer ', '')];
       return u ? res(200, u) : res(401, { msg: 'bad jwt' });
+    }
+    if (url.startsWith(`${SB}/auth/v1/admin/users/`)) {
+      calls.at(-1).method = init.method;
+      if (adminDown) return res(500, { msg: 'down' });
+      const id = url.split('/').pop();
+      for (const [t, u] of Object.entries(users)) if (u.id === id) delete users[t];
+      deleted.push('auth:' + id); return res(200, {});
+    }
+    if (init.method === 'DELETE' && url.startsWith(`${SB}/rest/v1/`)) {
+      deleted.push(url.slice(`${SB}/rest/v1/`.length)); return res(204, null);
     }
     if (url.startsWith(`${SB}/rest/v1/entitlements`)) return res(200, url.includes('u-pro') ? [{ tier: 'pro', expires_at: null }] : []);
     if (url === `${SB}/rest/v1/rpc/use_quota`) {
@@ -45,7 +55,7 @@ function fakeSupabase({ down = false } = {}) {
     }
     return res(404, {});
   };
-  return { fetch, calls, counters };
+  return { fetch, calls, counters, deleted };
 }
 
 test.describe('Worker', () => {
@@ -98,6 +108,32 @@ test.describe('Worker', () => {
     expect(me).toMatchObject({ signedIn: true, email: 'free@example.com', tier: 'free', usage: { label_scan: 100 }, caps: { label_scan: 100 } });
     const out = await (await worker.fetch(req('/me', { method: 'GET' }), env)).json();
     expect(out).toEqual({ signedIn: false, accounts: true, tier: 'free' });
+  });
+
+  test('/account/delete removes the auth user with the secret key, then every row of theirs', async () => {
+    const sb = fakeSupabase(); globalThis.fetch = sb.fetch;
+    const r = await worker.fetch(req('/account/delete', { token: 'tok-free' }), env);
+    expect(r.status).toBe(200);
+    expect(await r.json()).toEqual({ deleted: true });
+    expect(sb.deleted[0]).toBe('auth:u-free');
+    expect(sb.deleted.slice(1).sort()).toEqual(['entitlements', 'usage_counters', 'user_docs', 'wines'].map((t) => `${t}?user_id=eq.u-free`));
+    const admin = sb.calls.find((c) => c.url.includes('/admin/users/'));
+    expect(admin).toEqual({ url: `${SB}/auth/v1/admin/users/u-free`, apikey: 'sb_secret_x', method: 'DELETE' });
+    // The old token no longer works, even from the Worker's own cache.
+    expect((await scan('label_scan', 'tok-free')).status).toBe(401);
+  });
+
+  test('/account/delete: nothing is removed without a valid sign-in or when the auth delete fails', async () => {
+    const sb = fakeSupabase(); globalThis.fetch = sb.fetch;
+    expect((await worker.fetch(req('/account/delete'), env)).status).toBe(401);
+    expect((await worker.fetch(req('/account/delete', { token: 'tok-forged' }), env)).status).toBe(401);
+    expect((await worker.fetch(req('/account/delete', { token: 'tok-pro', method: 'GET' }), env)).status).toBe(405);
+    expect(sb.deleted).toEqual([]);
+    const down = fakeSupabase({ adminDown: true }); globalThis.fetch = down.fetch;
+    const r = await worker.fetch(req('/account/delete', { token: 'tok-pro' }), env);
+    expect(r.status).toBe(502);
+    expect((await r.json()).code).toBe('delete_failed');
+    expect(down.deleted).toEqual([]);
   });
 
   test('Supabase unreachable: scans still go through', async () => {
@@ -205,4 +241,48 @@ test('without sign-in configured, no account card appears', async ({ context, pa
   await page.goto(`${BASE}/#account`);
   await expect(page.locator('#root')).toContainText('Travel Mode');
   await expect(page.locator('#root')).not.toContainText('Sign in (optional)');
+});
+
+test('delete the account from Profile: confirm, then the server deletes it and the phone starts again', async ({ context, page }) => {
+  const errors = collectErrors(page);
+  await app(context, page);
+  const calls = [];
+  let fail = true;
+  await context.route('**/account/delete', (route) => {
+    calls.push(route.request().headers().authorization);
+    return fail ? route.fulfill({ status: 502, contentType: 'application/json', body: JSON.stringify({ error: 'Your account couldn\'t be deleted just now. Nothing was removed. Try again in a minute.', code: 'delete_failed' }) })
+      : route.fulfill({ contentType: 'application/json', body: JSON.stringify({ deleted: true }) });
+  });
+  await page.goto(`${BASE}/#home`);
+  await page.evaluate(() => {
+    Store.setJSON('vinterest_session', { access_token: 'acc-1', refresh_token: 'ref-1', expires_at: Date.now() / 1000 + 3600, user: { id: 'u1', email: 'carey@example.com' } });
+    Store.setJSON('vinterest_wines', [{ name: 'Test Rioja', vintage: '2019', type: 'red', score: 90, date: new Date().toISOString() }]);
+    Store.set('vinterest_something', 'x', { session: true });
+    XPSystem.save({ ...XPSystem.fresh(), total: 120 });
+  });
+  await page.goto(`${BASE}/#account`);
+  const root = page.locator('#root');
+  await root.getByText('Delete account').click();
+  const dialog = page.getByRole('dialog', { name: 'Delete your account' });
+  await expect(dialog).toContainText('It can\'t be undone');
+  await expect(dialog).toContainText('Save a backup file');
+  // Keep my account backs out without calling the server.
+  await dialog.getByText('Keep my account').click();
+  await expect(dialog).toHaveCount(0);
+  expect(calls).toEqual([]);
+  // A failure says so and leaves everything on the phone.
+  await root.getByText('Delete account').click();
+  await dialog.getByText('Delete my account').click();
+  await expect(dialog.getByRole('alert')).toContainText('Nothing was removed');
+  expect(await page.evaluate(() => [Account.signedIn(), WineHistory.getAll().length])).toEqual([true, 1]);
+  // Then it goes through: signed out, nothing of Vinterest left on the phone, back to the welcome.
+  fail = false;
+  await dialog.getByText('Delete my account').click();
+  await expect(page.locator('#root')).toContainText('Scan your first bottle');
+  expect(calls).toEqual(['Bearer acc-1', 'Bearer acc-1']);
+  const left = await page.evaluate(() => [...Store.keys('vinterest_'), ...Store.keys('vinterest_', { session: true })]);
+  // XP writes a fresh, empty record the moment the new start reads it; everything else is gone.
+  expect(left.filter((k) => k !== 'vinterest_xp_v3')).toEqual([]);
+  expect(await page.evaluate(() => [XPSystem.get().total, Account.signedIn()])).toEqual([0, false]);
+  expect(errors.filter((e) => !e.includes('status of 502'))).toEqual([]);
 });
