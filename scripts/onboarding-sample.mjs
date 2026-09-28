@@ -2,6 +2,10 @@
 // engines in a real page (dist/): WineDNA.profile, TasteMatch.assess, ContentEngine.because and
 // KnowledgeMap's grape area. The welcome slides render only what this saves, so they show genuine
 // app output without computing anything, reading anyone's data or calling an API at runtime.
+// Vinny's answer is real too: the generator builds Vinny's prompt for this user (Vinny.prompt, from
+// their WineDNA) and sends it once through the app's own /claude proxy (VINNY_ENDPOINT, default the
+// live site), so no API key is needed here. If the proxy can't be reached, the last captured answer
+// is kept, or the hand-written placeholder is used and marked as such.
 // Run after `npm run build`: node scripts/onboarding-sample.mjs
 import fs from 'node:fs';
 import path from 'node:path';
@@ -48,11 +52,30 @@ try {
     const realItems = K._items; K._items = () => items;
     const grapesArea = K._listArea('grape', wines, []);
     K._items = realItems;
-    return { match, dna, vinny: u.vinny, article: stub, mastery: grapesArea };
+    const vinnyPrompts = u.vinny.map((v) => Vinny.prompt(v.q, [], wines));
+    return { match, dna, vinnyPrompts, article: stub, mastery: grapesArea };
   }, fixture.user);
 } finally {
   await browser.close();
   server.kill();
+}
+// Vinny, asked for real.
+const ENDPOINT = process.env.VINNY_ENDPOINT || 'https://vinterest.pages.dev/claude';
+const before = JSON.parse(fs.readFileSync(FILE, 'utf8')).slides;
+const prompts = fixture.slides.vinnyPrompts; delete fixture.slides.vinnyPrompts;
+fixture.slides.vinny = [];
+for (const [i, v] of fixture.user.vinny.entries()) {
+  let answer = null;
+  try {
+    const r = await fetch(ENDPOINT, { method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ purpose: 'wine_qa', messages: [{ role: 'user', content: prompts[i] }] }) });
+    const j = await r.json();
+    if (r.ok && j.text) answer = String(j.text).trim();
+    else console.warn(`Vinny: ${r.status} ${j.error || ''}`);
+  } catch (e) { console.warn(`Vinny: couldn't reach ${ENDPOINT} (${e.message})`); }
+  const kept = before && before.vinny && before.vinny[i] && before.vinny[i].q === v.q && before.vinny[i].source === 'vinny' ? before.vinny[i] : null;
+  fixture.slides.vinny.push(answer ? { q: v.q, a: answer, source: 'vinny', captured: new Date().toISOString().slice(0, 10) }
+    : kept || { q: v.q, a: v.placeholder, source: 'placeholder' });
 }
 fs.writeFileSync(FILE, JSON.stringify(fixture, null, 2) + '\n');
 console.log(JSON.stringify(fixture.slides, null, 2));

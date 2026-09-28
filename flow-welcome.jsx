@@ -101,21 +101,15 @@ function _PreviewDna(){
   </div>;
 }
 
-/* Vinny reads their WineDNA, then answers: the question appears, and the answer types out. The
-   rest of the answer is already there, invisible, so the card doesn't grow as it types. */
+/* Vinny answering the sample user: the question, then the answer typing out. The answer is the
+   one Vinny gave from that user's WineDNA (captured by scripts/onboarding-sample.mjs). The rest of
+   it is already laid out, invisible, so the card doesn't grow as it types. */
 function _PreviewVinny(){
   const v=_WELCOME_SAMPLE.slides.vinny[0];
-  const n=_useCount(v.a.length,v.a.length*28,1500);
+  const n=_useCount(v.a.length,v.a.length*28,700);
   const done=n>=v.a.length;
   const a=<>{v.a.slice(0,n)}{!done&&<span className="wp-caret"/>}<span style={{opacity:0}}>{v.a.slice(n)}</span></>;
-  return <div style={{display:'flex',flexDirection:'column',gap:0}}>
-    <_DnaSummary/>
-    <div className="wp-in" style={{display:'flex',alignItems:'center',gap:8,padding:'8px 6px',animationDelay:'.5s'}}>
-      <div style={{width:2,height:22,background:C.cr,borderRadius:1,marginLeft:14}}/>
-      <span style={{fontSize:13,fontWeight:700,color:C.cr,fontFamily:C.P}}>Vinny answers from your WineDNA</span>
-    </div>
-    <div className="wp-in" style={{animationDelay:'.9s'}}><VinnyAnswers turns={[{q:v.q,a}]} style={{marginTop:0}}/></div>
-  </div>;
+  return <div className="wp-in"><VinnyAnswers turns={[{q:v.q,a}]} style={{marginTop:0}}/></div>;
 }
 
 function _PreviewLearn(){
@@ -133,8 +127,8 @@ function _welcomeAlt(kind){
     return `Example scan result: ${w.producer} ${w.name} ${w.vintage}, a ${m.pct}% match, "${m.label}". For it: ${pro.text} Against it: ${con.text}`; }
   if(kind==='dna'){ const d=S.dna;
     return `Example WineDNA for reds: "${d.personality}", based on ${d.lovedCount} Outstanding reds. ${d.chips.map(c=>`${c.label}: ${c.value}`).join('. ')}. ${d.confidence.n} scored, ${d.confidence.next||'a strong read'}.`; }
-  if(kind==='vinny'){ const v=S.vinny[0], d=S.dna;
-    return `Example WineDNA for reds, "${d.personality}", and Vinny answering from it. Question: "${v.q}" Vinny's answer: "${v.a}"`; }
+  if(kind==='vinny'){ const v=S.vinny[0];
+    return `Example question to Vinny: "${v.q}" Vinny's answer, from this user's WineDNA: "${v.a}"`; }
   const st=S.article, a=S.mastery;
   return `Example article written for you: "${st.title}", ${st.because.toLowerCase()}. Below it, the Grapes part of the mastery map: ${a.items.map(i=>`${i.name} ${i.score}%`).join(', ')}.`;
 }

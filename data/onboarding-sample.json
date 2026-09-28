@@ -1,5 +1,5 @@
 {
-  "_about": "The one imaginary user the welcome slides show (flow-welcome.jsx). A red drinker who loves Rioja and is branching into the Rhône. 'user' is written by hand; 'slides' is what the app's own engines (WineDNA.profile, TasteMatch.assess, ContentEngine.because, KnowledgeMap) produce from it, captured by scripts/onboarding-sample.mjs. Regenerate with: npm run sample:onboarding. Nothing here is read from a real user or fetched at runtime.",
+  "_about": "The one imaginary user the welcome slides show (flow-welcome.jsx). A red drinker who loves Rioja and is branching into the Rhône. 'user' is written by hand; 'slides' is what the app's own engines (WineDNA.profile, TasteMatch.assess, ContentEngine.because, KnowledgeMap) produce from it, captured by scripts/onboarding-sample.mjs. Regenerate with: npm run sample:onboarding. Vinny's answer is Vinny's own (purpose wine_qa, from this user's WineDNA via Vinny.prompt), fetched once through the app's /claude proxy when the generator runs; until that has happened slides.vinny[0].source is 'placeholder' and the answer is the hand-written one. Nothing here is read from a real user or fetched at runtime.",
   "user": {
     "currency": "GBP",
     "wines": [
@@ -268,7 +268,7 @@
     "vinny": [
       {
         "q": "Steak tonight. What should I look for?",
-        "a": "Try a Malbec. It has the ripe dark fruit you always score highly, and enough grip to stand up to red meat."
+        "placeholder": "Try a Malbec. It has the ripe dark fruit you always score highly, and enough grip to stand up to red meat."
       }
     ],
     "article": {
@@ -373,12 +373,6 @@
       },
       "sweetSpot": "£20–£45 GBP"
     },
-    "vinny": [
-      {
-        "q": "Steak tonight. What should I look for?",
-        "a": "Try a Malbec. It has the ripe dark fruit you always score highly, and enough grip to stand up to red meat."
-      }
-    ],
     "article": {
       "id": "sample",
       "title": "From Rioja to Rhône Valley",
@@ -432,6 +426,13 @@
         }
       ],
       "detail": "4 of 50 unlocked · 3 studied"
-    }
+    },
+    "vinny": [
+      {
+        "q": "Steak tonight. What should I look for?",
+        "a": "Try a Malbec. It has the ripe dark fruit you always score highly, and enough grip to stand up to red meat.",
+        "source": "placeholder"
+      }
+    ]
   }
 }
