@@ -106,7 +106,7 @@ function _PreviewDna(){
    (VinnyAnswers). The question types into the bar, the arrow lights, it sends (the bar empties to
    "Ask a follow-up…" as it does in the app), "Thinking…", then the answer types out. Everything is
    laid out from the start, invisible, so nothing moves or grows while it plays. */
-const _VINNY_TIMING={start:500,qPerChar:42,beforeSend:450,thinking:900,aPerChar:24};
+const _VINNY_TIMING={start:500,qPerChar:42,beforeSend:450,thinking:900,aPerChar:14};
 function _PreviewVinny(){
   const v=_WELCOME_SAMPLE.slides.vinny[0], T=_VINNY_TIMING;
   const still=_reducedMotion();
@@ -133,7 +133,7 @@ function _PreviewVinny(){
     :<>{v.a.slice(0,nA)}{nA<v.a.length&&<span className="wp-caret"/>}<span style={{opacity:0}}>{v.a.slice(nA)}</span></>;
   return <div style={{position:'relative',width:390,borderRadius:26,overflow:'hidden',background:C.bg,border:'1px solid rgba(255,255,255,0.08)'}}>
     <img src="onboarding-home.jpg" alt="" style={{position:'absolute',top:0,left:0,width:'100%',height:'auto',opacity:0.32,filter:'blur(1px)'}}/>
-    <div style={{position:'relative',padding:'62px 16px 150px'}}>
+    <div style={{position:'relative',padding:`62px 16px ${_WELCOME_SPARE.vinny}px`}}>
       <VinnyBar field={field} hasText={!!typedQ} canSend={false} lit={!!typedQ&&!sent}/>
       <div style={{opacity:sent?1:0,transform:sent?'none':'translateY(6px)',transition:'opacity .35s, transform .35s'}}>
         <VinnyAnswers turns={[{q:v.q,a}]}/>
@@ -165,6 +165,8 @@ function _welcomeAlt(kind){
 const _WELCOME_PREVIEWS={match:_PreviewMatch,dna:_PreviewDna,vinny:_PreviewVinny,learn:_PreviewLearn};
 // A preview drawn at a fixed width, in its own frame (the Vinny one lines up with its Home screenshot).
 const _WELCOME_FRAMED={vinny:390};
+// How much of a framed preview's bottom is only faded background, and may be cropped to fit.
+const _WELCOME_SPARE={vinny:150};
 
 /* A preview fills the space the slide leaves it: drawn at the width that shows it largest, then
    scaled down (never up) so all of it shows; below _WELCOME_PREVIEW_MIN it stays readable and is
@@ -190,8 +192,16 @@ function _WelcomePreview({kind,active}){
         if(s>best.s+0.01) best={s,w:W};
       }
       let out=best;
+      // A framed preview is fitted to what matters (above its spare background), and loses only
+      // background at the bottom if the whole of it doesn't fit.
+      const spare=_WELCOME_SPARE[kind]||0;
+      if(spare&&best.s<1){
+        const W=_WELCOME_FRAMED[kind]; g.style.width=W+'px';
+        const h=g.scrollHeight, s=Math.min(1,H/(h-spare+24),bw/W); // 24: room for the fade below the answer
+        out={s,w:W,crop:H/h<s-0.001,pan:0};
+      }
       // Never so small it can't be read: below MIN it stays at MIN and is cropped at the bottom.
-      if(best.s<_WELCOME_PREVIEW_MIN){
+      else if(best.s<_WELCOME_PREVIEW_MIN){
         const W=_WELCOME_FRAMED[kind]||Math.round(bw/_WELCOME_PREVIEW_MIN); g.style.width=W+'px';
         out={s:_WELCOME_PREVIEW_MIN,w:W,crop:true,pan:_WELCOME_FRAMED[kind]?0:Math.min(0,Math.round(H/_WELCOME_PREVIEW_MIN-g.scrollHeight))}; // a framed preview only loses faded background at the bottom: no scroll
       }
@@ -203,7 +213,8 @@ function _WelcomePreview({kind,active}){
     if(ro) ro.observe(b);
     return()=>ro&&ro.disconnect();
   },[]);
-  const fade='linear-gradient(to bottom,transparent 0,#000 4%,#000 80%,transparent)';
+  // A framed preview only loses spare background, so it fades over its last few pixels only.
+  const fade=_WELCOME_FRAMED[kind]?'linear-gradient(to bottom,#000 calc(100% - 20px),transparent)':'linear-gradient(to bottom,transparent 0,#000 4%,#000 80%,transparent)';
   const playing=active&&run>0;
   return <div ref={box} role="img" aria-label={alt} data-cropped={fit.crop?'true':undefined}
     style={{flex:1,minHeight:0,position:'relative',overflow:'hidden',...(fit.crop?{WebkitMaskImage:fade,maskImage:fade}:null)}}>

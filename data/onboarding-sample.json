@@ -430,8 +430,9 @@
     "vinny": [
       {
         "q": "Steak tonight. What should I look for?",
-        "a": "Try a Malbec. It has the ripe dark fruit you always score highly, and enough grip to stand up to red meat.",
-        "source": "placeholder"
+        "a": "Your track record with Rioja is a perfect guide here — the Tempranillo grape has natural tannins (those grippy, mouth-drying compounds) that cut right through the fat in a good steak. Something like your Viña Ardanza or Muga Reserva would be spot on. Look for a Rioja Reserva in your usual £20–£45 range and you honestly can't go wrong.",
+        "source": "vinny",
+        "captured": "2026-09-28"
       }
     ]
   }

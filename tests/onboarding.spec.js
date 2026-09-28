@@ -183,6 +183,8 @@ test('the welcome previews are pictures of the sample user: described, not tappa
   expect(alts[0]).toContain('Against it: Tannins');
   expect(alts[1]).toContain('WineDNA for reds');
   expect(alts[2]).toContain('Steak tonight. What should I look for?');
+  // Vinny's answer is Vinny's own, asked once for the sample user, not written for the slide.
+  expect(await page.evaluate(() => _WELCOME_SAMPLE.slides.vinny[0].source)).toBe('vinny');
   expect(alts[3]).toContain('From Rioja to Rhône Valley');
   const inside = await previews.evaluateAll((els) => els.map((e) => ({ hidden: e.firstChild.getAttribute('aria-hidden'), inert: e.firstChild.hasAttribute('inert'), pe: getComputedStyle(e.firstChild).pointerEvents, text: e.innerText })));
   for (const p of inside) {
@@ -273,7 +275,7 @@ test('the welcome previews animate, and reduced motion shows them finished at on
   await expect(previews.nth(0)).toContainText('87%');
   const anim = await previews.evaluateAll((els) => els.map((e) => [...e.querySelectorAll('*')].some((n) => getComputedStyle(n).animationName !== 'none')));
   expect(anim).toEqual([false, false, false, false]);
-  const vinny = await previews.nth(2).evaluate((e) => e.querySelector('.wp-caret') === null && e.innerText.includes('stand up to red meat.'));
+  const vinny = await previews.nth(2).evaluate((e) => e.querySelector('.wp-caret') === null && e.innerText.includes(_WELCOME_SAMPLE.slides.vinny[0].a));
   expect(vinny).toBe(true);
   // The Vinny slide is the real Ask Vinny bar, after sending, over the sample user's Home.
   await expect(previews.nth(2)).toContainText('Ask a follow-up…');

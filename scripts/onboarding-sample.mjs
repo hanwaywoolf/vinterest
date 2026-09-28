@@ -6,7 +6,8 @@
 // their WineDNA) and sends it once through the app's own /claude proxy (VINNY_ENDPOINT, default the
 // live site), so no API key is needed here. If the proxy can't be reached, the last captured answer
 // is kept, or the hand-written placeholder is used and marked as such.
-// Run after `npm run build`: node scripts/onboarding-sample.mjs
+// Run after `npm run build`: node scripts/onboarding-sample.mjs (behind an HTTPS proxy, e.g. a cloud
+// session, with NODE_USE_ENV_PROXY=1 so Node's fetch uses it).
 import fs from 'node:fs';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
