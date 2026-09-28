@@ -22,6 +22,7 @@ function fakeSupabase() {
     const rows = db[table];
     const keyOf = (r) => (table === 'wines' ? r.wine_key : r.doc_key);
     if (req.method() === 'GET') {
+      if (state.slowPull) await new Promise((r) => setTimeout(r, state.slowPull));
       let out = [...rows.values()];
       const gte = url.searchParams.get('updated_at');
       if (gte) out = out.filter((r) => r.updated_at >= gte.replace(/^gte\./, ''));
@@ -208,6 +209,30 @@ test('a change goes up by itself a few seconds later, without anyone pressing an
   await a.evaluate((w) => WineHistory.rate(w.name, w.vintage, 99), w);
   const key = await a.evaluate((w) => Sync.key(w), w);
   await expect.poll(() => server.db.wines.get(key).data.rating, { timeout: 10000 }).toBe(99);
+});
+
+// A change made while a sync is downloading is never overwritten by the cloud's older copy of the
+// same bottle (the copy this phone itself sent last time); it goes up on the next sync. Same for a
+// setting changed mid-sync.
+test('a change made while a sync is downloading keeps its value and goes up', async ({ browser }) => {
+  const server = fakeSupabase();
+  const a = await phone(browser, server, { demo: true });
+  await sync(a);
+  const w = (await wines(a))[0];
+  const key = await a.evaluate((w) => Sync.key(w), w);
+  const was = server.db.wines.get(key).data.rating;
+  server.slowPull = 800;
+  const running = a.evaluate(() => Sync.syncNow());
+  await a.waitForTimeout(200);
+  await a.evaluate((w) => { WineHistory.rate(w.name, w.vintage, 99); Settings.setScriptLength('short'); }, w);
+  await running;
+  server.slowPull = 0;
+  expect(await a.evaluate((w) => WineHistory.getAll().find((x) => x.name === w.name && String(x.vintage) === String(w.vintage)).rating, w)).toBe(99);
+  expect(await a.evaluate(() => Settings.scriptLength())).toBe('short');
+  expect(was).not.toBe(99);
+  await sync(a);
+  expect(server.db.wines.get(key).data.rating).toBe(99);
+  expect(server.db.user_docs.get('settings').data.values.vinterest_script_length).toBe('short');
 });
 
 test('Home offers a backup once there are a few wines, and not to someone signed in', async ({ browser }) => {

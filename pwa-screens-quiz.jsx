@@ -304,21 +304,8 @@ function QuizHubScreen({nav,back,showPro}){
             const done=isRead(stub);
             const locked=ContentEngine.stubLocked(stub);
             const because=ContentEngine.because(stub,wines);
-            return(
-              <div key={stub.id||i} onClick={()=>{ if(locked){ showPro('regions'); return; } Handoff.genArticle.set(stub);nav('gen-article');}}
-                style={{background:C.white,borderRadius:14,padding:done?'10px 14px':'14px 16px',display:'flex',alignItems:'center',gap:12,cursor:'pointer',border:`1px solid ${C.line}`,opacity:done?0.75:1}}>
-                <div style={{width:done?36:44,height:done?36:44,borderRadius:12,background:C.crSoft,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,border:`1px solid ${C.crDim}`}}>
-                  <Icon n={stub.iconName||'read'} sz={done?17:20} col={C.cr}/>
-                </div>
-                <div style={{flex:1,minWidth:0}}>
-                  {!done&&<div style={{fontSize:12,fontWeight:600,color:C.mid,fontFamily:C.P,textTransform:'uppercase',letterSpacing:'0.06em',marginBottom:2}}>{stub.series?`${stub.series} series`:'Written for you'} · {stub.readTime}</div>}
-                  <div style={{fontSize:done?15:16,fontWeight:700,color:C.ink,fontFamily:C.P,lineHeight:1.3}}>{stub.title}</div>
-                  {!done&&<div style={{fontSize:14,color:C.mid,fontFamily:C.P,marginTop:2}}>{stub.subtitle}</div>}
-                  {!done&&<div style={{fontSize:13,fontWeight:600,color:C.cr,fontFamily:C.P,marginTop:4}}>{because}</div>}
-                </div>
-                {locked ? <ProBadge/> : done ? <span style={{fontSize:14,fontWeight:700,color:C.green,fontFamily:C.P}}>✓</span> : <Icon n="chevron" sz={13} col={C.mid}/>}
-              </div>
-            );
+            return <ShelfCard key={stub.id||i} stub={stub} done={done} locked={locked} because={because}
+              onOpen={()=>{ if(locked){ showPro('regions'); return; } Handoff.genArticle.set(stub);nav('gen-article');}}/>;
           };
           return(
           <div ref={secRefs.shelf} style={{scrollMarginTop:56}}>
@@ -543,11 +530,53 @@ function QuizHubScreen({nav,back,showPro}){
   );
 }
 
+/* One "Written for you" piece on the Learn shelf. Also the welcome slides' preview
+   (flow-welcome.jsx), with no onOpen: not tappable, no chevron. */
+function ShelfCard({stub,done,locked,because,onOpen}){
+  return(
+  <div onClick={onOpen}
+    style={{background:C.white,borderRadius:14,padding:done?'10px 14px':'14px 16px',display:'flex',alignItems:'center',gap:12,cursor:onOpen?'pointer':'default',border:`1px solid ${C.line}`,opacity:done?0.75:1}}>
+    <div style={{width:done?36:44,height:done?36:44,borderRadius:12,background:C.crSoft,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,border:`1px solid ${C.crDim}`}}>
+      <Icon n={stub.iconName||'read'} sz={done?17:20} col={C.cr}/>
+    </div>
+    <div style={{flex:1,minWidth:0}}>
+      {!done&&<div style={{fontSize:12,fontWeight:600,color:C.mid,fontFamily:C.P,textTransform:'uppercase',letterSpacing:'0.06em',marginBottom:2}}>{stub.series?`${stub.series} series`:'Written for you'} · {stub.readTime}</div>}
+      <div style={{fontSize:done?15:16,fontWeight:700,color:C.ink,fontFamily:C.P,lineHeight:1.3}}>{stub.title}</div>
+      {!done&&<div style={{fontSize:14,color:C.mid,fontFamily:C.P,marginTop:2}}>{stub.subtitle}</div>}
+      {!done&&<div style={{fontSize:13,fontWeight:600,color:C.cr,fontFamily:C.P,marginTop:4}}>{because}</div>}
+    </div>
+    {locked ? <ProBadge/> : done ? <span style={{fontSize:14,fontWeight:700,color:C.green,fontFamily:C.P}}>✓</span> : onOpen ? <Icon n="chevron" sz={13} col={C.mid}/> : null}
+  </div>
+  );
+}
+
 /* ── MASTERY (PRO) ──
    How rounded their wine knowledge is, from what they've read and passed (KnowledgeMap,
    pwa-knowledge.js): each area's score, level, what counts, and the next thing to do. */
 function MasteryBar({score,col}){
-  return <div style={{height:6,borderRadius:3,background:C.offWhite,overflow:'hidden'}}><div style={{height:'100%',borderRadius:3,background:score>=100?C.green:(col||C.cr),width:`${score}%`,transition:'width .5s ease'}}/></div>;
+  return <div style={{height:6,borderRadius:3,background:C.offWhite,overflow:'hidden'}}><div className="mastery-fill" style={{height:'100%',borderRadius:3,background:score>=100?C.green:(col||C.cr),width:`${score}%`,transition:'width .5s ease'}}/></div>;
+}
+/* One area of the mastery map: its level and score, and (open) each region or grape in it. Also
+   the welcome slides' preview (flow-welcome.jsx), open, with no toggle or next step. */
+function MasteryAreaCard({a,open,onToggle,onNext}){
+  return(
+  <div style={{background:C.white,borderRadius:14,border:`1px solid ${C.line}`,padding:'12px 14px',display:'flex',flexDirection:'column',gap:7}}>
+    <div role="button" onClick={onToggle} style={{display:'flex',justifyContent:'space-between',alignItems:'baseline',cursor:a.items&&onToggle?'pointer':'default'}}>
+      <span style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>{a.label}</span>
+      <span style={{fontSize:14,fontWeight:700,color:a.score>=100?C.green:C.ink2,fontFamily:C.P}}>{a.level} · {a.score}%</span>
+    </div>
+    <MasteryBar score={a.score}/>
+    <div style={{fontSize:13,color:C.mid,fontFamily:C.P}}>{a.detail}{a.items&&a.items.length&&onToggle?(open?' · hide':' · see each'):''}</div>
+    {open&&a.items.map(i=>(
+      <div key={i.name} style={{display:'flex',alignItems:'center',gap:10}}>
+        <span style={{flex:'0 0 42%',fontSize:14,color:C.ink2,fontFamily:C.P,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{i.name}</span>
+        <div style={{flex:1}}><MasteryBar score={i.score}/></div>
+        <span style={{fontSize:13,fontWeight:700,color:C.ink2,fontFamily:C.P,width:38,textAlign:'right'}}>{i.score}%</span>
+      </div>
+    ))}
+    {a.next&&onNext&&<div role="button" onClick={onNext} style={{fontSize:14,fontWeight:700,color:C.cr,fontFamily:C.P,cursor:'pointer'}}>{a.next.label} →</div>}
+  </div>
+  );
 }
 function MasteryMapScreen({nav,back}){
   const m=React.useMemo(()=>KnowledgeMap.compute(),[]);
@@ -576,22 +605,7 @@ function MasteryMapScreen({nav,back}){
           <div key={G.id} style={{display:'flex',flexDirection:'column',gap:8}}>
             <div style={{fontSize:15,fontWeight:600,color:C.mid,letterSpacing:'0.08em',textTransform:'uppercase',fontFamily:C.P,marginTop:6}}>{G.label}</div>
             {m.areas.filter(a=>a.group===G.id).map(a=>(
-              <div key={a.id} style={{background:C.white,borderRadius:14,border:`1px solid ${C.line}`,padding:'12px 14px',display:'flex',flexDirection:'column',gap:7}}>
-                <div role="button" onClick={()=>a.items&&setOpen(o=>o===a.id?null:a.id)} style={{display:'flex',justifyContent:'space-between',alignItems:'baseline',cursor:a.items?'pointer':'default'}}>
-                  <span style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>{a.label}</span>
-                  <span style={{fontSize:14,fontWeight:700,color:a.score>=100?C.green:C.ink2,fontFamily:C.P}}>{a.level} · {a.score}%</span>
-                </div>
-                <MasteryBar score={a.score}/>
-                <div style={{fontSize:13,color:C.mid,fontFamily:C.P}}>{a.detail}{a.items&&a.items.length?(open===a.id?' · hide':' · see each'):''}</div>
-                {open===a.id&&a.items.map(i=>(
-                  <div key={i.name} style={{display:'flex',alignItems:'center',gap:10}}>
-                    <span style={{flex:'0 0 42%',fontSize:14,color:C.ink2,fontFamily:C.P,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{i.name}</span>
-                    <div style={{flex:1}}><MasteryBar score={i.score}/></div>
-                    <span style={{fontSize:13,fontWeight:700,color:C.ink2,fontFamily:C.P,width:38,textAlign:'right'}}>{i.score}%</span>
-                  </div>
-                ))}
-                {a.next&&<div role="button" onClick={()=>go(a.next)} style={{fontSize:14,fontWeight:700,color:C.cr,fontFamily:C.P,cursor:'pointer'}}>{a.next.label} →</div>}
-              </div>
+              <MasteryAreaCard key={a.id} a={a} open={open===a.id} onToggle={()=>a.items&&setOpen(o=>o===a.id?null:a.id)} onNext={()=>go(a.next)}/>
             ))}
           </div>
         ))}

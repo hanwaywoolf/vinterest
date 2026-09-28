@@ -78,11 +78,76 @@ function DnaBar({v,loved,col}){
   return(
     <div style={{position:'relative',height:14,display:'flex',alignItems:'center'}}>
       <div style={{position:'absolute',left:0,right:0,height:6,borderRadius:6,background:'rgba(0,0,0,0.07)',overflow:'hidden'}}>
-        <div style={{height:'100%',width:`${Math.min(1,v||0)*100}%`,borderRadius:6,background:col,opacity:0.85}}/>
+        <div className="dna-fill" style={{height:'100%',width:`${Math.min(1,v||0)*100}%`,borderRadius:6,background:col,opacity:0.85}}/>
       </div>
-      {loved!=null&&<div title="Your 90+ wines" style={{position:'absolute',left:`calc(${Math.min(1,loved)*100}% - 6px)`,width:12,height:12,borderRadius:'50%',background:C.ink,boxShadow:'0 1px 2px rgba(0,0,0,0.2)'}}/>}
+      {loved!=null&&<div className="dna-dot" title="Your 90+ wines" style={{position:'absolute',left:`calc(${Math.min(1,loved)*100}% - 6px)`,width:12,height:12,borderRadius:'50%',background:C.ink,boxShadow:'0 1px 2px rgba(0,0,0,0.2)'}}/>}
     </div>
   );
+}
+
+/* The WineDNA tab's pieces, shared with the welcome slides' preview (flow-welcome.jsx), which
+   renders them from data/onboarding-sample.json. t is WineDNA.profile plus the tab's colour. */
+function DnaTitle({t,basisLine}){
+  return <div>
+    <div style={{display:'flex',alignItems:'center',gap:7,marginBottom:4}}>
+      <span style={{fontSize:13,fontWeight:600,color:C.mid,fontFamily:C.P,letterSpacing:'0.09em',textTransform:'uppercase'}}>WineDNA</span>
+      <div style={{display:'inline-flex',alignItems:'center',gap:4,padding:'2px 8px',borderRadius:20,background:`${t.col}15`,border:`1px solid ${t.col}35`}}>
+        <div style={{width:5,height:5,borderRadius:3,background:t.col}}/>
+        <span style={{fontSize:12,fontWeight:700,color:t.col,fontFamily:C.P}}>{t.label}</span>
+      </div>
+    </div>
+    <div style={{fontSize:20,fontWeight:800,color:C.ink,fontFamily:C.P,letterSpacing:'-0.3px',lineHeight:1.15}}>{t.personality}</div>
+    <div style={{fontSize:13,color:C.mid,fontFamily:C.P,marginTop:3}}>{basisLine}</div>
+  </div>;
+}
+/* Fact chips (what they drink most next to what they score highest), then how much to trust it. */
+function DnaFacts({t,chips,conf}){
+  return <>
+    <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
+      {chips.map((ch,i)=>(
+        <div key={i} style={{padding:'5px 11px',borderRadius:20,background:i===0?`${t.col}10`:C.offWhite,border:`1px solid ${i===0?t.col+'30':C.line}`,display:'flex',gap:5,alignItems:'center'}}>
+          <span style={{fontSize:13,color:C.mid,fontFamily:C.P,whiteSpace:'nowrap'}}>{ch.label}</span>
+          <span style={{fontSize:13,fontWeight:700,color:i===0?t.col:C.ink2,fontFamily:C.P,whiteSpace:'nowrap'}}>{ch.value}</span>
+        </div>
+      ))}
+    </div>
+    <div style={{display:'flex',alignItems:'center',gap:8}}>
+      <div style={{display:'flex',gap:3}}>
+        {['early','good','strong'].map((l,i)=><div key={l} style={{width:16,height:5,borderRadius:3,background:['early','good','strong'].indexOf(conf.level)>=i?t.col:C.line}}/>)}
+      </div>
+      <span style={{fontSize:13,color:C.mid,fontFamily:C.P}}>
+        {conf.n} scored{conf.next?` · ${conf.next}`:' · a strong read'}
+      </span>
+    </div>
+  </>;
+}
+/* Their style, axis by axis: the fill is the wines they choose, the dot their 90+ wines. */
+function DnaTasteCard({t,tLabel,notes=true}){
+  return(
+  <Card style={{padding:14}}>
+    <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P,marginBottom:4}}>Your {tLabel} style</div>
+    <div style={{display:'flex',flexWrap:'wrap',gap:12,fontSize:13,color:C.mid,fontFamily:C.P,marginBottom:12}}>
+      <span style={{display:'inline-flex',alignItems:'center',gap:5}}><span style={{width:16,height:5,borderRadius:3,background:t.col,display:'inline-block'}}/>The {tLabel} you choose</span>
+      {t.loved.length>=3&&<span style={{display:'inline-flex',alignItems:'center',gap:5}}><span style={{width:9,height:9,borderRadius:'50%',background:C.ink,display:'inline-block'}}/>Your 90+ {tLabel}</span>}
+    </div>
+    <div style={{display:'flex',flexDirection:'column',gap:14}}>
+      {t.axes.filter(t.showAxis).map(k=>{
+        const A=WineDNA.AXES[k];
+        return(
+          <div key={k}>
+            <div style={{display:'flex',justifyContent:'space-between',marginBottom:4}}>
+              <span style={{fontSize:15,color:C.mid,fontFamily:C.P}}>{A.name}</span>
+              <span style={{fontSize:13,fontWeight:600,color:t.col,fontFamily:C.P}}>{A[WineDNA.level(t.avg[k])]}</span>
+            </div>
+            <DnaBar v={t.avg[k]} loved={t.lovedAvg[k]} col={t.col}/>
+            <div style={{display:'flex',justifyContent:'space-between',fontSize:12,color:C.mid,fontFamily:C.P,opacity:0.7,marginTop:2}}><span>{A.low}</span><span>{A.high}</span></div>
+            {notes&&t.axisNotes[k]&&<div style={{fontSize:13,color:C.mid,fontFamily:C.P,marginTop:4,lineHeight:1.55,textWrap:'pretty'}}>{t.axisNotes[k]}</div>}
+          </div>
+        );
+      })}
+    </div>
+    {notes&&<div style={{fontSize:13,color:C.mid,fontFamily:C.P,marginTop:12,lineHeight:1.5,opacity:0.8}}>Each wine's style is estimated from its label when you scan it: what the wine is typically like, not a tasting note.</div>}
+  </Card>  );
 }
 
 /* ──────────────────────────────────────────────────
@@ -298,17 +363,7 @@ function WineDNAScreen({nav,back,showPro}){
               </div>
             ):(
               <>
-                <div>
-                  <div style={{display:'flex',alignItems:'center',gap:7,marginBottom:4}}>
-                    <span style={{fontSize:13,fontWeight:600,color:C.mid,fontFamily:C.P,letterSpacing:'0.09em',textTransform:'uppercase'}}>WineDNA</span>
-                    <div style={{display:'inline-flex',alignItems:'center',gap:4,padding:'2px 8px',borderRadius:20,background:`${t.col}15`,border:`1px solid ${t.col}35`}}>
-                      <div style={{width:5,height:5,borderRadius:3,background:t.col}}/>
-                      <span style={{fontSize:12,fontWeight:700,color:t.col,fontFamily:C.P}}>{t.label}</span>
-                    </div>
-                  </div>
-                  <div style={{fontSize:20,fontWeight:800,color:C.ink,fontFamily:C.P,letterSpacing:'-0.3px',lineHeight:1.15}}>{t.personality}</div>
-                  <div style={{fontSize:13,color:C.mid,fontFamily:C.P,marginTop:3}}>{basisLine}</div>
-                </div>
+                <DnaTitle t={t} basisLine={basisLine}/>
 
                 {/* Written summary (Claude, from computed facts only) */}
                 {generatingSummary===t.key&&!genSummaries[t.key]?(
@@ -337,25 +392,7 @@ function WineDNAScreen({nav,back,showPro}){
                   );
                 })()}
 
-                {/* Fact chips */}
-                <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
-                  {chips.map((ch,i)=>(
-                    <div key={i} style={{padding:'5px 11px',borderRadius:20,background:i===0?`${t.col}10`:C.offWhite,border:`1px solid ${i===0?t.col+'30':C.line}`,display:'flex',gap:5,alignItems:'center'}}>
-                      <span style={{fontSize:13,color:C.mid,fontFamily:C.P,whiteSpace:'nowrap'}}>{ch.label}</span>
-                      <span style={{fontSize:13,fontWeight:700,color:i===0?t.col:C.ink2,fontFamily:C.P,whiteSpace:'nowrap'}}>{ch.value}</span>
-                    </div>
-                  ))}
-                </div>
-
-                {/* How much to trust this, and what sharpens it */}
-                <div style={{display:'flex',alignItems:'center',gap:8}}>
-                  <div style={{display:'flex',gap:3}}>
-                    {['early','good','strong'].map((l,i)=><div key={l} style={{width:16,height:5,borderRadius:3,background:['early','good','strong'].indexOf(conf.level)>=i?t.col:C.line}}/>)}
-                  </div>
-                  <span style={{fontSize:13,color:C.mid,fontFamily:C.P}}>
-                    {conf.n} scored{conf.next?` · ${conf.next}`:' · a strong read'}
-                  </span>
-                </div>
+                <DnaFacts t={t} chips={chips} conf={conf}/>
               </>
             )}
           </div>
@@ -463,30 +500,7 @@ function WineDNAScreen({nav,back,showPro}){
         {/* ── Taste profile: the style of what you choose, with your 90+ wines marked ── */}
         {t.wines.length>0&&<CSH label="Taste Profile" cKey="taste" collapsed={collapsed} toggle={toggle} summary={t.axes.filter(t.showAxis).map(k=>`${WineDNA.AXES[k].name}: ${WineDNA.AXES[k][WineDNA.level(t.avg[k])]}`).join(' · ')}/>}
         {t.wines.length>0&&!collapsed.taste&&(
-          <Card style={{padding:14}}>
-            <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P,marginBottom:4}}>Your {tLabel} style</div>
-            <div style={{display:'flex',flexWrap:'wrap',gap:12,fontSize:13,color:C.mid,fontFamily:C.P,marginBottom:12}}>
-              <span style={{display:'inline-flex',alignItems:'center',gap:5}}><span style={{width:16,height:5,borderRadius:3,background:t.col,display:'inline-block'}}/>The {tLabel} you choose</span>
-              {t.loved.length>=3&&<span style={{display:'inline-flex',alignItems:'center',gap:5}}><span style={{width:9,height:9,borderRadius:'50%',background:C.ink,display:'inline-block'}}/>Your 90+ {tLabel}</span>}
-            </div>
-            <div style={{display:'flex',flexDirection:'column',gap:14}}>
-              {t.axes.filter(t.showAxis).map(k=>{
-                const A=WineDNA.AXES[k];
-                return(
-                  <div key={k}>
-                    <div style={{display:'flex',justifyContent:'space-between',marginBottom:4}}>
-                      <span style={{fontSize:15,color:C.mid,fontFamily:C.P}}>{A.name}</span>
-                      <span style={{fontSize:13,fontWeight:600,color:t.col,fontFamily:C.P}}>{A[WineDNA.level(t.avg[k])]}</span>
-                    </div>
-                    <DnaBar v={t.avg[k]} loved={t.lovedAvg[k]} col={t.col}/>
-                    <div style={{display:'flex',justifyContent:'space-between',fontSize:12,color:C.mid,fontFamily:C.P,opacity:0.7,marginTop:2}}><span>{A.low}</span><span>{A.high}</span></div>
-                    {t.axisNotes[k]&&<div style={{fontSize:13,color:C.mid,fontFamily:C.P,marginTop:4,lineHeight:1.55,textWrap:'pretty'}}>{t.axisNotes[k]}</div>}
-                  </div>
-                );
-              })}
-            </div>
-            <div style={{fontSize:13,color:C.mid,fontFamily:C.P,marginTop:12,lineHeight:1.5,opacity:0.8}}>Each wine's style is estimated from its label when you scan it: what the wine is typically like, not a tasting note.</div>
-          </Card>
+          <DnaTasteCard t={t} tLabel={tLabel}/>
         )}
 
         {/* ── Value: price against score ── */}

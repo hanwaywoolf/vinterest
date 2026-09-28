@@ -80,11 +80,7 @@ function WineChatWidget({wines,nav,showPro}){
 
   return(
     <div style={{margin:'0 16px 8px'}}>
-      <form onSubmit={e=>{e.preventDefault();doAsk(q.trim());}} style={{display:'flex',alignItems:'center',gap:10,background:'#000',borderRadius:24,padding:'6px 6px 6px 6px'}}>
-        <div aria-hidden="true" style={{width:34,height:34,borderRadius:17,background:C.cr,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
-          <span style={{fontSize:16,fontWeight:800,color:'#fff',fontFamily:C.P}}>V</span>
-        </div>
-        <div style={{flex:1,minWidth:0,position:'relative',height:22}}>
+      <VinnyBar onSubmit={()=>doAsk(q.trim())} hasText={!!q} canSend={!asking&&!!q.trim()} lit={!!q.trim()} onClear={clearQ} field={<>
           <input ref={inputRef} value={q} onChange={e=>onType(e.target.value)} onKeyDown={onKey} onFocus={()=>setFocused(true)} onBlur={()=>setFocused(false)} aria-label="Ask Vinny"
             placeholder={open?'Ask a follow-up…':'Ask Vinny about wine…'} style={{position:'absolute',inset:0,width:'100%',border:'none',outline:'none',background:'transparent',fontSize:16,fontFamily:C.P,color:'#fff'}}/>
           {idle&&(
@@ -92,37 +88,56 @@ function WineChatWidget({wines,nav,showPro}){
               <span style={{fontSize:16,color:'rgba(255,255,255,0.75)',fontFamily:C.P,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{typed}<span style={{display:'inline-block',width:1.5,height:15,background:'rgba(255,255,255,0.75)',marginLeft:2,verticalAlign:'-2px',animation:'homeCaret 0.9s step-end infinite'}}/></span>
             </div>
           )}
-        </div>
-        {q&&<button type="button" onClick={clearQ} aria-label="Clear" style={{width:26,height:26,borderRadius:13,border:'none',background:'rgba(255,255,255,0.14)',flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',padding:0}}>
-          <svg width="10" height="10" viewBox="0 0 20 20"><path d="M4 4l12 12M16 4L4 16" stroke="#fff" strokeWidth="2.2" strokeLinecap="round"/></svg>
-        </button>}
-        <button type="submit" disabled={asking||!q.trim()} aria-label="Ask" style={{width:38,height:38,borderRadius:19,border:'none',background:q.trim()?C.cr:'rgba(255,255,255,0.18)',flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center',cursor:q.trim()?'pointer':'default',padding:0}}>
-          <svg width="16" height="16" viewBox="0 0 20 20"><path d="M3 10h13M10 4l6.5 6L10 16" stroke="#fff" strokeWidth="1.8" fill="none" strokeLinecap="round" strokeLinejoin="round"/></svg>
-        </button>
-      </form>
+      </>}/>
       {recent.length>0&&<div style={{display:'flex',gap:6,flexWrap:'wrap',marginTop:8}}>
         {recent.map(r=><div key={r} onMouseDown={e=>{e.preventDefault();fill(r);}} role="button" style={{padding:'6px 11px',borderRadius:999,background:C.offWhite,border:`1px solid ${C.line}`,fontSize:13,color:C.ink2,fontFamily:C.P,cursor:'pointer',maxWidth:'100%',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{r}</div>)}
       </div>}
-      {open&&<Card style={{padding:14,marginTop:10,position:'relative',background:'#000',display:'flex',flexDirection:'column',gap:12}}>
-        <div role="button" aria-label="Close" onClick={()=>setTurns([])} style={{position:'absolute',top:10,right:10,width:24,height:24,borderRadius:12,background:'rgba(255,255,255,0.12)',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer'}}>
-          <svg width="11" height="11" viewBox="0 0 20 20"><path d="M4 4l12 12M16 4L4 16" stroke="#fff" strokeWidth="1.8" strokeLinecap="round"/></svg>
-        </div>
-        <div style={{fontSize:12,fontWeight:700,color:'rgba(255,255,255,0.45)',fontFamily:C.P,textTransform:'uppercase',letterSpacing:'0.08em'}}>Vinny</div>
-        {turns.map((t,i)=>(
-          <div key={i} style={{display:'flex',flexDirection:'column',gap:6}}>
-            <div style={{fontSize:14,fontWeight:600,color:'rgba(255,255,255,0.55)',fontFamily:C.P,paddingRight:24}}>{t.q}</div>
-            {t.err?<div style={{fontSize:15,color:'rgba(255,255,255,0.7)',fontFamily:C.P}}>Couldn't get an answer. Try again.</div>
-              :t.a?<div style={{fontSize:16,color:'#fff',fontFamily:C.P,lineHeight:1.5}}>{t.a}</div>
-              :<div style={{fontSize:15,color:'rgba(255,255,255,0.7)',fontFamily:C.P,fontStyle:'italic'}}>Thinking…</div>}
-            {t.link&&i===turns.length-1&&<div role="button" onClick={()=>_openLearn(t.link,nav,showPro)} style={{alignSelf:'flex-start',display:'flex',alignItems:'center',gap:6,padding:'7px 12px',borderRadius:999,background:'rgba(255,255,255,0.1)',cursor:'pointer'}}>
-              <Icon n="book" sz={14} col="#fff"/>
-              <span style={{fontSize:14,fontWeight:700,color:'#fff',fontFamily:C.P}}>Learn more: {t.link.label}</span>
-            </div>}
-          </div>
-        ))}
-      </Card>}
+      {open&&<VinnyAnswers turns={turns} onClose={()=>setTurns([])} onLink={l=>_openLearn(l,nav,showPro)}/>}
     </div>
   );
+}
+
+/* The Ask Vinny bar: Vinny's V, the field, a clear button once there's text, and the send arrow
+   (crimson when there's something to send). Also the welcome slides' preview (flow-welcome.jsx),
+   where the field is the question typing itself and nothing can be tapped. */
+function VinnyBar({field,hasText,canSend,lit=canSend,onSubmit,onClear}){
+  return <form onSubmit={e=>{e.preventDefault(); if(onSubmit) onSubmit();}} style={{display:'flex',alignItems:'center',gap:10,background:'#000',borderRadius:24,padding:'6px 6px 6px 6px'}}>
+    <div aria-hidden="true" style={{width:34,height:34,borderRadius:17,background:C.cr,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+      <span style={{fontSize:16,fontWeight:800,color:'#fff',fontFamily:C.P}}>V</span>
+    </div>
+    <div style={{flex:1,minWidth:0,position:'relative',height:22}}>
+      {field}
+    </div>
+    {hasText&&<button type="button" onClick={onClear} aria-label="Clear" style={{width:26,height:26,borderRadius:13,border:'none',background:'rgba(255,255,255,0.14)',flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',padding:0}}>
+      <svg width="10" height="10" viewBox="0 0 20 20"><path d="M4 4l12 12M16 4L4 16" stroke="#fff" strokeWidth="2.2" strokeLinecap="round"/></svg>
+    </button>}
+    <button type="submit" disabled={!canSend} aria-label="Ask" style={{width:38,height:38,borderRadius:19,border:'none',background:lit?C.cr:'rgba(255,255,255,0.18)',flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center',cursor:canSend?'pointer':'default',padding:0,transition:'background .2s'}}>
+      <svg width="16" height="16" viewBox="0 0 20 20"><path d="M3 10h13M10 4l6.5 6L10 16" stroke="#fff" strokeWidth="1.8" fill="none" strokeLinecap="round" strokeLinejoin="round"/></svg>
+    </button>
+  </form>;
+}
+
+/* Vinny's answers under the box: each question and its answer, with a "Learn more" link on the
+   last. Also the welcome slides' preview (flow-welcome.jsx), with no close button or link. */
+function VinnyAnswers({turns,onClose,onLink,style}){
+  return <Card style={{padding:14,marginTop:10,...style,position:'relative',background:'#000',display:'flex',flexDirection:'column',gap:12}}>
+    {onClose&&<div role="button" aria-label="Close" onClick={onClose} style={{position:'absolute',top:10,right:10,width:24,height:24,borderRadius:12,background:'rgba(255,255,255,0.12)',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer'}}>
+      <svg width="11" height="11" viewBox="0 0 20 20"><path d="M4 4l12 12M16 4L4 16" stroke="#fff" strokeWidth="1.8" strokeLinecap="round"/></svg>
+    </div>}
+    <div style={{fontSize:12,fontWeight:700,color:'rgba(255,255,255,0.45)',fontFamily:C.P,textTransform:'uppercase',letterSpacing:'0.08em'}}>Vinny</div>
+    {turns.map((t,i)=>(
+      <div key={i} style={{display:'flex',flexDirection:'column',gap:6}}>
+        <div style={{fontSize:14,fontWeight:600,color:'rgba(255,255,255,0.55)',fontFamily:C.P,paddingRight:24}}>{t.q}</div>
+        {t.err?<div style={{fontSize:15,color:'rgba(255,255,255,0.7)',fontFamily:C.P}}>Couldn't get an answer. Try again.</div>
+          :t.a?<div style={{fontSize:16,color:'#fff',fontFamily:C.P,lineHeight:1.5}}>{t.a}</div>
+          :<div style={{fontSize:15,color:'rgba(255,255,255,0.7)',fontFamily:C.P,fontStyle:'italic'}}>Thinking…</div>}
+        {t.link&&onLink&&i===turns.length-1&&<div role="button" onClick={()=>onLink(t.link)} style={{alignSelf:'flex-start',display:'flex',alignItems:'center',gap:6,padding:'7px 12px',borderRadius:999,background:'rgba(255,255,255,0.1)',cursor:'pointer'}}>
+          <Icon n="book" sz={14} col="#fff"/>
+          <span style={{fontSize:14,fontWeight:700,color:'#fff',fontFamily:C.P}}>Learn more: {t.link.label}</span>
+        </div>}
+      </div>
+    ))}
+  </Card>;
 }
 
 /* Bottles waiting on the user: shelf checks to confirm ("Did you buy it?") and wines they've

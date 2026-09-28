@@ -58,6 +58,7 @@ export const STATIC_FILES = [
   '_redirects',
   'icons',
   'logo.png',
+  'onboarding-home.jpg',
   'reset.html',
   'tweaks-inline.compiled.js',
 ];
