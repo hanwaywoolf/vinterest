@@ -15,11 +15,11 @@
 const _WELCOME_SAMPLE=_loadJSON('data/onboarding-sample.json');
 
 const _WELCOME_TILES=[
-  {t:'Scan a bottle. Know if it\'s for you.',d:'Point your camera at any label. You get a match built on your own taste, and the reasons why.',preview:'match'},
-  {t:'Every bottle builds your WineDNA',d:'Your scores add up to a profile of the grapes, regions, styles and prices you love. It remembers everything you\'ve tried, so you don\'t have to.',preview:'dna'},
-  {t:'The right wine, wherever you\'re buying',d:'In the shop, at the restaurant or browsing online, scan and your match tells you if it\'s for you. Got a quick question? Ask Vinny. His answers come from your WineDNA.',preview:'vinny'},
-  {t:'Find out why you like what you like',d:'Articles written for you, from your WineDNA and history, on the grapes and regions behind your favourites and the ones worth trying next. Quizzes make it stick, and your mastery map shows how far you\'ve come.',preview:'learn'},
-  {t:'It gets better with every bottle',steps:[
+  {t:'Scan a bottle. Know if it\'s for you.',d:'Point your camera at any label or wine list. You get a match built on your own taste, and the reasons why.',preview:'match'},
+  {t:'Every bottle builds your WineDNA.',d:'Your scores add up to a profile of the grapes, regions, styles and prices you love. It remembers everything you\'ve tried, so you don\'t have to.',preview:'dna'},
+  {t:'The right wine, wherever you\'re buying.',d:'In the shop, at the restaurant or browsing online, scan and your match tells you if it\'s for you. Got a quick question? Ask Vinny. His answers come from your WineDNA.',preview:'vinny'},
+  {t:'Find out why you like what you like.',d:'Articles written for you, from your WineDNA and history, on the grapes and regions behind your favourites and the ones worth trying next. Quizzes make it stick, and your mastery map shows how far you\'ve come.',preview:'learn'},
+  {t:'It gets better with every bottle.',steps:[
     {when:'First bottle',d:'Its story, its quizzes, and the start of your WineDNA.'},
     {when:'After 3 reds',d:'Your red matches switch on. The same goes for every other type you drink.'},
     {when:'Every bottle after',d:'Sharper matches, more written for you, and a Vinny who knows you better.'},
@@ -184,28 +184,47 @@ function _WelcomePreview({kind,active}){
   </div>;
 }
 
+/* The last slide's timeline. The red dot walks down it on arrival (first bottle, then after 3
+   reds, then every bottle after), turning the line red behind it; with reduced motion it stays on
+   the first step. */
+function _WelcomeTimeline({steps,k,active}){
+  const z=n=>Math.round(n*k)+'px';
+  const [cur,setCur]=React.useState(0);
+  React.useEffect(()=>{
+    setCur(0);
+    if(!active||_reducedMotion()) return;
+    const ts=steps.slice(1).map((_,i)=>setTimeout(()=>setCur(i+1),700+i*1400));
+    return()=>ts.forEach(clearTimeout);
+  },[active]);
+  return <div data-step={cur} style={{flex:1,display:'flex',flexDirection:'column',justifyContent:'space-evenly',gap:Math.round(18*k),paddingTop:Math.round(18*k)}}>
+    {steps.map((s,i)=>{
+      const on=i===cur, past=i<cur;
+      return <div key={i} style={{display:'flex',gap:Math.round(16*k),flex:1,minHeight:0}}>
+        <div style={{display:'flex',flexDirection:'column',alignItems:'center',flexShrink:0,width:24}}>
+          <div style={{width:18,height:18,borderRadius:9,background:on||past?C.cr:'rgba(255,255,255,0.3)',border:on?'3px solid rgba(255,255,255,0.25)':'none',
+            boxShadow:on?`0 0 0 6px ${C.cr}33`:'none',boxSizing:'border-box',marginTop:4,transform:on?'scale(1.15)':'scale(1)',transition:'background .4s, box-shadow .4s, transform .4s'}}/>
+          {i<steps.length-1&&<div style={{width:2,flex:1,background:'rgba(255,255,255,0.14)',marginTop:6,position:'relative',overflow:'hidden'}}>
+            <div style={{position:'absolute',left:0,top:0,width:'100%',height:past?'100%':'0%',background:C.cr,transition:'height 1s ease'}}/>
+          </div>}
+        </div>
+        <div style={{paddingBottom:10,opacity:on||past?1:0.6,transition:'opacity .4s'}}>
+          <div style={{fontSize:z(18),fontWeight:700,color:'#fff',fontFamily:C.P,marginBottom:4}}>{s.when}</div>
+          <div style={{fontSize:z(15),color:_WELCOME_DIM,fontFamily:C.P,lineHeight:1.45}}>{s.d}</div>
+        </div>
+      </div>;
+    })}
+  </div>;
+}
+
 function _WelcomeTile({tile,k,tileRef,active}){
   // Set sizes (px strings, which the reader's text-size setting leaves alone): the slides are
   // designed as a whole, so they look the same for everyone, shrunk together only to fit (k).
   const z=n=>Math.round(n*k)+'px';
-  return <div ref={tileRef} style={{flex:'0 0 100%',width:'100%',height:'100%',overflowY:'auto',boxSizing:'border-box',padding:'8px 24px 12px',display:'flex',flexDirection:'column'}}>
+  return <div ref={tileRef} style={{flex:'0 0 100%',width:'100%',height:'100%',overflowY:'auto',touchAction:'pan-y',boxSizing:'border-box',padding:'8px 24px 12px',display:'flex',flexDirection:'column'}}>
     <div style={{fontSize:z(tile.preview?26:28),fontWeight:800,color:'#fff',fontFamily:C.P,letterSpacing:'-0.8px',lineHeight:1.12}}>{tile.t}</div>
     {tile.d&&<div style={{fontSize:z(15),color:_WELCOME_DIM,fontFamily:C.P,lineHeight:1.45,marginTop:Math.round(8*k)}}>{tile.d}</div>}
     {tile.preview&&<div style={{flex:1,minHeight:0,display:'flex',flexDirection:'column',paddingTop:Math.round(16*k)}}><_WelcomePreview kind={tile.preview} active={active}/></div>}
-    {tile.steps&&<div style={{flex:1,display:'flex',flexDirection:'column',justifyContent:'space-evenly',gap:Math.round(18*k),paddingTop:Math.round(18*k)}}>
-      {tile.steps.map((s,i)=>(
-        <div key={i} style={{display:'flex',gap:Math.round(16*k),flex:1,minHeight:0}}>
-          <div style={{display:'flex',flexDirection:'column',alignItems:'center',flexShrink:0,width:24}}>
-            <div style={{width:18,height:18,borderRadius:9,background:i===0?C.cr:'rgba(255,255,255,0.3)',border:i===0?'3px solid rgba(255,255,255,0.25)':'none',boxSizing:'border-box',marginTop:4}}/>
-            {i<tile.steps.length-1&&<div style={{width:2,flex:1,background:'rgba(255,255,255,0.14)',marginTop:6}}/>}
-          </div>
-          <div style={{paddingBottom:10}}>
-            <div style={{fontSize:z(18),fontWeight:700,color:'#fff',fontFamily:C.P,marginBottom:4}}>{s.when}</div>
-            <div style={{fontSize:z(15),color:_WELCOME_DIM,fontFamily:C.P,lineHeight:1.45}}>{s.d}</div>
-          </div>
-        </div>
-      ))}
-    </div>}
+    {tile.steps&&<_WelcomeTimeline steps={tile.steps} k={k} active={active}/>}
   </div>;
 }
 
@@ -224,21 +243,24 @@ function WelcomeScreen({next,returning}){
   // browser's own snap scrolling let one fast flick fly through every slide.
   const drag=React.useRef(null);
   const clampPage=i=>Math.max(0,Math.min(_WELCOME_TILES.length-1,i));
+  // Which way it goes is decided by how far the slides actually moved and how fast the finger was
+  // going at the end, never by the release event's position: a cancelled touch reports none.
   function onPointerDown(e){
     const el=track.current; if(!el||(e.pointerType==='mouse'&&e.button!==0)) return;
-    drag.current={x:e.clientX,y:e.clientY,t:performance.now(),left:el.scrollLeft,id:e.pointerId,moved:false};
+    drag.current={x:e.clientX,y:e.clientY,left:el.scrollLeft,id:e.pointerId,moved:false,lx:e.clientX,lt:performance.now(),v:0};
   }
   function onPointerMove(e){
     const d=drag.current, el=track.current; if(!d||!el||e.pointerId!==d.id) return;
     const dx=e.clientX-d.x, dy=e.clientY-d.y;
     if(!d.moved){ if(Math.abs(dx)<6||Math.abs(dx)<Math.abs(dy)) return; d.moved=true; try{ el.setPointerCapture(e.pointerId); }catch(err){} }
+    const now=performance.now(); d.v=(e.clientX-d.lx)/Math.max(1,now-d.lt); d.lx=e.clientX; d.lt=now; // px per ms, + is back
     el.scrollLeft=Math.max(0,Math.min(el.scrollWidth-el.clientWidth,d.left-dx));
   }
-  function onPointerUp(e){
-    const d=drag.current; drag.current=null; if(!d||!d.moved) return;
-    const dx=e.clientX-d.x, v=dx/Math.max(1,performance.now()-d.t); // px per ms
-    const from=page;
-    goTo(clampPage(dx<-60||v<-0.35?from+1:dx>60||v>0.35?from-1:from));
+  function onPointerUp(){
+    const d=drag.current, el=track.current; drag.current=null; if(!d||!d.moved||!el) return;
+    const moved=el.scrollLeft-page*el.clientWidth; // + forward, - back
+    const flick=performance.now()-d.lt<120?d.v:0;
+    goTo(clampPage(moved>60||flick<-0.35?page+1:moved<-60||flick>0.35?page-1:page));
   }
   // A rotated or resized screen keeps the current slide in place.
   React.useEffect(()=>{ const h=()=>{ const el=track.current; if(el) el.scrollLeft=page*el.clientWidth; }; window.addEventListener('resize',h); return()=>window.removeEventListener('resize',h); },[page]);

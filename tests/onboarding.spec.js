@@ -139,8 +139,8 @@ test('the first scan tells the bottle\'s story and shows what Vinterest will do 
 // The welcome: five slides to swipe through (or Next), Skip to the last, then the scan. Each of
 // the first four shows a preview of the real screen, fed the sample user in
 // data/onboarding-sample.json; every slide fits a small and a tall phone without scrolling.
-const WELCOME_TITLES = ['Scan a bottle. Know if it\'s for you.', 'Every bottle builds your WineDNA', 'The right wine, wherever you\'re buying',
-  'Find out why you like what you like', 'It gets better with every bottle'];
+const WELCOME_TITLES = ['Scan a bottle. Know if it\'s for you.', 'Every bottle builds your WineDNA.', 'The right wine, wherever you\'re buying.',
+  'Find out why you like what you like.', 'It gets better with every bottle.'];
 for (const [w, h] of [[360, 640], [430, 932]]) {
   test(`the welcome slides at ${w}x${h}: Next through five, previews that fit, Skip to the last`, async ({ context, page }) => {
     const errors = collectErrors(page);
@@ -321,5 +321,49 @@ test('a big fling on the welcome slides moves one slide, not all of them', async
   await page.mouse.up();
   await page.waitForTimeout(900);
   expect(await at()).toBe(1);
-  await expect(page.locator('#root').getByText('Every bottle builds your WineDNA')).toBeInViewport();
+  await expect(page.locator('#root').getByText('Every bottle builds your WineDNA.')).toBeInViewport();
+});
+
+// Real touch input (through the browser's own gesture handling): swipes go forward and back, one
+// slide each, from anywhere on the slide, including over a preview.
+test.describe('the welcome slides on a touch screen', () => {
+  test.use({ hasTouch: true, isMobile: true, viewport: { width: 390, height: 844 } });
+  test('swipe forward and back, one slide at a time', async ({ context, page }) => {
+    await makeDeterministic(page);
+    await stubNetwork(context);
+    await page.goto(`${BASE}/`);
+    const track = page.locator('[aria-roledescription="carousel"]');
+    const at = () => track.evaluate((el) => Math.round(el.scrollLeft / el.clientWidth));
+    const cdp = await context.newCDPSession(page);
+    const swipe = async (x0, y, dx, ms) => {
+      await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: x0, y }] });
+      for (let i = 1; i <= 8; i++) {
+        await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: x0 + dx * i / 8, y: y + i }] });
+        await page.waitForTimeout(ms / 8);
+      }
+      await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+      await page.waitForTimeout(700);
+    };
+    await swipe(330, 500, -220, 200); // over the preview
+    expect(await at()).toBe(1);
+    await swipe(330, 300, -260, 120); // a hard flick
+    expect(await at()).toBe(2);
+    await swipe(60, 500, 220, 200); // back
+    expect(await at()).toBe(1);
+    await swipe(60, 300, 260, 120); // and back again
+    expect(await at()).toBe(0);
+    await swipe(60, 300, 260, 120); // nothing before the first
+    expect(await at()).toBe(0);
+  });
+});
+
+// The last slide: the red dot walks down the timeline when the slide arrives.
+test('the timeline dot moves from the first bottle to every bottle after', async ({ context, page }) => {
+  await makeDeterministic(page);
+  await stubNetwork(context);
+  await page.goto(`${BASE}/`);
+  await page.locator('#root').getByText('Skip', { exact: true }).click();
+  const step = () => page.locator('[data-step]').getAttribute('data-step');
+  await expect.poll(step).toBe('0');
+  await expect.poll(step, { timeout: 5000 }).toBe('2');
 });
