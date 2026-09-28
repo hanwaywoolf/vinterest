@@ -1,0 +1,12 @@
+{
+  "appId": "app.vinterest",
+  "appName": "Vinterest",
+  "webDir": "dist",
+  "backgroundColor": "#FAFAFA",
+  "ios": {
+    "contentInset": "never"
+  },
+  "android": {
+    "allowMixedContent": false
+  }
+}
