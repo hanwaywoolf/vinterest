@@ -198,7 +198,8 @@ function regionQuizCandidates(wines){ return _regionsWithScans(wines).filter(r=>
 function completedRegionQuizzes(wines){ return _regionsWithScans(wines).filter(r=>RegionQuizBank.isComplete(r)); }
 
 /* USD → local currency, the one table every screen uses to show prices (WineDNA's average price,
-   the sommelier script budget). Scan prices are stored as price_usd. */
+   the sommelier script budget). A scan's label guess is price_usd; the shop price found after it is
+   saved as shop_price in the user's currency (fetchRetailEstimate). */
 const USD_FX={GBP:0.79,CAD:1.36,AUD:1.53,NZD:1.64,EUR:0.92,USD:1.0,JPY:150,CNY:7.2,CHF:0.88,ZAR:18.5,SGD:1.34,HKD:7.8,MXN:18,BRL:5.4,INR:83,AED:3.67,SEK:10.4,NOK:10.6,DKK:6.9};
 
 /* The sommelier script for one wine type ("I tend to go for… around £20–£35 GBP"), shared by
@@ -212,12 +213,13 @@ const SommelierScript = {
   // or a "buy again" all write a new one (a script written at scan time used to outlive the score).
   key(length,typeKey,sig,code){ return `vinterest_script_${length}_${typeKey}_${sig}_${code}_v5`; },
   sig(wines){
-    const extra=wines.map(w=>`${(w.price_paid&&w.price_paid.amount)||''}|${w.buy_again?1:0}|${w.price_usd||''}`).join(';');
+    const extra=wines.map(w=>`${(w.price_paid&&w.price_paid.amount)||''}|${w.buy_again?1:0}|${w.price_usd||''}|${(w.shop_price&&w.shop_price.amount)||''}`).join(';');
     let h=0; for(let i=0;i<extra.length;i++) h=(h*31+extra.charCodeAt(i))|0;
     return WineDNA.signature(wines)+(h>>>0).toString(36);
   },
   /* The typical spend for these wines, in local currency, rounded to friendly steps. Their own
-     wines come first: what they paid where they said, otherwise the scan's estimate, leaving out
+     wines come first: what they paid where they said, otherwise the shop price the Price tab found
+     (shop_price), otherwise the label's rough estimate, leaving out
      shelf checks they didn't buy and wines they scored below 80 (a bottle they didn't enjoy isn't
      a budget to aim for). One priced wine gives "around £90"; more give the middle half of their
      prices. Only with no priced wine at all does the usual spend from onboarding stand in. */
@@ -713,6 +715,7 @@ const ContentEngine = {
       b.push(w.rating>0?`scored ${w.rating}, ${ParkerScale.label(w.rating)}`:'not scored yet');
       const p=WineDNA.priceOf(w,rc); if(p) b.push(`${w.price_paid&&w.price_paid.amount>0?'paid':'about'} ${rc.base}${Math.round(p)}`);
       if(w.buy_again) b.push('would buy again');
+      if(w.where_had) b.push(`had it at ${w.where_had}`);
       const t=w.tasted?Object.entries(w.tasted).filter(([k,d])=>d&&cmp[k]).map(([k,d])=>`${cmp[k][d>0?1:0].toLowerCase()} than the label suggested`):[];
       if(t.length) b.push('they found it '+t.join(' and '));
       return '- '+b.join(', ');

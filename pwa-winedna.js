@@ -252,6 +252,9 @@ const WineDNA = {
     rc=rc||Regional.current(); const fx=USD_FX[rc.code]||1;
     const pp=w.price_paid;
     if(pp&&pp.amount>0) return pp.code===rc.code?pp.amount:pp.amount/(USD_FX[pp.code]||1)*fx;
+    // Then the shop price the Price tab showed (fetchRetailEstimate saves it), then the label guess.
+    const sp=w.shop_price;
+    if(sp&&sp.amount>0) return sp.code===rc.code?sp.amount:sp.amount/(USD_FX[sp.code]||1)*fx;
     return w.price_usd>0?w.price_usd*fx:null;
   },
 

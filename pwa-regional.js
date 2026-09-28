@@ -98,6 +98,21 @@ function retailPriceCacheKey(wine,code){
 const PRICE_SEARCH_FROM_USD=40;
 function _priceMarket(curr){ return {code:curr.code,label:curr.label,country:(FindOnline.country()||'').toUpperCase()}; }
 function fetchRetailEstimate(wine,curr){
+  return _fetchRetailEstimate(wine,curr).then(d=>{ _keepShopPrice(wine,curr,d); return d; });
+}
+/* The shop price is saved onto the wine (shop_price {amount, code, source}), so WineDNA's average,
+   Value and the sommelier script's budget use the same figure the Price tab shows, not the rough
+   label guess (price_usd) the scan started with. What they paid still comes first (WineDNA.priceOf). */
+function _keepShopPrice(wine,curr,d){
+  try{
+    if(!d||!(d.mid>0)) return;
+    const e=WineHistory.find(wine); if(!e) return;
+    const sp=e.shop_price;
+    if(sp&&sp.amount===d.mid&&sp.code===curr.code) return;
+    WineHistory.update(e.name,e.vintage,{shop_price:{amount:d.mid,code:curr.code,source:d.source||'estimate'}});
+  }catch(err){}
+}
+function _fetchRetailEstimate(wine,curr){
   const cacheKey=retailPriceCacheKey(wine,curr.code);
   const premium=!!(wine&&wine.price_usd>=PRICE_SEARCH_FROM_USD&&window.claude&&window.claude.priceSearch);
   let cached=Cache.get(cacheKey,null);

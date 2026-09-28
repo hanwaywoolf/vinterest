@@ -908,7 +908,7 @@ function RatingPanel({wine,existingRating,nav,showPro,curr,onRated,onSaveForLate
     <TastingExtras wine={wine} curr={curr}/>
     {/* Set apart from the optional details above so it doesn't read as one of them. */}
     <div style={{marginTop:10,paddingTop:16,borderTop:`2px solid ${C.line}`}}>
-      {onFinish?<Btn primary full onClick={onFinish}>Continue</Btn>:<Btn primary full onClick={()=>setNext(true)}>Done: what's next?</Btn>}
+      {onFinish?<Btn primary full onClick={onFinish}>Continue</Btn>:<Btn primary full onClick={()=>setNext(true)}>Finished: what's next?</Btn>}
     </div>
   </div>;
   return <div style={{display:'flex',flexDirection:'column',gap:14}}>
@@ -933,32 +933,24 @@ function RatingPanel({wine,existingRating,nav,showPro,curr,onRated,onSaveForLate
   </div>;
 }
 
-/* What each trait means, what the label suggested, and how to notice it on the next sip: the
-   comparison teaches the word as well as asking for it. */
-const _NOTICE={
-  body:{what:'How heavy the wine feels in your mouth.',how:'Think skimmed milk (light) against whole milk (full).',word:{low:'light',mid:'medium-bodied',high:'full-bodied'}},
-  tannins:{what:'The drying, grippy feel on your gums and teeth, from grape skins and oak.',how:'Like a sip of strong black tea.',word:{low:'silky',mid:'gently grippy',high:'firm and grippy'}},
-  acidity:{what:'The freshness that makes your mouth water.',how:'Notice how much your mouth waters after you swallow.',word:{low:'soft',mid:'fresh',high:'zingy'}},
-  texture:{what:'How smooth or rich a white feels.',how:'Crisp like a green apple, or round and creamy like butter.',word:{low:'crisp',mid:'smooth',high:'rich and creamy'}},
-};
-
 /* Optional, after a score. Each answer is used (inputs we ask for must teach, personalise or
    guide): "buy again" feeds the Buy again list, WineDNA's "Worth buying again", the sommelier
-   script and matching; what they paid feeds Value and their budget; what they noticed adjusts the
-   label estimate (WineDNA.axisValue) for WineDNA and every match. Each tap saves straight away;
-   a Blind Call on this bottle pre-fills the comparison. Beginners see the comparison folded away. */
+   script and matching; what they paid feeds Value and their budget; where they had it is shown on
+   the wine, searched in My Wines and given to Vinny and the articles written for them. */
 function TastingExtras({wine,curr}){
+  // After the score, only what's quick to answer: buy again, what they paid and where they had it.
+  // Each saves as it changes, so leaving here (or skipping Keep learning) loses nothing; the score
+  // itself was saved when they tapped Save rating. A Blind Call guess still records what they
+  // noticed (tasted), without asking again here.
   const entry=WineHistory.find(wine)||wine;
-  const axes=ScanFlow.compareAxes(entry);
-  const [tasted,setTasted]=React.useState(()=>entry.tasted||ScanFlow.tastedFromBlindCall(entry)||{});
   const [paid,setPaid]=React.useState(()=>entry.price_paid&&entry.price_paid.amount?String(entry.price_paid.amount):'');
+  const [where,setWhere]=React.useState(()=>entry.where_had||'');
   const [again,setAgain]=React.useState(entry.buy_again===true);
-  const [showNotice,setShowNotice]=React.useState(()=>UserPrefs.experience()!=='novice'||!!entry.tasted);
   const save=patch=>{ const e=WineHistory.find(wine); if(e) WineHistory.setTasting(e.name,e.vintage,patch); };
-  React.useEffect(()=>{ if(!entry.tasted&&Object.keys(tasted).length) save({tasted}); },[]);
-  const tc=_typeCol(entry);
-  const seg=(active)=>({flex:1,padding:'8px 4px',borderRadius:10,border:`1.5px solid ${active?tc:C.line}`,background:active?tc:C.white,color:active?'#fff':C.ink2,fontSize:14,fontWeight:600,fontFamily:C.P,textAlign:'center',cursor:'pointer'});
+  React.useEffect(()=>{ const t=ScanFlow.tastedFromBlindCall(entry); if(!entry.tasted&&t&&Object.keys(t).length) save({tasted:t}); },[]);
   const lab={fontSize:13,fontWeight:700,color:C.mid,fontFamily:C.P,marginBottom:5};
+  const box={display:'flex',alignItems:'center',gap:6,padding:'8px 10px',borderRadius:10,border:`1.5px solid ${C.line}`,background:C.white};
+  const field={flex:1,minWidth:0,border:'none',outline:'none',fontSize:16,fontFamily:C.P,color:C.ink,background:'transparent'};
   return <div style={{display:'flex',flexDirection:'column',gap:14,paddingTop:12,borderTop:`1px solid ${C.line}`}}>
     <div onClick={()=>{ const v=!again; setAgain(v); save({buy_again:v}); }} role="checkbox" aria-checked={again}
       style={{display:'flex',alignItems:'center',gap:12,padding:'12px 14px',borderRadius:12,border:`1.5px solid ${again?C.green:C.line}`,background:again?C.greenBg:C.white,cursor:'pointer'}}>
@@ -970,38 +962,23 @@ function TastingExtras({wine,curr}){
     </div>
     <div>
       <div style={lab}>What you paid (optional)</div>
-      <div style={{display:'flex',alignItems:'center',gap:6,padding:'8px 10px',borderRadius:10,border:`1.5px solid ${C.line}`,background:C.white}}>
+      <div style={box}>
         <span style={{fontSize:15,color:C.mid,fontFamily:C.P}}>{curr.base}</span>
         <input inputMode="decimal" placeholder="0" value={paid} aria-label="What you paid"
-          onChange={e=>setPaid(e.target.value.replace(/[^0-9.]/g,''))}
-          onBlur={()=>{ const n=Number(paid); save({price_paid:n>0?{amount:n,code:curr.code}:null}); }}
-          style={{flex:1,minWidth:0,border:'none',outline:'none',fontSize:16,fontFamily:C.P,color:C.ink,background:'transparent'}}/>
+          onChange={e=>{ const v=e.target.value.replace(/[^0-9.]/g,''); setPaid(v); const n=Number(v); save({price_paid:n>0?{amount:n,code:curr.code}:null}); }}
+          style={field}/>
       </div>
       <div style={{fontSize:13,color:C.mid,fontFamily:C.P,marginTop:4}}>Sets your usual spend and shows which bottles are good value for you.</div>
     </div>
-    {axes.length>0&&(!showNotice
-      ?<div onClick={()=>setShowNotice(true)} role="button" style={{fontSize:15,fontWeight:600,color:C.cr,fontFamily:C.P,cursor:'pointer'}}>Want to go further? Tell us what you noticed →</div>
-      :<div style={{display:'flex',flexDirection:'column',gap:14}}>
-        <div>
-          <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>What did you notice?</div>
-          <div style={{fontSize:13,color:C.mid,fontFamily:C.P,lineHeight:1.45,marginTop:2}}>Optional. Take another sip: here's what to feel for. Your answers adjust your WineDNA and future matches.</div>
-        </div>
-        {axes.map(k=>{
-          const [lo,hi]=ScanFlow.COMPARE[k]||['Less','More'];
-          const N=_NOTICE[k]||{}, expected=N.word&&N.word[WineDNA.level(entry[k])];
-          const pick=v=>{ const next={...tasted,[k]:v}; setTasted(next); save({tasted:next}); };
-          return <div key={k}>
-            <div style={{fontSize:15,fontWeight:700,color:C.ink,fontFamily:C.P}}>{WineDNA.AXES[k].name}</div>
-            {N.what&&<div style={{fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.45,marginTop:2}}>{N.what} {N.how}</div>}
-            {expected&&<div style={{fontSize:13,color:C.mid,fontFamily:C.P,marginTop:3}}>The label suggests {expected}. How did it feel to you?</div>}
-            <div style={{display:'flex',gap:6,marginTop:7}}>
-              <div onClick={()=>pick(-1)} style={seg(tasted[k]===-1)}>{lo}</div>
-              <div onClick={()=>pick(0)} style={seg(tasted[k]===0)}>As expected</div>
-              <div onClick={()=>pick(1)} style={seg(tasted[k]===1)}>{hi}</div>
-            </div>
-          </div>;
-        })}
-      </div>)}
+    <div>
+      <div style={lab}>Where did you have it? (optional)</div>
+      <div style={box}>
+        <input value={where} maxLength={80} placeholder="A restaurant, a shop, a friend's…" aria-label="Where did you have it"
+          onChange={e=>{ setWhere(e.target.value); save({where_had:e.target.value.trim()||null}); }}
+          style={field}/>
+      </div>
+      <div style={{fontSize:13,color:C.mid,fontFamily:C.P,marginTop:4}}>Shown on the wine and searchable in My Wines, so you can find it again. Vinny remembers it too.</div>
+    </div>
   </div>;
 }
 

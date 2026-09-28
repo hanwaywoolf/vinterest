@@ -104,21 +104,30 @@ test('no camera: the shutter never saves a sample wine, and a library photo scan
   expect(saved).toBeTruthy();
   expect(saved.confidence).toBe('high');
 
-  // Rate it, then the optional tasting details save straight away.
+  // Rate it: the score is saved at once, and the optional extras save as they're typed, so
+  // leaving before "Finished: what's next?" (or before Keep learning) loses nothing.
   await root.getByText('Rate it', { exact: true }).click();
   await root.getByText('90', { exact: true }).click();
   await root.getByText('Save rating').click();
   await expect(root).toContainText('Scored 90 · Outstanding');
-  await root.getByText('Fuller', { exact: true }).click();
+  await expect(root).not.toContainText('What did you notice?');
+  expect((await history(page)).find((w) => w.name === 'Clos Test Priorat').rating).toBe(90);
   await root.getByText('I\'d buy this again').click();
   await root.getByLabel('What you paid').fill('32');
-  await root.getByLabel('What you paid').blur();
+  await root.getByLabel('Where did you have it').fill('Dishoom King\'s Cross');
+  await page.evaluate(() => { location.hash = 'home'; }); // walk away without finishing
   const rated = (await history(page)).find((w) => w.name === 'Clos Test Priorat');
   expect(rated.rating).toBe(90);
   expect(rated.scan_intent).toBe('tasted');
-  expect(rated.tasted.body).toBe(1);
   expect(rated.buy_again).toBe(true);
   expect(rated.price_paid.amount).toBe(32);
+  expect(rated.where_had).toBe('Dishoom King\'s Cross');
+  // Where they had it: searchable in My Wines, shown on the wine, and Vinny knows.
+  expect(await page.evaluate(() => MyWines.query(WineHistory.getAll(), { q: 'dishoom' }).map((w) => w.name))).toEqual(['Clos Test Priorat']);
+  expect(await page.evaluate(() => Vinny.profile(WineHistory.getAll()))).toContain("had at Dishoom King's Cross");
+  await page.evaluate((w) => sessionStorage.setItem('vinterest_scan_result', JSON.stringify({ wine: w })), rated);
+  await page.goto(`${BASE}/?demo=1#detail`);
+  await expect(page.locator('[data-where-had]')).toHaveText("Had at Dishoom King's Cross");
   expect(errors).toEqual([]);
 });
 
@@ -320,7 +329,7 @@ test('the deck: sliders move sliders, a flick turns the card, and it ends on rat
   await root.getByText('Save rating').click();
   // The card's label follows the step.
   await expect(root.getByText('Your score', { exact: true })).toBeVisible();
-  await root.getByText('Done: what\'s next?').click();
+  await root.getByText('Finished: what\'s next?').click();
   await expect(root).toContainText('Keep learning');
   await expect(root.getByText('Rate it', { exact: true })).toHaveCount(0);
   await expect(root.getByText('Finish', { exact: true })).toBeVisible();
@@ -659,7 +668,7 @@ test('Keep learning opens at its top, not wherever the rating left the page scro
   await root.getByText('Save rating').click();
   const scroller = page.locator('.sc-scroll').first();
   await scroller.evaluate((el) => { el.scrollTop = el.scrollHeight; });
-  await root.getByText('Done: what\'s next?').click();
+  await root.getByText('Finished: what\'s next?').click();
   const heading = root.getByText('Keep learning', { exact: true });
   await expect(heading).toBeVisible();
   const [h, s] = [await heading.boundingBox(), await scroller.boundingBox()];

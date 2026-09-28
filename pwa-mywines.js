@@ -29,11 +29,12 @@ const MyWines = {
     return {types,status,shown};
   },
 
-  /* Every word typed must appear in the wine's name, producer, grapes, region, country or vintage. */
+  /* Every word typed must appear in the wine's name, producer, grapes, region, country, vintage or
+     where they had it. */
   matches(w,q){
     const words=this._norm(q).split(/\s+/).filter(Boolean);
     if(!words.length) return true;
-    const hay=this._norm([w.name,w.producer,(w.grapes||[]).join(' '),w.region,w.sub_region,w.country,w.vintage>0?w.vintage:'',w.type].join(' '));
+    const hay=this._norm([w.name,w.producer,(w.grapes||[]).join(' '),w.region,w.sub_region,w.country,w.vintage>0?w.vintage:'',w.type,w.where_had].join(' '));
     return words.every(x=>hay.includes(x));
   },
 

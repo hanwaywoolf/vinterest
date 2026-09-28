@@ -53,7 +53,7 @@ const Vinny = Object.assign(_accountStore('vinterest_vinny_v1'), {
       lines.push(`${p.label}: ${bits.join('; ')}.`);
     });
     const recent=[...chosen].sort((a,b)=>new Date(b.last_scanned||b.scanned_at||0)-new Date(a.last_scanned||a.scanned_at||0)).slice(0,3);
-    lines.push(`Most recent bottles: ${recent.map(w=>w.name+(w.rating>0?` (${w.rating})`:'')).join(', ')}.`);
+    lines.push(`Most recent bottles: ${recent.map(w=>w.name+(w.rating>0?` (${w.rating})`:'')+(w.where_had?`, had at ${w.where_had}`:'')).join(', ')}.`);
     return lines.join('\n');
   },
 
