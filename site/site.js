@@ -75,27 +75,59 @@
   }
 
   /* ── Playing the demos ──
-     A demo section is one screen tall and the page scrolls past it normally. While it's mostly on
-     screen its demo plays by itself: p (0 to 1) advances over data-duration seconds, the screen
-     scrolls to p, and the caption whose data-at we've reached is lit. At the end it rests, winds
-     back and plays again. A caption can be clicked (or pressed with Enter) to jump to it. With
-     reduced motion nothing plays: the screen sits at the top, every caption shows, and a click
+     A demo section is one screen tall and the page scrolls past it normally. When it's mostly on
+     screen its demo plays once by itself: p (0 to 1) advances over data-duration seconds, the screen
+     moves to p, and the caption whose data-at we've reached is lit. When it finishes it stays on the
+     last caption; it never restarts. The reader is in charge from then on, and any of these stops the
+     autoplay and holds the demo where it is:
+       - clicking a caption (or pressing Enter on it), or a dot on a phone;
+       - scrolling the mouse wheel over the caption text, which steps through the captions one at a
+         time and, at the first or last one, lets the page scroll on.
+     With reduced motion nothing plays: the screen sits at the top and every caption shows; a click
      still jumps to that point. */
-  var HOLD = 2600, REWIND = 1300, GAP = 500;
+  // ?speed=8 plays the demos eight times as fast (the tests use it).
+  var speed = parseFloat(new URLSearchParams(location.search).get('speed')) || 1;
   var features = Array.prototype.slice.call(document.querySelectorAll('[data-feature]')).map(function (el) {
-    return { el: el, steps: Array.prototype.slice.call(el.querySelectorAll('.steps li')), p: 0, phase: 'play', t: 0, on: false, step: -1, shown: -1,
-      dur: (parseFloat(el.getAttribute('data-duration')) || 16) * 1000 };
+    return { el: el, copy: el.querySelector('.copy'), steps: Array.prototype.slice.call(el.querySelectorAll('.steps li')), p: 0, phase: 'play', on: false, step: -1, shown: -1,
+      lock: 0, lastWheel: 0, dur: (parseFloat(el.getAttribute('data-duration')) || 16) * 1000 / speed };
   });
   features.forEach(function (f) {
     f.demos = demos.filter(function (d) { return d.feature === f.el; });
+    // Dots for phones, where only the lit caption shows: one per caption, the way to jump to another.
+    var dots = document.createElement('div');
+    dots.className = 'dots';
+    dots.setAttribute('role', 'group');
+    dots.setAttribute('aria-label', 'Steps');
+    f.dots = [];
     f.steps.forEach(function (li, i) {
       li.at = parseFloat(li.getAttribute('data-at') || '0');
+      // Where a click holds the demo: just into its part, or data-hold when the part is a run of things.
+      li.holdAt = li.hasAttribute('data-hold') ? parseFloat(li.getAttribute('data-hold')) : Math.min(1, li.at + 0.002);
       li.tabIndex = 0;
       li.setAttribute('role', 'button');
-      var go = function () { f.p = li.at + 0.002; f.phase = 'play'; f.t = 0; apply(f); };
-      li.addEventListener('click', go);
-      li.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } });
+      li.addEventListener('click', function () { hold(f, i); });
+      li.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); hold(f, i); } });
+      var dot = document.createElement('button');
+      dot.type = 'button';
+      dot.setAttribute('aria-label', li.querySelector('h3').textContent);
+      dot.addEventListener('click', function () { hold(f, i); });
+      dots.appendChild(dot);
+      f.dots.push(dot);
     });
+    f.copy.appendChild(dots);
+    // The mouse wheel over the text steps through the captions; at either end the page scrolls on.
+    if (!reduced) f.copy.addEventListener('wheel', function (e) {
+      if (Math.abs(e.deltaY) < 4 || e.ctrlKey) return;
+      var to = f.step + (e.deltaY > 0 ? 1 : -1);
+      if (to < 0 || to >= f.steps.length) return;
+      e.preventDefault();
+      var now = performance.now();
+      if (now - f.lastWheel > 200) f.lock = 0; // a new flick, not the tail of the last one
+      f.lastWheel = now;
+      if (now < f.lock) return;
+      f.lock = now + 700;
+      hold(f, to);
+    }, { passive: false });
   });
   /* The caption block is as tall as its tallest state (a different caption lit each time), so opening
      a longer one never moves the block or pushes it past the section. Measured with each caption lit
@@ -120,27 +152,19 @@
   window.addEventListener('resize', function () { clearTimeout(reserveTimer); reserveTimer = setTimeout(reserveSteps, 120); });
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(reserveSteps);
   reserveSteps();
+  // Stops the autoplay and shows caption i.
+  function hold(f, i) { f.phase = 'held'; f.p = f.steps[i].holdAt; apply(f); }
   function apply(f) {
     if (Math.abs(f.p - f.shown) < 0.0002) return;
     f.shown = f.p;
     f.el.style.setProperty('--p', f.p.toFixed(4));
     var step = 0;
-    f.steps.forEach(function (li, i) { if (f.p >= li.at - 0.001) step = i; });
+    f.steps.forEach(function (li) { if (f.p >= li.at - 0.001) step = f.steps.indexOf(li); });
     if (step !== f.step) {
       f.step = step;
-      f.steps.forEach(function (li, i) { li.classList.toggle('on', i === step); });
+      f.steps.forEach(function (li, i) { li.classList.toggle('on', i === step); f.dots[i].classList.toggle('on', i === step); });
     }
     f.demos.forEach(function (d) { d.progress = f.p; if (d.api) d.api.update(f.p); });
-  }
-  function advance(f, dt) {
-    if (f.phase === 'play') { f.p = Math.min(1, f.p + dt / f.dur); if (f.p >= 1) { f.phase = 'hold'; f.t = 0; } }
-    else if (f.phase === 'hold') { f.t += dt; if (f.t >= HOLD) { f.phase = 'rewind'; f.t = 0; } }
-    else if (f.phase === 'rewind') {
-      f.t += dt;
-      var k = Math.min(1, f.t / REWIND);
-      f.p = 1 - (k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2);
-      if (k >= 1) { f.p = 0; f.phase = 'gap'; f.t = 0; }
-    } else { f.t += dt; if (f.t >= GAP) { f.phase = 'play'; f.t = 0; } }
   }
   if (!reduced) {
     var fio = 'IntersectionObserver' in window ? new IntersectionObserver(function (entries) {
@@ -151,7 +175,12 @@
     var tick = function (now) {
       var dt = Math.min(64, now - (last || now));
       last = now;
-      features.forEach(function (f) { if (f.on) { advance(f, dt); apply(f); } });
+      features.forEach(function (f) {
+        if (!f.on || f.phase !== 'play') return;
+        f.p = Math.min(1, f.p + dt / f.dur);
+        if (f.p >= 1) f.phase = 'done';
+        apply(f);
+      });
       raf(tick);
     };
     raf(tick);

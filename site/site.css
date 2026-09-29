@@ -109,6 +109,7 @@ h1 .serif, h2 .serif { font-size: 1.08em; }
 .steps li.on::before { background: var(--cr); border-color: var(--cr); }
 .dark .steps li.on::before { background: #E8A0AE; border-color: #E8A0AE; }
 .steps li h3 { font-size: 17px; }
+.dots { display: none; }
 /* Only the lit caption shows its sentence, so the list stays short enough for any window. */
 .steps li p { font-size: 15px; color: var(--ink-2); margin-top: 0; max-width: 30em; max-height: 0; overflow: hidden; opacity: 0; transition: max-height .35s ease, opacity .3s ease, margin-top .3s ease; }
 .steps.measure li, .steps.measure li p, .steps.measure li::before { transition: none; }
@@ -117,6 +118,7 @@ h1 .serif, h2 .serif { font-size: 1.08em; }
 
 /* ── Plain sections ── */
 section.plain { padding: 112px 0; }
+section.off { background: var(--off); }
 .section-head { max-width: 640px; }
 .stages { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-top: 48px; }
 .stage-card { background: #fff; border: 1px solid var(--line); border-radius: 24px; padding: 28px; }
@@ -195,6 +197,13 @@ footer a:hover { color: #fff; }
   .steps { display: grid; }
   .steps li { padding: 0; grid-area: 1 / 1; visibility: hidden; opacity: 1; }
   .steps li.on { visibility: visible; }
+  .dots { display: flex; gap: 10px; margin-top: 12px; }
+  .dots button { width: 10px; height: 10px; padding: 0; border-radius: 5px; border: 0; background: rgba(0, 0, 0, .18); cursor: pointer; position: relative; transition: width .25s, background .25s; }
+  .dark .dots button { background: rgba(255, 255, 255, .3); }
+  .dots button.on { width: 26px; background: var(--cr); }
+  .dark .dots button.on { background: #E8A0AE; }
+  /* A bigger target than the dot itself, for a thumb. */
+  .dots button::after { content: ''; position: absolute; inset: -12px -6px; }
   .steps li p { font-size: 14px; max-height: none; opacity: 1; margin-top: 2px; transition: none; }
   .steps li h3 { font-size: 16px; }
   section.plain, .beta { padding: 72px 0; }
@@ -210,6 +219,7 @@ footer a:hover { color: #fff; }
   html { scroll-behavior: auto; }
   .feature { height: auto; }
   .pin { height: auto; padding: 96px var(--gutter); }
+  .dots { display: none; }
   .steps { display: grid; gap: 4px; }
   .steps li { opacity: 1; visibility: visible !important; grid-area: auto; }
   .steps li p { max-height: none; opacity: 1; margin-top: 4px; transition: none; }

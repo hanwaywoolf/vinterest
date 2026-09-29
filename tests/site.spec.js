@@ -51,24 +51,50 @@ test.describe('desktop', () => {
     expect(errors).toEqual([]);
   });
 
-  test('a demo plays by itself while it is on screen: the screen scrolls and the captions move on', async ({ page }) => {
-    await page.goto(BASE + '/');
+  test('a demo plays by itself while it is on screen, once, and then stays on its last caption', async ({ page }) => {
+    await page.goto(BASE + '/?speed=8');
     await show(page, 'scan');
     await expect(page.locator('#scan .phone-app')).toContainText('Crozes-Hermitage 2021');
-    await expect(page.locator('#scan .steps li.on h3')).toHaveText('A match you can read as a score');
-    await expect(page.locator('#scan .steps li.on h3')).toHaveText('Reasons for, and against', { timeout: 12000 });
+    await expect(page.locator('#scan .steps li.on h3')).toHaveText('Reasons for and against, and exactly why', { timeout: 8000 });
     await expect.poll(() => scrolledPx(page, 'scan')).toBeGreaterThan(20);
+    // It finishes (14s at eight times the speed) and does not start again.
+    await page.waitForTimeout(3500);
+    const at = await scrolledPx(page, 'scan');
+    await page.waitForTimeout(3500);
+    await expect(page.locator('#scan .steps li.on h3')).toHaveText('Reasons for and against, and exactly why');
+    expect(await scrolledPx(page, 'scan')).toBeGreaterThanOrEqual(at - 2);
   });
 
-  test('a caption jumps the demo to that point, and the demo opens "Why 87%?" for you', async ({ page }) => {
+  test('a caption stops the autoplay and holds the demo on that part', async ({ page }) => {
     await page.goto(BASE + '/');
     await show(page, 'scan');
     const phone = page.locator('#scan .phone-app');
-    await jump(page, 'scan', 2);
-    await expect(page.locator('#scan .steps li.on h3')).toHaveText('See exactly why');
+    await jump(page, 'scan', 1);
+    await expect(page.locator('#scan .steps li.on h3')).toHaveText('Reasons for and against, and exactly why');
+    // The demo opened "Why 87%?" so the working is on screen, and it stays put.
     await expect(phone).toContainText('HOLDS IT BACK', { ignoreCase: true });
+    await page.waitForTimeout(1500);
+    const held = await scrolledPx(page, 'scan');
+    await page.waitForTimeout(2500);
+    expect(Math.abs((await scrolledPx(page, 'scan')) - held)).toBeLessThan(3);
+    await expect(page.locator('#scan .steps li.on h3')).toHaveText('Reasons for and against, and exactly why');
     await jump(page, 'scan', 0);
     await expect(phone).not.toContainText('HOLDS IT BACK', { ignoreCase: true });
+  });
+
+  test('the mouse wheel over the text steps through the captions, then lets the page scroll on', async ({ page }) => {
+    await page.goto(BASE + '/');
+    await show(page, 'scan');
+    const y0 = await page.evaluate(() => scrollY);
+    const copy = await page.locator('#scan .copy').boundingBox();
+    await page.mouse.move(copy.x + 200, copy.y + 200);
+    await expect(page.locator('#scan .steps li.on h3')).toHaveText('A match you can read as a score');
+    await page.mouse.wheel(0, 120);
+    await expect(page.locator('#scan .steps li.on h3')).toHaveText('Reasons for and against, and exactly why');
+    expect(await page.evaluate(() => scrollY)).toBe(y0); // it stepped; the page did not move
+    await page.waitForTimeout(900);
+    await page.mouse.wheel(0, 120); // already on the last caption: the page scrolls
+    await expect.poll(() => page.evaluate(() => scrollY)).toBeGreaterThan(y0 + 50);
   });
 
   test('the page scrolls straight past a demo: no pinned section to scroll through', async ({ page }) => {
@@ -77,9 +103,54 @@ test.describe('desktop', () => {
     const h = await page.evaluate(() => document.getElementById('scan').offsetHeight);
     expect(h).toBeLessThanOrEqual(820);
     const before = await page.evaluate(() => scrollY);
-    await page.mouse.move(640, 400);
+    const ph = await page.locator('#scan .phone').boundingBox();
+    await page.mouse.move(ph.x + ph.width / 2, ph.y + ph.height / 2);
     await page.mouse.wheel(0, 700);
     await expect.poll(() => page.evaluate(() => scrollY)).toBeGreaterThan(before + 600);
+  });
+
+  test('the deck turns through its cards, and the price check is one of them', async ({ page }) => {
+    await page.goto(BASE + '/');
+    await show(page, 'learn-wine');
+    const phone = page.locator('#learn-wine .phone-app');
+    await expect(phone).toContainText('Your match');
+    await jump(page, 'learn-wine', 1);
+    await expect(phone).toContainText('Your kind of bottle');
+    await jump(page, 'learn-wine', 2);
+    await expect(phone).toContainText('Where it');
+    await jump(page, 'learn-wine', 4);
+    await expect(phone).toContainText('Price check');
+    await jump(page, 'learn-wine', 5);
+    await expect(phone).toContainText('How was it?');
+  });
+
+  test('rating a bottle slides the score up and saves it, without changing the other demos', async ({ page }) => {
+    await page.goto(BASE + '/');
+    await show(page, 'rate');
+    const phone = page.locator('#rate .phone-app');
+    await expect(phone).toContainText('How was it?');
+    await jump(page, 'rate', 1);
+    await expect(phone).toContainText('Scored 92', { timeout: 8000 });
+    await jump(page, 'rate', 2);
+    await expect(phone).toContainText('On your Buy again list', { timeout: 6000 });
+    // Going back to the start puts the rating panel back.
+    await jump(page, 'rate', 0);
+    await expect(phone).toContainText('How was it?', { timeout: 8000 });
+    // A saved rating stays in that demo: the WineDNA demo still counts the sample user's own bottles.
+    await jump(page, 'rate', 1);
+    await expect(phone).toContainText('Scored 92', { timeout: 8000 });
+    await show(page, 'winedna');
+    await expect(page.locator('#winedna .phone-app')).toContainText('12 bottles scanned');
+  });
+
+  test('after a score, Keep learning offers quizzes and articles for the bottle', async ({ page }) => {
+    await page.goto(BASE + '/');
+    await show(page, 'keep-learning');
+    const phone = page.locator('#keep-learning .phone-app');
+    await expect(phone).toContainText('Keep learning', { timeout: 10000 });
+    await expect(phone).toContainText('Syrah quiz');
+    await jump(page, 'keep-learning', 1);
+    await expect(phone).toContainText('Get to Know Syrah', { timeout: 6000 });
   });
 
   test('Vinny types the question and answers it', async ({ page }) => {
@@ -105,7 +176,9 @@ test.describe('desktop', () => {
     page.on('request', (r) => { const u = new URL(r.url()); if (u.origin !== BASE || /claude|supabase/.test(u.pathname)) calls.push(r.url()); });
     await page.addInitScript(() => { if (!localStorage.getItem('vinterest_wines')) localStorage.setItem('vinterest_wines', '[{"name":"Mine"}]'); });
     await page.goto(BASE + '/');
-    for (const id of ['scan', 'winedna', 'vinny', 'learn', 'my-wines']) { await show(page, id); await page.waitForTimeout(400); }
+    for (const id of FITS) { await show(page, id); await page.waitForTimeout(400); }
+    await jump(page, 'rate', 1);
+    await page.waitForTimeout(1500);
     const stored = await page.evaluate(() => ({ n: localStorage.length, wines: localStorage.getItem('vinterest_wines'), s: sessionStorage.length }));
     // Only the visitor's own key is there, unchanged, and nothing was written to session storage.
     expect(stored).toEqual({ n: 1, wines: '[{"name":"Mine"}]', s: 0 });
@@ -122,7 +195,7 @@ test.describe('desktop', () => {
 
 // Nothing in a demo section may be cut off, whatever the window: the text and the phone stay inside
 // the section, and the caption text stays clear of the header.
-const FITS = ['scan', 'winedna', 'vinny', 'learn', 'my-wines'];
+const FITS = ['scan', 'learn-wine', 'rate', 'keep-learning', 'winedna', 'vinny', 'learn', 'my-wines'];
 async function fits(page, id) {
   await show(page, id);
   await page.waitForTimeout(300);

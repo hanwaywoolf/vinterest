@@ -15,6 +15,7 @@ const DemoPersona = (() => {
   function area() {
     const m = new Map();
     return {
+      _map: m,
       getItem: (k) => (m.has(k) ? m.get(k) : null),
       setItem: (k, v) => { m.set(k, String(v)); },
       removeItem: (k) => { m.delete(k); },
@@ -40,5 +41,14 @@ const DemoPersona = (() => {
   // XP badge should look lived in, not like a first launch.
   local.setItem('vinterest_xp_v3', JSON.stringify({ version: 1, accounts: { local: { total: 410, events: [], scansThisWeek: [], totalRatings: 11, grapesSeen: ['Tempranillo', 'Grenache', 'Syrah', 'Malbec'], quizCompleted: {}, quizStreaks: {} } } }));
 
-  return { sample, user: sample.user, slides: sample.slides };
+  // Rating a bottle in a demo really saves it (WineHistory.add), which would change every other demo
+  // (12 bottles become 13, a scored wine appears). So each demo starts from this snapshot: mounting
+  // one puts the store back as seeded, and a demo's own React state is untouched by that.
+  const baseline = Array.from(local._map.entries());
+  function reset() {
+    local._map.clear(); session._map.clear();
+    baseline.forEach(([k, v]) => local._map.set(k, v));
+  }
+
+  return { sample, user: sample.user, slides: sample.slides, reset };
 })();

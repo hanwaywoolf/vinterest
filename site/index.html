@@ -58,7 +58,7 @@
 </section>
 
 <!-- 1. Scan and match -->
-<section class="feature light" id="scan" data-feature data-duration="20" aria-labelledby="scan-h">
+<section class="feature light" id="scan" data-feature data-duration="14" aria-labelledby="scan-h">
   <div class="pin">
     <div class="copy">
       <p class="eyebrow">Scan</p>
@@ -66,22 +66,85 @@
       <p class="lead">Point your camera at any label or wine list. You get a match built from your own scores, and the reasons behind it.</p>
       <ol class="steps">
         <li data-at="0"><h3>A match you can read as a score</h3><p>87% means we expect you to give it about an 87. It comes from every wine of that type you've scored, weighted by how alike each one is.</p></li>
-        <li data-at="0.22"><h3>Reasons for, and against</h3><p>Syrah: you've scored two, averaging 90. Tannins: your 90+ reds lean softer, and this one doesn't. You see both sides.</p></li>
-        <li data-at="0.45"><h3>See exactly why</h3><p>Tap "Why 87%?" and the working opens: your average for the type, what lifts this wine, what holds it back, and the bottles you've tried that are most like it.</p></li>
-        <li data-at="0.66"><h3>Then decide what's next</h3><p>Learn about the bottle, save it for later, or score it once you've tasted it. Every score out of 100 makes the next match better.</p></li>
-        <li data-at="0.9"><h3>Price, kept apart</h3><p>The shop price sits in its own card. It never changes the match, and a bottle far above your usual spend gets a note of its own.</p></li>
+        <li data-at="0.3" data-hold="0.58"><h3>Reasons for and against, and exactly why</h3><p>Syrah: you've scored two, averaging 90. Tannins: your 90+ reds lean softer, and this one doesn't. Tap &ldquo;Why 87%?&rdquo; to open the working, and the bottles you've tried that are most like it.</p></li>
       </ol>
     </div>
     <div class="stage">
-      <div class="phone-slot"><div class="phone" role="img" aria-label="A scroll through the scan result: the wine, the 87% match, the reasons, the working behind the match, and where to score it.">
+      <div class="phone-slot"><div class="phone" role="img" aria-label="A scroll through the scan result: the wine, the 87% match, the reasons for and against, and the working behind the number.">
         <div class="phone-screen" aria-hidden="true" inert><div class="statusbar"><span>9:41</span><span class="sig"><i style="width:18px"></i><i style="width:24px"></i></span></div><div class="phone-app" data-demo="scan"></div></div>
         <span class="island"></span></div></div>
     </div>
   </div>
 </section>
 
-<!-- 2. WineDNA -->
-<section class="feature dark flip" id="winedna" data-feature data-duration="18" aria-labelledby="dna-h">
+<!-- 2. Learn about the wine -->
+<section class="feature dark flip" id="learn-wine" data-feature data-duration="27" aria-labelledby="learn-wine-h">
+  <div class="pin">
+    <div class="copy">
+      <p class="eyebrow">Learn about it</p>
+      <h2 id="learn-wine-h">Learn about the wine, in <span class="serif">nine</span> cards.</h2>
+      <p class="lead">One tap on &ldquo;Learn about it&rdquo; opens a deck written for this exact bottle: why it suits you, where it's from, how to taste it, what to say, and what it should cost.</p>
+      <ol class="steps">
+        <li data-at="0"><h3>Start with your match</h3><p>The first card is the match and its reasons, in big type.</p></li>
+        <li data-at="0.111"><h3>Why you'll like it, and what to watch for</h3><p>A line on how this bottle fits your taste, and one practical tip, like decanting or serving temperature.</p></li>
+        <li data-at="0.333"><h3>Where it's from, and a story to tell</h3><p>The place, what makes the region's wines distinctive, the producer, and one surprising fact.</p></li>
+        <li data-at="0.556"><h3>How to taste it, and what to say</h3><p>Cues for body, tannins and acidity as you sip, Blind Call if you want to test your palate, and three lines to sound clued-in.</p></li>
+        <li data-at="0.778"><h3>What it should cost</h3><p>The shop price where you live, set against what you usually spend. It sits on its own card and never changes the match.</p></li>
+        <li data-at="0.889"><h3>Then score it</h3><p>The last card is where you give it a score.</p></li>
+      </ol>
+    </div>
+    <div class="stage">
+      <div class="phone-slot"><div class="phone" role="img" aria-label="The card deck for the Crozes-Hermitage, turning through its nine cards: match, why you'll like it, a tip, where it's from, a story, how to taste it, what to say, the price check and rating.">
+        <div class="phone-screen" aria-hidden="true" inert><div class="statusbar"><span>9:41</span><span class="sig"><i style="width:18px"></i><i style="width:24px"></i></span></div><div class="phone-app" data-demo="deck"></div></div>
+        <span class="island"></span></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- 3. Rate it -->
+<section class="feature light" id="rate" data-feature data-duration="18" aria-labelledby="rate-h">
+  <div class="pin">
+    <div class="copy">
+      <p class="eyebrow">Rate it</p>
+      <h2 id="rate-h">Taste it, then <span class="serif">score</span> it out of 100.</h2>
+      <p class="lead">Tap a quick score or drag the slider. Your score is the most useful thing you can give Vinterest, and every one sharpens your next match.</p>
+      <ol class="steps">
+        <li data-at="0"><h3>Slide to a score</h3><p>Drag the slider or tap 70, 80, 85, 90 or 95. The label follows: 90 to 95 is Outstanding, 80 to 89 Very good.</p></li>
+        <li data-at="0.5"><h3>It joins your WineDNA</h3><p>Save it and the bottle goes into My Wines and starts shaping your WineDNA and your next matches.</p></li>
+        <li data-at="0.74"><h3>Add what you noticed, if you like</h3><p>Say whether you'd buy it again, what you paid and how it felt against the label. Every answer is used: buy again feeds your shopping list, and the price sets your budget.</p></li>
+      </ol>
+    </div>
+    <div class="stage">
+      <div class="phone-slot"><div class="phone" role="img" aria-label="Rating the bottle: a slider moving up to 92, Outstanding, then the optional questions about buying it again, what you paid and what you noticed.">
+        <div class="phone-screen" aria-hidden="true" inert><div class="statusbar"><span>9:41</span><span class="sig"><i style="width:18px"></i><i style="width:24px"></i></span></div><div class="phone-app" data-demo="rate"></div></div>
+        <span class="island"></span></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- 4. Keep learning -->
+<section class="feature dark flip" id="keep-learning" data-feature data-duration="16" aria-labelledby="keep-learning-h">
+  <div class="pin">
+    <div class="copy">
+      <p class="eyebrow">Keep learning</p>
+      <h2 id="keep-learning-h">Then <span class="serif">keep</span> learning about the bottle.</h2>
+      <p class="lead">The moment you score, Vinterest offers a few things to read and quiz yourself on, all picked for the wine you just had. A few minutes each.</p>
+      <ol class="steps">
+        <li data-at="0"><h3>Quizzes on the bottle</h3><p>The basics for its type, a quiz on where it's from, and one on its grape. Each scan opens its own.</p></li>
+        <li data-at="0.4"><h3>Articles to read</h3><p>The next beginner article, and a piece written from your WineDNA about the grape, with the score you just gave in it.</p></li>
+        <li data-at="0.8"><h3>Then you're done</h3><p>Finish, see the full wine details, or scan another bottle.</p></li>
+      </ol>
+    </div>
+    <div class="stage">
+      <div class="phone-slot"><div class="phone" role="img" aria-label="The options after scoring: quizzes on the wine's type, region and grape, and articles to read.">
+        <div class="phone-screen" aria-hidden="true" inert><div class="statusbar"><span>9:41</span><span class="sig"><i style="width:18px"></i><i style="width:24px"></i></span></div><div class="phone-app" data-demo="keep"></div></div>
+        <span class="island"></span></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- 5. WineDNA -->
+<section class="feature light" id="winedna" data-feature data-duration="18" aria-labelledby="dna-h">
   <div class="pin">
     <div class="copy">
       <p class="eyebrow">WineDNA</p>
@@ -102,8 +165,8 @@
   </div>
 </section>
 
-<!-- 3. Vinny -->
-<section class="feature light" id="vinny" data-feature data-duration="14" aria-labelledby="vinny-h">
+<!-- 6. Vinny -->
+<section class="feature dark flip" id="vinny" data-feature data-duration="14" aria-labelledby="vinny-h">
   <div class="pin">
     <div class="copy">
       <p class="eyebrow">Ask Vinny</p>
@@ -123,8 +186,8 @@
   </div>
 </section>
 
-<!-- 4. Learn -->
-<section class="feature dark flip" id="learn" data-feature data-duration="18" aria-labelledby="learn-h">
+<!-- 7. Learn -->
+<section class="feature light" id="learn" data-feature data-duration="18" aria-labelledby="learn-h">
   <div class="pin">
     <div class="copy">
       <p class="eyebrow">Learn</p>
@@ -145,8 +208,8 @@
   </div>
 </section>
 
-<!-- 5. My Wines -->
-<section class="feature light" id="my-wines" data-feature data-duration="14" aria-labelledby="wines-h">
+<!-- 8. My Wines -->
+<section class="feature dark flip" id="my-wines" data-feature data-duration="14" aria-labelledby="wines-h">
   <div class="pin">
     <div class="copy">
       <p class="eyebrow">My Wines</p>
@@ -167,7 +230,7 @@
 </section>
 
 <!-- Gets better -->
-<section class="dark plain" aria-labelledby="better-h">
+<section class="plain off" aria-labelledby="better-h">
   <div class="wrap">
     <div class="section-head">
       <p class="eyebrow">Over time</p>
@@ -175,9 +238,9 @@
       <p class="lead">Your match and your WineDNA build as you score, and it says exactly how many more it needs.</p>
     </div>
     <div class="stages">
-      <div class="stage-card" style="background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.12)"><span class="when" style="color:#E8A0AE">First bottle</span><h3>Its story, and a start</h3><p style="color:var(--dim)">The bottle's story, its quizzes, and the beginning of your WineDNA.</p></div>
-      <div class="stage-card" style="background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.12)"><span class="when" style="color:#E8A0AE">After 3 reds</span><h3>Matches switch on</h3><p style="color:var(--dim)">Your red matches turn on. The same goes for every other type you drink.</p></div>
-      <div class="stage-card" style="background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.12)"><span class="when" style="color:#E8A0AE">Every bottle after</span><h3>Sharper, more yours</h3><p style="color:var(--dim)">Better matches, more written for you, and a Vinny who knows you better.</p></div>
+      <div class="stage-card"><span class="when">First bottle</span><h3>Its story, and a start</h3><p>The bottle's story, its quizzes, and the beginning of your WineDNA.</p></div>
+      <div class="stage-card"><span class="when">After 3 reds</span><h3>Matches switch on</h3><p>Your red matches turn on. The same goes for every other type you drink.</p></div>
+      <div class="stage-card"><span class="when">Every bottle after</span><h3>Sharper, more yours</h3><p>Better matches, more written for you, and a Vinny who knows you better.</p></div>
     </div>
   </div>
 </section>
