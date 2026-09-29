@@ -61,10 +61,9 @@ h1 .serif, h2 .serif { font-size: 1.08em; }
 .hero { padding: 132px 0 96px; min-height: 100svh; display: flex; align-items: center; }
 .hero .wrap { display: grid; grid-template-columns: 1.15fr .85fr; gap: 48px; align-items: center; }
 /* The landing headline is set light, with the one word that matters in bold (no italic serif here). */
-.hero h1 { font-weight: 400; letter-spacing: -.045em; line-height: 1.1; }
-/* "before": white letters with a crimson outline. The stroke is painted under the fill, so it sits
-   outside the letterforms and doesn't thin the white. */
-.hero h1 strong { font-weight: 700; color: #fff; -webkit-text-stroke: 7px var(--cr); paint-order: stroke fill; stroke-linejoin: round; letter-spacing: -.02em; }
+.hero h1 { font-size: clamp(34px, 4.9vw, 58px); font-weight: 400; letter-spacing: -.06em; line-height: 1.12; }
+/* "before" in the app's Sparkling blue (_TYPE_COLORS.sparkling). */
+.hero h1 strong { font-weight: 700; color: #5E8FA8; }
 .hero .lead { font-size: 20px; }
 .hero .cta { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 32px; }
 .hero .note { margin-top: 18px; font-size: 14px; color: var(--dim); }
