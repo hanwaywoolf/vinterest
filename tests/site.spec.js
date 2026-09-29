@@ -73,7 +73,15 @@ test.describe('desktop', () => {
     await expect(page.locator('#scan .steps li.on h3')).toHaveText('Reasons for and against, and exactly why');
     // The demo opened "Why 87%?" so the working is on screen, and it stays put.
     await expect(phone).toContainText('HOLDS IT BACK', { ignoreCase: true });
-    await page.waitForTimeout(1500);
+    await page.waitForTimeout(2500);
+    // It has scrolled far enough to reach where the working adds up to the match, and that line is on screen.
+    const inView = await page.evaluate(() => {
+      const root = document.querySelector('#scan .phone-app');
+      const line = Array.from(root.querySelectorAll('*')).find((n) => /We expect you'd score it about/.test(n.textContent) && n.children.length === 0);
+      const r = line.getBoundingClientRect(), s = root.getBoundingClientRect();
+      return r.top >= s.top && r.bottom <= s.bottom - 60;
+    });
+    expect(inView).toBe(true);
     const held = await scrolledPx(page, 'scan');
     await page.waitForTimeout(2500);
     expect(Math.abs((await scrolledPx(page, 'scan')) - held)).toBeLessThan(3);

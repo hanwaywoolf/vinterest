@@ -208,7 +208,14 @@ const VinterestDemo = {
       const want = p >= a.at;
       if (want === a.on || a.busy) return;
       a.busy = true;
-      _until(() => { if (_tapText(el, a.text)) { a.on = want; a.busy = false; return true; } return false; }, 30);
+      _until(() => {
+        if (!_tapText(el, a.text)) return false;
+        a.on = want; a.busy = false;
+        // Opening or closing something changes how long the screen is, so where p of the way down (or
+        // "the end") is has moved: work it out again once it has settled.
+        [150, 500].forEach((ms) => setTimeout(() => scrollTo(lastP), ms));
+        return true;
+      }, 30);
       setTimeout(() => { a.busy = false; }, 4000);
     });
 
