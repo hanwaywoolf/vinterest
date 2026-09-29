@@ -82,28 +82,37 @@ h1 .serif, h2 .serif { font-size: 1.08em; }
 .phone-app:empty::after { content: ''; flex: 1; margin: 24px; border-radius: 24px; background: linear-gradient(100deg, #F1EEEA 30%, #F8F6F3 50%, #F1EEEA 70%); background-size: 200% 100%; animation: shimmer 1.6s linear infinite; }
 @keyframes shimmer { to { background-position: -200% 0; } }
 
-/* ── Scroll-driven features ──
-   The section is tall; .pin sticks for its length; site.js turns how far through it you are into
-   the demo's scroll and into which caption is lit. */
-.feature { --track: 320vh; height: calc(100svh + var(--track)); }
-.pin { position: sticky; top: 0; height: 100svh; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 56px; align-items: center; padding: 88px 0 32px; grid-template-rows: minmax(0, 1fr); }
-.pin .copy { grid-column: 1; grid-row: 1; padding-left: max(var(--gutter), calc((100vw - var(--wrap)) / 2 + var(--gutter))); min-width: 0; max-width: 640px; }
-.pin .stage { grid-column: 2; grid-row: 1; height: 100%; padding-right: max(var(--gutter), calc((100vw - var(--wrap)) / 2 + var(--gutter))); justify-content: flex-start; }
-.feature.flip .copy { grid-column: 2; padding-left: 0; padding-right: max(var(--gutter), calc((100vw - var(--wrap)) / 2 + var(--gutter))); }
-.feature.flip .stage { grid-column: 1; justify-content: flex-end; padding-right: 0; padding-left: max(var(--gutter), calc((100vw - var(--wrap)) / 2 + var(--gutter))); }
+/* ── Demo sections ──
+   Each is one screen tall, or 680px when the window is shorter than that, and the page scrolls past
+   it normally. While it's on screen site.js plays the demo by itself and lights the caption it has
+   reached; a caption can be clicked to jump there. */
+.feature { height: max(100svh, 640px); display: grid; }
+.pin { width: 100%; max-width: var(--wrap); margin: 0 auto; padding: 88px var(--gutter) 40px; min-height: 0; height: 100%; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); gap: 56px; }
+.pin .copy { grid-column: 1; grid-row: 1; align-self: safe center; min-width: 0; max-width: 560px; }
+.pin .stage { grid-column: 2; grid-row: 1; height: 100%; justify-content: center; }
+.feature.flip .copy { grid-column: 2; }
+.feature.flip .stage { grid-column: 1; }
+/* A short window (a laptop with toolbars) gets tighter padding, so the text and phone still fit. */
+@media (max-height: 760px) and (min-width: 901px) { .feature { height: max(100svh, 600px); } .pin { padding: 76px var(--gutter) 24px; } }
 .feature h2 { max-width: 14em; }
-.steps { list-style: none; margin-top: 30px; position: relative; padding-left: 26px; display: grid; gap: 4px; }
+@media (max-height: 760px) and (min-width: 901px) { .feature .lead { font-size: 16px; margin-top: 12px; } .feature h2 { font-size: 38px; } .steps { margin-top: 16px; } }
+.steps { list-style: none; margin-top: 24px; position: relative; padding-left: 26px; display: grid; gap: 4px; }
 .steps::before { content: ''; position: absolute; left: 5px; top: 8px; bottom: 8px; width: 2px; border-radius: 1px; background: rgba(0, 0, 0, .1); }
 .dark .steps::before { background: rgba(255, 255, 255, .16); }
 .steps::after { content: ''; position: absolute; left: 5px; top: 8px; width: 2px; border-radius: 1px; background: var(--cr); height: calc((100% - 16px) * var(--p, 0)); }
 .dark .steps::after { background: #E8A0AE; }
-.steps li { position: relative; padding: 10px 0; opacity: .38; transition: opacity .3s; }
-.steps li::before { content: ''; position: absolute; left: -26px; top: 18px; width: 12px; height: 12px; border-radius: 50%; background: var(--bg); border: 2px solid rgba(0, 0, 0, .18); transition: background .3s, border-color .3s; }
+.steps li { position: relative; padding: 7px 0; opacity: .42; transition: opacity .3s; cursor: pointer; }
+.steps li:hover { opacity: .75; }
+.steps li::before { content: ''; position: absolute; left: -26px; top: 13px; width: 12px; height: 12px; border-radius: 50%; background: var(--bg); border: 2px solid rgba(0, 0, 0, .18); transition: background .3s, border-color .3s; }
 .dark .steps li::before { background: var(--dark); border-color: rgba(255, 255, 255, .3); }
 .steps li.on { opacity: 1; }
 .steps li.on::before { background: var(--cr); border-color: var(--cr); }
 .dark .steps li.on::before { background: #E8A0AE; border-color: #E8A0AE; }
-.steps li p { font-size: 15px; color: var(--ink-2); margin-top: 4px; max-width: 30em; }
+.steps li h3 { font-size: 17px; }
+/* Only the lit caption shows its sentence, so the list stays short enough for any window. */
+.steps li p { font-size: 15px; color: var(--ink-2); margin-top: 0; max-width: 30em; max-height: 0; overflow: hidden; opacity: 0; transition: max-height .35s ease, opacity .3s ease, margin-top .3s ease; }
+.steps.measure li, .steps.measure li p, .steps.measure li::before { transition: none; }
+.steps li.on p { max-height: 9em; opacity: 1; margin-top: 4px; }
 .dark .steps li p { color: var(--dim); }
 
 /* ── Plain sections ── */
@@ -172,10 +181,10 @@ footer a:hover { color: #fff; }
   .hero { padding: 100px 0 56px; min-height: 0; }
   .hero .wrap { grid-template-columns: 1fr; gap: 32px; }
   .hero .stage { height: 560px; }
-  .feature { --track: 260vh; }
-  .pin { grid-template-columns: 1fr; grid-template-rows: auto minmax(0, 1fr); gap: 12px; padding: 76px 0 12px; }
-  .pin .copy, .feature.flip .copy { grid-column: 1; grid-row: 1; padding: 0 var(--gutter); max-width: none; }
-  .pin .stage, .feature.flip .stage { grid-column: 1; grid-row: 2; padding: 0; justify-content: center; }
+  .feature { height: max(100svh, 600px); }
+  .pin { grid-template-columns: 1fr; grid-template-rows: auto minmax(0, 1fr); gap: 12px; padding: 76px var(--gutter) 16px; }
+  .pin .copy, .feature.flip .copy { grid-column: 1; grid-row: 1; max-width: none; }
+  .pin .stage, .feature.flip .stage { grid-column: 1; grid-row: 2; }
   .feature h2 { font-size: 26px; }
   .feature .eyebrow { margin-bottom: 8px; font-size: 12px; }
   .feature .lead { display: none; }
@@ -186,7 +195,7 @@ footer a:hover { color: #fff; }
   .steps { display: grid; }
   .steps li { padding: 0; grid-area: 1 / 1; visibility: hidden; opacity: 1; }
   .steps li.on { visibility: visible; }
-  .steps li p { font-size: 14px; margin-top: 2px; }
+  .steps li p { font-size: 14px; max-height: none; opacity: 1; margin-top: 2px; transition: none; }
   .steps li h3 { font-size: 16px; }
   section.plain, .beta { padding: 72px 0; }
   .stages { grid-template-columns: 1fr; }
@@ -200,9 +209,10 @@ footer a:hover { color: #fff; }
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
   .feature { height: auto; }
-  .pin { position: static; height: auto; padding: 96px 0; }
+  .pin { height: auto; padding: 96px var(--gutter); }
   .steps { display: grid; gap: 4px; }
   .steps li { opacity: 1; visibility: visible !important; grid-area: auto; }
+  .steps li p { max-height: none; opacity: 1; margin-top: 4px; transition: none; }
   .steps::after { display: none; }
   .phone-app:empty::after { animation: none; }
   .btn { transition: none; }

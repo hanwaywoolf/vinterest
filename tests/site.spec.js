@@ -23,13 +23,17 @@ test.beforeEach(async ({ page }) => {
   await page.route('**/api/country', (r) => r.fulfill({ contentType: 'application/json', body: '{"country":"GB"}' }));
 });
 
-// Scrolls to a point p (0 to 1) through a pinned feature section, as a visitor's scroll would.
-async function scrollTo(page, id, p) {
-  await page.evaluate(([id, p]) => {
-    const el = document.getElementById(id);
-    window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY + p * (el.offsetHeight - innerHeight), behavior: 'instant' });
-  }, [id, p]);
+// Brings a demo section on screen, as scrolling to it would.
+async function show(page, id) {
+  await page.evaluate((id) => document.getElementById(id).scrollIntoView({ block: 'center', behavior: 'instant' }), id);
 }
+// Jumps a demo to its nth caption, as a click on it does.
+const jump = (page, id, n) => page.locator(`#${id} .steps li`).nth(n).click();
+const scrolledPx = (page, id) => page.evaluate((id) => {
+  let best = 0;
+  document.querySelector(`#${id} .phone-app`).querySelectorAll('*').forEach((el) => { if (el.scrollHeight > el.clientHeight + 40 && ['auto', 'scroll'].includes(getComputedStyle(el).overflowY)) best = Math.max(best, el.scrollTop); });
+  return best;
+}, id);
 
 test.describe('desktop', () => {
   test.use({ viewport: { width: 1280, height: 800 }, hasTouch: false, isMobile: false });
@@ -47,35 +51,42 @@ test.describe('desktop', () => {
     expect(errors).toEqual([]);
   });
 
-  test('page scroll drives the real screen and lights the matching caption', async ({ page }) => {
+  test('a demo plays by itself while it is on screen: the screen scrolls and the captions move on', async ({ page }) => {
     await page.goto(BASE + '/');
-    const phone = page.locator('#scan .phone-app');
-    await scrollTo(page, 'scan', 0.02);
-    await expect(phone).toContainText('Crozes-Hermitage 2021');
-    const scrolled = () => page.evaluate(() => {
-      const root = document.querySelector('#scan .phone-app');
-      let best = 0;
-      root.querySelectorAll('*').forEach((el) => { if (el.scrollHeight > el.clientHeight + 40 && ['auto', 'scroll'].includes(getComputedStyle(el).overflowY)) best = Math.max(best, el.scrollTop); });
-      return best;
-    });
+    await show(page, 'scan');
+    await expect(page.locator('#scan .phone-app')).toContainText('Crozes-Hermitage 2021');
     await expect(page.locator('#scan .steps li.on h3')).toHaveText('A match you can read as a score');
-    const before = await scrolled();
-    await scrollTo(page, 'scan', 0.6);
-    await expect.poll(scrolled).toBeGreaterThan(before + 200);
-    // The demo opened "Why 87%?" for the visitor: its working is on the screen.
+    await expect(page.locator('#scan .steps li.on h3')).toHaveText('Reasons for, and against', { timeout: 12000 });
+    await expect.poll(() => scrolledPx(page, 'scan')).toBeGreaterThan(20);
+  });
+
+  test('a caption jumps the demo to that point, and the demo opens "Why 87%?" for you', async ({ page }) => {
+    await page.goto(BASE + '/');
+    await show(page, 'scan');
+    const phone = page.locator('#scan .phone-app');
+    await jump(page, 'scan', 2);
+    await expect(page.locator('#scan .steps li.on h3')).toHaveText('See exactly why');
     await expect(phone).toContainText('HOLDS IT BACK', { ignoreCase: true });
-    await expect(page.locator('#scan .steps li.on h3')).toHaveText('Why 87%? Open the working');
-    // And scrolling back closes it again.
-    await scrollTo(page, 'scan', 0.05);
+    await jump(page, 'scan', 0);
     await expect(phone).not.toContainText('HOLDS IT BACK', { ignoreCase: true });
   });
 
-  test('Vinny types the question and answers it as you scroll', async ({ page }) => {
+  test('the page scrolls straight past a demo: no pinned section to scroll through', async ({ page }) => {
     await page.goto(BASE + '/');
+    await show(page, 'scan');
+    const h = await page.evaluate(() => document.getElementById('scan').offsetHeight);
+    expect(h).toBeLessThanOrEqual(820);
+    const before = await page.evaluate(() => scrollY);
+    await page.mouse.move(640, 400);
+    await page.mouse.wheel(0, 700);
+    await expect.poll(() => page.evaluate(() => scrollY)).toBeGreaterThan(before + 600);
+  });
+
+  test('Vinny types the question and answers it', async ({ page }) => {
+    await page.goto(BASE + '/');
+    await show(page, 'vinny');
     const phone = page.locator('#vinny .phone-app');
-    await scrollTo(page, 'vinny', 0.2);
-    await expect(phone).toContainText('Steak');
-    await scrollTo(page, 'vinny', 0.95);
+    await jump(page, 'vinny', 2);
     await expect(phone).toContainText('Steak tonight. What should I look for?');
     await expect(phone).toContainText('Rioja');
   });
@@ -84,7 +95,7 @@ test.describe('desktop', () => {
     await page.goto(BASE + '/');
     const want = { winedna: 'WineDNA', learn: 'Wine Basics', 'my-wines': 'Viña Ardanza Reserva' };
     for (const [id, text] of Object.entries(want)) {
-      await scrollTo(page, id, 0.3);
+      await show(page, id);
       await expect(page.locator(`#${id} .phone-app`)).toContainText(text);
     }
   });
@@ -94,7 +105,7 @@ test.describe('desktop', () => {
     page.on('request', (r) => { const u = new URL(r.url()); if (u.origin !== BASE || /claude|supabase/.test(u.pathname)) calls.push(r.url()); });
     await page.addInitScript(() => { if (!localStorage.getItem('vinterest_wines')) localStorage.setItem('vinterest_wines', '[{"name":"Mine"}]'); });
     await page.goto(BASE + '/');
-    for (const id of ['scan', 'winedna', 'vinny', 'learn', 'my-wines']) { await scrollTo(page, id, 0.5); await page.waitForTimeout(400); }
+    for (const id of ['scan', 'winedna', 'vinny', 'learn', 'my-wines']) { await show(page, id); await page.waitForTimeout(400); }
     const stored = await page.evaluate(() => ({ n: localStorage.length, wines: localStorage.getItem('vinterest_wines'), s: sessionStorage.length }));
     // Only the visitor's own key is there, unchanged, and nothing was written to session storage.
     expect(stored).toEqual({ n: 1, wines: '[{"name":"Mine"}]', s: 0 });
@@ -104,9 +115,49 @@ test.describe('desktop', () => {
   test('the demo bundle is only fetched once a phone is near', async ({ page }) => {
     const hits = [];
     page.on('request', (r) => { if (r.url().includes('/demo.js')) hits.push(r.url()); });
-    await page.setViewportSize({ width: 1280, height: 800 });
     await page.goto(BASE + '/privacy/');
     expect(hits).toEqual([]);
+  });
+});
+
+// Nothing in a demo section may be cut off, whatever the window: the text and the phone stay inside
+// the section, and the caption text stays clear of the header.
+const FITS = ['scan', 'winedna', 'vinny', 'learn', 'my-wines'];
+async function fits(page, id) {
+  await show(page, id);
+  await page.waitForTimeout(300);
+  return page.evaluate((id) => {
+    const r = (sel) => document.querySelector(sel).getBoundingClientRect();
+    const sec = r(`#${id}`), copy = r(`#${id} .copy`), phone = r(`#${id} .phone`);
+    return { secTop: sec.top, secBottom: sec.bottom, copyTop: copy.top, copyBottom: copy.bottom, phoneTop: phone.top, phoneBottom: phone.bottom, vh: innerHeight, wide: document.documentElement.scrollWidth <= innerWidth };
+  }, id);
+}
+
+test.describe('short desktop window', () => {
+  test.use({ viewport: { width: 1280, height: 613 }, hasTouch: false, isMobile: false });
+
+  test('every section fits, with nothing cut off at the top or the bottom', async ({ page }) => {
+    await page.goto(BASE + '/');
+    for (const id of FITS) {
+      const b = await fits(page, id);
+      // The section is no taller than the window (or 600px, if the window is shorter): it is one screen, not a scroll.
+      expect(b.secBottom - b.secTop, `${id} height`).toBeLessThanOrEqual(Math.max(b.vh, 600) + 2);
+      expect(b.copyTop, `${id} text top`).toBeGreaterThanOrEqual(b.secTop + 60);
+      expect(b.copyBottom, `${id} text bottom`).toBeLessThanOrEqual(b.secBottom - 8);
+      expect(b.phoneTop, `${id} phone top`).toBeGreaterThanOrEqual(b.secTop + 60);
+      expect(b.phoneBottom, `${id} phone bottom`).toBeLessThanOrEqual(b.secBottom - 8);
+      // And with each caption lit in turn (once it has finished opening) nothing moves out of the section.
+      const n = await page.locator(`#${id} .steps li`).count();
+      let top0;
+      for (let i = 0; i < n; i++) {
+        await jump(page, id, i);
+        await page.waitForTimeout(500);
+        const c = await page.evaluate((id) => { const r = (q) => document.querySelector(q).getBoundingClientRect(); return { top: r(`#${id} .copy`).top - r(`#${id}`).top, bottom: r(`#${id} .copy`).bottom, sec: r(`#${id}`).bottom }; }, id);
+        expect(c.bottom, `${id} caption ${i}`).toBeLessThanOrEqual(c.sec - 8);
+        top0 = top0 ?? c.top;
+        expect(Math.abs(c.top - top0), `${id} caption ${i} moved the text`).toBeLessThan(2);
+      }
+    }
   });
 });
 
@@ -115,32 +166,27 @@ test.describe('phone', () => {
 
   test('nothing spills sideways, and the phone sits below the caption', async ({ page }) => {
     await page.goto(BASE + '/');
-    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
-    for (const id of ['scan', 'vinny', 'my-wines']) {
-      await scrollTo(page, id, 0.5);
-      await page.waitForTimeout(300);
-      const box = await page.evaluate((id) => {
-        const r = (sel) => document.querySelector(sel).getBoundingClientRect();
-        return { copyBottom: r(`#${id} .copy`).bottom, phoneTop: r(`#${id} .phone`).top, phoneBottom: r(`#${id} .phone`).bottom, vh: innerHeight };
-      }, id);
-      expect(box.phoneTop, id).toBeGreaterThanOrEqual(box.copyBottom - 2);
-      expect(box.phoneBottom, id).toBeLessThanOrEqual(box.vh + 2);
+    for (const id of FITS) {
+      const b = await fits(page, id);
+      expect(b.wide, id).toBe(true);
+      expect(b.secBottom - b.secTop, `${id} height`).toBeLessThanOrEqual(Math.max(b.vh, 600) + 2);
+      expect(b.phoneTop, id).toBeGreaterThanOrEqual(b.copyBottom - 2);
+      expect(b.phoneBottom, id).toBeLessThanOrEqual(b.secBottom + 2);
     }
-    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   });
 });
 
 test.describe('reduced motion', () => {
   test.use({ viewport: { width: 1280, height: 800 }, hasTouch: false, isMobile: false });
 
-  test('sections aren\'t pinned and every caption shows', async ({ page }) => {
+  test('nothing plays, and every caption shows', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.goto(BASE + '/');
-    const pos = await page.evaluate(() => getComputedStyle(document.querySelector('#scan .pin')).position);
-    expect(pos).toBe('static');
-    for (const li of await page.locator('#scan .steps li').all()) await expect(li).toBeVisible();
-    await scrollTo(page, 'scan', 0);
+    await show(page, 'scan');
+    for (const li of await page.locator('#scan .steps li').all()) { await expect(li).toBeVisible(); await expect(li.locator('p')).toBeVisible(); }
     await expect(page.locator('#scan .phone-app')).toContainText('Crozes-Hermitage 2021');
+    await page.waitForTimeout(1500);
+    expect(await scrolledPx(page, 'scan')).toBe(0);
   });
 });
 
