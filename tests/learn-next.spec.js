@@ -48,16 +48,12 @@ test('the 904 bug: first scan opens Rioja and Tempranillo; paying £90 sets the 
   await root.getByText('Rate it', { exact: true }).click();
   await root.getByText('95', { exact: true }).click();
   await root.getByText('Save rating').click();
-  // The tasting questions teach the words.
-  await expect(root).toContainText('How heavy the wine feels in your mouth.');
-  await expect(root).toContainText('The drying, grippy feel on your gums and teeth');
-  await expect(root).toContainText('The label suggests full-bodied. How did it feel to you?');
   await root.getByLabel('What you paid').fill('90');
   await root.getByLabel('What you paid').blur();
   await root.getByText('I\'d buy this again').click();
   // One priced red, scored 95, at £90: that's the budget now, not the onboarding answer.
   expect(await page.evaluate(() => SommelierScript.budget(WineHistory.getAll().filter((w) => w.type === 'red'), Regional.current()))).toBe('around £90 GBP');
-  await root.getByText('Done: what\'s next?').click();
+  await root.getByText('Finished: what\'s next?').click();
   await expect(root).toContainText('Keep learning');
   for (const t of ['Red Grapes: the basics', 'Rioja quiz', 'Tempranillo quiz']) await expect(root).toContainText(t);
   await expect(root).toContainText('Tempranillo leads this blend');
@@ -84,7 +80,7 @@ test('the sixth grape and region are offered with Pro', async ({ context, page }
   await expect(root).toContainText('Every Grape');
 });
 
-test('every wine type has its own basics; beginners see the tasting questions folded away', async ({ context, page }) => {
+test('every wine type has its own basics; after a score only the quick extras are asked', async ({ context, page }) => {
   const rose = { ...GRAN_RESERVA, name: 'Test Provence Rosé', producer: 'Test', region: 'Côtes de Provence', country: 'France', type: 'rosé', grapes: ['Grenache', 'Cinsault'], tannins: null, body: 0.3 };
   await newUser(context, page, { label: rose, seed: { vinterest_prefs: JSON.stringify({ types: ['rose'], budget: 'mid', experience: 'novice' }) } });
   await scan(page);
@@ -93,10 +89,10 @@ test('every wine type has its own basics; beginners see the tasting questions fo
   await root.getByText('Rate it', { exact: true }).click();
   await root.getByText('90', { exact: true }).click();
   await root.getByText('Save rating').click();
+  // After the score: only the quick extras, no tasting questions.
   await expect(root).not.toContainText('What did you notice?');
-  await root.getByText('Want to go further? Tell us what you noticed →').click();
-  await expect(root).toContainText('What did you notice?');
-  await root.getByText('Done: what\'s next?').click();
+  await expect(root.getByLabel('Where did you have it')).toBeVisible();
+  await root.getByText('Finished: what\'s next?').click();
   await expect(root).toContainText('Rosé: the basics');
   await expect(root).toContainText('Provence quiz');
 });

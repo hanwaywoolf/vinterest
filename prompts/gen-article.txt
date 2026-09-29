@@ -21,7 +21,7 @@ Voice rule: this reader has already shown the preference in question — they've
 
 Return ONLY valid JSON, no markdown:
 {
-  "forYou": "One sentence, max 25 words, telling the reader why this was written for them, citing one of their own wines or scores.",
+  "forYou": "One sentence, max 25 words, on what this piece will help them notice or choose next time, in terms of their own wines. The page already says \"{{because}}\", so don't repeat that wine's score or start with 'because' or 'you scored'.",
   "sections": [
     {
       "term": "Key concept or subheading",

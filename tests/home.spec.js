@@ -88,7 +88,7 @@ test('Home takes you straight there: a type row opens that tab, the script row o
 
   await page.goto(`${BASE}/?demo=1#home`);
   await root(page).getByText('Your red sommelier script', { exact: true }).click();
-  await expect(root(page).getByText('Reds', { exact: true }).first()).toHaveCSS('font-weight', '700');
+  await expect(root(page).getByText('Red', { exact: true }).first()).toHaveCSS('font-weight', '700');
   const scripts = page.locator('[data-section="scripts"]');
   await expect(scripts).toBeInViewport();
   // Opened, even though it was collapsed: no "Expand for full details" under it.

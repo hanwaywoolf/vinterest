@@ -7,6 +7,7 @@
 function NewUserFlow({onComplete}){
   const [step,setStep]=React.useState('welcome');
   const [scanned,setScanned]=React.useState(null);
+  const tasteSeen=React.useRef(false);
   const go=k=>{ try{ window.scrollTo(0,0); }catch(e){} setStep(k); };
   // Progress dots: setup, scan, then the three questions.
   const TOTAL=5;
@@ -16,7 +17,8 @@ function NewUserFlow({onComplete}){
     case 'setup':   return <OnboardSetup step={0} total={TOTAL} onBack={()=>go('welcome')} onDone={()=>go('scan')}/>;
     case 'scan':    return <ScanScreen nav={()=>{}} back={()=>go('setup')} onSkip={()=>go('taste')} onComplete={w=>{ setScanned(w||null); go(w?'story':'taste'); }}/>;
     case 'story':   return <FirstScanStory wine={scanned} onDone={()=>go('taste')}/>;
-    case 'taste':   return <OnboardTaste step={2} total={TOTAL} scanned={scanned} onBack={()=>go(scanned?'story':'scan')} onDone={()=>{ onComplete(); ScanFlow.flushToasts(); }}/>;
+    case 'taste':   { const first=!tasteSeen.current; tasteSeen.current=true;
+                      return <OnboardTaste step={2} total={TOTAL} scanned={first?scanned:null} onBack={()=>go(scanned?'story':'scan')} onDone={()=>{ onComplete(); ScanFlow.flushToasts(); }}/>; }
     default: return null;
   }
 }

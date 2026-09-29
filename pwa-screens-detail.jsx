@@ -94,7 +94,7 @@ function WineDetailScreen({back,nav,showPro}){
             <Icon n="back" sz={16} col={C.ink}/>
           </div>
           <div style={{display:'flex',gap:8}}>
-            <div onClick={toggleFav} style={{width:34,height:34,borderRadius:17,background:isFav?C.crSoft:C.offWhite,border:`1px solid ${isFav?C.crDim:C.line}`,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',transition:'all .15s'}}>
+            <div onClick={toggleFav} role="button" aria-pressed={isFav} aria-label={isFav?'Remove from favourites':'Add to favourites'} style={{width:34,height:34,borderRadius:17,background:isFav?C.crSoft:C.offWhite,border:`1px solid ${isFav?C.crDim:C.line}`,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',transition:'all .15s'}}>
               <svg viewBox="0 0 20 20" width={18} height={18}><path d="M10 16.5C10 16.5 3 12 3 7.5C3 5 5 3.2 7.2 3.2c1.5 0 2.5 1 2.8 1.8.3-.8 1.3-1.8 2.8-1.8C15 3.2 17 5 17 7.5c0 4.5-7 9-7 9z" stroke={isFav?C.cr:C.mid} strokeWidth="1.6" fill={isFav?C.cr:'none'}/></svg>
             </div>
             <div onClick={shareWine} style={{width:34,height:34,borderRadius:17,background:shared?C.greenBg:C.offWhite,border:`1px solid ${shared?C.green:C.line}`,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',transition:'all .15s'}}>
@@ -110,6 +110,7 @@ function WineDetailScreen({back,nav,showPro}){
           <div>
             <div style={{fontSize:24,fontWeight:700,color:C.ink,fontFamily:C.P,lineHeight:1.15}}>{wine?.name||'Château Margaux'}</div>
             <div style={{fontSize:16,color:C.mid,fontFamily:C.P,marginTop:3}}>{wine?<>{wine.vintage||'NV'}{(wine.region||wine.country)&&<> · {Regions.wineFlag(wine)&&<span role="img" aria-label={wine.country||'Country'} style={{fontSize:'17px',marginRight:5,verticalAlign:'-1px'}}>{Regions.wineFlag(wine)}</span>}{[wine.region!==wine.country?wine.region:null,wine.country].filter(Boolean).join(', ')}</>}</>:'2018 · Bordeaux, France'}</div>
+            {(()=>{ const had=wine&&(WineHistory.find(wine)||wine).where_had; return had?<div data-where-had style={{fontSize:14,color:C.mid,fontFamily:C.P,marginTop:2}}>Had at {had}</div>:null; })()}
             <div style={{display:'flex',gap:5,marginTop:8,flexWrap:'wrap',alignItems:'center'}}>{(()=>{ const t=WineDNA._t(wine?.type)||'red', col=(typeof _TYPE_COLORS!=='undefined'&&_TYPE_COLORS[t])||C.cr;
               return <Pill active sm style={{background:col,borderColor:col,fontWeight:600}}>{({red:'Red wine',white:'White wine',rose:'Rosé',sparkling:'Sparkling',orange:'Orange wine',dessert:'Dessert wine',fortified:'Fortified'})[t]||wine?.type}</Pill>; })()}{wine?.grapes?.[0]&&<Pill sm>{wine.grapes[0]}{wine.blend||wine.grapes.length>1?' blend':''}</Pill>}{wine&&<span onClick={()=>setEditing(true)} style={{fontSize:13,fontWeight:600,color:C.cr,fontFamily:C.P,cursor:'pointer',marginLeft:4}}>Edit details</span>}</div>
           </div>
@@ -185,7 +186,6 @@ function DetailMerged({wine,nav,existingRating=0,match}){
       setShowRatingUI(false);
     }
   }
-  function handleSliderChange(e){ const n=Number(e.target.value); setUserRating(n); pendingScore.current=n; }
   // Preset buttons update slider position only — user taps Save to commit
   function handlePreset(p){ setUserRating(p); pendingScore.current=p; }
 
@@ -242,8 +242,17 @@ function DetailMerged({wine,nav,existingRating=0,match}){
   const lovedAvg=match&&match.profile&&match.profile.loved.length>=3?match.profile.lovedAvg:null;
   const typeNoun=((WineDNA.NOUNS[typeKey]||['wine','wines'])[1]);
 
-  const notes=wine?.tasting_notes||[];
-  const pairings=wine?.food_pairings||[];
+  // A wine saved from a wine list arrives without tasting notes or pairings: ask once, keep them.
+  const [details,setDetails]=React.useState(null);
+  const [detailsLoading,setDetailsLoading]=React.useState(()=>ScanFlow.needsDetails(wine));
+  React.useEffect(()=>{
+    if(!ScanFlow.needsDetails(wine)){ setDetailsLoading(false); return; }
+    let live=true; setDetailsLoading(true);
+    ScanFlow.fillDetails(wine).then(d=>{ if(live) setDetails(d); }).catch(()=>{}).finally(()=>{ if(live) setDetailsLoading(false); });
+    return()=>{ live=false; };
+  },[wine?.name,wine?.vintage]);
+  const notes=WineDNA.capNotes((details||wine)?.tasting_notes);
+  const pairings=(details||wine)?.food_pairings||[];
 
   /* Match sentiment, from TasteMatch's verdict */
   const matchConfig=React.useMemo(()=>{
@@ -332,9 +341,8 @@ function DetailMerged({wine,nav,existingRating=0,match}){
               </div>
             ))}
           </div>
-          <input type="range" min={ParkerScale.MIN} max="100" step="1" value={Math.max(userRating,ParkerScale.MIN)}
-            onChange={handleSliderChange}
-            style={{width:'100%',accentColor:_typeCol(wine),cursor:'pointer',marginBottom:10,display:'block'}}/>
+          <TrackSlider label="Score" min={ParkerScale.MIN} max={100} value={Math.max(userRating,ParkerScale.MIN)} unset={!(userRating>0)}
+            onChange={n=>{ setUserRating(n); pendingScore.current=n; }} col={_typeCol(wine)} style={{marginBottom:10}}/>
           <div style={{textAlign:'center',minHeight:48,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:2}}>
             {userRating>0?(
               <>
@@ -411,7 +419,15 @@ function DetailMerged({wine,nav,existingRating=0,match}){
         </div>
       </div>
 
-      {/* Tasting Notes */}
+      {/* Tasting Notes (in the wine type's colour, like its sliders) */}
+      {!notes.length&&detailsLoading&&(
+        <div>
+          <SL label="Tasting Notes"/>
+          <div style={{display:'flex',alignItems:'center',gap:8,fontSize:15,color:C.mid,fontFamily:C.P,fontStyle:'italic'}}>
+            <div style={{width:12,height:12,borderRadius:6,border:'2px solid rgba(0,0,0,0.08)',borderTopColor:tc,animation:'spin .8s linear infinite',flexShrink:0}}/>Adding tasting notes…
+          </div>
+        </div>
+      )}
       {notes.length>0&&(
         <div>
           <SL label="Tasting Notes"/>
@@ -420,7 +436,7 @@ function DetailMerged({wine,nav,existingRating=0,match}){
           </div>
           <div style={{display:'flex',flexWrap:'wrap',gap:6}}>
             {notes.map((n,i)=>(
-              <span key={i} style={{padding:'5px 13px',borderRadius:20,background:i<2?C.crSoft:C.offWhite,color:i<2?C.cr:C.ink2,fontSize:15,fontWeight:500,fontFamily:C.P,border:`1px solid ${i<2?C.crDim:C.line}`}}>{n}</span>
+              <span key={i} data-note style={{padding:'5px 13px',borderRadius:20,background:tc+'14',color:C.ink,fontSize:15,fontWeight:500,fontFamily:C.P,border:`1px solid ${tc}55`}}>{n}</span>
             ))}
           </div>
         </div>
@@ -433,7 +449,7 @@ function DetailMerged({wine,nav,existingRating=0,match}){
           <div style={{display:'flex',gap:8}}>
             {pairings.slice(0,3).map((f,i)=>(
               <div key={i} style={{flex:1,background:C.offWhite,borderRadius:12,padding:'12px 6px',textAlign:'center',border:`1px solid ${C.line}`}}>
-                <div style={{display:'flex',justifyContent:'center',marginBottom:6}}><Icon n={pairingIcon(f)} sz={22} col={C.cr}/></div>
+                <div style={{display:'flex',justifyContent:'center',marginBottom:6}}><Icon n={pairingIcon(f)} sz={22} col={tc}/></div>
                 <div style={{fontSize:13,color:C.ink2,fontFamily:C.P,fontWeight:500,lineHeight:1.3}}>{f}</div>
               </div>
             ))}
@@ -447,7 +463,7 @@ function DetailMerged({wine,nav,existingRating=0,match}){
           <SL label={`About the ${wine.vintage} Vintage`}/>
           {loadingVintage?(
             <Card style={{padding:14,display:'flex',alignItems:'center',gap:8}}>
-              <div style={{width:12,height:12,borderRadius:6,border:'2px solid rgba(0,0,0,0.08)',borderTopColor:C.cr,animation:'detailSpin .8s linear infinite',flexShrink:0}}/>
+              <div style={{width:12,height:12,borderRadius:6,border:'2px solid rgba(0,0,0,0.08)',borderTopColor:C.cr,animation:'spin .8s linear infinite',flexShrink:0}}/>
               <span style={{fontSize:15,color:C.mid,fontFamily:C.P,fontStyle:'italic'}}>Analysing vintage…</span>
             </Card>
           ):vintageInfo?(

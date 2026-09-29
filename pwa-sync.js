@@ -276,10 +276,15 @@ const Sync = {
     const mins=Math.floor((now-t)/60000);
     return mins<1?'just now':mins<60?`${mins} minute${mins===1?'':'s'} ago`:mins<48*60?`${Math.floor(mins/60)} hour${mins<120?'':'s'} ago`:`${Math.floor(mins/1440)} days ago`;
   },
-  /* The Backup section on Profile: {tone:'on'|'working'|'problem', label, last, detail}. */
+  /* The Backup section on Profile: {tone:'on'|'working'|'problem'|'off', label, last, detail}.
+     Signed out (with sign-in available), it's 'off': nothing is backed up, and signIn asks for it. */
   summary(now=this._now()){
     const st=this.status();
-    if(!st.enabled) return null;
+    if(!st.enabled){
+      if(typeof Account==='undefined'||!Account.available()||Account.signedIn()) return null;
+      return {tone:'off',label:'Not backed up',last:'Your wines are only on this phone',signIn:true,
+        detail:"Sign in with your email and your wines, WineDNA, XP and progress are backed up to your account, so a new or lost phone doesn't lose them."};
+    }
     const waiting=st.pending?`${st.pending} change${st.pending===1?'':'s'} waiting to back up.`:'';
     if(st.error) return {tone:'problem',label:'Not reaching your account',last:st.lastSynced?`Last backed up ${this._ago(st.lastSynced,now)}`:'Not backed up yet',
       detail:`${waiting} We'll keep trying, and nothing on this phone is lost in the meantime.`.trim()};

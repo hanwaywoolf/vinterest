@@ -84,7 +84,7 @@ function _PreviewMatch(){
 
 function _dnaTab(){
   const d=_WELCOME_SAMPLE.slides.dna;
-  return {d,tLabel:d.label.toLowerCase(),t:{...d,col:(typeof _TYPE_COLORS!=='undefined'&&_TYPE_COLORS.red)||C.cr,loved:{length:d.lovedCount},axes:d.axes,showAxis:k=>d.axes.includes(k)}};
+  return {d,tLabel:d.label.toLowerCase(),t:{...d,tab:((typeof _TYPES!=='undefined'&&_TYPES.find(x=>x.label===d.label))||{}).tab,col:(typeof _TYPE_COLORS!=='undefined'&&_TYPE_COLORS.red)||C.cr,loved:{length:d.lovedCount},axes:d.axes,showAxis:k=>d.axes.includes(k)}};
 }
 function _DnaSummary({style}){
   const {d,t,tLabel}=_dnaTab();

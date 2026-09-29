@@ -18,19 +18,14 @@ const Platform = {
 
   /* Once, when the app opens. In the app: Android (and iOS) zoom all text by the phone's own font
      size, on top of Vinterest's own text size, which spilled text out of fixed shapes like the
-     match ring. So the WebView's zoom goes back to 100% and, until the reader picks a size on
-     Profile, Vinterest's size follows the phone's instead (TextSize). Then the sign-in settings
-     come from the live site if this build doesn't have them (Account.loadRemoteConfig). */
+     match ring. So the WebView's zoom goes back to 100%, and text starts at Vinterest's Standard
+     size whatever the phone's setting; the reader changes it on Profile (TextSize). Then the
+     sign-in settings come from the live site if this build doesn't have them
+     (Account.loadRemoteConfig). */
   async start(){
     if(!this.native()) return;
     const TZ=(window.VinterestNative||{}).TextZoom;
-    if(TZ){
-      try{
-        const {value}=await TZ.getPreferred();
-        await TZ.set({value:1});
-        if(typeof TextSize!=='undefined'&&!TextSize.chosen()) TextSize.set(value>=1.15?'xl':value>=1.05?'large':'standard');
-      }catch(e){}
-    }
+    if(TZ){ try{ await TZ.set({value:1}); }catch(e){} }
     if(typeof Account!=='undefined') Account.loadRemoteConfig();
   },
 

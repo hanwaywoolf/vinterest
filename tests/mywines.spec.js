@@ -5,17 +5,18 @@ const { stubNetwork, makeDeterministic, seedLocalStorage, collectErrors } = requ
 
 const BASE = 'http://localhost:4173';
 
-async function setup(context, page) {
+async function setup(context, page, extra = []) {
   await makeDeterministic(page);
   await seedLocalStorage(page, { vinterest_wineDNA_unlock_seen: '1' });
   await stubNetwork(context);
   await page.goto(`${BASE}/?demo=1#home`);
-  await page.evaluate(() => {
+  await page.evaluate((extra) => {
     const all = WineHistory.getAll();
     all.unshift({ name: 'Saved Test Chablis', producer: 'Test', type: 'white', region: 'Chablis', country: 'France', vintage: 2022, rating: 0, scan_intent: 'checking', times_consumed: 1, scanned_at: '2026-06-14T10:00:00Z', last_scanned: '2026-06-14T10:00:00Z' });
     all.unshift({ name: 'Unscored Test Rioja', producer: 'Test', type: 'red', region: 'Rioja', country: 'Spain', vintage: 0, rating: 0, scan_intent: 'tasted', times_consumed: 1, scanned_at: '2026-05-02T10:00:00Z', last_scanned: '2026-05-02T10:00:00Z' });
+    extra.forEach((w) => all.unshift(w));
     WineHistory.save(all);
-  });
+  }, extra);
   await page.goto(`${BASE}/?demo=1#mywines`);
 }
 const rowNames = (page) => page.locator('#root .mw-row').evaluateAll((els) => els.map((e) => e.querySelector('div[style*="font-weight: 600"]').textContent));
@@ -29,9 +30,9 @@ test('search, filters, sort and grouping', async ({ context, page }) => {
   await expect(root).toContainText(/about £\d+ a bottle/);
   await expect(root).toContainText('June 2026');
   await expect(root).toContainText('May 2026');
-  await root.getByText(/^Whites \d+$/).click();
+  await root.getByText(/^White \d+$/).click();
   expect(await rowNames(page)).toEqual(expect.arrayContaining(['Saved Test Chablis']));
-  await root.getByText(/^Whites \d+$/).click();
+  await root.getByText(/^White \d+$/).click();
   await root.getByText(/^Saved for later \d+$/).click();
   expect(await rowNames(page)).toEqual(['Saved Test Chablis']);
   await root.getByText(/^Saved for later \d+$/).click();
@@ -92,4 +93,35 @@ test.describe('on a touch screen', () => {
     await page.getByText('Save', { exact: true }).click();
     await expect(root.getByText('Renamed Test Chablis')).toBeVisible();
   });
+});
+
+test('a favourite (the heart on the wine\'s screen) shows a red heart on its row and has its own filter; every row shows its country\'s flag', async ({ context, page }) => {
+  const errors = collectErrors(page);
+  await setup(context, page);
+  const root = page.locator('#root');
+  await expect(root.getByText(/^Favourites \d+$/)).toHaveCount(0); // no chip until there's one
+  const row = root.locator('.mw-row', { hasText: 'Unscored Test Rioja' });
+  await expect(row).toContainText('🇪🇸');
+  await expect(row.getByRole('img', { name: 'Favourite' })).toHaveCount(0);
+  await row.click();
+  await root.getByRole('button', { name: 'Add to favourites' }).click();
+  await expect(root.getByRole('button', { name: 'Remove from favourites' })).toBeVisible();
+  await page.goto(`${BASE}/?demo=1#mywines`);
+  await expect(root.locator('.mw-row', { hasText: 'Unscored Test Rioja' }).getByRole('img', { name: 'Favourite' })).toBeVisible();
+  await root.getByText(/^Favourites 1$/).click();
+  expect(await rowNames(page)).toEqual(['Unscored Test Rioja']);
+  expect(errors).toEqual([]);
+});
+
+test('status counts follow the type picked: White with no buy-again whites reads Buy again 0', async ({ context, page }) => {
+  const again = (name) => ({ name, producer: 'Test', type: 'red', region: 'Rioja', country: 'Spain', vintage: 2019, rating: 93, buy_again: true, times_consumed: 1, scanned_at: '2026-06-10T10:00:00Z' });
+  await setup(context, page, [again('Again Red One'), again('Again Red Two')]);
+  const root = page.locator('#root');
+  const out = await page.evaluate(() => { const ws = WineHistory.getAll(); return { all: MyWines.counts(ws).status.again, white: MyWines.counts(ws, 'white').status.again, red: MyWines.counts(ws, 'red').status.again }; });
+  expect(out.all).toBeGreaterThanOrEqual(2);
+  expect(out.white).toBe(0);
+  expect(out.red).toBe(out.all);
+  await expect(root.getByText(new RegExp(`^Buy again ${out.all}$`))).toBeVisible();
+  await root.getByText(/^White \d+$/).click();
+  await expect(root.getByText(/^Buy again 0$/)).toBeVisible();
 });

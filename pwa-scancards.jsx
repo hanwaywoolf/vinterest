@@ -254,7 +254,7 @@ function ScanStyles(){
          still works); touch-action is decided where the finger lands, so the card alone isn't
          enough. Sliders keep their own drag. */
       .sc-swipe,.sc-swipe *{touch-action:pan-y}
-      .sc-swipe input[type=range]{touch-action:none}
+      .sc-swipe input[type=range],.sc-swipe [role=slider],.sc-swipe [role=slider] *{touch-action:none}
     `}</style>;
 }
 
@@ -268,6 +268,7 @@ function FirstScanStory({wine,onDone}){
   const curr=React.useMemo(()=>Regional.current(),[]);
   const deckStyle=useDeckStyle();
   const intent=v=>{ const e=WineHistory.find(wine); if(e) WineHistory.setScanIntent(e.name,e.vintage,v); };
+  const [scoredAlready]=React.useState(()=>(WineHistory.find(wine)||{}).rating||0);
   return <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden',background:C.bg,paddingTop:'env(safe-area-inset-top)'}}>
     <div style={{padding:'14px 18px 8px',flexShrink:0,display:'flex',alignItems:'flex-start',gap:12}}>
       <div style={{flex:1,minWidth:0}}>
@@ -277,7 +278,9 @@ function FirstScanStory({wine,onDone}){
       </div>
       <span onClick={onDone} role="button" style={{fontSize:15,fontWeight:600,color:C.mid,fontFamily:C.P,cursor:'pointer',paddingTop:2}}>Skip</span>
     </div>
-    <CardDeck key={deckStyle} deckStyle={deckStyle} wine={wine} gen={gen} loading={loading} match={match} curr={curr} scanData={{}} existingRating={0}
+    {/* Coming back from the questions, the bottle is already scored: the deck shows that score
+        rather than asking again beside a meter that already counts it. */}
+    <CardDeck key={deckStyle} deckStyle={deckStyle} wine={wine} gen={gen} loading={loading} match={match} curr={curr} scanData={{}} existingRating={scoredAlready}
       nav={()=>{}} firstScan onFinish={onDone}
       onRated={()=>{ intent('tasted'); setVer(v=>v+1); }}
       onSaveForLater={()=>{ intent('checking'); onDone(); }}
@@ -649,7 +652,7 @@ function TasteCues({wine,accent}){
   if(tx!=null) cues.push({l:'Oak / texture',v:lvl(tx,'Clean & steely','Subtle','Creamy, vanilla, toast'),tip:'Any butter, vanilla or toast? That\'s oak.'});
   if(sw>=0.2||isDessertOrFortified) cues.push({l:'Sweetness',v:lvl(sw,'Dry','Off-dry','Noticeably sweet'),tip:'Sense of sugar on the tip of your tongue.'});
   if(isDessertOrFortified) cues.push({l:'Serving size',v:'A smaller 2–3oz pour',tip:'These are richer and higher in alcohol — a small glass goes further.'});
-  const notes=(wine.tasting_notes||[]).slice(0,4);
+  const notes=WineDNA.capNotes(wine.tasting_notes).slice(0,4);
   return <div style={{display:'flex',flexDirection:'column',gap:14}}>
     <div style={{fontSize:24,fontWeight:800,color:C.ink,fontFamily:C.P,lineHeight:1.2,letterSpacing:'-0.01em'}}>What to look for</div>
     <div style={{display:'flex',flexDirection:'column',gap:12}}>
@@ -729,8 +732,8 @@ function BlindCallPredict({dims,col,onSubmit}){
           <div style={{display:'flex',justifyContent:'space-between',fontSize:12.5,color:C.mid,fontFamily:C.P,marginBottom:6,fontWeight:600,textTransform:'uppercase',letterSpacing:'0.04em'}}>
             <span>{DIM_LO[d]}</span><span style={{color:C.ink,fontWeight:700}}>{DIM_LABEL[d]}</span><span>{DIM_HI[d]}</span>
           </div>
-          <input type="range" min="0" max="100" value={Math.round(vals[d]*100)} style={{width:'100%',accentColor:col||C.cr,cursor:'pointer',display:'block',touchAction:'pan-y'}}
-            onChange={e=>setVals(v=>({...v,[d]:Number(e.target.value)/100}))}/>
+          <TrackSlider label={DIM_LABEL[d]} min={0} max={100} value={Math.round(vals[d]*100)} col={col||C.cr}
+            onChange={n=>setVals(v=>({...v,[d]:n/100}))}/>
         </div>
       ))}
     </div>
@@ -840,9 +843,33 @@ function ValueFace({wine,curr,scanData,accent,soft,expanded}){
 
 /* ── rating: the score, then optional tasting details that sharpen future matches ── */
 /* With `onFinish` (the first scan, inside onboarding) it ends on Continue instead of Keep learning. */
+/* A slider that answers wherever the finger lands on it, not only on the knob. iPhone Safari's
+   own range input only drags from the knob, which sits at the far edge before a score is picked,
+   so a touch that missed it fell through to the card deck as a swipe. touch-action:none and
+   data-noswipe keep the deck out of it; arrow keys work too. unset draws it without a value yet. */
+function TrackSlider({min,max,step=1,value,onChange,col=C.cr,label,unset=false,style}){
+  const ref=React.useRef(null), drag=React.useRef(null);
+  const clamp=v=>Math.min(max,Math.max(min,v));
+  const pct=(clamp(value)-min)/(max-min);
+  function at(x){ const r=ref.current.getBoundingClientRect(); const p=Math.min(1,Math.max(0,(x-r.left)/(r.width||1))); return clamp(Math.round((min+p*(max-min))/step)*step); }
+  function down(e){ if(e.button>0) return; e.stopPropagation(); drag.current=e.pointerId; try{ ref.current.setPointerCapture(e.pointerId); }catch(err){} onChange(at(e.clientX)); }
+  function move(e){ if(drag.current!==e.pointerId) return; e.stopPropagation(); onChange(at(e.clientX)); }
+  function up(e){ if(drag.current===e.pointerId) drag.current=null; }
+  function key(e){ const d={ArrowRight:step,ArrowUp:step,ArrowLeft:-step,ArrowDown:-step}[e.key]; if(d!=null){ e.preventDefault(); onChange(clamp((unset?min:value)+d)); } }
+  const track={position:'absolute',left:0,top:17,height:6,borderRadius:3};
+  return <div ref={ref} role="slider" tabIndex={0} aria-label={label} aria-valuemin={min} aria-valuemax={max} aria-valuenow={unset?undefined:value} data-noswipe
+    onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={up} onKeyDown={key}
+    style={{position:'relative',height:40,touchAction:'none',cursor:'pointer',userSelect:'none',WebkitUserSelect:'none',WebkitTapHighlightColor:'transparent',...style}}>
+    <div style={{...track,right:0,background:C.line}}/>
+    {!unset&&<div style={{...track,width:`${pct*100}%`,background:col}}/>}
+    <div style={{position:'absolute',left:`calc(${pct*100}% - 14px)`,top:6,width:28,height:28,borderRadius:14,background:'#fff',border:`2px solid ${unset?C.mid:col}`,boxShadow:'0 1px 5px rgba(0,0,0,0.22)',boxSizing:'border-box'}}/>
+  </div>;
+}
+
 function RatingPanel({wine,existingRating,nav,showPro,curr,onRated,onSaveForLater,onStage,onFinish}){
   const [score,setScore]=React.useState(existingRating||0);
-  const [saved,setSaved]=React.useState(false);
+  // The first bottle, revisited after scoring it: open on "Your score" (with Continue), not the picker.
+  const [saved,setSaved]=React.useState(()=>!!(onFinish&&existingRating>0));
   const [next,setNext]=React.useState(false);
   // Tells the deck which step it's on, so the card's label follows (Rate it → Your score → Keep learning).
   React.useEffect(()=>{ if(onStage) onStage(next?'next':saved?'saved':'rate'); },[saved,next]);
@@ -881,7 +908,7 @@ function RatingPanel({wine,existingRating,nav,showPro,curr,onRated,onSaveForLate
     <TastingExtras wine={wine} curr={curr}/>
     {/* Set apart from the optional details above so it doesn't read as one of them. */}
     <div style={{marginTop:10,paddingTop:16,borderTop:`2px solid ${C.line}`}}>
-      {onFinish?<Btn primary full onClick={onFinish}>Continue</Btn>:<Btn primary full onClick={()=>setNext(true)}>Done: what's next?</Btn>}
+      {onFinish?<Btn primary full onClick={onFinish}>Continue</Btn>:<Btn primary full onClick={()=>setNext(true)}>Finished: what's next?</Btn>}
     </div>
   </div>;
   return <div style={{display:'flex',flexDirection:'column',gap:14}}>
@@ -893,7 +920,7 @@ function RatingPanel({wine,existingRating,nav,showPro,curr,onRated,onSaveForLate
         </div>
       ))}
     </div>
-    <input type="range" min={ParkerScale.MIN} max="100" step="1" value={Math.max(score,ParkerScale.MIN)} onChange={e=>setScore(Number(e.target.value))} style={{width:'100%',accentColor:tc,cursor:'pointer'}}/>
+    <TrackSlider label="Score" min={ParkerScale.MIN} max={100} value={Math.max(score,ParkerScale.MIN)} unset={!(score>0)} onChange={setScore} col={tc}/>
     <div style={{textAlign:'center',minHeight:40}}>
       {score>0?<div style={{display:'flex',flexDirection:'column',alignItems:'center'}}>
         <div style={{display:'flex',alignItems:'baseline',gap:3}}><span style={{fontSize:34,fontWeight:800,color:tc,fontFamily:C.P,lineHeight:1}}>{score}</span><span style={{fontSize:13,fontWeight:700,color:C.mid,fontFamily:C.P}}>pts</span></div>
@@ -906,32 +933,24 @@ function RatingPanel({wine,existingRating,nav,showPro,curr,onRated,onSaveForLate
   </div>;
 }
 
-/* What each trait means, what the label suggested, and how to notice it on the next sip: the
-   comparison teaches the word as well as asking for it. */
-const _NOTICE={
-  body:{what:'How heavy the wine feels in your mouth.',how:'Think skimmed milk (light) against whole milk (full).',word:{low:'light',mid:'medium-bodied',high:'full-bodied'}},
-  tannins:{what:'The drying, grippy feel on your gums and teeth, from grape skins and oak.',how:'Like a sip of strong black tea.',word:{low:'silky',mid:'gently grippy',high:'firm and grippy'}},
-  acidity:{what:'The freshness that makes your mouth water.',how:'Notice how much your mouth waters after you swallow.',word:{low:'soft',mid:'fresh',high:'zingy'}},
-  texture:{what:'How smooth or rich a white feels.',how:'Crisp like a green apple, or round and creamy like butter.',word:{low:'crisp',mid:'smooth',high:'rich and creamy'}},
-};
-
 /* Optional, after a score. Each answer is used (inputs we ask for must teach, personalise or
    guide): "buy again" feeds the Buy again list, WineDNA's "Worth buying again", the sommelier
-   script and matching; what they paid feeds Value and their budget; what they noticed adjusts the
-   label estimate (WineDNA.axisValue) for WineDNA and every match. Each tap saves straight away;
-   a Blind Call on this bottle pre-fills the comparison. Beginners see the comparison folded away. */
+   script and matching; what they paid feeds Value and their budget; where they had it is shown on
+   the wine, searched in My Wines and given to Vinny and the articles written for them. */
 function TastingExtras({wine,curr}){
+  // After the score, only what's quick to answer: buy again, what they paid and where they had it.
+  // Each saves as it changes, so leaving here (or skipping Keep learning) loses nothing; the score
+  // itself was saved when they tapped Save rating. A Blind Call guess still records what they
+  // noticed (tasted), without asking again here.
   const entry=WineHistory.find(wine)||wine;
-  const axes=ScanFlow.compareAxes(entry);
-  const [tasted,setTasted]=React.useState(()=>entry.tasted||ScanFlow.tastedFromBlindCall(entry)||{});
   const [paid,setPaid]=React.useState(()=>entry.price_paid&&entry.price_paid.amount?String(entry.price_paid.amount):'');
+  const [where,setWhere]=React.useState(()=>entry.where_had||'');
   const [again,setAgain]=React.useState(entry.buy_again===true);
-  const [showNotice,setShowNotice]=React.useState(()=>UserPrefs.experience()!=='novice'||!!entry.tasted);
   const save=patch=>{ const e=WineHistory.find(wine); if(e) WineHistory.setTasting(e.name,e.vintage,patch); };
-  React.useEffect(()=>{ if(!entry.tasted&&Object.keys(tasted).length) save({tasted}); },[]);
-  const tc=_typeCol(entry);
-  const seg=(active)=>({flex:1,padding:'8px 4px',borderRadius:10,border:`1.5px solid ${active?tc:C.line}`,background:active?tc:C.white,color:active?'#fff':C.ink2,fontSize:14,fontWeight:600,fontFamily:C.P,textAlign:'center',cursor:'pointer'});
+  React.useEffect(()=>{ const t=ScanFlow.tastedFromBlindCall(entry); if(!entry.tasted&&t&&Object.keys(t).length) save({tasted:t}); },[]);
   const lab={fontSize:13,fontWeight:700,color:C.mid,fontFamily:C.P,marginBottom:5};
+  const box={display:'flex',alignItems:'center',gap:6,padding:'8px 10px',borderRadius:10,border:`1.5px solid ${C.line}`,background:C.white};
+  const field={flex:1,minWidth:0,border:'none',outline:'none',fontSize:16,fontFamily:C.P,color:C.ink,background:'transparent'};
   return <div style={{display:'flex',flexDirection:'column',gap:14,paddingTop:12,borderTop:`1px solid ${C.line}`}}>
     <div onClick={()=>{ const v=!again; setAgain(v); save({buy_again:v}); }} role="checkbox" aria-checked={again}
       style={{display:'flex',alignItems:'center',gap:12,padding:'12px 14px',borderRadius:12,border:`1.5px solid ${again?C.green:C.line}`,background:again?C.greenBg:C.white,cursor:'pointer'}}>
@@ -943,38 +962,23 @@ function TastingExtras({wine,curr}){
     </div>
     <div>
       <div style={lab}>What you paid (optional)</div>
-      <div style={{display:'flex',alignItems:'center',gap:6,padding:'8px 10px',borderRadius:10,border:`1.5px solid ${C.line}`,background:C.white}}>
+      <div style={box}>
         <span style={{fontSize:15,color:C.mid,fontFamily:C.P}}>{curr.base}</span>
         <input inputMode="decimal" placeholder="0" value={paid} aria-label="What you paid"
-          onChange={e=>setPaid(e.target.value.replace(/[^0-9.]/g,''))}
-          onBlur={()=>{ const n=Number(paid); save({price_paid:n>0?{amount:n,code:curr.code}:null}); }}
-          style={{flex:1,minWidth:0,border:'none',outline:'none',fontSize:16,fontFamily:C.P,color:C.ink,background:'transparent'}}/>
+          onChange={e=>{ const v=e.target.value.replace(/[^0-9.]/g,''); setPaid(v); const n=Number(v); save({price_paid:n>0?{amount:n,code:curr.code}:null}); }}
+          style={field}/>
       </div>
       <div style={{fontSize:13,color:C.mid,fontFamily:C.P,marginTop:4}}>Sets your usual spend and shows which bottles are good value for you.</div>
     </div>
-    {axes.length>0&&(!showNotice
-      ?<div onClick={()=>setShowNotice(true)} role="button" style={{fontSize:15,fontWeight:600,color:C.cr,fontFamily:C.P,cursor:'pointer'}}>Want to go further? Tell us what you noticed →</div>
-      :<div style={{display:'flex',flexDirection:'column',gap:14}}>
-        <div>
-          <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>What did you notice?</div>
-          <div style={{fontSize:13,color:C.mid,fontFamily:C.P,lineHeight:1.45,marginTop:2}}>Optional. Take another sip: here's what to feel for. Your answers adjust your WineDNA and future matches.</div>
-        </div>
-        {axes.map(k=>{
-          const [lo,hi]=ScanFlow.COMPARE[k]||['Less','More'];
-          const N=_NOTICE[k]||{}, expected=N.word&&N.word[WineDNA.level(entry[k])];
-          const pick=v=>{ const next={...tasted,[k]:v}; setTasted(next); save({tasted:next}); };
-          return <div key={k}>
-            <div style={{fontSize:15,fontWeight:700,color:C.ink,fontFamily:C.P}}>{WineDNA.AXES[k].name}</div>
-            {N.what&&<div style={{fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.45,marginTop:2}}>{N.what} {N.how}</div>}
-            {expected&&<div style={{fontSize:13,color:C.mid,fontFamily:C.P,marginTop:3}}>The label suggests {expected}. How did it feel to you?</div>}
-            <div style={{display:'flex',gap:6,marginTop:7}}>
-              <div onClick={()=>pick(-1)} style={seg(tasted[k]===-1)}>{lo}</div>
-              <div onClick={()=>pick(0)} style={seg(tasted[k]===0)}>As expected</div>
-              <div onClick={()=>pick(1)} style={seg(tasted[k]===1)}>{hi}</div>
-            </div>
-          </div>;
-        })}
-      </div>)}
+    <div>
+      <div style={lab}>Where did you have it? (optional)</div>
+      <div style={box}>
+        <input value={where} maxLength={80} placeholder="A restaurant, a shop, a friend's…" aria-label="Where did you have it"
+          onChange={e=>{ setWhere(e.target.value); save({where_had:e.target.value.trim()||null}); }}
+          style={field}/>
+      </div>
+      <div style={{fontSize:13,color:C.mid,fontFamily:C.P,marginTop:4}}>Shown on the wine and searchable in My Wines, so you can find it again. Vinny remembers it too.</div>
+    </div>
   </div>;
 }
 
@@ -1074,7 +1078,7 @@ function CardDeck({deckStyle,wine,gen,loading,match,curr,scanData,existingRating
 /* shared card chrome */
 /* The last card's label follows the rating step: Rate it, then Your score, then Keep learning. */
 const _FINISH_HEAD={rate:null,saved:{eyebrow:'Your score',icon:'check'},next:{eyebrow:'Keep learning',icon:'book'}};
-function CardShell({card,children,ctx,style}){
+function CardShell({card,children,ctx,style,active}){
   const isFinish=card.kind==='finish';
   const head=(isFinish&&ctx&&_FINISH_HEAD[ctx.finishStage])||card;
   // Long text (a producer story at Extra large) scrolls inside the card; a fade at the bottom
@@ -1082,6 +1086,9 @@ function CardShell({card,children,ctx,style}){
   const body=React.useRef(null);
   const [more,setMore]=React.useState(false);
   const check=React.useCallback(()=>{ const el=body.current; if(el) setMore(el.scrollHeight-el.scrollTop-el.clientHeight>6); },[]);
+  // A card always opens at its top: when it comes to the top of the deck (going back to one you'd
+  // scrolled included), and when the last card moves on from rating to Your score to Keep learning.
+  React.useLayoutEffect(()=>{ const el=body.current; if(el&&active!==false) el.scrollTop=0; check(); },[active,ctx&&ctx.finishStage,check]);
   React.useEffect(()=>{ check(); const el=body.current; if(!el||typeof ResizeObserver==='undefined') return;
     const ro=new ResizeObserver(check); ro.observe(el); if(el.firstElementChild) ro.observe(el.firstElementChild); return()=>ro.disconnect(); },[check]);
   return <div style={{background:C.white,borderRadius:22,border:`1px solid ${C.line}`,boxShadow:'0 6px 22px rgba(0,0,0,0.08)',display:'flex',flexDirection:'column',overflow:'hidden',...style}}>
@@ -1161,7 +1168,7 @@ function SwipeDeck({deck,ctx,idx,setIdx,go}){
           onPointerDown={isTop?onPointerDown:undefined} onPointerMove={isTop?onPointerMove:undefined} onPointerUp={isTop?onPointerUp:undefined} onPointerCancel={isTop?onPointerUp:undefined}
           onClickCapture={isTop?(e=>{ if(justDragged.current){ e.stopPropagation(); e.preventDefault(); } }):undefined}
           style={{position:'absolute',inset:0,zIndex:10-depth,transform:tf,transition:'transform .3s cubic-bezier(.34,1.1,.64,1)',opacity:depth>1?0:1,cursor:isTop?'grab':'default',userSelect:isTop&&!isFinish?'none':'auto',WebkitUserSelect:isTop&&!isFinish?'none':'auto',WebkitTouchCallout:isTop&&!isFinish?'none':'default'}}>
-          <CardShell card={cc} ctx={ctx} style={{height:'100%'}}>
+          <CardShell card={cc} ctx={ctx} style={{height:'100%'}} active={isTop}>
             <CardFace card={c} ctx={ctx}/>
           </CardShell>
           {isTop&&Math.abs(drag.dx)>40&&<div style={{position:'absolute',top:24,[drag.dx<0?'right':'left']:24,padding:'6px 14px',borderRadius:10,border:`2.5px solid ${C.mid}`,color:C.mid,fontSize:15,fontWeight:800,fontFamily:C.P,transform:`rotate(${drag.dx<0?12:-12}deg)`,background:'rgba(255,255,255,0.9)',letterSpacing:'0.05em'}}>{drag.dx<0?'NEXT':'BACK'}</div>}
@@ -1205,4 +1212,4 @@ function Feed({cards,ctx}){
   </div>;
 }
 
-Object.assign(window,{ScanCardsScreen});
+Object.assign(window,{TrackSlider,ScanCardsScreen});

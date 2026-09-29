@@ -24,7 +24,7 @@ async function user(context, page, opts = {}) {
 }
 
 test('new regions get different kinds of piece, and only compare like with like', async ({ context, page }) => {
-  await user(context, page);
+  await user(context, page, { seed: { vinterest_onramp_1_done: '1' } });
   await page.goto(`${BASE}/#home`);
   const stubs = await page.evaluate(() => {
     localStorage.removeItem('vinterest_gen_stubs');
@@ -59,7 +59,7 @@ test('an old shelf of repeated "Beyond Rioja" pieces heals, but a read one stays
 test('articles say whose they are, and the prompt knows the reader', async ({ context, page }) => {
   const errors = collectErrors(page);
   const claudeRequests = [];
-  const article = { forYou: 'You scored Gran Reserva 904 a 95 and paid £90: this is why it tasted that way.', sections: [{ term: 'Tempranillo', iconName: 'grape', plain: 'Your grape.', detail: 'Detail.', examples: ['One'] }, { term: 'Your next bottle', iconName: 'compass', plain: 'Try Ribera.', detail: 'Detail.', examples: [] }] };
+  const article = { forYou: 'At £90 your Gran Reserva 904 sits at the top of what you spend: here is what the extra ageing buys.', sections: [{ term: 'Tempranillo', iconName: 'grape', plain: 'Your grape.', detail: 'Detail.', examples: ['One'] }, { term: 'Your next bottle', iconName: 'compass', plain: 'Try Ribera.', detail: 'Detail.', examples: [] }] };
   await user(context, page, { claudeRequests, claudeText: (b) => (b.purpose === 'learn_article' ? JSON.stringify(article) : '') });
   await page.goto(`${BASE}/#home`);
   const stub = await page.evaluate(() => {
@@ -77,11 +77,13 @@ test('articles say whose they are, and the prompt knows the reader', async ({ co
   const root = page.locator('#root');
   await expect(root).toContainText('Written for you');
   await expect(root).toContainText('Because you gave Gran Reserva 904 a 95.');
-  await expect(root).toContainText('You scored Gran Reserva 904 a 95 and paid £90');
+  await expect(root).toContainText('here is what the extra ageing buys');
   await expect(root).toContainText('Your next bottle');
   const prompt = claudeRequests.find((r) => r.purpose === 'learn_article').messages[0].content;
   expect(prompt).toContain('About this reader');
   expect(prompt).toContain('Gran Reserva 904 2015');
+  // The intro box is told what the page already says, so it doesn't say it again.
+  expect(prompt).toContain('The page already says \\"Because you gave Gran Reserva 904 a 95\\"');
   expect(prompt).not.toMatch(/\{\{\w+\}\}/);
   // Cached with the forYou line, so reopening doesn't call Claude again.
   expect(await page.evaluate(() => JSON.parse(localStorage.getItem('vinterest_gen_article_ev_region_Rioja_palate_vs_textbook_content')).forYou)).toContain('Gran Reserva 904');
@@ -105,6 +107,60 @@ test('Written for you shows on the Learn shelf, WineDNA and the wine detail Lear
   await root.getByText('Learn', { exact: true }).first().click();
   await expect(root).toContainText('Keep learning');
   await expect(root).toContainText('written from your WineDNA');
+});
+
+test('Learn opens Written for you, and nothing shows it anywhere before Learn does', async ({ context, page }) => {
+  const errors = collectErrors(page);
+  // One Rioja scored, on-ramp not read: an old piece is already saved (as the first test APK did).
+  const stub = { id: 'early1', archetypeId: 'grape_unlock_intro', title: 'Get to Know Tempranillo', subtitle: 'x', readTime: '2 min', slots: { grape: 'Tempranillo' } };
+  await user(context, page, { seed: { vinterest_wines: JSON.stringify([WINES[0]]), vinterest_gen_stubs: JSON.stringify([stub]) } });
+  await page.goto(`${BASE}/#home`);
+  const root = page.locator('#root');
+  await expect(root).toContainText('Up next');
+  await expect(root).not.toContainText('Get to Know Tempranillo');
+  await expect(root).not.toContainText('Try next:'); // Explore Next waits for 3 reds, as on WineDNA
+  const before = await page.evaluate(() => ({
+    open: ContentEngine.shelfOpen(), primary: LearnNext.home().primary.kind,
+    written: ContentEngine.refreshShelf(WineHistory.getAll(), 6).length,
+    keep: LearnNext.forWine(WineHistory.getAll()[0]).filter((t) => t.kind === 'article').length,
+    dna: ContentEngine.forType('red').length,
+  }));
+  expect(before).toEqual({ open: false, primary: 'onramp', written: 1, keep: 0, dna: 0 });
+
+  await page.goto(`${BASE}/#learn`);
+  const locked = page.locator('[data-shelf-locked]');
+  await expect(locked).toContainText('Like a good bottle, these need a little time.');
+  await expect(locked).toContainText('5 taste terms every wine drinker should know');
+  await expect(root).not.toContainText('Get to Know Tempranillo');
+  await locked.getByText(/Read it now/).click();
+  await expect(root).toContainText('5 taste terms');
+
+  // Read it: the shelf opens on Learn, and Home follows.
+  await page.evaluate(() => LearnProgress.markOnRamp('onramp_1'));
+  await page.goto(`${BASE}/#learn`);
+  await expect(root).toContainText('Get to Know Tempranillo');
+  await expect(page.locator('[data-shelf-locked]')).toHaveCount(0);
+  await page.goto(`${BASE}/#home`);
+  await expect(root).toContainText('Get to Know Tempranillo');
+  expect(errors).toEqual([]);
+});
+
+test('an article says why it\'s for you once: the subtitle, "because" line and intro box don\'t all repeat the score', async ({ context, page }) => {
+  await user(context, page, { seed: { vinterest_onramp_1_done: '1', vinterest_wines: JSON.stringify([WINES[0]]) } });
+  await page.goto(`${BASE}/#home`);
+  const out = await page.evaluate(() => {
+    const stub = { id: 'g1', archetypeId: 'grape_unlock_intro', slots: { grape: 'Tempranillo' } };
+    return {
+      sub: ContentEngine.subtitleFor(ARTICLE_ARCHETYPES.find((a) => a.id === 'grape_unlock_intro'), { grape: 'Tempranillo' }, WineHistory.getAll()),
+      because: ContentEngine.because(stub),
+      restated: ContentEngine.forYouLine(stub, 'You scored the Gran Reserva 904 2015 a 95, so here is its grape.'),
+      fresh: ContentEngine.forYouLine(stub, 'Next time a list says Crianza, you will know what the oak adds.'),
+    };
+  });
+  expect(out.because).toBe('Because you gave Gran Reserva 904 a 95');
+  expect(out.sub).not.toContain('95');
+  expect(out.restated).toBeNull();
+  expect(out.fresh).toContain('Crianza');
 });
 
 test('a white grape piece draws on their whites, never their reds', async ({ context, page }) => {
