@@ -64,6 +64,10 @@ h1 .serif, h2 .serif { font-size: 1.08em; }
 .hero h1 { font-size: clamp(34px, 4.9vw, 58px); font-weight: 400; letter-spacing: -.06em; line-height: 1.12; }
 /* "before" in the app's Sparkling blue (_TYPE_COLORS.sparkling). */
 .hero h1 strong { font-weight: 700; color: #5E8FA8; }
+/* The scan section's heading gets the same treatment, on two lines, with "Know" in the theme red. */
+#scan h2 { font-size: clamp(28px, 3.7vw, 44px); font-weight: 400; letter-spacing: -.06em; line-height: 1.12; max-width: none; }
+#scan h2 .ln { display: block; }
+#scan h2 strong { font-weight: 700; color: var(--cr); }
 .hero .lead { font-size: 20px; }
 .hero .cta { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 32px; }
 .hero .note { margin-top: 18px; font-size: 14px; color: var(--dim); }
