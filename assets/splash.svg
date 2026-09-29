@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2732 2732" width="2732" height="2732">
+  <!-- The iOS launch screen: the icon's crimson with its V and grapes in the middle. iOS fills the
+       screen with this square image and crops the sides, so the mark stays in the centre third. -->
+  <defs>
+    <radialGradient id="grape" cx="0.36" cy="0.34" r="0.7">
+      <stop offset="0" stop-color="#DA93A3"/>
+      <stop offset="0.45" stop-color="#C85E77"/>
+      <stop offset="1" stop-color="#BD4E68"/>
+    </radialGradient>
+  </defs>
+  <rect width="2732" height="2732" fill="#8B1A2F"/>
+  <g transform="translate(1366 1366) scale(1.6) translate(-255.5 -255)">
+    <path d="M114 113 H212 L255.5 298 L299.5 113 H397.5 L255.5 397 Z" fill="#FFFFFF"/>
+    <circle cx="255.5" cy="137.5" r="37.5" fill="url(#grape)"/>
+    <circle cx="210" cy="225" r="37" fill="url(#grape)"/>
+    <circle cx="301" cy="225" r="37" fill="url(#grape)"/>
+  </g>
+</svg>

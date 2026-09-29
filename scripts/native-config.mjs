@@ -4,8 +4,10 @@
 const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 export function patchInfoPlist(xml, entries) {
   for (const [key, value] of Object.entries(entries || {})) {
-    const entry = `\t<key>${esc(key)}</key>\n\t<string>${esc(value)}</string>\n`;
-    const re = new RegExp(`\\t?<key>${key}</key>\\s*<string>[\\s\\S]*?</string>\\n?`);
+    // true/false become plist booleans (<true/>, <false/>); everything else a string.
+    const val = typeof value === 'boolean' ? `<${value}/>` : `<string>${esc(value)}</string>`;
+    const entry = `\t<key>${esc(key)}</key>\n\t${val}\n`;
+    const re = new RegExp(`\\t?<key>${key}</key>\\s*(<string>[\\s\\S]*?</string>|<true/>|<false/>)\\n?`);
     xml = re.test(xml) ? xml.replace(re, entry) : xml.replace(/<\/dict>\s*<\/plist>\s*$/, `${entry}</dict>\n</plist>\n`);
   }
   return xml;
