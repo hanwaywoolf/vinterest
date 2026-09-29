@@ -105,6 +105,21 @@ test.describe('desktop', () => {
     await expect.poll(() => page.evaluate(() => scrollY)).toBeGreaterThan(y0 + 50);
   });
 
+  test('a hard flick over the text moves one caption, and steady scrolling carries on down the page', async ({ page }) => {
+    await page.goto(BASE + '/');
+    await show(page, 'rate');
+    const copy = await page.locator('#rate .copy').boundingBox();
+    await page.mouse.move(copy.x + 100, copy.y + 100);
+    for (let i = 0; i < 6; i++) { await page.mouse.wheel(0, 100); await page.waitForTimeout(60); }
+    await expect(page.locator('#rate .steps li.on h3')).toHaveText('It joins your WineDNA');
+    await page.waitForTimeout(400);
+    await expect(page.locator('#rate .steps li.on h3')).toHaveText('It joins your WineDNA'); // not the next one
+    // Thirty notches in a row is someone travelling down the page: it scrolls.
+    const y0 = await page.evaluate(() => scrollY);
+    for (let i = 0; i < 30; i++) { await page.mouse.wheel(0, 100); await page.waitForTimeout(80); }
+    expect(await page.evaluate(() => scrollY)).toBeGreaterThan(y0 + 1500);
+  });
+
   test('the page scrolls straight past a demo: no pinned section to scroll through', async ({ page }) => {
     await page.goto(BASE + '/');
     await show(page, 'scan');
@@ -141,6 +156,9 @@ test.describe('desktop', () => {
     await expect(phone).toContainText('Scored 92', { timeout: 8000 });
     await jump(page, 'rate', 2);
     await expect(phone).toContainText('On your Buy again list', { timeout: 6000 });
+    // The other two quick answers are filled in as well.
+    await expect(phone.locator('input[aria-label="What you paid"]')).toHaveValue('30', { timeout: 6000 });
+    await expect(phone.locator('input[aria-label="Where did you have it"]')).toHaveValue("At a friend's dinner", { timeout: 6000 });
     // Going back to the start puts the rating panel back.
     await jump(page, 'rate', 0);
     await expect(phone).toContainText('How was it?', { timeout: 8000 });

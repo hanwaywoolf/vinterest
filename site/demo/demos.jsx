@@ -45,6 +45,18 @@ function _setInput(input, v) {
   Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(input, String(v));
   input.dispatchEvent(new Event('input', { bubbles: true }));
 }
+/* The rating card's score slider (TrackSlider): a role="slider" element that takes pointer events,
+   not an input. Setting a score is a tap at the right place along it, as a finger would: a
+   pointerdown at that x (which sets the value), then the pointerup that lets go. */
+const _scoreSlider = (root) => root.querySelector('[role="slider"][aria-label="Score"]');
+function _setScore(slider, score) {
+  const min = Number(slider.getAttribute('aria-valuemin')), max = Number(slider.getAttribute('aria-valuemax'));
+  const r = slider.getBoundingClientRect();
+  const init = { bubbles: true, cancelable: true, pointerId: 1, pointerType: 'mouse', isPrimary: true, button: 0, clientX: r.left + ((score - min) / (max - min)) * r.width, clientY: r.top + r.height / 2 };
+  slider.dispatchEvent(new PointerEvent('pointerdown', init));
+  slider.dispatchEvent(new PointerEvent('pointerup', init));
+}
+const _scoreNow = (slider) => Number(slider.getAttribute('aria-valuenow')) || 0; // 0 while unset
 /* Runs fn now and every 120ms until it says it's done (screens fill in after their first paint). */
 function _until(fn, tries = 40) {
   let dead = false;
@@ -71,7 +83,7 @@ function _glider(getEl) {
     if (!s) { raf = 0; return; }
     const d = target - s.scrollTop;
     if (Math.abs(d) < 0.6) { s.scrollTop = target; raf = 0; return; }
-    s.scrollTop += d * 0.16;
+    s.scrollTop += d * 0.1; // slow enough that a jump to a far part glides rather than swings
     raf = requestAnimationFrame(step);
   };
   return { to(t) { target = t; if (!raf) raf = requestAnimationFrame(step); }, stop() { cancelAnimationFrame(raf); raf = 0; } };
@@ -220,7 +232,7 @@ const VinterestDemo = {
     });
 
     let deckAt = -1;
-    let saved = false, rated = false, learned = false, boughtAgain = false;
+    let saved = false, rated = false, learned = false, boughtAgain = false, paid = false, where = false;
     return {
       update(p) {
         lastP = p;
@@ -235,16 +247,19 @@ const VinterestDemo = {
         }
         if (kind === 'rate') {
           // Slide the score up to a 92, save it, then read down what it asks next.
-          if (saved && p < 0.42) { saved = false; rated = false; boughtAgain = false; scroller = null; draw(); return; }
-          const input = el.querySelector('input[type=range]');
-          if (!saved && input) {
+          if (saved && p < 0.42) { saved = false; rated = false; boughtAgain = paid = where = false; scroller = null; draw(); return; }
+          const slider = _scoreSlider(el);
+          if (!saved && slider) {
             const s = p < 0.05 ? 0 : Math.round(70 + (_RATE_TO - 70) * _ease((p - 0.05) / 0.4));
             const now = p >= 0.45 ? _RATE_TO : s;
-            if (now && Number(input.value) !== now) _setInput(input, now);
+            if (now && _scoreNow(slider) !== now) _setScore(slider, now);
           }
           if (p >= 0.5 && !saved && !rated) { rated = true; _until(() => { if (_tapText(el, /^Save rating$/)) { saved = true; return true; } return false; }, 30); }
           if (saved) {
+            // The three quick answers it asks for: buy again, what you paid, where you had it.
             if (p >= 0.74 && !boughtAgain) { boughtAgain = true; _until(() => _tapText(el, /^I'd buy this again/), 20); }
+            if (p >= 0.82 && !paid) { paid = true; _until(() => { const i = el.querySelector('input[aria-label="What you paid"]'); if (!i) return false; _setInput(i, '30'); return true; }, 20); }
+            if (p >= 0.9 && !where) { where = true; _until(() => { const i = el.querySelector('input[aria-label="Where did you have it"]'); if (!i) return false; _setInput(i, "At a friend's dinner"); return true; }, 20); }
             const top = _topCard(el);
             if (top) { const sc = _demoScroller(top); if (sc) { scroller = sc; glide.to(_ease((p - 0.55) / 0.42) * (sc.scrollHeight - sc.clientHeight)); } }
           }
@@ -255,10 +270,15 @@ const VinterestDemo = {
           if (!learned) {
             learned = true;
             _until(() => {
-              const input = el.querySelector('input[type=range]');
-              if (!input) return false;
-              _setInput(input, _RATE_TO);
-              setTimeout(() => _until(() => { if (!_tapText(el, /^Save rating$/)) return false; setTimeout(() => _until(() => _tapText(el, /^Done: what/), 30), 250); return true; }, 30), 200);
+              const slider = _scoreSlider(el);
+              if (!slider) return false;
+              _setScore(slider, _RATE_TO);
+              setTimeout(() => _until(() => { if (!_tapText(el, /^Save rating$/)) return false; setTimeout(() => _until(() => {
+                // Another demo mounting puts the store back as seeded, which would undo this scan's
+                // unlocks; make sure they're there as the options are worked out.
+                ScanFlow.unlockLearning({ ...DemoPersona.user.scanned, confidence: 'high' });
+                return _tapText(el, /^Finished: what/);
+              }, 30), 250); return true; }, 30), 200);
               return true;
             }, 60);
           }

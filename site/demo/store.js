@@ -37,6 +37,10 @@ const DemoPersona = (() => {
     vinterest_wineDNA_unlock_seen: '1',
   }).forEach(([k, v]) => local.setItem(k, v));
 
+  // Written for you opens once the first beginner article is read (ContentEngine.shelfOpen), and a
+  // drinker twelve bottles in has read it: Keep learning, Home and Learn show their pieces.
+  local.setItem('vinterest_' + _loadJSON('data/onramp.json')[0].id + '_done', '1');
+
   // Twelve bottles in, they've earned a few levels (Explorer, at 350 XP): the Learn tab and the
   // XP badge should look lived in, not like a first launch.
   local.setItem('vinterest_xp_v3', JSON.stringify({ version: 1, accounts: { local: { total: 410, events: [], scansThisWeek: [], totalRatings: 11, grapesSeen: ['Tempranillo', 'Grenache', 'Syrah', 'Malbec'], quizCompleted: {}, quizStreaks: {} } } }));

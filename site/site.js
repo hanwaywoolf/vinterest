@@ -115,16 +115,23 @@
       f.dots.push(dot);
     });
     f.copy.appendChild(dots);
-    // The mouse wheel over the text steps through the captions; at either end the page scrolls on.
+    /* The mouse wheel over the text steps through the captions, one caption per flick: a flick is a run
+       of wheel events (a trackpad's momentum, or notches in quick succession) with no gap of 260ms
+       or more, so a hard flick can't run the whole demo, and captions can't change faster than every
+       0.7s. At the first or last caption the page scrolls on, and so it does when the reader keeps
+       scrolling for more than 1.2s without a pause: they're travelling down the page, not reading. */
     if (!reduced) f.copy.addEventListener('wheel', function (e) {
       if (Math.abs(e.deltaY) < 4 || e.ctrlKey) return;
       var to = f.step + (e.deltaY > 0 ? 1 : -1);
       if (to < 0 || to >= f.steps.length) return;
-      e.preventDefault();
       var now = performance.now();
-      if (now - f.lastWheel > 200) f.lock = 0; // a new flick, not the tail of the last one
+      var fresh = now - f.lastWheel > 260;
       f.lastWheel = now;
-      if (now < f.lock) return;
+      if (fresh) { f.flickStart = now; f.flickDone = false; }
+      if (now - f.flickStart > 1200) return; // sustained: let the page scroll
+      e.preventDefault();
+      if (f.flickDone || now < f.lock) return;
+      f.flickDone = true;
       f.lock = now + 700;
       hold(f, to);
     }, { passive: false });
@@ -169,7 +176,7 @@
   if (!reduced) {
     var fio = 'IntersectionObserver' in window ? new IntersectionObserver(function (entries) {
       entries.forEach(function (e) { features.forEach(function (f) { if (f.el === e.target) f.on = e.isIntersecting; }); });
-    }, { threshold: 0.55 }) : null;
+    }, { threshold: 0.35 }) : null; // early: a section is one screen, and readers scroll on quickly
     features.forEach(function (f) { if (fio) fio.observe(f.el); else f.on = true; });
     var last = 0;
     var tick = function (now) {
