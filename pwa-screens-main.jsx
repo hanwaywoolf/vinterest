@@ -157,11 +157,15 @@ function useGalleryHint(live){
   return on;
 }
 
+/* A 1×1 transparent image: the camera preview's poster, so Android shows no play button. */
+const _BLANK_POSTER='data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+
 function ScanScreen({nav,back,onComplete,onSkip}){
   const [camLive,setCamLive]=React.useState(false);
   const galleryHint=useGalleryHint(camLive);
   const onboarding=!!onComplete; // onboarding: save the scan & advance the flow instead of navigating
   const videoRef=React.useRef(null);
+  const [videoLive,setVideoLive]=React.useState(false);
   const streamRef=React.useRef(null);
   const [phase,setPhase]=React.useState('viewfinder'); // viewfinder | processing
   const [capturedImg,setCapturedImg]=React.useState(null);
@@ -308,9 +312,13 @@ function ScanScreen({nav,back,onComplete,onSkip}){
   // ── Viewfinder state ──
   return(
     <div style={{flex:1,display:'flex',flexDirection:'column',background:'#0A0A0A',position:'relative',overflow:'hidden'}}>
-      {/* Camera feed */}
-      {!camErr?(
-        <video ref={videoRef} autoPlay playsInline muted style={{position:'absolute',inset:0,width:'100%',height:'100%',objectFit:'cover',opacity:.88}}/>
+      {/* Camera feed. Android's WebView draws a big grey play button over any video element that
+          hasn't started, whatever its opacity or poster, and it showed behind the camera
+          permission prompt. So the video element only exists once the camera has started (after
+          permission); it picks up the stream as it mounts, and fades in on its first frame. */}
+      {!camErr?(camLive&&
+        <video ref={el=>{ videoRef.current=el; if(el&&streamRef.current&&el.srcObject!==streamRef.current) el.srcObject=streamRef.current; }} autoPlay playsInline muted poster={_BLANK_POSTER} onPlaying={()=>setVideoLive(true)} onLoadedData={()=>setVideoLive(true)}
+          style={{position:'absolute',inset:0,width:'100%',height:'100%',objectFit:'cover',opacity:videoLive?.88:0,transition:'opacity .2s'}}/>
       ):(
         <div style={{position:'absolute',inset:0,background:'linear-gradient(135deg,#1a1a1a,#2d1b2e)',display:'flex',alignItems:'center',justifyContent:'center',flexDirection:'column',gap:8}}>
           <Icon n="camera" sz={42} col="rgba(255,255,255,0.18)"/>

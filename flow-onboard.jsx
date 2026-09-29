@@ -91,6 +91,10 @@ function OnboardSetup({step,total,onBack,onDone}){
 
 /* ── Steps 3–5: what they drink, what they spend, how well they know wine ── */
 function OnboardTaste({step,total,onBack,onDone,scanned}){
+  // "Saved in My Wines" confirms the first bottle once, on arrival, then fades; the flow passes
+  // scanned only on the first visit, so going back to the bottle and forward again doesn't repeat it.
+  const [savedNote,setSavedNote]=React.useState(!!scanned);
+  React.useEffect(()=>{ if(!savedNote) return; const t=setTimeout(()=>setSavedNote(false),4000); return()=>clearTimeout(t); },[]);
   const [q,setQ]=React.useState(0);
   const [answers,setAnswers]=React.useState(()=>{ const p=UserPrefs.get(); return {types:p.types||[],budget:p.budget||null,experience:p.experience||null}; });
   const TYPE_OPTS=[
@@ -117,7 +121,7 @@ function OnboardTaste({step,total,onBack,onDone,scanned}){
     <div style={{flex:1,background:C.bg,display:'flex',flexDirection:'column',overflow:'hidden'}}>
       <OnboardHeader step={step+q} total={total} onBack={q>0?()=>setQ(q-1):onBack} onSkip={()=>{ saveAll(answers); onDone(); }}/>
       <div style={{flex:1,overflowY:'auto',padding:'8px 22px 16px'}}>
-        {scanned&&q===0&&<div style={{display:'flex',alignItems:'center',gap:10,padding:'10px 12px',borderRadius:12,background:C.greenBg,border:`1px solid ${C.green}30`,marginBottom:18}}>
+        {scanned&&q===0&&<div data-saved-note style={{display:'flex',alignItems:'center',gap:10,padding:'10px 12px',borderRadius:12,background:C.greenBg,border:`1px solid ${C.green}30`,opacity:savedNote?1:0,maxHeight:savedNote?120:0,marginBottom:savedNote?18:0,paddingTop:savedNote?10:0,paddingBottom:savedNote?10:0,overflow:'hidden',transition:'opacity .4s, max-height .4s .3s, margin .4s .3s, padding .4s .3s'}} aria-hidden={!savedNote}>
           <Icon n="check" sz={16} col={C.green}/>
           <span style={{fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.4}}><b>{scanned.name}</b> is saved in My Wines.</span>
         </div>}

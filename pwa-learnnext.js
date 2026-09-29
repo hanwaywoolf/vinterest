@@ -55,7 +55,7 @@ const LearnNext = {
   _articleTiles(wine,wines){
     try{ ContentEngine.refreshShelf(wines,6); }catch(e){}
     const r=Regions.resolve(wine)||wine.region, g=GrapeUnlocks.key((wine.grapes||[])[0]);
-    const shelf=ContentEngine.shelf(wines)||[];
+    const shelf=ContentEngine.openShelf(wines);
     return shelf.filter(s=>!LearnProgress.articleDone(s.id)&&!ContentEngine.stubLocked(s)
         &&s.slots&&((r&&s.slots.region===r)||(g&&s.slots.grape===g)))
       .map(s=>({kind:'article',key:'article:'+s.id,stub:s,icon:s.iconName||'read',title:s.title,why:s.subtitle,progress:`Written for you${s.readTime?` · ${s.readTime} read`:''}`}));
@@ -68,7 +68,7 @@ const LearnNext = {
     wines=wines||WineHistory.getAll();
     const out=[];
     if(!wines.length) out.push({kind:'scan',key:'scan',icon:'camera',title:'Scan your first bottle',why:'Your match, your WineDNA and the pieces written for you all start from a label.'});
-    const unread=(()=>{ try{ return (ContentEngine.shelf(wines)||[]).filter(s=>!LearnProgress.articleDone(s.id)&&!ContentEngine.stubLocked(s)); }catch(e){ return []; } })();
+    const unread=(()=>{ try{ return ContentEngine.openShelf(wines).filter(s=>!LearnProgress.articleDone(s.id)&&!ContentEngine.stubLocked(s)); }catch(e){ return []; } })();
     if(unread[0]) out.push({kind:'article',key:'article:'+unread[0].id,stub:unread[0],icon:unread[0].iconName||'read',title:unread[0].title,why:ContentEngine.because(unread[0],wines),progress:`Written for you${unread[0].readTime?` · ${unread[0].readTime}`:''}`});
     if(!UserPrefs.skipsOnRamp()){ const t=this._onRampTile(); if(t) out.push(t); }
     const gap=wines.length?KnowledgeMap.summary(wines).gap:null;

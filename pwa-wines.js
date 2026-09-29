@@ -141,9 +141,11 @@ const WineHistory = {
     return w;
   },
   /* What the user noticed when they drank it: tasted[axis] is -1 / 0 / 1 against the label
-     estimate (lighter / as expected / fuller, and so on), price_paid {amount, code}, buy_again. */
-  setTasting(name, vintage, {tasted, price_paid, buy_again}={}){
+     estimate (lighter / as expected / fuller, and so on), price_paid {amount, code}, buy_again,
+     and where_had (where they drank it: shown on the wine, searched in My Wines, told to Vinny). */
+  setTasting(name, vintage, {tasted, price_paid, buy_again, where_had}={}){
     const patch={};
+    if(where_had!==undefined) patch.where_had=where_had;
     if(tasted) patch.tasted=tasted;
     if(price_paid!==undefined) patch.price_paid=price_paid;
     if(buy_again!==undefined) patch.buy_again=buy_again;

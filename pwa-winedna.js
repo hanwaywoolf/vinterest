@@ -99,7 +99,11 @@ const WineDNA = {
     });
     return {grapes:out,blend,typical};
   },
+  /* Tasting notes read as one style everywhere: first letter capitalised ("Dried cherry and
+     plum"), since Claude sometimes returns them all lower case. */
+  capNotes(notes){ return (Array.isArray(notes)?notes:[]).map(n=>{ const t=String(n||'').trim(); return t?t.charAt(0).toUpperCase()+t.slice(1):t; }).filter(Boolean); },
   cleanWine(w){
+    if(w&&Array.isArray(w.tasting_notes)&&w.tasting_notes.some(n=>typeof n==='string'&&/^\s*[a-z]/.test(n))) w={...w,tasting_notes:this.capNotes(w.tasting_notes)};
     if(!w||!Array.isArray(w.grapes)||!w.grapes.some(g=>/[,;/&+]|\b(or|and|blend|likely|probably|possibly|typically|usually|mostly)\b|\s[-–—]\s|:|\(|%/i.test(g||''))) return w;
     const c=this.cleanGrapes(w.grapes);
     return {...w,grapes:c.grapes,blend:w.blend||c.blend,grapes_basis:w.grapes_basis||(c.typical?'typical':undefined)};
@@ -248,6 +252,9 @@ const WineDNA = {
     rc=rc||Regional.current(); const fx=USD_FX[rc.code]||1;
     const pp=w.price_paid;
     if(pp&&pp.amount>0) return pp.code===rc.code?pp.amount:pp.amount/(USD_FX[pp.code]||1)*fx;
+    // Then the shop price the Price tab showed (fetchRetailEstimate saves it), then the label guess.
+    const sp=w.shop_price;
+    if(sp&&sp.amount>0) return sp.code===rc.code?sp.amount:sp.amount/(USD_FX[sp.code]||1)*fx;
     return w.price_usd>0?w.price_usd*fx:null;
   },
 

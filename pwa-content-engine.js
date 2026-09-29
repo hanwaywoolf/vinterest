@@ -198,7 +198,8 @@ function regionQuizCandidates(wines){ return _regionsWithScans(wines).filter(r=>
 function completedRegionQuizzes(wines){ return _regionsWithScans(wines).filter(r=>RegionQuizBank.isComplete(r)); }
 
 /* USD → local currency, the one table every screen uses to show prices (WineDNA's average price,
-   the sommelier script budget). Scan prices are stored as price_usd. */
+   the sommelier script budget). A scan's label guess is price_usd; the shop price found after it is
+   saved as shop_price in the user's currency (fetchRetailEstimate). */
 const USD_FX={GBP:0.79,CAD:1.36,AUD:1.53,NZD:1.64,EUR:0.92,USD:1.0,JPY:150,CNY:7.2,CHF:0.88,ZAR:18.5,SGD:1.34,HKD:7.8,MXN:18,BRL:5.4,INR:83,AED:3.67,SEK:10.4,NOK:10.6,DKK:6.9};
 
 /* The sommelier script for one wine type ("I tend to go for… around £20–£35 GBP"), shared by
@@ -212,12 +213,13 @@ const SommelierScript = {
   // or a "buy again" all write a new one (a script written at scan time used to outlive the score).
   key(length,typeKey,sig,code){ return `vinterest_script_${length}_${typeKey}_${sig}_${code}_v5`; },
   sig(wines){
-    const extra=wines.map(w=>`${(w.price_paid&&w.price_paid.amount)||''}|${w.buy_again?1:0}|${w.price_usd||''}`).join(';');
+    const extra=wines.map(w=>`${(w.price_paid&&w.price_paid.amount)||''}|${w.buy_again?1:0}|${w.price_usd||''}|${(w.shop_price&&w.shop_price.amount)||''}`).join(';');
     let h=0; for(let i=0;i<extra.length;i++) h=(h*31+extra.charCodeAt(i))|0;
     return WineDNA.signature(wines)+(h>>>0).toString(36);
   },
   /* The typical spend for these wines, in local currency, rounded to friendly steps. Their own
-     wines come first: what they paid where they said, otherwise the scan's estimate, leaving out
+     wines come first: what they paid where they said, otherwise the shop price the Price tab found
+     (shop_price), otherwise the label's rough estimate, leaving out
      shelf checks they didn't buy and wines they scored below 80 (a bottle they didn't enjoy isn't
      a budget to aim for). One priced wine gives "around £90"; more give the middle half of their
      prices. Only with no priced wine at all does the usual spend from onboarding stand in. */
@@ -283,6 +285,7 @@ try{ EXPLORE_STYLES=_loadJSON('data/explore-styles.json')||[]; }catch(e){ consol
    low, and a spread across countries. A style the user has already scanned isn't suggested again;
    it's returned as "explored" with their rating, so trying a suggestion visibly closes the loop. */
 const ExploreNext = {
+  READY_AT:3,
   AXES:{body:['full body','light body','medium body'],tannins:['firm tannins','soft tannins','medium tannins'],
         acidity:['fresh, high acidity','softer acidity','balanced acidity'],sweetness:['sweetness','a dry style','a touch of sweetness']},
   _t(v){ return (v||'').toLowerCase().replace('é','e'); },
@@ -337,6 +340,9 @@ const ExploreNext = {
   },
   // {picks:[assessments], explored:[{style,wine}]} for one type.
   suggest(typeKey,wines,label,n=3){
+    // No picks until there's enough to go on (READY_AT wines of the type): WineDNA shows none
+    // before then, and neither does Home.
+    if(this._typeWines(typeKey,wines).length<this.READY_AT) n=0;
     const dna=this.dna(typeKey,wines);
     const styles=EXPLORE_STYLES.filter(s=>s.type===typeKey);
     const explored=[], open=[];
@@ -580,7 +586,9 @@ const ContentEngine = {
     if((archetype.id==='grape_unlock_intro'||archetype.id==='grape_deep_dive')&&slots.grape){
       const mineG=(wines||[]).filter(w=>(w.grapes||[]).some(g=>WineDNA.grape(g)===slots.grape));
       const top=[...mineG].sort((a,b)=>(b.rating||0)-(a.rating||0))[0];
-      if(top&&archetype.id==='grape_unlock_intro') return top.rating>0?`You scored ${top.name} ${top.rating}. Here's what ${slots.grape} brought to it.`:`You met it in ${top.name}. Here's what makes it taste the way it does.`;
+      // The "Because you gave X a 95" line already names the wine and its score; the subtitle
+      // talks about the grape instead, so the page doesn't say the same thing twice.
+      if(top&&archetype.id==='grape_unlock_intro') return top.rating>0?`What ${slots.grape} tastes like, and why it tasted that way in your glass.`:`You met it in ${top.name}. Here's what makes it taste the way it does.`;
       const G=KNOWLEDGE.grapes[slots.grape];
       if(archetype.id==='grape_deep_dive'&&G&&G.famousIn.length>1) return `${slots.grape} in ${list(G.famousIn.slice(0,3))}: what changes when it moves`;
     }
@@ -677,6 +685,16 @@ const ContentEngine = {
     if(s.trait) return 'Because of a pattern in your scores';
     return 'Picked from your WineDNA';
   },
+  /* The article's "why this is for you" box. Articles saved before the prompt said otherwise
+     often just restated the "because" line (the same wine and score, a third time on the page);
+     those get the standard line instead. */
+  forYouLine(stub,text,wines){
+    if(!text) return null;
+    const w=this._related((stub&&stub.slots)||{},wines||WineHistory.getAll())[0];
+    const low=String(text).toLowerCase();
+    if(w&&w.rating>0&&low.includes(String(w.name||'').toLowerCase())&&low.includes(String(w.rating))) return null;
+    return text;
+  },
   /* The kind of wine a piece is about: its type slot, its bottles, or its grape's colour. null for
      pieces about an idea (a concept, a tasting word) rather than a wine. */
   _subjectType(slots,rel){
@@ -697,6 +715,7 @@ const ContentEngine = {
       b.push(w.rating>0?`scored ${w.rating}, ${ParkerScale.label(w.rating)}`:'not scored yet');
       const p=WineDNA.priceOf(w,rc); if(p) b.push(`${w.price_paid&&w.price_paid.amount>0?'paid':'about'} ${rc.base}${Math.round(p)}`);
       if(w.buy_again) b.push('would buy again');
+      if(w.where_had) b.push(`had it at ${w.where_had}`);
       const t=w.tasted?Object.entries(w.tasted).filter(([k,d])=>d&&cmp[k]).map(([k,d])=>`${cmp[k][d>0?1:0].toLowerCase()} than the label suggested`):[];
       if(t.length) b.push('they found it '+t.join(' and '));
       return '- '+b.join(', ');
@@ -723,10 +742,21 @@ const ContentEngine = {
     return out.join('\n\n');
   },
 
+  /* Written for you opens on Learn once they've read the first beginner article, or straight away
+     for enthusiasts and experts (who skip the on-ramp). Learn sets the rule and everything else
+     follows it: until then no piece is written, and Home, WineDNA, wine detail and Keep learning
+     show none (openShelf), so nothing turns up elsewhere before Learn has it. */
+  shelfOpen(){
+    const list=typeof ON_RAMP!=='undefined'?ON_RAMP:[];
+    return UserPrefs.skipsOnRamp()||(list.length>0&&LearnProgress.onRampDone(list[0].id));
+  },
+  /* The shelf as every screen but Learn reads it: empty until it's open. */
+  openShelf(wines){ return this.shelfOpen()?(this.shelf(wines)||[]):[]; },
+
   /* Unread pieces about this wine type's bottles, for the WineDNA tab. */
   forType(typeKey,wines){
     wines=wines||WineHistory.getAll();
-    return (this.shelf(wines)||[]).filter(s=>!LearnProgress.articleDone(s.id)&&!this.stubLocked(s)&&this._related(s.slots,wines).some(w=>WineDNA._t(w.type)===typeKey));
+    return this.openShelf(wines).filter(s=>!LearnProgress.articleDone(s.id)&&!this.stubLocked(s)&&this._related(s.slots,wines).some(w=>WineDNA._t(w.type)===typeKey));
   },
 
   /* A region piece about a region past the free allowance is shown locked, with Pro. */
@@ -744,6 +774,7 @@ const ContentEngine = {
 
   refreshShelf(wines, maxUnread){
     maxUnread=maxUnread||6;
+    if(!this.shelfOpen()) return this.shelf(wines)||[];
     let stubs=[];
     try{ stubs=JSON.parse(Store.get('vinterest_gen_stubs')||'[]')||[]; }catch(e){}
     let healed=this._healStubs(stubs,wines);

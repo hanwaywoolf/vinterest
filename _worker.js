@@ -53,6 +53,8 @@ const CLAUDE_PURPOSE_LIMITS = {
   match_explain: 4096,     // pwa-screens-detail.jsx — "why this wine matches you"
   vintage_info: 4096,      // pwa-screens-detail.jsx — vintage quality + drinking window
   education: 4096,         // pwa-screens-detail.jsx — grape/vocabulary deep-dive
+  wine_details: 1024,      // pwa-scan.js ScanFlow.fillDetails — tasting notes, pairings and grapes for a
+                            // wine saved from a wine list (prompts/wine-details.txt), once per wine
   wine_qa: 300,            // pwa-vinny.js — "Ask Vinny" wine Q&A (prompts/vinny.txt). Answers are
                             // up to 3 short sentences (~60 words); this caps it well above that,
                             // as a backstop if the model ever ignores the length instruction.

@@ -104,21 +104,30 @@ test('no camera: the shutter never saves a sample wine, and a library photo scan
   expect(saved).toBeTruthy();
   expect(saved.confidence).toBe('high');
 
-  // Rate it, then the optional tasting details save straight away.
+  // Rate it: the score is saved at once, and the optional extras save as they're typed, so
+  // leaving before "Finished: what's next?" (or before Keep learning) loses nothing.
   await root.getByText('Rate it', { exact: true }).click();
   await root.getByText('90', { exact: true }).click();
   await root.getByText('Save rating').click();
   await expect(root).toContainText('Scored 90 · Outstanding');
-  await root.getByText('Fuller', { exact: true }).click();
+  await expect(root).not.toContainText('What did you notice?');
+  expect((await history(page)).find((w) => w.name === 'Clos Test Priorat').rating).toBe(90);
   await root.getByText('I\'d buy this again').click();
   await root.getByLabel('What you paid').fill('32');
-  await root.getByLabel('What you paid').blur();
+  await root.getByLabel('Where did you have it').fill('Dishoom King\'s Cross');
+  await page.evaluate(() => { location.hash = 'home'; }); // walk away without finishing
   const rated = (await history(page)).find((w) => w.name === 'Clos Test Priorat');
   expect(rated.rating).toBe(90);
   expect(rated.scan_intent).toBe('tasted');
-  expect(rated.tasted.body).toBe(1);
   expect(rated.buy_again).toBe(true);
   expect(rated.price_paid.amount).toBe(32);
+  expect(rated.where_had).toBe('Dishoom King\'s Cross');
+  // Where they had it: searchable in My Wines, shown on the wine, and Vinny knows.
+  expect(await page.evaluate(() => MyWines.query(WineHistory.getAll(), { q: 'dishoom' }).map((w) => w.name))).toEqual(['Clos Test Priorat']);
+  expect(await page.evaluate(() => Vinny.profile(WineHistory.getAll()))).toContain("had at Dishoom King's Cross");
+  await page.evaluate((w) => sessionStorage.setItem('vinterest_scan_result', JSON.stringify({ wine: w })), rated);
+  await page.goto(`${BASE}/?demo=1#detail`);
+  await expect(page.locator('[data-where-had]')).toHaveText("Had at Dishoom King's Cross");
   expect(errors).toEqual([]);
 });
 
@@ -299,22 +308,19 @@ test('the deck: sliders move sliders, a flick turns the card, and it ends on rat
   await page.mouse.up();
   await expect(root).toContainText('2 / 9');
   // Jump to the tasting card and play Blind Call: dragging a slider changes the slider, not the card.
-  await page.locator('#root div[style*="scaleX(-1)"]').click();
-  await page.locator('#root div[style*="scaleX(-1)"]').click();
-  await page.locator('#root div[style*="scaleX(-1)"]').click();
-  await page.locator('#root div[style*="scaleX(-1)"]').click();
+  for (let i = 0; i < 4; i++) await page.locator('#root div[style*="scaleX(-1)"]').click();
   await expect(root).toContainText('6 / 9');
   await root.getByText('Tasting it now? Play Blind Call').click();
-  const slider = root.locator('input[type=range]').first();
+  const slider = root.getByRole('slider').first();
   const s = await slider.boundingBox();
   await page.mouse.move(s.x + s.width * 0.5, s.y + s.height / 2);
   await page.mouse.down();
   await page.mouse.move(s.x + s.width * 0.9, s.y + s.height / 2, { steps: 5 });
   await page.mouse.up();
   await expect(root).toContainText('6 / 9');
-  expect(Number(await slider.inputValue())).toBeGreaterThan(70);
+  expect(Number(await slider.getAttribute('aria-valuenow'))).toBeGreaterThan(70);
   // Slider colour follows the wine type (red here).
-  expect(await slider.evaluate((el) => getComputedStyle(el).accentColor)).toBe('rgb(139, 26, 47)');
+  expect(await slider.evaluate((el) => getComputedStyle(el.children[1]).backgroundColor)).toBe('rgb(139, 26, 47)');
   // Last card is the rating; after saving, the end actions sit apart.
   for (let i = 0; i < 3; i++) await page.locator('#root div[style*="scaleX(-1)"]').click();
   await expect(root).toContainText('9 / 9');
@@ -323,7 +329,7 @@ test('the deck: sliders move sliders, a flick turns the card, and it ends on rat
   await root.getByText('Save rating').click();
   // The card's label follows the step.
   await expect(root.getByText('Your score', { exact: true })).toBeVisible();
-  await root.getByText('Done: what\'s next?').click();
+  await root.getByText('Finished: what\'s next?').click();
   await expect(root).toContainText('Keep learning');
   await expect(root.getByText('Rate it', { exact: true })).toHaveCount(0);
   await expect(root.getByText('Finish', { exact: true })).toBeVisible();
@@ -399,14 +405,22 @@ test.describe('the deck on a touch screen', () => {
     for (let i = 0; i < 5; i++) await drag(320, 400, -110, 250);
     await expect(root).toContainText('6 / 9');
     await root.getByText('Tasting it now? Play Blind Call').click();
-    const slider = root.locator('input[type=range]').first();
+    const slider = root.getByRole('slider').first();
     const s = await slider.boundingBox();
     await drag(s.x + s.width * 0.5, s.y + s.height / 2, s.width * 0.4, 300);
     await expect(root).toContainText('6 / 9');
-    expect(Number(await slider.inputValue())).toBeGreaterThan(70);
+    expect(Number(await slider.getAttribute('aria-valuenow'))).toBeGreaterThan(70);
     // From the Blind Call card on, swipe on the card heading (a swipe starting on a slider is the slider's).
     for (let i = 0; i < 3; i++) await drag(320, (await root.getByText(/^(While you taste|Sound clued-in|Price check)$/).first().boundingBox()).y + 5, -110, 250);
     await expect(root).toContainText('9 / 9');
+    // The score slider takes a touch anywhere on it, before any score is picked (iPhone's own
+    // slider only moved from its knob, parked at the far left, so the touch swiped the card).
+    const score = root.getByRole('slider', { name: 'Score' });
+    expect(await score.getAttribute('aria-valuenow')).toBeNull();
+    const b = await score.boundingBox();
+    await drag(b.x + b.width * 0.75, b.y + b.height / 2, b.width * 0.1, 300);
+    await expect(root).toContainText('9 / 9');
+    expect(Number(await score.getAttribute('aria-valuenow'))).toBeGreaterThanOrEqual(88);
     await drag(60, (await root.getByText('How was it?').boundingBox()).y + 5, 110, 250);
     await expect(root).toContainText('8 / 9');
   });
@@ -654,7 +668,7 @@ test('Keep learning opens at its top, not wherever the rating left the page scro
   await root.getByText('Save rating').click();
   const scroller = page.locator('.sc-scroll').first();
   await scroller.evaluate((el) => { el.scrollTop = el.scrollHeight; });
-  await root.getByText('Done: what\'s next?').click();
+  await root.getByText('Finished: what\'s next?').click();
   const heading = root.getByText('Keep learning', { exact: true });
   await expect(heading).toBeVisible();
   const [h, s] = [await heading.boundingBox(), await scroller.boundingBox()];
@@ -669,4 +683,58 @@ test('without a camera there is no gallery tip (the screen already says to choos
   await expect(page.locator('#root')).toContainText('Camera unavailable');
   await expect(page.locator('#root')).not.toContainText('Or pick a photo from your gallery');
   expect(await page.evaluate(() => Flags.galleryHintDue())).toBe(true);
+});
+
+test('a wine from a wine list gets its tasting notes, pairings and grapes once, in its type\'s colour', async ({ context, page }) => {
+  const errors = collectErrors(page);
+  const claudeRequests = [];
+  await makeDeterministic(page);
+  const veuve = { name: 'Champagne, Veuve Clicquot', producer: 'Veuve Clicquot', type: 'sparkling', region: 'Champagne', country: 'France', vintage: 0, body: 0.6, acidity: 0.7, sweetness: 0.1, rating: 90, scanned_at: '2026-09-01T12:00:00Z', source: 'list' };
+  await seedLocalStorage(page, { vinterest_onboarded: '1', vinterest_age_ok: '1', vinterest_region: 'uk', vinterest_wines: JSON.stringify([veuve]) });
+  await stubNetwork(context, { claudeRequests, claudeText: (b) => b.purpose === 'wine_details'
+    ? JSON.stringify({ tasting_notes: ['toasted brioche and almond', 'Crisp green apple', 'Fine, lively bubbles'], food_pairings: ['Oysters', 'Fried chicken', 'Parmesan'], grapes: ['Pinot Noir', 'Chardonnay', 'Pinot Meunier'] }) : '' });
+  await page.goto(`${BASE}/#home`);
+  await page.evaluate((w) => sessionStorage.setItem('vinterest_scan_result', JSON.stringify({ wine: w, existingRating: 90 })), veuve);
+  await page.goto(`${BASE}/#detail`);
+  const root = page.locator('#root');
+  await expect(root).toContainText('Toasted brioche and almond');
+  await expect(root).toContainText('Oysters');
+  // Sparkling's blue, not the brand crimson.
+  await expect(root.locator('[data-note]').first()).toHaveCSS('border-color', 'rgba(94, 143, 168, 0.333)');
+  const saved = await page.evaluate(() => WineHistory.getAll()[0]);
+  expect(saved.tasting_notes).toHaveLength(3);
+  expect(saved.tasting_notes[0]).toBe('Toasted brioche and almond'); // capitalised, as every note is shown
+  expect(await page.evaluate(() => { const all = WineHistory.getAll(); all.push({ name: 'Lower Case Rioja', type: 'red', vintage: 2016, tasting_notes: ['dried cherry and plum'] }); WineHistory.save(all); return WineHistory.getAll().find((w) => w.name === 'Lower Case Rioja').tasting_notes; })).toEqual(['Dried cherry and plum']);
+  expect(saved.grapes).toEqual(['Pinot Noir', 'Chardonnay', 'Pinot Meunier']);
+  expect(saved.grapes_basis).toBe('typical');
+  // Asked once: opening it again uses what was saved.
+  await page.evaluate(() => sessionStorage.setItem('vinterest_scan_result', JSON.stringify({ wine: WineHistory.getAll()[0], existingRating: 90 })));
+  await page.goto(`${BASE}/#detail`);
+  await expect(root).toContainText('Toasted brioche and almond');
+  expect(claudeRequests.filter((r) => r.purpose === 'wine_details')).toHaveLength(1);
+  expect(errors).toEqual([]);
+});
+
+test('a card always opens at its top, going back to one you had scrolled included', async ({ context, page }) => {
+  await page.setViewportSize({ width: 375, height: 600 });
+  await setup(context, page, { label: PRIORAT, seed: { vinterest_text_size: 'xl' } });
+  await page.goto(`${BASE}/?demo=1#camera`);
+  await page.getByTestId('scan-file').setInputFiles({ name: 'label.png', mimeType: 'image/png', buffer: PNG });
+  const root = page.locator('#root');
+  await root.getByText('Learn about it', { exact: true }).click();
+  await expect(root).toContainText('1 / 9');
+  // The card at the top of the deck has the highest z-index.
+  const topScroll = (set) => page.evaluate((set) => {
+    const cards = [...document.querySelectorAll('#root .sc-swipe [style*="z-index"]')].filter((e) => e.querySelector('.sc-scroll'));
+    const el = cards.sort((a, b) => Number(b.style.zIndex) - Number(a.style.zIndex))[0].querySelector('.sc-scroll');
+    if (set != null) el.scrollTop = set;
+    return el.scrollTop;
+  }, set);
+  expect(await topScroll(9999)).toBeGreaterThan(0);
+  await page.locator('#root div[style*="scaleX(-1)"]').click();
+  await expect(root).toContainText('2 / 9');
+  expect(await topScroll()).toBe(0);
+  await root.getByText('2 / 9', { exact: true }).locator('xpath=preceding-sibling::div[1]').click();
+  await expect(root).toContainText('1 / 9');
+  expect(await topScroll()).toBe(0);
 });

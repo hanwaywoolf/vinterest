@@ -83,22 +83,21 @@ test('the native projects get the camera wording (iOS) and permission (Android),
   expect(m1).toContain('<uses-feature android:name="android.hardware.camera" android:required="false" />');
 });
 
-test('in the app, the phone\'s font size sets Vinterest\'s text size (until the reader picks one), and the WebView zoom goes back to 100%', async ({ context, page }) => {
+test('in the app, the WebView zoom goes back to 100% and text starts at Standard, whatever the phone\'s font size', async ({ context, page }) => {
   await asApp(page);
   await makeDeterministic(page);
   await seedLocalStorage(page, { vinterest_onboarded: '1', vinterest_region: 'uk' });
   await stubNetwork(context);
   await page.goto(`${BASE}/#home`);
-  const run = (preferred) => page.evaluate(async (preferred) => {
+  const run = () => page.evaluate(async () => {
     const sets = [];
-    window.VinterestNative.TextZoom = { getPreferred: async () => ({ value: preferred }), set: async (o) => { sets.push(o.value); } };
+    window.VinterestNative.TextZoom = { getPreferred: async () => ({ value: 1.3 }), set: async (o) => { sets.push(o.value); } };
     await Platform.start();
     return { sets, size: TextSize.get().id };
-  }, preferred);
-  await page.evaluate(() => Store.remove(TextSize.KEY));
-  expect(await run(1.3)).toEqual({ sets: [1], size: 'xl' });
-  await page.evaluate(() => TextSize.set('standard')); // the reader's own choice stands
-  expect(await run(1.3)).toEqual({ sets: [1], size: 'standard' });
+  });
+  expect(await run()).toEqual({ sets: [1], size: 'standard' });
+  await page.evaluate(() => TextSize.set('large')); // the reader's own choice stands
+  expect(await run()).toEqual({ sets: [1], size: 'large' });
 });
 
 test('an app build without sign-in settings gets them from the live site, and Sign in appears', async ({ context, page }) => {

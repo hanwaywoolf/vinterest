@@ -234,6 +234,20 @@ test('a fair-use or Pro refusal reaches the screen in the server\'s words', asyn
   expect(err).toEqual({ message: 'You\'ve reached this week\'s fair-use limit for this. It resets on Monday.', code: 'fair_use' });
 });
 
+test('signed out, Profile\'s Backup says it\'s off in red, and its button opens sign-in', async ({ context, page }) => {
+  const errors = collectErrors(page);
+  await app(context, page);
+  await page.goto(`${BASE}/#account`);
+  const root = page.locator('#root');
+  const status = root.getByRole('status').filter({ hasText: 'Not backed up' });
+  await expect(status).toBeVisible();
+  await expect(status.locator('span').last()).toHaveCSS('color', 'rgb(176, 74, 58)');
+  await expect(root).toContainText('Your wines are only on this phone');
+  await root.getByText('Sign in to back up').click();
+  await expect(page.getByLabel('Email address')).toBeFocused();
+  expect(errors).toEqual([]);
+});
+
 test('without sign-in configured, no account card appears', async ({ context, page }) => {
   await makeDeterministic(page);
   await seedLocalStorage(page, { vinterest_onboarded: '1', vinterest_region: 'uk' });
@@ -241,6 +255,7 @@ test('without sign-in configured, no account card appears', async ({ context, pa
   await page.goto(`${BASE}/#account`);
   await expect(page.locator('#root')).toContainText('Travel Mode');
   await expect(page.locator('#root')).not.toContainText('Sign in (optional)');
+  await expect(page.locator('#root')).not.toContainText('Not backed up');
 });
 
 test('delete the account from Profile: confirm, then the server deletes it and the phone starts again', async ({ context, page }) => {
