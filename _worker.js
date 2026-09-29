@@ -65,6 +65,7 @@ const CLAUDE_PURPOSE_LIMITS = {
 
 const ALLOWED_ORIGINS = [
   "https://vinterest.app",
+  "https://test.vinterest.app", // the web app's test address (a custom domain on the vinterest Pages project)
   "https://vinterest.pages.dev",
   "capacitor://localhost",
   "https://localhost"

@@ -301,3 +301,12 @@ test('delete the account from Profile: confirm, then the server deletes it and t
   expect(await page.evaluate(() => [XPSystem.get().total, Account.signedIn()])).toEqual([0, false]);
   expect(errors.filter((e) => !e.includes('status of 502'))).toEqual([]);
 });
+
+test('the Worker takes requests from the app\'s own addresses (test.vinterest.app too) and refuses others', async () => {
+  const worker = await loadWorker();
+  const post = (origin) => worker.fetch(new Request('https://test.vinterest.app/claude', { method: 'POST', headers: { origin, 'content-type': 'application/json' }, body: JSON.stringify({ purpose: 'not_a_purpose', messages: [] }) }), { ANTHROPIC_API_KEY: 'test-key' }, { waitUntil() {} });
+  const code = async (o) => (await (await post(o)).json()).code;
+  // Allowed: past the origin check, stopped instead by the made-up purpose (no call is made).
+  for (const o of ['https://vinterest.app', 'https://test.vinterest.app', 'https://vinterest.pages.dev', 'https://abc123.vinterest.pages.dev']) expect(await code(o), o).toBe('invalid_purpose');
+  expect(await code('https://evil.example')).toBe('origin_denied');
+});
