@@ -30,6 +30,9 @@ window.claude = {
     const a = _DEMO_CAPTURED.answers || {};
     const text = purpose === 'winedna_summary' ? a.winedna_summary
       : purpose === 'scancard' ? a.scancard
+      : purpose === 'learn_article' ? a.learn_article
+      : purpose === 'vintage_info' ? a.vintage_info
+      : purpose === 'education' ? a.education
       : purpose === 'sommelier_script' ? (/^Condense/.test(prompt) ? a.sommelier_short : a.sommelier_long) : null;
     return text ? Promise.resolve(text) : Promise.reject(new Error('The website demos make no calls'));
   },
@@ -109,24 +112,87 @@ function _openScan(view, unlock) {
   Handoff.openWine({ wine, source: 'camera', tracked: true, view });
 }
 
-/* Which nav tab is lit under each screen, as in the app. */
+/* The sample user has done some studying, so the Mastery map and the Learn tab look lived in: most of
+   the red Wine Basics quiz and a few articles read. Done here, after every module has loaded, and
+   folded into the seeded store (DemoPersona.rebase), so each demo's reset keeps it. */
+(function seedStudy() {
+  try {
+    QuizMastery.topicPool('red_grapes').slice(0, 12).forEach((q) => QuizMastery.recordAnswer('topic:red_grapes', q.q, true));
+    QuizMastery.topicPool('sparkling').slice(0, 4).forEach((q) => QuizMastery.recordAnswer('topic:sparkling', q.q, true));
+    (ContentEngine.shelf(WineHistory.getAll()) || []).slice(0, 2).forEach((st) => LearnProgress.markArticle(st.id));
+    DemoPersona.rebase();
+  } catch (e) { /* the demos still work, with an emptier map */ }
+})();
+
+/* The article the Learn demo opens: the sample user's own "From Rioja to Rhône Valley" piece. Its text is
+   what Claude wrote for it (captured), not something composed here. */
+const _articleStub = () => ({ ...DemoPersona.slides.article, id: 'demo-article' });
+/* The bottle whose details the My Wines demo opens: their best-loved Rioja. */
+const _detailWine = () => WineHistory.getAll().find((w) => /Ardanza/i.test(w.name));
+
+/* Which nav tab is lit under each screen, as in the app.
+   A demo is one screen, or several stacked as `layers` (only one is shown at a time). `steps` say what
+   each part of the demo (a caption) shows, from p = `at`: which layer, where it scrolls to (`to`: 'top', a
+   selector, or text on the screen), whether it then reads on through the content (`drift`), and `do`
+   what a visitor would tap or type there. */
 const _DEMO_SCREENS = {
   scan: { nav: 'scan', Screen: ScanCardsScreen, view: 'result', stopAt: /^what next\?$/i },
   deck: { nav: 'scan', Screen: ScanCardsScreen, view: 'deck' },
   rate: { nav: 'scan', Screen: ScanCardsScreen, view: 'deck' },
   keep: { nav: 'scan', Screen: ScanCardsScreen, view: 'deck' },
-  // The scroll stops above the Data Backup card: the rest of Profile-style admin isn't the pitch.
-  dna: { nav: 'profile', Screen: WineDNAScreen, stopAt: /^Data Backup$/i },
+  // One part per caption, each scrolled to the section it talks about.
+  dna: { nav: 'profile', Screen: WineDNAScreen, steps: [
+    { at: 0, to: 'top' },
+    { at: 0.167, to: '[data-section="love"]' },
+    { at: 0.333, to: '[data-section="taste"]' },
+    { at: 0.5, to: '[data-section="value"]' },
+    { at: 0.667, to: '[data-section="explore"]' },
+    { at: 0.833, to: '[data-section="scripts"]' },
+  ] },
   home: { nav: 'home', Screen: HomeScreen },
-  wines: { nav: 'mywines', Screen: MyWinesScreen },
-  learn: { nav: 'learn', Screen: LearnScreen },
+  wines: { nav: 'mywines', layers: [
+    { id: 'list', Screen: MyWinesScreen },
+    { id: 'detail', Screen: WineDetailScreen, setup() { Handoff.openWine({ wine: _detailWine(), source: 'history' }); } },
+  ], steps: [
+    { at: 0, layer: 'list', to: 'top', drift: 'all', do: [{ layer: 'list', input: ['input[placeholder^="Search"]', ''] }] },
+    { at: 0.2, layer: 'list', to: 'top', do: [{ layer: 'list', input: ['input[placeholder^="Search"]', 'Rioja'] }] },
+    { at: 0.4, layer: 'detail', to: 'top', drift: 'all', do: [{ layer: 'detail', tap: /^Details$/ }] },
+    { at: 0.6, layer: 'detail', to: 'top', drift: 'all', do: [{ layer: 'detail', tap: /^Learn$/ }] },
+    { at: 0.8, layer: 'detail', to: 'top', drift: 'all', do: [{ layer: 'detail', tap: /^Price$/ }] },
+  ] },
+  learn: { nav: 'learn', layers: [
+    { id: 'hub', Screen: LearnScreen },
+    { id: 'article', Screen: GenArticleScreen, setup() { Handoff.genArticle.set(_articleStub()); } },
+    { id: 'mastery', Screen: MasteryMapScreen },
+  ], steps: [
+    { at: 0, layer: 'hub', to: 'top' },
+    { at: 0.2, layer: 'hub', to: /^wine basics$/i },
+    { at: 0.4, layer: 'hub', to: /^region quizzes$/i, drift: 'all' },
+    { at: 0.6, layer: 'article', to: 'top', drift: 'all' },
+    { at: 0.8, layer: 'mastery', to: 'top', drift: 'all' },
+  ] },
 };
 
-function _DemoFrame({ kind }) {
+/* One layer of a demo: its screen, set up (what it reads from the handoff) just before it renders, and
+   faded in when it's the one being shown. */
+function _Layer({ l, active }) {
+  React.useMemo(() => { if (l.setup) l.setup(); }, []);
+  const S = l.Screen;
+  return <div data-layer={l.id} style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', background: C.bg,
+    opacity: active ? 1 : 0, visibility: active ? 'visible' : 'hidden', transition: `opacity .4s ease, visibility 0s linear ${active ? 0 : 0.4}s` }}>
+    <S nav={_DEMO_NOOP} back={_DEMO_NOOP} showPro={_DEMO_NOOP} isTablet={false} />
+  </div>;
+}
+
+function _DemoFrame({ kind, ctl }) {
   const d = _DEMO_SCREENS[kind];
-  const { Screen } = d;
+  const Screen = d.Screen;
+  const [layer, setLayer] = React.useState(ctl.layer);
+  ctl.setLayer = (id) => { ctl.layer = id; setLayer(id); };
   return <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', background: C.bg, fontFamily: C.P }}>
-    <Screen nav={_DEMO_NOOP} back={_DEMO_NOOP} showPro={_DEMO_NOOP} isTablet={false} />
+    {d.layers
+      ? <div style={{ flex: 1, minHeight: 0, position: 'relative' }}>{d.layers.map((l) => <_Layer key={l.id} l={l} active={layer === l.id} />)}</div>
+      : <Screen nav={_DEMO_NOOP} back={_DEMO_NOOP} showPro={_DEMO_NOOP} isTablet={false} />}
     <BottomNav active={d.nav} nav={_DEMO_NOOP} showPro={_DEMO_NOOP} />
   </div>;
 }
@@ -184,6 +250,7 @@ const VinterestDemo = {
     if (!d) throw new Error('Unknown demo: ' + kind);
     const isScan = d.Screen === ScanCardsScreen;
     let gen = 0, cancel = () => {};
+    const ctl = { layer: d.layers ? d.layers[0].id : null, setLayer: null };
     const root = ReactDOM.createRoot(el);
     const draw = () => {
       gen++;
@@ -191,7 +258,7 @@ const VinterestDemo = {
       if (isScan) _openScan(d.view, kind === 'keep'); else DemoPersona.reset();
       // Rendered right now, not on React's schedule: the scan screen reads the handoff as it opens, and
       // another demo mounting in the meantime would have changed it.
-      ReactDOM.flushSync(() => root.render(<_DemoFrame key={gen} kind={kind} />));
+      ReactDOM.flushSync(() => root.render(<_DemoFrame key={gen} kind={kind} ctl={ctl} />));
       // The rating and keep-learning demos begin on the deck's last card, the rating card.
       if (kind === 'rate' || kind === 'keep') cancel = _until(() => { const dots = _deckDots(el); if (!dots || dots.length < _DECK_CARDS) return false; dots[_DECK_CARDS - 1].click(); return true; });
     };
@@ -231,11 +298,61 @@ const VinterestDemo = {
       setTimeout(() => { a.busy = false; }, 4000);
     });
 
+    /* Stepped demos (d.steps): one part per caption. Entering a part shows its layer and does what a
+       visitor would there; the scroll goes to what the part is about, then reads on through it. */
+    const layerEl = (id) => (id && el.querySelector('[data-layer="' + id + '"]')) || el;
+    const scrollers = {};
+    const scrollerFor = (id) => {
+      const c = scrollers[id || ''];
+      if (c && c.isConnected && c.clientHeight > 0) return c;
+      return (scrollers[id || ''] = _demoScroller(layerEl(id)));
+    };
+    const topOf = (root, sc, to) => {
+      if (!to || to === 'top') return 0;
+      const target = typeof to === 'string' ? root.querySelector(to) : _findText(root, to);
+      if (!target) return null;
+      return Math.max(0, target.getBoundingClientRect().top - sc.getBoundingClientRect().top + sc.scrollTop - 10);
+    };
+    let stepAt = -1;
+    const place = (p) => {
+      const steps = d.steps, k = steps.reduce((a, st, i) => (p >= st.at - 1e-6 ? i : a), 0), st = steps[k], next = steps[k + 1];
+      const within = _clamp01(((p - st.at) / ((next ? next.at : 1) - st.at)));
+      if (k !== stepAt) {
+        stepAt = k;
+        if (ctl.setLayer && st.layer) ctl.setLayer(st.layer);
+        // Text arrives and sections open a moment after a screen mounts, moving where things are.
+        [400, 1200, 2500].forEach((ms) => setTimeout(() => { if (stepAt === k) place(lastP); }, ms));
+        (st.do || []).forEach((a) => _until(() => {
+          const root = layerEl(a.layer);
+          if (a.tap) { if (!_tapText(root, a.tap)) return false; }
+          else if (a.input) { const i = root.querySelector(a.input[0]); if (!i) return false; if (i.value !== a.input[1]) _setInput(i, a.input[1]); }
+          // What was tapped or typed changes how long the screen is: place the scroll again once it settles.
+          [200, 700].forEach((ms) => setTimeout(() => place(lastP), ms));
+          return true;
+        }, 40));
+      }
+      const sc = scrollerFor(st.layer);
+      if (!sc) return;
+      scroller = sc;
+      const max = Math.max(0, sc.scrollHeight - sc.clientHeight), root = layerEl(st.layer);
+      const top = Math.min(max, topOf(root, sc, st.to) ?? 0);
+      let target = top;
+      if (st.drift === 'all') target = top + (max - top) * _ease((within - 0.15) / 0.75);
+      else {
+        // Read on a little through this part, but never past where the next one starts.
+        const nextTop = next && next.layer === st.layer ? topOf(root, sc, next.to) : null;
+        const room = Math.max(0, Math.min((nextTop == null ? max : nextTop) - top - 30, sc.clientHeight * 0.6, max - top));
+        target = top + room * _ease((within - 0.3) / 0.6);
+      }
+      glide.to(Math.max(0, Math.min(max, target)));
+    };
+
     let deckAt = -1;
     let saved = false, rated = false, learned = false, boughtAgain = false, paid = false, where = false;
     return {
       update(p) {
         lastP = p;
+        if (d.steps) { place(p); return; }
         if (kind === 'scan') { runActs(p); scrollTo(p); return; }
         if (kind === 'deck') {
           // Turn the deck to the card p is up to, and read down a long one while it's there.
@@ -246,8 +363,12 @@ const VinterestDemo = {
           return;
         }
         if (kind === 'rate') {
-          // Slide the score up to a 92, save it, then read down what it asks next.
-          if (saved && p < 0.42) { saved = false; rated = false; boughtAgain = paid = where = false; scroller = null; draw(); return; }
+          // Slide the rating up to a 92, save it, then read down what it asks next. Going back to the
+          // start (or choosing that part again) starts the rating over, so the slider plays again.
+          const slider0 = _scoreSlider(el);
+          if ((saved && p < 0.42) || (!saved && p < 0.05 && slider0 && _scoreNow(slider0) > 0)) {
+            saved = false; rated = false; boughtAgain = paid = where = false; scroller = null; draw(); return;
+          }
           const slider = _scoreSlider(el);
           if (!saved && slider) {
             const s = p < 0.05 ? 0 : Math.round(70 + (_RATE_TO - 70) * _ease((p - 0.05) / 0.4));
@@ -266,7 +387,7 @@ const VinterestDemo = {
           return;
         }
         if (kind === 'keep') {
-          // Score it, save it and open "what's next" (what a visitor does), then read down the options.
+          // Rate it, save it and open "what's next" (what a visitor does), then read down the options.
           if (!learned) {
             learned = true;
             _until(() => {

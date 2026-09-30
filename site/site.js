@@ -14,6 +14,48 @@
   onScrollHeader();
   window.addEventListener('scroll', onScrollHeader, { passive: true });
 
+  /* ── Stage navigation ──
+     Every demo section gets a progress bar (one line per caption) centred above its phone, and an
+     arrow either side of the phone. They're wired up below, where the captions are. Built first,
+     so the phone is sized against the room it actually has. */
+  var ARROW = '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="12.5,4.5 7,10 12.5,15.5"/></svg>';
+  Array.prototype.forEach.call(document.querySelectorAll('[data-feature]'), function (sec) {
+    var stage = sec.querySelector('.stage'), slot = stage.querySelector('.phone-slot');
+    var n = sec.querySelectorAll('.steps li').length;
+    var prog = document.createElement('div');
+    prog.className = 'prog';
+    prog.setAttribute('role', 'group');
+    prog.setAttribute('aria-label', 'Steps');
+    var segs = [];
+    Array.prototype.forEach.call(sec.querySelectorAll('.steps li'), function (li) {
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.setAttribute('aria-label', li.querySelector('h3').textContent);
+      b.innerHTML = '<span><i></i></span>';
+      prog.appendChild(b);
+      segs.push(b);
+    });
+    var mk = function (dir, label) {
+      var a = document.createElement('button');
+      a.type = 'button';
+      a.className = 'arrow ' + dir;
+      a.setAttribute('aria-label', label);
+      a.innerHTML = ARROW;
+      if (dir === 'next') a.firstChild.style.transform = 'scaleX(-1)';
+      return a;
+    };
+    var prev = mk('prev', 'Previous step'), next = mk('next', 'Next step');
+    var row = document.createElement('div'), holder = document.createElement('div');
+    row.className = 'phone-row';
+    holder.className = 'phone-holder';
+    holder.appendChild(slot);
+    row.appendChild(prev); row.appendChild(holder); row.appendChild(next);
+    stage.classList.add('has-nav');
+    stage.appendChild(prog);
+    stage.appendChild(row);
+    sec._nav = { segs: segs, prev: prev, next: next, slot: slot };
+  });
+
   /* ── Phones: scale a 410 x 864 frame to the room its stage gives it ── */
   var slots = Array.prototype.slice.call(document.querySelectorAll('.phone-slot'));
   function sizePhones() {
@@ -93,28 +135,31 @@
   });
   features.forEach(function (f) {
     f.demos = demos.filter(function (d) { return d.feature === f.el; });
-    // Dots for phones, where only the lit caption shows: one per caption, the way to jump to another.
-    var dots = document.createElement('div');
-    dots.className = 'dots';
-    dots.setAttribute('role', 'group');
-    dots.setAttribute('aria-label', 'Steps');
-    f.dots = [];
+    f.nav = f.el._nav;
     f.steps.forEach(function (li, i) {
       li.at = parseFloat(li.getAttribute('data-at') || '0');
       // Where a click holds the demo: just into its part, or data-hold when the part is a run of things.
       li.holdAt = li.hasAttribute('data-hold') ? parseFloat(li.getAttribute('data-hold')) : Math.min(1, li.at + 0.002);
+      // A part that plays something (the rating slider) plays it whenever the part is chosen, up to here.
+      li.animTo = li.hasAttribute('data-anim-to') ? parseFloat(li.getAttribute('data-anim-to')) : null;
       li.tabIndex = 0;
       li.setAttribute('role', 'button');
       li.addEventListener('click', function () { hold(f, i); });
       li.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); hold(f, i); } });
-      var dot = document.createElement('button');
-      dot.type = 'button';
-      dot.setAttribute('aria-label', li.querySelector('h3').textContent);
-      dot.addEventListener('click', function () { hold(f, i); });
-      dots.appendChild(dot);
-      f.dots.push(dot);
+      f.nav.segs[i].addEventListener('click', function () { hold(f, i); });
     });
-    f.copy.appendChild(dots);
+    f.nav.prev.addEventListener('click', function () { move(f, -1); });
+    f.nav.next.addEventListener('click', function () { move(f, 1); });
+    /* Swiping the phone sideways moves to the next or previous part (vertical drags still scroll the page). */
+    var sx = 0, sy = 0, sid = null;
+    f.nav.slot.addEventListener('pointerdown', function (e) { if (e.pointerType === 'mouse' && e.button !== 0) return; sid = e.pointerId; sx = e.clientX; sy = e.clientY; });
+    f.nav.slot.addEventListener('pointerup', function (e) {
+      if (e.pointerId !== sid) return;
+      sid = null;
+      var dx = e.clientX - sx, dy = e.clientY - sy;
+      if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy) * 1.4) move(f, dx < 0 ? 1 : -1);
+    });
+    f.nav.slot.addEventListener('pointercancel', function () { sid = null; });
     /* The mouse wheel over the text steps through the captions, one caption per flick: a flick is a run
        of wheel events (a trackpad's momentum, or notches in quick succession) with no gap of 260ms
        or more, so a hard flick can't run the whole demo, and captions can't change faster than every
@@ -159,18 +204,39 @@
   window.addEventListener('resize', function () { clearTimeout(reserveTimer); reserveTimer = setTimeout(reserveSteps, 120); });
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(reserveSteps);
   reserveSteps();
-  // Stops the autoplay and shows caption i.
-  function hold(f, i) { f.phase = 'held'; f.p = f.steps[i].holdAt; apply(f); }
+  var ease = function (k) { return k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2; };
+  // Stops the autoplay and shows caption i (playing what it plays, if it plays something).
+  function hold(f, i) {
+    var li = f.steps[i];
+    f.phase = 'held';
+    f.p = li.holdAt;
+    if (li.animTo != null) {
+      if (reduced) f.p = li.animTo;
+      else { f.phase = 'anim'; f.animFrom = li.holdAt; f.animTo = li.animTo; f.animT = 0; f.animMs = 2600 / speed; }
+    }
+    apply(f);
+  }
+  // The arrows and swipes: the next or previous part, if there is one.
+  function move(f, dir) { var to = f.step + dir; if (to >= 0 && to < f.steps.length) hold(f, to); }
   function apply(f) {
     if (Math.abs(f.p - f.shown) < 0.0002) return;
     f.shown = f.p;
     f.el.style.setProperty('--p', f.p.toFixed(4));
     var step = 0;
-    f.steps.forEach(function (li) { if (f.p >= li.at - 0.001) step = f.steps.indexOf(li); });
+    f.steps.forEach(function (li, i) { if (f.p >= li.at - 0.001) step = i; });
     if (step !== f.step) {
       f.step = step;
-      f.steps.forEach(function (li, i) { li.classList.toggle('on', i === step); f.dots[i].classList.toggle('on', i === step); });
+      f.steps.forEach(function (li, i) { li.classList.toggle('on', i === step); });
+      f.nav.prev.setAttribute('aria-disabled', step === 0 ? 'true' : 'false');
+      f.nav.next.setAttribute('aria-disabled', step === f.steps.length - 1 ? 'true' : 'false');
     }
+    // Lines before this part are full, the one being played fills as it goes, the rest are empty.
+    f.nav.segs.forEach(function (b, i) {
+      var end = i + 1 < f.steps.length ? f.steps[i + 1].at : 1, start = f.steps[i].at;
+      var fill = i < step ? 1 : i > step ? 0 : (f.phase === 'play' ? clamp((f.p - start) / Math.max(0.001, end - start), 0, 1) : 1);
+      b.firstChild.firstChild.style.setProperty('--f', fill.toFixed(3));
+      b.classList.toggle('on', i === step);
+    });
     f.demos.forEach(function (d) { d.progress = f.p; if (d.api) d.api.update(f.p); });
   }
   if (!reduced) {
@@ -183,16 +249,24 @@
       var dt = Math.min(64, now - (last || now));
       last = now;
       features.forEach(function (f) {
-        if (!f.on || f.phase !== 'play') return;
-        f.p = Math.min(1, f.p + dt / f.dur);
-        if (f.p >= 1) f.phase = 'done';
-        apply(f);
+        if (!f.on) return;
+        if (f.phase === 'play') {
+          f.p = Math.min(1, f.p + dt / f.dur);
+          if (f.p >= 1) f.phase = 'done';
+          apply(f);
+        } else if (f.phase === 'anim') {
+          f.animT += dt;
+          var k = Math.min(1, f.animT / f.animMs);
+          f.p = f.animFrom + (f.animTo - f.animFrom) * ease(k);
+          if (k >= 1) f.phase = 'held';
+          apply(f);
+        }
       });
       raf(tick);
     };
     raf(tick);
   } else {
-    features.forEach(function (f) { f.steps.forEach(function (li) { li.classList.add('on'); }); });
+    features.forEach(function (f) { f.steps.forEach(function (li) { li.classList.add('on'); }); apply(f); });
   }
 
   /* ── Beta form ── */

@@ -1,5 +1,5 @@
 // Fills in site/demo/captured.json: the text Claude writes for the website's demo screens (the
-// WineDNA summary, the sommelier script and the scan cards' text for the imaginary sample user). The demo page runs the
+// WineDNA summary, the sommelier script and the scan cards' text, the article, and the wine's vintage and education text for the imaginary sample user). The demo page runs the
 // app's real code, which builds the real prompts; this sends each once to the app's own /claude proxy
 // (VINTEREST_ENDPOINT, default the live site) and saves the answers, so no API key is needed here.
 // Run after `npm run site:build`: `npm run site:capture` (behind an HTTPS proxy, e.g. a cloud session,
@@ -30,18 +30,22 @@ try {
   const page = await browser.newPage();
   const seen = []; // { key, purpose, prompt }
   await page.exposeFunction('__capturePrompt', (purpose, prompt) => {
-    const key = purpose === 'winedna_summary' ? 'winedna_summary' : purpose === 'scancard' ? 'scancard' : /^Condense/.test(prompt) ? 'sommelier_short' : 'sommelier_long';
+    const key = ['winedna_summary', 'scancard', 'learn_article', 'vintage_info', 'education'].includes(purpose) ? purpose : /^Condense/.test(prompt) ? 'sommelier_short' : 'sommelier_long';
+    // Quiz banks and the like are generated on screen too; only what the demos use is kept.
+    if (!['winedna_summary', 'scancard', 'learn_article', 'vintage_info', 'education'].includes(purpose) && purpose !== 'sommelier_script') return ask(purpose, prompt);
     return ask(purpose, prompt).then((text) => { seen.push(key); saved.answers[key] = text; console.log(`${key}: ${text.slice(0, 90)}…`); return text; }, (e) => { console.warn(`${key}: ${e.message}`); throw e; });
   });
   await page.addInitScript(() => { window.__demoCapture = (purpose, prompt) => window.__capturePrompt(purpose, prompt); });
   const host = path.join(ROOT, 'site-dist/capture.html');
-  fs.writeFileSync(host, '<div id="a" style="width:390px;height:800px;display:flex;flex-direction:column"></div><div id="b" style="width:390px;height:800px;display:flex;flex-direction:column"></div><script src="demo.js"></script>');
+  fs.writeFileSync(host, '<div id="a" style="width:390px;height:800px;display:flex;flex-direction:column"></div><div id="b" style="width:390px;height:800px;display:flex;flex-direction:column"></div><div id="c" style="width:390px;height:800px;display:flex;flex-direction:column"></div><div id="d" style="width:390px;height:800px;display:flex;flex-direction:column"></div><script src="demo.js"></script>');
   await page.goto(`http://localhost:${PORT}/capture.html`);
   await page.waitForFunction(() => window.VinterestDemo);
-  await page.evaluate(() => { window.VinterestDemo.mount(document.getElementById('a'), 'dna'); window.VinterestDemo.mount(document.getElementById('b'), 'deck'); });
+  await page.evaluate(() => { window.VinterestDemo.mount(document.getElementById('a'), 'dna'); window.VinterestDemo.mount(document.getElementById('b'), 'deck'); window.VinterestDemo.mount(document.getElementById('c'), 'learn'); window.VinterestDemo.mount(document.getElementById('d'), 'wines'); });
+  // The wine's Learn tab asks for its text only once it's opened.
+  await page.evaluate(() => { const t = setInterval(() => { const b = Array.from(document.querySelectorAll('#d [data-layer="detail"] *')).find((e) => e.children.length === 0 && /^Learn$/.test(e.textContent.trim())); if (b) { b.click(); clearInterval(t); } }, 500); });
   // The WineDNA screen asks for the summary and the (long) sommelier script as it opens, and the
   // scan deck for its cards' text.
-  for (let i = 0; i < 90 && !(seen.includes('winedna_summary') && seen.includes('sommelier_long') && seen.includes('scancard')); i++) await page.waitForTimeout(1000);
+  for (let i = 0; i < 90 && !(seen.includes('winedna_summary') && seen.includes('sommelier_long') && seen.includes('scancard') && seen.includes('learn_article') && seen.includes('vintage_info') && seen.includes('education')); i++) await page.waitForTimeout(1000);
 } finally {
   fs.rmSync(path.join(ROOT, 'site-dist/capture.html'), { force: true });
   await browser.close();

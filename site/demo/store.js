@@ -54,5 +54,9 @@ const DemoPersona = (() => {
     baseline.forEach(([k, v]) => local._map.set(k, v));
   }
 
-  return { sample, user: sample.user, slides: sample.slides, reset };
+  // Take the store as it is now as the one every demo starts from (after demos.jsx has added the sample
+  // user's studying, which needs the app's modules loaded).
+  function rebase() { baseline.length = 0; Array.from(local._map.entries()).forEach((e) => baseline.push(e)); }
+
+  return { sample, user: sample.user, slides: sample.slides, reset, rebase };
 })();

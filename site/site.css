@@ -60,14 +60,14 @@ h1 .serif, h2 .serif { font-size: 1.08em; }
 
 .hero { padding: 132px 0 96px; min-height: 100svh; display: flex; align-items: center; }
 .hero .wrap { display: grid; grid-template-columns: 1.15fr .85fr; gap: 48px; align-items: center; }
-/* The landing headline is set light, with the one word that matters in bold (no italic serif here). */
-.hero h1 { font-size: clamp(34px, 4.9vw, 58px); font-weight: 400; letter-spacing: -.06em; line-height: 1.12; }
-/* "before" in the app's Sparkling blue (_TYPE_COLORS.sparkling). */
-.hero h1 strong { font-weight: 700; color: #5E8FA8; }
-/* The scan section's heading gets the same treatment, on two lines, with "Know" in the theme red. */
-#scan h2 { font-size: clamp(28px, 3.7vw, 44px); font-weight: 400; letter-spacing: -.06em; line-height: 1.12; max-width: none; }
-#scan h2 .ln { display: block; }
-#scan h2 strong { font-weight: 700; color: var(--cr); }
+/* Headings are light Poppins, set tight, with the one word that matters in bold crimson. */
+.hero h1, .feature h2 { font-weight: 400; letter-spacing: -.06em; line-height: 1.1; }
+.hero h1 { font-size: clamp(34px, 4.9vw, 58px); }
+.feature h2 { font-size: clamp(32px, 4.4vw, 54px); max-width: none; }
+.hero h1 strong, .feature h2 strong { font-weight: 700; color: var(--cr); }
+.feature h2 .ln { display: block; }
+/* The $ after a Pro feature. */
+sup.pro { font-size: .58em; font-weight: 700; color: #C4870A; margin-left: 1px; vertical-align: super; line-height: 0; cursor: help; }
 .hero .lead { font-size: 20px; }
 .hero .cta { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 32px; }
 .hero .note { margin-top: 18px; font-size: 14px; color: var(--dim); }
@@ -75,7 +75,22 @@ h1 .serif, h2 .serif { font-size: 1.08em; }
 
 /* ── Phone ── */
 .stage { display: flex; align-items: center; justify-content: center; min-height: 0; }
-.phone-slot { position: relative; flex: none; width: calc(410px * var(--s, .8)); height: calc(864px * var(--s, .8)); }
+/* A demo section's stage: a progress bar centred above the phone, and an arrow either side of it. */
+.stage.has-nav { flex-direction: column; align-items: stretch; justify-content: flex-start; }
+.prog { flex: none; width: min(100%, 360px); margin: 0 auto; display: flex; gap: 6px; }
+.prog button { flex: 1 1 0; max-width: 64px; height: 18px; padding: 7px 0; border: 0; background: none; cursor: pointer; }
+.prog button span { display: block; position: relative; height: 4px; border-radius: 2px; overflow: hidden; background: rgba(0, 0, 0, .14); }
+.dark .prog button span { background: rgba(255, 255, 255, .25); }
+.prog button i { position: absolute; inset: 0; background: var(--cr); transform-origin: 0 50%; transform: scaleX(var(--f, 0)); }
+.dark .prog button i { background: #E8A0AE; }
+.phone-row { flex: 1; min-height: 0; display: flex; align-items: center; gap: 8px; }
+.phone-holder { flex: 1; min-width: 0; height: 100%; display: flex; align-items: center; justify-content: center; }
+.arrow { flex: none; width: 44px; height: 44px; padding: 0; border-radius: 50%; border: 1px solid var(--line); background: #fff; color: var(--ink); display: grid; place-items: center; cursor: pointer; box-shadow: 0 4px 14px rgba(15, 15, 15, .12); transition: opacity .2s, transform .15s; }
+.dark .arrow { background: rgba(255, 255, 255, .1); border-color: rgba(255, 255, 255, .22); color: #fff; box-shadow: none; }
+.arrow:active { transform: scale(.94); }
+.arrow[aria-disabled="true"] { opacity: .28; cursor: default; }
+.arrow svg { width: 18px; height: 18px; }
+.phone-slot { touch-action: pan-y; position: relative; flex: none; width: calc(410px * var(--s, .8)); height: calc(864px * var(--s, .8)); }
 .phone { position: absolute; left: 0; top: 0; width: 410px; height: 864px; padding: 10px; border-radius: 58px; background: #101010; transform: scale(var(--s, .8)); transform-origin: 0 0;
   box-shadow: inset 0 0 0 1.5px #3a3a3a, 0 40px 80px rgba(0, 0, 0, .35), 0 8px 24px rgba(0, 0, 0, .25); }
 .light .phone { box-shadow: inset 0 0 0 1.5px #3a3a3a, 0 40px 70px rgba(15, 15, 15, .22), 0 8px 20px rgba(15, 15, 15, .15); }
@@ -102,8 +117,7 @@ h1 .serif, h2 .serif { font-size: 1.08em; }
 .feature.flip .stage { grid-column: 1; }
 /* A short window (a laptop with toolbars) gets tighter padding, so the text and phone still fit. */
 @media (max-height: 760px) and (min-width: 901px) { .feature { height: max(100svh, 600px); } .pin { padding: 76px var(--gutter) 24px; } }
-.feature h2 { max-width: 14em; }
-@media (max-height: 760px) and (min-width: 901px) { .feature .lead { font-size: 16px; margin-top: 12px; } .feature h2 { font-size: 38px; } .steps { margin-top: 16px; } }
+@media (max-height: 760px) and (min-width: 901px) { .feature .lead { font-size: 16px; margin-top: 12px; } .feature h2 { font-size: 40px; } .steps { margin-top: 16px; } }
 .steps { list-style: none; margin-top: 24px; position: relative; padding-left: 26px; display: grid; gap: 4px; }
 .steps::before { content: ''; position: absolute; left: 5px; top: 8px; bottom: 8px; width: 2px; border-radius: 1px; background: rgba(0, 0, 0, .1); }
 .dark .steps::before { background: rgba(255, 255, 255, .16); }
@@ -117,7 +131,6 @@ h1 .serif, h2 .serif { font-size: 1.08em; }
 .steps li.on::before { background: var(--cr); border-color: var(--cr); }
 .dark .steps li.on::before { background: #E8A0AE; border-color: #E8A0AE; }
 .steps li h3 { font-size: 17px; }
-.dots { display: none; }
 /* Only the lit caption shows its sentence, so the list stays short enough for any window. */
 .steps li p { font-size: 15px; color: var(--ink-2); margin-top: 0; max-width: 30em; max-height: 0; overflow: hidden; opacity: 0; transition: max-height .35s ease, opacity .3s ease, margin-top .3s ease; }
 .steps.measure li, .steps.measure li p, .steps.measure li::before { transition: none; }
@@ -195,7 +208,8 @@ footer a:hover { color: #fff; }
   .pin { grid-template-columns: 1fr; grid-template-rows: auto minmax(0, 1fr); gap: 12px; padding: 76px var(--gutter) 16px; }
   .pin .copy, .feature.flip .copy { grid-column: 1; grid-row: 1; max-width: none; }
   .pin .stage, .feature.flip .stage { grid-column: 1; grid-row: 2; }
-  .feature h2 { font-size: 26px; }
+  .feature h2 { font-size: 30px; }
+  .top .logo { height: 34px; }
   .feature .eyebrow { margin-bottom: 8px; font-size: 12px; }
   .feature .lead { display: none; }
   .steps { margin-top: 14px; padding-left: 0; }
@@ -205,13 +219,6 @@ footer a:hover { color: #fff; }
   .steps { display: grid; }
   .steps li { padding: 0; grid-area: 1 / 1; visibility: hidden; opacity: 1; }
   .steps li.on { visibility: visible; }
-  .dots { display: flex; gap: 10px; margin-top: 12px; }
-  .dots button { width: 10px; height: 10px; padding: 0; border-radius: 5px; border: 0; background: rgba(0, 0, 0, .18); cursor: pointer; position: relative; transition: width .25s, background .25s; }
-  .dark .dots button { background: rgba(255, 255, 255, .3); }
-  .dots button.on { width: 26px; background: var(--cr); }
-  .dark .dots button.on { background: #E8A0AE; }
-  /* A bigger target than the dot itself, for a thumb. */
-  .dots button::after { content: ''; position: absolute; inset: -12px -6px; }
   .steps li p { font-size: 14px; max-height: none; opacity: 1; margin-top: 2px; transition: none; }
   .steps li h3 { font-size: 16px; }
   section.plain, .beta { padding: 72px 0; }
@@ -227,8 +234,7 @@ footer a:hover { color: #fff; }
   html { scroll-behavior: auto; }
   .feature { height: auto; }
   .pin { height: auto; padding: 96px var(--gutter); }
-  .dots { display: none; }
-  .steps { display: grid; gap: 4px; }
+    .steps { display: grid; gap: 4px; }
   .steps li { opacity: 1; visibility: visible !important; grid-area: auto; }
   .steps li p { max-height: none; opacity: 1; margin-top: 4px; transition: none; }
   .steps::after { display: none; }

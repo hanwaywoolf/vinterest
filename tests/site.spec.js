@@ -43,7 +43,7 @@ test.describe('desktop', () => {
     page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
     page.on('pageerror', (e) => errors.push(`pageerror: ${e.message}`));
     await page.goto(BASE + '/');
-    await expect(page.locator('h1')).toContainText('Know if a wine is for you');
+    await expect(page.locator('h1')).toContainText('Learn if a wine is for you');
     const hero = page.locator('.hero .phone-app');
     await expect(hero).toContainText('Crozes-Hermitage 2021');
     await expect(hero).toContainText('87');
@@ -111,9 +111,9 @@ test.describe('desktop', () => {
     const copy = await page.locator('#rate .copy').boundingBox();
     await page.mouse.move(copy.x + 100, copy.y + 100);
     for (let i = 0; i < 6; i++) { await page.mouse.wheel(0, 100); await page.waitForTimeout(60); }
-    await expect(page.locator('#rate .steps li.on h3')).toHaveText('It joins your WineDNA');
+    await expect(page.locator('#rate .steps li.on h3')).toHaveText('It feeds your WineDNA');
     await page.waitForTimeout(400);
-    await expect(page.locator('#rate .steps li.on h3')).toHaveText('It joins your WineDNA'); // not the next one
+    await expect(page.locator('#rate .steps li.on h3')).toHaveText('It feeds your WineDNA'); // not the next one
     // Thirty notches in a row is someone travelling down the page: it scrolls.
     const y0 = await page.evaluate(() => scrollY);
     for (let i = 0; i < 30; i++) { await page.mouse.wheel(0, 100); await page.waitForTimeout(80); }
@@ -143,8 +143,6 @@ test.describe('desktop', () => {
     await expect(phone).toContainText('Where it');
     await jump(page, 'learn-wine', 4);
     await expect(phone).toContainText('Price check');
-    await jump(page, 'learn-wine', 5);
-    await expect(phone).toContainText('How was it?');
   });
 
   test('rating a bottle slides the score up and saves it, without changing the other demos', async ({ page }) => {
