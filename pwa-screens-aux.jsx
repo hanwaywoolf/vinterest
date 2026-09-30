@@ -239,7 +239,7 @@ function WineRow({w,open,setOpen,onOpen,onScore,onEdit,onDelete}){
   const ref=React.useRef(null), g=React.useRef(null), moved=React.useRef(false);
   const ACTIONS=144;
   const col=(typeof _TYPE_COLORS!=='undefined'&&_TYPE_COLORS[MyWines.type(w)])||C.cr;
-  const saved=MyWines.isSaved(w), fav=Favorites.has(w), flag=Regions.wineFlag(w);
+  const saved=MyWines.isSaved(w), fav=Favorites.has(w), flag=Regions.wineFlag(w), price=MyWines.price(w);
   const actionsRef=React.useRef(null);
   // The Edit/Delete buttons are hidden until the row moves, so they never tint the row's edges.
   function place(x,anim){
@@ -284,11 +284,15 @@ function WineRow({w,open,setOpen,onOpen,onScore,onEdit,onDelete}){
         </div>
       </div>
       {w.times_consumed>1&&<span style={{fontSize:13,color:C.mid,fontFamily:C.P,flexShrink:0}}>×{w.times_consumed}</span>}
-      {w.rating>0
-        ?<span style={{minWidth:34,textAlign:'right',fontSize:17,fontWeight:800,color:_MW_TONE[MyWines.scoreTone(w.rating)],fontFamily:C.P,flexShrink:0}}>{w.rating}</span>
-        :saved
-          ?<span style={{fontSize:13,fontWeight:600,color:C.mid,fontFamily:C.P,flexShrink:0}}>Saved</span>
-          :<button onClick={e=>{ e.stopPropagation(); onScore(w); }} style={{flexShrink:0,border:`1px solid ${C.crDim}`,background:C.crSoft,color:C.cr,borderRadius:20,padding:'5px 11px',fontSize:13,fontWeight:700,fontFamily:C.P,cursor:'pointer'}}>Score it</button>}
+      {/* The score (or Saved / Score it), with the price under it: what they paid, else the average. */}
+      <div style={{display:'flex',flexDirection:'column',alignItems:'flex-end',gap:2,flexShrink:0}}>
+        {w.rating>0
+          ?<span style={{minWidth:34,textAlign:'right',fontSize:17,fontWeight:800,color:_MW_TONE[MyWines.scoreTone(w.rating)],fontFamily:C.P}}>{w.rating}</span>
+          :saved
+            ?<span style={{fontSize:13,fontWeight:600,color:C.mid,fontFamily:C.P}}>Saved</span>
+            :<button onClick={e=>{ e.stopPropagation(); onScore(w); }} style={{border:`1px solid ${C.crDim}`,background:C.crSoft,color:C.cr,borderRadius:20,padding:'5px 11px',fontSize:13,fontWeight:700,fontFamily:C.P,cursor:'pointer'}}>Score it</button>}
+        {price&&<span className="mw-price" aria-label={price.label} style={{fontSize:13,color:price.paid?C.ink:C.mid,fontWeight:price.paid?600:400,fontFamily:C.P,whiteSpace:'nowrap'}}>{price.text}</span>}
+      </div>
     </div>
   </div>;
 }

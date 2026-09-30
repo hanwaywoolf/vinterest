@@ -51,7 +51,7 @@ test('search, filters, sort and grouping', async ({ context, page }) => {
   await root.getByText('Clear filters').click();
   await page.getByLabel('Sort').click();
   await root.getByText('Top scored').click();
-  const ratings = await page.locator('#root .mw-row').evaluateAll((els) => els.map((e) => Number((e.innerText.match(/(\d+)\s*$/) || [])[1] || 0)));
+  const ratings = await page.locator('#root .mw-row').evaluateAll((els) => els.map((e) => { const pr = e.querySelector('.mw-price'); const t = pr ? e.innerText.replace(pr.innerText, '') : e.innerText; return Number((t.trim().match(/(\d+)$/) || [])[1] || 0); }));
   expect(ratings.slice(0, -2)).toEqual([...ratings.slice(0, -2)].sort((a, b) => b - a));
   expect(errors).toEqual([]);
 });
@@ -110,6 +110,24 @@ test('a favourite (the heart on the wine\'s screen) shows a red heart on its row
   await expect(root.locator('.mw-row', { hasText: 'Unscored Test Rioja' }).getByRole('img', { name: 'Favourite' })).toBeVisible();
   await root.getByText(/^Favourites 1$/).click();
   expect(await rowNames(page)).toEqual(['Unscored Test Rioja']);
+  expect(errors).toEqual([]);
+});
+
+test('each row shows its price under the score: what they paid, else the average shop price', async ({ context, page }) => {
+  const errors = collectErrors(page);
+  const w = (name, extra) => ({ name, producer: 'Test', type: 'red', region: 'Rioja', country: 'Spain', vintage: 2019, rating: 91, times_consumed: 1, scanned_at: '2026-06-20T10:00:00Z', ...extra });
+  await setup(context, page, [
+    w('Paid Test Rioja', { price_usd: 18, shop_price: { amount: 14, code: 'GBP', source: 'estimate' }, price_paid: { amount: 22, code: 'GBP' } }),
+    w('Shop Test Rioja', { price_usd: 18, shop_price: { amount: 14, code: 'GBP', source: 'estimate' } }),
+    w('Bare Test Rioja', { price_usd: 0 }),
+  ]);
+  const root = page.locator('#root');
+  const row = (name) => root.locator('.mw-row', { hasText: name });
+  await expect(row('Paid Test Rioja').locator('.mw-price')).toHaveText('paid £22');
+  await expect(row('Paid Test Rioja').getByLabel('You paid £22')).toBeVisible();
+  await expect(row('Shop Test Rioja').locator('.mw-price')).toHaveText('avg £14');
+  await expect(row('Shop Test Rioja').getByLabel('Average shop price £14')).toBeVisible();
+  await expect(row('Bare Test Rioja').locator('.mw-price')).toHaveCount(0);
   expect(errors).toEqual([]);
 });
 
