@@ -33,6 +33,7 @@ window.claude = {
       : purpose === 'learn_article' ? a.learn_article
       : purpose === 'vintage_info' ? a.vintage_info
       : purpose === 'education' ? a.education
+      : purpose === 'price' ? (/Ardanza/.test(prompt) ? a.price_ardanza : null)
       : purpose === 'sommelier_script' ? (/^Condense/.test(prompt) ? a.sommelier_short : a.sommelier_long) : null;
     return text ? Promise.resolve(text) : Promise.reject(new Error('The website demos make no calls'));
   },
@@ -140,36 +141,50 @@ const _DEMO_SCREENS = {
   deck: { nav: 'scan', Screen: ScanCardsScreen, view: 'deck' },
   rate: { nav: 'scan', Screen: ScanCardsScreen, view: 'deck' },
   keep: { nav: 'scan', Screen: ScanCardsScreen, view: 'deck' },
-  // One part per caption, each scrolled to the section it talks about.
+  // One part per caption, each scrolled to the section it talks about, then reading gently on.
   dna: { nav: 'profile', Screen: WineDNAScreen, steps: [
-    { at: 0, to: 'top' },
-    { at: 0.167, to: '[data-section="love"]' },
-    { at: 0.333, to: '[data-section="taste"]' },
-    { at: 0.5, to: '[data-section="value"]' },
-    { at: 0.667, to: '[data-section="explore"]' },
-    { at: 0.833, to: '[data-section="scripts"]' },
+    { at: 0, to: 'top', drift: 0.3 },
+    { at: 0.167, to: '[data-section="love"]', drift: 0.3 },
+    { at: 0.333, to: '[data-section="taste"]', drift: 0.4 },
+    { at: 0.5, to: '[data-section="value"]', drift: 0.3 },
+    { at: 0.667, to: '[data-section="explore"]', drift: 0.3 },
+    { at: 0.833, to: '[data-section="scripts"]', drift: 0.4 },
   ] },
   home: { nav: 'home', Screen: HomeScreen },
   wines: { nav: 'mywines', layers: [
     { id: 'list', Screen: MyWinesScreen },
     { id: 'detail', Screen: WineDetailScreen, setup() { Handoff.openWine({ wine: _detailWine(), source: 'history' }); } },
   ], steps: [
-    { at: 0, layer: 'list', to: 'top', drift: 'all', do: [{ layer: 'list', input: ['input[placeholder^="Search"]', ''] }] },
-    { at: 0.2, layer: 'list', to: 'top', do: [{ layer: 'list', input: ['input[placeholder^="Search"]', 'Rioja'] }] },
-    { at: 0.4, layer: 'detail', to: 'top', drift: 'all', do: [{ layer: 'detail', tap: /^Details$/ }] },
-    { at: 0.6, layer: 'detail', to: 'top', drift: 'all', do: [{ layer: 'detail', tap: /^Learn$/ }] },
-    { at: 0.8, layer: 'detail', to: 'top', drift: 'all', do: [{ layer: 'detail', tap: /^Price$/ }] },
+    { at: 0, layer: 'list', to: 'top', drift: 0.5, ms: 6000, do: [{ layer: 'list', input: ['input[placeholder^="Search"]', ''] }] },
+    { at: 0.2, layer: 'list', to: 'top', do: [{ layer: 'list', type: ['input[placeholder^="Search"]', 'Rioja'] }] },
+    { at: 0.4, layer: 'detail', to: 'top', drift: 0.9, ms: 9000, do: [{ layer: 'detail', tap: /^Details$/ }] },
+    { at: 0.6, layer: 'detail', to: 'top', drift: 1.2, ms: 10000, do: [{ layer: 'detail', tap: /^Learn$/ }] },
+    { at: 0.8, layer: 'detail', to: 'top', drift: 0.8, ms: 8000, do: [{ layer: 'detail', tap: /^Price$/ }] },
   ] },
   learn: { nav: 'learn', layers: [
     { id: 'hub', Screen: LearnScreen },
     { id: 'article', Screen: GenArticleScreen, setup() { Handoff.genArticle.set(_articleStub()); } },
     { id: 'mastery', Screen: MasteryMapScreen },
   ], steps: [
-    { at: 0, layer: 'hub', to: 'top' },
-    { at: 0.2, layer: 'hub', to: /^wine basics$/i },
-    { at: 0.4, layer: 'hub', to: /^region quizzes$/i, drift: 'all' },
-    { at: 0.6, layer: 'article', to: 'top', drift: 'all' },
-    { at: 0.8, layer: 'mastery', to: 'top', drift: 'all' },
+    { at: 0, layer: 'hub', to: 'top', drift: 0.4, ms: 6000 },
+    { at: 0.2, layer: 'hub', to: /^wine basics$/i, drift: 0.4, ms: 6000 },
+    { at: 0.4, layer: 'hub', to: /^region quizzes$/i, drift: 0.5, ms: 6000 },
+    { at: 0.6, layer: 'article', to: 'top', drift: 0.9, ms: 14000 },
+    { at: 0.8, layer: 'mastery', to: 'top', drift: 0.6, ms: 10000 },
+  ] },
+  // The front page's carousel: one screen for each thing the app does.
+  hero: { nav: 'scan', layers: [
+    { id: 'scan', nav: 'scan', Screen: ScanCardsScreen, setup() { _openScan('result'); } },
+    { id: 'dna', nav: 'profile', Screen: WineDNAScreen },
+    { id: 'vinny', nav: 'home', Screen: _VinnyScreen },
+    { id: 'article', nav: 'learn', Screen: GenArticleScreen, setup() { Handoff.genArticle.set(_articleStub()); } },
+    { id: 'wines', nav: 'mywines', Screen: MyWinesScreen },
+  ], steps: [
+    { at: 0, layer: 'scan', to: 'top', drift: 0.4, ms: 6000 },
+    { at: 0.2, layer: 'dna', to: 'top', drift: 0.5, ms: 7000 },
+    { at: 0.4, layer: 'vinny', do: [{ vinny: true }] },
+    { at: 0.6, layer: 'article', to: 'top', drift: 0.6, ms: 9000 },
+    { at: 0.8, layer: 'wines', to: 'top', drift: 0.6, ms: 7000 },
   ] },
 };
 
@@ -189,11 +204,28 @@ function _DemoFrame({ kind, ctl }) {
   const Screen = d.Screen;
   const [layer, setLayer] = React.useState(ctl.layer);
   ctl.setLayer = (id) => { ctl.layer = id; setLayer(id); };
+  const cur = d.layers && d.layers.find((l) => l.id === layer);
   return <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', background: C.bg, fontFamily: C.P }}>
     {d.layers
       ? <div style={{ flex: 1, minHeight: 0, position: 'relative' }}>{d.layers.map((l) => <_Layer key={l.id} l={l} active={layer === l.id} />)}</div>
       : <Screen nav={_DEMO_NOOP} back={_DEMO_NOOP} showPro={_DEMO_NOOP} isTablet={false} />}
-    <BottomNav active={d.nav} nav={_DEMO_NOOP} showPro={_DEMO_NOOP} />
+    <BottomNav active={(cur && cur.nav) || d.nav} nav={_DEMO_NOOP} showPro={_DEMO_NOOP} />
+  </div>;
+}
+
+/* Ask Vinny's box as the app draws it: the text follows the cursor, so a long question shows its
+   end, not its start, as it's typed. */
+function _VinnyField({ text, placeholder, caret, dim }) {
+  const box = React.useRef(null), txt = React.useRef(null);
+  React.useLayoutEffect(() => {
+    if (box.current && txt.current) txt.current.style.transform = 'translateX(' + Math.min(0, box.current.clientWidth - txt.current.offsetWidth - 2) + 'px)';
+  });
+  return <div ref={box} style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', overflow: 'hidden' }}>
+    <style>{'@keyframes vcaret{0%,55%{opacity:1}56%,100%{opacity:0}}'}</style>
+    <span ref={txt} style={{ display: 'inline-flex', alignItems: 'center', flex: 'none', fontSize: 16, fontFamily: C.P, whiteSpace: 'nowrap', color: text ? '#fff' : dim }}>
+      {text || placeholder}
+      {caret && <i style={{ width: 1.5, height: 19, marginLeft: 1, background: '#fff', animation: 'vcaret 1s steps(1) infinite' }} />}
+    </span>
   </div>;
 }
 
@@ -203,7 +235,7 @@ function _DemoFrame({ kind, ctl }) {
    (data/onboarding-sample.json, captured by npm run sample:onboarding). All of it is laid out from
    the start, invisible, so nothing moves or grows while it plays. */
 const _VINNY_AT = { qEnd: 0.28, send: 0.34, answer: 0.44, end: 0.9 };
-function _VinnyDemo({ ctl }) {
+function _VinnyDemo({ ctl, bare }) {
   const [p, setP] = React.useState(ctl.p);
   React.useEffect(() => { ctl.set = setP; return () => { ctl.set = null; }; }, []);
   const v = DemoPersona.slides.vinny[0], T = _VINNY_AT;
@@ -211,12 +243,7 @@ function _VinnyDemo({ ctl }) {
   const sent = p >= T.send, thinking = sent && p < T.answer;
   const typedQ = sent ? '' : v.q.slice(0, Math.floor(span(0.02, T.qEnd) * v.q.length));
   const nA = Math.floor(span(T.answer, T.end) * v.a.length);
-  const dim = 'rgba(255,255,255,0.5)';
-  const field = <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', overflow: 'hidden' }}>
-    <span style={{ fontSize: 16, fontFamily: C.P, color: typedQ ? '#fff' : dim, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-      {typedQ || (sent ? 'Ask a follow-up…' : 'Ask Vinny about wine…')}
-    </span>
-  </div>;
+  const field = <_VinnyField text={typedQ} placeholder={sent ? 'Ask a follow-up…' : 'Ask Vinny about wine…'} caret={!!typedQ && !sent} dim="rgba(255,255,255,0.5)" />;
   const full = <span style={{ opacity: 0 }}>{v.a}</span>;
   const a = !sent ? full
     : thinking ? <span style={{ position: 'relative', display: 'block' }}>{full}<span style={{ position: 'absolute', left: 0, top: 0, fontSize: 15, fontStyle: 'italic', color: 'rgba(255,255,255,0.7)' }}>Thinking…</span></span>
@@ -233,9 +260,12 @@ function _VinnyDemo({ ctl }) {
         </div>
       </div>
     </div>
-    <BottomNav active="home" nav={_DEMO_NOOP} showPro={_DEMO_NOOP} />
+    {!bare && <BottomNav active="home" nav={_DEMO_NOOP} showPro={_DEMO_NOOP} />}
   </div>;
 }
+/* Vinny as one layer of the front page's carousel (its bottom bar is the frame's). */
+const _heroVinny = { set: null, p: 0 };
+function _VinnyScreen() { return <_VinnyDemo ctl={_heroVinny} bare />; }
 
 const VinterestDemo = {
   /* Draws the demo into el (a 390 x 844 box) and returns { update(p), unmount() }. */
@@ -298,8 +328,10 @@ const VinterestDemo = {
       setTimeout(() => { a.busy = false; }, 4000);
     });
 
-    /* Stepped demos (d.steps): one part per caption. Entering a part shows its layer and does what a
-       visitor would there; the scroll goes to what the part is about, then reads on through it. */
+    /* Stepped demos (d.steps): one part per caption. Entering a part shows its layer, does what a
+       visitor would there (tap a tab, type a search), goes to what the part is about, and then reads
+       gently on for `drift` screen-heights over `ms` (never through the whole screen). Nothing moves
+       on its own between parts: a part is left only when the reader picks another. */
     const layerEl = (id) => (id && el.querySelector('[data-layer="' + id + '"]')) || el;
     const scrollers = {};
     const scrollerFor = (id) => {
@@ -313,38 +345,55 @@ const VinterestDemo = {
       if (!target) return null;
       return Math.max(0, target.getBoundingClientRect().top - sc.getBoundingClientRect().top + sc.scrollTop - 10);
     };
-    let stepAt = -1;
-    const place = (p) => {
-      const steps = d.steps, k = steps.reduce((a, st, i) => (p >= st.at - 1e-6 ? i : a), 0), st = steps[k], next = steps[k + 1];
-      const within = _clamp01(((p - st.at) / ((next ? next.at : 1) - st.at)));
-      if (k !== stepAt) {
-        stepAt = k;
-        if (ctl.setLayer && st.layer) ctl.setLayer(st.layer);
-        // Text arrives and sections open a moment after a screen mounts, moving where things are.
-        [400, 1200, 2500].forEach((ms) => setTimeout(() => { if (stepAt === k) place(lastP); }, ms));
-        (st.do || []).forEach((a) => _until(() => {
-          const root = layerEl(a.layer);
-          if (a.tap) { if (!_tapText(root, a.tap)) return false; }
-          else if (a.input) { const i = root.querySelector(a.input[0]); if (!i) return false; if (i.value !== a.input[1]) _setInput(i, a.input[1]); }
-          // What was tapped or typed changes how long the screen is: place the scroll again once it settles.
-          [200, 700].forEach((ms) => setTimeout(() => place(lastP), ms));
+    let stepAt = -1, live = [], driftRaf = 0;
+    const stopAll = () => { live.splice(0).forEach((f) => f()); cancelAnimationFrame(driftRaf); driftRaf = 0; glide.stop(); };
+    const later = (fn, ms) => { const t = setTimeout(fn, ms); live.push(() => clearTimeout(t)); };
+    const typeInto = (root, sel, text) => {
+      live.push(_until(() => {
+        const i = root.querySelector(sel);
+        if (!i) return false;
+        if (i.value) _setInput(i, '');
+        for (let n = 1; n <= text.length; n++) later(() => { const j = root.querySelector(sel); if (j) _setInput(j, text.slice(0, n)); }, 500 + n * 260);
+        return true;
+      }, 40));
+    };
+    const enterStep = (k) => {
+      const st = d.steps[k];
+      stopAll();
+      stepAt = k;
+      if (ctl.setLayer && st.layer) ctl.setLayer(st.layer);
+      (st.do || []).forEach((a) => {
+        const root = layerEl(a.layer);
+        if (a.type) typeInto(root, a.type[0], a.type[1]);
+        else if (a.vinny) {
+          const t0 = performance.now(), MS = 9000;
+          const go = (now) => { const q = Math.min(1, (now - t0) / MS) * 0.92; _heroVinny.p = q; if (_heroVinny.set) _heroVinny.set(q); if (q < 0.92) driftRaf = requestAnimationFrame(go); };
+          _heroVinny.p = 0; if (_heroVinny.set) _heroVinny.set(0);
+          driftRaf = requestAnimationFrame(go);
+        } else live.push(_until(() => {
+          if (a.tap) return _tapText(root, a.tap);
+          const i = root.querySelector(a.input[0]);
+          if (!i) return false;
+          if (i.value !== a.input[1]) _setInput(i, a.input[1]);
           return true;
         }, 40));
-      }
-      const sc = scrollerFor(st.layer);
-      if (!sc) return;
-      scroller = sc;
-      const max = Math.max(0, sc.scrollHeight - sc.clientHeight), root = layerEl(st.layer);
-      const top = Math.min(max, topOf(root, sc, st.to) ?? 0);
-      let target = top;
-      if (st.drift === 'all') target = top + (max - top) * _ease((within - 0.15) / 0.75);
-      else {
-        // Read on a little through this part, but never past where the next one starts.
-        const nextTop = next && next.layer === st.layer ? topOf(root, sc, next.to) : null;
-        const room = Math.max(0, Math.min((nextTop == null ? max : nextTop) - top - 30, sc.clientHeight * 0.6, max - top));
-        target = top + room * _ease((within - 0.3) / 0.6);
-      }
-      glide.to(Math.max(0, Math.min(max, target)));
+      });
+      const top = () => { const sc = scrollerFor(st.layer); return sc ? { sc, y: Math.min(Math.max(0, sc.scrollHeight - sc.clientHeight), topOf(layerEl(st.layer), sc, st.to) ?? 0) } : null; };
+      // Screens fill in and sections open a moment after they appear: go to the part, and again once settled.
+      [350, 1100].forEach((ms) => later(() => { const t = top(); if (t) { scroller = t.sc; glide.to(t.y); } }, ms));
+      if (st.drift) later(() => {
+        const t = top();
+        if (!t) return;
+        glide.stop();
+        const from = t.y, max = Math.max(0, t.sc.scrollHeight - t.sc.clientHeight), to = Math.min(max, from + st.drift * t.sc.clientHeight), ms = st.ms || 8000, t0 = performance.now();
+        t.sc.scrollTop = from;
+        const go = (now) => { const q = Math.min(1, (now - t0) / ms); t.sc.scrollTop = from + (to - from) * (0.5 - 0.5 * Math.cos(Math.PI * q)); if (q < 1) driftRaf = requestAnimationFrame(go); };
+        driftRaf = requestAnimationFrame(go);
+      }, 1800);
+    };
+    const place = (p) => {
+      const k = d.steps.reduce((a, st, i) => (p >= st.at - 1e-6 ? i : a), 0);
+      if (k !== stepAt) enterStep(k);
     };
 
     let deckAt = -1;
@@ -409,7 +458,8 @@ const VinterestDemo = {
         }
         scrollTo(p);
       },
-      unmount() { cancel(); glide.stop(); root.unmount(); },
+      replay() { stepAt = -1; },
+      unmount() { cancel(); glide.stop(); if (d.steps) stopAll(); root.unmount(); },
     };
   },
 };

@@ -77,7 +77,9 @@ sup.pro { font-size: .58em; font-weight: 700; color: #C4870A; margin-left: 1px; 
 .stage { display: flex; align-items: center; justify-content: center; min-height: 0; }
 /* A demo section's stage: a progress bar centred above the phone, and an arrow either side of it. */
 .stage.has-nav { flex-direction: column; align-items: stretch; justify-content: flex-start; }
-.prog { flex: none; width: min(100%, 360px); margin: 0 auto; display: flex; gap: 6px; }
+.prog { flex: none; width: min(100%, 360px); margin: 0 auto; display: flex; justify-content: center; gap: 6px; }
+.stage .cap { flex: none; margin: 4px 0 0; text-align: center; font-size: 15px; font-weight: 600; color: var(--dim); }
+.dark .stage .cap { color: rgba(255, 255, 255, .8); }
 .prog button { flex: 1 1 0; max-width: 64px; height: 18px; padding: 7px 0; border: 0; background: none; cursor: pointer; }
 .prog button span { display: block; position: relative; height: 4px; border-radius: 2px; overflow: hidden; background: rgba(0, 0, 0, .14); }
 .dark .prog button span { background: rgba(255, 255, 255, .25); }

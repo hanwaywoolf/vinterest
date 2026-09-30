@@ -52,8 +52,11 @@
     row.appendChild(prev); row.appendChild(holder); row.appendChild(next);
     stage.classList.add('has-nav');
     stage.appendChild(prog);
+    // The front page's carousel has no captions beside it: the current one is said under the bar.
+    var cap = null;
+    if (sec.hasAttribute('data-carousel')) { cap = document.createElement('p'); cap.className = 'cap'; cap.setAttribute('aria-live', 'polite'); stage.appendChild(cap); }
     stage.appendChild(row);
-    sec._nav = { segs: segs, prev: prev, next: next, slot: slot };
+    sec._nav = { segs: segs, prev: prev, next: next, slot: slot, cap: cap };
   });
 
   /* ── Phones: scale a 410 x 864 frame to the room its stage gives it ── */
@@ -130,26 +133,28 @@
   // ?speed=8 plays the demos eight times as fast (the tests use it).
   var speed = parseFloat(new URLSearchParams(location.search).get('speed')) || 1;
   var features = Array.prototype.slice.call(document.querySelectorAll('[data-feature]')).map(function (el) {
-    return { el: el, copy: el.querySelector('.copy'), steps: Array.prototype.slice.call(el.querySelectorAll('.steps li')), p: 0, phase: 'play', on: false, step: -1, shown: -1,
+    return { el: el, copy: el.querySelector('.copy'), steps: Array.prototype.slice.call(el.querySelectorAll('.steps li')), p: 0, phase: 'held', started: false, wait: 0, carousel: el.hasAttribute('data-carousel'), on: false, step: -1, shown: -1,
       lock: 0, lastWheel: 0, dur: (parseFloat(el.getAttribute('data-duration')) || 16) * 1000 / speed };
   });
   features.forEach(function (f) {
     f.demos = demos.filter(function (d) { return d.feature === f.el; });
     f.nav = f.el._nav;
+    f.auto = f.carousel && !reduced;
     f.steps.forEach(function (li, i) {
       li.at = parseFloat(li.getAttribute('data-at') || '0');
       // Where a click holds the demo: just into its part, or data-hold when the part is a run of things.
       li.holdAt = li.hasAttribute('data-hold') ? parseFloat(li.getAttribute('data-hold')) : Math.min(1, li.at + 0.002);
       // A part that plays something (the rating slider) plays it whenever the part is chosen, up to here.
       li.animTo = li.hasAttribute('data-anim-to') ? parseFloat(li.getAttribute('data-anim-to')) : null;
+      li.animMs = parseFloat(li.getAttribute('data-anim-ms')) || 2600;
       li.tabIndex = 0;
       li.setAttribute('role', 'button');
-      li.addEventListener('click', function () { hold(f, i); });
-      li.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); hold(f, i); } });
-      f.nav.segs[i].addEventListener('click', function () { hold(f, i); });
+      li.addEventListener('click', function () { hold(f, i, true); });
+      li.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); hold(f, i, true); } });
+      f.nav.segs[i].addEventListener('click', function () { hold(f, i, true); });
     });
-    f.nav.prev.addEventListener('click', function () { move(f, -1); });
-    f.nav.next.addEventListener('click', function () { move(f, 1); });
+    f.nav.prev.addEventListener('click', function () { move(f, -1, true); });
+    f.nav.next.addEventListener('click', function () { move(f, 1, true); });
     /* Swiping the phone sideways moves to the next or previous part (vertical drags still scroll the page). */
     var sx = 0, sy = 0, sid = null;
     f.nav.slot.addEventListener('pointerdown', function (e) { if (e.pointerType === 'mouse' && e.button !== 0) return; sid = e.pointerId; sx = e.clientX; sy = e.clientY; });
@@ -157,7 +162,7 @@
       if (e.pointerId !== sid) return;
       sid = null;
       var dx = e.clientX - sx, dy = e.clientY - sy;
-      if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy) * 1.4) move(f, dx < 0 ? 1 : -1);
+      if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy) * 1.4) move(f, dx < 0 ? 1 : -1, true);
     });
     f.nav.slot.addEventListener('pointercancel', function () { sid = null; });
     /* The mouse wheel over the text steps through the captions, one caption per flick: a flick is a run
@@ -165,7 +170,7 @@
        or more, so a hard flick can't run the whole demo, and captions can't change faster than every
        0.7s. At the first or last caption the page scrolls on, and so it does when the reader keeps
        scrolling for more than 1.2s without a pause: they're travelling down the page, not reading. */
-    if (!reduced) f.copy.addEventListener('wheel', function (e) {
+    if (!reduced && f.copy) f.copy.addEventListener('wheel', function (e) {
       if (Math.abs(e.deltaY) < 4 || e.ctrlKey) return;
       var to = f.step + (e.deltaY > 0 ? 1 : -1);
       if (to < 0 || to >= f.steps.length) return;
@@ -178,7 +183,7 @@
       if (f.flickDone || now < f.lock) return;
       f.flickDone = true;
       f.lock = now + 700;
-      hold(f, to);
+      hold(f, to, true);
     }, { passive: false });
   });
   /* The caption block is as tall as its tallest state (a different caption lit each time), so opening
@@ -187,8 +192,9 @@
   function reserveSteps() {
     features.forEach(function (f) {
       var list = f.el.querySelector('.steps');
+      if (!list) return;
       list.style.minHeight = '';
-      if (window.innerWidth <= 900 || !f.steps.length) return;
+      if (window.innerWidth <= 900 || !f.steps.length || !list || f.el.hasAttribute('data-carousel')) return;
       list.classList.add('measure');
       var lit = f.steps.map(function (li) { return li.classList.contains('on'); }), tallest = 0;
       f.steps.forEach(function (li) {
@@ -206,18 +212,22 @@
   reserveSteps();
   var ease = function (k) { return k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2; };
   // Stops the autoplay and shows caption i (playing what it plays, if it plays something).
-  function hold(f, i) {
+  // `byReader` is a person choosing it: the front page's carousel then stops turning by itself.
+  function hold(f, i, byReader) {
     var li = f.steps[i];
+    if (byReader) f.auto = false;
     f.phase = 'held';
     f.p = li.holdAt;
+    // Choosing the part that's already showing plays it again.
+    if (f.step === i) { f.shown = -1; f.demos.forEach(function (d) { if (d.api && d.api.replay) d.api.replay(); }); }
     if (li.animTo != null) {
       if (reduced) f.p = li.animTo;
-      else { f.phase = 'anim'; f.animFrom = li.holdAt; f.animTo = li.animTo; f.animT = 0; f.animMs = 2600 / speed; }
+      else { f.phase = 'anim'; f.animFrom = li.holdAt; f.animTo = li.animTo; f.animT = 0; f.animMs = li.animMs / speed; }
     }
     apply(f);
   }
   // The arrows and swipes: the next or previous part, if there is one.
-  function move(f, dir) { var to = f.step + dir; if (to >= 0 && to < f.steps.length) hold(f, to); }
+  function move(f, dir, byReader) { var to = f.step + dir; if (to >= 0 && to < f.steps.length) hold(f, to, byReader); else if (f.carousel && byReader) hold(f, dir > 0 ? 0 : f.steps.length - 1, true); }
   function apply(f) {
     if (Math.abs(f.p - f.shown) < 0.0002) return;
     f.shown = f.p;
@@ -227,16 +237,17 @@
     if (step !== f.step) {
       f.step = step;
       f.steps.forEach(function (li, i) { li.classList.toggle('on', i === step); });
-      f.nav.prev.setAttribute('aria-disabled', step === 0 ? 'true' : 'false');
-      f.nav.next.setAttribute('aria-disabled', step === f.steps.length - 1 ? 'true' : 'false');
+      f.nav.prev.setAttribute('aria-disabled', !f.carousel && step === 0 ? 'true' : 'false');
+      f.nav.next.setAttribute('aria-disabled', !f.carousel && step === f.steps.length - 1 ? 'true' : 'false');
     }
     // Lines before this part are full, the one being played fills as it goes, the rest are empty.
     f.nav.segs.forEach(function (b, i) {
       var end = i + 1 < f.steps.length ? f.steps[i + 1].at : 1, start = f.steps[i].at;
-      var fill = i < step ? 1 : i > step ? 0 : (f.phase === 'play' ? clamp((f.p - start) / Math.max(0.001, end - start), 0, 1) : 1);
+      var fill = i < step ? 1 : i > step ? 0 : 1;
       b.firstChild.firstChild.style.setProperty('--f', fill.toFixed(3));
       b.classList.toggle('on', i === step);
     });
+    if (f.nav.cap) f.nav.cap.textContent = f.steps[step].querySelector('h3').textContent;
     f.demos.forEach(function (d) { d.progress = f.p; if (d.api) d.api.update(f.p); });
   }
   if (!reduced) {
@@ -250,11 +261,14 @@
       last = now;
       features.forEach(function (f) {
         if (!f.on) return;
-        if (f.phase === 'play') {
-          f.p = Math.min(1, f.p + dt / f.dur);
-          if (f.p >= 1) f.phase = 'done';
-          apply(f);
-        } else if (f.phase === 'anim') {
+        // A section starts on its first part once its phone is drawn; nothing then moves until the reader does
+        // (the front page's carousel turns by itself, until someone touches it).
+        if (!f.started) { if (f.demos.every(function (d) { return d.api; })) { f.started = true; hold(f, 0, false); } return; }
+        if (f.auto && f.phase === 'held') {
+          f.wait += dt;
+          if (f.wait > 7000 / speed) { f.wait = 0; hold(f, (f.step + 1) % f.steps.length, false); }
+        }
+        if (f.phase === 'anim') {
           f.animT += dt;
           var k = Math.min(1, f.animT / f.animMs);
           f.p = f.animFrom + (f.animTo - f.animFrom) * ease(k);

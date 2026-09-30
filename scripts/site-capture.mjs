@@ -30,9 +30,10 @@ try {
   const page = await browser.newPage();
   const seen = []; // { key, purpose, prompt }
   await page.exposeFunction('__capturePrompt', (purpose, prompt) => {
-    const key = ['winedna_summary', 'scancard', 'learn_article', 'vintage_info', 'education'].includes(purpose) ? purpose : /^Condense/.test(prompt) ? 'sommelier_short' : 'sommelier_long';
+    const key = purpose === 'price' ? 'price_ardanza' : ['winedna_summary', 'scancard', 'learn_article', 'vintage_info', 'education'].includes(purpose) ? purpose : /^Condense/.test(prompt) ? 'sommelier_short' : 'sommelier_long';
+    if (purpose === 'price' && !/Ardanza/.test(prompt)) return ask(purpose, prompt);
     // Quiz banks and the like are generated on screen too; only what the demos use is kept.
-    if (!['winedna_summary', 'scancard', 'learn_article', 'vintage_info', 'education'].includes(purpose) && purpose !== 'sommelier_script') return ask(purpose, prompt);
+    if (!['winedna_summary', 'scancard', 'learn_article', 'vintage_info', 'education', 'price'].includes(purpose) && purpose !== 'sommelier_script') return ask(purpose, prompt);
     return ask(purpose, prompt).then((text) => { seen.push(key); saved.answers[key] = text; console.log(`${key}: ${text.slice(0, 90)}…`); return text; }, (e) => { console.warn(`${key}: ${e.message}`); throw e; });
   });
   await page.addInitScript(() => { window.__demoCapture = (purpose, prompt) => window.__capturePrompt(purpose, prompt); });
@@ -42,10 +43,10 @@ try {
   await page.waitForFunction(() => window.VinterestDemo);
   await page.evaluate(() => { window.VinterestDemo.mount(document.getElementById('a'), 'dna'); window.VinterestDemo.mount(document.getElementById('b'), 'deck'); window.VinterestDemo.mount(document.getElementById('c'), 'learn'); window.VinterestDemo.mount(document.getElementById('d'), 'wines'); });
   // The wine's Learn tab asks for its text only once it's opened.
-  await page.evaluate(() => { const t = setInterval(() => { const b = Array.from(document.querySelectorAll('#d [data-layer="detail"] *')).find((e) => e.children.length === 0 && /^Learn$/.test(e.textContent.trim())); if (b) { b.click(); clearInterval(t); } }, 500); });
+  await page.evaluate(() => { const t = setInterval(() => { const b = Array.from(document.querySelectorAll('#d [data-layer="detail"] *')).find((e) => e.children.length === 0 && /^Learn$/.test(e.textContent.trim())); if (b) { b.click(); clearInterval(t); setTimeout(() => { const c = Array.from(document.querySelectorAll('#d [data-layer="detail"] *')).find((e) => e.children.length === 0 && /^Price$/.test(e.textContent.trim())); if (c) c.click(); }, 4000); } }, 500); });
   // The WineDNA screen asks for the summary and the (long) sommelier script as it opens, and the
   // scan deck for its cards' text.
-  for (let i = 0; i < 90 && !(seen.includes('winedna_summary') && seen.includes('sommelier_long') && seen.includes('scancard') && seen.includes('learn_article') && seen.includes('vintage_info') && seen.includes('education')); i++) await page.waitForTimeout(1000);
+  for (let i = 0; i < 90 && !(seen.includes('winedna_summary') && seen.includes('sommelier_long') && seen.includes('scancard') && seen.includes('learn_article') && seen.includes('vintage_info') && seen.includes('education') && seen.includes('price_ardanza')); i++) await page.waitForTimeout(1000);
 } finally {
   fs.rmSync(path.join(ROOT, 'site-dist/capture.html'), { force: true });
   await browser.close();

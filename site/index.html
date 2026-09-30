@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover"/>
-<title>Vinterest: know if a wine is for you before you buy it</title>
+<title>Vinterest: the wine app made for everyone</title>
 <meta name="description" content="Scan a wine label or a wine list. Vinterest matches it to the wines you've actually rated, explains why, and builds your WineDNA with every bottle."/>
 <meta name="theme-color" content="#0F0F0F"/>
 <link rel="canonical" href="%%ORIGIN%%/"/>
@@ -11,7 +11,7 @@
 <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png"/>
 <meta property="og:type" content="website"/>
 <meta property="og:site_name" content="Vinterest"/>
-<meta property="og:title" content="Vinterest: know if a wine is for you before you buy it"/>
+<meta property="og:title" content="Vinterest: the wine app made for everyone"/>
 <meta property="og:description" content="Scan a label. Get a match built from your own taste, and the reasons why."/>
 <meta property="og:url" content="%%ORIGIN%%/"/>
 <meta property="og:image" content="%%ORIGIN%%/og.png"/>
@@ -37,12 +37,12 @@
 <main id="main">
 
 <!-- Hero -->
-<section class="dark hero" aria-labelledby="hero-h">
+<section class="dark hero" data-feature data-carousel aria-labelledby="hero-h">
   <div class="wrap">
     <div>
-      <p class="eyebrow">Wine, without the guesswork</p>
-      <h1 id="hero-h">Learn if a wine is for you <strong>before</strong> you buy it.</h1>
-      <p class="lead">Scan a label or a wine list<sup class="pro" title="Included in Vinterest Pro" aria-label="Pro feature">$</sup>. Vinterest matches it against the wines you've actually rated, and shows you why it is, or isn't, a match for you.</p>
+      <p class="eyebrow">The wine app</p>
+      <h1 id="hero-h">Wine, made for <strong>everyone</strong>.</h1>
+      <p class="lead">Vinterest is the wine app for people who'd rather enjoy wine than study it. Scan a bottle or a wine list<sup class="pro" title="Included in Vinterest Pro" aria-label="Pro feature">$</sup>, see if it suits your taste, and learn a little every time, with no wine vocabulary needed.</p>
       <div class="cta">
         <a class="btn primary" href="#beta">Join the beta</a>
         <a class="btn ghost" href="%%APP_URL%%" data-track="app">Try the web app</a>
@@ -50,8 +50,15 @@
       <p class="note">Free to start. <sup class="pro" title="Included in Vinterest Pro" aria-label="Pro feature">$</sup> marks a Pro feature. iPhone and Android apps are on their way.</p>
     </div>
     <div class="stage">
-      <div class="phone-slot"><div class="phone" role="img" aria-label="The Vinterest scan result for a Crozes-Hermitage: an 87% match, a good bet, with a reason for and a reason against.">
-        <div class="phone-screen" aria-hidden="true" inert><div class="statusbar"><span>9:41</span><span class="sig"><i style="width:18px"></i><i style="width:24px"></i></span></div><div class="phone-app" data-demo="scan" data-progress="0"></div></div>
+      <ol class="steps" style="display:none">
+        <li data-at="0"><h3>Scan a bottle. See if it's for you.</h3></li>
+        <li data-at="0.2"><h3>Every bottle builds your WineDNA.</h3></li>
+        <li data-at="0.4"><h3>Ask Vinny anything, anytime.</h3></li>
+        <li data-at="0.6"><h3>Learn from articles written for you.</h3></li>
+        <li data-at="0.8"><h3>Remember everything you've tried.</h3></li>
+      </ol>
+      <div class="phone-slot"><div class="phone" role="img" aria-label="A tour of the Vinterest app: a scan result with its match, the WineDNA profile, Ask Vinny, an article written for you, and My Wines.">
+        <div class="phone-screen" aria-hidden="true" inert><div class="statusbar"><span>9:41</span><span class="sig"><i style="width:18px"></i><i style="width:24px"></i></span></div><div class="phone-app" data-demo="hero"></div></div>
         <span class="island"></span></div></div>
     </div>
   </div>
@@ -151,10 +158,10 @@
       <ol class="steps">
         <li data-at="0"><h3>A profile for each kind of wine</h3><p>Reds, whites, rosé and sparkling each get their own read. This drinker's reds come out Classic &amp; Balanced.</p></li>
         <li data-at="0.167"><h3>What you love, next to the rest</h3><p>Body, tannins and acidity across the wines you rate 90 or more, compared with everything else. You see what you keep reaching for.</p></li>
-        <li data-at="0.333"><h3>Your taste, in sliders</h3><p>The traits you choose, on sliders, with what each word means and how to notice it.</p></li>
+        <li data-at="0.333"><h3>Your taste, visualized</h3><p>The traits you choose, visualized, with what each word means and how to notice it.</p></li>
         <li data-at="0.5"><h3>Value, and what you pay</h3><p>Your sweet spot, and the bottles that beat their price.</p></li>
         <li data-at="0.667"><h3>Where to look next</h3><p>Suggestions built from what you already love, including the steps just outside your comfort zone.</p></li>
-        <li data-at="0.833"><h3>Your sommelier script</h3><p>A few lines to say to a restaurant sommelier, written from your WineDNA, so the bottles that come are ones you'll love.</p></li>
+        <li data-at="0.833"><h3>Your sommelier script</h3><p>A short, quick version or a longer, more detailed one when you need it: lines to say to a restaurant sommelier, written from your WineDNA.</p></li>
       </ol>
     </div>
     <div class="stage">
@@ -173,9 +180,9 @@
       <h2 id="vinny-h">A wine expert in your <strong>pocket</strong>.</h2>
       <p class="lead">In the shop, at the restaurant or browsing online. Got a quick question? Ask Vinny. His answers come from your WineDNA, not from a list of bestsellers.</p>
       <ol class="steps">
-        <li data-at="0"><h3>Ask Vinny anything</h3><p>"Steak tonight. What should I look for?" No wine vocabulary needed.</p></li>
-        <li data-at="0.4"><h3>Personalized answers powered by your WineDNA</h3><p>Vinny uses your best-rated bottles, your spend history and more to factor them into a personalized response.</p></li>
-        <li data-at="0.75"><h3>A quick and actionable response</h3><p>A few sentences that you can use wherever you are and links to related articles and quizzes to help you learn when you need it.</p></li>
+        <li data-at="0" data-anim-to="0.35" data-anim-ms="4500"><h3>Ask Vinny anything</h3><p>"Steak tonight. What should I look for?" No wine vocabulary needed.</p></li>
+        <li data-at="0.36" data-anim-to="0.6" data-anim-ms="5000"><h3>Personalized answers powered by your WineDNA</h3><p>Vinny uses your best-rated bottles, your spend history and more to factor them into a personalized response.</p></li>
+        <li data-at="0.62" data-anim-to="0.95" data-anim-ms="5000"><h3>A quick and actionable response</h3><p>A few sentences that you can use wherever you are and links to related articles and quizzes to help you learn when you need it.</p></li>
       </ol>
     </div>
     <div class="stage">

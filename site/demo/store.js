@@ -30,7 +30,10 @@ const DemoPersona = (() => {
   const now = Date.now();
   const wines = sample.user.wines
     .filter((w) => w.rating || w.scan_intent)
-    .map((w, i) => ({ ...w, scanned_at: new Date(now - (i + 1) * 86400000 * 3).toISOString() }));
+    .map((w, i) => ({ ...w, scanned_at: new Date(now - (i + 1) * 86400000 * 3).toISOString() }))
+    // A scan saves the label's own short description (it's The Story on the wine's Learn tab); the
+    // sample generator doesn't keep one, so the bottle the My Wines demo opens gets its own.
+    .map((w) => (/Ardanza/.test(w.name) ? { ...w, description: "La Rioja Alta's Viña Ardanza is a benchmark of traditional Rioja: mostly Tempranillo with a little Garnacha, aged about three years in American oak. Expect dried cherry, vanilla and a savoury, leathery finish." } : w));
   local.setItem('vinterest_wines', JSON.stringify(wines));
   Object.entries({
     vinterest_onboarded: '1', vinterest_age_ok: '1', vinterest_region: 'uk', vinterest_currency: 'GBP',

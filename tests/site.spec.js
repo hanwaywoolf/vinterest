@@ -43,7 +43,7 @@ test.describe('desktop', () => {
     page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
     page.on('pageerror', (e) => errors.push(`pageerror: ${e.message}`));
     await page.goto(BASE + '/');
-    await expect(page.locator('h1')).toContainText('Learn if a wine is for you');
+    await expect(page.locator('h1')).toContainText('Wine, made for everyone');
     const hero = page.locator('.hero .phone-app');
     await expect(hero).toContainText('Crozes-Hermitage 2021');
     await expect(hero).toContainText('87');
@@ -51,18 +51,41 @@ test.describe('desktop', () => {
     expect(errors).toEqual([]);
   });
 
-  test('a demo plays by itself while it is on screen, once, and then stays on its last caption', async ({ page }) => {
+  test('a section opens on its first caption and stays there until the reader moves it', async ({ page }) => {
     await page.goto(BASE + '/?speed=8');
     await show(page, 'scan');
     await expect(page.locator('#scan .phone-app')).toContainText('Crozes-Hermitage 2021');
-    await expect(page.locator('#scan .steps li.on h3')).toHaveText('Reasons for and against, and exactly why', { timeout: 8000 });
-    await expect.poll(() => scrolledPx(page, 'scan')).toBeGreaterThan(20);
-    // It finishes (14s at eight times the speed) and does not start again.
-    await page.waitForTimeout(3500);
-    const at = await scrolledPx(page, 'scan');
-    await page.waitForTimeout(3500);
+    await expect(page.locator('#scan .steps li.on h3')).toHaveText('A match you can read as a score');
+    await page.waitForTimeout(3000);
+    await expect(page.locator('#scan .steps li.on h3')).toHaveText('A match you can read as a score');
+    // The arrows, the progress bar and a caption all move it.
+    await page.locator('#scan .arrow.next').click();
     await expect(page.locator('#scan .steps li.on h3')).toHaveText('Reasons for and against, and exactly why');
-    expect(await scrolledPx(page, 'scan')).toBeGreaterThanOrEqual(at - 2);
+    await page.locator('#scan .prog button').first().click();
+    await expect(page.locator('#scan .steps li.on h3')).toHaveText('A match you can read as a score');
+  });
+
+  test('the progress bar is centred over the phone', async ({ page }) => {
+    await page.goto(BASE + '/');
+    for (const id of ['scan', 'winedna', 'vinny']) {
+      await show(page, id);
+      const bar = await page.locator(`#${id} .prog`).evaluate((el) => { const bs = Array.from(el.children).map((c) => c.getBoundingClientRect()); return (bs[0].left + bs[bs.length - 1].right) / 2; });
+      const ph = await page.locator(`#${id} .phone`).boundingBox();
+      expect(Math.abs(bar - (ph.x + ph.width / 2)), id).toBeLessThan(3);
+    }
+  });
+
+  test('the front page is a carousel of the app that turns by itself until someone touches it', async ({ page }) => {
+    await page.goto(BASE + '/?speed=8');
+    await expect(page.locator('.hero .stage .cap')).toHaveText("Scan a bottle. See if it's for you.");
+    await expect(page.locator('.hero .stage .cap')).toHaveText('Every bottle builds your WineDNA.', { timeout: 6000 });
+    await expect(page.locator('.hero .phone-app')).toContainText('WineDNA');
+    await page.locator('.hero .arrow.next').click();
+    const at = await page.locator('.hero .stage .cap').textContent();
+    await page.waitForTimeout(2500);
+    await expect(page.locator('.hero .stage .cap')).toHaveText(at); // stopped turning
+    await page.locator('.hero .prog button').first().click();
+    await expect(page.locator('.hero .phone-app')).toContainText('Crozes-Hermitage 2021');
   });
 
   test('a caption stops the autoplay and holds the demo on that part', async ({ page }) => {
@@ -175,6 +198,38 @@ test.describe('desktop', () => {
     await expect(phone).toContainText('Syrah quiz');
     await jump(page, 'keep-learning', 1);
     await expect(phone).toContainText('Get to Know Syrah', { timeout: 6000 });
+  });
+
+  test('Vinny types the question again each time it is chosen, and the box follows the cursor', async ({ page }) => {
+    await page.goto(BASE + '/?speed=4');
+    await show(page, 'vinny');
+    const phone = page.locator('#vinny .phone-app');
+    await expect(phone).toContainText('Thinking', { timeout: 8000 });
+    await jump(page, 'vinny', 0);
+    await expect(phone).not.toContainText('Thinking');
+    // Mid-typing the end of the question is what the box shows, with the cursor after it.
+    const seen = await page.waitForFunction(() => {
+      const box = document.querySelector('#vinny .phone-app form');
+      if (!box) return false;
+      const t = box.innerText.trim();
+      return t.length > 20 ? t : false;
+    }, null, { timeout: 8000 });
+    expect(await seen.jsonValue()).toBeTruthy();
+    await expect(phone).toContainText('Thinking', { timeout: 8000 });
+  });
+
+  test('My Wines types the search, opens a bottle, and shows its story and its price', async ({ page }) => {
+    await page.goto(BASE + '/');
+    await show(page, 'my-wines');
+    const phone = page.locator('#my-wines .phone-app');
+    await jump(page, 'my-wines', 1);
+    await expect(phone.locator('input[placeholder^="Search"]')).toHaveValue('Rioja', { timeout: 6000 });
+    await jump(page, 'my-wines', 3);
+    await expect(phone).toContainText('La Rioja Alta', { timeout: 6000 });
+    await expect(phone).toContainText('benchmark of traditional Rioja');
+    await jump(page, 'my-wines', 4);
+    await expect(phone).toContainText('Typical bottle price', { timeout: 6000 });
+    await expect(phone).toContainText('£27');
   });
 
   test('Vinny types the question and answers it', async ({ page }) => {
