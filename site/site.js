@@ -232,8 +232,10 @@
   }
   if (!reduced) {
     var fio = 'IntersectionObserver' in window ? new IntersectionObserver(function (entries) {
-      entries.forEach(function (e) { features.forEach(function (f) { if (f.el === e.target) f.on = e.isIntersecting; }); });
-    }, { threshold: 0.35 }) : null; // early: a section is one screen, and readers scroll on quickly
+      // "On screen" is a quarter of the section, or 40% of the window if the section is taller than that
+      // (zoomed in, or a small window), so a long section can't be too big to ever count.
+      entries.forEach(function (e) { features.forEach(function (f) { if (f.el === e.target) f.on = e.isIntersecting && e.intersectionRect.height >= Math.min(e.boundingClientRect.height * 0.25, window.innerHeight * 0.4); }); });
+    }, { threshold: [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.8, 1] }) : null; // early: a section is one screen, and readers scroll on quickly
     features.forEach(function (f) { if (fio) fio.observe(f.el); else f.on = true; });
     var last = 0;
     var tick = function (now) {
@@ -243,7 +245,12 @@
         if (!f.on) return;
         // A section starts on its first part once its phone is drawn; nothing then moves until the reader does
         // (the front page's carousel turns by itself, until someone touches it).
-        if (!f.started) { if (f.demos.every(function (d) { return d.api; })) { f.started = true; hold(f, 0, false); } return; }
+        if (!f.started) {
+          // Once its phone is drawn (or, if that's failing, after a few seconds, so the captions still turn).
+          f.seen = (f.seen || 0) + dt;
+          if (f.demos.every(function (d) { return d.api; }) || f.seen > 4000) { f.started = true; hold(f, 0, false); }
+          return;
+        }
         if (f.auto) {
           f.wait += dt;
           var dwell = f.steps[f.step].dwell / speed;
