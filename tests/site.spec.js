@@ -43,7 +43,7 @@ test.describe('desktop', () => {
     page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
     page.on('pageerror', (e) => errors.push(`pageerror: ${e.message}`));
     await page.goto(BASE + '/');
-    await expect(page.locator('h1')).toContainText('Wine, made for everyone');
+    await expect(page.locator('h1')).toContainText("Find wines you'll love");
     const hero = page.locator('.hero .phone-app');
     await expect(hero).toContainText('Crozes-Hermitage 2021');
     await expect(hero).toContainText('87');
@@ -51,18 +51,22 @@ test.describe('desktop', () => {
     expect(errors).toEqual([]);
   });
 
-  test('a section opens on its first caption and stays there until the reader moves it', async ({ page }) => {
+  test('a section plays through its captions by itself, once, and a click on the words stops it', async ({ page }) => {
     await page.goto(BASE + '/?speed=8');
     await show(page, 'scan');
     await expect(page.locator('#scan .phone-app')).toContainText('Crozes-Hermitage 2021');
     await expect(page.locator('#scan .steps li.on h3')).toHaveText('A match you can read as a score');
-    await page.waitForTimeout(3000);
+    await expect(page.locator('#scan .steps li.on h3')).toHaveText('Reasons for and against, and exactly why', { timeout: 6000 });
+    // It finishes and stays on the last caption; it does not start again.
+    await page.waitForTimeout(2500);
+    await expect(page.locator('#scan .steps li.on h3')).toHaveText('Reasons for and against, and exactly why');
+    // A click on a caption stops it: choose the first, and it stays there.
+    await jump(page, 'scan', 0);
+    await page.waitForTimeout(2500);
     await expect(page.locator('#scan .steps li.on h3')).toHaveText('A match you can read as a score');
-    // The arrows, the progress bar and a caption all move it.
+    // The arrows and the progress lines still move it.
     await page.locator('#scan .arrow.next').click();
     await expect(page.locator('#scan .steps li.on h3')).toHaveText('Reasons for and against, and exactly why');
-    await page.locator('#scan .prog button').first().click();
-    await expect(page.locator('#scan .steps li.on h3')).toHaveText('A match you can read as a score');
   });
 
   test('the progress bar is centred over the phone', async ({ page }) => {
@@ -113,34 +117,16 @@ test.describe('desktop', () => {
     await expect(phone).not.toContainText('HOLDS IT BACK', { ignoreCase: true });
   });
 
-  test('the mouse wheel over the text steps through the captions, then lets the page scroll on', async ({ page }) => {
-    await page.goto(BASE + '/');
-    await show(page, 'scan');
-    const y0 = await page.evaluate(() => scrollY);
-    const copy = await page.locator('#scan .copy').boundingBox();
-    await page.mouse.move(copy.x + 200, copy.y + 200);
-    await expect(page.locator('#scan .steps li.on h3')).toHaveText('A match you can read as a score');
-    await page.mouse.wheel(0, 120);
-    await expect(page.locator('#scan .steps li.on h3')).toHaveText('Reasons for and against, and exactly why');
-    expect(await page.evaluate(() => scrollY)).toBe(y0); // it stepped; the page did not move
-    await page.waitForTimeout(900);
-    await page.mouse.wheel(0, 120); // already on the last caption: the page scrolls
-    await expect.poll(() => page.evaluate(() => scrollY)).toBeGreaterThan(y0 + 50);
-  });
-
-  test('a hard flick over the text moves one caption, and steady scrolling carries on down the page', async ({ page }) => {
+  test('the wheel over the text scrolls the page and never moves the demo', async ({ page }) => {
     await page.goto(BASE + '/');
     await show(page, 'rate');
+    await jump(page, 'rate', 0);
     const copy = await page.locator('#rate .copy').boundingBox();
     await page.mouse.move(copy.x + 100, copy.y + 100);
-    for (let i = 0; i < 6; i++) { await page.mouse.wheel(0, 100); await page.waitForTimeout(60); }
-    await expect(page.locator('#rate .steps li.on h3')).toHaveText('It feeds your WineDNA');
-    await page.waitForTimeout(400);
-    await expect(page.locator('#rate .steps li.on h3')).toHaveText('It feeds your WineDNA'); // not the next one
-    // Thirty notches in a row is someone travelling down the page: it scrolls.
     const y0 = await page.evaluate(() => scrollY);
-    for (let i = 0; i < 30; i++) { await page.mouse.wheel(0, 100); await page.waitForTimeout(80); }
-    expect(await page.evaluate(() => scrollY)).toBeGreaterThan(y0 + 1500);
+    for (let i = 0; i < 6; i++) { await page.mouse.wheel(0, 100); await page.waitForTimeout(60); }
+    await expect.poll(() => page.evaluate(() => scrollY)).toBeGreaterThan(y0 + 300);
+    await expect(page.locator('#rate .steps li.on h3')).toHaveText('Slide to rate');
   });
 
   test('the page scrolls straight past a demo: no pinned section to scroll through', async ({ page }) => {

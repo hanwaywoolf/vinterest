@@ -120,16 +120,13 @@
   }
 
   /* ── Playing the demos ──
-     A demo section is one screen tall and the page scrolls past it normally. When it's mostly on
-     screen its demo plays once by itself: p (0 to 1) advances over data-duration seconds, the screen
-     moves to p, and the caption whose data-at we've reached is lit. When it finishes it stays on the
-     last caption; it never restarts. The reader is in charge from then on, and any of these stops the
-     autoplay and holds the demo where it is:
-       - clicking a caption (or pressing Enter on it), or a dot on a phone;
-       - scrolling the mouse wheel over the caption text, which steps through the captions one at a
-         time and, at the first or last one, lets the page scroll on.
-     With reduced motion nothing plays: the screen sits at the top and every caption shows; a click
-     still jumps to that point. */
+     A demo section is one screen tall and the page scrolls past it normally (nothing here reads the
+     wheel). When it's mostly on screen it plays by itself: each caption in turn for its reading time
+     (data-dwell seconds, default 7), the phone doing what that caption says, and the progress line
+     filling as it goes. After the last it stays there; it never restarts. The front page's carousel
+     keeps turning instead. A click (or Enter) on a caption stops the autoplay and holds the demo on
+     that part; the arrows, the progress lines and a swipe on the phone do the same. With reduced motion
+     nothing plays: every caption shows, and a click still jumps to that point. */
   // ?speed=8 plays the demos eight times as fast (the tests use it).
   var speed = parseFloat(new URLSearchParams(location.search).get('speed')) || 1;
   var features = Array.prototype.slice.call(document.querySelectorAll('[data-feature]')).map(function (el) {
@@ -139,7 +136,7 @@
   features.forEach(function (f) {
     f.demos = demos.filter(function (d) { return d.feature === f.el; });
     f.nav = f.el._nav;
-    f.auto = f.carousel && !reduced;
+    f.auto = !reduced;
     f.steps.forEach(function (li, i) {
       li.at = parseFloat(li.getAttribute('data-at') || '0');
       // Where a click holds the demo: just into its part, or data-hold when the part is a run of things.
@@ -147,6 +144,8 @@
       // A part that plays something (the rating slider) plays it whenever the part is chosen, up to here.
       li.animTo = li.hasAttribute('data-anim-to') ? parseFloat(li.getAttribute('data-anim-to')) : null;
       li.animMs = parseFloat(li.getAttribute('data-anim-ms')) || 2600;
+      // How long autoplay stays on this part before moving to the next: its own reading time.
+      li.dwell = (parseFloat(li.getAttribute('data-dwell')) || 7) * 1000;
       li.tabIndex = 0;
       li.setAttribute('role', 'button');
       li.addEventListener('click', function () { hold(f, i, true); });
@@ -165,26 +164,6 @@
       if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy) * 1.4) move(f, dx < 0 ? 1 : -1, true);
     });
     f.nav.slot.addEventListener('pointercancel', function () { sid = null; });
-    /* The mouse wheel over the text steps through the captions, one caption per flick: a flick is a run
-       of wheel events (a trackpad's momentum, or notches in quick succession) with no gap of 260ms
-       or more, so a hard flick can't run the whole demo, and captions can't change faster than every
-       0.7s. At the first or last caption the page scrolls on, and so it does when the reader keeps
-       scrolling for more than 1.2s without a pause: they're travelling down the page, not reading. */
-    if (!reduced && f.copy) f.copy.addEventListener('wheel', function (e) {
-      if (Math.abs(e.deltaY) < 4 || e.ctrlKey) return;
-      var to = f.step + (e.deltaY > 0 ? 1 : -1);
-      if (to < 0 || to >= f.steps.length) return;
-      var now = performance.now();
-      var fresh = now - f.lastWheel > 260;
-      f.lastWheel = now;
-      if (fresh) { f.flickStart = now; f.flickDone = false; }
-      if (now - f.flickStart > 1200) return; // sustained: let the page scroll
-      e.preventDefault();
-      if (f.flickDone || now < f.lock) return;
-      f.flickDone = true;
-      f.lock = now + 700;
-      hold(f, to, true);
-    }, { passive: false });
   });
   /* The caption block is as tall as its tallest state (a different caption lit each time), so opening
      a longer one never moves the block or pushes it past the section. Measured with each caption lit
@@ -216,6 +195,7 @@
   function hold(f, i, byReader) {
     var li = f.steps[i];
     if (byReader) f.auto = false;
+    f.wait = 0;
     f.phase = 'held';
     f.p = li.holdAt;
     // Choosing the part that's already showing plays it again.
@@ -243,7 +223,7 @@
     // Lines before this part are full, the one being played fills as it goes, the rest are empty.
     f.nav.segs.forEach(function (b, i) {
       var end = i + 1 < f.steps.length ? f.steps[i + 1].at : 1, start = f.steps[i].at;
-      var fill = i < step ? 1 : i > step ? 0 : 1;
+      var fill = i < step ? 1 : i > step ? 0 : (f.auto ? 0 : 1);
       b.firstChild.firstChild.style.setProperty('--f', fill.toFixed(3));
       b.classList.toggle('on', i === step);
     });
@@ -264,9 +244,15 @@
         // A section starts on its first part once its phone is drawn; nothing then moves until the reader does
         // (the front page's carousel turns by itself, until someone touches it).
         if (!f.started) { if (f.demos.every(function (d) { return d.api; })) { f.started = true; hold(f, 0, false); } return; }
-        if (f.auto && f.phase === 'held') {
+        if (f.auto) {
           f.wait += dt;
-          if (f.wait > 7000 / speed) { f.wait = 0; hold(f, (f.step + 1) % f.steps.length, false); }
+          var dwell = f.steps[f.step].dwell / speed;
+          f.nav.segs[f.step].firstChild.firstChild.style.setProperty('--f', clamp(f.wait / dwell, 0, 1).toFixed(3));
+          if (f.wait > dwell) {
+            if (f.step + 1 < f.steps.length) hold(f, f.step + 1, false);
+            else if (f.carousel) hold(f, 0, false);
+            else { f.auto = false; f.nav.segs[f.step].firstChild.firstChild.style.setProperty('--f', '1'); } // played through once: it stays on the last part
+          }
         }
         if (f.phase === 'anim') {
           f.animT += dt;
