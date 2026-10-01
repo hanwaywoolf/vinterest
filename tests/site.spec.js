@@ -43,7 +43,7 @@ test.describe('desktop', () => {
     page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
     page.on('pageerror', (e) => errors.push(`pageerror: ${e.message}`));
     await page.goto(BASE + '/');
-    await expect(page.locator('h1')).toContainText("Find wines you'll love. Learn why while you sip");
+    await expect(page.locator('h1')).toContainText("Find wines you'll love. Learn while you sip");
     const hero = page.locator('.hero .phone-app');
     await expect(hero).toContainText('Crozes-Hermitage 2021');
     await expect(hero).toContainText('87');
