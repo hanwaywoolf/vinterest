@@ -55,7 +55,7 @@ test.describe('desktop', () => {
     await page.goto(BASE + '/?speed=8');
     await show(page, 'scan');
     await expect(page.locator('#scan .phone-app')).toContainText('Crozes-Hermitage 2021');
-    await expect(page.locator('#scan .steps li.on h3')).toHaveText('A match you can read as a score');
+    await expect(page.locator('#scan .steps li.on h3')).toHaveText('A match score you can easily understand');
     await expect(page.locator('#scan .steps li.on h3')).toHaveText('Reasons for and against, and exactly why', { timeout: 6000 });
     // It finishes and stays on the last caption; it does not start again.
     await page.waitForTimeout(2500);
@@ -63,7 +63,7 @@ test.describe('desktop', () => {
     // A click on a caption stops it: choose the first, and it stays there.
     await jump(page, 'scan', 0);
     await page.waitForTimeout(2500);
-    await expect(page.locator('#scan .steps li.on h3')).toHaveText('A match you can read as a score');
+    await expect(page.locator('#scan .steps li.on h3')).toHaveText('A match score you can easily understand');
     // The arrows and the progress lines still move it.
     await page.locator('#scan .arrow.next').click();
     await expect(page.locator('#scan .steps li.on h3')).toHaveText('Reasons for and against, and exactly why');
