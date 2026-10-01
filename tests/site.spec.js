@@ -152,7 +152,13 @@ test.describe('desktop', () => {
     await expect(phone).toContainText('Heads up', { timeout: 8000 });
     await jump(page, 'learn-wine', 2);
     await expect(phone).toContainText('Where it');
-    await jump(page, 'learn-wine', 4);
+    // The origin story reads on down to the winemaker, below the regional signature.
+    await expect.poll(() => scrolledPx(page, 'learn-wine'), { timeout: 12000 }).toBeGreaterThan(40);
+    // How to taste it, and what to say: the taste card, then the lines to say.
+    await jump(page, 'learn-wine', 3);
+    await expect(phone).toContainText('While you taste');
+    await expect(phone).toContainText('Sound clued-in', { timeout: 10000 });
+    await jump(page, 'learn-wine', 5);
     await expect(phone).toContainText('Price check');
   });
 
@@ -186,6 +192,23 @@ test.describe('desktop', () => {
     await expect(phone).toContainText('Syrah quiz');
     await jump(page, 'keep-learning', 1);
     await expect(phone).toContainText('Get to Know Syrah', { timeout: 6000 });
+  });
+
+  test('Blind Call plays on the taste card: three sliders, the call locked in, then the score and its XP', async ({ page }) => {
+    await page.goto(BASE + '/?speed=2');
+    await show(page, 'learn-wine');
+    const phone = page.locator('#learn-wine .phone-app');
+    await jump(page, 'learn-wine', 4);
+    await expect(phone).toContainText('Call it before you look', { timeout: 8000 });
+    await expect(phone.locator('[role="slider"][aria-label="Body"]')).toHaveAttribute('aria-valuenow', /^5[5-9]$/, { timeout: 8000 });
+    await expect(phone.locator('[role="slider"][aria-label="Tannins"]')).toHaveAttribute('aria-valuenow', /^(6[5-9]|7\d)$/, { timeout: 8000 });
+    await expect(phone).toContainText('How you called it', { timeout: 8000 });
+    // The score and the XP are drawn inside the phone, not over the page.
+    await expect(phone).toContainText('XP', { timeout: 8000 });
+    await expect(phone).toContainText('% accurate');
+    // Chosen again, it starts over.
+    await jump(page, 'learn-wine', 4);
+    await expect(phone).toContainText('Call it before you look', { timeout: 8000 });
   });
 
   test('Vinny types the question again each time it is chosen, and the box follows the cursor', async ({ page }) => {

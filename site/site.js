@@ -144,6 +144,8 @@
       // A part that plays something (the rating slider) plays it whenever the part is chosen, up to here.
       li.animTo = li.hasAttribute('data-anim-to') ? parseFloat(li.getAttribute('data-anim-to')) : null;
       li.animMs = parseFloat(li.getAttribute('data-anim-ms')) || 2600;
+      // Linear when the part is a sequence in time (cards turning, a call being made), eased when it's one movement.
+      li.animLinear = li.hasAttribute('data-anim-linear');
       // How long autoplay stays on this part before moving to the next: its own reading time.
       li.dwell = (parseFloat(li.getAttribute('data-dwell')) || 7) * 1000;
       li.tabIndex = 0;
@@ -202,7 +204,7 @@
     if (f.step === i) { f.shown = -1; f.demos.forEach(function (d) { if (d.api && d.api.replay) d.api.replay(); }); }
     if (li.animTo != null) {
       if (reduced) f.p = li.animTo;
-      else { f.phase = 'anim'; f.animFrom = li.holdAt; f.animTo = li.animTo; f.animT = 0; f.animMs = li.animMs / speed; }
+      else { f.phase = 'anim'; f.animFrom = li.holdAt; f.animTo = li.animTo; f.animT = 0; f.animMs = li.animMs / speed; f.animLinear = li.animLinear; }
     }
     apply(f);
   }
@@ -264,7 +266,7 @@
         if (f.phase === 'anim') {
           f.animT += dt;
           var k = Math.min(1, f.animT / f.animMs);
-          f.p = f.animFrom + (f.animTo - f.animFrom) * ease(k);
+          f.p = f.animFrom + (f.animTo - f.animFrom) * (f.animLinear ? k : ease(k));
           if (k >= 1) f.phase = 'held';
           apply(f);
         }

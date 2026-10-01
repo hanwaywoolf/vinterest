@@ -18,6 +18,15 @@ const _DEMO_NOOP = () => {};
 /* Rating a bottle here must not show the XP toast over the page. */
 XPSystem.awardAndToast = function (reasons) { return this.award(reasons); };
 
+/* The app draws some full-screen overlays straight into document.body (the Blind Call result). On the
+   website that would cover the whole page, so while a demo has claimed a phone's overlay layer
+   (window.__demoPortal) they're drawn inside that phone instead. */
+const _realCreatePortal = ReactDOM.createPortal;
+ReactDOM.createPortal = function (child, node, key) {
+  const t = window.__demoPortal;
+  return _realCreatePortal.call(this, child, node === document.body && t && t.isConnected ? t : node, key);
+};
+
 /* The demos never call Claude. Where a real screen asks for text (the WineDNA summary, the
    sommelier script, the scan cards), it gets what Claude really wrote for the sample user, captured
    once by `npm run site:capture` into captured.json, like the onboarding slides' Vinny answer.
@@ -101,6 +110,8 @@ const _DECK_CARDS = 9;
 const _topCard = (el) => el.querySelector('.sc-swipe > div > div');
 /* What it takes to reach the deck's rating card, and a score in it. */
 const _RATE_TO = 92;
+/* Where the Blind Call part sits in the deck demo's p (see the caption's data-at in index.html). */
+const BLIND_AT = 0.75, BLIND_END = 0.777;
 
 /* The bottle in the camera: the sample user's next scan. `tracked` keeps the scan from being saved
    into the demo user's wines, so the other demos never change. */
@@ -205,7 +216,9 @@ function _DemoFrame({ kind, ctl }) {
   const [layer, setLayer] = React.useState(ctl.layer);
   ctl.setLayer = (id) => { ctl.layer = id; setLayer(id); };
   const cur = d.layers && d.layers.find((l) => l.id === layer);
-  return <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', background: C.bg, fontFamily: C.P }}>
+  return <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', background: C.bg, fontFamily: C.P, position: 'relative' }}>
+    {/* Where the app's full-screen overlays (the Blind Call result) are drawn, so they cover the phone, not the page. */}
+    <div data-portal style={{ position: 'absolute', inset: 0, transform: 'translateZ(0)', pointerEvents: 'none', zIndex: 60 }} />
     {d.layers
       ? <div style={{ flex: 1, minHeight: 0, position: 'relative' }}>{d.layers.map((l) => <_Layer key={l.id} l={l} active={layer === l.id} />)}</div>
       : <Screen nav={_DEMO_NOOP} back={_DEMO_NOOP} showPro={_DEMO_NOOP} isTablet={false} />}
@@ -396,19 +409,48 @@ const VinterestDemo = {
       if (k !== stepAt) enterStep(k);
     };
 
-    let deckAt = -1;
+    let deckAt = -1, cancelGo = () => {};
+    /* The Blind Call, played on the taste card: open it, slide Body, Acidity and Tannins to a guess, lock it
+       in, see how the call compares with the wine, then the score and the XP it earns (the app's own
+       maths). Driven by b, 0 to 1 across the part; going back to the start plays it again. */
+    let blindOpened = false, lastBlindP = 0, bLocked = false, bScored = false, bRevealed = false;
+    const resetBlind = () => { blindOpened = bLocked = bScored = bRevealed = false; lastBlindP = 0; window.__demoPortal = null; };
+    const BLIND_GUESS = { Body: 58, Acidity: 55, Tannins: 74 };
+    const driveBlind = (b) => {
+      lastBlindP = BLIND_AT + b * (BLIND_END - BLIND_AT);
+      window.__demoPortal = el.querySelector('[data-portal]');
+      if (!blindOpened && b >= 0.02) { blindOpened = true; _until(() => _tapText(el, /Play Blind Call/), 40); }
+      [['Body', 0.08, 0.28], ['Acidity', 0.28, 0.48], ['Tannins', 0.48, 0.68]].forEach(([name, a, z]) => {
+        const sl = el.querySelector('[role="slider"][aria-label="' + name + '"]');
+        if (!sl || b < a) return;
+        const now = Math.round(50 + (BLIND_GUESS[name] - 50) * _ease((b - a) / (z - a)));
+        if (_scoreNow(sl) !== now) _setScore(sl, now);
+      });
+      if (!bLocked && b >= 0.7) { bLocked = true; _until(() => _tapText(el, /^Lock in my call$/), 40); }
+      if (!bScored && b >= 0.84) { bScored = true; _until(() => _tapText(el, /^See my score$/), 40); }
+    };
     let saved = false, rated = false, learned = false, boughtAgain = false, paid = false, where = false;
-    return {
+    const api = {
       update(p) {
         lastP = p;
+        const update = (q) => api.update(q);
         if (d.steps) { place(p); return; }
         if (kind === 'scan') { runActs(p); scrollTo(p); return; }
         if (kind === 'deck') {
-          // Turn the deck to the card p is up to, and read down a long one while it's there.
-          const i = Math.min(_DECK_CARDS - 1, Math.floor(p * _DECK_CARDS + 1e-6)), within = p * _DECK_CARDS - i;
-          if (i !== deckAt) { const dots = _deckDots(el); if (dots && dots[i]) { dots[i].click(); deckAt = i; scroller = null; } }
+          // Turn the deck to the card p is up to, and read down a long one while it's there. The Blind Call
+          // part (p from 0.75) plays on the taste card, whose own number it isn't.
+          const blind = p >= BLIND_AT && p < BLIND_END;
+          const i = blind ? 5 : Math.min(_DECK_CARDS - 1, Math.floor(p * _DECK_CARDS + 1e-6)), within = p * _DECK_CARDS - i;
+          if (blind && blindOpened && p < lastBlindP - 0.002) { resetBlind(); draw(); deckAt = -1; }  // chosen again: play it from the start
+          if (i !== deckAt) {
+            deckAt = i; scroller = null;
+            cancelGo();
+            cancelGo = _until(() => { const dots = _deckDots(el); if (!dots || !dots[i]) return false; dots[i].click(); return true; }, 40);
+          }
+          if (blind) { lastBlindP = p; driveBlind((p - BLIND_AT) / (BLIND_END - BLIND_AT)); return; }
+          if (blindOpened && p < BLIND_AT) { resetBlind(); draw(); deckAt = -1; update(p); return; }
           const top = _topCard(el);
-          if (top) { const sc = _demoScroller(top); if (sc) { scroller = sc; glide.to(_ease((within - 0.3) / 0.55) * (sc.scrollHeight - sc.clientHeight)); } }
+          if (top) { const sc = _demoScroller(top); if (sc) { scroller = sc; glide.to(_ease((within - 0.15) / 0.75) * (sc.scrollHeight - sc.clientHeight)); } }
           return;
         }
         if (kind === 'rate') {
@@ -459,8 +501,9 @@ const VinterestDemo = {
         scrollTo(p);
       },
       replay() { stepAt = -1; },
-      unmount() { cancel(); glide.stop(); if (d.steps) stopAll(); root.unmount(); },
+      unmount() { cancel(); cancelGo(); glide.stop(); if (d.steps) stopAll(); root.unmount(); },
     };
+    return api;
   },
 };
 window.VinterestDemo = VinterestDemo;
