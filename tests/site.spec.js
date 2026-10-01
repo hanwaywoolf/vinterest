@@ -148,6 +148,8 @@ test.describe('desktop', () => {
     await expect(phone).toContainText('Your match');
     await jump(page, 'learn-wine', 1);
     await expect(phone).toContainText('Your kind of bottle');
+    // The same part goes on to the serving tip (decanting, temperature): the next card of the deck.
+    await expect(phone).toContainText('Heads up', { timeout: 8000 });
     await jump(page, 'learn-wine', 2);
     await expect(phone).toContainText('Where it');
     await jump(page, 'learn-wine', 4);
