@@ -245,9 +245,7 @@ function GenArticleScreen({nav,back}){
         {/* Hero */}
         <div style={{background:C.ink,padding:'24px 20px 22px'}}>
           <div style={{display:'inline-flex',alignItems:'center',gap:6,padding:'4px 12px',borderRadius:20,background:'rgba(255,255,255,0.1)',marginBottom:12}}>
-            {ContentEngine.articleRegions(stub).some(r=>Regions.flag(r))
-              ?ContentEngine.articleRegions(stub).map(r=><Flag key={r} region={r} size={15}/>)
-              :<Icon n={stub.iconName||'read'} sz={14} col="rgba(255,255,255,0.6)"/>}
+            <Icon n={stub.iconName||'read'} sz={14} col="rgba(255,255,255,0.6)"/>
             <span style={{fontSize:13,fontWeight:600,color:'rgba(255,255,255,0.55)',fontFamily:C.P}}>Written for you</span>
           </div>
           <div style={{fontSize:26,fontWeight:800,color:'#fff',fontFamily:C.P,lineHeight:1.2,marginBottom:10}}>{stub.title}</div>

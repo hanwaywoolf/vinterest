@@ -9,7 +9,9 @@ const C = {
   serif:"'Instrument Serif',serif",
 };
 
-/* A country's flag, for colour wherever a region or wine is named. By wine (its country, else its
+/* A country's flag, for colour on quiz and region containers only (region quiz rows and titles,
+   Keep learning region tiles, Mastery's regions, WineDNA's best regions), not wherever a place
+   is mentioned. By wine (its country, else its
    region's), by region name (Regions.nameFlag) or by country. Nothing when the country isn't known.
    A string size: a flag is a picture, so the reader's text size leaves it alone. Decorative: the
    place is always named beside it, so screen readers skip it (and previews stay one picture). */

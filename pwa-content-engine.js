@@ -483,8 +483,6 @@ const ContentEngine = {
     return s;
   },
 
-  /* The knowledge-base regions a piece is about (slots region and regionB), for its flags. */
-  articleRegions(stub){ const s=(stub&&stub.slots)||{}; return [s.region,s.regionB].filter(r=>r&&KNOWLEDGE.regions[r]); },
   fillTpl(tpl,slots){ let s=tpl; Object.keys(slots).forEach(k=>{ s=s.split('{{'+k+'}}').join(slots[k]??''); }); return s; },
 
   /* The region a new one is compared with: the knowledge-base region they drink most of the same
