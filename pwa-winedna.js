@@ -17,6 +17,8 @@ const ParkerScale = {
   MIN:50,
   LOVED:90,     // Outstanding and up
   DISLIKED:80,  // below "very good": average or worse
+  /* A score's colour band: 'good' (loved, 90+), 'neutral' (80-89), 'bad' (below 80). */
+  tone(score){ return score>=this.LOVED?'good':score>=this.DISLIKED?'neutral':'bad'; },
   label(score){ if(!score) return ''; const b=this.BANDS.find(x=>score>=x.min); return b?b.label:''; }
 };
 

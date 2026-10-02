@@ -20,6 +20,9 @@ function Flag({wine,region,country,size=15,style}){
   if(!f) return null;
   return <span className="vflag" aria-hidden="true" style={{fontSize:size+'px',lineHeight:1,flexShrink:0,...style}}>{f}</span>;
 }
+/* A Parker score's colour, the same everywhere: green 90+, amber 80-89, red below 80 (ParkerScale.tone). */
+const _SCORE_COL={good:C.green,neutral:C.amber,bad:'#B04A3A'};
+function scoreCol(score){ return _SCORE_COL[ParkerScale.tone(score)]; }
 function Icon({n,sz=20,col=C.ink,style:s}){
   const d={
     scan:<><rect x="3" y="3" width="6" height="6" rx="1" stroke={col} strokeWidth="1.6" fill="none"/><rect x="11" y="3" width="6" height="6" rx="1" stroke={col} strokeWidth="1.6" fill="none"/><rect x="3" y="11" width="6" height="6" rx="1" stroke={col} strokeWidth="1.6" fill="none"/><circle cx="14" cy="14" r="2.5" stroke={col} strokeWidth="1.6" fill="none"/><line x1="16.5" y1="16.5" x2="18.5" y2="18.5" stroke={col} strokeWidth="1.6" strokeLinecap="round"/></>,

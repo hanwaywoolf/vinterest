@@ -341,6 +341,20 @@ const ExploreNext = {
     ].filter(Boolean).join(' ');
     return {style,score,shares,bridge:bridge&&this._cap(bridge),why};
   },
+  /* "Explore Next is ready": the moment a wine type reaches READY_AT wines and has picks to
+     show, celebrated once per type in WineDNA. (It replaced "WineDNA unlocked", which marked a
+     three-types-and-a-spread gate that no longer exists: WineDNA works from the first wine.)
+     The first time the app looks (noteReady, on opening), every type already open counts as
+     seen, so existing users aren't told about picks they've had for months. */
+  TYPES:['red','white','rose','sparkling','orange','dessert','fortified'],
+  readyTypes(wines){ return this.TYPES.filter(k=>this._typeWines(k,wines).length>=this.READY_AT&&this.suggest(k,wines,'',1).picks.length>0); },
+  noteReady(wines){ if(Flags.exploreReadySeen()===null&&Settings.onboarded()) Flags.setExploreReadySeen(this.readyTypes(wines)); },
+  toCelebrate(wines){
+    const seen=Flags.exploreReadySeen();
+    if(seen===null){ this.noteReady(wines); return null; } // first look: what's open now isn't news
+    return this.readyTypes(wines).find(k=>!seen.includes(k))||null;
+  },
+  markCelebrated(k){ const seen=Flags.exploreReadySeen()||[]; if(!seen.includes(k)) Flags.setExploreReadySeen([...seen,k]); },
   // {picks:[assessments], explored:[{style,wine}]} for one type.
   suggest(typeKey,wines,label,n=3){
     // No picks until there's enough to go on (READY_AT wines of the type): WineDNA shows none
