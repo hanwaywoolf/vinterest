@@ -51,3 +51,22 @@ test('while the camera is asking for permission there is no video element at all
   await page.evaluate(() => window.__allowCamera());
   await expect(page.locator('#root video')).toHaveCSS('opacity', '0.88');
 });
+
+// A wine list frame sized from the screen's width (2:3) was taller than the space on a Pixel (412×780
+// once the status bar is taken off) and pushed the shutter off the bottom. Both modes now fit between the top bar and the controls.
+test.describe('on a tall phone', () => {
+  test.use({ viewport: { width: 412, height: 780 } });
+  test('in Bottle and Wine List mode the shutter and gallery button stay on screen', async ({ context, page }) => {
+    await stubNetwork(context);
+    await seedLocalStorage(page, { vinterest_onboarded: '1', vinterest_region: 'uk', vinterest_pro: '1' });
+    await page.goto(`${BASE}/#camera`);
+    const onScreen = async (loc) => { const b = await loc.boundingBox(); return b && b.y >= 0 && b.y + b.height <= 780; };
+    const shutter = page.getByLabel('Take photo');
+    const gallery = page.getByRole('button', { name: 'Choose a photo from your gallery' });
+    expect(await onScreen(shutter)).toBe(true);
+    await page.getByText('Wine List', { exact: true }).click();
+    await expect(page.getByText('List prices in GBP')).toBeVisible();
+    expect(await onScreen(shutter)).toBe(true);
+    expect(await onScreen(gallery)).toBe(true);
+  });
+});
