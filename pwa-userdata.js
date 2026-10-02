@@ -22,6 +22,18 @@ const Entitlement = {
   scanCount(){ return parseInt(Store.get(this.SCANS_KEY)||'0'); },
   addScan(){ Store.set(this.SCANS_KEY,this.scanCount()+1); },
   atScanLimit(){ return !this.isPro()&&this.scanCount()>=this.FREE_SCANS; },
+  /* What wine list scanning still needs: null (go ahead), 'signin' or 'pro'. The Worker checks this
+     itself (list_scan is PRO_ONLY in _worker.js) and never trusts the device flag, so with sign-in
+     configured a signed-out phone needs to sign in even after "Start Pro", and a signed-in one needs
+     Pro on the account. Without sign-in configured the Worker can't check, so the device flag counts. */
+  listScanNeeds(){
+    if(typeof Account!=='undefined'&&Account.available()){
+      if(!Account.signedIn()) return 'signin';
+      // While testing, any signed-in account may scan lists (OPEN_TO_SIGNED_IN in _worker.js).
+      return null;
+    }
+    return this.isPro()?null:'pro';
+  },
 };
 
 /* App settings that follow the user between devices. Location and the onboarding answers are
@@ -108,9 +120,13 @@ const Handoff = {
   /* How My Wines should open (type and sort), read once. */
   myWinesView:{ set:v=>Store.setJSON('vinterest_mywines_view',v,{session:true}),
     take(){ const v=Store.getJSON('vinterest_mywines_view',null,{session:true}); Store.remove('vinterest_mywines_view',{session:true}); return v||{}; } },
-  /* Why Profile was opened: 'backup' (Home's backup offer) opens the sign-in at the email step. Read once. */
+  /* Why Profile was opened: 'backup' (Home's backup offer) or 'listscan' (Wine List on the camera)
+     opens the sign-in at the email step. Read once. */
   accountIntent:{ set:v=>Store.set('vinterest_account_intent',v,{session:true}),
     take(){ const v=Store.get('vinterest_account_intent',{session:true}); Store.remove('vinterest_account_intent',{session:true}); return v; } },
+  /* The camera's starting mode: 'list' from Scan's Wine List card. Read once. */
+  cameraMode:{ set:v=>Store.set('vinterest_camera_mode',v,{session:true}),
+    take(){ const v=Store.get('vinterest_camera_mode',{session:true}); Store.remove('vinterest_camera_mode',{session:true}); return v; } },
   /* "Is this it?" answered for this scan. */
   confirmed(key){ return !!Store.get(key,{session:true}); },
   setConfirmed(key){ Store.set(key,'1',{session:true}); },

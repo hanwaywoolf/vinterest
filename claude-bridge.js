@@ -61,9 +61,10 @@
         throw new Error("Couldn’t reach the wine-ID service. Check your connection and that the API proxy is deployed.");
       }
       if (!res.ok) {
-        var msg = "The wine-ID service returned an error (" + res.status + ").", code = null;
-        try { var j = await res.json(); if (j && j.error) { code = j.code || null; msg = j.error; } if (code && res.status !== 402 && res.status !== 429) msg += " [" + code + "]"; } catch (e) {}
-        var err = new Error(msg); err.code = code; err.status = res.status;
+        var msg = "The wine-ID service returned an error (" + res.status + ").", code = null, signIn = false;
+        try { var j = await res.json(); if (j && j.error) { code = j.code || null; msg = j.error; signIn = !!j.signIn; } if (code && res.status !== 402 && res.status !== 429) msg += " [" + code + "]"; } catch (e) {}
+        // err.signIn: the Worker says signing in is the way through (a Pro feature asked for signed out).
+        var err = new Error(msg); err.code = code; err.status = res.status; err.signIn = signIn;
         throw err;
       }
       var data = await res.json();

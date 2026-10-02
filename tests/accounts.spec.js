@@ -87,11 +87,10 @@ test.describe('Worker', () => {
     expect(sb.calls[0]).toEqual({ url: `${SB}/auth/v1/user`, apikey: 'sb_publishable_x' });
   });
 
-  test('Pro comes from the server: a free account is refused list scans, a Pro one is metered', async () => {
+  test('while testing, any signed-in account may scan lists (metered); Pro ones too', async () => {
     const sb = fakeSupabase(); globalThis.fetch = sb.fetch;
-    const free = await scan('list_scan', 'tok-free');
-    expect(free.status).toBe(402);
-    expect((await free.json()).signIn).toBeUndefined();
+    expect((await scan('list_scan', 'tok-free')).status).toBe(200);
+    expect(sb.counters['u-free:list_scan']).toBe(1);
     expect((await scan('list_scan', 'tok-pro')).status).toBe(200);
     expect(sb.counters['u-pro:list_scan']).toBe(1);
     expect(sb.calls.filter((c) => c.url.includes('/rest/v1/')).every((c) => c.apikey === 'sb_secret_x')).toBe(true);

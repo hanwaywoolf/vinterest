@@ -239,7 +239,7 @@ function WineRow({w,open,setOpen,onOpen,onScore,onEdit,onDelete}){
   const ref=React.useRef(null), g=React.useRef(null), moved=React.useRef(false);
   const ACTIONS=144;
   const col=(typeof _TYPE_COLORS!=='undefined'&&_TYPE_COLORS[MyWines.type(w)])||C.cr;
-  const saved=MyWines.isSaved(w), fav=Favorites.has(w), flag=Regions.wineFlag(w);
+  const saved=MyWines.isSaved(w), fav=Favorites.has(w), flag=Regions.wineFlag(w), price=MyWines.price(w);
   const actionsRef=React.useRef(null);
   // The Edit/Delete buttons are hidden until the row moves, so they never tint the row's edges.
   function place(x,anim){
@@ -284,11 +284,15 @@ function WineRow({w,open,setOpen,onOpen,onScore,onEdit,onDelete}){
         </div>
       </div>
       {w.times_consumed>1&&<span style={{fontSize:13,color:C.mid,fontFamily:C.P,flexShrink:0}}>×{w.times_consumed}</span>}
-      {w.rating>0
-        ?<span style={{minWidth:34,textAlign:'right',fontSize:17,fontWeight:800,color:_MW_TONE[MyWines.scoreTone(w.rating)],fontFamily:C.P,flexShrink:0}}>{w.rating}</span>
-        :saved
-          ?<span style={{fontSize:13,fontWeight:600,color:C.mid,fontFamily:C.P,flexShrink:0}}>Saved</span>
-          :<button onClick={e=>{ e.stopPropagation(); onScore(w); }} style={{flexShrink:0,border:`1px solid ${C.crDim}`,background:C.crSoft,color:C.cr,borderRadius:20,padding:'5px 11px',fontSize:13,fontWeight:700,fontFamily:C.P,cursor:'pointer'}}>Score it</button>}
+      {/* The score (or Saved / Score it), with the price under it: what they paid, else the average. */}
+      <div style={{display:'flex',flexDirection:'column',alignItems:'flex-end',gap:2,flexShrink:0}}>
+        {w.rating>0
+          ?<span style={{minWidth:34,textAlign:'right',fontSize:17,fontWeight:800,color:_MW_TONE[MyWines.scoreTone(w.rating)],fontFamily:C.P}}>{w.rating}</span>
+          :saved
+            ?<span style={{fontSize:13,fontWeight:600,color:C.mid,fontFamily:C.P}}>Saved</span>
+            :<button onClick={e=>{ e.stopPropagation(); onScore(w); }} style={{border:`1px solid ${C.crDim}`,background:C.crSoft,color:C.cr,borderRadius:20,padding:'5px 11px',fontSize:13,fontWeight:700,fontFamily:C.P,cursor:'pointer'}}>Score it</button>}
+        {price&&<span className="mw-price" aria-label={price.label} style={{fontSize:13,color:price.paid?C.ink:C.mid,fontWeight:price.paid?600:400,fontFamily:C.P,whiteSpace:'nowrap'}}>{price.text}</span>}
+      </div>
     </div>
   </div>;
 }
@@ -542,12 +546,27 @@ function RestaurantScript({back}){
 function LearnScreen(props){ return React.createElement(QuizHubScreen, props); }
 
 /* ── WINE LIST RESULTS SCREEN ── */
-function WineListScreen({nav,back}){
+function WineListScreen({nav,back,showPro}){
   const data=React.useMemo(()=>{
     try{ return Handoff.wineList.get({}); }
     catch(e){ return {}; }
   },[]);
   const isDemo=data.demo===true;
+  // Why the read failed, in words that point at the real fix: the Worker refusing (sign in, Pro,
+  // this week's limit, can't reach it) is never the photo's fault, so only a list Claude couldn't
+  // read says to reframe the page.
+  const failure=(()=>{
+    const retry={cta:'Try Again',icon:'camera',act:()=>nav('camera')};
+    if(data.code==='pro_required'&&data.signIn) return Account.available()
+      ?{title:'Sign in to scan wine lists',body:'Wine list scanning is part of Pro, which belongs to your account.',cta:'Sign in',icon:'user',act:()=>{ Handoff.accountIntent.set('listscan'); nav('account'); }}
+      // This copy of the app hasn't got the sign-in settings yet (Platform.start fetches them online).
+      :{title:'Sign in to scan wine lists',body:'Sign-in isn’t ready on this phone yet. Reopen Vinterest while you’re online, then sign in on Profile.',...retry};
+    if(data.code==='pro_required') return {title:'Wine list scanning is part of Pro',body:'Your account is on the free plan.',cta:'See Pro',icon:'star',act:()=>showPro&&showPro('wine-list')};
+    if(data.code==='fair_use'||data.code==='rate_limited') return {title:'Wine list scanning is paused for now',body:data.reason,...retry};
+    if(/reach the wine-ID service/.test(data.reason||'')) return {title:'Couldn’t reach Vinterest',body:'Check your connection, then try again.',...retry};
+    if(data.status>=400||data.code) return {title:'That didn’t work this time',body:data.reason,...retry};
+    return {title:'List not detected — ensure the full page is in frame',...retry};
+  })();
 
 
   // A failed read shows the retry banner and no wines: made-up wines with made-up scores would mislead.
@@ -644,10 +663,11 @@ function WineListScreen({nav,back}){
         <div style={{background:'#FFF3CD',borderBottom:'1px solid #FFE082',padding:'10px 16px',display:'flex',alignItems:'flex-start',gap:10,flexShrink:0}}>
           <span style={{fontSize:19,flexShrink:0}}>⚠️</span>
           <div style={{flex:1}}>
-            <div style={{fontSize:16,fontWeight:600,color:'#7A5200',fontFamily:C.P}}>List not detected — ensure the full page is in frame</div>
-            <div onClick={()=>nav('camera')} style={{marginTop:6,display:'inline-flex',alignItems:'center',gap:5,padding:'6px 14px',borderRadius:20,background:'#8B1A2F',cursor:'pointer'}}>
-              <Icon n="camera" sz={12} col="#fff"/>
-              <span style={{fontSize:15,fontWeight:700,color:'#fff',fontFamily:C.P}}>Try Again</span>
+            <div style={{fontSize:16,fontWeight:600,color:'#7A5200',fontFamily:C.P}}>{failure.title}</div>
+            {failure.body&&<div style={{fontSize:14,color:'#7A5200',fontFamily:C.P,marginTop:2,lineHeight:1.45}}>{failure.body}</div>}
+            <div onClick={failure.act} style={{marginTop:6,display:'inline-flex',alignItems:'center',gap:5,padding:'6px 14px',borderRadius:20,background:'#8B1A2F',cursor:'pointer'}}>
+              <Icon n={failure.icon} sz={12} col="#fff"/>
+              <span style={{fontSize:15,fontWeight:700,color:'#fff',fontFamily:C.P}}>{failure.cta}</span>
             </div>
           </div>
         </div>
