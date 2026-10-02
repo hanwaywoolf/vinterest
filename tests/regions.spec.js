@@ -69,14 +69,13 @@ test('no shipped code groups, counts or compares wines by the raw label region',
 // Flags add colour wherever a region is named: a label region resolves to its knowledge-base
 // region's country, articles show the flags of the regions they're about, and WineDNA's best
 // regions and a region quiz's title carry one.
-test('a flag shows wherever a region is named: WineDNA, a region quiz, articles', async ({ context, page }) => {
+test('flags show on region containers: WineDNA\'s best regions and a region quiz', async ({ context, page }) => {
   await makeDeterministic(page);
   await seedLocalStorage(page, { vinterest_onboarded: '1', vinterest_region: 'uk', vinterest_wines: JSON.stringify(ROSES) });
   await stubNetwork(context);
   await page.goto(`${BASE}/#home`);
   const fr = await page.evaluate(() => Regions.countryFlag('France'));
   expect(await page.evaluate(() => [Regions.nameFlag('Côtes de Provence'), Regions.nameFlag('Provence'), Regions.nameFlag('Nowhere')])).toEqual([fr, fr, '']);
-  expect(await page.evaluate(() => ContentEngine.articleRegions({ slots: { region: 'Rioja', regionB: 'Provence' } }))).toEqual(['Rioja', 'Provence']);
 
   await page.evaluate(() => UserPrefs.openDNA('rose', 'love'));
   await page.goto(`${BASE}/?d=1#profile`);

@@ -322,7 +322,7 @@ function HomeScreen({nav, showPro, isTablet}){
         {/* Recently scanned */}
         {recentWines.length>0&&<Card style={{padding:0,overflow:'hidden'}}>
           {head('Recently scanned','All →',()=>nav('mywines'))}
-          {recentWines.map((w,i)=>row('r'+i,'wine',colFor(w),w.name,[Regions.wineFlag(w),MyWines.subline(w)].filter(Boolean).join(' '),()=>openWine(w),
+          {recentWines.map((w,i)=>row('r'+i,'wine',colFor(w),w.name,MyWines.subline(w),()=>openWine(w),
             w.rating>0?<span style={{fontSize:15,fontWeight:700,color:C.amber,fontFamily:C.P,flexShrink:0}}>{w.rating}</span>
               :<span style={{fontSize:13,color:C.cr,fontFamily:C.P,flexShrink:0,fontWeight:600}}>Score it →</span>))}
         </Card>}
@@ -331,7 +331,7 @@ function HomeScreen({nav, showPro, isTablet}){
         {dna.types.length>0&&<Card style={{padding:0,overflow:'hidden'}}>
           {head('Your WineDNA','Open →',()=>{ UserPrefs.openDNA(dna.types[0].key); nav('profile'); })}
           {dna.types.map(t=>row(t.key,'wine',t.col,t.tab,t.line,()=>{ UserPrefs.openDNA(t.key); nav('profile'); }))}
-          {dna.pick&&row('explore','compass',C.cr,`Try next: ${dna.pick.style.name}`,`Explore Next · ${[Regions.countryFlag(dna.pick.style.country),dna.pick.style.country].filter(Boolean).join(' ')}`,()=>{
+          {dna.pick&&row('explore','compass',C.cr,`Try next: ${dna.pick.style.name}`,`Explore Next · ${dna.pick.style.country}`,()=>{
             Handoff.styleExplore.set({id:dna.pick.style.id,typeKey:dna.pick.typeKey,label:dna.pick.typeLabel}); nav('style-explore'); })}
           {row('script','message',C.cr,`Your ${(WineDNA.NOUNS[dna.types[0].key]||['wine'])[0]} sommelier script`,'What to say when you order',()=>{ UserPrefs.openDNA(dna.types[0].key,'scripts'); nav('profile'); })}
         </Card>}

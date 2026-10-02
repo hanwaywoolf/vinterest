@@ -552,14 +552,11 @@ function QuizHubScreen({nav,back,showPro}){
 /* One "Written for you" piece on the Learn shelf. Also the welcome slides' preview
    (flow-welcome.jsx), with no onOpen: not tappable, no chevron. */
 function ShelfCard({stub,done,locked,because,onOpen}){
-  const regs=ContentEngine.articleRegions(stub).filter(r=>Regions.flag(r));
   return(
   <div onClick={onOpen}
     style={{background:C.white,borderRadius:14,padding:done?'10px 14px':'14px 16px',display:'flex',alignItems:'center',gap:12,cursor:onOpen?'pointer':'default',border:`1px solid ${C.line}`,opacity:done?0.75:1}}>
     <div style={{width:done?36:44,height:done?36:44,borderRadius:12,background:C.crSoft,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,border:`1px solid ${C.crDim}`}}>
-      {regs.length
-        ?<div style={{display:'flex',flexDirection:regs.length>1?'column':'row',alignItems:'center',lineHeight:1}}>{regs.map(r=><Flag key={r} region={r} size={regs.length>1?(done?13:16):(done?19:23)}/>)}</div>
-        :<Icon n={stub.iconName||'read'} sz={done?17:20} col={C.cr}/>}
+      <Icon n={stub.iconName||'read'} sz={done?17:20} col={C.cr}/>
     </div>
     <div style={{flex:1,minWidth:0}}>
       {!done&&<div style={{fontSize:12,fontWeight:600,color:C.mid,fontFamily:C.P,textTransform:'uppercase',letterSpacing:'0.06em',marginBottom:2}}>{stub.series?`${stub.series} series`:'Written for you'} · {stub.readTime}</div>}

@@ -309,7 +309,7 @@ function ScanHeader({wine,nav,back}){
 function WineIdentity({wine}){
   const col=_typeCol(wine);
   return <div>
-    <div style={{display:'flex',alignItems:'center',gap:6,fontSize:13,fontWeight:700,color:col,fontFamily:C.P,letterSpacing:'0.08em',textTransform:'uppercase'}}><Flag wine={wine} size={15}/><span>{[wine.type||'Red',wine.country].filter(Boolean).join(' · ')}</span></div>
+    <div style={{fontSize:13,fontWeight:700,color:col,fontFamily:C.P,letterSpacing:'0.08em',textTransform:'uppercase'}}>{[wine.type||'Red',wine.country].filter(Boolean).join(' · ')}</div>
     <div style={{fontSize:21,fontWeight:800,color:C.ink,fontFamily:C.P,lineHeight:1.2,marginTop:3}}>{_wineTitle(wine)}</div>
     <div style={{fontSize:15,color:C.mid,fontFamily:C.P,lineHeight:1.45,marginTop:2}}>{[wine.producer,WineDNA.grapeLine(wine),wine.region!==wine.country?wine.region:null].filter(Boolean).join(' · ')}</div>
   </div>;
