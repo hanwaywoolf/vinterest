@@ -29,7 +29,8 @@ const Entitlement = {
   listScanNeeds(){
     if(typeof Account!=='undefined'&&Account.available()){
       if(!Account.signedIn()) return 'signin';
-      return Account.tier()==='pro'?null:'pro';
+      // While testing, any signed-in account may scan lists (OPEN_TO_SIGNED_IN in _worker.js).
+      return null;
     }
     return this.isPro()?null:'pro';
   },

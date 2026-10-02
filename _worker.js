@@ -261,10 +261,14 @@ async function handleClaude(request, env, ctx) {
    purposes need Pro in `entitlements`, which only the server writes. The caps are cost guards,
    set generously, never product limits (spec D5). */
 const FAIR_USE = {
-  free: { label_scan: 100, list_scan: 0, price_search: 50, _other: 500 },
+  free: { label_scan: 100, list_scan: 30, price_search: 50, _other: 500 },
   pro:  { label_scan: 600, list_scan: 150, price_search: 300, _other: 3000 },
 };
 const PRO_ONLY = { list_scan: "Wine list scanning is part of Vinterest Pro." };
+/* While testing, before real purchases exist: these Pro features are open to any signed-in account
+   (metered by FAIR_USE.free); signed out still asks them to sign in. Remove an entry to make it Pro
+   again, and change Entitlement.listScanNeeds in pwa-userdata.js to match. */
+const OPEN_TO_SIGNED_IN = { list_scan: true };
 const AUTH_CACHE_MS = 5 * 60 * 1000;
 const _authCache = new Map();
 
@@ -316,7 +320,7 @@ async function gateAccount(request, env, purpose) {
     return {};
   }
   const tier = await tierOf(env, user.id);
-  if (PRO_ONLY[purpose] && tier !== "pro") return { response: json(402, { error: PRO_ONLY[purpose], code: "pro_required" }) };
+  if (PRO_ONLY[purpose] && tier !== "pro" && !OPEN_TO_SIGNED_IN[purpose]) return { response: json(402, { error: PRO_ONLY[purpose], code: "pro_required" }) };
   const r = await db(env, "rpc/use_quota", { method: "POST", body: JSON.stringify({ p_user: user.id, p_kind: purpose, p_cap: capFor(tier, purpose) }) });
   if (r.ok && (await r.json()) === null) {
     return { response: json(429, { error: "You've reached this week's fair-use limit for this. It resets on Monday.", code: "fair_use" }) };
