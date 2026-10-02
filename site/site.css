@@ -207,10 +207,10 @@ footer a:hover { color: #fff; }
   .hero .wrap { grid-template-columns: 1fr; gap: 32px; }
   .hero .stage { height: 560px; }
   .feature { height: max(100svh, 600px); }
-  .pin { grid-template-columns: 1fr; grid-template-rows: auto minmax(0, 1fr); gap: 12px; padding: 76px var(--gutter) 16px; }
+  .pin { grid-template-columns: 1fr; grid-template-rows: auto minmax(0, 1fr); gap: 10px; padding: 28px var(--gutter) 14px; }
   .pin .copy, .feature.flip .copy { grid-column: 1; grid-row: 1; max-width: none; }
   .pin .stage, .feature.flip .stage { grid-column: 1; grid-row: 2; }
-  .feature h2 { font-size: 30px; }
+  .feature h2 { font-size: 36px; }
   .top .logo { height: 34px; }
   .feature .eyebrow { margin-bottom: 8px; font-size: 12px; }
   .feature .lead { display: none; }
@@ -221,8 +221,8 @@ footer a:hover { color: #fff; }
   .steps { display: grid; }
   .steps li { padding: 0; grid-area: 1 / 1; visibility: hidden; opacity: 1; }
   .steps li.on { visibility: visible; }
-  .steps li p { font-size: 14px; max-height: none; opacity: 1; margin-top: 2px; transition: none; }
-  .steps li h3 { font-size: 16px; }
+  .steps li p { font-size: 16px; max-height: none; opacity: 1; margin-top: 2px; transition: none; }
+  .steps li h3 { font-size: 20px; }
   section.plain, .beta { padding: 72px 0; }
   .stages { grid-template-columns: 1fr; }
   .beta .wrap { grid-template-columns: 1fr; gap: 32px; }
