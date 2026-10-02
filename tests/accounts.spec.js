@@ -60,7 +60,8 @@ function fakeSupabase({ down = false, adminDown = false } = {}) {
 
 test.describe('Worker', () => {
   let worker, realFetch, ip = 0;
-  const env = { ANTHROPIC_API_KEY: 'k', SUPABASE_URL: SB, SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_x', SUPABASE_SECRET_KEY: 'sb_secret_x' };
+  // ALL_PRO "0": these tests check the free and Pro plans as they'll ship, not the testing switch.
+  const env = { ANTHROPIC_API_KEY: 'k', SUPABASE_URL: SB, SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_x', SUPABASE_SECRET_KEY: 'sb_secret_x', ALL_PRO: '0' };
   const req = (p, { token, body, method = 'POST' } = {}) => new Request('https://vinterest.pages.dev' + p, { method,
     headers: { 'content-type': 'application/json', origin: 'https://vinterest.pages.dev', 'cf-connecting-ip': '10.0.0.' + (++ip), ...(token ? { authorization: 'Bearer ' + token } : {}) },
     body: method === 'POST' ? JSON.stringify(body) : undefined });
@@ -94,6 +95,14 @@ test.describe('Worker', () => {
     expect((await scan('list_scan', 'tok-pro')).status).toBe(200);
     expect(sb.counters['u-pro:list_scan']).toBe(1);
     expect(sb.calls.filter((c) => c.url.includes('/rest/v1/')).every((c) => c.apikey === 'sb_secret_x')).toBe(true);
+  });
+
+  test('while testing, every signed-in account is Pro (ALL_PRO_FOR_TESTING); list scans still need sign-in', async () => {
+    const sb = fakeSupabase(); globalThis.fetch = sb.fetch;
+    const testing = { ...env }; delete testing.ALL_PRO;
+    const me = await (await worker.fetch(req('/me', { token: 'tok-free', method: 'GET' }), testing)).json();
+    expect(me.tier).toBe('pro');
+    expect((await scan('list_scan', null, testing)).status).toBe(402);
   });
 
   test('the weekly fair-use limit answers 429 once reached, and /me reports usage', async () => {
