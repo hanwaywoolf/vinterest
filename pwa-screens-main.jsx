@@ -172,6 +172,20 @@ function ScanScreen({nav,back,showPro,onComplete,onSkip}){
   const [capturedImg,setCapturedImg]=React.useState(null);
   const [mode,setMode]=React.useState(()=>!onComplete&&Handoff.cameraMode.take()==='list'&&!Entitlement.listScanNeeds()?'list':'bottle'); // bottle | list
   const [camErr,setCamErr]=React.useState(false);
+  // The phone's torch, for dark restaurants: only offered when the camera says it has one (Android
+  // Chrome does; iPhone Safari doesn't let a web page use it, so the button stays hidden there).
+  const [torchOk,setTorchOk]=React.useState(false);
+  const [torchOn,setTorchOn]=React.useState(false);
+  function checkTorch(){
+    const track=streamRef.current&&streamRef.current.getVideoTracks()[0];
+    try{ const caps=track&&track.getCapabilities?track.getCapabilities():null; if(caps&&caps.torch) setTorchOk(true); }catch(e){}
+  }
+  function toggleTorch(){
+    const track=streamRef.current&&streamRef.current.getVideoTracks()[0];
+    if(!track) return;
+    const next=!torchOn;
+    track.applyConstraints({advanced:[{torch:next}]}).then(()=>setTorchOn(next)).catch(()=>setTorchOk(false));
+  }
   const CURRENCIES=[{code:'GBP',sym:'£'},{code:'USD',sym:'$'},{code:'CAD',sym:'CA$'},{code:'AUD',sym:'A$'},{code:'NZD',sym:'NZ$'},{code:'EUR',sym:'€'}];
   const homeCurrency=(Regional.current().code)||Settings.currency()||'GBP';
   const [listCurrency,setListCurrency]=React.useState(homeCurrency);
@@ -190,6 +204,7 @@ function ScanScreen({nav,back,showPro,onComplete,onSkip}){
         if(caps&&caps.zoom&&typeof caps.zoom.min==='number'){
           track.applyConstraints({advanced:[{zoom:caps.zoom.min}]}).catch(()=>{});
         }
+        checkTorch();
       })
       .catch(()=>setCamErr(true));
     return ()=>{ if(streamRef.current) streamRef.current.getTracks().forEach(t=>t.stop()); };
@@ -330,7 +345,7 @@ function ScanScreen({nav,back,showPro,onComplete,onSkip}){
           permission prompt. So the video element only exists once the camera has started (after
           permission); it picks up the stream as it mounts, and fades in on its first frame. */}
       {!camErr?(camLive&&
-        <video ref={el=>{ videoRef.current=el; if(el&&streamRef.current&&el.srcObject!==streamRef.current) el.srcObject=streamRef.current; }} autoPlay playsInline muted poster={_BLANK_POSTER} onPlaying={()=>setVideoLive(true)} onLoadedData={()=>setVideoLive(true)}
+        <video ref={el=>{ videoRef.current=el; if(el&&streamRef.current&&el.srcObject!==streamRef.current) el.srcObject=streamRef.current; }} autoPlay playsInline muted poster={_BLANK_POSTER} onPlaying={()=>{ setVideoLive(true); checkTorch(); }} onLoadedData={()=>setVideoLive(true)}
           style={{position:'absolute',inset:0,width:'100%',height:'100%',objectFit:'cover',opacity:videoLive?.88:0,transition:'opacity .2s'}}/>
       ):(
         <div style={{position:'absolute',inset:0,background:'linear-gradient(135deg,#1a1a1a,#2d1b2e)',display:'flex',alignItems:'center',justifyContent:'center',flexDirection:'column',gap:8}}>
@@ -410,7 +425,11 @@ function ScanScreen({nav,back,showPro,onComplete,onSkip}){
         </div>}
         {/* Capture button, with a photo-library picker beside it */}
         <div style={{display:'flex',alignItems:'center',justifyContent:'center',gap:28,width:'100%'}}>
-          <div style={{width:48}}/>
+          {torchOk&&camLive
+            ?<div onClick={toggleTorch} role="button" aria-label={torchOn?'Turn the torch off':'Turn the torch on'} aria-pressed={torchOn} style={{width:48,height:48,borderRadius:12,background:torchOn?'#fff':'rgba(0,0,0,0.55)',backdropFilter:'blur(12px)',border:'1.5px solid rgba(255,255,255,0.35)',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer'}}>
+              <Icon n={torchOn?'torchOn':'torch'} sz={24} col={torchOn?'#0A0A0A':'#fff'}/>
+            </div>
+            :<div style={{width:48}}/>}
           <div onClick={capturePhoto} aria-label="Take photo" style={{width:74,height:74,borderRadius:37,background:'rgba(255,255,255,0.92)',border:'4px solid rgba(255,255,255,0.35)',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',boxShadow:'0 4px 28px rgba(0,0,0,0.5)'}}>
             <div style={{width:56,height:56,borderRadius:28,background:C.cr}}/>
           </div>
