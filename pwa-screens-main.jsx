@@ -352,8 +352,11 @@ function ScanScreen({nav,back,showPro,onComplete,onSkip}){
       </div>
 
       {/* Large portrait framing box */}
-      <div style={{flex:1,position:'relative',zIndex:2,display:'flex',alignItems:'center',justifyContent:'center'}}>
-        <div style={{width:mode==='list'?'95%':'94%',height:mode==='list'?'auto':'100%',aspectRatio:mode==='list'?'2/3':'auto',maxHeight:mode==='list'?'87vh':'none',position:'relative'}}>
+      {/* Both modes fill the space between the top bar and the controls (minHeight 0 lets it shrink):
+          a list frame sized from the width (2:3) was taller than that space on tall phones and pushed
+          the shutter off the bottom of the screen. */}
+      <div style={{flex:1,minHeight:0,position:'relative',zIndex:2,display:'flex',alignItems:'center',justifyContent:'center'}}>
+        <div style={{width:mode==='list'?'95%':'94%',height:'100%',position:'relative'}}>
           {/* Dim overlay outside frame */}
           <div style={{position:'absolute',top:0,left:0,right:0,bottom:0,boxShadow:'0 0 0 2000px rgba(0,0,0,0.52)',pointerEvents:'none',zIndex:1}}/>
           {/* Corner brackets */}
