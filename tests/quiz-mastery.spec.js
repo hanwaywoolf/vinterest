@@ -49,7 +49,7 @@ async function answerQuiz(page, pick) {
       },
       q,
     );
-    const options = root(page).locator('span', { hasText: /.+/ }).filter({ hasNotText: /^[A-D✓✗]$/ });
+    const options = root(page).locator('span:not(.vflag)', { hasText: /.+/ }).filter({ hasNotText: /^[A-D✓✗]$/ });
     if (right) await root(page).getByText(correctText, { exact: true }).first().click();
     else await options.filter({ hasNotText: correctText }).filter({ hasText: /\S{3,}/ }).nth(1).click();
     const next = root(page).getByText(/^(Next Question|See Results) →$/);

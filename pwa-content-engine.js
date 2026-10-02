@@ -53,6 +53,9 @@ const Regions = {
     return iso?String.fromCodePoint(...[...iso].map(ch=>0x1F1E6+ch.charCodeAt(0)-65)):'';
   },
   flag(region){ return this.countryFlag((KNOWLEDGE.regions[region]||{}).country); },
+  /* The flag for any region name: a knowledge-base region, or a label region ("Côtes de
+     Provence") that resolves to one. '' when unknown. */
+  nameFlag(name){ return this.flag(name)||this.flag(this.resolve({region:name})); },
   /* A wine's flag: its own country, else the country of the region it's filed under. */
   wineFlag(w){ return (w&&this.countryFlag(w.country))||this.flag(this.resolve(w)); },
   /* The region a wine is filed under for learning: the knowledge-base region when there is one. */
@@ -480,6 +483,8 @@ const ContentEngine = {
     return s;
   },
 
+  /* The knowledge-base regions a piece is about (slots region and regionB), for its flags. */
+  articleRegions(stub){ const s=(stub&&stub.slots)||{}; return [s.region,s.regionB].filter(r=>r&&KNOWLEDGE.regions[r]); },
   fillTpl(tpl,slots){ let s=tpl; Object.keys(slots).forEach(k=>{ s=s.split('{{'+k+'}}').join(slots[k]??''); }); return s; },
 
   /* The region a new one is compared with: the knowledge-base region they drink most of the same

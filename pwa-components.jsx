@@ -9,6 +9,15 @@ const C = {
   serif:"'Instrument Serif',serif",
 };
 
+/* A country's flag, for colour wherever a region or wine is named. By wine (its country, else its
+   region's), by region name (Regions.nameFlag) or by country. Nothing when the country isn't known.
+   A string size: a flag is a picture, so the reader's text size leaves it alone. Decorative: the
+   place is always named beside it, so screen readers skip it (and previews stay one picture). */
+function Flag({wine,region,country,size=15,style}){
+  const f=wine?Regions.wineFlag(wine):region?Regions.nameFlag(region):Regions.countryFlag(country);
+  if(!f) return null;
+  return <span className="vflag" aria-hidden="true" style={{fontSize:size+'px',lineHeight:1,flexShrink:0,...style}}>{f}</span>;
+}
 function Icon({n,sz=20,col=C.ink,style:s}){
   const d={
     scan:<><rect x="3" y="3" width="6" height="6" rx="1" stroke={col} strokeWidth="1.6" fill="none"/><rect x="11" y="3" width="6" height="6" rx="1" stroke={col} strokeWidth="1.6" fill="none"/><rect x="3" y="11" width="6" height="6" rx="1" stroke={col} strokeWidth="1.6" fill="none"/><circle cx="14" cy="14" r="2.5" stroke={col} strokeWidth="1.6" fill="none"/><line x1="16.5" y1="16.5" x2="18.5" y2="18.5" stroke={col} strokeWidth="1.6" strokeLinecap="round"/></>,
