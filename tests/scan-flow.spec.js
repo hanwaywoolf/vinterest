@@ -170,7 +170,7 @@ test('wine list: real match results per wine, and a tapped wine is saved as a sh
     { n: 'Rioja Test Reserva', t: 'red', r: 'Rioja', c: 'Spain', v: 2019, p: 'GLASS:12 / BOTTLE:48', g: 'Tempranillo', s: '766' },
     { n: 'Loire Test', t: 'white', r: 'Loire', c: 'France', v: 2022, p: '40', g: 'Chenin Blanc', s: '508' },
   ] };
-  await setup(context, page, { list });
+  await setup(context, page, { list, seed: { vinterest_pro: '1' } });
   await page.goto(`${BASE}/?demo=1#camera`);
   await page.getByText('Wine List', { exact: true }).click();
   await page.getByTestId('scan-file').setInputFiles({ name: 'list.png', mimeType: 'image/png', buffer: PNG });
@@ -224,7 +224,7 @@ test('Travel Mode: a list abroad is compared with the local shop price, in the l
   const travel = JSON.stringify({ active: true, country: 'France', sym: '€', code: 'EUR', until: '' });
   const requests = [];
   await makeDeterministic(page);
-  await seedLocalStorage(page, { vinterest_wineDNA_unlock_seen: '1', vinterest_travel: travel });
+  await seedLocalStorage(page, { vinterest_wineDNA_unlock_seen: '1', vinterest_travel: travel, vinterest_pro: '1' });
   await stubNetwork(context, { claudeRequests: requests, claudeText: (b) => b.purpose === 'list_scan' ? JSON.stringify(LIST_ABROAD)
     : b.purpose === 'price' ? JSON.stringify({ low: 20, mid: 24, high: 30, currency: 'EUR', tier: 'premium', note: 'Test.' }) : '' });
   await page.goto(`${BASE}/?demo=1#camera`);
@@ -243,7 +243,7 @@ test('Travel Mode: a list abroad is compared with the local shop price, in the l
 });
 
 test('at home, a list priced in another currency is converted before comparing', async ({ context, page }) => {
-  await setup(context, page, { list: LIST_ABROAD });
+  await setup(context, page, { list: LIST_ABROAD, seed: { vinterest_pro: '1' } });
   await page.goto(`${BASE}/?demo=1#home`);
   const fx = await page.evaluate(() => ({ eur: USD_FX.EUR, gbp: USD_FX.GBP }));
   await page.goto(`${BASE}/?demo=1#camera`);
@@ -737,4 +737,53 @@ test('a card always opens at its top, going back to one you had scrolled include
   await root.getByText('2 / 9', { exact: true }).locator('xpath=preceding-sibling::div[1]').click();
   await expect(root).toContainText('1 / 9');
   expect(await topScroll()).toBe(0);
+});
+
+// List scanning is Pro on the server (PRO_ONLY in _worker.js), which never trusts the phone's own
+// Pro flag. The camera follows the same rule (Entitlement.listScanNeeds), and a refused scan says
+// why instead of blaming the photo.
+test('Wine List on the camera: the Pro sheet without Pro; sign-in first when accounts exist, even after "Start Pro"', async ({ context, page }) => {
+  await setup(context, page);
+  await page.goto(`${BASE}/?demo=1#camera`);
+  const root = page.locator('#root');
+  await page.getByText('Wine List', { exact: true }).click();
+  await expect(page.getByText('List prices in GBP')).toHaveCount(0);
+  await expect(root).toContainText('Pro');
+  expect(await page.evaluate(() => Entitlement.listScanNeeds())).toBe('pro');
+
+  const page2 = await context.newPage();
+  await makeDeterministic(page2);
+  await page2.addInitScript(() => { window.VINTEREST_SUPABASE = { url: 'https://sb.test', key: 'sb_publishable_test' }; localStorage.setItem('vinterest_pro', '1'); });
+  await page2.goto(`${BASE}/?demo=1#camera`);
+  expect(await page2.evaluate(() => Entitlement.listScanNeeds())).toBe('signin');
+  await page2.getByText('Wine List', { exact: true }).click();
+  await expect(page2.locator('#root')).toContainText('Sign in to scan wine lists');
+  await expect(page2.locator('#root input[type="email"]')).toBeVisible();
+});
+
+test('a list scan the server refuses says why: sign in, Pro, or (only for an unreadable list) reframe the page', async ({ context, page }) => {
+  await setup(context, page, { seed: { vinterest_pro: '1' } });
+  let answer = { status: 402, body: { error: 'Wine list scanning is part of Vinterest Pro. Sign in to use Pro.', code: 'pro_required', signIn: true } };
+  await context.route('**/claude', (route) => route.fulfill({ status: answer.status, contentType: 'application/json', body: JSON.stringify(answer.body) }));
+  const root = page.locator('#root');
+  let n = 0;
+  const scanList = async () => {
+    await page.goto(`${BASE}/?demo=1&n=${++n}#camera`);
+    await page.getByText('Wine List', { exact: true }).click();
+    await page.getByTestId('scan-file').setInputFiles({ name: 'list.png', mimeType: 'image/png', buffer: PNG });
+    await expect(root).toContainText('Wine List Results');
+  };
+  await scanList();
+  await expect(root).toContainText('Sign in to scan wine lists');
+  await expect(root).not.toContainText('List not detected');
+  // This build has no sign-in settings, so it says how to get them rather than offering a dead button.
+  await expect(root).toContainText('Sign-in isn’t ready on this phone yet');
+
+  answer = { status: 402, body: { error: 'Wine list scanning is part of Vinterest Pro.', code: 'pro_required' } };
+  await scanList();
+  await expect(root).toContainText('Wine list scanning is part of Pro');
+
+  answer = { status: 200, body: { text: 'Sorry, I can\'t see a wine list here.' } };
+  await scanList();
+  await expect(root).toContainText('List not detected');
 });

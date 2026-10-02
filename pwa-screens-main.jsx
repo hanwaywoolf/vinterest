@@ -4,6 +4,7 @@
 function ScanHomeScreen({nav,showPro,isTablet}){
   const wines=WineHistory.getAll();
   const isPro=Entitlement.isPro();
+  const listNeeds=Entitlement.listScanNeeds();
   const scanCount=Entitlement.scanCount();
   const FREE_SCANS=10;
   const atLimit=!isPro&&scanCount>=FREE_SCANS;
@@ -37,9 +38,9 @@ function ScanHomeScreen({nav,showPro,isTablet}){
             {!atLimit&&<Icon n="chevron" sz={16} col="rgba(255,255,255,0.3)"/>}
           </div>
         )}
-        {/* Wine List – unlocks with Pro */}
-        {isPro?(
-          <div onClick={()=>nav('camera')} style={{background:C.white,borderRadius:14,padding:'14px 16px',display:'flex',alignItems:'center',gap:12,border:`1px solid ${C.green}40`,cursor:'pointer'}}>
+        {/* Wine List – unlocks with Pro on the account (Entitlement.listScanNeeds, as the Worker checks) */}
+        {!listNeeds?(
+          <div onClick={()=>{ Handoff.cameraMode.set('list'); nav('camera'); }} style={{background:C.white,borderRadius:14,padding:'14px 16px',display:'flex',alignItems:'center',gap:12,border:`1px solid ${C.green}40`,cursor:'pointer'}}>
             <div style={{width:40,height:40,borderRadius:10,background:C.greenBg,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
               <Icon n="list" sz={18} col={C.green}/>
             </div>
@@ -53,7 +54,7 @@ function ScanHomeScreen({nav,showPro,isTablet}){
             <Icon n="chevron" sz={14} col={C.mid}/>
           </div>
         ):(
-          <div onClick={()=>showPro('wine-list')} style={{background:C.white,borderRadius:14,padding:'14px 16px',display:'flex',alignItems:'center',gap:12,border:`1px solid ${C.line}`,cursor:'pointer',opacity:0.75}}>
+          <div onClick={()=>{ if(listNeeds==='signin'){ Handoff.accountIntent.set('listscan'); nav('account'); } else showPro('wine-list'); }} style={{background:C.white,borderRadius:14,padding:'14px 16px',display:'flex',alignItems:'center',gap:12,border:`1px solid ${C.line}`,cursor:'pointer',opacity:0.75}}>
             <div style={{width:40,height:40,borderRadius:10,background:C.offWhite,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
               <Icon n="list" sz={18} col={C.mid}/>
             </div>
@@ -160,7 +161,7 @@ function useGalleryHint(live){
 /* A 1×1 transparent image: the camera preview's poster, so Android shows no play button. */
 const _BLANK_POSTER='data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
 
-function ScanScreen({nav,back,onComplete,onSkip}){
+function ScanScreen({nav,back,showPro,onComplete,onSkip}){
   const [camLive,setCamLive]=React.useState(false);
   const galleryHint=useGalleryHint(camLive);
   const onboarding=!!onComplete; // onboarding: save the scan & advance the flow instead of navigating
@@ -169,7 +170,7 @@ function ScanScreen({nav,back,onComplete,onSkip}){
   const streamRef=React.useRef(null);
   const [phase,setPhase]=React.useState('viewfinder'); // viewfinder | processing
   const [capturedImg,setCapturedImg]=React.useState(null);
-  const [mode,setMode]=React.useState('bottle'); // bottle | list
+  const [mode,setMode]=React.useState(()=>!onComplete&&Handoff.cameraMode.take()==='list'&&!Entitlement.listScanNeeds()?'list':'bottle'); // bottle | list
   const [camErr,setCamErr]=React.useState(false);
   const CURRENCIES=[{code:'GBP',sym:'£'},{code:'USD',sym:'$'},{code:'CAD',sym:'CA$'},{code:'AUD',sym:'A$'},{code:'NZD',sym:'NZ$'},{code:'EUR',sym:'€'}];
   const homeCurrency=(Regional.current().code)||Settings.currency()||'GBP';
@@ -197,9 +198,10 @@ function ScanScreen({nav,back,onComplete,onSkip}){
 
 
   const fileRef=React.useRef(null);
-  // Resize to max 1024px longest side, keeping label detail without a heavy payload.
+  // Resize to keep detail without a heavy payload: 1024px on the longest side is plenty for a label,
+  // but a whole wine list in 1024px leaves its small print unreadable, so lists get 1600px.
   function processSource(src,w,h){
-    const maxDim=1024;
+    const maxDim=mode==='list'?1600:1024;
     const scale=Math.min(1,maxDim/Math.max(w,h));
     const canvas=document.createElement('canvas');
     canvas.width=Math.round(w*scale);
@@ -283,8 +285,19 @@ function ScanScreen({nav,back,onComplete,onSkip}){
       if(!wines.length) throw new Error('no_wines_found');
       Handoff.wineList.set({demo:false,wines,currency:listCurrency});
     }catch(e){
-      Handoff.wineList.set({demo:true,reason:e.message});
+      // Keep why it failed: the Worker's own words for "needs Pro / sign in" or a limit, so the
+      // results screen never blames the photo for something the photo didn't do.
+      Handoff.wineList.set({demo:true,reason:e.message,code:e.code||null,status:e.status||null,signIn:!!e.signIn});
     }finally{ nav('winelist'); }
+  }
+
+  // Wine List follows what the Worker allows (Entitlement.listScanNeeds), so a phone that only
+  // looks like Pro isn't sent to a scan the server will refuse.
+  function pickList(){
+    const needs=Entitlement.listScanNeeds();
+    if(!needs){ setMode('list'); return; }
+    if(needs==='signin'){ Handoff.accountIntent.set('listscan'); nav('account'); return; }
+    if(showPro) showPro('wine-list');
   }
 
   // ── Processing state ──
@@ -389,7 +402,7 @@ function ScanScreen({nav,back,onComplete,onSkip}){
         {/* Mode toggle — hidden during onboarding (bottle only) */}
         {!onboarding&&<div style={{display:'inline-flex',background:'rgba(0,0,0,0.55)',borderRadius:10,overflow:'hidden',backdropFilter:'blur(12px)'}}>
           {['Bottle','Wine List'].map((m,i)=>(
-            <div key={i} onClick={()=>setMode(i===0?'bottle':'list')} style={{padding:'10px 24px',background:(i===0?mode==='bottle':mode==='list')?C.cr:'transparent',fontSize:17,fontWeight:600,color:(i===0?mode==='bottle':mode==='list')?'#fff':'rgba(255,255,255,0.45)',fontFamily:C.P,cursor:'pointer',transition:'background .18s'}}>{m}</div>
+            <div key={i} onClick={()=>i===0?setMode('bottle'):pickList()} style={{padding:'10px 24px',background:(i===0?mode==='bottle':mode==='list')?C.cr:'transparent',fontSize:17,fontWeight:600,color:(i===0?mode==='bottle':mode==='list')?'#fff':'rgba(255,255,255,0.45)',fontFamily:C.P,cursor:'pointer',transition:'background .18s'}}>{m}</div>
           ))}
         </div>}
         {/* Capture button, with a photo-library picker beside it */}

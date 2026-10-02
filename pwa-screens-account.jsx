@@ -216,7 +216,7 @@ function AccountCard({showPro}){
   const [,tick]=React.useState(0);
   // Opened from Home's backup offer: go straight to the email, and say that's the step left.
   const [intent]=React.useState(()=>Handoff.accountIntent.take());
-  const [step,setStep]=React.useState(()=>intent==='backup'&&!Account.signedIn()?'email':'idle'); // idle | email | code
+  const [step,setStep]=React.useState(()=>(intent==='backup'||intent==='listscan')&&!Account.signedIn()?'email':'idle'); // idle | email | code
   const [email,setEmail]=React.useState('');
   const [code,setCode]=React.useState('');
   const [busy,setBusy]=React.useState(false);
@@ -283,6 +283,11 @@ function AccountCard({showPro}){
       ?<div>
         <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>One step left: sign in to back up</div>
         <div style={{fontSize:13,color:C.ink2,fontFamily:C.P,lineHeight:1.5}}>Your wines aren't backed up yet. Enter your email, type in the code we send, and they're backed up straight away.</div>
+      </div>
+      :intent==='listscan'
+      ?<div>
+        <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>Sign in to scan wine lists</div>
+        <div style={{fontSize:13,color:C.ink2,fontFamily:C.P,lineHeight:1.5}}>Wine list scanning is part of Pro, which belongs to your account. Enter your email and type in the code we send.</div>
       </div>
       :<div>
         <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>Sign in (optional)</div>
