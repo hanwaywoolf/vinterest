@@ -81,6 +81,11 @@ const Flags = {
   WINEDNA_UNLOCK_SEEN_KEY:'vinterest_wineDNA_unlock_seen',
   wineDNAUnlockSeen(){ return !!Store.get(this.WINEDNA_UNLOCK_SEEN_KEY); },
   markWineDNAUnlockSeen(){ Store.set(this.WINEDNA_UNLOCK_SEEN_KEY,'1'); },
+  /* The wine types whose "Explore Next is ready" moment has been shown (ExploreNext.toCelebrate);
+     null until the app first looks. */
+  EXPLORE_READY_KEY:'vinterest_explore_ready_seen',
+  exploreReadySeen(){ return Store.getJSON(this.EXPLORE_READY_KEY,null); },
+  setExploreReadySeen(types){ Store.setJSON(this.EXPLORE_READY_KEY,types); },
   /* The camera's "you can pick a photo from your gallery too" tip: shown on the first
      GALLERY_HINT_TIMES visits to the camera, then never again. */
   GALLERY_HINT_KEY:'vinterest_gallery_hint_v1', GALLERY_HINT_TIMES:3,

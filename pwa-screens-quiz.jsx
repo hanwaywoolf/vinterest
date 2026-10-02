@@ -1,49 +1,7 @@
 /* Vinterest — Quiz Hub + Quiz Screens */
 
 
-const _RING_TYPES=[
-  {key:'red',label:'Reds',col:'#8B1A2F'},{key:'white',label:'Whites',col:'#B8963E'},
-  {key:'rose',label:'Rosé',col:'#C47A8A'},{key:'sparkling',label:'Sparkling',col:'#5E8FA8'},
-];
 function _normType(t){return(t||'').toLowerCase().replace('é','e');}
-function getCoverage(wines){
-  const extra=['orange','dessert','fortified'];
-  const seen=new Set(wines.map(w=>_normType(w.type)).filter(Boolean));
-  const segs=_RING_TYPES.concat(extra.filter(k=>seen.has(k)).map(k=>({key:k,label:k[0].toUpperCase()+k.slice(1),col:_TYPE_COLORS&&_TYPE_COLORS[k]||C.cr})))
-    .map(s=>({...s,filled:seen.has(s.key)}));
-  const distinctTypes=segs.filter(s=>s.filled).length;
-  const rated=wines.filter(w=>w.rating>0);
-  const spread=arr=>{const v=arr.filter(x=>x!=null);return v.length?Math.max(...v)-Math.min(...v):0;};
-  const hasSpread=spread(rated.map(w=>w.body))>=0.25||spread(rated.map(w=>w.sweetness))>=0.25;
-  const nextMissing=segs.find(s=>!s.filled);
-  return {segs,distinctTypes,hasSpread,unlocked:distinctTypes>=3&&hasSpread,nextMissing};
-}
-function CoverageRing({segs,size=104,stroke=9}){
-  const n=segs.length,r=(size-stroke)/2,c=2*Math.PI*r,gap=7,segLen=c/n-gap;
-  return(
-    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{display:'block',flexShrink:0}}>
-      {segs.map((s,i)=>(
-        <circle key={s.key} cx={size/2} cy={size/2} r={r} fill="none" stroke={s.filled?s.col:C.line} strokeWidth={stroke}
-          strokeDasharray={`${segLen} ${c-segLen}`} strokeDashoffset={-i*(c/n)} strokeLinecap="round"
-          transform={`rotate(-90 ${size/2} ${size/2})`}/>
-      ))}
-    </svg>
-  );
-}
-
-function WineDNAUnlockCelebration({onDone}){
-  return(
-    <div style={{position:'absolute',inset:0,background:C.ink,zIndex:200,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:32,gap:14}}>
-      <div style={{animation:'dnaRise 1.1s ease both'}}><Icon n="brain" sz={40} col="#D4AF6A"/></div>
-      <div style={{fontSize:34,fontWeight:400,color:'#fff',fontFamily:C.P,textAlign:'center',animation:'dnaRise 1.1s .1s ease both'}}>WineDNA unlocked</div>
-      <div style={{fontSize:16,color:'rgba(255,255,255,0.55)',fontFamily:C.P,textAlign:'center',lineHeight:1.5,maxWidth:280,animation:'dnaRise 1.1s .2s ease both'}}>Your palate has enough range now — Explore Next recommendations start today.</div>
-      <div onClick={onDone} style={{marginTop:14,background:'#D4AF6A',borderRadius:14,padding:'13px 28px',cursor:'pointer',animation:'dnaRise 1.1s .3s ease both'}}>
-        <span style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>See WineDNA</span>
-      </div>
-      <style>{`@keyframes dnaRise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}`}</style>
-    </div>
-  );
-}
 
 /* ── QUIZ HUB / LEARN TAB ── */
 /* Dashed "N completed — show" row that expands a completed section (Wine Basics, regions). */
@@ -111,14 +69,6 @@ function QuizHubScreen({nav,back,showPro}){
   // (ContentEngine.shelfOpen, which every other screen follows too).
   const article1Done=ContentEngine.shelfOpen();
   const wines=React.useMemo(()=>WineHistory.getAll(),[]);
-  const coverage=React.useMemo(()=>getCoverage(wines),[wines]);
-  const [showUnlock,setShowUnlock]=React.useState(false);
-  React.useEffect(()=>{
-    if(coverage.unlocked && !Flags.wineDNAUnlockSeen()){
-      Flags.markWineDNAUnlockSeen();
-      setShowUnlock(true);
-    }
-  },[coverage.unlocked]);
 
   const [genStubs,setGenStubs]=React.useState(()=>{
     try{ return ContentEngine.shelf(); }catch(e){ return null; }
@@ -234,7 +184,6 @@ function QuizHubScreen({nav,back,showPro}){
 
   // After every hook above: returning early before one of them changes the hook count between
   // renders, and React throws the moment the unlock effect flips showUnlock.
-  if(showUnlock) return <WineDNAUnlockCelebration onDone={()=>{setShowUnlock(false);nav('profile');}}/>;
 
   return(
     <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden'}}>
@@ -258,15 +207,6 @@ function QuizHubScreen({nav,back,showPro}){
             <div style={{height:'100%',borderRadius:4,background:level.color,width:`${Math.round(prog*100)}%`,transition:'width .6s ease'}}/>
           </div>
         </div>
-        {!coverage.unlocked&&(
-          <div style={{display:'flex',alignItems:'center',gap:14,padding:'2px 0 16px'}}>
-            <CoverageRing segs={coverage.segs}/>
-            <div style={{flex:1}}>
-              <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P,marginBottom:3}}>Discovering your palate</div>
-              <div style={{fontSize:14,color:C.mid,fontFamily:C.P,lineHeight:1.4}}>{coverage.nextMissing?`You haven't rated ${({red:'a red',white:'a white',rose:'a rosé',sparkling:'a sparkling wine'})[coverage.nextMissing.key]||'a '+coverage.nextMissing.label.toLowerCase()} yet.`:'Rate a wider spread of body and sweetness to unlock WineDNA.'}</div>
-            </div>
-          </div>
-        )}
       </div>
 
       <div style={{flex:1,overflowY:'auto'}}>
@@ -577,19 +517,23 @@ function MasteryBar({score,col}){
 }
 /* One area of the mastery map: its level and score, and (open) each region or grape in it. Also
    the welcome slides' preview (flow-welcome.jsx), open, with no toggle or next step. */
+/* A wine-type area's colour (_TYPE_COLORS): its bar fills in it, so strong and weak types read
+   like a palette. Other areas stay crimson. */
+function _masteryCol(a){ return a.group==='types'&&typeof _TYPE_COLORS!=='undefined'?_TYPE_COLORS[a.id==='sweet'?'dessert':a.id]||C.cr:C.cr; }
 function MasteryAreaCard({a,open,onToggle,onNext}){
+  const col=_masteryCol(a);
   return(
   <div style={{background:C.white,borderRadius:14,border:`1px solid ${C.line}`,padding:'12px 14px',display:'flex',flexDirection:'column',gap:7}}>
     <div role="button" onClick={onToggle} style={{display:'flex',justifyContent:'space-between',alignItems:'baseline',cursor:a.items&&onToggle?'pointer':'default'}}>
-      <span style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>{a.label}</span>
+      <span style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>{a.group==='types'&&<span aria-hidden="true" style={{display:'inline-block',width:10,height:10,borderRadius:5,background:col,marginRight:8,verticalAlign:'1px'}}/>}{a.label}</span>
       <span style={{fontSize:14,fontWeight:700,color:a.score>=100?C.green:C.ink2,fontFamily:C.P}}>{a.level} · {a.score}%</span>
     </div>
-    <MasteryBar score={a.score}/>
+    <MasteryBar score={a.score} col={col}/>
     <div style={{fontSize:13,color:C.mid,fontFamily:C.P}}>{a.detail}{a.items&&a.items.length&&onToggle?(open?' · hide':' · see each'):''}</div>
     {open&&a.items.map(i=>(
       <div key={i.name} style={{display:'flex',alignItems:'center',gap:10}}>
-        <span style={{flex:'0 0 42%',fontSize:14,color:C.ink2,fontFamily:C.P,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{a.id==='regions'&&<Flag region={i.name} size={14} style={{marginRight:6}}/>}{i.name}</span>
-        <div style={{flex:1}}><MasteryBar score={i.score}/></div>
+        <span style={{flex:'0 0 42%',fontSize:14,color:C.ink2,fontFamily:C.P,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{a.id==='regions'&&<Flag region={i.name} size={14} style={{marginRight:6}}/>}{a.id==='grapes'&&<span aria-hidden="true" style={{display:'inline-block',width:8,height:8,borderRadius:4,background:grapeTypeColor(i.name),marginRight:7,verticalAlign:'1px'}}/>}{i.name}</span>
+        <div style={{flex:1}}><MasteryBar score={i.score} col={a.id==='grapes'?grapeTypeColor(i.name):col}/></div>
         <span style={{fontSize:13,fontWeight:700,color:C.ink2,fontFamily:C.P,width:38,textAlign:'right'}}>{i.score}%</span>
       </div>
     ))}

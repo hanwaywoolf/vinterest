@@ -94,5 +94,5 @@ const MyWines = {
   },
 
   /* The score colour by Parker band, as WineDNA and the scan screens use. */
-  scoreTone(r){ return r>=ParkerScale.LOVED?'good':r>=ParkerScale.DISLIKED?'neutral':'bad'; },
+  scoreTone(r){ return ParkerScale.tone(r); },
 };
