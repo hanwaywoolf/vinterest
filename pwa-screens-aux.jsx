@@ -189,6 +189,7 @@ function TasteProfileScreen({nav,back,showPro}){
               <div style={{flex:1,minWidth:0}}>
                 <div style={{fontSize:16,fontWeight:600,color:C.ink,fontFamily:C.P,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{w.name}</div>
                 <div style={{display:'flex',alignItems:'center',gap:6,marginTop:2}}>
+                  <Flag wine={w} size={13}/>
                   {w.region&&<span style={{fontSize:13,color:C.mid,fontFamily:C.P}}>{w.region}</span>}
                   {w.rating>0&&<><span style={{fontSize:13,color:C.line,fontFamily:C.P}}>·</span><span style={{fontSize:13,fontWeight:700,color:C.amber,fontFamily:C.P}}>{w.rating}/100</span></>}
                 </div>
@@ -727,7 +728,7 @@ function WineListScreen({nav,back,showPro}){
                       :<span style={{fontSize:13,fontWeight:600,color:C.mid,fontFamily:C.P,flexShrink:0}}>{m&&m.verdict==='early'?'Too early':'No read'}</span>}
                   </div>
                   <div style={{fontSize:15,color:C.mid,fontFamily:C.P,marginTop:2}}>
-                    {[w.region,w.country].filter(Boolean).join(' · ')}{w.vintage?` · ${w.vintage}`:''}
+                    <Flag wine={w} size={15} style={{marginRight:6}}/>{[w.region,w.country].filter(Boolean).join(' · ')}{w.vintage?` · ${w.vintage}`:''}
                   </div>
                   {m&&m.pct!=null&&<div style={{fontSize:14,fontWeight:600,color:mCol,fontFamily:C.P,marginTop:3}}>{m.label}{m.confidence==='low'?' · rough guess':''}</div>}
                   {m&&m.reasons[0]&&<div style={{fontSize:13,color:C.ink2,fontFamily:C.P,marginTop:2,lineHeight:1.4}}>{m.reasons[0].text}</div>}

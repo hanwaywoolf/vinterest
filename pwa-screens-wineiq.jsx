@@ -451,7 +451,7 @@ function WineDNAScreen({nav,back,showPro}){
                 {[...fav.regions.map(r=>({...r,kind:'Region'})),...fav.grapes.map(g=>({...g,kind:'Grape'}))].map(x=>(
                   <div key={x.kind+x.name} style={{display:'flex',alignItems:'center',gap:8,padding:'6px 0',borderTop:`1px solid ${C.line}`}}>
                     <span style={{fontSize:13,color:C.mid,fontFamily:C.P,width:48,flexShrink:0}}>{x.kind}</span>
-                    <span style={{fontSize:15,fontWeight:600,color:C.ink,fontFamily:C.P,flex:1}}>{x.name}</span>
+                    <span style={{fontSize:15,fontWeight:600,color:C.ink,fontFamily:C.P,flex:1}}>{x.kind==='Region'&&<Flag region={x.name} size={15} style={{marginRight:6}}/>}{x.name}</span>
                     <span style={{fontSize:13,color:C.mid,fontFamily:C.P}}>{x.count} bottle{x.count!==1?'s':''}</span>
                     <span style={{fontSize:15,fontWeight:800,color:x.avg>=ParkerScale.LOVED?C.green:C.amber,fontFamily:C.P,width:30,textAlign:'right'}}>{x.avg}</span>
                   </div>
@@ -480,12 +480,12 @@ function WineDNAScreen({nav,back,showPro}){
               <div style={{marginTop:14}}>
                 <div style={{...sub,marginBottom:6}}>Worth knowing before you buy</div>
                 {fav.rethink.map(x=>(
-                  <div key={'r'+x.name} style={{fontSize:15,color:C.ink2,fontFamily:C.P,lineHeight:1.5,marginBottom:4}}>{x.name}{x.also?` (${x.also})`:''} averages {x.avg} across {x.count} bottles, below your usual. Try a different producer or style before writing it off.</div>
+                  <div key={'r'+x.name} style={{fontSize:15,color:C.ink2,fontFamily:C.P,lineHeight:1.5,marginBottom:4}}>{x.kind==='region'&&<Flag region={x.name} size={15} style={{marginRight:6}}/>}{x.name}{x.also?` (${x.also})`:''} averages {x.avg} across {x.count} bottles, below your usual. Try a different producer or style before writing it off.</div>
                 ))}
                 {fav.disliked.map(w=>(
                   <div key={'d'+w.name} role="button" onClick={()=>openWine(w)} style={{display:'flex',alignItems:'center',gap:8,padding:'5px 0',borderTop:`1px solid ${C.line}`,cursor:'pointer'}}>
                     <span style={{fontSize:15,color:C.ink,fontFamily:C.P,flex:1}}>{w.name}</span>
-                    <span style={{fontSize:13,color:C.mid,fontFamily:C.P}}>{w.region||''}</span>
+                    <span style={{fontSize:13,color:C.mid,fontFamily:C.P}}><Flag wine={w} size={13} style={{marginRight:4}}/>{w.region||''}</span>
                     <span style={{fontSize:15,fontWeight:800,color:'#C0392B',fontFamily:C.P}}>{w.rating}</span>
                     <Icon n="chevron" sz={12} col={C.mid}/>
                   </div>

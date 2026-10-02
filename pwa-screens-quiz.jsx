@@ -552,11 +552,14 @@ function QuizHubScreen({nav,back,showPro}){
 /* One "Written for you" piece on the Learn shelf. Also the welcome slides' preview
    (flow-welcome.jsx), with no onOpen: not tappable, no chevron. */
 function ShelfCard({stub,done,locked,because,onOpen}){
+  const regs=ContentEngine.articleRegions(stub).filter(r=>Regions.flag(r));
   return(
   <div onClick={onOpen}
     style={{background:C.white,borderRadius:14,padding:done?'10px 14px':'14px 16px',display:'flex',alignItems:'center',gap:12,cursor:onOpen?'pointer':'default',border:`1px solid ${C.line}`,opacity:done?0.75:1}}>
     <div style={{width:done?36:44,height:done?36:44,borderRadius:12,background:C.crSoft,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,border:`1px solid ${C.crDim}`}}>
-      <Icon n={stub.iconName||'read'} sz={done?17:20} col={C.cr}/>
+      {regs.length
+        ?<div style={{display:'flex',flexDirection:regs.length>1?'column':'row',alignItems:'center',lineHeight:1}}>{regs.map(r=><Flag key={r} region={r} size={regs.length>1?(done?13:16):(done?19:23)}/>)}</div>
+        :<Icon n={stub.iconName||'read'} sz={done?17:20} col={C.cr}/>}
     </div>
     <div style={{flex:1,minWidth:0}}>
       {!done&&<div style={{fontSize:12,fontWeight:600,color:C.mid,fontFamily:C.P,textTransform:'uppercase',letterSpacing:'0.06em',marginBottom:2}}>{stub.series?`${stub.series} series`:'Written for you'} · {stub.readTime}</div>}
@@ -588,7 +591,7 @@ function MasteryAreaCard({a,open,onToggle,onNext}){
     <div style={{fontSize:13,color:C.mid,fontFamily:C.P}}>{a.detail}{a.items&&a.items.length&&onToggle?(open?' · hide':' · see each'):''}</div>
     {open&&a.items.map(i=>(
       <div key={i.name} style={{display:'flex',alignItems:'center',gap:10}}>
-        <span style={{flex:'0 0 42%',fontSize:14,color:C.ink2,fontFamily:C.P,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{i.name}</span>
+        <span style={{flex:'0 0 42%',fontSize:14,color:C.ink2,fontFamily:C.P,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{a.id==='regions'&&<Flag region={i.name} size={14} style={{marginRight:6}}/>}{i.name}</span>
         <div style={{flex:1}}><MasteryBar score={i.score}/></div>
         <span style={{fontSize:13,fontWeight:700,color:C.ink2,fontFamily:C.P,width:38,textAlign:'right'}}>{i.score}%</span>
       </div>
@@ -725,7 +728,7 @@ function nextQuizSuggestion(config){
   const topics=QUIZ_TOPICS.filter(t=>t.id!==config.topicId&&!QuizMastery.isComplete('topic:'+t.id,QuizMastery.topicPool(t.id)))
     .map(t=>({config:{mode:'practice',topicId:t.id},label:t.label}));
   const regions=regionQuizCandidates(wines).filter(r=>r!==config.region)
-    .map(r=>({config:{mode:'region',region:r},label:r}));
+    .map(r=>({config:{mode:'region',region:r},label:[Regions.flag(r),r].filter(Boolean).join(' ')}));
   const grapes=Object.keys(GrapeUnlocks.all()).filter(g=>g!==config.grape&&!grapeQuizComplete(g))
     .map(g=>({config:{mode:'grape',grape:g},label:g}));
   const guides=Guides.queue().filter(g=>g.id!==config.guideId&&Guides.isRead(g.id)&&!Guides.passed(g.id))
@@ -863,7 +866,7 @@ function QuizScreen({nav,back}){
         <div style={{background:C.cr,padding:'26px 24px 20px',display:'flex',flexDirection:'column',alignItems:'center',gap:5,flexShrink:0}}>
           <Icon n={justCompleted||pct===100?'trophy':pct>=80?'star':pct>=60?'check':'book'} sz={32} col="#fff"/>
           <div style={{fontSize:22,fontWeight:800,color:'#fff',fontFamily:C.P,textAlign:'center'}}>{msg}</div>
-          {!justCompleted&&<div style={{fontSize:15,color:'rgba(255,255,255,0.8)',fontFamily:C.P}}>{title}</div>}
+          {!justCompleted&&<div style={{fontSize:15,color:'rgba(255,255,255,0.8)',fontFamily:C.P}}>{mode==='region'&&<Flag region={config.region} size={15} style={{marginRight:6}}/>}{title}</div>}
           <div style={{display:'flex',gap:16,marginTop:6}}>
             <div style={{textAlign:'center'}}>
               <div style={{fontSize:28,fontWeight:800,color:'#fff',fontFamily:C.P}}>{finalScore}/{allQs.length}</div>
@@ -932,7 +935,7 @@ function QuizScreen({nav,back}){
             <Icon n="back" sz={14} col={C.ink}/>
           </div>
           <div style={{flex:1}}>
-            <div style={{fontSize:17,fontWeight:700,color:C.ink,fontFamily:C.P}}>{title}</div>
+            <div style={{fontSize:17,fontWeight:700,color:C.ink,fontFamily:C.P}}>{mode==='region'&&<Flag region={config.region} size={17} style={{marginRight:7}}/>}{title}</div>
           </div>
           <div style={{display:'flex',alignItems:'center',gap:5}}>
             {streak>=2&&<Icon n="flame" sz={18} col={C.cr}/>}
