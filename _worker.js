@@ -296,7 +296,13 @@ async function authUser(request, env) {
 function db(env, path, init = {}) {
   return fetch(`${env.SUPABASE_URL}/rest/v1/${path}`, { ...init, headers: { apikey: env.SUPABASE_SECRET_KEY, "content-type": "application/json", ...(init.headers || {}) } });
 }
+/* While testing, before real purchases exist, every signed-in account is Pro (metered at
+   FAIR_USE.pro). Set false to bring the free plan back; tests pass ALL_PRO: "0" to check it.
+   Entitlement.ALL_PRO_FOR_TESTING in pwa-userdata.js is the app's side. List scanning still
+   needs sign-in, so anonymous traffic can't run up the bill. */
+const ALL_PRO_FOR_TESTING = true;
 async function tierOf(env, userId) {
+  if (ALL_PRO_FOR_TESTING && env.ALL_PRO !== "0") return "pro";
   const r = await db(env, `entitlements?user_id=eq.${encodeURIComponent(userId)}&select=tier,expires_at`);
   if (!r.ok) return "free";
   const [e] = await r.json();

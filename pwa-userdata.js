@@ -13,7 +13,14 @@ const Entitlement = {
   FREE_SCANS:10,
   // Signed in, Pro is whatever the server says (Account.me(), from /me). Signed out, the device
   // flag the Pro sheet sets (no real purchases exist yet); the server never trusts it.
+  /* While testing, before real purchases exist, everyone is Pro: every Pro feature is open and
+     no Pro sheet or scan limit shows (the Worker's ALL_PRO_FOR_TESTING matches, for signed-in
+     accounts). Set false to bring the free plan back. Tests set window.VINTEREST_REAL_PLANS to
+     check the free plan as it will ship. */
+  ALL_PRO_FOR_TESTING:true,
+  allPro(){ return this.ALL_PRO_FOR_TESTING&&!(typeof window!=='undefined'&&window.VINTEREST_REAL_PLANS); },
   isPro(){
+    if(this.allPro()) return true;
     if(typeof Account!=='undefined'&&Account.signedIn()) return Account.tier()==='pro';
     return !!Store.get(this.PRO_KEY);
   },

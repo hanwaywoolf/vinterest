@@ -105,3 +105,12 @@ test('the XP badge on Home opens the achievements overlay with no console errors
   await expect(page.locator('#root')).toContainText('Achievements');
   expect(errors).toEqual([]);
 });
+
+// While testing, everyone is Pro in the app (Entitlement.ALL_PRO_FOR_TESTING); the other tests set
+// VINTEREST_REAL_PLANS (helpers.stubNetwork) to check the free plan as it will ship.
+test('while testing, everyone is Pro: no scan limit, every unlock open', async ({ page }) => {
+  await page.goto(`${BASE}/?demo=1#home`);
+  // This file's beforeEach (stubNetwork) asks for the real plans; this test is about the switch.
+  expect(await page.evaluate(() => { window.VINTEREST_REAL_PLANS = false; return [Entitlement.isPro(), Entitlement.atScanLimit(), Entitlement.listScanNeeds() !== 'pro']; })).toEqual([true, false, true]);
+  expect(await page.evaluate(() => { window.VINTEREST_REAL_PLANS = true; return Entitlement.atScanLimit(); })).toBe(true);
+});
