@@ -15,7 +15,8 @@ one user can never read or write another's rows.
    Editor then shows `wines`, `user_docs`, `entitlements` and `usage_counters`, each with RLS
    enabled. Then do the same with `migrations/0002_use_quota.sql` (the weekly fair-use counter
    the Worker calls) and `migrations/0003_sync_times.sql` (the database stamps each synced row's
-   time, so phones with different clocks never miss each other's changes). Run every file in
+   time, so phones with different clocks never miss each other's changes), then `migrations/0004_beta_signups.sql` (the website's beta list, written only by the site's Worker; see
+   `docs/site-setup.md`). Run every file in
    `migrations/` once, in order.
 3. **Turn on email sign-in with a code.** Go to Authentication → Sign In / Providers → Email:
    enabled, "Confirm email" on, and Email OTP Length **6**. The app signs in with a 6-digit code

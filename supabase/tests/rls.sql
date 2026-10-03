@@ -80,4 +80,15 @@ select pg_temp.check((select updated_at from public.user_docs where user_id = :A
 select pg_temp.check(pg_temp.refused('authenticated', :A, $q$insert into public.user_docs (user_id, doc_key, data) values ('aaaaaaaa-0000-0000-0000-00000000000a', 'anything', '{}')$q$), 'unknown document kinds are refused');
 delete from auth.users where id = :A;
 select pg_temp.check((select count(*) from public.wines where user_id = :A) = 0 and (select count(*) from public.entitlements where user_id = :A) = 0, 'deleting an account deletes its rows');
+
+-- The website's beta list (0004): only the server reads or writes it, one row per email.
+select pg_temp.check(not pg_temp.refused('service_role', null, $q$insert into public.beta_signups (first_name, last_name, country, email) values ('Ada', 'Lovelace', 'GB', 'ada@example.com')$q$), 'the server adds a beta sign-up');
+insert into public.beta_signups (first_name, last_name, country, email) values ('Ada', 'L', 'GB', 'ada@example.com') on conflict (email) do nothing;
+select pg_temp.check((select count(*) from public.beta_signups where email = 'ada@example.com') = 1, 'the same email is one row');
+select pg_temp.check(pg_temp.refused('service_role', null, $q$insert into public.beta_signups (first_name, last_name, country, email) values ('Bo', 'Peep', 'GB', 'Bo@Example.com')$q$), 'emails are stored lower-cased');
+select pg_temp.check(pg_temp.refused('service_role', null, $q$insert into public.beta_signups (first_name, last_name, country, email) values ('Bo', 'Peep', 'Britain', 'bo@example.com')$q$), 'a country is an ISO code');
+select pg_temp.check(pg_temp.refused('anon', null, $q$insert into public.beta_signups (first_name, last_name, country, email) values ('Eve', 'Hacker', 'GB', 'eve@example.com')$q$), 'signed-out cannot join the list directly');
+select pg_temp.check(pg_temp.refused('anon', null, 'select count(*) from public.beta_signups'), 'signed-out cannot read the list');
+select pg_temp.check(pg_temp.refused('authenticated', :B, 'select count(*) from public.beta_signups'), 'a signed-in user cannot read the list');
+select pg_temp.check(pg_temp.refused('authenticated', :B, $q$insert into public.beta_signups (first_name, last_name, country, email) values ('Eve', 'Hacker', 'GB', 'eve@example.com')$q$), 'a signed-in user cannot write the list');
 rollback;
