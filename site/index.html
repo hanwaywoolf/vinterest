@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover"/>
+<title>Vinterest: find wines you'll love, learn while you sip</title>
+<meta name="description" content="Scan a wine label or a wine list. Vinterest matches it to the wines you've actually rated, explains why, and builds your WineDNA with every bottle."/>
+<meta name="theme-color" content="#0F0F0F"/>
+<link rel="canonical" href="%%ORIGIN%%/"/>
+<link rel="icon" href="/icons/icon-192.png" type="image/png"/>
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png"/>
+<meta property="og:type" content="website"/>
+<meta property="og:site_name" content="Vinterest"/>
+<meta property="og:title" content="Vinterest: find wines you'll love, learn while you sip"/>
+<meta property="og:description" content="Scan a label. Get a match built from your own taste, and the reasons why."/>
+<meta property="og:url" content="%%ORIGIN%%/"/>
+<meta property="og:image" content="%%ORIGIN%%/og.png"/>
+<meta name="twitter:card" content="summary_large_image"/>
+<link rel="preload" href="/fonts/poppins-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin/>
+<link rel="preload" href="/fonts/poppins-latin-800-normal.woff2" as="font" type="font/woff2" crossorigin/>
+<link rel="stylesheet" href="/fonts/fonts.css"/>
+<link rel="stylesheet" href="/site.css?v=%%CSS_V%%"/>
+</head>
+<body data-app-url="%%APP_URL%%" data-demo-src="/demo.js?v=%%DEMO_V%%">
+<a class="skip" href="#beta">Skip to the beta sign-up</a>
+
+<header class="top" id="top">
+  <div class="wrap">
+    <a href="/" aria-label="Vinterest home"><img class="logo" src="/logo.png" alt="Vinterest" width="115" height="24"/></a>
+    <nav aria-label="Main">
+      <a class="link" href="%%APP_URL%%" data-track="app">Try the web app</a>
+      <a class="btn primary small" href="#beta">Join the beta</a>
+    </nav>
+  </div>
+</header>
+
+<main id="main">
+
+<!-- Hero -->
+<section class="dark hero" data-feature data-carousel aria-labelledby="hero-h">
+  <div class="wrap">
+    <div>
+      <p class="eyebrow">The wine app for everyone</p>
+      <h1 id="hero-h">Find wines you'll <strong>love</strong>. Learn while you <strong>sip</strong>.</h1>
+      <p class="lead">Just scan a bottle or a wine list<sup class="pro" title="Included in Vinterest Pro" aria-label="Pro feature">$</sup> to see how well it matches your taste and WineDNA. Then rate it and go deeper: pick a grape, a region or a skill and learn more about it with short quizzes and articles written for you.</p>
+      <div class="cta">
+        <a class="btn primary" href="#beta">Join the beta</a>
+        <a class="btn ghost" href="%%APP_URL%%" data-track="app">Try the web app</a>
+      </div>
+      <p class="note">Free to start. <sup class="pro" title="Included in Vinterest Pro" aria-label="Pro feature">$</sup> marks a Pro feature. iPhone and Android apps are on their way.</p>
+    </div>
+    <div class="stage">
+      <ol class="steps" style="display:none">
+        <li data-at="0"><h3>Scan a bottle. See if it's for you.</h3></li>
+        <li data-at="0.2"><h3>Every bottle builds your WineDNA.</h3></li>
+        <li data-dwell="10" data-at="0.4"><h3>Ask Vinny anything, anytime.</h3></li>
+        <li data-dwell="9" data-at="0.6"><h3>Go as deep as you like on any grape or region.</h3></li>
+        <li data-at="0.8"><h3>Remember everything you've tried.</h3></li>
+      </ol>
+      <div class="phone-slot"><div class="phone" role="img" aria-label="A tour of the Vinterest app: a scan result with its match, the WineDNA profile, Ask Vinny, an article written for you, and My Wines.">
+        <div class="phone-screen" aria-hidden="true" inert><div class="statusbar"><span>9:41</span><span class="sig"><i style="width:18px"></i><i style="width:24px"></i></span></div><div class="phone-app" data-demo="hero"></div></div>
+        <span class="island"></span></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- 1. Scan and match -->
+<section class="feature light" id="scan" data-feature data-duration="14" aria-labelledby="scan-h">
+  <div class="pin">
+    <div class="copy">
+      <p class="eyebrow">Scan</p>
+      <h2 id="scan-h"><span class="ln">Scan a bottle.</span> <span class="ln"><strong>Know</strong> if it's for you.</span></h2>
+      <p class="lead">Point your camera at any label or wine list<sup class="pro" title="Included in Vinterest Pro" aria-label="Pro feature">$</sup>. You get a match score built from your own ratings, the reasons behind it, and your WineDNA.</p>
+      <ol class="steps">
+        <li data-at="0"><h3>A match score you can easily understand</h3><p>A match score is a rating we expect you to give a wine. The more bottles you scan, the more developed your WineDNA and the more accurate your match score becomes.</p></li>
+        <li data-at="0.3" data-hold="0.97"><h3>Reasons for and against, and exactly why</h3><p>Every match score comes with its reasons for and against, drawn from your WineDNA: the grapes, the regions, the producers you've rated before, and the styles you rate highest.</p></li>
+      </ol>
+    </div>
+    <div class="stage">
+      <div class="phone-slot"><div class="phone" role="img" aria-label="A scroll through the scan result: the wine, the 87% match, the reasons for and against, and the working behind the number.">
+        <div class="phone-screen" aria-hidden="true" inert><div class="statusbar"><span>9:41</span><span class="sig"><i style="width:18px"></i><i style="width:24px"></i></span></div><div class="phone-app" data-demo="scan"></div></div>
+        <span class="island"></span></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- 2. Learn about the wine -->
+<section class="feature dark flip" id="learn-wine" data-feature data-duration="27" aria-labelledby="learn-wine-h">
+  <div class="pin">
+    <div class="copy">
+      <p class="eyebrow">Learn about it</p>
+      <h2 id="learn-wine-h">Learn about the wine, in <strong>nine</strong> cards.</h2>
+      <p class="lead">One tap on &ldquo;Learn about it&rdquo; opens a deck written for this exact bottle.</p>
+      <ol class="steps">
+        <li data-at="0"><h3>Start with your match score</h3><p>The first card is the match score and its rationale.</p></li>
+        <li data-at="0.111" data-anim-to="0.30" data-anim-ms="7000" data-anim-linear data-dwell="9"><h3>Why you'll like it, and what to watch for</h3><p>See how this bottle fits your taste, plus serving tips.</p></li>
+        <li data-at="0.333" data-anim-to="0.50" data-anim-ms="12000" data-anim-linear data-dwell="14"><h3>Learn the origin story</h3><p>The region and signature, winemaker and producer information, and some surprising facts.</p></li>
+        <li data-at="0.556" data-anim-to="0.74" data-anim-ms="8000" data-anim-linear data-dwell="10"><h3>How to taste it, and what to say</h3><p>Cues for body, tannins and acidity as you sip, and a few quick lines you can say to sound clued-in.</p></li>
+        <li data-at="0.75" data-anim-to="0.776" data-anim-ms="16000" data-anim-linear data-dwell="19"><h3>Test your palate with Blind Call</h3><p>Call its body, acidity and tannins before you look, lock it in, and see how close you were. The closer you are, the more XP you earn.</p></li>
+        <li data-at="0.778"><h3>What it should cost</h3><p>We check the shop prices where you live and compare them to your usual spend.</p></li>
+      </ol>
+    </div>
+    <div class="stage">
+      <div class="phone-slot"><div class="phone" role="img" aria-label="The card deck for the Crozes-Hermitage, turning through its cards: match score, why you'll like it, a tip, the origin story, a surprising fact, how to taste it, what to say, the price check and rating.">
+        <div class="phone-screen" aria-hidden="true" inert><div class="statusbar"><span>9:41</span><span class="sig"><i style="width:18px"></i><i style="width:24px"></i></span></div><div class="phone-app" data-demo="deck"></div></div>
+        <span class="island"></span></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- 3. Rate it -->
+<section class="feature light" id="rate" data-feature data-duration="18" aria-labelledby="rate-h">
+  <div class="pin">
+    <div class="copy">
+      <p class="eyebrow">Rate it</p>
+      <h2 id="rate-h">Taste it, then <strong>rate</strong> it out of 100.</h2>
+      <p class="lead">Rating your wine is the fastest way to sharpen your next match score.</p>
+      <ol class="steps">
+        <li data-at="0" data-anim-to="0.45"><h3>Slide to rate</h3><p>Drag the slider or tap 70, 80, 85, 90 or 95. The label follows: 90 to 95 is Outstanding, 80 to 89 Very good.</p></li>
+        <li data-at="0.5"><h3>It feeds your WineDNA</h3><p>Save it and the bottle goes into My Wines and starts shaping your WineDNA and your next matches.</p></li>
+        <li data-at="0.74" data-hold="0.96"><h3>Add some additional details, if you want</h3><p>Would you buy it again? What did you pay, and where did you have it? Your answers feed your Buy again list and your usual spend, and the place is searchable in My Wines.</p></li>
+      </ol>
+    </div>
+    <div class="stage">
+      <div class="phone-slot"><div class="phone" role="img" aria-label="Rating the bottle: a slider moving up to 92, Outstanding, then the optional questions about buying it again, what you paid and where you had it.">
+        <div class="phone-screen" aria-hidden="true" inert><div class="statusbar"><span>9:41</span><span class="sig"><i style="width:18px"></i><i style="width:24px"></i></span></div><div class="phone-app" data-demo="rate"></div></div>
+        <span class="island"></span></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- 4. Keep learning -->
+<section class="feature dark flip" id="keep-learning" data-feature data-duration="12" aria-labelledby="keep-learning-h">
+  <div class="pin">
+    <div class="copy">
+      <p class="eyebrow">Keep learning</p>
+      <h2 id="keep-learning-h">Learn while you <strong>sip</strong>.</h2>
+      <p class="lead">The moment you rate a bottle, Vinterest offers you a bespoke learning pathway created for the wine you just scanned.</p>
+      <ol class="steps">
+        <li data-at="0"><h3>Quizzes on the bottle</h3><p>Test yourself on the wine type, grape and region.</p></li>
+        <li data-at="0.5"><h3>Articles to read</h3><p>View the next best article, including personalized content written just for you from your WineDNA.</p></li>
+      </ol>
+    </div>
+    <div class="stage">
+      <div class="phone-slot"><div class="phone" role="img" aria-label="The options after rating: quizzes on the wine's type, region and grape, and articles to read.">
+        <div class="phone-screen" aria-hidden="true" inert><div class="statusbar"><span>9:41</span><span class="sig"><i style="width:18px"></i><i style="width:24px"></i></span></div><div class="phone-app" data-demo="keep"></div></div>
+        <span class="island"></span></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- 5. WineDNA -->
+<section class="feature light" id="winedna" data-feature data-duration="30" aria-labelledby="dna-h">
+  <div class="pin">
+    <div class="copy">
+      <p class="eyebrow">WineDNA</p>
+      <h2 id="dna-h">Every bottle builds your <strong>WineDNA</strong>.</h2>
+      <p class="lead">Your ratings add up to a profile of the grapes, regions, styles and prices you love.</p>
+      <ol class="steps">
+        <li data-at="0"><h3>A profile for each kind of wine</h3><p>Reds, whites, rosé and sparkling each get their own read. This drinker's reds come out Classic &amp; Balanced.</p></li>
+        <li data-at="0.167"><h3>What you love, next to the rest</h3><p>Body, tannins and acidity across the wines you rate 90 or more, compared with everything else. You see what you keep reaching for.</p></li>
+        <li data-at="0.333"><h3>Your taste, visualized</h3><p>The traits you choose, visualized, with what each word means and how to notice it.</p></li>
+        <li data-at="0.5"><h3>Value, and what you pay</h3><p>Your sweet spot, and the bottles that beat their price.</p></li>
+        <li data-at="0.667"><h3>Where to look next</h3><p>Suggestions built from what you already love, including the steps just outside your comfort zone.</p></li>
+        <li data-at="0.833"><h3>Your sommelier script</h3><p>A short, quick version or a longer, more detailed one when you need it: lines to say to a restaurant sommelier, written from your WineDNA.</p></li>
+      </ol>
+    </div>
+    <div class="stage">
+      <div class="phone-slot"><div class="phone" role="img" aria-label="A tour of the WineDNA screen for reds: the profile, what you love, taste sliders, value, where to look next and a sommelier script.">
+        <div class="phone-screen" aria-hidden="true" inert><div class="statusbar"><span>9:41</span><span class="sig"><i style="width:18px"></i><i style="width:24px"></i></span></div><div class="phone-app" data-demo="dna"></div></div>
+        <span class="island"></span></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- 6. Vinny -->
+<section class="feature dark flip" id="vinny" data-feature data-duration="14" aria-labelledby="vinny-h">
+  <div class="pin">
+    <div class="copy">
+      <p class="eyebrow">Ask Vinny</p>
+      <h2 id="vinny-h">A wine expert in your <strong>pocket</strong>.</h2>
+      <p class="lead">In the shop, at the restaurant or browsing online. Got a quick question? Ask Vinny. His answers come from your WineDNA, not from a list of bestsellers.</p>
+      <ol class="steps">
+        <li data-at="0" data-anim-to="0.35" data-anim-ms="4500"><h3>Ask Vinny anything</h3><p>"Steak tonight. What should I look for?" No wine vocabulary needed.</p></li>
+        <li data-at="0.36" data-anim-to="0.6" data-anim-ms="5000"><h3>Personalized answers powered by your WineDNA</h3><p>Vinny uses your best-rated bottles, your spend history and more to factor them into a personalized response.</p></li>
+        <li data-at="0.62" data-anim-to="0.95" data-anim-ms="5000"><h3>A quick and actionable response</h3><p>A few sentences that you can use wherever you are and links to related articles and quizzes to help you learn when you need it.</p></li>
+      </ol>
+    </div>
+    <div class="stage">
+      <div class="phone-slot"><div class="phone" role="img" aria-label="Asking Vinny on the Home screen: the question 'Steak tonight. What should I look for?' and an answer that names the user's own Rioja bottles.">
+        <div class="phone-screen" aria-hidden="true" inert><div class="statusbar"><span>9:41</span><span class="sig"><i style="width:18px"></i><i style="width:24px"></i></span></div><div class="phone-app" data-demo="vinny"></div></div>
+        <span class="island"></span></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- 7. Learn -->
+<section class="feature light" id="learn" data-feature data-duration="30" aria-labelledby="learn-h">
+  <div class="pin">
+    <div class="copy">
+      <p class="eyebrow">Learn</p>
+      <h2 id="learn-h">Learn about <strong>why</strong> you like what you like.</h2>
+      <p class="lead">Articles written for you, from your WineDNA and history, on the grapes and regions behind your favourites and the ones worth trying next. Quizzes make it stick.</p>
+      <ol class="steps">
+        <li data-at="0"><h3>Your next best thing</h3><p>One clear next step, chosen from what you've read, what you've scanned and where your gaps are.</p></li>
+        <li data-at="0.2"><h3>Wine Basics for every type</h3><p>Red, white, rosé, sparkling, orange, sweet and fortified, then regions, tasting and food.</p></li>
+        <li data-at="0.4"><h3>Regions, grapes and skills</h3><p>Each region and grape you scan opens its own quiz. Skills cover ordering out, buying, pairing and hosting.</p></li>
+        <li data-dwell="15" data-at="0.6"><h3>Written for you</h3><p>A personal article, written from your WineDNA about the grapes and regions behind your favourites and the ones worth trying next.</p></li>
+        <li data-dwell="11" data-at="0.8"><h3>Mastery map<sup class="pro" title="Included in Vinterest Pro" aria-label="Pro feature">$</sup></h3><p>A map of what you know. It scores you only from what you read and pass, never from what you buy.</p></li>
+      </ol>
+    </div>
+    <div class="stage">
+      <div class="phone-slot"><div class="phone" role="img" aria-label="A tour of the Learn tab: the next best thing to read, Wine Basics, quizzes, a personalised article written from the user's WineDNA, and the Mastery map.">
+        <div class="phone-screen" aria-hidden="true" inert><div class="statusbar"><span>9:41</span><span class="sig"><i style="width:18px"></i><i style="width:24px"></i></span></div><div class="phone-app" data-demo="learn"></div></div>
+        <span class="island"></span></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- 8. My Wines -->
+<section class="feature dark flip" id="my-wines" data-feature data-duration="20" aria-labelledby="wines-h">
+  <div class="pin">
+    <div class="copy">
+      <p class="eyebrow">My Wines</p>
+      <h2 id="wines-h">Remember everything you've <strong>tried</strong>.</h2>
+      <p class="lead">Every bottle you scan is saved with your rating, what you paid and whether you'd buy it again. Search it, filter it, and never lose the one you loved in March.</p>
+      <ol class="steps">
+        <li data-at="0"><h3>Every bottle, with your rating</h3><p>Grouped by month, newest first, with the rating you gave it.</p></li>
+        <li data-at="0.2"><h3>Find anything in a second</h3><p>Search by wine, producer, grape or region. Filter to reds, to what's still unrated, or to what you'd buy again.</p></li>
+        <li data-dwell="10" data-at="0.4"><h3>Open any bottle: Details</h3><p>Your rating and match, what it tastes like, and where you had it.</p></li>
+        <li data-dwell="11" data-at="0.6"><h3>Open any bottle: Learn</h3><p>The story behind the wine, and articles about its grape and region.</p></li>
+        <li data-dwell="9" data-at="0.8"><h3>Open any bottle: Price</h3><p>What it costs in shops where you live, next to what you paid.</p></li>
+      </ol>
+    </div>
+    <div class="stage">
+      <div class="phone-slot"><div class="phone" role="img" aria-label="A tour of My Wines: the list of rated bottles, a search, then one wine opened to show its Details, Learn and Price tabs.">
+        <div class="phone-screen" aria-hidden="true" inert><div class="statusbar"><span>9:41</span><span class="sig"><i style="width:18px"></i><i style="width:24px"></i></span></div><div class="phone-app" data-demo="wines"></div></div>
+        <span class="island"></span></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- Gets better -->
+<section class="plain off" aria-labelledby="better-h">
+  <div class="wrap">
+    <div class="section-head">
+      <p class="eyebrow">Over time</p>
+      <h2 id="better-h">It gets better with <strong>every</strong> bottle.</h2>
+      <p class="lead">Your match and your WineDNA build as you rate, and it says exactly how many more it needs.</p>
+    </div>
+    <div class="stages">
+      <div class="stage-card"><span class="when">First bottle</span><h3>Its story, and a start</h3><p>The bottle's story, its quizzes, and the beginning of your WineDNA.</p></div>
+      <div class="stage-card"><span class="when">After 3 reds</span><h3>Matches switch on</h3><p>Your red matches turn on. The same goes for every other type you drink.</p></div>
+      <div class="stage-card"><span class="when">Every bottle after</span><h3>Sharper, more yours</h3><p>Better matches, more written for you, and a Vinny who knows you better.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section class="plain" aria-labelledby="faq-h">
+  <div class="wrap">
+    <div class="section-head"><p class="eyebrow">Questions</p><h2 id="faq-h">Before you sign up</h2></div>
+    <div class="faq">
+      <details><summary>Is it free?</summary><p>You can start for free. Some features, like scanning whole wine lists and the Mastery map, are part of Vinterest Pro.</p></details>
+      <details><summary>Do I need an account?</summary><p>No. Your wines and ratings live on your phone. An account is optional, and only for backing up your wines and moving to a new phone.</p></details>
+      <details><summary>What happens to my label photos?</summary><p>The photo is sent to Claude, the AI that reads the label, and then dropped. Vinterest doesn't keep the image, and no photo is stored with your wines.</p></details>
+      <details><summary>Where can I use it?</summary><p>You can try the web app now. iPhone and Android apps are being prepared, and beta testers get them first.</p></details>
+      <details><summary>How does the match work?</summary><p>It predicts the rating you'd give a wine from the wines you've already rated, weighting the ones most like it: same grape, region, producer and style. Under three rated wines of a type it says it's too early to call, rather than guess.</p></details>
+    </div>
+  </div>
+</section>
+
+<!-- Beta -->
+<section class="dark beta" id="beta" aria-labelledby="beta-h">
+  <div class="wrap">
+    <div>
+      <p class="eyebrow">Beta</p>
+      <h2 id="beta-h">Get in early, and help <strong>shape</strong> it.</h2>
+      <p class="lead">Tell us who you are and we'll invite you when your spot opens. We'll only email you about the beta.</p>
+      <p class="lead" style="margin-top:14px"><a href="%%APP_URL%%" data-track="app" style="color:#fff;font-weight:600">Or try the web app now</a></p>
+    </div>
+    <div>
+      <form class="form" id="beta-form" novalidate>
+        <div class="fail" id="beta-fail" role="alert" hidden></div>
+        <div class="row">
+          <div class="field"><label for="b-first">First name</label><input id="b-first" name="first_name" autocomplete="given-name" required maxlength="80"/><span class="err" data-for="first_name"></span></div>
+          <div class="field"><label for="b-last">Last name</label><input id="b-last" name="last_name" autocomplete="family-name" required maxlength="80"/><span class="err" data-for="last_name"></span></div>
+        </div>
+        <div class="field"><label for="b-country">Country</label><select id="b-country" name="country" autocomplete="country" required><option value="">Select your country</option></select><span class="err" data-for="country"></span></div>
+        <div class="field"><label for="b-email">Email address</label><input id="b-email" name="email" type="email" inputmode="email" autocomplete="email" required maxlength="254"/><span class="err" data-for="email"></span></div>
+        <div class="hp" aria-hidden="true"><label>Website<input name="website" tabindex="-1" autocomplete="off"/></label></div>
+        <button class="btn primary" type="submit" id="beta-go">Join the beta</button>
+        <p class="fine">We use your name, country and email to invite you to the beta and to contact you about it. Nothing else, and never sold. See the <a href="/privacy/">privacy notice</a>.</p>
+      </form>
+      <div class="form thanks" id="beta-thanks" tabindex="-1" hidden>
+        <div class="tick"><svg width="30" height="30" viewBox="0 0 20 20"><polyline points="3.5,10 7.5,14.5 16.5,5" stroke="#1E7B4B" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <h3>You're on the list.</h3>
+        <p>Thanks, <span id="thanks-name"></span>. We'll email you when your spot opens. Want a head start? <a href="%%APP_URL%%" data-track="app" style="color:var(--cr);font-weight:600">Try the web app</a>.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <a href="/" aria-label="Vinterest home"><img src="/logo.png" alt="Vinterest" width="105" height="22"/></a>
+    <nav aria-label="Footer"><a href="%%APP_URL%%">Web app</a><a href="/privacy/">Privacy</a><a href="/terms/">Terms</a><a href="mailto:hello@vinterest.app">hello@vinterest.app</a></nav>
+    <span>&copy; Vinterest</span>
+  </div>
+</footer>
+
+<noscript><style>.phone-app:empty::after{animation:none}</style></noscript>
+<script src="/site.js?v=%%JS_V%%" defer></script>
+%%ANALYTICS%%
+</body>
+</html>
