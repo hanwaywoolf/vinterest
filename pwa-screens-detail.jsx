@@ -684,10 +684,15 @@ function DetailPrice({wine,nav}){
 
   const fmtPrice = (n) => n != null ? curr.base + n.toLocaleString() : '—';
 
+  // A wine they'd buy again gets "Restock"; the link goes to a partner shop when one is switched on.
+  const restock=!!(wine&&wine.buy_again===true);
+  const findLabel=wine?FindOnline.label(wine,restock?'Restock':null):'Find it online';
+  const findPartner=!!(wine&&FindOnline.target(wine).partner);
   function handleFindItForMe(){
     if(!wine) return;
-    FindOnline.open(wine);
+    FindOnline.open(wine,restock?'restock':'price');
   }
+  const listings=Shops.listings(priceData,'listing');
 
   const hasPrice = priceData && priceData.mid != null;
 
@@ -753,8 +758,27 @@ function DetailPrice({wine,nav}){
             </div>
           )}
 
-          {/* Find It For Me */}
-          <Btn primary full style={{background:C.cr,boxShadow:`0 3px 12px ${C.cr}35`}} onClick={handleFindItForMe}>Find It For Me</Btn>
+          {/* Where the live search found it: real listings only (the Worker keeps a shop only if the
+              search returned its page). Partner shops are labelled. */}
+          {listings.length>0&&(
+            <div>
+              <SL label="In shops now"/>
+              <Card style={{padding:0,overflow:'hidden'}}>
+                {listings.map((s,i)=>(
+                  <div key={s.url} role="link" onClick={()=>Shops.go(s.url)} style={{display:'flex',alignItems:'center',gap:10,padding:'12px 14px',borderTop:i?`1px solid ${C.line}`:'none',cursor:'pointer'}}>
+                    <span style={{flex:1,minWidth:0,fontSize:15,fontWeight:600,color:C.ink,fontFamily:C.P,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{s.name}</span>
+                    {s.partner&&<PartnerTag/>}
+                    {s.price>0&&<span style={{fontSize:15,fontWeight:700,color:C.ink,fontFamily:C.P}}>{fmtPrice(s.price)}</span>}
+                    <Icon n="chevron" sz={13} col={C.mid}/>
+                  </div>
+                ))}
+              </Card>
+            </div>
+          )}
+
+          {/* Find it for me (Restock for a wine they'd buy again) */}
+          <Btn primary full style={{background:C.cr,boxShadow:`0 3px 12px ${C.cr}35`}} onClick={handleFindItForMe}>{findLabel}</Btn>
+          {findPartner&&<div style={{display:'flex',justifyContent:'center',marginTop:-12}}><PartnerTag/></div>}
 
           {/* Disclaimer */}
           <div style={{fontSize:12,color:C.mid,fontFamily:C.P,lineHeight:1.5,textAlign:'center',padding:'0 8px'}}>
@@ -768,7 +792,7 @@ function DetailPrice({wine,nav}){
           <Card style={{padding:14}}>
             <span style={{fontSize:15,color:C.mid,fontFamily:C.P,fontStyle:'italic'}}>Price estimate unavailable for this wine.</span>
           </Card>
-          <Btn primary full style={{background:C.cr,boxShadow:`0 3px 12px ${C.cr}35`}} onClick={handleFindItForMe}>Find It For Me</Btn>
+          <Btn primary full style={{background:C.cr,boxShadow:`0 3px 12px ${C.cr}35`}} onClick={handleFindItForMe}>{findLabel}</Btn>
         </>
       )}
     </div>

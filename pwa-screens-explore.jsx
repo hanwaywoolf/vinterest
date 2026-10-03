@@ -433,7 +433,7 @@ function StyleExploreScreen({nav,back}){
                 )}
               </div>
               {wine.why&&<div style={{fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.55,marginBottom:10}}>{wine.why}</div>}
-              <Btn small full onClick={()=>FindOnline.open(wine)}>Find it online</Btn>
+              <Btn small full onClick={()=>FindOnline.open(wine,'explore')}>{FindOnline.label(wine)}</Btn>
             </Card>
           ))}
           {bottles&&bottles.length===0&&(

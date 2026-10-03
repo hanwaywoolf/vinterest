@@ -33,13 +33,41 @@ const FindOnline={
     return parts.join(' ');
   },
   url(wine){ const gl=this.country(); return 'https://www.google.com/search?q='+encodeURIComponent(this.query(wine))+(gl?'&gl='+gl:''); },
-  // A real link click, not window.open with window features: installed apps hand a plain
-  // target=_blank link to the platform's in-app browser (Safari's sheet with Done on iOS, a
-  // Custom Tab with a close button on Android), whereas a "popup" request can open a bare
-  // window with no way back.
-  open(wine){
+  /* Where "Find it for me" goes: a partner shop's own search when one is switched on for the
+     user's country (Shops, tracked when its Awin IDs are set), else Google. {url, name, partner}. */
+  target(wine,placement){
+    const shop=Shops.forCountry(this.country())[0];
+    if(shop){ const q=this.query(wine).replace(/\s+buy$/,''); return {...Shops.link(shop.search.replace('{q}',encodeURIComponent(q)),placement),name:shop.name}; }
+    return {url:this.url(wine),name:null,partner:false};
+  },
+  label(wine,verb){ const t=this.target(wine); return t.name?`${verb||'Find it'} at ${t.name}`:(verb?`${verb} online`:'Find it online'); },
+  open(wine,placement){ Shops.go(this.target(wine,placement||'find').url); }
+};
+/* Partner shops (data/retailers.json) and the one way any shop link is built. A link is tracked
+   through Awin (awin1.com/cread.php, clickref = where in the app it was tapped) only when the
+   publisher ID and that shop's awinMid are both set; otherwise it's the plain link. Money never
+   moves a match, a verdict or a pick: partner links sit beside them, labelled "Partner". */
+const Shops={
+  _cfg:null,
+  config(){ if(!this._cfg){ let c={}; try{ c=(typeof window!=='undefined'&&window.VINTEREST_RETAILERS)||_loadJSON('data/retailers.json')||{}; }catch(e){} this._cfg={awin:c.awin||{},retailers:c.retailers||[]}; } return this._cfg; },
+  _host(url){ try{ return new URL(url).host.replace(/^www\./,''); }catch(e){ return ''; } },
+  byUrl(url){ const h=this._host(url); return this.config().retailers.find(r=>(r.domains||[]).some(d=>h===d||h.endsWith('.'+d)))||null; },
+  // Switched-on shops with a search link, for a country ('gb', from FindOnline.country()).
+  forCountry(gl){ return this.config().retailers.filter(r=>r.enabled&&r.search&&r.country===gl); },
+  link(url,placement){
+    const r=this.byUrl(url), pub=this.config().awin.publisherId;
+    if(!(r&&r.awinMid&&pub)) return {url,partner:false,name:r?r.name:null};
+    return {url:'https://www.awin1.com/cread.php?awinmid='+encodeURIComponent(r.awinMid)+'&awinaffid='+encodeURIComponent(pub)+'&clickref='+encodeURIComponent(placement||'app')+'&ued='+encodeURIComponent(url),partner:true,name:r.name};
+  },
+  // The Price tab's "In shops now": the shops the live price search found the wine at.
+  listings(priceData,placement){ return ((priceData&&priceData.shops)||[]).map(s=>({...s,...this.link(s.url,placement),name:s.name})); },
+  /* A real link click, not window.open with window features: installed apps hand a plain
+     target=_blank link to the platform's in-app browser (Safari's sheet with Done on iOS, a
+     Custom Tab with a close button on Android), whereas a "popup" request can open a bare
+     window with no way back. */
+  go(url){
     const a=document.createElement('a');
-    a.href=this.url(wine); a.target='_blank'; a.rel='noopener noreferrer';
+    a.href=url; a.target='_blank'; a.rel='noopener noreferrer sponsored';
     document.body.appendChild(a); a.click(); a.remove();
   }
 };
