@@ -21,14 +21,13 @@
 <link rel="stylesheet" href="/fonts/fonts.css"/>
 <link rel="stylesheet" href="/site.css?v=%%CSS_V%%"/>
 </head>
-<body data-app-url="%%APP_URL%%" data-demo-src="/demo.js?v=%%DEMO_V%%">
+<body data-demo-src="/demo.js?v=%%DEMO_V%%">
 <a class="skip" href="#beta">Skip to the beta sign-up</a>
 
 <header class="top" id="top">
   <div class="wrap">
     <a href="/" aria-label="Vinterest home"><img class="logo" src="/logo.png" alt="Vinterest" width="115" height="24"/></a>
     <nav aria-label="Main">
-      <a class="link" href="%%APP_URL%%" data-track="app">Try the web app</a>
       <a class="btn primary small" href="#beta">Join the beta</a>
     </nav>
   </div>
@@ -45,7 +44,6 @@
       <p class="lead">Just scan a bottle or a wine list<sup class="pro" title="Included in Vinterest Pro" aria-label="Pro feature">$</sup> to see how well it matches your taste and WineDNA. Then rate it and go deeper: pick a grape, a region or a skill and learn more about it with short quizzes and articles written for you.</p>
       <div class="cta">
         <a class="btn primary" href="#beta">Join the beta</a>
-        <a class="btn ghost" href="%%APP_URL%%" data-track="app">Try the web app</a>
       </div>
       <p class="note">Free to start. <sup class="pro" title="Included in Vinterest Pro" aria-label="Pro feature">$</sup> marks a Pro feature. iPhone and Android apps are on their way.</p>
     </div>
@@ -264,7 +262,7 @@
       <details><summary>Is it free?</summary><p>You can start for free. Some features, like scanning whole wine lists and the Mastery map, are part of Vinterest Pro.</p></details>
       <details><summary>Do I need an account?</summary><p>No. Your wines and ratings live on your phone. An account is optional, and only for backing up your wines and moving to a new phone.</p></details>
       <details><summary>What happens to my label photos?</summary><p>The photo is sent to Claude, the AI that reads the label, and then dropped. Vinterest doesn't keep the image, and no photo is stored with your wines.</p></details>
-      <details><summary>Where can I use it?</summary><p>You can try the web app now. iPhone and Android apps are being prepared, and beta testers get them first.</p></details>
+      <details><summary>Where can I use it?</summary><p>On iPhone and Android. The apps are being prepared, and beta testers get them first.</p></details>
       <details><summary>How does the match work?</summary><p>It predicts the rating you'd give a wine from the wines you've already rated, weighting the ones most like it: same grape, region, producer and style. Under three rated wines of a type it says it's too early to call, rather than guess.</p></details>
     </div>
   </div>
@@ -277,7 +275,6 @@
       <p class="eyebrow">Beta</p>
       <h2 id="beta-h">Get in early, and help <strong>shape</strong> it.</h2>
       <p class="lead">Tell us who you are and we'll invite you when your spot opens. We'll only email you about the beta.</p>
-      <p class="lead" style="margin-top:14px"><a href="%%APP_URL%%" data-track="app" style="color:#fff;font-weight:600">Or try the web app now</a></p>
     </div>
     <div>
       <form class="form" id="beta-form" novalidate>
@@ -295,7 +292,7 @@
       <div class="form thanks" id="beta-thanks" tabindex="-1" hidden>
         <div class="tick"><svg width="30" height="30" viewBox="0 0 20 20"><polyline points="3.5,10 7.5,14.5 16.5,5" stroke="#1E7B4B" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
         <h3>You're on the list.</h3>
-        <p>Thanks, <span id="thanks-name"></span>. We'll email you when your spot opens. Want a head start? <a href="%%APP_URL%%" data-track="app" style="color:var(--cr);font-weight:600">Try the web app</a>.</p>
+        <p>Thanks, <span id="thanks-name"></span>. We'll email you when your spot opens.</p>
       </div>
     </div>
   </div>
@@ -306,7 +303,7 @@
 <footer>
   <div class="wrap">
     <a href="/" aria-label="Vinterest home"><img src="/logo.png" alt="Vinterest" width="105" height="22"/></a>
-    <nav aria-label="Footer"><a href="%%APP_URL%%">Web app</a><a href="/privacy/">Privacy</a><a href="/terms/">Terms</a><a href="mailto:hello@vinterest.app">hello@vinterest.app</a></nav>
+    <nav aria-label="Footer"><a href="/privacy/">Privacy</a><a href="/terms/">Terms</a><a href="mailto:hello@vinterest.app">hello@vinterest.app</a></nav>
     <span>&copy; Vinterest</span>
   </div>
 </footer>

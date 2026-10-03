@@ -14,7 +14,6 @@ the app (`npm run build` -> `dist/`): its own Cloudflare Pages project, its own 
 
 Build variables (all optional):
 
-- `SITE_APP_URL`: where "Try the web app" points. Default `/test`.
 - `CF_ANALYTICS_TOKEN`: the token from Cloudflare -> Web Analytics -> Add a site. Without it no analytics script is added. Web Analytics sets no cookies, so the site needs no cookie banner.
 - `SITE_ORIGIN`: the public address for the share card and sitemap. Default `https://vinterest.app`.
 
@@ -37,8 +36,8 @@ The app is currently served from the root of its own project (`vinterest.pages.d
 `index.html`, `manifest.json`, service worker and API calls use root-relative paths (`/claude`,
 `/manifest.json`, `/sw.js`, `/icons/...`). Serving it at `vinterest.app/test` therefore needs a
 small change in the app first (a base path for those, and a service-worker scope of `/test/`), then
-a route that sends `vinterest.app/test*` to the app's project. Until then the site's buttons point
-at whatever `SITE_APP_URL` says, and `https://vinterest.pages.dev` is the value to use.
+a route that sends `vinterest.app/test*` to the app's project. The site itself no longer links to
+the web app (beta users get the native apps), so this only matters for anyone who uses the URL directly.
 
 ## Demos
 
