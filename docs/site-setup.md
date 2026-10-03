@@ -59,3 +59,23 @@ Copy is in `site/index.html`. `site/privacy.html` and `site/terms.html` are draf
 app works today; they say so on the page, hold `[bracketed]` gaps (company name and address,
 jurisdiction, legal bases) and need a lawyer's review before launch. `hello@vinterest.app` is a
 placeholder contact address.
+
+## Confirmation emails (Resend)
+
+A new sign-up gets a short "You're on the list" email, sent by the Worker through Resend. It is optional:
+without `RESEND_API_KEY` nothing is sent and the form works as before. A failed email never fails the
+sign-up, and someone who signs up twice is emailed once.
+
+1. Create a Resend account and open Domains -> Add Domain -> `vinterest.app`.
+2. Add the DNS records Resend shows (SPF `TXT`, DKIM `TXT`, and the return-path `MX`/`TXT`) in
+   Cloudflare DNS for vinterest.app. Set them to "DNS only" (grey cloud). Wait for the domain to read
+   Verified. Without this Resend only sends to your own address.
+3. API Keys -> Create API Key, "Sending access" for that domain. Copy it once.
+4. In the site's Pages project -> Settings -> Variables and secrets (Production), add
+   `RESEND_API_KEY` (as a Secret) and, if you want a different sender than
+   `Vinterest <hello@vinterest.app>`, `RESEND_FROM`. The sender's domain must be the verified one.
+5. Redeploy (Deployments -> Retry deployment), then sign up with your own address to check it arrives.
+
+Replies go to `hello@vinterest.app`, so that mailbox has to exist (Cloudflare Email Routing can forward it).
+Legal pages mention that email is used only for the beta; keep the email's wording in step with them.
+
