@@ -438,7 +438,7 @@ async function handlePriceSearch(payload, env, key, ctx) {
     `Wine: ${_clean(w.producer)} ${_clean(w.name)} ${vintage || "(current release)"}. ${_clean(w.region)}, ${_clean(w.country, 40)}. Type: ${_clean(w.type, 20)}.\n` +
     `Search current listings from wine merchants and shops in that market. Prefer the ${vintage ? vintage + " vintage" : "current release"}; if it isn't listed, use the nearest current vintage and say so. ` +
     `Ignore auction results, en primeur / in-bond prices, magnums and restaurant prices; divide case prices by the number of bottles. Convert other currencies to ${m.code} approximately.\n` +
-    `Return ONLY JSON, no markdown: {"low":INT,"mid":INT,"high":INT,"currency":"${m.code}","tier":"entry|everyday|premium|luxury|ultra-luxury","note":"one sentence on where the range comes from, e.g. which vintage and the kind of shops","found":true}. ` +
+    `Return ONLY JSON, no markdown: {"shops":[{"name":"the shop's name","url":"the listing page you found","price":INT}],"low":INT,"mid":INT,"high":INT,"currency":"${m.code}","tier":"entry|everyday|premium|luxury|ultra-luxury","note":"one sentence on where the range comes from, e.g. which vintage and the kind of shops","found":true}. ` +
     `If you can't find real listings, return {"found":false}.`;
 
   const work = (async () => {
@@ -464,9 +464,11 @@ async function handlePriceSearch(payload, env, key, ctx) {
       let parsed = null;
       try { parsed = s >= 0 && e > s ? JSON.parse(text.slice(s, e + 1)) : null; } catch (err) {}
       if (!(parsed && parsed.found !== false && Number(parsed.mid) > 0)) return { text: "" };
+      const shops = _listedShops(parsed.shops, data.content);
       const out = JSON.stringify({
         low: Math.round(Number(parsed.low) || Number(parsed.mid)), mid: Math.round(Number(parsed.mid)), high: Math.round(Number(parsed.high) || Number(parsed.mid)),
-        currency: m.code, tier: parsed.tier || null, note: _clean(parsed.note, 240) || null, source: "search", at: Date.now()
+        currency: m.code, tier: parsed.tier || null, note: _clean(parsed.note, 240) || null, source: "search", at: Date.now(),
+        ...(shops.length ? { shops } : {})
       });
       await priceCachePut(env, k, out);
       return { text: out };
@@ -480,6 +482,29 @@ async function handlePriceSearch(payload, env, key, ctx) {
   if (!res) return json(200, { text: "", pending: true });
   if (res.error) return json(res.status || 502, { error: res.error, code: "anthropic_error" });
   return json(200, { text: res.text, cached: false });
+}
+
+/* The shops the search found the wine at (up to 3), for the Price tab's "In shops now". A link is
+   kept only when the search really returned a page on that site, so a shop the model made up,
+   or a link it guessed, never reaches the screen. https only, and never a search engine. */
+function _listedShops(shops, content) {
+  const seen = new Set();
+  for (const b of content || []) {
+    const results = b && b.type === "web_search_tool_result" && Array.isArray(b.content) ? b.content : [];
+    for (const r of results) { try { seen.add(new URL(r.url).host.replace(/^www\./, "")); } catch (e) {} }
+  }
+  const out = [];
+  for (const s of Array.isArray(shops) ? shops : []) {
+    let u;
+    try { u = new URL(String(s && s.url)); } catch (e) { continue; }
+    const host = u.host.replace(/^www\./, "");
+    if (u.protocol !== "https:" || !seen.has(host) || /(^|\.)(google|bing|duckduckgo|yahoo)\./.test(host)) continue;
+    if (out.some((o) => new URL(o.url).host.replace(/^www\./, "") === host)) continue;
+    const price = Math.round(Number(s.price));
+    out.push({ name: _clean(s.name, 40) || host, url: u.href.slice(0, 500), ...(price > 0 ? { price } : {}) });
+    if (out.length === 3) break;
+  }
+  return out;
 }
 
 function cors(res) {

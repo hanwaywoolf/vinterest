@@ -499,7 +499,8 @@ function WineDNAScreen({nav,back,showPro}){
                     <span style={{fontSize:15,color:C.ink,fontFamily:C.P,flex:1,minWidth:0,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{w.name}</span>
                     {pr>0&&<span style={{fontSize:13,color:C.mid,fontFamily:C.P}}>{Regional.current().base}{Math.round(pr)}{w.price_paid&&w.price_paid.amount>0?' paid':' est.'}</span>}
                     {w.rating>0&&<span style={{fontSize:15,fontWeight:800,color:scoreCol(w.rating),fontFamily:C.P,width:30,textAlign:'right'}}>{w.rating}</span>}
-                    <Icon n="chevron" sz={12} col={C.mid}/>
+                    {/* Their own shortlist, so the shortest path to buying it again (a partner shop when one is on). */}
+                    <button onClick={e=>{ e.stopPropagation(); FindOnline.open(w,'restock'); }} aria-label={`Restock ${w.name}`} style={{flexShrink:0,border:`1px solid ${C.green}55`,background:C.greenBg,color:C.green,borderRadius:20,padding:'4px 10px',fontSize:13,fontWeight:700,fontFamily:C.P,cursor:'pointer'}}>Restock</button>
                   </div>); })}
               </div>
             )}

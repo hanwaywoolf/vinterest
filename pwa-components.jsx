@@ -23,6 +23,8 @@ function Flag({wine,region,country,size=15,style}){
 /* A Parker score's colour, the same everywhere: green 90+, amber 80-89, red below 80 (ParkerScale.tone). */
 const _SCORE_COL={good:C.green,neutral:C.amber,bad:'#B04A3A'};
 function scoreCol(score){ return _SCORE_COL[ParkerScale.tone(score)]; }
+/* "Partner" beside a link that earns Vinterest a commission (Shops.link), so it's never hidden. */
+function PartnerTag(){ return <span title="Vinterest may earn a commission if you buy through this link." style={{fontSize:11,fontWeight:700,color:C.mid,fontFamily:C.P,border:`1px solid ${C.line}`,borderRadius:6,padding:'1px 6px',letterSpacing:'0.04em',whiteSpace:'nowrap'}}>Partner</span>; }
 function Icon({n,sz=20,col=C.ink,style:s}){
   const d={
     scan:<><rect x="3" y="3" width="6" height="6" rx="1" stroke={col} strokeWidth="1.6" fill="none"/><rect x="11" y="3" width="6" height="6" rx="1" stroke={col} strokeWidth="1.6" fill="none"/><rect x="3" y="11" width="6" height="6" rx="1" stroke={col} strokeWidth="1.6" fill="none"/><circle cx="14" cy="14" r="2.5" stroke={col} strokeWidth="1.6" fill="none"/><line x1="16.5" y1="16.5" x2="18.5" y2="18.5" stroke={col} strokeWidth="1.6" strokeLinecap="round"/></>,
