@@ -28,6 +28,11 @@ const GRAPE_TYPES = {
   'Muscat':'dessert','Furmint':'dessert'
 };
 function grapeTypeColor(grape){ return (_TYPE_COLORS&&_TYPE_COLORS[GRAPE_TYPES[grape]])||C.mid; }
+/* The colour of a grape's skin, which isn't always its wine's: Touriga Nacional is a red grape
+   made into Port, Muscat and Furmint white grapes made sweet, and Pinot Grigio and
+   Gewürztraminer have pink-grey skins. Mastery's grape cluster draws each berry in it. */
+const GRAPE_PINK_SKINS=new Set(['Pinot Grigio','Gewürztraminer']);
+function grapeSkin(grape){ const t=GRAPE_TYPES[grape]; return GRAPE_PINK_SKINS.has(grape)?'pink':t==='red'||t==='fortified'?'red':'white'; }
 
 /* The unlocks that are open: all of them with Pro. Otherwise everything unlocked before
    UNLOCKS_KEPT_BEFORE stays open (the allowance used to be checked only when unlocking, so

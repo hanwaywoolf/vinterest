@@ -60,12 +60,17 @@ const Settings = {
 };
 
 /* Per-device choices that shouldn't follow the user: the phone-layout override used by the
-   preview panel, and which WineDNA sections are folded away. */
+   preview panel, which WineDNA sections are folded away, and what the grape cluster last showed. */
 const Device = {
   FORCE_MOBILE_KEY:'vinterest_force_mobile', DNA_COLLAPSE_KEY:'vinterest_dna_collapsed_v1',
   forceMobile(){ return Store.get(this.FORCE_MOBILE_KEY)==='1'; },
   dnaCollapsed(){ return Store.getJSON(this.DNA_COLLAPSE_KEY,null); },
   setDnaCollapsed(v){ Store.setJSON(this.DNA_COLLAPSE_KEY,v); },
+  /* Each grape's score when Mastery's grape cluster was last seen on this phone, so the berries
+     grow from there to today's size. */
+  GRAPES_SEEN_KEY:'vinterest_grape_cluster_seen',
+  grapesSeen(){ return Store.getJSON(this.GRAPES_SEEN_KEY,{})||{}; },
+  setGrapesSeen(v){ Store.setJSON(this.GRAPES_SEEN_KEY,v); },
 };
 
 /* Wines hearted on the detail screen, by name and vintage. */

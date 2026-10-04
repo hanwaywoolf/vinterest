@@ -228,6 +228,54 @@ const KnowledgeMap = {
       return {...v,pins,open:pins.filter(p=>p.state==='open').length,drunk:pins.filter(p=>p.drunk).length};
     });
   },
+  /* ── The grape cluster ──
+     Every grape on the Learn list as a berry, in two bunches by skin (red; white with the
+     pink-skinned ones), each berry sized by its mastery. grapeCluster() is the data: per grape
+     its state ('open' unlocked, 'held' kept for Pro, 'locked' not yet met), score, level,
+     fading answers and profile, placed in a fixed slot of its bunch. Slots come from
+     bunchSlots(n): rows of a tapering teardrop (6, 6, 5, 4, 3, 2, 1 for 27), as many as there
+     are grapes, in units of one berry's radius, with a little seeded jitter; grapes take slots
+     in an order seeded by their name, so nothing reshuffles between visits and a berry grows in
+     its own place without moving its neighbours. Works the same for a few hundred grapes. */
+  _seed(str){ let h=2166136261; for(const ch of String(str)){ h^=ch.codePointAt(0); h=Math.imul(h,16777619); } return h>>>0; },
+  bunchSlots(n){
+    if(!n) return {slots:[],w:0,h:0};
+    let t=1; const rowsFor=t=>{ const r=[t,t]; for(let w=t-1;w>=1;w--) r.push(w); return r; };
+    while(rowsFor(t).reduce((a,b)=>a+b,0)<n) t++;
+    const rows=rowsFor(t); let extra=rows.reduce((a,b)=>a+b,0)-n;
+    // Too many slots: narrow the widest rows first, keeping the bunch's taper.
+    for(let i=0;extra>0;i=(i+1)%rows.length){ if(rows[i]>1&&(i===rows.length-1||rows[i]>rows[i+1]||i<2)){ rows[i]--; extra--; } }
+    // Berries a little closer than touching (2 radii apart, rows 1.5 down), so they overlap like a real bunch.
+    const slots=[], DX=1.74, DY=1.5;
+    rows.forEach((w,ri)=>{
+      const shift=ri>0&&w===rows[ri-1]?(ri%2?1:-1):0;
+      for(let i=0;i<w;i++){
+        const k=slots.length, jx=((this._seed('x'+k)%100)/100-0.5)*0.24, jy=((this._seed('y'+k)%100)/100-0.5)*0.24;
+        slots.push({x:(i-(w-1)/2)*DX+shift*DX/2+jx,y:ri*DY+jy});
+      }
+    });
+    const xs=slots.map(p=>p.x);
+    return {slots,w:Math.max(...xs)-Math.min(...xs)+2,h:(rows.length-1)*DY+2,top:Math.max(...rows)};
+  },
+  grapeCluster(m){
+    m=m||this.compute();
+    const area=m.areas.find(a=>a.id==='grapes'), items={};
+    (area?area.items:[]).forEach(i=>{ items[i.name]=i; });
+    const held=new Set(GrapeUnlocks.held());
+    const grapes=GRAPE_ALLOWLIST.map(g=>{
+      const it=items[g], K=KNOWLEDGE.grapes&&KNOWLEDGE.grapes[g];
+      return {name:g,skin:grapeSkin(g),state:it?'open':held.has(g)?'held':'locked',score:it?it.score:0,
+        level:it?it.level:'Not started',fading:it?it.fading||0:0,profile:K?K.profile:null};
+    });
+    const bunch=(id,label,list)=>{
+      const sorted=[...list].sort((a,b)=>this._seed(a.name)-this._seed(b.name)), L=this.bunchSlots(sorted.length);
+      return {id,label,...L,grapes:sorted.map((g,i)=>({...g,...L.slots[i]}))};
+    };
+    const studied=grapes.filter(g=>g.score>0).length, mastered=grapes.filter(g=>g.score>=100).length;
+    return {bunches:[bunch('red','Red grapes',grapes.filter(g=>g.skin==='red')),bunch('white','White grapes',grapes.filter(g=>g.skin!=='red'))],
+      total:grapes.length,studied,mastered,open:grapes.filter(g=>g.state==='open').length};
+  },
+
   /* The view to open on: the one with the most regions they've unlocked or drunk. */
   homeView(views){ return [...views].sort((a,b)=>(b.open+b.drunk)-(a.open+a.drunk))[0]||null; },
 };

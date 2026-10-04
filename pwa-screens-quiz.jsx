@@ -743,11 +743,119 @@ function MilestoneList({items}){
   </div>;
 }
 
+/* Mastery's grape cluster (KnowledgeMap.grapeCluster): every grape on the Learn list as a berry,
+   red-skinned in one bunch, white and pink in the other, sized by mastery, so the bunches fill
+   out as they learn. A grape not yet unlocked is a small grey berry, one unlocked but not started
+   a small outlined one; studying grows it to fill its slot, mastered adds the white bloom of a
+   ripe grape, fading dims and dashes it (as on the map). Berries grow from what this phone last
+   showed (Device.grapesSeen) to today's size; reduced motion shows them as they are. Each berry
+   is a button with its own label; a tap shows it below with its level and next step. Shading is
+   one radial gradient per skin, a glint, and one soft shadow per bunch, so hundreds stay cheap. */
+const _SKIN={red:['#B4466C','#6E1834','#2E0816'],white:['#EFE6AE','#C2AD52','#7C6C26'],pink:['#E8B2BE','#B46E80','#6A3343']};
+const _SKIN_NAME={red:'Red grape',white:'White grape',pink:'Pink-skinned grape'};
+const _BERRY_MIN=0.62, _BERRY_START=0.68;
+// Not yet unlocked: the same berry, smaller and unripe, in a muted version of its skin.
+const _SKIN_MUTED={red:['#EEE3E6','#D2BEC4','#AE9AA0'],white:['#F3F0E2','#DCD5B8','#B6AE8E'],pink:['#F1E4E7','#D9C2C8','#B39BA2']};
+function _berryScale(state,score){ return state!=='open'?_BERRY_MIN:_BERRY_START+(1-_BERRY_START)*Math.min(100,score)/100; }
+function _berrySaid(g){
+  const state=g.state==='open'?`${g.level}, ${g.score}%${g.fading?`, ${g.fading} answer${g.fading===1?'':'s'} fading`:''}`:g.state==='held'?'unlocked, kept for Pro':'not unlocked yet';
+  return `${g.name}, ${_SKIN_NAME[g.skin].toLowerCase()}: ${state}`;
+}
+function MasteryGrapes({m,nav,showPro}){
+  const c=React.useMemo(()=>KnowledgeMap.grapeCluster(m),[m]);
+  const [sel,setSel]=React.useState(null);
+  const seen=React.useRef(Device.grapesSeen());
+  const [grown,setGrown]=React.useState(false);
+  React.useEffect(()=>{
+    let a=requestAnimationFrame(()=>{ a=requestAnimationFrame(()=>setGrown(true)); });
+    const now={}; c.bunches.forEach(b=>b.grapes.forEach(g=>{ now[g.name]=g.state==='open'?g.score:-1; }));
+    Device.setGrapesSeen(now);
+    return()=>cancelAnimationFrame(a);
+  },[c]);
+  const W=340, GAP=14, colW=(W-GAP)/2;
+  const k=Math.min(...c.bunches.map(b=>colW/b.w)), R=k, TOP=34;
+  const H=Math.ceil(Math.max(...c.bunches.map(b=>b.h))*k+TOP+22);
+  const from=g=>{ const v=seen.current[g.name]; return v==null?_BERRY_MIN:v<0?_BERRY_MIN:_berryScale('open',v); };
+  const pick=c.bunches.flatMap(b=>b.grapes).find(g=>g.name===sel);
+  const act=g=>{
+    if(g.state==='open') return _openLearn({kind:'grape',grape:g.name},nav,showPro);
+    if(g.state==='held'||!Entitlement.isPro()) return g.state==='held'?showPro('grape-library'):nav('camera');
+    GrapeUnlocks.unlockManual(g.name); _openLearn({kind:'grape',grape:g.name},nav,showPro);
+  };
+  const key=g=>e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); setSel(g.name); } };
+  return(
+    <div style={{display:'flex',flexDirection:'column',gap:10}}>
+      <div style={{fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.5}}>
+        <b>{c.studied}</b> of {c.total} grapes studied{c.mastered?<>, <b>{c.mastered}</b> mastered</>:''}. Each berry grows as you learn its grape.
+      </div>
+      <svg viewBox={`0 0 ${W} ${H}`} width="100%" data-testid="grape-cluster" style={{display:'block',maxWidth:440,margin:'0 auto',overflow:'visible'}}>
+        <defs>
+          {[...Object.entries(_SKIN),...Object.entries(_SKIN_MUTED).map(([k,v])=>['m'+k,v])].map(([sk,[l,b,d]])=>(
+            <radialGradient key={sk} id={'vg-'+sk} cx="0.36" cy="0.3" r="0.78">
+              <stop offset="0" stopColor={l}/><stop offset="0.55" stopColor={b}/><stop offset="1" stopColor={d}/>
+            </radialGradient>
+          ))}
+          <radialGradient id="vg-bloom" cx="0.5" cy="0.5" r="0.5">
+            <stop offset="0.45" stopColor="#fff" stopOpacity="0"/><stop offset="1" stopColor="#E6EAF2" stopOpacity="0.6"/>
+          </radialGradient>
+          <filter id="vg-shadow" x="-20%" y="-20%" width="140%" height="150%"><feDropShadow dx="0" dy="3" stdDeviation="3.5" floodColor="#2A1A10" floodOpacity="0.22"/></filter>
+        </defs>
+        {c.bunches.map((b,bi)=>{
+          const cx=colW/2+bi*(colW+GAP);
+          return <g key={b.id}>
+            <path d={`M${cx} ${TOP-R*0.7} C ${cx} ${TOP-14}, ${cx+6} ${TOP-22}, ${cx+12} ${TOP-30}`} fill="none" stroke="#7A5A3A" strokeWidth="3" strokeLinecap="round"/>
+            <path d={`M${cx+3} ${TOP-18} c -14 -10 -30 -6 -34 2 c 12 8 26 8 34 -2 z`} fill="#7E9150" opacity="0.9"/>
+            <g filter="url(#vg-shadow)">
+              {[...b.grapes].sort((p,q)=>p.y-q.y).map(g=>{ // top rows first: lower berries hang over upper ones
+                const x=cx+g.x*k, y=TOP+R+g.y*k, now=_berryScale(g.state,g.score), sc=grown?now:from(g);
+                const open=g.state==='open', on=sel===g.name, fresh=open&&g.score===0;
+                return <g key={g.name} transform={`translate(${x.toFixed(1)} ${y.toFixed(1)})`} role="button" tabIndex={0} aria-label={_berrySaid(g)} aria-pressed={on}
+                  onClick={()=>setSel(g.name)} onKeyDown={key(g)} style={{cursor:'pointer',outline:'none'}} className="grape-btn">
+                  <circle r={R} fill="transparent" className="grape-hit"/>
+                  <g className="grape-berry" style={{transform:`scale(${sc})`}}>
+                    {open?<>
+                      <circle r={R} fill={`url(#vg-${g.skin})`} opacity={fresh?0.4:g.fading?0.5:1} stroke={fresh||g.fading?_SKIN[g.skin][1]:'none'} strokeWidth={fresh||g.fading?2.4:0} strokeDasharray={g.fading?'4 3':null}/>
+                      {g.score>=100&&<circle r={R} fill="url(#vg-bloom)"/>}
+                      {!fresh&&<ellipse cx={-R*0.36} cy={-R*0.4} rx={R*0.26} ry={R*0.16} fill="#fff" opacity="0.7" transform={`rotate(-32 ${-R*0.36} ${-R*0.4})`}/>}
+                    </>:<circle r={R} fill={`url(#vg-m${g.skin})`} opacity={g.state==='held'?1:0.92}/>}
+                  </g>
+                  {on&&<circle r={R*now+3} fill="none" stroke={C.ink} strokeWidth="2"/>}
+                </g>;
+              })}
+            </g>
+            <text x={cx} y={H-4} textAnchor="middle" style={{fontSize:'12px',fontWeight:600,fill:C.mid,fontFamily:C.P}}>{b.label} · {b.grapes.filter(g=>g.score>0).length}/{b.grapes.length}</text>
+          </g>;
+        })}
+      </svg>
+      <div aria-hidden="true" style={{display:'flex',flexWrap:'wrap',gap:'4px 12px'}}>
+        {[[_SKIN_MUTED.red[1],'Not unlocked',1],[_SKIN.red[1],'Grows as you learn',1],[_SKIN.white[1],'Faded, dashed: fading',0.5]].map(([col,l,o])=><span key={l} style={{display:'inline-flex',alignItems:'center',gap:5,fontSize:12,color:C.mid,fontFamily:C.P}}><span style={{width:9,height:9,borderRadius:5,background:col,opacity:o}}/>{l}</span>)}
+        <span style={{display:'inline-flex',alignItems:'center',gap:5,fontSize:12,color:C.mid,fontFamily:C.P}}><span style={{width:9,height:9,borderRadius:5,background:'radial-gradient(circle,#B4466C 40%,#E6EAF2)'}}/>White bloom: mastered</span>
+      </div>
+      {pick?<div data-testid="grape-picked" style={{display:'flex',alignItems:'flex-start',gap:10,padding:'10px 0',borderTop:`1px solid ${C.line}`}}>
+        <span aria-hidden="true" style={{width:14,height:14,borderRadius:7,marginTop:4,flexShrink:0,background:`radial-gradient(circle at 35% 30%,${_SKIN[pick.skin][0]},${_SKIN[pick.skin][1]} 55%,${_SKIN[pick.skin][2]})`}}/>
+        <div style={{flex:1,minWidth:0}}>
+          <div style={{fontSize:15,fontWeight:700,color:C.ink,fontFamily:C.P}}>{pick.name}</div>
+          <div style={{fontSize:13,color:C.mid,fontFamily:C.P,lineHeight:1.4}}>
+            {_SKIN_NAME[pick.skin]} · {pick.state==='open'?`${pick.level} · ${pick.score}%${pick.fading?` · ${pick.fading} answer${pick.fading===1?'':'s'} fading`:''}`:pick.state==='held'?'Unlocked, kept for Pro':'Not unlocked yet'}
+          </div>
+          {pick.profile&&<div style={{fontSize:13,color:C.ink2,fontFamily:C.P,lineHeight:1.45,marginTop:4}}>{pick.profile}.</div>}
+        </div>
+        {(pick.state!=='open'||pick.score<100||pick.fading>0)&&<div role="button" onClick={()=>act(pick)} style={{fontSize:14,fontWeight:700,color:C.cr,fontFamily:C.P,cursor:'pointer',whiteSpace:'nowrap',textAlign:'right',maxWidth:130,lineHeight:1.3}}>
+          {pick.state==='open'?(pick.fading?'Refresh →':'Quiz →'):pick.state==='held'||!Entitlement.isPro()?(pick.state==='held'?'Unlock with Pro':'Scan a bottle of it'):'Unlock and quiz →'}
+        </div>}
+      </div>:<div style={{fontSize:13,color:C.mid,fontFamily:C.P}}>Tap a grape to see it. Scanning a bottle unlocks its grape.</div>}
+    </div>
+  );
+}
+
 const _MASTERY_CSS=`@keyframes masteryGrow{from{transform:scale(0.2);opacity:0}to{transform:scale(1);opacity:1}}
 .mastery-radar-shape{animation:masteryGrow .7s cubic-bezier(.2,.8,.2,1) both}
 @keyframes milestoneIn{from{transform:translateY(8px);opacity:0}to{transform:none;opacity:1}}
 .milestone-in{animation:milestoneIn .5s ease both}
-@media (prefers-reduced-motion:reduce){.mastery-radar-shape,.milestone-in{animation:none}}`;
+
+.grape-berry{transition:transform .9s cubic-bezier(.2,.8,.2,1)}
+.grape-btn:focus-visible .grape-hit{stroke:#0F0F0F;stroke-width:2;stroke-dasharray:3 2}
+@media (prefers-reduced-motion:reduce){.mastery-radar-shape,.milestone-in{animation:none}.grape-berry{transition:none}}`;
 
 function MasteryMapScreen({nav,back,showPro}){
   const wines=React.useMemo(()=>WineHistory.getAll(),[]);
@@ -815,6 +923,11 @@ function MasteryMapScreen({nav,back,showPro}){
         {head('Your wine map')}
         <div style={card}>
           <MasteryRegionMap views={views} nav={nav} showPro={showPro}/>
+        </div>
+
+        {head('Your grapes')}
+        <div style={card}>
+          <MasteryGrapes m={m} nav={nav} showPro={showPro}/>
         </div>
 
         {head('Milestones')}

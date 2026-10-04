@@ -201,3 +201,72 @@ test('a quiz round that completes a region marks the milestone on its result', a
   await page.waitForTimeout(600);
   await page.screenshot({ path: path.join(info.project.outputDir, 'milestone.png') });
 });
+
+// The grape cluster: every Learn grape as a berry, red-skinned and white/pink bunches, sized by
+// mastery, in fixed seeded slots; a tap shows the grape and its next step.
+async function grapeStudy(page) {
+  await page.evaluate(() => {
+    const bank = (g) => Array.from({ length: 6 }, (_, i) => ({ q: `${g} question ${i + 1}?`, opts: ['Right', 'Wrong one', 'Wrong two', 'Wrong three'], a: 0, fact: 'Fact.' }));
+    const study = (g, n, daysAgo = 1) => {
+      GrapeUnlocks.unlockManual(g);
+      localStorage.setItem(_grapeQuizCacheKey(g), JSON.stringify(bank(g)));
+      bank(g).slice(0, n).forEach((q) => QuizMastery.recordAnswer('grape:' + g, q.q, true, Date.now() - daysAgo * 864e5));
+    };
+    study('Tempranillo', 6); study('Chardonnay', 3); study('Riesling', 6, 40); study('Pinot Grigio', 0);
+  });
+}
+
+test('the grape cluster: 50 berries in two fixed bunches, sized by mastery', async ({ context, page }) => {
+  await user(context, page);
+  await page.goto(`${BASE}/#home`);
+  await grapeStudy(page);
+  const out = await page.evaluate(() => {
+    const a = KnowledgeMap.grapeCluster(), b = KnowledgeMap.grapeCluster();
+    const all = a.bunches.flatMap((x) => x.grapes), get = (n) => all.find((g) => g.name === n);
+    return {
+      sizes: a.bunches.map((x) => [x.id, x.grapes.length]), total: a.total,
+      same: JSON.stringify(a.bunches.map((x) => x.grapes.map((g) => [g.name, g.x, g.y]))) === JSON.stringify(b.bunches.map((x) => x.grapes.map((g) => [g.name, g.x, g.y]))),
+      tour: get('Touriga Nacional').skin, pink: [get('Pinot Grigio').skin, a.bunches[1].grapes.some((g) => g.name === 'Gewürztraminer')],
+      tempranillo: get('Tempranillo'), chardonnay: get('Chardonnay'), riesling: get('Riesling'), malbec: get('Malbec').state,
+      big: KnowledgeMap.bunchSlots(300).slots.length,
+    };
+  });
+  expect(out.sizes).toEqual([['red', 27], ['white', 23]]);
+  expect(out.total).toBe(50);
+  expect(out.same).toBe(true); // seeded: never reshuffles
+  expect(out.tour).toBe('red');
+  expect(out.pink).toEqual(['pink', true]);
+  expect(out.tempranillo).toMatchObject({ state: 'open', score: 70, level: 'Confident' });
+  expect(out.chardonnay.score).toBe(35);
+  expect(out.riesling.fading).toBe(6);
+  expect(out.malbec).toBe('locked');
+  expect(out.big).toBe(300);
+});
+
+test('the grape cluster on Mastery: labelled berries, a tap shows the grape, growth is remembered', async ({ context, page }, info) => {
+  const errors = collectErrors(page);
+  await user(context, page);
+  await page.goto(`${BASE}/#home`);
+  await grapeStudy(page);
+  await page.goto(`${BASE}/#mastery-map`);
+  const cluster = page.getByTestId('grape-cluster');
+  await cluster.scrollIntoViewIfNeeded();
+  await expect(cluster.getByRole('button')).toHaveCount(50);
+  await expect(cluster.getByRole('button', { name: 'Tempranillo, red grape: Confident, 70%' })).toBeVisible();
+  await expect(cluster.getByRole('button', { name: /^Riesling, white grape: .*6 answers fading$/ })).toBeVisible();
+  await expect(cluster.getByRole('button', { name: 'Malbec, red grape: not unlocked yet' })).toBeVisible();
+  await page.waitForTimeout(1100);
+  await page.screenshot({ path: path.join(info.project.outputDir, 'grapes.png') });
+  await cluster.getByRole('button', { name: /^Tempranillo/ }).click();
+  const picked = page.getByTestId('grape-picked');
+  await expect(picked).toContainText('Red grape · Confident · 70%');
+  await expect(picked).toContainText('Medium-high tannin');
+  await expect(picked.getByText('Quiz →')).toBeVisible();
+  // Keyboard: Enter picks a berry too.
+  await cluster.getByRole('button', { name: /^Riesling/ }).focus();
+  await page.keyboard.press('Enter');
+  await expect(picked).toContainText('Refresh →');
+  await page.screenshot({ path: path.join(info.project.outputDir, 'grapes-picked.png') });
+  expect(await page.evaluate(() => Device.grapesSeen().Tempranillo)).toBe(70);
+  expect(errors).toEqual([]);
+});
