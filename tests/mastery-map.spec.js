@@ -280,6 +280,50 @@ test('the grape cluster on Mastery: labelled berries, a tap opens the grape page
   expect(errors).toEqual([]);
 });
 
+test('grapes as a list, back lands on the grapes, and the page lists their own bottles', async ({ context, page }, info) => {
+  const errors = collectErrors(page);
+  await user(context, page);
+  await page.goto(`${BASE}/#home`);
+  await grapeStudy(page);
+  await page.goto(`${BASE}/#mastery-map`);
+  await page.getByRole('tab', { name: 'List' }).click();
+  const list = page.getByTestId('grape-list');
+  await list.scrollIntoViewIfNeeded();
+  const names = await list.getByRole('button').evaluateAll((els) => els.map((e) => e.getAttribute('aria-label').split(',')[0]));
+  expect(names.length).toBe(50);
+  // Most progress first in each bunch; not-unlocked grapes last.
+  expect(names[0]).toBe('Tempranillo');
+  expect(Math.max(names.indexOf('Riesling'), names.indexOf('Chardonnay'))).toBeLessThan(names.indexOf('Pinot Grigio'));
+  expect(names.indexOf('Pinot Grigio')).toBeLessThan(names.indexOf('Viognier'));
+  await expect(list.getByRole('button', { name: /^Tempranillo/ })).toContainText('70%');
+  await page.screenshot({ path: path.join(info.project.outputDir, 'grape-list.png') });
+
+  // Back from a grape returns to the list, where they were, not the top of Mastery.
+  const scroller = () => page.getByTestId('grape-list').locator('xpath=ancestor::div[contains(@style,"overflow-y: auto")][1]');
+  const chard = list.getByRole('button', { name: /^Chardonnay/ });
+  await chard.scrollIntoViewIfNeeded();
+  const before = await scroller().evaluate((el) => el.scrollTop);
+  expect(before).toBeGreaterThan(200);
+  await chard.click();
+  await expect(page.getByTestId('grape-progress')).toBeVisible();
+  await root(page).getByRole('button', { name: 'Back' }).click();
+  await expect(page.getByTestId('grape-list')).toBeVisible();
+  await expect(page.getByRole('tab', { name: 'List' })).toHaveAttribute('aria-selected', 'true');
+  expect(Math.abs(await scroller().evaluate((el) => el.scrollTop) - before)).toBeLessThan(40);
+
+  // The grape's page lists their own bottles of it, best first; a tap opens the wine.
+  await page.getByTestId('grape-list').getByRole('button', { name: /^Tempranillo/ }).click();
+  const mine = page.getByTestId('grape-my-wines');
+  await expect(mine.getByRole('button')).toHaveCount(3);
+  await expect(mine.getByRole('button').first()).toContainText('Gran Reserva 904');
+  await mine.scrollIntoViewIfNeeded();
+  await page.screenshot({ path: path.join(info.project.outputDir, 'grape-my-wines.png') });
+  await mine.getByRole('button').first().click();
+  await expect(root(page)).toContainText('Gran Reserva 904');
+  await expect(page.getByTestId('grape-my-wines')).toHaveCount(0);
+  expect(errors).toEqual([]);
+});
+
 test('every grape has a page: origin, wines and how its bunch looks', async ({ context, page }) => {
   await user(context, page);
   await page.goto(`${BASE}/#home`);

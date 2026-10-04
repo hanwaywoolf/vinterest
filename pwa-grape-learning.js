@@ -37,7 +37,8 @@ function grapeSkin(grape){ const t=GRAPE_TYPES[grape]; return GRAPE_PINK_SKINS.h
 /* A grape's own page (GrapeScreen): everything data/knowledge.json knows about it (profile,
    origin, where it's famous, the wines made from it, climate, winemaking, food, ageing,
    look-alikes, blends, and how its bunch looks, for the sketch), the knowledge-base regions
-   that grow it, their own bottles of it (WineDNA.grape, so Shiraz counts as Syrah) and where
+   that grow it, their own bottles of it (WineDNA.grape, so Shiraz counts as Syrah; listed on the
+   page, each opening its wine) and where
    they stand with it in Mastery. */
 const GrapeInfo = {
   get(name,wines){
@@ -46,11 +47,14 @@ const GrapeInfo = {
     wines=wines||WineHistory.getAll();
     const mine=wines.filter(w=>(w.grapes||[]).some(g=>WineDNA.grape(g)===name));
     const scored=mine.filter(w=>w.rating>0).sort((a,b)=>b.rating-a.rating);
+    const when=w=>new Date(w.last_scanned||w.scanned_at||0).getTime()||0;
+    // Their bottles of it for the page's list: scored best first, then unscored, newest first.
+    const list=[...mine].sort((a,b)=>(b.rating||0)-(a.rating||0)||when(b)-when(a));
     const regions=Object.entries(KNOWLEDGE.regions||{}).filter(([,r])=>(r.keyGrapes||[]).some(g=>WineDNA.grape(g)===name)).map(([n])=>n);
     const m=KnowledgeMap.compute(wines), area=m.areas.find(a=>a.id==='grapes'), it=area&&area.items.find(i=>i.name===name);
     const state=it?'open':GrapeUnlocks.held().includes(name)?'held':'locked';
     return {name,skin:grapeSkin(name),type:GRAPE_TYPES[name],...K,look:K.look||{berry:'medium',bunch:'medium',notes:[]},regions,
-      mine:{count:mine.length,scored:scored.length,best:scored[0]||null,avg:scored.length?Math.round(scored.reduce((a,w)=>a+w.rating,0)/scored.length):null},
+      mine:{count:mine.length,wines:list,scored:scored.length,best:scored[0]||null,avg:scored.length?Math.round(scored.reduce((a,w)=>a+w.rating,0)/scored.length):null},
       mastery:{state,score:it?it.score:0,level:it?it.level:'Not started',fading:it?it.fading||0:0}};
   },
   /* How the page's sketch draws its bunch: how many berries and how tightly packed. */

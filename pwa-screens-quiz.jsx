@@ -761,7 +761,34 @@ function _berrySaid(g){
   return `${g.name}, ${_SKIN_NAME[g.skin].toLowerCase()}: ${state}`;
 }
 function openGrapePage(name,nav){ Handoff.grapePage.set(name); nav('grape'); }
-function MasteryGrapes({m,nav}){
+/* The grapes as a list: red, then white and pink, each grape with its level and score; a tap
+   opens its page, as a tap on the bunch does. */
+function MasteryGrapeList({c,open}){
+  const rows=React.useMemo(()=>KnowledgeMap.grapeRows(c),[c]);
+  const said=g=>g.state==='open'?(g.score>0?`${g.level}`:'Not started'):g.state==='held'?'Kept for Pro':'Not unlocked yet';
+  return <div data-testid="grape-list" style={{display:'flex',flexDirection:'column',gap:14}}>
+    {rows.map(b=><div key={b.id} style={{display:'flex',flexDirection:'column'}}>
+      <div style={{fontSize:14,fontWeight:700,color:C.ink2,fontFamily:C.P,marginBottom:4}}>{b.label} · {b.grapes.filter(g=>g.score>0).length}/{b.grapes.length}</div>
+      {b.grapes.map(g=>{
+        const col=SKETCH_WASH[g.skin]||SKETCH_WASH.red, on=g.state==='open';
+        return <div key={g.name} role="button" tabIndex={0} aria-label={_berrySaid(g)} onClick={()=>open(g.name)}
+          onKeyDown={e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); open(g.name); } }}
+          style={{display:'flex',alignItems:'center',gap:10,padding:'9px 0',borderTop:`1px solid ${C.line}`,cursor:'pointer'}}>
+          <span aria-hidden="true" style={{width:12,height:12,borderRadius:6,flexShrink:0,background:on&&g.score>0?col:'transparent',border:`1.5px solid ${on?col:SKETCH_PENCIL}`}}/>
+          <div style={{flex:1,minWidth:0,display:'flex',flexDirection:'column',gap:4}}>
+            <div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline',gap:8}}>
+              <span style={{fontSize:15,fontWeight:600,color:on?C.ink:C.mid,fontFamily:C.P}}>{g.name}</span>
+              <span style={{fontSize:13,color:C.mid,fontFamily:C.P,whiteSpace:'nowrap'}}>{g.fading>0&&<span style={{color:C.amber,fontWeight:600}}>fading · </span>}{said(g)}{on?<b style={{color:C.ink,marginLeft:6}}>{g.score}%</b>:''}</span>
+            </div>
+            {on&&<MasteryBar score={g.score} col={col}/>}
+          </div>
+          <Icon n="chevron" sz={14} col={C.mid}/>
+        </div>;
+      })}
+    </div>)}
+  </div>;
+}
+function MasteryGrapes({m,nav,view,setView,onOpen}){
   const c=React.useMemo(()=>KnowledgeMap.grapeCluster(m),[m]);
   const seen=React.useRef(Device.grapesSeen());
   const [grown,setGrown]=React.useState(false);
@@ -771,16 +798,25 @@ function MasteryGrapes({m,nav}){
     Device.setGrapesSeen(now);
     return()=>cancelAnimationFrame(a);
   },[c]);
+  const open=name=>{ if(onOpen) onOpen(); openGrapePage(name,nav); };
   const W=340, GAP=16, colW=(W-GAP)/2;
   const k=Math.min(...c.bunches.map(b=>colW/b.w)), R=k, TOP=40;
   const H=Math.ceil(Math.max(...c.bunches.map(b=>b.h))*k+TOP+24);
   const from=g=>{ const v=seen.current[g.name]; return v==null||v<0?_BERRY_MIN:_berryScale('open',v); };
-  const key=g=>e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); openGrapePage(g.name,nav); } };
+  const key=g=>e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); open(g.name); } };
+  const tab=(id,label)=><div role="tab" aria-selected={view===id} tabIndex={0} onClick={()=>setView(id)}
+    onKeyDown={e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); setView(id); } }}
+    style={{flex:1,textAlign:'center',padding:'6px 0',borderRadius:8,fontSize:14,fontWeight:600,fontFamily:C.P,cursor:'pointer',
+      background:view===id?C.white:'transparent',color:view===id?C.ink:C.mid,boxShadow:view===id?'0 1px 2px rgba(0,0,0,0.08)':'none'}}>{label}</div>;
   return(
     <div style={{display:'flex',flexDirection:'column',gap:10}}>
       <div style={{fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.5}}>
-        <b>{c.studied}</b> of {c.total} grapes studied{c.mastered?<>, <b>{c.mastered}</b> mastered</>:''}. Each grape fills in as you learn it; tap one to open its page.
+        <b>{c.studied}</b> of {c.total} grapes studied{c.mastered?<>, <b>{c.mastered}</b> mastered</>:''}. {view==='list'?'Tap a grape to open its page.':'Each grape fills in as you learn it; tap one to open its page.'}
       </div>
+      <div role="tablist" aria-label="Show grapes as" style={{display:'flex',gap:4,padding:3,borderRadius:10,background:C.offWhite}}>
+        {tab('bunch','Bunches')}{tab('list','List')}
+      </div>
+      {view==='list'?<MasteryGrapeList c={c} open={open}/>:<>
       <svg viewBox={`0 0 ${W} ${H}`} width="100%" data-testid="grape-cluster" style={{display:'block',maxWidth:440,margin:'0 auto',overflow:'visible'}}>
         {c.bunches.map((b,bi)=>{
           const cx=colW/2+bi*(colW+GAP), x0=cx-(Math.max(...b.grapes.map(g=>g.x))+Math.min(...b.grapes.map(g=>g.x)))/2*k;
@@ -789,20 +825,20 @@ function MasteryGrapes({m,nav}){
             {[...b.grapes].sort((p,q)=>p.y-q.y).map(g=>{ // top first: lower berries hang over upper ones
               const x=x0+g.x*k, y=TOP+R+g.y*k, sc=grown?_berryScale(g.state,g.score):from(g);
               return <g key={g.name} transform={`translate(${x.toFixed(1)} ${y.toFixed(1)})`} role="button" tabIndex={0} aria-label={_berrySaid(g)}
-                onClick={()=>openGrapePage(g.name,nav)} onKeyDown={key(g)} style={{cursor:'pointer',outline:'none'}} className="grape-btn">
+                onClick={()=>open(g.name)} onKeyDown={key(g)} style={{cursor:'pointer',outline:'none'}} className="grape-btn">
                 <circle r={R} fill="transparent" className="grape-hit"/>
                 <g className="grape-berry" style={{transform:`scale(${(sc*R).toFixed(2)})`}}>
                   <SketchBerry seed={g.name} skin={g.skin} state={_berryState(g)} fading={g.fading>0}/>
                 </g>
               </g>;
             })}
-            <text x={cx} y={H-4} textAnchor="middle" style={{fontSize:'15px',fontStyle:'italic',fill:C.ink2,fontFamily:C.serif}}>{b.label} · {b.grapes.filter(g=>g.score>0).length}/{b.grapes.length}</text>
+            <text x={cx} y={H-4} textAnchor="middle" style={{fontSize:'13px',fontWeight:700,fill:C.ink2,fontFamily:C.P}}>{b.label} · {b.grapes.filter(g=>g.score>0).length}/{b.grapes.length}</text>
           </g>;
         })}
       </svg>
       <div aria-hidden="true" style={{fontSize:13,color:C.mid,fontFamily:C.P,lineHeight:1.5}}>
         Pencil outline: not unlocked yet. Washed in colour: studying, fuller as you learn. Shaded: mastered. Dashed: fading, time for a refresher.
-      </div>
+      </div></>}
     </div>
   );
 }
@@ -827,6 +863,11 @@ function MasteryMapScreen({nav,back,showPro}){
   const milestones=React.useMemo(()=>Milestones.list(),[fresh]);
   const [open,setOpen]=React.useState(null);
   const listRef=React.useRef(null);
+  // Back from a grape's page returns to where they were, with the grapes shown the same way.
+  const ret=React.useRef(Handoff.masteryReturn.take());
+  const [grapeView,setGrapeView]=React.useState(ret.current&&ret.current.view==='list'?'list':'bunch');
+  React.useLayoutEffect(()=>{ const r=ret.current, el=listRef.current; if(r&&el&&r.top>0) el.scrollTop=r.top; },[]);
+  const leaveForGrape=()=>Handoff.masteryReturn.set({top:listRef.current?listRef.current.scrollTop:0,view:grapeView});
   const go=next=>{ if(next) _openLearn({kind:'mastery',next},nav,showPro); };
   const pick=id=>{
     const a=m.areas.find(x=>x.id===id); if(a&&a.items) setOpen(id);
@@ -886,7 +927,7 @@ function MasteryMapScreen({nav,back,showPro}){
 
         {head('Your grapes')}
         <div style={card}>
-          <MasteryGrapes m={m} nav={nav}/>
+          <MasteryGrapes m={m} nav={nav} view={grapeView} setView={setGrapeView} onOpen={leaveForGrape}/>
         </div>
 
         {head('Milestones')}

@@ -347,12 +347,12 @@ function GrapeSketch({info}){
       {berries.map(b=><g key={b.i} transform={`translate(${(x0+b.x*k).toFixed(1)} ${(TOP+k+b.y*k).toFixed(1)}) scale(${k.toFixed(2)})`}>
         <SketchBerry seed={info.name+b.i} skin={info.skin} state={b.ripe?'ripe':'grow'} wash={wash(b)}/>
       </g>)}
-      {notes.map((t,i)=>{ const [ex,ey]=edge(ys[i]), tx=196, lines=_wrapWords(t,20);
+      {notes.map((t,i)=>{ const [ex,ey]=edge(ys[i]), tx=196, lines=_wrapWords(t,22);
         return <g key={i}>
           <path d={`M${tx-6} ${ys[i]-4} Q ${(tx+ex)/2} ${ys[i]-10} ${ex+2} ${ey}`} fill="none" stroke={SKETCH_INK} strokeWidth="0.8" opacity="0.7"/>
           <circle cx={ex+2} cy={ey} r="1.6" fill={SKETCH_INK}/>
-          <text x={tx} y={ys[i]} style={{fontSize:'16px',fontStyle:'italic',fill:SKETCH_INK,fontFamily:C.serif}}>
-            {lines.map((l,j)=><tspan key={j} x={tx} dy={j?17:0}>{l}</tspan>)}
+          <text x={tx} y={ys[i]} style={{fontSize:'12px',fill:SKETCH_INK,fontFamily:C.P}}>
+            {lines.map((l,j)=><tspan key={j} x={tx} dy={j?15:0}>{l}</tspan>)}
           </text>
         </g>; })}
     </svg>
@@ -373,6 +373,7 @@ function GrapeScreen({nav,back,showPro}){
     GrapeUnlocks.unlockManual(info.name); _openLearn({kind:'grape',grape:info.name},nav,showPro);
   };
   const actLabel=ms.state==='open'?(ms.fading?`Refresh the ${info.name} quiz`:ms.score>=100?null:`Take the ${info.name} quiz`):ms.state==='held'?'Unlock with Pro':!Entitlement.isPro()?'Scan a bottle of it to unlock':`Unlock and take the quiz`;
+  const openMine=w=>{ Handoff.openWine({demo:false,wine:w,existingRating:w.rating||0}); nav('detail'); };
   const rows=[['Climate',info.climate],['In the winery',info.winemaking],['With food',info.food],['Ageing',info.ageing],['Often compared with',info.lookalike],['In blends',info.blends]].filter(r=>r[1]);
   return(
     <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden'}}>
@@ -418,6 +419,28 @@ function GrapeScreen({nav,back,showPro}){
         <div style={{...card,flexDirection:'row',flexWrap:'wrap',gap:6}}>
           {(info.wines||[]).map(w=><span key={w} style={{padding:'5px 10px',borderRadius:999,background:C.offWhite,fontSize:13,color:C.ink2,fontFamily:C.P}}>{w}</span>)}
         </div>
+
+        {info.mine.count>0&&<>
+          {head(`Your bottles of ${info.name}`)}
+          <div data-testid="grape-my-wines" style={{...card,gap:0,padding:'4px 16px'}}>
+            {info.mine.wines.map((w,i)=>(
+              <div key={(w.name||'')+'|'+(w.vintage||'')+'|'+i} role="button" tabIndex={0} onClick={()=>openMine(w)}
+                onKeyDown={e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); openMine(w); } }}
+                style={{display:'flex',alignItems:'center',gap:10,padding:'10px 0',borderTop:i?`1px solid ${C.line}`:'none',cursor:'pointer'}}>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontSize:15,fontWeight:600,color:C.ink,fontFamily:C.P,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{w.name}</div>
+                  <div style={{display:'flex',alignItems:'center',gap:5,fontSize:13,color:C.mid,fontFamily:C.P,minWidth:0}}>
+                    <Flag wine={w} size={13}/>
+                    <span style={{overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{[w.producer,w.region,w.vintage].filter(Boolean).join(' · ')}</span>
+                  </div>
+                </div>
+                {w.rating>0?<span style={{fontSize:16,fontWeight:800,color:scoreCol(w.rating),fontFamily:C.P}}>{w.rating}</span>
+                  :<span style={{fontSize:13,color:C.mid,fontFamily:C.P}}>Not scored</span>}
+                <Icon n="chevron" sz={14} col={C.mid}/>
+              </div>
+            ))}
+          </div>
+        </>}
 
         {head('From vine to glass')}
         <div style={{...card,gap:12}}>

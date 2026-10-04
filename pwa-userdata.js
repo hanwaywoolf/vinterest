@@ -134,6 +134,10 @@ const Handoff = {
   get guide(){ return this._s('vinterest_guide'); },
   /* The grape whose page (GrapeScreen) to open. */
   get grapePage(){ return this._s('vinterest_grape_page'); },
+  /* Where Mastery was when a grape's page opened ({top, view: 'bunch'|'list'}), so going back
+     lands on the grapes, not the top of the screen. Read once. */
+  masteryReturn:{ set:v=>Store.setJSON('vinterest_mastery_return',v,{session:true}),
+    take(){ const v=Store.getJSON('vinterest_mastery_return',null,{session:true}); Store.remove('vinterest_mastery_return',{session:true}); return v; } },
   get onRampIdx(){ return this._s('vinterest_onramp_idx'); },
   get styleExplore(){ return this._j('vinterest_style_explore'); },
   /* How My Wines should open (type and sort), read once. */

@@ -273,6 +273,14 @@ const KnowledgeMap = {
     const out={slots:pts.map(p=>({x:+p.x.toFixed(3),y:+(p.y-minY).toFixed(3)})),w:Math.max(...xs)-Math.min(...xs)+2,h:maxY-minY+2};
     return this._bunchCache[key]=out;
   },
+  /* Mastery's list view of the same grapes: each bunch's grapes in order of progress (highest
+     score first, then unlocked but not started, then kept for Pro, then not unlocked), by name
+     within each. */
+  grapeRows(c){
+    const rank=g=>g.state==='open'?(g.score>0?0:1):g.state==='held'?2:3;
+    return (c||this.grapeCluster()).bunches.map(b=>({id:b.id,label:b.label,
+      grapes:[...b.grapes].sort((p,q)=>rank(p)-rank(q)||q.score-p.score||p.name.localeCompare(q.name))}));
+  },
   grapeCluster(m){
     m=m||this.compute();
     const area=m.areas.find(a=>a.id==='grapes'), items={};
