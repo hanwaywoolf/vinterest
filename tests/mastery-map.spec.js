@@ -140,7 +140,13 @@ test('Palate scores Blind Calls per axis, names a habit, and fills in over five 
   await expect(card).toContainText('4 Blind Calls');
   await expect(card).toContainText('Tannin dries your gums');
   await expect(card).toContainText('grippier than the label');
-  await card.scrollIntoViewIfNeeded();
+  // The glasses: one per trait, filled to its score, the habit written under tannins.
+  const glasses = page.getByTestId('palate-glasses');
+  await expect(glasses.locator('.palate-fill')).toHaveCount(3);
+  await expect(glasses).toHaveAttribute('aria-label', /Body 100%; Acidity 100%; Tannins 60%, you call it grippier/);
+  await expect(glasses).toContainText('you call it grippier');
+  await glasses.scrollIntoViewIfNeeded();
+  await page.waitForTimeout(1500);
   await page.screenshot({ path: path.join(info.project.outputDir, 'mastery-palate.png') });
   expect(errors).toEqual([]);
 });

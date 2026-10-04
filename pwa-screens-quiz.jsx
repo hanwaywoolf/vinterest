@@ -561,13 +561,18 @@ function MasteryAreaCard({a,open,onToggle,onNext}){
   </div>
   );
 }
-/* The shape of their knowledge: one spoke per Mastery area, drawn on a dark panel like the
-   welcome screens (near-black with a crimson glow). The shape now is a smooth glowing curve
-   filled from the centre out; a faint dashed curve is where they were (KnowledgeMap.progress:
-   about a month ago, or their first week). Soft rings mark Developing (34), Confident (67) and
-   Mastered (100). A label tap jumps to that area's
-   card. A picture for screen readers (the cards below say the same in words). Labels are string
-   sizes: they must fit around the drawing. */
+/* Mastery's dark panels (the shape, the palate): near-black with a warm glow, like the welcome
+   screens, and a champagne-to-rosé palette so the drawing stands apart from the crimson brand. */
+const _DARK_PANEL='radial-gradient(120% 85% at 50% 35%, #2B2326 0%, #171315 55%, #0F0F0F 100%)';
+const _CHAMPAGNE='#F1D7A2', _ROSE='#E58FA3';
+/* The shape of their knowledge: one spoke per Mastery area on a dark panel. The shape now is a
+   smooth curve, washed from champagne at the top to rosé below, with a soft glow; a faint dotted
+   curve is where they were (KnowledgeMap.progress: about a month ago, or their first week). Rings
+   mark Developing (34), Confident (67) and Mastered (100), their names drawn last, on small dark
+   tags in the gap between the two spokes where the shape is smallest, so it never covers them. Each area's dot
+   takes its own colour (wine types their type's). A label tap jumps to that area's card. A
+   picture for screen readers (the cards below say the same in words). Labels are string sizes:
+   they must fit around the drawing. */
 function MasteryRadar({m,prog,onPick}){
   const W=340,H=310,cx=W/2,cy=H/2,R=100, n=m.areas.length;
   const uid=React.useId().replace(/:/g,'');
@@ -578,34 +583,42 @@ function MasteryRadar({m,prog,onPick}){
   const curve=scores=>_sketchPath(scores.map((v,i)=>pt(i,v)),true);
   const now=m.areas.map(a=>a.score), then=prog?m.areas.map(a=>prog.then.a[a.id]||0):null;
   const said=m.areas.map(a=>`${a.label} ${a.score}%`).join(', ');
-  const faint='rgba(255,255,255,0.09)';
+  // Ring names go in the gap between the two neighbouring spokes where the shape is smallest,
+  // so it never runs over them.
+  let gi=0, gv=1e9; for(let i=0;i<n;i++){ const v=Math.max(now[i],now[(i+1)%n]); if(v<gv){ gv=v; gi=i; } }
+  const faint='rgba(255,255,255,0.08)', gap=ang(gi)+Math.PI/n;
+  const dot=a=>a.score>=100?'#8FE0B4':a.group==='types'?_masteryCol(a):_ROSE;
   return(
     <svg viewBox={`0 0 ${W} ${H}`} width="100%" role="img" data-testid="mastery-radar" aria-label={`Your knowledge by area: ${said}.`} style={{display:'block',maxWidth:420,margin:'0 auto',overflow:'visible'}}>
       <defs>
-        <radialGradient id={`rf${uid}`} cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stopColor="#8B1A2F" stopOpacity="0.15"/>
-          <stop offset="100%" stopColor="#E0627A" stopOpacity="0.6"/>
-        </radialGradient>
-        <filter id={`rg${uid}`} x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="6"/></filter>
+        <linearGradient id={`rf${uid}`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={_CHAMPAGNE} stopOpacity="0.62"/>
+          <stop offset="100%" stopColor={_ROSE} stopOpacity="0.5"/>
+        </linearGradient>
+        <filter id={`rg${uid}`} x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="7"/></filter>
       </defs>
-      {[34,67,100].map(r=><circle key={r} cx={cx} cy={cy} r={rr(r)} fill="none" stroke={r===100?'rgba(255,255,255,0.16)':faint} strokeWidth="1"/>)}
+      {[34,67,100].map(r=><circle key={r} cx={cx} cy={cy} r={rr(r)} fill="none" stroke={r===100?'rgba(255,255,255,0.18)':faint} strokeWidth="1" strokeDasharray={r===100?null:'1 4'} strokeLinecap="round"/>)}
       {m.areas.map((a,i)=>{ const [x,y]=pt(i,100), [x0,y0]=pt(i,0); return <line key={a.id} x1={x0} y1={y0} x2={x} y2={y} stroke={faint} strokeWidth="1"/>; })}
-      {[['Developing',34],['Confident',67],['Mastered',100]].map(([l,r])=><text key={l} x={cx+4} y={cy-rr(r)+11} style={{fontSize:'8px',fontWeight:600,fill:'rgba(255,255,255,0.3)',fontFamily:C.P,letterSpacing:'0.06em'}}>{l.toUpperCase()}</text>)}
-      {then&&<path d={curve(then)} fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth="1.3" strokeDasharray="2 4" strokeLinecap="round"/>}
+      {then&&<path d={curve(then)} fill="none" stroke="rgba(255,255,255,0.45)" strokeWidth="1.3" strokeDasharray="1.5 4" strokeLinecap="round"/>}
       <g className="mastery-radar-shape" style={{transformOrigin:`${cx}px ${cy}px`}}>
-        <path d={curve(now)} fill="#E0627A" opacity="0.35" filter={`url(#rg${uid})`}/>
-        <path d={curve(now)} fill={`url(#rf${uid})`} stroke="#F2A0AE" strokeWidth="2" strokeLinejoin="round"/>
-        {m.areas.map((a,i)=>{ const [x,y]=pt(i,a.score), col=a.score>=100?'#7FD3A6':_masteryCol(a); if(!a.score) return null; return <g key={a.id}>
-          <circle cx={x} cy={y} r="7" fill={col} opacity="0.25"/>
-          <circle cx={x} cy={y} r="3.6" fill={col} stroke="#fff" strokeWidth="1.4"/>
+        <path d={curve(now)} fill={_CHAMPAGNE} opacity="0.22" filter={`url(#rg${uid})`}/>
+        <path d={curve(now)} fill={`url(#rf${uid})`} stroke={_CHAMPAGNE} strokeWidth="1.8" strokeLinejoin="round"/>
+        {m.areas.map((a,i)=>{ if(!a.score) return null; const [x,y]=pt(i,a.score), col=dot(a); return <g key={a.id}>
+          <circle cx={x} cy={y} r="7.5" fill={col} opacity="0.3"/>
+          <circle cx={x} cy={y} r="4" fill={col} stroke="#fff" strokeWidth="1.5"/>
         </g>; })}
       </g>
+      {[['Developing',34],['Confident',67],['Mastered',100]].map(([l,r])=>{ const d=rr(r)-(r===100?9:0), x=cx+Math.cos(gap)*d, y=cy+Math.sin(gap)*d, w=l.length*5.6+10; // Mastered sits just inside its ring, clear of the area names
+        return <g key={l} aria-hidden="true">
+          <rect x={x-w/2} y={y-7} width={w} height={14} rx={7} fill="rgba(15,15,15,0.82)" stroke="rgba(255,255,255,0.12)"/>
+          <text x={x} y={y+3} textAnchor="middle" style={{fontSize:'8px',fontWeight:700,fill:'rgba(255,255,255,0.7)',fontFamily:C.P,letterSpacing:'0.06em'}}>{l.toUpperCase()}</text>
+        </g>; })}
       {m.areas.map((a,i)=>{
         const c=Math.cos(ang(i)), sn=Math.sin(ang(i)), x=cx+c*(R+14), y=cy+sn*(R+14)+(sn>0.3?8:sn<-0.3?-6:3);
         const anchor=c>0.1?'start':c<-0.1?'end':'middle'; // the two bottom spokes lean apart
         return <g key={a.id} onClick={()=>onPick&&onPick(a.id)} style={{cursor:'pointer'}}>
-          <text x={x} y={y} textAnchor={anchor} style={{fontSize:'11px',fontWeight:600,fill:a.score?'rgba(255,255,255,0.85)':'rgba(255,255,255,0.45)',fontFamily:C.P}}>{KnowledgeMap.short(a)}</text>
-          <text x={x} y={y+12} textAnchor={anchor} style={{fontSize:'10px',fontWeight:700,fill:a.score>=100?'#7FD3A6':a.score?'#F2A0AE':'rgba(255,255,255,0.3)',fontFamily:C.P}}>{a.score}%</text>
+          <text x={x} y={y} textAnchor={anchor} style={{fontSize:'11px',fontWeight:600,fill:a.score?'rgba(255,255,255,0.88)':'rgba(255,255,255,0.42)',fontFamily:C.P}}>{KnowledgeMap.short(a)}</text>
+          <text x={x} y={y+12} textAnchor={anchor} style={{fontSize:'10px',fontWeight:700,fill:a.score>=100?'#8FE0B4':a.score?_CHAMPAGNE:'rgba(255,255,255,0.3)',fontFamily:C.P}}>{a.score}%</text>
         </g>;
       })}
     </svg>
@@ -769,10 +782,53 @@ function MasteryRegionMap({views,nav,showPro}){
 /* What they can taste (Palate, pwa-palate.js), beside what they know: their Blind Calls scored
    against each label's profile, a bar per axis with how to notice it, any habit ("you tend to
    call tannins grippier"), and the next step. Not part of the knowledge score. */
+/* Their palate as glasses: one ink-sketched wine glass per trait (body, acidity, tannins or
+   texture, the grape pages' pen-and-wash style), filled to how close their Blind Calls come to
+   the label on it (Palate's axis score), so the fullest glass is what they taste best. A habit
+   is written under its glass ("you call it grippier"). Before any call the glasses stand empty
+   and say what fills them. The fill rises when the section opens; reduced motion shows it
+   poured. */
+function _PalateGlass({x,a,col,i}){
+  const bowl='M14 8 C11 38 19 66 40 70 C61 66 69 38 66 8', closed=bowl+' Z';
+  const lvl=a.score==null?0:a.score, top=68-56*lvl/100, id=`pg${i}`;
+  return <g transform={`translate(${x} 0)`}>
+    <clipPath id={id}><path d={closed}/></clipPath>
+    {lvl>0&&<g clipPath={`url(#${id})`}>
+      <g className="palate-fill" style={{animationDelay:`${i*160}ms`}}>
+        <rect x="0" y={top} width="80" height={74-top} fill={col} opacity="0.62"/>
+        <ellipse cx="40" cy={top} rx="30" ry="3" fill={col} opacity="0.85"/>
+      </g>
+    </g>}
+    <path d={bowl} fill="none" stroke={SKETCH_INK} strokeWidth="1.6" strokeLinecap="round"/>
+    <path d="M13.2 7.4 C30 5.6 52 5.8 66.8 8.6" fill="none" stroke={SKETCH_INK} strokeWidth="1.1" strokeLinecap="round" opacity="0.8"/>
+    <path d="M40 70 C39.4 84 40.6 98 40 110" fill="none" stroke={SKETCH_INK} strokeWidth="1.6" strokeLinecap="round"/>
+    <path d="M22 113 C30 109.6 50 109.4 59 112.6 C50 115.4 31 115.6 21.2 113.4" fill="none" stroke={SKETCH_INK} strokeWidth="1.4" strokeLinecap="round"/>
+    <path d="M20 20 C19 32 21 44 25 52" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" opacity="0.7"/>
+    <text x="40" y="133" textAnchor="middle" style={{fontSize:'13px',fontWeight:700,fill:SKETCH_INK,fontFamily:C.P}}>{a.name}</text>
+    <text x="40" y="149" textAnchor="middle" style={{fontSize:'13px',fontWeight:700,fill:a.score==null?C.mid:col,fontFamily:C.P}}>{a.score==null?'–':`${a.score}%`}</text>
+    {a.lean&&<text x="40" y="164" textAnchor="middle" style={{fontSize:'11px',fontWeight:600,fill:C.amber,fontFamily:C.P}}>you call it {a.lean}</text>}
+  </g>;
+}
+function PalateGlasses({p}){
+  const ids=p.axes.length?p.axes.map(a=>a.id):['body','acidity','tannins'];
+  const axes=ids.map(id=>p.axes.find(a=>a.id===id)||{id,name:Palate.NAMES[id],score:null});
+  const col=id=>id==='texture'?SKETCH_WASH.white:SKETCH_WASH.red;
+  const GW=92, W=Math.max(300,axes.length*GW), x0=(W-axes.length*GW)/2+(GW-80)/2;
+  const said=p.n?axes.map(a=>`${a.name} ${a.score==null?'no calls yet':`${a.score}%`}${a.lean?`, you call it ${a.lean}`:''}`).join('; '):'empty until your first Blind Call';
+  return <div style={{background:'#FBF8F3',borderRadius:14,border:`1px solid ${C.line}`,padding:'14px 10px 8px'}}>
+    <svg viewBox={`0 0 ${W} 170`} width="100%" role="img" data-testid="palate-glasses" aria-label={`How close your Blind Calls come to the label, as glasses: ${said}.`} style={{display:'block',maxWidth:420,margin:'0 auto',overflow:'visible'}}>
+      {axes.map((a,i)=><_PalateGlass key={a.id} x={x0+i*GW} a={a} col={col(a.id)} i={i}/>)}
+    </svg>
+    <div style={{fontSize:13,color:C.ink2,fontFamily:C.P,lineHeight:1.45,textAlign:'center',padding:'4px 6px 2px'}}>
+      {p.n?<>The fuller the glass, the closer your Blind Calls come to the label on it.</>:<>Play Blind Call on your next bottle and these start to fill: the closer your guess, the fuller the glass.</>}
+    </div>
+  </div>;
+}
 function MasteryPalate({p,go}){
   const leans=Palate.leans(p);
   return(
     <div style={{display:'flex',flexDirection:'column',gap:10}}>
+      <PalateGlasses p={p}/>
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline'}}>
         <span style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>{p.n?`${p.level} · ${p.score}%`:'Not started'}</span>
         <span style={{fontSize:13,color:C.mid,fontFamily:C.P}}>{p.n} Blind Call{p.n===1?'':'s'}{p.trend!=null&&p.trend!==0?` · ${p.trend>0?'+':''}${p.trend} lately`:''}</span>
@@ -784,12 +840,7 @@ function MasteryPalate({p,go}){
       </div>
       {p.axes.map(a=>(
         <div key={a.id} style={{display:'flex',flexDirection:'column',gap:4}}>
-          <div style={{display:'flex',alignItems:'center',gap:10}}>
-            <span style={{flex:'0 0 30%',fontSize:14,fontWeight:600,color:C.ink2,fontFamily:C.P}}>{a.name}</span>
-            <div style={{flex:1}}><MasteryBar score={a.score}/></div>
-            <span style={{fontSize:13,fontWeight:700,color:C.ink2,fontFamily:C.P,width:38,textAlign:'right'}}>{a.score}%</span>
-          </div>
-          <div style={{fontSize:13,color:C.mid,fontFamily:C.P,lineHeight:1.4}}>{a.how}</div>
+          <div style={{fontSize:13,color:C.mid,fontFamily:C.P,lineHeight:1.4}}><b style={{color:C.ink2}}>{a.name}.</b> {a.how}</div>
         </div>
       ))}
       {leans.map(l=><div key={l} style={{fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.45,background:C.offWhite,borderRadius:10,padding:'8px 10px'}}>{l}</div>)}
@@ -949,15 +1000,17 @@ const _MASTERY_CSS=`@keyframes masteryGrow{from{transform:scale(0.2);opacity:0}t
 .milestone-in{animation:milestoneIn .5s ease both}
 
 .grape-berry{transition:transform .9s cubic-bezier(.2,.8,.2,1)}
+@keyframes palateFill{from{transform:scaleY(0)}to{transform:scaleY(1)}}
+.palate-fill{animation:palateFill 1.1s cubic-bezier(.3,.7,.2,1) both;transform-box:fill-box;transform-origin:50% 100%}
 .grape-btn:focus-visible .grape-hit{stroke:#0F0F0F;stroke-width:2;stroke-dasharray:3 2}
-@media (prefers-reduced-motion:reduce){.mastery-radar-shape,.milestone-in{animation:none}.grape-berry{transition:none}}`;
+@media (prefers-reduced-motion:reduce){.mastery-radar-shape,.milestone-in{animation:none}.grape-berry{transition:none}.palate-fill{animation:none}}`;
 
 /* One section of Mastery: a heading that folds it away (a chevron, aria-expanded) and, folded, a
    one-line summary in its place, which also opens it. `dark` draws the body on the welcome
    screens' near-black; `plain` lays its children out without a card (the area groups). */
 function MasterySection({id,title,summary,folded,toggle,dark,plain,testid,children}){
   const shut=!!folded[id];
-  const body={background:dark?'radial-gradient(120% 80% at 50% 40%, #3A1420 0%, #161012 55%, #0F0F0F 100%)':C.white,borderRadius:16,border:dark?'none':`1px solid ${C.line}`,padding:'14px 14px 12px',display:'flex',flexDirection:'column',gap:8};
+  const body={background:dark?_DARK_PANEL:C.white,borderRadius:16,border:dark?'none':`1px solid ${C.line}`,padding:'14px 14px 12px',display:'flex',flexDirection:'column',gap:8};
   return <section data-section={id} style={{display:'flex',flexDirection:'column',gap:8}}>
     <div role="button" tabIndex={0} aria-expanded={!shut} onClick={()=>toggle(id)}
       onKeyDown={e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); toggle(id); } }}
@@ -1030,7 +1083,7 @@ function MasteryMapScreen({nav,back,showPro}){
           summary={`${m.overall}% overall${rise?` · biggest rise ${rise.label} +${rise.delta}`:summary.strongest?` · strongest ${summary.strongest.label} ${summary.strongest.score}%`:''}`}>
           <MasteryRadar m={m} prog={prog} onPick={pick}/>
           <div style={{display:'flex',gap:14,justifyContent:'center',flexWrap:'wrap'}} aria-hidden="true">
-            <span style={{display:'inline-flex',alignItems:'center',gap:6,fontSize:12,color:'rgba(255,255,255,0.6)',fontFamily:C.P}}><span style={{width:16,height:0,borderTop:'2px solid #F2A0AE'}}/>Now</span>
+            <span style={{display:'inline-flex',alignItems:'center',gap:6,fontSize:12,color:'rgba(255,255,255,0.6)',fontFamily:C.P}}><span style={{width:16,height:0,borderTop:`2px solid ${_CHAMPAGNE}`}}/>Now</span>
             {prog&&<span style={{display:'inline-flex',alignItems:'center',gap:6,fontSize:12,color:'rgba(255,255,255,0.6)',fontFamily:C.P}}><span style={{width:16,height:0,borderTop:'2px dotted rgba(255,255,255,0.5)'}}/>{_when(prog.then.t)}</span>}
           </div>
           <div style={{fontSize:14,color:'rgba(255,255,255,0.75)',fontFamily:C.P,lineHeight:1.5}}>
