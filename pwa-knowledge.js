@@ -8,7 +8,10 @@
    Areas: one per wine type (its basics quiz, the grape quizzes of that colour they've unlocked,
    articles about that type), Regions and Grapes (each unlocked one: its quiz and its articles),
    and one per Wine Skills group (its guides read and questions passed, plus the matching
-   beginner articles). The full map is Pro; summary() is the free teaser. */
+   beginner articles). The full map is Pro; summary() is the free teaser.
+
+   Also here: focus() (what to study next, weighted by what they drink), the weekly history
+   behind the radar's "a month ago" outline, and regionMap() for the map of regions. */
 const KnowledgeMap = {
   TYPES:[
     {id:'red',label:'Red',types:['red'],topic:'red_grapes',colours:['red']},
@@ -93,15 +96,122 @@ const KnowledgeMap = {
     return {areas,overall,level:this.level(overall)};
   },
 
-  /* The free teaser: overall, strongest and the biggest gap. */
+  /* The free teaser: overall, strongest and the biggest gap. The gap is focus(): what they drink
+     most and know least, not just the lowest score. */
   summary(wines){
+    wines=wines||WineHistory.getAll();
     const m=this.compute(wines);
+    this.note(m);
     const sorted=[...m.areas].sort((a,b)=>b.score-a.score);
     const strongest=sorted[0]&&sorted[0].score>0?sorted[0]:null;
-    // On a tie (everything at 0% for someone new), the gap is a type they actually drink.
-    const drinks=new Set((wines||WineHistory.getAll()).map(w=>WineDNA._t(w.type)));
-    const mine=a=>{ const T=this.TYPES.find(t=>t.id===a.id); return T&&T.types.some(t=>drinks.has(t))?0:1; };
-    const gap=[...m.areas].sort((a,b)=>a.score-b.score||mine(a)-mine(b))[0]||null;
-    return {overall:m.overall,level:m.level,strongest,gap};
+    return {overall:m.overall,level:m.level,strongest,gap:this.focus(wines,m)};
   },
+
+  /* ── What to study next, weighted by what they drink ──
+     Each wine type, and each region and grape they've had (open to study), is a candidate:
+     the share of their wines it covers × how far from mastered it is. A region or grape counts
+     ITEM_X more than a whole type once they've started studying, since "Rioja" is a clearer next
+     step than "Red"; before that their type's basics come first (on a tie, the type). With no wines
+     (or everything they drink mastered) it's the lowest-scoring area, as before. Returns
+     {label, score, level, why, next, area}. */
+  ITEM_X:1.5,
+  focus(wines,m){
+    wines=wines||WineHistory.getAll(); m=m||this.compute(wines);
+    const n=wines.length, cands=[];
+    if(n){
+      this.TYPES.forEach(T=>{
+        const c=wines.filter(w=>T.types.includes(WineDNA._t(w.type))).length, a=m.areas.find(x=>x.id===T.id);
+        if(c&&a&&a.score<100) cands.push({area:a,label:T.label,score:a.score,level:a.level,w:c/n*(100-a.score),next:a.next,
+          why:`${c} of your ${n} wine${n===1?' is':'s are'} ${T.label.toLowerCase()}${a.score?`, and you're at ${a.score}% there`:`, and you haven't studied ${T.label.toLowerCase()} yet`}.`});
+      });
+      [['region','regions'],['grape','grapes']].forEach(([kind,id])=>{
+        const a=m.areas.find(x=>x.id===id); if(!a) return;
+        const counts={};
+        wines.forEach(w=>{
+          const names=kind==='region'?[WineDNA.region(w)]:[...new Set((w.grapes||[]).map(g=>WineDNA.grape(g)))];
+          names.filter(Boolean).forEach(x=>{ counts[x]=(counts[x]||0)+1; });
+        });
+        Object.entries(counts).forEach(([name,c])=>{
+          const it=a.items.find(i=>i.name===name); if(!it||it.score>=100) return;
+          const had=c===1?(kind==='region'?`a wine from ${name}`:`a ${name}`):`${c} ${kind==='region'?`wines from ${name}`:`${name} wines`}`;
+          cands.push({area:a,label:name,kind,score:it.score,level:it.level,w:c/n*(100-it.score)*(m.overall>0?this.ITEM_X:1),
+            next:{label:`Take the ${name} quiz`,[kind]:name},
+            why:`You've had ${had}${it.score?`, and you're at ${it.score}% there`:` and haven't studied it yet`}.`});
+        });
+      });
+    }
+    const best=cands.sort((a,b)=>b.w-a.w||!!a.kind-!!b.kind||a.score-b.score)[0];
+    if(best&&best.w>0){ const {w,...out}=best; return out; }
+    const drinks=new Set(wines.map(w=>WineDNA._t(w.type)));
+    const mine=a=>{ const T=this.TYPES.find(t=>t.id===a.id); return T&&T.types.some(t=>drinks.has(t))?0:1; };
+    const a=[...m.areas].sort((x,y)=>x.score-y.score||mine(x)-mine(y))[0];
+    return a?{area:a,label:a.label,score:a.score,level:a.level,next:a.next,why:null}:null;
+  },
+
+  /* ── History: one snapshot a week, so Mastery can show how their shape has changed ──
+     vinterest_mastery_history: {"<Monday, YYYY-MM-DD>": {t, o (overall), a: {areaId: score}}}.
+     Written when Mastery's numbers are worked out (Learn, Home, the Mastery screen), only when
+     this week's entry would change. Synced and backed up as progress (Backup._combine keeps the
+     higher of each number when two phones disagree). */
+  HISTORY_KEY:'vinterest_mastery_history', HISTORY_WEEKS:52, THEN_DAYS:28, DAY:864e5,
+  _week(t){ const d=new Date(t); d.setDate(d.getDate()-(d.getDay()+6)%7); const z=x=>String(x).padStart(2,'0'); return `${d.getFullYear()}-${z(d.getMonth()+1)}-${z(d.getDate())}`; },
+  history(){ const h=Store.getJSON(this.HISTORY_KEY,{}); return h&&typeof h==='object'&&!Array.isArray(h)?h:{}; },
+  note(m,now=Date.now()){
+    const h=this.history(), wk=this._week(now), a={};
+    m.areas.forEach(x=>{ a[x.id]=x.score; });
+    const cur=h[wk];
+    if(cur&&cur.o===m.overall&&JSON.stringify(cur.a)===JSON.stringify(a)) return;
+    h[wk]={t:now,o:m.overall,a};
+    const keep=Object.keys(h).sort().slice(-this.HISTORY_WEEKS), out={};
+    keep.forEach(k=>{ out[k]=h[k]; });
+    Store.setJSON(this.HISTORY_KEY,out);
+  },
+  /* The snapshot to compare with: the latest at least THEN_DAYS old, else (for someone newer)
+     the oldest at least a week old. Null in their first week. */
+  then(now=Date.now()){
+    const all=Object.values(this.history()).filter(e=>e&&e.t>0&&e.a).sort((x,y)=>x.t-y.t);
+    const old=all.filter(e=>e.t<=now-this.THEN_DAYS*this.DAY);
+    const e=old.length?old[old.length-1]:all.find(x=>x.t<=now-7*this.DAY);
+    return e?{...e,weeks:Math.max(1,Math.round((now-e.t)/(7*this.DAY)))}:null;
+  },
+  /* How they've moved since then(): the overall change and the areas that rose, biggest first. */
+  progress(m,now=Date.now()){
+    const p=this.then(now); if(!p) return null;
+    const rises=m.areas.map(a=>({id:a.id,label:a.label,delta:a.score-(p.a[a.id]||0)})).filter(x=>x.delta>0).sort((x,y)=>y.delta-x.delta);
+    return {then:p,weeks:p.weeks,overall:m.overall-(p.o||0),rises};
+  },
+  /* Radar labels: short enough to sit around the shape on a phone. */
+  short(a){ return {sweet:'Sweet',skill_ordering:'Ordering',skill_pairing:'Pairing'}[a.id]||a.label; },
+
+  /* ── The region map ──
+     data/world-map.json holds one drawing per view (scripts/world-map.mjs), Mercator in a w-wide
+     box; each knowledge-base region has its pin at `at` [lat, lng]. A pin is 'open' (unlocked:
+     its score and level), 'held' (unlocked past the free allowance, kept for Pro) or 'locked'
+     (scan a bottle from there), and `drunk` counts their wines from it. */
+  _map:null,
+  views(){ if(!this._map){ try{ this._map=_loadJSON('data/world-map.json').views; }catch(e){ this._map=[]; } } return this._map; },
+  project(v,at){
+    const rad=d=>d*Math.PI/180, Y=lat=>Math.log(Math.tan(Math.PI/4+rad(lat)/2));
+    const [w,,e,n]=v.box, k=v.w/rad(e-w);
+    return [k*rad(at[1]-w), k*(Y(n)-Y(at[0]))];
+  },
+  _inside(v,at){ return at[1]>=v.box[0]&&at[1]<=v.box[2]&&at[0]>=v.box[1]&&at[0]<=v.box[3]; },
+  regionMap(wines,m){
+    wines=wines||WineHistory.getAll(); m=m||this.compute(wines);
+    const area=m.areas.find(a=>a.id==='regions'), items={};
+    (area?area.items:[]).forEach(i=>{ items[i.name]=i; });
+    const held=new Set(RegionUnlocks.held()), drunk={};
+    wines.forEach(w=>{ const r=WineDNA.region(w); if(r) drunk[r]=(drunk[r]||0)+1; });
+    const regions=Object.entries(KNOWLEDGE.regions).filter(([,r])=>Array.isArray(r.at));
+    return this.views().map(v=>{
+      const pins=regions.filter(([,r])=>this._inside(v,r.at)).map(([name,r])=>{
+        const it=items[name], [x,y]=this.project(v,r.at);
+        return {name,country:r.country,x,y,state:it?'open':held.has(name)?'held':'locked',
+          score:it?it.score:0,level:it?it.level:'Not started',drunk:drunk[name]||0};
+      });
+      return {...v,pins,open:pins.filter(p=>p.state==='open').length,drunk:pins.filter(p=>p.drunk).length};
+    });
+  },
+  /* The view to open on: the one with the most regions they've unlocked or drunk. */
+  homeView(views){ return [...views].sort((a,b)=>(b.open+b.drunk)-(a.open+a.drunk))[0]||null; },
 };
