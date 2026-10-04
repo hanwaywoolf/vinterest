@@ -1,10 +1,13 @@
 {
-  "_about": "Partner shops for 'Find it for me', 'Restock' and the Price tab's 'In shops now'. Nothing is tracked until awin.publisherId and a shop's awinMid are both set, and a shop's own search is only used once it is enabled (after checking its search link opens real results). See docs/affiliates.md.",
+  "_about": "Partner shops for 'Find it for me', 'Restock' and the Price tab's 'In shops now'. Nothing is tracked until awin.publisherId is set, and a shop's own search is used only once it is enabled. Add the publisher ID (3114171) with the first approval, a shop's search link (with {q} where the wine goes) once you've opened it with a real wine, and set enabled when the shop has approved us. awinMid comes from Awin's advertiser directory. See docs/affiliates.md.",
   "awin": { "publisherId": "" },
   "retailers": [
-    { "id": "majestic",    "name": "Majestic",     "country": "gb", "domains": ["majestic.co.uk"],    "awinMid": "", "search": "https://www.majestic.co.uk/search?Ntt={q}",        "enabled": false },
-    { "id": "laithwaites", "name": "Laithwaites",  "country": "gb", "domains": ["laithwaites.co.uk"], "awinMid": "", "search": "https://www.laithwaites.co.uk/search?Ntt={q}",     "enabled": false },
-    { "id": "virginwines", "name": "Virgin Wines", "country": "gb", "domains": ["virginwines.co.uk"], "awinMid": "", "search": "https://www.virginwines.co.uk/search?q={q}",       "enabled": false },
-    { "id": "nakedwines",  "name": "Naked Wines",  "country": "gb", "domains": ["nakedwines.co.uk"],  "awinMid": "", "search": "https://www.nakedwines.co.uk/search?q={q}",        "enabled": false }
+    { "id": "majestic",        "name": "Majestic",          "country": "gb", "domains": ["majestic.co.uk"],      "awinMid": "1546",   "search": "", "enabled": false },
+    { "id": "winebuyers",      "name": "Winebuyers",        "country": "gb", "domains": ["winebuyers.com"],      "awinMid": "121644", "search": "", "enabled": false },
+    { "id": "greatwine",       "name": "The Great Wine Co.", "country": "gb", "domains": ["greatwine.co.uk"],    "awinMid": "21454",  "search": "", "enabled": false },
+    { "id": "drinksupermarket","name": "DrinkSupermarket",  "country": "gb", "domains": ["drinksupermarket.com"],"awinMid": "3574",   "search": "", "enabled": false },
+    { "id": "threshers",       "name": "Threshers",         "country": "gb", "domains": ["threshers.co.uk"],     "awinMid": "39276",  "search": "", "enabled": false },
+    { "id": "houseofdecant",   "name": "House of Decant",   "country": "gb", "domains": ["houseofdecant.com"],   "awinMid": "125510", "search": "", "enabled": false },
+    { "id": "wine52",          "name": "Wine52",            "country": "gb", "domains": ["beer52.com"],          "awinMid": "110978", "search": "", "enabled": false, "note": "A monthly discovery club: for Explore Next, not a scanned bottle (no search)." }
   ]
 }

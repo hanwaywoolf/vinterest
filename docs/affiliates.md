@@ -25,8 +25,10 @@ me" is a Google search and shop links are plain links.
 
 ## 2. Join each shop's programme
 
-In Awin: **Advertisers → Join programmes**, search for the shop (Majestic, Laithwaites, Virgin Wines,
-Naked Wines are listed in `data/retailers.json`; add others the same way). Each shop approves you
+In Awin: **Advertisers → Join programmes**, search for the shop. The shops applied to so far are listed in
+`data/retailers.json` with their Awin IDs (Majestic, Winebuyers, The Great Wine Co., DrinkSupermarket,
+Threshers, House of Decant, Wine52). Laithwaites, Virgin Wines and Naked Wines aren't on Awin (their
+programmes are on other networks or in-house); add others the same way. Each shop approves you
 separately, usually within a few days; some ask about your audience or traffic. Read each one's
 terms: commission rate, cookie length, and whether they allow app traffic and deep links.
 
