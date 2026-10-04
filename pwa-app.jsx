@@ -6,9 +6,11 @@ function App(){
     const h=window.location.hash.replace('#','').toLowerCase();
     return (h&&h!=='onboarding')?h:'home';
   });
+  // The way back: Home, then each screen opened since (a deep link opens above Home).
   const [stack,setStack]=React.useState(()=>{
-    const init=Settings.onboarded()?'home':'onboarding';
-    return [init];
+    if(!Settings.onboarded()) return ['onboarding'];
+    const h=window.location.hash.replace('#','').toLowerCase();
+    return h&&h!=='home'&&h!=='onboarding'?['home',h]:['home'];
   });
   const [proGate,setProGate]=React.useState(null);
   // On opening: types whose Explore Next is already open count as celebrated, so only a type
@@ -29,25 +31,36 @@ function App(){
     return()=>window.removeEventListener('resize',h);
   },[]);
 
+  /* Back follows the way they came, never in circles. Going to a screen already on the way back
+     (a quiz's "Back to Learn", Home from anywhere) returns to it, rewinding the browser's history
+     to that entry rather than stacking a new copy on top, so the in-app arrow and the phone's
+     own back gesture always agree: from Learn after a quiz, both go Home, not into the quiz.
+     `pushed` counts the history entries this visit added, so a rewind never leaves the app. */
+  const stackRef=React.useRef(stack); stackRef.current=stack;
+  const screenRef0=React.useRef(screen); screenRef0.current=screen;
+  const pushed=React.useRef(0);
+  const go=ns=>{ const to=ns[ns.length-1]; stackRef.current=ns; screenRef0.current=to; setStack(ns); setScreen(to); };
   function nav(to){
-    window.location.hash=to;
-    setStack(s=>[...s,to]);
-    setScreen(to);
+    const s=stackRef.current, i=s.lastIndexOf(to), up=s.length-1-i;
+    if(i>=0&&up===0){ go(s); return; }
+    if(i>=0&&up<=pushed.current){ pushed.current-=up; go(s.slice(0,i+1)); history.go(-up); return; }
+    if(i>=0||to==='home'){ go(i>=0?s.slice(0,i+1):['home']); history.replaceState(null,'','#'+to); return; }
+    pushed.current++; go([...s,to]); window.location.hash=to;
   }
   function back(){
-    if(stack.length<=1){setScreen('home');setStack(['home']);window.location.hash='home';return;}
-    const ns=stack.slice(0,-1);
-    setStack(ns);
-    const prev=ns[ns.length-1];
-    setScreen(prev);
-    window.location.hash=prev;
+    const s=stackRef.current, ns=s.length<=1?['home']:s.slice(0,-1);
+    if(s.length>1&&pushed.current>0){ pushed.current--; go(ns); history.back(); return; }
+    go(ns); history.replaceState(null,'','#'+ns[ns.length-1]);
   }
 
-  // Handle hardware back button / browser back
+  // The phone's back (or forward, or a link to a new hash): follow the same path.
   React.useEffect(()=>{
     const onPop=()=>{
-      const h=window.location.hash.replace('#','')||'home';
-      setScreen(h);
+      const h=window.location.hash.replace('#','').toLowerCase()||'home';
+      if(h===screenRef0.current) return; // our own change
+      const s=stackRef.current, i=s.lastIndexOf(h);
+      if(i>=0){ pushed.current=Math.max(0,pushed.current-(s.length-1-i)); go(s.slice(0,i+1)); }
+      else { pushed.current++; go([...s,h]); }
     };
     window.addEventListener('popstate',onPop);
     return ()=>window.removeEventListener('popstate',onPop);

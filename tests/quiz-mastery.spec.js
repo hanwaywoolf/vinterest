@@ -315,3 +315,17 @@ test('quiz XP: each new right answer, then the set bonus once', async ({ page })
   await expect(root(page)).toContainText(/All \d+ questions answered correctly/);
   expect(await xp()).toBe(start + 150 + 150); // 15 learned + the set bonus
 });
+
+// A generated bank that keeps teaching one point (Chardonnay's "neutral grape", three ways) keeps
+// only the first: a right answer that repeats an earlier one, or a stem built on it, is dropped.
+test('a quiz never asks the same point three ways', async ({ page }) => {
+  await page.goto(`${BASE}/?demo=1#learn`);
+  const kept = await page.evaluate(() => QuizMastery.distinct([
+    { q: 'Which statement best describes Chardonnay as a grape variety?', opts: ['Strong aromatics of its own', 'Always tastes the same', 'Grown for red blends', 'It is a neutral grape that reflects winemaking choices'], a: 3 },
+    { q: 'How does Chardonnay differ from an aromatic white grape such as Riesling?', opts: ['a', 'b', 'c', 'Chardonnay is a neutral grape shaped by winemaking, while Riesling expresses strong aromatics'], a: 3 },
+    { q: 'Given that Chardonnay is described as a neutral grape, what most shapes a Burgundy Chardonnay?', opts: ['a', 'b', "Terroir and climate, which shape the grape's ripeness", 'd'], a: 2 },
+    { q: 'What does new oak usually add to Chardonnay?', opts: ['Vanilla and buttery notes', 'Grassy notes', 'Petrol', 'Pepper'], a: 0 },
+    { q: 'Which region makes Chablis from Chardonnay?', opts: ['Burgundy', 'Rioja', 'Mosel', 'Napa'], a: 0 },
+  ], 'Chardonnay').map((q) => q.q.split(' ').slice(0, 3).join(' ')));
+  expect(kept).toEqual(['Which statement best', 'What does new', 'Which region makes']);
+});
