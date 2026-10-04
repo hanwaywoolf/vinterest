@@ -228,7 +228,7 @@ test('the grape cluster: 50 berries in two fixed bunches, sized by mastery', asy
       same: JSON.stringify(a.bunches.map((x) => x.grapes.map((g) => [g.name, g.x, g.y]))) === JSON.stringify(b.bunches.map((x) => x.grapes.map((g) => [g.name, g.x, g.y]))),
       tour: get('Touriga Nacional').skin, pink: [get('Pinot Grigio').skin, a.bunches[1].grapes.some((g) => g.name === 'Gewürztraminer')],
       tempranillo: get('Tempranillo'), chardonnay: get('Chardonnay'), riesling: get('Riesling'), malbec: get('Malbec').state,
-      big: KnowledgeMap.bunchSlots(300).slots.length,
+      big: KnowledgeMap.bunchSlots(300).slots.length, // the app shows 50; this only checks the layout has room to grow
     };
   });
   expect(out.sizes).toEqual([['red', 27], ['white', 23]]);

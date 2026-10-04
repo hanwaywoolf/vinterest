@@ -779,7 +779,7 @@ function MasteryGrapes({m,nav}){
   return(
     <div style={{display:'flex',flexDirection:'column',gap:10}}>
       <div style={{fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.5}}>
-        <b>{c.studied}</b> of {c.total} grapes studied{c.mastered?<>, <b>{c.mastered}</b> mastered</>:''}. Each berry fills in as you learn its grape; tap one to open it.
+        <b>{c.studied}</b> of {c.total} grapes studied{c.mastered?<>, <b>{c.mastered}</b> mastered</>:''}. Each grape fills in as you learn it; tap one to open its page.
       </div>
       <svg viewBox={`0 0 ${W} ${H}`} width="100%" data-testid="grape-cluster" style={{display:'block',maxWidth:440,margin:'0 auto',overflow:'visible'}}>
         {c.bunches.map((b,bi)=>{
