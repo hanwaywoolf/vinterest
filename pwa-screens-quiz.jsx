@@ -619,6 +619,36 @@ function _when(t){ return new Date(t).toLocaleDateString('en',{day:'numeric',mon
    next step. */
 const _PIN_COL={'Not started':'#fff','Getting started':'#DDA0AB','Developing':'#B94A61','Confident':C.cr,'Mastered':C.green};
 function _pinFill(p){ return p.state==='open'?_PIN_COL[p.level]||C.cr:'#CFC9C2'; }
+/* A two- or three-way switch (Bunches/List, Red/White, Map/List), as tabs. */
+function MasteryToggle({label,options,value,onChange,testid}){
+  return <div role="tablist" aria-label={label} data-testid={testid} style={{display:'flex',gap:4,padding:3,borderRadius:10,background:C.offWhite}}>
+    {options.map(([id,text])=>{ const on=value===id; return <div key={id} role="tab" aria-selected={on} tabIndex={0} onClick={()=>onChange(id)}
+      onKeyDown={e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); onChange(id); } }}
+      style={{flex:1,textAlign:'center',padding:'6px 0',borderRadius:8,fontSize:14,fontWeight:600,fontFamily:C.P,cursor:'pointer',
+        background:on?C.white:'transparent',color:on?C.ink:C.mid,boxShadow:on?'0 1px 2px rgba(0,0,0,0.08)':'none'}}>{text}</div>; })}
+  </div>;
+}
+/* One region as a row (the map's picked pins and the list): flag, name, where they stand, and
+   its next step (Quiz or Refresh, Pro, or scan a bottle from there). */
+function _RegionRow({p,nav,showPro,bar}){
+  const on=p.state==='open';
+  return <div data-region={p.name} style={{display:'flex',alignItems:'center',gap:10,padding:'10px 0',borderBottom:`1px solid ${C.line}`}}>
+    <Flag region={p.name} size={18}/>
+    <div style={{flex:1,minWidth:0,display:'flex',flexDirection:'column',gap:3}}>
+      <div style={{fontSize:15,fontWeight:700,color:on||!bar?C.ink:C.mid,fontFamily:C.P}}>{p.name}</div>
+      <div style={{fontSize:13,color:C.mid,fontFamily:C.P,lineHeight:1.4}}>
+        {on?`${p.level} · ${p.score}%`:p.state==='held'?'Unlocked, kept for Pro':'Not unlocked yet'}
+        {on&&p.fading?<span style={{color:C.amber,fontWeight:600}}>{` · ${p.fading} answer${p.fading===1?'':'s'} fading`}</span>:''}
+        {p.drunk?` · you've had ${p.drunk===1?'one':p.drunk}`:''}
+      </div>
+      {bar&&on&&<MasteryBar score={p.score} col={C.cr}/>}
+    </div>
+    {on?((p.score<100||p.fading>0)&&<div role="button" onClick={()=>_openLearn({kind:'region',region:p.name},nav,showPro)} style={{fontSize:14,fontWeight:700,color:C.cr,fontFamily:C.P,cursor:'pointer',whiteSpace:'nowrap'}}>{p.fading?'Refresh':'Quiz'} →</div>)
+      :p.state==='held'?<div role="button" onClick={()=>showPro('regions')} style={{cursor:'pointer'}}><ProBadge/></div>
+      :bar?null // the list says once, below, that a scan unlocks a region
+      :<div role="button" onClick={()=>nav('camera')} style={{fontSize:13,fontWeight:600,color:C.mid,fontFamily:C.P,cursor:'pointer',textAlign:'right',maxWidth:120,lineHeight:1.3}}>Scan a bottle from here</div>}
+  </div>;
+}
 /* Pinch (or a trackpad pinch, ctrl + wheel) zooms the map about the fingers, up to MAP_ZOOM_MAX;
    once zoomed, one finger pans it, and the page scrolls again once it's back at 1×. A touch that
    barely moves is a tap. + and − (and "Reset") do the same for anyone who can't pinch. Pins and
@@ -672,7 +702,12 @@ function useMapZoom(w,h){
   return {z,reset,zoomAt,ref,bind:onTap=>{ const H=handlers(onTap); wheel.current=H.onWheel; const {onWheel,...rest}=H; return rest; }};
 }
 function MasteryRegionMap({views,nav,showPro}){
-  const [vid,setVid]=React.useState(()=>{ const v=KnowledgeMap.homeView(views); return v?v.id:null; });
+  // Map or list, and which part of the world, as they last left it (Device.masteryView).
+  const saved=React.useRef(Device.masteryView()).current;
+  const [mode,setModeS]=React.useState(saved.regions==='list'?'list':'map');
+  const setMode=x=>{ setModeS(x); Device.setMasteryView({regions:x}); };
+  const [vid,setVidS]=React.useState(()=>{ if(saved.regionView&&views.some(x=>x.id===saved.regionView)) return saved.regionView; const v=KnowledgeMap.homeView(views); return v?v.id:null; });
+  const setVid=x=>{ setVidS(x); Device.setMasteryView({regionView:x}); };
   const [sel,setSel]=React.useState([]);
   const v=views.find(x=>x.id===vid)||views[0];
   const Z=useMapZoom(v?v.w:1,v?v.h:1), z=Z.z;
@@ -686,12 +721,17 @@ function MasteryRegionMap({views,nav,showPro}){
   const anyFading=v.pins.some(p=>p.fading);
   return(
     <div style={{display:'flex',flexDirection:'column',gap:10}}>
+      <MasteryToggle label="Show regions as" testid="region-mode" options={[['map','Map'],['list','List']]} value={mode} onChange={setMode}/>
       <div style={{display:'flex',gap:6,overflowX:'auto',scrollbarWidth:'none',margin:'0 -2px'}}>
         {views.map(x=>{ const on=x.id===v.id; return(
           <div key={x.id} role="button" aria-pressed={on} onClick={()=>{ setVid(x.id); setSel([]); Z.reset(); }} style={{flex:'0 0 auto',padding:'6px 11px',borderRadius:999,background:on?C.ink:C.white,border:`1px solid ${on?C.ink:C.line}`,cursor:'pointer',fontSize:13,fontWeight:600,color:on?'#fff':C.ink2,fontFamily:C.P,whiteSpace:'nowrap'}}>
             {x.label} <span style={{opacity:0.6}}>{x.open}/{x.pins.length}</span>
           </div>); })}
       </div>
+      {mode==='list'?<div data-testid="region-list" style={{display:'flex',flexDirection:'column',borderTop:`1px solid ${C.line}`}}>
+        {KnowledgeMap.regionRows(v).map(p=><_RegionRow key={p.name} p={p} nav={nav} showPro={showPro} bar/>)}
+        <div style={{fontSize:13,color:C.mid,fontFamily:C.P,marginTop:8}}>Scanning a bottle from a region unlocks it. <span role="button" onClick={()=>nav('camera')} style={{color:C.cr,fontWeight:700,cursor:'pointer'}}>Scan a bottle →</span></div>
+      </div>:<>
       <div style={{position:'relative'}}>
       <svg ref={Z.ref} viewBox={`${z.x.toFixed(2)} ${z.y.toFixed(2)} ${(v.w/z.k).toFixed(2)} ${(v.h/z.k).toFixed(2)}`} width="100%" {...Z.bind(tap)} role="img" data-testid="region-map" data-zoom={z.k.toFixed(2)}
         aria-label={`Map of ${v.label}: ${open} of ${v.pins.length} wine regions unlocked. Tap a region to see it; pinch or use + and − to zoom.`}
@@ -719,22 +759,9 @@ function MasteryRegionMap({views,nav,showPro}){
         {anyFading&&<span style={{display:'inline-flex',alignItems:'center',gap:5,fontSize:12,color:C.mid,fontFamily:C.P}}><span style={{width:9,height:9,borderRadius:6,background:C.cr,opacity:0.4,border:`1px dashed ${C.cr}`}}/>Fading: time for a refresher</span>}
       </div>
       {picked.length?<div data-testid="map-picked" style={{display:'flex',flexDirection:'column',borderTop:`1px solid ${C.line}`}}>
-        {picked.map(p=>(
-          <div key={p.name} style={{display:'flex',alignItems:'center',gap:10,padding:'10px 0',borderBottom:`1px solid ${C.line}`}}>
-            <Flag region={p.name} size={18}/>
-            <div style={{flex:1,minWidth:0}}>
-              <div style={{fontSize:15,fontWeight:700,color:C.ink,fontFamily:C.P}}>{p.name}</div>
-              <div style={{fontSize:13,color:C.mid,fontFamily:C.P,lineHeight:1.4}}>
-                {p.state==='open'?`${p.level} · ${p.score}%${p.fading?` · ${p.fading} answer${p.fading===1?'':'s'} fading`:''}`:p.state==='held'?'Unlocked, kept for Pro':'Not unlocked yet'}
-                {p.drunk?` · you've had ${p.drunk===1?'one':p.drunk}`:''}
-              </div>
-            </div>
-            {p.state==='open'?((p.score<100||p.fading>0)&&<div role="button" onClick={()=>_openLearn({kind:'region',region:p.name},nav,showPro)} style={{fontSize:14,fontWeight:700,color:C.cr,fontFamily:C.P,cursor:'pointer',whiteSpace:'nowrap'}}>{p.fading?'Refresh':'Quiz'} →</div>)
-              :p.state==='held'?<div role="button" onClick={()=>showPro('regions')} style={{cursor:'pointer'}}><ProBadge/></div>
-              :<div role="button" onClick={()=>nav('camera')} style={{fontSize:13,fontWeight:600,color:C.mid,fontFamily:C.P,cursor:'pointer',textAlign:'right',maxWidth:120,lineHeight:1.3}}>Scan a bottle from here</div>}
-          </div>
-        ))}
+        {picked.map(p=><_RegionRow key={p.name} p={p} nav={nav} showPro={showPro}/>)}
       </div>:<div style={{fontSize:13,color:C.mid,fontFamily:C.P}}>Tap a pin to see a region; pinch to zoom in. Scanning a bottle unlocks its region.</div>}
+      </>}
     </div>
   );
 }
@@ -838,12 +865,11 @@ function _berrySaid(g){
 function openGrapePage(name,nav){ Handoff.grapePage.set(name); nav('grape'); }
 /* The grapes as a list: red, then white and pink, each grape with its level and score; a tap
    opens its page, as a tap on the bunch does. */
-function MasteryGrapeList({c,open}){
-  const rows=React.useMemo(()=>KnowledgeMap.grapeRows(c),[c]);
+function MasteryGrapeList({c,open,skin}){
+  const rows=React.useMemo(()=>KnowledgeMap.grapeRows(c).filter(b=>!skin||b.id===skin),[c,skin]);
   const said=g=>g.state==='open'?(g.score>0?`${g.level}`:'Not started'):g.state==='held'?'Kept for Pro':'Not unlocked yet';
   return <div data-testid="grape-list" style={{display:'flex',flexDirection:'column',gap:14}}>
     {rows.map(b=><div key={b.id} style={{display:'flex',flexDirection:'column'}}>
-      <div style={{fontSize:14,fontWeight:700,color:C.ink2,fontFamily:C.P,marginBottom:4}}>{b.label} · {b.grapes.filter(g=>g.score>0).length}/{b.grapes.length}</div>
       {b.grapes.map(g=>{
         const col=SKETCH_WASH[g.skin]||SKETCH_WASH.red, on=g.state==='open';
         return <div key={g.name} role="button" tabIndex={0} aria-label={_berrySaid(g)} onClick={()=>open(g.name)}
@@ -879,19 +905,18 @@ function MasteryGrapes({m,nav,view,setView,onOpen}){
   const H=Math.ceil(Math.max(...c.bunches.map(b=>b.h))*k+TOP+24);
   const from=g=>{ const v=seen.current[g.name]; return v==null||v<0?_BERRY_MIN:_berryScale('open',v); };
   const key=g=>e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); open(g.name); } };
-  const tab=(id,label)=><div role="tab" aria-selected={view===id} tabIndex={0} onClick={()=>setView(id)}
-    onKeyDown={e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); setView(id); } }}
-    style={{flex:1,textAlign:'center',padding:'6px 0',borderRadius:8,fontSize:14,fontWeight:600,fontFamily:C.P,cursor:'pointer',
-      background:view===id?C.white:'transparent',color:view===id?C.ink:C.mid,boxShadow:view===id?'0 1px 2px rgba(0,0,0,0.08)':'none'}}>{label}</div>;
+  // Red or white in the list, as they last left it (Device.masteryView).
+  const [skin,setSkinS]=React.useState(()=>Device.masteryView().grapeSkin==='white'?'white':'red');
+  const setSkin=x=>{ setSkinS(x); Device.setMasteryView({grapeSkin:x}); };
+  const count=id=>{ const b=c.bunches.find(x=>x.id===id); return b?`${b.grapes.filter(g=>g.score>0).length}/${b.grapes.length}`:''; };
   return(
     <div style={{display:'flex',flexDirection:'column',gap:10}}>
       <div style={{fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.5}}>
         <b>{c.studied}</b> of {c.total} grapes studied{c.mastered?<>, <b>{c.mastered}</b> mastered</>:''}. {view==='list'?'Tap a grape to open its page.':'Each grape fills in as you learn it; tap one to open its page.'}
       </div>
-      <div role="tablist" aria-label="Show grapes as" style={{display:'flex',gap:4,padding:3,borderRadius:10,background:C.offWhite}}>
-        {tab('bunch','Bunches')}{tab('list','List')}
-      </div>
-      {view==='list'?<MasteryGrapeList c={c} open={open}/>:<>
+      <MasteryToggle label="Show grapes as" testid="grape-mode" options={[['bunch','Bunches'],['list','List']]} value={view} onChange={setView}/>
+      {view==='list'&&<MasteryToggle label="Grape colour" testid="grape-skin" options={[['red',`Red · ${count('red')}`],['white',`White · ${count('white')}`]]} value={skin} onChange={setSkin}/>}
+      {view==='list'?<MasteryGrapeList c={c} open={open} skin={skin}/>:<>
       <svg viewBox={`0 0 ${W} ${H}`} width="100%" data-testid="grape-cluster" style={{display:'block',maxWidth:440,margin:'0 auto',overflow:'visible'}}>
         {c.bunches.map((b,bi)=>{
           const cx=colW/2+bi*(colW+GAP), x0=cx-(Math.max(...b.grapes.map(g=>g.x))+Math.min(...b.grapes.map(g=>g.x)))/2*k;
@@ -958,7 +983,8 @@ function MasteryMapScreen({nav,back,showPro}){
   const listRef=React.useRef(null);
   // Back from a grape's page returns to where they were, with the grapes shown the same way.
   const ret=React.useRef(Handoff.masteryReturn.take());
-  const [grapeView,setGrapeView]=React.useState(ret.current&&ret.current.view==='list'?'list':'bunch');
+  const [grapeView,setGrapeViewS]=React.useState(()=>(ret.current&&ret.current.view||Device.masteryView().grapes)==='list'?'list':'bunch');
+  const setGrapeView=x=>{ setGrapeViewS(x); Device.setMasteryView({grapes:x}); };
   React.useLayoutEffect(()=>{ const r=ret.current, el=listRef.current; if(r&&el&&r.top>0) el.scrollTop=r.top; },[]);
   const leaveForGrape=()=>Handoff.masteryReturn.set({top:listRef.current?listRef.current.scrollTop:0,view:grapeView});
   const go=next=>{ if(next) _openLearn({kind:'mastery',next},nav,showPro); };

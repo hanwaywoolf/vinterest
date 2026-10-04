@@ -301,6 +301,12 @@ const KnowledgeMap = {
   },
 
   /* The view to open on: the one with the most regions they've unlocked or drunk. */
+  /* Mastery's region list for one map view: most progress first (as grapeRows), then kept for
+     Pro, then not unlocked, by name within each. */
+  regionRows(view){
+    const rank=p=>p.state==='open'?(p.score>0?0:1):p.state==='held'?2:3;
+    return [...((view&&view.pins)||[])].sort((a,b)=>rank(a)-rank(b)||(b.score||0)-(a.score||0)||a.name.localeCompare(b.name));
+  },
   /* Regions on the map overall (a region can sit in more than one view): {open, total}. */
   mapCount(views){
     const all={}; (views||[]).forEach(v=>v.pins.forEach(p=>{ all[p.name]=all[p.name]||p.state==='open'; }));

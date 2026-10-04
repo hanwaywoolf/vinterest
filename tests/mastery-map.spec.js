@@ -286,16 +286,20 @@ test('grapes as a list, back lands on the grapes, and the page lists their own b
   await page.goto(`${BASE}/#home`);
   await grapeStudy(page);
   await page.goto(`${BASE}/#mastery-map`);
-  await page.getByRole('tab', { name: 'List' }).click();
+  await page.getByTestId('grape-mode').getByRole('tab', { name: 'List' }).click();
   const list = page.getByTestId('grape-list');
   await list.scrollIntoViewIfNeeded();
-  const names = await list.getByRole('button').evaluateAll((els) => els.map((e) => e.getAttribute('aria-label').split(',')[0]));
-  expect(names.length).toBe(50);
-  // Most progress first in each bunch; not-unlocked grapes last.
-  expect(names[0]).toBe('Tempranillo');
-  expect(Math.max(names.indexOf('Riesling'), names.indexOf('Chardonnay'))).toBeLessThan(names.indexOf('Pinot Grigio'));
-  expect(names.indexOf('Pinot Grigio')).toBeLessThan(names.indexOf('Viognier'));
+  const names = () => list.getByRole('button').evaluateAll((els) => els.map((e) => e.getAttribute('aria-label').split(',')[0]));
+  // Red first, most progress first; not-unlocked grapes last.
+  const reds = await names();
+  expect(reds.length).toBe(27);
+  expect(reds[0]).toBe('Tempranillo');
   await expect(list.getByRole('button', { name: /^Tempranillo/ })).toContainText('70%');
+  await page.getByTestId('grape-skin').getByRole('tab', { name: /^White/ }).click();
+  const whites = await names();
+  expect(whites.length).toBe(23);
+  expect(Math.max(whites.indexOf('Riesling'), whites.indexOf('Chardonnay'))).toBeLessThan(whites.indexOf('Pinot Grigio'));
+  expect(whites.indexOf('Pinot Grigio')).toBeLessThan(whites.indexOf('Viognier'));
   await page.screenshot({ path: path.join(info.project.outputDir, 'grape-list.png') });
 
   // Back from a grape returns to the list, where they were, not the top of Mastery.
@@ -308,8 +312,15 @@ test('grapes as a list, back lands on the grapes, and the page lists their own b
   await expect(page.getByTestId('grape-progress')).toBeVisible();
   await root(page).getByRole('button', { name: 'Back' }).click();
   await expect(page.getByTestId('grape-list')).toBeVisible();
-  await expect(page.getByRole('tab', { name: 'List' })).toHaveAttribute('aria-selected', 'true');
+  await expect(page.getByTestId('grape-mode').getByRole('tab', { name: 'List' })).toHaveAttribute('aria-selected', 'true');
+  await expect(page.getByTestId('grape-skin').getByRole('tab', { name: /^White/ })).toHaveAttribute('aria-selected', 'true');
   expect(Math.abs(await scroller().evaluate((el) => el.scrollTop) - before)).toBeLessThan(40);
+
+  // Red or white stays as they left it, even after leaving Mastery.
+  await page.goto(`${BASE}/#home`);
+  await page.goto(`${BASE}/#mastery-map`);
+  await expect(page.getByTestId('grape-skin').getByRole('tab', { name: /^White/ })).toHaveAttribute('aria-selected', 'true');
+  await page.getByTestId('grape-skin').getByRole('tab', { name: /^Red/ }).click();
 
   // The grape's page lists their own bottles of it, best first; a tap opens the wine.
   await page.getByTestId('grape-list').getByRole('button', { name: /^Tempranillo/ }).click();
@@ -397,6 +408,28 @@ test('the wine map zooms with a pinch and with + and −, and a tap still picks 
   }, pin);
   await page.mouse.click(p2.x, p2.y);
   await expect(page.getByTestId('map-picked')).toContainText(pin.name);
+  expect(errors).toEqual([]);
+});
+
+test('regions as a list beside the map: per part of the world, most progress first, kept next time', async ({ context, page }, info) => {
+  const errors = collectErrors(page);
+  await user(context, page);
+  await page.goto(`${BASE}/#home`);
+  await page.goto(`${BASE}/#mastery-map`);
+  await page.getByTestId('region-mode').getByRole('tab', { name: 'List' }).click();
+  const list = page.getByTestId('region-list');
+  await list.scrollIntoViewIfNeeded();
+  await expect(page.getByTestId('region-map')).toHaveCount(0);
+  const want = await page.evaluate(() => KnowledgeMap.regionRows(KnowledgeMap.homeView(KnowledgeMap.regionMap())).map((p) => p.name));
+  expect(await list.locator('[data-region]').evaluateAll((els) => els.map((e) => e.dataset.region))).toEqual(want);
+  await page.screenshot({ path: path.join(info.project.outputDir, 'region-list.png') });
+  // Another part of the world, and both choices kept for next time.
+  await page.getByRole('button', { name: /^North America/ }).click();
+  await expect(list).toContainText('Napa');
+  await page.goto(`${BASE}/#home`);
+  await page.goto(`${BASE}/#mastery-map`);
+  await expect(page.getByTestId('region-mode').getByRole('tab', { name: 'List' })).toHaveAttribute('aria-selected', 'true');
+  await expect(page.getByTestId('region-list')).toContainText('Napa');
   expect(errors).toEqual([]);
 });
 

@@ -75,6 +75,11 @@ const Device = {
   MASTERY_COLLAPSE_KEY:'vinterest_mastery_collapsed_v1',
   masteryCollapsed(){ const v=Store.getJSON(this.MASTERY_COLLAPSE_KEY,{}); return v&&typeof v==='object'?v:{}; },
   setMasteryCollapsed(v){ Store.setJSON(this.MASTERY_COLLAPSE_KEY,v); },
+  /* How Mastery's grapes and regions were last shown on this phone, kept for next time:
+     {grapes: 'bunch'|'list', grapeSkin: 'red'|'white', regions: 'map'|'list', regionView: view id}. */
+  MASTERY_VIEW_KEY:'vinterest_mastery_view_v1',
+  masteryView(){ const v=Store.getJSON(this.MASTERY_VIEW_KEY,{}); return v&&typeof v==='object'?v:{}; },
+  setMasteryView(patch){ Store.setJSON(this.MASTERY_VIEW_KEY,{...this.masteryView(),...patch}); },
 };
 
 /* Wines hearted on the detail screen, by name and vintage. */
