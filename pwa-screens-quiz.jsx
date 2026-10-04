@@ -643,6 +643,38 @@ function MasteryRegionMap({views,nav,showPro}){
   );
 }
 
+/* What they can taste (Palate, pwa-palate.js), beside what they know: their Blind Calls scored
+   against each label's profile, a bar per axis with how to notice it, any habit ("you tend to
+   call tannins grippier"), and the next step. Not part of the knowledge score. */
+function MasteryPalate({p,go}){
+  const leans=Palate.leans(p);
+  return(
+    <div style={{display:'flex',flexDirection:'column',gap:10}}>
+      <div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline'}}>
+        <span style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>{p.n?`${p.level} · ${p.score}%`:'Not started'}</span>
+        <span style={{fontSize:13,color:C.mid,fontFamily:C.P}}>{p.n} Blind Call{p.n===1?'':'s'}{p.trend!=null&&p.trend!==0?` · ${p.trend>0?'+':''}${p.trend} lately`:''}</span>
+      </div>
+      <MasteryBar score={p.score}/>
+      <div style={{fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.5}}>
+        {p.n?<>Your calls average {p.accuracy}% accurate{p.n<Palate.FULL_AT?`. The score fills in as you play: ${Palate.FULL_AT-p.n} more to count in full`:''}. Each call is checked against the label's profile, an estimate, so treat it as a guide.</>
+          :<>Blind Call asks you to taste first and guess the body, acidity and tannins before you see the label's profile. Your calls build this score, separate from what you've read.</>}
+      </div>
+      {p.axes.map(a=>(
+        <div key={a.id} style={{display:'flex',flexDirection:'column',gap:4}}>
+          <div style={{display:'flex',alignItems:'center',gap:10}}>
+            <span style={{flex:'0 0 30%',fontSize:14,fontWeight:600,color:C.ink2,fontFamily:C.P}}>{a.name}</span>
+            <div style={{flex:1}}><MasteryBar score={a.score}/></div>
+            <span style={{fontSize:13,fontWeight:700,color:C.ink2,fontFamily:C.P,width:38,textAlign:'right'}}>{a.score}%</span>
+          </div>
+          <div style={{fontSize:13,color:C.mid,fontFamily:C.P,lineHeight:1.4}}>{a.how}</div>
+        </div>
+      ))}
+      {leans.map(l=><div key={l} style={{fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.45,background:C.offWhite,borderRadius:10,padding:'8px 10px'}}>{l}</div>)}
+      {p.next&&<div role="button" onClick={()=>go(p.next)} style={{fontSize:14,fontWeight:700,color:C.cr,fontFamily:C.P,cursor:'pointer'}}>{p.next.label} →</div>}
+    </div>
+  );
+}
+
 const _MASTERY_CSS=`@keyframes masteryGrow{from{transform:scale(0.2);opacity:0}to{transform:scale(1);opacity:1}}
 .mastery-radar-shape{animation:masteryGrow .7s cubic-bezier(.2,.8,.2,1) both}
 @media (prefers-reduced-motion:reduce){.mastery-radar-shape{animation:none}}`;
@@ -653,6 +685,7 @@ function MasteryMapScreen({nav,back,showPro}){
   const prog=React.useMemo(()=>KnowledgeMap.progress(m),[m]);
   const focus=React.useMemo(()=>KnowledgeMap.focus(wines,m),[m]);
   const views=React.useMemo(()=>KnowledgeMap.regionMap(wines,m),[m]);
+  const palate=React.useMemo(()=>Palate.compute(wines),[wines]);
   const [open,setOpen]=React.useState(null);
   const listRef=React.useRef(null);
   const go=next=>{ if(next) _openLearn({kind:'mastery',next},nav,showPro); };
@@ -698,6 +731,11 @@ function MasteryMapScreen({nav,back,showPro}){
               :<>No change since {_when(prog.then.t)}. A quiz or an article moves the shape.</>)
               :<>A rounder shape means rounder knowledge. From next week, a dashed outline shows where you were, so you can see it grow.</>}
           </div>
+        </div>
+
+        {head('Your palate')}
+        <div data-testid="mastery-palate" style={card}>
+          <MasteryPalate p={palate} go={go}/>
         </div>
 
         {head('Your wine map')}

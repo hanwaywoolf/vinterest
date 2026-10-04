@@ -114,3 +114,33 @@ test('the Mastery screen: Start here, the shape with last month, and the map', a
   await expect(root(page).getByRole('img', { name: /^Map of North America/ })).toBeVisible();
   expect(errors).toEqual([]);
 });
+
+// Palate: what they can taste, from their Blind Calls against each label's profile.
+test('Palate scores Blind Calls per axis, names a habit, and fills in over five calls', async ({ context, page }, info) => {
+  const errors = collectErrors(page);
+  await user(context, page);
+  await page.goto(`${BASE}/#home`);
+  const out = await page.evaluate(() => {
+    const none = Palate.compute();
+    const reds = WineHistory.getAll().filter((w) => w.type === 'red'); // body 0.6, tannins 0.6, acidity 0.6
+    // Three calls, each guessing tannins 0.25 grippier than the label; body and acidity spot on.
+    reds.forEach((w, i) => ScanFlow.saveBlindResult(w, { accuracy: 0.87, amount: 200, guess: { body: 0.6, acidity: 0.6, tannins: 0.85 } }));
+    const p = Palate.compute();
+    return { none: { score: none.score, n: none.n, next: none.next.label }, p, leans: Palate.leans(p) };
+  });
+  expect(out.none).toEqual({ score: 0, n: 0, next: 'Play Blind Call on your next bottle' });
+  expect(out.p.n).toBe(4); // three Riojas and the Burgundy
+  expect(out.p.axes.find((a) => a.id === 'body').score).toBe(100);
+  expect(out.p.axes.find((a) => a.id === 'tannins').score).toBe(60); // 1 − 1.6 × 0.25
+  expect(out.leans).toEqual(["You tend to call tannins grippier than the label's profile."]);
+  expect(out.p.score).toBe(Math.round(87 * 4 / 5)); // four of five calls
+  expect(out.p.next.label).toBe('Play Blind Call on your next bottle (4 of 5)');
+  await page.goto(`${BASE}/#mastery-map`);
+  const card = page.getByTestId('mastery-palate');
+  await expect(card).toContainText('4 Blind Calls');
+  await expect(card).toContainText('Tannin dries your gums');
+  await expect(card).toContainText('grippier than the label');
+  await card.scrollIntoViewIfNeeded();
+  await page.screenshot({ path: path.join(info.project.outputDir, 'mastery-palate.png') });
+  expect(errors).toEqual([]);
+});
