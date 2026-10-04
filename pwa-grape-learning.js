@@ -117,8 +117,7 @@ function getGrapeQuiz(grape, onReady){
     return;
   }
   _grapeQuizInFlight.add(grape);
-  const g=KNOWLEDGE.grapes[grape];
-  const facts=g?`${grape}: ${g.profile} Famous in: ${g.famousIn.join(', ')}.`:`${grape}: no specific retrieved facts — keep questions general and safely factual.`;
+  const facts=grapeFactsText(grape)||`${grape}: no specific retrieved facts — keep questions general and safely factual.`;
   const prompt=ContentEngine.fillTpl(_loadTextSync('prompts/grape-quiz.txt'),{grape,facts});
   window.claude.complete({purpose:'grape_quiz',max_tokens:4096,messages:[{role:'user',content:prompt}]})
     .then(text=>{

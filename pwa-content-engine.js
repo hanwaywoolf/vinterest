@@ -4,6 +4,16 @@
 
 let KNOWLEDGE={descriptors:{},regions:{},grapes:{}},ARTICLE_ARCHETYPES=[],TRIGGERS=[];
 try{ KNOWLEDGE=_loadJSON('data/knowledge.json')||KNOWLEDGE; }catch(e){ console.error('[Vinterest] knowledge.json failed to load — generated Learn content will be generic until it is deployed.',e); }
+/* A grape's checked facts as one line for a prompt (grape quizzes, articles): its profile and
+   where it's famous, then the angles a quiz spreads over (other names, climate, winemaking,
+   food, ageing, look-alikes, blends), so Claude has more than one idea to build questions on. */
+function grapeFactsText(name){
+  const g=KNOWLEDGE.grapes&&KNOWLEDGE.grapes[name]; if(!g) return null;
+  const parts=[`${name}: ${g.profile}.`, g.famousIn&&g.famousIn.length?`Famous in: ${g.famousIn.join(', ')}.`:null];
+  [['aka','Other names'],['climate','Climate'],['winemaking','Winemaking'],['food','Food'],['ageing','Ageing'],['lookalike','Compared with similar grapes'],['blends','In blends']]
+    .forEach(([k,l])=>{ if(g[k]) parts.push(`${l}: ${g[k]}.`); });
+  return parts.filter(Boolean).join(' ').replace(/\.\./g,'.');
+}
 try{ ARTICLE_ARCHETYPES=_loadJSON('data/archetypes.json')||[]; }catch(e){ console.error('[Vinterest] archetypes.json failed to load — the Learn shelf will stay empty until it is deployed.',e); }
 try{ TRIGGERS=_loadJSON('data/triggers.json')||[]; }catch(e){ console.error('[Vinterest] triggers.json failed to load — the Learn shelf will stay empty until it is deployed.',e); }
 
@@ -537,8 +547,7 @@ const ContentEngine = {
       lines.push(`${slots.regionB} (${r.country}): classification ${r.classification}. Key grapes: ${r.keyGrapes.join(', ')}. Climate: ${r.climate}.`);
     }
     if(slots.grape&&KNOWLEDGE.grapes[slots.grape]){
-      const g=KNOWLEDGE.grapes[slots.grape];
-      lines.push(`${slots.grape}: ${g.profile} Famous in: ${g.famousIn.join(', ')}.`);
+      lines.push(grapeFactsText(slots.grape));
     }
     if(slots.descriptor){
       const d=KNOWLEDGE.descriptors[slots.descriptor.toLowerCase()];

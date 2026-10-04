@@ -329,3 +329,17 @@ test('a quiz never asks the same point three ways', async ({ page }) => {
   ], 'Chardonnay').map((q) => q.q.split(' ').slice(0, 3).join(' ')));
   expect(kept).toEqual(['Which statement best', 'What does new', 'Which region makes']);
 });
+
+// Every grape on the Learn list has checked facts for each angle the quiz prompt spreads its
+// questions over, so no quiz is built on a single idea (Chardonnay's was "neutral" three times).
+test('every grape has facts for every quiz angle, and the prompt gets them all', async ({ page }) => {
+  await page.goto(`${BASE}/?demo=1#learn`);
+  const out = await page.evaluate(() => {
+    const fields = ['profile', 'famousIn', 'aka', 'climate', 'winemaking', 'food', 'ageing', 'lookalike', 'blends'];
+    const gaps = GRAPE_ALLOWLIST.flatMap((g) => fields.filter((f) => !(KNOWLEDGE.grapes[g] && KNOWLEDGE.grapes[g][f] && String(KNOWLEDGE.grapes[g][f]).length > 3)).map((f) => `${g}.${f}`));
+    return { n: GRAPE_ALLOWLIST.length, gaps, line: grapeFactsText('Chardonnay') };
+  });
+  expect(out.n).toBe(50);
+  expect(out.gaps).toEqual([]);
+  for (const l of ['Other names:', 'Climate:', 'Winemaking:', 'Food:', 'Ageing:', 'Compared with similar grapes:', 'In blends:']) expect(out.line).toContain(l);
+});
