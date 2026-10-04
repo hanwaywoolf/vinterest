@@ -8,7 +8,9 @@ module.exports = defineConfig({
   testDir: 'tests',
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
-  reporter: 'list',
+  // On CI, each failure is also a check annotation (the github reporter), readable on the PR
+  // without downloading the log.
+  reporter: process.env.CI ? [['list'], ['github']] : 'list',
   use: {
     ...devices['Pixel 7'],
     // Service workers would answer fetches before the test's network stubs see them.
