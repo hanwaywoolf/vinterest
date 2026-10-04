@@ -1,0 +1,71 @@
+/* Vinterest — ink-and-wash sketches of grapes, for Mastery's grape bunches and each grape's own
+   page. Drawn like a quick pen study: a slightly wobbly outline that overshoots where it closes,
+   a loose flat wash of the wine's own colour laid a little off the line, a couple of hatch
+   strokes for shade, no gradients or highlights. Every wobble is seeded by name, so a sketch
+   is the same each time. Colours are the app's: crimson for red skins, the white wines' gold,
+   rosé for pink skins, and an ink brown for the lines. */
+const SKETCH_INK='#3B2B24', SKETCH_PENCIL='#C9BFB5';
+const SKETCH_WASH={red:'#8B1A2F',white:'#B8963E',pink:'#C47A8A',green:'#9AA35A',russet:'#B07A45',leaf:'#7E9150',leafRed:'#A8323E'};
+
+/* A smooth closed-ish path through points (Catmull-Rom as cubic Béziers). */
+function _sketchPath(pts,closed){
+  const P=closed?[pts[pts.length-1],...pts,pts[0],pts[1]]:[pts[0],...pts,pts[pts.length-1]];
+  let d=`M${pts[0][0].toFixed(2)} ${pts[0][1].toFixed(2)}`;
+  for(let i=1;i<P.length-2;i++){
+    const [p0,p1,p2,p3]=[P[i-1],P[i],P[i+1],P[i+2]];
+    const c1=[p1[0]+(p2[0]-p0[0])/6,p1[1]+(p2[1]-p0[1])/6], c2=[p2[0]-(p3[0]-p1[0])/6,p2[1]-(p3[1]-p1[1])/6];
+    d+=`C${c1[0].toFixed(2)} ${c1[1].toFixed(2)} ${c2[0].toFixed(2)} ${c2[1].toFixed(2)} ${p2[0].toFixed(2)} ${p2[1].toFixed(2)}`;
+  }
+  return d+(closed?'Z':'');
+}
+/* A hand-drawn circle of radius 1: a little uneven, and the pen runs past where it started. */
+const _sketchCache={};
+function sketchBerryPaths(seed){
+  if(_sketchCache[seed]) return _sketchCache[seed];
+  const rnd=KnowledgeMap._rng('berry'+seed), start=rnd()*Math.PI*2, N=9;
+  const wob=Array.from({length:N+2},()=>0.94+rnd()*0.12);
+  const ring=over=>Array.from({length:N+1+(over?2:0)},(_,i)=>{ const t=start+i*(Math.PI*2/N)*(over?1.04:1), r=wob[i%(N+2)]*(over&&i>N?0.97:1); return [Math.cos(t)*r,Math.sin(t)*r]; });
+  const line=_sketchPath(ring(true),false);
+  const wash=_sketchPath(ring(false).slice(0,N),true);
+  const h=0.2+rnd()*0.15;
+  const hatch=`M${(0.15+h).toFixed(2)} 0.62 Q0.55 0.5 0.66 ${(0.18+h/2).toFixed(2)} M${(0.02+h).toFixed(2)} 0.76 Q0.45 0.68 0.6 0.46`;
+  return _sketchCache[seed]={line,wash,hatch,dx:0.1+rnd()*0.1,dy:0.12+rnd()*0.08};
+}
+/* One berry, radius 1 (scale the group it sits in). state: 'locked' a pencil outline only;
+   'start' an outline in its colour; 'grow' washed; 'ripe' washed with hatching; fading dashes
+   the line and thins the wash. */
+function SketchBerry({seed,skin,state,fading,wash}){
+  const p=sketchBerryPaths(seed), col=wash||SKETCH_WASH[skin]||SKETCH_WASH.red;
+  const line={fill:'none',strokeLinecap:'round',vectorEffect:'non-scaling-stroke'};
+  if(state==='locked') return <g><path d={p.wash} fill="#FBF8F3"/><path d={p.line} {...line} stroke={SKETCH_PENCIL} strokeWidth="1.1"/></g>;
+  return <g>
+    <path d={p.wash} fill={state==='start'?'#FBF8F3':col} opacity={state==='start'?1:fading?0.28:state==='ripe'?0.72:0.55} transform={`translate(${p.dx} ${p.dy})`}/>
+    <path d={p.line} {...line} stroke={state==='start'?col:SKETCH_INK} strokeWidth={state==='start'?1.5:1.2} strokeDasharray={fading?'3 3':null}/>
+    {state==='ripe'&&<path d={p.hatch} {...line} stroke={SKETCH_INK} strokeWidth="0.9" opacity="0.7"/>}
+  </g>;
+}
+/* A vine leaf: five lobes with a notch where the stalk joins, a lightly toothed edge and three
+   veins, about 30 units across, the stalk at (0, 0) and the top lobe pointing up. */
+function _leafPath(){
+  const pts=[], N=90;
+  for(let i=0;i<N;i++){
+    const t=-Math.PI/2+i*(Math.PI*2/N);
+    const r=13*(0.42+0.58*Math.pow(Math.abs(Math.sin(2.5*(t+Math.PI/2))),0.55))*(i%2?1:0.93);
+    pts.push([Math.cos(t)*r,-Math.sin(t)*r-5.5]);
+  }
+  return _sketchPath(pts,true);
+}
+const _LEAF=_leafPath();
+/* The top of a bunch: the stalk, a curling tendril and a leaf, at (x, y) where the berries begin. */
+function SketchVine({x,y,s=1,leafRed}){
+  const line={fill:'none',stroke:SKETCH_INK,strokeLinecap:'round'};
+  return <g transform={`translate(${x} ${y}) scale(${s})`}>
+    <path d="M0 4 C0 -6 2 -14 7 -22" {...line} strokeWidth="2.2"/>
+    <path d="M3 -12 C10 -14 14 -10 12 -6 C10 -3 7 -5 8 -7" {...line} strokeWidth="1"/>
+    <g transform="translate(2 -14) rotate(-38) scale(1.25)">
+      <path d={_LEAF} fill={leafRed?SKETCH_WASH.leafRed:SKETCH_WASH.leaf} opacity="0.42" transform="translate(1.2 1)"/>
+      <path d={_LEAF} {...line} strokeWidth="0.9"/>
+      <path d="M0 -5 L0 -17 M0 -6 L-10 -14 M0 -6 L10 -14 M0 -6 L-11 -6 M0 -6 L11 -6" {...line} strokeWidth="0.6" opacity="0.6"/>
+    </g>
+  </g>;
+}

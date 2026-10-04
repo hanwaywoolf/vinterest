@@ -232,30 +232,46 @@ const KnowledgeMap = {
      Every grape on the Learn list as a berry, in two bunches by skin (red; white with the
      pink-skinned ones), each berry sized by its mastery. grapeCluster() is the data: per grape
      its state ('open' unlocked, 'held' kept for Pro, 'locked' not yet met), score, level,
-     fading answers and profile, placed in a fixed slot of its bunch. Slots come from
-     bunchSlots(n): rows of a tapering teardrop (6, 6, 5, 4, 3, 2, 1 for 27), as many as there
-     are grapes, in units of one berry's radius, with a little seeded jitter; grapes take slots
-     in an order seeded by their name, so nothing reshuffles between visits and a berry grows in
-     its own place without moving its neighbours. Works the same for a few hundred grapes. */
+     fading answers and profile, placed in a fixed spot of its bunch. Spots come from
+     bunchSlots(n): berries scattered inside a bunch outline (not rows), in units of one berry's
+     radius, seeded so the same every time; grapes take spots in an order seeded by their name,
+     so nothing reshuffles between visits and a berry grows in its own place without moving its
+     neighbours. Works the same for a few hundred grapes. */
   _seed(str){ let h=2166136261; for(const ch of String(str)){ h^=ch.codePointAt(0); h=Math.imul(h,16777619); } return h>>>0; },
-  bunchSlots(n){
+  _rng(seed){ let x=this._seed(seed)||1; return ()=>{ x^=x<<13; x^=x>>>17; x^=x<<5; return (x>>>0)/4294967296; }; },
+  /* A bunch's outline: its half-width at depth t (0 the shoulders, 1 the tip), rounded at the
+     top and tapering to a point. */
+  _bunchW(t){ return Math.sin(Math.PI/2*Math.min(1,(t+0.04)/0.26))*Math.pow(Math.max(0,1-t),0.85); },
+  /* n berries (radius 1) scattered inside a bunch outline sized so they cover `fill` of it:
+     each placed in the most open of a few seeded candidate spots, then nudged apart until
+     neighbours just touch. Organic, not rows, and the same every time for the same n and seed. */
+  _bunchCache:{},
+  bunchSlots(n,opts={}){
+    const fill=opts.fill||0.8, seed=opts.seed||'bunch', key=n+'|'+fill+'|'+seed;
+    if(this._bunchCache[key]) return this._bunchCache[key];
     if(!n) return {slots:[],w:0,h:0};
-    let t=1; const rowsFor=t=>{ const r=[t,t]; for(let w=t-1;w>=1;w--) r.push(w); return r; };
-    while(rowsFor(t).reduce((a,b)=>a+b,0)<n) t++;
-    const rows=rowsFor(t); let extra=rows.reduce((a,b)=>a+b,0)-n;
-    // Too many slots: narrow the widest rows first, keeping the bunch's taper.
-    for(let i=0;extra>0;i=(i+1)%rows.length){ if(rows[i]>1&&(i===rows.length-1||rows[i]>rows[i+1]||i<2)){ rows[i]--; extra--; } }
-    // Berries a little closer than touching (2 radii apart, rows 1.5 down), so they overlap like a real bunch.
-    const slots=[], DX=1.74, DY=1.5;
-    rows.forEach((w,ri)=>{
-      const shift=ri>0&&w===rows[ri-1]?(ri%2?1:-1):0;
-      for(let i=0;i<w;i++){
-        const k=slots.length, jx=((this._seed('x'+k)%100)/100-0.5)*0.24, jy=((this._seed('y'+k)%100)/100-0.5)*0.24;
-        slots.push({x:(i-(w-1)/2)*DX+shift*DX/2+jx,y:ri*DY+jy});
+    let I=0; for(let i=0;i<100;i++) I+=this._bunchW((i+0.5)/100)/100;
+    const ASPECT=2.3, a=Math.sqrt(n*Math.PI/fill/(2*ASPECT*I)), h=ASPECT*a, rnd=this._rng(seed+n);
+    const room=y=>a*this._bunchW(y/h)-0.6;
+    const inside=(x,y)=>y>=0.6&&y<=h-0.6&&Math.abs(x)<=Math.max(0,room(y));
+    const pts=[{x:0,y:1}];
+    const sample=()=>{ for(let i=0;i<200;i++){ const x=(rnd()*2-1)*a, y=rnd()*h; if(inside(x,y)) return {x,y}; } return {x:0,y:h/2}; };
+    while(pts.length<n){
+      let best=null, bd=-1;
+      for(let c=0;c<24;c++){ const p=sample(); let d=1e9; for(const q of pts){ const e=(p.x-q.x)**2+(p.y-q.y)**2; if(e<d) d=e; } if(d>bd){ bd=d; best=p; } }
+      pts.push(best);
+    }
+    const GAP=1.86;
+    for(let it=0;it<60;it++){
+      for(let i=0;i<n;i++) for(let j=i+1;j<n;j++){
+        const p=pts[i], q=pts[j], dx=q.x-p.x, dy=q.y-p.y, d=Math.hypot(dx,dy)||0.01;
+        if(d<GAP){ const m=(GAP-d)/2, ux=dx/d, uy=dy/d; p.x-=ux*m; p.y-=uy*m; q.x+=ux*m; q.y+=uy*m; }
       }
-    });
-    const xs=slots.map(p=>p.x);
-    return {slots,w:Math.max(...xs)-Math.min(...xs)+2,h:(rows.length-1)*DY+2,top:Math.max(...rows)};
+      pts.forEach(p=>{ p.y=Math.min(h-0.6,Math.max(0.6,p.y)); const r=Math.max(0,room(p.y)); p.x=Math.max(-r,Math.min(r,p.x)); });
+    }
+    const minY=Math.min(...pts.map(p=>p.y)), maxY=Math.max(...pts.map(p=>p.y)), xs=pts.map(p=>p.x);
+    const out={slots:pts.map(p=>({x:+p.x.toFixed(3),y:+(p.y-minY).toFixed(3)})),w:Math.max(...xs)-Math.min(...xs)+2,h:maxY-minY+2};
+    return this._bunchCache[key]=out;
   },
   grapeCluster(m){
     m=m||this.compute();
@@ -268,7 +284,7 @@ const KnowledgeMap = {
         level:it?it.level:'Not started',fading:it?it.fading||0:0,profile:K?K.profile:null};
     });
     const bunch=(id,label,list)=>{
-      const sorted=[...list].sort((a,b)=>this._seed(a.name)-this._seed(b.name)), L=this.bunchSlots(sorted.length);
+      const sorted=[...list].sort((a,b)=>this._seed(a.name)-this._seed(b.name)), L=this.bunchSlots(sorted.length,{seed:id});
       return {id,label,...L,grapes:sorted.map((g,i)=>({...g,...L.slots[i]}))};
     };
     const studied=grapes.filter(g=>g.score>0).length, mastered=grapes.filter(g=>g.score>=100).length;

@@ -321,3 +321,113 @@ function GenArticleScreen({nav,back}){
 }
 
 Object.assign(window,{LearnArticleScreen,GenArticleScreen});
+
+/* ── A grape's own page ──
+   Opened from Mastery's grape bunches. An annotated ink-and-wash sketch of the grape's bunch
+   (pwa-sketch.jsx; its berry size, how tight the bunch is and what stands out, from
+   data/knowledge.json's `look`), where they stand with it and the next step, then what it
+   tastes like, where it comes from and grows, the wines made from it, and how climate,
+   winemaking, food and age change it (GrapeInfo in pwa-grape-learning.js). */
+const _SKIN_LABEL={red:'Red-skinned',white:'White-skinned',pink:'Pink-skinned'};
+function _wrapWords(text,max){ const out=[]; let line=''; String(text).split(' ').forEach(w=>{ if((line+' '+w).trim().length>max&&line){ out.push(line); line=w; } else line=(line+' '+w).trim(); }); if(line) out.push(line); return out; }
+function GrapeSketch({info}){
+  const {n,fill}=GrapeInfo.sketch(info.look);
+  const L=KnowledgeMap.bunchSlots(n,{fill,seed:info.name});
+  const W=340, H=260, BW=150, TOP=46;
+  const k=Math.min(BW/L.w,(H-TOP-14)/L.h), xs=L.slots.map(p=>p.x), x0=20+BW/2-(Math.max(...xs)+Math.min(...xs))/2*k;
+  const rnd=KnowledgeMap._rng('look'+info.name);
+  const berries=[...L.slots].map((p,i)=>({...p,i,green:info.look.uneven&&rnd()<0.35,ripe:rnd()<0.3})).sort((a,b)=>a.y-b.y);
+  const wash=b=>b.green?SKETCH_WASH.green:info.look.russet&&b.i%2?SKETCH_WASH.russet:null;
+  const notes=[_SKIN_LABEL[info.skin],...(info.look.notes||[])].slice(0,4);
+  const ys=notes.map((_,i)=>TOP+18+i*((H-TOP-30)/Math.max(1,notes.length)));
+  const edge=y=>{ const near=L.slots.filter(p=>Math.abs(TOP+k+p.y*k-y)<k*1.4); const p=near.length?near.reduce((a,b)=>b.x>a.x?b:a):L.slots[0]; return [x0+p.x*k+k*0.9,TOP+k+p.y*k]; };
+  return(
+    <svg viewBox={`0 0 ${W} ${H}`} width="100%" role="img" aria-label={`Sketch of ${info.name}: ${notes.join('; ')}.`} data-testid="grape-sketch" style={{display:'block',maxWidth:460,margin:'0 auto',overflow:'visible'}}>
+      <SketchVine x={x0} y={TOP-k*0.2} s={1.5} leafRed={info.look.leaf==='red'}/>
+      {berries.map(b=><g key={b.i} transform={`translate(${(x0+b.x*k).toFixed(1)} ${(TOP+k+b.y*k).toFixed(1)}) scale(${k.toFixed(2)})`}>
+        <SketchBerry seed={info.name+b.i} skin={info.skin} state={b.ripe?'ripe':'grow'} wash={wash(b)}/>
+      </g>)}
+      {notes.map((t,i)=>{ const [ex,ey]=edge(ys[i]), tx=196, lines=_wrapWords(t,20);
+        return <g key={i}>
+          <path d={`M${tx-6} ${ys[i]-4} Q ${(tx+ex)/2} ${ys[i]-10} ${ex+2} ${ey}`} fill="none" stroke={SKETCH_INK} strokeWidth="0.8" opacity="0.7"/>
+          <circle cx={ex+2} cy={ey} r="1.6" fill={SKETCH_INK}/>
+          <text x={tx} y={ys[i]} style={{fontSize:'16px',fontStyle:'italic',fill:SKETCH_INK,fontFamily:C.serif}}>
+            {lines.map((l,j)=><tspan key={j} x={tx} dy={j?17:0}>{l}</tspan>)}
+          </text>
+        </g>; })}
+    </svg>
+  );
+}
+function GrapeScreen({nav,back,showPro}){
+  const name=Handoff.grapePage.get();
+  const info=React.useMemo(()=>name?GrapeInfo.get(name):null,[name]);
+  const card={background:C.white,borderRadius:16,border:`1px solid ${C.line}`,padding:'14px 16px',display:'flex',flexDirection:'column',gap:8};
+  const head=t=><div style={{fontSize:13,fontWeight:600,color:C.mid,letterSpacing:'0.08em',textTransform:'uppercase',fontFamily:C.P,marginTop:4}}>{t}</div>;
+  const para=t=><div style={{fontSize:15,color:C.ink2,fontFamily:C.P,lineHeight:1.55}}>{t}</div>;
+  if(!info) return <div style={{flex:1,padding:24,fontFamily:C.P,color:C.mid}}>That grape isn't in the guide yet. <span role="button" onClick={back} style={{color:C.cr,fontWeight:700,cursor:'pointer'}}>Back</span></div>;
+  const ms=info.mastery;
+  const act=()=>{
+    if(ms.state==='open') return _openLearn({kind:'grape',grape:info.name},nav,showPro);
+    if(ms.state==='held') return showPro('grape-library');
+    if(!Entitlement.isPro()) return nav('camera');
+    GrapeUnlocks.unlockManual(info.name); _openLearn({kind:'grape',grape:info.name},nav,showPro);
+  };
+  const actLabel=ms.state==='open'?(ms.fading?`Refresh the ${info.name} quiz`:ms.score>=100?null:`Take the ${info.name} quiz`):ms.state==='held'?'Unlock with Pro':!Entitlement.isPro()?'Scan a bottle of it to unlock':`Unlock and take the quiz`;
+  const rows=[['Climate',info.climate],['In the winery',info.winemaking],['With food',info.food],['Ageing',info.ageing],['Often compared with',info.lookalike],['In blends',info.blends]].filter(r=>r[1]);
+  return(
+    <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden'}}>
+      <div style={{background:C.white,padding:'14px 20px',display:'flex',alignItems:'center',gap:12,borderBottom:`1px solid ${C.line}`,flexShrink:0}}>
+        <div role="button" aria-label="Back" onClick={back} style={{width:34,height:34,borderRadius:17,background:C.offWhite,border:`1px solid ${C.line}`,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',flexShrink:0}}><Icon n="back" sz={16} col={C.ink}/></div>
+        <div style={{minWidth:0}}>
+          <div style={{fontSize:20,fontWeight:800,color:C.ink,fontFamily:C.P,letterSpacing:'-0.4px'}}>{info.name}</div>
+          <div style={{fontSize:13,color:C.mid,fontFamily:C.P}}>{_SKIN_LABEL[info.skin]} grape{info.type==='fortified'?' · best known in Port':info.type==='dessert'?' · famous for sweet wines':''}</div>
+        </div>
+      </div>
+      <div style={{flex:1,overflowY:'auto',padding:'16px 20px',display:'flex',flexDirection:'column',gap:12}}>
+        <div style={{...card,background:'#FBF8F3',padding:'10px 10px 6px'}}><GrapeSketch info={info}/></div>
+
+        <div style={card} data-testid="grape-progress">
+          <div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline'}}>
+            <span style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>{ms.state==='open'?`${ms.level} · ${ms.score}%`:ms.state==='held'?'Unlocked, kept for Pro':'Not unlocked yet'}</span>
+            {ms.fading>0&&<span style={{fontSize:13,fontWeight:600,color:C.amber,fontFamily:C.P}}>{ms.fading} answer{ms.fading===1?'':'s'} fading</span>}
+          </div>
+          {ms.state==='open'&&<MasteryBar score={ms.score} col={grapeTypeColor(info.name)}/>}
+          {info.mine.count>0&&<div style={{fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.5}}>
+            You've had {info.mine.count===1?'one bottle':`${info.mine.count} bottles`} of it{info.mine.best?`; your best was ${info.mine.best.name} (${info.mine.best.rating})`:''}.
+          </div>}
+          {actLabel&&<div role="button" onClick={act} style={{fontSize:14,fontWeight:700,color:C.cr,fontFamily:C.P,cursor:'pointer'}}>{actLabel} →</div>}
+        </div>
+
+        {head('What it tastes like')}
+        <div style={card}>{para(info.profile+'.')}</div>
+
+        {head('Where it comes from')}
+        <div style={card}>
+          {para(info.origin+'.')}
+          {info.aka&&<div style={{fontSize:14,color:C.mid,fontFamily:C.P,lineHeight:1.5}}>{info.aka}.</div>}
+        </div>
+
+        {head('Where it grows')}
+        <div style={{...card,flexDirection:'row',flexWrap:'wrap',gap:6}}>
+          {[...new Set([...(info.famousIn||[]),...info.regions])].map(r=>(
+            <span key={r} style={{display:'inline-flex',alignItems:'center',gap:5,padding:'5px 10px',borderRadius:999,border:`1px solid ${C.line}`,fontSize:13,color:C.ink2,fontFamily:C.P}}><Flag region={r} size={13}/>{r}</span>
+          ))}
+        </div>
+
+        {head('Wines made from it')}
+        <div style={{...card,flexDirection:'row',flexWrap:'wrap',gap:6}}>
+          {(info.wines||[]).map(w=><span key={w} style={{padding:'5px 10px',borderRadius:999,background:C.offWhite,fontSize:13,color:C.ink2,fontFamily:C.P}}>{w}</span>)}
+        </div>
+
+        {head('From vine to glass')}
+        <div style={{...card,gap:12}}>
+          {rows.map(([l,t])=><div key={l}>
+            <div style={{fontSize:13,fontWeight:700,color:C.ink,fontFamily:C.P}}>{l}</div>
+            <div style={{fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.5}}>{t}.</div>
+          </div>)}
+        </div>
+        <div style={{height:12}}/>
+      </div>
+    </div>
+  );
+}

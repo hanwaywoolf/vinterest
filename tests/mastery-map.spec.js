@@ -243,11 +243,12 @@ test('the grape cluster: 50 berries in two fixed bunches, sized by mastery', asy
   expect(out.big).toBe(300);
 });
 
-test('the grape cluster on Mastery: labelled berries, a tap shows the grape, growth is remembered', async ({ context, page }, info) => {
+test('the grape cluster on Mastery: labelled berries, a tap opens the grape page, growth is remembered', async ({ context, page }, info) => {
   const errors = collectErrors(page);
   await user(context, page);
   await page.goto(`${BASE}/#home`);
   await grapeStudy(page);
+  await page.evaluate(() => WineHistory.add({ name: 'Rioja Reserva', type: 'red', region: 'Rioja', country: 'Spain', grapes: ['Tempranillo'], rating: 93 }));
   await page.goto(`${BASE}/#mastery-map`);
   const cluster = page.getByTestId('grape-cluster');
   await cluster.scrollIntoViewIfNeeded();
@@ -257,16 +258,37 @@ test('the grape cluster on Mastery: labelled berries, a tap shows the grape, gro
   await expect(cluster.getByRole('button', { name: 'Malbec, red grape: not unlocked yet' })).toBeVisible();
   await page.waitForTimeout(1100);
   await page.screenshot({ path: path.join(info.project.outputDir, 'grapes.png') });
+  expect(await page.evaluate(() => Device.grapesSeen().Tempranillo)).toBe(70);
+
+  // A tap opens the grape's own page.
   await cluster.getByRole('button', { name: /^Tempranillo/ }).click();
-  const picked = page.getByTestId('grape-picked');
-  await expect(picked).toContainText('Red grape · Confident · 70%');
-  await expect(picked).toContainText('Medium-high tannin');
-  await expect(picked.getByText('Quiz →')).toBeVisible();
-  // Keyboard: Enter picks a berry too.
+  await expect(page.getByTestId('grape-sketch')).toBeVisible();
+  await expect(page.getByRole('img', { name: /^Sketch of Tempranillo: Red-skinned; Thick, dark skins\.$/ })).toBeVisible();
+  const prog = page.getByTestId('grape-progress');
+  await expect(prog).toContainText('Confident · 70%');
+  await expect(prog).toContainText("You've had 4 bottles of it; your best was Gran Reserva 904 (95)");
+  await expect(prog).toContainText('Take the Tempranillo quiz →');
+  for (const t of ['Northern Spain, most likely Rioja', 'Ribera del Duero', 'Toro', 'In the winery', 'American oak']) await expect(root(page)).toContainText(t);
+  await page.screenshot({ path: path.join(info.project.outputDir, 'grape-page.png') });
+  await root(page).getByText('In the winery').scrollIntoViewIfNeeded();
+  await page.screenshot({ path: path.join(info.project.outputDir, 'grape-page-2.png') });
+  // Back returns to Mastery; Enter on a berry opens it too.
+  await root(page).getByRole('button', { name: 'Back' }).click();
   await cluster.getByRole('button', { name: /^Riesling/ }).focus();
   await page.keyboard.press('Enter');
-  await expect(picked).toContainText('Refresh →');
-  await page.screenshot({ path: path.join(info.project.outputDir, 'grapes-picked.png') });
-  expect(await page.evaluate(() => Device.grapesSeen().Tempranillo)).toBe(70);
+  await expect(page.getByTestId('grape-progress')).toContainText('Refresh the Riesling quiz');
   expect(errors).toEqual([]);
+});
+
+test('every grape has a page: origin, wines and how its bunch looks', async ({ context, page }) => {
+  await user(context, page);
+  await page.goto(`${BASE}/#home`);
+  const gaps = await page.evaluate(() => GRAPE_ALLOWLIST.flatMap((g) => {
+    const i = GrapeInfo.get(g); const miss = [];
+    if (!i) return [g];
+    if (!i.origin) miss.push(g + '.origin'); if (!(i.wines && i.wines.length)) miss.push(g + '.wines');
+    if (!(i.look && i.look.notes && i.look.notes.length)) miss.push(g + '.look');
+    return miss;
+  }));
+  expect(gaps).toEqual([]);
 });

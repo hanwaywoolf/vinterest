@@ -34,6 +34,33 @@ function grapeTypeColor(grape){ return (_TYPE_COLORS&&_TYPE_COLORS[GRAPE_TYPES[g
 const GRAPE_PINK_SKINS=new Set(['Pinot Grigio','Gewürztraminer']);
 function grapeSkin(grape){ const t=GRAPE_TYPES[grape]; return GRAPE_PINK_SKINS.has(grape)?'pink':t==='red'||t==='fortified'?'red':'white'; }
 
+/* A grape's own page (GrapeScreen): everything data/knowledge.json knows about it (profile,
+   origin, where it's famous, the wines made from it, climate, winemaking, food, ageing,
+   look-alikes, blends, and how its bunch looks, for the sketch), the knowledge-base regions
+   that grow it, their own bottles of it (WineDNA.grape, so Shiraz counts as Syrah) and where
+   they stand with it in Mastery. */
+const GrapeInfo = {
+  get(name,wines){
+    const K=typeof KNOWLEDGE!=='undefined'&&KNOWLEDGE.grapes&&KNOWLEDGE.grapes[name];
+    if(!K) return null;
+    wines=wines||WineHistory.getAll();
+    const mine=wines.filter(w=>(w.grapes||[]).some(g=>WineDNA.grape(g)===name));
+    const scored=mine.filter(w=>w.rating>0).sort((a,b)=>b.rating-a.rating);
+    const regions=Object.entries(KNOWLEDGE.regions||{}).filter(([,r])=>(r.keyGrapes||[]).some(g=>WineDNA.grape(g)===name)).map(([n])=>n);
+    const m=KnowledgeMap.compute(wines), area=m.areas.find(a=>a.id==='grapes'), it=area&&area.items.find(i=>i.name===name);
+    const state=it?'open':GrapeUnlocks.held().includes(name)?'held':'locked';
+    return {name,skin:grapeSkin(name),type:GRAPE_TYPES[name],...K,look:K.look||{berry:'medium',bunch:'medium',notes:[]},regions,
+      mine:{count:mine.length,scored:scored.length,best:scored[0]||null,avg:scored.length?Math.round(scored.reduce((a,w)=>a+w.rating,0)/scored.length):null},
+      mastery:{state,score:it?it.score:0,level:it?it.level:'Not started',fading:it?it.fading||0:0}};
+  },
+  /* How the page's sketch draws its bunch: how many berries and how tightly packed. */
+  sketch(look){
+    const n={small:24,medium:19,large:13}[look&&look.berry]||19;
+    const fill={tight:0.86,medium:0.78,loose:0.6}[look&&look.bunch]||0.78;
+    return {n,fill};
+  },
+};
+
 /* The unlocks that are open: all of them with Pro. Otherwise everything unlocked before
    UNLOCKS_KEPT_BEFORE stays open (the allowance used to be checked only when unlocking, so
    earlier extras are kept), and later unlocks fill whatever is left of `cap`, oldest first.

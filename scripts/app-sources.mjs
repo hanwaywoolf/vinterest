@@ -39,6 +39,7 @@ export const APP_SOURCES = [
   'pwa-scancards.jsx',
   'pwa-screens-detail.jsx',
   'pwa-screens-explore.jsx',
+  'pwa-sketch.jsx',
   'pwa-screens-quiz.jsx',
   'pwa-screens-aux.jsx',
   'pwa-screens-account.jsx',

@@ -132,6 +132,8 @@ const Handoff = {
   get quiz(){ return this._j('vinterest_quiz_config2'); },
   get genArticle(){ return this._j('vinterest_gen_article'); },
   get guide(){ return this._s('vinterest_guide'); },
+  /* The grape whose page (GrapeScreen) to open. */
+  get grapePage(){ return this._s('vinterest_grape_page'); },
   get onRampIdx(){ return this._s('vinterest_onramp_idx'); },
   get styleExplore(){ return this._j('vinterest_style_explore'); },
   /* How My Wines should open (type and sort), read once. */
