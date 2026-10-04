@@ -112,7 +112,7 @@ const ScanFlow = {
   blindPlayed(wine){ return !!Store.get(this._blindDoneKey(wine)); },
   markBlindPlayed(wine){ Store.set(this._blindDoneKey(wine),'1'); },
   blindResult(wine){ return Store.getJSON(this.blindKey(wine),null); },
-  saveBlindResult(wine,result){ Store.setJSON(this.blindKey(wine),result); },
+  saveBlindResult(wine,result){ Store.setJSON(this.blindKey(wine),{...result,at:Date.now()}); }, // `at`: Palate's trend
   /* A Blind Call is the user's own read of the wine as they taste it, so it pre-fills the
      comparison: more than 0.2 either side of the label estimate counts as lighter/fuller. */
   tastedFromBlindCall(wine){

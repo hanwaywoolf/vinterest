@@ -292,3 +292,26 @@ test('a generated bank drops near-duplicates, including a flipped "least likely"
   ]);
   expect(out.numbered).toBe(15);
 });
+
+// XP for a question set comes from answers learned: each question's first correct answer, in
+// whatever round, and the set's bonus once on finishing it. A replay of known answers earns
+// nothing, so a set can't be farmed by repeating it (it used to pay 75 a round, even at 0/5),
+// and a Wine Basics topic keeps paying past its first round (it used to pay once, then +0).
+test('quiz XP: each new right answer, then the set bonus once', async ({ page }) => {
+  await openRegion(page);
+  const xp = () => page.evaluate(() => XPSystem.get().total);
+  const start = await xp();
+  let first = true;
+  await answerQuiz(page, () => { const r = !first; first = false; return r; }); // 4 of 5
+  await expect(root(page)).toContainText('+40');
+  expect(await xp()).toBe(start + 40);
+  for (let round = 0; round < 2; round++) {
+    await root(page).getByText(/^Keep going/).click();
+    await answerQuiz(page, () => true);
+  }
+  expect(await xp()).toBe(start + 140); // 14 learned
+  await root(page).getByText(/^Keep going/).click();
+  await answerQuiz(page, () => true); // the last one, plus four already known
+  await expect(root(page)).toContainText(/All \d+ questions answered correctly/);
+  expect(await xp()).toBe(start + 150 + 150); // 15 learned + the set bonus
+});

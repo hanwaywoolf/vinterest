@@ -215,3 +215,56 @@ const KnowledgeMap = {
   /* The view to open on: the one with the most regions they've unlocked or drunk. */
   homeView(views){ return [...views].sort((a,b)=>(b.open+b.drunk)-(a.open+a.drunk))[0]||null; },
 };
+
+/* Milestones: the moments worth marking in Mastery and Palate, worked out from the same numbers
+   (nothing new is asked): a wine type or skill reaching Confident or Mastered, a region or grape mastered, regions
+   studied (1, 5, 10, 20), overall knowledge at 25/50/75/100%, and a palate that counts in full
+   (Palate.FULL_AT Blind Calls) or reaches Confident. vinterest_milestones holds {id: {at, title,
+   icon}}, synced and backed up as progress; check() records new ones and returns them so the
+   screen can mark the moment once (the quiz result, or Mastery). The first check on a phone
+   files what they'd already reached at 0 ("earlier"), so nobody is flooded with old news. */
+const Milestones = {
+  KEY:'vinterest_milestones',
+  REGION_STEPS:[1,5,10,20], OVERALL_STEPS:[25,50,75,100],
+  seen(){ const v=Store.getJSON(this.KEY,null); return v&&typeof v==='object'&&!Array.isArray(v)?v:null; },
+  /* Every milestone reached now: {id, title, sub, icon}. */
+  reached(m,palate){
+    const out=[];
+    // Regions and Grapes average only what's unlocked, so one studied region would read as
+    // "Confident in Regions": they get counts and per-item mastery instead.
+    m.areas.filter(a=>!a.items).forEach(a=>{
+      const what=a.group==='types'?`${a.label} wine`:a.label;
+      if(a.score>=67) out.push({id:`area:${a.id}:confident`,title:`Confident in ${what}`,sub:a.detail,icon:'star'});
+      if(a.score>=100) out.push({id:`area:${a.id}:mastered`,title:`Mastered ${what}`,sub:a.detail,icon:'trophy'});
+    });
+    const regions=(m.areas.find(a=>a.id==='regions')||{items:[]}).items;
+    regions.filter(i=>i.score>=100).forEach(i=>out.push({id:`region:${i.name}:mastered`,title:`Mastered ${i.name}`,sub:'Its quiz passed and read around',icon:'globe',region:i.name}));
+    const grapes=(m.areas.find(a=>a.id==='grapes')||{items:[]}).items;
+    grapes.filter(i=>i.score>=100).forEach(i=>out.push({id:`grape:${i.name}:mastered`,title:`Mastered ${i.name}`,sub:'Its quiz passed and read around',icon:'star'}));
+    const studied=regions.filter(i=>i.score>0).map(i=>i.name), names=xs=>xs.length>3?`${xs.slice(0,3).join(', ')} and ${xs.length-3} more`:xs.join(', ');
+    this.REGION_STEPS.filter(k=>studied.length>=k).forEach(k=>out.push({id:`regions:${k}`,title:k===1?'Your first region studied':`${k} regions studied`,sub:names(studied.slice(0,k)),icon:'globe',...(k===1?{region:studied[0]}:{})}));
+    this.OVERALL_STEPS.filter(k=>m.overall>=k).forEach(k=>out.push({id:`overall:${k}`,title:`Wine knowledge ${k}%`,sub:KnowledgeMap.level(k),icon:'book'}));
+    if(palate){
+      if(palate.n>=Palate.FULL_AT) out.push({id:'palate:full',title:`${Palate.FULL_AT} Blind Calls played`,sub:'Your palate score now counts in full',icon:'wine'});
+      if(palate.score>=67) out.push({id:'palate:confident',title:'A confident palate',sub:`Your Blind Calls average ${palate.accuracy}% accurate`,icon:'wine'});
+    }
+    return out;
+  },
+  /* Records what's newly reached and returns it (empty on the very first check). Each is kept
+     with its title, so it stays earned even if a score later falls (a quiz reset). */
+  check(m,palate,now=Date.now()){
+    const all=this.reached(m,palate), seen=this.seen(), first=!seen, s=seen||{};
+    const fresh=all.filter(x=>!(x.id in s));
+    if(!fresh.length&&!first) return [];
+    fresh.forEach(x=>{ s[x.id]={at:first?0:now,title:x.title,icon:x.icon,...(x.region?{region:x.region}:{})}; });
+    Store.setJSON(this.KEY,s);
+    return first?[]:fresh;
+  },
+  /* What they've reached, newest first, with when (0: before milestones were kept). */
+  list(){
+    const s=this.seen()||{};
+    return Object.entries(s).filter(([,v])=>v&&v.title).map(([id,v])=>({id,...v})).sort((a,b)=>b.at-a.at||a.title.localeCompare(b.title));
+  },
+  shareText(x){ return `${x.title} on Vinterest 🍷`; },
+};
+

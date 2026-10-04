@@ -643,9 +643,90 @@ function MasteryRegionMap({views,nav,showPro}){
   );
 }
 
+/* What they can taste (Palate, pwa-palate.js), beside what they know: their Blind Calls scored
+   against each label's profile, a bar per axis with how to notice it, any habit ("you tend to
+   call tannins grippier"), and the next step. Not part of the knowledge score. */
+function MasteryPalate({p,go}){
+  const leans=Palate.leans(p);
+  return(
+    <div style={{display:'flex',flexDirection:'column',gap:10}}>
+      <div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline'}}>
+        <span style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>{p.n?`${p.level} · ${p.score}%`:'Not started'}</span>
+        <span style={{fontSize:13,color:C.mid,fontFamily:C.P}}>{p.n} Blind Call{p.n===1?'':'s'}{p.trend!=null&&p.trend!==0?` · ${p.trend>0?'+':''}${p.trend} lately`:''}</span>
+      </div>
+      <MasteryBar score={p.score}/>
+      <div style={{fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.5}}>
+        {p.n?<>Your calls average {p.accuracy}% accurate{p.n<Palate.FULL_AT?`. The score fills in as you play: ${Palate.FULL_AT-p.n} more to count in full`:''}. Each call is checked against the label's profile, an estimate, so treat it as a guide.</>
+          :<>Blind Call asks you to taste first and guess the body, acidity and tannins before you see the label's profile. Your calls build this score, separate from what you've read.</>}
+      </div>
+      {p.axes.map(a=>(
+        <div key={a.id} style={{display:'flex',flexDirection:'column',gap:4}}>
+          <div style={{display:'flex',alignItems:'center',gap:10}}>
+            <span style={{flex:'0 0 30%',fontSize:14,fontWeight:600,color:C.ink2,fontFamily:C.P}}>{a.name}</span>
+            <div style={{flex:1}}><MasteryBar score={a.score}/></div>
+            <span style={{fontSize:13,fontWeight:700,color:C.ink2,fontFamily:C.P,width:38,textAlign:'right'}}>{a.score}%</span>
+          </div>
+          <div style={{fontSize:13,color:C.mid,fontFamily:C.P,lineHeight:1.4}}>{a.how}</div>
+        </div>
+      ))}
+      {leans.map(l=><div key={l} style={{fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.45,background:C.offWhite,borderRadius:10,padding:'8px 10px'}}>{l}</div>)}
+      {p.next&&<div role="button" onClick={()=>go(p.next)} style={{fontSize:14,fontWeight:700,color:C.cr,fontFamily:C.P,cursor:'pointer'}}>{p.next.label} →</div>}
+    </div>
+  );
+}
+
+/* A milestone reached just now (Milestones.check): shown once, where it happened (the quiz
+   result, or Mastery), with Share (Platform.shareText: the share sheet, else copied). */
+function _useShare(){
+  const [said,setSaid]=React.useState(null);
+  const share=async x=>{ const r=await Platform.shareText(Milestones.shareText(x)); if(r==='copied'){ setSaid('Copied to share'); setTimeout(()=>setSaid(null),2200); } };
+  return [share,said];
+}
+function MilestoneMoment({items}){
+  const [share,said]=_useShare();
+  if(!items||!items.length) return null;
+  return(
+    <div data-testid="milestone-moment" className="milestone-in" style={{background:C.ink,borderRadius:16,padding:'14px 16px',display:'flex',flexDirection:'column',gap:8}}>
+      <div style={{fontSize:13,fontWeight:600,color:'#E7C66B',fontFamily:C.P,textTransform:'uppercase',letterSpacing:'0.06em'}}>{items.length===1?(items[0].id.startsWith('level:')?'New level':'New milestone'):`${items.length} new milestones`}</div>
+      {items.map(x=>(
+        <div key={x.id} style={{display:'flex',alignItems:'center',gap:12}}>
+          <div style={{width:38,height:38,borderRadius:19,background:'rgba(231,198,107,0.16)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><Icon n={x.icon} sz={18} col="#E7C66B"/></div>
+          <div style={{flex:1,minWidth:0}}>
+            <div style={{fontSize:16,fontWeight:700,color:'#fff',fontFamily:C.P}}>{x.region&&<Flag region={x.region} size={15} style={{marginRight:6}}/>}{x.title}</div>
+            {x.sub&&<div style={{fontSize:13,color:'rgba(255,255,255,0.6)',fontFamily:C.P}}>{x.sub}</div>}
+          </div>
+          <div role="button" aria-label={`Share: ${x.title}`} onClick={()=>share(x)} style={{padding:'7px 12px',borderRadius:999,background:'rgba(255,255,255,0.12)',cursor:'pointer',display:'flex',alignItems:'center',gap:6}}>
+            <Icon n="share" sz={14} col="#fff"/><span style={{fontSize:13,fontWeight:700,color:'#fff',fontFamily:C.P}}>Share</span>
+          </div>
+        </div>
+      ))}
+      {said&&<div style={{fontSize:13,color:'#7FD3A6',fontFamily:C.P}}>{said}</div>}
+    </div>
+  );
+}
+function MilestoneList({items}){
+  const [share,said]=_useShare();
+  if(!items.length) return <div style={{fontSize:14,color:C.mid,fontFamily:C.P,lineHeight:1.5}}>Your first comes with your first region studied, or Confident in a wine type. Each one is marked here, with a date.</div>;
+  return <div style={{display:'flex',flexDirection:'column'}}>
+    <ShowMore items={items} limit={4} noun="milestones" render={x=>(
+      <div key={x.id} style={{display:'flex',alignItems:'center',gap:12,padding:'9px 0',borderBottom:`1px solid ${C.line}`}}>
+        <Icon n={x.icon} sz={17} col={C.cr}/>
+        <div style={{flex:1,minWidth:0}}>
+          <div style={{fontSize:15,fontWeight:700,color:C.ink,fontFamily:C.P}}>{x.region&&<Flag region={x.region} size={14} style={{marginRight:6}}/>}{x.title}</div>
+          <div style={{fontSize:13,color:C.mid,fontFamily:C.P}}>{x.at?new Date(x.at).toLocaleDateString('en',{day:'numeric',month:'short',year:'numeric'}):'Earlier'}</div>
+        </div>
+        <div role="button" aria-label={`Share: ${x.title}`} onClick={()=>share(x)} style={{padding:6,cursor:'pointer'}}><Icon n="share" sz={16} col={C.mid}/></div>
+      </div>
+    )}/>
+    {said&&<div style={{fontSize:13,color:C.green,fontFamily:C.P,marginTop:6}}>{said}</div>}
+  </div>;
+}
+
 const _MASTERY_CSS=`@keyframes masteryGrow{from{transform:scale(0.2);opacity:0}to{transform:scale(1);opacity:1}}
 .mastery-radar-shape{animation:masteryGrow .7s cubic-bezier(.2,.8,.2,1) both}
-@media (prefers-reduced-motion:reduce){.mastery-radar-shape{animation:none}}`;
+@keyframes milestoneIn{from{transform:translateY(8px);opacity:0}to{transform:none;opacity:1}}
+.milestone-in{animation:milestoneIn .5s ease both}
+@media (prefers-reduced-motion:reduce){.mastery-radar-shape,.milestone-in{animation:none}}`;
 
 function MasteryMapScreen({nav,back,showPro}){
   const wines=React.useMemo(()=>WineHistory.getAll(),[]);
@@ -653,6 +734,9 @@ function MasteryMapScreen({nav,back,showPro}){
   const prog=React.useMemo(()=>KnowledgeMap.progress(m),[m]);
   const focus=React.useMemo(()=>KnowledgeMap.focus(wines,m),[m]);
   const views=React.useMemo(()=>KnowledgeMap.regionMap(wines,m),[m]);
+  const palate=React.useMemo(()=>Palate.compute(wines),[wines]);
+  const fresh=React.useMemo(()=>Milestones.check(m,palate),[m,palate]);
+  const milestones=React.useMemo(()=>Milestones.list(),[fresh]);
   const [open,setOpen]=React.useState(null);
   const listRef=React.useRef(null);
   const go=next=>{ if(next) _openLearn({kind:'mastery',next},nav,showPro); };
@@ -686,6 +770,8 @@ function MasteryMapScreen({nav,back,showPro}){
           </div>}
         </div>
 
+        <MilestoneMoment items={fresh}/>
+
         {head('Your shape')}
         <div style={card}>
           <MasteryRadar m={m} prog={prog} onPick={pick}/>
@@ -700,10 +786,18 @@ function MasteryMapScreen({nav,back,showPro}){
           </div>
         </div>
 
+        {head('Your palate')}
+        <div data-testid="mastery-palate" style={card}>
+          <MasteryPalate p={palate} go={go}/>
+        </div>
+
         {head('Your wine map')}
         <div style={card}>
           <MasteryRegionMap views={views} nav={nav} showPro={showPro}/>
         </div>
+
+        {head('Milestones')}
+        <div data-testid="mastery-milestones" style={card}><MilestoneList items={milestones}/></div>
 
         {GROUPS.map(G=>(
           <div key={G.id} style={{display:'flex',flexDirection:'column',gap:8}}>
@@ -839,6 +933,8 @@ function QuizScreen({nav,back}){
   const [phase,setPhase]=React.useState(allQs.length?'question':'empty');
   const [streak,setStreak]=React.useState(0);
   const [xpGained,setXpGained]=React.useState(0);
+  const [milestones,setMilestones]=React.useState([]);
+  const startLevel=React.useRef(XPSystem.getLevel(XPSystem.get().total).name);
   const [results,setResults]=React.useState([]);
   const [, setResetTick]=React.useState(0);
   const scrollRef=React.useRef(null);
@@ -860,11 +956,15 @@ function QuizScreen({nav,back}){
       if(r.justMastered){
         const a=XPSystem.award([{type:'concept_mastered',conceptId:q.conceptId}]);
         gained+=a.filter(x=>!x.levelUp).reduce((s,x)=>s+x.amount,0);
-        XPSystem.toast(a);
+        XPSystem.toast(a,{quiet:true}); // the result shows the round's XP
       }
     }
     if(q.vocabTerm) VocabLedger.recordTest(q.vocabTerm,correct);
-    if(quizSet) QuizMastery.recordAnswer(quizSet.id,q.q,correct);
+    if(quizSet&&QuizMastery.recordAnswer(quizSet.id,q.q,correct)){
+      const a=XPSystem.award([{type:'question_learned'}]);
+      gained+=a.filter(x=>!x.levelUp).reduce((s,x)=>s+x.amount,0);
+      XPSystem.toast(a,{quiet:true}); // keeps the XP badge current; the result says it
+    }
     if(gained){ setXpGained(xp=>xp+gained); }
 
     setResults(rs=>[...rs,{correct,qText:q.q,selectedOpt:q.opts[i],correctOpt:q.opts[q.a],fact:q.fact}]);
@@ -876,11 +976,20 @@ function QuizScreen({nav,back}){
       const finalScore=results.filter(r=>r.correct).length+(selected===q.a?0:0);
       const boxes=allQs.filter(x=>x.conceptId).map(x=>{const d=MasterySystem.get();return d[x.conceptId]?d[x.conceptId].box:1;});
       const avgBox=boxes.length?boxes.reduce((s,b)=>s+b,0)/boxes.length/5:0;
-      const quizKey=mode==='practice'?'onramp_'+config.topicId:mode+'_'+Date.now();
-      const a2=XPSystem.award([{type:'quiz_complete',quizKey,derivedDifficulty:avgBox}]);
+      // A question set pays its completion bonus once, the round every question in it has been
+      // answered right (its new answers earned XP as they came). Other quizzes, once per round.
+      const setDoneNow=quizSet&&!startedComplete&&QuizMastery.isComplete(quizSet.id,quizSet.pool());
+      const a2=quizSet?(setDoneNow?XPSystem.award([{type:'quiz_complete',quizKey:'set_'+quizSet.id,amount:XPSystem.QUIZ_SET_BONUS()}]):[])
+        :XPSystem.award([{type:'quiz_complete',quizKey:mode+'_'+Date.now(),derivedDifficulty:avgBox}]);
       const g2=a2.filter(x=>!x.levelUp).reduce((s,a)=>s+a.amount,0);
       setXpGained(xp=>xp+g2);
-      XPSystem.toast(a2);
+      XPSystem.toast(a2,{quiet:true});
+      // What this round reached is marked here, on the result, once: a new level, and (for a
+      // question set) any milestone (Confident in Red, a region mastered). Nothing floats over it.
+      const lvl=XPSystem.getLevel(XPSystem.get().total).name, marks=[];
+      if(lvl!==startLevel.current) marks.push({id:'level:'+lvl,title:`${lvl} level reached`,sub:`${XPSystem.get().total} XP · next, ${XPSystem.nextLevel(XPSystem.get().total).name}`,icon:'trophy'});
+      if(quizSet){ try{ marks.push(...Milestones.check(KnowledgeMap.compute(),Palate.compute())); }catch(e){} }
+      setMilestones(marks);
       setPhase('results');
     } else {
       setQIdx(i=>i+1); setSelected(null); setPhase('question');
@@ -892,7 +1001,7 @@ function QuizScreen({nav,back}){
     const set=quizSetFor(cfg?.mode||'concept',cfg);
     Handoff.quiz.set(cfg);
     setConfig(cfg); setAllQs(qs); setStartedComplete(!!set&&QuizMastery.isComplete(set.id,set.pool()));
-    setQIdx(0); setSelected(null); setPhase(qs.length?'question':'empty'); setStreak(0); setXpGained(0); setResults([]);
+    setQIdx(0); setSelected(null); setPhase(qs.length?'question':'empty'); setStreak(0); setXpGained(0); setResults([]); setMilestones([]); startLevel.current=XPSystem.getLevel(XPSystem.get().total).name;
     if(scrollRef.current) scrollRef.current.scrollTop=0;
   }
   // Region and grape banks may still need generating before the next set can start.
@@ -963,10 +1072,11 @@ function QuizScreen({nav,back}){
         </div>
         <div ref={scrollRef} style={{flex:1,overflowY:'auto'}}>
           <div style={{padding:'16px',display:'flex',flexDirection:'column',gap:10}}>
+            <MilestoneMoment items={milestones}/>
             {setProgress&&(setDone
               ?card(true,justCompleted?`All ${setProgress.total} questions answered correctly`:'Complete — every question answered correctly',
                 justCompleted?'This one moves to your completed list on the Learn tab.':null)
-              :card(false,`${setProgress.correct} of ${setProgress.total} questions answered correctly`,"Questions you haven't got right yet come first in your next quiz."))}
+              :card(false,`${setProgress.correct} of ${setProgress.total} questions answered correctly`,`Questions you haven't got right yet come first in your next quiz. You earn XP for each one the first time you get it right, and ${XPSystem.QUIZ_SET_BONUS()} XP for finishing the set.`))}
             {concepts&&card(concepts.mastered===concepts.total,`${concepts.mastered} of ${concepts.total} concepts mastered`,
               concepts.mastered===concepts.total?null:'Each right answer moves a concept up a step and a miss moves it back one; five steps masters it.')}
             {setDone&&(

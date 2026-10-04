@@ -49,4 +49,17 @@ const Platform = {
       return 'shared';
     }catch(e){ return /cancel/i.test(String(e&&e.message||e))?'cancelled':'failed'; }
   },
+
+  /* Shares a line of text and a link: the share sheet in the app (Share plugin) and on phones
+     that have one (navigator.share), else copied to the clipboard. Resolves 'shared', 'copied',
+     'cancelled' or 'failed'. */
+  async shareText(text,url='https://vinterest.app'){
+    const cancelled=e=>/cancel|abort/i.test(String(e&&(e.name||'')+(e.message||'')||e));
+    const N=window.VinterestNative||{};
+    try{
+      if(this.native()&&N.Share){ await N.Share.share({title:'Vinterest',text,url}); return 'shared'; }
+      if(navigator.share){ await navigator.share({title:'Vinterest',text,url}); return 'shared'; }
+    }catch(e){ if(cancelled(e)) return 'cancelled'; }
+    try{ await navigator.clipboard.writeText(text+' '+url); return 'copied'; }catch(e){ return 'failed'; }
+  },
 };

@@ -19,7 +19,7 @@ const Backup = {
     'vinterest_onboarded','vinterest_script_length','vinterest_scancard_style','vinterest_text_size','vinterest_travel'],
   PROGRESS_KEYS:['vinterest_favorites','vinterest_wineDNA_unlock_seen','vinterest_explore_ready_seen','vinterest_gen_stubs','vinterest_grape_unlocks_v1',
     'vinterest_region_unlocks_v1','vinterest_region_quiz_v1','vinterest_quiz_mastery_v1','vinterest_exposure_v1','vinterest_mastery_v1',
-    'vinterest_guides_v1','vinterest_qexp_v1','vinterest_vocab_v1','vinterest_vinny_v1','vinterest_mastery_history'],
+    'vinterest_guides_v1','vinterest_qexp_v1','vinterest_vocab_v1','vinterest_vinny_v1','vinterest_mastery_history','vinterest_milestones'],
   // Families of keys: read articles, Blind Call guesses, and the generated quiz banks the quiz
   // progress refers to (lose a bank and its progress points at questions that no longer exist).
   PROGRESS_PREFIXES:['vinterest_gen_article_','vinterest_blindcall_','vinterest_grape_quiz_','vinterest_region_quiz_bank_'],
