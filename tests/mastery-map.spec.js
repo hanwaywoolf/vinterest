@@ -144,3 +144,60 @@ test('Palate scores Blind Calls per axis, names a habit, and fills in over five 
   await page.screenshot({ path: path.join(info.project.outputDir, 'mastery-palate.png') });
   expect(errors).toEqual([]);
 });
+
+// Milestones: marked once where they happen, listed with a date, never a flood of old news.
+test('milestones: old ones filed as earlier, a new one marked once on the quiz result, shared', async ({ context, page }) => {
+  const errors = collectErrors(page);
+  await user(context, page);
+  await page.goto(`${BASE}/#home`);
+  const before = await page.evaluate(() => {
+    QuizMastery.topicPool('white_grapes').forEach((q) => QuizMastery.recordAnswer('topic:white_grapes', q.q, true));
+    localStorage.removeItem(Milestones.KEY);
+    const first = Milestones.check(KnowledgeMap.compute(), Palate.compute());
+    return { first, seen: Milestones.seen() };
+  });
+  expect(before.first).toEqual([]); // the first look files what's there
+  expect(Object.keys(before.seen).length).toBe(0); // nothing reached yet at 50% white
+  // Red basics, but miss nothing: answering every question takes Red to 50%, then reading takes it on.
+  const fresh = await page.evaluate(() => {
+    QuizMastery.topicPool('red_grapes').forEach((q) => QuizMastery.recordAnswer('topic:red_grapes', q.q, true));
+    const m = KnowledgeMap.compute(); m.areas.find((a) => a.id === 'red').score = 70; // as if they'd read around it
+    return Milestones.check(m, Palate.compute()).map((x) => x.title);
+  });
+  expect(fresh).toEqual(['Confident in Red wine']);
+  const again = await page.evaluate(() => { const m = KnowledgeMap.compute(); m.areas.find((a) => a.id === 'red').score = 70; return Milestones.check(m, Palate.compute()); });
+  expect(again).toEqual([]); // once
+
+  // On the Mastery screen it's listed with its date, and Share copies the line when there's no share sheet.
+  await page.evaluate(() => { Object.defineProperty(navigator, 'share', { value: undefined, configurable: true }); });
+  await page.goto(`${BASE}/#mastery-map`);
+  const list = page.getByTestId('mastery-milestones');
+  await expect(list).toContainText('Confident in Red wine');
+  await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+  await list.getByRole('button', { name: 'Share: Confident in Red wine' }).click();
+  await expect(list).toContainText('Copied to share');
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe('Confident in Red wine on Vinterest 🍷 https://vinterest.app');
+  expect(errors).toEqual([]);
+});
+
+test('a quiz round that completes a region marks the milestone on its result', async ({ context, page }, info) => {
+  await user(context, page);
+  await page.goto(`${BASE}/#home`);
+  await page.evaluate(() => {
+    localStorage.setItem(Milestones.KEY, '{}');
+    RegionUnlocks.unlock('Rioja');
+    const pool = Array.from({ length: 5 }, (_, i) => ({ q: `Rioja question ${i + 1}?`, opts: ['Right', 'Wrong one', 'Wrong two', 'Wrong three'], a: 0, fact: 'Fact.' }));
+    RegionQuizBank.save ? RegionQuizBank.save('Rioja', pool) : localStorage.setItem('vinterest_region_quiz_bank_Rioja', JSON.stringify(pool));
+  });
+  const hasBank = await page.evaluate(() => (RegionQuizBank.pool('Rioja') || []).length);
+  test.skip(hasBank !== 5, 'region bank seeding differs');
+  await page.evaluate(() => { Handoff.quiz.set({ mode: 'region', region: 'Rioja' }); });
+  await page.goto(`${BASE}/#quiz`);
+  for (let i = 0; i < 5; i++) {
+    await root(page).getByText('Right', { exact: true }).first().click();
+    await root(page).getByText(/^(Next Question|See Results) →$/).click();
+  }
+  await expect(page.getByTestId('milestone-moment')).toContainText('Your first region studied');
+  await page.waitForTimeout(600);
+  await page.screenshot({ path: path.join(info.project.outputDir, 'milestone.png') });
+});

@@ -14,6 +14,8 @@ function App(){
   // On opening: types whose Explore Next is already open count as celebrated, so only a type
   // that opens from now on gets WineDNA's "Explore Next is ready" moment.
   React.useEffect(()=>{ try{ ExploreNext.noteReady(WineHistory.getAll()); }catch(e){} },[]);
+  // Files the milestones a phone has already reached as "earlier" the first time it looks (once).
+  React.useEffect(()=>{ try{ if(Settings.onboarded()&&!Milestones.seen()) Milestones.check(KnowledgeMap.compute(),Palate.compute()); }catch(e){} },[]);
   // A new text size (TextSize, pwa-textsize.js) re-renders every screen at once.
   const [,setTextTick]=React.useState(0);
   React.useEffect(()=>{ const h=()=>setTextTick(t=>t+1); window.addEventListener('vinterest:textsize',h); return()=>window.removeEventListener('vinterest:textsize',h); },[]);

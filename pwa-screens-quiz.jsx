@@ -675,9 +675,58 @@ function MasteryPalate({p,go}){
   );
 }
 
+/* A milestone reached just now (Milestones.check): shown once, where it happened (the quiz
+   result, or Mastery), with Share (Platform.shareText: the share sheet, else copied). */
+function _useShare(){
+  const [said,setSaid]=React.useState(null);
+  const share=async x=>{ const r=await Platform.shareText(Milestones.shareText(x)); if(r==='copied'){ setSaid('Copied to share'); setTimeout(()=>setSaid(null),2200); } };
+  return [share,said];
+}
+function MilestoneMoment({items}){
+  const [share,said]=_useShare();
+  if(!items||!items.length) return null;
+  return(
+    <div data-testid="milestone-moment" className="milestone-in" style={{background:C.ink,borderRadius:16,padding:'14px 16px',display:'flex',flexDirection:'column',gap:8}}>
+      <div style={{fontSize:13,fontWeight:600,color:'#E7C66B',fontFamily:C.P,textTransform:'uppercase',letterSpacing:'0.06em'}}>{items.length===1?'New milestone':`${items.length} new milestones`}</div>
+      {items.map(x=>(
+        <div key={x.id} style={{display:'flex',alignItems:'center',gap:12}}>
+          <div style={{width:38,height:38,borderRadius:19,background:'rgba(231,198,107,0.16)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><Icon n={x.icon} sz={18} col="#E7C66B"/></div>
+          <div style={{flex:1,minWidth:0}}>
+            <div style={{fontSize:16,fontWeight:700,color:'#fff',fontFamily:C.P}}>{x.region&&<Flag region={x.region} size={15} style={{marginRight:6}}/>}{x.title}</div>
+            {x.sub&&<div style={{fontSize:13,color:'rgba(255,255,255,0.6)',fontFamily:C.P}}>{x.sub}</div>}
+          </div>
+          <div role="button" aria-label={`Share: ${x.title}`} onClick={()=>share(x)} style={{padding:'7px 12px',borderRadius:999,background:'rgba(255,255,255,0.12)',cursor:'pointer',display:'flex',alignItems:'center',gap:6}}>
+            <Icon n="share" sz={14} col="#fff"/><span style={{fontSize:13,fontWeight:700,color:'#fff',fontFamily:C.P}}>Share</span>
+          </div>
+        </div>
+      ))}
+      {said&&<div style={{fontSize:13,color:'#7FD3A6',fontFamily:C.P}}>{said}</div>}
+    </div>
+  );
+}
+function MilestoneList({items}){
+  const [share,said]=_useShare();
+  if(!items.length) return <div style={{fontSize:14,color:C.mid,fontFamily:C.P,lineHeight:1.5}}>Your first comes with your first region studied, or Confident in a wine type. Each one is marked here, with a date.</div>;
+  return <div style={{display:'flex',flexDirection:'column'}}>
+    <ShowMore items={items} limit={4} noun="milestones" render={x=>(
+      <div key={x.id} style={{display:'flex',alignItems:'center',gap:12,padding:'9px 0',borderBottom:`1px solid ${C.line}`}}>
+        <Icon n={x.icon} sz={17} col={C.cr}/>
+        <div style={{flex:1,minWidth:0}}>
+          <div style={{fontSize:15,fontWeight:700,color:C.ink,fontFamily:C.P}}>{x.region&&<Flag region={x.region} size={14} style={{marginRight:6}}/>}{x.title}</div>
+          <div style={{fontSize:13,color:C.mid,fontFamily:C.P}}>{x.at?new Date(x.at).toLocaleDateString('en',{day:'numeric',month:'short',year:'numeric'}):'Earlier'}</div>
+        </div>
+        <div role="button" aria-label={`Share: ${x.title}`} onClick={()=>share(x)} style={{padding:6,cursor:'pointer'}}><Icon n="share" sz={16} col={C.mid}/></div>
+      </div>
+    )}/>
+    {said&&<div style={{fontSize:13,color:C.green,fontFamily:C.P,marginTop:6}}>{said}</div>}
+  </div>;
+}
+
 const _MASTERY_CSS=`@keyframes masteryGrow{from{transform:scale(0.2);opacity:0}to{transform:scale(1);opacity:1}}
 .mastery-radar-shape{animation:masteryGrow .7s cubic-bezier(.2,.8,.2,1) both}
-@media (prefers-reduced-motion:reduce){.mastery-radar-shape{animation:none}}`;
+@keyframes milestoneIn{from{transform:translateY(8px);opacity:0}to{transform:none;opacity:1}}
+.milestone-in{animation:milestoneIn .5s ease both}
+@media (prefers-reduced-motion:reduce){.mastery-radar-shape,.milestone-in{animation:none}}`;
 
 function MasteryMapScreen({nav,back,showPro}){
   const wines=React.useMemo(()=>WineHistory.getAll(),[]);
@@ -686,6 +735,8 @@ function MasteryMapScreen({nav,back,showPro}){
   const focus=React.useMemo(()=>KnowledgeMap.focus(wines,m),[m]);
   const views=React.useMemo(()=>KnowledgeMap.regionMap(wines,m),[m]);
   const palate=React.useMemo(()=>Palate.compute(wines),[wines]);
+  const fresh=React.useMemo(()=>Milestones.check(m,palate),[m,palate]);
+  const milestones=React.useMemo(()=>Milestones.list(),[fresh]);
   const [open,setOpen]=React.useState(null);
   const listRef=React.useRef(null);
   const go=next=>{ if(next) _openLearn({kind:'mastery',next},nav,showPro); };
@@ -719,6 +770,8 @@ function MasteryMapScreen({nav,back,showPro}){
           </div>}
         </div>
 
+        <MilestoneMoment items={fresh}/>
+
         {head('Your shape')}
         <div style={card}>
           <MasteryRadar m={m} prog={prog} onPick={pick}/>
@@ -742,6 +795,9 @@ function MasteryMapScreen({nav,back,showPro}){
         <div style={card}>
           <MasteryRegionMap views={views} nav={nav} showPro={showPro}/>
         </div>
+
+        {head('Milestones')}
+        <div data-testid="mastery-milestones" style={card}><MilestoneList items={milestones}/></div>
 
         {GROUPS.map(G=>(
           <div key={G.id} style={{display:'flex',flexDirection:'column',gap:8}}>
@@ -877,6 +933,7 @@ function QuizScreen({nav,back}){
   const [phase,setPhase]=React.useState(allQs.length?'question':'empty');
   const [streak,setStreak]=React.useState(0);
   const [xpGained,setXpGained]=React.useState(0);
+  const [milestones,setMilestones]=React.useState([]);
   const [results,setResults]=React.useState([]);
   const [, setResetTick]=React.useState(0);
   const scrollRef=React.useRef(null);
@@ -925,6 +982,8 @@ function QuizScreen({nav,back}){
       const g2=a2.filter(x=>!x.levelUp).reduce((s,a)=>s+a.amount,0);
       setXpGained(xp=>xp+g2);
       XPSystem.toast(a2);
+      // A milestone this round reached (Confident in Red, a region mastered) is marked here, once.
+      if(quizSet){ try{ setMilestones(Milestones.check(KnowledgeMap.compute(),Palate.compute())); }catch(e){} }
       setPhase('results');
     } else {
       setQIdx(i=>i+1); setSelected(null); setPhase('question');
@@ -936,7 +995,7 @@ function QuizScreen({nav,back}){
     const set=quizSetFor(cfg?.mode||'concept',cfg);
     Handoff.quiz.set(cfg);
     setConfig(cfg); setAllQs(qs); setStartedComplete(!!set&&QuizMastery.isComplete(set.id,set.pool()));
-    setQIdx(0); setSelected(null); setPhase(qs.length?'question':'empty'); setStreak(0); setXpGained(0); setResults([]);
+    setQIdx(0); setSelected(null); setPhase(qs.length?'question':'empty'); setStreak(0); setXpGained(0); setResults([]); setMilestones([]);
     if(scrollRef.current) scrollRef.current.scrollTop=0;
   }
   // Region and grape banks may still need generating before the next set can start.
@@ -1007,6 +1066,7 @@ function QuizScreen({nav,back}){
         </div>
         <div ref={scrollRef} style={{flex:1,overflowY:'auto'}}>
           <div style={{padding:'16px',display:'flex',flexDirection:'column',gap:10}}>
+            <MilestoneMoment items={milestones}/>
             {setProgress&&(setDone
               ?card(true,justCompleted?`All ${setProgress.total} questions answered correctly`:'Complete — every question answered correctly',
                 justCompleted?'This one moves to your completed list on the Learn tab.':null)
