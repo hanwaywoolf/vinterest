@@ -561,35 +561,51 @@ function MasteryAreaCard({a,open,onToggle,onNext}){
   </div>
   );
 }
-/* The shape of their knowledge: one spoke per Mastery area, the filled shape now and a dashed
-   outline of where they were (KnowledgeMap.progress: about a month ago, or their first week).
-   Rings mark Developing (34), Confident (67) and Mastered (100). A label tap jumps to that area's
+/* The shape of their knowledge: one spoke per Mastery area, drawn on a dark panel like the
+   welcome screens (near-black with a crimson glow). The shape now is a smooth glowing curve
+   filled from the centre out; a faint dashed curve is where they were (KnowledgeMap.progress:
+   about a month ago, or their first week). Soft rings mark Developing (34), Confident (67) and
+   Mastered (100). A label tap jumps to that area's
    card. A picture for screen readers (the cards below say the same in words). Labels are string
    sizes: they must fit around the drawing. */
 function MasteryRadar({m,prog,onPick}){
-  const W=340,H=300,cx=W/2,cy=H/2,R=96, n=m.areas.length;
+  const W=340,H=310,cx=W/2,cy=H/2,R=100, n=m.areas.length;
+  const uid=React.useId().replace(/:/g,'');
   const ang=i=>-Math.PI/2+i*2*Math.PI/n;
   // 0% sits on a small inner ring (HOLE of the radius), so an early shape is still a shape, not a spike.
-  const HOLE=0.14, rr=score=>R*(HOLE+(1-HOLE)*score/100);
+  const HOLE=0.26, rr=score=>R*(HOLE+(1-HOLE)*score/100);
   const pt=(i,score)=>[cx+Math.cos(ang(i))*rr(score),cy+Math.sin(ang(i))*rr(score)];
-  const poly=scores=>scores.map((v,i)=>pt(i,v).map(x=>x.toFixed(1)).join(',')).join(' ');
+  const curve=scores=>_sketchPath(scores.map((v,i)=>pt(i,v)),true);
   const now=m.areas.map(a=>a.score), then=prog?m.areas.map(a=>prog.then.a[a.id]||0):null;
   const said=m.areas.map(a=>`${a.label} ${a.score}%`).join(', ');
+  const faint='rgba(255,255,255,0.09)';
   return(
-    <svg viewBox={`0 0 ${W} ${H}`} width="100%" role="img" aria-label={`Your knowledge by area: ${said}.`} style={{display:'block',maxWidth:420,margin:'0 auto',overflow:'visible'}}>
-      {[0,34,67,100].map(r=><polygon key={r} points={poly(m.areas.map(()=>r))} fill="none" stroke={C.line} strokeWidth={r===100?1.2:1} strokeDasharray={r===100?null:'3 3'}/>)}
-      {m.areas.map((a,i)=>{ const [x,y]=pt(i,100), [x0,y0]=pt(i,0); return <line key={a.id} x1={x0} y1={y0} x2={x} y2={y} stroke={C.line} strokeWidth="1"/>; })}
-      {then&&<polygon points={poly(then)} fill="none" stroke={C.mid} strokeWidth="1.5" strokeDasharray="4 3"/>}
+    <svg viewBox={`0 0 ${W} ${H}`} width="100%" role="img" data-testid="mastery-radar" aria-label={`Your knowledge by area: ${said}.`} style={{display:'block',maxWidth:420,margin:'0 auto',overflow:'visible'}}>
+      <defs>
+        <radialGradient id={`rf${uid}`} cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor="#8B1A2F" stopOpacity="0.15"/>
+          <stop offset="100%" stopColor="#E0627A" stopOpacity="0.6"/>
+        </radialGradient>
+        <filter id={`rg${uid}`} x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="6"/></filter>
+      </defs>
+      {[34,67,100].map(r=><circle key={r} cx={cx} cy={cy} r={rr(r)} fill="none" stroke={r===100?'rgba(255,255,255,0.16)':faint} strokeWidth="1"/>)}
+      {m.areas.map((a,i)=>{ const [x,y]=pt(i,100), [x0,y0]=pt(i,0); return <line key={a.id} x1={x0} y1={y0} x2={x} y2={y} stroke={faint} strokeWidth="1"/>; })}
+      {[['Developing',34],['Confident',67],['Mastered',100]].map(([l,r])=><text key={l} x={cx+4} y={cy-rr(r)+11} style={{fontSize:'8px',fontWeight:600,fill:'rgba(255,255,255,0.3)',fontFamily:C.P,letterSpacing:'0.06em'}}>{l.toUpperCase()}</text>)}
+      {then&&<path d={curve(then)} fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth="1.3" strokeDasharray="2 4" strokeLinecap="round"/>}
       <g className="mastery-radar-shape" style={{transformOrigin:`${cx}px ${cy}px`}}>
-        <polygon points={poly(now)} fill={C.cr} fillOpacity="0.16" stroke={C.cr} strokeWidth="2" strokeLinejoin="round"/>
-        {m.areas.map((a,i)=>{ const [x,y]=pt(i,a.score); return <circle key={a.id} cx={x} cy={y} r="3.6" fill={a.score>=100?C.green:_masteryCol(a)} stroke="#fff" strokeWidth="1.2"/>; })}
+        <path d={curve(now)} fill="#E0627A" opacity="0.35" filter={`url(#rg${uid})`}/>
+        <path d={curve(now)} fill={`url(#rf${uid})`} stroke="#F2A0AE" strokeWidth="2" strokeLinejoin="round"/>
+        {m.areas.map((a,i)=>{ const [x,y]=pt(i,a.score), col=a.score>=100?'#7FD3A6':_masteryCol(a); if(!a.score) return null; return <g key={a.id}>
+          <circle cx={x} cy={y} r="7" fill={col} opacity="0.25"/>
+          <circle cx={x} cy={y} r="3.6" fill={col} stroke="#fff" strokeWidth="1.4"/>
+        </g>; })}
       </g>
       {m.areas.map((a,i)=>{
         const c=Math.cos(ang(i)), sn=Math.sin(ang(i)), x=cx+c*(R+14), y=cy+sn*(R+14)+(sn>0.3?8:sn<-0.3?-6:3);
         const anchor=c>0.1?'start':c<-0.1?'end':'middle'; // the two bottom spokes lean apart
         return <g key={a.id} onClick={()=>onPick&&onPick(a.id)} style={{cursor:'pointer'}}>
-          <text x={x} y={y} textAnchor={anchor} style={{fontSize:'11px',fontWeight:600,fill:C.ink2,fontFamily:C.P}}>{KnowledgeMap.short(a)}</text>
-          <text x={x} y={y+12} textAnchor={anchor} style={{fontSize:'10px',fontWeight:700,fill:a.score>=100?C.green:C.mid,fontFamily:C.P}}>{a.score}%</text>
+          <text x={x} y={y} textAnchor={anchor} style={{fontSize:'11px',fontWeight:600,fill:a.score?'rgba(255,255,255,0.85)':'rgba(255,255,255,0.45)',fontFamily:C.P}}>{KnowledgeMap.short(a)}</text>
+          <text x={x} y={y+12} textAnchor={anchor} style={{fontSize:'10px',fontWeight:700,fill:a.score>=100?'#7FD3A6':a.score?'#F2A0AE':'rgba(255,255,255,0.3)',fontFamily:C.P}}>{a.score}%</text>
         </g>;
       })}
     </svg>
@@ -603,16 +619,67 @@ function _when(t){ return new Date(t).toLocaleDateString('en',{day:'numeric',mon
    next step. */
 const _PIN_COL={'Not started':'#fff','Getting started':'#DDA0AB','Developing':'#B94A61','Confident':C.cr,'Mastered':C.green};
 function _pinFill(p){ return p.state==='open'?_PIN_COL[p.level]||C.cr:'#CFC9C2'; }
+/* Pinch (or a trackpad pinch, ctrl + wheel) zooms the map about the fingers, up to MAP_ZOOM_MAX;
+   once zoomed, one finger pans it, and the page scrolls again once it's back at 1×. A touch that
+   barely moves is a tap. + and − (and "Reset") do the same for anyone who can't pinch. Pins and
+   lines keep their size on screen as the map grows, so close-together regions come apart. */
+const MAP_ZOOM_MAX=6;
+function useMapZoom(w,h){
+  const [z,setZ]=React.useState({k:1,x:0,y:0}); // k: zoom; x, y: the top-left of what's shown, in map units
+  const fit=(k,x,y)=>{ k=Math.max(1,Math.min(MAP_ZOOM_MAX,k)); const vw=w/k, vh=h/k; return {k,x:Math.max(0,Math.min(w-vw,x)),y:Math.max(0,Math.min(h-vh,y))}; };
+  const reset=()=>setZ({k:1,x:0,y:0});
+  // Zoom by f about a point (px, py) given as a fraction of the shown box.
+  const zoomAt=(f,px=0.5,py=0.5)=>setZ(o=>{ const k=Math.max(1,Math.min(MAP_ZOOM_MAX,o.k*f)); const ax=o.x+px*w/o.k, ay=o.y+py*h/o.k; return fit(k,ax-px*w/k,ay-py*h/k); });
+  const pts=React.useRef(new Map()), g=React.useRef(null);
+  const frac=(e,r)=>[(e.clientX-r.left)/r.width,(e.clientY-r.top)/r.height];
+  const handlers=onTap=>({
+    onPointerDown(e){
+      const el=e.currentTarget; pts.current.set(e.pointerId,{x:e.clientX,y:e.clientY});
+      try{ el.setPointerCapture(e.pointerId); }catch(_){}
+      const r=el.getBoundingClientRect(), P=[...pts.current.values()];
+      g.current={r,start:{...z},P0:P.map(p=>({...p})),moved:false,two:P.length>=2||(g.current&&g.current.two&&P.length>1)};
+    },
+    onPointerMove(e){
+      if(!pts.current.has(e.pointerId)||!g.current) return;
+      pts.current.set(e.pointerId,{x:e.clientX,y:e.clientY});
+      const G=g.current, P=[...pts.current.values()], r=G.r, s=G.start;
+      if(P.length>=2&&G.P0.length>=2){
+        const d0=Math.hypot(G.P0[0].x-G.P0[1].x,G.P0[0].y-G.P0[1].y)||1, d1=Math.hypot(P[0].x-P[1].x,P[0].y-P[1].y);
+        const m0=[(G.P0[0].x+G.P0[1].x)/2,(G.P0[0].y+G.P0[1].y)/2], m1=[(P[0].x+P[1].x)/2,(P[0].y+P[1].y)/2];
+        const k=Math.max(1,Math.min(MAP_ZOOM_MAX,s.k*d1/d0));
+        // The map point under the first midpoint stays under the fingers' midpoint now.
+        const ax=s.x+(m0[0]-r.left)/r.width*w/s.k, ay=s.y+(m0[1]-r.top)/r.height*h/s.k;
+        setZ(fit(k,ax-(m1[0]-r.left)/r.width*w/k,ay-(m1[1]-r.top)/r.height*h/k)); G.moved=true; G.two=true;
+      }else if(P.length===1&&G.P0.length===1){
+        const dx=P[0].x-G.P0[0].x, dy=P[0].y-G.P0[0].y;
+        if(Math.hypot(dx,dy)>6) G.moved=true;
+        if(G.moved&&s.k>1) setZ(fit(s.k,s.x-dx/r.width*w/s.k,s.y-dy/r.height*h/s.k));
+      }
+    },
+    onPointerUp(e){
+      const G=g.current; pts.current.delete(e.pointerId);
+      if(G&&!G.moved&&!G.two&&pts.current.size===0){ const [fx,fy]=frac(e,G.r); onTap(z.x+fx*w/z.k,z.y+fy*h/z.k,z.k); }
+      // A finger left a pinch: carry on from here with the one that's still down.
+      const P=[...pts.current.values()];
+      g.current=P.length?{r:G?G.r:e.currentTarget.getBoundingClientRect(),start:{...z},P0:P.map(p=>({...p})),moved:true,two:true}:null;
+    },
+    onPointerCancel(e){ pts.current.delete(e.pointerId); if(!pts.current.size) g.current=null; },
+    onWheel(e){ if(!e.ctrlKey) return; e.preventDefault(); const [fx,fy]=frac(e,e.currentTarget.getBoundingClientRect()); zoomAt(Math.exp(-e.deltaY*0.01),fx,fy); },
+  });
+  // React's onWheel is passive; a trackpad pinch needs preventDefault, so it's attached by hand.
+  const ref=React.useRef(null), wheel=React.useRef(null);
+  React.useEffect(()=>{ const el=ref.current; if(!el) return; const f=e=>wheel.current&&wheel.current(e); el.addEventListener('wheel',f,{passive:false}); return()=>el.removeEventListener('wheel',f); },[]);
+  return {z,reset,zoomAt,ref,bind:onTap=>{ const H=handlers(onTap); wheel.current=H.onWheel; const {onWheel,...rest}=H; return rest; }};
+}
 function MasteryRegionMap({views,nav,showPro}){
   const [vid,setVid]=React.useState(()=>{ const v=KnowledgeMap.homeView(views); return v?v.id:null; });
   const [sel,setSel]=React.useState([]);
   const v=views.find(x=>x.id===vid)||views[0];
+  const Z=useMapZoom(v?v.w:1,v?v.h:1), z=Z.z;
   if(!v) return null;
-  const PIN=9, HIT=40;
-  const tap=e=>{
-    const r=e.currentTarget.getBoundingClientRect(), k=v.w/r.width, x=(e.clientX-r.left)*k, y=(e.clientY-r.top)*k;
-    setSel(v.pins.map(p=>({p,d:Math.hypot(p.x-x,p.y-y)})).filter(o=>o.d<=HIT).sort((a,b)=>a.d-b.d).slice(0,4).map(o=>o.p.name));
-  };
+  const PIN=9/Math.sqrt(z.k), HIT=40/z.k, SW=1/z.k;
+  const tap=(x,y)=>setSel(v.pins.map(p=>({p,d:Math.hypot(p.x-x,p.y-y)})).filter(o=>o.d<=HIT).sort((a,b)=>a.d-b.d).slice(0,4).map(o=>o.p.name));
+  const zbtn={width:34,height:34,borderRadius:10,background:'rgba(255,255,255,0.94)',border:`1px solid ${C.line}`,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',fontSize:'18px',fontWeight:700,color:C.ink,fontFamily:C.P,userSelect:'none',boxShadow:'0 1px 3px rgba(0,0,0,0.08)'};
   const picked=sel.map(n=>v.pins.find(p=>p.name===n)).filter(Boolean);
   const open=v.pins.filter(p=>p.state==='open').length;
   const legend=[['#CFC9C2','Not unlocked'],[_PIN_COL['Getting started'],'Getting started'],[_PIN_COL.Developing,'Developing'],[C.cr,'Confident'],[C.green,'Mastered']];
@@ -621,23 +688,31 @@ function MasteryRegionMap({views,nav,showPro}){
     <div style={{display:'flex',flexDirection:'column',gap:10}}>
       <div style={{display:'flex',gap:6,overflowX:'auto',scrollbarWidth:'none',margin:'0 -2px'}}>
         {views.map(x=>{ const on=x.id===v.id; return(
-          <div key={x.id} role="button" aria-pressed={on} onClick={()=>{ setVid(x.id); setSel([]); }} style={{flex:'0 0 auto',padding:'6px 11px',borderRadius:999,background:on?C.ink:C.white,border:`1px solid ${on?C.ink:C.line}`,cursor:'pointer',fontSize:13,fontWeight:600,color:on?'#fff':C.ink2,fontFamily:C.P,whiteSpace:'nowrap'}}>
+          <div key={x.id} role="button" aria-pressed={on} onClick={()=>{ setVid(x.id); setSel([]); Z.reset(); }} style={{flex:'0 0 auto',padding:'6px 11px',borderRadius:999,background:on?C.ink:C.white,border:`1px solid ${on?C.ink:C.line}`,cursor:'pointer',fontSize:13,fontWeight:600,color:on?'#fff':C.ink2,fontFamily:C.P,whiteSpace:'nowrap'}}>
             {x.label} <span style={{opacity:0.6}}>{x.open}/{x.pins.length}</span>
           </div>); })}
       </div>
-      <svg viewBox={`0 0 ${v.w} ${v.h}`} width="100%" onClick={tap} role="img"
-        aria-label={`Map of ${v.label}: ${open} of ${v.pins.length} wine regions unlocked. Tap a region to see it.`}
-        style={{display:'block',borderRadius:12,background:'#EEF1F3',cursor:'pointer',maxHeight:420}}>
-        <path d={v.land} fill="#F6F2EC" stroke="#D9D2C8" strokeWidth="1.5" strokeLinejoin="round"/>
-        <path d={v.borders} fill="none" stroke="#E2DBD1" strokeWidth="1.2"/>
+      <div style={{position:'relative'}}>
+      <svg ref={Z.ref} viewBox={`${z.x.toFixed(2)} ${z.y.toFixed(2)} ${(v.w/z.k).toFixed(2)} ${(v.h/z.k).toFixed(2)}`} width="100%" {...Z.bind(tap)} role="img" data-testid="region-map" data-zoom={z.k.toFixed(2)}
+        aria-label={`Map of ${v.label}: ${open} of ${v.pins.length} wine regions unlocked. Tap a region to see it; pinch or use + and − to zoom.`}
+        style={{display:'block',borderRadius:12,background:'#EEF1F3',cursor:z.k>1?'grab':'pointer',maxHeight:420,touchAction:z.k>1?'none':'pan-y',userSelect:'none',WebkitUserSelect:'none'}}>
+        <path d={v.land} fill="#F6F2EC" stroke="#D9D2C8" strokeWidth={1.5*SW} strokeLinejoin="round"/>
+        <path d={v.borders} fill="none" stroke="#E2DBD1" strokeWidth={1.2*SW}/>
         {[...v.pins].sort((a,b)=>(a.state==='open')-(b.state==='open')).map(p=>{
-          const on=sel.includes(p.name);
+          const on=sel.includes(p.name), first=p.state==='open'&&p.level==='Not started';
           return <g key={p.name}>
-            {p.drunk>0&&<circle cx={p.x} cy={p.y} r={PIN+5} fill="none" stroke={C.ink} strokeWidth="2.2"/>}
-            <circle cx={p.x} cy={p.y} r={on?PIN+3:p.state==='open'?PIN:PIN-2} fill={_pinFill(p)} fillOpacity={p.fading?0.4:1} strokeDasharray={p.fading?'3 2':null} stroke={p.state==='open'&&p.level==='Not started'?C.cr:'#fff'} strokeWidth={p.state==='open'&&p.level==='Not started'?2.5:2}/>
+            {p.drunk>0&&<circle cx={p.x} cy={p.y} r={PIN+5*SW} fill="none" stroke={C.ink} strokeWidth={2.2*SW}/>}
+            <circle cx={p.x} cy={p.y} r={on?PIN+3*SW:p.state==='open'?PIN:PIN-2*SW} fill={_pinFill(p)} fillOpacity={p.fading?0.4:1} strokeDasharray={p.fading?`${3*SW} ${2*SW}`:null} stroke={first?C.cr:'#fff'} strokeWidth={(first?2.5:2)*SW}/>
+            {z.k>=2.5&&p.state==='open'&&<text x={p.x} y={p.y-PIN-4*SW} textAnchor="middle" style={{fontSize:(11*SW).toFixed(2)+'px',fontWeight:600,fill:C.ink2,fontFamily:C.P,paintOrder:'stroke',stroke:'#F6F2EC',strokeWidth:3*SW}}>{p.name}</text>}
           </g>;
         })}
       </svg>
+      <div style={{position:'absolute',right:8,top:8,display:'flex',flexDirection:'column',gap:6}}>
+        <div role="button" aria-label="Zoom in" onClick={()=>Z.zoomAt(1.6)} style={zbtn}>+</div>
+        <div role="button" aria-label="Zoom out" onClick={()=>Z.zoomAt(1/1.6)} style={{...zbtn,opacity:z.k>1?1:0.45}}>−</div>
+      </div>
+      {z.k>1&&<div role="button" onClick={Z.reset} style={{...zbtn,position:'absolute',left:8,top:8,width:'auto',padding:'0 10px',fontSize:'13px',fontWeight:600}}>Reset</div>}
+      </div>
       <div aria-hidden="true" style={{display:'flex',flexWrap:'wrap',gap:'4px 12px'}}>
         {legend.map(([c,l])=><span key={l} style={{display:'inline-flex',alignItems:'center',gap:5,fontSize:12,color:C.mid,fontFamily:C.P}}><span style={{width:9,height:9,borderRadius:5,background:c,border:'1px solid rgba(0,0,0,0.08)'}}/>{l}</span>)}
         <span style={{display:'inline-flex',alignItems:'center',gap:5,fontSize:12,color:C.mid,fontFamily:C.P}}><span style={{width:9,height:9,borderRadius:6,border:`2px solid ${C.ink}`}}/>You've had one</span>
@@ -659,7 +734,7 @@ function MasteryRegionMap({views,nav,showPro}){
               :<div role="button" onClick={()=>nav('camera')} style={{fontSize:13,fontWeight:600,color:C.mid,fontFamily:C.P,cursor:'pointer',textAlign:'right',maxWidth:120,lineHeight:1.3}}>Scan a bottle from here</div>}
           </div>
         ))}
-      </div>:<div style={{fontSize:13,color:C.mid,fontFamily:C.P}}>Tap a pin to see a region. Scanning a bottle unlocks its region.</div>}
+      </div>:<div style={{fontSize:13,color:C.mid,fontFamily:C.P}}>Tap a pin to see a region; pinch to zoom in. Scanning a bottle unlocks its region.</div>}
     </div>
   );
 }
@@ -852,6 +927,24 @@ const _MASTERY_CSS=`@keyframes masteryGrow{from{transform:scale(0.2);opacity:0}t
 .grape-btn:focus-visible .grape-hit{stroke:#0F0F0F;stroke-width:2;stroke-dasharray:3 2}
 @media (prefers-reduced-motion:reduce){.mastery-radar-shape,.milestone-in{animation:none}.grape-berry{transition:none}}`;
 
+/* One section of Mastery: a heading that folds it away (a chevron, aria-expanded) and, folded, a
+   one-line summary in its place, which also opens it. `dark` draws the body on the welcome
+   screens' near-black; `plain` lays its children out without a card (the area groups). */
+function MasterySection({id,title,summary,folded,toggle,dark,plain,testid,children}){
+  const shut=!!folded[id];
+  const body={background:dark?'radial-gradient(120% 80% at 50% 40%, #3A1420 0%, #161012 55%, #0F0F0F 100%)':C.white,borderRadius:16,border:dark?'none':`1px solid ${C.line}`,padding:'14px 14px 12px',display:'flex',flexDirection:'column',gap:8};
+  return <section data-section={id} style={{display:'flex',flexDirection:'column',gap:8}}>
+    <div role="button" tabIndex={0} aria-expanded={!shut} onClick={()=>toggle(id)}
+      onKeyDown={e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); toggle(id); } }}
+      style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:8,marginTop:6,cursor:'pointer'}}>
+      <span style={{fontSize:15,fontWeight:600,color:C.mid,letterSpacing:'0.08em',textTransform:'uppercase',fontFamily:C.P}}>{title}</span>
+      <span aria-hidden="true" style={{display:'inline-flex',transform:`rotate(${shut?90:-90}deg)`,transition:'transform .2s ease'}}><Icon n="chevron" sz={16} col={C.mid}/></span>
+    </div>
+    {shut?<div data-testid={`summary-${id}`} role="button" onClick={()=>toggle(id)} style={{...body,background:C.white,border:`1px solid ${C.line}`,padding:'12px 14px',cursor:'pointer',fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.45}}>{summary}</div>
+      :plain?<div data-testid={testid} style={{display:'flex',flexDirection:'column',gap:8}}>{children}</div>
+      :<div data-testid={testid} style={body}>{children}</div>}
+  </section>;
+}
 function MasteryMapScreen({nav,back,showPro}){
   const wines=React.useMemo(()=>WineHistory.getAll(),[]);
   const m=React.useMemo(()=>{ const x=KnowledgeMap.compute(wines); KnowledgeMap.note(x); return x; },[]);
@@ -869,14 +962,20 @@ function MasteryMapScreen({nav,back,showPro}){
   React.useLayoutEffect(()=>{ const r=ret.current, el=listRef.current; if(r&&el&&r.top>0) el.scrollTop=r.top; },[]);
   const leaveForGrape=()=>Handoff.masteryReturn.set({top:listRef.current?listRef.current.scrollTop:0,view:grapeView});
   const go=next=>{ if(next) _openLearn({kind:'mastery',next},nav,showPro); };
+  // Sections they've folded away stay folded next time (Device.masteryCollapsed).
+  const [folded,setFolded]=React.useState(()=>Device.masteryCollapsed());
+  const toggle=id=>setFolded(f=>{ const n={...f}; if(n[id]) delete n[id]; else n[id]=true; Device.setMasteryCollapsed(n); return n; });
+  const cluster=React.useMemo(()=>KnowledgeMap.grapeCluster(m),[m]);
+  const mapCount=React.useMemo(()=>KnowledgeMap.mapCount(views),[views]);
+  const summary=React.useMemo(()=>{ const s=[...m.areas].sort((a,b)=>b.score-a.score); return {strongest:s[0]&&s[0].score>0?s[0]:null}; },[m]);
   const pick=id=>{
     const a=m.areas.find(x=>x.id===id); if(a&&a.items) setOpen(id);
-    const el=listRef.current&&listRef.current.querySelector(`[data-area="${id}"]`);
-    if(el) el.scrollIntoView({behavior:'smooth',block:'center'});
+    // A tap on the shape opens the area's section if it's folded, then goes to its card.
+    const g=a&&'g_'+a.group;
+    if(g&&folded[g]) toggle(g);
+    setTimeout(()=>{ const el=listRef.current&&listRef.current.querySelector(`[data-area="${id}"]`); if(el) el.scrollIntoView({behavior:'smooth',block:'center'}); },g&&folded[g]?50:0);
   };
   const GROUPS=[{id:'types',label:'Wine types'},{id:'places',label:'Regions and grapes'},{id:'skills',label:'Wine Skills'}];
-  const card={background:C.white,borderRadius:16,border:`1px solid ${C.line}`,padding:'14px 14px 12px',display:'flex',flexDirection:'column',gap:8};
-  const head=t=><div style={{fontSize:15,fontWeight:600,color:C.mid,letterSpacing:'0.08em',textTransform:'uppercase',fontFamily:C.P,marginTop:6}}>{t}</div>;
   const rise=prog&&prog.rises[0];
   return(
     <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden'}}>
@@ -901,46 +1000,47 @@ function MasteryMapScreen({nav,back,showPro}){
 
         <MilestoneMoment items={fresh}/>
 
-        {head('Your shape')}
-        <div style={card}>
+        <MasterySection id="shape" title="Your shape" dark folded={folded} toggle={toggle}
+          summary={`${m.overall}% overall${rise?` · biggest rise ${rise.label} +${rise.delta}`:summary.strongest?` · strongest ${summary.strongest.label} ${summary.strongest.score}%`:''}`}>
           <MasteryRadar m={m} prog={prog} onPick={pick}/>
           <div style={{display:'flex',gap:14,justifyContent:'center',flexWrap:'wrap'}} aria-hidden="true">
-            <span style={{display:'inline-flex',alignItems:'center',gap:6,fontSize:12,color:C.mid,fontFamily:C.P}}><span style={{width:16,height:0,borderTop:`2px solid ${C.cr}`}}/>Now</span>
-            {prog&&<span style={{display:'inline-flex',alignItems:'center',gap:6,fontSize:12,color:C.mid,fontFamily:C.P}}><span style={{width:16,height:0,borderTop:`2px dashed ${C.mid}`}}/>{_when(prog.then.t)}</span>}
+            <span style={{display:'inline-flex',alignItems:'center',gap:6,fontSize:12,color:'rgba(255,255,255,0.6)',fontFamily:C.P}}><span style={{width:16,height:0,borderTop:'2px solid #F2A0AE'}}/>Now</span>
+            {prog&&<span style={{display:'inline-flex',alignItems:'center',gap:6,fontSize:12,color:'rgba(255,255,255,0.6)',fontFamily:C.P}}><span style={{width:16,height:0,borderTop:'2px dotted rgba(255,255,255,0.5)'}}/>{_when(prog.then.t)}</span>}
           </div>
-          <div style={{fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.5}}>
-            {prog?(rise?<>Since {_when(prog.then.t)} your biggest rise is <b>{rise.label}</b> (+{rise.delta}).{prog.rises.length>1?` ${prog.rises.length-1} other area${prog.rises.length===2?' has':'s have'} grown too.`:''}</>
+          <div style={{fontSize:14,color:'rgba(255,255,255,0.75)',fontFamily:C.P,lineHeight:1.5}}>
+            {prog?(rise?<>Since {_when(prog.then.t)} your biggest rise is <b style={{color:'#fff'}}>{rise.label}</b> (+{rise.delta}).{prog.rises.length>1?` ${prog.rises.length-1} other area${prog.rises.length===2?' has':'s have'} grown too.`:''}</>
               :<>No change since {_when(prog.then.t)}. A quiz or an article moves the shape.</>)
-              :<>A rounder shape means rounder knowledge. From next week, a dashed outline shows where you were, so you can see it grow.</>}
+              :<>A rounder shape means rounder knowledge. From next week, a dotted outline shows where you were, so you can see it grow.</>}
           </div>
-        </div>
+        </MasterySection>
 
-        {head('Your palate')}
-        <div data-testid="mastery-palate" style={card}>
-          <MasteryPalate p={palate} go={go}/>
-        </div>
-
-        {head('Your wine map')}
-        <div style={card}>
-          <MasteryRegionMap views={views} nav={nav} showPro={showPro}/>
-        </div>
-
-        {head('Your grapes')}
-        <div style={card}>
+        <MasterySection id="grapes" title="Your grapes" folded={folded} toggle={toggle}
+          summary={`${cluster.studied} of ${cluster.total} grapes studied${cluster.mastered?` · ${cluster.mastered} mastered`:''}`}>
           <MasteryGrapes m={m} nav={nav} view={grapeView} setView={setGrapeView} onOpen={leaveForGrape}/>
-        </div>
+        </MasterySection>
 
-        {head('Milestones')}
-        <div data-testid="mastery-milestones" style={card}><MilestoneList items={milestones}/></div>
+        <MasterySection id="map" title="Your wine map" folded={folded} toggle={toggle}
+          summary={`${mapCount.open} of ${mapCount.total} regions unlocked`}>
+          <MasteryRegionMap views={views} nav={nav} showPro={showPro}/>
+        </MasterySection>
 
-        {GROUPS.map(G=>(
-          <div key={G.id} style={{display:'flex',flexDirection:'column',gap:8}}>
-            {head(G.label)}
-            {m.areas.filter(a=>a.group===G.id).map(a=>(
+        <MasterySection id="palate" title="Your palate" testid="mastery-palate" folded={folded} toggle={toggle}
+          summary={palate.n?`${palate.score}% · ${palate.level} · from ${palate.n} Blind Call${palate.n===1?'':'s'}`:'No Blind Calls yet'}>
+          <MasteryPalate p={palate} go={go}/>
+        </MasterySection>
+
+        <MasterySection id="milestones" title="Milestones" testid="mastery-milestones" folded={folded} toggle={toggle}
+          summary={milestones.length?`${milestones.length} earned · latest: ${milestones[0].title}`:'None yet'}>
+          <MilestoneList items={milestones}/>
+        </MasterySection>
+
+        {GROUPS.map(G=>{ const areas=m.areas.filter(a=>a.group===G.id); return(
+          <MasterySection key={G.id} id={'g_'+G.id} title={G.label} plain folded={folded} toggle={toggle}
+            summary={[...areas].sort((x,y)=>y.score-x.score).map(a=>`${KnowledgeMap.short(a)} ${a.score}%`).join(' · ')}>
+            {areas.map(a=>(
               <div key={a.id} data-area={a.id}><MasteryAreaCard a={a} open={open===a.id} onToggle={()=>a.items&&setOpen(o=>o===a.id?null:a.id)} onNext={()=>go(a.next)}/></div>
             ))}
-          </div>
-        ))}
+          </MasterySection>); })}
         <div style={{height:12}}/>
       </div>
     </div>

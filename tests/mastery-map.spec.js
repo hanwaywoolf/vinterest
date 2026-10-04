@@ -324,6 +324,82 @@ test('grapes as a list, back lands on the grapes, and the page lists their own b
   expect(errors).toEqual([]);
 });
 
+test('Mastery sections: in order, fold to a summary, and stay folded next time', async ({ context, page }, info) => {
+  const errors = collectErrors(page);
+  await user(context, page);
+  await page.goto(`${BASE}/#home`);
+  await grapeStudy(page);
+  await page.goto(`${BASE}/#mastery-map`);
+  const order = await page.locator('section[data-section]').evaluateAll((els) => els.map((e) => e.dataset.section));
+  expect(order).toEqual(['shape', 'grapes', 'map', 'palate', 'milestones', 'g_types', 'g_places', 'g_skills']);
+  await page.getByTestId('mastery-radar').scrollIntoViewIfNeeded();
+  await page.screenshot({ path: path.join(info.project.outputDir, 'mastery-shape.png') });
+
+  const head = (id) => page.locator(`section[data-section="${id}"] > [aria-expanded]`);
+  await head('grapes').click();
+  await expect(head('grapes')).toHaveAttribute('aria-expanded', 'false');
+  await expect(page.getByTestId('summary-grapes')).toHaveText('3 of 50 grapes studied');
+  await expect(page.getByTestId('grape-cluster')).toHaveCount(0);
+  await head('palate').click();
+  await expect(page.getByTestId('summary-palate')).toHaveText('No Blind Calls yet');
+  await head('shape').click();
+  await expect(page.getByTestId('summary-shape')).toContainText('% overall');
+  await page.screenshot({ path: path.join(info.project.outputDir, 'mastery-folded.png') });
+
+  // Remembered when they come back.
+  await page.goto(`${BASE}/#home`);
+  await page.goto(`${BASE}/#mastery-map`);
+  await expect(page.getByTestId('summary-grapes')).toBeVisible();
+  await expect(page.getByTestId('summary-palate')).toBeVisible();
+  await expect(head('map')).toHaveAttribute('aria-expanded', 'true');
+  // A tap on the summary opens it again.
+  await page.getByTestId('summary-grapes').click();
+  await expect(page.getByTestId('grape-cluster')).toBeVisible();
+  expect(await page.evaluate(() => Device.masteryCollapsed())).toEqual({ palate: true, shape: true });
+  expect(errors).toEqual([]);
+});
+
+test('the wine map zooms with a pinch and with + and −, and a tap still picks a region', async ({ context, page }) => {
+  const errors = collectErrors(page);
+  await user(context, page);
+  await page.goto(`${BASE}/#mastery-map`);
+  const map = page.getByTestId('region-map');
+  await map.scrollIntoViewIfNeeded();
+  await expect(map).toHaveAttribute('data-zoom', '1.00');
+  const box = await map.boundingBox();
+  const cx = box.x + box.width / 2, cy = box.y + box.height / 2;
+  // Two fingers moving apart, as pointer events.
+  await map.evaluate((el, { cx, cy }) => {
+    const ev = (type, id, x, y) => el.dispatchEvent(new PointerEvent(type, { pointerId: id, clientX: x, clientY: y, bubbles: true, pointerType: 'touch', isPrimary: id === 1 }));
+    ev('pointerdown', 1, cx - 20, cy); ev('pointerdown', 2, cx + 20, cy);
+    for (let i = 1; i <= 5; i++) { ev('pointermove', 1, cx - 20 - i * 12, cy); ev('pointermove', 2, cx + 20 + i * 12, cy); }
+    ev('pointerup', 1, cx - 80, cy); ev('pointerup', 2, cx + 80, cy);
+  }, { cx, cy });
+  const k = Number(await map.getAttribute('data-zoom'));
+  expect(k).toBeGreaterThan(3.5);
+  expect(k).toBeLessThan(4.5);
+  await page.getByRole('button', { name: 'Reset' }).click();
+  await expect(map).toHaveAttribute('data-zoom', '1.00');
+  await page.getByRole('button', { name: 'Zoom in' }).click();
+  await expect(map).toHaveAttribute('data-zoom', '1.60');
+  await page.getByRole('button', { name: 'Zoom out' }).click();
+  await expect(map).toHaveAttribute('data-zoom', '1.00');
+  // Zoomed in on a pin, a tap on it still lists it.
+  const pin = await page.evaluate(() => { const v = KnowledgeMap.homeView(KnowledgeMap.regionMap()); const p = v.pins.find((x) => x.name === 'Rioja') || v.pins[0]; return { x: p.x / v.w, y: p.y / v.h, name: p.name }; });
+  await map.evaluate((el, pin) => {
+    const r = el.getBoundingClientRect(), x = r.left + pin.x * r.width, y = r.top + pin.y * r.height;
+    el.dispatchEvent(new WheelEvent('wheel', { deltaY: -100, ctrlKey: true, clientX: x, clientY: y, bubbles: true, cancelable: true }));
+  }, pin);
+  expect(Number(await map.getAttribute('data-zoom'))).toBeGreaterThan(2);
+  const p2 = await map.evaluate((el, pin) => {
+    const vb = el.viewBox.baseVal, r = el.getBoundingClientRect(), W = vb.width * Number(el.dataset.zoom), H = vb.height * Number(el.dataset.zoom);
+    return { x: r.left + (pin.x * W - vb.x) / vb.width * r.width, y: r.top + (pin.y * H - vb.y) / vb.height * r.height };
+  }, pin);
+  await page.mouse.click(p2.x, p2.y);
+  await expect(page.getByTestId('map-picked')).toContainText(pin.name);
+  expect(errors).toEqual([]);
+});
+
 test('every grape has a page: origin, wines and how its bunch looks', async ({ context, page }) => {
   await user(context, page);
   await page.goto(`${BASE}/#home`);

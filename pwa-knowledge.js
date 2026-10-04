@@ -301,6 +301,11 @@ const KnowledgeMap = {
   },
 
   /* The view to open on: the one with the most regions they've unlocked or drunk. */
+  /* Regions on the map overall (a region can sit in more than one view): {open, total}. */
+  mapCount(views){
+    const all={}; (views||[]).forEach(v=>v.pins.forEach(p=>{ all[p.name]=all[p.name]||p.state==='open'; }));
+    const names=Object.keys(all); return {open:names.filter(n=>all[n]).length,total:names.length};
+  },
   homeView(views){ return [...views].sort((a,b)=>(b.open+b.drunk)-(a.open+a.drunk))[0]||null; },
 };
 

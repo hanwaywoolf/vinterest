@@ -71,6 +71,10 @@ const Device = {
   GRAPES_SEEN_KEY:'vinterest_grape_cluster_seen',
   grapesSeen(){ return Store.getJSON(this.GRAPES_SEEN_KEY,{})||{}; },
   setGrapesSeen(v){ Store.setJSON(this.GRAPES_SEEN_KEY,v); },
+  /* Which Mastery sections they've folded away on this phone ({id: true}), kept for next time. */
+  MASTERY_COLLAPSE_KEY:'vinterest_mastery_collapsed_v1',
+  masteryCollapsed(){ const v=Store.getJSON(this.MASTERY_COLLAPSE_KEY,{}); return v&&typeof v==='object'?v:{}; },
+  setMasteryCollapsed(v){ Store.setJSON(this.MASTERY_COLLAPSE_KEY,v); },
 };
 
 /* Wines hearted on the detail screen, by name and vintage. */
