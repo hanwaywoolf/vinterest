@@ -687,7 +687,7 @@ function MilestoneMoment({items}){
   if(!items||!items.length) return null;
   return(
     <div data-testid="milestone-moment" className="milestone-in" style={{background:C.ink,borderRadius:16,padding:'14px 16px',display:'flex',flexDirection:'column',gap:8}}>
-      <div style={{fontSize:13,fontWeight:600,color:'#E7C66B',fontFamily:C.P,textTransform:'uppercase',letterSpacing:'0.06em'}}>{items.length===1?'New milestone':`${items.length} new milestones`}</div>
+      <div style={{fontSize:13,fontWeight:600,color:'#E7C66B',fontFamily:C.P,textTransform:'uppercase',letterSpacing:'0.06em'}}>{items.length===1?(items[0].id.startsWith('level:')?'New level':'New milestone'):`${items.length} new milestones`}</div>
       {items.map(x=>(
         <div key={x.id} style={{display:'flex',alignItems:'center',gap:12}}>
           <div style={{width:38,height:38,borderRadius:19,background:'rgba(231,198,107,0.16)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><Icon n={x.icon} sz={18} col="#E7C66B"/></div>
@@ -934,6 +934,7 @@ function QuizScreen({nav,back}){
   const [streak,setStreak]=React.useState(0);
   const [xpGained,setXpGained]=React.useState(0);
   const [milestones,setMilestones]=React.useState([]);
+  const startLevel=React.useRef(XPSystem.getLevel(XPSystem.get().total).name);
   const [results,setResults]=React.useState([]);
   const [, setResetTick]=React.useState(0);
   const scrollRef=React.useRef(null);
@@ -955,13 +956,14 @@ function QuizScreen({nav,back}){
       if(r.justMastered){
         const a=XPSystem.award([{type:'concept_mastered',conceptId:q.conceptId}]);
         gained+=a.filter(x=>!x.levelUp).reduce((s,x)=>s+x.amount,0);
-        XPSystem.toast(a);
+        XPSystem.toast(a,{quiet:true}); // the result shows the round's XP
       }
     }
     if(q.vocabTerm) VocabLedger.recordTest(q.vocabTerm,correct);
     if(quizSet&&QuizMastery.recordAnswer(quizSet.id,q.q,correct)){
       const a=XPSystem.award([{type:'question_learned'}]);
       gained+=a.filter(x=>!x.levelUp).reduce((s,x)=>s+x.amount,0);
+      XPSystem.toast(a,{quiet:true}); // keeps the XP badge current; the result says it
     }
     if(gained){ setXpGained(xp=>xp+gained); }
 
@@ -981,9 +983,13 @@ function QuizScreen({nav,back}){
         :XPSystem.award([{type:'quiz_complete',quizKey:mode+'_'+Date.now(),derivedDifficulty:avgBox}]);
       const g2=a2.filter(x=>!x.levelUp).reduce((s,a)=>s+a.amount,0);
       setXpGained(xp=>xp+g2);
-      XPSystem.toast(a2);
-      // A milestone this round reached (Confident in Red, a region mastered) is marked here, once.
-      if(quizSet){ try{ setMilestones(Milestones.check(KnowledgeMap.compute(),Palate.compute())); }catch(e){} }
+      XPSystem.toast(a2,{quiet:true});
+      // What this round reached is marked here, on the result, once: a new level, and (for a
+      // question set) any milestone (Confident in Red, a region mastered). Nothing floats over it.
+      const lvl=XPSystem.getLevel(XPSystem.get().total).name, marks=[];
+      if(lvl!==startLevel.current) marks.push({id:'level:'+lvl,title:`${lvl} level reached`,sub:`${XPSystem.get().total} XP · next, ${XPSystem.nextLevel(XPSystem.get().total).name}`,icon:'trophy'});
+      if(quizSet){ try{ marks.push(...Milestones.check(KnowledgeMap.compute(),Palate.compute())); }catch(e){} }
+      setMilestones(marks);
       setPhase('results');
     } else {
       setQIdx(i=>i+1); setSelected(null); setPhase('question');
@@ -995,7 +1001,7 @@ function QuizScreen({nav,back}){
     const set=quizSetFor(cfg?.mode||'concept',cfg);
     Handoff.quiz.set(cfg);
     setConfig(cfg); setAllQs(qs); setStartedComplete(!!set&&QuizMastery.isComplete(set.id,set.pool()));
-    setQIdx(0); setSelected(null); setPhase(qs.length?'question':'empty'); setStreak(0); setXpGained(0); setResults([]); setMilestones([]);
+    setQIdx(0); setSelected(null); setPhase(qs.length?'question':'empty'); setStreak(0); setXpGained(0); setResults([]); setMilestones([]); startLevel.current=XPSystem.getLevel(XPSystem.get().total).name;
     if(scrollRef.current) scrollRef.current.scrollTop=0;
   }
   // Region and grape banks may still need generating before the next set can start.

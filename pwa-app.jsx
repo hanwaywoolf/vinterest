@@ -65,19 +65,16 @@ function App(){
   },[]);
   const showXpBadge=!['camera','onboarding','learn','quiz','article','gen-article','guide','identified','detail','mywines','scan','profile','style-explore','winelist','account','settings','mastery-map'].includes(screen);
 
-  // XP Toast
-  const [xpToasts,setXpToasts]=React.useState([]);
-  React.useEffect(()=>{
-    const handler=e=>{
-      const {awards}=e.detail||{};
-      if(!awards||!awards.length) return;
-      const id=Date.now()+Math.random();
-      setXpToasts(t=>[...t,{id,awards}]);
-      setTimeout(()=>setXpToasts(t=>t.filter(x=>x.id!==id)),3200);
-    };
-    window.addEventListener('vinterest:xp',handler);
-    return ()=>window.removeEventListener('vinterest:xp',handler);
-  },[]);
+  // XP and the moments behind it (pwa-moments.jsx): a quiet chip, and cards that wait for a calm screen.
+  const xpDel=useXPDelivery();
+  const actOnMoment=a=>{
+    xpDel.dismiss();
+    if(a.level) return setShowXpOverlay(true);
+    if(a.pro) return setProGate(a.pro);
+    if(a.learn) return _openLearn(a.learn,nav,setProGate);
+    if(a.screen==='mastery-map') return Entitlement.isPro()?nav('mastery-map'):setProGate('mastery-map');
+    if(a.screen) nav(a.screen);
+  };
 
   // Signed in: fetch the server's word on Pro and this week's usage (Account caches it).
   React.useEffect(()=>{ Platform.start(); if(Account.signedIn()) Account.refreshMe(); },[]);
@@ -139,11 +136,14 @@ function App(){
         {screen==='account'   && <AccountProfileScreen {...ctx}/>}
         {screen==='settings'  && <AccountProfileScreen {...ctx}/>/* Settings merged into Profile; old links land there */}
       </div>
+      {showNav&&MOMENT_SCREENS.includes(screen)&&xpDel.moment?<MomentCard m={xpDel.moment} more={xpDel.more} onAct={actOnMoment} onClose={xpDel.dismiss}/>
+        :showNav&&!showXpBadge&&<XPChip chip={xpDel.chip} overNav/>}
       {showNav&&<BottomNav active={screen} nav={nav} showPro={setProGate}/>}
       {showXpBadge&&(
         <div onClick={()=>setShowXpOverlay(true)} style={{position:'absolute',top:'calc(env(safe-area-inset-top) + 15px)',right:14,zIndex:200,display:'flex',alignItems:'center',gap:5,padding:'5px 11px',borderRadius:20,background:C.crSoft,border:`1px solid ${C.crDim}`,cursor:'pointer',boxShadow:'0 1px 8px rgba(0,0,0,0.08)',pointerEvents:'auto'}}>
           <Icon n={XPSystem.iconFor(XPSystem.getLevel(xpBadge.total))} sz={16} col={C.cr}/>
           <span style={{fontSize:'15px',fontWeight:700,color:C.cr,fontFamily:C.P}}>{xpBadge.total} XP</span>{/* fixed: the badge sits beside the logo */}
+          <XPBadgeGain chip={xpDel.chip}/>
           {Entitlement.isPro()&&<span style={{fontSize:12,fontWeight:700,color:'#fff',background:'linear-gradient(135deg,#9B5E00,#C4870A)',borderRadius:8,padding:'2px 6px',marginLeft:2}}>PRO</span>}
         </div>
       )}
@@ -233,23 +233,10 @@ function App(){
           </div>
         );
       })()}
-      {/* XP Toast overlay */}
-      <div style={{position:'absolute',top:0,left:0,right:0,pointerEvents:'none',zIndex:999,display:'flex',flexDirection:'column',alignItems:'center',gap:8,paddingTop:'calc(env(safe-area-inset-top) + 70px)'}}>
-        {xpToasts.map(toast=>(
-          <div key={toast.id} style={{display:'flex',flexDirection:'column',alignItems:'center',gap:4,animation:'xpIn .35s cubic-bezier(.34,1.56,.64,1) both'}}>
-            {toast.awards.map((a,i)=>(
-              <div key={i} style={{display:'inline-flex',alignItems:'center',gap:8,background:a.levelUp?'#0F0F0F':a.bonus?C.cr:'rgba(15,15,15,0.88)',borderRadius:30,padding:'8px 16px',backdropFilter:'blur(8px)',boxShadow:'0 4px 20px rgba(0,0,0,0.3)'}}>
-                {a.levelUp&&<Icon n="trophy" sz={16} col="#fff"/>}
-                {a.bonus&&!a.levelUp&&<Icon n="star" sz={14} col="#fff"/>}
-                {!a.levelUp&&!a.bonus&&<span style={{fontSize:15,fontWeight:700,color:C.amber,fontFamily:C.P}}>+{a.amount} XP</span>}
-                <span style={{fontSize:15,fontWeight:600,color:'#fff',fontFamily:C.P}}>{a.label}</span>
-              </div>
-            ))}
-          </div>
-        ))}
-      </div>
+      {!showXpBadge&&!showNav&&<XPChip chip={xpDel.chip}/>}
+      <style>{_MOMENT_CSS}</style>
       {proGate&&<ProGate feature={proGate} onClose={()=>setProGate(null)}/>}
-      <style>{`@keyframes xpIn{from{opacity:0;transform:translateY(-16px) scale(.9)}to{opacity:1;transform:none}} @keyframes slideUp{from{transform:translateY(100%)}to{transform:none}}`}</style>
+      <style>{`@keyframes slideUp{from{transform:translateY(100%)}to{transform:none}}`}</style>
     </div>
   );
 }

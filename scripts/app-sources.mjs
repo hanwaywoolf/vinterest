@@ -48,6 +48,7 @@ export const APP_SOURCES = [
   'pwa-screens-learn.jsx',
   'pwa-screens-home.jsx',
   'pwa-screens-wineiq.jsx',
+  'pwa-moments.jsx',
   'pwa-app.jsx',
 ];
 

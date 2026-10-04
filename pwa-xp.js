@@ -181,7 +181,7 @@ const XPSystem = {
         case 'first_type':
           if(r.value && !d.events.includes('type_'+r.value)){
             d.events.push('type_'+r.value); d.total+=A.first_type;
-            awards.push({label:'First '+r.value+' wine!',amount:A.first_type,bonus:true});
+            awards.push({label:'First '+r.value+' wine!',amount:A.first_type,bonus:true,wineType:r.value});
           }
           break;
 
@@ -190,7 +190,7 @@ const XPSystem = {
             const ck='country_'+(r.value).toLowerCase().replace(/\s/g,'_');
             if(!d.events.includes(ck)){
               d.events.push(ck); d.total+=A.first_country;
-              awards.push({label:'First from '+r.value+'!',amount:A.first_country,bonus:true});
+              awards.push({label:'First from '+r.value+'!',amount:A.first_country,bonus:true,country:r.value});
             }
           }
           break;
@@ -202,7 +202,7 @@ const XPSystem = {
             if(!(d.grapesSeen||[]).some(x=>WineDNA.grape(x).toLowerCase()===g)){
               d.grapesSeen=(d.grapesSeen||[]);
               d.grapesSeen.push(g); d.total+=A.new_grape;
-              awards.push({label:'New grape: '+r.value,amount:A.new_grape,bonus:true});
+              awards.push({label:'New grape: '+r.value,amount:A.new_grape,bonus:true,grape:r.value});
             }
           }
           break;
@@ -245,14 +245,51 @@ const XPSystem = {
     return awards;
   },
 
-  toast(awards){
+  /* Tells the app what was earned (XPDelivery in pwa-moments.jsx). opts.quiet: the screen shows
+     all of it itself (the quiz result); opts.xpShown: the screen shows the XP (Blind Call's
+     result) but moments like a level-up still come through. */
+  toast(awards,opts){
     if(!awards||!awards.length) return;
-    window.dispatchEvent(new CustomEvent('vinterest:xp',{detail:{awards}}));
+    window.dispatchEvent(new CustomEvent('vinterest:xp',{detail:{awards,...(opts||{})}}));
   },
 
-  awardAndToast(reasons){
+  /* How awards reach the user: plain XP adds up into one quiet "+N XP" chip (with the biggest
+     bonus's label), and what changes something for them becomes a moment card with a next step:
+     a new level, a new grape (its quiz), a first country (the wine map), a first wine type (its
+     basics). Moments wait for a calm screen (Home, Learn…), never over a scan or a quiz. */
+  present(awards){
+    let xp=0, label=null, best=0; const moments=[];
+    const an=w=>/^[aeiou]/i.test(w)?'an':'a';
+    (awards||[]).forEach(a=>{
+      if(a.levelUp){
+        const total=this.get().total, nxt=this.nextLevel(total);
+        moments.push({id:'level:'+a.level,icon:'trophy',kicker:'New level',title:`You're now ${an(a.level)} ${a.level}`,
+          body:nxt?`${nxt.min-total} XP to ${nxt.name}. Scanning, scoring, reading and quizzes all count.`:'',action:{label:'See your level',level:true}});
+        return;
+      }
+      xp+=a.amount||0;
+      if(a.bonus&&(a.amount||0)>=best){ best=a.amount||0; label=a.label.replace(/!$/,''); }
+      if(a.grape){
+        const key=typeof GrapeUnlocks!=='undefined'?GrapeUnlocks.key(a.grape):null, open=key&&GrapeUnlocks.isUnlocked(key);
+        moments.push({id:'grape:'+(key||a.grape),icon:'grape',kicker:'New grape',title:a.grape,
+          body:!key?'One more grape in your WineDNA.':open?`Its quiz is open on Learn: ten questions on where it grows and what it tastes like.`:'Its quiz is part of Pro.',
+          action:!key?null:open?{label:`Take the ${key} quiz`,learn:{kind:'grape',grape:key}}:{label:'See Pro',pro:'grape-library'}});
+      }
+      if(a.country) moments.push({id:'country:'+a.country,icon:'globe',kicker:'New country',title:`Your first wine from ${a.country}`,
+        body:'Its regions are on your wine map in Mastery.',action:{label:'See your wine map',screen:'mastery-map'}});
+      if(a.wineType){
+        const T=typeof KnowledgeMap!=='undefined'&&KnowledgeMap.TYPES.find(t=>t.types.includes(WineDNA._t(a.wineType)));
+        moments.push({id:'type:'+a.wineType,icon:'wine',kicker:'New wine type',title:`Your first ${String(a.wineType).toLowerCase()} wine`,
+          body:`Score ${TasteMatch.MIN_SCORED} and your match for them starts.`,
+          action:T?{label:`Take the ${T.label} basics quiz`,learn:{kind:'mastery',next:{quiz:{mode:'practice',topicId:T.topic}}}}:null});
+      }
+    });
+    return {xp,label,moments};
+  },
+
+  awardAndToast(reasons,opts){
     const a=this.award(reasons);
-    this.toast(a);
+    this.toast(a,opts);
     return a;
   }
 };

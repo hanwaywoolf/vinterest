@@ -697,7 +697,7 @@ function BlindCallCard({wine,gen,accent,onStart}){
       // Misjudging one wine's tannin/acidity/texture flags the concept for review; it isn't a
       // wrong answer to a Concept Check question, so it doesn't cost mastery progress.
       missed.forEach(d=>{ const cid=DIM_CONCEPT[d]; if(cid) MasterySystem.flagForReview(cid); });
-      const awards=XPSystem.awardAndToast([{type:'blind_call',accuracy}]);
+      const awards=XPSystem.awardAndToast([{type:'blind_call',accuracy}],{xpShown:true}); // the result shows its XP
       const amount=awards.filter(x=>!x.levelUp).reduce((s,x)=>s+x.amount,0);
       // The guess is kept: it's the user's own read of the wine, used to pre-fill the rating step.
       ScanFlow.saveBlindResult(wine,{accuracy,amount,guess:g});
