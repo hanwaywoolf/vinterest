@@ -30,16 +30,18 @@ const KnowledgeMap = {
   _pct(x){ return Math.round(Math.max(0,Math.min(1,x))*100); },
   _read(stub){ return LearnProgress.articleDone(stub.id); },
   _shelf(wines){ try{ return ContentEngine.shelf(wines)||[]; }catch(e){ return []; } },
-  _grapeFrac(g){ const bank=grapeQuizBank(g); return bank?this._frac(QuizMastery.progress('grape:'+g,bank)):0; },
+  // A quiz's strength (QuizMastery.freshness): answers known, fading ones at half.
+  _grapeFresh(g){ const bank=grapeQuizBank(g); return bank?QuizMastery.freshness('grape:'+g,bank):{strength:0,fading:0}; },
+  _grapeFrac(g){ return this._grapeFresh(g).strength; },
 
   _typeArea(T,wines,shelf){
-    const topicP=QuizMastery.progress('topic:'+T.topic,QuizMastery.topicPool(T.topic));
+    const topicP=QuizMastery.progress('topic:'+T.topic,QuizMastery.topicPool(T.topic)), topicF=QuizMastery.freshness('topic:'+T.topic,QuizMastery.topicPool(T.topic));
     const grapes=Object.keys(GrapeUnlocks.all()).filter(g=>T.colours.includes(GRAPE_TYPES[g]));
     const grapeF=grapes.length?WineDNA._mean(grapes.map(g=>this._grapeFrac(g))):0;
     const reads=shelf.filter(s=>this._read(s)&&T.types.includes(ContentEngine._subjectType(s.slots,ContentEngine._related(s.slots,wines)))).length;
     const readF=Math.min(1,reads/this.READ_TARGET);
     // Rosé, sparkling and orange have no grapes of their own colour on the list: basics and reading carry it.
-    const parts=T.colours.length?[[topicP.total?this._frac(topicP):0,.5],[grapeF,.25],[readF,.25]]:[[this._frac(topicP),.6],[readF,.4]];
+    const parts=T.colours.length?[[topicF.strength,.5],[grapeF,.25],[readF,.25]]:[[topicF.strength,.6],[readF,.4]];
     const score=this._pct(parts.reduce((a,[f,w])=>a+f*w,0));
     const next=topicP.correct<topicP.total?{label:`Take the ${T.label} basics quiz`,quiz:{mode:'practice',topicId:T.topic}}
       :T.colours.length&&!grapes.length?{label:`Scan a ${T.label.toLowerCase()} to unlock its grape quiz`,nav:'camera'}
@@ -53,10 +55,10 @@ const KnowledgeMap = {
   _items(kind,wines,shelf){
     const names=kind==='region'?Object.keys(RegionUnlocks.all()):Object.keys(GrapeUnlocks.all());
     return names.map(n=>{
-      const quiz=kind==='region'?this._frac(RegionQuizBank.get(n)&&RegionQuizBank.progress(n)):this._grapeFrac(n);
+      const f=kind==='region'?(RegionQuizBank.get(n)?QuizMastery.freshness(RegionQuizBank.setId(n),RegionQuizBank.pool(n)):{strength:0,fading:0}):this._grapeFresh(n);
       const reads=shelf.filter(s=>this._read(s)&&s.slots&&s.slots[kind]===n).length;
-      const score=this._pct(quiz*.7+Math.min(1,reads/2)*.3);
-      return {name:n,score,level:this.level(score),quiz:Math.round(quiz*100),reads};
+      const score=this._pct(f.strength*.7+Math.min(1,reads/2)*.3);
+      return {name:n,score,level:this.level(score),quiz:Math.round(f.strength*100),reads,fading:f.fading||0};
     }).sort((a,b)=>b.score-a.score||a.name.localeCompare(b.name));
   },
   _listArea(kind,wines,shelf){
@@ -75,9 +77,9 @@ const KnowledgeMap = {
     const onramp=(typeof ON_RAMP!=='undefined'?ON_RAMP:[]).filter(a=>this.ONRAMP_GROUP[a.id]===G.id);
     const readN=guides.filter(g=>Guides.isRead(g.id)).length+onramp.filter(a=>onRampDone(a.id)).length;
     const readTotal=guides.length+onramp.length;
-    const ps=guides.map(g=>Guides.progress(g.id));
-    const correct=ps.reduce((a,p)=>a+p.correct,0), total=ps.reduce((a,p)=>a+p.total,0);
-    const score=this._pct((readTotal?readN/readTotal:0)*.5+(total?correct/total:0)*.5);
+    const ps=guides.map(g=>Guides.progress(g.id)), fs=guides.map(g=>QuizMastery.freshness(Guides.setId(g.id),Guides.pool(g.id)));
+    const correct=ps.reduce((a,p)=>a+p.correct,0), total=ps.reduce((a,p)=>a+p.total,0), known=fs.reduce((a,f)=>a+f.strength*f.total,0);
+    const score=this._pct((readTotal?readN/readTotal:0)*.5+(total?known/total:0)*.5);
     const g=guides.find(x=>!Guides.done(x.id));
     return {id:'skill_'+G.id,group:'skills',label:G.label,score,level:this.level(score),
       next:g?{label:`${Guides.isRead(g.id)?'Answer the questions in':'Read'} "${g.title}"`,guide:g.id}:null,
@@ -180,6 +182,20 @@ const KnowledgeMap = {
     const rises=m.areas.map(a=>({id:a.id,label:a.label,delta:a.score-(p.a[a.id]||0)})).filter(x=>x.delta>0).sort((x,y)=>y.delta-x.delta);
     return {then:p,weeks:p.weeks,overall:m.overall-(p.o||0),rises};
   },
+  /* Question sets with answers fading (QuizMastery.isDue), most first: Home's "Refresh" step and
+     the map's faded pins. Only sets with at least FADE_SUGGEST_AT fading, so one stray answer
+     doesn't nag. Each carries the learn item that opens its quiz (Home's _openLearn). */
+  FADE_SUGGEST_AT:2,
+  refreshers(now=Date.now()){
+    const out=[], add=(label,setId,pool,learn,extra)=>{ if(!pool||!pool.length) return; const f=QuizMastery.freshness(setId,pool,now);
+      if(f.fading>=this.FADE_SUGGEST_AT) out.push({label,fading:f.fading,total:f.total,learn,...(extra||{})}); };
+    (typeof QUIZ_TOPICS!=='undefined'?QUIZ_TOPICS:[]).forEach(t=>add(`${t.label} basics`,'topic:'+t.id,QuizMastery.topicPool(t.id),{kind:'mastery',next:{quiz:{mode:'practice',topicId:t.id}}}));
+    Object.keys(RegionUnlocks.all()).forEach(r=>{ if(RegionQuizBank.get(r)) add(r,RegionQuizBank.setId(r),RegionQuizBank.pool(r),{kind:'region',region:r},{region:r}); });
+    Object.keys(GrapeUnlocks.all()).forEach(g=>{ const bank=grapeQuizBank(g); if(bank) add(g,'grape:'+g,bank,{kind:'grape',grape:g}); });
+    Guides.all().forEach(g=>add(g.title,Guides.setId(g.id),Guides.pool(g.id),{kind:'mastery',next:{quiz:{mode:'guide',guideId:g.id}}}));
+    return out.sort((a,b)=>b.fading-a.fading||a.label.localeCompare(b.label));
+  },
+
   /* Radar labels: short enough to sit around the shape on a phone. */
   short(a){ return {sweet:'Sweet',skill_ordering:'Ordering',skill_pairing:'Pairing'}[a.id]||a.label; },
 
@@ -207,7 +223,7 @@ const KnowledgeMap = {
       const pins=regions.filter(([,r])=>this._inside(v,r.at)).map(([name,r])=>{
         const it=items[name], [x,y]=this.project(v,r.at);
         return {name,country:r.country,x,y,state:it?'open':held.has(name)?'held':'locked',
-          score:it?it.score:0,level:it?it.level:'Not started',drunk:drunk[name]||0};
+          score:it?it.score:0,level:it?it.level:'Not started',drunk:drunk[name]||0,fading:it?it.fading:0};
       });
       return {...v,pins,open:pins.filter(p=>p.state==='open').length,drunk:pins.filter(p=>p.drunk).length};
     });

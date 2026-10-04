@@ -63,7 +63,7 @@ const LearnNext = {
 
   /* Home's "Up next": one main thing to do and two more. A first scan for someone with no wines;
      then the next unread Written for you piece, the next beginner article (unless they skip the
-     on-ramp), the step that closes their biggest Mastery gap (KnowledgeMap.focus: what they drink most and know least), and the next Wine Skills guide. */
+     on-ramp), a refresher for the set whose answers have faded most (KnowledgeMap.refreshers), the step that closes their biggest Mastery gap (KnowledgeMap.focus: what they drink most and know least), and the next Wine Skills guide. */
   home(wines){
     wines=wines||WineHistory.getAll();
     const out=[];
@@ -71,6 +71,10 @@ const LearnNext = {
     const unread=(()=>{ try{ return ContentEngine.openShelf(wines).filter(s=>!LearnProgress.articleDone(s.id)&&!ContentEngine.stubLocked(s)); }catch(e){ return []; } })();
     if(unread[0]) out.push({kind:'article',key:'article:'+unread[0].id,stub:unread[0],icon:unread[0].iconName||'read',title:unread[0].title,why:ContentEngine.because(unread[0],wines),progress:`Written for you${unread[0].readTime?` · ${unread[0].readTime}`:''}`});
     if(!UserPrefs.skipsOnRamp()){ const t=this._onRampTile(); if(t) out.push(t); }
+    // Answers fading (past their review date): the set that's faded most, as a quick refresher.
+    const fade=(()=>{ try{ return KnowledgeMap.refreshers()[0]; }catch(e){ return null; } })();
+    if(fade) out.push({...fade.learn,key:'refresh:'+fade.label,icon:'bolt',title:`Refresh ${fade.label}`,
+      why:`${fade.fading} of its ${fade.total} answers are fading. A quick quiz brings them back.`});
     const gap=wines.length?KnowledgeMap.summary(wines).gap:null;
     if(gap&&gap.next) out.push({kind:'mastery',key:'gap:'+gap.label,icon:'trophy',title:gap.next.label,why:gap.why?`${gap.why} It counts towards your Mastery.`:`Your biggest gap: ${gap.label}. Closing it counts towards your Mastery.`,next:gap.next});
     const g=Guides.queue()[0];

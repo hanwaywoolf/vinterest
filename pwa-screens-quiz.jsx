@@ -179,6 +179,7 @@ function QuizHubScreen({nav,back,showPro}){
   const guideQueue=Guides.queue(), guidesDone=Guides.finished();
   const openGuide=id=>{ Handoff.guide.set(id); nav('guide'); };
   const knowledge=React.useMemo(()=>KnowledgeMap.summary(wines),[wines,progressTick]);
+  const refreshers=React.useMemo(()=>{ try{ return KnowledgeMap.refreshers(); }catch(e){ return []; } },[progressTick]);
   const secRefs={shelf:React.useRef(null),basics:React.useRef(null),regions:React.useRef(null),grapes:React.useRef(null),skills:React.useRef(null),progress:React.useRef(null)};
   const jump=id=>{ const el=secRefs[id]&&secRefs[id].current; if(el) el.scrollIntoView({behavior:'smooth',block:'start'}); };
 
@@ -233,6 +234,24 @@ function QuizHubScreen({nav,back,showPro}){
             <Icon n="chevron" sz={13} col="rgba(255,255,255,0.3)"/>
           </div>
         </div>
+
+        {/* Answers past their review date (QuizMastery fading): the sets that need a quick refresher. */}
+        {refreshers.length>0&&<div data-testid="refreshers">
+          <div style={zoneLabel}>Time for a refresher</div>
+          <div style={{fontSize:14,color:C.mid,fontFamily:C.P,lineHeight:1.45,marginTop:4}}>Answers fade a few weeks after you last got them right, and count for less in your Mastery until you refresh them.</div>
+          <div style={{background:C.white,borderRadius:16,border:`1px solid ${C.line}`,marginTop:8,overflow:'hidden'}}>
+            {refreshers.slice(0,3).map((r,i)=>(
+              <div key={r.label} role="button" onClick={()=>_openLearn(r.learn,nav,showPro)} style={{display:'flex',alignItems:'center',gap:12,padding:'12px 14px',borderTop:i?`1px solid ${C.line}`:'none',cursor:'pointer'}}>
+                <Icon n="bolt" sz={17} col={C.amber}/>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontSize:15,fontWeight:700,color:C.ink,fontFamily:C.P}}>{r.region&&<Flag region={r.region} size={14} style={{marginRight:6}}/>}{r.label}</div>
+                  <div style={{fontSize:13,color:C.mid,fontFamily:C.P}}>{r.fading} of {r.total} answers fading</div>
+                </div>
+                <span style={{fontSize:14,fontWeight:700,color:C.cr,fontFamily:C.P}}>Refresh →</span>
+              </div>
+            ))}
+          </div>
+        </div>}
 
         {/* Before the shelf opens: what it is and the one step that opens it, shown faded. */}
         {!article1Done&&ON_RAMP[0]&&(
@@ -533,7 +552,7 @@ function MasteryAreaCard({a,open,onToggle,onNext}){
     <div style={{fontSize:13,color:C.mid,fontFamily:C.P}}>{a.detail}{a.items&&a.items.length&&onToggle?(open?' · hide':' · see each'):''}</div>
     {open&&a.items.map(i=>(
       <div key={i.name} style={{display:'flex',alignItems:'center',gap:10}}>
-        <span style={{flex:'0 0 42%',fontSize:14,color:C.ink2,fontFamily:C.P,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{a.id==='regions'&&<Flag region={i.name} size={14} style={{marginRight:6}}/>}{a.id==='grapes'&&<span aria-hidden="true" style={{display:'inline-block',width:8,height:8,borderRadius:4,background:grapeTypeColor(i.name),marginRight:7,verticalAlign:'1px'}}/>}{i.name}</span>
+        <span style={{flex:'0 0 42%',fontSize:14,color:C.ink2,fontFamily:C.P,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{a.id==='regions'&&<Flag region={i.name} size={14} style={{marginRight:6}}/>}{a.id==='grapes'&&<span aria-hidden="true" style={{display:'inline-block',width:8,height:8,borderRadius:4,background:grapeTypeColor(i.name),marginRight:7,verticalAlign:'1px'}}/>}{i.name}{i.fading>0&&<span style={{fontSize:12,fontWeight:600,color:C.amber,marginLeft:6}}>fading</span>}</span>
         <div style={{flex:1}}><MasteryBar score={i.score} col={a.id==='grapes'?grapeTypeColor(i.name):col}/></div>
         <span style={{fontSize:13,fontWeight:700,color:C.ink2,fontFamily:C.P,width:38,textAlign:'right'}}>{i.score}%</span>
       </div>
@@ -597,6 +616,7 @@ function MasteryRegionMap({views,nav,showPro}){
   const picked=sel.map(n=>v.pins.find(p=>p.name===n)).filter(Boolean);
   const open=v.pins.filter(p=>p.state==='open').length;
   const legend=[['#CFC9C2','Not unlocked'],[_PIN_COL['Getting started'],'Getting started'],[_PIN_COL.Developing,'Developing'],[C.cr,'Confident'],[C.green,'Mastered']];
+  const anyFading=v.pins.some(p=>p.fading);
   return(
     <div style={{display:'flex',flexDirection:'column',gap:10}}>
       <div style={{display:'flex',gap:6,overflowX:'auto',scrollbarWidth:'none',margin:'0 -2px'}}>
@@ -614,13 +634,14 @@ function MasteryRegionMap({views,nav,showPro}){
           const on=sel.includes(p.name);
           return <g key={p.name}>
             {p.drunk>0&&<circle cx={p.x} cy={p.y} r={PIN+5} fill="none" stroke={C.ink} strokeWidth="2.2"/>}
-            <circle cx={p.x} cy={p.y} r={on?PIN+3:p.state==='open'?PIN:PIN-2} fill={_pinFill(p)} stroke={p.state==='open'&&p.level==='Not started'?C.cr:'#fff'} strokeWidth={p.state==='open'&&p.level==='Not started'?2.5:2}/>
+            <circle cx={p.x} cy={p.y} r={on?PIN+3:p.state==='open'?PIN:PIN-2} fill={_pinFill(p)} fillOpacity={p.fading?0.4:1} strokeDasharray={p.fading?'3 2':null} stroke={p.state==='open'&&p.level==='Not started'?C.cr:'#fff'} strokeWidth={p.state==='open'&&p.level==='Not started'?2.5:2}/>
           </g>;
         })}
       </svg>
       <div aria-hidden="true" style={{display:'flex',flexWrap:'wrap',gap:'4px 12px'}}>
         {legend.map(([c,l])=><span key={l} style={{display:'inline-flex',alignItems:'center',gap:5,fontSize:12,color:C.mid,fontFamily:C.P}}><span style={{width:9,height:9,borderRadius:5,background:c,border:'1px solid rgba(0,0,0,0.08)'}}/>{l}</span>)}
         <span style={{display:'inline-flex',alignItems:'center',gap:5,fontSize:12,color:C.mid,fontFamily:C.P}}><span style={{width:9,height:9,borderRadius:6,border:`2px solid ${C.ink}`}}/>You've had one</span>
+        {anyFading&&<span style={{display:'inline-flex',alignItems:'center',gap:5,fontSize:12,color:C.mid,fontFamily:C.P}}><span style={{width:9,height:9,borderRadius:6,background:C.cr,opacity:0.4,border:`1px dashed ${C.cr}`}}/>Fading: time for a refresher</span>}
       </div>
       {picked.length?<div data-testid="map-picked" style={{display:'flex',flexDirection:'column',borderTop:`1px solid ${C.line}`}}>
         {picked.map(p=>(
@@ -629,11 +650,11 @@ function MasteryRegionMap({views,nav,showPro}){
             <div style={{flex:1,minWidth:0}}>
               <div style={{fontSize:15,fontWeight:700,color:C.ink,fontFamily:C.P}}>{p.name}</div>
               <div style={{fontSize:13,color:C.mid,fontFamily:C.P,lineHeight:1.4}}>
-                {p.state==='open'?`${p.level} · ${p.score}%`:p.state==='held'?'Unlocked, kept for Pro':'Not unlocked yet'}
+                {p.state==='open'?`${p.level} · ${p.score}%${p.fading?` · ${p.fading} answer${p.fading===1?'':'s'} fading`:''}`:p.state==='held'?'Unlocked, kept for Pro':'Not unlocked yet'}
                 {p.drunk?` · you've had ${p.drunk===1?'one':p.drunk}`:''}
               </div>
             </div>
-            {p.state==='open'?(p.score<100&&<div role="button" onClick={()=>_openLearn({kind:'region',region:p.name},nav,showPro)} style={{fontSize:14,fontWeight:700,color:C.cr,fontFamily:C.P,cursor:'pointer',whiteSpace:'nowrap'}}>Quiz →</div>)
+            {p.state==='open'?((p.score<100||p.fading>0)&&<div role="button" onClick={()=>_openLearn({kind:'region',region:p.name},nav,showPro)} style={{fontSize:14,fontWeight:700,color:C.cr,fontFamily:C.P,cursor:'pointer',whiteSpace:'nowrap'}}>{p.fading?'Refresh':'Quiz'} →</div>)
               :p.state==='held'?<div role="button" onClick={()=>showPro('regions')} style={{cursor:'pointer'}}><ProBadge/></div>
               :<div role="button" onClick={()=>nav('camera')} style={{fontSize:13,fontWeight:600,color:C.mid,fontFamily:C.P,cursor:'pointer',textAlign:'right',maxWidth:120,lineHeight:1.3}}>Scan a bottle from here</div>}
           </div>
@@ -934,6 +955,7 @@ function QuizScreen({nav,back}){
   const [streak,setStreak]=React.useState(0);
   const [xpGained,setXpGained]=React.useState(0);
   const [milestones,setMilestones]=React.useState([]);
+  const [refreshed,setRefreshed]=React.useState(0); // fading answers brought back this round
   const startLevel=React.useRef(XPSystem.getLevel(XPSystem.get().total).name);
   const [results,setResults]=React.useState([]);
   const [, setResetTick]=React.useState(0);
@@ -960,8 +982,10 @@ function QuizScreen({nav,back}){
       }
     }
     if(q.vocabTerm) VocabLedger.recordTest(q.vocabTerm,correct);
-    if(quizSet&&QuizMastery.recordAnswer(quizSet.id,q.q,correct)){
-      const a=XPSystem.award([{type:'question_learned'}]);
+    const rec=quizSet?QuizMastery.recordAnswer(quizSet.id,q.q,correct):false;
+    if(rec){
+      const a=XPSystem.award([{type:rec==='refreshed'?'question_refreshed':'question_learned'}]);
+      if(rec==='refreshed') setRefreshed(n=>n+1);
       gained+=a.filter(x=>!x.levelUp).reduce((s,x)=>s+x.amount,0);
       XPSystem.toast(a,{quiet:true}); // keeps the XP badge current; the result says it
     }
@@ -1001,7 +1025,7 @@ function QuizScreen({nav,back}){
     const set=quizSetFor(cfg?.mode||'concept',cfg);
     Handoff.quiz.set(cfg);
     setConfig(cfg); setAllQs(qs); setStartedComplete(!!set&&QuizMastery.isComplete(set.id,set.pool()));
-    setQIdx(0); setSelected(null); setPhase(qs.length?'question':'empty'); setStreak(0); setXpGained(0); setResults([]); setMilestones([]); startLevel.current=XPSystem.getLevel(XPSystem.get().total).name;
+    setQIdx(0); setSelected(null); setPhase(qs.length?'question':'empty'); setStreak(0); setXpGained(0); setResults([]); setMilestones([]); setRefreshed(0); startLevel.current=XPSystem.getLevel(XPSystem.get().total).name;
     if(scrollRef.current) scrollRef.current.scrollTop=0;
   }
   // Region and grape banks may still need generating before the next set can start.
@@ -1026,6 +1050,8 @@ function QuizScreen({nav,back}){
     const pool=quizSet&&quizSet.pool();
     const setProgress=quizSet&&QuizMastery.progress(quizSet.id,pool);
     const setDone=!!setProgress&&setProgress.total>0&&setProgress.correct===setProgress.total;
+    // Fading answers (past their review date) left in a complete set: the next round brings them back.
+    const fadingLeft=setDone?QuizMastery.freshness(quizSet.id,pool).fading:0;
     const justCompleted=setDone&&!startedComplete;
     const setName=mode==='practice'?title:mode==='region'?config.region:mode==='grape'?config.grape:title;
     const concepts=mode==='concept'&&MasterySystem.summary();
@@ -1037,6 +1063,7 @@ function QuizScreen({nav,back}){
     //  - Concept Check / Words: another round while there's anything left
     let primary=null;
     if(quizSet&&!setDone) primary={label:`Keep going · ${setProgress.total-setProgress.correct} to go`,go:()=>startQuiz(config)};
+    else if(quizSet&&setDone&&fadingLeft) primary={label:`Refresh · ${fadingLeft} fading`,go:()=>startQuiz(config)};
     else if(quizSet&&setDone){ const next=nextQuizSuggestion(config); if(next) primary={label:`Next: ${next.label}`,go:()=>startSuggested(next.config)}; }
     else if(mode==='concept'){ if(MasterySystem.selectConcepts(6).length) primary={label:'Keep going',go:()=>startQuiz(config)}; }
     else primary={label:'Keep going',go:()=>startQuiz(config)};
@@ -1074,8 +1101,11 @@ function QuizScreen({nav,back}){
           <div style={{padding:'16px',display:'flex',flexDirection:'column',gap:10}}>
             <MilestoneMoment items={milestones}/>
             {setProgress&&(setDone
-              ?card(true,justCompleted?`All ${setProgress.total} questions answered correctly`:'Complete — every question answered correctly',
-                justCompleted?'This one moves to your completed list on the Learn tab.':null)
+              ?card(true,justCompleted?`All ${setProgress.total} questions answered correctly`
+                  :refreshed?`${refreshed} fading answer${refreshed===1?'':'s'} refreshed`:'Complete — every question answered correctly',
+                justCompleted?'This one moves to your completed list on the Learn tab.'
+                  :fadingLeft?`${fadingLeft} more ${fadingLeft===1?'answer is':'answers are'} fading. Answers fade a few weeks after you last got them right; each refresh keeps them twice as long.`
+                  :refreshed?'Each refresh keeps an answer twice as long before it fades again.':null)
               :card(false,`${setProgress.correct} of ${setProgress.total} questions answered correctly`,`Questions you haven't got right yet come first in your next quiz. You earn XP for each one the first time you get it right, and ${XPSystem.QUIZ_SET_BONUS()} XP for finishing the set.`))}
             {concepts&&card(concepts.mastered===concepts.total,`${concepts.mastered} of ${concepts.total} concepts mastered`,
               concepts.mastered===concepts.total?null:'Each right answer moves a concept up a step and a miss moves it back one; five steps masters it.')}

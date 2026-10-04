@@ -161,6 +161,13 @@ const XPSystem = {
           awards.push({label:'New answer learned',amount:A.quiz_correct});
           break;
 
+        // A fading answer (QuizMastery: past its review date) answered right again: a little XP,
+        // only then, so replaying fresh answers still earns nothing.
+        case 'question_refreshed':
+          d.total+=A.question_refreshed||5;
+          awards.push({label:'Answer refreshed',amount:A.question_refreshed||5});
+          break;
+
         case 'quiz_complete':
           {const k=(r.quizKey||((r.topic||'')+'_'+(r.difficulty||'')));
           if(!d.quizCompleted) d.quizCompleted={};
