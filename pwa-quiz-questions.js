@@ -75,8 +75,16 @@ const QuizMastery = Object.assign(_accountStore('vinterest_quiz_mastery_v1'), {
   /* Near-duplicates out of a generated bank: a question is dropped when an earlier one shares
      most of its key words (the subject's own name aside), or, for "least / not / except"
      questions, a good part of them: those read as a flipped copy of a positive question
-     ("best pairing" vs "least likely pairing") and look like the app contradicting itself. */
+     ("best pairing" vs "least likely pairing") and look like the app contradicting itself.
+     It's also dropped when it tests a point an earlier question already taught: its right answer
+     shares THEME_SHARED key words with an earlier right answer ("a neutral grape … winemaking"
+     twice), or its stem builds on an earlier answer ("Given that Chardonnay is described as a
+     neutral grape, …"). Run on generation and on read, so a bank cached before keeps its other
+     questions and their progress. */
   _STOP:new Set('a an the of and or to in on for with by is are was be it its this that these those which what who why how does do did would could should can will as at from into than then their there your you wine wines'.split(' ')),
+  THEME_SHARED:2,
+  // Words too general to mark two answers as the same point.
+  _GENERIC:new Set('grape grapes while their other often usually style flavour flavor flavours flavors taste tastes which known'.split(' ')),
   _words(text,subject){
     const drop=new Set(String(subject||'').toLowerCase().split(/\s+/));
     return new Set(String(text||'').toLowerCase().replace(/'s\b/g,'').replace(/[^a-z0-9\s]/g,' ').split(/\s+/)
@@ -85,13 +93,19 @@ const QuizMastery = Object.assign(_accountStore('vinterest_quiz_mastery_v1'), {
   distinct(qs,subject){
     const kept=[];
     const neg=q=>/\b(least|not|except|never|worst|unlikely)\b/i.test(q.q);
+    const key=t=>new Set([...this._words(t,subject)].filter(x=>x.length>=5&&!this._GENERIC.has(x)));
+    const answer=q=>key(Array.isArray(q.opts)?q.opts[q.a]:'');
+    const premise=/^\s*(given that|since|because|as)\b/i;
     (qs||[]).forEach(q=>{
-      const w=this._words(q.q,subject);
+      const w=this._words(q.q,subject), a=answer(q), stem=key(q.q);
       const clash=kept.some(k=>{
         const kw=k._w, inter=[...w].filter(x=>kw.has(x)).length, sim=inter/((w.size+kw.size-inter)||1);
-        return sim>=0.45||((neg(q)||neg(k.q))&&sim>=0.25);
+        if(sim>=0.45||((neg(q)||neg(k.q))&&sim>=0.25)) return true;
+        const sameAnswer=[...a].filter(x=>k._a.has(x)).length>=this.THEME_SHARED;
+        const buildsOn=premise.test(q.q)&&[...stem].some(x=>k._a.has(x));
+        return sameAnswer||buildsOn;
       });
-      if(!clash) kept.push({q,_w:w});
+      if(!clash) kept.push({q,_w:w,_a:a});
     });
     return kept.map(k=>k.q);
   },
