@@ -18,24 +18,54 @@ const QUIZ_SIZE = 5;
 const QuizMastery = Object.assign(_accountStore('vinterest_quiz_mastery_v1'), {
   fresh(){ return {sets:{}}; },
   _set(d,setId){ return d.sets[setId]=d.sets[setId]||{correct:{},served:{}}; },
-  draw(setId,pool,n=QUIZ_SIZE){
+  draw(setId,pool,n=QUIZ_SIZE,now=Date.now()){
     const s=this.get().sets[setId]||{correct:{},served:{}};
+    // Not yet answered right first, then fading answers (oldest first), then the rest as review.
+    const group=q=>!s.correct[q.q]?0:this.isDue(s,q.q,now)?1:2;
     const picked=pool
-      .map(q=>({q,done:s.correct[q.q]?1:0,at:s.served[q.q]||0,rank:q.rank??({easy:0,medium:1,hard:2}[q.difficulty]||0),tie:Math.random()}))
-      .sort((x,y)=>x.done-y.done||x.at-y.at||x.rank-y.rank||x.tie-y.tie)
+      .map(q=>({q,g:group(q),due:(this._recall(s,q.q)||{}).at||0,at:s.served[q.q]||0,rank:q.rank??({easy:0,medium:1,hard:2}[q.difficulty]||0),tie:Math.random()}))
+      .sort((x,y)=>x.g-y.g||(x.g===1?x.due-y.due:0)||x.at-y.at||x.rank-y.rank||x.tie-y.tie)
       .slice(0,n)
       .map(x=>x.q);
-    const d=this.get(); const set=this._set(d,setId); const now=Date.now();
+    const d=this.get(); const set=this._set(d,setId);
     picked.forEach(q=>{ set.served[q.q]=now; });
     this.save(d);
     return picked;
   },
-  /* Returns true the first time a question is answered correctly (that's when it earns XP). */
-  recordAnswer(setId,qText,correct){
-    if(!correct) return false; // a later miss doesn't undo having known it
-    const d=this.get(); const set=this._set(d,setId);
-    if(set.correct[qText]) return false;
-    set.correct[qText]=Date.now(); this.save(d); return true;
+
+  /* ── Fading ──
+     Every right answer has a review date: REVIEW_DAYS after it was last answered right, doubling
+     with each successful review (14, 28, 56… days, up to REVIEW_MAX_DAYS). Past it the answer is
+     fading: still known (a set stays complete), but it counts FADE_WEIGHT in Mastery and comes
+     first in the next quiz, so practising is the refresher. A miss on a known answer makes it
+     fading again. recall[q] = {at: last right, n: right answers in a row}; a set saved before
+     this kept only correct[q] (the first right answer), which reads as {at, n: 1}. */
+  REVIEW_DAYS:14, REVIEW_MAX_DAYS:180, FADE_WEIGHT:0.5, DAY:864e5,
+  _recall(s,q){ const r=s&&s.recall&&s.recall[q]; if(r&&r.at) return r; const t=s&&s.correct[q]; return t?{at:t,n:1}:null; },
+  interval(n){ return Math.min(this.REVIEW_MAX_DAYS,this.REVIEW_DAYS*Math.pow(2,Math.max(0,(n||1)-1)))*this.DAY; },
+  isDue(s,q,now=Date.now()){ const r=this._recall(s,q); return !!r&&now-r.at>=this.interval(r.n); },
+  /* {correct, fading, total, strength}: strength is what Mastery reads, fading answers at half. */
+  freshness(setId,pool,now=Date.now()){
+    const s=this.get().sets[setId], total=pool.length;
+    if(!s||!total) return {correct:0,fading:0,total,strength:0};
+    const known=pool.filter(q=>s.correct[q.q]), fading=known.filter(q=>this.isDue(s,q.q,now)).length;
+    return {correct:known.length,fading,total,strength:(known.length-fading*(1-this.FADE_WEIGHT))/total};
+  },
+
+  /* 'learned' the first time a question is answered right (it earns XP), 'refreshed' when a
+     fading answer is answered right again (a little XP; its next review is twice as far off),
+     else false. A miss on a known answer makes it fading again; it never undoes having known it. */
+  recordAnswer(setId,qText,correct,now=Date.now()){
+    const d=this.get(); const set=this._set(d,setId); set.recall=set.recall||{};
+    const r=this._recall(set,qText);
+    if(!correct){
+      if(!r) return false;
+      set.recall[qText]={at:now-this.interval(1),n:1}; this.save(d); return false;
+    }
+    if(!set.correct[qText]){ set.correct[qText]=now; set.recall[qText]={at:now,n:1}; this.save(d); return 'learned'; }
+    const due=this.isDue(set,qText,now);
+    set.recall[qText]={at:now,n:due?(r.n||1)+1:(r.n||1)}; this.save(d);
+    return due?'refreshed':false;
   },
   // {correct, total} against the current pool of question texts.
   progress(setId,pool){
