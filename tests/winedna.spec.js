@@ -189,3 +189,40 @@ test('tapping a type with no wines opens its tab (no pop-up), and tabs name each
   await expect(root).not.toContainText("You haven't scanned a");
   expect(errors).toEqual([]);
 });
+
+// A bottle they've scored in another year leads the match: Cervaro della Sala 2019 scored 100,
+// the 2022 scanned under a slightly different name. A different wine from the same producer
+// and a different year of the same wine never merge in My Wines.
+test('another vintage of the same wine anchors the match and says so', async ({ page }) => {
+  await page.goto(`${BASE}/#home`);
+  const out = await page.evaluate(() => {
+    const white = (name, rating, extra = {}) => ({ name, type: 'white', producer: 'Antinori', region: 'Umbria', country: 'Italy', grapes: ['Chardonnay'], rating, body: 0.5, acidity: 0.6, sweetness: 0.05, vintage: 2021, ...extra });
+    const wines = [
+      white('Cervaro della Sala', 100, { vintage: 2019, body: 0.8 }),
+      { ...white('Muscadet Sèvre et Maine', 84), producer: 'Domaine Luneau', region: 'Loire', grapes: ['Melon de Bourgogne'], body: 0.3 },
+      { ...white('Sancerre', 86), producer: 'Henri Bourgeois', region: 'Loire', grapes: ['Sauvignon Blanc'], body: 0.35 },
+      { ...white('Albariño', 85), producer: 'Pazo Señorans', region: 'Rías Baixas', grapes: ['Albariño'], body: 0.4 },
+    ];
+    const scan = { name: 'Cervaro Della Sala, Antinori', vintage: 2022, type: 'white', producer: 'Marchesi Antinori', region: 'Umbria', country: 'Italy', grapes: ['Chardonnay', 'Grechetto'], body: 0.75, acidity: 0.6, sweetness: 0.05 };
+    const m = TasteMatch.assess(scan, wines);
+    const other = TasteMatch.assess({ ...scan, name: 'Bramìto della Sala', vintage: 2022 }, wines);
+    return {
+      same: WineHistory.otherVintage(scan, wines[0]), sameYear: WineHistory.otherVintage({ ...scan, vintage: 2019 }, wines[0]),
+      notOther: WineHistory.otherVintage({ ...scan, name: 'Bramìto della Sala' }, wines[0]), merged: WineHistory.same(scan, wines[0]),
+      pct: m.pct, verdict: m.verdict, first: m.reasons[0].text, summary: m.summary, vintages: m.vintages,
+      up: m.breakdown.up.map((x) => x.text), why: m.breakdown.pctWhy, otherPct: other.pct, otherFirst: other.reasons[0].kind,
+    };
+  });
+  expect(out.same).toBe(true);
+  expect(out.sameYear).toBe(false); // the same year is the same entry, not another vintage
+  expect(out.notOther).toBe(false);
+  expect(out.merged).toBe(false); // two years stay two wines
+  expect(out.vintages).toEqual([{ vintage: 2019, rating: 100 }]);
+  expect(out.first).toBe("You gave the 2019 a 100. Vintages vary, but it's the same wine.");
+  expect(out.summary).toBe("You gave the 2019 a 100, so we think you'd rate this one Extraordinary.");
+  expect(out.pct).toBeGreaterThanOrEqual(96);
+  expect(out.verdict).toBe('hit');
+  expect(out.up[0]).toBe('Other vintages of this wine: you scored the 2019 100');
+  expect(out.why).toMatch(/^The same wine from another year is the best guide there is/);
+  expect(out.otherFirst).not.toBe('vintage');
+});
