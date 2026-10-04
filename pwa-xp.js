@@ -25,6 +25,8 @@ function _cellarMaster(n){
 const LEVEL_ICON_MAP={'🍇':'wine','🥂':'glass','🌍':'globe','🔍':'compass','🏅':'star','🍾':'grape','🎓':'book','⭐':'flame','🏆':'trophy'};
 
 const XPSystem = {
+  /* Finishing a whole question set (every question answered right at least once): the top of the quiz_complete range, once per set. */
+  QUIZ_SET_BONUS(){ return XP_CURVE.awards.quiz_complete.max; },
   KEY:'vinterest_xp_v3',
   LEGACY_KEY:'vinterest_xp_v2',
   ACCOUNT_ID:'local', // single implicit local account for the POC; native port swaps the key, not the shape
@@ -149,6 +151,14 @@ const XPSystem = {
           {const sk=(r.topic||'')+'_'+(r.difficulty||'');
           d.quizStreaks=d.quizStreaks||{};
           d.quizStreaks[sk]=0;}
+          break;
+
+        // A question-set quiz (Wine Basics, region, grape, guide): XP for each question answered
+        // right for the first time (QuizMastery.recordAnswer says when), so a replay of questions
+        // they already know earns nothing, but every new one does, whatever round it's in.
+        case 'question_learned':
+          d.total+=A.quiz_correct;
+          awards.push({label:'New answer learned',amount:A.quiz_correct});
           break;
 
         case 'quiz_complete':

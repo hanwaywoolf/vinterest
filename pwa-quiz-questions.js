@@ -30,10 +30,12 @@ const QuizMastery = Object.assign(_accountStore('vinterest_quiz_mastery_v1'), {
     this.save(d);
     return picked;
   },
+  /* Returns true the first time a question is answered correctly (that's when it earns XP). */
   recordAnswer(setId,qText,correct){
-    if(!correct) return; // a later miss doesn't undo having known it
+    if(!correct) return false; // a later miss doesn't undo having known it
     const d=this.get(); const set=this._set(d,setId);
-    if(!set.correct[qText]){ set.correct[qText]=Date.now(); this.save(d); }
+    if(set.correct[qText]) return false;
+    set.correct[qText]=Date.now(); this.save(d); return true;
   },
   // {correct, total} against the current pool of question texts.
   progress(setId,pool){

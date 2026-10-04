@@ -864,7 +864,10 @@ function QuizScreen({nav,back}){
       }
     }
     if(q.vocabTerm) VocabLedger.recordTest(q.vocabTerm,correct);
-    if(quizSet) QuizMastery.recordAnswer(quizSet.id,q.q,correct);
+    if(quizSet&&QuizMastery.recordAnswer(quizSet.id,q.q,correct)){
+      const a=XPSystem.award([{type:'question_learned'}]);
+      gained+=a.filter(x=>!x.levelUp).reduce((s,x)=>s+x.amount,0);
+    }
     if(gained){ setXpGained(xp=>xp+gained); }
 
     setResults(rs=>[...rs,{correct,qText:q.q,selectedOpt:q.opts[i],correctOpt:q.opts[q.a],fact:q.fact}]);
@@ -876,8 +879,11 @@ function QuizScreen({nav,back}){
       const finalScore=results.filter(r=>r.correct).length+(selected===q.a?0:0);
       const boxes=allQs.filter(x=>x.conceptId).map(x=>{const d=MasterySystem.get();return d[x.conceptId]?d[x.conceptId].box:1;});
       const avgBox=boxes.length?boxes.reduce((s,b)=>s+b,0)/boxes.length/5:0;
-      const quizKey=mode==='practice'?'onramp_'+config.topicId:mode+'_'+Date.now();
-      const a2=XPSystem.award([{type:'quiz_complete',quizKey,derivedDifficulty:avgBox}]);
+      // A question set pays its completion bonus once, the round every question in it has been
+      // answered right (its new answers earned XP as they came). Other quizzes, once per round.
+      const setDoneNow=quizSet&&!startedComplete&&QuizMastery.isComplete(quizSet.id,quizSet.pool());
+      const a2=quizSet?(setDoneNow?XPSystem.award([{type:'quiz_complete',quizKey:'set_'+quizSet.id,amount:XPSystem.QUIZ_SET_BONUS()}]):[])
+        :XPSystem.award([{type:'quiz_complete',quizKey:mode+'_'+Date.now(),derivedDifficulty:avgBox}]);
       const g2=a2.filter(x=>!x.levelUp).reduce((s,a)=>s+a.amount,0);
       setXpGained(xp=>xp+g2);
       XPSystem.toast(a2);
@@ -966,7 +972,7 @@ function QuizScreen({nav,back}){
             {setProgress&&(setDone
               ?card(true,justCompleted?`All ${setProgress.total} questions answered correctly`:'Complete — every question answered correctly',
                 justCompleted?'This one moves to your completed list on the Learn tab.':null)
-              :card(false,`${setProgress.correct} of ${setProgress.total} questions answered correctly`,"Questions you haven't got right yet come first in your next quiz."))}
+              :card(false,`${setProgress.correct} of ${setProgress.total} questions answered correctly`,`Questions you haven't got right yet come first in your next quiz. You earn XP for each one the first time you get it right, and ${XPSystem.QUIZ_SET_BONUS()} XP for finishing the set.`))}
             {concepts&&card(concepts.mastered===concepts.total,`${concepts.mastered} of ${concepts.total} concepts mastered`,
               concepts.mastered===concepts.total?null:'Each right answer moves a concept up a step and a miss moves it back one; five steps masters it.')}
             {setDone&&(
