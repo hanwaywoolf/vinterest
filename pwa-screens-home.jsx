@@ -12,7 +12,7 @@ function _openLearn(item,nav,showPro){
   if(item.kind==='onramp'){ Handoff.onRampIdx.set(String(item.idx)); return nav('article'); }
   if(item.kind==='region') return RegionQuizBank.load(item.region,()=>quiz({mode:'region',region:item.region}));
   if(item.kind==='grape') return getGrapeQuiz(item.grape,qs=>{ if(qs&&qs.length) quiz({mode:'grape',grape:item.grape,questions:qs}); else nav('learn'); });
-  if(item.kind==='mastery'){ const n=item.next||{}; if(n.quiz) return quiz(n.quiz); if(n.guide){ Handoff.guide.set(n.guide); return nav('guide'); } return nav(n.nav||'learn'); }
+  if(item.kind==='mastery'){ const n=item.next||{}; if(n.region) return _openLearn({kind:'region',region:n.region},nav,showPro); if(n.grape) return _openLearn({kind:'grape',grape:n.grape},nav,showPro); if(n.quiz) return quiz(n.quiz); if(n.guide){ Handoff.guide.set(n.guide); return nav('guide'); } return nav(n.nav||'learn'); }
   nav('learn');
 }
 
