@@ -811,9 +811,14 @@ function MasteryRegionMap({views,nav,showPro}){
       <div style={{position:'relative'}}>
       <svg ref={Z.ref} viewBox={`${z.x.toFixed(2)} ${z.y.toFixed(2)} ${(v.w/z.k).toFixed(2)} ${(v.h/z.k).toFixed(2)}`} width="100%" {...Z.bind(tap)} role="img" data-testid="region-map" data-zoom={z.k.toFixed(2)}
         aria-label={`Map of ${v.label}: ${open} of ${v.pins.length} wine regions unlocked. Tap a region to see it; pinch or use + and − to zoom.`}
-        style={{display:'block',borderRadius:12,background:'#EEF1F3',cursor:z.k>1?'grab':'pointer',maxHeight:420,touchAction:z.k>1?'none':'pan-y',userSelect:'none',WebkitUserSelect:'none'}}>
-        <path d={v.land} fill="#F6F2EC" stroke="#D9D2C8" strokeWidth={1.5*SW} strokeLinejoin="round"/>
-        <path d={v.borders} fill="none" stroke="#E2DBD1" strokeWidth={1.2*SW}/>
+        style={{display:'block',borderRadius:12,background:'#FBF8F3',border:`1px solid ${C.line}`,cursor:z.k>1?'grab':'pointer',maxHeight:420,touchAction:z.k>1?'none':'pan-y',userSelect:'none',WebkitUserSelect:'none'}}>
+        {/* Cream paper with the land a shade warmer, its coastline sketched (a light pencil pass
+            just off a fine ink line) and borders pencilled in dashes. No sea texture or washes:
+            the lines carry it. Widths are screen pixels (u), so it stays fine-lined at any zoom. */}
+        <path d={v.land} fill="#F4ECDD"/>
+        <path d={v.borders} fill="none" stroke={SKETCH_INK} strokeOpacity="0.3" strokeWidth={0.8*u} strokeDasharray={`${2.2*u} ${2.4*u}`} strokeLinecap="round"/>
+        <path d={v.land} fill="none" stroke={SKETCH_PENCIL} strokeWidth={0.9*u} strokeLinejoin="round" transform={`translate(${(-0.9*u).toFixed(2)} ${(0.8*u).toFixed(2)})`}/>
+        <path d={v.land} fill="none" stroke={SKETCH_INK} strokeOpacity="0.7" strokeWidth={0.9*u} strokeLinejoin="round" strokeLinecap="round"/>
         {names.filter(n=>n.kind==='country').map(n=><text key={'c'+n.t} x={n.x} y={n.y} textAnchor="middle" data-label="country" style={{fontSize:n.fs.toFixed(2)+'px',fontWeight:600,letterSpacing:'0.1em',fill:'#A69C90',fontFamily:C.P,pointerEvents:'none'}}>{n.t}</text>)}
         {[...v.pins].sort((a,b)=>(a.state==='open')-(b.state==='open')).map(p=>{
           const on=sel.includes(p.name), first=p.state==='open'&&p.level==='Not started';
@@ -822,7 +827,7 @@ function MasteryRegionMap({views,nav,showPro}){
             <circle cx={p.x} cy={p.y} r={on?PIN+3*SW:p.state==='open'?PIN:PIN-2*SW} fill={_pinFill(p)} fillOpacity={p.fading?0.4:1} strokeDasharray={p.fading?`${3*SW} ${2*SW}`:null} stroke={first?C.cr:'#fff'} strokeWidth={(first?2.5:2)*SW}/>
           </g>;
         })}
-        {names.filter(n=>n.kind==='region').map(n=><text key={'r'+n.t} x={n.x} y={n.y} textAnchor="middle" data-label="region" style={{fontSize:n.fs.toFixed(2)+'px',fontWeight:n.on?700:500,fill:n.on?C.ink:'#7D736A',fontFamily:C.P,paintOrder:'stroke',stroke:'#F6F2EC',strokeWidth:(3*u).toFixed(2),strokeLinejoin:'round',pointerEvents:'none'}}>{n.t}</text>)}
+        {names.filter(n=>n.kind==='region').map(n=><text key={'r'+n.t} x={n.x} y={n.y} textAnchor="middle" data-label="region" style={{fontSize:n.fs.toFixed(2)+'px',fontWeight:n.on?700:500,fill:n.on?C.ink:'#7D736A',fontFamily:C.P,paintOrder:'stroke',stroke:'#F4ECDD',strokeWidth:(3*u).toFixed(2),strokeLinejoin:'round',pointerEvents:'none'}}>{n.t}</text>)}
       </svg>
       <div style={{position:'absolute',right:8,top:8,display:'flex',flexDirection:'column',gap:6}}>
         <div role="button" aria-label="Zoom in" onClick={()=>Z.zoomAt(1.6)} style={zbtn}>+</div>
