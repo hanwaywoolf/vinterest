@@ -52,6 +52,35 @@ test('the demo reds profile: signal, grapes, dislikes and value all come from re
   expect(p.confidence).toBe('strong');
 });
 
+// What You Love works on their own scale: someone who scores nearly everything 90+ still learns
+// what lifts and holds back their scores, a few great bottles don't outrank many good ones, and
+// a grape and region that are the same bottles show as one line.
+test('What You Love on a generous scorer: lifts and drags against their own average', async ({ page }) => {
+  await page.goto(`${BASE}/#home`);
+  const L = await page.evaluate(() => {
+    const w = (name, producer, region, grape, rating, price, vintage) => ({ name, producer, type: 'red', region, country: { Rioja: 'Spain', 'Napa Valley': 'USA' }[region] || 'Italy', grapes: [grape], rating, price_usd: price, vintage, body: 0.6, tannins: 0.6, acidity: 0.6 });
+    const ws = [
+      ...[96, 95, 97, 94, 95, 96, 95, 94, 96].map((r, i) => w('Chianti ' + i, 'Fattoria ' + i, 'Chianti Classico', 'Sangiovese', r, 30, 2018)),
+      ...[90, 91, 90, 92, 90, 91, 90, 91, 92].map((r, i) => w('Rioja ' + i, 'Bodega ' + i, 'Rioja', 'Tempranillo', r, 25, 2020)),
+      w('Lucky One', 'Solo', 'Napa Valley', 'Petit Verdot', 99, 60, 2015), w('Lucky Two', 'Solo', 'Napa Valley', 'Petit Verdot', 98, 60, 2016),
+    ];
+    return WineDNA.profile('red', ws, 'Reds').loves;
+  });
+  expect(L.ready).toBe(true);
+  expect(L.avg).toBeGreaterThan(92);
+  const up = L.up.map((x) => x.name), down = L.down.map((x) => x.name);
+  // A grape and its region that are the same bottles show once, the other named on the line.
+  expect(L.up.some((x) => [x.name, x.also].includes('Tuscany'))).toBe(true);
+  expect(L.down.some((x) => [x.name, x.also].includes('Rioja'))).toBe(true);
+  // Sangiovese is the same nine bottles as Tuscany: one line, the other named on it.
+  expect(up.filter((n) => n === 'Sangiovese' || n === 'Tuscany').length).toBe(1);
+  // Nine bottles at 95 come before two at 98.5: the list follows the evidence.
+  const at = (f) => L.up.findIndex(f);
+  expect(at((x) => [x.name, x.also].includes('Tuscany'))).toBe(0);
+  expect(at((x) => x.name === 'Solo' || x.also === 'Solo')).toBeGreaterThan(0);
+  expect(L.headline).toMatch(/lifts your scores most/);
+});
+
 test('one level scale: bar labels, chips and Explore Next agree', async ({ page }) => {
   await page.goto(`${BASE}/?demo=1#home`);
   const out = await page.evaluate(() => {
@@ -85,7 +114,7 @@ test('the WineDNA tab shows the new sections with no console errors', async ({ p
   const errors = collectErrors(page);
   await page.goto(`${BASE}/?demo=1#profile`);
   const root = page.locator('#root');
-  for (const t of ['Based on your 6 Outstanding (90+) reds', 'What you love', 'You tend to score softer-acid reds higher.', 'Where to look:', 'Where your best scores come from', 'Worth knowing before you buy', 'Your reds style', 'Your 90+ reds', 'Getting value', 'Your sweet spot', 'How your choices are changing', 'Blind Call accuracy']) {
+  for (const t of ['Based on your 6 Outstanding (90+) reds', 'What you love', 'You tend to score softer-acid reds higher.', 'Where to look:', 'Measured on your own scale', 'What lifts your scores', 'What holds them back', 'Worth knowing before you buy', 'Your reds style', 'Your 90+ reds', 'Getting value', 'Your sweet spot', 'How your choices are changing', 'Blind Call accuracy']) {
     await expect(root, t).toContainText(t);
   }
   // Removed: duplicate personality badge, XP bar, "1 of 4" arrows, generic grape claims.

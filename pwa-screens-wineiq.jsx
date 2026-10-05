@@ -321,7 +321,7 @@ function WineDNAScreen({nav,back,showPro}){
   );
 
   /* Summary chips: what you drink most next to what you score highest */
-  const fav=t.favourites;
+  const fav=t.favourites, lv=t.loves;
   const chips=[];
   if(t.topGrapes[0]) chips.push({label:'Top grape',value:t.topGrapes[0]});
   if(t.topRegions[0]) chips.push({label:'Most scanned',value:t.topRegions[0]});
@@ -448,47 +448,50 @@ function WineDNAScreen({nav,back,showPro}){
         })()}
 
         {/* ── What You Love: what separates your best-scored wines, and where they come from ── */}
-        {t.wines.length>0&&<CSH label="What You Love" cKey="love" collapsed={collapsed} toggle={toggle} summary={t.signals.length?t.signals[0].text+(t.signals[1]?' '+t.signals[1].text:''):fav.regions.length?`${fav.regions[0].name} is where your highest scores come from.`:`Score more ${tLabel} to see what your favourites have in common.`}/>}
+        {t.wines.length>0&&<CSH label="What You Love" cKey="love" collapsed={collapsed} toggle={toggle} summary={t.loves.ready&&t.loves.headline?t.loves.headline:`Score more ${tLabel} to see what your favourites have in common.`}/>}
         {t.wines.length>0&&!collapsed.love&&(
           <Card style={{padding:14}}>
             <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P,marginBottom:4}}>What you love</div>
-            <div style={{fontSize:15,color:C.mid,fontFamily:C.P,lineHeight:1.5,marginBottom:12}}>What your Outstanding (90+) {tLabel} have in common, compared with the rest.</div>
-            {t.signals.length>0?(
-              <div style={{display:'flex',flexDirection:'column',gap:10,marginBottom:14}}>
-                {t.signals.map(s=>(
-                  <div key={s.axis} style={{padding:'10px 12px',borderRadius:12,background:`${t.col}08`,border:`1px solid ${t.col}25`}}>
-                    <div style={{fontSize:15,fontWeight:700,color:C.ink,fontFamily:C.P,marginBottom:3}}>{s.text}</div>
-                    <div style={{fontSize:13,color:C.mid,fontFamily:C.P,lineHeight:1.5,marginBottom:6}}>{s.detail}</div>
-                    <div style={{fontSize:15,color:C.ink2,fontFamily:C.P,lineHeight:1.5}}><span style={{fontWeight:700,color:t.col}}>Where to look: </span>{s.tip}</div>
-                  </div>
-                ))}
-              </div>
-            ):(
+            {!lv.ready?(
               <div style={{fontSize:15,color:C.ink2,fontFamily:C.P,lineHeight:1.55,marginBottom:14,padding:'10px 12px',borderRadius:12,background:C.offWhite}}>
-                {conf.n<8
-                  ?`Score ${WineDNA.noun(t.key,8-conf.n)} more and this will show what separates the ones you love from the rest: ${t.axes.map(k=>WineDNA.AXES[k].name.toLowerCase()).join(', ')}.`
-                  :t.loved.length<3
-                    ?`You haven't scored ${WineDNA.noun(t.key,3)} at 90 or above yet. Once you do, this will show what they have in common.`
-                    :`No single trait separates your favourites yet: you enjoy ${tLabel} across a range of styles. That's a strength when choosing from a wine list.`}
+                Score {WineDNA.noun(t.key,WineDNA.LOVES_MIN-lv.n)} more and this will show what your favourite {tLabel} have in common: their grapes, regions, producers, price and style.
               </div>
-            )}
-
-            {(fav.regions.length>0||fav.grapes.length>0)&&(
-              <>
-                <div style={{...sub,marginBottom:6}}>Where your best scores come from</div>
-                {[...fav.regions.map(r=>({...r,kind:'Region'})),...fav.grapes.map(g=>({...g,kind:'Grape'}))].map(x=>(
-                  <div key={x.kind+x.name} style={{display:'flex',alignItems:'center',gap:8,padding:'6px 0',borderTop:`1px solid ${C.line}`}}>
-                    <span style={{fontSize:13,color:C.mid,fontFamily:C.P,width:48,flexShrink:0}}>{x.kind}</span>
-                    <span style={{fontSize:15,fontWeight:600,color:C.ink,fontFamily:C.P,flex:1}}>{x.kind==='Region'&&<Flag region={x.name} size={15} style={{marginRight:6}}/>}{x.name}</span>
-                    <span style={{fontSize:13,color:C.mid,fontFamily:C.P}}>{x.count} bottle{x.count!==1?'s':''}</span>
-                    <span style={{fontSize:15,fontWeight:800,color:scoreCol(x.avg),fontFamily:C.P,width:30,textAlign:'right'}}>{x.avg}</span>
-                  </div>
-                ))}
-                {fav.mostScanned&&fav.regions[0]&&fav.mostScanned.name!==fav.regions[0].name&&(
-                  <div style={{fontSize:13,color:C.ink2,fontFamily:C.P,lineHeight:1.5,marginTop:8}}>You scan {fav.mostScanned.name} most, but {fav.regions[0].name} scores highest. Worth seeking out more of it.</div>
-                )}
-              </>
-            )}
+            ):(<>
+              <div data-testid="love-scale" style={{fontSize:15,color:C.mid,fontFamily:C.P,lineHeight:1.5,marginBottom:12}}>
+                Measured on your own scale: your {lv.n} scored {tLabel} average <b style={{color:C.ink}}>{lv.avg}</b>, your best third score <b style={{color:C.ink}}>{lv.hiCut}+</b> and your lowest third <b style={{color:C.ink}}>{lv.loCut} or under</b>.
+              </div>
+              {lv.style.map(s=>(
+                <div key={s.axis} style={{padding:'10px 12px',borderRadius:12,background:`${t.col}08`,border:`1px solid ${t.col}25`,marginBottom:10}}>
+                  <div style={{fontSize:15,fontWeight:700,color:C.ink,fontFamily:C.P,marginBottom:3}}>{s.text}</div>
+                  <div style={{fontSize:13,color:C.mid,fontFamily:C.P,lineHeight:1.5,marginBottom:s.tip?6:0}}>{s.detail}</div>
+                  {s.tip&&<div style={{fontSize:15,color:C.ink2,fontFamily:C.P,lineHeight:1.5}}><span style={{fontWeight:700,color:t.col}}>Where to look: </span>{s.tip}</div>}
+                </div>
+              ))}
+              {[['What lifts your scores',lv.up,'love-up'],['What holds them back',lv.down,'love-down']].map(([title,rows,id])=>rows.length>0&&(
+                <div key={id} data-testid={id} style={{marginBottom:12}}>
+                  <div style={{...sub,marginBottom:6}}>{title}</div>
+                  {rows.map(x=>(
+                    <div key={x.kind+x.name} style={{display:'flex',alignItems:'center',gap:8,padding:'7px 0',borderTop:`1px solid ${C.line}`}}>
+                      <span style={{fontSize:12,color:C.mid,fontFamily:C.P,width:60,flexShrink:0}}>{x.kind}</span>
+                      <div style={{flex:1,minWidth:0}}>
+                        <div style={{fontSize:15,fontWeight:600,color:C.ink,fontFamily:C.P,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{x.kind==='Region'&&<Flag region={x.name} size={15} style={{marginRight:6}}/>}{x.name}</div>
+                        <div style={{fontSize:12,color:C.mid,fontFamily:C.P}}>{x.count} bottles · avg {x.avg}{x.also?` · also ${x.also}`:''}</div>
+                      </div>
+                      <span style={{fontSize:14,fontWeight:800,color:x.lift>0?C.green:'#B04A3A',fontFamily:C.P,whiteSpace:'nowrap'}}>{x.lift>0?'+':''}{x.lift}</span>
+                    </div>
+                  ))}
+                </div>
+              ))}
+              {(lv.up.length>0||lv.down.length>0)&&<div style={{fontSize:12,color:C.mid,fontFamily:C.P,lineHeight:1.45,marginTop:-4,marginBottom:12}}>Points above or below your average of {lv.avg}. A few bottles count for less than many, so one great bottle doesn't top the list.</div>}
+              {[lv.money,lv.age].filter(Boolean).map(x=><div key={x} style={{fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.5,marginBottom:8}}>{x}</div>)}
+              {!lv.style.length&&!lv.up.length&&!lv.down.length&&<div style={{fontSize:15,color:C.ink2,fontFamily:C.P,lineHeight:1.55,marginBottom:14,padding:'10px 12px',borderRadius:12,background:C.offWhite}}>
+                {lv.flat?`You score your ${tLabel} very evenly, mostly between ${lv.loCut} and ${lv.hiCut}, so nothing pulls ahead yet. Spreading your scores out (an 86 for a good-not-great bottle) will show what you really love.`
+                  :`Nothing pulls your scores up or down yet: no grape, region, producer, price or style stands out. That's a broad palate; more scores will sharpen it.`}
+              </div>}
+              {fav.mostScanned&&lv.up[0]&&lv.up[0].kind==='Region'&&fav.mostScanned.name!==lv.up[0].name&&(
+                <div style={{fontSize:13,color:C.ink2,fontFamily:C.P,lineHeight:1.5,marginBottom:12}}>You scan {fav.mostScanned.name} most, but {lv.up[0].name} lifts your scores more. Worth seeking out.</div>
+              )}
+            </>)}
 
             {fav.buyAgain.length>0&&(
               <div style={{marginTop:14}}>
