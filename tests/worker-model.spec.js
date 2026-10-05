@@ -36,11 +36,11 @@ test('Sonnet 4.6 (the default) gets the same request as before: no thinking, eff
   expect(out[0].json).toMatchObject({ text: '{"found":false}', model: 'claude-sonnet-4-6', usage: { input_tokens: 10, output_tokens: 5 } });
 });
 
-test('Claude Sonnet 5.5: thinking off, low effort for scans, medium for quiz banks and articles, fallbacks on', async () => {
+test('Claude Sonnet 5.5: thinking off, low effort for scans, high for quiz banks, medium for articles, fallbacks on', async () => {
   const { upstream } = await run({ CLAUDE_MODEL: 'claude-sonnet-5-5' }, [msg('label_scan'), msg('grape_quiz'), msg('learn_article')]);
   expect(upstream[0].body).toMatchObject({ model: 'claude-sonnet-5-5', thinking: { type: 'between_tools' }, output_config: { effort: 'low' }, fallbacks: 'default' });
   expect(upstream[0].beta).toBe('server-side-fallback-2026-07-01');
-  expect(upstream[1].body.output_config.effort).toBe('medium');
+  expect(upstream[1].body.output_config.effort).toBe('high');
   expect(upstream[2].body.output_config.effort).toBe('medium');
   // Overrides from the environment.
   const t = await run({ CLAUDE_MODEL: 'claude-sonnet-5-5', CLAUDE_EFFORT: 'high', CLAUDE_THINKING: 'on' }, [msg('label_scan')]);

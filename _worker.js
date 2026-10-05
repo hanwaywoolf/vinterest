@@ -70,10 +70,12 @@ const CLAUDE_PURPOSE_LIMITS = {
 /* Claude 5 models take settings Sonnet 4.6 didn't need. Sonnet 5.5 thinks by default, which
    Sonnet 4.6 (as called here) never did: thinking is turned off (`between_tools`) so a label scan
    stays as quick as it was, and effort is low except where the writing or the checked facts are
-   the product (quiz banks, articles, the WineDNA summary, the sommelier script). Refusal
+   the product: medium for articles, the WineDNA summary and the sommelier script, high for quiz
+   banks (made once and kept, and at medium its hard questions came out easy, with wrong answers
+   that gave themselves away). Refusal
    fallbacks are on, so a request their safety classifier declines is answered by another model
    in the same call instead of coming back empty. Earlier models get nothing extra. */
-const PURPOSE_EFFORT = { grape_quiz: "medium", region_quiz: "medium", learn_article: "medium", winedna_summary: "medium", sommelier_script: "medium" };
+const PURPOSE_EFFORT = { grape_quiz: "high", region_quiz: "high", learn_article: "medium", winedna_summary: "medium", sommelier_script: "medium" };
 function modelOptions(model, purpose, env) {
   if (!/^claude-(sonnet|opus|fable)-5/.test(model)) return { body: {}, betas: [] };
   const effort = env.CLAUDE_EFFORT || PURPOSE_EFFORT[purpose] || "low";
