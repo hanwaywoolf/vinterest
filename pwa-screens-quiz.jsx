@@ -712,7 +712,51 @@ function useMapZoom(w,h){
   // React's onWheel is passive; a trackpad pinch needs preventDefault, so it's attached by hand.
   const ref=React.useRef(null), wheel=React.useRef(null);
   React.useEffect(()=>{ const el=ref.current; if(!el) return; const f=e=>wheel.current&&wheel.current(e); el.addEventListener('wheel',f,{passive:false}); return()=>el.removeEventListener('wheel',f); },[]);
-  return {z,reset,zoomAt,ref,bind:onTap=>{ const H=handlers(onTap); wheel.current=H.onWheel; const {onWheel,...rest}=H; return rest; }};
+  // How wide the map is on screen, so names can be sized in real pixels at any zoom.
+  const [px,setPx]=React.useState(0);
+  React.useEffect(()=>{ const el=ref.current; if(!el) return; const m=()=>setPx(el.getBoundingClientRect().width); m();
+    if(typeof ResizeObserver==='undefined') return; const o=new ResizeObserver(m); o.observe(el); return()=>o.disconnect(); },[]);
+  return {z,px,reset,zoomAt,ref,bind:onTap=>{ const H=handlers(onTap); wheel.current=H.onWheel; const {onWheel,...rest}=H; return rest; }};
+}
+/* Names on the map, placed biggest-first and skipped where they'd overlap one already placed or
+   fall outside what's shown. u is map units per screen pixel, so every name is a fixed size on
+   screen however far in they've zoomed. Zoomed out, the countries (data/world-map.json's
+   `countries`, those with wine regions first, then largest first); zoomed in (MAP_NAMES_AT), the regions, unlocked ones first, each
+   above its pin, or below it when above is taken. Names keep clear of the pins and of the zoom
+   buttons. */
+const MAP_NAMES_AT=2;
+function _mapLabels(v,z,u,pin){
+  const vx=z.x, vy=z.y, vw=v.w/z.k, vh=v.h/z.k, placed=[], out=[];
+  const hit=(b,list)=>list.some(o=>b.x0<o.x1&&b.x1>o.x0&&b.y0<o.y1&&b.y1>o.y0), pins=[];
+  const fits=(b,loose)=>b.x0>=vx+2*u&&b.x1<=vx+vw-2*u&&b.y0>=vy+2*u&&b.y1<=vy+vh-2*u&&!hit(b,placed)&&(loose||!hit(b,pins));
+  const box=(x,y,w,h)=>({x0:x-w/2-2*u,x1:x+w/2+2*u,y0:y-h*1.05-u,y1:y+h*0.3+u}); // a little air round each name
+  // Keep clear of the zoom buttons (top right) and Reset (top left, once zoomed), in screen pixels.
+  const scr=(x0,y0,x1,y1)=>({x0:vx+x0*u,y0:vy+y0*u,x1:vx+x1*u,y1:vy+y1*u}), pw=vw/u;
+  placed.push(scr(pw-52,0,pw,96)); if(z.k>1) placed.push(scr(0,0,96,50));
+  if(z.k<MAP_NAMES_AT){
+    const fs=10;
+    // ...and of the pins, so a pin never sits on a country's name.
+    v.pins.forEach(p=>pins.push({x0:p.x-pin,x1:p.x+pin,y0:p.y-pin,y1:p.y+pin}));
+    // Countries with wine regions on the map are named first (Portugal before a bigger neighbour's spill-over).
+    const wine=new Set(Object.values((typeof KNOWLEDGE!=='undefined'&&KNOWLEDGE.regions)||{}).map(r=>r.country==='United States'?'USA':r.country));
+    [...(v.countries||[])].sort((a,b)=>(wine.has(b.name)-wine.has(a.name))||b.a-a.a).forEach(c=>{ // A country at the edge (Portugal) is nudged inwards rather than dropped; one that meets a
+      // name already placed tries a line above or below.
+      const t=c.name.toUpperCase(), w=t.length*fs*0.78*u, h=fs*u, x=Math.max(vx+w/2+5*u,Math.min(vx+vw-w/2-5*u,c.x));
+      const tries=[]; [0,-h*1.3,h*1.3,-h*2.4,h*2.4,-h*3.5,h*3.5].forEach(dy=>[0,-w*0.3,w*0.3,-w*0.6,w*0.6].forEach(dx=>tries.push([dx,dy])));
+      // Clear of pins if it can be; a wine country is still named over a pin rather than left out.
+      for(const loose of wine.has(c.name)?[false,true]:[false]){ let done=false;
+        for(const [dx,dy] of tries){ const x2=Math.max(vx+w/2+5*u,Math.min(vx+vw-w/2-5*u,x+dx)), y=c.y+h/2+dy, b=box(x2,y,w,h); if(fits(b,loose)){ placed.push(b); out.push({kind:'country',t,x:x2,y,fs:fs*u}); done=true; break; } }
+        if(done) break; } });
+    return out;
+  }
+  const fs=12, rank=p=>(p.state==='open'?0:2)-(p.drunk?1:0);
+  // The pins themselves are kept clear too, so a name never sits on another region's pin.
+  v.pins.forEach(p=>pins.push({x0:p.x-pin,x1:p.x+pin,y0:p.y-pin,y1:p.y+pin}));
+  [...v.pins].sort((a,b)=>rank(a)-rank(b)||(b.score||0)-(a.score||0)).forEach(p=>{
+    const w=p.name.length*fs*0.6*u, h=fs*u, gap=pin+3*u;
+    for(const y of [p.y-gap,p.y+gap+h]){ const b=box(p.x,y,w,h); if(fits(b)){ placed.push(b); out.push({kind:'region',t:p.name,x:p.x,y,fs:fs*u,on:p.state==='open'}); break; } }
+  });
+  return out;
 }
 function MasteryRegionMap({views,nav,showPro}){
   // Map or list, and which part of the world, as they last left it (Device.masteryView).
@@ -726,6 +770,8 @@ function MasteryRegionMap({views,nav,showPro}){
   const Z=useMapZoom(v?v.w:1,v?v.h:1), z=Z.z;
   if(!v) return null;
   const PIN=9/Math.sqrt(z.k), HIT=40/z.k, SW=1/z.k;
+  const u=(v.w/z.k)/(Z.px||320); // map units per screen pixel
+  const names=_mapLabels(v,z,u,PIN);
   const tap=(x,y)=>setSel(v.pins.map(p=>({p,d:Math.hypot(p.x-x,p.y-y)})).filter(o=>o.d<=HIT).sort((a,b)=>a.d-b.d).slice(0,4).map(o=>o.p.name));
   const zbtn={width:34,height:34,borderRadius:10,background:'rgba(255,255,255,0.94)',border:`1px solid ${C.line}`,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',fontSize:'18px',fontWeight:700,color:C.ink,fontFamily:C.P,userSelect:'none',boxShadow:'0 1px 3px rgba(0,0,0,0.08)'};
   const picked=sel.map(n=>v.pins.find(p=>p.name===n)).filter(Boolean);
@@ -751,14 +797,15 @@ function MasteryRegionMap({views,nav,showPro}){
         style={{display:'block',borderRadius:12,background:'#EEF1F3',cursor:z.k>1?'grab':'pointer',maxHeight:420,touchAction:z.k>1?'none':'pan-y',userSelect:'none',WebkitUserSelect:'none'}}>
         <path d={v.land} fill="#F6F2EC" stroke="#D9D2C8" strokeWidth={1.5*SW} strokeLinejoin="round"/>
         <path d={v.borders} fill="none" stroke="#E2DBD1" strokeWidth={1.2*SW}/>
+        {names.filter(n=>n.kind==='country').map(n=><text key={'c'+n.t} x={n.x} y={n.y} textAnchor="middle" data-label="country" style={{fontSize:n.fs.toFixed(2)+'px',fontWeight:600,letterSpacing:'0.1em',fill:'#A69C90',fontFamily:C.P,pointerEvents:'none'}}>{n.t}</text>)}
         {[...v.pins].sort((a,b)=>(a.state==='open')-(b.state==='open')).map(p=>{
           const on=sel.includes(p.name), first=p.state==='open'&&p.level==='Not started';
           return <g key={p.name}>
             {p.drunk>0&&<circle cx={p.x} cy={p.y} r={PIN+5*SW} fill="none" stroke={C.ink} strokeWidth={2.2*SW}/>}
             <circle cx={p.x} cy={p.y} r={on?PIN+3*SW:p.state==='open'?PIN:PIN-2*SW} fill={_pinFill(p)} fillOpacity={p.fading?0.4:1} strokeDasharray={p.fading?`${3*SW} ${2*SW}`:null} stroke={first?C.cr:'#fff'} strokeWidth={(first?2.5:2)*SW}/>
-            {z.k>=2.5&&p.state==='open'&&<text x={p.x} y={p.y-PIN-4*SW} textAnchor="middle" style={{fontSize:(11*SW).toFixed(2)+'px',fontWeight:600,fill:C.ink2,fontFamily:C.P,paintOrder:'stroke',stroke:'#F6F2EC',strokeWidth:3*SW}}>{p.name}</text>}
           </g>;
         })}
+        {names.filter(n=>n.kind==='region').map(n=><text key={'r'+n.t} x={n.x} y={n.y} textAnchor="middle" data-label="region" style={{fontSize:n.fs.toFixed(2)+'px',fontWeight:n.on?700:500,fill:n.on?C.ink:'#7D736A',fontFamily:C.P,paintOrder:'stroke',stroke:'#F6F2EC',strokeWidth:(3*u).toFixed(2),strokeLinejoin:'round',pointerEvents:'none'}}>{n.t}</text>)}
       </svg>
       <div style={{position:'absolute',right:8,top:8,display:'flex',flexDirection:'column',gap:6}}>
         <div role="button" aria-label="Zoom in" onClick={()=>Z.zoomAt(1.6)} style={zbtn}>+</div>
@@ -773,7 +820,7 @@ function MasteryRegionMap({views,nav,showPro}){
       </div>
       {picked.length?<div data-testid="map-picked" style={{display:'flex',flexDirection:'column',borderTop:`1px solid ${C.line}`}}>
         {picked.map(p=><_RegionRow key={p.name} p={p} nav={nav} showPro={showPro}/>)}
-      </div>:<div style={{fontSize:13,color:C.mid,fontFamily:C.P}}>Tap a pin to see a region; pinch to zoom in. Scanning a bottle unlocks its region.</div>}
+      </div>:<div style={{fontSize:13,color:C.mid,fontFamily:C.P}}>Tap a pin to see a region; pinch to zoom in and see their names. Scanning a bottle unlocks its region.</div>}
       </>}
     </div>
   );

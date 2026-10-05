@@ -439,6 +439,33 @@ test('regions as a list beside the map: per part of the world, most progress fir
   expect(errors).toEqual([]);
 });
 
+test('the wine map names countries zoomed out and regions zoomed in, readable and never overlapping', async ({ context, page }, info) => {
+  const errors = collectErrors(page);
+  await user(context, page);
+  await page.goto(`${BASE}/#mastery-map`);
+  await page.getByRole('button', { name: /^Europe/ }).click();
+  const map = page.getByTestId('region-map');
+  await map.scrollIntoViewIfNeeded();
+  const labels = (kind) => map.locator(`text[data-label="${kind}"]`).evaluateAll((els) => els.map((e) => { const r = e.getBoundingClientRect(); return { t: e.textContent, x0: r.left, x1: r.right, y0: r.top, y1: r.bottom, h: r.height }; }));
+  const clear = (ls) => ls.every((a, i) => ls.every((b, j) => i === j || a.x1 <= b.x0 + 1 || b.x1 <= a.x0 + 1 || a.y1 <= b.y0 + 1 || b.y1 <= a.y0 + 1));
+  const countries = await labels('country');
+  for (const c of ['FRANCE', 'SPAIN', 'ITALY', 'PORTUGAL']) expect(countries.map((l) => l.t)).toContain(c);
+  expect(Math.min(...countries.map((l) => l.h))).toBeGreaterThan(9);
+  expect(clear(countries)).toBe(true);
+  expect(await labels('region')).toEqual([]);
+  await page.screenshot({ path: path.join(info.project.outputDir, 'map-countries.png') });
+  // Zoomed all the way in: region names, the same size on screen, none on top of another.
+  for (let i = 0; i < 4; i++) await page.getByRole('button', { name: 'Zoom in' }).click();
+  await expect(map).toHaveAttribute('data-zoom', '6.00');
+  const regions = await labels('region');
+  expect(regions.length).toBeGreaterThan(0);
+  expect(Math.min(...regions.map((l) => l.h))).toBeGreaterThan(11);
+  expect(clear(regions)).toBe(true);
+  expect(await labels('country')).toEqual([]);
+  await page.screenshot({ path: path.join(info.project.outputDir, 'map-regions.png') });
+  expect(errors).toEqual([]);
+});
+
 test('every grape has a page: origin, wines and how its bunch looks', async ({ context, page }) => {
   await user(context, page);
   await page.goto(`${BASE}/#home`);
