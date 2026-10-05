@@ -8,16 +8,7 @@ function _topByWeightedCount(items){const c={};items.forEach(({v,rating})=>{if(v
 function _topNotes(wines,n){const all=[];wines.forEach(w=>(w.tasting_notes||[]).forEach(t=>{if(t)all.push({v:t,rating:w.rating});}));return _topByWeightedCount(all).slice(0,n);}
 
 /* ── Flavour clusters ── */
-const _NOTE_CLUSTERS=[
-  {name:'Dark Fruit & Spice',    kw:['blackberry','blackcurrant','black cherry','plum','dark cherry','black fruit','blueberry','clove','pepper','spice','anise','liquorice']},
-  {name:'Red Fruit & Floral',    kw:['cherry','raspberry','strawberry','redcurrant','red fruit','pomegranate','violet','rose','hibiscus']},
-  {name:'Earth & Leather',       kw:['earth','leather','tobacco','truffle','forest floor','mushroom','barnyard','smoke','tar','graphite','iron']},
-  {name:'Citrus & Mineral',      kw:['lemon','lime','grapefruit','citrus','mineral','chalk','flint','oyster','saline','wet stone','slate']},
-  {name:'Oak & Vanilla',         kw:['vanilla','caramel','toast','oak','cedar','sandalwood','coconut','cream','butterscotch']},
-  {name:'Herb & Savour',         kw:['herb','thyme','rosemary','olive','green pepper','eucalyptus','menthol','garrigue','dried herb']},
-  {name:'Tropical & Stone Fruit',kw:['peach','apricot','nectarine','mango','pineapple','passion fruit','melon','guava','lychee']},
-  {name:'Brioche & Yeast',       kw:['brioche','toast','biscuit','bread','yeast','pastry','almonds','hazelnut']},
-];
+const _NOTE_CLUSTERS=WineDNA.NOTE_CLUSTERS;
 const _FOOD_PAIRINGS={
   'Dark Fruit & Spice':   'Grilled red meat, aged hard cheese, braised short rib',
   'Red Fruit & Floral':   'Duck breast, mushroom risotto, charcuterie',
@@ -52,6 +43,24 @@ const _TYPES=[
   {key:'dessert',   label:'Dessert',  tab:'Dessert',  col:'#8A5A2B'},
   {key:'fortified', label:'Fortified',tab:'Fortified',col:'#5C2A1E'},
 ];
+
+/* One thing they love (or don't) in What You Love: how strongly, what it is, what it's like in
+   words (style and the flavours that recur), the evidence in plain terms, and their best (or
+   lowest) bottles of it, each opening the wine. */
+function _LoveCard({x,col,openWine,quiet}){
+  return <div style={{padding:'12px 12px',borderRadius:12,background:quiet?C.white:`${col}08`,border:`1px solid ${quiet?C.line:col+'25'}`,display:'flex',flexDirection:'column',gap:4}}>
+    <div style={{fontSize:12,fontWeight:700,color:quiet?C.mid:col,fontFamily:C.P,textTransform:'uppercase',letterSpacing:'0.06em'}}>{x.strength}</div>
+    <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>{x.kind==='Region'&&<Flag region={x.name} size={15} style={{marginRight:6}}/>}{x.title}{x.also?<span style={{fontWeight:500,color:C.mid}}> · {x.also}</span>:''}</div>
+    {x.character&&<div style={{fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.5}}>{x.character}</div>}
+    <div style={{fontSize:13,color:C.mid,fontFamily:C.P,lineHeight:1.45}}>{x.evidence}</div>
+    {x.examples.length>0&&<div style={{display:'flex',flexWrap:'wrap',gap:6,marginTop:4}}>
+      {x.examples.map(w=><span key={w.name+(w.vintage||'')} role="button" onClick={()=>openWine(w)} style={{display:'inline-flex',alignItems:'center',gap:6,padding:'5px 10px',borderRadius:999,background:C.white,border:`1px solid ${C.line}`,cursor:'pointer',maxWidth:'100%'}}>
+        <span style={{fontSize:13,color:C.ink,fontFamily:C.P,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{w.name}</span>
+        <span style={{fontSize:13,fontWeight:800,color:scoreCol(w.rating),fontFamily:C.P}}>{w.rating}</span>
+      </span>)}
+    </div>}
+  </div>;
+}
 
 /* Collapsible section header — collapsed state shows a short useful summary + expand CTA below the title */
 function CSH({label,cKey,collapsed,toggle,summary}){
@@ -457,39 +466,31 @@ function WineDNAScreen({nav,back,showPro}){
                 Score {WineDNA.noun(t.key,WineDNA.LOVES_MIN-lv.n)} more and this will show what your favourite {tLabel} have in common: their grapes, regions, producers, price and style.
               </div>
             ):(<>
-              <div data-testid="love-scale" style={{fontSize:15,color:C.mid,fontFamily:C.P,lineHeight:1.5,marginBottom:12}}>
-                Measured on your own scale: your {lv.n} scored {tLabel} average <b style={{color:C.ink}}>{lv.avg}</b>, your best third score <b style={{color:C.ink}}>{lv.hiCut}+</b> and your lowest third <b style={{color:C.ink}}>{lv.loCut} or under</b>.
+              {lv.portrait&&<div data-testid="love-portrait" style={{fontSize:18,fontWeight:700,color:C.ink,fontFamily:C.P,lineHeight:1.4,marginBottom:6}}>{lv.portrait}</div>}
+              <div data-testid="love-scale" style={{fontSize:13,color:C.mid,fontFamily:C.P,lineHeight:1.5,marginBottom:12}}>
+                From your {lv.n} scored {tLabel}, measured against your own usual score of {lv.usual}{lv.flat?'':` (your best third score ${lv.hiCut}+)`}.
               </div>
+              {lv.favs.length>0&&<div data-testid="love-up" style={{display:'flex',flexDirection:'column',gap:10,marginBottom:12}}>
+                {lv.favs.map(x=><_LoveCard key={x.kind+x.name} x={x} col={t.col} openWine={openWine}/>)}
+              </div>}
               {lv.style.map(s=>(
-                <div key={s.axis} style={{padding:'10px 12px',borderRadius:12,background:`${t.col}08`,border:`1px solid ${t.col}25`,marginBottom:10}}>
+                <div key={s.axis} style={{padding:'10px 12px',borderRadius:12,background:C.offWhite,marginBottom:10}}>
                   <div style={{fontSize:15,fontWeight:700,color:C.ink,fontFamily:C.P,marginBottom:3}}>{s.text}</div>
                   <div style={{fontSize:13,color:C.mid,fontFamily:C.P,lineHeight:1.5,marginBottom:s.tip?6:0}}>{s.detail}</div>
-                  {s.tip&&<div style={{fontSize:15,color:C.ink2,fontFamily:C.P,lineHeight:1.5}}><span style={{fontWeight:700,color:t.col}}>Where to look: </span>{s.tip}</div>}
+                  {s.tip&&<div style={{fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.5}}><span style={{fontWeight:700,color:t.col}}>Where to look: </span>{s.tip}</div>}
                 </div>
               ))}
-              {[['What lifts your scores',lv.up,'love-up'],['What holds them back',lv.down,'love-down']].map(([title,rows,id])=>rows.length>0&&(
-                <div key={id} data-testid={id} style={{marginBottom:12}}>
-                  <div style={{...sub,marginBottom:6}}>{title}</div>
-                  {rows.map(x=>(
-                    <div key={x.kind+x.name} style={{display:'flex',alignItems:'center',gap:8,padding:'7px 0',borderTop:`1px solid ${C.line}`}}>
-                      <span style={{fontSize:12,color:C.mid,fontFamily:C.P,width:60,flexShrink:0}}>{x.kind}</span>
-                      <div style={{flex:1,minWidth:0}}>
-                        <div style={{fontSize:15,fontWeight:600,color:C.ink,fontFamily:C.P,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{x.kind==='Region'&&<Flag region={x.name} size={15} style={{marginRight:6}}/>}{x.name}</div>
-                        <div style={{fontSize:12,color:C.mid,fontFamily:C.P}}>{x.count} bottles · avg {x.avg}{x.also?` · also ${x.also}`:''}</div>
-                      </div>
-                      <span style={{fontSize:14,fontWeight:800,color:x.lift>0?C.green:'#B04A3A',fontFamily:C.P,whiteSpace:'nowrap'}}>{x.lift>0?'+':''}{x.lift}</span>
-                    </div>
-                  ))}
-                </div>
-              ))}
-              {(lv.up.length>0||lv.down.length>0)&&<div style={{fontSize:12,color:C.mid,fontFamily:C.P,lineHeight:1.45,marginTop:-4,marginBottom:12}}>Points above or below your average of {lv.avg}. A few bottles count for less than many, so one great bottle doesn't top the list.</div>}
+              {lv.nots.length>0&&<div data-testid="love-down" style={{marginBottom:12}}>
+                <div style={{...sub,marginBottom:6}}>Less your thing</div>
+                <div style={{display:'flex',flexDirection:'column',gap:8}}>{lv.nots.map(x=><_LoveCard key={x.kind+x.name} x={x} col={C.mid} openWine={openWine} quiet/>)}</div>
+              </div>}
               {[lv.money,lv.age].filter(Boolean).map(x=><div key={x} style={{fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.5,marginBottom:8}}>{x}</div>)}
-              {!lv.style.length&&!lv.up.length&&!lv.down.length&&<div style={{fontSize:15,color:C.ink2,fontFamily:C.P,lineHeight:1.55,marginBottom:14,padding:'10px 12px',borderRadius:12,background:C.offWhite}}>
+              {!lv.style.length&&!lv.favs.length&&!lv.nots.length&&<div style={{fontSize:15,color:C.ink2,fontFamily:C.P,lineHeight:1.55,marginBottom:14,padding:'10px 12px',borderRadius:12,background:C.offWhite}}>
                 {lv.flat?`You score your ${tLabel} very evenly, mostly between ${lv.loCut} and ${lv.hiCut}, so nothing pulls ahead yet. Spreading your scores out (an 86 for a good-not-great bottle) will show what you really love.`
                   :`Nothing pulls your scores up or down yet: no grape, region, producer, price or style stands out. That's a broad palate; more scores will sharpen it.`}
               </div>}
-              {fav.mostScanned&&lv.up[0]&&lv.up[0].kind==='Region'&&fav.mostScanned.name!==lv.up[0].name&&(
-                <div style={{fontSize:13,color:C.ink2,fontFamily:C.P,lineHeight:1.5,marginBottom:12}}>You scan {fav.mostScanned.name} most, but {lv.up[0].name} lifts your scores more. Worth seeking out.</div>
+              {fav.mostScanned&&lv.favs[0]&&lv.favs[0].kind==='Region'&&fav.mostScanned.name!==lv.favs[0].name&&(
+                <div style={{fontSize:13,color:C.ink2,fontFamily:C.P,lineHeight:1.5,marginBottom:12}}>You scan {fav.mostScanned.name} most, but you score {lv.favs[0].name} higher. Worth seeking out.</div>
               )}
             </>)}
 

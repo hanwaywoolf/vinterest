@@ -78,7 +78,14 @@ test('What You Love on a generous scorer: lifts and drags against their own aver
   const at = (f) => L.up.findIndex(f);
   expect(at((x) => [x.name, x.also].includes('Tuscany'))).toBe(0);
   expect(at((x) => x.name === 'Solo' || x.also === 'Solo')).toBeGreaterThan(0);
-  expect(L.headline).toMatch(/lifts your scores most/);
+  // In words: a portrait naming the favourite, and each favourite described with its best bottles.
+  expect(L.portrait).toMatch(/^You love .*reds.*(Tuscany|Sangiovese)/);
+  expect(L.headline).toBe(L.portrait);
+  const fav = L.favs[0];
+  expect(fav.strength).toMatch(/favourite|lean/);
+  expect(fav.evidence).toMatch(/^9 bottles, usually around 95: about \d points? above your usual \d+\.$/);
+  expect(fav.examples.map((w) => w.rating)).toEqual([97, 96]);
+  expect(L.nots[0].evidence).toMatch(/below your usual/);
 });
 
 test('one level scale: bar labels, chips and Explore Next agree', async ({ page }) => {
@@ -114,7 +121,7 @@ test('the WineDNA tab shows the new sections with no console errors', async ({ p
   const errors = collectErrors(page);
   await page.goto(`${BASE}/?demo=1#profile`);
   const root = page.locator('#root');
-  for (const t of ['Based on your 6 Outstanding (90+) reds', 'What you love', 'You tend to score softer-acid reds higher.', 'Where to look:', 'Measured on your own scale', 'What lifts your scores', 'What holds them back', 'Worth knowing before you buy', 'Your reds style', 'Your 90+ reds', 'Getting value', 'Your sweet spot', 'How your choices are changing', 'Blind Call accuracy']) {
+  for (const t of ['Based on your 6 Outstanding (90+) reds', 'What you love', 'You tend to score softer-acid reds higher.', 'Where to look:', 'You love ', 'measured against your own usual score', 'Less your thing', 'Worth knowing before you buy', 'Your reds style', 'Your 90+ reds', 'Getting value', 'Your sweet spot', 'How your choices are changing', 'Blind Call accuracy']) {
     await expect(root, t).toContainText(t);
   }
   // Removed: duplicate personality badge, XP bar, "1 of 4" arrows, generic grape claims.

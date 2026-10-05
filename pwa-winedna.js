@@ -38,6 +38,34 @@ const WineDNA = {
     sparkling:['body','acidity','effervescence','sweetness'],orange:['body','tannins','acidity','texture'],dessert:['body','acidity','sweetness','texture'],
     fortified:['body','tannins','sweetness','texture']},
   // Where to look when a preference shows up — practical buying guidance, by axis and direction.
+  /* Flavour families and the words that place a tasting note in one (Flavour Signatures, and the
+     flavours What You Love names). Longer words are matched first, so "black cherry" isn't also
+     "cherry". */
+  NOTE_CLUSTERS:[
+    {name:'Dark Fruit & Spice',    kw:['blackberry','blackcurrant','black cherry','plum','dark cherry','black fruit','blueberry','clove','pepper','spice','anise','liquorice']},
+    {name:'Red Fruit & Floral',    kw:['cherry','raspberry','strawberry','redcurrant','red fruit','pomegranate','violet','rose','hibiscus']},
+    {name:'Earth & Leather',       kw:['earth','leather','tobacco','truffle','forest floor','mushroom','barnyard','smoke','tar','graphite','iron']},
+    {name:'Citrus & Mineral',      kw:['lemon','lime','grapefruit','citrus','mineral','chalk','flint','oyster','saline','wet stone','slate']},
+    {name:'Oak & Vanilla',         kw:['vanilla','caramel','toast','oak','cedar','sandalwood','coconut','cream','butterscotch']},
+    {name:'Herb & Savour',         kw:['herb','thyme','rosemary','olive','green pepper','eucalyptus','menthol','garrigue','dried herb']},
+    {name:'Tropical & Stone Fruit',kw:['peach','apricot','nectarine','mango','pineapple','passion fruit','melon','guava','lychee']},
+    {name:'Brioche & Yeast',       kw:['brioche','toast','biscuit','bread','yeast','pastry','almonds','hazelnut']},
+  ],
+  /* The flavour words that come up in at least two of these bottles' tasting notes, most first. */
+  flavourWords(ws,max=3){
+    const kws=[...new Set(this.NOTE_CLUSTERS.flatMap(c=>c.kw))].sort((a,b)=>b.length-a.length), c={};
+    ws.forEach(w=>{ const seen=new Set(); let t=(w.tasting_notes||[]).join(' ').toLowerCase();
+      kws.forEach(k=>{ if(t.includes(k)){ seen.add(k); t=t.split(k).join(' '); } }); seen.forEach(k=>{ c[k]=(c[k]||0)+1; }); });
+    return Object.entries(c).filter(([,n])=>n>=Math.min(2,ws.length)).sort((a,b)=>b[1]-a[1]).slice(0,max).map(([k])=>k);
+  },
+  /* A set of bottles' style in words ("full-bodied and firm"), from the traits that aren't middling. */
+  styleWords(ws,axes){
+    const W={body:['light','full-bodied'],tannins:['silky','firm'],acidity:['soft','fresh'],texture:['crisp','rich'],sweetness:['dry','sweet']};
+    const out=[]; (axes||Object.keys(W)).forEach(k=>{ if(!W[k]) return; const v=this._mean(ws.map(w=>this.axisValue(w,k)).filter(x=>typeof x==='number'));
+      const l=this.level(v); if(l==='high') out.push(W[k][1]); else if(l==='low'&&k!=='sweetness') out.push(W[k][0]); });
+    return out;
+  },
+  _list(xs){ return xs.length<2?(xs[0]||''):xs.slice(0,-1).join(', ')+' and '+xs[xs.length-1]; },
   TIPS:{
     body:{high:'Fuller wines come from warmer places and riper grapes: look at Barossa, Napa, Priorat or Châteauneuf-du-Pape.',
           low:'Lighter styles come from cooler places: Burgundy, Beaujolais, Oregon Pinot Noir or Etna.'},
@@ -295,7 +323,7 @@ const WineDNA = {
     let lifts=Object.values(groups).filter(g=>g.ws.length>=2).map(g=>{
       const m=g.ws.length, sum=g.ws.reduce((a,w)=>a+w.rating,0), shrunk=(sum+K*avg)/(m+K);
       const name=Object.entries(g.names).sort((a,b)=>b[1]-a[1])[0][0];
-      return {kind:g.kind,name,count:m,avg:Math.round(sum/m),lift:Math.round((shrunk-avg)*10)/10,set:g.ws.map(w=>w.name+'|'+(w.vintage||'')).sort().join(';')};
+      return {kind:g.kind,name,count:m,avg:Math.round(sum/m),lift:Math.round((shrunk-avg)*10)/10,set:g.ws.map(w=>w.name+'|'+(w.vintage||'')).sort().join(';'),ws:g.ws};
     }).filter(x=>Math.abs(x.lift)>=this.LIFT_MIN&&!(x.kind==='Country'&&x.count===n));
     // The same bottles under two names (Brunello the grape and Tuscany the region): keep the more specific line.
     const order={Producer:0,Grape:1,Region:2,Country:3,Price:4,Age:5};
@@ -313,9 +341,31 @@ const WineDNA = {
       :pr<=-0.2?`Price doesn't buy your favourites: your cheaper ${L} score as well as or better than the dear ones.`
       :`Price barely moves your scores, so the best value is where your top scores and lower prices meet.`;
     const age=ar==null?null:ar>=0.3?`You score older ${L} higher: bottle age suits you.`:ar<=-0.3?`You score younger ${L} higher: you like them fresh rather than aged.`:null;
-    const headline=styleAll[0]?styleAll[0].text:up[0]?`${up[0].name} lifts your scores most: ${up[0].count} bottles averaging ${up[0].avg}, ${up[0].lift>0?'+':''}${up[0].lift} on your average.`
-      :flat?`You score your ${L} very evenly, mostly between ${loCut} and ${hiCut}.`:null;
-    return {ready:true,n,avg:Math.round(avg*10)/10,hiCut,loCut,flat,style:styleAll,up,down,money,age,headline};
+    // In words: what each favourite is like, and the bottles that show it.
+    const one=L.replace(/s$/,''), usual=Math.round(avg);
+    const title=x=>x.kind==='Grape'?x.name:x.kind==='Region'?`${L.charAt(0).toUpperCase()+L.slice(1)} from ${x.name}`:x.kind==='Producer'?`${x.name}'s ${L}`
+      :x.kind==='Country'?`${x.name} ${L}`:x.kind==='Price'?`${L.charAt(0).toUpperCase()+L.slice(1)} ${x.name.toLowerCase()}`:`${L.charAt(0).toUpperCase()+L.slice(1)} ${x.name.toLowerCase()}`;
+    const strength=x=>Math.abs(x.lift)>=2.5?(x.lift>0?'Your clearest favourite':'Clearly not your thing'):Math.abs(x.lift)>=1.5?(x.lift>0?'A real favourite':'Usually not your thing'):(x.lift>0?'A gentle lean':'A slight drag');
+    const describe=x=>{
+      const st=this.styleWords(x.ws,p.axes), fl=this.flavourWords(x.ws);
+      const character=st.length||fl.length?`${st.length?this._list(st).charAt(0).toUpperCase()+this._list(st).slice(1):'Often'}${fl.length?`${st.length?', with':''} ${this._list(fl)}`:''}.`:null;
+      const pts=Math.round(Math.abs(x.avg-usual));
+      const evidence=x.lift>0?`${x.count} bottles, usually around ${x.avg}${pts>=1?`: about ${pts} point${pts===1?'':'s'} above your usual ${usual}`:''}.`
+        :`${x.count} bottles, usually around ${x.avg}${pts>=1?`: about ${pts} point${pts===1?'':'s'} below your usual ${usual}`:''}.`;
+      const ex=[...x.ws].sort((a,b)=>x.lift>0?b.rating-a.rating:a.rating-b.rating).slice(0,2);
+      return {...x,title:title(x),strength:strength(x),character,evidence,examples:ex,ws:undefined};
+    };
+    // Things you'd name on a wine list (a grape, a region, a producer) come before a price band,
+    // an age or a whole country, which only fill in when nothing more specific stands out.
+    const named=x=>['Grape','Region','Producer'].includes(x.kind)?0:1;
+    const favs=[...up].sort((a,b)=>named(a)-named(b)).slice(0,3).map(describe), nots=[...down].sort((a,b)=>named(a)-named(b)).slice(0,2).map(describe);
+    // The portrait: what their best third is like, and the favourites by name.
+    const bStyle=this.styleWords(best,p.axes), bFl=this.flavourWords(best,3);
+    const names=favs.filter(f=>named(f)===0).slice(0,2).map(f=>f.kind==='Producer'?`${f.name}'s bottles`:f.name);
+    const portrait=(bStyle.length||bFl.length||names.length)?`You love ${bStyle.length?this._list(bStyle)+' ':''}${L}${bFl.length?` with ${this._list(bFl)}`:''}${names.length?`, ${names.length>1?'above all':'especially'} ${this._list(names)}`:''}.`:null;
+    const headline=portrait||(styleAll[0]?styleAll[0].text:null)||(up[0]?`${up[0].name} lifts your scores most: ${up[0].count} bottles averaging ${up[0].avg}, ${up[0].lift>0?'+':''}${up[0].lift} on your average.`
+      :flat?`You score your ${L} very evenly, mostly between ${loCut} and ${hiCut}.`:null);
+    return {ready:true,n,avg:Math.round(avg*10)/10,usual,hiCut,loCut,flat,style:styleAll,up:up.map(({ws,...x})=>x),down:down.map(({ws,...x})=>x),favs,nots,portrait,money,age,headline};
   },
 
   // Where they drink a lot vs where they score highest, and what to rethink.
