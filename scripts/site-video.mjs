@@ -17,7 +17,7 @@ const OUT = { dinner: 'dinner-table', 'scan-demo': 'scan-demo' }[NAME];
 if (!OUT) throw new Error('Unknown film: ' + NAME);
 const FFMPEG = fs.readdirSync('/opt/pw-browsers').filter((d) => d.startsWith('ffmpeg')).map((d) => path.join('/opt/pw-browsers', d, 'ffmpeg-linux')).find((f) => fs.existsSync(f)) || 'ffmpeg';
 fs.mkdirSync(path.join(ROOT, 'video'), { recursive: true });
-for (const f of fs.readdirSync(path.join(ROOT, 'site/video')).filter((f) => f === `${NAME}.html` || /\.(png|jpe?g)$/.test(f))) fs.copyFileSync(path.join(ROOT, 'site/video', f), path.join(ROOT, 'site-dist', f));
+for (const f of fs.readdirSync(path.join(ROOT, 'site/video')).filter((f) => f === `${NAME}.html` || /\.(png|jpe?g|json)$/.test(f))) fs.copyFileSync(path.join(ROOT, 'site/video', f), path.join(ROOT, 'site-dist', f));
 const server = spawn(process.execPath, [path.join(ROOT, 'scripts/serve.mjs'), 'site-dist', String(PORT)], { cwd: ROOT, stdio: 'ignore' });
 await new Promise((r) => setTimeout(r, 800));
 const browser = await chromium.launch();
@@ -48,7 +48,7 @@ try {
   await done;
   console.log(`Saved video/${OUT}.webm (${n} frames, ${(n / FPS).toFixed(1)}s)`);
 } finally {
-  for (const f of [`${NAME}.html`, "ardanza.png"]) fs.rmSync(path.join(ROOT, 'site-dist', f), { force: true });
+  for (const f of fs.readdirSync(path.join(ROOT, "site/video")).filter((f) => f === `${NAME}.html` || /\.(png|jpe?g|json)$/.test(f))) fs.rmSync(path.join(ROOT, 'site-dist', f), { force: true });
   await browser.close();
   server.kill();
 }

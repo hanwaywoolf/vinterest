@@ -217,6 +217,8 @@ const _DEMO_SCREENS = {
     { at: 0.833, to: '[data-section="scripts"]', drift: 0.4 },
   ] },
   home: { nav: 'home', Screen: HomeScreen },
+  // My Wines as the visitor's own rating left it: nothing is reset, so the bottle rated in the demo before is in the list (the film).
+  after: { nav: 'mywines', Screen: MyWinesScreen, keepStore: true },
   wines: { nav: 'mywines', layers: [
     { id: 'list', Screen: MyWinesScreen },
     { id: 'detail', Screen: WineDetailScreen, setup() { Handoff.openWine({ wine: _detailWine(), source: 'history' }); } },
@@ -374,7 +376,7 @@ const VinterestDemo = {
     const draw = () => {
       gen++;
       cancel();
-      if (isScan) _openScan(d.view, kind === 'keep'); else DemoPersona.reset();
+      if (isScan) _openScan(d.view, kind === 'keep'); else if (!d.keepStore) DemoPersona.reset();
       // Rendered right now, not on React's schedule: the scan screen reads the handoff as it opens, and
       // another demo mounting in the meantime would have changed it.
       ReactDOM.flushSync(() => root.render(<_DemoFrame key={gen} kind={kind} ctl={ctl} />));

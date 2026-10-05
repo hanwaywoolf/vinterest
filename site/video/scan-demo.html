@@ -117,17 +117,35 @@
   var S = 0.92;
   phoneEl.style.transform = 'translate(' + (270 - 205 * S) + 'px,' + 118 + 'px) scale(' + S + ')';
 
+  /* The Ardanza's scan cards: Claude's text for it, captured once (npm run film:capture); the rest of the demo's answers stay as they are. */
+  var ARD = null;
+  fetch('/ardanza-captured.json').then(function (r) { return r.json(); }).then(function (j) { ARD = j.answers; });
+  var _complete = window.claude.complete;
+  window.claude.complete = function (arg) {
+    if (ARD && arg && arg.purpose === 'scancard' && ARD.scancard) return Promise.resolve(ARD.scancard);
+    return _complete.call(window.claude, arg);
+  };
+
+  /* The film, by second. Cards 1 to 7 of the post-scan deck get 4.6s each; the Blind Call's slice of the deck (p .75 to .777) is skipped. */
+  var CARD_AT = 12.8, CARD_S = 4.6, RATE_AT = 12.8 + 7 * 4.6;               // 45.0
+  var SAVE_AT = RATE_AT + 6.0, FIN_AT = RATE_AT + 12.4, LIST_AT = RATE_AT + 18.2, END_AT = LIST_AT + 8.0, END = END_AT + 3.4;
   var CAPS = [
     [0.5, 3.2, 'Point it at <b>any wine label</b>.'],
     [3.2, 7.0, 'Scan it. Vinterest <b>reads the label</b>.'],
-    [7.4, 12.0, 'A match score, built from <b>your own taste</b>.'],
-    [12.0, 20.0, 'With the <b>reasons for and against</b>.'],
-    [20.4, 27.0, 'Rate it. The fastest way to <b>sharpen your next match</b>.'],
-    [27.0, 31.0, 'Add what you <b>paid</b> and where you had it.'],
-    [31.4, 36.6, 'Your <b>WineDNA</b> grows with every bottle.'],
-    [36.6, 41.0, 'It even checks <b>how well it knows you</b>.'],
+    [7.4, 12.6, 'A match score from <b>your WineDNA</b> and <b>your rating history</b>.'],
+    [CARD_AT, CARD_AT + CARD_S, 'Why you\'ll like it, <b>from your own scores</b>.'],
+    [CARD_AT + CARD_S, CARD_AT + 2 * CARD_S, 'A <b>heads-up</b> before you pour.'],
+    [CARD_AT + 2 * CARD_S, CARD_AT + 3 * CARD_S, 'Where it\'s from, <b>in a few lines</b>.'],
+    [CARD_AT + 3 * CARD_S, CARD_AT + 4 * CARD_S, 'The story <b>behind the bottle</b>.'],
+    [CARD_AT + 4 * CARD_S, CARD_AT + 5 * CARD_S, 'What to <b>look for as you taste</b>.'],
+    [CARD_AT + 5 * CARD_S, CARD_AT + 6 * CARD_S, 'Lines to <b>say out loud</b>, like a sommelier.'],
+    [CARD_AT + 6 * CARD_S, CARD_AT + 7 * CARD_S, 'What it should <b>cost</b>, before you pay.'],
+    [RATE_AT + 0.4, SAVE_AT, 'Rate it. The fastest way to <b>sharpen your next match</b>.'],
+    [SAVE_AT, FIN_AT, 'Save it. Add what you <b>paid</b> and where you had it.'],
+    [FIN_AT + 0.4, LIST_AT, 'Then <b>keep learning</b>: quizzes and articles for this bottle.'],
+    [LIST_AT + 0.5, END_AT, 'And it\'s in <b>My Wines</b>, with your rating.'],
   ];
-  var END = 45, api = null, kind = null, lastP = -1, mountedAt = -1;
+  var api = null, kind = null, lastP = -1, tapped = false;
   function show(k) {
     if (kind === k) return;
     if (api) api.unmount();
@@ -137,12 +155,21 @@
   }
   function setP(p) { if (api && Math.abs(p - lastP) > 1e-4) { lastP = p; api.update(p); } }
 
-  // what the app shows, and how far through that demo it is, at each moment
+  /* What the app shows, and how far through that demo it is, at each moment. */
   function appAt(T) {
     if (T < 6.9) return null;
-    if (T < 20) return ['scan', T < 12 ? lerp(0, 0.28, ease(seg(T, 7.4, 11.8))) : lerp(0.3, 0.97, seg(T, 12.4, 19.6))];
-    if (T < 31) return ['rate', T < 25.8 ? lerp(0, 0.45, ease(seg(T, 20.8, 25.4))) : T < 27 ? 0.5 : lerp(0.74, 0.96, seg(T, 27.2, 30.6))];
-    return ['dna', T < 33.5 ? 0 : T < 36.6 ? 0.167 : 0.333];
+    if (T < CARD_AT - 0.2) return ['scan', lerp(0, 0.25, ease(seg(T, 7.4, 12.2)))];
+    if (T < RATE_AT) {
+      var i = Math.min(6, Math.floor((T - CARD_AT) / CARD_S)) + 1, u = ((T - CARD_AT) - (i - 1) * CARD_S) / CARD_S;
+      var lo = (i + 0.15) / 9, hi = (i + 0.85) / 9;
+      if (i === 6) { lo = 0.672; hi = 0.745; }                                  // short of the Blind Call's slice
+      return ['deck', lerp(lo, hi, ease(Math.min(1, Math.max(0, (u - 0.18) / 0.7))))];
+    }
+    if (T < LIST_AT - 0.2) {
+      var q = T < SAVE_AT - 1.0 ? lerp(0, 0.45, ease(seg(T, RATE_AT + 0.8, SAVE_AT - 1.2))) : T < SAVE_AT + 1.6 ? 0.5 : lerp(0.74, 0.96, seg(T, SAVE_AT + 1.8, FIN_AT - 0.4));
+      return ['rate', q];
+    }
+    return ['after', 0];
   }
 
   function render(T) {
@@ -152,18 +179,14 @@
     var steady = ease(seg(T, 3.2, 4.4)); // the hand settles as it lines up
     feedSvg.style.transform = 'translate(' + (wx * (1 - 0.7 * steady)) + 'px,' + (wy * (1 - 0.7 * steady)) + 'px) rotate(' + (wr * (1 - 0.7 * steady)) + 'deg) scale(' + push + ')';
     $('pill').textContent = T < 3.2 ? 'Frame the wine label' : 'Hold steady…';
-    // the corner brackets close in a touch as it locks on
     var inset = lerp(0, 8, steady);
-    document.getElementById('frame').style.transform = 'scale(' + (1 - inset / 340) + ')';
-    // a sweep down the label as it reads
+    $('frame').style.transform = 'scale(' + (1 - inset / 340) + ')';
     var sw = seg(T, 3.4, 5.0);
     $('scanline').style.opacity = sw > 0 && sw < 1 ? 1 : 0;
     $('scanline').style.top = (sw * 100) + '%';
-    // the shutter, the flash
     var press = ease(seg(T, 5.2, 5.35)) * (1 - ease(seg(T, 5.45, 5.65)));
     $('shutter').style.transform = 'scale(' + (1 - 0.1 * press) + ')';
     $('flash').style.opacity = (T > 5.3 && T < 5.9) ? 0.9 * (1 - seg(T, 5.3, 5.9)) : 0;
-    // "Analysing label…" until the match is ready
     var readIn = ease(seg(T, 5.4, 5.8)), readOut = ease(seg(T, 6.9, 7.4));
     read.style.opacity = readIn * (1 - readOut);
     $('sp').style.transform = 'rotate(' + (T * 360 / 0.85) + 'deg)';
@@ -173,10 +196,26 @@
     app.parentNode.querySelector('.statusbar').style.opacity = T < 7.2 ? 0 : 1;
     // the app's own screens
     var a = appAt(T);
-    if (a && api !== null || (a && window.VinterestDemo)) { show(a[0]); setP(a[1]); }
-    // a soft white between the app's demos
-    var f = Math.max(1 - Math.abs(T - 20.3) / 0.35, 1 - Math.abs(T - 31.2) / 0.35, 0);
-    fade.style.opacity = f > 0 ? 0.0 : 0;
+    if (a && window.VinterestDemo) { show(a[0]); setP(a[1]); }
+    // "Finished: what's next?", tapped once the extras are on screen; then the rating's own options
+    if (T >= FIN_AT && T < LIST_AT && !tapped && kind === 'rate') {
+      tapped = true;
+      ScanFlow.unlockLearning(Object.assign({}, DemoPersona.user.scanned, { confidence: 'high' }));
+      _until(function () { return _tapText(app, /^Finished: what/); }, 40);
+    }
+    if (T >= FIN_AT && T < LIST_AT && kind === 'rate') setP(lerp(0.96, 1, seg(T, FIN_AT + 2, LIST_AT - 0.6)));
+    // a quick wash of white across each change of screen, where the next one is drawn
+    var cuts = [CARD_AT - 0.2, RATE_AT, LIST_AT - 0.2];
+    var f = 0; cuts.forEach(function (c) { f = Math.max(f, 1 - Math.abs(T - c) / 0.2); });
+    fade.style.opacity = f > 0 ? f : 0;
+    // the new bottle, picked out in My Wines
+    if (kind === 'after') {
+      // the first "Viña Ardanza Reserva" in the list is the new 2020: climb from its name to the row that spans the screen
+      var row = _findText(app, /^Viña Ardanza Reserva$/), card = row;
+      while (card && card.parentElement && card.getBoundingClientRect().width < app.getBoundingClientRect().width * 0.9) card = card.parentElement;
+      if (card && card !== window.__hl) { if (window.__hl) window.__hl.style.boxShadow = ''; window.__hl = card; }
+      if (window.__hl) { window.__hl.style.boxShadow = 'inset 0 0 0 3px rgba(139,26,47,' + (0.55 + 0.35 * Math.sin(T * 5)) + ')'; window.__hl.style.background = 'rgba(139,26,47,.06)'; }
+    }
     // captions
     var c = CAPS.filter(function (x) { return T >= x[0] && T < x[1]; })[0];
     var capEl = $('cap');
@@ -186,12 +225,12 @@
       capEl.style.opacity = o; capEl.style.transform = 'translateY(' + (1 - o) * 6 + 'px)';
     } else capEl.style.opacity = 0;
     // end card
-    $('end').style.opacity = ease(seg(T, 41.6, 42.6));
-    phoneEl.style.opacity = 1 - ease(seg(T, 41.6, 42.4));
+    $('end').style.opacity = ease(seg(T, END_AT + 0.4, END_AT + 1.4));
+    phoneEl.style.opacity = 1 - ease(seg(T, END_AT + 0.4, END_AT + 1.2));
   }
 
   var T0 = null, STARTED = false, MANUAL = null;
-  window.__ready = function () { return !!window.VinterestDemo; };
+  window.__ready = function () { return !!window.VinterestDemo && !!ARD; };
   window.__start = function () { STARTED = true; T0 = performance.now(); };
   window.__setT = function (t) { MANUAL = t; };
   window.__END = END;

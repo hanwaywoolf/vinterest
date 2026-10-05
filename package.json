@@ -16,7 +16,8 @@
     "sample:onboarding": "npm run build && node scripts/onboarding-sample.mjs",
     "icons": "node scripts/app-icons.mjs",
     "map": "node scripts/world-map.mjs",
-    "site:video": "node scripts/site-video.mjs"
+    "site:video": "node scripts/site-video.mjs",
+    "film:capture": "node scripts/film-capture.mjs"
   },
   "keywords": [
     "wine",
