@@ -226,7 +226,7 @@ const _DEMO_SCREENS = {
     { at: 0.32, to: '[data-section="taste"]', drift: 0.55, ms: 7500 },
     { at: 0.4, to: '[data-section="value"]', drift: 0.35, ms: 6500 },
     { at: 0.48, to: '[data-section="explore"]', drift: 0.45, ms: 7500 },
-    { at: 0.56, to: '[data-section="scripts"]', drift: 0.35, ms: 7500 },
+    { at: 0.56, to: '[data-section="scripts"]', drift: 0.12, ms: 7500 },
     { at: 0.64, to: 'top', drift: 0.1, ms: 6000, do: [{ tap: /^White$/ }] },
     { at: 0.72, to: 'top', drift: 0.75, ms: 7500 },
     { at: 0.8, to: '[data-section="taste"]', drift: 0.55, ms: 7500 },
@@ -450,7 +450,9 @@ const VinterestDemo = {
       if (!to || to === 'top') return 0;
       const target = typeof to === 'string' ? root.querySelector(to) : _findText(root, to);
       if (!target) return null;
-      return Math.max(0, target.getBoundingClientRect().top - sc.getBoundingClientRect().top + sc.scrollTop - 10);
+      // The phone is drawn scaled (the website's phones, the films), so a distance on screen is `k` times the scroller's own pixels.
+      const sr = sc.getBoundingClientRect(), k = sr.height && sc.clientHeight ? sr.height / sc.clientHeight : 1;
+      return Math.max(0, (target.getBoundingClientRect().top - sr.top) / k + sc.scrollTop - 10);
     };
     let stepAt = -1, live = [], driftRaf = 0;
     const stopAll = () => { live.splice(0).forEach((f) => f()); cancelAnimationFrame(driftRaf); driftRaf = 0; glide.stop(); };
