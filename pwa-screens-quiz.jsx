@@ -208,6 +208,23 @@ function QuizHubScreen({nav,back,showPro}){
             <div style={{height:'100%',borderRadius:4,background:level.color,width:`${Math.round(prog*100)}%`,transition:'width .6s ease'}}/>
           </div>
         </div>
+        {/* Mastery, one tap from the top of Learn: their knowledge in a ring, and where to start. */}
+        <div role="button" tabIndex={0} data-testid="learn-mastery-link" onClick={()=>isPro?nav('mastery-map'):showPro('mastery-map')}
+          onKeyDown={e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); isPro?nav('mastery-map'):showPro('mastery-map'); } }}
+          style={{display:'flex',alignItems:'center',gap:10,marginBottom:12,padding:'8px 12px 8px 8px',borderRadius:12,background:'#FBF8F3',border:`1px solid ${C.line}`,cursor:'pointer'}}>
+          <svg width="34" height="34" viewBox="-17 -17 34 34" aria-hidden="true" style={{flexShrink:0}}>
+            <circle r="13" fill="none" stroke={SKETCH_PENCIL} strokeWidth="2.5"/>
+            <circle r="13" fill="none" stroke={C.cr} strokeWidth="3" strokeLinecap="round" transform="rotate(-90)"
+              strokeDasharray={2*Math.PI*13} strokeDashoffset={2*Math.PI*13*(1-Math.min(100,knowledge.overall)/100)}/>
+            <text y="3.5" textAnchor="middle" style={{fontSize:'9px',fontWeight:800,fill:C.ink,fontFamily:C.P}}>{knowledge.overall}%</text>
+          </svg>
+          <div style={{flex:1,minWidth:0}}>
+            <div style={{fontSize:15,fontWeight:700,color:C.ink,fontFamily:C.P}}>Your Mastery <span style={{fontWeight:500,color:C.mid}}>· {knowledge.level}</span></div>
+            <div style={{fontSize:13,color:C.mid,fontFamily:C.P,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{knowledge.gap?`Start here: ${knowledge.gap.label}`:'Your shape, grapes, wine map and palate'}</div>
+          </div>
+          {!isPro&&<ProBadge/>}
+          <Icon n="chevron" sz={13} col={C.mid}/>
+        </div>
       </div>
 
       <div style={{flex:1,overflowY:'auto'}}>
