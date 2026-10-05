@@ -216,6 +216,22 @@ const _DEMO_SCREENS = {
     { at: 0.667, to: '[data-section="explore"]', drift: 0.3 },
     { at: 0.833, to: '[data-section="scripts"]', drift: 0.4 },
   ] },
+  // WineDNA for the film (site/video/winedna-demo.html): red from the top down, then a tap on White and the same for it. One part per
+  // beat; the film moves p to a part's `at` when its time comes.
+  dnafilm: { nav: 'profile', Screen: WineDNAScreen, steps: [
+    { at: 0, to: 'top', drift: 0.12, ms: 6000 },
+    { at: 0.08, to: 'top', drift: 0.75, ms: 7500 },
+    { at: 0.16, to: '[data-section="knows"]', drift: 0.3, ms: 7000 },
+    { at: 0.24, to: '[data-section="house"]', drift: 0.3, ms: 6500 },
+    { at: 0.32, to: '[data-section="taste"]', drift: 0.55, ms: 7500 },
+    { at: 0.4, to: '[data-section="value"]', drift: 0.35, ms: 6500 },
+    { at: 0.48, to: '[data-section="explore"]', drift: 0.45, ms: 7500 },
+    { at: 0.56, to: '[data-section="scripts"]', drift: 0.35, ms: 7500 },
+    { at: 0.64, to: 'top', drift: 0.1, ms: 6000, do: [{ tap: /^White$/ }] },
+    { at: 0.72, to: 'top', drift: 0.75, ms: 7500 },
+    { at: 0.8, to: '[data-section="taste"]', drift: 0.55, ms: 7500 },
+    { at: 0.88, to: '[data-section="explore"]', drift: 0.45, ms: 7500 },
+  ] },
   home: { nav: 'home', Screen: HomeScreen },
   // My Wines as the visitor's own rating left it: nothing is reset, so the bottle rated in the demo before is in the list (the film).
   after: { nav: 'mywines', Screen: MyWinesScreen, keepStore: true },
