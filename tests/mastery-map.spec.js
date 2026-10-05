@@ -477,7 +477,8 @@ test('the wine map names countries zoomed out and regions zoomed in, readable an
   const labels = (kind) => map.locator(`text[data-label="${kind}"]`).evaluateAll((els) => els.map((e) => { const r = e.getBoundingClientRect(); return { t: e.textContent, x0: r.left, x1: r.right, y0: r.top, y1: r.bottom, h: r.height }; }));
   const clear = (ls) => ls.every((a, i) => ls.every((b, j) => i === j || a.x1 <= b.x0 + 1 || b.x1 <= a.x0 + 1 || a.y1 <= b.y0 + 1 || b.y1 <= a.y0 + 1));
   const countries = await labels('country');
-  for (const c of ['FRANCE', 'SPAIN', 'ITALY', 'PORTUGAL']) expect(countries.map((l) => l.t)).toContain(c);
+  // Only the major wine countries: the five with the most regions, nothing else.
+  expect(countries.map((l) => l.t).sort()).toEqual(['FRANCE', 'GERMANY', 'ITALY', 'PORTUGAL', 'SPAIN']);
   expect(Math.min(...countries.map((l) => l.h))).toBeGreaterThan(9);
   expect(clear(countries)).toBe(true);
   expect(await labels('region')).toEqual([]);
