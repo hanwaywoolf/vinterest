@@ -44,4 +44,4 @@ screens-*.jsx
 /site-dist/
 
 # Rendered films (npm run site:video)
-video/
+/video/
