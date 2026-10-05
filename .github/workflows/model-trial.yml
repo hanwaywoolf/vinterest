@@ -1,0 +1,49 @@
+# Runs scripts/model-trial.mjs on GitHub's machines, so a model can be compared from any device
+# (a Chromebook, a phone): Actions → Model trial → Run workflow. The report is on the run's page
+# (its summary) and kept as the "model-trial" artifact. Every call is a real, billed Claude call
+# (about 16 for the defaults).
+name: Model trial
+on:
+  workflow_dispatch:
+    inputs:
+      b:
+        description: Deployment to try (a preview with CLAUDE_MODEL set)
+        default: https://claude-sleepy-shannon-61xvx1.vinterest.pages.dev
+      a:
+        description: Deployment to compare against
+        default: https://vinterest.pages.dev
+      runs:
+        description: Runs per request
+        default: '2'
+      image_url:
+        description: Optional link to a photo of a wine label, to include a label scan
+        default: ''
+jobs:
+  trial:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Fetch the label photo
+        if: inputs.image_url != ''
+        run: curl -sSfL "$IMAGE_URL" -o label.jpg
+        env:
+          IMAGE_URL: ${{ inputs.image_url }}
+      - name: Run the trial
+        run: |
+          IMG=""; [ -f label.jpg ] && IMG="--image label.jpg"
+          node scripts/model-trial.mjs --a "$A" --b "$B" --runs "$RUNS" $IMG
+          cat model-trial.md >> "$GITHUB_STEP_SUMMARY"
+        env:
+          A: ${{ inputs.a }}
+          B: ${{ inputs.b }}
+          RUNS: ${{ inputs.runs }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: model-trial
+          path: model-trial.md
+          if-no-files-found: ignore
