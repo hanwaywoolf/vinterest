@@ -142,6 +142,28 @@ const _articleStub = () => ({ ...DemoPersona.slides.article, id: 'demo-article' 
 /* The bottle whose details the My Wines demo opens: their best-loved Rioja. */
 const _detailWine = () => WineHistory.getAll().find((w) => /Ardanza/i.test(w.name));
 
+/* The wine list the dinner-table film scans: what Claude would read off a restaurant's list (name, type,
+   region, price, main grape, and style as three digits for body, tannins and acidity, 1 to 9). The
+   best match for the sample user, a classic Rioja Reserva, is first and inside their usual spend. */
+const _FILM_LIST = [
+  { name: 'Contino Reserva', type: 'red', region: 'Rioja', country: 'Spain', vintage: 2017, price: 'BOTTLE:44', grape: 'Tempranillo', style: '656' },
+  { name: 'Barolo Serralunga', type: 'red', region: 'Piedmont', country: 'Italy', vintage: 2018, price: 'BOTTLE:78', grape: 'Nebbiolo', style: '887' },
+  { name: 'Pouilly-Fuissé', type: 'white', region: 'Burgundy', country: 'France', vintage: 2021, price: 'BOTTLE:62', grape: 'Chardonnay', style: '616' },
+  { name: 'Chianti Classico Riserva', type: 'red', region: 'Tuscany', country: 'Italy', vintage: 2019, price: 'BOTTLE:55', grape: 'Sangiovese', style: '677' },
+  { name: 'Cloudy Bay Sauvignon Blanc', type: 'white', region: 'Marlborough', country: 'New Zealand', vintage: 2023, price: 'BOTTLE:49', grape: 'Sauvignon Blanc', style: '418' },
+  { name: 'Châteauneuf-du-Pape', type: 'red', region: 'Rhône Valley', country: 'France', vintage: 2019, price: 'BOTTLE:84', grape: 'Grenache', style: '765' },
+  { name: 'Champagne Brut', type: 'sparkling', region: 'Champagne', country: 'France', vintage: null, price: 'BOTTLE:95', grape: 'Chardonnay', style: '518' },
+  { name: 'Pinot Noir', type: 'red', region: 'Burgundy', country: 'France', vintage: 2020, price: 'BOTTLE:72', grape: 'Pinot Noir', style: '667' },
+  { name: 'Malbec Reserva', type: 'red', region: 'Mendoza', country: 'Argentina', vintage: 2020, price: 'BOTTLE:46', grape: 'Malbec', style: '865' },
+  { name: 'Rosé de Provence', type: 'rosé', region: 'Provence', country: 'France', vintage: 2023, price: 'BOTTLE:42', grape: 'Grenache', style: '316' },
+];
+/* The scan result for that list's best match, as it opens when it's picked. */
+function _filmResult() {
+  DemoPersona.reset();
+  const { style, grape, ...wine } = TasteMatch.fromListEntry(_FILM_LIST[0]);
+  Handoff.openWine({ wine: { ...wine, confidence: 'high' }, source: 'camera', tracked: true, view: 'result' });
+}
+
 /* Which nav tab is lit under each screen, as in the app.
    A demo is one screen, or several stacked as `layers` (only one is shown at a time). `steps` say what
    each part of the demo (a caption) shows, from p = `at`: which layer, where it scrolls to (`to`: 'top', a
@@ -182,6 +204,19 @@ const _DEMO_SCREENS = {
     { at: 0.4, layer: 'hub', to: /^region quizzes$/i, drift: 0.5, ms: 6000 },
     { at: 0.6, layer: 'article', to: 'top', drift: 0.9, ms: 14000 },
     { at: 0.8, layer: 'mastery', to: 'top', drift: 0.6, ms: 10000 },
+  ] },
+  // The dinner-table film (site/video): the scanned wine list sorted by match, the best match, and the
+  // sommelier script. Driven from outside by update(p): 0 the list, .17 sorted by match, .34 the result, .67 the script.
+  // The result comes first so its setup (which resets the store) runs before the list's.
+  film: { nav: 'scan', layers: [
+    { id: 'result', nav: 'scan', Screen: ScanCardsScreen, setup() { _filmResult(); } },
+    { id: 'list', nav: 'scan', Screen: WineListScreen, setup() { Handoff.wineList.set({ demo: false, wines: _FILM_LIST, currency: 'GBP' }); } },
+    { id: 'script', nav: 'profile', Screen: WineDNAScreen },
+  ], steps: [
+    { at: 0, layer: 'list', to: 'top' },
+    { at: 0.17, layer: 'list', to: 'top', drift: 0.25, ms: 3000, do: [{ layer: 'list', tap: /Sort: Match Rate/ }] },
+    { at: 0.34, layer: 'result', to: 'top', drift: 0.5, ms: 3800 },
+    { at: 0.67, layer: 'script', to: '[data-section="scripts"]' },
   ] },
   // The front page's carousel: one screen for each thing the app does.
   hero: { nav: 'scan', layers: [

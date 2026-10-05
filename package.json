@@ -13,7 +13,8 @@
     "site:capture": "node scripts/site-capture.mjs",
     "site:og": "node scripts/site-og.mjs",
     "site:serve": "npm run site:build && node scripts/serve.mjs site-dist 4175",
-    "sample:onboarding": "npm run build && node scripts/onboarding-sample.mjs"
+    "sample:onboarding": "npm run build && node scripts/onboarding-sample.mjs",
+    "site:video": "node scripts/site-video.mjs"
   },
   "keywords": [
     "wine",
