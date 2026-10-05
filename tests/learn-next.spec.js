@@ -112,7 +112,7 @@ test('"buy again" is used: WineDNA shortlist, the match reasons and the sommelie
   });
   expect(reason).toContain('would buy again');
   await page.goto(`${BASE}/?demo=1#profile`);
-  await expect(page.locator('#root')).toContainText('Worth buying again');
+  await expect(page.locator('#root')).toContainText('Your “House” Wines');
   await expect(page.locator('#root')).toContainText('Banda Azul Rioja');
   expect(prompts.some((p) => p.includes('Banda Azul Rioja') && p.includes('would buy again'))).toBe(true);
 });

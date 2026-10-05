@@ -10,7 +10,6 @@
 //   site/_worker.js                             the beta sign-up endpoint (/api/beta), then static assets
 //
 // Settings (Cloudflare Pages build variables, all optional):
-//   SITE_APP_URL          where "Try the web app" points (default /test)
 //   CF_ANALYTICS_TOKEN    Cloudflare Web Analytics token; without it no analytics script is added
 //   SITE_ORIGIN           the site's public address, for share cards and the sitemap (default https://vinterest.app)
 import * as esbuild from 'esbuild';
@@ -95,7 +94,6 @@ async function build() {
   const token = process.env.CF_ANALYTICS_TOKEN;
   const vars = {
     ORIGIN: origin,
-    APP_URL: process.env.SITE_APP_URL || '/test',
     CSS_V: hash(css), JS_V: hash(js), DEMO_V: hash(demo),
     ANALYTICS: token
       ? `<script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "${token}"}'></script>`

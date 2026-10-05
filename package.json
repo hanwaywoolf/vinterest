@@ -15,7 +15,8 @@
     "site:serve": "npm run site:build && node scripts/serve.mjs site-dist 4175",
     "sample:onboarding": "npm run build && node scripts/onboarding-sample.mjs",
     "icons": "node scripts/app-icons.mjs",
-    "map": "node scripts/world-map.mjs"
+    "map": "node scripts/world-map.mjs",
+    "site:video": "node scripts/site-video.mjs"
   },
   "keywords": [
     "wine",

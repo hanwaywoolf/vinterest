@@ -124,6 +124,40 @@ function _openScan(view, unlock) {
   Handoff.openWine({ wine, source: 'camera', tracked: true, view });
 }
 
+/* The Mastery demo's sample user: a drinker twelve bottles in who has studied a fair bit. Their wines have
+   opened their grapes and regions, the question banks Claude wrote for those (captured once, like the rest)
+   are in, and they have answered a good share of each. A snapshot from five weeks ago, lower, gives the
+   radar its dashed "where you were" outline. Done in this demo's own setup, after DemoPersona.reset(), so the
+   other demos' stores (the Keep learning tiles, the Learn hub) are untouched. */
+function _seedMastery() {
+  try {
+    const banks = _DEMO_CAPTURED.banks || {};
+    Object.keys(banks).forEach((k) => Store.set(k, banks[k]));
+    WineHistory.getAll().forEach((w) => { try { ScanFlow.unlockLearning({ ...w, confidence: 'high' }); } catch (e) { /* the rest still shows */ } });
+    const answer = (setId, pool, n) => (pool || []).slice(0, n).forEach((q) => QuizMastery.recordAnswer(setId, q.q, true));
+    [['Tempranillo', 13], ['Grenache', 9], ['Syrah', 8], ['Malbec', 6], ['Nebbiolo', 3]].forEach(([g, n]) => answer('grape:' + g, grapeQuizBank(g), n));
+    [['Rioja', 14], ['Rhône Valley', 9], ['Mendoza', 7], ['Piedmont', 3]].forEach(([r, n]) => answer(RegionQuizBank.setId(r), RegionQuizBank.get(r), n));
+    [['red_grapes', 14], ['white_grapes', 6], ['rose', 3], ['sparkling', 5]].forEach(([t, n]) => answer('topic:' + t, QuizMastery.topicPool(t), n));
+    _loadJSON('data/onramp.json').slice(0, 4).forEach((a) => Store.set('vinterest_' + a.id + '_done', '1'));
+    // Seven Blind Calls, close to each label's profile but calling the tannins a little grippier, so the palate
+    // has a score, a bar per axis and a habit to show. The accuracy is worked out as the app does.
+    const off = [[0.04, -0.06, 0.15], [-0.05, 0.05, 0.2], [0.08, 0.03, 0.12], [-0.03, -0.04, 0.17], [0.06, 0.07, 0.1], [0.02, -0.02, 0.18], [-0.06, 0.04, 0.14]];
+    WineHistory.getAll().filter((w) => typeof w.body === 'number').slice(0, 7).forEach((w, i) => {
+      const o = off[i], c = (v) => Math.max(0, Math.min(1, v));
+      const guess = { body: c(w.body + o[0]), acidity: c(w.acidity + o[1]), tannins: c(w.tannins + o[2]) };
+      const miss = ['body', 'acidity', 'tannins'].map((k) => Math.abs(guess[k] - w[k]));
+      const accuracy = Math.max(0, 1 - (miss[0] + miss[1] + miss[2]) / 3 * 1.6);
+      ScanFlow.saveBlindResult(w, { accuracy, amount: Math.round(accuracy * 40), guess });
+    });
+    // Grapes as the list of red grapes, so the demo names each one with its progress.
+    Device.setMasteryView({ grapes: 'list', grapeSkin: 'red' });
+    const m = KnowledgeMap.compute(WineHistory.getAll()), then = Date.now() - 35 * 864e5, a = {};
+    m.areas.forEach((x) => { a[x.id] = Math.round(x.score * 0.55); });
+    Store.setJSON(KnowledgeMap.HISTORY_KEY, { [KnowledgeMap._week(then)]: { t: then, o: Math.round(m.overall * 0.55), a } });
+    KnowledgeMap.note(m);
+  } catch (e) { /* the demo still draws, with an emptier map */ }
+}
+
 /* The sample user has done some studying, so the Mastery map and the Learn tab look lived in: most of
    the red Wine Basics quiz and a few articles read. Done here, after every module has loaded, and
    folded into the seeded store (DemoPersona.rebase), so each demo's reset keeps it. */
@@ -141,6 +175,28 @@ function _openScan(view, unlock) {
 const _articleStub = () => ({ ...DemoPersona.slides.article, id: 'demo-article' });
 /* The bottle whose details the My Wines demo opens: their best-loved Rioja. */
 const _detailWine = () => WineHistory.getAll().find((w) => /Ardanza/i.test(w.name));
+
+/* The wine list the dinner-table film scans: what Claude would read off a restaurant's list (name, type,
+   region, price, main grape, and style as three digits for body, tannins and acidity, 1 to 9). The
+   best match for the sample user, a classic Rioja Reserva, is first and inside their usual spend. */
+const _FILM_LIST = [
+  { name: 'Contino Reserva', type: 'red', region: 'Rioja', country: 'Spain', vintage: 2017, price: 'BOTTLE:44', grape: 'Tempranillo', style: '656' },
+  { name: 'Barolo Serralunga', type: 'red', region: 'Piedmont', country: 'Italy', vintage: 2018, price: 'BOTTLE:78', grape: 'Nebbiolo', style: '887' },
+  { name: 'Pouilly-Fuissé', type: 'white', region: 'Burgundy', country: 'France', vintage: 2021, price: 'BOTTLE:62', grape: 'Chardonnay', style: '616' },
+  { name: 'Chianti Classico Riserva', type: 'red', region: 'Tuscany', country: 'Italy', vintage: 2019, price: 'BOTTLE:55', grape: 'Sangiovese', style: '677' },
+  { name: 'Cloudy Bay Sauvignon Blanc', type: 'white', region: 'Marlborough', country: 'New Zealand', vintage: 2023, price: 'BOTTLE:49', grape: 'Sauvignon Blanc', style: '418' },
+  { name: 'Châteauneuf-du-Pape', type: 'red', region: 'Rhône Valley', country: 'France', vintage: 2019, price: 'BOTTLE:84', grape: 'Grenache', style: '765' },
+  { name: 'Champagne Brut', type: 'sparkling', region: 'Champagne', country: 'France', vintage: null, price: 'BOTTLE:95', grape: 'Chardonnay', style: '518' },
+  { name: 'Pinot Noir', type: 'red', region: 'Burgundy', country: 'France', vintage: 2020, price: 'BOTTLE:72', grape: 'Pinot Noir', style: '667' },
+  { name: 'Malbec Reserva', type: 'red', region: 'Mendoza', country: 'Argentina', vintage: 2020, price: 'BOTTLE:46', grape: 'Malbec', style: '865' },
+  { name: 'Rosé de Provence', type: 'rosé', region: 'Provence', country: 'France', vintage: 2023, price: 'BOTTLE:42', grape: 'Grenache', style: '316' },
+];
+/* The scan result for that list's best match, as it opens when it's picked. */
+function _filmResult() {
+  DemoPersona.reset();
+  const { style, grape, ...wine } = TasteMatch.fromListEntry(_FILM_LIST[0]);
+  Handoff.openWine({ wine: { ...wine, confidence: 'high' }, source: 'camera', tracked: true, view: 'result' });
+}
 
 /* Which nav tab is lit under each screen, as in the app.
    A demo is one screen, or several stacked as `layers` (only one is shown at a time). `steps` say what
@@ -175,13 +231,34 @@ const _DEMO_SCREENS = {
   learn: { nav: 'learn', layers: [
     { id: 'hub', Screen: LearnScreen },
     { id: 'article', Screen: GenArticleScreen, setup() { Handoff.genArticle.set(_articleStub()); } },
-    { id: 'mastery', Screen: MasteryMapScreen },
   ], steps: [
     { at: 0, layer: 'hub', to: 'top', drift: 0.4, ms: 6000 },
-    { at: 0.2, layer: 'hub', to: /^wine basics$/i, drift: 0.4, ms: 6000 },
-    { at: 0.4, layer: 'hub', to: /^region quizzes$/i, drift: 0.5, ms: 6000 },
-    { at: 0.6, layer: 'article', to: 'top', drift: 0.9, ms: 14000 },
-    { at: 0.8, layer: 'mastery', to: 'top', drift: 0.6, ms: 10000 },
+    { at: 0.25, layer: 'hub', to: /^wine basics$/i, drift: 0.4, ms: 6000 },
+    { at: 0.5, layer: 'hub', to: /^region quizzes$/i, drift: 0.5, ms: 6000 },
+    { at: 0.75, layer: 'article', to: 'top', drift: 0.9, ms: 14000 },
+  ] },
+  // The dinner-table film (site/video): the scanned wine list sorted by match, the best match, and the
+  // sommelier script. Driven from outside by update(p): 0 the list, .17 sorted by match, .34 the result, .67 the script.
+  // The result comes first so its setup (which resets the store) runs before the list's.
+  film: { nav: 'scan', layers: [
+    { id: 'result', nav: 'scan', Screen: ScanCardsScreen, setup() { _filmResult(); } },
+    { id: 'list', nav: 'scan', Screen: WineListScreen, setup() { Handoff.wineList.set({ demo: false, wines: _FILM_LIST, currency: 'GBP' }); } },
+    { id: 'script', nav: 'profile', Screen: WineDNAScreen },
+  ], steps: [
+    { at: 0, layer: 'list', to: 'top' },
+    { at: 0.17, layer: 'list', to: 'top', drift: 0.25, ms: 3000, do: [{ layer: 'list', tap: /Sort: Match Rate/ }] },
+    { at: 0.34, layer: 'result', to: 'top', drift: 0.5, ms: 3800 },
+    { at: 0.67, layer: 'script', to: '[data-section="scripts"]' },
+  ] },
+  // The Mastery section: the whole picture (overall and the radar), the grapes, the regions (the wine map)
+  // and the palate. One layer only, so its setup can build the study history; the parts scroll and open.
+  mastery: { nav: 'learn', layers: [
+    { id: 'map', nav: 'learn', Screen: MasteryMapScreen, setup() { _seedMastery(); } },
+  ], steps: [
+    { at: 0, layer: 'map', to: 'top', drift: 0.4, ms: 7000 },
+    { at: 0.25, layer: 'map', to: /^your grapes$/i, drift: 0.05, ms: 4000 }, // shown as the red-grape list (_seedMastery), so each grape is named
+    { at: 0.5, layer: 'map', to: /^your wine map$/i, drift: 0.04, ms: 4000 },
+    { at: 0.75, layer: 'map', to: /^your palate$/i, drift: 0.04, ms: 4000 },
   ] },
   // The front page's carousel: one screen for each thing the app does.
   hero: { nav: 'scan', layers: [
@@ -378,6 +455,7 @@ const VinterestDemo = {
       (st.do || []).forEach((a) => {
         const root = layerEl(a.layer);
         if (a.type) typeInto(root, a.type[0], a.type[1]);
+        else if (a.open) [].concat(a.open).forEach((sel) => live.push(_until(() => { const t = root.querySelector(sel + ' [role="button"]'); if (!t) return false; t.click(); return true; }, 40)));
         else if (a.vinny) {
           const t0 = performance.now(), MS = 9000;
           const go = (now) => { const q = Math.min(1, (now - t0) / MS) * 0.92; _heroVinny.p = q; if (_heroVinny.set) _heroVinny.set(q); if (q < 0.92) driftRaf = requestAnimationFrame(go); };
