@@ -44,6 +44,53 @@ const _TYPES=[
   {key:'fortified', label:'Fortified',tab:'Fortified',col:'#5C2A1E'},
 ];
 
+/* How well the match knows them (TasteMatch.calibration): how often it lands close to the score
+   they gave, a strip of every scored wine by how far off it was, which way it leans, and their
+   biggest surprises either way, each opening the wine. */
+function _KnowsCard({k,t,tLabel,openWine}){
+  const card={padding:14};
+  if(!k.ready) return <Card style={card}><div style={{fontSize:15,color:C.ink2,fontFamily:C.P,lineHeight:1.55}}>
+    Each time you scan, we predict the score you'll give a bottle. Score {WineDNA.noun(t.key,k.need)} more and this will show how close those predictions come, and which bottles surprised you.</div></Card>;
+  const head=k.level==='well'?`We know your ${tLabel} well`:k.level==='getting'?`We're getting to know your ${tLabel}`:`Your ${tLabel} still surprise us`;
+  const W=300, H=46, span=15, x=d=>W/2+Math.max(-span,Math.min(span,d))/span*(W/2-10);
+  const lane={};
+  const Surprise=({r,up})=><div role="button" onClick={()=>openWine(r.wine)} style={{display:'flex',alignItems:'center',gap:10,padding:'9px 0',borderTop:`1px solid ${C.line}`,cursor:'pointer'}}>
+    <div style={{flex:1,minWidth:0}}>
+      <div style={{fontSize:15,fontWeight:600,color:C.ink,fontFamily:C.P,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{WineDNA.nameYear(r.wine)}</div>
+      <div style={{fontSize:13,color:C.mid,fontFamily:C.P,lineHeight:1.4}}>Your other {tLabel} pointed to about {r.expected}; you gave it {r.actual}.</div>
+    </div>
+    <span style={{fontSize:14,fontWeight:800,color:up?C.green:'#B04A3A',fontFamily:C.P,whiteSpace:'nowrap'}}>{up?'+':''}{r.diff}</span>
+  </div>;
+  return <Card style={card}>
+    <div data-testid="knows" style={{display:'flex',flexDirection:'column',gap:8}}>
+      <div style={{fontSize:17,fontWeight:700,color:C.ink,fontFamily:C.P}}>{head}</div>
+      <div style={{fontSize:15,color:C.ink2,fontFamily:C.P,lineHeight:1.5}}>
+        We matched each of your {k.n} scored {tLabel} again from your other {tLabel} alone. The expected score landed within {TasteMatch.CAL_CLOSE} points of yours <b>{k.close} times in {k.n}</b>, and within 5 points {k.near} times.
+      </div>
+      <svg viewBox={`0 0 ${W} ${H+18}`} width="100%" role="img" aria-label={`How far each prediction was from your score: ${k.close} of ${k.n} within ${TasteMatch.CAL_CLOSE} points.`} style={{display:'block',maxWidth:420}}>
+        <rect x={x(-TasteMatch.CAL_CLOSE)} y="4" width={x(TasteMatch.CAL_CLOSE)-x(-TasteMatch.CAL_CLOSE)} height={H-8} rx="6" fill={C.greenBg}/>
+        <line x1={W/2} y1="2" x2={W/2} y2={H-2} stroke={C.green} strokeWidth="1.5"/>
+        <line x1="10" y1={H/2} x2={W-10} y2={H/2} stroke={C.line} strokeWidth="1"/>
+        {k.rows.map((r,i)=>{ const cx=Math.round(x(r.diff)/6); const n=lane[cx]=(lane[cx]||0)+1; const y=H/2+((n%2?-1:1)*Math.floor(n/2))*6.5;
+          return <circle key={i} cx={x(r.diff)} cy={Math.max(6,Math.min(H-6,y))} r="3.6" fill={Math.abs(r.diff)<=TasteMatch.CAL_CLOSE?C.green:r.diff>0?t.col:'#B9AFA4'} opacity="0.85"/>; })}
+        <text x="10" y={H+14} style={{fontSize:'11px',fill:C.mid,fontFamily:C.P}}>You scored lower</text>
+        <text x={W/2} y={H+14} textAnchor="middle" style={{fontSize:'11px',fontWeight:700,fill:C.green,fontFamily:C.P}}>spot on</text>
+        <text x={W-10} y={H+14} textAnchor="end" style={{fontSize:'11px',fill:C.mid,fontFamily:C.P}}>You scored higher</text>
+      </svg>
+      {Math.abs(k.bias)>=2&&<div style={{fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.5}}>{k.bias>0?`You tend to score a little above what we expect (by about ${Math.round(k.bias)}): your ${tLabel} keep pleasing you more than your history says.`:`You tend to score a little below what we expect (by about ${Math.round(-k.bias)}): you're getting harder to impress.`}</div>}
+      {k.above.length>0&&<div data-testid="knows-above">
+        <div style={{fontSize:13,fontWeight:700,color:C.ink,fontFamily:C.P,marginTop:4,marginBottom:2}}>Loved more than we expected</div>
+        <div style={{fontSize:13,color:C.mid,fontFamily:C.P,lineHeight:1.45,marginBottom:2}}>Surprises like these are where your taste is growing: worth a closer look at what they have that your usual bottles don't.</div>
+        {k.above.map((r,i)=><Surprise key={i} r={r} up/>)}
+      </div>}
+      {k.below.length>0&&<div data-testid="knows-below">
+        <div style={{fontSize:13,fontWeight:700,color:C.ink,fontFamily:C.P,marginTop:4,marginBottom:2}}>Let you down</div>
+        {k.below.map((r,i)=><Surprise key={i} r={r}/>)}
+      </div>}
+    </div>
+  </Card>;
+}
+
 /* Collapsible section header — collapsed state shows a short useful summary + expand CTA below the title */
 function CSH({label,cKey,collapsed,toggle,summary}){
   const isC=collapsed[cKey];
@@ -220,7 +267,8 @@ function WineDNAScreen({nav,back,showPro}){
     const topNotes=_topNotes(p.wines,14);
     const explore=ExploreNext.suggest(tp.key,allWines,tp.label);
     const topWines=[...p.scored].sort((a,b)=>b.rating-a.rating).slice(0,3);
-    return{...tp,...p,pct,topNotes,noteClusters:_clusterNotes(topNotes),explore,topWines};
+    const knows=TasteMatch.calibration(tp.key,allWines);
+    return{...tp,...p,pct,topNotes,noteClusters:_clusterNotes(topNotes),explore,topWines,knows};
   }),[sig]);
 
   const t=typeStats[typeIdx];
@@ -441,25 +489,29 @@ function WineDNAScreen({nav,back,showPro}){
           </Card>;
         })()}
 
-        {/* ── Buy Again: their own shortlist (What You Love's findings now feed the summary at the top) ── */}
-        {fav.buyAgain.length>0&&<CSH label="Buy Again" cKey="buyagain" collapsed={collapsed} toggle={toggle} summary={`${fav.buyAgain.length===1?'One bottle':`${fav.buyAgain.length} bottles`} you said you'd buy again, led by ${fav.buyAgain[0].name}.`}/>}
-        {fav.buyAgain.length>0&&!collapsed.buyagain&&(
-          <Card style={{padding:14}}>
-            {fav.buyAgain.length>0&&(
-              <div>
-                <div style={{fontSize:13,color:C.mid,fontFamily:C.P,lineHeight:1.5,marginBottom:6}}>The bottles you said you'd buy again, best first. Restock goes straight to a shop.</div>
-                {fav.buyAgain.map(w=>{ const pr=WineDNA.priceOf(w); return (
-                  <div key={'b'+w.name} role="button" onClick={()=>openWine(w)} style={{display:'flex',alignItems:'center',gap:8,padding:'6px 0',borderTop:`1px solid ${C.line}`,cursor:'pointer'}}>
-                    <Icon n="cart" sz={15} col={C.green}/>
-                    <span style={{fontSize:15,color:C.ink,fontFamily:C.P,flex:1,minWidth:0,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{w.name}</span>
-                    {pr>0&&<span style={{fontSize:13,color:C.mid,fontFamily:C.P}}>{Regional.current().base}{Math.round(pr)}{w.price_paid&&w.price_paid.amount>0?' paid':' est.'}</span>}
-                    {w.rating>0&&<span style={{fontSize:15,fontWeight:800,color:scoreCol(w.rating),fontFamily:C.P,width:30,textAlign:'right'}}>{w.rating}</span>}
-                    {/* Their own shortlist, so the shortest path to buying it again (a partner shop when one is on). */}
-                    <button onClick={e=>{ e.stopPropagation(); FindOnline.open(w,'restock'); }} aria-label={`Restock ${w.name}`} style={{flexShrink:0,border:`1px solid ${C.green}55`,background:C.greenBg,color:C.green,borderRadius:20,padding:'4px 10px',fontSize:13,fontWeight:700,fontFamily:C.P,cursor:'pointer'}}>Restock</button>
-                  </div>); })}
-              </div>
-            )}
+        {/* ── How well we know you: every scored wine matched again from the rest (TasteMatch.calibration) ── */}
+        {t.scored.length>0&&<CSH label="How Well We Know You" cKey="knows" collapsed={collapsed} toggle={toggle}
+          summary={t.knows.ready?`Your match lands within ${TasteMatch.CAL_CLOSE} points of your score ${t.knows.close} times in ${t.knows.n}.${t.knows.above[0]?` Biggest surprise: ${t.knows.above[0].wine.name}.`:''}`:`Score ${WineDNA.noun(t.key,t.knows.need)} more and we'll show how well your match predicts your scores.`}/>}
+        {t.scored.length>0&&!collapsed.knows&&<_KnowsCard k={t.knows} t={t} tLabel={tLabel} openWine={openWine}/>}
 
+        {/* ── House wines: the bottles they keep coming back to (WineDNA.houseWines) ── */}
+        {t.house.length>0&&<CSH label="Your House Wines" cKey="house" collapsed={collapsed} toggle={toggle}
+          summary={`${t.house.length===1?'One bottle':`${t.house.length} bottles`} you keep coming back to, led by ${t.house[0].wine.name}.`}/>}
+        {t.house.length>0&&!collapsed.house&&(
+          <Card style={{padding:14}}>
+            <div style={{fontSize:13,color:C.mid,fontFamily:C.P,lineHeight:1.5,marginBottom:6}}>The {tLabel} you keep coming back to: had more than once, marked to buy again, or hearted (never one you scored under 80). Restock goes straight to a shop.</div>
+            <div data-testid="house-wines">
+            {t.house.map(h=>{ const w=h.wine; return (
+              <div key={'h'+w.name+(w.vintage||'')} role="button" onClick={()=>openWine(w)} style={{display:'flex',alignItems:'center',gap:8,padding:'8px 0',borderTop:`1px solid ${C.line}`,cursor:'pointer'}}>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontSize:15,fontWeight:600,color:C.ink,fontFamily:C.P,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{h.fav&&<span style={{color:C.cr,marginRight:5}}>♥</span>}{WineDNA.nameYear(w)}</div>
+                  <div style={{fontSize:13,color:C.mid,fontFamily:C.P}}>{h.why.map(x=>x.charAt(0).toUpperCase()+x.slice(1)).join(' · ')}</div>
+                </div>
+                {w.rating>0&&<span style={{fontSize:15,fontWeight:800,color:scoreCol(w.rating),fontFamily:C.P}}>{w.rating}</span>}
+                {/* Their own shortlist, so the shortest path to buying it again (a partner shop when one is on). */}
+                <button onClick={e=>{ e.stopPropagation(); FindOnline.open(w,'restock'); }} aria-label={`Restock ${w.name}`} style={{flexShrink:0,border:`1px solid ${C.green}55`,background:C.greenBg,color:C.green,borderRadius:20,padding:'4px 10px',fontSize:13,fontWeight:700,fontFamily:C.P,cursor:'pointer'}}>Restock</button>
+              </div>); })}
+            </div>
           </Card>
         )}
 

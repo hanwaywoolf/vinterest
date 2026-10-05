@@ -88,6 +88,51 @@ test('What You Love on a generous scorer: lifts and drags against their own aver
   expect(L.nots[0].evidence).toMatch(/below your usual/);
 });
 
+// How Well We Know You: each scored wine matched again from the others, against the score given.
+test('how well the match knows them: close calls, surprises either way, and the section', async ({ page }) => {
+  await page.goto(`${BASE}/?demo=1#home`);
+  const k = await page.evaluate(() => {
+    const all = WineHistory.getAll();
+    const c = TasteMatch.calibration('red', all);
+    // Every expected score is the match of that wine from the others alone.
+    const r0 = c.rows[0], again = TasteMatch.assess(r0.wine, all.filter((x) => x !== r0.wine));
+    return { ready: c.ready, n: c.n, close: c.close, near: c.near, scored: all.filter((w) => w.type === 'red' && w.rating > 0).length,
+      same: Math.round(again.expected) === r0.expected, above: c.above.map((r) => r.diff), below: c.below.map((r) => r.diff),
+      early: TasteMatch.calibration('red', all.filter((w) => w.type === 'red').slice(0, 5)).ready };
+  });
+  expect(k.ready).toBe(true);
+  expect(k.n).toBe(k.scored);
+  expect(k.near).toBeGreaterThanOrEqual(k.close);
+  expect(k.same).toBe(true);
+  k.above.forEach((d) => expect(d).toBeGreaterThanOrEqual(5));
+  k.below.forEach((d) => expect(d).toBeLessThanOrEqual(-5));
+  expect(k.early).toBe(false);
+  await page.evaluate(() => UserPrefs.openDNA('red', 'knows'));
+  await page.goto(`${BASE}/?demo=1&k=1#profile`);
+  await expect(page.getByTestId('knows')).toContainText(`times in ${k.n}`);
+});
+
+// House wines: what they come back to (had twice, buy again, hearted), not just top scores.
+test('house wines: had more than once, buy again or hearted, most-returned first', async ({ page }) => {
+  await page.goto(`${BASE}/?demo=1#home`);
+  const h = await page.evaluate(() => {
+    const all = WineHistory.getAll(), reds = all.filter((w) => w.type === 'red');
+    reds.forEach((w) => { delete w.times_consumed; delete w.buy_again; });
+    const liked = reds.filter((w) => w.rating >= 80), low = reds.find((w) => w.rating > 0 && w.rating < 80);
+    reds.length = 0; reds.push(...liked);
+    liked[0].times_consumed = 3; liked[1].buy_again = true; Favorites.toggle(liked[2]);
+    if (low) low.times_consumed = 50; // opened often but scored under 80: never a house wine
+    const out = WineDNA.houseWines(WineDNA.profile('red', all, 'Reds'));
+    // and the vintage is never written twice
+    const nameYear = [WineDNA.nameYear({ name: 'Mlavac 2016', vintage: 2016 }), WineDNA.nameYear({ name: 'Mlavac', vintage: 2016 })];
+    return { names: out.map((x) => x.wine.name), first: reds[0].name, why: out[0].why, all: [reds[0].name, reds[1].name, reds[2].name], nameYear };
+  });
+  expect(h.names[0]).toBe(h.first);
+  expect(h.why).toContain('had 3 times');
+  expect(h.names.sort()).toEqual(h.all.sort());
+  expect(h.nameYear).toEqual(['Mlavac 2016', 'Mlavac 2016']);
+});
+
 test('one level scale: bar labels, chips and Explore Next agree', async ({ page }) => {
   await page.goto(`${BASE}/?demo=1#home`);
   const out = await page.evaluate(() => {
@@ -121,7 +166,7 @@ test('the WineDNA tab shows the new sections with no console errors', async ({ p
   const errors = collectErrors(page);
   await page.goto(`${BASE}/?demo=1#profile`);
   const root = page.locator('#root');
-  for (const t of ['Based on your 6 Outstanding (90+) reds', 'Region you love most', 'Your reds style', 'Your 90+ reds', 'Getting value', 'Your sweet spot', 'How your choices are changing', 'Blind Call accuracy']) {
+  for (const t of ['Based on your 6 Outstanding (90+) reds', 'Region you love most', 'How Well We Know You', 'Your reds style', 'Your 90+ reds', 'Getting value', 'Your sweet spot', 'How your choices are changing', 'Blind Call accuracy']) {
     await expect(root, t).toContainText(t);
   }
   // Removed: duplicate personality badge, XP bar, "1 of 4" arrows, generic grape claims.
@@ -183,9 +228,9 @@ test('wines named in WineDNA open their details', async ({ page }) => {
     const all = WineHistory.getAll(); const w = all.find((x) => x.type === 'red' && x.rating >= 90); w.buy_again = true; WineHistory.save(all); });
   await page.goto(`${BASE}/?demo=1#profile`);
   const root = page.locator('#root');
-  await expect(root.locator('[data-section="buyagain"]')).toContainText('Buy Again');
-  const row = root.getByText("The bottles you said you'd buy again", { exact: false }).locator('xpath=following-sibling::div[1]');
-  const name = (await row.locator('span').first().innerText()).trim();
+  await expect(root.locator('[data-section="house"]')).toContainText('Your House Wines');
+  const row = page.getByTestId('house-wines').getByRole('button').first();
+  const name = (await row.locator('div div').first().innerText()).trim().replace(/^♥/, '').trim();
   await row.click();
   await expect(root.getByText('Details', { exact: true })).toBeVisible();
   await expect(root).toContainText(name);

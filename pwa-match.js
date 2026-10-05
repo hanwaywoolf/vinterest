@@ -64,6 +64,32 @@ const TasteMatch = {
     return parts.length?this._cap(parts.join(', ')):null;
   },
 
+  /* How well the match knows them, for WineDNA: every scored wine of the type matched again from
+     their other wines alone (as if they were scanning it now), against the score they gave it.
+     From CAL_MIN such wines: how often the expected score lands within CAL_CLOSE points (and
+     within 5), whether it tends to run low or high, and the biggest surprises either way (a
+     miss of SURPRISE points or more): where their taste is moving, or where a wine broke their
+     pattern. Nothing is stored; it's worked out from the wines as they are. */
+  CAL_MIN:8, CAL_CLOSE:3, SURPRISE:5,
+  calibration(typeKey,allWines){
+    allWines=allWines||[];
+    const scored=allWines.filter(w=>this._typeKey(w)===typeKey&&w.rating>0);
+    if(scored.length<this.CAL_MIN) return {ready:false,n:scored.length,need:this.CAL_MIN-scored.length};
+    const rows=scored.map(w=>{
+      const a=this.assess(w,allWines.filter(x=>x!==w));
+      if(!a||a.expected==null) return null;
+      const expected=Math.round(a.expected);
+      return {wine:w,expected,actual:w.rating,diff:w.rating-expected};
+    }).filter(Boolean);
+    if(rows.length<this.CAL_MIN) return {ready:false,n:rows.length,need:this.CAL_MIN-rows.length};
+    const n=rows.length, close=rows.filter(r=>Math.abs(r.diff)<=this.CAL_CLOSE).length, near=rows.filter(r=>Math.abs(r.diff)<=5).length;
+    const bias=WineDNA._mean(rows.map(r=>r.diff)), share=close/n;
+    const level=share>=0.7?'well':share>=0.5?'getting':'early';
+    const above=rows.filter(r=>r.diff>=this.SURPRISE).sort((a,b)=>b.diff-a.diff).slice(0,2);
+    const below=rows.filter(r=>r.diff<=-this.SURPRISE).sort((a,b)=>a.diff-b.diff).slice(0,2);
+    return {ready:true,n,close,near,share,level,bias:Math.round(bias*10)/10,rows,above,below};
+  },
+
   /* One wine against the user's history. `profiles` is an optional per-type cache for callers
      scoring many wines at once (a wine list). */
   assess(wine,allWines,profiles){

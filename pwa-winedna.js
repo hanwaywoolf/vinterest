@@ -65,6 +65,8 @@ const WineDNA = {
       const l=this.level(v); if(l==='high') out.push(W[k][1]); else if(l==='low'&&k!=='sweetness') out.push(W[k][0]); });
     return out;
   },
+  /* A wine's name with its vintage, unless the name already carries the year ("Mlavac 2016"). */
+  nameYear(w){ const n=String(w&&w.name||''), v=w&&w.vintage; return v&&!n.includes(String(v))?`${n} ${v}`:n; },
   _list(xs){ return xs.length<2?(xs[0]||''):xs.slice(0,-1).join(', ')+' and '+xs[xs.length-1]; },
   TIPS:{
     body:{high:'Fuller wines come from warmer places and riper grapes: look at Barossa, Napa, Priorat or Châteauneuf-du-Pape.',
@@ -196,6 +198,7 @@ const WineDNA = {
     p.signals=this.signals(p);
     p.favourites=this.favourites(p);
     p.loves=this.loves(p);
+    p.house=this.houseWines(p);
     p.value=this.value(p);
     p.blindCall=this.blindCall(wines);
     p.confidence=this.confidence(p);
@@ -366,6 +369,19 @@ const WineDNA = {
     const headline=portrait||(styleAll[0]?styleAll[0].text:null)||(up[0]?`${up[0].name} lifts your scores most: ${up[0].count} bottles averaging ${up[0].avg}, ${up[0].lift>0?'+':''}${up[0].lift} on your average.`
       :flat?`You score your ${L} very evenly, mostly between ${loCut} and ${hiCut}.`:null);
     return {ready:true,n,avg:Math.round(avg*10)/10,usual,hiCut,loCut,flat,style:styleAll,up:up.map(({ws,...x})=>x),down:down.map(({ws,...x})=>x),favs,nots,portrait,money,age,headline};
+  },
+
+  /* Their house wines: the bottles they keep coming back to, rather than just their top scores.
+     A wine earns a place by being had more than once (times_consumed), marked to buy again, or
+     hearted (Favorites); more of those, then a higher score, rank it higher. A wine they scored
+     under 80 never counts. */
+  HOUSE_MAX:6,
+  houseWines(p){
+    return p.wines.filter(w=>!(w.rating>0&&w.rating<ParkerScale.DISLIKED)).map(w=>{ // one they scored under 80 isn't a house wine, however often it's been opened
+      const times=w.times_consumed||1, fav=typeof Favorites!=='undefined'&&Favorites.has(w), again=w.buy_again===true;
+      const why=[]; if(times>=2) why.push(`had ${times} times`); if(again) why.push("you'd buy it again"); if(fav) why.push('a favourite');
+      return why.length?{wine:w,times,fav,again,why,rank:(times-1)*2+(again?2:0)+(fav?2:0)+(w.rating||0)/50}:null;
+    }).filter(Boolean).sort((a,b)=>b.rank-a.rank).slice(0,this.HOUSE_MAX);
   },
 
   // Where they drink a lot vs where they score highest, and what to rethink.
