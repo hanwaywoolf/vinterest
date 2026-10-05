@@ -72,30 +72,31 @@
     return hit ? Promise.resolve(hit) : Promise.reject(new Error('Not captured: ' + purpose));
   };
 
-  /* The film: one beat per part of WineDNA. `at` is the dnafilm demo's step. */
-  var B = 8.6;
+  /* The film: one beat per part of WineDNA. [the dnafilm demo's step, seconds, caption] */
   var BEATS = [
-    [0.0, 0.50, 'Your <b>WineDNA</b> is built from every bottle you score.'],
-    [0.08, 0.50, 'What you love, <b>in plain words</b>, from your own scores.'],
-    [0.16, 0.50, 'It tests itself on your scores, so you can see <b>how well it knows you</b>.'],
-    [0.24, 0.50, 'Your <b>“house” wines</b>: the bottles you keep coming back to.'],
-    [0.32, 0.50, 'Your <b>taste</b>, visualised, with what each word means.'],
-    [0.40, 0.50, '<b>Value</b>: what you pay, and the bottles that beat their price.'],
-    [0.48, 0.50, '<b>Explore</b>: styles just outside your comfort zone.'],
-    [0.56, 0.50, 'A <b>sommelier script</b>, ready for your next dinner.'],
-    [0.64, 0.50, 'Every wine type gets its <b>own DNA</b>. Now white.'],
-    [0.72, 0.50, 'What you love in <b>white</b>, in plain words.'],
-    [0.80, 0.50, 'Your taste in <b>white</b>, visualised.'],
-    [0.88, 0.50, 'And where to <b>explore</b> next in white.'],
+    [0.00, 3.2, 'A <b>WineDNA</b> profile for every type of wine you drink.'],
+    [0.06, 2.8, 'White has its own DNA.'],
+    [0.12, 2.8, 'So does <b>rosé</b>.'],
+    [0.18, 2.8, 'And <b>sparkling</b>.'],
+    [0.24, 3.6, 'Each one is built from the bottles you score. Now, <b>inside red</b>.'],
+    [0.30, 9.0, 'What you love, <b>in plain words</b>, from your own scores.'],
+    [0.36, 9.0, 'It tests itself on your scores, so you can see <b>how well it knows you</b>.'],
+    [0.42, 8.6, 'Your <b>“house” wines</b>: the bottles you keep coming back to.'],
+    [0.48, 9.0, 'Your <b>taste</b>, visualised, with what each word means.'],
+    [0.54, 8.6, '<b>Value</b>: what you pay, and the bottles that beat their price.'],
+    [0.60, 9.0, '<b>Explore</b>: styles just outside your comfort zone.'],
+    [0.66, 9.0, 'A <b>sommelier script</b>, ready for your next dinner.'],
   ];
-  var START = 0.8, DUR = 9.0, END_AT = START + BEATS.length * DUR, END = END_AT + 3.4;
+  var START = 0.8, STARTS = [], t_ = START;
+  BEATS.forEach(function (b) { STARTS.push(t_); t_ += b[1]; });
+  var END_AT = t_, END = END_AT + 3.4;
   var api = null;
   function render(T) {
     if (!READY || !window.VinterestDemo) return;
     if (!api) { api = window.VinterestDemo.mount(app, 'dnafilm'); api.update(0); }
-    var k = Math.min(BEATS.length - 1, Math.max(0, Math.floor((T - START) / DUR)));
+    var k = 0; STARTS.forEach(function (s0, i) { if (T >= s0) k = i; });
     api.update(BEATS[k][0] + 0.001);
-    var c = BEATS[k], t0 = START + k * DUR;
+    var c = BEATS[k], t0 = STARTS[k], DUR = c[1];
     var capEl = $('cap'), live = T >= START && T < END_AT;
     var o = live ? Math.min(ease(seg(T, t0, t0 + 0.4)), 1 - ease(seg(T, t0 + DUR - 0.35, t0 + DUR))) : 0;
     if (capEl.dataset.k !== c[2]) { capEl.dataset.k = c[2]; capEl.innerHTML = c[2]; }
