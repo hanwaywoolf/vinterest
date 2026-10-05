@@ -38,8 +38,16 @@ const CASES = [
   { purpose: 'match_explain', label: 'Why it matches', messages: [{ role: 'user', content: `In two sentences, tell this wine drinker why Muga Reserva 2019 (Rioja, Tempranillo, medium-full body, firm tannins) suits them. What we know: ${profile}` }] },
 ];
 if (args.image) {
-  const data = fs.readFileSync(String(args.image)).toString('base64');
-  const media_type = /\.png$/i.test(String(args.image)) ? 'image/png' : 'image/jpeg';
+  // The file's real format, from its first bytes (an iPhone photo is often HEIC whatever its name
+  // says, and Claude doesn't read HEIC; the app converts every photo to JPEG before sending).
+  const buf = fs.readFileSync(String(args.image));
+  const media_type = buf[0] === 0xff && buf[1] === 0xd8 ? 'image/jpeg' : buf.slice(0, 4).toString('hex') === '89504e47' ? 'image/png'
+    : buf.slice(0, 4).toString() === 'RIFF' && buf.slice(8, 12).toString() === 'WEBP' ? 'image/webp' : buf.slice(0, 3).toString() === 'GIF' ? 'image/gif' : null;
+  if (!media_type) {
+    console.error(`${args.image} isn't a JPEG, PNG, WebP or GIF${buf.slice(4, 8).toString() === 'ftyp' ? ' (it looks like an iPhone HEIC photo)' : ''}. On a Mac, convert it with:\n  sips -s format jpeg "${args.image}" --out label-converted.jpg\nthen use --image label-converted.jpg`);
+    process.exit(1);
+  }
+  const data = buf.toString('base64');
   CASES.unshift({ purpose: 'label_scan', label: 'Label scan', messages: [{ role: 'user', content: [{ type: 'image', source: { type: 'base64', media_type, data } }, { type: 'text', text: tpl('label-scan.txt') }] }] });
 }
 
