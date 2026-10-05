@@ -561,21 +561,17 @@ function MasteryAreaCard({a,open,onToggle,onNext}){
   </div>
   );
 }
-/* Mastery's dark panels (the shape, the palate): near-black with a warm glow, like the welcome
-   screens, and a champagne-to-rosé palette so the drawing stands apart from the crimson brand. */
-const _DARK_PANEL='radial-gradient(120% 85% at 50% 35%, #2B2326 0%, #171315 55%, #0F0F0F 100%)';
-const _CHAMPAGNE='#F1D7A2', _ROSE='#E58FA3';
-/* The shape of their knowledge: one spoke per Mastery area on a dark panel. The shape now is a
-   smooth curve, washed from champagne at the top to rosé below, with a soft glow; a faint dotted
-   curve is where they were (KnowledgeMap.progress: about a month ago, or their first week). Rings
-   mark Developing (34), Confident (67) and Mastered (100), their names drawn last, on small dark
-   tags in the gap between the two spokes where the shape is smallest, so it never covers them. Each area's dot
-   takes its own colour (wine types their type's). A label tap jumps to that area's card. A
-   picture for screen readers (the cards below say the same in words). Labels are string sizes:
-   they must fit around the drawing. */
+/* The shape of their knowledge: one spoke per Mastery area, drawn in the pen-and-wash style of
+   the grapes and the palate (cream paper, ink line, a loose wash laid a little off the line):
+   the shape now is a smooth ink curve over a crimson wash; a dotted pencil curve is where they
+   were (KnowledgeMap.progress: about a month ago, or their first week). Pencil rings mark
+   Developing (34), Confident (67) and Mastered (100); their names sit on small tags stacked down
+   the line straight below the centre, drawn last so the shape never covers them and far enough
+   apart that they never touch. Each area's dot takes its own colour (wine types their type's).
+   A label tap opens that area in the list. A picture for screen readers (the list says the same
+   in words). Labels are string sizes: they must fit around the drawing. */
 function MasteryRadar({m,prog,onPick}){
   const W=340,H=310,cx=W/2,cy=H/2,R=100, n=m.areas.length;
-  const uid=React.useId().replace(/:/g,'');
   const ang=i=>-Math.PI/2+i*2*Math.PI/n;
   // 0% sits on a small inner ring (HOLE of the radius), so an early shape is still a shape, not a spike.
   const HOLE=0.26, rr=score=>R*(HOLE+(1-HOLE)*score/100);
@@ -583,46 +579,49 @@ function MasteryRadar({m,prog,onPick}){
   const curve=scores=>_sketchPath(scores.map((v,i)=>pt(i,v)),true);
   const now=m.areas.map(a=>a.score), then=prog?m.areas.map(a=>prog.then.a[a.id]||0):null;
   const said=m.areas.map(a=>`${a.label} ${a.score}%`).join(', ');
-  // Ring names go in the gap between the two neighbouring spokes where the shape is smallest,
-  // so it never runs over them.
-  let gi=0, gv=1e9; for(let i=0;i<n;i++){ const v=Math.max(now[i],now[(i+1)%n]); if(v<gv){ gv=v; gi=i; } }
-  const faint='rgba(255,255,255,0.08)', gap=ang(gi)+Math.PI/n;
-  const dot=a=>a.score>=100?'#8FE0B4':a.group==='types'?_masteryCol(a):_ROSE;
+  const dot=a=>a.score>=100?C.green:_masteryCol(a);
   return(
     <svg viewBox={`0 0 ${W} ${H}`} width="100%" role="img" data-testid="mastery-radar" aria-label={`Your knowledge by area: ${said}.`} style={{display:'block',maxWidth:420,margin:'0 auto',overflow:'visible'}}>
-      <defs>
-        <linearGradient id={`rf${uid}`} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={_CHAMPAGNE} stopOpacity="0.62"/>
-          <stop offset="100%" stopColor={_ROSE} stopOpacity="0.5"/>
-        </linearGradient>
-        <filter id={`rg${uid}`} x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="7"/></filter>
-      </defs>
-      {[34,67,100].map(r=><circle key={r} cx={cx} cy={cy} r={rr(r)} fill="none" stroke={r===100?'rgba(255,255,255,0.18)':faint} strokeWidth="1" strokeDasharray={r===100?null:'1 4'} strokeLinecap="round"/>)}
-      {m.areas.map((a,i)=>{ const [x,y]=pt(i,100), [x0,y0]=pt(i,0); return <line key={a.id} x1={x0} y1={y0} x2={x} y2={y} stroke={faint} strokeWidth="1"/>; })}
-      {then&&<path d={curve(then)} fill="none" stroke="rgba(255,255,255,0.45)" strokeWidth="1.3" strokeDasharray="1.5 4" strokeLinecap="round"/>}
+      {[34,67,100].map(r=><circle key={r} cx={cx} cy={cy} r={rr(r)} fill="none" stroke={SKETCH_PENCIL} strokeWidth={r===100?1.3:1} strokeDasharray={r===100?null:'2 4'} strokeLinecap="round"/>)}
+      {m.areas.map((a,i)=>{ const [x,y]=pt(i,100), [x0,y0]=pt(i,0); return <line key={a.id} x1={x0} y1={y0} x2={x} y2={y} stroke={SKETCH_PENCIL} strokeWidth="0.8" opacity="0.7"/>; })}
+      {then&&<path d={curve(then)} fill="none" stroke={C.mid} strokeWidth="1.2" strokeDasharray="1.5 4" strokeLinecap="round"/>}
       <g className="mastery-radar-shape" style={{transformOrigin:`${cx}px ${cy}px`}}>
-        <path d={curve(now)} fill={_CHAMPAGNE} opacity="0.22" filter={`url(#rg${uid})`}/>
-        <path d={curve(now)} fill={`url(#rf${uid})`} stroke={_CHAMPAGNE} strokeWidth="1.8" strokeLinejoin="round"/>
-        {m.areas.map((a,i)=>{ if(!a.score) return null; const [x,y]=pt(i,a.score), col=dot(a); return <g key={a.id}>
-          <circle cx={x} cy={y} r="7.5" fill={col} opacity="0.3"/>
-          <circle cx={x} cy={y} r="4" fill={col} stroke="#fff" strokeWidth="1.5"/>
-        </g>; })}
+        <path d={curve(now)} fill={SKETCH_WASH.red} opacity="0.22" transform="translate(2.5 3)"/>
+        <path d={curve(now)} fill={SKETCH_WASH.red} opacity="0.1"/>
+        <path d={curve(now)} fill="none" stroke={SKETCH_INK} strokeWidth="1.8" strokeLinejoin="round"/>
+        {m.areas.map((a,i)=>{ if(!a.score) return null; const [x,y]=pt(i,a.score); return <circle key={a.id} cx={x} cy={y} r="4.2" fill={dot(a)} stroke="#FBF8F3" strokeWidth="1.6"/>; })}
       </g>
-      {[['Developing',34],['Confident',67],['Mastered',100]].map(([l,r])=>{ const d=rr(r)-(r===100?9:0), x=cx+Math.cos(gap)*d, y=cy+Math.sin(gap)*d, w=l.length*5.6+10; // Mastered sits just inside its ring, clear of the area names
+      {[['Developing',34],['Confident',67],['Mastered',100]].map(([l,r])=>{ const y=cy+rr(r), w=l.length*5.4+12;
         return <g key={l} aria-hidden="true">
-          <rect x={x-w/2} y={y-7} width={w} height={14} rx={7} fill="rgba(15,15,15,0.82)" stroke="rgba(255,255,255,0.12)"/>
-          <text x={x} y={y+3} textAnchor="middle" style={{fontSize:'8px',fontWeight:700,fill:'rgba(255,255,255,0.7)',fontFamily:C.P,letterSpacing:'0.06em'}}>{l.toUpperCase()}</text>
+          <rect x={cx-w/2} y={y-7} width={w} height={14} rx={7} fill="#FBF8F3" stroke={SKETCH_PENCIL}/>
+          <text x={cx} y={y+3} textAnchor="middle" style={{fontSize:'8px',fontWeight:700,fill:C.mid,fontFamily:C.P,letterSpacing:'0.06em'}}>{l.toUpperCase()}</text>
         </g>; })}
       {m.areas.map((a,i)=>{
         const c=Math.cos(ang(i)), sn=Math.sin(ang(i)), x=cx+c*(R+14), y=cy+sn*(R+14)+(sn>0.3?8:sn<-0.3?-6:3);
         const anchor=c>0.1?'start':c<-0.1?'end':'middle'; // the two bottom spokes lean apart
         return <g key={a.id} onClick={()=>onPick&&onPick(a.id)} style={{cursor:'pointer'}}>
-          <text x={x} y={y} textAnchor={anchor} style={{fontSize:'11px',fontWeight:600,fill:a.score?'rgba(255,255,255,0.88)':'rgba(255,255,255,0.42)',fontFamily:C.P}}>{KnowledgeMap.short(a)}</text>
-          <text x={x} y={y+12} textAnchor={anchor} style={{fontSize:'10px',fontWeight:700,fill:a.score>=100?'#8FE0B4':a.score?_CHAMPAGNE:'rgba(255,255,255,0.3)',fontFamily:C.P}}>{a.score}%</text>
+          <text x={x} y={y} textAnchor={anchor} style={{fontSize:'11px',fontWeight:600,fill:a.score?C.ink:C.mid,fontFamily:C.P}}>{KnowledgeMap.short(a)}</text>
+          <text x={x} y={y+12} textAnchor={anchor} style={{fontSize:'10px',fontWeight:700,fill:a.score>=100?C.green:a.score?C.cr:SKETCH_PENCIL,fontFamily:C.P}}>{a.score}%</text>
         </g>;
       })}
     </svg>
   );
+}
+/* The same areas as a list: each group (wine types, regions and grapes, Wine Skills) with every
+   area's card (its score, level, change since the dotted outline, what's inside it and its next
+   step), so the chart's numbers all have their detail. */
+const MASTERY_GROUPS=[{id:'types',label:'Wine types'},{id:'places',label:'Regions and grapes'},{id:'skills',label:'Wine Skills'}];
+function MasteryAreaList({m,prog,open,setOpen,go}){
+  return <div data-testid="mastery-area-list" style={{display:'flex',flexDirection:'column',gap:8}}>
+    {MASTERY_GROUPS.map(G=><React.Fragment key={G.id}>
+      <div style={{fontSize:14,fontWeight:700,color:C.ink2,fontFamily:C.P,marginTop:4}}>{G.label}</div>
+      {m.areas.filter(a=>a.group===G.id).map(a=>{ const d=prog?a.score-(prog.then.a[a.id]||0):0; return(
+        <div key={a.id} data-area={a.id} style={{position:'relative'}}>
+          <MasteryAreaCard a={a} open={open===a.id} onToggle={()=>a.items&&setOpen(o=>o===a.id?null:a.id)} onNext={()=>go(a.next)}/>
+          {d>0&&<span style={{position:'absolute',right:14,bottom:-7,fontSize:11,fontWeight:700,color:C.green,background:C.white,border:`1px solid ${C.line}`,borderRadius:999,padding:'1px 7px',fontFamily:C.P}}>+{d} since {_when(prog.then.t)}</span>}
+        </div>); })}
+    </React.Fragment>)}
+  </div>;
 }
 function _when(t){ return new Date(t).toLocaleDateString('en',{day:'numeric',month:'short'}); }
 
@@ -1035,11 +1034,10 @@ const _MASTERY_CSS=`@keyframes masteryGrow{from{transform:scale(0.2);opacity:0}t
 @media (prefers-reduced-motion:reduce){.mastery-radar-shape,.milestone-in{animation:none}.grape-berry{transition:none}.palate-ring{animation:none}}`;
 
 /* One section of Mastery: a heading that folds it away (a chevron, aria-expanded) and, folded, a
-   one-line summary in its place, which also opens it. `dark` draws the body on the welcome
-   screens' near-black; `plain` lays its children out without a card (the area groups). */
-function MasterySection({id,title,summary,folded,toggle,dark,plain,testid,children}){
+   one-line summary in its place, which also opens it. `plain` lays its children out without a card. */
+function MasterySection({id,title,summary,folded,toggle,plain,testid,children}){
   const shut=!!folded[id];
-  const body={background:dark?_DARK_PANEL:C.white,borderRadius:16,border:dark?'none':`1px solid ${C.line}`,padding:'14px 14px 12px',display:'flex',flexDirection:'column',gap:8};
+  const body={background:C.white,borderRadius:16,border:`1px solid ${C.line}`,padding:'14px 14px 12px',display:'flex',flexDirection:'column',gap:8};
   return <section data-section={id} style={{display:'flex',flexDirection:'column',gap:8}}>
     <div role="button" tabIndex={0} aria-expanded={!shut} onClick={()=>toggle(id)}
       onKeyDown={e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); toggle(id); } }}
@@ -1076,14 +1074,15 @@ function MasteryMapScreen({nav,back,showPro}){
   const cluster=React.useMemo(()=>KnowledgeMap.grapeCluster(m),[m]);
   const mapCount=React.useMemo(()=>KnowledgeMap.mapCount(views),[views]);
   const summary=React.useMemo(()=>{ const s=[...m.areas].sort((a,b)=>b.score-a.score); return {strongest:s[0]&&s[0].score>0?s[0]:null}; },[m]);
+  // Chart or list, as they last left it (Device.masteryView).
+  const [shapeView,setShapeViewS]=React.useState(()=>Device.masteryView().shape==='list'?'list':'chart');
+  const setShapeView=x=>{ setShapeViewS(x); Device.setMasteryView({shape:x}); };
+  // A tap on an area in the chart opens it in the list.
   const pick=id=>{
     const a=m.areas.find(x=>x.id===id); if(a&&a.items) setOpen(id);
-    // A tap on the shape opens the area's section if it's folded, then goes to its card.
-    const g=a&&'g_'+a.group;
-    if(g&&folded[g]) toggle(g);
-    setTimeout(()=>{ const el=listRef.current&&listRef.current.querySelector(`[data-area="${id}"]`); if(el) el.scrollIntoView({behavior:'smooth',block:'center'}); },g&&folded[g]?50:0);
+    setShapeView('list');
+    setTimeout(()=>{ const el=listRef.current&&listRef.current.querySelector(`[data-area="${id}"]`); if(el) el.scrollIntoView({behavior:'smooth',block:'center'}); },60);
   };
-  const GROUPS=[{id:'types',label:'Wine types'},{id:'places',label:'Regions and grapes'},{id:'skills',label:'Wine Skills'}];
   const rise=prog&&prog.rises[0];
   return(
     <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden'}}>
@@ -1108,18 +1107,20 @@ function MasteryMapScreen({nav,back,showPro}){
 
         <MilestoneMoment items={fresh}/>
 
-        <MasterySection id="shape" title="Your shape" dark folded={folded} toggle={toggle}
+        <MasterySection id="shape" title="Your shape" folded={folded} toggle={toggle}
           summary={`${m.overall}% overall${rise?` · biggest rise ${rise.label} +${rise.delta}`:summary.strongest?` · strongest ${summary.strongest.label} ${summary.strongest.score}%`:''}`}>
-          <MasteryRadar m={m} prog={prog} onPick={pick}/>
+          <MasteryToggle label="Show your shape as" testid="shape-mode" options={[['chart','Chart'],['list','List']]} value={shapeView} onChange={setShapeView}/>
+          {shapeView==='list'?<MasteryAreaList m={m} prog={prog} open={open} setOpen={setOpen} go={go}/>:<>
+          <div style={{background:'#FBF8F3',borderRadius:12,padding:'8px 4px 4px'}}><MasteryRadar m={m} prog={prog} onPick={pick}/></div>
           <div style={{display:'flex',gap:14,justifyContent:'center',flexWrap:'wrap'}} aria-hidden="true">
-            <span style={{display:'inline-flex',alignItems:'center',gap:6,fontSize:12,color:'rgba(255,255,255,0.6)',fontFamily:C.P}}><span style={{width:16,height:0,borderTop:`2px solid ${_CHAMPAGNE}`}}/>Now</span>
-            {prog&&<span style={{display:'inline-flex',alignItems:'center',gap:6,fontSize:12,color:'rgba(255,255,255,0.6)',fontFamily:C.P}}><span style={{width:16,height:0,borderTop:'2px dotted rgba(255,255,255,0.5)'}}/>{_when(prog.then.t)}</span>}
+            <span style={{display:'inline-flex',alignItems:'center',gap:6,fontSize:12,color:C.mid,fontFamily:C.P}}><span style={{width:16,height:0,borderTop:`2px solid ${SKETCH_INK}`}}/>Now</span>
+            {prog&&<span style={{display:'inline-flex',alignItems:'center',gap:6,fontSize:12,color:C.mid,fontFamily:C.P}}><span style={{width:16,height:0,borderTop:`2px dotted ${C.mid}`}}/>{_when(prog.then.t)}</span>}
           </div>
-          <div style={{fontSize:14,color:'rgba(255,255,255,0.75)',fontFamily:C.P,lineHeight:1.5}}>
-            {prog?(rise?<>Since {_when(prog.then.t)} your biggest rise is <b style={{color:'#fff'}}>{rise.label}</b> (+{rise.delta}).{prog.rises.length>1?` ${prog.rises.length-1} other area${prog.rises.length===2?' has':'s have'} grown too.`:''}</>
+          <div style={{fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.5}}>
+            {prog?(rise?<>Since {_when(prog.then.t)} your biggest rise is <b>{rise.label}</b> (+{rise.delta}).{prog.rises.length>1?` ${prog.rises.length-1} other area${prog.rises.length===2?' has':'s have'} grown too.`:''}</>
               :<>No change since {_when(prog.then.t)}. A quiz or an article moves the shape.</>)
-              :<>A rounder shape means rounder knowledge. From next week, a dotted outline shows where you were, so you can see it grow.</>}
-          </div>
+              :<>A rounder shape means rounder knowledge. From next week, a dotted outline shows where you were, so you can see it grow.</>} Tap an area, or List, for the detail behind each number.
+          </div></>}
         </MasterySection>
 
         <MasterySection id="grapes" title="Your grapes" folded={folded} toggle={toggle}
@@ -1142,13 +1143,6 @@ function MasteryMapScreen({nav,back,showPro}){
           <MilestoneList items={milestones}/>
         </MasterySection>
 
-        {GROUPS.map(G=>{ const areas=m.areas.filter(a=>a.group===G.id); return(
-          <MasterySection key={G.id} id={'g_'+G.id} title={G.label} plain folded={folded} toggle={toggle}
-            summary={[...areas].sort((x,y)=>y.score-x.score).map(a=>`${KnowledgeMap.short(a)} ${a.score}%`).join(' · ')}>
-            {areas.map(a=>(
-              <div key={a.id} data-area={a.id}><MasteryAreaCard a={a} open={open===a.id} onToggle={()=>a.items&&setOpen(o=>o===a.id?null:a.id)} onNext={()=>go(a.next)}/></div>
-            ))}
-          </MasterySection>); })}
         <div style={{height:12}}/>
       </div>
     </div>

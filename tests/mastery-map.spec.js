@@ -369,7 +369,14 @@ test('Mastery sections: in order, fold to a summary, and stay folded next time',
   await grapeStudy(page);
   await page.goto(`${BASE}/#mastery-map`);
   const order = await page.locator('section[data-section]').evaluateAll((els) => els.map((e) => e.dataset.section));
-  expect(order).toEqual(['shape', 'grapes', 'map', 'palate', 'milestones', 'g_types', 'g_places', 'g_skills']);
+  expect(order).toEqual(['shape', 'grapes', 'map', 'palate', 'milestones']);
+  // The chart's detail is its List view: every area with its card, kept for next time.
+  await page.getByTestId('shape-mode').getByRole('tab', { name: 'List' }).click();
+  const areas = page.getByTestId('mastery-area-list');
+  expect(await areas.locator('[data-area]').count()).toBe(await page.evaluate(() => KnowledgeMap.compute().areas.length));
+  await expect(areas.locator('[data-area="red"]')).toContainText('%');
+  await page.screenshot({ path: path.join(info.project.outputDir, 'mastery-area-list.png') });
+  await page.getByTestId('shape-mode').getByRole('tab', { name: 'Chart' }).click();
   await page.getByTestId('mastery-radar').scrollIntoViewIfNeeded();
   await page.screenshot({ path: path.join(info.project.outputDir, 'mastery-shape.png') });
 
