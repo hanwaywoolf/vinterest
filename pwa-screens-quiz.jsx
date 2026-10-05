@@ -829,53 +829,41 @@ function MasteryRegionMap({views,nav,showPro}){
 /* What they can taste (Palate, pwa-palate.js), beside what they know: their Blind Calls scored
    against each label's profile, a bar per axis with how to notice it, any habit ("you tend to
    call tannins grippier"), and the next step. Not part of the knowledge score. */
-/* Their palate as glasses: one ink-sketched wine glass per trait (body, acidity, tannins or
-   texture, the grape pages' pen-and-wash style), filled to how close their Blind Calls come to
-   the label on it (Palate's axis score), so the fullest glass is what they taste best. A habit
-   is written under its glass ("you call it grippier"). Before any call the glasses stand empty
-   and say what fills them. The fill rises when the section opens; reduced motion shows it
-   poured. */
-function _PalateGlass({x,a,col,i}){
-  const bowl='M14 8 C11 38 19 66 40 70 C61 66 69 38 66 8', closed=bowl+' Z';
-  const lvl=a.score==null?0:a.score, top=68-56*lvl/100, id=`pg${i}`;
-  return <g transform={`translate(${x} 0)`}>
-    <clipPath id={id}><path d={closed}/></clipPath>
-    {lvl>0&&<g clipPath={`url(#${id})`}>
-      <g className="palate-fill" style={{animationDelay:`${i*160}ms`}}>
-        <rect x="0" y={top} width="80" height={74-top} fill={col} opacity="0.62"/>
-        <ellipse cx="40" cy={top} rx="30" ry="3" fill={col} opacity="0.85"/>
-      </g>
-    </g>}
-    <path d={bowl} fill="none" stroke={SKETCH_INK} strokeWidth="1.6" strokeLinecap="round"/>
-    <path d="M13.2 7.4 C30 5.6 52 5.8 66.8 8.6" fill="none" stroke={SKETCH_INK} strokeWidth="1.1" strokeLinecap="round" opacity="0.8"/>
-    <path d="M40 70 C39.4 84 40.6 98 40 110" fill="none" stroke={SKETCH_INK} strokeWidth="1.6" strokeLinecap="round"/>
-    <path d="M22 113 C30 109.6 50 109.4 59 112.6 C50 115.4 31 115.6 21.2 113.4" fill="none" stroke={SKETCH_INK} strokeWidth="1.4" strokeLinecap="round"/>
-    <path d="M20 20 C19 32 21 44 25 52" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" opacity="0.7"/>
-    <text x="40" y="133" textAnchor="middle" style={{fontSize:'13px',fontWeight:700,fill:SKETCH_INK,fontFamily:C.P}}>{a.name}</text>
-    <text x="40" y="149" textAnchor="middle" style={{fontSize:'13px',fontWeight:700,fill:a.score==null?C.mid:col,fontFamily:C.P}}>{a.score==null?'–':`${a.score}%`}</text>
-    {a.lean&&<text x="40" y="164" textAnchor="middle" style={{fontSize:'11px',fontWeight:600,fill:C.amber,fontFamily:C.P}}>you call it {a.lean}</text>}
-  </g>;
-}
-function PalateGlasses({p}){
-  const ids=p.axes.length?p.axes.map(a=>a.id):['body','acidity','tannins'];
-  const axes=ids.map(id=>p.axes.find(a=>a.id===id)||{id,name:Palate.NAMES[id],score:null});
-  const col=id=>id==='texture'?SKETCH_WASH.white:SKETCH_WASH.red;
-  const GW=92, W=Math.max(300,axes.length*GW), x0=(W-axes.length*GW)/2+(GW-80)/2;
-  const said=p.n?axes.map(a=>`${a.name} ${a.score==null?'no calls yet':`${a.score}%`}${a.lean?`, you call it ${a.lean}`:''}`).join('; '):'empty until your first Blind Call';
-  return <div style={{background:'#FBF8F3',borderRadius:14,border:`1px solid ${C.line}`,padding:'14px 10px 8px'}}>
-    <svg viewBox={`0 0 ${W} 170`} width="100%" role="img" data-testid="palate-glasses" aria-label={`How close your Blind Calls come to the label, as glasses: ${said}.`} style={{display:'block',maxWidth:420,margin:'0 auto',overflow:'visible'}}>
-      {axes.map((a,i)=><_PalateGlass key={a.id} x={x0+i*GW} a={a} col={col(a.id)} i={i}/>)}
+/* Their palate as tiles, one per trait (body, acidity, tannins, texture): the thing it tastes
+   like, sketched (SketchTraitIcon), inside a ring that fills to how close their Blind Calls come
+   to the label on that trait, with the number written out large beside it, its level and any
+   habit ("you call it grippier"). A trait with no calls yet shows a dash and says so. Every tile
+   opens the trait's own page (PalateTraitScreen), like a grape's. */
+const PALATE_TRAITS=['body','acidity','tannins','texture'];
+function _PalateTile({id,a,onOpen}){
+  const sc=a?a.score:null, col=SKETCH_TRAIT[id], R=27, circ=2*Math.PI*R;
+  const ring=id==='body'?'#C9A86A':col;
+  return <div role="button" tabIndex={0} data-trait={id} onClick={()=>onOpen(id)} onKeyDown={e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); onOpen(id); } }}
+    aria-label={`${Palate.NAMES[id]}: ${sc==null?'no Blind Calls yet':`${sc}% on target${a.lean?`, you call it ${a.lean}`:''}`}. Open its page.`}
+    style={{background:'#FBF8F3',border:`1px solid ${C.line}`,borderRadius:14,padding:'10px 10px 10px 8px',display:'flex',alignItems:'center',gap:8,cursor:'pointer',minWidth:0}}>
+    <svg width="66" height="66" viewBox="-33 -33 66 66" aria-hidden="true" style={{flexShrink:0,overflow:'visible'}}>
+      <circle r={R} fill="none" stroke={SKETCH_PENCIL} strokeWidth="3" strokeDasharray="1 4" strokeLinecap="round"/>
+      {sc!=null&&<circle r={R} fill="none" stroke={ring} strokeWidth="4.5" strokeLinecap="round" className="palate-ring"
+        strokeDasharray={circ} strokeDashoffset={circ*(1-sc/100)} transform="rotate(-90)" style={{'--ring':circ}}/>}
+      <g transform="scale(0.82)"><SketchTraitIcon id={id}/></g>
     </svg>
-    <div style={{fontSize:13,color:C.ink2,fontFamily:C.P,lineHeight:1.45,textAlign:'center',padding:'4px 6px 2px'}}>
-      {p.n?<>The fuller the glass, the closer your Blind Calls come to the label on it.</>:<>Play Blind Call on your next bottle and these start to fill: the closer your guess, the fuller the glass.</>}
+    <div style={{minWidth:0,display:'flex',flexDirection:'column'}}>
+      <span style={{fontSize:14,fontWeight:700,color:C.ink,fontFamily:C.P}}>{Palate.NAMES[id]}</span>
+      <span style={{fontSize:24,fontWeight:800,color:sc==null?C.mid:C.ink,fontFamily:C.P,lineHeight:1.15}}>{sc==null?'–':`${sc}%`}</span>
+      <span style={{fontSize:12,color:a&&a.lean?C.amber:C.mid,fontFamily:C.P,fontWeight:a&&a.lean?600:400,lineHeight:1.3}}>{sc==null?'No calls yet':a.lean?`You call it ${a.lean}`:KnowledgeMap.level(sc)}</span>
     </div>
   </div>;
 }
-function MasteryPalate({p,go}){
-  const leans=Palate.leans(p);
+function PalateTiles({p,onOpen}){
+  return <div data-testid="palate-tiles" style={{display:'grid',gridTemplateColumns:'repeat(2,minmax(0,1fr))',gap:8}}>
+    {PALATE_TRAITS.map(id=><_PalateTile key={id} id={id} a={p.axes.find(x=>x.id===id)} onOpen={onOpen}/>)}
+  </div>;
+}
+function MasteryPalate({p,go,onOpen}){
   return(
     <div style={{display:'flex',flexDirection:'column',gap:10}}>
-      <PalateGlasses p={p}/>
+      <PalateTiles p={p} onOpen={onOpen}/>
+      <div style={{fontSize:13,color:C.mid,fontFamily:C.P,lineHeight:1.45}}>Each % is how close your Blind Calls come to the label on that trait. Tap one to learn how to taste it and see every call.</div>
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline'}}>
         <span style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>{p.n?`${p.level} · ${p.score}%`:'Not started'}</span>
         <span style={{fontSize:13,color:C.mid,fontFamily:C.P}}>{p.n} Blind Call{p.n===1?'':'s'}{p.trend!=null&&p.trend!==0?` · ${p.trend>0?'+':''}${p.trend} lately`:''}</span>
@@ -885,12 +873,6 @@ function MasteryPalate({p,go}){
         {p.n?<>Your calls average {p.accuracy}% accurate{p.n<Palate.FULL_AT?`. The score fills in as you play: ${Palate.FULL_AT-p.n} more to count in full`:''}. Each call is checked against the label's profile, an estimate, so treat it as a guide.</>
           :<>Blind Call asks you to taste first and guess the body, acidity and tannins before you see the label's profile. Your calls build this score, separate from what you've read.</>}
       </div>
-      {p.axes.map(a=>(
-        <div key={a.id} style={{display:'flex',flexDirection:'column',gap:4}}>
-          <div style={{fontSize:13,color:C.mid,fontFamily:C.P,lineHeight:1.4}}><b style={{color:C.ink2}}>{a.name}.</b> {a.how}</div>
-        </div>
-      ))}
-      {leans.map(l=><div key={l} style={{fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.45,background:C.offWhite,borderRadius:10,padding:'8px 10px'}}>{l}</div>)}
       {p.next&&<div role="button" onClick={()=>go(p.next)} style={{fontSize:14,fontWeight:700,color:C.cr,fontFamily:C.P,cursor:'pointer'}}>{p.next.label} →</div>}
     </div>
   );
@@ -1047,10 +1029,10 @@ const _MASTERY_CSS=`@keyframes masteryGrow{from{transform:scale(0.2);opacity:0}t
 .milestone-in{animation:milestoneIn .5s ease both}
 
 .grape-berry{transition:transform .9s cubic-bezier(.2,.8,.2,1)}
-@keyframes palateFill{from{transform:scaleY(0)}to{transform:scaleY(1)}}
-.palate-fill{animation:palateFill 1.1s cubic-bezier(.3,.7,.2,1) both;transform-box:fill-box;transform-origin:50% 100%}
+@keyframes palateRing{from{stroke-dashoffset:var(--ring)}}
+.palate-ring{animation:palateRing 1s cubic-bezier(.3,.7,.2,1) both}
 .grape-btn:focus-visible .grape-hit{stroke:#0F0F0F;stroke-width:2;stroke-dasharray:3 2}
-@media (prefers-reduced-motion:reduce){.mastery-radar-shape,.milestone-in{animation:none}.grape-berry{transition:none}.palate-fill{animation:none}}`;
+@media (prefers-reduced-motion:reduce){.mastery-radar-shape,.milestone-in{animation:none}.grape-berry{transition:none}.palate-ring{animation:none}}`;
 
 /* One section of Mastery: a heading that folds it away (a chevron, aria-expanded) and, folded, a
    one-line summary in its place, which also opens it. `dark` draws the body on the welcome
@@ -1086,7 +1068,7 @@ function MasteryMapScreen({nav,back,showPro}){
   const [grapeView,setGrapeViewS]=React.useState(()=>(ret.current&&ret.current.view||Device.masteryView().grapes)==='list'?'list':'bunch');
   const setGrapeView=x=>{ setGrapeViewS(x); Device.setMasteryView({grapes:x}); };
   React.useLayoutEffect(()=>{ const r=ret.current, el=listRef.current; if(r&&el&&r.top>0) el.scrollTop=r.top; },[]);
-  const leaveForGrape=()=>Handoff.masteryReturn.set({top:listRef.current?listRef.current.scrollTop:0,view:grapeView});
+  const leaveMastery=()=>Handoff.masteryReturn.set({top:listRef.current?listRef.current.scrollTop:0,view:grapeView});
   const go=next=>{ if(next) _openLearn({kind:'mastery',next},nav,showPro); };
   // Sections they've folded away stay folded next time (Device.masteryCollapsed).
   const [folded,setFolded]=React.useState(()=>Device.masteryCollapsed());
@@ -1142,7 +1124,7 @@ function MasteryMapScreen({nav,back,showPro}){
 
         <MasterySection id="grapes" title="Your grapes" folded={folded} toggle={toggle}
           summary={`${cluster.studied} of ${cluster.total} grapes studied${cluster.mastered?` · ${cluster.mastered} mastered`:''}`}>
-          <MasteryGrapes m={m} nav={nav} view={grapeView} setView={setGrapeView} onOpen={leaveForGrape}/>
+          <MasteryGrapes m={m} nav={nav} view={grapeView} setView={setGrapeView} onOpen={leaveMastery}/>
         </MasterySection>
 
         <MasterySection id="map" title="Your wine map" folded={folded} toggle={toggle}
@@ -1152,7 +1134,7 @@ function MasteryMapScreen({nav,back,showPro}){
 
         <MasterySection id="palate" title="Your palate" testid="mastery-palate" folded={folded} toggle={toggle}
           summary={palate.n?`${palate.score}% · ${palate.level} · from ${palate.n} Blind Call${palate.n===1?'':'s'}`:'No Blind Calls yet'}>
-          <MasteryPalate p={palate} go={go}/>
+          <MasteryPalate p={palate} go={go} onOpen={id=>{ leaveMastery(); Handoff.palateTrait.set(id); nav('palate-trait'); }}/>
         </MasterySection>
 
         <MasterySection id="milestones" title="Milestones" testid="mastery-milestones" folded={folded} toggle={toggle}

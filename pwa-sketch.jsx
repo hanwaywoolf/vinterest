@@ -69,3 +69,27 @@ function SketchVine({x,y,s=1,leafRed}){
     </g>
   </g>;
 }
+
+/* The palate traits as little pen-and-wash objects, each the thing the app compares it to
+   (Palate.HOW): a drop of cream for body, a lemon for acidity, a cup of black tea for tannins,
+   an apple for texture. Drawn about 40 units across, centred on (0, 0). */
+const SKETCH_TRAIT={body:'#E9D9B4',acidity:'#E8C547',tannins:'#9A6440',texture:'#A9B85E'};
+function SketchTraitIcon({id}){
+  const ink={fill:'none',stroke:SKETCH_INK,strokeLinecap:'round',strokeLinejoin:'round'}, wash=SKETCH_TRAIT[id];
+  const shape={
+    body:{d:'M0 -17 C5 -9 12 -2 12 6 C12 13.5 6.5 18 0 18 C-6.5 18 -12 13.5 -12 6 C-12 -2 -5 -9 0 -17 Z',
+      extra:<path d="M-6 6 C-6 10 -3.5 12.5 -0.5 13" {...ink} strokeWidth="1.2" opacity="0.6"/>},
+    acidity:{d:'M-17 0 C-17 -9 -8 -13 0 -13 C8 -13 17 -9 17 0 C17 9 8 13 0 13 C-8 13 -17 9 -17 0 Z',
+      extra:<><path d="M17 0 L20.5 -0.6 M-17 0 L-20.5 0.6" {...ink} strokeWidth="1.6"/><path d="M-9 -5 C-4 -8 4 -8 9 -5" {...ink} strokeWidth="1" opacity="0.55"/></>},
+    tannins:{d:'M-15 -8 L15 -8 C15 4 9 12 0 12 C-9 12 -15 4 -15 -8 Z',
+      extra:<><path d="M15 -4 C21 -4 21 5 13 5" {...ink} strokeWidth="1.6"/><path d="M-19 15 C-8 18 8 18 19 15" {...ink} strokeWidth="1.5"/><path d="M-4 -12 C-6 -15 -2 -17 -4 -20 M4 -12 C2 -15 6 -17 4 -20" {...ink} strokeWidth="1" opacity="0.55"/></>},
+    texture:{d:'M0 -9 C5 -14 15 -12 15 -1 C15 10 7 16 0 13 C-7 16 -15 10 -15 -1 C-15 -12 -5 -14 0 -9 Z',
+      extra:<><path d="M0 -9 C0 -13 1 -16 3 -18" {...ink} strokeWidth="1.5"/><path d="M3 -15 C7 -19 12 -18 13 -15 C9 -12 5 -13 3 -15 Z" fill={SKETCH_WASH.leaf} opacity="0.7" stroke={SKETCH_INK} strokeWidth="1"/></>},
+  }[id];
+  if(!shape) return null;
+  return <g>
+    <path d={shape.d} fill={wash} opacity="0.75" transform="translate(1.2 1.4)"/>
+    <path d={shape.d} {...ink} strokeWidth="1.6"/>
+    {shape.extra}
+  </g>;
+}

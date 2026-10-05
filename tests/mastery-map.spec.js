@@ -138,16 +138,37 @@ test('Palate scores Blind Calls per axis, names a habit, and fills in over five 
   await page.goto(`${BASE}/#mastery-map`);
   const card = page.getByTestId('mastery-palate');
   await expect(card).toContainText('4 Blind Calls');
-  await expect(card).toContainText('Tannin dries your gums');
-  await expect(card).toContainText('grippier than the label');
-  // The glasses: one per trait, filled to its score, the habit written under tannins.
-  const glasses = page.getByTestId('palate-glasses');
-  await expect(glasses.locator('.palate-fill')).toHaveCount(3);
-  await expect(glasses).toHaveAttribute('aria-label', /Body 100%; Acidity 100%; Tannins 60%, you call it grippier/);
-  await expect(glasses).toContainText('you call it grippier');
-  await glasses.scrollIntoViewIfNeeded();
-  await page.waitForTimeout(1500);
+  // The tiles: every trait with its number written out, the habit under tannins, texture waiting.
+  const tiles = page.getByTestId('palate-tiles');
+  await expect(tiles.locator('[data-trait]')).toHaveCount(4);
+  await expect(tiles.locator('[data-trait="body"]')).toContainText('100%');
+  await expect(tiles.locator('[data-trait="tannins"]')).toContainText('60%');
+  await expect(tiles.locator('[data-trait="tannins"]')).toContainText('You call it grippier');
+  await expect(tiles.locator('[data-trait="texture"]')).toContainText('No calls yet');
+  await tiles.scrollIntoViewIfNeeded();
+  await page.waitForTimeout(1100);
   await page.screenshot({ path: path.join(info.project.outputDir, 'mastery-palate.png') });
+
+  // A tile opens the trait's own page: the number, the habit, how to notice it, every call.
+  await tiles.locator('[data-trait="tannins"]').click();
+  await expect(page.getByTestId('trait-hero')).toContainText('60%');
+  await expect(root(page)).toContainText('you tend to call tannins grippier');
+  await expect(root(page)).toContainText('try calling it a little silkier');
+  await expect(root(page)).toContainText('Strong black tea');
+  const calls = page.getByTestId('trait-calls');
+  await expect(calls.getByRole('button')).toHaveCount(4);
+  await expect(calls.getByRole('button').first()).toContainText('You: very grippy · Label: quite grippy');
+  await expect(calls.getByRole('button').first()).toContainText('60%');
+  await page.screenshot({ path: path.join(info.project.outputDir, 'palate-trait.png') });
+  await calls.scrollIntoViewIfNeeded();
+  await page.screenshot({ path: path.join(info.project.outputDir, 'palate-trait-2.png') });
+  // Back lands on Mastery's palate, not the top.
+  await root(page).getByRole('button', { name: 'Back' }).click();
+  await expect(page.getByTestId('palate-tiles')).toBeInViewport();
+  // A trait with no calls still has its page, to learn from.
+  await page.getByTestId('palate-tiles').locator('[data-trait="texture"]').click();
+  await expect(page.getByTestId('trait-hero')).toContainText('No Blind Calls yet');
+  await expect(root(page)).toContainText('cold apple');
   expect(errors).toEqual([]);
 });
 

@@ -454,3 +454,84 @@ function GrapeScreen({nav,back,showPro}){
     </div>
   );
 }
+
+/* ── A palate trait's own page ──
+   Opened from Mastery's palate tiles, like a grape's page from the bunches: the trait sketched
+   in its ring with how close their Blind Calls come on it, any habit, then what it is, how to
+   notice it, wines at either end of its scale and a tip (Palate.TRAITS), then every Blind Call
+   on it: their guess and the label's profile in words, and how close it was, each opening its
+   wine. The next step is another Blind Call, or the tasting guide that teaches it. */
+function PalateTraitScreen({nav,back}){
+  const id=Handoff.palateTrait.get();
+  const t=React.useMemo(()=>id&&Palate.TRAITS[id]?Palate.trait(id):null,[id]);
+  const card={background:C.white,borderRadius:16,border:`1px solid ${C.line}`,padding:'14px 16px',display:'flex',flexDirection:'column',gap:8};
+  const head=x=><div style={{fontSize:13,fontWeight:600,color:C.mid,letterSpacing:'0.08em',textTransform:'uppercase',fontFamily:C.P,marginTop:4}}>{x}</div>;
+  if(!t) return <div style={{flex:1,padding:24,fontFamily:C.P,color:C.mid}}>That trait isn't here. <span role="button" onClick={back} style={{color:C.cr,fontWeight:700,cursor:'pointer'}}>Back</span></div>;
+  const R=44, circ=2*Math.PI*R, ring=t.id==='body'?'#C9A86A':SKETCH_TRAIT[t.id];
+  const openWine=w=>{ Handoff.openWine({demo:false,wine:w,existingRating:w.rating||0}); nav('detail'); };
+  const [lo,hi]=t.words;
+  return(
+    <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden'}}>
+      <div style={{background:C.white,padding:'14px 20px',display:'flex',alignItems:'center',gap:12,borderBottom:`1px solid ${C.line}`,flexShrink:0}}>
+        <div role="button" aria-label="Back" onClick={back} style={{width:34,height:34,borderRadius:17,background:C.offWhite,border:`1px solid ${C.line}`,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',flexShrink:0}}><Icon n="back" sz={16} col={C.ink}/></div>
+        <div style={{minWidth:0}}>
+          <div style={{fontSize:20,fontWeight:800,color:C.ink,fontFamily:C.P,letterSpacing:'-0.4px'}}>{t.name}</div>
+          <div style={{fontSize:13,color:C.mid,fontFamily:C.P}}>Your palate · from {lo} to {hi}</div>
+        </div>
+      </div>
+      <div style={{flex:1,overflowY:'auto',padding:'16px 20px',display:'flex',flexDirection:'column',gap:12}}>
+        <div data-testid="trait-hero" style={{...card,background:'#FBF8F3',flexDirection:'row',alignItems:'center',gap:14}}>
+          <svg width="110" height="110" viewBox="-55 -55 110 110" aria-hidden="true" style={{flexShrink:0,overflow:'visible'}}>
+            <circle r={R} fill="none" stroke={SKETCH_PENCIL} strokeWidth="3.5" strokeDasharray="1 5" strokeLinecap="round"/>
+            {t.score!=null&&<circle r={R} fill="none" stroke={ring} strokeWidth="6" strokeLinecap="round" strokeDasharray={circ} strokeDashoffset={circ*(1-t.score/100)} transform="rotate(-90)"/>}
+            <g transform="scale(1.35)"><SketchTraitIcon id={t.id}/></g>
+          </svg>
+          <div style={{display:'flex',flexDirection:'column',gap:2,minWidth:0}}>
+            <span style={{fontSize:34,fontWeight:800,color:t.score==null?C.mid:C.ink,fontFamily:C.P,lineHeight:1.05}}>{t.score==null?'–':`${t.score}%`}</span>
+            <span style={{fontSize:14,fontWeight:600,color:C.ink2,fontFamily:C.P}}>{t.score==null?'No Blind Calls yet':`${t.level} · ${t.n} call${t.n===1?'':'s'}`}</span>
+            <span style={{fontSize:13,color:C.mid,fontFamily:C.P,lineHeight:1.4}}>{t.score==null?`Your Blind Calls on ${t.name.toLowerCase()} will show here.`:`How close your calls come to the label on ${t.name.toLowerCase()}.`}</span>
+          </div>
+        </div>
+        {t.lean&&<div style={{...card,background:'#FFF4E0',border:'none'}}><span style={{fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.5}}><b>Your habit:</b> you tend to call {t.name.toLowerCase()} {t.lean} than the label's profile. Next time, try calling it a little {Palate.LEAN[t.id][0]===t.lean?Palate.LEAN[t.id][1]:Palate.LEAN[t.id][0]}.</span></div>}
+
+        {head('What it is')}
+        <div style={card}><span style={{fontSize:15,color:C.ink2,fontFamily:C.P,lineHeight:1.55}}>{t.what}</span></div>
+
+        {head('How to notice it')}
+        <div style={{...card,gap:10}}>
+          {t.notice.map((x,i)=><div key={i} style={{display:'flex',gap:10}}>
+            <span style={{width:22,height:22,borderRadius:11,background:'#FBF8F3',border:`1px solid ${C.line}`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:12,fontWeight:700,color:C.ink2,fontFamily:C.P,flexShrink:0}}>{i+1}</span>
+            <span style={{fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.5}}>{x}</span>
+          </div>)}
+        </div>
+
+        {head(`From ${lo} to ${hi}`)}
+        <div style={{...card,gap:10}}>
+          <div><div style={{fontSize:13,fontWeight:700,color:C.ink,fontFamily:C.P,textTransform:'capitalize'}}>{lo}</div><div style={{fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.5}}>{t.low}</div></div>
+          <div><div style={{fontSize:13,fontWeight:700,color:C.ink,fontFamily:C.P,textTransform:'capitalize'}}>{hi}</div><div style={{fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.5}}>{t.high}</div></div>
+          <div style={{fontSize:14,color:C.mid,fontFamily:C.P,lineHeight:1.5,borderTop:`1px solid ${C.line}`,paddingTop:10}}><b style={{color:C.ink2}}>Tip:</b> {t.tip}</div>
+        </div>
+
+        {head('Your Blind Calls')}
+        {t.calls.length?<div data-testid="trait-calls" style={{...card,gap:0,padding:'4px 16px'}}>
+          {t.calls.map((c,i)=><div key={i} role="button" tabIndex={0} onClick={()=>openWine(c.wine)} onKeyDown={e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); openWine(c.wine); } }}
+            style={{display:'flex',alignItems:'center',gap:10,padding:'10px 0',borderTop:i?`1px solid ${C.line}`:'none',cursor:'pointer'}}>
+            <div style={{flex:1,minWidth:0}}>
+              <div style={{fontSize:15,fontWeight:600,color:C.ink,fontFamily:C.P,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{c.wine.name}{c.wine.vintage?` ${c.wine.vintage}`:''}</div>
+              <div style={{fontSize:13,color:C.mid,fontFamily:C.P,lineHeight:1.4}}>You: {c.said} · Label: {c.labelSaid}</div>
+            </div>
+            <span style={{fontSize:16,fontWeight:800,color:c.accuracy>=80?C.green:c.accuracy>=50?C.amber:'#B04A3A',fontFamily:C.P}}>{c.accuracy}%</span>
+            <Icon n="chevron" sz={14} col={C.mid}/>
+          </div>)}
+        </div>:<div style={card}><span style={{fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.5}}>Blind Call asks you to taste before you see the label's profile. Play it on your next bottle and your call on {t.name.toLowerCase()} lands here.</span></div>}
+        <div style={{fontSize:13,color:C.mid,fontFamily:C.P,lineHeight:1.45}}>The label's profile is an estimate from the wine's details, so treat these as a guide, not a verdict on your palate.</div>
+
+        <div style={{display:'flex',flexDirection:'column',gap:8}}>
+          <div role="button" onClick={()=>nav('camera')} style={{fontSize:14,fontWeight:700,color:C.cr,fontFamily:C.P,cursor:'pointer'}}>Play Blind Call on your next bottle →</div>
+          {t.guide&&<div role="button" onClick={()=>{ Handoff.guide.set(t.guide.id); nav('guide'); }} style={{fontSize:14,fontWeight:700,color:C.cr,fontFamily:C.P,cursor:'pointer'}}>Read "{t.guide.title}" →</div>}
+        </div>
+        <div style={{height:12}}/>
+      </div>
+    </div>
+  );
+}
