@@ -76,7 +76,7 @@ function App(){
     window.addEventListener('vinterest:xp',handler);
     return ()=>window.removeEventListener('vinterest:xp',handler);
   },[]);
-  const showXpBadge=!['camera','onboarding','learn','quiz','article','gen-article','guide','identified','detail','mywines','scan','profile','style-explore','winelist','account','settings','mastery-map'].includes(screen);
+  const showXpBadge=!['camera','onboarding','learn','quiz','article','gen-article','guide','identified','detail','mywines','scan','profile','style-explore','winelist','account','settings','mastery-map','grape','palate-trait'].includes(screen);
 
   // XP and the moments behind it (pwa-moments.jsx): a quiet chip, and cards that wait for a calm screen.
   const xpDel=useXPDelivery();
@@ -143,6 +143,8 @@ function App(){
         {screen==='learn'     && <ScreenErrorBoundary><QuizHubScreen {...ctx}/></ScreenErrorBoundary>}
         {screen==='quiz'      && <QuizScreen {...ctx}/>}
         {screen==='mastery-map' && <MasteryMapScreen {...ctx}/>}
+        {screen==='grape' && <GrapeScreen {...ctx}/>}
+        {screen==='palate-trait' && <PalateTraitScreen {...ctx}/>}
         {screen==='article'   && <ScreenErrorBoundary><LearnArticleScreen {...ctx}/></ScreenErrorBoundary>}
         {screen==='gen-article'&& <ScreenErrorBoundary><GenArticleScreen {...ctx}/></ScreenErrorBoundary>}
         {screen==='guide'&& <ScreenErrorBoundary><GuideScreen {...ctx}/></ScreenErrorBoundary>}

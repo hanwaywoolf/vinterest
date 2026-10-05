@@ -436,6 +436,7 @@ function StyleExploreScreen({nav,back}){
               <Btn small full onClick={()=>FindOnline.open(wine,'explore')}>{FindOnline.label(wine)}</Btn>
             </Card>
           ))}
+          {bottles&&bottles.length>0&&<ShopDisclosure style={{padding:'0 4px'}}/>}
           {bottles&&bottles.length===0&&(
             <Card style={{padding:14}}>
               <span style={{fontSize:15,color:C.mid,fontFamily:C.P}}>Couldn't load bottle suggestions right now. The label tips above are enough to find one in a shop or on a wine list.</span>

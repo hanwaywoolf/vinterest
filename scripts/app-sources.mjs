@@ -39,6 +39,7 @@ export const APP_SOURCES = [
   'pwa-scancards.jsx',
   'pwa-screens-detail.jsx',
   'pwa-screens-explore.jsx',
+  'pwa-sketch.jsx',
   'pwa-screens-quiz.jsx',
   'pwa-screens-aux.jsx',
   'pwa-screens-account.jsx',
@@ -57,6 +58,7 @@ export const STATIC_FILES = [
   'manifest.json',
   'sw.js',
   '_worker.js',
+  'data/retailers.json', // read by the Worker's /go, so link routing follows the deployed list
   '_headers',
   '_redirects',
   'icons',

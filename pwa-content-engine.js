@@ -322,7 +322,10 @@ const ExploreNext = {
     const lovedSet=k=>new Set(p.loved.flatMap(k).map(x=>x.toLowerCase()));
     const lowOf=(pluck)=>{ const keep=lovedSet(pluck); return new Set(p.disliked.flatMap(pluck).map(x=>x.toLowerCase()).filter(x=>!keep.has(x))); };
     const grapes=w=>(w.grapes||[]).map(g=>WineDNA.grape(g)).filter(Boolean), region=w=>[...new Set([w.region,WineDNA.region(w)].filter(Boolean))]; // both the appellation and its region, so a disliked Bandol steers away from Bandol and from Provence styles
-    const avg={}; Object.keys(this.AXES).forEach(k=>{ const v=p.dnaAvg[k]!=null?p.dnaAvg[k]:p.avg[k]; if(v!=null) avg[k]=v; });
+    // The style to build on: their best third on their own scale (WineDNA.loves) once there's
+    // enough to go on, so a generous scorer's picks follow what they love most, not all their 90+s.
+    const target=p.loves&&p.loves.ready&&p.loves.bestAvg?p.loves.bestAvg:p.dnaAvg;
+    const avg={}; Object.keys(this.AXES).forEach(k=>{ const v=target[k]!=null?target[k]:p.avg[k]; if(v!=null) avg[k]=v; });
     return {wines:p.wines,avg,topGrapes:lc(p.topGrapes),topRegions:lc(p.topRegions),lowGrapes:lowOf(grapes),lowRegions:lowOf(region)};
   },
   _level(v){ return {high:0,low:1,mid:2}[WineDNA.level(v)]; },
@@ -365,6 +368,25 @@ const ExploreNext = {
     return this.readyTypes(wines).find(k=>!seen.includes(k))||null;
   },
   markCelebrated(k){ const seen=Flags.exploreReadySeen()||[]; if(!seen.includes(k)) Flags.setExploreReadySeen([...seen,k]); },
+  /* Picks rotate. A pick shown on REST_AFTER different days (WineDNA or Home) that they never
+     opened or added to Learn rests for REST_DAYS, scored REST_PENALTY lower so the next styles
+     come through; after its rest it's fresh again. Opened or added to Learn, it stays. Kept on
+     this phone (SEEN_KEY: {id: {days, last, opened}}). */
+  SEEN_KEY:'vinterest_explore_seen', REST_AFTER:5, REST_DAYS:30, REST_PENALTY:0.25,
+  _seen(){ const v=Store.getJSON(this.SEEN_KEY,{}); return v&&typeof v==='object'?v:{}; },
+  noteShown(picks,now=Date.now()){
+    const s=this._seen(), d=new Date(now).toISOString().slice(0,10); let ch=false;
+    (picks||[]).forEach(a=>{ const id=a.style.id, e=s[id]||{days:[]};
+      if(e.last&&now-e.last>=this.REST_DAYS*864e5) e.days=[]; // back from its rest: fresh
+      if(!e.days.includes(d)){ e.days=[...e.days,d].slice(-this.REST_AFTER*2); ch=true; }
+      e.last=now; s[id]=e; });
+    if(ch) Store.setJSON(this.SEEN_KEY,s);
+  },
+  markOpened(id,now=Date.now()){ const s=this._seen(); s[id]={days:[],...(s[id]||{}),opened:now}; Store.setJSON(this.SEEN_KEY,s); },
+  resting(id,now=Date.now()){
+    const e=this._seen()[id]; if(!e||e.opened||this.inLearn(id)) return false;
+    return (e.days||[]).length>=this.REST_AFTER&&now-(e.last||0)<this.REST_DAYS*864e5;
+  },
   // {picks:[assessments], explored:[{style,wine}]} for one type.
   suggest(typeKey,wines,label,n=3){
     // No picks until there's enough to go on (READY_AT wines of the type): WineDNA shows none
@@ -377,6 +399,7 @@ const ExploreNext = {
       const tried=dna.wines.filter(w=>this.matches(s,w)).sort((a,b)=>(b.rating||0)-(a.rating||0))[0];
       if(tried) explored.push({style:s,wine:tried}); else open.push(this.assess(s,dna,label));
     });
+    open.forEach(a=>{ if(this.resting(a.style.id)){ a.resting=true; a.score-=this.REST_PENALTY; } });
     open.sort((a,b)=>b.score-a.score);
     const picks=[], countries=new Set();
     open.forEach(a=>{ if(picks.length<n&&!countries.has(a.style.country)){ picks.push(a); countries.add(a.style.country); } });

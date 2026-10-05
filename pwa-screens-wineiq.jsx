@@ -8,16 +8,7 @@ function _topByWeightedCount(items){const c={};items.forEach(({v,rating})=>{if(v
 function _topNotes(wines,n){const all=[];wines.forEach(w=>(w.tasting_notes||[]).forEach(t=>{if(t)all.push({v:t,rating:w.rating});}));return _topByWeightedCount(all).slice(0,n);}
 
 /* ── Flavour clusters ── */
-const _NOTE_CLUSTERS=[
-  {name:'Dark Fruit & Spice',    kw:['blackberry','blackcurrant','black cherry','plum','dark cherry','black fruit','blueberry','clove','pepper','spice','anise','liquorice']},
-  {name:'Red Fruit & Floral',    kw:['cherry','raspberry','strawberry','redcurrant','red fruit','pomegranate','violet','rose','hibiscus']},
-  {name:'Earth & Leather',       kw:['earth','leather','tobacco','truffle','forest floor','mushroom','barnyard','smoke','tar','graphite','iron']},
-  {name:'Citrus & Mineral',      kw:['lemon','lime','grapefruit','citrus','mineral','chalk','flint','oyster','saline','wet stone','slate']},
-  {name:'Oak & Vanilla',         kw:['vanilla','caramel','toast','oak','cedar','sandalwood','coconut','cream','butterscotch']},
-  {name:'Herb & Savour',         kw:['herb','thyme','rosemary','olive','green pepper','eucalyptus','menthol','garrigue','dried herb']},
-  {name:'Tropical & Stone Fruit',kw:['peach','apricot','nectarine','mango','pineapple','passion fruit','melon','guava','lychee']},
-  {name:'Brioche & Yeast',       kw:['brioche','toast','biscuit','bread','yeast','pastry','almonds','hazelnut']},
-];
+const _NOTE_CLUSTERS=WineDNA.NOTE_CLUSTERS;
 const _FOOD_PAIRINGS={
   'Dark Fruit & Spice':   'Grilled red meat, aged hard cheese, braised short rib',
   'Red Fruit & Floral':   'Duck breast, mushroom risotto, charcuterie',
@@ -52,6 +43,53 @@ const _TYPES=[
   {key:'dessert',   label:'Dessert',  tab:'Dessert',  col:'#8A5A2B'},
   {key:'fortified', label:'Fortified',tab:'Fortified',col:'#5C2A1E'},
 ];
+
+/* How well the match knows them (TasteMatch.calibration): how often it lands close to the score
+   they gave, a strip of every scored wine by how far off it was, which way it leans, and their
+   biggest surprises either way, each opening the wine. */
+function _KnowsCard({k,t,tLabel,openWine}){
+  const card={padding:14};
+  if(!k.ready) return <Card style={card}><div style={{fontSize:15,color:C.ink2,fontFamily:C.P,lineHeight:1.55}}>
+    Each time you scan, we predict the score you'll give a bottle. Score {WineDNA.noun(t.key,k.need)} more and this will show how close those predictions come, and which bottles surprised you.</div></Card>;
+  const head=k.level==='well'?`We know your ${tLabel} well`:k.level==='getting'?`We're getting to know your ${tLabel}`:`Your ${tLabel} still surprise us`;
+  const W=300, H=46, span=15, x=d=>W/2+Math.max(-span,Math.min(span,d))/span*(W/2-10);
+  const lane={};
+  const Surprise=({r,up})=><div role="button" onClick={()=>openWine(r.wine)} style={{display:'flex',alignItems:'center',gap:10,padding:'9px 0',borderTop:`1px solid ${C.line}`,cursor:'pointer'}}>
+    <div style={{flex:1,minWidth:0}}>
+      <div style={{fontSize:15,fontWeight:600,color:C.ink,fontFamily:C.P,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{WineDNA.nameYear(r.wine)}</div>
+      <div style={{fontSize:13,color:C.mid,fontFamily:C.P,lineHeight:1.4}}>Your other {tLabel} pointed to about {r.expected}; you gave it {r.actual}.</div>
+    </div>
+    <span style={{fontSize:14,fontWeight:800,color:up?C.green:'#B04A3A',fontFamily:C.P,whiteSpace:'nowrap'}}>{up?'+':''}{r.diff}</span>
+  </div>;
+  return <Card style={card}>
+    <div data-testid="knows" style={{display:'flex',flexDirection:'column',gap:8}}>
+      <div style={{fontSize:17,fontWeight:700,color:C.ink,fontFamily:C.P}}>{head}</div>
+      <div style={{fontSize:15,color:C.ink2,fontFamily:C.P,lineHeight:1.5}}>
+        We matched each of your {k.n} scored {tLabel} again from your other {tLabel} alone. The expected score landed within {TasteMatch.CAL_CLOSE} points of yours <b>{k.close} times in {k.n}</b>, and within 5 points {k.near} times.
+      </div>
+      <svg viewBox={`0 0 ${W} ${H+18}`} width="100%" role="img" aria-label={`How far each prediction was from your score: ${k.close} of ${k.n} within ${TasteMatch.CAL_CLOSE} points.`} style={{display:'block',maxWidth:420}}>
+        <rect x={x(-TasteMatch.CAL_CLOSE)} y="4" width={x(TasteMatch.CAL_CLOSE)-x(-TasteMatch.CAL_CLOSE)} height={H-8} rx="6" fill={C.greenBg}/>
+        <line x1={W/2} y1="2" x2={W/2} y2={H-2} stroke={C.green} strokeWidth="1.5"/>
+        <line x1="10" y1={H/2} x2={W-10} y2={H/2} stroke={C.line} strokeWidth="1"/>
+        {k.rows.map((r,i)=>{ const cx=Math.round(x(r.diff)/6); const n=lane[cx]=(lane[cx]||0)+1; const y=H/2+((n%2?-1:1)*Math.floor(n/2))*6.5;
+          return <circle key={i} cx={x(r.diff)} cy={Math.max(6,Math.min(H-6,y))} r="3.6" fill={Math.abs(r.diff)<=TasteMatch.CAL_CLOSE?C.green:r.diff>0?t.col:'#B9AFA4'} opacity="0.85"/>; })}
+        <text x="10" y={H+14} style={{fontSize:'11px',fill:C.mid,fontFamily:C.P}}>You scored lower</text>
+        <text x={W/2} y={H+14} textAnchor="middle" style={{fontSize:'11px',fontWeight:700,fill:C.green,fontFamily:C.P}}>spot on</text>
+        <text x={W-10} y={H+14} textAnchor="end" style={{fontSize:'11px',fill:C.mid,fontFamily:C.P}}>You scored higher</text>
+      </svg>
+      {Math.abs(k.bias)>=2&&<div style={{fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.5}}>{k.bias>0?`You tend to score a little above what we expect (by about ${Math.round(k.bias)}): your ${tLabel} keep pleasing you more than your history says.`:`You tend to score a little below what we expect (by about ${Math.round(-k.bias)}): you're getting harder to impress.`}</div>}
+      {k.above.length>0&&<div data-testid="knows-above">
+        <div style={{fontSize:13,fontWeight:700,color:C.ink,fontFamily:C.P,marginTop:4,marginBottom:2}}>Loved more than we expected</div>
+        <div style={{fontSize:13,color:C.mid,fontFamily:C.P,lineHeight:1.45,marginBottom:2}}>Surprises like these are where your taste is growing: worth a closer look at what they have that your usual bottles don't.</div>
+        {k.above.map((r,i)=><Surprise key={i} r={r} up/>)}
+      </div>}
+      {k.below.length>0&&<div data-testid="knows-below">
+        <div style={{fontSize:13,fontWeight:700,color:C.ink,fontFamily:C.P,marginTop:4,marginBottom:2}}>Let you down</div>
+        {k.below.map((r,i)=><Surprise key={i} r={r}/>)}
+      </div>}
+    </div>
+  </Card>;
+}
 
 /* Collapsible section header — collapsed state shows a short useful summary + expand CTA below the title */
 function CSH({label,cKey,collapsed,toggle,summary}){
@@ -229,7 +267,8 @@ function WineDNAScreen({nav,back,showPro}){
     const topNotes=_topNotes(p.wines,14);
     const explore=ExploreNext.suggest(tp.key,allWines,tp.label);
     const topWines=[...p.scored].sort((a,b)=>b.rating-a.rating).slice(0,3);
-    return{...tp,...p,pct,topNotes,noteClusters:_clusterNotes(topNotes),explore,topWines};
+    const knows=TasteMatch.calibration(tp.key,allWines);
+    return{...tp,...p,pct,topNotes,noteClusters:_clusterNotes(topNotes),explore,topWines,knows};
   }),[sig]);
 
   const t=typeStats[typeIdx];
@@ -246,18 +285,22 @@ function WineDNAScreen({nav,back,showPro}){
      Keyed on the wine signature so a new scan or a changed score refreshes it. */
   React.useEffect(()=>{
     if(!t.wines.length) return;
-    const key=`vinterest_dna_v6_${t.key}_${sig}`;
+    const key=`vinterest_dna_v7_${t.key}_${sig}`;
     const cached=Cache.getText(key);
     if(cached){setGenSummaries(s=>({...s,[t.key]:cached}));return;}
     if(generatingSummary===t.key) return;
     setGeneratingSummary(t.key);
-    const hasDislikes=t.favourites.disliked.length>0;
-    const prompt=`You write the summary at the top of a wine drinker's WineDNA profile. The app is educational: be warm, specific and confidence-building, and help them buy better next time. Use ONLY these facts, computed from their own scans and 100-point scores; never invent grapes, regions, wines or numbers, and don't claim a preference the facts don't state. If they've scored fewer than 8, say gently that the picture is still forming.\n\nFacts:\n${WineDNA.summaryFacts(t)}\n\nReturn ONLY raw JSON, no markdown: {"style":"one sentence on the style of ${t.label.toLowerCase()} they reach for, max 22 words","love":"one sentence on what their highest scores have in common and what to look for next, max 26 words"${hasDislikes?',"miss":"one sentence on what the wines they scored under 80 share, framed as useful to know when buying, max 22 words"':''}}`;
+    const hasDislikes=t.favourites.disliked.length>0||(t.loves.nots||[]).length>0;
+    const prompt=`You write the summary at the top of a wine drinker's WineDNA profile. The app is educational: be warm, specific and confidence-building, and help them buy better next time. Use ONLY these facts, computed from their own scans and 100-point scores; never invent grapes, regions, wines or numbers, and don't claim a preference the facts don't state. If they've scored fewer than 8, say gently that the picture is still forming.\n\nFacts:\n${WineDNA.summaryFacts(t)}\n\nReturn ONLY raw JSON, no markdown: {"style":"one sentence on the style of ${t.label.toLowerCase()} they reach for, max 22 words","love":"two short sentences in plain words: what they love (the style, the flavours and the grapes, regions or producers that lift their scores, from the What they love facts) and one or two of their best bottles by name as proof, then what to look for next; at most one number, max 45 words"${hasDislikes?',"miss":"one sentence on what holds their scores down (from the Less their thing facts and the wines under 80), framed as useful to know when buying, max 26 words"':''}}`;
     window.claude.complete({purpose:'winedna_summary',messages:[{role:'user',content:prompt}]})
       .then(text=>{const s=(text||'').trim(); if(s){Cache.setText(key,s);setGenSummaries(g=>({...g,[t.key]:s}));}})
       .catch(()=>{})
       .finally(()=>setGeneratingSummary(null));
   },[typeIdx,sig]);
+
+  // Explore Next picks seen today count toward their rest (ExploreNext.noteShown), so ones they
+  // keep passing over make way for new styles.
+  React.useEffect(()=>{ if(t.explore&&t.explore.picks.length) ExploreNext.noteShown(t.explore.picks); },[typeIdx,sig]);
 
   /* Sommelier script — shared with Home through SommelierScript (pwa-content-engine.js), so
      both screens show the same text and the same budget. */
@@ -325,7 +368,10 @@ function WineDNAScreen({nav,back,showPro}){
   const chips=[];
   if(t.topGrapes[0]) chips.push({label:'Top grape',value:t.topGrapes[0]});
   if(t.topRegions[0]) chips.push({label:'Most scanned',value:t.topRegions[0]});
-  if(fav.regions[0]) chips.push({label:'Top-scoring region',value:`${fav.regions[0].name} · ${fav.regions[0].avg}`});
+  // The region that lifts their scores most against their own usual score (WineDNA.loves), not just the highest raw average.
+  const loveRegion=t.loves.ready&&t.loves.up.find(x=>x.kind==='Region');
+  if(loveRegion) chips.push({label:'Region you love most',value:loveRegion.name});
+  else if(fav.regions[0]) chips.push({label:'Top-scoring region',value:`${fav.regions[0].name} · ${fav.regions[0].avg}`});
   const conf=t.confidence;
   const basisLine=t.basis==='loved'
     ?`Based on your ${t.loved.length} Outstanding (90+) ${tLabel}`
@@ -407,7 +453,7 @@ function WineDNAScreen({nav,back,showPro}){
                       {[
                         {label:'Your Style',text:sections.style},
                         {label:'What You Love',text:sections.love},
-                        {label:'What Didn’t Work',text:t.favourites.disliked.length?sections.miss:null},
+                        {label:'What Didn’t Work',text:t.favourites.disliked.length||(t.loves.nots||[]).length?sections.miss:null},
                       ].filter(s=>s.text).map((s,i)=>(
                         <div key={i}>
                           <div style={{fontSize:12,fontWeight:700,color:t.col,letterSpacing:'0.08em',textTransform:'uppercase',fontFamily:C.P,marginBottom:2}}>{s.label}</div>
@@ -447,80 +493,30 @@ function WineDNAScreen({nav,back,showPro}){
           </Card>;
         })()}
 
-        {/* ── What You Love: what separates your best-scored wines, and where they come from ── */}
-        {t.wines.length>0&&<CSH label="What You Love" cKey="love" collapsed={collapsed} toggle={toggle} summary={t.signals.length?t.signals[0].text+(t.signals[1]?' '+t.signals[1].text:''):fav.regions.length?`${fav.regions[0].name} is where your highest scores come from.`:`Score more ${tLabel} to see what your favourites have in common.`}/>}
-        {t.wines.length>0&&!collapsed.love&&(
+        {/* ── How well we know you: every scored wine matched again from the rest (TasteMatch.calibration) ── */}
+        {t.scored.length>0&&<CSH label="How Well We Know You" cKey="knows" collapsed={collapsed} toggle={toggle}
+          summary={t.knows.ready?`Your match lands within ${TasteMatch.CAL_CLOSE} points of your score ${t.knows.close} times in ${t.knows.n}.${t.knows.above[0]?` Biggest surprise: ${t.knows.above[0].wine.name}.`:''}`:`Score ${WineDNA.noun(t.key,t.knows.need)} more and we'll show how well your match predicts your scores.`}/>}
+        {t.scored.length>0&&!collapsed.knows&&<_KnowsCard k={t.knows} t={t} tLabel={tLabel} openWine={openWine}/>}
+
+        {/* ── House wines: the bottles they keep coming back to (WineDNA.houseWines) ── */}
+        {t.house.length>0&&<CSH label="Your “House” Wines" cKey="house" collapsed={collapsed} toggle={toggle}
+          summary={`${t.house.length===1?'One bottle':`${t.house.length} bottles`} you keep coming back to, led by ${t.house[0].wine.name}.`}/>}
+        {t.house.length>0&&!collapsed.house&&(
           <Card style={{padding:14}}>
-            <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P,marginBottom:4}}>What you love</div>
-            <div style={{fontSize:15,color:C.mid,fontFamily:C.P,lineHeight:1.5,marginBottom:12}}>What your Outstanding (90+) {tLabel} have in common, compared with the rest.</div>
-            {t.signals.length>0?(
-              <div style={{display:'flex',flexDirection:'column',gap:10,marginBottom:14}}>
-                {t.signals.map(s=>(
-                  <div key={s.axis} style={{padding:'10px 12px',borderRadius:12,background:`${t.col}08`,border:`1px solid ${t.col}25`}}>
-                    <div style={{fontSize:15,fontWeight:700,color:C.ink,fontFamily:C.P,marginBottom:3}}>{s.text}</div>
-                    <div style={{fontSize:13,color:C.mid,fontFamily:C.P,lineHeight:1.5,marginBottom:6}}>{s.detail}</div>
-                    <div style={{fontSize:15,color:C.ink2,fontFamily:C.P,lineHeight:1.5}}><span style={{fontWeight:700,color:t.col}}>Where to look: </span>{s.tip}</div>
-                  </div>
-                ))}
-              </div>
-            ):(
-              <div style={{fontSize:15,color:C.ink2,fontFamily:C.P,lineHeight:1.55,marginBottom:14,padding:'10px 12px',borderRadius:12,background:C.offWhite}}>
-                {conf.n<8
-                  ?`Score ${WineDNA.noun(t.key,8-conf.n)} more and this will show what separates the ones you love from the rest: ${t.axes.map(k=>WineDNA.AXES[k].name.toLowerCase()).join(', ')}.`
-                  :t.loved.length<3
-                    ?`You haven't scored ${WineDNA.noun(t.key,3)} at 90 or above yet. Once you do, this will show what they have in common.`
-                    :`No single trait separates your favourites yet: you enjoy ${tLabel} across a range of styles. That's a strength when choosing from a wine list.`}
-              </div>
-            )}
-
-            {(fav.regions.length>0||fav.grapes.length>0)&&(
-              <>
-                <div style={{...sub,marginBottom:6}}>Where your best scores come from</div>
-                {[...fav.regions.map(r=>({...r,kind:'Region'})),...fav.grapes.map(g=>({...g,kind:'Grape'}))].map(x=>(
-                  <div key={x.kind+x.name} style={{display:'flex',alignItems:'center',gap:8,padding:'6px 0',borderTop:`1px solid ${C.line}`}}>
-                    <span style={{fontSize:13,color:C.mid,fontFamily:C.P,width:48,flexShrink:0}}>{x.kind}</span>
-                    <span style={{fontSize:15,fontWeight:600,color:C.ink,fontFamily:C.P,flex:1}}>{x.kind==='Region'&&<Flag region={x.name} size={15} style={{marginRight:6}}/>}{x.name}</span>
-                    <span style={{fontSize:13,color:C.mid,fontFamily:C.P}}>{x.count} bottle{x.count!==1?'s':''}</span>
-                    <span style={{fontSize:15,fontWeight:800,color:scoreCol(x.avg),fontFamily:C.P,width:30,textAlign:'right'}}>{x.avg}</span>
-                  </div>
-                ))}
-                {fav.mostScanned&&fav.regions[0]&&fav.mostScanned.name!==fav.regions[0].name&&(
-                  <div style={{fontSize:13,color:C.ink2,fontFamily:C.P,lineHeight:1.5,marginTop:8}}>You scan {fav.mostScanned.name} most, but {fav.regions[0].name} scores highest. Worth seeking out more of it.</div>
-                )}
-              </>
-            )}
-
-            {fav.buyAgain.length>0&&(
-              <div style={{marginTop:14}}>
-                <div style={{...sub,marginBottom:6}}>Worth buying again</div>
-                {fav.buyAgain.map(w=>{ const pr=WineDNA.priceOf(w); return (
-                  <div key={'b'+w.name} role="button" onClick={()=>openWine(w)} style={{display:'flex',alignItems:'center',gap:8,padding:'6px 0',borderTop:`1px solid ${C.line}`,cursor:'pointer'}}>
-                    <Icon n="cart" sz={15} col={C.green}/>
-                    <span style={{fontSize:15,color:C.ink,fontFamily:C.P,flex:1,minWidth:0,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{w.name}</span>
-                    {pr>0&&<span style={{fontSize:13,color:C.mid,fontFamily:C.P}}>{Regional.current().base}{Math.round(pr)}{w.price_paid&&w.price_paid.amount>0?' paid':' est.'}</span>}
-                    {w.rating>0&&<span style={{fontSize:15,fontWeight:800,color:scoreCol(w.rating),fontFamily:C.P,width:30,textAlign:'right'}}>{w.rating}</span>}
-                    {/* Their own shortlist, so the shortest path to buying it again (a partner shop when one is on). */}
-                    <button onClick={e=>{ e.stopPropagation(); FindOnline.open(w,'restock'); }} aria-label={`Restock ${w.name}`} style={{flexShrink:0,border:`1px solid ${C.green}55`,background:C.greenBg,color:C.green,borderRadius:20,padding:'4px 10px',fontSize:13,fontWeight:700,fontFamily:C.P,cursor:'pointer'}}>Restock</button>
-                  </div>); })}
-              </div>
-            )}
-
-            {(fav.rethink.length>0||fav.disliked.length>0)&&(
-              <div style={{marginTop:14}}>
-                <div style={{...sub,marginBottom:6}}>Worth knowing before you buy</div>
-                {fav.rethink.map(x=>(
-                  <div key={'r'+x.name} style={{fontSize:15,color:C.ink2,fontFamily:C.P,lineHeight:1.5,marginBottom:4}}>{x.name}{x.also?` (${x.also})`:''} averages {x.avg} across {x.count} bottles, below your usual. Try a different producer or style before writing it off.</div>
-                ))}
-                {fav.disliked.map(w=>(
-                  <div key={'d'+w.name} role="button" onClick={()=>openWine(w)} style={{display:'flex',alignItems:'center',gap:8,padding:'5px 0',borderTop:`1px solid ${C.line}`,cursor:'pointer'}}>
-                    <span style={{fontSize:15,color:C.ink,fontFamily:C.P,flex:1}}>{w.name}</span>
-                    <span style={{fontSize:13,color:C.mid,fontFamily:C.P}}>{w.region||''}</span>
-                    <span style={{fontSize:15,fontWeight:800,color:scoreCol(w.rating),fontFamily:C.P}}>{w.rating}</span>
-                    <Icon n="chevron" sz={12} col={C.mid}/>
-                  </div>
-                ))}
-              </div>
-            )}
+            <div style={{fontSize:13,color:C.mid,fontFamily:C.P,lineHeight:1.5,marginBottom:6}}>The {tLabel} you keep coming back to: had more than once, marked to buy again, or hearted (never one you scored under 80). Restock goes straight to a shop.</div>
+            <div data-testid="house-wines">
+            {t.house.map(h=>{ const w=h.wine; return (
+              <div key={'h'+w.name+(w.vintage||'')} role="button" onClick={()=>openWine(w)} style={{display:'flex',alignItems:'center',gap:8,padding:'8px 0',borderTop:`1px solid ${C.line}`,cursor:'pointer'}}>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontSize:15,fontWeight:600,color:C.ink,fontFamily:C.P,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{h.fav&&<span style={{color:C.cr,marginRight:5}}>♥</span>}{WineDNA.nameYear(w)}</div>
+                  <div style={{fontSize:13,color:C.mid,fontFamily:C.P}}>{h.why.map(x=>x.charAt(0).toUpperCase()+x.slice(1)).join(' · ')}</div>
+                </div>
+                {w.rating>0&&<span style={{fontSize:15,fontWeight:800,color:scoreCol(w.rating),fontFamily:C.P}}>{w.rating}</span>}
+                {/* Their own shortlist, so the shortest path to buying it again (a partner shop when one is on). */}
+                <button onClick={e=>{ e.stopPropagation(); FindOnline.open(w,'restock'); }} aria-label={`Restock ${w.name}`} style={{flexShrink:0,border:`1px solid ${C.green}55`,background:C.greenBg,color:C.green,borderRadius:20,padding:'4px 10px',fontSize:13,fontWeight:700,fontFamily:C.P,cursor:'pointer'}}>Restock</button>
+              </div>); })}
+            </div>
+            <ShopDisclosure style={{marginTop:8}}/>
           </Card>
         )}
 
@@ -569,7 +565,7 @@ function WineDNAScreen({nav,back,showPro}){
             <div style={{display:'flex',flexDirection:'column',gap:10}}>
               {t.explore.picks.map((p,i)=>(
                 <div key={p.style.id}
-                  onClick={()=>{Handoff.styleExplore.set({id:p.style.id,typeKey:t.key,label:t.label});nav('style-explore');}}
+                  onClick={()=>{ExploreNext.markOpened(p.style.id);Handoff.styleExplore.set({id:p.style.id,typeKey:t.key,label:t.label});nav('style-explore');}}
                   style={{padding:'12px 12px',borderRadius:12,background:i===0?`${t.col}08`:C.offWhite,border:`1px solid ${i===0?t.col+'25':C.line}`,cursor:'pointer'}}>
                   <div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline',gap:8,marginBottom:6}}>
                     <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P,flex:1}}>{p.style.name}</div>

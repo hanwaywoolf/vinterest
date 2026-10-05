@@ -321,3 +321,217 @@ function GenArticleScreen({nav,back}){
 }
 
 Object.assign(window,{LearnArticleScreen,GenArticleScreen});
+
+/* ── A grape's own page ──
+   Opened from Mastery's grape bunches. An annotated ink-and-wash sketch of the grape's bunch
+   (pwa-sketch.jsx; its berry size, how tight the bunch is and what stands out, from
+   data/knowledge.json's `look`), where they stand with it and the next step, then what it
+   tastes like, where it comes from and grows, the wines made from it, and how climate,
+   winemaking, food and age change it (GrapeInfo in pwa-grape-learning.js). */
+const _SKIN_LABEL={red:'Red-skinned',white:'White-skinned',pink:'Pink-skinned'};
+function _wrapWords(text,max){ const out=[]; let line=''; String(text).split(' ').forEach(w=>{ if((line+' '+w).trim().length>max&&line){ out.push(line); line=w; } else line=(line+' '+w).trim(); }); if(line) out.push(line); return out; }
+function GrapeSketch({info}){
+  const {n,fill}=GrapeInfo.sketch(info.look);
+  const L=KnowledgeMap.bunchSlots(n,{fill,seed:info.name});
+  const W=340, H=260, BW=150, TOP=46;
+  const k=Math.min(BW/L.w,(H-TOP-14)/L.h), xs=L.slots.map(p=>p.x), x0=20+BW/2-(Math.max(...xs)+Math.min(...xs))/2*k;
+  const rnd=KnowledgeMap._rng('look'+info.name);
+  const berries=[...L.slots].map((p,i)=>({...p,i,green:info.look.uneven&&rnd()<0.35,ripe:rnd()<0.3})).sort((a,b)=>a.y-b.y);
+  const wash=b=>b.green?SKETCH_WASH.green:info.look.russet&&b.i%2?SKETCH_WASH.russet:null;
+  const notes=[_SKIN_LABEL[info.skin],...(info.look.notes||[])].slice(0,4);
+  const ys=notes.map((_,i)=>TOP+18+i*((H-TOP-30)/Math.max(1,notes.length)));
+  const edge=y=>{ const near=L.slots.filter(p=>Math.abs(TOP+k+p.y*k-y)<k*1.4); const p=near.length?near.reduce((a,b)=>b.x>a.x?b:a):L.slots[0]; return [x0+p.x*k+k*0.9,TOP+k+p.y*k]; };
+  return(
+    <svg viewBox={`0 0 ${W} ${H}`} width="100%" role="img" aria-label={`Sketch of ${info.name}: ${notes.join('; ')}.`} data-testid="grape-sketch" style={{display:'block',maxWidth:460,margin:'0 auto',overflow:'visible'}}>
+      <SketchVine x={x0} y={TOP-k*0.2} s={1.5} leafRed={info.look.leaf==='red'}/>
+      {berries.map(b=><g key={b.i} transform={`translate(${(x0+b.x*k).toFixed(1)} ${(TOP+k+b.y*k).toFixed(1)}) scale(${k.toFixed(2)})`}>
+        <SketchBerry seed={info.name+b.i} skin={info.skin} state={b.ripe?'ripe':'grow'} wash={wash(b)}/>
+      </g>)}
+      {notes.map((t,i)=>{ const [ex,ey]=edge(ys[i]), tx=196, lines=_wrapWords(t,22);
+        return <g key={i}>
+          <path d={`M${tx-6} ${ys[i]-4} Q ${(tx+ex)/2} ${ys[i]-10} ${ex+2} ${ey}`} fill="none" stroke={SKETCH_INK} strokeWidth="0.8" opacity="0.7"/>
+          <circle cx={ex+2} cy={ey} r="1.6" fill={SKETCH_INK}/>
+          <text x={tx} y={ys[i]} style={{fontSize:'12px',fill:SKETCH_INK,fontFamily:C.P}}>
+            {lines.map((l,j)=><tspan key={j} x={tx} dy={j?15:0}>{l}</tspan>)}
+          </text>
+        </g>; })}
+    </svg>
+  );
+}
+function GrapeScreen({nav,back,showPro}){
+  const name=Handoff.grapePage.get();
+  const info=React.useMemo(()=>name?GrapeInfo.get(name):null,[name]);
+  const card={background:C.white,borderRadius:16,border:`1px solid ${C.line}`,padding:'14px 16px',display:'flex',flexDirection:'column',gap:8};
+  const head=t=><div style={{fontSize:13,fontWeight:600,color:C.mid,letterSpacing:'0.08em',textTransform:'uppercase',fontFamily:C.P,marginTop:4}}>{t}</div>;
+  const para=t=><div style={{fontSize:15,color:C.ink2,fontFamily:C.P,lineHeight:1.55}}>{t}</div>;
+  if(!info) return <div style={{flex:1,padding:24,fontFamily:C.P,color:C.mid}}>That grape isn't in the guide yet. <span role="button" onClick={back} style={{color:C.cr,fontWeight:700,cursor:'pointer'}}>Back</span></div>;
+  const ms=info.mastery;
+  const act=()=>{
+    if(ms.state==='open') return _openLearn({kind:'grape',grape:info.name},nav,showPro);
+    if(ms.state==='held') return showPro('grape-library');
+    if(!Entitlement.isPro()) return nav('camera');
+    GrapeUnlocks.unlockManual(info.name); _openLearn({kind:'grape',grape:info.name},nav,showPro);
+  };
+  const actLabel=ms.state==='open'?(ms.fading?`Refresh the ${info.name} quiz`:ms.score>=100?null:`Take the ${info.name} quiz`):ms.state==='held'?'Unlock with Pro':!Entitlement.isPro()?'Scan a bottle of it to unlock':`Unlock and take the quiz`;
+  const openMine=w=>{ Handoff.openWine({demo:false,wine:w,existingRating:w.rating||0}); nav('detail'); };
+  const rows=[['Climate',info.climate],['In the winery',info.winemaking],['With food',info.food],['Ageing',info.ageing],['Often compared with',info.lookalike],['In blends',info.blends]].filter(r=>r[1]);
+  return(
+    <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden'}}>
+      <div style={{background:C.white,padding:'14px 20px',display:'flex',alignItems:'center',gap:12,borderBottom:`1px solid ${C.line}`,flexShrink:0}}>
+        <div role="button" aria-label="Back" onClick={back} style={{width:34,height:34,borderRadius:17,background:C.offWhite,border:`1px solid ${C.line}`,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',flexShrink:0}}><Icon n="back" sz={16} col={C.ink}/></div>
+        <div style={{minWidth:0}}>
+          <div style={{fontSize:20,fontWeight:800,color:C.ink,fontFamily:C.P,letterSpacing:'-0.4px'}}>{info.name}</div>
+          <div style={{fontSize:13,color:C.mid,fontFamily:C.P}}>{_SKIN_LABEL[info.skin]} grape{info.type==='fortified'?' · best known in Port':info.type==='dessert'?' · famous for sweet wines':''}</div>
+        </div>
+      </div>
+      <div style={{flex:1,overflowY:'auto',padding:'16px 20px',display:'flex',flexDirection:'column',gap:12}}>
+        <div style={{...card,background:'#FBF8F3',padding:'10px 10px 6px'}}><GrapeSketch info={info}/></div>
+
+        <div style={card} data-testid="grape-progress">
+          <div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline'}}>
+            <span style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>{ms.state==='open'?`${ms.level} · ${ms.score}%`:ms.state==='held'?'Unlocked, kept for Pro':'Not unlocked yet'}<RiseTag n={ms.rise} style={{marginLeft:8,fontSize:13}}/></span>
+            {ms.fading>0&&<span style={{fontSize:13,fontWeight:600,color:C.amber,fontFamily:C.P}}>{ms.fading} answer{ms.fading===1?'':'s'} fading</span>}
+          </div>
+          {ms.state==='open'&&<MasteryBar score={ms.score} col={grapeTypeColor(info.name)}/>}
+          {info.mine.count>0&&<div style={{fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.5}}>
+            You've had {info.mine.count===1?'one bottle':`${info.mine.count} bottles`} of it{info.mine.best?`; your best was ${info.mine.best.name} (${info.mine.best.rating})`:''}.
+          </div>}
+          {actLabel&&<div role="button" onClick={act} style={{fontSize:14,fontWeight:700,color:C.cr,fontFamily:C.P,cursor:'pointer'}}>{actLabel} →</div>}
+        </div>
+
+        {head('What it tastes like')}
+        <div style={card}>{para(info.profile+'.')}</div>
+
+        {head('Where it comes from')}
+        <div style={card}>
+          {para(info.origin+'.')}
+          {info.aka&&<div style={{fontSize:14,color:C.mid,fontFamily:C.P,lineHeight:1.5}}>{info.aka}.</div>}
+        </div>
+
+        {head('Where it grows')}
+        <div style={{...card,flexDirection:'row',flexWrap:'wrap',gap:6}}>
+          {[...new Set([...(info.famousIn||[]),...info.regions])].map(r=>(
+            <span key={r} style={{display:'inline-flex',alignItems:'center',gap:5,padding:'5px 10px',borderRadius:999,border:`1px solid ${C.line}`,fontSize:13,color:C.ink2,fontFamily:C.P}}><Flag region={r} size={13}/>{r}</span>
+          ))}
+        </div>
+
+        {head('Wines made from it')}
+        <div style={{...card,flexDirection:'row',flexWrap:'wrap',gap:6}}>
+          {(info.wines||[]).map(w=><span key={w} style={{padding:'5px 10px',borderRadius:999,background:C.offWhite,fontSize:13,color:C.ink2,fontFamily:C.P}}>{w}</span>)}
+        </div>
+
+        {info.mine.count>0&&<>
+          {head(`Your bottles of ${info.name}`)}
+          <div data-testid="grape-my-wines" style={{...card,gap:0,padding:'4px 16px'}}>
+            {info.mine.wines.map((w,i)=>(
+              <div key={(w.name||'')+'|'+(w.vintage||'')+'|'+i} role="button" tabIndex={0} onClick={()=>openMine(w)}
+                onKeyDown={e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); openMine(w); } }}
+                style={{display:'flex',alignItems:'center',gap:10,padding:'10px 0',borderTop:i?`1px solid ${C.line}`:'none',cursor:'pointer'}}>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontSize:15,fontWeight:600,color:C.ink,fontFamily:C.P,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{w.name}</div>
+                  <div style={{display:'flex',alignItems:'center',gap:5,fontSize:13,color:C.mid,fontFamily:C.P,minWidth:0}}>
+                    <Flag wine={w} size={13}/>
+                    <span style={{overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{[w.producer,w.region,w.vintage].filter(Boolean).join(' · ')}</span>
+                  </div>
+                </div>
+                {w.rating>0?<span style={{fontSize:16,fontWeight:800,color:scoreCol(w.rating),fontFamily:C.P}}>{w.rating}</span>
+                  :<span style={{fontSize:13,color:C.mid,fontFamily:C.P}}>Not scored</span>}
+                <Icon n="chevron" sz={14} col={C.mid}/>
+              </div>
+            ))}
+          </div>
+        </>}
+
+        {head('From vine to glass')}
+        <div style={{...card,gap:12}}>
+          {rows.map(([l,t])=><div key={l}>
+            <div style={{fontSize:13,fontWeight:700,color:C.ink,fontFamily:C.P}}>{l}</div>
+            <div style={{fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.5}}>{t}.</div>
+          </div>)}
+        </div>
+        <div style={{height:12}}/>
+      </div>
+    </div>
+  );
+}
+
+/* ── A palate trait's own page ──
+   Opened from Mastery's palate tiles, like a grape's page from the bunches: the trait sketched
+   in its ring with how close their Blind Calls come on it, any habit, then what it is, how to
+   notice it, wines at either end of its scale and a tip (Palate.TRAITS), then every Blind Call
+   on it: their guess and the label's profile in words, and how close it was, each opening its
+   wine. The next step is another Blind Call, or the tasting guide that teaches it. */
+function PalateTraitScreen({nav,back}){
+  const id=Handoff.palateTrait.get();
+  const t=React.useMemo(()=>id&&Palate.TRAITS[id]?Palate.trait(id):null,[id]);
+  const card={background:C.white,borderRadius:16,border:`1px solid ${C.line}`,padding:'14px 16px',display:'flex',flexDirection:'column',gap:8};
+  const head=x=><div style={{fontSize:13,fontWeight:600,color:C.mid,letterSpacing:'0.08em',textTransform:'uppercase',fontFamily:C.P,marginTop:4}}>{x}</div>;
+  if(!t) return <div style={{flex:1,padding:24,fontFamily:C.P,color:C.mid}}>That trait isn't here. <span role="button" onClick={back} style={{color:C.cr,fontWeight:700,cursor:'pointer'}}>Back</span></div>;
+  const R=44, circ=2*Math.PI*R, ring=t.id==='body'?'#C9A86A':SKETCH_TRAIT[t.id];
+  const openWine=w=>{ Handoff.openWine({demo:false,wine:w,existingRating:w.rating||0}); nav('detail'); };
+  const [lo,hi]=t.words;
+  return(
+    <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden'}}>
+      <div style={{background:C.white,padding:'14px 20px',display:'flex',alignItems:'center',gap:12,borderBottom:`1px solid ${C.line}`,flexShrink:0}}>
+        <div role="button" aria-label="Back" onClick={back} style={{width:34,height:34,borderRadius:17,background:C.offWhite,border:`1px solid ${C.line}`,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',flexShrink:0}}><Icon n="back" sz={16} col={C.ink}/></div>
+        <div style={{minWidth:0}}>
+          <div style={{fontSize:20,fontWeight:800,color:C.ink,fontFamily:C.P,letterSpacing:'-0.4px'}}>{t.name}</div>
+          <div style={{fontSize:13,color:C.mid,fontFamily:C.P}}>Your palate · from {lo} to {hi}</div>
+        </div>
+      </div>
+      <div style={{flex:1,overflowY:'auto',padding:'16px 20px',display:'flex',flexDirection:'column',gap:12}}>
+        <div data-testid="trait-hero" style={{...card,background:'#FBF8F3',flexDirection:'row',alignItems:'center',gap:14}}>
+          <svg width="110" height="110" viewBox="-55 -55 110 110" aria-hidden="true" style={{flexShrink:0,overflow:'visible'}}>
+            <circle r={R} fill="none" stroke={SKETCH_PENCIL} strokeWidth="3.5" strokeDasharray="1 5" strokeLinecap="round"/>
+            {t.score!=null&&<circle r={R} fill="none" stroke={ring} strokeWidth="6" strokeLinecap="round" strokeDasharray={circ} strokeDashoffset={circ*(1-t.score/100)} transform="rotate(-90)"/>}
+            <g transform="scale(1.35)"><SketchTraitIcon id={t.id}/></g>
+          </svg>
+          <div style={{display:'flex',flexDirection:'column',gap:2,minWidth:0}}>
+            <span style={{fontSize:34,fontWeight:800,color:t.score==null?C.mid:C.ink,fontFamily:C.P,lineHeight:1.05}}>{t.score==null?'–':`${t.score}%`}</span>
+            <span style={{fontSize:14,fontWeight:600,color:C.ink2,fontFamily:C.P}}>{t.score==null?'No Blind Calls yet':`${t.level} · ${t.n} call${t.n===1?'':'s'}`}</span>
+            <span style={{fontSize:13,color:C.mid,fontFamily:C.P,lineHeight:1.4}}>{t.score==null?`Your Blind Calls on ${t.name.toLowerCase()} will show here.`:`How close your calls come to the label on ${t.name.toLowerCase()}.`}</span>
+          </div>
+        </div>
+        {t.lean&&<div style={{...card,background:'#FFF4E0',border:'none'}}><span style={{fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.5}}><b>Your habit:</b> you tend to call {t.name.toLowerCase()} {t.lean} than the label's profile. Next time, try calling it a little {Palate.LEAN[t.id][0]===t.lean?Palate.LEAN[t.id][1]:Palate.LEAN[t.id][0]}.</span></div>}
+
+        {head('What it is')}
+        <div style={card}><span style={{fontSize:15,color:C.ink2,fontFamily:C.P,lineHeight:1.55}}>{t.what}</span></div>
+
+        {head('How to notice it')}
+        <div style={{...card,gap:10}}>
+          {t.notice.map((x,i)=><div key={i} style={{display:'flex',gap:10}}>
+            <span style={{width:22,height:22,borderRadius:11,background:'#FBF8F3',border:`1px solid ${C.line}`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:12,fontWeight:700,color:C.ink2,fontFamily:C.P,flexShrink:0}}>{i+1}</span>
+            <span style={{fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.5}}>{x}</span>
+          </div>)}
+        </div>
+
+        {head(`From ${lo} to ${hi}`)}
+        <div style={{...card,gap:10}}>
+          <div><div style={{fontSize:13,fontWeight:700,color:C.ink,fontFamily:C.P,textTransform:'capitalize'}}>{lo}</div><div style={{fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.5}}>{t.low}</div></div>
+          <div><div style={{fontSize:13,fontWeight:700,color:C.ink,fontFamily:C.P,textTransform:'capitalize'}}>{hi}</div><div style={{fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.5}}>{t.high}</div></div>
+          <div style={{fontSize:14,color:C.mid,fontFamily:C.P,lineHeight:1.5,borderTop:`1px solid ${C.line}`,paddingTop:10}}><b style={{color:C.ink2}}>Tip:</b> {t.tip}</div>
+        </div>
+
+        {head('Your Blind Calls')}
+        {t.calls.length?<div data-testid="trait-calls" style={{...card,gap:0,padding:'4px 16px'}}>
+          {t.calls.map((c,i)=><div key={i} role="button" tabIndex={0} onClick={()=>openWine(c.wine)} onKeyDown={e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); openWine(c.wine); } }}
+            style={{display:'flex',alignItems:'center',gap:10,padding:'10px 0',borderTop:i?`1px solid ${C.line}`:'none',cursor:'pointer'}}>
+            <div style={{flex:1,minWidth:0}}>
+              <div style={{fontSize:15,fontWeight:600,color:C.ink,fontFamily:C.P,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{c.wine.name}{c.wine.vintage?` ${c.wine.vintage}`:''}</div>
+              <div style={{fontSize:13,color:C.mid,fontFamily:C.P,lineHeight:1.4}}>You: {c.said} · Label: {c.labelSaid}</div>
+            </div>
+            <span style={{fontSize:16,fontWeight:800,color:c.accuracy>=80?C.green:c.accuracy>=50?C.amber:'#B04A3A',fontFamily:C.P}}>{c.accuracy}%</span>
+            <Icon n="chevron" sz={14} col={C.mid}/>
+          </div>)}
+        </div>:<div style={card}><span style={{fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.5}}>Blind Call asks you to taste before you see the label's profile. Play it on your next bottle and your call on {t.name.toLowerCase()} lands here.</span></div>}
+        <div style={{fontSize:13,color:C.mid,fontFamily:C.P,lineHeight:1.45}}>The label's profile is an estimate from the wine's details, so treat these as a guide, not a verdict on your palate.</div>
+
+        <div style={{display:'flex',flexDirection:'column',gap:8}}>
+          <div role="button" onClick={()=>nav('camera')} style={{fontSize:14,fontWeight:700,color:C.cr,fontFamily:C.P,cursor:'pointer'}}>Play Blind Call on your next bottle →</div>
+          {t.guide&&<div role="button" onClick={()=>{ Handoff.guide.set(t.guide.id); nav('guide'); }} style={{fontSize:14,fontWeight:700,color:C.cr,fontFamily:C.P,cursor:'pointer'}}>Read "{t.guide.title}" →</div>}
+        </div>
+        <div style={{height:12}}/>
+      </div>
+    </div>
+  );
+}

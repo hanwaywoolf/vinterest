@@ -64,13 +64,38 @@ const land = merge(world, world.objects.countries.geometries);
 const borders = mesh(world, world.objects.countries, (a, b) => a !== b);
 const regions = JSON.parse(fs.readFileSync('data/knowledge.json', 'utf8')).regions;
 
+// Country names as the map shows them: short, and in English as wine labels use them.
+const SHORT = { 'United States of America': 'USA', 'United Kingdom': 'UK', 'Bosnia and Herz.': 'Bosnia', 'Czechia': 'Czechia', 'North Macedonia': 'N. Macedonia', 'Dominican Rep.': 'Dominican Rep.' };
+const countries = feature(world, world.objects.countries).features;
+/* Where to write each country's name in a view: the centre of its largest piece of land there
+   (so France's name sits in France, not between it and Corsica), with that piece's area, so the
+   app can label the biggest first and skip names that would collide. Countries too small to hold
+   a name at the phone's width are left out. */
+const MIN_LABEL_AREA = 900;
+function countryLabels(path, w, h) {
+  const out = [];
+  for (const f of countries) {
+    const polys = f.geometry.type === 'MultiPolygon' ? f.geometry.coordinates : [f.geometry.coordinates];
+    let best = null, ba = 0;
+    for (const c of polys) {
+      const g = { type: 'Feature', geometry: { type: 'Polygon', coordinates: c } }, a = path.area(g);
+      if (a > ba) { ba = a; best = g; }
+    }
+    if (!best || ba < MIN_LABEL_AREA) continue;
+    const [x, y] = path.centroid(best);
+    if (!(x > 12 && x < w - 12 && y > 8 && y < h - 8)) continue;
+    out.push({ name: SHORT[f.properties.name] || f.properties.name, x: Math.round(x), y: Math.round(y), a: Math.round(ba) });
+  }
+  return out.sort((p, q) => q.a - p.a);
+}
+
 const views = VIEWS.map((v) => {
   const [w, s, e, n] = v.box;
   const k = W / rad(e - w);
   const h = Math.round(k * (Y(n) - Y(s)));
   const proj = geoMercator().scale(k).translate([-k * rad(w), k * Y(n)]).clipExtent([[0, 0], [W, h]]);
   const path = geoPath(proj).digits(0);
-  return { id: v.id, label: v.label, box: v.box, w: W, h, land: tidy(path(land), true), borders: tidy(path(borders), false) };
+  return { id: v.id, label: v.label, box: v.box, w: W, h, land: tidy(path(land), true), borders: tidy(path(borders), false), countries: countryLabels(path, W, h) };
 });
 
 const inside = (v, [lat, lng]) => lng >= v.box[0] && lng <= v.box[2] && lat >= v.box[1] && lat <= v.box[3];

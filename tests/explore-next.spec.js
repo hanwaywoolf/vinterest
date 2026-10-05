@@ -85,3 +85,25 @@ test('opening a suggestion teaches the style, prices bottles around the usual sp
   expect(stub.facts).toContain(first.learn.why);
   expect(errors).toEqual([]);
 });
+
+// Picks rotate: one shown on five different days and never opened rests, so the next style comes
+// through; opening it keeps it; after its rest it's back.
+test('Explore Next rotates picks they keep passing over', async ({ page }) => {
+  await page.goto(`${BASE}/?demo=1#home`);
+  const r = await page.evaluate(() => {
+    const all = WineHistory.getAll(), day = 864e5, t0 = Date.now() - 5 * day; // the last showing was yesterday, so it's resting now
+    Store.remove(ExploreNext.SEEN_KEY);
+    const before = ExploreNext.suggest('red', all, 'Reds').picks.map((a) => a.style.id);
+    for (let i = 0; i < 5; i++) ExploreNext.noteShown(ExploreNext.suggest('red', all, 'Reds').picks.slice(0, 1), t0 + i * day);
+    const rested = ExploreNext.resting(before[0], t0 + 5 * day);
+    const after = ExploreNext.suggest('red', all, 'Reds').picks.map((a) => a.style.id);
+    const back = ExploreNext.resting(before[0], t0 + 40 * day);
+    ExploreNext.markOpened(before[0]);
+    const opened = ExploreNext.resting(before[0], t0 + 5 * day);
+    return { before, after, rested, back, opened };
+  });
+  expect(r.rested).toBe(true);
+  expect(r.after[0]).not.toBe(r.before[0]);
+  expect(r.back).toBe(false);
+  expect(r.opened).toBe(false);
+});

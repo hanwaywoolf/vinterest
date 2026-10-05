@@ -1,6 +1,7 @@
 {
   "_about": "Partner shops for 'Find it for me', 'Restock' and the Price tab's 'In shops now'. Nothing is tracked until awin.publisherId is set, and a shop's own search is used only once it is enabled. Add the publisher ID (3114171) with the first approval, a shop's search link (with {q} where the wine goes) once you've opened it with a real wine, and set enabled when the shop has approved us. awinMid comes from Awin's advertiser directory. See docs/affiliates.md.",
   "awin": { "publisherId": "" },
+  "skimlinks": { "id": "", "enabled": false, "sref": "https://vinterest.app/" },
   "retailers": [
     { "id": "majestic",        "name": "Majestic",          "country": "gb", "domains": ["majestic.co.uk"],      "awinMid": "1546",   "search": "", "enabled": false },
     { "id": "winebuyers",      "name": "Winebuyers",        "country": "gb", "domains": ["winebuyers.com"],      "awinMid": "121644", "search": "", "enabled": false },

@@ -21,6 +21,51 @@ const Palate = {
   // The guide that teaches each axis.
   GUIDE:{body:'taste_four_steps',acidity:'taste_four_steps',tannins:'taste_oak_and_tannin',texture:'taste_oak_and_tannin'},
 
+  /* Each trait's own page (PalateTraitScreen): what it is, how to notice it, wines at either end,
+     a tip, and the words for its scale (low end, high end). Fixed text, checked; no Claude call. */
+  TRAITS:{
+    body:{words:['light','full'],
+      what:'Body is how heavy a wine feels in your mouth, from watery to rich and mouth-filling.',
+      notice:['Think of skimmed milk, whole milk and cream: that is light, medium and full body.','Alcohol is the biggest driver: the more alcohol, the more weight. Sugar and oak add to it too.','Hold a sip for a moment and notice whether it feels thin or coats your tongue.'],
+      low:'Pinot Noir, Beaujolais, Vinho Verde', high:'Barossa Shiraz, Amarone, oaked California Chardonnay',
+      tip:'A warm wine feels heavier than a cold one, so judge it at the temperature it is served.'},
+    acidity:{words:['soft','fresh'],
+      what:'Acidity is the fresh, tart side of a wine: the part that makes your mouth water.',
+      notice:['After you swallow, tip your head forward a little: the more your mouth waters, the higher the acidity.','High acidity feels crisp and zesty, like lemon or green apple; low acidity feels soft and round.','Cool climates keep more acidity in the grapes; hot ones give softer wines.'],
+      low:'Viognier, warm-climate Merlot, Grenache', high:'Riesling, Sauvignon Blanc, Chablis, Barbera',
+      tip:'Sweetness hides acidity: a sweet Riesling can be very acidic without tasting sharp.'},
+    tannins:{words:['silky','grippy'],
+      what:'Tannin is the drying grip in red wine. It comes from grape skins, seeds and oak barrels.',
+      notice:['After you swallow, feel your gums and the inside of your cheeks: dry and grippy means more tannin.','Strong black tea left to stew is the classic comparison.','Tannin softens as a wine ages, and with fatty food such as steak or hard cheese.'],
+      low:'Pinot Noir, Gamay, Grenache', high:'Nebbiolo, Cabernet Sauvignon, Tannat',
+      tip:"Don't mix it up with acidity: tannin dries your mouth, acidity makes it water."},
+    texture:{words:['crisp','rich'],
+      what:'Texture is how a white wine feels in your mouth: lean and crisp, or round and creamy.',
+      notice:['Crisp feels like biting a cold apple; rich feels closer to a spoonful of yoghurt.','Oak, time on the lees (the spent yeast) and a softening second fermentation make a white rounder.','Roll the wine around your mouth and notice whether it feels sharp-edged or smooth.'],
+      low:'Sauvignon Blanc, Albariño, Muscadet', high:'Oaked Chardonnay, Viognier, white Rhône',
+      tip:'Very cold wine feels crisper; let a rich white warm up a little to feel its texture.'},
+  },
+  /* A 0-1 reading as words on the trait's own scale ("medium", "quite grippy", "very light"). */
+  word(id,v){
+    const [lo,hi]=this.TRAITS[id].words;
+    return v<0.2?`very ${lo}`:v<0.4?`quite ${lo}`:v<0.6?'medium':v<0.8?`quite ${hi}`:`very ${hi}`;
+  },
+  /* One trait for its page: the axis from compute() (score, lean, how) plus every Blind Call on
+     it, newest first, each with their guess and the label's profile in words and how close it was. */
+  trait(id,wines){
+    wines=wines||WineHistory.getAll();
+    const p=this.compute(wines), a=p.axes.find(x=>x.id===id)||null;
+    const calls=this.calls(wines).filter(c=>id in c.miss).map(c=>{
+      const label=typeof c.wine[id]==='number'?c.wine[id]:0.5, guess=label+c.miss[id];
+      return {wine:c.wine,at:c.at,guess,label,miss:c.miss[id],accuracy:Math.round(this._acc(c.miss[id])*100),
+        said:this.word(id,guess),labelSaid:this.word(id,label)};
+    }).reverse();
+    const score=a?a.score:null;
+    return {id,name:this.NAMES[id],...this.TRAITS[id],how:this.HOW[id],score,n:calls.length,lean:a?a.lean:null,
+      level:score==null?null:typeof KnowledgeMap!=='undefined'?KnowledgeMap.level(score):'',calls,
+      guide:typeof Guides!=='undefined'?Guides.byId(this.GUIDE[id]):null};
+  },
+
   _acc(miss){ return Math.max(0,1-Math.abs(miss)*1.6); },
   _mean(xs){ return xs.length?xs.reduce((a,b)=>a+b,0)/xs.length:0; },
 

@@ -26,20 +26,23 @@ test('as shipped, nothing is tracked: Find it for me is a Google search, links s
   await boot(context, page);
   await page.goto(`${BASE}/#home`);
   const out = await page.evaluate((w) => ({ t: FindOnline.target(w), label: FindOnline.label(w), link: Shops.link('https://www.majestic.co.uk/x', 'price') }), WINE);
-  expect(out.t.url).toMatch(/^https:\/\/www\.google\.com\/search\?q=/);
+  // Every tap goes by way of the Worker's /go, which follows the list as deployed today.
+  const t = new URL(out.t.url, BASE);
+  expect(t.pathname).toBe('/go');
+  expect(Object.fromEntries(t.searchParams)).toMatchObject({ c: 'gb', p: 'find' });
+  expect(t.searchParams.get('w')).toBe('La Rioja Alta Viña Ardanza Reserva 2016 wine buy');
   expect(out.t.partner).toBe(false);
   expect(out.label).toBe('Find it online');
-  expect(out.link).toEqual({ url: 'https://www.majestic.co.uk/x', partner: false, name: 'Majestic' });
+  expect(out.link).toEqual({ url: '/go?u=' + encodeURIComponent('https://www.majestic.co.uk/x') + '&p=price', partner: false, name: 'Majestic' });
 });
 
 test('with Awin IDs and a shop switched on: its search, tracked, with where it was tapped', async ({ context, page }) => {
   await boot(context, page, ON);
   await page.goto(`${BASE}/#home`);
   const out = await page.evaluate((w) => ({ t: FindOnline.target(w, 'restock'), label: FindOnline.label(w, 'Restock'), other: Shops.link('https://indiecellar.example/a', 'listing'), off: Shops.forCountry('gb').map((r) => r.id) }), WINE);
-  const u = new URL(out.t.url);
-  expect(u.host).toBe('www.awin1.com');
-  expect(Object.fromEntries(u.searchParams)).toMatchObject({ awinmid: '999', awinaffid: '12345', clickref: 'restock' });
-  expect(u.searchParams.get('ued')).toBe('https://www.majestic.co.uk/search?Ntt=La%20Rioja%20Alta%20Vi%C3%B1a%20Ardanza%20Reserva%202016%20wine');
+  const u = new URL(out.t.url, BASE);
+  expect(u.pathname).toBe('/go');
+  expect(u.searchParams.get('p')).toBe('restock');
   expect(out.t.partner).toBe(true);
   expect(out.label).toBe('Restock at Majestic');
   expect(out.other.partner).toBe(false); // not a partner: the plain link
@@ -61,9 +64,65 @@ test('the Price tab lists where the search found it, labels the partner, and Res
   await root.getByText('Majestic', { exact: true }).click();
   const tab = await opened;
   const u = new URL(tab.url());
+  expect(u.pathname).toBe('/go');
+  expect(u.searchParams.get('p')).toBe('listing');
+  expect(u.searchParams.get('u')).toBe('https://www.majestic.co.uk/wines/vina-ardanza-2016');
+  // and it says so in words, not only in a tooltip
+  await expect(root.getByTestId('shop-disclosure')).toContainText('We may earn a commission');
+});
+
+test('Skimlinks, when switched on, tracks the shops Awin doesn\'t cover', async ({ context, page }) => {
+  await boot(context, page, { ...ON, skimlinks: { id: '123X456', enabled: true } });
+  await page.goto(`${BASE}/#home`);
+  const out = await page.evaluate(() => ({ indie: Shops.link('https://indiecellar.example/a', 'listing'), signed: Shops.link('https://indiecellar.example/a', 'listing', 'abc') }));
+  const u = new URL(out.indie.url);
+  expect(u.host).toBe('go.skimresources.com');
+  expect(Object.fromEntries(u.searchParams)).toMatchObject({ id: '123X456', xcust: 'listing', sref: 'https://vinterest.app/', url: 'https://indiecellar.example/a' });
+  expect(out.indie.partner).toBe(true);
+  expect(out.signed.url).toBe('/go?u=' + encodeURIComponent('https://indiecellar.example/a') + '&p=listing&s=abc'); // a link the Worker signed goes by way of /go
+});
+
+test('the Worker\'s /go: the deployed list picks the shop and the tracking, and never redirects to just anywhere', async () => {
+  const copy = path.join(require('node:os').tmpdir(), `worker-go-${process.pid}.mjs`);
+  require('node:fs').copyFileSync(path.join(__dirname, '..', '_worker.js'), copy);
+  const worker = (await import(pathToFileURL(copy).href + '?go')).default;
+  const LIST = { ...ON, skimlinks: { id: '123X456', enabled: true } };
+  const env = { GO_SECRET: 'secret', ASSETS: { fetch: async (r) => new URL(r.url).pathname === '/data/retailers.json' ? new Response(JSON.stringify(LIST)) : new Response('', { status: 404 }) } };
+  const go = async (qs) => { const r = await worker.fetch(new Request('https://vinterest.pages.dev/go?' + qs), env); return { status: r.status, to: r.headers.get('location') }; };
+  // Find it for me: the switched-on shop for the country, through Awin.
+  let r = await go('w=' + encodeURIComponent('Vina Ardanza 2016 wine buy') + '&c=gb&p=restock');
+  expect(r.status).toBe(302);
+  let u = new URL(r.to);
   expect(u.host).toBe('www.awin1.com');
-  expect(u.searchParams.get('clickref')).toBe('listing');
-  expect(u.searchParams.get('ued')).toBe('https://www.majestic.co.uk/wines/vina-ardanza-2016');
+  expect(Object.fromEntries(u.searchParams)).toMatchObject({ awinmid: '999', awinaffid: '12345', clickref: 'restock', ued: 'https://www.majestic.co.uk/search?Ntt=Vina%20Ardanza%202016%20wine' });
+  // No shop for the country: a Google search, never wrapped.
+  r = await go('w=ardanza&c=us&p=find');
+  expect(r.to).toBe('https://www.google.com/search?q=ardanza&gl=us');
+  // A known shop's page.
+  r = await go('u=' + encodeURIComponent('https://www.majestic.co.uk/wines/x') + '&p=listing');
+  expect(new URL(r.to).searchParams.get('ued')).toBe('https://www.majestic.co.uk/wines/x');
+  // Anywhere else only with the Worker's own signature: then Skimlinks.
+  r = await go('u=' + encodeURIComponent('https://evil.example/') + '&p=listing');
+  expect(r.status).toBe(400);
+  r = await go('u=' + encodeURIComponent('https://indiecellar.example/a') + '&p=listing&s=forged');
+  expect(r.status).toBe(400);
+  // The price search signs what it lists.
+  const realFetch = global.fetch;
+  global.fetch = async () => new Response(JSON.stringify({ stop_reason: 'end_turn', content: [
+    { type: 'web_search_tool_result', tool_use_id: 's1', content: [{ type: 'web_search_result', url: 'https://indiecellar.example/a', title: 'x' }] },
+    { type: 'text', text: JSON.stringify({ shops: [{ name: 'Indie', url: 'https://indiecellar.example/a', price: 29 }], low: 25, mid: 28, high: 32, currency: 'GBP', found: true }) },
+  ] }), { status: 200 });
+  let sig;
+  try {
+    const p = await worker.fetch(new Request('https://vinterest.pages.dev/claude', { method: 'POST', headers: { 'content-type': 'application/json', origin: 'https://vinterest.pages.dev' },
+      body: JSON.stringify({ purpose: 'price_search', wine: { name: 'Indie Test', producer: 'X', vintage: 2019, country: 'Spain' }, market: { code: 'GBP', label: 'United Kingdom', country: 'GB' } }) }), { ...env, ANTHROPIC_API_KEY: 'k' });
+    sig = JSON.parse((await p.json()).text).shops[0].sig;
+  } finally { global.fetch = realFetch; }
+  expect(sig).toMatch(/^[0-9a-f]{24}$/);
+  r = await go('u=' + encodeURIComponent('https://indiecellar.example/a') + '&p=listing&s=' + sig);
+  u = new URL(r.to);
+  expect(u.host).toBe('go.skimresources.com');
+  expect(Object.fromEntries(u.searchParams)).toMatchObject({ id: '123X456', xcust: 'listing', sref: 'https://vinterest.app/', url: 'https://indiecellar.example/a' });
 });
 
 test('the Worker keeps a shop only if the search really returned its page; never a search engine', async () => {

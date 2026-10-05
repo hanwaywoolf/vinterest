@@ -236,11 +236,11 @@ test.describe('desktop', () => {
     await expect(phone).toContainText('Your Mastery');
     await expect(phone).toContainText('Your shape', { timeout: 10000 }); // the radar sits below the score
     await jump(page, 'mastery', 1);
-    await expect(phone).toContainText('Tempranillo', { timeout: 8000 }); // the grapes card, opened
+    await expect(phone).toContainText('Tempranillo', { timeout: 8000 }); // the red-grape list
     await jump(page, 'mastery', 2);
     await expect(phone).toContainText('Your wine map', { timeout: 8000 });
     await jump(page, 'mastery', 3);
-    await expect(phone).toContainText('You tend to call tannins grippier', { timeout: 8000 }); // seven seeded Blind Calls
+    await expect(phone).toContainText('You call it grippier', { timeout: 8000 }); // seven seeded Blind Calls: the tannins tile's habit
     // Mastery is its own section: the Learn section no longer carries a Mastery step.
     await expect(page.locator('#learn .steps li h3')).not.toContainText(['Mastery map']);
   });

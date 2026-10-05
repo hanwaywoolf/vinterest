@@ -208,6 +208,23 @@ function QuizHubScreen({nav,back,showPro}){
             <div style={{height:'100%',borderRadius:4,background:level.color,width:`${Math.round(prog*100)}%`,transition:'width .6s ease'}}/>
           </div>
         </div>
+        {/* Mastery, one tap from the top of Learn: their knowledge in a ring, and where to start. */}
+        <div role="button" tabIndex={0} data-testid="learn-mastery-link" onClick={()=>isPro?nav('mastery-map'):showPro('mastery-map')}
+          onKeyDown={e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); isPro?nav('mastery-map'):showPro('mastery-map'); } }}
+          style={{display:'flex',alignItems:'center',gap:10,marginBottom:12,padding:'8px 12px 8px 8px',borderRadius:12,background:'#FBF8F3',border:`1px solid ${C.line}`,cursor:'pointer'}}>
+          <svg width="34" height="34" viewBox="-17 -17 34 34" aria-hidden="true" style={{flexShrink:0}}>
+            <circle r="13" fill="none" stroke={SKETCH_PENCIL} strokeWidth="2.5"/>
+            <circle r="13" fill="none" stroke={C.cr} strokeWidth="3" strokeLinecap="round" transform="rotate(-90)"
+              strokeDasharray={2*Math.PI*13} strokeDashoffset={2*Math.PI*13*(1-Math.min(100,knowledge.overall)/100)}/>
+            <text y="3.5" textAnchor="middle" style={{fontSize:'9px',fontWeight:800,fill:C.ink,fontFamily:C.P}}>{knowledge.overall}%</text>
+          </svg>
+          <div style={{flex:1,minWidth:0}}>
+            <div style={{fontSize:15,fontWeight:700,color:C.ink,fontFamily:C.P}}>Your Mastery <span style={{fontWeight:500,color:C.mid}}>· {knowledge.level}</span>{knowledge.progress&&knowledge.progress.overall>0&&<span style={{fontSize:13,fontWeight:800,color:C.green,marginLeft:6}}>▲{knowledge.progress.overall} in {knowledge.progress.weeks} wk{knowledge.progress.weeks===1?'':'s'}</span>}</div>
+            <div style={{fontSize:13,color:C.mid,fontFamily:C.P,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{knowledge.gap?`Start here: ${knowledge.gap.label}`:'Your shape, grapes, wine map and palate'}</div>
+          </div>
+          {!isPro&&<ProBadge/>}
+          <Icon n="chevron" sz={13} col={C.mid}/>
+        </div>
       </div>
 
       <div style={{flex:1,overflowY:'auto'}}>
@@ -540,13 +557,19 @@ function MasteryBar({score,col}){
 /* A wine-type area's colour (_TYPE_COLORS): its bar fills in it, so strong and weak types read
    like a palette. Other areas stay crimson. */
 function _masteryCol(a){ return a.group==='types'&&typeof _TYPE_COLORS!=='undefined'?_TYPE_COLORS[a.id==='sweet'?'dessert':a.id]||C.cr:C.cr; }
-function MasteryAreaCard({a,open,onToggle,onNext}){
+/* A green rise: how much something has grown since the dotted outline's snapshot
+   (KnowledgeMap.progress, about a month back, or their first week). Nothing when it hasn't. */
+function RiseTag({n,style}){
+  if(!(n>0)) return null;
+  return <span data-rise={n} aria-label={`up ${n} points`} style={{display:'inline-flex',alignItems:'center',gap:2,fontSize:12,fontWeight:800,color:C.green,fontFamily:C.P,whiteSpace:'nowrap',...style}}>▲{n}</span>;
+}
+function MasteryAreaCard({a,open,onToggle,onNext,prog}){
   const col=_masteryCol(a);
   return(
   <div style={{background:C.white,borderRadius:14,border:`1px solid ${C.line}`,padding:'12px 14px',display:'flex',flexDirection:'column',gap:7}}>
     <div role="button" onClick={onToggle} style={{display:'flex',justifyContent:'space-between',alignItems:'baseline',cursor:a.items&&onToggle?'pointer':'default'}}>
       <span style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>{a.group==='types'&&<span aria-hidden="true" style={{display:'inline-block',width:10,height:10,borderRadius:5,background:col,marginRight:8,verticalAlign:'1px'}}/>}{a.label}</span>
-      <span style={{fontSize:14,fontWeight:700,color:a.score>=100?C.green:C.ink2,fontFamily:C.P}}>{a.level} · {a.score}%</span>
+      <span style={{fontSize:14,fontWeight:700,color:a.score>=100?C.green:C.ink2,fontFamily:C.P,display:'inline-flex',alignItems:'baseline',gap:6}}><RiseTag n={prog&&prog.area?prog.area(a.id):0}/>{a.level} · {a.score}%</span>
     </div>
     <MasteryBar score={a.score} col={col}/>
     <div style={{fontSize:13,color:C.mid,fontFamily:C.P}}>{a.detail}{a.items&&a.items.length&&onToggle?(open?' · hide':' · see each'):''}</div>
@@ -554,6 +577,7 @@ function MasteryAreaCard({a,open,onToggle,onNext}){
       <div key={i.name} style={{display:'flex',alignItems:'center',gap:10}}>
         <span style={{flex:'0 0 42%',fontSize:14,color:C.ink2,fontFamily:C.P,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{a.id==='regions'&&<Flag region={i.name} size={14} style={{marginRight:6}}/>}{a.id==='grapes'&&<span aria-hidden="true" style={{display:'inline-block',width:8,height:8,borderRadius:4,background:grapeTypeColor(i.name),marginRight:7,verticalAlign:'1px'}}/>}{i.name}{i.fading>0&&<span style={{fontSize:12,fontWeight:600,color:C.amber,marginLeft:6}}>fading</span>}</span>
         <div style={{flex:1}}><MasteryBar score={i.score} col={a.id==='grapes'?grapeTypeColor(i.name):col}/></div>
+        <RiseTag n={KnowledgeMap.itemRise(prog,a.id,i.name,i.score)}/>
         <span style={{fontSize:13,fontWeight:700,color:C.ink2,fontFamily:C.P,width:38,textAlign:'right'}}>{i.score}%</span>
       </div>
     ))}
@@ -561,39 +585,85 @@ function MasteryAreaCard({a,open,onToggle,onNext}){
   </div>
   );
 }
-/* The shape of their knowledge: one spoke per Mastery area, the filled shape now and a dashed
-   outline of where they were (KnowledgeMap.progress: about a month ago, or their first week).
-   Rings mark Developing (34), Confident (67) and Mastered (100). A label tap jumps to that area's
-   card. A picture for screen readers (the cards below say the same in words). Labels are string
-   sizes: they must fit around the drawing. */
+/* The shape of their knowledge: one spoke per Mastery area, drawn in the pen-and-wash style of
+   the grapes and the palate (cream paper, ink line, a loose wash laid a little off the line):
+   the shape now is a smooth ink curve over a crimson wash; a dotted pencil curve is where they
+   were (KnowledgeMap.progress: about a month ago, or their first week). Pencil rings mark
+   Developing (34), Confident (67) and Mastered (100), drawn as a pencil gone round twice (_sketchRing); their names sit
+   on small tags stacked down the line straight below the centre, drawn over the shape so it never
+   covers them, far enough apart that they never touch, with the dots drawn over the tags so a
+   high score near the bottom is never hidden. Each area's dot takes its own colour (wine types their type's).
+   A label tap opens that area in the list. A picture for screen readers (the list says the same
+   in words). Labels are string sizes: they must fit around the drawing. */
+/* A pencil circle gone round twice: two arcs a hair off the true circle, each stopping short of
+   closing (the first at 93%, the second carrying on past its start), seeded so the same ring is
+   drawn the same way every time. */
+function _sketchRing(cx,cy,r,seed){
+  const rnd=KnowledgeMap._rng(seed);
+  const arc=(ox,oy,rad,a0,span)=>{ const p=a=>[cx+ox+Math.cos(a)*rad,cy+oy+Math.sin(a)*rad], [x0,y0]=p(a0), half=a0+span/2, [xm,ym]=p(half), [x1,y1]=p(a0+span);
+    const f=v=>v.toFixed(2); return `M${f(x0)} ${f(y0)} A${f(rad)} ${f(rad)} 0 0 1 ${f(xm)} ${f(ym)} A${f(rad)} ${f(rad)} 0 0 1 ${f(x1)} ${f(y1)}`; };
+  const a0=rnd()*Math.PI*2;
+  return [arc(0.6-rnd()*1.2,0.6-rnd()*1.2,r*(1+0.006),a0,Math.PI*2*0.93),
+          arc(0.8-rnd()*1.6,0.8-rnd()*1.6,r*(1-0.008),a0+Math.PI*(0.6+rnd()*0.5),Math.PI*2*(0.82+rnd()*0.1))];
+}
 function MasteryRadar({m,prog,onPick}){
-  const W=340,H=300,cx=W/2,cy=H/2,R=96, n=m.areas.length;
+  const W=340,H=310,cx=W/2,cy=H/2,R=100, n=m.areas.length;
   const ang=i=>-Math.PI/2+i*2*Math.PI/n;
   // 0% sits on a small inner ring (HOLE of the radius), so an early shape is still a shape, not a spike.
-  const HOLE=0.14, rr=score=>R*(HOLE+(1-HOLE)*score/100);
+  const HOLE=0.26, rr=score=>R*(HOLE+(1-HOLE)*score/100);
   const pt=(i,score)=>[cx+Math.cos(ang(i))*rr(score),cy+Math.sin(ang(i))*rr(score)];
-  const poly=scores=>scores.map((v,i)=>pt(i,v).map(x=>x.toFixed(1)).join(',')).join(' ');
+  const curve=scores=>_sketchPath(scores.map((v,i)=>pt(i,v)),true);
   const now=m.areas.map(a=>a.score), then=prog?m.areas.map(a=>prog.then.a[a.id]||0):null;
   const said=m.areas.map(a=>`${a.label} ${a.score}%`).join(', ');
+  const dot=a=>a.score>=100?C.green:_masteryCol(a);
   return(
-    <svg viewBox={`0 0 ${W} ${H}`} width="100%" role="img" aria-label={`Your knowledge by area: ${said}.`} style={{display:'block',maxWidth:420,margin:'0 auto',overflow:'visible'}}>
-      {[0,34,67,100].map(r=><polygon key={r} points={poly(m.areas.map(()=>r))} fill="none" stroke={C.line} strokeWidth={r===100?1.2:1} strokeDasharray={r===100?null:'3 3'}/>)}
-      {m.areas.map((a,i)=>{ const [x,y]=pt(i,100), [x0,y0]=pt(i,0); return <line key={a.id} x1={x0} y1={y0} x2={x} y2={y} stroke={C.line} strokeWidth="1"/>; })}
-      {then&&<polygon points={poly(then)} fill="none" stroke={C.mid} strokeWidth="1.5" strokeDasharray="4 3"/>}
+    <svg viewBox={`0 0 ${W} ${H}`} width="100%" role="img" data-testid="mastery-radar" aria-label={`Your knowledge by area: ${said}.`} style={{display:'block',maxWidth:420,margin:'0 auto',overflow:'visible'}}>
+      {/* Rings drawn like a pencil going round twice: two clean, light passes a hair apart, each
+          lifting off before it closes, at a different place on each ring. */}
+      {[34,67,100].map(r=>_sketchRing(cx,cy,rr(r),'ring'+r).map((d,j)=><path key={r+'-'+j} d={d} fill="none" stroke={r===100?'#A99F94':SKETCH_PENCIL} strokeWidth={j?0.8:(r===100?1.3:1)} strokeLinecap="round" opacity={j?0.7:1}/>))}
+      {m.areas.map((a,i)=>{ const [x,y]=pt(i,100), [x0,y0]=pt(i,0); return <line key={a.id} x1={x0} y1={y0} x2={x} y2={y} stroke={SKETCH_PENCIL} strokeWidth="0.8" opacity="0.7"/>; })}
+      {then&&<path d={curve(then)} fill="none" stroke={C.mid} strokeWidth="1.2" strokeDasharray="1.5 4" strokeLinecap="round"/>}
       <g className="mastery-radar-shape" style={{transformOrigin:`${cx}px ${cy}px`}}>
-        <polygon points={poly(now)} fill={C.cr} fillOpacity="0.16" stroke={C.cr} strokeWidth="2" strokeLinejoin="round"/>
-        {m.areas.map((a,i)=>{ const [x,y]=pt(i,a.score); return <circle key={a.id} cx={x} cy={y} r="3.6" fill={a.score>=100?C.green:_masteryCol(a)} stroke="#fff" strokeWidth="1.2"/>; })}
+        <path d={curve(now)} fill={SKETCH_WASH.red} opacity="0.22" transform="translate(2.5 3)"/>
+        <path d={curve(now)} fill={SKETCH_WASH.red} opacity="0.1"/>
+        <path d={curve(now)} fill="none" stroke={SKETCH_PENCIL} strokeWidth="1.1" strokeLinejoin="round" transform="translate(-1.4 1.1)"/>
+        <path d={curve(now)} fill="none" stroke={SKETCH_INK} strokeWidth="1.7" strokeLinejoin="round"/>
+      </g>
+      {[['Developing',34],['Confident',67],['Mastered',100]].map(([l,r])=>{ const y=cy+rr(r), w=l.length*5.4+12;
+        return <g key={l} aria-hidden="true">
+          <rect x={cx-w/2} y={y-7} width={w} height={14} rx={7} fill="#FBF8F3" stroke={SKETCH_PENCIL}/>
+          <text x={cx} y={y+3} textAnchor="middle" style={{fontSize:'8px',fontWeight:700,fill:C.mid,fontFamily:C.P,letterSpacing:'0.06em'}}>{l.toUpperCase()}</text>
+        </g>; })}
+      {/* Dots last: a high score on a spoke near the bottom stays visible over the ring tags. */}
+      <g className="mastery-radar-shape" style={{transformOrigin:`${cx}px ${cy}px`}}>
+        {m.areas.map((a,i)=>{ if(!a.score) return null; const [x,y]=pt(i,a.score); return <circle key={a.id} cx={x} cy={y} r="4.2" fill={dot(a)} stroke={SKETCH_INK} strokeWidth="1.1"/>; })}
       </g>
       {m.areas.map((a,i)=>{
         const c=Math.cos(ang(i)), sn=Math.sin(ang(i)), x=cx+c*(R+14), y=cy+sn*(R+14)+(sn>0.3?8:sn<-0.3?-6:3);
         const anchor=c>0.1?'start':c<-0.1?'end':'middle'; // the two bottom spokes lean apart
         return <g key={a.id} onClick={()=>onPick&&onPick(a.id)} style={{cursor:'pointer'}}>
-          <text x={x} y={y} textAnchor={anchor} style={{fontSize:'11px',fontWeight:600,fill:C.ink2,fontFamily:C.P}}>{KnowledgeMap.short(a)}</text>
-          <text x={x} y={y+12} textAnchor={anchor} style={{fontSize:'10px',fontWeight:700,fill:a.score>=100?C.green:C.mid,fontFamily:C.P}}>{a.score}%</text>
+          <text x={x} y={y} textAnchor={anchor} style={{fontSize:'11px',fontWeight:600,fill:a.score?C.ink:C.mid,fontFamily:C.P}}>{KnowledgeMap.short(a)}</text>
+          <text x={x} y={y+12} textAnchor={anchor} style={{fontSize:'10px',fontWeight:700,fill:a.score>=100?C.green:a.score?C.cr:SKETCH_PENCIL,fontFamily:C.P}}>{a.score}%{prog&&prog.area&&prog.area(a.id)>0&&<tspan data-rise={prog.area(a.id)} style={{fill:C.green,fontWeight:800}}> ▲{prog.area(a.id)}</tspan>}</text>
         </g>;
       })}
     </svg>
   );
+}
+/* The same areas as a list: each group (wine types, regions and grapes, Wine Skills) with every
+   area's card (its score, level, change since the dotted outline, what's inside it and its next
+   step), so the chart's numbers all have their detail. */
+const MASTERY_GROUPS=[{id:'types',label:'Wine types'},{id:'places',label:'Regions and grapes'},{id:'skills',label:'Wine Skills'}];
+function MasteryAreaList({m,prog,open,setOpen,go}){
+  return <div data-testid="mastery-area-list" style={{display:'flex',flexDirection:'column',gap:8}}>
+    {prog&&prog.rises.length>0&&<div style={{fontSize:13,color:C.mid,fontFamily:C.P}}><span style={{color:C.green,fontWeight:800}}>▲</span> Points gained since {_when(prog.then.t)}.</div>}
+    {MASTERY_GROUPS.map(G=><React.Fragment key={G.id}>
+      <div style={{fontSize:14,fontWeight:700,color:C.ink2,fontFamily:C.P,marginTop:4}}>{G.label}</div>
+      {m.areas.filter(a=>a.group===G.id).map(a=>(
+        <div key={a.id} data-area={a.id}>
+          <MasteryAreaCard a={a} prog={prog} open={open===a.id} onToggle={()=>a.items&&setOpen(o=>o===a.id?null:a.id)} onNext={()=>go(a.next)}/>
+        </div>))}
+    </React.Fragment>)}
+  </div>;
 }
 function _when(t){ return new Date(t).toLocaleDateString('en',{day:'numeric',month:'short'}); }
 
@@ -603,63 +673,201 @@ function _when(t){ return new Date(t).toLocaleDateString('en',{day:'numeric',mon
    next step. */
 const _PIN_COL={'Not started':'#fff','Getting started':'#DDA0AB','Developing':'#B94A61','Confident':C.cr,'Mastered':C.green};
 function _pinFill(p){ return p.state==='open'?_PIN_COL[p.level]||C.cr:'#CFC9C2'; }
-function MasteryRegionMap({views,nav,showPro}){
-  const [vid,setVid]=React.useState(()=>{ const v=KnowledgeMap.homeView(views); return v?v.id:null; });
+/* A two- or three-way switch (Bunches/List, Red/White, Map/List), as tabs. */
+function MasteryToggle({label,options,value,onChange,testid}){
+  return <div role="tablist" aria-label={label} data-testid={testid} style={{display:'flex',gap:4,padding:3,borderRadius:10,background:C.offWhite}}>
+    {options.map(([id,text])=>{ const on=value===id; return <div key={id} role="tab" aria-selected={on} tabIndex={0} onClick={()=>onChange(id)}
+      onKeyDown={e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); onChange(id); } }}
+      style={{flex:1,textAlign:'center',padding:'6px 0',borderRadius:8,fontSize:14,fontWeight:600,fontFamily:C.P,cursor:'pointer',
+        background:on?C.white:'transparent',color:on?C.ink:C.mid,boxShadow:on?'0 1px 2px rgba(0,0,0,0.08)':'none'}}>{text}</div>; })}
+  </div>;
+}
+/* One region as a row (the map's picked pins and the list): flag, name, where they stand, and
+   its next step (Quiz or Refresh, Pro, or scan a bottle from there). */
+function _RegionRow({p,nav,showPro,bar,prog}){
+  const on=p.state==='open';
+  return <div data-region={p.name} style={{display:'flex',alignItems:'center',gap:10,padding:'10px 0',borderBottom:`1px solid ${C.line}`}}>
+    <Flag region={p.name} size={18}/>
+    <div style={{flex:1,minWidth:0,display:'flex',flexDirection:'column',gap:3}}>
+      <div style={{fontSize:15,fontWeight:700,color:on||!bar?C.ink:C.mid,fontFamily:C.P}}>{p.name}</div>
+      <div style={{fontSize:13,color:C.mid,fontFamily:C.P,lineHeight:1.4}}>
+        {on?`${p.level} · ${p.score}%`:p.state==='held'?'Unlocked, kept for Pro':'Not unlocked yet'}{on&&<RiseTag n={KnowledgeMap.itemRise(prog,'regions',p.name,p.score)} style={{marginLeft:6}}/>}
+        {on&&p.fading?<span style={{color:C.amber,fontWeight:600}}>{` · ${p.fading} answer${p.fading===1?'':'s'} fading`}</span>:''}
+        {p.drunk?` · you've had ${p.drunk===1?'one':p.drunk}`:''}
+      </div>
+      {bar&&on&&<MasteryBar score={p.score} col={C.cr}/>}
+    </div>
+    {on?((p.score<100||p.fading>0)&&<div role="button" onClick={()=>_openLearn({kind:'region',region:p.name},nav,showPro)} style={{fontSize:14,fontWeight:700,color:C.cr,fontFamily:C.P,cursor:'pointer',whiteSpace:'nowrap'}}>{p.fading?'Refresh':'Quiz'} →</div>)
+      :p.state==='held'?<div role="button" onClick={()=>showPro('regions')} style={{cursor:'pointer'}}><ProBadge/></div>
+      :bar?null // the list says once, below, that a scan unlocks a region
+      :<div role="button" onClick={()=>nav('camera')} style={{fontSize:13,fontWeight:600,color:C.mid,fontFamily:C.P,cursor:'pointer',textAlign:'right',maxWidth:120,lineHeight:1.3}}>Scan a bottle from here</div>}
+  </div>;
+}
+/* Pinch (or a trackpad pinch, ctrl + wheel) zooms the map about the fingers, up to MAP_ZOOM_MAX;
+   once zoomed, one finger pans it, and the page scrolls again once it's back at 1×. A touch that
+   barely moves is a tap. + and − (and "Reset") do the same for anyone who can't pinch. Pins and
+   lines keep their size on screen as the map grows, so close-together regions come apart. */
+const MAP_ZOOM_MAX=6;
+function useMapZoom(w,h){
+  const [z,setZ]=React.useState({k:1,x:0,y:0}); // k: zoom; x, y: the top-left of what's shown, in map units
+  const fit=(k,x,y)=>{ k=Math.max(1,Math.min(MAP_ZOOM_MAX,k)); const vw=w/k, vh=h/k; return {k,x:Math.max(0,Math.min(w-vw,x)),y:Math.max(0,Math.min(h-vh,y))}; };
+  const reset=()=>setZ({k:1,x:0,y:0});
+  // Zoom by f about a point (px, py) given as a fraction of the shown box.
+  const zoomAt=(f,px=0.5,py=0.5)=>setZ(o=>{ const k=Math.max(1,Math.min(MAP_ZOOM_MAX,o.k*f)); const ax=o.x+px*w/o.k, ay=o.y+py*h/o.k; return fit(k,ax-px*w/k,ay-py*h/k); });
+  const pts=React.useRef(new Map()), g=React.useRef(null);
+  const frac=(e,r)=>[(e.clientX-r.left)/r.width,(e.clientY-r.top)/r.height];
+  const handlers=onTap=>({
+    onPointerDown(e){
+      const el=e.currentTarget; pts.current.set(e.pointerId,{x:e.clientX,y:e.clientY});
+      try{ el.setPointerCapture(e.pointerId); }catch(_){}
+      const r=el.getBoundingClientRect(), P=[...pts.current.values()];
+      g.current={r,start:{...z},P0:P.map(p=>({...p})),moved:false,two:P.length>=2||(g.current&&g.current.two&&P.length>1)};
+    },
+    onPointerMove(e){
+      if(!pts.current.has(e.pointerId)||!g.current) return;
+      pts.current.set(e.pointerId,{x:e.clientX,y:e.clientY});
+      const G=g.current, P=[...pts.current.values()], r=G.r, s=G.start;
+      if(P.length>=2&&G.P0.length>=2){
+        const d0=Math.hypot(G.P0[0].x-G.P0[1].x,G.P0[0].y-G.P0[1].y)||1, d1=Math.hypot(P[0].x-P[1].x,P[0].y-P[1].y);
+        const m0=[(G.P0[0].x+G.P0[1].x)/2,(G.P0[0].y+G.P0[1].y)/2], m1=[(P[0].x+P[1].x)/2,(P[0].y+P[1].y)/2];
+        const k=Math.max(1,Math.min(MAP_ZOOM_MAX,s.k*d1/d0));
+        // The map point under the first midpoint stays under the fingers' midpoint now.
+        const ax=s.x+(m0[0]-r.left)/r.width*w/s.k, ay=s.y+(m0[1]-r.top)/r.height*h/s.k;
+        setZ(fit(k,ax-(m1[0]-r.left)/r.width*w/k,ay-(m1[1]-r.top)/r.height*h/k)); G.moved=true; G.two=true;
+      }else if(P.length===1&&G.P0.length===1){
+        const dx=P[0].x-G.P0[0].x, dy=P[0].y-G.P0[0].y;
+        if(Math.hypot(dx,dy)>6) G.moved=true;
+        if(G.moved&&s.k>1) setZ(fit(s.k,s.x-dx/r.width*w/s.k,s.y-dy/r.height*h/s.k));
+      }
+    },
+    onPointerUp(e){
+      const G=g.current; pts.current.delete(e.pointerId);
+      if(G&&!G.moved&&!G.two&&pts.current.size===0){ const [fx,fy]=frac(e,G.r); onTap(z.x+fx*w/z.k,z.y+fy*h/z.k,z.k); }
+      // A finger left a pinch: carry on from here with the one that's still down.
+      const P=[...pts.current.values()];
+      g.current=P.length?{r:G?G.r:e.currentTarget.getBoundingClientRect(),start:{...z},P0:P.map(p=>({...p})),moved:true,two:true}:null;
+    },
+    onPointerCancel(e){ pts.current.delete(e.pointerId); if(!pts.current.size) g.current=null; },
+    onWheel(e){ if(!e.ctrlKey) return; e.preventDefault(); const [fx,fy]=frac(e,e.currentTarget.getBoundingClientRect()); zoomAt(Math.exp(-e.deltaY*0.01),fx,fy); },
+  });
+  // React's onWheel is passive; a trackpad pinch needs preventDefault, so it's attached by hand.
+  const ref=React.useRef(null), wheel=React.useRef(null);
+  React.useEffect(()=>{ const el=ref.current; if(!el) return; const f=e=>wheel.current&&wheel.current(e); el.addEventListener('wheel',f,{passive:false}); return()=>el.removeEventListener('wheel',f); },[]);
+  // How wide the map is on screen, so names can be sized in real pixels at any zoom.
+  const [px,setPx]=React.useState(0);
+  React.useEffect(()=>{ const el=ref.current; if(!el) return; const m=()=>setPx(el.getBoundingClientRect().width); m();
+    if(typeof ResizeObserver==='undefined') return; const o=new ResizeObserver(m); o.observe(el); return()=>o.disconnect(); },[]);
+  return {z,px,reset,zoomAt,ref,bind:onTap=>{ const H=handlers(onTap); wheel.current=H.onWheel; const {onWheel,...rest}=H; return rest; }};
+}
+/* Names on the map, placed biggest-first and skipped where they'd overlap one already placed or
+   fall outside what's shown. u is map units per screen pixel, so every name is a fixed size on
+   screen however far in they've zoomed. Zoomed out, the countries (data/world-map.json's
+   `countries`, those with wine regions first, then largest first); zoomed in (MAP_NAMES_AT), the regions, unlocked ones first, each
+   above its pin, or below it when above is taken. Names keep clear of the pins and of the zoom
+   buttons. */
+const MAP_NAMES_AT=2;
+function _mapLabels(v,z,u,pin){
+  const vx=z.x, vy=z.y, vw=v.w/z.k, vh=v.h/z.k, placed=[], out=[];
+  const hit=(b,list)=>list.some(o=>b.x0<o.x1&&b.x1>o.x0&&b.y0<o.y1&&b.y1>o.y0), pins=[];
+  const fits=(b,loose)=>b.x0>=vx+2*u&&b.x1<=vx+vw-2*u&&b.y0>=vy+2*u&&b.y1<=vy+vh-2*u&&!hit(b,placed)&&(loose||!hit(b,pins));
+  const box=(x,y,w,h)=>({x0:x-w/2-2*u,x1:x+w/2+2*u,y0:y-h*1.05-u,y1:y+h*0.3+u}); // a little air round each name
+  // Keep clear of the zoom buttons (top right) and Reset (top left, once zoomed), in screen pixels.
+  const scr=(x0,y0,x1,y1)=>({x0:vx+x0*u,y0:vy+y0*u,x1:vx+x1*u,y1:vy+y1*u}), pw=vw/u;
+  placed.push(scr(pw-52,0,pw,96)); if(z.k>1) placed.push(scr(0,0,96,50));
+  if(z.k<MAP_NAMES_AT){
+    const fs=10;
+    // ...and of the pins, so a pin never sits on a country's name.
+    v.pins.forEach(p=>pins.push({x0:p.x-pin,x1:p.x+pin,y0:p.y-pin,y1:p.y+pin}));
+    // Countries with wine regions on the map are named first (Portugal before a bigger neighbour's spill-over).
+    const wine=new Set(Object.values((typeof KNOWLEDGE!=='undefined'&&KNOWLEDGE.regions)||{}).map(r=>r.country==='United States'?'USA':r.country));
+    [...(v.countries||[])].sort((a,b)=>(wine.has(b.name)-wine.has(a.name))||b.a-a.a).forEach(c=>{ // A country at the edge (Portugal) is nudged inwards rather than dropped; one that meets a
+      // name already placed tries a line above or below.
+      const t=c.name.toUpperCase(), w=t.length*fs*0.78*u, h=fs*u, x=Math.max(vx+w/2+5*u,Math.min(vx+vw-w/2-5*u,c.x));
+      const tries=[]; [0,-h*1.3,h*1.3,-h*2.4,h*2.4,-h*3.5,h*3.5].forEach(dy=>[0,-w*0.3,w*0.3,-w*0.6,w*0.6].forEach(dx=>tries.push([dx,dy])));
+      // Clear of pins if it can be; a wine country is still named over a pin rather than left out.
+      for(const loose of wine.has(c.name)?[false,true]:[false]){ let done=false;
+        for(const [dx,dy] of tries){ const x2=Math.max(vx+w/2+5*u,Math.min(vx+vw-w/2-5*u,x+dx)), y=c.y+h/2+dy, b=box(x2,y,w,h); if(fits(b,loose)){ placed.push(b); out.push({kind:'country',t,x:x2,y,fs:fs*u}); done=true; break; } }
+        if(done) break; } });
+    return out;
+  }
+  const fs=12, rank=p=>(p.state==='open'?0:2)-(p.drunk?1:0);
+  // The pins themselves are kept clear too, so a name never sits on another region's pin.
+  v.pins.forEach(p=>pins.push({x0:p.x-pin,x1:p.x+pin,y0:p.y-pin,y1:p.y+pin}));
+  [...v.pins].sort((a,b)=>rank(a)-rank(b)||(b.score||0)-(a.score||0)).forEach(p=>{
+    const w=p.name.length*fs*0.6*u, h=fs*u, gap=pin+3*u;
+    for(const y of [p.y-gap,p.y+gap+h]){ const b=box(p.x,y,w,h); if(fits(b)){ placed.push(b); out.push({kind:'region',t:p.name,x:p.x,y,fs:fs*u,on:p.state==='open'}); break; } }
+  });
+  return out;
+}
+function MasteryRegionMap({views,nav,showPro,prog}){
+  // Map or list, and which part of the world, as they last left it (Device.masteryView).
+  const saved=React.useRef(Device.masteryView()).current;
+  const [mode,setModeS]=React.useState(saved.regions==='list'?'list':'map');
+  const setMode=x=>{ setModeS(x); Device.setMasteryView({regions:x}); };
+  const [vid,setVidS]=React.useState(()=>{ if(saved.regionView&&views.some(x=>x.id===saved.regionView)) return saved.regionView; const v=KnowledgeMap.homeView(views); return v?v.id:null; });
+  const setVid=x=>{ setVidS(x); Device.setMasteryView({regionView:x}); };
   const [sel,setSel]=React.useState([]);
   const v=views.find(x=>x.id===vid)||views[0];
+  const Z=useMapZoom(v?v.w:1,v?v.h:1), z=Z.z;
   if(!v) return null;
-  const PIN=9, HIT=40;
-  const tap=e=>{
-    const r=e.currentTarget.getBoundingClientRect(), k=v.w/r.width, x=(e.clientX-r.left)*k, y=(e.clientY-r.top)*k;
-    setSel(v.pins.map(p=>({p,d:Math.hypot(p.x-x,p.y-y)})).filter(o=>o.d<=HIT).sort((a,b)=>a.d-b.d).slice(0,4).map(o=>o.p.name));
-  };
+  const PIN=9/Math.sqrt(z.k), HIT=40/z.k, SW=1/z.k;
+  const u=(v.w/z.k)/(Z.px||320); // map units per screen pixel
+  const names=_mapLabels(v,z,u,PIN);
+  const tap=(x,y)=>setSel(v.pins.map(p=>({p,d:Math.hypot(p.x-x,p.y-y)})).filter(o=>o.d<=HIT).sort((a,b)=>a.d-b.d).slice(0,4).map(o=>o.p.name));
+  const zbtn={width:34,height:34,borderRadius:10,background:'rgba(255,255,255,0.94)',border:`1px solid ${C.line}`,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',fontSize:'18px',fontWeight:700,color:C.ink,fontFamily:C.P,userSelect:'none',boxShadow:'0 1px 3px rgba(0,0,0,0.08)'};
   const picked=sel.map(n=>v.pins.find(p=>p.name===n)).filter(Boolean);
   const open=v.pins.filter(p=>p.state==='open').length;
   const legend=[['#CFC9C2','Not unlocked'],[_PIN_COL['Getting started'],'Getting started'],[_PIN_COL.Developing,'Developing'],[C.cr,'Confident'],[C.green,'Mastered']];
   const anyFading=v.pins.some(p=>p.fading);
   return(
     <div style={{display:'flex',flexDirection:'column',gap:10}}>
+      <MasteryToggle label="Show regions as" testid="region-mode" options={[['map','Map'],['list','List']]} value={mode} onChange={setMode}/>
       <div style={{display:'flex',gap:6,overflowX:'auto',scrollbarWidth:'none',margin:'0 -2px'}}>
         {views.map(x=>{ const on=x.id===v.id; return(
-          <div key={x.id} role="button" aria-pressed={on} onClick={()=>{ setVid(x.id); setSel([]); }} style={{flex:'0 0 auto',padding:'6px 11px',borderRadius:999,background:on?C.ink:C.white,border:`1px solid ${on?C.ink:C.line}`,cursor:'pointer',fontSize:13,fontWeight:600,color:on?'#fff':C.ink2,fontFamily:C.P,whiteSpace:'nowrap'}}>
+          <div key={x.id} role="button" aria-pressed={on} onClick={()=>{ setVid(x.id); setSel([]); Z.reset(); }} style={{flex:'0 0 auto',padding:'6px 11px',borderRadius:999,background:on?C.ink:C.white,border:`1px solid ${on?C.ink:C.line}`,cursor:'pointer',fontSize:13,fontWeight:600,color:on?'#fff':C.ink2,fontFamily:C.P,whiteSpace:'nowrap'}}>
             {x.label} <span style={{opacity:0.6}}>{x.open}/{x.pins.length}</span>
           </div>); })}
       </div>
-      <svg viewBox={`0 0 ${v.w} ${v.h}`} width="100%" onClick={tap} role="img"
-        aria-label={`Map of ${v.label}: ${open} of ${v.pins.length} wine regions unlocked. Tap a region to see it.`}
-        style={{display:'block',borderRadius:12,background:'#EEF1F3',cursor:'pointer',maxHeight:420}}>
-        <path d={v.land} fill="#F6F2EC" stroke="#D9D2C8" strokeWidth="1.5" strokeLinejoin="round"/>
-        <path d={v.borders} fill="none" stroke="#E2DBD1" strokeWidth="1.2"/>
+      {mode==='list'?<div data-testid="region-list" style={{display:'flex',flexDirection:'column',borderTop:`1px solid ${C.line}`}}>
+        {KnowledgeMap.regionRows(v).map(p=><_RegionRow key={p.name} p={p} nav={nav} showPro={showPro} bar prog={prog}/>)}
+        <div style={{fontSize:13,color:C.mid,fontFamily:C.P,marginTop:8}}>Scanning a bottle from a region unlocks it. <span role="button" onClick={()=>nav('camera')} style={{color:C.cr,fontWeight:700,cursor:'pointer'}}>Scan a bottle →</span></div>
+      </div>:<>
+      <div style={{position:'relative'}}>
+      <svg ref={Z.ref} viewBox={`${z.x.toFixed(2)} ${z.y.toFixed(2)} ${(v.w/z.k).toFixed(2)} ${(v.h/z.k).toFixed(2)}`} width="100%" {...Z.bind(tap)} role="img" data-testid="region-map" data-zoom={z.k.toFixed(2)}
+        aria-label={`Map of ${v.label}: ${open} of ${v.pins.length} wine regions unlocked. Tap a region to see it; pinch or use + and − to zoom.`}
+        style={{display:'block',borderRadius:12,background:'#FBF8F3',border:`1px solid ${C.line}`,cursor:z.k>1?'grab':'pointer',maxHeight:420,touchAction:z.k>1?'none':'pan-y',userSelect:'none',WebkitUserSelect:'none'}}>
+        {/* Cream paper with the land a shade warmer, its coastline sketched (a light pencil pass
+            just off a fine ink line) and borders pencilled in dashes. No sea texture or washes:
+            the lines carry it. Widths are screen pixels (u), so it stays fine-lined at any zoom. */}
+        <path d={v.land} fill="#F4ECDD"/>
+        <path d={v.borders} fill="none" stroke={SKETCH_INK} strokeOpacity="0.3" strokeWidth={0.8*u} strokeDasharray={`${2.2*u} ${2.4*u}`} strokeLinecap="round"/>
+        <path d={v.land} fill="none" stroke={SKETCH_PENCIL} strokeWidth={0.9*u} strokeLinejoin="round" transform={`translate(${(-0.9*u).toFixed(2)} ${(0.8*u).toFixed(2)})`}/>
+        <path d={v.land} fill="none" stroke={SKETCH_INK} strokeOpacity="0.7" strokeWidth={0.9*u} strokeLinejoin="round" strokeLinecap="round"/>
+        {names.filter(n=>n.kind==='country').map(n=><text key={'c'+n.t} x={n.x} y={n.y} textAnchor="middle" data-label="country" style={{fontSize:n.fs.toFixed(2)+'px',fontWeight:600,letterSpacing:'0.1em',fill:'#A69C90',fontFamily:C.P,pointerEvents:'none'}}>{n.t}</text>)}
         {[...v.pins].sort((a,b)=>(a.state==='open')-(b.state==='open')).map(p=>{
-          const on=sel.includes(p.name);
+          const on=sel.includes(p.name), first=p.state==='open'&&p.level==='Not started';
           return <g key={p.name}>
-            {p.drunk>0&&<circle cx={p.x} cy={p.y} r={PIN+5} fill="none" stroke={C.ink} strokeWidth="2.2"/>}
-            <circle cx={p.x} cy={p.y} r={on?PIN+3:p.state==='open'?PIN:PIN-2} fill={_pinFill(p)} fillOpacity={p.fading?0.4:1} strokeDasharray={p.fading?'3 2':null} stroke={p.state==='open'&&p.level==='Not started'?C.cr:'#fff'} strokeWidth={p.state==='open'&&p.level==='Not started'?2.5:2}/>
+            {p.drunk>0&&<circle cx={p.x} cy={p.y} r={PIN+5*SW} fill="none" stroke={C.ink} strokeWidth={2.2*SW}/>}
+            <circle cx={p.x} cy={p.y} r={on?PIN+3*SW:p.state==='open'?PIN:PIN-2*SW} fill={_pinFill(p)} fillOpacity={p.fading?0.4:1} strokeDasharray={p.fading?`${3*SW} ${2*SW}`:null} stroke={first?C.cr:'#fff'} strokeWidth={(first?2.5:2)*SW}/>
           </g>;
         })}
+        {names.filter(n=>n.kind==='region').map(n=><text key={'r'+n.t} x={n.x} y={n.y} textAnchor="middle" data-label="region" style={{fontSize:n.fs.toFixed(2)+'px',fontWeight:n.on?700:500,fill:n.on?C.ink:'#7D736A',fontFamily:C.P,paintOrder:'stroke',stroke:'#F4ECDD',strokeWidth:(3*u).toFixed(2),strokeLinejoin:'round',pointerEvents:'none'}}>{n.t}</text>)}
       </svg>
+      <div style={{position:'absolute',right:8,top:8,display:'flex',flexDirection:'column',gap:6}}>
+        <div role="button" aria-label="Zoom in" onClick={()=>Z.zoomAt(1.6)} style={zbtn}>+</div>
+        <div role="button" aria-label="Zoom out" onClick={()=>Z.zoomAt(1/1.6)} style={{...zbtn,opacity:z.k>1?1:0.45}}>−</div>
+      </div>
+      {z.k>1&&<div role="button" onClick={Z.reset} style={{...zbtn,position:'absolute',left:8,top:8,width:'auto',padding:'0 10px',fontSize:'13px',fontWeight:600}}>Reset</div>}
+      </div>
       <div aria-hidden="true" style={{display:'flex',flexWrap:'wrap',gap:'4px 12px'}}>
         {legend.map(([c,l])=><span key={l} style={{display:'inline-flex',alignItems:'center',gap:5,fontSize:12,color:C.mid,fontFamily:C.P}}><span style={{width:9,height:9,borderRadius:5,background:c,border:'1px solid rgba(0,0,0,0.08)'}}/>{l}</span>)}
         <span style={{display:'inline-flex',alignItems:'center',gap:5,fontSize:12,color:C.mid,fontFamily:C.P}}><span style={{width:9,height:9,borderRadius:6,border:`2px solid ${C.ink}`}}/>You've had one</span>
         {anyFading&&<span style={{display:'inline-flex',alignItems:'center',gap:5,fontSize:12,color:C.mid,fontFamily:C.P}}><span style={{width:9,height:9,borderRadius:6,background:C.cr,opacity:0.4,border:`1px dashed ${C.cr}`}}/>Fading: time for a refresher</span>}
       </div>
       {picked.length?<div data-testid="map-picked" style={{display:'flex',flexDirection:'column',borderTop:`1px solid ${C.line}`}}>
-        {picked.map(p=>(
-          <div key={p.name} style={{display:'flex',alignItems:'center',gap:10,padding:'10px 0',borderBottom:`1px solid ${C.line}`}}>
-            <Flag region={p.name} size={18}/>
-            <div style={{flex:1,minWidth:0}}>
-              <div style={{fontSize:15,fontWeight:700,color:C.ink,fontFamily:C.P}}>{p.name}</div>
-              <div style={{fontSize:13,color:C.mid,fontFamily:C.P,lineHeight:1.4}}>
-                {p.state==='open'?`${p.level} · ${p.score}%${p.fading?` · ${p.fading} answer${p.fading===1?'':'s'} fading`:''}`:p.state==='held'?'Unlocked, kept for Pro':'Not unlocked yet'}
-                {p.drunk?` · you've had ${p.drunk===1?'one':p.drunk}`:''}
-              </div>
-            </div>
-            {p.state==='open'?((p.score<100||p.fading>0)&&<div role="button" onClick={()=>_openLearn({kind:'region',region:p.name},nav,showPro)} style={{fontSize:14,fontWeight:700,color:C.cr,fontFamily:C.P,cursor:'pointer',whiteSpace:'nowrap'}}>{p.fading?'Refresh':'Quiz'} →</div>)
-              :p.state==='held'?<div role="button" onClick={()=>showPro('regions')} style={{cursor:'pointer'}}><ProBadge/></div>
-              :<div role="button" onClick={()=>nav('camera')} style={{fontSize:13,fontWeight:600,color:C.mid,fontFamily:C.P,cursor:'pointer',textAlign:'right',maxWidth:120,lineHeight:1.3}}>Scan a bottle from here</div>}
-          </div>
-        ))}
-      </div>:<div style={{fontSize:13,color:C.mid,fontFamily:C.P}}>Tap a pin to see a region. Scanning a bottle unlocks its region.</div>}
+        {picked.map(p=><_RegionRow key={p.name} p={p} nav={nav} showPro={showPro} prog={prog}/>)}
+      </div>:<div style={{fontSize:13,color:C.mid,fontFamily:C.P}}>Tap a pin to see a region; pinch to zoom in and see their names. Scanning a bottle unlocks its region.</div>}
+      </>}
     </div>
   );
 }
@@ -667,10 +875,41 @@ function MasteryRegionMap({views,nav,showPro}){
 /* What they can taste (Palate, pwa-palate.js), beside what they know: their Blind Calls scored
    against each label's profile, a bar per axis with how to notice it, any habit ("you tend to
    call tannins grippier"), and the next step. Not part of the knowledge score. */
-function MasteryPalate({p,go}){
-  const leans=Palate.leans(p);
+/* Their palate as tiles, one per trait (body, acidity, tannins, texture): the thing it tastes
+   like, sketched (SketchTraitIcon), inside a ring that fills to how close their Blind Calls come
+   to the label on that trait, with the number written out large beside it, its level and any
+   habit ("you call it grippier"). A trait with no calls yet shows a dash and says so. Every tile
+   opens the trait's own page (PalateTraitScreen), like a grape's. */
+const PALATE_TRAITS=['body','acidity','tannins','texture'];
+function _PalateTile({id,a,onOpen}){
+  const sc=a?a.score:null, col=SKETCH_TRAIT[id], R=27, circ=2*Math.PI*R;
+  const ring=id==='body'?'#C9A86A':col;
+  return <div role="button" tabIndex={0} data-trait={id} onClick={()=>onOpen(id)} onKeyDown={e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); onOpen(id); } }}
+    aria-label={`${Palate.NAMES[id]}: ${sc==null?'no Blind Calls yet':`${sc}% on target${a.lean?`, you call it ${a.lean}`:''}`}. Open its page.`}
+    style={{background:'#FBF8F3',border:`1px solid ${C.line}`,borderRadius:14,padding:'10px 10px 10px 8px',display:'flex',alignItems:'center',gap:8,cursor:'pointer',minWidth:0}}>
+    <svg width="66" height="66" viewBox="-33 -33 66 66" aria-hidden="true" style={{flexShrink:0,overflow:'visible'}}>
+      <circle r={R} fill="none" stroke={SKETCH_PENCIL} strokeWidth="3" strokeDasharray="1 4" strokeLinecap="round"/>
+      {sc!=null&&<circle r={R} fill="none" stroke={ring} strokeWidth="4.5" strokeLinecap="round" className="palate-ring"
+        strokeDasharray={circ} strokeDashoffset={circ*(1-sc/100)} transform="rotate(-90)" style={{'--ring':circ}}/>}
+      <g transform="scale(0.82)"><SketchTraitIcon id={id}/></g>
+    </svg>
+    <div style={{minWidth:0,display:'flex',flexDirection:'column'}}>
+      <span style={{fontSize:14,fontWeight:700,color:C.ink,fontFamily:C.P}}>{Palate.NAMES[id]}</span>
+      <span style={{fontSize:24,fontWeight:800,color:sc==null?C.mid:C.ink,fontFamily:C.P,lineHeight:1.15}}>{sc==null?'–':`${sc}%`}</span>
+      <span style={{fontSize:12,color:a&&a.lean?C.amber:C.mid,fontFamily:C.P,fontWeight:a&&a.lean?600:400,lineHeight:1.3}}>{sc==null?'No calls yet':a.lean?`You call it ${a.lean}`:KnowledgeMap.level(sc)}</span>
+    </div>
+  </div>;
+}
+function PalateTiles({p,onOpen}){
+  return <div data-testid="palate-tiles" style={{display:'grid',gridTemplateColumns:'repeat(2,minmax(0,1fr))',gap:8}}>
+    {PALATE_TRAITS.map(id=><_PalateTile key={id} id={id} a={p.axes.find(x=>x.id===id)} onOpen={onOpen}/>)}
+  </div>;
+}
+function MasteryPalate({p,go,onOpen}){
   return(
     <div style={{display:'flex',flexDirection:'column',gap:10}}>
+      <PalateTiles p={p} onOpen={onOpen}/>
+      <div style={{fontSize:13,color:C.mid,fontFamily:C.P,lineHeight:1.45}}>Each % is how close your Blind Calls come to the label on that trait. Tap one to learn how to taste it and see every call.</div>
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline'}}>
         <span style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>{p.n?`${p.level} · ${p.score}%`:'Not started'}</span>
         <span style={{fontSize:13,color:C.mid,fontFamily:C.P}}>{p.n} Blind Call{p.n===1?'':'s'}{p.trend!=null&&p.trend!==0?` · ${p.trend>0?'+':''}${p.trend} lately`:''}</span>
@@ -680,17 +919,6 @@ function MasteryPalate({p,go}){
         {p.n?<>Your calls average {p.accuracy}% accurate{p.n<Palate.FULL_AT?`. The score fills in as you play: ${Palate.FULL_AT-p.n} more to count in full`:''}. Each call is checked against the label's profile, an estimate, so treat it as a guide.</>
           :<>Blind Call asks you to taste first and guess the body, acidity and tannins before you see the label's profile. Your calls build this score, separate from what you've read.</>}
       </div>
-      {p.axes.map(a=>(
-        <div key={a.id} style={{display:'flex',flexDirection:'column',gap:4}}>
-          <div style={{display:'flex',alignItems:'center',gap:10}}>
-            <span style={{flex:'0 0 30%',fontSize:14,fontWeight:600,color:C.ink2,fontFamily:C.P}}>{a.name}</span>
-            <div style={{flex:1}}><MasteryBar score={a.score}/></div>
-            <span style={{fontSize:13,fontWeight:700,color:C.ink2,fontFamily:C.P,width:38,textAlign:'right'}}>{a.score}%</span>
-          </div>
-          <div style={{fontSize:13,color:C.mid,fontFamily:C.P,lineHeight:1.4}}>{a.how}</div>
-        </div>
-      ))}
-      {leans.map(l=><div key={l} style={{fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.45,background:C.offWhite,borderRadius:10,padding:'8px 10px'}}>{l}</div>)}
       {p.next&&<div role="button" onClick={()=>go(p.next)} style={{fontSize:14,fontWeight:700,color:C.cr,fontFamily:C.P,cursor:'pointer'}}>{p.next.label} →</div>}
     </div>
   );
@@ -743,12 +971,132 @@ function MilestoneList({items}){
   </div>;
 }
 
+/* Mastery's grape bunches (KnowledgeMap.grapeCluster): every grape on the Learn list as a
+   berry, red skins in one bunch, white and pink in the other, drawn as an ink-and-wash sketch
+   (pwa-sketch.jsx) and sized by mastery, so the bunches fill out as they learn. Not yet
+   unlocked: a small pencil outline. Unlocked, not started: an outline in its colour. Studying:
+   washed, growing to fill its spot. Mastered: full, with hatching. Fading: dashed and pale.
+   Berries grow from what this phone last showed (Device.grapesSeen) to today's size; reduced
+   motion shows them as they are. Each berry is a labelled button that opens the grape's page. */
+const _SKIN_NAME={red:'Red grape',white:'White grape',pink:'Pink-skinned grape'};
+// Close to full size even before they're learnt, so the bunch reads as a bunch; learning
+// grows a berry until it slightly overlaps its neighbours, as a ripe bunch does.
+const _BERRY_MIN=0.95, _BERRY_START=1, _BERRY_FULL=1.2;
+function _berryScale(state,score){ return state!=='open'?_BERRY_MIN:_BERRY_START+(_BERRY_FULL-_BERRY_START)*Math.min(100,score)/100; }
+function _berryState(g){ return g.state!=='open'?'locked':g.score>=100?'ripe':g.score>0?'grow':'start'; }
+function _berrySaid(g){
+  const state=g.state==='open'?`${g.level}, ${g.score}%${g.fading?`, ${g.fading} answer${g.fading===1?'':'s'} fading`:''}`:g.state==='held'?'unlocked, kept for Pro':'not unlocked yet';
+  return `${g.name}, ${_SKIN_NAME[g.skin].toLowerCase()}: ${state}`;
+}
+function openGrapePage(name,nav){ Handoff.grapePage.set(name); nav('grape'); }
+/* The grapes as a list: red, then white and pink, each grape with its level and score; a tap
+   opens its page, as a tap on the bunch does. */
+function MasteryGrapeList({c,open,skin,prog}){
+  const rows=React.useMemo(()=>KnowledgeMap.grapeRows(c).filter(b=>!skin||b.id===skin),[c,skin]);
+  const said=g=>g.state==='open'?(g.score>0?`${g.level}`:'Not started'):g.state==='held'?'Kept for Pro':'Not unlocked yet';
+  return <div data-testid="grape-list" style={{display:'flex',flexDirection:'column',gap:14}}>
+    {rows.map(b=><div key={b.id} style={{display:'flex',flexDirection:'column'}}>
+      {b.grapes.map(g=>{
+        const col=SKETCH_WASH[g.skin]||SKETCH_WASH.red, on=g.state==='open';
+        return <div key={g.name} role="button" tabIndex={0} aria-label={_berrySaid(g)} onClick={()=>open(g.name)}
+          onKeyDown={e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); open(g.name); } }}
+          style={{display:'flex',alignItems:'center',gap:10,padding:'9px 0',borderTop:`1px solid ${C.line}`,cursor:'pointer'}}>
+          <span aria-hidden="true" style={{width:12,height:12,borderRadius:6,flexShrink:0,background:on&&g.score>0?col:'transparent',border:`1.5px solid ${on?col:SKETCH_PENCIL}`}}/>
+          <div style={{flex:1,minWidth:0,display:'flex',flexDirection:'column',gap:4}}>
+            <div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline',gap:8}}>
+              <span style={{fontSize:15,fontWeight:600,color:on?C.ink:C.mid,fontFamily:C.P}}>{g.name}</span>
+              <span style={{fontSize:13,color:C.mid,fontFamily:C.P,whiteSpace:'nowrap',display:'inline-flex',alignItems:'baseline',gap:4}}>{g.fading>0&&<span style={{color:C.amber,fontWeight:600}}>fading · </span>}{said(g)}<RiseTag n={on?KnowledgeMap.itemRise(prog,'grapes',g.name,g.score):0} style={{marginLeft:4}}/>{on?<b style={{color:C.ink,marginLeft:4}}>{g.score}%</b>:''}</span>
+            </div>
+            {on&&<MasteryBar score={g.score} col={col}/>}
+          </div>
+          <Icon n="chevron" sz={14} col={C.mid}/>
+        </div>;
+      })}
+    </div>)}
+  </div>;
+}
+function MasteryGrapes({m,nav,view,setView,onOpen,prog}){
+  const c=React.useMemo(()=>KnowledgeMap.grapeCluster(m),[m]);
+  const seen=React.useRef(Device.grapesSeen());
+  const [grown,setGrown]=React.useState(false);
+  React.useEffect(()=>{
+    let a=requestAnimationFrame(()=>{ a=requestAnimationFrame(()=>setGrown(true)); });
+    const now={}; c.bunches.forEach(b=>b.grapes.forEach(g=>{ now[g.name]=g.state==='open'?g.score:-1; }));
+    Device.setGrapesSeen(now);
+    return()=>cancelAnimationFrame(a);
+  },[c]);
+  const open=name=>{ if(onOpen) onOpen(); openGrapePage(name,nav); };
+  const W=340, GAP=16, colW=(W-GAP)/2;
+  const k=Math.min(...c.bunches.map(b=>colW/b.w)), R=k, TOP=40;
+  const H=Math.ceil(Math.max(...c.bunches.map(b=>b.h))*k+TOP+24);
+  const from=g=>{ const v=seen.current[g.name]; return v==null||v<0?_BERRY_MIN:_berryScale('open',v); };
+  const key=g=>e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); open(g.name); } };
+  // Red or white in the list, as they last left it (Device.masteryView).
+  const [skin,setSkinS]=React.useState(()=>Device.masteryView().grapeSkin==='white'?'white':'red');
+  const setSkin=x=>{ setSkinS(x); Device.setMasteryView({grapeSkin:x}); };
+  const count=id=>{ const b=c.bunches.find(x=>x.id===id); return b?`${b.grapes.filter(g=>g.score>0).length}/${b.grapes.length}`:''; };
+  return(
+    <div style={{display:'flex',flexDirection:'column',gap:10}}>
+      <div style={{fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.5}}>
+        <b>{c.studied}</b> of {c.total} grapes studied{c.mastered?<>, <b>{c.mastered}</b> mastered</>:''}. {view==='list'?'Tap a grape to open its page.':'Each grape fills in as you learn it; tap one to open its page.'}
+      </div>
+      <MasteryToggle label="Show grapes as" testid="grape-mode" options={[['bunch','Bunches'],['list','List']]} value={view} onChange={setView}/>
+      {view==='list'&&<MasteryToggle label="Grape colour" testid="grape-skin" options={[['red',`Red · ${count('red')}`],['white',`White · ${count('white')}`]]} value={skin} onChange={setSkin}/>}
+      {view==='list'?<MasteryGrapeList c={c} open={open} skin={skin} prog={prog}/>:<>
+      <svg viewBox={`0 0 ${W} ${H}`} width="100%" data-testid="grape-cluster" style={{display:'block',maxWidth:440,margin:'0 auto',overflow:'visible'}}>
+        {c.bunches.map((b,bi)=>{
+          const cx=colW/2+bi*(colW+GAP), x0=cx-(Math.max(...b.grapes.map(g=>g.x))+Math.min(...b.grapes.map(g=>g.x)))/2*k;
+          return <g key={b.id}>
+            <SketchVine x={x0} y={TOP-R*0.1} s={1.2} leafRed={false}/>
+            {[...b.grapes].sort((p,q)=>p.y-q.y).map(g=>{ // top first: lower berries hang over upper ones
+              const x=x0+g.x*k, y=TOP+R+g.y*k, sc=grown?_berryScale(g.state,g.score):from(g);
+              return <g key={g.name} transform={`translate(${x.toFixed(1)} ${y.toFixed(1)})`} role="button" tabIndex={0} aria-label={_berrySaid(g)}
+                onClick={()=>open(g.name)} onKeyDown={key(g)} style={{cursor:'pointer',outline:'none'}} className="grape-btn">
+                <circle r={R} fill="transparent" className="grape-hit"/>
+                <g className="grape-berry" style={{transform:`scale(${(sc*R).toFixed(2)})`}}>
+                  <SketchBerry seed={g.name} skin={g.skin} state={_berryState(g)} fading={g.fading>0}/>
+                </g>
+              </g>;
+            })}
+            <text x={cx} y={H-4} textAnchor="middle" style={{fontSize:'13px',fontWeight:700,fill:C.ink2,fontFamily:C.P}}>{b.label} · {b.grapes.filter(g=>g.score>0).length}/{b.grapes.length}</text>
+          </g>;
+        })}
+      </svg>
+      <div aria-hidden="true" style={{fontSize:13,color:C.mid,fontFamily:C.P,lineHeight:1.5}}>
+        Pencil outline: not unlocked yet. Washed in colour: studying, fuller as you learn. Shaded: mastered. Dashed: fading, time for a refresher.
+      </div></>}
+    </div>
+  );
+}
+
 const _MASTERY_CSS=`@keyframes masteryGrow{from{transform:scale(0.2);opacity:0}to{transform:scale(1);opacity:1}}
 .mastery-radar-shape{animation:masteryGrow .7s cubic-bezier(.2,.8,.2,1) both}
 @keyframes milestoneIn{from{transform:translateY(8px);opacity:0}to{transform:none;opacity:1}}
 .milestone-in{animation:milestoneIn .5s ease both}
-@media (prefers-reduced-motion:reduce){.mastery-radar-shape,.milestone-in{animation:none}}`;
 
+.grape-berry{transition:transform .9s cubic-bezier(.2,.8,.2,1)}
+@keyframes palateRing{from{stroke-dashoffset:var(--ring)}}
+.palate-ring{animation:palateRing 1s cubic-bezier(.3,.7,.2,1) both}
+.grape-btn:focus-visible .grape-hit{stroke:#0F0F0F;stroke-width:2;stroke-dasharray:3 2}
+@media (prefers-reduced-motion:reduce){.mastery-radar-shape,.milestone-in{animation:none}.grape-berry{transition:none}.palate-ring{animation:none}}`;
+
+/* One section of Mastery: a heading that folds it away (a chevron, aria-expanded) and, folded, a
+   one-line summary in its place, which also opens it. `plain` lays its children out without a card. */
+function MasterySection({id,title,summary,folded,toggle,plain,testid,children}){
+  const shut=!!folded[id];
+  const body={background:C.white,borderRadius:16,border:`1px solid ${C.line}`,padding:'14px 14px 12px',display:'flex',flexDirection:'column',gap:8};
+  return <section data-section={id} style={{display:'flex',flexDirection:'column',gap:8}}>
+    <div role="button" tabIndex={0} aria-expanded={!shut} onClick={()=>toggle(id)}
+      onKeyDown={e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); toggle(id); } }}
+      style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:8,marginTop:6,cursor:'pointer'}}>
+      <span style={{fontSize:15,fontWeight:600,color:C.mid,letterSpacing:'0.08em',textTransform:'uppercase',fontFamily:C.P}}>{title}</span>
+      <span aria-hidden="true" style={{display:'inline-flex',transform:`rotate(${shut?90:-90}deg)`,transition:'transform .2s ease'}}><Icon n="chevron" sz={16} col={C.mid}/></span>
+    </div>
+    {shut?<div data-testid={`summary-${id}`} role="button" onClick={()=>toggle(id)} style={{...body,background:C.white,border:`1px solid ${C.line}`,padding:'12px 14px',cursor:'pointer',fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.45}}>{summary}</div>
+      :plain?<div data-testid={testid} style={{display:'flex',flexDirection:'column',gap:8}}>{children}</div>
+      :<div data-testid={testid} style={body}>{children}</div>}
+  </section>;
+}
 function MasteryMapScreen({nav,back,showPro}){
   const wines=React.useMemo(()=>WineHistory.getAll(),[]);
   const m=React.useMemo(()=>{ const x=KnowledgeMap.compute(wines); KnowledgeMap.note(x); return x; },[]);
@@ -760,15 +1108,28 @@ function MasteryMapScreen({nav,back,showPro}){
   const milestones=React.useMemo(()=>Milestones.list(),[fresh]);
   const [open,setOpen]=React.useState(null);
   const listRef=React.useRef(null);
+  // Back from a grape's page returns to where they were, with the grapes shown the same way.
+  const ret=React.useRef(Handoff.masteryReturn.take());
+  const [grapeView,setGrapeViewS]=React.useState(()=>(ret.current&&ret.current.view||Device.masteryView().grapes)==='list'?'list':'bunch');
+  const setGrapeView=x=>{ setGrapeViewS(x); Device.setMasteryView({grapes:x}); };
+  React.useLayoutEffect(()=>{ const r=ret.current, el=listRef.current; if(r&&el&&r.top>0) el.scrollTop=r.top; },[]);
+  const leaveMastery=()=>Handoff.masteryReturn.set({top:listRef.current?listRef.current.scrollTop:0,view:grapeView});
   const go=next=>{ if(next) _openLearn({kind:'mastery',next},nav,showPro); };
+  // Sections they've folded away stay folded next time (Device.masteryCollapsed).
+  const [folded,setFolded]=React.useState(()=>Device.masteryCollapsed());
+  const toggle=id=>setFolded(f=>{ const n={...f}; if(n[id]) delete n[id]; else n[id]=true; Device.setMasteryCollapsed(n); return n; });
+  const cluster=React.useMemo(()=>KnowledgeMap.grapeCluster(m),[m]);
+  const mapCount=React.useMemo(()=>KnowledgeMap.mapCount(views),[views]);
+  const summary=React.useMemo(()=>{ const s=[...m.areas].sort((a,b)=>b.score-a.score); return {strongest:s[0]&&s[0].score>0?s[0]:null}; },[m]);
+  // Chart or list, as they last left it (Device.masteryView).
+  const [shapeView,setShapeViewS]=React.useState(()=>Device.masteryView().shape==='list'?'list':'chart');
+  const setShapeView=x=>{ setShapeViewS(x); Device.setMasteryView({shape:x}); };
+  // A tap on an area in the chart opens it in the list.
   const pick=id=>{
     const a=m.areas.find(x=>x.id===id); if(a&&a.items) setOpen(id);
-    const el=listRef.current&&listRef.current.querySelector(`[data-area="${id}"]`);
-    if(el) el.scrollIntoView({behavior:'smooth',block:'center'});
+    setShapeView('list');
+    setTimeout(()=>{ const el=listRef.current&&listRef.current.querySelector(`[data-area="${id}"]`); if(el) el.scrollIntoView({behavior:'smooth',block:'center'}); },60);
   };
-  const GROUPS=[{id:'types',label:'Wine types'},{id:'places',label:'Regions and grapes'},{id:'skills',label:'Wine Skills'}];
-  const card={background:C.white,borderRadius:16,border:`1px solid ${C.line}`,padding:'14px 14px 12px',display:'flex',flexDirection:'column',gap:8};
-  const head=t=><div style={{fontSize:15,fontWeight:600,color:C.mid,letterSpacing:'0.08em',textTransform:'uppercase',fontFamily:C.P,marginTop:6}}>{t}</div>;
   const rise=prog&&prog.rises[0];
   return(
     <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden'}}>
@@ -781,7 +1142,7 @@ function MasteryMapScreen({nav,back,showPro}){
         <div style={{background:C.ink,borderRadius:16,padding:'18px 16px',display:'flex',flexDirection:'column',gap:8}}>
           <div style={{fontSize:13,fontWeight:600,color:'rgba(255,255,255,0.5)',fontFamily:C.P,textTransform:'uppercase',letterSpacing:'0.06em'}}>Your wine knowledge</div>
           <div style={{fontSize:32,fontWeight:800,color:'#fff',fontFamily:C.P}}>{m.overall}% <span style={{fontSize:16,fontWeight:600,color:'rgba(255,255,255,0.6)'}}>{m.level}</span>
-            {prog&&prog.overall>0&&<span style={{fontSize:15,fontWeight:700,color:'#7FD3A6',marginLeft:8}}>+{prog.overall} in {prog.weeks} week{prog.weeks===1?'':'s'}</span>}</div>
+            {prog&&prog.overall>0&&<span style={{fontSize:15,fontWeight:700,color:'#7FD3A6',marginLeft:8}}>▲{prog.overall} in {prog.weeks} week{prog.weeks===1?'':'s'}</span>}</div>
           <div style={{fontSize:14,color:'rgba(255,255,255,0.65)',fontFamily:C.P,lineHeight:1.5}}>Built from the articles you've read and the quizzes you've passed. Only studying and testing move it.</div>
           {focus&&focus.score<100&&<div data-testid="mastery-focus" style={{marginTop:4,background:'rgba(255,255,255,0.08)',borderRadius:12,padding:'12px 12px',display:'flex',flexDirection:'column',gap:6}}>
             <div style={{fontSize:13,fontWeight:600,color:'rgba(255,255,255,0.5)',fontFamily:C.P,textTransform:'uppercase',letterSpacing:'0.06em'}}>Start here</div>
@@ -793,41 +1154,42 @@ function MasteryMapScreen({nav,back,showPro}){
 
         <MilestoneMoment items={fresh}/>
 
-        {head('Your shape')}
-        <div style={card}>
-          <MasteryRadar m={m} prog={prog} onPick={pick}/>
+        <MasterySection id="shape" title="Your shape" folded={folded} toggle={toggle}
+          summary={`${m.overall}% overall${rise?` · biggest rise ${rise.label} +${rise.delta}`:summary.strongest?` · strongest ${summary.strongest.label} ${summary.strongest.score}%`:''}`}>
+          <MasteryToggle label="Show your shape as" testid="shape-mode" options={[['chart','Chart'],['list','List']]} value={shapeView} onChange={setShapeView}/>
+          {shapeView==='list'?<MasteryAreaList m={m} prog={prog} open={open} setOpen={setOpen} go={go}/>:<>
+          <div style={{background:'#FBF8F3',borderRadius:12,padding:'8px 4px 4px'}}><MasteryRadar m={m} prog={prog} onPick={pick}/></div>
           <div style={{display:'flex',gap:14,justifyContent:'center',flexWrap:'wrap'}} aria-hidden="true">
-            <span style={{display:'inline-flex',alignItems:'center',gap:6,fontSize:12,color:C.mid,fontFamily:C.P}}><span style={{width:16,height:0,borderTop:`2px solid ${C.cr}`}}/>Now</span>
-            {prog&&<span style={{display:'inline-flex',alignItems:'center',gap:6,fontSize:12,color:C.mid,fontFamily:C.P}}><span style={{width:16,height:0,borderTop:`2px dashed ${C.mid}`}}/>{_when(prog.then.t)}</span>}
+            <span style={{display:'inline-flex',alignItems:'center',gap:6,fontSize:12,color:C.mid,fontFamily:C.P}}><span style={{width:16,height:0,borderTop:`2px solid ${SKETCH_INK}`}}/>Now</span>
+            {prog&&<span style={{display:'inline-flex',alignItems:'center',gap:6,fontSize:12,color:C.mid,fontFamily:C.P}}><span style={{width:16,height:0,borderTop:`2px dotted ${C.mid}`}}/>{_when(prog.then.t)}</span>}
           </div>
           <div style={{fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.5}}>
             {prog?(rise?<>Since {_when(prog.then.t)} your biggest rise is <b>{rise.label}</b> (+{rise.delta}).{prog.rises.length>1?` ${prog.rises.length-1} other area${prog.rises.length===2?' has':'s have'} grown too.`:''}</>
               :<>No change since {_when(prog.then.t)}. A quiz or an article moves the shape.</>)
-              :<>A rounder shape means rounder knowledge. From next week, a dashed outline shows where you were, so you can see it grow.</>}
-          </div>
-        </div>
+              :<>A rounder shape means rounder knowledge. From next week, a dotted outline shows where you were, so you can see it grow.</>} Tap an area, or List, for the detail behind each number.
+          </div></>}
+        </MasterySection>
 
-        {head('Your palate')}
-        <div data-testid="mastery-palate" style={card}>
-          <MasteryPalate p={palate} go={go}/>
-        </div>
+        <MasterySection id="grapes" title="Your grapes" folded={folded} toggle={toggle}
+          summary={`${cluster.studied} of ${cluster.total} grapes studied${cluster.mastered?` · ${cluster.mastered} mastered`:''}`}>
+          <MasteryGrapes m={m} nav={nav} view={grapeView} setView={setGrapeView} onOpen={leaveMastery} prog={prog}/>
+        </MasterySection>
 
-        {head('Your wine map')}
-        <div style={card}>
-          <MasteryRegionMap views={views} nav={nav} showPro={showPro}/>
-        </div>
+        <MasterySection id="map" title="Your wine map" folded={folded} toggle={toggle}
+          summary={`${mapCount.open} of ${mapCount.total} regions unlocked`}>
+          <MasteryRegionMap views={views} nav={nav} showPro={showPro} prog={prog}/>
+        </MasterySection>
 
-        {head('Milestones')}
-        <div data-testid="mastery-milestones" style={card}><MilestoneList items={milestones}/></div>
+        <MasterySection id="palate" title="Your palate" testid="mastery-palate" folded={folded} toggle={toggle}
+          summary={palate.n?`${palate.score}% · ${palate.level} · from ${palate.n} Blind Call${palate.n===1?'':'s'}`:'No Blind Calls yet'}>
+          <MasteryPalate p={palate} go={go} onOpen={id=>{ leaveMastery(); Handoff.palateTrait.set(id); nav('palate-trait'); }}/>
+        </MasterySection>
 
-        {GROUPS.map(G=>(
-          <div key={G.id} style={{display:'flex',flexDirection:'column',gap:8}}>
-            {head(G.label)}
-            {m.areas.filter(a=>a.group===G.id).map(a=>(
-              <div key={a.id} data-area={a.id}><MasteryAreaCard a={a} open={open===a.id} onToggle={()=>a.items&&setOpen(o=>o===a.id?null:a.id)} onNext={()=>go(a.next)}/></div>
-            ))}
-          </div>
-        ))}
+        <MasterySection id="milestones" title="Milestones" testid="mastery-milestones" folded={folded} toggle={toggle}
+          summary={milestones.length?`${milestones.length} earned · latest: ${milestones[0].title}`:'None yet'}>
+          <MilestoneList items={milestones}/>
+        </MasterySection>
+
         <div style={{height:12}}/>
       </div>
     </div>

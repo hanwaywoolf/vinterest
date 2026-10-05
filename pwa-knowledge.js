@@ -106,7 +106,7 @@ const KnowledgeMap = {
     this.note(m);
     const sorted=[...m.areas].sort((a,b)=>b.score-a.score);
     const strongest=sorted[0]&&sorted[0].score>0?sorted[0]:null;
-    return {overall:m.overall,level:m.level,strongest,gap:this.focus(wines,m)};
+    return {overall:m.overall,level:m.level,strongest,gap:this.focus(wines,m),progress:this.progress(m)};
   },
 
   /* ── What to study next, weighted by what they drink ──
@@ -159,11 +159,11 @@ const KnowledgeMap = {
   _week(t){ const d=new Date(t); d.setDate(d.getDate()-(d.getDay()+6)%7); const z=x=>String(x).padStart(2,'0'); return `${d.getFullYear()}-${z(d.getMonth()+1)}-${z(d.getDate())}`; },
   history(){ const h=Store.getJSON(this.HISTORY_KEY,{}); return h&&typeof h==='object'&&!Array.isArray(h)?h:{}; },
   note(m,now=Date.now()){
-    const h=this.history(), wk=this._week(now), a={};
-    m.areas.forEach(x=>{ a[x.id]=x.score; });
+    const h=this.history(), wk=this._week(now), a={}, i={};
+    m.areas.forEach(x=>{ a[x.id]=x.score; (x.items||[]).forEach(it=>{ if(it.score>0) i[x.id+'|'+it.name]=it.score; }); });
     const cur=h[wk];
-    if(cur&&cur.o===m.overall&&JSON.stringify(cur.a)===JSON.stringify(a)) return;
-    h[wk]={t:now,o:m.overall,a};
+    if(cur&&cur.o===m.overall&&JSON.stringify(cur.a)===JSON.stringify(a)&&JSON.stringify(cur.i||{})===JSON.stringify(i)) return;
+    h[wk]={t:now,o:m.overall,a,i}; // i: each region's and grape's score, for their own green rises
     const keep=Object.keys(h).sort().slice(-this.HISTORY_WEEKS), out={};
     keep.forEach(k=>{ out[k]=h[k]; });
     Store.setJSON(this.HISTORY_KEY,out);
@@ -180,7 +180,13 @@ const KnowledgeMap = {
   progress(m,now=Date.now()){
     const p=this.then(now); if(!p) return null;
     const rises=m.areas.map(a=>({id:a.id,label:a.label,delta:a.score-(p.a[a.id]||0)})).filter(x=>x.delta>0).sort((x,y)=>y.delta-x.delta);
-    return {then:p,weeks:p.weeks,overall:m.overall-(p.o||0),rises};
+    return {then:p,weeks:p.weeks,overall:m.overall-(p.o||0),rises,area:id=>{ const a=m.areas.find(x=>x.id===id); return a?a.score-(p.a[id]||0):0; }};
+  },
+  /* How far one region or grape has risen since then() (its green "+N"): 0 when it hasn't, or
+     when the snapshot predates item scores. */
+  itemRise(prog,areaId,name,score){
+    if(!prog||!prog.then||!prog.then.i) return 0;
+    return Math.max(0,(score||0)-(prog.then.i[areaId+'|'+name]||0));
   },
   /* Question sets with answers fading (QuizMastery.isDue), most first: Home's "Refresh" step and
      the map's faded pins. Only sets with at least FADE_SUGGEST_AT fading, so one stray answer
@@ -228,7 +234,90 @@ const KnowledgeMap = {
       return {...v,pins,open:pins.filter(p=>p.state==='open').length,drunk:pins.filter(p=>p.drunk).length};
     });
   },
+  /* ── The grape cluster ──
+     Every grape on the Learn list as a berry, in two bunches by skin (red; white with the
+     pink-skinned ones), each berry sized by its mastery. grapeCluster() is the data: per grape
+     its state ('open' unlocked, 'held' kept for Pro, 'locked' not yet met), score, level,
+     fading answers and profile, placed in a fixed spot of its bunch. Spots come from
+     bunchSlots(n): berries scattered inside a bunch outline (not rows), in units of one berry's
+     radius, seeded so the same every time; grapes take spots in an order seeded by their name,
+     so nothing reshuffles between visits and a berry grows in its own place without moving its
+     neighbours. Works the same for a few hundred grapes. */
+  _seed(str){ let h=2166136261; for(const ch of String(str)){ h^=ch.codePointAt(0); h=Math.imul(h,16777619); } return h>>>0; },
+  _rng(seed){ let x=this._seed(seed)||1; return ()=>{ x^=x<<13; x^=x>>>17; x^=x<<5; return (x>>>0)/4294967296; }; },
+  /* A bunch's outline: its half-width at depth t (0 the shoulders, 1 the tip), rounded at the
+     top and tapering to a point. */
+  _bunchW(t){ return Math.sin(Math.PI/2*Math.min(1,(t+0.04)/0.26))*Math.pow(Math.max(0,1-t),0.85); },
+  /* n berries (radius 1) scattered inside a bunch outline sized so they cover `fill` of it:
+     each placed in the most open of a few seeded candidate spots, then nudged apart until
+     neighbours just touch. Organic, not rows, and the same every time for the same n and seed. */
+  _bunchCache:{},
+  bunchSlots(n,opts={}){
+    const fill=opts.fill||0.8, seed=opts.seed||'bunch', key=n+'|'+fill+'|'+seed;
+    if(this._bunchCache[key]) return this._bunchCache[key];
+    if(!n) return {slots:[],w:0,h:0};
+    let I=0; for(let i=0;i<100;i++) I+=this._bunchW((i+0.5)/100)/100;
+    const ASPECT=2.3, a=Math.sqrt(n*Math.PI/fill/(2*ASPECT*I)), h=ASPECT*a, rnd=this._rng(seed+n);
+    const room=y=>a*this._bunchW(y/h)-0.6;
+    const inside=(x,y)=>y>=0.6&&y<=h-0.6&&Math.abs(x)<=Math.max(0,room(y));
+    const pts=[{x:0,y:1}];
+    const sample=()=>{ for(let i=0;i<200;i++){ const x=(rnd()*2-1)*a, y=rnd()*h; if(inside(x,y)) return {x,y}; } return {x:0,y:h/2}; };
+    while(pts.length<n){
+      let best=null, bd=-1;
+      for(let c=0;c<24;c++){ const p=sample(); let d=1e9; for(const q of pts){ const e=(p.x-q.x)**2+(p.y-q.y)**2; if(e<d) d=e; } if(d>bd){ bd=d; best=p; } }
+      pts.push(best);
+    }
+    const GAP=1.86;
+    for(let it=0;it<60;it++){
+      for(let i=0;i<n;i++) for(let j=i+1;j<n;j++){
+        const p=pts[i], q=pts[j], dx=q.x-p.x, dy=q.y-p.y, d=Math.hypot(dx,dy)||0.01;
+        if(d<GAP){ const m=(GAP-d)/2, ux=dx/d, uy=dy/d; p.x-=ux*m; p.y-=uy*m; q.x+=ux*m; q.y+=uy*m; }
+      }
+      pts.forEach(p=>{ p.y=Math.min(h-0.6,Math.max(0.6,p.y)); const r=Math.max(0,room(p.y)); p.x=Math.max(-r,Math.min(r,p.x)); });
+    }
+    const minY=Math.min(...pts.map(p=>p.y)), maxY=Math.max(...pts.map(p=>p.y)), xs=pts.map(p=>p.x);
+    const out={slots:pts.map(p=>({x:+p.x.toFixed(3),y:+(p.y-minY).toFixed(3)})),w:Math.max(...xs)-Math.min(...xs)+2,h:maxY-minY+2};
+    return this._bunchCache[key]=out;
+  },
+  /* Mastery's list view of the same grapes: each bunch's grapes in order of progress (highest
+     score first, then unlocked but not started, then kept for Pro, then not unlocked), by name
+     within each. */
+  grapeRows(c){
+    const rank=g=>g.state==='open'?(g.score>0?0:1):g.state==='held'?2:3;
+    return (c||this.grapeCluster()).bunches.map(b=>({id:b.id,label:b.label,
+      grapes:[...b.grapes].sort((p,q)=>rank(p)-rank(q)||q.score-p.score||p.name.localeCompare(q.name))}));
+  },
+  grapeCluster(m){
+    m=m||this.compute();
+    const area=m.areas.find(a=>a.id==='grapes'), items={};
+    (area?area.items:[]).forEach(i=>{ items[i.name]=i; });
+    const held=new Set(GrapeUnlocks.held());
+    const grapes=GRAPE_ALLOWLIST.map(g=>{
+      const it=items[g], K=KNOWLEDGE.grapes&&KNOWLEDGE.grapes[g];
+      return {name:g,skin:grapeSkin(g),state:it?'open':held.has(g)?'held':'locked',score:it?it.score:0,
+        level:it?it.level:'Not started',fading:it?it.fading||0:0,profile:K?K.profile:null};
+    });
+    const bunch=(id,label,list)=>{
+      const sorted=[...list].sort((a,b)=>this._seed(a.name)-this._seed(b.name)), L=this.bunchSlots(sorted.length,{seed:id});
+      return {id,label,...L,grapes:sorted.map((g,i)=>({...g,...L.slots[i]}))};
+    };
+    const studied=grapes.filter(g=>g.score>0).length, mastered=grapes.filter(g=>g.score>=100).length;
+    return {bunches:[bunch('red','Red grapes',grapes.filter(g=>g.skin==='red')),bunch('white','White grapes',grapes.filter(g=>g.skin!=='red'))],
+      total:grapes.length,studied,mastered,open:grapes.filter(g=>g.state==='open').length};
+  },
+
   /* The view to open on: the one with the most regions they've unlocked or drunk. */
+  /* Mastery's region list for one map view: most progress first (as grapeRows), then kept for
+     Pro, then not unlocked, by name within each. */
+  regionRows(view){
+    const rank=p=>p.state==='open'?(p.score>0?0:1):p.state==='held'?2:3;
+    return [...((view&&view.pins)||[])].sort((a,b)=>rank(a)-rank(b)||(b.score||0)-(a.score||0)||a.name.localeCompare(b.name));
+  },
+  /* Regions on the map overall (a region can sit in more than one view): {open, total}. */
+  mapCount(views){
+    const all={}; (views||[]).forEach(v=>v.pins.forEach(p=>{ all[p.name]=all[p.name]||p.state==='open'; }));
+    const names=Object.keys(all); return {open:names.filter(n=>all[n]).length,total:names.length};
+  },
   homeView(views){ return [...views].sort((a,b)=>(b.open+b.drunk)-(a.open+a.drunk))[0]||null; },
 };
 

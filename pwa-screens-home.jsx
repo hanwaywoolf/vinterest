@@ -234,6 +234,9 @@ function HomeScreen({nav, showPro, isTablet}){
     return {types,pick};
   },[sig]);
 
+  // Home's "Try next" counts as a day the pick was shown (ExploreNext.noteShown).
+  React.useEffect(()=>{ if(dna.pick) ExploreNext.noteShown([dna.pick]); },[dna.pick&&dna.pick.style.id]);
+
   const lv=XPSystem.getLevel(xpData.total);
   const nx=XPSystem.nextLevel(xpData.total);
   const pg=XPSystem.levelProgress(xpData.total);
@@ -332,7 +335,7 @@ function HomeScreen({nav, showPro, isTablet}){
           {head('Your WineDNA','Open →',()=>{ UserPrefs.openDNA(dna.types[0].key); nav('profile'); })}
           {dna.types.map(t=>row(t.key,'wine',t.col,t.tab,t.line,()=>{ UserPrefs.openDNA(t.key); nav('profile'); }))}
           {dna.pick&&row('explore','compass',C.cr,`Try next: ${dna.pick.style.name}`,`Explore Next · ${dna.pick.style.country}`,()=>{
-            Handoff.styleExplore.set({id:dna.pick.style.id,typeKey:dna.pick.typeKey,label:dna.pick.typeLabel}); nav('style-explore'); })}
+            ExploreNext.markOpened(dna.pick.style.id); Handoff.styleExplore.set({id:dna.pick.style.id,typeKey:dna.pick.typeKey,label:dna.pick.typeLabel}); nav('style-explore'); })}
           {row('script','message',C.cr,`Your ${(WineDNA.NOUNS[dna.types[0].key]||['wine'])[0]} sommelier script`,'What to say when you order',()=>{ UserPrefs.openDNA(dna.types[0].key,'scripts'); nav('profile'); })}
         </Card>}
 

@@ -779,6 +779,7 @@ function DetailPrice({wine,nav}){
           {/* Find it for me (Restock for a wine they'd buy again) */}
           <Btn primary full style={{background:C.cr,boxShadow:`0 3px 12px ${C.cr}35`}} onClick={handleFindItForMe}>{findLabel}</Btn>
           {findPartner&&<div style={{display:'flex',justifyContent:'center',marginTop:-12}}><PartnerTag/></div>}
+          <ShopDisclosure style={{textAlign:'center',marginTop:-8,padding:'0 8px'}}/>
 
           {/* Disclaimer */}
           <div style={{fontSize:12,color:C.mid,fontFamily:C.P,lineHeight:1.5,textAlign:'center',padding:'0 8px'}}>

@@ -60,12 +60,26 @@ const Settings = {
 };
 
 /* Per-device choices that shouldn't follow the user: the phone-layout override used by the
-   preview panel, and which WineDNA sections are folded away. */
+   preview panel, which WineDNA sections are folded away, and what the grape cluster last showed. */
 const Device = {
   FORCE_MOBILE_KEY:'vinterest_force_mobile', DNA_COLLAPSE_KEY:'vinterest_dna_collapsed_v1',
   forceMobile(){ return Store.get(this.FORCE_MOBILE_KEY)==='1'; },
   dnaCollapsed(){ return Store.getJSON(this.DNA_COLLAPSE_KEY,null); },
   setDnaCollapsed(v){ Store.setJSON(this.DNA_COLLAPSE_KEY,v); },
+  /* Each grape's score when Mastery's grape cluster was last seen on this phone, so the berries
+     grow from there to today's size. */
+  GRAPES_SEEN_KEY:'vinterest_grape_cluster_seen',
+  grapesSeen(){ return Store.getJSON(this.GRAPES_SEEN_KEY,{})||{}; },
+  setGrapesSeen(v){ Store.setJSON(this.GRAPES_SEEN_KEY,v); },
+  /* Which Mastery sections they've folded away on this phone ({id: true}), kept for next time. */
+  MASTERY_COLLAPSE_KEY:'vinterest_mastery_collapsed_v1',
+  masteryCollapsed(){ const v=Store.getJSON(this.MASTERY_COLLAPSE_KEY,{}); return v&&typeof v==='object'?v:{}; },
+  setMasteryCollapsed(v){ Store.setJSON(this.MASTERY_COLLAPSE_KEY,v); },
+  /* How Mastery's grapes and regions were last shown on this phone, kept for next time:
+     {grapes: 'bunch'|'list', grapeSkin: 'red'|'white', regions: 'map'|'list', regionView: view id}. */
+  MASTERY_VIEW_KEY:'vinterest_mastery_view_v1',
+  masteryView(){ const v=Store.getJSON(this.MASTERY_VIEW_KEY,{}); return v&&typeof v==='object'?v:{}; },
+  setMasteryView(patch){ Store.setJSON(this.MASTERY_VIEW_KEY,{...this.masteryView(),...patch}); },
 };
 
 /* Wines hearted on the detail screen, by name and vintage. */
@@ -127,6 +141,14 @@ const Handoff = {
   get quiz(){ return this._j('vinterest_quiz_config2'); },
   get genArticle(){ return this._j('vinterest_gen_article'); },
   get guide(){ return this._s('vinterest_guide'); },
+  /* The grape whose page (GrapeScreen) to open. */
+  get grapePage(){ return this._s('vinterest_grape_page'); },
+  /* The palate trait whose page (PalateTraitScreen) to open: body, acidity, tannins or texture. */
+  get palateTrait(){ return this._s('vinterest_palate_trait'); },
+  /* Where Mastery was when a grape's page opened ({top, view: 'bunch'|'list'}), so going back
+     lands on the grapes, not the top of the screen. Read once. */
+  masteryReturn:{ set:v=>Store.setJSON('vinterest_mastery_return',v,{session:true}),
+    take(){ const v=Store.getJSON('vinterest_mastery_return',null,{session:true}); Store.remove('vinterest_mastery_return',{session:true}); return v; } },
   get onRampIdx(){ return this._s('vinterest_onramp_idx'); },
   get styleExplore(){ return this._j('vinterest_style_explore'); },
   /* How My Wines should open (type and sort), read once. */

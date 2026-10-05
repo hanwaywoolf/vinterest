@@ -97,6 +97,7 @@ test('read a guide, pass its questions, see it in Learn and in Mastery (Pro)', a
   await page.evaluate(() => localStorage.setItem('vinterest_pro', '1'));
   await page.goto(`${BASE}/#mastery-map`);
   await expect(root(page)).toContainText('Your Mastery');
+  await page.getByTestId('shape-mode').getByRole('tab', { name: 'List' }).click();
   await expect(root(page)).toContainText('Wine Skills');
   const pairing = await page.evaluate(() => KnowledgeMap.compute().areas.find((a) => a.id === 'skill_pairing'));
   expect(pairing.detail).toContain('3/9 questions');

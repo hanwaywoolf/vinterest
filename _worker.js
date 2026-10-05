@@ -103,6 +103,9 @@ export default {
       if (request.method !== "POST") return json(405, { error: "Method not allowed" });
       return handleAccountDelete(request, env);
     }
+    if (url.pathname === "/go") {
+      return handleGo(request, env);
+    }
     if (url.pathname === "/claude") {
       if (request.method === "OPTIONS") return cors(new Response(null, { status: 204 }));
       if (request.method !== "POST") return json(405, { error: "Method not allowed" });
@@ -424,7 +427,7 @@ async function handlePriceSearch(payload, env, key, ctx) {
   if (!w.name || !MARKET_CODE_RE.test(String(m.code || ""))) return json(400, { error: "price_search needs wine.name and market.code.", code: "invalid_price_search" });
   const k = priceCacheKey(w, m);
   const hit = await priceCacheGet(env, k);
-  if (hit) return json(200, { text: hit, cached: true });
+  if (hit) return json(200, { text: await _signListings(env, hit), cached: true });
 
   const model = env.PRICE_MODEL || env.CLAUDE_MODEL || "claude-sonnet-4-6";
   // The basic search tool: a price is in the result snippets, and it's far quicker than the
@@ -481,7 +484,7 @@ async function handlePriceSearch(payload, env, key, ctx) {
   const res = await Promise.race([work, new Promise((ok) => setTimeout(() => ok(null), PRICE_WAIT_MS))]);
   if (!res) return json(200, { text: "", pending: true });
   if (res.error) return json(res.status || 502, { error: res.error, code: "anthropic_error" });
-  return json(200, { text: res.text, cached: false });
+  return json(200, { text: await _signListings(env, res.text), cached: false });
 }
 
 /* The shops the search found the wine at (up to 3), for the Price tab's "In shops now". A link is
@@ -518,4 +521,78 @@ function json(status, obj) {
     status,
     headers: { "content-type": "application/json" }
   }));
+}
+
+/* ── /go: every shop link the app opens goes through here ──
+   The app links to /go rather than straight to a shop, so which shop a link reaches and how it's
+   tracked follow data/retailers.json as deployed today, not as it was when a phone's app was
+   built: an approval or a new network needs a web deploy, never an app-store update.
+   - /go?w=<search words>&c=<country>&p=<placement>: "Find it for me" and "Restock". The first
+     switched-on shop for that country with a search link, else a Google search.
+   - /go?u=<url>&p=<placement>[&s=<sig>]: a shop page. Only a known retailer's site, or a link
+     this Worker signed itself (the price search's "In shops now", _signListings), so /go is
+     never an open redirect someone could point at any site.
+   Then the link is tracked: through Awin when the shop has an awinMid and the publisher ID is set,
+   else through Skimlinks when it's switched on (it pays on most other shops), else left plain.
+   p is where in the app it was tapped (Awin's clickref, Skimlinks' xcust). Money never moves a
+   match, a pick or the order of a list: /go only decides where a tap already made goes. */
+const GO_PLACEMENTS = new Set(["price", "restock", "listing", "explore", "find", "app"]);
+let _retailers = null;
+async function retailersConfig(env, request) {
+  if (_retailers && Date.now() - _retailers.at < 5 * 60 * 1000) return _retailers.cfg;
+  let cfg = { awin: {}, skimlinks: {}, retailers: [] };
+  try {
+    const r = env && env.ASSETS ? await env.ASSETS.fetch(new Request(new URL("/data/retailers.json", request.url))) : null;
+    if (r && r.ok) { const c = await r.json(); cfg = { awin: c.awin || {}, skimlinks: c.skimlinks || {}, retailers: Array.isArray(c.retailers) ? c.retailers : [] }; }
+  } catch (e) {}
+  _retailers = { at: Date.now(), cfg };
+  return cfg;
+}
+function _goHost(u) { try { return new URL(u).host.replace(/^www\./, ""); } catch (e) { return ""; } }
+function _shopFor(cfg, url) { const h = _goHost(url); return cfg.retailers.find((r) => (r.domains || []).some((d) => h === d || h.endsWith("." + d))) || null; }
+function _track(cfg, url, placement) {
+  const r = _shopFor(cfg, url), pub = cfg.awin && cfg.awin.publisherId, sk = cfg.skimlinks || {};
+  if (r && r.awinMid && pub) return "https://www.awin1.com/cread.php?awinmid=" + encodeURIComponent(r.awinMid) + "&awinaffid=" + encodeURIComponent(pub) + "&clickref=" + encodeURIComponent(placement) + "&ued=" + encodeURIComponent(url);
+  // Skimlinks' Link Wrapper. sref is the page a click is credited to: an app tap has no web page
+  // and /go sends no referrer, so it names the approved site (skimlinks.sref, else vinterest.app).
+  if (sk.enabled && sk.id && !/(^|\.)google\./.test(_goHost(url))) return "https://go.skimresources.com/?id=" + encodeURIComponent(sk.id) + "&xs=1&xcust=" + encodeURIComponent(placement) + "&sref=" + encodeURIComponent(sk.sref || "https://vinterest.app/") + "&url=" + encodeURIComponent(url);
+  return url;
+}
+/* A short signature for a link this Worker vouches for (HMAC with GO_SECRET). Without the secret
+   nothing is signed, and the app opens unknown shops' pages directly. */
+async function _goSig(env, url) {
+  if (!env || !env.GO_SECRET) return null;
+  const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(env.GO_SECRET), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+  const mac = new Uint8Array(await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(url)));
+  return [...mac.slice(0, 12)].map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+async function _signListings(env, text) {
+  if (!env || !env.GO_SECRET) return text;
+  try {
+    const o = JSON.parse(text);
+    if (!Array.isArray(o.shops) || !o.shops.length) return text;
+    o.shops = await Promise.all(o.shops.map(async (s) => ({ ...s, sig: await _goSig(env, s.url) })));
+    return JSON.stringify(o);
+  } catch (e) { return text; }
+}
+async function handleGo(request, env) {
+  const q = new URL(request.url).searchParams;
+  const placement = GO_PLACEMENTS.has(q.get("p")) ? q.get("p") : "app";
+  const cfg = await retailersConfig(env, request);
+  let target;
+  const words = (q.get("w") || "").replace(/\s+/g, " ").trim().slice(0, 200);
+  if (words) {
+    const gl = (q.get("c") || "").toLowerCase().replace(/[^a-z]/g, "").slice(0, 2);
+    const shop = cfg.retailers.find((r) => r.enabled && r.search && r.country === gl);
+    target = shop ? shop.search.replace("{q}", encodeURIComponent(words.replace(/\s+buy$/i, "")))
+      : "https://www.google.com/search?q=" + encodeURIComponent(words) + (gl ? "&gl=" + gl : "");
+  } else {
+    let u;
+    try { u = new URL(q.get("u") || ""); } catch (e) { return new Response("Not a link", { status: 400 }); }
+    if (u.protocol !== "https:") return new Response("Not a link", { status: 400 });
+    const vouched = !!_shopFor(cfg, u.href) || (!!q.get("s") && q.get("s") === await _goSig(env, u.href));
+    if (!vouched) return new Response("Unknown shop link", { status: 400 });
+    target = u.href;
+  }
+  return new Response(null, { status: 302, headers: { Location: _track(cfg, target, placement), "Cache-Control": "no-store", "Referrer-Policy": "no-referrer", "X-Robots-Tag": "noindex" } });
 }

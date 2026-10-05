@@ -1357,5 +1357,561 @@
    "bual",
    "boal"
   ]
+ },
+ {
+  "id": "ribera_del_duero",
+  "type": "red",
+  "name": "Ribera del Duero",
+  "region": "Ribera del Duero, Castilla y León",
+  "country": "Spain",
+  "grapes": [
+   "Tempranillo"
+  ],
+  "profile": {
+   "body": 0.8,
+   "tannins": 0.75,
+   "acidity": 0.6
+  },
+  "bridge": {
+   "grapes": [
+    "tempranillo",
+    "cabernet sauvignon"
+   ],
+   "regions": [
+    "rioja",
+    "toro"
+   ]
+  },
+  "adds": "darker, denser Tempranillo with more grip",
+  "learn": {
+   "taste": "Blackberry, plum, liquorice and toasty oak. Full-bodied with firm tannins.",
+   "why": "The vineyards sit high on Spain's central plateau, with hot days and cold nights, so Tempranillo (here often called Tinto Fino) ripens dark and powerful but keeps its freshness.",
+   "label": "Look for 'Ribera del Duero' on the label. Crianza, Reserva and Gran Reserva mean longer ageing, as in Rioja.",
+   "ask": "I like Rioja: could I try a Ribera del Duero, something a bit darker?"
+  },
+  "match": [
+   "ribera del duero"
+  ]
+ },
+ {
+  "id": "priorat",
+  "type": "red",
+  "name": "Priorat",
+  "region": "Priorat, Catalonia",
+  "country": "Spain",
+  "grapes": [
+   "Garnacha",
+   "Cariñena"
+  ],
+  "profile": {
+   "body": 0.85,
+   "tannins": 0.7,
+   "acidity": 0.6
+  },
+  "bridge": {
+   "grapes": [
+    "grenache",
+    "carignan",
+    "syrah"
+   ],
+   "regions": [
+    "rhône",
+    "chateauneuf",
+    "rioja"
+   ]
+  },
+  "adds": "a slatey, mineral intensity",
+  "learn": {
+   "taste": "Ripe black cherry, dried herbs and a stony, mineral edge. Full-bodied and concentrated.",
+   "why": "Old Garnacha and Cariñena vines grow on steep terraces of crumbly slate called llicorella. They give tiny yields of intense, mineral wine.",
+   "label": "Look for 'Priorat DOQ'. Neighbouring Montsant is a lighter, often cheaper alternative.",
+   "ask": "Something like a Châteauneuf-du-Pape but more mineral: do you have a Priorat?"
+  },
+  "match": [
+   "priorat",
+   "priorato"
+  ]
+ },
+ {
+  "id": "xinomavro",
+  "type": "red",
+  "name": "Xinomavro",
+  "region": "Naoussa, Macedonia",
+  "country": "Greece",
+  "grapes": [
+   "Xinomavro"
+  ],
+  "profile": {
+   "body": 0.6,
+   "tannins": 0.8,
+   "acidity": 0.75
+  },
+  "bridge": {
+   "grapes": [
+    "nebbiolo",
+    "sangiovese"
+   ],
+   "regions": [
+    "piedmont",
+    "barolo",
+    "tuscany"
+   ]
+  },
+  "adds": "tomato-leaf and olive savouriness",
+  "learn": {
+   "taste": "Sour cherry, tomato leaf, olive and spice. High tannin and acidity, paler than you'd expect.",
+   "why": "Greece's answer to Nebbiolo: a pale but firmly structured red that ages for decades, turning to dried fruit and leather.",
+   "label": "Look for 'Naoussa' or 'Amyndeon' on the label; Xinomavro is usually named as the grape.",
+   "ask": "If I like Barolo, would a Naoussa Xinomavro suit me?"
+  },
+  "match": [
+   "xinomavro",
+   "naoussa"
+  ]
+ },
+ {
+  "id": "valpolicella_ripasso",
+  "type": "red",
+  "name": "Valpolicella Ripasso",
+  "region": "Valpolicella, Veneto",
+  "country": "Italy",
+  "grapes": [
+   "Corvina"
+  ],
+  "profile": {
+   "body": 0.7,
+   "tannins": 0.55,
+   "acidity": 0.65
+  },
+  "bridge": {
+   "grapes": [
+    "corvina",
+    "sangiovese",
+    "merlot"
+   ],
+   "regions": [
+    "veneto",
+    "valpolicella",
+    "tuscany"
+   ]
+  },
+  "adds": "a raisined richness without Amarone's price",
+  "learn": {
+   "taste": "Cherry, raisin, cocoa and sweet spice. Medium to full-bodied and smooth.",
+   "why": "Ripasso means 'repassed': the wine is fermented a second time on the dried-grape skins left over from making Amarone, which adds richness and depth.",
+   "label": "Look for 'Valpolicella Ripasso' on the label. Amarone della Valpolicella is the fuller, stronger and pricier version.",
+   "ask": "Something rich and smooth but not too heavy: a Valpolicella Ripasso?"
+  },
+  "match": [
+   "ripasso"
+  ]
+ },
+ {
+  "id": "central_otago_pinot",
+  "type": "red",
+  "name": "Central Otago Pinot Noir",
+  "region": "Central Otago",
+  "country": "New Zealand",
+  "grapes": [
+   "Pinot Noir"
+  ],
+  "profile": {
+   "body": 0.55,
+   "tannins": 0.4,
+   "acidity": 0.7
+  },
+  "bridge": {
+   "grapes": [
+    "pinot noir",
+    "gamay"
+   ],
+   "regions": [
+    "burgundy",
+    "oregon",
+    "beaujolais"
+   ]
+  },
+  "adds": "vivid, dark-cherry fruit from the world's southernmost vineyards",
+  "learn": {
+   "taste": "Dark cherry, plum, wild thyme and spice. Silky, with bright acidity.",
+   "why": "Mountain vineyards with a near-continental climate: hot days, cold nights and a long autumn give Pinot Noir ripe, intense fruit with fresh acidity.",
+   "label": "Look for 'Central Otago' on the label; sub-regions such as Bannockburn, Gibbston and Bendigo appear too.",
+   "ask": "Do you have a Pinot Noir from Central Otago?"
+  },
+  "match": [
+   "central otago"
+  ]
+ },
+ {
+  "id": "saint_emilion",
+  "type": "red",
+  "name": "Saint-Émilion",
+  "region": "Right Bank, Bordeaux",
+  "country": "France",
+  "grapes": [
+   "Merlot",
+   "Cabernet Franc"
+  ],
+  "profile": {
+   "body": 0.7,
+   "tannins": 0.65,
+   "acidity": 0.6
+  },
+  "bridge": {
+   "grapes": [
+    "merlot",
+    "cabernet franc",
+    "cabernet sauvignon"
+   ],
+   "regions": [
+    "bordeaux",
+    "loire"
+   ]
+  },
+  "adds": "plush Merlot lifted by Cabernet Franc",
+  "learn": {
+   "taste": "Plum, black cherry, cedar and tobacco. Rounder and softer than Left Bank Bordeaux.",
+   "why": "On Bordeaux's Right Bank, clay and limestone soils suit Merlot and Cabernet Franc rather than Cabernet Sauvignon, so the wines are plusher and earlier-drinking.",
+   "label": "Look for 'Saint-Émilion' or 'Saint-Émilion Grand Cru'; neighbouring Pomerol is similar and often richer.",
+   "ask": "Something from Bordeaux's Right Bank, a Saint-Émilion with Cabernet Franc in it?"
+  },
+  "match": [
+   "saint-émilion",
+   "saint-emilion",
+   "st-émilion",
+   "st-emilion"
+  ]
+ },
+ {
+  "id": "chilean_carmenere",
+  "type": "red",
+  "name": "Chilean Carmenère",
+  "region": "Colchagua & Maipo",
+  "country": "Chile",
+  "grapes": [
+   "Carmenère"
+  ],
+  "profile": {
+   "body": 0.7,
+   "tannins": 0.55,
+   "acidity": 0.55
+  },
+  "bridge": {
+   "grapes": [
+    "cabernet franc",
+    "merlot",
+    "cabernet sauvignon"
+   ],
+   "regions": [
+    "bordeaux",
+    "colchagua"
+   ]
+  },
+  "adds": "a green-peppercorn and paprika spice",
+  "learn": {
+   "taste": "Black plum, red pepper, paprika and cocoa. Medium to full-bodied and soft.",
+   "why": "An old Bordeaux grape that almost vanished in France and was rediscovered in Chile in 1994, where it had been grown for years mistaken for Merlot.",
+   "label": "Carmenère is named on the label; Colchagua and Peumo are good regions to look for.",
+   "ask": "Could I try a Chilean Carmenère?"
+  },
+  "match": [
+   "carmenère",
+   "carmenere"
+  ]
+ },
+ {
+  "id": "nero_davola",
+  "type": "red",
+  "name": "Nero d'Avola",
+  "region": "Sicily",
+  "country": "Italy",
+  "grapes": [
+   "Nero d'Avola"
+  ],
+  "profile": {
+   "body": 0.7,
+   "tannins": 0.55,
+   "acidity": 0.6
+  },
+  "bridge": {
+   "grapes": [
+    "syrah",
+    "grenache",
+    "primitivo",
+    "sangiovese"
+   ],
+   "regions": [
+    "sicily",
+    "puglia",
+    "rhône"
+   ]
+  },
+  "adds": "sun-ripened black fruit with a Mediterranean warmth",
+  "learn": {
+   "taste": "Black cherry, plum, liquorice and sweet spice. Full-flavoured and soft.",
+   "why": "Sicily's most planted red grape. In the island's south-east, around Noto and Vittoria, it makes wines with real freshness as well as ripe fruit.",
+   "label": "Nero d'Avola is named on the label. Cerasuolo di Vittoria blends it with lighter Frappato.",
+   "ask": "Something ripe and generous from Sicily: a Nero d'Avola?"
+  },
+  "match": [
+   "nero d'avola"
+  ]
+ },
+ {
+  "id": "zweigelt",
+  "type": "red",
+  "name": "Zweigelt",
+  "region": "Burgenland & Niederösterreich",
+  "country": "Austria",
+  "grapes": [
+   "Zweigelt"
+  ],
+  "profile": {
+   "body": 0.4,
+   "tannins": 0.3,
+   "acidity": 0.65
+  },
+  "bridge": {
+   "grapes": [
+    "gamay",
+    "pinot noir",
+    "barbera"
+   ],
+   "regions": [
+    "beaujolais",
+    "burgundy"
+   ]
+  },
+  "adds": "juicy, peppery freshness that suits a light chill",
+  "learn": {
+   "taste": "Sour cherry, raspberry and a dash of pepper. Light, juicy and low in tannin.",
+   "why": "Austria's most planted red, bred in 1922 by crossing Blaufränkisch and St. Laurent. Most is made fresh and fruity, to drink young.",
+   "label": "Zweigelt is named on the label; it's also called Blauer Zweigelt or Rotburger.",
+   "ask": "Something light and juicy I could serve a little chilled: a Zweigelt?"
+  },
+  "match": [
+   "zweigelt"
+  ]
+ },
+ {
+  "id": "soave",
+  "type": "white",
+  "name": "Soave Classico",
+  "region": "Soave, Veneto",
+  "country": "Italy",
+  "grapes": [
+   "Garganega"
+  ],
+  "profile": {
+   "body": 0.45,
+   "acidity": 0.65,
+   "sweetness": 0.05
+  },
+  "bridge": {
+   "grapes": [
+    "pinot grigio",
+    "chardonnay",
+    "garganega"
+   ],
+   "regions": [
+    "veneto",
+    "chablis"
+   ]
+  },
+  "adds": "almond and white-blossom notes with a volcanic edge",
+  "learn": {
+   "taste": "Pear, almond, white flowers and a salty, mineral finish. Light to medium body.",
+   "why": "The Classico hills east of Verona have volcanic soils where Garganega gives far more character than the cheap Soave many people know.",
+   "label": "Look for 'Soave Classico' on the label; producers such as Pieropan and Inama are reliable.",
+   "ask": "Something dry and Italian with more character than a Pinot Grigio: a Soave Classico?"
+  },
+  "match": [
+   "soave"
+  ]
+ },
+ {
+  "id": "godello",
+  "type": "white",
+  "name": "Godello",
+  "region": "Valdeorras & Bierzo",
+  "country": "Spain",
+  "grapes": [
+   "Godello"
+  ],
+  "profile": {
+   "body": 0.6,
+   "acidity": 0.65,
+   "sweetness": 0.05
+  },
+  "bridge": {
+   "grapes": [
+    "chardonnay",
+    "albariño",
+    "chenin blanc"
+   ],
+   "regions": [
+    "burgundy",
+    "rías baixas",
+    "galicia"
+   ]
+  },
+  "adds": "a Burgundian texture from Spain's green north-west",
+  "learn": {
+   "taste": "Pear, apple, citrus and a stony, slightly creamy texture. Medium-bodied.",
+   "why": "Nearly extinct in the 1970s, Godello was revived in Galicia. It gives wines with the weight of Chardonnay and the freshness of the Atlantic north-west.",
+   "label": "Godello is named on the label; look for Valdeorras, Bierzo or Ribeira Sacra.",
+   "ask": "Something like a white Burgundy but from Spain: do you have a Godello?"
+  },
+  "match": [
+   "godello",
+   "valdeorras"
+  ]
+ },
+ {
+  "id": "vermentino",
+  "type": "white",
+  "name": "Vermentino",
+  "region": "Sardinia & Liguria",
+  "country": "Italy",
+  "grapes": [
+   "Vermentino"
+  ],
+  "profile": {
+   "body": 0.5,
+   "acidity": 0.6,
+   "sweetness": 0.05
+  },
+  "bridge": {
+   "grapes": [
+    "sauvignon blanc",
+    "pinot grigio",
+    "albariño"
+   ],
+   "regions": [
+    "provence",
+    "sardinia"
+   ]
+  },
+  "adds": "a salty, herbal coastal freshness",
+  "learn": {
+   "taste": "Lime, green apple, almond and Mediterranean herbs, with a salty finish. Light to medium body.",
+   "why": "A coastal grape grown around the western Mediterranean. In Provence it's called Rolle; Sardinia's Gallura makes the most prized versions.",
+   "label": "Look for 'Vermentino di Gallura' or 'Vermentino di Sardegna'; Provence whites often contain it as Rolle.",
+   "ask": "Something fresh and coastal to go with fish: a Vermentino?"
+  },
+  "match": [
+   "vermentino",
+   "rolle"
+  ]
+ },
+ {
+  "id": "alsace_pinot_gris",
+  "type": "white",
+  "name": "Alsace Pinot Gris",
+  "region": "Alsace",
+  "country": "France",
+  "grapes": [
+   "Pinot Gris"
+  ],
+  "profile": {
+   "body": 0.75,
+   "acidity": 0.55,
+   "sweetness": 0.25
+  },
+  "bridge": {
+   "grapes": [
+    "pinot grigio",
+    "viognier",
+    "chenin blanc",
+    "gewürztraminer"
+   ],
+   "regions": [
+    "alsace"
+   ]
+  },
+  "adds": "a richer, smoky take on the Pinot Grigio grape",
+  "learn": {
+   "taste": "Ripe pear, honey, ginger and a smoky note. Full-bodied, often with a touch of sweetness.",
+   "why": "The same grape as Italy's Pinot Grigio, but in sunny, dry Alsace it's picked riper and made fuller, spicier and sometimes off-dry.",
+   "label": "Look for 'Pinot Gris' and 'Alsace' on the label; 'Vendanges Tardives' means late-harvested and sweet.",
+   "ask": "Something rich and textured but not oaky: an Alsace Pinot Gris?"
+  },
+  "match": [
+   "pinot gris"
+  ]
+ },
+ {
+  "id": "fiano_avellino",
+  "type": "white",
+  "name": "Fiano di Avellino",
+  "region": "Campania",
+  "country": "Italy",
+  "grapes": [
+   "Fiano"
+  ],
+  "profile": {
+   "body": 0.65,
+   "acidity": 0.6,
+   "sweetness": 0.05
+  },
+  "bridge": {
+   "grapes": [
+    "chardonnay",
+    "viognier",
+    "chenin blanc"
+   ],
+   "regions": [
+    "campania",
+    "burgundy"
+   ]
+  },
+  "adds": "waxy, honeyed texture with a hazelnut finish",
+  "learn": {
+   "taste": "Pear, honey, hazelnut and a smoky, mineral note. Medium to full body.",
+   "why": "An ancient grape from the hills inland of Naples. It's one of the few Italian whites that grows more complex with five or more years in bottle.",
+   "label": "Look for 'Fiano di Avellino DOCG' on the label.",
+   "ask": "Something textured and Italian, a little like a white Burgundy: a Fiano di Avellino?"
+  },
+  "match": [
+   "fiano"
+  ]
+ },
+ {
+  "id": "hunter_semillon",
+  "type": "white",
+  "name": "Hunter Valley Semillon",
+  "region": "Hunter Valley, New South Wales",
+  "country": "Australia",
+  "grapes": [
+   "Sémillon"
+  ],
+  "profile": {
+   "body": 0.35,
+   "acidity": 0.8,
+   "sweetness": 0.05
+  },
+  "bridge": {
+   "grapes": [
+    "riesling",
+    "sauvignon blanc",
+    "sémillon"
+   ],
+   "regions": [
+    "chablis",
+    "clare valley",
+    "bordeaux"
+   ]
+  },
+  "adds": "a lean youth that turns to toast and honey with age",
+  "learn": {
+   "taste": "Young: lemon, lime and grass, very light and crisp. With age: toast, honey and lanolin, with no oak at all.",
+   "why": "Picked early with low alcohol (often 10–11%), Hunter Semillon is lean when young and gains its famous toasty flavours from years in bottle, not from oak.",
+   "label": "Semillon and Hunter Valley are on the label; look for an older vintage if you want the toasty style.",
+   "ask": "Do you have an older Hunter Valley Semillon?"
+  },
+  "match": [
+   "hunter valley semillon",
+   "hunter semillon"
+  ]
  }
 ]

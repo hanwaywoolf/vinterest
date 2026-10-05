@@ -51,3 +51,20 @@ test('region quizzes show their country\'s flag', async ({ page }) => {
   await page.reload();
   await expect(page.locator('#root').getByRole('img', { name: 'Spain' }).first()).toBeVisible();
 });
+
+// Mastery is one tap from the top of Learn: the overall % in a ring and where to start.
+test('the top of Learn links to Mastery', async ({ context, page }) => {
+  const errors = collectErrors(page);
+  await makeDeterministic(page);
+  await seedLocalStorage(page, { vinterest_onboarded: '1', vinterest_age_ok: '1', vinterest_region: 'uk', vinterest_pro: '1' });
+  await stubNetwork(context);
+  await page.goto(`${BASE}/#learn`);
+  const link = page.getByTestId('learn-mastery-link');
+  await expect(link).toBeInViewport();
+  const overall = await page.evaluate(() => KnowledgeMap.summary().overall);
+  await expect(link).toContainText(`${overall}%`);
+  await expect(link).toContainText('Your Mastery');
+  await link.click();
+  await expect(page.locator('#root')).toContainText('Your wine knowledge');
+  expect(errors).toEqual([]);
+});

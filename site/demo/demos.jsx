@@ -149,6 +149,8 @@ function _seedMastery() {
       const accuracy = Math.max(0, 1 - (miss[0] + miss[1] + miss[2]) / 3 * 1.6);
       ScanFlow.saveBlindResult(w, { accuracy, amount: Math.round(accuracy * 40), guess });
     });
+    // Grapes as the list of red grapes, so the demo names each one with its progress.
+    Device.setMasteryView({ grapes: 'list', grapeSkin: 'red' });
     const m = KnowledgeMap.compute(WineHistory.getAll()), then = Date.now() - 35 * 864e5, a = {};
     m.areas.forEach((x) => { a[x.id] = Math.round(x.score * 0.55); });
     Store.setJSON(KnowledgeMap.HISTORY_KEY, { [KnowledgeMap._week(then)]: { t: then, o: Math.round(m.overall * 0.55), a } });
@@ -209,7 +211,7 @@ const _DEMO_SCREENS = {
   // One part per caption, each scrolled to the section it talks about, then reading gently on.
   dna: { nav: 'profile', Screen: WineDNAScreen, steps: [
     { at: 0, to: 'top', drift: 0.3 },
-    { at: 0.167, to: '[data-section="love"]', drift: 0.3 },
+    { at: 0.167, to: 'top', drift: 0.7 }, // the written summary's What You Love, under the profile
     { at: 0.333, to: '[data-section="taste"]', drift: 0.4 },
     { at: 0.5, to: '[data-section="value"]', drift: 0.3 },
     { at: 0.667, to: '[data-section="explore"]', drift: 0.3 },
@@ -254,7 +256,7 @@ const _DEMO_SCREENS = {
     { id: 'map', nav: 'learn', Screen: MasteryMapScreen, setup() { _seedMastery(); } },
   ], steps: [
     { at: 0, layer: 'map', to: 'top', drift: 0.4, ms: 7000 },
-    { at: 0.25, layer: 'map', to: /^regions and grapes$/i, do: [{ layer: 'map', open: '[data-area="grapes"]' }], drift: 0.05, ms: 4000 },
+    { at: 0.25, layer: 'map', to: /^your grapes$/i, drift: 0.05, ms: 4000 }, // shown as the red-grape list (_seedMastery), so each grape is named
     { at: 0.5, layer: 'map', to: /^your wine map$/i, drift: 0.04, ms: 4000 },
     { at: 0.75, layer: 'map', to: /^your palate$/i, drift: 0.04, ms: 4000 },
   ] },
