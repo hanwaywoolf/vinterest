@@ -52,7 +52,7 @@ function LearnArticleScreen({nav,back}){
                 <div style={{width:46,height:46,borderRadius:12,background:C.offWhite,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><Icon n={s.iconName} sz={22} col={C.cr}/></div>
                 <div style={{flex:1}}>
                   <div style={{fontSize:21,fontWeight:800,color:C.ink,fontFamily:C.P,marginBottom:3}}>{s.term}</div>
-                  <div style={{fontSize:15,color:C.mid,fontFamily:C.P,fontStyle:'italic',marginBottom:10}}>{s.plain}</div>
+                  <div style={{fontSize:15,color:C.mid,fontFamily:C.P,marginBottom:10}}>{s.plain}</div>
                 </div>
               </div>
               <div style={{padding:'0 16px 14px',display:'flex',flexDirection:'column',gap:10}}>
@@ -136,7 +136,7 @@ function GuideScreen({nav,back}){
                 <div style={{width:42,height:42,borderRadius:12,background:C.offWhite,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><Icon n={sec.iconName||'read'} sz={20} col={C.cr}/></div>
                 <div style={{flex:1}}>
                   <div style={{fontSize:19,fontWeight:800,color:C.ink,fontFamily:C.P}}>{sec.term}</div>
-                  <div style={{fontSize:15,color:C.mid,fontFamily:C.P,fontStyle:'italic'}}>{sec.plain}</div>
+                  <div style={{fontSize:15,color:C.mid,fontFamily:C.P}}>{sec.plain}</div>
                 </div>
               </div>
               <div style={{fontSize:16,color:C.ink2,fontFamily:C.P,lineHeight:1.7}}>{sec.detail}</div>
@@ -261,7 +261,7 @@ function GenArticleScreen({nav,back}){
           {generating&&(
             <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'40px 20px',gap:14}}>
               <div style={{width:18,height:18,borderRadius:9,border:`2px solid ${C.cr}`,borderTopColor:'transparent',animation:'storySpin .8s linear infinite'}}/>
-              <span style={{fontSize:16,color:C.mid,fontFamily:C.P,fontStyle:'italic',textAlign:'center'}}>Writing your personalised article…</span>
+              <span style={{fontSize:16,color:C.mid,fontFamily:C.P,textAlign:'center'}}>Writing your personalised article…</span>
             </div>
           )}
 
@@ -272,7 +272,7 @@ function GenArticleScreen({nav,back}){
                 <div style={{width:46,height:46,borderRadius:12,background:C.offWhite,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><Icon n={s.iconName||'read'} sz={22} col={C.cr}/></div>
                 <div style={{flex:1}}>
                   <div style={{fontSize:21,fontWeight:800,color:C.ink,fontFamily:C.P,marginBottom:3}}>{s.term}</div>
-                  <div style={{fontSize:15,color:C.mid,fontFamily:C.P,fontStyle:'italic',marginBottom:10}}>{s.plain}</div>
+                  <div style={{fontSize:15,color:C.mid,fontFamily:C.P,marginBottom:10}}>{s.plain}</div>
                 </div>
               </div>
               <div style={{padding:'0 16px 14px',display:'flex',flexDirection:'column',gap:10}}>
