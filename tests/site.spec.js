@@ -229,6 +229,22 @@ test.describe('desktop', () => {
     await expect(phone).toContainText('Thinking', { timeout: 8000 });
   });
 
+  test('Mastery shows the whole picture, the grapes, the region map and the palate, from the current build', async ({ page }) => {
+    await page.goto(BASE + '/');
+    await show(page, 'mastery');
+    const phone = page.locator('#mastery .phone-app');
+    await expect(phone).toContainText('Your Mastery');
+    await expect(phone).toContainText('Your shape', { timeout: 10000 }); // the radar sits below the score
+    await jump(page, 'mastery', 1);
+    await expect(phone).toContainText('Tempranillo', { timeout: 8000 }); // the grapes card, opened
+    await jump(page, 'mastery', 2);
+    await expect(phone).toContainText('Your wine map', { timeout: 8000 });
+    await jump(page, 'mastery', 3);
+    await expect(phone).toContainText('You tend to call tannins grippier', { timeout: 8000 }); // seven seeded Blind Calls
+    // Mastery is its own section: the Learn section no longer carries a Mastery step.
+    await expect(page.locator('#learn .steps li h3')).not.toContainText(['Mastery map']);
+  });
+
   test('My Wines types the search, opens a bottle, and shows its story and its price', async ({ page }) => {
     await page.goto(BASE + '/');
     await show(page, 'my-wines');
@@ -254,7 +270,7 @@ test.describe('desktop', () => {
 
   test('each demo screen mounts, with the sample user\'s wines', async ({ page }) => {
     await page.goto(BASE + '/');
-    const want = { winedna: 'WineDNA', learn: 'Wine Basics', 'my-wines': 'Viña Ardanza Reserva' };
+    const want = { winedna: 'WineDNA', learn: 'Wine Basics', mastery: 'Your Mastery', 'my-wines': 'Viña Ardanza Reserva' };
     for (const [id, text] of Object.entries(want)) {
       await show(page, id);
       await expect(page.locator(`#${id} .phone-app`)).toContainText(text);
@@ -285,7 +301,7 @@ test.describe('desktop', () => {
 
 // Nothing in a demo section may be cut off, whatever the window: the text and the phone stay inside
 // the section, and the caption text stays clear of the header.
-const FITS = ['scan', 'learn-wine', 'rate', 'keep-learning', 'winedna', 'vinny', 'learn', 'my-wines'];
+const FITS = ['scan', 'learn-wine', 'rate', 'keep-learning', 'winedna', 'vinny', 'learn', 'mastery', 'my-wines'];
 async function fits(page, id) {
   await show(page, id);
   await page.waitForTimeout(300);
@@ -420,6 +436,39 @@ test.describe('the sign-up Worker', () => {
     expect(calls[0].init.headers.apikey).toBe('secret');
     expect(calls[0].init.headers.prefer).toContain('ignore-duplicates');
     expect(JSON.parse(calls[0].init.body)).toEqual({ first_name: 'Ada', last_name: 'Lovelace', country: 'GB', email: 'ada@example.com' });
+  });
+
+  test('emails a new sign-up through Resend, once, and never fails the sign-up if that goes wrong', async () => {
+    const { handleBeta } = await load();
+    const renv = { ...env, RESEND_API_KEY: 're_test', RESEND_FROM: 'Vinterest <hello@vinterest.app>' };
+    const realFetch = globalThis.fetch;
+    const calls = [];
+    let inserted = true, resendOk = true;
+    globalThis.fetch = async (url, init) => {
+      calls.push({ url: String(url), init });
+      if (String(url).includes('supabase')) return new Response(JSON.stringify(inserted ? [{ email: 'ada@example.com' }] : []), { status: 201, headers: { 'content-type': 'application/json' } });
+      return resendOk ? new Response('{"id":"1"}', { status: 200 }) : new Response('nope', { status: 403 });
+    };
+    try {
+      let res = await handleBeta(post({ ...good, first_name: '<b>Ada</b>' }, { 'cf-connecting-ip': '7.7.7.1' }), renv);
+      expect(res.status).toBe(200);
+      const mail = calls.find((c) => c.url === 'https://api.resend.com/emails');
+      expect(mail.init.headers.authorization).toBe('Bearer re_test');
+      const sent = JSON.parse(mail.init.body);
+      expect(sent.to).toEqual(['ada@example.com']);
+      expect(sent.from).toBe('Vinterest <hello@vinterest.app>');
+      expect(sent.html).not.toContain('<b>Ada</b>'); // the name is escaped in the HTML
+      expect(calls.find((c) => c.url.includes('supabase')).init.headers.prefer).toContain('return=representation');
+      // Someone already on the list gets nothing more.
+      calls.length = 0; inserted = false;
+      res = await handleBeta(post(good, { 'cf-connecting-ip': '7.7.7.2' }), renv);
+      expect(res.status).toBe(200);
+      expect(calls.some((c) => c.url.includes('resend'))).toBe(false);
+      // Resend refusing leaves the sign-up successful.
+      inserted = true; resendOk = false;
+      res = await handleBeta(post(good, { 'cf-connecting-ip': '7.7.7.3' }), renv);
+      expect(res.status).toBe(200);
+    } finally { globalThis.fetch = realFetch; }
   });
 
   test('refuses bad input, other sites, and says so plainly when sign-ups aren\'t set up', async () => {
