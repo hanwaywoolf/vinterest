@@ -4,10 +4,14 @@
 //
 // Set these in Cloudflare Pages → your project → Settings → Variables and secrets:
 //   ANTHROPIC_API_KEY   (required, mark as a secret)  your sk-ant-... key
-//   CLAUDE_MODEL        (optional)  e.g. claude-haiku-4-5 for a cheaper model
+//   CLAUDE_MODEL        (optional)  e.g. claude-sonnet-5-5 (cheaper per token; see modelOptions)
 //                                   (default: claude-sonnet-4-6)
+//   CLAUDE_EFFORT       (optional)  Claude 5 models only: low | medium | high, for every purpose
+//                                   (default: PURPOSE_EFFORT, else low)
+//   CLAUDE_THINKING     (optional)  Claude Sonnet 5.5 only: "on" lets it think (slower); default off
 //   PRICE_MODEL         (optional)  model for the premium-wine price search only
-//                                   (default: CLAUDE_MODEL, then claude-sonnet-4-6)
+//                                   (default: claude-sonnet-4-6, whatever CLAUDE_MODEL is: the
+//                                   search tool and its timing were tuned on it)
 //   SUPABASE_URL        (optional)  https://<project-ref>.supabase.co. With it and the two keys
 //   SUPABASE_PUBLISHABLE_KEY          below, signed-in users are verified, metered per week and
 //   SUPABASE_SECRET_KEY (secret)     checked for Pro (supabase/README.md). Without them, every
@@ -62,6 +66,23 @@ const CLAUDE_PURPOSE_LIMITS = {
   learn_article: 4096,     // pwa-screens-learn.jsx — generated learning article body
   winedna_summary: 4096    // pwa-screens-wineiq.jsx — Wine DNA personality summary
 };
+
+/* Claude 5 models take settings Sonnet 4.6 didn't need. Sonnet 5.5 thinks by default, which
+   Sonnet 4.6 (as called here) never did: thinking is turned off (`between_tools`) so a label scan
+   stays as quick as it was, and effort is low except where the writing or the checked facts are
+   the product (quiz banks, articles, the WineDNA summary, the sommelier script). High effort didn't
+   make the quiz banks' wrong answers any less obvious; the quiz prompts' own rule about them does. Refusal
+   fallbacks are on, so a request their safety classifier declines is answered by another model
+   in the same call instead of coming back empty. Earlier models get nothing extra. */
+const PURPOSE_EFFORT = { grape_quiz: "medium", region_quiz: "medium", learn_article: "medium", winedna_summary: "medium", sommelier_script: "medium" };
+function modelOptions(model, purpose, env) {
+  if (!/^claude-(sonnet|opus|fable)-5/.test(model)) return { body: {}, betas: [] };
+  const effort = env.CLAUDE_EFFORT || PURPOSE_EFFORT[purpose] || "low";
+  const body = { output_config: { effort } }, betas = [];
+  if (/^claude-sonnet-5-5/.test(model) && env.CLAUDE_THINKING !== "on") body.thinking = { type: "between_tools" };
+  if (/^claude-(sonnet-5-5|opus-5|fable-5-1)/.test(model)) { body.fallbacks = "default"; betas.push("server-side-fallback-2026-07-01"); }
+  return { body, betas };
+}
 
 const ALLOWED_ORIGINS = [
   "https://vinterest.app",
@@ -232,26 +253,32 @@ async function handleClaude(request, env, ctx) {
   const model = env.CLAUDE_MODEL || "claude-sonnet-4-6";
   const max_tokens = Math.min(Number(payload.max_tokens) || purposeCap, purposeCap);
 
+  const opts = modelOptions(model, purpose, env);
   try {
+    const started = Date.now();
     const r = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
         "content-type": "application/json",
         "x-api-key": key,
-        "anthropic-version": "2023-06-01"
+        "anthropic-version": "2023-06-01",
+        ...(opts.betas.length ? { "anthropic-beta": opts.betas.join(",") } : {})
       },
-      body: JSON.stringify({ model, max_tokens, messages })
+      body: JSON.stringify({ model, max_tokens, messages, ...opts.body })
     });
     const data = await r.json();
     if (!r.ok) {
       const msg = (data && data.error && data.error.message) || "Anthropic API error.";
       return json(r.status, { error: msg, code: "anthropic_error" });
     }
+    // Declined by every model in the chain: say so rather than answer with nothing.
+    if (data.stop_reason === "refusal") return json(422, { error: "Claude couldn't answer that one. Try again, or ask it another way.", code: "refused" });
     const text = (data.content || [])
       .filter((b) => b.type === "text")
       .map((b) => b.text)
       .join("");
-    return json(200, { text });
+    // model, usage and ms are for comparing models (scripts/model-trial.mjs); the app reads text.
+    return json(200, { text, model: data.model || model, usage: data.usage || null, ms: Date.now() - started });
   } catch (e) {
     return json(502, { error: "Failed to reach Anthropic: " + (e && e.message ? e.message : String(e)), code: "upstream_unreachable" });
   }
@@ -429,7 +456,7 @@ async function handlePriceSearch(payload, env, key, ctx) {
   const hit = await priceCacheGet(env, k);
   if (hit) return json(200, { text: await _signListings(env, hit), cached: true });
 
-  const model = env.PRICE_MODEL || env.CLAUDE_MODEL || "claude-sonnet-4-6";
+  const model = env.PRICE_MODEL || "claude-sonnet-4-6";
   // The basic search tool: a price is in the result snippets, and it's far quicker than the
   // dynamic-filtering variant, which runs code over every page it reads.
   const tool = { type: "web_search_20250305", name: "web_search", max_uses: 2 };

@@ -761,11 +761,11 @@ function useMapZoom(w,h){
 }
 /* Names on the map, placed biggest-first and skipped where they'd overlap one already placed or
    fall outside what's shown. u is map units per screen pixel, so every name is a fixed size on
-   screen however far in they've zoomed. Zoomed out, the countries (data/world-map.json's
-   `countries`, those with wine regions first, then largest first); zoomed in (MAP_NAMES_AT), the regions, unlocked ones first, each
+   screen however far in they've zoomed. Zoomed out, the major wine countries only (data/world-map.json's
+   `countries` with the most knowledge-base regions, MAP_COUNTRY_MAX at most); zoomed in (MAP_NAMES_AT), the regions, unlocked ones first, each
    above its pin, or below it when above is taken. Names keep clear of the pins and of the zoom
    buttons. */
-const MAP_NAMES_AT=2;
+const MAP_NAMES_AT=2, MAP_COUNTRY_MAX=5;
 function _mapLabels(v,z,u,pin){
   const vx=z.x, vy=z.y, vw=v.w/z.k, vh=v.h/z.k, placed=[], out=[];
   const hit=(b,list)=>list.some(o=>b.x0<o.x1&&b.x1>o.x0&&b.y0<o.y1&&b.y1>o.y0), pins=[];
@@ -775,17 +775,17 @@ function _mapLabels(v,z,u,pin){
   const scr=(x0,y0,x1,y1)=>({x0:vx+x0*u,y0:vy+y0*u,x1:vx+x1*u,y1:vy+y1*u}), pw=vw/u;
   placed.push(scr(pw-52,0,pw,96)); if(z.k>1) placed.push(scr(0,0,96,50));
   if(z.k<MAP_NAMES_AT){
-    const fs=10;
-    // ...and of the pins, so a pin never sits on a country's name.
+    const fs=10.5;
     v.pins.forEach(p=>pins.push({x0:p.x-pin,x1:p.x+pin,y0:p.y-pin,y1:p.y+pin}));
-    // Countries with wine regions on the map are named first (Portugal before a bigger neighbour's spill-over).
-    const wine=new Set(Object.values((typeof KNOWLEDGE!=='undefined'&&KNOWLEDGE.regions)||{}).map(r=>r.country==='United States'?'USA':r.country));
-    [...(v.countries||[])].sort((a,b)=>(wine.has(b.name)-wine.has(a.name))||b.a-a.a).forEach(c=>{ // A country at the edge (Portugal) is nudged inwards rather than dropped; one that meets a
-      // name already placed tries a line above or below.
-      const t=c.name.toUpperCase(), w=t.length*fs*0.78*u, h=fs*u, x=Math.max(vx+w/2+5*u,Math.min(vx+vw-w/2-5*u,c.x));
+    // Only the major wine countries: those with the most knowledge-base regions, MAP_COUNTRY_MAX
+    // at most, so Europe reads France, Italy, Spain, Portugal, Germany and nothing else.
+    const n={}; Object.values((typeof KNOWLEDGE!=='undefined'&&KNOWLEDGE.regions)||{}).forEach(r=>{ const c=r.country==='United States'?'USA':r.country; n[c]=(n[c]||0)+1; });
+    (v.countries||[]).filter(c=>n[c.name]).sort((a,b)=>n[b.name]-n[a.name]||b.a-a.a).slice(0,MAP_COUNTRY_MAX).forEach(c=>{
+      // A country at the edge (Portugal) is nudged inwards rather than dropped; one that meets a
+      // name already placed tries a line above or below. Clear of pins if it can be.
+      const t=c.name.toUpperCase(), w=t.length*fs*0.72*u, h=fs*u, x=Math.max(vx+w/2+5*u,Math.min(vx+vw-w/2-5*u,c.x));
       const tries=[]; [0,-h*1.3,h*1.3,-h*2.4,h*2.4,-h*3.5,h*3.5].forEach(dy=>[0,-w*0.3,w*0.3,-w*0.6,w*0.6].forEach(dx=>tries.push([dx,dy])));
-      // Clear of pins if it can be; a wine country is still named over a pin rather than left out.
-      for(const loose of wine.has(c.name)?[false,true]:[false]){ let done=false;
+      for(const loose of [false,true]){ let done=false;
         for(const [dx,dy] of tries){ const x2=Math.max(vx+w/2+5*u,Math.min(vx+vw-w/2-5*u,x+dx)), y=c.y+h/2+dy, b=box(x2,y,w,h); if(fits(b,loose)){ placed.push(b); out.push({kind:'country',t,x:x2,y,fs:fs*u}); done=true; break; } }
         if(done) break; } });
     return out;
@@ -835,23 +835,20 @@ function MasteryRegionMap({views,nav,showPro,prog}){
       <div style={{position:'relative'}}>
       <svg ref={Z.ref} viewBox={`${z.x.toFixed(2)} ${z.y.toFixed(2)} ${(v.w/z.k).toFixed(2)} ${(v.h/z.k).toFixed(2)}`} width="100%" {...Z.bind(tap)} role="img" data-testid="region-map" data-zoom={z.k.toFixed(2)}
         aria-label={`Map of ${v.label}: ${open} of ${v.pins.length} wine regions unlocked. Tap a region to see it; pinch or use + and − to zoom.`}
-        style={{display:'block',borderRadius:12,background:'#FBF8F3',border:`1px solid ${C.line}`,cursor:z.k>1?'grab':'pointer',maxHeight:420,touchAction:z.k>1?'none':'pan-y',userSelect:'none',WebkitUserSelect:'none'}}>
-        {/* Cream paper with the land a shade warmer, its coastline sketched (a light pencil pass
-            just off a fine ink line) and borders pencilled in dashes. No sea texture or washes:
-            the lines carry it. Widths are screen pixels (u), so it stays fine-lined at any zoom. */}
-        <path d={v.land} fill="#F4ECDD"/>
-        <path d={v.borders} fill="none" stroke={SKETCH_INK} strokeOpacity="0.3" strokeWidth={0.8*u} strokeDasharray={`${2.2*u} ${2.4*u}`} strokeLinecap="round"/>
-        <path d={v.land} fill="none" stroke={SKETCH_PENCIL} strokeWidth={0.9*u} strokeLinejoin="round" transform={`translate(${(-0.9*u).toFixed(2)} ${(0.8*u).toFixed(2)})`}/>
-        <path d={v.land} fill="none" stroke={SKETCH_INK} strokeOpacity="0.7" strokeWidth={0.9*u} strokeLinejoin="round" strokeLinecap="round"/>
-        {names.filter(n=>n.kind==='country').map(n=><text key={'c'+n.t} x={n.x} y={n.y} textAnchor="middle" data-label="country" style={{fontSize:n.fs.toFixed(2)+'px',fontWeight:600,letterSpacing:'0.1em',fill:'#A69C90',fontFamily:C.P,pointerEvents:'none'}}>{n.t}</text>)}
+        style={{display:'block',borderRadius:12,background:'#FDFCFA',border:`1px solid ${C.line}`,cursor:z.k>1?'grab':'pointer',maxHeight:420,touchAction:z.k>1?'none':'pan-y',userSelect:'none',WebkitUserSelect:'none'}}>
+        {/* A hollow outline map in muted colours: the land barely tinted, one thin coastline and
+            fainter borders, so the pins carry it. Widths are screen pixels (u), fine at any zoom. */}
+        <path d={v.land} fill="#F6F3EE" stroke="#B5ABA0" strokeWidth={0.8*u} strokeLinejoin="round"/>
+        <path d={v.borders} fill="none" stroke="#DCD4CA" strokeWidth={0.6*u} strokeLinejoin="round"/>
+        {names.filter(n=>n.kind==='country').map(n=><text key={'c'+n.t} x={n.x} y={n.y} textAnchor="middle" data-label="country" style={{fontSize:n.fs.toFixed(2)+'px',fontWeight:600,letterSpacing:'0.06em',fill:'#A39A90',fontFamily:C.P,paintOrder:'stroke',stroke:'#F6F3EE',strokeWidth:(3*u).toFixed(2),strokeLinejoin:'round',pointerEvents:'none'}}>{n.t}</text>)}
         {[...v.pins].sort((a,b)=>(a.state==='open')-(b.state==='open')).map(p=>{
           const on=sel.includes(p.name), first=p.state==='open'&&p.level==='Not started';
           return <g key={p.name}>
-            {p.drunk>0&&<circle cx={p.x} cy={p.y} r={PIN+5*SW} fill="none" stroke={C.ink} strokeWidth={2.2*SW}/>}
+            {p.drunk>0&&<circle cx={p.x} cy={p.y} r={PIN+4*SW} fill="none" stroke="#6B625A" strokeWidth={1.6*SW}/>}
             <circle cx={p.x} cy={p.y} r={on?PIN+3*SW:p.state==='open'?PIN:PIN-2*SW} fill={_pinFill(p)} fillOpacity={p.fading?0.4:1} strokeDasharray={p.fading?`${3*SW} ${2*SW}`:null} stroke={first?C.cr:'#fff'} strokeWidth={(first?2.5:2)*SW}/>
           </g>;
         })}
-        {names.filter(n=>n.kind==='region').map(n=><text key={'r'+n.t} x={n.x} y={n.y} textAnchor="middle" data-label="region" style={{fontSize:n.fs.toFixed(2)+'px',fontWeight:n.on?700:500,fill:n.on?C.ink:'#7D736A',fontFamily:C.P,paintOrder:'stroke',stroke:'#F4ECDD',strokeWidth:(3*u).toFixed(2),strokeLinejoin:'round',pointerEvents:'none'}}>{n.t}</text>)}
+        {names.filter(n=>n.kind==='region').map(n=><text key={'r'+n.t} x={n.x} y={n.y} textAnchor="middle" data-label="region" style={{fontSize:n.fs.toFixed(2)+'px',fontWeight:n.on?700:500,fill:n.on?C.ink:'#7D736A',fontFamily:C.P,paintOrder:'stroke',stroke:'#F6F3EE',strokeWidth:(3*u).toFixed(2),strokeLinejoin:'round',pointerEvents:'none'}}>{n.t}</text>)}
       </svg>
       <div style={{position:'absolute',right:8,top:8,display:'flex',flexDirection:'column',gap:6}}>
         <div role="button" aria-label="Zoom in" onClick={()=>Z.zoomAt(1.6)} style={zbtn}>+</div>
@@ -861,7 +858,7 @@ function MasteryRegionMap({views,nav,showPro,prog}){
       </div>
       <div aria-hidden="true" style={{display:'flex',flexWrap:'wrap',gap:'4px 12px'}}>
         {legend.map(([c,l])=><span key={l} style={{display:'inline-flex',alignItems:'center',gap:5,fontSize:12,color:C.mid,fontFamily:C.P}}><span style={{width:9,height:9,borderRadius:5,background:c,border:'1px solid rgba(0,0,0,0.08)'}}/>{l}</span>)}
-        <span style={{display:'inline-flex',alignItems:'center',gap:5,fontSize:12,color:C.mid,fontFamily:C.P}}><span style={{width:9,height:9,borderRadius:6,border:`2px solid ${C.ink}`}}/>You've had one</span>
+        <span style={{display:'inline-flex',alignItems:'center',gap:5,fontSize:12,color:C.mid,fontFamily:C.P}}><span style={{width:9,height:9,borderRadius:6,border:'2px solid #6B625A'}}/>You've had one</span>
         {anyFading&&<span style={{display:'inline-flex',alignItems:'center',gap:5,fontSize:12,color:C.mid,fontFamily:C.P}}><span style={{width:9,height:9,borderRadius:6,background:C.cr,opacity:0.4,border:`1px dashed ${C.cr}`}}/>Fading: time for a refresher</span>}
       </div>
       {picked.length?<div data-testid="map-picked" style={{display:'flex',flexDirection:'column',borderTop:`1px solid ${C.line}`}}>

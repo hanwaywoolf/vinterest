@@ -164,6 +164,7 @@ const Sync = {
       let a,b; try{ a=JSON.parse(mineVals[k]); b=JSON.parse(theirVals[k]); }catch(e){ return; }
       out[k]=JSON.stringify(Backup._combine(a,b));
     });
+    if(kind==='progress') Backup._settleContent(out,mineVals,theirVals);
     return {values:out,times};
   },
 

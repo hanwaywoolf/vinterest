@@ -365,6 +365,12 @@ function WelcomeScreen({next,returning}){
           <span style={{fontSize:'15px',color:_WELCOME_DIM,fontFamily:C.P}}>Already have an account? </span>
           <span role="button" onClick={()=>setSignIn(true)} style={{fontSize:'15px',fontWeight:700,color:'#fff',fontFamily:C.P,cursor:'pointer',textDecoration:'underline',textUnderlineOffset:3}}>Sign in</span>
         </div>}
+        {/* A new phone with only a backup file: restore it here rather than after a first scan. Their
+            learning, XP and Mastery come back with the wines; someone who'd finished onboarding goes Home. */}
+        <div style={{textAlign:'center',marginTop:Account.available()?8:14}}>
+          <span style={{fontSize:'15px',color:_WELCOME_DIM,fontFamily:C.P}}>Have a backup file? </span>
+          <span role="button" data-testid="welcome-restore" onClick={()=>restoreBackupFile(()=>Settings.onboarded()?returning():next())} style={{fontSize:'15px',fontWeight:700,color:'#fff',fontFamily:C.P,cursor:'pointer',textDecoration:'underline',textUnderlineOffset:3}}>Restore it</span>
+        </div>
       </div>
     </div>
   );
