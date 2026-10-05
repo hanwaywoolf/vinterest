@@ -131,6 +131,7 @@ function _openScan(view, unlock) {
    other demos' stores (the Keep learning tiles, the Learn hub) are untouched. */
 function _seedMastery() {
   try {
+    Device.setMasteryView({ grapes: 'bunch', shape: 'chart' }); // the sketched bunches and the radar, not the lists
     const banks = _DEMO_CAPTURED.banks || {};
     Object.keys(banks).forEach((k) => Store.set(k, banks[k]));
     WineHistory.getAll().forEach((w) => { try { ScanFlow.unlockLearning({ ...w, confidence: 'high' }); } catch (e) { /* the rest still shows */ } });
@@ -149,8 +150,6 @@ function _seedMastery() {
       const accuracy = Math.max(0, 1 - (miss[0] + miss[1] + miss[2]) / 3 * 1.6);
       ScanFlow.saveBlindResult(w, { accuracy, amount: Math.round(accuracy * 40), guess });
     });
-    // Grapes as the list of red grapes, so the demo names each one with its progress.
-    Device.setMasteryView({ grapes: 'list', grapeSkin: 'red' });
     const m = KnowledgeMap.compute(WineHistory.getAll()), then = Date.now() - 35 * 864e5, a = {};
     m.areas.forEach((x) => { a[x.id] = Math.round(x.score * 0.55); });
     Store.setJSON(KnowledgeMap.HISTORY_KEY, { [KnowledgeMap._week(then)]: { t: then, o: Math.round(m.overall * 0.55), a } });
@@ -255,10 +254,10 @@ const _DEMO_SCREENS = {
   mastery: { nav: 'learn', layers: [
     { id: 'map', nav: 'learn', Screen: MasteryMapScreen, setup() { _seedMastery(); } },
   ], steps: [
-    { at: 0, layer: 'map', to: 'top', drift: 0.4, ms: 7000 },
-    { at: 0.25, layer: 'map', to: /^your grapes$/i, drift: 0.05, ms: 4000 }, // shown as the red-grape list (_seedMastery), so each grape is named
-    { at: 0.5, layer: 'map', to: /^your wine map$/i, drift: 0.04, ms: 4000 },
-    { at: 0.75, layer: 'map', to: /^your palate$/i, drift: 0.04, ms: 4000 },
+    { at: 0, layer: 'map', to: 'top', drift: 0.5, ms: 7000 },
+    { at: 0.25, layer: 'map', to: '[data-section="grapes"]', drift: 0.05, ms: 4000 },
+    { at: 0.5, layer: 'map', to: '[data-section="map"]', drift: 0.05, ms: 4000 },
+    { at: 0.75, layer: 'map', to: '[data-section="palate"]', drift: 0.05, ms: 4000 },
   ] },
   // The front page's carousel: one screen for each thing the app does.
   hero: { nav: 'scan', layers: [

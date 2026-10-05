@@ -236,7 +236,7 @@ test.describe('desktop', () => {
     await expect(phone).toContainText('Your Mastery');
     await expect(phone).toContainText('Your shape', { timeout: 10000 }); // the radar sits below the score
     await jump(page, 'mastery', 1);
-    await expect(phone).toContainText('Tempranillo', { timeout: 8000 }); // the red-grape list
+    await expect(phone.locator('[data-testid="grape-cluster"]')).toBeVisible({ timeout: 8000 }); // the sketched bunches
     await jump(page, 'mastery', 2);
     await expect(phone).toContainText('Your wine map', { timeout: 8000 });
     await jump(page, 'mastery', 3);
