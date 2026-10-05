@@ -50,13 +50,35 @@ test('Home, Learn and Wine DNA render with no console errors', async ({ page }) 
   expect(dataRequests, 'data/*.json and prompts/*.txt should be inlined, not fetched').toEqual([]);
 });
 
-test('Learn shows the WineDNA unlock celebration on first visit after unlocking', async ({ page }) => {
+// "Explore Next is ready for your reds" replaced "WineDNA unlocked" (a coverage gate that no longer
+// exists): shown once in WineDNA, the first time a type reaches ExploreNext.READY_AT wines.
+const RED = (n) => ({ name: `Ready Test Red ${n}`, producer: 'Test', type: 'red', region: 'Rioja', country: 'Spain', vintage: 2019, rating: 90 + n, grapes: ['Tempranillo'], body: 0.7, tannins: 0.6, acidity: 0.55, sweetness: 0.05, scanned_at: `2026-06-0${n}T10:00:00Z` });
+test('Explore Next is ready: shown once when the third red arrives, then opens the picks', async ({ page }) => {
   const errors = collectErrors(page);
-  await page.goto(`${BASE}/?demo=1#learn`);
-  await expect(page.locator('#root')).toContainText('WineDNA unlocked');
-  await expect(page.locator('#root')).not.toContainText("Something didn't load right");
-  expect(await page.evaluate(() => localStorage.getItem('vinterest_wineDNA_unlock_seen'))).toBe('1');
+  await page.addInitScript((w) => { if (sessionStorage.getItem('__s')) return; sessionStorage.setItem('__s', '1'); localStorage.setItem('vinterest_onboarded', '1'); localStorage.setItem('vinterest_age_ok', '1'); localStorage.setItem('vinterest_wines', JSON.stringify(w)); }, [RED(1), RED(2)]);
+  await page.goto(`${BASE}/#home`);
+  const root = page.locator('#root');
+  await expect(root).toContainText('Recently scanned');
+  expect(await page.evaluate(() => Flags.exploreReadySeen())).toEqual([]);
+  await page.evaluate((w) => WineHistory.save([...WineHistory.getAll(), w]), RED(3));
+  await page.goto(`${BASE}/?a=1#profile`);
+  await expect(root).toContainText('Explore Next is ready for your reds.');
+  await expect(root).toContainText('3 reds scanned');
+  await root.getByRole('button', { name: 'See my picks' }).click();
+  await expect(root.locator('[data-section="explore"]')).toBeVisible();
+  await page.goto(`${BASE}/?b=1#profile`);
+  await expect(root).not.toContainText('Explore Next is ready');
+  expect(await page.evaluate(() => Flags.exploreReadySeen())).toEqual(['red']);
   expect(errors).toEqual([]);
+});
+
+test('types already open when the app first looks are never celebrated (existing users)', async ({ page }) => {
+  await page.goto(`${BASE}/?demo=1#profile`);
+  const root = page.locator('#root');
+  await expect(root).toContainText('WineDNA');
+  await expect(root).not.toContainText('Explore Next is ready');
+  await expect(root).not.toContainText('WineDNA unlocked');
+  expect(await page.evaluate(() => Flags.exploreReadySeen())).toContain('red');
 });
 
 test('a first-time visitor lands on onboarding with no console errors', async ({ page }) => {
@@ -82,4 +104,13 @@ test('the XP badge on Home opens the achievements overlay with no console errors
   await page.locator('#root').getByText('1805 XP', { exact: true }).click();
   await expect(page.locator('#root')).toContainText('Achievements');
   expect(errors).toEqual([]);
+});
+
+// While testing, everyone is Pro in the app (Entitlement.ALL_PRO_FOR_TESTING); the other tests set
+// VINTEREST_REAL_PLANS (helpers.stubNetwork) to check the free plan as it will ship.
+test('while testing, everyone is Pro: no scan limit, every unlock open', async ({ page }) => {
+  await page.goto(`${BASE}/?demo=1#home`);
+  // This file's beforeEach (stubNetwork) asks for the real plans; this test is about the switch.
+  expect(await page.evaluate(() => { window.VINTEREST_REAL_PLANS = false; return [Entitlement.isPro(), Entitlement.atScanLimit(), Entitlement.listScanNeeds() !== 'pro']; })).toEqual([true, false, true]);
+  expect(await page.evaluate(() => { window.VINTEREST_REAL_PLANS = true; return Entitlement.atScanLimit(); })).toBe(true);
 });

@@ -3,7 +3,8 @@
 // The ios/ and android/ folders are generated, never edited by hand and never committed (CLAUDE.md):
 // this adds the platform if it's missing, copies the built web app in (cap sync), then applies the
 // settings in capacitor.config.json's "vinterestNative": iOS Info.plist entries (the camera
-// wording) and Android permissions and features (the camera). Running it again changes nothing.
+// wording, export compliance), the iOS icon and launch screen from assets/ios/, and Android
+// permissions and features (the camera). Running it again changes nothing.
 import fs from 'node:fs';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
@@ -22,6 +23,11 @@ cap('sync', platform);
 if (platform === 'ios') {
   const file = path.join(ROOT, 'ios/App/App/Info.plist');
   fs.writeFileSync(file, patchInfoPlist(fs.readFileSync(file, 'utf8'), config.ios && config.ios.infoPlist));
+  // The app icon and launch screen, rendered from assets/*.svg by scripts/app-icons.mjs.
+  const xc = path.join(ROOT, 'ios/App/App/Assets.xcassets');
+  fs.copyFileSync(path.join(ROOT, 'assets/ios/AppIcon-1024.png'), path.join(xc, 'AppIcon.appiconset/AppIcon-512@2x.png'));
+  for (const f of ['splash-2732x2732.png', 'splash-2732x2732-1.png', 'splash-2732x2732-2.png'])
+    fs.copyFileSync(path.join(ROOT, 'assets/ios/splash-2732.png'), path.join(xc, 'Splash.imageset', f));
 } else {
   const file = path.join(ROOT, 'android/app/src/main/AndroidManifest.xml');
   fs.writeFileSync(file, patchManifest(fs.readFileSync(file, 'utf8'), config.android));

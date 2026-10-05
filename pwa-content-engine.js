@@ -4,6 +4,16 @@
 
 let KNOWLEDGE={descriptors:{},regions:{},grapes:{}},ARTICLE_ARCHETYPES=[],TRIGGERS=[];
 try{ KNOWLEDGE=_loadJSON('data/knowledge.json')||KNOWLEDGE; }catch(e){ console.error('[Vinterest] knowledge.json failed to load — generated Learn content will be generic until it is deployed.',e); }
+/* A grape's checked facts as one line for a prompt (grape quizzes, articles): its profile and
+   where it's famous, then the angles a quiz spreads over (other names, climate, winemaking,
+   food, ageing, look-alikes, blends), so Claude has more than one idea to build questions on. */
+function grapeFactsText(name){
+  const g=KNOWLEDGE.grapes&&KNOWLEDGE.grapes[name]; if(!g) return null;
+  const parts=[`${name}: ${g.profile}.`, g.famousIn&&g.famousIn.length?`Famous in: ${g.famousIn.join(', ')}.`:null];
+  [['aka','Other names'],['climate','Climate'],['winemaking','Winemaking'],['food','Food'],['ageing','Ageing'],['lookalike','Compared with similar grapes'],['blends','In blends']]
+    .forEach(([k,l])=>{ if(g[k]) parts.push(`${l}: ${g[k]}.`); });
+  return parts.filter(Boolean).join(' ').replace(/\.\./g,'.');
+}
 try{ ARTICLE_ARCHETYPES=_loadJSON('data/archetypes.json')||[]; }catch(e){ console.error('[Vinterest] archetypes.json failed to load — the Learn shelf will stay empty until it is deployed.',e); }
 try{ TRIGGERS=_loadJSON('data/triggers.json')||[]; }catch(e){ console.error('[Vinterest] triggers.json failed to load — the Learn shelf will stay empty until it is deployed.',e); }
 
@@ -53,6 +63,9 @@ const Regions = {
     return iso?String.fromCodePoint(...[...iso].map(ch=>0x1F1E6+ch.charCodeAt(0)-65)):'';
   },
   flag(region){ return this.countryFlag((KNOWLEDGE.regions[region]||{}).country); },
+  /* The flag for any region name: a knowledge-base region, or a label region ("Côtes de
+     Provence") that resolves to one. '' when unknown. */
+  nameFlag(name){ return this.flag(name)||this.flag(this.resolve({region:name})); },
   /* A wine's flag: its own country, else the country of the region it's filed under. */
   wineFlag(w){ return (w&&this.countryFlag(w.country))||this.flag(this.resolve(w)); },
   /* The region a wine is filed under for learning: the knowledge-base region when there is one. */
@@ -338,6 +351,20 @@ const ExploreNext = {
     ].filter(Boolean).join(' ');
     return {style,score,shares,bridge:bridge&&this._cap(bridge),why};
   },
+  /* "Explore Next is ready": the moment a wine type reaches READY_AT wines and has picks to
+     show, celebrated once per type in WineDNA. (It replaced "WineDNA unlocked", which marked a
+     three-types-and-a-spread gate that no longer exists: WineDNA works from the first wine.)
+     The first time the app looks (noteReady, on opening), every type already open counts as
+     seen, so existing users aren't told about picks they've had for months. */
+  TYPES:['red','white','rose','sparkling','orange','dessert','fortified'],
+  readyTypes(wines){ return this.TYPES.filter(k=>this._typeWines(k,wines).length>=this.READY_AT&&this.suggest(k,wines,'',1).picks.length>0); },
+  noteReady(wines){ if(Flags.exploreReadySeen()===null&&Settings.onboarded()) Flags.setExploreReadySeen(this.readyTypes(wines)); },
+  toCelebrate(wines){
+    const seen=Flags.exploreReadySeen();
+    if(seen===null){ this.noteReady(wines); return null; } // first look: what's open now isn't news
+    return this.readyTypes(wines).find(k=>!seen.includes(k))||null;
+  },
+  markCelebrated(k){ const seen=Flags.exploreReadySeen()||[]; if(!seen.includes(k)) Flags.setExploreReadySeen([...seen,k]); },
   // {picks:[assessments], explored:[{style,wine}]} for one type.
   suggest(typeKey,wines,label,n=3){
     // No picks until there's enough to go on (READY_AT wines of the type): WineDNA shows none
@@ -520,8 +547,7 @@ const ContentEngine = {
       lines.push(`${slots.regionB} (${r.country}): classification ${r.classification}. Key grapes: ${r.keyGrapes.join(', ')}. Climate: ${r.climate}.`);
     }
     if(slots.grape&&KNOWLEDGE.grapes[slots.grape]){
-      const g=KNOWLEDGE.grapes[slots.grape];
-      lines.push(`${slots.grape}: ${g.profile} Famous in: ${g.famousIn.join(', ')}.`);
+      lines.push(grapeFactsText(slots.grape));
     }
     if(slots.descriptor){
       const d=KNOWLEDGE.descriptors[slots.descriptor.toLowerCase()];

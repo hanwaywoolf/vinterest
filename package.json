@@ -14,6 +14,8 @@
     "site:og": "node scripts/site-og.mjs",
     "site:serve": "npm run site:build && node scripts/serve.mjs site-dist 4175",
     "sample:onboarding": "npm run build && node scripts/onboarding-sample.mjs",
+    "icons": "node scripts/app-icons.mjs",
+    "map": "node scripts/world-map.mjs",
     "site:video": "node scripts/site-video.mjs"
   },
   "keywords": [
@@ -39,6 +41,9 @@
   "devDependencies": {
     "@capacitor/cli": "^8.5.2",
     "@playwright/test": "1.56.1",
-    "esbuild": "0.28.2"
+    "d3-geo": "^3.1.1",
+    "esbuild": "0.28.2",
+    "topojson-client": "^3.1.0",
+    "world-atlas": "^2.0.2"
   }
 }

@@ -67,7 +67,7 @@ test('in the app, a backup file goes to the share sheet instead of a download', 
   expect(out.calls[1][0]).toBe('share');
 });
 
-test('the native projects get the camera wording (iOS) and permission (Android), once', async () => {
+test('the native projects get the camera wording and export compliance (iOS) and permission (Android), once', async () => {
   const { patchInfoPlist, patchManifest } = await import(pathToFileURL(path.join(__dirname, '..', 'scripts/native-config.mjs')).href);
   const cfg = require('../capacitor.config.json').vinterestNative;
   const plist = '<?xml version="1.0"?>\n<plist version="1.0">\n<dict>\n\t<key>CFBundleName</key>\n\t<string>App</string>\n</dict>\n</plist>\n';
@@ -75,6 +75,8 @@ test('the native projects get the camera wording (iOS) and permission (Android),
   expect(p2).toBe(p1);
   expect(p1).toContain('<key>NSCameraUsageDescription</key>');
   expect(p1).toContain('wine labels and wine lists');
+  // Export compliance as a real plist boolean, so App Store Connect doesn't ask on every upload.
+  expect(p1).toContain('<key>ITSAppUsesNonExemptEncryption</key>\n\t<false/>');
   expect(p1).toMatch(/<\/dict>\n<\/plist>\n$/);
   const manifest = '<?xml version="1.0"?>\n<manifest>\n    <application/>\n    <uses-permission android:name="android.permission.INTERNET" />\n</manifest>\n';
   const m1 = patchManifest(manifest, cfg.android), m2 = patchManifest(m1, cfg.android);
@@ -118,4 +120,19 @@ test('the Worker\'s /config gives the public sign-in settings, or null without t
   expect(await get({ SUPABASE_URL: 'https://p.supabase.co', SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_x', SUPABASE_SECRET_KEY: 'never' }))
     .toEqual({ supabase: { url: 'https://p.supabase.co', key: 'sb_publishable_x' } });
   expect(await get({})).toEqual({ supabase: null });
+});
+
+test('the iOS icon is 1024×1024 with no alpha channel (the App Store rejects one), and the launch screen is 2732 square', async () => {
+  const fs = require('node:fs');
+  const png = (f) => { const b = fs.readFileSync(path.join(__dirname, '..', f)); return { w: b.readUInt32BE(16), h: b.readUInt32BE(20), colourType: b[25], sig: b.subarray(1, 4).toString() }; };
+  expect(png('assets/ios/AppIcon-1024.png')).toEqual({ w: 1024, h: 1024, colourType: 2, sig: 'PNG' }); // 2 = RGB, no alpha
+  const splash = png('assets/ios/splash-2732.png');
+  expect([splash.w, splash.h]).toEqual([2732, 2732]);
+  // The renderer's own PNG writer: RGBA in, RGB out.
+  const { rgbPng } = await import(pathToFileURL(path.join(__dirname, '..', 'scripts/app-icons.mjs')).href);
+  const out = rgbPng(2, 1, Uint8Array.from([255, 0, 0, 255, 0, 0, 255, 128]));
+  expect(out.readUInt32BE(16)).toBe(2);
+  expect(out[25]).toBe(2);
+  const idat = out.subarray(out.indexOf('IDAT') + 4);
+  expect([...require('node:zlib').inflateSync(idat.subarray(0, out.readUInt32BE(out.indexOf('IDAT') - 4)))]).toEqual([0, 255, 0, 0, 0, 0, 255]);
 });

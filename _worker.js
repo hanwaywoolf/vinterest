@@ -65,6 +65,7 @@ const CLAUDE_PURPOSE_LIMITS = {
 
 const ALLOWED_ORIGINS = [
   "https://vinterest.app",
+  "https://test.vinterest.app", // the web app's test address (a custom domain on the vinterest Pages project)
   "https://vinterest.pages.dev",
   "capacitor://localhost",
   "https://localhost"
@@ -260,10 +261,14 @@ async function handleClaude(request, env, ctx) {
    purposes need Pro in `entitlements`, which only the server writes. The caps are cost guards,
    set generously, never product limits (spec D5). */
 const FAIR_USE = {
-  free: { label_scan: 100, list_scan: 0, price_search: 50, _other: 500 },
+  free: { label_scan: 100, list_scan: 30, price_search: 50, _other: 500 },
   pro:  { label_scan: 600, list_scan: 150, price_search: 300, _other: 3000 },
 };
 const PRO_ONLY = { list_scan: "Wine list scanning is part of Vinterest Pro." };
+/* While testing, before real purchases exist: these Pro features are open to any signed-in account
+   (metered by FAIR_USE.free); signed out still asks them to sign in. Remove an entry to make it Pro
+   again, and change Entitlement.listScanNeeds in pwa-userdata.js to match. */
+const OPEN_TO_SIGNED_IN = { list_scan: true };
 const AUTH_CACHE_MS = 5 * 60 * 1000;
 const _authCache = new Map();
 
@@ -291,7 +296,13 @@ async function authUser(request, env) {
 function db(env, path, init = {}) {
   return fetch(`${env.SUPABASE_URL}/rest/v1/${path}`, { ...init, headers: { apikey: env.SUPABASE_SECRET_KEY, "content-type": "application/json", ...(init.headers || {}) } });
 }
+/* While testing, before real purchases exist, every signed-in account is Pro (metered at
+   FAIR_USE.pro). Set false to bring the free plan back; tests pass ALL_PRO: "0" to check it.
+   Entitlement.ALL_PRO_FOR_TESTING in pwa-userdata.js is the app's side. List scanning still
+   needs sign-in, so anonymous traffic can't run up the bill. */
+const ALL_PRO_FOR_TESTING = true;
 async function tierOf(env, userId) {
+  if (ALL_PRO_FOR_TESTING && env.ALL_PRO !== "0") return "pro";
   const r = await db(env, `entitlements?user_id=eq.${encodeURIComponent(userId)}&select=tier,expires_at`);
   if (!r.ok) return "free";
   const [e] = await r.json();
@@ -315,7 +326,7 @@ async function gateAccount(request, env, purpose) {
     return {};
   }
   const tier = await tierOf(env, user.id);
-  if (PRO_ONLY[purpose] && tier !== "pro") return { response: json(402, { error: PRO_ONLY[purpose], code: "pro_required" }) };
+  if (PRO_ONLY[purpose] && tier !== "pro" && !OPEN_TO_SIGNED_IN[purpose]) return { response: json(402, { error: PRO_ONLY[purpose], code: "pro_required" }) };
   const r = await db(env, "rpc/use_quota", { method: "POST", body: JSON.stringify({ p_user: user.id, p_kind: purpose, p_cap: capFor(tier, purpose) }) });
   if (r.ok && (await r.json()) === null) {
     return { response: json(429, { error: "You've reached this week's fair-use limit for this. It resets on Monday.", code: "fair_use" }) };
@@ -427,7 +438,7 @@ async function handlePriceSearch(payload, env, key, ctx) {
     `Wine: ${_clean(w.producer)} ${_clean(w.name)} ${vintage || "(current release)"}. ${_clean(w.region)}, ${_clean(w.country, 40)}. Type: ${_clean(w.type, 20)}.\n` +
     `Search current listings from wine merchants and shops in that market. Prefer the ${vintage ? vintage + " vintage" : "current release"}; if it isn't listed, use the nearest current vintage and say so. ` +
     `Ignore auction results, en primeur / in-bond prices, magnums and restaurant prices; divide case prices by the number of bottles. Convert other currencies to ${m.code} approximately.\n` +
-    `Return ONLY JSON, no markdown: {"low":INT,"mid":INT,"high":INT,"currency":"${m.code}","tier":"entry|everyday|premium|luxury|ultra-luxury","note":"one sentence on where the range comes from, e.g. which vintage and the kind of shops","found":true}. ` +
+    `Return ONLY JSON, no markdown: {"shops":[{"name":"the shop's name","url":"the listing page you found","price":INT}],"low":INT,"mid":INT,"high":INT,"currency":"${m.code}","tier":"entry|everyday|premium|luxury|ultra-luxury","note":"one sentence on where the range comes from, e.g. which vintage and the kind of shops","found":true}. ` +
     `If you can't find real listings, return {"found":false}.`;
 
   const work = (async () => {
@@ -453,9 +464,11 @@ async function handlePriceSearch(payload, env, key, ctx) {
       let parsed = null;
       try { parsed = s >= 0 && e > s ? JSON.parse(text.slice(s, e + 1)) : null; } catch (err) {}
       if (!(parsed && parsed.found !== false && Number(parsed.mid) > 0)) return { text: "" };
+      const shops = _listedShops(parsed.shops, data.content);
       const out = JSON.stringify({
         low: Math.round(Number(parsed.low) || Number(parsed.mid)), mid: Math.round(Number(parsed.mid)), high: Math.round(Number(parsed.high) || Number(parsed.mid)),
-        currency: m.code, tier: parsed.tier || null, note: _clean(parsed.note, 240) || null, source: "search", at: Date.now()
+        currency: m.code, tier: parsed.tier || null, note: _clean(parsed.note, 240) || null, source: "search", at: Date.now(),
+        ...(shops.length ? { shops } : {})
       });
       await priceCachePut(env, k, out);
       return { text: out };
@@ -469,6 +482,29 @@ async function handlePriceSearch(payload, env, key, ctx) {
   if (!res) return json(200, { text: "", pending: true });
   if (res.error) return json(res.status || 502, { error: res.error, code: "anthropic_error" });
   return json(200, { text: res.text, cached: false });
+}
+
+/* The shops the search found the wine at (up to 3), for the Price tab's "In shops now". A link is
+   kept only when the search really returned a page on that site, so a shop the model made up,
+   or a link it guessed, never reaches the screen. https only, and never a search engine. */
+function _listedShops(shops, content) {
+  const seen = new Set();
+  for (const b of content || []) {
+    const results = b && b.type === "web_search_tool_result" && Array.isArray(b.content) ? b.content : [];
+    for (const r of results) { try { seen.add(new URL(r.url).host.replace(/^www\./, "")); } catch (e) {} }
+  }
+  const out = [];
+  for (const s of Array.isArray(shops) ? shops : []) {
+    let u;
+    try { u = new URL(String(s && s.url)); } catch (e) { continue; }
+    const host = u.host.replace(/^www\./, "");
+    if (u.protocol !== "https:" || !seen.has(host) || /(^|\.)(google|bing|duckduckgo|yahoo)\./.test(host)) continue;
+    if (out.some((o) => new URL(o.url).host.replace(/^www\./, "") === host)) continue;
+    const price = Math.round(Number(s.price));
+    out.push({ name: _clean(s.name, 40) || host, url: u.href.slice(0, 500), ...(price > 0 ? { price } : {}) });
+    if (out.length === 3) break;
+  }
+  return out;
 }
 
 function cors(res) {

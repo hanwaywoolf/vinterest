@@ -1,49 +1,7 @@
 /* Vinterest — Quiz Hub + Quiz Screens */
 
 
-const _RING_TYPES=[
-  {key:'red',label:'Reds',col:'#8B1A2F'},{key:'white',label:'Whites',col:'#B8963E'},
-  {key:'rose',label:'Rosé',col:'#C47A8A'},{key:'sparkling',label:'Sparkling',col:'#5E8FA8'},
-];
 function _normType(t){return(t||'').toLowerCase().replace('é','e');}
-function getCoverage(wines){
-  const extra=['orange','dessert','fortified'];
-  const seen=new Set(wines.map(w=>_normType(w.type)).filter(Boolean));
-  const segs=_RING_TYPES.concat(extra.filter(k=>seen.has(k)).map(k=>({key:k,label:k[0].toUpperCase()+k.slice(1),col:_TYPE_COLORS&&_TYPE_COLORS[k]||C.cr})))
-    .map(s=>({...s,filled:seen.has(s.key)}));
-  const distinctTypes=segs.filter(s=>s.filled).length;
-  const rated=wines.filter(w=>w.rating>0);
-  const spread=arr=>{const v=arr.filter(x=>x!=null);return v.length?Math.max(...v)-Math.min(...v):0;};
-  const hasSpread=spread(rated.map(w=>w.body))>=0.25||spread(rated.map(w=>w.sweetness))>=0.25;
-  const nextMissing=segs.find(s=>!s.filled);
-  return {segs,distinctTypes,hasSpread,unlocked:distinctTypes>=3&&hasSpread,nextMissing};
-}
-function CoverageRing({segs,size=104,stroke=9}){
-  const n=segs.length,r=(size-stroke)/2,c=2*Math.PI*r,gap=7,segLen=c/n-gap;
-  return(
-    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{display:'block',flexShrink:0}}>
-      {segs.map((s,i)=>(
-        <circle key={s.key} cx={size/2} cy={size/2} r={r} fill="none" stroke={s.filled?s.col:C.line} strokeWidth={stroke}
-          strokeDasharray={`${segLen} ${c-segLen}`} strokeDashoffset={-i*(c/n)} strokeLinecap="round"
-          transform={`rotate(-90 ${size/2} ${size/2})`}/>
-      ))}
-    </svg>
-  );
-}
-
-function WineDNAUnlockCelebration({onDone}){
-  return(
-    <div style={{position:'absolute',inset:0,background:C.ink,zIndex:200,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:32,gap:14}}>
-      <div style={{animation:'dnaRise 1.1s ease both'}}><Icon n="brain" sz={40} col="#D4AF6A"/></div>
-      <div style={{fontSize:34,fontWeight:400,color:'#fff',fontFamily:C.P,textAlign:'center',animation:'dnaRise 1.1s .1s ease both'}}>WineDNA unlocked</div>
-      <div style={{fontSize:16,color:'rgba(255,255,255,0.55)',fontFamily:C.P,textAlign:'center',lineHeight:1.5,maxWidth:280,animation:'dnaRise 1.1s .2s ease both'}}>Your palate has enough range now — Explore Next recommendations start today.</div>
-      <div onClick={onDone} style={{marginTop:14,background:'#D4AF6A',borderRadius:14,padding:'13px 28px',cursor:'pointer',animation:'dnaRise 1.1s .3s ease both'}}>
-        <span style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>See WineDNA</span>
-      </div>
-      <style>{`@keyframes dnaRise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}`}</style>
-    </div>
-  );
-}
 
 /* ── QUIZ HUB / LEARN TAB ── */
 /* Dashed "N completed — show" row that expands a completed section (Wine Basics, regions). */
@@ -111,14 +69,6 @@ function QuizHubScreen({nav,back,showPro}){
   // (ContentEngine.shelfOpen, which every other screen follows too).
   const article1Done=ContentEngine.shelfOpen();
   const wines=React.useMemo(()=>WineHistory.getAll(),[]);
-  const coverage=React.useMemo(()=>getCoverage(wines),[wines]);
-  const [showUnlock,setShowUnlock]=React.useState(false);
-  React.useEffect(()=>{
-    if(coverage.unlocked && !Flags.wineDNAUnlockSeen()){
-      Flags.markWineDNAUnlockSeen();
-      setShowUnlock(true);
-    }
-  },[coverage.unlocked]);
 
   const [genStubs,setGenStubs]=React.useState(()=>{
     try{ return ContentEngine.shelf(); }catch(e){ return null; }
@@ -229,18 +179,18 @@ function QuizHubScreen({nav,back,showPro}){
   const guideQueue=Guides.queue(), guidesDone=Guides.finished();
   const openGuide=id=>{ Handoff.guide.set(id); nav('guide'); };
   const knowledge=React.useMemo(()=>KnowledgeMap.summary(wines),[wines,progressTick]);
+  const refreshers=React.useMemo(()=>{ try{ return KnowledgeMap.refreshers(); }catch(e){ return []; } },[progressTick]);
   const secRefs={shelf:React.useRef(null),basics:React.useRef(null),regions:React.useRef(null),grapes:React.useRef(null),skills:React.useRef(null),progress:React.useRef(null)};
   const jump=id=>{ const el=secRefs[id]&&secRefs[id].current; if(el) el.scrollIntoView({behavior:'smooth',block:'start'}); };
 
   // After every hook above: returning early before one of them changes the hook count between
   // renders, and React throws the moment the unlock effect flips showUnlock.
-  if(showUnlock) return <WineDNAUnlockCelebration onDone={()=>{setShowUnlock(false);nav('profile');}}/>;
 
   return(
     <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden'}}>
       <div style={{background:C.white,padding:'14px 20px 0',borderBottom:`1px solid ${C.line}`,flexShrink:0}}>
         <div style={{display:'flex',alignItems:'center',gap:12,marginBottom:12}}>
-          <div onClick={back} style={{width:34,height:34,borderRadius:17,background:C.offWhite,border:`1px solid ${C.line}`,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer'}}>
+          <div role="button" aria-label="Back" onClick={back} style={{width:34,height:34,borderRadius:17,background:C.offWhite,border:`1px solid ${C.line}`,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer'}}>
             <Icon n="back" sz={16} col={C.ink}/>
           </div>
           <span style={{fontSize:22,fontWeight:800,color:C.ink,fontFamily:C.P,flex:1,letterSpacing:'-0.4px'}}>Learn</span>
@@ -258,15 +208,6 @@ function QuizHubScreen({nav,back,showPro}){
             <div style={{height:'100%',borderRadius:4,background:level.color,width:`${Math.round(prog*100)}%`,transition:'width .6s ease'}}/>
           </div>
         </div>
-        {!coverage.unlocked&&(
-          <div style={{display:'flex',alignItems:'center',gap:14,padding:'2px 0 16px'}}>
-            <CoverageRing segs={coverage.segs}/>
-            <div style={{flex:1}}>
-              <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P,marginBottom:3}}>Discovering your palate</div>
-              <div style={{fontSize:14,color:C.mid,fontFamily:C.P,lineHeight:1.4}}>{coverage.nextMissing?`You haven't rated ${({red:'a red',white:'a white',rose:'a rosé',sparkling:'a sparkling wine'})[coverage.nextMissing.key]||'a '+coverage.nextMissing.label.toLowerCase()} yet.`:'Rate a wider spread of body and sweetness to unlock WineDNA.'}</div>
-            </div>
-          </div>
-        )}
       </div>
 
       <div style={{flex:1,overflowY:'auto'}}>
@@ -293,6 +234,24 @@ function QuizHubScreen({nav,back,showPro}){
             <Icon n="chevron" sz={13} col="rgba(255,255,255,0.3)"/>
           </div>
         </div>
+
+        {/* Answers past their review date (QuizMastery fading): the sets that need a quick refresher. */}
+        {refreshers.length>0&&<div data-testid="refreshers">
+          <div style={zoneLabel}>Time for a refresher</div>
+          <div style={{fontSize:14,color:C.mid,fontFamily:C.P,lineHeight:1.45,marginTop:4}}>Answers fade a few weeks after you last got them right, and count for less in your Mastery until you refresh them.</div>
+          <div style={{background:C.white,borderRadius:16,border:`1px solid ${C.line}`,marginTop:8,overflow:'hidden'}}>
+            {refreshers.slice(0,3).map((r,i)=>(
+              <div key={r.label} role="button" onClick={()=>_openLearn(r.learn,nav,showPro)} style={{display:'flex',alignItems:'center',gap:12,padding:'12px 14px',borderTop:i?`1px solid ${C.line}`:'none',cursor:'pointer'}}>
+                <Icon n="bolt" sz={17} col={C.amber}/>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontSize:15,fontWeight:700,color:C.ink,fontFamily:C.P}}>{r.region&&<Flag region={r.region} size={14} style={{marginRight:6}}/>}{r.label}</div>
+                  <div style={{fontSize:13,color:C.mid,fontFamily:C.P}}>{r.fading} of {r.total} answers fading</div>
+                </div>
+                <span style={{fontSize:14,fontWeight:700,color:C.cr,fontFamily:C.P}}>Refresh →</span>
+              </div>
+            ))}
+          </div>
+        </div>}
 
         {/* Before the shelf opens: what it is and the one step that opens it, shown faded. */}
         {!article1Done&&ON_RAMP[0]&&(
@@ -571,25 +530,30 @@ function ShelfCard({stub,done,locked,because,onOpen}){
 
 /* ── MASTERY (PRO) ──
    How rounded their wine knowledge is, from what they've read and passed (KnowledgeMap,
-   pwa-knowledge.js): each area's score, level, what counts, and the next thing to do. */
+   pwa-knowledge.js): where to start (focus), the shape of it now and a month ago, the map of
+   regions, then each area's score, level, what counts, and the next thing to do. */
 function MasteryBar({score,col}){
   return <div style={{height:6,borderRadius:3,background:C.offWhite,overflow:'hidden'}}><div className="mastery-fill" style={{height:'100%',borderRadius:3,background:score>=100?C.green:(col||C.cr),width:`${score}%`,transition:'width .5s ease'}}/></div>;
 }
 /* One area of the mastery map: its level and score, and (open) each region or grape in it. Also
    the welcome slides' preview (flow-welcome.jsx), open, with no toggle or next step. */
+/* A wine-type area's colour (_TYPE_COLORS): its bar fills in it, so strong and weak types read
+   like a palette. Other areas stay crimson. */
+function _masteryCol(a){ return a.group==='types'&&typeof _TYPE_COLORS!=='undefined'?_TYPE_COLORS[a.id==='sweet'?'dessert':a.id]||C.cr:C.cr; }
 function MasteryAreaCard({a,open,onToggle,onNext}){
+  const col=_masteryCol(a);
   return(
   <div style={{background:C.white,borderRadius:14,border:`1px solid ${C.line}`,padding:'12px 14px',display:'flex',flexDirection:'column',gap:7}}>
     <div role="button" onClick={onToggle} style={{display:'flex',justifyContent:'space-between',alignItems:'baseline',cursor:a.items&&onToggle?'pointer':'default'}}>
-      <span style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>{a.label}</span>
+      <span style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>{a.group==='types'&&<span aria-hidden="true" style={{display:'inline-block',width:10,height:10,borderRadius:5,background:col,marginRight:8,verticalAlign:'1px'}}/>}{a.label}</span>
       <span style={{fontSize:14,fontWeight:700,color:a.score>=100?C.green:C.ink2,fontFamily:C.P}}>{a.level} · {a.score}%</span>
     </div>
-    <MasteryBar score={a.score}/>
+    <MasteryBar score={a.score} col={col}/>
     <div style={{fontSize:13,color:C.mid,fontFamily:C.P}}>{a.detail}{a.items&&a.items.length&&onToggle?(open?' · hide':' · see each'):''}</div>
     {open&&a.items.map(i=>(
       <div key={i.name} style={{display:'flex',alignItems:'center',gap:10}}>
-        <span style={{flex:'0 0 42%',fontSize:14,color:C.ink2,fontFamily:C.P,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{i.name}</span>
-        <div style={{flex:1}}><MasteryBar score={i.score}/></div>
+        <span style={{flex:'0 0 42%',fontSize:14,color:C.ink2,fontFamily:C.P,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{a.id==='regions'&&<Flag region={i.name} size={14} style={{marginRight:6}}/>}{a.id==='grapes'&&<span aria-hidden="true" style={{display:'inline-block',width:8,height:8,borderRadius:4,background:grapeTypeColor(i.name),marginRight:7,verticalAlign:'1px'}}/>}{i.name}{i.fading>0&&<span style={{fontSize:12,fontWeight:600,color:C.amber,marginLeft:6}}>fading</span>}</span>
+        <div style={{flex:1}}><MasteryBar score={i.score} col={a.id==='grapes'?grapeTypeColor(i.name):col}/></div>
         <span style={{fontSize:13,fontWeight:700,color:C.ink2,fontFamily:C.P,width:38,textAlign:'right'}}>{i.score}%</span>
       </div>
     ))}
@@ -597,34 +561,270 @@ function MasteryAreaCard({a,open,onToggle,onNext}){
   </div>
   );
 }
-function MasteryMapScreen({nav,back}){
-  const m=React.useMemo(()=>KnowledgeMap.compute(),[]);
+/* The shape of their knowledge: one spoke per Mastery area, the filled shape now and a dashed
+   outline of where they were (KnowledgeMap.progress: about a month ago, or their first week).
+   Rings mark Developing (34), Confident (67) and Mastered (100). A label tap jumps to that area's
+   card. A picture for screen readers (the cards below say the same in words). Labels are string
+   sizes: they must fit around the drawing. */
+function MasteryRadar({m,prog,onPick}){
+  const W=340,H=300,cx=W/2,cy=H/2,R=96, n=m.areas.length;
+  const ang=i=>-Math.PI/2+i*2*Math.PI/n;
+  // 0% sits on a small inner ring (HOLE of the radius), so an early shape is still a shape, not a spike.
+  const HOLE=0.14, rr=score=>R*(HOLE+(1-HOLE)*score/100);
+  const pt=(i,score)=>[cx+Math.cos(ang(i))*rr(score),cy+Math.sin(ang(i))*rr(score)];
+  const poly=scores=>scores.map((v,i)=>pt(i,v).map(x=>x.toFixed(1)).join(',')).join(' ');
+  const now=m.areas.map(a=>a.score), then=prog?m.areas.map(a=>prog.then.a[a.id]||0):null;
+  const said=m.areas.map(a=>`${a.label} ${a.score}%`).join(', ');
+  return(
+    <svg viewBox={`0 0 ${W} ${H}`} width="100%" role="img" aria-label={`Your knowledge by area: ${said}.`} style={{display:'block',maxWidth:420,margin:'0 auto',overflow:'visible'}}>
+      {[0,34,67,100].map(r=><polygon key={r} points={poly(m.areas.map(()=>r))} fill="none" stroke={C.line} strokeWidth={r===100?1.2:1} strokeDasharray={r===100?null:'3 3'}/>)}
+      {m.areas.map((a,i)=>{ const [x,y]=pt(i,100), [x0,y0]=pt(i,0); return <line key={a.id} x1={x0} y1={y0} x2={x} y2={y} stroke={C.line} strokeWidth="1"/>; })}
+      {then&&<polygon points={poly(then)} fill="none" stroke={C.mid} strokeWidth="1.5" strokeDasharray="4 3"/>}
+      <g className="mastery-radar-shape" style={{transformOrigin:`${cx}px ${cy}px`}}>
+        <polygon points={poly(now)} fill={C.cr} fillOpacity="0.16" stroke={C.cr} strokeWidth="2" strokeLinejoin="round"/>
+        {m.areas.map((a,i)=>{ const [x,y]=pt(i,a.score); return <circle key={a.id} cx={x} cy={y} r="3.6" fill={a.score>=100?C.green:_masteryCol(a)} stroke="#fff" strokeWidth="1.2"/>; })}
+      </g>
+      {m.areas.map((a,i)=>{
+        const c=Math.cos(ang(i)), sn=Math.sin(ang(i)), x=cx+c*(R+14), y=cy+sn*(R+14)+(sn>0.3?8:sn<-0.3?-6:3);
+        const anchor=c>0.1?'start':c<-0.1?'end':'middle'; // the two bottom spokes lean apart
+        return <g key={a.id} onClick={()=>onPick&&onPick(a.id)} style={{cursor:'pointer'}}>
+          <text x={x} y={y} textAnchor={anchor} style={{fontSize:'11px',fontWeight:600,fill:C.ink2,fontFamily:C.P}}>{KnowledgeMap.short(a)}</text>
+          <text x={x} y={y+12} textAnchor={anchor} style={{fontSize:'10px',fontWeight:700,fill:a.score>=100?C.green:C.mid,fontFamily:C.P}}>{a.score}%</text>
+        </g>;
+      })}
+    </svg>
+  );
+}
+function _when(t){ return new Date(t).toLocaleDateString('en',{day:'numeric',month:'short'}); }
+
+/* The map of wine regions (KnowledgeMap.regionMap): every region in the knowledge base as a pin,
+   coloured by its level once unlocked, grey until a scan unlocks it, ringed where they've had a
+   bottle from it. A tap shows the pins near it (they sit close together in Europe), each with its
+   next step. */
+const _PIN_COL={'Not started':'#fff','Getting started':'#DDA0AB','Developing':'#B94A61','Confident':C.cr,'Mastered':C.green};
+function _pinFill(p){ return p.state==='open'?_PIN_COL[p.level]||C.cr:'#CFC9C2'; }
+function MasteryRegionMap({views,nav,showPro}){
+  const [vid,setVid]=React.useState(()=>{ const v=KnowledgeMap.homeView(views); return v?v.id:null; });
+  const [sel,setSel]=React.useState([]);
+  const v=views.find(x=>x.id===vid)||views[0];
+  if(!v) return null;
+  const PIN=9, HIT=40;
+  const tap=e=>{
+    const r=e.currentTarget.getBoundingClientRect(), k=v.w/r.width, x=(e.clientX-r.left)*k, y=(e.clientY-r.top)*k;
+    setSel(v.pins.map(p=>({p,d:Math.hypot(p.x-x,p.y-y)})).filter(o=>o.d<=HIT).sort((a,b)=>a.d-b.d).slice(0,4).map(o=>o.p.name));
+  };
+  const picked=sel.map(n=>v.pins.find(p=>p.name===n)).filter(Boolean);
+  const open=v.pins.filter(p=>p.state==='open').length;
+  const legend=[['#CFC9C2','Not unlocked'],[_PIN_COL['Getting started'],'Getting started'],[_PIN_COL.Developing,'Developing'],[C.cr,'Confident'],[C.green,'Mastered']];
+  const anyFading=v.pins.some(p=>p.fading);
+  return(
+    <div style={{display:'flex',flexDirection:'column',gap:10}}>
+      <div style={{display:'flex',gap:6,overflowX:'auto',scrollbarWidth:'none',margin:'0 -2px'}}>
+        {views.map(x=>{ const on=x.id===v.id; return(
+          <div key={x.id} role="button" aria-pressed={on} onClick={()=>{ setVid(x.id); setSel([]); }} style={{flex:'0 0 auto',padding:'6px 11px',borderRadius:999,background:on?C.ink:C.white,border:`1px solid ${on?C.ink:C.line}`,cursor:'pointer',fontSize:13,fontWeight:600,color:on?'#fff':C.ink2,fontFamily:C.P,whiteSpace:'nowrap'}}>
+            {x.label} <span style={{opacity:0.6}}>{x.open}/{x.pins.length}</span>
+          </div>); })}
+      </div>
+      <svg viewBox={`0 0 ${v.w} ${v.h}`} width="100%" onClick={tap} role="img"
+        aria-label={`Map of ${v.label}: ${open} of ${v.pins.length} wine regions unlocked. Tap a region to see it.`}
+        style={{display:'block',borderRadius:12,background:'#EEF1F3',cursor:'pointer',maxHeight:420}}>
+        <path d={v.land} fill="#F6F2EC" stroke="#D9D2C8" strokeWidth="1.5" strokeLinejoin="round"/>
+        <path d={v.borders} fill="none" stroke="#E2DBD1" strokeWidth="1.2"/>
+        {[...v.pins].sort((a,b)=>(a.state==='open')-(b.state==='open')).map(p=>{
+          const on=sel.includes(p.name);
+          return <g key={p.name}>
+            {p.drunk>0&&<circle cx={p.x} cy={p.y} r={PIN+5} fill="none" stroke={C.ink} strokeWidth="2.2"/>}
+            <circle cx={p.x} cy={p.y} r={on?PIN+3:p.state==='open'?PIN:PIN-2} fill={_pinFill(p)} fillOpacity={p.fading?0.4:1} strokeDasharray={p.fading?'3 2':null} stroke={p.state==='open'&&p.level==='Not started'?C.cr:'#fff'} strokeWidth={p.state==='open'&&p.level==='Not started'?2.5:2}/>
+          </g>;
+        })}
+      </svg>
+      <div aria-hidden="true" style={{display:'flex',flexWrap:'wrap',gap:'4px 12px'}}>
+        {legend.map(([c,l])=><span key={l} style={{display:'inline-flex',alignItems:'center',gap:5,fontSize:12,color:C.mid,fontFamily:C.P}}><span style={{width:9,height:9,borderRadius:5,background:c,border:'1px solid rgba(0,0,0,0.08)'}}/>{l}</span>)}
+        <span style={{display:'inline-flex',alignItems:'center',gap:5,fontSize:12,color:C.mid,fontFamily:C.P}}><span style={{width:9,height:9,borderRadius:6,border:`2px solid ${C.ink}`}}/>You've had one</span>
+        {anyFading&&<span style={{display:'inline-flex',alignItems:'center',gap:5,fontSize:12,color:C.mid,fontFamily:C.P}}><span style={{width:9,height:9,borderRadius:6,background:C.cr,opacity:0.4,border:`1px dashed ${C.cr}`}}/>Fading: time for a refresher</span>}
+      </div>
+      {picked.length?<div data-testid="map-picked" style={{display:'flex',flexDirection:'column',borderTop:`1px solid ${C.line}`}}>
+        {picked.map(p=>(
+          <div key={p.name} style={{display:'flex',alignItems:'center',gap:10,padding:'10px 0',borderBottom:`1px solid ${C.line}`}}>
+            <Flag region={p.name} size={18}/>
+            <div style={{flex:1,minWidth:0}}>
+              <div style={{fontSize:15,fontWeight:700,color:C.ink,fontFamily:C.P}}>{p.name}</div>
+              <div style={{fontSize:13,color:C.mid,fontFamily:C.P,lineHeight:1.4}}>
+                {p.state==='open'?`${p.level} · ${p.score}%${p.fading?` · ${p.fading} answer${p.fading===1?'':'s'} fading`:''}`:p.state==='held'?'Unlocked, kept for Pro':'Not unlocked yet'}
+                {p.drunk?` · you've had ${p.drunk===1?'one':p.drunk}`:''}
+              </div>
+            </div>
+            {p.state==='open'?((p.score<100||p.fading>0)&&<div role="button" onClick={()=>_openLearn({kind:'region',region:p.name},nav,showPro)} style={{fontSize:14,fontWeight:700,color:C.cr,fontFamily:C.P,cursor:'pointer',whiteSpace:'nowrap'}}>{p.fading?'Refresh':'Quiz'} →</div>)
+              :p.state==='held'?<div role="button" onClick={()=>showPro('regions')} style={{cursor:'pointer'}}><ProBadge/></div>
+              :<div role="button" onClick={()=>nav('camera')} style={{fontSize:13,fontWeight:600,color:C.mid,fontFamily:C.P,cursor:'pointer',textAlign:'right',maxWidth:120,lineHeight:1.3}}>Scan a bottle from here</div>}
+          </div>
+        ))}
+      </div>:<div style={{fontSize:13,color:C.mid,fontFamily:C.P}}>Tap a pin to see a region. Scanning a bottle unlocks its region.</div>}
+    </div>
+  );
+}
+
+/* What they can taste (Palate, pwa-palate.js), beside what they know: their Blind Calls scored
+   against each label's profile, a bar per axis with how to notice it, any habit ("you tend to
+   call tannins grippier"), and the next step. Not part of the knowledge score. */
+function MasteryPalate({p,go}){
+  const leans=Palate.leans(p);
+  return(
+    <div style={{display:'flex',flexDirection:'column',gap:10}}>
+      <div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline'}}>
+        <span style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>{p.n?`${p.level} · ${p.score}%`:'Not started'}</span>
+        <span style={{fontSize:13,color:C.mid,fontFamily:C.P}}>{p.n} Blind Call{p.n===1?'':'s'}{p.trend!=null&&p.trend!==0?` · ${p.trend>0?'+':''}${p.trend} lately`:''}</span>
+      </div>
+      <MasteryBar score={p.score}/>
+      <div style={{fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.5}}>
+        {p.n?<>Your calls average {p.accuracy}% accurate{p.n<Palate.FULL_AT?`. The score fills in as you play: ${Palate.FULL_AT-p.n} more to count in full`:''}. Each call is checked against the label's profile, an estimate, so treat it as a guide.</>
+          :<>Blind Call asks you to taste first and guess the body, acidity and tannins before you see the label's profile. Your calls build this score, separate from what you've read.</>}
+      </div>
+      {p.axes.map(a=>(
+        <div key={a.id} style={{display:'flex',flexDirection:'column',gap:4}}>
+          <div style={{display:'flex',alignItems:'center',gap:10}}>
+            <span style={{flex:'0 0 30%',fontSize:14,fontWeight:600,color:C.ink2,fontFamily:C.P}}>{a.name}</span>
+            <div style={{flex:1}}><MasteryBar score={a.score}/></div>
+            <span style={{fontSize:13,fontWeight:700,color:C.ink2,fontFamily:C.P,width:38,textAlign:'right'}}>{a.score}%</span>
+          </div>
+          <div style={{fontSize:13,color:C.mid,fontFamily:C.P,lineHeight:1.4}}>{a.how}</div>
+        </div>
+      ))}
+      {leans.map(l=><div key={l} style={{fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.45,background:C.offWhite,borderRadius:10,padding:'8px 10px'}}>{l}</div>)}
+      {p.next&&<div role="button" onClick={()=>go(p.next)} style={{fontSize:14,fontWeight:700,color:C.cr,fontFamily:C.P,cursor:'pointer'}}>{p.next.label} →</div>}
+    </div>
+  );
+}
+
+/* A milestone reached just now (Milestones.check): shown once, where it happened (the quiz
+   result, or Mastery), with Share (Platform.shareText: the share sheet, else copied). */
+function _useShare(){
+  const [said,setSaid]=React.useState(null);
+  const share=async x=>{ const r=await Platform.shareText(Milestones.shareText(x)); if(r==='copied'){ setSaid('Copied to share'); setTimeout(()=>setSaid(null),2200); } };
+  return [share,said];
+}
+function MilestoneMoment({items}){
+  const [share,said]=_useShare();
+  if(!items||!items.length) return null;
+  return(
+    <div data-testid="milestone-moment" className="milestone-in" style={{background:C.ink,borderRadius:16,padding:'14px 16px',display:'flex',flexDirection:'column',gap:8}}>
+      <div style={{fontSize:13,fontWeight:600,color:'#E7C66B',fontFamily:C.P,textTransform:'uppercase',letterSpacing:'0.06em'}}>{items.length===1?(items[0].id.startsWith('level:')?'New level':'New milestone'):`${items.length} new milestones`}</div>
+      {items.map(x=>(
+        <div key={x.id} style={{display:'flex',alignItems:'center',gap:12}}>
+          <div style={{width:38,height:38,borderRadius:19,background:'rgba(231,198,107,0.16)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><Icon n={x.icon} sz={18} col="#E7C66B"/></div>
+          <div style={{flex:1,minWidth:0}}>
+            <div style={{fontSize:16,fontWeight:700,color:'#fff',fontFamily:C.P}}>{x.region&&<Flag region={x.region} size={15} style={{marginRight:6}}/>}{x.title}</div>
+            {x.sub&&<div style={{fontSize:13,color:'rgba(255,255,255,0.6)',fontFamily:C.P}}>{x.sub}</div>}
+          </div>
+          <div role="button" aria-label={`Share: ${x.title}`} onClick={()=>share(x)} style={{padding:'7px 12px',borderRadius:999,background:'rgba(255,255,255,0.12)',cursor:'pointer',display:'flex',alignItems:'center',gap:6}}>
+            <Icon n="share" sz={14} col="#fff"/><span style={{fontSize:13,fontWeight:700,color:'#fff',fontFamily:C.P}}>Share</span>
+          </div>
+        </div>
+      ))}
+      {said&&<div style={{fontSize:13,color:'#7FD3A6',fontFamily:C.P}}>{said}</div>}
+    </div>
+  );
+}
+function MilestoneList({items}){
+  const [share,said]=_useShare();
+  if(!items.length) return <div style={{fontSize:14,color:C.mid,fontFamily:C.P,lineHeight:1.5}}>Your first comes with your first region studied, or Confident in a wine type. Each one is marked here, with a date.</div>;
+  return <div style={{display:'flex',flexDirection:'column'}}>
+    <ShowMore items={items} limit={4} noun="milestones" render={x=>(
+      <div key={x.id} style={{display:'flex',alignItems:'center',gap:12,padding:'9px 0',borderBottom:`1px solid ${C.line}`}}>
+        <Icon n={x.icon} sz={17} col={C.cr}/>
+        <div style={{flex:1,minWidth:0}}>
+          <div style={{fontSize:15,fontWeight:700,color:C.ink,fontFamily:C.P}}>{x.region&&<Flag region={x.region} size={14} style={{marginRight:6}}/>}{x.title}</div>
+          <div style={{fontSize:13,color:C.mid,fontFamily:C.P}}>{x.at?new Date(x.at).toLocaleDateString('en',{day:'numeric',month:'short',year:'numeric'}):'Earlier'}</div>
+        </div>
+        <div role="button" aria-label={`Share: ${x.title}`} onClick={()=>share(x)} style={{padding:6,cursor:'pointer'}}><Icon n="share" sz={16} col={C.mid}/></div>
+      </div>
+    )}/>
+    {said&&<div style={{fontSize:13,color:C.green,fontFamily:C.P,marginTop:6}}>{said}</div>}
+  </div>;
+}
+
+const _MASTERY_CSS=`@keyframes masteryGrow{from{transform:scale(0.2);opacity:0}to{transform:scale(1);opacity:1}}
+.mastery-radar-shape{animation:masteryGrow .7s cubic-bezier(.2,.8,.2,1) both}
+@keyframes milestoneIn{from{transform:translateY(8px);opacity:0}to{transform:none;opacity:1}}
+.milestone-in{animation:milestoneIn .5s ease both}
+@media (prefers-reduced-motion:reduce){.mastery-radar-shape,.milestone-in{animation:none}}`;
+
+function MasteryMapScreen({nav,back,showPro}){
+  const wines=React.useMemo(()=>WineHistory.getAll(),[]);
+  const m=React.useMemo(()=>{ const x=KnowledgeMap.compute(wines); KnowledgeMap.note(x); return x; },[]);
+  const prog=React.useMemo(()=>KnowledgeMap.progress(m),[m]);
+  const focus=React.useMemo(()=>KnowledgeMap.focus(wines,m),[m]);
+  const views=React.useMemo(()=>KnowledgeMap.regionMap(wines,m),[m]);
+  const palate=React.useMemo(()=>Palate.compute(wines),[wines]);
+  const fresh=React.useMemo(()=>Milestones.check(m,palate),[m,palate]);
+  const milestones=React.useMemo(()=>Milestones.list(),[fresh]);
   const [open,setOpen]=React.useState(null);
-  const go=next=>{
-    if(!next) return;
-    if(next.quiz){ Handoff.quiz.set(next.quiz); nav('quiz'); return; }
-    if(next.guide){ Handoff.guide.set(next.guide); nav('guide'); return; }
-    nav(next.nav||'learn');
+  const listRef=React.useRef(null);
+  const go=next=>{ if(next) _openLearn({kind:'mastery',next},nav,showPro); };
+  const pick=id=>{
+    const a=m.areas.find(x=>x.id===id); if(a&&a.items) setOpen(id);
+    const el=listRef.current&&listRef.current.querySelector(`[data-area="${id}"]`);
+    if(el) el.scrollIntoView({behavior:'smooth',block:'center'});
   };
   const GROUPS=[{id:'types',label:'Wine types'},{id:'places',label:'Regions and grapes'},{id:'skills',label:'Wine Skills'}];
-  const gap=[...m.areas].sort((a,b)=>a.score-b.score)[0];
+  const card={background:C.white,borderRadius:16,border:`1px solid ${C.line}`,padding:'14px 14px 12px',display:'flex',flexDirection:'column',gap:8};
+  const head=t=><div style={{fontSize:15,fontWeight:600,color:C.mid,letterSpacing:'0.08em',textTransform:'uppercase',fontFamily:C.P,marginTop:6}}>{t}</div>;
+  const rise=prog&&prog.rises[0];
   return(
     <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden'}}>
+      <style>{_MASTERY_CSS}</style>
       <div style={{background:C.white,padding:'14px 20px',display:'flex',alignItems:'center',gap:12,borderBottom:`1px solid ${C.line}`,flexShrink:0}}>
         <div onClick={back} style={{width:34,height:34,borderRadius:17,background:C.offWhite,border:`1px solid ${C.line}`,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer'}}><Icon n="back" sz={16} col={C.ink}/></div>
         <span style={{fontSize:20,fontWeight:800,color:C.ink,fontFamily:C.P,letterSpacing:'-0.4px'}}>Your Mastery</span>
       </div>
-      <div style={{flex:1,overflowY:'auto',padding:'16px 20px',display:'flex',flexDirection:'column',gap:12}}>
+      <div ref={listRef} style={{flex:1,overflowY:'auto',padding:'16px 20px',display:'flex',flexDirection:'column',gap:12}}>
         <div style={{background:C.ink,borderRadius:16,padding:'18px 16px',display:'flex',flexDirection:'column',gap:8}}>
           <div style={{fontSize:13,fontWeight:600,color:'rgba(255,255,255,0.5)',fontFamily:C.P,textTransform:'uppercase',letterSpacing:'0.06em'}}>Your wine knowledge</div>
-          <div style={{fontSize:32,fontWeight:800,color:'#fff',fontFamily:C.P}}>{m.overall}% <span style={{fontSize:16,fontWeight:600,color:'rgba(255,255,255,0.6)'}}>{m.level}</span></div>
-          <div style={{fontSize:14,color:'rgba(255,255,255,0.65)',fontFamily:C.P,lineHeight:1.5}}>Built from the articles you've read and the quizzes you've passed. Only studying and testing move it.{gap&&gap.score<100?` Your biggest gap is ${gap.label}.`:''}</div>
+          <div style={{fontSize:32,fontWeight:800,color:'#fff',fontFamily:C.P}}>{m.overall}% <span style={{fontSize:16,fontWeight:600,color:'rgba(255,255,255,0.6)'}}>{m.level}</span>
+            {prog&&prog.overall>0&&<span style={{fontSize:15,fontWeight:700,color:'#7FD3A6',marginLeft:8}}>+{prog.overall} in {prog.weeks} week{prog.weeks===1?'':'s'}</span>}</div>
+          <div style={{fontSize:14,color:'rgba(255,255,255,0.65)',fontFamily:C.P,lineHeight:1.5}}>Built from the articles you've read and the quizzes you've passed. Only studying and testing move it.</div>
+          {focus&&focus.score<100&&<div data-testid="mastery-focus" style={{marginTop:4,background:'rgba(255,255,255,0.08)',borderRadius:12,padding:'12px 12px',display:'flex',flexDirection:'column',gap:6}}>
+            <div style={{fontSize:13,fontWeight:600,color:'rgba(255,255,255,0.5)',fontFamily:C.P,textTransform:'uppercase',letterSpacing:'0.06em'}}>Start here</div>
+            <div style={{fontSize:16,fontWeight:700,color:'#fff',fontFamily:C.P}}>{focus.area&&focus.area.id==='regions'&&<Flag region={focus.label} size={16} style={{marginRight:6}}/>}{focus.label}</div>
+            <div style={{fontSize:14,color:'rgba(255,255,255,0.75)',fontFamily:C.P,lineHeight:1.45}}>{focus.why||`Your biggest gap, at ${focus.score}%.`}</div>
+            {focus.next&&<div role="button" onClick={()=>go(focus.next)} style={{fontSize:14,fontWeight:700,color:'#fff',fontFamily:C.P,cursor:'pointer',textDecoration:'underline',textUnderlineOffset:3}}>{focus.next.label} →</div>}
+          </div>}
         </div>
+
+        <MilestoneMoment items={fresh}/>
+
+        {head('Your shape')}
+        <div style={card}>
+          <MasteryRadar m={m} prog={prog} onPick={pick}/>
+          <div style={{display:'flex',gap:14,justifyContent:'center',flexWrap:'wrap'}} aria-hidden="true">
+            <span style={{display:'inline-flex',alignItems:'center',gap:6,fontSize:12,color:C.mid,fontFamily:C.P}}><span style={{width:16,height:0,borderTop:`2px solid ${C.cr}`}}/>Now</span>
+            {prog&&<span style={{display:'inline-flex',alignItems:'center',gap:6,fontSize:12,color:C.mid,fontFamily:C.P}}><span style={{width:16,height:0,borderTop:`2px dashed ${C.mid}`}}/>{_when(prog.then.t)}</span>}
+          </div>
+          <div style={{fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.5}}>
+            {prog?(rise?<>Since {_when(prog.then.t)} your biggest rise is <b>{rise.label}</b> (+{rise.delta}).{prog.rises.length>1?` ${prog.rises.length-1} other area${prog.rises.length===2?' has':'s have'} grown too.`:''}</>
+              :<>No change since {_when(prog.then.t)}. A quiz or an article moves the shape.</>)
+              :<>A rounder shape means rounder knowledge. From next week, a dashed outline shows where you were, so you can see it grow.</>}
+          </div>
+        </div>
+
+        {head('Your palate')}
+        <div data-testid="mastery-palate" style={card}>
+          <MasteryPalate p={palate} go={go}/>
+        </div>
+
+        {head('Your wine map')}
+        <div style={card}>
+          <MasteryRegionMap views={views} nav={nav} showPro={showPro}/>
+        </div>
+
+        {head('Milestones')}
+        <div data-testid="mastery-milestones" style={card}><MilestoneList items={milestones}/></div>
+
         {GROUPS.map(G=>(
           <div key={G.id} style={{display:'flex',flexDirection:'column',gap:8}}>
-            <div style={{fontSize:15,fontWeight:600,color:C.mid,letterSpacing:'0.08em',textTransform:'uppercase',fontFamily:C.P,marginTop:6}}>{G.label}</div>
+            {head(G.label)}
             {m.areas.filter(a=>a.group===G.id).map(a=>(
-              <MasteryAreaCard key={a.id} a={a} open={open===a.id} onToggle={()=>a.items&&setOpen(o=>o===a.id?null:a.id)} onNext={()=>go(a.next)}/>
+              <div key={a.id} data-area={a.id}><MasteryAreaCard a={a} open={open===a.id} onToggle={()=>a.items&&setOpen(o=>o===a.id?null:a.id)} onNext={()=>go(a.next)}/></div>
             ))}
           </div>
         ))}
@@ -725,7 +925,7 @@ function nextQuizSuggestion(config){
   const topics=QUIZ_TOPICS.filter(t=>t.id!==config.topicId&&!QuizMastery.isComplete('topic:'+t.id,QuizMastery.topicPool(t.id)))
     .map(t=>({config:{mode:'practice',topicId:t.id},label:t.label}));
   const regions=regionQuizCandidates(wines).filter(r=>r!==config.region)
-    .map(r=>({config:{mode:'region',region:r},label:r}));
+    .map(r=>({config:{mode:'region',region:r},label:[Regions.flag(r),r].filter(Boolean).join(' ')}));
   const grapes=Object.keys(GrapeUnlocks.all()).filter(g=>g!==config.grape&&!grapeQuizComplete(g))
     .map(g=>({config:{mode:'grape',grape:g},label:g}));
   const guides=Guides.queue().filter(g=>g.id!==config.guideId&&Guides.isRead(g.id)&&!Guides.passed(g.id))
@@ -754,6 +954,9 @@ function QuizScreen({nav,back}){
   const [phase,setPhase]=React.useState(allQs.length?'question':'empty');
   const [streak,setStreak]=React.useState(0);
   const [xpGained,setXpGained]=React.useState(0);
+  const [milestones,setMilestones]=React.useState([]);
+  const [refreshed,setRefreshed]=React.useState(0); // fading answers brought back this round
+  const startLevel=React.useRef(XPSystem.getLevel(XPSystem.get().total).name);
   const [results,setResults]=React.useState([]);
   const [, setResetTick]=React.useState(0);
   const scrollRef=React.useRef(null);
@@ -775,11 +978,17 @@ function QuizScreen({nav,back}){
       if(r.justMastered){
         const a=XPSystem.award([{type:'concept_mastered',conceptId:q.conceptId}]);
         gained+=a.filter(x=>!x.levelUp).reduce((s,x)=>s+x.amount,0);
-        XPSystem.toast(a);
+        XPSystem.toast(a,{quiet:true}); // the result shows the round's XP
       }
     }
     if(q.vocabTerm) VocabLedger.recordTest(q.vocabTerm,correct);
-    if(quizSet) QuizMastery.recordAnswer(quizSet.id,q.q,correct);
+    const rec=quizSet?QuizMastery.recordAnswer(quizSet.id,q.q,correct):false;
+    if(rec){
+      const a=XPSystem.award([{type:rec==='refreshed'?'question_refreshed':'question_learned'}]);
+      if(rec==='refreshed') setRefreshed(n=>n+1);
+      gained+=a.filter(x=>!x.levelUp).reduce((s,x)=>s+x.amount,0);
+      XPSystem.toast(a,{quiet:true}); // keeps the XP badge current; the result says it
+    }
     if(gained){ setXpGained(xp=>xp+gained); }
 
     setResults(rs=>[...rs,{correct,qText:q.q,selectedOpt:q.opts[i],correctOpt:q.opts[q.a],fact:q.fact}]);
@@ -791,11 +1000,20 @@ function QuizScreen({nav,back}){
       const finalScore=results.filter(r=>r.correct).length+(selected===q.a?0:0);
       const boxes=allQs.filter(x=>x.conceptId).map(x=>{const d=MasterySystem.get();return d[x.conceptId]?d[x.conceptId].box:1;});
       const avgBox=boxes.length?boxes.reduce((s,b)=>s+b,0)/boxes.length/5:0;
-      const quizKey=mode==='practice'?'onramp_'+config.topicId:mode+'_'+Date.now();
-      const a2=XPSystem.award([{type:'quiz_complete',quizKey,derivedDifficulty:avgBox}]);
+      // A question set pays its completion bonus once, the round every question in it has been
+      // answered right (its new answers earned XP as they came). Other quizzes, once per round.
+      const setDoneNow=quizSet&&!startedComplete&&QuizMastery.isComplete(quizSet.id,quizSet.pool());
+      const a2=quizSet?(setDoneNow?XPSystem.award([{type:'quiz_complete',quizKey:'set_'+quizSet.id,amount:XPSystem.QUIZ_SET_BONUS()}]):[])
+        :XPSystem.award([{type:'quiz_complete',quizKey:mode+'_'+Date.now(),derivedDifficulty:avgBox}]);
       const g2=a2.filter(x=>!x.levelUp).reduce((s,a)=>s+a.amount,0);
       setXpGained(xp=>xp+g2);
-      XPSystem.toast(a2);
+      XPSystem.toast(a2,{quiet:true});
+      // What this round reached is marked here, on the result, once: a new level, and (for a
+      // question set) any milestone (Confident in Red, a region mastered). Nothing floats over it.
+      const lvl=XPSystem.getLevel(XPSystem.get().total).name, marks=[];
+      if(lvl!==startLevel.current) marks.push({id:'level:'+lvl,title:`${lvl} level reached`,sub:`${XPSystem.get().total} XP · next, ${XPSystem.nextLevel(XPSystem.get().total).name}`,icon:'trophy'});
+      if(quizSet){ try{ marks.push(...Milestones.check(KnowledgeMap.compute(),Palate.compute())); }catch(e){} }
+      setMilestones(marks);
       setPhase('results');
     } else {
       setQIdx(i=>i+1); setSelected(null); setPhase('question');
@@ -807,7 +1025,7 @@ function QuizScreen({nav,back}){
     const set=quizSetFor(cfg?.mode||'concept',cfg);
     Handoff.quiz.set(cfg);
     setConfig(cfg); setAllQs(qs); setStartedComplete(!!set&&QuizMastery.isComplete(set.id,set.pool()));
-    setQIdx(0); setSelected(null); setPhase(qs.length?'question':'empty'); setStreak(0); setXpGained(0); setResults([]);
+    setQIdx(0); setSelected(null); setPhase(qs.length?'question':'empty'); setStreak(0); setXpGained(0); setResults([]); setMilestones([]); setRefreshed(0); startLevel.current=XPSystem.getLevel(XPSystem.get().total).name;
     if(scrollRef.current) scrollRef.current.scrollTop=0;
   }
   // Region and grape banks may still need generating before the next set can start.
@@ -832,6 +1050,8 @@ function QuizScreen({nav,back}){
     const pool=quizSet&&quizSet.pool();
     const setProgress=quizSet&&QuizMastery.progress(quizSet.id,pool);
     const setDone=!!setProgress&&setProgress.total>0&&setProgress.correct===setProgress.total;
+    // Fading answers (past their review date) left in a complete set: the next round brings them back.
+    const fadingLeft=setDone?QuizMastery.freshness(quizSet.id,pool).fading:0;
     const justCompleted=setDone&&!startedComplete;
     const setName=mode==='practice'?title:mode==='region'?config.region:mode==='grape'?config.grape:title;
     const concepts=mode==='concept'&&MasterySystem.summary();
@@ -843,6 +1063,7 @@ function QuizScreen({nav,back}){
     //  - Concept Check / Words: another round while there's anything left
     let primary=null;
     if(quizSet&&!setDone) primary={label:`Keep going · ${setProgress.total-setProgress.correct} to go`,go:()=>startQuiz(config)};
+    else if(quizSet&&setDone&&fadingLeft) primary={label:`Refresh · ${fadingLeft} fading`,go:()=>startQuiz(config)};
     else if(quizSet&&setDone){ const next=nextQuizSuggestion(config); if(next) primary={label:`Next: ${next.label}`,go:()=>startSuggested(next.config)}; }
     else if(mode==='concept'){ if(MasterySystem.selectConcepts(6).length) primary={label:'Keep going',go:()=>startQuiz(config)}; }
     else primary={label:'Keep going',go:()=>startQuiz(config)};
@@ -863,7 +1084,7 @@ function QuizScreen({nav,back}){
         <div style={{background:C.cr,padding:'26px 24px 20px',display:'flex',flexDirection:'column',alignItems:'center',gap:5,flexShrink:0}}>
           <Icon n={justCompleted||pct===100?'trophy':pct>=80?'star':pct>=60?'check':'book'} sz={32} col="#fff"/>
           <div style={{fontSize:22,fontWeight:800,color:'#fff',fontFamily:C.P,textAlign:'center'}}>{msg}</div>
-          {!justCompleted&&<div style={{fontSize:15,color:'rgba(255,255,255,0.8)',fontFamily:C.P}}>{title}</div>}
+          {!justCompleted&&<div style={{fontSize:15,color:'rgba(255,255,255,0.8)',fontFamily:C.P}}>{mode==='region'&&<Flag region={config.region} size={15} style={{marginRight:6}}/>}{title}</div>}
           <div style={{display:'flex',gap:16,marginTop:6}}>
             <div style={{textAlign:'center'}}>
               <div style={{fontSize:28,fontWeight:800,color:'#fff',fontFamily:C.P}}>{finalScore}/{allQs.length}</div>
@@ -878,10 +1099,14 @@ function QuizScreen({nav,back}){
         </div>
         <div ref={scrollRef} style={{flex:1,overflowY:'auto'}}>
           <div style={{padding:'16px',display:'flex',flexDirection:'column',gap:10}}>
+            <MilestoneMoment items={milestones}/>
             {setProgress&&(setDone
-              ?card(true,justCompleted?`All ${setProgress.total} questions answered correctly`:'Complete — every question answered correctly',
-                justCompleted?'This one moves to your completed list on the Learn tab.':null)
-              :card(false,`${setProgress.correct} of ${setProgress.total} questions answered correctly`,"Questions you haven't got right yet come first in your next quiz."))}
+              ?card(true,justCompleted?`All ${setProgress.total} questions answered correctly`
+                  :refreshed?`${refreshed} fading answer${refreshed===1?'':'s'} refreshed`:'Complete — every question answered correctly',
+                justCompleted?'This one moves to your completed list on the Learn tab.'
+                  :fadingLeft?`${fadingLeft} more ${fadingLeft===1?'answer is':'answers are'} fading. Answers fade a few weeks after you last got them right; each refresh keeps them twice as long.`
+                  :refreshed?'Each refresh keeps an answer twice as long before it fades again.':null)
+              :card(false,`${setProgress.correct} of ${setProgress.total} questions answered correctly`,`Questions you haven't got right yet come first in your next quiz. You earn XP for each one the first time you get it right, and ${XPSystem.QUIZ_SET_BONUS()} XP for finishing the set.`))}
             {concepts&&card(concepts.mastered===concepts.total,`${concepts.mastered} of ${concepts.total} concepts mastered`,
               concepts.mastered===concepts.total?null:'Each right answer moves a concept up a step and a miss moves it back one; five steps masters it.')}
             {setDone&&(
@@ -932,7 +1157,7 @@ function QuizScreen({nav,back}){
             <Icon n="back" sz={14} col={C.ink}/>
           </div>
           <div style={{flex:1}}>
-            <div style={{fontSize:17,fontWeight:700,color:C.ink,fontFamily:C.P}}>{title}</div>
+            <div style={{fontSize:17,fontWeight:700,color:C.ink,fontFamily:C.P}}>{mode==='region'&&<Flag region={config.region} size={17} style={{marginRight:7}}/>}{title}</div>
           </div>
           <div style={{display:'flex',alignItems:'center',gap:5}}>
             {streak>=2&&<Icon n="flame" sz={18} col={C.cr}/>}

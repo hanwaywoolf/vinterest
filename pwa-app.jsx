@@ -6,11 +6,18 @@ function App(){
     const h=window.location.hash.replace('#','').toLowerCase();
     return (h&&h!=='onboarding')?h:'home';
   });
+  // The way back: Home, then each screen opened since (a deep link opens above Home).
   const [stack,setStack]=React.useState(()=>{
-    const init=Settings.onboarded()?'home':'onboarding';
-    return [init];
+    if(!Settings.onboarded()) return ['onboarding'];
+    const h=window.location.hash.replace('#','').toLowerCase();
+    return h&&h!=='home'&&h!=='onboarding'?['home',h]:['home'];
   });
   const [proGate,setProGate]=React.useState(null);
+  // On opening: types whose Explore Next is already open count as celebrated, so only a type
+  // that opens from now on gets WineDNA's "Explore Next is ready" moment.
+  React.useEffect(()=>{ try{ ExploreNext.noteReady(WineHistory.getAll()); }catch(e){} },[]);
+  // Files the milestones a phone has already reached as "earlier" the first time it looks (once).
+  React.useEffect(()=>{ try{ if(Settings.onboarded()&&!Milestones.seen()) Milestones.check(KnowledgeMap.compute(),Palate.compute()); }catch(e){} },[]);
   // A new text size (TextSize, pwa-textsize.js) re-renders every screen at once.
   const [,setTextTick]=React.useState(0);
   React.useEffect(()=>{ const h=()=>setTextTick(t=>t+1); window.addEventListener('vinterest:textsize',h); return()=>window.removeEventListener('vinterest:textsize',h); },[]);
@@ -24,25 +31,36 @@ function App(){
     return()=>window.removeEventListener('resize',h);
   },[]);
 
+  /* Back follows the way they came, never in circles. Going to a screen already on the way back
+     (a quiz's "Back to Learn", Home from anywhere) returns to it, rewinding the browser's history
+     to that entry rather than stacking a new copy on top, so the in-app arrow and the phone's
+     own back gesture always agree: from Learn after a quiz, both go Home, not into the quiz.
+     `pushed` counts the history entries this visit added, so a rewind never leaves the app. */
+  const stackRef=React.useRef(stack); stackRef.current=stack;
+  const screenRef0=React.useRef(screen); screenRef0.current=screen;
+  const pushed=React.useRef(0);
+  const go=ns=>{ const to=ns[ns.length-1]; stackRef.current=ns; screenRef0.current=to; setStack(ns); setScreen(to); };
   function nav(to){
-    window.location.hash=to;
-    setStack(s=>[...s,to]);
-    setScreen(to);
+    const s=stackRef.current, i=s.lastIndexOf(to), up=s.length-1-i;
+    if(i>=0&&up===0){ go(s); return; }
+    if(i>=0&&up<=pushed.current){ pushed.current-=up; go(s.slice(0,i+1)); history.go(-up); return; }
+    if(i>=0||to==='home'){ go(i>=0?s.slice(0,i+1):['home']); history.replaceState(null,'','#'+to); return; }
+    pushed.current++; go([...s,to]); window.location.hash=to;
   }
   function back(){
-    if(stack.length<=1){setScreen('home');setStack(['home']);window.location.hash='home';return;}
-    const ns=stack.slice(0,-1);
-    setStack(ns);
-    const prev=ns[ns.length-1];
-    setScreen(prev);
-    window.location.hash=prev;
+    const s=stackRef.current, ns=s.length<=1?['home']:s.slice(0,-1);
+    if(s.length>1&&pushed.current>0){ pushed.current--; go(ns); history.back(); return; }
+    go(ns); history.replaceState(null,'','#'+ns[ns.length-1]);
   }
 
-  // Handle hardware back button / browser back
+  // The phone's back (or forward, or a link to a new hash): follow the same path.
   React.useEffect(()=>{
     const onPop=()=>{
-      const h=window.location.hash.replace('#','')||'home';
-      setScreen(h);
+      const h=window.location.hash.replace('#','').toLowerCase()||'home';
+      if(h===screenRef0.current) return; // our own change
+      const s=stackRef.current, i=s.lastIndexOf(h);
+      if(i>=0){ pushed.current=Math.max(0,pushed.current-(s.length-1-i)); go(s.slice(0,i+1)); }
+      else { pushed.current++; go([...s,h]); }
     };
     window.addEventListener('popstate',onPop);
     return ()=>window.removeEventListener('popstate',onPop);
@@ -60,19 +78,16 @@ function App(){
   },[]);
   const showXpBadge=!['camera','onboarding','learn','quiz','article','gen-article','guide','identified','detail','mywines','scan','profile','style-explore','winelist','account','settings','mastery-map'].includes(screen);
 
-  // XP Toast
-  const [xpToasts,setXpToasts]=React.useState([]);
-  React.useEffect(()=>{
-    const handler=e=>{
-      const {awards}=e.detail||{};
-      if(!awards||!awards.length) return;
-      const id=Date.now()+Math.random();
-      setXpToasts(t=>[...t,{id,awards}]);
-      setTimeout(()=>setXpToasts(t=>t.filter(x=>x.id!==id)),3200);
-    };
-    window.addEventListener('vinterest:xp',handler);
-    return ()=>window.removeEventListener('vinterest:xp',handler);
-  },[]);
+  // XP and the moments behind it (pwa-moments.jsx): a quiet chip, and cards that wait for a calm screen.
+  const xpDel=useXPDelivery();
+  const actOnMoment=a=>{
+    xpDel.dismiss();
+    if(a.level) return setShowXpOverlay(true);
+    if(a.pro) return setProGate(a.pro);
+    if(a.learn) return _openLearn(a.learn,nav,setProGate);
+    if(a.screen==='mastery-map') return Entitlement.isPro()?nav('mastery-map'):setProGate('mastery-map');
+    if(a.screen) nav(a.screen);
+  };
 
   // Signed in: fetch the server's word on Pro and this week's usage (Account caches it).
   React.useEffect(()=>{ Platform.start(); if(Account.signedIn()) Account.refreshMe(); },[]);
@@ -134,11 +149,14 @@ function App(){
         {screen==='account'   && <AccountProfileScreen {...ctx}/>}
         {screen==='settings'  && <AccountProfileScreen {...ctx}/>/* Settings merged into Profile; old links land there */}
       </div>
+      {showNav&&MOMENT_SCREENS.includes(screen)&&xpDel.moment?<MomentCard m={xpDel.moment} more={xpDel.more} onAct={actOnMoment} onClose={xpDel.dismiss}/>
+        :showNav&&!showXpBadge&&<XPChip chip={xpDel.chip} overNav/>}
       {showNav&&<BottomNav active={screen} nav={nav} showPro={setProGate}/>}
       {showXpBadge&&(
         <div onClick={()=>setShowXpOverlay(true)} style={{position:'absolute',top:'calc(env(safe-area-inset-top) + 15px)',right:14,zIndex:200,display:'flex',alignItems:'center',gap:5,padding:'5px 11px',borderRadius:20,background:C.crSoft,border:`1px solid ${C.crDim}`,cursor:'pointer',boxShadow:'0 1px 8px rgba(0,0,0,0.08)',pointerEvents:'auto'}}>
           <Icon n={XPSystem.iconFor(XPSystem.getLevel(xpBadge.total))} sz={16} col={C.cr}/>
           <span style={{fontSize:'15px',fontWeight:700,color:C.cr,fontFamily:C.P}}>{xpBadge.total} XP</span>{/* fixed: the badge sits beside the logo */}
+          <XPBadgeGain chip={xpDel.chip}/>
           {Entitlement.isPro()&&<span style={{fontSize:12,fontWeight:700,color:'#fff',background:'linear-gradient(135deg,#9B5E00,#C4870A)',borderRadius:8,padding:'2px 6px',marginLeft:2}}>PRO</span>}
         </div>
       )}
@@ -228,23 +246,10 @@ function App(){
           </div>
         );
       })()}
-      {/* XP Toast overlay */}
-      <div style={{position:'absolute',top:0,left:0,right:0,pointerEvents:'none',zIndex:999,display:'flex',flexDirection:'column',alignItems:'center',gap:8,paddingTop:'calc(env(safe-area-inset-top) + 70px)'}}>
-        {xpToasts.map(toast=>(
-          <div key={toast.id} style={{display:'flex',flexDirection:'column',alignItems:'center',gap:4,animation:'xpIn .35s cubic-bezier(.34,1.56,.64,1) both'}}>
-            {toast.awards.map((a,i)=>(
-              <div key={i} style={{display:'inline-flex',alignItems:'center',gap:8,background:a.levelUp?'#0F0F0F':a.bonus?C.cr:'rgba(15,15,15,0.88)',borderRadius:30,padding:'8px 16px',backdropFilter:'blur(8px)',boxShadow:'0 4px 20px rgba(0,0,0,0.3)'}}>
-                {a.levelUp&&<Icon n="trophy" sz={16} col="#fff"/>}
-                {a.bonus&&!a.levelUp&&<Icon n="star" sz={14} col="#fff"/>}
-                {!a.levelUp&&!a.bonus&&<span style={{fontSize:15,fontWeight:700,color:C.amber,fontFamily:C.P}}>+{a.amount} XP</span>}
-                <span style={{fontSize:15,fontWeight:600,color:'#fff',fontFamily:C.P}}>{a.label}</span>
-              </div>
-            ))}
-          </div>
-        ))}
-      </div>
+      {!showXpBadge&&!showNav&&<XPChip chip={xpDel.chip}/>}
+      <style>{_MOMENT_CSS}</style>
       {proGate&&<ProGate feature={proGate} onClose={()=>setProGate(null)}/>}
-      <style>{`@keyframes xpIn{from{opacity:0;transform:translateY(-16px) scale(.9)}to{opacity:1;transform:none}} @keyframes slideUp{from{transform:translateY(100%)}to{transform:none}}`}</style>
+      <style>{`@keyframes slideUp{from{transform:translateY(100%)}to{transform:none}}`}</style>
     </div>
   );
 }

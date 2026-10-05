@@ -51,3 +51,57 @@ test('while the camera is asking for permission there is no video element at all
   await page.evaluate(() => window.__allowCamera());
   await expect(page.locator('#root video')).toHaveCSS('opacity', '0.88');
 });
+
+// A wine list frame sized from the screen's width (2:3) was taller than the space on a Pixel (412×780
+// once the status bar is taken off) and pushed the shutter off the bottom. Both modes now fit between the top bar and the controls.
+test.describe('on a tall phone', () => {
+  test.use({ viewport: { width: 412, height: 780 } });
+  test('in Bottle and Wine List mode the shutter and gallery button stay on screen', async ({ context, page }) => {
+    await stubNetwork(context);
+    await seedLocalStorage(page, { vinterest_onboarded: '1', vinterest_region: 'uk', vinterest_pro: '1' });
+    await page.goto(`${BASE}/#camera`);
+    const onScreen = async (loc) => { const b = await loc.boundingBox(); return b && b.y >= 0 && b.y + b.height <= 780; };
+    const shutter = page.getByLabel('Take photo');
+    const gallery = page.getByRole('button', { name: 'Choose a photo from your gallery' });
+    expect(await onScreen(shutter)).toBe(true);
+    await page.getByText('Wine List', { exact: true }).click();
+    await expect(page.getByText('List prices in GBP')).toBeVisible();
+    expect(await onScreen(shutter)).toBe(true);
+    expect(await onScreen(gallery)).toBe(true);
+  });
+});
+
+// The torch: a toggle left of the shutter in both modes, only when the camera reports one.
+// Chromium's fake camera has no torch, so the first test gives it one and records what's asked.
+test('a camera with a torch gets a toggle that switches it on and off, in Bottle and Wine List mode', async ({ context, page }) => {
+  await stubNetwork(context);
+  await seedLocalStorage(page, { vinterest_onboarded: '1', vinterest_region: 'uk', vinterest_pro: '1' });
+  await page.addInitScript(() => {
+    window.__torch = [];
+    const caps = MediaStreamTrack.prototype.getCapabilities;
+    MediaStreamTrack.prototype.getCapabilities = function () { return { ...(caps ? caps.call(this) : {}), torch: true }; };
+    const apply = MediaStreamTrack.prototype.applyConstraints;
+    MediaStreamTrack.prototype.applyConstraints = function (c) {
+      const t = c && c.advanced && c.advanced.find((a) => 'torch' in a);
+      if (t) { window.__torch.push(t.torch); return Promise.resolve(); }
+      return apply.call(this, c);
+    };
+  });
+  await page.goto(`${BASE}/#camera`);
+  const on = page.getByRole('button', { name: 'Turn the torch on' });
+  await on.click();
+  const off = page.getByRole('button', { name: 'Turn the torch off' });
+  await expect(off).toHaveAttribute('aria-pressed', 'true');
+  await page.getByText('Wine List', { exact: true }).click();
+  await off.click();
+  await expect(on).toBeVisible();
+  expect(await page.evaluate(() => window.__torch)).toEqual([true, false]);
+});
+
+test('a camera without a torch shows no torch button', async ({ context, page }) => {
+  await stubNetwork(context);
+  await seedLocalStorage(page, { vinterest_onboarded: '1', vinterest_region: 'uk' });
+  await page.goto(`${BASE}/#camera`);
+  await expect(page.locator('#root video')).toHaveCSS('opacity', '0.88');
+  await expect(page.getByRole('button', { name: /torch/ })).toHaveCount(0);
+});

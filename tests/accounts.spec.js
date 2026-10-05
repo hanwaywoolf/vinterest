@@ -60,7 +60,8 @@ function fakeSupabase({ down = false, adminDown = false } = {}) {
 
 test.describe('Worker', () => {
   let worker, realFetch, ip = 0;
-  const env = { ANTHROPIC_API_KEY: 'k', SUPABASE_URL: SB, SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_x', SUPABASE_SECRET_KEY: 'sb_secret_x' };
+  // ALL_PRO "0": these tests check the free and Pro plans as they'll ship, not the testing switch.
+  const env = { ANTHROPIC_API_KEY: 'k', SUPABASE_URL: SB, SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_x', SUPABASE_SECRET_KEY: 'sb_secret_x', ALL_PRO: '0' };
   const req = (p, { token, body, method = 'POST' } = {}) => new Request('https://vinterest.pages.dev' + p, { method,
     headers: { 'content-type': 'application/json', origin: 'https://vinterest.pages.dev', 'cf-connecting-ip': '10.0.0.' + (++ip), ...(token ? { authorization: 'Bearer ' + token } : {}) },
     body: method === 'POST' ? JSON.stringify(body) : undefined });
@@ -87,14 +88,21 @@ test.describe('Worker', () => {
     expect(sb.calls[0]).toEqual({ url: `${SB}/auth/v1/user`, apikey: 'sb_publishable_x' });
   });
 
-  test('Pro comes from the server: a free account is refused list scans, a Pro one is metered', async () => {
+  test('while testing, any signed-in account may scan lists (metered); Pro ones too', async () => {
     const sb = fakeSupabase(); globalThis.fetch = sb.fetch;
-    const free = await scan('list_scan', 'tok-free');
-    expect(free.status).toBe(402);
-    expect((await free.json()).signIn).toBeUndefined();
+    expect((await scan('list_scan', 'tok-free')).status).toBe(200);
+    expect(sb.counters['u-free:list_scan']).toBe(1);
     expect((await scan('list_scan', 'tok-pro')).status).toBe(200);
     expect(sb.counters['u-pro:list_scan']).toBe(1);
     expect(sb.calls.filter((c) => c.url.includes('/rest/v1/')).every((c) => c.apikey === 'sb_secret_x')).toBe(true);
+  });
+
+  test('while testing, every signed-in account is Pro (ALL_PRO_FOR_TESTING); list scans still need sign-in', async () => {
+    const sb = fakeSupabase(); globalThis.fetch = sb.fetch;
+    const testing = { ...env }; delete testing.ALL_PRO;
+    const me = await (await worker.fetch(req('/me', { token: 'tok-free', method: 'GET' }), testing)).json();
+    expect(me.tier).toBe('pro');
+    expect((await scan('list_scan', null, testing)).status).toBe(402);
   });
 
   test('the weekly fair-use limit answers 429 once reached, and /me reports usage', async () => {
@@ -300,4 +308,13 @@ test('delete the account from Profile: confirm, then the server deletes it and t
   expect(left.filter((k) => k !== 'vinterest_xp_v3')).toEqual([]);
   expect(await page.evaluate(() => [XPSystem.get().total, Account.signedIn()])).toEqual([0, false]);
   expect(errors.filter((e) => !e.includes('status of 502'))).toEqual([]);
+});
+
+test('the Worker takes requests from the app\'s own addresses (test.vinterest.app too) and refuses others', async () => {
+  const worker = await loadWorker();
+  const post = (origin) => worker.fetch(new Request('https://test.vinterest.app/claude', { method: 'POST', headers: { origin, 'content-type': 'application/json' }, body: JSON.stringify({ purpose: 'not_a_purpose', messages: [] }) }), { ANTHROPIC_API_KEY: 'test-key' }, { waitUntil() {} });
+  const code = async (o) => (await (await post(o)).json()).code;
+  // Allowed: past the origin check, stopped instead by the made-up purpose (no call is made).
+  for (const o of ['https://vinterest.app', 'https://test.vinterest.app', 'https://vinterest.pages.dev', 'https://abc123.vinterest.pages.dev']) expect(await code(o), o).toBe('invalid_purpose');
+  expect(await code('https://evil.example')).toBe('origin_denied');
 });

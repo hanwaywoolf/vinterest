@@ -155,6 +155,25 @@ function DnaTasteCard({t,tLabel,notes=true}){
 /* ──────────────────────────────────────────────────
    WineDNA Screen — renders WineDNA.profile (pwa-winedna.js) for each wine type
 ────────────────────────────────────────────────── */
+/* "Explore Next is ready for your reds": shown once, the first time a type reaches
+   ExploreNext.READY_AT wines and has picks (ExploreNext.toCelebrate). In the type's colour; "See my
+   picks" opens that type's Explore section. */
+function ExploreReadyMoment({type,count,onDone}){
+  const T=_TYPES.find(t=>t.key===type)||_TYPES[0], word=type==='red'||type==='white'?T.label.toLowerCase():`${T.tab.toLowerCase()} wines`;
+  return(
+    <div role="dialog" aria-label={`Explore Next is ready for your ${word}`} style={{position:'absolute',inset:0,background:C.ink,zIndex:200,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:32,gap:14}}>
+      <div style={{width:64,height:64,borderRadius:32,background:T.col+'33',border:`2px solid ${T.col}`,display:'flex',alignItems:'center',justifyContent:'center',animation:'dnaRise 1.1s ease both'}}><Icon n="compass" sz={30} col="#fff"/></div>
+      <div style={{fontSize:13,fontWeight:700,color:'rgba(255,255,255,0.6)',fontFamily:C.P,letterSpacing:'0.1em',textTransform:'uppercase',animation:'dnaRise 1.1s .05s ease both'}}>{count} {word} scanned</div>
+      <div style={{fontSize:30,fontWeight:700,color:'#fff',fontFamily:C.P,textAlign:'center',lineHeight:1.2,animation:'dnaRise 1.1s .1s ease both'}}>Explore Next is ready for your {word}.</div>
+      <div style={{fontSize:16,color:'rgba(255,255,255,0.7)',fontFamily:C.P,textAlign:'center',lineHeight:1.5,maxWidth:300,animation:'dnaRise 1.1s .2s ease both'}}>That's enough to see what you go for. Here are styles to try next, picked from the {word} you love.</div>
+      <div role="button" onClick={onDone} style={{marginTop:14,background:T.col,borderRadius:14,padding:'13px 28px',cursor:'pointer',animation:'dnaRise 1.1s .3s ease both'}}>
+        <span style={{fontSize:16,fontWeight:700,color:'#fff',fontFamily:C.P}}>See my picks</span>
+      </div>
+      <style>{`@keyframes dnaRise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}`}</style>
+    </div>
+  );
+}
+
 function WineDNAScreen({nav,back,showPro}){
   // Opens on the type they've chosen most (UserPrefs.openingType), or the tab they last picked.
   const [typeIdx,setTypeIdxState]=React.useState(()=>Math.max(0,_TYPES.findIndex(t=>t.key===UserPrefs.openingType(WineHistory.getAll()))));
@@ -184,6 +203,14 @@ function WineDNAScreen({nav,back,showPro}){
     setCollapsed(c=>({...c,[sec]:false}));
     setTimeout(()=>{ const el=document.querySelector(`[data-section="${sec}"]`); if(el) el.scrollIntoView({block:'start'}); },60);
   },[]);
+  // A wine type whose Explore Next has just opened: celebrated once, then its picks are shown.
+  const [ready,setReady]=React.useState(()=>ExploreNext.toCelebrate(WineHistory.getAll()));
+  React.useEffect(()=>{ if(ready) ExploreNext.markCelebrated(ready); },[ready]);
+  function seePicks(){
+    const i=_TYPES.findIndex(t=>t.key===ready); if(i>=0) setTypeIdx(i);
+    setCollapsed(c=>({...c,explore:false})); setReady(null);
+    setTimeout(()=>{ const el=document.querySelector('[data-section="explore"]'); if(el) el.scrollIntoView({block:'start'}); },80);
+  }
   const touchX=React.useRef(null);
   const touchY=React.useRef(null);
 
@@ -304,6 +331,7 @@ function WineDNAScreen({nav,back,showPro}){
     ?`Based on your ${t.loved.length} Outstanding (90+) ${tLabel}`
     :`Based on the ${WineDNA.noun(t.key,t.wines.length)} you've ${conf.n>0?'chosen':'scanned'}`;
 
+  if(ready) return <ExploreReadyMoment type={ready} count={ExploreNext._typeWines(ready,allWines).length} onDone={seePicks}/>;
   return(
     <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden',background:C.bg}}>
 
@@ -451,9 +479,9 @@ function WineDNAScreen({nav,back,showPro}){
                 {[...fav.regions.map(r=>({...r,kind:'Region'})),...fav.grapes.map(g=>({...g,kind:'Grape'}))].map(x=>(
                   <div key={x.kind+x.name} style={{display:'flex',alignItems:'center',gap:8,padding:'6px 0',borderTop:`1px solid ${C.line}`}}>
                     <span style={{fontSize:13,color:C.mid,fontFamily:C.P,width:48,flexShrink:0}}>{x.kind}</span>
-                    <span style={{fontSize:15,fontWeight:600,color:C.ink,fontFamily:C.P,flex:1}}>{x.name}</span>
+                    <span style={{fontSize:15,fontWeight:600,color:C.ink,fontFamily:C.P,flex:1}}>{x.kind==='Region'&&<Flag region={x.name} size={15} style={{marginRight:6}}/>}{x.name}</span>
                     <span style={{fontSize:13,color:C.mid,fontFamily:C.P}}>{x.count} bottle{x.count!==1?'s':''}</span>
-                    <span style={{fontSize:15,fontWeight:800,color:x.avg>=ParkerScale.LOVED?C.green:C.amber,fontFamily:C.P,width:30,textAlign:'right'}}>{x.avg}</span>
+                    <span style={{fontSize:15,fontWeight:800,color:scoreCol(x.avg),fontFamily:C.P,width:30,textAlign:'right'}}>{x.avg}</span>
                   </div>
                 ))}
                 {fav.mostScanned&&fav.regions[0]&&fav.mostScanned.name!==fav.regions[0].name&&(
@@ -470,8 +498,9 @@ function WineDNAScreen({nav,back,showPro}){
                     <Icon n="cart" sz={15} col={C.green}/>
                     <span style={{fontSize:15,color:C.ink,fontFamily:C.P,flex:1,minWidth:0,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{w.name}</span>
                     {pr>0&&<span style={{fontSize:13,color:C.mid,fontFamily:C.P}}>{Regional.current().base}{Math.round(pr)}{w.price_paid&&w.price_paid.amount>0?' paid':' est.'}</span>}
-                    {w.rating>0&&<span style={{fontSize:15,fontWeight:800,color:w.rating>=ParkerScale.LOVED?C.green:C.amber,fontFamily:C.P,width:30,textAlign:'right'}}>{w.rating}</span>}
-                    <Icon n="chevron" sz={12} col={C.mid}/>
+                    {w.rating>0&&<span style={{fontSize:15,fontWeight:800,color:scoreCol(w.rating),fontFamily:C.P,width:30,textAlign:'right'}}>{w.rating}</span>}
+                    {/* Their own shortlist, so the shortest path to buying it again (a partner shop when one is on). */}
+                    <button onClick={e=>{ e.stopPropagation(); FindOnline.open(w,'restock'); }} aria-label={`Restock ${w.name}`} style={{flexShrink:0,border:`1px solid ${C.green}55`,background:C.greenBg,color:C.green,borderRadius:20,padding:'4px 10px',fontSize:13,fontWeight:700,fontFamily:C.P,cursor:'pointer'}}>Restock</button>
                   </div>); })}
               </div>
             )}
@@ -486,7 +515,7 @@ function WineDNAScreen({nav,back,showPro}){
                   <div key={'d'+w.name} role="button" onClick={()=>openWine(w)} style={{display:'flex',alignItems:'center',gap:8,padding:'5px 0',borderTop:`1px solid ${C.line}`,cursor:'pointer'}}>
                     <span style={{fontSize:15,color:C.ink,fontFamily:C.P,flex:1}}>{w.name}</span>
                     <span style={{fontSize:13,color:C.mid,fontFamily:C.P}}>{w.region||''}</span>
-                    <span style={{fontSize:15,fontWeight:800,color:'#C0392B',fontFamily:C.P}}>{w.rating}</span>
+                    <span style={{fontSize:15,fontWeight:800,color:scoreCol(w.rating),fontFamily:C.P}}>{w.rating}</span>
                     <Icon n="chevron" sz={12} col={C.mid}/>
                   </div>
                 ))}
@@ -681,7 +710,7 @@ function WineDNAScreen({nav,back,showPro}){
         {!collapsed.history&&(()=>{
           const stats=[
             {label:`${t.label} scanned`,  val:t.wines.length},
-            {label:'Average score',       val:tAvgScore||'—', note:tAvgScore?ParkerScale.label(tAvgScore):null, col:tAvgScore>=ParkerScale.LOVED?C.green:tAvgScore?C.amber:null},
+            {label:'Average score',       val:tAvgScore||'—', note:tAvgScore?ParkerScale.label(tAvgScore):null, col:tAvgScore?scoreCol(tAvgScore):null},
             {label:'Countries',           val:tCountries||'—'},
             {label:'Blind Call accuracy', val:t.blindCall?`${t.blindCall.accuracy}%`:'—', note:t.blindCall?`${t.blindCall.played} played`:'Play after a scan'},
           ];
@@ -720,7 +749,7 @@ function WineDNAScreen({nav,back,showPro}){
                         <div style={{fontSize:15,fontWeight:600,color:C.ink,fontFamily:C.P,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{w.name}</div>
                         <div style={{fontSize:13,color:C.mid,fontFamily:C.P,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{[w.region,w.vintage?String(w.vintage):null,ParkerScale.label(w.rating)].filter(Boolean).join(' · ')}</div>
                       </div>
-                      <span style={{fontSize:15,fontWeight:800,color:w.rating>=ParkerScale.LOVED?C.green:C.amber,fontFamily:C.P,width:30,textAlign:'right',flexShrink:0}}>{w.rating}</span>
+                      <span style={{fontSize:15,fontWeight:800,color:scoreCol(w.rating),fontFamily:C.P,width:30,textAlign:'right',flexShrink:0}}>{w.rating}</span>
                     </div>
                   ))}
                 </>

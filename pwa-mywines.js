@@ -83,6 +83,16 @@ const MyWines = {
     return [producer,region,w.vintage>0?String(w.vintage):'NV'].filter(Boolean).join(' · ');
   },
 
+  /* The price under a row's score: what they paid if they said so after scoring it ("paid £22"),
+     otherwise the average shop price the scan found ("avg £18"), both through WineDNA.priceOf so
+     the row agrees with the summary line and the Price sort. Null when there's no price at all. */
+  price(w,rc){
+    rc=rc||Regional.current();
+    const p=WineDNA.priceOf(w,rc); if(!(p>0)) return null;
+    const paid=!!(w.price_paid&&w.price_paid.amount>0), amt=`${rc.base}${Math.round(p)}`;
+    return {paid,text:paid?`paid ${amt}`:`avg ${amt}`,label:paid?`You paid ${amt}`:`Average shop price ${amt}`};
+  },
+
   /* The score colour by Parker band, as WineDNA and the scan screens use. */
-  scoreTone(r){ return r>=ParkerScale.LOVED?'good':r>=ParkerScale.DISLIKED?'neutral':'bad'; },
+  scoreTone(r){ return ParkerScale.tone(r); },
 };

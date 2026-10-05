@@ -49,7 +49,7 @@ async function answerQuiz(page, pick) {
       },
       q,
     );
-    const options = root(page).locator('span', { hasText: /.+/ }).filter({ hasNotText: /^[A-D✓✗]$/ });
+    const options = root(page).locator('span:not(.vflag)', { hasText: /.+/ }).filter({ hasNotText: /^[A-D✓✗]$/ });
     if (right) await root(page).getByText(correctText, { exact: true }).first().click();
     else await options.filter({ hasNotText: correctText }).filter({ hasText: /\S{3,}/ }).nth(1).click();
     const next = root(page).getByText(/^(Next Question|See Results) →$/);
@@ -291,4 +291,55 @@ test('a generated bank drops near-duplicates, including a flipped "least likely"
     'Which grape is Brunello di Montalcino made from?',
   ]);
   expect(out.numbered).toBe(15);
+});
+
+// XP for a question set comes from answers learned: each question's first correct answer, in
+// whatever round, and the set's bonus once on finishing it. A replay of known answers earns
+// nothing, so a set can't be farmed by repeating it (it used to pay 75 a round, even at 0/5),
+// and a Wine Basics topic keeps paying past its first round (it used to pay once, then +0).
+test('quiz XP: each new right answer, then the set bonus once', async ({ page }) => {
+  await openRegion(page);
+  const xp = () => page.evaluate(() => XPSystem.get().total);
+  const start = await xp();
+  let first = true;
+  await answerQuiz(page, () => { const r = !first; first = false; return r; }); // 4 of 5
+  await expect(root(page)).toContainText('+40');
+  expect(await xp()).toBe(start + 40);
+  for (let round = 0; round < 2; round++) {
+    await root(page).getByText(/^Keep going/).click();
+    await answerQuiz(page, () => true);
+  }
+  expect(await xp()).toBe(start + 140); // 14 learned
+  await root(page).getByText(/^Keep going/).click();
+  await answerQuiz(page, () => true); // the last one, plus four already known
+  await expect(root(page)).toContainText(/All \d+ questions answered correctly/);
+  expect(await xp()).toBe(start + 150 + 150); // 15 learned + the set bonus
+});
+
+// A generated bank that keeps teaching one point (Chardonnay's "neutral grape", three ways) keeps
+// only the first: a right answer that repeats an earlier one, or a stem built on it, is dropped.
+test('a quiz never asks the same point three ways', async ({ page }) => {
+  await page.goto(`${BASE}/?demo=1#learn`);
+  const kept = await page.evaluate(() => QuizMastery.distinct([
+    { q: 'Which statement best describes Chardonnay as a grape variety?', opts: ['Strong aromatics of its own', 'Always tastes the same', 'Grown for red blends', 'It is a neutral grape that reflects winemaking choices'], a: 3 },
+    { q: 'How does Chardonnay differ from an aromatic white grape such as Riesling?', opts: ['a', 'b', 'c', 'Chardonnay is a neutral grape shaped by winemaking, while Riesling expresses strong aromatics'], a: 3 },
+    { q: 'Given that Chardonnay is described as a neutral grape, what most shapes a Burgundy Chardonnay?', opts: ['a', 'b', "Terroir and climate, which shape the grape's ripeness", 'd'], a: 2 },
+    { q: 'What does new oak usually add to Chardonnay?', opts: ['Vanilla and buttery notes', 'Grassy notes', 'Petrol', 'Pepper'], a: 0 },
+    { q: 'Which region makes Chablis from Chardonnay?', opts: ['Burgundy', 'Rioja', 'Mosel', 'Napa'], a: 0 },
+  ], 'Chardonnay').map((q) => q.q.split(' ').slice(0, 3).join(' ')));
+  expect(kept).toEqual(['Which statement best', 'What does new', 'Which region makes']);
+});
+
+// Every grape on the Learn list has checked facts for each angle the quiz prompt spreads its
+// questions over, so no quiz is built on a single idea (Chardonnay's was "neutral" three times).
+test('every grape has facts for every quiz angle, and the prompt gets them all', async ({ page }) => {
+  await page.goto(`${BASE}/?demo=1#learn`);
+  const out = await page.evaluate(() => {
+    const fields = ['profile', 'famousIn', 'aka', 'climate', 'winemaking', 'food', 'ageing', 'lookalike', 'blends'];
+    const gaps = GRAPE_ALLOWLIST.flatMap((g) => fields.filter((f) => !(KNOWLEDGE.grapes[g] && KNOWLEDGE.grapes[g][f] && String(KNOWLEDGE.grapes[g][f]).length > 3)).map((f) => `${g}.${f}`));
+    return { n: GRAPE_ALLOWLIST.length, gaps, line: grapeFactsText('Chardonnay') };
+  });
+  expect(out.n).toBe(50);
+  expect(out.gaps).toEqual([]);
+  for (const l of ['Other names:', 'Climate:', 'Winemaking:', 'Food:', 'Ageing:', 'Compared with similar grapes:', 'In blends:']) expect(out.line).toContain(l);
 });

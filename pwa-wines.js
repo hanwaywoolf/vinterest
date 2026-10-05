@@ -84,6 +84,14 @@ const WineHistory = {
     const ca=ctx(a), cb=ctx(b);
     return [...nb].every(t=>ca.has(t))&&[...na].every(t=>cb.has(t));
   },
+  /* The same wine from a different year (both dated): what TasteMatch leans on hardest, since
+     their score for the 2019 is the best guide to the 2022. Never the same entry: two years stay
+     two wines in My Wines. */
+  otherVintage(a,b){
+    if(!a||!b) return false;
+    const va=this._vintageKey(a.vintage), vb=this._vintageKey(b.vintage);
+    return va!=='nv'&&vb!=='nv'&&va!==vb&&this.same(a,{...b,vintage:a.vintage});
+  },
   _index(wines,wine){
     const i=wines.findIndex(w=>w.name===wine.name&&String(w.vintage)===String(wine.vintage)&&this.same(w,wine));
     return i>=0?i:wines.findIndex(w=>this.same(w,wine));

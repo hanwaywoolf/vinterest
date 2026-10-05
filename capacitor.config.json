@@ -13,8 +13,10 @@
     "_about": "Applied to the generated native projects by scripts/native.mjs after every sync (they are never edited by hand).",
     "ios": {
       "infoPlist": {
-        "NSCameraUsageDescription": "Vinterest uses the camera to read wine labels and wine lists, so it can tell you about a bottle and whether it's for you."
-      }
+        "NSCameraUsageDescription": "Vinterest uses the camera to read wine labels and wine lists, so it can tell you about a bottle and whether it's for you.",
+        "ITSAppUsesNonExemptEncryption": false
+      },
+      "_ITSAppUsesNonExemptEncryption": "false: the app only uses the phone's standard HTTPS, so App Store Connect doesn't ask about encryption on every upload."
     },
     "android": {
       "permissions": [

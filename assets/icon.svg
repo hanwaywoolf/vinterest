@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="1024" height="1024">
+  <!-- The Vinterest app icon, drawn to match icons/icon-512-maskable.png so it renders sharp at any
+       size (the App Store needs 1024×1024, opaque). scripts/app-icons.mjs renders it to PNG. -->
+  <defs>
+    <radialGradient id="grape" cx="0.36" cy="0.34" r="0.7">
+      <stop offset="0" stop-color="#DA93A3"/>
+      <stop offset="0.45" stop-color="#C85E77"/>
+      <stop offset="1" stop-color="#BD4E68"/>
+    </radialGradient>
+  </defs>
+  <rect width="512" height="512" fill="#8B1A2F"/>
+  <path d="M114 113 H212 L255.5 298 L299.5 113 H397.5 L255.5 397 Z" fill="#FFFFFF"/>
+  <circle cx="255.5" cy="137.5" r="37.5" fill="url(#grape)"/>
+  <circle cx="210" cy="225" r="37" fill="url(#grape)"/>
+  <circle cx="301" cy="225" r="37" fill="url(#grape)"/>
+</svg>

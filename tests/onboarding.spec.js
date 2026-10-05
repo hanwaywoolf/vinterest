@@ -39,7 +39,11 @@ test('a new user: age and location, first scan, three questions, then Home on th
   await root.getByRole('button', { name: 'Start exploring' }).click();
   await expect(root).toContainText('Your rosé sommelier script');
   await expect(root).toContainText('Take the Rosé basics quiz'); // their own type is the first gap
-  await expect(root).toContainText('Wine scanned');
+  // The scan's moments wait for Home: one card above the navigation, with a next step.
+  await expect(page.getByTestId('moment-card')).toContainText('Your first rosé wine');
+  await expect(page.getByTestId('moment-card')).toContainText('2 more');
+  await page.getByTestId('moment-card').getByRole('button', { name: 'Dismiss' }).click();
+  await expect(page.getByTestId('moment-card')).toContainText('Your first wine from France');
   for (const t of ['Create account', 'Continue with Google', 'Start Pro', 'How often do you drink', 'What are you here for']) await expect(root).not.toContainText(t);
   const state = await page.evaluate(() => ({ prefs: UserPrefs.get(), region: localStorage.getItem('vinterest_region'), age: UserPrefs.ageConfirmed(),
     onboarded: localStorage.getItem('vinterest_onboarded'), wines: WineHistory.getAll().map((w) => w.name) }));

@@ -24,6 +24,7 @@ export const APP_SOURCES = [
   'pwa-learnnext.js',
   'pwa-guides.js',
   'pwa-knowledge.js',
+  'pwa-palate.js',
   'pwa-vinny.js',
   'pwa-wines.js',
   'pwa-regional.js',
@@ -47,6 +48,7 @@ export const APP_SOURCES = [
   'pwa-screens-learn.jsx',
   'pwa-screens-home.jsx',
   'pwa-screens-wineiq.jsx',
+  'pwa-moments.jsx',
   'pwa-app.jsx',
 ];
 

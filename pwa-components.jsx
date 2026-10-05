@@ -9,11 +9,30 @@ const C = {
   serif:"'Instrument Serif',serif",
 };
 
+/* A country's flag, for colour on quiz and region containers only (region quiz rows and titles,
+   Keep learning region tiles, Mastery's regions, WineDNA's best regions), not wherever a place
+   is mentioned. By wine (its country, else its
+   region's), by region name (Regions.nameFlag) or by country. Nothing when the country isn't known.
+   A string size: a flag is a picture, so the reader's text size leaves it alone. Decorative: the
+   place is always named beside it, so screen readers skip it (and previews stay one picture). */
+function Flag({wine,region,country,size=15,style}){
+  const f=wine?Regions.wineFlag(wine):region?Regions.nameFlag(region):Regions.countryFlag(country);
+  if(!f) return null;
+  return <span className="vflag" aria-hidden="true" style={{fontSize:size+'px',lineHeight:1,flexShrink:0,...style}}>{f}</span>;
+}
+/* A Parker score's colour, the same everywhere: green 90+, amber 80-89, red below 80 (ParkerScale.tone). */
+const _SCORE_COL={good:C.green,neutral:C.amber,bad:'#B04A3A'};
+function scoreCol(score){ return _SCORE_COL[ParkerScale.tone(score)]; }
+/* "Partner" beside a link that earns Vinterest a commission (Shops.link), so it's never hidden. */
+function PartnerTag(){ return <span title="Vinterest may earn a commission if you buy through this link." style={{fontSize:11,fontWeight:700,color:C.mid,fontFamily:C.P,border:`1px solid ${C.line}`,borderRadius:6,padding:'1px 6px',letterSpacing:'0.04em',whiteSpace:'nowrap'}}>Partner</span>; }
 function Icon({n,sz=20,col=C.ink,style:s}){
   const d={
     scan:<><rect x="3" y="3" width="6" height="6" rx="1" stroke={col} strokeWidth="1.6" fill="none"/><rect x="11" y="3" width="6" height="6" rx="1" stroke={col} strokeWidth="1.6" fill="none"/><rect x="3" y="11" width="6" height="6" rx="1" stroke={col} strokeWidth="1.6" fill="none"/><circle cx="14" cy="14" r="2.5" stroke={col} strokeWidth="1.6" fill="none"/><line x1="16.5" y1="16.5" x2="18.5" y2="18.5" stroke={col} strokeWidth="1.6" strokeLinecap="round"/></>,
     fork:<><path d="M7 2v5c0 1.5.8 2.5 2 3v8" stroke={col} strokeWidth="1.6" fill="none" strokeLinecap="round" strokeLinejoin="round"/><path d="M5 2v3" stroke={col} strokeWidth="1.6" fill="none" strokeLinecap="round"/><path d="M9 2v3" stroke={col} strokeWidth="1.6" fill="none" strokeLinecap="round"/><path d="M14 2v4l2-1v-3" stroke={col} strokeWidth="1.6" fill="none" strokeLinecap="round" strokeLinejoin="round"/><path d="M14 6c0 2.5 2 3 2 5v7" stroke={col} strokeWidth="1.6" fill="none" strokeLinecap="round"/></>,
     cart:<><path d="M2 3h2.5l2.2 10h8.6l1.8-7H6.5" stroke={col} strokeWidth="1.6" fill="none" strokeLinecap="round" strokeLinejoin="round"/><circle cx="9" cy="17" r="1.2" fill={col}/><circle cx="14.5" cy="17" r="1.2" fill={col}/></>,
+    grape:<>{[[7,7],[13,7],[10,11],[4,11],[16,11],[7,15],[13,15],[10,18.5]].slice(0,7).map(([x,y],k)=><circle key={k} cx={x} cy={y} r="2.6" stroke={col} strokeWidth="1.5" fill="none"/>)}<path d="M10 4V1.5M10 3.5c1.5-1.5 3.5-1.5 4.5-1" stroke={col} strokeWidth="1.5" fill="none" strokeLinecap="round"/></>,
+    torch:<><path d="M11.5 2L4.5 11h5l-1 7 7-9h-5l1-7z" stroke={col} strokeWidth="1.6" fill="none" strokeLinejoin="round"/></>,
+    torchOn:<path d="M11.5 2L4.5 11h5l-1 7 7-9h-5l1-7z" fill={col} stroke={col} strokeWidth="1.2" strokeLinejoin="round"/>,
     gallery:<><rect x="2.5" y="4" width="15" height="12" rx="2" stroke={col} strokeWidth="1.6" fill="none"/><circle cx="7" cy="8.2" r="1.4" fill={col}/><path d="M3 14.5l4.2-4 3 2.8 2.6-2.3L17 14.5" stroke={col} strokeWidth="1.6" fill="none" strokeLinecap="round" strokeLinejoin="round"/></>,
     home:<><path d="M3 9.5L10 3l7 6.5" stroke={col} strokeWidth="1.6" fill="none" strokeLinecap="round"/><path d="M5 8.5V17h4v-4.5h2V17h4V8.5" stroke={col} strokeWidth="1.6" fill="none" strokeLinecap="round"/></>,
     compass:<><circle cx="10" cy="10" r="7" stroke={col} strokeWidth="1.6" fill="none"/><polygon points="10,5.5 12,9.5 10,10.5 8,9.5" fill={col}/><polygon points="10,14.5 8,10.5 10,10.5 12,10.5" fill={col} opacity=".35"/></>,
