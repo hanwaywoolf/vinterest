@@ -565,12 +565,23 @@ function MasteryAreaCard({a,open,onToggle,onNext}){
    the grapes and the palate (cream paper, ink line, a loose wash laid a little off the line):
    the shape now is a smooth ink curve over a crimson wash; a dotted pencil curve is where they
    were (KnowledgeMap.progress: about a month ago, or their first week). Pencil rings mark
-   Developing (34), Confident (67) and Mastered (100), drawn as wobbly pen circles; their names sit
+   Developing (34), Confident (67) and Mastered (100), drawn as a pencil gone round twice (_sketchRing); their names sit
    on small tags stacked down the line straight below the centre, drawn over the shape so it never
    covers them, far enough apart that they never touch, with the dots drawn over the tags so a
    high score near the bottom is never hidden. Each area's dot takes its own colour (wine types their type's).
    A label tap opens that area in the list. A picture for screen readers (the list says the same
    in words). Labels are string sizes: they must fit around the drawing. */
+/* A pencil circle gone round twice: two arcs a hair off the true circle, each stopping short of
+   closing (the first at 93%, the second carrying on past its start), seeded so the same ring is
+   drawn the same way every time. */
+function _sketchRing(cx,cy,r,seed){
+  const rnd=KnowledgeMap._rng(seed);
+  const arc=(ox,oy,rad,a0,span)=>{ const p=a=>[cx+ox+Math.cos(a)*rad,cy+oy+Math.sin(a)*rad], [x0,y0]=p(a0), half=a0+span/2, [xm,ym]=p(half), [x1,y1]=p(a0+span);
+    const f=v=>v.toFixed(2); return `M${f(x0)} ${f(y0)} A${f(rad)} ${f(rad)} 0 0 1 ${f(xm)} ${f(ym)} A${f(rad)} ${f(rad)} 0 0 1 ${f(x1)} ${f(y1)}`; };
+  const a0=rnd()*Math.PI*2;
+  return [arc(0.6-rnd()*1.2,0.6-rnd()*1.2,r*(1+0.006),a0,Math.PI*2*0.93),
+          arc(0.8-rnd()*1.6,0.8-rnd()*1.6,r*(1-0.008),a0+Math.PI*(0.6+rnd()*0.5),Math.PI*2*(0.82+rnd()*0.1))];
+}
 function MasteryRadar({m,prog,onPick}){
   const W=340,H=310,cx=W/2,cy=H/2,R=100, n=m.areas.length;
   const ang=i=>-Math.PI/2+i*2*Math.PI/n;
@@ -583,8 +594,9 @@ function MasteryRadar({m,prog,onPick}){
   const dot=a=>a.score>=100?C.green:_masteryCol(a);
   return(
     <svg viewBox={`0 0 ${W} ${H}`} width="100%" role="img" data-testid="mastery-radar" aria-label={`Your knowledge by area: ${said}.`} style={{display:'block',maxWidth:420,margin:'0 auto',overflow:'visible'}}>
-      {/* Hand-drawn rings: the same wobbly pen circle as the grapes, scaled to each level. */}
-      {[34,67,100].map(r=><path key={r} d={sketchBerryPaths('ring'+r).line} transform={`translate(${cx} ${cy}) scale(${rr(r).toFixed(2)})`} fill="none" stroke={r===100?'#A99F94':SKETCH_PENCIL} strokeWidth={r===100?1.3:1} strokeDasharray={r===100?null:'2 4'} strokeLinecap="round" vectorEffect="non-scaling-stroke"/>)}
+      {/* Rings drawn like a pencil going round twice: two clean, light passes a hair apart, each
+          lifting off before it closes, at a different place on each ring. */}
+      {[34,67,100].map(r=>_sketchRing(cx,cy,rr(r),'ring'+r).map((d,j)=><path key={r+'-'+j} d={d} fill="none" stroke={r===100?'#A99F94':SKETCH_PENCIL} strokeWidth={j?0.8:(r===100?1.3:1)} strokeLinecap="round" opacity={j?0.7:1}/>))}
       {m.areas.map((a,i)=>{ const [x,y]=pt(i,100), [x0,y0]=pt(i,0); return <line key={a.id} x1={x0} y1={y0} x2={x} y2={y} stroke={SKETCH_PENCIL} strokeWidth="0.8" opacity="0.7"/>; })}
       {then&&<path d={curve(then)} fill="none" stroke={C.mid} strokeWidth="1.2" strokeDasharray="1.5 4" strokeLinecap="round"/>}
       <g className="mastery-radar-shape" style={{transformOrigin:`${cx}px ${cy}px`}}>
@@ -781,7 +793,7 @@ function MasteryRegionMap({views,nav,showPro}){
   const zbtn={width:34,height:34,borderRadius:10,background:'rgba(255,255,255,0.94)',border:`1px solid ${C.line}`,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',fontSize:'18px',fontWeight:700,color:C.ink,fontFamily:C.P,userSelect:'none',boxShadow:'0 1px 3px rgba(0,0,0,0.08)'};
   const picked=sel.map(n=>v.pins.find(p=>p.name===n)).filter(Boolean);
   const open=v.pins.filter(p=>p.state==='open').length;
-  const legend=[['#D6CCBF','Not unlocked'],[_PIN_COL['Getting started'],'Getting started'],[_PIN_COL.Developing,'Developing'],[C.cr,'Confident'],[C.green,'Mastered']];
+  const legend=[['#CFC9C2','Not unlocked'],[_PIN_COL['Getting started'],'Getting started'],[_PIN_COL.Developing,'Developing'],[C.cr,'Confident'],[C.green,'Mastered']];
   const anyFading=v.pins.some(p=>p.fading);
   return(
     <div style={{display:'flex',flexDirection:'column',gap:10}}>
@@ -799,30 +811,18 @@ function MasteryRegionMap({views,nav,showPro}){
       <div style={{position:'relative'}}>
       <svg ref={Z.ref} viewBox={`${z.x.toFixed(2)} ${z.y.toFixed(2)} ${(v.w/z.k).toFixed(2)} ${(v.h/z.k).toFixed(2)}`} width="100%" {...Z.bind(tap)} role="img" data-testid="region-map" data-zoom={z.k.toFixed(2)}
         aria-label={`Map of ${v.label}: ${open} of ${v.pins.length} wine regions unlocked. Tap a region to see it; pinch or use + and − to zoom.`}
-        style={{display:'block',borderRadius:12,background:'#FBF8F3',cursor:z.k>1?'grab':'pointer',maxHeight:420,touchAction:z.k>1?'none':'pan-y',userSelect:'none',WebkitUserSelect:'none'}}>
-        {/* Drawn like the rest of Mastery: paper, a pale wash for the sea, the land a loose wash laid
-            a little off an ink coastline that the pen went over twice, pencilled borders. Line
-            widths are screen pixels (SW), so the sketch stays fine-lined at any zoom. */}
-        <defs><pattern id="mapSea" width={14*u} height={9*u} patternUnits="userSpaceOnUse">
-          <path d={`M${2*u} ${5*u} q${2.5*u} ${-2*u} ${5*u} 0`} fill="none" stroke="#9FB4BE" strokeWidth={0.8*u} strokeLinecap="round" opacity="0.55"/>
-        </pattern></defs>
-        <rect x={z.x} y={z.y} width={v.w/z.k} height={v.h/z.k} fill="#E4ECEF" opacity="0.7"/>
-        <rect x={z.x} y={z.y} width={v.w/z.k} height={v.h/z.k} fill="url(#mapSea)"/>
-        <path d={v.land} fill="#FBF8F3"/>
-        <path d={v.land} fill="#EADFC8" opacity="0.7" transform={`translate(${(2.2*u).toFixed(2)} ${(2.6*u).toFixed(2)})`}/>
-        <path d={v.borders} fill="none" stroke={SKETCH_INK} strokeOpacity="0.28" strokeWidth={0.8*u} strokeDasharray={`${2*u} ${2.5*u}`} strokeLinecap="round"/>
-        <path d={v.land} fill="none" stroke={SKETCH_PENCIL} strokeWidth={0.9*u} strokeLinejoin="round" transform={`translate(${(-0.9*u).toFixed(2)} ${(0.7*u).toFixed(2)})`}/>
-        <path d={v.land} fill="none" stroke={SKETCH_INK} strokeOpacity="0.8" strokeWidth={1*u} strokeLinejoin="round" strokeLinecap="round"/>
-        {names.filter(n=>n.kind==='country').map(n=><text key={'c'+n.t} x={n.x} y={n.y} textAnchor="middle" data-label="country" style={{fontSize:n.fs.toFixed(2)+'px',fontWeight:600,letterSpacing:'0.1em',fill:'#9A8C7C',fontFamily:C.P,pointerEvents:'none'}}>{n.t}</text>)}
+        style={{display:'block',borderRadius:12,background:'#EEF1F3',cursor:z.k>1?'grab':'pointer',maxHeight:420,touchAction:z.k>1?'none':'pan-y',userSelect:'none',WebkitUserSelect:'none'}}>
+        <path d={v.land} fill="#F6F2EC" stroke="#D9D2C8" strokeWidth={1.5*SW} strokeLinejoin="round"/>
+        <path d={v.borders} fill="none" stroke="#E2DBD1" strokeWidth={1.2*SW}/>
+        {names.filter(n=>n.kind==='country').map(n=><text key={'c'+n.t} x={n.x} y={n.y} textAnchor="middle" data-label="country" style={{fontSize:n.fs.toFixed(2)+'px',fontWeight:600,letterSpacing:'0.1em',fill:'#A69C90',fontFamily:C.P,pointerEvents:'none'}}>{n.t}</text>)}
         {[...v.pins].sort((a,b)=>(a.state==='open')-(b.state==='open')).map(p=>{
-          const on=sel.includes(p.name), first=p.state==='open'&&p.level==='Not started', locked=p.state!=='open';
+          const on=sel.includes(p.name), first=p.state==='open'&&p.level==='Not started';
           return <g key={p.name}>
-            {p.drunk>0&&<circle cx={p.x} cy={p.y} r={PIN+5*SW} fill="none" stroke={SKETCH_INK} strokeWidth={1.8*SW}/>}
-            <circle cx={p.x} cy={p.y} r={on?PIN+3*SW:locked?PIN-2*SW:PIN} fill={locked?'#D6CCBF':_pinFill(p)} fillOpacity={p.fading?0.4:1}
-              strokeDasharray={p.fading?`${3*SW} ${2*SW}`:null} stroke={first?C.cr:locked?'#A99F94':SKETCH_INK} strokeWidth={(first?2.2:locked?1.3:1.2)*SW}/>
+            {p.drunk>0&&<circle cx={p.x} cy={p.y} r={PIN+5*SW} fill="none" stroke={C.ink} strokeWidth={2.2*SW}/>}
+            <circle cx={p.x} cy={p.y} r={on?PIN+3*SW:p.state==='open'?PIN:PIN-2*SW} fill={_pinFill(p)} fillOpacity={p.fading?0.4:1} strokeDasharray={p.fading?`${3*SW} ${2*SW}`:null} stroke={first?C.cr:'#fff'} strokeWidth={(first?2.5:2)*SW}/>
           </g>;
         })}
-        {names.filter(n=>n.kind==='region').map(n=><text key={'r'+n.t} x={n.x} y={n.y} textAnchor="middle" data-label="region" style={{fontSize:n.fs.toFixed(2)+'px',fontWeight:n.on?700:500,fill:n.on?C.ink:'#7D736A',fontFamily:C.P,paintOrder:'stroke',stroke:'#FBF8F3',strokeWidth:(3*u).toFixed(2),strokeLinejoin:'round',pointerEvents:'none'}}>{n.t}</text>)}
+        {names.filter(n=>n.kind==='region').map(n=><text key={'r'+n.t} x={n.x} y={n.y} textAnchor="middle" data-label="region" style={{fontSize:n.fs.toFixed(2)+'px',fontWeight:n.on?700:500,fill:n.on?C.ink:'#7D736A',fontFamily:C.P,paintOrder:'stroke',stroke:'#F6F2EC',strokeWidth:(3*u).toFixed(2),strokeLinejoin:'round',pointerEvents:'none'}}>{n.t}</text>)}
       </svg>
       <div style={{position:'absolute',right:8,top:8,display:'flex',flexDirection:'column',gap:6}}>
         <div role="button" aria-label="Zoom in" onClick={()=>Z.zoomAt(1.6)} style={zbtn}>+</div>
@@ -831,8 +831,8 @@ function MasteryRegionMap({views,nav,showPro}){
       {z.k>1&&<div role="button" onClick={Z.reset} style={{...zbtn,position:'absolute',left:8,top:8,width:'auto',padding:'0 10px',fontSize:'13px',fontWeight:600}}>Reset</div>}
       </div>
       <div aria-hidden="true" style={{display:'flex',flexWrap:'wrap',gap:'4px 12px'}}>
-        {legend.map(([c,l])=><span key={l} style={{display:'inline-flex',alignItems:'center',gap:5,fontSize:12,color:C.mid,fontFamily:C.P}}><span style={{width:9,height:9,borderRadius:5,background:c,border:`1px solid ${l==='Not unlocked'?'#A99F94':SKETCH_INK}`}}/>{l}</span>)}
-        <span style={{display:'inline-flex',alignItems:'center',gap:5,fontSize:12,color:C.mid,fontFamily:C.P}}><span style={{width:9,height:9,borderRadius:6,border:`2px solid ${SKETCH_INK}`}}/>You've had one</span>
+        {legend.map(([c,l])=><span key={l} style={{display:'inline-flex',alignItems:'center',gap:5,fontSize:12,color:C.mid,fontFamily:C.P}}><span style={{width:9,height:9,borderRadius:5,background:c,border:'1px solid rgba(0,0,0,0.08)'}}/>{l}</span>)}
+        <span style={{display:'inline-flex',alignItems:'center',gap:5,fontSize:12,color:C.mid,fontFamily:C.P}}><span style={{width:9,height:9,borderRadius:6,border:`2px solid ${C.ink}`}}/>You've had one</span>
         {anyFading&&<span style={{display:'inline-flex',alignItems:'center',gap:5,fontSize:12,color:C.mid,fontFamily:C.P}}><span style={{width:9,height:9,borderRadius:6,background:C.cr,opacity:0.4,border:`1px dashed ${C.cr}`}}/>Fading: time for a refresher</span>}
       </div>
       {picked.length?<div data-testid="map-picked" style={{display:'flex',flexDirection:'column',borderTop:`1px solid ${C.line}`}}>
