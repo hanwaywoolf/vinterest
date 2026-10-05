@@ -389,7 +389,7 @@ function GrapeScreen({nav,back,showPro}){
 
         <div style={card} data-testid="grape-progress">
           <div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline'}}>
-            <span style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>{ms.state==='open'?`${ms.level} · ${ms.score}%`:ms.state==='held'?'Unlocked, kept for Pro':'Not unlocked yet'}</span>
+            <span style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>{ms.state==='open'?`${ms.level} · ${ms.score}%`:ms.state==='held'?'Unlocked, kept for Pro':'Not unlocked yet'}<RiseTag n={ms.rise} style={{marginLeft:8,fontSize:13}}/></span>
             {ms.fading>0&&<span style={{fontSize:13,fontWeight:600,color:C.amber,fontFamily:C.P}}>{ms.fading} answer{ms.fading===1?'':'s'} fading</span>}
           </div>
           {ms.state==='open'&&<MasteryBar score={ms.score} col={grapeTypeColor(info.name)}/>}

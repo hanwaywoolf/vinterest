@@ -106,7 +106,7 @@ const KnowledgeMap = {
     this.note(m);
     const sorted=[...m.areas].sort((a,b)=>b.score-a.score);
     const strongest=sorted[0]&&sorted[0].score>0?sorted[0]:null;
-    return {overall:m.overall,level:m.level,strongest,gap:this.focus(wines,m)};
+    return {overall:m.overall,level:m.level,strongest,gap:this.focus(wines,m),progress:this.progress(m)};
   },
 
   /* ── What to study next, weighted by what they drink ──
@@ -159,11 +159,11 @@ const KnowledgeMap = {
   _week(t){ const d=new Date(t); d.setDate(d.getDate()-(d.getDay()+6)%7); const z=x=>String(x).padStart(2,'0'); return `${d.getFullYear()}-${z(d.getMonth()+1)}-${z(d.getDate())}`; },
   history(){ const h=Store.getJSON(this.HISTORY_KEY,{}); return h&&typeof h==='object'&&!Array.isArray(h)?h:{}; },
   note(m,now=Date.now()){
-    const h=this.history(), wk=this._week(now), a={};
-    m.areas.forEach(x=>{ a[x.id]=x.score; });
+    const h=this.history(), wk=this._week(now), a={}, i={};
+    m.areas.forEach(x=>{ a[x.id]=x.score; (x.items||[]).forEach(it=>{ if(it.score>0) i[x.id+'|'+it.name]=it.score; }); });
     const cur=h[wk];
-    if(cur&&cur.o===m.overall&&JSON.stringify(cur.a)===JSON.stringify(a)) return;
-    h[wk]={t:now,o:m.overall,a};
+    if(cur&&cur.o===m.overall&&JSON.stringify(cur.a)===JSON.stringify(a)&&JSON.stringify(cur.i||{})===JSON.stringify(i)) return;
+    h[wk]={t:now,o:m.overall,a,i}; // i: each region's and grape's score, for their own green rises
     const keep=Object.keys(h).sort().slice(-this.HISTORY_WEEKS), out={};
     keep.forEach(k=>{ out[k]=h[k]; });
     Store.setJSON(this.HISTORY_KEY,out);
@@ -180,7 +180,13 @@ const KnowledgeMap = {
   progress(m,now=Date.now()){
     const p=this.then(now); if(!p) return null;
     const rises=m.areas.map(a=>({id:a.id,label:a.label,delta:a.score-(p.a[a.id]||0)})).filter(x=>x.delta>0).sort((x,y)=>y.delta-x.delta);
-    return {then:p,weeks:p.weeks,overall:m.overall-(p.o||0),rises};
+    return {then:p,weeks:p.weeks,overall:m.overall-(p.o||0),rises,area:id=>{ const a=m.areas.find(x=>x.id===id); return a?a.score-(p.a[id]||0):0; }};
+  },
+  /* How far one region or grape has risen since then() (its green "+N"): 0 when it hasn't, or
+     when the snapshot predates item scores. */
+  itemRise(prog,areaId,name,score){
+    if(!prog||!prog.then||!prog.then.i) return 0;
+    return Math.max(0,(score||0)-(prog.then.i[areaId+'|'+name]||0));
   },
   /* Question sets with answers fading (QuizMastery.isDue), most first: Home's "Refresh" step and
      the map's faded pins. Only sets with at least FADE_SUGGEST_AT fading, so one stray answer

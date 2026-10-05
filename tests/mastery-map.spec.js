@@ -494,6 +494,38 @@ test('the wine map names countries zoomed out and regions zoomed in, readable an
   expect(errors).toEqual([]);
 });
 
+test('green rises: what has grown since the snapshot shows ▲ on the chart, the lists, the grape page and Learn', async ({ context, page }) => {
+  const errors = collectErrors(page);
+  await user(context, page);
+  await page.goto(`${BASE}/#home`);
+  await page.evaluate(() => {
+    // A month ago: nothing studied but a little Tempranillo.
+    const t = Date.now() - 35 * 864e5, m = KnowledgeMap.compute(), a = {};
+    m.areas.forEach((x) => { a[x.id] = 0; });
+    Store.setJSON(KnowledgeMap.HISTORY_KEY, { [KnowledgeMap._week(t)]: { t, o: 0, a, i: { 'grapes|Tempranillo': 20 } } });
+  });
+  await grapeStudy(page);
+  const p = await page.evaluate(() => { const m = KnowledgeMap.compute(), g = KnowledgeMap.progress(m); return { overall: g.overall, grapes: g.area('grapes'), temp: KnowledgeMap.itemRise(g, 'grapes', 'Tempranillo', 70), riesling: KnowledgeMap.itemRise(g, 'grapes', 'Riesling', 35) }; });
+  expect(p.overall).toBeGreaterThan(0);
+  expect(p.temp).toBe(50);
+  expect(p.riesling).toBeGreaterThan(0); // not studied a month ago: all of it is new
+  // Learn's link
+  await page.goto(`${BASE}/#learn`);
+  await expect(page.getByTestId('learn-mastery-link')).toContainText(`▲${p.overall}`);
+  // The chart's label and the area list
+  await page.goto(`${BASE}/#mastery-map`);
+  await expect(page.getByTestId('mastery-radar').locator(`tspan[data-rise="${p.grapes}"]`)).toHaveCount(1);
+  await page.getByTestId('shape-mode').getByRole('tab', { name: 'List' }).click();
+  await expect(page.locator('[data-area="grapes"] [data-rise]').first()).toHaveText(`▲${p.grapes}`);
+  // The grape list and the grape's own page
+  await page.getByTestId('grape-mode').getByRole('tab', { name: 'List' }).click();
+  await page.getByTestId('grape-skin').getByRole('tab', { name: /^Red/ }).click();
+  await expect(page.getByTestId('grape-list').getByRole('button', { name: /^Tempranillo/ }).locator('[data-rise]')).toHaveText('▲50');
+  await page.getByTestId('grape-list').getByRole('button', { name: /^Tempranillo/ }).click();
+  await expect(page.getByTestId('grape-progress').locator('[data-rise]')).toHaveText('▲50');
+  expect(errors).toEqual([]);
+});
+
 test('every grape has a page: origin, wines and how its bunch looks', async ({ context, page }) => {
   await user(context, page);
   await page.goto(`${BASE}/#home`);

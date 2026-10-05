@@ -219,7 +219,7 @@ function QuizHubScreen({nav,back,showPro}){
             <text y="3.5" textAnchor="middle" style={{fontSize:'9px',fontWeight:800,fill:C.ink,fontFamily:C.P}}>{knowledge.overall}%</text>
           </svg>
           <div style={{flex:1,minWidth:0}}>
-            <div style={{fontSize:15,fontWeight:700,color:C.ink,fontFamily:C.P}}>Your Mastery <span style={{fontWeight:500,color:C.mid}}>· {knowledge.level}</span></div>
+            <div style={{fontSize:15,fontWeight:700,color:C.ink,fontFamily:C.P}}>Your Mastery <span style={{fontWeight:500,color:C.mid}}>· {knowledge.level}</span>{knowledge.progress&&knowledge.progress.overall>0&&<span style={{fontSize:13,fontWeight:800,color:C.green,marginLeft:6}}>▲{knowledge.progress.overall} in {knowledge.progress.weeks} wk{knowledge.progress.weeks===1?'':'s'}</span>}</div>
             <div style={{fontSize:13,color:C.mid,fontFamily:C.P,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{knowledge.gap?`Start here: ${knowledge.gap.label}`:'Your shape, grapes, wine map and palate'}</div>
           </div>
           {!isPro&&<ProBadge/>}
@@ -557,13 +557,19 @@ function MasteryBar({score,col}){
 /* A wine-type area's colour (_TYPE_COLORS): its bar fills in it, so strong and weak types read
    like a palette. Other areas stay crimson. */
 function _masteryCol(a){ return a.group==='types'&&typeof _TYPE_COLORS!=='undefined'?_TYPE_COLORS[a.id==='sweet'?'dessert':a.id]||C.cr:C.cr; }
-function MasteryAreaCard({a,open,onToggle,onNext}){
+/* A green rise: how much something has grown since the dotted outline's snapshot
+   (KnowledgeMap.progress, about a month back, or their first week). Nothing when it hasn't. */
+function RiseTag({n,style}){
+  if(!(n>0)) return null;
+  return <span data-rise={n} aria-label={`up ${n} points`} style={{display:'inline-flex',alignItems:'center',gap:2,fontSize:12,fontWeight:800,color:C.green,fontFamily:C.P,whiteSpace:'nowrap',...style}}>▲{n}</span>;
+}
+function MasteryAreaCard({a,open,onToggle,onNext,prog}){
   const col=_masteryCol(a);
   return(
   <div style={{background:C.white,borderRadius:14,border:`1px solid ${C.line}`,padding:'12px 14px',display:'flex',flexDirection:'column',gap:7}}>
     <div role="button" onClick={onToggle} style={{display:'flex',justifyContent:'space-between',alignItems:'baseline',cursor:a.items&&onToggle?'pointer':'default'}}>
       <span style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>{a.group==='types'&&<span aria-hidden="true" style={{display:'inline-block',width:10,height:10,borderRadius:5,background:col,marginRight:8,verticalAlign:'1px'}}/>}{a.label}</span>
-      <span style={{fontSize:14,fontWeight:700,color:a.score>=100?C.green:C.ink2,fontFamily:C.P}}>{a.level} · {a.score}%</span>
+      <span style={{fontSize:14,fontWeight:700,color:a.score>=100?C.green:C.ink2,fontFamily:C.P,display:'inline-flex',alignItems:'baseline',gap:6}}><RiseTag n={prog&&prog.area?prog.area(a.id):0}/>{a.level} · {a.score}%</span>
     </div>
     <MasteryBar score={a.score} col={col}/>
     <div style={{fontSize:13,color:C.mid,fontFamily:C.P}}>{a.detail}{a.items&&a.items.length&&onToggle?(open?' · hide':' · see each'):''}</div>
@@ -571,6 +577,7 @@ function MasteryAreaCard({a,open,onToggle,onNext}){
       <div key={i.name} style={{display:'flex',alignItems:'center',gap:10}}>
         <span style={{flex:'0 0 42%',fontSize:14,color:C.ink2,fontFamily:C.P,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{a.id==='regions'&&<Flag region={i.name} size={14} style={{marginRight:6}}/>}{a.id==='grapes'&&<span aria-hidden="true" style={{display:'inline-block',width:8,height:8,borderRadius:4,background:grapeTypeColor(i.name),marginRight:7,verticalAlign:'1px'}}/>}{i.name}{i.fading>0&&<span style={{fontSize:12,fontWeight:600,color:C.amber,marginLeft:6}}>fading</span>}</span>
         <div style={{flex:1}}><MasteryBar score={i.score} col={a.id==='grapes'?grapeTypeColor(i.name):col}/></div>
+        <RiseTag n={KnowledgeMap.itemRise(prog,a.id,i.name,i.score)}/>
         <span style={{fontSize:13,fontWeight:700,color:C.ink2,fontFamily:C.P,width:38,textAlign:'right'}}>{i.score}%</span>
       </div>
     ))}
@@ -636,7 +643,7 @@ function MasteryRadar({m,prog,onPick}){
         const anchor=c>0.1?'start':c<-0.1?'end':'middle'; // the two bottom spokes lean apart
         return <g key={a.id} onClick={()=>onPick&&onPick(a.id)} style={{cursor:'pointer'}}>
           <text x={x} y={y} textAnchor={anchor} style={{fontSize:'11px',fontWeight:600,fill:a.score?C.ink:C.mid,fontFamily:C.P}}>{KnowledgeMap.short(a)}</text>
-          <text x={x} y={y+12} textAnchor={anchor} style={{fontSize:'10px',fontWeight:700,fill:a.score>=100?C.green:a.score?C.cr:SKETCH_PENCIL,fontFamily:C.P}}>{a.score}%</text>
+          <text x={x} y={y+12} textAnchor={anchor} style={{fontSize:'10px',fontWeight:700,fill:a.score>=100?C.green:a.score?C.cr:SKETCH_PENCIL,fontFamily:C.P}}>{a.score}%{prog&&prog.area&&prog.area(a.id)>0&&<tspan data-rise={prog.area(a.id)} style={{fill:C.green,fontWeight:800}}> ▲{prog.area(a.id)}</tspan>}</text>
         </g>;
       })}
     </svg>
@@ -648,13 +655,13 @@ function MasteryRadar({m,prog,onPick}){
 const MASTERY_GROUPS=[{id:'types',label:'Wine types'},{id:'places',label:'Regions and grapes'},{id:'skills',label:'Wine Skills'}];
 function MasteryAreaList({m,prog,open,setOpen,go}){
   return <div data-testid="mastery-area-list" style={{display:'flex',flexDirection:'column',gap:8}}>
+    {prog&&prog.rises.length>0&&<div style={{fontSize:13,color:C.mid,fontFamily:C.P}}><span style={{color:C.green,fontWeight:800}}>▲</span> Points gained since {_when(prog.then.t)}.</div>}
     {MASTERY_GROUPS.map(G=><React.Fragment key={G.id}>
       <div style={{fontSize:14,fontWeight:700,color:C.ink2,fontFamily:C.P,marginTop:4}}>{G.label}</div>
-      {m.areas.filter(a=>a.group===G.id).map(a=>{ const d=prog?a.score-(prog.then.a[a.id]||0):0; return(
-        <div key={a.id} data-area={a.id} style={{position:'relative'}}>
-          <MasteryAreaCard a={a} open={open===a.id} onToggle={()=>a.items&&setOpen(o=>o===a.id?null:a.id)} onNext={()=>go(a.next)}/>
-          {d>0&&<span style={{position:'absolute',right:14,bottom:-7,fontSize:11,fontWeight:700,color:C.green,background:C.white,border:`1px solid ${C.line}`,borderRadius:999,padding:'1px 7px',fontFamily:C.P}}>+{d} since {_when(prog.then.t)}</span>}
-        </div>); })}
+      {m.areas.filter(a=>a.group===G.id).map(a=>(
+        <div key={a.id} data-area={a.id}>
+          <MasteryAreaCard a={a} prog={prog} open={open===a.id} onToggle={()=>a.items&&setOpen(o=>o===a.id?null:a.id)} onNext={()=>go(a.next)}/>
+        </div>))}
     </React.Fragment>)}
   </div>;
 }
@@ -677,14 +684,14 @@ function MasteryToggle({label,options,value,onChange,testid}){
 }
 /* One region as a row (the map's picked pins and the list): flag, name, where they stand, and
    its next step (Quiz or Refresh, Pro, or scan a bottle from there). */
-function _RegionRow({p,nav,showPro,bar}){
+function _RegionRow({p,nav,showPro,bar,prog}){
   const on=p.state==='open';
   return <div data-region={p.name} style={{display:'flex',alignItems:'center',gap:10,padding:'10px 0',borderBottom:`1px solid ${C.line}`}}>
     <Flag region={p.name} size={18}/>
     <div style={{flex:1,minWidth:0,display:'flex',flexDirection:'column',gap:3}}>
       <div style={{fontSize:15,fontWeight:700,color:on||!bar?C.ink:C.mid,fontFamily:C.P}}>{p.name}</div>
       <div style={{fontSize:13,color:C.mid,fontFamily:C.P,lineHeight:1.4}}>
-        {on?`${p.level} · ${p.score}%`:p.state==='held'?'Unlocked, kept for Pro':'Not unlocked yet'}
+        {on?`${p.level} · ${p.score}%`:p.state==='held'?'Unlocked, kept for Pro':'Not unlocked yet'}{on&&<RiseTag n={KnowledgeMap.itemRise(prog,'regions',p.name,p.score)} style={{marginLeft:6}}/>}
         {on&&p.fading?<span style={{color:C.amber,fontWeight:600}}>{` · ${p.fading} answer${p.fading===1?'':'s'} fading`}</span>:''}
         {p.drunk?` · you've had ${p.drunk===1?'one':p.drunk}`:''}
       </div>
@@ -792,7 +799,7 @@ function _mapLabels(v,z,u,pin){
   });
   return out;
 }
-function MasteryRegionMap({views,nav,showPro}){
+function MasteryRegionMap({views,nav,showPro,prog}){
   // Map or list, and which part of the world, as they last left it (Device.masteryView).
   const saved=React.useRef(Device.masteryView()).current;
   const [mode,setModeS]=React.useState(saved.regions==='list'?'list':'map');
@@ -822,7 +829,7 @@ function MasteryRegionMap({views,nav,showPro}){
           </div>); })}
       </div>
       {mode==='list'?<div data-testid="region-list" style={{display:'flex',flexDirection:'column',borderTop:`1px solid ${C.line}`}}>
-        {KnowledgeMap.regionRows(v).map(p=><_RegionRow key={p.name} p={p} nav={nav} showPro={showPro} bar/>)}
+        {KnowledgeMap.regionRows(v).map(p=><_RegionRow key={p.name} p={p} nav={nav} showPro={showPro} bar prog={prog}/>)}
         <div style={{fontSize:13,color:C.mid,fontFamily:C.P,marginTop:8}}>Scanning a bottle from a region unlocks it. <span role="button" onClick={()=>nav('camera')} style={{color:C.cr,fontWeight:700,cursor:'pointer'}}>Scan a bottle →</span></div>
       </div>:<>
       <div style={{position:'relative'}}>
@@ -858,7 +865,7 @@ function MasteryRegionMap({views,nav,showPro}){
         {anyFading&&<span style={{display:'inline-flex',alignItems:'center',gap:5,fontSize:12,color:C.mid,fontFamily:C.P}}><span style={{width:9,height:9,borderRadius:6,background:C.cr,opacity:0.4,border:`1px dashed ${C.cr}`}}/>Fading: time for a refresher</span>}
       </div>
       {picked.length?<div data-testid="map-picked" style={{display:'flex',flexDirection:'column',borderTop:`1px solid ${C.line}`}}>
-        {picked.map(p=><_RegionRow key={p.name} p={p} nav={nav} showPro={showPro}/>)}
+        {picked.map(p=><_RegionRow key={p.name} p={p} nav={nav} showPro={showPro} prog={prog}/>)}
       </div>:<div style={{fontSize:13,color:C.mid,fontFamily:C.P}}>Tap a pin to see a region; pinch to zoom in and see their names. Scanning a bottle unlocks its region.</div>}
       </>}
     </div>
@@ -984,7 +991,7 @@ function _berrySaid(g){
 function openGrapePage(name,nav){ Handoff.grapePage.set(name); nav('grape'); }
 /* The grapes as a list: red, then white and pink, each grape with its level and score; a tap
    opens its page, as a tap on the bunch does. */
-function MasteryGrapeList({c,open,skin}){
+function MasteryGrapeList({c,open,skin,prog}){
   const rows=React.useMemo(()=>KnowledgeMap.grapeRows(c).filter(b=>!skin||b.id===skin),[c,skin]);
   const said=g=>g.state==='open'?(g.score>0?`${g.level}`:'Not started'):g.state==='held'?'Kept for Pro':'Not unlocked yet';
   return <div data-testid="grape-list" style={{display:'flex',flexDirection:'column',gap:14}}>
@@ -998,7 +1005,7 @@ function MasteryGrapeList({c,open,skin}){
           <div style={{flex:1,minWidth:0,display:'flex',flexDirection:'column',gap:4}}>
             <div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline',gap:8}}>
               <span style={{fontSize:15,fontWeight:600,color:on?C.ink:C.mid,fontFamily:C.P}}>{g.name}</span>
-              <span style={{fontSize:13,color:C.mid,fontFamily:C.P,whiteSpace:'nowrap'}}>{g.fading>0&&<span style={{color:C.amber,fontWeight:600}}>fading · </span>}{said(g)}{on?<b style={{color:C.ink,marginLeft:6}}>{g.score}%</b>:''}</span>
+              <span style={{fontSize:13,color:C.mid,fontFamily:C.P,whiteSpace:'nowrap',display:'inline-flex',alignItems:'baseline',gap:4}}>{g.fading>0&&<span style={{color:C.amber,fontWeight:600}}>fading · </span>}{said(g)}<RiseTag n={on?KnowledgeMap.itemRise(prog,'grapes',g.name,g.score):0} style={{marginLeft:4}}/>{on?<b style={{color:C.ink,marginLeft:4}}>{g.score}%</b>:''}</span>
             </div>
             {on&&<MasteryBar score={g.score} col={col}/>}
           </div>
@@ -1008,7 +1015,7 @@ function MasteryGrapeList({c,open,skin}){
     </div>)}
   </div>;
 }
-function MasteryGrapes({m,nav,view,setView,onOpen}){
+function MasteryGrapes({m,nav,view,setView,onOpen,prog}){
   const c=React.useMemo(()=>KnowledgeMap.grapeCluster(m),[m]);
   const seen=React.useRef(Device.grapesSeen());
   const [grown,setGrown]=React.useState(false);
@@ -1035,7 +1042,7 @@ function MasteryGrapes({m,nav,view,setView,onOpen}){
       </div>
       <MasteryToggle label="Show grapes as" testid="grape-mode" options={[['bunch','Bunches'],['list','List']]} value={view} onChange={setView}/>
       {view==='list'&&<MasteryToggle label="Grape colour" testid="grape-skin" options={[['red',`Red · ${count('red')}`],['white',`White · ${count('white')}`]]} value={skin} onChange={setSkin}/>}
-      {view==='list'?<MasteryGrapeList c={c} open={open} skin={skin}/>:<>
+      {view==='list'?<MasteryGrapeList c={c} open={open} skin={skin} prog={prog}/>:<>
       <svg viewBox={`0 0 ${W} ${H}`} width="100%" data-testid="grape-cluster" style={{display:'block',maxWidth:440,margin:'0 auto',overflow:'visible'}}>
         {c.bunches.map((b,bi)=>{
           const cx=colW/2+bi*(colW+GAP), x0=cx-(Math.max(...b.grapes.map(g=>g.x))+Math.min(...b.grapes.map(g=>g.x)))/2*k;
@@ -1135,7 +1142,7 @@ function MasteryMapScreen({nav,back,showPro}){
         <div style={{background:C.ink,borderRadius:16,padding:'18px 16px',display:'flex',flexDirection:'column',gap:8}}>
           <div style={{fontSize:13,fontWeight:600,color:'rgba(255,255,255,0.5)',fontFamily:C.P,textTransform:'uppercase',letterSpacing:'0.06em'}}>Your wine knowledge</div>
           <div style={{fontSize:32,fontWeight:800,color:'#fff',fontFamily:C.P}}>{m.overall}% <span style={{fontSize:16,fontWeight:600,color:'rgba(255,255,255,0.6)'}}>{m.level}</span>
-            {prog&&prog.overall>0&&<span style={{fontSize:15,fontWeight:700,color:'#7FD3A6',marginLeft:8}}>+{prog.overall} in {prog.weeks} week{prog.weeks===1?'':'s'}</span>}</div>
+            {prog&&prog.overall>0&&<span style={{fontSize:15,fontWeight:700,color:'#7FD3A6',marginLeft:8}}>▲{prog.overall} in {prog.weeks} week{prog.weeks===1?'':'s'}</span>}</div>
           <div style={{fontSize:14,color:'rgba(255,255,255,0.65)',fontFamily:C.P,lineHeight:1.5}}>Built from the articles you've read and the quizzes you've passed. Only studying and testing move it.</div>
           {focus&&focus.score<100&&<div data-testid="mastery-focus" style={{marginTop:4,background:'rgba(255,255,255,0.08)',borderRadius:12,padding:'12px 12px',display:'flex',flexDirection:'column',gap:6}}>
             <div style={{fontSize:13,fontWeight:600,color:'rgba(255,255,255,0.5)',fontFamily:C.P,textTransform:'uppercase',letterSpacing:'0.06em'}}>Start here</div>
@@ -1165,12 +1172,12 @@ function MasteryMapScreen({nav,back,showPro}){
 
         <MasterySection id="grapes" title="Your grapes" folded={folded} toggle={toggle}
           summary={`${cluster.studied} of ${cluster.total} grapes studied${cluster.mastered?` · ${cluster.mastered} mastered`:''}`}>
-          <MasteryGrapes m={m} nav={nav} view={grapeView} setView={setGrapeView} onOpen={leaveMastery}/>
+          <MasteryGrapes m={m} nav={nav} view={grapeView} setView={setGrapeView} onOpen={leaveMastery} prog={prog}/>
         </MasterySection>
 
         <MasterySection id="map" title="Your wine map" folded={folded} toggle={toggle}
           summary={`${mapCount.open} of ${mapCount.total} regions unlocked`}>
-          <MasteryRegionMap views={views} nav={nav} showPro={showPro}/>
+          <MasteryRegionMap views={views} nav={nav} showPro={showPro} prog={prog}/>
         </MasterySection>
 
         <MasterySection id="palate" title="Your palate" testid="mastery-palate" folded={folded} toggle={toggle}

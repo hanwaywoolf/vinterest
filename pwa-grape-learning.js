@@ -55,7 +55,8 @@ const GrapeInfo = {
     const state=it?'open':GrapeUnlocks.held().includes(name)?'held':'locked';
     return {name,skin:grapeSkin(name),type:GRAPE_TYPES[name],...K,look:K.look||{berry:'medium',bunch:'medium',notes:[]},regions,
       mine:{count:mine.length,wines:list,scored:scored.length,best:scored[0]||null,avg:scored.length?Math.round(scored.reduce((a,w)=>a+w.rating,0)/scored.length):null},
-      mastery:{state,score:it?it.score:0,level:it?it.level:'Not started',fading:it?it.fading||0:0}};
+      mastery:{state,score:it?it.score:0,level:it?it.level:'Not started',fading:it?it.fading||0:0,
+        rise:it?KnowledgeMap.itemRise(KnowledgeMap.progress(m),'grapes',name,it.score):0}};
   },
   /* How the page's sketch draws its bunch: how many berries and how tightly packed. */
   sketch(look){
