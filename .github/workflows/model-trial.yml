@@ -1,5 +1,6 @@
 # Runs scripts/model-trial.mjs on GitHub's machines, so a model can be compared from any device
-# (a Chromebook, a phone): Actions → Model trial → Run workflow. The report is on the run's page
+# (a Chromebook, a phone): Actions → Model trial → Run workflow (once this file is on main), or a
+# commit on a claude/ branch whose message contains [model-trial] (the defaults below). The report is on the run's page
 # (its summary) and kept as the "model-trial" artifact. Every call is a real, billed Claude call
 # (about 16 for the defaults).
 name: Model trial
@@ -18,8 +19,11 @@ on:
       image_url:
         description: Optional link to a photo of a wine label, to include a label scan
         default: ''
+  push:
+    branches: ['claude/**']
 jobs:
   trial:
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[model-trial]')
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -38,9 +42,9 @@ jobs:
           node scripts/model-trial.mjs --a "$A" --b "$B" --runs "$RUNS" $IMG
           cat model-trial.md >> "$GITHUB_STEP_SUMMARY"
         env:
-          A: ${{ inputs.a }}
-          B: ${{ inputs.b }}
-          RUNS: ${{ inputs.runs }}
+          A: ${{ inputs.a || 'https://vinterest.pages.dev' }}
+          B: ${{ inputs.b || 'https://claude-sleepy-shannon-61xvx1.vinterest.pages.dev' }}
+          RUNS: ${{ inputs.runs || '2' }}
       - uses: actions/upload-artifact@v4
         if: always()
         with:
