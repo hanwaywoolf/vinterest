@@ -287,6 +287,8 @@ const WineDNA = {
     const hiCut=Math.round(this._q(rs,2/3)), loCut=Math.round(this._q(rs,1/3));
     const best=sc.filter(w=>w.rating>=hiCut), low=sc.filter(w=>w.rating<=loCut);
     const flat=hiCut-loCut<2;
+    // The style of their best third, per trait (Explore Next builds on it).
+    const bestAvg={}; Object.keys(this.AXES).forEach(k=>{ const v=this._mean(best.map(w=>this.axisValue(w,k)).filter(x=>typeof x==='number')); if(v!=null) bestAvg[k]=v; });
     const L=p.label.toLowerCase();
     // Style, on their own scale.
     const style=[];
@@ -368,7 +370,7 @@ const WineDNA = {
     const portrait=(bStyle.length||bFl.length||names.length)?`You love ${bStyle.length?this._list(bStyle)+' ':''}${L}${bFl.length?` with ${this._list(bFl)}`:''}${names.length?`, ${names.length>1?'above all':'especially'} ${this._list(names)}`:''}.`:null;
     const headline=portrait||(styleAll[0]?styleAll[0].text:null)||(up[0]?`${up[0].name} lifts your scores most: ${up[0].count} bottles averaging ${up[0].avg}, ${up[0].lift>0?'+':''}${up[0].lift} on your average.`
       :flat?`You score your ${L} very evenly, mostly between ${loCut} and ${hiCut}.`:null);
-    return {ready:true,n,avg:Math.round(avg*10)/10,usual,hiCut,loCut,flat,style:styleAll,up:up.map(({ws,...x})=>x),down:down.map(({ws,...x})=>x),favs,nots,portrait,money,age,headline};
+    return {ready:true,n,avg:Math.round(avg*10)/10,usual,bestAvg,hiCut,loCut,flat,style:styleAll,up:up.map(({ws,...x})=>x),down:down.map(({ws,...x})=>x),favs,nots,portrait,money,age,headline};
   },
 
   /* Their house wines: the bottles they keep coming back to, rather than just their top scores.

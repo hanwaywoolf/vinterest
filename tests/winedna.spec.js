@@ -228,7 +228,7 @@ test('wines named in WineDNA open their details', async ({ page }) => {
     const all = WineHistory.getAll(); const w = all.find((x) => x.type === 'red' && x.rating >= 90); w.buy_again = true; WineHistory.save(all); });
   await page.goto(`${BASE}/?demo=1#profile`);
   const root = page.locator('#root');
-  await expect(root.locator('[data-section="house"]')).toContainText('Your House Wines');
+  await expect(root.locator('[data-section="house"]')).toContainText('Your “House” Wines');
   const row = page.getByTestId('house-wines').getByRole('button').first();
   const name = (await row.locator('div div').first().innerText()).trim().replace(/^♥/, '').trim();
   await row.click();

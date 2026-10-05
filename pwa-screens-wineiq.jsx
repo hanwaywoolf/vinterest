@@ -298,6 +298,10 @@ function WineDNAScreen({nav,back,showPro}){
       .finally(()=>setGeneratingSummary(null));
   },[typeIdx,sig]);
 
+  // Explore Next picks seen today count toward their rest (ExploreNext.noteShown), so ones they
+  // keep passing over make way for new styles.
+  React.useEffect(()=>{ if(t.explore&&t.explore.picks.length) ExploreNext.noteShown(t.explore.picks); },[typeIdx,sig]);
+
   /* Sommelier script — shared with Home through SommelierScript (pwa-content-engine.js), so
      both screens show the same text and the same budget. */
   React.useEffect(()=>{
@@ -495,7 +499,7 @@ function WineDNAScreen({nav,back,showPro}){
         {t.scored.length>0&&!collapsed.knows&&<_KnowsCard k={t.knows} t={t} tLabel={tLabel} openWine={openWine}/>}
 
         {/* ── House wines: the bottles they keep coming back to (WineDNA.houseWines) ── */}
-        {t.house.length>0&&<CSH label="Your House Wines" cKey="house" collapsed={collapsed} toggle={toggle}
+        {t.house.length>0&&<CSH label="Your “House” Wines" cKey="house" collapsed={collapsed} toggle={toggle}
           summary={`${t.house.length===1?'One bottle':`${t.house.length} bottles`} you keep coming back to, led by ${t.house[0].wine.name}.`}/>}
         {t.house.length>0&&!collapsed.house&&(
           <Card style={{padding:14}}>
@@ -560,7 +564,7 @@ function WineDNAScreen({nav,back,showPro}){
             <div style={{display:'flex',flexDirection:'column',gap:10}}>
               {t.explore.picks.map((p,i)=>(
                 <div key={p.style.id}
-                  onClick={()=>{Handoff.styleExplore.set({id:p.style.id,typeKey:t.key,label:t.label});nav('style-explore');}}
+                  onClick={()=>{ExploreNext.markOpened(p.style.id);Handoff.styleExplore.set({id:p.style.id,typeKey:t.key,label:t.label});nav('style-explore');}}
                   style={{padding:'12px 12px',borderRadius:12,background:i===0?`${t.col}08`:C.offWhite,border:`1px solid ${i===0?t.col+'25':C.line}`,cursor:'pointer'}}>
                   <div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline',gap:8,marginBottom:6}}>
                     <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P,flex:1}}>{p.style.name}</div>
