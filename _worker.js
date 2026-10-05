@@ -553,7 +553,9 @@ function _shopFor(cfg, url) { const h = _goHost(url); return cfg.retailers.find(
 function _track(cfg, url, placement) {
   const r = _shopFor(cfg, url), pub = cfg.awin && cfg.awin.publisherId, sk = cfg.skimlinks || {};
   if (r && r.awinMid && pub) return "https://www.awin1.com/cread.php?awinmid=" + encodeURIComponent(r.awinMid) + "&awinaffid=" + encodeURIComponent(pub) + "&clickref=" + encodeURIComponent(placement) + "&ued=" + encodeURIComponent(url);
-  if (sk.enabled && sk.id && !/(^|\.)google\./.test(_goHost(url))) return "https://go.skimresources.com/?id=" + encodeURIComponent(sk.id) + "&xs=1&xcust=" + encodeURIComponent(placement) + "&url=" + encodeURIComponent(url);
+  // Skimlinks' Link Wrapper. sref is the page a click is credited to: an app tap has no web page
+  // and /go sends no referrer, so it names the approved site (skimlinks.sref, else vinterest.app).
+  if (sk.enabled && sk.id && !/(^|\.)google\./.test(_goHost(url))) return "https://go.skimresources.com/?id=" + encodeURIComponent(sk.id) + "&xs=1&xcust=" + encodeURIComponent(placement) + "&sref=" + encodeURIComponent(sk.sref || "https://vinterest.app/") + "&url=" + encodeURIComponent(url);
   return url;
 }
 /* A short signature for a link this Worker vouches for (HMAC with GO_SECRET). Without the secret

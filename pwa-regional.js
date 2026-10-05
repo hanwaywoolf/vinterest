@@ -67,7 +67,7 @@ const Shops={
   _track(url,placement){
     const c=this.config(), r=this.byUrl(url), pub=c.awin.publisherId, sk=c.skimlinks||{};
     if(r&&r.awinMid&&pub) return {url:'https://www.awin1.com/cread.php?awinmid='+encodeURIComponent(r.awinMid)+'&awinaffid='+encodeURIComponent(pub)+'&clickref='+encodeURIComponent(placement||'app')+'&ued='+encodeURIComponent(url),partner:true};
-    if(sk.enabled&&sk.id) return {url:'https://go.skimresources.com/?id='+encodeURIComponent(sk.id)+'&xs=1&xcust='+encodeURIComponent(placement||'app')+'&url='+encodeURIComponent(url),partner:true};
+    if(sk.enabled&&sk.id) return {url:'https://go.skimresources.com/?id='+encodeURIComponent(sk.id)+'&xs=1&xcust='+encodeURIComponent(placement||'app')+'&sref='+encodeURIComponent(sk.sref||'https://vinterest.app/')+'&url='+encodeURIComponent(url),partner:true};
     return {url,partner:false};
   },
   /* A shop page's link. A known retailer's page, or one the Worker signed (`sig`, the price

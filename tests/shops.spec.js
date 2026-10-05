@@ -77,7 +77,7 @@ test('Skimlinks, when switched on, tracks the shops Awin doesn\'t cover', async 
   const out = await page.evaluate(() => ({ indie: Shops.link('https://indiecellar.example/a', 'listing'), signed: Shops.link('https://indiecellar.example/a', 'listing', 'abc') }));
   const u = new URL(out.indie.url);
   expect(u.host).toBe('go.skimresources.com');
-  expect(Object.fromEntries(u.searchParams)).toMatchObject({ id: '123X456', xcust: 'listing', url: 'https://indiecellar.example/a' });
+  expect(Object.fromEntries(u.searchParams)).toMatchObject({ id: '123X456', xcust: 'listing', sref: 'https://vinterest.app/', url: 'https://indiecellar.example/a' });
   expect(out.indie.partner).toBe(true);
   expect(out.signed.url).toBe('/go?u=' + encodeURIComponent('https://indiecellar.example/a') + '&p=listing&s=abc'); // a link the Worker signed goes by way of /go
 });
@@ -122,7 +122,7 @@ test('the Worker\'s /go: the deployed list picks the shop and the tracking, and 
   r = await go('u=' + encodeURIComponent('https://indiecellar.example/a') + '&p=listing&s=' + sig);
   u = new URL(r.to);
   expect(u.host).toBe('go.skimresources.com');
-  expect(Object.fromEntries(u.searchParams)).toMatchObject({ id: '123X456', xcust: 'listing', url: 'https://indiecellar.example/a' });
+  expect(Object.fromEntries(u.searchParams)).toMatchObject({ id: '123X456', xcust: 'listing', sref: 'https://vinterest.app/', url: 'https://indiecellar.example/a' });
 });
 
 test('the Worker keeps a shop only if the search really returned its page; never a search engine', async () => {

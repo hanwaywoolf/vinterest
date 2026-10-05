@@ -94,8 +94,15 @@ most of them without applying shop by shop, at a lower rate than a direct deal.
 1. Apply at skimlinks.com as a publisher with vinterest.app. Describe the app as for the Awin
    application above. Check their terms allow traffic from inside an app, and expect them to ask
    about traffic.
-2. Once approved, copy your **site ID** (looks like `123456X1234567`) into
-   `data/retailers.json` → `skimlinks.id`, and set `skimlinks.enabled` to `true`.
+2. Once approved, copy your **site ID** (looks like `123456X1234567`; it's in the snippet's
+   address after `/js/`) into `data/retailers.json` → `skimlinks.id`, and set
+   `skimlinks.enabled` to `true`. Don't paste the JavaScript snippet anywhere: the app can't run
+   it, and the site has no shop links. `/go` builds Link Wrapper links on the server instead
+   (`go.skimresources.com/?id=…&xs=1&xcust=<where it was tapped>&sref=<the page it's credited
+   to>&url=<the shop page>`). An app tap has no web page and `/go` sends no referrer, so `sref`
+   names the approved site (`skimlinks.sref`, `https://vinterest.app/` by default).
+   In Skimlinks' domain settings, also list the addresses the app runs on
+   (`test.vinterest.app`, `vinterest.pages.dev`) in case clicks are checked against them.
 3. Deploy. From then on every shop link that isn't an Awin partner goes through
    `go.skimresources.com` (never a Google search), labelled Partner.
 
