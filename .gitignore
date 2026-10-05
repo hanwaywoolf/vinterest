@@ -45,3 +45,4 @@ screens-*.jsx
 
 # Rendered films (npm run site:video)
 video/
+model-trial.md
