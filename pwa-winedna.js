@@ -475,8 +475,18 @@ const WineDNA = {
     f.push(`Personality label: ${p.personality} (based on ${p.basis==='loved'?'their 90+ wines':'all the wines they chose'}).`);
     f.push(`Style of the wines they choose: ${p.axes.filter(k=>p.avg[k]!=null).map(k=>`${this.AXES[k].name.toLowerCase()} ${this.level(p.avg[k])}`).join(', ')}.`);
     p.signals.forEach(s=>f.push(`Preference signal: ${s.text} ${s.detail}`));
-    if(p.favourites.regions.length) f.push(`Highest-scoring regions: ${p.favourites.regions.map(r=>`${r.name} (${r.count} bottles, avg ${r.avg})`).join('; ')}.`);
-    if(p.favourites.grapes.length) f.push(`Highest-scoring grapes: ${p.favourites.grapes.map(g=>`${g.name} (${g.count}, avg ${g.avg})`).join('; ')}.`);
+    // What they love, on their own scale (WineDNA.loves): the summary's "What You Love" is built from this.
+    const lv=p.loves;
+    if(lv&&lv.ready){
+      f.push(`Their usual score for ${p.label.toLowerCase()} is ${lv.usual}; their best third score ${lv.hiCut}+.`);
+      if(lv.portrait) f.push(`What they love, in a line: ${lv.portrait}`);
+      lv.favs.forEach(x=>f.push(`What they love: ${x.title}${x.also?` (also ${x.also})`:''}. ${x.strength}. ${x.character||''} ${x.evidence} Best bottles: ${x.examples.map(w=>`${w.name} (${w.rating})`).join(', ')}.`));
+      lv.nots.forEach(x=>f.push(`Less their thing: ${x.title}${x.also?` (also ${x.also})`:''}. ${x.character||''} ${x.evidence} Lowest: ${x.examples.map(w=>`${w.name} (${w.rating})`).join(', ')}.`));
+      [lv.money,lv.age].filter(Boolean).forEach(x=>f.push(x));
+    } else {
+      if(p.favourites.regions.length) f.push(`Highest-scoring regions: ${p.favourites.regions.map(r=>`${r.name} (${r.count} bottles, avg ${r.avg})`).join('; ')}.`);
+      if(p.favourites.grapes.length) f.push(`Highest-scoring grapes: ${p.favourites.grapes.map(g=>`${g.name} (${g.count}, avg ${g.avg})`).join('; ')}.`);
+    }
     if(p.favourites.disliked.length) f.push(`Scored below 80: ${p.favourites.disliked.map(w=>`${w.name}${w.region?' from '+w.region:''} (${w.rating})`).join('; ')}.`);
     if(p.value&&p.value.verdict) f.push(`Value: ${p.value.verdict.text}`);
     return f.join('\n');

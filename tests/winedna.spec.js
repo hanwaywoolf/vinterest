@@ -121,7 +121,7 @@ test('the WineDNA tab shows the new sections with no console errors', async ({ p
   const errors = collectErrors(page);
   await page.goto(`${BASE}/?demo=1#profile`);
   const root = page.locator('#root');
-  for (const t of ['Based on your 6 Outstanding (90+) reds', 'What you love', 'You tend to score softer-acid reds higher.', 'Where to look:', 'You love ', 'measured against your own usual score', 'Less your thing', 'Worth knowing before you buy', 'Your reds style', 'Your 90+ reds', 'Getting value', 'Your sweet spot', 'How your choices are changing', 'Blind Call accuracy']) {
+  for (const t of ['Based on your 6 Outstanding (90+) reds', 'Region you love most', 'Your reds style', 'Your 90+ reds', 'Getting value', 'Your sweet spot', 'How your choices are changing', 'Blind Call accuracy']) {
     await expect(root, t).toContainText(t);
   }
   // Removed: duplicate personality badge, XP bar, "1 of 4" arrows, generic grape claims.
@@ -183,7 +183,8 @@ test('wines named in WineDNA open their details', async ({ page }) => {
     const all = WineHistory.getAll(); const w = all.find((x) => x.type === 'red' && x.rating >= 90); w.buy_again = true; WineHistory.save(all); });
   await page.goto(`${BASE}/?demo=1#profile`);
   const root = page.locator('#root');
-  const row = root.getByText('Worth buying again', { exact: true }).locator('xpath=following-sibling::div[1]');
+  await expect(root.locator('[data-section="buyagain"]')).toContainText('Buy Again');
+  const row = root.getByText("The bottles you said you'd buy again", { exact: false }).locator('xpath=following-sibling::div[1]');
   const name = (await row.locator('span').first().innerText()).trim();
   await row.click();
   await expect(root.getByText('Details', { exact: true })).toBeVisible();

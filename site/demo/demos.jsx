@@ -155,7 +155,7 @@ const _DEMO_SCREENS = {
   // One part per caption, each scrolled to the section it talks about, then reading gently on.
   dna: { nav: 'profile', Screen: WineDNAScreen, steps: [
     { at: 0, to: 'top', drift: 0.3 },
-    { at: 0.167, to: '[data-section="love"]', drift: 0.3 },
+    { at: 0.167, to: 'top', drift: 0.7 }, // the written summary's What You Love, under the profile
     { at: 0.333, to: '[data-section="taste"]', drift: 0.4 },
     { at: 0.5, to: '[data-section="value"]', drift: 0.3 },
     { at: 0.667, to: '[data-section="explore"]', drift: 0.3 },

@@ -44,24 +44,6 @@ const _TYPES=[
   {key:'fortified', label:'Fortified',tab:'Fortified',col:'#5C2A1E'},
 ];
 
-/* One thing they love (or don't) in What You Love: how strongly, what it is, what it's like in
-   words (style and the flavours that recur), the evidence in plain terms, and their best (or
-   lowest) bottles of it, each opening the wine. */
-function _LoveCard({x,col,openWine,quiet}){
-  return <div style={{padding:'12px 12px',borderRadius:12,background:quiet?C.white:`${col}08`,border:`1px solid ${quiet?C.line:col+'25'}`,display:'flex',flexDirection:'column',gap:4}}>
-    <div style={{fontSize:12,fontWeight:700,color:quiet?C.mid:col,fontFamily:C.P,textTransform:'uppercase',letterSpacing:'0.06em'}}>{x.strength}</div>
-    <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>{x.kind==='Region'&&<Flag region={x.name} size={15} style={{marginRight:6}}/>}{x.title}{x.also?<span style={{fontWeight:500,color:C.mid}}> · {x.also}</span>:''}</div>
-    {x.character&&<div style={{fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.5}}>{x.character}</div>}
-    <div style={{fontSize:13,color:C.mid,fontFamily:C.P,lineHeight:1.45}}>{x.evidence}</div>
-    {x.examples.length>0&&<div style={{display:'flex',flexWrap:'wrap',gap:6,marginTop:4}}>
-      {x.examples.map(w=><span key={w.name+(w.vintage||'')} role="button" onClick={()=>openWine(w)} style={{display:'inline-flex',alignItems:'center',gap:6,padding:'5px 10px',borderRadius:999,background:C.white,border:`1px solid ${C.line}`,cursor:'pointer',maxWidth:'100%'}}>
-        <span style={{fontSize:13,color:C.ink,fontFamily:C.P,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{w.name}</span>
-        <span style={{fontSize:13,fontWeight:800,color:scoreCol(w.rating),fontFamily:C.P}}>{w.rating}</span>
-      </span>)}
-    </div>}
-  </div>;
-}
-
 /* Collapsible section header — collapsed state shows a short useful summary + expand CTA below the title */
 function CSH({label,cKey,collapsed,toggle,summary}){
   const isC=collapsed[cKey];
@@ -255,13 +237,13 @@ function WineDNAScreen({nav,back,showPro}){
      Keyed on the wine signature so a new scan or a changed score refreshes it. */
   React.useEffect(()=>{
     if(!t.wines.length) return;
-    const key=`vinterest_dna_v6_${t.key}_${sig}`;
+    const key=`vinterest_dna_v7_${t.key}_${sig}`;
     const cached=Cache.getText(key);
     if(cached){setGenSummaries(s=>({...s,[t.key]:cached}));return;}
     if(generatingSummary===t.key) return;
     setGeneratingSummary(t.key);
-    const hasDislikes=t.favourites.disliked.length>0;
-    const prompt=`You write the summary at the top of a wine drinker's WineDNA profile. The app is educational: be warm, specific and confidence-building, and help them buy better next time. Use ONLY these facts, computed from their own scans and 100-point scores; never invent grapes, regions, wines or numbers, and don't claim a preference the facts don't state. If they've scored fewer than 8, say gently that the picture is still forming.\n\nFacts:\n${WineDNA.summaryFacts(t)}\n\nReturn ONLY raw JSON, no markdown: {"style":"one sentence on the style of ${t.label.toLowerCase()} they reach for, max 22 words","love":"one sentence on what their highest scores have in common and what to look for next, max 26 words"${hasDislikes?',"miss":"one sentence on what the wines they scored under 80 share, framed as useful to know when buying, max 22 words"':''}}`;
+    const hasDislikes=t.favourites.disliked.length>0||(t.loves.nots||[]).length>0;
+    const prompt=`You write the summary at the top of a wine drinker's WineDNA profile. The app is educational: be warm, specific and confidence-building, and help them buy better next time. Use ONLY these facts, computed from their own scans and 100-point scores; never invent grapes, regions, wines or numbers, and don't claim a preference the facts don't state. If they've scored fewer than 8, say gently that the picture is still forming.\n\nFacts:\n${WineDNA.summaryFacts(t)}\n\nReturn ONLY raw JSON, no markdown: {"style":"one sentence on the style of ${t.label.toLowerCase()} they reach for, max 22 words","love":"two short sentences in plain words: what they love (the style, the flavours and the grapes, regions or producers that lift their scores, from the What they love facts) and one or two of their best bottles by name as proof, then what to look for next; at most one number, max 45 words"${hasDislikes?',"miss":"one sentence on what holds their scores down (from the Less their thing facts and the wines under 80), framed as useful to know when buying, max 26 words"':''}}`;
     window.claude.complete({purpose:'winedna_summary',messages:[{role:'user',content:prompt}]})
       .then(text=>{const s=(text||'').trim(); if(s){Cache.setText(key,s);setGenSummaries(g=>({...g,[t.key]:s}));}})
       .catch(()=>{})
@@ -330,11 +312,14 @@ function WineDNAScreen({nav,back,showPro}){
   );
 
   /* Summary chips: what you drink most next to what you score highest */
-  const fav=t.favourites, lv=t.loves;
+  const fav=t.favourites;
   const chips=[];
   if(t.topGrapes[0]) chips.push({label:'Top grape',value:t.topGrapes[0]});
   if(t.topRegions[0]) chips.push({label:'Most scanned',value:t.topRegions[0]});
-  if(fav.regions[0]) chips.push({label:'Top-scoring region',value:`${fav.regions[0].name} · ${fav.regions[0].avg}`});
+  // The region that lifts their scores most against their own usual score (WineDNA.loves), not just the highest raw average.
+  const loveRegion=t.loves.ready&&t.loves.up.find(x=>x.kind==='Region');
+  if(loveRegion) chips.push({label:'Region you love most',value:loveRegion.name});
+  else if(fav.regions[0]) chips.push({label:'Top-scoring region',value:`${fav.regions[0].name} · ${fav.regions[0].avg}`});
   const conf=t.confidence;
   const basisLine=t.basis==='loved'
     ?`Based on your ${t.loved.length} Outstanding (90+) ${tLabel}`
@@ -416,7 +401,7 @@ function WineDNAScreen({nav,back,showPro}){
                       {[
                         {label:'Your Style',text:sections.style},
                         {label:'What You Love',text:sections.love},
-                        {label:'What Didn’t Work',text:t.favourites.disliked.length?sections.miss:null},
+                        {label:'What Didn’t Work',text:t.favourites.disliked.length||(t.loves.nots||[]).length?sections.miss:null},
                       ].filter(s=>s.text).map((s,i)=>(
                         <div key={i}>
                           <div style={{fontSize:12,fontWeight:700,color:t.col,letterSpacing:'0.08em',textTransform:'uppercase',fontFamily:C.P,marginBottom:2}}>{s.label}</div>
@@ -456,47 +441,13 @@ function WineDNAScreen({nav,back,showPro}){
           </Card>;
         })()}
 
-        {/* ── What You Love: what separates your best-scored wines, and where they come from ── */}
-        {t.wines.length>0&&<CSH label="What You Love" cKey="love" collapsed={collapsed} toggle={toggle} summary={t.loves.ready&&t.loves.headline?t.loves.headline:`Score more ${tLabel} to see what your favourites have in common.`}/>}
-        {t.wines.length>0&&!collapsed.love&&(
+        {/* ── Buy Again: their own shortlist (What You Love's findings now feed the summary at the top) ── */}
+        {fav.buyAgain.length>0&&<CSH label="Buy Again" cKey="buyagain" collapsed={collapsed} toggle={toggle} summary={`${fav.buyAgain.length===1?'One bottle':`${fav.buyAgain.length} bottles`} you said you'd buy again, led by ${fav.buyAgain[0].name}.`}/>}
+        {fav.buyAgain.length>0&&!collapsed.buyagain&&(
           <Card style={{padding:14}}>
-            <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P,marginBottom:4}}>What you love</div>
-            {!lv.ready?(
-              <div style={{fontSize:15,color:C.ink2,fontFamily:C.P,lineHeight:1.55,marginBottom:14,padding:'10px 12px',borderRadius:12,background:C.offWhite}}>
-                Score {WineDNA.noun(t.key,WineDNA.LOVES_MIN-lv.n)} more and this will show what your favourite {tLabel} have in common: their grapes, regions, producers, price and style.
-              </div>
-            ):(<>
-              {lv.portrait&&<div data-testid="love-portrait" style={{fontSize:18,fontWeight:700,color:C.ink,fontFamily:C.P,lineHeight:1.4,marginBottom:6}}>{lv.portrait}</div>}
-              <div data-testid="love-scale" style={{fontSize:13,color:C.mid,fontFamily:C.P,lineHeight:1.5,marginBottom:12}}>
-                From your {lv.n} scored {tLabel}, measured against your own usual score of {lv.usual}{lv.flat?'':` (your best third score ${lv.hiCut}+)`}.
-              </div>
-              {lv.favs.length>0&&<div data-testid="love-up" style={{display:'flex',flexDirection:'column',gap:10,marginBottom:12}}>
-                {lv.favs.map(x=><_LoveCard key={x.kind+x.name} x={x} col={t.col} openWine={openWine}/>)}
-              </div>}
-              {lv.style.map(s=>(
-                <div key={s.axis} style={{padding:'10px 12px',borderRadius:12,background:C.offWhite,marginBottom:10}}>
-                  <div style={{fontSize:15,fontWeight:700,color:C.ink,fontFamily:C.P,marginBottom:3}}>{s.text}</div>
-                  <div style={{fontSize:13,color:C.mid,fontFamily:C.P,lineHeight:1.5,marginBottom:s.tip?6:0}}>{s.detail}</div>
-                  {s.tip&&<div style={{fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.5}}><span style={{fontWeight:700,color:t.col}}>Where to look: </span>{s.tip}</div>}
-                </div>
-              ))}
-              {lv.nots.length>0&&<div data-testid="love-down" style={{marginBottom:12}}>
-                <div style={{...sub,marginBottom:6}}>Less your thing</div>
-                <div style={{display:'flex',flexDirection:'column',gap:8}}>{lv.nots.map(x=><_LoveCard key={x.kind+x.name} x={x} col={C.mid} openWine={openWine} quiet/>)}</div>
-              </div>}
-              {[lv.money,lv.age].filter(Boolean).map(x=><div key={x} style={{fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.5,marginBottom:8}}>{x}</div>)}
-              {!lv.style.length&&!lv.favs.length&&!lv.nots.length&&<div style={{fontSize:15,color:C.ink2,fontFamily:C.P,lineHeight:1.55,marginBottom:14,padding:'10px 12px',borderRadius:12,background:C.offWhite}}>
-                {lv.flat?`You score your ${tLabel} very evenly, mostly between ${lv.loCut} and ${lv.hiCut}, so nothing pulls ahead yet. Spreading your scores out (an 86 for a good-not-great bottle) will show what you really love.`
-                  :`Nothing pulls your scores up or down yet: no grape, region, producer, price or style stands out. That's a broad palate; more scores will sharpen it.`}
-              </div>}
-              {fav.mostScanned&&lv.favs[0]&&lv.favs[0].kind==='Region'&&fav.mostScanned.name!==lv.favs[0].name&&(
-                <div style={{fontSize:13,color:C.ink2,fontFamily:C.P,lineHeight:1.5,marginBottom:12}}>You scan {fav.mostScanned.name} most, but you score {lv.favs[0].name} higher. Worth seeking out.</div>
-              )}
-            </>)}
-
             {fav.buyAgain.length>0&&(
-              <div style={{marginTop:14}}>
-                <div style={{...sub,marginBottom:6}}>Worth buying again</div>
+              <div>
+                <div style={{fontSize:13,color:C.mid,fontFamily:C.P,lineHeight:1.5,marginBottom:6}}>The bottles you said you'd buy again, best first. Restock goes straight to a shop.</div>
                 {fav.buyAgain.map(w=>{ const pr=WineDNA.priceOf(w); return (
                   <div key={'b'+w.name} role="button" onClick={()=>openWine(w)} style={{display:'flex',alignItems:'center',gap:8,padding:'6px 0',borderTop:`1px solid ${C.line}`,cursor:'pointer'}}>
                     <Icon n="cart" sz={15} col={C.green}/>
@@ -509,22 +460,6 @@ function WineDNAScreen({nav,back,showPro}){
               </div>
             )}
 
-            {(fav.rethink.length>0||fav.disliked.length>0)&&(
-              <div style={{marginTop:14}}>
-                <div style={{...sub,marginBottom:6}}>Worth knowing before you buy</div>
-                {fav.rethink.map(x=>(
-                  <div key={'r'+x.name} style={{fontSize:15,color:C.ink2,fontFamily:C.P,lineHeight:1.5,marginBottom:4}}>{x.name}{x.also?` (${x.also})`:''} averages {x.avg} across {x.count} bottles, below your usual. Try a different producer or style before writing it off.</div>
-                ))}
-                {fav.disliked.map(w=>(
-                  <div key={'d'+w.name} role="button" onClick={()=>openWine(w)} style={{display:'flex',alignItems:'center',gap:8,padding:'5px 0',borderTop:`1px solid ${C.line}`,cursor:'pointer'}}>
-                    <span style={{fontSize:15,color:C.ink,fontFamily:C.P,flex:1}}>{w.name}</span>
-                    <span style={{fontSize:13,color:C.mid,fontFamily:C.P}}>{w.region||''}</span>
-                    <span style={{fontSize:15,fontWeight:800,color:scoreCol(w.rating),fontFamily:C.P}}>{w.rating}</span>
-                    <Icon n="chevron" sz={12} col={C.mid}/>
-                  </div>
-                ))}
-              </div>
-            )}
           </Card>
         )}
 

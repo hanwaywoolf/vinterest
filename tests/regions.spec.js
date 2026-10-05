@@ -69,24 +69,13 @@ test('no shipped code groups, counts or compares wines by the raw label region',
 // Flags add colour wherever a region is named: a label region resolves to its knowledge-base
 // region's country, articles show the flags of the regions they're about, and WineDNA's best
 // regions and a region quiz's title carry one.
-test('flags show on region containers: WineDNA\'s best regions and a region quiz', async ({ context, page }) => {
+test('flags show on region containers: a region quiz', async ({ context, page }) => {
   await makeDeterministic(page);
-  // Two lower-scored rosés from elsewhere, so What You Love has enough to say Provence lifts their scores.
-  const more = [
-    { name: 'Tavel Test', producer: 'Aqueria', type: 'rose', region: 'Tavel', country: 'France', rating: 84, vintage: 2023, scanned_at: '2026-06-06T00:00:00Z' },
-    { name: 'Navarra Test Rosado', producer: 'Chivite', type: 'rose', region: 'Navarra', country: 'Spain', rating: 83, vintage: 2023, scanned_at: '2026-06-07T00:00:00Z' },
-  ];
-  await seedLocalStorage(page, { vinterest_onboarded: '1', vinterest_region: 'uk', vinterest_wines: JSON.stringify([...ROSES, ...more]) });
+  await seedLocalStorage(page, { vinterest_onboarded: '1', vinterest_region: 'uk', vinterest_wines: JSON.stringify(ROSES) });
   await stubNetwork(context);
   await page.goto(`${BASE}/#home`);
   const fr = await page.evaluate(() => Regions.countryFlag('France'));
   expect(await page.evaluate(() => [Regions.nameFlag('Côtes de Provence'), Regions.nameFlag('Provence'), Regions.nameFlag('Nowhere')])).toEqual([fr, fr, '']);
-
-  await page.evaluate(() => UserPrefs.openDNA('rose', 'love'));
-  await page.goto(`${BASE}/?d=1#profile`);
-  const best = page.getByTestId('love-up');
-  await expect(best).toContainText('Provence');
-  await expect(best.locator('.vflag').first()).toHaveText(fr);
 
   await page.evaluate(() => Handoff.quiz.set({ mode: 'region', region: 'Provence' }));
   await page.goto(`${BASE}/?q=1#quiz`);
