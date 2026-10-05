@@ -24,6 +24,9 @@ function Flag({wine,region,country,size=15,style}){
 const _SCORE_COL={good:C.green,neutral:C.amber,bad:'#B04A3A'};
 function scoreCol(score){ return _SCORE_COL[ParkerScale.tone(score)]; }
 /* "Partner" beside a link that earns Vinterest a commission (Shops.link), so it's never hidden. */
+/* Said in words wherever shop links are (the Price tab, "House" Wines), since a tooltip never
+   shows on a phone: the UK's ad rules and the FTC both want a clear note. */
+function ShopDisclosure({style}){ return <div data-testid="shop-disclosure" style={{fontSize:12,color:C.mid,fontFamily:C.P,lineHeight:1.45,...style}}>We may earn a commission if you buy through these links. It never changes your match or what we suggest.</div>; }
 function PartnerTag(){ return <span title="Vinterest may earn a commission if you buy through this link." style={{fontSize:11,fontWeight:700,color:C.mid,fontFamily:C.P,border:`1px solid ${C.line}`,borderRadius:6,padding:'1px 6px',letterSpacing:'0.04em',whiteSpace:'nowrap'}}>Partner</span>; }
 function Icon({n,sz=20,col=C.ink,style:s}){
   const d={

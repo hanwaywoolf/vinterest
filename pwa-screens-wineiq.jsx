@@ -516,6 +516,7 @@ function WineDNAScreen({nav,back,showPro}){
                 <button onClick={e=>{ e.stopPropagation(); FindOnline.open(w,'restock'); }} aria-label={`Restock ${w.name}`} style={{flexShrink:0,border:`1px solid ${C.green}55`,background:C.greenBg,color:C.green,borderRadius:20,padding:'4px 10px',fontSize:13,fontWeight:700,fontFamily:C.P,cursor:'pointer'}}>Restock</button>
               </div>); })}
             </div>
+            <ShopDisclosure style={{marginTop:8}}/>
           </Card>
         )}
 

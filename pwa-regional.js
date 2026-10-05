@@ -34,33 +34,51 @@ const FindOnline={
   },
   url(wine){ const gl=this.country(); return 'https://www.google.com/search?q='+encodeURIComponent(this.query(wine))+(gl?'&gl='+gl:''); },
   /* Where "Find it for me" goes: a partner shop's own search when one is switched on for the
-     user's country (Shops, tracked when its Awin IDs are set), else Google. {url, name, partner}. */
+     user's country (Shops, tracked when its Awin IDs are set), else Google, by way of /go.
+     {url, name, partner}. */
   target(wine,placement){
-    const shop=Shops.forCountry(this.country())[0];
-    if(shop){ const q=this.query(wine).replace(/\s+buy$/,''); return {...Shops.link(shop.search.replace('{q}',encodeURIComponent(q)),placement),name:shop.name}; }
-    return {url:this.url(wine),name:null,partner:false};
+    // The tap goes to the Worker's /go, which picks the shop from the list as deployed today (an
+    // installed app's own copy may be older); the name and Partner label come from this copy.
+    const gl=this.country(), shop=Shops.forCountry(gl)[0];
+    const url=Shops.goUrl({w:this.query(wine),c:gl,p:placement||'find'});
+    if(shop){ const q=this.query(wine).replace(/\s+buy$/,''); return {url,name:shop.name,partner:Shops._track(shop.search.replace('{q}',encodeURIComponent(q)),placement).partner}; }
+    return {url,name:null,partner:false};
   },
   label(wine,verb){ const t=this.target(wine); return t.name?`${verb||'Find it'} at ${t.name}`:(verb?`${verb} online`:'Find it online'); },
   open(wine,placement){ Shops.go(this.target(wine,placement||'find').url); }
 };
-/* Partner shops (data/retailers.json) and the one way any shop link is built. A link is tracked
-   through Awin (awin1.com/cread.php, clickref = where in the app it was tapped) only when the
-   publisher ID and that shop's awinMid are both set; otherwise it's the plain link. Money never
-   moves a match, a verdict or a pick: partner links sit beside them, labelled "Partner". */
+/* Partner shops (data/retailers.json) and the one way any shop link is built. Links go by way of
+   the Worker's /go, which tracks them through Awin (clickref = where in the app it was tapped)
+   when the publisher ID and that shop's awinMid are both set, else Skimlinks when it's switched
+   on, else leaves them plain. Money never moves a match, a verdict or a pick: shop links sit
+   beside them, labelled "Partner" and explained in words (ShopDisclosure). */
 const Shops={
   _cfg:null,
-  config(){ if(!this._cfg){ let c={}; try{ c=(typeof window!=='undefined'&&window.VINTEREST_RETAILERS)||_loadJSON('data/retailers.json')||{}; }catch(e){} this._cfg={awin:c.awin||{},retailers:c.retailers||[]}; } return this._cfg; },
+  config(){ if(!this._cfg){ let c={}; try{ c=(typeof window!=='undefined'&&window.VINTEREST_RETAILERS)||_loadJSON('data/retailers.json')||{}; }catch(e){} this._cfg={awin:c.awin||{},skimlinks:c.skimlinks||{},retailers:c.retailers||[]}; } return this._cfg; },
   _host(url){ try{ return new URL(url).host.replace(/^www\./,''); }catch(e){ return ''; } },
   byUrl(url){ const h=this._host(url); return this.config().retailers.find(r=>(r.domains||[]).some(d=>h===d||h.endsWith('.'+d)))||null; },
   // Switched-on shops with a search link, for a country ('gb', from FindOnline.country()).
   forCountry(gl){ return this.config().retailers.filter(r=>r.enabled&&r.search&&r.country===gl); },
-  link(url,placement){
-    const r=this.byUrl(url), pub=this.config().awin.publisherId;
-    if(!(r&&r.awinMid&&pub)) return {url,partner:false,name:r?r.name:null};
-    return {url:'https://www.awin1.com/cread.php?awinmid='+encodeURIComponent(r.awinMid)+'&awinaffid='+encodeURIComponent(pub)+'&clickref='+encodeURIComponent(placement||'app')+'&ued='+encodeURIComponent(url),partner:true,name:r.name};
+  /* The Worker's /go link (_worker.js handleGo), absolute in the installed apps (Platform.api). */
+  goUrl(params){ return Platform.api('/go?'+Object.entries(params).filter(([,v])=>v!=null&&v!=='').map(([k,v])=>k+'='+encodeURIComponent(v)).join('&')); },
+  /* How this copy of the list would track a link: Awin when the shop has an awinMid and the
+     publisher ID is set, else Skimlinks when it's switched on, else plain. Says whether it's a
+     partner link (the Partner label); /go does the same with the deployed list. */
+  _track(url,placement){
+    const c=this.config(), r=this.byUrl(url), pub=c.awin.publisherId, sk=c.skimlinks||{};
+    if(r&&r.awinMid&&pub) return {url:'https://www.awin1.com/cread.php?awinmid='+encodeURIComponent(r.awinMid)+'&awinaffid='+encodeURIComponent(pub)+'&clickref='+encodeURIComponent(placement||'app')+'&ued='+encodeURIComponent(url),partner:true};
+    if(sk.enabled&&sk.id) return {url:'https://go.skimresources.com/?id='+encodeURIComponent(sk.id)+'&xs=1&xcust='+encodeURIComponent(placement||'app')+'&url='+encodeURIComponent(url),partner:true};
+    return {url,partner:false};
+  },
+  /* A shop page's link. A known retailer's page, or one the Worker signed (`sig`, the price
+     search's own listings), goes by way of /go; anything else is tracked here (Skimlinks) or
+     opened as it is, since /go only follows links it can vouch for. */
+  link(url,placement,sig){
+    const r=this.byUrl(url), t=this._track(url,placement);
+    return {url:(r||sig)?this.goUrl({u:url,p:placement||'app',s:sig}):t.url,partner:t.partner,name:r?r.name:null};
   },
   // The Price tab's "In shops now": the shops the live price search found the wine at.
-  listings(priceData,placement){ return ((priceData&&priceData.shops)||[]).map(s=>({...s,...this.link(s.url,placement),name:s.name})); },
+  listings(priceData,placement){ return ((priceData&&priceData.shops)||[]).map(s=>({...s,...this.link(s.url,placement,s.sig),name:s.name})); },
   /* A real link click, not window.open with window features: installed apps hand a plain
      target=_blank link to the platform's in-app browser (Safari's sheet with Done on iOS, a
      Custom Tab with a close button on Android), whereas a "popup" request can open a bare

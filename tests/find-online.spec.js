@@ -39,6 +39,7 @@ test('Find it online opens a normal new tab (a link, not a popup window)', async
   await page.evaluate(() => { window.__opened = []; const o = window.open; window.open = (...a) => { window.__opened.push(a); return o.apply(window, a); }; });
   await page.locator('#root').getByText(/Learn about it & find a bottle/).first().click();
   const [tab] = await Promise.all([context.waitForEvent('page'), page.locator('#root').getByText('Find it online', { exact: true }).first().click()]);
-  expect(tab.url()).toContain('google.com/search?q=Pietradolce%20Etna%20Rosso%202021%20wine%20buy');
+  // by way of the Worker's /go, which sends it to a partner shop for the country, else Google
+  expect(tab.url()).toContain('/go?w=Pietradolce%20Etna%20Rosso%202021%20wine%20buy&c=gb&p=explore');
   expect(await page.evaluate(() => window.__opened.length)).toBe(0);
 });
