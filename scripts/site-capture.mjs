@@ -46,6 +46,18 @@ try {
   await page.evaluate(() => { const t = setInterval(() => { const b = Array.from(document.querySelectorAll('#d [data-layer="detail"] *')).find((e) => e.children.length === 0 && /^Learn$/.test(e.textContent.trim())); if (b) { b.click(); clearInterval(t); setTimeout(() => { const c = Array.from(document.querySelectorAll('#d [data-layer="detail"] *')).find((e) => e.children.length === 0 && /^Price$/.test(e.textContent.trim())); if (c) c.click(); }, 4000); } }, 500); });
   // The WineDNA screen asks for the summary and the (long) sommelier script as it opens, and the
   // scan deck for its cards' text.
+  // The Mastery demo's study history needs question banks for the grapes and regions the sample user has
+  // opened: ask the app to build them (it calls Claude through the hook above), then keep what it cached.
+  const BANK_GRAPES = ['Tempranillo', 'Grenache', 'Syrah', 'Malbec', 'Nebbiolo'], BANK_REGIONS = ['Rioja', 'Rhône Valley', 'Mendoza', 'Piedmont'];
+  await page.evaluate(([g, r]) => { g.forEach((x) => getGrapeQuiz(x, () => {})); r.forEach((x) => RegionQuizBank.load(x, () => {})); }, [BANK_GRAPES, BANK_REGIONS]);
+  for (let i = 0; i < 120; i++) {
+    const have = await page.evaluate(([g, r]) => g.filter((x) => grapeQuizBank(x)).length + r.filter((x) => RegionQuizBank.get(x)).length, [BANK_GRAPES, BANK_REGIONS]);
+    if (have === BANK_GRAPES.length + BANK_REGIONS.length) break;
+    await page.waitForTimeout(1000);
+  }
+  const banks = await page.evaluate(([g, r]) => { const out = {}; g.forEach((x) => { const k = _grapeQuizCacheKey(x); out[k] = Store.get(k); }); r.forEach((x) => { const k = RegionQuizBank.key(x); out[k] = Store.get(k); }); return out; }, [BANK_GRAPES, BANK_REGIONS]);
+  Object.entries(banks).forEach(([k, v]) => { if (v) saved.banks = { ...(saved.banks || {}), [k]: v }; });
+  console.log('banks:', Object.keys(saved.banks || {}).length);
   for (let i = 0; i < 90 && !(seen.includes('winedna_summary') && seen.includes('sommelier_long') && seen.includes('scancard') && seen.includes('learn_article') && seen.includes('vintage_info') && seen.includes('education') && seen.includes('price_ardanza')); i++) await page.waitForTimeout(1000);
 } finally {
   fs.rmSync(path.join(ROOT, 'site-dist/capture.html'), { force: true });

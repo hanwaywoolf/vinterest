@@ -124,6 +124,38 @@ function _openScan(view, unlock) {
   Handoff.openWine({ wine, source: 'camera', tracked: true, view });
 }
 
+/* The Mastery demo's sample user: a drinker twelve bottles in who has studied a fair bit. Their wines have
+   opened their grapes and regions, the question banks Claude wrote for those (captured once, like the rest)
+   are in, and they have answered a good share of each. A snapshot from five weeks ago, lower, gives the
+   radar its dashed "where you were" outline. Done in this demo's own setup, after DemoPersona.reset(), so the
+   other demos' stores (the Keep learning tiles, the Learn hub) are untouched. */
+function _seedMastery() {
+  try {
+    const banks = _DEMO_CAPTURED.banks || {};
+    Object.keys(banks).forEach((k) => Store.set(k, banks[k]));
+    WineHistory.getAll().forEach((w) => { try { ScanFlow.unlockLearning({ ...w, confidence: 'high' }); } catch (e) { /* the rest still shows */ } });
+    const answer = (setId, pool, n) => (pool || []).slice(0, n).forEach((q) => QuizMastery.recordAnswer(setId, q.q, true));
+    [['Tempranillo', 13], ['Grenache', 9], ['Syrah', 8], ['Malbec', 6], ['Nebbiolo', 3]].forEach(([g, n]) => answer('grape:' + g, grapeQuizBank(g), n));
+    [['Rioja', 14], ['Rhône Valley', 9], ['Mendoza', 7], ['Piedmont', 3]].forEach(([r, n]) => answer(RegionQuizBank.setId(r), RegionQuizBank.get(r), n));
+    [['red_grapes', 14], ['white_grapes', 6], ['rose', 3], ['sparkling', 5]].forEach(([t, n]) => answer('topic:' + t, QuizMastery.topicPool(t), n));
+    _loadJSON('data/onramp.json').slice(0, 4).forEach((a) => Store.set('vinterest_' + a.id + '_done', '1'));
+    // Seven Blind Calls, close to each label's profile but calling the tannins a little grippier, so the palate
+    // has a score, a bar per axis and a habit to show. The accuracy is worked out as the app does.
+    const off = [[0.04, -0.06, 0.15], [-0.05, 0.05, 0.2], [0.08, 0.03, 0.12], [-0.03, -0.04, 0.17], [0.06, 0.07, 0.1], [0.02, -0.02, 0.18], [-0.06, 0.04, 0.14]];
+    WineHistory.getAll().filter((w) => typeof w.body === 'number').slice(0, 7).forEach((w, i) => {
+      const o = off[i], c = (v) => Math.max(0, Math.min(1, v));
+      const guess = { body: c(w.body + o[0]), acidity: c(w.acidity + o[1]), tannins: c(w.tannins + o[2]) };
+      const miss = ['body', 'acidity', 'tannins'].map((k) => Math.abs(guess[k] - w[k]));
+      const accuracy = Math.max(0, 1 - (miss[0] + miss[1] + miss[2]) / 3 * 1.6);
+      ScanFlow.saveBlindResult(w, { accuracy, amount: Math.round(accuracy * 40), guess });
+    });
+    const m = KnowledgeMap.compute(WineHistory.getAll()), then = Date.now() - 35 * 864e5, a = {};
+    m.areas.forEach((x) => { a[x.id] = Math.round(x.score * 0.55); });
+    Store.setJSON(KnowledgeMap.HISTORY_KEY, { [KnowledgeMap._week(then)]: { t: then, o: Math.round(m.overall * 0.55), a } });
+    KnowledgeMap.note(m);
+  } catch (e) { /* the demo still draws, with an emptier map */ }
+}
+
 /* The sample user has done some studying, so the Mastery map and the Learn tab look lived in: most of
    the red Wine Basics quiz and a few articles read. Done here, after every module has loaded, and
    folded into the seeded store (DemoPersona.rebase), so each demo's reset keeps it. */
@@ -197,13 +229,11 @@ const _DEMO_SCREENS = {
   learn: { nav: 'learn', layers: [
     { id: 'hub', Screen: LearnScreen },
     { id: 'article', Screen: GenArticleScreen, setup() { Handoff.genArticle.set(_articleStub()); } },
-    { id: 'mastery', Screen: MasteryMapScreen },
   ], steps: [
     { at: 0, layer: 'hub', to: 'top', drift: 0.4, ms: 6000 },
-    { at: 0.2, layer: 'hub', to: /^wine basics$/i, drift: 0.4, ms: 6000 },
-    { at: 0.4, layer: 'hub', to: /^region quizzes$/i, drift: 0.5, ms: 6000 },
-    { at: 0.6, layer: 'article', to: 'top', drift: 0.9, ms: 14000 },
-    { at: 0.8, layer: 'mastery', to: 'top', drift: 0.6, ms: 10000 },
+    { at: 0.25, layer: 'hub', to: /^wine basics$/i, drift: 0.4, ms: 6000 },
+    { at: 0.5, layer: 'hub', to: /^region quizzes$/i, drift: 0.5, ms: 6000 },
+    { at: 0.75, layer: 'article', to: 'top', drift: 0.9, ms: 14000 },
   ] },
   // The dinner-table film (site/video): the scanned wine list sorted by match, the best match, and the
   // sommelier script. Driven from outside by update(p): 0 the list, .17 sorted by match, .34 the result, .67 the script.
@@ -217,6 +247,16 @@ const _DEMO_SCREENS = {
     { at: 0.17, layer: 'list', to: 'top', drift: 0.25, ms: 3000, do: [{ layer: 'list', tap: /Sort: Match Rate/ }] },
     { at: 0.34, layer: 'result', to: 'top', drift: 0.5, ms: 3800 },
     { at: 0.67, layer: 'script', to: '[data-section="scripts"]' },
+  ] },
+  // The Mastery section: the whole picture (overall and the radar), the grapes, the regions (the wine map)
+  // and the palate. One layer only, so its setup can build the study history; the parts scroll and open.
+  mastery: { nav: 'learn', layers: [
+    { id: 'map', nav: 'learn', Screen: MasteryMapScreen, setup() { _seedMastery(); } },
+  ], steps: [
+    { at: 0, layer: 'map', to: 'top', drift: 0.4, ms: 7000 },
+    { at: 0.25, layer: 'map', to: /^regions and grapes$/i, do: [{ layer: 'map', open: '[data-area="grapes"]' }], drift: 0.05, ms: 4000 },
+    { at: 0.5, layer: 'map', to: /^your wine map$/i, drift: 0.04, ms: 4000 },
+    { at: 0.75, layer: 'map', to: /^your palate$/i, drift: 0.04, ms: 4000 },
   ] },
   // The front page's carousel: one screen for each thing the app does.
   hero: { nav: 'scan', layers: [
@@ -413,6 +453,7 @@ const VinterestDemo = {
       (st.do || []).forEach((a) => {
         const root = layerEl(a.layer);
         if (a.type) typeInto(root, a.type[0], a.type[1]);
+        else if (a.open) [].concat(a.open).forEach((sel) => live.push(_until(() => { const t = root.querySelector(sel + ' [role="button"]'); if (!t) return false; t.click(); return true; }, 40)));
         else if (a.vinny) {
           const t0 = performance.now(), MS = 9000;
           const go = (now) => { const q = Math.min(1, (now - t0) / MS) * 0.92; _heroVinny.p = q; if (_heroVinny.set) _heroVinny.set(q); if (q < 0.92) driftRaf = requestAnimationFrame(go); };

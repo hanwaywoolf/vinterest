@@ -229,6 +229,22 @@ test.describe('desktop', () => {
     await expect(phone).toContainText('Thinking', { timeout: 8000 });
   });
 
+  test('Mastery shows the whole picture, the grapes, the region map and the palate, from the current build', async ({ page }) => {
+    await page.goto(BASE + '/');
+    await show(page, 'mastery');
+    const phone = page.locator('#mastery .phone-app');
+    await expect(phone).toContainText('Your Mastery');
+    await expect(phone).toContainText('Your shape', { timeout: 10000 }); // the radar sits below the score
+    await jump(page, 'mastery', 1);
+    await expect(phone).toContainText('Tempranillo', { timeout: 8000 }); // the grapes card, opened
+    await jump(page, 'mastery', 2);
+    await expect(phone).toContainText('Your wine map', { timeout: 8000 });
+    await jump(page, 'mastery', 3);
+    await expect(phone).toContainText('You tend to call tannins grippier', { timeout: 8000 }); // seven seeded Blind Calls
+    // Mastery is its own section: the Learn section no longer carries a Mastery step.
+    await expect(page.locator('#learn .steps li h3')).not.toContainText(['Mastery map']);
+  });
+
   test('My Wines types the search, opens a bottle, and shows its story and its price', async ({ page }) => {
     await page.goto(BASE + '/');
     await show(page, 'my-wines');
@@ -254,7 +270,7 @@ test.describe('desktop', () => {
 
   test('each demo screen mounts, with the sample user\'s wines', async ({ page }) => {
     await page.goto(BASE + '/');
-    const want = { winedna: 'WineDNA', learn: 'Wine Basics', 'my-wines': 'Viña Ardanza Reserva' };
+    const want = { winedna: 'WineDNA', learn: 'Wine Basics', mastery: 'Your Mastery', 'my-wines': 'Viña Ardanza Reserva' };
     for (const [id, text] of Object.entries(want)) {
       await show(page, id);
       await expect(page.locator(`#${id} .phone-app`)).toContainText(text);
@@ -285,7 +301,7 @@ test.describe('desktop', () => {
 
 // Nothing in a demo section may be cut off, whatever the window: the text and the phone stay inside
 // the section, and the caption text stays clear of the header.
-const FITS = ['scan', 'learn-wine', 'rate', 'keep-learning', 'winedna', 'vinny', 'learn', 'my-wines'];
+const FITS = ['scan', 'learn-wine', 'rate', 'keep-learning', 'winedna', 'vinny', 'learn', 'mastery', 'my-wines'];
 async function fits(page, id) {
   await show(page, id);
   await page.waitForTimeout(300);
