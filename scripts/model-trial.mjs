@@ -11,6 +11,7 @@
 // label scan per run with --image. The report (markdown) has both answers side by side.
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 const args = Object.fromEntries(process.argv.slice(2).reduce((a, x, i, all) => (x.startsWith('--') ? [...a, [x.slice(2), all[i + 1] && !all[i + 1].startsWith('--') ? all[i + 1] : true]] : a), []));
 const A = String(args.a || 'https://vinterest.pages.dev').replace(/\/$/, '');
@@ -23,7 +24,7 @@ if (!B) { console.error('Usage: node scripts/model-trial.mjs --b <preview url> [
 const PRICE = { 'claude-sonnet-4-6': [3, 15], 'claude-sonnet-5-5': [2, 10], 'claude-haiku-4-5': [1, 5], 'claude-opus-5-5': [4, 20] };
 const priceOf = (model) => PRICE[Object.keys(PRICE).find((k) => String(model || '').startsWith(k))] || null;
 
-const root = path.join(path.dirname(new URL(import.meta.url).pathname), '..');
+const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..'); // a folder name may have spaces
 const tpl = (f) => fs.readFileSync(path.join(root, 'prompts', f), 'utf8');
 const fill = (t, v) => t.replace(/\{\{(\w+)\}\}/g, (_, k) => v[k] ?? '');
 const K = JSON.parse(fs.readFileSync(path.join(root, 'data', 'knowledge.json'), 'utf8'));
