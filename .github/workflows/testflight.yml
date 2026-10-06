@@ -69,6 +69,7 @@ jobs:
           echo "ASC_KEY_PATH=$RUNNER_TEMP/keys/AuthKey_$ASC_KEY_ID.p8" >> "$GITHUB_ENV"
       - name: Archive (signed automatically)
         run: |
+          set -o pipefail
           VERSION=$(node -p "require('./package.json').version")
           BUILD=$(( ${{ github.run_number }} * 10 + ${{ github.run_attempt }} ))
           echo "Vinterest $VERSION ($BUILD)"
@@ -78,9 +79,14 @@ jobs:
             -authenticationKeyPath "$ASC_KEY_PATH" -authenticationKeyID "$ASC_KEY_ID" -authenticationKeyIssuerID "$ASC_ISSUER_ID" \
             DEVELOPMENT_TEAM="$APPLE_TEAM_ID" CODE_SIGN_STYLE=Automatic \
             MARKETING_VERSION="$VERSION" CURRENT_PROJECT_VERSION="$BUILD" \
-            archive
+            archive 2>&1 | tee "$RUNNER_TEMP/archive.log" || {
+            # Xcode's own error lines as annotations, so a failure says why on the run's summary
+            # (exit code 65 alone doesn't).
+            grep -E '(error|Error):' "$RUNNER_TEMP/archive.log" | sort -u | head -20 | while IFS= read -r l; do echo "::error title=Archive::$l"; done
+            exit 1; }
       - name: Upload to TestFlight
         run: |
+          set -o pipefail
           cat > "$RUNNER_TEMP/ExportOptions.plist" <<EOF
           <?xml version="1.0" encoding="UTF-8"?>
           <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -95,7 +101,10 @@ jobs:
           xcodebuild -exportArchive -archivePath "$RUNNER_TEMP/Vinterest.xcarchive" \
             -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist" -exportPath "$RUNNER_TEMP/export" \
             -allowProvisioningUpdates \
-            -authenticationKeyPath "$ASC_KEY_PATH" -authenticationKeyID "$ASC_KEY_ID" -authenticationKeyIssuerID "$ASC_ISSUER_ID"
+            -authenticationKeyPath "$ASC_KEY_PATH" -authenticationKeyID "$ASC_KEY_ID" -authenticationKeyIssuerID "$ASC_ISSUER_ID" \
+            2>&1 | tee "$RUNNER_TEMP/export.log" || {
+            grep -E '(error|Error):' "$RUNNER_TEMP/export.log" | sort -u | head -20 | while IFS= read -r l; do echo "::error title=Upload::$l"; done
+            exit 1; }
       - name: Remove the key
         if: always()
         run: rm -rf "$RUNNER_TEMP/keys"
