@@ -759,8 +759,22 @@ const ContentEngine = {
     const rc=Regional.current(), out=[];
     const rel=this._related(stub&&stub.slots,wines);
     const cmp=ScanFlow.COMPARE;
+    // A grape piece needs to know how the grape is in each bottle: the lead grape or a supporting
+    // one, printed on the label or only what the wine usually contains, and the label's own name
+    // for it (Garnacha for Grenache). Without that the article built a whole section on a supporting
+    // grape it had to guess at, then hedged ("your bottles don't tell us the exact mix").
+    const subj=stub&&stub.slots&&stub.slots.grape?WineDNA.grape(stub.slots.grape):null;
+    const grapesOf=w=>{
+      const gs=w.grapes||[]; if(!gs.length) return [];
+      const out=[`grapes: ${gs.map((g,i)=>g+(i===0&&gs.length>1?' (the lead grape)':'')).join(', ')}${w.grapes_basis==='typical'?' (what this wine usually contains; not printed on the label)':''}`];
+      const i=subj?gs.findIndex(g=>WineDNA.grape(g)===subj):-1;
+      if(i>0) out.push(`${gs[i]} is a supporting grape in it, not the main one`);
+      if(i>=0&&gs[i]!==subj) out.push(`its label calls ${subj} "${gs[i]}"`);
+      return out;
+    };
     const line=w=>{
       const b=[w.name+(w.vintage>0?' '+w.vintage:'')+(w.region?` (${w.region})`:'')];
+      b.push(...grapesOf(w));
       b.push(w.rating>0?`scored ${w.rating}, ${ParkerScale.label(w.rating)}`:'not scored yet');
       const p=WineDNA.priceOf(w,rc); if(p) b.push(`${w.price_paid&&w.price_paid.amount>0?'paid':'about'} ${rc.base}${Math.round(p)}`);
       if(w.buy_again) b.push('would buy again');

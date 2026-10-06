@@ -68,7 +68,7 @@ test('articles say whose they are, and the prompt knows the reader', async ({ co
     return { because: ContentEngine.because(s), brief: ContentEngine.readerBrief(s) };
   });
   expect(stub.because).toBe('Because you gave Gran Reserva 904 a 95');
-  expect(stub.brief).toContain('Gran Reserva 904 2015 (Rioja Alta), scored 95, Outstanding, paid £90, would buy again, they found it fuller than the label suggested');
+  expect(stub.brief).toContain('Gran Reserva 904 2015 (Rioja Alta), grapes: Tempranillo, scored 95, Outstanding, paid £90, would buy again, they found it fuller than the label suggested');
   expect(stub.brief).toContain('Muga Reserva');
   expect(stub.brief).toContain('Their WineDNA for reds');
   expect(stub.brief).toContain('What they usually spend');
@@ -182,7 +182,7 @@ test('a white grape piece draws on their whites, never their reds', async ({ con
   expect(out.none.brief).not.toContain('Cloudy Bay');
   expect(out.none.brief).toContain('WineDNA for whites');
   expect(out.one.because).toBe('Because you gave Trimbach Pinot Gris a 90');
-  expect(out.one.brief).toContain('Trimbach Pinot Gris (Alsace), scored 90');
+  expect(out.one.brief).toContain('Trimbach Pinot Gris (Alsace), grapes: Pinot Gris, its label calls Pinot Grigio "Pinot Gris", scored 90');
   expect(out.one.brief).not.toMatch(/reds|Gran Reserva/);
   // "Entering white" is about the contrast, so it does get what they mostly drink.
   expect(out.entering).toContain('What they mostly drink (reds)');
@@ -198,4 +198,20 @@ test('a piece about a type they have never had says so instead of borrowing anot
   expect(brief).toContain('They have no bottles on this subject yet');
   expect(brief).toContain("They haven't had any whites yet");
   expect(brief).not.toMatch(/reds|Gran Reserva/);
+});
+
+test('a grape piece says how the grape sits in each bottle: lead or supporting, on the label or typical, and the label\'s name for it', async ({ context, page }) => {
+  await user(context, page);
+  await page.goto(`${BASE}/#home`);
+  const brief = await page.evaluate(() => {
+    WineHistory.save([
+      { name: 'Viña Ardanza Reserva', vintage: 2016, region: 'Rioja', country: 'Spain', type: 'red', grapes: ['Tempranillo', 'Garnacha'], blend: true, grapes_basis: 'typical', rating: 98, scanned_at: '2026-06-01T12:00:00Z' },
+      { name: 'Château Rayas', vintage: 2015, region: 'Châteauneuf-du-Pape', country: 'France', type: 'red', grapes: ['Grenache'], grapes_basis: 'label', rating: 95, scanned_at: '2026-06-02T12:00:00Z' },
+    ]);
+    return ContentEngine.readerBrief({ id: 'g3', archetypeId: 'grape_unlock_intro', slots: { grape: 'Grenache' } });
+  });
+  expect(brief).toContain('grapes: Tempranillo (the lead grape), Garnacha (what this wine usually contains; not printed on the label)');
+  expect(brief).toContain('Garnacha is a supporting grape in it, not the main one');
+  expect(brief).toContain('its label calls Grenache "Garnacha"');
+  expect(brief).toMatch(/Château Rayas 2015 \(Châteauneuf-du-Pape\), grapes: Grenache, scored 95/);
 });
