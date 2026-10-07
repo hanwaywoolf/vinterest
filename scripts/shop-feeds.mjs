@@ -113,10 +113,10 @@ async function sync(shop, rows, seenAt) {
 // The Worker's own /shop-match (handleShopMatch in _worker.js) against the loaded table, for wines
 // whose answer we know, so a change to the matching or a new feed can be judged on real listings.
 const CHECK = [
-  { name: 'Tignanello', producer: 'Marchesi Antinori', vintage: 2021, region: 'Toscana', country: 'Italy', grapes: ['Sangiovese'] },
+  { name: 'Tignanello', producer: 'Marchesi Antinori', vintage: 2021, region: 'Toscana', country: 'Italy', type: 'red', grapes: ['Sangiovese'] },
   { name: 'Tignanello', producer: 'Marchesi Antinori', vintage: 2019, region: 'Toscana', country: 'Italy' },
   { name: 'Viña Ardanza Reserva', producer: 'La Rioja Alta', vintage: 2016, region: 'Rioja', country: 'Spain' },
-  { name: 'Muga Reserva', producer: 'Bodegas Muga', vintage: 2020, region: 'Rioja', country: 'Spain' },
+  { name: 'Muga Reserva', producer: 'Bodegas Muga', vintage: 2020, region: 'Rioja', country: 'Spain', type: 'red' },
   { name: 'Sauvignon Blanc', producer: 'Cloudy Bay', vintage: 2024, region: 'Marlborough', country: 'New Zealand', grapes: ['Sauvignon Blanc'] },
   { name: 'Châteauneuf-du-Pape', producer: 'Château de Beaucastel', vintage: 2019, region: 'Rhône', country: 'France' },
   { name: 'Sassicaia', producer: 'Tenuta San Guido', vintage: 2020, region: 'Bolgheri', country: 'Italy' },

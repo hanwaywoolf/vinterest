@@ -556,6 +556,7 @@ function _listedShops(shops, content) {
    "buy"), which adds the Awin tracking. Money never moves a match: this sits on the Price tab only.
    Without Supabase or a feed shop for the country it answers {items:[]}. */
 const SHOP_MATCH_TTL_S = 6 * 3600;
+const SHOP_COLOURS = { red: "red", rouge: "red", tinto: "red", rosso: "red", white: "white", blanc: "white", blanco: "white", bianco: "white", weiss: "white", rose: "rose", rosado: "rose", rosato: "rose" };
 const SHOP_PACK_WORDS = new Set(["case", "of", "bottle", "bottles", "half", "magnum", "double", "cl", "ml", "x", "off", "vintage", "seller"]);
 
 function _shopWineWords(wine) {
@@ -567,6 +568,8 @@ function _shopWineWords(wine) {
     prodT: [...prod].filter(tell),
     generic: [...new Set(nameW.filter((w) => !tell(w) && w.length > 2))],
     allowed: new Set([...nameW, ...prod, ..._lcboWords(`${wine.region || ""} ${wine.country || ""} ${(wine.grapes || []).join(" ")} ${wine.type || ""}`)]),
+    // Only a still wine's colour: sparkling and sweet wines come in several.
+    colour: { red: "red", white: "white", rose: "rose", "rosé": "rose" }[String(wine.type || "").toLowerCase()] || null,
   };
 }
 /* How surely a listing is this wine, 0 to about 1: how many of the words of the wine's own name it
@@ -581,7 +584,9 @@ function shopScore(ww, p) {
   const cover = ww.nameT.length ? nameHits / ww.nameT.length : 1;
   const extra = [...have].filter((w) => !ww.allowed.has(w) && !LCBO_GENERIC.has(w) && !SHOP_PACK_WORDS.has(w) && w.length > 2 && !/\d/.test(w)).length;
   const style = [...have].filter((w) => LCBO_GENERIC.has(w) && w.length > 3 && !ww.allowed.has(w) && ["reserva", "riserva", "reserve", "gran", "grand", "classico", "superiore", "rosso", "bianco", "blanc", "rouge", "tinto"].includes(w)).length;
-  return cover - 0.3 * extra - 0.15 * style + 0.03 * ww.generic.filter((w) => have.has(w)).length;
+  // A listing that names another colour ("muga - white wine" for a red Reserva) is another wine.
+  const clash = ww.colour && [...have].some((w) => SHOP_COLOURS[w] && SHOP_COLOURS[w] !== ww.colour && !ww.allowed.has(w));
+  return cover - 0.3 * extra - 0.15 * style + 0.03 * ww.generic.filter((w) => have.has(w)).length - (clash ? 1 : 0);
 }
 function _shopItem(p) {
   const price = Number(p.price), pack = p.pack || 1;
