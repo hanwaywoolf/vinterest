@@ -17,17 +17,17 @@ jobs:
         run: |
           q() { curl -sS -m 30 -X POST https://api.lcbo.dev/graphql -H 'content-type: application/json' -d "$1" -w '\nHTTP %{http_code}\n' 2>&1 | head -c 40000; }
           {
-            echo '## Query fields'; echo '```'
-            q '{"query":"{ __schema { queryType { fields { name description args { name type { name kind ofType { name kind } } } type { name kind ofType { name kind } } } } } }"}'
+            echo '## Input types'; echo '```'
+            q '{"query":"{ __schema { types { name kind inputFields { name type { name kind ofType { name kind ofType { name } } } } enumValues { name } } } }"}' | node -e '
+              let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{const j=JSON.parse(s.split("\nHTTP")[0]);for(const t of j.data.__schema.types){if(t.name.startsWith("__"))continue;if(t.inputFields)console.log(t.name+": "+t.inputFields.map(f=>f.name+":"+(f.type.name||(f.type.ofType&&(f.type.ofType.name||(f.type.ofType.ofType&&f.type.ofType.ofType.name)))||f.type.kind)).join(", "));else if(t.kind==="ENUM")console.log(t.name+" = "+t.enumValues.map(e=>e.name).join("|"))}}catch(e){console.log(s.slice(0,3000))}})'
             echo '```'
-            echo '## Types (fields)'; echo '```'
-            q '{"query":"{ __schema { types { name kind fields { name type { name kind ofType { name kind ofType { name } } } } } } }"}' | node -e '
-              let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{const j=JSON.parse(s.split("\nHTTP")[0]);for(const t of j.data.__schema.types){if(t.name.startsWith("__")||!t.fields)continue;console.log(t.name+": "+t.fields.map(f=>f.name+":"+(f.type.name||(f.type.ofType&&(f.type.ofType.name||(f.type.ofType.ofType&&f.type.ofType.ofType.name)))||f.type.kind)).join(", "))}}catch(e){console.log(s.slice(0,3000))}})'
-            echo '```'
-            echo '## Landing page'; echo '```'
-            curl -sS -m 20 https://lcbo.dev/ | sed -e 's/<[^>]*>/ /g' | tr -s ' \n' | head -c 6000
-            echo; echo '```'
+            for page in how-to/inventory-lookup how-to/product-discovery how-to/store-location legal/terms-of-service reference/rate-limits reference/complexity-limits quick-start; do
+              echo "## $page"; echo '```'
+              curl -sS -m 20 "https://lcbo.dev/$page.html" | sed -e 's/<script[^>]*>.*<\/script>//g' -e 's/<[^>]*>/ /g' | tr -s ' \n' | grep -v '__VP_HASH_MAP__' | head -c 5000
+              echo; echo '```'
+            done
           } > probe.md
+
           wc -c probe.md
       - name: Post
         if: always()
