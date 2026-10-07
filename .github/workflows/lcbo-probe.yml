@@ -42,6 +42,13 @@ jobs:
               echo
             done
             echo '```'
+            # How to reach LCBO.dev's maintainer: email, GitHub and social links on their own pages.
+            echo '## LCBO.dev contact'; echo '```'
+            for u in https://lcbo.dev https://lcbo.dev/legal/terms-of-service https://lcbo.dev/legal/privacy-policy https://lcbo.dev/quick-start; do
+              curl -sSL -m 20 "$u" -o c.html; echo "$u"
+              grep -oiE 'mailto:[^"'"'"' >]+|[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}|https://(github\.com|x\.com|twitter\.com|bsky\.app|www\.linkedin\.com)/[^"'"'"' <>]+|discord\.gg/[^"'"'"' <>]+' c.html | grep -viE '\.(png|svg|js|css)$' | sort -u | head -10
+            done
+            echo '```'
           } > probe.md
           wc -c probe.md
       - name: Post

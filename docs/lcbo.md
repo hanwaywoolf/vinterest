@@ -1,6 +1,13 @@
 # LCBO stock near you (Ontario beta)
 
-Ontario users who add their city on Profile (Where You Buy Wine) see "At the LCBO" on a wine's Price tab: the LCBO's product and price for that bottle, and up to three stores within 25 km of their city that have it, with how many. It's a Pro feature (while testing, every signed-in account is Pro) and it is off until you switch it on.
+Ontario users see "At the LCBO" on a wine's Price tab with two links that work today:
+
+- **Find it at the LCBO** opens lcbo.com's own search for the bottle (`/en/catalogsearch/result/?q=<producer and name>`, no vintage, through `/go`). The bottle's page there has "Check store inventory", which shows which stores have it.
+- **LCBO stores in <city>** (once they've added their city on Profile, under Where You Buy Wine) opens a Google Maps search for "LCBO, <city>, ON". lcbo.com's store finder ignores anything put in its address, so it can't be opened on a city.
+
+The LCBO's terms forbid collecting data from its websites for commercial purposes (screen scraping included), so the app only links to lcbo.com and never reads it.
+
+Above the links, once LCBO.dev works and you switch it on, Pro users with a city also get the LCBO's product and price and up to three stores within 25 km that have it, with how many (while testing, every signed-in account is Pro).
 
 ## Where the data comes from
 

@@ -642,58 +642,55 @@ const REGION_CURRENCY = {
    (e.g. "CAD") underneath the amount, so "CA$24" becomes "$24" with "CAD" below it. sym (with country
    prefix) is kept only for use inside LLM prompts, where the disambiguation matters. */
 
-/* "At the LCBO" (Ontario users with a city on Profile, beta, Pro): the LCBO's price and the
-   nearest stores with the bottle, from Lcbo (pwa-regional.js). Nothing at all while the server has
-   it switched off; a quiet line when LCBO.dev can't answer or doesn't carry the wine. */
-function LcboStock({wine,nav,showPro,fmtPrice}){
-  const applies=Lcbo.applies();
-  const needs=applies?Lcbo.needs():null;
+/* "At the LCBO" (Ontario users): the bottle searched on lcbo.com, where its page has "Check store
+   inventory", and the LCBO stores in their city on a map. With a city, Pro and the lookup switched
+   on (the Worker's LCBO_ENABLED, beta), the nearest stores that have it are listed above them,
+   from Lcbo (pwa-regional.js). */
+function LcboStock({wine,nav,fmtPrice}){
+  const ontario=Lcbo.ontario(), city=Lcbo.city();
+  const lookup=!!city&&!Lcbo.needs();
   const [d,setD]=React.useState(null);
   const [busy,setBusy]=React.useState(false);
   React.useEffect(()=>{
-    if(!applies||needs||!wine||!wine.name) return;
+    if(!lookup||!wine||!wine.name) return;
     let live=true; setD(null); setBusy(true);
     Lcbo.stock(wine).then(r=>{ if(live) setD(r); }).finally(()=>{ if(live) setBusy(false); });
     return()=>{ live=false; };
-  },[applies,needs,wine&&wine.name,wine&&wine.producer]);
-  if(!applies) return null;
-  if(!busy&&d&&d.enabled===false) return null;
-  const city=Lcbo.city();
-  const head=<div style={{display:'flex',alignItems:'center',gap:8,marginBottom:8}}>
-    <div style={{fontSize:13,fontWeight:700,color:C.mid,letterSpacing:'0.07em',textTransform:'uppercase',fontFamily:C.P}}>At the LCBO</div>
-    <span style={{fontSize:11,fontWeight:700,color:C.cr,background:C.crSoft,borderRadius:6,padding:'2px 6px',fontFamily:C.P,letterSpacing:'0.04em'}}>BETA</span>
-  </div>;
-  const quiet=(t)=><div data-testid="lcbo">{head}<Card style={{padding:14}}><span style={{fontSize:15,color:C.mid,fontFamily:C.P}}>{t}</span></Card></div>;
-  const want=needs||(d&&d.needs);
-  if(want) return <div data-testid="lcbo">{head}<Card style={{padding:14,display:'flex',flexDirection:'column',gap:10}}>
-    <span style={{fontSize:15,color:C.ink2,fontFamily:C.P,lineHeight:1.5}}>See which LCBO stores near {city} have this bottle, and how many they have.</span>
-    <Btn full onClick={()=>{ if(want==='signin'){ Handoff.accountIntent.set('lcbo'); nav('account'); } else if(showPro) showPro('lcbo'); }}>{want==='signin'?'Sign in to check stock':'Unlock with Pro'}</Btn>
-  </Card></div>;
-  if(busy||!d) return busy?quiet(`Checking LCBO stores near ${city}…`):quiet("LCBO stock couldn't be checked. Check your connection and try again.");
-  if(!d.available) return quiet("LCBO stock couldn't be checked just now. Try again later.");
-  if(!d.cityFound) return quiet(`We couldn't find an LCBO store in ${city}. Check the city on your Profile.`);
-  if(!d.found) return quiet("The LCBO doesn't list this wine right now.");
-  const link=Lcbo.link(d.product), fresh=Lcbo.freshness(d.stores);
-  return <div data-testid="lcbo">{head}<Card style={{padding:0,overflow:'hidden'}}>
-    <div role="link" onClick={()=>link&&Shops.go(link.url)} style={{display:'flex',alignItems:'center',gap:10,padding:'12px 14px',cursor:'pointer'}}>
-      <div style={{flex:1,minWidth:0}}>
-        <div style={{fontSize:15,fontWeight:600,color:C.ink,fontFamily:C.P,lineHeight:1.35}}>{d.product.name}</div>
-        <div style={{fontSize:13,color:C.mid,fontFamily:C.P}}>LCBO #{d.product.sku}{d.product.volumeMl&&d.product.volumeMl!==750?` · ${d.product.volumeMl} mL`:''}</div>
-      </div>
-      {d.product.price>0&&<span style={{fontSize:15,fontWeight:700,color:C.ink,fontFamily:C.P}}>{fmtPrice(d.product.price)}</span>}
-      <Icon n="chevron" sz={13} col={C.mid}/>
-    </div>
-    {d.stores.length?d.stores.map(s=>(
-      <div key={s.id||s.name} style={{display:'flex',alignItems:'center',gap:10,padding:'11px 14px',borderTop:`1px solid ${C.line}`}}>
+  },[lookup,wine&&wine.name,wine&&wine.producer]);
+  if(!ontario||!wine) return null;
+  const found=d&&d.enabled&&d.available&&d.cityFound&&d.found?d:null;
+  const link=found&&Lcbo.link(found.product), fresh=found&&Lcbo.freshness(found.stores);
+  const small={fontSize:13,color:C.mid,fontFamily:C.P,lineHeight:1.5};
+  return <div data-testid="lcbo">
+    <div style={{fontSize:13,fontWeight:700,color:C.mid,letterSpacing:'0.07em',textTransform:'uppercase',fontFamily:C.P,marginBottom:8}}>At the LCBO</div>
+    {found&&<><Card style={{padding:0,overflow:'hidden',marginBottom:6}}>
+      <div role="link" onClick={()=>link&&Shops.go(link.url)} style={{display:'flex',alignItems:'center',gap:10,padding:'12px 14px',cursor:'pointer'}}>
         <div style={{flex:1,minWidth:0}}>
-          <div style={{fontSize:15,fontWeight:600,color:C.ink,fontFamily:C.P}}>{s.name}</div>
-          <div style={{fontSize:13,color:C.mid,fontFamily:C.P}}>{[s.address,s.km!=null?`${s.km} km`:null].filter(Boolean).join(' · ')}</div>
+          <div style={{fontSize:15,fontWeight:600,color:C.ink,fontFamily:C.P,lineHeight:1.35}}>{found.product.name}</div>
+          <div style={{fontSize:13,color:C.mid,fontFamily:C.P}}>LCBO #{found.product.sku}{found.product.volumeMl&&found.product.volumeMl!==750?` · ${found.product.volumeMl} mL`:''}</div>
         </div>
-        <span style={{fontSize:14,fontWeight:700,color:C.ink2,fontFamily:C.P,whiteSpace:'nowrap'}}>{s.quantity} in stock</span>
+        {found.product.price>0&&<span style={{fontSize:15,fontWeight:700,color:C.ink,fontFamily:C.P}}>{fmtPrice(found.product.price)}</span>}
+        <Icon n="chevron" sz={13} col={C.mid}/>
       </div>
-    )):<div style={{padding:'11px 14px',borderTop:`1px solid ${C.line}`,fontSize:14,color:C.mid,fontFamily:C.P}}>No store within {d.radiusKm||25} km of {city} has it right now.</div>}
-  </Card>
-  <div style={{fontSize:12,color:C.mid,fontFamily:C.P,lineHeight:1.5,marginTop:6}}>{fresh?fresh+'. ':''}Counts are the LCBO's, via LCBO.dev, and can be a day behind. The LCBO may carry a different vintage.</div>
+      {found.stores.length?found.stores.map(s=>(
+        <div key={s.id||s.name} style={{display:'flex',alignItems:'center',gap:10,padding:'11px 14px',borderTop:`1px solid ${C.line}`}}>
+          <div style={{flex:1,minWidth:0}}>
+            <div style={{fontSize:15,fontWeight:600,color:C.ink,fontFamily:C.P}}>{s.name}</div>
+            <div style={{fontSize:13,color:C.mid,fontFamily:C.P}}>{[s.address,s.km!=null?`${s.km} km`:null].filter(Boolean).join(' · ')}</div>
+          </div>
+          <span style={{fontSize:14,fontWeight:700,color:C.ink2,fontFamily:C.P,whiteSpace:'nowrap'}}>{s.quantity} in stock</span>
+        </div>
+      )):<div style={{padding:'11px 14px',borderTop:`1px solid ${C.line}`,fontSize:14,color:C.mid,fontFamily:C.P}}>No store within {found.radiusKm||25} km of {city} has it right now.</div>}
+    </Card>
+    <div style={{...small,fontSize:12,marginBottom:10}}>{fresh?fresh+'. ':''}Counts are the LCBO's, via LCBO.dev, and can be a day behind. The LCBO may carry a different vintage.</div></>}
+    {!found&&<div style={{...small,marginBottom:10}}>{busy?`Checking LCBO stores near ${city}…`
+      :d&&d.enabled&&d.available&&d.cityFound===false?`We couldn't find an LCBO store in ${city}. Check the city on your Profile.`
+      :'Search for this bottle on lcbo.com, open it, and tap "Check store inventory" to see which stores near you have it.'}</div>}
+    <div style={{display:'flex',flexDirection:'column',gap:8}}>
+      <Btn full onClick={()=>Lcbo.openSearch(wine)}>Find it at the LCBO</Btn>
+      {city?<Btn full onClick={()=>Lcbo.openStores(city)}>LCBO stores in {city}</Btn>
+        :<div role="link" onClick={()=>nav('account')} style={{...small,textAlign:'center',color:C.cr,fontWeight:600,cursor:'pointer'}}>Add your city on Profile to see the stores near you</div>}
+    </div>
   </div>;
 }
 
@@ -831,7 +828,7 @@ function DetailPrice({wine,nav,showPro}){
             </div>
           )}
 
-          <LcboStock wine={wine} nav={nav} showPro={showPro} fmtPrice={fmtPrice}/>
+          <LcboStock wine={wine} nav={nav} fmtPrice={fmtPrice}/>
 
           {/* Find it for me (Restock for a wine they'd buy again) */}
           <Btn primary full style={{background:C.cr,boxShadow:`0 3px 12px ${C.cr}35`}} onClick={handleFindItForMe}>{findLabel}</Btn>
@@ -850,7 +847,7 @@ function DetailPrice({wine,nav,showPro}){
           <Card style={{padding:14}}>
             <span style={{fontSize:15,color:C.mid,fontFamily:C.P,fontStyle:'italic'}}>Price estimate unavailable for this wine.</span>
           </Card>
-          <LcboStock wine={wine} nav={nav} showPro={showPro} fmtPrice={fmtPrice}/>
+          <LcboStock wine={wine} nav={nav} fmtPrice={fmtPrice}/>
           <Btn primary full style={{background:C.cr,boxShadow:`0 3px 12px ${C.cr}35`}} onClick={handleFindItForMe}>{findLabel}</Btn>
         </>
       )}

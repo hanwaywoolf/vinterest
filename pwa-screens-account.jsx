@@ -148,14 +148,14 @@ function AccountProfileScreen({nav,back,showPro}){
               {UserPrefs.askCity(country,region)&&<div>
                 <input value={city} onChange={e=>setCity(e.target.value)} placeholder="City (optional)" aria-label="City" data-testid="loc-city"
                   style={{width:'100%',boxSizing:'border-box',padding:'12px 14px',borderRadius:11,border:`1px solid ${C.line}`,background:C.white,fontSize:15,fontFamily:C.P,color:C.ink,outline:'none'}}/>
-                <div style={{fontSize:13,color:C.mid,fontFamily:C.P,marginTop:6,lineHeight:1.4}}>We use it to show which LCBO stores near you have a bottle in stock.</div>
+                <div style={{fontSize:13,color:C.mid,fontFamily:C.P,marginTop:6,lineHeight:1.4}}>We use it to show the LCBO stores near you, and which have a bottle in stock.</div>
               </div>}
               <Btn primary full onClick={saveLocation}>Save</Btn>
             </div>
           ):(
             <div style={{fontSize:15,color:C.ink,fontFamily:C.P}}>
               {[UserPrefs.askCity(country,region)?city:'',region,country].filter(Boolean).join(', ')||'Not set'}
-              <div style={{fontSize:13,color:C.mid,marginTop:4}}>Prices show in {home.sym} ({home.code}).{UserPrefs.askCity(country,region)?(city?' LCBO stock is checked near '+city+'.':' Add your city to see LCBO stock near you.'):''}</div>
+              <div style={{fontSize:13,color:C.mid,marginTop:4}}>Prices show in {home.sym} ({home.code}).{UserPrefs.askCity(country,region)?(city?' LCBO stores are shown near '+city+'.':' Add your city to see the LCBO stores near you.'):''}</div>
             </div>
           )}
         </AccSection>
@@ -223,7 +223,7 @@ function AccountCard({showPro}){
   const [,tick]=React.useState(0);
   // Opened from Home's backup offer: go straight to the email, and say that's the step left.
   const [intent]=React.useState(()=>Handoff.accountIntent.take());
-  const [step,setStep]=React.useState(()=>(intent==='backup'||intent==='listscan'||intent==='lcbo')&&!Account.signedIn()?'email':'idle'); // idle | email | code
+  const [step,setStep]=React.useState(()=>(intent==='backup'||intent==='listscan')&&!Account.signedIn()?'email':'idle'); // idle | email | code
   const [email,setEmail]=React.useState('');
   const [code,setCode]=React.useState('');
   const [busy,setBusy]=React.useState(false);
@@ -290,11 +290,6 @@ function AccountCard({showPro}){
       ?<div>
         <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>One step left: sign in to back up</div>
         <div style={{fontSize:13,color:C.ink2,fontFamily:C.P,lineHeight:1.5}}>Your wines aren't backed up yet. Enter your email, type in the code we send, and they're backed up straight away.</div>
-      </div>
-      :intent==='lcbo'
-      ?<div>
-        <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>Sign in to see LCBO stock</div>
-        <div style={{fontSize:13,color:C.ink2,fontFamily:C.P,lineHeight:1.5}}>LCBO stock near you is part of Pro, which belongs to your account. Enter your email and type in the code we send.</div>
       </div>
       :intent==='listscan'
       ?<div>

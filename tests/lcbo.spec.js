@@ -131,7 +131,7 @@ test('Profile asks for a city only in Ontario, and keeps it with the location', 
   await root.getByTestId('loc-city').fill('  Ottawa ');
   await root.getByText('Save', { exact: true }).click();
   await expect(root).toContainText('Ottawa, ON, Canada');
-  await expect(root).toContainText('LCBO stock is checked near Ottawa.');
+  await expect(root).toContainText('LCBO stores are shown near Ottawa.');
   expect(await page.evaluate(() => [UserPrefs.location().city, Lcbo.city(), Backup.SETTINGS_KEYS.includes('vinterest_city')])).toEqual(['Ottawa', 'Ottawa', true]);
   // Moving out of Ontario drops the city.
   await page.evaluate(() => UserPrefs.setLocation({ country: 'Canada', state: 'Quebec', city: 'Ottawa' }));
@@ -161,21 +161,40 @@ test('the Price tab shows the LCBO\'s price and the stores near them that have i
   expect(u.searchParams.get('u')).toBe('https://www.lcbo.com/en/catalogsearch/result/?q=222');
 });
 
-test('switched off on the server: the Price tab shows nothing of it', async ({ context, page }) => {
-  let asked = await boot(context, page, { ...ONTARIO, vinterest_pro: '1' });
+test('switched off on the server: the bottle searched on lcbo.com and the city\'s stores on a map', async ({ context, page }) => {
+  const asked = await boot(context, page, { ...ONTARIO, vinterest_pro: '1' });
   await openPrice(page);
-  await expect(page.locator('#root')).toContainText('Find it online');
+  const box = page.locator('#root').getByTestId('lcbo');
+  await expect(box).toContainText('Check store inventory');
   await expect.poll(() => asked.length).toBe(1);
-  await expect(page.locator('#root').getByTestId('lcbo')).toHaveCount(0);
+  // lcbo.com's search, from the label (no vintage, each word once), by way of /go.
+  let opened = context.waitForEvent('page');
+  await box.getByText('Find it at the LCBO', { exact: true }).click();
+  let u = new URL((await opened).url());
+  expect(u.pathname).toBe('/go');
+  expect(u.searchParams.get('p')).toBe('lcbo');
+  expect(u.searchParams.get('u')).toBe('https://www.lcbo.com/en/catalogsearch/result/?q=Bodegas+Muga+Reserva');
+  opened = context.waitForEvent('page');
+  await box.getByText('LCBO stores in Ottawa', { exact: true }).click();
+  u = new URL((await opened).url());
+  expect(u.host).toBe('www.google.com');
+  expect(u.searchParams.get('query')).toBe('LCBO, Ottawa, ON');
 });
 
-test('outside Ontario nothing is asked; on the free plan it offers Pro', async ({ context, page }) => {
+test('outside Ontario no card; in Ontario without a city or Pro, the links and no lookup', async ({ context, page }) => {
   const asked = await boot(context, page, { vinterest_country: 'Canada', vinterest_state: 'BC', vinterest_region: 'canada', vinterest_pro: '1' });
   await openPrice(page);
   await expect(page.locator('#root')).toContainText('Find it online');
   await expect(page.locator('#root').getByTestId('lcbo')).toHaveCount(0);
-  await page.evaluate(() => { Store.set('vinterest_state', 'Ontario'); Store.set('vinterest_city', 'Ottawa'); Store.remove('vinterest_pro'); });
+  // Ontario, no city: the search, and a way to add the city.
+  await page.evaluate(() => Store.set('vinterest_state', 'Ontario'));
   await openPrice(page);
-  await expect(page.locator('#root').getByTestId('lcbo')).toContainText('Unlock with Pro');
+  const box = page.locator('#root').getByTestId('lcbo');
+  await expect(box.getByText('Find it at the LCBO', { exact: true })).toBeVisible();
+  await expect(box).toContainText('Add your city on Profile');
+  // With a city on the free plan: both links, and no lookup.
+  await page.evaluate(() => { Store.set('vinterest_city', 'Ottawa'); Store.remove('vinterest_pro'); });
+  await openPrice(page);
+  await expect(box.getByText('LCBO stores in Ottawa', { exact: true })).toBeVisible();
   expect(asked).toHaveLength(0);
 });

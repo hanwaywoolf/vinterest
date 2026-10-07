@@ -93,13 +93,28 @@ const Shops={
 /* LCBO stock near an Ontario user (beta, Pro). The Worker's /lcbo (handleLcbo in _worker.js) finds
    the LCBO product a wine is and which stores near their city (UserPrefs city, asked only in
    Ontario) have it, from LCBO.dev's public data, updated daily. It's off on the server until
-   LCBO_ENABLED is set, and then this shows nothing; anything else it can't answer shows as a
-   quiet line, never an error. Each answer is kept on the phone for CACHE_MS. */
+   LCBO_ENABLED is set; until then, and whenever it can't answer, the card is two links: the
+   bottle searched on lcbo.com and the LCBO stores in their city on a map. Each answer is kept on the phone for CACHE_MS. */
 const Lcbo={
   CACHE_PREFIX:'vinterest_lcbo_', CACHE_MS:20*60*1000,
   city(){ const l=UserPrefs.location(); return UserPrefs.askCity(l.country,l.state)&&l.city?l.city:null; },
-  // Ontario with a city: the only people the Price tab's "At the LCBO" is for.
+  // Ontario: the Price tab's "At the LCBO" (its buttons need no city; the stock list does).
+  ontario(){ const l=UserPrefs.location(); return UserPrefs.askCity(l.country,l.state); },
+  // Ontario with a city: the stock lookup (the Worker's /lcbo).
   applies(){ return !!this.city(); },
+  /* lcbo.com's own search for the bottle, from the label: producer and name, each word once, no
+     vintage (the LCBO lists most wines without one). Its product page has "Check store inventory".
+     lcbo.com's terms forbid collecting its data, so the app only links to it. */
+  searchUrl(wine){
+    const seen=new Set(), words=`${wine&&wine.producer||''} ${wine&&wine.name||''}`.split(/\s+/)
+      .filter(w=>w&&!/^(19|20)\d{2}$/.test(w)&&!seen.has(w.toLowerCase())&&seen.add(w.toLowerCase()));
+    return 'https://www.lcbo.com/en/catalogsearch/result/?q='+encodeURIComponent(words.join(' ')).replace(/%20/g,'+');
+  },
+  /* The LCBO stores in their city on a map. lcbo.com's store finder can't be opened on a city
+     (it ignores anything in its address), so this is a Google Maps search. */
+  storesUrl(city){ return 'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(`LCBO, ${city}, ON`); },
+  openSearch(wine){ Shops.go(Shops.link(this.searchUrl(wine),'lcbo').url); },
+  openStores(city){ Shops.go(this.storesUrl(city)); },
   /* What it still needs: null, 'signin' (sign-in configured and signed out: the Worker answers
      402 there) or 'pro'. Mirrors PRO_ONLY.lcbo; the Worker checks for itself. */
   needs(){
