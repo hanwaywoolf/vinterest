@@ -732,8 +732,17 @@ const ContentEngine = {
     const repeat=before.some(s=>s.archetypeId===stub.archetypeId);
     const staleB=stub.archetypeId==='beyond_region'&&slots.regionB!==stub.slots.regionB;
     if(!repeat&&!staleB) return false;
-    const archetype=this.pickArchetype({event:'new_region'},slots,before);
-    if(!archetype) return false;
+    // Healing runs on every read of the shelf, so it has to settle: move a repeat only to a kind
+    // used less often than its own, and choose by the piece's id, never at random. A random pick
+    // among kinds already used rewrote the shelf on every read, and on WineDNA (which reads it
+    // twice a draw, and redraws when a sync brings the change back) that never stopped.
+    const used=id=>before.filter(s=>s.archetypeId===id).length;
+    const cands=this._candidates('new_region',slots);
+    if(!cands.length) return false;
+    const min=Math.min(...cands.map(c=>used(c.id)));
+    if(!staleB&&min>=used(stub.archetypeId)) return false;
+    const least=cands.filter(c=>used(c.id)===min);
+    const archetype=least.find(c=>c.id===stub.archetypeId)||least[[...String(stub.id)].reduce((h,ch)=>(h*31+ch.charCodeAt(0))>>>0,7)%least.length];
     Object.assign(stub,{archetypeId:archetype.id,iconName:archetype.iconName,readTime:archetype.readTime,series:archetype.series||null,brief:archetype.brief,slots,facts:this.retrieveFacts(archetype,slots)});
     return true;
   },

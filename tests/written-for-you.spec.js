@@ -56,6 +56,27 @@ test('an old shelf of repeated "Beyond Rioja" pieces heals, but a read one stays
   expect(out.filter((s) => /Rioja to/.test(s.title)).length).toBe(1);
 });
 
+test('a shelf with more unread region pieces than kinds settles: reading it never rewrites it, and WineDNA opens', async ({ context, page }) => {
+  // Twelve untouched region pieces, two kinds: healing once spreads them over the kinds, and after
+  // that a read changes nothing. It used to pick at random among kinds already used and save on
+  // every read, which on WineDNA (two reads a draw) locked the page up.
+  const regs = ['Rioja', 'Tuscany', 'Burgundy', 'Bordeaux', 'Piedmont', 'Champagne', 'Douro', 'Mosel', 'Napa Valley', 'Barossa Valley', 'Marlborough', 'Provence'];
+  const stubs = regs.map((r, i) => ({ id: 'ev_r' + i, archetypeId: i % 2 ? 'new_region_intro' : 'region_rules', title: 'T', subtitle: 's', iconName: 'map', slots: { region: r } }));
+  await user(context, page, { seed: { vinterest_onramp_1_done: '1', vinterest_gen_stubs: JSON.stringify(stubs) } });
+  const errors = collectErrors(page);
+  await page.goto(`${BASE}/#home`);
+  const writes = await page.evaluate(() => {
+    ContentEngine.shelf(WineHistory.getAll());
+    let n = 0; const off = Store.subscribe((k) => { if (k === 'vinterest_gen_stubs') n++; });
+    for (let i = 0; i < 10; i++) ContentEngine.shelf(WineHistory.getAll());
+    off && off(); return n;
+  });
+  expect(writes).toBe(0);
+  await page.evaluate(() => { location.hash = '#profile'; });
+  await expect(page.locator('#root')).toContainText('Your History', { timeout: 10000 });
+  expect(errors).toEqual([]);
+});
+
 test('articles say whose they are, and the prompt knows the reader', async ({ context, page }) => {
   const errors = collectErrors(page);
   const claudeRequests = [];

@@ -18,11 +18,18 @@
      the app itself won't open. Sign-in tokens are left out. Nothing is changed or sent anywhere. -->
 <h1>Save my Vinterest data</h1>
 <p>This saves your wines, XP, learning and settings from this browser to a file, without opening the app. Your sign-in isn't included, and nothing is changed or sent anywhere.</p>
-<button id="save">Save to a file</button>
+<button id="save">Get my data</button>
 <div id="out"></div>
+<div id="ways" style="display:none;margin-top:18px">
+  <p><a id="dl" download="vinterest-rescue.json" style="color:#fff;font-weight:700">Download vinterest-rescue.json</a></p>
+  <p>If the download doesn't start, copy it instead and paste it where you were asked for it:</p>
+  <button id="copy">Copy</button>
+  <textarea id="txt" readonly style="display:block;width:100%;max-width:520px;height:120px;margin-top:12px;font-size:12px"></textarea>
+</div>
 <script>
 (function(){
   var SKIP={vinterest_session:1,vinterest_me:1};
+  var out=document.getElementById('out');
   document.getElementById('save').onclick=function(){
     var data={}, n=0;
     try{
@@ -30,15 +37,20 @@
         if(k.indexOf('vinterest_')!==0||SKIP[k]) return;
         data[k]=localStorage.getItem(k); n++;
       });
-    }catch(e){ document.getElementById('out').textContent='This browser blocked reading the data: '+e.message; return; }
+    }catch(e){ out.textContent='This browser blocked reading the data: '+e.message; return; }
     var text=JSON.stringify({format:'vinterest-rescue',version:1,exported:new Date().toISOString(),keys:data});
-    var name='vinterest-rescue.json';
-    try{
-      var file=new File([text],name,{type:'application/json'});
-      if(navigator.canShare&&navigator.canShare({files:[file]})){ navigator.share({files:[file],title:name}).catch(function(){}); }
-      else { var a=document.createElement('a'); a.href=URL.createObjectURL(file); a.download=name; a.click(); }
-      document.getElementById('out').textContent='Saved '+n+' items ('+Math.round(text.length/1024)+' KB).';
-    }catch(e){ document.getElementById('out').textContent='Couldn’t save the file: '+e.message; }
+    out.textContent=n+' items found ('+Math.round(text.length/1024)+' KB).';
+    var dl=document.getElementById('dl');
+    try{ dl.href=URL.createObjectURL(new Blob([text],{type:'application/octet-stream'})); }catch(e){ dl.href='data:application/octet-stream;charset=utf-8,'+encodeURIComponent(text); }
+    document.getElementById('txt').value=text;
+    document.getElementById('ways').style.display='block';
+    try{ dl.click(); }catch(e){}
+  };
+  document.getElementById('copy').onclick=function(){
+    var t=document.getElementById('txt'), b=this;
+    var done=function(){ b.textContent='Copied'; };
+    if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(t.value).then(done,function(){ t.select(); document.execCommand('copy'); done(); });
+    else { t.select(); document.execCommand('copy'); done(); }
   };
 })();
 </script>
