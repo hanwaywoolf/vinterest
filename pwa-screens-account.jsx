@@ -40,6 +40,7 @@ function AccountProfileScreen({nav,back,showPro}){
   const [editSection,setEditSection]=React.useState(null);
   const [country,setCountry]=React.useState(()=>UserPrefs.location().country||'');
   const [region,setRegionField]=React.useState(()=>UserPrefs.location().state||'');
+  const [city,setCity]=React.useState(()=>UserPrefs.location().city||'');
 
   const [travel,setTravelState]=React.useState(()=>Regional.travel());
   const [travelForm,setTravelForm]=React.useState({country:'',until:'',code:''});
@@ -57,7 +58,7 @@ function AccountProfileScreen({nav,back,showPro}){
     const cur=prefs[key]||[];
     savePrefField(key,cur.includes(id)?cur.filter(x=>x!==id):[...cur,id]);
   }
-  function saveLocation(){ UserPrefs.setLocation({country,state:region}); setEditSection(null); }
+  function saveLocation(){ UserPrefs.setLocation({country,state:region,city}); const l=UserPrefs.location(); setRegionField(l.state); setCity(l.city); setEditSection(null); }
 
   function enableTravel(){
     if(!travelForm.country.trim()) return;
@@ -143,12 +144,18 @@ function AccountProfileScreen({nav,back,showPro}){
               </select>
               {(UserPrefs.country(country)||{}).stateLabel&&<input value={region} onChange={e=>setRegionField(e.target.value)} placeholder={`${UserPrefs.country(country).stateLabel} (optional)`}
                 style={{width:'100%',boxSizing:'border-box',padding:'12px 14px',borderRadius:11,border:`1px solid ${C.line}`,background:C.white,fontSize:15,fontFamily:C.P,color:C.ink,outline:'none'}}/>}
+              {/* Ontario only: the city is where the LCBO lookup starts looking for stores with a bottle in stock. */}
+              {UserPrefs.askCity(country,region)&&<div>
+                <input value={city} onChange={e=>setCity(e.target.value)} placeholder="City (optional)" aria-label="City" data-testid="loc-city"
+                  style={{width:'100%',boxSizing:'border-box',padding:'12px 14px',borderRadius:11,border:`1px solid ${C.line}`,background:C.white,fontSize:15,fontFamily:C.P,color:C.ink,outline:'none'}}/>
+                <div style={{fontSize:13,color:C.mid,fontFamily:C.P,marginTop:6,lineHeight:1.4}}>We use it to show the LCBO stores near you, and which have a bottle in stock.</div>
+              </div>}
               <Btn primary full onClick={saveLocation}>Save</Btn>
             </div>
           ):(
             <div style={{fontSize:15,color:C.ink,fontFamily:C.P}}>
-              {[region,country].filter(Boolean).join(', ')||'Not set'}
-              <div style={{fontSize:13,color:C.mid,marginTop:4}}>Prices show in {home.sym} ({home.code}).</div>
+              {[UserPrefs.askCity(country,region)?city:'',region,country].filter(Boolean).join(', ')||'Not set'}
+              <div style={{fontSize:13,color:C.mid,marginTop:4}}>Prices show in {home.sym} ({home.code}).{UserPrefs.askCity(country,region)?(city?' LCBO stores are shown near '+city+'.':' Add your city to see the LCBO stores near you.'):''}</div>
             </div>
           )}
         </AccSection>

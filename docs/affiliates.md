@@ -61,13 +61,16 @@ same way. Each shop approves you
 separately, usually within a few days; some ask about your audience or traffic. Read each one's
 terms: commission rate, cookie length, and whether they allow app traffic and deep links.
 
-When a shop approves you, its **advertiser ID** (the "mid") is on its programme page. Put it in
-that shop's `awinMid`.
+When a shop approves you, its **advertiser ID** (the "mid") is on its programme page. Check it
+matches that shop's `awinMid` and set `"joined": true`. Links go through Awin only for shops with
+`joined`: an Awin link to a shop that hasn't approved you can land on Awin's error page instead
+of the shop. Approved so far: Winebuyers (publisher ID 3114171 is set). Winebuyers' search is switched on, so "Find it for me" in the UK goes to its search through Awin.
 
 ## 3. Check the shop's search link, then switch it on
 
 "Find it for me" opens the shop's own search for the wine. Each shop's search address is in
-`search`, with `{q}` where the wine goes. Before switching a shop on:
+`search`, with `{q}` where the wine goes; the app puts in the producer and name only (no vintage,
+"wine" or "buy", which can empty a shop's search). Before switching a shop on:
 
 1. Open its `search` address in a browser with a real wine in place of `{q}`, e.g.
    `https://www.majestic.co.uk/search?Ntt=Vina%20Ardanza`. It must show results, not an error or
@@ -77,7 +80,7 @@ that shop's `awinMid`.
 3. Set `"enabled": true`.
 
 A shop doesn't need to be switched on for **In shops now**: when the price search finds the wine at
-a shop whose site is in `domains` and that shop has an `awinMid`, that link is tracked anyway.
+a shop whose site is in `domains` and that shop has joined with an `awinMid`, that link is tracked anyway.
 
 ## 4. Ship it
 
@@ -113,3 +116,25 @@ Awin still wins for its own shops (better rates); Skimlinks only takes the rest.
 Each shop has a `country` (`gb`, `us`, …) and only shows to users in that market (their location or
 Travel Mode). US shops such as Wine.com run their programmes on other networks (Impact, CJ); adding
 one of those means a second link format in `Shops.link` (`pwa-regional.js`).
+
+## Product feeds: the bottle itself, with Buy
+
+A shop that publishes a product feed on Awin (Toolbox → Create-a-Feed) lets the Price tab show the
+very bottle: its photo, vintage and price, and "Buy at <shop>" straight to its page (through `/go`,
+placement `buy`, with the Awin tracking). Winebuyers' feed is on.
+
+1. In Create-a-Feed, pick the shop under an advertiser-based feed (its "AWIN CSV" datafeed), then
+   CSV, comma, gzip, with "Include Adult Content" ticked (alcohol is adult content). Copy the
+   download URL. It holds your feed key: never paste it into the repo or a chat.
+2. Add it as a GitHub Actions secret named `AWIN_FEED_<SHOP ID>` (e.g. `AWIN_FEED_WINEBUYERS`), add
+   the same name to `.github/workflows/shop-feeds.yml`, and set `"feed": "awin"` on the shop in
+   `data/retailers.json`.
+3. The Shop feeds workflow (`scripts/shop-feeds.mjs`) loads every such feed into Supabase's
+   `shop_products` (migration `0005`) each night at 04:17 UTC; run it by hand from Actions → Shop
+   feeds → Run workflow. A feed that comes back less than half last night's size is not loaded.
+   It needs the GitHub secrets `SUPABASE_URL` and `SUPABASE_FEEDS_KEY` (`supabase/README.md`).
+
+The Worker's `/shop-match` finds the wine among a shop's listings by its name's words (the
+producer's only has to appear), rejects listings with a telling word the wine doesn't have
+(Muga's Rosado for its Reserva), prefers a single 75cl bottle of the scanned vintage, and otherwise
+lists the vintages the shop has. Tests: `tests/shop-feed.spec.js`.

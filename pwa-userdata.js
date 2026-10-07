@@ -143,6 +143,8 @@ const Handoff = {
   get guide(){ return this._s('vinterest_guide'); },
   /* The grape whose page (GrapeScreen) to open. */
   get grapePage(){ return this._s('vinterest_grape_page'); },
+  /* The region whose page (RegionPageScreen) to open. */
+  get regionPage(){ return this._s('vinterest_region_page'); },
   /* The palate trait whose page (PalateTraitScreen) to open: body, acidity, tannins or texture. */
   get palateTrait(){ return this._s('vinterest_palate_trait'); },
   /* Where Mastery was when a grape's page opened ({top, view: 'bunch'|'list'}), so going back

@@ -1,0 +1,61 @@
+# Runs the LCBO lookup (scripts/lcbo-check.mjs) against the live LCBO.dev API from GitHub's machines (this repo's dev
+# environment can't reach lcbo.dev) and posts them as a comment on the commit, so the LCBO lookup
+# is built against the real API. Runs on a claude/ branch commit whose message has [lcbo-probe].
+name: LCBO probe
+on:
+  push:
+    branches: ['claude/**']
+jobs:
+  probe:
+    if: contains(github.event.head_commit.message, '[lcbo-probe]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write # to post the results as a comment on the commit
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Probe
+        run: |
+          # The app's own lookup (scripts/lcbo-check.mjs runs _worker.js's handleLcbo), then one
+          # raw query so an LCBO.dev outage shows its own error.
+          node scripts/lcbo-check.mjs || true
+          {
+            cat lcbo-check.md 2>/dev/null
+            echo '## Raw store query'; echo '```'
+            curl -sS -m 30 -X POST https://api.lcbo.dev/graphql -H 'content-type: application/json' \
+              -d '{"query":"{ stores(pagination:{first:2}) { edges { node { externalId name city } } } }"}' -w '\nHTTP %{http_code}\n' 2>&1 | head -c 4000
+            echo '```'
+            # Which lcbo.com links work for the app's "Find it at the LCBO" and store buttons: status,
+            # where each lands, and the store finder's form fields (a handful of requests, no data kept).
+            echo '## lcbo.com links'; echo '```'
+            UA='Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1'
+            for u in 'https://www.lcbo.com/en/catalogsearch/result/?q=muga+reserva' 'https://www.lcbo.com/en/catalogsearch/result/#q=muga%20reserva' \
+                     'https://www.lcbo.com/en/stores' 'https://www.lcbo.com/en/stores?city=Ottawa' 'https://www.lcbo.com/en/storelocator' 'https://www.lcbo.com/en/stores/ottawa'; do
+              curl -sSL -m 20 -A "$UA" -o p.html -w "$u -> %{http_code} %{url_effective} %{size_download}B\n" "$u" 2>&1
+              grep -oiE '<title>[^<]*</title>' p.html | head -1
+              grep -oiE '<(input|form)[^>]*(name|action)="[^"]*"[^>]*>' p.html | grep -viE 'hidden|csrf|form_key|newsletter|email' | head -8
+              grep -oiE 'https://www\.lcbo\.com/en/stores[^"'"'"' ]{0,80}' p.html | sort -u | head -8
+              grep -oiE 'coveo[^"'"'"' ]{0,60}' p.html | sort -u | head -3
+              echo
+            done
+            echo '```'
+            # How to reach LCBO.dev's maintainer: email, GitHub and social links on their own pages.
+            echo '## LCBO.dev contact'; echo '```'
+            for u in https://lcbo.dev https://lcbo.dev/legal/terms-of-service https://lcbo.dev/legal/privacy-policy https://lcbo.dev/quick-start; do
+              curl -sSL -m 20 "$u" -o c.html; echo "$u"
+              grep -oiE 'mailto:[^"'"'"' >]+|[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}|https://(github\.com|x\.com|twitter\.com|bsky\.app|www\.linkedin\.com)/[^"'"'"' <>]+|discord\.gg/[^"'"'"' <>]+' c.html | grep -viE '\.(png|svg|js|css)$' | sort -u | head -10
+            done
+            echo '```'
+          } > probe.md
+          wc -c probe.md
+      - name: Post
+        if: always()
+        run: |
+          node -e "const t=require('fs').readFileSync('probe.md','utf8');require('fs').writeFileSync('c.json',JSON.stringify({body:t.slice(0,60000)}))"
+          curl -sS -X POST -H "authorization: Bearer $GH_TOKEN" -H "accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${{ github.repository }}/commits/${{ github.sha }}/comments" -d @c.json > /dev/null
+        env:
+          GH_TOKEN: ${{ github.token }}

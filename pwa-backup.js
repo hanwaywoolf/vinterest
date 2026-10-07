@@ -15,7 +15,7 @@
    what would change without touching anything; `apply` does it. */
 const Backup = {
   FORMAT:'vinterest-backup', VERSION:2,
-  SETTINGS_KEYS:['vinterest_prefs','vinterest_age_ok','vinterest_country','vinterest_state','vinterest_region','vinterest_currency',
+  SETTINGS_KEYS:['vinterest_prefs','vinterest_age_ok','vinterest_country','vinterest_state','vinterest_city','vinterest_region','vinterest_currency',
     'vinterest_onboarded','vinterest_script_length','vinterest_scancard_style','vinterest_text_size','vinterest_travel'],
   PROGRESS_KEYS:['vinterest_favorites','vinterest_wineDNA_unlock_seen','vinterest_explore_ready_seen','vinterest_gen_stubs','vinterest_grape_unlocks_v1',
     'vinterest_region_unlocks_v1','vinterest_region_quiz_v1','vinterest_quiz_mastery_v1','vinterest_exposure_v1','vinterest_mastery_v1',
@@ -23,12 +23,13 @@ const Backup = {
   // Families of keys: read articles, Blind Call guesses, and the generated quiz banks the quiz
   // progress refers to (lose a bank and its progress points at questions that no longer exist).
   PROGRESS_PREFIXES:['vinterest_gen_article_','vinterest_blindcall_','vinterest_grape_quiz_','vinterest_region_quiz_bank_'],
-  // Read markers for beginner articles are 'vinterest_<id>_done'.
+  // Read markers for beginner articles are 'vinterest_<id>_done' (onramp_1 …: the id has an
+  // underscore, so the pattern must allow one, or the beginner articles read never travel).
   _isProgressKey(k){
     if(this.PROGRESS_KEYS.includes(k)) return true;
     if(k.startsWith('vinterest_gen_article_')) return k.endsWith('_done'); // not the article text cache
     if(this.PROGRESS_PREFIXES.some(p=>k.startsWith(p))) return true;
-    return /^vinterest_[a-z0-9-]+_done$/.test(k)&&!k.startsWith('vinterest_gen_article_');
+    return /^vinterest_[a-z0-9_-]+_done$/.test(k)&&!k.startsWith('vinterest_gen_article_');
   },
   // Generated content, not counters: never combined field by field. _settleContent picks or joins them.
   _fillOnly(k){ return this._isBank(k)||k===this.STUBS_KEY; },

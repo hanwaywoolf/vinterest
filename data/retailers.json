@@ -1,14 +1,15 @@
 {
-  "_about": "Partner shops for 'Find it for me', 'Restock' and the Price tab's 'In shops now'. Nothing is tracked until awin.publisherId is set, and a shop's own search is used only once it is enabled. Add the publisher ID (3114171) with the first approval, a shop's search link (with {q} where the wine goes) once you've opened it with a real wine, and set enabled when the shop has approved us. awinMid comes from Awin's advertiser directory. See docs/affiliates.md.",
-  "awin": { "publisherId": "" },
+  "_about": "Partner shops for 'Find it for me', 'Restock' and the Price tab's 'In shops now'. Nothing is tracked until awin.publisherId is set, and a shop's own search is used only once it is enabled. Links go through Awin only for shops with joined: true (they've approved us). Add a shop's search link (with {q} where the wine goes) once you've opened it with a real wine, and set enabled when the shop has approved us. awinMid comes from Awin's advertiser directory. See docs/affiliates.md.",
+  "awin": { "publisherId": "3114171" },
   "skimlinks": { "id": "", "enabled": false, "sref": "https://vinterest.app/" },
   "retailers": [
     { "id": "majestic",        "name": "Majestic",          "country": "gb", "domains": ["majestic.co.uk"],      "awinMid": "1546",   "search": "", "enabled": false },
-    { "id": "winebuyers",      "name": "Winebuyers",        "country": "gb", "domains": ["winebuyers.com"],      "awinMid": "121644", "search": "", "enabled": false },
+    { "id": "winebuyers",      "name": "Winebuyers",        "country": "gb", "domains": ["winebuyers.com"],      "awinMid": "121644", "joined": true, "feed": "awin", "search": "https://winebuyers.com/en_GB/search?bitbag_elasticsearch_search%5Bquery%5D={q}&category=all", "enabled": true },
     { "id": "greatwine",       "name": "The Great Wine Co.", "country": "gb", "domains": ["greatwine.co.uk"],    "awinMid": "21454",  "search": "", "enabled": false },
     { "id": "drinksupermarket","name": "DrinkSupermarket",  "country": "gb", "domains": ["drinksupermarket.com"],"awinMid": "3574",   "search": "", "enabled": false },
     { "id": "threshers",       "name": "Threshers",         "country": "gb", "domains": ["threshers.co.uk"],     "awinMid": "39276",  "search": "", "enabled": false },
     { "id": "houseofdecant",   "name": "House of Decant",   "country": "gb", "domains": ["houseofdecant.com"],   "awinMid": "125510", "search": "", "enabled": false },
-    { "id": "wine52",          "name": "Wine52",            "country": "gb", "domains": ["beer52.com"],          "awinMid": "110978", "search": "", "enabled": false, "note": "A monthly discovery club: for Explore Next, not a scanned bottle (no search)." }
+    { "id": "wine52",          "name": "Wine52",            "country": "gb", "domains": ["beer52.com"],          "awinMid": "110978", "search": "", "enabled": false, "note": "A monthly discovery club: for Explore Next, not a scanned bottle (no search)." },
+    { "id": "lcbo",            "name": "LCBO",              "country": "ca", "domains": ["lcbo.com"],            "search": "", "enabled": false, "note": "Ontario's liquor board, not an affiliate: listed so /go opens its pages for the LCBO stock lookup (docs/lcbo.md). Never Find it for me for all of Canada." }
   ]
 }

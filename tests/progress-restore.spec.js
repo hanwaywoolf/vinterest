@@ -33,7 +33,8 @@ function study() {
   QuizMastery.topicPool('red_grapes').forEach((q) => QuizMastery.recordAnswer('topic:red_grapes', q.q, true));
   Guides.markRead('taste_four_steps');
   Guides.pool('taste_four_steps').forEach((q) => QuizMastery.recordAnswer(Guides.setId('taste_four_steps'), q.q, true));
-  LearnProgress.markOnRamp('what-is-body');
+  // Real beginner article ids (onramp_1 …): an id with an underscore once kept them from travelling.
+  ON_RAMP.slice(0, 2).forEach((a) => LearnProgress.markOnRamp(a.id));
   wines.slice(0, 4).forEach((w, i) => ScanFlow.saveBlindResult(w, { guess: { body: 0.5 + i / 20, acidity: 0.6, tannins: 0.4 }, score: 70 + i }));
   XPSystem.award(['quiz_correct']);
   KnowledgeMap.note(KnowledgeMap.compute(), old);
@@ -67,7 +68,7 @@ function snapshot() {
     milestones: Milestones.list().map((x) => x.id).sort(),
     then: prog && prog.then != null ? prog.overall : null,
     refreshers: KnowledgeMap.refreshers().map((r) => r.id || r.name),
-    onramp: LearnProgress.onRampDone('what-is-body'),
+    onramp: ON_RAMP.filter((a) => LearnProgress.onRampDone(a.id)).map((a) => a.id),
     guideRead: !!Guides.get().read.taste_four_steps,
     stubs: (Store.getJSON('vinterest_gen_stubs', []) || []).map((x) => x.id).filter((id) => id !== 'ev_new_phone'),
   };
@@ -149,6 +150,7 @@ test('signing in on a new phone: Learn, XP and Mastery come back exactly', async
   await b.page.reload();
   await b.page.waitForFunction(() => typeof KnowledgeMap !== 'undefined');
   expect(await b.page.evaluate(snapshot)).toEqual(before);
+  expect(before.onramp).toHaveLength(2);
 });
 
 test('restoring after a first scan on the new phone: the banks their answers belong to win, and read pieces stay', async ({ context, page }) => {
@@ -218,4 +220,6 @@ test('the welcome screen restores a backup file: a returning user goes straight 
   await (await chooser).setFiles({ name: 'vinterest-backup.json', mimeType: 'application/json', buffer: Buffer.from(file) });
   await expect.poll(() => fresh.evaluate(() => location.hash)).toBe('#home');
   expect(await fresh.evaluate(snapshot)).toEqual(before);
+  // Home's XP badge shows the restored XP, not the 0 the app started onboarding with.
+  await expect(fresh.locator('#root')).toContainText(`${before.xp} XP`);
 });

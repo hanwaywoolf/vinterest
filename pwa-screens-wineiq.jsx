@@ -49,6 +49,7 @@ const _TYPES=[
    biggest surprises either way, each opening the wine. */
 function _KnowsCard({k,t,tLabel,openWine}){
   const card={padding:14};
+  const wide=useWide();
   if(!k.ready) return <Card style={card}><div style={{fontSize:15,color:C.ink2,fontFamily:C.P,lineHeight:1.55}}>
     Each time you scan, we predict the score you'll give a bottle. Score {WineDNA.noun(t.key,k.need)} more and this will show how close those predictions come, and which bottles surprised you.</div></Card>;
   const head=k.level==='well'?`We know your ${tLabel} well`:k.level==='getting'?`We're getting to know your ${tLabel}`:`Your ${tLabel} still surprise us`;
@@ -61,8 +62,11 @@ function _KnowsCard({k,t,tLabel,openWine}){
     </div>
     <span style={{fontSize:14,fontWeight:800,color:up?C.green:'#B04A3A',fontFamily:C.P,whiteSpace:'nowrap'}}>{up?'+':''}{r.diff}</span>
   </div>;
+  // On an iPad the surprises sit beside the summary and its strip, using the whole width.
+  const twoCol=wide&&(k.above.length>0||k.below.length>0);
   return <Card style={card}>
-    <div data-testid="knows" style={{display:'flex',flexDirection:'column',gap:8}}>
+    <div data-testid="knows" style={twoCol?{display:'grid',gridTemplateColumns:'minmax(0,1fr) minmax(0,1fr)',gap:24,alignItems:'start'}:{display:'flex',flexDirection:'column',gap:8}}>
+      <div style={{display:'flex',flexDirection:'column',gap:8}}>
       <div style={{fontSize:17,fontWeight:700,color:C.ink,fontFamily:C.P}}>{head}</div>
       <div style={{fontSize:15,color:C.ink2,fontFamily:C.P,lineHeight:1.5}}>
         We matched each of your {k.n} scored {tLabel} again from your other {tLabel} alone. The expected score landed within {TasteMatch.CAL_CLOSE} points of yours <b>{k.close} times in {k.n}</b>, and within 5 points {k.near} times.
@@ -78,6 +82,8 @@ function _KnowsCard({k,t,tLabel,openWine}){
         <text x={W-10} y={H+14} textAnchor="end" style={{fontSize:'11px',fill:C.mid,fontFamily:C.P}}>You scored higher</text>
       </svg>
       {Math.abs(k.bias)>=2&&<div style={{fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.5}}>{k.bias>0?`You tend to score a little above what we expect (by about ${Math.round(k.bias)}): your ${tLabel} keep pleasing you more than your history says.`:`You tend to score a little below what we expect (by about ${Math.round(-k.bias)}): you're getting harder to impress.`}</div>}
+      </div>
+      <div style={{display:'flex',flexDirection:'column',gap:8}}>
       {k.above.length>0&&<div data-testid="knows-above">
         <div style={{fontSize:13,fontWeight:700,color:C.ink,fontFamily:C.P,marginTop:4,marginBottom:2}}>Loved more than we expected</div>
         <div style={{fontSize:13,color:C.mid,fontFamily:C.P,lineHeight:1.45,marginBottom:2}}>Surprises like these are where your taste is growing: worth a closer look at what they have that your usual bottles don't.</div>
@@ -87,6 +93,7 @@ function _KnowsCard({k,t,tLabel,openWine}){
         <div style={{fontSize:13,fontWeight:700,color:C.ink,fontFamily:C.P,marginTop:4,marginBottom:2}}>Let you down</div>
         {k.below.map((r,i)=><Surprise key={i} r={r}/>)}
       </div>}
+      </div>
     </div>
   </Card>;
 }
@@ -213,6 +220,7 @@ function ExploreReadyMoment({type,count,onDone}){
 }
 
 function WineDNAScreen({nav,back,showPro}){
+  const wide=useWide();
   // Opens on the type they've chosen most (UserPrefs.openingType), or the tab they last picked.
   const [typeIdx,setTypeIdxState]=React.useState(()=>Math.max(0,_TYPES.findIndex(t=>t.key===UserPrefs.openingType(WineHistory.getAll()))));
   const setTypeIdx=i=>{ setTypeIdxState(i); if(_TYPES[i]) UserPrefs.rememberType(_TYPES[i].key); };
@@ -378,6 +386,315 @@ function WineDNAScreen({nav,back,showPro}){
     :`Based on the ${WineDNA.noun(t.key,t.wines.length)} you've ${conf.n>0?'chosen':'scanned'}`;
 
   if(ready) return <ExploreReadyMoment type={ready} count={ExploreNext._typeWines(ready,allWines).length} onDone={seePicks}/>;
+  /* Each section of the type's DNA once, laid out below: one column on a phone, in pairs side by
+     side on an iPad (useWide), with How Well We Know You and Explore across the full width. */
+  const S={
+    written:<>
+        {/* ── Written for you: unread Learn pieces about this type's bottles (ContentEngine.forType) ── */}
+        {(()=>{
+          const reads=ContentEngine.forType(t.key,allWines).slice(0,2);
+          if(!reads.length) return null;
+          const open=stub=>{ Handoff.genArticle.set(stub); nav('gen-article'); };
+          return <Card style={{padding:'14px 16px',display:'flex',flexDirection:'column',gap:10}}>
+            <div>
+              <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>Written from your WineDNA</div>
+              <div style={{fontSize:14,color:C.mid,fontFamily:C.P,lineHeight:1.45,marginTop:2}}>Short reads about your own {tLabel}, written for you and nobody else.</div>
+            </div>
+            {reads.map(stub=>(
+              <div key={stub.id} onClick={()=>open(stub)} role="button" style={{display:'flex',alignItems:'center',gap:12,cursor:'pointer'}}>
+                <div style={{width:38,height:38,borderRadius:11,background:`${t.col}12`,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><Icon n={stub.iconName||'read'} sz={18} col={t.col}/></div>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontSize:15,fontWeight:700,color:C.ink,fontFamily:C.P,lineHeight:1.3}}>{stub.title}</div>
+                  <div style={{fontSize:13,color:C.mid,fontFamily:C.P,lineHeight:1.4,marginTop:1}}>{ContentEngine.because(stub,allWines)}</div>
+                </div>
+                <Icon n="chevron" sz={13} col={C.mid}/>
+              </div>
+            ))}
+          </Card>;
+        })()}
+    </>,
+    knows:<>
+        {/* ── How well we know you: every scored wine matched again from the rest (TasteMatch.calibration) ── */}
+        {t.scored.length>0&&<CSH label="How Well We Know You" cKey="knows" collapsed={collapsed} toggle={toggle}
+          summary={t.knows.ready?`Your match lands within ${TasteMatch.CAL_CLOSE} points of your score ${t.knows.close} times in ${t.knows.n}.${t.knows.above[0]?` Biggest surprise: ${t.knows.above[0].wine.name}.`:''}`:`Score ${WineDNA.noun(t.key,t.knows.need)} more and we'll show how well your match predicts your scores.`}/>}
+        {t.scored.length>0&&!collapsed.knows&&<_KnowsCard k={t.knows} t={t} tLabel={tLabel} openWine={openWine}/>}
+    </>,
+    house:<>
+        {/* ── House wines: the bottles they keep coming back to (WineDNA.houseWines) ── */}
+        {t.house.length>0&&<CSH label="Your “House” Wines" cKey="house" collapsed={collapsed} toggle={toggle}
+          summary={`${t.house.length===1?'One bottle':`${t.house.length} bottles`} you keep coming back to, led by ${t.house[0].wine.name}.`}/>}
+        {t.house.length>0&&!collapsed.house&&(
+          <Card style={{padding:14}}>
+            <div style={{fontSize:13,color:C.mid,fontFamily:C.P,lineHeight:1.5,marginBottom:6}}>The {tLabel} you keep coming back to: had more than once, marked to buy again, or hearted (never one you scored under 80). Restock goes straight to a shop.</div>
+            <div data-testid="house-wines">
+            {t.house.map(h=>{ const w=h.wine; return (
+              <div key={'h'+w.name+(w.vintage||'')} role="button" onClick={()=>openWine(w)} style={{display:'flex',alignItems:'center',gap:8,padding:'8px 0',borderTop:`1px solid ${C.line}`,cursor:'pointer'}}>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontSize:15,fontWeight:600,color:C.ink,fontFamily:C.P,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{h.fav&&<span style={{color:C.cr,marginRight:5}}>♥</span>}{WineDNA.nameYear(w)}</div>
+                  <div style={{fontSize:13,color:C.mid,fontFamily:C.P}}>{h.why.map(x=>x.charAt(0).toUpperCase()+x.slice(1)).join(' · ')}</div>
+                </div>
+                {w.rating>0&&<span style={{fontSize:15,fontWeight:800,color:scoreCol(w.rating),fontFamily:C.P}}>{w.rating}</span>}
+                {/* Their own shortlist, so the shortest path to buying it again (a partner shop when one is on). */}
+                <button onClick={e=>{ e.stopPropagation(); FindOnline.open(w,'restock'); }} aria-label={`Restock ${w.name}`} style={{flexShrink:0,border:`1px solid ${C.green}55`,background:C.greenBg,color:C.green,borderRadius:20,padding:'4px 10px',fontSize:13,fontWeight:700,fontFamily:C.P,cursor:'pointer'}}>Restock</button>
+              </div>); })}
+            </div>
+            <ShopDisclosure style={{marginTop:8}}/>
+          </Card>
+        )}
+    </>,
+    taste:<>
+        {/* ── Taste profile: the style of what you choose, with your 90+ wines marked ── */}
+        {t.wines.length>0&&<CSH label="Taste Profile" cKey="taste" collapsed={collapsed} toggle={toggle} summary={t.axes.filter(t.showAxis).map(k=>`${WineDNA.AXES[k].name}: ${WineDNA.AXES[k][WineDNA.level(t.avg[k])]}`).join(' · ')}/>}
+        {t.wines.length>0&&!collapsed.taste&&(
+          <DnaTasteCard t={t} tLabel={tLabel}/>
+        )}
+    </>,
+    value:<>
+        {/* ── Value: price against score ── */}
+        {t.value&&<CSH label="Value" cKey="value" collapsed={collapsed} toggle={toggle} summary={t.value.verdict?t.value.verdict.text:`Your best-value ${tLabel}, from ${t.value.n} scored bottles with prices.`}/>}
+        {t.value&&!collapsed.value&&(
+          <Card style={{padding:14}}>
+            <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P,marginBottom:8}}>Getting value</div>
+            {t.value.verdict&&<div style={{fontSize:15,color:C.ink2,fontFamily:C.P,lineHeight:1.55,marginBottom:10}}>{t.value.verdict.text}</div>}
+            {t.value.sweetSpot&&(
+              <div style={{padding:'8px 12px',borderRadius:10,background:C.amberBg,border:`1px solid ${C.amber}25`,marginBottom:10}}>
+                <span style={{fontSize:15,color:C.amber,fontFamily:C.P,fontWeight:700}}>Your sweet spot: {t.value.sweetSpot}</span>
+                <div style={{fontSize:13,color:C.mid,fontFamily:C.P,marginTop:2}}>Where most of your Outstanding {tLabel} are priced.</div>
+              </div>
+            )}
+            {t.value.bestValue.length>0&&(
+              <>
+                <div style={{...sub,marginBottom:6}}>Best value so far</div>
+                {t.value.bestValue.map(b=>(
+                  <div key={b.wine.name} role="button" onClick={()=>openWine(b.wine)} style={{display:'flex',alignItems:'center',gap:8,padding:'6px 0',borderTop:`1px solid ${C.line}`,cursor:'pointer'}}>
+                    <span style={{fontSize:15,color:C.ink,fontFamily:C.P,flex:1}}>{b.wine.name}</span>
+                    <span style={{fontSize:13,color:C.mid,fontFamily:C.P}}>{b.price}{b.paid?' paid':' est.'}</span>
+                    <span style={{fontSize:15,fontWeight:800,color:C.green,fontFamily:C.P,width:30,textAlign:'right'}}>{b.wine.rating}</span>
+                    <Icon n="chevron" sz={12} col={C.mid}/>
+                  </div>
+                ))}
+                <div style={{fontSize:13,color:C.mid,fontFamily:C.P,lineHeight:1.5,marginTop:8}}>Scored 90+ at or below your typical price. Remember these producers: they're good bets on a list or in a shop.</div>
+              </>
+            )}
+            <div style={{fontSize:13,color:C.mid,fontFamily:C.P,marginTop:10,opacity:0.8}}>{t.value.paid?`Prices are what you paid for ${t.value.paid} of these, and estimates from your scans for the rest (${t.value.code}).`:`Prices are estimates from your scans (${t.value.code}). Add what you paid when you rate a bottle to make this exact.`}</div>
+          </Card>
+        )}
+    </>,
+    explore:<>
+        {t.explore.picks.length>0&&<CSH label="Explore" cKey="explore" collapsed={collapsed} toggle={toggle} summary={`${t.explore.picks.length} styles picked from your ${tLabel} DNA. Top pick: ${t.explore.picks[0].style.name} (${t.explore.picks[0].style.country}).${t.explore.explored.length?` You've explored ${t.explore.explored.length} so far.`:''}`}/>}
+        {/* ── Explore Next: styles to try, ranked from this type's WineDNA (ExploreNext, pwa-content-engine.js) ── */}
+        {t.explore.picks.length>0&&!collapsed.explore&&(
+          <Card style={{padding:14}}>
+            <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P,marginBottom:4}}>Explore Next</div>
+            <div style={{fontSize:15,color:C.mid,fontFamily:C.P,marginBottom:12,lineHeight:1.5}}>Styles that share your {tLabel} DNA but take you somewhere new. Tap one to learn what it's like and how to find it.</div>
+            <div style={{display:'flex',flexDirection:'column',gap:10}}>
+              {t.explore.picks.map((p,i)=>(
+                <div key={p.style.id}
+                  onClick={()=>{ExploreNext.markOpened(p.style.id);Handoff.styleExplore.set({id:p.style.id,typeKey:t.key,label:t.label});nav('style-explore');}}
+                  style={{padding:'12px 12px',borderRadius:12,background:i===0?`${t.col}08`:C.offWhite,border:`1px solid ${i===0?t.col+'25':C.line}`,cursor:'pointer'}}>
+                  <div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline',gap:8,marginBottom:6}}>
+                    <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P,flex:1}}>{p.style.name}</div>
+                    <span style={{fontSize:13,color:C.mid,fontFamily:C.P,flexShrink:0}}>{p.style.country}</span>
+                  </div>
+                  <div style={{display:'flex',flexWrap:'wrap',gap:5,marginBottom:8}}>
+                    {p.shares&&<span style={{fontSize:12,fontWeight:600,color:C.green,background:C.greenBg,border:`1px solid ${C.green}30`,borderRadius:20,padding:'2px 9px',fontFamily:C.P}}>Shares: {p.shares}</span>}
+                    <span style={{fontSize:12,fontWeight:600,color:t.col,background:`${t.col}10`,border:`1px solid ${t.col}30`,borderRadius:20,padding:'2px 9px',fontFamily:C.P}}>New: {p.style.adds}</span>
+                  </div>
+                  <div style={{fontSize:15,color:C.ink2,fontFamily:C.P,lineHeight:1.55,textWrap:'pretty',marginBottom:6}}>{p.why}</div>
+                  <div style={{fontSize:13,fontWeight:600,color:t.col,fontFamily:C.P}}>Learn about it & find a bottle →</div>
+                </div>
+              ))}
+            </div>
+            {t.explore.explored.length>0&&(
+              <div style={{marginTop:12,paddingTop:10,borderTop:`1px solid ${C.line}`}}>
+                <div style={{...sub,marginBottom:6}}>Already explored</div>
+                {t.explore.explored.map(e=>(
+                  <div key={e.style.id} style={{display:'flex',alignItems:'center',gap:8,padding:'4px 0'}}>
+                    <span style={{fontSize:15,fontWeight:700,color:C.green,fontFamily:C.P}}>✓</span>
+                    <span style={{fontSize:15,color:C.ink,fontFamily:C.P,flex:1}}>{e.style.name}</span>
+                    <span style={{fontSize:13,color:C.mid,fontFamily:C.P}}>{e.wine.rating?`you scored it ${e.wine.rating}`:'scanned'}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </Card>
+        )}
+    </>,
+    flavour:<>
+        {/* ── Flavour Signatures ── */}
+        {t.wines.length>=2&&t.noteClusters.length>0&&<CSH label="Flavour Signatures" cKey="flavour" collapsed={collapsed} toggle={toggle} summary={`${t.noteClusters[0].name} is the most common flavour family across your ${tLabel}.${t.noteClusters[1]?' '+t.noteClusters[1].name+' shows up often too.':''}`}/>}
+        {t.wines.length>=2&&t.noteClusters.length>0&&!collapsed.flavour&&(
+          <Card style={{padding:14}}>
+            <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P,marginBottom:4}}>Flavour Signatures</div>
+            <div style={{fontSize:15,color:C.mid,fontFamily:C.P,lineHeight:1.5,marginBottom:12}}>The flavour families that come up most in your {tLabel}, and food that suits them.</div>
+            <div style={{display:'flex',flexDirection:'column',gap:10}}>
+              {t.noteClusters.map((cl,i)=>(
+                <div key={i} style={{padding:'10px 12px',borderRadius:12,background:C.offWhite,border:`1px solid ${C.line}`}}>
+                  <div style={{fontSize:15,fontWeight:700,color:C.ink,fontFamily:C.P,marginBottom:6}}>{cl.name}</div>
+                  <div style={{display:'flex',flexWrap:'wrap',gap:4,marginBottom:8}}>
+                    {cl.notes.map((n,j)=>(
+                      <span key={j} style={{padding:'3px 9px',borderRadius:20,background:j===0?`${t.col}10`:C.white,border:`1px solid ${j===0?t.col+'30':C.line}`,fontSize:13,color:j===0?t.col:C.ink2,fontFamily:C.P}}>{n}</span>
+                    ))}
+                  </div>
+                  {_FOOD_PAIRINGS[cl.name]&&(
+                    <div style={{display:'flex',alignItems:'flex-start',gap:6}}>
+                      <span style={{fontSize:13,color:C.mid,fontFamily:C.P,flexShrink:0,marginTop:1}}>Pairs with</span>
+                      <span style={{fontSize:13,color:C.ink2,fontFamily:C.P,lineHeight:1.5}}>{_FOOD_PAIRINGS[cl.name]}</span>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </Card>
+        )}
+    </>,
+    journey:<>
+        {/* ── Your Journey: how your choices are changing ── */}
+        {t.journey.length>=2&&(()=>{
+          const J=t.journey, last=J[J.length-1];
+          const totalRegions=new Set(t.wines.map(w=>WineDNA.region(w)).filter(Boolean)).size;
+          const totalGrapes=t.grapeStats.length;
+          const maxN=Math.max(...J.map(b=>b.count));
+          const lastNew=[...last.newRegions];
+          const summary=lastNew.length
+            ?`${['day','week'].includes(last.unit)?(last.unit==='day'?'On':'The week of'):'In'} ${last.label} you tried ${lastNew.length} new region${lastNew.length!==1?'s':''}: ${lastNew.slice(0,3).join(', ')}${lastNew.length>3?` and ${lastNew.length-3} more`:''}.`
+            :`You've explored ${totalRegions} regions and ${totalGrapes} grapes in your ${tLabel} so far.`;
+          return(
+            <>
+              <CSH label="Your Journey" cKey="journey" collapsed={collapsed} toggle={toggle} summary={summary}/>
+              {!collapsed.journey&&(
+                <Card style={{padding:14}}>
+                  <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P,marginBottom:4}}>How your choices are changing</div>
+                  <div style={{fontSize:15,color:C.mid,fontFamily:C.P,marginBottom:14,lineHeight:1.5}}>{tLabel.charAt(0).toUpperCase()+tLabel.slice(1)} scanned over time, and how many regions each period was your first taste of.</div>
+                  <div style={{display:'flex',gap:4,alignItems:'flex-end',height:72,marginBottom:6}}>
+                    {J.map((b,i)=>(
+                      <div key={i} style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',gap:3,height:'100%',justifyContent:'flex-end'}}>
+                        <span style={{fontSize:13,fontWeight:600,color:t.col,fontFamily:C.P}}>{b.count}</span>
+                        <div style={{width:'55%',height:`${Math.max(8,Math.round(b.count/maxN*100))}%`,background:t.col,borderRadius:'4px 4px 0 0',opacity:0.72}}/>
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{display:'flex',gap:4}}>
+                    {J.map((b,i)=>(
+                      <div key={i} style={{flex:1,textAlign:'center'}}>
+                        <span style={{fontSize:12,color:C.mid,fontFamily:C.P}}>{b.label}</span>
+                        <div style={{fontSize:12,fontWeight:600,color:b.newRegions.length?C.green:C.mid,fontFamily:C.P,opacity:b.newRegions.length?1:0.6}}>{b.newRegions.length?`+${b.newRegions.length} new`:'—'}</div>
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{fontSize:13,color:C.ink2,fontFamily:C.P,marginTop:10,lineHeight:1.55}}>
+                    {summary} {totalRegions<6?'Every new region teaches your palate something: Explore Next above has ideas.':'That breadth is what makes your scores meaningful: you know what you like because you have tried the alternatives.'}
+                  </div>
+                </Card>
+              )}
+            </>
+          );
+        })()}
+    </>,
+    scripts:<>
+        {t.wines.length>0&&<CSH label="Scripts" cKey="scripts" collapsed={collapsed} toggle={toggle} summary={genScripts[t.key]?`Your ${tLabel} sommelier script is ready to use at your next dinner. "${genScripts[t.key].replace(/^"|"$/g,'').slice(0,90)}${genScripts[t.key].length>92?'…':''}"`:`What to say to a sommelier about the ${tLabel} you like.`}/>}
+        {/* ── Sommelier Script ── */}
+        {t.wines.length>0&&!collapsed.scripts&&(
+          <Card style={{padding:14}}>
+            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:10}}>
+              <div style={{display:'flex',alignItems:'center',gap:8}}>
+                <Icon n="message" sz={14} col={t.col}/>
+                <span style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>Your {t.label} Script</span>
+              </div>
+              {t.wines.length>0&&!generatingScript&&(
+                <div style={{display:'flex',gap:4,background:C.offWhite,borderRadius:6,padding:'3px 4px',border:`1px solid ${C.line}`}}>
+                  {['short','long'].map(len=>(
+                    <div key={len} onClick={()=>{setScriptLength(len);Settings.setScriptLength(len);setGenScripts(s=>{const n={...s};delete n[t.key];return n;});}} style={{padding:'4px 8px',borderRadius:4,background:scriptLength===len?C.cr:'transparent',cursor:'pointer'}}>
+                      <span style={{fontSize:13,fontWeight:600,color:scriptLength===len?'#fff':C.mid,fontFamily:C.P}}>{len.charAt(0).toUpperCase()+len.slice(1)}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            {generatingScript===t.key?(
+              <div style={{display:'flex',alignItems:'center',gap:8}}>
+                <div style={{width:14,height:14,borderRadius:7,border:'2px solid rgba(0,0,0,0.08)',borderTopColor:t.col,animation:'dnaSpin .8s linear infinite',flexShrink:0}}/>
+                <span style={{fontSize:15,color:C.mid,fontFamily:C.P,fontStyle:'italic'}}>Writing…</span>
+              </div>
+            ):(
+              <>
+                <div style={{fontSize:15,color:C.ink2,fontFamily:C.P,fontStyle:'italic',lineHeight:1.65,marginBottom:genScripts[t.key]?10:0}}>{genScripts[t.key]||'Generating…'}</div>
+                {genScripts[t.key]&&(
+                  <Btn primary small style={{background:t.col,boxShadow:`0 3px 12px ${t.col}40`,marginTop:4}} onClick={()=>{
+                    try{navigator.clipboard.writeText((genScripts[t.key]||'').replace(/"/g,''));setCopied(t.key);setTimeout(()=>setCopied(null),2000);}catch(e){}
+                  }}>{copied===t.key?'✓ Copied':'Copy Script'}</Btn>
+                )}
+              </>
+            )}
+          </Card>
+        )}
+    </>,
+    history:<>
+        <CSH label="Your History" cKey="history" collapsed={collapsed} toggle={toggle} summary={`You've scanned ${t.wines.length} ${tLabel} across ${tCountries} countr${tCountries!==1?'ies':'y'}${tAvgScore?`, scoring them ${tAvgScore} on average`:''}.`}/>
+        {/* ── History: one card in the same style as the sections above ── */}
+        {!collapsed.history&&(()=>{
+          const stats=[
+            {label:`${t.label} scanned`,  val:t.wines.length},
+            {label:'Average score',       val:tAvgScore||'—', note:tAvgScore?ParkerScale.label(tAvgScore):null, col:tAvgScore?scoreCol(tAvgScore):null},
+            {label:'Countries',           val:tCountries||'—'},
+            {label:'Blind Call accuracy', val:t.blindCall?`${t.blindCall.accuracy}%`:'—', note:t.blindCall?`${t.blindCall.played} played`:'Play after a scan'},
+          ];
+          return(
+            <Card style={{padding:14}}>
+              <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P,marginBottom:10}}>Your {tLabel} so far</div>
+              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',borderTop:`1px solid ${C.line}`}}>
+                {stats.map((x,i)=>(
+                  <div key={x.label} style={{padding:'12px 0',paddingLeft:i%2?14:0,borderLeft:i%2?`1px solid ${C.line}`:'none',borderBottom:i<2?`1px solid ${C.line}`:'none'}}>
+                    <div style={{fontSize:22,fontWeight:800,color:x.val==='—'?C.mid:(x.col||t.col),fontFamily:C.P,lineHeight:1.1}}>{x.val}</div>
+                    <div style={{fontSize:13,color:C.mid,fontFamily:C.P,marginTop:4}}>{x.label}</div>
+                    {x.note&&<div style={{fontSize:12,color:C.mid,fontFamily:C.P,opacity:0.75,marginTop:1}}>{x.note}</div>}
+                  </div>
+                ))}
+              </div>
+              {tAvgPrice>0&&(
+                <div style={{display:'flex',alignItems:'baseline',gap:8,padding:'10px 0',borderTop:`1px solid ${C.line}`}}>
+                  <span style={{fontSize:15,color:C.ink,fontFamily:C.P,flex:1}}>Average price</span>
+                  <span style={{fontSize:15,fontWeight:800,color:C.ink,fontFamily:C.P}}>{_cbase}{Math.round(tAvgPrice*_cfx)}</span>
+                  <span style={{fontSize:13,color:C.mid,fontFamily:C.P}}>{_ccode} per bottle, est.</span>
+                </div>
+              )}
+              {t.topWines.length>0&&(
+                <>
+                  <div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline',marginTop:10,marginBottom:6}}>
+                    <span style={sub}>Top {t.label}</span>
+                    <span onClick={()=>{ try{ Handoff.myWinesView.set({type:t.key,sort:'rating'}); }catch(e){} nav('mywines'); }} style={{fontSize:13,fontWeight:600,color:t.col,fontFamily:C.P,cursor:'pointer'}}>See all →</span>
+                  </div>
+                  {t.topWines.map((w,i)=>(
+                    <div key={i} onClick={()=>{
+                      Handoff.openWine({demo:false,wine:w,confidence:0.9,existingRating:w.rating||0});
+                      nav('detail');
+                    }} style={{display:'flex',alignItems:'center',gap:10,padding:'8px 0',borderTop:`1px solid ${C.line}`,cursor:'pointer'}}>
+                      <span style={{fontSize:13,fontWeight:700,color:C.mid,fontFamily:C.P,width:22,flexShrink:0}}>#{i+1}</span>
+                      <div style={{flex:1,minWidth:0}}>
+                        <div style={{fontSize:15,fontWeight:600,color:C.ink,fontFamily:C.P,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{w.name}</div>
+                        <div style={{fontSize:13,color:C.mid,fontFamily:C.P,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{[w.region,w.vintage?String(w.vintage):null,ParkerScale.label(w.rating)].filter(Boolean).join(' · ')}</div>
+                      </div>
+                      <span style={{fontSize:15,fontWeight:800,color:scoreCol(w.rating),fontFamily:C.P,width:30,textAlign:'right',flexShrink:0}}>{w.rating}</span>
+                    </div>
+                  ))}
+                </>
+              )}
+            </Card>
+          );
+        })()}
+    </>,
+  };
+  const cell=x=><div style={{display:'flex',flexDirection:'column',gap:12,minWidth:0}}>{x}</div>;
+  // Which sections show for this type, so the iPad pairs only those (no empty half beside one).
+  const shown={written:ContentEngine.forType(t.key,allWines).length>0,knows:t.scored.length>0,house:t.house.length>0,taste:t.wines.length>0,value:!!t.value,
+    explore:t.explore.picks.length>0,flavour:t.wines.length>=2&&t.noteClusters.length>0,journey:t.journey.length>=2,scripts:t.wines.length>0,history:true};
+  const FULL={knows:1,explore:1};
+  const tablet=[];
+  { let half=null; const flush=()=>{ if(half){ tablet.push(<React.Fragment key={half}>{S[half]}</React.Fragment>); half=null; } };
+    ['written','house','knows','taste','value','explore','flavour','journey','scripts','history'].filter(k=>shown[k]).forEach(k=>{
+      if(FULL[k]){ flush(); tablet.push(<React.Fragment key={k}>{S[k]}</React.Fragment>); return; }
+      if(half){ tablet.push(<WideColumns key={half+k}>{cell(S[half])}{cell(S[k])}</WideColumns>); half=null; } else half=k; });
+    flush(); }
   return(
     <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden',background:C.bg}}>
 
@@ -470,289 +787,7 @@ function WineDNAScreen({nav,back,showPro}){
           </div>
         </Card>
 
-        {/* ── Written for you: unread Learn pieces about this type's bottles (ContentEngine.forType) ── */}
-        {(()=>{
-          const reads=ContentEngine.forType(t.key,allWines).slice(0,2);
-          if(!reads.length) return null;
-          const open=stub=>{ Handoff.genArticle.set(stub); nav('gen-article'); };
-          return <Card style={{padding:'14px 16px',display:'flex',flexDirection:'column',gap:10}}>
-            <div>
-              <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>Written from your WineDNA</div>
-              <div style={{fontSize:14,color:C.mid,fontFamily:C.P,lineHeight:1.45,marginTop:2}}>Short reads about your own {tLabel}, written for you and nobody else.</div>
-            </div>
-            {reads.map(stub=>(
-              <div key={stub.id} onClick={()=>open(stub)} role="button" style={{display:'flex',alignItems:'center',gap:12,cursor:'pointer'}}>
-                <div style={{width:38,height:38,borderRadius:11,background:`${t.col}12`,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><Icon n={stub.iconName||'read'} sz={18} col={t.col}/></div>
-                <div style={{flex:1,minWidth:0}}>
-                  <div style={{fontSize:15,fontWeight:700,color:C.ink,fontFamily:C.P,lineHeight:1.3}}>{stub.title}</div>
-                  <div style={{fontSize:13,color:C.mid,fontFamily:C.P,lineHeight:1.4,marginTop:1}}>{ContentEngine.because(stub,allWines)}</div>
-                </div>
-                <Icon n="chevron" sz={13} col={C.mid}/>
-              </div>
-            ))}
-          </Card>;
-        })()}
-
-        {/* ── How well we know you: every scored wine matched again from the rest (TasteMatch.calibration) ── */}
-        {t.scored.length>0&&<CSH label="How Well We Know You" cKey="knows" collapsed={collapsed} toggle={toggle}
-          summary={t.knows.ready?`Your match lands within ${TasteMatch.CAL_CLOSE} points of your score ${t.knows.close} times in ${t.knows.n}.${t.knows.above[0]?` Biggest surprise: ${t.knows.above[0].wine.name}.`:''}`:`Score ${WineDNA.noun(t.key,t.knows.need)} more and we'll show how well your match predicts your scores.`}/>}
-        {t.scored.length>0&&!collapsed.knows&&<_KnowsCard k={t.knows} t={t} tLabel={tLabel} openWine={openWine}/>}
-
-        {/* ── House wines: the bottles they keep coming back to (WineDNA.houseWines) ── */}
-        {t.house.length>0&&<CSH label="Your “House” Wines" cKey="house" collapsed={collapsed} toggle={toggle}
-          summary={`${t.house.length===1?'One bottle':`${t.house.length} bottles`} you keep coming back to, led by ${t.house[0].wine.name}.`}/>}
-        {t.house.length>0&&!collapsed.house&&(
-          <Card style={{padding:14}}>
-            <div style={{fontSize:13,color:C.mid,fontFamily:C.P,lineHeight:1.5,marginBottom:6}}>The {tLabel} you keep coming back to: had more than once, marked to buy again, or hearted (never one you scored under 80). Restock goes straight to a shop.</div>
-            <div data-testid="house-wines">
-            {t.house.map(h=>{ const w=h.wine; return (
-              <div key={'h'+w.name+(w.vintage||'')} role="button" onClick={()=>openWine(w)} style={{display:'flex',alignItems:'center',gap:8,padding:'8px 0',borderTop:`1px solid ${C.line}`,cursor:'pointer'}}>
-                <div style={{flex:1,minWidth:0}}>
-                  <div style={{fontSize:15,fontWeight:600,color:C.ink,fontFamily:C.P,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{h.fav&&<span style={{color:C.cr,marginRight:5}}>♥</span>}{WineDNA.nameYear(w)}</div>
-                  <div style={{fontSize:13,color:C.mid,fontFamily:C.P}}>{h.why.map(x=>x.charAt(0).toUpperCase()+x.slice(1)).join(' · ')}</div>
-                </div>
-                {w.rating>0&&<span style={{fontSize:15,fontWeight:800,color:scoreCol(w.rating),fontFamily:C.P}}>{w.rating}</span>}
-                {/* Their own shortlist, so the shortest path to buying it again (a partner shop when one is on). */}
-                <button onClick={e=>{ e.stopPropagation(); FindOnline.open(w,'restock'); }} aria-label={`Restock ${w.name}`} style={{flexShrink:0,border:`1px solid ${C.green}55`,background:C.greenBg,color:C.green,borderRadius:20,padding:'4px 10px',fontSize:13,fontWeight:700,fontFamily:C.P,cursor:'pointer'}}>Restock</button>
-              </div>); })}
-            </div>
-            <ShopDisclosure style={{marginTop:8}}/>
-          </Card>
-        )}
-
-        {/* ── Taste profile: the style of what you choose, with your 90+ wines marked ── */}
-        {t.wines.length>0&&<CSH label="Taste Profile" cKey="taste" collapsed={collapsed} toggle={toggle} summary={t.axes.filter(t.showAxis).map(k=>`${WineDNA.AXES[k].name}: ${WineDNA.AXES[k][WineDNA.level(t.avg[k])]}`).join(' · ')}/>}
-        {t.wines.length>0&&!collapsed.taste&&(
-          <DnaTasteCard t={t} tLabel={tLabel}/>
-        )}
-
-        {/* ── Value: price against score ── */}
-        {t.value&&<CSH label="Value" cKey="value" collapsed={collapsed} toggle={toggle} summary={t.value.verdict?t.value.verdict.text:`Your best-value ${tLabel}, from ${t.value.n} scored bottles with prices.`}/>}
-        {t.value&&!collapsed.value&&(
-          <Card style={{padding:14}}>
-            <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P,marginBottom:8}}>Getting value</div>
-            {t.value.verdict&&<div style={{fontSize:15,color:C.ink2,fontFamily:C.P,lineHeight:1.55,marginBottom:10}}>{t.value.verdict.text}</div>}
-            {t.value.sweetSpot&&(
-              <div style={{padding:'8px 12px',borderRadius:10,background:C.amberBg,border:`1px solid ${C.amber}25`,marginBottom:10}}>
-                <span style={{fontSize:15,color:C.amber,fontFamily:C.P,fontWeight:700}}>Your sweet spot: {t.value.sweetSpot}</span>
-                <div style={{fontSize:13,color:C.mid,fontFamily:C.P,marginTop:2}}>Where most of your Outstanding {tLabel} are priced.</div>
-              </div>
-            )}
-            {t.value.bestValue.length>0&&(
-              <>
-                <div style={{...sub,marginBottom:6}}>Best value so far</div>
-                {t.value.bestValue.map(b=>(
-                  <div key={b.wine.name} role="button" onClick={()=>openWine(b.wine)} style={{display:'flex',alignItems:'center',gap:8,padding:'6px 0',borderTop:`1px solid ${C.line}`,cursor:'pointer'}}>
-                    <span style={{fontSize:15,color:C.ink,fontFamily:C.P,flex:1}}>{b.wine.name}</span>
-                    <span style={{fontSize:13,color:C.mid,fontFamily:C.P}}>{b.price}{b.paid?' paid':' est.'}</span>
-                    <span style={{fontSize:15,fontWeight:800,color:C.green,fontFamily:C.P,width:30,textAlign:'right'}}>{b.wine.rating}</span>
-                    <Icon n="chevron" sz={12} col={C.mid}/>
-                  </div>
-                ))}
-                <div style={{fontSize:13,color:C.mid,fontFamily:C.P,lineHeight:1.5,marginTop:8}}>Scored 90+ at or below your typical price. Remember these producers: they're good bets on a list or in a shop.</div>
-              </>
-            )}
-            <div style={{fontSize:13,color:C.mid,fontFamily:C.P,marginTop:10,opacity:0.8}}>{t.value.paid?`Prices are what you paid for ${t.value.paid} of these, and estimates from your scans for the rest (${t.value.code}).`:`Prices are estimates from your scans (${t.value.code}). Add what you paid when you rate a bottle to make this exact.`}</div>
-          </Card>
-        )}
-
-        {t.explore.picks.length>0&&<CSH label="Explore" cKey="explore" collapsed={collapsed} toggle={toggle} summary={`${t.explore.picks.length} styles picked from your ${tLabel} DNA. Top pick: ${t.explore.picks[0].style.name} (${t.explore.picks[0].style.country}).${t.explore.explored.length?` You've explored ${t.explore.explored.length} so far.`:''}`}/>}
-        {/* ── Explore Next: styles to try, ranked from this type's WineDNA (ExploreNext, pwa-content-engine.js) ── */}
-        {t.explore.picks.length>0&&!collapsed.explore&&(
-          <Card style={{padding:14}}>
-            <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P,marginBottom:4}}>Explore Next</div>
-            <div style={{fontSize:15,color:C.mid,fontFamily:C.P,marginBottom:12,lineHeight:1.5}}>Styles that share your {tLabel} DNA but take you somewhere new. Tap one to learn what it's like and how to find it.</div>
-            <div style={{display:'flex',flexDirection:'column',gap:10}}>
-              {t.explore.picks.map((p,i)=>(
-                <div key={p.style.id}
-                  onClick={()=>{ExploreNext.markOpened(p.style.id);Handoff.styleExplore.set({id:p.style.id,typeKey:t.key,label:t.label});nav('style-explore');}}
-                  style={{padding:'12px 12px',borderRadius:12,background:i===0?`${t.col}08`:C.offWhite,border:`1px solid ${i===0?t.col+'25':C.line}`,cursor:'pointer'}}>
-                  <div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline',gap:8,marginBottom:6}}>
-                    <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P,flex:1}}>{p.style.name}</div>
-                    <span style={{fontSize:13,color:C.mid,fontFamily:C.P,flexShrink:0}}>{p.style.country}</span>
-                  </div>
-                  <div style={{display:'flex',flexWrap:'wrap',gap:5,marginBottom:8}}>
-                    {p.shares&&<span style={{fontSize:12,fontWeight:600,color:C.green,background:C.greenBg,border:`1px solid ${C.green}30`,borderRadius:20,padding:'2px 9px',fontFamily:C.P}}>Shares: {p.shares}</span>}
-                    <span style={{fontSize:12,fontWeight:600,color:t.col,background:`${t.col}10`,border:`1px solid ${t.col}30`,borderRadius:20,padding:'2px 9px',fontFamily:C.P}}>New: {p.style.adds}</span>
-                  </div>
-                  <div style={{fontSize:15,color:C.ink2,fontFamily:C.P,lineHeight:1.55,textWrap:'pretty',marginBottom:6}}>{p.why}</div>
-                  <div style={{fontSize:13,fontWeight:600,color:t.col,fontFamily:C.P}}>Learn about it & find a bottle →</div>
-                </div>
-              ))}
-            </div>
-            {t.explore.explored.length>0&&(
-              <div style={{marginTop:12,paddingTop:10,borderTop:`1px solid ${C.line}`}}>
-                <div style={{...sub,marginBottom:6}}>Already explored</div>
-                {t.explore.explored.map(e=>(
-                  <div key={e.style.id} style={{display:'flex',alignItems:'center',gap:8,padding:'4px 0'}}>
-                    <span style={{fontSize:15,fontWeight:700,color:C.green,fontFamily:C.P}}>✓</span>
-                    <span style={{fontSize:15,color:C.ink,fontFamily:C.P,flex:1}}>{e.style.name}</span>
-                    <span style={{fontSize:13,color:C.mid,fontFamily:C.P}}>{e.wine.rating?`you scored it ${e.wine.rating}`:'scanned'}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </Card>
-        )}
-
-        {/* ── Flavour Signatures ── */}
-        {t.wines.length>=2&&t.noteClusters.length>0&&<CSH label="Flavour Signatures" cKey="flavour" collapsed={collapsed} toggle={toggle} summary={`${t.noteClusters[0].name} is the most common flavour family across your ${tLabel}.${t.noteClusters[1]?' '+t.noteClusters[1].name+' shows up often too.':''}`}/>}
-        {t.wines.length>=2&&t.noteClusters.length>0&&!collapsed.flavour&&(
-          <Card style={{padding:14}}>
-            <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P,marginBottom:4}}>Flavour Signatures</div>
-            <div style={{fontSize:15,color:C.mid,fontFamily:C.P,lineHeight:1.5,marginBottom:12}}>The flavour families that come up most in your {tLabel}, and food that suits them.</div>
-            <div style={{display:'flex',flexDirection:'column',gap:10}}>
-              {t.noteClusters.map((cl,i)=>(
-                <div key={i} style={{padding:'10px 12px',borderRadius:12,background:C.offWhite,border:`1px solid ${C.line}`}}>
-                  <div style={{fontSize:15,fontWeight:700,color:C.ink,fontFamily:C.P,marginBottom:6}}>{cl.name}</div>
-                  <div style={{display:'flex',flexWrap:'wrap',gap:4,marginBottom:8}}>
-                    {cl.notes.map((n,j)=>(
-                      <span key={j} style={{padding:'3px 9px',borderRadius:20,background:j===0?`${t.col}10`:C.white,border:`1px solid ${j===0?t.col+'30':C.line}`,fontSize:13,color:j===0?t.col:C.ink2,fontFamily:C.P}}>{n}</span>
-                    ))}
-                  </div>
-                  {_FOOD_PAIRINGS[cl.name]&&(
-                    <div style={{display:'flex',alignItems:'flex-start',gap:6}}>
-                      <span style={{fontSize:13,color:C.mid,fontFamily:C.P,flexShrink:0,marginTop:1}}>Pairs with</span>
-                      <span style={{fontSize:13,color:C.ink2,fontFamily:C.P,lineHeight:1.5}}>{_FOOD_PAIRINGS[cl.name]}</span>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          </Card>
-        )}
-
-        {/* ── Your Journey: how your choices are changing ── */}
-        {t.journey.length>=2&&(()=>{
-          const J=t.journey, last=J[J.length-1];
-          const totalRegions=new Set(t.wines.map(w=>WineDNA.region(w)).filter(Boolean)).size;
-          const totalGrapes=t.grapeStats.length;
-          const maxN=Math.max(...J.map(b=>b.count));
-          const lastNew=[...last.newRegions];
-          const summary=lastNew.length
-            ?`${['day','week'].includes(last.unit)?(last.unit==='day'?'On':'The week of'):'In'} ${last.label} you tried ${lastNew.length} new region${lastNew.length!==1?'s':''}: ${lastNew.slice(0,3).join(', ')}${lastNew.length>3?` and ${lastNew.length-3} more`:''}.`
-            :`You've explored ${totalRegions} regions and ${totalGrapes} grapes in your ${tLabel} so far.`;
-          return(
-            <>
-              <CSH label="Your Journey" cKey="journey" collapsed={collapsed} toggle={toggle} summary={summary}/>
-              {!collapsed.journey&&(
-                <Card style={{padding:14}}>
-                  <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P,marginBottom:4}}>How your choices are changing</div>
-                  <div style={{fontSize:15,color:C.mid,fontFamily:C.P,marginBottom:14,lineHeight:1.5}}>{tLabel.charAt(0).toUpperCase()+tLabel.slice(1)} scanned over time, and how many regions each period was your first taste of.</div>
-                  <div style={{display:'flex',gap:4,alignItems:'flex-end',height:72,marginBottom:6}}>
-                    {J.map((b,i)=>(
-                      <div key={i} style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',gap:3,height:'100%',justifyContent:'flex-end'}}>
-                        <span style={{fontSize:13,fontWeight:600,color:t.col,fontFamily:C.P}}>{b.count}</span>
-                        <div style={{width:'55%',height:`${Math.max(8,Math.round(b.count/maxN*100))}%`,background:t.col,borderRadius:'4px 4px 0 0',opacity:0.72}}/>
-                      </div>
-                    ))}
-                  </div>
-                  <div style={{display:'flex',gap:4}}>
-                    {J.map((b,i)=>(
-                      <div key={i} style={{flex:1,textAlign:'center'}}>
-                        <span style={{fontSize:12,color:C.mid,fontFamily:C.P}}>{b.label}</span>
-                        <div style={{fontSize:12,fontWeight:600,color:b.newRegions.length?C.green:C.mid,fontFamily:C.P,opacity:b.newRegions.length?1:0.6}}>{b.newRegions.length?`+${b.newRegions.length} new`:'—'}</div>
-                      </div>
-                    ))}
-                  </div>
-                  <div style={{fontSize:13,color:C.ink2,fontFamily:C.P,marginTop:10,lineHeight:1.55}}>
-                    {summary} {totalRegions<6?'Every new region teaches your palate something: Explore Next above has ideas.':'That breadth is what makes your scores meaningful: you know what you like because you have tried the alternatives.'}
-                  </div>
-                </Card>
-              )}
-            </>
-          );
-        })()}
-
-        {t.wines.length>0&&<CSH label="Scripts" cKey="scripts" collapsed={collapsed} toggle={toggle} summary={genScripts[t.key]?`Your ${tLabel} sommelier script is ready to use at your next dinner. "${genScripts[t.key].replace(/^"|"$/g,'').slice(0,90)}${genScripts[t.key].length>92?'…':''}"`:`What to say to a sommelier about the ${tLabel} you like.`}/>}
-        {/* ── Sommelier Script ── */}
-        {t.wines.length>0&&!collapsed.scripts&&(
-          <Card style={{padding:14}}>
-            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:10}}>
-              <div style={{display:'flex',alignItems:'center',gap:8}}>
-                <Icon n="message" sz={14} col={t.col}/>
-                <span style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>Your {t.label} Script</span>
-              </div>
-              {t.wines.length>0&&!generatingScript&&(
-                <div style={{display:'flex',gap:4,background:C.offWhite,borderRadius:6,padding:'3px 4px',border:`1px solid ${C.line}`}}>
-                  {['short','long'].map(len=>(
-                    <div key={len} onClick={()=>{setScriptLength(len);Settings.setScriptLength(len);setGenScripts(s=>{const n={...s};delete n[t.key];return n;});}} style={{padding:'4px 8px',borderRadius:4,background:scriptLength===len?C.cr:'transparent',cursor:'pointer'}}>
-                      <span style={{fontSize:13,fontWeight:600,color:scriptLength===len?'#fff':C.mid,fontFamily:C.P}}>{len.charAt(0).toUpperCase()+len.slice(1)}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-            {generatingScript===t.key?(
-              <div style={{display:'flex',alignItems:'center',gap:8}}>
-                <div style={{width:14,height:14,borderRadius:7,border:'2px solid rgba(0,0,0,0.08)',borderTopColor:t.col,animation:'dnaSpin .8s linear infinite',flexShrink:0}}/>
-                <span style={{fontSize:15,color:C.mid,fontFamily:C.P,fontStyle:'italic'}}>Writing…</span>
-              </div>
-            ):(
-              <>
-                <div style={{fontSize:15,color:C.ink2,fontFamily:C.P,fontStyle:'italic',lineHeight:1.65,marginBottom:genScripts[t.key]?10:0}}>{genScripts[t.key]||'Generating…'}</div>
-                {genScripts[t.key]&&(
-                  <Btn primary small style={{background:t.col,boxShadow:`0 3px 12px ${t.col}40`,marginTop:4}} onClick={()=>{
-                    try{navigator.clipboard.writeText((genScripts[t.key]||'').replace(/"/g,''));setCopied(t.key);setTimeout(()=>setCopied(null),2000);}catch(e){}
-                  }}>{copied===t.key?'✓ Copied':'Copy Script'}</Btn>
-                )}
-              </>
-            )}
-          </Card>
-        )}
-
-        <CSH label="Your History" cKey="history" collapsed={collapsed} toggle={toggle} summary={`You've scanned ${t.wines.length} ${tLabel} across ${tCountries} countr${tCountries!==1?'ies':'y'}${tAvgScore?`, scoring them ${tAvgScore} on average`:''}.`}/>
-        {/* ── History: one card in the same style as the sections above ── */}
-        {!collapsed.history&&(()=>{
-          const stats=[
-            {label:`${t.label} scanned`,  val:t.wines.length},
-            {label:'Average score',       val:tAvgScore||'—', note:tAvgScore?ParkerScale.label(tAvgScore):null, col:tAvgScore?scoreCol(tAvgScore):null},
-            {label:'Countries',           val:tCountries||'—'},
-            {label:'Blind Call accuracy', val:t.blindCall?`${t.blindCall.accuracy}%`:'—', note:t.blindCall?`${t.blindCall.played} played`:'Play after a scan'},
-          ];
-          return(
-            <Card style={{padding:14}}>
-              <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P,marginBottom:10}}>Your {tLabel} so far</div>
-              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',borderTop:`1px solid ${C.line}`}}>
-                {stats.map((x,i)=>(
-                  <div key={x.label} style={{padding:'12px 0',paddingLeft:i%2?14:0,borderLeft:i%2?`1px solid ${C.line}`:'none',borderBottom:i<2?`1px solid ${C.line}`:'none'}}>
-                    <div style={{fontSize:22,fontWeight:800,color:x.val==='—'?C.mid:(x.col||t.col),fontFamily:C.P,lineHeight:1.1}}>{x.val}</div>
-                    <div style={{fontSize:13,color:C.mid,fontFamily:C.P,marginTop:4}}>{x.label}</div>
-                    {x.note&&<div style={{fontSize:12,color:C.mid,fontFamily:C.P,opacity:0.75,marginTop:1}}>{x.note}</div>}
-                  </div>
-                ))}
-              </div>
-              {tAvgPrice>0&&(
-                <div style={{display:'flex',alignItems:'baseline',gap:8,padding:'10px 0',borderTop:`1px solid ${C.line}`}}>
-                  <span style={{fontSize:15,color:C.ink,fontFamily:C.P,flex:1}}>Average price</span>
-                  <span style={{fontSize:15,fontWeight:800,color:C.ink,fontFamily:C.P}}>{_cbase}{Math.round(tAvgPrice*_cfx)}</span>
-                  <span style={{fontSize:13,color:C.mid,fontFamily:C.P}}>{_ccode} per bottle, est.</span>
-                </div>
-              )}
-              {t.topWines.length>0&&(
-                <>
-                  <div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline',marginTop:10,marginBottom:6}}>
-                    <span style={sub}>Top {t.label}</span>
-                    <span onClick={()=>{ try{ Handoff.myWinesView.set({type:t.key,sort:'rating'}); }catch(e){} nav('mywines'); }} style={{fontSize:13,fontWeight:600,color:t.col,fontFamily:C.P,cursor:'pointer'}}>See all →</span>
-                  </div>
-                  {t.topWines.map((w,i)=>(
-                    <div key={i} onClick={()=>{
-                      Handoff.openWine({demo:false,wine:w,confidence:0.9,existingRating:w.rating||0});
-                      nav('detail');
-                    }} style={{display:'flex',alignItems:'center',gap:10,padding:'8px 0',borderTop:`1px solid ${C.line}`,cursor:'pointer'}}>
-                      <span style={{fontSize:13,fontWeight:700,color:C.mid,fontFamily:C.P,width:22,flexShrink:0}}>#{i+1}</span>
-                      <div style={{flex:1,minWidth:0}}>
-                        <div style={{fontSize:15,fontWeight:600,color:C.ink,fontFamily:C.P,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{w.name}</div>
-                        <div style={{fontSize:13,color:C.mid,fontFamily:C.P,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{[w.region,w.vintage?String(w.vintage):null,ParkerScale.label(w.rating)].filter(Boolean).join(' · ')}</div>
-                      </div>
-                      <span style={{fontSize:15,fontWeight:800,color:scoreCol(w.rating),fontFamily:C.P,width:30,textAlign:'right',flexShrink:0}}>{w.rating}</span>
-                    </div>
-                  ))}
-                </>
-              )}
-            </Card>
-          );
-        })()}
+        {wide?<>{tablet}</>:<>{S.written}{S.knows}{S.house}{S.taste}{S.value}{S.explore}{S.flavour}{S.journey}{S.scripts}{S.history}</>}
 
         {/* ── Data Backup ── */}
         <DataBackupCard padding={14}/>

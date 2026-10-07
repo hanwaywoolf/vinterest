@@ -17,6 +17,7 @@
     "icons": "node scripts/app-icons.mjs",
     "map": "node scripts/world-map.mjs",
     "site:video": "node scripts/site-video.mjs",
+    "lcbo:check": "node scripts/lcbo-check.mjs",
     "model:trial": "node scripts/model-trial.mjs"
   },
   "keywords": [

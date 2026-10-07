@@ -32,6 +32,10 @@ const FindOnline={
     parts.push('buy');
     return parts.join(' ');
   },
+  /* A shop's own search gets the producer and name only: "wine", "buy" and the vintage are for
+     Google, and a shop search can come back empty with them (the shop page has the vintages).
+     The same as shopWords in _worker.js. */
+  shopQuery(q){ return q.replace(/\s+buy$/i,'').replace(/\s+wine$/i,'').replace(/\s+(19|20)\d{2}$/,''); },
   url(wine){ const gl=this.country(); return 'https://www.google.com/search?q='+encodeURIComponent(this.query(wine))+(gl?'&gl='+gl:''); },
   /* Where "Find it for me" goes: a partner shop's own search when one is switched on for the
      user's country (Shops, tracked when its Awin IDs are set), else Google, by way of /go.
@@ -41,7 +45,7 @@ const FindOnline={
     // installed app's own copy may be older); the name and Partner label come from this copy.
     const gl=this.country(), shop=Shops.forCountry(gl)[0];
     const url=Shops.goUrl({w:this.query(wine),c:gl,p:placement||'find'});
-    if(shop){ const q=this.query(wine).replace(/\s+buy$/,''); return {url,name:shop.name,partner:Shops._track(shop.search.replace('{q}',encodeURIComponent(q)),placement).partner}; }
+    if(shop){ const q=this.shopQuery(this.query(wine)); return {url,name:shop.name,partner:Shops._track(shop.search.replace('{q}',encodeURIComponent(q)),placement).partner}; }
     return {url,name:null,partner:false};
   },
   label(wine,verb){ const t=this.target(wine); return t.name?`${verb||'Find it'} at ${t.name}`:(verb?`${verb} online`:'Find it online'); },
@@ -61,12 +65,13 @@ const Shops={
   forCountry(gl){ return this.config().retailers.filter(r=>r.enabled&&r.search&&r.country===gl); },
   /* The Worker's /go link (_worker.js handleGo), absolute in the installed apps (Platform.api). */
   goUrl(params){ return Platform.api('/go?'+Object.entries(params).filter(([,v])=>v!=null&&v!=='').map(([k,v])=>k+'='+encodeURIComponent(v)).join('&')); },
-  /* How this copy of the list would track a link: Awin when the shop has an awinMid and the
-     publisher ID is set, else Skimlinks when it's switched on, else plain. Says whether it's a
+  /* How this copy of the list would track a link: Awin when the shop has approved us (joined) and
+     has an awinMid, and the publisher ID is set (an Awin link to a shop that hasn't approved us can
+     land on Awin's error page instead of the shop), else Skimlinks when it's switched on, else plain. Says whether it's a
      partner link (the Partner label); /go does the same with the deployed list. */
   _track(url,placement){
     const c=this.config(), r=this.byUrl(url), pub=c.awin.publisherId, sk=c.skimlinks||{};
-    if(r&&r.awinMid&&pub) return {url:'https://www.awin1.com/cread.php?awinmid='+encodeURIComponent(r.awinMid)+'&awinaffid='+encodeURIComponent(pub)+'&clickref='+encodeURIComponent(placement||'app')+'&ued='+encodeURIComponent(url),partner:true};
+    if(r&&r.joined&&r.awinMid&&pub) return {url:'https://www.awin1.com/cread.php?awinmid='+encodeURIComponent(r.awinMid)+'&awinaffid='+encodeURIComponent(pub)+'&clickref='+encodeURIComponent(placement||'app')+'&ued='+encodeURIComponent(url),partner:true};
     if(sk.enabled&&sk.id) return {url:'https://go.skimresources.com/?id='+encodeURIComponent(sk.id)+'&xs=1&xcust='+encodeURIComponent(placement||'app')+'&sref='+encodeURIComponent(sk.sref||'https://vinterest.app/')+'&url='+encodeURIComponent(url),partner:true};
     return {url,partner:false};
   },
@@ -77,6 +82,30 @@ const Shops={
     const r=this.byUrl(url), t=this._track(url,placement);
     return {url:(r||sig)?this.goUrl({u:url,p:placement||'app',s:sig}):t.url,partner:t.partner,name:r?r.name:null};
   },
+  /* The bottle itself at the partner shop for the user's country, from that shop's own product
+     feed (the Worker's /shop-match): {shop:{id,name}, vintage, exact, others, items}, each item
+     {name, vintage, price, pack, sizeMl, perBottle, currency, url, image, seller}; exact is this
+     vintage as a single bottle where the shop has one, others are the vintages it does have.
+     null when there's nothing to show or no connection. Kept on the phone for MATCH_MS. */
+  MATCH_PREFIX:'vinterest_shopmatch_', MATCH_MS:6*3600*1000,
+  async match(wine){
+    const gl=FindOnline.country();
+    if(!gl||!wine||!wine.name) return null;
+    const k=this.MATCH_PREFIX+[gl,wine.producer,wine.name,wine.vintage].map(x=>String(x||'').toLowerCase().replace(/[^a-z0-9]+/g,'-')).join('|').slice(0,160);
+    const hit=Cache.get(k,null);
+    if(hit&&hit.at&&Date.now()-hit.at<this.MATCH_MS) return hit.data;
+    try{
+      const r=await fetch(Platform.api('/shop-match'),{method:'POST',headers:{'content-type':'application/json'},
+        body:JSON.stringify({country:gl,wine:{name:wine.name,producer:wine.producer||'',vintage:wine.vintage||null,region:wine.region||'',country:wine.country||'',type:wine.type||'',grapes:wine.grapes||[]}})});
+      if(!r.ok) return null;
+      const d=await r.json();
+      const data=d&&d.items&&d.items.length?d:null;
+      Cache.set(k,{at:Date.now(),data});
+      return data;
+    }catch(e){ return null; }
+  },
+  // "£159", "£22.95": a shop's own price in its own currency.
+  money(n,cur){ try{ return new Intl.NumberFormat('en-GB',{style:'currency',currency:cur||'GBP',minimumFractionDigits:n%1?2:0,maximumFractionDigits:2}).format(n); }catch(e){ return (cur||'')+' '+n; } },
   // The Price tab's "In shops now": the shops the live price search found the wine at.
   listings(priceData,placement){ return ((priceData&&priceData.shops)||[]).map(s=>({...s,...this.link(s.url,placement,s.sig),name:s.name})); },
   /* A real link click, not window.open with window features: installed apps hand a plain
@@ -88,6 +117,68 @@ const Shops={
     a.href=url; a.target='_blank'; a.rel='noopener noreferrer sponsored';
     document.body.appendChild(a); a.click(); a.remove();
   }
+};
+/* LCBO stock near an Ontario user (beta, Pro). The Worker's /lcbo (handleLcbo in _worker.js) finds
+   the LCBO product a wine is and which stores near their city (UserPrefs city, asked only in
+   Ontario) have it, from LCBO.dev's public data, updated daily. It's off on the server until
+   LCBO_ENABLED is set; until then, and whenever it can't answer, the card is two links: the
+   bottle searched on lcbo.com and the LCBO stores in their city on a map. Each answer is kept on the phone for CACHE_MS. */
+const Lcbo={
+  CACHE_PREFIX:'vinterest_lcbo_', CACHE_MS:20*60*1000,
+  city(){ const l=UserPrefs.location(); return UserPrefs.askCity(l.country,l.state)&&l.city?l.city:null; },
+  // Ontario: the Price tab's "At the LCBO" (its buttons need no city; the stock list does).
+  ontario(){ const l=UserPrefs.location(); return UserPrefs.askCity(l.country,l.state); },
+  // Ontario with a city: the stock lookup (the Worker's /lcbo).
+  applies(){ return !!this.city(); },
+  /* lcbo.com's own search for the bottle, from the label: producer and name, each word once, no
+     vintage (the LCBO lists most wines without one). Its product page has "Check store inventory".
+     lcbo.com's terms forbid collecting its data, so the app only links to it. */
+  searchUrl(wine){
+    const seen=new Set(), words=`${wine&&wine.producer||''} ${wine&&wine.name||''}`.split(/\s+/)
+      .filter(w=>w&&!/^(19|20)\d{2}$/.test(w)&&!seen.has(w.toLowerCase())&&seen.add(w.toLowerCase()));
+    return 'https://www.lcbo.com/en/catalogsearch/result/?q='+encodeURIComponent(words.join(' ')).replace(/%20/g,'+');
+  },
+  /* The LCBO stores in their city on a map. lcbo.com's store finder can't be opened on a city
+     (it ignores anything in its address), so this is a Google Maps search. */
+  storesUrl(city){ return 'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(`LCBO, ${city}, ON`); },
+  openSearch(wine){ Shops.go(Shops.link(this.searchUrl(wine),'lcbo').url); },
+  openStores(city){ Shops.go(this.storesUrl(city)); },
+  /* What it still needs: null, 'signin' (sign-in configured and signed out: the Worker answers
+     402 there) or 'pro'. Mirrors PRO_ONLY.lcbo; the Worker checks for itself. */
+  needs(){
+    if(typeof Account!=='undefined'&&Account.available()&&!Account.signedIn()) return 'signin';
+    return Entitlement.isPro()?null:'pro';
+  },
+  _key(wine,city){ return this.CACHE_PREFIX+[wine.producer,wine.name,city].map(x=>String(x||'').toLowerCase().replace(/[^a-z0-9]+/g,'-')).join('|').slice(0,160); },
+  /* {enabled, available, cityFound, found, product:{sku,name,price,url}, stores:[{name,address,city,km,quantity,updatedAt}], checkedAt}
+     or null when the request didn't get through (offline). */
+  async stock(wine){
+    const city=this.city();
+    if(!city||!wine||!wine.name) return null;
+    const k=this._key(wine,city), hit=Cache.get(k,null);
+    if(hit&&hit.at&&Date.now()-hit.at<this.CACHE_MS) return hit.data;
+    const body=JSON.stringify({wine:{name:wine.name,producer:wine.producer||'',vintage:wine.vintage||null},city});
+    const send=async(token)=>fetch(Platform.api('/lcbo'),{method:'POST',headers:{'content-type':'application/json',...(token?{authorization:'Bearer '+token}:{})},body});
+    try{
+      const acct=typeof Account!=='undefined'&&Account.signedIn()?Account:null;
+      const token=acct?await acct.token():null;
+      let r=await send(token);
+      if(r.status===401&&token){ acct.expired(); r=await send(null); }
+      const d=await r.json().catch(()=>null);
+      if(r.status===402) return {enabled:true,needs:d&&d.signIn?'signin':'pro'};
+      if(!r.ok||!d) return {enabled:true,available:false};
+      if(d.enabled&&d.available) Cache.set(k,{at:Date.now(),data:d});
+      return d;
+    }catch(e){ return null; }
+  },
+  // "Updated today", "Updated yesterday", "Updated 3 days ago": how fresh LCBO.dev's count is.
+  freshness(stores){
+    const t=Math.max(0,...(stores||[]).map(s=>Date.parse(s.updatedAt)||0));
+    if(!t) return null;
+    const days=Math.floor((Date.now()-t)/864e5);
+    return days<=0?'Stock as of today':days===1?'Stock as of yesterday':`Stock as of ${days} days ago`;
+  },
+  link(product){ return product&&product.url?Shops.link(product.url,'lcbo'):null; },
 };
 const Regional={
   TRAVEL_KEY:'vinterest_travel',

@@ -68,3 +68,21 @@ test('the top of Learn links to Mastery', async ({ context, page }) => {
   await expect(page.locator('#root')).toContainText('Your wine knowledge');
   expect(errors).toEqual([]);
 });
+
+test('the library also lists the beginner articles they have read, and opens them', async ({ context, page }) => {
+  await makeDeterministic(page);
+  await seedLocalStorage(page, { vinterest_onboarded: '1', vinterest_age_ok: '1', vinterest_region: 'uk',
+    vinterest_gen_stubs: JSON.stringify([1, 2].map(stub)), vinterest_gen_article_s1_done: '1',
+    vinterest_onramp_1_done: '1', vinterest_onramp_2_done: '1' });
+  await stubNetwork(context);
+  await page.goto(`${BASE}/#learn`);
+  const root = page.locator('#root');
+  const [first, second] = await page.evaluate(() => ON_RAMP.slice(0, 2).map((a) => a.title));
+  await root.getByText('Your library · 3 read').click();
+  const basics = root.getByTestId('library-basics');
+  await expect(basics).toContainText(first);
+  await expect(basics).toContainText(second);
+  await basics.getByText(second, { exact: true }).click();
+  await expect.poll(() => page.evaluate(() => location.hash)).toBe('#article');
+  await expect(root).toContainText(second);
+});

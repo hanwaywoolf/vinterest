@@ -155,6 +155,38 @@ function BottomNav({active, nav, showPro}){
 }
 
 /* ── Sidebar navigation (tablet/iPad) ── */
+/* iPad and other tablets (768px and wider, portrait or landscape, unless the preview panel forces
+   the phone layout): screens lay their sections out in two columns instead of one long phone
+   column. useWide() re-renders when the window turns or resizes. */
+function _isWide(){ try{ return !Device.forceMobile()&&window.innerWidth>=768; }catch(e){ return false; } }
+// 'phone', 'tablet' (an iPad upright, 768px+) or 'roomy' (an iPad on its side, 1024px+).
+function _layoutSize(){ if(!_isWide()) return 'phone'; return window.innerWidth>=1024?'roomy':'tablet'; }
+function useLayoutSize(){
+  const [w,setW]=React.useState(_layoutSize);
+  React.useEffect(()=>{ const h=()=>setW(_layoutSize()); window.addEventListener('resize',h); window.addEventListener('orientationchange',h);
+    return()=>{ window.removeEventListener('resize',h); window.removeEventListener('orientationchange',h); }; },[]);
+  return w;
+}
+function useWide(){ return useLayoutSize()!=='phone'; }
+/* Reading screens (articles, guides, quizzes) on an iPad: the text in a comfortable column rather
+   than stretched across the screen, and a side panel of context beside it on its side (below it
+   when upright). On a phone, exactly as before: the children only. */
+function ReadingLayout({children,aside,max=760}){
+  const size=useLayoutSize();
+  if(size==='phone') return <>{children}</>;
+  if(size==='roomy'&&aside) return <div data-reading="roomy" style={{display:'grid',gridTemplateColumns:'minmax(0,1fr) 320px',gap:24,maxWidth:max+344,margin:'0 auto',width:'100%',alignItems:'start'}}>
+    <div style={{display:'flex',flexDirection:'column',gap:12,minWidth:0}}>{children}</div>
+    <div data-reading-aside style={{display:'flex',flexDirection:'column',gap:12,position:'sticky',top:12}}>{aside}</div>
+  </div>;
+  return <div data-reading="column" style={{display:'flex',flexDirection:'column',gap:12,maxWidth:max,margin:'0 auto',width:'100%'}}>{children}{aside&&<div data-reading-aside style={{display:'grid',gridTemplateColumns:'repeat(2,minmax(0,1fr))',gap:12,alignItems:'start'}}>{aside}</div>}</div>;
+}
+/* Sections side by side on a tablet, one column on a phone. Children that are false or null are
+   skipped, so a missing section never leaves a gap. */
+function WideColumns({children,gap=16,cols=2,style}){
+  const wide=useWide(), kids=React.Children.toArray(children).filter(Boolean);
+  if(!wide||kids.length<2) return <>{kids}</>;
+  return <div data-wide-columns style={{display:'grid',gridTemplateColumns:`repeat(${cols},minmax(0,1fr))`,gap,alignItems:'start',...style}}>{kids}</div>;
+}
 function SideNav({active,nav,showPro,xpBadge,onXpClick}){
   const homeActive=['home','scan'].includes(active);
   const cellarActive=active==='mywines';

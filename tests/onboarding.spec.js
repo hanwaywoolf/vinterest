@@ -69,7 +69,7 @@ test('under age stops there; the scan and the questions can be skipped', async (
   await root.getByText('Skip', { exact: true }).click();
   await expect(root.getByText('My Wines')).toBeVisible();
   const s = await page.evaluate(() => ({ loc: UserPrefs.location(), cur: Regional.current().code, onboarded: localStorage.getItem('vinterest_onboarded') }));
-  expect(s).toEqual({ loc: { country: 'United States', state: 'Oregon' }, cur: 'USD', onboarded: '1' });
+  expect(s).toEqual({ loc: { country: 'United States', state: 'Oregon', city: '' }, cur: 'USD', onboarded: '1' });
 });
 
 test('what the answers change: price fallbacks, spend on the scan result, Learn depth', async ({ context, page }) => {

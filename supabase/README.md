@@ -16,7 +16,7 @@ one user can never read or write another's rows.
    enabled. Then do the same with `migrations/0002_use_quota.sql` (the weekly fair-use counter
    the Worker calls) and `migrations/0003_sync_times.sql` (the database stamps each synced row's
    time, so phones with different clocks never miss each other's changes), then `migrations/0004_beta_signups.sql` (the website's beta list, written only by the site's Worker; see
-   `docs/site-setup.md`). Run every file in
+   `docs/site-setup.md`). Then `migrations/0005_shop_products.sql` (partner shops' products from their Awin feeds, written nightly by the feed job and read by the Worker; see `docs/affiliates.md`). Run every file in
    `migrations/` once, in order.
 3. **Turn on email sign-in with a code.** Go to Authentication → Sign In / Providers → Email:
    enabled, "Confirm email" on, and Email OTP Length **6**. The app signs in with a 6-digit code
@@ -39,7 +39,8 @@ one user can never read or write another's rows.
    - **Publishable key** (`sb_publishable_…`). Public: safe in the app, because row-level security,
      not the key, decides what anyone can see. Keep the `default` one.
    - **Secret key** (`sb_secret_…`). **Secret**: it bypasses row-level security. Create one named
-     `cloudflare_worker` and delete any other secret keys, so the only copy is Cloudflare's.
+     `cloudflare_worker` for the Worker, and one named `github_feeds` for the nightly shop-feed job
+     (GitHub secret `SUPABASE_FEEDS_KEY`), and delete any others. Each can be revoked on its own.
    - On the "Legacy anon, service_role API keys" tab, disable the legacy keys: the app doesn't use
      them, and an old service_role key was once used by the retired backend.
 
@@ -49,6 +50,7 @@ one user can never read or write another's rows.
 |---|---|---|
 | Project URL, publishable key | Cloudflare Pages → Settings → Variables and Secrets, as `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY` (plain text) | The build puts them in the app so it can sign in and sync |
 | Secret key | Cloudflare Pages → Settings → Variables and Secrets, as `SUPABASE_SECRET_KEY` (type **Secret**) | Only `_worker.js` uses it, to meter usage and read Pro |
+| Project URL, the `github_feeds` secret key | GitHub → the repo → Settings → Secrets and variables → Actions, as `SUPABASE_URL` and `SUPABASE_FEEDS_KEY` | Only the nightly shop-feed job (`.github/workflows/shop-feeds.yml`) uses them, to load the partner shops' products |
 
 Delete any old `SUPABASE_*` or `APIFY_*` variables left there by the retired backend.
 
