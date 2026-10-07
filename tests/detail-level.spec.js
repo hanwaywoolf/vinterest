@@ -76,6 +76,17 @@ test('WineDNA at More adds How Well We Know You and Journey, still not Flavour S
   await expect(root).toContainText('How Well We Know You');
   await expect(root).not.toContainText('Flavour Signatures');
   await expect(page.getByTestId('dna-best-value')).toBeVisible();
+  // Folded rows carry a picture beside their line: a target, the journey's bars, a map of where the bottles come from.
+  await expect(page.getByTestId('dna-target')).toBeVisible();
+  expect(await page.getByTestId('dna-target').locator('circle').count()).toBeGreaterThan(8);
+  await expect(page.getByTestId('dna-journey-bars')).toBeVisible();
+  await expect(page.getByTestId('dna-bottle-map')).toBeVisible();
+  // Show all: Value opens with price against score, the best value in green.
+  await page.getByTestId('dna-more-later').getByText('Show all details').click();
+  await expect(page.getByTestId('dna-value-dots').first()).toBeVisible();
+  const map = await page.evaluate(() => KnowledgeMap.bottleMap(WineHistory.getAll().filter((w) => w.type === 'red')));
+  expect(map.pins.length).toBeGreaterThan(1);
+  expect(map.pins[0].n).toBeGreaterThanOrEqual(map.pins[map.pins.length - 1].n);
 });
 
 test('the scan result at Simple: the top reason either way, and "Why N%?" waits for More; the cards open on their main line', async ({ context, page }) => {

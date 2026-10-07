@@ -461,7 +461,10 @@ const WineDNA = {
             ?{kind:'pays',text:`Your Outstanding ${L} cost more on average ${cmp}, and higher prices have tended to mean higher scores for you. Stepping up can pay off, especially within your sweet spot.`}
             :{kind:'loose',text:`Your Outstanding ${L} cost a little more on average ${cmp}, but across all your ${L} price and score barely move together. A higher price hasn't reliably meant a better bottle for you.`};
     }
-    return {n:ws.length,paid:ws.filter(x=>x.w.price_paid&&x.w.price_paid.amount>0).length,code:rc.code,sweetSpot:hi.length>=2?SommelierScript.budget(hi.map(x=>x.w),rc):null,bestValue,verdict};
+    // Every priced bottle as a point (price, score) for the Value picture, best-value ones marked.
+    const best=new Set(bestValue.map(b=>b.wine));
+    const points=ws.map(x=>({price:x.price,rating:x.w.rating,name:x.w.name,best:best.has(x.w)}));
+    return {n:ws.length,paid:ws.filter(x=>x.w.price_paid&&x.w.price_paid.amount>0).length,code:rc.code,sweetSpot:hi.length>=2?SommelierScript.budget(hi.map(x=>x.w),rc):null,bestValue,verdict,points,median};
   },
 
   // Blind Call guesses made after scanning these wines (accuracy 0–1 per wine).
