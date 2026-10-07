@@ -8,8 +8,8 @@ const { stubNetwork, makeDeterministic, seedLocalStorage } = require('./helpers'
 
 const BASE = 'http://localhost:4173';
 const ON = { awin: { publisherId: '12345' }, retailers: [
-  { id: 'majestic', name: 'Majestic', country: 'gb', domains: ['majestic.co.uk'], awinMid: '999', search: 'https://www.majestic.co.uk/search?Ntt={q}', enabled: true },
-  { id: 'off', name: 'Off Shop', country: 'gb', domains: ['off.example'], awinMid: '1', search: 'https://off.example/s?q={q}', enabled: false },
+  { id: 'majestic', name: 'Majestic', country: 'gb', domains: ['majestic.co.uk'], awinMid: '999', joined: true, search: 'https://www.majestic.co.uk/search?Ntt={q}', enabled: true },
+  { id: 'off', name: 'Off Shop', country: 'gb', domains: ['off.example'], awinMid: '1', joined: true, search: 'https://off.example/s?q={q}', enabled: false },
 ] };
 const WINE = { name: 'Viña Ardanza Reserva', producer: 'La Rioja Alta', vintage: 2016, region: 'Rioja', country: 'Spain', type: 'red', price_usd: 45, buy_again: true, rating: 93, grapes: ['Tempranillo'] };
 const FOUND = { low: 25, mid: 28, high: 32, currency: 'GBP', tier: 'premium', note: 'UK merchants list the 2016.', source: 'search',
@@ -149,4 +149,22 @@ test('the Worker keeps a shop only if the search really returned its page; never
     const out = JSON.parse((await r.json()).text);
     expect(out.shops).toEqual([{ name: 'Majestic', url: 'https://www.majestic.co.uk/wines/vina-ardanza-2016', price: 27 }]);
   } finally { global.fetch = realFetch; }
+});
+
+test('Awin only for a shop that has approved us (joined): one that hasn\'t gets a plain link, not Awin\'s error page', async ({ context, page }) => {
+  const LIST = { ...ON, retailers: ON.retailers.map((r) => (r.id === 'off' ? { ...r, joined: false } : r)) };
+  const copy = path.join(require('node:os').tmpdir(), `worker-joined-${process.pid}.mjs`);
+  require('node:fs').copyFileSync(path.join(__dirname, '..', '_worker.js'), copy);
+  const worker = (await import(pathToFileURL(copy).href + '?joined')).default;
+  const env = { ASSETS: { fetch: async (r) => new URL(r.url).pathname === '/data/retailers.json' ? new Response(JSON.stringify(LIST)) : new Response('', { status: 404 }) } };
+  const go = async (u) => (await worker.fetch(new Request('https://vinterest.pages.dev/go?u=' + encodeURIComponent(u) + '&p=listing'), env)).headers.get('location');
+  expect(await go('https://off.example/wine')).toBe('https://off.example/wine');
+  expect(new URL(await go('https://www.majestic.co.uk/wines/x')).host).toBe('www.awin1.com');
+  // The app's own copy of the rule, which decides the Partner label.
+  await boot(context, page, LIST);
+  await page.goto(`${BASE}/#home`);
+  await page.waitForFunction(() => typeof Shops !== 'undefined');
+  const out = await page.evaluate(() => [Shops._track('https://off.example/wine', 'listing'), Shops._track('https://www.majestic.co.uk/wines/x', 'listing').partner]);
+  expect(out[0]).toEqual({ url: 'https://off.example/wine', partner: false });
+  expect(out[1]).toBe(true);
 });

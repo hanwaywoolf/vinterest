@@ -61,8 +61,10 @@ same way. Each shop approves you
 separately, usually within a few days; some ask about your audience or traffic. Read each one's
 terms: commission rate, cookie length, and whether they allow app traffic and deep links.
 
-When a shop approves you, its **advertiser ID** (the "mid") is on its programme page. Put it in
-that shop's `awinMid`.
+When a shop approves you, its **advertiser ID** (the "mid") is on its programme page. Check it
+matches that shop's `awinMid` and set `"joined": true`. Links go through Awin only for shops with
+`joined`: an Awin link to a shop that hasn't approved you can land on Awin's error page instead
+of the shop. Approved so far: Winebuyers (publisher ID 3114171 is set).
 
 ## 3. Check the shop's search link, then switch it on
 
@@ -77,7 +79,7 @@ that shop's `awinMid`.
 3. Set `"enabled": true`.
 
 A shop doesn't need to be switched on for **In shops now**: when the price search finds the wine at
-a shop whose site is in `domains` and that shop has an `awinMid`, that link is tracked anyway.
+a shop whose site is in `domains` and that shop has joined with an `awinMid`, that link is tracked anyway.
 
 ## 4. Ship it
 

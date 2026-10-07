@@ -559,7 +559,7 @@ function json(status, obj) {
    - /go?u=<url>&p=<placement>[&s=<sig>]: a shop page. Only a known retailer's site, or a link
      this Worker signed itself (the price search's "In shops now", _signListings), so /go is
      never an open redirect someone could point at any site.
-   Then the link is tracked: through Awin when the shop has an awinMid and the publisher ID is set,
+   Then the link is tracked: through Awin when the shop has approved us (joined), has an awinMid and the publisher ID is set,
    else through Skimlinks when it's switched on (it pays on most other shops), else left plain.
    p is where in the app it was tapped (Awin's clickref, Skimlinks' xcust). Money never moves a
    match, a pick or the order of a list: /go only decides where a tap already made goes. */
@@ -579,7 +579,9 @@ function _goHost(u) { try { return new URL(u).host.replace(/^www\./, ""); } catc
 function _shopFor(cfg, url) { const h = _goHost(url); return cfg.retailers.find((r) => (r.domains || []).some((d) => h === d || h.endsWith("." + d))) || null; }
 function _track(cfg, url, placement) {
   const r = _shopFor(cfg, url), pub = cfg.awin && cfg.awin.publisherId, sk = cfg.skimlinks || {};
-  if (r && r.awinMid && pub) return "https://www.awin1.com/cread.php?awinmid=" + encodeURIComponent(r.awinMid) + "&awinaffid=" + encodeURIComponent(pub) + "&clickref=" + encodeURIComponent(placement) + "&ued=" + encodeURIComponent(url);
+  // Awin only for a shop that has approved us (joined): a link to one that hasn't can land on
+  // Awin's error page instead of the shop.
+  if (r && r.joined && r.awinMid && pub) return "https://www.awin1.com/cread.php?awinmid=" + encodeURIComponent(r.awinMid) + "&awinaffid=" + encodeURIComponent(pub) + "&clickref=" + encodeURIComponent(placement) + "&ued=" + encodeURIComponent(url);
   // Skimlinks' Link Wrapper. sref is the page a click is credited to: an app tap has no web page
   // and /go sends no referrer, so it names the approved site (skimlinks.sref, else vinterest.app).
   if (sk.enabled && sk.id && !/(^|\.)google\./.test(_goHost(url))) return "https://go.skimresources.com/?id=" + encodeURIComponent(sk.id) + "&xs=1&xcust=" + encodeURIComponent(placement) + "&sref=" + encodeURIComponent(sk.sref || "https://vinterest.app/") + "&url=" + encodeURIComponent(url);

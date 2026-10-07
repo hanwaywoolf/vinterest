@@ -61,12 +61,13 @@ const Shops={
   forCountry(gl){ return this.config().retailers.filter(r=>r.enabled&&r.search&&r.country===gl); },
   /* The Worker's /go link (_worker.js handleGo), absolute in the installed apps (Platform.api). */
   goUrl(params){ return Platform.api('/go?'+Object.entries(params).filter(([,v])=>v!=null&&v!=='').map(([k,v])=>k+'='+encodeURIComponent(v)).join('&')); },
-  /* How this copy of the list would track a link: Awin when the shop has an awinMid and the
-     publisher ID is set, else Skimlinks when it's switched on, else plain. Says whether it's a
+  /* How this copy of the list would track a link: Awin when the shop has approved us (joined) and
+     has an awinMid, and the publisher ID is set (an Awin link to a shop that hasn't approved us can
+     land on Awin's error page instead of the shop), else Skimlinks when it's switched on, else plain. Says whether it's a
      partner link (the Partner label); /go does the same with the deployed list. */
   _track(url,placement){
     const c=this.config(), r=this.byUrl(url), pub=c.awin.publisherId, sk=c.skimlinks||{};
-    if(r&&r.awinMid&&pub) return {url:'https://www.awin1.com/cread.php?awinmid='+encodeURIComponent(r.awinMid)+'&awinaffid='+encodeURIComponent(pub)+'&clickref='+encodeURIComponent(placement||'app')+'&ued='+encodeURIComponent(url),partner:true};
+    if(r&&r.joined&&r.awinMid&&pub) return {url:'https://www.awin1.com/cread.php?awinmid='+encodeURIComponent(r.awinMid)+'&awinaffid='+encodeURIComponent(pub)+'&clickref='+encodeURIComponent(placement||'app')+'&ued='+encodeURIComponent(url),partner:true};
     if(sk.enabled&&sk.id) return {url:'https://go.skimresources.com/?id='+encodeURIComponent(sk.id)+'&xs=1&xcust='+encodeURIComponent(placement||'app')+'&sref='+encodeURIComponent(sk.sref||'https://vinterest.app/')+'&url='+encodeURIComponent(url),partner:true};
     return {url,partner:false};
   },
