@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Vinterest rescue</title>
+<style>
+  html,body{margin:0}
+  body{background:#1A1A1D;color:#fff;font-family:system-ui,-apple-system,sans-serif;padding:32px 20px;line-height:1.5}
+  h1{font-size:20px;margin:0 0 8px}
+  p{font-size:15px;opacity:.75;margin:0 0 18px;max-width:520px}
+  button{font:inherit;font-size:16px;font-weight:700;color:#fff;background:#8B1A2F;border:none;border-radius:12px;padding:14px 20px;cursor:pointer}
+  #out{font-size:14px;opacity:.7;margin-top:14px}
+</style>
+</head>
+<body>
+<!-- Saves everything Vinterest keeps in this browser to a file, without starting the app, for when
+     the app itself won't open. Sign-in tokens are left out. Nothing is changed or sent anywhere. -->
+<h1>Save my Vinterest data</h1>
+<p>This saves your wines, XP, learning and settings from this browser to a file, without opening the app. Your sign-in isn't included, and nothing is changed or sent anywhere.</p>
+<button id="save">Save to a file</button>
+<div id="out"></div>
+<script>
+(function(){
+  var SKIP={vinterest_session:1,vinterest_me:1};
+  document.getElementById('save').onclick=function(){
+    var data={}, n=0;
+    try{
+      Object.keys(localStorage).forEach(function(k){
+        if(k.indexOf('vinterest_')!==0||SKIP[k]) return;
+        data[k]=localStorage.getItem(k); n++;
+      });
+    }catch(e){ document.getElementById('out').textContent='This browser blocked reading the data: '+e.message; return; }
+    var text=JSON.stringify({format:'vinterest-rescue',version:1,exported:new Date().toISOString(),keys:data});
+    var name='vinterest-rescue.json';
+    try{
+      var file=new File([text],name,{type:'application/json'});
+      if(navigator.canShare&&navigator.canShare({files:[file]})){ navigator.share({files:[file],title:name}).catch(function(){}); }
+      else { var a=document.createElement('a'); a.href=URL.createObjectURL(file); a.download=name; a.click(); }
+      document.getElementById('out').textContent='Saved '+n+' items ('+Math.round(text.length/1024)+' KB).';
+    }catch(e){ document.getElementById('out').textContent='Couldn’t save the file: '+e.message; }
+  };
+})();
+</script>
+</body>
+</html>

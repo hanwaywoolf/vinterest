@@ -65,5 +65,6 @@ export const STATIC_FILES = [
   'logo.png',
   'onboarding-home.jpg',
   'reset.html',
+  'rescue.html',
   'tweaks-inline.compiled.js',
 ];
