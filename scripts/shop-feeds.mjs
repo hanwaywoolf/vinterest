@@ -103,7 +103,10 @@ async function sync(shop, rows, seenAt) {
   }
   const del = await fetch(`${base}/rest/v1/shop_products?shop=eq.${shop}&seen_at=lt.${encodeURIComponent(seenAt)}`, { method: 'DELETE', headers: { ...h, prefer: 'return=minimal' } });
   if (!del.ok) throw new Error(`${shop}: removing old rows failed: HTTP ${del.status}`);
-  return `${shop}: ${rows.length} wines saved (had ${had}).`;
+  // Read a few back, so the run's log shows the table really holds them.
+  const back = await fetch(`${base}/rest/v1/rpc/shop_candidates`, { method: 'POST', headers: h, body: JSON.stringify({ p_shop: shop, p_words: ['tignanello', 'ardanza'], p_limit: 8 }) });
+  const sample = back.ok ? (await back.json()).map((r) => `  ${r.name} | ${r.vintage || 'NV'} | ${r.pack}x${r.size_ml}ml | ${r.currency} ${r.price}`).join('\n') : `  reading back failed: HTTP ${back.status}`;
+  return `${shop}: ${rows.length} wines saved (had ${had}).\n${sample}`;
 }
 
 async function main() {
