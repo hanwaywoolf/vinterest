@@ -44,11 +44,17 @@ const Regions = {
     Object.entries(KNOWLEDGE.regions||{}).forEach(([key,r])=>{ [key,...(r.aliases||[])].forEach(n=>{ const t=this._norm(n); if(t) list.push({t,key}); }); });
     return this._index=list.sort((a,b)=>b.t.length-a.t.length); // longest first: "Rioja Alta" before "Rioja"
   },
+  // Same text, same answer, and a redraw on a phone asks thousands of times: remembered.
+  _matched:new Map(),
   _match(text){
+    const k=String(text||'');
+    if(this._matched.has(k)) return this._matched.get(k);
     const x=' '+this._norm(text)+' ';
-    if(x.trim()==='') return null;
-    const hit=this.index().find(e=>x.includes(' '+e.t+' '));
-    return hit?hit.key:null;
+    const hit=x.trim()===''?null:this.index().find(e=>x.includes(' '+e.t+' '));
+    const key=hit?hit.key:null;
+    if(this._matched.size>5000) this._matched.clear();
+    this._matched.set(k,key);
+    return key;
   },
   resolve(w){ if(!w) return null; return this._match(w.sub_region)||this._match(w.region)||this._match(w.name)||null; },
   /* The region's country flag (emoji), for colour on region quizzes. '' when unknown. */
@@ -135,7 +141,7 @@ const RegionQuizBank = {
   key(region){ return 'vinterest_region_quiz_bank_'+region.replace(/\s+/g,'_'); },
   get(region){
     // Near-duplicates filtered on read, so banks saved before the filter existed are cleaned too.
-    try{ const raw=JSON.parse(Store.get(this.key(region))||'null'); const qs=Array.isArray(raw)?QuizMastery.distinct(raw,region):null; return qs&&qs.length>=QUIZ_SIZE?qs:null; }catch(e){ return null; }
+    try{ const qs=QuizMastery.distinctStored(Store.get(this.key(region)),region); return qs&&qs.length>=QUIZ_SIZE?qs:null; }catch(e){ return null; }
   },
   // A question is kept only if it's well-formed; a bank with too few survivors isn't cached,
   // so the next tap retries generation rather than locking in a short bank.

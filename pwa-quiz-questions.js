@@ -19,7 +19,7 @@ const QuizMastery = Object.assign(_accountStore('vinterest_quiz_mastery_v1'), {
   fresh(){ return {sets:{}}; },
   _set(d,setId){ return d.sets[setId]=d.sets[setId]||{correct:{},served:{}}; },
   draw(setId,pool,n=QUIZ_SIZE,now=Date.now()){
-    const s=this.get().sets[setId]||{correct:{},served:{}};
+    const s=this._peek().sets[setId]||{correct:{},served:{}};
     // Not yet answered right first, then fading answers (oldest first), then the rest as review.
     const group=q=>!s.correct[q.q]?0:this.isDue(s,q.q,now)?1:2;
     const picked=pool
@@ -46,7 +46,7 @@ const QuizMastery = Object.assign(_accountStore('vinterest_quiz_mastery_v1'), {
   isDue(s,q,now=Date.now()){ const r=this._recall(s,q); return !!r&&now-r.at>=this.interval(r.n); },
   /* {correct, fading, total, strength}: strength is what Mastery reads, fading answers at half. */
   freshness(setId,pool,now=Date.now()){
-    const s=this.get().sets[setId], total=pool.length;
+    const s=this._peek().sets[setId], total=pool.length;
     if(!s||!total) return {correct:0,fading:0,total,strength:0};
     const known=pool.filter(q=>s.correct[q.q]), fading=known.filter(q=>this.isDue(s,q.q,now)).length;
     return {correct:known.length,fading,total,strength:(known.length-fading*(1-this.FADE_WEIGHT))/total};
@@ -69,7 +69,7 @@ const QuizMastery = Object.assign(_accountStore('vinterest_quiz_mastery_v1'), {
   },
   // {correct, total} against the current pool of question texts.
   progress(setId,pool){
-    const s=this.get().sets[setId];
+    const s=this._peek().sets[setId];
     return {correct:s?pool.filter(q=>s.correct[q.q]).length:0,total:pool.length};
   },
   /* Near-duplicates out of a generated bank: a question is dropped when an earlier one shares
@@ -89,6 +89,17 @@ const QuizMastery = Object.assign(_accountStore('vinterest_quiz_mastery_v1'), {
     const drop=new Set(String(subject||'').toLowerCase().split(/\s+/));
     return new Set(String(text||'').toLowerCase().replace(/'s\b/g,'').replace(/[^a-z0-9\s]/g,' ').split(/\s+/)
       .map(w=>w.length>4&&w.endsWith('s')?w.slice(0,-1):w).filter(w=>(w.length>2||/\d/.test(w))&&!this._STOP.has(w)&&!drop.has(w)));
+  },
+  /* distinct() for a bank as stored: which questions it keeps is remembered per stored text (fresh
+     objects each time, so a caller can change them), since Mastery reads every bank on each draw. */
+  _kept:new Map(),
+  distinctStored(raw,subject){
+    const qs=JSON.parse(raw||'null'); if(!Array.isArray(qs)) return null;
+    const k=subject+'\u0001'+raw;
+    let idx=this._kept.get(k);
+    if(!idx){ const kept=new Set(this.distinct(qs,subject)); idx=qs.map((q,i)=>kept.has(q)?i:-1).filter(i=>i>=0);
+      if(this._kept.size>500) this._kept.clear(); this._kept.set(k,idx); }
+    return idx.map(i=>qs[i]);
   },
   distinct(qs,subject){
     const kept=[];
