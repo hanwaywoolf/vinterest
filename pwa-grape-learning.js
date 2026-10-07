@@ -171,7 +171,7 @@ function getGrapeQuiz(grape, onReady){
 /* Progress through a grape's cached 15-question bank lives in QuizMastery under 'grape:<name>';
    a grape is complete once every question in its bank has been answered correctly. */
 // Near-duplicates are filtered on read too, so banks saved before the filter existed are cleaned.
-function grapeQuizBank(grape){ try{ const qs=JSON.parse(Store.get(_grapeQuizCacheKey(grape))||'null'); return Array.isArray(qs)?QuizMastery.distinct(qs,grape):null; }catch(e){ return null; } }
+function grapeQuizBank(grape){ try{ return QuizMastery.distinctStored(Store.get(_grapeQuizCacheKey(grape)),grape); }catch(e){ return null; } }
 function grapeQuizComplete(grape){ const bank=grapeQuizBank(grape); return !!bank&&QuizMastery.isComplete('grape:'+grape,bank); }
 /* Fire-and-forget: warms the cache so a later tap on this grape is instant. Safe to call redundantly. */
 function prefetchGrapeQuiz(grape){

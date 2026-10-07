@@ -10,6 +10,10 @@ function _accountStore(key){
   return {
     KEY:key, ACCOUNT_ID:'local',
     get(){ let all; try{ all=JSON.parse(Store.get(this.KEY)||'null'); }catch(e){} return (all&&all.accounts&&all.accounts[this.ACCOUNT_ID])||this.fresh(); },
+    /* The same, for reading only: parsed once until the stored text changes, so Mastery and Home
+       can ask about a hundred sets without parsing the whole store for each. Never change what it
+       returns (get() hands out a copy that's safe to change and save). */
+    _peek(){ const raw=Store.get(this.KEY)||''; if(this._peekRaw!==raw){ this._peekRaw=raw; this._peeked=this.get(); } return this._peeked; },
     save(d){ let all; try{ all=JSON.parse(Store.get(this.KEY)||'null'); }catch(e){} if(!all||!all.accounts) all={version:1,accounts:{}}; all.accounts[this.ACCOUNT_ID]=d; Store.set(this.KEY,JSON.stringify(all)); },
     fresh(){ return {}; }
   };

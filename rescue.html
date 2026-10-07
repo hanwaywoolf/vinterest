@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Vinterest rescue</title>
+<style>
+  html,body{margin:0}
+  body{background:#1A1A1D;color:#fff;font-family:system-ui,-apple-system,sans-serif;padding:32px 20px;line-height:1.5}
+  h1{font-size:20px;margin:0 0 8px}
+  p{font-size:15px;opacity:.75;margin:0 0 18px;max-width:520px}
+  button{font:inherit;font-size:16px;font-weight:700;color:#fff;background:#8B1A2F;border:none;border-radius:12px;padding:14px 20px;cursor:pointer}
+  #out{font-size:14px;opacity:.7;margin-top:14px}
+</style>
+</head>
+<body>
+<!-- Saves everything Vinterest keeps in this browser to a file, without starting the app, for when
+     the app itself won't open. Sign-in tokens are left out. Nothing is changed or sent anywhere. -->
+<h1>Save my Vinterest data</h1>
+<p>This saves your wines, XP, learning and settings from this browser to a file, without opening the app. Your sign-in isn't included, and nothing is changed or sent anywhere.</p>
+<button id="save">Get my data</button>
+<div id="out"></div>
+<div id="ways" style="display:none;margin-top:18px">
+  <p><a id="dl" download="vinterest-rescue.json" style="color:#fff;font-weight:700">Download vinterest-rescue.json</a></p>
+  <p>If the download doesn't start, copy it instead and paste it where you were asked for it:</p>
+  <button id="copy">Copy</button>
+  <textarea id="txt" readonly style="display:block;width:100%;max-width:520px;height:120px;margin-top:12px;font-size:12px"></textarea>
+</div>
+<script>
+(function(){
+  var SKIP={vinterest_session:1,vinterest_me:1};
+  var out=document.getElementById('out');
+  document.getElementById('save').onclick=function(){
+    var data={}, n=0;
+    try{
+      Object.keys(localStorage).forEach(function(k){
+        if(k.indexOf('vinterest_')!==0||SKIP[k]) return;
+        data[k]=localStorage.getItem(k); n++;
+      });
+    }catch(e){ out.textContent='This browser blocked reading the data: '+e.message; return; }
+    var text=JSON.stringify({format:'vinterest-rescue',version:1,exported:new Date().toISOString(),keys:data});
+    out.textContent=n+' items found ('+Math.round(text.length/1024)+' KB).';
+    var dl=document.getElementById('dl');
+    try{ dl.href=URL.createObjectURL(new Blob([text],{type:'application/octet-stream'})); }catch(e){ dl.href='data:application/octet-stream;charset=utf-8,'+encodeURIComponent(text); }
+    document.getElementById('txt').value=text;
+    document.getElementById('ways').style.display='block';
+    try{ dl.click(); }catch(e){}
+  };
+  document.getElementById('copy').onclick=function(){
+    var t=document.getElementById('txt'), b=this;
+    var done=function(){ b.textContent='Copied'; };
+    if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(t.value).then(done,function(){ t.select(); document.execCommand('copy'); done(); });
+    else { t.select(); document.execCommand('copy'); done(); }
+  };
+})();
+</script>
+</body>
+</html>
