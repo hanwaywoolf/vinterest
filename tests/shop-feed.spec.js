@@ -23,6 +23,7 @@ const FEED = [
   ['8', '2016 Muga, Prado Enea Gran Reserva, Rioja', 74.99, 'Winebuyers'],
   ['13', '2012 - rioja - muga - white wine - spain', 39, 'Winebuyers'],
   ['14', 'Muga Reserva Rioja 2021 | Cheers Wine Merchants (1x75cl)', 23.95, 'Cheers Wine Merchants'],
+  ['15', '2012 - rioja - muga | Je Veux Ce Vin (1x75cl)', 39.94, 'Je Veux Ce Vin'],
   ['9', 'La Rioja Alta Viña Ardanza Reserva 2019 Half Bottle 37.5cl | La Rioja Alta Vina', 22.95, 'La Rioja Alta Vina'],
   ['10', '2019 La Rioja Alta, Vina Ardanza Reserva, Rioja', 39.5, 'Winebuyers'],
   ['11', 'La Rioja Alta, Vina Ardanza Reserva, Rioja Alta, 2010 | Perfect Bottle (1x75cl)', 59, 'Perfect Bottle'],
@@ -87,7 +88,7 @@ test('Muga Reserva is never its Rosado, Prado Enea or a white Muga; Viña Ardanz
     { wine: { name: 'Sassicaia', producer: 'Tenuta San Guido', vintage: 2019 } },
   ]);
   expect(out[0].exact).toMatchObject({ name: '2020 Muga Reserva', price: 25.94 });
-  // The 2021 from a marketplace seller, never the white 2012.
+  // The 2021 from a marketplace seller, never the white 2012 or a Muga that doesn't say it's the Reserva.
   expect(out[0].others.map((x) => [x.name, x.seller])).toEqual([['Muga Reserva Rioja 2021', 'Cheers Wine Merchants']]);
   expect(out[1].exact).toBeNull();
   expect(out[1].others.map((x) => x.vintage)).toEqual([2020, 2021]);

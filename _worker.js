@@ -557,6 +557,7 @@ function _listedShops(shops, content) {
    Without Supabase or a feed shop for the country it answers {items:[]}. */
 const SHOP_MATCH_TTL_S = 6 * 3600;
 const SHOP_COLOURS = { red: "red", rouge: "red", tinto: "red", rosso: "red", white: "white", blanc: "white", blanco: "white", bianco: "white", weiss: "white", rose: "rose", rosado: "rose", rosato: "rose" };
+const SHOP_STYLE_WORDS = new Set(["reserva", "riserva", "reserve", "gran", "grand", "crianza", "classico", "superiore"]);
 const SHOP_PACK_WORDS = new Set(["case", "of", "bottle", "bottles", "half", "magnum", "double", "cl", "ml", "x", "off", "vintage", "seller"]);
 
 function _shopWineWords(wine) {
@@ -586,7 +587,10 @@ function shopScore(ww, p) {
   const style = [...have].filter((w) => LCBO_GENERIC.has(w) && w.length > 3 && !ww.allowed.has(w) && ["reserva", "riserva", "reserve", "gran", "grand", "classico", "superiore", "rosso", "bianco", "blanc", "rouge", "tinto"].includes(w)).length;
   // A listing that names another colour ("muga - white wine" for a red Reserva) is another wine.
   const clash = ww.colour && [...have].some((w) => SHOP_COLOURS[w] && SHOP_COLOURS[w] !== ww.colour && !ww.allowed.has(w));
-  return cover - 0.3 * extra - 0.15 * style + 0.03 * ww.generic.filter((w) => have.has(w)).length - (clash ? 1 : 0);
+  // A style word in the wine's name ("Reserva") that the listing leaves out: maybe the same wine,
+  // maybe its Crianza. Ranked below the listings that say it, so it only shows when nothing does.
+  const missing = ww.generic.filter((w) => SHOP_STYLE_WORDS.has(w) && !have.has(w)).length;
+  return cover - 0.3 * extra - 0.15 * style + 0.03 * ww.generic.filter((w) => have.has(w)).length - 0.2 * missing - (clash ? 1 : 0);
 }
 function _shopItem(p) {
   const price = Number(p.price), pack = p.pack || 1;
