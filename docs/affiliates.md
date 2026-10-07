@@ -116,3 +116,25 @@ Awin still wins for its own shops (better rates); Skimlinks only takes the rest.
 Each shop has a `country` (`gb`, `us`, …) and only shows to users in that market (their location or
 Travel Mode). US shops such as Wine.com run their programmes on other networks (Impact, CJ); adding
 one of those means a second link format in `Shops.link` (`pwa-regional.js`).
+
+## Product feeds: the bottle itself, with Buy
+
+A shop that publishes a product feed on Awin (Toolbox → Create-a-Feed) lets the Price tab show the
+very bottle: its photo, vintage and price, and "Buy at <shop>" straight to its page (through `/go`,
+placement `buy`, with the Awin tracking). Winebuyers' feed is on.
+
+1. In Create-a-Feed, pick the shop under an advertiser-based feed (its "AWIN CSV" datafeed), then
+   CSV, comma, gzip, with "Include Adult Content" ticked (alcohol is adult content). Copy the
+   download URL. It holds your feed key: never paste it into the repo or a chat.
+2. Add it as a GitHub Actions secret named `AWIN_FEED_<SHOP ID>` (e.g. `AWIN_FEED_WINEBUYERS`), add
+   the same name to `.github/workflows/shop-feeds.yml`, and set `"feed": "awin"` on the shop in
+   `data/retailers.json`.
+3. The Shop feeds workflow (`scripts/shop-feeds.mjs`) loads every such feed into Supabase's
+   `shop_products` (migration `0005`) each night at 04:17 UTC; run it by hand from Actions → Shop
+   feeds → Run workflow. A feed that comes back less than half last night's size is not loaded.
+   It needs the GitHub secrets `SUPABASE_URL` and `SUPABASE_FEEDS_KEY` (`supabase/README.md`).
+
+The Worker's `/shop-match` finds the wine among a shop's listings by its name's words (the
+producer's only has to appear), rejects listings with a telling word the wine doesn't have
+(Muga's Rosado for its Reserva), prefers a single 75cl bottle of the scanned vintage, and otherwise
+lists the vintages the shop has. Tests: `tests/shop-feed.spec.js`.

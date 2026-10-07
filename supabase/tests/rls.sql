@@ -91,4 +91,13 @@ select pg_temp.check(pg_temp.refused('anon', null, $q$insert into public.beta_si
 select pg_temp.check(pg_temp.refused('anon', null, 'select count(*) from public.beta_signups'), 'signed-out cannot read the list');
 select pg_temp.check(pg_temp.refused('authenticated', :B, 'select count(*) from public.beta_signups'), 'a signed-in user cannot read the list');
 select pg_temp.check(pg_temp.refused('authenticated', :B, $q$insert into public.beta_signups (first_name, last_name, country, email) values ('Eve', 'Hacker', 'GB', 'eve@example.com')$q$), 'a signed-in user cannot write the list');
+-- Partner shops' products (0005): the server writes and reads them; nobody else.
+select pg_temp.check(not pg_temp.refused('service_role', null, $q$insert into public.shop_products (shop, product_id, name, words, vintage, price, currency, url) values ('winebuyers', 'p1', '2021 Antinori, Tignanello, IGT', '{2021,antinori,tignanello,igt}', 2021, 159, 'GBP', 'https://winebuyers.com/x')$q$), 'the feed job adds a shop product');
+insert into public.shop_products (shop, product_id, name, words, vintage, pack, price, currency, url) values ('winebuyers', 'p2', 'Antinori Tignanello (case of 3)', '{antinori,tignanello,case,of,3}', null, 3, 450, 'GBP', 'https://winebuyers.com/y'), ('winebuyers', 'p3', '2024 Muga Rosado', '{2024,muga,rosado}', 2024, 1, 17, 'GBP', 'https://winebuyers.com/z');
+select pg_temp.check((select array_agg(product_id order by product_id) from public.shop_candidates('winebuyers', '{antinori,tignanello}', 10)) = '{p1,p2}', 'shop_candidates finds the listings sharing words, not the others');
+select pg_temp.check((select product_id from public.shop_candidates('winebuyers', '{tignanello,2021}', 1)) = 'p1', 'the listing sharing the most words comes first');
+select pg_temp.check(pg_temp.refused('anon', null, 'select count(*) from public.shop_products'), 'signed-out cannot read shop products');
+select pg_temp.check(pg_temp.refused('authenticated', :B, 'select count(*) from public.shop_products'), 'a signed-in user cannot read shop products');
+select pg_temp.check(pg_temp.refused('authenticated', :B, $q$select * from public.shop_candidates('winebuyers', '{muga}', 5)$q$), 'a signed-in user cannot call shop_candidates');
+select pg_temp.check(pg_temp.refused('anon', null, $q$delete from public.shop_products$q$), 'signed-out cannot change shop products');
 rollback;

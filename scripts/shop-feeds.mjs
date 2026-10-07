@@ -1,16 +1,19 @@
-// Reads a partner shop's Awin product feed (CSV, gzip) and, for now, reports what's in it: which
-// columns the shop fills, how its wines are named and priced, and a few sample matches, so the
-// "Buy at <shop>" lookup is built on the real data. The feed's download URL holds the publisher's
-// feed key, so it only ever comes from the environment (a GitHub secret), never the repo or a log.
-//   AWIN_FEED_WINEBUYERS=<url> node scripts/shop-feeds.mjs --report [--find "tignanello"]
+// The partner shops' Awin product feeds, into Supabase's shop_products table (migration 0005), so
+// a wine's Price tab can show the very bottle with "Buy at <shop>" (the Worker's /shop-match).
+// Run nightly by .github/workflows/shop-feeds.yml for every shop in data/retailers.json with
+// "feed": "awin", whose download URL is the secret AWIN_FEED_<ID> (it holds the publisher's feed
+// key, so it only ever comes from the environment, never the repo or a log).
+//   node scripts/shop-feeds.mjs --report          what's in each feed (columns, samples), no writes
+//   node scripts/shop-feeds.mjs --sync            replace each shop's rows (SUPABASE_URL, SUPABASE_FEEDS_KEY)
 import zlib from 'node:zlib';
 import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
-const args = Object.fromEntries(process.argv.slice(2).reduce((a, x, i, all) => (x.startsWith('--') ? [...a, [x.slice(2), all[i + 1] && !all[i + 1].startsWith('--') ? all[i + 1] : true]] : a), []));
-const FEEDS = { winebuyers: process.env.AWIN_FEED_WINEBUYERS };
+const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 
 // RFC 4180 CSV: quoted fields may hold commas, quotes ("") and newlines.
-function parseCsv(text) {
+export function parseCsv(text) {
   const rows = [];
   let row = [], f = '', q = false;
   for (let i = 0; i < text.length; i++) {
@@ -24,36 +27,101 @@ function parseCsv(text) {
     else if (c !== '\r') f += c;
   }
   if (f || row.length) { row.push(f); rows.push(row); }
-  return rows;
+  const [head = [], ...body] = rows;
+  return body.filter((r) => r.length > 1).map((r) => Object.fromEntries(head.map((h, i) => [h.trim(), r[i] ?? ''])));
+}
+
+// A name's words: lower-case, accents gone, letters and digits only. The same as _lcboWords in
+// _worker.js, which matches a scanned wine against these.
+export function words(s) {
+  return String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim().split(' ').filter(Boolean);
+}
+
+/* One feed row as a shop_products row, or null for anything that isn't wine. Marketplace names
+   carry a seller ("… | Perfect Bottle (1x75cl)"), cases ("(case of 3)", "12 x 75cl"), half
+   bottles and magnums, which the Worker needs to tell apart from the single 75cl bottle. */
+export function toRow(shop, x, seenAt) {
+  if (!/^wine\b/i.test(x.merchant_category || x.category_name || '')) return null;
+  const price = parseFloat(x.search_price);
+  if (!x.aw_product_id || !x.product_name || !(price >= 0)) return null;
+  const full = x.product_name.replace(/\s+/g, ' ').trim();
+  const [main, ...rest] = full.split(' | ');
+  const tail = rest.join(' | ');
+  const brand = (x.brand_name || '').trim();
+  const sellerPart = tail.replace(/\([^)]*\)/g, '').trim();
+  // A seller's suffix ends with its pack in brackets ("Perfect Bottle (1x75cl)"); a bare repeat of
+  // the wine's own name ("| La Rioja Alta Vina") isn't one.
+  const seller = /\(\s*\d+\s*x/i.test(tail) && sellerPart && brand && sellerPart.toLowerCase() === brand.toLowerCase() && !/^winebuyers$/i.test(brand) ? brand : null;
+  const t = full.toLowerCase();
+  let pack = 1;
+  const m = t.match(/case of (\d+)/) || t.match(/\b(\d+)\s*x\s*(?:75|37\.5|50|150)\s*cl\b/) || t.match(/\b(\d+)\s*bottles\b/);
+  if (m) pack = Math.max(1, parseInt(m[1], 10));
+  let size = 750;
+  if (/half bottle|37\.5\s*cl|375\s*ml/.test(t)) size = 375;
+  else if (/double magnum|300\s*cl|\b3\s*l(itre)?s?\b/.test(t) && !/3000\s*cl/.test(t)) size = 3000;
+  else if (/magnum|150\s*cl|1\.5\s*l(itre)?s?\b/.test(t)) size = 1500;
+  else if (/\b50\s*cl\b|500\s*ml/.test(t)) size = 500;
+  const year = (main.match(/\b(18[5-9]\d|19\d{2}|20\d{2})\b/) || [])[1];
+  const vintage = year && +year <= new Date().getFullYear() + 1 ? +year : null;
+  return {
+    shop, product_id: String(x.aw_product_id), name: main.trim().slice(0, 300), words: [...new Set(words(main))].slice(0, 40),
+    vintage, size_ml: size, pack, price: Math.round(price * 100) / 100, currency: (x.currency || 'GBP').toUpperCase(),
+    url: x.merchant_deep_link || x.aw_deep_link, image: x.aw_image_url || x.merchant_image_url || null, seller, seen_at: seenAt,
+  };
 }
 
 async function load(url) {
   const r = await fetch(url);
   if (!r.ok) throw new Error(`feed download failed: HTTP ${r.status}`);
   const buf = Buffer.from(await r.arrayBuffer());
-  const text = (buf[0] === 0x1f && buf[1] === 0x8b ? zlib.gunzipSync(buf) : buf).toString('utf8');
-  const [head, ...rows] = parseCsv(text);
-  return rows.filter((r) => r.length > 1).map((r) => Object.fromEntries(head.map((h, i) => [h.trim(), r[i] ?? ''])));
+  return parseCsv((buf[0] === 0x1f && buf[1] === 0x8b ? zlib.gunzipSync(buf) : buf).toString('utf8'));
 }
 
-for (const [shop, url] of Object.entries(FEEDS)) {
-  if (!url) { console.log(`${shop}: no feed URL set`); continue; }
-  const items = await load(url);
+function report(shop, items, rows) {
   const cols = Object.keys(items[0] || {});
-  let md = `# ${shop} feed\n\n${items.length} products, ${cols.length} columns.\n\n## Columns (share filled, an example)\n\n`;
-  for (const c of cols) {
-    const filled = items.filter((x) => String(x[c]).trim()).length;
-    const ex = (items.find((x) => String(x[c]).trim()) || {})[c] || '';
-    md += `- \`${c}\`: ${Math.round((100 * filled) / items.length)}%${filled ? ` · ${JSON.stringify(String(ex).slice(0, c.includes('link') || c.includes('url') ? 60 : 140))}` : ''}\n`;
+  let md = `# ${shop} feed\n\n${items.length} products, ${rows.length} of them wine, ${cols.length} columns.\n`;
+  md += `\n${rows.filter((r) => r.vintage).length} wines with a vintage, ${rows.filter((r) => r.pack > 1).length} cases, ${rows.filter((r) => r.size_ml !== 750).length} not 75cl, ${rows.filter((r) => r.seller).length} with a named seller.\n`;
+  for (const q of ['tignanello', 'ardanza', 'muga', 'beaucastel', 'cloudy bay']) {
+    const hits = rows.filter((r) => r.words.join(' ').includes(q)).slice(0, 8);
+    md += `\n## "${q}"\n\n` + hits.map((r) => `- ${r.name} | ${r.vintage || 'NV'} | ${r.pack}×${r.size_ml}ml | ${r.currency} ${r.price}${r.seller ? ` | ${r.seller}` : ''}`).join('\n') + '\n';
   }
-  const count = (k) => Object.entries(items.reduce((m, x) => ((m[x[k] || '(blank)'] = (m[x[k] || '(blank)'] || 0) + 1), m), {})).sort((a, b) => b[1] - a[1]).slice(0, 25);
-  for (const k of ['merchant_category', 'category_name', 'product_type', 'colour', 'currency', 'in_stock']) if (cols.includes(k)) md += `\n## ${k}\n\n` + count(k).map(([v, n]) => `- ${v}: ${n}`).join('\n') + '\n';
-  const yr = items.filter((x) => /\b(19|20)\d{2}\b/.test(x.product_name)).length;
-  md += `\n${Math.round((100 * yr) / items.length)}% of names carry a vintage.\n`;
-  for (const q of String(args.find || 'tignanello|ardanza|muga|beaucastel|cloudy bay').split('|')) {
-    const hits = items.filter((x) => `${x.brand_name} ${x.product_name}`.toLowerCase().includes(q.toLowerCase())).slice(0, 6);
-    md += `\n## "${q}" (${hits.length} shown)\n\n` + hits.map((x) => `- ${x.product_name} | brand ${x.brand_name || '-'} | ${x.currency} ${x.search_price} | in_stock ${x.in_stock || '-'} | ${['custom_1', 'custom_2', 'custom_3', 'custom_4', 'custom_5', 'custom_6', 'custom_7', 'custom_8', 'specifications', 'colour'].filter((k) => x[k]).map((k) => `${k}=${String(x[k]).slice(0, 50)}`).join(' ')}`).join('\n') + '\n';
-  }
-  fs.writeFileSync(`feed-report-${shop}.md`, md);
-  console.log(md.slice(0, 3000));
+  return md;
 }
+
+async function sync(shop, rows, seenAt) {
+  const base = process.env.SUPABASE_URL, key = process.env.SUPABASE_FEEDS_KEY;
+  if (!base || !key) throw new Error('SUPABASE_URL and SUPABASE_FEEDS_KEY are needed to sync');
+  const h = { apikey: key, 'content-type': 'application/json' };
+  const before = await fetch(`${base}/rest/v1/shop_products?shop=eq.${shop}&select=product_id`, { method: 'HEAD', headers: { ...h, prefer: 'count=exact' } });
+  const had = parseInt((before.headers.get('content-range') || '').split('/')[1] || '0', 10) || 0;
+  // A feed that came back far smaller than last night's is more likely broken than a shop that
+  // sold out: keep yesterday's rows rather than wipe the catalogue.
+  if (rows.length < 100 || (had && rows.length < had * 0.5)) throw new Error(`${shop}: only ${rows.length} wines (had ${had}); keeping the old rows`);
+  for (let i = 0; i < rows.length; i += 1000) {
+    const r = await fetch(`${base}/rest/v1/shop_products?on_conflict=shop,product_id`, { method: 'POST', headers: { ...h, prefer: 'resolution=merge-duplicates,return=minimal' }, body: JSON.stringify(rows.slice(i, i + 1000)) });
+    if (!r.ok) throw new Error(`${shop}: upload failed at row ${i}: HTTP ${r.status} ${(await r.text()).slice(0, 300)}`);
+  }
+  const del = await fetch(`${base}/rest/v1/shop_products?shop=eq.${shop}&seen_at=lt.${encodeURIComponent(seenAt)}`, { method: 'DELETE', headers: { ...h, prefer: 'return=minimal' } });
+  if (!del.ok) throw new Error(`${shop}: removing old rows failed: HTTP ${del.status}`);
+  return `${shop}: ${rows.length} wines saved (had ${had}).`;
+}
+
+async function main() {
+  const mode = process.argv.includes('--sync') ? 'sync' : 'report';
+  const shops = JSON.parse(fs.readFileSync(path.join(ROOT, 'data/retailers.json'), 'utf8')).retailers.filter((r) => r.feed === 'awin');
+  const seenAt = new Date().toISOString();
+  let out = '', failed = false;
+  for (const s of shops) {
+    const url = process.env[`AWIN_FEED_${s.id.toUpperCase()}`];
+    if (!url) { out += `${s.id}: no feed URL (secret AWIN_FEED_${s.id.toUpperCase()})\n`; continue; }
+    try {
+      const items = await load(url);
+      const rows = items.map((x) => toRow(s.id, x, seenAt)).filter(Boolean);
+      out += mode === 'sync' ? (await sync(s.id, rows, seenAt)) + '\n' : report(s.id, items, rows);
+    } catch (e) { failed = true; out += `${s.id}: ${e.message}\n`; }
+  }
+  fs.writeFileSync(path.join(ROOT, `feed-report-${mode}.md`), out);
+  console.log(out);
+  if (failed) process.exitCode = 1;
+}
+if (import.meta.url === pathToFileURL(process.argv[1] || '').href) main();

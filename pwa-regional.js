@@ -82,6 +82,30 @@ const Shops={
     const r=this.byUrl(url), t=this._track(url,placement);
     return {url:(r||sig)?this.goUrl({u:url,p:placement||'app',s:sig}):t.url,partner:t.partner,name:r?r.name:null};
   },
+  /* The bottle itself at the partner shop for the user's country, from that shop's own product
+     feed (the Worker's /shop-match): {shop:{id,name}, vintage, exact, others, items}, each item
+     {name, vintage, price, pack, sizeMl, perBottle, currency, url, image, seller}; exact is this
+     vintage as a single bottle where the shop has one, others are the vintages it does have.
+     null when there's nothing to show or no connection. Kept on the phone for MATCH_MS. */
+  MATCH_PREFIX:'vinterest_shopmatch_', MATCH_MS:6*3600*1000,
+  async match(wine){
+    const gl=FindOnline.country();
+    if(!gl||!wine||!wine.name) return null;
+    const k=this.MATCH_PREFIX+[gl,wine.producer,wine.name,wine.vintage].map(x=>String(x||'').toLowerCase().replace(/[^a-z0-9]+/g,'-')).join('|').slice(0,160);
+    const hit=Cache.get(k,null);
+    if(hit&&hit.at&&Date.now()-hit.at<this.MATCH_MS) return hit.data;
+    try{
+      const r=await fetch(Platform.api('/shop-match'),{method:'POST',headers:{'content-type':'application/json'},
+        body:JSON.stringify({country:gl,wine:{name:wine.name,producer:wine.producer||'',vintage:wine.vintage||null,region:wine.region||'',country:wine.country||'',type:wine.type||'',grapes:wine.grapes||[]}})});
+      if(!r.ok) return null;
+      const d=await r.json();
+      const data=d&&d.items&&d.items.length?d:null;
+      Cache.set(k,{at:Date.now(),data});
+      return data;
+    }catch(e){ return null; }
+  },
+  // "£159", "£22.95": a shop's own price in its own currency.
+  money(n,cur){ try{ return new Intl.NumberFormat('en-GB',{style:'currency',currency:cur||'GBP',minimumFractionDigits:n%1?2:0,maximumFractionDigits:2}).format(n); }catch(e){ return (cur||'')+' '+n; } },
   // The Price tab's "In shops now": the shops the live price search found the wine at.
   listings(priceData,placement){ return ((priceData&&priceData.shops)||[]).map(s=>({...s,...this.link(s.url,placement,s.sig),name:s.name})); },
   /* A real link click, not window.open with window features: installed apps hand a plain

@@ -642,6 +642,44 @@ const REGION_CURRENCY = {
    (e.g. "CAD") underneath the amount, so "CA$24" becomes "$24" with "CAD" below it. sym (with country
    prefix) is kept only for use inside LLM prompts, where the disambiguation matters. */
 
+/* The bottle itself at the partner shop for their country (Shops.match: the shop's own product
+   feed), with "Buy at <shop>" on its page through /go, labelled Partner. Without this vintage it
+   says so and lists the vintages the shop has; nothing at all when the shop doesn't list the wine.
+   Money never moves a match: it's only here, on the Price tab. */
+function ShopBottle({wine}){
+  const [d,setD]=React.useState(null);
+  React.useEffect(()=>{ let live=true; setD(null); Shops.match(wine).then(r=>{ if(live) setD(r); }); return()=>{ live=false; }; },[wine&&wine.name,wine&&wine.producer,wine&&wine.vintage]);
+  if(!d) return null;
+  const shop=d.shop.name, first=d.exact||d.others[0], rest=d.exact?d.others:d.others.slice(1);
+  const buy=(it)=>Shops.go(Shops.link(it.url,'buy').url);
+  const detail=(it)=>[it.vintage||'Non-vintage',it.pack>1?`case of ${it.pack}, ${Shops.money(it.perBottle,it.currency)} a bottle`:it.sizeMl!==750?(it.sizeMl===375?'half bottle':it.sizeMl===1500?'magnum':`${it.sizeMl/10}cl`):null].filter(Boolean).join(' · ');
+  return <div data-testid="shop-bottle">
+    <div style={{fontSize:13,fontWeight:700,color:C.mid,letterSpacing:'0.07em',textTransform:'uppercase',fontFamily:C.P,marginBottom:8}}>At {shop}</div>
+    {!d.exact&&wine.vintage&&<div style={{fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.5,marginBottom:8}}>{shop} doesn't list the {wine.vintage} right now. {d.others.length>1?'These are the vintages it has.':'This is the vintage it has.'}</div>}
+    <Card style={{padding:0,overflow:'hidden'}}>
+      <div style={{display:'flex',gap:12,padding:'12px 14px',alignItems:'center'}}>
+        {first.image&&<img src={first.image} alt="" style={{width:56,height:56,objectFit:'contain',borderRadius:8,background:C.white,flexShrink:0}}/>}
+        <div style={{flex:1,minWidth:0}}>
+          <div style={{fontSize:15,fontWeight:600,color:C.ink,fontFamily:C.P,lineHeight:1.35}}>{first.name}</div>
+          <div style={{fontSize:13,color:C.mid,fontFamily:C.P}}>{detail(first)}{first.seller?` · sold by ${first.seller}`:''}</div>
+        </div>
+        <div style={{fontSize:17,fontWeight:800,color:C.ink,fontFamily:C.P,whiteSpace:'nowrap'}}>{Shops.money(first.price,first.currency)}</div>
+      </div>
+      <div style={{padding:'0 14px 12px',display:'flex',flexDirection:'column',gap:6}}>
+        <Btn primary full style={{background:C.cr}} onClick={()=>buy(first)}>Buy at {shop}</Btn>
+        <div style={{display:'flex',justifyContent:'center'}}><PartnerTag/></div>
+      </div>
+      {rest.map(it=>(
+        <div key={it.id} role="link" onClick={()=>buy(it)} style={{display:'flex',alignItems:'center',gap:10,padding:'11px 14px',borderTop:`1px solid ${C.line}`,cursor:'pointer'}}>
+          <span style={{flex:1,minWidth:0,fontSize:15,color:C.ink,fontFamily:C.P}}>{detail(it)}</span>
+          <span style={{fontSize:15,fontWeight:700,color:C.ink,fontFamily:C.P}}>{Shops.money(it.price,it.currency)}</span>
+          <Icon n="chevron" sz={13} col={C.mid}/>
+        </div>
+      ))}
+    </Card>
+  </div>;
+}
+
 /* "At the LCBO" (Ontario users): the bottle searched on lcbo.com, where its page has "Check store
    inventory", and the LCBO stores in their city on a map. With a city, Pro and the lookup switched
    on (the Worker's LCBO_ENABLED, beta), the nearest stores that have it are listed above them,
@@ -828,6 +866,7 @@ function DetailPrice({wine,nav,showPro}){
             </div>
           )}
 
+          <ShopBottle wine={wine}/>
           <LcboStock wine={wine} nav={nav} fmtPrice={fmtPrice}/>
 
           {/* Find it for me (Restock for a wine they'd buy again) */}
@@ -847,6 +886,7 @@ function DetailPrice({wine,nav,showPro}){
           <Card style={{padding:14}}>
             <span style={{fontSize:15,color:C.mid,fontFamily:C.P,fontStyle:'italic'}}>Price estimate unavailable for this wine.</span>
           </Card>
+          <ShopBottle wine={wine}/>
           <LcboStock wine={wine} nav={nav} fmtPrice={fmtPrice}/>
           <Btn primary full style={{background:C.cr,boxShadow:`0 3px 12px ${C.cr}35`}} onClick={handleFindItForMe}>{findLabel}</Btn>
         </>

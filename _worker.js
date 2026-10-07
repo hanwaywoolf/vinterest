@@ -127,6 +127,11 @@ export default {
     if (url.pathname === "/go") {
       return handleGo(request, env);
     }
+    if (url.pathname === "/shop-match") {
+      if (request.method === "OPTIONS") return cors(new Response(null, { status: 204 }));
+      if (request.method !== "POST") return json(405, { error: "Method not allowed" });
+      return handleShopMatch(request, env);
+    }
     if (url.pathname === "/lcbo") {
       if (request.method === "OPTIONS") return cors(new Response(null, { status: 204 }));
       if (request.method !== "POST") return json(405, { error: "Method not allowed" });
@@ -542,6 +547,90 @@ function _listedShops(shops, content) {
   return out;
 }
 
+/* ── The bottle itself at a partner shop ──
+   POST /shop-match {wine:{name, producer, vintage, region, country, grapes}, country:'gb'}: the
+   listing at the user's partner shop (data/retailers.json, enabled with "feed") that is this wine,
+   from the shop's own product feed, loaded nightly into Supabase's shop_products
+   (scripts/shop-feeds.mjs). It prefers a single 75cl bottle of the scanned vintage; without one it
+   names the vintages the shop does have. The app links the listing's page through /go (placement
+   "buy"), which adds the Awin tracking. Money never moves a match: this sits on the Price tab only.
+   Without Supabase or a feed shop for the country it answers {items:[]}. */
+const SHOP_MATCH_TTL_S = 6 * 3600;
+const SHOP_PACK_WORDS = new Set(["case", "of", "bottle", "bottles", "half", "magnum", "double", "cl", "ml", "x", "off", "vintage", "seller"]);
+
+function _shopWineWords(wine) {
+  const prod = new Set(_lcboWords(wine.producer));
+  const tell = (w) => !LCBO_GENERIC.has(w) && w.length > 2 && !/^\d+$/.test(w);
+  const nameW = _lcboWords(wine.name).filter((w) => !/^(18|19|20)\d{2}$/.test(w));
+  return {
+    nameT: [...new Set(nameW.filter((w) => tell(w) && !prod.has(w)))],
+    prodT: [...prod].filter(tell),
+    generic: [...new Set(nameW.filter((w) => !tell(w) && w.length > 2))],
+    allowed: new Set([...nameW, ...prod, ..._lcboWords(`${wine.region || ""} ${wine.country || ""} ${(wine.grapes || []).join(" ")} ${wine.type || ""}`)]),
+  };
+}
+/* How surely a listing is this wine, 0 to about 1: how many of the words of the wine's own name it
+   has, once one of the producer's words is there too (shops shorten "Marchesi Antinori" to
+   "Antinori", so the rest of the producer's name never counts). A telling word the wine doesn't
+   have ("Rosado", "Prado Enea", "Chianti") counts against it, so Muga's other wines never pass
+   for its Reserva. */
+function shopScore(ww, p) {
+  const have = new Set(p.words || []);
+  const nameHits = ww.nameT.filter((w) => have.has(w)).length, prodHits = ww.prodT.filter((w) => have.has(w)).length;
+  if ((ww.nameT.length && !nameHits) || (ww.prodT.length && !prodHits) || !(ww.nameT.length + ww.prodT.length)) return 0;
+  const cover = ww.nameT.length ? nameHits / ww.nameT.length : 1;
+  const extra = [...have].filter((w) => !ww.allowed.has(w) && !LCBO_GENERIC.has(w) && !SHOP_PACK_WORDS.has(w) && w.length > 2 && !/\d/.test(w)).length;
+  const style = [...have].filter((w) => LCBO_GENERIC.has(w) && w.length > 3 && !ww.allowed.has(w) && ["reserva", "riserva", "reserve", "gran", "grand", "classico", "superiore", "rosso", "bianco", "blanc", "rouge", "tinto"].includes(w)).length;
+  return cover - 0.3 * extra - 0.15 * style + 0.03 * ww.generic.filter((w) => have.has(w)).length;
+}
+function _shopItem(p) {
+  const price = Number(p.price), pack = p.pack || 1;
+  return { id: p.product_id, name: p.name, vintage: p.vintage || null, price, pack, sizeMl: p.size_ml || 750, perBottle: Math.round((price / pack) * 100) / 100, currency: p.currency, url: p.url, image: p.image || null, seller: p.seller || null };
+}
+// Single 75cl bottles first, then the lowest price a bottle.
+function _shopBest(list) {
+  return list.slice().sort((a, b) => (a.pack !== 1) - (b.pack !== 1) || ((a.size_ml || 750) !== 750) - ((b.size_ml || 750) !== 750) || a.price / a.pack - b.price / b.pack)[0];
+}
+
+async function handleShopMatch(request, env) {
+  if (!originAllowed(request.headers.get("origin"))) return json(403, { error: "Origin not allowed.", code: "origin_denied" });
+  if (rateLimited(clientIp(request))) return json(429, { error: "Too many requests. Please slow down and try again shortly.", code: "rate_limited" });
+  let body;
+  try { body = JSON.parse((await request.text()).slice(0, 4000)); } catch (e) { return json(400, { error: "Invalid JSON body.", code: "invalid_json" }); }
+  const w = body && body.wine, gl = String((body && body.country) || "").toLowerCase().replace(/[^a-z]/g, "").slice(0, 2);
+  if (!w || !w.name) return json(400, { error: "shop-match needs wine.name.", code: "invalid_shop_match" });
+  const cfg = await retailersConfig(env, request);
+  const shop = cfg.retailers.find((r) => r.enabled && r.feed && r.country === gl);
+  if (!shop || !env.SUPABASE_URL || !env.SUPABASE_SECRET_KEY) return json(200, { items: [] });
+  const wine = { name: _clean(w.name, 120), producer: _clean(w.producer, 80), region: _clean(w.region, 60), country: _clean(w.country, 40), type: _clean(w.type, 20), grapes: (Array.isArray(w.grapes) ? w.grapes : []).slice(0, 6).map((g) => _clean(g, 30)) };
+  const vintage = /^(18|19|20)\d{2}$/.test(String(w.vintage || "")) ? +w.vintage : null;
+  const k = `shopmatch:v1:${shop.id}:${_slug(wine.producer)}:${_slug(wine.name)}:${vintage || "nv"}`;
+  const hit = await priceCacheGet(env, k);
+  if (hit) return json(200, JSON.parse(hit));
+  const ww = _shopWineWords(wine);
+  const query = [...ww.nameT, ...ww.prodT];
+  if (!query.length) return json(200, { items: [] });
+  let rows;
+  try {
+    const r = await db(env, "rpc/shop_candidates", { method: "POST", body: JSON.stringify({ p_shop: shop.id, p_words: query, p_limit: 60 }) });
+    if (!r.ok) return json(200, { items: [] });
+    rows = await r.json();
+  } catch (e) { return json(200, { items: [] }); }
+  const scored = rows.map((p) => ({ p, s: shopScore(ww, p) })).filter((x) => x.s >= 0.75);
+  const top = scored.length ? Math.max(...scored.map((x) => x.s)) : 0;
+  // Only the listings as good as the best (within a whisker): one wine, its vintages and packs.
+  const same = scored.filter((x) => x.s >= top - 0.08).map((x) => x.p);
+  const byYear = new Map();
+  for (const p of same) { const y = p.vintage || 0; byYear.set(y, [...(byYear.get(y) || []), p]); }
+  const exactRows = vintage ? byYear.get(vintage) : (byYear.get(0) || null);
+  const exact = exactRows && exactRows.length ? _shopItem(_shopBest(exactRows)) : null;
+  const others = [...byYear.entries()].filter(([y]) => y && y !== (exact && exact.vintage)).map(([y, ps]) => ({ y, p: _shopBest(ps) }))
+    .sort((a, b) => (vintage ? Math.abs(a.y - vintage) - Math.abs(b.y - vintage) : b.y - a.y)).slice(0, 3).map((x) => _shopItem(x.p));
+  const out = { shop: { id: shop.id, name: shop.name }, vintage, exact, others, items: [exact, ...others].filter(Boolean) };
+  await priceCachePut(env, k, JSON.stringify(out), SHOP_MATCH_TTL_S);
+  return json(200, out);
+}
+
 /* ── LCBO stock near an Ontario user (beta) ──
    POST /lcbo {wine:{name, producer, vintage}, city}: which LCBO stores near their city have the
    bottle, from LCBO.dev's public GraphQL API (an independent project, not the LCBO; no key, 60
@@ -701,7 +790,7 @@ function json(status, obj) {
    else through Skimlinks when it's switched on (it pays on most other shops), else left plain.
    p is where in the app it was tapped (Awin's clickref, Skimlinks' xcust). Money never moves a
    match, a pick or the order of a list: /go only decides where a tap already made goes. */
-const GO_PLACEMENTS = new Set(["price", "restock", "listing", "explore", "find", "lcbo", "app"]);
+const GO_PLACEMENTS = new Set(["price", "restock", "listing", "explore", "find", "lcbo", "buy", "app"]);
 let _retailers = null;
 async function retailersConfig(env, request) {
   if (_retailers && Date.now() - _retailers.at < 5 * 60 * 1000) return _retailers.cfg;
