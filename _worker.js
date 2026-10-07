@@ -127,6 +127,11 @@ export default {
     if (url.pathname === "/go") {
       return handleGo(request, env);
     }
+    if (url.pathname === "/lcbo") {
+      if (request.method === "OPTIONS") return cors(new Response(null, { status: 204 }));
+      if (request.method !== "POST") return json(405, { error: "Method not allowed" });
+      return handleLcbo(request, env);
+    }
     if (url.pathname === "/claude") {
       if (request.method === "OPTIONS") return cors(new Response(null, { status: 204 }));
       if (request.method !== "POST") return json(405, { error: "Method not allowed" });
@@ -294,7 +299,7 @@ const FAIR_USE = {
   free: { label_scan: 100, list_scan: 30, price_search: 50, _other: 500 },
   pro:  { label_scan: 600, list_scan: 150, price_search: 300, _other: 3000 },
 };
-const PRO_ONLY = { list_scan: "Wine list scanning is part of Vinterest Pro." };
+const PRO_ONLY = { list_scan: "Wine list scanning is part of Vinterest Pro.", lcbo: "LCBO stock near you is part of Vinterest Pro." };
 /* While testing, before real purchases exist: these Pro features are open to any signed-in account
    (metered by FAIR_USE.free); signed out still asks them to sign in. Remove an entry to make it Pro
    again, and change Entitlement.listScanNeeds in pwa-userdata.js to match. */
@@ -440,11 +445,11 @@ async function priceCacheGet(env, k) {
     return hit ? await hit.text() : null;
   } catch (e) { return null; }
 }
-async function priceCachePut(env, k, value) {
+async function priceCachePut(env, k, value, ttl = PRICE_TTL_S) {
   try {
-    if (env.PRICE_CACHE) return await env.PRICE_CACHE.put(k, value, { expirationTtl: PRICE_TTL_S });
+    if (env.PRICE_CACHE) return await env.PRICE_CACHE.put(k, value, { expirationTtl: ttl });
     await caches.default.put(new Request("https://price-cache.vinterest.internal/" + encodeURIComponent(k)),
-      new Response(value, { headers: { "Cache-Control": `public, max-age=${PRICE_TTL_S}` } }));
+      new Response(value, { headers: { "Cache-Control": `public, max-age=${ttl}` } }));
   } catch (e) {}
 }
 function _clean(s, n) { return String(s || "").replace(/[\r\n"]+/g, " ").trim().slice(0, n || 120); }
@@ -537,6 +542,139 @@ function _listedShops(shops, content) {
   return out;
 }
 
+/* ── LCBO stock near an Ontario user (beta) ──
+   POST /lcbo {wine:{name, producer, vintage}, city}: which LCBO stores near their city have the
+   bottle, from LCBO.dev's public GraphQL API (an independent project, not the LCBO; no key, 60
+   requests a minute per IP). Off unless LCBO_ENABLED is "1": until then it answers
+   {enabled:false} and the app shows nothing. Pro (PRO_ONLY.lcbo), so signed out it asks them to
+   sign in. The city's centre is the middle of that city's LCBO stores, from LCBO.dev's own store
+   list, so no geocoding service is needed. Anything LCBO.dev can't answer comes back as
+   {available:false}, never an error the app has to explain. docs/lcbo.md has the details. */
+const LCBO_API = "https://api.lcbo.dev/graphql";
+const LCBO_RADIUS_KM = 25;
+const LCBO_STORES_TTL_S = 24 * 3600;  // the store list changes rarely
+const LCBO_MATCH_TTL_S = 24 * 3600;   // which LCBO product a wine is
+const LCBO_STOCK_TTL_S = 20 * 60;     // LCBO.dev suggests caching inventory 15-30 minutes
+const LCBO_TIMEOUT_MS = 8000;
+// Words on half the shelf, which say nothing about which wine it is.
+const LCBO_GENERIC = new Set(["the", "and", "de", "di", "del", "della", "du", "des", "la", "le", "les", "el", "los", "das", "der", "von", "vin", "vino", "wine", "red", "white", "rose", "rouge", "blanc", "tinto", "rosso", "bianco", "reserva", "reserve", "riserva", "gran", "grand", "cru", "classico", "superiore", "estate", "winery", "bodega", "bodegas", "domaine", "chateau", "cantina", "tenuta", "vineyards", "cellars", "doc", "docg", "aoc", "igt", "nv"]);
+
+async function lcboQuery(query, variables) {
+  const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), LCBO_TIMEOUT_MS);
+  try {
+    const r = await fetch(LCBO_API, { method: "POST", headers: { "content-type": "application/json", accept: "application/json" }, body: JSON.stringify({ query, variables }), signal: ctl.signal });
+    if (!r.ok) throw new Error("lcbo_http_" + r.status);
+    const d = await r.json();
+    if (d.errors && d.errors.length) throw new Error("lcbo_graphql");
+    return d.data;
+  } finally { clearTimeout(t); }
+}
+function _lcboWords(s) {
+  return String(s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim().split(" ").filter(Boolean);
+}
+function _citySlug(s) { return _lcboWords(String(s || "").replace(/^\s*city of\s+/i, "")).map((w) => (w === "st" ? "saint" : w)).join("-"); }
+
+/* Every LCBO store's name, city and location, cached for a day. */
+async function lcboStores(env) {
+  const k = "lcbo:v1:stores", hit = await priceCacheGet(env, k);
+  if (hit) return JSON.parse(hit);
+  const out = [];
+  let after = null;
+  for (let page = 0; page < 12; page++) {
+    const d = await lcboQuery("query($after:String){ stores(pagination:{first:100, after:$after}){ edges{ node{ externalId name city latitude longitude } } pageInfo{ hasNextPage endCursor } } }", { after });
+    const c = d && d.stores;
+    if (!c) break;
+    for (const e of c.edges || []) if (e.node && e.node.latitude != null) out.push({ id: e.node.externalId, city: e.node.city || "", lat: e.node.latitude, lng: e.node.longitude });
+    if (!c.pageInfo || !c.pageInfo.hasNextPage) break;
+    after = c.pageInfo.endCursor;
+  }
+  if (out.length) await priceCachePut(env, k, JSON.stringify(out), LCBO_STORES_TTL_S);
+  return out;
+}
+/* The middle of a city's LCBO stores, or null when no store is in a city by that name. */
+function lcboCityCentre(stores, city) {
+  const want = _citySlug(city);
+  if (!want) return null;
+  let here = stores.filter((s) => _citySlug(s.city) === want);
+  if (!here.length) here = stores.filter((s) => { const c = _citySlug(s.city); return c.startsWith(want + "-") || c.endsWith("-" + want); });
+  if (!here.length) return null;
+  return { lat: here.reduce((a, s) => a + s.lat, 0) / here.length, lng: here.reduce((a, s) => a + s.lng, 0) / here.length, stores: here.length };
+}
+
+/* Which LCBO product a wine is: its producer and name searched, each result scored by how many of
+   the wine's telling words it shares. A match needs most of them and at least one that isn't a
+   generic word, so "Reserva" alone never makes two wines the same. */
+function lcboScore(wine, p) {
+  const want = [...new Set(_lcboWords(`${wine.producer || ""} ${wine.name || ""}`).filter((w) => !/^(19|20)\d{2}$/.test(w)))];
+  const telling = want.filter((w) => !LCBO_GENERIC.has(w) && w.length > 2);
+  if (!telling.length) return 0;
+  const haveList = _lcboWords(`${p.producerName || ""} ${p.name || ""}`), have = new Set(haveList);
+  const hits = telling.filter((w) => have.has(w)).length;
+  if (!hits) return 0;
+  // Then the small words break ties (Muga Reserva over Muga Rosado for "Muga Reserva"), and a
+  // telling word the wine doesn't have counts against it.
+  const generic = want.filter((w) => !telling.includes(w)), wantSet = new Set(want);
+  const extra = [...have].filter((w) => !wantSet.has(w) && !LCBO_GENERIC.has(w) && w.length > 2 && !/^\d+$/.test(w)).length;
+  let score = hits / telling.length + (generic.length ? 0.1 * generic.filter((w) => have.has(w)).length / generic.length : 0) - 0.05 * extra;
+  if (p.unitVolumeMl === 750) score += 0.05;
+  if (p.isBuyable === false) score -= 0.2;
+  return score;
+}
+async function lcboMatch(env, wine) {
+  const k = `lcbo:v1:match:${_slug(wine.producer)}:${_slug(wine.name)}`, hit = await priceCacheGet(env, k);
+  if (hit) return JSON.parse(hit).product;
+  const name = String(wine.name || "").replace(/\b(19|20)\d{2}\b/g, "").trim();
+  const producer = String(wine.producer || "").trim();
+  const searches = [...new Set([name && producer && !_lcboWords(name).includes(_lcboWords(producer)[0]) ? `${producer} ${name}` : name, name, producer].filter(Boolean))].slice(0, 2);
+  const seen = new Map();
+  for (const q of searches) {
+    const d = await lcboQuery("query($q:String){ products(filters:{search:$q, categorySlug:\"wine\"}, pagination:{first:10}){ edges{ node{ sku name producerName priceInCents unitVolumeMl isBuyable } } } }", { q: q.slice(0, 80) });
+    for (const e of ((d && d.products && d.products.edges) || [])) if (e.node && e.node.sku) seen.set(e.node.sku, e.node);
+    const best = [...seen.values()].map((p) => ({ p, s: lcboScore(wine, p) })).sort((a, b) => b.s - a.s)[0];
+    if (best && best.s >= 0.75) break;
+  }
+  const best = [...seen.values()].map((p) => ({ p, s: lcboScore(wine, p) })).sort((a, b) => b.s - a.s)[0];
+  const product = best && best.s >= 0.6 ? { sku: String(best.p.sku), name: best.p.name, producer: best.p.producerName || null, price: best.p.priceInCents != null ? best.p.priceInCents / 100 : null, volumeMl: best.p.unitVolumeMl || null } : null;
+  await priceCachePut(env, k, JSON.stringify({ product }), LCBO_MATCH_TTL_S);
+  return product;
+}
+/* The stores within LCBO_RADIUS_KM of a point that have it, nearest first (up to 3). */
+async function lcboStock(env, sku, at, citySlug) {
+  const k = `lcbo:v1:stock:${sku}:${citySlug}`, hit = await priceCacheGet(env, k);
+  if (hit) return JSON.parse(hit);
+  const d = await lcboQuery("query($sku:String!,$lat:Float,$lng:Float,$r:Float){ product(sku:$sku){ inventories(filters:{latitude:$lat, longitude:$lng, radiusKm:$r, minQuantity:1}, pagination:{first:5}){ edges{ node{ quantity updatedAt distanceKm store{ externalId name address city } } } } } }", { sku, lat: at.lat, lng: at.lng, r: LCBO_RADIUS_KM });
+  const edges = (d && d.product && d.product.inventories && d.product.inventories.edges) || [];
+  const stores = edges.map((e) => e.node).filter((n) => n && n.store && n.quantity > 0)
+    .sort((a, b) => (a.distanceKm ?? 1e9) - (b.distanceKm ?? 1e9)).slice(0, 3)
+    .map((n) => ({ id: n.store.externalId, name: n.store.name, address: n.store.address || null, city: n.store.city || null, km: n.distanceKm != null ? Math.round(n.distanceKm * 10) / 10 : null, quantity: n.quantity, updatedAt: n.updatedAt || null }));
+  const out = { stores, checkedAt: new Date().toISOString() };
+  await priceCachePut(env, k, JSON.stringify(out), LCBO_STOCK_TTL_S);
+  return out;
+}
+
+async function handleLcbo(request, env) {
+  if (env.LCBO_ENABLED !== "1") return json(200, { enabled: false });
+  if (!originAllowed(request.headers.get("origin"))) return json(403, { error: "Origin not allowed.", code: "origin_denied" });
+  if (rateLimited(clientIp(request))) return json(429, { error: "Too many requests. Please slow down and try again shortly.", code: "rate_limited" });
+  let body;
+  try { body = JSON.parse((await request.text()).slice(0, 4000)); } catch (e) { return json(400, { error: "Invalid JSON body.", code: "invalid_json" }); }
+  const wine = body && body.wine, city = _clean(body && body.city, 60);
+  if (!wine || !wine.name || !city) return json(400, { error: "lcbo needs wine.name and city.", code: "invalid_lcbo" });
+  const gate = await gateAccount(request, env, "lcbo");
+  if (gate.response) return gate.response;
+  const w = { name: _clean(wine.name, 120), producer: _clean(wine.producer, 80) };
+  try {
+    const at = lcboCityCentre(await lcboStores(env), city);
+    if (!at) return json(200, { enabled: true, available: true, city, cityFound: false });
+    const product = await lcboMatch(env, w);
+    if (!product) return json(200, { enabled: true, available: true, city, cityFound: true, found: false });
+    const stock = await lcboStock(env, product.sku, at, _citySlug(city));
+    return json(200, { enabled: true, available: true, city, cityFound: true, found: true, product: { ...product, url: `https://www.lcbo.com/en/catalogsearch/result/?q=${encodeURIComponent(product.sku)}` }, radiusKm: LCBO_RADIUS_KM, ...stock });
+  } catch (e) {
+    return json(200, { enabled: true, available: false });
+  }
+}
+
 function cors(res) {
   res.headers.set("access-control-allow-origin", "*");
   res.headers.set("access-control-allow-headers", "content-type, authorization");
@@ -563,7 +701,7 @@ function json(status, obj) {
    else through Skimlinks when it's switched on (it pays on most other shops), else left plain.
    p is where in the app it was tapped (Awin's clickref, Skimlinks' xcust). Money never moves a
    match, a pick or the order of a list: /go only decides where a tap already made goes. */
-const GO_PLACEMENTS = new Set(["price", "restock", "listing", "explore", "find", "app"]);
+const GO_PLACEMENTS = new Set(["price", "restock", "listing", "explore", "find", "lcbo", "app"]);
 let _retailers = null;
 async function retailersConfig(env, request) {
   if (_retailers && Date.now() - _retailers.at < 5 * 60 * 1000) return _retailers.cfg;

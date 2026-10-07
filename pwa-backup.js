@@ -15,7 +15,7 @@
    what would change without touching anything; `apply` does it. */
 const Backup = {
   FORMAT:'vinterest-backup', VERSION:2,
-  SETTINGS_KEYS:['vinterest_prefs','vinterest_age_ok','vinterest_country','vinterest_state','vinterest_region','vinterest_currency',
+  SETTINGS_KEYS:['vinterest_prefs','vinterest_age_ok','vinterest_country','vinterest_state','vinterest_city','vinterest_region','vinterest_currency',
     'vinterest_onboarded','vinterest_script_length','vinterest_scancard_style','vinterest_text_size','vinterest_travel'],
   PROGRESS_KEYS:['vinterest_favorites','vinterest_wineDNA_unlock_seen','vinterest_explore_ready_seen','vinterest_gen_stubs','vinterest_grape_unlocks_v1',
     'vinterest_region_unlocks_v1','vinterest_region_quiz_v1','vinterest_quiz_mastery_v1','vinterest_exposure_v1','vinterest_mastery_v1',

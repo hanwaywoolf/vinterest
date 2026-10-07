@@ -90,6 +90,53 @@ const Shops={
     document.body.appendChild(a); a.click(); a.remove();
   }
 };
+/* LCBO stock near an Ontario user (beta, Pro). The Worker's /lcbo (handleLcbo in _worker.js) finds
+   the LCBO product a wine is and which stores near their city (UserPrefs city, asked only in
+   Ontario) have it, from LCBO.dev's public data, updated daily. It's off on the server until
+   LCBO_ENABLED is set, and then this shows nothing; anything else it can't answer shows as a
+   quiet line, never an error. Each answer is kept on the phone for CACHE_MS. */
+const Lcbo={
+  CACHE_PREFIX:'vinterest_lcbo_', CACHE_MS:20*60*1000,
+  city(){ const l=UserPrefs.location(); return UserPrefs.askCity(l.country,l.state)&&l.city?l.city:null; },
+  // Ontario with a city: the only people the Price tab's "At the LCBO" is for.
+  applies(){ return !!this.city(); },
+  /* What it still needs: null, 'signin' (sign-in configured and signed out: the Worker answers
+     402 there) or 'pro'. Mirrors PRO_ONLY.lcbo; the Worker checks for itself. */
+  needs(){
+    if(typeof Account!=='undefined'&&Account.available()&&!Account.signedIn()) return 'signin';
+    return Entitlement.isPro()?null:'pro';
+  },
+  _key(wine,city){ return this.CACHE_PREFIX+[wine.producer,wine.name,city].map(x=>String(x||'').toLowerCase().replace(/[^a-z0-9]+/g,'-')).join('|').slice(0,160); },
+  /* {enabled, available, cityFound, found, product:{sku,name,price,url}, stores:[{name,address,city,km,quantity,updatedAt}], checkedAt}
+     or null when the request didn't get through (offline). */
+  async stock(wine){
+    const city=this.city();
+    if(!city||!wine||!wine.name) return null;
+    const k=this._key(wine,city), hit=Cache.get(k,null);
+    if(hit&&hit.at&&Date.now()-hit.at<this.CACHE_MS) return hit.data;
+    const body=JSON.stringify({wine:{name:wine.name,producer:wine.producer||'',vintage:wine.vintage||null},city});
+    const send=async(token)=>fetch(Platform.api('/lcbo'),{method:'POST',headers:{'content-type':'application/json',...(token?{authorization:'Bearer '+token}:{})},body});
+    try{
+      const acct=typeof Account!=='undefined'&&Account.signedIn()?Account:null;
+      const token=acct?await acct.token():null;
+      let r=await send(token);
+      if(r.status===401&&token){ acct.expired(); r=await send(null); }
+      const d=await r.json().catch(()=>null);
+      if(r.status===402) return {enabled:true,needs:d&&d.signIn?'signin':'pro'};
+      if(!r.ok||!d) return {enabled:true,available:false};
+      if(d.enabled&&d.available) Cache.set(k,{at:Date.now(),data:d});
+      return d;
+    }catch(e){ return null; }
+  },
+  // "Updated today", "Updated yesterday", "Updated 3 days ago": how fresh LCBO.dev's count is.
+  freshness(stores){
+    const t=Math.max(0,...(stores||[]).map(s=>Date.parse(s.updatedAt)||0));
+    if(!t) return null;
+    const days=Math.floor((Date.now()-t)/864e5);
+    return days<=0?'Stock as of today':days===1?'Stock as of yesterday':`Stock as of ${days} days ago`;
+  },
+  link(product){ return product&&product.url?Shops.link(product.url,'lcbo'):null; },
+};
 const Regional={
   TRAVEL_KEY:'vinterest_travel',
   travel(){

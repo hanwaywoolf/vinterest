@@ -9,6 +9,7 @@
     { "id": "drinksupermarket","name": "DrinkSupermarket",  "country": "gb", "domains": ["drinksupermarket.com"],"awinMid": "3574",   "search": "", "enabled": false },
     { "id": "threshers",       "name": "Threshers",         "country": "gb", "domains": ["threshers.co.uk"],     "awinMid": "39276",  "search": "", "enabled": false },
     { "id": "houseofdecant",   "name": "House of Decant",   "country": "gb", "domains": ["houseofdecant.com"],   "awinMid": "125510", "search": "", "enabled": false },
-    { "id": "wine52",          "name": "Wine52",            "country": "gb", "domains": ["beer52.com"],          "awinMid": "110978", "search": "", "enabled": false, "note": "A monthly discovery club: for Explore Next, not a scanned bottle (no search)." }
+    { "id": "wine52",          "name": "Wine52",            "country": "gb", "domains": ["beer52.com"],          "awinMid": "110978", "search": "", "enabled": false, "note": "A monthly discovery club: for Explore Next, not a scanned bottle (no search)." },
+    { "id": "lcbo",            "name": "LCBO",              "country": "ca", "domains": ["lcbo.com"],            "search": "", "enabled": false, "note": "Ontario's liquor board, not an affiliate: listed so /go opens its pages for the LCBO stock lookup (docs/lcbo.md). Never Find it for me for all of Canada." }
   ]
 }

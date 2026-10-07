@@ -220,6 +220,7 @@ function ProBadge({style:s}){
 function ProGate({feature,onClose}){
   const FEAT={
     'wine-list':{icon:'📋',title:'Wine List Scanning',desc:'Snap any restaurant menu and get instant match scores for every bottle.',bullets:['Scan full wine lists in seconds','AI ranks every wine by your taste profile','Works at any restaurant worldwide']},
+    'lcbo':{icon:'🏪',title:'LCBO Stock Near You',desc:'See which LCBO stores near you have a bottle, and how many they have.',bullets:['The LCBO\'s price for the bottle you scanned','The nearest stores with it in stock','For Ontario, from the city on your Profile']},
     'unlimited-scans':{icon:'♾️',title:'Unlimited Scans',desc:"You've used your 10 free scans. Pro gives you unlimited.",bullets:['Scan as many bottles as you like','Your full scan history never expires','Priority AI label recognition']},
     'taste-depth':{icon:'🎭',title:'Full Taste Profile',desc:'Unlock your complete taste breakdown across all wine types.',bullets:['Whites, Rosé & Sparkling profiles','Personalised sommelier scripts for each','Full food pairing analysis']},
     'grape-library':{icon:'🍇',title:'Every Grape',desc:`You've unlocked your ${typeof FREE_GRAPE_CAP!=='undefined'?FREE_GRAPE_CAP:5} free grapes. Pro opens all 50.`,bullets:['A quiz and article for every grape you meet','Learn what each grape tastes like, and why','New grapes unlock the moment you scan them']},
