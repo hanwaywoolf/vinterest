@@ -203,8 +203,8 @@ function HomeScreen({nav, showPro, isTablet}){
   const [xpData,setXpData]=React.useState(()=>XPSystem.get());
   React.useEffect(()=>{
     const h=()=>setXpData(XPSystem.get());
-    window.addEventListener('vinterest:xp',h);
-    return()=>window.removeEventListener('vinterest:xp',h);
+    window.addEventListener('vinterest:xp',h); window.addEventListener('vinterest:sync',h);
+    return()=>{ window.removeEventListener('vinterest:xp',h); window.removeEventListener('vinterest:sync',h); };
   },[]);
 
   const allWines=WineHistory.getAll();

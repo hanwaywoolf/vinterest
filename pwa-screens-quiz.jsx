@@ -295,6 +295,9 @@ function QuizHubScreen({nav,back,showPro}){
           const all=genStubs||[];
           const unread=[...all.filter(x=>!isRead(x)&&!ContentEngine.stubLocked(x)),...all.filter(x=>!isRead(x)&&ContentEngine.stubLocked(x))];
           const read=all.filter(isRead);
+          // The beginner articles they've read belong in the library too, after the pieces written for them.
+          const readBasics=ON_RAMP.map((a,i)=>({a,i})).filter(x=>LearnProgress.onRampDone(x.a.id));
+          const libraryCount=read.length+readBasics.length;
           const card=(stub,i)=>{
             const done=isRead(stub);
             const locked=ContentEngine.stubLocked(stub);
@@ -313,14 +316,27 @@ function QuizHubScreen({nav,back,showPro}){
               </div>
             )}
             <ShowMore items={unread} limit={3} render={card} noun="to read"/>
-            {read.length>0&&(
-              <div role="button" onClick={()=>setLibraryOpen(o=>!o)} style={{background:C.white,borderRadius:14,padding:'10px 14px',display:'flex',alignItems:'center',gap:8,cursor:'pointer',border:`1px dashed ${C.line}`}}>
+            {libraryCount>0&&(
+              <div role="button" data-testid="library-toggle" onClick={()=>setLibraryOpen(o=>!o)} style={{background:C.white,borderRadius:14,padding:'10px 14px',display:'flex',alignItems:'center',gap:8,cursor:'pointer',border:`1px dashed ${C.line}`}}>
                 <Icon n="book" sz={15} col={C.mid}/>
-                <span style={{fontSize:14,fontWeight:600,color:C.mid,fontFamily:C.P,flex:1}}>Your library · {read.length} read</span>
+                <span style={{fontSize:14,fontWeight:600,color:C.mid,fontFamily:C.P,flex:1}}>Your library · {libraryCount} read</span>
                 <Icon n="chevron" sz={12} col={C.mid} style={{transform:libraryOpen?'rotate(-90deg)':'rotate(90deg)'}}/>
               </div>
             )}
             {libraryOpen&&read.map(card)}
+            {libraryOpen&&readBasics.length>0&&<div data-testid="library-basics" style={{background:C.white,borderRadius:14,border:`1px solid ${C.line}`,overflow:'hidden'}}>
+              <div style={{fontSize:13,fontWeight:700,color:C.mid,letterSpacing:'0.07em',textTransform:'uppercase',fontFamily:C.P,padding:'10px 14px 4px'}}>Beginner articles</div>
+              {readBasics.map(({a,i})=>(
+                <div key={a.id} role="button" onClick={()=>{Handoff.onRampIdx.set(String(i));nav('article');}} style={{display:'flex',alignItems:'center',gap:12,padding:'10px 14px',borderTop:`1px solid ${C.line}`,cursor:'pointer'}}>
+                  <Icon n="check" sz={15} col={C.green||C.mid}/>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontSize:15,fontWeight:600,color:C.ink,fontFamily:C.P}}>{a.title}</div>
+                    <div style={{fontSize:13,color:C.mid,fontFamily:C.P}}>{a.readTime} read</div>
+                  </div>
+                  <Icon n="chevron" sz={13} col={C.mid}/>
+                </div>
+              ))}
+            </div>}
             </div>
           </div>
           );
