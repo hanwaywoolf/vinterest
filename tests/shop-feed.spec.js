@@ -131,6 +131,9 @@ test('the Price tab shows the bottle at Winebuyers with Buy, through /go with Aw
   await expect(card).toContainText('£159');
   await expect(card).toContainText('£150');
   await expect(card.getByText('Partner', { exact: true })).toBeVisible();
+  // With the bottle found at Winebuyers, a second button to Winebuyers' search would only repeat it.
+  await expect(root.getByText('Find it at Winebuyers', { exact: true })).toHaveCount(0);
+  await expect(root.getByText('Partner', { exact: true })).toHaveCount(1);
   expect(asked[0]).toMatchObject({ country: 'gb', wine: { name: 'Tignanello', producer: 'Marchesi Antinori', vintage: 2019 } });
   const opened = context.waitForEvent('page');
   await card.getByText('Buy at Winebuyers', { exact: true }).click();

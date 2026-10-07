@@ -646,9 +646,9 @@ const REGION_CURRENCY = {
    feed), with "Buy at <shop>" on its page through /go, labelled Partner. Without this vintage it
    says so and lists the vintages the shop has; nothing at all when the shop doesn't list the wine.
    Money never moves a match: it's only here, on the Price tab. */
-function ShopBottle({wine}){
+function ShopBottle({wine,onShop}){
   const [d,setD]=React.useState(null);
-  React.useEffect(()=>{ let live=true; setD(null); Shops.match(wine).then(r=>{ if(live) setD(r); }); return()=>{ live=false; }; },[wine&&wine.name,wine&&wine.producer,wine&&wine.vintage]);
+  React.useEffect(()=>{ let live=true; setD(null); onShop&&onShop(null); Shops.match(wine).then(r=>{ if(live){ setD(r); onShop&&onShop(r?r.shop.name:null); } }); return()=>{ live=false; }; },[wine&&wine.name,wine&&wine.producer,wine&&wine.vintage]);
   if(!d) return null;
   const shop=d.shop.name, first=d.exact||d.others[0], rest=d.exact?d.others:d.others.slice(1);
   const buy=(it)=>Shops.go(Shops.link(it.url,'buy').url);
@@ -783,6 +783,10 @@ function DetailPrice({wine,nav,showPro}){
     FindOnline.open(wine,restock?'restock':'price');
   }
   const listings=Shops.listings(priceData,'listing');
+  // When the card above found the bottle itself at the very shop "Find it for me" would search,
+  // its Buy button is the way there; a second button to the same shop's search only repeats it.
+  const [bottleShop,setBottleShop]=React.useState(null);
+  const findShown=!(bottleShop&&wine&&FindOnline.target(wine).name===bottleShop);
 
   const hasPrice = priceData && priceData.mid != null;
 
@@ -866,12 +870,12 @@ function DetailPrice({wine,nav,showPro}){
             </div>
           )}
 
-          <ShopBottle wine={wine}/>
+          <ShopBottle wine={wine} onShop={setBottleShop}/>
           <LcboStock wine={wine} nav={nav} fmtPrice={fmtPrice}/>
 
           {/* Find it for me (Restock for a wine they'd buy again) */}
-          <Btn primary full style={{background:C.cr,boxShadow:`0 3px 12px ${C.cr}35`}} onClick={handleFindItForMe}>{findLabel}</Btn>
-          {findPartner&&<div style={{display:'flex',justifyContent:'center',marginTop:-12}}><PartnerTag/></div>}
+          {findShown&&<Btn primary full style={{background:C.cr,boxShadow:`0 3px 12px ${C.cr}35`}} onClick={handleFindItForMe}>{findLabel}</Btn>}
+          {findShown&&findPartner&&<div style={{display:'flex',justifyContent:'center',marginTop:-12}}><PartnerTag/></div>}
           <ShopDisclosure style={{textAlign:'center',marginTop:-8,padding:'0 8px'}}/>
 
           {/* Disclaimer */}
@@ -886,9 +890,9 @@ function DetailPrice({wine,nav,showPro}){
           <Card style={{padding:14}}>
             <span style={{fontSize:15,color:C.mid,fontFamily:C.P,fontStyle:'italic'}}>Price estimate unavailable for this wine.</span>
           </Card>
-          <ShopBottle wine={wine}/>
+          <ShopBottle wine={wine} onShop={setBottleShop}/>
           <LcboStock wine={wine} nav={nav} fmtPrice={fmtPrice}/>
-          <Btn primary full style={{background:C.cr,boxShadow:`0 3px 12px ${C.cr}35`}} onClick={handleFindItForMe}>{findLabel}</Btn>
+          {findShown&&<Btn primary full style={{background:C.cr,boxShadow:`0 3px 12px ${C.cr}35`}} onClick={handleFindItForMe}>{findLabel}</Btn>}
         </>
       )}
     </div>
