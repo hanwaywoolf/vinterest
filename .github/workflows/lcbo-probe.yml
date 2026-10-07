@@ -17,22 +17,24 @@ jobs:
         run: |
           q() { curl -sS -m 30 -X POST https://api.lcbo.dev/graphql -H 'content-type: application/json' -d "$1" -w '\nHTTP %{http_code}\n' 2>&1 | head -c 40000; }
           {
-            echo '## Sample: Ardanza near Toronto'; echo '```'
-            q '{"query":"{ products(filters:{search:\"Vina Ardanza\"}, pagination:{first:5}) { totalCount edges { node { sku name producerName regionName countryOfManufacture primaryCategory priceInCents unitVolumeMl isBuyable stockType: sellingPackage thumbnailUrl inventories(filters:{latitude:43.6532, longitude:-79.3832, radiusKm:25, minQuantity:1}, sortBy:DISTANCE, pagination:{first:3}) { totalCount edges { node { quantity distanceKm updatedAt store { externalId name city address } } } } } } } }"}'
-            echo '```'
-            echo '## Sample: Muga Reserva'; echo '```'
-            q '{"query":"{ products(filters:{search:\"Muga Reserva\"}, pagination:{first:5}) { totalCount edges { node { sku name producerName priceInCents unitVolumeMl primaryCategory } } } }"}'
-            echo '```'
-            echo '## Sample: stores near Ottawa'; echo '```'
-            q '{"query":"{ stores(filters:{latitude:45.4215, longitude:-75.6972, radiusKm:10}, sortBy:DISTANCE, pagination:{first:3}) { totalCount edges { node { externalId name city address distanceKm } } } }"}'
-            echo '```'
-            for page in legal/terms-of-service reference/rate-limits reference/complexity-limits how-to/inventory-lookup; do
-              echo "## $page"; echo '```'
-              curl -sSL -m 20 "https://lcbo.dev/$page" -o page.html -w 'HTTP %{http_code}\n'
-              node -e 'const h=require("fs").readFileSync("page.html","utf8");const m=h.match(/<main[\s\S]*?<\/main>/);const t=(m?m[0]:h).replace(/<script[\s\S]*?<\/script>/g,"").replace(/<style[\s\S]*?<\/style>/g,"").replace(/<[^>]+>/g," ").replace(/\s+/g," ");console.log(t.slice(0,6000))'
-              echo '```'
+            for body in \
+              '{"query":"{ products(filters:{search:\"Ardanza\"}, pagination:{first:3}) { totalCount edges { node { sku name producerName priceInCents } } } }"}' \
+              '{"query":"{ products(filters:{search:\"Muga\"}, pagination:{first:5}) { totalCount edges { node { sku name producerName priceInCents unitVolumeMl primaryCategory } } } }"}' \
+              '{"query":"{ products(filters:{name:\"Muga\"}, pagination:{first:5}) { totalCount edges { node { sku name producerName priceInCents } } } }"}' \
+              '{"query":"{ products(filters:{producer:\"Bodegas Muga\"}, pagination:{first:5}) { totalCount edges { node { sku name producerName priceInCents } } } }"}' \
+              '{"query":"{ products(filters:{search:\"rioja reserva\"}, pagination:{first:5}) { totalCount edges { node { sku name producerName priceInCents regionName } } } }"}' \
+              '{"query":"{ products(filters:{search:\"Tignanello\"}, pagination:{first:3}) { totalCount edges { node { sku name producerName priceInCents } } } }"}' \
+              '{"query":"{ products(pagination:{first:2}, sortBy:SELL_RANK_MONTHLY) { totalCount edges { node { sku name producerName priceInCents primaryCategory } } } }"}' \
+              '{"query":"{ stores(pagination:{first:2}) { totalCount edges { node { externalId name city } } } }"}' \
+              '{"query":"{ stores(filters:{latitude:45.4215, longitude:-75.6972, radiusKm:10}, pagination:{first:3}) { edges { node { externalId name city distanceKm } } } }"}' ; do
+              echo "## $body" | head -c 200; echo; echo '```'; q "$body"; echo '```'; sleep 2
             done
+            echo '## product-discovery'; echo '```'
+            curl -sSL -m 20 "https://lcbo.dev/how-to/product-discovery" -o page.html
+            node -e 'const h=require("fs").readFileSync("page.html","utf8");const m=h.match(/<main[\s\S]*?<\/main>/);const t=(m?m[0]:h).replace(/<script[\s\S]*?<\/script>/g,"").replace(/<style[\s\S]*?<\/style>/g,"").replace(/<[^>]+>/g," ").replace(/\s+/g," ");console.log(t.slice(0,5000))'
+            echo '```'
           } > probe.md
+
 
 
           wc -c probe.md
