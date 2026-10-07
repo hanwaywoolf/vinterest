@@ -210,26 +210,44 @@ function DnaTasteTiles({t,nav}){
   const axes=t.axes.filter(t.showAxis).filter(k=>t.avg[k]!=null);
   if(!axes.length) return null;
   const open=id=>{ Handoff.palateTrait.set(id); nav('palate-trait'); };
-  return <div data-testid="dna-taste-tiles" style={{display:'grid',gridTemplateColumns:`repeat(${Math.min(axes.length,4)},minmax(0,1fr))`,gap:6}}>
+  // Three fit across; four sit two by two with the word beside the picture, so long words
+  // ("Mouth-watering") never break mid-letter at a large text size.
+  const wide=axes.length>3;
+  return <div data-testid="dna-taste-tiles" style={{display:'grid',gridTemplateColumns:`repeat(${wide?2:axes.length},minmax(0,1fr))`,gap:6}}>
     {axes.map(k=>{
       const v=Math.max(0,Math.min(1,t.avg[k])), R=21, circ=2*Math.PI*R, A=WineDNA.AXES[k];
       const word=WineDNA.everyday(k,t.avg[k]), page=PALATE_TRAITS.includes(k);
-      const col=SKETCH_TRAIT[k]||t.col, ring=k==='body'?'#C9A86A':col;
+      const col=SKETCH_TRAIT[k]||_DNA_TRAIT_WASH[k]||t.col, ring=k==='body'?'#C9A86A':col;
       return <div key={k} role={page?'button':undefined} tabIndex={page?0:undefined} data-trait={k}
         onClick={page?()=>open(k):undefined} onKeyDown={page?(e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); open(k); } }):undefined}
         aria-label={`${A.name}: ${word}.${page?' What this means.':''}`}
-        style={{background:'#FBF8F3',border:`1px solid ${C.line}`,borderRadius:12,padding:'8px 4px 7px',display:'flex',flexDirection:'column',alignItems:'center',gap:3,cursor:page?'pointer':'default',minWidth:0}}>
-        <svg width="50" height="50" viewBox="-25 -25 50 50" aria-hidden="true" style={{overflow:'visible'}}>
+        style={{background:'#FBF8F3',border:`1px solid ${C.line}`,borderRadius:12,padding:wide?'6px 8px 6px 6px':'8px 4px 7px',display:'flex',flexDirection:wide?'row':'column',alignItems:'center',gap:wide?8:3,cursor:page?'pointer':'default',minWidth:0}}>
+        <svg width="50" height="50" viewBox="-25 -25 50 50" aria-hidden="true" style={{overflow:'visible',flexShrink:0}}>
           <circle r={R} fill="none" stroke={SKETCH_PENCIL} strokeWidth="2.5" strokeDasharray="1 4" strokeLinecap="round"/>
           <circle r={R} fill="none" stroke={ring} strokeWidth="4" strokeLinecap="round" strokeDasharray={circ} strokeDashoffset={circ*(1-v)} transform="rotate(-90)"/>
-          {SKETCH_TRAIT[k]?<g transform="scale(0.62)"><SketchTraitIcon id={k}/></g>
-            :<text textAnchor="middle" y="5" style={{fontSize:'15px',fontWeight:800,fill:t.col,fontFamily:C.P}}>{A.name.charAt(0)}</text>}
+          <g transform="scale(0.62)">{SKETCH_TRAIT[k]?<SketchTraitIcon id={k}/>:<_DnaTraitSketch id={k}/>}</g>
         </svg>
-        <div style={{fontSize:14,fontWeight:800,color:C.ink,fontFamily:C.P,lineHeight:1.15,textAlign:'center',overflowWrap:'anywhere'}}>{word}</div>
-        <div style={{fontSize:12,color:C.mid,fontFamily:C.P,lineHeight:1.1}}>{A.name}</div>
+        <div style={{minWidth:0,textAlign:wide?'left':'center'}}>
+          <div style={{fontSize:14,fontWeight:800,color:C.ink,fontFamily:C.P,lineHeight:1.15,hyphens:'manual'}}>{word}</div>
+          <div style={{fontSize:12,color:C.mid,fontFamily:C.P,lineHeight:1.2}}>{A.name}</div>
+        </div>
       </div>;
     })}
   </div>;
+}
+/* Sweetness and bubbles have no palate page or Mastery sketch: a sugar cube and a few bubbles,
+   in the same pen and wash. */
+const _DNA_TRAIT_WASH={sweetness:'#E7C6A4',effervescence:'#B9D3DE'};
+function _DnaTraitSketch({id}){
+  const ink={fill:'none',stroke:SKETCH_INK,strokeLinecap:'round',strokeLinejoin:'round',strokeWidth:1.6};
+  if(id==='sweetness') return <g>
+    <path d="M-11 -4 L1 -11 L13 -5 L13 8 L1 15 L-11 8 Z" fill={_DNA_TRAIT_WASH.sweetness} opacity="0.75" transform="translate(1 1)"/>
+    <path d="M-12 -5 L0 -12 L12 -6 L12 7 L0 14 L-12 7 Z M-12 -5 L0 1 L12 -6 M0 1 L0 14" {...ink}/>
+  </g>;
+  if(id==='effervescence') return <g>
+    {[[-6,6,7],[7,-2,5],[-3,-9,4],[9,10,3]].map(([x,y,r],i)=><g key={i}><circle cx={x+1} cy={y+1} r={r} fill={_DNA_TRAIT_WASH.effervescence} opacity="0.7"/><circle cx={x} cy={y} r={r} {...ink}/></g>)}
+  </g>;
+  return null;
 }
 /* Their top flavour families, as pills in the type's colour. */
 function DnaFlavourPills({t}){
