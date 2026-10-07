@@ -1,0 +1,33 @@
+# Reads the partner shops' Awin product feeds (scripts/shop-feeds.mjs). For now it reports what's
+# in each feed and posts the report on the commit: a claude/ branch commit whose message has
+# [feed-report]. The feed URLs hold the publisher's feed key, so they live only in the
+# AWIN_FEED_* secrets and are never printed.
+name: Shop feeds
+on:
+  workflow_dispatch:
+  push:
+    branches: ['claude/**']
+jobs:
+  report:
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[feed-report]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write # to post the report as a comment on the commit
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Report
+        run: node scripts/shop-feeds.mjs --report
+        env:
+          AWIN_FEED_WINEBUYERS: ${{ secrets.AWIN_FEED_WINEBUYERS }}
+      - name: Post the report on the commit
+        if: always() && hashFiles('feed-report-*.md') != ''
+        run: |
+          node -e "const fs=require('fs');const t=fs.readdirSync('.').filter(f=>f.startsWith('feed-report-')).map(f=>fs.readFileSync(f,'utf8')).join('\n\n');fs.writeFileSync('c.json',JSON.stringify({body:t.slice(0,60000)}))"
+          curl -sS -X POST -H "authorization: Bearer $GH_TOKEN" -H "accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${{ github.repository }}/commits/${{ github.sha }}/comments" -d @c.json > /dev/null
+        env:
+          GH_TOKEN: ${{ github.token }}
