@@ -194,6 +194,7 @@ function BackupOffer({nav,count}){
    pieces written for them, their recent scans, their WineDNA at a glance with an Explore Next
    pick, and their knowledge (level, XP and the Mastery teaser). */
 function HomeScreen({nav, showPro, isTablet}){
+  const wide=useWide();
   const [travel,setTravel]=React.useState(()=>Regional.travel());
   React.useEffect(()=>{
     const h=()=>setTravel(Regional.travel());
@@ -255,6 +256,68 @@ function HomeScreen({nav, showPro, isTablet}){
     {right||<Icon n="chevron" sz={13} col={C.mid}/>}
   </div>;
 
+  /* Home in two halves: what to do next, and what they've done. Side by side on an iPad. */
+  const doNext=<>
+        <WaitingOnYou nav={nav}/>
+        {Sync.offerBackup(allWines)&&<BackupOffer nav={nav} count={allWines.length}/>}
+
+        {/* Up next: one clear thing to do, two more under it */}
+        {next.primary&&<div>
+          <div style={{fontSize:13,fontWeight:700,color:C.mid,letterSpacing:'0.07em',textTransform:'uppercase',fontFamily:C.P,margin:'4px 2px 8px'}}>Up next</div>
+          <div role="button" onClick={()=>_openLearn(next.primary,nav,showPro)} style={{background:C.ink,borderRadius:16,padding:16,display:'flex',alignItems:'center',gap:12,cursor:'pointer'}}>
+            <div style={{width:46,height:46,borderRadius:12,background:'rgba(255,255,255,0.1)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><Icon n={next.primary.icon||'book'} sz={21} col="#fff"/></div>
+            <div style={{flex:1,minWidth:0}}>
+              {next.primary.progress&&<div style={{fontSize:12,fontWeight:600,color:'rgba(255,255,255,0.5)',fontFamily:C.P,textTransform:'uppercase',letterSpacing:'0.06em',marginBottom:3}}>{next.primary.progress}</div>}
+              <div style={{fontSize:17,fontWeight:700,color:'#fff',fontFamily:C.P,lineHeight:1.3}}>{next.primary.title}</div>
+              <div style={{fontSize:14,color:'rgba(255,255,255,0.6)',fontFamily:C.P,lineHeight:1.4,marginTop:3}}>{next.primary.why}</div>
+            </div>
+            <Icon n="chevron" sz={14} col="rgba(255,255,255,0.4)"/>
+          </div>
+          {next.more.length>0&&<Card style={{padding:0,overflow:'hidden',marginTop:8}}>
+            {next.more.map((m,i)=><div key={m.key} style={i===0?{marginTop:-1}:null}>{row(m.key,m.icon||'book',C.cr,m.title,m.why,()=>_openLearn(m,nav,showPro))}</div>)}
+          </Card>}
+        </div>}
+
+        {/* Written for you: the next unread pieces */}
+        {shelf.length>0&&<Card style={{padding:0,overflow:'hidden'}}>
+          {head('Written for you','All →',()=>nav('learn'))}
+          {shelf.map(st=>row(st.id,st.iconName||'read',C.cr,st.title,ContentEngine.because(st,allWines),()=>_openLearn({kind:'article',stub:st},nav,showPro)))}
+        </Card>}
+  </>;
+  const done=<>
+        {/* Recently scanned */}
+        {recentWines.length>0&&<Card style={{padding:0,overflow:'hidden'}}>
+          {head('Recently scanned','All →',()=>nav('mywines'))}
+          {recentWines.map((w,i)=>row('r'+i,'wine',colFor(w),w.name,MyWines.subline(w),()=>openWine(w),
+            w.rating>0?<span style={{fontSize:15,fontWeight:700,color:C.amber,fontFamily:C.P,flexShrink:0}}>{w.rating}</span>
+              :<span style={{fontSize:13,color:C.cr,fontFamily:C.P,flexShrink:0,fontWeight:600}}>Score it →</span>))}
+        </Card>}
+
+        {/* WineDNA at a glance */}
+        {dna.types.length>0&&<Card style={{padding:0,overflow:'hidden'}}>
+          {head('Your WineDNA','Open →',()=>{ UserPrefs.openDNA(dna.types[0].key); nav('profile'); })}
+          {dna.types.map(t=>row(t.key,'wine',t.col,t.tab,t.line,()=>{ UserPrefs.openDNA(t.key); nav('profile'); }))}
+          {dna.pick&&row('explore','compass',C.cr,`Try next: ${dna.pick.style.name}`,`Explore Next · ${dna.pick.style.country}`,()=>{
+            ExploreNext.markOpened(dna.pick.style.id); Handoff.styleExplore.set({id:dna.pick.style.id,typeKey:dna.pick.typeKey,label:dna.pick.typeLabel}); nav('style-explore'); })}
+          {row('script','message',C.cr,`Your ${(WineDNA.NOUNS[dna.types[0].key]||['wine'])[0]} sommelier script`,'What to say when you order',()=>{ UserPrefs.openDNA(dna.types[0].key,'scripts'); nav('profile'); })}
+        </Card>}
+
+        {/* Your knowledge: level and XP, and the Mastery teaser (the full map is Pro) */}
+        <Card onClick={()=>knowledge?(isPro?nav('mastery-map'):showPro('mastery-map')):nav('learn')} style={{padding:14,cursor:'pointer',display:'flex',flexDirection:'column',gap:8}}>
+          <div style={{display:'flex',alignItems:'center',gap:8}}>
+            <span style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P,flex:1}}>{lv.badge} {lv.name}</span>
+            <span style={{fontSize:13,color:C.mid,fontFamily:C.P}}>{xpData.total} XP{nx?` · ${nx.min-xpData.total} to ${nx.name}`:''}</span>
+          </div>
+          <Prog val={pg} h={5} col={C.cr}/>
+          {knowledge&&<div style={{display:'flex',alignItems:'center',gap:8}}>
+            <div style={{flex:1,fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.45}}>
+              Wine knowledge {knowledge.overall}%{knowledge.strongest?<> · strongest in <b>{knowledge.strongest.label}</b></>:null}{knowledge.gap?<> · biggest gap <b>{knowledge.gap.label}</b></>:null}
+            </div>
+            {!isPro&&<ProBadge/>}
+          </div>}
+        </Card>
+  </>;
+  const cell=x=><div style={{display:'flex',flexDirection:'column',gap:12,minWidth:0}}>{x}</div>;
   return(
     <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden',background:C.bg,position:'relative'}}>
       <div style={{background:C.white,flexShrink:0}}>
@@ -296,63 +359,7 @@ function HomeScreen({nav, showPro, isTablet}){
       <div style={{flex:1,overflowY:'auto',overscrollBehavior:'none',WebkitOverflowScrolling:'touch'}}>
       <div style={{padding:'10px 20px 8px',display:'flex',flexDirection:'column',gap:12}}>
 
-        <WaitingOnYou nav={nav}/>
-        {Sync.offerBackup(allWines)&&<BackupOffer nav={nav} count={allWines.length}/>}
-
-        {/* Up next: one clear thing to do, two more under it */}
-        {next.primary&&<div>
-          <div style={{fontSize:13,fontWeight:700,color:C.mid,letterSpacing:'0.07em',textTransform:'uppercase',fontFamily:C.P,margin:'4px 2px 8px'}}>Up next</div>
-          <div role="button" onClick={()=>_openLearn(next.primary,nav,showPro)} style={{background:C.ink,borderRadius:16,padding:16,display:'flex',alignItems:'center',gap:12,cursor:'pointer'}}>
-            <div style={{width:46,height:46,borderRadius:12,background:'rgba(255,255,255,0.1)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><Icon n={next.primary.icon||'book'} sz={21} col="#fff"/></div>
-            <div style={{flex:1,minWidth:0}}>
-              {next.primary.progress&&<div style={{fontSize:12,fontWeight:600,color:'rgba(255,255,255,0.5)',fontFamily:C.P,textTransform:'uppercase',letterSpacing:'0.06em',marginBottom:3}}>{next.primary.progress}</div>}
-              <div style={{fontSize:17,fontWeight:700,color:'#fff',fontFamily:C.P,lineHeight:1.3}}>{next.primary.title}</div>
-              <div style={{fontSize:14,color:'rgba(255,255,255,0.6)',fontFamily:C.P,lineHeight:1.4,marginTop:3}}>{next.primary.why}</div>
-            </div>
-            <Icon n="chevron" sz={14} col="rgba(255,255,255,0.4)"/>
-          </div>
-          {next.more.length>0&&<Card style={{padding:0,overflow:'hidden',marginTop:8}}>
-            {next.more.map((m,i)=><div key={m.key} style={i===0?{marginTop:-1}:null}>{row(m.key,m.icon||'book',C.cr,m.title,m.why,()=>_openLearn(m,nav,showPro))}</div>)}
-          </Card>}
-        </div>}
-
-        {/* Written for you: the next unread pieces */}
-        {shelf.length>0&&<Card style={{padding:0,overflow:'hidden'}}>
-          {head('Written for you','All →',()=>nav('learn'))}
-          {shelf.map(st=>row(st.id,st.iconName||'read',C.cr,st.title,ContentEngine.because(st,allWines),()=>_openLearn({kind:'article',stub:st},nav,showPro)))}
-        </Card>}
-
-        {/* Recently scanned */}
-        {recentWines.length>0&&<Card style={{padding:0,overflow:'hidden'}}>
-          {head('Recently scanned','All →',()=>nav('mywines'))}
-          {recentWines.map((w,i)=>row('r'+i,'wine',colFor(w),w.name,MyWines.subline(w),()=>openWine(w),
-            w.rating>0?<span style={{fontSize:15,fontWeight:700,color:C.amber,fontFamily:C.P,flexShrink:0}}>{w.rating}</span>
-              :<span style={{fontSize:13,color:C.cr,fontFamily:C.P,flexShrink:0,fontWeight:600}}>Score it →</span>))}
-        </Card>}
-
-        {/* WineDNA at a glance */}
-        {dna.types.length>0&&<Card style={{padding:0,overflow:'hidden'}}>
-          {head('Your WineDNA','Open →',()=>{ UserPrefs.openDNA(dna.types[0].key); nav('profile'); })}
-          {dna.types.map(t=>row(t.key,'wine',t.col,t.tab,t.line,()=>{ UserPrefs.openDNA(t.key); nav('profile'); }))}
-          {dna.pick&&row('explore','compass',C.cr,`Try next: ${dna.pick.style.name}`,`Explore Next · ${dna.pick.style.country}`,()=>{
-            ExploreNext.markOpened(dna.pick.style.id); Handoff.styleExplore.set({id:dna.pick.style.id,typeKey:dna.pick.typeKey,label:dna.pick.typeLabel}); nav('style-explore'); })}
-          {row('script','message',C.cr,`Your ${(WineDNA.NOUNS[dna.types[0].key]||['wine'])[0]} sommelier script`,'What to say when you order',()=>{ UserPrefs.openDNA(dna.types[0].key,'scripts'); nav('profile'); })}
-        </Card>}
-
-        {/* Your knowledge: level and XP, and the Mastery teaser (the full map is Pro) */}
-        <Card onClick={()=>knowledge?(isPro?nav('mastery-map'):showPro('mastery-map')):nav('learn')} style={{padding:14,cursor:'pointer',display:'flex',flexDirection:'column',gap:8}}>
-          <div style={{display:'flex',alignItems:'center',gap:8}}>
-            <span style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P,flex:1}}>{lv.badge} {lv.name}</span>
-            <span style={{fontSize:13,color:C.mid,fontFamily:C.P}}>{xpData.total} XP{nx?` · ${nx.min-xpData.total} to ${nx.name}`:''}</span>
-          </div>
-          <Prog val={pg} h={5} col={C.cr}/>
-          {knowledge&&<div style={{display:'flex',alignItems:'center',gap:8}}>
-            <div style={{flex:1,fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.45}}>
-              Wine knowledge {knowledge.overall}%{knowledge.strongest?<> · strongest in <b>{knowledge.strongest.label}</b></>:null}{knowledge.gap?<> · biggest gap <b>{knowledge.gap.label}</b></>:null}
-            </div>
-            {!isPro&&<ProBadge/>}
-          </div>}
-        </Card>
+        {wide?<WideColumns gap={16}>{cell(doNext)}{cell(done)}</WideColumns>:<>{doNext}{done}</>}
 
         <div style={{height:8}}/>
       </div>

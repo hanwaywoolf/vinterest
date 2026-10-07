@@ -36,7 +36,11 @@ function ScanLocationCard({wine}){
 
 function WineDetailScreen({back,nav,showPro}){
   const [tab,setTab]=React.useState(0);
-  const tabs=['Details','Learn','Price'];
+  /* On an iPad on its side the Price tab becomes a panel beside the other two (where to buy stays in
+     view while they read); upright, the three tabs as on a phone, in a centred column. */
+  const size=useLayoutSize(), split=size==='roomy', wide=size!=='phone';
+  const tabs=split?['Details','Learn']:['Details','Learn','Price'];
+  React.useEffect(()=>{ if(split&&tab===2) setTab(0); },[split]);
   const scanData=React.useMemo(()=>{
     try{ return Handoff.scanResult.get({}); }
     catch(e){ return {}; }
@@ -121,11 +125,19 @@ function WineDetailScreen({back,nav,showPro}){
           ))}
         </div>
       </div>
-      <div ref={scrollRef} style={{flex:1,overflowY:'auto'}}>
+      <div style={{flex:1,display:'flex',minHeight:0}}>
+      <div ref={scrollRef} style={{flex:1,overflowY:'auto',minWidth:0}}>
         {editing&&<EditWineSheet wine={wine} onSave={saveEdit} onClose={()=>setEditing(false)}/>}
+        <div style={{maxWidth:wide&&!split?760:undefined,margin:'0 auto'}}>
         {tab===0&&<DetailMerged key={wine&&wine.name} wine={wine} nav={nav} existingRating={existingRating} match={match}/>}
         {tab===1&&<DetailStory wine={wine} nav={nav} showPro={showPro} existingRating={existingRating}/>}
         {tab===2&&<DetailPrice wine={wine} nav={nav} showPro={showPro}/>}
+        </div>
+      </div>
+      {split&&<div data-testid="detail-price-pane" style={{width:400,flexShrink:0,overflowY:'auto',borderLeft:`1px solid ${C.line}`,background:C.bg}}>
+        <div style={{fontSize:13,fontWeight:700,color:C.mid,letterSpacing:'0.08em',textTransform:'uppercase',fontFamily:C.P,padding:'16px 20px 0'}}>Price and where to buy</div>
+        <DetailPrice wine={wine} nav={nav} showPro={showPro}/>
+      </div>}
       </div>
       {confirmDelete&&<div onClick={()=>setConfirmDelete(false)} style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.5)',display:'flex',alignItems:'flex-end',zIndex:80}}>
         <div onClick={e=>e.stopPropagation()} style={{background:C.white,borderRadius:'22px 22px 0 0',width:'100%',padding:'22px 20px 28px',display:'flex',flexDirection:'column',gap:14}}>

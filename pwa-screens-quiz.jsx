@@ -22,7 +22,7 @@ function ShowMore({items,limit=3,render,noun}){
   const rest=items.length-limit;
   return <>
     {(open?items:items.slice(0,limit)).map(render)}
-    {rest>0&&<div role="button" onClick={()=>setOpen(o=>!o)} style={{padding:'8px 4px',display:'flex',alignItems:'center',gap:6,cursor:'pointer'}}>
+    {rest>0&&<div role="button" onClick={()=>setOpen(o=>!o)} style={{padding:'8px 4px',display:'flex',alignItems:'center',gap:6,cursor:'pointer',gridColumn:'1 / -1'}}>
       <Icon n="chevron" sz={12} col={C.cr} style={{transform:open?'rotate(-90deg)':'rotate(90deg)'}}/>
       <span style={{fontSize:14,fontWeight:700,color:C.cr,fontFamily:C.P}}>{open?'Show less':`Show ${rest} more${noun?' '+noun:''}`}</span>
     </div>}
@@ -58,6 +58,8 @@ function CompletedMark({onReset}){
 }
 
 function QuizHubScreen({nav,back,showPro}){
+  // On an iPad the lists (pieces, basics, regions, guides) run two to a row, and the page keeps to 1100px.
+  const wide=useWide(), list=wide?{display:'grid',gridTemplateColumns:'repeat(2,minmax(0,1fr))',gap:8,alignItems:'stretch'}:{display:'flex',flexDirection:'column',gap:8};
   const [xpData,setXpData]=React.useState(()=>XPSystem.get());
   const [isPro,setIsPro]=React.useState(()=>Entitlement.isPro());
   React.useEffect(()=>{const h=()=>setIsPro(true);window.addEventListener('vinterest:pro',h);return()=>window.removeEventListener('vinterest:pro',h);},[]);
@@ -236,7 +238,7 @@ function QuizHubScreen({nav,back,showPro}){
   {id:'skills',label:'Skills',count:guideQueue.length},
   {id:'progress',label:'Mastery'},
 ].filter(Boolean)}/>
-<div style={{padding:'14px 16px',display:'flex',flexDirection:'column',gap:14}}>
+<div style={{padding:wide?'14px max(16px, calc((100% - 1100px) / 2))':'14px 16px',display:'flex',flexDirection:'column',gap:14}}>
         <div>
           <div style={zoneLabel}>Next Best Thing</div>
           <div onClick={nextBest.action} style={{background:C.ink,borderRadius:16,padding:'16px',display:'flex',alignItems:'center',gap:12,cursor:'pointer',marginTop:8}}>
@@ -309,22 +311,22 @@ function QuizHubScreen({nav,back,showPro}){
           <div ref={secRefs.shelf} style={{scrollMarginTop:56}}>
             <div style={zoneLabel}>Written for you</div>
             <div style={{fontSize:14,color:C.mid,fontFamily:C.P,lineHeight:1.45,marginTop:4}}>Every piece here is written from your WineDNA: the bottles you've scanned, how you scored them and what you paid. Nobody else gets the same article.</div>
-            <div style={{marginTop:8,display:'flex',flexDirection:'column',gap:8}}>
+            <div style={{...list,marginTop:8}}>
             {!unread.length&&(
-              <div style={{padding:'18px 16px',textAlign:'center',background:C.white,borderRadius:14,border:`1px dashed ${C.line}`}}>
+              <div style={{padding:'18px 16px',textAlign:'center',background:C.white,borderRadius:14,border:`1px dashed ${C.line}`,gridColumn:'1 / -1'}}>
                 <span style={{fontSize:15,color:C.mid,fontFamily:C.P,lineHeight:1.5}}>{read.length?"You've read everything written for you so far. Scan or score another bottle and more arrives.":"Nothing on your shelf yet. Scan a bottle and we'll have something for you by morning."}</span>
               </div>
             )}
             <ShowMore items={unread} limit={3} render={card} noun="to read"/>
             {libraryCount>0&&(
-              <div role="button" data-testid="library-toggle" onClick={()=>setLibraryOpen(o=>!o)} style={{background:C.white,borderRadius:14,padding:'10px 14px',display:'flex',alignItems:'center',gap:8,cursor:'pointer',border:`1px dashed ${C.line}`}}>
+              <div role="button" data-testid="library-toggle" onClick={()=>setLibraryOpen(o=>!o)} style={{background:C.white,borderRadius:14,padding:'10px 14px',display:'flex',alignItems:'center',gap:8,cursor:'pointer',border:`1px dashed ${C.line}`,gridColumn:'1 / -1'}}>
                 <Icon n="book" sz={15} col={C.mid}/>
                 <span style={{fontSize:14,fontWeight:600,color:C.mid,fontFamily:C.P,flex:1}}>Your library · {libraryCount} read</span>
                 <Icon n="chevron" sz={12} col={C.mid} style={{transform:libraryOpen?'rotate(-90deg)':'rotate(90deg)'}}/>
               </div>
             )}
             {libraryOpen&&read.map(card)}
-            {libraryOpen&&readBasics.length>0&&<div data-testid="library-basics" style={{background:C.white,borderRadius:14,border:`1px solid ${C.line}`,overflow:'hidden'}}>
+            {libraryOpen&&readBasics.length>0&&<div data-testid="library-basics" style={{background:C.white,borderRadius:14,border:`1px solid ${C.line}`,overflow:'hidden',gridColumn:'1 / -1'}}>
               <div style={{fontSize:13,fontWeight:700,color:C.mid,letterSpacing:'0.07em',textTransform:'uppercase',fontFamily:C.P,padding:'10px 14px 4px'}}>Beginner articles</div>
               {readBasics.map(({a,i})=>(
                 <div key={a.id} role="button" onClick={()=>{Handoff.onRampIdx.set(String(i));nav('article');}} style={{display:'flex',alignItems:'center',gap:12,padding:'10px 14px',borderTop:`1px solid ${C.line}`,cursor:'pointer'}}>
@@ -343,7 +345,7 @@ function QuizHubScreen({nav,back,showPro}){
         })()}
 
         <div ref={secRefs.basics} style={{...zoneLabel,scrollMarginTop:56}}>Wine Basics</div>
-        <div style={{display:'flex',flexDirection:'column',gap:8,marginTop:-6}}>
+        <div style={{...list,marginTop:-6}}>
           <ShowMore items={topicsToShow} limit={4} noun="topics" render={topic=>{
             const p=topicProgress(topic.id);
             return(
@@ -378,7 +380,7 @@ function QuizHubScreen({nav,back,showPro}){
           {(quizRegions.length>0||doneRegions.length>0||proRegions.length>0)&&(
             <>
               {(quizRegions.length>0||doneRegions.length>0||proRegions.length>0)&&(
-                <div ref={secRefs.regions} style={{marginTop:14,scrollMarginTop:56}}>
+                <div ref={secRefs.regions} style={{marginTop:14,scrollMarginTop:56,gridColumn:'1 / -1'}}>
                   <div style={zoneLabel}>Region quizzes</div>
                   <div style={{fontSize:14,color:C.mid,fontFamily:C.P,lineHeight:1.45,marginTop:2}}>One for each region you've scanned: its grapes, climate, rules and how to read its labels.</div>
                 </div>
@@ -472,7 +474,7 @@ function QuizHubScreen({nav,back,showPro}){
           <div style={zoneLabel}>Wine Skills</div>
           <div style={{fontSize:14,color:C.mid,fontFamily:C.P,lineHeight:1.45,marginTop:2}}>Short guides for the moments that matter: tasting, ordering out, buying, pairing and hosting. Each ends with three quick questions.</div>
         </div>
-        <div style={{display:'flex',flexDirection:'column',gap:8,marginTop:-6}}>
+        <div style={{...list,marginTop:-6}}>
           <ShowMore items={guideQueue} limit={4} noun="guides" render={g=>{
             const p=Guides.progress(g.id), read=Guides.isRead(g.id);
             return(
@@ -700,11 +702,11 @@ function MasteryToggle({label,options,value,onChange,testid}){
 }
 /* One region as a row (the map's picked pins and the list): flag, name, where they stand, and
    its next step (Quiz or Refresh, Pro, or scan a bottle from there). */
-function _RegionRow({p,nav,showPro,bar,prog}){
+function _RegionRow({p,nav,showPro,bar,prog,onOpen}){
   const on=p.state==='open';
   return <div data-region={p.name} style={{display:'flex',alignItems:'center',gap:10,padding:'10px 0',borderBottom:`1px solid ${C.line}`}}>
     <Flag region={p.name} size={18}/>
-    <div style={{flex:1,minWidth:0,display:'flex',flexDirection:'column',gap:3}}>
+    <div role={onOpen?'button':undefined} onClick={onOpen?()=>onOpen(p.name):undefined} style={{flex:1,minWidth:0,display:'flex',flexDirection:'column',gap:3,cursor:onOpen?'pointer':'default'}}>
       <div style={{fontSize:15,fontWeight:700,color:on||!bar?C.ink:C.mid,fontFamily:C.P}}>{p.name}</div>
       <div style={{fontSize:13,color:C.mid,fontFamily:C.P,lineHeight:1.4}}>
         {on?`${p.level} · ${p.score}%`:p.state==='held'?'Unlocked, kept for Pro':'Not unlocked yet'}{on&&<RiseTag n={KnowledgeMap.itemRise(prog,'regions',p.name,p.score)} style={{marginLeft:6}}/>}
@@ -731,7 +733,13 @@ function useMapZoom(w,h){
   // Zoom by f about a point (px, py) given as a fraction of the shown box.
   const zoomAt=(f,px=0.5,py=0.5)=>setZ(o=>{ const k=Math.max(1,Math.min(MAP_ZOOM_MAX,o.k*f)); const ax=o.x+px*w/o.k, ay=o.y+py*h/o.k; return fit(k,ax-px*w/k,ay-py*h/k); });
   const pts=React.useRef(new Map()), g=React.useRef(null);
-  const frac=(e,r)=>[(e.clientX-r.left)/r.width,(e.clientY-r.top)/r.height];
+  /* Where the map is really drawn inside the element. The SVG keeps the map's shape, so when its
+     height is capped (420px on an iPad's wide screen) the map sits centred with space either side,
+     and a finger's position has to be measured from the drawing, not the element's edge, or taps
+     land beside the pin and names come out the wrong size. */
+  const box=r=>{ const s=Math.min(r.width/w,r.height/h)||1, cw=w*s, ch=h*s; return {cw,ch,ox:(r.width-cw)/2,oy:(r.height-ch)/2}; };
+  const at=(x,y,r)=>{ const b=box(r); return [(x-r.left-b.ox)/b.cw,(y-r.top-b.oy)/b.ch]; };
+  const frac=(e,r)=>at(e.clientX,e.clientY,r);
   const handlers=onTap=>({
     onPointerDown(e){
       const el=e.currentTarget; pts.current.set(e.pointerId,{x:e.clientX,y:e.clientY});
@@ -748,12 +756,14 @@ function useMapZoom(w,h){
         const m0=[(G.P0[0].x+G.P0[1].x)/2,(G.P0[0].y+G.P0[1].y)/2], m1=[(P[0].x+P[1].x)/2,(P[0].y+P[1].y)/2];
         const k=Math.max(1,Math.min(MAP_ZOOM_MAX,s.k*d1/d0));
         // The map point under the first midpoint stays under the fingers' midpoint now.
-        const ax=s.x+(m0[0]-r.left)/r.width*w/s.k, ay=s.y+(m0[1]-r.top)/r.height*h/s.k;
-        setZ(fit(k,ax-(m1[0]-r.left)/r.width*w/k,ay-(m1[1]-r.top)/r.height*h/k)); G.moved=true; G.two=true;
+        const f0=at(m0[0],m0[1],r), f1=at(m1[0],m1[1],r);
+        const ax=s.x+f0[0]*w/s.k, ay=s.y+f0[1]*h/s.k;
+        setZ(fit(k,ax-f1[0]*w/k,ay-f1[1]*h/k)); G.moved=true; G.two=true;
       }else if(P.length===1&&G.P0.length===1){
         const dx=P[0].x-G.P0[0].x, dy=P[0].y-G.P0[0].y;
         if(Math.hypot(dx,dy)>6) G.moved=true;
-        if(G.moved&&s.k>1) setZ(fit(s.k,s.x-dx/r.width*w/s.k,s.y-dy/r.height*h/s.k));
+        const b=box(r);
+        if(G.moved&&s.k>1) setZ(fit(s.k,s.x-dx/b.cw*w/s.k,s.y-dy/b.ch*h/s.k));
       }
     },
     onPointerUp(e){
@@ -769,10 +779,12 @@ function useMapZoom(w,h){
   // React's onWheel is passive; a trackpad pinch needs preventDefault, so it's attached by hand.
   const ref=React.useRef(null), wheel=React.useRef(null);
   React.useEffect(()=>{ const el=ref.current; if(!el) return; const f=e=>wheel.current&&wheel.current(e); el.addEventListener('wheel',f,{passive:false}); return()=>el.removeEventListener('wheel',f); },[]);
-  // How wide the map is on screen, so names can be sized in real pixels at any zoom.
-  const [px,setPx]=React.useState(0);
-  React.useEffect(()=>{ const el=ref.current; if(!el) return; const m=()=>setPx(el.getBoundingClientRect().width); m();
+  // How wide the map is drawn on screen (not the element: see box), so names, pins and lines
+  // can be sized in real pixels at any zoom.
+  const [rect,setRect]=React.useState(null);
+  React.useEffect(()=>{ const el=ref.current; if(!el) return; const m=()=>{ const r=el.getBoundingClientRect(); setRect({width:r.width,height:r.height}); }; m();
     if(typeof ResizeObserver==='undefined') return; const o=new ResizeObserver(m); o.observe(el); return()=>o.disconnect(); },[]);
+  const px=rect?box(rect).cw:0;
   return {z,px,reset,zoomAt,ref,bind:onTap=>{ const H=handlers(onTap); wheel.current=H.onWheel; const {onWheel,...rest}=H; return rest; }};
 }
 /* Names on the map, placed biggest-first and skipped where they'd overlap one already placed or
@@ -791,7 +803,7 @@ function _mapLabels(v,z,u,pin){
   const scr=(x0,y0,x1,y1)=>({x0:vx+x0*u,y0:vy+y0*u,x1:vx+x1*u,y1:vy+y1*u}), pw=vw/u;
   placed.push(scr(pw-52,0,pw,96)); if(z.k>1) placed.push(scr(0,0,96,50));
   if(z.k<MAP_NAMES_AT){
-    const fs=10.5;
+    const fs=12.5;
     v.pins.forEach(p=>pins.push({x0:p.x-pin,x1:p.x+pin,y0:p.y-pin,y1:p.y+pin}));
     // Only the major wine countries: those with the most knowledge-base regions, MAP_COUNTRY_MAX
     // at most, so Europe reads France, Italy, Spain, Portugal, Germany and nothing else.
@@ -806,16 +818,57 @@ function _mapLabels(v,z,u,pin){
         if(done) break; } });
     return out;
   }
-  const fs=12, rank=p=>(p.state==='open'?0:2)-(p.drunk?1:0);
+  const fs=15, rank=p=>(p.state==='open'?0:2)-(p.drunk?1:0);
   // The pins themselves are kept clear too, so a name never sits on another region's pin.
   v.pins.forEach(p=>pins.push({x0:p.x-pin,x1:p.x+pin,y0:p.y-pin,y1:p.y+pin}));
   [...v.pins].sort((a,b)=>rank(a)-rank(b)||(b.score||0)-(a.score||0)).forEach(p=>{
-    const w=p.name.length*fs*0.6*u, h=fs*u, gap=pin+3*u;
-    for(const y of [p.y-gap,p.y+gap+h]){ const b=box(p.x,y,w,h); if(fits(b)){ placed.push(b); out.push({kind:'region',t:p.name,x:p.x,y,fs:fs*u,on:p.state==='open'}); break; } }
+    const w=p.name.length*fs*0.62*u, h=fs*u, gap=pin+5*u;
+    // Pins outside what's shown need no name; one inside is named above or below its pin, pulled
+    // in from the edge when it would run off it, else beside the pin.
+    if(p.x<vx||p.x>vx+vw||p.y<vy||p.y>vy+vh) return;
+    const inX=x=>Math.max(vx+w/2+3*u,Math.min(vx+vw-w/2-3*u,x));
+    const spots=[[inX(p.x),p.y-gap],[inX(p.x),p.y+gap+h],[p.x+gap+w/2,p.y+h*0.35],[p.x-gap-w/2,p.y+h*0.35]];
+    for(const [x,y] of spots){ const b=box(x,y,w,h); if(fits(b)){ placed.push(b); out.push({kind:'region',t:p.name,x,y,fs:fs*u,on:p.state==='open'}); break; } }
   });
   return out;
 }
-function MasteryRegionMap({views,nav,showPro,prog}){
+/* The page of a region (RegionPageScreen, screen 'region-page'), from the map's card or the list; back returns to Mastery
+   where they were. */
+function openRegionPage(name,nav){ Handoff.regionPage.set(name); nav('region-page'); }
+/* The card a tapped pin opens, under the map: the region's name and flag, its country and key
+   grapes, where they stand with it (level, score, rise, fading answers, bottles they've had), its
+   next step, and "More" for its own page. Pins close together under the finger are offered as
+   "Also here". */
+function MapRegionCard({names,p,nav,showPro,prog,onOpen,onPick,onClose}){
+  const info=React.useMemo(()=>RegionInfo.get(p.name),[p.name]);
+  const on=p.state==='open', others=names.filter(n=>n!==p.name);
+  const step=on?((p.score<100||p.fading>0)?{t:p.fading?'Refresh':'Take the quiz',go:()=>_openLearn({kind:'region',region:p.name},nav,showPro)}:null)
+    :p.state==='held'?{t:'Unlock with Pro',go:()=>showPro('regions')}:{t:'Scan a bottle from here',go:()=>nav('camera')};
+  return <div data-testid="map-picked" data-region={p.name} style={{background:C.white,border:`1px solid ${C.line}`,borderRadius:14,padding:'12px 14px',display:'flex',flexDirection:'column',gap:8,boxShadow:'0 2px 10px rgba(0,0,0,0.06)'}}>
+    <div style={{display:'flex',alignItems:'flex-start',gap:10}}>
+      <Flag region={p.name} size={22}/>
+      <div style={{flex:1,minWidth:0}}>
+        <div style={{fontSize:17,fontWeight:800,color:C.ink,fontFamily:C.P,lineHeight:1.25}}>{p.name}</div>
+        {info&&<div style={{fontSize:13,color:C.mid,fontFamily:C.P,lineHeight:1.4}}>{RegionInfo.line(info)}</div>}
+      </div>
+      <div role="button" aria-label="Close" onClick={onClose} style={{width:28,height:28,borderRadius:14,background:C.offWhite,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',flexShrink:0,fontSize:'16px',color:C.mid,fontFamily:C.P}}>×</div>
+    </div>
+    <div style={{fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.45}}>
+      {on?`${p.level} · ${p.score}%`:p.state==='held'?'Unlocked, kept for Pro':'Not unlocked yet'}{on&&<RiseTag n={KnowledgeMap.itemRise(prog,'regions',p.name,p.score)} style={{marginLeft:6}}/>}
+      {on&&p.fading?<span style={{color:C.amber,fontWeight:600}}>{` · ${p.fading} answer${p.fading===1?'':'s'} fading`}</span>:''}
+      {p.drunk?` · you've had ${p.drunk===1?'one':p.drunk}`:''}
+    </div>
+    {on&&<MasteryBar score={p.score} col={C.cr}/>}
+    <div style={{display:'flex',gap:8,flexWrap:'wrap',alignItems:'center'}}>
+      {step&&<div role="button" onClick={step.go} style={{padding:'8px 14px',borderRadius:10,background:C.cr,color:'#fff',fontSize:14,fontWeight:700,fontFamily:C.P,cursor:'pointer'}}>{step.t}</div>}
+      {info&&<div role="button" data-testid="region-more" onClick={()=>onOpen(p.name)} style={{padding:'8px 14px',borderRadius:10,border:`1px solid ${C.line}`,color:C.ink,fontSize:14,fontWeight:700,fontFamily:C.P,cursor:'pointer'}}>More about {p.name} →</div>}
+    </div>
+    {others.length>0&&<div style={{display:'flex',gap:6,flexWrap:'wrap',alignItems:'center',fontSize:13,color:C.mid,fontFamily:C.P}}>Also here:
+      {others.map(n=><span key={n} role="button" onClick={()=>onPick(n)} style={{padding:'3px 9px',borderRadius:999,border:`1px solid ${C.line}`,color:C.ink2,cursor:'pointer'}}>{n}</span>)}
+    </div>}
+  </div>;
+}
+function MasteryRegionMap({views,nav,showPro,prog,onLeave}){
   // Map or list, and which part of the world, as they last left it (Device.masteryView).
   const saved=React.useRef(Device.masteryView()).current;
   const [mode,setModeS]=React.useState(saved.regions==='list'?'list':'map');
@@ -826,12 +879,15 @@ function MasteryRegionMap({views,nav,showPro,prog}){
   const v=views.find(x=>x.id===vid)||views[0];
   const Z=useMapZoom(v?v.w:1,v?v.h:1), z=Z.z;
   if(!v) return null;
-  const PIN=9/Math.sqrt(z.k), HIT=40/z.k, SW=1/z.k;
   const u=(v.w/z.k)/(Z.px||320); // map units per screen pixel
+  // Pins, their outlines and how near a finger must land, all in screen pixels: pins grow a
+  // little as they zoom in, and a tap anywhere within HIT of a pin's centre picks it.
+  const PIN=Math.min(11,6+z.k)*u, HIT=Math.max(PIN+10*u,24*u), SW=u;
   const names=_mapLabels(v,z,u,PIN);
   const tap=(x,y)=>setSel(v.pins.map(p=>({p,d:Math.hypot(p.x-x,p.y-y)})).filter(o=>o.d<=HIT).sort((a,b)=>a.d-b.d).slice(0,4).map(o=>o.p.name));
   const zbtn={width:34,height:34,borderRadius:10,background:'rgba(255,255,255,0.94)',border:`1px solid ${C.line}`,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',fontSize:'18px',fontWeight:700,color:C.ink,fontFamily:C.P,userSelect:'none',boxShadow:'0 1px 3px rgba(0,0,0,0.08)'};
   const picked=sel.map(n=>v.pins.find(p=>p.name===n)).filter(Boolean);
+  const openPage=n=>{ onLeave&&onLeave(); openRegionPage(n,nav); };
   const open=v.pins.filter(p=>p.state==='open').length;
   const legend=[['#CFC9C2','Not unlocked'],[_PIN_COL['Getting started'],'Getting started'],[_PIN_COL.Developing,'Developing'],[C.cr,'Confident'],[C.green,'Mastered']];
   const anyFading=v.pins.some(p=>p.fading);
@@ -845,7 +901,7 @@ function MasteryRegionMap({views,nav,showPro,prog}){
           </div>); })}
       </div>
       {mode==='list'?<div data-testid="region-list" style={{display:'flex',flexDirection:'column',borderTop:`1px solid ${C.line}`}}>
-        {KnowledgeMap.regionRows(v).map(p=><_RegionRow key={p.name} p={p} nav={nav} showPro={showPro} bar prog={prog}/>)}
+        {KnowledgeMap.regionRows(v).map(p=><_RegionRow key={p.name} p={p} nav={nav} showPro={showPro} bar prog={prog} onOpen={openPage}/>)}
         <div style={{fontSize:13,color:C.mid,fontFamily:C.P,marginTop:8}}>Scanning a bottle from a region unlocks it. <span role="button" onClick={()=>nav('camera')} style={{color:C.cr,fontWeight:700,cursor:'pointer'}}>Scan a bottle →</span></div>
       </div>:<>
       <div style={{position:'relative'}}>
@@ -856,15 +912,15 @@ function MasteryRegionMap({views,nav,showPro,prog}){
             fainter borders, so the pins carry it. Widths are screen pixels (u), fine at any zoom. */}
         <path d={v.land} fill="#F6F3EE" stroke="#B5ABA0" strokeWidth={0.8*u} strokeLinejoin="round"/>
         <path d={v.borders} fill="none" stroke="#DCD4CA" strokeWidth={0.6*u} strokeLinejoin="round"/>
-        {names.filter(n=>n.kind==='country').map(n=><text key={'c'+n.t} x={n.x} y={n.y} textAnchor="middle" data-label="country" style={{fontSize:n.fs.toFixed(2)+'px',fontWeight:600,letterSpacing:'0.06em',fill:'#A39A90',fontFamily:C.P,paintOrder:'stroke',stroke:'#F6F3EE',strokeWidth:(3*u).toFixed(2),strokeLinejoin:'round',pointerEvents:'none'}}>{n.t}</text>)}
+        {names.filter(n=>n.kind==='country').map(n=><text key={'c'+n.t} x={n.x} y={n.y} textAnchor="middle" data-label="country" style={{fontSize:n.fs.toFixed(2)+'px',fontWeight:700,letterSpacing:'0.06em',fill:'#A39A90',fontFamily:C.P,paintOrder:'stroke',stroke:'#F6F3EE',strokeWidth:(3*u).toFixed(2),strokeLinejoin:'round',pointerEvents:'none'}}>{n.t}</text>)}
         {[...v.pins].sort((a,b)=>(a.state==='open')-(b.state==='open')).map(p=>{
-          const on=sel.includes(p.name), first=p.state==='open'&&p.level==='Not started';
+          const on=sel[0]===p.name, first=p.state==='open'&&p.level==='Not started';
           return <g key={p.name}>
             {p.drunk>0&&<circle cx={p.x} cy={p.y} r={PIN+4*SW} fill="none" stroke="#6B625A" strokeWidth={1.6*SW}/>}
-            <circle cx={p.x} cy={p.y} r={on?PIN+3*SW:p.state==='open'?PIN:PIN-2*SW} fill={_pinFill(p)} fillOpacity={p.fading?0.4:1} strokeDasharray={p.fading?`${3*SW} ${2*SW}`:null} stroke={first?C.cr:'#fff'} strokeWidth={(first?2.5:2)*SW}/>
+            <circle cx={p.x} cy={p.y} r={on?PIN+3*SW:p.state==='open'?PIN:PIN-2*SW} fill={_pinFill(p)} fillOpacity={p.fading?0.4:1} strokeDasharray={p.fading?`${3*SW} ${2*SW}`:null} stroke={on?C.ink:first?C.cr:'#fff'} strokeWidth={(on?2.5:first?2.5:2)*SW}/>
           </g>;
         })}
-        {names.filter(n=>n.kind==='region').map(n=><text key={'r'+n.t} x={n.x} y={n.y} textAnchor="middle" data-label="region" style={{fontSize:n.fs.toFixed(2)+'px',fontWeight:n.on?700:500,fill:n.on?C.ink:'#7D736A',fontFamily:C.P,paintOrder:'stroke',stroke:'#F6F3EE',strokeWidth:(3*u).toFixed(2),strokeLinejoin:'round',pointerEvents:'none'}}>{n.t}</text>)}
+        {names.filter(n=>n.kind==='region').map(n=><text key={'r'+n.t} x={n.x} y={n.y} textAnchor="middle" data-label="region" style={{fontSize:n.fs.toFixed(2)+'px',fontWeight:n.on?800:600,fill:n.on?C.ink:'#7D736A',fontFamily:C.P,paintOrder:'stroke',stroke:'#F6F3EE',strokeWidth:(3*u).toFixed(2),strokeLinejoin:'round',pointerEvents:'none'}}>{n.t}</text>)}
       </svg>
       <div style={{position:'absolute',right:8,top:8,display:'flex',flexDirection:'column',gap:6}}>
         <div role="button" aria-label="Zoom in" onClick={()=>Z.zoomAt(1.6)} style={zbtn}>+</div>
@@ -877,9 +933,8 @@ function MasteryRegionMap({views,nav,showPro,prog}){
         <span style={{display:'inline-flex',alignItems:'center',gap:5,fontSize:12,color:C.mid,fontFamily:C.P}}><span style={{width:9,height:9,borderRadius:6,border:'2px solid #6B625A'}}/>You've had one</span>
         {anyFading&&<span style={{display:'inline-flex',alignItems:'center',gap:5,fontSize:12,color:C.mid,fontFamily:C.P}}><span style={{width:9,height:9,borderRadius:6,background:C.cr,opacity:0.4,border:`1px dashed ${C.cr}`}}/>Fading: time for a refresher</span>}
       </div>
-      {picked.length?<div data-testid="map-picked" style={{display:'flex',flexDirection:'column',borderTop:`1px solid ${C.line}`}}>
-        {picked.map(p=><_RegionRow key={p.name} p={p} nav={nav} showPro={showPro} prog={prog}/>)}
-      </div>:<div style={{fontSize:13,color:C.mid,fontFamily:C.P}}>Tap a pin to see a region; pinch to zoom in and see their names. Scanning a bottle unlocks its region.</div>}
+      {picked.length?<MapRegionCard names={sel} p={picked[0]} nav={nav} showPro={showPro} prog={prog} onOpen={openPage}
+        onPick={n=>setSel(s=>[n,...s.filter(x=>x!==n)])} onClose={()=>setSel([])}/>:<div style={{fontSize:13,color:C.mid,fontFamily:C.P}}>Tap a pin to see a region; pinch to zoom in and see their names. Scanning a bottle unlocks its region.</div>}
       </>}
     </div>
   );
@@ -1111,6 +1166,8 @@ function MasterySection({id,title,summary,folded,toggle,plain,testid,children}){
   </section>;
 }
 function MasteryMapScreen({nav,back,showPro}){
+  // On an iPad the shape sits beside the grapes and the palate beside the milestones; the map spans both.
+  const wide=useWide();
   const wines=React.useMemo(()=>WineHistory.getAll(),[]);
   const m=React.useMemo(()=>{ const x=KnowledgeMap.compute(wines); KnowledgeMap.note(x); return x; },[]);
   const prog=React.useMemo(()=>KnowledgeMap.progress(m),[m]);
@@ -1167,6 +1224,7 @@ function MasteryMapScreen({nav,back,showPro}){
 
         <MilestoneMoment items={fresh}/>
 
+        <WideColumns>
         <MasterySection id="shape" title="Your shape" folded={folded} toggle={toggle}
           summary={`${m.overall}% overall${rise?` · biggest rise ${rise.label} +${rise.delta}`:summary.strongest?` · strongest ${summary.strongest.label} ${summary.strongest.score}%`:''}`}>
           <MasteryToggle label="Show your shape as" testid="shape-mode" options={[['chart','Chart'],['list','List']]} value={shapeView} onChange={setShapeView}/>
@@ -1182,26 +1240,27 @@ function MasteryMapScreen({nav,back,showPro}){
               :<>A rounder shape means rounder knowledge. From next week, a dotted outline shows where you were, so you can see it grow.</>} Tap an area, or List, for the detail behind each number.
           </div></>}
         </MasterySection>
-
         <MasterySection id="grapes" title="Your grapes" folded={folded} toggle={toggle}
           summary={`${cluster.studied} of ${cluster.total} grapes studied${cluster.mastered?` · ${cluster.mastered} mastered`:''}`}>
           <MasteryGrapes m={m} nav={nav} view={grapeView} setView={setGrapeView} onOpen={leaveMastery} prog={prog}/>
         </MasterySection>
+        </WideColumns>
 
         <MasterySection id="map" title="Your wine map" folded={folded} toggle={toggle}
           summary={`${mapCount.open} of ${mapCount.total} regions unlocked`}>
-          <MasteryRegionMap views={views} nav={nav} showPro={showPro} prog={prog}/>
+          <MasteryRegionMap views={views} nav={nav} showPro={showPro} prog={prog} onLeave={leaveMastery}/>
         </MasterySection>
 
+        <WideColumns>
         <MasterySection id="palate" title="Your palate" testid="mastery-palate" folded={folded} toggle={toggle}
           summary={palate.n?`${palate.score}% · ${palate.level} · from ${palate.n} Blind Call${palate.n===1?'':'s'}`:'No Blind Calls yet'}>
           <MasteryPalate p={palate} go={go} onOpen={id=>{ leaveMastery(); Handoff.palateTrait.set(id); nav('palate-trait'); }}/>
         </MasterySection>
-
         <MasterySection id="milestones" title="Milestones" testid="mastery-milestones" folded={folded} toggle={toggle}
           summary={milestones.length?`${milestones.length} earned · latest: ${milestones[0].title}`:'None yet'}>
           <MilestoneList items={milestones}/>
         </MasterySection>
+        </WideColumns>
 
         <div style={{height:12}}/>
       </div>
@@ -1312,6 +1371,8 @@ function nextQuizSuggestion(config){
 
 /* ── QUIZ SCREEN ── */
 function QuizScreen({nav,back}){
+  // On an iPad the question, the review and the buttons sit in a centred column (side), not across the screen.
+  const wide=useWide(), side=wide?'max(16px, calc((100% - 720px) / 2))':'16px';
   // Config is state so the results screen can move straight on to the next quiz or set.
   const [config,setConfig]=React.useState(()=>{
     try{ return Handoff.quiz.get(); }catch(e){ return null; }
@@ -1473,7 +1534,7 @@ function QuizScreen({nav,back}){
           </div>
         </div>
         <div ref={scrollRef} style={{flex:1,overflowY:'auto'}}>
-          <div style={{padding:'16px',display:'flex',flexDirection:'column',gap:10}}>
+          <div style={{padding:`16px ${side}`,display:'flex',flexDirection:'column',gap:10}}>
             <MilestoneMoment items={milestones}/>
             {setProgress&&(setDone
               ?card(true,justCompleted?`All ${setProgress.total} questions answered correctly`
@@ -1507,7 +1568,7 @@ function QuizScreen({nav,back}){
           </div>
         </div>
         {/* Actions stay pinned below the review so they're visible without scrolling. */}
-        <div style={{flexShrink:0,padding:'12px 16px calc(12px + env(safe-area-inset-bottom))',borderTop:`1px solid ${C.line}`,background:C.white,display:'flex',flexDirection:'column',gap:8}}>
+        <div style={{flexShrink:0,padding:`12px ${side} calc(12px + env(safe-area-inset-bottom))`,borderTop:`1px solid ${C.line}`,background:C.white,display:'flex',flexDirection:'column',gap:8}}>
           {primary&&<Btn primary full onClick={nextLoading?undefined:primary.go}>{nextLoading?'Getting it ready…':primary.label}</Btn>}
           <Btn primary={!primary} full onClick={()=>nav('learn')}>Back to Learn</Btn>
         </div>
@@ -1544,7 +1605,7 @@ function QuizScreen({nav,back}){
         </div>
       </div>
 
-      <div onClick={phase==='feedback'?advance:undefined} style={{flex:1,overflowY:'auto',padding:'20px 16px',display:'flex',flexDirection:'column',gap:14,cursor:phase==='feedback'?'pointer':'default'}}>
+      <div onClick={phase==='feedback'?advance:undefined} style={{flex:1,overflowY:'auto',padding:wide?`28px ${side}`:'20px 16px',display:'flex',flexDirection:'column',gap:14,cursor:phase==='feedback'?'pointer':'default'}}>
         <div style={{fontSize:21,fontWeight:700,color:C.ink,fontFamily:C.P,lineHeight:1.4}}>{q.q}</div>
         <div style={{display:'flex',flexDirection:'column',gap:10,marginTop:4}}>
           {q.opts.map((opt,i)=>{

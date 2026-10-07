@@ -72,6 +72,31 @@ const Regions = {
   of(w){ return this.resolve(w)||(w&&w.region)||null; },
 };
 
+/* A region's own page (RegionPageScreen) and the map's card: the knowledge base's checked facts for
+   it, where they stand with it in Mastery, and every bottle of theirs from it (WineDNA.region, so
+   a Châteauneuf-du-Pape counts for the Rhône), best score first. Like GrapeInfo for a grape. */
+const RegionInfo = {
+  get(name,wines){
+    const K=typeof KNOWLEDGE!=='undefined'&&KNOWLEDGE.regions&&KNOWLEDGE.regions[name];
+    if(!K) return null;
+    wines=wines||WineHistory.getAll();
+    const mine=wines.filter(w=>WineDNA.region(w)===name);
+    const scored=mine.filter(w=>w.rating>0).sort((a,b)=>b.rating-a.rating);
+    const when=w=>new Date(w.last_scanned||w.scanned_at||0).getTime()||0;
+    const list=[...mine].sort((a,b)=>(b.rating||0)-(a.rating||0)||when(b)-when(a));
+    const m=KnowledgeMap.compute(wines), area=m.areas.find(a=>a.id==='regions'), it=area&&area.items.find(i=>i.name===name);
+    const state=it?'open':RegionUnlocks.held().includes(name)?'held':'locked';
+    // Their own labels' names for places inside it (the appellations they've had), then the rest.
+    const theirs=[...new Set(mine.map(w=>w.sub_region||w.region).filter(r=>r&&r!==name))];
+    return {name,...K,grapes:(K.keyGrapes||[]).map(g=>WineDNA.grape(g)),places:[...new Set([...theirs,...(K.aliases||[])])],theirs,
+      mine:{count:mine.length,wines:list,scored:scored.length,best:scored[0]||null,avg:scored.length?Math.round(scored.reduce((a,w)=>a+w.rating,0)/scored.length):null},
+      mastery:{state,score:it?it.score:0,level:it?it.level:'Not started',fading:it?it.fading||0:0,
+        rise:it?KnowledgeMap.itemRise(KnowledgeMap.progress(m),'regions',name,it.score):0}};
+  },
+  // The map card's one line: its country and the grapes it's known for.
+  line(info){ return [info.country,(info.grapes||[]).slice(0,3).join(', ')].filter(Boolean).join(' · '); },
+};
+
 /* Regions open up as they're scanned: the first FREE_REGION_CAP for everyone, the rest with Pro
    (their quizzes and region articles show as "Unlock with Pro"). Existing history is backfilled
    in scan order, so nobody loses a region they already had. */
@@ -722,6 +747,15 @@ const ContentEngine = {
       :false;
     const when=w=>new Date(w.last_scanned||w.scanned_at||0).getTime()||0;
     return (wines||[]).filter(hit).sort((a,b)=>(b.rating||0)-(a.rating||0)||when(b)-when(a));
+  },
+  /* What a piece's side panel on an iPad shows (ReadingLayout): the bottles of theirs it draws on,
+     and the grape or region page and quiz that go deeper on its subject, when the guide has one. */
+  context(stub,wines){
+    const s=(stub&&stub.slots)||{}, all=wines||WineHistory.getAll();
+    const bottles=this._related(s,all).slice(0,5);
+    const g=s.grape&&WineDNA.grape(s.grape), grape=g&&typeof KNOWLEDGE!=='undefined'&&KNOWLEDGE.grapes&&KNOWLEDGE.grapes[g]?g:null;
+    const r=s.region&&(Regions.resolve({region:s.region})||s.region), region=r&&typeof KNOWLEDGE!=='undefined'&&KNOWLEDGE.regions&&KNOWLEDGE.regions[r]?r:null;
+    return {bottles,grape,region};
   },
   because(stub,wines){
     const s=(stub&&stub.slots)||{};

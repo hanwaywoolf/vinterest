@@ -80,7 +80,7 @@ function App(){
   // A new phone starts in onboarding with 0 XP; signing in or restoring a file there brings their
   // XP down before Home opens, so read it again whenever the screen changes.
   React.useEffect(()=>{ setXpBadge(XPSystem.get()); },[screen]);
-  const showXpBadge=!['camera','onboarding','learn','quiz','article','gen-article','guide','identified','detail','mywines','scan','profile','style-explore','winelist','account','settings','mastery-map','grape','palate-trait'].includes(screen);
+  const showXpBadge=!['camera','onboarding','learn','quiz','article','gen-article','guide','identified','detail','mywines','scan','profile','style-explore','winelist','account','settings','mastery-map','grape','region-page','palate-trait'].includes(screen);
 
   // XP and the moments behind it (pwa-moments.jsx): a quiet chip, and cards that wait for a calm screen.
   const xpDel=useXPDelivery();
@@ -148,6 +148,7 @@ function App(){
         {screen==='quiz'      && <QuizScreen {...ctx}/>}
         {screen==='mastery-map' && <MasteryMapScreen {...ctx}/>}
         {screen==='grape' && <GrapeScreen {...ctx}/>}
+        {screen==='region-page' && <RegionPageScreen {...ctx}/>}
         {screen==='palate-trait' && <PalateTraitScreen {...ctx}/>}
         {screen==='article'   && <ScreenErrorBoundary><LearnArticleScreen {...ctx}/></ScreenErrorBoundary>}
         {screen==='gen-article'&& <ScreenErrorBoundary><GenArticleScreen {...ctx}/></ScreenErrorBoundary>}
