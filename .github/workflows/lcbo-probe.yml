@@ -17,16 +17,23 @@ jobs:
         run: |
           q() { curl -sS -m 30 -X POST https://api.lcbo.dev/graphql -H 'content-type: application/json' -d "$1" -w '\nHTTP %{http_code}\n' 2>&1 | head -c 40000; }
           {
-            echo '## Input types'; echo '```'
-            q '{"query":"{ __schema { types { name kind inputFields { name type { name kind ofType { name kind ofType { name } } } } enumValues { name } } } }"}' | node -e '
-              let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{const j=JSON.parse(s.split("\nHTTP")[0]);for(const t of j.data.__schema.types){if(t.name.startsWith("__"))continue;if(t.inputFields)console.log(t.name+": "+t.inputFields.map(f=>f.name+":"+(f.type.name||(f.type.ofType&&(f.type.ofType.name||(f.type.ofType.ofType&&f.type.ofType.ofType.name)))||f.type.kind)).join(", "));else if(t.kind==="ENUM")console.log(t.name+" = "+t.enumValues.map(e=>e.name).join("|"))}}catch(e){console.log(s.slice(0,3000))}})'
+            echo '## Sample: Ardanza near Toronto'; echo '```'
+            q '{"query":"{ products(filters:{search:\"Vina Ardanza\"}, pagination:{first:5}) { totalCount edges { node { sku name producerName regionName countryOfManufacture primaryCategory priceInCents unitVolumeMl isBuyable stockType: sellingPackage thumbnailUrl inventories(filters:{latitude:43.6532, longitude:-79.3832, radiusKm:25, minQuantity:1}, sortBy:DISTANCE, pagination:{first:3}) { totalCount edges { node { quantity distanceKm updatedAt store { externalId name city address } } } } } } } }"}'
             echo '```'
-            for page in how-to/inventory-lookup how-to/product-discovery how-to/store-location legal/terms-of-service reference/rate-limits reference/complexity-limits quick-start; do
+            echo '## Sample: Muga Reserva'; echo '```'
+            q '{"query":"{ products(filters:{search:\"Muga Reserva\"}, pagination:{first:5}) { totalCount edges { node { sku name producerName priceInCents unitVolumeMl primaryCategory } } } }"}'
+            echo '```'
+            echo '## Sample: stores near Ottawa'; echo '```'
+            q '{"query":"{ stores(filters:{latitude:45.4215, longitude:-75.6972, radiusKm:10}, sortBy:DISTANCE, pagination:{first:3}) { totalCount edges { node { externalId name city address distanceKm } } } }"}'
+            echo '```'
+            for page in legal/terms-of-service reference/rate-limits reference/complexity-limits how-to/inventory-lookup; do
               echo "## $page"; echo '```'
-              curl -sS -m 20 "https://lcbo.dev/$page.html" | sed -e 's/<script[^>]*>.*<\/script>//g' -e 's/<[^>]*>/ /g' | tr -s ' \n' | grep -v '__VP_HASH_MAP__' | head -c 5000
-              echo; echo '```'
+              curl -sSL -m 20 "https://lcbo.dev/$page" -o page.html -w 'HTTP %{http_code}\n'
+              node -e 'const h=require("fs").readFileSync("page.html","utf8");const m=h.match(/<main[\s\S]*?<\/main>/);const t=(m?m[0]:h).replace(/<script[\s\S]*?<\/script>/g,"").replace(/<style[\s\S]*?<\/style>/g,"").replace(/<[^>]+>/g," ").replace(/\s+/g," ");console.log(t.slice(0,6000))'
+              echo '```'
             done
           } > probe.md
+
 
           wc -c probe.md
       - name: Post
