@@ -28,6 +28,20 @@ jobs:
             curl -sS -m 30 -X POST https://api.lcbo.dev/graphql -H 'content-type: application/json' \
               -d '{"query":"{ stores(pagination:{first:2}) { edges { node { externalId name city } } } }"}' -w '\nHTTP %{http_code}\n' 2>&1 | head -c 4000
             echo '```'
+            # Which lcbo.com links work for the app's "Find it at the LCBO" and store buttons: status,
+            # where each lands, and the store finder's form fields (a handful of requests, no data kept).
+            echo '## lcbo.com links'; echo '```'
+            UA='Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1'
+            for u in 'https://www.lcbo.com/en/catalogsearch/result/?q=muga+reserva' 'https://www.lcbo.com/en/catalogsearch/result/#q=muga%20reserva' \
+                     'https://www.lcbo.com/en/stores' 'https://www.lcbo.com/en/stores?city=Ottawa' 'https://www.lcbo.com/en/storelocator' 'https://www.lcbo.com/en/stores/ottawa'; do
+              curl -sSL -m 20 -A "$UA" -o p.html -w "$u -> %{http_code} %{url_effective} %{size_download}B\n" "$u" 2>&1
+              grep -oiE '<title>[^<]*</title>' p.html | head -1
+              grep -oiE '<(input|form)[^>]*(name|action)="[^"]*"[^>]*>' p.html | grep -viE 'hidden|csrf|form_key|newsletter|email' | head -8
+              grep -oiE 'https://www\.lcbo\.com/en/stores[^"'"'"' ]{0,80}' p.html | sort -u | head -8
+              grep -oiE 'coveo[^"'"'"' ]{0,60}' p.html | sort -u | head -3
+              echo
+            done
+            echo '```'
           } > probe.md
           wc -c probe.md
       - name: Post
