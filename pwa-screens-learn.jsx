@@ -374,8 +374,7 @@ function GenArticleScreen({nav,back,showPro}){
                   <div style={{fontSize:19,fontWeight:700,color:C.green,fontFamily:C.P,marginBottom:4}}>Article complete!</div>
                   <div style={{fontSize:16,color:C.mid,fontFamily:C.P,lineHeight:1.55,marginBottom:14}}>Keep exploring your reading list for more personalised content.</div>
                   <div style={{display:'flex',gap:8,justifyContent:'center'}}>
-                    <Btn onClick={()=>nav('learn')}>Reading List</Btn>
-                    <Btn primary onClick={()=>nav('camera')}>Scan a bottle</Btn>
+                    <Btn primary onClick={()=>nav('learn')}>Reading List</Btn>
                   </div>
                 </>
               ):(
@@ -444,10 +443,10 @@ function GrapeScreen({nav,back,showPro}){
   const act=()=>{
     if(ms.state==='open') return _openLearn({kind:'grape',grape:info.name},nav,showPro);
     if(ms.state==='held') return showPro('grape-library');
-    if(!Entitlement.isPro()) return nav('camera');
+    if(!Entitlement.isPro()) return;
     GrapeUnlocks.unlockManual(info.name); _openLearn({kind:'grape',grape:info.name},nav,showPro);
   };
-  const actLabel=ms.state==='open'?(ms.fading?`Refresh the ${info.name} quiz`:ms.score>=100?null:`Take the ${info.name} quiz`):ms.state==='held'?'Unlock with Pro':!Entitlement.isPro()?'Scan a bottle of it to unlock':`Unlock and take the quiz`;
+  const actLabel=ms.state==='open'?(ms.fading?`Refresh the ${info.name} quiz`:ms.score>=100?null:`Take the ${info.name} quiz`):ms.state==='held'?'Unlock with Pro':!Entitlement.isPro()?null:`Unlock and take the quiz`;
   const openMine=w=>{ Handoff.openWine({demo:false,wine:w,existingRating:w.rating||0}); nav('detail'); };
   const rows=[['Climate',info.climate],['In the winery',info.winemaking],['With food',info.food],['Ageing',info.ageing],['Often compared with',info.lookalike],['In blends',info.blends]].filter(r=>r[1]);
   return(
@@ -471,6 +470,7 @@ function GrapeScreen({nav,back,showPro}){
           {info.mine.count>0&&<div style={{fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.5}}>
             You've had {info.mine.count===1?'one bottle':`${info.mine.count} bottles`} of it{info.mine.best?`; your best was ${info.mine.best.name} (${info.mine.best.rating})`:''}.
           </div>}
+          {ms.state==='locked'&&!actLabel&&<div style={{fontSize:14,color:C.mid,fontFamily:C.P,lineHeight:1.5}}>The next bottle of it you scan unlocks its quiz.</div>}
           {actLabel&&<div role="button" onClick={act} style={{fontSize:14,fontWeight:700,color:C.cr,fontFamily:C.P,cursor:'pointer'}}>{actLabel} →</div>}
         </div>
 
@@ -546,9 +546,8 @@ function RegionPageScreen({nav,back,showPro}){
   const act=()=>{
     if(ms.state==='open') return _openLearn({kind:'region',region:info.name},nav,showPro);
     if(ms.state==='held') return showPro('regions');
-    nav('camera');
   };
-  const actLabel=ms.state==='open'?(ms.fading?`Refresh the ${info.name} quiz`:ms.score>=100?null:`Take the ${info.name} quiz`):ms.state==='held'?'Unlock with Pro':`Scan a bottle from ${info.name} to unlock it`;
+  const actLabel=ms.state==='open'?(ms.fading?`Refresh the ${info.name} quiz`:ms.score>=100?null:`Take the ${info.name} quiz`):ms.state==='held'?'Unlock with Pro':null;
   const openMine=w=>{ Handoff.openWine({demo:false,wine:w,existingRating:w.rating||0}); nav('detail'); };
   const facts=[['How it\'s classified',info.classification],['Climate',info.climate],['Ageing rules',info.agingRules],['Producers to know',(info.classicProducers||[]).join(', ')]].filter(r=>r[1]);
   const wide=useWide();
@@ -601,6 +600,7 @@ function RegionPageScreen({nav,back,showPro}){
             {info.mine.count>0?<>You've had {info.mine.count===1?'one bottle':`${info.mine.count} bottles`} from {info.name}{info.mine.avg!=null?`, scored ${info.mine.avg} on average`:''}{info.mine.best?`; your best was ${info.mine.best.name} (${info.mine.best.rating})`:''}.</>
               :`You haven't had a bottle from ${info.name} yet.`}
           </div>
+          {ms.state==='locked'&&!actLabel&&<div style={{fontSize:14,color:C.mid,fontFamily:C.P,lineHeight:1.5}}>{`The next bottle from ${info.name} you scan unlocks its quiz.`}</div>}
           {actLabel&&<div role="button" onClick={act} style={{fontSize:14,fontWeight:700,color:C.cr,fontFamily:C.P,cursor:'pointer'}}>{actLabel} →</div>}
         </div>
 

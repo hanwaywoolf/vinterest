@@ -442,6 +442,8 @@ test('the wine map zooms with a pinch and with + and −, and a tap still picks 
   }, pin);
   await page.mouse.click(p2.x, p2.y);
   await expect(page.getByTestId('map-picked')).toContainText(pin.name);
+  // The nav's Scan button is always there; the card never pushes a scan.
+  await expect(page.getByTestId('map-picked')).not.toContainText('Scan a bottle');
   expect(errors).toEqual([]);
 });
 

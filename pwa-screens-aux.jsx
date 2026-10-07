@@ -759,7 +759,6 @@ function WineListScreen({nav,back,showPro}){
             </Card>
           );
         })}
-        <Btn primary full onClick={()=>nav('camera')} style={{marginTop:4}}>Scan Another</Btn>
         <div style={{height:8}}/>
       </div>
 </div>

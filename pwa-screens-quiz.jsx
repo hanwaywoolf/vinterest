@@ -90,7 +90,7 @@ function QuizHubScreen({nav,back,showPro}){
     ? {kind:'onramp',title:nextOnRamp.title,sub:nextOnRamp.subtitle,readTime:nextOnRamp.readTime,action:()=>{Handoff.onRampIdx.set(String(ON_RAMP.indexOf(nextOnRamp)));nav('article');}}
     : unreadShelf.length
       ? {kind:'shelf',stub:unreadShelf[0],title:unreadShelf[0].title,sub:unreadShelf[0].subtitle,action:()=>{Handoff.genArticle.set(unreadShelf[0]);nav('gen-article');}}
-      : {kind:'scan',title:'Scan a bottle for your next read',sub:"Your shelf restocks based on what you try.",action:()=>nav('camera')};
+      : null;
 
   // Bumped after a progress reset so the to-do/completed splits below recompute.
   const [progressTick,setProgressTick]=React.useState(0);
@@ -239,11 +239,11 @@ function QuizHubScreen({nav,back,showPro}){
   {id:'progress',label:'Mastery'},
 ].filter(Boolean)}/>
 <div style={{padding:wide?'14px max(16px, calc((100% - 1100px) / 2))':'14px 16px',display:'flex',flexDirection:'column',gap:14}}>
-        <div>
+        {nextBest&&<div>
           <div style={zoneLabel}>Next Best Thing</div>
           <div onClick={nextBest.action} style={{background:C.ink,borderRadius:16,padding:'16px',display:'flex',alignItems:'center',gap:12,cursor:'pointer',marginTop:8}}>
             <div style={{width:46,height:46,borderRadius:12,background:'rgba(255,255,255,0.08)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
-              <Icon n={nextBest.kind==='scan'?'camera':nextBest.kind==='onramp'?'book':(nextBest.stub.iconName||'read')} sz={20} col="rgba(255,255,255,0.7)"/>
+              <Icon n={nextBest.kind==='onramp'?'book':(nextBest.stub.iconName||'read')} sz={20} col="rgba(255,255,255,0.7)"/>
             </div>
             <div style={{flex:1}}>
               <div style={{fontSize:13,fontWeight:600,color:'rgba(255,255,255,0.4)',fontFamily:C.P,textTransform:'uppercase',letterSpacing:'0.06em',marginBottom:3}}>{nextBest.kind==='onramp'?'On-Ramp · '+nextBest.readTime:nextBest.kind==='shelf'?'Written for you · '+nextBest.stub.readTime:'Free forever'}</div>
@@ -252,7 +252,7 @@ function QuizHubScreen({nav,back,showPro}){
             </div>
             <Icon n="chevron" sz={13} col="rgba(255,255,255,0.3)"/>
           </div>
-        </div>
+        </div>}
 
         {/* Answers past their review date (QuizMastery fading): the sets that need a quick refresher. */}
         {refreshers.length>0&&<div data-testid="refreshers">
@@ -717,8 +717,7 @@ function _RegionRow({p,nav,showPro,bar,prog,onOpen}){
     </div>
     {on?((p.score<100||p.fading>0)&&<div role="button" onClick={()=>_openLearn({kind:'region',region:p.name},nav,showPro)} style={{fontSize:14,fontWeight:700,color:C.cr,fontFamily:C.P,cursor:'pointer',whiteSpace:'nowrap'}}>{p.fading?'Refresh':'Quiz'} →</div>)
       :p.state==='held'?<div role="button" onClick={()=>showPro('regions')} style={{cursor:'pointer'}}><ProBadge/></div>
-      :bar?null // the list says once, below, that a scan unlocks a region
-      :<div role="button" onClick={()=>nav('camera')} style={{fontSize:13,fontWeight:600,color:C.mid,fontFamily:C.P,cursor:'pointer',textAlign:'right',maxWidth:120,lineHeight:1.3}}>Scan a bottle from here</div>}
+      :null} {/* 'Not unlocked yet' says it; the nav's Scan button is always there */}
   </div>;
 }
 /* Pinch (or a trackpad pinch, ctrl + wheel) zooms the map about the fingers, up to MAP_ZOOM_MAX;
@@ -843,7 +842,7 @@ function MapRegionCard({names,p,nav,showPro,prog,onOpen,onPick,onClose}){
   const info=React.useMemo(()=>RegionInfo.get(p.name),[p.name]);
   const on=p.state==='open', others=names.filter(n=>n!==p.name);
   const step=on?((p.score<100||p.fading>0)?{t:p.fading?'Refresh':'Take the quiz',go:()=>_openLearn({kind:'region',region:p.name},nav,showPro)}:null)
-    :p.state==='held'?{t:'Unlock with Pro',go:()=>showPro('regions')}:{t:'Scan a bottle from here',go:()=>nav('camera')};
+    :p.state==='held'?{t:'Unlock with Pro',go:()=>showPro('regions')}:null;
   return <div data-testid="map-picked" data-region={p.name} style={{background:C.white,border:`1px solid ${C.line}`,borderRadius:14,padding:'12px 14px',display:'flex',flexDirection:'column',gap:8,boxShadow:'0 2px 10px rgba(0,0,0,0.06)'}}>
     <div style={{display:'flex',alignItems:'flex-start',gap:10}}>
       <Flag region={p.name} size={22}/>
@@ -854,7 +853,7 @@ function MapRegionCard({names,p,nav,showPro,prog,onOpen,onPick,onClose}){
       <div role="button" aria-label="Close" onClick={onClose} style={{width:28,height:28,borderRadius:14,background:C.offWhite,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',flexShrink:0,fontSize:'16px',color:C.mid,fontFamily:C.P}}>×</div>
     </div>
     <div style={{fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.45}}>
-      {on?`${p.level} · ${p.score}%`:p.state==='held'?'Unlocked, kept for Pro':'Not unlocked yet'}{on&&<RiseTag n={KnowledgeMap.itemRise(prog,'regions',p.name,p.score)} style={{marginLeft:6}}/>}
+      {on?`${p.level} · ${p.score}%`:p.state==='held'?'Unlocked, kept for Pro':'Not unlocked yet · a bottle from here unlocks it'}{on&&<RiseTag n={KnowledgeMap.itemRise(prog,'regions',p.name,p.score)} style={{marginLeft:6}}/>}
       {on&&p.fading?<span style={{color:C.amber,fontWeight:600}}>{` · ${p.fading} answer${p.fading===1?'':'s'} fading`}</span>:''}
       {p.drunk?` · you've had ${p.drunk===1?'one':p.drunk}`:''}
     </div>
@@ -902,7 +901,7 @@ function MasteryRegionMap({views,nav,showPro,prog,onLeave}){
       </div>
       {mode==='list'?<div data-testid="region-list" style={{display:'flex',flexDirection:'column',borderTop:`1px solid ${C.line}`}}>
         {KnowledgeMap.regionRows(v).map(p=><_RegionRow key={p.name} p={p} nav={nav} showPro={showPro} bar prog={prog} onOpen={openPage}/>)}
-        <div style={{fontSize:13,color:C.mid,fontFamily:C.P,marginTop:8}}>Scanning a bottle from a region unlocks it. <span role="button" onClick={()=>nav('camera')} style={{color:C.cr,fontWeight:700,cursor:'pointer'}}>Scan a bottle →</span></div>
+        <div style={{fontSize:13,color:C.mid,fontFamily:C.P,marginTop:8}}>Scanning a bottle from a region unlocks it.</div>
       </div>:<>
       <div style={{position:'relative'}}>
       <svg ref={Z.ref} viewBox={`${z.x.toFixed(2)} ${z.y.toFixed(2)} ${(v.w/z.k).toFixed(2)} ${(v.h/z.k).toFixed(2)}`} width="100%" {...Z.bind(tap)} role="img" data-testid="region-map" data-zoom={z.k.toFixed(2)}
