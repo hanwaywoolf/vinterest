@@ -5,6 +5,7 @@
 // key, so it only ever comes from the environment, never the repo or a log).
 //   node scripts/shop-feeds.mjs --report          what's in each feed (columns, samples), no writes
 //   node scripts/shop-feeds.mjs --sync            replace each shop's rows (SUPABASE_URL, SUPABASE_FEEDS_KEY)
+//   node scripts/shop-feeds.mjs --check           what the Worker's /shop-match finds for some well-known wines
 import zlib from 'node:zlib';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -109,7 +110,36 @@ async function sync(shop, rows, seenAt) {
   return `${shop}: ${rows.length} wines saved (had ${had}).\n${sample}`;
 }
 
+// The Worker's own /shop-match (handleShopMatch in _worker.js) against the loaded table, for wines
+// whose answer we know, so a change to the matching or a new feed can be judged on real listings.
+const CHECK = [
+  { name: 'Tignanello', producer: 'Marchesi Antinori', vintage: 2021, region: 'Toscana', country: 'Italy', grapes: ['Sangiovese'] },
+  { name: 'Tignanello', producer: 'Marchesi Antinori', vintage: 2019, region: 'Toscana', country: 'Italy' },
+  { name: 'Viña Ardanza Reserva', producer: 'La Rioja Alta', vintage: 2016, region: 'Rioja', country: 'Spain' },
+  { name: 'Muga Reserva', producer: 'Bodegas Muga', vintage: 2020, region: 'Rioja', country: 'Spain' },
+  { name: 'Sauvignon Blanc', producer: 'Cloudy Bay', vintage: 2024, region: 'Marlborough', country: 'New Zealand', grapes: ['Sauvignon Blanc'] },
+  { name: 'Châteauneuf-du-Pape', producer: 'Château de Beaucastel', vintage: 2019, region: 'Rhône', country: 'France' },
+  { name: 'Sassicaia', producer: 'Tenuta San Guido', vintage: 2020, region: 'Bolgheri', country: 'Italy' },
+  { name: 'Barolo', producer: 'G.D. Vajra', vintage: 2019, region: 'Piedmont', country: 'Italy', grapes: ['Nebbiolo'] },
+  { name: 'Whispering Angel', producer: "Château d'Esclans", vintage: 2024, region: 'Côtes de Provence', country: 'France', type: 'rose' },
+  { name: 'Brut Réserve', producer: 'Charles Heidsieck', vintage: null, region: 'Champagne', country: 'France', type: 'sparkling' },
+];
+async function check() {
+  const worker = (await import(pathToFileURL(path.join(ROOT, '_worker.js')).href)).default;
+  const env = { SUPABASE_URL: process.env.SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY: 'unused', SUPABASE_SECRET_KEY: process.env.SUPABASE_FEEDS_KEY,
+    ASSETS: { fetch: async () => new Response(fs.readFileSync(path.join(ROOT, 'data/retailers.json'))) } };
+  let out = '# What /shop-match finds\n';
+  for (const wine of CHECK) {
+    const r = await worker.fetch(new Request('https://vinterest.pages.dev/shop-match', { method: 'POST', headers: { 'content-type': 'application/json', origin: 'https://vinterest.pages.dev' }, body: JSON.stringify({ country: 'gb', wine }) }), env);
+    const d = await r.json();
+    const it = (x) => `${x.name} (${x.vintage || 'NV'}${x.pack > 1 ? `, case of ${x.pack}` : ''}${x.sizeMl !== 750 ? `, ${x.sizeMl}ml` : ''}) £${x.price}${x.seller ? `, ${x.seller}` : ''}`;
+    out += `\n- **${wine.producer} ${wine.name} ${wine.vintage || 'NV'}**: ${d.exact ? it(d.exact) : 'no exact'}${(d.others || []).length ? `; other vintages: ${d.others.map(it).join('; ')}` : ''}${d.items && !d.items.length ? ' (nothing)' : ''}`;
+  }
+  return out + '\n';
+}
+
 async function main() {
+  if (process.argv.includes('--check')) { const out = await check(); fs.writeFileSync(path.join(ROOT, 'feed-report-check.md'), out); console.log(out); return; }
   const mode = process.argv.includes('--sync') ? 'sync' : 'report';
   const shops = JSON.parse(fs.readFileSync(path.join(ROOT, 'data/retailers.json'), 'utf8')).retailers.filter((r) => r.feed === 'awin');
   const seenAt = new Date().toISOString();

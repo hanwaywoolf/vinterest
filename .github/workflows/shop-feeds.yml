@@ -1,7 +1,8 @@
 # Loads the partner shops' Awin product feeds into Supabase every night (scripts/shop-feeds.mjs), so
 # the Price tab can show the bottle itself with "Buy at <shop>". Also on demand (Actions → Shop
 # feeds → Run workflow) and on a claude/ branch commit whose message has [feed-sync] (loads) or
-# [feed-report] (only reports what's in the feeds). Secrets: AWIN_FEED_<SHOP> (the feed's download
+# [feed-report] (only reports what's in the feeds) or [feed-check] (what the matching finds for
+# some well-known wines). Secrets: AWIN_FEED_<SHOP> (the feed's download
 # URL, which holds the publisher's feed key, never printed), SUPABASE_URL and SUPABASE_FEEDS_KEY (a
 # Supabase secret key used only by this job). The result is posted on the commit.
 name: Shop feeds
@@ -13,7 +14,7 @@ on:
     branches: ['claude/**']
 jobs:
   feeds:
-    if: github.event_name != 'push' || contains(github.event.head_commit.message, '[feed-sync]') || contains(github.event.head_commit.message, '[feed-report]')
+    if: github.event_name != 'push' || contains(github.event.head_commit.message, '[feed-sync]') || contains(github.event.head_commit.message, '[feed-report]') || contains(github.event.head_commit.message, '[feed-check]')
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -24,7 +25,7 @@ jobs:
         with:
           node-version: 22
       - name: Load the feeds
-        run: node scripts/shop-feeds.mjs ${{ (github.event_name == 'push' && contains(github.event.head_commit.message, '[feed-report]')) && '--report' || '--sync' }}
+        run: node scripts/shop-feeds.mjs ${{ (github.event_name == 'push' && contains(github.event.head_commit.message, '[feed-report]')) && '--report' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[feed-check]')) && '--check' || '--sync' }}
         env:
           AWIN_FEED_WINEBUYERS: ${{ secrets.AWIN_FEED_WINEBUYERS }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
