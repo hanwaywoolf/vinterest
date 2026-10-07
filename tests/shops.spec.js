@@ -22,17 +22,18 @@ async function boot(context, page, retailers) {
   await stubNetwork(context, { claudeText: (b) => b.purpose === 'price_search' ? JSON.stringify(FOUND) : '' });
 }
 
-test('as shipped, nothing is tracked: Find it for me is a Google search, links stay plain', async ({ context, page }) => {
+test('as shipped: Find it for me in the UK is Winebuyers\' search, through Awin; a shop that hasn\'t approved us stays plain', async ({ context, page }) => {
   await boot(context, page);
   await page.goto(`${BASE}/#home`);
-  const out = await page.evaluate((w) => ({ t: FindOnline.target(w), label: FindOnline.label(w), link: Shops.link('https://www.majestic.co.uk/x', 'price') }), WINE);
+  const out = await page.evaluate((w) => ({ t: FindOnline.target(w), label: FindOnline.label(w), link: Shops.link('https://www.majestic.co.uk/x', 'price'), wb: Shops._track('https://winebuyers.com/en_GB/x', 'find') }), WINE);
   // Every tap goes by way of the Worker's /go, which follows the list as deployed today.
   const t = new URL(out.t.url, BASE);
   expect(t.pathname).toBe('/go');
   expect(Object.fromEntries(t.searchParams)).toMatchObject({ c: 'gb', p: 'find' });
   expect(t.searchParams.get('w')).toBe('La Rioja Alta Viña Ardanza Reserva 2016 wine buy');
-  expect(out.t.partner).toBe(false);
-  expect(out.label).toBe('Find it online');
+  expect(out.t.partner).toBe(true);
+  expect(out.label).toBe('Find it at Winebuyers');
+  expect(new URL(out.wb.url).searchParams.get('awinmid')).toBe('121644');
   expect(out.link).toEqual({ url: '/go?u=' + encodeURIComponent('https://www.majestic.co.uk/x') + '&p=price', partner: false, name: 'Majestic' });
 });
 
@@ -94,7 +95,8 @@ test('the Worker\'s /go: the deployed list picks the shop and the tracking, and 
   expect(r.status).toBe(302);
   let u = new URL(r.to);
   expect(u.host).toBe('www.awin1.com');
-  expect(Object.fromEntries(u.searchParams)).toMatchObject({ awinmid: '999', awinaffid: '12345', clickref: 'restock', ued: 'https://www.majestic.co.uk/search?Ntt=Vina%20Ardanza%202016%20wine' });
+  expect(Object.fromEntries(u.searchParams)).toMatchObject({ awinmid: '999', awinaffid: '12345', clickref: 'restock', ued: 'https://www.majestic.co.uk/search?Ntt=Vina%20Ardanza' });
+  // A shop's search gets the producer and name only: no vintage, "wine" or "buy".
   // No shop for the country: a Google search, never wrapped.
   r = await go('w=ardanza&c=us&p=find');
   expect(r.to).toBe('https://www.google.com/search?q=ardanza&gl=us');

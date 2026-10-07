@@ -32,6 +32,10 @@ const FindOnline={
     parts.push('buy');
     return parts.join(' ');
   },
+  /* A shop's own search gets the producer and name only: "wine", "buy" and the vintage are for
+     Google, and a shop search can come back empty with them (the shop page has the vintages).
+     The same as shopWords in _worker.js. */
+  shopQuery(q){ return q.replace(/\s+buy$/i,'').replace(/\s+wine$/i,'').replace(/\s+(19|20)\d{2}$/,''); },
   url(wine){ const gl=this.country(); return 'https://www.google.com/search?q='+encodeURIComponent(this.query(wine))+(gl?'&gl='+gl:''); },
   /* Where "Find it for me" goes: a partner shop's own search when one is switched on for the
      user's country (Shops, tracked when its Awin IDs are set), else Google, by way of /go.
@@ -41,7 +45,7 @@ const FindOnline={
     // installed app's own copy may be older); the name and Partner label come from this copy.
     const gl=this.country(), shop=Shops.forCountry(gl)[0];
     const url=Shops.goUrl({w:this.query(wine),c:gl,p:placement||'find'});
-    if(shop){ const q=this.query(wine).replace(/\s+buy$/,''); return {url,name:shop.name,partner:Shops._track(shop.search.replace('{q}',encodeURIComponent(q)),placement).partner}; }
+    if(shop){ const q=this.shopQuery(this.query(wine)); return {url,name:shop.name,partner:Shops._track(shop.search.replace('{q}',encodeURIComponent(q)),placement).partner}; }
     return {url,name:null,partner:false};
   },
   label(wine,verb){ const t=this.target(wine); return t.name?`${verb||'Find it'} at ${t.name}`:(verb?`${verb} online`:'Find it online'); },

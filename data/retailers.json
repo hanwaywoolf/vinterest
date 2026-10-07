@@ -4,7 +4,7 @@
   "skimlinks": { "id": "", "enabled": false, "sref": "https://vinterest.app/" },
   "retailers": [
     { "id": "majestic",        "name": "Majestic",          "country": "gb", "domains": ["majestic.co.uk"],      "awinMid": "1546",   "search": "", "enabled": false },
-    { "id": "winebuyers",      "name": "Winebuyers",        "country": "gb", "domains": ["winebuyers.com"],      "awinMid": "121644", "joined": true, "search": "", "enabled": false },
+    { "id": "winebuyers",      "name": "Winebuyers",        "country": "gb", "domains": ["winebuyers.com"],      "awinMid": "121644", "joined": true, "search": "https://winebuyers.com/en_GB/search?bitbag_elasticsearch_search%5Bquery%5D={q}&category=all", "enabled": true },
     { "id": "greatwine",       "name": "The Great Wine Co.", "country": "gb", "domains": ["greatwine.co.uk"],    "awinMid": "21454",  "search": "", "enabled": false },
     { "id": "drinksupermarket","name": "DrinkSupermarket",  "country": "gb", "domains": ["drinksupermarket.com"],"awinMid": "3574",   "search": "", "enabled": false },
     { "id": "threshers",       "name": "Threshers",         "country": "gb", "domains": ["threshers.co.uk"],     "awinMid": "39276",  "search": "", "enabled": false },

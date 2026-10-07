@@ -742,6 +742,9 @@ async function _signListings(env, text) {
     return JSON.stringify(o);
   } catch (e) { return text; }
 }
+/* A shop's own search gets the producer and name only (FindOnline.shopQuery in the app): "wine",
+   "buy" and the vintage are for Google, and a shop's search can come back empty with them. */
+function shopWords(w) { return w.replace(/\s+buy$/i, "").replace(/\s+wine$/i, "").replace(/\s+(19|20)\d{2}$/, ""); }
 async function handleGo(request, env) {
   const q = new URL(request.url).searchParams;
   const placement = GO_PLACEMENTS.has(q.get("p")) ? q.get("p") : "app";
@@ -751,7 +754,7 @@ async function handleGo(request, env) {
   if (words) {
     const gl = (q.get("c") || "").toLowerCase().replace(/[^a-z]/g, "").slice(0, 2);
     const shop = cfg.retailers.find((r) => r.enabled && r.search && r.country === gl);
-    target = shop ? shop.search.replace("{q}", encodeURIComponent(words.replace(/\s+buy$/i, "")))
+    target = shop ? shop.search.replace("{q}", encodeURIComponent(shopWords(words)))
       : "https://www.google.com/search?q=" + encodeURIComponent(words) + (gl ? "&gl=" + gl : "");
   } else {
     let u;

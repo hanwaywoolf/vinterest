@@ -64,12 +64,13 @@ terms: commission rate, cookie length, and whether they allow app traffic and de
 When a shop approves you, its **advertiser ID** (the "mid") is on its programme page. Check it
 matches that shop's `awinMid` and set `"joined": true`. Links go through Awin only for shops with
 `joined`: an Awin link to a shop that hasn't approved you can land on Awin's error page instead
-of the shop. Approved so far: Winebuyers (publisher ID 3114171 is set).
+of the shop. Approved so far: Winebuyers (publisher ID 3114171 is set). Winebuyers' search is switched on, so "Find it for me" in the UK goes to its search through Awin.
 
 ## 3. Check the shop's search link, then switch it on
 
 "Find it for me" opens the shop's own search for the wine. Each shop's search address is in
-`search`, with `{q}` where the wine goes. Before switching a shop on:
+`search`, with `{q}` where the wine goes; the app puts in the producer and name only (no vintage,
+"wine" or "buy", which can empty a shop's search). Before switching a shop on:
 
 1. Open its `search` address in a browser with a real wine in place of `{q}`, e.g.
    `https://www.majestic.co.uk/search?Ntt=Vina%20Ardanza`. It must show results, not an error or
