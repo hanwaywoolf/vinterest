@@ -172,7 +172,8 @@ function AccountProfileScreen({nav,back,showPro}){
 
         <AccSection title="Wine Knowledge" onEdit={()=>setEditSection(editSection==='experience'?null:'experience')} editing={editSection==='experience'}>
           <AccChips opts={UserPrefs.EXPERIENCE} sel={prefs.experience} editing={editSection==='experience'} onToggle={id=>savePrefField('experience',id)}/>
-          <div style={{fontSize:13,color:C.mid,fontFamily:C.P,marginTop:8}}>Sets where Learn starts and how deep articles go.</div>
+          <div style={{fontSize:13,color:C.mid,fontFamily:C.P,marginTop:8}}>Sets where Learn starts, how deep articles go and how much detail WineDNA and your scans show. The detail grows as you learn.</div>
+          <DetailSwitch/>
         </AccSection>
 
         {/* What went wrong recently, for when something misbehaves (ErrorLog, written by index.html). */}
@@ -191,6 +192,25 @@ function AccountProfileScreen({nav,back,showPro}){
 }
 
 Object.assign(window,{AccountProfileScreen});
+
+/* "Show all details" (DetailLevel): every screen at full detail, whatever their level. Says which
+   level they're at otherwise, so turning it off isn't a mystery. */
+function DetailSwitch(){
+  const [on,setOn]=React.useState(()=>DetailLevel.showAll());
+  const lvl=DetailLevel.LEVELS[DetailLevel.reached()];
+  const now=lvl==='everything'?'You already see everything.':lvl==='more'?'You see more detail now; the rest opens as you learn more.':'You see the essentials now; more opens as you learn.';
+  function flip(){ DetailLevel.setShowAll(!on); setOn(!on); }
+  return <div data-testid="detail-switch" style={{display:'flex',alignItems:'center',gap:12,marginTop:12,paddingTop:12,borderTop:`1px solid ${C.line}`}}>
+    <div style={{flex:1,minWidth:0}}>
+      <div style={{fontSize:15,fontWeight:700,color:C.ink,fontFamily:C.P}}>Show all details</div>
+      <div style={{fontSize:13,color:C.mid,fontFamily:C.P,lineHeight:1.4}}>{on?'Every screen shows its full detail.':now}</div>
+    </div>
+    <div role="switch" aria-checked={on} aria-label="Show all details" tabIndex={0} onClick={flip} onKeyDown={e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); flip(); } }}
+      style={{width:46,height:28,borderRadius:14,background:on?C.cr:C.line,position:'relative',cursor:'pointer',flexShrink:0,transition:'background .15s'}}>
+      <div style={{position:'absolute',top:3,left:on?21:3,width:22,height:22,borderRadius:11,background:'#fff',boxShadow:'0 1px 3px rgba(0,0,0,0.2)',transition:'left .15s'}}/>
+    </div>
+  </div>;
+}
 
 /* Text size: Standard, Large (+10%) or Extra large (+20%). Only the text grows (TextSize). */
 function TextSizeControl(){

@@ -268,6 +268,20 @@ const XPSystem = {
     let xp=0, label=null, best=0; const moments=[];
     const an=w=>/^[aeiou]/i.test(w)?'an':'a';
     (awards||[]).forEach(a=>{
+      // How much detail the app shows (DetailLevel, pwa-detail.js): a rise, or the one-time
+      // explanation for someone who used the app before levels existed.
+      if(a.detailLevel){
+        moments.push({id:'detail:'+a.detailLevel,icon:'brain',kicker:'More to see',title:'Your WineDNA shows more now',
+          body:(typeof DetailLevel!=='undefined'&&DetailLevel.ADDS[a.detailLevel])||'',action:{label:'See your WineDNA',screen:'profile'}});
+        return;
+      }
+      if(a.detailIntro){
+        moments.push({id:'detail-intro',icon:'brain',kicker:'Made for you',title:a.detailIntro==='everything'?'Vinterest shows you everything':'Vinterest keeps it simple for now',
+          body:a.detailIntro==='everything'?'You told us you know wine well, so every screen shows its full detail.'
+            :'WineDNA and your scans show the essentials first, and more as you learn. Want it all now? Turn on "Show all details" on Profile.',
+          action:a.detailIntro==='everything'?null:{label:'Open Profile',screen:'account'}});
+        return;
+      }
       if(a.levelUp){
         const total=this.get().total, nxt=this.nextLevel(total);
         moments.push({id:'level:'+a.level,icon:'trophy',kicker:'New level',title:`You're now ${an(a.level)} ${a.level}`,

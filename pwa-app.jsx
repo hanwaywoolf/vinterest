@@ -20,7 +20,8 @@ function App(){
   React.useEffect(()=>{ try{ if(Settings.onboarded()&&!Milestones.seen()) Milestones.check(KnowledgeMap.compute(),Palate.compute()); }catch(e){} },[]);
   // A new text size (TextSize, pwa-textsize.js) re-renders every screen at once.
   const [,setTextTick]=React.useState(0);
-  React.useEffect(()=>{ const h=()=>setTextTick(t=>t+1); window.addEventListener('vinterest:textsize',h); return()=>window.removeEventListener('vinterest:textsize',h); },[]);
+  React.useEffect(()=>{ const h=()=>setTextTick(t=>t+1); window.addEventListener('vinterest:textsize',h); window.addEventListener('vinterest:detail',h);
+    return()=>{ window.removeEventListener('vinterest:textsize',h); window.removeEventListener('vinterest:detail',h); }; },[]);
 
   // Tablet / iPad detection (Device.forceMobile() overrides it for the preview panel)
   const forceMobile=()=>Device.forceMobile();
@@ -80,6 +81,13 @@ function App(){
   // A new phone starts in onboarding with 0 XP; signing in or restoring a file there brings their
   // XP down before Home opens, so read it again whenever the screen changes.
   React.useEffect(()=>{ setXpBadge(XPSystem.get()); },[screen]);
+  // How much detail screens show (DetailLevel): checked on calm screens, a moment's wait after
+  // arriving, so a rise from a quiz or a scan is told on Home, Learn or another tab.
+  React.useEffect(()=>{
+    if(!Settings.onboarded()||!MOMENT_SCREENS.includes(screen)) return;
+    const t=setTimeout(()=>{ try{ DetailLevel.check(); }catch(e){} },400);
+    return()=>clearTimeout(t);
+  },[screen]);
   const showXpBadge=!['camera','onboarding','learn','quiz','article','gen-article','guide','identified','detail','mywines','scan','profile','style-explore','winelist','account','settings','mastery-map','grape','region-page','palate-trait'].includes(screen);
 
   // XP and the moments behind it (pwa-moments.jsx): a quiet chip, and cards that wait for a calm screen.

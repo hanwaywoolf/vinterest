@@ -14,10 +14,12 @@ const UMD = {
 
 // claudeText(body) returns the text the stubbed /claude answers with; the default is empty,
 // which every caller treats as a failed generation.
-async function stubNetwork(context, { claudeRequests = [], claudeText = () => '' } = {}) {
+async function stubNetwork(context, { claudeRequests = [], claudeText = () => '' , detail = 'all' } = {}) {
   // Tests check the free plan as it will ship, not the everyone-is-Pro testing switch
   // (Entitlement.ALL_PRO_FOR_TESTING); tests of the switch itself don't call stubNetwork.
-  await context.addInitScript(() => { window.VINTEREST_REAL_PLANS = true; });
+  // Screens show all their detail (DetailLevel) unless a test asks for the levels as they ship
+  // ({ detail: 'real' }), so tests of a section don't depend on how far the test user has learnt.
+  await context.addInitScript((d) => { window.VINTEREST_REAL_PLANS = true; window.VINTEREST_DETAIL = d; }, detail);
   await context.route(/^https?:\/\/(?!localhost[:/])/, (route) => {
     const url = route.request().url();
     const umd = Object.entries(UMD).find(([k]) => url.includes(k));

@@ -197,6 +197,75 @@ function DnaTasteCard({t,tLabel,notes=true}){
   </Card>  );
 }
 
+/* The portrait at the top of WineDNA (DetailLevel): their style as pictures first. A tile per
+   trait, the thing the app compares it to sketched in pen and wash (the Mastery palate's icons)
+   inside a ring filled to where the wines they choose sit, the everyday word large and the wine
+   term small beneath it. A tile with a palate page (body, acidity, tannins, texture) opens it:
+   what the word means and how to notice it. */
+function DnaTasteTiles({t,nav}){
+  const axes=t.axes.filter(t.showAxis).filter(k=>t.avg[k]!=null);
+  if(!axes.length) return null;
+  const open=id=>{ Handoff.palateTrait.set(id); nav('palate-trait'); };
+  return <div data-testid="dna-taste-tiles" style={{display:'grid',gridTemplateColumns:`repeat(${Math.min(axes.length,4)},minmax(0,1fr))`,gap:6}}>
+    {axes.map(k=>{
+      const v=Math.max(0,Math.min(1,t.avg[k])), R=21, circ=2*Math.PI*R, A=WineDNA.AXES[k];
+      const word=WineDNA.everyday(k,t.avg[k]), page=PALATE_TRAITS.includes(k);
+      const col=SKETCH_TRAIT[k]||t.col, ring=k==='body'?'#C9A86A':col;
+      return <div key={k} role={page?'button':undefined} tabIndex={page?0:undefined} data-trait={k}
+        onClick={page?()=>open(k):undefined} onKeyDown={page?(e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); open(k); } }):undefined}
+        aria-label={`${A.name}: ${word}.${page?' What this means.':''}`}
+        style={{background:'#FBF8F3',border:`1px solid ${C.line}`,borderRadius:12,padding:'8px 4px 7px',display:'flex',flexDirection:'column',alignItems:'center',gap:3,cursor:page?'pointer':'default',minWidth:0}}>
+        <svg width="50" height="50" viewBox="-25 -25 50 50" aria-hidden="true" style={{overflow:'visible'}}>
+          <circle r={R} fill="none" stroke={SKETCH_PENCIL} strokeWidth="2.5" strokeDasharray="1 4" strokeLinecap="round"/>
+          <circle r={R} fill="none" stroke={ring} strokeWidth="4" strokeLinecap="round" strokeDasharray={circ} strokeDashoffset={circ*(1-v)} transform="rotate(-90)"/>
+          {SKETCH_TRAIT[k]?<g transform="scale(0.62)"><SketchTraitIcon id={k}/></g>
+            :<text textAnchor="middle" y="5" style={{fontSize:'15px',fontWeight:800,fill:t.col,fontFamily:C.P}}>{A.name.charAt(0)}</text>}
+        </svg>
+        <div style={{fontSize:14,fontWeight:800,color:C.ink,fontFamily:C.P,lineHeight:1.15,textAlign:'center',overflowWrap:'anywhere'}}>{word}</div>
+        <div style={{fontSize:12,color:C.mid,fontFamily:C.P,lineHeight:1.1}}>{A.name}</div>
+      </div>;
+    })}
+  </div>;
+}
+/* Their top flavour families, as pills in the type's colour. */
+function DnaFlavourPills({t}){
+  const cl=(t.noteClusters||[]).slice(0,3);
+  if(t.wines.length<2||!cl.length) return null;
+  return <div data-testid="dna-flavours" style={{display:'flex',alignItems:'center',gap:6,flexWrap:'wrap'}}>
+    <span style={{fontSize:13,color:C.mid,fontFamily:C.P}}>Flavours you go for</span>
+    {cl.map(c=><span key={c.name} style={{padding:'4px 11px',borderRadius:20,background:`${t.col}12`,border:`1px solid ${t.col}30`,fontSize:13,fontWeight:700,color:t.col,fontFamily:C.P}}>{c.name}</span>)}
+  </div>;
+}
+/* What lifts and holds back their scores (WineDNA.loves), as two short columns: the thing, with a
+   flag or icon, and its points against their usual score. */
+function DnaLoveAvoid({t}){
+  const L=t.loves; if(!L||!L.ready||(!L.up.length&&!L.down.length)) return null;
+  const icon={Grape:'grape',Region:'globe',Country:'globe',Producer:'wine',Price:'cart',Age:'bookmark'};
+  const row=(x,good)=><div key={x.kind+x.name} style={{display:'flex',alignItems:'center',gap:6,minWidth:0}}>
+    {x.kind==='Region'?<Flag region={x.name} size={14}/>:<Icon n={icon[x.kind]||'wine'} sz={13} col={C.mid}/>}
+    <span style={{flex:1,minWidth:0,fontSize:13,color:C.ink2,fontFamily:C.P,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{x.name}</span>
+    <span style={{fontSize:13,fontWeight:800,color:good?C.green:'#B04A3A',fontFamily:C.P}}>{good?'+':'−'}{Math.abs(Math.round(x.lift))||1}</span>
+  </div>;
+  return <div data-testid="dna-love-avoid" style={{display:'grid',gridTemplateColumns:'minmax(0,1fr) minmax(0,1fr)',gap:12}}>
+    <div style={{display:'flex',flexDirection:'column',gap:5}}>
+      <div style={{fontSize:12,fontWeight:700,color:C.green,fontFamily:C.P,letterSpacing:'0.06em',textTransform:'uppercase'}}>Lifts your scores</div>
+      {L.up.slice(0,3).map(x=>row(x,true))}
+    </div>
+    <div style={{display:'flex',flexDirection:'column',gap:5}}>
+      <div style={{fontSize:12,fontWeight:700,color:'#B04A3A',fontFamily:C.P,letterSpacing:'0.06em',textTransform:'uppercase'}}>Holds them back</div>
+      {L.down.length?L.down.slice(0,3).map(x=>row(x,false)):<span style={{fontSize:13,color:C.mid,fontFamily:C.P}}>Nothing yet</span>}
+    </div>
+  </div>;
+}
+/* Optional reading folded under the portrait ("Read more"). */
+function DnaReadMore({label='Read more',children}){
+  const [open,setOpen]=React.useState(false);
+  return <div>
+    <div role="button" aria-expanded={open} onClick={()=>setOpen(o=>!o)} style={{fontSize:14,fontWeight:700,color:C.cr,fontFamily:C.P,cursor:'pointer'}}>{open?'Show less':label} {open?'↑':'→'}</div>
+    {open&&<div style={{marginTop:8}}>{children}</div>}
+  </div>;
+}
+
 /* ──────────────────────────────────────────────────
    WineDNA Screen — renders WineDNA.profile (pwa-winedna.js) for each wine type
 ────────────────────────────────────────────────── */
@@ -231,7 +300,9 @@ function WineDNAScreen({nav,back,showPro}){
   const [copied,setCopied]=React.useState(null);
   const [scriptLength,setScriptLength]=React.useState(Settings.scriptLength());
   const [collapsed,setCollapsed]=React.useState(()=>{
-    const def={love:false,taste:false,value:false,explore:false,flavour:false,journey:false,scripts:false,history:false};
+    // Below Everything (DetailLevel) the longer sections start folded to their one-line summary.
+    const fold=!DetailLevel.at('everything');
+    const def={love:false,taste:false,value:false,explore:false,flavour:false,journey:fold,knows:fold,scripts:fold,history:fold};
     try{
       const saved=Device.dnaCollapsed();
       if(saved) return {...def,...saved};
@@ -388,6 +459,7 @@ function WineDNAScreen({nav,back,showPro}){
   if(ready) return <ExploreReadyMoment type={ready} count={ExploreNext._typeWines(ready,allWines).length} onDone={seePicks}/>;
   /* Each section of the type's DNA once, laid out below: one column on a phone, in pairs side by
      side on an iPad (useWide), with How Well We Know You and Explore across the full width. */
+  const more=DetailLevel.at('more'), all=DetailLevel.at('everything');
   const S={
     written:<>
         {/* ── Written for you: unread Learn pieces about this type's bottles (ContentEngine.forType) ── */}
@@ -449,7 +521,20 @@ function WineDNAScreen({nav,back,showPro}){
           <DnaTasteCard t={t} tLabel={tLabel}/>
         )}
     </>,
-    value:<>
+    value:!all?<>
+        {/* At Simple and More, Value is one line: their best value so far (the full section at Everything). */}
+        {t.value&&t.value.bestValue[0]&&(()=>{ const b=t.value.bestValue[0]; return <Card style={{padding:'12px 14px'}}>
+          <div data-testid="dna-best-value" role="button" onClick={()=>openWine(b.wine)} style={{display:'flex',alignItems:'center',gap:10,cursor:'pointer'}}>
+            <div style={{width:34,height:34,borderRadius:10,background:C.greenBg,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><Icon n="star" sz={16} col={C.green}/></div>
+            <div style={{flex:1,minWidth:0}}>
+              <div style={{fontSize:12,fontWeight:700,color:C.mid,fontFamily:C.P,letterSpacing:'0.06em',textTransform:'uppercase'}}>Best value so far</div>
+              <div style={{fontSize:15,fontWeight:700,color:C.ink,fontFamily:C.P,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{b.wine.name}</div>
+            </div>
+            <span style={{fontSize:13,color:C.mid,fontFamily:C.P}}>{b.price}</span>
+            <span style={{fontSize:16,fontWeight:800,color:C.green,fontFamily:C.P}}>{b.wine.rating}</span>
+          </div>
+        </Card>; })()}
+    </>:<>
         {/* ── Value: price against score ── */}
         {t.value&&<CSH label="Value" cKey="value" collapsed={collapsed} toggle={toggle} summary={t.value.verdict?t.value.verdict.text:`Your best-value ${tLabel}, from ${t.value.n} scored bottles with prices.`}/>}
         {t.value&&!collapsed.value&&(
@@ -486,7 +571,7 @@ function WineDNAScreen({nav,back,showPro}){
         {t.explore.picks.length>0&&!collapsed.explore&&(
           <Card style={{padding:14}}>
             <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P,marginBottom:4}}>Explore Next</div>
-            <div style={{fontSize:15,color:C.mid,fontFamily:C.P,marginBottom:12,lineHeight:1.5}}>Styles that share your {tLabel} DNA but take you somewhere new. Tap one to learn what it's like and how to find it.</div>
+            {more?<div style={{fontSize:15,color:C.mid,fontFamily:C.P,marginBottom:12,lineHeight:1.5}}>Styles that share your {tLabel} DNA but take you somewhere new. Tap one to learn what it's like and how to find it.</div>:<div style={{fontSize:14,color:C.mid,fontFamily:C.P,marginBottom:10}}>Styles to try next, picked from your {tLabel}.</div>}
             <div style={{display:'flex',flexDirection:'column',gap:10}}>
               {t.explore.picks.map((p,i)=>(
                 <div key={p.style.id}
@@ -500,7 +585,7 @@ function WineDNAScreen({nav,back,showPro}){
                     {p.shares&&<span style={{fontSize:12,fontWeight:600,color:C.green,background:C.greenBg,border:`1px solid ${C.green}30`,borderRadius:20,padding:'2px 9px',fontFamily:C.P}}>Shares: {p.shares}</span>}
                     <span style={{fontSize:12,fontWeight:600,color:t.col,background:`${t.col}10`,border:`1px solid ${t.col}30`,borderRadius:20,padding:'2px 9px',fontFamily:C.P}}>New: {p.style.adds}</span>
                   </div>
-                  <div style={{fontSize:15,color:C.ink2,fontFamily:C.P,lineHeight:1.55,textWrap:'pretty',marginBottom:6}}>{p.why}</div>
+                  {more&&<div style={{fontSize:15,color:C.ink2,fontFamily:C.P,lineHeight:1.55,textWrap:'pretty',marginBottom:6}}>{p.why}</div>}
                   <div style={{fontSize:13,fontWeight:600,color:t.col,fontFamily:C.P}}>Learn about it & find a bottle →</div>
                 </div>
               ))}
@@ -686,8 +771,13 @@ function WineDNAScreen({nav,back,showPro}){
   };
   const cell=x=><div style={{display:'flex',flexDirection:'column',gap:12,minWidth:0}}>{x}</div>;
   // Which sections show for this type, so the iPad pairs only those (no empty half beside one).
-  const shown={written:ContentEngine.forType(t.key,allWines).length>0,knows:t.scored.length>0,house:t.house.length>0,taste:t.wines.length>0,value:!!t.value,
-    explore:t.explore.picks.length>0,flavour:t.wines.length>=2&&t.noteClusters.length>0,journey:t.journey.length>=2,scripts:t.wines.length>0,history:true};
+  // How much they see (DetailLevel): Simple is the useful rows (House Wines, Explore Next, the
+  // script, History) and a line on their best value; More adds Journey and How Well We Know You;
+  // Everything the full Value, the style bars and Flavour Signatures.
+  const shown={written:ContentEngine.forType(t.key,allWines).length>0,knows:more&&t.scored.length>0,house:t.house.length>0,taste:all&&t.wines.length>0,
+    value:all?!!t.value:!!(t.value&&t.value.bestValue.length),
+    explore:t.explore.picks.length>0,flavour:all&&t.wines.length>=2&&t.noteClusters.length>0,journey:more&&t.journey.length>=2,scripts:t.wines.length>0,history:true};
+  Object.keys(S).forEach(k=>{ if(!shown[k]) S[k]=null; });
   const FULL={knows:1,explore:1};
   const tablet=[];
   { let half=null; const flush=()=>{ if(half){ tablet.push(<React.Fragment key={half}>{S[half]}</React.Fragment>); half=null; } };
@@ -753,8 +843,12 @@ function WineDNAScreen({nav,back,showPro}){
             ):(
               <>
                 <DnaTitle t={t} basisLine={basisLine}/>
-
-                {/* Written summary (Claude, from computed facts only) */}
+                {/* The portrait (DetailLevel): pictures first, the written summary one tap away. */}
+                <DnaTasteTiles t={t} nav={nav}/>
+                <DnaFacts t={t} chips={chips} conf={conf}/>
+                <DnaFlavourPills t={t}/>
+                {DetailLevel.at('everything')&&<DnaLoveAvoid t={t}/>}
+                {(genSummaries[t.key]||generatingSummary===t.key)&&<DnaReadMore label="Read your WineDNA in words">
                 {generatingSummary===t.key&&!genSummaries[t.key]?(
                   <div style={{display:'flex',alignItems:'center',gap:8}}>
                     <div style={{width:14,height:14,borderRadius:7,border:'2px solid rgba(0,0,0,0.08)',borderTopColor:t.col,animation:'dnaSpin .8s linear infinite',flexShrink:0}}/>
@@ -780,14 +874,17 @@ function WineDNAScreen({nav,back,showPro}){
                     </div>
                   );
                 })()}
-
-                <DnaFacts t={t} chips={chips} conf={conf}/>
+                </DnaReadMore>}
               </>
             )}
           </div>
         </Card>
 
         {wide?<>{tablet}</>:<>{S.written}{S.knows}{S.house}{S.taste}{S.value}{S.explore}{S.flavour}{S.journey}{S.scripts}{S.history}</>}
+
+        {!DetailLevel.at('everything')&&<div data-testid="dna-more-later" style={{fontSize:13,color:C.mid,fontFamily:C.P,lineHeight:1.5,textAlign:'center',padding:'2px 8px'}}>
+          More of your WineDNA appears here as you learn. <span role="button" onClick={()=>DetailLevel.setShowAll(true)} style={{color:C.cr,fontWeight:700,cursor:'pointer'}}>Show all details</span>
+        </div>}
 
         {/* ── Data Backup ── */}
         <DataBackupCard padding={14}/>

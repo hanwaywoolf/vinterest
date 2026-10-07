@@ -26,6 +26,17 @@ const WineDNA = {
   // One scale for every label on the tab (bars, chips, personality, Explore Next).
   HIGH:0.67, LOW:0.40,
   level(v){ return v==null?null:v>=this.HIGH?'high':v<=this.LOW?'low':'mid'; },
+  /* The everyday word for where a trait sits, for the taste tiles at the top of WineDNA: what a
+     casual drinker would say ("Rich", "Mouth-watering"), with the wine term shown small beneath. */
+  EVERYDAY:{
+    body:{low:'Light',mid:'Rounded',high:'Rich'},
+    tannins:{low:'Silky',mid:'Gentle grip',high:'Grippy'},
+    acidity:{low:'Mellow',mid:'Fresh',high:'Mouth-watering'},
+    sweetness:{low:'Dry',mid:'Off-dry',high:'Sweet'},
+    texture:{low:'Crisp',mid:'Smooth',high:'Creamy'},
+    effervescence:{low:'Gentle',mid:'Lively',high:'Vigorous'},
+  },
+  everyday(axis,v){ const l=this.level(v); return l&&this.EVERYDAY[axis]?this.EVERYDAY[axis][l]:null; },
   AXES:{
     body:         {name:'Body',         low:'Light',          mid:'Medium',        high:'Full',          lowAdj:'lighter',        highAdj:'fuller'},
     tannins:      {name:'Tannins',      low:'Silky',          mid:'Medium',        high:'Grippy',        lowAdj:'softer-tannin',  highAdj:'firmer-tannin'},
