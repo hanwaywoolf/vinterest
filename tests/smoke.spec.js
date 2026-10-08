@@ -59,7 +59,8 @@ test('Explore Next is ready: shown once when the third red arrives, then opens t
   await page.goto(`${BASE}/#home`);
   const root = page.locator('#root');
   await expect(root).toContainText('Recently scanned');
-  expect(await page.evaluate(() => Flags.exploreReadySeen())).toEqual([]);
+  // Written just after the first draw (ExploreNext.noteReady), so a slower engine needs a moment.
+  await expect.poll(() => page.evaluate(() => Flags.exploreReadySeen())).toEqual([]);
   await page.evaluate((w) => WineHistory.save([...WineHistory.getAll(), w]), RED(3));
   await page.goto(`${BASE}/?a=1#profile`);
   await expect(root).toContainText('Explore Next is ready for your reds.');

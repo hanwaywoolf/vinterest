@@ -114,11 +114,14 @@ function MatchRing({match,size=96}){
 
 /* TasteMatch's reasons: one line each, with a dot for whether it counts for or against. A price
    note (TasteMatch.priceNote) follows them, marked apart: it's said, but it never moves the match. */
-function MatchReasons({match,col,showSummary=true,priceNote}){
+/* brief (the scan result below More, DetailLevel): the first reason for it and the first against,
+   without the summary. */
+function MatchReasons({match,col,showSummary=true,priceNote,brief=false}){
   if(!match) return null;
-  return <div style={{display:'flex',flexDirection:'column',gap:8}}>
-    {showSummary&&<div style={{fontSize:15,color:col||C.ink2,fontFamily:C.P,lineHeight:1.55}}>{match.summary}</div>}
-    {match.reasons.map((r,i)=>(
+  const reasons=brief?[match.reasons.find(r=>r.tone==='good'),match.reasons.find(r=>r.tone==='bad')||match.reasons.find(r=>r.tone==='neutral')].filter(Boolean):match.reasons;
+  return <div data-brief={brief?'1':undefined} style={{display:'flex',flexDirection:'column',gap:8}}>
+    {showSummary&&!brief&&<div style={{fontSize:15,color:col||C.ink2,fontFamily:C.P,lineHeight:1.55}}>{match.summary}</div>}
+    {reasons.map((r,i)=>(
       <div key={i} style={{display:'flex',gap:9,alignItems:'flex-start',fontSize:15,lineHeight:1.5}}>
         <span style={{height:'1.5em',display:'flex',alignItems:'center',flexShrink:0}}><span style={{width:8,height:8,borderRadius:4,background:_TONE_COL[r.tone]}}/></span>
         <span style={{color:C.ink2,fontFamily:C.P}}>{r.text}</span>
@@ -407,8 +410,9 @@ function ScanResult({wine,match,curr,scanData,existingRating,nav,showPro,view,se
       {/* Too early for a match: show how close it is and what it unlocks, not just a dash. */}
       {match&&match.verdict==='early'&&<div style={{marginTop:14}}><MatchComingSoon wine={wine} compact/></div>}
       {match&&(match.reasons.length>0||match.expected!=null)&&<div style={{marginTop:14,paddingTop:12,borderTop:`1px solid ${C.line}`}}>
-        <MatchReasons match={match} showSummary={match.expected!=null} priceNote={TasteMatch.priceNote(wine,list||shop,WineHistory.getAll(),curr)}/>
-        <MatchBreakdown match={match}/>
+        {/* Below More (DetailLevel): the top reason either way; the rest and "Why N%?" come with More. */}
+        <MatchReasons match={match} showSummary={match.expected!=null} brief={!DetailLevel.at('more')} priceNote={TasteMatch.priceNote(wine,list||shop,WineHistory.getAll(),curr)}/>
+        {DetailLevel.at('more')&&<MatchBreakdown match={match}/>}
       </div>}
     </Card>
 
@@ -537,14 +541,18 @@ function MatchComingSoon({wine,compact}){
   </div>;
 }
 
-/* renders the body of one card — always at full detail; there is no separate expand/collapse mode, everything ships on the main screen. */
+/* Renders the body of one card. From More (DetailLevel) everything shows; below it each card
+   opens on its picture and main line, and the rest (the reasons, the regional detail, more lines
+   to say, the price note) waits behind "More" on that card. */
 function CardFace({card,ctx}){
-  const expanded=true;
+  const [expanded,setExpanded]=React.useState(()=>DetailLevel.at('more'));
   const {wine,gen,loading,match,curr,scanData}=ctx;
   const a=card.accent;
   const P=C.P;
-  const H=({children})=><div style={{fontSize:expanded?24:20,fontWeight:800,color:C.ink,fontFamily:P,lineHeight:1.2,letterSpacing:'-0.01em'}}>{children}</div>;
-  const Body=({children,big})=><div style={{fontSize:big?(expanded?20:18):(expanded?17:16),color:C.ink2,fontFamily:P,lineHeight:1.55}}>{children}</div>;
+  const H=({children})=><div style={{fontSize:24,fontWeight:800,color:C.ink,fontFamily:P,lineHeight:1.2,letterSpacing:'-0.01em'}}>{children}</div>;
+  const Body=({children,big})=><div style={{fontSize:big?20:17,color:C.ink2,fontFamily:P,lineHeight:1.55}}>{children}</div>;
+  const More=()=>expanded?null:<div role="button" data-card-more onClick={e=>{ e.stopPropagation(); setExpanded(true); }}
+    style={{alignSelf:'flex-start',fontSize:15,fontWeight:700,color:a||C.cr,fontFamily:P,cursor:'pointer',padding:'2px 0'}}>More →</div>;
 
   // The first scan: what each card will do for them once they've scored a few bottles.
   const note=ctx.firstScan?_FIRST_NOTES[card.kind==='gen'?card.field:card.kind]:null;
@@ -563,8 +571,9 @@ function CardFace({card,ctx}){
       {match&&match.expected!=null&&<div style={{fontSize:16,color:C.mid,fontFamily:P,marginTop:-6}}>Likely {match.expectedLabel} for you</div>}
       <div style={{width:'100%',textAlign:'left',padding:'12px 14px',borderRadius:12,background:C.offWhite,border:`1px solid ${C.line}`}}>
         <div style={{fontSize:13,fontWeight:700,color:C.mid,fontFamily:P,letterSpacing:'0.06em',textTransform:'uppercase',marginBottom:6}}>How we got this</div>
-        <MatchReasons match={match} col={C.ink2}/>
+        <MatchReasons match={match} col={C.ink2} brief={!expanded}/>
       </div>
+      {match&&match.reasons.length>2&&<More/>}
     </div>;
   }
 
@@ -574,6 +583,7 @@ function CardFace({card,ctx}){
       <H>{card.field==='fact'?'A little story':card.field==='fit'?(match&&match.tone==='good'?'Your kind of bottle':match&&match.tone==='bad'?'Not your usual style':'What might win you over'):'One thing to know'}</H>
       <Body big>{loading&&!val?<ScanShimmer col={a}/>:(val||'—')}</Body>
       {expanded&&card.field==='fit'&&match&&match.reasons.length>0&&<div style={{padding:'12px 14px',borderRadius:12,background:C.offWhite,border:`1px solid ${C.line}`}}><MatchReasons match={match} showSummary={false}/></div>}
+      {!expanded&&(card.field==='caution'||(card.field==='fit'&&match&&match.reasons.length>0))&&<More/>}
       {expanded&&card.field==='caution'&&<div style={{fontSize:15,color:C.mid,fontFamily:C.P,lineHeight:1.55}}>{match&&match.tone==='good'?'Just a tip to get the most out of it, not a reason to hesitate.':'Worth knowing so nothing catches you off guard.'}</div>}
       <Note/>
     </div>;
@@ -588,7 +598,8 @@ function CardFace({card,ctx}){
         ))}
       </div>
       <Body big>{loading&&!(gen&&gen.origin)?<ScanShimmer col={a}/>:((gen&&gen.origin)||`${wine.region?wine.region+', ':''}${wine.country} — a classic home for ${(wine.grapes&&wine.grapes[0])||'this style'}.`)}</Body>
-      <div style={{padding:'12px 14px',borderRadius:12,background:card.soft,border:`1px solid ${a}22`,display:'flex',flexDirection:'column',gap:10}}>
+      <More/>
+      {expanded&&<div style={{padding:'12px 14px',borderRadius:12,background:card.soft,border:`1px solid ${a}22`,display:'flex',flexDirection:'column',gap:10}}>
         <div>
           <div style={{fontSize:12,fontWeight:700,color:a,fontFamily:C.P,letterSpacing:'0.06em',textTransform:'uppercase',marginBottom:3}}>The regional signature</div>
           <div style={{fontSize:15.5,color:C.ink2,fontFamily:C.P,lineHeight:1.45}}>{(gen&&gen.region_style)||`Wines from ${wine.region||wine.country} are prized for their sense of place.`}</div>
@@ -597,7 +608,7 @@ function CardFace({card,ctx}){
           <div style={{fontSize:12,fontWeight:700,color:a,fontFamily:C.P,letterSpacing:'0.06em',textTransform:'uppercase',marginBottom:3}}>{wine.producer||'The winemaker'}</div>
           <div style={{fontSize:15.5,color:C.ink2,fontFamily:C.P,lineHeight:1.45}}>{loading&&!(gen&&gen.estate)?<ScanShimmer col={a}/>:((gen&&gen.estate)||`A producer working in the traditional style of ${wine.region||wine.country}.`)}</div>
         </div>
-      </div>
+      </div>}
       <Note/>
     </div>;
   }
@@ -615,14 +626,15 @@ function CardFace({card,ctx}){
     return <div style={{display:'flex',flexDirection:'column',gap:14}}>
       <H>Say it out loud</H>
       <div style={{display:'flex',flexDirection:'column',gap:10}}>
-        {lines.slice(0,3).map((l,i)=>(
+        {lines.slice(0,expanded?3:1).map((l,i)=>(
           <div key={i} style={{display:'flex',gap:10,padding:'11px 13px',borderRadius:13,background:card.soft,border:`1px solid ${a}22`}}>
             <span style={{fontSize:22,color:a,fontFamily:'Georgia,serif',lineHeight:1,marginTop:-2}}>“</span>
             <span style={{fontSize:15.5,color:C.ink,fontFamily:C.P,lineHeight:1.5,fontWeight:500}}>{loading&&!(gen&&gen.talk)?'…':l}</span>
           </div>
         ))}
       </div>
-      {gen&&gen.fact2&&<div style={{padding:'12px 14px',borderRadius:12,background:C.offWhite,border:`1px solid ${C.line}`}}>
+      {(lines.length>1||(gen&&gen.fact2))&&<More/>}
+      {expanded&&gen&&gen.fact2&&<div style={{padding:'12px 14px',borderRadius:12,background:C.offWhite,border:`1px solid ${C.line}`}}>
         <div style={{fontSize:13,fontWeight:700,color:a,fontFamily:C.P,letterSpacing:'0.06em',textTransform:'uppercase',marginBottom:5}}>Drop this fact</div>
         <div style={{fontSize:15,color:C.ink2,fontFamily:C.P,lineHeight:1.55}}>{gen.fact2}</div>
       </div>}
@@ -632,6 +644,7 @@ function CardFace({card,ctx}){
 
   if(card.kind==='value') return <div style={{display:'flex',flexDirection:'column',gap:14}}>
     <ValueFace wine={wine} curr={curr} scanData={scanData} accent={a} soft={card.soft} expanded={expanded}/>
+    <More/>
     <Note/>
   </div>;
   if(card.kind==='finish') return null; // rendered specially by deck (needs actions)

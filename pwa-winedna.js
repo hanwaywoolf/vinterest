@@ -26,6 +26,88 @@ const WineDNA = {
   // One scale for every label on the tab (bars, chips, personality, Explore Next).
   HIGH:0.67, LOW:0.40,
   level(v){ return v==null?null:v>=this.HIGH?'high':v<=this.LOW?'low':'mid'; },
+  /* The everyday word for where a trait sits, for the taste tiles at the top of WineDNA: what a
+     casual drinker would say ("Rich", "Mouth-watering"), with the wine term shown small beneath. */
+  EVERYDAY:{
+    body:{low:'Light',mid:'Rounded',high:'Rich'},
+    tannins:{low:'Silky',mid:'Gentle grip',high:'Grippy'},
+    acidity:{low:'Mellow',mid:'Fresh',high:'Mouth-watering'},
+    sweetness:{low:'Dry',mid:'Off-dry',high:'Sweet'},
+    texture:{low:'Crisp',mid:'Smooth',high:'Creamy'},
+    effervescence:{low:'Gentle',mid:'Lively',high:'Vigorous'},
+  },
+  everyday(axis,v){ const l=this.level(v); return l&&this.EVERYDAY[axis]?this.EVERYDAY[axis][l]:null; },
+  /* What sweetness and bubbles are, for WineDNA's trait page (body, acidity, tannins and texture
+     share their wording with the palate pages, Palate.TRAITS). Fixed, checked text. */
+  TRAIT_ABOUT:{
+    sweetness:{what:'Sweetness is how much sugar is left in the wine after it has fermented.',
+      notice:['Sweetness shows on the tip of your tongue, first thing.','Fruity is not the same as sweet: a ripe, fruity wine can still be completely dry.','High acidity hides sugar, so a sweet wine can still taste fresh.'],
+      low:'Most reds, Chablis, Brut Champagne', high:'Sauternes, Moscato, Port', tip:'On a label, Brut, Sec and Trocken mean dry; Demi-sec, Doux and Süss mean sweeter.'},
+    effervescence:{what:'Bubbles are the fizz in a sparkling wine: how fine, how many and how lively they feel.',
+      notice:['Fine, small bubbles feel creamy; big ones feel frothy and sharp.','Wines made the traditional way (Champagne, Cava) tend to have finer, longer-lasting bubbles.','Watch the glass: a steady stream of tiny bubbles is a good sign.'],
+      low:'Crémant, Moscato d\'Asti, Pét-Nat', high:'Champagne, Cava, Franciacorta', tip:'Serve it well chilled: warm sparkling wine loses its bubbles fast and tastes flat.'},
+  },
+  /* WineDNA's page for one trait of one wine type (DnaTraitScreen): where the wines they choose
+     sit on it, where their 90+ wines sit, every bottle on the scale and what the word means. It's
+     about their wines (Claude's label estimates), never their tasting: how well they taste a trait
+     is Mastery's palate page (PalateTraitScreen), from their Blind Calls. */
+  traitView(typeKey,axis,wines){
+    const A=this.AXES[axis]; if(!A) return null;
+    const ws=(wines||[]).filter(w=>this._t(w.type)===typeKey&&this.chosen(w));
+    const at=ws.map(w=>({wine:w,v:this.axisValue(w,axis),rating:w.rating||0})).filter(x=>typeof x.v==='number').sort((a,b)=>a.v-b.v);
+    if(!at.length) return null;
+    const avg=this._mean(at.map(x=>x.v));
+    const lovedWs=at.filter(x=>x.rating>=ParkerScale.LOVED), loved=lovedWs.length>=3?this._mean(lovedWs.map(x=>x.v)):null;
+    const L=(this.NOUNS[typeKey]||['wine','wines'])[1];
+    const lean=loved==null?null:loved-avg>=0.08?`Your 90+ ${L} sit ${A.highAdj} than the ${L} you choose overall.`
+      :avg-loved>=0.08?`Your 90+ ${L} sit ${A.lowAdj} than the ${L} you choose overall.`:`Your 90+ ${L} sit about where the rest of your ${L} do.`;
+    const P=typeof Palate!=='undefined'&&Palate.TRAITS[axis];
+    const about=P?{what:P.what,notice:P.notice,low:P.low,high:P.high,tip:P.tip}:(this.TRAIT_ABOUT[axis]||null);
+    // Five steps along the scale, each with its bottles (best first) and their average score, so
+    // a page reads the same with five wines or five hundred. The verdict names the step their
+    // scores are highest in, against the lowest, once two steps have two scored bottles each.
+    const words=this.STEPS[axis]||[A.low,'','Medium','',A.high];
+    const steps=words.map((label,i)=>{ const b=at.filter(x=>Math.min(4,Math.floor(x.v*5))===i).sort((p,q)=>q.rating-p.rating);
+      const sc=b.filter(x=>x.rating>0); return {i,label,n:b.length,avg:sc.length?Math.round(this._mean(sc.map(x=>x.rating))):null,scored:sc.length,bottles:b}; });
+    const rated=steps.filter(s=>s.scored>=2), most=[...steps].sort((a,b)=>b.n-a.n)[0];
+    const hi=[...rated].sort((a,b)=>b.avg-a.avg)[0], lo=[...rated].sort((a,b)=>a.avg-b.avg)[0];
+    const verdict=rated.length>=2&&hi.avg>lo.avg?`Your best scores are in ${hi.label} (average ${hi.avg}), your lowest in ${lo.label} (average ${lo.avg}).`
+      :`Most of your ${L} sit in ${most.label}.`;
+    return {axis,name:A.name,lowWord:A.low,highWord:A.high,word:this.everyday(axis,avg),avg,loved,lean,bottles:at,n:at.length,about,steps,verdict,start:most.i};
+  },
+  /* The five steps of each trait's scale on its WineDNA page, low to high. */
+  STEPS:{
+    body:['Light','Light-medium','Medium','Medium-full','Full'],
+    tannins:['Silky','Soft','Medium','Firm','Grippy'],
+    acidity:['Mellow','Soft','Fresh','Bright','Zingy'],
+    sweetness:['Bone dry','Dry','Off-dry','Medium-sweet','Sweet'],
+    texture:['Crisp','Clean','Smooth','Round','Creamy'],
+    effervescence:['Gentle','Soft','Lively','Brisk','Vigorous'],
+  },
+  /* Price bands for Value, in the user's currency: [from, to) with the top band open. */
+  PRICE_BANDS:{GBP:[0,15,25,40,60],EUR:[0,15,25,40,60],USD:[0,20,35,50,80],CAD:[0,20,35,55,80],AUD:[0,20,35,55,80],NZD:[0,20,35,55,80]},
+  /* Where their bottles of a type come from (WineDNA's History): every region, most bottles first,
+     with their average score, and up to three knowledge-base regions they haven't had that grow the
+     grapes they choose most (`next`), each with the grape that links it. */
+  places(p){
+    const by={};
+    p.chosen.forEach(w=>{ const r=this.region(w); if(!r) return; const e=by[r]=by[r]||{name:r,n:0,scores:[]}; e.n++; if(w.rating>0) e.scores.push(w.rating); });
+    const list=Object.values(by).map(e=>({name:e.name,n:e.n,avg:e.scores.length?Math.round(this._mean(e.scores)):null})).sort((a,b)=>b.n-a.n||(b.avg||0)-(a.avg||0));
+    const had=new Set(list.map(x=>x.name)), grapes=(p.topGrapes||[]).slice(0,3);
+    const next=[];
+    Object.entries(KNOWLEDGE.regions||{}).forEach(([name,r])=>{
+      if(had.has(name)) return;
+      const kg=(r.keyGrapes||[]).map(g=>this.grape(String(g).split(' (')[0]));
+      const g=grapes.find(x=>kg.includes(x)); if(!g) return;
+      next.push({name,country:r.country,grape:g,rank:grapes.indexOf(g)});
+    });
+    // One per grape first (their top grape's first region, then the next grape's…), so three
+    // suggestions aren't all the same grape.
+    next.sort((a,b)=>a.rank-b.rank||a.name.localeCompare(b.name));
+    const picked=[], used=new Set();
+    for(let round=0;picked.length<3&&round<3;round++) next.forEach(x=>{ if(picked.length<3&&!picked.includes(x)&&(round>0||!used.has(x.grape))){ picked.push(x); used.add(x.grape); } });
+    return {list,countries:new Set(p.chosen.map(w=>w.country).filter(Boolean)).size,next:picked};
+  },
   AXES:{
     body:         {name:'Body',         low:'Light',          mid:'Medium',        high:'Full',          lowAdj:'lighter',        highAdj:'fuller'},
     tannins:      {name:'Tannins',      low:'Silky',          mid:'Medium',        high:'Grippy',        lowAdj:'softer-tannin',  highAdj:'firmer-tannin'},
@@ -212,6 +294,7 @@ const WineDNA = {
     p.blindCall=this.blindCall(wines);
     p.confidence=this.confidence(p);
     p.journey=this.journey(wines);
+    p.places=this.places(p);
     p.axisNotes=Object.fromEntries(axes.map(k=>[k,this.axisNote(p,k)]));
     return p;
   },
@@ -450,7 +533,16 @@ const WineDNA = {
             ?{kind:'pays',text:`Your Outstanding ${L} cost more on average ${cmp}, and higher prices have tended to mean higher scores for you. Stepping up can pay off, especially within your sweet spot.`}
             :{kind:'loose',text:`Your Outstanding ${L} cost a little more on average ${cmp}, but across all your ${L} price and score barely move together. A higher price hasn't reliably meant a better bottle for you.`};
     }
-    return {n:ws.length,paid:ws.filter(x=>x.w.price_paid&&x.w.price_paid.amount>0).length,code:rc.code,sweetSpot:hi.length>=2?SommelierScript.budget(hi.map(x=>x.w),rc):null,bestValue,verdict};
+    // Their average score in each price band, the bottles in it best first, and the band their
+    // scores are highest in (from two bottles): the picture Value opens on.
+    const cuts=this.PRICE_BANDS[rc.code]||this.PRICE_BANDS.USD;
+    const bands=cuts.map((lo,i)=>{ const hiP=cuts[i+1]; const b=ws.filter(x=>x.price>=lo&&(hiP==null||x.price<hiP)).sort((p,q)=>q.w.rating-p.w.rating);
+      return {label:lo===0?`Under ${money(hiP)}`:hiP==null?`${money(lo)} +`:`${money(lo)} – ${money(hiP)}`,n:b.length,avg:b.length?Math.round(this._mean(b.map(x=>x.w.rating))):null,
+        bottles:b.map(x=>({wine:x.w,price:money(x.price),paid:!!(x.w.price_paid&&x.w.price_paid.amount>0)}))}; }).filter(b=>b.n>0);
+    const top=bands.filter(b=>b.n>=2).sort((a,b)=>b.avg-a.avg)[0]||null;
+    const dearest=bands[bands.length-1];
+    const bandVerdict=top?`Your best scores come from ${top.label} (average ${top.avg})${dearest&&dearest!==top&&dearest.avg!=null&&dearest.avg<=top.avg?': spending more hasn\'t bought you better':''}.`:null;
+    return {n:ws.length,paid:ws.filter(x=>x.w.price_paid&&x.w.price_paid.amount>0).length,code:rc.code,sweetSpot:hi.length>=2?SommelierScript.budget(hi.map(x=>x.w),rc):null,bestValue,verdict,bands,topBand:top?top.label:null,bandVerdict};
   },
 
   // Blind Call guesses made after scanning these wines (accuracy 0–1 per wine).

@@ -106,7 +106,7 @@ function OnboardTaste({step,total,onBack,onDone,scanned}){
       opts:TYPE_OPTS.map(o=>({id:o.id,label:o.label,col:o.col}))},
     {key:'budget',title:'What do you usually spend on a bottle?',sub:'Until you\'ve scored a few wines, this is the price range we suggest around.',
       opts:UserPrefs.budgetOptions().map(o=>({id:o.id,label:o.label,d:o.note}))},
-    {key:'experience',title:'How well do you know wine?',sub:'This sets where Learn starts and how deep it goes.',
+    {key:'experience',title:'How well do you know wine?',sub:'This sets how much detail Vinterest shows you, where Learn starts and how deep it goes. More opens as you learn, and you can change it on Profile.',
       opts:UserPrefs.EXPERIENCE.map(o=>({id:o.id,label:o.label,d:o.note}))},
   ];
   const Q=QS[q];
@@ -115,7 +115,8 @@ function OnboardTaste({step,total,onBack,onDone,scanned}){
   function choose(id){
     setAnswers(a=>({...a,[Q.key]:Q.multi?(a[Q.key].includes(id)?a[Q.key].filter(x=>x!==id):[...a[Q.key],id]):id}));
   }
-  function saveAll(a){ Object.entries(a).forEach(([k,v])=>{ if(Array.isArray(v)?v.length:v) UserPrefs.set(k,v); }); }
+  // The experience answer was shown with what each level looks like, so no "detail" card later.
+  function saveAll(a){ Object.entries(a).forEach(([k,v])=>{ if(Array.isArray(v)?v.length:v) UserPrefs.set(k,v); }); DetailLevel.markIntro(); }
   function advance(){ if(q<QS.length-1) setQ(q+1); else { saveAll(answers); onDone(); } }
   const on=id=>Q.multi?sel.includes(id):sel===id;
   return(
@@ -142,10 +143,38 @@ function OnboardTaste({step,total,onBack,onDone,scanned}){
             </div>
           ))}
         </div>
+        {Q.key==='experience'&&sel&&<DetailPreview exp={sel}/>}
       </div>
       <OnboardFooter label={q<QS.length-1?'Continue':'Start exploring'} enabled={has} onClick={advance}/>
     </div>
   );
 }
 
-Object.assign(window,{OnboardSetup,OnboardTaste});
+/* What their experience answer means for what they'll see (DetailLevel): the top of WineDNA as it
+   will look (the sample user's taste tiles, labelled as an example, a picture, not a control), then what
+   each level adds, those beyond their starting level faded with "as you learn". */
+const _DETAIL_ADDS=[
+  {level:'simple',items:['Your taste in pictures','Favourites','The bottles you come back to','What to try next','What to say when ordering']},
+  {level:'more',items:['How your taste is changing','How well we can predict your scores','Every reason behind a match']},
+  {level:'everything',items:['Your best value','What lifts and holds back your scores','Flavour signatures']},
+];
+function DetailPreview({exp}){
+  const {t}=_dnaTab(), start=DetailLevel.base(exp);
+  return <div data-testid="detail-preview" data-level={DetailLevel.LEVELS[start]} style={{marginTop:18,padding:14,borderRadius:16,background:C.white,border:`1px solid ${C.line}`,display:'flex',flexDirection:'column',gap:10}}>
+    <div style={{fontSize:13,fontWeight:700,color:C.mid,fontFamily:C.P,letterSpacing:'0.08em',textTransform:'uppercase'}}>What you'll see</div>
+    <div inert="" aria-hidden="true" style={{pointerEvents:'none',display:'flex',flexDirection:'column',gap:8}}>
+      <DnaTasteTiles t={t} nav={()=>{}}/>
+      <div style={{fontSize:12,color:C.mid,fontFamily:C.P}}>An example: yours will be drawn from your own wines.</div>
+    </div>
+    <div style={{display:'flex',flexDirection:'column',gap:5,marginTop:2}}>
+      {_DETAIL_ADDS.filter((g,gi)=>gi<=start).flatMap(g=>g.items).map(it=><div key={it} style={{display:'flex',alignItems:'center',gap:8}}>
+        <Icon n="check" sz={13} col={C.green}/><span style={{fontSize:14,color:C.ink2,fontFamily:C.P}}>{it}</span></div>)}
+      {start<2&&<div style={{fontSize:12,fontWeight:700,color:C.mid,fontFamily:C.P,letterSpacing:'0.06em',textTransform:'uppercase',marginTop:6}}>Opens as you learn</div>}
+      {_DETAIL_ADDS.filter((g,gi)=>gi>start).flatMap(g=>g.items).map(it=><div key={it} style={{display:'flex',alignItems:'center',gap:8,opacity:0.5}}>
+        <span style={{width:13,display:'flex',justifyContent:'center',flexShrink:0}}><span style={{width:6,height:6,borderRadius:3,background:C.mid}}/></span>
+        <span style={{fontSize:14,color:C.ink2,fontFamily:C.P}}>{it}</span></div>)}
+    </div>
+  </div>;
+}
+
+Object.assign(window,{OnboardSetup,OnboardTaste,DetailPreview});

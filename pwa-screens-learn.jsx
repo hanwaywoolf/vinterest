@@ -644,7 +644,7 @@ function PalateTraitScreen({nav,back}){
   const card={background:C.white,borderRadius:16,border:`1px solid ${C.line}`,padding:'14px 16px',display:'flex',flexDirection:'column',gap:8};
   const head=x=><div style={{fontSize:13,fontWeight:600,color:C.mid,letterSpacing:'0.08em',textTransform:'uppercase',fontFamily:C.P,marginTop:4}}>{x}</div>;
   if(!t) return <div style={{flex:1,padding:24,fontFamily:C.P,color:C.mid}}>That trait isn't here. <span role="button" onClick={back} style={{color:C.cr,fontWeight:700,cursor:'pointer'}}>Back</span></div>;
-  const R=44, circ=2*Math.PI*R, ring=t.id==='body'?'#C9A86A':SKETCH_TRAIT[t.id];
+  const R=44, circ=2*Math.PI*R, ring=SKETCH_TRAIT[t.id];
   const openWine=w=>{ Handoff.openWine({demo:false,wine:w,existingRating:w.rating||0}); nav('detail'); };
   const [lo,hi]=t.words;
   return(
