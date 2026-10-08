@@ -70,6 +70,11 @@ test('WineDNA at Simple: a portrait in pictures, the useful rows, a line on valu
   expect(await top('dna-trait-about')).toBeLessThan(await top('dna-trait-hero'));
   expect(await top('dna-trait-hero')).toBeLessThan(await top('dna-trait-steps'));
   await expect(page.getByTestId('dna-trait-about')).toContainText('How to notice it');
+  // A short explainer: the rest is folded behind "More about body", and the chart starts on the first screen.
+  await expect(page.getByTestId('dna-trait-about')).not.toContainText('Tip:');
+  expect(await top('dna-trait-steps')).toBeLessThan(page.viewportSize().height);
+  await page.getByTestId('dna-trait-about').getByText('More about body').click();
+  await expect(page.getByTestId('dna-trait-about')).toContainText('Tip:');
   const listed = async () => page.getByTestId('dna-trait-bottles').getByRole('button').filter({ hasNotText: /^Show (\d+ more|less)/ }).allInnerTexts();
   const first = await listed();
   expect(first.length).toBeGreaterThan(0);

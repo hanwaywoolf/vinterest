@@ -390,6 +390,7 @@ function DnaTraitScreen({nav,back}){
   const T=_TYPES.find(x=>x.key===h.type)||_TYPES[0];
   const tv=React.useMemo(()=>h.axis?WineDNA.traitView(T.key,h.axis,WineHistory.getAll()):null,[h.type,h.axis]);
   const [pick,setPick]=React.useState(null);
+  const [moreAbout,setMoreAbout]=React.useState(false);
   const card={background:C.white,borderRadius:16,border:`1px solid ${C.line}`,padding:'14px 16px',display:'flex',flexDirection:'column',gap:8};
   const head=x=><div style={{fontSize:13,fontWeight:600,color:C.mid,letterSpacing:'0.08em',textTransform:'uppercase',fontFamily:C.P,marginTop:4}}>{x}</div>;
   const L=T.label.toLowerCase(), col=_TYPE_COLORS[T.key]||C.cr;
@@ -407,19 +408,21 @@ function DnaTraitScreen({nav,back}){
         </div>
       </div>
       <div style={{flex:1,overflowY:'auto',padding:'16px 20px',display:'flex',flexDirection:'column',gap:12}}>
-        {/* What the word means and how to notice it come first, so the chart and bottles below read
-            in its terms. */}
-        {tv.about&&<div data-testid="dna-trait-about" style={{display:'flex',flexDirection:'column',gap:12}}>
-          {head(`What ${tv.name.toLowerCase()} is`)}
-          <div style={card}><span style={{fontSize:15,color:C.ink2,fontFamily:C.P,lineHeight:1.55}}>{tv.about.what}</span></div>
-          {head('How to notice it')}
-          <div style={card}>{tv.about.notice.map((n,i)=><div key={i} style={{display:'flex',gap:9,fontSize:15,color:C.ink2,fontFamily:C.P,lineHeight:1.5}}><span style={{color:col,fontWeight:800}}>•</span><span>{n}</span></div>)}</div>
-          {head('At either end')}
-          <div style={{...card,flexDirection:'row',gap:12}}>
-            <div style={{flex:1,minWidth:0}}><div style={{fontSize:13,fontWeight:700,color:C.mid,fontFamily:C.P}}>{tv.lowWord}</div><div style={{fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.45}}>{tv.about.low}</div></div>
-            <div style={{flex:1,minWidth:0}}><div style={{fontSize:13,fontWeight:700,color:C.mid,fontFamily:C.P}}>{tv.highWord}</div><div style={{fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.45}}>{tv.about.high}</div></div>
-          </div>
-          <div style={{...card,background:C.offWhite}}><span style={{fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.5}}><b>Tip:</b> {tv.about.tip}</span></div>
+        {/* A short explainer first, so their chart reads in its terms: what the word means and the
+            one best way to notice it, the rest folded behind "More about …" so the chart stays
+            near the top. */}
+        {tv.about&&<div data-testid="dna-trait-about" style={{...card,gap:6,padding:'12px 16px'}}>
+          <span style={{fontSize:15,color:C.ink,fontFamily:C.P,lineHeight:1.5}}>{tv.about.what}</span>
+          <span style={{fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.5}}><b style={{color:col}}>How to notice it:</b> {tv.about.notice[0]}</span>
+          <div role="button" aria-expanded={moreAbout} onClick={()=>setMoreAbout(o=>!o)} style={{fontSize:14,fontWeight:700,color:C.cr,fontFamily:C.P,cursor:'pointer',marginTop:2}}>{moreAbout?'Less':`More about ${tv.name.toLowerCase()}`} {moreAbout?'↑':'↓'}</div>
+          {moreAbout&&<div style={{display:'flex',flexDirection:'column',gap:10,marginTop:4}}>
+            {tv.about.notice.slice(1).map((n,i)=><div key={i} style={{display:'flex',gap:9,fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.5}}><span style={{color:col,fontWeight:800}}>•</span><span>{n}</span></div>)}
+            <div style={{display:'flex',gap:12}}>
+              <div style={{flex:1,minWidth:0}}><div style={{fontSize:13,fontWeight:700,color:C.mid,fontFamily:C.P}}>{tv.lowWord}</div><div style={{fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.45}}>{tv.about.low}</div></div>
+              <div style={{flex:1,minWidth:0}}><div style={{fontSize:13,fontWeight:700,color:C.mid,fontFamily:C.P}}>{tv.highWord}</div><div style={{fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.45}}>{tv.about.high}</div></div>
+            </div>
+            <span style={{fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.5}}><b>Tip:</b> {tv.about.tip}</span>
+          </div>}
         </div>}
 
         <div data-testid="dna-trait-hero" style={{...card,background:'#FBF8F3',flexDirection:'row',alignItems:'center',gap:14}}>
