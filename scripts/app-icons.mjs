@@ -22,26 +22,27 @@ const chunk = (type, data) => {
   return Buffer.concat([len, body, crc]);
 };
 /* RGBA pixels → an 8-bit RGB PNG (colour type 2: no alpha channel). */
-export function rgbPng(width, height, rgba) {
-  const raw = Buffer.alloc((width * 3 + 1) * height);
+export function rgbPng(width, height, rgba, { alpha = false } = {}) {
+  const n = alpha ? 4 : 3; // with alpha: colour type 6, 32-bit (what Google Play's listing icon wants)
+  const raw = Buffer.alloc((width * n + 1) * height);
   for (let y = 0; y < height; y++) {
-    raw[y * (width * 3 + 1)] = 0;
+    raw[y * (width * n + 1)] = 0;
     for (let x = 0; x < width; x++) {
-      const i = (y * width + x) * 4, o = y * (width * 3 + 1) + 1 + x * 3;
-      raw[o] = rgba[i]; raw[o + 1] = rgba[i + 1]; raw[o + 2] = rgba[i + 2];
+      const i = (y * width + x) * 4, o = y * (width * n + 1) + 1 + x * n;
+      for (let k = 0; k < n; k++) raw[o + k] = rgba[i + k];
     }
   }
   const ihdr = Buffer.alloc(13);
-  ihdr.writeUInt32BE(width, 0); ihdr.writeUInt32BE(height, 4); ihdr[8] = 8; ihdr[9] = 2;
+  ihdr.writeUInt32BE(width, 0); ihdr.writeUInt32BE(height, 4); ihdr[8] = 8; ihdr[9] = alpha ? 6 : 2;
   return Buffer.concat([Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]), chunk('IHDR', ihdr), chunk('IDAT', zlib.deflateSync(raw, { level: 9 })), chunk('IEND', Buffer.alloc(0))]);
 }
 
 /* Draws an SVG at size×size. With rgb, the pixels come back (base64, fast) and are written as an
    RGB PNG with no alpha channel (the icon); otherwise it's a plain screenshot (the launch screen). */
-async function render(browser, svgFile, size, outFile, { rgb = false, svg = null, height = size, alpha = false } = {}) {
+async function render(browser, svgFile, size, outFile, { rgb = false, rgba = false, svg = null, height = size, alpha = false } = {}) {
   const page = await browser.newPage({ viewport: { width: size, height } });
   svg = svg || fs.readFileSync(path.join(ROOT, svgFile), 'utf8');
-  if (!rgb) {
+  if (!rgb && !rgba) {
     await page.setContent(`<html><body style="margin:0;background:transparent">${svg.replace(/width="\d+" height="\d+"/, `width="${size}" height="${height}"`)}</body></html>`);
     await page.screenshot({ path: outFile, clip: { x: 0, y: 0, width: size, height }, omitBackground: alpha });
   } else {
@@ -54,7 +55,7 @@ async function render(browser, svgFile, size, outFile, { rgb = false, svg = null
       let s = ''; for (let i = 0; i < d.length; i += 0x8000) s += String.fromCharCode.apply(null, d.subarray(i, i + 0x8000));
       return btoa(s);
     }, { svg, size });
-    fs.writeFileSync(outFile, rgbPng(size, size, Buffer.from(b64, 'base64')));
+    fs.writeFileSync(outFile, rgbPng(size, size, Buffer.from(b64, 'base64'), { alpha: rgba }));
   }
   await page.close();
   console.log(`${path.relative(ROOT, outFile)} (${size}×${height}${rgb ? ', RGB' : ''})`);
@@ -94,6 +95,6 @@ if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(new URL(im
     await render(browser, null, h, path.join(OUT_ANDROID, `splash-land-${d}.png`), { svg: androidSplash(h, w), height: w });
   }
   // Google Play's store listing icon: 512×512, square (Play rounds it itself), a 32-bit PNG.
-  await render(browser, null, 512, path.join(OUT_ANDROID, 'play-icon-512.png'), { svg: ICON, alpha: true }); // Play wants 32-bit
+  await render(browser, null, 512, path.join(OUT_ANDROID, 'play-icon-512.png'), { svg: ICON, rgba: true });
   await browser.close();
 }
