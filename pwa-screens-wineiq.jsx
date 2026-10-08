@@ -217,7 +217,8 @@ function DnaTasteTiles({t,nav}){
     {axes.map(k=>{
       const v=Math.max(0,Math.min(1,t.avg[k])), R=21, circ=2*Math.PI*R, A=WineDNA.AXES[k];
       const word=WineDNA.everyday(k,t.avg[k]), page=true;
-      const col=SKETCH_TRAIT[k]||_DNA_TRAIT_WASH[k]||t.col, ring=k==='body'?'#C9A86A':col;
+      // The ring is their wine type's colour (as everything on WineDNA); the picture is ink alone.
+      const ring=t.col;
       return <div key={k} role={page?'button':undefined} tabIndex={page?0:undefined} data-trait={k}
         onClick={page?()=>open(k):undefined} onKeyDown={page?(e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); open(k); } }):undefined}
         aria-label={`${A.name}: ${word}.${page?' What this means.':''}`}
@@ -225,7 +226,7 @@ function DnaTasteTiles({t,nav}){
         <svg width="50" height="50" viewBox="-25 -25 50 50" aria-hidden="true" style={{overflow:'visible',flexShrink:0}}>
           <circle r={R} fill="none" stroke={SKETCH_PENCIL} strokeWidth="2.5" strokeDasharray="1 4" strokeLinecap="round"/>
           <circle r={R} fill="none" stroke={ring} strokeWidth="4" strokeLinecap="round" strokeDasharray={circ} strokeDashoffset={circ*(1-v)} transform="rotate(-90)"/>
-          <g transform="scale(0.62)">{SKETCH_TRAIT[k]?<SketchTraitIcon id={k}/>:<_DnaTraitSketch id={k}/>}</g>
+          <g transform="scale(0.62)">{SKETCH_TRAIT[k]?<SketchTraitIcon id={k} inkOnly wine={t.col}/>:<_DnaTraitSketch id={k}/>}</g>
         </svg>
         <div style={{minWidth:0,textAlign:wide?'left':'center'}}>
           <div style={{fontSize:14,fontWeight:800,color:C.ink,fontFamily:C.P,lineHeight:1.15,hyphens:'manual'}}>{word}</div>
@@ -235,17 +236,15 @@ function DnaTasteTiles({t,nav}){
     })}
   </div>;
 }
-/* Sweetness and bubbles have no palate page or Mastery sketch: a sugar cube and a few bubbles,
-   in the same pen and wash. */
-const _DNA_TRAIT_WASH={sweetness:'#E7C6A4',effervescence:'#B9D3DE'};
+/* Sweetness and bubbles have no Mastery sketch: a sugar cube and a few bubbles, in ink like the
+   rest of WineDNA's tiles. */
 function _DnaTraitSketch({id}){
   const ink={fill:'none',stroke:SKETCH_INK,strokeLinecap:'round',strokeLinejoin:'round',strokeWidth:1.6};
   if(id==='sweetness') return <g>
-    <path d="M-11 -4 L1 -11 L13 -5 L13 8 L1 15 L-11 8 Z" fill={_DNA_TRAIT_WASH.sweetness} opacity="0.75" transform="translate(1 1)"/>
-    <path d="M-12 -5 L0 -12 L12 -6 L12 7 L0 14 L-12 7 Z M-12 -5 L0 1 L12 -6 M0 1 L0 14" {...ink}/>
+        <path d="M-12 -5 L0 -12 L12 -6 L12 7 L0 14 L-12 7 Z M-12 -5 L0 1 L12 -6 M0 1 L0 14" {...ink}/>
   </g>;
   if(id==='effervescence') return <g>
-    {[[-6,6,7],[7,-2,5],[-3,-9,4],[9,10,3]].map(([x,y,r],i)=><g key={i}><circle cx={x+1} cy={y+1} r={r} fill={_DNA_TRAIT_WASH.effervescence} opacity="0.7"/><circle cx={x} cy={y} r={r} {...ink}/></g>)}
+    {[[-6,6,7],[7,-2,5],[-3,-9,4],[9,10,3]].map(([x,y,r],i)=><circle key={i} cx={x} cy={y} r={r} {...ink}/>)}
   </g>;
   return null;
 }
@@ -344,7 +343,7 @@ function DnaTraitScreen({nav,back}){
   const head=x=><div style={{fontSize:13,fontWeight:600,color:C.mid,letterSpacing:'0.08em',textTransform:'uppercase',fontFamily:C.P,marginTop:4}}>{x}</div>;
   const L=T.label.toLowerCase(), col=_TYPE_COLORS[T.key]||C.cr;
   if(!tv) return <div style={{flex:1,padding:24,fontFamily:C.P,color:C.mid}}>Nothing to show for that yet. <span role="button" onClick={back} style={{color:C.cr,fontWeight:700,cursor:'pointer'}}>Back</span></div>;
-  const R=44, circ=2*Math.PI*R, ring=tv.axis==='body'?'#C9A86A':(SKETCH_TRAIT[tv.axis]||_DNA_TRAIT_WASH[tv.axis]||col);
+  const R=44, circ=2*Math.PI*R, ring=col;
   const openWine=w=>{ Handoff.openWine({demo:false,wine:w,existingRating:w.rating||0}); nav('detail'); };
   const B=tv.bottles, list=all||B.length<=8?B:[...B.slice(0,3),null,...B.slice(-3)];
   const pos=v=>`calc(${Math.round(v*1000)/10}% - 6px)`;
@@ -362,7 +361,7 @@ function DnaTraitScreen({nav,back}){
           <svg width="110" height="110" viewBox="-55 -55 110 110" aria-hidden="true" style={{flexShrink:0,overflow:'visible'}}>
             <circle r={R} fill="none" stroke={SKETCH_PENCIL} strokeWidth="3.5" strokeDasharray="1 5" strokeLinecap="round"/>
             <circle r={R} fill="none" stroke={ring} strokeWidth="6" strokeLinecap="round" strokeDasharray={circ} strokeDashoffset={circ*(1-tv.avg)} transform="rotate(-90)"/>
-            <g transform="scale(1.35)">{SKETCH_TRAIT[tv.axis]?<SketchTraitIcon id={tv.axis}/>:<_DnaTraitSketch id={tv.axis}/>}</g>
+            <g transform="scale(1.35)">{SKETCH_TRAIT[tv.axis]?<SketchTraitIcon id={tv.axis} inkOnly wine={col}/>:<_DnaTraitSketch id={tv.axis}/>}</g>
           </svg>
           <div style={{display:'flex',flexDirection:'column',gap:2,minWidth:0}}>
             <span style={{fontSize:28,fontWeight:800,color:C.ink,fontFamily:C.P,lineHeight:1.1}}>{tv.word}</span>
