@@ -49,6 +49,22 @@ These go only into GitHub's secret box, never into the repo, a chat or an email.
 Then Actions → Google Play → **Run workflow**. In about 10 minutes the run's page has a
 `Vinterest-android-release` artifact: a zip holding `Vinterest.aab`.
 
+## Android developer verification (registering the package)
+
+Play Console → Android developer verification → Register package name: `app.vinterest`, then the
+upload key's SHA-256 fingerprint:
+
+```sh
+openssl pkcs12 -in vinterest-upload.p12 -nokeys | openssl x509 -noout -fingerprint -sha256
+```
+
+(only the part after `=`). To prove you hold the key, Google shows a code and asks for an APK
+signed with it that carries the code in `assets/adi-registration.properties`. Copy the code, then
+Actions → Google Play → Run workflow → paste it into **verification code** → Run. About 10 minutes
+later the run has a `Vinterest-verification-apk` artifact: unzip it and upload
+`Vinterest-verification.apk` in Google's form. That run builds only this APK and uploads nothing
+to Play.
+
 ## 3. The first upload, by hand (once your Play account is verified)
 
 Google only accepts API uploads for an app that already has one bundle.

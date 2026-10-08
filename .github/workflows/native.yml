@@ -77,6 +77,14 @@ jobs:
             -Pandroid.injected.signing.store.file="$K/upload.p12" -Pandroid.injected.signing.store.password=throwaway \
             -Pandroid.injected.signing.key.alias=upload -Pandroid.injected.signing.key.password=throwaway
           jarsigner -verify app/build/outputs/bundle/release/app-release.aab | tail -1
+          # The signed APK Google's developer verification takes (play.yml with a verification code).
+          mkdir -p app/src/main/assets && echo TESTCODE > app/src/main/assets/adi-registration.properties
+          ./gradlew assembleRelease --no-daemon \
+            -Pandroid.injected.signing.store.file="$K/upload.p12" -Pandroid.injected.signing.store.password=throwaway \
+            -Pandroid.injected.signing.key.alias=upload -Pandroid.injected.signing.key.password=throwaway
+          unzip -p app/build/outputs/apk/release/app-release.apk assets/adi-registration.properties | grep -q TESTCODE
+          "$ANDROID_HOME"/build-tools/$(ls "$ANDROID_HOME"/build-tools | sort -V | tail -1)/apksigner verify --print-certs app/build/outputs/apk/release/app-release.apk | grep -i 'SHA-256'
+          rm app/src/main/assets/adi-registration.properties
       - uses: actions/upload-artifact@v4
         with:
           name: Vinterest-android-debug

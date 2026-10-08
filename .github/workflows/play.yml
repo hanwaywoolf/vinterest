@@ -8,6 +8,9 @@
 #     Play Console needs by hand. Once PLAY_SERVICE_ACCOUNT_JSON is set, every run uploads it
 #     (scripts/play-upload.mjs) to PLAY_TRACK (variable, default internal) as PLAY_RELEASE_STATUS
 #     (variable, default draft: a new app takes only drafts until its first release is rolled out).
+#   - Run by hand with a "verification code", it instead builds the small signed APK Google's Android
+#     developer verification asks for (the code in assets/adi-registration.properties, signed with
+#     the upload key), kept as "Vinterest-verification-apk", and uploads nothing to Play.
 #   - Version: package.json's "version". versionCode: this workflow's run number ×10 + attempt, so
 #     every upload, re-runs included, has a new, higher number.
 name: Google Play
@@ -15,6 +18,11 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      verification_code:
+        description: "Only for Android developer verification: the code Google shows (leave empty for a normal build)"
+        required: false
+        default: ""
 concurrency:
   group: google-play
   cancel-in-progress: false
@@ -73,7 +81,34 @@ jobs:
           keytool -list -keystore "$RUNNER_TEMP/keys/upload.p12" -storepass "$ANDROID_KEYSTORE_PASSWORD" -alias upload >/dev/null 2>&1 || {
             echo "::error title=Upload key::The keystore didn't open with ANDROID_KEYSTORE_PASSWORD, or has no key called 'upload'. See docs/google-play.md."
             exit 1; }
+      - name: Verification APK
+        if: inputs.verification_code
+        working-directory: android
+        env:
+          CODE: ${{ inputs.verification_code }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+        run: |
+          CODE=$(printf '%s' "$CODE" | tr -d '[:space:]')
+          [[ "$CODE" =~ ^[A-Za-z0-9]+$ ]] || { echo "::error title=Verification code::Paste only the code Google shows (letters and numbers)."; exit 1; }
+          mkdir -p app/src/main/assets
+          printf '%s\n' "$CODE" > app/src/main/assets/adi-registration.properties
+          ./gradlew assembleRelease --no-daemon \
+            -Pandroid.injected.signing.store.file="$RUNNER_TEMP/keys/upload.p12" \
+            -Pandroid.injected.signing.store.password="$ANDROID_KEYSTORE_PASSWORD" \
+            -Pandroid.injected.signing.key.alias=upload \
+            -Pandroid.injected.signing.key.password="$ANDROID_KEYSTORE_PASSWORD"
+          APK=app/build/outputs/apk/release/app-release.apk
+          unzip -p "$APK" assets/adi-registration.properties
+          "$ANDROID_HOME"/build-tools/$(ls "$ANDROID_HOME"/build-tools | sort -V | tail -1)/apksigner verify --print-certs "$APK" | grep -i 'SHA-256'
+          cp "$APK" "$GITHUB_WORKSPACE/Vinterest-verification.apk"
+      - uses: actions/upload-artifact@v4
+        if: inputs.verification_code
+        with:
+          name: Vinterest-verification-apk
+          path: Vinterest-verification.apk
+          retention-days: 7
       - name: Build the signed bundle
+        if: ${{ !inputs.verification_code }}
         working-directory: android
         env:
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
@@ -86,11 +121,13 @@ jobs:
           jarsigner -verify app/build/outputs/bundle/release/app-release.aab | tail -1
           cp app/build/outputs/bundle/release/app-release.aab "$GITHUB_WORKSPACE/Vinterest.aab"
       - uses: actions/upload-artifact@v4
+        if: ${{ !inputs.verification_code }}
         with:
           name: Vinterest-android-release
           path: Vinterest.aab
           retention-days: 14
       - name: Upload to Google Play
+        if: ${{ !inputs.verification_code }}
         env:
           PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
           PLAY_TRACK: ${{ vars.PLAY_TRACK }}
