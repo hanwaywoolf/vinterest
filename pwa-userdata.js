@@ -104,6 +104,10 @@ const Flags = {
   markWineDNAUnlockSeen(){ Store.set(this.WINEDNA_UNLOCK_SEEN_KEY,'1'); },
   /* The wine types whose "Explore Next is ready" moment has been shown (ExploreNext.toCelebrate);
      null until the app first looks. */
+  // WineDNA's "What is WineDNA?" card, shown until they've read it once.
+  DNA_WELCOME_KEY:'vinterest_dna_welcome_seen',
+  dnaWelcomeSeen(){ return !!Store.get(this.DNA_WELCOME_KEY); },
+  markDnaWelcomeSeen(){ Store.set(this.DNA_WELCOME_KEY,'1'); },
   EXPLORE_READY_KEY:'vinterest_explore_ready_seen',
   exploreReadySeen(){ return Store.getJSON(this.EXPLORE_READY_KEY,null); },
   setExploreReadySeen(types){ Store.setJSON(this.EXPLORE_READY_KEY,types); },

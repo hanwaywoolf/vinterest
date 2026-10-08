@@ -318,20 +318,6 @@ const KnowledgeMap = {
     const all={}; (views||[]).forEach(v=>v.pins.forEach(p=>{ all[p.name]=all[p.name]||p.state==='open'; }));
     const names=Object.keys(all); return {open:names.filter(n=>all[n]).length,total:names.length};
   },
-  /* Where a set of bottles comes from, for WineDNA's History picture: the map view with the most
-     of their regions, and a pin per knowledge-base region with how many bottles came from it.
-     `elsewhere` counts bottles from regions in other views or not on the map. Null with no regions. */
-  bottleMap(wines){
-    const count={}; let total=0;
-    (wines||[]).forEach(w=>{ const r=WineDNA.region(w), k=r&&KNOWLEDGE.regions[r]; if(k&&Array.isArray(k.at)){ count[r]=(count[r]||0)+1; total++; } });
-    if(!total) return null;
-    const best=this.views().map(v=>{
-      const pins=Object.entries(count).filter(([r])=>this._inside(v,KNOWLEDGE.regions[r].at)).map(([name,n])=>{ const [x,y]=this.project(v,KNOWLEDGE.regions[name].at); return {name,n,x,y}; });
-      return {view:v,pins,n:pins.reduce((s,p)=>s+p.n,0)};
-    }).sort((a,b)=>b.n-a.n)[0];
-    if(!best||!best.n) return null;
-    return {view:best.view,pins:best.pins.sort((a,b)=>b.n-a.n),elsewhere:total-best.n,unmapped:(wines||[]).length-total};
-  },
   homeView(views){ return [...views].sort((a,b)=>(b.open+b.drunk)-(a.open+a.drunk))[0]||null; },
 };
 

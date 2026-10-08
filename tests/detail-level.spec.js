@@ -54,15 +54,25 @@ test('WineDNA at Simple: a portrait in pictures, the useful rows, a line on valu
   await expect(page.getByTestId('dna-best-value')).toBeVisible();
   await expect(root).toContainText('Your “House” Wines');
   await expect(root).toContainText('Explore');
-  for (const later of ['How Well We Know You', 'Your Journey', 'Flavour Signatures', 'Taste Profile', 'Getting value']) await expect(root).not.toContainText(later);
+  for (const later of ['How Well We Know You', 'Your Journey', 'Flavour Signatures', 'Taste Profile', 'Your score at each price']) await expect(root).not.toContainText(later);
   await expect(page.getByTestId('dna-love-avoid')).toHaveCount(0);
   // A taste tile opens WineDNA's own page for that trait: the wines they choose on its scale and
   // what the word means, never the palate page's Blind Call scoring.
   await page.getByTestId('dna-taste-tiles').locator('[data-trait="body"]').click();
   await expect(page).toHaveURL(/#dna-trait/);
   await expect(page.getByTestId('dna-trait-hero')).toContainText('The reds you choose');
-  await expect(page.getByTestId('dna-trait-scale')).toBeVisible();
-  expect(await page.getByTestId('dna-trait-bottles').getByRole('button').count()).toBeGreaterThan(3);
+  // Five steps along the scale with a verdict; the list follows the step picked, best first.
+  const steps = page.getByTestId('dna-trait-steps');
+  await expect(steps.locator('[aria-pressed]')).toHaveCount(5);
+  await expect(page.getByTestId('dna-trait-verdict')).toContainText(/Your best scores are in|Most of your reds sit in/);
+  const listed = async () => page.getByTestId('dna-trait-bottles').getByRole('button').allInnerTexts();
+  const first = await listed();
+  expect(first.length).toBeGreaterThan(0);
+  const scores = first.map((t) => Number((t.match(/(\d+)\s*$/) || [])[1] || 0));
+  expect([...scores].sort((a, b) => b - a)).toEqual(scores);
+  const other = steps.locator('[aria-pressed="false"]').filter({ hasNotText: /^0/ }).first();
+  await other.click();
+  await expect.poll(listed).not.toEqual(first);
   await expect(root).toContainText('How to notice it');
   for (const blind of ['Blind Call', 'on target', 'calls']) await expect(root).not.toContainText(blind);
   await page.goBack();
@@ -83,17 +93,48 @@ test('WineDNA at More adds How Well We Know You and Journey, still not Flavour S
   await expect(root).toContainText('How Well We Know You');
   await expect(root).not.toContainText('Flavour Signatures');
   await expect(page.getByTestId('dna-best-value')).toBeVisible();
-  // Folded rows carry a picture beside their line: a target, the journey's bars, a map of where the bottles come from.
+  // Folded rows carry a picture beside their line: a target and the journey's bars.
   await expect(page.getByTestId('dna-target')).toBeVisible();
   expect(await page.getByTestId('dna-target').locator('circle').count()).toBeGreaterThan(8);
   await expect(page.getByTestId('dna-journey-bars')).toBeVisible();
-  await expect(page.getByTestId('dna-bottle-map')).toBeVisible();
-  // Show all: Value opens with price against score, the best value in green.
+  // Show all: Value opens on their score at each price, names the band they score best in, and a
+  // tapped band lists its bottles.
   await page.getByTestId('dna-more-later').getByText('Show all details').click();
-  await expect(page.getByTestId('dna-value-dots').first()).toBeVisible();
-  const map = await page.evaluate(() => KnowledgeMap.bottleMap(WineHistory.getAll().filter((w) => w.type === 'red')));
-  expect(map.pins.length).toBeGreaterThan(1);
-  expect(map.pins[0].n).toBeGreaterThanOrEqual(map.pins[map.pins.length - 1].n);
+  await page.locator('[data-section="value"]').click().catch(() => {});
+  const v = await page.evaluate(() => WineDNA.profile('red', WineHistory.getAll(), 'Reds').value);
+  expect(v.bands.length).toBeGreaterThan(1);
+  expect(v.bands.reduce((s, b) => s + b.n, 0)).toBe(v.n);
+  // History: their places most first, each with its average, and untried places that grow their grapes.
+  const pl = await page.evaluate(() => WineDNA.profile('red', WineHistory.getAll(), 'Reds').places);
+  expect(pl.list.length).toBeGreaterThan(1);
+  expect(pl.list[0].n).toBeGreaterThanOrEqual(pl.list[pl.list.length - 1].n);
+  pl.next.forEach((x) => expect(pl.list.map((y) => y.name)).not.toContain(x.name));
+});
+
+test('WineDNA says what it is: a first-visit card until read, and one line always', async ({ context, page }) => {
+  await user(context, page);
+  await page.goto(`${BASE}/?demo=1#profile`);
+  await expect(page.getByTestId('dna-intro')).toContainText("Your taste, worked out from the");
+  await expect(page.getByTestId('dna-welcome')).toContainText('What is WineDNA?');
+  await page.getByTestId('dna-welcome').getByText('Got it').click();
+  await expect(page.getByTestId('dna-welcome')).toHaveCount(0);
+  await page.reload();
+  await expect(page.getByTestId('dna-intro')).toBeVisible();
+  await expect(page.getByTestId('dna-welcome')).toHaveCount(0);
+});
+
+test('Value and History at Everything: price bands with a named best band; places with their pages', async ({ context, page }) => {
+  await user(context, page, { experience: 'expert' });
+  await page.goto(`${BASE}/?demo=1#profile`);
+  await expect(page.getByTestId('dna-band-bars').first()).toBeVisible();
+  const card = page.getByTestId('dna-band-bars').filter({ has: page.locator('[aria-pressed]') });
+  await expect(page.getByTestId('dna-value-verdict')).toContainText('Your best scores come from');
+  const before = await page.getByTestId('dna-band-bottles').innerText();
+  await card.locator('[aria-pressed="false"]').first().click();
+  await expect.poll(() => page.getByTestId('dna-band-bottles').innerText()).not.toBe(before);
+  await expect(page.getByTestId('dna-places')).toBeVisible();
+  await page.getByTestId('dna-places').getByRole('button').first().click();
+  await expect(page).toHaveURL(/#region-page/);
 });
 
 test('the scan result at Simple: the top reason either way, and "Why N%?" waits for More; the cards open on their main line', async ({ context, page }) => {
