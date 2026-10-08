@@ -88,7 +88,7 @@ function App(){
     const t=setTimeout(()=>{ try{ DetailLevel.check(); }catch(e){} },400);
     return()=>clearTimeout(t);
   },[screen]);
-  const showXpBadge=!['camera','onboarding','learn','quiz','article','gen-article','guide','identified','detail','mywines','scan','profile','style-explore','winelist','account','settings','mastery-map','grape','region-page','palate-trait'].includes(screen);
+  const showXpBadge=!['camera','onboarding','learn','quiz','article','gen-article','guide','identified','detail','mywines','scan','profile','style-explore','winelist','account','settings','mastery-map','grape','region-page','palate-trait','dna-trait'].includes(screen);
 
   // XP and the moments behind it (pwa-moments.jsx): a quiet chip, and cards that wait for a calm screen.
   const xpDel=useXPDelivery();
@@ -158,6 +158,7 @@ function App(){
         {screen==='grape' && <GrapeScreen {...ctx}/>}
         {screen==='region-page' && <RegionPageScreen {...ctx}/>}
         {screen==='palate-trait' && <PalateTraitScreen {...ctx}/>}
+        {screen==='dna-trait' && <DnaTraitScreen {...ctx}/>}
         {screen==='article'   && <ScreenErrorBoundary><LearnArticleScreen {...ctx}/></ScreenErrorBoundary>}
         {screen==='gen-article'&& <ScreenErrorBoundary><GenArticleScreen {...ctx}/></ScreenErrorBoundary>}
         {screen==='guide'&& <ScreenErrorBoundary><GuideScreen {...ctx}/></ScreenErrorBoundary>}

@@ -56,10 +56,17 @@ test('WineDNA at Simple: a portrait in pictures, the useful rows, a line on valu
   await expect(root).toContainText('Explore');
   for (const later of ['How Well We Know You', 'Your Journey', 'Flavour Signatures', 'Taste Profile', 'Getting value']) await expect(root).not.toContainText(later);
   await expect(page.getByTestId('dna-love-avoid')).toHaveCount(0);
-  // A taste tile explains its word: it opens that trait's page.
+  // A taste tile opens WineDNA's own page for that trait: the wines they choose on its scale and
+  // what the word means, never the palate page's Blind Call scoring.
   await page.getByTestId('dna-taste-tiles').locator('[data-trait="body"]').click();
-  await expect(page).toHaveURL(/#palate-trait/);
+  await expect(page).toHaveURL(/#dna-trait/);
+  await expect(page.getByTestId('dna-trait-hero')).toContainText('The reds you choose');
+  await expect(page.getByTestId('dna-trait-scale')).toBeVisible();
+  expect(await page.getByTestId('dna-trait-bottles').getByRole('button').count()).toBeGreaterThan(3);
+  await expect(root).toContainText('How to notice it');
+  for (const blind of ['Blind Call', 'on target', 'calls']) await expect(root).not.toContainText(blind);
   await page.goBack();
+  await expect(page).toHaveURL(/#profile/);
   await page.getByTestId('dna-more-later').getByText('Show all details').click();
   await expect(root).toContainText('How Well We Know You');
   await expect(root).toContainText('Flavour Signatures');

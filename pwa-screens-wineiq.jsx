@@ -204,19 +204,19 @@ function DnaTasteCard({t,tLabel,notes=true}){
 /* The portrait at the top of WineDNA (DetailLevel): their style as pictures first. A tile per
    trait, the thing the app compares it to sketched in pen and wash (the Mastery palate's icons)
    inside a ring filled to where the wines they choose sit, the everyday word large and the wine
-   term small beneath it. A tile with a palate page (body, acidity, tannins, texture) opens it:
-   what the word means and how to notice it. */
+   term small beneath it. Each opens WineDNA's own page for that trait (DnaTraitScreen). */
 function DnaTasteTiles({t,nav}){
   const axes=t.axes.filter(t.showAxis).filter(k=>t.avg[k]!=null);
   if(!axes.length) return null;
-  const open=id=>{ Handoff.palateTrait.set(id); nav('palate-trait'); };
+  // WineDNA's own trait page (the wines they choose), never the palate page (their Blind Calls).
+  const open=id=>{ Handoff.dnaTrait.set({type:t.key,axis:id}); nav('dna-trait'); };
   // Three fit across; four sit two by two with the word beside the picture, so long words
   // ("Mouth-watering") never break mid-letter at a large text size.
   const wide=axes.length>3;
   return <div data-testid="dna-taste-tiles" style={{display:'grid',gridTemplateColumns:`repeat(${wide?2:axes.length},minmax(0,1fr))`,gap:6}}>
     {axes.map(k=>{
       const v=Math.max(0,Math.min(1,t.avg[k])), R=21, circ=2*Math.PI*R, A=WineDNA.AXES[k];
-      const word=WineDNA.everyday(k,t.avg[k]), page=PALATE_TRAITS.includes(k);
+      const word=WineDNA.everyday(k,t.avg[k]), page=true;
       const col=SKETCH_TRAIT[k]||_DNA_TRAIT_WASH[k]||t.col, ring=k==='body'?'#C9A86A':col;
       return <div key={k} role={page?'button':undefined} tabIndex={page?0:undefined} data-trait={k}
         onClick={page?()=>open(k):undefined} onKeyDown={page?(e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); open(k); } }):undefined}
@@ -330,6 +330,91 @@ function DnaJourneyBars({J,col,w=96,h=56}){
     {B.map((b,i)=>{ const x=gap+i*(bw+gap), full=(h-10)*b.count/max, nw=(h-10)*Math.min(b.count,b.newRegions.length)/max;
       return <g key={i}><rect x={x} y={h-5-full} width={bw} height={full} rx="2" fill={C.line}/><rect x={x} y={h-5-nw} width={bw} height={nw} rx="2" fill={col}/></g>; })}
   </svg>;
+}
+/* WineDNA's page for one trait of one wine type (WineDNA.traitView): where the wines they choose
+   sit and where their 90+ wines sit, every bottle on the scale, then what the word means and how
+   to notice it. It's about their wines, from the labels; how well they taste it is Mastery's
+   palate page, from Blind Calls, and the two never share a screen. */
+function DnaTraitScreen({nav,back}){
+  const h=Handoff.dnaTrait.get(null)||{};
+  const T=_TYPES.find(x=>x.key===h.type)||_TYPES[0];
+  const tv=React.useMemo(()=>h.axis?WineDNA.traitView(T.key,h.axis,WineHistory.getAll()):null,[h.type,h.axis]);
+  const [all,setAll]=React.useState(false);
+  const card={background:C.white,borderRadius:16,border:`1px solid ${C.line}`,padding:'14px 16px',display:'flex',flexDirection:'column',gap:8};
+  const head=x=><div style={{fontSize:13,fontWeight:600,color:C.mid,letterSpacing:'0.08em',textTransform:'uppercase',fontFamily:C.P,marginTop:4}}>{x}</div>;
+  const L=T.label.toLowerCase(), col=_TYPE_COLORS[T.key]||C.cr;
+  if(!tv) return <div style={{flex:1,padding:24,fontFamily:C.P,color:C.mid}}>Nothing to show for that yet. <span role="button" onClick={back} style={{color:C.cr,fontWeight:700,cursor:'pointer'}}>Back</span></div>;
+  const R=44, circ=2*Math.PI*R, ring=tv.axis==='body'?'#C9A86A':(SKETCH_TRAIT[tv.axis]||_DNA_TRAIT_WASH[tv.axis]||col);
+  const openWine=w=>{ Handoff.openWine({demo:false,wine:w,existingRating:w.rating||0}); nav('detail'); };
+  const B=tv.bottles, list=all||B.length<=8?B:[...B.slice(0,3),null,...B.slice(-3)];
+  const pos=v=>`calc(${Math.round(v*1000)/10}% - 6px)`;
+  return(
+    <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden'}}>
+      <div style={{background:C.white,padding:'14px 20px',display:'flex',alignItems:'center',gap:12,borderBottom:`1px solid ${C.line}`,flexShrink:0}}>
+        <div role="button" aria-label="Back" onClick={back} style={{width:34,height:34,borderRadius:17,background:C.offWhite,border:`1px solid ${C.line}`,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',flexShrink:0}}><Icon n="back" sz={16} col={C.ink}/></div>
+        <div style={{minWidth:0}}>
+          <div style={{fontSize:20,fontWeight:800,color:C.ink,fontFamily:C.P,letterSpacing:'-0.4px'}}>{tv.name}</div>
+          <div style={{fontSize:13,color:C.mid,fontFamily:C.P}}>Your {L} · from {tv.lowWord.toLowerCase()} to {tv.highWord.toLowerCase()}</div>
+        </div>
+      </div>
+      <div style={{flex:1,overflowY:'auto',padding:'16px 20px',display:'flex',flexDirection:'column',gap:12}}>
+        <div data-testid="dna-trait-hero" style={{...card,background:'#FBF8F3',flexDirection:'row',alignItems:'center',gap:14}}>
+          <svg width="110" height="110" viewBox="-55 -55 110 110" aria-hidden="true" style={{flexShrink:0,overflow:'visible'}}>
+            <circle r={R} fill="none" stroke={SKETCH_PENCIL} strokeWidth="3.5" strokeDasharray="1 5" strokeLinecap="round"/>
+            <circle r={R} fill="none" stroke={ring} strokeWidth="6" strokeLinecap="round" strokeDasharray={circ} strokeDashoffset={circ*(1-tv.avg)} transform="rotate(-90)"/>
+            <g transform="scale(1.35)">{SKETCH_TRAIT[tv.axis]?<SketchTraitIcon id={tv.axis}/>:<_DnaTraitSketch id={tv.axis}/>}</g>
+          </svg>
+          <div style={{display:'flex',flexDirection:'column',gap:2,minWidth:0}}>
+            <span style={{fontSize:28,fontWeight:800,color:C.ink,fontFamily:C.P,lineHeight:1.1}}>{tv.word}</span>
+            <span style={{fontSize:14,fontWeight:600,color:C.ink2,fontFamily:C.P}}>The {L} you choose</span>
+            <span style={{fontSize:13,color:C.mid,fontFamily:C.P,lineHeight:1.4}}>From {WineDNA.noun(T.key,tv.n)}.</span>
+          </div>
+        </div>
+
+        {head(`Your ${L} on the scale`)}
+        <div data-testid="dna-trait-scale" style={card}>
+          <div style={{position:'relative',height:30,margin:'4px 6px 0'}}>
+            <div style={{position:'absolute',left:0,right:0,top:14,height:2,background:C.line,borderRadius:1}}/>
+            {B.map((b,i)=><div key={i} title={b.wine.name} style={{position:'absolute',left:pos(b.v),top:9+((i%3)-1)*5,width:12,height:12,borderRadius:6,background:b.rating?scoreCol(b.rating):C.mid,opacity:0.8,border:'1.5px solid #fff'}}/>)}
+            <div title="The middle of your choices" style={{position:'absolute',left:`calc(${Math.round(tv.avg*1000)/10}% - 1.5px)`,top:2,width:3,height:26,borderRadius:2,background:C.ink}}/>
+          </div>
+          <div style={{display:'flex',justifyContent:'space-between',fontSize:13,color:C.mid,fontFamily:C.P}}><span>{tv.lowWord}</span><span>{tv.highWord}</span></div>
+          <div style={{display:'flex',gap:12,flexWrap:'wrap',fontSize:12,color:C.mid,fontFamily:C.P}}>
+            <span style={{display:'inline-flex',alignItems:'center',gap:5}}><span style={{width:3,height:12,background:C.ink,borderRadius:2}}/>The middle of your {L}</span>
+            <span style={{display:'inline-flex',alignItems:'center',gap:5}}><span style={{width:9,height:9,borderRadius:5,background:C.green}}/>90+ <span style={{width:9,height:9,borderRadius:5,background:C.amber,marginLeft:4}}/>80s <span style={{width:9,height:9,borderRadius:5,background:'#B04A3A',marginLeft:4}}/>under 80</span>
+          </div>
+          {tv.lean&&<div style={{fontSize:15,color:C.ink2,fontFamily:C.P,lineHeight:1.5}}>{tv.lean}</div>}
+        </div>
+
+        <div data-testid="dna-trait-bottles" style={{...card,gap:0,padding:'4px 16px'}}>
+          {list.map((b,i)=>b?<div key={i} role="button" tabIndex={0} onClick={()=>openWine(b.wine)} onKeyDown={e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); openWine(b.wine); } }}
+            style={{display:'flex',alignItems:'center',gap:10,padding:'10px 0',borderTop:i?`1px solid ${C.line}`:'none',cursor:'pointer'}}>
+            <div style={{flex:1,minWidth:0}}>
+              <div style={{fontSize:15,fontWeight:600,color:C.ink,fontFamily:C.P,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{WineDNA.nameYear(b.wine)}</div>
+              <div style={{fontSize:13,color:C.mid,fontFamily:C.P}}>{WineDNA.everyday(tv.axis,b.v)}</div>
+            </div>
+            {b.rating>0&&<span style={{fontSize:15,fontWeight:800,color:scoreCol(b.rating),fontFamily:C.P}}>{b.rating}</span>}
+            <Icon n="chevron" sz={12} col={C.mid}/>
+          </div>:<div key={'gap'+i} role="button" onClick={()=>setAll(true)} style={{padding:'10px 0',borderTop:`1px solid ${C.line}`,fontSize:14,fontWeight:700,color:C.cr,fontFamily:C.P,cursor:'pointer'}}>Show all {B.length}</div>)}
+        </div>
+        <div style={{fontSize:13,color:C.mid,fontFamily:C.P,lineHeight:1.45}}>Where each wine sits is estimated from its label when you scan it: what the wine is typically like, not a tasting note.</div>
+
+        {tv.about&&<>
+          {head(`What ${tv.name.toLowerCase()} is`)}
+          <div style={card}><span style={{fontSize:15,color:C.ink2,fontFamily:C.P,lineHeight:1.55}}>{tv.about.what}</span></div>
+          {head('How to notice it')}
+          <div style={card}>{tv.about.notice.map((n,i)=><div key={i} style={{display:'flex',gap:9,fontSize:15,color:C.ink2,fontFamily:C.P,lineHeight:1.5}}><span style={{color:col,fontWeight:800}}>•</span><span>{n}</span></div>)}</div>
+          {head('At either end')}
+          <div style={{...card,flexDirection:'row',gap:12}}>
+            <div style={{flex:1,minWidth:0}}><div style={{fontSize:13,fontWeight:700,color:C.mid,fontFamily:C.P}}>{tv.lowWord}</div><div style={{fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.45}}>{tv.about.low}</div></div>
+            <div style={{flex:1,minWidth:0}}><div style={{fontSize:13,fontWeight:700,color:C.mid,fontFamily:C.P}}>{tv.highWord}</div><div style={{fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.45}}>{tv.about.high}</div></div>
+          </div>
+          <div style={{...card,background:C.offWhite}}><span style={{fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.5}}><b>Tip:</b> {tv.about.tip}</span></div>
+        </>}
+        <div style={{height:8}}/>
+      </div>
+    </div>
+  );
 }
 /* Optional reading folded under the portrait ("Read more"). */
 function DnaReadMore({label='Read more',children}){

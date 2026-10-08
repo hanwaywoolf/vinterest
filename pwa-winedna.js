@@ -37,6 +37,34 @@ const WineDNA = {
     effervescence:{low:'Gentle',mid:'Lively',high:'Vigorous'},
   },
   everyday(axis,v){ const l=this.level(v); return l&&this.EVERYDAY[axis]?this.EVERYDAY[axis][l]:null; },
+  /* What sweetness and bubbles are, for WineDNA's trait page (body, acidity, tannins and texture
+     share their wording with the palate pages, Palate.TRAITS). Fixed, checked text. */
+  TRAIT_ABOUT:{
+    sweetness:{what:'Sweetness is how much sugar is left in the wine after it has fermented.',
+      notice:['Sweetness shows on the tip of your tongue, first thing.','Fruity is not the same as sweet: a ripe, fruity wine can still be completely dry.','High acidity hides sugar, so a sweet wine can still taste fresh.'],
+      low:'Most reds, Chablis, Brut Champagne', high:'Sauternes, Moscato, Port', tip:'On a label, Brut, Sec and Trocken mean dry; Demi-sec, Doux and Süss mean sweeter.'},
+    effervescence:{what:'Bubbles are the fizz in a sparkling wine: how fine, how many and how lively they feel.',
+      notice:['Fine, small bubbles feel creamy; big ones feel frothy and sharp.','Wines made the traditional way (Champagne, Cava) tend to have finer, longer-lasting bubbles.','Watch the glass: a steady stream of tiny bubbles is a good sign.'],
+      low:'Crémant, Moscato d\'Asti, Pét-Nat', high:'Champagne, Cava, Franciacorta', tip:'Serve it well chilled: warm sparkling wine loses its bubbles fast and tastes flat.'},
+  },
+  /* WineDNA's page for one trait of one wine type (DnaTraitScreen): where the wines they choose
+     sit on it, where their 90+ wines sit, every bottle on the scale and what the word means. It's
+     about their wines (Claude's label estimates), never their tasting: how well they taste a trait
+     is Mastery's palate page (PalateTraitScreen), from their Blind Calls. */
+  traitView(typeKey,axis,wines){
+    const A=this.AXES[axis]; if(!A) return null;
+    const ws=(wines||[]).filter(w=>this._t(w.type)===typeKey&&this.chosen(w));
+    const at=ws.map(w=>({wine:w,v:this.axisValue(w,axis),rating:w.rating||0})).filter(x=>typeof x.v==='number').sort((a,b)=>a.v-b.v);
+    if(!at.length) return null;
+    const avg=this._mean(at.map(x=>x.v));
+    const lovedWs=at.filter(x=>x.rating>=ParkerScale.LOVED), loved=lovedWs.length>=3?this._mean(lovedWs.map(x=>x.v)):null;
+    const L=(this.NOUNS[typeKey]||['wine','wines'])[1];
+    const lean=loved==null?null:loved-avg>=0.08?`Your 90+ ${L} sit ${A.highAdj} than the ${L} you choose overall.`
+      :avg-loved>=0.08?`Your 90+ ${L} sit ${A.lowAdj} than the ${L} you choose overall.`:`Your 90+ ${L} sit about where the rest of your ${L} do.`;
+    const P=typeof Palate!=='undefined'&&Palate.TRAITS[axis];
+    const about=P?{what:P.what,notice:P.notice,low:P.low,high:P.high,tip:P.tip}:(this.TRAIT_ABOUT[axis]||null);
+    return {axis,name:A.name,lowWord:A.low,highWord:A.high,word:this.everyday(axis,avg),avg,loved,lean,bottles:at,n:at.length,about};
+  },
   AXES:{
     body:         {name:'Body',         low:'Light',          mid:'Medium',        high:'Full',          lowAdj:'lighter',        highAdj:'fuller'},
     tannins:      {name:'Tannins',      low:'Silky',          mid:'Medium',        high:'Grippy',        lowAdj:'softer-tannin',  highAdj:'firmer-tannin'},

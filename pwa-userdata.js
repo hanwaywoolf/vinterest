@@ -147,6 +147,9 @@ const Handoff = {
   get regionPage(){ return this._s('vinterest_region_page'); },
   /* The palate trait whose page (PalateTraitScreen) to open: body, acidity, tannins or texture. */
   get palateTrait(){ return this._s('vinterest_palate_trait'); },
+  /* WineDNA's trait page (DnaTraitScreen): {type, axis}. Not the palate page above: that one is
+     Blind Calls, this one is the wines they choose. */
+  get dnaTrait(){ return this._j('vinterest_dna_trait'); },
   /* Where Mastery was when a grape's page opened ({top, view: 'bunch'|'list'}), so going back
      lands on the grapes, not the top of the screen. Read once. */
   masteryReturn:{ set:v=>Store.setJSON('vinterest_mastery_return',v,{session:true}),
