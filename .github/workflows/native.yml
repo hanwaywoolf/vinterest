@@ -2,7 +2,9 @@
 # so a change that breaks the native build shows up straight away:
 #   - ios: on a GitHub Mac (free for this public repo), an unsigned iPhone build, kept as the
 #     "Vinterest-ios-unsigned" artifact (an .ipa: signing comes with the Apple Developer account).
-#   - android: a debug .apk, kept as "Vinterest-android-debug", installable on any Android phone.
+#   - android: a debug .apk, kept as "Vinterest-android-debug", installable on any Android phone,
+#     and a release App Bundle signed with a throwaway key made the way docs/google-play.md makes the
+#     real one, so the Google Play build (play.yml) is proved on every PR, not first on main.
 # The native projects are generated here from capacitor.config.json by scripts/native.mjs, never
 # committed. Sign-in is built in when the repository has SUPABASE_URL and SUPABASE_PUBLISHABLE_KEY
 # set as Actions variables (both are public); without them the apps fetch them from the live site's
@@ -65,6 +67,24 @@ jobs:
       - name: Build debug .apk
         working-directory: android
         run: ./gradlew assembleDebug --no-daemon
+      - name: Build a signed release bundle (throwaway key)
+        working-directory: android
+        run: |
+          K="$RUNNER_TEMP/throwaway"; mkdir -p "$K"
+          openssl req -x509 -newkey rsa:4096 -sha256 -days 10000 -nodes -keyout "$K/key.pem" -out "$K/cert.pem" -subj "/CN=Vinterest upload key"
+          openssl pkcs12 -export -name upload -inkey "$K/key.pem" -in "$K/cert.pem" -out "$K/upload.p12" -passout pass:throwaway
+          ./gradlew bundleRelease --no-daemon \
+            -Pandroid.injected.signing.store.file="$K/upload.p12" -Pandroid.injected.signing.store.password=throwaway \
+            -Pandroid.injected.signing.key.alias=upload -Pandroid.injected.signing.key.password=throwaway
+          jarsigner -verify app/build/outputs/bundle/release/app-release.aab | tail -1
+          # The signed APK Google's developer verification takes (play.yml with a verification code).
+          mkdir -p app/src/main/assets && echo TESTCODE > app/src/main/assets/adi-registration.properties
+          ./gradlew assembleRelease --no-daemon \
+            -Pandroid.injected.signing.store.file="$K/upload.p12" -Pandroid.injected.signing.store.password=throwaway \
+            -Pandroid.injected.signing.key.alias=upload -Pandroid.injected.signing.key.password=throwaway
+          unzip -p app/build/outputs/apk/release/app-release.apk assets/adi-registration.properties | grep -q TESTCODE
+          "$ANDROID_HOME"/build-tools/$(ls "$ANDROID_HOME"/build-tools | sort -V | tail -1)/apksigner verify --print-certs app/build/outputs/apk/release/app-release.apk | grep -i 'SHA-256'
+          rm app/src/main/assets/adi-registration.properties
       - uses: actions/upload-artifact@v4
         with:
           name: Vinterest-android-debug
