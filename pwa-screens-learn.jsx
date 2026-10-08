@@ -6,7 +6,36 @@ try{ ON_RAMP=_loadJSON('data/onramp.json')||[]; }catch(e){ console.error('[Vinte
 function onRampDone(id){ return LearnProgress.onRampDone(id); }
 function onRampProgress(){ return ON_RAMP.filter(a=>onRampDone(a.id)).length; }
 
+/* Side panels for reading screens on an iPad (ReadingLayout): cards of context beside the text. */
+const _asideCard={background:C.white,borderRadius:16,border:`1px solid ${C.line}`,padding:'14px 16px',display:'flex',flexDirection:'column',gap:8};
+const _asideHead=t=><div style={{fontSize:12,fontWeight:700,color:C.mid,letterSpacing:'0.08em',textTransform:'uppercase',fontFamily:C.P}}>{t}</div>;
+function _AsideWines({wines,nav,title}){
+  if(!wines||!wines.length) return null;
+  const open=w=>{ Handoff.openWine({demo:false,wine:w,existingRating:w.rating||0}); nav('detail'); };
+  return <div style={_asideCard} data-testid="aside-wines">
+    {_asideHead(title)}
+    {wines.map((w,i)=><div key={(w.name||'')+i} role="button" onClick={()=>open(w)} style={{display:'flex',alignItems:'center',gap:8,paddingTop:i?8:0,borderTop:i?`1px solid ${C.line}`:'none',cursor:'pointer'}}>
+      <div style={{flex:1,minWidth:0}}>
+        <div style={{fontSize:14,fontWeight:600,color:C.ink,fontFamily:C.P,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{WineDNA.nameYear(w)}</div>
+        <div style={{fontSize:12,color:C.mid,fontFamily:C.P,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{[w.producer,w.region].filter(Boolean).join(' · ')}</div>
+      </div>
+      {w.rating>0&&<span style={{fontSize:15,fontWeight:800,color:scoreCol(w.rating),fontFamily:C.P}}>{w.rating}</span>}
+    </div>)}
+  </div>;
+}
+function _AsideLinks({links}){
+  links=(links||[]).filter(Boolean);
+  if(!links.length) return null;
+  return <div style={_asideCard} data-testid="aside-links">
+    {_asideHead('Go deeper')}
+    {links.map(l=><div key={l.t} role="button" onClick={l.go} style={{display:'flex',alignItems:'center',gap:8,cursor:'pointer',fontSize:14,fontWeight:700,color:C.cr,fontFamily:C.P}}>
+      {l.icon&&<Icon n={l.icon} sz={15} col={C.cr}/>}<span style={{flex:1}}>{l.t}</span><Icon n="chevron" sz={12} col={C.cr}/>
+    </div>)}
+  </div>;
+}
+
 function LearnArticleScreen({nav,back}){
+  const wide=useWide();
   const idx=React.useMemo(()=>{ const i=parseInt(Handoff.onRampIdx.get()||'0',10); return isNaN(i)?0:Math.min(i,ON_RAMP.length-1); },[]);
   const article=ON_RAMP[idx];
   const [completed,setCompleted]=React.useState(()=>onRampDone(article.id));
@@ -35,7 +64,7 @@ function LearnArticleScreen({nav,back}){
 
       <div style={{flex:1,overflowY:'auto'}}>
         {/* Hero */}
-        <div style={{background:C.ink,padding:'24px 20px 22px'}}>
+        <div style={{background:C.ink,padding:wide?'32px max(20px, calc((100% - 760px) / 2)) 28px':'24px 20px 22px'}}>
           <div style={{display:'inline-flex',alignItems:'center',gap:6,padding:'4px 12px',borderRadius:20,background:'rgba(255,255,255,0.1)',marginBottom:12}}>
             <Icon n="book" sz={12} col="rgba(255,255,255,0.55)"/>
             <span style={{fontSize:13,fontWeight:600,color:'rgba(255,255,255,0.55)',fontFamily:C.P}}>Quick Read</span>
@@ -44,15 +73,26 @@ function LearnArticleScreen({nav,back}){
           <div style={{fontSize:16,color:'rgba(255,255,255,0.42)',fontFamily:C.P,lineHeight:1.65}}>{article.subtitle}</div>
         </div>
 
-        {/* Sections */}
+        {/* Sections: on an iPad in a reading column, with the beginner series beside it */}
         <div style={{padding:'16px 20px',display:'flex',flexDirection:'column',gap:12}}>
+          <ReadingLayout aside={wide?<>
+            <div style={_asideCard} data-testid="aside-series">
+              {_asideHead(`Beginner articles · ${ON_RAMP.filter(a=>onRampDone(a.id)).length} of ${ON_RAMP.length} read`)}
+              {ON_RAMP.map((a,i)=><div key={a.id} role="button" onClick={()=>{ if(i===idx) return; Handoff.onRampIdx.set(String(i)); nav('article'); }} style={{display:'flex',alignItems:'center',gap:8,cursor:i===idx?'default':'pointer'}}>
+                <Icon n={onRampDone(a.id)?'check':'book'} sz={14} col={onRampDone(a.id)?C.green:i===idx?C.cr:C.mid}/>
+                <span style={{flex:1,fontSize:14,fontWeight:i===idx?800:500,color:i===idx?C.ink:C.ink2,fontFamily:C.P,lineHeight:1.35}}>{a.title}</span>
+                <span style={{fontSize:12,color:C.mid,fontFamily:C.P,whiteSpace:'nowrap'}}>{a.readTime}</span>
+              </div>)}
+            </div>
+            <div style={_asideCard}>{_asideHead('Why read these')}<div style={{fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.5}}>Each one takes a couple of minutes and explains one thing wine people take for granted. Finish the first and your Written for you shelf opens.</div></div>
+          </>:null}>
           {article.sections.map((s,i)=>(
             <div key={i} style={{background:C.white,borderRadius:16,overflow:'hidden',border:`1px solid ${C.line}`}}>
               <div style={{padding:'14px 16px 0',display:'flex',gap:12,alignItems:'flex-start'}}>
                 <div style={{width:46,height:46,borderRadius:12,background:C.offWhite,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><Icon n={s.iconName} sz={22} col={C.cr}/></div>
                 <div style={{flex:1}}>
                   <div style={{fontSize:21,fontWeight:800,color:C.ink,fontFamily:C.P,marginBottom:3}}>{s.term}</div>
-                  <div style={{fontSize:15,color:C.mid,fontFamily:C.P,fontStyle:'italic',marginBottom:10}}>{s.plain}</div>
+                  <div style={{fontSize:15,color:C.mid,fontFamily:C.P,marginBottom:10}}>{s.plain}</div>
                 </div>
               </div>
               <div style={{padding:'0 16px 14px',display:'flex',flexDirection:'column',gap:10}}>
@@ -89,6 +129,7 @@ function LearnArticleScreen({nav,back}){
               </>
             )}
           </div>
+          </ReadingLayout>
           <div style={{height:16}}/>
         </div>
       </div>
@@ -102,6 +143,7 @@ Object.assign(window,{LearnArticleScreen});
    A fixed guide (Guides, pwa-guides.js): a line from the reader's own wines, the sections, then
    three questions and something to try. Read + every question right = finished. */
 function GuideScreen({nav,back}){
+  const wide=useWide();
   const guide=React.useMemo(()=>Guides.byId(Handoff.guide.get()||''),[]);
   const [read,setRead]=React.useState(()=>!!guide&&Guides.isRead(guide.id));
   const personal=React.useMemo(()=>guide?Guides.personal(guide):null,[guide&&guide.id]);
@@ -121,12 +163,29 @@ function GuideScreen({nav,back}){
         {read&&passed&&<span style={{fontSize:15,fontWeight:700,color:C.green,fontFamily:C.P}}>✓ Done</span>}
       </div>
       <div style={{flex:1,overflowY:'auto'}}>
-        <div style={{background:C.ink,padding:'24px 20px 22px'}}>
+        <div style={{background:C.ink,padding:wide?'32px max(20px, calc((100% - 760px) / 2)) 28px':'24px 20px 22px'}}>
           <div style={{fontSize:26,fontWeight:800,color:'#fff',fontFamily:C.P,lineHeight:1.2,marginBottom:10}}>{guide.title}</div>
           <div style={{fontSize:16,color:'rgba(255,255,255,0.55)',fontFamily:C.P,lineHeight:1.6}}>{guide.subtitle}</div>
         </div>
         <div style={{padding:'16px 20px',display:'flex',flexDirection:'column',gap:12}}>
-          {personal&&<div style={{padding:'12px 14px',borderRadius:14,background:C.crSoft,border:`1px solid ${C.crDim}`}}>
+          <ReadingLayout aside={wide?<>
+            {personal&&<div style={{padding:'12px 14px',borderRadius:14,background:C.crSoft,border:`1px solid ${C.crDim}`}}>
+            <div style={{fontSize:12,fontWeight:700,color:C.cr,fontFamily:C.P,textTransform:'uppercase',letterSpacing:'0.06em',marginBottom:3}}>For you</div>
+            <div style={{fontSize:15,color:C.ink2,fontFamily:C.P,lineHeight:1.55}}>{personal}</div>
+          </div>}
+          <div style={{background:passed?C.greenBg:C.crSoft,borderRadius:16,padding:'16px',border:`1px solid ${passed?C.green+'30':C.crDim}`,display:'flex',flexDirection:'column',gap:10}}>
+            <div style={{fontSize:17,fontWeight:700,color:passed?C.green:C.cr,fontFamily:C.P}}>{passed?'You\'ve got this one':'Check yourself'}</div>
+            <div style={{fontSize:15,color:C.ink2,fontFamily:C.P,lineHeight:1.5}}>{passed?'Every question answered. It counts towards your Mastery.':`${p.total} quick questions on this guide${p.correct?` · ${p.correct}/${p.total} answered so far`:''}. Reading it and passing them counts towards your Mastery.`}</div>
+            <Btn primary full onClick={check}>{passed?'Practise again':'Answer the questions'}</Btn>
+            {!read&&<Btn full onClick={markRead}>Mark as read · +50 XP</Btn>}
+          </div>
+          {guide.tryIt&&<div role="button" onClick={()=>{ markRead(); nav(guide.tryIt.nav); }} style={{padding:'12px 14px',borderRadius:14,background:C.white,border:`1px solid ${C.line}`,display:'flex',alignItems:'center',gap:10,cursor:'pointer'}}>
+            <Icon n="bolt" sz={18} col={C.cr}/>
+            <span style={{flex:1,fontSize:15,fontWeight:700,color:C.ink,fontFamily:C.P}}>Try it: {guide.tryIt.label}</span>
+            <Icon n="chevron" sz={13} col={C.mid}/>
+          </div>}
+          </>:null}>
+          {!wide&&personal&&<div style={{padding:'12px 14px',borderRadius:14,background:C.crSoft,border:`1px solid ${C.crDim}`}}>
             <div style={{fontSize:12,fontWeight:700,color:C.cr,fontFamily:C.P,textTransform:'uppercase',letterSpacing:'0.06em',marginBottom:3}}>For you</div>
             <div style={{fontSize:15,color:C.ink2,fontFamily:C.P,lineHeight:1.55}}>{personal}</div>
           </div>}
@@ -136,7 +195,7 @@ function GuideScreen({nav,back}){
                 <div style={{width:42,height:42,borderRadius:12,background:C.offWhite,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><Icon n={sec.iconName||'read'} sz={20} col={C.cr}/></div>
                 <div style={{flex:1}}>
                   <div style={{fontSize:19,fontWeight:800,color:C.ink,fontFamily:C.P}}>{sec.term}</div>
-                  <div style={{fontSize:15,color:C.mid,fontFamily:C.P,fontStyle:'italic'}}>{sec.plain}</div>
+                  <div style={{fontSize:15,color:C.mid,fontFamily:C.P}}>{sec.plain}</div>
                 </div>
               </div>
               <div style={{fontSize:16,color:C.ink2,fontFamily:C.P,lineHeight:1.7}}>{sec.detail}</div>
@@ -150,6 +209,7 @@ function GuideScreen({nav,back}){
               </div>}
             </div>
           ))}
+          {!wide&&<>
           <div style={{background:passed?C.greenBg:C.crSoft,borderRadius:16,padding:'16px',border:`1px solid ${passed?C.green+'30':C.crDim}`,display:'flex',flexDirection:'column',gap:10}}>
             <div style={{fontSize:17,fontWeight:700,color:passed?C.green:C.cr,fontFamily:C.P}}>{passed?'You\'ve got this one':'Check yourself'}</div>
             <div style={{fontSize:15,color:C.ink2,fontFamily:C.P,lineHeight:1.5}}>{passed?'Every question answered. It counts towards your Mastery.':`${p.total} quick questions on this guide${p.correct?` · ${p.correct}/${p.total} answered so far`:''}. Reading it and passing them counts towards your Mastery.`}</div>
@@ -161,6 +221,8 @@ function GuideScreen({nav,back}){
             <span style={{flex:1,fontSize:15,fontWeight:700,color:C.ink,fontFamily:C.P}}>Try it: {guide.tryIt.label}</span>
             <Icon n="chevron" sz={13} col={C.mid}/>
           </div>}
+          </>}
+          </ReadingLayout>
           <div style={{height:16}}/>
         </div>
       </div>
@@ -171,7 +233,8 @@ function GuideScreen({nav,back}){
 Object.assign(window,{GuideScreen});
 
 /* ── GENERATED ARTICLE SCREEN ── */
-function GenArticleScreen({nav,back}){
+function GenArticleScreen({nav,back,showPro}){
+  const wide=useWide();
   const stub=React.useMemo(()=>{
     try{ return Handoff.genArticle.get(); }catch(e){ return null; }
   },[]);
@@ -188,6 +251,7 @@ function GenArticleScreen({nav,back}){
   });
   const sections=cached&&cached.sections;
   const because=React.useMemo(()=>stub?ContentEngine.because(stub):null,[stub&&stub.id]);
+  const ctx=React.useMemo(()=>stub?ContentEngine.context(stub):{bottles:[]},[stub&&stub.id]);
   const [generating,setGenerating]=React.useState(false);
 
   React.useEffect(()=>{
@@ -222,6 +286,7 @@ function GenArticleScreen({nav,back}){
     setCompleted(true);
   }
 
+  const forYou=(cached&&stub&&ContentEngine.forYouLine(stub,cached.forYou))||'Nobody else gets this article. It\'s written from your WineDNA: the wines you\'ve scanned, how you scored them and what you paid.';
   if(!stub) return(
     <div style={{flex:1,display:'flex',alignItems:'center',justifyContent:'center',padding:32}}>
       <span style={{fontSize:16,color:C.mid,fontFamily:C.P}}>Article not found.</span>
@@ -243,7 +308,7 @@ function GenArticleScreen({nav,back}){
 
       <div style={{flex:1,overflowY:'auto'}}>
         {/* Hero */}
-        <div style={{background:C.ink,padding:'24px 20px 22px'}}>
+        <div style={{background:C.ink,padding:wide?'32px max(20px, calc((100% - 760px) / 2)) 28px':'24px 20px 22px'}}>
           <div style={{display:'inline-flex',alignItems:'center',gap:6,padding:'4px 12px',borderRadius:20,background:'rgba(255,255,255,0.1)',marginBottom:12}}>
             <Icon n={stub.iconName||'read'} sz={14} col="rgba(255,255,255,0.6)"/>
             <span style={{fontSize:13,fontWeight:600,color:'rgba(255,255,255,0.55)',fontFamily:C.P}}>Written for you</span>
@@ -252,16 +317,25 @@ function GenArticleScreen({nav,back}){
           <div style={{fontSize:16,color:'rgba(255,255,255,0.5)',fontFamily:C.P,lineHeight:1.65}}>{stub.subtitle}</div>
           {because&&<div style={{fontSize:14,fontWeight:600,color:'rgba(255,255,255,0.75)',fontFamily:C.P,marginTop:12}}>{because}.</div>}
         </div>
-        <div style={{margin:'14px 20px 0',padding:'12px 14px',borderRadius:14,background:C.crSoft,border:`1px solid ${C.crDim}`}}>
-          <div style={{fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.55}}>{(cached&&ContentEngine.forYouLine(stub,cached.forYou))||'Nobody else gets this article. It\'s written from your WineDNA: the wines you\'ve scanned, how you scored them and what you paid.'}</div>
-        </div>
+        {!wide&&<div style={{margin:'14px 20px 0',padding:'12px 14px',borderRadius:14,background:C.crSoft,border:`1px solid ${C.crDim}`}}>
+          <div style={{fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.55}}>{forYou}</div>
+        </div>}
 
         <div style={{padding:'16px 20px',display:'flex',flexDirection:'column',gap:12}}>
+          {/* On an iPad: why it's for them, their bottles it draws on and where to go deeper, beside the text. */}
+          <ReadingLayout aside={wide?<>
+            <div style={{..._asideCard,background:C.crSoft,border:`1px solid ${C.crDim}`}} data-testid="aside-why">{_asideHead('Why this is for you')}<div style={{fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.55}}>{forYou}</div></div>
+            <_AsideWines wines={ctx.bottles} nav={nav} title="Your bottles in this piece"/>
+            <_AsideLinks links={[ctx.grape&&{t:`${ctx.grape}: the grape's page`,icon:'grape',go:()=>openGrapePage(ctx.grape,nav)},
+              ctx.region&&{t:`${ctx.region}: the region's page`,icon:'map',go:()=>openRegionPage(ctx.region,nav)},
+              ctx.grape&&{t:`Take the ${ctx.grape} quiz`,icon:'trophy',go:()=>_openLearn({kind:'grape',grape:ctx.grape},nav,showPro||(()=>{}))},
+              ctx.region&&{t:`Take the ${ctx.region} quiz`,icon:'trophy',go:()=>_openLearn({kind:'region',region:ctx.region},nav,showPro||(()=>{}))}]}/>
+          </>:null}>
           {/* Loading state */}
           {generating&&(
             <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'40px 20px',gap:14}}>
               <div style={{width:18,height:18,borderRadius:9,border:`2px solid ${C.cr}`,borderTopColor:'transparent',animation:'storySpin .8s linear infinite'}}/>
-              <span style={{fontSize:16,color:C.mid,fontFamily:C.P,fontStyle:'italic',textAlign:'center'}}>Writing your personalised article…</span>
+              <span style={{fontSize:16,color:C.mid,fontFamily:C.P,textAlign:'center'}}>Writing your personalised article…</span>
             </div>
           )}
 
@@ -272,7 +346,7 @@ function GenArticleScreen({nav,back}){
                 <div style={{width:46,height:46,borderRadius:12,background:C.offWhite,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><Icon n={s.iconName||'read'} sz={22} col={C.cr}/></div>
                 <div style={{flex:1}}>
                   <div style={{fontSize:21,fontWeight:800,color:C.ink,fontFamily:C.P,marginBottom:3}}>{s.term}</div>
-                  <div style={{fontSize:15,color:C.mid,fontFamily:C.P,fontStyle:'italic',marginBottom:10}}>{s.plain}</div>
+                  <div style={{fontSize:15,color:C.mid,fontFamily:C.P,marginBottom:10}}>{s.plain}</div>
                 </div>
               </div>
               <div style={{padding:'0 16px 14px',display:'flex',flexDirection:'column',gap:10}}>
@@ -300,8 +374,7 @@ function GenArticleScreen({nav,back}){
                   <div style={{fontSize:19,fontWeight:700,color:C.green,fontFamily:C.P,marginBottom:4}}>Article complete!</div>
                   <div style={{fontSize:16,color:C.mid,fontFamily:C.P,lineHeight:1.55,marginBottom:14}}>Keep exploring your reading list for more personalised content.</div>
                   <div style={{display:'flex',gap:8,justifyContent:'center'}}>
-                    <Btn onClick={()=>nav('learn')}>Reading List</Btn>
-                    <Btn primary onClick={()=>nav('camera')}>Scan a bottle</Btn>
+                    <Btn primary onClick={()=>nav('learn')}>Reading List</Btn>
                   </div>
                 </>
               ):(
@@ -313,6 +386,7 @@ function GenArticleScreen({nav,back}){
               )}
             </div>
           )}
+          </ReadingLayout>
           <div style={{height:16}}/>
         </div>
       </div>
@@ -369,10 +443,10 @@ function GrapeScreen({nav,back,showPro}){
   const act=()=>{
     if(ms.state==='open') return _openLearn({kind:'grape',grape:info.name},nav,showPro);
     if(ms.state==='held') return showPro('grape-library');
-    if(!Entitlement.isPro()) return nav('camera');
+    if(!Entitlement.isPro()) return;
     GrapeUnlocks.unlockManual(info.name); _openLearn({kind:'grape',grape:info.name},nav,showPro);
   };
-  const actLabel=ms.state==='open'?(ms.fading?`Refresh the ${info.name} quiz`:ms.score>=100?null:`Take the ${info.name} quiz`):ms.state==='held'?'Unlock with Pro':!Entitlement.isPro()?'Scan a bottle of it to unlock':`Unlock and take the quiz`;
+  const actLabel=ms.state==='open'?(ms.fading?`Refresh the ${info.name} quiz`:ms.score>=100?null:`Take the ${info.name} quiz`):ms.state==='held'?'Unlock with Pro':!Entitlement.isPro()?null:`Unlock and take the quiz`;
   const openMine=w=>{ Handoff.openWine({demo:false,wine:w,existingRating:w.rating||0}); nav('detail'); };
   const rows=[['Climate',info.climate],['In the winery',info.winemaking],['With food',info.food],['Ageing',info.ageing],['Often compared with',info.lookalike],['In blends',info.blends]].filter(r=>r[1]);
   return(
@@ -396,6 +470,7 @@ function GrapeScreen({nav,back,showPro}){
           {info.mine.count>0&&<div style={{fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.5}}>
             You've had {info.mine.count===1?'one bottle':`${info.mine.count} bottles`} of it{info.mine.best?`; your best was ${info.mine.best.name} (${info.mine.best.rating})`:''}.
           </div>}
+          {ms.state==='locked'&&!actLabel&&<div style={{fontSize:14,color:C.mid,fontFamily:C.P,lineHeight:1.5}}>The next bottle of it you scan unlocks its quiz.</div>}
           {actLabel&&<div role="button" onClick={act} style={{fontSize:14,fontWeight:700,color:C.cr,fontFamily:C.P,cursor:'pointer'}}>{actLabel} →</div>}
         </div>
 
@@ -450,6 +525,108 @@ function GrapeScreen({nav,back,showPro}){
           </div>)}
         </div>
         <div style={{height:12}}/>
+      </div>
+    </div>
+  );
+}
+
+/* ── A region's own page ──
+   Opened from the wine map's card ("More about …") or the region list, like a grape's page: where
+   they stand with it and its next step, then its checked facts from the knowledge base (rules and
+   classification, climate, ageing, the producers to know), the grapes it's known for (each opens
+   its own page), the places inside it, and every bottle of theirs from it, best score first, each
+   opening its wine (RegionInfo in pwa-content-engine.js). */
+function RegionPageScreen({nav,back,showPro}){
+  const name=Handoff.regionPage.get();
+  const info=React.useMemo(()=>name?RegionInfo.get(name):null,[name]);
+  const card={background:C.white,borderRadius:16,border:`1px solid ${C.line}`,padding:'14px 16px',display:'flex',flexDirection:'column',gap:8};
+  const head=t=><div style={{fontSize:13,fontWeight:600,color:C.mid,letterSpacing:'0.08em',textTransform:'uppercase',fontFamily:C.P,marginTop:4}}>{t}</div>;
+  if(!info) return <div style={{flex:1,padding:24,fontFamily:C.P,color:C.mid}}>That region isn't in the guide yet. <span role="button" onClick={back} style={{color:C.cr,fontWeight:700,cursor:'pointer'}}>Back</span></div>;
+  const ms=info.mastery;
+  const act=()=>{
+    if(ms.state==='open') return _openLearn({kind:'region',region:info.name},nav,showPro);
+    if(ms.state==='held') return showPro('regions');
+  };
+  const actLabel=ms.state==='open'?(ms.fading?`Refresh the ${info.name} quiz`:ms.score>=100?null:`Take the ${info.name} quiz`):ms.state==='held'?'Unlock with Pro':null;
+  const openMine=w=>{ Handoff.openWine({demo:false,wine:w,existingRating:w.rating||0}); nav('detail'); };
+  const facts=[['How it\'s classified',info.classification],['Climate',info.climate],['Ageing rules',info.agingRules],['Producers to know',(info.classicProducers||[]).join(', ')]].filter(r=>r[1]);
+  const wide=useWide();
+  const mineCard=info.mine.count>0&&<div>
+    {head(`Your bottles from ${info.name}`)}
+    <div data-testid="region-my-wines" style={{...card,gap:0,padding:'4px 16px',marginTop:8}}>
+      {info.mine.wines.map((w,i)=>(
+        <div key={(w.name||'')+'|'+(w.vintage||'')+'|'+i} role="button" tabIndex={0} onClick={()=>openMine(w)}
+          onKeyDown={e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); openMine(w); } }}
+          style={{display:'flex',alignItems:'center',gap:10,padding:'10px 0',borderTop:i?`1px solid ${C.line}`:'none',cursor:'pointer'}}>
+          <div style={{flex:1,minWidth:0}}>
+            <div style={{fontSize:15,fontWeight:600,color:C.ink,fontFamily:C.P,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{w.name}</div>
+            <div style={{fontSize:13,color:C.mid,fontFamily:C.P,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{[w.producer,w.sub_region||w.region,w.vintage].filter(Boolean).join(' · ')}</div>
+          </div>
+          {w.rating>0?<span style={{fontSize:16,fontWeight:800,color:scoreCol(w.rating),fontFamily:C.P}}>{w.rating}</span>
+            :<span style={{fontSize:13,color:C.mid,fontFamily:C.P}}>Not scored</span>}
+          <Icon n="chevron" sz={14} col={C.mid}/>
+        </div>
+      ))}
+    </div>
+  </div>;
+  const factsCard=<div>
+    {head('At a glance')}
+    <div style={{...card,gap:12,marginTop:8}}>
+      {facts.map(([l,t])=><div key={l}>
+        <div style={{fontSize:13,fontWeight:700,color:C.ink,fontFamily:C.P}}>{l}</div>
+        <div style={{fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.5}}>{String(t).replace(/\.+$/,'')}.</div>
+      </div>)}
+    </div>
+  </div>;
+  return(
+    <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden'}}>
+      <div style={{background:C.white,padding:'14px 20px',display:'flex',alignItems:'center',gap:12,borderBottom:`1px solid ${C.line}`,flexShrink:0}}>
+        <div role="button" aria-label="Back" onClick={back} style={{width:34,height:34,borderRadius:17,background:C.offWhite,border:`1px solid ${C.line}`,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',flexShrink:0}}><Icon n="back" sz={16} col={C.ink}/></div>
+        <Flag region={info.name} size={24}/>
+        <div style={{minWidth:0}}>
+          <div style={{fontSize:20,fontWeight:800,color:C.ink,fontFamily:C.P,letterSpacing:'-0.4px'}}>{info.name}</div>
+          <div style={{fontSize:13,color:C.mid,fontFamily:C.P}}>{info.country} · wine region</div>
+        </div>
+      </div>
+      <div style={{flex:1,overflowY:'auto',padding:'16px 20px'}}>
+        <div style={{maxWidth:wide?1100:undefined,margin:'0 auto',display:'flex',flexDirection:'column',gap:12}}>
+        <div style={card} data-testid="region-progress">
+          <div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline',gap:8,flexWrap:'wrap'}}>
+            <span style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>{ms.state==='open'?`${ms.level} · ${ms.score}%`:ms.state==='held'?'Unlocked, kept for Pro':'Not unlocked yet'}<RiseTag n={ms.rise} style={{marginLeft:8,fontSize:13}}/></span>
+            {ms.fading>0&&<span style={{fontSize:13,fontWeight:600,color:C.amber,fontFamily:C.P}}>{ms.fading} answer{ms.fading===1?'':'s'} fading</span>}
+          </div>
+          {ms.state==='open'&&<MasteryBar score={ms.score} col={C.cr}/>}
+          <div style={{fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.5}}>
+            {info.mine.count>0?<>You've had {info.mine.count===1?'one bottle':`${info.mine.count} bottles`} from {info.name}{info.mine.avg!=null?`, scored ${info.mine.avg} on average`:''}{info.mine.best?`; your best was ${info.mine.best.name} (${info.mine.best.rating})`:''}.</>
+              :`You haven't had a bottle from ${info.name} yet.`}
+          </div>
+          {ms.state==='locked'&&!actLabel&&<div style={{fontSize:14,color:C.mid,fontFamily:C.P,lineHeight:1.5}}>{`The next bottle from ${info.name} you scan unlocks its quiz.`}</div>}
+          {actLabel&&<div role="button" onClick={act} style={{fontSize:14,fontWeight:700,color:C.cr,fontFamily:C.P,cursor:'pointer'}}>{actLabel} →</div>}
+        </div>
+
+        <div style={{display:'grid',gridTemplateColumns:wide?'minmax(0,1fr) minmax(0,1fr)':'minmax(0,1fr)',gap:12,alignItems:'start'}}>
+          {factsCard}
+          <div style={{display:'flex',flexDirection:'column',gap:12}}>
+            <div>
+              {head('The grapes it\'s known for')}
+              <div style={{...card,flexDirection:'row',flexWrap:'wrap',gap:6,marginTop:8}}>
+                {info.grapes.map(g=>{ const known=typeof KNOWLEDGE!=='undefined'&&KNOWLEDGE.grapes&&KNOWLEDGE.grapes[g];
+                  return <span key={g} role={known?'button':undefined} onClick={known?()=>openGrapePage(g,nav):undefined}
+                    style={{display:'inline-flex',alignItems:'center',gap:6,padding:'6px 12px',borderRadius:999,background:grapeTypeColor(g)+'15',border:`1px solid ${grapeTypeColor(g)}40`,fontSize:14,fontWeight:600,color:grapeTypeColor(g),fontFamily:C.P,cursor:known?'pointer':'default'}}>{g}{known&&<Icon n="chevron" sz={11} col={grapeTypeColor(g)}/>}</span>; })}
+              </div>
+            </div>
+            {info.places.length>0&&<div>
+              {head('Places inside it')}
+              <div style={{...card,flexDirection:'row',flexWrap:'wrap',gap:6,marginTop:8}}>
+                {info.places.slice(0,16).map(r=><span key={r} style={{padding:'5px 10px',borderRadius:999,background:info.theirs.includes(r)?C.crSoft:C.offWhite,fontSize:13,color:info.theirs.includes(r)?C.cr:C.ink2,fontWeight:info.theirs.includes(r)?700:400,fontFamily:C.P}}>{r}</span>)}
+              </div>
+              {info.theirs.length>0&&<div style={{fontSize:12,color:C.mid,fontFamily:C.P,marginTop:4}}>Highlighted: the ones on your own labels.</div>}
+            </div>}
+          </div>
+        </div>
+        {mineCard}
+        <div style={{height:12}}/>
+        </div>
       </div>
     </div>
   );

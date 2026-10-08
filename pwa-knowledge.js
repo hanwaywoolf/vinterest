@@ -66,7 +66,7 @@ const KnowledgeMap = {
     const score=items.length?this._pct(WineDNA._mean(items.map(i=>i.score))/100):0;
     const weakest=[...items].sort((a,b)=>a.score-b.score)[0];
     const label=kind==='region'?'Regions':'Grapes';
-    const next=!items.length?{label:`Scan a bottle to unlock your first ${kind}`,nav:'camera'}
+    const next=!items.length?null
       :weakest.score<100?{label:`Next: the ${weakest.name} quiz`,nav:'learn'}:null;
     return {id:kind+'s',group:'places',label,score,level:this.level(score),next,items,
       detail:`${items.length} of ${kind==='region'?Object.keys(KNOWLEDGE.regions).length:GRAPE_ALLOWLIST.length} unlocked`+(items.length?` · ${items.filter(i=>i.score>0).length} studied`:'')};

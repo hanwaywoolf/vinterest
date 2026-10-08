@@ -1,7 +1,8 @@
 # Builds the iPhone app on a GitHub Mac, signs it and uploads it to TestFlight, on every push to
 # main and on demand (Actions → TestFlight → Run workflow). Setup, once: docs/testflight.md.
-#   - Signing is Xcode's automatic signing through an App Store Connect API key: Apple creates and
-#     keeps the certificate and profile, so there are no certificate files to manage.
+#   - Signing is Xcode's automatic signing through an App Store Connect API key, at export: Apple
+#     creates and keeps the distribution certificate and profile, so there are no certificate files
+#     to manage and no iPhone needs registering (the archive itself is built unsigned).
 #   - Until the key (secrets ASC_KEY_ID, ASC_ISSUER_ID, ASC_KEY_P8) and the team (variable
 #     APPLE_TEAM_ID) are set, the check job says so and nothing else runs.
 #   - Version: package.json's "version". Build number: this workflow's run number ×10 + attempt,
@@ -67,8 +68,12 @@ jobs:
           mkdir -p "$RUNNER_TEMP/keys"
           printf '%s\n' "$ASC_KEY_P8" > "$RUNNER_TEMP/keys/AuthKey_$ASC_KEY_ID.p8"
           echo "ASC_KEY_PATH=$RUNNER_TEMP/keys/AuthKey_$ASC_KEY_ID.p8" >> "$GITHUB_ENV"
-      - name: Archive (signed automatically)
+      # Archived unsigned: automatic signing would first sign for development, which needs a
+      # registered iPhone ("Your team has no devices"). The upload step signs it for App Store
+      # distribution, creating the certificate and profile itself, and that needs no device.
+      - name: Archive (unsigned)
         run: |
+          set -o pipefail
           VERSION=$(node -p "require('./package.json').version")
           BUILD=$(( ${{ github.run_number }} * 10 + ${{ github.run_attempt }} ))
           echo "Vinterest $VERSION ($BUILD)"
@@ -76,11 +81,16 @@ jobs:
             -destination 'generic/platform=iOS' -archivePath "$RUNNER_TEMP/Vinterest.xcarchive" \
             -allowProvisioningUpdates \
             -authenticationKeyPath "$ASC_KEY_PATH" -authenticationKeyID "$ASC_KEY_ID" -authenticationKeyIssuerID "$ASC_ISSUER_ID" \
-            DEVELOPMENT_TEAM="$APPLE_TEAM_ID" CODE_SIGN_STYLE=Automatic \
+            DEVELOPMENT_TEAM="$APPLE_TEAM_ID" CODE_SIGN_STYLE=Automatic CODE_SIGNING_ALLOWED=NO \
             MARKETING_VERSION="$VERSION" CURRENT_PROJECT_VERSION="$BUILD" \
-            archive
+            archive 2>&1 | tee "$RUNNER_TEMP/archive.log" || {
+            # Xcode's own error lines as annotations, so a failure says why on the run's summary
+            # (exit code 65 alone doesn't).
+            grep -E '(error|Error):' "$RUNNER_TEMP/archive.log" | sort -u | head -20 | while IFS= read -r l; do echo "::error title=Archive::$l"; done
+            exit 1; }
       - name: Upload to TestFlight
         run: |
+          set -o pipefail
           cat > "$RUNNER_TEMP/ExportOptions.plist" <<EOF
           <?xml version="1.0" encoding="UTF-8"?>
           <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -95,7 +105,10 @@ jobs:
           xcodebuild -exportArchive -archivePath "$RUNNER_TEMP/Vinterest.xcarchive" \
             -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist" -exportPath "$RUNNER_TEMP/export" \
             -allowProvisioningUpdates \
-            -authenticationKeyPath "$ASC_KEY_PATH" -authenticationKeyID "$ASC_KEY_ID" -authenticationKeyIssuerID "$ASC_ISSUER_ID"
+            -authenticationKeyPath "$ASC_KEY_PATH" -authenticationKeyID "$ASC_KEY_ID" -authenticationKeyIssuerID "$ASC_ISSUER_ID" \
+            2>&1 | tee "$RUNNER_TEMP/export.log" || {
+            grep -E '(error|Error):' "$RUNNER_TEMP/export.log" | sort -u | head -20 | while IFS= read -r l; do echo "::error title=Upload::$l"; done
+            exit 1; }
       - name: Remove the key
         if: always()
         run: rm -rf "$RUNNER_TEMP/keys"

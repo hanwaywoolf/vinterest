@@ -48,3 +48,6 @@ screens-*.jsx
 
 # Personal data used to render the WineDNA film (a real backup and the text Claude wrote for it)
 /site/video/private/
+model-trial.md
+lcbo-check.md
+feed-report-*.md

@@ -46,13 +46,17 @@ const UserPrefs = {
     return c?c.name:null;
   },
 
-  location(){ return {country:Store.get('vinterest_country')||'',state:Store.get('vinterest_state')||''}; },
-  setLocation({country,state}){
+  location(){ return {country:Store.get('vinterest_country')||'',state:Store.get('vinterest_state')||'',city:Store.get('vinterest_city')||''}; },
+  /* Ontario is the one place the app asks for a city: the LCBO lookup (Lcbo in pwa-regional.js)
+     finds the LCBO stores near it with a bottle in stock. */
+  isOntario(state){ return /^(on|ont|ontario)\.?$/i.test(String(state||'').trim()); },
+  askCity(country,state){ const c=this.country(country); return !!(c&&c.iso==='CA'&&this.isOntario(state)); },
+  setLocation({country,state,city}){
     const c=this.country(country)||this.COUNTRIES[this.COUNTRIES.length-1];
     try{
       Store.set('vinterest_country',c.name);
       if(state&&c.stateLabel) Store.set('vinterest_state',state.trim()); else Store.remove('vinterest_state');
-      Store.remove('vinterest_city'); // never used
+      if(city&&city.trim()&&this.askCity(c.name,state)) Store.set('vinterest_city',city.trim().replace(/\s+/g,' ')); else Store.remove('vinterest_city');
       Store.set('vinterest_region',c.region);
       Store.set('vinterest_currency',(HOME_REGION_CURRENCY[c.region]||{}).code||'USD');
     }catch(e){}

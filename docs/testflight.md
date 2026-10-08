@@ -51,6 +51,10 @@ build number goes up by itself.
 - *No profiles for 'app.vinterest' were found* / *No Account for Team*: the App ID (step 2) or
   `APPLE_TEAM_ID` is missing or doesn't match.
 - *Cloud signing permission error*: the API key needs **Admin** access (step 4).
+- *Your team has no devices from which to generate a provisioning profile*: that's development
+  signing, which needs a registered iPhone. The workflow archives unsigned and signs only for
+  App Store distribution at upload, which needs no device; if this comes back, the archive step
+  is signing again.
 - *The bundle version must be higher*: a build with that number was already uploaded; run the
   workflow again (the number goes up).
 - *Missing compliance*: shouldn't happen; `ITSAppUsesNonExemptEncryption` is set to false by

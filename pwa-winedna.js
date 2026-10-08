@@ -104,7 +104,16 @@ const WineDNA = {
      on the 50-grape Learn list, ignoring case and accents ("Gewurztraminer", "Albarino"), so a
      grape never shows under one name in WineDNA and another in Learn. */
   _fold(s){ return String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim(); },
+  _grapeMemo:new Map(),
   grape(g){
+    const k=String(g||'');
+    if(this._grapeMemo.has(k)) return this._grapeMemo.get(k);
+    const v=this._grape(g);
+    if(this._grapeMemo.size>5000) this._grapeMemo.clear();
+    this._grapeMemo.set(k,v);
+    return v;
+  },
+  _grape(g){
     const raw=(g||'').trim(), k=raw.toLowerCase(); if(!k) return null;
     const syn=this.GRAPE_SYNONYMS[k]||this.GRAPE_SYNONYMS[this._fold(k)];
     const name=syn||(raw===k?raw.split(' ').map(w=>w.charAt(0).toUpperCase()+w.slice(1)).join(' '):raw);

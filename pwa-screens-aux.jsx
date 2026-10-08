@@ -759,7 +759,6 @@ function WineListScreen({nav,back,showPro}){
             </Card>
           );
         })}
-        <Btn primary full onClick={()=>nav('camera')} style={{marginTop:4}}>Scan Another</Btn>
         <div style={{height:8}}/>
       </div>
 </div>
@@ -776,25 +775,32 @@ function saveBackupFile(){
     if(r==='failed') alert('The backup file couldn\'t be saved. Try again.');
   });
 }
+/* Picks a backup file, says what restoring it will do, and restores it once they agree. The
+   restored file is passed to `done` (Profile reloads; the welcome screen goes on from there). */
+function restoreBackupFile(done){
+  const inp=document.createElement('input'); inp.type='file'; inp.accept='.json,application/json';
+  inp.onchange=e=>{
+    const file=e.target.files[0]; if(!file) return;
+    const reader=new FileReader();
+    reader.onload=ev=>{
+      const r=Backup.read(String(ev.target.result||''));
+      if(!r.ok){ alert(r.error); return; }
+      if(!window.confirm(Backup.describe(r.summary)+'\n\nRestore it?')) return;
+      const plan=Backup.apply(r.data);
+      done(plan,r.data);
+    };
+    reader.onerror=()=>alert('That file couldn\'t be opened. Try saving it to your phone again.');
+    reader.readAsText(file);
+  };
+  inp.click();
+}
 function DataBackupCard({padding=12}){
   const exportFile=saveBackupFile;
   function importFile(){
-    const inp=document.createElement('input'); inp.type='file'; inp.accept='.json,application/json';
-    inp.onchange=e=>{
-      const file=e.target.files[0]; if(!file) return;
-      const reader=new FileReader();
-      reader.onload=ev=>{
-        const r=Backup.read(String(ev.target.result||''));
-        if(!r.ok){ alert(r.error); return; }
-        if(!window.confirm(Backup.describe(r.summary)+'\n\nRestore it?')) return;
-        const done=Backup.apply(r.data);
-        alert(`Restored: ${done.added} new wine${done.added===1?'':'s'}${done.updated?`, ${done.updated} merged`:''}.`);
-        window.location.reload();
-      };
-      reader.onerror=()=>alert('That file couldn\'t be opened. Try saving it to your phone again.');
-      reader.readAsText(file);
-    };
-    inp.click();
+    restoreBackupFile(done=>{
+      alert(`Restored: ${done.added} new wine${done.added===1?'':'s'}${done.updated?`, ${done.updated} merged`:''}.`);
+      window.location.reload();
+    });
   }
   return <Card style={{padding}}>
     <div style={{fontSize:16,fontWeight:600,color:C.ink,fontFamily:C.P,marginBottom:10}}>Data Backup</div>
@@ -807,4 +813,4 @@ function DataBackupCard({padding=12}){
 }
 
 /* ── SETTINGS SCREEN ── */
-Object.assign(window,{TasteProfileScreen,RestaurantScreen,LearnScreen,MyWinesScreen,WineListScreen});
+Object.assign(window,{TasteProfileScreen,RestaurantScreen,LearnScreen,MyWinesScreen,WineListScreen,restoreBackupFile});

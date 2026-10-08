@@ -44,11 +44,17 @@ const Regions = {
     Object.entries(KNOWLEDGE.regions||{}).forEach(([key,r])=>{ [key,...(r.aliases||[])].forEach(n=>{ const t=this._norm(n); if(t) list.push({t,key}); }); });
     return this._index=list.sort((a,b)=>b.t.length-a.t.length); // longest first: "Rioja Alta" before "Rioja"
   },
+  // Same text, same answer, and a redraw on a phone asks thousands of times: remembered.
+  _matched:new Map(),
   _match(text){
+    const k=String(text||'');
+    if(this._matched.has(k)) return this._matched.get(k);
     const x=' '+this._norm(text)+' ';
-    if(x.trim()==='') return null;
-    const hit=this.index().find(e=>x.includes(' '+e.t+' '));
-    return hit?hit.key:null;
+    const hit=x.trim()===''?null:this.index().find(e=>x.includes(' '+e.t+' '));
+    const key=hit?hit.key:null;
+    if(this._matched.size>5000) this._matched.clear();
+    this._matched.set(k,key);
+    return key;
   },
   resolve(w){ if(!w) return null; return this._match(w.sub_region)||this._match(w.region)||this._match(w.name)||null; },
   /* The region's country flag (emoji), for colour on region quizzes. '' when unknown. */
@@ -70,6 +76,31 @@ const Regions = {
   wineFlag(w){ return (w&&this.countryFlag(w.country))||this.flag(this.resolve(w)); },
   /* The region a wine is filed under for learning: the knowledge-base region when there is one. */
   of(w){ return this.resolve(w)||(w&&w.region)||null; },
+};
+
+/* A region's own page (RegionPageScreen) and the map's card: the knowledge base's checked facts for
+   it, where they stand with it in Mastery, and every bottle of theirs from it (WineDNA.region, so
+   a Châteauneuf-du-Pape counts for the Rhône), best score first. Like GrapeInfo for a grape. */
+const RegionInfo = {
+  get(name,wines){
+    const K=typeof KNOWLEDGE!=='undefined'&&KNOWLEDGE.regions&&KNOWLEDGE.regions[name];
+    if(!K) return null;
+    wines=wines||WineHistory.getAll();
+    const mine=wines.filter(w=>WineDNA.region(w)===name);
+    const scored=mine.filter(w=>w.rating>0).sort((a,b)=>b.rating-a.rating);
+    const when=w=>new Date(w.last_scanned||w.scanned_at||0).getTime()||0;
+    const list=[...mine].sort((a,b)=>(b.rating||0)-(a.rating||0)||when(b)-when(a));
+    const m=KnowledgeMap.compute(wines), area=m.areas.find(a=>a.id==='regions'), it=area&&area.items.find(i=>i.name===name);
+    const state=it?'open':RegionUnlocks.held().includes(name)?'held':'locked';
+    // Their own labels' names for places inside it (the appellations they've had), then the rest.
+    const theirs=[...new Set(mine.map(w=>w.sub_region||w.region).filter(r=>r&&r!==name))];
+    return {name,...K,grapes:(K.keyGrapes||[]).map(g=>WineDNA.grape(g)),places:[...new Set([...theirs,...(K.aliases||[])])],theirs,
+      mine:{count:mine.length,wines:list,scored:scored.length,best:scored[0]||null,avg:scored.length?Math.round(scored.reduce((a,w)=>a+w.rating,0)/scored.length):null},
+      mastery:{state,score:it?it.score:0,level:it?it.level:'Not started',fading:it?it.fading||0:0,
+        rise:it?KnowledgeMap.itemRise(KnowledgeMap.progress(m),'regions',name,it.score):0}};
+  },
+  // The map card's one line: its country and the grapes it's known for.
+  line(info){ return [info.country,(info.grapes||[]).slice(0,3).join(', ')].filter(Boolean).join(' · '); },
 };
 
 /* Regions open up as they're scanned: the first FREE_REGION_CAP for everyone, the rest with Pro
@@ -110,7 +141,7 @@ const RegionQuizBank = {
   key(region){ return 'vinterest_region_quiz_bank_'+region.replace(/\s+/g,'_'); },
   get(region){
     // Near-duplicates filtered on read, so banks saved before the filter existed are cleaned too.
-    try{ const raw=JSON.parse(Store.get(this.key(region))||'null'); const qs=Array.isArray(raw)?QuizMastery.distinct(raw,region):null; return qs&&qs.length>=QUIZ_SIZE?qs:null; }catch(e){ return null; }
+    try{ const qs=QuizMastery.distinctStored(Store.get(this.key(region)),region); return qs&&qs.length>=QUIZ_SIZE?qs:null; }catch(e){ return null; }
   },
   // A question is kept only if it's well-formed; a bank with too few survivors isn't cached,
   // so the next tap retries generation rather than locking in a short bank.
@@ -701,8 +732,17 @@ const ContentEngine = {
     const repeat=before.some(s=>s.archetypeId===stub.archetypeId);
     const staleB=stub.archetypeId==='beyond_region'&&slots.regionB!==stub.slots.regionB;
     if(!repeat&&!staleB) return false;
-    const archetype=this.pickArchetype({event:'new_region'},slots,before);
-    if(!archetype) return false;
+    // Healing runs on every read of the shelf, so it has to settle: move a repeat only to a kind
+    // used less often than its own, and choose by the piece's id, never at random. A random pick
+    // among kinds already used rewrote the shelf on every read, and on WineDNA (which reads it
+    // twice a draw, and redraws when a sync brings the change back) that never stopped.
+    const used=id=>before.filter(s=>s.archetypeId===id).length;
+    const cands=this._candidates('new_region',slots);
+    if(!cands.length) return false;
+    const min=Math.min(...cands.map(c=>used(c.id)));
+    if(!staleB&&min>=used(stub.archetypeId)) return false;
+    const least=cands.filter(c=>used(c.id)===min);
+    const archetype=least.find(c=>c.id===stub.archetypeId)||least[[...String(stub.id)].reduce((h,ch)=>(h*31+ch.charCodeAt(0))>>>0,7)%least.length];
     Object.assign(stub,{archetypeId:archetype.id,iconName:archetype.iconName,readTime:archetype.readTime,series:archetype.series||null,brief:archetype.brief,slots,facts:this.retrieveFacts(archetype,slots)});
     return true;
   },
@@ -722,6 +762,15 @@ const ContentEngine = {
       :false;
     const when=w=>new Date(w.last_scanned||w.scanned_at||0).getTime()||0;
     return (wines||[]).filter(hit).sort((a,b)=>(b.rating||0)-(a.rating||0)||when(b)-when(a));
+  },
+  /* What a piece's side panel on an iPad shows (ReadingLayout): the bottles of theirs it draws on,
+     and the grape or region page and quiz that go deeper on its subject, when the guide has one. */
+  context(stub,wines){
+    const s=(stub&&stub.slots)||{}, all=wines||WineHistory.getAll();
+    const bottles=this._related(s,all).slice(0,5);
+    const g=s.grape&&WineDNA.grape(s.grape), grape=g&&typeof KNOWLEDGE!=='undefined'&&KNOWLEDGE.grapes&&KNOWLEDGE.grapes[g]?g:null;
+    const r=s.region&&(Regions.resolve({region:s.region})||s.region), region=r&&typeof KNOWLEDGE!=='undefined'&&KNOWLEDGE.regions&&KNOWLEDGE.regions[r]?r:null;
+    return {bottles,grape,region};
   },
   because(stub,wines){
     const s=(stub&&stub.slots)||{};
@@ -759,8 +808,22 @@ const ContentEngine = {
     const rc=Regional.current(), out=[];
     const rel=this._related(stub&&stub.slots,wines);
     const cmp=ScanFlow.COMPARE;
+    // A grape piece needs to know how the grape is in each bottle: the lead grape or a supporting
+    // one, printed on the label or only what the wine usually contains, and the label's own name
+    // for it (Garnacha for Grenache). Without that the article built a whole section on a supporting
+    // grape it had to guess at, then hedged ("your bottles don't tell us the exact mix").
+    const subj=stub&&stub.slots&&stub.slots.grape?WineDNA.grape(stub.slots.grape):null;
+    const grapesOf=w=>{
+      const gs=w.grapes||[]; if(!gs.length) return [];
+      const out=[`grapes: ${gs.map((g,i)=>g+(i===0&&gs.length>1?' (the lead grape)':'')).join(', ')}${w.grapes_basis==='typical'?' (what this wine usually contains; not printed on the label)':''}`];
+      const i=subj?gs.findIndex(g=>WineDNA.grape(g)===subj):-1;
+      if(i>0) out.push(`${gs[i]} is a supporting grape in it, not the main one`);
+      if(i>=0&&gs[i]!==subj) out.push(`its label calls ${subj} "${gs[i]}"`);
+      return out;
+    };
     const line=w=>{
       const b=[w.name+(w.vintage>0?' '+w.vintage:'')+(w.region?` (${w.region})`:'')];
+      b.push(...grapesOf(w));
       b.push(w.rating>0?`scored ${w.rating}, ${ParkerScale.label(w.rating)}`:'not scored yet');
       const p=WineDNA.priceOf(w,rc); if(p) b.push(`${w.price_paid&&w.price_paid.amount>0?'paid':'about'} ${rc.base}${Math.round(p)}`);
       if(w.buy_again) b.push('would buy again');

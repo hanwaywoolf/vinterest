@@ -442,6 +442,8 @@ test('the wine map zooms with a pinch and with + and −, and a tap still picks 
   }, pin);
   await page.mouse.click(p2.x, p2.y);
   await expect(page.getByTestId('map-picked')).toContainText(pin.name);
+  // The nav's Scan button is always there; the card never pushes a scan.
+  await expect(page.getByTestId('map-picked')).not.toContainText('Scan a bottle');
   expect(errors).toEqual([]);
 });
 
@@ -477,7 +479,8 @@ test('the wine map names countries zoomed out and regions zoomed in, readable an
   const labels = (kind) => map.locator(`text[data-label="${kind}"]`).evaluateAll((els) => els.map((e) => { const r = e.getBoundingClientRect(); return { t: e.textContent, x0: r.left, x1: r.right, y0: r.top, y1: r.bottom, h: r.height }; }));
   const clear = (ls) => ls.every((a, i) => ls.every((b, j) => i === j || a.x1 <= b.x0 + 1 || b.x1 <= a.x0 + 1 || a.y1 <= b.y0 + 1 || b.y1 <= a.y0 + 1));
   const countries = await labels('country');
-  for (const c of ['FRANCE', 'SPAIN', 'ITALY', 'PORTUGAL']) expect(countries.map((l) => l.t)).toContain(c);
+  // Only the major wine countries: the five with the most regions, nothing else.
+  expect(countries.map((l) => l.t).sort()).toEqual(['FRANCE', 'GERMANY', 'ITALY', 'PORTUGAL', 'SPAIN']);
   expect(Math.min(...countries.map((l) => l.h))).toBeGreaterThan(9);
   expect(clear(countries)).toBe(true);
   expect(await labels('region')).toEqual([]);
@@ -537,4 +540,80 @@ test('every grape has a page: origin, wines and how its bunch looks', async ({ c
     return miss;
   }));
   expect(gaps).toEqual([]);
+});
+
+test.describe('on an iPad', () => {
+  test.use({ viewport: { width: 1180, height: 820 } });
+
+  test('the map is drawn centred in a wide box: a tap on a pin picks that pin, names are one size at every zoom', async ({ context, page }, info) => {
+    const errors = collectErrors(page);
+    await user(context, page);
+    await page.goto(`${BASE}/#mastery-map`);
+    await page.getByRole('button', { name: /^Europe/ }).click();
+    const map = page.getByTestId('region-map');
+    await map.scrollIntoViewIfNeeded();
+    // Where a pin really is on screen: the map keeps its shape, so in a wide box it sits centred.
+    const where = (name) => map.evaluate((el, name) => {
+      const vb = el.viewBox.baseVal, r = el.getBoundingClientRect(), s = Math.min(r.width / vb.width, r.height / vb.height);
+      const ox = (r.width - vb.width * s) / 2, oy = (r.height - vb.height * s) / 2;
+      const v = KnowledgeMap.regionMap().find((x) => x.id === 'europe'), p = v.pins.find((x) => x.name === name);
+      return { x: r.left + ox + (p.x - vb.x) * s, y: r.top + oy + (p.y - vb.y) * s, letterbox: ox };
+    }, name);
+    const rioja = await where('Rioja');
+    expect(rioja.letterbox).toBeGreaterThan(50); // the case that used to miss
+    await page.mouse.click(rioja.x, rioja.y);
+    const card = page.getByTestId('map-picked');
+    await expect(card).toHaveAttribute('data-region', 'Rioja');
+    await expect(card).toContainText("you've had 3");
+    await expect(card).toContainText('Spain · Tempranillo');
+    // A finger a little off the pin still picks it.
+    await page.getByRole('button', { name: 'Close' }).click();
+    await map.scrollIntoViewIfNeeded();
+    const again = await where('Rioja');
+    await page.mouse.click(again.x + 14, again.y + 10);
+    await expect(card).toHaveAttribute('data-region', 'Rioja');
+    await page.screenshot({ path: path.join(info.project.outputDir, 'ipad-map-card.png') });
+    // Names: the same size on screen at 2× and at 6×, and every pin in view that has room is named.
+    const sizes = async () => map.locator('text[data-label="region"]').evaluateAll((els) => els.map((e) => Math.round(e.getBoundingClientRect().height)));
+    for (let i = 0; i < 2; i++) await page.getByRole('button', { name: 'Zoom in' }).click();
+    const at2 = await sizes();
+    for (let i = 0; i < 2; i++) await page.getByRole('button', { name: 'Zoom in' }).click();
+    const at6 = await sizes();
+    expect(at2.length).toBeGreaterThan(0);
+    expect(Math.max(...at2, ...at6) - Math.min(...at2, ...at6)).toBeLessThanOrEqual(2);
+    expect(Math.min(...at6)).toBeGreaterThanOrEqual(14);
+    expect(errors).toEqual([]);
+  });
+
+  test('"More" opens the region page: its facts, its grapes, their bottles from it; back returns to the map', async ({ context, page }, info) => {
+    const errors = collectErrors(page);
+    await user(context, page);
+    await page.goto(`${BASE}/#mastery-map`);
+    const map = page.getByTestId('region-map');
+    await map.scrollIntoViewIfNeeded();
+    const pos = await map.evaluate((el) => {
+      const vb = el.viewBox.baseVal, r = el.getBoundingClientRect(), s = Math.min(r.width / vb.width, r.height / vb.height);
+      const v = KnowledgeMap.regionMap().find((x) => x.id === 'europe'), p = v.pins.find((x) => x.name === 'Rioja');
+      return { x: r.left + (r.width - vb.width * s) / 2 + p.x * s, y: r.top + (r.height - vb.height * s) / 2 + p.y * s };
+    });
+    await page.mouse.click(pos.x, pos.y);
+    await page.getByTestId('region-more').click();
+    await expect.poll(() => page.evaluate(() => location.hash)).toBe('#region-page');
+    const root = page.locator('#root');
+    await expect(root).toContainText('Rioja');
+    await expect(root).toContainText('At a glance');
+    await expect(root).toContainText('Producers to know');
+    await expect(page.getByTestId('region-my-wines').locator('[role="button"]')).toHaveCount(3);
+    // On an iPad the facts and the grapes sit side by side.
+    const cols = await page.evaluate(() => { const g = [...document.querySelectorAll('#root div')].find((d) => getComputedStyle(d).gridTemplateColumns.split(' ').length === 2); return !!g; });
+    expect(cols).toBe(true);
+    await page.screenshot({ path: path.join(info.project.outputDir, 'ipad-region-page.png') });
+    // A grape it's known for opens that grape's page.
+    await root.getByRole('button', { name: /^Tempranillo/ }).first().click();
+    await expect.poll(() => page.evaluate(() => location.hash)).toBe('#grape');
+    await page.goBack();
+    await page.getByRole('button', { name: 'Back' }).first().click();
+    await expect.poll(() => page.evaluate(() => location.hash)).toBe('#mastery-map');
+    expect(errors).toEqual([]);
+  });
 });

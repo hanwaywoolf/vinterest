@@ -1,0 +1,40 @@
+# Loads the partner shops' Awin product feeds into Supabase every night (scripts/shop-feeds.mjs), so
+# the Price tab can show the bottle itself with "Buy at <shop>". Also on demand (Actions → Shop
+# feeds → Run workflow) and on a claude/ branch commit whose message has [feed-sync] (loads) or
+# [feed-report] (only reports what's in the feeds) or [feed-check] (what the matching finds for
+# some well-known wines). Secrets: AWIN_FEED_<SHOP> (the feed's download
+# URL, which holds the publisher's feed key, never printed), SUPABASE_URL and SUPABASE_FEEDS_KEY (a
+# Supabase secret key used only by this job). The result is posted on the commit.
+name: Shop feeds
+on:
+  schedule:
+    - cron: '17 4 * * *'
+  workflow_dispatch:
+  push:
+    branches: ['claude/**']
+jobs:
+  feeds:
+    if: github.event_name != 'push' || contains(github.event.head_commit.message, '[feed-sync]') || contains(github.event.head_commit.message, '[feed-report]') || contains(github.event.head_commit.message, '[feed-check]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write # to post the result as a comment on the commit
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Load the feeds
+        run: node scripts/shop-feeds.mjs ${{ (github.event_name == 'push' && contains(github.event.head_commit.message, '[feed-report]')) && '--report' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[feed-check]')) && '--check' || '--sync' }}
+        env:
+          AWIN_FEED_WINEBUYERS: ${{ secrets.AWIN_FEED_WINEBUYERS }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_FEEDS_KEY: ${{ secrets.SUPABASE_FEEDS_KEY }}
+      - name: Post the result on the commit
+        if: always() && github.event_name == 'push' && hashFiles('feed-report-*.md') != ''
+        run: |
+          node -e "const fs=require('fs');const t=fs.readdirSync('.').filter(f=>f.startsWith('feed-report-')).map(f=>fs.readFileSync(f,'utf8')).join('\n\n');fs.writeFileSync('c.json',JSON.stringify({body:t.slice(0,60000)}))"
+          curl -sS -X POST -H "authorization: Bearer $GH_TOKEN" -H "accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${{ github.repository }}/commits/${{ github.sha }}/comments" -d @c.json > /dev/null
+        env:
+          GH_TOKEN: ${{ github.token }}

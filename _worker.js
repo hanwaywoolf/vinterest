@@ -4,10 +4,14 @@
 //
 // Set these in Cloudflare Pages → your project → Settings → Variables and secrets:
 //   ANTHROPIC_API_KEY   (required, mark as a secret)  your sk-ant-... key
-//   CLAUDE_MODEL        (optional)  e.g. claude-haiku-4-5 for a cheaper model
+//   CLAUDE_MODEL        (optional)  e.g. claude-sonnet-5-5 (cheaper per token; see modelOptions)
 //                                   (default: claude-sonnet-4-6)
+//   CLAUDE_EFFORT       (optional)  Claude 5 models only: low | medium | high, for every purpose
+//                                   (default: PURPOSE_EFFORT, else low)
+//   CLAUDE_THINKING     (optional)  Claude Sonnet 5.5 only: "on" lets it think (slower); default off
 //   PRICE_MODEL         (optional)  model for the premium-wine price search only
-//                                   (default: CLAUDE_MODEL, then claude-sonnet-4-6)
+//                                   (default: claude-sonnet-4-6, whatever CLAUDE_MODEL is: the
+//                                   search tool and its timing were tuned on it)
 //   SUPABASE_URL        (optional)  https://<project-ref>.supabase.co. With it and the two keys
 //   SUPABASE_PUBLISHABLE_KEY          below, signed-in users are verified, metered per week and
 //   SUPABASE_SECRET_KEY (secret)     checked for Pro (supabase/README.md). Without them, every
@@ -63,6 +67,23 @@ const CLAUDE_PURPOSE_LIMITS = {
   winedna_summary: 4096    // pwa-screens-wineiq.jsx — Wine DNA personality summary
 };
 
+/* Claude 5 models take settings Sonnet 4.6 didn't need. Sonnet 5.5 thinks by default, which
+   Sonnet 4.6 (as called here) never did: thinking is turned off (`between_tools`) so a label scan
+   stays as quick as it was, and effort is low except where the writing or the checked facts are
+   the product (quiz banks, articles, the WineDNA summary, the sommelier script). High effort didn't
+   make the quiz banks' wrong answers any less obvious; the quiz prompts' own rule about them does. Refusal
+   fallbacks are on, so a request their safety classifier declines is answered by another model
+   in the same call instead of coming back empty. Earlier models get nothing extra. */
+const PURPOSE_EFFORT = { grape_quiz: "medium", region_quiz: "medium", learn_article: "medium", winedna_summary: "medium", sommelier_script: "medium" };
+function modelOptions(model, purpose, env) {
+  if (!/^claude-(sonnet|opus|fable)-5/.test(model)) return { body: {}, betas: [] };
+  const effort = env.CLAUDE_EFFORT || PURPOSE_EFFORT[purpose] || "low";
+  const body = { output_config: { effort } }, betas = [];
+  if (/^claude-sonnet-5-5/.test(model) && env.CLAUDE_THINKING !== "on") body.thinking = { type: "between_tools" };
+  if (/^claude-(sonnet-5-5|opus-5|fable-5-1)/.test(model)) { body.fallbacks = "default"; betas.push("server-side-fallback-2026-07-01"); }
+  return { body, betas };
+}
+
 const ALLOWED_ORIGINS = [
   "https://vinterest.app",
   "https://test.vinterest.app", // the web app's test address (a custom domain on the vinterest Pages project)
@@ -105,6 +126,16 @@ export default {
     }
     if (url.pathname === "/go") {
       return handleGo(request, env);
+    }
+    if (url.pathname === "/shop-match") {
+      if (request.method === "OPTIONS") return cors(new Response(null, { status: 204 }));
+      if (request.method !== "POST") return json(405, { error: "Method not allowed" });
+      return handleShopMatch(request, env);
+    }
+    if (url.pathname === "/lcbo") {
+      if (request.method === "OPTIONS") return cors(new Response(null, { status: 204 }));
+      if (request.method !== "POST") return json(405, { error: "Method not allowed" });
+      return handleLcbo(request, env);
     }
     if (url.pathname === "/claude") {
       if (request.method === "OPTIONS") return cors(new Response(null, { status: 204 }));
@@ -232,26 +263,32 @@ async function handleClaude(request, env, ctx) {
   const model = env.CLAUDE_MODEL || "claude-sonnet-4-6";
   const max_tokens = Math.min(Number(payload.max_tokens) || purposeCap, purposeCap);
 
+  const opts = modelOptions(model, purpose, env);
   try {
+    const started = Date.now();
     const r = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
         "content-type": "application/json",
         "x-api-key": key,
-        "anthropic-version": "2023-06-01"
+        "anthropic-version": "2023-06-01",
+        ...(opts.betas.length ? { "anthropic-beta": opts.betas.join(",") } : {})
       },
-      body: JSON.stringify({ model, max_tokens, messages })
+      body: JSON.stringify({ model, max_tokens, messages, ...opts.body })
     });
     const data = await r.json();
     if (!r.ok) {
       const msg = (data && data.error && data.error.message) || "Anthropic API error.";
       return json(r.status, { error: msg, code: "anthropic_error" });
     }
+    // Declined by every model in the chain: say so rather than answer with nothing.
+    if (data.stop_reason === "refusal") return json(422, { error: "Claude couldn't answer that one. Try again, or ask it another way.", code: "refused" });
     const text = (data.content || [])
       .filter((b) => b.type === "text")
       .map((b) => b.text)
       .join("");
-    return json(200, { text });
+    // model, usage and ms are for comparing models (scripts/model-trial.mjs); the app reads text.
+    return json(200, { text, model: data.model || model, usage: data.usage || null, ms: Date.now() - started });
   } catch (e) {
     return json(502, { error: "Failed to reach Anthropic: " + (e && e.message ? e.message : String(e)), code: "upstream_unreachable" });
   }
@@ -267,7 +304,7 @@ const FAIR_USE = {
   free: { label_scan: 100, list_scan: 30, price_search: 50, _other: 500 },
   pro:  { label_scan: 600, list_scan: 150, price_search: 300, _other: 3000 },
 };
-const PRO_ONLY = { list_scan: "Wine list scanning is part of Vinterest Pro." };
+const PRO_ONLY = { list_scan: "Wine list scanning is part of Vinterest Pro.", lcbo: "LCBO stock near you is part of Vinterest Pro." };
 /* While testing, before real purchases exist: these Pro features are open to any signed-in account
    (metered by FAIR_USE.free); signed out still asks them to sign in. Remove an entry to make it Pro
    again, and change Entitlement.listScanNeeds in pwa-userdata.js to match. */
@@ -413,11 +450,11 @@ async function priceCacheGet(env, k) {
     return hit ? await hit.text() : null;
   } catch (e) { return null; }
 }
-async function priceCachePut(env, k, value) {
+async function priceCachePut(env, k, value, ttl = PRICE_TTL_S) {
   try {
-    if (env.PRICE_CACHE) return await env.PRICE_CACHE.put(k, value, { expirationTtl: PRICE_TTL_S });
+    if (env.PRICE_CACHE) return await env.PRICE_CACHE.put(k, value, { expirationTtl: ttl });
     await caches.default.put(new Request("https://price-cache.vinterest.internal/" + encodeURIComponent(k)),
-      new Response(value, { headers: { "Cache-Control": `public, max-age=${PRICE_TTL_S}` } }));
+      new Response(value, { headers: { "Cache-Control": `public, max-age=${ttl}` } }));
   } catch (e) {}
 }
 function _clean(s, n) { return String(s || "").replace(/[\r\n"]+/g, " ").trim().slice(0, n || 120); }
@@ -429,7 +466,7 @@ async function handlePriceSearch(payload, env, key, ctx) {
   const hit = await priceCacheGet(env, k);
   if (hit) return json(200, { text: await _signListings(env, hit), cached: true });
 
-  const model = env.PRICE_MODEL || env.CLAUDE_MODEL || "claude-sonnet-4-6";
+  const model = env.PRICE_MODEL || "claude-sonnet-4-6";
   // The basic search tool: a price is in the result snippets, and it's far quicker than the
   // dynamic-filtering variant, which runs code over every page it reads.
   const tool = { type: "web_search_20250305", name: "web_search", max_uses: 2 };
@@ -510,6 +547,232 @@ function _listedShops(shops, content) {
   return out;
 }
 
+/* ── The bottle itself at a partner shop ──
+   POST /shop-match {wine:{name, producer, vintage, region, country, grapes}, country:'gb'}: the
+   listing at the user's partner shop (data/retailers.json, enabled with "feed") that is this wine,
+   from the shop's own product feed, loaded nightly into Supabase's shop_products
+   (scripts/shop-feeds.mjs). It prefers a single 75cl bottle of the scanned vintage; without one it
+   names the vintages the shop does have. The app links the listing's page through /go (placement
+   "buy"), which adds the Awin tracking. Money never moves a match: this sits on the Price tab only.
+   Without Supabase or a feed shop for the country it answers {items:[]}. */
+const SHOP_MATCH_TTL_S = 6 * 3600;
+const SHOP_COLOURS = { red: "red", rouge: "red", tinto: "red", rosso: "red", white: "white", blanc: "white", blanco: "white", bianco: "white", weiss: "white", rose: "rose", rosado: "rose", rosato: "rose" };
+const SHOP_STYLE_WORDS = new Set(["reserva", "riserva", "reserve", "gran", "grand", "crianza", "classico", "superiore"]);
+const SHOP_PACK_WORDS = new Set(["case", "of", "bottle", "bottles", "half", "magnum", "double", "cl", "ml", "x", "off", "vintage", "seller"]);
+
+function _shopWineWords(wine) {
+  const prod = new Set(_lcboWords(wine.producer));
+  const tell = (w) => !LCBO_GENERIC.has(w) && w.length > 2 && !/^\d+$/.test(w);
+  const nameW = _lcboWords(wine.name).filter((w) => !/^(18|19|20)\d{2}$/.test(w));
+  return {
+    nameT: [...new Set(nameW.filter((w) => tell(w) && !prod.has(w)))],
+    prodT: [...prod].filter(tell),
+    generic: [...new Set(nameW.filter((w) => !tell(w) && w.length > 2))],
+    allowed: new Set([...nameW, ...prod, ..._lcboWords(`${wine.region || ""} ${wine.country || ""} ${(wine.grapes || []).join(" ")} ${wine.type || ""}`)]),
+    // Only a still wine's colour: sparkling and sweet wines come in several.
+    colour: { red: "red", white: "white", rose: "rose", "rosé": "rose" }[String(wine.type || "").toLowerCase()] || null,
+  };
+}
+/* How surely a listing is this wine, 0 to about 1: how many of the words of the wine's own name it
+   has, once one of the producer's words is there too (shops shorten "Marchesi Antinori" to
+   "Antinori", so the rest of the producer's name never counts). A telling word the wine doesn't
+   have ("Rosado", "Prado Enea", "Chianti") counts against it, so Muga's other wines never pass
+   for its Reserva. */
+function shopScore(ww, p) {
+  const have = new Set(p.words || []);
+  const nameHits = ww.nameT.filter((w) => have.has(w)).length, prodHits = ww.prodT.filter((w) => have.has(w)).length;
+  if ((ww.nameT.length && !nameHits) || (ww.prodT.length && !prodHits) || !(ww.nameT.length + ww.prodT.length)) return 0;
+  const cover = ww.nameT.length ? nameHits / ww.nameT.length : 1;
+  const extra = [...have].filter((w) => !ww.allowed.has(w) && !LCBO_GENERIC.has(w) && !SHOP_PACK_WORDS.has(w) && w.length > 2 && !/\d/.test(w)).length;
+  const style = [...have].filter((w) => LCBO_GENERIC.has(w) && w.length > 3 && !ww.allowed.has(w) && ["reserva", "riserva", "reserve", "gran", "grand", "classico", "superiore", "rosso", "bianco", "blanc", "rouge", "tinto"].includes(w)).length;
+  // A listing that names another colour ("muga - white wine" for a red Reserva) is another wine.
+  const clash = ww.colour && [...have].some((w) => SHOP_COLOURS[w] && SHOP_COLOURS[w] !== ww.colour && !ww.allowed.has(w));
+  // A style word in the wine's name ("Reserva") that the listing leaves out: maybe the same wine,
+  // maybe its Crianza. Ranked below the listings that say it, so it only shows when nothing does.
+  const missing = ww.generic.filter((w) => SHOP_STYLE_WORDS.has(w) && !have.has(w)).length;
+  return cover - 0.3 * extra - 0.15 * style + 0.03 * ww.generic.filter((w) => have.has(w)).length - 0.2 * missing - (clash ? 1 : 0);
+}
+function _shopItem(p) {
+  const price = Number(p.price), pack = p.pack || 1;
+  return { id: p.product_id, name: p.name, vintage: p.vintage || null, price, pack, sizeMl: p.size_ml || 750, perBottle: Math.round((price / pack) * 100) / 100, currency: p.currency, url: p.url, image: p.image || null, seller: p.seller || null };
+}
+// Single 75cl bottles first, then the lowest price a bottle.
+function _shopBest(list) {
+  return list.slice().sort((a, b) => (a.pack !== 1) - (b.pack !== 1) || ((a.size_ml || 750) !== 750) - ((b.size_ml || 750) !== 750) || a.price / a.pack - b.price / b.pack)[0];
+}
+
+async function handleShopMatch(request, env) {
+  if (!originAllowed(request.headers.get("origin"))) return json(403, { error: "Origin not allowed.", code: "origin_denied" });
+  if (rateLimited(clientIp(request))) return json(429, { error: "Too many requests. Please slow down and try again shortly.", code: "rate_limited" });
+  let body;
+  try { body = JSON.parse((await request.text()).slice(0, 4000)); } catch (e) { return json(400, { error: "Invalid JSON body.", code: "invalid_json" }); }
+  const w = body && body.wine, gl = String((body && body.country) || "").toLowerCase().replace(/[^a-z]/g, "").slice(0, 2);
+  if (!w || !w.name) return json(400, { error: "shop-match needs wine.name.", code: "invalid_shop_match" });
+  const cfg = await retailersConfig(env, request);
+  const shop = cfg.retailers.find((r) => r.enabled && r.feed && r.country === gl);
+  if (!shop || !env.SUPABASE_URL || !env.SUPABASE_SECRET_KEY) return json(200, { items: [] });
+  const wine = { name: _clean(w.name, 120), producer: _clean(w.producer, 80), region: _clean(w.region, 60), country: _clean(w.country, 40), type: _clean(w.type, 20), grapes: (Array.isArray(w.grapes) ? w.grapes : []).slice(0, 6).map((g) => _clean(g, 30)) };
+  const vintage = /^(18|19|20)\d{2}$/.test(String(w.vintage || "")) ? +w.vintage : null;
+  const k = `shopmatch:v1:${shop.id}:${_slug(wine.producer)}:${_slug(wine.name)}:${vintage || "nv"}`;
+  const hit = await priceCacheGet(env, k);
+  if (hit) return json(200, JSON.parse(hit));
+  const ww = _shopWineWords(wine);
+  const query = [...ww.nameT, ...ww.prodT];
+  if (!query.length) return json(200, { items: [] });
+  let rows;
+  try {
+    const r = await db(env, "rpc/shop_candidates", { method: "POST", body: JSON.stringify({ p_shop: shop.id, p_words: query, p_limit: 60 }) });
+    if (!r.ok) return json(200, { items: [] });
+    rows = await r.json();
+  } catch (e) { return json(200, { items: [] }); }
+  const scored = rows.map((p) => ({ p, s: shopScore(ww, p) })).filter((x) => x.s >= 0.75);
+  const top = scored.length ? Math.max(...scored.map((x) => x.s)) : 0;
+  // Only the listings as good as the best (within a whisker): one wine, its vintages and packs.
+  const same = scored.filter((x) => x.s >= top - 0.08).map((x) => x.p);
+  const byYear = new Map();
+  for (const p of same) { const y = p.vintage || 0; byYear.set(y, [...(byYear.get(y) || []), p]); }
+  const exactRows = vintage ? byYear.get(vintage) : (byYear.get(0) || null);
+  const exact = exactRows && exactRows.length ? _shopItem(_shopBest(exactRows)) : null;
+  const others = [...byYear.entries()].filter(([y]) => y && y !== (exact && exact.vintage)).map(([y, ps]) => ({ y, p: _shopBest(ps) }))
+    .sort((a, b) => (vintage ? Math.abs(a.y - vintage) - Math.abs(b.y - vintage) : b.y - a.y)).slice(0, 3).map((x) => _shopItem(x.p));
+  const out = { shop: { id: shop.id, name: shop.name }, vintage, exact, others, items: [exact, ...others].filter(Boolean) };
+  await priceCachePut(env, k, JSON.stringify(out), SHOP_MATCH_TTL_S);
+  return json(200, out);
+}
+
+/* ── LCBO stock near an Ontario user (beta) ──
+   POST /lcbo {wine:{name, producer, vintage}, city}: which LCBO stores near their city have the
+   bottle, from LCBO.dev's public GraphQL API (an independent project, not the LCBO; no key, 60
+   requests a minute per IP). Off unless LCBO_ENABLED is "1": until then it answers
+   {enabled:false} and the app shows nothing. Pro (PRO_ONLY.lcbo), so signed out it asks them to
+   sign in. The city's centre is the middle of that city's LCBO stores, from LCBO.dev's own store
+   list, so no geocoding service is needed. Anything LCBO.dev can't answer comes back as
+   {available:false}, never an error the app has to explain. docs/lcbo.md has the details. */
+const LCBO_API = "https://api.lcbo.dev/graphql";
+const LCBO_RADIUS_KM = 25;
+const LCBO_STORES_TTL_S = 24 * 3600;  // the store list changes rarely
+const LCBO_MATCH_TTL_S = 24 * 3600;   // which LCBO product a wine is
+const LCBO_STOCK_TTL_S = 20 * 60;     // LCBO.dev suggests caching inventory 15-30 minutes
+const LCBO_TIMEOUT_MS = 8000;
+// Words on half the shelf, which say nothing about which wine it is.
+const LCBO_GENERIC = new Set(["the", "and", "de", "di", "del", "della", "du", "des", "la", "le", "les", "el", "los", "das", "der", "von", "vin", "vino", "wine", "red", "white", "rose", "rouge", "blanc", "tinto", "rosso", "bianco", "reserva", "reserve", "riserva", "gran", "grand", "cru", "classico", "superiore", "estate", "winery", "bodega", "bodegas", "domaine", "chateau", "cantina", "tenuta", "vineyards", "cellars", "doc", "docg", "aoc", "igt", "nv"]);
+
+async function lcboQuery(query, variables) {
+  const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), LCBO_TIMEOUT_MS);
+  try {
+    const r = await fetch(LCBO_API, { method: "POST", headers: { "content-type": "application/json", accept: "application/json" }, body: JSON.stringify({ query, variables }), signal: ctl.signal });
+    if (!r.ok) throw new Error("lcbo_http_" + r.status);
+    const d = await r.json();
+    if (d.errors && d.errors.length) throw new Error("lcbo_graphql");
+    return d.data;
+  } finally { clearTimeout(t); }
+}
+function _lcboWords(s) {
+  return String(s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim().split(" ").filter(Boolean);
+}
+function _citySlug(s) { return _lcboWords(String(s || "").replace(/^\s*city of\s+/i, "")).map((w) => (w === "st" ? "saint" : w)).join("-"); }
+
+/* Every LCBO store's name, city and location, cached for a day. */
+async function lcboStores(env) {
+  const k = "lcbo:v1:stores", hit = await priceCacheGet(env, k);
+  if (hit) return JSON.parse(hit);
+  const out = [];
+  let after = null;
+  for (let page = 0; page < 12; page++) {
+    const d = await lcboQuery("query($after:String){ stores(pagination:{first:100, after:$after}){ edges{ node{ externalId name city latitude longitude } } pageInfo{ hasNextPage endCursor } } }", { after });
+    const c = d && d.stores;
+    if (!c) break;
+    for (const e of c.edges || []) if (e.node && e.node.latitude != null) out.push({ id: e.node.externalId, city: e.node.city || "", lat: e.node.latitude, lng: e.node.longitude });
+    if (!c.pageInfo || !c.pageInfo.hasNextPage) break;
+    after = c.pageInfo.endCursor;
+  }
+  if (out.length) await priceCachePut(env, k, JSON.stringify(out), LCBO_STORES_TTL_S);
+  return out;
+}
+/* The middle of a city's LCBO stores, or null when no store is in a city by that name. */
+function lcboCityCentre(stores, city) {
+  const want = _citySlug(city);
+  if (!want) return null;
+  let here = stores.filter((s) => _citySlug(s.city) === want);
+  if (!here.length) here = stores.filter((s) => { const c = _citySlug(s.city); return c.startsWith(want + "-") || c.endsWith("-" + want); });
+  if (!here.length) return null;
+  return { lat: here.reduce((a, s) => a + s.lat, 0) / here.length, lng: here.reduce((a, s) => a + s.lng, 0) / here.length, stores: here.length };
+}
+
+/* Which LCBO product a wine is: its producer and name searched, each result scored by how many of
+   the wine's telling words it shares. A match needs most of them and at least one that isn't a
+   generic word, so "Reserva" alone never makes two wines the same. */
+function lcboScore(wine, p) {
+  const want = [...new Set(_lcboWords(`${wine.producer || ""} ${wine.name || ""}`).filter((w) => !/^(19|20)\d{2}$/.test(w)))];
+  const telling = want.filter((w) => !LCBO_GENERIC.has(w) && w.length > 2);
+  if (!telling.length) return 0;
+  const haveList = _lcboWords(`${p.producerName || ""} ${p.name || ""}`), have = new Set(haveList);
+  const hits = telling.filter((w) => have.has(w)).length;
+  if (!hits) return 0;
+  // Then the small words break ties (Muga Reserva over Muga Rosado for "Muga Reserva"), and a
+  // telling word the wine doesn't have counts against it.
+  const generic = want.filter((w) => !telling.includes(w)), wantSet = new Set(want);
+  const extra = [...have].filter((w) => !wantSet.has(w) && !LCBO_GENERIC.has(w) && w.length > 2 && !/^\d+$/.test(w)).length;
+  let score = hits / telling.length + (generic.length ? 0.1 * generic.filter((w) => have.has(w)).length / generic.length : 0) - 0.05 * extra;
+  if (p.unitVolumeMl === 750) score += 0.05;
+  if (p.isBuyable === false) score -= 0.2;
+  return score;
+}
+async function lcboMatch(env, wine) {
+  const k = `lcbo:v1:match:${_slug(wine.producer)}:${_slug(wine.name)}`, hit = await priceCacheGet(env, k);
+  if (hit) return JSON.parse(hit).product;
+  const name = String(wine.name || "").replace(/\b(19|20)\d{2}\b/g, "").trim();
+  const producer = String(wine.producer || "").trim();
+  const searches = [...new Set([name && producer && !_lcboWords(name).includes(_lcboWords(producer)[0]) ? `${producer} ${name}` : name, name, producer].filter(Boolean))].slice(0, 2);
+  const seen = new Map();
+  for (const q of searches) {
+    const d = await lcboQuery("query($q:String){ products(filters:{search:$q, categorySlug:\"wine\"}, pagination:{first:10}){ edges{ node{ sku name producerName priceInCents unitVolumeMl isBuyable } } } }", { q: q.slice(0, 80) });
+    for (const e of ((d && d.products && d.products.edges) || [])) if (e.node && e.node.sku) seen.set(e.node.sku, e.node);
+    const best = [...seen.values()].map((p) => ({ p, s: lcboScore(wine, p) })).sort((a, b) => b.s - a.s)[0];
+    if (best && best.s >= 0.75) break;
+  }
+  const best = [...seen.values()].map((p) => ({ p, s: lcboScore(wine, p) })).sort((a, b) => b.s - a.s)[0];
+  const product = best && best.s >= 0.6 ? { sku: String(best.p.sku), name: best.p.name, producer: best.p.producerName || null, price: best.p.priceInCents != null ? best.p.priceInCents / 100 : null, volumeMl: best.p.unitVolumeMl || null } : null;
+  await priceCachePut(env, k, JSON.stringify({ product }), LCBO_MATCH_TTL_S);
+  return product;
+}
+/* The stores within LCBO_RADIUS_KM of a point that have it, nearest first (up to 3). */
+async function lcboStock(env, sku, at, citySlug) {
+  const k = `lcbo:v1:stock:${sku}:${citySlug}`, hit = await priceCacheGet(env, k);
+  if (hit) return JSON.parse(hit);
+  const d = await lcboQuery("query($sku:String!,$lat:Float,$lng:Float,$r:Float){ product(sku:$sku){ inventories(filters:{latitude:$lat, longitude:$lng, radiusKm:$r, minQuantity:1}, pagination:{first:5}){ edges{ node{ quantity updatedAt distanceKm store{ externalId name address city } } } } } }", { sku, lat: at.lat, lng: at.lng, r: LCBO_RADIUS_KM });
+  const edges = (d && d.product && d.product.inventories && d.product.inventories.edges) || [];
+  const stores = edges.map((e) => e.node).filter((n) => n && n.store && n.quantity > 0)
+    .sort((a, b) => (a.distanceKm ?? 1e9) - (b.distanceKm ?? 1e9)).slice(0, 3)
+    .map((n) => ({ id: n.store.externalId, name: n.store.name, address: n.store.address || null, city: n.store.city || null, km: n.distanceKm != null ? Math.round(n.distanceKm * 10) / 10 : null, quantity: n.quantity, updatedAt: n.updatedAt || null }));
+  const out = { stores, checkedAt: new Date().toISOString() };
+  await priceCachePut(env, k, JSON.stringify(out), LCBO_STOCK_TTL_S);
+  return out;
+}
+
+async function handleLcbo(request, env) {
+  if (env.LCBO_ENABLED !== "1") return json(200, { enabled: false });
+  if (!originAllowed(request.headers.get("origin"))) return json(403, { error: "Origin not allowed.", code: "origin_denied" });
+  if (rateLimited(clientIp(request))) return json(429, { error: "Too many requests. Please slow down and try again shortly.", code: "rate_limited" });
+  let body;
+  try { body = JSON.parse((await request.text()).slice(0, 4000)); } catch (e) { return json(400, { error: "Invalid JSON body.", code: "invalid_json" }); }
+  const wine = body && body.wine, city = _clean(body && body.city, 60);
+  if (!wine || !wine.name || !city) return json(400, { error: "lcbo needs wine.name and city.", code: "invalid_lcbo" });
+  const gate = await gateAccount(request, env, "lcbo");
+  if (gate.response) return gate.response;
+  const w = { name: _clean(wine.name, 120), producer: _clean(wine.producer, 80) };
+  try {
+    const at = lcboCityCentre(await lcboStores(env), city);
+    if (!at) return json(200, { enabled: true, available: true, city, cityFound: false });
+    const product = await lcboMatch(env, w);
+    if (!product) return json(200, { enabled: true, available: true, city, cityFound: true, found: false });
+    const stock = await lcboStock(env, product.sku, at, _citySlug(city));
+    return json(200, { enabled: true, available: true, city, cityFound: true, found: true, product: { ...product, url: `https://www.lcbo.com/en/catalogsearch/result/?q=${encodeURIComponent(product.sku)}` }, radiusKm: LCBO_RADIUS_KM, ...stock });
+  } catch (e) {
+    return json(200, { enabled: true, available: false });
+  }
+}
+
 function cors(res) {
   res.headers.set("access-control-allow-origin", "*");
   res.headers.set("access-control-allow-headers", "content-type, authorization");
@@ -532,11 +795,11 @@ function json(status, obj) {
    - /go?u=<url>&p=<placement>[&s=<sig>]: a shop page. Only a known retailer's site, or a link
      this Worker signed itself (the price search's "In shops now", _signListings), so /go is
      never an open redirect someone could point at any site.
-   Then the link is tracked: through Awin when the shop has an awinMid and the publisher ID is set,
+   Then the link is tracked: through Awin when the shop has approved us (joined), has an awinMid and the publisher ID is set,
    else through Skimlinks when it's switched on (it pays on most other shops), else left plain.
    p is where in the app it was tapped (Awin's clickref, Skimlinks' xcust). Money never moves a
    match, a pick or the order of a list: /go only decides where a tap already made goes. */
-const GO_PLACEMENTS = new Set(["price", "restock", "listing", "explore", "find", "app"]);
+const GO_PLACEMENTS = new Set(["price", "restock", "listing", "explore", "find", "lcbo", "buy", "app"]);
 let _retailers = null;
 async function retailersConfig(env, request) {
   if (_retailers && Date.now() - _retailers.at < 5 * 60 * 1000) return _retailers.cfg;
@@ -552,7 +815,9 @@ function _goHost(u) { try { return new URL(u).host.replace(/^www\./, ""); } catc
 function _shopFor(cfg, url) { const h = _goHost(url); return cfg.retailers.find((r) => (r.domains || []).some((d) => h === d || h.endsWith("." + d))) || null; }
 function _track(cfg, url, placement) {
   const r = _shopFor(cfg, url), pub = cfg.awin && cfg.awin.publisherId, sk = cfg.skimlinks || {};
-  if (r && r.awinMid && pub) return "https://www.awin1.com/cread.php?awinmid=" + encodeURIComponent(r.awinMid) + "&awinaffid=" + encodeURIComponent(pub) + "&clickref=" + encodeURIComponent(placement) + "&ued=" + encodeURIComponent(url);
+  // Awin only for a shop that has approved us (joined): a link to one that hasn't can land on
+  // Awin's error page instead of the shop.
+  if (r && r.joined && r.awinMid && pub) return "https://www.awin1.com/cread.php?awinmid=" + encodeURIComponent(r.awinMid) + "&awinaffid=" + encodeURIComponent(pub) + "&clickref=" + encodeURIComponent(placement) + "&ued=" + encodeURIComponent(url);
   // Skimlinks' Link Wrapper. sref is the page a click is credited to: an app tap has no web page
   // and /go sends no referrer, so it names the approved site (skimlinks.sref, else vinterest.app).
   if (sk.enabled && sk.id && !/(^|\.)google\./.test(_goHost(url))) return "https://go.skimresources.com/?id=" + encodeURIComponent(sk.id) + "&xs=1&xcust=" + encodeURIComponent(placement) + "&sref=" + encodeURIComponent(sk.sref || "https://vinterest.app/") + "&url=" + encodeURIComponent(url);
@@ -575,6 +840,9 @@ async function _signListings(env, text) {
     return JSON.stringify(o);
   } catch (e) { return text; }
 }
+/* A shop's own search gets the producer and name only (FindOnline.shopQuery in the app): "wine",
+   "buy" and the vintage are for Google, and a shop's search can come back empty with them. */
+function shopWords(w) { return w.replace(/\s+buy$/i, "").replace(/\s+wine$/i, "").replace(/\s+(19|20)\d{2}$/, ""); }
 async function handleGo(request, env) {
   const q = new URL(request.url).searchParams;
   const placement = GO_PLACEMENTS.has(q.get("p")) ? q.get("p") : "app";
@@ -584,7 +852,7 @@ async function handleGo(request, env) {
   if (words) {
     const gl = (q.get("c") || "").toLowerCase().replace(/[^a-z]/g, "").slice(0, 2);
     const shop = cfg.retailers.find((r) => r.enabled && r.search && r.country === gl);
-    target = shop ? shop.search.replace("{q}", encodeURIComponent(words.replace(/\s+buy$/i, "")))
+    target = shop ? shop.search.replace("{q}", encodeURIComponent(shopWords(words)))
       : "https://www.google.com/search?q=" + encodeURIComponent(words) + (gl ? "&gl=" + gl : "");
   } else {
     let u;

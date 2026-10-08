@@ -40,7 +40,8 @@ function OnboardSetup({step,total,onBack,onDone}){
   const c=UserPrefs.country(country);
   const cur=c?HOME_REGION_CURRENCY[c.region]:null;
   const ready=age&&!!c;
-  function done(){ UserPrefs.confirmAge(); UserPrefs.setLocation({country,state}); onDone(); }
+  // A city brought down by sign-in (WelcomeSignIn) stays.
+  function done(){ UserPrefs.confirmAge(); UserPrefs.setLocation({country,state,city:UserPrefs.location().city}); onDone(); }
   const field={width:'100%',boxSizing:'border-box',padding:'15px 16px',borderRadius:13,border:`1px solid ${C.line}`,background:C.white,fontSize:16,fontFamily:C.P,color:C.ink,outline:'none'};
 
   if(underage) return(

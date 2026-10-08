@@ -15,7 +15,7 @@
    what would change without touching anything; `apply` does it. */
 const Backup = {
   FORMAT:'vinterest-backup', VERSION:2,
-  SETTINGS_KEYS:['vinterest_prefs','vinterest_age_ok','vinterest_country','vinterest_state','vinterest_region','vinterest_currency',
+  SETTINGS_KEYS:['vinterest_prefs','vinterest_age_ok','vinterest_country','vinterest_state','vinterest_city','vinterest_region','vinterest_currency',
     'vinterest_onboarded','vinterest_script_length','vinterest_scancard_style','vinterest_text_size','vinterest_travel'],
   PROGRESS_KEYS:['vinterest_favorites','vinterest_wineDNA_unlock_seen','vinterest_explore_ready_seen','vinterest_gen_stubs','vinterest_grape_unlocks_v1',
     'vinterest_region_unlocks_v1','vinterest_region_quiz_v1','vinterest_quiz_mastery_v1','vinterest_exposure_v1','vinterest_mastery_v1',
@@ -23,15 +23,48 @@ const Backup = {
   // Families of keys: read articles, Blind Call guesses, and the generated quiz banks the quiz
   // progress refers to (lose a bank and its progress points at questions that no longer exist).
   PROGRESS_PREFIXES:['vinterest_gen_article_','vinterest_blindcall_','vinterest_grape_quiz_','vinterest_region_quiz_bank_'],
-  // Read markers for beginner articles are 'vinterest_<id>_done'.
+  // Read markers for beginner articles are 'vinterest_<id>_done' (onramp_1 …: the id has an
+  // underscore, so the pattern must allow one, or the beginner articles read never travel).
   _isProgressKey(k){
     if(this.PROGRESS_KEYS.includes(k)) return true;
     if(k.startsWith('vinterest_gen_article_')) return k.endsWith('_done'); // not the article text cache
     if(this.PROGRESS_PREFIXES.some(p=>k.startsWith(p))) return true;
-    return /^vinterest_[a-z0-9-]+_done$/.test(k)&&!k.startsWith('vinterest_gen_article_');
+    return /^vinterest_[a-z0-9_-]+_done$/.test(k)&&!k.startsWith('vinterest_gen_article_');
   },
-  // Generated banks: kept as they are on the phone when present (they're content, not counters).
-  _fillOnly(k){ return k.startsWith('vinterest_grape_quiz_')||k.startsWith('vinterest_region_quiz_bank_')||k==='vinterest_gen_stubs'; },
+  // Generated content, not counters: never combined field by field. _settleContent picks or joins them.
+  _fillOnly(k){ return this._isBank(k)||k===this.STUBS_KEY; },
+  _isBank(k){ return k.startsWith('vinterest_grape_quiz_')||k.startsWith('vinterest_region_quiz_bank_'); },
+  STUBS_KEY:'vinterest_gen_stubs', QUIZ_KEY:'vinterest_quiz_mastery_v1', SHELF_UNREAD:6,
+
+  /* Generated content when both sides have it ({key: stored text}, `out` already holding the
+     combined counters). A new phone makes its own quiz bank the moment its first scan unlocks a
+     grape or region, so keeping the phone's bank would leave every saved answer pointing at
+     questions that no longer exist and put their most-studied grape back at 0%: each bank goes to
+     the side more of the saved answers belong to (the phone's on a tie). Written for you shelves
+     join by piece: the phone's, then every one from the other side they've read (their library),
+     then its unread ones while the shelf has room. Writes the choices into `out`. */
+  _settleContent(out,mine,theirs){
+    let answered={};
+    try{ const q=JSON.parse(out[this.QUIZ_KEY]||'null'); Object.values((q&&q.accounts)||{}).forEach(a=>Object.values((a&&a.sets)||{}).forEach(s=>Object.keys((s&&s.correct)||{}).forEach(t=>{ answered[t]=1; }))); }catch(e){}
+    const known=text=>{ try{ const b=JSON.parse(text); return Array.isArray(b)?b.filter(x=>x&&answered[x.q]).length:-1; }catch(e){ return -1; } };
+    Object.keys(theirs).filter(k=>this._isBank(k)&&k in mine&&mine[k]!==theirs[k]).forEach(k=>{
+      out[k]=known(theirs[k])>known(mine[k])?theirs[k]:mine[k];
+    });
+    const k=this.STUBS_KEY;
+    if(k in mine&&k in theirs&&mine[k]!==theirs[k]){
+      let a,b; try{ a=JSON.parse(mine[k]); b=JSON.parse(theirs[k]); }catch(e){ return out; }
+      if(!Array.isArray(a)||!Array.isArray(b)) return out;
+      const read=st=>!!out['vinterest_gen_article_'+st.id+'_done'];
+      const ids=new Set(a.map(st=>st&&st.id)), joined=[...a];
+      let unread=a.filter(st=>st&&!read(st)).length;
+      b.filter(st=>st&&st.id&&!ids.has(st.id)).forEach(st=>{
+        if(read(st)) joined.push(st);
+        else if(unread<this.SHELF_UNREAD){ joined.push(st); unread++; }
+      });
+      out[k]=JSON.stringify(joined);
+    }
+    return out;
+  },
 
   exportData(){
     const settings={}, progress={};
@@ -84,13 +117,19 @@ const Backup = {
     const plan=WineHistory.importWines(data.wines||[]);
     if(data.xp) XPSystem.mergeImport(data.xp);
     Object.entries(data.settings||{}).forEach(([k,v])=>Store.set(k,v));
-    Object.entries(data.progress||{}).forEach(([k,v])=>{
-      const mine=Store.get(k);
-      if(mine==null) return Store.set(k,v);
+    const theirs=data.progress||{}, mine={}, out={};
+    Object.keys(theirs).forEach(k=>{ const v=Store.get(k); if(v!=null) mine[k]=v; });
+    Object.entries(theirs).forEach(([k,v])=>{
+      if(!(k in mine)){ out[k]=v; return; }
       if(this._fillOnly(k)) return;
-      let a,b; try{ a=JSON.parse(mine); b=JSON.parse(v); }catch(e){ return; }
-      Store.setJSON(k,this._combine(a,b));
+      let a,b; try{ a=JSON.parse(mine[k]); b=JSON.parse(v); }catch(e){ return; }
+      out[k]=JSON.stringify(this._combine(a,b));
     });
+    // Read markers and quiz answers this phone has but the file doesn't still count when choosing.
+    const all={...mine,...out};
+    Store.keys('vinterest_').filter(k=>!(k in all)&&this._isProgressKey(k)).forEach(k=>{ all[k]=Store.get(k); });
+    this._settleContent(all,mine,theirs);
+    Object.keys(theirs).forEach(k=>{ if(all[k]!=null&&all[k]!==mine[k]) Store.set(k,all[k]); });
     return plan;
   },
   /* Progress from two phones, combined without losing either: numbers take the larger, flags stay
