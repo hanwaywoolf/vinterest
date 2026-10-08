@@ -75,12 +75,26 @@ jobs:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
         run: |
-          mkdir -p "$RUNNER_TEMP/keys"
-          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/keys/upload.p12"
-          # The key must be under the alias "upload" (docs/google-play.md); say so plainly if not.
-          keytool -list -keystore "$RUNNER_TEMP/keys/upload.p12" -storepass "$ANDROID_KEYSTORE_PASSWORD" -alias upload >/dev/null 2>&1 || {
-            echo "::error title=Upload key::The keystore didn't open with ANDROID_KEYSTORE_PASSWORD, or has no key called 'upload'. See docs/google-play.md."
-            exit 1; }
+          err() { echo "::error title=Upload key::$1"; exit 1; }
+          K="$RUNNER_TEMP/keys"; mkdir -p "$K"
+          # Whitespace or line breaks picked up when pasting the secret don't matter.
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | tr -d '[:space:]' | base64 -d > "$K/given.p12" 2>/dev/null \
+            || err "ANDROID_KEYSTORE_BASE64 isn't the base64 text of the key file. Copy it again with: base64 -i vinterest-upload.p12 | pbcopy"
+          echo "Key file: $(wc -c < "$K/given.p12") bytes"
+          # Re-packed with this machine's openssl under the alias "upload", so a key file made on a
+          # Mac (LibreSSL's older encryption, or another name) reads the same as one made here.
+          export PW="$ANDROID_KEYSTORE_PASSWORD"
+          openssl pkcs12 -in "$K/given.p12" -passin env:PW -nodes -out "$K/key.pem" 2>"$K/err" \
+            || openssl pkcs12 -legacy -in "$K/given.p12" -passin env:PW -nodes -out "$K/key.pem" 2>>"$K/err" \
+            || { grep -qi 'mac verify\|invalid password' "$K/err" \
+                   && err "ANDROID_KEYSTORE_PASSWORD doesn't open the key file. Check it's the password you typed when making vinterest-upload.p12." \
+                   || err "The key file didn't open: $(head -1 "$K/err")"; }
+          grep -q 'PRIVATE KEY' "$K/key.pem" || err "The key file has no private key in it."
+          openssl pkcs12 -export -name upload -in "$K/key.pem" -out "$K/upload.p12" -passout env:PW
+          rm -f "$K/key.pem" "$K/given.p12" "$K/err"
+          # The fingerprint, to compare with the one registered in Play Console.
+          keytool -list -keystore "$K/upload.p12" -storepass "$PW" -alias upload 2>/dev/null | grep -i 'fingerprint' \
+            || err "The re-packed key didn't open in Java."
       - name: Verification APK
         if: inputs.verification_code
         working-directory: android
