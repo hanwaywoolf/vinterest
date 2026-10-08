@@ -1,0 +1,106 @@
+# Builds the Android app as a signed App Bundle (.aab, what Google Play takes) on every push to main
+# and on demand (Actions → Google Play → Run workflow), and uploads it to Play's internal testing
+# track. Setup, once: docs/google-play.md.
+#   - Signed with the upload key (secrets ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD). Google
+#     keeps the key that signs the app on people's phones (Play App Signing); this one only proves
+#     an upload is ours. Until both are set, the check job says so and nothing else runs.
+#   - The .aab is kept as the "Vinterest-android-release" artifact, for the first upload, which
+#     Play Console needs by hand. Once PLAY_SERVICE_ACCOUNT_JSON is set, every run uploads it
+#     (scripts/play-upload.mjs) to PLAY_TRACK (variable, default internal) as PLAY_RELEASE_STATUS
+#     (variable, default draft: a new app takes only drafts until its first release is rolled out).
+#   - Version: package.json's "version". versionCode: this workflow's run number ×10 + attempt, so
+#     every upload, re-runs included, has a new, higher number.
+name: Google Play
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+concurrency:
+  group: google-play
+  cancel-in-progress: false
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    outputs:
+      ready: ${{ steps.check.outputs.ready }}
+    steps:
+      - id: check
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+        run: |
+          missing=""
+          for v in ANDROID_KEYSTORE_BASE64 ANDROID_KEYSTORE_PASSWORD; do [ -n "${!v}" ] || missing="$missing $v"; done
+          if [ -n "$missing" ]; then
+            echo "::notice title=Google Play build skipped::Not set up yet, missing:$missing. See docs/google-play.md."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+  play:
+    needs: check
+    if: needs.check.outputs.ready == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+      SUPABASE_PUBLISHABLE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - run: npm ci
+      - run: npm run build
+      - name: Android project
+        run: |
+          export ANDROID_VERSION_CODE=$(( ${{ github.run_number }} * 10 + ${{ github.run_attempt }} ))
+          echo "Vinterest $(node -p "require('./package.json').version") ($ANDROID_VERSION_CODE)"
+          node scripts/native.mjs android
+      - name: Upload key
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/keys"
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/keys/upload.p12"
+          # The key must be under the alias "upload" (docs/google-play.md); say so plainly if not.
+          keytool -list -keystore "$RUNNER_TEMP/keys/upload.p12" -storepass "$ANDROID_KEYSTORE_PASSWORD" -alias upload >/dev/null 2>&1 || {
+            echo "::error title=Upload key::The keystore didn't open with ANDROID_KEYSTORE_PASSWORD, or has no key called 'upload'. See docs/google-play.md."
+            exit 1; }
+      - name: Build the signed bundle
+        working-directory: android
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+        run: |
+          ./gradlew bundleRelease --no-daemon \
+            -Pandroid.injected.signing.store.file="$RUNNER_TEMP/keys/upload.p12" \
+            -Pandroid.injected.signing.store.password="$ANDROID_KEYSTORE_PASSWORD" \
+            -Pandroid.injected.signing.key.alias=upload \
+            -Pandroid.injected.signing.key.password="$ANDROID_KEYSTORE_PASSWORD"
+          jarsigner -verify app/build/outputs/bundle/release/app-release.aab | tail -1
+          cp app/build/outputs/bundle/release/app-release.aab "$GITHUB_WORKSPACE/Vinterest.aab"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Vinterest-android-release
+          path: Vinterest.aab
+          retention-days: 14
+      - name: Upload to Google Play
+        env:
+          PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+          PLAY_TRACK: ${{ vars.PLAY_TRACK }}
+          PLAY_RELEASE_STATUS: ${{ vars.PLAY_RELEASE_STATUS }}
+        run: |
+          if [ -z "$PLAY_SERVICE_ACCOUNT_JSON" ]; then
+            echo "::notice title=Not uploaded::Built and signed. Download Vinterest-android-release from this run and upload it in Play Console, or set PLAY_SERVICE_ACCOUNT_JSON (docs/google-play.md)."
+            exit 0
+          fi
+          node scripts/play-upload.mjs Vinterest.aab
+      - name: Remove the key
+        if: always()
+        run: rm -rf "$RUNNER_TEMP/keys"

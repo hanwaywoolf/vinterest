@@ -3,12 +3,16 @@
 // The ios/ and android/ folders are generated, never edited by hand and never committed (CLAUDE.md):
 // this adds the platform if it's missing, copies the built web app in (cap sync), then applies the
 // settings in capacitor.config.json's "vinterestNative": iOS Info.plist entries (the camera
-// wording, export compliance), the iOS icon and launch screen from assets/ios/, and Android
-// permissions and features (the camera). Running it again changes nothing.
+// wording, export compliance), the iOS icon and launch screen from assets/ios/, Android
+// permissions and features (the camera), and the Android icons and launch screen from
+// assets/android/. Android's versionName is package.json's version; its versionCode (Google Play's
+// build number) is ANDROID_VERSION_CODE when the build sets it (.github/workflows/play.yml), else 1.
+// Running it again changes nothing.
 import fs from 'node:fs';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
-import { patchInfoPlist, patchManifest } from './native-config.mjs';
+import { patchInfoPlist, patchManifest, patchAppGradle, patchIconBackground } from './native-config.mjs';
+import { ANDROID_DENSITIES, ANDROID_ICON_BACKGROUND } from './app-icons.mjs';
 
 const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
 const platform = process.argv[2];
@@ -31,5 +35,19 @@ if (platform === 'ios') {
 } else {
   const file = path.join(ROOT, 'android/app/src/main/AndroidManifest.xml');
   fs.writeFileSync(file, patchManifest(fs.readFileSync(file, 'utf8'), config.android));
+  const gradle = path.join(ROOT, 'android/app/build.gradle');
+  const version = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8')).version;
+  fs.writeFileSync(gradle, patchAppGradle(fs.readFileSync(gradle, 'utf8'), { versionName: version, versionCode: process.env.ANDROID_VERSION_CODE || 1 }));
+  // The icons and launch screen, rendered from assets/*.svg by scripts/app-icons.mjs.
+  const res = path.join(ROOT, 'android/app/src/main/res'), art = path.join(ROOT, 'assets/android');
+  for (const d of Object.keys(ANDROID_DENSITIES)) {
+    for (const f of ['ic_launcher', 'ic_launcher_round', 'ic_launcher_foreground'])
+      fs.copyFileSync(path.join(art, `${f}-${d}.png`), path.join(res, `mipmap-${d}`, `${f}.png`));
+    fs.copyFileSync(path.join(art, `splash-port-${d}.png`), path.join(res, `drawable-port-${d}`, 'splash.png'));
+    fs.copyFileSync(path.join(art, `splash-land-${d}.png`), path.join(res, `drawable-land-${d}`, 'splash.png'));
+  }
+  fs.copyFileSync(path.join(art, 'splash-port-mdpi.png'), path.join(res, 'drawable', 'splash.png'));
+  const bg = path.join(res, 'values/ic_launcher_background.xml');
+  fs.writeFileSync(bg, patchIconBackground(fs.readFileSync(bg, 'utf8'), ANDROID_ICON_BACKGROUND));
 }
 console.log(`${platform}: synced from dist/ and configured from capacitor.config.json`);

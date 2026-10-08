@@ -19,3 +19,19 @@ export function patchManifest(xml, { permissions = [], features = [] } = {}) {
   return lines.length ? xml.replace(/<\/manifest>\s*$/, `${lines.join('\n')}\n</manifest>\n`) : xml;
 }
 
+
+/* app/build.gradle's version: versionName from package.json, versionCode (Google Play's build
+   number, which must go up with every upload) from the build. */
+export function patchAppGradle(gradle, { versionName, versionCode } = {}) {
+  if (versionName) gradle = gradle.replace(/versionName\s+"[^"]*"/, `versionName "${String(versionName).replace(/"/g, '')}"`);
+  if (versionCode) {
+    const n = parseInt(versionCode, 10);
+    if (!(n > 0 && n <= 2100000000)) throw new Error(`versionCode must be a whole number from 1 to 2100000000, not ${versionCode}`);
+    gradle = gradle.replace(/versionCode\s+\d+/, `versionCode ${n}`);
+  }
+  return gradle;
+}
+/* values/ic_launcher_background.xml: the adaptive icon's background colour. */
+export function patchIconBackground(xml, colour) {
+  return xml.replace(/(<color name="ic_launcher_background">)[^<]*(<\/color>)/, `$1${colour}$2`);
+}
