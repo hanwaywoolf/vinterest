@@ -7,6 +7,8 @@
 // permissions and features (the camera), and the Android icons and launch screen from
 // assets/android/. Android's versionName is package.json's version; its versionCode (Google Play's
 // build number) is ANDROID_VERSION_CODE when the build sets it (.github/workflows/play.yml), else 1.
+// Debug builds (the PR test app) are app.vinterest.dev, "Vinterest Dev", so they install beside
+// the Play app.
 // Running it again changes nothing.
 import fs from 'node:fs';
 import path from 'node:path';
@@ -47,6 +49,15 @@ if (platform === 'ios') {
     fs.copyFileSync(path.join(art, `splash-land-${d}.png`), path.join(res, `drawable-land-${d}`, 'splash.png'));
   }
   fs.copyFileSync(path.join(art, 'splash-port-mdpi.png'), path.join(res, 'drawable', 'splash.png'));
+  // The debug build (the PR test app, app.vinterest.dev) is "Vinterest Dev" on the home screen.
+  const debugRes = path.join(ROOT, 'android/app/src/debug/res/values');
+  fs.mkdirSync(debugRes, { recursive: true });
+  fs.writeFileSync(path.join(debugRes, 'strings.xml'), `<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Vinterest Dev</string>
+    <string name="title_activity_main">Vinterest Dev</string>
+</resources>
+`);
   const bg = path.join(res, 'values/ic_launcher_background.xml');
   fs.writeFileSync(bg, patchIconBackground(fs.readFileSync(bg, 'utf8'), ANDROID_ICON_BACKGROUND));
 }

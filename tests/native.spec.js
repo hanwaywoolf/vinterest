@@ -137,12 +137,14 @@ test('the iOS icon is 1024×1024 with no alpha channel (the App Store rejects on
   expect([...require('node:zlib').inflateSync(idat.subarray(0, out.readUInt32BE(out.indexOf('IDAT') - 4)))]).toEqual([0, 255, 0, 0, 0, 0, 255]);
 });
 
-test('Android: versionName from package.json, versionCode from the build, the icon background crimson', async () => {
+test('Android: versionName from package.json, versionCode from the build, debug builds as app.vinterest.dev, the icon background crimson', async () => {
   const { patchAppGradle, patchIconBackground } = await import(pathToFileURL(path.join(__dirname, '..', 'scripts/native-config.mjs')).href);
-  const gradle = 'defaultConfig {\n        applicationId "app.vinterest"\n        versionCode 1\n        versionName "1.0"\n    }';
+  const gradle = 'defaultConfig {\n        applicationId "app.vinterest"\n        versionCode 1\n        versionName "1.0"\n    }\n    buildTypes {\n        release {\n            minifyEnabled false\n        }\n    }';
   const g = patchAppGradle(gradle, { versionName: '1.3.0', versionCode: '231' });
   expect(g).toContain('versionCode 231');
   expect(g).toContain('versionName "1.3.0"');
+  // The PR test app installs beside the Play app; the release keeps app.vinterest.
+  expect(g).toMatch(/debug \{\s*applicationIdSuffix "\.dev"\s*\}\s*release \{/);
   expect(patchAppGradle(g, { versionName: '1.3.0', versionCode: '231' })).toBe(g);
   expect(() => patchAppGradle(gradle, { versionCode: 'abc' })).toThrow(/whole number/);
   expect(patchIconBackground('<resources>\n    <color name="ic_launcher_background">#FFFFFF</color>\n</resources>', '#8B1A2F'))
