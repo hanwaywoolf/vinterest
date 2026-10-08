@@ -17,12 +17,25 @@ const TextSize = {
   scale(){ if(this._scale==null) this._scale=this.get().scale; return this._scale; },
   set(id){
     const s=this.SIZES.find(x=>x.id===id)||this.SIZES[0];
-    try{ Store.set(this.KEY,s.id); }catch(e){}
     this._scale=s.scale;
-    try{ window.dispatchEvent(new Event('vinterest:textsize')); }catch(e){}
+    try{ Store.set(this.KEY,s.id); }catch(e){}
+    this._changed();
+  },
+  _changed(){ try{ window.dispatchEvent(new Event('vinterest:textsize')); }catch(e){} },
+  /* A size that arrives another way (a backup restored, sign-in or sync bringing the account's
+     setting, an account deleted) redraws the app at that size: the scale is cached, so without
+     this the screen kept the old size while Profile's picker showed the new one. */
+  _follow(){
+    Store.subscribe((key)=>{
+      if(key!==this.KEY) return;
+      const s=this.get().scale;
+      if(s!==this._scale){ this._scale=s; this._changed(); }
+    });
   },
   px(n){ return Math.round(Math.max(this.MIN,n)*this.scale()*2)/2; },
 };
+
+TextSize._follow();
 
 function _h(type,props){
   if(typeof type==='string'&&props&&props.style&&typeof props.style.fontSize==='number'){

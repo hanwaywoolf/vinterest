@@ -214,7 +214,10 @@ function DetailSwitch(){
 
 /* Text size: Standard, Large (+10%) or Extra large (+20%). Only the text grows (TextSize). */
 function TextSizeControl(){
-  const [cur,setCur]=React.useState(()=>TextSize.get().id);
+  // Always the stored size, so a size restored or synced in shows here as it shows on screen.
+  const [,setTick]=React.useState(0);
+  React.useEffect(()=>{ const h=()=>setTick(t=>t+1); window.addEventListener('vinterest:textsize',h); return()=>window.removeEventListener('vinterest:textsize',h); },[]);
+  const cur=TextSize.get().id;
   return <Card style={{padding:14,display:'flex',flexDirection:'column',gap:10}}>
     <div>
       <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>Text size</div>
@@ -223,7 +226,7 @@ function TextSizeControl(){
     <div role="radiogroup" aria-label="Text size" style={{display:'flex',gap:6}}>
       {TextSize.SIZES.map((s,i)=>{
         const on=cur===s.id;
-        return <div key={s.id} role="radio" aria-checked={on} onClick={()=>{ TextSize.set(s.id); setCur(s.id); }}
+        return <div key={s.id} role="radio" aria-checked={on} onClick={()=>TextSize.set(s.id)}
           style={{flex:1,textAlign:'center',padding:'10px 4px',borderRadius:10,cursor:'pointer',background:on?C.crSoft:C.offWhite,border:`1.5px solid ${on?C.cr:'transparent'}`}}>
           <div style={{fontSize:14+i*2,fontWeight:800,color:on?C.cr:C.ink,fontFamily:C.P,lineHeight:1.1}}>Aa</div>
           {/* The labels stay one size so the three tiles line up; the Aa above shows the difference. */}
