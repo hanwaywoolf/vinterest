@@ -100,10 +100,15 @@ const ScanFlow = {
   },
 
   /* The words for "lighter / as expected / fuller than the label" on each axis. */
-  COMPARE:{body:['Lighter','Fuller'],tannins:['Softer','Grippier'],acidity:['Softer','Zingier'],texture:['Crisper','Richer'],sweetness:['Drier','Sweeter']},
+  COMPARE:{body:['Lighter','Fuller'],tannins:['Softer','Grippier'],acidity:['Softer','Zingier'],texture:['Crisper','Richer'],sweetness:['Drier','Sweeter'],effervescence:['Softer','Livelier']},
+  /* What a Blind Call asks about, and what it pre-fills on the wine: the traits that matter for the
+     type (tannins for reds, bubbles for sparkling, texture for whites), and only those the label
+     scan gave a figure for. A trait with no figure is never asked: there'd be nothing to score the
+     call against, and the wine's own screen couldn't show it (a sparkling wine has no texture). */
   compareAxes(wine){
     const t=WineDNA._t(wine&&wine.type);
-    const axes=['red','orange','fortified'].includes(t)?['body','tannins','acidity']:['body','acidity','texture'];
+    const axes=['red','orange','fortified'].includes(t)?['body','tannins','acidity']
+      :t==='sparkling'?['body','acidity','effervescence']:['body','acidity','texture'];
     return axes.filter(k=>typeof (wine&&wine[k])==='number');
   },
   blindKey(wine){ return 'vinterest_blindcall_result_'+((wine.name||'')+'_'+(wine.vintage||'nv')).replace(/\s/g,'_'); },

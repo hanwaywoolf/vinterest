@@ -688,15 +688,13 @@ function TasteCues({wine,accent}){
 }
 
 /* ── Blind Call ── */
-const DIM_LABEL={body:'Body',acidity:'Acidity',tannins:'Tannins',texture:'Texture'};
-const DIM_LO={body:'Light',acidity:'Mellow',tannins:'Silky',texture:'Crisp & steely'};
-const DIM_HI={body:'Full',acidity:'Zingy',tannins:'Grippy',texture:'Rich & creamy'};
+const DIM_LABEL={body:'Body',acidity:'Acidity',tannins:'Tannins',texture:'Texture',effervescence:'Bubbles'};
+const DIM_LO={body:'Light',acidity:'Mellow',tannins:'Silky',texture:'Crisp & steely',effervescence:'Soft & delicate'};
+const DIM_HI={body:'Full',acidity:'Zingy',tannins:'Grippy',texture:'Rich & creamy',effervescence:'Lively & persistent'};
 const DIM_CONCEPT={tannins:'tannin_source',acidity:'acidity_and_food',texture:'oak_influence'};
-function dimsFor(wine){
-  const type=(wine.type||'red').toLowerCase().replace('é','e');
-  const showTannins=['red','orange','fortified'].includes(type);
-  return showTannins?['body','acidity','tannins']:['body','acidity','texture'];
-}
+/* The traits to call: the same ones the wine's own screen shows for its type, and only those the
+   label gave a figure for (ScanFlow.compareAxes), so every call is scored against the label. */
+function dimsFor(wine){ return ScanFlow.compareAxes(wine); }
 
 function BlindCallCard({wine,gen,accent,onStart}){
   const [phase,setPhase]=React.useState(()=>ScanFlow.blindPlayed(wine)?'summary':'predict');
@@ -719,6 +717,7 @@ function BlindCallCard({wine,gen,accent,onStart}){
     setPhase('result');
   }
 
+  if(phase==='predict'&&!dims.length) return <div style={{fontSize:15,color:C.mid,fontFamily:C.P,lineHeight:1.5}}>The label didn't tell us enough about this wine's style to play Blind Call on it.</div>;
   if(phase==='predict') return <BlindCallPredict dims={dims} col={_typeCol(wine)} onSubmit={g=>{setGuess(g);setPhase('reveal');if(onStart) onStart();}}/>;
   if(phase==='reveal') return <BlindCallReveal wine={wine} dims={dims} guess={guess} col={_typeCol(wine)} onDone={finalizeReveal}/>;
   if(phase==='result') return <>
@@ -755,7 +754,7 @@ function BlindCallPredict({dims,col,onSubmit}){
 }
 
 function BlindCallReveal({wine,dims,guess,col,onDone}){
-  const deltas=dims.map(d=>Math.abs(guess[d]-(wine[d]??0.5)));
+  const deltas=dims.map(d=>Math.abs(guess[d]-wine[d]));
   const avgDelta=deltas.reduce((s,x)=>s+x,0)/deltas.length;
   const accuracy=Math.max(0,1-avgDelta*1.6);
   const missed=dims.filter((d,i)=>deltas[i]>0.22);
@@ -763,7 +762,7 @@ function BlindCallReveal({wine,dims,guess,col,onDone}){
     <div style={{fontSize:24,fontWeight:800,color:C.ink,fontFamily:C.P,lineHeight:1.2,letterSpacing:'-0.01em'}}>How you called it</div>
     <div style={{display:'flex',flexDirection:'column',gap:20}}>
       {dims.map(d=>{
-        const g=guess[d],act=wine[d]??0.5;
+        const g=guess[d],act=wine[d];
         return <div key={d}>
           <div style={{fontSize:14,fontWeight:700,color:C.ink,fontFamily:C.P,marginBottom:8}}>{DIM_LABEL[d]}</div>
           <div style={{position:'relative',height:8,borderRadius:4,background:C.line}}>

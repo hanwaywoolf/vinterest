@@ -787,3 +787,45 @@ test('a list scan the server refuses says why: sign in, Pro, or (only for an unr
   await scanList();
   await expect(root).toContainText('List not detected');
 });
+
+const CHAMPAGNE = {
+  name: 'Test Brut Champagne', confidence: 'high', alternative: '', producer: 'Test Maison', vintage: null, region: 'Champagne', sub_region: '',
+  country: 'France', type: 'sparkling', grapes: ['Chardonnay', 'Pinot Noir'], body: 0.5, tannins: null, acidity: 0.85, sweetness: 0.1, texture: null,
+  effervescence: 0.8, abv: 12, tasting_notes: ['Brioche'], food_pairings: ['Oysters'], price_usd: 45, description: 'A test Champagne.',
+};
+
+test('Blind Call asks about the traits the wine shows (bubbles, not texture, for sparkling), only those the label gave', async ({ context, page }) => {
+  await setup(context, page, { label: CHAMPAGNE });
+  await page.setViewportSize({ width: 400, height: 860 });
+  await page.goto(`${BASE}/?demo=1#camera`);
+  await page.getByTestId('scan-file').setInputFiles({ name: 'label.png', mimeType: 'image/png', buffer: PNG });
+  const root = page.locator('#root');
+  await root.getByText('Learn about it', { exact: true }).click();
+  await expect(root).toContainText('1 / 9');
+  for (let i = 0; i < 5; i++) await page.locator('#root div[style*="scaleX(-1)"]').click();
+  await expect(root).toContainText('6 / 9');
+  await root.getByText('Tasting it now? Play Blind Call').click();
+  // Body, acidity and bubbles: a sparkling wine has no texture figure, so it's never asked.
+  const sliders = root.getByRole('slider');
+  expect(await sliders.evaluateAll((els) => els.map((e) => e.getAttribute('aria-label')))).toEqual(['Body', 'Acidity', 'Bubbles']);
+  const out = await page.evaluate((w) => ({
+    sparkling: ScanFlow.compareAxes(w),
+    red: ScanFlow.compareAxes({ type: 'red', body: 0.8, tannins: 0.7, acidity: 0.6 }),
+    whiteNoTexture: ScanFlow.compareAxes({ type: 'white', body: 0.4, acidity: 0.8, texture: null }),
+  }), CHAMPAGNE);
+  expect(out).toEqual({ sparkling: ['body', 'acidity', 'effervescence'], red: ['body', 'tannins', 'acidity'], whiteNoTexture: ['body', 'acidity'] });
+  // The call pre-fills the wine's own tasting, including the bubbles, which its Taste Profile shows.
+  const tasted = await page.evaluate((w) => {
+    ScanFlow.saveBlindResult(w, { accuracy: 0.8, amount: 20, guess: { body: 0.5, acidity: 0.85, effervescence: 0.4 } });
+    return ScanFlow.tastedFromBlindCall(w);
+  }, CHAMPAGNE);
+  expect(tasted).toEqual({ body: 0, acidity: 0, effervescence: -1 });
+  // An older call that guessed a texture the label never had doesn't count towards the palate.
+  const palate = await page.evaluate((w) => {
+    const all = WineHistory.getAll(); all.unshift({ ...w, rating: 0 }); WineHistory.save(all);
+    ScanFlow.saveBlindResult(w, { accuracy: 0.5, amount: 10, guess: { body: 0.5, acidity: 0.85, texture: 0.9 } });
+    const c = Palate.calls().find((x) => x.wine.name === w.name);
+    return c && Object.keys(c.miss).sort();
+  }, CHAMPAGNE);
+  expect(palate).toEqual(['acidity', 'body']);
+});

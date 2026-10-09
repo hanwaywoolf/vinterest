@@ -75,7 +75,9 @@ const Palate = {
     return wines.map(w=>{
       const r=ScanFlow.blindResult(w); if(!r||!r.guess) return null;
       const miss={};
-      this.AXES.forEach(k=>{ const g=r.guess[k]; if(typeof g==='number') miss[k]=g-(typeof w[k]==='number'?w[k]:0.5); });
+      // Only traits the label gave a figure for: an older call on a sparkling wine's "texture" was
+      // scored against a made-up middle value, and counting it would skew their palate.
+      this.AXES.forEach(k=>{ const g=r.guess[k]; if(typeof g==='number'&&typeof w[k]==='number') miss[k]=g-w[k]; });
       const ks=Object.keys(miss); if(!ks.length) return null;
       const accuracy=typeof r.accuracy==='number'?r.accuracy:Math.max(0,1-this._mean(ks.map(k=>Math.abs(miss[k])))*1.6);
       return {wine:w,at:r.at||new Date(w.last_scanned||w.scanned_at||0).getTime()||0,miss,accuracy};
