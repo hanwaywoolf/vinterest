@@ -383,11 +383,14 @@ function DnaJourneyBars({J,col,w=96,h=56}){
    sit and where their 90+ wines sit, every bottle on the scale, then what the word means and how
    to notice it. It's about their wines, from the labels; how well they taste it is Mastery's
    palate page, from Blind Calls, and the two never share a screen. */
+/* How many of a step's bottles a trait page lists before "Show N more". */
+const DNA_TRAIT_BOTTLES=5;
 function DnaTraitScreen({nav,back}){
   const h=Handoff.dnaTrait.get(null)||{};
   const T=_TYPES.find(x=>x.key===h.type)||_TYPES[0];
   const tv=React.useMemo(()=>h.axis?WineDNA.traitView(T.key,h.axis,WineHistory.getAll()):null,[h.type,h.axis]);
   const [pick,setPick]=React.useState(null);
+  const [moreAbout,setMoreAbout]=React.useState(false);
   const card={background:C.white,borderRadius:16,border:`1px solid ${C.line}`,padding:'14px 16px',display:'flex',flexDirection:'column',gap:8};
   const head=x=><div style={{fontSize:13,fontWeight:600,color:C.mid,letterSpacing:'0.08em',textTransform:'uppercase',fontFamily:C.P,marginTop:4}}>{x}</div>;
   const L=T.label.toLowerCase(), col=_TYPE_COLORS[T.key]||C.cr;
@@ -405,6 +408,23 @@ function DnaTraitScreen({nav,back}){
         </div>
       </div>
       <div style={{flex:1,overflowY:'auto',padding:'16px 20px',display:'flex',flexDirection:'column',gap:12}}>
+        {/* A short explainer first, so their chart reads in its terms: what the word means and the
+            one best way to notice it, the rest folded behind "More about …" so the chart stays
+            near the top. */}
+        {tv.about&&<div data-testid="dna-trait-about" style={{...card,gap:6,padding:'12px 16px'}}>
+          <span style={{fontSize:15,color:C.ink,fontFamily:C.P,lineHeight:1.5}}>{tv.about.what}</span>
+          <span style={{fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.5}}><b style={{color:col}}>How to notice it:</b> {tv.about.notice[0]}</span>
+          <div role="button" aria-expanded={moreAbout} onClick={()=>setMoreAbout(o=>!o)} style={{fontSize:14,fontWeight:700,color:C.cr,fontFamily:C.P,cursor:'pointer',marginTop:2}}>{moreAbout?'Less':`More about ${tv.name.toLowerCase()}`} {moreAbout?'↑':'↓'}</div>
+          {moreAbout&&<div style={{display:'flex',flexDirection:'column',gap:10,marginTop:4}}>
+            {tv.about.notice.slice(1).map((n,i)=><div key={i} style={{display:'flex',gap:9,fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.5}}><span style={{color:col,fontWeight:800}}>•</span><span>{n}</span></div>)}
+            <div style={{display:'flex',gap:12}}>
+              <div style={{flex:1,minWidth:0}}><div style={{fontSize:13,fontWeight:700,color:C.mid,fontFamily:C.P}}>{tv.lowWord}</div><div style={{fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.45}}>{tv.about.low}</div></div>
+              <div style={{flex:1,minWidth:0}}><div style={{fontSize:13,fontWeight:700,color:C.mid,fontFamily:C.P}}>{tv.highWord}</div><div style={{fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.45}}>{tv.about.high}</div></div>
+            </div>
+            <span style={{fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.5}}><b>Tip:</b> {tv.about.tip}</span>
+          </div>}
+        </div>}
+
         <div data-testid="dna-trait-hero" style={{...card,background:'#FBF8F3',flexDirection:'row',alignItems:'center',gap:14}}>
           <svg width="110" height="110" viewBox="-55 -55 110 110" aria-hidden="true" style={{flexShrink:0,overflow:'visible'}}>
             <circle r={R} fill="none" stroke={SKETCH_PENCIL} strokeWidth="3.5" strokeDasharray="1 5" strokeLinecap="round"/>
@@ -437,27 +457,16 @@ function DnaTraitScreen({nav,back}){
 
         {head(`${step.label} · ${WineDNA.noun(T.key,step.n)}${step.avg!=null?` · average ${step.avg}`:''}`)}
         <div data-testid="dna-trait-bottles" style={{...card,gap:0,padding:step.n?'4px 16px':'14px 16px'}}>
-          {step.n?step.bottles.map((b,i)=><div key={i} role="button" tabIndex={0} onClick={()=>openWine(b.wine)} onKeyDown={e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); openWine(b.wine); } }}
+          {/* The best few, then the rest behind "Show N more" (a step can hold dozens). */}
+          {step.n?<ShowMore key={sel} items={step.bottles} limit={DNA_TRAIT_BOTTLES} noun={step.bottles.length-DNA_TRAIT_BOTTLES===1?'bottle':'bottles'} render={(b,i)=><div key={i} role="button" tabIndex={0} onClick={()=>openWine(b.wine)} onKeyDown={e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); openWine(b.wine); } }}
             style={{display:'flex',alignItems:'center',gap:10,padding:'10px 0',borderTop:i?`1px solid ${C.line}`:'none',cursor:'pointer'}}>
             <div style={{flex:1,minWidth:0,fontSize:15,fontWeight:600,color:C.ink,fontFamily:C.P,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{WineDNA.nameYear(b.wine)}</div>
             {b.rating>0&&<span style={{fontSize:15,fontWeight:800,color:scoreCol(b.rating),fontFamily:C.P}}>{b.rating}</span>}
             <Icon n="chevron" sz={12} col={C.mid}/>
-          </div>):<span style={{fontSize:14,color:C.mid,fontFamily:C.P}}>None of your {L} sit here yet.</span>}
+          </div>}/>:<span style={{fontSize:14,color:C.mid,fontFamily:C.P}}>None of your {L} sit here yet.</span>}
         </div>
         <div style={{fontSize:13,color:C.mid,fontFamily:C.P,lineHeight:1.45}}>Where each wine sits is estimated from its label when you scan it: what the wine is typically like, not a tasting note.</div>
 
-        {tv.about&&<>
-          {head(`What ${tv.name.toLowerCase()} is`)}
-          <div style={card}><span style={{fontSize:15,color:C.ink2,fontFamily:C.P,lineHeight:1.55}}>{tv.about.what}</span></div>
-          {head('How to notice it')}
-          <div style={card}>{tv.about.notice.map((n,i)=><div key={i} style={{display:'flex',gap:9,fontSize:15,color:C.ink2,fontFamily:C.P,lineHeight:1.5}}><span style={{color:col,fontWeight:800}}>•</span><span>{n}</span></div>)}</div>
-          {head('At either end')}
-          <div style={{...card,flexDirection:'row',gap:12}}>
-            <div style={{flex:1,minWidth:0}}><div style={{fontSize:13,fontWeight:700,color:C.mid,fontFamily:C.P}}>{tv.lowWord}</div><div style={{fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.45}}>{tv.about.low}</div></div>
-            <div style={{flex:1,minWidth:0}}><div style={{fontSize:13,fontWeight:700,color:C.mid,fontFamily:C.P}}>{tv.highWord}</div><div style={{fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.45}}>{tv.about.high}</div></div>
-          </div>
-          <div style={{...card,background:C.offWhite}}><span style={{fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.5}}><b>Tip:</b> {tv.about.tip}</span></div>
-        </>}
         <div style={{height:8}}/>
       </div>
     </div>

@@ -49,3 +49,20 @@ test('at Extra large nothing on the main screens runs off the side', async ({ co
     expect(bad, `#${s}`).toBe(0);
   }
 });
+
+test('a size brought in by a restore or sync shows straight away, and the picker matches it', async ({ context, page }) => {
+  await makeDeterministic(page);
+  await seedLocalStorage(page, { vinterest_wineDNA_unlock_seen: '1', vinterest_text_size: 'large' });
+  await stubNetwork(context);
+  await page.goto(`${BASE}/?demo=1#account`);
+  const title = root(page).getByText('Text size', { exact: true });
+  await expect(title).toHaveCSS('font-size', '17.5px');
+  // Backup.apply and Sync write settings straight through Store, not TextSize.set.
+  await page.evaluate(() => Store.set('vinterest_text_size', 'xl'));
+  await expect(title).toHaveCSS('font-size', '19px');
+  await expect(root(page).getByRole('radio', { name: /Extra large/ })).toHaveAttribute('aria-checked', 'true');
+  // An account deleted (every key cleared) goes back to Standard.
+  await page.evaluate(() => Store.remove('vinterest_text_size'));
+  await expect(title).toHaveCSS('font-size', '16px');
+  await expect(root(page).getByRole('radio', { name: /Standard/ })).toHaveAttribute('aria-checked', 'true');
+});

@@ -2,7 +2,8 @@
 # so a change that breaks the native build shows up straight away:
 #   - ios: on a GitHub Mac (free for this public repo), an unsigned iPhone build, kept as the
 #     "Vinterest-ios-unsigned" artifact (an .ipa: signing comes with the Apple Developer account).
-#   - android: a debug .apk, kept as "Vinterest-android-debug", installable on any Android phone,
+#   - android: a debug .apk, kept as "Vinterest-android-debug", installable on any Android phone
+#     as "Vinterest Dev" (app.vinterest.dev), beside the Play app,
 #     and a release App Bundle signed with a throwaway key made the way docs/google-play.md makes the
 #     real one, so the Google Play build (play.yml) is proved on every PR, not first on main.
 # The native projects are generated here from capacitor.config.json by scripts/native.mjs, never

@@ -21,8 +21,12 @@ export function patchManifest(xml, { permissions = [], features = [] } = {}) {
 
 
 /* app/build.gradle's version: versionName from package.json, versionCode (Google Play's build
-   number, which must go up with every upload) from the build. */
+   number, which must go up with every upload) from the build. Debug builds (the PR test app) get
+   the ID app.vinterest.dev, so they install beside the Play app instead of clashing with it. */
+export const DEBUG_ID_SUFFIX = '.dev';
 export function patchAppGradle(gradle, { versionName, versionCode } = {}) {
+  if (!/debug\s*\{[^}]*applicationIdSuffix/.test(gradle))
+    gradle = gradle.replace(/buildTypes\s*\{/, (m) => `${m}\n        debug {\n            applicationIdSuffix "${DEBUG_ID_SUFFIX}"\n        }`);
   if (versionName) gradle = gradle.replace(/versionName\s+"[^"]*"/, `versionName "${String(versionName).replace(/"/g, '')}"`);
   if (versionCode) {
     const n = parseInt(versionCode, 10);
