@@ -458,6 +458,8 @@ test.describe('the sign-up Worker', () => {
       expect(sent.to).toEqual(['ada@example.com']);
       expect(sent.from).toBe('Vinterest <hello@vinterest.app>');
       expect(sent.html).not.toContain('<b>Ada</b>'); // the name is escaped in the HTML
+      expect(sent.subject).toBe('Thank you for registering for the Vinterest beta');
+      for (const part of ['download links', 'updates on the beta', 'acceptance into the programme']) { expect(sent.text).toContain(part); expect(sent.html).toContain(part); }
       expect(calls.find((c) => c.url.includes('supabase')).init.headers.prefer).toContain('return=representation');
       // Someone already on the list gets nothing more.
       calls.length = 0; inserted = false;
