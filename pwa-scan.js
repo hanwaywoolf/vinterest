@@ -38,7 +38,7 @@ const ScanFlow = {
      identity, so scores and history stay on one entry. It also keeps the saved reading of the
      label (style, grapes, region): Claude's estimates vary a little from scan to scan, and the
      same bottle shouldn't get a different match each time it's scanned. Corrections go through Edit. */
-  STABLE_FIELDS:['type','body','tannins','acidity','sweetness','texture','effervescence','grapes','blend','grapes_basis','region','sub_region','country'],
+  STABLE_FIELDS:['type','body','tannins','acidity','sweetness','texture','effervescence','grapes','blend','grapes_basis','grape_shares','region','sub_region','country'],
   resolve(wine){
     if(!wine||!wine.name) return {wine,existing:null};
     const existing=WineHistory.find(wine);
@@ -119,16 +119,45 @@ const ScanFlow = {
   REVEAL_TRAITS:3,
   /* How long a scene stays: time to read its words at an unhurried READ_WPM, plus REVEAL_LEAD for
      the picture to arrive (the dial sweeping up, the pin dropping), never under REVEAL_MIN_MS. */
-  READ_WPM:220, REVEAL_LEAD:1400, REVEAL_MIN_MS:2600,
-  revealLength(text){
+  READ_WPM:260, REVEAL_LEAD:1100, REVEAL_MIN_MS:2300,
+  // Scenes whose picture takes longer to draw (the bunch and its callouts, the map closing in on
+  // the pin, the glass and bubble) get that much more.
+  REVEAL_EXTRA:{grape:1800,place:1400,say:1300},
+  revealLength(text,key){
     const words=String(text||'').trim().split(/\s+/).filter(Boolean).length;
-    return Math.max(this.REVEAL_MIN_MS,Math.round(this.REVEAL_LEAD+words*60000/this.READ_WPM));
+    return Math.max(this.REVEAL_MIN_MS,Math.round(this.REVEAL_LEAD+(this.REVEAL_EXTRA[key]||0)+words*60000/this.READ_WPM));
+  },
+  /* The vintage card's cache (the Details tab asks Claude for the drinking window once per wine). */
+  vintageKey(wine){ return `vinterest_vintage_${(wine.name||'').replace(/\s/g,'_')}_${wine.vintage}`; },
+  /* Where a dated bottle is in its life: the years it should drink best, and whether it's young,
+     ready or past it today. Claude's window from the Details tab when that's been fetched
+     (source 'claude'); otherwise a rough estimate from the type and the label's style, said as
+     such: reds keep longer the fuller and grippier they are, fortified and sweet wines longest,
+     rosé and light whites least. Sparkling: vintage ones keep, NV is for now. */
+  drinkWindow(wine,now){
+    const v=parseInt(wine&&wine.vintage,10); if(!v||v<1900) return null;
+    const year=(now?new Date(now):new Date()).getFullYear();
+    let from,to,source='estimate';
+    const c=Cache.getText(this.vintageKey(wine)); let ci=null; try{ ci=c&&JSON.parse(c); }catch(e){}
+    if(ci&&ci.peak_from>0&&ci.peak_to>=ci.peak_from){ from=+ci.peak_from; to=+ci.peak_to; source='claude'; }
+    else {
+      const t=WineDNA._t(wine.type), b=typeof wine.body==='number'?wine.body:0.6, tn=typeof wine.tannins==='number'?wine.tannins:0.5, tx=typeof wine.texture==='number'?wine.texture:0.4;
+      const S={red:[2+Math.round(tn*3),5+Math.round((b+tn)*6)],white:[1+Math.round(tx*2),3+Math.round(tx*5)],rose:[0,2],sparkling:[2,8],orange:[1,6],dessert:[3,20],fortified:[3,30]}[t]||[1,4];
+      from=v+S[0]; to=v+S[1];
+    }
+    const age=year-v, stage=year<from?'young':year<=to?'ready':'old';
+    // Where today sits on a line from release to well past its best, 0 to 1 (the chart's marker).
+    const span=Math.max(2,(to-v)*1.4), at=Math.max(0.02,Math.min(0.98,age/span));
+    return {vintage:v,age,from,to,stage,source,at,fromAt:Math.min(0.96,(from-v)/span),toAt:Math.min(0.98,(to-v)/span),
+      word:stage==='young'?'Still young':stage==='ready'?'Drinking well now':'Past its best',
+      line:stage==='young'?`Best from ${from}${to>from?` to ${to}`:''}`:stage==='ready'?`At its best until about ${to}`:`Was at its best up to ${to}`};
   },
   reveal(wine,match,gen,wines){
     wines=wines||WineHistory.getAll();
     const t=WineDNA._t(wine.type), col=(typeof _TYPE_COLORS!=='undefined'&&_TYPE_COLORS[t])||'#8B1A2F';
     const identity={type:wine.type||'wine',country:wine.country||'',title:WineDNA.nameYear(wine),producer:wine.producer||'',
-      grapes:WineDNA.grapeLine(wine)||'',region:wine.region&&wine.region!==wine.country?wine.region:'',flag:Regions.wineFlag(wine)||''};
+      grapes:WineDNA.grapeLine(wine,{shares:true})||'',region:wine.region&&wine.region!==wine.country?wine.region:'',flag:Regions.wineFlag(wine)||'',
+      window:this.drinkWindow(wine)};
     // The match: the number and verdict, one reason for and one against. Too early: how close.
     let m=null;
     if(match){
@@ -141,17 +170,28 @@ const ScanFlow = {
     const traits=(WineDNA.AXES_FOR[t]||['body','acidity','sweetness']).filter(k=>typeof wine[k]==='number')
       .slice(0,this.REVEAL_TRAITS).map(k=>({axis:k,name:WineDNA.AXES[k].name,word:WineDNA.everyday(k,wine[k]),v:wine[k],low:WineDNA.AXES[k].low,high:WineDNA.AXES[k].high}));
     const notes=WineDNA.capNotes(wine.tasting_notes).slice(0,3);
-    // The lead grape, from the knowledge base's checked line; never a guess about the bottle.
+    // The lead grape, from the knowledge base's checked line, drawn as its page's sketch with two
+    // callouts (its skin and its bunch); never a guess about the bottle. `basis` is how we know
+    // it's the grape: printed on the label ('label'), the house's known blend ('known'), or only
+    // what wines like this usually hold ('typical', the one case for "usually").
     const lead=(wine.grapes||[])[0], gk=lead?GrapeUnlocks.key(lead):null, G=gk&&KNOWLEDGE.grapes[gk];
-    const grape=G?{name:gk,blend:!!(wine.blend||(wine.grapes||[]).length>1),typical:wine.grapes_basis==='typical',line:G.profile,famousIn:(G.famousIn||[]).slice(0,2)}:null;
+    const info=G?GrapeInfo.get(gk,wines):null;
+    const grape=G?{name:gk,blend:!!(wine.blend||(wine.grapes||[]).length>1),basis:wine.grapes_basis==='typical'?'typical':wine.grapes_basis==='known'?'known':'label',
+      typical:wine.grapes_basis==='typical',line:G.profile,famousIn:(G.famousIn||[]).slice(0,2),info,callouts:info?GrapeInfo.lookWords(info):[]}:null;
     // The place: the knowledge-base region with its climate and a spot on the wine map.
     const rk=Regions.resolve(wine), R=rk&&KNOWLEDGE.regions[rk];
     let place=null;
     if(R){
       const v=Array.isArray(R.at)?KnowledgeMap.views().find(x=>KnowledgeMap._inside(x,R.at)):null;
       const [x,y]=v?KnowledgeMap.project(v,R.at):[0,0];
-      place={name:rk,country:R.country||wine.country||'',flag:Regions.countryFlag(R.country)||identity.flag,line:R.climate||R.classification||'',
-        grapes:(R.keyGrapes||[]).slice(0,3),map:v?{view:v,x,y}:null};
+      // The wide shot the map starts on: the whole country (its centre and size from the view's
+      // country list), then it closes in on the pin. A country the view doesn't list starts wide
+      // on the pin itself.
+      const iso=n=>Regions.ISO[n]||n, cn=R.country||wine.country||'';
+      const C=v&&(v.countries||[]).find(c=>c.name===cn||iso(c.name)===iso(cn));
+      const wide=C?{x:C.x,y:C.y,z:Math.max(2.2,Math.min(6,Math.sqrt(C.a)/60)),name:C.name===cn?cn:cn}:{x,y,z:3,name:cn};
+      place={name:rk,country:cn,flag:Regions.countryFlag(R.country)||identity.flag,line:R.climate||R.classification||'',
+        grapes:(R.keyGrapes||[]).slice(0,3),map:v?{view:v,x,y,wide}:null};
     }
     // One thing to say out loud, from the scan cards once Claude has written them.
     const talk=gen&&Array.isArray(gen.talk)&&gen.talk.find(x=>typeof x==='string'&&x.trim());

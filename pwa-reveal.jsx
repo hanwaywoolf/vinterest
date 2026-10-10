@@ -5,8 +5,13 @@
    the grape, the place on the map, one thing to say about it, then what to do next.
 
    Every fact comes from ScanFlow.reveal (pwa-scan.js): the match from TasteMatch, the traits from
-   the label estimate, the grape and the place from knowledge.json, the line to say from the scan
-   cards once Claude has written them. A scene without its facts isn't shown. Each scene stays
+   the label estimate (each with its one-line meaning, Palate.HOW) and the notes with a pen sketch
+   of their flavour family (SketchNoteIcon), the drinking window (ScanFlow.drinkWindow) under the
+   label, the grape as its page's own sketch drawing itself in with two callouts (GrapeSketch), the
+   place as the wine map closing in from the whole country on the pin, which is then named, the
+   line to say from the scan cards once Claude has written them, under a glass and speech bubble
+   the pen draws (SketchSay). Every picture is drawn in code: no Claude call, nothing fetched. A
+   scene without its facts isn't shown. Each scene stays
    long enough to read (ScanFlow.revealLength: its words at a slow reading speed, plus time for the
    picture). A swipe left moves on and a swipe right goes back, a tap pauses and resumes, Skip goes
    to the end; the first couple of reveals open on a tip saying so (Flags.revealTipsDue). Scenes
@@ -28,7 +33,11 @@ const REVEAL_CSS=`
 @keyframes rvLeaveL{from{opacity:1;transform:none;filter:blur(0)}to{opacity:0;transform:translateX(-90px) scale(.94);filter:blur(6px)}}
 @keyframes rvLeaveR{from{opacity:1;transform:none;filter:blur(0)}to{opacity:0;transform:translateX(90px) scale(.94);filter:blur(6px)}}
 @keyframes rvTip{from{opacity:0}to{opacity:1}}
-.rv-stage{position:relative;overflow:hidden;background:#0F0F0F;color:#fff;user-select:none;-webkit-user-select:none;touch-action:manipulation}
+@keyframes rvDraw{from{stroke-dashoffset:1}to{stroke-dashoffset:0}}
+@keyframes rvZoom{from{transform:var(--rv-from)}to{transform:none}}
+@keyframes rvOut{from{opacity:1}to{opacity:0}}
+@keyframes rvMark{from{left:0}to{left:var(--rv-at)}}
+.rv-stage{position:relative;overflow:hidden;background:#0F0F0F;color:#fff;user-select:none;-webkit-user-select:none;touch-action:none}
 .rv-stage .rv-in{animation:rvIn .55s cubic-bezier(.2,.8,.3,1) both}
 .rv-stage .rv-bar{transform-origin:left center;animation:rvGrow .9s cubic-bezier(.3,.9,.4,1) both}
 .rv-stage .rv-pop{animation:rvPop .5s cubic-bezier(.2,.9,.3,1.2) both}
@@ -42,21 +51,39 @@ const REVEAL_CSS=`
 .rv-stage .rv-leave-l{animation:rvLeaveL .42s cubic-bezier(.4,0,.7,1) both;pointer-events:none}
 .rv-stage .rv-leave-r{animation:rvLeaveR .42s cubic-bezier(.4,0,.7,1) both;pointer-events:none}
 .rv-stage .rv-tip{animation:rvTip .4s ease both}
-@media (prefers-reduced-motion: reduce){.rv-stage *{animation:none!important;transition:none!important}.rv-stage .rv-seg{transform:none}}
+.rv-stage .rv-draw{stroke-dasharray:1;stroke-dashoffset:1;animation:rvDraw .8s ease-out both}
+.rv-stage .rv-zoom{transform-origin:0 0;animation:rvZoom 1.7s cubic-bezier(.5,0,.2,1) both}
+.rv-stage .rv-out{animation:rvOut .5s ease both}
+.rv-stage .rv-mark{animation:rvMark 1.2s cubic-bezier(.3,.8,.3,1) both}
+.rv-stage .rv-still *{animation:none!important}
+.rv-stage .rv-still .rv-draw{stroke-dashoffset:0}
+.rv-stage .rv-still .rv-mark{left:var(--rv-at)}
+.rv-stage .rv-still .rv-out{opacity:0}
+@media (prefers-reduced-motion: reduce){.rv-stage *{animation:none!important;transition:none!important}.rv-stage .rv-seg{transform:none}.rv-stage .rv-draw{stroke-dashoffset:0}.rv-stage .rv-mark{left:var(--rv-at)}.rv-stage .rv-out{opacity:0}}
 `;
 /* The words each scene asks someone to read, for its length (ScanFlow.revealLength). */
 function _revealWords(key,d,existingRating){
   const i=d.identity, m=d.match;
   switch(key){
-    case 'label': return [i.title,i.producer,i.grapes,i.region].join(' ');
+    case 'label': return [i.title,i.producer,i.grapes,i.region,i.window?i.window.word+' '+i.window.line:''].join(' ');
     case 'match': return m.early?`Score 3 ${m.early.many} and every one you scan comes with a match worked out from your own scores, not a critic's`
       :[m.label,m.expectedLabel?`Likely ${m.expectedLabel} for you you've loved ${m.chance}% of wines like it`:'',existingRating>0?'You scored it we expected':'',m.pro,m.con].join(' ');
-    case 'taste': return d.traits.map(t=>t.word+' '+t.name).concat(d.notes).join(' ');
-    case 'grape': return [d.grape.name,d.grape.line,'Famous in',...d.grape.famousIn].join(' ');
+    case 'taste': return d.traits.map(t=>t.word+' '+t.name+' '+_rvTraitHow(t.axis)).concat(d.notes).join(' ');
+    case 'grape': return [d.grape.name,d.grape.line,...d.grape.callouts,_rvGrapeBasis(d.grape)||''].join(' ');
     case 'place': return [d.place.name,d.place.country,d.place.line,'Known for',...d.place.grapes].join(' ');
     case 'say': return d.say.text;
     default: return '';
   }
+}
+/* What a trait means, in one line (Teach while asking): the palate's for the tasting traits, the
+   WineDNA trait page's for sweetness and bubbles. */
+function _rvTraitHow(axis){
+  if(Palate.HOW[axis]) return Palate.HOW[axis];
+  const a=WineDNA.TRAIT_ABOUT&&WineDNA.TRAIT_ABOUT[axis]; return a?a.what:'';
+}
+/* How we know it's the grape, when the label didn't print it. "Usually" only for a guess. */
+function _rvGrapeBasis(g){
+  return g.basis==='typical'?'The usual grape here: the label doesn\'t say':g.basis==='known'?'Not printed on the label, but this house\'s blend is known':null;
 }
 /* Verdict colours that read on the dark stage (the result screen's _TONE_COL are for white). */
 const _RV_TONE={good:'#5FD48F',neutral:'#F2B84B',bad:'#F28B7D'};
@@ -66,7 +93,7 @@ function _revealOff(){ return typeof window!=='undefined'&&window.VINTEREST_REVE
 /* The scenes this scan has, in order. `say` joins once Claude's lines are in. */
 function _revealScenes(d,existingRating){
   const keys=['label',d.match&&'match',d.traits.length&&'taste',d.grape&&'grape',d.place&&'place',d.say&&'say'].filter(Boolean);
-  return keys.map(key=>({key,ms:ScanFlow.revealLength(_revealWords(key,d,existingRating))})).concat([{key:'end',ms:0}]);
+  return keys.map(key=>({key,ms:ScanFlow.revealLength(_revealWords(key,d,existingRating),key)})).concat([{key:'end',ms:0}]);
 }
 
 function ScanReveal({wine,match,gen,existingRating,firstScan,nav,showPro,curr,onDone,onRated,onSaveForLater,onFinish}){
@@ -98,7 +125,9 @@ function ScanReveal({wine,match,gen,existingRating,firstScan,nav,showPro,curr,on
     return()=>{ clearTimeout(t); elapsed.current+=performance.now()-startedAt.current; };
   },[key,paused,scene.ms,still,tips]);
   // Touch: a swipe left moves on, a swipe right goes back (REVEAL_SWIPE px, or a quick flick); a
-  // tap pauses and resumes. A finger held down also pauses, and lets go where it was.
+  // tap pauses and resumes. A finger held down also pauses, and lets go where it was. The stage
+  // takes every touch itself (touch-action: none): with the browser allowed to pan, Android
+  // Chrome claimed a sideways drag as a scroll and cancelled the pointer, so no swipe arrived.
   const start=React.useRef(null), hold=React.useRef(null), held=React.useRef(false);
   const down=e=>{ if(e.target.closest('[data-rv-stop]')) return; start.current={x:e.clientX,y:e.clientY,t:performance.now()}; held.current=false; hold.current=setTimeout(()=>{ held.current=true; setPaused(true); },260); };
   const up=e=>{
@@ -129,15 +158,18 @@ function ScanReveal({wine,match,gen,existingRating,firstScan,nav,showPro,curr,on
       {key!=='end'&&<span role="button" data-rv-stop onClick={()=>go(scenes.length-1)} style={{fontSize:14,fontWeight:700,color:'rgba(255,255,255,0.75)',fontFamily:C.P,cursor:'pointer',padding:'6px 0 6px 12px'}}>Skip</span>}
     </div>
     <div style={{position:'relative',flex:1,minHeight:0}}>
-      {leaving&&<div aria-hidden="true" className={leaving.dir==='fwd'?'rv-leave-l':'rv-leave-r'} style={{position:'absolute',inset:0,display:'flex',flexDirection:'column',justifyContent:'center',padding:'20px 26px 32px'}}>
+      {leaving&&<div aria-hidden="true" className={leaving.dir==='fwd'?'rv-leave-l':'rv-leave-r'} style={{position:'absolute',inset:0,display:'flex',flexDirection:'column',justifyContent:'center',padding:'16px 26px 44px'}}>
         <_RvScene k={leaving.key} d={d} col={col} existingRating={existingRating} still/>
       </div>}
       <div key={key} data-testid="reveal-scene" data-scene={key} className={leaving?(dir==='fwd'?'rv-enter-r':'rv-enter-l'):undefined}
-          style={{position:'absolute',inset:0,display:'flex',flexDirection:'column',justifyContent:'center',padding:'20px 26px 32px'}}>
+          style={{position:'absolute',inset:0,display:'flex',flexDirection:'column',justifyContent:'center',padding:'16px 26px 44px'}}>
         <_RvScene k={key} d={d} col={col} existingRating={existingRating}/>
       </div>
     </div>
-    {paused&&key!=='end'&&<div data-testid="reveal-paused" className="rv-in" style={{position:'absolute',left:0,right:0,bottom:'calc(18px + env(safe-area-inset-bottom))',textAlign:'center',pointerEvents:'none'}}>
+    {key!=='end'&&<div data-testid="reveal-foot" style={{position:'absolute',left:0,right:0,bottom:'calc(14px + env(safe-area-inset-bottom))',textAlign:'center',pointerEvents:'none'}}>
+      <span style={{fontSize:'10px',fontWeight:700,color:'rgba(255,255,255,0.4)',fontFamily:C.P,letterSpacing:'0.16em',textTransform:'uppercase'}}>Personalised scan story · powered by Vinny</span>
+    </div>}
+    {paused&&key!=='end'&&<div data-testid="reveal-paused" className="rv-in" style={{position:'absolute',left:0,right:0,bottom:'calc(42px + env(safe-area-inset-bottom))',textAlign:'center',pointerEvents:'none'}}>
       <span style={{fontSize:13,fontWeight:700,color:'rgba(255,255,255,0.8)',fontFamily:C.P,letterSpacing:'0.1em',textTransform:'uppercase',padding:'7px 14px',borderRadius:20,background:'rgba(255,255,255,0.14)'}}>Paused · tap to go on</span>
     </div>}
     {tips&&<_RvTips onDone={()=>setTips(false)}/>}
@@ -157,7 +189,7 @@ function _RvScene({k,d,col,existingRating,still}){
     :k==='grape'?<_RvGrape d={d} col={col}/>
     :k==='place'?<_RvPlace d={d} col={col}/>
     :k==='say'?<_RvSay d={d} col={col}/>:null;
-  return still?<div style={{display:'contents'}} className="rv-still">{inner}<style>{`.rv-still .rv-in,.rv-still .rv-bar,.rv-still .rv-pop,.rv-still .rv-pin{animation:none!important}`}</style></div>:inner;
+  return still?<div style={{display:'contents'}} className="rv-still">{inner}</div>:inner;
 }
 
 /* How to drive it, over the first couple of reveals (Flags.revealTipsDue). */
@@ -181,14 +213,31 @@ function _RvTips({onDone}){
 const _rvEyebrow=(text,col)=><div className="rv-in" style={{fontSize:13,fontWeight:700,color:col,fontFamily:C.P,letterSpacing:'0.12em',textTransform:'uppercase'}}>{text}</div>;
 const _rvDelay=s=>({animationDelay:`${s}s`});
 
-/* 1. The label: what was read. */
+/* 1. The label: what was read, and where the vintage is in its life: a line from young through
+   its best years to old, the window lit in the type's colour and a marker sliding to today. */
 function _RvLabel({d,col}){
-  const i=d.identity;
+  const i=d.identity, w=i.window;
   return <div style={{display:'flex',flexDirection:'column',gap:10}}>
     {_rvEyebrow(<span>{i.flag&&<span className="vflag" aria-hidden="true" style={{marginRight:8}}>{i.flag}</span>}{[i.type,i.country].filter(Boolean).join(' · ')}</span>,'rgba(255,255,255,0.7)')}
     <div className="rv-in" style={{...(_rvDelay(.15)),fontSize:34,fontWeight:800,color:'#fff',fontFamily:C.P,lineHeight:1.1,letterSpacing:'-0.5px'}}>{i.title}</div>
     {i.producer&&<div className="rv-in" style={{..._rvDelay(.5),fontSize:18,color:'rgba(255,255,255,0.85)',fontFamily:C.P,lineHeight:1.4}}>{i.producer}</div>}
     {(i.grapes||i.region)&&<div className="rv-in" style={{..._rvDelay(.75),fontSize:16,color:'rgba(255,255,255,0.6)',fontFamily:C.P,lineHeight:1.45}}>{[i.grapes,i.region].filter(Boolean).join(' · ')}</div>}
+    {w&&<_RvWindow w={w} col={col}/>}
+  </div>;
+}
+function _RvWindow({w,col}){
+  const pct=x=>`${Math.round(x*100)}%`;
+  return <div data-testid="reveal-window" className="rv-in" style={{..._rvDelay(1.1),marginTop:14}}>
+    <div style={{display:'flex',alignItems:'baseline',justifyContent:'space-between',gap:10}}>
+      <span style={{fontSize:20,fontWeight:800,color:'#fff',fontFamily:C.P}}>{w.word}</span>
+      <span style={{fontSize:13,color:'rgba(255,255,255,0.55)',fontFamily:C.P}}>{w.age===0?'this year\'s':`${w.age} year${w.age===1?'':'s'} old`}</span>
+    </div>
+    <div style={{position:'relative',height:10,marginTop:10,borderRadius:5,background:'rgba(255,255,255,0.14)'}}>
+      <div style={{position:'absolute',top:0,bottom:0,left:pct(w.fromAt),width:pct(w.toAt-w.fromAt),borderRadius:5,background:col,boxShadow:`0 0 12px ${col}99`}}/>
+      <div className="rv-mark" style={{'--rv-at':pct(w.at),..._rvDelay(1.3),position:'absolute',top:-4,width:18,height:18,marginLeft:-9,borderRadius:9,background:'#fff',border:`3px solid ${col}`,boxShadow:'0 2px 6px rgba(0,0,0,0.5)'}}/>
+    </div>
+    <div style={{display:'flex',justifyContent:'space-between',fontSize:12,fontWeight:700,color:'rgba(255,255,255,0.45)',fontFamily:C.P,marginTop:8,letterSpacing:'0.08em',textTransform:'uppercase'}}><span>Young</span><span>At its best</span><span>Old</span></div>
+    <div style={{fontSize:14,color:'rgba(255,255,255,0.7)',fontFamily:C.P,marginTop:6,lineHeight:1.4}}>{w.line}{w.source==='estimate'?' · a rough estimate from its style':''}</div>
   </div>;
 }
 
@@ -235,75 +284,94 @@ function _RvMatch({d,col,existingRating,still}){
   </div>;
 }
 
-/* 3. How it will feel: the traits the label estimated, each as an everyday word and a bar that
-   fills, then the tasting notes. */
+/* 3. How it will feel: the traits the label estimated, each as an everyday word, a bar that
+   fills and one line on what the word means, then the tasting notes, each with a pen sketch of
+   its flavour family. */
 function _RvTaste({d,col}){
-  return <div style={{display:'flex',flexDirection:'column',gap:18}}>
+  return <div style={{display:'flex',flexDirection:'column',gap:14}}>
     {_rvEyebrow('How it\'ll feel','rgba(255,255,255,0.7)')}
     {d.traits.map((t,i)=><div key={t.axis} className="rv-in" style={_rvDelay(.2+i*.3)}>
-      <div style={{display:'flex',alignItems:'baseline',justifyContent:'space-between',marginBottom:8}}>
-        <span style={{fontSize:26,fontWeight:800,color:'#fff',fontFamily:C.P,lineHeight:1.1}}>{t.word}</span>
+      <div style={{display:'flex',alignItems:'baseline',justifyContent:'space-between',marginBottom:6}}>
+        <span style={{fontSize:24,fontWeight:800,color:'#fff',fontFamily:C.P,lineHeight:1.1}}>{t.word}</span>
         <span style={{fontSize:13,fontWeight:700,color:'rgba(255,255,255,0.5)',fontFamily:C.P,letterSpacing:'0.1em',textTransform:'uppercase'}}>{t.name}</span>
       </div>
       <div style={{height:8,borderRadius:4,background:'rgba(255,255,255,0.16)',overflow:'hidden'}}>
         <div className="rv-bar" style={{..._rvDelay(.5+i*.3),height:'100%',width:`${Math.round(t.v*100)}%`,borderRadius:4,background:col,boxShadow:`0 0 12px ${col}99`}}/>
       </div>
-      <div style={{display:'flex',justifyContent:'space-between',fontSize:12,color:'rgba(255,255,255,0.4)',fontFamily:C.P,marginTop:4}}><span>{t.low}</span><span>{t.high}</span></div>
+      <div style={{fontSize:13,color:'rgba(255,255,255,0.55)',fontFamily:C.P,marginTop:5,lineHeight:1.35}}>{_rvTraitHow(t.axis)}</div>
     </div>)}
-    {d.notes.length>0&&<div style={{display:'flex',flexWrap:'wrap',gap:8,marginTop:4}}>
-      {d.notes.map((n,i)=><span key={n} className="rv-pop" style={{..._rvDelay(1.5+i*.18),fontSize:15,fontWeight:600,color:'#fff',fontFamily:C.P,padding:'7px 13px',borderRadius:20,background:'rgba(255,255,255,0.12)',border:'1px solid rgba(255,255,255,0.25)'}}>{n}</span>)}
+    {d.notes.length>0&&<div data-testid="reveal-notes" style={{display:'flex',flexWrap:'wrap',gap:8,marginTop:2}}>
+      {d.notes.map((n,i)=><span key={n} className="rv-pop" style={{..._rvDelay(1.5+i*.18),display:'inline-flex',alignItems:'center',gap:8,fontSize:15,fontWeight:600,color:'#fff',fontFamily:C.P,padding:'5px 13px 5px 8px',borderRadius:20,background:'rgba(255,255,255,0.12)',border:'1px solid rgba(255,255,255,0.25)'}}>
+        <svg viewBox="-18 -18 36 36" width="28" height="28" aria-hidden="true" style={{flexShrink:0}}><SketchNoteIcon note={n} ink="#fff"/></svg>{n}</span>)}
     </div>}
   </div>;
 }
 
-/* 4. The grape, in the knowledge base's own words. */
+/* 4. The grape: its page's own sketch of the bunch on cream paper, drawn in berry by berry, with
+   two callouts the pen writes (its skin, its bunch), then the knowledge base's line on its taste.
+   How we know it's the grape when the label didn't print it, in words that never say "usually"
+   for a blend that is known. */
 function _RvGrape({d,col}){
-  const g=d.grape;
-  return <div style={{display:'flex',flexDirection:'column',gap:12}}>
+  const g=d.grape, basis=_rvGrapeBasis(g);
+  return <div style={{display:'flex',flexDirection:'column',gap:10}}>
     {_rvEyebrow(g.blend?'Led by the grape':'The grape','rgba(255,255,255,0.7)')}
-    <div className="rv-in" style={{..._rvDelay(.15),fontSize:40,fontWeight:800,color:'#fff',fontFamily:C.P,lineHeight:1.05,letterSpacing:'-0.5px'}}>{g.name}</div>
-    <div className="rv-in" style={{..._rvDelay(.5),fontSize:18,color:'rgba(255,255,255,0.85)',fontFamily:C.P,lineHeight:1.5}}>{g.line}.</div>
-    {g.famousIn.length>0&&<div className="rv-in" style={{..._rvDelay(.9),fontSize:15,color:'rgba(255,255,255,0.55)',fontFamily:C.P}}>Famous in {g.famousIn.join(' and ')}{g.typical?' · the usual grape here, not stated on the label':''}</div>}
+    <div className="rv-in" style={{..._rvDelay(.1),fontSize:36,fontWeight:800,color:'#fff',fontFamily:C.P,lineHeight:1.05,letterSpacing:'-0.5px'}}>{g.name}</div>
+    {g.info&&<div className="rv-in" data-testid="reveal-grape-sketch" style={{..._rvDelay(.2),alignSelf:'center',width:'100%',maxWidth:320,background:'#FBF8F3',borderRadius:16,padding:'10px 8px 4px',boxShadow:'0 10px 30px rgba(0,0,0,0.4)'}}>
+      <GrapeSketch info={g.info} notes={g.callouts} animate/>
+    </div>}
+    <div className="rv-in" style={{..._rvDelay(2.2),fontSize:16,color:'rgba(255,255,255,0.85)',fontFamily:C.P,lineHeight:1.45}}>{g.line}.</div>
+    {basis&&<div className="rv-in" style={{..._rvDelay(2.5),fontSize:13,color:'rgba(255,255,255,0.5)',fontFamily:C.P,lineHeight:1.4}}>{basis}</div>}
   </div>;
 }
 
-/* 5. The place: the wine map close in, a pin dropping on the region, its name and climate. */
+/* 5. The place: the wine map opens on the whole country, named, then closes in on the region
+   (rv-zoom, from the wide window to the one around the pin), the pin drops and takes the
+   region's name; its climate below. */
 function _RvPlace({d,col}){
   const p=d.place, W=300, H=200;
   // The map is a window onto the view around the pin, its edges faded so it sits in the stage
   // rather than cutting across it.
   const mask='radial-gradient(ellipse at 50% 50%, #000 40%, transparent 74%)';
+  const m=p.map, wide=m&&m.wide, z=wide?wide.z:1;
+  // The wide shot shows a window z times the close one, centred on the country; the transform
+  // that puts that window into the close box is what the zoom animates away from.
+  const from=wide?`translate(${m.x}px ${m.y}px) scale(${1/z}) translate(${-wide.x}px ${-wide.y}px)`:'none';
+  const label=(x,y,text,cls,delay)=><text x={x} y={y} className={cls} style={{animationDelay:delay,fontSize:'13px',fontWeight:800,fontFamily:C.P,fill:'#fff',paintOrder:'stroke',stroke:'rgba(15,15,15,0.85)',strokeWidth:'4px',strokeLinejoin:'round'}}>{text}</text>;
   return <div style={{display:'flex',flexDirection:'column',gap:12}}>
-    {p.map&&<div className="rv-in" style={{alignSelf:'center',width:'100%',maxWidth:360,aspectRatio:`${W}/${H}`,position:'relative',overflow:'hidden',WebkitMaskImage:mask,maskImage:mask}}>
-      <svg viewBox={`${p.map.x-W/2} ${p.map.y-H*0.52} ${W} ${H}`} width="100%" height="100%" aria-hidden="true">
-        <path d={p.map.view.land} fill="rgba(255,255,255,0.07)" stroke="rgba(255,255,255,0.35)" strokeWidth="0.8" vectorEffect="non-scaling-stroke"/>
-        {p.map.view.borders&&<path d={p.map.view.borders} fill="none" stroke="rgba(255,255,255,0.14)" strokeWidth="0.6" vectorEffect="non-scaling-stroke"/>}
-        <g transform={`translate(${p.map.x} ${p.map.y})`}>
-          <circle className="rv-pulse" r="9" fill="none" stroke={col} strokeWidth="1.5" style={{animationDelay:'.8s'}}/>
-          <g className="rv-pin" style={_rvDelay(.3)}><circle r="5.5" fill={col} stroke="#fff" strokeWidth="1.6"/></g>
+    {m&&<div className="rv-in" data-testid="reveal-map" style={{alignSelf:'center',width:'100%',maxWidth:360,aspectRatio:`${W}/${H}`,position:'relative',overflow:'hidden',WebkitMaskImage:mask,maskImage:mask}}>
+      <svg viewBox={`${m.x-W/2} ${m.y-H*0.52} ${W} ${H}`} width="100%" height="100%" aria-hidden="true" style={{overflow:'hidden'}}>
+        <g className="rv-zoom" style={{'--rv-from':from,animationDelay:'.7s'}}>
+          <path d={m.view.land} fill="rgba(255,255,255,0.07)" stroke="rgba(255,255,255,0.35)" strokeWidth="0.8" vectorEffect="non-scaling-stroke"/>
+          {m.view.borders&&<path d={m.view.borders} fill="none" stroke="rgba(255,255,255,0.14)" strokeWidth="0.6" vectorEffect="non-scaling-stroke"/>}
+        </g>
+        <g transform={`translate(${m.x} ${m.y})`}>
+          <circle className="rv-pulse" r="9" fill="none" stroke={col} strokeWidth="1.5" style={{animationDelay:'2.6s'}}/>
+          <g className="rv-pin" style={_rvDelay(2.3)}><circle r="5.5" fill={col} stroke="#fff" strokeWidth="1.6"/></g>
+          {label(10,5,p.name,'rv-in','2.8s')}
         </g>
       </svg>
+      {wide&&wide.name&&<div className="rv-out" aria-hidden="true" style={{position:'absolute',left:0,right:0,top:'50%',transform:'translateY(-50%)',textAlign:'center',fontSize:'22px',fontWeight:800,color:'rgba(255,255,255,0.85)',fontFamily:C.P,letterSpacing:'0.08em',textTransform:'uppercase',textShadow:'0 2px 10px rgba(0,0,0,0.8)',animationDelay:'1.1s'}}>{wide.name}</div>}
     </div>}
     {_rvEyebrow('Where it\'s from','rgba(255,255,255,0.7)')}
-    <div className="rv-in" style={{..._rvDelay(.9),display:'flex',alignItems:'center',gap:10}}>
+    <div className="rv-in" style={{..._rvDelay(2.6),display:'flex',alignItems:'center',gap:10}}>
       {p.flag&&<span className="vflag" aria-hidden="true" style={{fontSize:'30px',lineHeight:1}}>{p.flag}</span>}
       <div>
-        <div style={{fontSize:32,fontWeight:800,color:'#fff',fontFamily:C.P,lineHeight:1.1}}>{p.name}</div>
+        <div style={{fontSize:30,fontWeight:800,color:'#fff',fontFamily:C.P,lineHeight:1.1}}>{p.name}</div>
         {p.country&&<div style={{fontSize:15,color:'rgba(255,255,255,0.6)',fontFamily:C.P,marginTop:2}}>{p.country}</div>}
       </div>
     </div>
-    {p.line&&<div className="rv-in" style={{..._rvDelay(1.3),fontSize:16,color:'rgba(255,255,255,0.85)',fontFamily:C.P,lineHeight:1.5}}>{p.line}{/[.!?]$/.test(p.line)?'':'.'}</div>}
-    {p.grapes.length>0&&<div className="rv-in" style={{..._rvDelay(1.6),fontSize:14,color:'rgba(255,255,255,0.5)',fontFamily:C.P}}>Known for {p.grapes.join(', ')}</div>}
+    {p.line&&<div className="rv-in" style={{..._rvDelay(2.9),fontSize:16,color:'rgba(255,255,255,0.85)',fontFamily:C.P,lineHeight:1.5}}>{p.line}{/[.!?]$/.test(p.line)?'':'.'}</div>}
+    {p.grapes.length>0&&<div className="rv-in" style={{..._rvDelay(3.1),fontSize:14,color:'rgba(255,255,255,0.5)',fontFamily:C.P}}>Known for {p.grapes.join(', ')}</div>}
   </div>;
 }
 
-/* 6. One thing to say about it, from the scan cards. */
+/* 6. One thing to say about it, from the scan cards, under the pen's raised glass and bubble. */
 function _RvSay({d,col}){
   const s=d.say;
   return <div style={{display:'flex',flexDirection:'column',gap:12}}>
     {_rvEyebrow(s.kind==='talk'?'Something to say about it':'Did you know','rgba(255,255,255,0.7)')}
-    <div className="rv-in" style={{..._rvDelay(.2),fontSize:56,fontWeight:800,lineHeight:.5,color:col,fontFamily:C.P,marginTop:16}} aria-hidden="true">“</div>
-    <div className="rv-in" style={{..._rvDelay(.45),fontSize:24,fontWeight:600,color:'#fff',fontFamily:C.P,lineHeight:1.4}}>{s.text}</div>
+    <div className="rv-in" data-testid="reveal-say-sketch" style={{..._rvDelay(.1),marginTop:6}}><SketchSay ink="rgba(255,255,255,0.9)" col={col}/></div>
+    <div className="rv-in" style={{..._rvDelay(2.4),fontSize:24,fontWeight:600,color:'#fff',fontFamily:C.P,lineHeight:1.4}}>“{s.text}”</div>
   </div>;
 }
 
@@ -315,7 +383,7 @@ function _RvEnd({wine,d,firstScan,existingRating,nav,showPro,curr,onDone,onRated
     {key:'learn',icon:'book',label:'Learn about it',sub:'The story, the taste, the region and grape',on:()=>onDone('deck')},
     ...(existingRating?[]:[{key:'save',icon:'bookmark',label:'Save for later',sub:'Shopping, or not tasted yet',on:()=>onDone('saved')}]),
   ];
-  return <div data-rv-stop data-testid="reveal-end" className="rv-sheet" style={{position:'relative',background:C.white,borderRadius:'22px 22px 0 0',padding:'18px 18px calc(18px + env(safe-area-inset-bottom))',maxHeight:'78%',overflowY:'auto',boxShadow:'0 -8px 30px rgba(0,0,0,0.4)'}}>
+  return <div data-rv-stop data-testid="reveal-end" className="rv-sheet" style={{position:'relative',background:C.white,borderRadius:'22px 22px 0 0',padding:'18px 18px calc(18px + env(safe-area-inset-bottom))',maxHeight:'78%',overflowY:'auto',touchAction:'pan-y',boxShadow:'0 -8px 30px rgba(0,0,0,0.4)'}}>
     {firstScan
       ?<div style={{display:'flex',flexDirection:'column',gap:12}}>
         <div style={{fontSize:13,fontWeight:700,color:d.col,fontFamily:C.P,letterSpacing:'0.08em',textTransform:'uppercase'}}>Your WineDNA starts here</div>

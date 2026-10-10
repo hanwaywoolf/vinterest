@@ -58,6 +58,13 @@ const GrapeInfo = {
       mastery:{state,score:it?it.score:0,level:it?it.level:'Not started',fading:it?it.fading||0:0,
         rise:it?KnowledgeMap.itemRise(KnowledgeMap.progress(m),'grapes',name,it.score):0}};
   },
+  /* The two callouts the reveal writes on the sketch: its skin (colour) and its bunch (shape). */
+  lookWords(info){
+    const look=info.look||{}, skin={red:'Red-skinned',white:'White-skinned',pink:'Pink-skinned'}[info.skin]||'';
+    const colour=[skin,(look.notes||[])[0]].filter(Boolean).join(': ');
+    const shape=`${{small:'Small',medium:'Medium',large:'Large'}[look.berry]||'Medium'} berries in a ${{tight:'tightly packed',medium:'medium',loose:'loose'}[look.bunch]||'medium'} bunch`;
+    return [colour,shape].filter(Boolean);
+  },
   /* How the page's sketch draws its bunch: how many berries and how tightly packed. */
   sketch(look){
     const n={small:24,medium:19,large:13}[look&&look.berry]||19;

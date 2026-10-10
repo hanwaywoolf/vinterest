@@ -40,6 +40,11 @@ test('the reveal tells the scan in order: label, match, taste, grape, place, a l
   await expect(scene).toContainText('Viña Real Gran Reserva 2016');
   await expect(scene).toContainText('CVNE');
   await expect(scene).toContainText('Tempranillo, Graciano · Rioja');
+  // Where the vintage is in its life (ScanFlow.drinkWindow: an estimate from its style until the
+  // Details tab has asked Claude), as a line from young to old with the window lit.
+  await expect(page.getByTestId('reveal-window')).toContainText(/Still young|Drinking well now|Past its best/);
+  await expect(page.getByTestId('reveal-window')).toContainText('a rough estimate from its style');
+  await expect(page.getByTestId('reveal-foot')).toContainText('Personalised scan story · powered by Vinny');
   // The match: the real TasteMatch number and verdict, one reason for and one against.
   await next(page);
   await expect(scene).toHaveAttribute('data-scene', 'match');
@@ -53,20 +58,31 @@ test('the reveal tells the scan in order: label, match, taste, grape, place, a l
   await expect(scene).toHaveAttribute('data-scene', 'taste');
   for (const t of ['Rich', 'Body', 'Gentle grip', 'Tannins', 'Fresh', 'Acidity', 'Dried cherry', 'Vanilla']) await expect(scene).toContainText(t);
   await expect(scene).not.toContainText('Texture');
-  // The grape and the place, in the knowledge base's checked words, with the pin on the map.
+  // Each trait says what the word means (Palate.HOW), and each note carries its family's sketch.
+  await expect(scene).toContainText('Body is weight in the mouth');
+  await expect(scene).toContainText('Tannin dries your gums');
+  expect(await page.getByTestId('reveal-notes').locator('svg').count()).toBe(3);
+  // The grape: its page's sketch with two callouts (skin and bunch), the checked line, and no
+  // "usually" for a grape the label states.
   await next(page);
   await expect(scene).toHaveAttribute('data-scene', 'grape');
   await expect(scene).toContainText('Led by the grape');
   await expect(scene).toContainText('Tempranillo');
+  await expect(page.getByTestId('grape-sketch')).toHaveAttribute('aria-label', 'Sketch of Tempranillo: Red-skinned: Thick, dark skins; Medium berries in a medium bunch.');
+  expect(await page.getByTestId('grape-sketch').locator('path.rv-draw').count()).toBe(2);
   await expect(scene).toContainText('Medium-high tannin, red cherry and plum');
-  await expect(scene).toContainText('Famous in Rioja and Ribera del Duero');
+  await expect(scene).not.toContainText(/usual|Famous in/);
+  // The place: the map opens on the country, closes in on the pin, and names it.
   await next(page);
   await expect(scene).toHaveAttribute('data-scene', 'place');
-  await expect(scene).toContainText('Rioja');
+  await expect(page.getByTestId('reveal-map')).toContainText('Spain');
+  await expect(page.getByTestId('reveal-map').locator('.rv-zoom')).toHaveCount(1);
+  await expect(page.getByTestId('reveal-map').locator('text')).toHaveText('Rioja');
   await expect(scene).toContainText('Continental, tempered by the Atlantic');
   await expect(scene.locator('svg path').first()).toBeVisible();
   await next(page);
   await expect(scene).toHaveAttribute('data-scene', 'say');
+  await expect(page.getByTestId('reveal-say-sketch').locator('path.rv-draw').first()).toBeVisible();
   await expect(scene).toContainText('Gran Reserva means it waited years in oak');
   // Everything is Poppins, nothing italic.
   expect(await page.evaluate(() => [...document.querySelectorAll('.rv-stage *')].filter((e) => e.textContent.trim() && e.children.length === 0).map((e) => getComputedStyle(e)).filter((cs) => !/Poppins/.test(cs.fontFamily) || cs.fontStyle === 'italic').length)).toBe(0);
@@ -106,8 +122,8 @@ test('scenes move on by themselves, a held finger pauses, and the whole thing ta
     const d = ScanFlow.reveal(w, TasteMatch.assess(w, WineHistory.getAll()), { talk: ['Gran Reserva means it waited years in oak'] });
     return _revealScenes(d, 0).map((s) => [s.key, s.ms]);
   }, RIOJA);
-  for (const [k, ms] of lens) if (k !== 'end') expect(ms, k).toBeGreaterThanOrEqual(2600);
-  expect(await page.evaluate(() => ScanFlow.revealLength('one two three four five six seven eight nine ten') - ScanFlow.REVEAL_LEAD)).toBe(Math.round(10 * 60000 / 220));
+  for (const [k, ms] of lens) if (k !== 'end') expect(ms, k).toBeGreaterThanOrEqual(2300);
+  expect(await page.evaluate(() => ScanFlow.revealLength('one two three four five six seven eight nine ten') - ScanFlow.REVEAL_LEAD)).toBe(Math.round(10 * 60000 / 260));
   const total = lens.reduce((a, [, ms]) => a + ms, 0);
   expect(total).toBeGreaterThanOrEqual(15000);
   expect(total).toBeLessThanOrEqual(45000);
@@ -170,4 +186,31 @@ test('with reduced motion nothing moves on by itself, and at Extra large text no
     await next(page);
   }
   await expect(scene).toHaveAttribute('data-scene', 'end');
+});
+
+test('the drinking window and how sure the grape is: estimates from style, Claude\'s window once fetched, "usually" only for a guess', async ({ context, page }) => {
+  await makeDeterministic(page);
+  await stubNetwork(context);
+  await page.goto(`${BASE}/?demo=1#home`);
+  const out = await page.evaluate((w) => {
+    const now = new Date(2026, 9, 10);
+    const young = ScanFlow.drinkWindow({ ...w, vintage: 2025 }, now), ready = ScanFlow.drinkWindow(w, now), old = ScanFlow.drinkWindow({ ...w, vintage: 1990 }, now);
+    const rose = ScanFlow.drinkWindow({ type: 'rosé', vintage: 2024, body: 0.3 }, now);
+    const nv = ScanFlow.drinkWindow({ ...w, vintage: null }, now);
+    Cache.set(ScanFlow.vintageKey(w), { peak_from: 2030, peak_to: 2040 });
+    const claude = ScanFlow.drinkWindow(w, now);
+    const line = (basis, shares) => WineDNA.grapeLine({ grapes: ['Tempranillo', 'Garnacha'], blend: true, grapes_basis: basis, grape_shares: shares }, { shares: true });
+    return { young: [young.stage, young.word, young.source], ready: [ready.stage, ready.from <= 2026 && ready.to >= 2026], old: old.stage, rose: [rose.from, rose.to], nv,
+      claude: [claude.stage, claude.from, claude.to, claude.source, claude.line],
+      lines: [line('label'), line('known'), line('typical'), line('known', { Tempranillo: 80, Garnacha: 20 }), line('typical', { Tempranillo: 80, Garnacha: 20 })],
+      words: GrapeInfo.lookWords(GrapeInfo.get('Tempranillo')) };
+  }, RIOJA);
+  expect(out.young).toEqual(['young', 'Still young', 'estimate']);
+  expect(out.ready).toEqual(['ready', true]);
+  expect(out.old).toBe('old');
+  expect(out.rose).toEqual([2024, 2026]);
+  expect(out.nv).toBeNull();
+  expect(out.claude).toEqual(['young', 2030, 2040, 'claude', 'Best from 2030 to 2040']);
+  expect(out.lines).toEqual(['Tempranillo, Garnacha', 'Tempranillo, Garnacha', 'Usually Tempranillo and Garnacha', 'Tempranillo 80%, Garnacha 20%', 'Usually Tempranillo and Garnacha']);
+  expect(out.words).toEqual(['Red-skinned: Thick, dark skins', 'Medium berries in a medium bunch']);
 });

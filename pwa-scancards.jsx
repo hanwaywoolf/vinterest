@@ -45,7 +45,7 @@ function useScanContent(wine,match){
       'Wine: '+(w.name||'')+(w.vintage&&w.vintage!=='NV'&&w.vintage!==0?' '+w.vintage:'')+'. '+
       'Type: '+(w.type||'red')+'. Region: '+(w.region||'')+((w.sub_region)?' ('+w.sub_region+')':'')+', '+(w.country||'')+'. '+
       'Producer: '+(w.producer||'unknown')+'. '+
-      'Grapes: '+(WineDNA.grapeLine(w)||'unknown')+(w.grapes_basis==='typical'?' (not stated on the label: what this wine usually contains)':'')+'. '+
+      'Grapes: '+(WineDNA.grapeLine(w)||'unknown')+(w.grapes_basis==='typical'?' (not stated on the label: what this wine usually contains)':w.grapes_basis==='known'?' (the producer\'s known blend)':'')+'. '+
       (w.blend||(w.grapes||[]).length>1?'This is a blend: call it a blend led by its main grape, never a single-grape wine. ':'')+
       'Tasting notes: '+((w.tasting_notes||[]).join(', ')||'n/a')+'. '+
       matchFacts+' '+agingLine+' '+
