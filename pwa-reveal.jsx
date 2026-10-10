@@ -34,8 +34,7 @@ const REVEAL_CSS=`
 @keyframes rvLeaveR{from{opacity:1;transform:none;filter:blur(0)}to{opacity:0;transform:translateX(90px) scale(.94);filter:blur(6px)}}
 @keyframes rvTip{from{opacity:0}to{opacity:1}}
 @keyframes rvDraw{from{stroke-dashoffset:1}to{stroke-dashoffset:0}}
-@keyframes rvZoom{from{transform:var(--rv-from)}to{transform:none}}
-@keyframes rvZoomIn{from{transform:none}to{transform:var(--rv-to)}}
+@keyframes rvZoom{from{transform:var(--rv-from)}to{transform:var(--rv-to)}}
 @keyframes rvOut{from{opacity:1}to{opacity:0}}
 @keyframes rvMark{from{left:0}to{left:var(--rv-at)}}
 .rv-stage{position:relative;overflow:hidden;background:#0F0F0F;color:#fff;user-select:none;-webkit-user-select:none;touch-action:none}
@@ -53,16 +52,15 @@ const REVEAL_CSS=`
 .rv-stage .rv-leave-r{animation:rvLeaveR .42s cubic-bezier(.4,0,.7,1) both;pointer-events:none}
 .rv-stage .rv-tip{animation:rvTip .4s ease both}
 .rv-stage .rv-draw{stroke-dasharray:1;stroke-dashoffset:1;animation:rvDraw .8s ease-out both}
-.rv-stage .rv-zoom{transform-origin:0 0;animation:rvZoom 1.7s cubic-bezier(.5,0,.2,1) both}
-.rv-stage .rv-zoom-in{transform-origin:0 0;animation:rvZoomIn 1.6s cubic-bezier(.4,0,.2,1) both}
+.rv-stage .rv-zoom{transform-origin:0 0;animation:rvZoom 2.6s cubic-bezier(.45,0,.15,1) both}
 .rv-stage .rv-out{animation:rvOut .5s ease both}
 .rv-stage .rv-mark{animation:rvMark 1.2s cubic-bezier(.3,.8,.3,1) both}
 .rv-stage .rv-still *{animation:none!important}
 .rv-stage .rv-still .rv-draw{stroke-dashoffset:0}
 .rv-stage .rv-still .rv-mark{left:var(--rv-at)}
 .rv-stage .rv-still .rv-out{opacity:0}
-.rv-stage .rv-still .rv-zoom-in{transform:var(--rv-to)}
-@media (prefers-reduced-motion: reduce){.rv-stage *{animation:none!important;transition:none!important}.rv-stage .rv-seg{transform:none}.rv-stage .rv-draw{stroke-dashoffset:0}.rv-stage .rv-mark{left:var(--rv-at)}.rv-stage .rv-out{opacity:0}.rv-stage .rv-zoom-in{transform:var(--rv-to)}}
+.rv-stage .rv-still .rv-zoom{transform:var(--rv-to)}
+@media (prefers-reduced-motion: reduce){.rv-stage *{animation:none!important;transition:none!important}.rv-stage .rv-seg{transform:none}.rv-stage .rv-draw{stroke-dashoffset:0}.rv-stage .rv-mark{left:var(--rv-at)}.rv-stage .rv-out{opacity:0}.rv-stage .rv-zoom{transform:var(--rv-to)}}
 `;
 /* The words each scene asks someone to read, for its length (ScanFlow.revealLength). */
 function _revealWords(key,d,existingRating){
@@ -327,10 +325,12 @@ function _RvGrape({d,col}){
   </div>;
 }
 
-/* 5. The place: the wine map opens on the whole country, named, then closes in on the region
-   (rv-zoom, from the wide window to the one around the pin), and as the pin drops and takes the
-   region's name it closes in tighter still (rv-zoom-in, RV_TIGHT about the pin, which stays
-   put); its climate below. */
+/* 5. The place: the wine map opens on the whole country, named, then closes in on the region in
+   one movement (rv-zoom), ending RV_TIGHT× in about the pin as it drops and takes the region's
+   name; its climate below. Both ends of the zoom are written as a scale about the pin plus an
+   offset of the pin from the centre (the country frame's offset, then none), so CSS interpolates
+   the pin along a straight line into the centre while the scale grows, instead of swinging it
+   out and back (which a translate-scale-translate of the country's centre did). */
 const RV_TIGHT=1.7;
 function _RvPlace({d,col}){
   const p=d.place, W=300, H=200;
@@ -342,22 +342,21 @@ function _RvPlace({d,col}){
   // that puts that window into the close box is what the zoom animates away from.
   // CSS transforms, so the translate arguments take commas (the SVG attribute form, with spaces,
   // is invalid CSS and left the map still).
-  const from=wide?`translate(${m.x}px, ${m.y}px) scale(${1/z}) translate(${-wide.x}px, ${-wide.y}px)`:'none';
+  const ox=wide?(m.x-wide.x)/z:0, oy=wide?(m.y-wide.y)/z:0; // where the pin sits in the country frame
+  const from=`translate(${m.x+ox}px, ${m.y+oy}px) scale(${wide?1/z:1}) translate(${-m.x}px, ${-m.y}px)`;
   const tight=`translate(${m.x}px, ${m.y}px) scale(${RV_TIGHT}) translate(${-m.x}px, ${-m.y}px)`;
   const label=(x,y,text,cls,delay)=><text x={x} y={y} className={cls} style={{animationDelay:delay,fontSize:'13px',fontWeight:800,fontFamily:C.P,fill:'#fff',paintOrder:'stroke',stroke:'rgba(15,15,15,0.85)',strokeWidth:'4px',strokeLinejoin:'round'}}>{text}</text>;
   return <div style={{display:'flex',flexDirection:'column',gap:12}}>
     {m&&<div className="rv-in" data-testid="reveal-map" style={{alignSelf:'center',width:'100%',maxWidth:360,aspectRatio:`${W}/${H}`,position:'relative',overflow:'hidden',WebkitMaskImage:mask,maskImage:mask}}>
       <svg viewBox={`${m.x-W/2} ${m.y-H*0.52} ${W} ${H}`} width="100%" height="100%" aria-hidden="true" style={{overflow:'hidden'}}>
-        <g className="rv-zoom" style={{'--rv-from':from,animationDelay:'.7s'}}>
-          <g className="rv-zoom-in" style={{'--rv-to':tight,animationDelay:'2.5s'}}>
-            <path d={m.view.land} fill="rgba(255,255,255,0.07)" stroke="rgba(255,255,255,0.35)" strokeWidth="0.8" vectorEffect="non-scaling-stroke"/>
-            {m.view.borders&&<path d={m.view.borders} fill="none" stroke="rgba(255,255,255,0.14)" strokeWidth="0.6" vectorEffect="non-scaling-stroke"/>}
-          </g>
+        <g className="rv-zoom" style={{'--rv-from':from,'--rv-to':tight,animationDelay:'.7s'}}>
+          <path d={m.view.land} fill="rgba(255,255,255,0.07)" stroke="rgba(255,255,255,0.35)" strokeWidth="0.8" vectorEffect="non-scaling-stroke"/>
+          {m.view.borders&&<path d={m.view.borders} fill="none" stroke="rgba(255,255,255,0.14)" strokeWidth="0.6" vectorEffect="non-scaling-stroke"/>}
         </g>
         <g transform={`translate(${m.x} ${m.y})`}>
           <circle className="rv-pulse" r="9" fill="none" stroke={col} strokeWidth="1.5" style={{animationDelay:'2.6s'}}/>
-          <g className="rv-pin" style={_rvDelay(2.3)}><circle r="5.5" fill={col} stroke="#fff" strokeWidth="1.6"/></g>
-          {label(10,5,p.name,'rv-in','2.8s')}
+          <g className="rv-pin" style={_rvDelay(2.8)}><circle r="5.5" fill={col} stroke="#fff" strokeWidth="1.6"/></g>
+          {label(10,5,p.name,'rv-in','3.2s')}
         </g>
       </svg>
       {wide&&wide.name&&<div className="rv-out" aria-hidden="true" style={{position:'absolute',left:0,right:0,top:'50%',transform:'translateY(-50%)',textAlign:'center',fontSize:'22px',fontWeight:800,color:'rgba(255,255,255,0.85)',fontFamily:C.P,letterSpacing:'0.08em',textTransform:'uppercase',textShadow:'0 2px 10px rgba(0,0,0,0.8)',animationDelay:'1.1s'}}>{wide.name}</div>}

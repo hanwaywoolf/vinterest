@@ -93,7 +93,8 @@ const _TONE_COL={good:C.green,neutral:C.amber,bad:'#B04A3A'};
 const _DECK_LIGHT={dark:false,bg:C.bg,card:C.white,ink:C.ink,ink2:C.ink2,mid:C.mid,line:C.line,soft:C.offWhite,crSoft:C.crSoft,
   green:C.green,greenBg:C.greenBg,amber:C.amber,amberBg:C.amberBg,tone:_TONE_COL,fade0:'rgba(255,255,255,0)',shadow:'0 6px 22px rgba(0,0,0,0.08)',
   lift:c=>c,tint:(c,soft)=>soft||_alpha(c,0.12)};
-const _DECK_DARK_LIFT={[C.cr]:'#E05A74',[C.green]:'#5FD48F',[C.amber]:'#F2B84B',[C.ink]:'#FFFFFF','#9B6B00':'#F2B84B','#6B2D8B':'#C08BE0','#B04A3A':'#F28B7D','#1E7B4B':'#5FD48F'};
+const _DECK_DARK_LIFT={[C.cr]:'#E05A74',[C.green]:'#5FD48F',[C.amber]:'#F2B84B',[C.ink]:'#FFFFFF','#9B6B00':'#F2B84B','#6B2D8B':'#C08BE0','#B04A3A':'#F28B7D','#1E7B4B':'#5FD48F',
+  '#5C2A1E':'#B8775C','#8A5A2B':'#D09A58','#B8963E':'#E2BC5A','#C1652B':'#E8854A'}; // crimson, fortified, dessert, white, orange lifted; rosé and sparkling read as they are
 const _DECK_DARK={dark:true,bg:'#0F0F0F',card:'#1A1A1C',ink:'#FFFFFF',ink2:'rgba(255,255,255,0.86)',mid:'rgba(255,255,255,0.62)',line:'rgba(255,255,255,0.14)',soft:'rgba(255,255,255,0.07)',crSoft:'rgba(224,90,116,0.22)',
   green:'#5FD48F',greenBg:'rgba(95,212,143,0.16)',amber:'#F2B84B',amberBg:'rgba(242,184,75,0.16)',tone:{good:'#5FD48F',neutral:'#F2B84B',bad:'#F28B7D'},fade0:'rgba(26,26,28,0)',shadow:'0 10px 30px rgba(0,0,0,0.55)',
   lift:c=>_DECK_DARK_LIFT[c]||c,tint:c=>_alpha(_DECK_DARK_LIFT[c]||c,0.22)};
@@ -510,19 +511,22 @@ function ScanResult({wine,match,curr,scanData,existingRating,nav,showPro,view,se
    depth, the table, Blind Call, and what's next. Each card opens on a line and keeps its
    paragraph behind "More" (below the More detail level); the words come from WineDeep, written
    on demand the first time the deck is opened, over the checked facts in knowledge.json. */
-function buildCards({match}){
+function buildCards({match,wine}){
+  // Every card in the wine type's colourway (crimson for a red, gold for a white, blue for
+  // sparkling: _TYPE_COLORS), not a colour per card.
+  const a=_typeCol(wine), soft=null;
   return [
     match&&match.verdict==='early'
-      ?{key:'match',accent:C.green,soft:C.greenBg,icon:'compass',eyebrow:'Your match',kind:'first-match'}
-      :{key:'match',accent:C.green,soft:C.greenBg,icon:'compass',eyebrow:'Your match',kind:'match'},
-    {key:'house',accent:C.cr,soft:C.crSoft,icon:'user',eyebrow:'The house',kind:'house'},
-    {key:'year',accent:'#9B6B00',soft:'#FBF3E0',icon:'bookmark',eyebrow:'The year',kind:'year'},
-    {key:'made',accent:'#6B2D8B',soft:'#F3ECF8',icon:'grape',eyebrow:'How it\'s made',kind:'made'},
-    {key:'region',accent:C.cr,soft:C.crSoft,icon:'globe',eyebrow:'The region',kind:'region'},
-    {key:'table',accent:C.amber,soft:C.amberBg,icon:'fork',eyebrow:'At the table',kind:'table'},
-    {key:'taste',accent:C.ink,soft:C.offWhite,icon:'wine',eyebrow:'While you taste',kind:'taste'},
-    {key:'next',accent:C.green,soft:C.greenBg,icon:'book',eyebrow:'Next from here',kind:'next'},
-    {key:'finish',accent:C.cr,soft:C.crSoft,icon:'star',eyebrow:'Rate it',kind:'finish'},
+      ?{key:'match',accent:a,soft,icon:'compass',eyebrow:'Your match',kind:'first-match'}
+      :{key:'match',accent:a,soft,icon:'compass',eyebrow:'Your match',kind:'match'},
+    {key:'house',accent:a,soft,icon:'user',eyebrow:'The house',kind:'house'},
+    {key:'year',accent:a,soft,icon:'bookmark',eyebrow:'The year',kind:'year'},
+    {key:'made',accent:a,soft,icon:'grape',eyebrow:'How it\'s made',kind:'made'},
+    {key:'region',accent:a,soft,icon:'globe',eyebrow:'The region',kind:'region'},
+    {key:'table',accent:a,soft,icon:'fork',eyebrow:'At the table',kind:'table'},
+    {key:'taste',accent:a,soft,icon:'wine',eyebrow:'While you taste',kind:'taste'},
+    {key:'next',accent:a,soft,icon:'book',eyebrow:'Next from here',kind:'next'},
+    {key:'finish',accent:a,soft,icon:'star',eyebrow:'Rate it',kind:'finish'},
   ];
 }
 
@@ -614,7 +618,7 @@ function CardFace({card,ctx}){ const T=useTheme();
       {w&&<div style={{display:'flex',alignItems:'baseline',gap:8,flexWrap:'wrap'}}>
         <span style={{fontSize:16,fontWeight:800,color:a,fontFamily:P}}>{w.word}</span>
         <span style={{fontSize:14,color:T.mid,fontFamily:P}}>{w.line}{w.source==='estimate'?' · a rough estimate':''}</span>
-        {r&&r!=='Unknown'&&<span style={{fontSize:12.5,fontWeight:700,color:a,fontFamily:P,padding:'2px 9px',borderRadius:12,background:card.soft}}>{r} vintage</span>}
+        {r&&r!=='Unknown'&&<span style={{fontSize:12.5,fontWeight:700,color:a,fontFamily:P,padding:'2px 9px',borderRadius:12,background:T.tint(card.accent)}}>{r} vintage</span>}
       </div>}
       <Deep f="year" fallback={y?`The ${y} in ${facts.region||wine.region||wine.country}.`:'A blend of years, made to taste the same every time.'}/>
     </div>;
@@ -645,13 +649,13 @@ function CardFace({card,ctx}){ const T=useTheme();
       {!t&&ctx.deepLoading?<WritingWait compact wine={wine} col={a} sub="Learn more about this wine"/>:<>
         {t&&t.serve&&<Body>{t.serve}</Body>}
         {pairs.length>0?<div style={{display:'flex',flexDirection:'column',gap:8}}>
-          {pairs.slice(0,expanded?3:2).map((x,i)=><div key={i} style={{padding:'10px 12px',borderRadius:12,background:card.soft,border:`1px solid ${a}22`}}>
+          {pairs.slice(0,expanded?3:2).map((x,i)=><div key={i} style={{padding:'10px 12px',borderRadius:12,background:T.tint(card.accent),border:`1px solid ${a}33`}}>
             <div style={{fontSize:15,fontWeight:700,color:T.ink,fontFamily:P}}>{x.food}</div>
             {x.why&&<div style={{fontSize:14,color:T.ink2,fontFamily:P,lineHeight:1.45,marginTop:2}}>{x.why}</div>}
           </div>)}
           {pairs.length>2&&<More/>}
         </div>
-        :plain.length>0?<div style={{display:'flex',flexWrap:'wrap',gap:7}}>{plain.map((f,i)=><span key={i} style={{padding:'5px 12px',borderRadius:20,background:card.soft,color:a,fontSize:14,fontWeight:600,fontFamily:P,border:`1px solid ${a}22`}}>{f}</span>)}</div>:null}
+        :plain.length>0?<div style={{display:'flex',flexWrap:'wrap',gap:7}}>{plain.map((f,i)=><span key={i} style={{padding:'5px 12px',borderRadius:20,background:T.tint(card.accent),color:a,fontSize:14,fontWeight:600,fontFamily:P,border:`1px solid ${a}33`}}>{f}</span>)}</div>:null}
         {facts.food&&<Facts rows={[[`${facts.grape} and food`,facts.food]]}/>}
       </>}
     </div>;
@@ -870,21 +874,32 @@ function RatingDial({min,max=100,value,unset=false,onChange,col=C.cr,label='Rati
   function up(e){ if(drag.current===e.pointerId) drag.current=null; }
   function key(e){ const d={ArrowRight:1,ArrowUp:1,ArrowLeft:-1,ArrowDown:-1}[e.key]; if(d!=null){ e.preventDefault(); onChange(clamp((unset?min:value)+d)); } }
   const deg=A0+frac*SWEEP, [kx,ky]=pt(deg), lab=unset?'':ParkerScale.label(value);
+  // The scale's colours along the arc: red below 80, amber to 89, green from 90 (ParkerScale.tone),
+  // blended between; the whole arc faint, the part turned to at full strength, and the rating
+  // in its band's colour.
+  const tone=T.tone, bandCol=unset?T.mid:tone[ParkerScale.tone(value)];
+  const xAt=v=>pt(A0+(v-min)/(max-min)*SWEEP)[0];
+  const gid=React.useMemo(()=>'rd'+Math.random().toString(36).slice(2,7),[]);
+  const stops=[[xAt(min),tone.bad],[xAt(76),tone.bad],[xAt(82),tone.neutral],[xAt(87),tone.neutral],[xAt(93),tone.good],[xAt(max),tone.good]];
+  const x0=stops[0][0], x1=stops[stops.length-1][0];
   return <div ref={ref} role="slider" tabIndex={0} aria-label={label} aria-valuemin={min} aria-valuemax={max} aria-valuenow={unset?undefined:value} aria-valuetext={unset?'Not rated yet':`${value}, ${lab}`} data-noswipe
     onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={up} onKeyDown={key}
     style={{position:'relative',width:size,height:size*0.9,margin:'0 auto',touchAction:'none',cursor:'pointer',userSelect:'none',WebkitUserSelect:'none',WebkitTapHighlightColor:'transparent'}}>
     <svg viewBox={`0 0 ${S} ${S*0.9}`} width={size} height={size*0.9} aria-hidden="true" style={{display:'block',overflow:'visible'}}>
-      <path d={arc(A0,135)} fill="none" stroke={T.line} strokeWidth="14" strokeLinecap="round"/>
-      {!unset&&frac>0&&<path d={arc(A0,deg)} fill="none" stroke={col} strokeWidth="14" strokeLinecap="round"/>}
-      {ParkerScale.PRESETS.map(p=>{ const a=A0+(p-min)/(max-min)*SWEEP, [x0,y0]=pt(a,r+9), [x1,y1]=pt(a,r+13);
-        return <line key={p} x1={x0} y1={y0} x2={x1} y2={y1} stroke={T.mid} strokeWidth="1.5" strokeLinecap="round"/>; })}
-      <circle cx={kx} cy={ky} r="12" fill={T.card} stroke={unset?T.mid:col} strokeWidth="3" style={{filter:'drop-shadow(0 1px 3px rgba(0,0,0,0.3))'}}/>
+      <defs><linearGradient id={gid} gradientUnits="userSpaceOnUse" x1={x0} y1="0" x2={x1} y2="0">
+        {stops.map(([x,c],i)=><stop key={i} offset={((x-x0)/(x1-x0)).toFixed(3)} stopColor={c}/>)}
+      </linearGradient></defs>
+      <path d={arc(A0,135)} fill="none" stroke={`url(#${gid})`} strokeOpacity={T.dark?0.22:0.18} strokeWidth="11" strokeLinecap="round"/>
+      {!unset&&frac>0&&<path d={arc(A0,deg)} fill="none" stroke={`url(#${gid})`} strokeWidth="11" strokeLinecap="round"/>}
+      {[70,80,90].map(p=>{ const a=A0+(p-min)/(max-min)*SWEEP, [tx,ty]=pt(a,r+16);
+        return <text key={p} x={tx} y={ty+3} textAnchor="middle" style={{fontSize:'9.5px',fontWeight:700,fontFamily:C.P,fill:T.mid}} aria-hidden="true">{String(p).replace(/^(\d)(\d)$/,'$1\u2009$2')}</text>; })}
+      <circle cx={kx} cy={ky} r="11" fill={T.card} stroke={bandCol} strokeWidth="3.5" style={{filter:'drop-shadow(0 1px 3px rgba(0,0,0,0.35))'}}/>
     </svg>
-    <div style={{position:'absolute',left:0,right:0,top:'38%',transform:'translateY(-40%)',textAlign:'center',pointerEvents:'none',fontFamily:C.P}}>
+    <div style={{position:'absolute',left:0,right:0,top:'40%',transform:'translateY(-42%)',textAlign:'center',pointerEvents:'none',fontFamily:C.P}}>
       {unset
-        ?<div style={{fontSize:'14px',fontWeight:600,color:T.mid,lineHeight:1.3,padding:'0 48px'}}>Turn the dial or tap a rating</div>
-        :<><div style={{display:'flex',alignItems:'baseline',justifyContent:'center',gap:3}}><span style={{fontSize:'46px',fontWeight:800,color:col,lineHeight:1}}>{value}</span><span style={{fontSize:'13px',fontWeight:700,color:T.mid}}>pts</span></div>
-          <div style={{fontSize:'14px',fontWeight:700,color:T.amber,marginTop:4}}>{lab}</div></>}
+        ?<div style={{fontSize:'14px',fontWeight:600,color:T.mid,lineHeight:1.3,padding:'0 52px'}}>Turn the dial or tap a rating</div>
+        :<><div style={{fontSize:'50px',fontWeight:800,color:bandCol,lineHeight:1,letterSpacing:'-0.02em'}}>{value}</div>
+          <div style={{fontSize:'13px',fontWeight:700,color:bandCol,marginTop:6,letterSpacing:'0.04em',textTransform:'uppercase'}}>{lab}</div></>}
     </div>
   </div>;
 }
@@ -1064,7 +1079,7 @@ function TasteCard({wine,gen,accent,onBlindCall}){ const T=useTheme();
 
 /* ── the deck (three interaction styles) ── */
 function CardDeck({deckStyle,wine,gen,loading,match,curr,scanData,existingRating,nav,showPro,onRated,onSaveForLater,onBlindCall,firstScan,onFinish,startIdx=0,onIdx}){ const T=useTheme();
-  const cards=React.useMemo(()=>buildCards({match}),[match&&match.tone,match&&match.verdict]);
+  const cards=React.useMemo(()=>buildCards({match,wine}),[match&&match.tone,match&&match.verdict,wine&&wine.type]);
   const [finishStage,setFinishStage]=React.useState('rate');
   // "Learn more about this wine" is written the first time the deck opens, then kept on the phone.
   const [deep,setDeep]=React.useState(()=>WineDeep.get(wine));

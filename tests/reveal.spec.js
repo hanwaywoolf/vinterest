@@ -80,12 +80,12 @@ test('the reveal tells the scan in order: label, match, taste, grape, place, a l
   // The zoom is a real CSS transform (an invalid one once left the map still for everyone): the
   // country frame is a scale-down of the region frame, and the tighter frame scales up about the pin.
   const zoomed = () => page.evaluate(() => {
-    const m = (el) => getComputedStyle(el).transform;
-    return { out: m(document.querySelector('.rv-zoom')), tight: m(document.querySelector('.rv-zoom-in')), to: document.querySelector('.rv-zoom-in').style.getPropertyValue('--rv-to') };
+    const el = document.querySelector('.rv-zoom');
+    return { now: getComputedStyle(el).transform, to: el.style.getPropertyValue('--rv-to') };
   });
-  await expect.poll(async () => (await zoomed()).out).toMatch(/^matrix\(0\.\d+, 0, 0, 0\.\d+/);
+  await expect.poll(async () => (await zoomed()).now).toMatch(/^matrix\(0\.\d+, 0, 0, 0\.\d+/);
   expect((await zoomed()).to).toMatch(/^translate\([\d.]+px, [\d.]+px\) scale\(1\.\d+\) translate\(-[\d.]+px, -[\d.]+px\)$/);
-  await expect.poll(async () => (await zoomed()).tight, { timeout: 8000 }).toMatch(/^matrix\(1\.[1-9]\d*, 0, 0, 1\.[1-9]/);
+  await expect.poll(async () => (await zoomed()).now, { timeout: 8000 }).toMatch(/^matrix\(1\.[1-9]\d*, 0, 0, 1\.[1-9]/);
   await expect(page.getByTestId('reveal-map').locator('text')).toHaveText('Rioja');
   await expect(scene).toContainText('Continental, tempered by the Atlantic');
   await expect(scene.locator('svg path').first()).toBeVisible();
