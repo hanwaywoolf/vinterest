@@ -103,24 +103,33 @@ test('damaged or wrong files say what\'s wrong and change nothing', async ({ con
   expect(out.text).toContain('2 damaged entries will be skipped.');
 });
 
-test('WineDNA: import asks with a summary before restoring; a bad file gets its own message', async ({ context, page }) => {
+test('the welcome screen\'s Restore it asks with a summary before restoring; a bad file gets its own message', async ({ context, page }) => {
+  // The one file import left: the welcome screen (WineDNA's Export/Import card went when signing in became the backup).
   const errors = collectErrors(page);
   await demo(context, page);
-  await page.goto(`${BASE}/?demo=1#profile`);
+  const good = await page.evaluate(() => JSON.stringify({ ...Backup.exportData(), wines: [...WineHistory.getAll(), { name: 'From Backup Test', type: 'red', rating: 90 }] }));
+  const context2 = await page.context().browser().newContext({ serviceWorkers: 'block' });
+  const fresh = await context2.newPage();
+  const freshErrors = collectErrors(fresh);
+  await makeDeterministic(fresh);
+  await stubNetwork(context2);
+  await fresh.goto(`${BASE}/`);
   const dialogs = [];
-  page.on('dialog', (d) => { dialogs.push(d.message()); d.type() === 'confirm' ? d.dismiss() : d.accept(); });
+  fresh.on('dialog', (d) => { dialogs.push(d.message()); d.type() === 'confirm' ? d.dismiss() : d.accept(); });
   const pick = async (text) => {
-    const chooser = page.waitForEvent('filechooser');
-    await page.locator('#root').getByText('⬆ Import').click();
+    const chooser = fresh.waitForEvent('filechooser');
+    await fresh.getByTestId('welcome-restore').click();
     await (await chooser).setFiles({ name: 'b.json', mimeType: 'application/json', buffer: Buffer.from(text) });
     await expect.poll(() => dialogs.length).toBeGreaterThan(0);
   };
   await pick('{ broken');
   expect(dialogs.shift()).toContain('isn\'t a Vinterest backup');
-  const good = await page.evaluate(() => JSON.stringify({ ...Backup.exportData(), wines: [...WineHistory.getAll(), { name: 'From Backup Test', type: 'red', rating: 90 }] }));
   await pick(good);
-  expect(dialogs.shift()).toMatch(/^Backup from \d{4}-\d{2}-\d{2}: 1 new wine, \d+ merged with ones you have.*Restore it\?$/s);
-  // Declined: nothing restored.
-  expect(await page.evaluate(() => !!WineHistory.find({ name: 'From Backup Test', type: 'red' }))).toBe(false);
+  expect(dialogs.shift()).toMatch(/^Backup from \d{4}-\d{2}-\d{2}: \d+ new wines.*Restore it\?$/s);
+  // Declined: nothing restored, still on the welcome screen.
+  expect(await fresh.evaluate(() => WineHistory.getAll().length)).toBe(0);
+  expect(await fresh.evaluate(() => location.hash)).not.toBe('#home');
   expect(errors).toEqual([]);
+  expect(freshErrors).toEqual([]);
+  await context2.close();
 });
