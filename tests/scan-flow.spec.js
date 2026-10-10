@@ -604,7 +604,7 @@ test('"Why N%?" says which of the wine\'s traits bring it up or hold it back, in
   expect(out.closest).toBe('The 3 reds most like it: you loved all of them.');
   // The match % is the chance they'd score it at least their bar (just under their average, 90
   // here, so 88); the expected score and its spread are said first, the share loved alongside.
-  expect(out.why).toMatch(/^We expect you'd score it about (\d+), give or take \d+\. You score reds 90 on average, so we count 88 or better as one you enjoyed: that's an? (\d+)% chance this one gets there, an? \2% match\. Weighing all 7 reds you've scored by how alike they are, you've loved \(90\+\) about \d+% of wines like this one, against 57% of your reds overall\.$/);
+  expect(out.why).toMatch(/^We expect you'd score it about (\d+), most likely somewhere between \d+ and \d+\. You score reds 90 on average, so we count 88 or better as one you enjoyed: that's an? (\d+)% chance this one gets there, an? \2% match\. Weighing all 7 reds you've scored by how alike they are, you've loved \(90\+\) about \d+% of wines like this one, against 57% of your reds overall\.$/);
   expect(out.verdict).toBe('hit');
   expect(out.pct).toBeGreaterThanOrEqual(80);
 });

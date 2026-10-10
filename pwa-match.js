@@ -314,10 +314,10 @@ const TasteMatch = {
     const loved=like.filter(x=>x.w.rating>=ParkerScale.LOVED), notLoved=like.filter(x=>x.w.rating<ParkerScale.LOVED);
     const nm=x=>`${x.w.name} (${x.w.rating})`;
     const closest=like.length?`The ${like.length===1?L.replace(/s$/,''):like.length+' '+L} most like it: you loved ${loved.length===like.length?'all of them':`${loved.length} (scored 90+)`}${notLoved.length&&loved.length<like.length?`; not ${notLoved.map(nm).join(', ')}`:''}.`:'';
-    const lovedR=Math.round(lovedNear*100), give=Math.round(sd);
+    const lovedR=Math.round(lovedNear*100), lo=Math.max(0,Math.round(e-sd)), hi=Math.min(100,Math.round(e+sd));
     const vWhy=vint&&vint.length?`The same wine from another year is the best guide there is, so your ${vint.length===1?`score for the ${vint[0].vintage}`:`average for the other vintages (${Math.round(vMean)})`} makes up ${Math.round(this.VINTAGE_W*100)}% of the prediction and everything else you've scored the rest. `:'';
     const an=v=>/^(8|11|18)/.test(String(v))?'an':'a';
-    const pctWhy=vWhy+`We expect you'd score it about ${e}, give or take ${give}. You score ${L} ${avgR} on average, so we count ${bar} or better as one you enjoyed: that's ${an(pct)} ${pct}% chance this one gets there, ${an(pct)} ${pct}% match. Weighing all ${n} ${L} you've scored by how alike they are, you've loved (90+) about ${lovedR}% of wines like this one, against ${Math.round(lovedAll*100)}% of your ${L} overall.`;
+    const pctWhy=vWhy+`We expect you'd score it about ${e}, most likely somewhere between ${lo} and ${hi}. You score ${L} ${avgR} on average, so we count ${bar} or better as one you enjoyed: that's ${an(pct)} ${pct}% chance this one gets there, ${an(pct)} ${pct}% match. Weighing all ${n} ${L} you've scored by how alike they are, you've loved (90+) about ${lovedR}% of wines like this one, against ${Math.round(lovedAll*100)}% of your ${L} overall.`;
     return {avg:avgR,up,down,even,closest,predicted:e,sd,bar,pctWhy};
   },
 

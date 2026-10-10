@@ -308,3 +308,25 @@ test('another vintage of the same wine anchors the match and says so', async ({ 
   expect(out.why).toMatch(/^The same wine from another year is the best guide there is/);
   expect(out.otherFirst).not.toBe('vintage');
 });
+
+test('other vintages are found across loose label readings (a year in the name, a dropped Reserva), never across tiers', async ({ context, page }) => {
+  await makeDeterministic(page);
+  await stubNetwork(context);
+  await page.goto(`${BASE}/?demo=1#home`);
+  const out = await page.evaluate(() => {
+    const a = { name: 'Viña Ardanza Reserva', producer: 'La Rioja Alta', vintage: 2016, type: 'red', region: 'Rioja', grapes: ['Tempranillo'], body: 0.7, tannins: 0.6, acidity: 0.6 };
+    const v = (name, vintage, rating) => ({ ...a, name, vintage, rating });
+    const pairs = [v('Viña Ardanza Reserva 2020', 2020, 98), v('Viña Ardanza', 2015, 95), v('Vina Ardanza Reserva', 2019, 93), v('Viña Ardanza Gran Reserva', 2015, 90), v('Viña Arana Reserva', 2017, 85)];
+    // Four Riojas scored low beside them: without the vintages the match would be middling.
+    const others = ['CVNE Gran Reserva', 'MOOM Tempranillo', 'Banda Azul', 'Montaria Reserva'].map((n, i) => ({ ...a, name: n, producer: 'Someone', vintage: 2018 + i, rating: 80 + i * 2 }));
+    const all = pairs.slice(0, 3).concat(others);
+    const m = TasteMatch.assess(a, all);
+    return { found: pairs.map((p) => WineHistory.otherVintage(a, p)), vintages: m.vintages.map((x) => x.vintage), pct: m.pct, expected: m.expected, first: m.reasons[0].kind, why: m.breakdown.pctWhy.slice(0, 60) };
+  });
+  expect(out.found).toEqual([true, true, true, false, false]);
+  expect(out.vintages).toEqual([2020, 2019, 2015]);
+  expect(out.first).toBe('vintage');
+  expect(out.expected).toBeGreaterThanOrEqual(94);
+  expect(out.pct).toBeGreaterThanOrEqual(90);
+  expect(out.why).toMatch(/^The same wine from another year is the best guide/);
+});
