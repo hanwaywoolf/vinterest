@@ -950,7 +950,7 @@ function MasteryRegionMap({views,nav,showPro,prog,onLeave}){
 const PALATE_TRAITS=['body','acidity','tannins','texture'];
 function _PalateTile({id,a,onOpen}){
   const sc=a?a.score:null, col=SKETCH_TRAIT[id], R=27, circ=2*Math.PI*R;
-  const ring=id==='body'?'#C9A86A':col;
+  const ring=col;
   return <div role="button" tabIndex={0} data-trait={id} onClick={()=>onOpen(id)} onKeyDown={e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); onOpen(id); } }}
     aria-label={`${Palate.NAMES[id]}: ${sc==null?'no Blind Calls yet':`${sc}% on target${a.lean?`, you call it ${a.lean}`:''}`}. Open its page.`}
     style={{background:'#FBF8F3',border:`1px solid ${C.line}`,borderRadius:14,padding:'10px 10px 10px 8px',display:'flex',alignItems:'center',gap:8,cursor:'pointer',minWidth:0}}>

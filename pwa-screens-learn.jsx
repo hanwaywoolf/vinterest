@@ -644,7 +644,7 @@ function PalateTraitScreen({nav,back}){
   const card={background:C.white,borderRadius:16,border:`1px solid ${C.line}`,padding:'14px 16px',display:'flex',flexDirection:'column',gap:8};
   const head=x=><div style={{fontSize:13,fontWeight:600,color:C.mid,letterSpacing:'0.08em',textTransform:'uppercase',fontFamily:C.P,marginTop:4}}>{x}</div>;
   if(!t) return <div style={{flex:1,padding:24,fontFamily:C.P,color:C.mid}}>That trait isn't here. <span role="button" onClick={back} style={{color:C.cr,fontWeight:700,cursor:'pointer'}}>Back</span></div>;
-  const R=44, circ=2*Math.PI*R, ring=t.id==='body'?'#C9A86A':SKETCH_TRAIT[t.id];
+  const R=44, circ=2*Math.PI*R, ring=SKETCH_TRAIT[t.id];
   const openWine=w=>{ Handoff.openWine({demo:false,wine:w,existingRating:w.rating||0}); nav('detail'); };
   const [lo,hi]=t.words;
   return(
@@ -691,7 +691,7 @@ function PalateTraitScreen({nav,back}){
 
         {head('Your Blind Calls')}
         {t.calls.length?<div data-testid="trait-calls" style={{...card,gap:0,padding:'4px 16px'}}>
-          {t.calls.map((c,i)=><div key={i} role="button" tabIndex={0} onClick={()=>openWine(c.wine)} onKeyDown={e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); openWine(c.wine); } }}
+          <ShowMore items={t.calls} limit={DNA_TRAIT_BOTTLES} noun={t.calls.length-DNA_TRAIT_BOTTLES===1?'call':'calls'} render={(c,i)=><div key={i} role="button" tabIndex={0} onClick={()=>openWine(c.wine)} onKeyDown={e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); openWine(c.wine); } }}
             style={{display:'flex',alignItems:'center',gap:10,padding:'10px 0',borderTop:i?`1px solid ${C.line}`:'none',cursor:'pointer'}}>
             <div style={{flex:1,minWidth:0}}>
               <div style={{fontSize:15,fontWeight:600,color:C.ink,fontFamily:C.P,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{c.wine.name}{c.wine.vintage?` ${c.wine.vintage}`:''}</div>
@@ -699,7 +699,7 @@ function PalateTraitScreen({nav,back}){
             </div>
             <span style={{fontSize:16,fontWeight:800,color:c.accuracy>=80?C.green:c.accuracy>=50?C.amber:'#B04A3A',fontFamily:C.P}}>{c.accuracy}%</span>
             <Icon n="chevron" sz={14} col={C.mid}/>
-          </div>)}
+          </div>}/>
         </div>:<div style={card}><span style={{fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.5}}>Blind Call asks you to taste before you see the label's profile. Play it on your next bottle and your call on {t.name.toLowerCase()} lands here.</span></div>}
         <div style={{fontSize:13,color:C.mid,fontFamily:C.P,lineHeight:1.45}}>The label's profile is an estimate from the wine's details, so treat these as a guide, not a verdict on your palate.</div>
 

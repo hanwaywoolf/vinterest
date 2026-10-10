@@ -136,3 +136,69 @@ test('the iOS icon is 1024×1024 with no alpha channel (the App Store rejects on
   const idat = out.subarray(out.indexOf('IDAT') + 4);
   expect([...require('node:zlib').inflateSync(idat.subarray(0, out.readUInt32BE(out.indexOf('IDAT') - 4)))]).toEqual([0, 255, 0, 0, 0, 0, 255]);
 });
+
+test('Android: versionName from package.json, versionCode from the build, debug builds as app.vinterest.dev, the icon background crimson', async () => {
+  const { patchAppGradle, patchIconBackground } = await import(pathToFileURL(path.join(__dirname, '..', 'scripts/native-config.mjs')).href);
+  const gradle = 'defaultConfig {\n        applicationId "app.vinterest"\n        versionCode 1\n        versionName "1.0"\n    }\n    buildTypes {\n        release {\n            minifyEnabled false\n        }\n    }';
+  const g = patchAppGradle(gradle, { versionName: '1.3.0', versionCode: '231' });
+  expect(g).toContain('versionCode 231');
+  expect(g).toContain('versionName "1.3.0"');
+  // The PR test app installs beside the Play app; the release keeps app.vinterest.
+  expect(g).toMatch(/debug \{\s*applicationIdSuffix "\.dev"\s*\}\s*release \{/);
+  expect(patchAppGradle(g, { versionName: '1.3.0', versionCode: '231' })).toBe(g);
+  expect(() => patchAppGradle(gradle, { versionCode: 'abc' })).toThrow(/whole number/);
+  expect(patchIconBackground('<resources>\n    <color name="ic_launcher_background">#FFFFFF</color>\n</resources>', '#8B1A2F'))
+    .toContain('<color name="ic_launcher_background">#8B1A2F</color>');
+});
+
+test('Android icons and launch screens are rendered for every density (not Capacitor\'s placeholder logo)', async () => {
+  const fs = require('node:fs');
+  const { ANDROID_DENSITIES, ANDROID_SPLASH } = await import(pathToFileURL(path.join(__dirname, '..', 'scripts/app-icons.mjs')).href);
+  const size = (f) => { const b = fs.readFileSync(path.join(__dirname, '..', 'assets/android', f)); return [b.readUInt32BE(16), b.readUInt32BE(20)]; };
+  for (const [d, x] of Object.entries(ANDROID_DENSITIES)) {
+    expect(size(`ic_launcher-${d}.png`)).toEqual([48 * x, 48 * x]);
+    expect(size(`ic_launcher_round-${d}.png`)).toEqual([48 * x, 48 * x]);
+    expect(size(`ic_launcher_foreground-${d}.png`)).toEqual([108 * x, 108 * x]);
+    expect(size(`splash-port-${d}.png`)).toEqual(ANDROID_SPLASH[d]);
+    expect(size(`splash-land-${d}.png`)).toEqual([...ANDROID_SPLASH[d]].reverse());
+  }
+  expect(size('play-icon-512.png')).toEqual([512, 512]);
+  expect(fs.readFileSync(path.join(__dirname, '..', 'assets/android/play-icon-512.png'))[25]).toBe(6); // 32-bit, as Play asks
+});
+
+test('the Google Play upload signs in with the service account and makes one edit: bundle, track, commit', async () => {
+  const crypto = require('node:crypto');
+  const { privateKey, publicKey } = crypto.generateKeyPairSync('rsa', { modulusLength: 2048 });
+  const account = { client_email: 'ci@vinterest.iam.gserviceaccount.com', private_key: privateKey.export({ type: 'pkcs8', format: 'pem' }), token_uri: 'https://oauth2.googleapis.com/token' };
+  const { upload } = await import(pathToFileURL(path.join(__dirname, '..', 'scripts/play-upload.mjs')).href);
+  const calls = [];
+  const json = (status, body) => ({ ok: status < 300, status, json: async () => body });
+  const fetchFn = async (url, opts) => {
+    calls.push([opts.method, url.replace('https://androidpublisher.googleapis.com', ''), opts.headers.authorization || null]);
+    if (url.startsWith('https://oauth2')) {
+      const [h, c, s] = new URLSearchParams(opts.body).get('assertion').split('.');
+      const ok = crypto.verify('RSA-SHA256', Buffer.from(`${h}.${c}`), publicKey, Buffer.from(s, 'base64url'));
+      const claims = JSON.parse(Buffer.from(c, 'base64url'));
+      return ok && claims.iss === account.client_email && claims.scope.endsWith('/androidpublisher') ? json(200, { access_token: 'tok' }) : json(400, { error: 'invalid_grant' });
+    }
+    if (url.includes('/tracks/')) { calls[calls.length - 1].push(JSON.parse(opts.body)); return json(200, {}); }
+    if (url.endsWith('/edits')) return json(200, { id: 'E1' });
+    if (url.includes('/bundles')) return json(200, { versionCode: 231 });
+    if (url.endsWith(':commit')) return json(200, { id: 'E1' });
+    return json(404, { error: { message: 'unexpected' } });
+  };
+  expect(await upload({ account, bundle: Buffer.from('aab'), fetchFn })).toBe(231);
+  const app = '/androidpublisher/v3/applications/app.vinterest';
+  expect(calls.map((c) => c.slice(0, 2))).toEqual([
+    ['POST', 'https://oauth2.googleapis.com/token'],
+    ['POST', `${app}/edits`],
+    ['POST', '/upload/androidpublisher/v3/applications/app.vinterest/edits/E1/bundles?uploadType=media'],
+    ['PUT', `${app}/edits/E1/tracks/internal`],
+    ['POST', `${app}/edits/E1:commit`],
+  ]);
+  expect(calls[1][2]).toBe('Bearer tok');
+  expect(calls[3][3]).toEqual({ track: 'internal', releases: [{ versionCodes: ['231'], status: 'draft' }] });
+  // Google's own words come through when it refuses.
+  const refuse = async (url, opts) => url.startsWith('https://oauth2') ? json(200, { access_token: 't' }) : json(403, { error: { message: 'The caller does not have permission' } });
+  await expect(upload({ account, bundle: Buffer.from('x'), fetchFn: refuse })).rejects.toThrow('Google Play (403): The caller does not have permission');
+});
