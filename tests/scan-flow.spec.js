@@ -37,9 +37,9 @@ test('TasteMatch: list wines are told apart, dislikes count, and thin history sa
     return { barolo: [barolo.verdict, barolo.pct, barolo.reasons.map((r) => r.text)], rioja: [rioja.verdict, rioja.pct],
       bare: [bare.verdict, bare.pct], white: [white.verdict, white.pct, calcMatchScore({ type: 'white', body: 0.4 }, all)] };
   });
-  // The demo history scored its two Nebbiolos in the low 70s: a Barolo is probably not for them.
+  // The demo history scored its Barolo 72: another Barolo is probably not for them.
   expect(out.barolo[0]).toBe('miss');
-  expect(out.barolo[2].join(' ')).toContain('Nebbiolo: you\'ve scored 2, averaging 73.');
+  expect(out.barolo[2].join(' ')).toContain('Closest in style to Barolo DOCG 2016, which you scored 72.');
   // The demo's Tempranillos average 84, about their usual: an even chance, so middling.
   expect(out.rioja[0]).toBe('mixed');
   expect(out.rioja[1]).toBeGreaterThan(out.barolo[1]);

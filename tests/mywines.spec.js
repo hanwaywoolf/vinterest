@@ -25,7 +25,7 @@ test('search, filters, sort and grouping', async ({ context, page }) => {
   const errors = collectErrors(page);
   await setup(context, page);
   const root = page.locator('#root');
-  await expect(root).toContainText('24 bottles');
+  await expect(root).toContainText('21 bottles');
   // The summary's price is in the user's currency (the demo is UK), not a bare dollar figure.
   await expect(root).toContainText(/about £\d+ a bottle/);
   await expect(root).toContainText('June 2026');

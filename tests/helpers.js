@@ -58,7 +58,7 @@ async function makeDeterministic(page, { fakeTimers = false } = {}) {
   });
 }
 
-// index.html seeds 22 demo wines and 1805 XP on ?demo=1, which skips onboarding. Extra keys are
+// index.html seeds 19 demo wines and 1805 XP on ?demo=1, which skips onboarding. Extra keys are
 // written before the app boots.
 async function seedLocalStorage(page, extra = {}) {
   await page.addInitScript((entries) => {

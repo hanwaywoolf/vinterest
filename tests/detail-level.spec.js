@@ -28,8 +28,8 @@ test('where each experience answer starts, how learning moves it up, and that it
     ['novice', 'casual', 'enthusiast', 'expert'].forEach((e) => { set(e); out[e] = DetailLevel.level(); });
     set('casual');
     const wines = WineHistory.getAll(), few = wines.slice(0, 4);
-    // Learning leads: 25% Mastery is More; 22 wines add 10 points, so 15% is enough with them, not without.
-    out.m25 = DetailLevel.earnedNow(few, 25); out.m15few = DetailLevel.earnedNow(few, 15); out.m15many = DetailLevel.earnedNow(wines, 15);
+    // Learning leads: 25% Mastery is More; 19 wines add 9 points, so 16% is enough with them, not without.
+    out.m25 = DetailLevel.earnedNow(few, 25); out.m15few = DetailLevel.earnedNow(few, 16); out.m15many = DetailLevel.earnedNow(wines, 16);
     // Everything needs 50% Mastery and 15 scored wines.
     out.all50few = DetailLevel.earnedNow(few, 50); out.all50many = DetailLevel.earnedNow(wines, 50);
     DetailLevel.check(wines, 30); out.afterRise = DetailLevel.level();

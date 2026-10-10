@@ -44,9 +44,9 @@ test('the demo reds profile: signal, grapes, dislikes and value all come from re
   for (const g of ['Grenache', 'Syrah', 'Plavac Mali']) expect(p.grapes).toContain(g);
   for (const g of ['Garnacha', 'Shiraz', 'Mlavac']) expect(p.grapes).not.toContain(g);
   // Only genuinely low scores (under 80) count as "didn't work"; 80s are Very good.
-  expect(p.disliked).toEqual([66]);
-  // Piedmont and Nebbiolo are the same two bottles: one line, not two.
-  expect(p.rethink).toEqual([['Piedmont', 'Nebbiolo']]);
+  expect(p.disliked).toEqual([72]);
+  // One disliked bottle (the Barolo) isn't a pattern to rethink.
+  expect(p.rethink).toEqual([]);
   // £28 vs £22 is not "about the same".
   expect(p.verdict.kind).not.toBe('flat');
   expect(p.confidence).toBe('strong');
@@ -166,7 +166,7 @@ test('the WineDNA tab shows the new sections with no console errors', async ({ p
   const errors = collectErrors(page);
   await page.goto(`${BASE}/?demo=1#profile`);
   const root = page.locator('#root');
-  for (const t of ['Based on your 6 Outstanding (90+) reds', 'Region you love most', 'How Well We Know You', 'Your reds style', 'Your 90+ reds', 'Your score at each price', 'Your best scores come from', 'How your choices are changing', 'Blind Call accuracy']) {
+  for (const t of ['Based on your 6 Outstanding (90+) reds', 'Top-scoring region', 'How Well We Know You', 'Your reds style', 'Your 90+ reds', 'Your score at each price', 'Your best scores come from', 'How your choices are changing', 'Blind Call accuracy']) {
     await expect(root, t).toContainText(t);
   }
   // Removed: duplicate personality badge, XP bar, "1 of 4" arrows, generic grape claims.
@@ -230,7 +230,8 @@ test('wines named in WineDNA open their details', async ({ page }) => {
   const root = page.locator('#root');
   await expect(root.locator('[data-section="house"]')).toContainText('Your “House” Wines');
   const row = page.getByTestId('house-wines').getByRole('button').first();
-  const name = (await row.locator('div div').first().innerText()).trim().replace(/^♥/, '').trim();
+  // The row says "Name 2018"; the wine's header sets the year on its own line, so match the name alone.
+  const name = (await row.locator('div div').first().innerText()).trim().replace(/^♥/, '').replace(/\s+(19|20)\d\d$/, '').trim();
   await row.click();
   await expect(root.getByText('Details', { exact: true })).toBeVisible();
   await expect(root).toContainText(name);
