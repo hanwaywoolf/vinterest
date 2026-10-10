@@ -307,7 +307,7 @@ function _RvTaste({d,col}){
   </div>;
 }
 
-/* 4. The grape: its page's own sketch of the bunch on cream paper, drawn in berry by berry, with
+/* 4. The grape: its page's own sketch of the bunch, drawn straight onto the stage in a light ink, berry by berry, with
    two callouts the pen writes (its skin, its bunch), then the knowledge base's line on its taste.
    How we know it's the grape when the label didn't print it, in words that never say "usually"
    for a blend that is known. */
@@ -316,8 +316,8 @@ function _RvGrape({d,col}){
   return <div style={{display:'flex',flexDirection:'column',gap:10}}>
     {_rvEyebrow(g.blend?'Led by the grape':'The grape','rgba(255,255,255,0.7)')}
     <div className="rv-in" style={{..._rvDelay(.1),fontSize:36,fontWeight:800,color:'#fff',fontFamily:C.P,lineHeight:1.05,letterSpacing:'-0.5px'}}>{g.name}</div>
-    {g.info&&<div className="rv-in" data-testid="reveal-grape-sketch" style={{..._rvDelay(.2),alignSelf:'center',width:'100%',maxWidth:320,background:'#FBF8F3',borderRadius:16,padding:'10px 8px 4px',boxShadow:'0 10px 30px rgba(0,0,0,0.4)'}}>
-      <GrapeSketch info={g.info} notes={g.callouts} animate/>
+    {g.info&&<div className="rv-in" data-testid="reveal-grape-sketch" style={{..._rvDelay(.2),alignSelf:'center',width:'100%',maxWidth:330,marginTop:10}}>
+      <GrapeSketch info={g.info} notes={g.callouts} animate ink="rgba(255,255,255,0.85)"/>
     </div>}
     <div className="rv-in" style={{..._rvDelay(2.2),fontSize:16,color:'rgba(255,255,255,0.85)',fontFamily:C.P,lineHeight:1.45}}>{g.line}.</div>
     {basis&&<div className="rv-in" style={{..._rvDelay(2.5),fontSize:13,color:'rgba(255,255,255,0.5)',fontFamily:C.P,lineHeight:1.4}}>{basis}</div>}

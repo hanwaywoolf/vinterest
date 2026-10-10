@@ -34,14 +34,14 @@ function sketchBerryPaths(seed){
 /* One berry, radius 1 (scale the group it sits in). state: 'locked' a pencil outline only;
    'start' an outline in its colour; 'grow' washed; 'ripe' washed with hatching; fading dashes
    the line and thins the wash. */
-function SketchBerry({seed,skin,state,fading,wash}){
+function SketchBerry({seed,skin,state,fading,wash,ink=SKETCH_INK}){
   const p=sketchBerryPaths(seed), col=wash||SKETCH_WASH[skin]||SKETCH_WASH.red;
   const line={fill:'none',strokeLinecap:'round',vectorEffect:'non-scaling-stroke'};
   if(state==='locked') return <g><path d={p.wash} fill="#FBF8F3"/><path d={p.line} {...line} stroke={SKETCH_PENCIL} strokeWidth="1.1"/></g>;
   return <g>
     <path d={p.wash} fill={state==='start'?'#FBF8F3':col} opacity={state==='start'?1:fading?0.28:state==='ripe'?0.72:0.55} transform={`translate(${p.dx} ${p.dy})`}/>
-    <path d={p.line} {...line} stroke={state==='start'?col:SKETCH_INK} strokeWidth={state==='start'?1.5:1.2} strokeDasharray={fading?'3 3':null}/>
-    {state==='ripe'&&<path d={p.hatch} {...line} stroke={SKETCH_INK} strokeWidth="0.9" opacity="0.7"/>}
+    <path d={p.line} {...line} stroke={state==='start'?col:ink} strokeWidth={state==='start'?1.5:1.2} strokeDasharray={fading?'3 3':null}/>
+    {state==='ripe'&&<path d={p.hatch} {...line} stroke={ink} strokeWidth="0.9" opacity="0.7"/>}
   </g>;
 }
 /* A vine leaf: five lobes with a notch where the stalk joins, a lightly toothed edge and three
@@ -57,8 +57,8 @@ function _leafPath(){
 }
 const _LEAF=_leafPath();
 /* The top of a bunch: the stalk, a curling tendril and a leaf, at (x, y) where the berries begin. */
-function SketchVine({x,y,s=1,leafRed}){
-  const line={fill:'none',stroke:SKETCH_INK,strokeLinecap:'round'};
+function SketchVine({x,y,s=1,leafRed,ink=SKETCH_INK}){
+  const line={fill:'none',stroke:ink,strokeLinecap:'round'};
   return <g transform={`translate(${x} ${y}) scale(${s})`}>
     <path d="M0 4 C0 -6 2 -14 7 -22" {...line} strokeWidth="2.2"/>
     <path d="M3 -12 C10 -14 14 -10 12 -6 C10 -3 7 -5 8 -7" {...line} strokeWidth="1"/>
