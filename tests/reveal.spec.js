@@ -156,6 +156,22 @@ test('too early for a match it shows the meter; a wine the knowledge base lacks 
   expect(await page.getByTestId('reveal-progress').locator('> div').count()).toBe(3);
 });
 
+// A region the guide doesn't cover, from a country on the map: the place scene still opens on the
+// country, named, with the label's own region and no pin; a country off every map skips it.
+test('a region the guide lacks still shows its country on the map, with no pin', async ({ context, page }) => {
+  const scene = await scan(context, page, { ...FIZZ, name: 'Test Fizz', region: 'Somewhere Alta', country: 'Spain' }, { demo: false, gen: null, seed: { vinterest_onboarded: '1', vinterest_region: 'uk' } });
+  await playIt(page);
+  await next(page); await next(page); await next(page);
+  await expect(scene).toHaveAttribute('data-scene', 'place');
+  await expect(scene).toContainText('Somewhere Alta');
+  await expect(scene).toContainText('Not in our region guide yet');
+  const map = page.getByTestId('reveal-map');
+  await expect(map).toContainText('Spain');
+  await expect(map.locator('circle')).toHaveCount(0);
+  // The sparkling regions the guide now covers resolve by their own names.
+  expect(await page.evaluate(() => ['Franciacorta', 'Sussex', 'Tasmania', 'Trentodoc', 'Crémant de Bourgogne', 'Cava'].map((r) => Regions.resolve({ region: r })))).toEqual(['Franciacorta', 'England', 'Tasmania', 'Trentino-Alto Adige', 'Burgundy', 'Penedès']);
+});
+
 test('the first bottle ends on its rating and carries on with onboarding', async ({ context, page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await makeDeterministic(page);

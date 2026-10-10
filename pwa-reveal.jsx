@@ -344,7 +344,8 @@ function _RvPlace({d,col}){
   // is invalid CSS and left the map still).
   const ox=wide?(m.x-wide.x)/z:0, oy=wide?(m.y-wide.y)/z:0; // where the pin sits in the country frame
   const from=`translate(${m.x+ox}px, ${m.y+oy}px) scale(${wide?1/z:1}) translate(${-m.x}px, ${-m.y}px)`;
-  const tight=`translate(${m.x}px, ${m.y}px) scale(${RV_TIGHT}) translate(${-m.x}px, ${-m.y}px)`;
+  // Without a pin (a region the guide lacks) the country only eases in a little and stays named.
+  const tight=`translate(${m.x}px, ${m.y}px) scale(${m.noPin?(1.25/z):RV_TIGHT}) translate(${-m.x}px, ${-m.y}px)`;
   const label=(x,y,text,cls,delay)=><text x={x} y={y} className={cls} style={{animationDelay:delay,fontSize:'13px',fontWeight:800,fontFamily:C.P,fill:'#fff',paintOrder:'stroke',stroke:'rgba(15,15,15,0.85)',strokeWidth:'4px',strokeLinejoin:'round'}}>{text}</text>;
   return <div style={{display:'flex',flexDirection:'column',gap:12}}>
     {m&&<div className="rv-in" data-testid="reveal-map" style={{alignSelf:'center',width:'100%',maxWidth:360,aspectRatio:`${W}/${H}`,position:'relative',overflow:'hidden',WebkitMaskImage:mask,maskImage:mask}}>
@@ -353,13 +354,13 @@ function _RvPlace({d,col}){
           <path d={m.view.land} fill="rgba(255,255,255,0.07)" stroke="rgba(255,255,255,0.35)" strokeWidth="0.8" vectorEffect="non-scaling-stroke"/>
           {m.view.borders&&<path d={m.view.borders} fill="none" stroke="rgba(255,255,255,0.14)" strokeWidth="0.6" vectorEffect="non-scaling-stroke"/>}
         </g>
-        <g transform={`translate(${m.x} ${m.y})`}>
+        {!m.noPin&&<g transform={`translate(${m.x} ${m.y})`}>
           <circle className="rv-pulse" r="9" fill="none" stroke={col} strokeWidth="1.5" style={{animationDelay:'2.6s'}}/>
           <g className="rv-pin" style={_rvDelay(2.8)}><circle r="5.5" fill={col} stroke="#fff" strokeWidth="1.6"/></g>
           {label(10,5,p.name,'rv-in','3.2s')}
-        </g>
+        </g>}
       </svg>
-      {wide&&wide.name&&<div className="rv-out" aria-hidden="true" style={{position:'absolute',left:0,right:0,top:'50%',transform:'translateY(-50%)',textAlign:'center',fontSize:'22px',fontWeight:800,color:'rgba(255,255,255,0.85)',fontFamily:C.P,letterSpacing:'0.08em',textTransform:'uppercase',textShadow:'0 2px 10px rgba(0,0,0,0.8)',animationDelay:'1.1s'}}>{wide.name}</div>}
+      {wide&&wide.name&&<div className={m.noPin?undefined:'rv-out'} aria-hidden="true" style={{position:'absolute',left:0,right:0,top:'50%',transform:'translateY(-50%)',textAlign:'center',fontSize:'22px',fontWeight:800,color:'rgba(255,255,255,0.85)',fontFamily:C.P,letterSpacing:'0.08em',textTransform:'uppercase',textShadow:'0 2px 10px rgba(0,0,0,0.8)',animationDelay:'1.1s'}}>{wide.name}</div>}
     </div>}
     {_rvEyebrow('Where it\'s from','rgba(255,255,255,0.7)')}
     <div className="rv-in" style={{..._rvDelay(2.6),display:'flex',alignItems:'center',gap:10}}>

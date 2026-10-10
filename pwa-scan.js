@@ -192,6 +192,18 @@ const ScanFlow = {
       const wide=C?{x:C.x,y:C.y,z:Math.max(2.2,Math.min(6,Math.sqrt(C.a)/60)),name:C.name===cn?cn:cn}:{x,y,z:3,name:cn};
       place={name:rk,country:cn,flag:Regions.countryFlag(R.country)||identity.flag,line:R.climate||R.classification||'',
         grapes:(R.keyGrapes||[]).slice(0,3),map:v?{view:v,x,y,wide}:null};
+    }else if(wine.country){
+      // A region the guide doesn't cover yet (a sparkling from a lesser-known corner, say): the map
+      // still opens on its country, named, with the label's own region and no pin to close in on.
+      const iso=n=>Regions.ISO[n]||n, cn=String(wine.country).trim();
+      const v=KnowledgeMap.views().find(x=>(x.countries||[]).some(c=>c.name===cn||iso(c.name)===iso(cn)));
+      const C=v&&(v.countries||[]).find(c=>c.name===cn||iso(c.name)===iso(cn));
+      if(C){
+        const wide={x:C.x,y:C.y,z:Math.max(2.2,Math.min(6,Math.sqrt(C.a)/60)),name:cn};
+        const region=(wine.sub_region||wine.region||'').trim();
+        place={name:region&&region!==cn?region:cn,country:region&&region!==cn?cn:'',flag:Regions.countryFlag(cn)||identity.flag,
+          line:region?'Not in our region guide yet, so there\'s no quiz for it':'',grapes:[],map:{view:v,x:C.x,y:C.y,wide,noPin:true}};
+      }
     }
     // One thing to say out loud, from the scan cards once Claude has written them.
     const talk=gen&&Array.isArray(gen.talk)&&gen.talk.find(x=>typeof x==='string'&&x.trim());
