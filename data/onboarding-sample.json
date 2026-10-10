@@ -260,7 +260,7 @@
         "Syrah"
       ],
       "body": 0.66,
-      "tannins": 0.68,
+      "tannins": 0.63,
       "acidity": 0.64,
       "sweetness": 0.03,
       "price_usd": 38
@@ -268,7 +268,7 @@
     "vinny": [
       {
         "q": "Steak tonight. What should I look for?",
-        "placeholder": "Try a Malbec. It has the ripe dark fruit you always score highly, and enough grip to stand up to red meat."
+        "placeholder": "Try a Malbec. It has the ripe dark fruit you always rating highly, and enough grip to stand up to red meat."
       }
     ],
     "article": {
@@ -303,16 +303,17 @@
   },
   "slides": {
     "match": {
-      "pct": 87,
+      "pct": 74,
       "tone": "good",
       "label": "A good bet",
-      "expected": 87,
+      "expected": 88,
       "expectedLabel": "Very good",
-      "chance": 53,
+      "bar": 87,
+      "sd": 3,
       "reasons": [
         {
           "tone": "good",
-          "text": "Syrah: you've scored 2, averaging 90."
+          "text": "Syrah: you've rated 2, averaging 90."
         },
         {
           "tone": "bad",
@@ -331,8 +332,8 @@
       "confidence": {
         "n": 11,
         "level": "good",
-        "next": "Score 1 more to firm it up",
-        "unscored": 1
+        "next": "Rate 1 more to firm it up",
+        "unrated": 1
       },
       "chips": [
         {
@@ -344,7 +345,7 @@
           "value": "Rioja"
         },
         {
-          "label": "Top-scoring region",
+          "label": "Top-rated region",
           "value": "Rioja · 91"
         }
       ],
@@ -389,7 +390,7 @@
       "id": "grapes",
       "group": "places",
       "label": "Grapes",
-      "score": 35,
+      "rating": 35,
       "level": "Developing",
       "next": {
         "label": "Next: the Malbec quiz",
@@ -398,28 +399,28 @@
       "items": [
         {
           "name": "Tempranillo",
-          "score": 85,
+          "rating": 85,
           "level": "Confident",
           "quiz": 100,
           "reads": 1
         },
         {
           "name": "Grenache",
-          "score": 42,
+          "rating": 42,
           "level": "Developing",
           "quiz": 60,
           "reads": 0
         },
         {
           "name": "Syrah",
-          "score": 14,
+          "rating": 14,
           "level": "Getting started",
           "quiz": 20,
           "reads": 0
         },
         {
           "name": "Malbec",
-          "score": 0,
+          "rating": 0,
           "level": "Not started",
           "quiz": 0,
           "reads": 0

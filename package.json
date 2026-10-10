@@ -1,6 +1,6 @@
 {
   "name": "vinterest",
-  "version": "1.3.1",
+  "version": "1.4.0",
   "description": "Scan wine labels, build your taste profile, and order with confidence.",
   "scripts": {
     "dev": "open index.html",
@@ -18,7 +18,8 @@
     "map": "node scripts/world-map.mjs",
     "site:video": "node scripts/site-video.mjs",
     "lcbo:check": "node scripts/lcbo-check.mjs",
-    "model:trial": "node scripts/model-trial.mjs"
+    "model:trial": "node scripts/model-trial.mjs",
+    "match:backtest": "node scripts/match-backtest.mjs"
   },
   "keywords": [
     "wine",

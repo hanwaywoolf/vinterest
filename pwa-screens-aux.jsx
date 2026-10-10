@@ -138,7 +138,7 @@ function TasteProfileScreen({nav,back,showPro}){
           ):isGenerating?(
             <div style={{display:'flex',alignItems:'center',gap:10,padding:'6px 0 10px'}}>
               <div style={{width:18,height:18,borderRadius:9,border:'2px solid rgba(0,0,0,0.1)',borderTopColor:c.col,animation:'vspin 0.8s linear infinite',flexShrink:0}}/>
-              <span style={{fontSize:15,color:C.mid,fontFamily:C.P,fontStyle:'italic'}}>Writing your personalised script…</span>
+              <WritingWait compact sub="Your sommelier script" wine={null}/>
             </div>
           ):(
             <>
@@ -216,8 +216,6 @@ function TasteProfileScreen({nav,back,showPro}){
           );
         })()}
 
-        {/* Data backup */}
-        <DataBackupCard padding={12}/>
         {/* App version */}
         <div style={{textAlign:'center',padding:'12px 0 4px',opacity:0.45}}>
           <span style={{fontSize:13,color:C.mid,fontFamily:C.P}}>Vinterest v1.0.38</span>
@@ -290,7 +288,7 @@ function WineRow({w,open,setOpen,onOpen,onScore,onEdit,onDelete}){
           ?<span style={{minWidth:34,textAlign:'right',fontSize:17,fontWeight:800,color:_MW_TONE[MyWines.scoreTone(w.rating)],fontFamily:C.P}}>{w.rating}</span>
           :saved
             ?<span style={{fontSize:13,fontWeight:600,color:C.mid,fontFamily:C.P}}>Saved</span>
-            :<button onClick={e=>{ e.stopPropagation(); onScore(w); }} style={{border:`1px solid ${C.crDim}`,background:C.crSoft,color:C.cr,borderRadius:20,padding:'5px 11px',fontSize:13,fontWeight:700,fontFamily:C.P,cursor:'pointer'}}>Score it</button>}
+            :<button onClick={e=>{ e.stopPropagation(); onScore(w); }} style={{border:`1px solid ${C.crDim}`,background:C.crSoft,color:C.cr,borderRadius:20,padding:'5px 11px',fontSize:13,fontWeight:700,fontFamily:C.P,cursor:'pointer'}}>Rate it</button>}
         {price&&<span className="mw-price" aria-label={price.label} style={{fontSize:13,color:price.paid?C.ink:C.mid,fontWeight:price.paid?600:400,fontFamily:C.P,whiteSpace:'nowrap'}}>{price.text}</span>}
       </div>
     </div>
@@ -376,7 +374,7 @@ function MyWinesScreen({nav,back}){
           <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',height:'100%',padding:40,textAlign:'center',gap:12}}>
             <Icon n="wine" sz={40} col={C.mid}/>
             <div style={{fontSize:20,fontWeight:700,color:C.ink,fontFamily:C.P}}>No wines yet</div>
-            <div style={{fontSize:16,color:C.mid,fontFamily:C.P,lineHeight:1.5}}>Every bottle you scan lands here, with your score.</div>
+            <div style={{fontSize:16,color:C.mid,fontFamily:C.P,lineHeight:1.5}}>Every bottle you scan lands here, with your rating.</div>
             <Btn primary onClick={()=>nav('camera')}>Scan a bottle</Btn>
           </div>
         ):list.length===0?(
@@ -794,23 +792,4 @@ function restoreBackupFile(done){
   };
   inp.click();
 }
-function DataBackupCard({padding=12}){
-  const exportFile=saveBackupFile;
-  function importFile(){
-    restoreBackupFile(done=>{
-      alert(`Restored: ${done.added} new wine${done.added===1?'':'s'}${done.updated?`, ${done.updated} merged`:''}.`);
-      window.location.reload();
-    });
-  }
-  return <Card style={{padding}}>
-    <div style={{fontSize:16,fontWeight:600,color:C.ink,fontFamily:C.P,marginBottom:10}}>Data Backup</div>
-    <div style={{display:'flex',gap:8}}>
-      <Btn full style={{flex:1,fontSize:15}} onClick={exportFile}>⬇ Export</Btn>
-      <Btn full style={{flex:1,fontSize:15}} onClick={importFile}>⬆ Import</Btn>
-    </div>
-    <div style={{fontSize:13,color:C.mid,fontFamily:C.P,marginTop:8,lineHeight:1.5}}>Export saves your wines, XP, settings and learning progress to a file on your phone. Import adds a backup to what's here: nothing on this phone is lost.</div>
-  </Card>;
-}
-
-/* ── SETTINGS SCREEN ── */
 Object.assign(window,{TasteProfileScreen,RestaurantScreen,LearnScreen,MyWinesScreen,WineListScreen,restoreBackupFile});

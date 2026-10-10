@@ -9,7 +9,7 @@
 
    Most demos are "the screen, scrolled": update(p) glides the screen's own scroll container. Some
    also do what a visitor would with a finger, by clicking the real controls at the right moment
-   (opening "Why 87%?", turning a deck card, sliding the score) and are undone or redone as p moves
+   (opening "Why N%?", turning a deck card, sliding the score) and are undone or redone as p moves
    back and forth. The Vinny demo types a question and answer instead, from what Vinny really said
    (data/onboarding-sample.json). */
 
@@ -39,6 +39,7 @@ window.claude = {
     const a = _DEMO_CAPTURED.answers || {};
     const text = purpose === 'winedna_summary' ? a.winedna_summary
       : purpose === 'scancard' ? a.scancard
+      : purpose === 'wine_deep' ? a.wine_deep
       : purpose === 'learn_article' ? a.learn_article
       : purpose === 'vintage_info' ? a.vintage_info
       : purpose === 'education' ? a.education
@@ -61,11 +62,17 @@ function _setInput(input, v) {
 /* The rating card's score slider (TrackSlider): a role="slider" element that takes pointer events,
    not an input. Setting a score is a tap at the right place along it, as a finger would: a
    pointerdown at that x (which sets the value), then the pointerup that lets go. */
-const _scoreSlider = (root) => root.querySelector('[role="slider"][aria-label="Score"]');
+const _scoreSlider = (root) => root.querySelector('[role="slider"][aria-label="Rating"]');
 function _setScore(slider, score) {
+  // The rating is a dial (RatingDial): the finger lands on its arc, 270° from bottom-left round to
+  // bottom-right, with the centre at (100, 104) of its 200×180 drawing.
+  // Blind Call's sliders are still horizontal bars: the point is a fraction along them.
   const min = Number(slider.getAttribute('aria-valuemin')), max = Number(slider.getAttribute('aria-valuemax'));
-  const r = slider.getBoundingClientRect();
-  const init = { bubbles: true, cancelable: true, pointerId: 1, pointerType: 'mouse', isPrimary: true, button: 0, clientX: r.left + ((score - min) / (max - min)) * r.width, clientY: r.top + r.height / 2 };
+  const r = slider.getBoundingClientRect(), f = (score - min) / (max - min), dial = slider.getAttribute('aria-label') === 'Rating';
+  const deg = (-135 + f * 270) * Math.PI / 180;
+  const init = { bubbles: true, cancelable: true, pointerId: 1, pointerType: 'mouse', isPrimary: true, button: 0,
+    clientX: dial ? r.left + (100 + 76 * Math.sin(deg)) / 200 * r.width : r.left + f * r.width,
+    clientY: dial ? r.top + (104 - 76 * Math.cos(deg)) / 180 * r.height : r.top + r.height / 2 };
   slider.dispatchEvent(new PointerEvent('pointerdown', init));
   slider.dispatchEvent(new PointerEvent('pointerup', init));
 }
@@ -505,7 +512,7 @@ const VinterestDemo = {
         if (_scoreNow(sl) !== now) _setScore(sl, now);
       });
       if (!bLocked && b >= 0.7) { bLocked = true; _until(() => _tapText(el, /^Lock in my call$/), 40); }
-      if (!bScored && b >= 0.84) { bScored = true; _until(() => _tapText(el, /^See my score$/), 40); }
+      if (!bScored && b >= 0.84) { bScored = true; _until(() => _tapText(el, /^See my result$/), 40); }
     };
     let saved = false, rated = false, learned = false, boughtAgain = false, paid = false, where = false;
     const api = {
@@ -518,7 +525,7 @@ const VinterestDemo = {
           // Turn the deck to the card p is up to, and read down a long one while it's there. The Blind Call
           // part (p from 0.75) plays on the taste card, whose own number it isn't.
           const blind = p >= BLIND_AT && p < BLIND_END;
-          const i = blind ? 5 : Math.min(_DECK_CARDS - 1, Math.floor(p * _DECK_CARDS + 1e-6)), within = p * _DECK_CARDS - i;
+          const i = blind ? 6 : Math.min(_DECK_CARDS - 1, Math.floor(p * _DECK_CARDS + 1e-6)), within = p * _DECK_CARDS - i;
           if (blind && blindOpened && p < lastBlindP - 0.002) { resetBlind(); draw(); deckAt = -1; }  // chosen again: play it from the start
           if (i !== deckAt) {
             deckAt = i; scroller = null;

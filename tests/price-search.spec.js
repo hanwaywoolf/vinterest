@@ -20,7 +20,7 @@ async function scanAs(context, page, label, requests) {
     : b.purpose === 'price' ? JSON.stringify({ low: 10, mid: 14, high: 18, currency: 'GBP', tier: 'everyday', note: 'Estimate.' }) : '' });
   await page.goto(`${BASE}/#camera`);
   await page.getByTestId('scan-file').setInputFiles({ name: 'l.png', mimeType: 'image/png', buffer: PNG });
-  await expect(page.locator('#root')).toContainText('Learn about it');
+  await expect(page.locator('#root')).toContainText('Learn more about this wine');
 }
 
 test('a premium wine is priced from current listings; the search carries the wine and market', async ({ context, page }) => {

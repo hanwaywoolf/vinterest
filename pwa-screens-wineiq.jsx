@@ -51,7 +51,7 @@ function _KnowsCard({k,t,tLabel,openWine}){
   const card={padding:14};
   const wide=useWide();
   if(!k.ready) return <Card style={card}><div style={{fontSize:15,color:C.ink2,fontFamily:C.P,lineHeight:1.55}}>
-    Each time you scan, we predict the score you'll give a bottle. Score {WineDNA.noun(t.key,k.need)} more and this will show how close those predictions come, and which bottles surprised you.</div></Card>;
+    Each time you scan, we predict the rating you'll give a bottle. Rate {WineDNA.noun(t.key,k.need)} more and this will show how close those predictions come, and which bottles surprised you.</div></Card>;
   const head=k.level==='well'?`We know your ${tLabel} well`:k.level==='getting'?`We're getting to know your ${tLabel}`:`Your ${tLabel} still surprise us`;
   const W=300, H=46, span=15, x=d=>W/2+Math.max(-span,Math.min(span,d))/span*(W/2-10);
   const lane={};
@@ -69,19 +69,19 @@ function _KnowsCard({k,t,tLabel,openWine}){
       <div style={{display:'flex',flexDirection:'column',gap:8}}>
       <div style={{fontSize:17,fontWeight:700,color:C.ink,fontFamily:C.P}}>{head}</div>
       <div style={{fontSize:15,color:C.ink2,fontFamily:C.P,lineHeight:1.5}}>
-        We matched each of your {k.n} scored {tLabel} again from your other {tLabel} alone. The expected score landed within {TasteMatch.CAL_CLOSE} points of yours <b>{k.close} times in {k.n}</b>, and within 5 points {k.near} times.
+        We matched each of your {k.n} rated {tLabel} again from your other {tLabel} alone. The expected rating landed within {TasteMatch.CAL_CLOSE} points of yours <b>{k.close} times in {k.n}</b>, and within 5 points {k.near} times.
       </div>
-      <svg viewBox={`0 0 ${W} ${H+18}`} width="100%" role="img" aria-label={`How far each prediction was from your score: ${k.close} of ${k.n} within ${TasteMatch.CAL_CLOSE} points.`} style={{display:'block',maxWidth:420}}>
+      <svg viewBox={`0 0 ${W} ${H+18}`} width="100%" role="img" aria-label={`How far each prediction was from your rating: ${k.close} of ${k.n} within ${TasteMatch.CAL_CLOSE} points.`} style={{display:'block',maxWidth:420}}>
         <rect x={x(-TasteMatch.CAL_CLOSE)} y="4" width={x(TasteMatch.CAL_CLOSE)-x(-TasteMatch.CAL_CLOSE)} height={H-8} rx="6" fill={C.greenBg}/>
         <line x1={W/2} y1="2" x2={W/2} y2={H-2} stroke={C.green} strokeWidth="1.5"/>
         <line x1="10" y1={H/2} x2={W-10} y2={H/2} stroke={C.line} strokeWidth="1"/>
         {k.rows.map((r,i)=>{ const cx=Math.round(x(r.diff)/6); const n=lane[cx]=(lane[cx]||0)+1; const y=H/2+((n%2?-1:1)*Math.floor(n/2))*6.5;
           return <circle key={i} cx={x(r.diff)} cy={Math.max(6,Math.min(H-6,y))} r="3.6" fill={Math.abs(r.diff)<=TasteMatch.CAL_CLOSE?C.green:r.diff>0?t.col:'#B9AFA4'} opacity="0.85"/>; })}
-        <text x="10" y={H+14} style={{fontSize:'11px',fill:C.mid,fontFamily:C.P}}>You scored lower</text>
+        <text x="10" y={H+14} style={{fontSize:'11px',fill:C.mid,fontFamily:C.P}}>You rated lower</text>
         <text x={W/2} y={H+14} textAnchor="middle" style={{fontSize:'11px',fontWeight:700,fill:C.green,fontFamily:C.P}}>spot on</text>
-        <text x={W-10} y={H+14} textAnchor="end" style={{fontSize:'11px',fill:C.mid,fontFamily:C.P}}>You scored higher</text>
+        <text x={W-10} y={H+14} textAnchor="end" style={{fontSize:'11px',fill:C.mid,fontFamily:C.P}}>You rated higher</text>
       </svg>
-      {Math.abs(k.bias)>=2&&<div style={{fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.5}}>{k.bias>0?`You tend to score a little above what we expect (by about ${Math.round(k.bias)}): your ${tLabel} keep pleasing you more than your history says.`:`You tend to score a little below what we expect (by about ${Math.round(-k.bias)}): you're getting harder to impress.`}</div>}
+      {Math.abs(k.bias)>=2&&<div style={{fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.5}}>{k.bias>0?`You tend to rate a little above what we expect (by about ${Math.round(k.bias)}): your ${tLabel} keep pleasing you more than your history says.`:`You tend to rate a little below what we expect (by about ${Math.round(-k.bias)}): you're getting harder to impress.`}</div>}
       </div>
       <div style={{display:'flex',flexDirection:'column',gap:8}}>
       {k.above.length>0&&<div data-testid="knows-above">
@@ -167,7 +167,7 @@ function DnaFacts({t,chips,conf}){
         {['early','good','strong'].map((l,i)=><div key={l} style={{width:16,height:5,borderRadius:3,background:['early','good','strong'].indexOf(conf.level)>=i?t.col:C.line}}/>)}
       </div>
       <span style={{fontSize:13,color:C.mid,fontFamily:C.P}}>
-        {conf.n} scored{conf.next?` · ${conf.next}`:' · a strong read'}
+        {conf.n} rated{conf.next?` · ${conf.next}`:' · a strong read'}
       </span>
     </div>
   </>;
@@ -269,7 +269,7 @@ function DnaLoveAvoid({t}){
   </div>;
   return <div data-testid="dna-love-avoid" style={{display:'grid',gridTemplateColumns:'minmax(0,1fr) minmax(0,1fr)',gap:12}}>
     <div style={{display:'flex',flexDirection:'column',gap:5}}>
-      <div style={{fontSize:12,fontWeight:700,color:C.green,fontFamily:C.P,letterSpacing:'0.06em',textTransform:'uppercase'}}>Lifts your scores</div>
+      <div style={{fontSize:12,fontWeight:700,color:C.green,fontFamily:C.P,letterSpacing:'0.06em',textTransform:'uppercase'}}>Lifts your ratings</div>
       {L.up.slice(0,3).map(x=>row(x,true))}
     </div>
     <div style={{display:'flex',flexDirection:'column',gap:5}}>
@@ -311,7 +311,7 @@ function DnaBandBars({v,col,sel,onPick,small}){
         <div style={{height:14,borderRadius:4,background:C.offWhite,overflow:'hidden'}}><div style={{height:'100%',width:`${Math.max(4,((b.avg||70)-70)/30*100)}%`,borderRadius:4,background:top?col:on?`${col}88`:C.line}}/></div>
         <span style={{fontSize:14,fontWeight:800,color:b.avg?scoreCol(b.avg):C.mid,fontFamily:C.P,textAlign:'right',fontVariantNumeric:'tabular-nums'}}>{b.avg}</span>
       </div>; })}
-    <div style={{fontSize:12,color:C.mid,fontFamily:C.P}}>Bar length is your average score. Tap a price to see its bottles.{B.some(b=>b.n<2)?' One bottle is too few to judge a price by, so those are faded.':''}</div>
+    <div style={{fontSize:12,color:C.mid,fontFamily:C.P}}>Bar length is your average rating. Tap a price to see its bottles.{B.some(b=>b.n<2)?' One bottle is too few to judge a price by, so those are faded.':''}</div>
   </div>;
 }
 /* WineDNA's Value: where their money buys the wines they love (the bands, the band they score
@@ -328,7 +328,7 @@ function DnaValueCard({t,tLabel,openWine}){
   </div>;
   const sub={fontSize:13,fontWeight:700,color:C.mid,fontFamily:C.P,textTransform:'uppercase',letterSpacing:'0.06em'};
   return <Card style={{padding:14,display:'flex',flexDirection:'column',gap:10}}>
-    <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>Your score at each price</div>
+    <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>Your rating at each price</div>
     <DnaBandBars v={v} col={t.col} sel={sel} onPick={setSel}/>
     {v.bandVerdict&&<div data-testid="dna-value-verdict" style={{fontSize:15,color:C.ink,fontFamily:C.P,lineHeight:1.5,padding:'10px 12px',borderRadius:12,background:`${t.col}10`}}>{v.bandVerdict}</div>}
     {band&&<div data-testid="dna-band-bottles"><div style={{...sub,marginBottom:2}}>{band.label} · {WineDNA.noun(t.key,band.n)}</div>{band.bottles.slice(0,5).map(row)}</div>}
@@ -586,7 +586,7 @@ function WineDNAScreen({nav,back,showPro}){
     if(generatingSummary===t.key) return;
     setGeneratingSummary(t.key);
     const hasDislikes=t.favourites.disliked.length>0||(t.loves.nots||[]).length>0;
-    const prompt=`You write the summary at the top of a wine drinker's WineDNA profile. The app is educational: be warm, specific and confidence-building, and help them buy better next time. Use ONLY these facts, computed from their own scans and 100-point scores; never invent grapes, regions, wines or numbers, and don't claim a preference the facts don't state. If they've scored fewer than 8, say gently that the picture is still forming.\n\nFacts:\n${WineDNA.summaryFacts(t)}\n\nReturn ONLY raw JSON, no markdown: {"style":"one sentence on the style of ${t.label.toLowerCase()} they reach for, max 22 words","love":"two short sentences in plain words: what they love (the style, the flavours and the grapes, regions or producers that lift their scores, from the What they love facts) and one or two of their best bottles by name as proof, then what to look for next; at most one number, max 45 words"${hasDislikes?',"miss":"one sentence on what holds their scores down (from the Less their thing facts and the wines under 80), framed as useful to know when buying, max 26 words"':''}}`;
+    const prompt=`You write the summary at the top of a wine drinker's WineDNA profile. The app is educational: be warm, specific and confidence-building, and help them buy better next time. Use ONLY these facts, computed from their own scans and 100-point ratings; never invent grapes, regions, wines or numbers, and don't claim a preference the facts don't state. If they've rated fewer than 8, say gently that the picture is still forming.\n\nFacts:\n${WineDNA.summaryFacts(t)}\n\nReturn ONLY raw JSON, no markdown: {"style":"one sentence on the style of ${t.label.toLowerCase()} they reach for, max 22 words","love":"two short sentences in plain words: what they love (the style, the flavours and the grapes, regions or producers that lift their ratings, from the What they love facts) and one or two of their best bottles by name as proof, then what to look for next; at most one number, max 45 words"${hasDislikes?',"miss":"one sentence on what holds their ratings down (from the Less their thing facts and the wines under 80), framed as useful to know when buying, max 26 words"':''}}`;
     window.claude.complete({purpose:'winedna_summary',messages:[{role:'user',content:prompt}]})
       .then(text=>{const s=(text||'').trim(); if(s){Cache.setText(key,s);setGenSummaries(g=>({...g,[t.key]:s}));}})
       .catch(()=>{})
@@ -651,7 +651,7 @@ function WineDNAScreen({nav,back,showPro}){
         </div>
         <div>
           <div style={{fontSize:22,fontWeight:800,color:C.ink,fontFamily:C.P,marginBottom:8,lineHeight:1.2}}>Your WineDNA is waiting</div>
-          <div style={{fontSize:17,color:C.mid,fontFamily:C.P,lineHeight:1.65,maxWidth:280}}>Scan and score bottles to unlock your personal taste profile: what you love, where to find more of it, and how to buy with confidence.</div>
+          <div style={{fontSize:17,color:C.mid,fontFamily:C.P,lineHeight:1.65,maxWidth:280}}>Scan and rate bottles to unlock your personal taste profile: what you love, where to find more of it, and how to buy with confidence.</div>
         </div>
         <Btn primary full onClick={()=>nav('camera')}>Scan Your First Bottle</Btn>
       </div>
@@ -666,7 +666,7 @@ function WineDNAScreen({nav,back,showPro}){
   // The region that lifts their scores most against their own usual score (WineDNA.loves), not just the highest raw average.
   const loveRegion=t.loves.ready&&t.loves.up.find(x=>x.kind==='Region');
   if(loveRegion) chips.push({label:'Region you love most',value:loveRegion.name});
-  else if(fav.regions[0]) chips.push({label:'Top-scoring region',value:`${fav.regions[0].name} · ${fav.regions[0].avg}`});
+  else if(fav.regions[0]) chips.push({label:'Top-rated region',value:`${fav.regions[0].name} · ${fav.regions[0].avg}`});
   const conf=t.confidence;
   const basisLine=t.basis==='loved'
     ?`Based on your ${t.loved.length} Outstanding (90+) ${tLabel}`
@@ -704,7 +704,7 @@ function WineDNAScreen({nav,back,showPro}){
     knows:<>
         {/* ── How well we know you: every scored wine matched again from the rest (TasteMatch.calibration) ── */}
         {t.scored.length>0&&<CSH label="How Well We Know You" visual={<DnaTarget k={t.knows} size={72}/>} cKey="knows" collapsed={collapsed} toggle={toggle}
-          summary={t.knows.ready?`Your match lands within ${TasteMatch.CAL_CLOSE} points of your score ${t.knows.close} times in ${t.knows.n}.${t.knows.above[0]?` Biggest surprise: ${t.knows.above[0].wine.name}.`:''}`:`Score ${WineDNA.noun(t.key,t.knows.need)} more and we'll show how well your match predicts your scores.`}/>}
+          summary={t.knows.ready?`Your match lands within ${TasteMatch.CAL_CLOSE} points of your rating ${t.knows.close} times in ${t.knows.n}.${t.knows.above[0]?` Biggest surprise: ${t.knows.above[0].wine.name}.`:''}`:`Rating ${WineDNA.noun(t.key,t.knows.need)} more and we'll show how well your match predicts your ratings.`}/>}
         {t.scored.length>0&&!collapsed.knows&&<_KnowsCard k={t.knows} t={t} tLabel={tLabel} openWine={openWine}/>}
     </>,
     house:<>
@@ -752,7 +752,7 @@ function WineDNAScreen({nav,back,showPro}){
         </Card>; })()}
     </>:<>
         {/* ── Value: price against score ── */}
-        {t.value&&<CSH label="Value" visual={<DnaBandBars v={t.value} col={t.col} small/>} cKey="value" collapsed={collapsed} toggle={toggle} summary={t.value.verdict?t.value.verdict.text:`Your best-value ${tLabel}, from ${t.value.n} scored bottles with prices.`}/>}
+        {t.value&&<CSH label="Value" visual={<DnaBandBars v={t.value} col={t.col} small/>} cKey="value" collapsed={collapsed} toggle={toggle} summary={t.value.verdict?t.value.verdict.text:`Your best-value ${tLabel}, from ${t.value.n} rated bottles with prices.`}/>}
         {t.value&&!collapsed.value&&<DnaValueCard t={t} tLabel={tLabel} openWine={openWine}/>}
     </>,
     explore:<>
@@ -787,7 +787,7 @@ function WineDNAScreen({nav,back,showPro}){
                   <div key={e.style.id} style={{display:'flex',alignItems:'center',gap:8,padding:'4px 0'}}>
                     <span style={{fontSize:15,fontWeight:700,color:C.green,fontFamily:C.P}}>✓</span>
                     <span style={{fontSize:15,color:C.ink,fontFamily:C.P,flex:1}}>{e.style.name}</span>
-                    <span style={{fontSize:13,color:C.mid,fontFamily:C.P}}>{e.wine.rating?`you scored it ${e.wine.rating}`:'scanned'}</span>
+                    <span style={{fontSize:13,color:C.mid,fontFamily:C.P}}>{e.wine.rating?`you rated it ${e.wine.rating}`:'scanned'}</span>
                   </div>
                 ))}
               </div>
@@ -858,7 +858,7 @@ function WineDNAScreen({nav,back,showPro}){
                     ))}
                   </div>
                   <div style={{fontSize:13,color:C.ink2,fontFamily:C.P,marginTop:10,lineHeight:1.55}}>
-                    {summary} {totalRegions<6?'Every new region teaches your palate something: Explore Next above has ideas.':'That breadth is what makes your scores meaningful: you know what you like because you have tried the alternatives.'}
+                    {summary} {totalRegions<6?'Every new region teaches your palate something: Explore Next above has ideas.':'That breadth is what makes your ratings meaningful: you know what you like because you have tried the alternatives.'}
                   </div>
                 </Card>
               )}
@@ -905,12 +905,12 @@ function WineDNAScreen({nav,back,showPro}){
         )}
     </>,
     history:<>
-        <CSH label="Your History" visual={t.places&&t.places.list.length?<div style={{display:"flex",gap:2}}>{t.places.list.slice(0,3).map(x=><Flag key={x.name} region={x.name} size={22}/>)}</div>:null} cKey="history" collapsed={collapsed} toggle={toggle} summary={`You've scanned ${t.wines.length} ${tLabel} across ${tCountries} countr${tCountries!==1?'ies':'y'}${tAvgScore?`, scoring them ${tAvgScore} on average`:''}.`}/>
+        <CSH label="Your History" visual={t.places&&t.places.list.length?<div style={{display:"flex",gap:2}}>{t.places.list.slice(0,3).map(x=><Flag key={x.name} region={x.name} size={22}/>)}</div>:null} cKey="history" collapsed={collapsed} toggle={toggle} summary={`You've scanned ${t.wines.length} ${tLabel} across ${tCountries} countr${tCountries!==1?'ies':'y'}${tAvgScore?`, rating them ${tAvgScore} on average`:''}.`}/>
         {/* ── History: one card in the same style as the sections above ── */}
         {!collapsed.history&&(()=>{
           const stats=[
             {label:`${t.label} scanned`,  val:t.wines.length},
-            {label:'Average score',       val:tAvgScore||'—', note:tAvgScore?ParkerScale.label(tAvgScore):null, col:tAvgScore?scoreCol(tAvgScore):null},
+            {label:'Average rating',       val:tAvgScore||'—', note:tAvgScore?ParkerScale.label(tAvgScore):null, col:tAvgScore?scoreCol(tAvgScore):null},
             {label:'Countries',           val:tCountries||'—'},
             {label:'Blind Call accuracy', val:t.blindCall?`${t.blindCall.accuracy}%`:'—', note:t.blindCall?`${t.blindCall.played} played`:'Play after a scan'},
           ];
@@ -988,7 +988,7 @@ function WineDNAScreen({nav,back,showPro}){
           <div style={{fontSize:22,fontWeight:800,color:C.ink,fontFamily:C.P,letterSpacing:'-0.3px'}}>WineDNA</div>
         </div>
         <div style={{display:'flex',alignItems:'center',gap:8,marginLeft:46}}>
-          <span style={{fontSize:15,color:C.mid,fontFamily:C.P}}>{allWines.length} bottle{allWines.length!==1?'s':''} scanned · {allWines.filter(w=>w.rating>0).length} scored</span>
+          <span style={{fontSize:15,color:C.mid,fontFamily:C.P}}>{allWines.length} bottle{allWines.length!==1?'s':''} scanned · {allWines.filter(w=>w.rating>0).length} rated</span>
         </div>
       </div>
 
@@ -998,7 +998,7 @@ function WineDNAScreen({nav,back,showPro}){
         {/* First visits: what WineDNA is, until they've read it once. */}
         {!welcomed&&<div data-testid="dna-welcome" style={{background:C.crSoft,borderRadius:16,padding:'14px 16px',display:'flex',flexDirection:'column',gap:6}}>
           <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>What is WineDNA?</div>
-          <div style={{fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.5}}>Every bottle you score teaches us your taste. This page shows what the wines you love have in common, so you can pick the next one with confidence. Tap any picture to see what it means.</div>
+          <div style={{fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.5}}>Every bottle you rate teaches us your taste. This page shows what the wines you love have in common, so you can pick the next one with confidence. Tap any picture to see what it means.</div>
           <div role="button" onClick={()=>{ Flags.markDnaWelcomeSeen(); setWelcomed(true); }} style={{alignSelf:'flex-start',fontSize:14,fontWeight:700,color:C.cr,fontFamily:C.P,cursor:'pointer',marginTop:2}}>Got it</div>
         </div>}
         <SH label="Your WineDNA"/>
@@ -1040,7 +1040,7 @@ function WineDNAScreen({nav,back,showPro}){
             ):(
               <>
                 <DnaTitle t={t} basisLine={basisLine}/>
-                <div data-testid="dna-intro" style={{fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.5,marginTop:-4}}>Your taste, worked out from the {WineDNA.noun(t.key,t.wines.length)} you've scanned and scored. The more you score, the sharper it gets.</div>
+                <div data-testid="dna-intro" style={{fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.5,marginTop:-4}}>Your taste, worked out from the {WineDNA.noun(t.key,t.wines.length)} you've scanned and rated. The more you rate, the sharper it gets.</div>
                 {/* The portrait (DetailLevel): pictures first, the written summary one tap away. */}
                 <DnaTasteTiles t={t} nav={nav}/>
                 <DnaFacts t={t} chips={chips} conf={conf}/>
@@ -1083,9 +1083,6 @@ function WineDNAScreen({nav,back,showPro}){
         {!DetailLevel.at('everything')&&<div data-testid="dna-more-later" style={{fontSize:13,color:C.mid,fontFamily:C.P,lineHeight:1.5,textAlign:'center',padding:'2px 8px'}}>
           More of your WineDNA appears here as you learn. <span role="button" onClick={()=>DetailLevel.setShowAll(true)} style={{color:C.cr,fontWeight:700,cursor:'pointer'}}>Show all details</span>
         </div>}
-
-        {/* ── Data Backup ── */}
-        <DataBackupCard padding={14}/>
 
         {/* App version */}
         <div style={{textAlign:'center',padding:'12px 0 4px',opacity:0.45}}>

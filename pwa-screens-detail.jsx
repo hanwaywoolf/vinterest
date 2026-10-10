@@ -205,7 +205,7 @@ function DetailMerged({wine,nav,existingRating=0,match}){
   const [loadingVintage,setLoadingVintage]=React.useState(false);
   React.useEffect(()=>{
     if(!wine||!wine.vintage) return;
-    const cacheKey=`vinterest_vintage_${(wine.name||'').replace(/\s/g,'_')}_${wine.vintage}`;
+    const cacheKey=ScanFlow.vintageKey(wine);
     const cached=Cache.getText(cacheKey);
     if(cached){try{setVintageInfo(JSON.parse(cached));return;}catch(e){}}
     setLoadingVintage(true);
@@ -353,21 +353,8 @@ function DetailMerged({wine,nav,existingRating=0,match}){
               </div>
             ))}
           </div>
-          <TrackSlider label="Score" min={ParkerScale.MIN} max={100} value={Math.max(userRating,ParkerScale.MIN)} unset={!(userRating>0)}
-            onChange={n=>{ setUserRating(n); pendingScore.current=n; }} col={_typeCol(wine)} style={{marginBottom:10}}/>
-          <div style={{textAlign:'center',minHeight:48,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:2}}>
-            {userRating>0?(
-              <>
-                <div style={{display:'flex',alignItems:'baseline',gap:2}}>
-                  <span style={{fontSize:36,fontWeight:800,color:_typeCol(wine),fontFamily:C.P,lineHeight:1}}>{userRating}</span>
-                  <span style={{fontSize:13,fontWeight:700,color:C.mid,fontFamily:C.P,marginLeft:2,opacity:0.7}}>pts</span>
-                </div>
-                <span style={{fontSize:15,fontWeight:600,color:C.amber,fontFamily:C.P}}>{scoreLabel}</span>
-              </>
-            ):(
-              <span style={{fontSize:14,color:C.mid,fontFamily:C.P}}>Drag slider or tap a preset to rate</span>
-            )}
-          </div>
+          <RatingDial label="Rating" min={ParkerScale.MIN} max={100} value={Math.max(userRating,ParkerScale.MIN)} unset={!(userRating>0)}
+            onChange={n=>{ setUserRating(n); pendingScore.current=n; }} col={_typeCol(wine)}/>
           <div style={{fontSize:12,color:C.mid,fontFamily:C.P,textAlign:'center',lineHeight:1.5,opacity:0.8,marginTop:4}}>100-point scale: 96+ Extraordinary · 90–95 Outstanding · 80–89 Very good · 70–79 Average · under 70 Below average</div>
           {userRating>0&&!saved&&(
             <div onClick={()=>commitScore()} style={{marginTop:10,background:C.cr,borderRadius:12,padding:'12px',textAlign:'center',cursor:'pointer'}}>
@@ -474,10 +461,7 @@ function DetailMerged({wine,nav,existingRating=0,match}){
         <div>
           <SL label={`About the ${wine.vintage} Vintage`}/>
           {loadingVintage?(
-            <Card style={{padding:14,display:'flex',alignItems:'center',gap:8}}>
-              <div style={{width:12,height:12,borderRadius:6,border:'2px solid rgba(0,0,0,0.08)',borderTopColor:C.cr,animation:'spin .8s linear infinite',flexShrink:0}}/>
-              <span style={{fontSize:15,color:C.mid,fontFamily:C.P,fontStyle:'italic'}}>Analysing vintage…</span>
-            </Card>
+            <Card style={{padding:8}}><WritingWait compact title="Reading the vintage…" wine={wine}/></Card>
           ):vintageInfo?(
             <Card style={{padding:14}}>
               <div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline',marginBottom:12}}>
@@ -660,7 +644,8 @@ const REGION_CURRENCY = {
    Money never moves a match: it's only here, on the Price tab. */
 function ShopBottle({wine,onShop}){
   const [d,setD]=React.useState(null);
-  React.useEffect(()=>{ let live=true; setD(null); onShop&&onShop(null); Shops.match(wine).then(r=>{ if(live){ setD(r); onShop&&onShop(r?r.shop.name:null); } }); return()=>{ live=false; }; },[wine&&wine.name,wine&&wine.producer,wine&&wine.vintage]);
+  // onShop: 'pending' while it looks, then the shop's name or null.
+  React.useEffect(()=>{ let live=true; setD(null); onShop&&onShop('pending'); Shops.match(wine).then(r=>{ if(live){ setD(r); onShop&&onShop(r?r.shop.name:null); } }).catch(()=>{ if(live){ setD(null); onShop&&onShop(null); } }); return()=>{ live=false; }; },[wine&&wine.name,wine&&wine.producer,wine&&wine.vintage]);
   if(!d) return null;
   const shop=d.shop.name, first=d.exact||d.others[0], rest=d.exact?d.others:d.others.slice(1);
   const buy=(it)=>Shops.go(Shops.link(it.url,'buy').url);
@@ -797,8 +782,12 @@ function DetailPrice({wine,nav,showPro}){
   const listings=Shops.listings(priceData,'listing');
   // When the card above found the bottle itself at the very shop "Find it for me" would search,
   // its Buy button is the way there; a second button to the same shop's search only repeats it.
-  const [bottleShop,setBottleShop]=React.useState(null);
-  const findShown=!(bottleShop&&wine&&FindOnline.target(wine).name===bottleShop);
+  // Which partner shop has the bottle itself (ShopBottle): 'pending' while it looks. While a partner
+  // has it, its card leads the tab and the other shops the search found aren't listed: the sale
+  // goes to the partner (the match, verdict and suggestions never change for it).
+  const [bottleShop,setBottleShop]=React.useState('pending');
+  const partnerHasIt=!!bottleShop;
+  const findShown=!(bottleShop&&bottleShop!=='pending'&&wine&&FindOnline.target(wine).name===bottleShop);
 
   const hasPrice = priceData && priceData.mid != null;
 
@@ -806,10 +795,7 @@ function DetailPrice({wine,nav,showPro}){
     <div style={{padding:'16px 20px',display:'flex',flexDirection:'column',gap:20}}>
 
       {loading && (
-        <Card style={{padding:14,display:'flex',alignItems:'center',gap:10}}>
-          <div style={{width:13,height:13,borderRadius:7,border:'2px solid rgba(0,0,0,0.08)',borderTopColor:C.cr,animation:'storySpin .8s linear infinite',flexShrink:0}}/>
-          <span style={{fontSize:15,color:C.mid,fontFamily:C.P,fontStyle:'italic'}}>Estimating price…</span>
-        </Card>
+        <Card style={{padding:8}}><WritingWait compact title="Checking prices where you are…" wine={wine}/></Card>
       )}
 
       {done && hasPrice && (
@@ -864,9 +850,11 @@ function DetailPrice({wine,nav,showPro}){
             </div>
           )}
 
+          <ShopBottle wine={wine} onShop={setBottleShop}/>
+
           {/* Where the live search found it: real listings only (the Worker keeps a shop only if the
-              search returned its page). Partner shops are labelled. */}
-          {listings.length>0&&(
+              search returned its page), and only when no partner has the bottle itself above. */}
+          {listings.length>0&&!partnerHasIt&&(
             <div>
               <SL label="In shops now"/>
               <Card style={{padding:0,overflow:'hidden'}}>
@@ -882,7 +870,6 @@ function DetailPrice({wine,nav,showPro}){
             </div>
           )}
 
-          <ShopBottle wine={wine} onShop={setBottleShop}/>
           <LcboStock wine={wine} nav={nav} fmtPrice={fmtPrice}/>
 
           {/* Find it for me (Restock for a wine they'd buy again) */}

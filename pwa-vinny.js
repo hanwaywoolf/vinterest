@@ -42,19 +42,39 @@ const Vinny = Object.assign(_accountStore('vinterest_vinny_v1'), {
     Object.entries(counts).sort((a,b)=>b[1]-a[1]).slice(0,3).forEach(([k])=>{
       const p=WineDNA.profile(k,wines,ContentEngine._typeLabel(k)), L=p.label.toLowerCase();
       const best=[...p.scored].sort((a,b)=>b.rating-a.rating).slice(0,3).map(w=>`${w.name} (${w.rating})`);
-      const bits=[`${WineDNA.noun(k,p.wines.length)} scanned, ${p.scored.length} scored`];
+      const bits=[`${WineDNA.noun(k,p.wines.length)} scanned, ${p.scored.length} rated`];
       if(p.scored.length) bits.push(`style they choose: ${p.personality}`);
       if(p.topGrapes.length) bits.push(`grapes they pick most: ${p.topGrapes.slice(0,3).join(', ')}`);
-      if(p.favourites.regions.length) bits.push(`best-scoring regions: ${p.favourites.regions.map(r=>r.name).join(', ')}`);
-      if(best.length) bits.push(`top scores: ${best.join(', ')}`);
-      if(p.favourites.disliked.length) bits.push(`scored under 80: ${p.favourites.disliked.map(w=>w.name).join(', ')}`);
+      if(p.favourites.regions.length) bits.push(`best-rated regions: ${p.favourites.regions.map(r=>r.name).join(', ')}`);
+      if(best.length) bits.push(`top ratings: ${best.join(', ')}`);
+      if(p.favourites.disliked.length) bits.push(`rated under 80: ${p.favourites.disliked.map(w=>w.name).join(', ')}`);
       if(p.favourites.buyAgain.length) bits.push(`would buy again: ${p.favourites.buyAgain.map(w=>w.name).join(', ')}`);
       const b=SommelierScript.budget(p.wines,rc); if(b) bits.push(`usual spend: ${b}`);
       lines.push(`${p.label}: ${bits.join('; ')}.`);
     });
-    const recent=[...chosen].sort((a,b)=>new Date(b.last_scanned||b.scanned_at||0)-new Date(a.last_scanned||a.scanned_at||0)).slice(0,3);
-    lines.push(`Most recent bottles: ${recent.map(w=>w.name+(w.rating>0?` (${w.rating})`:'')+(w.where_had?`, had at ${w.where_had}`:'')).join(', ')}.`);
+    // Every scan, saved-for-later ones too, newest first, each with what someone would describe it
+    // by ("the Croatian red I just scanned", "that full-bodied one"), so Vinny can tell which bottle
+    // they mean and name it instead of asking.
+    const when=w=>new Date(w.last_scanned||w.scanned_at||0).getTime()||0;
+    const recent=[...wines].sort((a,b)=>when(b)-when(a)).slice(0,this.RECENT_BOTTLES);
+    if(recent.length) lines.push(`Their most recent scans, newest first (the first is the one they scanned last):\n${recent.map(w=>'- '+this.bottleLine(w)).join('\n')}`);
     return lines.join('\n');
+  },
+  RECENT_BOTTLES:5,
+  /* One bottle as a line: name and year, when it was scanned, type, where from, grapes, the label's
+     style in words, and their score or that it's waiting for one. */
+  bottleLine(w,now=Date.now()){
+    const t=WineDNA._t(w.type), bits=[WineDNA.nameYear(w)];
+    const at=new Date(w.last_scanned||w.scanned_at||0).getTime();
+    if(at){ const d=Math.floor((now-at)/86400000); bits.push(d<=0?'scanned today':d===1?'scanned yesterday':`scanned ${d} days ago`); }
+    const place=[w.region,w.country].filter(Boolean).join(', ');
+    bits.push([t||'wine',place?`from ${place}`:''].filter(Boolean).join(' '));
+    const g=(w.grapes||[]).slice(0,3); if(g.length) bits.push(`${w.grapes_basis==='typical'?'usually ':''}${g.join(', ')}`);
+    const style=(WineDNA.AXES_FOR[t]||[]).map(k=>{ const l=WineDNA.level(w[k]), A=WineDNA.AXES[k]; return l&&A?`${A[l].toLowerCase()} ${A.name.toLowerCase()}`:null; }).filter(Boolean);
+    if(style.length) bits.push(`label suggests ${style.join(', ')}`);
+    bits.push(w.rating>0?`they rated it ${w.rating}`:w.scan_intent==='checking'?'saved for later, not tried':'not rated yet');
+    if(w.where_had) bits.push(`had at ${w.where_had}`);
+    return bits.join('; ');
   },
 
   prompt(question,turns,wines){

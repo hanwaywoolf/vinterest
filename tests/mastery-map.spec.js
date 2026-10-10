@@ -37,7 +37,7 @@ test('every knowledge-base region has a pin inside one map view', async ({ conte
   expect(out.land).toBe(true);
 });
 
-test('Start here weighs what they drink: three Riojas beat a lower score elsewhere', async ({ context, page }) => {
+test('Start here weighs what they drink: three Riojas beat a lower rating elsewhere', async ({ context, page }) => {
   await user(context, page);
   await page.goto(`${BASE}/#home`);
   const out = await page.evaluate(() => {
@@ -116,7 +116,7 @@ test('the Mastery screen: Start here, the shape with last month, and the map', a
 });
 
 // Palate: what they can taste, from their Blind Calls against each label's profile.
-test('Palate scores Blind Calls per axis, names a habit, and fills in over five calls', async ({ context, page }, info) => {
+test('Palate ratings Blind Calls per axis, names a habit, and fills in over five calls', async ({ context, page }, info) => {
   const errors = collectErrors(page);
   await user(context, page);
   await page.goto(`${BASE}/#home`);
@@ -420,9 +420,8 @@ test('the wine map zooms with a pinch and with + and −, and a tap still picks 
     for (let i = 1; i <= 5; i++) { ev('pointermove', 1, cx - 20 - i * 12, cy); ev('pointermove', 2, cx + 20 + i * 12, cy); }
     ev('pointerup', 1, cx - 80, cy); ev('pointerup', 2, cx + 80, cy);
   }, { cx, cy });
-  const k = Number(await map.getAttribute('data-zoom'));
-  expect(k).toBeGreaterThan(3.5);
-  expect(k).toBeLessThan(4.5);
+  await expect.poll(async () => Number(await map.getAttribute('data-zoom'))).toBeGreaterThan(3.5);
+  expect(Number(await map.getAttribute('data-zoom'))).toBeLessThan(4.5);
   await page.getByRole('button', { name: 'Reset' }).click();
   await expect(map).toHaveAttribute('data-zoom', '1.00');
   await page.getByRole('button', { name: 'Zoom in' }).click();
@@ -435,7 +434,8 @@ test('the wine map zooms with a pinch and with + and −, and a tap still picks 
     const r = el.getBoundingClientRect(), x = r.left + pin.x * r.width, y = r.top + pin.y * r.height;
     el.dispatchEvent(new WheelEvent('wheel', { deltaY: -100, ctrlKey: true, clientX: x, clientY: y, bubbles: true, cancelable: true }));
   }, pin);
-  expect(Number(await map.getAttribute('data-zoom'))).toBeGreaterThan(2);
+  // The zoom lands on React's next commit, so poll rather than read the attribute at once.
+  await expect.poll(async () => Number(await map.getAttribute('data-zoom'))).toBeGreaterThan(2);
   const p2 = await map.evaluate((el, pin) => {
     const vb = el.viewBox.baseVal, r = el.getBoundingClientRect(), W = vb.width * Number(el.dataset.zoom), H = vb.height * Number(el.dataset.zoom);
     return { x: r.left + (pin.x * W - vb.x) / vb.width * r.width, y: r.top + (pin.y * H - vb.y) / vb.height * r.height };

@@ -28,8 +28,8 @@ test('where each experience answer starts, how learning moves it up, and that it
     ['novice', 'casual', 'enthusiast', 'expert'].forEach((e) => { set(e); out[e] = DetailLevel.level(); });
     set('casual');
     const wines = WineHistory.getAll(), few = wines.slice(0, 4);
-    // Learning leads: 25% Mastery is More; 22 wines add 10 points, so 15% is enough with them, not without.
-    out.m25 = DetailLevel.earnedNow(few, 25); out.m15few = DetailLevel.earnedNow(few, 15); out.m15many = DetailLevel.earnedNow(wines, 15);
+    // Learning leads: 25% Mastery is More; 19 wines add 9 points, so 16% is enough with them, not without.
+    out.m25 = DetailLevel.earnedNow(few, 25); out.m15few = DetailLevel.earnedNow(few, 16); out.m15many = DetailLevel.earnedNow(wines, 16);
     // Everything needs 50% Mastery and 15 scored wines.
     out.all50few = DetailLevel.earnedNow(few, 50); out.all50many = DetailLevel.earnedNow(wines, 50);
     DetailLevel.check(wines, 30); out.afterRise = DetailLevel.level();
@@ -54,7 +54,7 @@ test('WineDNA at Simple: a portrait in pictures, the useful rows, a line on valu
   await expect(page.getByTestId('dna-best-value')).toBeVisible();
   await expect(root).toContainText('Your “House” Wines');
   await expect(root).toContainText('Explore');
-  for (const later of ['How Well We Know You', 'Your Journey', 'Flavour Signatures', 'Taste Profile', 'Your score at each price']) await expect(root).not.toContainText(later);
+  for (const later of ['How Well We Know You', 'Your Journey', 'Flavour Signatures', 'Taste Profile', 'Your rating at each price']) await expect(root).not.toContainText(later);
   await expect(page.getByTestId('dna-love-avoid')).toHaveCount(0);
   // A taste tile opens WineDNA's own page for that trait: the wines they choose on its scale and
   // what the word means, never the palate page's Blind Call scoring.
@@ -64,7 +64,7 @@ test('WineDNA at Simple: a portrait in pictures, the useful rows, a line on valu
   // Five steps along the scale with a verdict; the list follows the step picked, best first.
   const steps = page.getByTestId('dna-trait-steps');
   await expect(steps.locator('[aria-pressed]')).toHaveCount(5);
-  await expect(page.getByTestId('dna-trait-verdict')).toContainText(/Your best scores are in|Most of your reds sit in/);
+  await expect(page.getByTestId('dna-trait-verdict')).toContainText(/Your best ratings are in|Most of your reds sit in/);
   // What the word means and how to notice it come first, above their chart and bottles.
   const top = async (id) => page.getByTestId(id).evaluate((e) => e.getBoundingClientRect().top);
   expect(await top('dna-trait-about')).toBeLessThan(await top('dna-trait-hero'));
@@ -147,7 +147,7 @@ test('Value and History at Everything: price bands with a named best band; place
   await page.goto(`${BASE}/?demo=1#profile`);
   await expect(page.getByTestId('dna-band-bars').first()).toBeVisible();
   const card = page.getByTestId('dna-band-bars').filter({ has: page.locator('[aria-pressed]') });
-  await expect(page.getByTestId('dna-value-verdict')).toContainText('Your best scores come from');
+  await expect(page.getByTestId('dna-value-verdict')).toContainText('Your best ratings come from');
   const before = await page.getByTestId('dna-band-bottles').innerText();
   await card.locator('[aria-pressed="false"]').first().click();
   await expect.poll(() => page.getByTestId('dna-band-bottles').innerText()).not.toBe(before);
@@ -161,13 +161,13 @@ test('the scan result at Simple: the top reason either way, and "Why N%?" waits 
   await page.goto(`${BASE}/?demo=1#camera`);
   await page.getByTestId('scan-file').setInputFiles({ name: 'label.png', mimeType: 'image/png', buffer: PNG });
   const root = page.locator('#root');
-  await expect(root).toContainText('Learn about it');
+  await expect(root).toContainText('Learn more about this wine');
   const brief = root.locator('[data-brief="1"]').first();
   await expect(brief).toBeVisible();
   expect(await brief.locator(':scope > div').count()).toBeLessThanOrEqual(2);
   await expect(root).not.toContainText(/Why \d+%\?/);
   // The deck: the match card's reasons are brief, with More for the rest.
-  await root.getByText('Learn about it', { exact: true }).click();
+  await root.getByText('Learn more about this wine', { exact: true }).click();
   await expect(root).toContainText('How we got this');
   const mores = root.locator('[data-card-more]');
   const n = await mores.count();

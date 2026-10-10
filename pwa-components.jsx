@@ -255,7 +255,7 @@ function ProGate({feature,onClose}){
     'unlimited-scans':{icon:'♾️',title:'Unlimited Scans',desc:"You've used your 10 free scans. Pro gives you unlimited.",bullets:['Scan as many bottles as you like','Your full scan history never expires','Priority AI label recognition']},
     'taste-depth':{icon:'🎭',title:'Full Taste Profile',desc:'Unlock your complete taste breakdown across all wine types.',bullets:['Whites, Rosé & Sparkling profiles','Personalised sommelier scripts for each','Full food pairing analysis']},
     'grape-library':{icon:'🍇',title:'Every Grape',desc:`You've unlocked your ${typeof FREE_GRAPE_CAP!=='undefined'?FREE_GRAPE_CAP:5} free grapes. Pro opens all 50.`,bullets:['A quiz and article for every grape you meet','Learn what each grape tastes like, and why','New grapes unlock the moment you scan them']},
-    'mastery-map':{icon:'🏆',title:'Your Mastery',desc:'See how rounded your wine knowledge is, built from what you\'ve read and the quizzes you\'ve passed.',bullets:['A score for every wine type, region, grape and skill','Your strongest areas and your biggest gaps','The next thing to read or pass in each one']},
+    'mastery-map':{icon:'🏆',title:'Your Mastery',desc:'See how rounded your wine knowledge is, built from what you\'ve read and the quizzes you\'ve passed.',bullets:['A rating for every wine type, region, grape and skill','Your strongest areas and your biggest gaps','The next thing to read or pass in each one']},
     'regions':{icon:'🗺️',title:'Every Region',desc:`You've unlocked your ${typeof FREE_REGION_CAP!=='undefined'?FREE_REGION_CAP:5} free regions. Pro opens every region you scan.`,bullets:['Region quizzes and articles for every wine you scan','How each place shapes the wine in your glass','Personalised pieces on the regions you drink']},
     'upgrade':{icon:'🍷',title:'Vinterest Pro',desc:'Everything in Vinterest, with nothing held back.',bullets:['Unlimited label scans, and wine list scanning','Every grape and region you meet, with quizzes and articles','Your full Mastery map and every wine type in WineDNA']},
     'expert-quiz':{icon:'🎓',title:'Expert Quizzes',desc:'Advanced wine knowledge questions with bigger XP rewards.',bullets:['WSET-inspired question sets','200 XP per completed quiz','Unlock Expert badge on your profile']},
@@ -315,7 +315,9 @@ function Card({children,style:s,onClick}){
   return <div onClick={onClick} style={{background:C.white,borderRadius:16,padding:14,boxShadow:'0 1px 4px rgba(0,0,0,0.06)',...s}}>{children}</div>;
 }
 function Btn({children,primary,full,small,style:s,onClick}){
-  return <div onClick={onClick} style={{padding:small?'8px 14px':'12px 20px',borderRadius:12,background:primary?C.cr:C.white,color:primary?'#fff':C.ink,border:primary?'none':`1px solid ${C.line}`,fontFamily:C.P,fontSize:small?13:15,fontWeight:600,textAlign:'center',width:full?'100%':'auto',boxShadow:primary?`0 4px 16px ${C.cr}40`:'none',cursor:'pointer',boxSizing:'border-box',...s}}>{children}</div>;
+  // On the scan story's dark stage (DeckTheme, pwa-scancards.jsx) a plain button is a dark glass pill.
+  const T=typeof useTheme==='function'?useTheme():null, dark=!!(T&&T.dark);
+  return <div onClick={onClick} style={{padding:small?'8px 14px':'12px 20px',borderRadius:12,background:primary?C.cr:dark?T.soft:C.white,color:primary?'#fff':dark?T.ink:C.ink,border:primary?'none':`1px solid ${dark?T.line:C.line}`,fontFamily:C.P,fontSize:small?13:15,fontWeight:600,textAlign:'center',width:full?'100%':'auto',boxShadow:primary?`0 4px 16px ${C.cr}40`:'none',cursor:'pointer',boxSizing:'border-box',...s}}>{children}</div>;
 }
 
 /* Catches a render-time exception in a screen (e.g. static data that failed to load) so the

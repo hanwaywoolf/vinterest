@@ -167,7 +167,7 @@ function AccountProfileScreen({nav,back,showPro}){
 
         <AccSection title="Usual Spend" onEdit={()=>setEditSection(editSection==='budget'?null:'budget')} editing={editSection==='budget'}>
           <AccChips opts={UserPrefs.budgetOptions()} sel={prefs.budget} editing={editSection==='budget'} onToggle={id=>savePrefField('budget',id)}/>
-          <div style={{fontSize:13,color:C.mid,fontFamily:C.P,marginTop:8}}>Used for price suggestions until you've scored a few wines with prices.</div>
+          <div style={{fontSize:13,color:C.mid,fontFamily:C.P,marginTop:8}}>Used for price suggestions until you've rated a few wines with prices.</div>
         </AccSection>
 
         <AccSection title="Wine Knowledge" onEdit={()=>setEditSection(editSection==='experience'?null:'experience')} editing={editSection==='experience'}>
@@ -352,7 +352,7 @@ function DeleteAccountPanel({busy,err,onCancel,onDelete}){
   return <div role="dialog" aria-label="Delete your account" style={{marginTop:6,padding:12,borderRadius:12,background:'#FBEFEC',border:`1px solid ${red}40`,display:'flex',flexDirection:'column',gap:10}}>
     <div style={{fontSize:15,fontWeight:700,color:C.ink,fontFamily:C.P}}>Delete your account?</div>
     <div style={{fontSize:13,color:C.ink2,fontFamily:C.P,lineHeight:1.5}}>
-      This deletes your account and everything backed up to it, and clears Vinterest from this phone: your wines, scores, WineDNA, XP and learning progress. It can't be undone.
+      This deletes your account and everything backed up to it, and clears Vinterest from this phone: your wines, ratings, WineDNA, XP and learning progress. It can't be undone.
     </div>
     <div style={{fontSize:13,color:C.ink2,fontFamily:C.P,lineHeight:1.5}}>
       Want a copy first? <span onClick={saveBackupFile} style={{fontWeight:700,color:C.cr,cursor:'pointer'}}>Save a backup file</span> to your phone. You can import it later, with or without an account.

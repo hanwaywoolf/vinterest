@@ -12,12 +12,13 @@ const WineHistory = {
     return merged;
   },
   _mergeDupes(list){
-    const seen=new Map(), out=[];
+    // Two entries `same` calls one wine with the same vintage (the name read a little differently:
+    // a year inside it, a dropped Reserva) become one, the earlier entry keeping its place.
+    const out=[];
     list.forEach(w=>{
-      const k=String(w.name||'').toLowerCase()+'|'+this._vintageKey(w.vintage);
-      const i=seen.get(k);
-      if(i!=null&&this.same(out[i],w)) out[i]=this._merge(out[i],w);
-      else { seen.set(k,out.length); out.push(w); }
+      const vk=this._vintageKey(w.vintage);
+      const i=out.findIndex(o=>this._vintageKey(o.vintage)===vk&&this.same(o,w));
+      if(i>=0) out[i]=this._merge(out[i],w); else out.push(w);
     });
     // An entry saved without a vintage folds into the one dated entry of the same wine.
     const nv=w=>this._vintageKey(w.vintage)==='nv';
@@ -78,12 +79,19 @@ const WineHistory = {
     const va=this._vintageKey(a.vintage), vb=this._vintageKey(b.vintage);
     if(va!==vb&&va!=='nv'&&vb!=='nv') return false;
     if(this._t(a)&&this._t(b)&&this._t(a)!==this._t(b)) return false;
-    const na=this._tokens(a.name), nb=this._tokens(b.name);
+    // A year inside the name ("Viña Ardanza Reserva 2020") isn't part of the name; a tier word
+    // (Reserva, Crianza…) that only one reading has is forgiven, since a label read sometimes
+    // drops it, but Reserva and Gran Reserva stay two wines.
+    const na=this._nameTokens(a.name), nb=this._nameTokens(b.name);
     if(![...na].some(t=>nb.has(t))) return false;
     const ctx=w=>this._tokens(w.name,w.producer,w.region,w.sub_region,w.country,w.grapes||[]);
     const ca=ctx(a), cb=ctx(b);
-    return [...nb].every(t=>ca.has(t))&&[...na].every(t=>cb.has(t));
+    const tierA=[...na].some(t=>this._TIER.has(t)), tierB=[...nb].some(t=>this._TIER.has(t));
+    const ok=(from,to,tierOther)=>[...from].every(t=>to.has(t)||(this._TIER.has(t)&&!tierOther));
+    return ok(nb,ca,tierA)&&ok(na,cb,tierB);
   },
+  _TIER:new Set(['reserva','riserva','reserve','crianza','gran','grand','especial','classico','superiore','selection','seleccion']),
+  _nameTokens(name){ const out=this._tokens(name); [...out].forEach(t=>{ if(/^(19|20)\d\d$/.test(t)) out.delete(t); }); return out; },
   /* The same wine from a different year (both dated): what TasteMatch leans on hardest, since
      their score for the 2019 is the best guide to the 2022. Never the same entry: two years stay
      two wines in My Wines. */

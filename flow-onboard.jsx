@@ -104,7 +104,7 @@ function OnboardTaste({step,total,onBack,onDone,scanned}){
   const QS=[
     {key:'types',multi:true,title:'What do you usually drink?',sub:'Your first pick is what Home and WineDNA open on.',
       opts:TYPE_OPTS.map(o=>({id:o.id,label:o.label,col:o.col}))},
-    {key:'budget',title:'What do you usually spend on a bottle?',sub:'Until you\'ve scored a few wines, this is the price range we suggest around.',
+    {key:'budget',title:'What do you usually spend on a bottle?',sub:'Until you\'ve rated a few wines, this is the price range we suggest around.',
       opts:UserPrefs.budgetOptions().map(o=>({id:o.id,label:o.label,d:o.note}))},
     {key:'experience',title:'How well do you know wine?',sub:'This sets how much detail Vinterest shows you, where Learn starts and how deep it goes. More opens as you learn, and you can change it on Profile.',
       opts:UserPrefs.EXPERIENCE.map(o=>({id:o.id,label:o.label,d:o.note}))},
@@ -155,8 +155,8 @@ function OnboardTaste({step,total,onBack,onDone,scanned}){
    each level adds, those beyond their starting level faded with "as you learn". */
 const _DETAIL_ADDS=[
   {level:'simple',items:['Your taste in pictures','Favourites','The bottles you come back to','What to try next','What to say when ordering']},
-  {level:'more',items:['How your taste is changing','How well we can predict your scores','Every reason behind a match']},
-  {level:'everything',items:['Your best value','What lifts and holds back your scores','Flavour signatures']},
+  {level:'more',items:['How your taste is changing','How well we can predict your ratings','Every reason behind a match']},
+  {level:'everything',items:['Your best value','What lifts and holds back your ratings','Flavour signatures']},
 ];
 function DetailPreview({exp}){
   const {t}=_dnaTab(), start=DetailLevel.base(exp);

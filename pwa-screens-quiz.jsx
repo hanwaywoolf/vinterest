@@ -284,7 +284,7 @@ function QuizHubScreen({nav,back,showPro}){
                 </div>)}
               </div>
               <div style={{fontSize:15,fontWeight:700,color:C.ink,fontFamily:C.P,lineHeight:1.35}}>Like a good bottle, these need a little time.</div>
-              <div style={{fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.5,marginTop:4}}>Pieces here are written from your WineDNA: the bottles you scan, how you score them and what you pay. Read <b>{ON_RAMP[0].title}</b> first and your shelf opens.</div>
+              <div style={{fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.5,marginTop:4}}>Pieces here are written from your WineDNA: the bottles you scan, how you rate them and what you pay. Read <b>{ON_RAMP[0].title}</b> first and your shelf opens.</div>
               <div style={{marginTop:12}}><Btn primary onClick={()=>{Handoff.onRampIdx.set('0');nav('article');}}>Read it now · {ON_RAMP[0].readTime}</Btn></div>
             </div>
           </div>
@@ -310,11 +310,11 @@ function QuizHubScreen({nav,back,showPro}){
           return(
           <div ref={secRefs.shelf} style={{scrollMarginTop:56}}>
             <div style={zoneLabel}>Written for you</div>
-            <div style={{fontSize:14,color:C.mid,fontFamily:C.P,lineHeight:1.45,marginTop:4}}>Every piece here is written from your WineDNA: the bottles you've scanned, how you scored them and what you paid. Nobody else gets the same article.</div>
+            <div style={{fontSize:14,color:C.mid,fontFamily:C.P,lineHeight:1.45,marginTop:4}}>Every piece here is written from your WineDNA: the bottles you've scanned, how you rated them and what you paid. Nobody else gets the same article.</div>
             <div style={{...list,marginTop:8}}>
             {!unread.length&&(
               <div style={{padding:'18px 16px',textAlign:'center',background:C.white,borderRadius:14,border:`1px dashed ${C.line}`,gridColumn:'1 / -1'}}>
-                <span style={{fontSize:15,color:C.mid,fontFamily:C.P,lineHeight:1.5}}>{read.length?"You've read everything written for you so far. Scan or score another bottle and more arrives.":"Nothing on your shelf yet. Scan a bottle and we'll have something for you by morning."}</span>
+                <span style={{fontSize:15,color:C.mid,fontFamily:C.P,lineHeight:1.5}}>{read.length?"You've read everything written for you so far. Scan or rate another bottle and more arrives.":"Nothing on your shelf yet. Scan a bottle and we'll have something for you by morning."}</span>
               </div>
             )}
             <ShowMore items={unread} limit={3} render={card} noun="to read"/>
@@ -780,9 +780,14 @@ function useMapZoom(w,h){
   React.useEffect(()=>{ const el=ref.current; if(!el) return; const f=e=>wheel.current&&wheel.current(e); el.addEventListener('wheel',f,{passive:false}); return()=>el.removeEventListener('wheel',f); },[]);
   // How wide the map is drawn on screen (not the element: see box), so names, pins and lines
   // can be sized in real pixels at any zoom.
+  // Measured from the layout (clientWidth, the observer's own rect), never getBoundingClientRect:
+  // that includes the screen's enter animation, which scales the box, so the map was first drawn
+  // with pins and names 1.8× too big and nothing re-measured, since the layout size never changed.
   const [rect,setRect]=React.useState(null);
-  React.useEffect(()=>{ const el=ref.current; if(!el) return; const m=()=>{ const r=el.getBoundingClientRect(); setRect({width:r.width,height:r.height}); }; m();
-    if(typeof ResizeObserver==='undefined') return; const o=new ResizeObserver(m); o.observe(el); return()=>o.disconnect(); },[]);
+  React.useEffect(()=>{ const el=ref.current; if(!el) return;
+    const m=()=>{ const w=el.clientWidth||el.parentElement&&el.parentElement.clientWidth||0, h=el.clientHeight||0; if(w) setRect({width:w,height:h||w*(hRef.current/wRef.current)}); }; m();
+    if(typeof ResizeObserver==='undefined') return; const o=new ResizeObserver(es=>{ const c=es[0]&&es[0].contentRect; if(c&&c.width) setRect({width:c.width,height:c.height}); else m(); }); o.observe(el); return()=>o.disconnect(); },[]);
+  const wRef=React.useRef(w), hRef=React.useRef(h); wRef.current=w; hRef.current=h;
   const px=rect?box(rect).cw:0;
   return {z,px,reset,zoomAt,ref,bind:onTap=>{ const H=handlers(onTap); wheel.current=H.onWheel; const {onWheel,...rest}=H; return rest; }};
 }
@@ -802,7 +807,7 @@ function _mapLabels(v,z,u,pin){
   const scr=(x0,y0,x1,y1)=>({x0:vx+x0*u,y0:vy+y0*u,x1:vx+x1*u,y1:vy+y1*u}), pw=vw/u;
   placed.push(scr(pw-52,0,pw,96)); if(z.k>1) placed.push(scr(0,0,96,50));
   if(z.k<MAP_NAMES_AT){
-    const fs=12.5;
+    const fs=10;
     v.pins.forEach(p=>pins.push({x0:p.x-pin,x1:p.x+pin,y0:p.y-pin,y1:p.y+pin}));
     // Only the major wine countries: those with the most knowledge-base regions, MAP_COUNTRY_MAX
     // at most, so Europe reads France, Italy, Spain, Portugal, Germany and nothing else.
@@ -817,7 +822,7 @@ function _mapLabels(v,z,u,pin){
         if(done) break; } });
     return out;
   }
-  const fs=15, rank=p=>(p.state==='open'?0:2)-(p.drunk?1:0);
+  const fs=14, rank=p=>(p.state==='open'?0:2)-(p.drunk?1:0);
   // The pins themselves are kept clear too, so a name never sits on another region's pin.
   v.pins.forEach(p=>pins.push({x0:p.x-pin,x1:p.x+pin,y0:p.y-pin,y1:p.y+pin}));
   [...v.pins].sort((a,b)=>rank(a)-rank(b)||(b.score||0)-(a.score||0)).forEach(p=>{
@@ -881,7 +886,8 @@ function MasteryRegionMap({views,nav,showPro,prog,onLeave}){
   const u=(v.w/z.k)/(Z.px||320); // map units per screen pixel
   // Pins, their outlines and how near a finger must land, all in screen pixels: pins grow a
   // little as they zoom in, and a tap anywhere within HIT of a pin's centre picks it.
-  const PIN=Math.min(11,6+z.k)*u, HIT=Math.max(PIN+10*u,24*u), SW=u;
+  // Small zoomed out (Europe has 36 pins on a phone), growing as they zoom in.
+  const PIN=Math.min(11,3+1.5*z.k)*u, HIT=Math.max(PIN+10*u,24*u), SW=u;
   const names=_mapLabels(v,z,u,PIN);
   const tap=(x,y)=>setSel(v.pins.map(p=>({p,d:Math.hypot(p.x-x,p.y-y)})).filter(o=>o.d<=HIT).sort((a,b)=>a.d-b.d).slice(0,4).map(o=>o.p.name));
   const zbtn={width:34,height:34,borderRadius:10,background:'rgba(255,255,255,0.94)',border:`1px solid ${C.line}`,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',fontSize:'18px',fontWeight:700,color:C.ink,fontFamily:C.P,userSelect:'none',boxShadow:'0 1px 3px rgba(0,0,0,0.08)'};
@@ -983,8 +989,8 @@ function MasteryPalate({p,go,onOpen}){
       </div>
       <MasteryBar score={p.score}/>
       <div style={{fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.5}}>
-        {p.n?<>Your calls average {p.accuracy}% accurate{p.n<Palate.FULL_AT?`. The score fills in as you play: ${Palate.FULL_AT-p.n} more to count in full`:''}. Each call is checked against the label's profile, an estimate, so treat it as a guide.</>
-          :<>Blind Call asks you to taste first and guess the body, acidity and tannins before you see the label's profile. Your calls build this score, separate from what you've read.</>}
+        {p.n?<>Your calls average {p.accuracy}% accurate{p.n<Palate.FULL_AT?`. The rating fills in as you play: ${Palate.FULL_AT-p.n} more to count in full`:''}. Each call is checked against the label's profile, an estimate, so treat it as a guide.</>
+          :<>Blind Call asks you to taste first and guess the body, acidity and tannins before you see the label's profile. Your calls build this rating, separate from what you've read.</>}
       </div>
       {p.next&&<div role="button" onClick={()=>go(p.next)} style={{fontSize:14,fontWeight:700,color:C.cr,fontFamily:C.P,cursor:'pointer'}}>{p.next.label} →</div>}
     </div>
@@ -1395,6 +1401,9 @@ function QuizScreen({nav,back}){
   const [results,setResults]=React.useState([]);
   const [, setResetTick]=React.useState(0);
   const scrollRef=React.useRef(null);
+  // Each question opens at its top: the previous one may have been scrolled to reach its answers.
+  const qRef=React.useRef(null);
+  React.useLayoutEffect(()=>{ if(qRef.current) qRef.current.scrollTop=0; },[qIdx,phase==='question']);
 
   const title=quizTitle(config);
 
@@ -1532,7 +1541,7 @@ function QuizScreen({nav,back}){
             </div>
           </div>
         </div>
-        <div ref={scrollRef} style={{flex:1,overflowY:'auto'}}>
+        <div key="results" ref={scrollRef} style={{flex:1,overflowY:'auto'}}>
           <div style={{padding:`16px ${side}`,display:'flex',flexDirection:'column',gap:10}}>
             <MilestoneMoment items={milestones}/>
             {setProgress&&(setDone
@@ -1604,7 +1613,7 @@ function QuizScreen({nav,back}){
         </div>
       </div>
 
-      <div onClick={phase==='feedback'?advance:undefined} style={{flex:1,overflowY:'auto',padding:wide?`28px ${side}`:'20px 16px',display:'flex',flexDirection:'column',gap:14,cursor:phase==='feedback'?'pointer':'default'}}>
+      <div key="question" ref={qRef} onClick={phase==='feedback'?advance:undefined} style={{flex:1,overflowY:'auto',padding:wide?`28px ${side}`:'20px 16px',display:'flex',flexDirection:'column',gap:14,cursor:phase==='feedback'?'pointer':'default'}}>
         <div style={{fontSize:21,fontWeight:700,color:C.ink,fontFamily:C.P,lineHeight:1.4}}>{q.q}</div>
         <div style={{display:'flex',flexDirection:'column',gap:10,marginTop:4}}>
           {q.opts.map((opt,i)=>{

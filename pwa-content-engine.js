@@ -379,7 +379,7 @@ const ExploreNext = {
     const lbl=label.toLowerCase();
     const why=[
       shares
-        ?`${style.name} has the ${shares.replace(/^(a |an )/,'')} you go for in your ${lbl}${ex?` (think ${ex.name}, which you scored ${ex.rating})`:''}, and brings ${style.adds}.`
+        ?`${style.name} has the ${shares.replace(/^(a |an )/,'')} you go for in your ${lbl}${ex?` (think ${ex.name}, which you rated ${ex.rating})`:''}, and brings ${style.adds}.`
         :`${style.name} brings ${style.adds}, a new corner of ${lbl} for your map.`,
       bridge?`A natural next step if you enjoy ${this._cap(bridge)}.`:''
     ].filter(Boolean).join(' ');
@@ -780,7 +780,7 @@ const ContentEngine = {
     if(s.region) return `Because you unlocked ${s.region}`;
     if(s.conceptLabel) return 'Because a quiz question caught you out';
     if(s.descriptor) return `Because "${s.descriptor}" came up in your tasting notes`;
-    if(s.trait) return 'Because of a pattern in your scores';
+    if(s.trait) return 'Because of a pattern in your ratings';
     return 'Picked from your WineDNA';
   },
   /* The article's "why this is for you" box. Articles saved before the prompt said otherwise
@@ -824,7 +824,7 @@ const ContentEngine = {
     const line=w=>{
       const b=[w.name+(w.vintage>0?' '+w.vintage:'')+(w.region?` (${w.region})`:'')];
       b.push(...grapesOf(w));
-      b.push(w.rating>0?`scored ${w.rating}, ${ParkerScale.label(w.rating)}`:'not scored yet');
+      b.push(w.rating>0?`rated ${w.rating}, ${ParkerScale.label(w.rating)}`:'not rated yet');
       const p=WineDNA.priceOf(w,rc); if(p) b.push(`${w.price_paid&&w.price_paid.amount>0?'paid':'about'} ${rc.base}${Math.round(p)}`);
       if(w.buy_again) b.push('would buy again');
       if(w.where_had) b.push(`had it at ${w.where_had}`);

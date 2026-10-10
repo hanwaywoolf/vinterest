@@ -83,13 +83,13 @@ test('read a guide, pass its questions, see it in Learn and in Mastery (Pro)', a
   await expect(root(page)).toContainText('Your wine knowledge · 0%');
   // Free: the Mastery card opens the Pro sheet.
   await root(page).getByText('Your wine knowledge · 0%').click();
-  await expect(root(page)).toContainText('A score for every wine type, region, grape and skill');
+  await expect(root(page)).toContainText('A rating for every wine type, region, grape and skill');
   await page.reload();
 
   await root(page).getByText('Four pairing rules that actually work', { exact: true }).click();
   await expect(root(page)).toContainText('Wine Skills · Food pairing');
   // The line from their own wines.
-  await expect(root(page)).toContainText('Your top-scored red, Gran Reserva 904 (95): try it with steak, lamb or a hard cheese.');
+  await expect(root(page)).toContainText('Your top-rated red, Gran Reserva 904 (95): try it with steak, lamb or a hard cheese.');
   await root(page).getByText('Answer the questions', { exact: true }).click();
   await passGuide(page, 'pair_rules');
   await root(page).getByText('Back to Learn', { exact: true }).click();

@@ -7,6 +7,9 @@ const { test, expect } = require('@playwright/test');
 const { ROOT } = require('./helpers');
 
 const BASE = 'http://localhost:4175';
+// The demos run the app's engines over the onboarding sample user, so the match they show is whatever
+// data/onboarding-sample.json's regenerated slides say (`npm run sample:onboarding`).
+const SAMPLE_MATCH = require('../data/onboarding-sample.json').slides.match;
 // site/_worker.js is an ES module in a CommonJS package: load a .mjs copy of it (once, so the
 // Worker's per-visitor limit is shared by every test that calls it, as it would be in one isolate).
 let workerModule;
@@ -46,8 +49,8 @@ test.describe('desktop', () => {
     await expect(page.locator('h1')).toContainText("Find wines you'll love. Learn while you sip");
     const hero = page.locator('.hero .phone-app');
     await expect(hero).toContainText('Crozes-Hermitage 2021');
-    await expect(hero).toContainText('87');
-    await expect(hero).toContainText('A good bet');
+    await expect(hero).toContainText(`${SAMPLE_MATCH.pct}%`);
+    await expect(hero).toContainText(SAMPLE_MATCH.label);
     expect(errors).toEqual([]);
   });
 
@@ -98,13 +101,13 @@ test.describe('desktop', () => {
     const phone = page.locator('#scan .phone-app');
     await jump(page, 'scan', 1);
     await expect(page.locator('#scan .steps li.on h3')).toHaveText('Reasons for and against, and exactly why');
-    // The demo opened "Why 87%?" so the working is on screen, and it stays put.
+    // The demo opened "Why N%?" so the working is on screen, and it stays put.
     await expect(phone).toContainText('HOLDS IT BACK', { ignoreCase: true });
     await page.waitForTimeout(2500);
     // It has scrolled far enough to reach where the working adds up to the match, and that line is on screen.
     const inView = await page.evaluate(() => {
       const root = document.querySelector('#scan .phone-app');
-      const line = Array.from(root.querySelectorAll('*')).find((n) => /We expect you'd score it about/.test(n.textContent) && n.children.length === 0);
+      const line = Array.from(root.querySelectorAll('*')).find((n) => /We expect you'd rate it about/.test(n.textContent) && n.children.length === 0);
       const r = line.getBoundingClientRect(), s = root.getBoundingClientRect();
       return r.top >= s.top && r.bottom <= s.bottom - 60;
     });
@@ -141,34 +144,36 @@ test.describe('desktop', () => {
     await expect.poll(() => page.evaluate(() => scrollY)).toBeGreaterThan(before + 600);
   });
 
-  test('the deck turns through its cards, and the price check is one of them', async ({ page }) => {
+  test('the deck turns through its cards: the house, the year, how it is made, the region, the table, the tasting cues', async ({ page }) => {
     await page.goto(BASE + '/');
     await show(page, 'learn-wine');
     const phone = page.locator('#learn-wine .phone-app');
     await expect(phone).toContainText('Your match');
     await jump(page, 'learn-wine', 1);
-    await expect(phone).toContainText('Your kind of bottle');
-    // The same part goes on to the serving tip (decanting, temperature): the next card of the deck.
-    await expect(phone).toContainText('Heads up', { timeout: 8000 });
+    await expect(phone).toContainText('The house');
+    await expect(phone).toContainText('Alain Graillot');
+    // The same part goes on to the year: the next card of the deck.
+    await expect(phone).toContainText('The year', { timeout: 8000 });
     await jump(page, 'learn-wine', 2);
-    await expect(phone).toContainText('Where it');
-    // The origin story reads on down to the winemaker, below the regional signature.
+    await expect(phone).toContainText('How it\'s made');
+    // The region card reads on down.
+    await expect(phone).toContainText('The region', { timeout: 12000 });
     await expect.poll(() => scrolledPx(page, 'learn-wine'), { timeout: 12000 }).toBeGreaterThan(40);
-    // How to taste it, and what to say: the taste card, then the lines to say.
+    // At the table, then the tasting cues.
     await jump(page, 'learn-wine', 3);
-    await expect(phone).toContainText('While you taste');
-    await expect(phone).toContainText('Sound clued-in', { timeout: 10000 });
+    await expect(phone).toContainText('At the table');
+    await expect(phone).toContainText('While you taste', { timeout: 10000 });
     await jump(page, 'learn-wine', 5);
-    await expect(phone).toContainText('Price check');
+    await expect(phone).toContainText('Next from here');
   });
 
-  test('rating a bottle slides the score up and saves it, without changing the other demos', async ({ page }) => {
+  test('rating a bottle slides the rating up and saves it, without changing the other demos', async ({ page }) => {
     await page.goto(BASE + '/');
     await show(page, 'rate');
     const phone = page.locator('#rate .phone-app');
     await expect(phone).toContainText('How was it?');
     await jump(page, 'rate', 1);
-    await expect(phone).toContainText('Scored 92', { timeout: 8000 });
+    await expect(phone).toContainText('Rated 92', { timeout: 8000 });
     await jump(page, 'rate', 2);
     await expect(phone).toContainText('On your Buy again list', { timeout: 6000 });
     // The other two quick answers are filled in as well.
@@ -179,12 +184,12 @@ test.describe('desktop', () => {
     await expect(phone).toContainText('How was it?', { timeout: 8000 });
     // A saved rating stays in that demo: the WineDNA demo still counts the sample user's own bottles.
     await jump(page, 'rate', 1);
-    await expect(phone).toContainText('Scored 92', { timeout: 8000 });
+    await expect(phone).toContainText('Rated 92', { timeout: 8000 });
     await show(page, 'winedna');
     await expect(page.locator('#winedna .phone-app')).toContainText('12 bottles scanned');
   });
 
-  test('after a score, Keep learning offers quizzes and articles for the bottle', async ({ page }) => {
+  test('after a rating, Keep learning offers quizzes and articles for the bottle', async ({ page }) => {
     await page.goto(BASE + '/');
     await show(page, 'keep-learning');
     const phone = page.locator('#keep-learning .phone-app');
@@ -194,7 +199,7 @@ test.describe('desktop', () => {
     await expect(phone).toContainText('Get to Know Syrah', { timeout: 6000 });
   });
 
-  test('Blind Call plays on the taste card: three sliders, the call locked in, then the score and its XP', async ({ page }) => {
+  test('Blind Call plays on the taste card: three sliders, the call locked in, then the rating and its XP', async ({ page }) => {
     await page.goto(BASE + '/?speed=2');
     await show(page, 'learn-wine');
     const phone = page.locator('#learn-wine .phone-app');
@@ -203,7 +208,7 @@ test.describe('desktop', () => {
     await expect(phone.locator('[role="slider"][aria-label="Body"]')).toHaveAttribute('aria-valuenow', /^5[5-9]$/, { timeout: 8000 });
     await expect(phone.locator('[role="slider"][aria-label="Tannins"]')).toHaveAttribute('aria-valuenow', /^(6[5-9]|7\d)$/, { timeout: 8000 });
     await expect(phone).toContainText('How you called it', { timeout: 8000 });
-    // The score and the XP are drawn inside the phone, not over the page.
+    // The rating and the XP are drawn inside the phone, not over the page.
     await expect(phone).toContainText('XP', { timeout: 8000 });
     await expect(phone).toContainText('% accurate');
     // Chosen again, it starts over.
@@ -234,7 +239,7 @@ test.describe('desktop', () => {
     await show(page, 'mastery');
     const phone = page.locator('#mastery .phone-app');
     await expect(phone).toContainText('Your Mastery');
-    await expect(phone).toContainText('Your shape', { timeout: 10000 }); // the radar sits below the score
+    await expect(phone).toContainText('Your shape', { timeout: 10000 }); // the radar sits below the rating
     await jump(page, 'mastery', 1);
     await expect(phone).toContainText('Tempranillo', { timeout: 8000 }); // the red-grape list
     await jump(page, 'mastery', 2);
