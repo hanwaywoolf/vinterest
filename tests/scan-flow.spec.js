@@ -125,6 +125,14 @@ test('no camera: the shutter never saves a sample wine, and a library photo scan
   // Where they had it: searchable in My Wines, shown on the wine, and Vinny knows.
   expect(await page.evaluate(() => MyWines.query(WineHistory.getAll(), { q: 'dishoom' }).map((w) => w.name))).toEqual(['Clos Test Priorat']);
   expect(await page.evaluate(() => Vinny.profile(WineHistory.getAll()))).toContain("had at Dishoom King's Cross");
+  // Vinny gets their recent scans with what someone would describe one by (type, place, grapes,
+  // the label's style, when, the score), newest first, so "the Croatian red I just scanned" is named.
+  const prof = await page.evaluate(() => Vinny.profile(WineHistory.getAll()));
+  expect(prof).toContain('Their most recent scans, newest first');
+  expect(prof.split('\n').find((l) => l.startsWith('- Clos Test Priorat'))).toMatch(/^- Clos Test Priorat 2019; scanned today; red from Priorat, Spain; Garnacha; label suggests full body, .*; they scored it 90; had at Dishoom King's Cross$/);
+  expect(await page.evaluate(() => Vinny.bottleLine({ name: 'Saved One', type: 'white', country: 'France', scan_intent: 'checking', grapes: ['Chardonnay'], grapes_basis: 'typical' })))
+    .toBe('Saved One; white from France; usually Chardonnay; saved for later, not tried');
+  expect(await page.evaluate(() => Vinny.prompt('which wine?', [], WineHistory.getAll()))).toContain('match it against their most recent scans above and name it plainly');
   await page.evaluate((w) => sessionStorage.setItem('vinterest_scan_result', JSON.stringify({ wine: w })), rated);
   await page.goto(`${BASE}/?demo=1#detail`);
   await expect(page.locator('[data-where-had]')).toHaveText("Had at Dishoom King's Cross");
