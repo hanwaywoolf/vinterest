@@ -40,7 +40,7 @@ test('TasteMatch: list wines are told apart, dislikes count, and thin history sa
   // The demo history scored its two Nebbiolos in the low 70s: a Barolo is probably not for them.
   expect(out.barolo[0]).toBe('miss');
   expect(out.barolo[2].join(' ')).toContain('Nebbiolo: you\'ve scored 2, averaging 73.');
-  // The demo's Tempranillos average 84: the match % is the score we expect, so middling.
+  // The demo's Tempranillos average 84, about their usual: an even chance, so middling.
   expect(out.rioja[0]).toBe('mixed');
   expect(out.rioja[1]).toBeGreaterThan(out.barolo[1]);
   // Nothing to go on: no made-up number.
@@ -97,7 +97,7 @@ test('no camera: the shutter never saves a sample wine, and a library photo scan
   await page.getByTestId('scan-file').setInputFiles({ name: 'label.png', mimeType: 'image/png', buffer: PNG });
   const root = page.locator('#root');
   await expect(root).toContainText('Clos Test Priorat 2019');
-  await expect(root).toContainText(/Likely (Outstanding|Very good|Average|Extraordinary) for you/);
+  await expect(root).toContainText(/Likely about \d+ from you · (Outstanding|Very good|Average|Extraordinary)/);
   await expect(root).toContainText('Garnacha');
   await expect(root).toContainText('In shops');
   const saved = (await history(page)).find((w) => w.name === 'Clos Test Priorat');
@@ -147,7 +147,7 @@ test('a hard-to-read label asks "Is this it?" before anything is saved', async (
   await expect(root).toContainText('Is this the right wine?');
   expect((await history(page)).some((w) => /Clos T/.test(w.name))).toBe(false);
   await root.getByText('It\'s Clos Test Priorat').click();
-  await expect(root).toContainText(/Likely (Outstanding|Very good|Average|Extraordinary) for you/);
+  await expect(root).toContainText(/Likely about \d+ from you · (Outstanding|Very good|Average|Extraordinary)/);
   const names = (await history(page)).filter((w) => /Clos T/.test(w.name)).map((w) => w.name);
   expect(names).toEqual(['Clos Test Priorat']);
 });
@@ -561,7 +561,8 @@ test('TasteMatch is relative to how they score: a generous scorer isn\'t told ev
     const full = TasteMatch.assess({ name: 'Full', type: 'red', body: 0.85, tannins: 0.85, acidity: 0.5 }, all);
     return { light: [light.expected, light.verdict, light.pct], full: [full.expected, full.verdict, full.pct] };
   });
-  // They'd still rate the light one well, but only the full one is among their favourites.
+  // They'd still rate the light one well, but only the full one is up with their favourites
+  // (a favourite needs the expected score FAV_ABOVE over their average, not just their bar).
   expect(out.light[0]).toBeGreaterThanOrEqual(80);
   expect(out.light[1]).not.toBe('hit');
   expect(out.full[1]).toBe('hit');
@@ -601,9 +602,9 @@ test('"Why N%?" says which of the wine\'s traits bring it up or hold it back, in
   expect(out.even).toContain('Tuscany: your 7 from there average 90');
   // The reds most like it are counted out loud; every scored wine still counts, weighted.
   expect(out.closest).toBe('The 3 reds most like it: you loved all of them.');
-  // The % is the chance they'd love it: the weighted share of wines like it they scored 90+.
-  // The match % is the score we expect; the chance they'd love it is said alongside.
-  expect(out.why).toMatch(/^We expect you'd score it about (\d+), so a \1% match\. Weighing all 7 reds you've scored by how alike they are, you've loved \(90\+\) about \d+% of wines like this one, against 57% of your reds overall\.$/);
+  // The match % is the chance they'd score it at least their bar (just under their average, 90
+  // here, so 88); the expected score and its spread are said first, the share loved alongside.
+  expect(out.why).toMatch(/^We expect you'd score it about (\d+), give or take \d+\. You score reds 90 on average, so we count 88 or better as one you enjoyed: that's an? (\d+)% chance this one gets there, an? \2% match\. Weighing all 7 reds you've scored by how alike they are, you've loved \(90\+\) about \d+% of wines like this one, against 57% of your reds overall\.$/);
   expect(out.verdict).toBe('hit');
   expect(out.pct).toBeGreaterThanOrEqual(80);
 });
@@ -647,9 +648,11 @@ test('equally similar wines count together, so a small change in the style estim
     const mk = (name, rating, b) => ({ name, type: 'red', rating, region: 'Tuscany', grapes: ['Sangiovese'], body: b, tannins: b, acidity: 0.75 });
     const all = [mk('S1', 95, 0.86), mk('S2', 93, 0.9), mk('S3', 99, 0.88), mk('S4', 87, 0.8), mk('S5', 80, 0.79), mk('S6', 93, 0.82),
       { name: 'O1', type: 'red', rating: 80, grapes: ['Merlot'], body: 0.4, tannins: 0.4, acidity: 0.5 }, { name: 'O2', type: 'red', rating: 100, grapes: ['Gamay'], body: 0.3, tannins: 0.3, acidity: 0.6 }];
-    return [0.9, 0.85, 0.8].map((b) => TasteMatch.assess({ name: 'Brunello', type: 'red', region: 'Brunello di Montalcino', grapes: ['Sangiovese Grosso'], body: b, tannins: b, acidity: 0.78 }, all).pct);
+    return [0.9, 0.85, 0.8].map((b) => { const m = TasteMatch.assess({ name: 'Brunello', type: 'red', region: 'Brunello di Montalcino', grapes: ['Sangiovese Grosso'], body: b, tannins: b, acidity: 0.78 }, all); return [m.expected, m.pct]; });
   });
-  expect(Math.max(...pcts) - Math.min(...pcts)).toBeLessThanOrEqual(8);
+  // The expected score barely moves; the % (a probability, steeper near their bar) moves a little more.
+  expect(Math.max(...pcts.map((p) => p[0])) - Math.min(...pcts.map((p) => p[0]))).toBeLessThanOrEqual(4);
+  expect(Math.max(...pcts.map((p) => p[1])) - Math.min(...pcts.map((p) => p[1]))).toBeLessThanOrEqual(20);
 });
 
 test('the same producer counts: an Antinori Brunello draws on their Tignanello', async ({ context, page }) => {
@@ -836,4 +839,37 @@ test('Blind Call asks about the traits the wine shows (bubbles, not texture, for
     return c && Object.keys(c.miss).sort();
   }, CHAMPAGNE);
   expect(palate).toEqual(['acidity', 'body']);
+});
+
+test('TasteMatch is a distribution: a spread, a personal bar just under their average, and a % that is the chance of clearing it', async ({ context, page }) => {
+  await setup(context, page);
+  await page.goto(`${BASE}/?demo=1#home`);
+  const out = await page.evaluate(() => {
+    const mk = (name, rating, body, grapes, extra = {}) => ({ name, type: 'white', rating, body, acidity: 0.7, texture: 0.3, grapes, region: 'Loire', ...extra });
+    // Three whites scored 85, 87 and 92: their bar is 86 (average 88, less BAR_BELOW).
+    const all = [mk('Chenin', 85, 0.55, ['Chenin Blanc']), mk('Sauvignon', 87, 0.4, ['Sauvignon Blanc']), mk('Viura', 92, 0.5, ['Viura'], { region: 'Rioja', buy_again: true })];
+    const like92 = TasteMatch.assess({ name: 'Another Viura', type: 'white', body: 0.5, acidity: 0.7, texture: 0.3, grapes: ['Viura'], region: 'Rioja' }, all);
+    const like87 = TasteMatch.assess({ name: 'Another Sauvignon', type: 'white', body: 0.4, acidity: 0.7, texture: 0.3, grapes: ['Sauvignon Blanc'] }, all);
+    const unlike = TasteMatch.assess({ name: 'Oaked Chardonnay', type: 'white', body: 0.85, acidity: 0.4, texture: 0.9, grapes: ['Chardonnay'], region: 'Burgundy' }, all);
+    const strict = Array.from({ length: 6 }, (_, i) => mk(`Strict ${i}`, 76 + i, 0.5, ['Chenin Blanc']));
+    const generous = Array.from({ length: 6 }, (_, i) => mk(`Generous ${i}`, 93 + i, 0.5, ['Chenin Blanc']));
+    return { bar: like92.bar, pcts: [like92.pct, like87.pct, unlike.pct], sds: [like92.sd, like87.sd, unlike.sd], verdicts: [like92.verdict, like87.verdict, unlike.verdict],
+      expected: [like92.expected, like87.expected, unlike.expected], summary: like92.summary,
+      strictBar: TasteMatch.bar(strict), generousBar: TasteMatch.bar(generous), phi: [TasteMatch._phi(0), TasteMatch._phi(1.96), TasteMatch._phi(-1)].map((x) => Math.round(x * 1000) / 1000) };
+  });
+  expect(out.bar).toBe(86);
+  expect(out.phi).toEqual([0.5, 0.975, 0.159]);
+  // Like the 92 they'd buy again: near-certain and up with their best; like the 87: a good bet, not
+  // a favourite; nothing like anything they've scored: the widest spread.
+  expect(out.pcts[0]).toBeGreaterThanOrEqual(90);
+  expect(out.verdicts[0]).toBe('hit');
+  expect(out.pcts[0]).toBeGreaterThan(out.pcts[1]);
+  expect(out.verdicts[1]).toBe('good');
+  expect(out.sds[2]).toBeGreaterThan(out.sds[0]);
+  expect(out.sds[2]).toBeGreaterThan(out.sds[1]);
+  expect(out.pcts[2]).toBeLessThan(out.pcts[0]);
+  expect(out.summary).toMatch(/^Based on the 3 whites you've scored, there's a \d+% chance you'd score it 86 or better; most likely about \d+, (Outstanding|Very good)\.$/);
+  // The bar follows how they score, within limits.
+  expect(out.strictBar).toBe(82);
+  expect(out.generousBar).toBe(90);
 });

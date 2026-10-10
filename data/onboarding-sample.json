@@ -260,7 +260,7 @@
         "Syrah"
       ],
       "body": 0.66,
-      "tannins": 0.68,
+      "tannins": 0.63,
       "acidity": 0.64,
       "sweetness": 0.03,
       "price_usd": 38
@@ -303,12 +303,13 @@
   },
   "slides": {
     "match": {
-      "pct": 87,
+      "pct": 74,
       "tone": "good",
       "label": "A good bet",
-      "expected": 87,
+      "expected": 88,
       "expectedLabel": "Very good",
-      "chance": 53,
+      "bar": 87,
+      "sd": 3,
       "reasons": [
         {
           "tone": "good",

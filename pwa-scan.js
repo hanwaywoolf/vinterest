@@ -162,7 +162,7 @@ const ScanFlow = {
     let m=null;
     if(match){
       const pro=match.reasons.find(r=>r.tone==='good'), con=match.reasons.find(r=>r.tone==='bad')||match.reasons.find(r=>r.tone==='neutral');
-      m={pct:match.pct,tone:match.tone,label:match.label,expectedLabel:match.expectedLabel||null,chance:match.chance!=null?match.chance:null,
+      m={pct:match.pct,tone:match.tone,label:match.label,expected:match.expected!=null?match.expected:null,expectedLabel:match.expectedLabel||null,bar:match.bar!=null?match.bar:null,
         early:match.verdict==='early'?FirstScan.progress(wine,wines):null,vintage:!!match.vintage,
         pro:pro?pro.text:null,con:con?con.text:null};
     }

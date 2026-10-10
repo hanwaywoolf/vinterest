@@ -126,7 +126,7 @@ test('scenes move on by themselves, a held finger pauses, and the whole thing ta
   expect(await page.evaluate(() => ScanFlow.revealLength('one two three four five six seven eight nine ten') - ScanFlow.REVEAL_LEAD)).toBe(Math.round(10 * 60000 / 260));
   const total = lens.reduce((a, [, ms]) => a + ms, 0);
   expect(total).toBeGreaterThanOrEqual(15000);
-  expect(total).toBeLessThanOrEqual(45000);
+  expect(total).toBeLessThanOrEqual(50000);
 });
 
 test('too early for a match it shows the meter; a wine the knowledge base lacks skips the grape and place', async ({ context, page }) => {

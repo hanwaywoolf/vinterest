@@ -7,6 +7,9 @@ const { test, expect } = require('@playwright/test');
 const { ROOT } = require('./helpers');
 
 const BASE = 'http://localhost:4175';
+// The demos run the app's engines over the onboarding sample user, so the match they show is whatever
+// data/onboarding-sample.json's regenerated slides say (`npm run sample:onboarding`).
+const SAMPLE_MATCH = require('../data/onboarding-sample.json').slides.match;
 // site/_worker.js is an ES module in a CommonJS package: load a .mjs copy of it (once, so the
 // Worker's per-visitor limit is shared by every test that calls it, as it would be in one isolate).
 let workerModule;
@@ -46,8 +49,8 @@ test.describe('desktop', () => {
     await expect(page.locator('h1')).toContainText("Find wines you'll love. Learn while you sip");
     const hero = page.locator('.hero .phone-app');
     await expect(hero).toContainText('Crozes-Hermitage 2021');
-    await expect(hero).toContainText('87');
-    await expect(hero).toContainText('A good bet');
+    await expect(hero).toContainText(`${SAMPLE_MATCH.pct}%`);
+    await expect(hero).toContainText(SAMPLE_MATCH.label);
     expect(errors).toEqual([]);
   });
 
@@ -98,7 +101,7 @@ test.describe('desktop', () => {
     const phone = page.locator('#scan .phone-app');
     await jump(page, 'scan', 1);
     await expect(page.locator('#scan .steps li.on h3')).toHaveText('Reasons for and against, and exactly why');
-    // The demo opened "Why 87%?" so the working is on screen, and it stays put.
+    // The demo opened "Why N%?" so the working is on screen, and it stays put.
     await expect(phone).toContainText('HOLDS IT BACK', { ignoreCase: true });
     await page.waitForTimeout(2500);
     // It has scrolled far enough to reach where the working adds up to the match, and that line is on screen.
@@ -147,7 +150,7 @@ test.describe('desktop', () => {
     const phone = page.locator('#learn-wine .phone-app');
     await expect(phone).toContainText('Your match');
     await jump(page, 'learn-wine', 1);
-    await expect(phone).toContainText('Your kind of bottle');
+    await expect(phone).toContainText(SAMPLE_MATCH.tone === 'good' ? 'Your kind of bottle' : SAMPLE_MATCH.tone === 'bad' ? 'Not your usual style' : 'What might win you over');
     // The same part goes on to the serving tip (decanting, temperature): the next card of the deck.
     await expect(phone).toContainText('Heads up', { timeout: 8000 });
     await jump(page, 'learn-wine', 2);

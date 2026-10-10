@@ -73,8 +73,8 @@ function _PreviewMatch(){
         <MatchRing match={{...m,pct}}/>
         <div className="wp-in" style={{flex:1,minWidth:0,animationDelay:'.9s'}}>
           <div style={{fontSize:20,fontWeight:800,color:col,fontFamily:C.P,lineHeight:1.2}}>{m.label}</div>
-          <div style={{fontSize:15,color:C.mid,fontFamily:C.P,marginTop:3}}>Likely {m.expectedLabel} for you</div>
-          <div style={{fontSize:13,color:C.mid,fontFamily:C.P,marginTop:2}}>You've loved {m.chance}% of wines like it</div>
+          <div style={{fontSize:15,color:C.mid,fontFamily:C.P,marginTop:3}}>Likely about {m.expected} from you · {m.expectedLabel}</div>
+          <div style={{fontSize:13,color:C.mid,fontFamily:C.P,marginTop:2}}>{m.pct}% sure you'd score it {m.bar}+, your usual for reds</div>
         </div>
       </div>
       <div className="wp-reasons" style={{marginTop:14,paddingTop:12,borderTop:`1px solid ${C.line}`}}><MatchReasons match={m} showSummary={false}/></div>
