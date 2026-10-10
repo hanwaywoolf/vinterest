@@ -1,8 +1,9 @@
 /* Vinterest PWA — Main App with navigation */
 
-/* Screens drawn on the story's dark stage (pwa-scancards.jsx DeckTheme): the nav and the XP badge go dark
-   under them, so the screen runs to the edge. */
-const DARK_SCREENS=['home']; // the scan result ('identified') has no nav or badge
+/* Screens that have moved onto the story's stage (pwa-scancards.jsx DeckTheme) and follow the
+   appearance picked on Profile (Settings.theme): under them the nav and the XP badge follow it too.
+   Every other screen still draws itself light until it moves over. */
+const THEMED_SCREENS=['home','profile','dna-trait','identified'];
 function App(){
   const [screen,setScreen]=React.useState(()=>{
     if(!Settings.onboarded()) return 'onboarding';
@@ -23,8 +24,8 @@ function App(){
   React.useEffect(()=>{ try{ if(Settings.onboarded()&&!Milestones.seen()) Milestones.check(KnowledgeMap.compute(),Palate.compute()); }catch(e){} },[]);
   // A new text size (TextSize, pwa-textsize.js) re-renders every screen at once.
   const [,setTextTick]=React.useState(0);
-  React.useEffect(()=>{ const h=()=>setTextTick(t=>t+1); window.addEventListener('vinterest:textsize',h); window.addEventListener('vinterest:detail',h);
-    return()=>{ window.removeEventListener('vinterest:textsize',h); window.removeEventListener('vinterest:detail',h); }; },[]);
+  React.useEffect(()=>{ const h=()=>setTextTick(t=>t+1); window.addEventListener('vinterest:textsize',h); window.addEventListener('vinterest:detail',h); window.addEventListener('vinterest:theme',h); window.addEventListener('vinterest:sync',h);
+    return()=>{ window.removeEventListener('vinterest:textsize',h); window.removeEventListener('vinterest:detail',h); window.removeEventListener('vinterest:theme',h); window.removeEventListener('vinterest:sync',h); }; },[]);
 
   // Tablet / iPad detection (Device.forceMobile() overrides it for the preview panel)
   const forceMobile=()=>Device.forceMobile();
@@ -138,10 +139,11 @@ function App(){
   },[]);
 
   const ctx={nav,back,showPro:setProGate,isTablet};
+  const theme=THEMED_SCREENS.includes(screen)&&Settings.theme()==='dark'?_DECK_DARK:_DECK_LIGHT, darkChrome=theme.dark;
 
   return(
     <div style={{width:'100%',maxWidth:isTablet?'100%':430,height:'100%',margin:'0 auto',background:(screen==='camera')?'#0A0A0A':C.bg,display:'flex',flexDirection:'column',position:'relative',overflow:'hidden',boxSizing:'border-box',paddingTop:(screen==='onboarding'||screen==='camera')?0:'env(safe-area-inset-top)'}}>
-      <div key={dataGen} style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden',minHeight:0}}>
+      <DeckTheme.Provider value={theme}><div key={dataGen} style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden',minHeight:0}}>
         {screen==='onboarding' && <NewUserFlow onComplete={()=>{Settings.setOnboarded();nav('home');}}/>}
         {screen==='home'      && <HomeScreen {...ctx}/>}
         {screen==='scan'      && <ScanHomeScreen {...ctx}/>}
@@ -167,14 +169,14 @@ function App(){
         {screen==='guide'&& <ScreenErrorBoundary><GuideScreen {...ctx}/></ScreenErrorBoundary>}
         {screen==='account'   && <AccountProfileScreen {...ctx}/>}
         {screen==='settings'  && <AccountProfileScreen {...ctx}/>/* Settings merged into Profile; old links land there */}
-      </div>
+      </div></DeckTheme.Provider>
       {showNav&&MOMENT_SCREENS.includes(screen)&&xpDel.moment?<MomentCard m={xpDel.moment} more={xpDel.more} onAct={actOnMoment} onClose={xpDel.dismiss}/>
         :showNav&&!showXpBadge&&<XPChip chip={xpDel.chip} overNav/>}
-      {showNav&&<BottomNav active={screen} nav={nav} showPro={setProGate} dark={DARK_SCREENS.includes(screen)}/>}
+      {showNav&&<BottomNav active={screen} nav={nav} showPro={setProGate} dark={darkChrome}/>}
       {showXpBadge&&(
-        <div onClick={()=>setShowXpOverlay(true)} style={{position:'absolute',top:'calc(env(safe-area-inset-top) + 15px)',right:14,zIndex:200,display:'flex',alignItems:'center',gap:5,padding:'5px 11px',borderRadius:20,background:DARK_SCREENS.includes(screen)?'rgba(255,255,255,0.08)':C.crSoft,border:`1px solid ${DARK_SCREENS.includes(screen)?'rgba(255,255,255,0.16)':C.crDim}`,cursor:'pointer',boxShadow:'0 1px 8px rgba(0,0,0,0.08)',pointerEvents:'auto'}}>
-          <Icon n={XPSystem.iconFor(XPSystem.getLevel(xpBadge.total))} sz={16} col={DARK_SCREENS.includes(screen)?'#E05A74':C.cr}/>
-          <span style={{fontSize:'15px',fontWeight:700,color:DARK_SCREENS.includes(screen)?'#E05A74':C.cr,fontFamily:C.P}}>{xpBadge.total} XP</span>{/* fixed: the badge sits beside the logo */}
+        <div onClick={()=>setShowXpOverlay(true)} style={{position:'absolute',top:'calc(env(safe-area-inset-top) + 15px)',right:14,zIndex:200,display:'flex',alignItems:'center',gap:5,padding:'5px 11px',borderRadius:20,background:darkChrome?'rgba(255,255,255,0.08)':C.crSoft,border:`1px solid ${darkChrome?'rgba(255,255,255,0.16)':C.crDim}`,cursor:'pointer',boxShadow:'0 1px 8px rgba(0,0,0,0.08)',pointerEvents:'auto'}}>
+          <Icon n={XPSystem.iconFor(XPSystem.getLevel(xpBadge.total))} sz={16} col={darkChrome?'#E05A74':C.cr}/>
+          <span style={{fontSize:'15px',fontWeight:700,color:darkChrome?'#E05A74':C.cr,fontFamily:C.P}}>{xpBadge.total} XP</span>{/* fixed: the badge sits beside the logo */}
           <XPBadgeGain chip={xpDel.chip}/>
           {Entitlement.isPro()&&<span style={{fontSize:12,fontWeight:700,color:'#fff',background:'linear-gradient(135deg,#9B5E00,#C4870A)',borderRadius:8,padding:'2px 6px',marginLeft:2}}>PRO</span>}
         </div>

@@ -65,7 +65,7 @@ for (const size of ['standard', 'xl']) {
 
 // Safari paints the strip behind the home indicator with the page background, so the page
 // background follows whatever is at the bottom of the screen (a dark screen must not get a white bar).
-test('the page background matches the bottom of the screen: dark on the welcome screen and Home, light under My Wines', async ({ context, page }) => {
+test('the page background matches the bottom of the screen: dark on the welcome screen and Home, light under My Wines and on Home once Light is picked', async ({ context, page }) => {
   await makeDeterministic(page);
   await stubNetwork(context);
   await page.goto(`${BASE}/#home`); // first visit: onboarding opens on the dark welcome screen
@@ -82,6 +82,12 @@ test('the page background matches the bottom of the screen: dark on the welcome 
   await expect(page.locator('#root')).toContainText('My Wines');
   const light = await page.evaluate(async () => { await new Promise((r) => setTimeout(r, 500)); return getComputedStyle(document.body).backgroundColor; });
   expect(lum(light), `my wines page background ${light}`).toBeGreaterThan(200);
+  // Appearance on Profile (Settings.theme): Light turns Home's stage light, nav and all.
+  await page.evaluate(() => Settings.setTheme('light'));
+  await page.goto(`${BASE}/?demo=1#home`);
+  await expect(page.locator('#root')).toContainText('Recently scanned');
+  const homeLight = await page.evaluate(async () => { await new Promise((r) => setTimeout(r, 500)); return getComputedStyle(document.body).backgroundColor; });
+  expect(lum(homeLight), `home page background in light ${homeLight}`).toBeGreaterThan(200);
 });
 
 // Installed on an iPhone, a see-through status bar ("black-translucent") left the bottom 59pt of

@@ -18,13 +18,14 @@ function CompletedToggle({count,expanded,onToggle}){
 const GRAPE_PILLS=10;
 function ShowMore({items,limit=3,render,noun}){
   const [open,setOpen]=React.useState(false);
+  const T=useTheme(), cr=T.lift(C.cr);
   if(!items||!items.length) return null;
   const rest=items.length-limit;
   return <>
     {(open?items:items.slice(0,limit)).map(render)}
     {rest>0&&<div role="button" onClick={()=>setOpen(o=>!o)} style={{padding:'8px 4px',display:'flex',alignItems:'center',gap:6,cursor:'pointer',gridColumn:'1 / -1'}}>
-      <Icon n="chevron" sz={12} col={C.cr} style={{transform:open?'rotate(-90deg)':'rotate(90deg)'}}/>
-      <span style={{fontSize:14,fontWeight:700,color:C.cr,fontFamily:C.P}}>{open?'Show less':`Show ${rest} more${noun?' '+noun:''}`}</span>
+      <Icon n="chevron" sz={12} col={cr} style={{transform:open?'rotate(-90deg)':'rotate(90deg)'}}/>
+      <span style={{fontSize:14,fontWeight:700,color:cr,fontFamily:C.P}}>{open?'Show less':`Show ${rest} more${noun?' '+noun:''}`}</span>
     </div>}
   </>;
 }

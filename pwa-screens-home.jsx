@@ -195,7 +195,7 @@ function BackupOffer({nav,count}){ const T=useTheme();
    pick, and their knowledge (level, XP and the Mastery teaser). */
 function HomeScreen({nav, showPro, isTablet}){
   const wide=useWide();
-  const T=_DECK_DARK; // Home sits on the story's dark stage (pwa-scancards.jsx)
+  const T=useTheme(); // the appearance picked on Profile (Settings.theme), through pwa-app.jsx
   const [travel,setTravel]=React.useState(()=>Regional.travel());
   React.useEffect(()=>{
     const h=()=>setTravel(Regional.travel());
@@ -266,8 +266,8 @@ function HomeScreen({nav, showPro, isTablet}){
         {/* Up next: one clear thing to do, two more under it */}
         {next.primary&&<div>
           <div style={{fontSize:13,fontWeight:700,color:T.mid,letterSpacing:'0.07em',textTransform:'uppercase',fontFamily:C.P,margin:'4px 2px 8px'}}>Up next</div>
-          <div role="button" onClick={()=>_openLearn(next.primary,nav,showPro)} style={{background:_alpha(glow,0.16),border:`1px solid ${_alpha(glow,0.4)}`,borderRadius:16,padding:16,display:'flex',alignItems:'center',gap:12,cursor:'pointer',boxShadow:`0 0 36px ${_alpha(glow,0.18)}`}}>
-            <div style={{width:46,height:46,borderRadius:12,background:_alpha(glow,0.28),display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><Icon n={next.primary.icon||'book'} sz={21} col={glow}/></div>
+          <div role="button" onClick={()=>_openLearn(next.primary,nav,showPro)} style={T.dark?{background:_alpha(glow,0.16),border:`1px solid ${_alpha(glow,0.4)}`,borderRadius:16,padding:16,display:'flex',alignItems:'center',gap:12,cursor:'pointer',boxShadow:`0 0 36px ${_alpha(glow,0.18)}`}:{background:C.ink,borderRadius:16,padding:16,display:'flex',alignItems:'center',gap:12,cursor:'pointer'}}>
+            <div style={{width:46,height:46,borderRadius:12,background:T.dark?_alpha(glow,0.28):'rgba(255,255,255,0.1)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><Icon n={next.primary.icon||'book'} sz={21} col={T.dark?glow:'#fff'}/></div>
             <div style={{flex:1,minWidth:0}}>
               {next.primary.progress&&<div style={{fontSize:12,fontWeight:600,color:'rgba(255,255,255,0.5)',fontFamily:C.P,textTransform:'uppercase',letterSpacing:'0.06em',marginBottom:3}}>{next.primary.progress}</div>}
               <div style={{fontSize:17,fontWeight:700,color:'#fff',fontFamily:C.P,lineHeight:1.3}}>{next.primary.title}</div>
@@ -321,14 +321,14 @@ function HomeScreen({nav, showPro, isTablet}){
   </>;
   const cell=x=><div style={{display:'flex',flexDirection:'column',gap:12,minWidth:0}}>{x}</div>;
   return(
-    <DeckTheme.Provider value={_DECK_DARK}><div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden',background:T.bg,position:'relative'}}>
+    <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden',background:T.bg,position:'relative'}}>
       {/* The top of the stage glows in the colour of the type they drink most, as the story glows in the wine's. */}
-      <div style={{background:`radial-gradient(ellipse at 50% -20%, ${_alpha(glow,0.42)}, transparent 70%) ${T.bg}`,flexShrink:0}}>
+      <div style={{background:`radial-gradient(ellipse at 50% -20%, ${_alpha(glow,T.dark?0.42:0.14)}, transparent 70%) ${T.dark?T.bg:C.white}`,flexShrink:0}}>
         <div style={{padding:'14px 20px 14px',paddingRight:'120px',display:'flex',alignItems:'center',gap:12}}>
           <div onClick={()=>nav('account')} style={{width:34,height:34,borderRadius:17,background:T.soft,border:`1px solid ${T.line}`,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',flexShrink:0}}>
             <Icon n="user" sz={16} col={T.ink}/>
           </div>
-          <img src="logo.png" alt="Vinterest" style={{height:28,width:'auto',display:'block',cursor:'pointer',filter:'invert(1) brightness(2)'}} onClick={()=>{
+          <img src="logo.png" alt="Vinterest" style={{height:28,width:'auto',display:'block',cursor:'pointer',filter:T.dark?'invert(1) brightness(2)':'none'}} onClick={()=>{
             // Tapping the logo checks for a new version of the app (and shows the update banner).
             if(!('serviceWorker' in navigator)||Platform.native()) return;
             navigator.serviceWorker.getRegistration().then(function(reg){
@@ -358,7 +358,7 @@ function HomeScreen({nav, showPro, isTablet}){
       {/* Cards scroll up under the Vinny bar and fade into the header rather than being cut off
           at a hard edge. */}
       <div style={{flex:1,minHeight:0,position:'relative',display:'flex',flexDirection:'column'}}>
-      <div aria-hidden="true" data-home-fade style={{position:'absolute',top:0,left:0,right:0,height:18,background:`linear-gradient(${T.bg},${T.fade0})`,pointerEvents:'none',zIndex:1}}/>
+      <div aria-hidden="true" data-home-fade style={{position:'absolute',top:0,left:0,right:0,height:18,background:T.dark?`linear-gradient(${T.bg},${T.fade0})`:`linear-gradient(${C.white},${C.white}00)`,pointerEvents:'none',zIndex:1}}/>
       <div style={{flex:1,overflowY:'auto',overscrollBehavior:'none',WebkitOverflowScrolling:'touch'}}>
       <div style={{padding:'10px 20px 8px',display:'flex',flexDirection:'column',gap:12}}>
 
@@ -369,7 +369,7 @@ function HomeScreen({nav, showPro, isTablet}){
       </div>
       </div>
       <style>{`@keyframes homeCaret{50%{opacity:0}}`}</style>
-    </div></DeckTheme.Provider>
+    </div>
   );
 }
 

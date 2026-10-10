@@ -201,6 +201,7 @@ function ScanCardsScreen({nav,back,showPro}){
   React.useEffect(()=>{ if(!confirmed||(view!=='result'&&view!=='deck')) return; try{ const sd=Handoff.scanResult.get({}); if(sd.view!==view){ sd.view=view; Handoff.openWine(sd); } }catch(e){} },[view,confirmed]);
   const noteDeckIdx=React.useCallback(i=>{ try{ const sd=Handoff.scanResult.get({}); if(sd.deckIdx!==i){ sd.deckIdx=i; Handoff.openWine(sd); } }catch(e){} },[]);
   const deckStyle=useDeckStyle();
+  const appTheme=useTheme();
   const curr=React.useMemo(()=>Regional.current(),[]);
   const match=React.useMemo(()=>wine?TasteMatch.assess(wine,WineHistory.getAll()):null,[wine,ratingsVersion]);
   const {gen,loading}=useScanContent(confirmed?wine:null,match);
@@ -239,9 +240,11 @@ function ScanCardsScreen({nav,back,showPro}){
     </div>;
   }
 
-  const reveal=confirmed&&view==='reveal', dark=true; // the story, the deck, the result and "Is this it?" all sit on the dark stage
-  return <DeckTheme.Provider value={dark?_DECK_DARK:_DECK_LIGHT}><div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden',background:dark?'#0F0F0F':C.bg}}>
-    {!reveal&&<ScanHeader wine={wine} nav={nav} back={view==='deck'&&confirmed?()=>setView('result'):back}/>}
+  // The story and the deck are always on the dark stage; the result and "Is this it?" follow the
+  // appearance picked on Profile (the app's DeckTheme, pwa-app.jsx).
+  const reveal=confirmed&&view==='reveal', story=reveal||(confirmed&&view==='deck'), stage=story?_DECK_DARK:appTheme;
+  return <DeckTheme.Provider value={stage}><div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden',background:stage.bg}}>
+    {!reveal&&<ScanHeader wine={wine} nav={nav} back={view==='deck'&&confirmed?()=>setView('result'):back} plain={!(confirmed&&view==='deck')}/>}
     {!confirmed
       ? <ConfirmGate wine={wine} onYes={confirm} onEdit={()=>setEditing(true)} nav={nav}
           onAlt={()=>applyEdit({name:wine.alternative,producer:''})}/>
@@ -316,14 +319,16 @@ function FirstScanStory({wine,onDone}){
   </div>;
 }
 
-function ScanHeader({wine,nav,back}){ const T=useTheme();
+function ScanHeader({wine,nav,back,plain}){ const T=useTheme(); // plain: just Back and Details, when the screen names the wine itself
   return <div style={{padding:'12px 16px 10px',flexShrink:0,display:'flex',alignItems:'center',gap:12,background:T.dark?T.bg:T.card,borderBottom:`1px solid ${T.line}`}}>
     <div onClick={back} style={{width:34,height:34,borderRadius:17,background:T.soft,border:`1px solid ${T.line}`,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',flexShrink:0}}>
       <Icon n="back" sz={16} col={T.ink}/>
     </div>
     <div style={{flex:1,minWidth:0}}>
+      {plain?null:<>
       <div style={{fontSize:16,fontWeight:700,color:T.ink,fontFamily:C.P,lineHeight:1.15,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{wine.name}</div>
       <div style={{fontSize:13,color:T.mid,fontFamily:C.P,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{[wine.vintage&&wine.vintage!==0?wine.vintage:'NV',wine.region!==wine.country?wine.region:null,wine.country].filter(Boolean).join(' · ')}</div>
+      </>}
     </div>
     <div onClick={()=>nav('detail')} style={{flexShrink:0,display:'flex',alignItems:'center',gap:4,padding:'7px 12px',borderRadius:20,background:T.soft,border:`1px solid ${T.line}`,cursor:'pointer',whiteSpace:'nowrap'}}>
       <span style={{fontSize:13,fontWeight:600,color:T.ink2,fontFamily:C.P}}>Details</span>
@@ -415,7 +420,7 @@ function ScanResult({wine,match,curr,scanData,existingRating,nav,showPro,view,se
   const glass={background:T.soft,border:`1px solid ${T.line}`,borderRadius:16,padding:16};
   return <div style={{flex:1,minHeight:0,position:'relative',display:'flex',flexDirection:'column'}}>
     {/* The stage glows in the wine type's colour, as the story does. */}
-    <div aria-hidden="true" style={{position:'absolute',top:-40,left:0,right:0,height:300,background:`radial-gradient(ellipse at 50% 0%, ${_alpha(typeCol,0.42)}, transparent 68%)`,pointerEvents:'none',animation:'scFade 1s ease both'}}/>
+    <div aria-hidden="true" style={{position:'absolute',top:-40,left:0,right:0,height:300,background:`radial-gradient(ellipse at 50% 0%, ${_alpha(typeCol,T.dark?0.42:0.14)}, transparent 68%)`,pointerEvents:'none',animation:'scFade 1s ease both'}}/>
     <div className="sc-scroll" style={{flex:1,overflowY:'auto',padding:'16px 16px 28px',display:'flex',flexDirection:'column',gap:12,position:'relative'}}>
     <div style={{padding:'6px 2px 2px',...rise(0)}}>
       <WineIdentity wine={wine}/>
