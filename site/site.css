@@ -247,3 +247,9 @@ footer a:hover { color: #fff; }
   .btn { transition: none; }
   .pin .stage { height: 700px; }
 }
+
+/* The wine map on the website shows only what the drinker has opened: the app draws every region it knows as a grey pin, which on a small
+   phone is a field of dots. Locked pins, the border lines and the "not unlocked" key are left out here (the app itself is unchanged). */
+.phone [data-testid="region-map"] circle[fill="#CFC9C2"] { display: none; }
+.phone [data-testid="region-map"] path[fill="none"] { display: none; }
+.phone div:has(> [data-testid="region-map"]) + div[aria-hidden="true"] > span:first-child { display: none !important; }

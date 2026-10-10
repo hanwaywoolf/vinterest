@@ -38,6 +38,8 @@ const DemoPersona = (() => {
   Object.entries({
     vinterest_onboarded: '1', vinterest_age_ok: '1', vinterest_region: 'uk', vinterest_currency: 'GBP',
     vinterest_wineDNA_unlock_seen: '1',
+    // The phone is drawn inside a desktop window: without this the app reads the window's width and lays itself out as an iPad.
+    vinterest_force_mobile: '1',
     // The demos show what the app can do, so every screen at full detail (DetailLevel).
     vinterest_detail_all: '1', vinterest_detail_intro: '1',
   }).forEach(([k, v]) => local.setItem(k, v));
