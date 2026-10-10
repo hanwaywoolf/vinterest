@@ -134,6 +134,8 @@ sup.pro { font-size: .58em; font-weight: 700; color: #C4870A; margin-left: 1px; 
 .steps li.on::before { background: var(--cr); border-color: var(--cr); }
 .dark .steps li.on::before { background: #E8A0AE; border-color: #E8A0AE; }
 .steps li h3 { font-size: 17px; }
+/* A short window has seven or eight captions to stack: tighten them (after the base rules above, which would win otherwise). */
+@media (max-height: 700px) and (min-width: 901px) { .steps { gap: 2px; } .steps li { padding: 4px 0; } .steps li::before { top: 10px; } }
 /* Only the lit caption shows its sentence, so the list stays short enough for any window. */
 .steps li p { font-size: 15px; color: var(--ink-2); margin-top: 0; max-width: 30em; max-height: 0; overflow: hidden; opacity: 0; transition: max-height .35s ease, opacity .3s ease, margin-top .3s ease; }
 .steps.measure li, .steps.measure li p, .steps.measure li::before { transition: none; }
@@ -245,3 +247,12 @@ footer a:hover { color: #fff; }
   .btn { transition: none; }
   .pin .stage { height: 700px; }
 }
+
+/* The wine map on the website shows only what the drinker has opened: the app draws every region it knows as a grey pin, which on a small
+   phone is a field of dots. Locked pins, the border lines and the "not unlocked" key are left out here (the app itself is unchanged). */
+.phone [data-testid="region-map"] circle[fill="#CFC9C2"] { display: none; }
+.phone [data-testid="region-map"] path[fill="none"] { display: none; }
+.phone div:has(> [data-testid="region-map"]) + div[aria-hidden="true"] > span:first-child { display: none !important; }
+
+/* The scan story is paused between captions; its "Paused" pill isn't part of what the demo shows. */
+.phone [data-testid="reveal-paused"] { display: none; }

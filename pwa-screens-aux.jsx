@@ -216,8 +216,6 @@ function TasteProfileScreen({nav,back,showPro}){
           );
         })()}
 
-        {/* Data backup */}
-        <DataBackupCard padding={12}/>
         {/* App version */}
         <div style={{textAlign:'center',padding:'12px 0 4px',opacity:0.45}}>
           <span style={{fontSize:13,color:C.mid,fontFamily:C.P}}>Vinterest v1.0.38</span>
@@ -794,23 +792,4 @@ function restoreBackupFile(done){
   };
   inp.click();
 }
-function DataBackupCard({padding=12}){
-  const exportFile=saveBackupFile;
-  function importFile(){
-    restoreBackupFile(done=>{
-      alert(`Restored: ${done.added} new wine${done.added===1?'':'s'}${done.updated?`, ${done.updated} merged`:''}.`);
-      window.location.reload();
-    });
-  }
-  return <Card style={{padding}}>
-    <div style={{fontSize:16,fontWeight:600,color:C.ink,fontFamily:C.P,marginBottom:10}}>Data Backup</div>
-    <div style={{display:'flex',gap:8}}>
-      <Btn full style={{flex:1,fontSize:15}} onClick={exportFile}>⬇ Export</Btn>
-      <Btn full style={{flex:1,fontSize:15}} onClick={importFile}>⬆ Import</Btn>
-    </div>
-    <div style={{fontSize:13,color:C.mid,fontFamily:C.P,marginTop:8,lineHeight:1.5}}>Export saves your wines, XP, settings and learning progress to a file on your phone. Import adds a backup to what's here: nothing on this phone is lost.</div>
-  </Card>;
-}
-
-/* ── SETTINGS SCREEN ── */
 Object.assign(window,{TasteProfileScreen,RestaurantScreen,LearnScreen,MyWinesScreen,WineListScreen,restoreBackupFile});

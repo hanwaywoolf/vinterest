@@ -38,6 +38,7 @@ export const APP_SOURCES = [
   'tweaks-panel.jsx',
   'pwa-screens-main.jsx',
   'pwa-scancards.jsx',
+  'pwa-reveal.jsx',
   'pwa-screens-detail.jsx',
   'pwa-screens-explore.jsx',
   'pwa-sketch.jsx',

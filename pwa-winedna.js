@@ -231,10 +231,15 @@ const WineDNA = {
     const c=this.cleanGrapes(w.grapes);
     return {...w,grapes:c.grapes,blend:w.blend||c.blend,grapes_basis:w.grapes_basis||(c.typical?'typical':undefined)};
   },
-  /* "Grenache, Syrah, Cinsault" / "Usually Grenache, Syrah and Cinsault" for display. */
-  grapeLine(w){
+  /* "Grenache, Syrah, Cinsault" / "Usually Grenache, Syrah and Cinsault" for display. "Usually"
+     only when the grapes were guessed (grapes_basis 'typical'); a blend the label or the house
+     states is said plainly. With `shares` and the label's or house's percentages (grape_shares,
+     only when the scan knew them): "Tempranillo 80%, Garnacha 20%". */
+  grapeLine(w,{shares=false}={}){
     const g=(w&&w.grapes||[]).filter(Boolean);
     if(!g.length) return '';
+    const sh=shares&&w.grape_shares&&typeof w.grape_shares==='object'?w.grape_shares:null;
+    if(sh&&w.grapes_basis!=='typical'&&g.every(x=>sh[x]>0)) return g.map(x=>`${x} ${Math.round(sh[x])}%`).join(', ');
     const list=g.length>1?g.slice(0,-1).join(', ')+' and '+g[g.length-1]:g[0];
     return w.grapes_basis==='typical'?`Usually ${list}`:g.join(', ');
   },

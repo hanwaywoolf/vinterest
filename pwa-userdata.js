@@ -113,6 +113,10 @@ const Flags = {
   setExploreReadySeen(types){ Store.setJSON(this.EXPLORE_READY_KEY,types); },
   /* The camera's "you can pick a photo from your gallery too" tip: shown on the first
      GALLERY_HINT_TIMES visits to the camera, then never again. */
+  /* The reveal's controls tip (swipe, tap to pause, Skip): over the first REVEAL_TIPS_TIMES reveals. */
+  REVEAL_TIPS_KEY:'vinterest_reveal_tips_v1', REVEAL_TIPS_TIMES:2,
+  revealTipsDue(){ return (parseInt(Store.get(this.REVEAL_TIPS_KEY)||'0')||0)<this.REVEAL_TIPS_TIMES; },
+  markRevealTips(){ Store.set(this.REVEAL_TIPS_KEY,(parseInt(Store.get(this.REVEAL_TIPS_KEY)||'0')||0)+1); },
   GALLERY_HINT_KEY:'vinterest_gallery_hint_v1', GALLERY_HINT_TIMES:3,
   galleryHintDue(){ return (parseInt(Store.get(this.GALLERY_HINT_KEY)||'0')||0)<this.GALLERY_HINT_TIMES; },
   markGalleryHint(){ Store.set(this.GALLERY_HINT_KEY,(parseInt(Store.get(this.GALLERY_HINT_KEY)||'0')||0)+1); },

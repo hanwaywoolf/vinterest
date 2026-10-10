@@ -62,7 +62,7 @@ placeholder contact address.
 
 ## Confirmation emails (Resend)
 
-A new sign-up gets a short "You're on the list" email, sent by the Worker through Resend. It is optional:
+A new sign-up gets a short "Thank you for registering for the Vinterest beta" email (download links and updates on release and acceptance to follow), sent by the Worker through Resend. It is optional:
 without `RESEND_API_KEY` nothing is sent and the form works as before. A failed email never fails the
 sign-up, and someone who signs up twice is emailed once.
 

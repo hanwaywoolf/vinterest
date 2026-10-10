@@ -205,7 +205,7 @@ function DetailMerged({wine,nav,existingRating=0,match}){
   const [loadingVintage,setLoadingVintage]=React.useState(false);
   React.useEffect(()=>{
     if(!wine||!wine.vintage) return;
-    const cacheKey=`vinterest_vintage_${(wine.name||'').replace(/\s/g,'_')}_${wine.vintage}`;
+    const cacheKey=ScanFlow.vintageKey(wine);
     const cached=Cache.getText(cacheKey);
     if(cached){try{setVintageInfo(JSON.parse(cached));return;}catch(e){}}
     setLoadingVintage(true);

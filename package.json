@@ -17,8 +17,10 @@
     "icons": "node scripts/app-icons.mjs",
     "map": "node scripts/world-map.mjs",
     "site:video": "node scripts/site-video.mjs",
+    "film:capture": "node scripts/film-capture.mjs",
     "lcbo:check": "node scripts/lcbo-check.mjs",
-    "model:trial": "node scripts/model-trial.mjs"
+    "model:trial": "node scripts/model-trial.mjs",
+    "match:backtest": "node scripts/match-backtest.mjs"
   },
   "keywords": [
     "wine",

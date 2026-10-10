@@ -44,13 +44,13 @@ const escapeHtml = (v) => String(v).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", 
 // never fails the sign-up (the person is already on the list), so it's logged and dropped.
 async function sendConfirmation(env, { first, email }) {
   const from = env.RESEND_FROM || "Vinterest <hello@vinterest.app>";
-  const text = `Hi ${first},\n\nThanks for joining the Vinterest beta. You're on the list, and we'll email you when your spot opens. We'll only email you about the beta.\n\nIf you didn't sign up, just ignore this email and you won't hear from us again.\n\nQuestions? Reply to this email.\n\nThe Vinterest team\nhttps://vinterest.app`;
-  const html = `<div style="font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.5;color:#1a1a1a;max-width:520px"><p>Hi ${escapeHtml(first)},</p><p>Thanks for joining the Vinterest beta. <strong>You're on the list</strong>, and we'll email you when your spot opens. We'll only email you about the beta.</p><p>If you didn't sign up, just ignore this email and you won't hear from us again.</p><p>Questions? Reply to this email.</p><p>The Vinterest team<br><a href="https://vinterest.app" style="color:#8B1A2F">vinterest.app</a></p></div>`;
+  const text = `Hi ${first},\n\nThank you for registering for the Vinterest beta.\n\nWe'll be in touch with your download links, and with updates on the beta's release and on your acceptance into the programme. We'll only email you about the beta.\n\nIf you didn't sign up, just ignore this email and you won't hear from us again.\n\nQuestions? Reply to this email.\n\nThe Vinterest team\nhttps://vinterest.app`;
+  const html = `<div style="font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.5;color:#1a1a1a;max-width:520px"><p>Hi ${escapeHtml(first)},</p><p><strong>Thank you for registering for the Vinterest beta.</strong></p><p>We'll be in touch with your download links, and with updates on the beta's release and on your acceptance into the programme. We'll only email you about the beta.</p><p>If you didn't sign up, just ignore this email and you won't hear from us again.</p><p>Questions? Reply to this email.</p><p>The Vinterest team<br><a href="https://vinterest.app" style="color:#8B1A2F">vinterest.app</a></p></div>`;
   try {
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: { authorization: `Bearer ${env.RESEND_API_KEY}`, "content-type": "application/json" },
-      body: JSON.stringify({ from, to: [email], reply_to: "hello@vinterest.app", subject: "You're on the Vinterest beta list", text, html }),
+      body: JSON.stringify({ from, to: [email], reply_to: "hello@vinterest.app", subject: "Thank you for registering for the Vinterest beta", text, html }),
     });
     if (!res.ok) console.warn("Resend refused the confirmation email:", res.status);
   } catch (e) {

@@ -404,7 +404,11 @@ Object.assign(window,{LearnArticleScreen,GenArticleScreen});
    winemaking, food and age change it (GrapeInfo in pwa-grape-learning.js). */
 const _SKIN_LABEL={red:'Red-skinned',white:'White-skinned',pink:'Pink-skinned'};
 function _wrapWords(text,max){ const out=[]; let line=''; String(text).split(' ').forEach(w=>{ if((line+' '+w).trim().length>max&&line){ out.push(line); line=w; } else line=(line+' '+w).trim(); }); if(line) out.push(line); return out; }
-function GrapeSketch({info}){
+/* `notes` replaces the callouts (the reveal writes two: skin and bunch); `ink` is the pen's colour
+   (a light one on the reveal's dark stage, where it's drawn straight onto the background); `animate` draws it in:
+   the berries pop in one by one, then each arrow draws and its words appear (the reveal's
+   rv-pop, rv-draw and rv-in classes; on the grape page it stands still). */
+function GrapeSketch({info,notes:givenNotes,animate=false,ink=SKETCH_INK}){
   const {n,fill}=GrapeInfo.sketch(info.look);
   const L=KnowledgeMap.bunchSlots(n,{fill,seed:info.name});
   const W=340, H=260, BW=150, TOP=46;
@@ -412,20 +416,23 @@ function GrapeSketch({info}){
   const rnd=KnowledgeMap._rng('look'+info.name);
   const berries=[...L.slots].map((p,i)=>({...p,i,green:info.look.uneven&&rnd()<0.35,ripe:rnd()<0.3})).sort((a,b)=>a.y-b.y);
   const wash=b=>b.green?SKETCH_WASH.green:info.look.russet&&b.i%2?SKETCH_WASH.russet:null;
-  const notes=[_SKIN_LABEL[info.skin],...(info.look.notes||[])].slice(0,4);
+  const notes=givenNotes||[_SKIN_LABEL[info.skin],...(info.look.notes||[])].slice(0,4);
+  const berryDelay=i=>animate?{animationDelay:`${(0.2+i*0.07).toFixed(2)}s`}:undefined, noteAt=i=>0.4+berries.length*0.07+i*0.9;
   const ys=notes.map((_,i)=>TOP+18+i*((H-TOP-30)/Math.max(1,notes.length)));
   const edge=y=>{ const near=L.slots.filter(p=>Math.abs(TOP+k+p.y*k-y)<k*1.4); const p=near.length?near.reduce((a,b)=>b.x>a.x?b:a):L.slots[0]; return [x0+p.x*k+k*0.9,TOP+k+p.y*k]; };
   return(
     <svg viewBox={`0 0 ${W} ${H}`} width="100%" role="img" aria-label={`Sketch of ${info.name}: ${notes.join('; ')}.`} data-testid="grape-sketch" style={{display:'block',maxWidth:460,margin:'0 auto',overflow:'visible'}}>
-      <SketchVine x={x0} y={TOP-k*0.2} s={1.5} leafRed={info.look.leaf==='red'}/>
-      {berries.map(b=><g key={b.i} transform={`translate(${(x0+b.x*k).toFixed(1)} ${(TOP+k+b.y*k).toFixed(1)}) scale(${k.toFixed(2)})`}>
-        <SketchBerry seed={info.name+b.i} skin={info.skin} state={b.ripe?'ripe':'grow'} wash={wash(b)}/>
+      <SketchVine x={x0} y={TOP-k*0.2} s={1.5} leafRed={info.look.leaf==='red'} ink={ink}/>
+      {berries.map((b,j)=><g key={b.i} transform={`translate(${(x0+b.x*k).toFixed(1)} ${(TOP+k+b.y*k).toFixed(1)})`}>
+        <g className={animate?'rv-pop':undefined} style={berryDelay(j)}><g transform={`scale(${k.toFixed(2)})`}>
+          <SketchBerry seed={info.name+b.i} skin={info.skin} state={b.ripe?'ripe':'grow'} wash={wash(b)} ink={ink}/>
+        </g></g>
       </g>)}
       {notes.map((t,i)=>{ const [ex,ey]=edge(ys[i]), tx=196, lines=_wrapWords(t,22);
         return <g key={i}>
-          <path d={`M${tx-6} ${ys[i]-4} Q ${(tx+ex)/2} ${ys[i]-10} ${ex+2} ${ey}`} fill="none" stroke={SKETCH_INK} strokeWidth="0.8" opacity="0.7"/>
-          <circle cx={ex+2} cy={ey} r="1.6" fill={SKETCH_INK}/>
-          <text x={tx} y={ys[i]} style={{fontSize:'12px',fill:SKETCH_INK,fontFamily:C.P}}>
+          <path d={`M${tx-6} ${ys[i]-4} Q ${(tx+ex)/2} ${ys[i]-10} ${ex+2} ${ey}`} fill="none" stroke={ink} strokeWidth="0.8" opacity="0.7" pathLength="1" className={animate?'rv-draw':undefined} style={animate?{animationDelay:`${noteAt(i)}s`}:undefined}/>
+          <circle cx={ex+2} cy={ey} r="1.6" fill={ink} className={animate?'rv-in':undefined} style={animate?{animationDelay:`${noteAt(i)+0.5}s`}:undefined}/>
+          <text x={tx} y={ys[i]} className={animate?'rv-in':undefined} style={{fontSize:'12px',fill:ink,fontFamily:C.P,...(animate?{animationDelay:`${noteAt(i)+0.2}s`}:{})}}>
             {lines.map((l,j)=><tspan key={j} x={tx} dy={j?15:0}>{l}</tspan>)}
           </text>
         </g>; })}
