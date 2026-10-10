@@ -131,6 +131,8 @@ test('the Price tab shows the bottle at Winebuyers with Buy, through /go with Aw
   await expect(card).toContainText('£159');
   await expect(card).toContainText('£150');
   await expect(card.getByText('Partner', { exact: true })).toBeVisible();
+  // The partner's bottle leads the tab, and the shops the price search found aren't listed beside it.
+  await expect(root).not.toContainText('In shops now');
   // With the bottle found at Winebuyers, a second button to Winebuyers' search would only repeat it.
   await expect(root.getByText('Find it at Winebuyers', { exact: true })).toHaveCount(0);
   await expect(root.getByText('Partner', { exact: true })).toHaveCount(1);

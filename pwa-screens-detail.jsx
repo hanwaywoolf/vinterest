@@ -644,7 +644,8 @@ const REGION_CURRENCY = {
    Money never moves a match: it's only here, on the Price tab. */
 function ShopBottle({wine,onShop}){
   const [d,setD]=React.useState(null);
-  React.useEffect(()=>{ let live=true; setD(null); onShop&&onShop(null); Shops.match(wine).then(r=>{ if(live){ setD(r); onShop&&onShop(r?r.shop.name:null); } }); return()=>{ live=false; }; },[wine&&wine.name,wine&&wine.producer,wine&&wine.vintage]);
+  // onShop: 'pending' while it looks, then the shop's name or null.
+  React.useEffect(()=>{ let live=true; setD(null); onShop&&onShop('pending'); Shops.match(wine).then(r=>{ if(live){ setD(r); onShop&&onShop(r?r.shop.name:null); } }).catch(()=>{ if(live){ setD(null); onShop&&onShop(null); } }); return()=>{ live=false; }; },[wine&&wine.name,wine&&wine.producer,wine&&wine.vintage]);
   if(!d) return null;
   const shop=d.shop.name, first=d.exact||d.others[0], rest=d.exact?d.others:d.others.slice(1);
   const buy=(it)=>Shops.go(Shops.link(it.url,'buy').url);
@@ -781,8 +782,12 @@ function DetailPrice({wine,nav,showPro}){
   const listings=Shops.listings(priceData,'listing');
   // When the card above found the bottle itself at the very shop "Find it for me" would search,
   // its Buy button is the way there; a second button to the same shop's search only repeats it.
-  const [bottleShop,setBottleShop]=React.useState(null);
-  const findShown=!(bottleShop&&wine&&FindOnline.target(wine).name===bottleShop);
+  // Which partner shop has the bottle itself (ShopBottle): 'pending' while it looks. While a partner
+  // has it, its card leads the tab and the other shops the search found aren't listed: the sale
+  // goes to the partner (the match, verdict and suggestions never change for it).
+  const [bottleShop,setBottleShop]=React.useState('pending');
+  const partnerHasIt=!!bottleShop;
+  const findShown=!(bottleShop&&bottleShop!=='pending'&&wine&&FindOnline.target(wine).name===bottleShop);
 
   const hasPrice = priceData && priceData.mid != null;
 
@@ -845,9 +850,11 @@ function DetailPrice({wine,nav,showPro}){
             </div>
           )}
 
+          <ShopBottle wine={wine} onShop={setBottleShop}/>
+
           {/* Where the live search found it: real listings only (the Worker keeps a shop only if the
-              search returned its page). Partner shops are labelled. */}
-          {listings.length>0&&(
+              search returned its page), and only when no partner has the bottle itself above. */}
+          {listings.length>0&&!partnerHasIt&&(
             <div>
               <SL label="In shops now"/>
               <Card style={{padding:0,overflow:'hidden'}}>
@@ -863,7 +870,6 @@ function DetailPrice({wine,nav,showPro}){
             </div>
           )}
 
-          <ShopBottle wine={wine} onShop={setBottleShop}/>
           <LcboStock wine={wine} nav={nav} fmtPrice={fmtPrice}/>
 
           {/* Find it for me (Restock for a wine they'd buy again) */}
