@@ -1084,9 +1084,6 @@ function WineDNAScreen({nav,back,showPro}){
           More of your WineDNA appears here as you learn. <span role="button" onClick={()=>DetailLevel.setShowAll(true)} style={{color:C.cr,fontWeight:700,cursor:'pointer'}}>Show all details</span>
         </div>}
 
-        {/* ── Data Backup ── */}
-        <DataBackupCard padding={14}/>
-
         {/* App version */}
         <div style={{textAlign:'center',padding:'12px 0 4px',opacity:0.45}}>
           <span style={{fontSize:13,color:C.mid,fontFamily:C.P}}>Vinterest v{__APP_VERSION__}</span>

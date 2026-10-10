@@ -45,7 +45,7 @@ function useScanContent(wine,match){
       'Wine: '+(w.name||'')+(w.vintage&&w.vintage!=='NV'&&w.vintage!==0?' '+w.vintage:'')+'. '+
       'Type: '+(w.type||'red')+'. Region: '+(w.region||'')+((w.sub_region)?' ('+w.sub_region+')':'')+', '+(w.country||'')+'. '+
       'Producer: '+(w.producer||'unknown')+'. '+
-      'Grapes: '+(WineDNA.grapeLine(w)||'unknown')+(w.grapes_basis==='typical'?' (not stated on the label: what this wine usually contains)':'')+'. '+
+      'Grapes: '+(WineDNA.grapeLine(w)||'unknown')+(w.grapes_basis==='typical'?' (not stated on the label: what this wine usually contains)':w.grapes_basis==='known'?' (the producer\'s known blend)':'')+'. '+
       (w.blend||(w.grapes||[]).length>1?'This is a blend: call it a blend led by its main grape, never a single-grape wine. ':'')+
       'Tasting notes: '+((w.tasting_notes||[]).join(', ')||'n/a')+'. '+
       matchFacts+' '+agingLine+' '+
@@ -183,8 +183,10 @@ function ScanCardsScreen({nav,back,showPro}){
   const confirmKey='vinterest_scan_confirmed_'+((scanData.wine&&scanData.wine.name)||'').replace(/\s/g,'_');
   const [confirmed,setConfirmed]=React.useState(()=>!!saved||!ScanFlow.needsConfirm(scanData.wine,source)||Handoff.confirmed(confirmKey));
   const [editing,setEditing]=React.useState(false);
-  // Every scan opens on the result; the deck is one tap away ("Learn about it").
-  const [view,setView]=React.useState(()=>scanData.view||'result');
+  // A fresh scan opens on the reveal (ScanReveal, pwa-reveal.jsx), then the result; coming back
+  // to the screen (from Details, say: `tracked`) or a screen that asked for a view skips it.
+  const fresh=!scanData.view&&!scanData.tracked&&(source==='camera'||source==='list')&&!_revealOff();
+  const [view,setView]=React.useState(()=>scanData.view||(fresh?'reveal':'result'));
   const deckStyle=useDeckStyle();
   const curr=React.useMemo(()=>Regional.current(),[]);
   const match=React.useMemo(()=>wine?TasteMatch.assess(wine,WineHistory.getAll()):null,[wine,ratingsVersion]);
@@ -224,11 +226,15 @@ function ScanCardsScreen({nav,back,showPro}){
     </div>;
   }
 
-  return <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden',background:C.bg}}>
-    <ScanHeader wine={wine} nav={nav} back={view==='deck'&&confirmed?()=>setView('result'):back}/>
+  const reveal=confirmed&&view==='reveal';
+  return <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden',background:reveal?'#0F0F0F':C.bg}}>
+    {!reveal&&<ScanHeader wine={wine} nav={nav} back={view==='deck'&&confirmed?()=>setView('result'):back}/>}
     {!confirmed
       ? <ConfirmGate wine={wine} onYes={confirm} onEdit={()=>setEditing(true)} nav={nav}
           onAlt={()=>applyEdit({name:wine.alternative,producer:''})}/>
+      : view==='reveal'
+        ? <ScanReveal wine={wine} match={match} gen={gen} existingRating={existingRating} nav={nav} showPro={showPro} curr={curr}
+            onDone={v=>{ if(v==='saved') setIntent('checking'); setView(v); }}/>
       : view==='deck'
         ? <CardDeck key={deckStyle} deckStyle={deckStyle} wine={wine} gen={gen} loading={loading} match={match} showPro={showPro}
             curr={curr} scanData={scanData} existingRating={existingRating} nav={nav}
@@ -272,22 +278,26 @@ function FirstScanStory({wine,onDone}){
   const deckStyle=useDeckStyle();
   const intent=v=>{ const e=WineHistory.find(wine); if(e) WineHistory.setScanIntent(e.name,e.vintage,v); };
   const [scoredAlready]=React.useState(()=>(WineHistory.find(wine)||{}).rating||0);
-  return <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden',background:C.bg,paddingTop:'env(safe-area-inset-top)'}}>
-    <div style={{padding:'14px 18px 8px',flexShrink:0,display:'flex',alignItems:'flex-start',gap:12}}>
+  const revealing=!_revealOff();
+  return <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden',background:revealing?'#0F0F0F':C.bg,paddingTop:revealing?0:'env(safe-area-inset-top)'}}>
+    {!revealing&&<div style={{padding:'14px 18px 8px',flexShrink:0,display:'flex',alignItems:'flex-start',gap:12}}>
       <div style={{flex:1,minWidth:0}}>
         <div style={{fontSize:13,fontWeight:700,color:C.cr,fontFamily:C.P,letterSpacing:'0.08em',textTransform:'uppercase'}}>Your first bottle</div>
         <div style={{fontSize:20,fontWeight:800,color:C.ink,fontFamily:C.P,lineHeight:1.2,marginTop:2}}>{wine.name}</div>
         <div style={{fontSize:14,color:C.mid,fontFamily:C.P,marginTop:2}}>Here's its story, and what Vinterest will do with every bottle after it.</div>
       </div>
       <span onClick={onDone} role="button" style={{fontSize:15,fontWeight:600,color:C.mid,fontFamily:C.P,cursor:'pointer',paddingTop:2}}>Skip</span>
-    </div>
+    </div>}
     {/* Coming back from the questions, the bottle is already scored: the deck shows that score
         rather than asking again beside a meter that already counts it. */}
-    <CardDeck key={deckStyle} deckStyle={deckStyle} wine={wine} gen={gen} loading={loading} match={match} curr={curr} scanData={{}} existingRating={scoredAlready}
+    {!_revealOff()
+      ?<ScanReveal wine={wine} match={match} gen={gen} existingRating={scoredAlready} firstScan nav={()=>{}} curr={curr} onFinish={onDone}
+          onRated={()=>{ intent('tasted'); setVer(v=>v+1); }} onSaveForLater={()=>{ intent('checking'); onDone(); }}/>
+      :<CardDeck key={deckStyle} deckStyle={deckStyle} wine={wine} gen={gen} loading={loading} match={match} curr={curr} scanData={{}} existingRating={scoredAlready}
       nav={()=>{}} firstScan onFinish={onDone}
       onRated={()=>{ intent('tasted'); setVer(v=>v+1); }}
       onSaveForLater={()=>{ intent('checking'); onDone(); }}
-      onBlindCall={()=>intent('tasting')}/>
+      onBlindCall={()=>intent('tasting')}/>}
     <ScanStyles/>
   </div>;
 }
@@ -400,10 +410,10 @@ function ScanResult({wine,match,curr,scanData,existingRating,nav,showPro,view,se
         <div style={{flex:1,minWidth:0}}>
           <div style={{fontSize:20,fontWeight:800,color:match&&match.pct!=null?col:C.ink,fontFamily:C.P,lineHeight:1.2}}>{match?match.label:'—'}</div>
           {match&&match.expected!=null
-            ?<div style={{fontSize:15,color:C.mid,fontFamily:C.P,marginTop:3}}>{existingRating>0?`We predicted ${match.expected} · you scored ${existingRating}`:`Likely ${match.expectedLabel} for you`}</div>
+            ?<div style={{fontSize:15,color:C.mid,fontFamily:C.P,marginTop:3}}>{existingRating>0?`We expected about ${match.expected} · you scored ${existingRating}`:`Likely about ${match.expected} from you · ${match.expectedLabel}`}</div>
             :match&&match.verdict==='early'?null
             :<div style={{fontSize:15,color:C.mid,fontFamily:C.P,marginTop:3,lineHeight:1.45}}>{match&&match.summary}</div>}
-          {match&&match.expected!=null&&match.chance!=null&&!(existingRating>0)&&<div style={{fontSize:13,color:C.mid,fontFamily:C.P,marginTop:2}}>You've loved {match.chance}% of wines like it</div>}
+          {match&&match.expected!=null&&match.bar!=null&&!(existingRating>0)&&<div style={{fontSize:13,color:C.mid,fontFamily:C.P,marginTop:2}}>{match.pct}% sure you'd score it {match.bar}+, your usual for {match.breakdownLabel}</div>}
           {match&&match.confidence==='low'&&<div style={{fontSize:13,color:C.mid,fontFamily:C.P,marginTop:2}}>Rough guess</div>}
         </div>
       </div>
@@ -568,7 +578,7 @@ function CardFace({card,ctx}){
     return <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:14,textAlign:'center'}}>
       <MatchRing match={match} size={150}/>
       <H>{match?match.label:'—'}</H>
-      {match&&match.expected!=null&&<div style={{fontSize:16,color:C.mid,fontFamily:P,marginTop:-6}}>Likely {match.expectedLabel} for you</div>}
+      {match&&match.expected!=null&&<div style={{fontSize:16,color:C.mid,fontFamily:P,marginTop:-6}}>Likely about {match.expected} from you · {match.expectedLabel}</div>}
       <div style={{width:'100%',textAlign:'left',padding:'12px 14px',borderRadius:12,background:C.offWhite,border:`1px solid ${C.line}`}}>
         <div style={{fontSize:13,fontWeight:700,color:C.mid,fontFamily:P,letterSpacing:'0.06em',textTransform:'uppercase',marginBottom:6}}>How we got this</div>
         <MatchReasons match={match} col={C.ink2} brief={!expanded}/>
@@ -688,15 +698,13 @@ function TasteCues({wine,accent}){
 }
 
 /* ── Blind Call ── */
-const DIM_LABEL={body:'Body',acidity:'Acidity',tannins:'Tannins',texture:'Texture'};
-const DIM_LO={body:'Light',acidity:'Mellow',tannins:'Silky',texture:'Crisp & steely'};
-const DIM_HI={body:'Full',acidity:'Zingy',tannins:'Grippy',texture:'Rich & creamy'};
+const DIM_LABEL={body:'Body',acidity:'Acidity',tannins:'Tannins',texture:'Texture',effervescence:'Bubbles'};
+const DIM_LO={body:'Light',acidity:'Mellow',tannins:'Silky',texture:'Crisp & steely',effervescence:'Soft & delicate'};
+const DIM_HI={body:'Full',acidity:'Zingy',tannins:'Grippy',texture:'Rich & creamy',effervescence:'Lively & persistent'};
 const DIM_CONCEPT={tannins:'tannin_source',acidity:'acidity_and_food',texture:'oak_influence'};
-function dimsFor(wine){
-  const type=(wine.type||'red').toLowerCase().replace('é','e');
-  const showTannins=['red','orange','fortified'].includes(type);
-  return showTannins?['body','acidity','tannins']:['body','acidity','texture'];
-}
+/* The traits to call: the same ones the wine's own screen shows for its type, and only those the
+   label gave a figure for (ScanFlow.compareAxes), so every call is scored against the label. */
+function dimsFor(wine){ return ScanFlow.compareAxes(wine); }
 
 function BlindCallCard({wine,gen,accent,onStart}){
   const [phase,setPhase]=React.useState(()=>ScanFlow.blindPlayed(wine)?'summary':'predict');
@@ -719,6 +727,7 @@ function BlindCallCard({wine,gen,accent,onStart}){
     setPhase('result');
   }
 
+  if(phase==='predict'&&!dims.length) return <div style={{fontSize:15,color:C.mid,fontFamily:C.P,lineHeight:1.5}}>The label didn't tell us enough about this wine's style to play Blind Call on it.</div>;
   if(phase==='predict') return <BlindCallPredict dims={dims} col={_typeCol(wine)} onSubmit={g=>{setGuess(g);setPhase('reveal');if(onStart) onStart();}}/>;
   if(phase==='reveal') return <BlindCallReveal wine={wine} dims={dims} guess={guess} col={_typeCol(wine)} onDone={finalizeReveal}/>;
   if(phase==='result') return <>
@@ -755,7 +764,7 @@ function BlindCallPredict({dims,col,onSubmit}){
 }
 
 function BlindCallReveal({wine,dims,guess,col,onDone}){
-  const deltas=dims.map(d=>Math.abs(guess[d]-(wine[d]??0.5)));
+  const deltas=dims.map(d=>Math.abs(guess[d]-wine[d]));
   const avgDelta=deltas.reduce((s,x)=>s+x,0)/deltas.length;
   const accuracy=Math.max(0,1-avgDelta*1.6);
   const missed=dims.filter((d,i)=>deltas[i]>0.22);
@@ -763,7 +772,7 @@ function BlindCallReveal({wine,dims,guess,col,onDone}){
     <div style={{fontSize:24,fontWeight:800,color:C.ink,fontFamily:C.P,lineHeight:1.2,letterSpacing:'-0.01em'}}>How you called it</div>
     <div style={{display:'flex',flexDirection:'column',gap:20}}>
       {dims.map(d=>{
-        const g=guess[d],act=wine[d]??0.5;
+        const g=guess[d],act=wine[d];
         return <div key={d}>
           <div style={{fontSize:14,fontWeight:700,color:C.ink,fontFamily:C.P,marginBottom:8}}>{DIM_LABEL[d]}</div>
           <div style={{position:'relative',height:8,borderRadius:4,background:C.line}}>

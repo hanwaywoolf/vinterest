@@ -9,7 +9,7 @@
 
    Most demos are "the screen, scrolled": update(p) glides the screen's own scroll container. Some
    also do what a visitor would with a finger, by clicking the real controls at the right moment
-   (opening "Why 87%?", turning a deck card, sliding the score) and are undone or redone as p moves
+   (opening "Why N%?", turning a deck card, sliding the score) and are undone or redone as p moves
    back and forth. The Vinny demo types a question and answer instead, from what Vinny really said
    (data/onboarding-sample.json). */
 

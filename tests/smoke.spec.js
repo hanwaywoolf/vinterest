@@ -40,7 +40,7 @@ test('Home, Learn and Wine DNA render with no console errors', async ({ page }) 
 
   await tab(page, 'WineDNA').click();
   await expect(root).toContainText('Your WineDNA');
-  await expect(root).toContainText('Data Backup');
+  await expect(root).not.toContainText('Data Backup'); // backup is Profile's sign-in now, not a file card here
   await expect(root).toContainText(`Vinterest v${pkg.version}`);
 
   await tab(page, 'Home').click();

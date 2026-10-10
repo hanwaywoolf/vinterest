@@ -33,7 +33,7 @@ try {
     // Slide 1: the scan result for the bottle they point the camera at.
     const m = TasteMatch.assess(u.scanned, wines);
     const good = m.reasons.find((r) => r.tone === 'good'), bad = m.reasons.find((r) => r.tone === 'bad');
-    const match = { pct: m.pct, tone: m.tone, label: m.label, expected: m.expected, expectedLabel: m.expectedLabel, chance: m.chance,
+    const match = { pct: m.pct, tone: m.tone, label: m.label, expected: m.expected, expectedLabel: m.expectedLabel, bar: m.bar, sd: m.sd,
       reasons: [good, bad].filter(Boolean).map((r) => ({ tone: r.tone, text: r.text })) };
     // Slide 2: the WineDNA tab for reds, as the screen reads it from WineDNA.profile.
     const fav = p.favourites;
