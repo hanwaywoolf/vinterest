@@ -663,8 +663,6 @@ function CardFace({card,ctx}){ const T=useTheme();
 
   if(card.kind==='next'){
     return <div style={{display:'flex',flexDirection:'column',gap:12}}>
-      <H>Next from here</H>
-      {match&&match.breakdown&&match.breakdown.closest&&<Body>{match.breakdown.closest}</Body>}
       <KeepLearning wine={wine} nav={ctx.nav||(()=>{})} showPro={ctx.showPro} reveal intro="Quizzes and articles this bottle opened, from your WineDNA."/>
     </div>;
   }
@@ -889,17 +887,18 @@ function RatingDial({min,max=100,value,unset=false,onChange,col=C.cr,label='Rati
       <defs><linearGradient id={gid} gradientUnits="userSpaceOnUse" x1={x0} y1="0" x2={x1} y2="0">
         {stops.map(([x,c],i)=><stop key={i} offset={((x-x0)/(x1-x0)).toFixed(3)} stopColor={c}/>)}
       </linearGradient></defs>
-      <path d={arc(A0,135)} fill="none" stroke={`url(#${gid})`} strokeOpacity={T.dark?0.22:0.18} strokeWidth="11" strokeLinecap="round"/>
-      {!unset&&frac>0&&<path d={arc(A0,deg)} fill="none" stroke={`url(#${gid})`} strokeWidth="11" strokeLinecap="round"/>}
-      {[70,80,90].map(p=>{ const a=A0+(p-min)/(max-min)*SWEEP, [tx,ty]=pt(a,r+16);
-        return <text key={p} x={tx} y={ty+3} textAnchor="middle" style={{fontSize:'9.5px',fontWeight:700,fontFamily:C.P,fill:T.mid}} aria-hidden="true">{String(p).replace(/^(\d)(\d)$/,'$1\u2009$2')}</text>; })}
-      <circle cx={kx} cy={ky} r="11" fill={T.card} stroke={bandCol} strokeWidth="3.5" style={{filter:'drop-shadow(0 1px 3px rgba(0,0,0,0.35))'}}/>
+      <path d={arc(A0,135)} fill="none" stroke={`url(#${gid})`} strokeOpacity={T.dark?0.2:0.16} strokeWidth="8" strokeLinecap="round"/>
+      {!unset&&frac>0&&<path d={arc(A0,deg)} fill="none" stroke={`url(#${gid})`} strokeWidth="8" strokeLinecap="round"/>}
+      {[80,90].map(p=>{ const a=A0+(p-min)/(max-min)*SWEEP, [x0,y0]=pt(a,r+8), [x1,y1]=pt(a,r+12);
+        return <line key={p} x1={x0} y1={y0} x2={x1} y2={y1} stroke={T.mid} strokeOpacity="0.6" strokeWidth="1.5" strokeLinecap="round"/>; })}
+      <circle cx={kx} cy={ky} r="9" fill={bandCol} stroke={T.card} strokeWidth="3" style={{filter:'drop-shadow(0 1px 3px rgba(0,0,0,0.35))'}}/>
     </svg>
-    <div style={{position:'absolute',left:0,right:0,top:'40%',transform:'translateY(-42%)',textAlign:'center',pointerEvents:'none',fontFamily:C.P}}>
+    {/* The rating sits on the arc's centre (cy of the 200×180 drawing). */}
+    <div style={{position:'absolute',left:0,right:0,top:`${(cy/(S*0.9))*100}%`,transform:'translateY(-50%)',textAlign:'center',pointerEvents:'none',fontFamily:C.P}}>
       {unset
-        ?<div style={{fontSize:'14px',fontWeight:600,color:T.mid,lineHeight:1.3,padding:'0 52px'}}>Turn the dial or tap a rating</div>
-        :<><div style={{fontSize:'50px',fontWeight:800,color:bandCol,lineHeight:1,letterSpacing:'-0.02em'}}>{value}</div>
-          <div style={{fontSize:'13px',fontWeight:700,color:bandCol,marginTop:6,letterSpacing:'0.04em',textTransform:'uppercase'}}>{lab}</div></>}
+        ?<div style={{fontSize:'14px',fontWeight:600,color:T.mid,lineHeight:1.3,padding:'0 56px'}}>Turn the dial or tap a rating</div>
+        :<><div style={{fontSize:'58px',fontWeight:800,color:bandCol,lineHeight:1,letterSpacing:'-0.03em'}}>{value}</div>
+          <div style={{fontSize:'12px',fontWeight:700,color:T.mid,marginTop:6,letterSpacing:'0.1em',textTransform:'uppercase'}}>{lab}</div></>}
     </div>
   </div>;
 }
