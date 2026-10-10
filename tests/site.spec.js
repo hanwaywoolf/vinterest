@@ -47,10 +47,10 @@ test.describe('desktop', () => {
     page.on('pageerror', (e) => errors.push(`pageerror: ${e.message}`));
     await page.goto(BASE + '/');
     await expect(page.locator('h1')).toContainText("Find wines you'll love. Learn while you sip");
+    // The first tile is the scan story: the label first, then the match a few seconds in.
     const hero = page.locator('.hero .phone-app');
     await expect(hero).toContainText('Crozes-Hermitage 2021');
-    await expect(hero).toContainText(`${SAMPLE_MATCH.pct}%`);
-    await expect(hero).toContainText(SAMPLE_MATCH.label);
+    await expect(hero).toContainText(`${SAMPLE_MATCH.pct}%`, { timeout: 10000 });
     expect(errors).toEqual([]);
   });
 
@@ -85,7 +85,7 @@ test.describe('desktop', () => {
 
   test('the front page is a carousel of the app that turns by itself until someone touches it', async ({ page }) => {
     await page.goto(BASE + '/?speed=8');
-    await expect(page.locator('.hero .stage .cap')).toHaveText("Scan a bottle. See if it's for you.");
+    await expect(page.locator('.hero .stage .cap')).toHaveText('Scan a bottle. Get its story.');
     await expect(page.locator('.hero .stage .cap')).toHaveText('Every bottle builds your WineDNA.', { timeout: 6000 });
     await expect(page.locator('.hero .phone-app')).toContainText('WineDNA');
     await page.locator('.hero .arrow.next').click();

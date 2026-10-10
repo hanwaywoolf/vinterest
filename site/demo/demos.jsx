@@ -283,13 +283,18 @@ const _DEMO_SCREENS = {
   ] },
   // The front page's carousel: one screen for each thing the app does.
   hero: { nav: 'scan', layers: [
-    { id: 'scan', nav: 'scan', Screen: ScanCardsScreen, setup() { _openScan('result'); } },
+    // The scan story, as a fresh scan plays it. The app saves a scanned wine, which would add a bottle to the WineDNA beside it: take it back out.
+    { id: 'scan', nav: 'scan', Screen: ScanCardsScreen, setup() {
+      _openScan(undefined, false, true);
+      const w = DemoPersona.user.scanned;
+      setTimeout(() => { try { WineHistory.remove(w.name, w.vintage); } catch (e) { /* the bottle stays */ } }, 700);
+    } },
     { id: 'dna', nav: 'profile', Screen: WineDNAScreen },
     { id: 'vinny', nav: 'home', Screen: _VinnyScreen },
     { id: 'article', nav: 'learn', Screen: GenArticleScreen, setup() { Handoff.genArticle.set(_articleStub()); } },
     { id: 'wines', nav: 'mywines', Screen: MyWinesScreen },
   ], steps: [
-    { at: 0, layer: 'scan', to: 'top', drift: 0.4, ms: 6000 },
+    { at: 0, layer: 'scan', do: [{ story: 2800 }] },
     { at: 0.2, layer: 'dna', to: 'top', drift: 0.5, ms: 7000 },
     { at: 0.4, layer: 'vinny', do: [{ vinny: true }] },
     { at: 0.6, layer: 'article', to: 'top', drift: 0.6, ms: 9000 },
@@ -299,7 +304,7 @@ const _DEMO_SCREENS = {
 
 /* One layer of a demo: its screen, set up (what it reads from the handoff) just before it renders, and
    faded in when it's the one being shown. */
-function _Layer({ l, active }) {
+function _Layer({ l, active }) {  // remounted (key) to play its screen again
   React.useMemo(() => { if (l.setup) l.setup(); }, []);
   const S = l.Screen;
   return <div data-layer={l.id} style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', background: C.bg,
@@ -312,13 +317,15 @@ function _DemoFrame({ kind, ctl }) {
   const d = _DEMO_SCREENS[kind];
   const Screen = d.Screen;
   const [layer, setLayer] = React.useState(ctl.layer);
+  const [bumps, setBumps] = React.useState({});
   ctl.setLayer = (id) => { ctl.layer = id; setLayer(id); };
+  ctl.restart = (id) => setBumps((b) => ({ ...b, [id]: (b[id] || 0) + 1 }));
   const cur = d.layers && d.layers.find((l) => l.id === layer);
   return <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', background: C.bg, fontFamily: C.P, position: 'relative' }}>
     {/* Where the app's full-screen overlays (the Blind Call result) are drawn, so they cover the phone, not the page. */}
     <div data-portal style={{ position: 'absolute', inset: 0, transform: 'translateZ(0)', pointerEvents: 'none', zIndex: 60 }} />
     {d.layers
-      ? <div style={{ flex: 1, minHeight: 0, position: 'relative' }}>{d.layers.map((l) => <_Layer key={l.id} l={l} active={layer === l.id} />)}</div>
+      ? <div style={{ flex: 1, minHeight: 0, position: 'relative' }}>{d.layers.map((l) => <_Layer key={l.id + ':' + (bumps[l.id] || 0)} l={l} active={layer === l.id} />)}</div>
       : <Screen nav={_DEMO_NOOP} back={_DEMO_NOOP} showPro={_DEMO_NOOP} isTablet={false} />}
     <BottomNav active={(cur && cur.nav) || d.nav} nav={_DEMO_NOOP} showPro={_DEMO_NOOP} />
   </div>;
@@ -472,12 +479,25 @@ const VinterestDemo = {
     };
     const enterStep = (k) => {
       const st = d.steps[k];
+      const again = stepAt !== -1 && (st.do || []).some((a) => a.story);   // coming back round: play the story from its first scene
       stopAll();
       stepAt = k;
+      if (again && ctl.restart) ctl.restart(st.layer);
       if (ctl.setLayer && st.layer) ctl.setLayer(st.layer);
       (st.do || []).forEach((a) => {
         const root = layerEl(a.layer);
-        if (a.type) typeInto(root, a.type[0], a.type[1]);
+        if (a.story) {
+          // The scan story, a scene every a.story ms: held on one scene and turned by a swipe, as the Scan section does.
+          const go = (n) => {
+            const st2 = root.querySelector('.rv-stage');
+            if (!st2 || root.querySelector('[data-testid="reveal-tips"]')) return later(() => go(n - 1), 150);
+            if (!root.querySelector('[data-testid="reveal-paused"]')) { rvTouchIn(root, 0); return later(() => go(n - 1), 150); }
+            const sc = root.querySelector('[data-testid="reveal-scene"]');
+            if (sc && sc.getAttribute('data-scene') === 'end') return;
+            later(() => { rvTouchIn(root, -140); go(1); }, a.story);
+          };
+          later(() => go(60), 400);
+        } else if (a.type) typeInto(root, a.type[0], a.type[1]);
         else if (a.open) [].concat(a.open).forEach((sel) => live.push(_until(() => { const t = root.querySelector(sel + ' [role="button"]'); if (!t) return false; t.click(); return true; }, 40)));
         else if (a.vinny) {
           const t0 = performance.now(), MS = 9000;
@@ -538,13 +558,14 @@ const VinterestDemo = {
     ['pointerdown', 'pointerup'].forEach((t) => el.addEventListener(t, (e) => { if (e.__rv) e.stopPropagation(); }));
     const rvStage = () => el.querySelector('.rv-stage');
     const rvScene = () => { const n = el.querySelector('[data-testid="reveal-scene"]'); return n ? n.getAttribute('data-scene') : (el.querySelector('[data-testid="reveal-sheet"]') || _findText(el, /^Rate it$/) ? 'end' : null); };
-    const rvTouch = (dx) => {
-      const st = rvStage(); if (!st) return false;
+    const rvTouchIn = (root, dx) => {
+      const st = root.querySelector('.rv-stage'); if (!st) return false;
       const r = st.getBoundingClientRect(), x = r.left + r.width / 2, y = r.top + r.height / 2;
       const ev = (t, cx) => { const e = new PointerEvent(t, { bubbles: true, cancelable: true, pointerId: 1, pointerType: 'touch', isPrimary: true, button: 0, clientX: cx, clientY: y }); e.__rv = true; st.dispatchEvent(e); };
       ev('pointerdown', x); ev('pointerup', x + dx);
       return true;
     };
+    const rvTouch = (dx) => rvTouchIn(el, dx);
     const rvTo = (i) => {
       const token = ++rvToken, want = RV_KEYS[Math.max(0, Math.min(RV_KEYS.length - 1, i))];
       (function step(n) {
