@@ -4,7 +4,8 @@
 // commit), so the service account key never passes through a third-party action. No dependencies:
 // the OAuth token comes from a JWT signed here with the key (node:crypto).
 //   PLAY_TRACK           internal (default), alpha, beta or production
-//   PLAY_RELEASE_STATUS  draft (default) or completed. A new app accepts only drafts until its first
+//   PLAY_RELEASE_STATUS  completed (default: the first release was rolled out by hand on 10 Oct 2026, so
+//                        every upload now goes straight to testers) or draft. A new app accepts only drafts until its first
 //                        release has been rolled out by hand in Play Console (docs/google-play.md).
 import fs from 'node:fs';
 import crypto from 'node:crypto';
@@ -32,7 +33,7 @@ export async function accessToken(account, fetchFn = fetch) {
 }
 
 /* One edit: upload the bundle, release it on the track, commit. Returns the uploaded versionCode. */
-export async function upload({ account, bundle, track = 'internal', status = 'draft', fetchFn = fetch }) {
+export async function upload({ account, bundle, track = 'internal', status = 'completed', fetchFn = fetch }) {
   const token = await accessToken(account, fetchFn);
   const call = async (method, url, body, type = 'application/json') => {
     const res = await fetchFn(url, { method, headers: { authorization: `Bearer ${token}`, 'content-type': type }, body });
@@ -58,7 +59,7 @@ if (process.argv[1] && new URL(import.meta.url).pathname === fs.realpathSync(pro
   try { account = JSON.parse(process.env.PLAY_SERVICE_ACCOUNT_JSON || ''); } catch (e) {
     console.error('PLAY_SERVICE_ACCOUNT_JSON is missing or not the JSON key file Google gave you.'); process.exit(1);
   }
-  const track = process.env.PLAY_TRACK || 'internal', status = process.env.PLAY_RELEASE_STATUS || 'draft';
+  const track = process.env.PLAY_TRACK || 'internal', status = process.env.PLAY_RELEASE_STATUS || 'completed';
   try {
     const vc = await upload({ account, bundle: fs.readFileSync(file), track, status });
     console.log(`Uploaded ${PACKAGE} versionCode ${vc} to the ${track} track (${status}).`);

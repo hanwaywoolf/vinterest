@@ -94,10 +94,10 @@ So every push to `main` reaches testers without the manual upload:
 4. GitHub secret `PLAY_SERVICE_ACCOUNT_JSON`: the whole contents of the `.json` file. Then delete
    the downloaded file.
 
-Uploads go to the internal track as **drafts** by default, because Google refuses anything else
-until the app's first release has been rolled out by hand (step 3). Once it has, add the GitHub
-**variable** (not secret) `PLAY_RELEASE_STATUS` = `completed`, and each build goes straight to
-testers. `PLAY_TRACK` (variable) picks another track: `alpha` (closed testing), `beta` (open),
+Uploads go to the internal track as **completed** releases, straight to testers, since the first
+release was rolled out by hand (step 3; Google refuses anything but drafts before that). To hold a
+build back as a draft instead, set the GitHub **variable** (not secret) `PLAY_RELEASE_STATUS` =
+`draft`. `PLAY_TRACK` (variable) picks another track: `alpha` (closed testing), `beta` (open),
 `production`.
 
 ## Version numbers
@@ -113,8 +113,8 @@ numbers too.
 - *Google Play (403): The caller does not have permission*: the service account hasn't been
   invited in Play Console (step 4.3), or the invite has no permission for this app.
 - *Package not found: app.vinterest*: the first bundle hasn't been uploaded by hand (step 3).
-- *Only releases with status draft may be created on draft app*: leave `PLAY_RELEASE_STATUS`
-  unset until the first release has been rolled out.
+- *Only releases with status draft may be created on draft app*: set the variable `PLAY_RELEASE_STATUS`
+  to `draft` until the first release has been rolled out by hand.
 - *Version code N has already been used*: run the workflow again (the number goes up).
 - *The Android App Bundle was signed with the wrong key*: the upload key in GitHub isn't the one
   Play has. Use the original, or reset the upload key in Play Console → Setup → App signing.

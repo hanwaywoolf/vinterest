@@ -197,7 +197,7 @@ test('the Google Play upload signs in with the service account and makes one edi
     ['POST', `${app}/edits/E1:commit`],
   ]);
   expect(calls[1][2]).toBe('Bearer tok');
-  expect(calls[3][3]).toEqual({ track: 'internal', releases: [{ versionCodes: ['231'], status: 'draft' }] });
+  expect(calls[3][3]).toEqual({ track: 'internal', releases: [{ versionCodes: ['231'], status: 'completed' }] }); // straight to testers by default
   // Google's own words come through when it refuses.
   const refuse = async (url, opts) => url.startsWith('https://oauth2') ? json(200, { access_token: 't' }) : json(403, { error: { message: 'The caller does not have permission' } });
   await expect(upload({ account, bundle: Buffer.from('x'), fetchFn: refuse })).rejects.toThrow('Google Play (403): The caller does not have permission');
