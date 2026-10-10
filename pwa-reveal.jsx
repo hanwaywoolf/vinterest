@@ -6,10 +6,14 @@
 
    Every fact comes from ScanFlow.reveal (pwa-scan.js): the match from TasteMatch, the traits from
    the label estimate, the grape and the place from knowledge.json, the line to say from the scan
-   cards once Claude has written them. A scene without its facts isn't shown. A tap on the right
-   moves on, a tap on the left goes back, a finger held down pauses, Skip goes to the end; reduced
-   motion shows each scene finished and waits for a tap. Tests turn it off (window.VINTEREST_REVEAL
-   = 'off', helpers.stubNetwork) unless they test it. */
+   cards once Claude has written them. A scene without its facts isn't shown. Each scene stays
+   long enough to read (ScanFlow.revealLength: its words at a slow reading speed, plus time for the
+   picture). A swipe left moves on and a swipe right goes back, a tap pauses and resumes, Skip goes
+   to the end; the first couple of reveals open on a tip saying so (Flags.revealTipsDue). Scenes
+   hand over with a slide: the old one slips out and the new one slides in from the side the
+   swipe came from. Reduced motion shows each scene finished and waits for a swipe. Everything is
+   set in Poppins, nothing in italics. Tests turn it off (window.VINTEREST_REVEAL = 'off',
+   helpers.stubNetwork) unless they test it. */
 const REVEAL_CSS=`
 @keyframes rvIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
 @keyframes rvGrow{from{transform:scaleX(0)}to{transform:scaleX(1)}}
@@ -19,6 +23,11 @@ const REVEAL_CSS=`
 @keyframes rvGlow{from{opacity:0}to{opacity:1}}
 @keyframes rvSheet{from{transform:translateY(100%)}to{transform:none}}
 @keyframes rvPop{0%{opacity:0;transform:scale(.7)}70%{transform:scale(1.06)}100%{opacity:1;transform:none}}
+@keyframes rvEnterR{from{opacity:0;transform:translateX(70px) scale(.96)}to{opacity:1;transform:none}}
+@keyframes rvEnterL{from{opacity:0;transform:translateX(-70px) scale(.96)}to{opacity:1;transform:none}}
+@keyframes rvLeaveL{from{opacity:1;transform:none;filter:blur(0)}to{opacity:0;transform:translateX(-90px) scale(.94);filter:blur(6px)}}
+@keyframes rvLeaveR{from{opacity:1;transform:none;filter:blur(0)}to{opacity:0;transform:translateX(90px) scale(.94);filter:blur(6px)}}
+@keyframes rvTip{from{opacity:0}to{opacity:1}}
 .rv-stage{position:relative;overflow:hidden;background:#0F0F0F;color:#fff;user-select:none;-webkit-user-select:none;touch-action:manipulation}
 .rv-stage .rv-in{animation:rvIn .55s cubic-bezier(.2,.8,.3,1) both}
 .rv-stage .rv-bar{transform-origin:left center;animation:rvGrow .9s cubic-bezier(.3,.9,.4,1) both}
@@ -28,10 +37,27 @@ const REVEAL_CSS=`
 .rv-stage .rv-seg{transform-origin:left center;animation:rvFill linear both}
 .rv-stage.rv-paused .rv-seg,.rv-stage.rv-paused .rv-pulse{animation-play-state:paused}
 .rv-stage .rv-sheet{animation:rvSheet .45s cubic-bezier(.2,.8,.3,1) both}
+.rv-stage .rv-enter-r{animation:rvEnterR .5s cubic-bezier(.2,.8,.3,1) both}
+.rv-stage .rv-enter-l{animation:rvEnterL .5s cubic-bezier(.2,.8,.3,1) both}
+.rv-stage .rv-leave-l{animation:rvLeaveL .42s cubic-bezier(.4,0,.7,1) both;pointer-events:none}
+.rv-stage .rv-leave-r{animation:rvLeaveR .42s cubic-bezier(.4,0,.7,1) both;pointer-events:none}
+.rv-stage .rv-tip{animation:rvTip .4s ease both}
 @media (prefers-reduced-motion: reduce){.rv-stage *{animation:none!important;transition:none!important}.rv-stage .rv-seg{transform:none}}
 `;
-/* Scene lengths, ms. About fifteen seconds in all once the match is in. */
-const REVEAL_MS={label:2400,match:4200,early:3400,taste:3800,grape:3000,place:3400,say:3200};
+/* The words each scene asks someone to read, for its length (ScanFlow.revealLength). */
+function _revealWords(key,d,existingRating){
+  const i=d.identity, m=d.match;
+  switch(key){
+    case 'label': return [i.title,i.producer,i.grapes,i.region].join(' ');
+    case 'match': return m.early?`Score 3 ${m.early.many} and every one you scan comes with a match worked out from your own scores, not a critic's`
+      :[m.label,m.expectedLabel?`Likely ${m.expectedLabel} for you you've loved ${m.chance}% of wines like it`:'',existingRating>0?'You scored it we expected':'',m.pro,m.con].join(' ');
+    case 'taste': return d.traits.map(t=>t.word+' '+t.name).concat(d.notes).join(' ');
+    case 'grape': return [d.grape.name,d.grape.line,'Famous in',...d.grape.famousIn].join(' ');
+    case 'place': return [d.place.name,d.place.country,d.place.line,'Known for',...d.place.grapes].join(' ');
+    case 'say': return d.say.text;
+    default: return '';
+  }
+}
 /* Verdict colours that read on the dark stage (the result screen's _TONE_COL are for white). */
 const _RV_TONE={good:'#5FD48F',neutral:'#F2B84B',bad:'#F28B7D'};
 
@@ -39,14 +65,8 @@ function _revealOff(){ return typeof window!=='undefined'&&window.VINTEREST_REVE
 
 /* The scenes this scan has, in order. `say` joins once Claude's lines are in. */
 function _revealScenes(d,existingRating){
-  const s=[{key:'label',ms:REVEAL_MS.label}];
-  if(d.match) s.push({key:'match',ms:d.match.early?REVEAL_MS.early:REVEAL_MS.match});
-  if(d.traits.length) s.push({key:'taste',ms:REVEAL_MS.taste});
-  if(d.grape) s.push({key:'grape',ms:REVEAL_MS.grape});
-  if(d.place) s.push({key:'place',ms:REVEAL_MS.place});
-  if(d.say) s.push({key:'say',ms:REVEAL_MS.say});
-  s.push({key:'end',ms:0});
-  return s;
+  const keys=['label',d.match&&'match',d.traits.length&&'taste',d.grape&&'grape',d.place&&'place',d.say&&'say'].filter(Boolean);
+  return keys.map(key=>({key,ms:ScanFlow.revealLength(_revealWords(key,d,existingRating))})).concat([{key:'end',ms:0}]);
 }
 
 function ScanReveal({wine,match,gen,existingRating,firstScan,nav,showPro,curr,onDone,onRated,onSaveForLater,onFinish}){
@@ -54,30 +74,43 @@ function ScanReveal({wine,match,gen,existingRating,firstScan,nav,showPro,curr,on
   const scenes=React.useMemo(()=>_revealScenes(d,existingRating),[d,existingRating]);
   const [key,setKey]=React.useState('label');
   const [paused,setPaused]=React.useState(false);
+  // The first couple of reveals open on how to drive it; the stage waits underneath.
+  const [tips,setTips]=React.useState(()=>Flags.revealTipsDue());
+  React.useEffect(()=>{ if(tips) Flags.markRevealTips(); },[]);
   const idx=Math.max(0,scenes.findIndex(s=>s.key===key)), scene=scenes[idx];
   const still=_reducedMotion();
-  const go=React.useCallback(i=>{ const n=Math.max(0,Math.min(scenes.length-1,i)); setKey(scenes[n].key); },[scenes]);
+  // The scene on its way out, kept for its exit animation, and which way the change went.
+  const [leaving,setLeaving]=React.useState(null); // {key, dir}
+  const [dir,setDir]=React.useState('fwd');
+  const go=React.useCallback(i=>{
+    const n=Math.max(0,Math.min(scenes.length-1,i)); if(scenes[n].key===key) return;
+    const d=n>idx?'fwd':'back'; setDir(d); if(!still) setLeaving({key,dir:d}); setKey(scenes[n].key);
+  },[scenes,key,idx,still]);
+  React.useEffect(()=>{ if(!leaving) return; const t=setTimeout(()=>setLeaving(null),450); return()=>clearTimeout(t); },[leaving]);
   // Each scene moves on by itself unless the finger is down or motion is reduced. A pause keeps
   // what's elapsed, so a long press doesn't restart the scene.
   const elapsed=React.useRef(0), startedAt=React.useRef(0);
   React.useEffect(()=>{ elapsed.current=0; },[key]);
   React.useEffect(()=>{
-    if(!scene.ms||paused||still) return;
+    if(!scene.ms||paused||still||tips) return;
     startedAt.current=performance.now();
     const t=setTimeout(()=>go(idx+1),Math.max(50,scene.ms-elapsed.current));
     return()=>{ clearTimeout(t); elapsed.current+=performance.now()-startedAt.current; };
-  },[key,paused,scene.ms,still]);
-  // Touch: hold to pause; a short tap on the left third goes back, anywhere else moves on.
-  const hold=React.useRef(null), held=React.useRef(false);
-  const down=e=>{ if(e.target.closest('[data-rv-stop]')) return; held.current=false; hold.current=setTimeout(()=>{ held.current=true; setPaused(true); },180); };
+  },[key,paused,scene.ms,still,tips]);
+  // Touch: a swipe left moves on, a swipe right goes back (REVEAL_SWIPE px, or a quick flick); a
+  // tap pauses and resumes. A finger held down also pauses, and lets go where it was.
+  const start=React.useRef(null), hold=React.useRef(null), held=React.useRef(false);
+  const down=e=>{ if(e.target.closest('[data-rv-stop]')) return; start.current={x:e.clientX,y:e.clientY,t:performance.now()}; held.current=false; hold.current=setTimeout(()=>{ held.current=true; setPaused(true); },260); };
   const up=e=>{
-    if(e.target.closest('[data-rv-stop]')) return;
+    if(e.target.closest('[data-rv-stop]')||!start.current) return;
     clearTimeout(hold.current);
+    const dx=e.clientX-start.current.x, dy=e.clientY-start.current.y, dt=performance.now()-start.current.t; start.current=null;
+    const swipe=Math.abs(dx)>Math.abs(dy)*1.3&&(Math.abs(dx)>REVEAL_SWIPE||(Math.abs(dx)>24&&dt<220));
+    if(swipe){ if(held.current){ held.current=false; setPaused(false); } go(dx<0?idx+1:idx-1); return; }
     if(held.current){ held.current=false; setPaused(false); return; }
-    const r=e.currentTarget.getBoundingClientRect();
-    if(e.clientX-r.left<r.width*0.3) go(idx-1); else go(idx+1);
+    if(Math.abs(dx)<10&&Math.abs(dy)<10) setPaused(p=>!p);
   };
-  const cancel=()=>{ clearTimeout(hold.current); if(held.current){ held.current=false; setPaused(false); } };
+  const cancel=()=>{ clearTimeout(hold.current); start.current=null; if(held.current){ held.current=false; setPaused(false); } };
   const col=d.col;
   return <div className={`rv-stage${paused?' rv-paused':''}`} role="region" aria-label={`Your scan in ${scenes.length-1} quick steps`}
       onPointerDown={down} onPointerUp={up} onPointerCancel={cancel} onPointerLeave={cancel}
@@ -95,17 +128,53 @@ function ScanReveal({wine,match,gen,existingRating,firstScan,nav,showPro,curr,on
       <span style={{fontSize:13,fontWeight:700,color:'rgba(255,255,255,0.6)',fontFamily:C.P,letterSpacing:'0.1em',textTransform:'uppercase'}}>{firstScan?'Your first bottle':'Your scan'}</span>
       {key!=='end'&&<span role="button" data-rv-stop onClick={()=>go(scenes.length-1)} style={{fontSize:14,fontWeight:700,color:'rgba(255,255,255,0.75)',fontFamily:C.P,cursor:'pointer',padding:'6px 0 6px 12px'}}>Skip</span>}
     </div>
-    <div data-testid="reveal-scene" data-scene={key} style={{position:'relative',flex:1,display:'flex',flexDirection:'column',justifyContent:'center',padding:'20px 26px 32px',minHeight:0}}>
-      {key==='label'&&<_RvLabel d={d} col={col}/>}
-      {key==='match'&&<_RvMatch d={d} col={col} existingRating={existingRating}/>}
-      {key==='taste'&&<_RvTaste d={d} col={col}/>}
-      {key==='grape'&&<_RvGrape d={d} col={col}/>}
-      {key==='place'&&<_RvPlace d={d} col={col}/>}
-      {key==='say'&&<_RvSay d={d} col={col}/>}
+    <div style={{position:'relative',flex:1,minHeight:0}}>
+      {leaving&&<div aria-hidden="true" className={leaving.dir==='fwd'?'rv-leave-l':'rv-leave-r'} style={{position:'absolute',inset:0,display:'flex',flexDirection:'column',justifyContent:'center',padding:'20px 26px 32px'}}>
+        <_RvScene k={leaving.key} d={d} col={col} existingRating={existingRating} still/>
+      </div>}
+      <div key={key} data-testid="reveal-scene" data-scene={key} className={leaving?(dir==='fwd'?'rv-enter-r':'rv-enter-l'):undefined}
+          style={{position:'absolute',inset:0,display:'flex',flexDirection:'column',justifyContent:'center',padding:'20px 26px 32px'}}>
+        <_RvScene k={key} d={d} col={col} existingRating={existingRating}/>
+      </div>
     </div>
-    {key!=='end'&&idx===0&&<div className="rv-in" style={{position:'relative',textAlign:'center',fontSize:13,color:'rgba(255,255,255,0.45)',fontFamily:C.P,paddingBottom:'calc(14px + env(safe-area-inset-bottom))',animationDelay:'1.2s'}}>Tap to move on · hold to pause</div>}
+    {paused&&key!=='end'&&<div data-testid="reveal-paused" className="rv-in" style={{position:'absolute',left:0,right:0,bottom:'calc(18px + env(safe-area-inset-bottom))',textAlign:'center',pointerEvents:'none'}}>
+      <span style={{fontSize:13,fontWeight:700,color:'rgba(255,255,255,0.8)',fontFamily:C.P,letterSpacing:'0.1em',textTransform:'uppercase',padding:'7px 14px',borderRadius:20,background:'rgba(255,255,255,0.14)'}}>Paused · tap to go on</span>
+    </div>}
+    {tips&&<_RvTips onDone={()=>setTips(false)}/>}
     {key==='end'&&<_RvEnd wine={wine} d={d} firstScan={firstScan} existingRating={existingRating} nav={nav} showPro={showPro} curr={curr}
       onDone={onDone} onRated={onRated} onSaveForLater={onSaveForLater} onFinish={onFinish}/>}
+  </div>;
+}
+
+/* A swipe this long (px) turns the page; a quick flick needs less. */
+const REVEAL_SWIPE=56;
+
+function _RvScene({k,d,col,existingRating,still}){
+  // `still`: the copy of a scene on its way out shows finished, so nothing replays as it leaves.
+  const inner=k==='label'?<_RvLabel d={d} col={col}/>
+    :k==='match'?<_RvMatch d={d} col={col} existingRating={existingRating} still={still}/>
+    :k==='taste'?<_RvTaste d={d} col={col}/>
+    :k==='grape'?<_RvGrape d={d} col={col}/>
+    :k==='place'?<_RvPlace d={d} col={col}/>
+    :k==='say'?<_RvSay d={d} col={col}/>:null;
+  return still?<div style={{display:'contents'}} className="rv-still">{inner}<style>{`.rv-still .rv-in,.rv-still .rv-bar,.rv-still .rv-pop,.rv-still .rv-pin{animation:none!important}`}</style></div>:inner;
+}
+
+/* How to drive it, over the first couple of reveals (Flags.revealTipsDue). */
+function _RvTips({onDone}){
+  const row=(icon,text)=><div style={{display:'flex',alignItems:'center',gap:14}}>
+    <div style={{width:44,height:44,borderRadius:22,background:'rgba(255,255,255,0.12)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,fontSize:'22px',lineHeight:1}} aria-hidden="true">{icon}</div>
+    <div style={{fontSize:17,fontWeight:600,color:'#fff',fontFamily:C.P,lineHeight:1.35}}>{text}</div>
+  </div>;
+  return <div data-rv-stop data-testid="reveal-tips" className="rv-tip" role="dialog" aria-label="How the reveal works" style={{position:'absolute',inset:0,background:'rgba(10,10,10,0.9)',display:'flex',flexDirection:'column',justifyContent:'center',padding:'32px 30px calc(32px + env(safe-area-inset-bottom))',gap:22}}>
+    <div>
+      <div style={{fontSize:13,fontWeight:700,color:'rgba(255,255,255,0.6)',fontFamily:C.P,letterSpacing:'0.12em',textTransform:'uppercase'}}>Your scan, in a few quick scenes</div>
+      <div style={{fontSize:26,fontWeight:800,color:'#fff',fontFamily:C.P,lineHeight:1.15,marginTop:6}}>It plays by itself. You can drive it too.</div>
+    </div>
+    {row('←','Swipe left to move on, right to go back')}
+    {row('●','Tap to pause, tap again to carry on')}
+    {row('↦','Skip jumps to what to do next')}
+    <div role="button" onClick={onDone} style={{marginTop:8,alignSelf:'stretch',textAlign:'center',padding:'15px 18px',borderRadius:14,background:'#fff',color:C.ink,fontSize:16,fontWeight:800,fontFamily:C.P,cursor:'pointer'}}>Play it</div>
   </div>;
 }
 
@@ -125,9 +194,9 @@ function _RvLabel({d,col}){
 
 /* 2. The match: the dial sweeps up, the verdict lands, then one reason each way. Too early: how
    many scores it needs. Already scored: their score beside the prediction. */
-function _RvMatch({d,col,existingRating}){
+function _RvMatch({d,col,existingRating,still}){
   const m=d.match, tone=_RV_TONE[m.tone]||_RV_TONE.neutral;
-  const pct=m.pct!=null?m.pct:0, shown=_useCount(pct,1500,250);
+  const pct=m.pct!=null?m.pct:0, counted=_useCount(pct,1500,250), shown=still?pct:counted;
   const R=74, circ=2*Math.PI*R, size=200;
   if(m.early){
     const p=m.early;
@@ -193,7 +262,7 @@ function _RvGrape({d,col}){
   return <div style={{display:'flex',flexDirection:'column',gap:12}}>
     {_rvEyebrow(g.blend?'Led by the grape':'The grape','rgba(255,255,255,0.7)')}
     <div className="rv-in" style={{..._rvDelay(.15),fontSize:40,fontWeight:800,color:'#fff',fontFamily:C.P,lineHeight:1.05,letterSpacing:'-0.5px'}}>{g.name}</div>
-    <div className="rv-in" style={{..._rvDelay(.5),fontSize:19,color:'rgba(255,255,255,0.85)',fontFamily:C.serif,lineHeight:1.45}}>{g.line}.</div>
+    <div className="rv-in" style={{..._rvDelay(.5),fontSize:18,color:'rgba(255,255,255,0.85)',fontFamily:C.P,lineHeight:1.5}}>{g.line}.</div>
     {g.famousIn.length>0&&<div className="rv-in" style={{..._rvDelay(.9),fontSize:15,color:'rgba(255,255,255,0.55)',fontFamily:C.P}}>Famous in {g.famousIn.join(' and ')}{g.typical?' · the usual grape here, not stated on the label':''}</div>}
   </div>;
 }
@@ -223,7 +292,7 @@ function _RvPlace({d,col}){
         {p.country&&<div style={{fontSize:15,color:'rgba(255,255,255,0.6)',fontFamily:C.P,marginTop:2}}>{p.country}</div>}
       </div>
     </div>
-    {p.line&&<div className="rv-in" style={{..._rvDelay(1.3),fontSize:17,color:'rgba(255,255,255,0.85)',fontFamily:C.serif,lineHeight:1.45}}>{p.line}{/[.!?]$/.test(p.line)?'':'.'}</div>}
+    {p.line&&<div className="rv-in" style={{..._rvDelay(1.3),fontSize:16,color:'rgba(255,255,255,0.85)',fontFamily:C.P,lineHeight:1.5}}>{p.line}{/[.!?]$/.test(p.line)?'':'.'}</div>}
     {p.grapes.length>0&&<div className="rv-in" style={{..._rvDelay(1.6),fontSize:14,color:'rgba(255,255,255,0.5)',fontFamily:C.P}}>Known for {p.grapes.join(', ')}</div>}
   </div>;
 }
@@ -233,8 +302,8 @@ function _RvSay({d,col}){
   const s=d.say;
   return <div style={{display:'flex',flexDirection:'column',gap:12}}>
     {_rvEyebrow(s.kind==='talk'?'Something to say about it':'Did you know','rgba(255,255,255,0.7)')}
-    <div className="rv-in" style={{..._rvDelay(.2),fontSize:64,lineHeight:.6,color:col,fontFamily:C.serif,marginTop:14}} aria-hidden="true">“</div>
-    <div className="rv-in" style={{..._rvDelay(.45),fontSize:27,color:'#fff',fontFamily:C.serif,lineHeight:1.35}}>{s.text}</div>
+    <div className="rv-in" style={{..._rvDelay(.2),fontSize:56,fontWeight:800,lineHeight:.5,color:col,fontFamily:C.P,marginTop:16}} aria-hidden="true">“</div>
+    <div className="rv-in" style={{..._rvDelay(.45),fontSize:24,fontWeight:600,color:'#fff',fontFamily:C.P,lineHeight:1.4}}>{s.text}</div>
   </div>;
 }
 

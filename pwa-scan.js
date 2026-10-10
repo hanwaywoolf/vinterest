@@ -117,6 +117,13 @@ const ScanFlow = {
      place from knowledge.json, one line to say from the scan cards (Claude) once it has arrived.
      Nothing is invented for the sake of a scene: a scene without its facts is left out. */
   REVEAL_TRAITS:3,
+  /* How long a scene stays: time to read its words at an unhurried READ_WPM, plus REVEAL_LEAD for
+     the picture to arrive (the dial sweeping up, the pin dropping), never under REVEAL_MIN_MS. */
+  READ_WPM:220, REVEAL_LEAD:1400, REVEAL_MIN_MS:2600,
+  revealLength(text){
+    const words=String(text||'').trim().split(/\s+/).filter(Boolean).length;
+    return Math.max(this.REVEAL_MIN_MS,Math.round(this.REVEAL_LEAD+words*60000/this.READ_WPM));
+  },
   reveal(wine,match,gen,wines){
     wines=wines||WineHistory.getAll();
     const t=WineDNA._t(wine.type), col=(typeof _TYPE_COLORS!=='undefined'&&_TYPE_COLORS[t])||'#8B1A2F';

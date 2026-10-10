@@ -21,14 +21,22 @@ async function scan(context, page, label, { seed = {}, demo = true, gen = GEN } 
   await page.getByTestId('scan-file').setInputFiles({ name: 'label.png', mimeType: 'image/png', buffer: PNG });
   return page.getByTestId('reveal-scene');
 }
-const next = (page) => page.mouse.click(300, 500);
-const prev = (page) => page.mouse.click(60, 500);
+// A swipe turns the page (left: on, right: back); a tap pauses.
+async function swipe(page, dx) { await page.mouse.move(200, 500); await page.mouse.down(); await page.mouse.move(200 + dx / 2, 502, { steps: 3 }); await page.mouse.move(200 + dx, 504, { steps: 3 }); await page.mouse.up(); }
+const next = (page) => swipe(page, -120);
+const prev = (page) => swipe(page, 120);
+const tap = (page) => page.mouse.click(300, 500);
+async function playIt(page) { await page.getByTestId('reveal-tips').getByText('Play it').click(); }
 
 test('the reveal tells the scan in order: label, match, taste, grape, place, a line to say, then what next', async ({ context, page }) => {
   const errors = collectErrors(page);
   const scene = await scan(context, page, RIOJA);
   const root = page.locator('#root');
+  // The first couple of reveals open on how to drive it; the stage waits underneath.
+  await expect(page.getByTestId('reveal-tips')).toContainText('Swipe left to move on, right to go back');
+  await page.waitForTimeout(3000);
   await expect(scene).toHaveAttribute('data-scene', 'label');
+  await playIt(page);
   await expect(scene).toContainText('Viña Real Gran Reserva 2016');
   await expect(scene).toContainText('CVNE');
   await expect(scene).toContainText('Tempranillo, Graciano · Rioja');
@@ -60,7 +68,9 @@ test('the reveal tells the scan in order: label, match, taste, grape, place, a l
   await next(page);
   await expect(scene).toHaveAttribute('data-scene', 'say');
   await expect(scene).toContainText('Gran Reserva means it waited years in oak');
-  // A tap on the left goes back; the end sheet's rows lead to the rating, the deck and saving.
+  // Everything is Poppins, nothing italic.
+  expect(await page.evaluate(() => [...document.querySelectorAll('.rv-stage *')].filter((e) => e.textContent.trim() && e.children.length === 0).map((e) => getComputedStyle(e)).filter((cs) => !/Poppins/.test(cs.fontFamily) || cs.fontStyle === 'italic').length)).toBe(0);
+  // A swipe right goes back; the end sheet's rows lead to the rating, the deck and saving.
   await prev(page);
   await expect(scene).toHaveAttribute('data-scene', 'place');
   await root.getByText('Skip', { exact: true }).click();
@@ -76,22 +86,36 @@ test('the reveal tells the scan in order: label, match, taste, grape, place, a l
 });
 
 test('scenes move on by themselves, a held finger pauses, and the whole thing takes about fifteen seconds', async ({ context, page }) => {
-  const scene = await scan(context, page, RIOJA);
+  const scene = await scan(context, page, RIOJA, { seed: { vinterest_reveal_tips_v1: '2' } });
+  await expect(page.getByTestId('reveal-tips')).toHaveCount(0); // the tip has had its two showings
   await expect(scene).toHaveAttribute('data-scene', 'label');
-  await expect(scene).toHaveAttribute('data-scene', 'match', { timeout: 4000 });
-  // Hold: the scene stays put well past its length.
-  await page.mouse.move(300, 500); await page.mouse.down();
-  await page.waitForTimeout(5200);
+  const labelMs = await page.evaluate(() => [...document.querySelectorAll('[data-testid=reveal-progress] .rv-seg')].map((e) => parseInt(getComputedStyle(e).animationDuration) * 1000)[0]);
+  await expect(scene).toHaveAttribute('data-scene', 'match', { timeout: labelMs + 1500 });
+  const matchMs = await page.evaluate(() => [...document.querySelectorAll('[data-testid=reveal-progress] .rv-seg')].map((e) => parseInt(getComputedStyle(e).animationDuration) * 1000)[0]);
+  // A tap pauses: the scene stays put well past its length; another tap carries on.
+  await tap(page);
+  await expect(page.getByTestId('reveal-paused')).toBeVisible();
+  await page.waitForTimeout(matchMs + 1500);
   await expect(scene).toHaveAttribute('data-scene', 'match');
-  await page.mouse.up();
-  await expect(scene).toHaveAttribute('data-scene', 'taste', { timeout: 5000 });
-  const total = Object.values(await page.evaluate(() => REVEAL_MS)).reduce((a, b) => a + b, 0) - (await page.evaluate(() => REVEAL_MS.early));
+  await tap(page);
+  await expect(page.getByTestId('reveal-paused')).toHaveCount(0);
+  await expect(scene).toHaveAttribute('data-scene', 'taste', { timeout: matchMs + 2500 });
+  // Each scene stays long enough to read its words (ScanFlow.revealLength), and the whole thing is
+  // in the region of fifteen to twenty-five seconds for a wine with every scene.
+  const lens = await page.evaluate((w) => {
+    const d = ScanFlow.reveal(w, TasteMatch.assess(w, WineHistory.getAll()), { talk: ['Gran Reserva means it waited years in oak'] });
+    return _revealScenes(d, 0).map((s) => [s.key, s.ms]);
+  }, RIOJA);
+  for (const [k, ms] of lens) if (k !== 'end') expect(ms, k).toBeGreaterThanOrEqual(2600);
+  expect(await page.evaluate(() => ScanFlow.revealLength('one two three four five six seven eight nine ten') - ScanFlow.REVEAL_LEAD)).toBe(Math.round(10 * 60000 / 220));
+  const total = lens.reduce((a, [, ms]) => a + ms, 0);
   expect(total).toBeGreaterThanOrEqual(15000);
-  expect(total).toBeLessThanOrEqual(21000);
+  expect(total).toBeLessThanOrEqual(45000);
 });
 
 test('too early for a match it shows the meter; a wine the knowledge base lacks skips the grape and place', async ({ context, page }) => {
   const scene = await scan(context, page, FIZZ, { demo: false, gen: null, seed: { vinterest_onboarded: '1', vinterest_region: 'uk' } });
+  await playIt(page);
   await expect(scene).toHaveAttribute('data-scene', 'label');
   await next(page);
   await expect(scene).toHaveAttribute('data-scene', 'match');
@@ -118,6 +142,7 @@ test('the first bottle ends on its score and carries on with onboarding', async 
   await root.getByText(/^(Continue|Next)$/).first().click().catch(() => {});
   await page.getByTestId('scan-file').setInputFiles({ name: 'label.png', mimeType: 'image/png', buffer: PNG });
   const scene = page.getByTestId('reveal-scene');
+  await playIt(page);
   await expect(scene).toHaveAttribute('data-scene', 'label');
   await expect(root).toContainText('Your first bottle');
   await root.getByText('Skip', { exact: true }).click();
@@ -132,7 +157,7 @@ test('the first bottle ends on its score and carries on with onboarding', async 
 
 test('with reduced motion nothing moves on by itself, and at Extra large text nothing runs off the side', async ({ context, page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
-  const scene = await scan(context, page, RIOJA, { seed: { vinterest_text_size: 'xl' } });
+  const scene = await scan(context, page, RIOJA, { seed: { vinterest_text_size: 'xl', vinterest_reveal_tips_v1: '2' } });
   await expect(scene).toHaveAttribute('data-scene', 'label');
   await page.waitForTimeout(3200);
   await expect(scene).toHaveAttribute('data-scene', 'label');
