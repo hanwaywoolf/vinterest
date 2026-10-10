@@ -12,6 +12,9 @@
 
 const DemoPersona = (() => {
   const sample = _loadJSON('data/onboarding-sample.json');
+  // A label scan reads the tasting notes too; the sample generator doesn't keep them, so the bottle the scan story opens on gets the notes
+  // its label and Claude's text for it speak of (northern Rhône Syrah: dark fruit, pepper, smoked meat, violet).
+  if (sample.user.scanned && !sample.user.scanned.tasting_notes) sample.user.scanned.tasting_notes = ['Blackberry', 'Black pepper', 'Smoked meat', 'Violet'];
   function area() {
     const m = new Map();
     return {
@@ -40,6 +43,8 @@ const DemoPersona = (() => {
     vinterest_wineDNA_unlock_seen: '1',
     // The phone is drawn inside a desktop window: without this the app reads the window's width and lays itself out as an iPad.
     vinterest_force_mobile: '1',
+    // The scan story's "how to drive it" tip is for the first two reveals on a phone; a demo opens straight on the scenes.
+    vinterest_reveal_tips_v1: '2',
     // The demos show what the app can do, so every screen at full detail (DetailLevel).
     vinterest_detail_all: '1', vinterest_detail_intro: '1',
   }).forEach(([k, v]) => local.setItem(k, v));

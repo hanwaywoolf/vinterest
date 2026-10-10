@@ -253,3 +253,6 @@ footer a:hover { color: #fff; }
 .phone [data-testid="region-map"] circle[fill="#CFC9C2"] { display: none; }
 .phone [data-testid="region-map"] path[fill="none"] { display: none; }
 .phone div:has(> [data-testid="region-map"]) + div[aria-hidden="true"] > span:first-child { display: none !important; }
+
+/* The scan story is paused between captions; its "Paused" pill isn't part of what the demo shows. */
+.phone [data-testid="reveal-paused"] { display: none; }

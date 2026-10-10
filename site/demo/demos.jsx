@@ -115,13 +115,14 @@ const BLIND_AT = 0.75, BLIND_END = 0.777;
 
 /* The bottle in the camera: the sample user's next scan. `tracked` keeps the scan from being saved
    into the demo user's wines, so the other demos never change. */
-function _openScan(view, unlock) {
+function _openScan(view, unlock, fresh) {
   DemoPersona.reset();
   const wine = { ...DemoPersona.user.scanned, confidence: 'high' };
   // A confirmed scan opens its grape's and region's quizzes (ScanFlow.unlockLearning): what the
   // "Keep learning" options after a score are built from. `tracked` skips it, so do it here.
   if (unlock) ScanFlow.unlockLearning(wine);
-  Handoff.openWine({ wine, source: 'camera', tracked: true, view });
+  // `fresh`: a scan as it just happened (the reveal plays, and the app saves the wine); otherwise a screen asking for a view.
+  Handoff.openWine({ wine, source: 'camera', tracked: !fresh, view: fresh ? undefined : view });
 }
 
 /* The Mastery demo's sample user: a drinker twelve bottles in who has studied a fair bit. Their wines have
@@ -204,6 +205,8 @@ function _filmResult() {
    what a visitor would tap or type there. */
 const _DEMO_SCREENS = {
   scan: { nav: 'scan', Screen: ScanCardsScreen, view: 'result', stopAt: /^what next\?$/i },
+  // The scan story (the reveal): the app's own scenes, one per caption (label and drinking window, match, taste, grape, place, one thing to say, the ways out).
+  reveal: { nav: 'scan', Screen: ScanCardsScreen, fresh: true },
   deck: { nav: 'scan', Screen: ScanCardsScreen, view: 'deck' },
   rate: { nav: 'scan', Screen: ScanCardsScreen, view: 'deck' },
   keep: { nav: 'scan', Screen: ScanCardsScreen, view: 'deck' },
@@ -393,7 +396,7 @@ const VinterestDemo = {
     const draw = () => {
       gen++;
       cancel();
-      if (isScan) _openScan(d.view, kind === 'keep'); else if (!d.keepStore) DemoPersona.reset();
+      if (isScan) _openScan(d.view, kind === 'keep', d.fresh); else if (!d.keepStore) DemoPersona.reset();
       // Rendered right now, not on React's schedule: the scan screen reads the handoff as it opens, and
       // another demo mounting in the meantime would have changed it.
       ReactDOM.flushSync(() => root.render(<_DemoFrame key={gen} kind={kind} ctl={ctl} />));
@@ -527,13 +530,43 @@ const VinterestDemo = {
       if (!bLocked && b >= 0.7) { bLocked = true; _until(() => _tapText(el, /^Lock in my call$/), 40); }
       if (!bScored && b >= 0.84) { bScored = true; _until(() => _tapText(el, /^See my score$/), 40); }
     };
-    let saved = false, rated = false, learned = false, boughtAgain = false, paid = false, where = false;
+    /* The scan story plays itself and moves on after each scene's reading time. The website moves it a scene per caption instead:
+       one tap pauses it (the "Paused" pill is hidden in site.css), and a swipe, as a finger would, turns the page. */
+    const RV_KEYS = ['label', 'match', 'taste', 'grape', 'place', 'say', 'end'];
+    let rvToken = 0;
+    // The app hears these on its root (el); the page's own swipe handling, further up, must not take them for a reader's swipe.
+    ['pointerdown', 'pointerup'].forEach((t) => el.addEventListener(t, (e) => { if (e.__rv) e.stopPropagation(); }));
+    const rvStage = () => el.querySelector('.rv-stage');
+    const rvScene = () => { const n = el.querySelector('[data-testid="reveal-scene"]'); return n ? n.getAttribute('data-scene') : (el.querySelector('[data-testid="reveal-sheet"]') || _findText(el, /^Rate it$/) ? 'end' : null); };
+    const rvTouch = (dx) => {
+      const st = rvStage(); if (!st) return false;
+      const r = st.getBoundingClientRect(), x = r.left + r.width / 2, y = r.top + r.height / 2;
+      const ev = (t, cx) => { const e = new PointerEvent(t, { bubbles: true, cancelable: true, pointerId: 1, pointerType: 'touch', isPrimary: true, button: 0, clientX: cx, clientY: y }); e.__rv = true; st.dispatchEvent(e); };
+      ev('pointerdown', x); ev('pointerup', x + dx);
+      return true;
+    };
+    const rvTo = (i) => {
+      const token = ++rvToken, want = RV_KEYS[Math.max(0, Math.min(RV_KEYS.length - 1, i))];
+      (function step(n) {
+        if (token !== rvToken || n <= 0) return;
+        const st = rvStage();
+        if (!st || el.querySelector('[data-testid="reveal-tips"]')) return setTimeout(() => step(n - 1), 150);
+        if (!el.querySelector('[data-testid="reveal-paused"]') && rvScene() !== 'end') { rvTouch(0); return setTimeout(() => step(n - 1), 150); }
+        const cur = rvScene();
+        if (!cur || cur === want) return;
+        // Scenes a wine doesn't have are skipped by the app itself, so move one page at a time and look again.
+        rvTouch(RV_KEYS.indexOf(want) > RV_KEYS.indexOf(cur) ? -140 : 140);
+        setTimeout(() => step(n - 1), 600);
+      })(40);
+    };
+    let saved = false, rated = false, learned = false, boughtAgain = false, paid = false, where = false, finished = false;
     const api = {
       update(p) {
         lastP = p;
         const update = (q) => api.update(q);
         if (d.steps) { place(p); return; }
         if (kind === 'scan') { runActs(p); scrollTo(p); return; }
+        if (kind === 'reveal') { rvTo(Math.floor(p * RV_KEYS.length + 1e-6)); return; }
         if (kind === 'deck') {
           // Turn the deck to the card p is up to, and read down a long one while it's there. The Blind Call
           // part (p from 0.75) plays on the taste card, whose own number it isn't.
@@ -555,8 +588,15 @@ const VinterestDemo = {
           // Slide the rating up to a 92, save it, then read down what it asks next. Going back to the
           // start (or choosing that part again) starts the rating over, so the slider plays again.
           const slider0 = _scoreSlider(el);
-          if ((saved && p < 0.42) || (!saved && p < 0.05 && slider0 && _scoreNow(slider0) > 0)) {
-            saved = false; rated = false; boughtAgain = paid = where = false; scroller = null; draw(); return;
+          if ((saved && p < 0.42) || (!saved && p < 0.05 && slider0 && _scoreNow(slider0) > 0) || (finished && p < 0.9)) {
+            saved = false; rated = false; finished = false; boughtAgain = paid = where = false; scroller = null; draw();
+            if (p >= 0.05) setTimeout(() => api.update(lastP), 500); // back to where it was asked to be
+            return;
+          }
+          // The last part: "Finished: what's next?", and the Keep learning options for this bottle.
+          if (p >= 0.94 && saved && !finished) {
+            finished = true;
+            _until(() => { ScanFlow.unlockLearning({ ...DemoPersona.user.scanned, confidence: 'high' }); return _tapText(el, /^Finished: what/); }, 40);
           }
           const slider = _scoreSlider(el);
           if (!saved && slider) {
