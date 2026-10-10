@@ -138,7 +138,7 @@ function TasteProfileScreen({nav,back,showPro}){
           ):isGenerating?(
             <div style={{display:'flex',alignItems:'center',gap:10,padding:'6px 0 10px'}}>
               <div style={{width:18,height:18,borderRadius:9,border:'2px solid rgba(0,0,0,0.1)',borderTopColor:c.col,animation:'vspin 0.8s linear infinite',flexShrink:0}}/>
-              <span style={{fontSize:15,color:C.mid,fontFamily:C.P,fontStyle:'italic'}}>Writing your personalised script…</span>
+              <WritingWait compact sub="Your sommelier script" wine={null}/>
             </div>
           ):(
             <>

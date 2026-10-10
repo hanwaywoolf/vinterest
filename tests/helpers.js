@@ -12,7 +12,8 @@ const UMD = {
   'unpkg.com/react-dom@': 'node_modules/react-dom/umd/react-dom.development.js',
 };
 
-// claudeText(body) returns the text the stubbed /claude answers with; the default is empty,
+// claudeText(body) returns the text the stubbed /claude answers with (a promise is awaited, so a
+// test can make Claude slow); the default is empty,
 // which every caller treats as a failed generation.
 async function stubNetwork(context, { claudeRequests = [], claudeText = () => '' , detail = 'all', reveal = 'off' } = {}) {
   // Tests check the free plan as it will ship, not the everyone-is-Pro testing switch
@@ -31,10 +32,11 @@ async function stubNetwork(context, { claudeRequests = [], claudeText = () => ''
     // Google Fonts: an empty stylesheet keeps the page offline without a failed-request console error.
     return route.fulfill({ contentType: url.includes('css') ? 'text/css' : 'text/plain', body: '' });
   });
-  await context.route('**/claude', (route) => {
+  await context.route('**/claude', async (route) => {
     claudeRequests.push(JSON.parse(route.request().postData() || '{}'));
     const body = JSON.parse(route.request().postData() || '{}');
-    return route.fulfill({ contentType: 'application/json', body: JSON.stringify({ text: claudeText(body) }) });
+    const text = await claudeText(body);
+    return route.fulfill({ contentType: 'application/json', body: JSON.stringify({ text }) });
   });
 }
 

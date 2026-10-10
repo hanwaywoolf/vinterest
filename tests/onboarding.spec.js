@@ -126,13 +126,14 @@ test('the first scan tells the bottle\'s story and shows what Vinterest will do 
   await expect(root).toContainText('Example');
   await expect(root).toContainText('Rate 3 rosés and every rosé you scan shows how much you\'ll like it');
   const next = async () => { await page.locator('.sc-swipe > div').last().locator('> div').last().click(); await page.waitForTimeout(250); };
+  // The deep cards are written on demand; with nothing from the stub they fall back to the checked facts.
   const seen = new Set();
   for (let i = 0; i < 12 && !(await root.getByText('9 / 9', { exact: true }).isVisible()); i++) {
-    for (const t of ['This card gets personal', 'Open in Learn now', 'Why play Blind Call', 'Your sommelier script', 'Know a good price']) if (await root.getByText(t, { exact: true }).first().isVisible().catch(() => false)) seen.add(t);
-    if (await root.getByText('This scan opened the Grenache quiz and the Provence quiz.').isVisible().catch(() => false)) seen.add('unlocks named');
+    for (const t of ['The house', 'The year', 'How it\'s made', 'The region', 'At the table', 'While you taste', 'Next from here']) if (await root.getByText(t, { exact: true }).first().isVisible().catch(() => false)) seen.add(t);
     await next();
   }
-  expect([...seen].sort()).toEqual(['Know a good price', 'Open in Learn now', 'This card gets personal', 'Why play Blind Call', 'Your sommelier script', 'unlocks named']);
+  expect([...seen].sort()).toEqual(['At the table', 'How it\'s made', 'Next from here', 'The house', 'The region', 'The year', 'While you taste']);
+  for (const t of ['This card gets personal', 'Open in Learn now', 'Why play Blind Call', 'Know a good price']) await expect(root).not.toContainText(t);
   // The last card: the WineDNA meter, the first score, then on to the questions.
   await root.getByText('90', { exact: true }).click();
   await root.getByText('Save rating').click();

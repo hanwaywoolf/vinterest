@@ -26,7 +26,7 @@ function useScanContent(wine,match){
   const verdict=match?match.verdict:'x';
   React.useEffect(()=>{
     if(!wine||!wine.name) return;
-    const key='vinterest_scancards_v6_'+(wine.name||'').replace(/\s/g,'_')+'_'+(wine.vintage||'nv')+'_'+verdict;
+    const key='vinterest_scancards_v7_'+(wine.name||'').replace(/\s/g,'_')+'_'+(wine.vintage||'nv')+'_'+verdict;
     const cached=Cache.getText(key);
     if(cached){ try{ setGen(JSON.parse(cached)); return; }catch(e){} }
     if(!window.claude||!window.claude.complete) return;
@@ -41,24 +41,17 @@ function useScanContent(wine,match){
     const agingFact=_agingFactFor(w);
     const agingLine=agingFact?`REFERENCE AGING FACTS (use verbatim, do not alter the numbers): ${agingFact}`:'REFERENCE AGING FACTS: none available for this wine’s classification — do not state specific aging durations you are not certain of.';
     const prompt=
-      'You are a warm, knowledgeable sommelier writing quick-hit cards for a wine app that teaches people about wine and helps them buy well. '+
+      'You are a warm, knowledgeable sommelier writing two short things for a wine app that teaches people about wine. '+
       'Wine: '+(w.name||'')+(w.vintage&&w.vintage!=='NV'&&w.vintage!==0?' '+w.vintage:'')+'. '+
       'Type: '+(w.type||'red')+'. Region: '+(w.region||'')+((w.sub_region)?' ('+w.sub_region+')':'')+', '+(w.country||'')+'. '+
       'Producer: '+(w.producer||'unknown')+'. '+
       'Grapes: '+(WineDNA.grapeLine(w)||'unknown')+(w.grapes_basis==='typical'?' (not stated on the label: what this wine usually contains)':w.grapes_basis==='known'?' (the producer\'s known blend)':'')+'. '+
       (w.blend||(w.grapes||[]).length>1?'This is a blend: call it a blend led by its main grape, never a single-grape wine. ':'')+
-      'Tasting notes: '+((w.tasting_notes||[]).join(', ')||'n/a')+'. '+
       matchFacts+' '+agingLine+' '+
-      'Return ONLY valid JSON, no markdown, all sentences concrete and specific to THIS wine (no generic filler), and NO numbers/percentages/decimals anywhere EXCEPT when referencing a specific year/vintage — years must always be written as numerals (e.g. "2010", never "twenty ten"): '+
+      'Return ONLY valid JSON, no markdown, concrete and specific to THIS wine (no generic filler), and NO numbers/percentages/decimals anywhere EXCEPT a specific year, always written as numerals: '+
       '{'+
-      '"fact":"one genuinely surprising, memorable fact about this wine, its producer, grape, or region (max 28 words)",'+
-      '"fit":"one vivid sentence about this wine\'s style for this drinker, consistent with the match verdict above: for a likely favourite or good bet, why it suits them; for could go either way, what might win them over; for probably not for you, how it differs from what they usually love and when it could still be worth trying. Honest, never oversold. Only name grapes, regions or wines that appear in the facts above (max 28 words)",'+
-      '"caution":"one specific, practical thing worth knowing before or while drinking THIS bottle — e.g. decanting, serving temperature, food pairing, or how it will develop with age. Speak directly, no hedging like \\"if you prefer\\" (max 24 words)",'+
-      '"origin":"one sentence painting the place this comes from — landscape, climate or culture (max 26 words)",'+
-      '"region_style":"one sentence on what makes wines from here distinctive (max 24 words)",'+
-      '"estate":"one sentence on the producer/winemaker and the estate\'s history or reputation — if producer is unknown, describe the typical winemaking approach in this region instead (max 26 words)",'+
-      '"talk":["three SHORT quotable phrases (each max 12 words) a drinker could say out loud to sound clued-in about this exact wine"],'+
-      '"fact2":"one specific, memorable aging/classification/production fact that helps this bottle make sense. If REFERENCE AGING FACTS are given, you MUST use those exact figures verbatim (paraphrase the wording only, never change the numbers). If none are given, give a general production fact that does NOT state specific aging durations you are not certain of (max 22 words)"'+
+      '"fact":"one genuinely surprising, memorable fact about this wine, its producer, grape or region (max 28 words)",'+
+      '"talk":["three SHORT quotable phrases (each max 12 words) a drinker could say out loud to sound clued-in about this exact wine"]'+
       '}';
     window.claude.complete({purpose:'scancard',messages:[{role:'user',content:prompt}]})
       .then(text=>{
@@ -169,7 +162,7 @@ function useDeckStyle(){
   return s;
 }
 /* After a scan: an "Is this it?" check when the label was hard to read, then the result (match,
-   reasons, then three equal next steps: Learn about it / Rate it / Save for later, then style and price). The card deck is the
+   reasons, then three equal next steps: Learn more about this wine / Rate it / Save for later, then style and price). The card deck is the
    optional deep dive, one tap away. */
 function ScanCardsScreen({nav,back,showPro}){
   const scanData=React.useMemo(()=>{
@@ -268,7 +261,7 @@ function ScanStyles(){
 }
 
 /* The first scan, as the last part of onboarding: this bottle's story, with what each feature will
-   do for them stitched into the cards where it belongs (FirstScan, _FIRST_NOTES), ending on their
+   do for them (FirstScan), ending on their
    first score or Save for later. Later scans use the ordinary result screen. */
 function FirstScanStory({wine,onDone}){
   const [ver,setVer]=React.useState(0);
@@ -446,7 +439,7 @@ function ScanResult({wine,match,curr,scanData,existingRating,nav,showPro,view,se
             <div style={{fontSize:13,fontWeight:700,color:C.mid,letterSpacing:'0.07em',textTransform:'uppercase',fontFamily:C.P,margin:'2px 2px 8px'}}>What next?</div>
             <div style={{display:'flex',flexDirection:'column',gap:8}}>
               {[
-                {key:'learn',icon:'book',label:'Learn about it',sub:'Story, taste, region and grape',on:onDeck},
+                {key:'learn',icon:'book',label:'Learn more about this wine',sub:'The house, the year, how it\'s made, the table',on:onDeck},
                 {key:'rate',icon:'star',label:existingRating?`Re-rate it (${existingRating})`:'Rate it',sub:existingRating?'Changed your mind?':'Rate it to sharpen your WineDNA',on:()=>setView('rate')},
                 ...(existingRating?[]:[{key:'save',icon:'bookmark',label:'Save for later',sub:'Shopping, or not tasted yet',on:onSaveForLater}]),
               ].map(x=>(
@@ -491,43 +484,29 @@ function ScanResult({wine,match,curr,scanData,existingRating,nav,showPro,view,se
   </div>;
 }
 
-/* ── card content model ── */
-function buildCards({match,firstScan}){
-  const tone=match?match.tone:'neutral';
+/* ── card content model: "Learn more about this wine" ──
+   The layer after the scan story, for the ones who want more. The story has already given the
+   match, how the wine will feel, the grape, the place and one line to say; these go deeper and
+   never repeat it: the match in full, the house, the year, how it's made, the appellation in
+   depth, the table, Blind Call, and what's next. Each card opens on a line and keeps its
+   paragraph behind "More" (below the More detail level); the words come from WineDeep, written
+   on demand the first time the deck is opened, over the checked facts in knowledge.json. */
+function buildCards({match}){
   return [
-    firstScan&&match&&match.pct==null
+    match&&match.verdict==='early'
       ?{key:'match',accent:C.green,soft:C.greenBg,icon:'compass',eyebrow:'Your match',kind:'first-match'}
       :{key:'match',accent:C.green,soft:C.greenBg,icon:'compass',eyebrow:'Your match',kind:'match'},
-    {key:'fit',accent:tone==='bad'?C.amber:C.green,soft:tone==='bad'?C.amberBg:C.greenBg,icon:'heart',eyebrow:tone==='good'?'Why you\'ll like it':tone==='bad'?'How it\'s different':'Why it could click',kind:'gen',field:'fit'},
-    {key:'caution',accent:C.amber,soft:C.amberBg,icon:'message',eyebrow:'Heads up',kind:'gen',field:'caution'},
-    {key:'origin',accent:C.cr,soft:C.crSoft,icon:'globe',eyebrow:'Where it\'s from',kind:'origin'},
-    {key:'fact',accent:'#9B6B00',soft:'#FBF3E0',icon:'star',eyebrow:'Did you know',kind:'gen',field:'fact'},
+    {key:'house',accent:C.cr,soft:C.crSoft,icon:'user',eyebrow:'The house',kind:'house'},
+    {key:'year',accent:'#9B6B00',soft:'#FBF3E0',icon:'bookmark',eyebrow:'The year',kind:'year'},
+    {key:'made',accent:'#6B2D8B',soft:'#F3ECF8',icon:'grape',eyebrow:'How it\'s made',kind:'made'},
+    {key:'region',accent:C.cr,soft:C.crSoft,icon:'globe',eyebrow:'The region',kind:'region'},
+    {key:'table',accent:C.amber,soft:C.amberBg,icon:'fork',eyebrow:'At the table',kind:'table'},
     {key:'taste',accent:C.ink,soft:C.offWhite,icon:'wine',eyebrow:'While you taste',kind:'taste'},
-    {key:'talk',accent:C.cr,soft:C.crSoft,icon:'message',eyebrow:'Sound clued-in',kind:'talk'},
-    {key:'value',accent:'#6B2D8B',soft:'#F3ECF8',icon:'cart',eyebrow:'Price check',kind:'value'},
+    {key:'next',accent:C.green,soft:C.greenBg,icon:'book',eyebrow:'Next from here',kind:'next'},
     {key:'finish',accent:C.cr,soft:C.crSoft,icon:'star',eyebrow:'Rate it',kind:'finish'},
   ];
 }
 
-/* On the first scan, each card says what it becomes with use. Wording only; the facts come from
-   FirstScan (pwa-scan.js). */
-const _FIRST_NOTES={
-  fit:{title:'This card gets personal',text:w=>`Rate a few ${FirstScan.progress(w,[]).many} and it says why you'll like a bottle or won't, from the wines you've loved and the ones you haven't.`},
-  origin:{title:'Open in Learn now',text:w=>{ const u=FirstScan.unlocked(w), open=[u.grape&&`the ${u.grape} quiz`,u.region&&`the ${u.region} quiz`].filter(Boolean);
-    return open.length?`This scan opened ${open.join(' and ')}. Every new grape and region you scan opens its own.`:'Every new grape and region you scan opens its own quiz in Learn.'; }},
-  taste:{title:'Why play Blind Call',text:()=>'Each call trains your palate, and your guesses tell your WineDNA how you really taste, not just what the label says.'},
-  talk:{title:'Your sommelier script',text:()=>'As your WineDNA grows, Vinterest writes you a few lines to say in a restaurant, so the sommelier brings bottles you\'ll love.'},
-  value:{title:'Know a good price',text:()=>'Prices are checked where you live. Tell us what you pay and Vinterest learns your usual spend and which bottles are good value for you.'},
-};
-function FeatureNote({accent,title,children}){
-  return <div style={{padding:'12px 14px',borderRadius:12,background:C.white,border:`1.5px dashed ${accent}55`,display:'flex',gap:10,alignItems:'flex-start'}}>
-    <div style={{width:26,height:26,borderRadius:13,background:C.crSoft,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,marginTop:1}}><Icon n="star" sz={13} col={C.cr}/></div>
-    <div>
-      <div style={{fontSize:13,fontWeight:700,color:C.cr,fontFamily:C.P,letterSpacing:'0.06em',textTransform:'uppercase',marginBottom:3}}>{title}</div>
-      <div style={{fontSize:15,color:C.ink2,fontFamily:C.P,lineHeight:1.5}}>{children}</div>
-    </div>
-  </div>;
-}
 /* Before there are enough scores for a match: a WineDNA meter for this wine's type, what unlocks,
    and (unless compact) a clearly labelled example of a personal match. */
 function MatchComingSoon({wine,compact}){
@@ -552,6 +531,8 @@ function MatchComingSoon({wine,compact}){
 }
 
 /* Renders the body of one card. From More (DetailLevel) everything shows; below it each card
+
+/* Renders the body of one card. From More (DetailLevel) everything shows; below it each card
    opens on its picture and main line, and the rest (the reasons, the regional detail, more lines
    to say, the price note) waits behind "More" on that card. */
 function CardFace({card,ctx}){
@@ -559,14 +540,24 @@ function CardFace({card,ctx}){
   const {wine,gen,loading,match,curr,scanData}=ctx;
   const a=card.accent;
   const P=C.P;
-  const H=({children})=><div style={{fontSize:24,fontWeight:800,color:C.ink,fontFamily:P,lineHeight:1.2,letterSpacing:'-0.01em'}}>{children}</div>;
-  const Body=({children,big})=><div style={{fontSize:big?20:17,color:C.ink2,fontFamily:P,lineHeight:1.55}}>{children}</div>;
+  // The app's own sizes (titles 19, text 16): a card holds a paragraph, not a headline.
+  const H=({children})=><div style={{fontSize:19,fontWeight:800,color:C.ink,fontFamily:P,lineHeight:1.25,letterSpacing:'-0.01em'}}>{children}</div>;
+  const Body=({children,dim})=><div style={{fontSize:dim?15:16,color:dim?C.mid:C.ink2,fontFamily:P,lineHeight:1.55}}>{children}</div>;
+  const Sub=({children})=><div style={{fontSize:12.5,fontWeight:700,color:C.mid,fontFamily:P,letterSpacing:'0.06em',textTransform:'uppercase'}}>{children}</div>;
+  // The checked facts under a card, in a quiet box.
+  const Facts=({rows})=>rows.filter(r=>r&&r[1]).length?<div style={{padding:'10px 12px',borderRadius:12,background:C.offWhite,border:`1px solid ${C.line}`,display:'flex',flexDirection:'column',gap:6}}>
+    {rows.filter(r=>r&&r[1]).map(([k,v],i)=><div key={i} style={{fontSize:14,color:C.ink2,fontFamily:P,lineHeight:1.45}}><span style={{fontWeight:700,color:C.ink}}>{k}: </span>{v}</div>)}
+  </div>:null;
+  const deep=ctx.deep, facts=ctx.facts||{};
+  // One of WineDeep's cards: its line, its paragraph behind More, the wait while it's written.
+  const Deep=({f,fallback})=>{ const v=deep&&deep[f];
+    if(!v&&ctx.deepLoading) return <WritingWait compact wine={wine} col={a} sub="Learn more about this wine"/>;
+    return <>
+      <Body>{(v&&v.line)||fallback||'—'}</Body>
+      {v&&v.more&&(expanded?<Body dim>{v.more}</Body>:<More/>)}
+    </>; };
   const More=()=>expanded?null:<div role="button" data-card-more onClick={e=>{ e.stopPropagation(); setExpanded(true); }}
     style={{alignSelf:'flex-start',fontSize:15,fontWeight:700,color:a||C.cr,fontFamily:P,cursor:'pointer',padding:'2px 0'}}>More →</div>;
-
-  // The first scan: what each card will do for them once they've scored a few bottles.
-  const note=ctx.firstScan?_FIRST_NOTES[card.kind==='gen'?card.field:card.kind]:null;
-  const Note=()=>note?<FeatureNote accent={a} title={note.title}>{note.text(wine)}</FeatureNote>:null;
 
   if(card.kind==='first-match') return <div style={{display:'flex',flexDirection:'column',gap:16}}>
     <H>Your match, from your own taste</H>
@@ -574,89 +565,91 @@ function CardFace({card,ctx}){
   </div>;
 
   if(card.kind==='match'){
-    const col=_TONE_COL[match?match.tone:'neutral'];
+    // The story gave the number and a reason each way; here is the whole working.
     return <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:14,textAlign:'center'}}>
-      <MatchRing match={match} size={150}/>
+      <MatchRing match={match} size={120}/>
       <H>{match?match.label:'—'}</H>
-      {match&&match.expected!=null&&<div style={{fontSize:16,color:C.mid,fontFamily:P,marginTop:-6}}>Likely about {match.expected} from you · {match.expectedLabel}</div>}
+      {match&&match.expected!=null&&<div style={{fontSize:15,color:C.mid,fontFamily:P,marginTop:-8}}>Likely about {match.expected} from you · {match.expectedLabel}</div>}
       <div style={{width:'100%',textAlign:'left',padding:'12px 14px',borderRadius:12,background:C.offWhite,border:`1px solid ${C.line}`}}>
         <div style={{fontSize:13,fontWeight:700,color:C.mid,fontFamily:P,letterSpacing:'0.06em',textTransform:'uppercase',marginBottom:6}}>How we got this</div>
         <MatchReasons match={match} col={C.ink2} brief={!expanded}/>
+        {expanded&&match&&match.breakdown&&<div style={{marginTop:4}}><MatchBreakdown match={match}/></div>}
       </div>
-      {match&&match.reasons.length>2&&<More/>}
+      {match&&(match.reasons.length>2||match.breakdown)&&<More/>}
     </div>;
   }
 
-  if(card.kind==='gen'){
-    const val=gen&&gen[card.field];
-    return <div style={{display:'flex',flexDirection:'column',gap:14}}>
-      <H>{card.field==='fact'?'A little story':card.field==='fit'?(match&&match.tone==='good'?'Your kind of bottle':match&&match.tone==='bad'?'Not your usual style':'What might win you over'):'One thing to know'}</H>
-      <Body big>{loading&&!val?<ScanShimmer col={a}/>:(val||'—')}</Body>
-      {expanded&&card.field==='fit'&&match&&match.reasons.length>0&&<div style={{padding:'12px 14px',borderRadius:12,background:C.offWhite,border:`1px solid ${C.line}`}}><MatchReasons match={match} showSummary={false}/></div>}
-      {!expanded&&(card.field==='caution'||(card.field==='fit'&&match&&match.reasons.length>0))&&<More/>}
-      {expanded&&card.field==='caution'&&<div style={{fontSize:15,color:C.mid,fontFamily:C.P,lineHeight:1.55}}>{match&&match.tone==='good'?'Just a tip to get the most out of it, not a reason to hesitate.':'Worth knowing so nothing catches you off guard.'}</div>}
-      <Note/>
-    </div>;
-  }
-
-  if(card.kind==='origin'){
+  if(card.kind==='house'){
+    const classic=facts.classic||[];
     return <div style={{display:'flex',flexDirection:'column',gap:12}}>
-      <H>{wine.region||wine.country}</H>
-      <div style={{display:'flex',flexWrap:'wrap',gap:7}}>
-        {[wine.sub_region,wine.region,wine.country].filter(Boolean).filter((v,i,arr)=>arr.indexOf(v)===i).map((t,i)=>(
-          <span key={i} style={{padding:'5px 12px',borderRadius:20,background:card.soft,color:a,fontSize:14,fontWeight:600,fontFamily:C.P,border:`1px solid ${a}22`}}>{t}</span>
-        ))}
-      </div>
-      <Body big>{loading&&!(gen&&gen.origin)?<ScanShimmer col={a}/>:((gen&&gen.origin)||`${wine.region?wine.region+', ':''}${wine.country} — a classic home for ${(wine.grapes&&wine.grapes[0])||'this style'}.`)}</Body>
-      <More/>
-      {expanded&&<div style={{padding:'12px 14px',borderRadius:12,background:card.soft,border:`1px solid ${a}22`,display:'flex',flexDirection:'column',gap:10}}>
-        <div>
-          <div style={{fontSize:12,fontWeight:700,color:a,fontFamily:C.P,letterSpacing:'0.06em',textTransform:'uppercase',marginBottom:3}}>The regional signature</div>
-          <div style={{fontSize:15.5,color:C.ink2,fontFamily:C.P,lineHeight:1.45}}>{(gen&&gen.region_style)||`Wines from ${wine.region||wine.country} are prized for their sense of place.`}</div>
-        </div>
-        <div style={{borderTop:`1px solid ${a}22`,paddingTop:10}}>
-          <div style={{fontSize:12,fontWeight:700,color:a,fontFamily:C.P,letterSpacing:'0.06em',textTransform:'uppercase',marginBottom:3}}>{wine.producer||'The winemaker'}</div>
-          <div style={{fontSize:15.5,color:C.ink2,fontFamily:C.P,lineHeight:1.45}}>{loading&&!(gen&&gen.estate)?<ScanShimmer col={a}/>:((gen&&gen.estate)||`A producer working in the traditional style of ${wine.region||wine.country}.`)}</div>
-        </div>
+      <H>{wine.producer||'The house'}</H>
+      <Deep f="house" fallback={facts.isClassic?`One of ${facts.region}'s classic houses.`:wine.producer?`A ${facts.region||wine.region||wine.country} producer.`:'The label didn\'t name a producer.'}/>
+      <Facts rows={[[facts.isClassic?'Classic houses here':'Classic houses of '+(facts.region||'the region'),classic.length?classic.join(', '):null]]}/>
+    </div>;
+  }
+
+  if(card.kind==='year'){
+    const y=wine.vintage&&wine.vintage!=='NV'&&wine.vintage!==0?String(wine.vintage):null, w=ScanFlow.drinkWindow(wine), r=deep&&deep.year&&deep.year.rating;
+    return <div style={{display:'flex',flexDirection:'column',gap:12}}>
+      <H>{y||'Non-vintage'}</H>
+      {w&&<div style={{display:'flex',alignItems:'baseline',gap:8,flexWrap:'wrap'}}>
+        <span style={{fontSize:16,fontWeight:800,color:a,fontFamily:P}}>{w.word}</span>
+        <span style={{fontSize:14,color:C.mid,fontFamily:P}}>{w.line}{w.source==='estimate'?' · a rough estimate':''}</span>
+        {r&&r!=='Unknown'&&<span style={{fontSize:12.5,fontWeight:700,color:a,fontFamily:P,padding:'2px 9px',borderRadius:12,background:card.soft}}>{r} vintage</span>}
       </div>}
-      <Note/>
+      <Deep f="year" fallback={y?`The ${y} in ${facts.region||wine.region||wine.country}.`:'A blend of years, made to taste the same every time.'}/>
+    </div>;
+  }
+
+  if(card.kind==='made'){
+    return <div style={{display:'flex',flexDirection:'column',gap:12}}>
+      <H>How it's made</H>
+      <Deep f="made" fallback={facts.winemaking||(facts.classification?`${facts.region} is a ${facts.classification}: the rules below say how long it waits before release.`:null)}/>
+      <Facts rows={[['Classification',facts.classification?`${facts.region} ${facts.classification}`:null],['Ageing rules',facts.agingRules],[facts.grape?`${facts.grape} in the winery`:'',facts.winemaking]]}/>
+    </div>;
+  }
+
+  if(card.kind==='region'){
+    const name=facts.region||wine.region||wine.country;
+    return <div style={{display:'flex',flexDirection:'column',gap:12}}>
+      <H>{name}</H>
+      <Deep f="region" fallback={facts.climate?`${facts.climate}.`:null}/>
+      <Facts rows={[['Inside it',(facts.places||[]).length?facts.places.join(', '):null],['Known for',(facts.keyGrapes||[]).length?facts.keyGrapes.join(', '):null]]}/>
+      {facts.region&&ctx.nav&&<div role="button" onClick={e=>{ e.stopPropagation(); openRegionPage(facts.region,ctx.nav); }} style={{alignSelf:'flex-start',fontSize:15,fontWeight:700,color:a,fontFamily:P,cursor:'pointer'}}>{facts.region}'s page →</div>}
+    </div>;
+  }
+
+  if(card.kind==='table'){
+    const t=deep&&deep.table, pairs=t&&Array.isArray(t.pairings)?t.pairings.filter(x=>x&&x.food):[], plain=WineDNA.capNotes(wine.food_pairings||[]);
+    return <div style={{display:'flex',flexDirection:'column',gap:12}}>
+      <H>At the table</H>
+      {!t&&ctx.deepLoading?<WritingWait compact wine={wine} col={a} sub="Learn more about this wine"/>:<>
+        {t&&t.serve&&<Body>{t.serve}</Body>}
+        {pairs.length>0?<div style={{display:'flex',flexDirection:'column',gap:8}}>
+          {pairs.slice(0,expanded?3:2).map((x,i)=><div key={i} style={{padding:'10px 12px',borderRadius:12,background:card.soft,border:`1px solid ${a}22`}}>
+            <div style={{fontSize:15,fontWeight:700,color:C.ink,fontFamily:P}}>{x.food}</div>
+            {x.why&&<div style={{fontSize:14,color:C.ink2,fontFamily:P,lineHeight:1.45,marginTop:2}}>{x.why}</div>}
+          </div>)}
+          {pairs.length>2&&<More/>}
+        </div>
+        :plain.length>0?<div style={{display:'flex',flexWrap:'wrap',gap:7}}>{plain.map((f,i)=><span key={i} style={{padding:'5px 12px',borderRadius:20,background:card.soft,color:a,fontSize:14,fontWeight:600,fontFamily:P,border:`1px solid ${a}22`}}>{f}</span>)}</div>:null}
+        {facts.food&&<Facts rows={[[`${facts.grape} and food`,facts.food]]}/>}
+      </>}
+    </div>;
+  }
+
+  if(card.kind==='next'){
+    return <div style={{display:'flex',flexDirection:'column',gap:12}}>
+      <H>Next from here</H>
+      {match&&match.breakdown&&match.breakdown.closest&&<Body>{match.breakdown.closest}</Body>}
+      <KeepLearning wine={wine} nav={ctx.nav||(()=>{})} showPro={ctx.showPro} reveal intro="Quizzes and articles this bottle opened, from your WineDNA."/>
     </div>;
   }
 
   if(card.kind==='taste') return <div style={{display:'flex',flexDirection:'column',gap:14}}>
     <TasteCard wine={wine} gen={gen} accent={a} onBlindCall={ctx.onBlindCall}/>
-    <Note/>
   </div>;
 
-  if(card.kind==='talk'){
-    const lines=(gen&&Array.isArray(gen.talk)&&gen.talk.length)?gen.talk:[
-      `A ${wine.type||'red'} that really speaks of ${wine.region||wine.country}.`,
-      (wine.grapes&&wine.grapes[0])?((wine.blend||wine.grapes.length>1)?`A lovely ${wine.grapes[0]}-led blend.`:`Lovely example of ${wine.grapes[0]}.`):'Nicely made, plenty of character.',
-      'Great with the right plate of food.'];
-    return <div style={{display:'flex',flexDirection:'column',gap:14}}>
-      <H>Say it out loud</H>
-      <div style={{display:'flex',flexDirection:'column',gap:10}}>
-        {lines.slice(0,expanded?3:1).map((l,i)=>(
-          <div key={i} style={{display:'flex',gap:10,padding:'11px 13px',borderRadius:13,background:card.soft,border:`1px solid ${a}22`}}>
-            <span style={{fontSize:22,color:a,fontFamily:'Georgia,serif',lineHeight:1,marginTop:-2}}>“</span>
-            <span style={{fontSize:15.5,color:C.ink,fontFamily:C.P,lineHeight:1.5,fontWeight:500}}>{loading&&!(gen&&gen.talk)?'…':l}</span>
-          </div>
-        ))}
-      </div>
-      {(lines.length>1||(gen&&gen.fact2))&&<More/>}
-      {expanded&&gen&&gen.fact2&&<div style={{padding:'12px 14px',borderRadius:12,background:C.offWhite,border:`1px solid ${C.line}`}}>
-        <div style={{fontSize:13,fontWeight:700,color:a,fontFamily:C.P,letterSpacing:'0.06em',textTransform:'uppercase',marginBottom:5}}>Drop this fact</div>
-        <div style={{fontSize:15,color:C.ink2,fontFamily:C.P,lineHeight:1.55}}>{gen.fact2}</div>
-      </div>}
-      <Note/>
-    </div>;
-  }
-
-  if(card.kind==='value') return <div style={{display:'flex',flexDirection:'column',gap:14}}>
-    <ValueFace wine={wine} curr={curr} scanData={scanData} accent={a} soft={card.soft} expanded={expanded}/>
-    <More/>
-    <Note/>
-  </div>;
   if(card.kind==='finish') return null; // rendered specially by deck (needs actions)
   return null;
 }
@@ -677,7 +670,7 @@ function TasteCues({wine,accent}){
   if(isDessertOrFortified) cues.push({l:'Serving size',v:'A smaller 2–3oz pour',tip:'These are richer and higher in alcohol — a small glass goes further.'});
   const notes=WineDNA.capNotes(wine.tasting_notes).slice(0,4);
   return <div style={{display:'flex',flexDirection:'column',gap:14}}>
-    <div style={{fontSize:24,fontWeight:800,color:C.ink,fontFamily:C.P,lineHeight:1.2,letterSpacing:'-0.01em'}}>What to look for</div>
+    <div style={{fontSize:19,fontWeight:800,color:C.ink,fontFamily:C.P,lineHeight:1.25,letterSpacing:'-0.01em'}}>What to look for</div>
     <div style={{display:'flex',flexDirection:'column',gap:12}}>
       {cues.slice(0,isDessertOrFortified?5:4).map((c,i)=>(
         <div key={i} style={{display:'flex',gap:10,alignItems:'baseline'}}>
@@ -817,58 +810,6 @@ function BlindCallResult({score,onClose}){
   </div>;
 }
 
-function ValueFace({wine,curr,scanData,accent,soft,expanded}){
-  // The label's estimate shows straight away; the shop price replaces it when it arrives.
-  const [pd,setPd]=React.useState(()=>{ const l=ScanFlow.shopPrice(wine,curr); return l!=null?{mid:l,source:'label'}:null; });
-  const [loading,setLoading]=React.useState(false);
-  React.useEffect(()=>{
-    if(!wine||!wine.name) return;
-    setLoading(true);
-    ScanFlow.shopEstimate(wine,curr).then(d=>{ if(d) setPd(d); }).finally(()=>setLoading(false));
-  },[wine&&wine.name,curr.code]);
-  const fmt=n=>n!=null?curr.base+Number(n).toLocaleString():'—';
-  // Present when opened from a wine list; converted when the list is in another currency.
-  const lc=scanData.listCurrency, rawList=scanData.listPrice||scanData.restaurantPrice||null;
-  const restaurant=rawList&&lc&&lc!==curr.code?Math.round(rawList/(USD_FX[lc]||1)*(USD_FX[curr.code]||1)):rawList;
-  const mid=pd&&pd.mid;
-  const estListLo=mid!=null?Math.round(mid*2.2):null;
-  const estListHi=mid!=null?Math.round(mid*2.8):null;
-  const ratio=(restaurant&&mid)?(restaurant/mid):null;
-  return <div style={{display:'flex',flexDirection:'column',gap:14}}>
-    <div style={{fontSize:20,fontWeight:800,color:C.ink,fontFamily:C.P,lineHeight:1.2}}>{restaurant?'Retail vs. restaurant':'What it\'s worth'}</div>
-    {loading&&!pd?<ScanShimmer col={accent}/>:pd&&mid!=null?<>
-      <div style={{display:'flex',gap:10}}>
-        <div style={{flex:1,padding:'13px 14px',borderRadius:14,background:soft,border:`1px solid ${accent}22`}}>
-          <div style={{fontSize:12.5,fontWeight:600,color:accent,fontFamily:C.P,marginBottom:3}}>Typical retail</div>
-          <div style={{fontSize:24,fontWeight:800,color:accent,fontFamily:C.P,lineHeight:1}}>{fmt(mid)}</div>
-          <div style={{fontSize:11,fontWeight:700,color:accent+'99',fontFamily:C.P,marginTop:3}}>{curr.code} · shop shelf</div>
-        </div>
-        <div style={{flex:1,padding:'13px 14px',borderRadius:14,background:C.white,border:`1px solid ${C.line}`}}>
-          <div style={{fontSize:12.5,fontWeight:600,color:C.mid,fontFamily:C.P,marginBottom:3}}>{restaurant?'On this list':'On a wine list'}</div>
-          <div style={{fontSize:24,fontWeight:800,color:C.ink,fontFamily:C.P,lineHeight:1}}>{restaurant?fmt(restaurant):`${fmt(estListLo)}–${fmt(estListHi)}`}</div>
-          <div style={{fontSize:11,fontWeight:700,color:C.mid,fontFamily:C.P,marginTop:3}}>{restaurant?`${curr.code} · restaurant`:'typical markup'}</div>
-        </div>
-      </div>
-      <div style={{display:'flex',alignItems:'center',gap:10,padding:'11px 14px',borderRadius:12,background:C.ink,color:'#fff'}}>
-        <div style={{fontSize:22,fontWeight:800,fontFamily:C.P,lineHeight:1}}>{ratio?ratio.toFixed(1)+'×':'~2.5×'}</div>
-        <div style={{fontSize:13.5,fontFamily:C.P,lineHeight:1.4,opacity:.92}}>{ratio?(ratio>=3?'A steep markup versus the shelf price.':ratio>=2?'A fair, typical restaurant markup.':'A gentle markup — good value on a list.'):'Restaurants usually charge two to three times retail.'}</div>
-      </div>
-      {loading&&pd.source==='label'&&<div style={{fontSize:13,color:C.mid,fontFamily:C.P,fontStyle:'italic'}}>Checking current shop prices…</div>}
-      {pd.tier&&<div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-        <span style={{fontSize:14,color:C.mid,fontFamily:C.P}}>Price tier</span>
-        <span style={{fontSize:14,fontWeight:700,color:accent,fontFamily:C.P,textTransform:'capitalize'}}>{String(pd.tier).replace('-',' ')}</span>
-      </div>}
-      {expanded&&pd.note&&<div style={{fontSize:14.5,color:C.ink2,fontFamily:C.P,lineHeight:1.55,padding:'11px 13px',borderRadius:12,background:C.offWhite,border:`1px solid ${C.line}`}}>{pd.note}</div>}
-    </>:<div style={{fontSize:15,color:C.mid,fontFamily:C.P,fontStyle:'italic'}}>Price estimate unavailable for this bottle.</div>}
-  </div>;
-}
-
-/* ── rating: the score, then optional tasting details that sharpen future matches ── */
-/* With `onFinish` (the first scan, inside onboarding) it ends on Continue instead of Keep learning. */
-/* A slider that answers wherever the finger lands on it, not only on the knob. iPhone Safari's
-   own range input only drags from the knob, which sits at the far edge before a score is picked,
-   so a touch that missed it fell through to the card deck as a swipe. touch-action:none and
-   data-noswipe keep the deck out of it; arrow keys work too. unset draws it without a value yet. */
 function TrackSlider({min,max,step=1,value,onChange,col=C.cr,label,unset=false,style}){
   const ref=React.useRef(null), drag=React.useRef(null);
   const clamp=v=>Math.min(max,Math.max(min,v));
@@ -1069,9 +1010,15 @@ function TasteCard({wine,gen,accent,onBlindCall}){
 
 /* ── the deck (three interaction styles) ── */
 function CardDeck({deckStyle,wine,gen,loading,match,curr,scanData,existingRating,nav,showPro,onRated,onSaveForLater,onBlindCall,firstScan,onFinish}){
-  const cards=React.useMemo(()=>buildCards({match,firstScan}),[match&&match.tone,firstScan]);
+  const cards=React.useMemo(()=>buildCards({match}),[match&&match.tone,match&&match.verdict]);
   const [finishStage,setFinishStage]=React.useState('rate');
-  const ctx={wine,gen,loading,match,curr,scanData,onBlindCall,finishStage,firstScan,
+  // "Learn more about this wine" is written the first time the deck opens, then kept on the phone.
+  const [deep,setDeep]=React.useState(()=>WineDeep.get(wine));
+  const [deepLoading,setDeepLoading]=React.useState(false);
+  React.useEffect(()=>{ if(deep||!wine||!wine.name) return; let live=true; setDeepLoading(true);
+    WineDeep.load(wine,match,d=>{ if(!live) return; setDeep(d); setDeepLoading(false); }); return()=>{ live=false; }; },[wine&&wine.name,wine&&wine.vintage]);
+  const facts=React.useMemo(()=>WineDeep.facts(wine),[wine&&wine.name,wine&&wine.vintage]);
+  const ctx={wine,gen,loading,match,curr,scanData,onBlindCall,finishStage,firstScan,deep,deepLoading,facts,nav,showPro,
     finish:()=><>
       {firstScan&&finishStage==='rate'&&<div style={{marginBottom:16}}><MatchComingSoon wine={wine} compact/></div>}
       <RatingPanel wine={wine} existingRating={existingRating} nav={nav} showPro={showPro} curr={curr} onRated={onRated} onSaveForLater={existingRating?null:onSaveForLater} onStage={setFinishStage} onFinish={onFinish}/>

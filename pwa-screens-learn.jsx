@@ -334,8 +334,7 @@ function GenArticleScreen({nav,back,showPro}){
           {/* Loading state */}
           {generating&&(
             <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'40px 20px',gap:14}}>
-              <div style={{width:18,height:18,borderRadius:9,border:`2px solid ${C.cr}`,borderTopColor:'transparent',animation:'storySpin .8s linear infinite'}}/>
-              <span style={{fontSize:16,color:C.mid,fontFamily:C.P,textAlign:'center'}}>Writing your personalised article…</span>
+              <WritingWait sub="Your article" wine={null}/>
             </div>
           )}
 

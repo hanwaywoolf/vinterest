@@ -144,25 +144,27 @@ test.describe('desktop', () => {
     await expect.poll(() => page.evaluate(() => scrollY)).toBeGreaterThan(before + 600);
   });
 
-  test('the deck turns through its cards, and the price check is one of them', async ({ page }) => {
+  test('the deck turns through its cards: the house, the year, how it is made, the region, the table, the tasting cues', async ({ page }) => {
     await page.goto(BASE + '/');
     await show(page, 'learn-wine');
     const phone = page.locator('#learn-wine .phone-app');
     await expect(phone).toContainText('Your match');
     await jump(page, 'learn-wine', 1);
-    await expect(phone).toContainText(SAMPLE_MATCH.tone === 'good' ? 'Your kind of bottle' : SAMPLE_MATCH.tone === 'bad' ? 'Not your usual style' : 'What might win you over');
-    // The same part goes on to the serving tip (decanting, temperature): the next card of the deck.
-    await expect(phone).toContainText('Heads up', { timeout: 8000 });
+    await expect(phone).toContainText('The house');
+    await expect(phone).toContainText('Alain Graillot');
+    // The same part goes on to the year: the next card of the deck.
+    await expect(phone).toContainText('The year', { timeout: 8000 });
     await jump(page, 'learn-wine', 2);
-    await expect(phone).toContainText('Where it');
-    // The origin story reads on down to the winemaker, below the regional signature.
+    await expect(phone).toContainText('How it\'s made');
+    // The region card reads on down.
+    await expect(phone).toContainText('The region', { timeout: 12000 });
     await expect.poll(() => scrolledPx(page, 'learn-wine'), { timeout: 12000 }).toBeGreaterThan(40);
-    // How to taste it, and what to say: the taste card, then the lines to say.
+    // At the table, then the tasting cues.
     await jump(page, 'learn-wine', 3);
-    await expect(phone).toContainText('While you taste');
-    await expect(phone).toContainText('Sound clued-in', { timeout: 10000 });
+    await expect(phone).toContainText('At the table');
+    await expect(phone).toContainText('While you taste', { timeout: 10000 });
     await jump(page, 'learn-wine', 5);
-    await expect(phone).toContainText('Price check');
+    await expect(phone).toContainText('Next from here');
   });
 
   test('rating a bottle slides the rating up and saves it, without changing the other demos', async ({ page }) => {

@@ -161,13 +161,13 @@ test('the scan result at Simple: the top reason either way, and "Why N%?" waits 
   await page.goto(`${BASE}/?demo=1#camera`);
   await page.getByTestId('scan-file').setInputFiles({ name: 'label.png', mimeType: 'image/png', buffer: PNG });
   const root = page.locator('#root');
-  await expect(root).toContainText('Learn about it');
+  await expect(root).toContainText('Learn more about this wine');
   const brief = root.locator('[data-brief="1"]').first();
   await expect(brief).toBeVisible();
   expect(await brief.locator(':scope > div').count()).toBeLessThanOrEqual(2);
   await expect(root).not.toContainText(/Why \d+%\?/);
   // The deck: the match card's reasons are brief, with More for the rest.
-  await root.getByText('Learn about it', { exact: true }).click();
+  await root.getByText('Learn more about this wine', { exact: true }).click();
   await expect(root).toContainText('How we got this');
   const mores = root.locator('[data-card-more]');
   const n = await mores.count();

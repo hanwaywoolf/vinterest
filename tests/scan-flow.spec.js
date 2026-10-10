@@ -14,12 +14,19 @@ const PRIORAT = {
   effervescence: null, abv: 14.5, tasting_notes: ['Black cherry'], food_pairings: ['Lamb'], price_usd: 40, description: 'A test wine.',
 };
 
-async function setup(context, page, { label, list, seed = {} } = {}) {
+// `deep` is the "Learn more about this wine" answer (purpose wine_deep), given after `deepMs`.
+const DEEP = { house: { line: 'Clos Test is a small Priorat estate known for old-vine Garnacha.', more: 'Founded in 1990 on the slate slopes above Gratallops.' },
+  year: { line: 'The 2019 was a warm, even year in Priorat.', more: 'Drinking well now and for a decade.', rating: 'Outstanding', drink_from: 2022, drink_to: 2035, peak_from: 2025, peak_to: 2031 },
+  made: { line: 'Old-vine Garnacha, fermented in open vats and aged in older barrels.', more: 'Little new oak, so the fruit leads.' },
+  region: { line: 'Priorat sits on llicorella, the black slate that gives its wines their mineral edge.', more: 'Gratallops and Porrera are its best-known villages.' },
+  table: { serve: 'Serve just below room temperature and decant for an hour.', pairings: [{ food: 'Roast lamb', why: 'Tannin against fat.' }, { food: 'Grilled chorizo', why: 'Smoke meets smoke.' }, { food: 'Aged Manchego', why: 'Salt against fruit.' }] } };
+async function setup(context, page, { label, list, seed = {}, deep, deepMs = 0 } = {}) {
   await makeDeterministic(page);
   await seedLocalStorage(page, { vinterest_wineDNA_unlock_seen: '1', ...seed });
   await stubNetwork(context, {
     claudeText: (body) => (body.purpose === 'label_scan' && label ? JSON.stringify(label)
-      : body.purpose === 'list_scan' && list ? JSON.stringify(list) : ''),
+      : body.purpose === 'list_scan' && list ? JSON.stringify(list)
+      : body.purpose === 'wine_deep' && deep ? new Promise((ok) => setTimeout(() => ok(JSON.stringify(deep)), deepMs)) : ''),
   });
 }
 const history = (page) => page.evaluate(() => WineHistory.getAll());
@@ -220,9 +227,9 @@ test('every scan opens on the result, even for someone who usually opens the dec
   await page.goto(`${BASE}/?demo=1#camera`);
   await page.getByTestId('scan-file').setInputFiles({ name: 'label.png', mimeType: 'image/png', buffer: PNG });
   const root = page.locator('#root');
-  await expect(root).toContainText('Learn about it');
+  await expect(root).toContainText('Learn more about this wine');
   await expect(root).not.toContainText('How we got this');
-  await root.getByText('Learn about it', { exact: true }).click();
+  await root.getByText('Learn more about this wine', { exact: true }).click();
   await expect(root).toContainText('How we got this');
 });
 
@@ -300,12 +307,12 @@ test('blends are not grapes: phrases split into varieties, guessed grapes are ne
 });
 
 test('the deck: sliders move sliders, a flick turns the card, and it ends on rating with clear end actions', async ({ context, page }) => {
-  await setup(context, page, { label: PRIORAT });
+  await setup(context, page, { label: PRIORAT, deep: DEEP, deepMs: 1500 });
   await page.setViewportSize({ width: 400, height: 860 });
   await page.goto(`${BASE}/?demo=1#camera`);
   await page.getByTestId('scan-file').setInputFiles({ name: 'label.png', mimeType: 'image/png', buffer: PNG });
   const root = page.locator('#root');
-  await root.getByText('Learn about it', { exact: true }).click();
+  await root.getByText('Learn more about this wine', { exact: true }).click();
   await expect(root).toContainText('1 / 9');
   const box = await root.getByText('How we got this').boundingBox();
   // A quick 90px flick is enough; no need to drag a third of the screen.
@@ -315,9 +322,27 @@ test('the deck: sliders move sliders, a flick turns the card, and it ends on rat
   await page.mouse.move(box.x + 110, box.y, { steps: 2 });
   await page.mouse.up();
   await expect(root).toContainText('2 / 9');
-  // Jump to the tasting card and play Blind Call: dragging a slider changes the slider, not the card.
-  for (let i = 0; i < 4; i++) await page.locator('#root div[style*="scaleX(-1)"]').click();
-  await expect(root).toContainText('6 / 9');
+  // The deep cards are written when the deck opens: while Claude writes, the house card says so
+  // and gives something to read; then the line arrives, with the checked facts under it.
+  await expect(root).toContainText('The house');
+  await expect(page.getByTestId('writing-wait').first()).toBeVisible();
+  await expect(root).toContainText('Writing something personalised for you');
+  await expect(page.getByTestId('writing-tip').first()).toBeVisible();
+  await expect(root).toContainText('Clos Test is a small Priorat estate', { timeout: 8000 });
+  await expect(page.getByTestId('writing-wait')).toHaveCount(0);
+  await page.locator('#root div[style*="scaleX(-1)"]').click();
+  await expect(root).toContainText('The year');
+  await expect(root).toContainText('The 2019 was a warm, even year');
+  await page.locator('#root div[style*="scaleX(-1)"]').click();
+  await page.locator('#root div[style*="scaleX(-1)"]').click();
+  await expect(root).toContainText('The region');
+  await expect(root).toContainText('black slate');
+  await page.locator('#root div[style*="scaleX(-1)"]').click();
+  await expect(root).toContainText('At the table');
+  await expect(root).toContainText('Roast lamb');
+  // The tasting card: play Blind Call; dragging a slider changes the slider, not the card.
+  await page.locator('#root div[style*="scaleX(-1)"]').click();
+  await expect(root).toContainText('7 / 9');
   await root.getByText('Tasting it now? Play Blind Call').click();
   const slider = root.getByRole('slider').first();
   const s = await slider.boundingBox();
@@ -325,12 +350,12 @@ test('the deck: sliders move sliders, a flick turns the card, and it ends on rat
   await page.mouse.down();
   await page.mouse.move(s.x + s.width * 0.9, s.y + s.height / 2, { steps: 5 });
   await page.mouse.up();
-  await expect(root).toContainText('6 / 9');
+  await expect(root).toContainText('7 / 9');
   expect(Number(await slider.getAttribute('aria-valuenow'))).toBeGreaterThan(70);
   // Slider colour follows the wine type (red here).
   expect(await slider.evaluate((el) => getComputedStyle(el.children[1]).backgroundColor)).toBe('rgb(139, 26, 47)');
   // Last card is the rating; after saving, the end actions sit apart.
-  for (let i = 0; i < 3; i++) await page.locator('#root div[style*="scaleX(-1)"]').click();
+  for (let i = 0; i < 2; i++) await page.locator('#root div[style*="scaleX(-1)"]').click();
   await expect(root).toContainText('9 / 9');
   await expect(root.getByText('Rate it', { exact: true })).toBeVisible();
   await root.getByText('90', { exact: true }).click();
@@ -393,7 +418,7 @@ test.describe('the deck on a touch screen', () => {
     await page.goto(`${BASE}/?demo=1#camera`);
     await page.getByTestId('scan-file').setInputFiles({ name: 'label.png', mimeType: 'image/png', buffer: PNG });
     const root = page.locator('#root');
-    await root.getByText('Learn about it', { exact: true }).click();
+    await root.getByText('Learn more about this wine', { exact: true }).click();
     await expect(root).toContainText('1 / 9');
     const cdp = await context.newCDPSession(page);
     const drag = async (x0, y, dx, ms) => {
@@ -410,16 +435,16 @@ test.describe('the deck on a touch screen', () => {
     await expect(root).toContainText('2 / 9');
     await drag(100, y, 100, 300);
     await expect(root).toContainText('1 / 9');
-    for (let i = 0; i < 5; i++) await drag(320, 400, -110, 250);
-    await expect(root).toContainText('6 / 9');
+    for (let i = 0; i < 6; i++) await drag(320, 400, -110, 250);
+    await expect(root).toContainText('7 / 9');
     await root.getByText('Tasting it now? Play Blind Call').click();
     const slider = root.getByRole('slider').first();
     const s = await slider.boundingBox();
     await drag(s.x + s.width * 0.5, s.y + s.height / 2, s.width * 0.4, 300);
-    await expect(root).toContainText('6 / 9');
+    await expect(root).toContainText('7 / 9');
     expect(Number(await slider.getAttribute('aria-valuenow'))).toBeGreaterThan(70);
     // From the Blind Call card on, swipe on the card heading (a swipe starting on a slider is the slider's).
-    for (let i = 0; i < 3; i++) await drag(320, (await root.getByText(/^(While you taste|Sound clued-in|Price check)$/).first().boundingBox()).y + 5, -110, 250);
+    for (let i = 0; i < 2; i++) await drag(320, (await root.getByText(/^(While you taste|Next from here|Rate it)$/).first().boundingBox()).y + 5, -110, 250);
     await expect(root).toContainText('9 / 9');
     // The score slider takes a touch anywhere on it, before any score is picked (iPhone's own
     // slider only moved from its knob, parked at the far left, so the touch swiped the card).
@@ -443,7 +468,7 @@ test.describe('a long deck card at Extra large', () => {
     await page.goto(`${BASE}/?demo=1#camera`);
     await page.getByTestId('scan-file').setInputFiles({ name: 'label.png', mimeType: 'image/png', buffer: PNG });
     const root = page.locator('#root');
-    await root.getByText('Learn about it', { exact: true }).click();
+    await root.getByText('Learn more about this wine', { exact: true }).click();
     for (let i = 1; i < 4; i++) { await root.getByText(`${i} / 9`).waitFor(); await page.locator('.sc-swipe > div').last().locator('> div').last().click(); }
     await expect(root).toContainText('4 / 9');
     const body = page.locator('.sc-swipe .sc-scroll').first();
@@ -732,7 +757,7 @@ test('a card always opens at its top, going back to one you had scrolled include
   await page.goto(`${BASE}/?demo=1#camera`);
   await page.getByTestId('scan-file').setInputFiles({ name: 'label.png', mimeType: 'image/png', buffer: PNG });
   const root = page.locator('#root');
-  await root.getByText('Learn about it', { exact: true }).click();
+  await root.getByText('Learn more about this wine', { exact: true }).click();
   await expect(root).toContainText('1 / 9');
   // The card at the top of the deck has the highest z-index.
   const topScroll = (set) => page.evaluate((set) => {
@@ -811,14 +836,15 @@ test('Blind Call asks about the traits the wine shows (bubbles, not texture, for
   await page.goto(`${BASE}/?demo=1#camera`);
   await page.getByTestId('scan-file').setInputFiles({ name: 'label.png', mimeType: 'image/png', buffer: PNG });
   const root = page.locator('#root');
-  await root.getByText('Learn about it', { exact: true }).click();
+  await root.getByText('Learn more about this wine', { exact: true }).click();
   await expect(root).toContainText('1 / 9');
-  for (let i = 0; i < 5; i++) await page.locator('#root div[style*="scaleX(-1)"]').click();
-  await expect(root).toContainText('6 / 9');
+  for (let i = 0; i < 6; i++) await page.locator('#root div[style*="scaleX(-1)"]').click();
+  await expect(root).toContainText('7 / 9');
   await root.getByText('Tasting it now? Play Blind Call').click();
   // Body, acidity and bubbles: a sparkling wine has no texture figure, so it's never asked.
   const sliders = root.getByRole('slider');
-  expect(await sliders.evaluateAll((els) => els.map((e) => e.getAttribute('aria-label')))).toEqual(['Body', 'Acidity', 'Bubbles']);
+  // (The rating card behind it is already drawn, so its slider is in the page too.)
+  expect((await sliders.evaluateAll((els) => els.map((e) => e.getAttribute('aria-label')))).filter((n) => n !== 'Rating')).toEqual(['Body', 'Acidity', 'Bubbles']);
   const out = await page.evaluate((w) => ({
     sparkling: ScanFlow.compareAxes(w),
     red: ScanFlow.compareAxes({ type: 'red', body: 0.8, tannins: 0.7, acidity: 0.6 }),

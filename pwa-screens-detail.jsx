@@ -474,10 +474,7 @@ function DetailMerged({wine,nav,existingRating=0,match}){
         <div>
           <SL label={`About the ${wine.vintage} Vintage`}/>
           {loadingVintage?(
-            <Card style={{padding:14,display:'flex',alignItems:'center',gap:8}}>
-              <div style={{width:12,height:12,borderRadius:6,border:'2px solid rgba(0,0,0,0.08)',borderTopColor:C.cr,animation:'spin .8s linear infinite',flexShrink:0}}/>
-              <span style={{fontSize:15,color:C.mid,fontFamily:C.P,fontStyle:'italic'}}>Analysing vintage…</span>
-            </Card>
+            <Card style={{padding:8}}><WritingWait compact title="Reading the vintage…" wine={wine}/></Card>
           ):vintageInfo?(
             <Card style={{padding:14}}>
               <div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline',marginBottom:12}}>
@@ -806,10 +803,7 @@ function DetailPrice({wine,nav,showPro}){
     <div style={{padding:'16px 20px',display:'flex',flexDirection:'column',gap:20}}>
 
       {loading && (
-        <Card style={{padding:14,display:'flex',alignItems:'center',gap:10}}>
-          <div style={{width:13,height:13,borderRadius:7,border:'2px solid rgba(0,0,0,0.08)',borderTopColor:C.cr,animation:'storySpin .8s linear infinite',flexShrink:0}}/>
-          <span style={{fontSize:15,color:C.mid,fontFamily:C.P,fontStyle:'italic'}}>Estimating price…</span>
-        </Card>
+        <Card style={{padding:8}}><WritingWait compact title="Checking prices where you are…" wine={wine}/></Card>
       )}
 
       {done && hasPrice && (

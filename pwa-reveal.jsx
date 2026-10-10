@@ -381,7 +381,7 @@ function _RvSay({d,col}){
 function _RvEnd({wine,d,firstScan,existingRating,nav,showPro,curr,onDone,onRated,onSaveForLater,onFinish}){
   const rows=[
     {key:'rate',icon:'star',label:existingRating?`Re-rate it (${existingRating})`:'Rate it',sub:existingRating?'Changed your mind?':'Rate it to sharpen your WineDNA',on:()=>onDone('rate')},
-    {key:'learn',icon:'book',label:'Learn about it',sub:'The story, the taste, the region and grape',on:()=>onDone('deck')},
+    {key:'learn',icon:'book',label:'Learn more about this wine',sub:'The house, the year, how it\'s made, the table',on:()=>onDone('deck')},
     ...(existingRating?[]:[{key:'save',icon:'bookmark',label:'Save for later',sub:'Shopping, or not tasted yet',on:()=>onDone('saved')}]),
   ];
   return <div data-rv-stop data-testid="reveal-end" className="rv-sheet" style={{position:'relative',background:C.white,borderRadius:'22px 22px 0 0',padding:'18px 18px calc(18px + env(safe-area-inset-bottom))',maxHeight:'78%',overflowY:'auto',touchAction:'pan-y',boxShadow:'0 -8px 30px rgba(0,0,0,0.4)'}}>

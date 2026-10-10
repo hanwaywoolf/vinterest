@@ -117,15 +117,17 @@ test('"buy again" is used: WineDNA shortlist, the match reasons and the sommelie
   expect(prompts.some((p) => p.includes('Banda Azul Rioja') && p.includes('would buy again'))).toBe(true);
 });
 
-test('after a scan, Learn about it leads the next steps, above Rate it, Save for later, style and price', async ({ context, page }) => {
+test('after a scan, Learn more about this wine leads the next steps, above Rate it, Save for later, style and price', async ({ context, page }) => {
   await newUser(context, page);
   await scan(page);
   const root = page.locator('#root');
   const y = async (t) => (await root.getByText(t, { exact: true }).first().boundingBox()).y;
-  const [learn, rate, save, style] = [await y('Learn about it'), await y('Rate it'), await y('Save for later'), await y('Style')];
+  const [learn, rate, save, style] = [await y('Learn more about this wine'), await y('Rate it'), await y('Save for later'), await y('Style')];
   expect(learn).toBeLessThan(rate);
   expect(rate).toBeLessThan(save);
   expect(save).toBeLessThan(style);
-  await root.getByText('Learn about it', { exact: true }).click();
-  await expect(root).toContainText('How we got this');
+  await root.getByText('Learn more about this wine', { exact: true }).click();
+  // Too early for a match of their own: the deck opens on the meter and a labelled example.
+  await expect(root).toContainText('Your match, from your own taste');
+  await expect(root).toContainText('Example');
 });

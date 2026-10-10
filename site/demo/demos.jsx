@@ -39,6 +39,7 @@ window.claude = {
     const a = _DEMO_CAPTURED.answers || {};
     const text = purpose === 'winedna_summary' ? a.winedna_summary
       : purpose === 'scancard' ? a.scancard
+      : purpose === 'wine_deep' ? a.wine_deep
       : purpose === 'learn_article' ? a.learn_article
       : purpose === 'vintage_info' ? a.vintage_info
       : purpose === 'education' ? a.education
@@ -518,7 +519,7 @@ const VinterestDemo = {
           // Turn the deck to the card p is up to, and read down a long one while it's there. The Blind Call
           // part (p from 0.75) plays on the taste card, whose own number it isn't.
           const blind = p >= BLIND_AT && p < BLIND_END;
-          const i = blind ? 5 : Math.min(_DECK_CARDS - 1, Math.floor(p * _DECK_CARDS + 1e-6)), within = p * _DECK_CARDS - i;
+          const i = blind ? 6 : Math.min(_DECK_CARDS - 1, Math.floor(p * _DECK_CARDS + 1e-6)), within = p * _DECK_CARDS - i;
           if (blind && blindOpened && p < lastBlindP - 0.002) { resetBlind(); draw(); deckAt = -1; }  // chosen again: play it from the start
           if (i !== deckAt) {
             deckAt = i; scroller = null;

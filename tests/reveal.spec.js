@@ -92,7 +92,7 @@ test('the reveal tells the scan in order: label, match, taste, grape, place, a l
   await root.getByText('Skip', { exact: true }).click();
   await expect(scene).toHaveAttribute('data-scene', 'end');
   await expect(root).toContainText('What next?');
-  await root.getByText('Learn about it', { exact: true }).click();
+  await root.getByText('Learn more about this wine', { exact: true }).click();
   await expect(root).toContainText('1 / 9');
   // Coming back to the screen (the deck's back, or from Details) doesn't replay it.
   await page.reload();
