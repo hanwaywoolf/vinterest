@@ -111,6 +111,46 @@ const ScanFlow = {
       :t==='sparkling'?['body','acidity','effervescence']:['body','acidity','texture'];
     return axes.filter(k=>typeof (wine&&wine[k])==='number');
   },
+  /* The reveal (ScanReveal, pwa-reveal.jsx): the few things worth knowing about a scan, as scenes
+     that play for about fifteen seconds before the result. Everything here is already computed or
+     checked: the match from TasteMatch, the traits from the label estimate, the grape and the
+     place from knowledge.json, one line to say from the scan cards (Claude) once it has arrived.
+     Nothing is invented for the sake of a scene: a scene without its facts is left out. */
+  REVEAL_TRAITS:3,
+  reveal(wine,match,gen,wines){
+    wines=wines||WineHistory.getAll();
+    const t=WineDNA._t(wine.type), col=(typeof _TYPE_COLORS!=='undefined'&&_TYPE_COLORS[t])||'#8B1A2F';
+    const identity={type:wine.type||'wine',country:wine.country||'',title:WineDNA.nameYear(wine),producer:wine.producer||'',
+      grapes:WineDNA.grapeLine(wine)||'',region:wine.region&&wine.region!==wine.country?wine.region:'',flag:Regions.wineFlag(wine)||''};
+    // The match: the number and verdict, one reason for and one against. Too early: how close.
+    let m=null;
+    if(match){
+      const pro=match.reasons.find(r=>r.tone==='good'), con=match.reasons.find(r=>r.tone==='bad')||match.reasons.find(r=>r.tone==='neutral');
+      m={pct:match.pct,tone:match.tone,label:match.label,expectedLabel:match.expectedLabel||null,chance:match.chance!=null?match.chance:null,
+        early:match.verdict==='early'?FirstScan.progress(wine,wines):null,vintage:!!match.vintage,
+        pro:pro?pro.text:null,con:con?con.text:null};
+    }
+    // The traits the wine's own screen shows for its type, only those the label gave a figure for.
+    const traits=(WineDNA.AXES_FOR[t]||['body','acidity','sweetness']).filter(k=>typeof wine[k]==='number')
+      .slice(0,this.REVEAL_TRAITS).map(k=>({axis:k,name:WineDNA.AXES[k].name,word:WineDNA.everyday(k,wine[k]),v:wine[k],low:WineDNA.AXES[k].low,high:WineDNA.AXES[k].high}));
+    const notes=WineDNA.capNotes(wine.tasting_notes).slice(0,3);
+    // The lead grape, from the knowledge base's checked line; never a guess about the bottle.
+    const lead=(wine.grapes||[])[0], gk=lead?GrapeUnlocks.key(lead):null, G=gk&&KNOWLEDGE.grapes[gk];
+    const grape=G?{name:gk,blend:!!(wine.blend||(wine.grapes||[]).length>1),typical:wine.grapes_basis==='typical',line:G.profile,famousIn:(G.famousIn||[]).slice(0,2)}:null;
+    // The place: the knowledge-base region with its climate and a spot on the wine map.
+    const rk=Regions.resolve(wine), R=rk&&KNOWLEDGE.regions[rk];
+    let place=null;
+    if(R){
+      const v=Array.isArray(R.at)?KnowledgeMap.views().find(x=>KnowledgeMap._inside(x,R.at)):null;
+      const [x,y]=v?KnowledgeMap.project(v,R.at):[0,0];
+      place={name:rk,country:R.country||wine.country||'',flag:Regions.countryFlag(R.country)||identity.flag,line:R.climate||R.classification||'',
+        grapes:(R.keyGrapes||[]).slice(0,3),map:v?{view:v,x,y}:null};
+    }
+    // One thing to say out loud, from the scan cards once Claude has written them.
+    const talk=gen&&Array.isArray(gen.talk)&&gen.talk.find(x=>typeof x==='string'&&x.trim());
+    const say=talk?{text:talk.trim().replace(/^["“]|["”]$/g,''),kind:'talk'}:gen&&gen.fact?{text:String(gen.fact),kind:'fact'}:null;
+    return {col,identity,match:m,traits,notes,grape,place,say};
+  },
   blindKey(wine){ return 'vinterest_blindcall_result_'+((wine.name||'')+'_'+(wine.vintage||'nv')).replace(/\s/g,'_'); },
   /* Blind Call: played once per wine; the result keeps their guess for the rating step. */
   _blindDoneKey(wine){ return 'vinterest_blindcall_'+((wine.name||'')+'_'+(wine.vintage||'nv')).replace(/\s/g,'_'); },

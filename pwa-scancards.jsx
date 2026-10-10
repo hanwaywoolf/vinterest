@@ -183,8 +183,10 @@ function ScanCardsScreen({nav,back,showPro}){
   const confirmKey='vinterest_scan_confirmed_'+((scanData.wine&&scanData.wine.name)||'').replace(/\s/g,'_');
   const [confirmed,setConfirmed]=React.useState(()=>!!saved||!ScanFlow.needsConfirm(scanData.wine,source)||Handoff.confirmed(confirmKey));
   const [editing,setEditing]=React.useState(false);
-  // Every scan opens on the result; the deck is one tap away ("Learn about it").
-  const [view,setView]=React.useState(()=>scanData.view||'result');
+  // A fresh scan opens on the reveal (ScanReveal, pwa-reveal.jsx), then the result; coming back
+  // to the screen (from Details, say: `tracked`) or a screen that asked for a view skips it.
+  const fresh=!scanData.view&&!scanData.tracked&&(source==='camera'||source==='list')&&!_revealOff();
+  const [view,setView]=React.useState(()=>scanData.view||(fresh?'reveal':'result'));
   const deckStyle=useDeckStyle();
   const curr=React.useMemo(()=>Regional.current(),[]);
   const match=React.useMemo(()=>wine?TasteMatch.assess(wine,WineHistory.getAll()):null,[wine,ratingsVersion]);
@@ -224,11 +226,15 @@ function ScanCardsScreen({nav,back,showPro}){
     </div>;
   }
 
-  return <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden',background:C.bg}}>
-    <ScanHeader wine={wine} nav={nav} back={view==='deck'&&confirmed?()=>setView('result'):back}/>
+  const reveal=confirmed&&view==='reveal';
+  return <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden',background:reveal?'#0F0F0F':C.bg}}>
+    {!reveal&&<ScanHeader wine={wine} nav={nav} back={view==='deck'&&confirmed?()=>setView('result'):back}/>}
     {!confirmed
       ? <ConfirmGate wine={wine} onYes={confirm} onEdit={()=>setEditing(true)} nav={nav}
           onAlt={()=>applyEdit({name:wine.alternative,producer:''})}/>
+      : view==='reveal'
+        ? <ScanReveal wine={wine} match={match} gen={gen} existingRating={existingRating} nav={nav} showPro={showPro} curr={curr}
+            onDone={v=>{ if(v==='saved') setIntent('checking'); setView(v); }}/>
       : view==='deck'
         ? <CardDeck key={deckStyle} deckStyle={deckStyle} wine={wine} gen={gen} loading={loading} match={match} showPro={showPro}
             curr={curr} scanData={scanData} existingRating={existingRating} nav={nav}
@@ -272,22 +278,26 @@ function FirstScanStory({wine,onDone}){
   const deckStyle=useDeckStyle();
   const intent=v=>{ const e=WineHistory.find(wine); if(e) WineHistory.setScanIntent(e.name,e.vintage,v); };
   const [scoredAlready]=React.useState(()=>(WineHistory.find(wine)||{}).rating||0);
-  return <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden',background:C.bg,paddingTop:'env(safe-area-inset-top)'}}>
-    <div style={{padding:'14px 18px 8px',flexShrink:0,display:'flex',alignItems:'flex-start',gap:12}}>
+  const revealing=!_revealOff();
+  return <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden',background:revealing?'#0F0F0F':C.bg,paddingTop:revealing?0:'env(safe-area-inset-top)'}}>
+    {!revealing&&<div style={{padding:'14px 18px 8px',flexShrink:0,display:'flex',alignItems:'flex-start',gap:12}}>
       <div style={{flex:1,minWidth:0}}>
         <div style={{fontSize:13,fontWeight:700,color:C.cr,fontFamily:C.P,letterSpacing:'0.08em',textTransform:'uppercase'}}>Your first bottle</div>
         <div style={{fontSize:20,fontWeight:800,color:C.ink,fontFamily:C.P,lineHeight:1.2,marginTop:2}}>{wine.name}</div>
         <div style={{fontSize:14,color:C.mid,fontFamily:C.P,marginTop:2}}>Here's its story, and what Vinterest will do with every bottle after it.</div>
       </div>
       <span onClick={onDone} role="button" style={{fontSize:15,fontWeight:600,color:C.mid,fontFamily:C.P,cursor:'pointer',paddingTop:2}}>Skip</span>
-    </div>
+    </div>}
     {/* Coming back from the questions, the bottle is already scored: the deck shows that score
         rather than asking again beside a meter that already counts it. */}
-    <CardDeck key={deckStyle} deckStyle={deckStyle} wine={wine} gen={gen} loading={loading} match={match} curr={curr} scanData={{}} existingRating={scoredAlready}
+    {!_revealOff()
+      ?<ScanReveal wine={wine} match={match} gen={gen} existingRating={scoredAlready} firstScan nav={()=>{}} curr={curr} onFinish={onDone}
+          onRated={()=>{ intent('tasted'); setVer(v=>v+1); }} onSaveForLater={()=>{ intent('checking'); onDone(); }}/>
+      :<CardDeck key={deckStyle} deckStyle={deckStyle} wine={wine} gen={gen} loading={loading} match={match} curr={curr} scanData={{}} existingRating={scoredAlready}
       nav={()=>{}} firstScan onFinish={onDone}
       onRated={()=>{ intent('tasted'); setVer(v=>v+1); }}
       onSaveForLater={()=>{ intent('checking'); onDone(); }}
-      onBlindCall={()=>intent('tasting')}/>
+      onBlindCall={()=>intent('tasting')}/>}
     <ScanStyles/>
   </div>;
 }
