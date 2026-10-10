@@ -218,19 +218,19 @@ function DnaTasteTiles({t,nav}){ const T=useTheme();
       const v=Math.max(0,Math.min(1,t.avg[k])), R=21, circ=2*Math.PI*R, A=WineDNA.AXES[k];
       const word=WineDNA.everyday(k,t.avg[k]), page=true;
       // The ring is their wine type's colour (as everything on WineDNA); the picture is ink alone.
-      const ring=t.col;
+      const ring=t.col, ink=T.dark?'rgba(255,255,255,0.88)':SKETCH_INK, pencil=T.dark?'rgba(255,255,255,0.28)':SKETCH_PENCIL;
       return <div key={k} role={page?'button':undefined} tabIndex={page?0:undefined} data-trait={k}
         onClick={page?()=>open(k):undefined} onKeyDown={page?(e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); open(k); } }):undefined}
         aria-label={`${A.name}: ${word}.${page?' What this means.':''}`}
-        style={{background:'#FBF8F3',border:`1px solid ${C.line}`,borderRadius:12,padding:wide?'6px 8px 6px 6px':'8px 4px 7px',display:'flex',flexDirection:wide?'row':'column',alignItems:'center',gap:wide?8:3,cursor:page?'pointer':'default',minWidth:0}}>
+        style={{background:T.dark?T.soft:'#FBF8F3',border:`1px solid ${T.dark?T.line:C.line}`,borderRadius:12,padding:wide?'6px 8px 6px 6px':'8px 4px 7px',display:'flex',flexDirection:wide?'row':'column',alignItems:'center',gap:wide?8:3,cursor:page?'pointer':'default',minWidth:0}}>
         <svg width="50" height="50" viewBox="-25 -25 50 50" aria-hidden="true" style={{overflow:'visible',flexShrink:0}}>
-          <circle r={R} fill="none" stroke={SKETCH_PENCIL} strokeWidth="2.5" strokeDasharray="1 4" strokeLinecap="round"/>
+          <circle r={R} fill="none" stroke={pencil} strokeWidth="2.5" strokeDasharray="1 4" strokeLinecap="round"/>
           <circle r={R} fill="none" stroke={ring} strokeWidth="4" strokeLinecap="round" strokeDasharray={circ} strokeDashoffset={circ*(1-v)} transform="rotate(-90)"/>
-          <g transform="scale(0.62)">{SKETCH_TRAIT[k]?<SketchTraitIcon id={k} inkOnly wine={t.col}/>:<_DnaTraitSketch id={k}/>}</g>
+          <g transform="scale(0.62)">{SKETCH_TRAIT[k]?<SketchTraitIcon id={k} inkOnly wine={t.col} ink={ink}/>:<_DnaTraitSketch id={k} ink={ink}/>}</g>
         </svg>
         <div style={{minWidth:0,textAlign:wide?'left':'center'}}>
-          <div style={{fontSize:14,fontWeight:800,color:C.ink,fontFamily:C.P,lineHeight:1.15,hyphens:'manual'}}>{word}</div>
-          <div style={{fontSize:12,color:C.mid,fontFamily:C.P,lineHeight:1.2}}>{A.name}</div>
+          <div style={{fontSize:14,fontWeight:800,color:T.ink,fontFamily:C.P,lineHeight:1.15,hyphens:'manual'}}>{word}</div>
+          <div style={{fontSize:12,color:T.mid,fontFamily:C.P,lineHeight:1.2}}>{A.name}</div>
         </div>
       </div>;
     })}
@@ -238,8 +238,8 @@ function DnaTasteTiles({t,nav}){ const T=useTheme();
 }
 /* Sweetness and bubbles have no Mastery sketch: a sugar cube and a few bubbles, in ink like the
    rest of WineDNA's tiles. */
-function _DnaTraitSketch({id}){
-  const ink={fill:'none',stroke:SKETCH_INK,strokeLinecap:'round',strokeLinejoin:'round',strokeWidth:1.6};
+function _DnaTraitSketch({id,ink:inkCol=SKETCH_INK}){
+  const ink={fill:'none',stroke:inkCol,strokeLinecap:'round',strokeLinejoin:'round',strokeWidth:1.6};
   if(id==='sweetness') return <g>
         <path d="M-12 -5 L0 -12 L12 -6 L12 7 L0 14 L-12 7 Z M-12 -5 L0 1 L12 -6 M0 1 L0 14" {...ink}/>
   </g>;
@@ -285,9 +285,9 @@ function DnaTarget({k,size=84}){ const T=useTheme();
   if(!k||!k.ready) return null;
   const R=size/2-3, step=R/10, ring=n=>Math.min(R,n*step);
   return <svg data-testid="dna-target" width={size} height={size} viewBox={`${-size/2} ${-size/2} ${size} ${size}`} aria-hidden="true">
-    <circle r={R} fill="#FBF8F3" stroke={C.line}/>
+    <circle r={R} fill={T.dark?T.soft:"#FBF8F3"} stroke={T.line}/>
     <circle r={ring(5)} fill="none" stroke={T.amber} strokeOpacity="0.35" strokeDasharray="2 3"/>
-    <circle r={ring(TasteMatch.CAL_CLOSE)} fill={C.greenBg} stroke={C.green} strokeOpacity="0.45"/>
+    <circle r={ring(TasteMatch.CAL_CLOSE)} fill={T.greenBg} stroke={T.green} strokeOpacity="0.45"/>
     {k.rows.map((r,i)=>{ const m=Math.abs(r.diff), d=Math.min(R-2,m*step), a=i*2.39996;
       const col=m<=TasteMatch.CAL_CLOSE?T.green:m<=5?T.amber:T.tone.bad;
       return <circle key={i} cx={Math.cos(a)*d} cy={Math.sin(a)*d} r={Math.max(2.2,size/34)} fill={col} fillOpacity="0.85"/>; })}
@@ -299,9 +299,9 @@ function DnaTarget({k,size=84}){ const T=useTheme();
 function DnaBandBars({v,col,sel,onPick,small}){ const T=useTheme();
   const B=v&&v.bands; if(!B||!B.length) return null;
   if(small) return <svg data-testid="dna-band-bars" width="96" height="56" viewBox="0 0 96 56" aria-hidden="true" style={{display:'block'}}>
-    <rect x="0.5" y="0.5" width="95" height="55" rx="8" fill="#FBF8F3" stroke={C.line}/>
+    <rect x="0.5" y="0.5" width="95" height="55" rx="8" fill={T.dark?T.soft:"#FBF8F3"} stroke={T.line}/>
     {B.slice(0,5).map((b,i)=>{ const h=Math.max(3,((b.avg||70)-70)/30*40), w=(96-6*(B.length+1))/B.length, x=6+i*(w+6);
-      return <rect key={i} x={x} y={51-h} width={w} height={h} rx="2" fill={b.label===v.topBand?col:C.line}/>; })}
+      return <rect key={i} x={x} y={51-h} width={w} height={h} rx="2" fill={b.label===v.topBand?col:T.line}/>; })}
   </svg>;
   return <div data-testid="dna-band-bars" style={{display:'flex',flexDirection:'column',gap:6}}>
     {B.map((b,i)=>{ const on=sel===i, top=b.label===v.topBand, thin=b.n<2;
@@ -374,9 +374,9 @@ function DnaJourneyBars({J,col,w=96,h=56}){ const T=useTheme();
   if(!J||J.length<2) return null;
   const B=J.slice(-8), max=Math.max(...B.map(b=>b.count),1), gap=3, bw=(w-gap*(B.length+1))/B.length;
   return <svg data-testid="dna-journey-bars" width={w} height={h} viewBox={`0 0 ${w} ${h}`} aria-hidden="true" style={{display:'block'}}>
-    <rect x="0.5" y="0.5" width={w-1} height={h-1} rx="8" fill="#FBF8F3" stroke={C.line}/>
+    <rect x="0.5" y="0.5" width={w-1} height={h-1} rx="8" fill={T.dark?T.soft:"#FBF8F3"} stroke={T.line}/>
     {B.map((b,i)=>{ const x=gap+i*(bw+gap), full=(h-10)*b.count/max, nw=(h-10)*Math.min(b.count,b.newRegions.length)/max;
-      return <g key={i}><rect x={x} y={h-5-full} width={bw} height={full} rx="2" fill={C.line}/><rect x={x} y={h-5-nw} width={bw} height={nw} rx="2" fill={col}/></g>; })}
+      return <g key={i}><rect x={x} y={h-5-full} width={bw} height={full} rx="2" fill={T.line}/><rect x={x} y={h-5-nw} width={bw} height={nw} rx="2" fill={col}/></g>; })}
   </svg>;
 }
 /* WineDNA's page for one trait of one wine type (WineDNA.traitView): where the wines they choose
@@ -395,7 +395,7 @@ function DnaTraitScreen({nav,back}){
   const head=x=><div style={{fontSize:13,fontWeight:600,color:T.mid,letterSpacing:'0.08em',textTransform:'uppercase',fontFamily:C.P,marginTop:4}}>{x}</div>;
   const L=TP.label.toLowerCase(), col=T.lift(_TYPE_COLORS[TP.key]||C.cr);
   if(!tv) return <div style={{flex:1,padding:24,fontFamily:C.P,color:T.mid}}>Nothing to show for that yet. <span role="button" onClick={back} style={{color:T.lift(C.cr),fontWeight:700,cursor:'pointer'}}>Back</span></div>;
-  const R=44, circ=2*Math.PI*R, ring=col;
+  const R=44, circ=2*Math.PI*R, ring=col, ink=T.dark?'rgba(255,255,255,0.88)':SKETCH_INK, pencil=T.dark?'rgba(255,255,255,0.28)':SKETCH_PENCIL;
   const openWine=w=>{ Handoff.openWine({demo:false,wine:w,existingRating:w.rating||0}); nav('detail'); };
   const sel=pick==null?tv.start:pick, step=tv.steps[sel], maxN=Math.max(...tv.steps.map(x=>x.n),1);
   return(
@@ -425,16 +425,16 @@ function DnaTraitScreen({nav,back}){
           </div>}
         </div>}
 
-        <div data-testid="dna-trait-hero" style={{...card,background:'#FBF8F3',border:`1px solid ${C.line}`,flexDirection:'row',alignItems:'center',gap:14}}>
+        <div data-testid="dna-trait-hero" style={{...card,background:T.dark?T.soft:'#FBF8F3',border:`1px solid ${T.dark?T.line:C.line}`,flexDirection:'row',alignItems:'center',gap:14}}>
           <svg width="110" height="110" viewBox="-55 -55 110 110" aria-hidden="true" style={{flexShrink:0,overflow:'visible'}}>
-            <circle r={R} fill="none" stroke={SKETCH_PENCIL} strokeWidth="3.5" strokeDasharray="1 5" strokeLinecap="round"/>
+            <circle r={R} fill="none" stroke={pencil} strokeWidth="3.5" strokeDasharray="1 5" strokeLinecap="round"/>
             <circle r={R} fill="none" stroke={ring} strokeWidth="6" strokeLinecap="round" strokeDasharray={circ} strokeDashoffset={circ*(1-tv.avg)} transform="rotate(-90)"/>
-            <g transform="scale(1.35)">{SKETCH_TRAIT[tv.axis]?<SketchTraitIcon id={tv.axis} inkOnly wine={col}/>:<_DnaTraitSketch id={tv.axis}/>}</g>
+            <g transform="scale(1.35)">{SKETCH_TRAIT[tv.axis]?<SketchTraitIcon id={tv.axis} inkOnly wine={col} ink={ink}/>:<_DnaTraitSketch id={tv.axis} ink={ink}/>}</g>
           </svg>
           <div style={{display:'flex',flexDirection:'column',gap:2,minWidth:0}}>
-            <span style={{fontSize:28,fontWeight:800,color:C.ink,fontFamily:C.P,lineHeight:1.1}}>{tv.word}</span>
-            <span style={{fontSize:14,fontWeight:600,color:C.ink2,fontFamily:C.P}}>The {L} you choose</span>
-            <span style={{fontSize:13,color:C.mid,fontFamily:C.P,lineHeight:1.4}}>From {WineDNA.noun(TP.key,tv.n)}.</span>
+            <span style={{fontSize:28,fontWeight:800,color:T.ink,fontFamily:C.P,lineHeight:1.1}}>{tv.word}</span>
+            <span style={{fontSize:14,fontWeight:600,color:T.ink2,fontFamily:C.P}}>The {L} you choose</span>
+            <span style={{fontSize:13,color:T.mid,fontFamily:C.P,lineHeight:1.4}}>From {WineDNA.noun(TP.key,tv.n)}.</span>
           </div>
         </div>
 
