@@ -166,6 +166,41 @@ test('Android icons and launch screens are rendered for every density (not Capac
   expect(fs.readFileSync(path.join(__dirname, '..', 'assets/android/play-icon-512.png'))[25]).toBe(6); // 32-bit, as Play asks
 });
 
+test('after a TestFlight upload, every internal group gets automatic distribution, and one is made if there is none', async () => {
+  const { ensureInternalGroups, token } = await import(pathToFileURL(path.join(__dirname, '..', 'scripts/testflight-groups.mjs')).href);
+  const { privateKey } = require('node:crypto').generateKeyPairSync('ec', { namedCurve: 'prime256v1' });
+  const p8 = privateKey.export({ type: 'pkcs8', format: 'pem' });
+  // The token is an ES256 JWT for App Store Connect, signed with the key.
+  const jwt = token({ keyId: 'K1', issuerId: 'I1', p8, now: 1000 });
+  const [h, c] = jwt.split('.').slice(0, 2).map((s) => JSON.parse(Buffer.from(s, 'base64url').toString()));
+  expect(h).toEqual({ alg: 'ES256', kid: 'K1', typ: 'JWT' });
+  expect(c).toEqual({ iss: 'I1', iat: 1000, exp: 1600, aud: 'appstoreconnect-v1' });
+  const calls = [];
+  const json = (status, body) => ({ ok: status < 300, status, text: async () => JSON.stringify(body) });
+  const fetchFn = async (url, opts = {}) => {
+    calls.push([opts.method, url, opts.body ? JSON.parse(opts.body) : null]);
+    expect(opts.headers.Authorization).toMatch(/^Bearer ey/);
+    if (url.includes('/apps?')) return json(200, { data: [{ id: 'A1' }] });
+    if (url.includes('/betaGroups?')) return json(200, { data: [
+      { id: 'G1', attributes: { name: 'Team', isInternalGroup: true, hasAccessToAllBuilds: false } },
+      { id: 'G2', attributes: { name: 'Friends', isInternalGroup: true, hasAccessToAllBuilds: true } }] });
+    return json(200, { data: {} });
+  };
+  const out = await ensureInternalGroups({ keyId: 'K1', issuerId: 'I1', p8, fetchFn });
+  expect(out).toEqual({ app: 'A1', created: false, groups: [{ name: 'Team', changed: true }, { name: 'Friends', changed: false }] });
+  // Only the group without it is patched; the one that has it is left alone.
+  expect(calls.filter((c) => c[0] === 'PATCH')).toEqual([['PATCH', 'https://api.appstoreconnect.apple.com/v1/betaGroups/G1', { data: { type: 'betaGroups', id: 'G1', attributes: { hasAccessToAllBuilds: true } } }]]);
+  // No internal group at all: one is made with automatic distribution on.
+  calls.length = 0;
+  const none = async (url, opts = {}) => { calls.push([opts.method, url, opts.body ? JSON.parse(opts.body) : null]);
+    return url.includes('/apps?') ? json(200, { data: [{ id: 'A1' }] }) : url.includes('/betaGroups?') ? json(200, { data: [] }) : json(201, { data: { id: 'G9' } }); };
+  expect(await ensureInternalGroups({ keyId: 'K1', issuerId: 'I1', p8, fetchFn: none })).toEqual({ app: 'A1', created: true, groups: [{ name: 'Internal testers', changed: true }] });
+  expect(calls[2]).toEqual(['POST', 'https://api.appstoreconnect.apple.com/v1/betaGroups', { data: { type: 'betaGroups', attributes: { name: 'Internal testers', isInternalGroup: true, hasAccessToAllBuilds: true }, relationships: { app: { data: { type: 'apps', id: 'A1' } } } } }]);
+  // Apple's own words come through when it refuses.
+  const refuse = async () => json(403, { errors: [{ title: 'FORBIDDEN', detail: 'The API key does not have permission' }] });
+  await expect(ensureInternalGroups({ keyId: 'K1', issuerId: 'I1', p8, fetchFn: refuse })).rejects.toThrow('App Store Connect (403): The API key does not have permission');
+});
+
 test('the Google Play upload signs in with the service account and makes one edit: bundle, track, commit', async () => {
   const crypto = require('node:crypto');
   const { privateKey, publicKey } = crypto.generateKeyPairSync('rsa', { modulusLength: 2048 });
@@ -197,7 +232,7 @@ test('the Google Play upload signs in with the service account and makes one edi
     ['POST', `${app}/edits/E1:commit`],
   ]);
   expect(calls[1][2]).toBe('Bearer tok');
-  expect(calls[3][3]).toEqual({ track: 'internal', releases: [{ versionCodes: ['231'], status: 'draft' }] });
+  expect(calls[3][3]).toEqual({ track: 'internal', releases: [{ versionCodes: ['231'], status: 'completed' }] }); // straight to testers by default
   // Google's own words come through when it refuses.
   const refuse = async (url, opts) => url.startsWith('https://oauth2') ? json(200, { access_token: 't' }) : json(403, { error: { message: 'The caller does not have permission' } });
   await expect(upload({ account, bundle: Buffer.from('x'), fetchFn: refuse })).rejects.toThrow('Google Play (403): The caller does not have permission');
