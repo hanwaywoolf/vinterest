@@ -64,9 +64,15 @@ function _setInput(input, v) {
    pointerdown at that x (which sets the value), then the pointerup that lets go. */
 const _scoreSlider = (root) => root.querySelector('[role="slider"][aria-label="Rating"]');
 function _setScore(slider, score) {
+  // The rating is a dial (RatingDial): the finger lands on its arc, 270° from bottom-left round to
+  // bottom-right, with the centre at (100, 104) of its 200×180 drawing.
+  // Blind Call's sliders are still horizontal bars: the point is a fraction along them.
   const min = Number(slider.getAttribute('aria-valuemin')), max = Number(slider.getAttribute('aria-valuemax'));
-  const r = slider.getBoundingClientRect();
-  const init = { bubbles: true, cancelable: true, pointerId: 1, pointerType: 'mouse', isPrimary: true, button: 0, clientX: r.left + ((score - min) / (max - min)) * r.width, clientY: r.top + r.height / 2 };
+  const r = slider.getBoundingClientRect(), f = (score - min) / (max - min), dial = slider.getAttribute('aria-label') === 'Rating';
+  const deg = (-135 + f * 270) * Math.PI / 180;
+  const init = { bubbles: true, cancelable: true, pointerId: 1, pointerType: 'mouse', isPrimary: true, button: 0,
+    clientX: dial ? r.left + (100 + 76 * Math.sin(deg)) / 200 * r.width : r.left + f * r.width,
+    clientY: dial ? r.top + (104 - 76 * Math.cos(deg)) / 180 * r.height : r.top + r.height / 2 };
   slider.dispatchEvent(new PointerEvent('pointerdown', init));
   slider.dispatchEvent(new PointerEvent('pointerup', init));
 }

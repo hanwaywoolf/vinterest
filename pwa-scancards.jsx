@@ -85,22 +85,37 @@ function ScanShimmer({col}){
   </span>;
 }
 const _TONE_COL={good:C.green,neutral:C.amber,bad:'#B04A3A'};
+/* The deck's theme. The result screen is light; the card deck ("Learn more about this wine") and
+   the reveal's end sheet are drawn on the scan story's dark stage, so the components they share
+   (the cards, the rating, Keep learning, the waiting state) take their colours from here rather
+   than C. `lift` maps an accent set for white (crimson, green, amber, ink) to one that reads on
+   the dark stage; `tint` is a soft wash of an accent for an icon's circle. */
+const _DECK_LIGHT={dark:false,bg:C.bg,card:C.white,ink:C.ink,ink2:C.ink2,mid:C.mid,line:C.line,soft:C.offWhite,crSoft:C.crSoft,
+  green:C.green,greenBg:C.greenBg,amber:C.amber,amberBg:C.amberBg,tone:_TONE_COL,fade0:'rgba(255,255,255,0)',shadow:'0 6px 22px rgba(0,0,0,0.08)',
+  lift:c=>c,tint:(c,soft)=>soft||_alpha(c,0.12)};
+const _DECK_DARK_LIFT={[C.cr]:'#E05A74',[C.green]:'#5FD48F',[C.amber]:'#F2B84B',[C.ink]:'#FFFFFF','#9B6B00':'#F2B84B','#6B2D8B':'#C08BE0','#B04A3A':'#F28B7D','#1E7B4B':'#5FD48F'};
+const _DECK_DARK={dark:true,bg:'#0F0F0F',card:'#1A1A1C',ink:'#FFFFFF',ink2:'rgba(255,255,255,0.86)',mid:'rgba(255,255,255,0.62)',line:'rgba(255,255,255,0.14)',soft:'rgba(255,255,255,0.07)',crSoft:'rgba(224,90,116,0.22)',
+  green:'#5FD48F',greenBg:'rgba(95,212,143,0.16)',amber:'#F2B84B',amberBg:'rgba(242,184,75,0.16)',tone:{good:'#5FD48F',neutral:'#F2B84B',bad:'#F28B7D'},fade0:'rgba(26,26,28,0)',shadow:'0 10px 30px rgba(0,0,0,0.55)',
+  lift:c=>_DECK_DARK_LIFT[c]||c,tint:c=>_alpha(_DECK_DARK_LIFT[c]||c,0.22)};
+function _alpha(c,a){ const m=/^#([0-9a-f]{6})$/i.exec(c||''); if(!m) return c; const n=parseInt(m[1],16); return `rgba(${n>>16},${(n>>8)&255},${n&255},${a})`; }
+const DeckTheme=React.createContext(_DECK_LIGHT);
+const useTheme=()=>React.useContext(DeckTheme);
 /* The wine-type colour WineDNA uses (_TYPE_COLORS), for sliders and selections on this wine. */
 function _typeCol(w){ return (typeof _TYPE_COLORS!=='undefined'&&_TYPE_COLORS[WineDNA._t(w&&w.type)])||C.cr; }
 
 /* The match ring: TasteMatch's percentage, or a dash when it's too early to call. Its text is
    sized to the ring in string px, so a larger text size (TextSize) doesn't spill out of it. */
-function MatchRing({match,size=96}){
-  const pct=match?match.pct:null, col=_TONE_COL[match?match.tone:'neutral'];
+function MatchRing({match,size=96}){ const T=useTheme();
+  const pct=match?match.pct:null, col=T.tone[match?match.tone:'neutral'];
   const r=52,circ=2*Math.PI*r;
   return <div style={{position:'relative',width:size,height:size,flexShrink:0}}>
     <svg width={size} height={size} viewBox="0 0 130 130" style={{transform:'rotate(-90deg)'}}>
-      <circle cx="65" cy="65" r={r} fill="none" stroke={C.line} strokeWidth="10"/>
+      <circle cx="65" cy="65" r={r} fill="none" stroke={T.line} strokeWidth="10"/>
       {pct!=null&&<circle cx="65" cy="65" r={r} fill="none" stroke={col} strokeWidth="10" strokeLinecap="round" strokeDasharray={circ} strokeDashoffset={circ*(1-pct/100)} style={{transition:'stroke-dashoffset 1s cubic-bezier(.34,1.1,.64,1)'}}/>}
     </svg>
     <div style={{position:'absolute',inset:0,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center'}}>
-      <div style={{fontSize:`${size*0.27}px`,fontWeight:800,color:pct!=null?col:C.mid,fontFamily:C.P,lineHeight:1}}>{pct!=null?pct:'—'}{pct!=null&&<span style={{fontSize:`${size*0.12}px`,fontWeight:700}}>%</span>}</div>
-      <div style={{fontSize:'11px',fontWeight:700,color:C.mid,fontFamily:C.P,letterSpacing:'0.1em',textTransform:'uppercase',marginTop:2}}>match</div>
+      <div style={{fontSize:`${size*0.27}px`,fontWeight:800,color:pct!=null?col:T.mid,fontFamily:C.P,lineHeight:1}}>{pct!=null?pct:'—'}{pct!=null&&<span style={{fontSize:`${size*0.12}px`,fontWeight:700}}>%</span>}</div>
+      <div style={{fontSize:'11px',fontWeight:700,color:T.mid,fontFamily:C.P,letterSpacing:'0.1em',textTransform:'uppercase',marginTop:2}}>match</div>
     </div>
   </div>;
 }
@@ -109,20 +124,20 @@ function MatchRing({match,size=96}){
    note (TasteMatch.priceNote) follows them, marked apart: it's said, but it never moves the match. */
 /* brief (the scan result below More, DetailLevel): the first reason for it and the first against,
    without the summary. */
-function MatchReasons({match,col,showSummary=true,priceNote,brief=false}){
+function MatchReasons({match,col,showSummary=true,priceNote,brief=false}){ const T=useTheme();
   if(!match) return null;
   const reasons=brief?[match.reasons.find(r=>r.tone==='good'),match.reasons.find(r=>r.tone==='bad')||match.reasons.find(r=>r.tone==='neutral')].filter(Boolean):match.reasons;
   return <div data-brief={brief?'1':undefined} style={{display:'flex',flexDirection:'column',gap:8}}>
-    {showSummary&&!brief&&<div style={{fontSize:15,color:col||C.ink2,fontFamily:C.P,lineHeight:1.55}}>{match.summary}</div>}
+    {showSummary&&!brief&&<div style={{fontSize:15,color:col||T.ink2,fontFamily:C.P,lineHeight:1.55}}>{match.summary}</div>}
     {reasons.map((r,i)=>(
       <div key={i} style={{display:'flex',gap:9,alignItems:'flex-start',fontSize:15,lineHeight:1.5}}>
-        <span style={{height:'1.5em',display:'flex',alignItems:'center',flexShrink:0}}><span style={{width:8,height:8,borderRadius:4,background:_TONE_COL[r.tone]}}/></span>
-        <span style={{color:C.ink2,fontFamily:C.P}}>{r.text}</span>
+        <span style={{height:'1.5em',display:'flex',alignItems:'center',flexShrink:0}}><span style={{width:8,height:8,borderRadius:4,background:T.tone[r.tone]}}/></span>
+        <span style={{color:T.ink2,fontFamily:C.P}}>{r.text}</span>
       </div>
     ))}
     {priceNote&&<div style={{display:'flex',gap:9,alignItems:'flex-start',fontSize:15,lineHeight:1.5}}>
-      <span style={{height:'1.5em',display:'flex',alignItems:'center',flexShrink:0}}><span style={{width:8,height:8,borderRadius:2,background:C.amber}}/></span>
-      <span style={{color:C.ink2,fontFamily:C.P}}>{priceNote.text} <span style={{color:C.mid}}>This doesn't change the match.</span></span>
+      <span style={{height:'1.5em',display:'flex',alignItems:'center',flexShrink:0}}><span style={{width:8,height:8,borderRadius:2,background:T.amber}}/></span>
+      <span style={{color:T.ink2,fontFamily:C.P}}>{priceNote.text} <span style={{color:T.mid}}>This doesn't change the match.</span></span>
     </div>}
   </div>;
 }
@@ -130,23 +145,23 @@ function MatchReasons({match,col,showSummary=true,priceNote,brief=false}){
 /* "Why 81%?": what about this wine lifts the prediction above their average and what holds it
    back, the wines most like it, and how that becomes the %. Everything comes from
    TasteMatch.breakdown; nothing is worked out here. */
-function MatchBreakdown({match}){
+function MatchBreakdown({match}){ const T=useTheme();
   const [open,setOpen]=React.useState(false);
   const b=match&&match.breakdown; if(!b||match.pct==null) return null;
   const line=(it,sym,col,i)=><div key={i} style={{display:'flex',gap:9,alignItems:'baseline',fontSize:15,fontFamily:C.P,lineHeight:1.45}}>
-    <span style={{fontWeight:800,color:col,width:12,flexShrink:0,textAlign:'center'}}>{sym}</span><span style={{color:C.ink2}}>{it.text}</span></div>;
-  const head=t=><div style={{fontSize:13,fontWeight:700,color:C.mid,fontFamily:C.P,textTransform:'uppercase',letterSpacing:'0.06em'}}>{t}</div>;
+    <span style={{fontWeight:800,color:col,width:12,flexShrink:0,textAlign:'center'}}>{sym}</span><span style={{color:T.ink2}}>{it.text}</span></div>;
+  const head=t=><div style={{fontSize:13,fontWeight:700,color:T.mid,fontFamily:C.P,textTransform:'uppercase',letterSpacing:'0.06em'}}>{t}</div>;
   return <div style={{marginTop:12}}>
-    <div role="button" onClick={()=>setOpen(o=>!o)} style={{display:'flex',alignItems:'center',gap:6,fontSize:15,fontWeight:700,color:C.cr,fontFamily:C.P,cursor:'pointer'}}>
-      Why {match.pct}%? <span style={{display:'inline-block',transform:open?'rotate(90deg)':'none',transition:'transform .15s'}}><Icon n="chevron" sz={12} col={C.cr}/></span>
+    <div role="button" onClick={()=>setOpen(o=>!o)} style={{display:'flex',alignItems:'center',gap:6,fontSize:15,fontWeight:700,color:T.lift(C.cr),fontFamily:C.P,cursor:'pointer'}}>
+      Why {match.pct}%? <span style={{display:'inline-block',transform:open?'rotate(90deg)':'none',transition:'transform .15s'}}><Icon n="chevron" sz={12} col={T.lift(C.cr)}/></span>
     </div>
-    {open&&<div style={{marginTop:10,padding:'12px 14px',borderRadius:12,background:C.offWhite,border:`1px solid ${C.line}`,display:'flex',flexDirection:'column',gap:8}}>
-      <div style={{fontSize:15,color:C.ink2,fontFamily:C.P,lineHeight:1.45}}>You rate {match.breakdownLabel} {b.avg} on average. Compared with that:</div>
-      {b.up.length>0&&<>{head('Brings it up')}{b.up.map((it,i)=>line(it,'↑',C.green,i))}</>}
+    {open&&<div style={{marginTop:10,padding:'12px 14px',borderRadius:12,background:T.soft,border:`1px solid ${T.line}`,display:'flex',flexDirection:'column',gap:8}}>
+      <div style={{fontSize:15,color:T.ink2,fontFamily:C.P,lineHeight:1.45}}>You rate {match.breakdownLabel} {b.avg} on average. Compared with that:</div>
+      {b.up.length>0&&<>{head('Brings it up')}{b.up.map((it,i)=>line(it,'↑',T.green,i))}</>}
       {b.down.length>0&&<>{head('Holds it back')}{b.down.map((it,i)=>line(it,'↓','#B04A3A',i))}</>}
-      {b.even.length>0&&<>{head('No difference')}{b.even.map((it,i)=>line(it,'·',C.mid,i))}</>}
-      {b.closest&&<div style={{fontSize:13,color:C.mid,fontFamily:C.P,lineHeight:1.45,paddingTop:8,borderTop:`1px solid ${C.line}`}}>{b.closest}</div>}
-      <div style={{fontSize:15,color:C.ink2,fontFamily:C.P,lineHeight:1.5}}>{b.pctWhy}</div>
+      {b.even.length>0&&<>{head('No difference')}{b.even.map((it,i)=>line(it,'·',T.mid,i))}</>}
+      {b.closest&&<div style={{fontSize:13,color:T.mid,fontFamily:C.P,lineHeight:1.45,paddingTop:8,borderTop:`1px solid ${T.line}`}}>{b.closest}</div>}
+      <div style={{fontSize:15,color:T.ink2,fontFamily:C.P,lineHeight:1.5}}>{b.pctWhy}</div>
     </div>}
   </div>;
 }
@@ -180,6 +195,10 @@ function ScanCardsScreen({nav,back,showPro}){
   // to the screen (from Details, say: `tracked`) or a screen that asked for a view skips it.
   const fresh=!scanData.view&&!scanData.tracked&&(source==='camera'||source==='list')&&!_revealOff();
   const [view,setView]=React.useState(()=>scanData.view||(fresh?'reveal':'result'));
+  // The view (and the deck's card) is kept on the handoff, so coming back from a page opened from
+  // here (a region's page from the deck, the wine's Details) lands where they left, not on the result.
+  React.useEffect(()=>{ if(!confirmed||(view!=='result'&&view!=='deck')) return; try{ const sd=Handoff.scanResult.get({}); if(sd.view!==view){ sd.view=view; Handoff.openWine(sd); } }catch(e){} },[view,confirmed]);
+  const noteDeckIdx=React.useCallback(i=>{ try{ const sd=Handoff.scanResult.get({}); if(sd.deckIdx!==i){ sd.deckIdx=i; Handoff.openWine(sd); } }catch(e){} },[]);
   const deckStyle=useDeckStyle();
   const curr=React.useMemo(()=>Regional.current(),[]);
   const match=React.useMemo(()=>wine?TasteMatch.assess(wine,WineHistory.getAll()):null,[wine,ratingsVersion]);
@@ -219,8 +238,8 @@ function ScanCardsScreen({nav,back,showPro}){
     </div>;
   }
 
-  const reveal=confirmed&&view==='reveal';
-  return <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden',background:reveal?'#0F0F0F':C.bg}}>
+  const reveal=confirmed&&view==='reveal', dark=reveal||(confirmed&&view==='deck');
+  return <DeckTheme.Provider value={dark?_DECK_DARK:_DECK_LIGHT}><div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden',background:dark?'#0F0F0F':C.bg}}>
     {!reveal&&<ScanHeader wine={wine} nav={nav} back={view==='deck'&&confirmed?()=>setView('result'):back}/>}
     {!confirmed
       ? <ConfirmGate wine={wine} onYes={confirm} onEdit={()=>setEditing(true)} nav={nav}
@@ -230,7 +249,7 @@ function ScanCardsScreen({nav,back,showPro}){
             onDone={v=>{ if(v==='saved') setIntent('checking'); setView(v); }}/>
       : view==='deck'
         ? <CardDeck key={deckStyle} deckStyle={deckStyle} wine={wine} gen={gen} loading={loading} match={match} showPro={showPro}
-            curr={curr} scanData={scanData} existingRating={existingRating} nav={nav}
+            curr={curr} scanData={scanData} existingRating={existingRating} nav={nav} startIdx={scanData.deckIdx||0} onIdx={noteDeckIdx}
             onRated={()=>{ setIntent('tasted'); setRatingsVersion(v=>v+1); }}
             onSaveForLater={()=>{ setIntent('checking'); setView('saved'); }}
             onBlindCall={()=>setIntent('tasting')}/>
@@ -241,7 +260,7 @@ function ScanCardsScreen({nav,back,showPro}){
             onDeck={()=>setView('deck')}/>}
     {editing&&<EditWineSheet wine={wine} onSave={applyEdit} onClose={()=>setEditing(false)}/>}
     <ScanStyles/>
-  </div>;
+  </div></DeckTheme.Provider>;
 }
 
 /* Keyframes and the deck's touch rules, shared by the scan screen and the first-scan story. */
@@ -272,41 +291,41 @@ function FirstScanStory({wine,onDone}){
   const intent=v=>{ const e=WineHistory.find(wine); if(e) WineHistory.setScanIntent(e.name,e.vintage,v); };
   const [scoredAlready]=React.useState(()=>(WineHistory.find(wine)||{}).rating||0);
   const revealing=!_revealOff();
-  return <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden',background:revealing?'#0F0F0F':C.bg,paddingTop:revealing?0:'env(safe-area-inset-top)'}}>
+  return <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden',background:'#0F0F0F',paddingTop:revealing?0:'env(safe-area-inset-top)'}}>
     {!revealing&&<div style={{padding:'14px 18px 8px',flexShrink:0,display:'flex',alignItems:'flex-start',gap:12}}>
       <div style={{flex:1,minWidth:0}}>
-        <div style={{fontSize:13,fontWeight:700,color:C.cr,fontFamily:C.P,letterSpacing:'0.08em',textTransform:'uppercase'}}>Your first bottle</div>
-        <div style={{fontSize:20,fontWeight:800,color:C.ink,fontFamily:C.P,lineHeight:1.2,marginTop:2}}>{wine.name}</div>
-        <div style={{fontSize:14,color:C.mid,fontFamily:C.P,marginTop:2}}>Here's its story, and what Vinterest will do with every bottle after it.</div>
+        <div style={{fontSize:13,fontWeight:700,color:'#E05A74',fontFamily:C.P,letterSpacing:'0.08em',textTransform:'uppercase'}}>Your first bottle</div>
+        <div style={{fontSize:20,fontWeight:800,color:'#fff',fontFamily:C.P,lineHeight:1.2,marginTop:2}}>{wine.name}</div>
+        <div style={{fontSize:14,color:'rgba(255,255,255,0.6)',fontFamily:C.P,marginTop:2}}>Here's its story, and what Vinterest will do with every bottle after it.</div>
       </div>
-      <span onClick={onDone} role="button" style={{fontSize:15,fontWeight:600,color:C.mid,fontFamily:C.P,cursor:'pointer',paddingTop:2}}>Skip</span>
+      <span onClick={onDone} role="button" style={{fontSize:15,fontWeight:600,color:'rgba(255,255,255,0.6)',fontFamily:C.P,cursor:'pointer',paddingTop:2}}>Skip</span>
     </div>}
     {/* Coming back from the questions, the bottle is already scored: the deck shows that score
         rather than asking again beside a meter that already counts it. */}
     {!_revealOff()
       ?<ScanReveal wine={wine} match={match} gen={gen} existingRating={scoredAlready} firstScan nav={()=>{}} curr={curr} onFinish={onDone}
           onRated={()=>{ intent('tasted'); setVer(v=>v+1); }} onSaveForLater={()=>{ intent('checking'); onDone(); }}/>
-      :<CardDeck key={deckStyle} deckStyle={deckStyle} wine={wine} gen={gen} loading={loading} match={match} curr={curr} scanData={{}} existingRating={scoredAlready}
+      :<DeckTheme.Provider value={_DECK_DARK}><CardDeck key={deckStyle} deckStyle={deckStyle} wine={wine} gen={gen} loading={loading} match={match} curr={curr} scanData={{}} existingRating={scoredAlready}
       nav={()=>{}} firstScan onFinish={onDone}
       onRated={()=>{ intent('tasted'); setVer(v=>v+1); }}
       onSaveForLater={()=>{ intent('checking'); onDone(); }}
-      onBlindCall={()=>intent('tasting')}/>}
+      onBlindCall={()=>intent('tasting')}/></DeckTheme.Provider>}
     <ScanStyles/>
   </div>;
 }
 
-function ScanHeader({wine,nav,back}){
-  return <div style={{padding:'12px 16px 10px',flexShrink:0,display:'flex',alignItems:'center',gap:12,background:C.white,borderBottom:`1px solid ${C.line}`}}>
-    <div onClick={back} style={{width:34,height:34,borderRadius:17,background:C.offWhite,border:`1px solid ${C.line}`,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',flexShrink:0}}>
-      <Icon n="back" sz={16} col={C.ink}/>
+function ScanHeader({wine,nav,back}){ const T=useTheme();
+  return <div style={{padding:'12px 16px 10px',flexShrink:0,display:'flex',alignItems:'center',gap:12,background:T.dark?T.bg:T.card,borderBottom:`1px solid ${T.line}`}}>
+    <div onClick={back} style={{width:34,height:34,borderRadius:17,background:T.soft,border:`1px solid ${T.line}`,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',flexShrink:0}}>
+      <Icon n="back" sz={16} col={T.ink}/>
     </div>
     <div style={{flex:1,minWidth:0}}>
-      <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P,lineHeight:1.15,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{wine.name}</div>
-      <div style={{fontSize:13,color:C.mid,fontFamily:C.P,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{[wine.vintage&&wine.vintage!==0?wine.vintage:'NV',wine.region!==wine.country?wine.region:null,wine.country].filter(Boolean).join(' · ')}</div>
+      <div style={{fontSize:16,fontWeight:700,color:T.ink,fontFamily:C.P,lineHeight:1.15,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{wine.name}</div>
+      <div style={{fontSize:13,color:T.mid,fontFamily:C.P,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{[wine.vintage&&wine.vintage!==0?wine.vintage:'NV',wine.region!==wine.country?wine.region:null,wine.country].filter(Boolean).join(' · ')}</div>
     </div>
-    <div onClick={()=>nav('detail')} style={{flexShrink:0,display:'flex',alignItems:'center',gap:4,padding:'7px 12px',borderRadius:20,background:C.offWhite,border:`1px solid ${C.line}`,cursor:'pointer',whiteSpace:'nowrap'}}>
-      <span style={{fontSize:13,fontWeight:600,color:C.ink2,fontFamily:C.P}}>Details</span>
-      <Icon n="chevron" sz={12} col={C.mid}/>
+    <div onClick={()=>nav('detail')} style={{flexShrink:0,display:'flex',alignItems:'center',gap:4,padding:'7px 12px',borderRadius:20,background:T.soft,border:`1px solid ${T.line}`,cursor:'pointer',whiteSpace:'nowrap'}}>
+      <span style={{fontSize:13,fontWeight:600,color:T.ink2,fontFamily:C.P}}>Details</span>
+      <Icon n="chevron" sz={12} col={T.mid}/>
     </div>
   </div>;
 }
@@ -509,23 +528,23 @@ function buildCards({match}){
 
 /* Before there are enough scores for a match: a WineDNA meter for this wine's type, what unlocks,
    and (unless compact) a clearly labelled example of a personal match. */
-function MatchComingSoon({wine,compact}){
+function MatchComingSoon({wine,compact}){ const T=useTheme();
   const p=React.useMemo(()=>FirstScan.progress(wine,WineHistory.getAll()),[wine&&wine.name]);
   const ex=FirstScan.example(wine), col=_typeCol(wine);
   return <div style={{display:'flex',flexDirection:'column',gap:12}}>
-    <div style={{fontSize:compact?16:18,fontWeight:800,color:C.ink,fontFamily:C.P,lineHeight:1.3}}>
+    <div style={{fontSize:compact?16:18,fontWeight:800,color:T.ink,fontFamily:C.P,lineHeight:1.3}}>
       {p.n===0?`Your WineDNA starts with your first rating`:`${p.n} of ${p.need} ${p.many} rated`}</div>
     <div style={{display:'flex',gap:6}} aria-label={`${p.n} of ${p.need} ${p.many} rated`}>
-      {Array.from({length:p.need},(_,i)=><div key={i} style={{flex:1,height:8,borderRadius:4,background:i<p.n?col:C.line}}/>)}
+      {Array.from({length:p.need},(_,i)=><div key={i} style={{flex:1,height:8,borderRadius:4,background:i<p.n?col:T.line}}/>)}
     </div>
-    <div style={{fontSize:15,color:C.ink2,fontFamily:C.P,lineHeight:1.5}}>
+    <div style={{fontSize:15,color:T.ink2,fontFamily:C.P,lineHeight:1.5}}>
       Rate {p.left===1?'one more':p.left} {p.left===1?p.one:p.many} and every {p.one} you scan shows how much you'll like it, before you buy it or as you try it, worked out from your own ratings, not critics'.</div>
     {/* Laid out like the real match card, ring at near full size, and labelled as an example. */}
-    {!compact&&<div style={{padding:'14px 14px 16px',borderRadius:12,background:C.offWhite,border:`1px solid ${C.line}`,display:'flex',flexDirection:'column',alignItems:'center',gap:8,textAlign:'center'}}>
-      <div style={{fontSize:12,fontWeight:700,color:C.mid,fontFamily:C.P,letterSpacing:'0.08em',textTransform:'uppercase'}}>Example</div>
+    {!compact&&<div style={{padding:'14px 14px 16px',borderRadius:12,background:T.soft,border:`1px solid ${T.line}`,display:'flex',flexDirection:'column',alignItems:'center',gap:8,textAlign:'center'}}>
+      <div style={{fontSize:12,fontWeight:700,color:T.mid,fontFamily:C.P,letterSpacing:'0.08em',textTransform:'uppercase'}}>Example</div>
       <MatchRing match={{pct:ex.pct,tone:'good'}} size={120}/>
-      <div style={{fontSize:18,fontWeight:800,color:C.green,fontFamily:C.P}}>{ex.label}</div>
-      <div style={{fontSize:14,color:C.mid,fontFamily:C.P,lineHeight:1.4}}>{ex.line}</div>
+      <div style={{fontSize:18,fontWeight:800,color:T.green,fontFamily:C.P}}>{ex.label}</div>
+      <div style={{fontSize:14,color:T.mid,fontFamily:C.P,lineHeight:1.4}}>{ex.line}</div>
     </div>}
   </div>;
 }
@@ -535,18 +554,18 @@ function MatchComingSoon({wine,compact}){
 /* Renders the body of one card. From More (DetailLevel) everything shows; below it each card
    opens on its picture and main line, and the rest (the reasons, the regional detail, more lines
    to say, the price note) waits behind "More" on that card. */
-function CardFace({card,ctx}){
+function CardFace({card,ctx}){ const T=useTheme();
   const [expanded,setExpanded]=React.useState(()=>DetailLevel.at('more'));
   const {wine,gen,loading,match,curr,scanData}=ctx;
-  const a=card.accent;
+  const a=T.lift(card.accent);
   const P=C.P;
   // The app's own sizes (titles 19, text 16): a card holds a paragraph, not a headline.
-  const H=({children})=><div style={{fontSize:19,fontWeight:800,color:C.ink,fontFamily:P,lineHeight:1.25,letterSpacing:'-0.01em'}}>{children}</div>;
-  const Body=({children,dim})=><div style={{fontSize:dim?15:16,color:dim?C.mid:C.ink2,fontFamily:P,lineHeight:1.55}}>{children}</div>;
-  const Sub=({children})=><div style={{fontSize:12.5,fontWeight:700,color:C.mid,fontFamily:P,letterSpacing:'0.06em',textTransform:'uppercase'}}>{children}</div>;
+  const H=({children})=><div style={{fontSize:19,fontWeight:800,color:T.ink,fontFamily:P,lineHeight:1.25,letterSpacing:'-0.01em'}}>{children}</div>;
+  const Body=({children,dim})=><div style={{fontSize:dim?15:16,color:dim?T.mid:T.ink2,fontFamily:P,lineHeight:1.55}}>{children}</div>;
+  const Sub=({children})=><div style={{fontSize:12.5,fontWeight:700,color:T.mid,fontFamily:P,letterSpacing:'0.06em',textTransform:'uppercase'}}>{children}</div>;
   // The checked facts under a card, in a quiet box.
-  const Facts=({rows})=>rows.filter(r=>r&&r[1]).length?<div style={{padding:'10px 12px',borderRadius:12,background:C.offWhite,border:`1px solid ${C.line}`,display:'flex',flexDirection:'column',gap:6}}>
-    {rows.filter(r=>r&&r[1]).map(([k,v],i)=><div key={i} style={{fontSize:14,color:C.ink2,fontFamily:P,lineHeight:1.45}}><span style={{fontWeight:700,color:C.ink}}>{k}: </span>{v}</div>)}
+  const Facts=({rows})=>rows.filter(r=>r&&r[1]).length?<div style={{padding:'10px 12px',borderRadius:12,background:T.soft,border:`1px solid ${T.line}`,display:'flex',flexDirection:'column',gap:6}}>
+    {rows.filter(r=>r&&r[1]).map(([k,v],i)=><div key={i} style={{fontSize:14,color:T.ink2,fontFamily:P,lineHeight:1.45}}><span style={{fontWeight:700,color:T.ink}}>{k}: </span>{v}</div>)}
   </div>:null;
   const deep=ctx.deep, facts=ctx.facts||{};
   // One of WineDeep's cards: its line, its paragraph behind More, the wait while it's written.
@@ -569,10 +588,10 @@ function CardFace({card,ctx}){
     return <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:14,textAlign:'center'}}>
       <MatchRing match={match} size={120}/>
       <H>{match?match.label:'—'}</H>
-      {match&&match.expected!=null&&<div style={{fontSize:15,color:C.mid,fontFamily:P,marginTop:-8}}>Likely about {match.expected} from you · {match.expectedLabel}</div>}
-      <div style={{width:'100%',textAlign:'left',padding:'12px 14px',borderRadius:12,background:C.offWhite,border:`1px solid ${C.line}`}}>
-        <div style={{fontSize:13,fontWeight:700,color:C.mid,fontFamily:P,letterSpacing:'0.06em',textTransform:'uppercase',marginBottom:6}}>How we got this</div>
-        <MatchReasons match={match} col={C.ink2} brief={!expanded}/>
+      {match&&match.expected!=null&&<div style={{fontSize:15,color:T.mid,fontFamily:P,marginTop:-8}}>Likely about {match.expected} from you · {match.expectedLabel}</div>}
+      <div style={{width:'100%',textAlign:'left',padding:'12px 14px',borderRadius:12,background:T.soft,border:`1px solid ${T.line}`}}>
+        <div style={{fontSize:13,fontWeight:700,color:T.mid,fontFamily:P,letterSpacing:'0.06em',textTransform:'uppercase',marginBottom:6}}>How we got this</div>
+        <MatchReasons match={match} col={T.ink2} brief={!expanded}/>
         {expanded&&match&&match.breakdown&&<div style={{marginTop:4}}><MatchBreakdown match={match}/></div>}
       </div>
       {match&&(match.reasons.length>2||match.breakdown)&&<More/>}
@@ -594,7 +613,7 @@ function CardFace({card,ctx}){
       <H>{y||'Non-vintage'}</H>
       {w&&<div style={{display:'flex',alignItems:'baseline',gap:8,flexWrap:'wrap'}}>
         <span style={{fontSize:16,fontWeight:800,color:a,fontFamily:P}}>{w.word}</span>
-        <span style={{fontSize:14,color:C.mid,fontFamily:P}}>{w.line}{w.source==='estimate'?' · a rough estimate':''}</span>
+        <span style={{fontSize:14,color:T.mid,fontFamily:P}}>{w.line}{w.source==='estimate'?' · a rough estimate':''}</span>
         {r&&r!=='Unknown'&&<span style={{fontSize:12.5,fontWeight:700,color:a,fontFamily:P,padding:'2px 9px',borderRadius:12,background:card.soft}}>{r} vintage</span>}
       </div>}
       <Deep f="year" fallback={y?`The ${y} in ${facts.region||wine.region||wine.country}.`:'A blend of years, made to taste the same every time.'}/>
@@ -627,8 +646,8 @@ function CardFace({card,ctx}){
         {t&&t.serve&&<Body>{t.serve}</Body>}
         {pairs.length>0?<div style={{display:'flex',flexDirection:'column',gap:8}}>
           {pairs.slice(0,expanded?3:2).map((x,i)=><div key={i} style={{padding:'10px 12px',borderRadius:12,background:card.soft,border:`1px solid ${a}22`}}>
-            <div style={{fontSize:15,fontWeight:700,color:C.ink,fontFamily:P}}>{x.food}</div>
-            {x.why&&<div style={{fontSize:14,color:C.ink2,fontFamily:P,lineHeight:1.45,marginTop:2}}>{x.why}</div>}
+            <div style={{fontSize:15,fontWeight:700,color:T.ink,fontFamily:P}}>{x.food}</div>
+            {x.why&&<div style={{fontSize:14,color:T.ink2,fontFamily:P,lineHeight:1.45,marginTop:2}}>{x.why}</div>}
           </div>)}
           {pairs.length>2&&<More/>}
         </div>
@@ -655,8 +674,8 @@ function CardFace({card,ctx}){
 }
 
 /* ── static taste cues (checking / tasted / post-Blind-Call summary) ── */
-function TasteCues({wine,accent}){
-  const a=accent||C.ink;
+function TasteCues({wine,accent}){ const T=useTheme();
+  const a=accent||T.ink;
   const cues=[];
   const type=(wine.type||'red').toLowerCase().replace('é','e');
   const showTannins=['red','orange','fortified'].includes(type);
@@ -670,21 +689,21 @@ function TasteCues({wine,accent}){
   if(isDessertOrFortified) cues.push({l:'Serving size',v:'A smaller 2–3oz pour',tip:'These are richer and higher in alcohol — a small glass goes further.'});
   const notes=WineDNA.capNotes(wine.tasting_notes).slice(0,4);
   return <div style={{display:'flex',flexDirection:'column',gap:14}}>
-    <div style={{fontSize:19,fontWeight:800,color:C.ink,fontFamily:C.P,lineHeight:1.25,letterSpacing:'-0.01em'}}>What to look for</div>
+    <div style={{fontSize:19,fontWeight:800,color:T.ink,fontFamily:C.P,lineHeight:1.25,letterSpacing:'-0.01em'}}>What to look for</div>
     <div style={{display:'flex',flexDirection:'column',gap:12}}>
       {cues.slice(0,isDessertOrFortified?5:4).map((c,i)=>(
         <div key={i} style={{display:'flex',gap:10,alignItems:'baseline'}}>
           <span style={{fontSize:15,fontWeight:700,color:a,fontFamily:C.P,minWidth:92,flexShrink:0}}>{c.l}</span>
           <div style={{flex:1}}>
-            <div style={{fontSize:17,color:C.ink,fontFamily:C.P,fontWeight:600}}>{c.v}</div>
+            <div style={{fontSize:17,color:T.ink,fontFamily:C.P,fontWeight:600}}>{c.v}</div>
           </div>
         </div>
       ))}
     </div>
     {notes.length>0&&<div>
-      <div style={{fontSize:13,fontWeight:700,color:C.mid,fontFamily:C.P,letterSpacing:'0.06em',textTransform:'uppercase',marginBottom:7,marginTop:2}}>Hunt for these flavours</div>
+      <div style={{fontSize:13,fontWeight:700,color:T.mid,fontFamily:C.P,letterSpacing:'0.06em',textTransform:'uppercase',marginBottom:7,marginTop:2}}>Hunt for these flavours</div>
       <div style={{display:'flex',flexWrap:'wrap',gap:6}}>
-        {notes.map((n,i)=>(<span key={i} style={{padding:'5px 11px',borderRadius:20,background:C.offWhite,color:C.ink2,fontSize:15,fontWeight:500,fontFamily:C.P,border:`1px solid ${C.line}`}}>{n}</span>))}
+        {notes.map((n,i)=>(<span key={i} style={{padding:'5px 11px',borderRadius:20,background:T.soft,color:T.ink2,fontSize:15,fontWeight:500,fontFamily:C.P,border:`1px solid ${T.line}`}}>{n}</span>))}
       </div>
     </div>}
   </div>;
@@ -699,7 +718,7 @@ const DIM_CONCEPT={tannins:'tannin_source',acidity:'acidity_and_food',texture:'o
    label gave a figure for (ScanFlow.compareAxes), so every call is scored against the label. */
 function dimsFor(wine){ return ScanFlow.compareAxes(wine); }
 
-function BlindCallCard({wine,gen,accent,onStart}){
+function BlindCallCard({wine,gen,accent,onStart}){ const T=useTheme();
   const [phase,setPhase]=React.useState(()=>ScanFlow.blindPlayed(wine)?'summary':'predict');
   const [guess,setGuess]=React.useState(null);
   const [score,setScore]=React.useState(()=>ScanFlow.blindResult(wine));
@@ -720,7 +739,7 @@ function BlindCallCard({wine,gen,accent,onStart}){
     setPhase('result');
   }
 
-  if(phase==='predict'&&!dims.length) return <div style={{fontSize:15,color:C.mid,fontFamily:C.P,lineHeight:1.5}}>The label didn't tell us enough about this wine's style to play Blind Call on it.</div>;
+  if(phase==='predict'&&!dims.length) return <div style={{fontSize:15,color:T.mid,fontFamily:C.P,lineHeight:1.5}}>The label didn't tell us enough about this wine's style to play Blind Call on it.</div>;
   if(phase==='predict') return <BlindCallPredict dims={dims} col={_typeCol(wine)} onSubmit={g=>{setGuess(g);setPhase('reveal');if(onStart) onStart();}}/>;
   if(phase==='reveal') return <BlindCallReveal wine={wine} dims={dims} guess={guess} col={_typeCol(wine)} onDone={finalizeReveal}/>;
   if(phase==='result') return <>
@@ -728,24 +747,24 @@ function BlindCallCard({wine,gen,accent,onStart}){
     <div style={{minHeight:120}}/>
   </>;
   return <div style={{display:'flex',flexDirection:'column',gap:16}}>
-    <div style={{padding:'12px 14px',borderRadius:12,background:C.greenBg,border:`1px solid ${C.green}30`,display:'flex',alignItems:'center',gap:10}}>
-      <Icon n="check" sz={18} col={C.green}/>
-      <span style={{fontSize:14.5,fontWeight:600,color:C.green,fontFamily:C.P}}>You called it {score?Math.round(score.accuracy*100):'—'}% accurate{score?` · +${score.amount} XP`:''}</span>
+    <div style={{padding:'12px 14px',borderRadius:12,background:T.greenBg,border:`1px solid ${T.green}30`,display:'flex',alignItems:'center',gap:10}}>
+      <Icon n="check" sz={18} col={T.green}/>
+      <span style={{fontSize:14.5,fontWeight:600,color:T.green,fontFamily:C.P}}>You called it {score?Math.round(score.accuracy*100):'—'}% accurate{score?` · +${score.amount} XP`:''}</span>
     </div>
     <TasteCues wine={wine} accent={accent}/>
   </div>;
 }
 
-function BlindCallPredict({dims,col,onSubmit}){
+function BlindCallPredict({dims,col,onSubmit}){ const T=useTheme();
   const [vals,setVals]=React.useState(()=>Object.fromEntries(dims.map(d=>[d,0.5])));
   return <div style={{display:'flex',flexDirection:'column',gap:16}}>
-    <div style={{fontSize:24,fontWeight:800,color:C.ink,fontFamily:C.P,lineHeight:1.2,letterSpacing:'-0.01em'}}>Call it before you look</div>
-    <div style={{fontSize:15,color:C.mid,fontFamily:C.P,lineHeight:1.5}}>Drag each slider to where you think this wine lands — no penalty for missing.</div>
+    <div style={{fontSize:24,fontWeight:800,color:T.ink,fontFamily:C.P,lineHeight:1.2,letterSpacing:'-0.01em'}}>Call it before you look</div>
+    <div style={{fontSize:15,color:T.mid,fontFamily:C.P,lineHeight:1.5}}>Drag each slider to where you think this wine lands — no penalty for missing.</div>
     <div style={{display:'flex',flexDirection:'column',gap:20,marginTop:4}}>
       {dims.map(d=>(
         <div key={d}>
-          <div style={{display:'flex',justifyContent:'space-between',fontSize:12.5,color:C.mid,fontFamily:C.P,marginBottom:6,fontWeight:600,textTransform:'uppercase',letterSpacing:'0.04em'}}>
-            <span>{DIM_LO[d]}</span><span style={{color:C.ink,fontWeight:700}}>{DIM_LABEL[d]}</span><span>{DIM_HI[d]}</span>
+          <div style={{display:'flex',justifyContent:'space-between',fontSize:12.5,color:T.mid,fontFamily:C.P,marginBottom:6,fontWeight:600,textTransform:'uppercase',letterSpacing:'0.04em'}}>
+            <span>{DIM_LO[d]}</span><span style={{color:T.ink,fontWeight:700}}>{DIM_LABEL[d]}</span><span>{DIM_HI[d]}</span>
           </div>
           <TrackSlider label={DIM_LABEL[d]} min={0} max={100} value={Math.round(vals[d]*100)} col={col||C.cr}
             onChange={n=>setVals(v=>({...v,[d]:n/100}))}/>
@@ -756,32 +775,32 @@ function BlindCallPredict({dims,col,onSubmit}){
   </div>;
 }
 
-function BlindCallReveal({wine,dims,guess,col,onDone}){
+function BlindCallReveal({wine,dims,guess,col,onDone}){ const T=useTheme();
   const deltas=dims.map(d=>Math.abs(guess[d]-wine[d]));
   const avgDelta=deltas.reduce((s,x)=>s+x,0)/deltas.length;
   const accuracy=Math.max(0,1-avgDelta*1.6);
   const missed=dims.filter((d,i)=>deltas[i]>0.22);
   return <div style={{display:'flex',flexDirection:'column',gap:16}}>
-    <div style={{fontSize:24,fontWeight:800,color:C.ink,fontFamily:C.P,lineHeight:1.2,letterSpacing:'-0.01em'}}>How you called it</div>
+    <div style={{fontSize:24,fontWeight:800,color:T.ink,fontFamily:C.P,lineHeight:1.2,letterSpacing:'-0.01em'}}>How you called it</div>
     <div style={{display:'flex',flexDirection:'column',gap:20}}>
       {dims.map(d=>{
         const g=guess[d],act=wine[d];
         return <div key={d}>
-          <div style={{fontSize:14,fontWeight:700,color:C.ink,fontFamily:C.P,marginBottom:8}}>{DIM_LABEL[d]}</div>
-          <div style={{position:'relative',height:8,borderRadius:4,background:C.line}}>
-            <div style={{position:'absolute',left:`${act*100}%`,top:-4,width:16,height:16,borderRadius:8,background:C.green,border:'2px solid #fff',boxShadow:'0 1px 4px rgba(0,0,0,0.3)',transform:'translateX(-50%)'}}/>
+          <div style={{fontSize:14,fontWeight:700,color:T.ink,fontFamily:C.P,marginBottom:8}}>{DIM_LABEL[d]}</div>
+          <div style={{position:'relative',height:8,borderRadius:4,background:T.line}}>
+            <div style={{position:'absolute',left:`${act*100}%`,top:-4,width:16,height:16,borderRadius:8,background:T.green,border:'2px solid #fff',boxShadow:'0 1px 4px rgba(0,0,0,0.3)',transform:'translateX(-50%)'}}/>
             <div style={{position:'absolute',left:`${g*100}%`,top:-4,width:16,height:16,borderRadius:8,background:col||C.cr,border:'2px solid #fff',boxShadow:'0 1px 4px rgba(0,0,0,0.3)',transform:'translateX(-50%)',opacity:0.85}}/>
           </div>
-          <div style={{display:'flex',justifyContent:'space-between',fontSize:12,color:C.mid,fontFamily:C.P,marginTop:6}}>
+          <div style={{display:'flex',justifyContent:'space-between',fontSize:12,color:T.mid,fontFamily:C.P,marginTop:6}}>
             <span style={{color:col||C.cr,fontWeight:600}}>● your call</span>
-            <span style={{color:C.green,fontWeight:600}}>● actual</span>
+            <span style={{color:T.green,fontWeight:600}}>● actual</span>
           </div>
         </div>;
       })}
     </div>
-    {missed.length>0&&<div style={{padding:'12px 14px',borderRadius:12,background:C.amberBg,border:`1px solid ${C.amber}30`}}>
-      <div style={{fontSize:14,fontWeight:700,color:C.amber,fontFamily:C.P,marginBottom:3}}>Worth a closer look: {missed.map(d=>DIM_LABEL[d]).join(', ')}</div>
-      <div style={{fontSize:13.5,color:C.ink2,fontFamily:C.P,lineHeight:1.5}}>No cost to missing — we'll queue a short read on this for your shelf.</div>
+    {missed.length>0&&<div style={{padding:'12px 14px',borderRadius:12,background:T.amberBg,border:`1px solid ${T.amber}30`}}>
+      <div style={{fontSize:14,fontWeight:700,color:T.amber,fontFamily:C.P,marginBottom:3}}>Worth a closer look: {missed.map(d=>DIM_LABEL[d]).join(', ')}</div>
+      <div style={{fontSize:13.5,color:T.ink2,fontFamily:C.P,lineHeight:1.5}}>No cost to missing — we'll queue a short read on this for your shelf.</div>
     </div>}
     <Btn primary full onClick={()=>onDone(guess,missed,accuracy)}>See my result</Btn>
   </div>;
@@ -810,7 +829,7 @@ function BlindCallResult({score,onClose}){
   </div>;
 }
 
-function TrackSlider({min,max,step=1,value,onChange,col=C.cr,label,unset=false,style}){
+function TrackSlider({min,max,step=1,value,onChange,col=C.cr,label,unset=false,style}){ const T=useTheme();
   const ref=React.useRef(null), drag=React.useRef(null);
   const clamp=v=>Math.min(max,Math.max(min,v));
   const pct=(clamp(value)-min)/(max-min);
@@ -823,13 +842,54 @@ function TrackSlider({min,max,step=1,value,onChange,col=C.cr,label,unset=false,s
   return <div ref={ref} role="slider" tabIndex={0} aria-label={label} aria-valuemin={min} aria-valuemax={max} aria-valuenow={unset?undefined:value} data-noswipe
     onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={up} onKeyDown={key}
     style={{position:'relative',height:40,touchAction:'none',cursor:'pointer',userSelect:'none',WebkitUserSelect:'none',WebkitTapHighlightColor:'transparent',...style}}>
-    <div style={{...track,right:0,background:C.line}}/>
+    <div style={{...track,right:0,background:T.line}}/>
     {!unset&&<div style={{...track,width:`${pct*100}%`,background:col}}/>}
-    <div style={{position:'absolute',left:`calc(${pct*100}% - 14px)`,top:6,width:28,height:28,borderRadius:14,background:'#fff',border:`2px solid ${unset?C.mid:col}`,boxShadow:'0 1px 5px rgba(0,0,0,0.22)',boxSizing:'border-box'}}/>
+    <div style={{position:'absolute',left:`calc(${pct*100}% - 14px)`,top:6,width:28,height:28,borderRadius:14,background:'#fff',border:`2px solid ${unset?T.mid:col}`,boxShadow:'0 1px 5px rgba(0,0,0,0.22)',boxSizing:'border-box'}}/>
   </div>;
 }
 
-function RatingPanel({wine,existingRating,nav,showPro,curr,onRated,onSaveForLater,onStage,onFinish}){
+/* The rating dial: a 270° arc from ParkerScale.MIN to 100, turned by a finger anywhere on it (the
+   angle from the centre is the rating, so a touch lands a rating at once, as the old slider did
+   anywhere on its bar), the rating and its band in the middle, the presets as ticks round the
+   rim (unnumbered: the preset buttons under it name them). A keyboard moves it by one. Its text is sized in px: it has to fit the drawing. */
+function RatingDial({min,max=100,value,unset=false,onChange,col=C.cr,label='Rating',size=224}){ const T=useTheme();
+  const ref=React.useRef(null), drag=React.useRef(null);
+  const SWEEP=270, A0=-135, cx=100, cy=104, r=76, S=200;
+  const clamp=v=>Math.min(max,Math.max(min,v));
+  const frac=(clamp(value)-min)/(max-min);
+  const pt=(deg,rad=r)=>{ const a=deg*Math.PI/180; return [cx+rad*Math.sin(a),cy-rad*Math.cos(a)]; };
+  const arc=(a,b,rad=r)=>{ const [x0,y0]=pt(a,rad),[x1,y1]=pt(b,rad); return `M${x0.toFixed(2)} ${y0.toFixed(2)} A${rad} ${rad} 0 ${b-a>180?1:0} 1 ${x1.toFixed(2)} ${y1.toFixed(2)}`; };
+  function at(x,y){
+    const b=ref.current.getBoundingClientRect(), vx=(x-b.left)/(b.width||1)*S, vy=(y-b.top)/(b.height||1)*(S*0.9);
+    let deg=Math.atan2(vx-cx,-(vy-cy))*180/Math.PI;           // clockwise from the top, -180..180
+    if(deg>135) deg=deg>157.5?A0:135; if(deg<A0) deg=deg<-157.5?135:A0;  // the gap at the bottom goes to the nearer end
+    return clamp(Math.round(min+(deg-A0)/SWEEP*(max-min)));
+  }
+  function down(e){ if(e.button>0) return; e.stopPropagation(); drag.current=e.pointerId; try{ ref.current.setPointerCapture(e.pointerId); }catch(err){} onChange(at(e.clientX,e.clientY)); }
+  function move(e){ if(drag.current!==e.pointerId) return; e.stopPropagation(); onChange(at(e.clientX,e.clientY)); }
+  function up(e){ if(drag.current===e.pointerId) drag.current=null; }
+  function key(e){ const d={ArrowRight:1,ArrowUp:1,ArrowLeft:-1,ArrowDown:-1}[e.key]; if(d!=null){ e.preventDefault(); onChange(clamp((unset?min:value)+d)); } }
+  const deg=A0+frac*SWEEP, [kx,ky]=pt(deg), lab=unset?'':ParkerScale.label(value);
+  return <div ref={ref} role="slider" tabIndex={0} aria-label={label} aria-valuemin={min} aria-valuemax={max} aria-valuenow={unset?undefined:value} aria-valuetext={unset?'Not rated yet':`${value}, ${lab}`} data-noswipe
+    onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={up} onKeyDown={key}
+    style={{position:'relative',width:size,height:size*0.9,margin:'0 auto',touchAction:'none',cursor:'pointer',userSelect:'none',WebkitUserSelect:'none',WebkitTapHighlightColor:'transparent'}}>
+    <svg viewBox={`0 0 ${S} ${S*0.9}`} width={size} height={size*0.9} aria-hidden="true" style={{display:'block',overflow:'visible'}}>
+      <path d={arc(A0,135)} fill="none" stroke={T.line} strokeWidth="14" strokeLinecap="round"/>
+      {!unset&&frac>0&&<path d={arc(A0,deg)} fill="none" stroke={col} strokeWidth="14" strokeLinecap="round"/>}
+      {ParkerScale.PRESETS.map(p=>{ const a=A0+(p-min)/(max-min)*SWEEP, [x0,y0]=pt(a,r+9), [x1,y1]=pt(a,r+13);
+        return <line key={p} x1={x0} y1={y0} x2={x1} y2={y1} stroke={T.mid} strokeWidth="1.5" strokeLinecap="round"/>; })}
+      <circle cx={kx} cy={ky} r="12" fill={T.card} stroke={unset?T.mid:col} strokeWidth="3" style={{filter:'drop-shadow(0 1px 3px rgba(0,0,0,0.3))'}}/>
+    </svg>
+    <div style={{position:'absolute',left:0,right:0,top:'38%',transform:'translateY(-40%)',textAlign:'center',pointerEvents:'none',fontFamily:C.P}}>
+      {unset
+        ?<div style={{fontSize:'14px',fontWeight:600,color:T.mid,lineHeight:1.3,padding:'0 48px'}}>Turn the dial or tap a rating</div>
+        :<><div style={{display:'flex',alignItems:'baseline',justifyContent:'center',gap:3}}><span style={{fontSize:'46px',fontWeight:800,color:col,lineHeight:1}}>{value}</span><span style={{fontSize:'13px',fontWeight:700,color:T.mid}}>pts</span></div>
+          <div style={{fontSize:'14px',fontWeight:700,color:T.amber,marginTop:4}}>{lab}</div></>}
+    </div>
+  </div>;
+}
+
+function RatingPanel({wine,existingRating,nav,showPro,curr,onRated,onSaveForLater,onStage,onFinish}){ const T=useTheme();
   const [score,setScore]=React.useState(existingRating||0);
   // The first bottle, revisited after scoring it: open on "Your score" (with Continue), not the picker.
   const [saved,setSaved]=React.useState(()=>!!(onFinish&&existingRating>0));
@@ -854,45 +914,39 @@ function RatingPanel({wine,existingRating,nav,showPro,curr,onRated,onSaveForLate
   // After the score and the optional details: what to learn next, then the ways out.
   if(saved&&next) return <div style={{display:'flex',flexDirection:'column',gap:14}}>
     <KeepLearning wine={wine} nav={nav} showPro={showPro} reveal/>
-    <div style={{marginTop:6,paddingTop:16,borderTop:`2px solid ${C.line}`,display:'flex',flexDirection:'column',gap:10}}>
+    <div style={{marginTop:6,paddingTop:16,borderTop:`2px solid ${T.line}`,display:'flex',flexDirection:'column',gap:10}}>
       <Btn primary full onClick={()=>nav('home')}>Finish</Btn>
       <Btn full onClick={()=>nav('detail')}>See full wine details</Btn>
-      <div onClick={()=>nav('camera')} style={{textAlign:'center',fontSize:15,fontWeight:600,color:C.mid,fontFamily:C.P,cursor:'pointer',padding:'2px 0'}}>Scan another bottle</div>
+      <div onClick={()=>nav('camera')} style={{textAlign:'center',fontSize:15,fontWeight:600,color:T.mid,fontFamily:C.P,cursor:'pointer',padding:'2px 0'}}>Scan another bottle</div>
     </div>
   </div>;
   if(saved) return <div style={{display:'flex',flexDirection:'column',gap:14}}>
     <div style={{display:'flex',alignItems:'center',gap:10}}>
-      <div style={{width:36,height:36,borderRadius:18,background:C.greenBg,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><Icon n="check" sz={18} col={C.green}/></div>
+      <div style={{width:36,height:36,borderRadius:18,background:T.greenBg,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><Icon n="check" sz={18} col={T.green}/></div>
       <div>
-        <div style={{fontSize:17,fontWeight:800,color:C.ink,fontFamily:C.P}}>Rated {score} · {label}</div>
-        <div style={{fontSize:13,color:C.mid,fontFamily:C.P}}>Saved to My Wines</div>
+        <div style={{fontSize:17,fontWeight:800,color:T.ink,fontFamily:C.P}}>Rated {score} · {label}</div>
+        <div style={{fontSize:13,color:T.mid,fontFamily:C.P}}>Saved to My Wines</div>
       </div>
     </div>
     <TastingExtras wine={wine} curr={curr}/>
     {/* Set apart from the optional details above so it doesn't read as one of them. */}
-    <div style={{marginTop:10,paddingTop:16,borderTop:`2px solid ${C.line}`}}>
+    <div style={{marginTop:10,paddingTop:16,borderTop:`2px solid ${T.line}`}}>
       {onFinish?<Btn primary full onClick={onFinish}>Continue</Btn>:<Btn primary full onClick={()=>setNext(true)}>Finished: what's next?</Btn>}
     </div>
   </div>;
   return <div style={{display:'flex',flexDirection:'column',gap:14}}>
-    <div style={{fontSize:20,fontWeight:800,color:C.ink,fontFamily:C.P,lineHeight:1.2,textAlign:'center'}}>How was it?</div>
+    <div style={{fontSize:20,fontWeight:800,color:T.ink,fontFamily:C.P,lineHeight:1.2,textAlign:'center'}}>How was it?</div>
+    <RatingDial label="Rating" min={ParkerScale.MIN} max={100} value={Math.max(score,ParkerScale.MIN)} unset={!(score>0)} onChange={setScore} col={tc}/>
     <div style={{display:'flex',gap:6}}>
       {ParkerScale.PRESETS.map(p=>(
-        <div key={p} onClick={()=>setScore(p)} style={{flex:1,padding:'9px 2px',borderRadius:11,border:`1.5px solid ${score===p?tc:C.line}`,background:score===p?tc:C.white,textAlign:'center',cursor:'pointer',transition:'all .12s'}}>
-          <span style={{fontSize:17,fontWeight:700,color:score===p?'#fff':C.mid,fontFamily:C.P}}>{p}</span>
+        <div key={p} onClick={()=>setScore(p)} style={{flex:1,padding:'9px 2px',borderRadius:11,border:`1.5px solid ${score===p?tc:T.line}`,background:score===p?tc:T.card,textAlign:'center',cursor:'pointer',transition:'all .12s'}}>
+          <span style={{fontSize:17,fontWeight:700,color:score===p?'#fff':T.mid,fontFamily:C.P}}>{p}</span>
         </div>
       ))}
     </div>
-    <TrackSlider label="Rating" min={ParkerScale.MIN} max={100} value={Math.max(score,ParkerScale.MIN)} unset={!(score>0)} onChange={setScore} col={tc}/>
-    <div style={{textAlign:'center',minHeight:40}}>
-      {score>0?<div style={{display:'flex',flexDirection:'column',alignItems:'center'}}>
-        <div style={{display:'flex',alignItems:'baseline',gap:3}}><span style={{fontSize:34,fontWeight:800,color:tc,fontFamily:C.P,lineHeight:1}}>{score}</span><span style={{fontSize:13,fontWeight:700,color:C.mid,fontFamily:C.P}}>pts</span></div>
-        <span style={{fontSize:15,fontWeight:600,color:C.amber,fontFamily:C.P}}>{label}</span>
-      </div>:<span style={{fontSize:15,color:C.mid,fontFamily:C.P}}>Slide or tap a rating</span>}
-    </div>
-    <div style={{fontSize:12,color:C.mid,fontFamily:C.P,textAlign:'center',lineHeight:1.5,opacity:0.8}}>100-point scale: 96+ Extraordinary · 90–95 Outstanding · 80–89 Very good · 70–79 Average · under 70 Below average</div>
+    <div style={{fontSize:12,color:T.mid,fontFamily:C.P,textAlign:'center',lineHeight:1.5,opacity:0.8}}>100-point scale: 96+ Extraordinary · 90–95 Outstanding · 80–89 Very good · 70–79 Average · under 70 Below average</div>
     {score>0&&<Btn primary full onClick={commit}>Save rating</Btn>}
-    {onSaveForLater&&<div onClick={onSaveForLater} style={{textAlign:'center',fontSize:15,fontWeight:600,color:C.mid,fontFamily:C.P,cursor:'pointer'}}>Not tasted it yet? Save for later</div>}
+    {onSaveForLater&&<div onClick={onSaveForLater} style={{textAlign:'center',fontSize:15,fontWeight:600,color:T.mid,fontFamily:C.P,cursor:'pointer'}}>Not tasted it yet? Save for later</div>}
   </div>;
 }
 
@@ -900,7 +954,7 @@ function RatingPanel({wine,existingRating,nav,showPro,curr,onRated,onSaveForLate
    guide): "buy again" feeds the Buy again list, WineDNA's "Worth buying again", the sommelier
    script and matching; what they paid feeds Value and their budget; where they had it is shown on
    the wine, searched in My Wines and given to Vinny and the articles written for them. */
-function TastingExtras({wine,curr}){
+function TastingExtras({wine,curr}){ const T=useTheme();
   // After the score, only what's quick to answer: buy again, what they paid and where they had it.
   // Each saves as it changes, so leaving here (or skipping Keep learning) loses nothing; the score
   // itself was saved when they tapped Save rating. A Blind Call guess still records what they
@@ -911,27 +965,27 @@ function TastingExtras({wine,curr}){
   const [again,setAgain]=React.useState(entry.buy_again===true);
   const save=patch=>{ const e=WineHistory.find(wine); if(e) WineHistory.setTasting(e.name,e.vintage,patch); };
   React.useEffect(()=>{ const t=ScanFlow.tastedFromBlindCall(entry); if(!entry.tasted&&t&&Object.keys(t).length) save({tasted:t}); },[]);
-  const lab={fontSize:13,fontWeight:700,color:C.mid,fontFamily:C.P,marginBottom:5};
-  const box={display:'flex',alignItems:'center',gap:6,padding:'8px 10px',borderRadius:10,border:`1.5px solid ${C.line}`,background:C.white};
-  const field={flex:1,minWidth:0,border:'none',outline:'none',fontSize:16,fontFamily:C.P,color:C.ink,background:'transparent'};
-  return <div style={{display:'flex',flexDirection:'column',gap:14,paddingTop:12,borderTop:`1px solid ${C.line}`}}>
+  const lab={fontSize:13,fontWeight:700,color:T.mid,fontFamily:C.P,marginBottom:5};
+  const box={display:'flex',alignItems:'center',gap:6,padding:'8px 10px',borderRadius:10,border:`1.5px solid ${T.line}`,background:T.card};
+  const field={flex:1,minWidth:0,border:'none',outline:'none',fontSize:16,fontFamily:C.P,color:T.ink,background:'transparent'};
+  return <div style={{display:'flex',flexDirection:'column',gap:14,paddingTop:12,borderTop:`1px solid ${T.line}`}}>
     <div onClick={()=>{ const v=!again; setAgain(v); save({buy_again:v}); }} role="checkbox" aria-checked={again}
-      style={{display:'flex',alignItems:'center',gap:12,padding:'12px 14px',borderRadius:12,border:`1.5px solid ${again?C.green:C.line}`,background:again?C.greenBg:C.white,cursor:'pointer'}}>
-      <div style={{width:34,height:34,borderRadius:17,background:again?C.green:C.offWhite,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><Icon n="cart" sz={18} col={again?'#fff':C.mid}/></div>
+      style={{display:'flex',alignItems:'center',gap:12,padding:'12px 14px',borderRadius:12,border:`1.5px solid ${again?T.green:T.line}`,background:again?T.greenBg:T.card,cursor:'pointer'}}>
+      <div style={{width:34,height:34,borderRadius:17,background:again?T.green:T.soft,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><Icon n="cart" sz={18} col={again?'#fff':T.mid}/></div>
       <div style={{flex:1}}>
-        <div style={{fontSize:15,fontWeight:700,color:again?C.green:C.ink,fontFamily:C.P}}>{again?'On your Buy again list':'I\'d buy this again'}</div>
-        <div style={{fontSize:13,color:C.mid,fontFamily:C.P,lineHeight:1.4}}>We'll keep it handy for your next shop and bring it into your sommelier script.</div>
+        <div style={{fontSize:15,fontWeight:700,color:again?T.green:T.ink,fontFamily:C.P}}>{again?'On your Buy again list':'I\'d buy this again'}</div>
+        <div style={{fontSize:13,color:T.mid,fontFamily:C.P,lineHeight:1.4}}>We'll keep it handy for your next shop and bring it into your sommelier script.</div>
       </div>
     </div>
     <div>
       <div style={lab}>What you paid (optional)</div>
       <div style={box}>
-        <span style={{fontSize:15,color:C.mid,fontFamily:C.P}}>{curr.base}</span>
+        <span style={{fontSize:15,color:T.mid,fontFamily:C.P}}>{curr.base}</span>
         <input inputMode="decimal" placeholder="0" value={paid} aria-label="What you paid"
           onChange={e=>{ const v=e.target.value.replace(/[^0-9.]/g,''); setPaid(v); const n=Number(v); save({price_paid:n>0?{amount:n,code:curr.code}:null}); }}
           style={field}/>
       </div>
-      <div style={{fontSize:13,color:C.mid,fontFamily:C.P,marginTop:4}}>Sets your usual spend and shows which bottles are good value for you.</div>
+      <div style={{fontSize:13,color:T.mid,fontFamily:C.P,marginTop:4}}>Sets your usual spend and shows which bottles are good value for you.</div>
     </div>
     <div>
       <div style={lab}>Where did you have it? (optional)</div>
@@ -940,14 +994,14 @@ function TastingExtras({wine,curr}){
           onChange={e=>{ setWhere(e.target.value); save({where_had:e.target.value.trim()||null}); }}
           style={field}/>
       </div>
-      <div style={{fontSize:13,color:C.mid,fontFamily:C.P,marginTop:4}}>Shown on the wine and searchable in My Wines, so you can find it again. Vinny remembers it too.</div>
+      <div style={{fontSize:13,color:T.mid,fontFamily:C.P,marginTop:4}}>Shown on the wine and searchable in My Wines, so you can find it again. Vinny remembers it too.</div>
     </div>
   </div>;
 }
 
 /* "Keep learning": LearnNext's tiles for this wine (its type's basics, region, grape, the next
    beginner article, unread articles about it). Locked ones open the Pro sheet. */
-function KeepLearning({wine,nav,showPro,intro,reveal}){
+function KeepLearning({wine,nav,showPro,intro,reveal}){ const T=useTheme();
   const tiles=React.useMemo(()=>LearnNext.forWine(wine),[wine&&wine.name]);
   // Arriving here from the bottom of the rating (or Save for later) leaves the page scrolled
   // down; with `reveal` it brings its own first line to the top of the scrolling area.
@@ -970,46 +1024,46 @@ function KeepLearning({wine,nav,showPro,intro,reveal}){
   }
   return <div ref={root} style={{display:'flex',flexDirection:'column',gap:10}}>
     <div>
-      <div style={{fontSize:18,fontWeight:800,color:C.ink,fontFamily:C.P}}>Keep learning</div>
-      <div style={{fontSize:14,color:C.mid,fontFamily:C.P,lineHeight:1.45,marginTop:2}}>{intro||'Picked for the wine you just had. A few minutes each.'}</div>
+      <div style={{fontSize:18,fontWeight:800,color:T.ink,fontFamily:C.P}}>Keep learning</div>
+      <div style={{fontSize:14,color:T.mid,fontFamily:C.P,lineHeight:1.45,marginTop:2}}>{intro||'Picked for the wine you just had. A few minutes each.'}</div>
     </div>
     {tiles.map(t=>(
-      <div key={t.key} onClick={()=>open(t)} role="button" style={{display:'flex',alignItems:'center',gap:12,padding:'12px 14px',borderRadius:14,background:C.white,border:`1px solid ${C.line}`,cursor:'pointer'}}>
-        <div style={{width:40,height:40,borderRadius:12,background:t.locked?C.offWhite:(t.col?t.col+'14':C.crSoft),display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
-          {t.kind==='region'&&Regions.flag(t.key.slice(7))?<span role="img" style={{fontSize:'22px',lineHeight:1,opacity:t.locked?0.5:1}}>{Regions.flag(t.key.slice(7))}</span>:<Icon n={t.locked?'lock':t.icon} sz={19} col={t.locked?C.mid:(t.col||C.cr)}/>}
+      <div key={t.key} onClick={()=>open(t)} role="button" style={{display:'flex',alignItems:'center',gap:12,padding:'12px 14px',borderRadius:14,background:T.card,border:`1px solid ${T.line}`,cursor:'pointer'}}>
+        <div style={{width:40,height:40,borderRadius:12,background:t.locked?T.soft:(t.col?t.col+'14':T.crSoft),display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+          {t.kind==='region'&&Regions.flag(t.key.slice(7))?<span role="img" style={{fontSize:'22px',lineHeight:1,opacity:t.locked?0.5:1}}>{Regions.flag(t.key.slice(7))}</span>:<Icon n={t.locked?'lock':t.icon} sz={19} col={t.locked?T.mid:(t.col||C.cr)}/>}
         </div>
         <div style={{flex:1,minWidth:0}}>
-          <div style={{fontSize:15,fontWeight:700,color:C.ink,fontFamily:C.P,lineHeight:1.3}}>{t.title}</div>
-          <div style={{fontSize:13,color:C.mid,fontFamily:C.P,lineHeight:1.4,marginTop:2}}>{t.why}</div>
-          {(t.progress||t.locked)&&<div style={{fontSize:12,fontWeight:700,color:t.locked?C.amber:C.ink2,fontFamily:C.P,marginTop:4}}>{t.locked?'Unlock with Pro':t.progress}</div>}
+          <div style={{fontSize:15,fontWeight:700,color:T.ink,fontFamily:C.P,lineHeight:1.3}}>{t.title}</div>
+          <div style={{fontSize:13,color:T.mid,fontFamily:C.P,lineHeight:1.4,marginTop:2}}>{t.why}</div>
+          {(t.progress||t.locked)&&<div style={{fontSize:12,fontWeight:700,color:t.locked?T.amber:T.ink2,fontFamily:C.P,marginTop:4}}>{t.locked?'Unlock with Pro':t.progress}</div>}
         </div>
         {busy===t.key
-          ?<div style={{width:14,height:14,borderRadius:7,border:`2px solid ${C.line}`,borderTopColor:C.cr,animation:'scSpin .8s linear infinite',flexShrink:0}}/>
-          :t.locked?<ProBadge/>:<Icon n="chevron" sz={13} col={C.mid}/>}
+          ?<div style={{width:14,height:14,borderRadius:7,border:`2px solid ${T.line}`,borderTopColor:C.cr,animation:'scSpin .8s linear infinite',flexShrink:0}}/>
+          :t.locked?<ProBadge/>:<Icon n="chevron" sz={13} col={T.mid}/>}
       </div>
     ))}
   </div>;
 }
 
 /* The "while you taste" card: taste cues, with Blind Call on offer for someone drinking it now. */
-function TasteCard({wine,gen,accent,onBlindCall}){
+function TasteCard({wine,gen,accent,onBlindCall}){ const T=useTheme();
   const played=ScanFlow.blindPlayed(wine);
   const [blind,setBlind]=React.useState(played);
   if(blind) return <BlindCallCard wine={wine} gen={gen} accent={accent} onStart={onBlindCall}/>;
   return <div style={{display:'flex',flexDirection:'column',gap:14}}>
     <TasteCues wine={wine} accent={accent}/>
-    <div onClick={()=>setBlind(true)} style={{padding:'12px 14px',borderRadius:12,background:C.crSoft,border:`1px solid ${C.crDim}`,cursor:'pointer',display:'flex',alignItems:'center',gap:10}}>
-      <Icon n="bolt" sz={18} col={C.cr}/>
+    <div onClick={()=>setBlind(true)} style={{padding:'12px 14px',borderRadius:12,background:T.crSoft,border:`1px solid ${T.dark?T.line:C.crDim}`,cursor:'pointer',display:'flex',alignItems:'center',gap:10}}>
+      <Icon n="bolt" sz={18} col={T.lift(C.cr)}/>
       <div style={{flex:1}}>
-        <div style={{fontSize:15,fontWeight:700,color:C.cr,fontFamily:C.P}}>Tasting it now? Play Blind Call</div>
-        <div style={{fontSize:13,color:C.ink2,fontFamily:C.P}}>Call the body, acidity and more before you see the answer.</div>
+        <div style={{fontSize:15,fontWeight:700,color:T.lift(C.cr),fontFamily:C.P}}>Tasting it now? Play Blind Call</div>
+        <div style={{fontSize:13,color:T.ink2,fontFamily:C.P}}>Call the body, acidity and more before you see the answer.</div>
       </div>
     </div>
   </div>;
 }
 
 /* ── the deck (three interaction styles) ── */
-function CardDeck({deckStyle,wine,gen,loading,match,curr,scanData,existingRating,nav,showPro,onRated,onSaveForLater,onBlindCall,firstScan,onFinish}){
+function CardDeck({deckStyle,wine,gen,loading,match,curr,scanData,existingRating,nav,showPro,onRated,onSaveForLater,onBlindCall,firstScan,onFinish,startIdx=0,onIdx}){ const T=useTheme();
   const cards=React.useMemo(()=>buildCards({match}),[match&&match.tone,match&&match.verdict]);
   const [finishStage,setFinishStage]=React.useState('rate');
   // "Learn more about this wine" is written the first time the deck opens, then kept on the phone.
@@ -1023,7 +1077,8 @@ function CardDeck({deckStyle,wine,gen,loading,match,curr,scanData,existingRating
       {firstScan&&finishStage==='rate'&&<div style={{marginBottom:16}}><MatchComingSoon wine={wine} compact/></div>}
       <RatingPanel wine={wine} existingRating={existingRating} nav={nav} showPro={showPro} curr={curr} onRated={onRated} onSaveForLater={existingRating?null:onSaveForLater} onStage={setFinishStage} onFinish={onFinish}/>
     </>};
-  const [idx,setIdx]=React.useState(0);
+  const [idx,setIdx]=React.useState(()=>Math.max(0,Math.min(startIdx,cards.length-1)));
+  React.useEffect(()=>{ if(onIdx) onIdx(idx); },[idx]);
 
   const total=cards.length;
   const go=d=>setIdx(i=>Math.max(0,Math.min(total-1,i+d)));
@@ -1034,7 +1089,7 @@ function CardDeck({deckStyle,wine,gen,loading,match,curr,scanData,existingRating
     {/* progress dots */}
     <div style={{display:'flex',gap:5,padding:'12px 20px 6px',justifyContent:'center',flexWrap:'wrap',flexShrink:0}}>
       {cards.map((c,i)=>(
-        <div key={c.key} onClick={()=>deckStyle==='deck'&&setIdx(i)} style={{height:4,borderRadius:2,flex:deckStyle==='deck'?'0 0 auto':1,width:deckStyle==='deck'?(i===idx?22:14):'auto',maxWidth:deckStyle==='deck'?undefined:34,background:i<=idx?c.accent:C.line,transition:'all .25s',cursor:deckStyle==='deck'?'pointer':'default'}}/>
+        <div key={c.key} onClick={()=>deckStyle==='deck'&&setIdx(i)} style={{height:4,borderRadius:2,flex:deckStyle==='deck'?'0 0 auto':1,width:deckStyle==='deck'?(i===idx?22:14):'auto',maxWidth:deckStyle==='deck'?undefined:34,background:i<=idx?T.lift(c.accent):T.line,transition:'all .25s',cursor:deckStyle==='deck'?'pointer':'default'}}/>
       ))}
     </div>
 
@@ -1047,7 +1102,7 @@ function CardDeck({deckStyle,wine,gen,loading,match,curr,scanData,existingRating
 /* shared card chrome */
 /* The last card's label follows the rating step: Rate it, then Your score, then Keep learning. */
 const _FINISH_HEAD={rate:null,saved:{eyebrow:'Your rating',icon:'check'},next:{eyebrow:'Keep learning',icon:'book'}};
-function CardShell({card,children,ctx,style,active}){
+function CardShell({card,children,ctx,style,active}){ const T=useTheme();
   const isFinish=card.kind==='finish';
   const head=(isFinish&&ctx&&_FINISH_HEAD[ctx.finishStage])||card;
   // Long text (a producer story at Extra large) scrolls inside the card; a fade at the bottom
@@ -1060,11 +1115,12 @@ function CardShell({card,children,ctx,style,active}){
   React.useLayoutEffect(()=>{ const el=body.current; if(el&&active!==false) el.scrollTop=0; check(); },[active,ctx&&ctx.finishStage,check]);
   React.useEffect(()=>{ check(); const el=body.current; if(!el||typeof ResizeObserver==='undefined') return;
     const ro=new ResizeObserver(check); ro.observe(el); if(el.firstElementChild) ro.observe(el.firstElementChild); return()=>ro.disconnect(); },[check]);
-  return <div style={{background:C.white,borderRadius:22,border:`1px solid ${C.line}`,boxShadow:'0 6px 22px rgba(0,0,0,0.08)',display:'flex',flexDirection:'column',overflow:'hidden',...style}}>
-    <div style={{height:5,background:card.accent,flexShrink:0}}/>
+  const acc=T.lift(card.accent), soft=T.tint(card.accent,card.soft);
+  return <div style={{background:T.card,borderRadius:22,border:`1px solid ${T.line}`,boxShadow:T.shadow,display:'flex',flexDirection:'column',overflow:'hidden',...style}}>
+    <div style={{height:5,background:acc,flexShrink:0}}/>
     <div style={{padding:'16px 18px 6px',display:'flex',alignItems:'center',gap:9,flexShrink:0}}>
-      <div style={{width:30,height:30,borderRadius:9,background:card.soft,display:'flex',alignItems:'center',justifyContent:'center'}}><Icon n={head.icon} sz={16} col={card.accent}/></div>
-      <span style={{fontSize:12.5,fontWeight:700,color:card.accent,fontFamily:C.P,letterSpacing:'0.09em',textTransform:'uppercase'}}>{head.eyebrow}</span>
+      <div style={{width:30,height:30,borderRadius:9,background:soft,display:'flex',alignItems:'center',justifyContent:'center'}}><Icon n={head.icon} sz={16} col={acc}/></div>
+      <span style={{fontSize:12.5,fontWeight:700,color:acc,fontFamily:C.P,letterSpacing:'0.09em',textTransform:'uppercase'}}>{head.eyebrow}</span>
     </div>
     {/* Scrolls up and down only: the deck sets touch-action:pan-y (.sc-swipe), so the browser
         takes vertical drags for scrolling and leaves sideways drags to the swipe. */}
@@ -1072,7 +1128,7 @@ function CardShell({card,children,ctx,style,active}){
       <div ref={body} onScroll={check} className="sc-scroll" style={{padding:'8px 18px 18px',overflowX:'hidden',overflowY:'auto',flex:1,minHeight:0}}>
         <div>{isFinish?ctx.finish():children}</div>
       </div>
-      {more&&<div aria-hidden="true" style={{position:'absolute',left:0,right:0,bottom:0,height:44,pointerEvents:'none',background:`linear-gradient(rgba(255,255,255,0),${C.white})`}}/>}
+      {more&&<div aria-hidden="true" style={{position:'absolute',left:0,right:0,bottom:0,height:44,pointerEvents:'none',background:`linear-gradient(${T.fade0},${T.card})`}}/>}
     </div>
   </div>;
 }
@@ -1081,7 +1137,7 @@ function CardShell({card,children,ctx,style,active}){
    (slider, input, button), only once the finger moves sideways more than it moves down, and
    moves the card directly rather than re-rendering the deck every frame. A drag past a fifth
    of the card, or a short flick, turns it; it works both ways, including back from the last card. */
-function SwipeDeck({deck,ctx,idx,setIdx,go}){
+function SwipeDeck({deck,ctx,idx,setIdx,go}){ const T=useTheme();
   const g=React.useRef(null);
   const hintRef=React.useRef(0);
   const justDragged=React.useRef(false);
@@ -1140,21 +1196,21 @@ function SwipeDeck({deck,ctx,idx,setIdx,go}){
           <CardShell card={cc} ctx={ctx} style={{height:'100%'}} active={isTop}>
             <CardFace card={c} ctx={ctx}/>
           </CardShell>
-          {isTop&&Math.abs(drag.dx)>40&&<div style={{position:'absolute',top:24,[drag.dx<0?'right':'left']:24,padding:'6px 14px',borderRadius:10,border:`2.5px solid ${C.mid}`,color:C.mid,fontSize:15,fontWeight:800,fontFamily:C.P,transform:`rotate(${drag.dx<0?12:-12}deg)`,background:'rgba(255,255,255,0.9)',letterSpacing:'0.05em'}}>{drag.dx<0?'NEXT':'BACK'}</div>}
+          {isTop&&Math.abs(drag.dx)>40&&<div style={{position:'absolute',top:24,[drag.dx<0?'right':'left']:24,padding:'6px 14px',borderRadius:10,border:`2.5px solid ${T.mid}`,color:T.mid,fontSize:15,fontWeight:800,fontFamily:C.P,transform:`rotate(${drag.dx<0?12:-12}deg)`,background:T.card,letterSpacing:'0.05em'}}>{drag.dx<0?'NEXT':'BACK'}</div>}
         </div>;
       })}
     </div>
     {/* controls */}
     <div style={{flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center',gap:14,paddingTop:12}}>
-      <div onClick={()=>go(-1)} style={{width:44,height:44,borderRadius:22,background:C.white,border:`1px solid ${C.line}`,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',opacity:idx===0?0.35:1,boxShadow:'0 2px 8px rgba(0,0,0,0.08)'}}><Icon n="back" sz={17} col={C.ink}/></div>
-      <div style={{fontSize:12.5,fontWeight:700,color:C.mid,fontFamily:C.P,minWidth:44,textAlign:'center'}}>{idx+1} / {deck.length}</div>
-      <div onClick={()=>go(1)} style={{width:44,height:44,borderRadius:22,background:idx>=deck.length-1?C.white:C.cr,border:idx>=deck.length-1?`1px solid ${C.line}`:'none',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',opacity:idx>=deck.length-1?0.35:1,boxShadow:'0 2px 8px rgba(139,26,47,0.25)',transform:'scaleX(-1)'}}><Icon n="back" sz={17} col={idx>=deck.length-1?C.ink:'#fff'}/></div>
+      <div onClick={()=>go(-1)} style={{width:44,height:44,borderRadius:22,background:T.card,border:`1px solid ${T.line}`,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',opacity:idx===0?0.35:1,boxShadow:'0 2px 8px rgba(0,0,0,0.08)'}}><Icon n="back" sz={17} col={T.ink}/></div>
+      <div style={{fontSize:12.5,fontWeight:700,color:T.mid,fontFamily:C.P,minWidth:44,textAlign:'center'}}>{idx+1} / {deck.length}</div>
+      <div onClick={()=>go(1)} style={{width:44,height:44,borderRadius:22,background:idx>=deck.length-1?T.card:C.cr,border:idx>=deck.length-1?`1px solid ${T.line}`:'none',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',opacity:idx>=deck.length-1?0.35:1,boxShadow:'0 2px 8px rgba(139,26,47,0.25)',transform:'scaleX(-1)'}}><Icon n="back" sz={17} col={idx>=deck.length-1?T.ink:'#fff'}/></div>
     </div>
   </div>;
 }
 
 /* deck style B — horizontal carousel */
-function Carousel({cards,ctx}){
+function Carousel({cards,ctx}){ const T=useTheme();
   return <div className="sc-scroll" style={{flex:1,display:'flex',overflowX:'auto',scrollSnapType:'x mandatory',gap:14,padding:'8px 16px 18px',minHeight:0}}>
     {cards.map(c=>{
       const cc={...c,_wine:ctx.wine};
@@ -1168,7 +1224,7 @@ function Carousel({cards,ctx}){
 }
 
 /* deck style C — vertical feed */
-function Feed({cards,ctx}){
+function Feed({cards,ctx}){ const T=useTheme();
   return <div className="sc-scroll" style={{flex:1,overflowY:'auto',padding:'8px 16px 24px',display:'flex',flexDirection:'column',gap:14,minHeight:0}}>
     {cards.map(c=>{
       const cc={...c,_wine:ctx.wine};
@@ -1181,4 +1237,4 @@ function Feed({cards,ctx}){
   </div>;
 }
 
-Object.assign(window,{TrackSlider,ScanCardsScreen});
+Object.assign(window,{RatingDial,DeckTheme,useTheme,_DECK_LIGHT,_DECK_DARK,TrackSlider,ScanCardsScreen});

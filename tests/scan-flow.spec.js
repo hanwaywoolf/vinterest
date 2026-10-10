@@ -408,6 +408,23 @@ test('wine detail: taste bars use WineDNA\'s scale, skip missing figures, and sa
   await expect(root).toContainText('Your 90+ reds');
 });
 
+// A page opened from the deck (the region card's link) comes back to that card, not the result.
+test('back from a region page opened on the deck returns to the deck, on the same card', async ({ context, page }) => {
+  await setup(context, page, { label: PRIORAT, deep: DEEP });
+  await page.goto(`${BASE}/?demo=1#camera`);
+  await page.getByTestId('scan-file').setInputFiles({ name: 'label.png', mimeType: 'image/png', buffer: PNG });
+  const root = page.locator('#root');
+  await root.getByText('Learn more about this wine', { exact: true }).click();
+  for (let i = 0; i < 4; i++) await page.locator('#root div[style*="scaleX(-1)"]').click();
+  await expect(root).toContainText('5 / 9');
+  await root.getByText("Priorat's page").click();
+  await expect(root).toContainText('Priorat');
+  await expect(page).toHaveURL(/region-page/);
+  await page.goBack();
+  await expect(root).toContainText('5 / 9');
+  await expect(root).toContainText('The region');
+});
+
 // Real touch input (through the browser's own gesture handling, unlike a mouse): a gentle swipe
 // turns the card either way, from anywhere on it, including back from the last card, and a
 // touch-drag on a Blind Call slider moves the slider, not the card.

@@ -353,21 +353,8 @@ function DetailMerged({wine,nav,existingRating=0,match}){
               </div>
             ))}
           </div>
-          <TrackSlider label="Rating" min={ParkerScale.MIN} max={100} value={Math.max(userRating,ParkerScale.MIN)} unset={!(userRating>0)}
-            onChange={n=>{ setUserRating(n); pendingScore.current=n; }} col={_typeCol(wine)} style={{marginBottom:10}}/>
-          <div style={{textAlign:'center',minHeight:48,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:2}}>
-            {userRating>0?(
-              <>
-                <div style={{display:'flex',alignItems:'baseline',gap:2}}>
-                  <span style={{fontSize:36,fontWeight:800,color:_typeCol(wine),fontFamily:C.P,lineHeight:1}}>{userRating}</span>
-                  <span style={{fontSize:13,fontWeight:700,color:C.mid,fontFamily:C.P,marginLeft:2,opacity:0.7}}>pts</span>
-                </div>
-                <span style={{fontSize:15,fontWeight:600,color:C.amber,fontFamily:C.P}}>{scoreLabel}</span>
-              </>
-            ):(
-              <span style={{fontSize:14,color:C.mid,fontFamily:C.P}}>Drag slider or tap a preset to rate</span>
-            )}
-          </div>
+          <RatingDial label="Rating" min={ParkerScale.MIN} max={100} value={Math.max(userRating,ParkerScale.MIN)} unset={!(userRating>0)}
+            onChange={n=>{ setUserRating(n); pendingScore.current=n; }} col={_typeCol(wine)}/>
           <div style={{fontSize:12,color:C.mid,fontFamily:C.P,textAlign:'center',lineHeight:1.5,opacity:0.8,marginTop:4}}>100-point scale: 96+ Extraordinary · 90–95 Outstanding · 80–89 Very good · 70–79 Average · under 70 Below average</div>
           {userRating>0&&!saved&&(
             <div onClick={()=>commitScore()} style={{marginTop:10,background:C.cr,borderRadius:12,padding:'12px',textAlign:'center',cursor:'pointer'}}>

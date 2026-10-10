@@ -35,6 +35,7 @@ const REVEAL_CSS=`
 @keyframes rvTip{from{opacity:0}to{opacity:1}}
 @keyframes rvDraw{from{stroke-dashoffset:1}to{stroke-dashoffset:0}}
 @keyframes rvZoom{from{transform:var(--rv-from)}to{transform:none}}
+@keyframes rvZoomIn{from{transform:none}to{transform:var(--rv-to)}}
 @keyframes rvOut{from{opacity:1}to{opacity:0}}
 @keyframes rvMark{from{left:0}to{left:var(--rv-at)}}
 .rv-stage{position:relative;overflow:hidden;background:#0F0F0F;color:#fff;user-select:none;-webkit-user-select:none;touch-action:none}
@@ -53,13 +54,15 @@ const REVEAL_CSS=`
 .rv-stage .rv-tip{animation:rvTip .4s ease both}
 .rv-stage .rv-draw{stroke-dasharray:1;stroke-dashoffset:1;animation:rvDraw .8s ease-out both}
 .rv-stage .rv-zoom{transform-origin:0 0;animation:rvZoom 1.7s cubic-bezier(.5,0,.2,1) both}
+.rv-stage .rv-zoom-in{transform-origin:0 0;animation:rvZoomIn 1.6s cubic-bezier(.4,0,.2,1) both}
 .rv-stage .rv-out{animation:rvOut .5s ease both}
 .rv-stage .rv-mark{animation:rvMark 1.2s cubic-bezier(.3,.8,.3,1) both}
 .rv-stage .rv-still *{animation:none!important}
 .rv-stage .rv-still .rv-draw{stroke-dashoffset:0}
 .rv-stage .rv-still .rv-mark{left:var(--rv-at)}
 .rv-stage .rv-still .rv-out{opacity:0}
-@media (prefers-reduced-motion: reduce){.rv-stage *{animation:none!important;transition:none!important}.rv-stage .rv-seg{transform:none}.rv-stage .rv-draw{stroke-dashoffset:0}.rv-stage .rv-mark{left:var(--rv-at)}.rv-stage .rv-out{opacity:0}}
+.rv-stage .rv-still .rv-zoom-in{transform:var(--rv-to)}
+@media (prefers-reduced-motion: reduce){.rv-stage *{animation:none!important;transition:none!important}.rv-stage .rv-seg{transform:none}.rv-stage .rv-draw{stroke-dashoffset:0}.rv-stage .rv-mark{left:var(--rv-at)}.rv-stage .rv-out{opacity:0}.rv-stage .rv-zoom-in{transform:var(--rv-to)}}
 `;
 /* The words each scene asks someone to read, for its length (ScanFlow.revealLength). */
 function _revealWords(key,d,existingRating){
@@ -325,8 +328,10 @@ function _RvGrape({d,col}){
 }
 
 /* 5. The place: the wine map opens on the whole country, named, then closes in on the region
-   (rv-zoom, from the wide window to the one around the pin), the pin drops and takes the
-   region's name; its climate below. */
+   (rv-zoom, from the wide window to the one around the pin), and as the pin drops and takes the
+   region's name it closes in tighter still (rv-zoom-in, RV_TIGHT about the pin, which stays
+   put); its climate below. */
+const RV_TIGHT=1.7;
 function _RvPlace({d,col}){
   const p=d.place, W=300, H=200;
   // The map is a window onto the view around the pin, its edges faded so it sits in the stage
@@ -335,14 +340,19 @@ function _RvPlace({d,col}){
   const m=p.map, wide=m&&m.wide, z=wide?wide.z:1;
   // The wide shot shows a window z times the close one, centred on the country; the transform
   // that puts that window into the close box is what the zoom animates away from.
-  const from=wide?`translate(${m.x}px ${m.y}px) scale(${1/z}) translate(${-wide.x}px ${-wide.y}px)`:'none';
+  // CSS transforms, so the translate arguments take commas (the SVG attribute form, with spaces,
+  // is invalid CSS and left the map still).
+  const from=wide?`translate(${m.x}px, ${m.y}px) scale(${1/z}) translate(${-wide.x}px, ${-wide.y}px)`:'none';
+  const tight=`translate(${m.x}px, ${m.y}px) scale(${RV_TIGHT}) translate(${-m.x}px, ${-m.y}px)`;
   const label=(x,y,text,cls,delay)=><text x={x} y={y} className={cls} style={{animationDelay:delay,fontSize:'13px',fontWeight:800,fontFamily:C.P,fill:'#fff',paintOrder:'stroke',stroke:'rgba(15,15,15,0.85)',strokeWidth:'4px',strokeLinejoin:'round'}}>{text}</text>;
   return <div style={{display:'flex',flexDirection:'column',gap:12}}>
     {m&&<div className="rv-in" data-testid="reveal-map" style={{alignSelf:'center',width:'100%',maxWidth:360,aspectRatio:`${W}/${H}`,position:'relative',overflow:'hidden',WebkitMaskImage:mask,maskImage:mask}}>
       <svg viewBox={`${m.x-W/2} ${m.y-H*0.52} ${W} ${H}`} width="100%" height="100%" aria-hidden="true" style={{overflow:'hidden'}}>
         <g className="rv-zoom" style={{'--rv-from':from,animationDelay:'.7s'}}>
-          <path d={m.view.land} fill="rgba(255,255,255,0.07)" stroke="rgba(255,255,255,0.35)" strokeWidth="0.8" vectorEffect="non-scaling-stroke"/>
-          {m.view.borders&&<path d={m.view.borders} fill="none" stroke="rgba(255,255,255,0.14)" strokeWidth="0.6" vectorEffect="non-scaling-stroke"/>}
+          <g className="rv-zoom-in" style={{'--rv-to':tight,animationDelay:'2.5s'}}>
+            <path d={m.view.land} fill="rgba(255,255,255,0.07)" stroke="rgba(255,255,255,0.35)" strokeWidth="0.8" vectorEffect="non-scaling-stroke"/>
+            {m.view.borders&&<path d={m.view.borders} fill="none" stroke="rgba(255,255,255,0.14)" strokeWidth="0.6" vectorEffect="non-scaling-stroke"/>}
+          </g>
         </g>
         <g transform={`translate(${m.x} ${m.y})`}>
           <circle className="rv-pulse" r="9" fill="none" stroke={col} strokeWidth="1.5" style={{animationDelay:'2.6s'}}/>
@@ -379,32 +389,33 @@ function _RvSay({d,col}){
 /* 7. What next: the ways out, on a sheet that rises over the stage. The first bottle scores
    itself here (RatingPanel with onFinish) and carries on with onboarding. */
 function _RvEnd({wine,d,firstScan,existingRating,nav,showPro,curr,onDone,onRated,onSaveForLater,onFinish}){
+  const col=d.col||C.cr;
   const rows=[
     {key:'rate',icon:'star',label:existingRating?`Re-rate it (${existingRating})`:'Rate it',sub:existingRating?'Changed your mind?':'Rate it to sharpen your WineDNA',on:()=>onDone('rate')},
     {key:'learn',icon:'book',label:'Learn more about this wine',sub:'The house, the year, how it\'s made, the table',on:()=>onDone('deck')},
     ...(existingRating?[]:[{key:'save',icon:'bookmark',label:'Save for later',sub:'Shopping, or not tasted yet',on:()=>onDone('saved')}]),
   ];
-  return <div data-rv-stop data-testid="reveal-end" className="rv-sheet" style={{position:'relative',background:C.white,borderRadius:'22px 22px 0 0',padding:'18px 18px calc(18px + env(safe-area-inset-bottom))',maxHeight:'78%',overflowY:'auto',touchAction:'pan-y',boxShadow:'0 -8px 30px rgba(0,0,0,0.4)'}}>
+  return <DeckTheme.Provider value={_DECK_DARK}><div data-rv-stop data-testid="reveal-end" className="rv-sheet" style={{position:'relative',background:'#161618',borderRadius:'22px 22px 0 0',borderTop:'1px solid rgba(255,255,255,0.14)',padding:'18px 18px calc(18px + env(safe-area-inset-bottom))',maxHeight:'78%',overflowY:'auto',touchAction:'pan-y',boxShadow:`0 -8px 40px rgba(0,0,0,0.6), 0 -1px 24px ${_alpha(col,0.25)}`}}>
     {firstScan
       ?<div style={{display:'flex',flexDirection:'column',gap:12}}>
-        <div style={{fontSize:13,fontWeight:700,color:d.col,fontFamily:C.P,letterSpacing:'0.08em',textTransform:'uppercase'}}>Your WineDNA starts here</div>
+        <div style={{fontSize:13,fontWeight:700,color:_DECK_DARK.lift(col),fontFamily:C.P,letterSpacing:'0.08em',textTransform:'uppercase'}}>Your WineDNA starts here</div>
         <RatingPanel wine={wine} existingRating={existingRating} nav={nav} showPro={showPro} curr={curr} onRated={onRated} onSaveForLater={onSaveForLater} onFinish={onFinish}/>
       </div>
       :<div style={{display:'flex',flexDirection:'column',gap:10}}>
         <div style={{display:'flex',alignItems:'baseline',justifyContent:'space-between'}}>
-          <div style={{fontSize:20,fontWeight:800,color:C.ink,fontFamily:C.P}}>What next?</div>
-          <span role="button" onClick={()=>onDone('result')} style={{fontSize:14,fontWeight:600,color:C.mid,fontFamily:C.P,cursor:'pointer'}}>See the result →</span>
+          <div style={{fontSize:20,fontWeight:800,color:'#fff',fontFamily:C.P}}>What next?</div>
+          <span role="button" onClick={()=>onDone('result')} style={{fontSize:14,fontWeight:600,color:'rgba(255,255,255,0.62)',fontFamily:C.P,cursor:'pointer'}}>See the result →</span>
         </div>
-        {rows.map(x=><div key={x.key} role="button" onClick={x.on} style={{background:C.white,border:`1.5px solid ${C.crDim}`,borderRadius:14,padding:'12px 14px',display:'flex',alignItems:'center',gap:12,cursor:'pointer'}}>
-          <div style={{width:38,height:38,borderRadius:19,background:C.crSoft,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><Icon n={x.icon} sz={18} col={C.cr}/></div>
+        {rows.map(x=><div key={x.key} role="button" onClick={x.on} style={{background:'rgba(255,255,255,0.06)',border:'1px solid rgba(255,255,255,0.14)',borderRadius:14,padding:'12px 14px',display:'flex',alignItems:'center',gap:12,cursor:'pointer'}}>
+          <div style={{width:38,height:38,borderRadius:19,background:_alpha(_DECK_DARK.lift(col),0.22),display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><Icon n={x.icon} sz={18} col={_DECK_DARK.lift(col)}/></div>
           <div style={{flex:1,minWidth:0}}>
-            <div style={{fontSize:16,fontWeight:800,color:C.ink,fontFamily:C.P,lineHeight:1.25}}>{x.label}</div>
-            <div style={{fontSize:13,color:C.mid,fontFamily:C.P,lineHeight:1.35}}>{x.sub}</div>
+            <div style={{fontSize:16,fontWeight:800,color:'#fff',fontFamily:C.P,lineHeight:1.25}}>{x.label}</div>
+            <div style={{fontSize:13,color:'rgba(255,255,255,0.62)',fontFamily:C.P,lineHeight:1.35}}>{x.sub}</div>
           </div>
-          <Icon n="chevron" sz={14} col={C.mid}/>
+          <Icon n="chevron" sz={14} col="rgba(255,255,255,0.5)"/>
         </div>)}
       </div>}
-  </div>;
+  </div></DeckTheme.Provider>;
 }
 
 Object.assign(window,{ScanReveal});

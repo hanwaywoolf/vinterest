@@ -315,7 +315,9 @@ function Card({children,style:s,onClick}){
   return <div onClick={onClick} style={{background:C.white,borderRadius:16,padding:14,boxShadow:'0 1px 4px rgba(0,0,0,0.06)',...s}}>{children}</div>;
 }
 function Btn({children,primary,full,small,style:s,onClick}){
-  return <div onClick={onClick} style={{padding:small?'8px 14px':'12px 20px',borderRadius:12,background:primary?C.cr:C.white,color:primary?'#fff':C.ink,border:primary?'none':`1px solid ${C.line}`,fontFamily:C.P,fontSize:small?13:15,fontWeight:600,textAlign:'center',width:full?'100%':'auto',boxShadow:primary?`0 4px 16px ${C.cr}40`:'none',cursor:'pointer',boxSizing:'border-box',...s}}>{children}</div>;
+  // On the scan story's dark stage (DeckTheme, pwa-scancards.jsx) a plain button is a dark glass pill.
+  const T=typeof useTheme==='function'?useTheme():null, dark=!!(T&&T.dark);
+  return <div onClick={onClick} style={{padding:small?'8px 14px':'12px 20px',borderRadius:12,background:primary?C.cr:dark?T.soft:C.white,color:primary?'#fff':dark?T.ink:C.ink,border:primary?'none':`1px solid ${dark?T.line:C.line}`,fontFamily:C.P,fontSize:small?13:15,fontWeight:600,textAlign:'center',width:full?'100%':'auto',boxShadow:primary?`0 4px 16px ${C.cr}40`:'none',cursor:'pointer',boxSizing:'border-box',...s}}>{children}</div>;
 }
 
 /* Catches a render-time exception in a screen (e.g. static data that failed to load) so the
