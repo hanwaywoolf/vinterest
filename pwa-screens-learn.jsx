@@ -286,7 +286,7 @@ function GenArticleScreen({nav,back,showPro}){
     setCompleted(true);
   }
 
-  const forYou=(cached&&stub&&ContentEngine.forYouLine(stub,cached.forYou))||'Nobody else gets this article. It\'s written from your WineDNA: the wines you\'ve scanned, how you scored them and what you paid.';
+  const forYou=(cached&&stub&&ContentEngine.forYouLine(stub,cached.forYou))||'Nobody else gets this article. It\'s written from your WineDNA: the wines you\'ve scanned, how you rated them and what you paid.';
   if(!stub) return(
     <div style={{flex:1,display:'flex',alignItems:'center',justifyContent:'center',padding:32}}>
       <span style={{fontSize:16,color:C.mid,fontFamily:C.P}}>Article not found.</span>
@@ -517,7 +517,7 @@ function GrapeScreen({nav,back,showPro}){
                   </div>
                 </div>
                 {w.rating>0?<span style={{fontSize:16,fontWeight:800,color:scoreCol(w.rating),fontFamily:C.P}}>{w.rating}</span>
-                  :<span style={{fontSize:13,color:C.mid,fontFamily:C.P}}>Not scored</span>}
+                  :<span style={{fontSize:13,color:C.mid,fontFamily:C.P}}>Not rated</span>}
                 <Icon n="chevron" sz={14} col={C.mid}/>
               </div>
             ))}
@@ -570,7 +570,7 @@ function RegionPageScreen({nav,back,showPro}){
             <div style={{fontSize:13,color:C.mid,fontFamily:C.P,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{[w.producer,w.sub_region||w.region,w.vintage].filter(Boolean).join(' · ')}</div>
           </div>
           {w.rating>0?<span style={{fontSize:16,fontWeight:800,color:scoreCol(w.rating),fontFamily:C.P}}>{w.rating}</span>
-            :<span style={{fontSize:13,color:C.mid,fontFamily:C.P}}>Not scored</span>}
+            :<span style={{fontSize:13,color:C.mid,fontFamily:C.P}}>Not rated</span>}
           <Icon n="chevron" sz={14} col={C.mid}/>
         </div>
       ))}
@@ -604,7 +604,7 @@ function RegionPageScreen({nav,back,showPro}){
           </div>
           {ms.state==='open'&&<MasteryBar score={ms.score} col={C.cr}/>}
           <div style={{fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.5}}>
-            {info.mine.count>0?<>You've had {info.mine.count===1?'one bottle':`${info.mine.count} bottles`} from {info.name}{info.mine.avg!=null?`, scored ${info.mine.avg} on average`:''}{info.mine.best?`; your best was ${info.mine.best.name} (${info.mine.best.rating})`:''}.</>
+            {info.mine.count>0?<>You've had {info.mine.count===1?'one bottle':`${info.mine.count} bottles`} from {info.name}{info.mine.avg!=null?`, rated ${info.mine.avg} on average`:''}{info.mine.best?`; your best was ${info.mine.best.name} (${info.mine.best.rating})`:''}.</>
               :`You haven't had a bottle from ${info.name} yet.`}
           </div>
           {ms.state==='locked'&&!actLabel&&<div style={{fontSize:14,color:C.mid,fontFamily:C.P,lineHeight:1.5}}>{`The next bottle from ${info.name} you scan unlocks its quiz.`}</div>}

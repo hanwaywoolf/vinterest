@@ -56,7 +56,7 @@ test('the original unversioned backups still restore, XP put back in its proper 
   expect(out).toEqual({ ok: true, version: 1, found: true, total: 99999, envelope: true });
 });
 
-test('restoring onto a phone with data merges: no duplicate bottles, higher scores kept, XP never lowered, progress combined', async ({ context, page }) => {
+test('restoring onto a phone with data merges: no duplicate bottles, higher ratings kept, XP never lowered, progress combined', async ({ context, page }) => {
   await demo(context, page);
   const out = await page.evaluate(() => {
     const mine = WineHistory.getAll(); const first = mine[0];

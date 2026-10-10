@@ -288,7 +288,7 @@ function WineRow({w,open,setOpen,onOpen,onScore,onEdit,onDelete}){
           ?<span style={{minWidth:34,textAlign:'right',fontSize:17,fontWeight:800,color:_MW_TONE[MyWines.scoreTone(w.rating)],fontFamily:C.P}}>{w.rating}</span>
           :saved
             ?<span style={{fontSize:13,fontWeight:600,color:C.mid,fontFamily:C.P}}>Saved</span>
-            :<button onClick={e=>{ e.stopPropagation(); onScore(w); }} style={{border:`1px solid ${C.crDim}`,background:C.crSoft,color:C.cr,borderRadius:20,padding:'5px 11px',fontSize:13,fontWeight:700,fontFamily:C.P,cursor:'pointer'}}>Score it</button>}
+            :<button onClick={e=>{ e.stopPropagation(); onScore(w); }} style={{border:`1px solid ${C.crDim}`,background:C.crSoft,color:C.cr,borderRadius:20,padding:'5px 11px',fontSize:13,fontWeight:700,fontFamily:C.P,cursor:'pointer'}}>Rate it</button>}
         {price&&<span className="mw-price" aria-label={price.label} style={{fontSize:13,color:price.paid?C.ink:C.mid,fontWeight:price.paid?600:400,fontFamily:C.P,whiteSpace:'nowrap'}}>{price.text}</span>}
       </div>
     </div>
@@ -374,7 +374,7 @@ function MyWinesScreen({nav,back}){
           <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',height:'100%',padding:40,textAlign:'center',gap:12}}>
             <Icon n="wine" sz={40} col={C.mid}/>
             <div style={{fontSize:20,fontWeight:700,color:C.ink,fontFamily:C.P}}>No wines yet</div>
-            <div style={{fontSize:16,color:C.mid,fontFamily:C.P,lineHeight:1.5}}>Every bottle you scan lands here, with your score.</div>
+            <div style={{fontSize:16,color:C.mid,fontFamily:C.P,lineHeight:1.5}}>Every bottle you scan lands here, with your rating.</div>
             <Btn primary onClick={()=>nav('camera')}>Scan a bottle</Btn>
           </div>
         ):list.length===0?(

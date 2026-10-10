@@ -284,7 +284,7 @@ function QuizHubScreen({nav,back,showPro}){
                 </div>)}
               </div>
               <div style={{fontSize:15,fontWeight:700,color:C.ink,fontFamily:C.P,lineHeight:1.35}}>Like a good bottle, these need a little time.</div>
-              <div style={{fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.5,marginTop:4}}>Pieces here are written from your WineDNA: the bottles you scan, how you score them and what you pay. Read <b>{ON_RAMP[0].title}</b> first and your shelf opens.</div>
+              <div style={{fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.5,marginTop:4}}>Pieces here are written from your WineDNA: the bottles you scan, how you rate them and what you pay. Read <b>{ON_RAMP[0].title}</b> first and your shelf opens.</div>
               <div style={{marginTop:12}}><Btn primary onClick={()=>{Handoff.onRampIdx.set('0');nav('article');}}>Read it now · {ON_RAMP[0].readTime}</Btn></div>
             </div>
           </div>
@@ -310,11 +310,11 @@ function QuizHubScreen({nav,back,showPro}){
           return(
           <div ref={secRefs.shelf} style={{scrollMarginTop:56}}>
             <div style={zoneLabel}>Written for you</div>
-            <div style={{fontSize:14,color:C.mid,fontFamily:C.P,lineHeight:1.45,marginTop:4}}>Every piece here is written from your WineDNA: the bottles you've scanned, how you scored them and what you paid. Nobody else gets the same article.</div>
+            <div style={{fontSize:14,color:C.mid,fontFamily:C.P,lineHeight:1.45,marginTop:4}}>Every piece here is written from your WineDNA: the bottles you've scanned, how you rated them and what you paid. Nobody else gets the same article.</div>
             <div style={{...list,marginTop:8}}>
             {!unread.length&&(
               <div style={{padding:'18px 16px',textAlign:'center',background:C.white,borderRadius:14,border:`1px dashed ${C.line}`,gridColumn:'1 / -1'}}>
-                <span style={{fontSize:15,color:C.mid,fontFamily:C.P,lineHeight:1.5}}>{read.length?"You've read everything written for you so far. Scan or score another bottle and more arrives.":"Nothing on your shelf yet. Scan a bottle and we'll have something for you by morning."}</span>
+                <span style={{fontSize:15,color:C.mid,fontFamily:C.P,lineHeight:1.5}}>{read.length?"You've read everything written for you so far. Scan or rate another bottle and more arrives.":"Nothing on your shelf yet. Scan a bottle and we'll have something for you by morning."}</span>
               </div>
             )}
             <ShowMore items={unread} limit={3} render={card} noun="to read"/>
@@ -983,8 +983,8 @@ function MasteryPalate({p,go,onOpen}){
       </div>
       <MasteryBar score={p.score}/>
       <div style={{fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.5}}>
-        {p.n?<>Your calls average {p.accuracy}% accurate{p.n<Palate.FULL_AT?`. The score fills in as you play: ${Palate.FULL_AT-p.n} more to count in full`:''}. Each call is checked against the label's profile, an estimate, so treat it as a guide.</>
-          :<>Blind Call asks you to taste first and guess the body, acidity and tannins before you see the label's profile. Your calls build this score, separate from what you've read.</>}
+        {p.n?<>Your calls average {p.accuracy}% accurate{p.n<Palate.FULL_AT?`. The rating fills in as you play: ${Palate.FULL_AT-p.n} more to count in full`:''}. Each call is checked against the label's profile, an estimate, so treat it as a guide.</>
+          :<>Blind Call asks you to taste first and guess the body, acidity and tannins before you see the label's profile. Your calls build this rating, separate from what you've read.</>}
       </div>
       {p.next&&<div role="button" onClick={()=>go(p.next)} style={{fontSize:14,fontWeight:700,color:C.cr,fontFamily:C.P,cursor:'pointer'}}>{p.next.label} →</div>}
     </div>
@@ -1395,6 +1395,9 @@ function QuizScreen({nav,back}){
   const [results,setResults]=React.useState([]);
   const [, setResetTick]=React.useState(0);
   const scrollRef=React.useRef(null);
+  // Each question opens at its top: the previous one may have been scrolled to reach its answers.
+  const qRef=React.useRef(null);
+  React.useLayoutEffect(()=>{ if(qRef.current) qRef.current.scrollTop=0; },[qIdx,phase==='question']);
 
   const title=quizTitle(config);
 
@@ -1532,7 +1535,7 @@ function QuizScreen({nav,back}){
             </div>
           </div>
         </div>
-        <div ref={scrollRef} style={{flex:1,overflowY:'auto'}}>
+        <div key="results" ref={scrollRef} style={{flex:1,overflowY:'auto'}}>
           <div style={{padding:`16px ${side}`,display:'flex',flexDirection:'column',gap:10}}>
             <MilestoneMoment items={milestones}/>
             {setProgress&&(setDone
@@ -1604,7 +1607,7 @@ function QuizScreen({nav,back}){
         </div>
       </div>
 
-      <div onClick={phase==='feedback'?advance:undefined} style={{flex:1,overflowY:'auto',padding:wide?`28px ${side}`:'20px 16px',display:'flex',flexDirection:'column',gap:14,cursor:phase==='feedback'?'pointer':'default'}}>
+      <div key="question" ref={qRef} onClick={phase==='feedback'?advance:undefined} style={{flex:1,overflowY:'auto',padding:wide?`28px ${side}`:'20px 16px',display:'flex',flexDirection:'column',gap:14,cursor:phase==='feedback'?'pointer':'default'}}>
         <div style={{fontSize:21,fontWeight:700,color:C.ink,fontFamily:C.P,lineHeight:1.4}}>{q.q}</div>
         <div style={{display:'flex',flexDirection:'column',gap:10,marginTop:4}}>
           {q.opts.map((opt,i)=>{

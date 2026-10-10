@@ -122,7 +122,7 @@ const ScanFlow = {
   READ_WPM:260, REVEAL_LEAD:1100, REVEAL_MIN_MS:2300,
   // Scenes whose picture takes longer to draw (the bunch and its callouts, the map closing in on
   // the pin, the glass and bubble) get that much more.
-  REVEAL_EXTRA:{grape:1800,place:1400,say:1300},
+  REVEAL_EXTRA:{grape:1800,place:1400,say:1600},
   revealLength(text,key){
     const words=String(text||'').trim().split(/\s+/).filter(Boolean).length;
     return Math.max(this.REVEAL_MIN_MS,Math.round(this.REVEAL_LEAD+(this.REVEAL_EXTRA[key]||0)+words*60000/this.READ_WPM));

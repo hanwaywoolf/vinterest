@@ -122,9 +122,9 @@ test('the first scan tells the bottle\'s story and shows what Vinterest will do 
   await expect(root).toContainText('Your first bottle');
   // Card 1: the match, before there's anything to match against, with a labelled example.
   await expect(root).toContainText('Your match, from your own taste');
-  await expect(root).toContainText('Your WineDNA starts with your first score');
+  await expect(root).toContainText('Your WineDNA starts with your first rating');
   await expect(root).toContainText('Example');
-  await expect(root).toContainText('Score 3 rosés and every rosé you scan shows how much you\'ll like it');
+  await expect(root).toContainText('Rate 3 rosés and every rosé you scan shows how much you\'ll like it');
   const next = async () => { await page.locator('.sc-swipe > div').last().locator('> div').last().click(); await page.waitForTimeout(250); };
   const seen = new Set();
   for (let i = 0; i < 12 && !(await root.getByText('9 / 9', { exact: true }).isVisible()); i++) {
@@ -136,7 +136,7 @@ test('the first scan tells the bottle\'s story and shows what Vinterest will do 
   // The last card: the WineDNA meter, the first score, then on to the questions.
   await root.getByText('90', { exact: true }).click();
   await root.getByText('Save rating').click();
-  await expect(root).toContainText('Scored 90 · Outstanding');
+  await expect(root).toContainText('Rated 90 · Outstanding');
   await root.getByText('Continue', { exact: true }).click();
   await expect(root).toContainText('Minuty Prestige Rosé is saved in My Wines.');
   expect(await page.evaluate(() => WineHistory.getAll()[0].rating)).toBe(90);
@@ -147,7 +147,7 @@ test('the first scan tells the bottle\'s story and shows what Vinterest will do 
   await page.locator('#root svg').first().click();
   await expect(root).toContainText('Your first bottle');
   for (let i = 0; i < 12 && !(await root.getByText('9 / 9', { exact: true }).isVisible()); i++) await next();
-  await expect(root).toContainText('Scored 90 · Outstanding');
+  await expect(root).toContainText('Rated 90 · Outstanding');
   await expect(root).not.toContainText('How was it?');
   await root.getByText('Continue', { exact: true }).click();
   await expect(root).toContainText('What do you usually drink?');
@@ -212,7 +212,7 @@ test('the welcome previews are pictures of the sample user: described, not tappa
     expect(p.text).not.toContain('My Own Secret Bottle');
   }
   // Slide 1 shows a reason for and a reason against.
-  expect(inside[0].text).toContain('Syrah: you\'ve scored 2, averaging 90.');
+  expect(inside[0].text).toContain('Syrah: you\'ve rated 2, averaging 90.');
   expect(inside[0].text).toContain('this one doesn\'t');
   expect(calls).toEqual([]);
 });

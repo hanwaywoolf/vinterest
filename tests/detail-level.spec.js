@@ -54,7 +54,7 @@ test('WineDNA at Simple: a portrait in pictures, the useful rows, a line on valu
   await expect(page.getByTestId('dna-best-value')).toBeVisible();
   await expect(root).toContainText('Your “House” Wines');
   await expect(root).toContainText('Explore');
-  for (const later of ['How Well We Know You', 'Your Journey', 'Flavour Signatures', 'Taste Profile', 'Your score at each price']) await expect(root).not.toContainText(later);
+  for (const later of ['How Well We Know You', 'Your Journey', 'Flavour Signatures', 'Taste Profile', 'Your rating at each price']) await expect(root).not.toContainText(later);
   await expect(page.getByTestId('dna-love-avoid')).toHaveCount(0);
   // A taste tile opens WineDNA's own page for that trait: the wines they choose on its scale and
   // what the word means, never the palate page's Blind Call scoring.
@@ -64,7 +64,7 @@ test('WineDNA at Simple: a portrait in pictures, the useful rows, a line on valu
   // Five steps along the scale with a verdict; the list follows the step picked, best first.
   const steps = page.getByTestId('dna-trait-steps');
   await expect(steps.locator('[aria-pressed]')).toHaveCount(5);
-  await expect(page.getByTestId('dna-trait-verdict')).toContainText(/Your best scores are in|Most of your reds sit in/);
+  await expect(page.getByTestId('dna-trait-verdict')).toContainText(/Your best ratings are in|Most of your reds sit in/);
   // What the word means and how to notice it come first, above their chart and bottles.
   const top = async (id) => page.getByTestId(id).evaluate((e) => e.getBoundingClientRect().top);
   expect(await top('dna-trait-about')).toBeLessThan(await top('dna-trait-hero'));
@@ -147,7 +147,7 @@ test('Value and History at Everything: price bands with a named best band; place
   await page.goto(`${BASE}/?demo=1#profile`);
   await expect(page.getByTestId('dna-band-bars').first()).toBeVisible();
   const card = page.getByTestId('dna-band-bars').filter({ has: page.locator('[aria-pressed]') });
-  await expect(page.getByTestId('dna-value-verdict')).toContainText('Your best scores come from');
+  await expect(page.getByTestId('dna-value-verdict')).toContainText('Your best ratings come from');
   const before = await page.getByTestId('dna-band-bottles').innerText();
   await card.locator('[aria-pressed="false"]').first().click();
   await expect.poll(() => page.getByTestId('dna-band-bottles').innerText()).not.toBe(before);

@@ -154,7 +154,7 @@ function WaitingOnYou({nav}){
   return <Card style={{padding:0,overflow:'hidden'}}>
     <div style={{padding:'12px 14px 8px'}}>
       <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>Waiting on you</div>
-      <div style={{fontSize:13,color:C.mid,fontFamily:C.P,marginTop:1}}>Every score sharpens your matches.</div>
+      <div style={{fontSize:13,color:C.mid,fontFamily:C.P,marginTop:1}}>Every rating sharpens your matches.</div>
     </div>
     {ask&&<div style={{padding:'10px 14px 12px',borderTop:`1px solid ${C.line}`}}>
       <div style={{fontSize:15,color:C.ink,fontFamily:C.P,lineHeight:1.45}}>Did you buy the <b>{ask.name}</b>{ask.vintage?` ${ask.vintage}`:''}?</div>
@@ -167,9 +167,9 @@ function WaitingOnYou({nav}){
       <div key={w.name+'|'+w.vintage} onClick={()=>open(w)} style={{display:'flex',alignItems:'center',gap:10,padding:'10px 14px',borderTop:`1px solid ${C.line}`,cursor:'pointer'}}>
         <div style={{flex:1,minWidth:0}}>
           <div style={{fontSize:15,fontWeight:600,color:C.ink,fontFamily:C.P,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{w.name}</div>
-          <div style={{fontSize:13,color:C.mid,fontFamily:C.P}}>{w.bought&&w.scan_intent==='checking'?'Bought':'Tasted'}, not scored yet</div>
+          <div style={{fontSize:13,color:C.mid,fontFamily:C.P}}>{w.bought&&w.scan_intent==='checking'?'Bought':'Tasted'}, not rated yet</div>
         </div>
-        <span style={{fontSize:13,fontWeight:700,color:C.cr,fontFamily:C.P,flexShrink:0}}>Score it →</span>
+        <span style={{fontSize:13,fontWeight:700,color:C.cr,fontFamily:C.P,flexShrink:0}}>Rate it →</span>
       </div>
     ))}
     {toScore.length>3&&<div onClick={()=>nav('mywines')} style={{padding:'8px 14px 12px',borderTop:`1px solid ${C.line}`,fontSize:13,fontWeight:600,color:C.mid,fontFamily:C.P,cursor:'pointer'}}>{toScore.length-3} more in My Wines →</div>}
@@ -228,7 +228,7 @@ function HomeScreen({nav, showPro, isTablet}){
       const best=p.favourites.regions[0]||null;
       const tab=((typeof _TYPES!=='undefined'&&_TYPES.find(x=>x.key===k))||{}).tab||label;
       return {key:k,label,tab,col:(typeof _TYPE_COLORS!=='undefined'&&_TYPE_COLORS[k])||C.cr,
-        line:p.scored.length?`${p.personality}${best?` · best from ${best.name}`:''}`:`${WineDNA.noun(k,p.wines.length)} scanned, none scored yet`};
+        line:p.scored.length?`${p.personality}${best?` · best from ${best.name}`:''}`:`${WineDNA.noun(k,p.wines.length)} scanned, none rated yet`};
     });
     let pick=null;
     if(types[0]){ try{ const e=ExploreNext.suggest(types[0].key,allWines,types[0].label,1); pick=e.picks[0]?{...e.picks[0],typeKey:types[0].key,typeLabel:types[0].label}:null; }catch(e){} }
@@ -290,7 +290,7 @@ function HomeScreen({nav, showPro, isTablet}){
           {head('Recently scanned','All →',()=>nav('mywines'))}
           {recentWines.map((w,i)=>row('r'+i,'wine',colFor(w),w.name,MyWines.subline(w),()=>openWine(w),
             w.rating>0?<span style={{fontSize:15,fontWeight:700,color:C.amber,fontFamily:C.P,flexShrink:0}}>{w.rating}</span>
-              :<span style={{fontSize:13,color:C.cr,fontFamily:C.P,flexShrink:0,fontWeight:600}}>Score it →</span>))}
+              :<span style={{fontSize:13,color:C.cr,fontFamily:C.P,flexShrink:0,fontWeight:600}}>Rate it →</span>))}
         </Card>}
 
         {/* WineDNA at a glance */}

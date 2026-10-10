@@ -80,7 +80,7 @@ test('the sixth grape and region are offered with Pro', async ({ context, page }
   await expect(root).toContainText('Every Grape');
 });
 
-test('every wine type has its own basics; after a score only the quick extras are asked', async ({ context, page }) => {
+test('every wine type has its own basics; after a rating only the quick extras are asked', async ({ context, page }) => {
   const rose = { ...GRAN_RESERVA, name: 'Test Provence Rosé', producer: 'Test', region: 'Côtes de Provence', country: 'France', type: 'rosé', grapes: ['Grenache', 'Cinsault'], tannins: null, body: 0.3 };
   await newUser(context, page, { label: rose, seed: { vinterest_prefs: JSON.stringify({ types: ['rose'], budget: 'mid', experience: 'novice' }) } });
   await scan(page);

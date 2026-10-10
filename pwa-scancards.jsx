@@ -148,7 +148,7 @@ function MatchBreakdown({match}){
       Why {match.pct}%? <span style={{display:'inline-block',transform:open?'rotate(90deg)':'none',transition:'transform .15s'}}><Icon n="chevron" sz={12} col={C.cr}/></span>
     </div>
     {open&&<div style={{marginTop:10,padding:'12px 14px',borderRadius:12,background:C.offWhite,border:`1px solid ${C.line}`,display:'flex',flexDirection:'column',gap:8}}>
-      <div style={{fontSize:15,color:C.ink2,fontFamily:C.P,lineHeight:1.45}}>You score {match.breakdownLabel} {b.avg} on average. Compared with that:</div>
+      <div style={{fontSize:15,color:C.ink2,fontFamily:C.P,lineHeight:1.45}}>You rate {match.breakdownLabel} {b.avg} on average. Compared with that:</div>
       {b.up.length>0&&<>{head('Brings it up')}{b.up.map((it,i)=>line(it,'↑',C.green,i))}</>}
       {b.down.length>0&&<>{head('Holds it back')}{b.down.map((it,i)=>line(it,'↓','#B04A3A',i))}</>}
       {b.even.length>0&&<>{head('No difference')}{b.even.map((it,i)=>line(it,'·',C.mid,i))}</>}
@@ -399,7 +399,7 @@ function ScanResult({wine,match,curr,scanData,existingRating,nav,showPro,view,se
     <Card style={{padding:16}}>
       <WineIdentity wine={wine}/>
       <div style={{display:'flex',alignItems:'center',gap:10,marginTop:10,flexWrap:'wrap'}}>
-        {existingRating>0&&<span style={{fontSize:13,fontWeight:700,color:C.green,background:C.greenBg,border:`1px solid ${C.green}30`,borderRadius:20,padding:'3px 10px',fontFamily:C.P}}>You scored it {existingRating} · {ParkerScale.label(existingRating)}</span>}
+        {existingRating>0&&<span style={{fontSize:13,fontWeight:700,color:C.green,background:C.greenBg,border:`1px solid ${C.green}30`,borderRadius:20,padding:'3px 10px',fontFamily:C.P}}>You rated it {existingRating} · {ParkerScale.label(existingRating)}</span>}
         <span onClick={onEdit} style={{fontSize:13,fontWeight:600,color:C.cr,fontFamily:C.P,cursor:'pointer'}}>Not right? Edit</span>
       </div>
     </Card>
@@ -410,10 +410,10 @@ function ScanResult({wine,match,curr,scanData,existingRating,nav,showPro,view,se
         <div style={{flex:1,minWidth:0}}>
           <div style={{fontSize:20,fontWeight:800,color:match&&match.pct!=null?col:C.ink,fontFamily:C.P,lineHeight:1.2}}>{match?match.label:'—'}</div>
           {match&&match.expected!=null
-            ?<div style={{fontSize:15,color:C.mid,fontFamily:C.P,marginTop:3}}>{existingRating>0?`We expected about ${match.expected} · you scored ${existingRating}`:`Likely about ${match.expected} from you · ${match.expectedLabel}`}</div>
+            ?<div style={{fontSize:15,color:C.mid,fontFamily:C.P,marginTop:3}}>{existingRating>0?`We expected about ${match.expected} · you rated ${existingRating}`:`Likely about ${match.expected} from you · ${match.expectedLabel}`}</div>
             :match&&match.verdict==='early'?null
             :<div style={{fontSize:15,color:C.mid,fontFamily:C.P,marginTop:3,lineHeight:1.45}}>{match&&match.summary}</div>}
-          {match&&match.expected!=null&&match.bar!=null&&!(existingRating>0)&&<div style={{fontSize:13,color:C.mid,fontFamily:C.P,marginTop:2}}>{match.pct}% sure you'd score it {match.bar}+, your usual for {match.breakdownLabel}</div>}
+          {match&&match.expected!=null&&match.bar!=null&&!(existingRating>0)&&<div style={{fontSize:13,color:C.mid,fontFamily:C.P,marginTop:2}}>{match.pct}% sure you'd rate it {match.bar}+, your usual for {match.breakdownLabel}</div>}
           {match&&match.confidence==='low'&&<div style={{fontSize:13,color:C.mid,fontFamily:C.P,marginTop:2}}>Rough guess</div>}
         </div>
       </div>
@@ -447,7 +447,7 @@ function ScanResult({wine,match,curr,scanData,existingRating,nav,showPro,view,se
             <div style={{display:'flex',flexDirection:'column',gap:8}}>
               {[
                 {key:'learn',icon:'book',label:'Learn about it',sub:'Story, taste, region and grape',on:onDeck},
-                {key:'rate',icon:'star',label:existingRating?`Re-rate it (${existingRating})`:'Rate it',sub:existingRating?'Changed your mind?':'Score it to sharpen your WineDNA',on:()=>setView('rate')},
+                {key:'rate',icon:'star',label:existingRating?`Re-rate it (${existingRating})`:'Rate it',sub:existingRating?'Changed your mind?':'Rate it to sharpen your WineDNA',on:()=>setView('rate')},
                 ...(existingRating?[]:[{key:'save',icon:'bookmark',label:'Save for later',sub:'Shopping, or not tasted yet',on:onSaveForLater}]),
               ].map(x=>(
                 <div key={x.key} role="button" onClick={x.on} style={{background:C.white,border:`1.5px solid ${C.crDim}`,borderRadius:14,padding:'12px 14px',display:'flex',alignItems:'center',gap:12,cursor:'pointer',boxShadow:'0 1px 3px rgba(0,0,0,0.04)'}}>
@@ -512,7 +512,7 @@ function buildCards({match,firstScan}){
 /* On the first scan, each card says what it becomes with use. Wording only; the facts come from
    FirstScan (pwa-scan.js). */
 const _FIRST_NOTES={
-  fit:{title:'This card gets personal',text:w=>`Score a few ${FirstScan.progress(w,[]).many} and it says why you'll like a bottle or won't, from the wines you've loved and the ones you haven't.`},
+  fit:{title:'This card gets personal',text:w=>`Rate a few ${FirstScan.progress(w,[]).many} and it says why you'll like a bottle or won't, from the wines you've loved and the ones you haven't.`},
   origin:{title:'Open in Learn now',text:w=>{ const u=FirstScan.unlocked(w), open=[u.grape&&`the ${u.grape} quiz`,u.region&&`the ${u.region} quiz`].filter(Boolean);
     return open.length?`This scan opened ${open.join(' and ')}. Every new grape and region you scan opens its own.`:'Every new grape and region you scan opens its own quiz in Learn.'; }},
   taste:{title:'Why play Blind Call',text:()=>'Each call trains your palate, and your guesses tell your WineDNA how you really taste, not just what the label says.'},
@@ -535,12 +535,12 @@ function MatchComingSoon({wine,compact}){
   const ex=FirstScan.example(wine), col=_typeCol(wine);
   return <div style={{display:'flex',flexDirection:'column',gap:12}}>
     <div style={{fontSize:compact?16:18,fontWeight:800,color:C.ink,fontFamily:C.P,lineHeight:1.3}}>
-      {p.n===0?`Your WineDNA starts with your first score`:`${p.n} of ${p.need} ${p.many} scored`}</div>
-    <div style={{display:'flex',gap:6}} aria-label={`${p.n} of ${p.need} ${p.many} scored`}>
+      {p.n===0?`Your WineDNA starts with your first rating`:`${p.n} of ${p.need} ${p.many} rated`}</div>
+    <div style={{display:'flex',gap:6}} aria-label={`${p.n} of ${p.need} ${p.many} rated`}>
       {Array.from({length:p.need},(_,i)=><div key={i} style={{flex:1,height:8,borderRadius:4,background:i<p.n?col:C.line}}/>)}
     </div>
     <div style={{fontSize:15,color:C.ink2,fontFamily:C.P,lineHeight:1.5}}>
-      Score {p.left===1?'one more':p.left} {p.left===1?p.one:p.many} and every {p.one} you scan shows how much you'll like it, before you buy it or as you try it, worked out from your own scores, not critics'.</div>
+      Rate {p.left===1?'one more':p.left} {p.left===1?p.one:p.many} and every {p.one} you scan shows how much you'll like it, before you buy it or as you try it, worked out from your own ratings, not critics'.</div>
     {/* Laid out like the real match card, ring at near full size, and labelled as an example. */}
     {!compact&&<div style={{padding:'14px 14px 16px',borderRadius:12,background:C.offWhite,border:`1px solid ${C.line}`,display:'flex',flexDirection:'column',alignItems:'center',gap:8,textAlign:'center'}}>
       <div style={{fontSize:12,fontWeight:700,color:C.mid,fontFamily:C.P,letterSpacing:'0.08em',textTransform:'uppercase'}}>Example</div>
@@ -790,7 +790,7 @@ function BlindCallReveal({wine,dims,guess,col,onDone}){
       <div style={{fontSize:14,fontWeight:700,color:C.amber,fontFamily:C.P,marginBottom:3}}>Worth a closer look: {missed.map(d=>DIM_LABEL[d]).join(', ')}</div>
       <div style={{fontSize:13.5,color:C.ink2,fontFamily:C.P,lineHeight:1.5}}>No cost to missing — we'll queue a short read on this for your shelf.</div>
     </div>}
-    <Btn primary full onClick={()=>onDone(guess,missed,accuracy)}>See my score</Btn>
+    <Btn primary full onClick={()=>onDone(guess,missed,accuracy)}>See my result</Btn>
   </div>;
 }
 
@@ -923,7 +923,7 @@ function RatingPanel({wine,existingRating,nav,showPro,curr,onRated,onSaveForLate
     <div style={{display:'flex',alignItems:'center',gap:10}}>
       <div style={{width:36,height:36,borderRadius:18,background:C.greenBg,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><Icon n="check" sz={18} col={C.green}/></div>
       <div>
-        <div style={{fontSize:17,fontWeight:800,color:C.ink,fontFamily:C.P}}>Scored {score} · {label}</div>
+        <div style={{fontSize:17,fontWeight:800,color:C.ink,fontFamily:C.P}}>Rated {score} · {label}</div>
         <div style={{fontSize:13,color:C.mid,fontFamily:C.P}}>Saved to My Wines</div>
       </div>
     </div>
@@ -942,12 +942,12 @@ function RatingPanel({wine,existingRating,nav,showPro,curr,onRated,onSaveForLate
         </div>
       ))}
     </div>
-    <TrackSlider label="Score" min={ParkerScale.MIN} max={100} value={Math.max(score,ParkerScale.MIN)} unset={!(score>0)} onChange={setScore} col={tc}/>
+    <TrackSlider label="Rating" min={ParkerScale.MIN} max={100} value={Math.max(score,ParkerScale.MIN)} unset={!(score>0)} onChange={setScore} col={tc}/>
     <div style={{textAlign:'center',minHeight:40}}>
       {score>0?<div style={{display:'flex',flexDirection:'column',alignItems:'center'}}>
         <div style={{display:'flex',alignItems:'baseline',gap:3}}><span style={{fontSize:34,fontWeight:800,color:tc,fontFamily:C.P,lineHeight:1}}>{score}</span><span style={{fontSize:13,fontWeight:700,color:C.mid,fontFamily:C.P}}>pts</span></div>
         <span style={{fontSize:15,fontWeight:600,color:C.amber,fontFamily:C.P}}>{label}</span>
-      </div>:<span style={{fontSize:15,color:C.mid,fontFamily:C.P}}>Slide or tap a score</span>}
+      </div>:<span style={{fontSize:15,color:C.mid,fontFamily:C.P}}>Slide or tap a rating</span>}
     </div>
     <div style={{fontSize:12,color:C.mid,fontFamily:C.P,textAlign:'center',lineHeight:1.5,opacity:0.8}}>100-point scale: 96+ Extraordinary · 90–95 Outstanding · 80–89 Very good · 70–79 Average · under 70 Below average</div>
     {score>0&&<Btn primary full onClick={commit}>Save rating</Btn>}
@@ -1099,7 +1099,7 @@ function CardDeck({deckStyle,wine,gen,loading,match,curr,scanData,existingRating
 
 /* shared card chrome */
 /* The last card's label follows the rating step: Rate it, then Your score, then Keep learning. */
-const _FINISH_HEAD={rate:null,saved:{eyebrow:'Your score',icon:'check'},next:{eyebrow:'Keep learning',icon:'book'}};
+const _FINISH_HEAD={rate:null,saved:{eyebrow:'Your rating',icon:'check'},next:{eyebrow:'Keep learning',icon:'book'}};
 function CardShell({card,children,ctx,style,active}){
   const isFinish=card.kind==='finish';
   const head=(isFinish&&ctx&&_FINISH_HEAD[ctx.finishStage])||card;

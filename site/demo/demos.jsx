@@ -61,7 +61,7 @@ function _setInput(input, v) {
 /* The rating card's score slider (TrackSlider): a role="slider" element that takes pointer events,
    not an input. Setting a score is a tap at the right place along it, as a finger would: a
    pointerdown at that x (which sets the value), then the pointerup that lets go. */
-const _scoreSlider = (root) => root.querySelector('[role="slider"][aria-label="Score"]');
+const _scoreSlider = (root) => root.querySelector('[role="slider"][aria-label="Rating"]');
 function _setScore(slider, score) {
   const min = Number(slider.getAttribute('aria-valuemin')), max = Number(slider.getAttribute('aria-valuemax'));
   const r = slider.getBoundingClientRect();
@@ -505,7 +505,7 @@ const VinterestDemo = {
         if (_scoreNow(sl) !== now) _setScore(sl, now);
       });
       if (!bLocked && b >= 0.7) { bLocked = true; _until(() => _tapText(el, /^Lock in my call$/), 40); }
-      if (!bScored && b >= 0.84) { bScored = true; _until(() => _tapText(el, /^See my score$/), 40); }
+      if (!bScored && b >= 0.84) { bScored = true; _until(() => _tapText(el, /^See my result$/), 40); }
     };
     let saved = false, rated = false, learned = false, boughtAgain = false, paid = false, where = false;
     const api = {

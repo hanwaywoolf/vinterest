@@ -71,7 +71,7 @@ const WineDNA = {
       const sc=b.filter(x=>x.rating>0); return {i,label,n:b.length,avg:sc.length?Math.round(this._mean(sc.map(x=>x.rating))):null,scored:sc.length,bottles:b}; });
     const rated=steps.filter(s=>s.scored>=2), most=[...steps].sort((a,b)=>b.n-a.n)[0];
     const hi=[...rated].sort((a,b)=>b.avg-a.avg)[0], lo=[...rated].sort((a,b)=>a.avg-b.avg)[0];
-    const verdict=rated.length>=2&&hi.avg>lo.avg?`Your best scores are in ${hi.label} (average ${hi.avg}), your lowest in ${lo.label} (average ${lo.avg}).`
+    const verdict=rated.length>=2&&hi.avg>lo.avg?`Your best ratings are in ${hi.label} (average ${hi.avg}), your lowest in ${lo.label} (average ${lo.avg}).`
       :`Most of your ${L} sit in ${most.label}.`;
     return {axis,name:A.name,lowWord:A.low,highWord:A.high,word:this.everyday(axis,avg),avg,loved,lean,bottles:at,n:at.length,about,steps,verdict,start:most.i};
   },
@@ -332,7 +332,7 @@ const WineDNA = {
   confidence(p){
     const n=p.scored.length;
     const level=n>=12?'strong':n>=8?'good':n>=3?'early':'none';
-    const next=level==='strong'?null:level==='good'?`Score ${12-n} more to firm it up`:`Score ${this.noun(p.typeKey,8-n)} more to unlock your preference signals`;
+    const next=level==='strong'?null:level==='good'?`Rate ${12-n} more to firm it up`:`Rate ${this.noun(p.typeKey,8-n)} more to unlock your preference signals`;
     return {n,level,next,unscored:p.wines.length-n};
   },
 
@@ -352,7 +352,7 @@ const WineDNA = {
       const dir=hiM>restM?'high':'low', A=this.AXES[k];
       out.push({axis:k,dir,r,strength:Math.abs(r)>=0.5?'consistently':'tend to',
         lovedMean:hiM,restMean:restM,adj:dir==='high'?A.highAdj:A.lowAdj,
-        text:`You ${Math.abs(r)>=0.5?'consistently':'tend to'} score ${dir==='high'?A.highAdj:A.lowAdj} ${p.label.toLowerCase()} higher.`,
+        text:`You ${Math.abs(r)>=0.5?'consistently':'tend to'} rate ${dir==='high'?A.highAdj:A.lowAdj} ${p.label.toLowerCase()} higher.`,
         detail:`Your ${hi.length} Outstanding (90+) ${p.label.toLowerCase()} average ${this.AXES[k].name.toLowerCase()} ${Math.round(hiM*100)}/100, against ${Math.round(restM*100)}/100 for the rest.`,
         tip:this.TIPS[k][dir]});
     });
@@ -439,10 +439,10 @@ const WineDNA = {
     const pw=sc.filter(w=>this.priceOf(w)>0), aw=sc.filter(w=>{ const v=parseInt(w.vintage); return v>1900&&v<=year; });
     const pr=pw.length>=8?this._r(pw.map(w=>Math.log(this.priceOf(w))),pw.map(w=>w.rating)):null;
     const ar=aw.length>=8?this._r(aw.map(w=>year-parseInt(w.vintage)),aw.map(w=>w.rating)):null;
-    const money=pr==null?null:pr>=0.3?`Your scores climb with price: the more a ${L.replace(/s$/,'')} costs, the more you tend to like it.`
-      :pr<=-0.2?`Price doesn't buy your favourites: your cheaper ${L} score as well as or better than the dear ones.`
-      :`Price barely moves your scores, so the best value is where your top scores and lower prices meet.`;
-    const age=ar==null?null:ar>=0.3?`You score older ${L} higher: bottle age suits you.`:ar<=-0.3?`You score younger ${L} higher: you like them fresh rather than aged.`:null;
+    const money=pr==null?null:pr>=0.3?`Your ratings climb with price: the more a ${L.replace(/s$/,'')} costs, the more you tend to like it.`
+      :pr<=-0.2?`Price doesn't buy your favourites: your cheaper ${L} rating as well as or better than the dear ones.`
+      :`Price barely moves your ratings, so the best value is where your top ratings and lower prices meet.`;
+    const age=ar==null?null:ar>=0.3?`You rate older ${L} higher: bottle age suits you.`:ar<=-0.3?`You rate younger ${L} higher: you like them fresh rather than aged.`:null;
     // In words: what each favourite is like, and the bottles that show it.
     const one=L.replace(/s$/,''), usual=Math.round(avg);
     const title=x=>x.kind==='Grape'?x.name:x.kind==='Region'?`${L.charAt(0).toUpperCase()+L.slice(1)} from ${x.name}`:x.kind==='Producer'?`${x.name}'s ${L}`
@@ -465,8 +465,8 @@ const WineDNA = {
     const bStyle=this.styleWords(best,p.axes), bFl=this.flavourWords(best,3);
     const names=favs.filter(f=>named(f)===0).slice(0,2).map(f=>f.kind==='Producer'?`${f.name}'s bottles`:f.name);
     const portrait=(bStyle.length||bFl.length||names.length)?`You love ${bStyle.length?this._list(bStyle)+' ':''}${L}${bFl.length?` with ${this._list(bFl)}`:''}${names.length?`, ${names.length>1?'above all':'especially'} ${this._list(names)}`:''}.`:null;
-    const headline=portrait||(styleAll[0]?styleAll[0].text:null)||(up[0]?`${up[0].name} lifts your scores most: ${up[0].count} bottles averaging ${up[0].avg}, ${up[0].lift>0?'+':''}${up[0].lift} on your average.`
-      :flat?`You score your ${L} very evenly, mostly between ${loCut} and ${hiCut}.`:null);
+    const headline=portrait||(styleAll[0]?styleAll[0].text:null)||(up[0]?`${up[0].name} lifts your ratings most: ${up[0].count} bottles averaging ${up[0].avg}, ${up[0].lift>0?'+':''}${up[0].lift} on your average.`
+      :flat?`You rate your ${L} very evenly, mostly between ${loCut} and ${hiCut}.`:null);
     return {ready:true,n,avg:Math.round(avg*10)/10,usual,bestAvg,hiCut,loCut,flat,style:styleAll,up:up.map(({ws,...x})=>x),down:down.map(({ws,...x})=>x),favs,nots,portrait,money,age,headline};
   },
 
@@ -535,8 +535,8 @@ const WineDNA = {
         :hiP<=restP*1.15
           ?{kind:'flat',text:`Your Outstanding ${L} cost about the same as the rest ${cmp}. Spending more hasn't bought you more enjoyment, so there's no need to trade up to find wines you love.`}
           :r>=0.3
-            ?{kind:'pays',text:`Your Outstanding ${L} cost more on average ${cmp}, and higher prices have tended to mean higher scores for you. Stepping up can pay off, especially within your sweet spot.`}
-            :{kind:'loose',text:`Your Outstanding ${L} cost a little more on average ${cmp}, but across all your ${L} price and score barely move together. A higher price hasn't reliably meant a better bottle for you.`};
+            ?{kind:'pays',text:`Your Outstanding ${L} cost more on average ${cmp}, and higher prices have tended to mean higher ratings for you. Stepping up can pay off, especially within your sweet spot.`}
+            :{kind:'loose',text:`Your Outstanding ${L} cost a little more on average ${cmp}, but across all your ${L} price and rate barely move together. A higher price hasn't reliably meant a better bottle for you.`};
     }
     // Their average score in each price band, the bottles in it best first, and the band their
     // scores are highest in (from two bottles): the picture Value opens on.
@@ -546,7 +546,7 @@ const WineDNA = {
         bottles:b.map(x=>({wine:x.w,price:money(x.price),paid:!!(x.w.price_paid&&x.w.price_paid.amount>0)}))}; }).filter(b=>b.n>0);
     const top=bands.filter(b=>b.n>=2).sort((a,b)=>b.avg-a.avg)[0]||null;
     const dearest=bands[bands.length-1];
-    const bandVerdict=top?`Your best scores come from ${top.label} (average ${top.avg})${dearest&&dearest!==top&&dearest.avg!=null&&dearest.avg<=top.avg?': spending more hasn\'t bought you better':''}.`:null;
+    const bandVerdict=top?`Your best ratings come from ${top.label} (average ${top.avg})${dearest&&dearest!==top&&dearest.avg!=null&&dearest.avg<=top.avg?': spending more hasn\'t bought you better':''}.`:null;
     return {n:ws.length,paid:ws.filter(x=>x.w.price_paid&&x.w.price_paid.amount>0).length,code:rc.code,sweetSpot:hi.length>=2?SommelierScript.budget(hi.map(x=>x.w),rc):null,bestValue,verdict,bands,topBand:top?top.label:null,bandVerdict};
   },
 
@@ -595,23 +595,23 @@ const WineDNA = {
   /* The facts the Claude-written summary is allowed to use, so it can only restate what's true. */
   summaryFacts(p){
     const f=[];
-    f.push(`Wine type: ${p.label}. ${p.wines.length} scanned, ${p.scored.length} scored on the 100-point scale, ${p.loved.length} scored 90+ (Outstanding).`);
+    f.push(`Wine type: ${p.label}. ${p.wines.length} scanned, ${p.scored.length} rated on the 100-point scale, ${p.loved.length} rated 90+ (Outstanding).`);
     f.push(`Personality label: ${p.personality} (based on ${p.basis==='loved'?'their 90+ wines':'all the wines they chose'}).`);
     f.push(`Style of the wines they choose: ${p.axes.filter(k=>p.avg[k]!=null).map(k=>`${this.AXES[k].name.toLowerCase()} ${this.level(p.avg[k])}`).join(', ')}.`);
     p.signals.forEach(s=>f.push(`Preference signal: ${s.text} ${s.detail}`));
     // What they love, on their own scale (WineDNA.loves): the summary's "What You Love" is built from this.
     const lv=p.loves;
     if(lv&&lv.ready){
-      f.push(`Their usual score for ${p.label.toLowerCase()} is ${lv.usual}; their best third score ${lv.hiCut}+.`);
+      f.push(`Their usual rating for ${p.label.toLowerCase()} is ${lv.usual}; their best third rate ${lv.hiCut}+.`);
       if(lv.portrait) f.push(`What they love, in a line: ${lv.portrait}`);
       lv.favs.forEach(x=>f.push(`What they love: ${x.title}${x.also?` (also ${x.also})`:''}. ${x.strength}. ${x.character||''} ${x.evidence} Best bottles: ${x.examples.map(w=>`${w.name} (${w.rating})`).join(', ')}.`));
       lv.nots.forEach(x=>f.push(`Less their thing: ${x.title}${x.also?` (also ${x.also})`:''}. ${x.character||''} ${x.evidence} Lowest: ${x.examples.map(w=>`${w.name} (${w.rating})`).join(', ')}.`));
       [lv.money,lv.age].filter(Boolean).forEach(x=>f.push(x));
     } else {
-      if(p.favourites.regions.length) f.push(`Highest-scoring regions: ${p.favourites.regions.map(r=>`${r.name} (${r.count} bottles, avg ${r.avg})`).join('; ')}.`);
-      if(p.favourites.grapes.length) f.push(`Highest-scoring grapes: ${p.favourites.grapes.map(g=>`${g.name} (${g.count}, avg ${g.avg})`).join('; ')}.`);
+      if(p.favourites.regions.length) f.push(`Highest-rated regions: ${p.favourites.regions.map(r=>`${r.name} (${r.count} bottles, avg ${r.avg})`).join('; ')}.`);
+      if(p.favourites.grapes.length) f.push(`Highest-rated grapes: ${p.favourites.grapes.map(g=>`${g.name} (${g.count}, avg ${g.avg})`).join('; ')}.`);
     }
-    if(p.favourites.disliked.length) f.push(`Scored below 80: ${p.favourites.disliked.map(w=>`${w.name}${w.region?' from '+w.region:''} (${w.rating})`).join('; ')}.`);
+    if(p.favourites.disliked.length) f.push(`Rated below 80: ${p.favourites.disliked.map(w=>`${w.name}${w.region?' from '+w.region:''} (${w.rating})`).join('; ')}.`);
     if(p.value&&p.value.verdict) f.push(`Value: ${p.value.verdict.text}`);
     return f.join('\n');
   }

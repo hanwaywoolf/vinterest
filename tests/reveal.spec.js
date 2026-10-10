@@ -135,8 +135,8 @@ test('too early for a match it shows the meter; a wine the knowledge base lacks 
   await expect(scene).toHaveAttribute('data-scene', 'label');
   await next(page);
   await expect(scene).toHaveAttribute('data-scene', 'match');
-  await expect(scene).toContainText('It starts with your first score');
-  await expect(scene).toContainText('Score 3 sparkling wines');
+  await expect(scene).toContainText('It starts with your first rating');
+  await expect(scene).toContainText('Rate 3 sparkling wines');
   await next(page);
   await expect(scene).toHaveAttribute('data-scene', 'taste');
   await expect(scene).toContainText('Lively'); // bubbles, not texture, for sparkling
@@ -146,7 +146,7 @@ test('too early for a match it shows the meter; a wine the knowledge base lacks 
   expect(await page.getByTestId('reveal-progress').locator('> div').count()).toBe(3);
 });
 
-test('the first bottle ends on its score and carries on with onboarding', async ({ context, page }) => {
+test('the first bottle ends on its rating and carries on with onboarding', async ({ context, page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await makeDeterministic(page);
   await stubNetwork(context, { reveal: 'real', claudeText: (b) => b.purpose === 'label_scan' ? JSON.stringify(RIOJA) : '' });

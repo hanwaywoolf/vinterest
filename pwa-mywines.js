@@ -8,11 +8,11 @@
 const MyWines = {
   STATUSES:[
     {id:'favourite',label:'Favourites',test:w=>Favorites.has(w)},
-    {id:'unscored',label:'Unscored',test:w=>!(w.rating>0)&&!MyWines.isSaved(w)},
+    {id:'unrated',label:'Unrated',test:w=>!(w.rating>0)&&!MyWines.isSaved(w)},
     {id:'saved',label:'Saved for later',test:w=>MyWines.isSaved(w)},
     {id:'again',label:'Buy again',test:w=>w.buy_again===true},
   ],
-  SORTS:[{id:'recent',label:'Recent'},{id:'rating',label:'Top scored'},{id:'name',label:'A–Z'},{id:'price',label:'Price'}],
+  SORTS:[{id:'recent',label:'Recent'},{id:'rating',label:'Top rated'},{id:'name',label:'A–Z'},{id:'price',label:'Price'}],
 
   isSaved(w){ return w.scan_intent==='checking'&&!(w.rating>0)&&w.bought!==true; },
   type(w){ return WineDNA._t(w.type)||'red'; },

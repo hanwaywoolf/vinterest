@@ -37,7 +37,7 @@ test('every knowledge-base region has a pin inside one map view', async ({ conte
   expect(out.land).toBe(true);
 });
 
-test('Start here weighs what they drink: three Riojas beat a lower score elsewhere', async ({ context, page }) => {
+test('Start here weighs what they drink: three Riojas beat a lower rating elsewhere', async ({ context, page }) => {
   await user(context, page);
   await page.goto(`${BASE}/#home`);
   const out = await page.evaluate(() => {
@@ -116,7 +116,7 @@ test('the Mastery screen: Start here, the shape with last month, and the map', a
 });
 
 // Palate: what they can taste, from their Blind Calls against each label's profile.
-test('Palate scores Blind Calls per axis, names a habit, and fills in over five calls', async ({ context, page }, info) => {
+test('Palate ratings Blind Calls per axis, names a habit, and fills in over five calls', async ({ context, page }, info) => {
   const errors = collectErrors(page);
   await user(context, page);
   await page.goto(`${BASE}/#home`);

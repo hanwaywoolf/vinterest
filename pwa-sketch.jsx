@@ -167,23 +167,14 @@ function SketchNoteIcon({note,family,ink='#fff',wash}){
   }
 }
 
-/* "Something to say": a raised glass with a speech bubble, drawn as the pen would draw it (each
-   line runs on from the last, `rv-draw` in the reveal's CSS), then the words. Consistent across
-   every wine: it's the mark for the line you can say out loud. */
+/* "Something to say": a speech bubble the pen draws in one quick stroke (`rv-draw` in the
+   reveal's CSS), with the words right behind it. The same mark on every wine: the line you can
+   say out loud. */
 function SketchSay({ink='#fff',col}){
   const line={fill:'none',stroke:ink,strokeLinecap:'round',strokeLinejoin:'round'};
-  return <svg viewBox="-20 -40 110 70" width="200" height="128" aria-hidden="true" style={{display:'block',overflow:'visible'}}>
-    {/* the glass, tilted as if raised */}
-    <g transform="rotate(-14 0 0)">
-      <path d="M-11 -17 C-11 -4 -8 4 0 4 C8 4 11 -4 11 -17" {...line} strokeWidth="1.8" pathLength="1" className="rv-draw" style={{animationDelay:'.1s'}}/>
-      <path d="M-11 -17 C-5 -18.4 5 -18.4 11 -17" {...line} strokeWidth="1.2" pathLength="1" className="rv-draw" style={{animationDelay:'.5s'}} opacity="0.75"/>
-      <path d="M-10.3 -7 C-5 -5.4 5 -5.4 10.3 -7" {...line} strokeWidth="1.1" pathLength="1" className="rv-draw" style={{animationDelay:'.7s'}} opacity="0.8"/>
-      <path d="M-10.3 -7 C-9.5 0 -6 4 0 4 C6 4 9.5 0 10.3 -7 Z" fill={col||ink} opacity="0.5" className="rv-in" style={{animationDelay:'.9s'}}/>
-      <path d="M0 4 L0 15 M-8.5 16.5 C-4 14.6 4 14.6 8.5 16.5" {...line} strokeWidth="1.8" pathLength="1" className="rv-draw" style={{animationDelay:'.85s'}}/>
-    </g>
-    {/* the bubble, pointing back at the glass */}
-    <path d="M28 -34 L78 -34 C84 -34 86 -31 86 -26 L86 -10 C86 -5 84 -2 78 -2 L42 -2 L30 8 L33 -2 L28 -2 C23 -2 21 -5 21 -10 L21 -26 C21 -31 23 -34 28 -34 Z" {...line} strokeWidth="1.6" pathLength="1" className="rv-draw" style={{animationDelay:'1.15s',animationDuration:'1s'}}/>
-    <path d="M32 -24 L74 -24 M32 -17 L70 -17 M32 -10 L58 -10" {...line} strokeWidth="1.3" opacity="0.55" pathLength="1" className="rv-draw" style={{animationDelay:'2s',animationDuration:'.7s'}}/>
+  return <svg viewBox="0 0 70 50" width="84" height="60" aria-hidden="true" style={{display:'block',overflow:'visible'}}>
+    <path d="M8 4 L60 4 C66 4 68 7 68 12 L68 30 C68 35 66 38 60 38 L24 38 L10 48 L14 38 L8 38 C3 38 1 35 1 30 L1 12 C1 7 3 4 8 4 Z" {...line} strokeWidth="2" pathLength="1" className="rv-draw" style={{animationDuration:'.7s'}}/>
+    <path d="M13 15 L56 15 M13 22 L52 22 M13 29 L38 29" stroke={col||ink} strokeWidth="2.2" strokeLinecap="round" opacity="0.75" pathLength="1" className="rv-draw" style={{animationDelay:'.5s',animationDuration:'.45s'}}/>
   </svg>;
 }
 Object.assign(window,{SketchNoteIcon,sketchNoteFamily,SKETCH_NOTE_FAMILIES,SketchSay});

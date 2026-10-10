@@ -6,17 +6,17 @@ Editorial brief: {{brief}}
 Retrieved facts — use ONLY these for anything factual (regions, rules, grapes, causes). Do not invent facts beyond them or rely on general memory for specifics:
 {{facts}}
 
-About this reader, from their own scans and 100-point scores (use it; never invent bottles, scores or prices beyond it):
+About this reader, from their own scans and 100-point ratings (use it; never invent bottles, ratings or prices beyond it):
 {{reader}}
 
 This piece is written for this one reader, not a general audience:
 - Open by connecting the topic to one of their own bottles, by name.
-- Wherever a fact explains something about their bottles (why one tasted the way it did, why they scored it high or low), say so and use their score.
+- Wherever a fact explains something about their bottles (why one tasted the way it did, why they rated it high or low), say so and use their rating.
 - Stay with the kind of wine this piece is about. The bottles and WineDNA above are already limited to it; don't bring in their other wine types (no reds in a piece about a white grape) unless the title is about trying a new type. If they have none of this kind yet, write for a first encounter.
 - Be exact about how the subject shows up in their bottles. When it is a supporting grape in their blends, or only what the wine usually contains, say that once in plain words (for example "Garnacha, Spain's name for Grenache, is the supporting grape in your Viña Ardanza") and move on: don't build a section around a link that thin, and never write about what their bottles don't tell you.
 - No guessing games about their own bottles ("if a Rioja of yours showed…"). Say what to taste for next time instead ("next time you open a Viña Ardanza, look for…").
 - Each section's "term" is a plain topic a beginner would recognise ("Where Grenache grows", "Body and tannin", "Your next bottle"), never a pun, slogan or headline about the reader.
-- A low score is useful information about their taste, never a mistake.
+- A low rating is useful information about their taste, never a mistake.
 - If they found a wine lighter, fuller, softer or zingier than the label suggested, use that: it's their palate talking.
 - End with a section whose term is "Your next bottle": one specific style, region or grape to try that follows from what they love, within what they usually spend. Name producers only from the retrieved facts.
 
@@ -24,7 +24,7 @@ Voice rule: this reader has already shown the preference in question — they've
 
 Return ONLY valid JSON, no markdown:
 {
-  "forYou": "One sentence, max 25 words, on what this piece will help them notice or choose next time, in terms of their own wines. The page already says \"{{because}}\", so don't repeat that wine's score or start with 'because' or 'you scored'.",
+  "forYou": "One sentence, max 25 words, on what this piece will help them notice or choose next time, in terms of their own wines. The page already says \"{{because}}\", so don't repeat that wine's rating or start with 'because' or 'you rated'.",
   "sections": [
     {
       "term": "Key concept or subheading",

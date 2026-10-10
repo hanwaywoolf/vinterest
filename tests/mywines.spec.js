@@ -13,7 +13,7 @@ async function setup(context, page, extra = []) {
   await page.evaluate((extra) => {
     const all = WineHistory.getAll();
     all.unshift({ name: 'Saved Test Chablis', producer: 'Test', type: 'white', region: 'Chablis', country: 'France', vintage: 2022, rating: 0, scan_intent: 'checking', times_consumed: 1, scanned_at: '2026-06-14T10:00:00Z', last_scanned: '2026-06-14T10:00:00Z' });
-    all.unshift({ name: 'Unscored Test Rioja', producer: 'Test', type: 'red', region: 'Rioja', country: 'Spain', vintage: 0, rating: 0, scan_intent: 'tasted', times_consumed: 1, scanned_at: '2026-05-02T10:00:00Z', last_scanned: '2026-05-02T10:00:00Z' });
+    all.unshift({ name: 'Unrated Test Rioja', producer: 'Test', type: 'red', region: 'Rioja', country: 'Spain', vintage: 0, rating: 0, scan_intent: 'tasted', times_consumed: 1, scanned_at: '2026-05-02T10:00:00Z', last_scanned: '2026-05-02T10:00:00Z' });
     extra.forEach((w) => all.unshift(w));
     WineHistory.save(all);
   }, extra);
@@ -36,12 +36,12 @@ test('search, filters, sort and grouping', async ({ context, page }) => {
   await root.getByText(/^Saved for later \d+$/).click();
   expect(await rowNames(page)).toEqual(['Saved Test Chablis']);
   await root.getByText(/^Saved for later \d+$/).click();
-  await root.getByText(/^Unscored \d+$/).click();
-  expect(await rowNames(page)).toEqual(['Unscored Test Rioja']);
-  await expect(root.getByRole('button', { name: 'Score it' })).toBeVisible();
+  await root.getByText(/^Unrated \d+$/).click();
+  expect(await rowNames(page)).toEqual(['Unrated Test Rioja']);
+  await expect(root.getByRole('button', { name: 'Rate it' })).toBeVisible();
   // NV shows as NV, not 0.
   await expect(root).toContainText('Rioja · NV');
-  await root.getByText(/^Unscored \d+$/).click();
+  await root.getByText(/^Unrated \d+$/).click();
   await page.getByLabel('Search your wines').fill('rioja reserva');
   const names = await rowNames(page);
   expect(names.length).toBeGreaterThan(0);
@@ -50,16 +50,16 @@ test('search, filters, sort and grouping', async ({ context, page }) => {
   await expect(root).toContainText('No wines match');
   await root.getByText('Clear filters').click();
   await page.getByLabel('Sort').click();
-  await root.getByText('Top scored').click();
+  await root.getByText('Top rated').click();
   const ratings = await page.locator('#root .mw-row').evaluateAll((els) => els.map((e) => { const pr = e.querySelector('.mw-price'); const t = pr ? e.innerText.replace(pr.innerText, '') : e.innerText; return Number((t.trim().match(/(\d+)$/) || [])[1] || 0); }));
   expect(ratings.slice(0, -2)).toEqual([...ratings.slice(0, -2)].sort((a, b) => b - a));
   expect(errors).toEqual([]);
 });
 
-test('Score it opens the rating; a row opens the wine', async ({ context, page }) => {
+test('Rate it opens the rating; a row opens the wine', async ({ context, page }) => {
   await setup(context, page);
   const root = page.locator('#root');
-  await root.getByRole('button', { name: 'Score it' }).first().click();
+  await root.getByRole('button', { name: 'Rate it' }).first().click();
   await expect(root).toContainText('How was it?');
   await page.goto(`${BASE}/?demo=1#mywines`);
   await root.getByText('Saved Test Chablis').click();
@@ -100,20 +100,20 @@ test('a favourite (the heart on the wine\'s screen) shows a red heart on its row
   await setup(context, page);
   const root = page.locator('#root');
   await expect(root.getByText(/^Favourites \d+$/)).toHaveCount(0); // no chip until there's one
-  const row = root.locator('.mw-row', { hasText: 'Unscored Test Rioja' });
+  const row = root.locator('.mw-row', { hasText: 'Unrated Test Rioja' });
   await expect(row).toContainText('🇪🇸');
   await expect(row.getByRole('img', { name: 'Favourite' })).toHaveCount(0);
   await row.click();
   await root.getByRole('button', { name: 'Add to favourites' }).click();
   await expect(root.getByRole('button', { name: 'Remove from favourites' })).toBeVisible();
   await page.goto(`${BASE}/?demo=1#mywines`);
-  await expect(root.locator('.mw-row', { hasText: 'Unscored Test Rioja' }).getByRole('img', { name: 'Favourite' })).toBeVisible();
+  await expect(root.locator('.mw-row', { hasText: 'Unrated Test Rioja' }).getByRole('img', { name: 'Favourite' })).toBeVisible();
   await root.getByText(/^Favourites 1$/).click();
-  expect(await rowNames(page)).toEqual(['Unscored Test Rioja']);
+  expect(await rowNames(page)).toEqual(['Unrated Test Rioja']);
   expect(errors).toEqual([]);
 });
 
-test('each row shows its price under the score: what they paid, else the average shop price', async ({ context, page }) => {
+test('each row shows its price under the rating: what they paid, else the average shop price', async ({ context, page }) => {
   const errors = collectErrors(page);
   const w = (name, extra) => ({ name, producer: 'Test', type: 'red', region: 'Rioja', country: 'Spain', vintage: 2019, rating: 91, times_consumed: 1, scanned_at: '2026-06-20T10:00:00Z', ...extra });
   await setup(context, page, [

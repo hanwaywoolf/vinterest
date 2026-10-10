@@ -353,7 +353,7 @@ function DetailMerged({wine,nav,existingRating=0,match}){
               </div>
             ))}
           </div>
-          <TrackSlider label="Score" min={ParkerScale.MIN} max={100} value={Math.max(userRating,ParkerScale.MIN)} unset={!(userRating>0)}
+          <TrackSlider label="Rating" min={ParkerScale.MIN} max={100} value={Math.max(userRating,ParkerScale.MIN)} unset={!(userRating>0)}
             onChange={n=>{ setUserRating(n); pendingScore.current=n; }} col={_typeCol(wine)} style={{marginBottom:10}}/>
           <div style={{textAlign:'center',minHeight:48,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:2}}>
             {userRating>0?(

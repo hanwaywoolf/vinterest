@@ -9,8 +9,8 @@
    of their flavour family (SketchNoteIcon), the drinking window (ScanFlow.drinkWindow) under the
    label, the grape as its page's own sketch drawing itself in with two callouts (GrapeSketch), the
    place as the wine map closing in from the whole country on the pin, which is then named, the
-   line to say from the scan cards once Claude has written them, under a glass and speech bubble
-   the pen draws (SketchSay). Every picture is drawn in code: no Claude call, nothing fetched. A
+   line to say from the scan cards once Claude has written them, under a speech bubble the pen
+   draws (SketchSay). Every picture is drawn in code: no Claude call, nothing fetched. A
    scene without its facts isn't shown. Each scene stays
    long enough to read (ScanFlow.revealLength: its words at a slow reading speed, plus time for the
    picture). A swipe left moves on and a swipe right goes back, a tap pauses and resumes, Skip goes
@@ -66,8 +66,8 @@ function _revealWords(key,d,existingRating){
   const i=d.identity, m=d.match;
   switch(key){
     case 'label': return [i.title,i.producer,i.grapes,i.region,i.window?i.window.word+' '+i.window.line:''].join(' ');
-    case 'match': return m.early?`Score 3 ${m.early.many} and every one you scan comes with a match worked out from your own scores, not a critic's`
-      :[m.label,m.expectedLabel?`Likely about ${m.expected} from you ${m.expectedLabel} ${m.pct}% sure you'd score it ${m.bar} or better`:'',existingRating>0?'You scored it we expected':'',m.pro,m.con].join(' ');
+    case 'match': return m.early?`Rate 3 ${m.early.many} and every one you scan comes with a match worked out from your own ratings, not a critic's`
+      :[m.label,m.expectedLabel?`Likely about ${m.expected} from you ${m.expectedLabel} ${m.pct}% sure you'd rate it ${m.bar} or better`:'',existingRating>0?'You rated it we expected':'',m.pro,m.con].join(' ');
     case 'taste': return d.traits.map(t=>t.word+' '+t.name+' '+_rvTraitHow(t.axis)).concat(d.notes).join(' ');
     case 'grape': return [d.grape.name,d.grape.line,...d.grape.callouts,_rvGrapeBasis(d.grape)||''].join(' ');
     case 'place': return [d.place.name,d.place.country,d.place.line,'Known for',...d.place.grapes].join(' ');
@@ -251,11 +251,11 @@ function _RvMatch({d,col,existingRating,still}){
     const p=m.early;
     return <div style={{display:'flex',flexDirection:'column',gap:16,alignItems:'center',textAlign:'center'}}>
       {_rvEyebrow('Your match','rgba(255,255,255,0.7)')}
-      <div className="rv-in" style={{..._rvDelay(.15),fontSize:30,fontWeight:800,color:'#fff',fontFamily:C.P,lineHeight:1.15}}>{p.n===0?'It starts with your first score':`${p.n} of ${p.need} ${p.many} scored`}</div>
-      <div className="rv-in" style={{..._rvDelay(.4),display:'flex',gap:8,width:'70%'}} aria-label={`${p.n} of ${p.need} ${p.many} scored`}>
+      <div className="rv-in" style={{..._rvDelay(.15),fontSize:30,fontWeight:800,color:'#fff',fontFamily:C.P,lineHeight:1.15}}>{p.n===0?'It starts with your first rating':`${p.n} of ${p.need} ${p.many} rated`}</div>
+      <div className="rv-in" style={{..._rvDelay(.4),display:'flex',gap:8,width:'70%'}} aria-label={`${p.n} of ${p.need} ${p.many} rated`}>
         {Array.from({length:p.need},(_,k)=><div key={k} style={{flex:1,height:10,borderRadius:5,background:'rgba(255,255,255,0.2)',overflow:'hidden'}}>{k<p.n&&<div className="rv-bar" style={{..._rvDelay(.6+k*.2),height:'100%',background:col}}/>}</div>)}
       </div>
-      <div className="rv-in" style={{..._rvDelay(.9),fontSize:17,color:'rgba(255,255,255,0.8)',fontFamily:C.P,lineHeight:1.5,maxWidth:320}}>Score {p.left===1?'one more':p.left} {p.left===1?p.one:p.many} and every {p.one} you scan comes with a match worked out from your own scores, not a critic's.</div>
+      <div className="rv-in" style={{..._rvDelay(.9),fontSize:17,color:'rgba(255,255,255,0.8)',fontFamily:C.P,lineHeight:1.5,maxWidth:320}}>Rate {p.left===1?'one more':p.left} {p.left===1?p.one:p.many} and every {p.one} you scan comes with a match worked out from your own ratings, not a critic's.</div>
     </div>;
   }
   return <div style={{display:'flex',flexDirection:'column',gap:14,alignItems:'center',textAlign:'center'}}>
@@ -274,8 +274,8 @@ function _RvMatch({d,col,existingRating,still}){
     </div>
     <div className="rv-in" style={{..._rvDelay(1.5),fontSize:28,fontWeight:800,color:tone,fontFamily:C.P,lineHeight:1.15}}>{m.label}</div>
     <div className="rv-in" style={{..._rvDelay(1.7),fontSize:16,color:'rgba(255,255,255,0.75)',fontFamily:C.P,lineHeight:1.45}}>
-      {existingRating>0?`You scored it ${existingRating}${m.expected!=null?` · we expected about ${m.expected}`:''}`
-        :m.expectedLabel?`Likely about ${m.expected} from you · ${m.expectedLabel}${m.bar!=null?` · ${m.pct}% sure you'd score it ${m.bar}+`:''}`:''}
+      {existingRating>0?`You rated it ${existingRating}${m.expected!=null?` · we expected about ${m.expected}`:''}`
+        :m.expectedLabel?`Likely about ${m.expected} from you · ${m.expectedLabel}${m.bar!=null?` · ${m.pct}% sure you'd rate it ${m.bar}+`:''}`:''}
     </div>
     {(m.pro||m.con)&&<div style={{display:'flex',flexDirection:'column',gap:8,marginTop:6,width:'100%',maxWidth:340,textAlign:'left'}}>
       {m.pro&&<div className="rv-in" style={{..._rvDelay(2.1),display:'flex',gap:10,alignItems:'flex-start'}}><span style={{marginTop:7,width:8,height:8,borderRadius:4,background:_RV_TONE.good,flexShrink:0}}/><span style={{fontSize:15,color:'rgba(255,255,255,0.85)',fontFamily:C.P,lineHeight:1.45}}>{m.pro}</span></div>}
@@ -365,13 +365,14 @@ function _RvPlace({d,col}){
   </div>;
 }
 
-/* 6. One thing to say about it, from the scan cards, under the pen's raised glass and bubble. */
+/* 6. One thing to say about it, from the scan cards, under the pen's speech bubble. The words
+   are up within a second; the scene then waits for them to be read (REVEAL_EXTRA.say). */
 function _RvSay({d,col}){
   const s=d.say;
   return <div style={{display:'flex',flexDirection:'column',gap:12}}>
     {_rvEyebrow(s.kind==='talk'?'Something to say about it':'Did you know','rgba(255,255,255,0.7)')}
-    <div className="rv-in" data-testid="reveal-say-sketch" style={{..._rvDelay(.1),marginTop:6}}><SketchSay ink="rgba(255,255,255,0.9)" col={col}/></div>
-    <div className="rv-in" style={{..._rvDelay(2.4),fontSize:24,fontWeight:600,color:'#fff',fontFamily:C.P,lineHeight:1.4}}>“{s.text}”</div>
+    <div className="rv-in" data-testid="reveal-say-sketch" style={{..._rvDelay(.05),marginTop:4}}><SketchSay ink="rgba(255,255,255,0.9)" col={col}/></div>
+    <div className="rv-in" style={{..._rvDelay(.8),fontSize:24,fontWeight:600,color:'#fff',fontFamily:C.P,lineHeight:1.4}}>“{s.text}”</div>
   </div>;
 }
 
@@ -379,7 +380,7 @@ function _RvSay({d,col}){
    itself here (RatingPanel with onFinish) and carries on with onboarding. */
 function _RvEnd({wine,d,firstScan,existingRating,nav,showPro,curr,onDone,onRated,onSaveForLater,onFinish}){
   const rows=[
-    {key:'rate',icon:'star',label:existingRating?`Re-rate it (${existingRating})`:'Rate it',sub:existingRating?'Changed your mind?':'Score it to sharpen your WineDNA',on:()=>onDone('rate')},
+    {key:'rate',icon:'star',label:existingRating?`Re-rate it (${existingRating})`:'Rate it',sub:existingRating?'Changed your mind?':'Rate it to sharpen your WineDNA',on:()=>onDone('rate')},
     {key:'learn',icon:'book',label:'Learn about it',sub:'The story, the taste, the region and grape',on:()=>onDone('deck')},
     ...(existingRating?[]:[{key:'save',icon:'bookmark',label:'Save for later',sub:'Shopping, or not tasted yet',on:()=>onDone('saved')}]),
   ];

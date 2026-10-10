@@ -21,7 +21,7 @@ test('Parker labels and quick-picks', async ({ page }) => {
   expect(out.presets).toEqual([70, 80, 85, 90, 95]);
 });
 
-test('the demo reds profile: signal, grapes, dislikes and value all come from real scores', async ({ page }) => {
+test('the demo reds profile: signal, grapes, dislikes and value all come from real ratings', async ({ page }) => {
   await page.goto(`${BASE}/?demo=1#home`);
   const p = await page.evaluate(() => {
     const x = WineDNA.profile('red', WineHistory.getAll(), 'Reds');
@@ -55,7 +55,7 @@ test('the demo reds profile: signal, grapes, dislikes and value all come from re
 // What You Love works on their own scale: someone who scores nearly everything 90+ still learns
 // what lifts and holds back their scores, a few great bottles don't outrank many good ones, and
 // a grape and region that are the same bottles show as one line.
-test('What You Love on a generous scorer: lifts and drags against their own average', async ({ page }) => {
+test('What You Love on a generous rater: lifts and drags against their own average', async ({ page }) => {
   await page.goto(`${BASE}/#home`);
   const L = await page.evaluate(() => {
     const w = (name, producer, region, grape, rating, price, vintage) => ({ name, producer, type: 'red', region, country: { Rioja: 'Spain', 'Napa Valley': 'USA' }[region] || 'Italy', grapes: [grape], rating, price_usd: price, vintage, body: 0.6, tannins: 0.6, acidity: 0.6 });
@@ -151,7 +151,7 @@ test('one level scale: bar labels, chips and Explore Next agree', async ({ page 
   for (const s of out.shares.filter(Boolean)) expect(allowed).toContain(s);
 });
 
-test('re-scoring a wine refreshes the profile (not just adding one)', async ({ page }) => {
+test('re-rating a wine refreshes the profile (not just adding one)', async ({ page }) => {
   await page.goto(`${BASE}/?demo=1#home`);
   const out = await page.evaluate(() => {
     const before = WineDNA.signature(WineHistory.getAll());
@@ -166,7 +166,7 @@ test('the WineDNA tab shows the new sections with no console errors', async ({ p
   const errors = collectErrors(page);
   await page.goto(`${BASE}/?demo=1#profile`);
   const root = page.locator('#root');
-  for (const t of ['Based on your 6 Outstanding (90+) reds', 'Top-scoring region', 'How Well We Know You', 'Your reds style', 'Your 90+ reds', 'Your score at each price', 'Your best scores come from', 'How your choices are changing', 'Blind Call accuracy']) {
+  for (const t of ['Based on your 6 Outstanding (90+) reds', 'Top-rated region', 'How Well We Know You', 'Your reds style', 'Your 90+ reds', 'Your rating at each price', 'Your best ratings come from', 'How your choices are changing', 'Blind Call accuracy']) {
     await expect(root, t).toContainText(t);
   }
   // Removed: duplicate personality badge, XP bar, "1 of 4" arrows, generic grape claims.
@@ -305,7 +305,7 @@ test('another vintage of the same wine anchors the match and says so', async ({ 
   expect(out.summary).toBe("You gave the 2019 a 100, so we think you'd rate this one Extraordinary.");
   expect(out.pct).toBeGreaterThanOrEqual(96);
   expect(out.verdict).toBe('hit');
-  expect(out.up[0]).toBe('Other vintages of this wine: you scored the 2019 100');
+  expect(out.up[0]).toBe('Other vintages of this wine: you rated the 2019 100');
   expect(out.why).toMatch(/^The same wine from another year is the best guide there is/);
   expect(out.otherFirst).not.toBe('vintage');
 });
