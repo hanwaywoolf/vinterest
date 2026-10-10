@@ -114,40 +114,42 @@ function Icon({n,sz=20,col=C.ink,style:s}){
 
 /* Tab labels are a fixed 13px (a string size, so Text size doesn't scale them) on one line:
    five tabs share the width of a small phone, and a wrapped label pushes the whole bar up. */
-function BottomNav({active, nav, showPro}){
+function BottomNav({active, nav, showPro, dark}){
+  // Under a dark screen (Home, the scan story) the bar is dark too, so the screen runs to the edge.
+  const bg=dark?'#161618':C.white, line=dark?'rgba(255,255,255,0.14)':C.line, on=dark?'#E05A74':C.cr, off=dark?'rgba(255,255,255,0.62)':C.mid;
   const homeActive=active==='home'||active==='scan';
   const cellarActive=active==='mywines';
   const learnActive=active==='learn'||active==='quiz'||active==='article';
   const profileActive=active==='profile';
   return(
     <div style={{flexShrink:0,position:'relative',zIndex:50,overflow:'visible'}}>
-      <div style={{display:'flex',background:C.white,borderTop:`1px solid ${C.line}`,zIndex:100,overflow:'visible'}}>
+      <div style={{display:'flex',background:bg,borderTop:`1px solid ${line}`,zIndex:100,overflow:'visible'}}>
         {/* Home */}
         <div onClick={()=>nav('home')} style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:3,cursor:'pointer',padding:'9px 0 max(env(safe-area-inset-bottom,9px),9px)'}}>
-          <Icon n="home" sz={22} col={homeActive?C.cr:C.mid}/>
-          <span style={{fontSize:'13px',whiteSpace:'nowrap',fontWeight:homeActive?600:400,color:homeActive?C.cr:C.mid,fontFamily:C.P}}>Home</span>
+          <Icon n="home" sz={22} col={homeActive?on:off}/>
+          <span style={{fontSize:'13px',whiteSpace:'nowrap',fontWeight:homeActive?600:400,color:homeActive?on:off,fontFamily:C.P}}>Home</span>
         </div>
         {/* My Wines */}
         <div onClick={()=>nav('mywines')} style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:3,cursor:'pointer',padding:'9px 0 max(env(safe-area-inset-bottom,9px),9px)'}}>
-          <Icon n="wine" sz={22} col={cellarActive?C.cr:C.mid}/>
-          <span style={{fontSize:'13px',whiteSpace:'nowrap',fontWeight:cellarActive?600:400,color:cellarActive?C.cr:C.mid,fontFamily:C.P}}>My Wines</span>
+          <Icon n="wine" sz={22} col={cellarActive?on:off}/>
+          <span style={{fontSize:'13px',whiteSpace:'nowrap',fontWeight:cellarActive?600:400,color:cellarActive?on:off,fontFamily:C.P}}>My Wines</span>
         </div>
         {/* Scan FAB */}
         <div style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'flex-end',cursor:'pointer',paddingBottom:'max(env(safe-area-inset-bottom,9px),9px)'}} onClick={()=>nav('camera')}>
-          <div style={{width:54,height:54,borderRadius:27,background:C.cr,display:'flex',alignItems:'center',justifyContent:'center',marginTop:-20,boxShadow:`0 4px 22px ${C.cr}60`,border:'3px solid #fff'}}>
+          <div style={{width:54,height:54,borderRadius:27,background:C.cr,display:'flex',alignItems:'center',justifyContent:'center',marginTop:-20,boxShadow:`0 4px 22px ${C.cr}60`,border:`3px solid ${bg}`}}>
             <Icon n="camera" sz={22} col="#fff"/>
           </div>
-          <span style={{fontSize:'13px',whiteSpace:'nowrap',fontWeight:600,color:C.cr,fontFamily:C.P,marginTop:3}}>Scan</span>
+          <span style={{fontSize:'13px',whiteSpace:'nowrap',fontWeight:600,color:on,fontFamily:C.P,marginTop:3}}>Scan</span>
         </div>
         {/* Learn */}
         <div onClick={()=>nav('learn')} style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:3,cursor:'pointer',padding:'9px 0 max(env(safe-area-inset-bottom,9px),9px)'}}>
-          <Icon n="book" sz={22} col={learnActive?C.cr:C.mid}/>
-          <span style={{fontSize:'13px',whiteSpace:'nowrap',fontWeight:learnActive?600:400,color:learnActive?C.cr:C.mid,fontFamily:C.P}}>Learn</span>
+          <Icon n="book" sz={22} col={learnActive?on:off}/>
+          <span style={{fontSize:'13px',whiteSpace:'nowrap',fontWeight:learnActive?600:400,color:learnActive?on:off,fontFamily:C.P}}>Learn</span>
         </div>
         {/* WineDNA */}
         <div onClick={()=>nav('profile')} style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:3,cursor:'pointer',padding:'9px 0 max(env(safe-area-inset-bottom,9px),9px)'}}>
-          <Icon n="brain" sz={22} col={profileActive?C.cr:C.mid}/>
-          <span style={{fontSize:'13px',whiteSpace:'nowrap',fontWeight:profileActive?600:400,color:profileActive?C.cr:C.mid,fontFamily:C.P}}>WineDNA</span>
+          <Icon n="brain" sz={22} col={profileActive?on:off}/>
+          <span style={{fontSize:'13px',whiteSpace:'nowrap',fontWeight:profileActive?600:400,color:profileActive?on:off,fontFamily:C.P}}>WineDNA</span>
         </div>
       </div>
     </div>
@@ -309,10 +311,14 @@ function Pill({children,active,sm,style:s}){
   return <span style={{display:'inline-flex',alignItems:'center',padding:sm?'3px 9px':'5px 12px',borderRadius:20,background:active?C.cr:'transparent',color:active?'#fff':C.mid,border:`1px solid ${active?C.cr:C.line}`,fontSize:sm?12:13,fontWeight:500,fontFamily:C.P,...s}}>{children}</span>;
 }
 function Prog({val=0.5,col,h=4,style:s}){
-  return <div style={{height:h,borderRadius:h,background:'rgba(0,0,0,0.07)',overflow:'hidden',...s}}><div style={{height:'100%',width:`${Math.min(1,val)*100}%`,borderRadius:h,background:col||C.cr}}/></div>;
+  const T=typeof useTheme==='function'?useTheme():null;
+  return <div style={{height:h,borderRadius:h,background:T&&T.dark?'rgba(255,255,255,0.14)':'rgba(0,0,0,0.07)',overflow:'hidden',...s}}><div style={{height:'100%',width:`${Math.min(1,val)*100}%`,borderRadius:h,background:col||C.cr}}/></div>;
 }
 function Card({children,style:s,onClick}){
-  return <div onClick={onClick} style={{background:C.white,borderRadius:16,padding:14,boxShadow:'0 1px 4px rgba(0,0,0,0.06)',...s}}>{children}</div>;
+  // On a dark stage (DeckTheme, pwa-scancards.jsx: the scan story, its deck, the scan result and
+  // Home) a card is glass: a faint wash with a hairline, no shadow.
+  const T=typeof useTheme==='function'?useTheme():null, dark=!!(T&&T.dark);
+  return <div onClick={onClick} style={dark?{background:T.soft,border:`1px solid ${T.line}`,borderRadius:16,padding:14,...s}:{background:C.white,borderRadius:16,padding:14,boxShadow:'0 1px 4px rgba(0,0,0,0.06)',...s}}>{children}</div>;
 }
 function Btn({children,primary,full,small,style:s,onClick}){
   // On the scan story's dark stage (DeckTheme, pwa-scancards.jsx) a plain button is a dark glass pill.

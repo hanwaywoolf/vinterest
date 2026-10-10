@@ -1,5 +1,8 @@
 /* Vinterest PWA — Main App with navigation */
 
+/* Screens drawn on the story's dark stage (pwa-scancards.jsx DeckTheme): the nav and the XP badge go dark
+   under them, so the screen runs to the edge. */
+const DARK_SCREENS=['home']; // the scan result ('identified') has no nav or badge
 function App(){
   const [screen,setScreen]=React.useState(()=>{
     if(!Settings.onboarded()) return 'onboarding';
@@ -167,11 +170,11 @@ function App(){
       </div>
       {showNav&&MOMENT_SCREENS.includes(screen)&&xpDel.moment?<MomentCard m={xpDel.moment} more={xpDel.more} onAct={actOnMoment} onClose={xpDel.dismiss}/>
         :showNav&&!showXpBadge&&<XPChip chip={xpDel.chip} overNav/>}
-      {showNav&&<BottomNav active={screen} nav={nav} showPro={setProGate}/>}
+      {showNav&&<BottomNav active={screen} nav={nav} showPro={setProGate} dark={DARK_SCREENS.includes(screen)}/>}
       {showXpBadge&&(
-        <div onClick={()=>setShowXpOverlay(true)} style={{position:'absolute',top:'calc(env(safe-area-inset-top) + 15px)',right:14,zIndex:200,display:'flex',alignItems:'center',gap:5,padding:'5px 11px',borderRadius:20,background:C.crSoft,border:`1px solid ${C.crDim}`,cursor:'pointer',boxShadow:'0 1px 8px rgba(0,0,0,0.08)',pointerEvents:'auto'}}>
-          <Icon n={XPSystem.iconFor(XPSystem.getLevel(xpBadge.total))} sz={16} col={C.cr}/>
-          <span style={{fontSize:'15px',fontWeight:700,color:C.cr,fontFamily:C.P}}>{xpBadge.total} XP</span>{/* fixed: the badge sits beside the logo */}
+        <div onClick={()=>setShowXpOverlay(true)} style={{position:'absolute',top:'calc(env(safe-area-inset-top) + 15px)',right:14,zIndex:200,display:'flex',alignItems:'center',gap:5,padding:'5px 11px',borderRadius:20,background:DARK_SCREENS.includes(screen)?'rgba(255,255,255,0.08)':C.crSoft,border:`1px solid ${DARK_SCREENS.includes(screen)?'rgba(255,255,255,0.16)':C.crDim}`,cursor:'pointer',boxShadow:'0 1px 8px rgba(0,0,0,0.08)',pointerEvents:'auto'}}>
+          <Icon n={XPSystem.iconFor(XPSystem.getLevel(xpBadge.total))} sz={16} col={DARK_SCREENS.includes(screen)?'#E05A74':C.cr}/>
+          <span style={{fontSize:'15px',fontWeight:700,color:DARK_SCREENS.includes(screen)?'#E05A74':C.cr,fontFamily:C.P}}>{xpBadge.total} XP</span>{/* fixed: the badge sits beside the logo */}
           <XPBadgeGain chip={xpDel.chip}/>
           {Entitlement.isPro()&&<span style={{fontSize:12,fontWeight:700,color:'#fff',background:'linear-gradient(135deg,#9B5E00,#C4870A)',borderRadius:8,padding:'2px 6px',marginLeft:2}}>PRO</span>}
         </div>
