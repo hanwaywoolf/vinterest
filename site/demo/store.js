@@ -42,6 +42,8 @@ const DemoPersona = (() => {
     vinterest_onboarded: '1', vinterest_age_ok: '1', vinterest_region: 'uk', vinterest_currency: 'GBP',
     vinterest_wineDNA_unlock_seen: '1',
     // The phone is drawn inside a desktop window: without this the app reads the window's width and lays itself out as an iPad.
+    // WineDNA's "What is WineDNA?" note is for a first visit only; the demo shows the profile the visitor would see after it.
+    vinterest_dna_welcome_seen: '1',
     vinterest_force_mobile: '1',
     // The scan story's "how to drive it" tip is for the first two reveals on a phone; a demo opens straight on the scenes.
     vinterest_reveal_tips_v1: '2',

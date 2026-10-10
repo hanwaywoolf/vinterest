@@ -61,6 +61,8 @@
     if (!rd.ok) throw new Error(rd.error);
     Backup.apply(rd.data);
     ['vinterest_onboarded', 'vinterest_age_ok'].forEach(function (k) { Store.set(k, k === 'vinterest_onboarded' ? '1' : new Date().toISOString()); });
+    Flags.markDnaWelcomeSeen();   // the first-visit "What is WineDNA?" note
+    Flags.setExploreReadySeen(ExploreNext.readyTypes(WineHistory.getAll())); // the once-only "Explore Next is ready" tile
     DemoPersona.rebase();
     READY = true;
   });

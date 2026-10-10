@@ -166,6 +166,8 @@ function _seedMastery() {
     QuizMastery.topicPool('red_grapes').slice(0, 12).forEach((q) => QuizMastery.recordAnswer('topic:red_grapes', q.q, true));
     QuizMastery.topicPool('sparkling').slice(0, 4).forEach((q) => QuizMastery.recordAnswer('topic:sparkling', q.q, true));
     (ContentEngine.shelf(WineHistory.getAll()) || []).slice(0, 2).forEach((st) => LearnProgress.markArticle(st.id));
+    // WineDNA says "Explore Next is ready" once, at the top, the first time a type opens: they've seen it, so the demo opens on the profile.
+    Flags.setExploreReadySeen(ExploreNext.readyTypes(WineHistory.getAll()));
     DemoPersona.rebase();
   } catch (e) { /* the demos still work, with an emptier map */ }
 })();
@@ -294,7 +296,7 @@ const _DEMO_SCREENS = {
     { id: 'article', nav: 'learn', Screen: GenArticleScreen, setup() { Handoff.genArticle.set(_articleStub()); } },
     { id: 'wines', nav: 'mywines', Screen: MyWinesScreen },
   ], steps: [
-    { at: 0, layer: 'scan', do: [{ story: 2800 }] },
+    { at: 0, layer: 'scan', do: [{ story: 3000, until: 'match' }] },
     { at: 0.2, layer: 'dna', to: 'top', drift: 0.5, ms: 7000 },
     { at: 0.4, layer: 'vinny', do: [{ vinny: true }] },
     { at: 0.6, layer: 'article', to: 'top', drift: 0.6, ms: 9000 },
@@ -487,14 +489,14 @@ const VinterestDemo = {
       (st.do || []).forEach((a) => {
         const root = layerEl(a.layer);
         if (a.story) {
-          // The scan story, a scene every a.story ms: held on one scene and turned by a swipe, as the Scan section does.
+          // The scan story, a scene every a.story ms (up to the scene named in a.until, if any): held on one scene and turned by a swipe, as the Scan section does.
           const go = (n) => {
             const st2 = root.querySelector('.rv-stage');
             if (!st2 || root.querySelector('[data-testid="reveal-tips"]')) return later(() => go(n - 1), 150);
             if (!root.querySelector('[data-testid="reveal-paused"]')) { rvTouchIn(root, 0); return later(() => go(n - 1), 150); }
             const sc = root.querySelector('[data-testid="reveal-scene"]');
-            if (sc && sc.getAttribute('data-scene') === 'end') return;
-            later(() => { rvTouchIn(root, -140); go(1); }, a.story);
+            if (sc && (sc.getAttribute('data-scene') === 'end' || sc.getAttribute('data-scene') === a.until)) return;
+            later(() => { rvTouchIn(root, -140); later(() => go(1), 500); }, a.story);   // look again once the new scene is up
           };
           later(() => go(60), 400);
         } else if (a.type) typeInto(root, a.type[0], a.type[1]);
