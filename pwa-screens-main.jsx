@@ -1,7 +1,7 @@
 /* Vinterest PWA — Home, Scan, Wine Identified screens */
 
 /* ── SCAN HOME (Scan tab content) ── */
-function ScanHomeScreen({nav,showPro,isTablet}){
+function ScanHomeScreen({nav,showPro,isTablet}){ const T=useTheme(), cr=T.lift(C.cr);
   const wines=WineHistory.getAll();
   const isPro=Entitlement.isPro();
   const listNeeds=Entitlement.listScanNeeds();
@@ -10,14 +10,14 @@ function ScanHomeScreen({nav,showPro,isTablet}){
   const atLimit=!isPro&&scanCount>=FREE_SCANS;
   const scansLeft=Math.max(0,FREE_SCANS-scanCount);
   const typeColors={red:C.cr,white:'#B8963E',rosé:'#C47A8A',rose:'#C47A8A',sparkling:'#5E8FA8'};
-  const colFor=w=>typeColors[(w.type||'red').toLowerCase().replace('é','e')]||C.cr;
+  const colFor=w=>T.lift(typeColors[(w.type||'red').toLowerCase().replace('é','e')]||C.cr);
   function handleScanCTA(){ if(atLimit){showPro('unlimited-scans');return;} nav('camera'); }
   return(
-    <div style={{flex:1,display:'flex',flexDirection:'column',overflowY:'auto',background:C.bg}}>
-      <div style={{padding:'18px 20px 16px',display:'flex',justifyContent:'space-between',alignItems:'center',background:C.white,borderBottom:`1px solid ${C.line}`}}>
-        <img src="logo.png" alt="Vinterest" style={{height:28,width:'auto',display:'block'}}/>
+    <div style={{flex:1,display:'flex',flexDirection:'column',overflowY:'auto',background:T.bg}}>
+      <div style={{padding:'18px 20px 16px',display:'flex',justifyContent:'space-between',alignItems:'center',background:`radial-gradient(ellipse at 50% -20%, ${_alpha(cr,T.dark?0.42:0.14)}, transparent 70%) ${T.dark?T.bg:C.white}`,borderBottom:`1px solid ${T.line}`}}>
+        <img src="logo.png" alt="Vinterest" style={{height:28,width:'auto',display:'block',filter:T.dark?'invert(1) brightness(2)':'none'}}/>
         {!isPro&&!atLimit&&scansLeft<=3&&scansLeft>0&&(
-          <div style={{fontSize:13,color:C.amber,fontWeight:600,fontFamily:C.P,background:C.amberBg,padding:'4px 10px',borderRadius:20,border:`1px solid ${C.amber}30`}}>{scansLeft} scan{scansLeft!==1?'s':''} left</div>
+          <div style={{fontSize:13,color:T.amber,fontWeight:600,fontFamily:C.P,background:T.amberBg,padding:'4px 10px',borderRadius:20,border:`1px solid ${T.amber}30`}}>{scansLeft} scan{scansLeft!==1?'s':''} left</div>
         )}
         {!isPro&&atLimit&&(
           <div onClick={()=>showPro('unlimited-scans')} style={{fontSize:13,fontWeight:700,fontFamily:C.P,background:'linear-gradient(135deg,#9B5E00,#C4870A)',padding:'5px 12px',borderRadius:20,cursor:'pointer',color:'#fff'}}>Upgrade</div>
@@ -26,9 +26,9 @@ function ScanHomeScreen({nav,showPro,isTablet}){
       <div style={{padding:'16px 20px',display:'flex',flexDirection:'column',gap:12}}>
         {/* Primary scan CTA — phone only; tablet has it in sidebar */}
         {!isTablet&&(
-          <div onClick={handleScanCTA} style={{background:C.ink,borderRadius:20,padding:'20px 22px',display:'flex',alignItems:'center',gap:16,cursor:'pointer',position:'relative',overflow:'hidden'}}>
-            <div style={{position:'absolute',right:-24,top:-24,width:140,height:140,borderRadius:70,background:`${C.cr}28`,pointerEvents:'none'}}/>
-            <div style={{width:58,height:58,borderRadius:16,background:atLimit?'#444':C.cr,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,zIndex:1,boxShadow:atLimit?'none':`0 6px 24px ${C.cr}55`}}>
+          <div onClick={handleScanCTA} style={{background:T.dark?_alpha(cr,0.16):C.ink,border:T.dark?`1px solid ${_alpha(cr,0.4)}`:'none',boxShadow:T.dark?`0 0 36px ${_alpha(cr,0.18)}`:'none',borderRadius:20,padding:'20px 22px',display:'flex',alignItems:'center',gap:16,cursor:'pointer',position:'relative',overflow:'hidden'}}>
+            <div style={{position:'absolute',right:-24,top:-24,width:140,height:140,borderRadius:70,background:`${cr}28`,pointerEvents:'none'}}/>
+            <div style={{width:58,height:58,borderRadius:16,background:atLimit?'#444':cr,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,zIndex:1,boxShadow:atLimit?'none':`0 6px 24px ${cr}55`}}>
               {atLimit?<Icon n="lock" sz={24} col="#888"/>:<Icon n="camera" sz={28} col="#fff"/>}
             </div>
             <div style={{flex:1,zIndex:1}}>
@@ -40,40 +40,40 @@ function ScanHomeScreen({nav,showPro,isTablet}){
         )}
         {/* Wine List – unlocks with Pro on the account (Entitlement.listScanNeeds, as the Worker checks) */}
         {!listNeeds?(
-          <div onClick={()=>{ Handoff.cameraMode.set('list'); nav('camera'); }} style={{background:C.white,borderRadius:14,padding:'14px 16px',display:'flex',alignItems:'center',gap:12,border:`1px solid ${C.green}40`,cursor:'pointer'}}>
-            <div style={{width:40,height:40,borderRadius:10,background:C.greenBg,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
-              <Icon n="list" sz={18} col={C.green}/>
+          <div onClick={()=>{ Handoff.cameraMode.set('list'); nav('camera'); }} style={{background:T.glass,borderRadius:14,padding:'14px 16px',display:'flex',alignItems:'center',gap:12,border:`1px solid ${T.green}40`,cursor:'pointer'}}>
+            <div style={{width:40,height:40,borderRadius:10,background:T.greenBg,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+              <Icon n="list" sz={18} col={T.green}/>
             </div>
             <div style={{flex:1}}>
               <div style={{display:'flex',alignItems:'center',gap:8}}>
-                <span style={{fontSize:17,fontWeight:600,color:C.ink,fontFamily:C.P}}>Wine List Scan</span>
+                <span style={{fontSize:17,fontWeight:600,color:T.ink,fontFamily:C.P}}>Wine List Scan</span>
                 <span style={{fontSize:12,fontWeight:700,color:'#fff',background:'linear-gradient(135deg,#9B5E00,#C4870A)',borderRadius:8,padding:'2px 7px'}}>UNLOCKED</span>
               </div>
-              <div style={{fontSize:15,color:C.mid,fontFamily:C.P,marginTop:1}}>Snap a restaurant menu for instant picks</div>
+              <div style={{fontSize:15,color:T.mid,fontFamily:C.P,marginTop:1}}>Snap a restaurant menu for instant picks</div>
             </div>
-            <Icon n="chevron" sz={14} col={C.mid}/>
+            <Icon n="chevron" sz={14} col={T.mid}/>
           </div>
         ):(
-          <div onClick={()=>{ if(listNeeds==='signin'){ Handoff.accountIntent.set('listscan'); nav('account'); } else showPro('wine-list'); }} style={{background:C.white,borderRadius:14,padding:'14px 16px',display:'flex',alignItems:'center',gap:12,border:`1px solid ${C.line}`,cursor:'pointer',opacity:0.75}}>
-            <div style={{width:40,height:40,borderRadius:10,background:C.offWhite,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
-              <Icon n="list" sz={18} col={C.mid}/>
+          <div onClick={()=>{ if(listNeeds==='signin'){ Handoff.accountIntent.set('listscan'); nav('account'); } else showPro('wine-list'); }} style={{background:T.glass,borderRadius:14,padding:'14px 16px',display:'flex',alignItems:'center',gap:12,border:`1px solid ${T.line}`,cursor:'pointer',opacity:0.75}}>
+            <div style={{width:40,height:40,borderRadius:10,background:T.soft,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+              <Icon n="list" sz={18} col={T.mid}/>
             </div>
             <div style={{flex:1}}>
               <div style={{display:'flex',alignItems:'center',gap:8}}>
-                <span style={{fontSize:17,fontWeight:600,color:C.ink2,fontFamily:C.P}}>Wine List Scan</span>
+                <span style={{fontSize:17,fontWeight:600,color:T.ink2,fontFamily:C.P}}>Wine List Scan</span>
                 <ProBadge/>
               </div>
-              <div style={{fontSize:15,color:C.mid,fontFamily:C.P,marginTop:1}}>Snap a restaurant menu for instant picks</div>
+              <div style={{fontSize:15,color:T.mid,fontFamily:C.P,marginTop:1}}>Snap a restaurant menu for instant picks</div>
             </div>
-            <Icon n="lock" sz={14} col={C.mid}/>
+            <Icon n="lock" sz={14} col={T.mid}/>
           </div>
         )}
         {/* My Wines / empty state */}
         {wines.length===0?(
-          <div style={{background:C.white,borderRadius:16,padding:'28px 20px',textAlign:'center',border:`1px solid ${C.line}`}}>
+          <div style={{background:T.glass,borderRadius:16,padding:'28px 20px',textAlign:'center',border:`1px solid ${T.line}`}}>
             <div style={{fontSize:46,marginBottom:10}}>🍷</div>
-            <div style={{fontSize:20,fontWeight:700,color:C.ink,fontFamily:C.P,marginBottom:6}}>My Wines is empty</div>
-            <div style={{fontSize:16,color:C.mid,fontFamily:C.P,lineHeight:1.65,marginBottom:16}}>Scan and rate your first bottle to start building your personal taste profile.</div>
+            <div style={{fontSize:20,fontWeight:700,color:T.ink,fontFamily:C.P,marginBottom:6}}>My Wines is empty</div>
+            <div style={{fontSize:16,color:T.mid,fontFamily:C.P,lineHeight:1.65,marginBottom:16}}>Scan and rate your first bottle to start building your personal taste profile.</div>
             <div style={{display:'flex',gap:10,justifyContent:'center'}}>
               <Btn primary onClick={handleScanCTA}>Scan First Bottle</Btn>
               <Btn onClick={()=>nav('learn')}>Take a Quiz</Btn>
@@ -82,8 +82,8 @@ function ScanHomeScreen({nav,showPro,isTablet}){
         ):(
           <>
             <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginTop:4}}>
-              <span style={{fontSize:15,fontWeight:600,color:C.mid,letterSpacing:'0.08em',textTransform:'uppercase',fontFamily:C.P}}>My Wines · {wines.length}</span>
-              <span onClick={()=>nav('mywines')} style={{fontSize:15,fontWeight:600,color:C.cr,fontFamily:C.P,cursor:'pointer'}}>Manage →</span>
+              <span style={{fontSize:15,fontWeight:600,color:T.mid,letterSpacing:'0.08em',textTransform:'uppercase',fontFamily:C.P}}>My Wines · {wines.length}</span>
+              <span onClick={()=>nav('mywines')} style={{fontSize:15,fontWeight:600,color:cr,fontFamily:C.P,cursor:'pointer'}}>Manage →</span>
             </div>
             {wines.map((w,i)=>(
               <Card key={i} style={{padding:10,cursor:'pointer'}} onClick={()=>{
@@ -95,16 +95,16 @@ function ScanHomeScreen({nav,showPro,isTablet}){
                     <Icon n="wine" sz={17} col={colFor(w)}/>
                   </div>
                   <div style={{flex:1,minWidth:0}}>
-                    <div style={{fontSize:17,fontWeight:600,color:C.ink,fontFamily:C.P,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{w.name}</div>
-                    <div style={{fontSize:15,color:C.mid,fontFamily:C.P}}>{[w.region,w.country].filter(Boolean)[0]||''} · {w.vintage||'NV'}</div>
+                    <div style={{fontSize:17,fontWeight:600,color:T.ink,fontFamily:C.P,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{w.name}</div>
+                    <div style={{fontSize:15,color:T.mid,fontFamily:C.P}}>{[w.region,w.country].filter(Boolean)[0]||''} · {w.vintage||'NV'}</div>
                     {w.type&&<div style={{fontSize:13,color:colFor(w),fontFamily:C.P,fontWeight:600,textTransform:'capitalize',marginTop:1}}>{w.type}</div>}
                   </div>
                   <div style={{display:'flex',flexDirection:'column',alignItems:'flex-end',gap:3,flexShrink:0}}>
                     {w.rating>0&&<div style={{display:'flex',alignItems:'baseline',gap:1}}>
-                      <span style={{fontSize:17,fontWeight:700,color:C.amber,fontFamily:C.P}}>{w.rating}</span>
-                      <span style={{fontSize:13,color:C.mid,fontFamily:C.P}}>/100</span>
+                      <span style={{fontSize:17,fontWeight:700,color:T.amber,fontFamily:C.P}}>{w.rating}</span>
+                      <span style={{fontSize:13,color:T.mid,fontFamily:C.P}}>/100</span>
                     </div>}
-                    {w.times_consumed>1&&<span style={{fontSize:13,color:C.mid,fontFamily:C.P}}>×{w.times_consumed}</span>}
+                    {w.times_consumed>1&&<span style={{fontSize:13,color:T.mid,fontFamily:C.P}}>×{w.times_consumed}</span>}
                   </div>
                 </div>
               </Card>
@@ -113,18 +113,18 @@ function ScanHomeScreen({nav,showPro,isTablet}){
         )}
         {wines.length===0&&(
           <>
-            <div style={{fontSize:15,fontWeight:600,color:C.mid,letterSpacing:'0.08em',textTransform:'uppercase',fontFamily:C.P,marginTop:4}}>Get Started</div>
+            <div style={{fontSize:15,fontWeight:600,color:T.mid,letterSpacing:'0.08em',textTransform:'uppercase',fontFamily:C.P,marginTop:4}}>Get Started</div>
             {[
               {emoji:'🎓',t:'Take a Wine Quiz',s:'Earn XP and learn something new',dest:'learn'},
               {emoji:'📖',t:'5 taste terms to know',s:'Understand any wine in 2 minutes',dest:'article'},
             ].map((a,i)=>(
               <Card key={i} onClick={()=>nav(a.dest)} style={{display:'flex',alignItems:'center',gap:12,padding:14,cursor:'pointer'}}>
-                <div style={{width:44,height:44,borderRadius:12,background:C.offWhite,display:'flex',alignItems:'center',justifyContent:'center',fontSize:22,flexShrink:0}}>{a.emoji}</div>
+                <div style={{width:44,height:44,borderRadius:12,background:T.soft,display:'flex',alignItems:'center',justifyContent:'center',fontSize:22,flexShrink:0}}>{a.emoji}</div>
                 <div style={{flex:1}}>
-                  <div style={{fontSize:17,fontWeight:600,color:C.ink,fontFamily:C.P}}>{a.t}</div>
-                  <div style={{fontSize:15,color:C.mid,fontFamily:C.P,marginTop:1}}>{a.s}</div>
+                  <div style={{fontSize:17,fontWeight:600,color:T.ink,fontFamily:C.P}}>{a.t}</div>
+                  <div style={{fontSize:15,color:T.mid,fontFamily:C.P,marginTop:1}}>{a.s}</div>
                 </div>
-                <Icon n="chevron" sz={14} col={C.mid}/>
+                <Icon n="chevron" sz={14} col={T.mid}/>
               </Card>
             ))}
           </>
