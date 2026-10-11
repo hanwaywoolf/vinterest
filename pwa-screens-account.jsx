@@ -245,11 +245,11 @@ function ThemeControl(){ const T=useTheme(), cr=T.lift(C.cr);
   const [,setTick]=React.useState(0);
   React.useEffect(()=>{ const h=()=>setTick(t=>t+1); window.addEventListener('vinterest:theme',h); window.addEventListener('vinterest:sync',h); return()=>{ window.removeEventListener('vinterest:theme',h); window.removeEventListener('vinterest:sync',h); }; },[]);
   const cur=Settings.theme();
-  const opts=[{id:'dark',label:'Dark',sub:'The scan story\'s stage'},{id:'light',label:'Light',sub:'Paper white'}];
+  const opts=[{id:'dark',label:'Dark & neon'},{id:'light',label:'Paper white'}];
   return <Card style={{padding:14,display:'flex',flexDirection:'column',gap:10}}>
     <div>
       <div style={{fontSize:16,fontWeight:700,color:T.ink,fontFamily:C.P}}>Appearance</div>
-      <div style={{fontSize:13,color:T.mid,fontFamily:C.P}}>How Home, WineDNA and your scan results look. The scan story is always dark.</div>
+      <div style={{fontSize:13,color:T.mid,fontFamily:C.P}}>How the app looks.</div>
     </div>
     <div role="radiogroup" aria-label="Appearance" style={{display:'flex',gap:6}}>
       {opts.map(o=>{ const on=cur===o.id, dark=o.id==='dark';
@@ -258,7 +258,6 @@ function ThemeControl(){ const T=useTheme(), cr=T.lift(C.cr);
           <div style={{width:22,height:22,borderRadius:11,background:dark?'#2A2A2E':'#fff',border:`1px solid ${dark?'rgba(255,255,255,0.2)':C.line}`,flexShrink:0}}/>
           <div style={{minWidth:0}}>
             <div style={{fontSize:14,fontWeight:700,color:dark?'#fff':C.ink,fontFamily:C.P}}>{o.label}</div>
-            <div style={{fontSize:12,color:dark?'rgba(255,255,255,0.62)':C.mid,fontFamily:C.P,lineHeight:1.3}}>{o.sub}</div>
           </div>
         </div>; })}
     </div>

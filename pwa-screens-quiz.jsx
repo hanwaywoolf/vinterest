@@ -625,7 +625,7 @@ function _sketchRing(cx,cy,r,seed){
   return [arc(0.6-rnd()*1.2,0.6-rnd()*1.2,r*(1+0.006),a0,Math.PI*2*0.93),
           arc(0.8-rnd()*1.6,0.8-rnd()*1.6,r*(1-0.008),a0+Math.PI*(0.6+rnd()*0.5),Math.PI*2*(0.82+rnd()*0.1))];
 }
-function MasteryRadar({m,prog,onPick}){
+function MasteryRadar({m,prog,onPick}){ const T=useTheme(), cr=T.lift(C.cr), INK=T.dark?'rgba(255,255,255,0.88)':SKETCH_INK, PENCIL=T.dark?'rgba(255,255,255,0.28)':SKETCH_PENCIL;
   const W=340,H=310,cx=W/2,cy=H/2,R=100, n=m.areas.length;
   const ang=i=>-Math.PI/2+i*2*Math.PI/n;
   // 0% sits on a small inner ring (HOLE of the radius), so an early shape is still a shape, not a spike.
@@ -634,35 +634,35 @@ function MasteryRadar({m,prog,onPick}){
   const curve=scores=>_sketchPath(scores.map((v,i)=>pt(i,v)),true);
   const now=m.areas.map(a=>a.score), then=prog?m.areas.map(a=>prog.then.a[a.id]||0):null;
   const said=m.areas.map(a=>`${a.label} ${a.score}%`).join(', ');
-  const dot=a=>a.score>=100?C.green:_masteryCol(a);
+  const dot=a=>a.score>=100?T.green:_masteryCol(a);
   return(
     <svg viewBox={`0 0 ${W} ${H}`} width="100%" role="img" data-testid="mastery-radar" aria-label={`Your knowledge by area: ${said}.`} style={{display:'block',maxWidth:420,margin:'0 auto',overflow:'visible'}}>
       {/* Rings drawn like a pencil going round twice: two clean, light passes a hair apart, each
           lifting off before it closes, at a different place on each ring. */}
-      {[34,67,100].map(r=>_sketchRing(cx,cy,rr(r),'ring'+r).map((d,j)=><path key={r+'-'+j} d={d} fill="none" stroke={r===100?'#A99F94':SKETCH_PENCIL} strokeWidth={j?0.8:(r===100?1.3:1)} strokeLinecap="round" opacity={j?0.7:1}/>))}
-      {m.areas.map((a,i)=>{ const [x,y]=pt(i,100), [x0,y0]=pt(i,0); return <line key={a.id} x1={x0} y1={y0} x2={x} y2={y} stroke={SKETCH_PENCIL} strokeWidth="0.8" opacity="0.7"/>; })}
-      {then&&<path d={curve(then)} fill="none" stroke={C.mid} strokeWidth="1.2" strokeDasharray="1.5 4" strokeLinecap="round"/>}
+      {[34,67,100].map(r=>_sketchRing(cx,cy,rr(r),'ring'+r).map((d,j)=><path key={r+'-'+j} d={d} fill="none" stroke={r===100?(T.dark?'rgba(255,255,255,0.4)':'#A99F94'):PENCIL} strokeWidth={j?0.8:(r===100?1.3:1)} strokeLinecap="round" opacity={j?0.7:1}/>))}
+      {m.areas.map((a,i)=>{ const [x,y]=pt(i,100), [x0,y0]=pt(i,0); return <line key={a.id} x1={x0} y1={y0} x2={x} y2={y} stroke={PENCIL} strokeWidth="0.8" opacity="0.7"/>; })}
+      {then&&<path d={curve(then)} fill="none" stroke={T.mid} strokeWidth="1.2" strokeDasharray="1.5 4" strokeLinecap="round"/>}
       <g className="mastery-radar-shape" style={{transformOrigin:`${cx}px ${cy}px`}}>
-        <path d={curve(now)} fill={SKETCH_WASH.red} opacity="0.22" transform="translate(2.5 3)"/>
-        <path d={curve(now)} fill={SKETCH_WASH.red} opacity="0.1"/>
-        <path d={curve(now)} fill="none" stroke={SKETCH_PENCIL} strokeWidth="1.1" strokeLinejoin="round" transform="translate(-1.4 1.1)"/>
-        <path d={curve(now)} fill="none" stroke={SKETCH_INK} strokeWidth="1.7" strokeLinejoin="round"/>
+        <path d={curve(now)} fill={T.lift(SKETCH_WASH.red)} opacity="0.22" transform="translate(2.5 3)"/>
+        <path d={curve(now)} fill={T.lift(SKETCH_WASH.red)} opacity="0.1"/>
+        <path d={curve(now)} fill="none" stroke={PENCIL} strokeWidth="1.1" strokeLinejoin="round" transform="translate(-1.4 1.1)"/>
+        <path d={curve(now)} fill="none" stroke={INK} strokeWidth="1.7" strokeLinejoin="round"/>
       </g>
       {[['Developing',34],['Confident',67],['Mastered',100]].map(([l,r])=>{ const y=cy+rr(r), w=l.length*5.4+12;
         return <g key={l} aria-hidden="true">
-          <rect x={cx-w/2} y={y-7} width={w} height={14} rx={7} fill="#FBF8F3" stroke={SKETCH_PENCIL}/>
-          <text x={cx} y={y+3} textAnchor="middle" style={{fontSize:'8px',fontWeight:700,fill:C.mid,fontFamily:C.P,letterSpacing:'0.06em'}}>{l.toUpperCase()}</text>
+          <rect x={cx-w/2} y={y-7} width={w} height={14} rx={7} fill="#FBF8F3" stroke={PENCIL}/>
+          <text x={cx} y={y+3} textAnchor="middle" style={{fontSize:'8px',fontWeight:700,fill:T.mid,fontFamily:C.P,letterSpacing:'0.06em'}}>{l.toUpperCase()}</text>
         </g>; })}
       {/* Dots last: a high score on a spoke near the bottom stays visible over the ring tags. */}
       <g className="mastery-radar-shape" style={{transformOrigin:`${cx}px ${cy}px`}}>
-        {m.areas.map((a,i)=>{ if(!a.score) return null; const [x,y]=pt(i,a.score); return <circle key={a.id} cx={x} cy={y} r="4.2" fill={dot(a)} stroke={SKETCH_INK} strokeWidth="1.1"/>; })}
+        {m.areas.map((a,i)=>{ if(!a.score) return null; const [x,y]=pt(i,a.score); return <circle key={a.id} cx={x} cy={y} r="4.2" fill={dot(a)} stroke={INK} strokeWidth="1.1"/>; })}
       </g>
       {m.areas.map((a,i)=>{
         const c=Math.cos(ang(i)), sn=Math.sin(ang(i)), x=cx+c*(R+14), y=cy+sn*(R+14)+(sn>0.3?8:sn<-0.3?-6:3);
         const anchor=c>0.1?'start':c<-0.1?'end':'middle'; // the two bottom spokes lean apart
         return <g key={a.id} onClick={()=>onPick&&onPick(a.id)} style={{cursor:'pointer'}}>
-          <text x={x} y={y} textAnchor={anchor} style={{fontSize:'11px',fontWeight:600,fill:a.score?C.ink:C.mid,fontFamily:C.P}}>{KnowledgeMap.short(a)}</text>
-          <text x={x} y={y+12} textAnchor={anchor} style={{fontSize:'10px',fontWeight:700,fill:a.score>=100?C.green:a.score?C.cr:SKETCH_PENCIL,fontFamily:C.P}}>{a.score}%{prog&&prog.area&&prog.area(a.id)>0&&<tspan data-rise={prog.area(a.id)} style={{fill:C.green,fontWeight:800}}> ▲{prog.area(a.id)}</tspan>}</text>
+          <text x={x} y={y} textAnchor={anchor} style={{fontSize:'11px',fontWeight:600,fill:a.score?T.ink:T.mid,fontFamily:C.P}}>{KnowledgeMap.short(a)}</text>
+          <text x={x} y={y+12} textAnchor={anchor} style={{fontSize:'10px',fontWeight:700,fill:a.score>=100?T.green:a.score?cr:PENCIL,fontFamily:C.P}}>{a.score}%{prog&&prog.area&&prog.area(a.id)>0&&<tspan data-rise={prog.area(a.id)} style={{fill:T.green,fontWeight:800}}> ▲{prog.area(a.id)}</tspan>}</text>
         </g>;
       })}
     </svg>
@@ -672,11 +672,11 @@ function MasteryRadar({m,prog,onPick}){
    area's card (its score, level, change since the dotted outline, what's inside it and its next
    step), so the chart's numbers all have their detail. */
 const MASTERY_GROUPS=[{id:'types',label:'Wine types'},{id:'places',label:'Regions and grapes'},{id:'skills',label:'Wine Skills'}];
-function MasteryAreaList({m,prog,open,setOpen,go}){
+function MasteryAreaList({m,prog,open,setOpen,go}){ const T=useTheme(), cr=T.lift(C.cr), INK=T.dark?'rgba(255,255,255,0.88)':SKETCH_INK, PENCIL=T.dark?'rgba(255,255,255,0.28)':SKETCH_PENCIL;
   return <div data-testid="mastery-area-list" style={{display:'flex',flexDirection:'column',gap:8}}>
-    {prog&&prog.rises.length>0&&<div style={{fontSize:13,color:C.mid,fontFamily:C.P}}><span style={{color:C.green,fontWeight:800}}>▲</span> Points gained since {_when(prog.then.t)}.</div>}
+    {prog&&prog.rises.length>0&&<div style={{fontSize:13,color:T.mid,fontFamily:C.P}}><span style={{color:T.green,fontWeight:800}}>▲</span> Points gained since {_when(prog.then.t)}.</div>}
     {MASTERY_GROUPS.map(G=><React.Fragment key={G.id}>
-      <div style={{fontSize:14,fontWeight:700,color:C.ink2,fontFamily:C.P,marginTop:4}}>{G.label}</div>
+      <div style={{fontSize:14,fontWeight:700,color:T.ink2,fontFamily:C.P,marginTop:4}}>{G.label}</div>
       {m.areas.filter(a=>a.group===G.id).map(a=>(
         <div key={a.id} data-area={a.id}>
           <MasteryAreaCard a={a} prog={prog} open={open===a.id} onToggle={()=>a.items&&setOpen(o=>o===a.id?null:a.id)} onNext={()=>go(a.next)}/>
@@ -691,32 +691,32 @@ function _when(t){ return new Date(t).toLocaleDateString('en',{day:'numeric',mon
    bottle from it. A tap shows the pins near it (they sit close together in Europe), each with its
    next step. */
 const _PIN_COL={'Not started':'#fff','Getting started':'#DDA0AB','Developing':'#B94A61','Confident':C.cr,'Mastered':C.green};
-function _pinFill(p){ return p.state==='open'?_PIN_COL[p.level]||C.cr:'#CFC9C2'; }
+function _pinFill(p,T){ return p.state==='open'?(T?T.lift(_PIN_COL[p.level]||C.cr):_PIN_COL[p.level]||C.cr):(T&&T.dark?'rgba(255,255,255,0.25)':'#CFC9C2'); }
 /* A two- or three-way switch (Bunches/List, Red/White, Map/List), as tabs. */
-function MasteryToggle({label,options,value,onChange,testid}){
-  return <div role="tablist" aria-label={label} data-testid={testid} style={{display:'flex',gap:4,padding:3,borderRadius:10,background:C.offWhite}}>
+function MasteryToggle({label,options,value,onChange,testid}){ const T=useTheme(), cr=T.lift(C.cr), INK=T.dark?'rgba(255,255,255,0.88)':SKETCH_INK, PENCIL=T.dark?'rgba(255,255,255,0.28)':SKETCH_PENCIL;
+  return <div role="tablist" aria-label={label} data-testid={testid} style={{display:'flex',gap:4,padding:3,borderRadius:10,background:T.soft}}>
     {options.map(([id,text])=>{ const on=value===id; return <div key={id} role="tab" aria-selected={on} tabIndex={0} onClick={()=>onChange(id)}
       onKeyDown={e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); onChange(id); } }}
       style={{flex:1,textAlign:'center',padding:'6px 0',borderRadius:8,fontSize:14,fontWeight:600,fontFamily:C.P,cursor:'pointer',
-        background:on?C.white:'transparent',color:on?C.ink:C.mid,boxShadow:on?'0 1px 2px rgba(0,0,0,0.08)':'none'}}>{text}</div>; })}
+        background:on?(T.dark?'rgba(255,255,255,0.16)':C.white):'transparent',color:on?T.ink:T.mid,boxShadow:on?'0 1px 2px rgba(0,0,0,0.08)':'none'}}>{text}</div>; })}
   </div>;
 }
 /* One region as a row (the map's picked pins and the list): flag, name, where they stand, and
    its next step (Quiz or Refresh, Pro, or scan a bottle from there). */
-function _RegionRow({p,nav,showPro,bar,prog,onOpen}){
+function _RegionRow({p,nav,showPro,bar,prog,onOpen}){ const T=useTheme(), cr=T.lift(C.cr), INK=T.dark?'rgba(255,255,255,0.88)':SKETCH_INK, PENCIL=T.dark?'rgba(255,255,255,0.28)':SKETCH_PENCIL;
   const on=p.state==='open';
-  return <div data-region={p.name} style={{display:'flex',alignItems:'center',gap:10,padding:'10px 0',borderBottom:`1px solid ${C.line}`}}>
+  return <div data-region={p.name} style={{display:'flex',alignItems:'center',gap:10,padding:'10px 0',borderBottom:`1px solid ${T.line}`}}>
     <Flag region={p.name} size={18}/>
     <div role={onOpen?'button':undefined} onClick={onOpen?()=>onOpen(p.name):undefined} style={{flex:1,minWidth:0,display:'flex',flexDirection:'column',gap:3,cursor:onOpen?'pointer':'default'}}>
-      <div style={{fontSize:15,fontWeight:700,color:on||!bar?C.ink:C.mid,fontFamily:C.P}}>{p.name}</div>
-      <div style={{fontSize:13,color:C.mid,fontFamily:C.P,lineHeight:1.4}}>
+      <div style={{fontSize:15,fontWeight:700,color:on||!bar?T.ink:T.mid,fontFamily:C.P}}>{p.name}</div>
+      <div style={{fontSize:13,color:T.mid,fontFamily:C.P,lineHeight:1.4}}>
         {on?`${p.level} · ${p.score}%`:p.state==='held'?'Unlocked, kept for Pro':'Not unlocked yet'}{on&&<RiseTag n={KnowledgeMap.itemRise(prog,'regions',p.name,p.score)} style={{marginLeft:6}}/>}
-        {on&&p.fading?<span style={{color:C.amber,fontWeight:600}}>{` · ${p.fading} answer${p.fading===1?'':'s'} fading`}</span>:''}
+        {on&&p.fading?<span style={{color:T.amber,fontWeight:600}}>{` · ${p.fading} answer${p.fading===1?'':'s'} fading`}</span>:''}
         {p.drunk?` · you've had ${p.drunk===1?'one':p.drunk}`:''}
       </div>
-      {bar&&on&&<MasteryBar score={p.score} col={C.cr}/>}
+      {bar&&on&&<MasteryBar score={p.score} col={cr}/>}
     </div>
-    {on?((p.score<100||p.fading>0)&&<div role="button" onClick={()=>_openLearn({kind:'region',region:p.name},nav,showPro)} style={{fontSize:14,fontWeight:700,color:C.cr,fontFamily:C.P,cursor:'pointer',whiteSpace:'nowrap'}}>{p.fading?'Refresh':'Quiz'} →</div>)
+    {on?((p.score<100||p.fading>0)&&<div role="button" onClick={()=>_openLearn({kind:'region',region:p.name},nav,showPro)} style={{fontSize:14,fontWeight:700,color:cr,fontFamily:C.P,cursor:'pointer',whiteSpace:'nowrap'}}>{p.fading?'Refresh':'Quiz'} →</div>)
       :p.state==='held'?<div role="button" onClick={()=>showPro('regions')} style={{cursor:'pointer'}}><ProBadge/></div>
       :null} {/* 'Not unlocked yet' says it; the nav's Scan button is always there */}
   </div>;
@@ -844,36 +844,36 @@ function openRegionPage(name,nav){ Handoff.regionPage.set(name); nav('region-pag
    grapes, where they stand with it (level, score, rise, fading answers, bottles they've had), its
    next step, and "More" for its own page. Pins close together under the finger are offered as
    "Also here". */
-function MapRegionCard({names,p,nav,showPro,prog,onOpen,onPick,onClose}){
+function MapRegionCard({names,p,nav,showPro,prog,onOpen,onPick,onClose}){ const T=useTheme(), cr=T.lift(C.cr), INK=T.dark?'rgba(255,255,255,0.88)':SKETCH_INK, PENCIL=T.dark?'rgba(255,255,255,0.28)':SKETCH_PENCIL;
   const info=React.useMemo(()=>RegionInfo.get(p.name),[p.name]);
   const on=p.state==='open', others=names.filter(n=>n!==p.name);
   const step=on?((p.score<100||p.fading>0)?{t:p.fading?'Refresh':'Take the quiz',go:()=>_openLearn({kind:'region',region:p.name},nav,showPro)}:null)
     :p.state==='held'?{t:'Unlock with Pro',go:()=>showPro('regions')}:null;
-  return <div data-testid="map-picked" data-region={p.name} style={{background:C.white,border:`1px solid ${C.line}`,borderRadius:14,padding:'12px 14px',display:'flex',flexDirection:'column',gap:8,boxShadow:'0 2px 10px rgba(0,0,0,0.06)'}}>
+  return <div data-testid="map-picked" data-region={p.name} style={{background:T.glass,border:`1px solid ${T.line}`,borderRadius:14,padding:'12px 14px',display:'flex',flexDirection:'column',gap:8,boxShadow:'0 2px 10px rgba(0,0,0,0.06)'}}>
     <div style={{display:'flex',alignItems:'flex-start',gap:10}}>
       <Flag region={p.name} size={22}/>
       <div style={{flex:1,minWidth:0}}>
-        <div style={{fontSize:17,fontWeight:800,color:C.ink,fontFamily:C.P,lineHeight:1.25}}>{p.name}</div>
-        {info&&<div style={{fontSize:13,color:C.mid,fontFamily:C.P,lineHeight:1.4}}>{RegionInfo.line(info)}</div>}
+        <div style={{fontSize:17,fontWeight:800,color:T.ink,fontFamily:C.P,lineHeight:1.25}}>{p.name}</div>
+        {info&&<div style={{fontSize:13,color:T.mid,fontFamily:C.P,lineHeight:1.4}}>{RegionInfo.line(info)}</div>}
       </div>
-      <div role="button" aria-label="Close" onClick={onClose} style={{width:28,height:28,borderRadius:14,background:C.offWhite,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',flexShrink:0,fontSize:'16px',color:C.mid,fontFamily:C.P}}>×</div>
+      <div role="button" aria-label="Close" onClick={onClose} style={{width:28,height:28,borderRadius:14,background:T.soft,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',flexShrink:0,fontSize:'16px',color:T.mid,fontFamily:C.P}}>×</div>
     </div>
-    <div style={{fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.45}}>
+    <div style={{fontSize:14,color:T.ink2,fontFamily:C.P,lineHeight:1.45}}>
       {on?`${p.level} · ${p.score}%`:p.state==='held'?'Unlocked, kept for Pro':'Not unlocked yet · a bottle from here unlocks it'}{on&&<RiseTag n={KnowledgeMap.itemRise(prog,'regions',p.name,p.score)} style={{marginLeft:6}}/>}
-      {on&&p.fading?<span style={{color:C.amber,fontWeight:600}}>{` · ${p.fading} answer${p.fading===1?'':'s'} fading`}</span>:''}
+      {on&&p.fading?<span style={{color:T.amber,fontWeight:600}}>{` · ${p.fading} answer${p.fading===1?'':'s'} fading`}</span>:''}
       {p.drunk?` · you've had ${p.drunk===1?'one':p.drunk}`:''}
     </div>
-    {on&&<MasteryBar score={p.score} col={C.cr}/>}
+    {on&&<MasteryBar score={p.score} col={cr}/>}
     <div style={{display:'flex',gap:8,flexWrap:'wrap',alignItems:'center'}}>
-      {step&&<div role="button" onClick={step.go} style={{padding:'8px 14px',borderRadius:10,background:C.cr,color:'#fff',fontSize:14,fontWeight:700,fontFamily:C.P,cursor:'pointer'}}>{step.t}</div>}
-      {info&&<div role="button" data-testid="region-more" onClick={()=>onOpen(p.name)} style={{padding:'8px 14px',borderRadius:10,border:`1px solid ${C.line}`,color:C.ink,fontSize:14,fontWeight:700,fontFamily:C.P,cursor:'pointer'}}>More about {p.name} →</div>}
+      {step&&<div role="button" onClick={step.go} style={{padding:'8px 14px',borderRadius:10,background:cr,color:'#fff',fontSize:14,fontWeight:700,fontFamily:C.P,cursor:'pointer'}}>{step.t}</div>}
+      {info&&<div role="button" data-testid="region-more" onClick={()=>onOpen(p.name)} style={{padding:'8px 14px',borderRadius:10,border:`1px solid ${T.line}`,color:T.ink,fontSize:14,fontWeight:700,fontFamily:C.P,cursor:'pointer'}}>More about {p.name} →</div>}
     </div>
-    {others.length>0&&<div style={{display:'flex',gap:6,flexWrap:'wrap',alignItems:'center',fontSize:13,color:C.mid,fontFamily:C.P}}>Also here:
-      {others.map(n=><span key={n} role="button" onClick={()=>onPick(n)} style={{padding:'3px 9px',borderRadius:999,border:`1px solid ${C.line}`,color:C.ink2,cursor:'pointer'}}>{n}</span>)}
+    {others.length>0&&<div style={{display:'flex',gap:6,flexWrap:'wrap',alignItems:'center',fontSize:13,color:T.mid,fontFamily:C.P}}>Also here:
+      {others.map(n=><span key={n} role="button" onClick={()=>onPick(n)} style={{padding:'3px 9px',borderRadius:999,border:`1px solid ${T.line}`,color:T.ink2,cursor:'pointer'}}>{n}</span>)}
     </div>}
   </div>;
 }
-function MasteryRegionMap({views,nav,showPro,prog,onLeave}){
+function MasteryRegionMap({views,nav,showPro,prog,onLeave}){ const T=useTheme(), cr=T.lift(C.cr), INK=T.dark?'rgba(255,255,255,0.88)':SKETCH_INK, PENCIL=T.dark?'rgba(255,255,255,0.28)':SKETCH_PENCIL;
   // Map or list, and which part of the world, as they last left it (Device.masteryView).
   const saved=React.useRef(Device.masteryView()).current;
   const [mode,setModeS]=React.useState(saved.regions==='list'?'list':'map');
@@ -891,42 +891,42 @@ function MasteryRegionMap({views,nav,showPro,prog,onLeave}){
   const PIN=Math.min(11,3+1.5*z.k)*u, HIT=Math.max(PIN+10*u,24*u), SW=u;
   const names=_mapLabels(v,z,u,PIN);
   const tap=(x,y)=>setSel(v.pins.map(p=>({p,d:Math.hypot(p.x-x,p.y-y)})).filter(o=>o.d<=HIT).sort((a,b)=>a.d-b.d).slice(0,4).map(o=>o.p.name));
-  const zbtn={width:34,height:34,borderRadius:10,background:'rgba(255,255,255,0.94)',border:`1px solid ${C.line}`,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',fontSize:'18px',fontWeight:700,color:C.ink,fontFamily:C.P,userSelect:'none',boxShadow:'0 1px 3px rgba(0,0,0,0.08)'};
+  const zbtn={width:34,height:34,borderRadius:10,background:T.dark?'rgba(26,26,28,0.94)':'rgba(255,255,255,0.94)',border:`1px solid ${T.line}`,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',fontSize:'18px',fontWeight:700,color:T.ink,fontFamily:C.P,userSelect:'none',boxShadow:'0 1px 3px rgba(0,0,0,0.08)'};
   const picked=sel.map(n=>v.pins.find(p=>p.name===n)).filter(Boolean);
   const openPage=n=>{ onLeave&&onLeave(); openRegionPage(n,nav); };
   const open=v.pins.filter(p=>p.state==='open').length;
-  const legend=[['#CFC9C2','Not unlocked'],[_PIN_COL['Getting started'],'Getting started'],[_PIN_COL.Developing,'Developing'],[C.cr,'Confident'],[C.green,'Mastered']];
+  const legend=[[T.dark?'rgba(255,255,255,0.25)':'#CFC9C2','Not unlocked'],[_PIN_COL['Getting started'],'Getting started'],[T.lift(_PIN_COL.Developing),'Developing'],[cr,'Confident'],[T.green,'Mastered']];
   const anyFading=v.pins.some(p=>p.fading);
   return(
     <div style={{display:'flex',flexDirection:'column',gap:10}}>
       <MasteryToggle label="Show regions as" testid="region-mode" options={[['map','Map'],['list','List']]} value={mode} onChange={setMode}/>
       <div style={{display:'flex',gap:6,overflowX:'auto',scrollbarWidth:'none',margin:'0 -2px'}}>
         {views.map(x=>{ const on=x.id===v.id; return(
-          <div key={x.id} role="button" aria-pressed={on} onClick={()=>{ setVid(x.id); setSel([]); Z.reset(); }} style={{flex:'0 0 auto',padding:'6px 11px',borderRadius:999,background:on?C.ink:C.white,border:`1px solid ${on?C.ink:C.line}`,cursor:'pointer',fontSize:13,fontWeight:600,color:on?'#fff':C.ink2,fontFamily:C.P,whiteSpace:'nowrap'}}>
+          <div key={x.id} role="button" aria-pressed={on} onClick={()=>{ setVid(x.id); setSel([]); Z.reset(); }} style={{flex:'0 0 auto',padding:'6px 11px',borderRadius:999,background:on?T.ink:T.glass,border:`1px solid ${on?T.ink:T.line}`,cursor:'pointer',fontSize:13,fontWeight:600,color:on?T.bg:T.ink2,fontFamily:C.P,whiteSpace:'nowrap'}}>
             {x.label} <span style={{opacity:0.6}}>{x.open}/{x.pins.length}</span>
           </div>); })}
       </div>
-      {mode==='list'?<div data-testid="region-list" style={{display:'flex',flexDirection:'column',borderTop:`1px solid ${C.line}`}}>
+      {mode==='list'?<div data-testid="region-list" style={{display:'flex',flexDirection:'column',borderTop:`1px solid ${T.line}`}}>
         {KnowledgeMap.regionRows(v).map(p=><_RegionRow key={p.name} p={p} nav={nav} showPro={showPro} bar prog={prog} onOpen={openPage}/>)}
-        <div style={{fontSize:13,color:C.mid,fontFamily:C.P,marginTop:8}}>Scanning a bottle from a region unlocks it.</div>
+        <div style={{fontSize:13,color:T.mid,fontFamily:C.P,marginTop:8}}>Scanning a bottle from a region unlocks it.</div>
       </div>:<>
       <div style={{position:'relative'}}>
       <svg ref={Z.ref} viewBox={`${z.x.toFixed(2)} ${z.y.toFixed(2)} ${(v.w/z.k).toFixed(2)} ${(v.h/z.k).toFixed(2)}`} width="100%" {...Z.bind(tap)} role="img" data-testid="region-map" data-zoom={z.k.toFixed(2)}
         aria-label={`Map of ${v.label}: ${open} of ${v.pins.length} wine regions unlocked. Tap a region to see it; pinch or use + and − to zoom.`}
-        style={{display:'block',borderRadius:12,background:'#FDFCFA',border:`1px solid ${C.line}`,cursor:z.k>1?'grab':'pointer',maxHeight:420,touchAction:z.k>1?'none':'pan-y',userSelect:'none',WebkitUserSelect:'none'}}>
+        style={{display:'block',borderRadius:12,background:T.dark?T.card:'#FDFCFA',border:`1px solid ${T.line}`,cursor:z.k>1?'grab':'pointer',maxHeight:420,touchAction:z.k>1?'none':'pan-y',userSelect:'none',WebkitUserSelect:'none'}}>
         {/* A hollow outline map in muted colours: the land barely tinted, one thin coastline and
             fainter borders, so the pins carry it. Widths are screen pixels (u), fine at any zoom. */}
-        <path d={v.land} fill="#F6F3EE" stroke="#B5ABA0" strokeWidth={0.8*u} strokeLinejoin="round"/>
-        <path d={v.borders} fill="none" stroke="#DCD4CA" strokeWidth={0.6*u} strokeLinejoin="round"/>
-        {names.filter(n=>n.kind==='country').map(n=><text key={'c'+n.t} x={n.x} y={n.y} textAnchor="middle" data-label="country" style={{fontSize:n.fs.toFixed(2)+'px',fontWeight:700,letterSpacing:'0.06em',fill:'#A39A90',fontFamily:C.P,paintOrder:'stroke',stroke:'#F6F3EE',strokeWidth:(3*u).toFixed(2),strokeLinejoin:'round',pointerEvents:'none'}}>{n.t}</text>)}
+        <path d={v.land} fill={T.dark?"rgba(255,255,255,0.06)":"#F6F3EE"} stroke={T.dark?"rgba(255,255,255,0.35)":"#B5ABA0"} strokeWidth={0.8*u} strokeLinejoin="round"/>
+        <path d={v.borders} fill="none" stroke={T.dark?"rgba(255,255,255,0.12)":"#DCD4CA"} strokeWidth={0.6*u} strokeLinejoin="round"/>
+        {names.filter(n=>n.kind==='country').map(n=><text key={'c'+n.t} x={n.x} y={n.y} textAnchor="middle" data-label="country" style={{fontSize:n.fs.toFixed(2)+'px',fontWeight:700,letterSpacing:'0.06em',fill:T.dark?'rgba(255,255,255,0.45)':'#A39A90',fontFamily:C.P,paintOrder:'stroke',stroke:T.dark?T.card:'#F6F3EE',strokeWidth:(3*u).toFixed(2),strokeLinejoin:'round',pointerEvents:'none'}}>{n.t}</text>)}
         {[...v.pins].sort((a,b)=>(a.state==='open')-(b.state==='open')).map(p=>{
           const on=sel[0]===p.name, first=p.state==='open'&&p.level==='Not started';
           return <g key={p.name}>
-            {p.drunk>0&&<circle cx={p.x} cy={p.y} r={PIN+4*SW} fill="none" stroke="#6B625A" strokeWidth={1.6*SW}/>}
-            <circle cx={p.x} cy={p.y} r={on?PIN+3*SW:p.state==='open'?PIN:PIN-2*SW} fill={_pinFill(p)} fillOpacity={p.fading?0.4:1} strokeDasharray={p.fading?`${3*SW} ${2*SW}`:null} stroke={on?C.ink:first?C.cr:'#fff'} strokeWidth={(on?2.5:first?2.5:2)*SW}/>
+            {p.drunk>0&&<circle cx={p.x} cy={p.y} r={PIN+4*SW} fill="none" stroke={T.dark?"rgba(255,255,255,0.75)":"#6B625A"} strokeWidth={1.6*SW}/>}
+            <circle cx={p.x} cy={p.y} r={on?PIN+3*SW:p.state==='open'?PIN:PIN-2*SW} fill={_pinFill(p,T)} fillOpacity={p.fading?0.4:1} strokeDasharray={p.fading?`${3*SW} ${2*SW}`:null} stroke={on?T.ink:first?cr:(T.dark?T.bg:'#fff')} strokeWidth={(on?2.5:first?2.5:2)*SW}/>
           </g>;
         })}
-        {names.filter(n=>n.kind==='region').map(n=><text key={'r'+n.t} x={n.x} y={n.y} textAnchor="middle" data-label="region" style={{fontSize:n.fs.toFixed(2)+'px',fontWeight:n.on?800:600,fill:n.on?C.ink:'#7D736A',fontFamily:C.P,paintOrder:'stroke',stroke:'#F6F3EE',strokeWidth:(3*u).toFixed(2),strokeLinejoin:'round',pointerEvents:'none'}}>{n.t}</text>)}
+        {names.filter(n=>n.kind==='region').map(n=><text key={'r'+n.t} x={n.x} y={n.y} textAnchor="middle" data-label="region" style={{fontSize:n.fs.toFixed(2)+'px',fontWeight:n.on?800:600,fill:n.on?T.ink:(T.dark?'rgba(255,255,255,0.6)':'#7D736A'),fontFamily:C.P,paintOrder:'stroke',stroke:T.dark?T.card:'#F6F3EE',strokeWidth:(3*u).toFixed(2),strokeLinejoin:'round',pointerEvents:'none'}}>{n.t}</text>)}
       </svg>
       <div style={{position:'absolute',right:8,top:8,display:'flex',flexDirection:'column',gap:6}}>
         <div role="button" aria-label="Zoom in" onClick={()=>Z.zoomAt(1.6)} style={zbtn}>+</div>
@@ -935,12 +935,12 @@ function MasteryRegionMap({views,nav,showPro,prog,onLeave}){
       {z.k>1&&<div role="button" onClick={Z.reset} style={{...zbtn,position:'absolute',left:8,top:8,width:'auto',padding:'0 10px',fontSize:'13px',fontWeight:600}}>Reset</div>}
       </div>
       <div aria-hidden="true" style={{display:'flex',flexWrap:'wrap',gap:'4px 12px'}}>
-        {legend.map(([c,l])=><span key={l} style={{display:'inline-flex',alignItems:'center',gap:5,fontSize:12,color:C.mid,fontFamily:C.P}}><span style={{width:9,height:9,borderRadius:5,background:c,border:'1px solid rgba(0,0,0,0.08)'}}/>{l}</span>)}
-        <span style={{display:'inline-flex',alignItems:'center',gap:5,fontSize:12,color:C.mid,fontFamily:C.P}}><span style={{width:9,height:9,borderRadius:6,border:'2px solid #6B625A'}}/>You've had one</span>
-        {anyFading&&<span style={{display:'inline-flex',alignItems:'center',gap:5,fontSize:12,color:C.mid,fontFamily:C.P}}><span style={{width:9,height:9,borderRadius:6,background:C.cr,opacity:0.4,border:`1px dashed ${C.cr}`}}/>Fading: time for a refresher</span>}
+        {legend.map(([c,l])=><span key={l} style={{display:'inline-flex',alignItems:'center',gap:5,fontSize:12,color:T.mid,fontFamily:C.P}}><span style={{width:9,height:9,borderRadius:5,background:c,border:`1px solid ${T.line}`}}/>{l}</span>)}
+        <span style={{display:'inline-flex',alignItems:'center',gap:5,fontSize:12,color:T.mid,fontFamily:C.P}}><span style={{width:9,height:9,borderRadius:6,border:`2px solid ${T.dark?'rgba(255,255,255,0.75)':'#6B625A'}`}}/>You've had one</span>
+        {anyFading&&<span style={{display:'inline-flex',alignItems:'center',gap:5,fontSize:12,color:T.mid,fontFamily:C.P}}><span style={{width:9,height:9,borderRadius:6,background:cr,opacity:0.4,border:`1px dashed ${cr}`}}/>Fading: time for a refresher</span>}
       </div>
       {picked.length?<MapRegionCard names={sel} p={picked[0]} nav={nav} showPro={showPro} prog={prog} onOpen={openPage}
-        onPick={n=>setSel(s=>[n,...s.filter(x=>x!==n)])} onClose={()=>setSel([])}/>:<div style={{fontSize:13,color:C.mid,fontFamily:C.P}}>Tap a pin to see a region; pinch to zoom in and see their names. Scanning a bottle unlocks its region.</div>}
+        onPick={n=>setSel(s=>[n,...s.filter(x=>x!==n)])} onClose={()=>setSel([])}/>:<div style={{fontSize:13,color:T.mid,fontFamily:C.P}}>Tap a pin to see a region; pinch to zoom in and see their names. Scanning a bottle unlocks its region.</div>}
       </>}
     </div>
   );
@@ -955,22 +955,22 @@ function MasteryRegionMap({views,nav,showPro,prog,onLeave}){
    habit ("you call it grippier"). A trait with no calls yet shows a dash and says so. Every tile
    opens the trait's own page (PalateTraitScreen), like a grape's. */
 const PALATE_TRAITS=['body','acidity','tannins','texture'];
-function _PalateTile({id,a,onOpen}){
+function _PalateTile({id,a,onOpen}){ const T=useTheme(), cr=T.lift(C.cr), INK=T.dark?'rgba(255,255,255,0.88)':SKETCH_INK, PENCIL=T.dark?'rgba(255,255,255,0.28)':SKETCH_PENCIL;
   const sc=a?a.score:null, col=SKETCH_TRAIT[id], R=27, circ=2*Math.PI*R;
   const ring=col;
   return <div role="button" tabIndex={0} data-trait={id} onClick={()=>onOpen(id)} onKeyDown={e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); onOpen(id); } }}
     aria-label={`${Palate.NAMES[id]}: ${sc==null?'no Blind Calls yet':`${sc}% on target${a.lean?`, you call it ${a.lean}`:''}`}. Open its page.`}
-    style={{background:'#FBF8F3',border:`1px solid ${C.line}`,borderRadius:14,padding:'10px 10px 10px 8px',display:'flex',alignItems:'center',gap:8,cursor:'pointer',minWidth:0}}>
+    style={{background:T.dark?T.soft:'#FBF8F3',border:`1px solid ${T.line}`,borderRadius:14,padding:'10px 10px 10px 8px',display:'flex',alignItems:'center',gap:8,cursor:'pointer',minWidth:0}}>
     <svg width="66" height="66" viewBox="-33 -33 66 66" aria-hidden="true" style={{flexShrink:0,overflow:'visible'}}>
-      <circle r={R} fill="none" stroke={SKETCH_PENCIL} strokeWidth="3" strokeDasharray="1 4" strokeLinecap="round"/>
+      <circle r={R} fill="none" stroke={PENCIL} strokeWidth="3" strokeDasharray="1 4" strokeLinecap="round"/>
       {sc!=null&&<circle r={R} fill="none" stroke={ring} strokeWidth="4.5" strokeLinecap="round" className="palate-ring"
         strokeDasharray={circ} strokeDashoffset={circ*(1-sc/100)} transform="rotate(-90)" style={{'--ring':circ}}/>}
-      <g transform="scale(0.82)"><SketchTraitIcon id={id}/></g>
+      <g transform="scale(0.82)"><SketchTraitIcon id={id} ink={INK}/></g>
     </svg>
     <div style={{minWidth:0,display:'flex',flexDirection:'column'}}>
-      <span style={{fontSize:14,fontWeight:700,color:C.ink,fontFamily:C.P}}>{Palate.NAMES[id]}</span>
-      <span style={{fontSize:24,fontWeight:800,color:sc==null?C.mid:C.ink,fontFamily:C.P,lineHeight:1.15}}>{sc==null?'–':`${sc}%`}</span>
-      <span style={{fontSize:12,color:a&&a.lean?C.amber:C.mid,fontFamily:C.P,fontWeight:a&&a.lean?600:400,lineHeight:1.3}}>{sc==null?'No calls yet':a.lean?`You call it ${a.lean}`:KnowledgeMap.level(sc)}</span>
+      <span style={{fontSize:14,fontWeight:700,color:T.ink,fontFamily:C.P}}>{Palate.NAMES[id]}</span>
+      <span style={{fontSize:24,fontWeight:800,color:sc==null?T.mid:T.ink,fontFamily:C.P,lineHeight:1.15}}>{sc==null?'–':`${sc}%`}</span>
+      <span style={{fontSize:12,color:a&&a.lean?T.amber:T.mid,fontFamily:C.P,fontWeight:a&&a.lean?600:400,lineHeight:1.3}}>{sc==null?'No calls yet':a.lean?`You call it ${a.lean}`:KnowledgeMap.level(sc)}</span>
     </div>
   </div>;
 }
@@ -979,21 +979,21 @@ function PalateTiles({p,onOpen}){
     {PALATE_TRAITS.map(id=><_PalateTile key={id} id={id} a={p.axes.find(x=>x.id===id)} onOpen={onOpen}/>)}
   </div>;
 }
-function MasteryPalate({p,go,onOpen}){
+function MasteryPalate({p,go,onOpen}){ const T=useTheme(), cr=T.lift(C.cr), INK=T.dark?'rgba(255,255,255,0.88)':SKETCH_INK, PENCIL=T.dark?'rgba(255,255,255,0.28)':SKETCH_PENCIL;
   return(
     <div style={{display:'flex',flexDirection:'column',gap:10}}>
       <PalateTiles p={p} onOpen={onOpen}/>
-      <div style={{fontSize:13,color:C.mid,fontFamily:C.P,lineHeight:1.45}}>Each % is how close your Blind Calls come to the label on that trait. Tap one to learn how to taste it and see every call.</div>
+      <div style={{fontSize:13,color:T.mid,fontFamily:C.P,lineHeight:1.45}}>Each % is how close your Blind Calls come to the label on that trait. Tap one to learn how to taste it and see every call.</div>
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline'}}>
-        <span style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>{p.n?`${p.level} · ${p.score}%`:'Not started'}</span>
-        <span style={{fontSize:13,color:C.mid,fontFamily:C.P}}>{p.n} Blind Call{p.n===1?'':'s'}{p.trend!=null&&p.trend!==0?` · ${p.trend>0?'+':''}${p.trend} lately`:''}</span>
+        <span style={{fontSize:16,fontWeight:700,color:T.ink,fontFamily:C.P}}>{p.n?`${p.level} · ${p.score}%`:'Not started'}</span>
+        <span style={{fontSize:13,color:T.mid,fontFamily:C.P}}>{p.n} Blind Call{p.n===1?'':'s'}{p.trend!=null&&p.trend!==0?` · ${p.trend>0?'+':''}${p.trend} lately`:''}</span>
       </div>
       <MasteryBar score={p.score}/>
-      <div style={{fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.5}}>
+      <div style={{fontSize:14,color:T.ink2,fontFamily:C.P,lineHeight:1.5}}>
         {p.n?<>Your calls average {p.accuracy}% accurate{p.n<Palate.FULL_AT?`. The rating fills in as you play: ${Palate.FULL_AT-p.n} more to count in full`:''}. Each call is checked against the label's profile, an estimate, so treat it as a guide.</>
           :<>Blind Call asks you to taste first and guess the body, acidity and tannins before you see the label's profile. Your calls build this rating, separate from what you've read.</>}
       </div>
-      {p.next&&<div role="button" onClick={()=>go(p.next)} style={{fontSize:14,fontWeight:700,color:C.cr,fontFamily:C.P,cursor:'pointer'}}>{p.next.label} →</div>}
+      {p.next&&<div role="button" onClick={()=>go(p.next)} style={{fontSize:14,fontWeight:700,color:cr,fontFamily:C.P,cursor:'pointer'}}>{p.next.label} →</div>}
     </div>
   );
 }
@@ -1005,11 +1005,11 @@ function _useShare(){
   const share=async x=>{ const r=await Platform.shareText(Milestones.shareText(x)); if(r==='copied'){ setSaid('Copied to share'); setTimeout(()=>setSaid(null),2200); } };
   return [share,said];
 }
-function MilestoneMoment({items}){
+function MilestoneMoment({items}){ const T=useTheme(), cr=T.lift(C.cr), INK=T.dark?'rgba(255,255,255,0.88)':SKETCH_INK, PENCIL=T.dark?'rgba(255,255,255,0.28)':SKETCH_PENCIL;
   const [share,said]=_useShare();
   if(!items||!items.length) return null;
   return(
-    <div data-testid="milestone-moment" className="milestone-in" style={{background:C.ink,borderRadius:16,padding:'14px 16px',display:'flex',flexDirection:'column',gap:8}}>
+    <div data-testid="milestone-moment" className="milestone-in" style={{background:T.ink,borderRadius:16,padding:'14px 16px',display:'flex',flexDirection:'column',gap:8}}>
       <div style={{fontSize:13,fontWeight:600,color:'#E7C66B',fontFamily:C.P,textTransform:'uppercase',letterSpacing:'0.06em'}}>{items.length===1?(items[0].id.startsWith('level:')?'New level':'New milestone'):`${items.length} new milestones`}</div>
       {items.map(x=>(
         <div key={x.id} style={{display:'flex',alignItems:'center',gap:12}}>
@@ -1027,21 +1027,21 @@ function MilestoneMoment({items}){
     </div>
   );
 }
-function MilestoneList({items}){
+function MilestoneList({items}){ const T=useTheme(), cr=T.lift(C.cr), INK=T.dark?'rgba(255,255,255,0.88)':SKETCH_INK, PENCIL=T.dark?'rgba(255,255,255,0.28)':SKETCH_PENCIL;
   const [share,said]=_useShare();
-  if(!items.length) return <div style={{fontSize:14,color:C.mid,fontFamily:C.P,lineHeight:1.5}}>Your first comes with your first region studied, or Confident in a wine type. Each one is marked here, with a date.</div>;
+  if(!items.length) return <div style={{fontSize:14,color:T.mid,fontFamily:C.P,lineHeight:1.5}}>Your first comes with your first region studied, or Confident in a wine type. Each one is marked here, with a date.</div>;
   return <div style={{display:'flex',flexDirection:'column'}}>
     <ShowMore items={items} limit={4} noun="milestones" render={x=>(
-      <div key={x.id} style={{display:'flex',alignItems:'center',gap:12,padding:'9px 0',borderBottom:`1px solid ${C.line}`}}>
-        <Icon n={x.icon} sz={17} col={C.cr}/>
+      <div key={x.id} style={{display:'flex',alignItems:'center',gap:12,padding:'9px 0',borderBottom:`1px solid ${T.line}`}}>
+        <Icon n={x.icon} sz={17} col={cr}/>
         <div style={{flex:1,minWidth:0}}>
-          <div style={{fontSize:15,fontWeight:700,color:C.ink,fontFamily:C.P}}>{x.region&&<Flag region={x.region} size={14} style={{marginRight:6}}/>}{x.title}</div>
-          <div style={{fontSize:13,color:C.mid,fontFamily:C.P}}>{x.at?new Date(x.at).toLocaleDateString('en',{day:'numeric',month:'short',year:'numeric'}):'Earlier'}</div>
+          <div style={{fontSize:15,fontWeight:700,color:T.ink,fontFamily:C.P}}>{x.region&&<Flag region={x.region} size={14} style={{marginRight:6}}/>}{x.title}</div>
+          <div style={{fontSize:13,color:T.mid,fontFamily:C.P}}>{x.at?new Date(x.at).toLocaleDateString('en',{day:'numeric',month:'short',year:'numeric'}):'Earlier'}</div>
         </div>
-        <div role="button" aria-label={`Share: ${x.title}`} onClick={()=>share(x)} style={{padding:6,cursor:'pointer'}}><Icon n="share" sz={16} col={C.mid}/></div>
+        <div role="button" aria-label={`Share: ${x.title}`} onClick={()=>share(x)} style={{padding:6,cursor:'pointer'}}><Icon n="share" sz={16} col={T.mid}/></div>
       </div>
     )}/>
-    {said&&<div style={{fontSize:13,color:C.green,fontFamily:C.P,marginTop:6}}>{said}</div>}
+    {said&&<div style={{fontSize:13,color:T.green,fontFamily:C.P,marginTop:6}}>{said}</div>}
   </div>;
 }
 
@@ -1065,31 +1065,31 @@ function _berrySaid(g){
 function openGrapePage(name,nav){ Handoff.grapePage.set(name); nav('grape'); }
 /* The grapes as a list: red, then white and pink, each grape with its level and score; a tap
    opens its page, as a tap on the bunch does. */
-function MasteryGrapeList({c,open,skin,prog}){
+function MasteryGrapeList({c,open,skin,prog}){ const T=useTheme(), cr=T.lift(C.cr), INK=T.dark?'rgba(255,255,255,0.88)':SKETCH_INK, PENCIL=T.dark?'rgba(255,255,255,0.28)':SKETCH_PENCIL;
   const rows=React.useMemo(()=>KnowledgeMap.grapeRows(c).filter(b=>!skin||b.id===skin),[c,skin]);
   const said=g=>g.state==='open'?(g.score>0?`${g.level}`:'Not started'):g.state==='held'?'Kept for Pro':'Not unlocked yet';
   return <div data-testid="grape-list" style={{display:'flex',flexDirection:'column',gap:14}}>
     {rows.map(b=><div key={b.id} style={{display:'flex',flexDirection:'column'}}>
       {b.grapes.map(g=>{
-        const col=SKETCH_WASH[g.skin]||SKETCH_WASH.red, on=g.state==='open';
+        const col=T.lift(SKETCH_WASH[g.skin]||SKETCH_WASH.red), on=g.state==='open';
         return <div key={g.name} role="button" tabIndex={0} aria-label={_berrySaid(g)} onClick={()=>open(g.name)}
           onKeyDown={e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); open(g.name); } }}
-          style={{display:'flex',alignItems:'center',gap:10,padding:'9px 0',borderTop:`1px solid ${C.line}`,cursor:'pointer'}}>
-          <span aria-hidden="true" style={{width:12,height:12,borderRadius:6,flexShrink:0,background:on&&g.score>0?col:'transparent',border:`1.5px solid ${on?col:SKETCH_PENCIL}`}}/>
+          style={{display:'flex',alignItems:'center',gap:10,padding:'9px 0',borderTop:`1px solid ${T.line}`,cursor:'pointer'}}>
+          <span aria-hidden="true" style={{width:12,height:12,borderRadius:6,flexShrink:0,background:on&&g.score>0?col:'transparent',border:`1.5px solid ${on?col:PENCIL}`}}/>
           <div style={{flex:1,minWidth:0,display:'flex',flexDirection:'column',gap:4}}>
             <div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline',gap:8}}>
-              <span style={{fontSize:15,fontWeight:600,color:on?C.ink:C.mid,fontFamily:C.P}}>{g.name}</span>
-              <span style={{fontSize:13,color:C.mid,fontFamily:C.P,whiteSpace:'nowrap',display:'inline-flex',alignItems:'baseline',gap:4}}>{g.fading>0&&<span style={{color:C.amber,fontWeight:600}}>fading · </span>}{said(g)}<RiseTag n={on?KnowledgeMap.itemRise(prog,'grapes',g.name,g.score):0} style={{marginLeft:4}}/>{on?<b style={{color:C.ink,marginLeft:4}}>{g.score}%</b>:''}</span>
+              <span style={{fontSize:15,fontWeight:600,color:on?T.ink:T.mid,fontFamily:C.P}}>{g.name}</span>
+              <span style={{fontSize:13,color:T.mid,fontFamily:C.P,whiteSpace:'nowrap',display:'inline-flex',alignItems:'baseline',gap:4}}>{g.fading>0&&<span style={{color:T.amber,fontWeight:600}}>fading · </span>}{said(g)}<RiseTag n={on?KnowledgeMap.itemRise(prog,'grapes',g.name,g.score):0} style={{marginLeft:4}}/>{on?<b style={{color:T.ink,marginLeft:4}}>{g.score}%</b>:''}</span>
             </div>
             {on&&<MasteryBar score={g.score} col={col}/>}
           </div>
-          <Icon n="chevron" sz={14} col={C.mid}/>
+          <Icon n="chevron" sz={14} col={T.mid}/>
         </div>;
       })}
     </div>)}
   </div>;
 }
-function MasteryGrapes({m,nav,view,setView,onOpen,prog}){
+function MasteryGrapes({m,nav,view,setView,onOpen,prog}){ const T=useTheme(), cr=T.lift(C.cr), INK=T.dark?'rgba(255,255,255,0.88)':SKETCH_INK, PENCIL=T.dark?'rgba(255,255,255,0.28)':SKETCH_PENCIL;
   const c=React.useMemo(()=>KnowledgeMap.grapeCluster(m),[m]);
   const seen=React.useRef(Device.grapesSeen());
   const [grown,setGrown]=React.useState(false);
@@ -1111,7 +1111,7 @@ function MasteryGrapes({m,nav,view,setView,onOpen,prog}){
   const count=id=>{ const b=c.bunches.find(x=>x.id===id); return b?`${b.grapes.filter(g=>g.score>0).length}/${b.grapes.length}`:''; };
   return(
     <div style={{display:'flex',flexDirection:'column',gap:10}}>
-      <div style={{fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.5}}>
+      <div style={{fontSize:14,color:T.ink2,fontFamily:C.P,lineHeight:1.5}}>
         <b>{c.studied}</b> of {c.total} grapes studied{c.mastered?<>, <b>{c.mastered}</b> mastered</>:''}. {view==='list'?'Tap a grape to open its page.':'Each grape fills in as you learn it; tap one to open its page.'}
       </div>
       <MasteryToggle label="Show grapes as" testid="grape-mode" options={[['bunch','Bunches'],['list','List']]} value={view} onChange={setView}/>
@@ -1121,22 +1121,22 @@ function MasteryGrapes({m,nav,view,setView,onOpen,prog}){
         {c.bunches.map((b,bi)=>{
           const cx=colW/2+bi*(colW+GAP), x0=cx-(Math.max(...b.grapes.map(g=>g.x))+Math.min(...b.grapes.map(g=>g.x)))/2*k;
           return <g key={b.id}>
-            <SketchVine x={x0} y={TOP-R*0.1} s={1.2} leafRed={false}/>
+            <SketchVine x={x0} y={TOP-R*0.1} s={1.2} leafRed={false} ink={INK}/>
             {[...b.grapes].sort((p,q)=>p.y-q.y).map(g=>{ // top first: lower berries hang over upper ones
               const x=x0+g.x*k, y=TOP+R+g.y*k, sc=grown?_berryScale(g.state,g.score):from(g);
               return <g key={g.name} transform={`translate(${x.toFixed(1)} ${y.toFixed(1)})`} role="button" tabIndex={0} aria-label={_berrySaid(g)}
                 onClick={()=>open(g.name)} onKeyDown={key(g)} style={{cursor:'pointer',outline:'none'}} className="grape-btn">
                 <circle r={R} fill="transparent" className="grape-hit"/>
                 <g className="grape-berry" style={{transform:`scale(${(sc*R).toFixed(2)})`}}>
-                  <SketchBerry seed={g.name} skin={g.skin} state={_berryState(g)} fading={g.fading>0}/>
+                  <SketchBerry seed={g.name} skin={g.skin} state={_berryState(g)} fading={g.fading>0} ink={INK} wash={T.dark?T.lift(SKETCH_WASH[g.skin]||SKETCH_WASH.red):undefined}/>
                 </g>
               </g>;
             })}
-            <text x={cx} y={H-4} textAnchor="middle" style={{fontSize:'13px',fontWeight:700,fill:C.ink2,fontFamily:C.P}}>{b.label} · {b.grapes.filter(g=>g.score>0).length}/{b.grapes.length}</text>
+            <text x={cx} y={H-4} textAnchor="middle" style={{fontSize:'13px',fontWeight:700,fill:T.ink2,fontFamily:C.P}}>{b.label} · {b.grapes.filter(g=>g.score>0).length}/{b.grapes.length}</text>
           </g>;
         })}
       </svg>
-      <div aria-hidden="true" style={{fontSize:13,color:C.mid,fontFamily:C.P,lineHeight:1.5}}>
+      <div aria-hidden="true" style={{fontSize:13,color:T.mid,fontFamily:C.P,lineHeight:1.5}}>
         Pencil outline: not unlocked yet. Washed in colour: studying, fuller as you learn. Shaded: mastered. Dashed: fading, time for a refresher.
       </div></>}
     </div>
@@ -1156,22 +1156,22 @@ const _MASTERY_CSS=`@keyframes masteryGrow{from{transform:scale(0.2);opacity:0}t
 
 /* One section of Mastery: a heading that folds it away (a chevron, aria-expanded) and, folded, a
    one-line summary in its place, which also opens it. `plain` lays its children out without a card. */
-function MasterySection({id,title,summary,folded,toggle,plain,testid,children}){
+function MasterySection({id,title,summary,folded,toggle,plain,testid,children}){ const T=useTheme(), cr=T.lift(C.cr), INK=T.dark?'rgba(255,255,255,0.88)':SKETCH_INK, PENCIL=T.dark?'rgba(255,255,255,0.28)':SKETCH_PENCIL;
   const shut=!!folded[id];
-  const body={background:C.white,borderRadius:16,border:`1px solid ${C.line}`,padding:'14px 14px 12px',display:'flex',flexDirection:'column',gap:8};
+  const body={background:T.glass,borderRadius:16,border:`1px solid ${T.line}`,padding:'14px 14px 12px',display:'flex',flexDirection:'column',gap:8};
   return <section data-section={id} style={{display:'flex',flexDirection:'column',gap:8}}>
     <div role="button" tabIndex={0} aria-expanded={!shut} onClick={()=>toggle(id)}
       onKeyDown={e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); toggle(id); } }}
       style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:8,marginTop:6,cursor:'pointer'}}>
-      <span style={{fontSize:15,fontWeight:600,color:C.mid,letterSpacing:'0.08em',textTransform:'uppercase',fontFamily:C.P}}>{title}</span>
-      <span aria-hidden="true" style={{display:'inline-flex',transform:`rotate(${shut?90:-90}deg)`,transition:'transform .2s ease'}}><Icon n="chevron" sz={16} col={C.mid}/></span>
+      <span style={{fontSize:15,fontWeight:600,color:T.mid,letterSpacing:'0.08em',textTransform:'uppercase',fontFamily:C.P}}>{title}</span>
+      <span aria-hidden="true" style={{display:'inline-flex',transform:`rotate(${shut?90:-90}deg)`,transition:'transform .2s ease'}}><Icon n="chevron" sz={16} col={T.mid}/></span>
     </div>
-    {shut?<div data-testid={`summary-${id}`} role="button" onClick={()=>toggle(id)} style={{...body,background:C.white,border:`1px solid ${C.line}`,padding:'12px 14px',cursor:'pointer',fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.45}}>{summary}</div>
+    {shut?<div data-testid={`summary-${id}`} role="button" onClick={()=>toggle(id)} style={{...body,background:T.glass,border:`1px solid ${T.line}`,padding:'12px 14px',cursor:'pointer',fontSize:14,color:T.ink2,fontFamily:C.P,lineHeight:1.45}}>{summary}</div>
       :plain?<div data-testid={testid} style={{display:'flex',flexDirection:'column',gap:8}}>{children}</div>
       :<div data-testid={testid} style={body}>{children}</div>}
   </section>;
 }
-function MasteryMapScreen({nav,back,showPro}){
+function MasteryMapScreen({nav,back,showPro}){ const T=useTheme(), cr=T.lift(C.cr), INK=T.dark?'rgba(255,255,255,0.88)':SKETCH_INK, PENCIL=T.dark?'rgba(255,255,255,0.28)':SKETCH_PENCIL;
   // On an iPad the shape sits beside the grapes and the palate beside the milestones; the map spans both.
   const wide=useWide();
   const wines=React.useMemo(()=>WineHistory.getAll(),[]);
@@ -1208,14 +1208,14 @@ function MasteryMapScreen({nav,back,showPro}){
   };
   const rise=prog&&prog.rises[0];
   return(
-    <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden'}}>
+    <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden',background:T.bg}}>
       <style>{_MASTERY_CSS}</style>
-      <div style={{background:C.white,padding:'14px 20px',display:'flex',alignItems:'center',gap:12,borderBottom:`1px solid ${C.line}`,flexShrink:0}}>
-        <div onClick={back} style={{width:34,height:34,borderRadius:17,background:C.offWhite,border:`1px solid ${C.line}`,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer'}}><Icon n="back" sz={16} col={C.ink}/></div>
-        <span style={{fontSize:20,fontWeight:800,color:C.ink,fontFamily:C.P,letterSpacing:'-0.4px'}}>Your Mastery</span>
+      <div style={{background:`radial-gradient(ellipse at 50% -20%, ${_alpha(cr,T.dark?0.42:0.14)}, transparent 70%) ${T.dark?T.bg:C.white}`,padding:'14px 20px',display:'flex',alignItems:'center',gap:12,borderBottom:`1px solid ${T.line}`,flexShrink:0}}>
+        <div onClick={back} style={{width:34,height:34,borderRadius:17,background:T.soft,border:`1px solid ${T.line}`,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer'}}><Icon n="back" sz={16} col={T.ink}/></div>
+        <span style={{fontSize:20,fontWeight:800,color:T.ink,fontFamily:C.P,letterSpacing:'-0.4px'}}>Your Mastery</span>
       </div>
       <div ref={listRef} style={{flex:1,overflowY:'auto',padding:'16px 20px',display:'flex',flexDirection:'column',gap:12}}>
-        <div style={{background:C.ink,borderRadius:16,padding:'18px 16px',display:'flex',flexDirection:'column',gap:8}}>
+        <div style={T.dark?{background:_alpha(cr,0.16),border:`1px solid ${_alpha(cr,0.4)}`,boxShadow:`0 0 36px ${_alpha(cr,0.18)}`,borderRadius:16,padding:'18px 16px',display:'flex',flexDirection:'column',gap:8}:{background:C.ink,borderRadius:16,padding:'18px 16px',display:'flex',flexDirection:'column',gap:8}}>
           <div style={{fontSize:13,fontWeight:600,color:'rgba(255,255,255,0.5)',fontFamily:C.P,textTransform:'uppercase',letterSpacing:'0.06em'}}>Your wine knowledge</div>
           <div style={{fontSize:32,fontWeight:800,color:'#fff',fontFamily:C.P}}>{m.overall}% <span style={{fontSize:16,fontWeight:600,color:'rgba(255,255,255,0.6)'}}>{m.level}</span>
             {prog&&prog.overall>0&&<span style={{fontSize:15,fontWeight:700,color:'#7FD3A6',marginLeft:8}}>▲{prog.overall} in {prog.weeks} week{prog.weeks===1?'':'s'}</span>}</div>
@@ -1235,12 +1235,12 @@ function MasteryMapScreen({nav,back,showPro}){
           summary={`${m.overall}% overall${rise?` · biggest rise ${rise.label} +${rise.delta}`:summary.strongest?` · strongest ${summary.strongest.label} ${summary.strongest.score}%`:''}`}>
           <MasteryToggle label="Show your shape as" testid="shape-mode" options={[['chart','Chart'],['list','List']]} value={shapeView} onChange={setShapeView}/>
           {shapeView==='list'?<MasteryAreaList m={m} prog={prog} open={open} setOpen={setOpen} go={go}/>:<>
-          <div style={{background:'#FBF8F3',borderRadius:12,padding:'8px 4px 4px'}}><MasteryRadar m={m} prog={prog} onPick={pick}/></div>
+          <div style={{background:T.dark?T.soft:'#FBF8F3',borderRadius:12,padding:'8px 4px 4px'}}><MasteryRadar m={m} prog={prog} onPick={pick}/></div>
           <div style={{display:'flex',gap:14,justifyContent:'center',flexWrap:'wrap'}} aria-hidden="true">
-            <span style={{display:'inline-flex',alignItems:'center',gap:6,fontSize:12,color:C.mid,fontFamily:C.P}}><span style={{width:16,height:0,borderTop:`2px solid ${SKETCH_INK}`}}/>Now</span>
-            {prog&&<span style={{display:'inline-flex',alignItems:'center',gap:6,fontSize:12,color:C.mid,fontFamily:C.P}}><span style={{width:16,height:0,borderTop:`2px dotted ${C.mid}`}}/>{_when(prog.then.t)}</span>}
+            <span style={{display:'inline-flex',alignItems:'center',gap:6,fontSize:12,color:T.mid,fontFamily:C.P}}><span style={{width:16,height:0,borderTop:`2px solid ${INK}`}}/>Now</span>
+            {prog&&<span style={{display:'inline-flex',alignItems:'center',gap:6,fontSize:12,color:T.mid,fontFamily:C.P}}><span style={{width:16,height:0,borderTop:`2px dotted ${T.mid}`}}/>{_when(prog.then.t)}</span>}
           </div>
-          <div style={{fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.5}}>
+          <div style={{fontSize:14,color:T.ink2,fontFamily:C.P,lineHeight:1.5}}>
             {prog?(rise?<>Since {_when(prog.then.t)} your biggest rise is <b>{rise.label}</b> (+{rise.delta}).{prog.rises.length>1?` ${prog.rises.length-1} other area${prog.rises.length===2?' has':'s have'} grown too.`:''}</>
               :<>No change since {_when(prog.then.t)}. A quiz or an article moves the shape.</>)
               :<>A rounder shape means rounder knowledge. From next week, a dotted outline shows where you were, so you can see it grow.</>} Tap an area, or List, for the detail behind each number.

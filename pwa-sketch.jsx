@@ -35,11 +35,13 @@ function sketchBerryPaths(seed){
    'start' an outline in its colour; 'grow' washed; 'ripe' washed with hatching; fading dashes
    the line and thins the wash. */
 function SketchBerry({seed,skin,state,fading,wash,ink=SKETCH_INK}){
+  // On the story's dark stage (a light ink) the paper and pencil go with it: glass and a faint pencil.
+  const dark=ink!==SKETCH_INK, PAPER=dark?'rgba(255,255,255,0.06)':'#FBF8F3', PENCIL=dark?'rgba(255,255,255,0.28)':SKETCH_PENCIL;
   const p=sketchBerryPaths(seed), col=wash||SKETCH_WASH[skin]||SKETCH_WASH.red;
   const line={fill:'none',strokeLinecap:'round',vectorEffect:'non-scaling-stroke'};
-  if(state==='locked') return <g><path d={p.wash} fill="#FBF8F3"/><path d={p.line} {...line} stroke={SKETCH_PENCIL} strokeWidth="1.1"/></g>;
+  if(state==='locked') return <g><path d={p.wash} fill={PAPER}/><path d={p.line} {...line} stroke={PENCIL} strokeWidth="1.1"/></g>;
   return <g>
-    <path d={p.wash} fill={state==='start'?'#FBF8F3':col} opacity={state==='start'?1:fading?0.28:state==='ripe'?0.72:0.55} transform={`translate(${p.dx} ${p.dy})`}/>
+    <path d={p.wash} fill={state==='start'?PAPER:col} opacity={state==='start'?1:fading?0.28:state==='ripe'?0.72:0.55} transform={`translate(${p.dx} ${p.dy})`}/>
     <path d={p.line} {...line} stroke={state==='start'?col:ink} strokeWidth={state==='start'?1.5:1.2} strokeDasharray={fading?'3 3':null}/>
     {state==='ripe'&&<path d={p.hatch} {...line} stroke={ink} strokeWidth="0.9" opacity="0.7"/>}
   </g>;
