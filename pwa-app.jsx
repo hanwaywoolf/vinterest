@@ -3,7 +3,7 @@
 /* Screens that have moved onto the story's stage (pwa-scancards.jsx DeckTheme) and follow the
    appearance picked on Profile (Settings.theme): under them the nav and the XP badge follow it too.
    Every other screen still draws itself light until it moves over. */
-const THEMED_SCREENS=['home','profile','dna-trait','identified','mywines','detail','learn','scan','account','quiz','article','gen-article','guide','grape','region-page','palate-trait','mastery-map'];
+const THEMED_SCREENS=['home','profile','dna-trait','identified','mywines','detail','learn','account','quiz','article','gen-article','guide','grape','region-page','palate-trait','mastery-map'];
 function App(){
   const [screen,setScreen]=React.useState(()=>{
     if(!Settings.onboarded()) return 'onboarding';
@@ -92,7 +92,7 @@ function App(){
     const t=setTimeout(()=>{ try{ DetailLevel.check(); }catch(e){} },400);
     return()=>clearTimeout(t);
   },[screen]);
-  const showXpBadge=!['camera','onboarding','learn','quiz','article','gen-article','guide','identified','detail','mywines','scan','profile','style-explore','winelist','account','settings','mastery-map','grape','region-page','palate-trait','dna-trait'].includes(screen);
+  const showXpBadge=!['camera','onboarding','learn','quiz','article','gen-article','guide','identified','detail','mywines','profile','style-explore','winelist','account','settings','mastery-map','grape','region-page','palate-trait','dna-trait'].includes(screen);
 
   // XP and the moments behind it (pwa-moments.jsx): a quiet chip, and cards that wait for a calm screen.
   const xpDel=useXPDelivery();
@@ -146,7 +146,6 @@ function App(){
       <DeckTheme.Provider value={theme}><div key={dataGen} style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden',minHeight:0}}>
         {screen==='onboarding' && <NewUserFlow onComplete={()=>{Settings.setOnboarded();nav('home');}}/>}
         {screen==='home'      && <HomeScreen {...ctx}/>}
-        {screen==='scan'      && <ScanHomeScreen {...ctx}/>}
         {screen==='camera'    && <ScanScreen {...ctx}/>}
         {screen==='identified'&& <WineIdentifiedScreen {...ctx}/>}
         {screen==='winelist'  && <WineListScreen {...ctx}/>}
@@ -319,67 +318,5 @@ function DiscoverScreen({nav,back}){
   );
 }
 
-/* ── Simple Shopping placeholder ── */
-function ShoppingScreen({nav,back}){
-  const [rating,setRating]=React.useState(0);
-  const [hov,setHov]=React.useState(0);
-  return(
-    <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden'}}>
-      <div style={{background:C.white,padding:'14px 20px',display:'flex',alignItems:'center',gap:12,borderBottom:`1px solid ${C.line}`,flexShrink:0}}>
-        <div onClick={back} style={{width:34,height:34,borderRadius:17,background:C.offWhite,border:`1px solid ${C.line}`,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer'}}>
-          <Icon n="back" sz={16} col={C.ink}/>
-        </div>
-        <span style={{fontSize:20,fontWeight:700,color:C.ink,fontFamily:C.P,flex:1}}>Shopping Mode</span>
-        <span style={{fontSize:15,fontWeight:600,color:C.cr,fontFamily:C.P,padding:'4px 10px',borderRadius:20,background:C.crSoft}}>In Store</span>
-      </div>
-      <div style={{flex:1,overflowY:'auto',padding:'14px 20px',display:'flex',flexDirection:'column',gap:12}}>
-        <Card style={{padding:14,border:`1.5px solid ${C.green}`}}>
-          <div style={{display:'flex',gap:12}}>
-            <div style={{width:46,height:64,borderRadius:8,background:C.crSoft,flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center'}}>
-              <Icon n="wine" sz={22} col={C.cr}/>
-            </div>
-            <div style={{flex:1}}>
-              <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start'}}>
-                <div>
-                  <div style={{fontSize:18,fontWeight:700,color:C.ink,fontFamily:C.P}}>Meiomi Pinot Noir</div>
-                  <div style={{fontSize:15,color:C.mid,fontFamily:C.P}}>California · Pinot Noir</div>
-                </div>
-                <div style={{display:'inline-flex',alignItems:'center',gap:2,padding:'3px 8px',borderRadius:7,background:C.greenBg}}>
-                  <span style={{fontSize:16,fontWeight:700,color:C.green,fontFamily:C.P}}>88%</span>
-                </div>
-              </div>
-              <div style={{display:'flex',gap:5,marginTop:6}}><Pill active sm>Red</Pill><Pill sm>Medium Body</Pill></div>
-            </div>
-          </div>
-          <div style={{borderTop:`1px solid ${C.line}`,marginTop:10,paddingTop:10,display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-            <span style={{fontSize:20,fontWeight:700,color:C.ink,fontFamily:C.P}}>$18.99</span>
-            <Btn primary small>Add to Cart</Btn>
-          </div>
-        </Card>
-        <div style={{fontSize:15,fontWeight:600,color:C.mid,letterSpacing:'0.08em',textTransform:'uppercase',fontFamily:C.P}}>Also on This Shelf</div>
-        {[{name:'Elouan Pinot Noir',sub:'Oregon · $22',score:92,note:'Higher match — try this one!'},
-          {name:'La Crema Pinot Noir',sub:'Sonoma · $19',score:85,note:'Similar style, great value'}].map((w,i)=>(
-          <Card key={i} style={{padding:10}}>
-            <div style={{display:'flex',alignItems:'center',gap:10}}>
-              <div style={{width:32,height:44,borderRadius:6,background:C.crSoft,flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center'}}>
-                <Icon n="wine" sz={14} col={C.cr}/>
-              </div>
-              <div style={{flex:1}}>
-                <div style={{fontSize:17,fontWeight:600,color:C.ink,fontFamily:C.P}}>{w.name}</div>
-                <div style={{fontSize:15,color:C.mid,fontFamily:C.P}}>{w.sub}</div>
-                <div style={{fontSize:15,color:C.cr,fontFamily:C.P,marginTop:2,fontWeight:500}}>{w.note}</div>
-              </div>
-              <div style={{display:'inline-flex',alignItems:'center',gap:2,padding:'3px 8px',borderRadius:7,background:C.greenBg}}>
-                <span style={{fontSize:16,fontWeight:700,color:C.green,fontFamily:C.P}}>{w.score}%</span>
-              </div>
-            </div>
-          </Card>
-        ))}
-        <Btn primary full onClick={()=>nav('scan')}>Scan Another Bottle</Btn>
-        <div style={{height:8}}/>
-      </div>
-    </div>
-  );
-}
 
 ReactDOM.createRoot(document.getElementById('root')).render(<App/>);

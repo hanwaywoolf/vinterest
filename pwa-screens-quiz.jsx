@@ -1525,7 +1525,7 @@ function QuizScreen({nav,back}){ const T=useTheme(), cr=T.lift(C.cr);
       </div>
     );
     return(
-      <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden'}}>
+      <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden',background:T.bg}}>
         <div style={{background:cr,padding:'26px 24px 20px',display:'flex',flexDirection:'column',alignItems:'center',gap:5,flexShrink:0}}>
           <Icon n={justCompleted||pct===100?'trophy':pct>=80?'star':pct>=60?'check':'book'} sz={32} col="#fff"/>
           <div style={{fontSize:22,fontWeight:800,color:'#fff',fontFamily:C.P,textAlign:'center'}}>{msg}</div>
@@ -1595,7 +1595,7 @@ function QuizScreen({nav,back}){ const T=useTheme(), cr=T.lift(C.cr);
       });
 
   return(
-    <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden'}}>
+    <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden',background:T.bg}}>
       <div style={{background:`radial-gradient(ellipse at 50% -20%, ${_alpha(cr,T.dark?0.42:0.14)}, transparent 70%) ${T.dark?T.bg:C.white}`,padding:'14px 20px 12px',flexShrink:0,borderBottom:`1px solid ${T.line}`}}>
         <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:10}}>
           <div onClick={back} style={{width:32,height:32,borderRadius:16,background:T.soft,border:`1px solid ${T.line}`,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer'}}>

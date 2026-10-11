@@ -13,7 +13,6 @@ const SCREENS = [
   ['learn', 'Wine Basics'],
   ['profile', 'WineDNA'],
   ['account', 'Where You Buy Wine'],
-  ['scan', 'Scan'],
 ];
 
 for (const size of ['standard', 'xl']) {
@@ -49,7 +48,7 @@ for (const size of ['standard', 'xl']) {
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1)).toBe(true);
       expect.soft(wide, 'elements running off the right edge').toEqual([]);
       // The bottom navigation is on screen.
-      if (hash !== 'scan') {
+      {
         const nav = await root.getByText('WineDNA', { exact: true }).last().boundingBox();
         expect(nav && nav.y + nav.height).toBeLessThanOrEqual(page.viewportSize().height + 1);
         // Each tab label on one line (a wrapped "My Wines" pushes the whole bar up).

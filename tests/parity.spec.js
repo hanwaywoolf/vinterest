@@ -22,7 +22,7 @@ test.skip(!fs.existsSync(path.join(ROOT, 'bundle.js')), 'bundle.js has been remo
 // #account isn't either: the profile shows only the preferences the app uses (UserPrefs).
 // #learn isn't either: regions open from their first scan, and there are Wine Basics topics for
 // every wine type.
-const SCREENS = ['scan']; // home is "what next" (LearnNext.home), mastery-map is Mastery, settings has Text size
+const SCREENS = []; // #scan is gone too (the Scan button opens the camera); home is "what next" (LearnNext.home), mastery-map is Mastery, settings has Text size
 
 // Intended differences on these screens: the version line is generated now, and the legacy build's
 // QuizHubScreen crashes on the first Learn visit after WineDNA unlocks (fixed in this build),

@@ -7,7 +7,7 @@
    calm screen (MOMENT_SCREENS): one earned mid-scan or mid-quiz waits until they're back on Home,
    Learn or another tab, so it never covers what they're doing. A screen that shows its own XP
    passes {xpShown}; one that shows everything (the quiz result) passes {quiet}. */
-const MOMENT_SCREENS=['home','mywines','learn','profile','scan','mastery-map','account'];
+const MOMENT_SCREENS=['home','mywines','learn','profile','mastery-map','account'];
 const _MOMENT_CSS=`@keyframes xpChipIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
 @keyframes momentIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
 .xp-chip{animation:xpChipIn .25s ease both}.moment-card{animation:momentIn .35s cubic-bezier(.2,.8,.2,1) both}
