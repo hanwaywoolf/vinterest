@@ -3,7 +3,7 @@
 /* Screens that have moved onto the story's stage (pwa-scancards.jsx DeckTheme) and follow the
    appearance picked on Profile (Settings.theme): under them the nav and the XP badge follow it too.
    Every other screen still draws itself light until it moves over. */
-const THEMED_SCREENS=['home','profile','dna-trait','identified','mywines','detail','learn','account','quiz','article','gen-article','guide','grape','region-page','palate-trait','mastery-map','style-explore','winelist','region','varietal','similar'];
+const THEMED_SCREENS=['notices','home','profile','dna-trait','identified','mywines','detail','learn','account','quiz','article','gen-article','guide','grape','region-page','palate-trait','mastery-map','style-explore','winelist','region','varietal','similar'];
 function App(){
   const [screen,setScreen]=React.useState(()=>{
     if(!Settings.onboarded()) return 'onboarding';
@@ -79,8 +79,10 @@ function App(){
   React.useEffect(()=>{
     // XP earned here, and XP a sync brings in (signing in on a new phone): the badge follows both.
     const handler=()=>setXpBadge(XPSystem.get());
-    window.addEventListener('vinterest:xp',handler); window.addEventListener('vinterest:sync',handler);
-    return ()=>{ window.removeEventListener('vinterest:xp',handler); window.removeEventListener('vinterest:sync',handler); };
+    // Home has the bell where the XP pill was; its XP line asks for the tier and achievements overlay.
+    const overlay=()=>setShowXpOverlay(true);
+    window.addEventListener('vinterest:xp',handler); window.addEventListener('vinterest:sync',handler); window.addEventListener('vinterest:xp-overlay',overlay);
+    return ()=>{ window.removeEventListener('vinterest:xp',handler); window.removeEventListener('vinterest:sync',handler); window.removeEventListener('vinterest:xp-overlay',overlay); };
   },[]);
   // A new phone starts in onboarding with 0 XP; signing in or restoring a file there brings their
   // XP down before Home opens, so read it again whenever the screen changes.
@@ -89,10 +91,10 @@ function App(){
   // arriving, so a rise from a quiz or a scan is told on Home, Learn or another tab.
   React.useEffect(()=>{
     if(!Settings.onboarded()||!MOMENT_SCREENS.includes(screen)) return;
-    const t=setTimeout(()=>{ try{ DetailLevel.check(); }catch(e){} },400);
+    const t=setTimeout(()=>{ try{ DetailLevel.check(); }catch(e){} try{ Notices.check(); }catch(e){} },400);
     return()=>clearTimeout(t);
   },[screen]);
-  const showXpBadge=!['camera','onboarding','learn','quiz','article','gen-article','guide','identified','detail','mywines','profile','style-explore','winelist','account','settings','mastery-map','grape','region-page','palate-trait','dna-trait'].includes(screen);
+  const showXpBadge=!['home','notices','camera','onboarding','learn','quiz','article','gen-article','guide','identified','detail','mywines','profile','style-explore','winelist','account','settings','mastery-map','grape','region-page','palate-trait','dna-trait'].includes(screen);
 
   // XP and the moments behind it (pwa-moments.jsx): a quiet chip, and cards that wait for a calm screen.
   const xpDel=useXPDelivery();
@@ -146,6 +148,7 @@ function App(){
       <DeckTheme.Provider value={theme}><div key={dataGen} style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden',minHeight:0}}>
         {screen==='onboarding' && <NewUserFlow onComplete={()=>{Settings.setOnboarded();nav('home');}}/>}
         {screen==='home'      && <HomeScreen {...ctx}/>}
+        {screen==='notices'   && <NoticesScreen {...ctx}/>}
         {screen==='camera'    && <ScanScreen {...ctx}/>}
         {screen==='identified'&& <WineIdentifiedScreen {...ctx}/>}
         {screen==='winelist'  && <WineListScreen {...ctx}/>}
@@ -172,6 +175,7 @@ function App(){
       {showNav&&MOMENT_SCREENS.includes(screen)&&xpDel.moment?<MomentCard m={xpDel.moment} more={xpDel.more} onAct={actOnMoment} onClose={xpDel.dismiss}/>
         :showNav&&!showXpBadge&&<XPChip chip={xpDel.chip} overNav/>}
       {showNav&&<BottomNav active={screen} nav={nav} showPro={setProGate} dark={darkChrome}/>}
+      {screen==='home'&&<NoticeBell nav={nav} dark={darkChrome}/>}
       {showXpBadge&&(
         <div onClick={()=>setShowXpOverlay(true)} style={{position:'absolute',top:'calc(env(safe-area-inset-top) + 15px)',right:14,zIndex:200,display:'flex',alignItems:'center',gap:5,padding:'5px 11px',borderRadius:20,background:darkChrome?'rgba(255,255,255,0.08)':C.crSoft,border:`1px solid ${darkChrome?'rgba(255,255,255,0.16)':C.crDim}`,cursor:'pointer',boxShadow:'0 1px 8px rgba(0,0,0,0.08)',pointerEvents:'auto'}}>
           <Icon n={XPSystem.iconFor(XPSystem.getLevel(xpBadge.total))} sz={16} col={darkChrome?'#E05A74':C.cr}/>

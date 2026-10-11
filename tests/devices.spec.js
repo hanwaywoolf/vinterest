@@ -13,6 +13,7 @@ const SCREENS = [
   ['learn', 'Wine Basics'],
   ['profile', 'WineDNA'],
   ['account', 'Where You Buy Wine'],
+  ['notices', 'Notifications'],
 ];
 
 for (const size of ['standard', 'xl']) {

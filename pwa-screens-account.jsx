@@ -89,6 +89,7 @@ function AccountProfileScreen({nav,back,showPro}){ const T=useTheme(), cr=T.lift
         <InstallCard/>
 
         <ThemeControl/>
+        <NotifyControl/>
 
         <TextSizeControl/>
 
@@ -241,6 +242,28 @@ function TextSizeControl(){ const T=useTheme(), cr=T.lift(C.cr);
 
 /* Appearance: the story's dark stage, or light (Settings.theme). Screens that have moved onto the
    stage follow it at once; the scan story itself is always dark. */
+/* Notifications on Profile: which categories the bell on Home collects (Notices.TYPES). A category
+   switched off writes nothing new; what's already there stays until read. */
+function NotifyControl(){ const T=useTheme(), cr=T.lift(C.cr);
+  const [prefs,setPrefs]=React.useState(()=>Notices.prefs());
+  React.useEffect(()=>{ const h=()=>setPrefs(Notices.prefs()); window.addEventListener('vinterest:notices',h); window.addEventListener('vinterest:sync',h); return()=>{ window.removeEventListener('vinterest:notices',h); window.removeEventListener('vinterest:sync',h); }; },[]);
+  return <div data-testid="notify-control"><Card style={{padding:14,display:"flex",flexDirection:"column",gap:4}}>
+    <div style={{fontSize:16,fontWeight:700,color:T.ink,fontFamily:C.P}}>Notifications</div>
+    <div style={{fontSize:13,color:T.mid,fontFamily:C.P}}>What the bell on Home collects.</div>
+    {Object.entries(Notices.TYPES).map(([id,t])=>{ const on=prefs[id]!==false; const flip=()=>Notices.setPref(id,!on);
+      return <div key={id} style={{display:'flex',alignItems:'center',gap:12,marginTop:10,paddingTop:10,borderTop:`1px solid ${T.line}`}}>
+        <div style={{flex:1,minWidth:0}}>
+          <div style={{fontSize:15,fontWeight:700,color:T.ink,fontFamily:C.P}}>{t.label}</div>
+          <div style={{fontSize:13,color:T.mid,fontFamily:C.P,lineHeight:1.4}}>{t.desc}</div>
+        </div>
+        <div role="switch" aria-checked={on} aria-label={t.label} tabIndex={0} onClick={flip} onKeyDown={e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); flip(); } }}
+          style={{width:46,height:28,borderRadius:14,background:on?cr:T.line,position:'relative',cursor:'pointer',flexShrink:0,transition:'background .15s'}}>
+          <div style={{position:'absolute',top:3,left:on?21:3,width:22,height:22,borderRadius:11,background:'#fff',boxShadow:'0 1px 3px rgba(0,0,0,0.2)',transition:'left .15s'}}/>
+        </div>
+      </div>; })}
+  </Card></div>;
+}
+
 function ThemeControl(){ const T=useTheme(), cr=T.lift(C.cr);
   const [,setTick]=React.useState(0);
   React.useEffect(()=>{ const h=()=>setTick(t=>t+1); window.addEventListener('vinterest:theme',h); window.addEventListener('vinterest:sync',h); return()=>{ window.removeEventListener('vinterest:theme',h); window.removeEventListener('vinterest:sync',h); }; },[]);

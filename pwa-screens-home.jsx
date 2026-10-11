@@ -308,7 +308,7 @@ function HomeScreen({nav, showPro, isTablet}){
         <Card onClick={()=>knowledge?(isPro?nav('mastery-map'):showPro('mastery-map')):nav('learn')} style={{padding:14,cursor:'pointer',display:'flex',flexDirection:'column',gap:8}}>
           <div style={{display:'flex',alignItems:'center',gap:8}}>
             <span style={{fontSize:16,fontWeight:700,color:T.ink,fontFamily:C.P,flex:1}}>{lv.badge} {lv.name}</span>
-            <span style={{fontSize:13,color:T.mid,fontFamily:C.P}}>{xpData.total} XP{nx?` · ${nx.min-xpData.total} to ${nx.name}`:''}</span>
+            <span data-testid="home-xp" onClick={e=>{ e.stopPropagation(); try{ window.dispatchEvent(new Event('vinterest:xp-overlay')); }catch(err){} }} style={{fontSize:13,color:T.mid,fontFamily:C.P,cursor:'pointer'}}>{xpData.total} XP{nx?` · ${nx.min-xpData.total} to ${nx.name}`:''}</span>
           </div>
           <Prog val={pg} h={5} col={T.lift(C.cr)}/>
           {knowledge&&<div style={{display:'flex',alignItems:'center',gap:8}}>
