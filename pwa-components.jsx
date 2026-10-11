@@ -308,7 +308,8 @@ function ProGate({feature,onClose}){
 }
 
 function Pill({children,active,sm,style:s}){
-  return <span style={{display:'inline-flex',alignItems:'center',padding:sm?'3px 9px':'5px 12px',borderRadius:20,background:active?C.cr:'transparent',color:active?'#fff':C.mid,border:`1px solid ${active?C.cr:C.line}`,fontSize:sm?12:13,fontWeight:500,fontFamily:C.P,...s}}>{children}</span>;
+  const T=typeof useTheme==='function'?useTheme():null, cr=T?T.lift(C.cr):C.cr, mid=T?T.mid:C.mid, line=T?T.line:C.line;
+  return <span style={{display:'inline-flex',alignItems:'center',padding:sm?'3px 9px':'5px 12px',borderRadius:20,background:active?cr:'transparent',color:active?'#fff':mid,border:`1px solid ${active?cr:line}`,fontSize:sm?12:13,fontWeight:500,fontFamily:C.P,...s}}>{children}</span>;
 }
 function Prog({val=0.5,col,h=4,style:s}){
   const T=typeof useTheme==='function'?useTheme():null;

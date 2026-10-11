@@ -1,6 +1,6 @@
 /* Vinterest PWA — Wine Detail screen (tabbed: Details / Learn / Price) */
 
-function ScanLocationCard({wine}){
+function ScanLocationCard({wine}){ const T=useTheme(), cr=T.lift(C.cr);
   const [editing,setEditing]=React.useState(false);
   const [val,setVal]=React.useState(wine?.scan_location?.name||'');
   const [savedName,setSavedName]=React.useState(wine?.scan_location?.name||'');
@@ -18,23 +18,23 @@ function ScanLocationCard({wine}){
   }
   return <Card style={{padding:'12px 14px',display:'flex',flexDirection:'column',gap:8}}>
     <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-      <span style={{fontSize:12,fontWeight:700,color:C.mid,letterSpacing:'0.08em',textTransform:'uppercase',fontFamily:C.P}}>{copy.label}</span>
-      {dateStr&&<span style={{fontSize:12.5,color:C.mid,fontFamily:C.P}}>Scanned {dateStr}</span>}
+      <span style={{fontSize:12,fontWeight:700,color:T.mid,letterSpacing:'0.08em',textTransform:'uppercase',fontFamily:C.P}}>{copy.label}</span>
+      {dateStr&&<span style={{fontSize:12.5,color:T.mid,fontFamily:C.P}}>Scanned {dateStr}</span>}
     </div>
     {editing?(
       <div style={{display:'flex',gap:8}}>
-        <input autoFocus value={val} onChange={e=>setVal(e.target.value)} onKeyDown={e=>{if(e.key==='Enter')commit();}} placeholder={copy.placeholder} style={{flex:1,minWidth:0,fontSize:15,fontFamily:C.P,padding:'8px 10px',borderRadius:9,border:`1px solid ${C.line}`,color:C.ink}}/>
+        <input autoFocus value={val} onChange={e=>setVal(e.target.value)} onKeyDown={e=>{if(e.key==='Enter')commit();}} placeholder={copy.placeholder} style={{flex:1,minWidth:0,fontSize:15,fontFamily:C.P,padding:'8px 10px',borderRadius:9,border:`1px solid ${T.line}`,color:T.ink}}/>
         <Btn primary style={{flexShrink:0}} onClick={commit}>Save</Btn>
       </div>
     ):(
-      <div onClick={()=>setEditing(true)} style={{cursor:'pointer',fontSize:15.5,fontFamily:C.P,color:savedName?C.ink:C.mid,fontWeight:savedName?600:400}}>
+      <div onClick={()=>setEditing(true)} style={{cursor:'pointer',fontSize:15.5,fontFamily:C.P,color:savedName?T.ink:T.mid,fontWeight:savedName?600:400}}>
         {savedName||copy.empty}
       </div>
     )}
   </Card>;
 }
 
-function WineDetailScreen({back,nav,showPro}){
+function WineDetailScreen({back,nav,showPro}){ const T=useTheme(), cr=T.lift(C.cr);
   const [tab,setTab]=React.useState(0);
   /* On an iPad on its side the Price tab becomes a panel beside the other two (where to buy stays in
      view while they read); upright, the three tabs as on a phone, in a centred column. */
@@ -90,38 +90,39 @@ function WineDetailScreen({back,nav,showPro}){
     nav('mywines');
   }
 
+  const typeCol=T.lift((typeof _TYPE_COLORS!=='undefined'&&_TYPE_COLORS[WineDNA._t(wine?.type)||'red'])||C.cr);
   return(
-    <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden'}}>
-      <div style={{background:C.white,padding:'14px 20px 0',flexShrink:0,borderBottom:`1px solid ${C.line}`}}>
+    <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden',background:T.bg}}>
+      <div style={{background:`radial-gradient(ellipse at 50% -20%, ${_alpha(typeCol,T.dark?0.42:0.14)}, transparent 70%) ${T.dark?T.bg:C.white}`,padding:'14px 20px 0',flexShrink:0,borderBottom:`1px solid ${T.line}`}}>
         <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:14}}>
-          <div onClick={back} style={{width:34,height:34,borderRadius:17,background:C.offWhite,border:`1px solid ${C.line}`,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer'}}>
-            <Icon n="back" sz={16} col={C.ink}/>
+          <div onClick={back} style={{width:34,height:34,borderRadius:17,background:T.soft,border:`1px solid ${T.line}`,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer'}}>
+            <Icon n="back" sz={16} col={T.ink}/>
           </div>
           <div style={{display:'flex',gap:8}}>
-            <div onClick={toggleFav} role="button" aria-pressed={isFav} aria-label={isFav?'Remove from favourites':'Add to favourites'} style={{width:34,height:34,borderRadius:17,background:isFav?C.crSoft:C.offWhite,border:`1px solid ${isFav?C.crDim:C.line}`,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',transition:'all .15s'}}>
-              <svg viewBox="0 0 20 20" width={18} height={18}><path d="M10 16.5C10 16.5 3 12 3 7.5C3 5 5 3.2 7.2 3.2c1.5 0 2.5 1 2.8 1.8.3-.8 1.3-1.8 2.8-1.8C15 3.2 17 5 17 7.5c0 4.5-7 9-7 9z" stroke={isFav?C.cr:C.mid} strokeWidth="1.6" fill={isFav?C.cr:'none'}/></svg>
+            <div onClick={toggleFav} role="button" aria-pressed={isFav} aria-label={isFav?'Remove from favourites':'Add to favourites'} style={{width:34,height:34,borderRadius:17,background:isFav?T.crSoft:T.soft,border:`1px solid ${isFav?_alpha(cr,0.4):T.line}`,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',transition:'all .15s'}}>
+              <svg viewBox="0 0 20 20" width={18} height={18}><path d="M10 16.5C10 16.5 3 12 3 7.5C3 5 5 3.2 7.2 3.2c1.5 0 2.5 1 2.8 1.8.3-.8 1.3-1.8 2.8-1.8C15 3.2 17 5 17 7.5c0 4.5-7 9-7 9z" stroke={isFav?cr:T.mid} strokeWidth="1.6" fill={isFav?cr:'none'}/></svg>
             </div>
-            <div onClick={shareWine} style={{width:34,height:34,borderRadius:17,background:shared?C.greenBg:C.offWhite,border:`1px solid ${shared?C.green:C.line}`,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',transition:'all .15s'}}>
-              <Icon n={shared?'check':'share'} sz={17} col={shared?C.green:C.mid}/>
+            <div onClick={shareWine} style={{width:34,height:34,borderRadius:17,background:shared?T.greenBg:T.soft,border:`1px solid ${shared?T.green:T.line}`,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',transition:'all .15s'}}>
+              <Icon n={shared?'check':'share'} sz={17} col={shared?T.green:T.mid}/>
             </div>
-            {wine&&<div onClick={()=>setConfirmDelete(true)} style={{width:34,height:34,borderRadius:17,background:C.offWhite,border:`1px solid ${C.line}`,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer'}}>
-              <Icon n="trash" sz={16} col={C.mid}/>
+            {wine&&<div onClick={()=>setConfirmDelete(true)} style={{width:34,height:34,borderRadius:17,background:T.soft,border:`1px solid ${T.line}`,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer'}}>
+              <Icon n="trash" sz={16} col={T.mid}/>
             </div>}
           </div>
         </div>
         {/* Name, vintage and place use the full width; the type pill carries the wine's colour. */}
         <div style={{marginBottom:14}}>
           <div>
-            <div style={{fontSize:24,fontWeight:700,color:C.ink,fontFamily:C.P,lineHeight:1.15}}>{wine?.name||'Château Margaux'}</div>
-            <div style={{fontSize:16,color:C.mid,fontFamily:C.P,marginTop:3}}>{wine?<>{wine.vintage||'NV'}{(wine.region||wine.country)&&<> · {Regions.wineFlag(wine)&&<span role="img" aria-label={wine.country||'Country'} style={{fontSize:'17px',marginRight:5,verticalAlign:'-1px'}}>{Regions.wineFlag(wine)}</span>}{[wine.region!==wine.country?wine.region:null,wine.country].filter(Boolean).join(', ')}</>}</>:'2018 · Bordeaux, France'}</div>
-            {(()=>{ const had=wine&&(WineHistory.find(wine)||wine).where_had; return had?<div data-where-had style={{fontSize:14,color:C.mid,fontFamily:C.P,marginTop:2}}>Had at {had}</div>:null; })()}
-            <div style={{display:'flex',gap:5,marginTop:8,flexWrap:'wrap',alignItems:'center'}}>{(()=>{ const t=WineDNA._t(wine?.type)||'red', col=(typeof _TYPE_COLORS!=='undefined'&&_TYPE_COLORS[t])||C.cr;
-              return <Pill active sm style={{background:col,borderColor:col,fontWeight:600}}>{({red:'Red wine',white:'White wine',rose:'Rosé',sparkling:'Sparkling',orange:'Orange wine',dessert:'Dessert wine',fortified:'Fortified'})[t]||wine?.type}</Pill>; })()}{wine?.grapes?.[0]&&<Pill sm>{wine.grapes[0]}{wine.blend||wine.grapes.length>1?' blend':''}</Pill>}{wine&&<span onClick={()=>setEditing(true)} style={{fontSize:13,fontWeight:600,color:C.cr,fontFamily:C.P,cursor:'pointer',marginLeft:4}}>Edit details</span>}</div>
+            <div style={{fontSize:24,fontWeight:700,color:T.ink,fontFamily:C.P,lineHeight:1.15}}>{wine?.name||'Château Margaux'}</div>
+            <div style={{fontSize:16,color:T.mid,fontFamily:C.P,marginTop:3}}>{wine?<>{wine.vintage||'NV'}{(wine.region||wine.country)&&<> · {Regions.wineFlag(wine)&&<span role="img" aria-label={wine.country||'Country'} style={{fontSize:'17px',marginRight:5,verticalAlign:'-1px'}}>{Regions.wineFlag(wine)}</span>}{[wine.region!==wine.country?wine.region:null,wine.country].filter(Boolean).join(', ')}</>}</>:'2018 · Bordeaux, France'}</div>
+            {(()=>{ const had=wine&&(WineHistory.find(wine)||wine).where_had; return had?<div data-where-had style={{fontSize:14,color:T.mid,fontFamily:C.P,marginTop:2}}>Had at {had}</div>:null; })()}
+            <div style={{display:'flex',gap:5,marginTop:8,flexWrap:'wrap',alignItems:'center'}}>{(()=>{ const t=WineDNA._t(wine?.type)||'red', col=typeCol;
+              return <Pill active sm style={{background:col,borderColor:col,fontWeight:600}}>{({red:'Red wine',white:'White wine',rose:'Rosé',sparkling:'Sparkling',orange:'Orange wine',dessert:'Dessert wine',fortified:'Fortified'})[t]||wine?.type}</Pill>; })()}{wine?.grapes?.[0]&&<Pill sm>{wine.grapes[0]}{wine.blend||wine.grapes.length>1?' blend':''}</Pill>}{wine&&<span onClick={()=>setEditing(true)} style={{fontSize:13,fontWeight:600,color:cr,fontFamily:C.P,cursor:'pointer',marginLeft:4}}>Edit details</span>}</div>
           </div>
         </div>
-        <div style={{display:'flex',borderBottom:`1px solid ${C.line}`}}>
+        <div style={{display:'flex',borderBottom:`1px solid ${T.line}`}}>
           {tabs.map((t,i)=>(
-            <div key={i} onClick={()=>setTab(i)} style={{flex:1,textAlign:'center',paddingBottom:10,fontSize:17,fontWeight:i===tab?600:400,color:i===tab?C.cr:C.mid,fontFamily:C.P,borderBottom:i===tab?`2px solid ${C.cr}`:'none',marginBottom:-1,cursor:'pointer'}}>{t}</div>
+            <div key={i} onClick={()=>setTab(i)} style={{flex:1,textAlign:'center',paddingBottom:10,fontSize:17,fontWeight:i===tab?600:400,color:i===tab?cr:T.mid,fontFamily:C.P,borderBottom:i===tab?`2px solid ${cr}`:'none',marginBottom:-1,cursor:'pointer'}}>{t}</div>
           ))}
         </div>
       </div>
@@ -134,17 +135,17 @@ function WineDetailScreen({back,nav,showPro}){
         {tab===2&&<DetailPrice wine={wine} nav={nav} showPro={showPro}/>}
         </div>
       </div>
-      {split&&<div data-testid="detail-price-pane" style={{width:400,flexShrink:0,overflowY:'auto',borderLeft:`1px solid ${C.line}`,background:C.bg}}>
-        <div style={{fontSize:13,fontWeight:700,color:C.mid,letterSpacing:'0.08em',textTransform:'uppercase',fontFamily:C.P,padding:'16px 20px 0'}}>Price and where to buy</div>
+      {split&&<div data-testid="detail-price-pane" style={{width:400,flexShrink:0,overflowY:'auto',borderLeft:`1px solid ${T.line}`,background:T.bg}}>
+        <div style={{fontSize:13,fontWeight:700,color:T.mid,letterSpacing:'0.08em',textTransform:'uppercase',fontFamily:C.P,padding:'16px 20px 0'}}>Price and where to buy</div>
         <DetailPrice wine={wine} nav={nav} showPro={showPro}/>
       </div>}
       </div>
       {confirmDelete&&<div onClick={()=>setConfirmDelete(false)} style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.5)',display:'flex',alignItems:'flex-end',zIndex:80}}>
-        <div onClick={e=>e.stopPropagation()} style={{background:C.white,borderRadius:'22px 22px 0 0',width:'100%',padding:'22px 20px 28px',display:'flex',flexDirection:'column',gap:14}}>
-          <div style={{width:40,height:4,borderRadius:2,background:C.line,margin:'0 auto 4px'}}/>
-          <div style={{fontSize:19,fontWeight:800,color:C.ink,fontFamily:C.P,textAlign:'center'}}>Delete this scan?</div>
-          <div style={{fontSize:15,color:C.mid,fontFamily:C.P,textAlign:'center',lineHeight:1.5}}>{wine?.name} will be permanently removed from your wine history, including any rating.</div>
-          <Btn full style={{background:C.cr,color:'#fff',border:'none'}} onClick={deleteWine}>Delete</Btn>
+        <div onClick={e=>e.stopPropagation()} style={{background:T.dark?T.card:C.white,borderRadius:'22px 22px 0 0',width:'100%',padding:'22px 20px 28px',display:'flex',flexDirection:'column',gap:14}}>
+          <div style={{width:40,height:4,borderRadius:2,background:T.line,margin:'0 auto 4px'}}/>
+          <div style={{fontSize:19,fontWeight:800,color:T.ink,fontFamily:C.P,textAlign:'center'}}>Delete this scan?</div>
+          <div style={{fontSize:15,color:T.mid,fontFamily:C.P,textAlign:'center',lineHeight:1.5}}>{wine?.name} will be permanently removed from your wine history, including any rating.</div>
+          <Btn full style={{background:cr,color:'#fff',border:'none'}} onClick={deleteWine}>Delete</Btn>
           <Btn full onClick={()=>setConfirmDelete(false)}>Cancel</Btn>
         </div>
       </div>}
@@ -175,7 +176,7 @@ const _TASTE_COPY={
     about:'Effervescence is the intensity and persistence of the bubbles. A soft mousse feels gentle on the tongue; vigorous bubbles are fine, energetic and long-lasting.'},
 };
 
-function DetailMerged({wine,nav,existingRating=0,match}){
+function DetailMerged({wine,nav,existingRating=0,match}){ const T=useTheme(), cr=T.lift(C.cr);
   const matchPct=match?match.pct:null;
   const [userRating,setUserRating]=React.useState(existingRating);
   const [showRatingUI,setShowRatingUI]=React.useState(existingRating===0);
@@ -245,10 +246,10 @@ function DetailMerged({wine,nav,existingRating=0,match}){
   ].filter(c=>c.value):[];
 
   const SL=({label})=>(
-    <div style={{fontSize:13,fontWeight:700,color:C.mid,letterSpacing:'0.07em',textTransform:'uppercase',fontFamily:C.P,marginBottom:8}}>{label}</div>
+    <div style={{fontSize:13,fontWeight:700,color:T.mid,letterSpacing:'0.07em',textTransform:'uppercase',fontFamily:C.P,marginBottom:8}}>{label}</div>
   );
   // The axes WineDNA uses for this type (bubbles first for sparkling), only where the scan gave a figure.
-  const tc=_typeCol(wine);
+  const tc=T.lift(_typeCol(wine)); // lifted on the dark stage
   const typeKey=WineDNA._t(wine&&wine.type);
   const tasteAxes=wine?(WineDNA.AXES_FOR[typeKey]||['body','acidity','sweetness']).slice().sort((x,y)=>(y==='effervescence')-(x==='effervescence')).filter(k=>typeof wine[k]==='number'):[];
   const lovedAvg=match&&match.profile&&match.profile.loved.length>=3?match.profile.lovedAvg:null;
@@ -269,8 +270,8 @@ function DetailMerged({wine,nav,existingRating=0,match}){
   /* Match sentiment, from TasteMatch's verdict */
   const matchConfig=React.useMemo(()=>{
     const v=match?match.verdict:'unknown';
-    if(v==='hit'||v==='good') return {descriptor:match.label,title:'Why it should suit you',bg:C.greenBg,border:`1px solid ${C.green}25`,col:C.green};
-    if(v==='miss') return {descriptor:match.label,title:'Why it might not be for you',bg:C.crSoft,border:`1px solid ${C.crDim}`,col:C.cr};
+    if(v==='hit'||v==='good') return {descriptor:match.label,title:'Why it should suit you',bg:T.greenBg,border:`1px solid ${T.green}25`,col:T.green};
+    if(v==='miss') return {descriptor:match.label,title:'Why it might not be for you',bg:T.crSoft,border:`1px solid ${_alpha(cr,0.4)}`,col:cr};
     return {descriptor:match?match.label:null,title:'What to expect',bg:'#EEF6FF',border:'1px solid #4A90D930',col:'#2563A8'};
   },[match]);
   function pairingIcon(text){
@@ -299,7 +300,7 @@ function DetailMerged({wine,nav,existingRating=0,match}){
           background:col,
           borderRadius:10,
           transform:'translateX(-50%)',
-          border:`3px solid ${C.white}`,
+          border:`3px solid ${T.soft}`,
           boxShadow:`0 2px 8px ${col}55`,
           transition:`left 0.75s cubic-bezier(0.34,1.1,0.64,1) ${delay}`,
         });
@@ -309,35 +310,35 @@ function DetailMerged({wine,nav,existingRating=0,match}){
             <div>
               <div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline',marginBottom:8}}>
                 <div style={{display:'flex',alignItems:'baseline',gap:5}}>
-                  <span style={{fontSize:10,fontWeight:700,color:C.green,fontFamily:C.P,letterSpacing:'0.1em',textTransform:'uppercase',opacity:0.55}}>Your Match</span>
+                  <span style={{fontSize:10,fontWeight:700,color:T.green,fontFamily:C.P,letterSpacing:'0.1em',textTransform:'uppercase',opacity:0.55}}>Your Match</span>
                   {matchConfig.descriptor&&<span style={{fontSize:12,fontWeight:600,color:matchConfig.col,fontFamily:C.P,opacity:0.8}}>· {matchConfig.descriptor}</span>}
                 </div>
-                <span style={{fontSize:17,fontWeight:800,color:C.green,fontFamily:C.P,letterSpacing:'-0.02em'}}>{matchPct!=null?`${matchPct}%`:'—'}</span>
+                <span style={{fontSize:17,fontWeight:800,color:T.green,fontFamily:C.P,letterSpacing:'-0.02em'}}>{matchPct!=null?`${matchPct}%`:'—'}</span>
               </div>
-              {matchPct!=null&&<div style={{width:'100%',height:8,background:`linear-gradient(to right,${C.white},${C.green}50,${C.green})`,borderRadius:4,position:'relative',border:`1px solid ${C.green}25`}}>
-                <div style={dotStyle(matchPct,C.green)}/>
+              {matchPct!=null&&<div style={{width:'100%',height:8,background:`linear-gradient(to right,${T.soft},${T.green}50,${T.green})`,borderRadius:4,position:'relative',border:`1px solid ${T.green}25`}}>
+                <div style={dotStyle(matchPct,T.green)}/>
               </div>}
             </div>
             {/* Rating row */}
             <div onClick={()=>{setShowRatingUI(true);setSaved(false);}} style={{cursor:'pointer'}}>
               <div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline',marginBottom:8}}>
                 <div style={{display:'flex',alignItems:'baseline',gap:5}}>
-                  <span style={{fontSize:10,fontWeight:700,color:C.amber,fontFamily:C.P,letterSpacing:'0.1em',textTransform:'uppercase',opacity:0.55}}>Your Rating</span>
-                  {userRating>0&&scoreLabel&&<span style={{fontSize:12,fontWeight:600,color:C.amber,fontFamily:C.P,opacity:0.65}}>· {scoreLabel}</span>}
+                  <span style={{fontSize:10,fontWeight:700,color:T.amber,fontFamily:C.P,letterSpacing:'0.1em',textTransform:'uppercase',opacity:0.55}}>Your Rating</span>
+                  {userRating>0&&scoreLabel&&<span style={{fontSize:12,fontWeight:600,color:T.amber,fontFamily:C.P,opacity:0.65}}>· {scoreLabel}</span>}
                 </div>
                 {userRating>0?(
                   <div style={{display:'flex',alignItems:'baseline',gap:1}}>
-                    <span style={{fontSize:17,fontWeight:800,color:C.amber,fontFamily:C.P,letterSpacing:'-0.02em'}}>{userRating}</span>
-                    <span style={{fontSize:10,fontWeight:700,color:C.amber,fontFamily:C.P,opacity:0.6,marginLeft:2}}>pts</span>
+                    <span style={{fontSize:17,fontWeight:800,color:T.amber,fontFamily:C.P,letterSpacing:'-0.02em'}}>{userRating}</span>
+                    <span style={{fontSize:10,fontWeight:700,color:T.amber,fontFamily:C.P,opacity:0.6,marginLeft:2}}>pts</span>
                   </div>
                 ):(
-                  <span style={{fontSize:12,fontWeight:600,color:C.mid,fontFamily:C.P,opacity:0.5}}>tap to rate</span>
+                  <span style={{fontSize:12,fontWeight:600,color:T.mid,fontFamily:C.P,opacity:0.5}}>tap to rate</span>
                 )}
               </div>
-              <div style={{width:'100%',height:8,background:userRating>0?`linear-gradient(to right,${C.white},${C.amber}50,${C.amber})`:`linear-gradient(to right,${C.white},${C.line})`,borderRadius:4,position:'relative',border:`1px solid ${C.amber}25`}}>
-                {userRating>0&&<div style={dotStyle(userRating,C.amber,'0.12s')}/>}
+              <div style={{width:'100%',height:8,background:userRating>0?`linear-gradient(to right,${T.soft},${T.amber}50,${T.amber})`:`linear-gradient(to right,${T.soft},${T.line})`,borderRadius:4,position:'relative',border:`1px solid ${T.amber}25`}}>
+                {userRating>0&&<div style={dotStyle(userRating,T.amber,'0.12s')}/>}
               </div>
-              {userRating>0&&<div style={{fontSize:10,color:C.mid,fontFamily:C.P,marginTop:5,opacity:0.4,textAlign:'center'}}>tap to edit</div>}
+              {userRating>0&&<div style={{fontSize:10,color:T.mid,fontFamily:C.P,marginTop:5,opacity:0.4,textAlign:'center'}}>tap to edit</div>}
             </div>
           </Card>
         );
@@ -345,23 +346,23 @@ function DetailMerged({wine,nav,existingRating=0,match}){
       {/* Rating UI */}
       {showRatingUI&&(
         <Card style={{padding:'14px 16px'}}>
-          <div style={{fontSize:16,fontWeight:600,color:C.ink,fontFamily:C.P,marginBottom:12}}>Rate This Wine</div>
+          <div style={{fontSize:16,fontWeight:600,color:T.ink,fontFamily:C.P,marginBottom:12}}>Rate This Wine</div>
           <div style={{display:'flex',gap:5,marginBottom:12}}>
             {ParkerScale.PRESETS.map(p=>(
-              <div key={p} onClick={()=>handlePreset(p)} style={{flex:1,padding:'7px 2px',borderRadius:9,border:`1.5px solid ${userRating===p?_typeCol(wine):C.line}`,background:userRating===p?_typeCol(wine):'transparent',textAlign:'center',cursor:'pointer',transition:'all .15s'}}>
-                <span style={{fontSize:17,fontWeight:700,color:userRating===p?'#fff':C.mid,fontFamily:C.P}}>{p}</span>
+              <div key={p} onClick={()=>handlePreset(p)} style={{flex:1,padding:'7px 2px',borderRadius:9,border:`1.5px solid ${userRating===p?tc:T.line}`,background:userRating===p?tc:'transparent',textAlign:'center',cursor:'pointer',transition:'all .15s'}}>
+                <span style={{fontSize:17,fontWeight:700,color:userRating===p?'#fff':T.mid,fontFamily:C.P}}>{p}</span>
               </div>
             ))}
           </div>
           <RatingDial label="Rating" min={ParkerScale.MIN} max={100} value={Math.max(userRating,ParkerScale.MIN)} unset={!(userRating>0)}
-            onChange={n=>{ setUserRating(n); pendingScore.current=n; }} col={_typeCol(wine)}/>
-          <div style={{fontSize:12,color:C.mid,fontFamily:C.P,textAlign:'center',lineHeight:1.5,opacity:0.8,marginTop:4}}>100-point scale: 96+ Extraordinary · 90–95 Outstanding · 80–89 Very good · 70–79 Average · under 70 Below average</div>
+            onChange={n=>{ setUserRating(n); pendingScore.current=n; }} col={tc}/>
+          <div style={{fontSize:12,color:T.mid,fontFamily:C.P,textAlign:'center',lineHeight:1.5,opacity:0.8,marginTop:4}}>100-point scale: 96+ Extraordinary · 90–95 Outstanding · 80–89 Very good · 70–79 Average · under 70 Below average</div>
           {userRating>0&&!saved&&(
-            <div onClick={()=>commitScore()} style={{marginTop:10,background:C.cr,borderRadius:12,padding:'12px',textAlign:'center',cursor:'pointer'}}>
+            <div onClick={()=>commitScore()} style={{marginTop:10,background:cr,borderRadius:12,padding:'12px',textAlign:'center',cursor:'pointer'}}>
               <span style={{fontSize:16,fontWeight:700,color:'#fff',fontFamily:C.P}}>Save Rating</span>
             </div>
           )}
-          {saved&&<div style={{textAlign:'center',fontSize:15,color:C.green,fontFamily:C.P,fontWeight:600,marginTop:8}}>✓ Saved to My Wines</div>}
+          {saved&&<div style={{textAlign:'center',fontSize:15,color:T.green,fontFamily:C.P,fontWeight:600,marginTop:8}}>✓ Saved to My Wines</div>}
         </Card>
       )}
 
@@ -380,7 +381,7 @@ function DetailMerged({wine,nav,existingRating=0,match}){
           where your 90+ wines of this type sit, once you have three. */}
       <div>
         <SL label="Taste Profile"/>
-        <div style={{fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.5,marginBottom:12,padding:'10px 12px',borderRadius:10,background:C.offWhite,border:`1px solid ${C.line}`}}>
+        <div style={{fontSize:14,color:T.ink2,fontFamily:C.P,lineHeight:1.5,marginBottom:12,padding:'10px 12px',borderRadius:10,background:T.soft,border:`1px solid ${T.line}`}}>
           How this wine typically feels, estimated from the label.{lovedAvg?` The dot shows where your Outstanding (90+) ${typeNoun} sit, so you can see how it compares.`:''}
         </div>
         <div style={{display:'flex',flexDirection:'column',gap:20}}>
@@ -393,26 +394,26 @@ function DetailMerged({wine,nav,existingRating=0,match}){
                 <button onClick={()=>{alert(copy.about)}} style={{width:20,height:20,borderRadius:10,background:tc+'18',border:`1px solid ${tc}`,color:tc,fontSize:12,fontWeight:400,cursor:'pointer',padding:0,display:'flex',alignItems:'center',justifyContent:'center',fontFamily:C.P}}>?</button>
               </div>
               <DnaBar v={v} loved={lovedAvg?lovedAvg[k]:null} col={tc}/>
-              <div style={{display:'flex',justifyContent:'space-between',fontSize:12,color:C.mid,fontFamily:C.P,marginTop:2,marginBottom:8}}><span>{A.low}</span><span>{A.high}</span></div>
-              <div style={{fontSize:16,color:C.ink2,fontFamily:C.P,lineHeight:1.5,paddingLeft:8,borderLeft:`2px solid ${tc}40`}}>
+              <div style={{display:'flex',justifyContent:'space-between',fontSize:12,color:T.mid,fontFamily:C.P,marginTop:2,marginBottom:8}}><span>{A.low}</span><span>{A.high}</span></div>
+              <div style={{fontSize:16,color:T.ink2,fontFamily:C.P,lineHeight:1.5,paddingLeft:8,borderLeft:`2px solid ${tc}40`}}>
                 {copy.lead}<strong>{copy.word[lvl]}</strong>{copy.tail}: {copy.say[lvl]}.
-                {felt?<span style={{color:C.mid}}> You found it {ScanFlow.COMPARE[k][felt<0?0:1].toLowerCase()} than the label suggested.</span>:null}
+                {felt?<span style={{color:T.mid}}> You found it {ScanFlow.COMPARE[k][felt<0?0:1].toLowerCase()} than the label suggested.</span>:null}
               </div>
             </div>;
           })}
-          {lovedAvg&&<div style={{display:'flex',flexWrap:'wrap',gap:12,fontSize:13,color:C.mid,fontFamily:C.P}}>
+          {lovedAvg&&<div style={{display:'flex',flexWrap:'wrap',gap:12,fontSize:13,color:T.mid,fontFamily:C.P}}>
             <span style={{display:'inline-flex',alignItems:'center',gap:5}}><span style={{width:16,height:5,borderRadius:3,background:tc,display:'inline-block'}}/>This wine</span>
-            <span style={{display:'inline-flex',alignItems:'center',gap:5}}><span style={{width:9,height:9,borderRadius:'50%',background:C.ink,display:'inline-block'}}/>Your 90+ {typeNoun}</span>
+            <span style={{display:'inline-flex',alignItems:'center',gap:5}}><span style={{width:9,height:9,borderRadius:'50%',background:T.ink,display:'inline-block'}}/>Your 90+ {typeNoun}</span>
           </div>}
 
           {/* ABV */}
           {chars.find(c=>c.label==='ABV')&&(
             <div>
               <div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline',marginBottom:8}}>
-                <span style={{fontSize:15,fontWeight:700,color:C.cr,fontFamily:C.P}}>Alcohol Content</span>
-                <span style={{fontSize:13,color:C.mid,fontFamily:C.P}}>{chars.find(c=>c.label==='ABV')?.value}</span>
+                <span style={{fontSize:15,fontWeight:700,color:cr,fontFamily:C.P}}>Alcohol Content</span>
+                <span style={{fontSize:13,color:T.mid,fontFamily:C.P}}>{chars.find(c=>c.label==='ABV')?.value}</span>
               </div>
-              <div style={{fontSize:16,color:C.ink2,fontFamily:C.P,lineHeight:1.5,paddingLeft:8,borderLeft:`2px solid ${C.crSoft}`}}>At {wine?.abv}%, this wine has {wine?.abv<10?'lower alcohol, making it light and crisp':wine?.abv<13?'moderate alcohol, typical for most wines':wine?.abv<15?'higher alcohol, which adds warmth and body':'very high alcohol, which adds significant warmth and weight to the wine'}. Higher alcohol also affects aging potential.</div>
+              <div style={{fontSize:16,color:T.ink2,fontFamily:C.P,lineHeight:1.5,paddingLeft:8,borderLeft:`2px solid ${T.crSoft}`}}>At {wine?.abv}%, this wine has {wine?.abv<10?'lower alcohol, making it light and crisp':wine?.abv<13?'moderate alcohol, typical for most wines':wine?.abv<15?'higher alcohol, which adds warmth and body':'very high alcohol, which adds significant warmth and weight to the wine'}. Higher alcohol also affects aging potential.</div>
             </div>
           )}
         </div>
@@ -422,20 +423,20 @@ function DetailMerged({wine,nav,existingRating=0,match}){
       {!notes.length&&detailsLoading&&(
         <div>
           <SL label="Tasting Notes"/>
-          <div style={{display:'flex',alignItems:'center',gap:8,fontSize:15,color:C.mid,fontFamily:C.P,fontStyle:'italic'}}>
-            <div style={{width:12,height:12,borderRadius:6,border:'2px solid rgba(0,0,0,0.08)',borderTopColor:tc,animation:'spin .8s linear infinite',flexShrink:0}}/>Adding tasting notes…
+          <div style={{display:'flex',alignItems:'center',gap:8,fontSize:15,color:T.mid,fontFamily:C.P,fontStyle:'italic'}}>
+            <div style={{width:12,height:12,borderRadius:6,border:`2px solid ${T.line}`,borderTopColor:tc,animation:'spin .8s linear infinite',flexShrink:0}}/>Adding tasting notes…
           </div>
         </div>
       )}
       {notes.length>0&&(
         <div>
           <SL label="Tasting Notes"/>
-          <div style={{fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.5,marginBottom:12,padding:'10px 12px',borderRadius:10,background:C.offWhite,border:`1px solid ${C.line}`}}>
+          <div style={{fontSize:14,color:T.ink2,fontFamily:C.P,lineHeight:1.5,marginBottom:12,padding:'10px 12px',borderRadius:10,background:T.soft,border:`1px solid ${T.line}`}}>
             These flavours are what you'll taste when you drink it — look for these clues as you sip. Tasting notes help you build your palate and remember wines you love.
           </div>
           <div style={{display:'flex',flexWrap:'wrap',gap:6}}>
             {notes.map((n,i)=>(
-              <span key={i} data-note style={{padding:'5px 13px',borderRadius:20,background:tc+'14',color:C.ink,fontSize:15,fontWeight:500,fontFamily:C.P,border:`1px solid ${tc}55`}}>{n}</span>
+              <span key={i} data-note style={{padding:'5px 13px',borderRadius:20,background:tc+'14',color:T.ink,fontSize:15,fontWeight:500,fontFamily:C.P,border:`1px solid ${tc}55`}}>{n}</span>
             ))}
           </div>
         </div>
@@ -447,9 +448,9 @@ function DetailMerged({wine,nav,existingRating=0,match}){
           <SL label="Pairs With"/>
           <div style={{display:'flex',gap:8}}>
             {pairings.slice(0,3).map((f,i)=>(
-              <div key={i} style={{flex:1,background:C.offWhite,borderRadius:12,padding:'12px 6px',textAlign:'center',border:`1px solid ${C.line}`}}>
+              <div key={i} style={{flex:1,background:T.soft,borderRadius:12,padding:'12px 6px',textAlign:'center',border:`1px solid ${T.line}`}}>
                 <div style={{display:'flex',justifyContent:'center',marginBottom:6}}><Icon n={pairingIcon(f)} sz={22} col={tc}/></div>
-                <div style={{fontSize:13,color:C.ink2,fontFamily:C.P,fontWeight:500,lineHeight:1.3}}>{f}</div>
+                <div style={{fontSize:13,color:T.ink2,fontFamily:C.P,fontWeight:500,lineHeight:1.3}}>{f}</div>
               </div>
             ))}
           </div>
@@ -465,18 +466,18 @@ function DetailMerged({wine,nav,existingRating=0,match}){
           ):vintageInfo?(
             <Card style={{padding:14}}>
               <div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline',marginBottom:12}}>
-                <span style={{fontSize:16,fontWeight:600,color:C.ink,fontFamily:C.P}}>Quality Rating</span>
-                <span style={{fontSize:17,fontWeight:700,color:C.cr,fontFamily:C.P}}>{vintageInfo.vintage_rating}</span>
+                <span style={{fontSize:16,fontWeight:600,color:T.ink,fontFamily:C.P}}>Quality Rating</span>
+                <span style={{fontSize:17,fontWeight:700,color:cr,fontFamily:C.P}}>{vintageInfo.vintage_rating}</span>
               </div>
               <div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline',marginBottom:12}}>
-                <span style={{fontSize:16,fontWeight:600,color:C.ink,fontFamily:C.P}}>Drinking Now</span>
-                <span style={{fontSize:15,color:C.ink2,fontFamily:C.P}}>{vintageInfo.drink_from}–{vintageInfo.drink_to}</span>
+                <span style={{fontSize:16,fontWeight:600,color:T.ink,fontFamily:C.P}}>Drinking Now</span>
+                <span style={{fontSize:15,color:T.ink2,fontFamily:C.P}}>{vintageInfo.drink_from}–{vintageInfo.drink_to}</span>
               </div>
               <div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline',marginBottom:12}}>
-                <span style={{fontSize:16,fontWeight:600,color:C.ink,fontFamily:C.P}}>Peak Years</span>
-                <span style={{fontSize:15,color:C.ink2,fontFamily:C.P}}>{vintageInfo.peak_from}–{vintageInfo.peak_to}</span>
+                <span style={{fontSize:16,fontWeight:600,color:T.ink,fontFamily:C.P}}>Peak Years</span>
+                <span style={{fontSize:15,color:T.ink2,fontFamily:C.P}}>{vintageInfo.peak_from}–{vintageInfo.peak_to}</span>
               </div>
-              <div style={{fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.5,paddingTop:12,borderTop:`1px solid ${C.line}`,marginTop:12}}>💡 {vintageInfo.note}</div>
+              <div style={{fontSize:14,color:T.ink2,fontFamily:C.P,lineHeight:1.5,paddingTop:12,borderTop:`1px solid ${T.line}`,marginTop:12}}>💡 {vintageInfo.note}</div>
             </Card>
           ):null}
         </div>
@@ -485,7 +486,7 @@ function DetailMerged({wine,nav,existingRating=0,match}){
   );
 }
 
-function DetailStory({wine,nav,showPro,existingRating=0}){
+function DetailStory({wine,nav,showPro,existingRating=0}){ const T=useTheme(), cr=T.lift(C.cr);
   const description=(wine?.description?.trim())||'A wine with character and depth.';
 
   // ── Education: grape deep-dive, growing-season context, vocab terms (batched + cached) ──
@@ -510,10 +511,10 @@ function DetailStory({wine,nav,showPro,existingRating=0}){
       .catch(()=>{})
       .finally(()=>setEduLoading(false));
   },[wine?.name,wine?.vintage]);
-  const eduSpin=<div style={{display:'flex',alignItems:'center',gap:7}}><div style={{width:11,height:11,borderRadius:6,border:`2px solid ${C.cr}33`,borderTopColor:C.cr,animation:'storySpin .8s linear infinite'}}/><span style={{fontSize:14,color:C.mid,fontFamily:C.P,fontStyle:'italic'}}>Pulling together the lesson…</span></div>;
+  const eduSpin=<div style={{display:'flex',alignItems:'center',gap:7}}><div style={{width:11,height:11,borderRadius:6,border:`2px solid ${cr}33`,borderTopColor:cr,animation:'storySpin .8s linear infinite'}}/><span style={{fontSize:14,color:T.mid,fontFamily:C.P,fontStyle:'italic'}}>Pulling together the lesson…</span></div>;
 
   const SL=({label})=>(
-    <div style={{fontSize:13,fontWeight:700,color:C.mid,letterSpacing:'0.07em',textTransform:'uppercase',fontFamily:C.P,marginBottom:8}}>{label}</div>
+    <div style={{fontSize:13,fontWeight:700,color:T.mid,letterSpacing:'0.07em',textTransform:'uppercase',fontFamily:C.P,marginBottom:8}}>{label}</div>
   );
 
   return(
@@ -521,7 +522,7 @@ function DetailStory({wine,nav,showPro,existingRating=0}){
       {/* Wine Story/Description */}
       <div>
         <SL label="The Story"/>
-        <div style={{fontSize:16,color:C.ink2,fontFamily:C.P,lineHeight:1.75}}>{description}</div>
+        <div style={{fontSize:16,color:T.ink2,fontFamily:C.P,lineHeight:1.75}}>{description}</div>
       </div>
 
       {wine&&<KeepLearning wine={wine} nav={nav} showPro={showPro} intro="Quizzes and articles picked from this wine, and written from your WineDNA."/>}
@@ -530,7 +531,7 @@ function DetailStory({wine,nav,showPro,existingRating=0}){
       {wine?.producer&&(
         <div>
           <SL label="Producer"/>
-          <div style={{fontSize:16,fontWeight:600,color:C.ink,fontFamily:C.P}}>{wine.producer}</div>
+          <div style={{fontSize:16,fontWeight:600,color:T.ink,fontFamily:C.P}}>{wine.producer}</div>
         </div>
       )}
 
@@ -540,8 +541,8 @@ function DetailStory({wine,nav,showPro,existingRating=0}){
           <SL label="Grape Varietal"/>
           <div style={{display:'flex',flexWrap:'wrap',gap:8}}>
             {wine.grapes.map((g,i)=>(
-              <div key={i} style={{padding:'8px 14px',borderRadius:10,background:C.crSoft,border:`1px solid ${C.crDim}`}}>
-                <span style={{fontSize:15,fontWeight:600,color:C.cr,fontFamily:C.P}}>{g}</span>
+              <div key={i} style={{padding:'8px 14px',borderRadius:10,background:T.crSoft,border:`1px solid ${_alpha(cr,0.4)}`}}>
+                <span style={{fontSize:15,fontWeight:600,color:cr,fontFamily:C.P}}>{g}</span>
               </div>
             ))}
           </div>
@@ -552,7 +553,7 @@ function DetailStory({wine,nav,showPro,existingRating=0}){
       {wine?.type&&(
         <div>
           <SL label="Wine Type"/>
-          <div style={{fontSize:16,fontWeight:600,color:C.ink,fontFamily:C.P,textTransform:'capitalize'}}>{wine.type}</div>
+          <div style={{fontSize:16,fontWeight:600,color:T.ink,fontFamily:C.P,textTransform:'capitalize'}}>{wine.type}</div>
         </div>
       )}
 
@@ -560,7 +561,7 @@ function DetailStory({wine,nav,showPro,existingRating=0}){
       {(wine?.region||wine?.country)&&(
         <div>
           <SL label="Region"/>
-          <div style={{fontSize:16,fontWeight:600,color:C.ink,fontFamily:C.P}}>{wine.region}{wine.region&&wine.country?', ':''}{wine.country}</div>
+          <div style={{fontSize:16,fontWeight:600,color:T.ink,fontFamily:C.P}}>{wine.region}{wine.region&&wine.country?', ':''}{wine.country}</div>
         </div>
       )}
 
@@ -572,27 +573,27 @@ function DetailStory({wine,nav,showPro,existingRating=0}){
             {/* Grape deep-dive */}
             <Card style={{padding:14}}>
               <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:8}}>
-                <Icon n="wine" sz={16} col={C.cr}/>
-                <span style={{fontSize:15,fontWeight:700,color:C.ink,fontFamily:C.P}}>{(wine?.grapes&&wine.grapes[0])||'The grape'}, up close</span>
+                <Icon n="wine" sz={16} col={cr}/>
+                <span style={{fontSize:15,fontWeight:700,color:T.ink,fontFamily:C.P}}>{(wine?.grapes&&wine.grapes[0])||'The grape'}, up close</span>
               </div>
-              <div style={{fontSize:15,color:C.ink2,fontFamily:C.P,lineHeight:1.6}}>{eduLoading&&!edu?eduSpin:(edu&&edu.grape)||''}</div>
+              <div style={{fontSize:15,color:T.ink2,fontFamily:C.P,lineHeight:1.6}}>{eduLoading&&!edu?eduSpin:(edu&&edu.grape)||''}</div>
             </Card>
             {/* Growing-season / weather context */}
             {(edu&&edu.season)&&(
               <Card style={{padding:14}}>
                 <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:8}}>
-                  <Icon n="globe" sz={16} col={C.cr}/>
-                  <span style={{fontSize:15,fontWeight:700,color:C.ink,fontFamily:C.P}}>{wine?.vintage&&wine.vintage!==0?`The ${wine.vintage} growing season`:'Climate & place'}</span>
+                  <Icon n="globe" sz={16} col={cr}/>
+                  <span style={{fontSize:15,fontWeight:700,color:T.ink,fontFamily:C.P}}>{wine?.vintage&&wine.vintage!==0?`The ${wine.vintage} growing season`:'Climate & place'}</span>
                 </div>
-                <div style={{fontSize:15,color:C.ink2,fontFamily:C.P,lineHeight:1.6}}>{edu.season}</div>
+                <div style={{fontSize:15,color:T.ink2,fontFamily:C.P,lineHeight:1.6}}>{edu.season}</div>
               </Card>
             )}
             {/* Vocab this bottle teaches */}
             {(edu&&Array.isArray(edu.terms)&&edu.terms.length>0)&&(
               <Card style={{padding:14}}>
                 <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:10}}>
-                  <Icon n="book" sz={16} col={C.cr}/>
-                  <span style={{fontSize:15,fontWeight:700,color:C.ink,fontFamily:C.P}}>Words this bottle teaches</span>
+                  <Icon n="book" sz={16} col={cr}/>
+                  <span style={{fontSize:15,fontWeight:700,color:T.ink,fontFamily:C.P}}>Words this bottle teaches</span>
                 </div>
                 <div style={{display:'flex',flexDirection:'column',gap:10}}>
                   {edu.terms.slice(0,3).map((tm,i)=>{
@@ -602,8 +603,8 @@ function DetailStory({wine,nav,showPro,existingRating=0}){
                     <div key={i} style={{display:'flex',gap:10,alignItems:'flex-start',fontSize:15,lineHeight:1.55}}>
                       {/* The dot sits in a box one line tall, so it lines up with the term on the
                           first line however many lines the definition wraps to. */}
-                      <div style={{height:'1.55em',display:'flex',alignItems:'center',flexShrink:0}}><div style={{width:6,height:6,borderRadius:3,background:C.cr}}/></div>
-                      <div style={{fontFamily:C.P}}><span style={{fontWeight:700,color:C.cr}}>{capTerm}</span><span style={{color:C.ink2}}> — {tm.meaning}</span></div>
+                      <div style={{height:'1.55em',display:'flex',alignItems:'center',flexShrink:0}}><div style={{width:6,height:6,borderRadius:3,background:cr}}/></div>
+                      <div style={{fontFamily:C.P}}><span style={{fontWeight:700,color:cr}}>{capTerm}</span><span style={{color:T.ink2}}> — {tm.meaning}</span></div>
                     </div>
                     );
                   })}
@@ -642,7 +643,7 @@ const REGION_CURRENCY = {
    feed), with "Buy at <shop>" on its page through /go, labelled Partner. Without this vintage it
    says so and lists the vintages the shop has; nothing at all when the shop doesn't list the wine.
    Money never moves a match: it's only here, on the Price tab. */
-function ShopBottle({wine,onShop}){
+function ShopBottle({wine,onShop}){ const T=useTheme(), cr=T.lift(C.cr);
   const [d,setD]=React.useState(null);
   // onShop: 'pending' while it looks, then the shop's name or null.
   React.useEffect(()=>{ let live=true; setD(null); onShop&&onShop('pending'); Shops.match(wine).then(r=>{ if(live){ setD(r); onShop&&onShop(r?r.shop.name:null); } }).catch(()=>{ if(live){ setD(null); onShop&&onShop(null); } }); return()=>{ live=false; }; },[wine&&wine.name,wine&&wine.producer,wine&&wine.vintage]);
@@ -651,26 +652,26 @@ function ShopBottle({wine,onShop}){
   const buy=(it)=>Shops.go(Shops.link(it.url,'buy').url);
   const detail=(it)=>[it.vintage||'Non-vintage',it.pack>1?`case of ${it.pack}, ${Shops.money(it.perBottle,it.currency)} a bottle`:it.sizeMl!==750?(it.sizeMl===375?'half bottle':it.sizeMl===1500?'magnum':`${it.sizeMl/10}cl`):null].filter(Boolean).join(' · ');
   return <div data-testid="shop-bottle">
-    <div style={{fontSize:13,fontWeight:700,color:C.mid,letterSpacing:'0.07em',textTransform:'uppercase',fontFamily:C.P,marginBottom:8}}>At {shop}</div>
-    {!d.exact&&wine.vintage&&<div style={{fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.5,marginBottom:8}}>{shop} doesn't list the {wine.vintage} right now. {d.others.length>1?'These are the vintages it has.':'This is the vintage it has.'}</div>}
+    <div style={{fontSize:13,fontWeight:700,color:T.mid,letterSpacing:'0.07em',textTransform:'uppercase',fontFamily:C.P,marginBottom:8}}>At {shop}</div>
+    {!d.exact&&wine.vintage&&<div style={{fontSize:14,color:T.ink2,fontFamily:C.P,lineHeight:1.5,marginBottom:8}}>{shop} doesn't list the {wine.vintage} right now. {d.others.length>1?'These are the vintages it has.':'This is the vintage it has.'}</div>}
     <Card style={{padding:0,overflow:'hidden'}}>
       <div style={{display:'flex',gap:12,padding:'12px 14px',alignItems:'center'}}>
-        {first.image&&<img src={first.image} alt="" style={{width:56,height:56,objectFit:'contain',borderRadius:8,background:C.white,flexShrink:0}}/>}
+        {first.image&&<img src={first.image} alt="" style={{width:56,height:56,objectFit:'contain',borderRadius:8,background:'#fff',flexShrink:0}}/>}
         <div style={{flex:1,minWidth:0}}>
-          <div style={{fontSize:15,fontWeight:600,color:C.ink,fontFamily:C.P,lineHeight:1.35}}>{first.name}</div>
-          <div style={{fontSize:13,color:C.mid,fontFamily:C.P}}>{detail(first)}{first.seller?` · sold by ${first.seller}`:''}</div>
+          <div style={{fontSize:15,fontWeight:600,color:T.ink,fontFamily:C.P,lineHeight:1.35}}>{first.name}</div>
+          <div style={{fontSize:13,color:T.mid,fontFamily:C.P}}>{detail(first)}{first.seller?` · sold by ${first.seller}`:''}</div>
         </div>
-        <div style={{fontSize:17,fontWeight:800,color:C.ink,fontFamily:C.P,whiteSpace:'nowrap'}}>{Shops.money(first.price,first.currency)}</div>
+        <div style={{fontSize:17,fontWeight:800,color:T.ink,fontFamily:C.P,whiteSpace:'nowrap'}}>{Shops.money(first.price,first.currency)}</div>
       </div>
       <div style={{padding:'0 14px 12px',display:'flex',flexDirection:'column',gap:6}}>
-        <Btn primary full style={{background:C.cr}} onClick={()=>buy(first)}>Buy at {shop}</Btn>
+        <Btn primary full style={{background:cr}} onClick={()=>buy(first)}>Buy at {shop}</Btn>
         <div style={{display:'flex',justifyContent:'center'}}><PartnerTag/></div>
       </div>
       {rest.map(it=>(
-        <div key={it.id} role="link" onClick={()=>buy(it)} style={{display:'flex',alignItems:'center',gap:10,padding:'11px 14px',borderTop:`1px solid ${C.line}`,cursor:'pointer'}}>
-          <span style={{flex:1,minWidth:0,fontSize:15,color:C.ink,fontFamily:C.P}}>{detail(it)}</span>
-          <span style={{fontSize:15,fontWeight:700,color:C.ink,fontFamily:C.P}}>{Shops.money(it.price,it.currency)}</span>
-          <Icon n="chevron" sz={13} col={C.mid}/>
+        <div key={it.id} role="link" onClick={()=>buy(it)} style={{display:'flex',alignItems:'center',gap:10,padding:'11px 14px',borderTop:`1px solid ${T.line}`,cursor:'pointer'}}>
+          <span style={{flex:1,minWidth:0,fontSize:15,color:T.ink,fontFamily:C.P}}>{detail(it)}</span>
+          <span style={{fontSize:15,fontWeight:700,color:T.ink,fontFamily:C.P}}>{Shops.money(it.price,it.currency)}</span>
+          <Icon n="chevron" sz={13} col={T.mid}/>
         </div>
       ))}
     </Card>
@@ -681,7 +682,7 @@ function ShopBottle({wine,onShop}){
    inventory", and the LCBO stores in their city on a map. With a city, Pro and the lookup switched
    on (the Worker's LCBO_ENABLED, beta), the nearest stores that have it are listed above them,
    from Lcbo (pwa-regional.js). */
-function LcboStock({wine,nav,fmtPrice}){
+function LcboStock({wine,nav,fmtPrice}){ const T=useTheme(), cr=T.lift(C.cr);
   const ontario=Lcbo.ontario(), city=Lcbo.city();
   const lookup=!!city&&!Lcbo.needs();
   const [d,setD]=React.useState(null);
@@ -695,27 +696,27 @@ function LcboStock({wine,nav,fmtPrice}){
   if(!ontario||!wine) return null;
   const found=d&&d.enabled&&d.available&&d.cityFound&&d.found?d:null;
   const link=found&&Lcbo.link(found.product), fresh=found&&Lcbo.freshness(found.stores);
-  const small={fontSize:13,color:C.mid,fontFamily:C.P,lineHeight:1.5};
+  const small={fontSize:13,color:T.mid,fontFamily:C.P,lineHeight:1.5};
   return <div data-testid="lcbo">
-    <div style={{fontSize:13,fontWeight:700,color:C.mid,letterSpacing:'0.07em',textTransform:'uppercase',fontFamily:C.P,marginBottom:8}}>At the LCBO</div>
+    <div style={{fontSize:13,fontWeight:700,color:T.mid,letterSpacing:'0.07em',textTransform:'uppercase',fontFamily:C.P,marginBottom:8}}>At the LCBO</div>
     {found&&<><Card style={{padding:0,overflow:'hidden',marginBottom:6}}>
       <div role="link" onClick={()=>link&&Shops.go(link.url)} style={{display:'flex',alignItems:'center',gap:10,padding:'12px 14px',cursor:'pointer'}}>
         <div style={{flex:1,minWidth:0}}>
-          <div style={{fontSize:15,fontWeight:600,color:C.ink,fontFamily:C.P,lineHeight:1.35}}>{found.product.name}</div>
-          <div style={{fontSize:13,color:C.mid,fontFamily:C.P}}>LCBO #{found.product.sku}{found.product.volumeMl&&found.product.volumeMl!==750?` · ${found.product.volumeMl} mL`:''}</div>
+          <div style={{fontSize:15,fontWeight:600,color:T.ink,fontFamily:C.P,lineHeight:1.35}}>{found.product.name}</div>
+          <div style={{fontSize:13,color:T.mid,fontFamily:C.P}}>LCBO #{found.product.sku}{found.product.volumeMl&&found.product.volumeMl!==750?` · ${found.product.volumeMl} mL`:''}</div>
         </div>
-        {found.product.price>0&&<span style={{fontSize:15,fontWeight:700,color:C.ink,fontFamily:C.P}}>{fmtPrice(found.product.price)}</span>}
-        <Icon n="chevron" sz={13} col={C.mid}/>
+        {found.product.price>0&&<span style={{fontSize:15,fontWeight:700,color:T.ink,fontFamily:C.P}}>{fmtPrice(found.product.price)}</span>}
+        <Icon n="chevron" sz={13} col={T.mid}/>
       </div>
       {found.stores.length?found.stores.map(s=>(
-        <div key={s.id||s.name} style={{display:'flex',alignItems:'center',gap:10,padding:'11px 14px',borderTop:`1px solid ${C.line}`}}>
+        <div key={s.id||s.name} style={{display:'flex',alignItems:'center',gap:10,padding:'11px 14px',borderTop:`1px solid ${T.line}`}}>
           <div style={{flex:1,minWidth:0}}>
-            <div style={{fontSize:15,fontWeight:600,color:C.ink,fontFamily:C.P}}>{s.name}</div>
-            <div style={{fontSize:13,color:C.mid,fontFamily:C.P}}>{[s.address,s.km!=null?`${s.km} km`:null].filter(Boolean).join(' · ')}</div>
+            <div style={{fontSize:15,fontWeight:600,color:T.ink,fontFamily:C.P}}>{s.name}</div>
+            <div style={{fontSize:13,color:T.mid,fontFamily:C.P}}>{[s.address,s.km!=null?`${s.km} km`:null].filter(Boolean).join(' · ')}</div>
           </div>
-          <span style={{fontSize:14,fontWeight:700,color:C.ink2,fontFamily:C.P,whiteSpace:'nowrap'}}>{s.quantity} in stock</span>
+          <span style={{fontSize:14,fontWeight:700,color:T.ink2,fontFamily:C.P,whiteSpace:'nowrap'}}>{s.quantity} in stock</span>
         </div>
-      )):<div style={{padding:'11px 14px',borderTop:`1px solid ${C.line}`,fontSize:14,color:C.mid,fontFamily:C.P}}>No store within {found.radiusKm||25} km of {city} has it right now.</div>}
+      )):<div style={{padding:'11px 14px',borderTop:`1px solid ${T.line}`,fontSize:14,color:T.mid,fontFamily:C.P}}>No store within {found.radiusKm||25} km of {city} has it right now.</div>}
     </Card>
     <div style={{...small,fontSize:12,marginBottom:10}}>{fresh?fresh+'. ':''}Counts are the LCBO's, via LCBO.dev, and can be a day behind. The LCBO may carry a different vintage.</div></>}
     {!found&&<div style={{...small,marginBottom:10}}>{busy?`Checking LCBO stores near ${city}…`
@@ -724,12 +725,12 @@ function LcboStock({wine,nav,fmtPrice}){
     <div style={{display:'flex',flexDirection:'column',gap:8}}>
       <Btn full onClick={()=>Lcbo.openSearch(wine)}>Find it at the LCBO</Btn>
       {city?<Btn full onClick={()=>Lcbo.openStores(city)}>LCBO stores in {city}</Btn>
-        :<div role="link" onClick={()=>nav('account')} style={{...small,textAlign:'center',color:C.cr,fontWeight:600,cursor:'pointer'}}>Add your city on Profile to see the stores near you</div>}
+        :<div role="link" onClick={()=>nav('account')} style={{...small,textAlign:'center',color:cr,fontWeight:600,cursor:'pointer'}}>Add your city on Profile to see the stores near you</div>}
     </div>
   </div>;
 }
 
-function DetailPrice({wine,nav,showPro}){
+function DetailPrice({wine,nav,showPro}){ const T=useTheme(), cr=T.lift(C.cr);
   const curr = (()=>{ const rc=Regional.current(); return {sym:rc.sym,base:rc.base,code:rc.code,label:rc.label}; })();
 
   const [priceData,  setPriceData]  = React.useState(null);
@@ -751,13 +752,13 @@ function DetailPrice({wine,nav,showPro}){
   }, [wine && wine.name, wine && wine.vintage, curr.code]);
 
   const SL=({label})=>(
-    <div style={{fontSize:13,fontWeight:700,color:C.mid,letterSpacing:'0.07em',textTransform:'uppercase',fontFamily:C.P,marginBottom:8}}>{label}</div>
+    <div style={{fontSize:13,fontWeight:700,color:T.mid,letterSpacing:'0.07em',textTransform:'uppercase',fontFamily:C.P,marginBottom:8}}>{label}</div>
   );
 
   const tierColor = {
-    'entry':       C.mid,
-    'everyday':    C.ink2,
-    'premium':     C.cr,
+    'entry':       T.mid,
+    'everyday':    T.ink2,
+    'premium':     cr,
     'luxury':      '#9B6B00',
     'ultra-luxury':'#6B2D8B',
   };
@@ -805,36 +806,36 @@ function DetailPrice({wine,nav,showPro}){
             <SL label={priceData&&priceData.source==='search'?'Current shop price':'Estimated retail price'}/>
             <Card style={{padding:0,overflow:'hidden'}}>
               {/* Mid price hero */}
-              <div style={{padding:'18px 16px',background:C.crSoft,display:'flex',justifyContent:'space-between',alignItems:'center',borderBottom:'1px solid '+C.crDim}}>
+              <div style={{padding:'18px 16px',background:T.crSoft,display:'flex',justifyContent:'space-between',alignItems:'center',borderBottom:'1px solid '+_alpha(cr,0.4)}}>
                 <div>
-                  <div style={{fontSize:13,fontWeight:600,color:C.cr,fontFamily:C.P,marginBottom:2}}>Typical bottle price</div>
-                  <div style={{fontSize:11,color:C.cr+'99',fontFamily:C.P}}>{curr.label}</div>
+                  <div style={{fontSize:13,fontWeight:600,color:cr,fontFamily:C.P,marginBottom:2}}>Typical bottle price</div>
+                  <div style={{fontSize:11,color:cr+'99',fontFamily:C.P}}>{curr.label}</div>
                 </div>
                 <div style={{textAlign:'right'}}>
-                  <div style={{fontSize:26,fontWeight:800,color:C.cr,fontFamily:C.P,lineHeight:1}}>{fmtPrice(priceData.mid)}</div>
-                  <div style={{fontSize:11,fontWeight:700,color:C.cr+'99',fontFamily:C.P,marginTop:3,letterSpacing:'0.04em'}}>{curr.code}</div>
+                  <div style={{fontSize:26,fontWeight:800,color:cr,fontFamily:C.P,lineHeight:1}}>{fmtPrice(priceData.mid)}</div>
+                  <div style={{fontSize:11,fontWeight:700,color:cr+'99',fontFamily:C.P,marginTop:3,letterSpacing:'0.04em'}}>{curr.code}</div>
                 </div>
               </div>
               {/* Low / High row */}
               {(priceData.low != null || priceData.high != null) && (
-                <div style={{display:'flex',borderBottom:'1px solid '+C.line}}>
-                  <div style={{flex:1,padding:'11px 14px',borderRight:'1px solid '+C.line}}>
-                    <div style={{fontSize:12,color:C.mid,fontFamily:C.P,marginBottom:2}}>Budget end</div>
-                    <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>{fmtPrice(priceData.low)}</div>
-                    <div style={{fontSize:10,fontWeight:600,color:C.mid,fontFamily:C.P,marginTop:2,letterSpacing:'0.04em'}}>{curr.code}</div>
+                <div style={{display:'flex',borderBottom:'1px solid '+T.line}}>
+                  <div style={{flex:1,padding:'11px 14px',borderRight:'1px solid '+T.line}}>
+                    <div style={{fontSize:12,color:T.mid,fontFamily:C.P,marginBottom:2}}>Budget end</div>
+                    <div style={{fontSize:16,fontWeight:700,color:T.ink,fontFamily:C.P}}>{fmtPrice(priceData.low)}</div>
+                    <div style={{fontSize:10,fontWeight:600,color:T.mid,fontFamily:C.P,marginTop:2,letterSpacing:'0.04em'}}>{curr.code}</div>
                   </div>
                   <div style={{flex:1,padding:'11px 14px'}}>
-                    <div style={{fontSize:12,color:C.mid,fontFamily:C.P,marginBottom:2}}>Premium end</div>
-                    <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>{fmtPrice(priceData.high)}</div>
-                    <div style={{fontSize:10,fontWeight:600,color:C.mid,fontFamily:C.P,marginTop:2,letterSpacing:'0.04em'}}>{curr.code}</div>
+                    <div style={{fontSize:12,color:T.mid,fontFamily:C.P,marginBottom:2}}>Premium end</div>
+                    <div style={{fontSize:16,fontWeight:700,color:T.ink,fontFamily:C.P}}>{fmtPrice(priceData.high)}</div>
+                    <div style={{fontSize:10,fontWeight:600,color:T.mid,fontFamily:C.P,marginTop:2,letterSpacing:'0.04em'}}>{curr.code}</div>
                   </div>
                 </div>
               )}
               {/* Tier badge */}
               {priceData.tier && (
                 <div style={{padding:'10px 14px',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-                  <span style={{fontSize:14,color:C.mid,fontFamily:C.P}}>Price tier</span>
-                  <span style={{fontSize:14,fontWeight:700,color:tierColor[priceData.tier]||C.cr,fontFamily:C.P}}>{tierLabel[priceData.tier]||priceData.tier}</span>
+                  <span style={{fontSize:14,color:T.mid,fontFamily:C.P}}>Price tier</span>
+                  <span style={{fontSize:14,fontWeight:700,color:tierColor[priceData.tier]||cr,fontFamily:C.P}}>{tierLabel[priceData.tier]||priceData.tier}</span>
                 </div>
               )}
             </Card>
@@ -844,7 +845,7 @@ function DetailPrice({wine,nav,showPro}){
           {priceData.note && (
             <div>
               <SL label="Price Context"/>
-              <div style={{fontSize:15,color:C.ink2,fontFamily:C.P,lineHeight:1.6,padding:'12px 14px',borderRadius:12,background:C.offWhite,border:'1px solid '+C.line}}>
+              <div style={{fontSize:15,color:T.ink2,fontFamily:C.P,lineHeight:1.6,padding:'12px 14px',borderRadius:12,background:T.soft,border:'1px solid '+T.line}}>
                 {priceData.note}
               </div>
             </div>
@@ -859,11 +860,11 @@ function DetailPrice({wine,nav,showPro}){
               <SL label="In shops now"/>
               <Card style={{padding:0,overflow:'hidden'}}>
                 {listings.map((s,i)=>(
-                  <div key={s.url} role="link" onClick={()=>Shops.go(s.url)} style={{display:'flex',alignItems:'center',gap:10,padding:'12px 14px',borderTop:i?`1px solid ${C.line}`:'none',cursor:'pointer'}}>
-                    <span style={{flex:1,minWidth:0,fontSize:15,fontWeight:600,color:C.ink,fontFamily:C.P,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{s.name}</span>
+                  <div key={s.url} role="link" onClick={()=>Shops.go(s.url)} style={{display:'flex',alignItems:'center',gap:10,padding:'12px 14px',borderTop:i?`1px solid ${T.line}`:'none',cursor:'pointer'}}>
+                    <span style={{flex:1,minWidth:0,fontSize:15,fontWeight:600,color:T.ink,fontFamily:C.P,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{s.name}</span>
                     {s.partner&&<PartnerTag/>}
-                    {s.price>0&&<span style={{fontSize:15,fontWeight:700,color:C.ink,fontFamily:C.P}}>{fmtPrice(s.price)}</span>}
-                    <Icon n="chevron" sz={13} col={C.mid}/>
+                    {s.price>0&&<span style={{fontSize:15,fontWeight:700,color:T.ink,fontFamily:C.P}}>{fmtPrice(s.price)}</span>}
+                    <Icon n="chevron" sz={13} col={T.mid}/>
                   </div>
                 ))}
               </Card>
@@ -873,12 +874,12 @@ function DetailPrice({wine,nav,showPro}){
           <LcboStock wine={wine} nav={nav} fmtPrice={fmtPrice}/>
 
           {/* Find it for me (Restock for a wine they'd buy again) */}
-          {findShown&&<Btn primary full style={{background:C.cr,boxShadow:`0 3px 12px ${C.cr}35`}} onClick={handleFindItForMe}>{findLabel}</Btn>}
+          {findShown&&<Btn primary full style={{background:cr,boxShadow:`0 3px 12px ${cr}35`}} onClick={handleFindItForMe}>{findLabel}</Btn>}
           {findShown&&findPartner&&<div style={{display:'flex',justifyContent:'center',marginTop:-12}}><PartnerTag/></div>}
           <ShopDisclosure style={{textAlign:'center',marginTop:-8,padding:'0 8px'}}/>
 
           {/* Disclaimer */}
-          <div style={{fontSize:12,color:C.mid,fontFamily:C.P,lineHeight:1.5,textAlign:'center',padding:'0 8px'}}>
+          <div style={{fontSize:12,color:T.mid,fontFamily:C.P,lineHeight:1.5,textAlign:'center',padding:'0 8px'}}>
             Prices are estimates based on publicly available market data and may vary by retailer, vintage condition, and availability.
           </div>
         </>
@@ -887,11 +888,11 @@ function DetailPrice({wine,nav,showPro}){
       {done && !hasPrice && (
         <>
           <Card style={{padding:14}}>
-            <span style={{fontSize:15,color:C.mid,fontFamily:C.P,fontStyle:'italic'}}>Price estimate unavailable for this wine.</span>
+            <span style={{fontSize:15,color:T.mid,fontFamily:C.P,fontStyle:'italic'}}>Price estimate unavailable for this wine.</span>
           </Card>
           <ShopBottle wine={wine} onShop={setBottleShop}/>
           <LcboStock wine={wine} nav={nav} fmtPrice={fmtPrice}/>
-          {findShown&&<Btn primary full style={{background:C.cr,boxShadow:`0 3px 12px ${C.cr}35`}} onClick={handleFindItForMe}>{findLabel}</Btn>}
+          {findShown&&<Btn primary full style={{background:cr,boxShadow:`0 3px 12px ${cr}35`}} onClick={handleFindItForMe}>{findLabel}</Btn>}
         </>
       )}
     </div>
