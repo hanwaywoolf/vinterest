@@ -25,18 +25,18 @@ function useClaudeData(cacheKey, prompt, wine, purpose){
   return {data,loading,error};
 }
 
-function ExploreLoading(){
+function ExploreLoading(){ const T=useTheme(), cr=T.lift(C.cr);
   return(
     <div style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:14}}>
-      <div style={{width:44,height:44,borderRadius:22,border:'3px solid rgba(0,0,0,0.07)',borderTopColor:C.cr,animation:'vspin 0.85s linear infinite'}}/>
-      <span style={{fontSize:16,color:C.mid,fontFamily:C.P}}>Loading…</span>
+      <div style={{width:44,height:44,borderRadius:22,border:'3px solid rgba(0,0,0,0.07)',borderTopColor:cr,animation:'vspin 0.85s linear infinite'}}/>
+      <span style={{fontSize:16,color:T.mid,fontFamily:C.P}}>Loading…</span>
       <style>{`@keyframes vspin{to{transform:rotate(360deg)}}`}</style>
     </div>
   );
 }
 
 /* ── REGION SCREEN ── */
-function RegionScreen({nav,back}){
+function RegionScreen({nav,back}){ const T=useTheme(), cr=T.lift(C.cr);
   const wine=React.useMemo(()=>{
     try{return Handoff.scanResult.get({}).wine||null;}
     catch(e){return null;}
@@ -49,8 +49,8 @@ function RegionScreen({nav,back}){
   const {data,loading}=useClaudeData(`vinterest_region_${region}`,prompt,wine);
 
   return(
-    <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden'}}>
-      <div style={{background:C.cr,padding:'14px 20px',display:'flex',alignItems:'center',gap:12,flexShrink:0}}>
+    <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden',background:T.bg}}>
+      <div style={{background:cr,padding:'14px 20px',display:'flex',alignItems:'center',gap:12,flexShrink:0}}>
         <div onClick={back} style={{width:34,height:34,borderRadius:17,background:'rgba(255,255,255,0.2)',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer'}}>
           <Icon n="back" sz={16} col="#fff"/>
         </div>
@@ -65,22 +65,22 @@ function RegionScreen({nav,back}){
         <div style={{flex:1,overflowY:'auto'}}>
 <div style={{padding:'14px 16px',display:'flex',flexDirection:'column',gap:12}}>
           <Card style={{padding:14}}>
-            <div style={{fontSize:15,fontWeight:700,color:C.ink,fontFamily:C.P,marginBottom:8}}>About {region}</div>
-            <div style={{fontSize:16,color:C.ink2,fontFamily:C.P,lineHeight:1.65}}>{data?.about||'Information unavailable.'}</div>
+            <div style={{fontSize:15,fontWeight:700,color:T.ink,fontFamily:C.P,marginBottom:8}}>About {region}</div>
+            <div style={{fontSize:16,color:T.ink2,fontFamily:C.P,lineHeight:1.65}}>{data?.about||'Information unavailable.'}</div>
             {data?.climate&&(
-              <div style={{marginTop:10,padding:'10px 12px',borderRadius:10,background:C.offWhite,border:`1px solid ${C.line}`}}>
-                <div style={{fontSize:13,fontWeight:600,color:C.mid,fontFamily:C.P,marginBottom:3}}>Climate &amp; Terroir</div>
-                <div style={{fontSize:15,color:C.ink2,fontFamily:C.P,lineHeight:1.5}}>{data.climate}</div>
+              <div style={{marginTop:10,padding:'10px 12px',borderRadius:10,background:T.soft,border:`1px solid ${T.line}`}}>
+                <div style={{fontSize:13,fontWeight:600,color:T.mid,fontFamily:C.P,marginBottom:3}}>Climate &amp; Terroir</div>
+                <div style={{fontSize:15,color:T.ink2,fontFamily:C.P,lineHeight:1.5}}>{data.climate}</div>
               </div>
             )}
           </Card>
 
           {data?.key_varietals?.length>0&&(
             <Card style={{padding:12}}>
-              <div style={{fontSize:15,fontWeight:700,color:C.ink,fontFamily:C.P,marginBottom:8}}>Key Varietals</div>
+              <div style={{fontSize:15,fontWeight:700,color:T.ink,fontFamily:C.P,marginBottom:8}}>Key Varietals</div>
               <div style={{display:'flex',flexWrap:'wrap',gap:6}}>
                 {data.key_varietals.map((g,i)=>(
-                  <span key={i} onClick={()=>nav('varietal')} style={{padding:'5px 14px',borderRadius:20,background:i===0?C.crSoft:C.offWhite,color:i===0?C.cr:C.ink2,fontSize:15,fontWeight:i===0?600:500,fontFamily:C.P,border:`1px solid ${i===0?C.crDim:C.line}`,cursor:'pointer'}}>{g}</span>
+                  <span key={i} onClick={()=>nav('varietal')} style={{padding:'5px 14px',borderRadius:20,background:i===0?T.crSoft:T.soft,color:i===0?cr:T.ink2,fontSize:15,fontWeight:i===0?600:500,fontFamily:C.P,border:`1px solid ${i===0?_alpha(cr,0.4):T.line}`,cursor:'pointer'}}>{g}</span>
                 ))}
               </div>
             </Card>
@@ -88,14 +88,14 @@ function RegionScreen({nav,back}){
 
           {data?.notable_producers?.length>0&&(
             <Card style={{padding:12}}>
-              <div style={{fontSize:15,fontWeight:700,color:C.ink,fontFamily:C.P,marginBottom:8}}>Notable Producers</div>
+              <div style={{fontSize:15,fontWeight:700,color:T.ink,fontFamily:C.P,marginBottom:8}}>Notable Producers</div>
               <div style={{display:'flex',flexDirection:'column',gap:6}}>
                 {data.notable_producers.map((p,i)=>(
-                  <div key={i} style={{display:'flex',alignItems:'center',gap:10,padding:'8px 10px',borderRadius:10,background:C.offWhite}}>
-                    <div style={{width:30,height:30,borderRadius:7,background:C.crSoft,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
-                      <Icon n="wine" sz={14} col={C.cr}/>
+                  <div key={i} style={{display:'flex',alignItems:'center',gap:10,padding:'8px 10px',borderRadius:10,background:T.soft}}>
+                    <div style={{width:30,height:30,borderRadius:7,background:T.crSoft,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+                      <Icon n="wine" sz={14} col={cr}/>
                     </div>
-                    <span style={{fontSize:16,fontWeight:500,color:C.ink,fontFamily:C.P}}>{p}</span>
+                    <span style={{fontSize:16,fontWeight:500,color:T.ink,fontFamily:C.P}}>{p}</span>
                   </div>
                 ))}
               </div>
@@ -103,16 +103,16 @@ function RegionScreen({nav,back}){
           )}
 
           {data?.food_culture&&(
-            <Card style={{background:C.greenBg,boxShadow:'none',border:`1px solid ${C.green}25`,padding:12}}>
-              <div style={{fontSize:15,fontWeight:600,color:C.green,fontFamily:C.P,marginBottom:4}}>Food &amp; Wine Culture</div>
-              <div style={{fontSize:15,color:C.ink2,fontFamily:C.P,lineHeight:1.55}}>{data.food_culture}</div>
+            <Card style={{background:T.greenBg,boxShadow:'none',border:`1px solid ${T.green}25`,padding:12}}>
+              <div style={{fontSize:15,fontWeight:600,color:T.green,fontFamily:C.P,marginBottom:4}}>Food &amp; Wine Culture</div>
+              <div style={{fontSize:15,color:T.ink2,fontFamily:C.P,lineHeight:1.55}}>{data.food_culture}</div>
             </Card>
           )}
 
           {data?.fun_fact&&(
-            <Card style={{background:C.amberBg,boxShadow:'none',border:`1px solid ${C.amber}25`,padding:12}}>
-              <div style={{fontSize:15,fontWeight:600,color:C.amber,fontFamily:C.P,marginBottom:4}}>Did You Know?</div>
-              <div style={{fontSize:15,color:C.ink2,fontFamily:C.P,lineHeight:1.55}}>{data.fun_fact}</div>
+            <Card style={{background:T.amberBg,boxShadow:'none',border:`1px solid ${T.amber}25`,padding:12}}>
+              <div style={{fontSize:15,fontWeight:600,color:T.amber,fontFamily:C.P,marginBottom:4}}>Did You Know?</div>
+              <div style={{fontSize:15,color:T.ink2,fontFamily:C.P,lineHeight:1.55}}>{data.fun_fact}</div>
             </Card>
           )}
 
@@ -126,7 +126,7 @@ function RegionScreen({nav,back}){
 }
 
 /* ── VARIETAL SCREEN ── */
-function VarietalScreen({nav,back}){
+function VarietalScreen({nav,back}){ const T=useTheme(), cr=T.lift(C.cr);
   const wine=React.useMemo(()=>{
     try{return Handoff.scanResult.get({}).wine||null;}
     catch(e){return null;}
@@ -140,13 +140,13 @@ function VarietalScreen({nav,back}){
   const tasteTiles=data?[
     {name:'Body',   val:data.body??0.7,  desc:data.body_desc||'',   lo:'Light',    hi:'Full',    col:'#8B1A2F'},
     {name:'Tannins',val:data.tannins??0.6,desc:data.tannin_desc||'',lo:'Silky',    hi:'Grippy',  col:'#7B5EA7'},
-    {name:'Acidity',val:data.acidity??0.7,desc:'',                   lo:'Mellow',   hi:'Zingy',   col:C.green},
-    {name:'Sweetness',val:data.sweetness??0.1,desc:'',               lo:'Bone Dry', hi:'Sweet',   col:C.amber},
+    {name:'Acidity',val:data.acidity??0.7,desc:'',                   lo:'Mellow',   hi:'Zingy',   col:T.green},
+    {name:'Sweetness',val:data.sweetness??0.1,desc:'',               lo:'Bone Dry', hi:'Sweet',   col:T.amber},
   ]:[];
 
   return(
-    <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden'}}>
-      <div style={{background:C.ink,padding:'14px 20px',display:'flex',alignItems:'center',gap:12,flexShrink:0}}>
+    <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden',background:T.bg}}>
+      <div style={{background:T.dark?T.card:C.ink,padding:'14px 20px',display:'flex',alignItems:'center',gap:12,flexShrink:0}}>
         <div onClick={back} style={{width:34,height:34,borderRadius:17,background:'rgba(255,255,255,0.1)',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer'}}>
           <Icon n="back" sz={16} col="#fff"/>
         </div>
@@ -161,17 +161,17 @@ function VarietalScreen({nav,back}){
         <div style={{flex:1,overflowY:'auto'}}>
 <div style={{padding:'14px 16px',display:'flex',flexDirection:'column',gap:12}}>
           <Card style={{padding:14}}>
-            <div style={{fontSize:16,color:C.ink2,fontFamily:C.P,lineHeight:1.65}}>{data?.about}</div>
+            <div style={{fontSize:16,color:T.ink2,fontFamily:C.P,lineHeight:1.65}}>{data?.about}</div>
           </Card>
 
           {tasteTiles.length>0&&(
             <div>
-              <div style={{fontSize:15,fontWeight:700,color:C.ink,fontFamily:C.P,marginBottom:8}}>Taste Characteristics</div>
+              <div style={{fontSize:15,fontWeight:700,color:T.ink,fontFamily:C.P,marginBottom:8}}>Taste Characteristics</div>
               <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8}}>
                 {tasteTiles.map((t,i)=>(
-                  <div key={i} style={{background:C.white,borderRadius:14,padding:'10px',border:`1px solid ${C.line}`}}>
-                    <div style={{fontSize:15,fontWeight:600,color:C.ink,fontFamily:C.P,marginBottom:2}}>{t.name}</div>
-                    {t.desc&&<div style={{fontSize:13,color:C.mid,fontFamily:C.P,lineHeight:1.3,marginBottom:6}}>{t.desc}</div>}
+                  <div key={i} style={{background:T.glass,borderRadius:14,padding:'10px',border:`1px solid ${T.line}`}}>
+                    <div style={{fontSize:15,fontWeight:600,color:T.ink,fontFamily:C.P,marginBottom:2}}>{t.name}</div>
+                    {t.desc&&<div style={{fontSize:13,color:T.mid,fontFamily:C.P,lineHeight:1.3,marginBottom:6}}>{t.desc}</div>}
                     <Prog val={t.val} col={t.col} h={5}/>
                     <div style={{display:'flex',justifyContent:'space-between',marginTop:3}}>
                       <span style={{fontSize:13,color:'#bbb',fontFamily:C.P}}>{t.lo}</span>
@@ -186,10 +186,10 @@ function VarietalScreen({nav,back}){
 
           {data?.typical_regions?.length>0&&(
             <Card style={{padding:12}}>
-              <div style={{fontSize:15,fontWeight:700,color:C.ink,fontFamily:C.P,marginBottom:8}}>Famous In</div>
+              <div style={{fontSize:15,fontWeight:700,color:T.ink,fontFamily:C.P,marginBottom:8}}>Famous In</div>
               <div style={{display:'flex',flexWrap:'wrap',gap:6}}>
                 {data.typical_regions.map((r,i)=>(
-                  <span key={i} style={{padding:'5px 13px',borderRadius:20,background:C.offWhite,color:C.ink2,fontSize:15,fontWeight:500,fontFamily:C.P,border:`1px solid ${C.line}`}}>{r}</span>
+                  <span key={i} style={{padding:'5px 13px',borderRadius:20,background:T.soft,color:T.ink2,fontSize:15,fontWeight:500,fontFamily:C.P,border:`1px solid ${T.line}`}}>{r}</span>
                 ))}
               </div>
             </Card>
@@ -197,11 +197,11 @@ function VarietalScreen({nav,back}){
 
           {data?.food_pairings?.length>0&&(
             <Card style={{padding:12}}>
-              <div style={{fontSize:15,fontWeight:700,color:C.ink,fontFamily:C.P,marginBottom:8}}>Food Pairings</div>
+              <div style={{fontSize:15,fontWeight:700,color:T.ink,fontFamily:C.P,marginBottom:8}}>Food Pairings</div>
               <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:7}}>
                 {data.food_pairings.map((f,i)=>(
-                  <div key={i} style={{background:C.offWhite,borderRadius:10,padding:'10px 8px',textAlign:'center',border:`1px solid ${C.line}`}}>
-                    <div style={{fontSize:15,color:C.ink2,fontFamily:C.P,fontWeight:500}}>{f}</div>
+                  <div key={i} style={{background:T.soft,borderRadius:10,padding:'10px 8px',textAlign:'center',border:`1px solid ${T.line}`}}>
+                    <div style={{fontSize:15,color:T.ink2,fontFamily:C.P,fontWeight:500}}>{f}</div>
                   </div>
                 ))}
               </div>
@@ -210,19 +210,19 @@ function VarietalScreen({nav,back}){
 
           {data?.similar_varietals?.length>0&&(
             <Card style={{padding:12}}>
-              <div style={{fontSize:15,fontWeight:700,color:C.ink,fontFamily:C.P,marginBottom:8}}>If You Like This, Try…</div>
+              <div style={{fontSize:15,fontWeight:700,color:T.ink,fontFamily:C.P,marginBottom:8}}>If You Like This, Try…</div>
               <div style={{display:'flex',flexWrap:'wrap',gap:6}}>
                 {data.similar_varietals.map((g,i)=>(
-                  <span key={i} style={{padding:'5px 13px',borderRadius:20,background:C.crSoft,color:C.cr,fontSize:15,fontWeight:600,fontFamily:C.P,border:`1px solid ${C.crDim}`}}>{g}</span>
+                  <span key={i} style={{padding:'5px 13px',borderRadius:20,background:T.crSoft,color:cr,fontSize:15,fontWeight:600,fontFamily:C.P,border:`1px solid ${_alpha(cr,0.4)}`}}>{g}</span>
                 ))}
               </div>
             </Card>
           )}
 
           {data?.aging_note&&(
-            <Card style={{background:C.amberBg,boxShadow:'none',border:`1px solid ${C.amber}25`,padding:12}}>
-              <div style={{fontSize:15,fontWeight:600,color:C.amber,fontFamily:C.P,marginBottom:4}}>Aging Potential</div>
-              <div style={{fontSize:15,color:C.ink2,fontFamily:C.P,lineHeight:1.55}}>{data.aging_note}</div>
+            <Card style={{background:T.amberBg,boxShadow:'none',border:`1px solid ${T.amber}25`,padding:12}}>
+              <div style={{fontSize:15,fontWeight:600,color:T.amber,fontFamily:C.P,marginBottom:4}}>Aging Potential</div>
+              <div style={{fontSize:15,color:T.ink2,fontFamily:C.P,lineHeight:1.55}}>{data.aging_note}</div>
             </Card>
           )}
 
@@ -236,7 +236,7 @@ function VarietalScreen({nav,back}){
 }
 
 /* ── SIMILAR WINES SCREEN ── */
-function SimilarWinesScreen({nav,back}){
+function SimilarWinesScreen({nav,back}){ const T=useTheme(), cr=T.lift(C.cr);
   const wine=React.useMemo(()=>{
     try{return Handoff.scanResult.get({}).wine||null;}
     catch(e){return null;}
@@ -248,21 +248,21 @@ function SimilarWinesScreen({nav,back}){
   const {data,loading}=useClaudeData(`vinterest_similar_${wineName}`,prompt,wine);
 
   const typeColors={red:'#8B1A2F',white:'#B8963E','rosé':'#C47A8A',rose:'#C47A8A',sparkling:'#5E8FA8'};
-  const colFor=t=>typeColors[(t||'red').toLowerCase().replace('é','e')]||C.cr;
-  const badge={same:{l:'Similar price',bg:C.greenBg,col:C.green},step_up:{l:'Step up',bg:C.amberBg,col:C.amber},step_down:{l:'Better value',bg:C.crSoft,col:C.cr}};
+  const colFor=t=>typeColors[(t||'red').toLowerCase().replace('é','e')]||cr;
+  const badge={same:{l:'Similar price',bg:T.greenBg,col:T.green},step_up:{l:'Step up',bg:T.amberBg,col:T.amber},step_down:{l:'Better value',bg:T.crSoft,col:cr}};
 
   return(
-    <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden'}}>
-      <div style={{background:C.white,padding:'14px 16px 12px',borderBottom:`1px solid ${C.line}`,flexShrink:0}}>
+    <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden',background:T.bg}}>
+      <div style={{background:`radial-gradient(ellipse at 50% -20%, ${_alpha(cr,T.dark?0.42:0.14)}, transparent 70%) ${T.dark?T.bg:C.white}`,padding:'14px 16px 12px',borderBottom:`1px solid ${T.line}`,flexShrink:0}}>
         <div style={{display:'flex',alignItems:'center',gap:10}}>
-          <div onClick={back} style={{width:34,height:34,borderRadius:17,background:C.offWhite,border:`1px solid ${C.line}`,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer'}}>
-            <Icon n="back" sz={16} col={C.ink}/>
+          <div onClick={back} style={{width:34,height:34,borderRadius:17,background:T.soft,border:`1px solid ${T.line}`,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer'}}>
+            <Icon n="back" sz={16} col={T.ink}/>
           </div>
           <div style={{flex:1,minWidth:0}}>
-            <div style={{fontSize:19,fontWeight:700,color:C.ink,fontFamily:C.P}}>Similar Wines</div>
-            <div style={{fontSize:15,color:C.mid,fontFamily:C.P,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>Based on {wineName}</div>
+            <div style={{fontSize:19,fontWeight:700,color:T.ink,fontFamily:C.P}}>Similar Wines</div>
+            <div style={{fontSize:15,color:T.mid,fontFamily:C.P,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>Based on {wineName}</div>
           </div>
-          <Icon n="compass" sz={20} col={C.mid}/>
+          <Icon n="compass" sz={20} col={T.mid}/>
         </div>
       </div>
 
@@ -289,11 +289,11 @@ function SimilarWinesScreen({nav,back}){
                   </div>
                   <div style={{flex:1,minWidth:0}}>
                     <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',gap:6}}>
-                      <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P,lineHeight:1.2,flex:1}}>{w.name}</div>
-                      {w.approx_price_usd&&<span style={{fontSize:15,fontWeight:700,color:C.ink2,fontFamily:C.P,flexShrink:0}}>${w.approx_price_usd}</span>}
+                      <div style={{fontSize:16,fontWeight:700,color:T.ink,fontFamily:C.P,lineHeight:1.2,flex:1}}>{w.name}</div>
+                      {w.approx_price_usd&&<span style={{fontSize:15,fontWeight:700,color:T.ink2,fontFamily:C.P,flexShrink:0}}>${w.approx_price_usd}</span>}
                     </div>
-                    <div style={{fontSize:15,color:C.mid,fontFamily:C.P,marginTop:2}}>{[w.region,w.country].filter(Boolean).join(' · ')}</div>
-                    <div style={{fontSize:15,color:C.ink2,fontFamily:C.P,marginTop:4,lineHeight:1.45,fontStyle:'italic'}}>{w.why_similar}</div>
+                    <div style={{fontSize:15,color:T.mid,fontFamily:C.P,marginTop:2}}>{[w.region,w.country].filter(Boolean).join(' · ')}</div>
+                    <div style={{fontSize:15,color:T.ink2,fontFamily:C.P,marginTop:4,lineHeight:1.45,fontStyle:'italic'}}>{w.why_similar}</div>
                     <div style={{display:'flex',gap:6,marginTop:6,alignItems:'center',flexWrap:'wrap'}}>
                       <Pill sm style={{background:col+'12',color:col,border:`1px solid ${col}25`,textTransform:'capitalize'}}>{w.type||'Red'}</Pill>
                       {w.grapes?.[0]&&<Pill sm>{w.grapes[0]}</Pill>}
@@ -316,7 +316,7 @@ function SimilarWinesScreen({nav,back}){
 /* Explore Next detail: teaches one style (what it tastes like, why, how to spot it, what to ask
    for) from the curated catalogue, then suggests real bottles priced around the user's usual
    spend. Opened from WineDNA's Explore Next; the style and reasoning come from ExploreNext. */
-function StyleExploreScreen({nav,back}){
+function StyleExploreScreen({nav,back}){ const T=useTheme(), cr=T.lift(C.cr);
   const cfg=React.useMemo(()=>{
     try{return Handoff.styleExplore.get();}
     catch(e){return null;}
@@ -360,25 +360,25 @@ function StyleExploreScreen({nav,back}){
 
 
   const TYPE_COL={red:'#8B1A2F',white:'#B8963E',rose:'#C47A8A',sparkling:'#5E8FA8',orange:'#C1652B',dessert:'#8A5A2B',fortified:'#5C2A1E'};
-  const col=TYPE_COL[typeKey]||C.cr;
+  const col=TYPE_COL[typeKey]||cr;
   const section=(title,children)=>(
-    <div style={{padding:'12px 14px',borderRadius:12,background:C.white,border:`1px solid ${C.line}`}}>
+    <div style={{padding:'12px 14px',borderRadius:12,background:T.glass,border:`1px solid ${T.line}`}}>
       <div style={{fontSize:12,fontWeight:700,color:col,fontFamily:C.P,marginBottom:5,letterSpacing:'0.08em',textTransform:'uppercase'}}>{title}</div>
       {children}
     </div>
   );
-  const body=t=><div style={{fontSize:15,color:C.ink2,fontFamily:C.P,lineHeight:1.6}}>{t}</div>;
+  const body=t=><div style={{fontSize:15,color:T.ink2,fontFamily:C.P,lineHeight:1.6}}>{t}</div>;
   const TIER={value:'Value','mid-range':'Your usual','step-up':'Step up',splurge:'Splurge'};
 
   if(!style) return(
     <div style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:12,padding:32}}>
-      <span style={{fontSize:16,color:C.mid,fontFamily:C.P,textAlign:'center'}}>This suggestion has been updated. Open Explore Next on your WineDNA to see the latest picks.</span>
+      <span style={{fontSize:16,color:T.mid,fontFamily:C.P,textAlign:'center'}}>This suggestion has been updated. Open Explore Next on your WineDNA to see the latest picks.</span>
       <Btn primary onClick={()=>nav('profile')}>Go to WineDNA</Btn>
     </div>
   );
 
   return(
-    <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden'}}>
+    <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden',background:T.bg}}>
       <div style={{background:col,padding:'14px 20px',display:'flex',alignItems:'center',gap:12,flexShrink:0}}>
         <div onClick={back} style={{width:34,height:34,borderRadius:17,background:'rgba(255,255,255,0.2)',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer'}}>
           <Icon n="back" sz={16} col="#fff"/>
@@ -401,20 +401,20 @@ function StyleExploreScreen({nav,back}){
           {section('How to spot it',body(style.learn.label))}
           {section('What to ask for',(
             <div style={{display:'flex',alignItems:'flex-start',gap:10}}>
-              <div style={{flex:1,fontSize:15,color:C.ink2,fontFamily:C.P,lineHeight:1.6,fontStyle:'italic'}}>"{style.learn.ask}"</div>
+              <div style={{flex:1,fontSize:15,color:T.ink2,fontFamily:C.P,lineHeight:1.6,fontStyle:'italic'}}>"{style.learn.ask}"</div>
               <span onClick={()=>{try{navigator.clipboard.writeText(style.learn.ask);setCopied(true);setTimeout(()=>setCopied(false),2000);}catch(e){}}}
                 style={{fontSize:13,fontWeight:600,color:col,fontFamily:C.P,cursor:'pointer',flexShrink:0}}>{copied?'Copied':'Copy'}</span>
             </div>
           ))}
 
           <div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline',marginTop:6}}>
-            <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>Bottles to try</div>
-            {budget&&<span style={{fontSize:13,color:C.amber,fontFamily:C.P,fontWeight:600}}>Your usual: {budget}</span>}
+            <div style={{fontSize:16,fontWeight:700,color:T.ink,fontFamily:C.P}}>Bottles to try</div>
+            {budget&&<span style={{fontSize:13,color:T.amber,fontFamily:C.P,fontWeight:600}}>Your usual: {budget}</span>}
           </div>
           {loading&&(
             <div style={{display:'flex',alignItems:'center',gap:10,padding:'10px 2px'}}>
               <div style={{width:16,height:16,borderRadius:8,border:`2px solid ${col}30`,borderTopColor:col,animation:'storySpin .8s linear infinite'}}/>
-              <span style={{fontSize:14,color:C.mid,fontFamily:C.P}}>Finding bottles you can buy in {rc.label}…</span>
+              <span style={{fontSize:14,color:T.mid,fontFamily:C.P}}>Finding bottles you can buy in {rc.label}…</span>
             </div>
           )}
           {bottles&&bottles.map((wine,i)=>(
@@ -422,8 +422,8 @@ function StyleExploreScreen({nav,back}){
               <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',gap:8,marginBottom:6}}>
                 <div style={{flex:1}}>
                   {TIER[wine.tier]&&<div style={{fontSize:12,fontWeight:700,color:col,fontFamily:C.P,letterSpacing:'0.05em',textTransform:'uppercase',marginBottom:3}}>{TIER[wine.tier]}</div>}
-                  <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P,lineHeight:1.2}}>{wine.name}</div>
-                  {wine.producer&&!wine.name.includes(wine.producer)&&<div style={{fontSize:14,color:C.mid,fontFamily:C.P}}>{wine.producer}</div>}
+                  <div style={{fontSize:16,fontWeight:700,color:T.ink,fontFamily:C.P,lineHeight:1.2}}>{wine.name}</div>
+                  {wine.producer&&!wine.name.includes(wine.producer)&&<div style={{fontSize:14,color:T.mid,fontFamily:C.P}}>{wine.producer}</div>}
                 </div>
                 {wine.price_local>0&&(
                   <div style={{flexShrink:0,textAlign:'right'}}>
@@ -432,26 +432,26 @@ function StyleExploreScreen({nav,back}){
                   </div>
                 )}
               </div>
-              {wine.why&&<div style={{fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.55,marginBottom:10}}>{wine.why}</div>}
+              {wine.why&&<div style={{fontSize:14,color:T.ink2,fontFamily:C.P,lineHeight:1.55,marginBottom:10}}>{wine.why}</div>}
               <Btn small full onClick={()=>FindOnline.open(wine,'explore')}>{FindOnline.label(wine)}</Btn>
             </Card>
           ))}
           {bottles&&bottles.length>0&&<ShopDisclosure style={{padding:'0 4px'}}/>}
           {bottles&&bottles.length===0&&(
             <Card style={{padding:14}}>
-              <span style={{fontSize:15,color:C.mid,fontFamily:C.P}}>Couldn't load bottle suggestions right now. The label tips above are enough to find one in a shop or on a wine list.</span>
+              <span style={{fontSize:15,color:T.mid,fontFamily:C.P}}>Couldn't load bottle suggestions right now. The label tips above are enough to find one in a shop or on a wine list.</span>
             </Card>
           )}
 
-          <Card style={{padding:14,background:C.offWhite,border:`1px solid ${C.line}`}}>
-            <div style={{fontSize:15,fontWeight:700,color:C.ink,fontFamily:C.P,marginBottom:4}}>Found one? Scan it</div>
-            <div style={{fontSize:14,color:C.mid,fontFamily:C.P,lineHeight:1.55,marginBottom:10}}>Scan and rate it and it'll move to "Already explored" on your WineDNA, and your next suggestions will learn from what you thought.</div>
+          <Card style={{padding:14,background:T.soft,border:`1px solid ${T.line}`}}>
+            <div style={{fontSize:15,fontWeight:700,color:T.ink,fontFamily:C.P,marginBottom:4}}>Found one? Scan it</div>
+            <div style={{fontSize:14,color:T.mid,fontFamily:C.P,lineHeight:1.55,marginBottom:10}}>Scan and rate it and it'll move to "Already explored" on your WineDNA, and your next suggestions will learn from what you thought.</div>
             <Btn primary full style={{background:col}} onClick={()=>nav('camera')}>Scan a bottle</Btn>
           </Card>
 
-          <Card style={{padding:14,background:inLearn?C.greenBg:C.offWhite,border:`1px solid ${inLearn?C.green+'40':C.line}`}}>
-            <div style={{fontSize:15,fontWeight:700,color:inLearn?C.green:C.ink,fontFamily:C.P,marginBottom:4}}>{inLearn?'✓ On your Learn shelf':'Read up before you buy'}</div>
-            <div style={{fontSize:14,color:C.mid,fontFamily:C.P,lineHeight:1.55,marginBottom:inLearn?0:10}}>
+          <Card style={{padding:14,background:inLearn?T.greenBg:T.soft,border:`1px solid ${inLearn?T.green+'40':T.line}`}}>
+            <div style={{fontSize:15,fontWeight:700,color:inLearn?T.green:T.ink,fontFamily:C.P,marginBottom:4}}>{inLearn?'✓ On your Learn shelf':'Read up before you buy'}</div>
+            <div style={{fontSize:14,color:T.mid,fontFamily:C.P,lineHeight:1.55,marginBottom:inLearn?0:10}}>
               {inLearn?`"Explore Next: ${style.name}" is waiting on your Learn tab.`:`Add a short article on ${style.name} to your Learn tab: the story behind it, what to eat with it, and how to order it.`}
             </div>
             {!inLearn&&<Btn full onClick={()=>{ExploreNext.addToLearn(style.id);setInLearn(true);}}>Add to Learn</Btn>}
