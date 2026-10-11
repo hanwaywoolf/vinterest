@@ -1376,7 +1376,7 @@ function nextQuizSuggestion(config){
 }
 
 /* ── QUIZ SCREEN ── */
-function QuizScreen({nav,back}){
+function QuizScreen({nav,back}){ const T=useTheme(), cr=T.lift(C.cr);
   // On an iPad the question, the review and the buttons sit in a centred column (side), not across the screen.
   const wide=useWide(), side=wide?'max(16px, calc((100% - 720px) / 2))':'16px';
   // Config is state so the results screen can move straight on to the next quiz or set.
@@ -1482,7 +1482,7 @@ function QuizScreen({nav,back}){
 
   if(phase==='empty') return(
     <div style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:12,padding:32}}>
-      <span style={{fontSize:16,color:C.mid,fontFamily:C.P,textAlign:'center'}}>{mode==='concept'&&MasterySystem.summary().mastered===MasterySystem.summary().total&&MasterySystem.summary().total>0
+      <span style={{fontSize:16,color:T.mid,fontFamily:C.P,textAlign:'center'}}>{mode==='concept'&&MasterySystem.summary().mastered===MasterySystem.summary().total&&MasterySystem.summary().total>0
         ?'Every concept is mastered. Nice work.'
         :'Nothing to test yet — scan and rate a few more bottles first.'}</span>
       <Btn primary onClick={()=>nav('learn')}>Back to Learn</Btn>
@@ -1519,14 +1519,14 @@ function QuizScreen({nav,back}){
       startQuiz(config);
     }
     const card=(done,headline,sub)=>(
-      <div style={{background:done?C.greenBg:C.offWhite,borderRadius:12,padding:'12px 14px',border:`1px solid ${done?C.green+'40':C.line}`}}>
-        <div style={{fontSize:15,fontWeight:700,color:done?C.green:C.ink,fontFamily:C.P}}>{headline}</div>
-        {sub&&<div style={{fontSize:14,color:C.mid,fontFamily:C.P,marginTop:2,lineHeight:1.4}}>{sub}</div>}
+      <div style={{background:done?T.greenBg:T.soft,borderRadius:12,padding:'12px 14px',border:`1px solid ${done?T.green+'40':T.line}`}}>
+        <div style={{fontSize:15,fontWeight:700,color:done?T.green:T.ink,fontFamily:C.P}}>{headline}</div>
+        {sub&&<div style={{fontSize:14,color:T.mid,fontFamily:C.P,marginTop:2,lineHeight:1.4}}>{sub}</div>}
       </div>
     );
     return(
       <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden'}}>
-        <div style={{background:C.cr,padding:'26px 24px 20px',display:'flex',flexDirection:'column',alignItems:'center',gap:5,flexShrink:0}}>
+        <div style={{background:cr,padding:'26px 24px 20px',display:'flex',flexDirection:'column',alignItems:'center',gap:5,flexShrink:0}}>
           <Icon n={justCompleted||pct===100?'trophy':pct>=80?'star':pct>=60?'check':'book'} sz={32} col="#fff"/>
           <div style={{fontSize:22,fontWeight:800,color:'#fff',fontFamily:C.P,textAlign:'center'}}>{msg}</div>
           {!justCompleted&&<div style={{fontSize:15,color:'rgba(255,255,255,0.8)',fontFamily:C.P}}>{mode==='region'&&<Flag region={config.region} size={15} style={{marginRight:6}}/>}{title}</div>}
@@ -1556,20 +1556,20 @@ function QuizScreen({nav,back}){
               concepts.mastered===concepts.total?null:'Each right answer moves a concept up a step and a miss moves it back one; five steps masters it.')}
             {setDone&&(
               <div style={{display:'flex',justifyContent:'center',gap:18}}>
-                <span onClick={()=>startQuiz(config)} style={{fontSize:14,fontWeight:600,color:C.mid,fontFamily:C.P,textDecoration:'underline',cursor:'pointer'}}>Practise again</span>
-                <span onClick={resetSet} style={{fontSize:14,fontWeight:600,color:C.mid,fontFamily:C.P,textDecoration:'underline',cursor:'pointer'}}>Reset progress</span>
+                <span onClick={()=>startQuiz(config)} style={{fontSize:14,fontWeight:600,color:T.mid,fontFamily:C.P,textDecoration:'underline',cursor:'pointer'}}>Practise again</span>
+                <span onClick={resetSet} style={{fontSize:14,fontWeight:600,color:T.mid,fontFamily:C.P,textDecoration:'underline',cursor:'pointer'}}>Reset progress</span>
               </div>
             )}
-            <div style={{fontSize:15,fontWeight:600,color:C.mid,letterSpacing:'0.07em',textTransform:'uppercase',fontFamily:C.P,marginTop:4}}>Review</div>
+            <div style={{fontSize:15,fontWeight:600,color:T.mid,letterSpacing:'0.07em',textTransform:'uppercase',fontFamily:C.P,marginTop:4}}>Review</div>
             {results.map((r,i)=>(
-              <div key={i} style={{background:r.correct?C.greenBg:'#FFF0F0',borderRadius:12,padding:'10px 14px',border:`1px solid ${r.correct?C.green+'30':'#F5A0A0'}`}}>
+              <div key={i} style={{background:r.correct?T.greenBg:'#FFF0F0',borderRadius:12,padding:'10px 14px',border:`1px solid ${r.correct?T.green+'30':'#F5A0A0'}`}}>
                 <div style={{display:'flex',gap:8,alignItems:'flex-start'}}>
                   <span style={{fontSize:18,flexShrink:0}}>{r.correct?'✓':'✗'}</span>
                   <div>
-                    <div style={{fontSize:15,fontWeight:600,color:C.ink,fontFamily:C.P,lineHeight:1.3}}>{r.qText}</div>
+                    <div style={{fontSize:15,fontWeight:600,color:T.ink,fontFamily:C.P,lineHeight:1.3}}>{r.qText}</div>
                     {!r.correct&&<div style={{fontSize:15,color:'#C0392B',fontFamily:C.P,marginTop:3}}>Your answer: {r.selectedOpt}</div>}
-                    {!r.correct&&<div style={{fontSize:15,color:C.green,fontFamily:C.P}}>Correct: {r.correctOpt}</div>}
-                    {r.fact&&<div style={{fontSize:15,color:C.mid,fontFamily:C.P,marginTop:4,lineHeight:1.4,fontStyle:'italic'}}>{r.fact}</div>}
+                    {!r.correct&&<div style={{fontSize:15,color:T.green,fontFamily:C.P}}>Correct: {r.correctOpt}</div>}
+                    {r.fact&&<div style={{fontSize:15,color:T.mid,fontFamily:C.P,marginTop:4,lineHeight:1.4,fontStyle:'italic'}}>{r.fact}</div>}
                   </div>
                 </div>
               </div>
@@ -1577,7 +1577,7 @@ function QuizScreen({nav,back}){
           </div>
         </div>
         {/* Actions stay pinned below the review so they're visible without scrolling. */}
-        <div style={{flexShrink:0,padding:`12px ${side} calc(12px + env(safe-area-inset-bottom))`,borderTop:`1px solid ${C.line}`,background:C.white,display:'flex',flexDirection:'column',gap:8}}>
+        <div style={{flexShrink:0,padding:`12px ${side} calc(12px + env(safe-area-inset-bottom))`,borderTop:`1px solid ${T.line}`,background:T.glass,display:'flex',flexDirection:'column',gap:8}}>
           {primary&&<Btn primary full onClick={nextLoading?undefined:primary.go}>{nextLoading?'Getting it ready…':primary.label}</Btn>}
           <Btn primary={!primary} full onClick={()=>nav('learn')}>Back to Learn</Btn>
         </div>
@@ -1587,38 +1587,38 @@ function QuizScreen({nav,back}){
 
   const progress=(qIdx+1)/allQs.length;
   const optColors=selected===null
-    ? q.opts.map(()=>({bg:C.white,border:C.line,text:C.ink}))
+    ? q.opts.map(()=>({bg:T.glass,border:T.line,text:T.ink}))
     : q.opts.map((_,i)=>{
-        if(i===q.a) return {bg:C.greenBg,border:C.green,text:C.green};
-        if(i===selected&&selected!==q.a) return {bg:'#FFF0F0',border:'#E88080',text:'#C0392B'};
-        return {bg:C.white,border:C.line,text:C.ink};
+        if(i===q.a) return {bg:T.greenBg,border:T.green,text:T.green};
+        if(i===selected&&selected!==q.a) return {bg:T.dark?'rgba(242,139,125,0.16)':'#FFF0F0',border:T.dark?T.tone.bad:'#E88080',text:T.dark?T.tone.bad:'#C0392B'};
+        return {bg:T.glass,border:T.line,text:T.ink};
       });
 
   return(
     <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden'}}>
-      <div style={{background:C.white,padding:'14px 20px 12px',flexShrink:0,borderBottom:`1px solid ${C.line}`}}>
+      <div style={{background:`radial-gradient(ellipse at 50% -20%, ${_alpha(cr,T.dark?0.42:0.14)}, transparent 70%) ${T.dark?T.bg:C.white}`,padding:'14px 20px 12px',flexShrink:0,borderBottom:`1px solid ${T.line}`}}>
         <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:10}}>
-          <div onClick={back} style={{width:32,height:32,borderRadius:16,background:C.offWhite,border:`1px solid ${C.line}`,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer'}}>
-            <Icon n="back" sz={14} col={C.ink}/>
+          <div onClick={back} style={{width:32,height:32,borderRadius:16,background:T.soft,border:`1px solid ${T.line}`,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer'}}>
+            <Icon n="back" sz={14} col={T.ink}/>
           </div>
           <div style={{flex:1}}>
-            <div style={{fontSize:17,fontWeight:700,color:C.ink,fontFamily:C.P}}>{mode==='region'&&<Flag region={config.region} size={17} style={{marginRight:7}}/>}{title}</div>
+            <div style={{fontSize:17,fontWeight:700,color:T.ink,fontFamily:C.P}}>{mode==='region'&&<Flag region={config.region} size={17} style={{marginRight:7}}/>}{title}</div>
           </div>
           <div style={{display:'flex',alignItems:'center',gap:5}}>
-            {streak>=2&&<Icon n="flame" sz={18} col={C.cr}/>}
-            <span style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>{qIdx+1}/{allQs.length}</span>
+            {streak>=2&&<Icon n="flame" sz={18} col={cr}/>}
+            <span style={{fontSize:16,fontWeight:700,color:T.ink,fontFamily:C.P}}>{qIdx+1}/{allQs.length}</span>
           </div>
         </div>
-        <div style={{height:5,borderRadius:3,background:C.offWhite,overflow:'hidden'}}>
-          <div style={{height:'100%',borderRadius:3,background:C.cr,width:`${Math.round(progress*100)}%`,transition:'width .4s ease'}}/>
+        <div style={{height:5,borderRadius:3,background:T.soft,overflow:'hidden'}}>
+          <div style={{height:'100%',borderRadius:3,background:cr,width:`${Math.round(progress*100)}%`,transition:'width .4s ease'}}/>
         </div>
       </div>
 
       <div key="question" ref={qRef} onClick={phase==='feedback'?advance:undefined} style={{flex:1,overflowY:'auto',padding:wide?`28px ${side}`:'20px 16px',display:'flex',flexDirection:'column',gap:14,cursor:phase==='feedback'?'pointer':'default'}}>
-        <div style={{fontSize:21,fontWeight:700,color:C.ink,fontFamily:C.P,lineHeight:1.4}}>{q.q}</div>
+        <div style={{fontSize:21,fontWeight:700,color:T.ink,fontFamily:C.P,lineHeight:1.4}}>{q.q}</div>
         <div style={{display:'flex',flexDirection:'column',gap:10,marginTop:4}}>
           {q.opts.map((opt,i)=>{
-            const s=optColors[i]||{bg:C.white,border:C.line,text:C.ink};
+            const s=optColors[i]||{bg:T.glass,border:T.line,text:T.ink};
             return(
               <div key={i} onClick={()=>choose(i)}
                 style={{padding:'15px 16px',borderRadius:14,border:`2px solid ${s.border}`,background:s.bg,cursor:phase==='question'?'pointer':'default',transition:'all .2s',display:'flex',alignItems:'center',gap:10}}>
@@ -1634,11 +1634,11 @@ function QuizScreen({nav,back}){
         </div>
         {phase==='feedback'&&(
           <div style={{animation:'fadeIn .3s ease'}}>
-            <div style={{background:selected===q.a?C.greenBg:'#FFF8F0',borderRadius:14,padding:'12px 14px',border:`1px solid ${selected===q.a?C.green+'40':'#F5C07040'}`,marginBottom:12}}>
-              <div style={{fontSize:16,fontWeight:700,color:selected===q.a?C.green:'#B87000',fontFamily:C.P,marginBottom:4}}>{selected===q.a?'Correct!':'Not quite'}</div>
-              {q.fact&&<div style={{fontSize:15,color:C.ink2,fontFamily:C.P,lineHeight:1.5}}>{q.fact}</div>}
+            <div style={{background:selected===q.a?T.greenBg:'#FFF8F0',borderRadius:14,padding:'12px 14px',border:`1px solid ${selected===q.a?T.green+'40':'#F5C07040'}`,marginBottom:12}}>
+              <div style={{fontSize:16,fontWeight:700,color:selected===q.a?T.green:'#B87000',fontFamily:C.P,marginBottom:4}}>{selected===q.a?'Correct!':'Not quite'}</div>
+              {q.fact&&<div style={{fontSize:15,color:T.ink2,fontFamily:C.P,lineHeight:1.5}}>{q.fact}</div>}
             </div>
-            <div onClick={e=>{e.stopPropagation();advance();}} style={{background:C.cr,borderRadius:14,padding:'15px',textAlign:'center',cursor:'pointer',boxShadow:`0 6px 22px ${C.cr}45`,userSelect:'none',WebkitUserSelect:'none'}}>
+            <div onClick={e=>{e.stopPropagation();advance();}} style={{background:cr,borderRadius:14,padding:'15px',textAlign:'center',cursor:'pointer',boxShadow:`0 6px 22px ${cr}45`,userSelect:'none',WebkitUserSelect:'none'}}>
               <span style={{fontSize:17,fontWeight:700,color:'#fff',fontFamily:C.P}}>{qIdx+1>=allQs.length?'See Results →':'Next Question →'}</span>
             </div>
           </div>

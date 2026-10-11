@@ -3,7 +3,7 @@
 /* Screens that have moved onto the story's stage (pwa-scancards.jsx DeckTheme) and follow the
    appearance picked on Profile (Settings.theme): under them the nav and the XP badge follow it too.
    Every other screen still draws itself light until it moves over. */
-const THEMED_SCREENS=['home','profile','dna-trait','identified','mywines','detail','learn','scan','account'];
+const THEMED_SCREENS=['home','profile','dna-trait','identified','mywines','detail','learn','scan','account','quiz','article','gen-article','guide','grape','region-page','palate-trait'];
 function App(){
   const [screen,setScreen]=React.useState(()=>{
     if(!Settings.onboarded()) return 'onboarding';
