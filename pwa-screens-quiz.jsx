@@ -30,35 +30,35 @@ function ShowMore({items,limit=3,render,noun}){
   </>;
 }
 /* The row of section chips at the top of Learn: every kind of learning visible at once, one tap away. */
-function LearnJumpRow({sections,onJump}){
-  return <div style={{display:'flex',gap:8,overflowX:'auto',padding:'10px 16px',background:C.bg,position:'sticky',top:0,zIndex:2,borderBottom:`1px solid ${C.line}`,scrollbarWidth:'none'}}>
+function LearnJumpRow({sections,onJump}){ const T=useTheme(), cr=T.lift(C.cr);
+  return <div style={{display:'flex',gap:8,overflowX:'auto',padding:'10px 16px',background:T.bg,position:'sticky',top:0,zIndex:2,borderBottom:`1px solid ${T.line}`,scrollbarWidth:'none'}}>
     {sections.map(x=>(
-      <div key={x.id} role="button" onClick={()=>onJump(x.id)} style={{flex:'0 0 auto',padding:'7px 13px',borderRadius:999,background:C.white,border:`1px solid ${C.line}`,cursor:'pointer',display:'flex',alignItems:'center',gap:6}}>
-        <span style={{fontSize:14,fontWeight:600,color:C.ink,fontFamily:C.P,whiteSpace:'nowrap'}}>{x.label}</span>
-        {x.count>0&&<span style={{fontSize:12,fontWeight:700,color:C.cr,background:C.crSoft,borderRadius:999,padding:'1px 7px',fontFamily:C.P}}>{x.count}</span>}
+      <div key={x.id} role="button" onClick={()=>onJump(x.id)} style={{flex:'0 0 auto',padding:'7px 13px',borderRadius:999,background:T.glass,border:`1px solid ${T.line}`,cursor:'pointer',display:'flex',alignItems:'center',gap:6}}>
+        <span style={{fontSize:14,fontWeight:600,color:T.ink,fontFamily:C.P,whiteSpace:'nowrap'}}>{x.label}</span>
+        {x.count>0&&<span style={{fontSize:12,fontWeight:700,color:cr,background:T.crSoft,borderRadius:999,padding:'1px 7px',fontFamily:C.P}}>{x.count}</span>}
       </div>
     ))}
   </div>;
 }
 /* A region's country flag in the 42px icon tile (Regions.flag); the map icon when the country is
    unknown. Locked (Pro) regions show it faded. The flag is a fixed graphic, so its size is px. */
-function RegionFlag({region,locked}){
+function RegionFlag({region,locked}){ const T=useTheme(), cr=T.lift(C.cr);
   const f=Regions.flag(region);
-  return <div style={{width:42,height:42,borderRadius:12,background:C.offWhite,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,opacity:locked?0.5:1}}>
-    {f?<span role="img" aria-label={(KNOWLEDGE.regions[region]||{}).country} style={{fontSize:'24px',lineHeight:1}}>{f}</span>:<Icon n="map" sz={20} col={C.ink}/>}
+  return <div style={{width:42,height:42,borderRadius:12,background:T.soft,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,opacity:locked?0.5:1}}>
+    {f?<span role="img" aria-label={(KNOWLEDGE.regions[region]||{}).country} style={{fontSize:'24px',lineHeight:1}}>{f}</span>:<Icon n="map" sz={20} col={T.ink}/>}
   </div>;
 }
 /* ✓ plus a Reset link, for a completed quiz row. The row itself stays tappable to retake it. */
-function CompletedMark({onReset}){
+function CompletedMark({onReset}){ const T=useTheme(), cr=T.lift(C.cr);
   return(
     <div style={{display:'flex',flexDirection:'column',alignItems:'flex-end',gap:2,flexShrink:0}}>
-      <span style={{fontSize:14,fontWeight:700,color:C.green,fontFamily:C.P}}>✓</span>
-      <span onClick={e=>{e.stopPropagation();onReset();}} style={{fontSize:13,fontWeight:600,color:C.mid,fontFamily:C.P,textDecoration:'underline',cursor:'pointer'}}>Reset</span>
+      <span style={{fontSize:14,fontWeight:700,color:T.green,fontFamily:C.P}}>✓</span>
+      <span onClick={e=>{e.stopPropagation();onReset();}} style={{fontSize:13,fontWeight:600,color:T.mid,fontFamily:C.P,textDecoration:'underline',cursor:'pointer'}}>Reset</span>
     </div>
   );
 }
 
-function QuizHubScreen({nav,back,showPro}){
+function QuizHubScreen({nav,back,showPro}){ const T=useTheme(), cr=T.lift(C.cr);
   // On an iPad the lists (pieces, basics, regions, guides) run two to a row, and the page keeps to 1100px.
   const wide=useWide(), list=wide?{display:'grid',gridTemplateColumns:'repeat(2,minmax(0,1fr))',gap:8,alignItems:'stretch'}:{display:'flex',flexDirection:'column',gap:8};
   const [xpData,setXpData]=React.useState(()=>XPSystem.get());
@@ -84,7 +84,7 @@ function QuizHubScreen({nav,back,showPro}){
     setGenStubs(updated);
   },[article1Done]);
 
-  const zoneLabel={fontSize:15,fontWeight:600,color:C.mid,letterSpacing:'0.08em',textTransform:'uppercase',fontFamily:C.P,marginBottom:2};
+  const zoneLabel={fontSize:15,fontWeight:600,color:T.mid,letterSpacing:'0.08em',textTransform:'uppercase',fontFamily:C.P,marginBottom:2};
   const unreadShelf=(genStubs||[]).filter(s=>!LearnProgress.articleDone(s.id)&&!ContentEngine.stubLocked(s));
   const nextOnRamp=ON_RAMP.find(a=>!onRampDone(a.id));
   const nextBest=nextOnRamp&&!(UserPrefs.skipsOnRamp()&&unreadShelf.length)
@@ -190,43 +190,43 @@ function QuizHubScreen({nav,back,showPro}){
   // renders, and React throws the moment the unlock effect flips showUnlock.
 
   return(
-    <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden'}}>
-      <div style={{background:C.white,padding:'14px 20px 0',borderBottom:`1px solid ${C.line}`,flexShrink:0}}>
+    <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden',background:T.bg}}>
+      <div style={{background:`radial-gradient(ellipse at 50% -20%, ${_alpha(cr,T.dark?0.42:0.14)}, transparent 70%) ${T.dark?T.bg:C.white}`,padding:'14px 20px 0',borderBottom:`1px solid ${T.line}`,flexShrink:0}}>
         <div style={{display:'flex',alignItems:'center',gap:12,marginBottom:12}}>
-          <div role="button" aria-label="Back" onClick={back} style={{width:34,height:34,borderRadius:17,background:C.offWhite,border:`1px solid ${C.line}`,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer'}}>
-            <Icon n="back" sz={16} col={C.ink}/>
+          <div role="button" aria-label="Back" onClick={back} style={{width:34,height:34,borderRadius:17,background:T.soft,border:`1px solid ${T.line}`,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer'}}>
+            <Icon n="back" sz={16} col={T.ink}/>
           </div>
-          <span style={{fontSize:22,fontWeight:800,color:C.ink,fontFamily:C.P,flex:1,letterSpacing:'-0.4px'}}>Learn</span>
-          <div style={{display:'flex',alignItems:'center',gap:6,padding:'5px 10px',borderRadius:20,background:C.crSoft,border:`1px solid ${C.crDim}`}}>
-            <Icon n={XPSystem.iconFor(level)} sz={15} col={C.cr}/>
-            <span style={{fontSize:16,fontWeight:700,color:C.cr,fontFamily:C.P}}>{xpData.total} XP</span>
+          <span style={{fontSize:22,fontWeight:800,color:T.ink,fontFamily:C.P,flex:1,letterSpacing:'-0.4px'}}>Learn</span>
+          <div style={{display:'flex',alignItems:'center',gap:6,padding:'5px 10px',borderRadius:20,background:T.crSoft,border:`1px solid ${_alpha(cr,0.4)}`}}>
+            <Icon n={XPSystem.iconFor(level)} sz={15} col={cr}/>
+            <span style={{fontSize:16,fontWeight:700,color:cr,fontFamily:C.P}}>{xpData.total} XP</span>
           </div>
         </div>
         <div style={{marginBottom:14}}>
           <div style={{display:'flex',justifyContent:'space-between',marginBottom:4}}>
-            <span style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>{level.name}</span>
-            {nextLvl&&<span style={{fontSize:15,color:C.mid,fontFamily:C.P}}>{nextLvl.min - xpData.total} XP to {nextLvl.name}</span>}
+            <span style={{fontSize:16,fontWeight:700,color:T.ink,fontFamily:C.P}}>{level.name}</span>
+            {nextLvl&&<span style={{fontSize:15,color:T.mid,fontFamily:C.P}}>{nextLvl.min - xpData.total} XP to {nextLvl.name}</span>}
           </div>
-          <div style={{height:7,borderRadius:4,background:C.offWhite,overflow:'hidden'}}>
+          <div style={{height:7,borderRadius:4,background:T.soft,overflow:'hidden'}}>
             <div style={{height:'100%',borderRadius:4,background:level.color,width:`${Math.round(prog*100)}%`,transition:'width .6s ease'}}/>
           </div>
         </div>
         {/* Mastery, one tap from the top of Learn: their knowledge in a ring, and where to start. */}
         <div role="button" tabIndex={0} data-testid="learn-mastery-link" onClick={()=>isPro?nav('mastery-map'):showPro('mastery-map')}
           onKeyDown={e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); isPro?nav('mastery-map'):showPro('mastery-map'); } }}
-          style={{display:'flex',alignItems:'center',gap:10,marginBottom:12,padding:'8px 12px 8px 8px',borderRadius:12,background:'#FBF8F3',border:`1px solid ${C.line}`,cursor:'pointer'}}>
+          style={{display:'flex',alignItems:'center',gap:10,marginBottom:12,padding:'8px 12px 8px 8px',borderRadius:12,background:T.dark?T.soft:'#FBF8F3',border:`1px solid ${T.line}`,cursor:'pointer'}}>
           <svg width="34" height="34" viewBox="-17 -17 34 34" aria-hidden="true" style={{flexShrink:0}}>
-            <circle r="13" fill="none" stroke={SKETCH_PENCIL} strokeWidth="2.5"/>
-            <circle r="13" fill="none" stroke={C.cr} strokeWidth="3" strokeLinecap="round" transform="rotate(-90)"
+            <circle r="13" fill="none" stroke={T.dark?'rgba(255,255,255,0.28)':SKETCH_PENCIL} strokeWidth="2.5"/>
+            <circle r="13" fill="none" stroke={cr} strokeWidth="3" strokeLinecap="round" transform="rotate(-90)"
               strokeDasharray={2*Math.PI*13} strokeDashoffset={2*Math.PI*13*(1-Math.min(100,knowledge.overall)/100)}/>
-            <text y="3.5" textAnchor="middle" style={{fontSize:'9px',fontWeight:800,fill:C.ink,fontFamily:C.P}}>{knowledge.overall}%</text>
+            <text y="3.5" textAnchor="middle" style={{fontSize:'9px',fontWeight:800,fill:T.ink,fontFamily:C.P}}>{knowledge.overall}%</text>
           </svg>
           <div style={{flex:1,minWidth:0}}>
-            <div style={{fontSize:15,fontWeight:700,color:C.ink,fontFamily:C.P}}>Your Mastery <span style={{fontWeight:500,color:C.mid}}>· {knowledge.level}</span>{knowledge.progress&&knowledge.progress.overall>0&&<span style={{fontSize:13,fontWeight:800,color:C.green,marginLeft:6}}>▲{knowledge.progress.overall} in {knowledge.progress.weeks} wk{knowledge.progress.weeks===1?'':'s'}</span>}</div>
-            <div style={{fontSize:13,color:C.mid,fontFamily:C.P,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{knowledge.gap?`Start here: ${knowledge.gap.label}`:'Your shape, grapes, wine map and palate'}</div>
+            <div style={{fontSize:15,fontWeight:700,color:T.ink,fontFamily:C.P}}>Your Mastery <span style={{fontWeight:500,color:T.mid}}>· {knowledge.level}</span>{knowledge.progress&&knowledge.progress.overall>0&&<span style={{fontSize:13,fontWeight:800,color:T.green,marginLeft:6}}>▲{knowledge.progress.overall} in {knowledge.progress.weeks} wk{knowledge.progress.weeks===1?'':'s'}</span>}</div>
+            <div style={{fontSize:13,color:T.mid,fontFamily:C.P,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{knowledge.gap?`Start here: ${knowledge.gap.label}`:'Your shape, grapes, wine map and palate'}</div>
           </div>
           {!isPro&&<ProBadge/>}
-          <Icon n="chevron" sz={13} col={C.mid}/>
+          <Icon n="chevron" sz={13} col={T.mid}/>
         </div>
       </div>
 
@@ -242,9 +242,9 @@ function QuizHubScreen({nav,back,showPro}){
 <div style={{padding:wide?'14px max(16px, calc((100% - 1100px) / 2))':'14px 16px',display:'flex',flexDirection:'column',gap:14}}>
         {nextBest&&<div>
           <div style={zoneLabel}>Next Best Thing</div>
-          <div onClick={nextBest.action} style={{background:C.ink,borderRadius:16,padding:'16px',display:'flex',alignItems:'center',gap:12,cursor:'pointer',marginTop:8}}>
-            <div style={{width:46,height:46,borderRadius:12,background:'rgba(255,255,255,0.08)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
-              <Icon n={nextBest.kind==='onramp'?'book':(nextBest.stub.iconName||'read')} sz={20} col="rgba(255,255,255,0.7)"/>
+          <div onClick={nextBest.action} style={T.dark?{background:_alpha(cr,0.16),border:`1px solid ${_alpha(cr,0.4)}`,borderRadius:16,padding:'16px',display:'flex',alignItems:'center',gap:12,cursor:'pointer',marginTop:8,boxShadow:`0 0 36px ${_alpha(cr,0.18)}`}:{background:C.ink,borderRadius:16,padding:'16px',display:'flex',alignItems:'center',gap:12,cursor:'pointer',marginTop:8}}>
+            <div style={{width:46,height:46,borderRadius:12,background:T.dark?_alpha(cr,0.28):'rgba(255,255,255,0.08)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+              <Icon n={nextBest.kind==='onramp'?'book':(nextBest.stub.iconName||'read')} sz={20} col={T.dark?cr:'rgba(255,255,255,0.7)'}/>
             </div>
             <div style={{flex:1}}>
               <div style={{fontSize:13,fontWeight:600,color:'rgba(255,255,255,0.4)',fontFamily:C.P,textTransform:'uppercase',letterSpacing:'0.06em',marginBottom:3}}>{nextBest.kind==='onramp'?'On-Ramp · '+nextBest.readTime:nextBest.kind==='shelf'?'Written for you · '+nextBest.stub.readTime:'Free forever'}</div>
@@ -258,16 +258,16 @@ function QuizHubScreen({nav,back,showPro}){
         {/* Answers past their review date (QuizMastery fading): the sets that need a quick refresher. */}
         {refreshers.length>0&&<div data-testid="refreshers">
           <div style={zoneLabel}>Time for a refresher</div>
-          <div style={{fontSize:14,color:C.mid,fontFamily:C.P,lineHeight:1.45,marginTop:4}}>Answers fade a few weeks after you last got them right, and count for less in your Mastery until you refresh them.</div>
-          <div style={{background:C.white,borderRadius:16,border:`1px solid ${C.line}`,marginTop:8,overflow:'hidden'}}>
+          <div style={{fontSize:14,color:T.mid,fontFamily:C.P,lineHeight:1.45,marginTop:4}}>Answers fade a few weeks after you last got them right, and count for less in your Mastery until you refresh them.</div>
+          <div style={{background:T.glass,borderRadius:16,border:`1px solid ${T.line}`,marginTop:8,overflow:'hidden'}}>
             {refreshers.slice(0,3).map((r,i)=>(
-              <div key={r.label} role="button" onClick={()=>_openLearn(r.learn,nav,showPro)} style={{display:'flex',alignItems:'center',gap:12,padding:'12px 14px',borderTop:i?`1px solid ${C.line}`:'none',cursor:'pointer'}}>
-                <Icon n="bolt" sz={17} col={C.amber}/>
+              <div key={r.label} role="button" onClick={()=>_openLearn(r.learn,nav,showPro)} style={{display:'flex',alignItems:'center',gap:12,padding:'12px 14px',borderTop:i?`1px solid ${T.line}`:'none',cursor:'pointer'}}>
+                <Icon n="bolt" sz={17} col={T.amber}/>
                 <div style={{flex:1,minWidth:0}}>
-                  <div style={{fontSize:15,fontWeight:700,color:C.ink,fontFamily:C.P}}>{r.region&&<Flag region={r.region} size={14} style={{marginRight:6}}/>}{r.label}</div>
-                  <div style={{fontSize:13,color:C.mid,fontFamily:C.P}}>{r.fading} of {r.total} answers fading</div>
+                  <div style={{fontSize:15,fontWeight:700,color:T.ink,fontFamily:C.P}}>{r.region&&<Flag region={r.region} size={14} style={{marginRight:6}}/>}{r.label}</div>
+                  <div style={{fontSize:13,color:T.mid,fontFamily:C.P}}>{r.fading} of {r.total} answers fading</div>
                 </div>
-                <span style={{fontSize:14,fontWeight:700,color:C.cr,fontFamily:C.P}}>Refresh →</span>
+                <span style={{fontSize:14,fontWeight:700,color:cr,fontFamily:C.P}}>Refresh →</span>
               </div>
             ))}
           </div>
@@ -277,15 +277,15 @@ function QuizHubScreen({nav,back,showPro}){
         {!article1Done&&ON_RAMP[0]&&(
           <div ref={secRefs.shelf} data-shelf-locked style={{scrollMarginTop:56}}>
             <div style={zoneLabel}>Written for you</div>
-            <div style={{marginTop:8,background:C.white,borderRadius:14,border:`1px dashed ${C.line}`,padding:'16px',position:'relative',overflow:'hidden'}}>
+            <div style={{marginTop:8,background:T.glass,borderRadius:14,border:`1px dashed ${T.line}`,padding:'16px',position:'relative',overflow:'hidden'}}>
               <div aria-hidden="true" style={{opacity:0.35,display:'flex',flexDirection:'column',gap:8,marginBottom:12}}>
                 {[0.9,0.7].map((w,i)=><div key={i} style={{display:'flex',gap:10,alignItems:'center'}}>
-                  <div style={{width:36,height:36,borderRadius:10,background:C.crSoft,flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center'}}><Icon n="read" sz={16} col={C.cr}/></div>
-                  <div style={{flex:1}}><div style={{height:10,width:`${w*100}%`,background:C.line,borderRadius:5,marginBottom:6}}/><div style={{height:8,width:`${w*70}%`,background:C.line,borderRadius:4}}/></div>
+                  <div style={{width:36,height:36,borderRadius:10,background:T.crSoft,flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center'}}><Icon n="read" sz={16} col={cr}/></div>
+                  <div style={{flex:1}}><div style={{height:10,width:`${w*100}%`,background:T.line,borderRadius:5,marginBottom:6}}/><div style={{height:8,width:`${w*70}%`,background:T.line,borderRadius:4}}/></div>
                 </div>)}
               </div>
-              <div style={{fontSize:15,fontWeight:700,color:C.ink,fontFamily:C.P,lineHeight:1.35}}>Like a good bottle, these need a little time.</div>
-              <div style={{fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.5,marginTop:4}}>Pieces here are written from your WineDNA: the bottles you scan, how you rate them and what you pay. Read <b>{ON_RAMP[0].title}</b> first and your shelf opens.</div>
+              <div style={{fontSize:15,fontWeight:700,color:T.ink,fontFamily:C.P,lineHeight:1.35}}>Like a good bottle, these need a little time.</div>
+              <div style={{fontSize:14,color:T.ink2,fontFamily:C.P,lineHeight:1.5,marginTop:4}}>Pieces here are written from your WineDNA: the bottles you scan, how you rate them and what you pay. Read <b>{ON_RAMP[0].title}</b> first and your shelf opens.</div>
               <div style={{marginTop:12}}><Btn primary onClick={()=>{Handoff.onRampIdx.set('0');nav('article');}}>Read it now · {ON_RAMP[0].readTime}</Btn></div>
             </div>
           </div>
@@ -311,32 +311,32 @@ function QuizHubScreen({nav,back,showPro}){
           return(
           <div ref={secRefs.shelf} style={{scrollMarginTop:56}}>
             <div style={zoneLabel}>Written for you</div>
-            <div style={{fontSize:14,color:C.mid,fontFamily:C.P,lineHeight:1.45,marginTop:4}}>Every piece here is written from your WineDNA: the bottles you've scanned, how you rated them and what you paid. Nobody else gets the same article.</div>
+            <div style={{fontSize:14,color:T.mid,fontFamily:C.P,lineHeight:1.45,marginTop:4}}>Every piece here is written from your WineDNA: the bottles you've scanned, how you rated them and what you paid. Nobody else gets the same article.</div>
             <div style={{...list,marginTop:8}}>
             {!unread.length&&(
-              <div style={{padding:'18px 16px',textAlign:'center',background:C.white,borderRadius:14,border:`1px dashed ${C.line}`,gridColumn:'1 / -1'}}>
-                <span style={{fontSize:15,color:C.mid,fontFamily:C.P,lineHeight:1.5}}>{read.length?"You've read everything written for you so far. Scan or rate another bottle and more arrives.":"Nothing on your shelf yet. Scan a bottle and we'll have something for you by morning."}</span>
+              <div style={{padding:'18px 16px',textAlign:'center',background:T.glass,borderRadius:14,border:`1px dashed ${T.line}`,gridColumn:'1 / -1'}}>
+                <span style={{fontSize:15,color:T.mid,fontFamily:C.P,lineHeight:1.5}}>{read.length?"You've read everything written for you so far. Scan or rate another bottle and more arrives.":"Nothing on your shelf yet. Scan a bottle and we'll have something for you by morning."}</span>
               </div>
             )}
             <ShowMore items={unread} limit={3} render={card} noun="to read"/>
             {libraryCount>0&&(
-              <div role="button" data-testid="library-toggle" onClick={()=>setLibraryOpen(o=>!o)} style={{background:C.white,borderRadius:14,padding:'10px 14px',display:'flex',alignItems:'center',gap:8,cursor:'pointer',border:`1px dashed ${C.line}`,gridColumn:'1 / -1'}}>
-                <Icon n="book" sz={15} col={C.mid}/>
-                <span style={{fontSize:14,fontWeight:600,color:C.mid,fontFamily:C.P,flex:1}}>Your library · {libraryCount} read</span>
-                <Icon n="chevron" sz={12} col={C.mid} style={{transform:libraryOpen?'rotate(-90deg)':'rotate(90deg)'}}/>
+              <div role="button" data-testid="library-toggle" onClick={()=>setLibraryOpen(o=>!o)} style={{background:T.glass,borderRadius:14,padding:'10px 14px',display:'flex',alignItems:'center',gap:8,cursor:'pointer',border:`1px dashed ${T.line}`,gridColumn:'1 / -1'}}>
+                <Icon n="book" sz={15} col={T.mid}/>
+                <span style={{fontSize:14,fontWeight:600,color:T.mid,fontFamily:C.P,flex:1}}>Your library · {libraryCount} read</span>
+                <Icon n="chevron" sz={12} col={T.mid} style={{transform:libraryOpen?'rotate(-90deg)':'rotate(90deg)'}}/>
               </div>
             )}
             {libraryOpen&&read.map(card)}
-            {libraryOpen&&readBasics.length>0&&<div data-testid="library-basics" style={{background:C.white,borderRadius:14,border:`1px solid ${C.line}`,overflow:'hidden',gridColumn:'1 / -1'}}>
-              <div style={{fontSize:13,fontWeight:700,color:C.mid,letterSpacing:'0.07em',textTransform:'uppercase',fontFamily:C.P,padding:'10px 14px 4px'}}>Beginner articles</div>
+            {libraryOpen&&readBasics.length>0&&<div data-testid="library-basics" style={{background:T.glass,borderRadius:14,border:`1px solid ${T.line}`,overflow:'hidden',gridColumn:'1 / -1'}}>
+              <div style={{fontSize:13,fontWeight:700,color:T.mid,letterSpacing:'0.07em',textTransform:'uppercase',fontFamily:C.P,padding:'10px 14px 4px'}}>Beginner articles</div>
               {readBasics.map(({a,i})=>(
-                <div key={a.id} role="button" onClick={()=>{Handoff.onRampIdx.set(String(i));nav('article');}} style={{display:'flex',alignItems:'center',gap:12,padding:'10px 14px',borderTop:`1px solid ${C.line}`,cursor:'pointer'}}>
-                  <Icon n="check" sz={15} col={C.green||C.mid}/>
+                <div key={a.id} role="button" onClick={()=>{Handoff.onRampIdx.set(String(i));nav('article');}} style={{display:'flex',alignItems:'center',gap:12,padding:'10px 14px',borderTop:`1px solid ${T.line}`,cursor:'pointer'}}>
+                  <Icon n="check" sz={15} col={T.green||T.mid}/>
                   <div style={{flex:1,minWidth:0}}>
-                    <div style={{fontSize:15,fontWeight:600,color:C.ink,fontFamily:C.P}}>{a.title}</div>
-                    <div style={{fontSize:13,color:C.mid,fontFamily:C.P}}>{a.readTime} read</div>
+                    <div style={{fontSize:15,fontWeight:600,color:T.ink,fontFamily:C.P}}>{a.title}</div>
+                    <div style={{fontSize:13,color:T.mid,fontFamily:C.P}}>{a.readTime} read</div>
                   </div>
-                  <Icon n="chevron" sz={13} col={C.mid}/>
+                  <Icon n="chevron" sz={13} col={T.mid}/>
                 </div>
               ))}
             </div>}
@@ -351,28 +351,28 @@ function QuizHubScreen({nav,back,showPro}){
             const p=topicProgress(topic.id);
             return(
             <div key={topic.id} onClick={()=>startQuiz({mode:'practice',topicId:topic.id})}
-              style={{background:C.white,borderRadius:14,padding:'12px 14px',display:'flex',alignItems:'center',gap:12,cursor:'pointer',border:`1px solid ${C.line}`}}>
+              style={{background:T.glass,borderRadius:14,padding:'12px 14px',display:'flex',alignItems:'center',gap:12,cursor:'pointer',border:`1px solid ${T.line}`}}>
               <div style={{width:42,height:42,borderRadius:12,background:topic.color+'15',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,border:`1px solid ${topic.color}25`}}>
                 <Icon n={topic.iconName||'book'} sz={20} col={topic.color}/>
               </div>
               <div style={{flex:1}}>
-                <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>{topic.label}</div>
-                <div style={{fontSize:14,color:C.mid,fontFamily:C.P}}>{topic.desc}{p.correct>0?` · ${p.correct}/${p.total} correct`:''}</div>
+                <div style={{fontSize:16,fontWeight:700,color:T.ink,fontFamily:C.P}}>{topic.label}</div>
+                <div style={{fontSize:14,color:T.mid,fontFamily:C.P}}>{topic.desc}{p.correct>0?` · ${p.correct}/${p.total} correct`:''}</div>
               </div>
-              <Icon n="chevron" sz={13} col={C.mid}/>
+              <Icon n="chevron" sz={13} col={T.mid}/>
             </div>
             );
           }}/>
           {doneTopics.length>0&&<CompletedToggle count={doneTopics.length} expanded={topicsExpanded} onToggle={()=>setTopicsExpanded(e=>!e)}/>}
           {topicsExpanded&&doneTopics.map(topic=>(
             <div key={topic.id} onClick={()=>startQuiz({mode:'practice',topicId:topic.id})}
-              style={{background:C.white,borderRadius:14,padding:'12px 14px',display:'flex',alignItems:'center',gap:12,cursor:'pointer',border:`1px solid ${C.line}`,opacity:0.7}}>
+              style={{background:T.glass,borderRadius:14,padding:'12px 14px',display:'flex',alignItems:'center',gap:12,cursor:'pointer',border:`1px solid ${T.line}`,opacity:0.7}}>
               <div style={{width:42,height:42,borderRadius:12,background:topic.color+'15',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,border:`1px solid ${topic.color}25`}}>
                 <Icon n={topic.iconName||'book'} sz={20} col={topic.color}/>
               </div>
               <div style={{flex:1}}>
-                <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>{topic.label}</div>
-                <div style={{fontSize:14,color:C.mid,fontFamily:C.P}}>{topic.desc}</div>
+                <div style={{fontSize:16,fontWeight:700,color:T.ink,fontFamily:C.P}}>{topic.label}</div>
+                <div style={{fontSize:14,color:T.mid,fontFamily:C.P}}>{topic.desc}</div>
               </div>
               <CompletedMark onReset={()=>resetProgress(topic.label,()=>QuizMastery.reset('topic:'+topic.id))}/>
             </div>
@@ -383,15 +383,15 @@ function QuizHubScreen({nav,back,showPro}){
               {(quizRegions.length>0||doneRegions.length>0||proRegions.length>0)&&(
                 <div ref={secRefs.regions} style={{marginTop:14,scrollMarginTop:56,gridColumn:'1 / -1'}}>
                   <div style={zoneLabel}>Region quizzes</div>
-                  <div style={{fontSize:14,color:C.mid,fontFamily:C.P,lineHeight:1.45,marginTop:2}}>One for each region you've scanned: its grapes, climate, rules and how to read its labels.</div>
+                  <div style={{fontSize:14,color:T.mid,fontFamily:C.P,lineHeight:1.45,marginTop:2}}>One for each region you've scanned: its grapes, climate, rules and how to read its labels.</div>
                 </div>
               )}
               <ShowMore items={[...quizRegions.map(r=>({r})),...proRegions.map(r=>({r,pro:true}))]} limit={3} noun="regions" render={({r:region,pro})=>pro?(
-                <div key={region} onClick={()=>showPro('regions')} style={{background:C.white,borderRadius:14,padding:'12px 14px',display:'flex',alignItems:'center',gap:12,cursor:'pointer',border:`1px solid ${C.line}`}}>
+                <div key={region} onClick={()=>showPro('regions')} style={{background:T.glass,borderRadius:14,padding:'12px 14px',display:'flex',alignItems:'center',gap:12,cursor:'pointer',border:`1px solid ${T.line}`}}>
                   <RegionFlag region={region} locked/>
                   <div style={{flex:1}}>
-                    <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>{region}</div>
-                    <div style={{fontSize:14,color:C.mid,fontFamily:C.P}}>Unlock with Pro</div>
+                    <div style={{fontSize:16,fontWeight:700,color:T.ink,fontFamily:C.P}}>{region}</div>
+                    <div style={{fontSize:14,color:T.mid,fontFamily:C.P}}>Unlock with Pro</div>
                   </div>
                   <ProBadge/>
                 </div>
@@ -402,25 +402,25 @@ function QuizHubScreen({nav,back,showPro}){
                 const p=RegionQuizBank.get(region)&&RegionQuizBank.progress(region);
                 const sub=p&&p.correct>0?`${p.correct} of ${p.total} answered`:'5 questions a round';
                 return(
-                  <div key={region} onClick={()=>handleRegionTap(region)} style={{background:C.white,borderRadius:14,padding:'12px 14px',display:'flex',alignItems:'center',gap:12,cursor:'pointer',border:`1px solid ${C.line}`}}>
+                  <div key={region} onClick={()=>handleRegionTap(region)} style={{background:T.glass,borderRadius:14,padding:'12px 14px',display:'flex',alignItems:'center',gap:12,cursor:'pointer',border:`1px solid ${T.line}`}}>
                     <RegionFlag region={region}/>
                     <div style={{flex:1}}>
-                      <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>{region} quiz</div>
-                      <div style={{fontSize:14,color:C.mid,fontFamily:C.P}}>{sub}</div>
+                      <div style={{fontSize:16,fontWeight:700,color:T.ink,fontFamily:C.P}}>{region} quiz</div>
+                      <div style={{fontSize:14,color:T.mid,fontFamily:C.P}}>{sub}</div>
                     </div>
                     {regionLoading===region
-                      ?<div style={{width:14,height:14,borderRadius:7,border:`2px solid ${C.line}`,borderTopColor:C.cr,animation:'storySpin .8s linear infinite'}}/>
-                      :<Icon n="chevron" sz={13} col={C.mid}/>}
+                      ?<div style={{width:14,height:14,borderRadius:7,border:`2px solid ${T.line}`,borderTopColor:cr,animation:'storySpin .8s linear infinite'}}/>
+                      :<Icon n="chevron" sz={13} col={T.mid}/>}
                   </div>
                 );
               })()}/>
               {doneRegions.length>0&&<CompletedToggle count={doneRegions.length} expanded={regionsExpanded} onToggle={()=>setRegionsExpanded(e=>!e)}/>}
               {regionsExpanded&&doneRegions.map(region=>(
-                <div key={region} onClick={()=>handleRegionTap(region)} style={{background:C.white,borderRadius:14,padding:'12px 14px',display:'flex',alignItems:'center',gap:12,cursor:'pointer',border:`1px solid ${C.line}`,opacity:0.7}}>
+                <div key={region} onClick={()=>handleRegionTap(region)} style={{background:T.glass,borderRadius:14,padding:'12px 14px',display:'flex',alignItems:'center',gap:12,cursor:'pointer',border:`1px solid ${T.line}`,opacity:0.7}}>
                   <RegionFlag region={region}/>
                   <div style={{flex:1}}>
-                    <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>{region} quiz</div>
-                    <div style={{fontSize:14,color:C.mid,fontFamily:C.P}}>Every question answered · tap to practise</div>
+                    <div style={{fontSize:16,fontWeight:700,color:T.ink,fontFamily:C.P}}>{region} quiz</div>
+                    <div style={{fontSize:14,color:T.mid,fontFamily:C.P}}>Every question answered · tap to practise</div>
                   </div>
                   <CompletedMark onReset={()=>resetProgress(region,()=>RegionQuizBank.reset(region))}/>
                 </div>
@@ -430,89 +430,89 @@ function QuizHubScreen({nav,back,showPro}){
         </div>
 
         <div ref={secRefs.grapes} style={{...zoneLabel,scrollMarginTop:56}}>Grape quizzes</div>
-        <div style={{fontSize:14,color:C.mid,fontFamily:C.P,lineHeight:1.45,marginTop:2}}>Tap a grape for its quiz: what it tastes like, where it grows and how to spot it on a label.</div>
-        <div style={{fontSize:13,fontWeight:600,color:C.ink2,fontFamily:C.P,marginTop:4}}>{unlockedGrapes.length} of {GRAPE_ALLOWLIST.length} unlocked · {isPro?'locked ones unlock as you tap'
+        <div style={{fontSize:14,color:T.mid,fontFamily:C.P,lineHeight:1.45,marginTop:2}}>Tap a grape for its quiz: what it tastes like, where it grows and how to spot it on a label.</div>
+        <div style={{fontSize:13,fontWeight:600,color:T.ink2,fontFamily:C.P,marginTop:4}}>{unlockedGrapes.length} of {GRAPE_ALLOWLIST.length} unlocked · {isPro?'locked ones unlock as you tap'
           :unlockedGrapes.length>=FREE_GRAPE_CAP?`your ${FREE_GRAPE_CAP} free grapes are open${GrapeUnlocks.held().length?`, ${GrapeUnlocks.held().length} more waiting for Pro`:''}; Pro opens the rest`
           :`scan or rate a wine to open another (${FREE_GRAPE_CAP-unlockedGrapes.length} of ${FREE_GRAPE_CAP} free left)`}</div>
         <div style={{display:'flex',flexWrap:'wrap',gap:8,marginTop:8}}>
         {(grapesExpanded?unlockedGrapes:unlockedGrapes.slice(0,GRAPE_PILLS)).map(g=>{
           const loading=grapeLoading===g;
-          const col=grapeTypeColor(g);
+          const col=T.lift(grapeTypeColor(g));
           const status=grapePillStatus(g);
           return(
             <div key={g} onClick={()=>handleGrapeTap(g)} style={{flex:'0 0 auto',padding:'10px 16px',borderRadius:999,background:col+'15',border:`1px solid ${col}40`,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:7}}>
-              {status&&status.done&&<span style={{fontSize:14,fontWeight:700,color:C.green,fontFamily:C.P}}>✓</span>}
+              {status&&status.done&&<span style={{fontSize:14,fontWeight:700,color:T.green,fontFamily:C.P}}>✓</span>}
               <span style={{fontSize:14,fontWeight:600,color:col,fontFamily:C.P,whiteSpace:'nowrap'}}>{g}</span>
               {loading
                 ?<div style={{width:13,height:13,borderRadius:7,border:`2px solid ${col}33`,borderTopColor:col,animation:'storySpin .8s linear infinite'}}/>
-                :status&&!status.done&&<span style={{fontSize:12,fontWeight:700,color:col,fontFamily:C.P,background:'#fff',borderRadius:999,padding:'1px 7px'}}>{status.text}</span>}
+                :status&&!status.done&&<span style={{fontSize:12,fontWeight:700,color:col,fontFamily:C.P,background:T.dark?T.soft:'#fff',borderRadius:999,padding:'1px 7px'}}>{status.text}</span>}
             </div>
           );
         })}
         {(lockedGrapes.length>0||unlockedGrapes.length>GRAPE_PILLS)&&(
-          <div onClick={()=>setGrapesExpanded(e=>!e)} style={{flex:'0 0 auto',padding:'10px 18px',borderRadius:999,background:C.white,border:`1px dashed ${C.line}`,cursor:'pointer',display:'flex',alignItems:'center',gap:6}}>
-            {grapesExpanded?<Icon n="chevron" sz={12} col={C.mid} style={{transform:'rotate(-90deg)'}}/>:<Icon n="lock" sz={12} col={C.mid}/>}
-            <span style={{fontSize:14,fontWeight:600,color:C.mid,fontFamily:C.P,whiteSpace:'nowrap'}}>{grapesExpanded?'Show less':`+${lockedGrapes.length+Math.max(0,unlockedGrapes.length-GRAPE_PILLS)} more`}</span>
+          <div onClick={()=>setGrapesExpanded(e=>!e)} style={{flex:'0 0 auto',padding:'10px 18px',borderRadius:999,background:T.glass,border:`1px dashed ${T.line}`,cursor:'pointer',display:'flex',alignItems:'center',gap:6}}>
+            {grapesExpanded?<Icon n="chevron" sz={12} col={T.mid} style={{transform:'rotate(-90deg)'}}/>:<Icon n="lock" sz={12} col={T.mid}/>}
+            <span style={{fontSize:14,fontWeight:600,color:T.mid,fontFamily:C.P,whiteSpace:'nowrap'}}>{grapesExpanded?'Show less':`+${lockedGrapes.length+Math.max(0,unlockedGrapes.length-GRAPE_PILLS)} more`}</span>
           </div>
         )}
         {grapesExpanded&&lockedGrapes.map(g=>{
           const loading=grapeLoading===g;
-          const col=grapeTypeColor(g);
+          const col=T.lift(grapeTypeColor(g));
           return(
-            <div key={g} onClick={()=>handleGrapeTap(g)} style={{flex:'0 0 auto',padding:'10px 18px',borderRadius:999,background:C.white,border:`1px solid ${col}30`,cursor:'pointer',display:'flex',alignItems:'center',gap:6,opacity:0.75}}>
-              {!loading&&<Icon n="lock" sz={11} col={C.mid}/>}
-              <span style={{fontSize:14,fontWeight:600,color:C.ink,fontFamily:C.P,whiteSpace:'nowrap'}}>{g}</span>
+            <div key={g} onClick={()=>handleGrapeTap(g)} style={{flex:'0 0 auto',padding:'10px 18px',borderRadius:999,background:T.glass,border:`1px solid ${col}30`,cursor:'pointer',display:'flex',alignItems:'center',gap:6,opacity:0.75}}>
+              {!loading&&<Icon n="lock" sz={11} col={T.mid}/>}
+              <span style={{fontSize:14,fontWeight:600,color:T.ink,fontFamily:C.P,whiteSpace:'nowrap'}}>{g}</span>
               {loading&&<div style={{width:13,height:13,borderRadius:7,border:`2px solid ${col}33`,borderTopColor:col,animation:'storySpin .8s linear infinite'}}/>}
             </div>
           );
         })}
         </div>
-        {grapeLoading&&<div style={{fontSize:14,color:C.mid,fontFamily:C.P,marginTop:8}}>Preparing your {grapeLoading} quiz… the first time takes a few seconds.</div>}
+        {grapeLoading&&<div style={{fontSize:14,color:T.mid,fontFamily:C.P,marginTop:8}}>Preparing your {grapeLoading} quiz… the first time takes a few seconds.</div>}
         {grapeError&&!grapeLoading&&<div style={{fontSize:14,color:'#C0392B',fontFamily:C.P,marginTop:8}}>Couldn't load the {grapeError} quiz. Check your connection and tap it again.</div>}
 
         {/* Wine Skills: fixed guides for tasting, ordering, buying, pairing and hosting (Guides, pwa-guides.js) */}
         <div ref={secRefs.skills} style={{scrollMarginTop:56}}>
           <div style={zoneLabel}>Wine Skills</div>
-          <div style={{fontSize:14,color:C.mid,fontFamily:C.P,lineHeight:1.45,marginTop:2}}>Short guides for the moments that matter: tasting, ordering out, buying, pairing and hosting. Each ends with three quick questions.</div>
+          <div style={{fontSize:14,color:T.mid,fontFamily:C.P,lineHeight:1.45,marginTop:2}}>Short guides for the moments that matter: tasting, ordering out, buying, pairing and hosting. Each ends with three quick questions.</div>
         </div>
         <div style={{...list,marginTop:-6}}>
           <ShowMore items={guideQueue} limit={4} noun="guides" render={g=>{
             const p=Guides.progress(g.id), read=Guides.isRead(g.id);
             return(
-              <div key={g.id} onClick={()=>openGuide(g.id)} role="button" style={{background:C.white,borderRadius:14,padding:'12px 14px',display:'flex',alignItems:'center',gap:12,cursor:'pointer',border:`1px solid ${C.line}`}}>
-                <div style={{width:42,height:42,borderRadius:12,background:C.crSoft,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,border:`1px solid ${C.crDim}`}}><Icon n={g.iconName||'book'} sz={20} col={C.cr}/></div>
+              <div key={g.id} onClick={()=>openGuide(g.id)} role="button" style={{background:T.glass,borderRadius:14,padding:'12px 14px',display:'flex',alignItems:'center',gap:12,cursor:'pointer',border:`1px solid ${T.line}`}}>
+                <div style={{width:42,height:42,borderRadius:12,background:T.crSoft,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,border:`1px solid ${_alpha(cr,0.4)}`}}><Icon n={g.iconName||'book'} sz={20} col={cr}/></div>
                 <div style={{flex:1,minWidth:0}}>
-                  <div style={{fontSize:12,fontWeight:600,color:C.mid,fontFamily:C.P,textTransform:'uppercase',letterSpacing:'0.06em',marginBottom:2}}>{Guides.group(g.group).label} · {g.readTime}</div>
-                  <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P,lineHeight:1.3}}>{g.title}</div>
-                  {(read||p.correct>0)&&<div style={{fontSize:13,fontWeight:600,color:C.ink2,fontFamily:C.P,marginTop:3}}>{read?'Read':'Not read yet'} · {p.correct}/{p.total} questions</div>}
+                  <div style={{fontSize:12,fontWeight:600,color:T.mid,fontFamily:C.P,textTransform:'uppercase',letterSpacing:'0.06em',marginBottom:2}}>{Guides.group(g.group).label} · {g.readTime}</div>
+                  <div style={{fontSize:16,fontWeight:700,color:T.ink,fontFamily:C.P,lineHeight:1.3}}>{g.title}</div>
+                  {(read||p.correct>0)&&<div style={{fontSize:13,fontWeight:600,color:T.ink2,fontFamily:C.P,marginTop:3}}>{read?'Read':'Not read yet'} · {p.correct}/{p.total} questions</div>}
                 </div>
-                <Icon n="chevron" sz={13} col={C.mid}/>
+                <Icon n="chevron" sz={13} col={T.mid}/>
               </div>
             );
           }}/>
           {guidesDone.length>0&&<CompletedToggle count={guidesDone.length} expanded={guidesExpanded} onToggle={()=>setGuidesExpanded(e=>!e)}/>}
           {guidesExpanded&&guidesDone.map(g=>(
-            <div key={g.id} onClick={()=>openGuide(g.id)} role="button" style={{background:C.white,borderRadius:14,padding:'10px 14px',display:'flex',alignItems:'center',gap:12,cursor:'pointer',border:`1px solid ${C.line}`,opacity:0.75}}>
-              <Icon n={g.iconName||'book'} sz={17} col={C.cr}/>
-              <div style={{flex:1,fontSize:15,fontWeight:700,color:C.ink,fontFamily:C.P}}>{g.title}</div>
-              <span style={{fontSize:14,fontWeight:700,color:C.green,fontFamily:C.P}}>✓</span>
+            <div key={g.id} onClick={()=>openGuide(g.id)} role="button" style={{background:T.glass,borderRadius:14,padding:'10px 14px',display:'flex',alignItems:'center',gap:12,cursor:'pointer',border:`1px solid ${T.line}`,opacity:0.75}}>
+              <Icon n={g.iconName||'book'} sz={17} col={cr}/>
+              <div style={{flex:1,fontSize:15,fontWeight:700,color:T.ink,fontFamily:C.P}}>{g.title}</div>
+              <span style={{fontSize:14,fontWeight:700,color:T.green,fontFamily:C.P}}>✓</span>
             </div>
           ))}
         </div>
 
         <div ref={secRefs.progress} style={{...zoneLabel,scrollMarginTop:56}}>Your Mastery</div>
-        <div onClick={()=>isPro?nav('mastery-map'):showPro('mastery-map')} role="button" style={{background:C.white,borderRadius:16,border:`1px solid ${C.line}`,padding:'14px 16px',display:'flex',flexDirection:'column',gap:10,marginTop:-6,cursor:'pointer'}}>
+        <div onClick={()=>isPro?nav('mastery-map'):showPro('mastery-map')} role="button" style={{background:T.glass,borderRadius:16,border:`1px solid ${T.line}`,padding:'14px 16px',display:'flex',flexDirection:'column',gap:10,marginTop:-6,cursor:'pointer'}}>
           <div style={{display:'flex',alignItems:'center',gap:12}}>
-            <div style={{width:42,height:42,borderRadius:12,background:C.offWhite,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><Icon n="trophy" sz={19} col={C.ink}/></div>
+            <div style={{width:42,height:42,borderRadius:12,background:T.soft,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><Icon n="trophy" sz={19} col={T.ink}/></div>
             <div style={{flex:1}}>
-              <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>Your wine knowledge · {knowledge.overall}%</div>
-              <div style={{fontSize:14,color:C.mid,fontFamily:C.P,lineHeight:1.4}}>From the articles you've read and the quizzes you've passed, across every wine type, region, grape and skill.</div>
+              <div style={{fontSize:16,fontWeight:700,color:T.ink,fontFamily:C.P}}>Your wine knowledge · {knowledge.overall}%</div>
+              <div style={{fontSize:14,color:T.mid,fontFamily:C.P,lineHeight:1.4}}>From the articles you've read and the quizzes you've passed, across every wine type, region, grape and skill.</div>
             </div>
             {!isPro&&<ProBadge/>}
-            <Icon n="chevron" sz={13} col={C.mid}/>
+            <Icon n="chevron" sz={13} col={T.mid}/>
           </div>
-          <div style={{height:6,borderRadius:3,background:C.offWhite,overflow:'hidden'}}><div style={{height:'100%',width:`${knowledge.overall}%`,background:C.cr,borderRadius:3}}/></div>
-          <div style={{fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.45}}>
+          <div style={{height:6,borderRadius:3,background:T.soft,overflow:'hidden'}}><div style={{height:'100%',width:`${knowledge.overall}%`,background:cr,borderRadius:3}}/></div>
+          <div style={{fontSize:14,color:T.ink2,fontFamily:C.P,lineHeight:1.45}}>
             {knowledge.strongest?<>Strongest: <b>{knowledge.strongest.label}</b> ({knowledge.strongest.level.toLowerCase()}). </>:null}
             {knowledge.gap?<>Biggest gap: <b>{knowledge.gap.label}</b>.</>:null}
           </div>
@@ -521,12 +521,12 @@ function QuizHubScreen({nav,back,showPro}){
         <div style={zoneLabel}>Courses</div>
         {[{icon:'globe',title:'Country courses',sub:'A whole country in one course: its regions, grapes, local wines and labels.'},
           {icon:'map',title:'Travel prep',sub:'Tell us where you\'re going and we\'ll build a course and wine picks for your trip.'}].map(c=>(
-          <div key={c.title} style={{background:C.white,borderRadius:16,border:`1px solid ${C.line}`,padding:'14px 16px',display:'flex',alignItems:'center',gap:12,opacity:0.7,marginTop:-6}}>
-            <div style={{width:42,height:42,borderRadius:12,background:C.offWhite,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><Icon n={c.icon} sz={19} col={C.mid}/></div>
+          <div key={c.title} style={{background:T.glass,borderRadius:16,border:`1px solid ${T.line}`,padding:'14px 16px',display:'flex',alignItems:'center',gap:12,opacity:0.7,marginTop:-6}}>
+            <div style={{width:42,height:42,borderRadius:12,background:T.soft,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><Icon n={c.icon} sz={19} col={T.mid}/></div>
             <div style={{flex:1}}>
-              <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>{c.title}</div>
-              <div style={{fontSize:14,color:C.mid,fontFamily:C.P,lineHeight:1.4}}>{c.sub}</div>
-              <div style={{fontSize:12,fontWeight:700,color:C.amber,fontFamily:C.P,marginTop:3}}>Coming soon</div>
+              <div style={{fontSize:16,fontWeight:700,color:T.ink,fontFamily:C.P}}>{c.title}</div>
+              <div style={{fontSize:14,color:T.mid,fontFamily:C.P,lineHeight:1.4}}>{c.sub}</div>
+              <div style={{fontSize:12,fontWeight:700,color:T.amber,fontFamily:C.P,marginTop:3}}>Coming soon</div>
             </div>
             <ProBadge/>
           </div>
@@ -534,7 +534,7 @@ function QuizHubScreen({nav,back,showPro}){
 
         <div style={{height:8}}/>
         <div onClick={()=>{XPSystem.reset();setXpData(XPSystem.fresh());}} style={{textAlign:'center',padding:'8px',cursor:'pointer'}}>
-          <span style={{fontSize:13,color:C.mid,fontFamily:C.P,textDecoration:'underline'}}>Reset XP &amp; progress</span>
+          <span style={{fontSize:13,color:T.mid,fontFamily:C.P,textDecoration:'underline'}}>Reset XP &amp; progress</span>
         </div>
         <div style={{height:16}}/>
       </div>
@@ -546,20 +546,20 @@ function QuizHubScreen({nav,back,showPro}){
 
 /* One "Written for you" piece on the Learn shelf. Also the welcome slides' preview
    (flow-welcome.jsx), with no onOpen: not tappable, no chevron. */
-function ShelfCard({stub,done,locked,because,onOpen}){
+function ShelfCard({stub,done,locked,because,onOpen}){ const T=useTheme(), cr=T.lift(C.cr);
   return(
   <div onClick={onOpen}
-    style={{background:C.white,borderRadius:14,padding:done?'10px 14px':'14px 16px',display:'flex',alignItems:'center',gap:12,cursor:onOpen?'pointer':'default',border:`1px solid ${C.line}`,opacity:done?0.75:1}}>
-    <div style={{width:done?36:44,height:done?36:44,borderRadius:12,background:C.crSoft,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,border:`1px solid ${C.crDim}`}}>
-      <Icon n={stub.iconName||'read'} sz={done?17:20} col={C.cr}/>
+    style={{background:T.glass,borderRadius:14,padding:done?'10px 14px':'14px 16px',display:'flex',alignItems:'center',gap:12,cursor:onOpen?'pointer':'default',border:`1px solid ${T.line}`,opacity:done?0.75:1}}>
+    <div style={{width:done?36:44,height:done?36:44,borderRadius:12,background:T.crSoft,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,border:`1px solid ${_alpha(cr,0.4)}`}}>
+      <Icon n={stub.iconName||'read'} sz={done?17:20} col={cr}/>
     </div>
     <div style={{flex:1,minWidth:0}}>
-      {!done&&<div style={{fontSize:12,fontWeight:600,color:C.mid,fontFamily:C.P,textTransform:'uppercase',letterSpacing:'0.06em',marginBottom:2}}>{stub.series?`${stub.series} series`:'Written for you'} · {stub.readTime}</div>}
-      <div style={{fontSize:done?15:16,fontWeight:700,color:C.ink,fontFamily:C.P,lineHeight:1.3}}>{stub.title}</div>
-      {!done&&<div style={{fontSize:14,color:C.mid,fontFamily:C.P,marginTop:2}}>{stub.subtitle}</div>}
-      {!done&&<div style={{fontSize:13,fontWeight:600,color:C.cr,fontFamily:C.P,marginTop:4}}>{because}</div>}
+      {!done&&<div style={{fontSize:12,fontWeight:600,color:T.mid,fontFamily:C.P,textTransform:'uppercase',letterSpacing:'0.06em',marginBottom:2}}>{stub.series?`${stub.series} series`:'Written for you'} · {stub.readTime}</div>}
+      <div style={{fontSize:done?15:16,fontWeight:700,color:T.ink,fontFamily:C.P,lineHeight:1.3}}>{stub.title}</div>
+      {!done&&<div style={{fontSize:14,color:T.mid,fontFamily:C.P,marginTop:2}}>{stub.subtitle}</div>}
+      {!done&&<div style={{fontSize:13,fontWeight:600,color:cr,fontFamily:C.P,marginTop:4}}>{because}</div>}
     </div>
-    {locked ? <ProBadge/> : done ? <span style={{fontSize:14,fontWeight:700,color:C.green,fontFamily:C.P}}>✓</span> : onOpen ? <Icon n="chevron" sz={13} col={C.mid}/> : null}
+    {locked ? <ProBadge/> : done ? <span style={{fontSize:14,fontWeight:700,color:T.green,fontFamily:C.P}}>✓</span> : onOpen ? <Icon n="chevron" sz={13} col={T.mid}/> : null}
   </div>
   );
 }
@@ -568,8 +568,8 @@ function ShelfCard({stub,done,locked,because,onOpen}){
    How rounded their wine knowledge is, from what they've read and passed (KnowledgeMap,
    pwa-knowledge.js): where to start (focus), the shape of it now and a month ago, the map of
    regions, then each area's score, level, what counts, and the next thing to do. */
-function MasteryBar({score,col}){
-  return <div style={{height:6,borderRadius:3,background:C.offWhite,overflow:'hidden'}}><div className="mastery-fill" style={{height:'100%',borderRadius:3,background:score>=100?C.green:(col||C.cr),width:`${score}%`,transition:'width .5s ease'}}/></div>;
+function MasteryBar({score,col}){ const T=useTheme(), cr=T.lift(C.cr);
+  return <div style={{height:6,borderRadius:3,background:T.soft,overflow:'hidden'}}><div className="mastery-fill" style={{height:'100%',borderRadius:3,background:score>=100?T.green:T.lift(col||cr),width:`${score}%`,transition:'width .5s ease'}}/></div>;
 }
 /* One area of the mastery map: its level and score, and (open) each region or grape in it. Also
    the welcome slides' preview (flow-welcome.jsx), open, with no toggle or next step. */
@@ -578,29 +578,29 @@ function MasteryBar({score,col}){
 function _masteryCol(a){ return a.group==='types'&&typeof _TYPE_COLORS!=='undefined'?_TYPE_COLORS[a.id==='sweet'?'dessert':a.id]||C.cr:C.cr; }
 /* A green rise: how much something has grown since the dotted outline's snapshot
    (KnowledgeMap.progress, about a month back, or their first week). Nothing when it hasn't. */
-function RiseTag({n,style}){
+function RiseTag({n,style}){ const T=useTheme(), cr=T.lift(C.cr);
   if(!(n>0)) return null;
-  return <span data-rise={n} aria-label={`up ${n} points`} style={{display:'inline-flex',alignItems:'center',gap:2,fontSize:12,fontWeight:800,color:C.green,fontFamily:C.P,whiteSpace:'nowrap',...style}}>▲{n}</span>;
+  return <span data-rise={n} aria-label={`up ${n} points`} style={{display:'inline-flex',alignItems:'center',gap:2,fontSize:12,fontWeight:800,color:T.green,fontFamily:C.P,whiteSpace:'nowrap',...style}}>▲{n}</span>;
 }
-function MasteryAreaCard({a,open,onToggle,onNext,prog}){
-  const col=_masteryCol(a);
+function MasteryAreaCard({a,open,onToggle,onNext,prog}){ const T=useTheme(), cr=T.lift(C.cr);
+  const col=T.lift(_masteryCol(a));
   return(
-  <div style={{background:C.white,borderRadius:14,border:`1px solid ${C.line}`,padding:'12px 14px',display:'flex',flexDirection:'column',gap:7}}>
+  <div style={{background:T.glass,borderRadius:14,border:`1px solid ${T.line}`,padding:'12px 14px',display:'flex',flexDirection:'column',gap:7}}>
     <div role="button" onClick={onToggle} style={{display:'flex',justifyContent:'space-between',alignItems:'baseline',cursor:a.items&&onToggle?'pointer':'default'}}>
-      <span style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>{a.group==='types'&&<span aria-hidden="true" style={{display:'inline-block',width:10,height:10,borderRadius:5,background:col,marginRight:8,verticalAlign:'1px'}}/>}{a.label}</span>
-      <span style={{fontSize:14,fontWeight:700,color:a.score>=100?C.green:C.ink2,fontFamily:C.P,display:'inline-flex',alignItems:'baseline',gap:6}}><RiseTag n={prog&&prog.area?prog.area(a.id):0}/>{a.level} · {a.score}%</span>
+      <span style={{fontSize:16,fontWeight:700,color:T.ink,fontFamily:C.P}}>{a.group==='types'&&<span aria-hidden="true" style={{display:'inline-block',width:10,height:10,borderRadius:5,background:col,marginRight:8,verticalAlign:'1px'}}/>}{a.label}</span>
+      <span style={{fontSize:14,fontWeight:700,color:a.score>=100?T.green:T.ink2,fontFamily:C.P,display:'inline-flex',alignItems:'baseline',gap:6}}><RiseTag n={prog&&prog.area?prog.area(a.id):0}/>{a.level} · {a.score}%</span>
     </div>
     <MasteryBar score={a.score} col={col}/>
-    <div style={{fontSize:13,color:C.mid,fontFamily:C.P}}>{a.detail}{a.items&&a.items.length&&onToggle?(open?' · hide':' · see each'):''}</div>
+    <div style={{fontSize:13,color:T.mid,fontFamily:C.P}}>{a.detail}{a.items&&a.items.length&&onToggle?(open?' · hide':' · see each'):''}</div>
     {open&&a.items.map(i=>(
       <div key={i.name} style={{display:'flex',alignItems:'center',gap:10}}>
-        <span style={{flex:'0 0 42%',fontSize:14,color:C.ink2,fontFamily:C.P,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{a.id==='regions'&&<Flag region={i.name} size={14} style={{marginRight:6}}/>}{a.id==='grapes'&&<span aria-hidden="true" style={{display:'inline-block',width:8,height:8,borderRadius:4,background:grapeTypeColor(i.name),marginRight:7,verticalAlign:'1px'}}/>}{i.name}{i.fading>0&&<span style={{fontSize:12,fontWeight:600,color:C.amber,marginLeft:6}}>fading</span>}</span>
-        <div style={{flex:1}}><MasteryBar score={i.score} col={a.id==='grapes'?grapeTypeColor(i.name):col}/></div>
+        <span style={{flex:'0 0 42%',fontSize:14,color:T.ink2,fontFamily:C.P,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{a.id==='regions'&&<Flag region={i.name} size={14} style={{marginRight:6}}/>}{a.id==='grapes'&&<span aria-hidden="true" style={{display:'inline-block',width:8,height:8,borderRadius:4,background:grapeTypeColor(i.name),marginRight:7,verticalAlign:'1px'}}/>}{i.name}{i.fading>0&&<span style={{fontSize:12,fontWeight:600,color:T.amber,marginLeft:6}}>fading</span>}</span>
+        <div style={{flex:1}}><MasteryBar score={i.score} col={a.id==='grapes'?T.lift(grapeTypeColor(i.name)):col}/></div>
         <RiseTag n={KnowledgeMap.itemRise(prog,a.id,i.name,i.score)}/>
-        <span style={{fontSize:13,fontWeight:700,color:C.ink2,fontFamily:C.P,width:38,textAlign:'right'}}>{i.score}%</span>
+        <span style={{fontSize:13,fontWeight:700,color:T.ink2,fontFamily:C.P,width:38,textAlign:'right'}}>{i.score}%</span>
       </div>
     ))}
-    {a.next&&onNext&&<div role="button" onClick={onNext} style={{fontSize:14,fontWeight:700,color:C.cr,fontFamily:C.P,cursor:'pointer'}}>{a.next.label} →</div>}
+    {a.next&&onNext&&<div role="button" onClick={onNext} style={{fontSize:14,fontWeight:700,color:cr,fontFamily:C.P,cursor:'pointer'}}>{a.next.label} →</div>}
   </div>
   );
 }

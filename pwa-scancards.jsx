@@ -90,12 +90,12 @@ const _TONE_COL={good:C.green,neutral:C.amber,bad:'#B04A3A'};
    (the cards, the rating, Keep learning, the waiting state) take their colours from here rather
    than C. `lift` maps an accent set for white (crimson, green, amber, ink) to one that reads on
    the dark stage; `tint` is a soft wash of an accent for an icon's circle. */
-const _DECK_LIGHT={dark:false,bg:C.bg,card:C.white,ink:C.ink,ink2:C.ink2,mid:C.mid,line:C.line,soft:C.offWhite,crSoft:C.crSoft,
+const _DECK_LIGHT={dark:false,bg:C.bg,card:C.white,glass:C.white,ink:C.ink,ink2:C.ink2,mid:C.mid,line:C.line,soft:C.offWhite,crSoft:C.crSoft,
   green:C.green,greenBg:C.greenBg,amber:C.amber,amberBg:C.amberBg,tone:_TONE_COL,fade0:'rgba(255,255,255,0)',shadow:'0 6px 22px rgba(0,0,0,0.08)',
   lift:c=>c,tint:(c,soft)=>soft||_alpha(c,0.12)};
 const _DECK_DARK_LIFT={[C.cr]:'#E05A74',[C.green]:'#5FD48F',[C.amber]:'#F2B84B',[C.ink]:'#FFFFFF','#9B6B00':'#F2B84B','#6B2D8B':'#C08BE0','#B04A3A':'#F28B7D','#1E7B4B':'#5FD48F',
   '#5C2A1E':'#B8775C','#8A5A2B':'#D09A58','#B8963E':'#E2BC5A','#C1652B':'#E8854A'}; // crimson, fortified, dessert, white, orange lifted; rosé and sparkling read as they are
-const _DECK_DARK={dark:true,bg:'#0F0F0F',card:'#1A1A1C',ink:'#FFFFFF',ink2:'rgba(255,255,255,0.86)',mid:'rgba(255,255,255,0.62)',line:'rgba(255,255,255,0.14)',soft:'rgba(255,255,255,0.07)',crSoft:'rgba(224,90,116,0.22)',
+const _DECK_DARK={dark:true,bg:'#0F0F0F',card:'#1A1A1C',glass:'rgba(255,255,255,0.07)',ink:'#FFFFFF',ink2:'rgba(255,255,255,0.86)',mid:'rgba(255,255,255,0.62)',line:'rgba(255,255,255,0.14)',soft:'rgba(255,255,255,0.07)',crSoft:'rgba(224,90,116,0.22)',
   green:'#5FD48F',greenBg:'rgba(95,212,143,0.16)',amber:'#F2B84B',amberBg:'rgba(242,184,75,0.16)',tone:{good:'#5FD48F',neutral:'#F2B84B',bad:'#F28B7D'},fade0:'rgba(26,26,28,0)',shadow:'0 10px 30px rgba(0,0,0,0.55)',
   lift:c=>_DECK_DARK_LIFT[c]||c,tint:c=>_alpha(_DECK_DARK_LIFT[c]||c,0.22)};
 function _alpha(c,a){ const m=/^#([0-9a-f]{6})$/i.exec(c||''); if(!m) return c; const n=parseInt(m[1],16); return `rgba(${n>>16},${(n>>8)&255},${n&255},${a})`; }
