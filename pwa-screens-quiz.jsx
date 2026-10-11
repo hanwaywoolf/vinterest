@@ -208,7 +208,7 @@ function QuizHubScreen({nav,back,showPro}){ const T=useTheme(), cr=T.lift(C.cr);
             {nextLvl&&<span style={{fontSize:15,color:T.mid,fontFamily:C.P}}>{nextLvl.min - xpData.total} XP to {nextLvl.name}</span>}
           </div>
           <div style={{height:7,borderRadius:4,background:T.soft,overflow:'hidden'}}>
-            <div style={{height:'100%',borderRadius:4,background:level.color,width:`${Math.round(prog*100)}%`,transition:'width .6s ease'}}/>
+            <div style={{height:'100%',borderRadius:4,background:T.lift(level.color),width:`${Math.round(prog*100)}%`,transition:'width .6s ease'}}/>
           </div>
         </div>
         {/* Mastery, one tap from the top of Learn: their knowledge in a ring, and where to start. */}
@@ -352,8 +352,8 @@ function QuizHubScreen({nav,back,showPro}){ const T=useTheme(), cr=T.lift(C.cr);
             return(
             <div key={topic.id} onClick={()=>startQuiz({mode:'practice',topicId:topic.id})}
               style={{background:T.glass,borderRadius:14,padding:'12px 14px',display:'flex',alignItems:'center',gap:12,cursor:'pointer',border:`1px solid ${T.line}`}}>
-              <div style={{width:42,height:42,borderRadius:12,background:topic.color+'15',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,border:`1px solid ${topic.color}25`}}>
-                <Icon n={topic.iconName||'book'} sz={20} col={topic.color}/>
+              <div style={{width:42,height:42,borderRadius:12,background:_alpha(T.lift(topic.color),0.15),display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,border:`1px solid ${topic.color}25`}}>
+                <Icon n={topic.iconName||'book'} sz={20} col={T.lift(topic.color)}/>
               </div>
               <div style={{flex:1}}>
                 <div style={{fontSize:16,fontWeight:700,color:T.ink,fontFamily:C.P}}>{topic.label}</div>
@@ -367,8 +367,8 @@ function QuizHubScreen({nav,back,showPro}){ const T=useTheme(), cr=T.lift(C.cr);
           {topicsExpanded&&doneTopics.map(topic=>(
             <div key={topic.id} onClick={()=>startQuiz({mode:'practice',topicId:topic.id})}
               style={{background:T.glass,borderRadius:14,padding:'12px 14px',display:'flex',alignItems:'center',gap:12,cursor:'pointer',border:`1px solid ${T.line}`,opacity:0.7}}>
-              <div style={{width:42,height:42,borderRadius:12,background:topic.color+'15',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,border:`1px solid ${topic.color}25`}}>
-                <Icon n={topic.iconName||'book'} sz={20} col={topic.color}/>
+              <div style={{width:42,height:42,borderRadius:12,background:_alpha(T.lift(topic.color),0.15),display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,border:`1px solid ${topic.color}25`}}>
+                <Icon n={topic.iconName||'book'} sz={20} col={T.lift(topic.color)}/>
               </div>
               <div style={{flex:1}}>
                 <div style={{fontSize:16,fontWeight:700,color:T.ink,fontFamily:C.P}}>{topic.label}</div>
