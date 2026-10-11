@@ -198,8 +198,8 @@ function QuizHubScreen({nav,back,showPro}){ const T=useTheme(), cr=T.lift(C.cr);
           </div>
           <span style={{fontSize:22,fontWeight:800,color:T.ink,fontFamily:C.P,flex:1,letterSpacing:'-0.4px'}}>Learn</span>
           <div style={{display:'flex',alignItems:'center',gap:6,padding:'5px 10px',borderRadius:20,background:T.crSoft,border:`1px solid ${_alpha(cr,0.4)}`}}>
-            <Icon n={XPSystem.iconFor(level)} sz={15} col={cr}/>
-            <span style={{fontSize:16,fontWeight:700,color:cr,fontFamily:C.P}}>{xpData.total} XP</span>
+            <Icon n={XPSystem.iconFor(level)} sz={15} col={T.dark?'#fff':cr}/>
+            <span style={{fontSize:16,fontWeight:700,color:T.dark?'#fff':cr,fontFamily:C.P}}>{xpData.total} XP</span>
           </div>
         </div>
         <div style={{marginBottom:14}}>
@@ -650,8 +650,8 @@ function MasteryRadar({m,prog,onPick}){ const T=useTheme(), cr=T.lift(C.cr), INK
       </g>
       {[['Developing',34],['Confident',67],['Mastered',100]].map(([l,r])=>{ const y=cy+rr(r), w=l.length*5.4+12;
         return <g key={l} aria-hidden="true">
-          <rect x={cx-w/2} y={y-7} width={w} height={14} rx={7} fill="#FBF8F3" stroke={PENCIL}/>
-          <text x={cx} y={y+3} textAnchor="middle" style={{fontSize:'8px',fontWeight:700,fill:T.mid,fontFamily:C.P,letterSpacing:'0.06em'}}>{l.toUpperCase()}</text>
+          <rect x={cx-w/2} y={y-7} width={w} height={14} rx={7} fill={T.dark?T.card:"#FBF8F3"} stroke={PENCIL}/>
+          <text x={cx} y={y+3} textAnchor="middle" style={{fontSize:'8px',fontWeight:700,fill:T.dark?T.ink2:C.mid,fontFamily:C.P,letterSpacing:'0.06em'}}>{l.toUpperCase()}</text>
         </g>; })}
       {/* Dots last: a high score on a spoke near the bottom stays visible over the ring tags. */}
       <g className="mastery-radar-shape" style={{transformOrigin:`${cx}px ${cy}px`}}>
