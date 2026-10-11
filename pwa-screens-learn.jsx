@@ -324,7 +324,7 @@ function GenArticleScreen({nav,back,showPro}){ const T=useTheme(), cr=T.lift(C.c
         <div style={{padding:'16px 20px',display:'flex',flexDirection:'column',gap:12}}>
           {/* On an iPad: why it's for them, their bottles it draws on and where to go deeper, beside the text. */}
           <ReadingLayout aside={wide?<>
-            <div style={{..._asideCard,background:T.crSoft,border:`1px solid ${_alpha(cr,0.4)}`}} data-testid="aside-why">{_asideHead('Why this is for you')}<div style={{fontSize:14,color:T.ink2,fontFamily:C.P,lineHeight:1.55}}>{forYou}</div></div>
+            <div style={{..._asideCardOf(T),background:T.crSoft,border:`1px solid ${_alpha(cr,0.4)}`}} data-testid="aside-why">{_asideHead('Why this is for you')}<div style={{fontSize:14,color:T.ink2,fontFamily:C.P,lineHeight:1.55}}>{forYou}</div></div>
             <_AsideWines wines={ctx.bottles} nav={nav} title="Your bottles in this piece"/>
             <_AsideLinks links={[ctx.grape&&{t:`${ctx.grape}: the grape's page`,icon:'grape',go:()=>openGrapePage(ctx.grape,nav)},
               ctx.region&&{t:`${ctx.region}: the region's page`,icon:'map',go:()=>openRegionPage(ctx.region,nav)},

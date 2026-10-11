@@ -685,7 +685,7 @@ function WineListScreen({nav,back,showPro}){ const T=useTheme(), cr=T.lift(C.cr)
         </div>
         <div style={{display:'flex',gap:6,overflowX:'auto'}}>
           <div onClick={()=>setTypeFilter(null)} style={{flexShrink:0,padding:'6px 12px',borderRadius:20,border:`1.5px solid ${!typeFilter?T.ink:T.line}`,background:!typeFilter?T.ink:'transparent',cursor:'pointer'}}>
-            <span style={{fontSize:14,fontWeight:600,color:!typeFilter?'#fff':T.mid,fontFamily:C.P,textTransform:'capitalize'}}>All Types</span>
+            <span style={{fontSize:14,fontWeight:600,color:!typeFilter?T.bg:T.mid,fontFamily:C.P,textTransform:'capitalize'}}>All Types</span>
           </div>
           {types.map(t=>{
             const active=typeFilter===t;
