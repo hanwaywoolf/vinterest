@@ -79,6 +79,7 @@ test('the page background matches the bottom of the screen: dark on the welcome 
   expect(lum(home), `home page background ${home}`).toBeLessThan(80); // Home sits on the story's dark stage, nav and all
   // Appearance on Profile (Settings.theme): Light turns Home's stage light, nav and all.
   await page.evaluate(() => Settings.setTheme('light'));
+  await page.reload(); // the same URL again wouldn't navigate
   await page.goto(`${BASE}/?demo=1#home`);
   await expect(page.locator('#root')).toContainText('Recently scanned');
   const homeLight = await page.evaluate(async () => { await new Promise((r) => setTimeout(r, 500)); return getComputedStyle(document.body).backgroundColor; });
