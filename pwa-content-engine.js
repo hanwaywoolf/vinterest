@@ -101,7 +101,7 @@ const RegionInfo = {
     const extra=labels.filter(l=>!known.some(p=>p.theirs&&(fold(l)===fold(p.name)||fold(p.name).startsWith(fold(l)+' (')))).map(l=>({name:l,kind:'on your label',theirs:true}));
     const places=[...known.filter(p=>p.theirs),...extra,...known.filter(p=>!p.theirs)];
     const theirs=places.filter(p=>p.theirs).map(p=>p.name);
-    return {name,...K,grapes:(K.keyGrapes||[]).map(g=>WineDNA.grape(g)),places,theirs,wines:K.wines||[],
+    return {name,...K,grapes:(K.keyGrapes||[]).map(g=>WineDNA.grape(g)),places,theirs,wines:K.wines||[],terms:K.terms||[],
       mine:{count:mine.length,wines:list,scored:scored.length,best:scored[0]||null,avg:scored.length?Math.round(scored.reduce((a,w)=>a+w.rating,0)/scored.length):null},
       mastery:{state,score:it?it.score:0,level:it?it.level:'Not started',fading:it?it.fading||0:0,
         rise:it?KnowledgeMap.itemRise(KnowledgeMap.progress(m),'regions',name,it.score):0}};

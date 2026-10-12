@@ -75,6 +75,20 @@ const WineDNA = {
       :`${most.n} of your ${at.length} ${L} sit in ${most.label}${most.avg!=null?`, rated ${most.avg} on average`:''}.`;
     return {axis,name:A.name,lowWord:A.low,highWord:A.high,word:this.everyday(axis,avg),avg,loved,lean,bottles:at,n:at.length,about,steps,verdict,start:most.i};
   },
+  /* What each step of a scale means, in plain words (Teach while asking): the line under the
+     portrait's scale leads with the step's own name and says this, so the word on the scale and
+     the word in the sentence are always the same one. Fixed text, not their history. */
+  STEP_MEANING:{
+    body:['Light on the palate, like skimmed milk: easy, often lower in alcohol, best with lighter food.','Light to medium: a little more weight, still easy-drinking and not heavy.','Medium weight: neither delicate nor heavy, the middle of the scale and the most food-friendly.','Medium to full: real weight in the mouth, from riper fruit and more alcohol, without being heavy.','Full: coats the mouth like cream, from ripe fruit, higher alcohol and often oak. Built for rich food.'],
+    tannins:['Silky: barely any grip, the tannin smooth and hidden. Think Pinot Noir.','Soft: a gentle grip you notice only at the finish.','Medium: a clear, dry grip on the gums that settles quickly. Suits most food.','Firm: tannin that dries the gums and asks for food or a few more years in bottle.','Grippy: strong, drying tannin, like strong black tea. Softens with age, steak or hard cheese.'],
+    acidity:['Mellow: soft and round, little of the mouth-watering edge, feels gentle.','Soft: a touch of freshness, still rounded and easy.','Fresh: your mouth waters a little after each sip, which keeps the wine lively with food.','Bright: a clear, mouth-watering lift that cuts through rich or fatty dishes.','Zingy: sharp, tangy acidity like biting a lemon. Great with seafood and salty food.'],
+    sweetness:['Bone dry: no sugar left at all, the finish clean and crisp.','Dry: no sweetness you\'d notice, the ripe fruit can read as rich.','Off-dry: a hint of sweetness that softens spice and heat in food.','Medium-sweet: openly sweet but balanced by acidity, for cheese or fruit desserts.','Sweet: dessert-level sweetness, kept lively by acidity. Serve cold and in small glasses.'],
+    texture:['Crisp: clean and lean, like a cold apple, with no weight on the tongue.','Clean: fresh and light, with a little roundness.','Smooth: softly rounded, often from lees or a little oak, without being creamy.','Round: noticeably rich and rounded, from ripeness, oak or lees stirring.','Creamy: rich and buttery, usually from oak and malolactic conversion. For richer dishes.'],
+    effervescence:['Gentle: a soft prickle rather than a sparkle, like a pétillant wine.','Soft: light bubbles that fade quickly in the glass.','Lively: a steady, fine bead that keeps the wine fresh.','Brisk: a vigorous mousse that fills the mouth, as in most Champagne.','Vigorous: a strong, persistent fizz with a creamy foam.'],
+  },
+  /* The step a value sits on, by the nearest of the five named stops (0, ¼, ½, ¾, 1), so the
+     stop the marker sits by is the one named in bold and in the sentence. */
+  stepAt(v){ return Math.max(0,Math.min(4,Math.round(Math.max(0,Math.min(1,v))*4))); },
   /* The five steps of each trait's scale on its WineDNA page, low to high. */
   STEPS:{
     body:['Light','Light-medium','Medium','Medium-full','Full'],
