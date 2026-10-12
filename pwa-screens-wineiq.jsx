@@ -201,39 +201,48 @@ function DnaTasteCard({t,tLabel,notes=true}){ const T=useTheme();
   </Card>  );
 }
 
-/* The portrait at the top of WineDNA (DetailLevel): their style as pictures first. A tile per
-   trait, the thing the app compares it to sketched in pen and wash (the Mastery palate's icons)
-   inside a ring filled to where the wines they choose sit, the everyday word large and the wine
-   term small beneath it. Each opens WineDNA's own page for that trait (DnaTraitScreen). */
+/* The portrait at the top of WineDNA (DetailLevel): their style told the way the scan story's
+   taste scene tells a wine's. One glass panel, a row per trait: the thing the app compares it to
+   sketched in ink on a wash of the type's colour, the everyday word large with the wine term small
+   in caps beside it, a bar of five steps (WineDNA.STEPS) lit to where the wines they choose sit,
+   glowing in the type's colour on the dark stage, the ends of the scale named under it. Rows
+   arrive one after another and the steps light up in turn. Each opens WineDNA's own page for that
+   trait (DnaTraitScreen). */
 function DnaTasteTiles({t,nav}){ const T=useTheme();
   const axes=t.axes.filter(t.showAxis).filter(k=>t.avg[k]!=null);
   if(!axes.length) return null;
   // WineDNA's own trait page (the wines they choose), never the palate page (their Blind Calls).
   const open=id=>{ Handoff.dnaTrait.set({type:t.key,axis:id}); nav('dna-trait'); };
-  // Three fit across; four sit two by two with the word beside the picture, so long words
-  // ("Mouth-watering") never break mid-letter at a large text size.
-  const wide=axes.length>3;
-  return <div data-testid="dna-taste-tiles" style={{display:'grid',gridTemplateColumns:`repeat(${wide?2:axes.length},minmax(0,1fr))`,gap:6}}>
-    {axes.map(k=>{
-      const v=Math.max(0,Math.min(1,t.avg[k])), R=21, circ=2*Math.PI*R, A=WineDNA.AXES[k];
-      const word=WineDNA.everyday(k,t.avg[k]), page=true;
-      // The ring is their wine type's colour (as everything on WineDNA); the picture is ink alone.
-      const ring=t.col, ink=T.dark?'rgba(255,255,255,0.88)':SKETCH_INK, pencil=T.dark?'rgba(255,255,255,0.28)':SKETCH_PENCIL;
-      return <div key={k} role={page?'button':undefined} tabIndex={page?0:undefined} data-trait={k}
-        onClick={page?()=>open(k):undefined} onKeyDown={page?(e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); open(k); } }):undefined}
-        aria-label={`${A.name}: ${word}.${page?' What this means.':''}`}
-        style={{background:T.dark?T.soft:'#FBF8F3',border:`1px solid ${T.dark?T.line:C.line}`,borderRadius:12,padding:wide?'6px 8px 6px 6px':'8px 4px 7px',display:'flex',flexDirection:wide?'row':'column',alignItems:'center',gap:wide?8:3,cursor:page?'pointer':'default',minWidth:0}}>
-        <svg width="50" height="50" viewBox="-25 -25 50 50" aria-hidden="true" style={{overflow:'visible',flexShrink:0}}>
-          <circle r={R} fill="none" stroke={pencil} strokeWidth="2.5" strokeDasharray="1 4" strokeLinecap="round"/>
-          <circle r={R} fill="none" stroke={ring} strokeWidth="4" strokeLinecap="round" strokeDasharray={circ} strokeDashoffset={circ*(1-v)} transform="rotate(-90)"/>
-          <g transform="scale(0.62)">{SKETCH_TRAIT[k]?<SketchTraitIcon id={k} inkOnly wine={t.col} ink={ink}/>:<_DnaTraitSketch id={k} ink={ink}/>}</g>
-        </svg>
-        <div style={{minWidth:0,textAlign:wide?'left':'center'}}>
-          <div style={{fontSize:14,fontWeight:800,color:T.ink,fontFamily:C.P,lineHeight:1.15,hyphens:'manual'}}>{word}</div>
-          <div style={{fontSize:12,color:T.mid,fontFamily:C.P,lineHeight:1.2}}>{A.name}</div>
+  const col=t.col, ink=T.dark?'rgba(255,255,255,0.88)':SKETCH_INK, track=T.dark?'rgba(255,255,255,0.1)':'rgba(0,0,0,0.07)';
+  return <div data-testid="dna-taste-tiles" style={{background:T.dark?'rgba(255,255,255,0.05)':'#FBF8F3',border:`1px solid ${T.line}`,borderRadius:16,padding:'4px 0'}}>
+    <style>{`@keyframes dnaRow{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}@keyframes dnaStep{from{opacity:0;transform:scaleX(.3)}to{opacity:1;transform:none}}
+      .dna-row{animation:dnaRow .5s cubic-bezier(.2,.8,.3,1) both}.dna-step{animation:dnaStep .35s cubic-bezier(.2,.8,.3,1) both;transform-origin:left}
+      @media (prefers-reduced-motion:reduce){.dna-row,.dna-step{animation:none}}`}</style>
+    {axes.map((k,i)=>{
+      const v=Math.max(0,Math.min(1,t.avg[k])), A=WineDNA.AXES[k], step=Math.min(4,Math.floor(v*5));
+      const word=WineDNA.everyday(k,t.avg[k]), steps=WineDNA.STEPS[k]||['','','','',''];
+      return <div key={k} role="button" tabIndex={0} data-trait={k} className="dna-row" style={{animationDelay:`${i*.18}s`}}
+        onClick={()=>open(k)} onKeyDown={e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); open(k); } }}
+        aria-label={`${A.name}: ${word}. What this means.`}>
+        <div style={{display:'flex',alignItems:'center',gap:12,padding:'11px 12px 11px 10px',borderTop:i?`1px solid ${T.line}`:'none',cursor:'pointer'}}>
+          <svg width="46" height="46" viewBox="-23 -23 46 46" aria-hidden="true" style={{flexShrink:0,overflow:'visible'}}>
+            <circle r={22} fill={_alpha(col,T.dark?0.18:0.1)}/>
+            <g transform="scale(0.6)">{SKETCH_TRAIT[k]?<SketchTraitIcon id={k} inkOnly wine={col} ink={ink}/>:<_DnaTraitSketch id={k} ink={ink}/>}</g>
+          </svg>
+          <div style={{flex:1,minWidth:0}}>
+            <div style={{display:'flex',alignItems:'baseline',justifyContent:'space-between',gap:8,marginBottom:6}}>
+              <span style={{fontSize:19,fontWeight:800,color:T.ink,fontFamily:C.P,lineHeight:1.1,minWidth:0}}>{word}</span>
+              <span style={{fontSize:11,fontWeight:700,color:T.mid,fontFamily:C.P,letterSpacing:'0.1em',textTransform:'uppercase',flexShrink:0}}>{A.name}</span>
+            </div>
+            <div style={{display:'flex',gap:3}} aria-hidden="true">
+              {steps.map((name,j)=>{ const lit=j<=step, now=j===step;
+                return <div key={j} title={name} className={lit?'dna-step':undefined} style={{flex:1,height:7,borderRadius:4,background:lit?col:track,opacity:lit&&!now?0.55:1,animationDelay:`${.25+i*.18+j*.08}s`,boxShadow:now&&T.dark?`0 0 10px ${col}`:'none'}}/>; })}
+            </div>
+            <div style={{display:'flex',justifyContent:'space-between',fontSize:11,color:T.mid,fontFamily:C.P,opacity:0.75,marginTop:4}}><span>{A.low}</span><span>{A.high}</span></div>
+          </div>
+          <Icon n="chevron" sz={14} col={T.mid} style={{flexShrink:0}}/>
         </div>
-      </div>;
-    })}
+      </div>; })}
   </div>;
 }
 /* Sweetness and bubbles have no Mastery sketch: a sugar cube and a few bubbles, in ink like the

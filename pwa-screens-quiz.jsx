@@ -955,23 +955,32 @@ function MasteryRegionMap({views,nav,showPro,prog,onLeave}){ const T=useTheme(),
    habit ("you call it grippier"). A trait with no calls yet shows a dash and says so. Every tile
    opens the trait's own page (PalateTraitScreen), like a grape's. */
 const PALATE_TRAITS=['body','acidity','tannins','texture'];
-function _PalateTile({id,a,onOpen}){ const T=useTheme(), cr=T.lift(C.cr), INK=T.dark?'rgba(255,255,255,0.88)':SKETCH_INK, PENCIL=T.dark?'rgba(255,255,255,0.28)':SKETCH_PENCIL;
-  const sc=a?a.score:null, col=SKETCH_TRAIT[id], R=27, circ=2*Math.PI*R;
-  const ring=col;
+/* A palate trait as a dial in the story's shape (the rating dial's 270° arc, open at the foot):
+   the arc lit to the score in the trait's colour, glowing on the dark stage, a tick where Confident
+   begins (KnowledgeMap's 67), the thing the app compares it to sketched inside, the score in the
+   foot of the arc, the habit or level under it. Tapping opens the trait's page. */
+const _PALATE_ARC={from:135,sweep:270,R:36}, _PALATE_CONFIDENT=67;
+function _palateArcPath(cx,cy,R,from,sweep){
+  const rad=d=>d*Math.PI/180, x=d=>cx+R*Math.cos(rad(d)), y=d=>cy+R*Math.sin(rad(d));
+  return `M${x(from).toFixed(2)} ${y(from).toFixed(2)} A${R} ${R} 0 ${sweep>180?1:0} 1 ${x(from+sweep).toFixed(2)} ${y(from+sweep).toFixed(2)}`;
+}
+function _PalateTile({id,a,onOpen}){ const T=useTheme(), INK=T.dark?'rgba(255,255,255,0.88)':SKETCH_INK;
+  const sc=a?a.score:null, col=T.lift(SKETCH_TRAIT[id]), {from,sweep,R}=_PALATE_ARC, cx=50, cy=46;
+  const track=T.dark?'rgba(255,255,255,0.14)':'rgba(0,0,0,0.1)';
+  const tick=from+sweep*_PALATE_CONFIDENT/100, rad=tick*Math.PI/180, tx=Math.cos(rad), ty=Math.sin(rad);
   return <div role="button" tabIndex={0} data-trait={id} onClick={()=>onOpen(id)} onKeyDown={e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); onOpen(id); } }}
     aria-label={`${Palate.NAMES[id]}: ${sc==null?'no Blind Calls yet':`${sc}% on target${a.lean?`, you call it ${a.lean}`:''}`}. Open its page.`}
-    style={{background:T.dark?T.soft:'#FBF8F3',border:`1px solid ${T.line}`,borderRadius:14,padding:'10px 10px 10px 8px',display:'flex',alignItems:'center',gap:8,cursor:'pointer',minWidth:0}}>
-    <svg width="66" height="66" viewBox="-33 -33 66 66" aria-hidden="true" style={{flexShrink:0,overflow:'visible'}}>
-      <circle r={R} fill="none" stroke={PENCIL} strokeWidth="3" strokeDasharray="1 4" strokeLinecap="round"/>
-      {sc!=null&&<circle r={R} fill="none" stroke={ring} strokeWidth="4.5" strokeLinecap="round" className="palate-ring"
-        strokeDasharray={circ} strokeDashoffset={circ*(1-sc/100)} transform="rotate(-90)" style={{'--ring':circ}}/>}
-      <g transform="scale(0.82)"><SketchTraitIcon id={id} ink={INK}/></g>
+    style={{background:T.dark?'rgba(255,255,255,0.05)':'#FBF8F3',border:`1px solid ${T.line}`,borderRadius:16,padding:'10px 6px 10px',display:'flex',flexDirection:'column',alignItems:'center',gap:2,cursor:'pointer',minWidth:0}}>
+    <svg width="100" height="92" viewBox="0 0 100 92" aria-hidden="true" style={{overflow:'visible',flexShrink:0}}>
+      <path d={_palateArcPath(cx,cy,R,from,sweep)} fill="none" stroke={track} strokeWidth="5" strokeLinecap="round"/>
+      <line x1={cx+(R-6)*tx} y1={cy+(R-6)*ty} x2={cx+(R+6)*tx} y2={cy+(R+6)*ty} stroke={T.dark?'rgba(255,255,255,0.35)':'rgba(0,0,0,0.25)'} strokeWidth="1.5" strokeLinecap="round"/>
+      {sc!=null&&sc>0&&<path d={_palateArcPath(cx,cy,R,from,sweep)} fill="none" stroke={col} strokeWidth="5" strokeLinecap="round" className="palate-arc"
+        pathLength="100" strokeDasharray="100" strokeDashoffset={100-sc} style={{filter:T.dark?`drop-shadow(0 0 5px ${col})`:'none'}}/>}
+      <g transform={`translate(${cx} ${cy-3}) scale(0.78)`}><SketchTraitIcon id={id} ink={INK}/></g>
+      <text x={cx} y={cy+R+6} textAnchor="middle" style={{fontSize:'17px',fontWeight:800,fill:sc==null?T.mid:col,fontFamily:C.P}}>{sc==null?'–':`${sc}%`}</text>
     </svg>
-    <div style={{minWidth:0,display:'flex',flexDirection:'column'}}>
-      <span style={{fontSize:14,fontWeight:700,color:T.ink,fontFamily:C.P}}>{Palate.NAMES[id]}</span>
-      <span style={{fontSize:24,fontWeight:800,color:sc==null?T.mid:T.ink,fontFamily:C.P,lineHeight:1.15}}>{sc==null?'–':`${sc}%`}</span>
-      <span style={{fontSize:12,color:a&&a.lean?T.amber:T.mid,fontFamily:C.P,fontWeight:a&&a.lean?600:400,lineHeight:1.3}}>{sc==null?'No calls yet':a.lean?`You call it ${a.lean}`:KnowledgeMap.level(sc)}</span>
-    </div>
+    <span style={{fontSize:15,fontWeight:700,color:T.ink,fontFamily:C.P,marginTop:2}}>{Palate.NAMES[id]}</span>
+    <span style={{fontSize:12,color:a&&a.lean?T.amber:T.mid,fontFamily:C.P,fontWeight:a&&a.lean?600:400,lineHeight:1.3,textAlign:'center'}}>{sc==null?'No calls yet':a.lean?`You call it ${a.lean}`:KnowledgeMap.level(sc)}</span>
   </div>;
 }
 function PalateTiles({p,onOpen}){
@@ -1149,10 +1158,10 @@ const _MASTERY_CSS=`@keyframes masteryGrow{from{transform:scale(0.2);opacity:0}t
 .milestone-in{animation:milestoneIn .5s ease both}
 
 .grape-berry{transition:transform .9s cubic-bezier(.2,.8,.2,1)}
-@keyframes palateRing{from{stroke-dashoffset:var(--ring)}}
-.palate-ring{animation:palateRing 1s cubic-bezier(.3,.7,.2,1) both}
+@keyframes palateArc{from{stroke-dashoffset:100}}
+.palate-arc{animation:palateArc 1.1s cubic-bezier(.3,.7,.2,1) both}
 .grape-btn:focus-visible .grape-hit{stroke:#0F0F0F;stroke-width:2;stroke-dasharray:3 2}
-@media (prefers-reduced-motion:reduce){.mastery-radar-shape,.milestone-in{animation:none}.grape-berry{transition:none}.palate-ring{animation:none}}`;
+@media (prefers-reduced-motion:reduce){.mastery-radar-shape,.milestone-in{animation:none}.grape-berry{transition:none}.palate-arc{animation:none}}`;
 
 /* One section of Mastery: a heading that folds it away (a chevron, aria-expanded) and, folded, a
    one-line summary in its place, which also opens it. `plain` lays its children out without a card. */
