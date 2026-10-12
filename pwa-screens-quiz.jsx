@@ -955,36 +955,29 @@ function MasteryRegionMap({views,nav,showPro,prog,onLeave}){ const T=useTheme(),
    habit ("you call it grippier"). A trait with no calls yet shows a dash and says so. Every tile
    opens the trait's own page (PalateTraitScreen), like a grape's. */
 const PALATE_TRAITS=['body','acidity','tannins','texture'];
-/* A palate trait as a dial in the story's shape (the rating dial's 270° arc, open at the foot):
-   the arc lit to the score in the trait's colour, glowing on the dark stage, a tick where Confident
-   begins (KnowledgeMap's 67), the thing the app compares it to sketched inside, the score in the
-   foot of the arc, the habit or level under it. Tapping opens the trait's page. */
-const _PALATE_ARC={from:135,sweep:270,R:36}, _PALATE_CONFIDENT=67;
-function _palateArcPath(cx,cy,R,from,sweep){
-  const rad=d=>d*Math.PI/180, x=d=>cx+R*Math.cos(rad(d)), y=d=>cy+R*Math.sin(rad(d));
-  return `M${x(from).toFixed(2)} ${y(from).toFixed(2)} A${R} ${R} 0 ${sweep>180?1:0} 1 ${x(from+sweep).toFixed(2)} ${y(from+sweep).toFixed(2)}`;
-}
-function _PalateTile({id,a,onOpen}){ const T=useTheme(), INK=T.dark?'rgba(255,255,255,0.88)':SKETCH_INK;
-  const sc=a?a.score:null, col=T.lift(SKETCH_TRAIT[id]), {from,sweep,R}=_PALATE_ARC, cx=50, cy=46;
-  const track=T.dark?'rgba(255,255,255,0.14)':'rgba(0,0,0,0.1)';
-  const tick=from+sweep*_PALATE_CONFIDENT/100, rad=tick*Math.PI/180, tx=Math.cos(rad), ty=Math.sin(rad);
+/* A palate trait as a small ring with the score inside, lit in the trait's colour and glowing on
+   the dark stage, the trait named under it and then its level, or the habit the calls lean to
+   ("You say" over "Softer" in amber). Four across. Tapping opens the trait's page. */
+function _PalateTile({id,a,onOpen}){ const T=useTheme();
+  const sc=a?a.score:null, col=T.lift(SKETCH_TRAIT[id]), track=T.dark?'rgba(255,255,255,0.1)':'rgba(0,0,0,0.08)';
+  const lean=a&&a.lean?a.lean.charAt(0).toUpperCase()+a.lean.slice(1):null;
   return <div role="button" tabIndex={0} data-trait={id} onClick={()=>onOpen(id)} onKeyDown={e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); onOpen(id); } }}
     aria-label={`${Palate.NAMES[id]}: ${sc==null?'no Blind Calls yet':`${sc}% on target${a.lean?`, you call it ${a.lean}`:''}`}. Open its page.`}
-    style={{background:T.dark?'rgba(255,255,255,0.05)':'#FBF8F3',border:`1px solid ${T.line}`,borderRadius:16,padding:'10px 6px 10px',display:'flex',flexDirection:'column',alignItems:'center',gap:2,cursor:'pointer',minWidth:0}}>
-    <svg width="100" height="92" viewBox="0 0 100 92" aria-hidden="true" style={{overflow:'visible',flexShrink:0}}>
-      <path d={_palateArcPath(cx,cy,R,from,sweep)} fill="none" stroke={track} strokeWidth="5" strokeLinecap="round"/>
-      <line x1={cx+(R-6)*tx} y1={cy+(R-6)*ty} x2={cx+(R+6)*tx} y2={cy+(R+6)*ty} stroke={T.dark?'rgba(255,255,255,0.35)':'rgba(0,0,0,0.25)'} strokeWidth="1.5" strokeLinecap="round"/>
-      {sc!=null&&sc>0&&<path d={_palateArcPath(cx,cy,R,from,sweep)} fill="none" stroke={col} strokeWidth="5" strokeLinecap="round" className="palate-arc"
-        pathLength="100" strokeDasharray="100" strokeDashoffset={100-sc} style={{filter:T.dark?`drop-shadow(0 0 5px ${col})`:'none'}}/>}
-      <g transform={`translate(${cx} ${cy-3}) scale(0.78)`}><SketchTraitIcon id={id} ink={INK}/></g>
-      <text x={cx} y={cy+R+6} textAnchor="middle" style={{fontSize:'17px',fontWeight:800,fill:sc==null?T.mid:col,fontFamily:C.P}}>{sc==null?'–':`${sc}%`}</text>
+    style={{display:'flex',flexDirection:'column',alignItems:'center',gap:4,cursor:'pointer',minWidth:0,padding:'4px 0'}}>
+    <svg width="66" height="66" viewBox="-33 -33 66 66" aria-hidden="true" style={{overflow:'visible',flexShrink:0}}>
+      <circle r={28} fill="none" stroke={track} strokeWidth="6"/>
+      {sc!=null&&sc>0&&<circle r={28} fill="none" stroke={col} strokeWidth="6" strokeLinecap="round" className="palate-arc" pathLength="100" strokeDasharray="100" strokeDashoffset={100-sc} transform="rotate(-90)" style={{filter:T.dark?`drop-shadow(0 0 6px ${col})`:'none'}}/>}
+      <text y="6" textAnchor="middle" style={{fontSize:'17px',fontWeight:800,fill:sc==null?T.mid:T.ink,fontFamily:C.P}}>{sc==null?'–':sc}</text>
     </svg>
-    <span style={{fontSize:15,fontWeight:700,color:T.ink,fontFamily:C.P,marginTop:2}}>{Palate.NAMES[id]}</span>
-    <span style={{fontSize:12,color:a&&a.lean?T.amber:T.mid,fontFamily:C.P,fontWeight:a&&a.lean?600:400,lineHeight:1.3,textAlign:'center'}}>{sc==null?'No calls yet':a.lean?`You call it ${a.lean}`:KnowledgeMap.level(sc)}</span>
+    <span style={{fontSize:13,fontWeight:700,color:T.ink,fontFamily:C.P,marginTop:2}}>{Palate.NAMES[id]}</span>
+    {sc==null?<span style={{fontSize:13,color:T.mid,fontFamily:C.P,textAlign:'center'}}>No calls yet</span>
+      :lean?<span style={{display:'flex',flexDirection:'column',alignItems:'center',lineHeight:1.15}}><span style={{fontSize:13,color:T.mid,fontFamily:C.P,whiteSpace:'nowrap'}}>You say</span><span style={{fontSize:13,fontWeight:700,color:T.amber,fontFamily:C.P}}>{lean}</span></span>
+      :<span style={{fontSize:13,color:T.mid,fontFamily:C.P,textAlign:'center'}}>{KnowledgeMap.level(sc)}</span>}
   </div>;
 }
 function PalateTiles({p,onOpen}){
-  return <div data-testid="palate-tiles" style={{display:'grid',gridTemplateColumns:'repeat(2,minmax(0,1fr))',gap:8}}>
+  const T=useTheme();
+  return <div data-testid="palate-tiles" style={{display:'grid',gridTemplateColumns:'repeat(4,minmax(0,1fr))',gap:4,background:T.dark?'rgba(255,255,255,0.05)':'#FBF8F3',border:`1px solid ${T.line}`,borderRadius:16,padding:'12px 6px 8px'}}>
     {PALATE_TRAITS.map(id=><_PalateTile key={id} id={id} a={p.axes.find(x=>x.id===id)} onOpen={onOpen}/>)}
   </div>;
 }

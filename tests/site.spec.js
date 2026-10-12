@@ -245,7 +245,7 @@ test.describe('desktop', () => {
     await jump(page, 'mastery', 2);
     await expect(phone).toContainText('Your wine map', { timeout: 8000 });
     await jump(page, 'mastery', 3);
-    await expect(phone).toContainText('You call it grippier', { timeout: 8000 }); // seven seeded Blind Calls: the tannins tile's habit
+    await expect(phone).toContainText('Grippier', { timeout: 8000 }); // seven seeded Blind Calls: the tannins tile's habit
     // Mastery is its own section: the Learn section no longer carries a Mastery step.
     await expect(page.locator('#learn .steps li h3')).not.toContainText(['Mastery map']);
   });

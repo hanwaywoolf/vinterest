@@ -201,46 +201,44 @@ function DnaTasteCard({t,tLabel,notes=true}){ const T=useTheme();
   </Card>  );
 }
 
-/* The portrait at the top of WineDNA (DetailLevel): their style told the way the scan story's
-   taste scene tells a wine's. One glass panel, a row per trait: the thing the app compares it to
-   sketched in ink on a wash of the type's colour, the everyday word large with the wine term small
-   in caps beside it, a bar of five steps (WineDNA.STEPS) lit to where the wines they choose sit,
-   glowing in the type's colour on the dark stage, the ends of the scale named under it. Rows
-   arrive one after another and the steps light up in turn. Each opens WineDNA's own page for that
+/* The portrait at the top of WineDNA (DetailLevel): one glass panel, a row per trait, each a scale
+   they could scrub: the trait named small in caps beside its sketch, then five markers across the
+   full width (WineDNA.STEPS), the step the wines they choose sit on lit as a pill carrying the
+   everyday word (WineDNA.everyday), glowing in the type's colour on the dark stage, the ends of
+   the scale named under it. Rows arrive one after another. Each opens WineDNA's own page for that
    trait (DnaTraitScreen). */
 function DnaTasteTiles({t,nav}){ const T=useTheme();
   const axes=t.axes.filter(t.showAxis).filter(k=>t.avg[k]!=null);
   if(!axes.length) return null;
   // WineDNA's own trait page (the wines they choose), never the palate page (their Blind Calls).
   const open=id=>{ Handoff.dnaTrait.set({type:t.key,axis:id}); nav('dna-trait'); };
-  const col=t.col, ink=T.dark?'rgba(255,255,255,0.88)':SKETCH_INK, track=T.dark?'rgba(255,255,255,0.1)':'rgba(0,0,0,0.07)';
-  return <div data-testid="dna-taste-tiles" style={{background:T.dark?'rgba(255,255,255,0.05)':'#FBF8F3',border:`1px solid ${T.line}`,borderRadius:16,padding:'4px 0'}}>
-    <style>{`@keyframes dnaRow{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}@keyframes dnaStep{from{opacity:0;transform:scaleX(.3)}to{opacity:1;transform:none}}
-      .dna-row{animation:dnaRow .5s cubic-bezier(.2,.8,.3,1) both}.dna-step{animation:dnaStep .35s cubic-bezier(.2,.8,.3,1) both;transform-origin:left}
-      @media (prefers-reduced-motion:reduce){.dna-row,.dna-step{animation:none}}`}</style>
+  const col=t.col, ink=T.dark?'rgba(255,255,255,0.88)':SKETCH_INK, track=T.dark?'rgba(255,255,255,0.14)':'rgba(0,0,0,0.1)';
+  return <div data-testid="dna-taste-tiles" style={{background:T.dark?'rgba(255,255,255,0.05)':'#FBF8F3',border:`1px solid ${T.line}`,borderRadius:16,padding:'2px 0'}}>
+    <style>{`@keyframes dnaRow{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}@keyframes dnaPill{0%{transform:scale(.6);opacity:0}70%{transform:scale(1.06)}100%{transform:none;opacity:1}}
+      .dna-row{animation:dnaRow .5s cubic-bezier(.2,.8,.3,1) both}.dna-pill{animation:dnaPill .45s cubic-bezier(.2,.8,.3,1) both}
+      @media (prefers-reduced-motion:reduce){.dna-row,.dna-pill{animation:none}}`}</style>
     {axes.map((k,i)=>{
       const v=Math.max(0,Math.min(1,t.avg[k])), A=WineDNA.AXES[k], step=Math.min(4,Math.floor(v*5));
       const word=WineDNA.everyday(k,t.avg[k]), steps=WineDNA.STEPS[k]||['','','','',''];
       return <div key={k} role="button" tabIndex={0} data-trait={k} className="dna-row" style={{animationDelay:`${i*.18}s`}}
         onClick={()=>open(k)} onKeyDown={e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); open(k); } }}
         aria-label={`${A.name}: ${word}. What this means.`}>
-        <div style={{display:'flex',alignItems:'center',gap:12,padding:'11px 12px 11px 10px',borderTop:i?`1px solid ${T.line}`:'none',cursor:'pointer'}}>
-          <svg width="46" height="46" viewBox="-23 -23 46 46" aria-hidden="true" style={{flexShrink:0,overflow:'visible'}}>
-            <circle r={22} fill={_alpha(col,T.dark?0.18:0.1)}/>
-            <g transform="scale(0.6)">{SKETCH_TRAIT[k]?<SketchTraitIcon id={k} inkOnly wine={col} ink={ink}/>:<_DnaTraitSketch id={k} ink={ink}/>}</g>
-          </svg>
-          <div style={{flex:1,minWidth:0}}>
-            <div style={{display:'flex',alignItems:'baseline',justifyContent:'space-between',gap:8,marginBottom:6}}>
-              <span style={{fontSize:19,fontWeight:800,color:T.ink,fontFamily:C.P,lineHeight:1.1,minWidth:0}}>{word}</span>
-              <span style={{fontSize:11,fontWeight:700,color:T.mid,fontFamily:C.P,letterSpacing:'0.1em',textTransform:'uppercase',flexShrink:0}}>{A.name}</span>
-            </div>
-            <div style={{display:'flex',gap:3}} aria-hidden="true">
-              {steps.map((name,j)=>{ const lit=j<=step, now=j===step;
-                return <div key={j} title={name} className={lit?'dna-step':undefined} style={{flex:1,height:7,borderRadius:4,background:lit?col:track,opacity:lit&&!now?0.55:1,animationDelay:`${.25+i*.18+j*.08}s`,boxShadow:now&&T.dark?`0 0 10px ${col}`:'none'}}/>; })}
-            </div>
-            <div style={{display:'flex',justifyContent:'space-between',fontSize:11,color:T.mid,fontFamily:C.P,opacity:0.75,marginTop:4}}><span>{A.low}</span><span>{A.high}</span></div>
+        <div style={{padding:'11px 14px 10px',borderTop:i?`1px solid ${T.line}`:'none',cursor:'pointer',display:'flex',flexDirection:'column',gap:8}}>
+          <div style={{display:'flex',alignItems:'center',gap:8}}>
+            <svg width="26" height="26" viewBox="-13 -13 26 26" aria-hidden="true" style={{flexShrink:0,overflow:'visible'}}>
+              <g transform="scale(0.5)">{SKETCH_TRAIT[k]?<SketchTraitIcon id={k} inkOnly wine={col} ink={ink}/>:<_DnaTraitSketch id={k} ink={ink}/>}</g>
+            </svg>
+            <span style={{fontSize:12,fontWeight:700,color:T.mid,fontFamily:C.P,letterSpacing:'0.1em',textTransform:'uppercase',flex:1}}>{A.name}</span>
+            <Icon n="chevron" sz={13} col={T.mid}/>
           </div>
-          <Icon n="chevron" sz={14} col={T.mid} style={{flexShrink:0}}/>
+          <div style={{display:'flex',alignItems:'center',gap:4}} aria-hidden="true">
+            {steps.map((name,j)=>{ const now=j===step, before=j<step;
+              return <div key={j} title={name} style={{flex:now?'0 0 auto':1,display:'flex',justifyContent:'center',alignItems:'center'}}>
+                {now?<span className="dna-pill" style={{animationDelay:`${.3+i*.18}s`,padding:'4px 12px',borderRadius:20,background:col,color:'#fff',fontSize:13,fontWeight:800,fontFamily:C.P,lineHeight:1.2,boxShadow:T.dark?`0 0 14px ${_alpha(col,0.75)}`:'none',whiteSpace:'nowrap'}}>{word}</span>
+                  :<span style={{width:8,height:8,borderRadius:4,background:before?_alpha(col,0.5):track}}/>}
+              </div>; })}
+          </div>
+          <div style={{display:'flex',justifyContent:'space-between',fontSize:11,color:T.mid,fontFamily:C.P,opacity:0.75}}><span>{A.low}</span><span>{A.high}</span></div>
         </div>
       </div>; })}
   </div>;
