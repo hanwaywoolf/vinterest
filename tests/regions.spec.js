@@ -100,5 +100,13 @@ test('region places are places, with their kind; the wines made there are a sepa
   const info = await page.evaluate(() => RegionInfo.get('Tuscany', [{ name: 'Tignanello', region: 'Tuscany', sub_region: 'Chianti Classico', type: 'red', rating: 96 }]));
   expect(info.places[0]).toMatchObject({ name: 'Chianti Classico', kind: 'appellation', theirs: true });
   expect(info.theirs).toEqual(['Chianti Classico']);
-  expect(info.wines[0]).toBe('Brunello di Montalcino');
+  expect(info.wines[0]).toMatchObject({ name: 'Brunello di Montalcino', had: false });
+  expect(info.grapes[0]).toMatchObject({ name: 'Sangiovese', had: false });
+  // A bottle of Brunello with Sangiovese on it marks both as had.
+  const had = await page.evaluate(() => RegionInfo.get('Tuscany', [{ name: 'Biondi-Santi Brunello di Montalcino', region: 'Tuscany', sub_region: 'Montalcino', type: 'red', grapes: ['Sangiovese'], rating: 97 }]));
+  expect(had.wines[0]).toMatchObject({ name: 'Brunello di Montalcino', had: true });
+  expect(had.grapes[0]).toMatchObject({ name: 'Sangiovese', had: true });
+  // A Bolgheri bottle counts for "Bolgheri reds (the Super Tuscans)".
+  const bol = await page.evaluate(() => RegionInfo.get('Tuscany', [{ name: 'Ornellaia 2018', region: 'Bolgheri', type: 'red', grapes: ['Cabernet Sauvignon'], rating: 94 }]));
+  expect(bol.wines.find((w) => w.name.startsWith('Bolgheri')).had).toBe(true);
 });

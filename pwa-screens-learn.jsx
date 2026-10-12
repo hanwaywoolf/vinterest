@@ -619,21 +619,22 @@ function RegionPageScreen({nav,back,showPro}){ const T=useTheme(), cr=T.lift(C.c
                 {info.places.length?info.places.slice(0,16).map(p=><span key={p.name} style={{display:'inline-flex',alignItems:'baseline',gap:5,padding:'5px 10px',borderRadius:999,background:p.theirs?(T.dark?cr:T.crSoft):T.soft,fontSize:13,color:p.theirs?(T.dark?'#fff':cr):T.ink2,fontWeight:p.theirs?700:400,fontFamily:C.P}}>{p.name}<span style={{fontSize:11,fontWeight:400,opacity:0.7}}>{p.kind}</span></span>)
                   :<span style={{fontSize:13,color:T.mid,fontFamily:C.P}}>Nothing listed yet.</span>}
               </div>
-              {info.theirs.length>0&&<div style={{fontSize:12,color:T.mid,fontFamily:C.P,marginTop:4}}>Highlighted: the ones on your own labels.</div>}
+              <div style={{fontSize:12,color:T.mid,fontFamily:C.P,marginTop:4}}>Pink: the ones on your own labels.</div>
             </div>
             <div>
               {head('Grapes and wines')}
+              {/* The same colouring as the places above: pink for what they've had, grey for not yet;
+                  grapes filled, wines outlined with a glass. A grape on the Learn list opens its page. */}
               <div style={{...card,marginTop:8,gap:10}}>
                 <div style={{display:'flex',flexWrap:'wrap',gap:6}}>
-                  {info.grapes.map(g=>{ const known=typeof KNOWLEDGE!=='undefined'&&KNOWLEDGE.grapes&&KNOWLEDGE.grapes[g];
-                    return <span key={g} role={known?'button':undefined} onClick={known?()=>openGrapePage(g,nav):undefined}
-                      style={{display:'inline-flex',alignItems:'center',gap:6,padding:'6px 12px',borderRadius:999,background:T.dark?T.lift(grapeTypeColor(g)):grapeTypeColor(g)+'15',border:`1px solid ${T.dark?'transparent':grapeTypeColor(g)+'40'}`,fontSize:14,fontWeight:700,color:T.dark?'#fff':grapeTypeColor(g),fontFamily:C.P,cursor:known?'pointer':'default'}}>{g}{known&&<Icon n="chevron" sz={11} col={T.dark?"#fff":grapeTypeColor(g)}/>}</span>; })}
+                  {info.grapes.map(g=>{ const known=typeof KNOWLEDGE!=='undefined'&&KNOWLEDGE.grapes&&KNOWLEDGE.grapes[g.name], had=g.had;
+                    return <span key={g.name} role={known?'button':undefined} onClick={known?()=>openGrapePage(g.name,nav):undefined}
+                      style={{display:'inline-flex',alignItems:'center',gap:6,padding:'6px 12px',borderRadius:999,background:had?(T.dark?cr:T.crSoft):T.soft,fontSize:14,fontWeight:had?700:400,color:had?(T.dark?'#fff':cr):T.ink2,fontFamily:C.P,cursor:known?'pointer':'default'}}>{g.name}{known&&<Icon n="chevron" sz={11} col={had?(T.dark?'#fff':cr):T.mid}/>}</span>; })}
                 </div>
-                {/* The wines made here as pills too, outlined rather than filled, with a glass, so they read apart from the grapes. */}
                 {info.wines.length>0&&<div data-testid="region-wines" style={{display:'flex',flexWrap:'wrap',gap:6}}>
-                  {info.wines.map(w=><span key={w} style={{display:'inline-flex',alignItems:'center',gap:6,padding:'5px 11px',borderRadius:999,background:'transparent',border:`1px solid ${T.dark?'rgba(255,255,255,0.3)':T.line}`,fontSize:13,fontWeight:600,color:T.ink2,fontFamily:C.P}}><Icon n="wine" sz={12} col={T.mid}/>{w}</span>)}
+                  {info.wines.map(w=><span key={w.name} style={{display:'inline-flex',alignItems:'center',gap:6,padding:'5px 11px',borderRadius:999,background:'transparent',border:`1.5px solid ${w.had?cr:(T.dark?'rgba(255,255,255,0.3)':T.line)}`,fontSize:13,fontWeight:w.had?700:600,color:w.had?cr:T.ink2,fontFamily:C.P}}><Icon n="wine" sz={12} col={w.had?cr:T.mid}/>{w.name}</span>)}
                 </div>}
-                <div style={{fontSize:12,color:T.mid,fontFamily:C.P}}>Filled: the grapes it's known for. Outlined: the wines made here.</div>
+                <div style={{fontSize:12,color:T.mid,fontFamily:C.P}}>Filled: grapes. Outlined: wines. Pink: you've had it.</div>
               </div>
             </div>
             {info.terms.length>0&&<div>
