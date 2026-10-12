@@ -232,13 +232,13 @@ function DnaRules({t,nav,onExplore}){ const T=useTheme(), col=t.col;
    (WineDNA.signals). Rows arrive one after another. Each opens WineDNA's own page for that trait
    (DnaTraitScreen). */
 const _DNA_SCALE={w:326,h:68,y:38,x0:6,x1:320};
-function _DnaScale({axis,v,loved,col,T,step,word}){
+function _DnaScale({axis,v,col,T,step,word}){
   const {w,h,y,x0,x1}=_DNA_SCALE, X=t=>x0+(x1-x0)*t, steps=WineDNA.STEPS[axis]||['','','','',''];
   const track=T.dark?'rgba(255,255,255,0.14)':'rgba(0,0,0,0.1)', dim=T.dark?'rgba(255,255,255,0.18)':'rgba(0,0,0,0.12)', name=T.dark?'rgba(255,255,255,0.45)':'rgba(0,0,0,0.45)';
   // Nine dots at i/8, the five step names under every other one (the same x), so they line up.
   const dots=[...Array(9)].map((_,i)=>({x:X(i/8),r:i%2?2.5:4,lit:i/8<=v}));
   // Their position: a ring on the line, the word in a pill floating just above it (kept inside
-  // the scale's ends), so the white 90+ dot always has the line to itself.
+  // the scale's ends).
   const pw=Math.max(44,String(word||'').length*7.2+22), px=Math.max(x0+pw/2,Math.min(x1-pw/2,X(v)));
   return <svg viewBox={`0 0 ${w} ${h}`} width="100%" aria-hidden="true" style={{display:'block',overflow:'visible'}}>
     <line x1={x0} y1={y} x2={x1} y2={y} stroke={track} strokeWidth="1.5"/>
@@ -248,7 +248,6 @@ function _DnaScale({axis,v,loved,col,T,step,word}){
     <rect x={px-pw/2} y={2} width={pw} height={22} rx={11} fill={col} style={{filter:T.dark?`drop-shadow(0 0 8px ${_alpha(col,0.8)})`:'none'}}/>
     <text x={px} y={17.5} textAnchor="middle" style={{fontSize:'13px',fontWeight:800,fill:'#fff',fontFamily:C.P}}>{word}</text>
     <circle cx={X(v)} cy={y} r="7" fill={T.dark?'#0E0E10':'#FBF8F3'} stroke={col} strokeWidth="2.5" style={{filter:T.dark?`drop-shadow(0 0 6px ${col})`:'none'}}/>
-    {loved!=null&&<circle cx={X(loved)} cy={y} r="4.5" fill={T.dark?'#fff':T.ink} stroke={T.dark?'#0E0E10':'#fff'} strokeWidth="1.5"/>}
     {steps.map((label,i)=>{ const x=X(i/4), on=i===step; return <text key={i} x={x} y={h-6} textAnchor={i===0?'start':i===4?'end':'middle'} style={{fontSize:on?'12px':'10px',fontWeight:on?800:400,fill:on?(T.dark?'#fff':T.ink):name,fontFamily:C.P}}>{label}</text>; })}
   </svg>;
 }
@@ -261,23 +260,20 @@ function DnaTasteTiles({t,nav}){ const T=useTheme();
   return <div data-testid="dna-taste-tiles" style={{background:T.dark?'rgba(255,255,255,0.05)':'#FBF8F3',border:`1px solid ${T.line}`,borderRadius:16,padding:'2px 0'}}>
     <style>{`@keyframes dnaRow{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}.dna-row{animation:dnaRow .5s cubic-bezier(.2,.8,.3,1) both}
       @media (prefers-reduced-motion:reduce){.dna-row{animation:none}}`}</style>
-    <div style={{display:'flex',gap:14,padding:'10px 14px 2px',fontSize:11,color:T.mid,fontFamily:C.P}} aria-hidden="true">
-      <span style={{display:'inline-flex',alignItems:'center',gap:5}}><span style={{width:10,height:10,borderRadius:5,border:`2px solid ${col}`,boxSizing:'border-box'}}/>The {L} you choose</span>
-      {t.loved.length>=3&&<span style={{display:'inline-flex',alignItems:'center',gap:5}}><span style={{width:9,height:9,borderRadius:5,background:T.dark?'#fff':T.ink}}/>Your 90+ {L}</span>}
-    </div>
     {axes.map((k,i)=>{
       const v=Math.max(0,Math.min(1,t.avg[k])), A=WineDNA.AXES[k], step=Math.min(4,Math.floor(v*5)), lv=t.lovedAvg[k];
       const word=WineDNA.everyday(k,t.avg[k]);
-      const lean=lv==null?null:lv-v>=0.08?`Your 90+ ${L} sit ${A.highAdj} than the ${L} you choose.`:v-lv>=0.08?`Your 90+ ${L} sit ${A.lowAdj} than the ${L} you choose.`:`Your 90+ ${L} sit about where your choices do.`;
+      // The difference between what they love and what they choose, only when there is one.
+      const lean=lv==null?null:lv-v>=0.08?`The ${L} you rate 90+ run ${A.highAdj} than the ones you usually pick.`:v-lv>=0.08?`The ${L} you rate 90+ run ${A.lowAdj} than the ones you usually pick.`:`The ${L} you usually pick.`;
       return <div key={k} role="button" tabIndex={0} data-trait={k} className="dna-row" style={{animationDelay:`${i*.18}s`}}
         onClick={()=>open(k)} onKeyDown={e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); open(k); } }}
         aria-label={`${A.name}: ${word}. What this means.`}>
-        <div style={{padding:'8px 14px 10px',borderTop:i?`1px solid ${T.line}`:'none',cursor:'pointer',display:'flex',flexDirection:'column',gap:4}}>
+        <div style={{padding:'10px 14px 10px',borderTop:i?`1px solid ${T.line}`:'none',cursor:'pointer',display:'flex',flexDirection:'column',gap:4}}>
           <div style={{display:'flex',alignItems:'center',gap:8}}>
             <span style={{fontSize:12,fontWeight:700,color:T.mid,fontFamily:C.P,letterSpacing:'0.1em',textTransform:'uppercase',flex:1}}>{A.name}</span>
             <Icon n="chevron" sz={13} col={T.mid}/>
           </div>
-          <_DnaScale axis={k} v={v} loved={lv} col={col} T={T} step={step} word={word}/>
+          <_DnaScale axis={k} v={v} col={col} T={T} step={step} word={word}/>
           {(()=>{ const sg=signalFor(k); return <div style={{fontSize:13,color:T.ink2,fontFamily:C.P,lineHeight:1.45}}><b style={{color:T.ink}}>{word}.</b> {sg?sg.text:(lean||'')}{sg&&<> <span style={{color:T.green,fontWeight:700}}>Shapes your match.</span></>}</div>; })()}
         </div>
       </div>; })}
