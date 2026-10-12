@@ -629,7 +629,11 @@ function RegionPageScreen({nav,back,showPro}){ const T=useTheme(), cr=T.lift(C.c
                     return <span key={g} role={known?'button':undefined} onClick={known?()=>openGrapePage(g,nav):undefined}
                       style={{display:'inline-flex',alignItems:'center',gap:6,padding:'6px 12px',borderRadius:999,background:T.dark?T.lift(grapeTypeColor(g)):grapeTypeColor(g)+'15',border:`1px solid ${T.dark?'transparent':grapeTypeColor(g)+'40'}`,fontSize:14,fontWeight:700,color:T.dark?'#fff':grapeTypeColor(g),fontFamily:C.P,cursor:known?'pointer':'default'}}>{g}{known&&<Icon n="chevron" sz={11} col={T.dark?"#fff":grapeTypeColor(g)}/>}</span>; })}
                 </div>
-                {info.wines.length>0&&<div data-testid="region-wines" style={{fontSize:14,color:T.ink2,fontFamily:C.P,lineHeight:1.5}}><b style={{color:T.ink}}>Wines made here:</b> {info.wines.join(' · ')}.</div>}
+                {/* The wines made here as pills too, outlined rather than filled, with a glass, so they read apart from the grapes. */}
+                {info.wines.length>0&&<div data-testid="region-wines" style={{display:'flex',flexWrap:'wrap',gap:6}}>
+                  {info.wines.map(w=><span key={w} style={{display:'inline-flex',alignItems:'center',gap:6,padding:'5px 11px',borderRadius:999,background:'transparent',border:`1px solid ${T.dark?'rgba(255,255,255,0.3)':T.line}`,fontSize:13,fontWeight:600,color:T.ink2,fontFamily:C.P}}><Icon n="wine" sz={12} col={T.mid}/>{w}</span>)}
+                </div>}
+                <div style={{fontSize:12,color:T.mid,fontFamily:C.P}}>Filled: the grapes it's known for. Outlined: the wines made here.</div>
               </div>
             </div>
             {info.terms.length>0&&<div>
