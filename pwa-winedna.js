@@ -470,6 +470,32 @@ const WineDNA = {
     return {ready:true,n,avg:Math.round(avg*10)/10,usual,bestAvg,hiCut,loCut,flat,style:styleAll,up:up.map(({ws,...x})=>x),down:down.map(({ws,...x})=>x),favs,nots,portrait,money,age,headline};
   },
 
+  /* Your rules: three things to do next time they're buying, written from what the profile already
+     knows (WineDNA.loves, Explore Next), so the tab leads with the decision rather than the data.
+     - reach: the grape, region or producer that lifts their ratings most, with the price band
+       that lifts them too when there is one ("Reach for Sangiovese, over £36");
+     - skip: the one that holds them back most, else a price band that does;
+     - try: Explore Next's top pick for the type, which they haven't had.
+     Each carries its evidence in a line and where a tap goes (a region's page, Explore). Below
+     LOVES_MIN rated wines there's one rule: rate more. `explore` is ExploreNext.suggest's answer. */
+  rules(p,explore){
+    const L=(this.NOUNS[p.typeKey]||['wine','wines'])[1], lv=p.loves, out=[];
+    const named=x=>['Grape','Region','Producer'].includes(x.kind);
+    const band=x=>{ const n=x.name; if(/^Over /.test(n)) return 'over '+n.slice(5); if(/^Under /.test(n)) return 'under '+n.slice(6); const cur=(n.match(/^[^0-9]*/)||[''])[0]; return 'between '+n.replace('–',' and '+cur); };
+    const pts=x=>`${x.count} bottles, averaging ${x.avg}: ${Math.abs(x.lift)>=1?Math.round(Math.abs(x.lift)):1} point${Math.round(Math.abs(x.lift))===1?'':'s'} ${x.lift>0?'above':'below'} your usual ${lv&&lv.usual}.`;
+    if(lv&&lv.ready){
+      const up=lv.up.find(named), upPrice=lv.up.find(x=>x.kind==='Price');
+      if(up) out.push({kind:'reach',lead:`Reach for ${up.kind==='Producer'?up.name+"'s bottles":up.name}${upPrice?`, ${band(upPrice)}`:''}`,why:pts(up),name:up.name,link:up.kind==='Region'?{region:up.name}:null});
+      const down=lv.down.find(named), downPrice=lv.down.find(x=>x.kind==='Price');
+      if(down) out.push({kind:'skip',lead:`Skip ${down.kind==='Producer'?down.name+"'s bottles":down.name}`,why:pts(down),name:down.name,link:down.kind==='Region'?{region:down.name}:null});
+      else if(downPrice) out.push({kind:'skip',lead:`Skip ${L} ${band(downPrice)}`,why:pts(downPrice),name:downPrice.name,link:null});
+    }
+    const pick=explore&&explore.picks&&explore.picks[0];
+    if(pick) out.push({kind:'try',lead:`Try ${pick.style.name}`,why:(pick.why||'').split('. ')[0].replace(/\s*\([^)]*\)/,'').replace(/\.?$/,'.'),name:pick.style.name,link:{explore:true}});
+    if(!out.length){ const need=Math.max(0,this.LOVES_MIN-p.scored.length); out.push({kind:'more',lead:need?`Rate ${need} more ${need===1?L.replace(/s$/,''):L}`:`Rate a few more ${L}`,why:`Your rules appear once there's enough to go on.`,name:'',link:null}); }
+    return out.slice(0,3);
+  },
+
   /* Their house wines: the bottles they keep coming back to, rather than just their top scores.
      A wine earns a place by being had more than once (times_consumed), marked to buy again, or
      hearted (Favorites); more of those, then a higher score, rank it higher. A wine they scored

@@ -331,3 +331,28 @@ test('other vintages are found across loose label readings (a year in the name, 
   expect(out.pct).toBeGreaterThanOrEqual(90);
   expect(out.why).toMatch(/^The same wine from another year is the best guide/);
 });
+
+// Your rules (WineDNA.rules): three things to do next time they're buying, from what the profile
+// already knows. Reach for what lifts their ratings (with the price band that does too), skip what
+// holds them back (one finding, never fused with a price band), try Explore Next's pick; before
+// enough rated wines, one rule: rate more.
+test('Your rules: reach, skip and try from the profile, and "rate more" before it is ready', async ({ page }) => {
+  await page.goto(`${BASE}/?demo=1#profile`);
+  const rules = await page.evaluate(() => { const w = WineHistory.getAll(); const p = WineDNA.profile('red', w, 'Reds'); return WineDNA.rules(p, ExploreNext.suggest('red', w, 'Reds')); });
+  expect(rules.map((r) => r.kind)).toEqual(['reach', 'skip', 'try']);
+  expect(rules[0].lead).toMatch(/^Reach for \w+(, (over|under|between) £\d+( and £\d+)?)?$/);
+  expect(rules[0].why).toMatch(/^\d+ bottles, averaging \d+: \d+ points? above your usual \d+\.$/);
+  expect(rules[1].lead).toMatch(/^Skip \w+$/);
+  expect(rules[2].lead).toMatch(/^Try /);
+  expect(rules[2].why).not.toMatch(/\(think/);
+  expect(rules[2].link).toEqual({ explore: true });
+  // The card on the tab, and its Try row opening Explore Next.
+  const card = page.getByTestId('dna-rules');
+  await expect(card).toContainText("Next time you're buying");
+  await expect(card.locator('[data-rule="reach"]')).toContainText(rules[0].lead);
+  await card.locator('[data-rule="try"]').click();
+  await expect(page.locator('[data-section="explore"]')).toBeInViewport();
+  // Too few rated: one rule, to rate more.
+  const early = await page.evaluate(() => { const w = WineHistory.getAll().filter((x) => x.type === 'red').slice(0, 3); const p = WineDNA.profile('red', w, 'Reds'); return WineDNA.rules(p, null); });
+  expect(early).toHaveLength(1); expect(early[0].kind).toBe('more'); expect(early[0].lead).toMatch(/^Rate \d+ more reds$/);
+});
