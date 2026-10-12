@@ -231,24 +231,21 @@ function DnaRules({t,nav,onExplore}){ const T=useTheme(), col=t.col;
    against their choices, and "Shapes your match" where that trait is one of the match's signals
    (WineDNA.signals). Rows arrive one after another. Each opens WineDNA's own page for that trait
    (DnaTraitScreen). */
-const _DNA_SCALE={w:326,h:68,y:38,x0:6,x1:320};
+const _DNA_SCALE={w:326,h:48,y:16,x0:6,x1:320};
 function _DnaScale({axis,v,col,T,step,word}){
   const {w,h,y,x0,x1}=_DNA_SCALE, X=t=>x0+(x1-x0)*t, steps=WineDNA.STEPS[axis]||['','','','',''];
-  const track=T.dark?'rgba(255,255,255,0.14)':'rgba(0,0,0,0.1)', dim=T.dark?'rgba(255,255,255,0.18)':'rgba(0,0,0,0.12)', name=T.dark?'rgba(255,255,255,0.45)':'rgba(0,0,0,0.45)';
-  // Nine dots at i/8, the five step names under every other one (the same x), so they line up.
-  const dots=[...Array(9)].map((_,i)=>({x:X(i/8),r:i%2?2.5:4,lit:i/8<=v}));
-  // Their position: a ring on the line, the word in a pill floating just above it (kept inside
-  // the scale's ends).
-  const pw=Math.max(44,String(word||'').length*7.2+22), px=Math.max(x0+pw/2,Math.min(x1-pw/2,X(v)));
+  const track=T.dark?'rgba(255,255,255,0.12)':'rgba(0,0,0,0.08)', dim=T.dark?'rgba(255,255,255,0.22)':'rgba(0,0,0,0.14)', name=T.dark?'rgba(255,255,255,0.45)':'rgba(0,0,0,0.45)';
+  // Nine small dots at i/8; the five step names under every other one (the same x), so they line up.
+  const dots=[...Array(9)].map((_,i)=>({x:X(i/8),lit:i/8<=v}));
+  // The word in a pill sitting on the line at their position, kept inside the scale's ends.
+  const pw=Math.max(40,String(word||'').length*7+20), px=Math.max(x0+pw/2,Math.min(x1-pw/2,X(v)));
   return <svg viewBox={`0 0 ${w} ${h}`} width="100%" aria-hidden="true" style={{display:'block',overflow:'visible'}}>
-    <line x1={x0} y1={y} x2={x1} y2={y} stroke={track} strokeWidth="1.5"/>
-    <line x1={x0} y1={y} x2={X(v)} y2={y} stroke={col} strokeWidth="1.5" style={{filter:T.dark?`drop-shadow(0 0 5px ${col})`:'none'}}/>
-    {dots.map((d,i)=><circle key={i} cx={d.x} cy={y} r={d.r} fill={d.lit?_alpha(col,0.75):dim}/>)}
-    <line x1={X(v)} y1={y-8} x2={X(v)} y2={y-24} stroke={col} strokeWidth="1.5"/>
-    <rect x={px-pw/2} y={2} width={pw} height={22} rx={11} fill={col} style={{filter:T.dark?`drop-shadow(0 0 8px ${_alpha(col,0.8)})`:'none'}}/>
-    <text x={px} y={17.5} textAnchor="middle" style={{fontSize:'13px',fontWeight:800,fill:'#fff',fontFamily:C.P}}>{word}</text>
-    <circle cx={X(v)} cy={y} r="7" fill={T.dark?'#0E0E10':'#FBF8F3'} stroke={col} strokeWidth="2.5" style={{filter:T.dark?`drop-shadow(0 0 6px ${col})`:'none'}}/>
-    {steps.map((label,i)=>{ const x=X(i/4), on=i===step; return <text key={i} x={x} y={h-6} textAnchor={i===0?'start':i===4?'end':'middle'} style={{fontSize:on?'12px':'10px',fontWeight:on?800:400,fill:on?(T.dark?'#fff':T.ink):name,fontFamily:C.P}}>{label}</text>; })}
+    <line x1={x0} y1={y} x2={x1} y2={y} stroke={track} strokeWidth="2" strokeLinecap="round"/>
+    <line x1={x0} y1={y} x2={X(v)} y2={y} stroke={col} strokeWidth="2" strokeLinecap="round" style={{filter:T.dark?`drop-shadow(0 0 4px ${col})`:'none'}}/>
+    {dots.map((d,i)=><circle key={i} cx={d.x} cy={y} r="3" fill={d.lit?col:dim}/>)}
+    <rect x={px-pw/2} y={y-11} width={pw} height={22} rx={11} fill={col} style={{filter:T.dark?`drop-shadow(0 0 8px ${_alpha(col,0.8)})`:'none'}}/>
+    <text x={px} y={y+4.5} textAnchor="middle" style={{fontSize:'13px',fontWeight:800,fill:'#fff',fontFamily:C.P}}>{word}</text>
+    {steps.map((label,i)=>{ const x=X(i/4), on=i===step; return <text key={i} x={x} y={h-4} textAnchor={i===0?'start':i===4?'end':'middle'} style={{fontSize:on?'12px':'10px',fontWeight:on?800:400,fill:on?(T.dark?'#fff':T.ink):name,fontFamily:C.P}}>{label}</text>; })}
   </svg>;
 }
 function DnaTasteTiles({t,nav}){ const T=useTheme();
@@ -263,8 +260,11 @@ function DnaTasteTiles({t,nav}){ const T=useTheme();
     {axes.map((k,i)=>{
       const v=Math.max(0,Math.min(1,t.avg[k])), A=WineDNA.AXES[k], step=Math.min(4,Math.floor(v*5)), lv=t.lovedAvg[k];
       const word=WineDNA.everyday(k,t.avg[k]);
-      // The difference between what they love and what they choose, only when there is one.
-      const lean=lv==null?null:lv-v>=0.08?`The ${L} you rate 90+ run ${A.highAdj} than the ones you usually pick.`:v-lv>=0.08?`The ${L} you rate 90+ run ${A.lowAdj} than the ones you usually pick.`:`The ${L} you usually pick.`;
+      // One line worth reading: the match signal; else how their 90+ wines differ from their
+      // picks; else which step their best and lowest ratings sit in (WineDNA.traitView).
+      const diff=lv==null?null:lv-v>=0.08?`The ${L} you rate 90+ run ${A.highAdj} than the ones you usually pick.`:v-lv>=0.08?`The ${L} you rate 90+ run ${A.lowAdj} than the ones you usually pick.`:null;
+      const tv=diff?null:WineDNA.traitView(t.key,k,t.wines);
+      const lean=diff||(tv&&tv.verdict)||'';
       return <div key={k} role="button" tabIndex={0} data-trait={k} className="dna-row" style={{animationDelay:`${i*.18}s`}}
         onClick={()=>open(k)} onKeyDown={e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); open(k); } }}
         aria-label={`${A.name}: ${word}. What this means.`}>

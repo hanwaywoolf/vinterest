@@ -92,9 +92,16 @@ const RegionInfo = {
     const list=[...mine].sort((a,b)=>(b.rating||0)-(a.rating||0)||when(b)-when(a));
     const m=KnowledgeMap.compute(wines), area=m.areas.find(a=>a.id==='regions'), it=area&&area.items.find(i=>i.name===name);
     const state=it?'open':RegionUnlocks.held().includes(name)?'held':'locked';
-    // Their own labels' names for places inside it (the appellations they've had), then the rest.
-    const theirs=[...new Set(mine.map(w=>w.sub_region||w.region).filter(r=>r&&r!==name))];
-    return {name,...K,grapes:(K.keyGrapes||[]).map(g=>WineDNA.grape(g)),places:[...new Set([...theirs,...(K.aliases||[])])],theirs,
+    // Places inside it from the knowledge base (each with what it is: town, appellation, zone…),
+    // the ones on their own labels first; a label place the guide doesn't list is added as theirs.
+    // `aliases` stay a matching list (wine names, local spellings) and never show here.
+    const fold=s=>WineDNA._fold(s);
+    const labels=[...new Set(mine.map(w=>w.sub_region||w.region).filter(r=>r&&r!==name))];
+    const known=(K.places||[]).map(p=>({...p,theirs:labels.some(l=>fold(l)===fold(p.name)||fold(p.name).startsWith(fold(l)+' ('))}));
+    const extra=labels.filter(l=>!known.some(p=>p.theirs&&(fold(l)===fold(p.name)||fold(p.name).startsWith(fold(l)+' (')))).map(l=>({name:l,kind:'on your label',theirs:true}));
+    const places=[...known.filter(p=>p.theirs),...extra,...known.filter(p=>!p.theirs)];
+    const theirs=places.filter(p=>p.theirs).map(p=>p.name);
+    return {name,...K,grapes:(K.keyGrapes||[]).map(g=>WineDNA.grape(g)),places,theirs,wines:K.wines||[],
       mine:{count:mine.length,wines:list,scored:scored.length,best:scored[0]||null,avg:scored.length?Math.round(scored.reduce((a,w)=>a+w.rating,0)/scored.length):null},
       mastery:{state,score:it?it.score:0,level:it?it.level:'Not started',fading:it?it.fading||0:0,
         rise:it?KnowledgeMap.itemRise(KnowledgeMap.progress(m),'regions',name,it.score):0}};

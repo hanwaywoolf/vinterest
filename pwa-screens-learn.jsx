@@ -624,9 +624,10 @@ function RegionPageScreen({nav,back,showPro}){ const T=useTheme(), cr=T.lift(C.c
             {info.places.length>0&&<div>
               {head('Places inside it')}
               <div style={{...card,flexDirection:'row',flexWrap:'wrap',gap:6,marginTop:8}}>
-                {info.places.slice(0,16).map(r=><span key={r} style={{padding:'5px 10px',borderRadius:999,background:info.theirs.includes(r)?(T.dark?cr:T.crSoft):T.soft,fontSize:13,color:info.theirs.includes(r)?(T.dark?'#fff':cr):T.ink2,fontWeight:info.theirs.includes(r)?700:400,fontFamily:C.P}}>{r}</span>)}
+                {info.places.slice(0,16).map(p=><span key={p.name} style={{display:'inline-flex',alignItems:'baseline',gap:5,padding:'5px 10px',borderRadius:999,background:p.theirs?(T.dark?cr:T.crSoft):T.soft,fontSize:13,color:p.theirs?(T.dark?'#fff':cr):T.ink2,fontWeight:p.theirs?700:400,fontFamily:C.P}}>{p.name}<span style={{fontSize:11,fontWeight:400,opacity:0.7}}>{p.kind}</span></span>)}
               </div>
               {info.theirs.length>0&&<div style={{fontSize:12,color:T.mid,fontFamily:C.P,marginTop:4}}>Highlighted: the ones on your own labels.</div>}
+              {info.wines.length>0&&<div data-testid="region-wines" style={{fontSize:14,color:T.ink2,fontFamily:C.P,lineHeight:1.5,marginTop:8}}><b style={{color:T.ink}}>Wines made here:</b> {info.wines.join(' · ')}.</div>}
             </div>}
           </div>
         </div>

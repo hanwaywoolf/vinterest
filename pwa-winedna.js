@@ -72,7 +72,7 @@ const WineDNA = {
     const rated=steps.filter(s=>s.scored>=2), most=[...steps].sort((a,b)=>b.n-a.n)[0];
     const hi=[...rated].sort((a,b)=>b.avg-a.avg)[0], lo=[...rated].sort((a,b)=>a.avg-b.avg)[0];
     const verdict=rated.length>=2&&hi.avg>lo.avg?`Your best ratings are in ${hi.label} (average ${hi.avg}), your lowest in ${lo.label} (average ${lo.avg}).`
-      :`Most of your ${L} sit in ${most.label}.`;
+      :`${most.n} of your ${at.length} ${L} sit in ${most.label}${most.avg!=null?`, rated ${most.avg} on average`:''}.`;
     return {axis,name:A.name,lowWord:A.low,highWord:A.high,word:this.everyday(axis,avg),avg,loved,lean,bottles:at,n:at.length,about,steps,verdict,start:most.i};
   },
   /* The five steps of each trait's scale on its WineDNA page, low to high. */
