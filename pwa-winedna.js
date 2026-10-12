@@ -73,7 +73,9 @@ const WineDNA = {
     const hi=[...rated].sort((a,b)=>b.avg-a.avg)[0], lo=[...rated].sort((a,b)=>a.avg-b.avg)[0];
     const verdict=rated.length>=2&&hi.avg>lo.avg?`Your best ratings are in ${hi.label} (average ${hi.avg}), your lowest in ${lo.label} (average ${lo.avg}).`
       :`${most.n} of your ${at.length} ${L} sit in ${most.label}${most.avg!=null?`, rated ${most.avg} on average`:''}.`;
-    return {axis,name:A.name,lowWord:A.low,highWord:A.high,word:this.everyday(axis,avg),avg,loved,lean,bottles:at,n:at.length,about,steps,verdict,start:most.i};
+    // The match's own signal for this trait (the 90+ wines against the rest), as the portrait row says it.
+    const signal=(()=>{ try{ const TP=(typeof _TYPES!=='undefined'?_TYPES:[]).find(x=>x.key===typeKey); const p=this.profile(typeKey,wines,TP?TP.label:L); return (p.signals||[]).find(x=>x.axis===axis)||null; }catch(e){ return null; } })();
+    return {axis,name:A.name,lowWord:A.low,highWord:A.high,word:this.everyday(axis,avg),avg,loved,lean,signal,bottles:at,n:at.length,about,steps,verdict,start:most.i};
   },
   /* What each step of a scale means, in plain words (Teach while asking): the line under the
      portrait's scale leads with the step's own name and says this, so the word on the scale and
@@ -435,6 +437,8 @@ const WineDNA = {
         add('Price',band,band==='under'?`Under ${cur}${Math.round(pq[0])}`:band==='over'?`Over ${cur}${Math.round(pq[1])}`:`${cur}${Math.round(pq[0])}–${Math.round(pq[1])}`,w); }
       const v=parseInt(w.vintage); if(v>1900&&v<=year){ const age=year-v, b=age<5?'young':age<=10?'5to10':'old';
         add('Age',b,b==='young'?'Under 5 years old':b==='5to10'?'5–10 years old':'Over 10 years old',w); }
+      // Where they had it (TastingExtras' where_had), so "the ones you open at home rate higher" can be said.
+      const at=String(w.where_had||'').trim(); if(at) add('Where',at.toLowerCase(),at,w);
     });
     let lifts=Object.values(groups).filter(g=>g.ws.length>=2).map(g=>{
       const m=g.ws.length, sum=g.ws.reduce((a,w)=>a+w.rating,0), shrunk=(sum+K*avg)/(m+K);
@@ -442,12 +446,17 @@ const WineDNA = {
       return {kind:g.kind,name,count:m,avg:Math.round(sum/m),lift:Math.round((shrunk-avg)*10)/10,set:g.ws.map(w=>w.name+'|'+(w.vintage||'')).sort().join(';'),ws:g.ws};
     }).filter(x=>Math.abs(x.lift)>=this.LIFT_MIN&&!(x.kind==='Country'&&x.count===n));
     // The same bottles under two names (Brunello the grape and Tuscany the region): keep the more specific line.
-    const order={Producer:0,Grape:1,Region:2,Country:3,Price:4,Age:5};
+    const order={Producer:0,Grape:1,Region:2,Country:3,Price:4,Age:5,Where:6};
     lifts.sort((a,b)=>Math.abs(b.lift)-Math.abs(a.lift)||order[a.kind]-order[b.kind]);
     const seen=new Map(); lifts=lifts.filter(x=>{ const o=seen.get(x.set); if(o){ o.also=o.also||x.name; return false; } seen.set(x.set,x); return true; });
     // Listed by how much evidence is behind each lift (its size × √bottles), so nine bottles a
     // couple of points up come before two bottles a few points up; the number shown is the lift.
     const weight=x=>Math.abs(x.lift)*Math.sqrt(x.count);
+    // Each line says whether the match reads it: TasteMatch counts the same grape, region and
+    // producer, never a country, price, age or place, which only shape the words and the rules.
+    const MATCH_KINDS=['Grape','Region','Producer'];
+    lifts.forEach(x=>{ x.match=MATCH_KINDS.includes(x.kind);
+      x.examples=[...x.ws].sort((a,b)=>x.lift>0?b.rating-a.rating:a.rating-b.rating).slice(0,2).map(w=>({name:this.nameYear(w),rating:w.rating})); });
     const up=lifts.filter(x=>x.lift>0).sort((a,b)=>weight(b)-weight(a)).slice(0,5), down=lifts.filter(x=>x.lift<0).sort((a,b)=>weight(b)-weight(a)).slice(0,3);
     // Price and age as a whole.
     const pw=sc.filter(w=>this.priceOf(w)>0), aw=sc.filter(w=>{ const v=parseInt(w.vintage); return v>1900&&v<=year; });
@@ -460,7 +469,7 @@ const WineDNA = {
     // In words: what each favourite is like, and the bottles that show it.
     const one=L.replace(/s$/,''), usual=Math.round(avg);
     const title=x=>x.kind==='Grape'?x.name:x.kind==='Region'?`${L.charAt(0).toUpperCase()+L.slice(1)} from ${x.name}`:x.kind==='Producer'?`${x.name}'s ${L}`
-      :x.kind==='Country'?`${x.name} ${L}`:x.kind==='Price'?`${L.charAt(0).toUpperCase()+L.slice(1)} ${x.name.toLowerCase()}`:`${L.charAt(0).toUpperCase()+L.slice(1)} ${x.name.toLowerCase()}`;
+      :x.kind==='Country'?`${x.name} ${L}`:x.kind==='Price'?`${L.charAt(0).toUpperCase()+L.slice(1)} ${x.name.toLowerCase()}`:x.kind==='Where'?`${L.charAt(0).toUpperCase()+L.slice(1)} you had at ${x.name}`:`${L.charAt(0).toUpperCase()+L.slice(1)} ${x.name.toLowerCase()}`;
     const strength=x=>Math.abs(x.lift)>=2.5?(x.lift>0?'Your clearest favourite':'Clearly not your thing'):Math.abs(x.lift)>=1.5?(x.lift>0?'A real favourite':'Usually not your thing'):(x.lift>0?'A gentle lean':'A slight drag');
     const describe=x=>{
       const st=this.styleWords(x.ws,p.axes), fl=this.flavourWords(x.ws);
