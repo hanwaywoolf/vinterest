@@ -231,18 +231,25 @@ function DnaRules({t,nav,onExplore}){ const T=useTheme(), col=t.col;
    against their choices, and "Shapes your match" where that trait is one of the match's signals
    (WineDNA.signals). Rows arrive one after another. Each opens WineDNA's own page for that trait
    (DnaTraitScreen). */
-const _DNA_SCALE={w:326,h:50,y:18,x0:4,x1:322};
-function _DnaScale({axis,v,loved,col,T,step}){
+const _DNA_SCALE={w:326,h:68,y:38,x0:6,x1:320};
+function _DnaScale({axis,v,loved,col,T,step,word}){
   const {w,h,y,x0,x1}=_DNA_SCALE, X=t=>x0+(x1-x0)*t, steps=WineDNA.STEPS[axis]||['','','','',''];
   const track=T.dark?'rgba(255,255,255,0.14)':'rgba(0,0,0,0.1)', dim=T.dark?'rgba(255,255,255,0.18)':'rgba(0,0,0,0.12)', name=T.dark?'rgba(255,255,255,0.45)':'rgba(0,0,0,0.45)';
+  // Nine dots at i/8, the five step names under every other one (the same x), so they line up.
   const dots=[...Array(9)].map((_,i)=>({x:X(i/8),r:i%2?2.5:4,lit:i/8<=v}));
+  // Their position: a ring on the line, the word in a pill floating just above it (kept inside
+  // the scale's ends), so the white 90+ dot always has the line to itself.
+  const pw=Math.max(44,String(word||'').length*7.2+22), px=Math.max(x0+pw/2,Math.min(x1-pw/2,X(v)));
   return <svg viewBox={`0 0 ${w} ${h}`} width="100%" aria-hidden="true" style={{display:'block',overflow:'visible'}}>
     <line x1={x0} y1={y} x2={x1} y2={y} stroke={track} strokeWidth="1.5"/>
     <line x1={x0} y1={y} x2={X(v)} y2={y} stroke={col} strokeWidth="1.5" style={{filter:T.dark?`drop-shadow(0 0 5px ${col})`:'none'}}/>
     {dots.map((d,i)=><circle key={i} cx={d.x} cy={y} r={d.r} fill={d.lit?_alpha(col,0.75):dim}/>)}
-    <circle cx={X(v)} cy={y} r="8" fill={col} stroke={T.dark?'#fff':'#fff'} strokeWidth="2" style={{filter:T.dark?`drop-shadow(0 0 8px ${col})`:'none'}}/>
+    <line x1={X(v)} y1={y-8} x2={X(v)} y2={y-24} stroke={col} strokeWidth="1.5"/>
+    <rect x={px-pw/2} y={2} width={pw} height={22} rx={11} fill={col} style={{filter:T.dark?`drop-shadow(0 0 8px ${_alpha(col,0.8)})`:'none'}}/>
+    <text x={px} y={17.5} textAnchor="middle" style={{fontSize:'13px',fontWeight:800,fill:'#fff',fontFamily:C.P}}>{word}</text>
+    <circle cx={X(v)} cy={y} r="7" fill={T.dark?'#0E0E10':'#FBF8F3'} stroke={col} strokeWidth="2.5" style={{filter:T.dark?`drop-shadow(0 0 6px ${col})`:'none'}}/>
     {loved!=null&&<circle cx={X(loved)} cy={y} r="4.5" fill={T.dark?'#fff':T.ink} stroke={T.dark?'#0E0E10':'#fff'} strokeWidth="1.5"/>}
-    {steps.map((label,i)=>{ const x=X(i/4), on=i===step; return <text key={i} x={i===0?x0+8:i===4?x1-8:x} y={h-8} textAnchor="middle" style={{fontSize:on?'12px':'10px',fontWeight:on?800:400,fill:on?(T.dark?'#fff':T.ink):name,fontFamily:C.P}}>{label}</text>; })}
+    {steps.map((label,i)=>{ const x=X(i/4), on=i===step; return <text key={i} x={x} y={h-6} textAnchor={i===0?'start':i===4?'end':'middle'} style={{fontSize:on?'12px':'10px',fontWeight:on?800:400,fill:on?(T.dark?'#fff':T.ink):name,fontFamily:C.P}}>{label}</text>; })}
   </svg>;
 }
 function DnaTasteTiles({t,nav}){ const T=useTheme();
@@ -270,7 +277,7 @@ function DnaTasteTiles({t,nav}){ const T=useTheme();
             <span style={{fontSize:12,fontWeight:700,color:T.mid,fontFamily:C.P,letterSpacing:'0.1em',textTransform:'uppercase',flex:1}}>{A.name}</span>
             <Icon n="chevron" sz={13} col={T.mid}/>
           </div>
-          <_DnaScale axis={k} v={v} loved={lv} col={col} T={T} step={step}/>
+          <_DnaScale axis={k} v={v} loved={lv} col={col} T={T} step={step} word={word}/>
           {(()=>{ const sg=signalFor(k); return <div style={{fontSize:13,color:T.ink2,fontFamily:C.P,lineHeight:1.45}}><b style={{color:T.ink}}>{word}.</b> {sg?sg.text:(lean||'')}{sg&&<> <span style={{color:T.green,fontWeight:700}}>Shapes your match.</span></>}</div>; })()}
         </div>
       </div>; })}
