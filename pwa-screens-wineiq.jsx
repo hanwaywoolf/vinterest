@@ -304,32 +304,31 @@ function DnaFlavourPills({t}){ const T=useTheme();
    rest shape the words here and Your rules, tagged WORDS. This is the one place the lifts are
    listed: Your rules picks from the same list, and the written summary says it in sentences. */
 function DnaMoves({t}){ const T=useTheme();
-  const L=t.loves; if(!L||!L.ready||(!L.up.length&&!L.down.length)) return null;
-  const one=(WineDNA.NOUNS[t.key]||['wine','wines'])[0];
-  // Things you'd name on a wine list first (the match reads them), then price, age, country and place.
-  const named=xs=>[...xs].sort((a,b)=>(b.match?1:0)-(a.match?1:0));
-  const row=(x,good)=>{
-    const ex=(x.examples||[]).slice(0,1).map(w=>`${w.name} (${w.rating})`).join(', ');
-    const why=[`${WineDNA.noun(t.key,x.count)}, average rating ${x.avg}`,
-      x.also?`the same bottles as ${x.also}`:ex?`${good?'best':'lowest'}: ${ex}`:null].filter(Boolean).join(' · ');
-    const name=x.kind==='Where'?`Had at ${x.name}`:x.name;
+  const P=WineDNA.patterns(t); if(!P||(!P.named.length&&!P.price&&!P.age&&!P.where)) return null;
+  const L=t.label.toLowerCase(), col=t.col;
+  const head=x=><div style={{fontSize:12,fontWeight:700,color:T.mid,fontFamily:C.P,letterSpacing:'0.08em',textTransform:'uppercase'}}>{x}</div>;
+  const row=x=>{ const good=x.lift>0, ex=(x.examples||[]).slice(0,1).map(w=>`${w.name} (${w.rating})`).join('');
     return <div key={x.kind+x.name} style={{display:'flex',alignItems:'center',gap:10}}>
       <span style={{width:40,textAlign:'right',fontSize:17,fontWeight:800,color:good?T.green:T.tone.bad,fontFamily:C.P,flexShrink:0}}>{good?'+':'−'}{Math.abs(Math.round(x.lift))||1}</span>
       <div style={{flex:1,minWidth:0}}>
-        <div style={{display:'flex',alignItems:'center',gap:6,fontSize:14,fontWeight:700,color:T.ink,fontFamily:C.P}}>{x.kind==='Region'&&<Flag region={x.name} size={14}/>}{x.kind==='Country'&&<Flag country={x.name} size={14}/>}<span style={{overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{name}</span></div>
-        <div style={{fontSize:12,color:T.mid,fontFamily:C.P,lineHeight:1.4}}>{why}</div>
+        <div style={{display:'flex',alignItems:'center',gap:6,fontSize:14,fontWeight:700,color:T.ink,fontFamily:C.P}}>{x.kind==='Region'&&<Flag region={x.name} size={14}/>}<span style={{overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{x.name}</span></div>
+        <div style={{fontSize:12,color:T.mid,fontFamily:C.P,lineHeight:1.4}}>{WineDNA.noun(t.key,x.count)}, average rating {x.avg}{x.also?` · the same bottles as ${x.also}`:ex?` · ${good?'best':'lowest'}: ${ex}`:''}</div>
       </div>
     </div>; };
-  const reads=[...L.up,...L.down].filter(x=>x.match).map(x=>x.name), only=[...L.up,...L.down].filter(x=>!x.match).map(x=>x.kind==='Where'?'where you had it':x.kind.toLowerCase());
-  return <div data-testid="dna-moves" style={{background:T.glass,border:`1px solid ${T.line}`,borderRadius:16,padding:14,display:'flex',flexDirection:'column',gap:10}}>
-    <div style={{fontSize:13,color:T.mid,fontFamily:C.P,lineHeight:1.45}}>Your average rating for {t.label.toLowerCase()} is <b style={{color:T.ink}}>{L.usual}</b>. Each line is how far above or below that you rate {t.label.toLowerCase()} like it, from at least two bottles.</div>
-    <div style={{display:'flex',flexDirection:'column',gap:9}}>
-      {named(L.up).map(x=>row(x,true))}
-      {L.up.length>0&&L.down.length>0&&<div style={{height:1,background:T.line}}/>}
-      {named(L.down).map(x=>row(x,false))}
+  const line=(label,text)=>text&&<div style={{display:'flex',flexDirection:'column',gap:4}}>{head(label)}<div style={{fontSize:14,color:T.ink2,fontFamily:C.P,lineHeight:1.5}}>{text}</div></div>;
+  return <div data-testid="dna-moves" style={{background:T.glass,border:`1px solid ${T.line}`,borderRadius:16,padding:14,display:'flex',flexDirection:'column',gap:14}}>
+    {/* The average first and large: every + and − below is measured against it. */}
+    <div style={{display:'flex',alignItems:'center',gap:14,padding:'10px 12px',borderRadius:12,background:_alpha(col,T.dark?0.14:0.08)}}>
+      <span data-testid="dna-avg" style={{fontSize:34,fontWeight:800,color:col,fontFamily:C.P,lineHeight:1}}>{P.usual}</span>
+      <div style={{fontSize:13,color:T.ink2,fontFamily:C.P,lineHeight:1.45}}><b style={{color:T.ink}}>Your average rating for {L}</b>, from {WineDNA.noun(t.key,P.n)}. Every + and − below is points above or below it.</div>
     </div>
-    {/* Which of these the match reads: grape, region and producer count in a match score; the rest only shape the words here and your rules. */}
-    <div style={{fontSize:12,color:T.mid,fontFamily:C.P,lineHeight:1.45}}>{reads.length?`${WineDNA._list(reads)} also count${reads.length===1?'s':''} in a ${one}'s match score. `:''}{only.length?(u=>`${WineDNA._list(u).charAt(0).toUpperCase()+WineDNA._list(u).slice(1)} never move${u.length===1?'s':''} a match: ${u.length===1?'it shapes':'they shape'} only the words here and your rules.`)([...new Set(only)]):''}</div>
+    {P.named.length>0&&<div style={{display:'flex',flexDirection:'column',gap:9}}>
+      {head('Grapes, regions and producers')}
+      {P.named.map(row)}
+    </div>}
+    {line('Price',P.price)}
+    {line('Age',P.age)}
+    {line('Where you had it',P.where)}
   </div>;
 }
 /* How Well We Know You as a target (TasteMatch.calibration): a dot per scored wine, as far from
@@ -1080,8 +1079,8 @@ function WineDNAScreen({nav,back,showPro}){
 
                 <DnaFlavourPills t={t}/>
                 {DetailLevel.at('more')&&t.loves&&t.loves.ready&&(t.loves.up.length||t.loves.down.length)>0&&<>
-                  <CSH label="What moves your ratings" cKey="moves" collapsed={collapsed} toggle={toggle}
-                    summary={(by=>[...by(t.loves.up).slice(0,2).map(x=>`${x.name} +${Math.abs(Math.round(x.lift))||1}`),...by(t.loves.down).slice(0,1).map(x=>`${x.name} −${Math.abs(Math.round(x.lift))||1}`)].join(' · '))(xs=>[...xs].sort((a,b)=>(b.match?1:0)-(a.match?1:0)))}/>
+                  <CSH label="Why you rate what you rate" cKey="moves" collapsed={collapsed} toggle={toggle}
+                    summary={(P=>P?[`Your average: ${P.usual}`,...P.named.slice(0,3).map(x=>`${x.name} ${x.lift>0?'+':'−'}${Math.abs(Math.round(x.lift))||1}`)].join(' · '):'')(WineDNA.patterns(t))}/>
                   {!collapsed.moves&&<DnaMoves t={t}/>}
                 </>}
                 {(genSummaries[t.key]||generatingSummary===t.key)&&<DnaReadMore label="Read your WineDNA in words">

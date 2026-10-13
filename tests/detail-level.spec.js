@@ -54,7 +54,7 @@ test('WineDNA at Simple: a portrait in pictures, the useful rows, a line on valu
   await expect(page.getByTestId('dna-best-value')).toBeVisible();
   await expect(root).toContainText('Buy again');
   await expect(root).toContainText('Explore');
-  for (const later of ['How Well We Know You', 'Your Journey', 'What moves your ratings', 'Your rating at each price']) await expect(root).not.toContainText(later);
+  for (const later of ['How Well We Know You', 'Your Journey', 'Why you rate what you rate', 'Your rating at each price']) await expect(root).not.toContainText(later);
   await expect(page.getByTestId('dna-moves')).toHaveCount(0);
   // A taste tile opens WineDNA's own page for that trait: the wines they choose on its scale and
   // what the word means, never the palate page's Blind Call scoring.
@@ -101,13 +101,15 @@ test('WineDNA at Simple: a portrait in pictures, the useful rows, a line on valu
   await expect(root).toContainText('Your rating at each price');
   await expect(page.getByTestId('dna-moves')).toBeVisible();
   // Each line says whether the match reads it: a grape, region or producer does, a price band doesn't.
-  await expect(page.getByTestId('dna-moves')).toContainText('match score');
+  await expect(page.getByTestId('dna-avg')).toBeVisible();
+  await expect(page.getByTestId('dna-moves')).toContainText('Your average rating for reds');
+  await expect(page.getByTestId('dna-moves')).not.toContainText('match');
   await expect(page.getByTestId('dna-more-later')).toHaveCount(0);
   expect(await page.evaluate(() => DetailLevel.showAll())).toBe(true);
   expect(errors).toEqual([]);
 });
 
-test('WineDNA at More adds What moves your ratings, How Well We Know You and Journey, still not the full Value', async ({ context, page }) => {
+test('WineDNA at More adds Why you rate what you rate, How Well We Know You and Journey, still not the full Value', async ({ context, page }) => {
   await user(context, page, { experience: 'enthusiast' });
   await page.goto(`${BASE}/?demo=1#profile`);
   const root = page.locator('#root');

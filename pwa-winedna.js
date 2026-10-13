@@ -345,6 +345,23 @@ const WineDNA = {
   },
 
   // How much weight to put on what the tab says, and what would sharpen it.
+  /* Why they rate what they rate (the card under the portrait): patterns in their own ratings, each
+     as points against their average rating, which the card shows large so + and − can't be misread.
+     Nothing here is about the match, which explains itself on each scan ("Why N%?").
+       named: grapes, regions and producers (lifts then drags; a country is dropped, it repeats the
+       regions); price, age and where they had it as one sentence each, only with a real lean. */
+  patterns(p){
+    const L=p.label.toLowerCase(), lv=p.loves; if(!lv||!lv.ready) return null;
+    const named=[...lv.up,...lv.down].filter(x=>['Grape','Region','Producer'].includes(x.kind));
+    const say=(kind,b,more,less)=>{ if(!b||b.length<2) return null; const hi=b[0], lo=b[b.length-1]; if(hi.avg-lo.avg<2) return null;
+      return `${more(hi)}: ${hi.name.toLowerCase()} averages ${hi.avg}, ${lo.name.toLowerCase()} ${lo.avg}.`; };
+    const B=lv.bands||{};
+    const price=lv.money&&B.price&&B.price.length>=2?`${lv.money.split(':')[0]}: ${B.price[0].name.toLowerCase()} averages ${B.price[0].avg}, ${B.price[B.price.length-1].name.toLowerCase()} ${B.price[B.price.length-1].avg}.`:lv.money;
+    const age=lv.age?`${lv.age.split(':')[0]}${B.age&&B.age.length>=2?`: ${B.age[0].name.toLowerCase()} averages ${B.age[0].avg}, ${B.age[B.age.length-1].name.toLowerCase()} ${B.age[B.age.length-1].avg}.`:'.'}`:null;
+    const where=say('Where',B.where,hi=>`You rate the ${L} you have at ${hi.name} highest`);
+    return {usual:lv.usual,n:lv.n,named,price,age,where};
+  },
+
   /* What's thin: the one line saying what would sharpen this tab most, or null once it's strong.
      Unrated bottles first (they're already scanned), then the ratings the signals need, then a
      trait few of their labels gave a figure for (the lead grape or region scan missed it). */
@@ -501,7 +518,9 @@ const WineDNA = {
     const portrait=(bStyle.length||bFl.length||names.length)?`You love ${bStyle.length?this._list(bStyle)+' ':''}${L}${bFl.length?` with ${this._list(bFl)}`:''}${names.length?`, ${names.length>1?'above all':'especially'} ${this._list(names)}`:''}.`:null;
     const headline=portrait||(styleAll[0]?styleAll[0].text:null)||(up[0]?`${up[0].name} lifts your ratings most: ${up[0].count} bottles averaging ${up[0].avg}, ${up[0].lift>0?'+':''}${up[0].lift} on your average.`
       :flat?`You rate your ${L} very evenly, mostly between ${loCut} and ${hiCut}.`:null);
-    return {ready:true,n,avg:Math.round(avg*10)/10,usual,bestAvg,hiCut,loCut,flat,style:styleAll,up:up.map(({ws,...x})=>x),down:down.map(({ws,...x})=>x),favs,nots,portrait,money,age,headline};
+    const bands=kind=>Object.values(groups).filter(g=>g.kind===kind&&g.ws.length>=2).map(g=>({name:Object.keys(g.names)[0],count:g.ws.length,avg:Math.round(g.ws.reduce((a,w)=>a+w.rating,0)/g.ws.length)})).sort((a,b)=>b.avg-a.avg);
+    return {ready:true,n,avg:Math.round(avg*10)/10,usual,bestAvg,hiCut,loCut,flat,style:styleAll,up:up.map(({ws,...x})=>x),down:down.map(({ws,...x})=>x),favs,nots,portrait,money,age,headline,
+      bands:{price:bands('Price'),age:bands('Age'),where:bands('Where')}};
   },
 
   /* Your rules: three things to do next time they're buying, written from what the profile already
