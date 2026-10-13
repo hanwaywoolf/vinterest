@@ -516,7 +516,7 @@ const WineDNA = {
     const L=(this.NOUNS[p.typeKey]||['wine','wines'])[1], lv=p.loves, out=[];
     const named=x=>['Grape','Region','Producer'].includes(x.kind);
     const band=x=>{ const n=x.name; if(/^Over /.test(n)) return 'over '+n.slice(5); if(/^Under /.test(n)) return 'under '+n.slice(6); const cur=(n.match(/^[^0-9]*/)||[''])[0]; return 'between '+n.replace('–',' and '+cur); };
-    const pts=x=>`${x.count} bottles, averaging ${x.avg}: ${Math.abs(x.lift)>=1?Math.round(Math.abs(x.lift)):1} point${Math.round(Math.abs(x.lift))===1?'':'s'} ${x.lift>0?'above':'below'} your usual ${lv&&lv.usual}.`;
+    const pts=x=>`${x.count} bottles, average rating ${x.avg}: ${Math.abs(x.lift)>=1?Math.round(Math.abs(x.lift)):1} point${Math.round(Math.abs(x.lift))===1?'':'s'} ${x.lift>0?'above':'below'} your average ${lv&&lv.usual}.`;
     if(lv&&lv.ready){
       const up=lv.up.find(named), upPrice=lv.up.find(x=>x.kind==='Price');
       if(up) out.push({kind:'reach',lead:`Reach for ${up.kind==='Producer'?up.name+"'s bottles":up.name}${upPrice?`, ${band(upPrice)}`:''}`,why:pts(up),name:up.name,link:up.kind==='Region'?{region:up.name}:null});

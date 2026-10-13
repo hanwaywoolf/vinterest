@@ -35,11 +35,12 @@ function ScanLocationCard({wine}){ const T=useTheme(), cr=T.lift(C.cr);
 }
 
 function WineDetailScreen({back,nav,showPro}){ const T=useTheme(), cr=T.lift(C.cr);
-  const [tab,setTab]=React.useState(0);
-  /* On an iPad on its side the Price tab becomes a panel beside the other two (where to buy stays in
-     view while they read); upright, the three tabs as on a phone, in a centred column. */
+  /* On an iPad on its side the Shop tab becomes a panel beside the other two (where to buy stays in
+     view while they read); upright, the three tabs as on a phone, in a centred column. A handoff
+     with tab 'shop' (Restock on WineDNA's Buy again) opens on it. */
   const size=useLayoutSize(), split=size==='roomy', wide=size!=='phone';
-  const tabs=split?['Details','Learn']:['Details','Learn','Price'];
+  const tabs=split?['Details','Learn']:['Details','Learn','Shop'];
+  const [tab,setTab]=React.useState(()=>{ try{ return !split&&Handoff.scanResult.get({}).tab==='shop'?2:0; }catch(e){ return 0; } });
   React.useEffect(()=>{ if(split&&tab===2) setTab(0); },[split]);
   const scanData=React.useMemo(()=>{
     try{ return Handoff.scanResult.get({}); }
@@ -642,7 +643,7 @@ const REGION_CURRENCY = {
 /* The bottle itself at the partner shop for their country (Shops.match: the shop's own product
    feed), with "Buy at <shop>" on its page through /go, labelled Partner. Without this vintage it
    says so and lists the vintages the shop has; nothing at all when the shop doesn't list the wine.
-   Money never moves a match: it's only here, on the Price tab. */
+   Money never moves a match: it's only here, on the Shop tab. */
 function ShopBottle({wine,onShop}){ const T=useTheme(), cr=T.lift(C.cr);
   const [d,setD]=React.useState(null);
   // onShop: 'pending' while it looks, then the shop's name or null.

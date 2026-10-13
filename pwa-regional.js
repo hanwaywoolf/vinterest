@@ -106,7 +106,7 @@ const Shops={
   },
   // "£159", "£22.95": a shop's own price in its own currency.
   money(n,cur){ try{ return new Intl.NumberFormat('en-GB',{style:'currency',currency:cur||'GBP',minimumFractionDigits:n%1?2:0,maximumFractionDigits:2}).format(n); }catch(e){ return (cur||'')+' '+n; } },
-  // The Price tab's "In shops now": the shops the live price search found the wine at.
+  // The Shop tab's "In shops now": the shops the live price search found the wine at.
   listings(priceData,placement){ return ((priceData&&priceData.shops)||[]).map(s=>({...s,...this.link(s.url,placement,s.sig),name:s.name})); },
   /* A real link click, not window.open with window features: installed apps hand a plain
      target=_blank link to the platform's in-app browser (Safari's sheet with Done on iOS, a
@@ -126,7 +126,7 @@ const Shops={
 const Lcbo={
   CACHE_PREFIX:'vinterest_lcbo_', CACHE_MS:20*60*1000,
   city(){ const l=UserPrefs.location(); return UserPrefs.askCity(l.country,l.state)&&l.city?l.city:null; },
-  // Ontario: the Price tab's "At the LCBO" (its buttons need no city; the stock list does).
+  // Ontario: the Shop tab's "At the LCBO" (its buttons need no city; the stock list does).
   ontario(){ const l=UserPrefs.location(); return UserPrefs.askCity(l.country,l.state); },
   // Ontario with a city: the stock lookup (the Worker's /lcbo).
   applies(){ return !!this.city(); },
@@ -238,7 +238,7 @@ function fetchRetailEstimate(wine,curr){
   return _fetchRetailEstimate(wine,curr).then(d=>{ _keepShopPrice(wine,curr,d); return d; });
 }
 /* The shop price is saved onto the wine (shop_price {amount, code, source}), so WineDNA's average,
-   Value and the sommelier script's budget use the same figure the Price tab shows, not the rough
+   Value and the sommelier script's budget use the same figure the Shop tab shows, not the rough
    label guess (price_usd) the scan started with. What they paid still comes first (WineDNA.priceOf). */
 function _keepShopPrice(wine,curr,d){
   try{

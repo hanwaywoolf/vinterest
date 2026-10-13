@@ -122,9 +122,14 @@ function App(){
   React.useEffect(()=>{
     let raf=0;
     const sync=()=>{ cancelAnimationFrame(raf); raf=requestAnimationFrame(()=>{
-      let el=document.elementFromPoint(window.innerWidth/2,window.innerHeight-2), c='';
-      for(;el&&el!==document.documentElement;el=el.parentElement){ const b=getComputedStyle(el).backgroundColor; if(b&&b!=='transparent'&&!/,\s*0\)$/.test(b)){ c=b; break; } }
+      const at=y=>{ let el=document.elementFromPoint(window.innerWidth/2,y);
+        for(;el&&el!==document.documentElement;el=el.parentElement){ const b=getComputedStyle(el).backgroundColor; if(b&&b!=='transparent'&&!/,\s*0\)$/.test(b)) return b; }
+        return ''; };
+      const c=at(window.innerHeight-2);
       if(c){ document.documentElement.style.backgroundColor=c; document.body.style.backgroundColor=c; }
+      // The phone's status bar takes the colour at the top of the screen, with icons to suit.
+      const top=at(2)||c; if(top){ const m=top.match(/\d+/g)||[], [r,g,b]=m.map(Number), hex='#'+[r,g,b].map(x=>(x||0).toString(16).padStart(2,'0')).join('');
+        Platform.statusBar(hex,(0.299*r+0.587*g+0.114*b)<128); }
     }); };
     sync(); const t=setTimeout(sync,350);
     const mo=new MutationObserver(sync); const root=document.getElementById('root');

@@ -168,9 +168,14 @@ test('the WineDNA tab shows the new sections with no console errors', async ({ p
   const root = page.locator('#root');
   // The thin line, the palate link and the Scripts row sit above the portrait and the lifts.
   await expect(page.getByTestId('dna-palate-link')).toContainText('Your palate');
-  await expect(page.getByTestId('dna-script-row')).toContainText('What to say when ordering');
-  await page.getByTestId('dna-script-row').click();
-  await expect(page.locator('[data-section="scripts"]')).toBeInViewport();
+  // The sommelier script itself sits under the portrait, not a link down to it; every section folds.
+  const scripts = page.locator('[data-section="scripts"]');
+  await expect(scripts).toContainText('Scripts');
+  await page.locator('[data-section="portrait"]').getByText('Your portrait').click();
+  await expect(page.getByTestId('dna-taste-tiles')).toHaveCount(0);
+  await expect(page.locator('[data-section="portrait"]')).toContainText('·');
+  await page.locator('[data-section="portrait"]').getByText('Your portrait').click();
+  await expect(page.getByTestId('dna-taste-tiles')).toBeVisible();
   for (const t of ['Based on your 6 Outstanding (90+) reds', 'What moves your ratings', 'How Well We Know You', 'Your rating at each price', 'Your best ratings come from', 'How your choices are changing', 'Blind Call accuracy']) {
     await expect(root, t).toContainText(t);
   }
@@ -233,7 +238,13 @@ test('wines named in WineDNA open their details', async ({ page }) => {
     const all = WineHistory.getAll(); const w = all.find((x) => x.type === 'red' && x.rating >= 90); w.buy_again = true; WineHistory.save(all); });
   await page.goto(`${BASE}/?demo=1#profile`);
   const root = page.locator('#root');
-  await expect(root.locator('[data-section="house"]')).toContainText('Your “House” Wines');
+  await expect(root.locator('[data-section="house"]')).toContainText('Buy again');
+  // Restock opens the bottle on its Shop tab (every way to buy it is there), never a shop straight away.
+  await page.getByTestId('house-wines').getByRole('button', { name: /^Restock/ }).first().click();
+  await expect(page).toHaveURL(/#detail/);
+  await expect(root.getByText(/Restock|Find it/).first()).toBeVisible();
+  await page.goBack();
+  await expect(root.locator('[data-section="house"]')).toBeVisible();
   const row = page.getByTestId('house-wines').getByRole('button').first();
   // The row says "Name 2018"; the wine's header sets the year on its own line, so match the name alone.
   const name = (await row.locator('div div').first().innerText()).trim().replace(/^♥/, '').replace(/\s+(19|20)\d\d$/, '').trim();
@@ -346,14 +357,14 @@ test('Your rules: reach, skip and try from the profile, and "rate more" before i
   const rules = await page.evaluate(() => { const w = WineHistory.getAll(); const p = WineDNA.profile('red', w, 'Reds'); return WineDNA.rules(p, ExploreNext.suggest('red', w, 'Reds')); });
   expect(rules.map((r) => r.kind)).toEqual(['reach', 'skip', 'try']);
   expect(rules[0].lead).toMatch(/^Reach for \w+(, (over|under|between) £\d+( and £\d+)?)?$/);
-  expect(rules[0].why).toMatch(/^\d+ bottles, averaging \d+: \d+ points? above your usual \d+\.$/);
+  expect(rules[0].why).toMatch(/^\d+ bottles, average rating \d+: \d+ points? above your average \d+\.$/);
   expect(rules[1].lead).toMatch(/^Skip \w+$/);
   expect(rules[2].lead).toMatch(/^Try /);
   expect(rules[2].why).not.toMatch(/\(think/);
   expect(rules[2].link).toEqual({ explore: true });
   // The card on the tab, and its Try row opening Explore Next.
   const card = page.getByTestId('dna-rules');
-  await expect(card).toContainText("Next time you're buying");
+  await expect(page.locator('[data-section="rules"]')).toContainText("Next time you're buying");
   await expect(card.locator('[data-rule="reach"]')).toContainText(rules[0].lead);
   await card.locator('[data-rule="try"]').click();
   await expect(page.locator('[data-section="explore"]')).toBeInViewport();

@@ -525,7 +525,7 @@ async function handlePriceSearch(payload, env, key, ctx) {
   return json(200, { text: await _signListings(env, res.text), cached: false });
 }
 
-/* The shops the search found the wine at (up to 3), for the Price tab's "In shops now". A link is
+/* The shops the search found the wine at (up to 3), for the Shop tab's "In shops now". A link is
    kept only when the search really returned a page on that site, so a shop the model made up,
    or a link it guessed, never reaches the screen. https only, and never a search engine. */
 function _listedShops(shops, content) {
@@ -554,7 +554,7 @@ function _listedShops(shops, content) {
    from the shop's own product feed, loaded nightly into Supabase's shop_products
    (scripts/shop-feeds.mjs). It prefers a single 75cl bottle of the scanned vintage; without one it
    names the vintages the shop does have. The app links the listing's page through /go (placement
-   "buy"), which adds the Awin tracking. Money never moves a match: this sits on the Price tab only.
+   "buy"), which adds the Awin tracking. Money never moves a match: this sits on the Shop tab only.
    Without Supabase or a feed shop for the country it answers {items:[]}. */
 const SHOP_MATCH_TTL_S = 6 * 3600;
 const SHOP_COLOURS = { red: "red", rouge: "red", tinto: "red", rosso: "red", white: "white", blanc: "white", blanco: "white", bianco: "white", weiss: "white", rose: "rose", rosado: "rose", rosato: "rose" };

@@ -1,8 +1,8 @@
 # Partner shops (Awin, then Skimlinks)
 
 Vinterest earns a commission when someone buys wine through a partner link. Links go out from
-four places: **Find it for me** on a wine's Price tab (it becomes **Restock** for a wine you'd buy
-again), the **Restock** button on WineDNA's “House” Wines, the **In shops now** list the live
+four places: **Find it for me** on a wine's Shop tab (it becomes **Restock** for a wine you'd buy
+again), the **Restock** button on WineDNA's Buy again, the **In shops now** list the live
 price search finds, and **Find it** on an Explore Next style's bottles. Every tracked link is
 labelled **Partner**, a visible line beside the links says "We may earn a commission if you buy
 through these links. It never changes your match or what we suggest." (`ShopDisclosure`; a
@@ -119,7 +119,7 @@ one of those means a second link format in `Shops.link` (`pwa-regional.js`).
 
 ## Product feeds: the bottle itself, with Buy
 
-A shop that publishes a product feed on Awin (Toolbox → Create-a-Feed) lets the Price tab show the
+A shop that publishes a product feed on Awin (Toolbox → Create-a-Feed) lets the Shop tab show the
 very bottle: its photo, vintage and price, and "Buy at <shop>" straight to its page (through `/go`,
 placement `buy`, with the Awin tracking). Winebuyers' feed is on.
 

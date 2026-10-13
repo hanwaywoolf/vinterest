@@ -77,7 +77,7 @@ test('the budget comes from their own wines: price paid first, wines they dislik
   expect(out.noPrices).toBe('£12–£25 GBP');
 });
 
-test('once the Price tab finds a shop price, WineDNA and the script budget use it, not the label guess', async ({ context, page }) => {
+test('once the Shop tab finds a shop price, WineDNA and the script budget use it, not the label guess', async ({ context, page }) => {
   await makeDeterministic(page);
   const posip = { name: 'Pošip Ograničeni Položaji', type: 'white', region: 'Srednja i Južna Dalmacija', country: 'Croatia', vintage: 0, rating: 95, price_usd: 18, scanned_at: '2026-09-01T12:00:00Z' };
   await seedLocalStorage(page, { vinterest_onboarded: '1', vinterest_age_ok: '1', vinterest_region: 'uk', vinterest_wines: JSON.stringify([posip]) });

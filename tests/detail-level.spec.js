@@ -52,7 +52,7 @@ test('WineDNA at Simple: a portrait in pictures, the useful rows, a line on valu
   await expect(page.getByTestId('dna-taste-tiles')).toContainText('Body');
   await expect(page.getByTestId('dna-flavours')).toBeVisible();
   await expect(page.getByTestId('dna-best-value')).toBeVisible();
-  await expect(root).toContainText('Your “House” Wines');
+  await expect(root).toContainText('Buy again');
   await expect(root).toContainText('Explore');
   for (const later of ['How Well We Know You', 'Your Journey', 'What moves your ratings', 'Your rating at each price']) await expect(root).not.toContainText(later);
   await expect(page.getByTestId('dna-moves')).toHaveCount(0);
@@ -101,7 +101,7 @@ test('WineDNA at Simple: a portrait in pictures, the useful rows, a line on valu
   await expect(root).toContainText('Your rating at each price');
   await expect(page.getByTestId('dna-moves')).toBeVisible();
   // Each line says whether the match reads it: a grape, region or producer does, a price band doesn't.
-  await expect(page.getByTestId('dna-moves')).toContainText('MATCH');
+  await expect(page.getByTestId('dna-moves')).toContainText('match score');
   await expect(page.getByTestId('dna-more-later')).toHaveCount(0);
   expect(await page.evaluate(() => DetailLevel.showAll())).toBe(true);
   expect(errors).toEqual([]);
