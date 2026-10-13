@@ -166,6 +166,11 @@ test('the WineDNA tab shows the new sections with no console errors', async ({ p
   const errors = collectErrors(page);
   await page.goto(`${BASE}/?demo=1#profile`);
   const root = page.locator('#root');
+  // The thin line, the palate link and the Scripts row sit above the portrait and the lifts.
+  await expect(page.getByTestId('dna-palate-link')).toContainText('Your palate');
+  await expect(page.getByTestId('dna-script-row')).toContainText('What to say when ordering');
+  await page.getByTestId('dna-script-row').click();
+  await expect(page.locator('[data-section="scripts"]')).toBeInViewport();
   for (const t of ['Based on your 6 Outstanding (90+) reds', 'What moves your ratings', 'How Well We Know You', 'Your rating at each price', 'Your best ratings come from', 'How your choices are changing', 'Blind Call accuracy']) {
     await expect(root, t).toContainText(t);
   }

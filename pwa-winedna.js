@@ -345,6 +345,17 @@ const WineDNA = {
   },
 
   // How much weight to put on what the tab says, and what would sharpen it.
+  /* What's thin: the one line saying what would sharpen this tab most, or null once it's strong.
+     Unrated bottles first (they're already scanned), then the ratings the signals need, then a
+     trait few of their labels gave a figure for (the lead grape or region scan missed it). */
+  thin(p){
+    const c=p.confidence||this.confidence(p), L=p.label.toLowerCase();
+    if(c.unscored>=2) return `${c.unscored} of your ${L} are unrated: rating them sharpens everything here.`;
+    if(c.next) return `${c.next}.`;
+    const few=p.axes.filter(p.showAxis).map(k=>({k,n:p.scored.filter(w=>typeof this.axisValue(w,k)==='number').length})).filter(x=>x.n<8)[0];
+    if(few) return `Only ${few.n} of your rated ${L} carry a ${this.AXES[few.k].name.toLowerCase()} estimate, so that line is a rough one.`;
+    return null;
+  },
   confidence(p){
     const n=p.scored.length;
     const level=n>=12?'strong':n>=8?'good':n>=3?'early':'none';

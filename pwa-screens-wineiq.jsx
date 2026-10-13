@@ -567,7 +567,7 @@ function ExploreReadyMoment({type,count,onDone}){
 }
 
 function WineDNAScreen({nav,back,showPro}){
-  const wide=useWide();
+  const wide=useWide(), isPro=Entitlement.isPro();
   const T=useTheme(); // the appearance picked on Profile; on the dark stage the type's colour is lifted
   // Opens on the type they've chosen most (UserPrefs.openingType), or the tab they last picked.
   const [typeIdx,setTypeIdxState]=React.useState(()=>Math.max(0,_TYPES.findIndex(t=>t.key===UserPrefs.openingType(WineHistory.getAll()))));
@@ -594,12 +594,13 @@ function WineDNAScreen({nav,back,showPro}){
     Device.setDnaCollapsed(next);
     return next;
   }),[]);
-  // Arriving from Home with a section to show (UserPrefs.openDNA): open it and scroll to it.
-  React.useEffect(()=>{
-    const sec=UserPrefs.takeDNASection(); if(!sec) return;
-    setCollapsed(c=>({...c,[sec]:false}));
-    setTimeout(()=>{ const el=document.querySelector(`[data-section="${sec}"]`); if(el) el.scrollIntoView({block:'start'}); },60);
-  },[]);
+  // Open a folded section and scroll to it (the Scripts row at the top, Your rules' Explore line,
+  // and arriving from Home with a section to show, UserPrefs.openDNA).
+  const openSection=sec=>{
+    setCollapsed(c=>{ const n={...c,[sec]:false}; Device.setDnaCollapsed(n); return n; });
+    setTimeout(()=>{ const el=document.querySelector(`[data-section="${sec}"]`); if(el) el.scrollIntoView({block:'start',behavior:'smooth'}); },60);
+  };
+  React.useEffect(()=>{ const sec=UserPrefs.takeDNASection(); if(sec) openSection(sec); },[]);
   // A wine type whose Explore Next has just opened: celebrated once, then its picks are shown.
   const [ready,setReady]=React.useState(()=>ExploreNext.toCelebrate(WineHistory.getAll()));
   React.useEffect(()=>{ if(ready) ExploreNext.markCelebrated(ready); },[ready]);
@@ -1063,8 +1064,24 @@ function WineDNAScreen({nav,back,showPro}){
                 <DnaTitle t={t} basisLine={basisLine}/>
                 <div data-testid="dna-intro" style={{fontSize:14,color:T.ink2,fontFamily:C.P,lineHeight:1.5,marginTop:-4}}>Your taste, worked out from the {WineDNA.noun(t.key,t.wines.length)} you've scanned and rated. The more you rate, the sharper it gets.</div>
                 {/* Your rules, then the portrait (DetailLevel): the decision first, the pictures, the written summary one tap away. */}
-                <DnaRules t={t} nav={nav} onExplore={()=>{ setCollapsed(c=>{ const n={...c,explore:false}; Device.setDnaCollapsed(n); return n; }); setTimeout(()=>{ const el=document.querySelector('[data-section="explore"]'); if(el) el.scrollIntoView({block:'start',behavior:'smooth'}); },60); }}/>
+                {(thin=>thin&&<div data-testid="dna-thin" style={{fontSize:13,color:T.mid,fontFamily:C.P,lineHeight:1.45,marginTop:-6}}>{thin}</div>)(WineDNA.thin(t))}
+                <DnaRules t={t} nav={nav} onExplore={()=>openSection('explore')}/>
                 <DnaTasteTiles t={t} nav={nav}/>
+                {/* The portrait is what they choose; how well they taste these traits is Mastery's palate. */}
+                <div role="button" tabIndex={0} data-testid="dna-palate-link" onClick={()=>isPro?nav('mastery-map'):showPro('mastery-map')} onKeyDown={e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); isPro?nav('mastery-map'):showPro('mastery-map'); } }}
+                  style={{display:'flex',alignItems:'center',gap:8,fontSize:13,color:T.mid,fontFamily:C.P,cursor:'pointer',marginTop:-4}}>
+                  <span style={{flex:1}}>The wines you choose. How well you can taste these is your palate.</span>
+                  <span style={{color:T.lift(C.cr),fontWeight:700,whiteSpace:'nowrap'}}>Your palate →</span>
+                </div>
+                <div role="button" tabIndex={0} data-testid="dna-script-row" onClick={()=>openSection('scripts')} onKeyDown={e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); openSection('scripts'); } }}
+                  style={{display:'flex',alignItems:'center',gap:10,padding:'10px 12px',borderRadius:12,background:T.glass,border:`1px solid ${T.line}`,cursor:'pointer'}}>
+                  <Icon n="message" sz={15} col={t.col}/>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontSize:14,fontWeight:700,color:T.ink,fontFamily:C.P}}>What to say when ordering</div>
+                    <div style={{fontSize:12,color:T.mid,fontFamily:C.P}}>Your {t.label.toLowerCase()} sommelier script, from this DNA</div>
+                  </div>
+                  <Icon n="chevron" sz={12} col={T.mid}/>
+                </div>
                 <DnaFlavourPills t={t}/>
                 {DetailLevel.at('more')&&<DnaMoves t={t}/>}
                 {(genSummaries[t.key]||generatingSummary===t.key)&&<DnaReadMore label="Read your WineDNA in words">
