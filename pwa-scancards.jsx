@@ -90,12 +90,12 @@ const _TONE_COL={good:C.green,neutral:C.amber,bad:'#B04A3A'};
    (the cards, the rating, Keep learning, the waiting state) take their colours from here rather
    than C. `lift` maps an accent set for white (crimson, green, amber, ink) to one that reads on
    the dark stage; `tint` is a soft wash of an accent for an icon's circle. */
-const _DECK_LIGHT={dark:false,bg:C.bg,card:C.white,ink:C.ink,ink2:C.ink2,mid:C.mid,line:C.line,soft:C.offWhite,crSoft:C.crSoft,
+const _DECK_LIGHT={dark:false,bg:C.bg,card:C.white,glass:C.white,ink:C.ink,ink2:C.ink2,mid:C.mid,line:C.line,soft:C.offWhite,crSoft:C.crSoft,
   green:C.green,greenBg:C.greenBg,amber:C.amber,amberBg:C.amberBg,tone:_TONE_COL,fade0:'rgba(255,255,255,0)',shadow:'0 6px 22px rgba(0,0,0,0.08)',
   lift:c=>c,tint:(c,soft)=>soft||_alpha(c,0.12)};
 const _DECK_DARK_LIFT={[C.cr]:'#E05A74',[C.green]:'#5FD48F',[C.amber]:'#F2B84B',[C.ink]:'#FFFFFF','#9B6B00':'#F2B84B','#6B2D8B':'#C08BE0','#B04A3A':'#F28B7D','#1E7B4B':'#5FD48F',
   '#5C2A1E':'#B8775C','#8A5A2B':'#D09A58','#B8963E':'#E2BC5A','#C1652B':'#E8854A'}; // crimson, fortified, dessert, white, orange lifted; rosé and sparkling read as they are
-const _DECK_DARK={dark:true,bg:'#0F0F0F',card:'#1A1A1C',ink:'#FFFFFF',ink2:'rgba(255,255,255,0.86)',mid:'rgba(255,255,255,0.62)',line:'rgba(255,255,255,0.14)',soft:'rgba(255,255,255,0.07)',crSoft:'rgba(224,90,116,0.22)',
+const _DECK_DARK={dark:true,bg:'#0F0F0F',card:'#1A1A1C',glass:'rgba(255,255,255,0.07)',ink:'#FFFFFF',ink2:'rgba(255,255,255,0.86)',mid:'rgba(255,255,255,0.62)',line:'rgba(255,255,255,0.14)',soft:'rgba(255,255,255,0.07)',crSoft:'rgba(224,90,116,0.22)',
   green:'#5FD48F',greenBg:'rgba(95,212,143,0.16)',amber:'#F2B84B',amberBg:'rgba(242,184,75,0.16)',tone:{good:'#5FD48F',neutral:'#F2B84B',bad:'#F28B7D'},fade0:'rgba(26,26,28,0)',shadow:'0 10px 30px rgba(0,0,0,0.55)',
   lift:c=>_DECK_DARK_LIFT[c]||c,tint:c=>_alpha(_DECK_DARK_LIFT[c]||c,0.22)};
 function _alpha(c,a){ const m=/^#([0-9a-f]{6})$/i.exec(c||''); if(!m) return c; const n=parseInt(m[1],16); return `rgba(${n>>16},${(n>>8)&255},${n&255},${a})`; }
@@ -201,6 +201,7 @@ function ScanCardsScreen({nav,back,showPro}){
   React.useEffect(()=>{ if(!confirmed||(view!=='result'&&view!=='deck')) return; try{ const sd=Handoff.scanResult.get({}); if(sd.view!==view){ sd.view=view; Handoff.openWine(sd); } }catch(e){} },[view,confirmed]);
   const noteDeckIdx=React.useCallback(i=>{ try{ const sd=Handoff.scanResult.get({}); if(sd.deckIdx!==i){ sd.deckIdx=i; Handoff.openWine(sd); } }catch(e){} },[]);
   const deckStyle=useDeckStyle();
+  const appTheme=useTheme();
   const curr=React.useMemo(()=>Regional.current(),[]);
   const match=React.useMemo(()=>wine?TasteMatch.assess(wine,WineHistory.getAll()):null,[wine,ratingsVersion]);
   const {gen,loading}=useScanContent(confirmed?wine:null,match);
@@ -239,9 +240,11 @@ function ScanCardsScreen({nav,back,showPro}){
     </div>;
   }
 
-  const reveal=confirmed&&view==='reveal', dark=reveal||(confirmed&&view==='deck');
-  return <DeckTheme.Provider value={dark?_DECK_DARK:_DECK_LIGHT}><div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden',background:dark?'#0F0F0F':C.bg}}>
-    {!reveal&&<ScanHeader wine={wine} nav={nav} back={view==='deck'&&confirmed?()=>setView('result'):back}/>}
+  // The story and the deck are always on the dark stage; the result and "Is this it?" follow the
+  // appearance picked on Profile (the app's DeckTheme, pwa-app.jsx).
+  const reveal=confirmed&&view==='reveal', story=reveal||(confirmed&&view==='deck'), stage=story?_DECK_DARK:appTheme;
+  return <DeckTheme.Provider value={stage}><div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden',background:stage.bg}}>
+    {!reveal&&<ScanHeader wine={wine} nav={nav} back={view==='deck'&&confirmed?()=>setView('result'):back} plain={!(confirmed&&view==='deck')}/>}
     {!confirmed
       ? <ConfirmGate wine={wine} onYes={confirm} onEdit={()=>setEditing(true)} nav={nav}
           onAlt={()=>applyEdit({name:wine.alternative,producer:''})}/>
@@ -270,6 +273,7 @@ function ScanStyles(){
       @keyframes scSpin{to{transform:rotate(360deg)}}
       @keyframes scSheet{from{transform:translateY(100%)}to{transform:translateY(0)}}
       @keyframes scFade{from{opacity:0}to{opacity:1}}
+      @keyframes scRise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
       @keyframes scPop{from{opacity:0;transform:translateY(10px) scale(.98)}to{opacity:1;transform:none}}
       .sc-scroll::-webkit-scrollbar{display:none}
       /* Every element in the swipe deck leaves horizontal drags to the deck (vertical scrolling
@@ -315,14 +319,16 @@ function FirstScanStory({wine,onDone}){
   </div>;
 }
 
-function ScanHeader({wine,nav,back}){ const T=useTheme();
+function ScanHeader({wine,nav,back,plain}){ const T=useTheme(); // plain: just Back and Details, when the screen names the wine itself
   return <div style={{padding:'12px 16px 10px',flexShrink:0,display:'flex',alignItems:'center',gap:12,background:T.dark?T.bg:T.card,borderBottom:`1px solid ${T.line}`}}>
     <div onClick={back} style={{width:34,height:34,borderRadius:17,background:T.soft,border:`1px solid ${T.line}`,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',flexShrink:0}}>
       <Icon n="back" sz={16} col={T.ink}/>
     </div>
     <div style={{flex:1,minWidth:0}}>
+      {plain?null:<>
       <div style={{fontSize:16,fontWeight:700,color:T.ink,fontFamily:C.P,lineHeight:1.15,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{wine.name}</div>
       <div style={{fontSize:13,color:T.mid,fontFamily:C.P,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{[wine.vintage&&wine.vintage!==0?wine.vintage:'NV',wine.region!==wine.country?wine.region:null,wine.country].filter(Boolean).join(' · ')}</div>
+      </>}
     </div>
     <div onClick={()=>nav('detail')} style={{flexShrink:0,display:'flex',alignItems:'center',gap:4,padding:'7px 12px',borderRadius:20,background:T.soft,border:`1px solid ${T.line}`,cursor:'pointer',whiteSpace:'nowrap'}}>
       <span style={{fontSize:13,fontWeight:600,color:T.ink2,fontFamily:C.P}}>Details</span>
@@ -332,28 +338,28 @@ function ScanHeader({wine,nav,back}){ const T=useTheme();
 }
 
 /* Name, producer, vintage and place, as read from the label. */
-function WineIdentity({wine}){
-  const col=_typeCol(wine);
+function WineIdentity({wine}){ const T=useTheme();
+  const col=T.lift(_typeCol(wine));
   return <div>
     <div style={{fontSize:13,fontWeight:700,color:col,fontFamily:C.P,letterSpacing:'0.08em',textTransform:'uppercase'}}>{[wine.type||'Red',wine.country].filter(Boolean).join(' · ')}</div>
-    <div style={{fontSize:21,fontWeight:800,color:C.ink,fontFamily:C.P,lineHeight:1.2,marginTop:3}}>{_wineTitle(wine)}</div>
-    <div style={{fontSize:15,color:C.mid,fontFamily:C.P,lineHeight:1.45,marginTop:2}}>{[wine.producer,WineDNA.grapeLine(wine),wine.region!==wine.country?wine.region:null].filter(Boolean).join(' · ')}</div>
+    <div style={{fontSize:T.dark?24:21,fontWeight:800,color:T.ink,fontFamily:C.P,lineHeight:1.2,marginTop:3}}>{_wineTitle(wine)}</div>
+    <div style={{fontSize:15,color:T.mid,fontFamily:C.P,lineHeight:1.45,marginTop:2}}>{[wine.producer,WineDNA.grapeLine(wine),wine.region!==wine.country?wine.region:null].filter(Boolean).join(' · ')}</div>
   </div>;
 }
 
 /* ── "Is this it?" — only when Claude couldn't read the label clearly ── */
-function ConfirmGate({wine,onYes,onAlt,onEdit,nav}){
+function ConfirmGate({wine,onYes,onAlt,onEdit,nav}){ const T=useTheme();
   return <div className="sc-scroll" style={{flex:1,overflowY:'auto',padding:'22px 20px 28px',display:'flex',flexDirection:'column',gap:16,animation:'scFade .25s ease'}}>
     <div>
-      <div style={{fontSize:13,fontWeight:700,color:C.amber,letterSpacing:'0.1em',textTransform:'uppercase',fontFamily:C.P}}>Check the label</div>
-      <div style={{fontSize:23,fontWeight:800,color:C.ink,fontFamily:C.P,lineHeight:1.2,marginTop:4}}>Is this the right wine?</div>
-      <div style={{fontSize:15,color:C.mid,fontFamily:C.P,lineHeight:1.5,marginTop:6}}>We couldn't read all of the label, so we're not certain. A wrong wine would skew your WineDNA, so it's worth a second.</div>
+      <div style={{fontSize:13,fontWeight:700,color:T.amber,letterSpacing:'0.1em',textTransform:'uppercase',fontFamily:C.P}}>Check the label</div>
+      <div style={{fontSize:23,fontWeight:800,color:T.ink,fontFamily:C.P,lineHeight:1.2,marginTop:4}}>Is this the right wine?</div>
+      <div style={{fontSize:15,color:T.mid,fontFamily:C.P,lineHeight:1.5,marginTop:6}}>We couldn't read all of the label, so we're not certain. A wrong wine would skew your WineDNA, so it's worth a second.</div>
     </div>
     <Card style={{padding:16}}><WineIdentity wine={wine}/></Card>
     <Btn primary full onClick={onYes}>Yes, that's it</Btn>
     {wine.alternative&&<Btn full onClick={onAlt}>It's {wine.alternative}</Btn>}
     <Btn full onClick={onEdit}>Edit the details</Btn>
-    <div onClick={()=>nav('camera')} style={{textAlign:'center',fontSize:15,fontWeight:600,color:C.mid,fontFamily:C.P,cursor:'pointer'}}>Scan again</div>
+    <div onClick={()=>nav('camera')} style={{textAlign:'center',fontSize:15,fontWeight:600,color:T.mid,fontFamily:C.P,cursor:'pointer'}}>Scan again</div>
   </div>;
 }
 
@@ -398,7 +404,8 @@ function EditWineSheet({wine,onSave,onClose}){
 
 /* ── the result: everything needed to decide, on one screen ── */
 function ScanResult({wine,match,curr,scanData,existingRating,nav,showPro,view,setView,onEdit,onRated,onSaveForLater,onDeck}){
-  const col=_TONE_COL[match?match.tone:'neutral'];
+  const T=useTheme();
+  const col=T.tone[match?match.tone:'neutral'], typeCol=T.lift(_typeCol(wine));
   const [shop,setShop]=React.useState(()=>curr.isTravel?null:ScanFlow.shopPrice(wine,curr));
   const [shopFound,setShopFound]=React.useState(false); // from current shop listings, not an estimate
   React.useEffect(()=>{ let live=true; ScanFlow.shopEstimate(wine,curr).then(d=>{ if(live&&d){ setShop(d.mid); setShopFound(d.source==='search'); } }); return()=>{ live=false; }; },[wine&&wine.name,curr.code]);
@@ -407,32 +414,38 @@ function ScanResult({wine,match,curr,scanData,existingRating,nav,showPro,view,se
   const list=scanData.listPrice?(lc&&lc!==curr.code?scanData.listPrice/(USD_FX[lc]||1)*(USD_FX[curr.code]||1):scanData.listPrice):null;
   const mk=ScanFlow.markup(list,shop);
   const sweet=match&&match.profile&&match.profile.value&&match.profile.value.sweetSpot;
-  const sub={fontSize:13,fontWeight:700,color:C.mid,fontFamily:C.P,textTransform:'uppercase',letterSpacing:'0.06em'};
-  return <div className="sc-scroll" style={{flex:1,overflowY:'auto',padding:'16px 16px 28px',display:'flex',flexDirection:'column',gap:12,animation:'scFade .25s ease'}}>
-    <Card style={{padding:16}}>
+  const sub={fontSize:13,fontWeight:700,color:T.mid,fontFamily:C.P,textTransform:'uppercase',letterSpacing:'0.06em'};
+  // Each section arrives a beat after the one above, the way the story's scenes do.
+  const rise=i=>({animation:`scRise .5s cubic-bezier(.2,.7,.2,1) ${i*0.08}s both`});
+  const glass={background:T.soft,border:`1px solid ${T.line}`,borderRadius:16,padding:16};
+  return <div style={{flex:1,minHeight:0,position:'relative',display:'flex',flexDirection:'column'}}>
+    {/* The stage glows in the wine type's colour, as the story does. */}
+    <div aria-hidden="true" style={{position:'absolute',top:-40,left:0,right:0,height:300,background:`radial-gradient(ellipse at 50% 0%, ${_alpha(typeCol,T.dark?0.42:0.14)}, transparent 68%)`,pointerEvents:'none',animation:'scFade 1s ease both'}}/>
+    <div className="sc-scroll" style={{flex:1,overflowY:'auto',padding:'16px 16px 28px',display:'flex',flexDirection:'column',gap:12,position:'relative'}}>
+    <div style={{padding:'6px 2px 2px',...rise(0)}}>
       <WineIdentity wine={wine}/>
       <div style={{display:'flex',alignItems:'center',gap:10,marginTop:10,flexWrap:'wrap'}}>
-        {existingRating>0&&<span style={{fontSize:13,fontWeight:700,color:C.green,background:C.greenBg,border:`1px solid ${C.green}30`,borderRadius:20,padding:'3px 10px',fontFamily:C.P}}>You rated it {existingRating} · {ParkerScale.label(existingRating)}</span>}
-        <span onClick={onEdit} style={{fontSize:13,fontWeight:600,color:C.cr,fontFamily:C.P,cursor:'pointer'}}>Not right? Edit</span>
+        {existingRating>0&&<span style={{fontSize:13,fontWeight:700,color:T.green,background:T.greenBg,border:`1px solid ${_alpha(T.green,0.3)}`,borderRadius:20,padding:'3px 10px',fontFamily:C.P}}>You rated it {existingRating} · {ParkerScale.label(existingRating)}</span>}
+        <span onClick={onEdit} style={{fontSize:13,fontWeight:600,color:T.lift(C.cr),fontFamily:C.P,cursor:'pointer'}}>Not right? Edit</span>
       </div>
-    </Card>
+    </div>
 
-    <Card style={{padding:16}}>
+    <Card style={{padding:16,...rise(1)}}>
       <div style={{display:'flex',alignItems:'center',gap:14}}>
-        <MatchRing match={match}/>
+        <MatchRing match={match} size={104}/>
         <div style={{flex:1,minWidth:0}}>
-          <div style={{fontSize:20,fontWeight:800,color:match&&match.pct!=null?col:C.ink,fontFamily:C.P,lineHeight:1.2}}>{match?match.label:'—'}</div>
+          <div style={{fontSize:20,fontWeight:800,color:match&&match.pct!=null?col:T.ink,fontFamily:C.P,lineHeight:1.2}}>{match?match.label:'—'}</div>
           {match&&match.expected!=null
-            ?<div style={{fontSize:15,color:C.mid,fontFamily:C.P,marginTop:3}}>{existingRating>0?`We expected about ${match.expected} · you rated ${existingRating}`:`Likely about ${match.expected} from you · ${match.expectedLabel}`}</div>
+            ?<div style={{fontSize:15,color:T.mid,fontFamily:C.P,marginTop:3}}>{existingRating>0?`We expected about ${match.expected} · you rated ${existingRating}`:`Likely about ${match.expected} from you · ${match.expectedLabel}`}</div>
             :match&&match.verdict==='early'?null
-            :<div style={{fontSize:15,color:C.mid,fontFamily:C.P,marginTop:3,lineHeight:1.45}}>{match&&match.summary}</div>}
-          {match&&match.expected!=null&&match.bar!=null&&!(existingRating>0)&&<div style={{fontSize:13,color:C.mid,fontFamily:C.P,marginTop:2}}>{match.pct}% sure you'd rate it {match.bar}+, your usual for {match.breakdownLabel}</div>}
-          {match&&match.confidence==='low'&&<div style={{fontSize:13,color:C.mid,fontFamily:C.P,marginTop:2}}>Rough guess</div>}
+            :<div style={{fontSize:15,color:T.mid,fontFamily:C.P,marginTop:3,lineHeight:1.45}}>{match&&match.summary}</div>}
+          {match&&match.expected!=null&&match.bar!=null&&!(existingRating>0)&&<div style={{fontSize:13,color:T.mid,fontFamily:C.P,marginTop:2}}>{match.pct}% sure you'd rate it {match.bar}+, your usual for {match.breakdownLabel}</div>}
+          {match&&match.confidence==='low'&&<div style={{fontSize:13,color:T.mid,fontFamily:C.P,marginTop:2}}>Rough guess</div>}
         </div>
       </div>
       {/* Too early for a match: show how close it is and what it unlocks, not just a dash. */}
       {match&&match.verdict==='early'&&<div style={{marginTop:14}}><MatchComingSoon wine={wine} compact/></div>}
-      {match&&(match.reasons.length>0||match.expected!=null)&&<div style={{marginTop:14,paddingTop:12,borderTop:`1px solid ${C.line}`}}>
+      {match&&(match.reasons.length>0||match.expected!=null)&&<div style={{marginTop:14,paddingTop:12,borderTop:`1px solid ${T.line}`}}>
         {/* Below More (DetailLevel): the top reason either way; the rest and "Why N%?" come with More. */}
         <MatchReasons match={match} showSummary={match.expected!=null} brief={!DetailLevel.at('more')} priceNote={TasteMatch.priceNote(wine,list||shop,WineHistory.getAll(),curr)}/>
         {DetailLevel.at('more')&&<MatchBreakdown match={match}/>}
@@ -440,67 +453,68 @@ function ScanResult({wine,match,curr,scanData,existingRating,nav,showPro,view,se
     </Card>
 
     {view==='rate'
-      ? <Card style={{padding:16}}><RatingPanel wine={wine} existingRating={existingRating} nav={nav} showPro={showPro} curr={curr} onRated={onRated} onSaveForLater={existingRating?null:onSaveForLater}/></Card>
+      ? <Card style={{padding:16,...rise(2)}}><RatingPanel wine={wine} existingRating={existingRating} nav={nav} showPro={showPro} curr={curr} onRated={onRated} onSaveForLater={existingRating?null:onSaveForLater}/></Card>
       : view==='saved'
-        ? <><Card style={{padding:16,display:'flex',flexDirection:'column',gap:10,alignItems:'center',textAlign:'center'}}>
-            <div style={{width:48,height:48,borderRadius:24,background:C.crSoft,display:'flex',alignItems:'center',justifyContent:'center'}}><Icon n="check" sz={22} col={C.cr}/></div>
-            <div style={{fontSize:18,fontWeight:800,color:C.ink,fontFamily:C.P}}>Saved for later</div>
-            <div style={{fontSize:15,color:C.ink2,fontFamily:C.P,lineHeight:1.5}}>It won't count towards your WineDNA until you buy or taste it. Next time you open the app we'll ask whether you bought it.</div>
-            <div role="button" onClick={()=>setView('rate')} style={{fontSize:15,fontWeight:700,color:C.cr,fontFamily:C.P,cursor:'pointer'}}>Already tasted it? Rate it instead →</div>
+        ? <><Card style={{padding:16,display:'flex',flexDirection:'column',gap:10,alignItems:'center',textAlign:'center',...rise(2)}}>
+            <div style={{width:48,height:48,borderRadius:24,background:_alpha(typeCol,0.22),display:'flex',alignItems:'center',justifyContent:'center'}}><Icon n="check" sz={22} col={typeCol}/></div>
+            <div style={{fontSize:18,fontWeight:800,color:T.ink,fontFamily:C.P}}>Saved for later</div>
+            <div style={{fontSize:15,color:T.ink2,fontFamily:C.P,lineHeight:1.5}}>It won't count towards your WineDNA until you buy or taste it. Next time you open the app we'll ask whether you bought it.</div>
+            <div role="button" onClick={()=>setView('rate')} style={{fontSize:15,fontWeight:700,color:T.lift(C.cr),fontFamily:C.P,cursor:'pointer'}}>Already tasted it? Rate it instead →</div>
           </Card>
-          <Card style={{padding:16}}><KeepLearning wine={wine} nav={nav} showPro={showPro} reveal intro="Shopping? Learn a little about it before you decide."/></Card>
-          <div style={{display:'flex',gap:10}}>
+          <Card style={{padding:16,...rise(3)}}><KeepLearning wine={wine} nav={nav} showPro={showPro} reveal intro="Shopping? Learn a little about it before you decide."/></Card>
+          <div style={{display:'flex',gap:10,...rise(4)}}>
             <Btn full onClick={()=>nav('mywines')}>My Wines</Btn>
             <Btn primary full onClick={()=>nav('camera')}>Scan another</Btn>
           </div></>
-        : <div>
+        : <div style={rise(2)}>
             {/* Three next steps as full-width rows, straight under the match: learning about the
                 wine is as easy to reach as rating or saving it. */}
-            <div style={{fontSize:13,fontWeight:700,color:C.mid,letterSpacing:'0.07em',textTransform:'uppercase',fontFamily:C.P,margin:'2px 2px 8px'}}>What next?</div>
+            <div style={{fontSize:13,fontWeight:700,color:T.mid,letterSpacing:'0.07em',textTransform:'uppercase',fontFamily:C.P,margin:'2px 2px 8px'}}>What next?</div>
             <div style={{display:'flex',flexDirection:'column',gap:8}}>
               {[
                 {key:'learn',icon:'book',label:'Learn more about this wine',sub:'The house, the year, how it\'s made, the table',on:onDeck},
                 {key:'rate',icon:'star',label:existingRating?`Re-rate it (${existingRating})`:'Rate it',sub:existingRating?'Changed your mind?':'Rate it to sharpen your WineDNA',on:()=>setView('rate')},
                 ...(existingRating?[]:[{key:'save',icon:'bookmark',label:'Save for later',sub:'Shopping, or not tasted yet',on:onSaveForLater}]),
               ].map(x=>(
-                <div key={x.key} role="button" onClick={x.on} style={{background:C.white,border:`1.5px solid ${C.crDim}`,borderRadius:14,padding:'12px 14px',display:'flex',alignItems:'center',gap:12,cursor:'pointer',boxShadow:'0 1px 3px rgba(0,0,0,0.04)'}}>
-                  <div style={{width:38,height:38,borderRadius:19,background:C.crSoft,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><Icon n={x.icon} sz={18} col={C.cr}/></div>
+                <div key={x.key} role="button" onClick={x.on} style={{...glass,borderRadius:14,padding:'12px 14px',display:'flex',alignItems:'center',gap:12,cursor:'pointer'}}>
+                  <div style={{width:38,height:38,borderRadius:19,background:_alpha(typeCol,0.22),display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><Icon n={x.icon} sz={18} col={typeCol}/></div>
                   <div style={{flex:1,minWidth:0}}>
-                    <div style={{fontSize:16,fontWeight:800,color:C.ink,fontFamily:C.P,lineHeight:1.25}}>{x.label}</div>
-                    <div style={{fontSize:13,color:C.mid,fontFamily:C.P,lineHeight:1.35}}>{x.sub}</div>
+                    <div style={{fontSize:16,fontWeight:800,color:T.ink,fontFamily:C.P,lineHeight:1.25}}>{x.label}</div>
+                    <div style={{fontSize:13,color:T.mid,fontFamily:C.P,lineHeight:1.35}}>{x.sub}</div>
                   </div>
-                  <Icon n="chevron" sz={14} col={C.mid}/>
+                  <Icon n="chevron" sz={14} col={T.mid}/>
                 </div>
               ))}
             </div>
           </div>}
 
-    {(match&&match.style||shop||list)&&<Card style={{padding:16,display:'flex',flexDirection:'column',gap:10}}>
+    {(match&&match.style||shop||list)&&<Card style={{padding:16,display:'flex',flexDirection:'column',gap:10,...rise(3)}}>
       {match&&match.style&&<div>
         <div style={{...sub,marginBottom:4}}>Style</div>
-        <div style={{fontSize:15,color:C.ink,fontFamily:C.P,lineHeight:1.5}}>{match.style}</div>
-        <div style={{fontSize:13,color:C.mid,fontFamily:C.P,marginTop:2}}>Estimated from the label: what this wine is typically like.</div>
+        <div style={{fontSize:15,color:T.ink,fontFamily:C.P,lineHeight:1.5}}>{match.style}</div>
+        <div style={{fontSize:13,color:T.mid,fontFamily:C.P,marginTop:2}}>Estimated from the label: what this wine is typically like.</div>
       </div>}
-      {(shop||list)&&<div style={{paddingTop:match&&match.style?10:0,borderTop:match&&match.style?`1px solid ${C.line}`:'none'}}>
+      {(shop||list)&&<div style={{paddingTop:match&&match.style?10:0,borderTop:match&&match.style?`1px solid ${T.line}`:'none'}}>
         <div style={{...sub,marginBottom:6}}>Price</div>
         {shop&&<div style={{display:'flex',alignItems:'baseline',gap:8}}>
-          <span style={{fontSize:15,color:C.ink,fontFamily:C.P,flex:1}}>{curr.isTravel?`In shops in ${curr.label}`:'In shops'}</span>
-          <span style={{fontSize:15,fontWeight:800,color:C.ink,fontFamily:C.P}}>about {ScanFlow.money(shop,curr)}</span>
-          <span style={{fontSize:13,color:C.mid,fontFamily:C.P}}>{shopFound?'in shops now':'est.'}</span>
+          <span style={{fontSize:15,color:T.ink,fontFamily:C.P,flex:1}}>{curr.isTravel?`In shops in ${curr.label}`:'In shops'}</span>
+          <span style={{fontSize:15,fontWeight:800,color:T.ink,fontFamily:C.P}}>about {ScanFlow.money(shop,curr)}</span>
+          <span style={{fontSize:13,color:T.mid,fontFamily:C.P}}>{shopFound?'in shops now':'est.'}</span>
         </div>}
         {list&&<div style={{display:'flex',alignItems:'baseline',gap:8,marginTop:4}}>
-          <span style={{fontSize:15,color:C.ink,fontFamily:C.P,flex:1}}>On this list</span>
-          <span style={{fontSize:15,fontWeight:800,color:C.ink,fontFamily:C.P}}>{ScanFlow.money(list,curr)}</span>
-          {mk&&<span style={{fontSize:13,color:C.mid,fontFamily:C.P}}>{mk.ratio.toFixed(1)}× shop</span>}
+          <span style={{fontSize:15,color:T.ink,fontFamily:C.P,flex:1}}>On this list</span>
+          <span style={{fontSize:15,fontWeight:800,color:T.ink,fontFamily:C.P}}>{ScanFlow.money(list,curr)}</span>
+          {mk&&<span style={{fontSize:13,color:T.mid,fontFamily:C.P}}>{mk.ratio.toFixed(1)}× shop</span>}
         </div>}
-        {mk&&<div style={{fontSize:13,color:C.ink2,fontFamily:C.P,marginTop:4}}>{mk.text}</div>}
-        {sweet&&<div style={{fontSize:13,color:C.mid,fontFamily:C.P,marginTop:6}}>Your Outstanding {match.profile.label.toLowerCase()} usually cost {sweet}.</div>}
+        {mk&&<div style={{fontSize:13,color:T.ink2,fontFamily:C.P,marginTop:4}}>{mk.text}</div>}
+        {sweet&&<div style={{fontSize:13,color:T.mid,fontFamily:C.P,marginTop:6}}>Your Outstanding {match.profile.label.toLowerCase()} usually cost {sweet}.</div>}
         {/* Until WineDNA has a sweet spot from their own scores, compare with the spend they gave. */}
         {!sweet&&shop&&(()=>{ const fit=UserPrefs.spendFit(shop,curr), b=UserPrefs.budget(curr); if(!fit) return null;
-          return <div style={{fontSize:13,color:C.mid,fontFamily:C.P,marginTop:6}}>{fit==='within'?`Within your usual spend (${b.label}).`:fit==='above'?`Above your usual spend (${b.label}).`:`Below your usual spend (${b.label}).`}</div>; })()}
+          return <div style={{fontSize:13,color:T.mid,fontFamily:C.P,marginTop:6}}>{fit==='within'?`Within your usual spend (${b.label}).`:fit==='above'?`Above your usual spend (${b.label}).`:`Below your usual spend (${b.label}).`}</div>; })()}
       </div>}
     </Card>}
 
+    </div>
   </div>;
 }
 

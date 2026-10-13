@@ -84,13 +84,13 @@ function WineChatWidget({wines,nav,showPro}){
           <input ref={inputRef} value={q} onChange={e=>onType(e.target.value)} onKeyDown={onKey} onFocus={()=>setFocused(true)} onBlur={()=>setFocused(false)} aria-label="Ask Vinny"
             placeholder={open?'Ask a follow-up…':'Ask Vinny about wine…'} style={{position:'absolute',inset:0,width:'100%',border:'none',outline:'none',background:'transparent',fontSize:16,fontFamily:C.P,color:'#fff'}}/>
           {idle&&(
-            <div onClick={()=>fill(prompts[pIdx])} style={{position:'absolute',inset:0,display:'flex',alignItems:'center',background:'#000',cursor:'text'}}>
+            <div onClick={()=>fill(prompts[pIdx])} style={{position:'absolute',inset:0,display:'flex',alignItems:'center',background:'#1C1C1F',cursor:'text'}}>
               <span style={{fontSize:16,color:'rgba(255,255,255,0.75)',fontFamily:C.P,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{typed}<span style={{display:'inline-block',width:1.5,height:15,background:'rgba(255,255,255,0.75)',marginLeft:2,verticalAlign:'-2px',animation:'homeCaret 0.9s step-end infinite'}}/></span>
             </div>
           )}
       </>}/>
       {recent.length>0&&<div style={{display:'flex',gap:6,flexWrap:'wrap',marginTop:8}}>
-        {recent.map(r=><div key={r} onMouseDown={e=>{e.preventDefault();fill(r);}} role="button" style={{padding:'6px 11px',borderRadius:999,background:C.offWhite,border:`1px solid ${C.line}`,fontSize:13,color:C.ink2,fontFamily:C.P,cursor:'pointer',maxWidth:'100%',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{r}</div>)}
+        {recent.map(r=><div key={r} onMouseDown={e=>{e.preventDefault();fill(r);}} role="button" style={{padding:'6px 11px',borderRadius:999,background:'rgba(255,255,255,0.07)',border:'1px solid rgba(255,255,255,0.14)',fontSize:13,color:'rgba(255,255,255,0.86)',fontFamily:C.P,cursor:'pointer',maxWidth:'100%',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{r}</div>)}
       </div>}
       {open&&<VinnyAnswers turns={turns} onClose={()=>setTurns([])} onLink={l=>_openLearn(l,nav,showPro)}/>}
     </div>
@@ -101,7 +101,7 @@ function WineChatWidget({wines,nav,showPro}){
    (crimson when there's something to send). Also the welcome slides' preview (flow-welcome.jsx),
    where the field is the question typing itself and nothing can be tapped. */
 function VinnyBar({field,hasText,canSend,lit=canSend,onSubmit,onClear}){
-  return <form onSubmit={e=>{e.preventDefault(); if(onSubmit) onSubmit();}} style={{display:'flex',alignItems:'center',gap:10,background:'#000',borderRadius:24,padding:'6px 6px 6px 6px'}}>
+  return <form onSubmit={e=>{e.preventDefault(); if(onSubmit) onSubmit();}} style={{display:'flex',alignItems:'center',gap:10,background:'#1C1C1F',border:'1px solid rgba(255,255,255,0.14)',borderRadius:24,padding:'6px 6px 6px 6px'}}>
     <div aria-hidden="true" style={{width:34,height:34,borderRadius:17,background:C.cr,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
       <span style={{fontSize:16,fontWeight:800,color:'#fff',fontFamily:C.P}}>V</span>
     </div>
@@ -120,7 +120,7 @@ function VinnyBar({field,hasText,canSend,lit=canSend,onSubmit,onClear}){
 /* Vinny's answers under the box: each question and its answer, with a "Learn more" link on the
    last. Also the welcome slides' preview (flow-welcome.jsx), with no close button or link. */
 function VinnyAnswers({turns,onClose,onLink,style}){
-  return <Card style={{padding:14,marginTop:10,...style,position:'relative',background:'#000',display:'flex',flexDirection:'column',gap:12}}>
+  return <Card style={{padding:14,marginTop:10,...style,position:'relative',background:'#1C1C1F',border:'1px solid rgba(255,255,255,0.14)',display:'flex',flexDirection:'column',gap:12}}>
     {onClose&&<div role="button" aria-label="Close" onClick={onClose} style={{position:'absolute',top:10,right:10,width:24,height:24,borderRadius:12,background:'rgba(255,255,255,0.12)',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer'}}>
       <svg width="11" height="11" viewBox="0 0 20 20"><path d="M4 4l12 12M16 4L4 16" stroke="#fff" strokeWidth="1.8" strokeLinecap="round"/></svg>
     </div>}
@@ -142,7 +142,7 @@ function VinnyAnswers({turns,onClose,onLink,style}){
 
 /* Bottles waiting on the user: shelf checks to confirm ("Did you buy it?") and wines they've
    drunk or bought but not scored. Each score sharpens WineDNA and every match. */
-function WaitingOnYou({nav}){
+function WaitingOnYou({nav}){ const T=useTheme();
   const [v,setV]=React.useState(0);
   const {toScore,toAsk}=React.useMemo(()=>WineHistory.pending(),[v]);
   if(!toScore.length&&!toAsk.length) return null;
@@ -153,39 +153,39 @@ function WaitingOnYou({nav}){
   };
   return <Card style={{padding:0,overflow:'hidden'}}>
     <div style={{padding:'12px 14px 8px'}}>
-      <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>Waiting on you</div>
-      <div style={{fontSize:13,color:C.mid,fontFamily:C.P,marginTop:1}}>Every rating sharpens your matches.</div>
+      <div style={{fontSize:16,fontWeight:700,color:T.ink,fontFamily:C.P}}>Waiting on you</div>
+      <div style={{fontSize:13,color:T.mid,fontFamily:C.P,marginTop:1}}>Every rating sharpens your matches.</div>
     </div>
-    {ask&&<div style={{padding:'10px 14px 12px',borderTop:`1px solid ${C.line}`}}>
-      <div style={{fontSize:15,color:C.ink,fontFamily:C.P,lineHeight:1.45}}>Did you buy the <b>{ask.name}</b>{ask.vintage?` ${ask.vintage}`:''}?</div>
+    {ask&&<div style={{padding:'10px 14px 12px',borderTop:`1px solid ${T.line}`}}>
+      <div style={{fontSize:15,color:T.ink,fontFamily:C.P,lineHeight:1.45}}>Did you buy the <b>{ask.name}</b>{ask.vintage?` ${ask.vintage}`:''}?</div>
       <div style={{display:'flex',gap:8,marginTop:8}}>
         <Btn small primary onClick={()=>{ WineHistory.setBought(ask.name,ask.vintage,true); setV(x=>x+1); }}>Yes, I bought it</Btn>
         <Btn small onClick={()=>{ WineHistory.setBought(ask.name,ask.vintage,false); setV(x=>x+1); }}>No</Btn>
       </div>
     </div>}
     {toScore.slice(0,3).map(w=>(
-      <div key={w.name+'|'+w.vintage} onClick={()=>open(w)} style={{display:'flex',alignItems:'center',gap:10,padding:'10px 14px',borderTop:`1px solid ${C.line}`,cursor:'pointer'}}>
+      <div key={w.name+'|'+w.vintage} onClick={()=>open(w)} style={{display:'flex',alignItems:'center',gap:10,padding:'10px 14px',borderTop:`1px solid ${T.line}`,cursor:'pointer'}}>
         <div style={{flex:1,minWidth:0}}>
-          <div style={{fontSize:15,fontWeight:600,color:C.ink,fontFamily:C.P,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{w.name}</div>
-          <div style={{fontSize:13,color:C.mid,fontFamily:C.P}}>{w.bought&&w.scan_intent==='checking'?'Bought':'Tasted'}, not rated yet</div>
+          <div style={{fontSize:15,fontWeight:600,color:T.ink,fontFamily:C.P,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{w.name}</div>
+          <div style={{fontSize:13,color:T.mid,fontFamily:C.P}}>{w.bought&&w.scan_intent==='checking'?'Bought':'Tasted'}, not rated yet</div>
         </div>
-        <span style={{fontSize:13,fontWeight:700,color:C.cr,fontFamily:C.P,flexShrink:0}}>Rate it →</span>
+        <span style={{fontSize:13,fontWeight:700,color:T.lift(C.cr),fontFamily:C.P,flexShrink:0}}>Rate it →</span>
       </div>
     ))}
-    {toScore.length>3&&<div onClick={()=>nav('mywines')} style={{padding:'8px 14px 12px',borderTop:`1px solid ${C.line}`,fontSize:13,fontWeight:600,color:C.mid,fontFamily:C.P,cursor:'pointer'}}>{toScore.length-3} more in My Wines →</div>}
+    {toScore.length>3&&<div onClick={()=>nav('mywines')} style={{padding:'8px 14px 12px',borderTop:`1px solid ${T.line}`,fontSize:13,fontWeight:600,color:T.mid,fontFamily:C.P,cursor:'pointer'}}>{toScore.length-3} more in My Wines →</div>}
   </Card>;
 }
 
 /* Sign in to back up (Sync.offerBackup): once they have a few bottles on the phone. */
-function BackupOffer({nav,count}){
+function BackupOffer({nav,count}){ const T=useTheme();
   const [gone,setGone]=React.useState(false);
   if(gone) return null;
-  return <Card style={{padding:14,display:'flex',flexDirection:'column',gap:8,border:`1px solid ${C.line}`}}>
-    <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>Keep your {count} wines safe</div>
-    <div style={{fontSize:14,color:C.mid,fontFamily:C.P,lineHeight:1.5}}>They're only on this phone right now. Sign in with your email and they're backed up, with your WineDNA and progress, ready on any phone.</div>
+  return <Card style={{padding:14,display:'flex',flexDirection:'column',gap:8,border:`1px solid ${T.line}`}}>
+    <div style={{fontSize:16,fontWeight:700,color:T.ink,fontFamily:C.P}}>Keep your {count} wines safe</div>
+    <div style={{fontSize:14,color:T.mid,fontFamily:C.P,lineHeight:1.5}}>They're only on this phone right now. Sign in with your email and they're backed up, with your WineDNA and progress, ready on any phone.</div>
     <div style={{display:'flex',gap:14,alignItems:'center',marginTop:2}}>
       <div onClick={()=>{ Handoff.accountIntent.set('backup'); nav('account'); }} style={{padding:'10px 16px',borderRadius:12,background:C.cr,color:'#fff',fontSize:15,fontWeight:700,fontFamily:C.P,cursor:'pointer'}}>Sign in to back up</div>
-      <span onClick={()=>{ Flags.dismissBackupOffer(); setGone(true); }} style={{fontSize:14,color:C.mid,fontFamily:C.P,cursor:'pointer'}}>Not now</span>
+      <span onClick={()=>{ Flags.dismissBackupOffer(); setGone(true); }} style={{fontSize:14,color:T.mid,fontFamily:C.P,cursor:'pointer'}}>Not now</span>
     </div>
   </Card>;
 }
@@ -195,6 +195,7 @@ function BackupOffer({nav,count}){
    pick, and their knowledge (level, XP and the Mastery teaser). */
 function HomeScreen({nav, showPro, isTablet}){
   const wide=useWide();
+  const T=useTheme(); // the appearance picked on Profile (Settings.theme), through pwa-app.jsx
   const [travel,setTravel]=React.useState(()=>Regional.travel());
   React.useEffect(()=>{
     const h=()=>setTravel(Regional.travel());
@@ -235,6 +236,7 @@ function HomeScreen({nav, showPro, isTablet}){
     return {types,pick};
   },[sig]);
 
+  const glow=T.lift(dna.types[0]?dna.types[0].col:C.cr);
   // Home's "Try next" counts as a day the pick was shown (ExploreNext.noteShown).
   React.useEffect(()=>{ if(dna.pick) ExploreNext.noteShown([dna.pick]); },[dna.pick&&dna.pick.style.id]);
 
@@ -244,16 +246,16 @@ function HomeScreen({nav, showPro, isTablet}){
   const openWine=w=>{ Handoff.openWine({demo:false,wine:w,confidence:0.9,existingRating:w.rating||0}); nav('detail'); };
   const colFor=w=>(typeof _TYPE_COLORS!=='undefined'&&_TYPE_COLORS[WineDNA._t(w.type)||'red'])||C.cr;
   const head=(title,link,onLink)=><div style={{padding:'12px 14px 7px',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-    <span style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>{title}</span>
-    {link&&<span onClick={onLink} role="button" style={{fontSize:15,fontWeight:600,color:C.cr,fontFamily:C.P,cursor:'pointer'}}>{link}</span>}
+    <span style={{fontSize:16,fontWeight:700,color:T.ink,fontFamily:C.P}}>{title}</span>
+    {link&&<span onClick={onLink} role="button" style={{fontSize:15,fontWeight:600,color:T.lift(C.cr),fontFamily:C.P,cursor:'pointer'}}>{link}</span>}
   </div>;
-  const row=(key,icon,col,title,sub,onClick,right)=><div key={key} onClick={onClick} role="button" style={{display:'flex',alignItems:'center',gap:12,padding:'10px 14px',borderTop:`1px solid ${C.line}`,cursor:'pointer'}}>
-    <div style={{width:34,height:34,borderRadius:10,background:col+'15',flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center'}}><Icon n={icon} sz={16} col={col}/></div>
+  const row=(key,icon,col,title,sub,onClick,right)=><div key={key} onClick={onClick} role="button" style={{display:'flex',alignItems:'center',gap:12,padding:'10px 14px',borderTop:`1px solid ${T.line}`,cursor:'pointer'}}>
+    <div style={{width:34,height:34,borderRadius:10,background:_alpha(T.lift(col),0.2),flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center'}}><Icon n={icon} sz={16} col={T.lift(col)}/></div>
     <div style={{flex:1,minWidth:0}}>
-      <div style={{fontSize:15,fontWeight:600,color:C.ink,fontFamily:C.P,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{title}</div>
-      {sub&&<div style={{fontSize:13,color:C.mid,fontFamily:C.P,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{sub}</div>}
+      <div style={{fontSize:15,fontWeight:600,color:T.ink,fontFamily:C.P,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{title}</div>
+      {sub&&<div style={{fontSize:13,color:T.mid,fontFamily:C.P,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{sub}</div>}
     </div>
-    {right||<Icon n="chevron" sz={13} col={C.mid}/>}
+    {right||<Icon n="chevron" sz={13} col={T.mid}/>}
   </div>;
 
   /* Home in two halves: what to do next, and what they've done. Side by side on an iPad. */
@@ -263,9 +265,9 @@ function HomeScreen({nav, showPro, isTablet}){
 
         {/* Up next: one clear thing to do, two more under it */}
         {next.primary&&<div>
-          <div style={{fontSize:13,fontWeight:700,color:C.mid,letterSpacing:'0.07em',textTransform:'uppercase',fontFamily:C.P,margin:'4px 2px 8px'}}>Up next</div>
-          <div role="button" onClick={()=>_openLearn(next.primary,nav,showPro)} style={{background:C.ink,borderRadius:16,padding:16,display:'flex',alignItems:'center',gap:12,cursor:'pointer'}}>
-            <div style={{width:46,height:46,borderRadius:12,background:'rgba(255,255,255,0.1)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><Icon n={next.primary.icon||'book'} sz={21} col="#fff"/></div>
+          <div style={{fontSize:13,fontWeight:700,color:T.mid,letterSpacing:'0.07em',textTransform:'uppercase',fontFamily:C.P,margin:'4px 2px 8px'}}>Up next</div>
+          <div role="button" onClick={()=>_openLearn(next.primary,nav,showPro)} style={T.dark?{background:_alpha(glow,0.16),border:`1px solid ${_alpha(glow,0.4)}`,borderRadius:16,padding:16,display:'flex',alignItems:'center',gap:12,cursor:'pointer',boxShadow:`0 0 36px ${_alpha(glow,0.18)}`}:{background:C.ink,borderRadius:16,padding:16,display:'flex',alignItems:'center',gap:12,cursor:'pointer'}}>
+            <div style={{width:46,height:46,borderRadius:12,background:T.dark?_alpha(glow,0.28):'rgba(255,255,255,0.1)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><Icon n={next.primary.icon||'book'} sz={21} col={T.dark?glow:'#fff'}/></div>
             <div style={{flex:1,minWidth:0}}>
               {next.primary.progress&&<div style={{fontSize:12,fontWeight:600,color:'rgba(255,255,255,0.5)',fontFamily:C.P,textTransform:'uppercase',letterSpacing:'0.06em',marginBottom:3}}>{next.primary.progress}</div>}
               <div style={{fontSize:17,fontWeight:700,color:'#fff',fontFamily:C.P,lineHeight:1.3}}>{next.primary.title}</div>
@@ -289,8 +291,8 @@ function HomeScreen({nav, showPro, isTablet}){
         {recentWines.length>0&&<Card style={{padding:0,overflow:'hidden'}}>
           {head('Recently scanned','All →',()=>nav('mywines'))}
           {recentWines.map((w,i)=>row('r'+i,'wine',colFor(w),w.name,MyWines.subline(w),()=>openWine(w),
-            w.rating>0?<span style={{fontSize:15,fontWeight:700,color:C.amber,fontFamily:C.P,flexShrink:0}}>{w.rating}</span>
-              :<span style={{fontSize:13,color:C.cr,fontFamily:C.P,flexShrink:0,fontWeight:600}}>Rate it →</span>))}
+            w.rating>0?<span style={{fontSize:15,fontWeight:700,color:T.amber,fontFamily:C.P,flexShrink:0}}>{w.rating}</span>
+              :<span style={{fontSize:13,color:T.lift(C.cr),fontFamily:C.P,flexShrink:0,fontWeight:600}}>Rate it →</span>))}
         </Card>}
 
         {/* WineDNA at a glance */}
@@ -305,12 +307,12 @@ function HomeScreen({nav, showPro, isTablet}){
         {/* Your knowledge: level and XP, and the Mastery teaser (the full map is Pro) */}
         <Card onClick={()=>knowledge?(isPro?nav('mastery-map'):showPro('mastery-map')):nav('learn')} style={{padding:14,cursor:'pointer',display:'flex',flexDirection:'column',gap:8}}>
           <div style={{display:'flex',alignItems:'center',gap:8}}>
-            <span style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P,flex:1}}>{lv.badge} {lv.name}</span>
-            <span style={{fontSize:13,color:C.mid,fontFamily:C.P}}>{xpData.total} XP{nx?` · ${nx.min-xpData.total} to ${nx.name}`:''}</span>
+            <span style={{fontSize:16,fontWeight:700,color:T.ink,fontFamily:C.P,flex:1}}>{lv.badge} {lv.name}</span>
+            <span data-testid="home-xp" onClick={e=>{ e.stopPropagation(); try{ window.dispatchEvent(new Event('vinterest:xp-overlay')); }catch(err){} }} style={{fontSize:13,color:T.mid,fontFamily:C.P,cursor:'pointer'}}>{xpData.total} XP{nx?` · ${nx.min-xpData.total} to ${nx.name}`:''}</span>
           </div>
-          <Prog val={pg} h={5} col={C.cr}/>
+          <Prog val={pg} h={5} col={T.lift(C.cr)}/>
           {knowledge&&<div style={{display:'flex',alignItems:'center',gap:8}}>
-            <div style={{flex:1,fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.45}}>
+            <div style={{flex:1,fontSize:14,color:T.ink2,fontFamily:C.P,lineHeight:1.45}}>
               Wine knowledge {knowledge.overall}%{knowledge.strongest?<> · strongest in <b>{knowledge.strongest.label}</b></>:null}{knowledge.gap?<> · biggest gap <b>{knowledge.gap.label}</b></>:null}
             </div>
             {!isPro&&<ProBadge/>}
@@ -319,13 +321,14 @@ function HomeScreen({nav, showPro, isTablet}){
   </>;
   const cell=x=><div style={{display:'flex',flexDirection:'column',gap:12,minWidth:0}}>{x}</div>;
   return(
-    <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden',background:C.bg,position:'relative'}}>
-      <div style={{background:C.white,flexShrink:0}}>
+    <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden',background:T.bg,position:'relative'}}>
+      {/* The top of the stage glows in the colour of the type they drink most, as the story glows in the wine's. */}
+      <div style={{background:`radial-gradient(ellipse at 50% -20%, ${_alpha(glow,T.dark?0.42:0.14)}, transparent 70%) ${T.dark?T.bg:C.white}`,flexShrink:0}}>
         <div style={{padding:'14px 20px 14px',paddingRight:'120px',display:'flex',alignItems:'center',gap:12}}>
-          <div onClick={()=>nav('account')} style={{width:34,height:34,borderRadius:17,background:C.offWhite,border:`1px solid ${C.line}`,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',flexShrink:0}}>
-            <Icon n="user" sz={16} col={C.ink}/>
+          <div onClick={()=>nav('account')} style={{width:34,height:34,borderRadius:17,background:T.soft,border:`1px solid ${T.line}`,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',flexShrink:0}}>
+            <Icon n="user" sz={16} col={T.ink}/>
           </div>
-          <img src="logo.png" alt="Vinterest" style={{height:28,width:'auto',display:'block',cursor:'pointer'}} onClick={()=>{
+          <img src="logo.png" alt="Vinterest" style={{height:28,width:'auto',display:'block',cursor:'pointer',filter:T.dark?'invert(1) brightness(2)':'none'}} onClick={()=>{
             // Tapping the logo checks for a new version of the app (and shows the update banner).
             if(!('serviceWorker' in navigator)||Platform.native()) return;
             navigator.serviceWorker.getRegistration().then(function(reg){
@@ -355,7 +358,7 @@ function HomeScreen({nav, showPro, isTablet}){
       {/* Cards scroll up under the Vinny bar and fade into the header rather than being cut off
           at a hard edge. */}
       <div style={{flex:1,minHeight:0,position:'relative',display:'flex',flexDirection:'column'}}>
-      <div aria-hidden="true" data-home-fade style={{position:'absolute',top:0,left:0,right:0,height:18,background:`linear-gradient(${C.white},${C.white}00)`,pointerEvents:'none',zIndex:1}}/>
+      <div aria-hidden="true" data-home-fade style={{position:'absolute',top:0,left:0,right:0,height:18,background:T.dark?`linear-gradient(${T.bg},${T.fade0})`:`linear-gradient(${C.white},${C.white}00)`,pointerEvents:'none',zIndex:1}}/>
       <div style={{flex:1,overflowY:'auto',overscrollBehavior:'none',WebkitOverflowScrolling:'touch'}}>
       <div style={{padding:'10px 20px 8px',display:'flex',flexDirection:'column',gap:12}}>
 

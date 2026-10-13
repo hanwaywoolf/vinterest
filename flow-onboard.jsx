@@ -155,8 +155,8 @@ function OnboardTaste({step,total,onBack,onDone,scanned}){
    each level adds, those beyond their starting level faded with "as you learn". */
 const _DETAIL_ADDS=[
   {level:'simple',items:['Your taste in pictures','Favourites','The bottles you come back to','What to try next','What to say when ordering']},
-  {level:'more',items:['How your taste is changing','How well we can predict your ratings','Every reason behind a match']},
-  {level:'everything',items:['Your best value','What lifts and holds back your ratings','Flavour signatures']},
+  {level:'more',items:['What moves your ratings','How your taste is changing','How well we can predict your ratings','Every reason behind a match']},
+  {level:'everything',items:['Your best value']},
 ];
 function DetailPreview({exp}){
   const {t}=_dnaTab(), start=DetailLevel.base(exp);

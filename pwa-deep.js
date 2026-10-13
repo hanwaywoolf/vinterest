@@ -23,7 +23,7 @@ const WineDeep = {
     const producer=((w&&w.producer)||'').trim(), classic=R?(R.classicProducers||[]):[];
     const isClassic=!!producer&&classic.some(p=>TasteMatch._sameProducer({producer},{producer:p}));
     return {region:rk,country:(R&&R.country)||(w&&w.country)||'',classification:(R&&R.classification)||'',agingRules:(R&&R.agingRules)||'',
-      climate:(R&&R.climate)||'',keyGrapes:R?(R.keyGrapes||[]):[],classic,isClassic,places:R?(R.aliases||[]).filter(a=>a!==rk):[],
+      climate:(R&&R.climate)||'',keyGrapes:R?(R.keyGrapes||[]):[],classic,isClassic,places:R?(R.places||[]).map(p=>p.name):[],
       grape:gk||lead||null,grapeKnown:!!G,winemaking:(G&&G.winemaking)||'',ageing:(G&&G.ageing)||'',food:(G&&G.food)||'',origin:(G&&G.origin)||''};
   },
   prompt(w,match){

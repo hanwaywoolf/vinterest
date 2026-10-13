@@ -249,7 +249,7 @@ test('signed out, Profile\'s Backup says it\'s off in red, and its button opens 
   const root = page.locator('#root');
   const status = root.getByRole('status').filter({ hasText: 'Not backed up' });
   await expect(status).toBeVisible();
-  await expect(status.locator('span').last()).toHaveCSS('color', 'rgb(176, 74, 58)');
+  await expect(status.locator('span').last()).toHaveCSS('color', /rgb\((176, 74, 58|242, 139, 125)\)/); // the red of the stage: dark lifts it
   await expect(root).toContainText('Your wines are only on this phone');
   await root.getByText('Sign in to back up').click();
   await expect(page.getByLabel('Email address')).toBeFocused();

@@ -1,33 +1,33 @@
 /* Vinterest — Account / Profile screen: onboarding summary (editable) + Travel Mode */
 
 const ACC_TYPE_OPTS=[{id:'red',label:'Red',col:'#8B1A2F'},{id:'white',label:'White',col:'#B8963E'},{id:'rose',label:'Rosé',col:'#C47A8A'},{id:'sparkling',label:'Sparkling',col:'#5E8FA8'},{id:'orange',label:'Orange',col:'#C1652B'},{id:'dessert',label:'Dessert',col:'#8A5A2B'},{id:'fortified',label:'Fortified',col:'#5C2A1E'}];
-function AccSection({title,children,onEdit,editing}){
+function AccSection({title,children,onEdit,editing}){ const T=useTheme(), cr=T.lift(C.cr);
   return(
     <Card style={{padding:14}}>
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:10}}>
-        <span style={{fontSize:15,fontWeight:700,color:C.ink,fontFamily:C.P}}>{title}</span>
-        {onEdit&&<span onClick={onEdit} style={{fontSize:14,fontWeight:600,color:C.cr,fontFamily:C.P,cursor:'pointer'}}>{editing?'Done':'Edit'}</span>}
+        <span style={{fontSize:15,fontWeight:700,color:T.ink,fontFamily:C.P}}>{title}</span>
+        {onEdit&&<span onClick={onEdit} style={{fontSize:14,fontWeight:600,color:cr,fontFamily:C.P,cursor:'pointer'}}>{editing?'Done':'Edit'}</span>}
       </div>
       {children}
     </Card>
   );
 }
 
-function AccChips({opts,sel,editing,onToggle}){
+function AccChips({opts,sel,editing,onToggle}){ const T=useTheme(), cr=T.lift(C.cr); opts=opts.map(o=>o.col?{...o,col:T.lift(o.col)}:o);
   const active=Array.isArray(sel)?sel:(sel?[sel]:[]);
   if(!editing){
     return active.length
       ?<div style={{display:'flex',flexWrap:'wrap',gap:6}}>{active.map(id=>{const o=opts.find(x=>x.id===id);return o?<Pill key={id} active sm>{o.label}</Pill>:null;})}</div>
-      :<div style={{fontSize:14,color:C.mid,fontFamily:C.P,fontStyle:'italic'}}>Not set</div>;
+      :<div style={{fontSize:14,color:T.mid,fontFamily:C.P,fontStyle:'italic'}}>Not set</div>;
   }
   return(
     <div style={{display:'flex',flexWrap:'wrap',gap:8}}>
       {opts.map(o=>{
         const on=active.includes(o.id);
         return(
-          <div key={o.id} onClick={()=>onToggle(o.id)} style={{display:'flex',alignItems:'center',gap:6,padding:'8px 12px',borderRadius:10,border:`1.5px solid ${on?C.cr:C.line}`,background:on?C.crSoft:C.white,cursor:'pointer'}}>
-            {o.icon&&<Icon n={o.icon} sz={14} col={o.col||C.mid}/>}
-            <span style={{fontSize:14,fontWeight:on?700:500,color:on?C.cr:C.ink2,fontFamily:C.P}}>{o.label}</span>
+          <div key={o.id} onClick={()=>onToggle(o.id)} style={{display:'flex',alignItems:'center',gap:6,padding:'8px 12px',borderRadius:10,border:`1.5px solid ${on?cr:T.line}`,background:on?T.crSoft:T.glass,cursor:'pointer'}}>
+            {o.icon&&<Icon n={o.icon} sz={14} col={o.col||T.mid}/>}
+            <span style={{fontSize:14,fontWeight:on?700:500,color:on?cr:T.ink2,fontFamily:C.P}}>{o.label}</span>
           </div>
         );
       })}
@@ -35,7 +35,7 @@ function AccChips({opts,sel,editing,onToggle}){
   );
 }
 
-function AccountProfileScreen({nav,back,showPro}){
+function AccountProfileScreen({nav,back,showPro}){ const T=useTheme(), cr=T.lift(C.cr);
   const [prefs,setPrefs]=React.useState(()=>UserPrefs.get());
   const [editSection,setEditSection]=React.useState(null);
   const [country,setCountry]=React.useState(()=>UserPrefs.location().country||'');
@@ -72,12 +72,12 @@ function AccountProfileScreen({nav,back,showPro}){
   const home=Regional.home();
 
   return(
-    <div style={{flex:1,display:'flex',flexDirection:'column',background:C.bg,overflow:'hidden'}}>
-      <div style={{display:'flex',alignItems:'center',gap:12,padding:'14px 20px',background:C.white,borderBottom:`1px solid ${C.line}`,flexShrink:0}}>
-        <div onClick={back} style={{width:34,height:34,borderRadius:17,background:C.offWhite,border:`1px solid ${C.line}`,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer'}}>
-          <Icon n="back" sz={16} col={C.ink}/>
+    <div style={{flex:1,display:'flex',flexDirection:'column',background:T.bg,overflow:'hidden'}}>
+      <div style={{display:'flex',alignItems:'center',gap:12,padding:'14px 20px',background:`radial-gradient(ellipse at 50% -20%, ${_alpha(cr,T.dark?0.42:0.14)}, transparent 70%) ${T.dark?T.bg:C.white}`,borderBottom:`1px solid ${T.line}`,flexShrink:0}}>
+        <div onClick={back} style={{width:34,height:34,borderRadius:17,background:T.soft,border:`1px solid ${T.line}`,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer'}}>
+          <Icon n="back" sz={16} col={T.ink}/>
         </div>
-        <span style={{fontSize:20,fontWeight:700,color:C.ink,fontFamily:C.P,flex:1}}>Profile</span>
+        <span style={{fontSize:20,fontWeight:700,color:T.ink,fontFamily:C.P,flex:1}}>Profile</span>
       </div>
 
       <div style={{flex:1,overflowY:'auto',padding:'14px 20px',display:'flex',flexDirection:'column',gap:12}}>
@@ -88,46 +88,49 @@ function AccountProfileScreen({nav,back,showPro}){
 
         <InstallCard/>
 
+        <ThemeControl/>
+        <NotifyControl/>
+
         <TextSizeControl/>
 
         {/* Travel Mode */}
-        <Card style={{padding:14,border:travel?`1.5px solid ${C.cr}`:`1px solid ${C.line}`}}>
+        <Card style={{padding:14,border:travel?`1.5px solid ${cr}`:`1px solid ${T.line}`}}>
           <div style={{display:'flex',alignItems:'center',gap:10}}>
-            <div style={{width:38,height:38,borderRadius:19,background:travel?C.crSoft:C.offWhite,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
-              <Icon n="compass" sz={19} col={travel?C.cr:C.mid}/>
+            <div style={{width:38,height:38,borderRadius:19,background:travel?T.crSoft:T.soft,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+              <Icon n="compass" sz={19} col={travel?cr:T.mid}/>
             </div>
             <div style={{flex:1}}>
-              <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>Travel Mode</div>
-              <div style={{fontSize:13,color:C.mid,fontFamily:C.P}}>{travel?`On — ${travel.country} (${travel.code})`:'Temporarily price in a different currency'}</div>
+              <div style={{fontSize:16,fontWeight:700,color:T.ink,fontFamily:C.P}}>Travel Mode</div>
+              <div style={{fontSize:13,color:T.mid,fontFamily:C.P}}>{travel?`On — ${travel.country} (${travel.code})`:'Temporarily price in a different currency'}</div>
             </div>
-            <div onClick={()=>travel?disableTravel():setTravelEditing(e=>!e)} style={{width:46,height:27,borderRadius:14,background:travel?C.cr:C.line,position:'relative',cursor:'pointer',flexShrink:0,transition:'background .15s'}}>
+            <div onClick={()=>travel?disableTravel():setTravelEditing(e=>!e)} style={{width:46,height:27,borderRadius:14,background:travel?cr:T.line,position:'relative',cursor:'pointer',flexShrink:0,transition:'background .15s'}}>
               <div style={{position:'absolute',top:2,left:travel?21:2,width:23,height:23,borderRadius:12,background:'#fff',boxShadow:'0 1px 3px rgba(0,0,0,0.25)',transition:'left .15s'}}/>
             </div>
           </div>
           {travel&&(
-            <div style={{marginTop:10,paddingTop:10,borderTop:`1px solid ${C.line}`,fontSize:13,color:C.mid,fontFamily:C.P}}>
+            <div style={{marginTop:10,paddingTop:10,borderTop:`1px solid ${T.line}`,fontSize:13,color:T.mid,fontFamily:C.P}}>
               {travel.until?`Turns off automatically on ${travel.until}`:'On until you turn it off'} · prices show in {travel.sym}
             </div>
           )}
           {!travel&&travelEditing&&(
-            <div style={{marginTop:12,paddingTop:12,borderTop:`1px solid ${C.line}`,display:'flex',flexDirection:'column',gap:10}}>
+            <div style={{marginTop:12,paddingTop:12,borderTop:`1px solid ${T.line}`,display:'flex',flexDirection:'column',gap:10}}>
               <div>
-                <div style={{fontSize:13,fontWeight:600,color:C.ink2,fontFamily:C.P,marginBottom:6}}>Where are you travelling to?</div>
+                <div style={{fontSize:13,fontWeight:600,color:T.ink2,fontFamily:C.P,marginBottom:6}}>Where are you travelling to?</div>
                 <input value={travelForm.country} onChange={e=>setTravelForm(f=>({...f,country:e.target.value}))} placeholder="e.g. United States"
-                  style={{width:'100%',boxSizing:'border-box',padding:'12px 14px',borderRadius:11,border:`1px solid ${C.line}`,background:C.white,fontSize:15,fontFamily:C.P,color:C.ink,outline:'none'}}/>
+                  style={{width:'100%',boxSizing:'border-box',padding:'12px 14px',borderRadius:11,border:`1px solid ${T.line}`,background:T.glass,fontSize:15,fontFamily:C.P,color:T.ink,outline:'none'}}/>
               </div>
               <div>
-                <div style={{fontSize:13,fontWeight:600,color:C.ink2,fontFamily:C.P,marginBottom:6}}>Currency</div>
+                <div style={{fontSize:13,fontWeight:600,color:T.ink2,fontFamily:C.P,marginBottom:6}}>Currency</div>
                 <select value={travelForm.code||(lookupCountryCurrency(travelForm.country)||{}).code||''} onChange={e=>setTravelForm(f=>({...f,code:e.target.value}))}
-                  style={{width:'100%',boxSizing:'border-box',padding:'12px 14px',borderRadius:11,border:`1px solid ${C.line}`,background:C.white,fontSize:15,fontFamily:C.P,color:C.ink,outline:'none',appearance:'none',WebkitAppearance:'none'}}>
+                  style={{width:'100%',boxSizing:'border-box',padding:'12px 14px',borderRadius:11,border:`1px solid ${T.line}`,background:T.glass,fontSize:15,fontFamily:C.P,color:T.ink,outline:'none',appearance:'none',WebkitAppearance:'none'}}>
                   {CURRENCY_LIST.map(c=><option key={c.code} value={c.code}>{c.code} ({c.sym})</option>)}
                 </select>
               </div>
               <div>
-                <div style={{fontSize:13,fontWeight:600,color:C.ink2,fontFamily:C.P,marginBottom:6}}>Return date (optional)</div>
+                <div style={{fontSize:13,fontWeight:600,color:T.ink2,fontFamily:C.P,marginBottom:6}}>Return date (optional)</div>
                 <input type="date" value={travelForm.until} onChange={e=>setTravelForm(f=>({...f,until:e.target.value}))}
-                  style={{width:'100%',boxSizing:'border-box',padding:'12px 14px',borderRadius:11,border:`1px solid ${C.line}`,background:C.white,fontSize:15,fontFamily:C.P,color:C.ink,outline:'none'}}/>
-                <div style={{fontSize:12,color:C.mid,fontFamily:C.P,marginTop:5}}>Leave blank to turn it off manually.</div>
+                  style={{width:'100%',boxSizing:'border-box',padding:'12px 14px',borderRadius:11,border:`1px solid ${T.line}`,background:T.glass,fontSize:15,fontFamily:C.P,color:T.ink,outline:'none'}}/>
+                <div style={{fontSize:12,color:T.mid,fontFamily:C.P,marginTop:5}}>Leave blank to turn it off manually.</div>
               </div>
               <Btn primary full onClick={enableTravel}>Enable Travel Mode</Btn>
             </div>
@@ -138,41 +141,41 @@ function AccountProfileScreen({nav,back,showPro}){
         <AccSection title="Where You Buy Wine" onEdit={()=>setEditSection(editSection==='loc'?null:'loc')} editing={editSection==='loc'}>
           {editSection==='loc'?(
             <div style={{display:'flex',flexDirection:'column',gap:10}}>
-              <select value={country} onChange={e=>setCountry(e.target.value)} aria-label="Country" style={{width:'100%',boxSizing:'border-box',padding:'12px 14px',borderRadius:11,border:`1px solid ${C.line}`,background:C.white,fontSize:15,fontFamily:C.P,color:C.ink,outline:'none',appearance:'none',WebkitAppearance:'none'}}>
+              <select value={country} onChange={e=>setCountry(e.target.value)} aria-label="Country" style={{width:'100%',boxSizing:'border-box',padding:'12px 14px',borderRadius:11,border:`1px solid ${T.line}`,background:T.glass,fontSize:15,fontFamily:C.P,color:T.ink,outline:'none',appearance:'none',WebkitAppearance:'none'}}>
                 <option value="" disabled>Select country</option>
                 {UserPrefs.COUNTRIES.map(c=><option key={c.name} value={c.name}>{c.name}</option>)}
               </select>
               {(UserPrefs.country(country)||{}).stateLabel&&<input value={region} onChange={e=>setRegionField(e.target.value)} placeholder={`${UserPrefs.country(country).stateLabel} (optional)`}
-                style={{width:'100%',boxSizing:'border-box',padding:'12px 14px',borderRadius:11,border:`1px solid ${C.line}`,background:C.white,fontSize:15,fontFamily:C.P,color:C.ink,outline:'none'}}/>}
+                style={{width:'100%',boxSizing:'border-box',padding:'12px 14px',borderRadius:11,border:`1px solid ${T.line}`,background:T.glass,fontSize:15,fontFamily:C.P,color:T.ink,outline:'none'}}/>}
               {/* Ontario only: the city is where the LCBO lookup starts looking for stores with a bottle in stock. */}
               {UserPrefs.askCity(country,region)&&<div>
                 <input value={city} onChange={e=>setCity(e.target.value)} placeholder="City (optional)" aria-label="City" data-testid="loc-city"
-                  style={{width:'100%',boxSizing:'border-box',padding:'12px 14px',borderRadius:11,border:`1px solid ${C.line}`,background:C.white,fontSize:15,fontFamily:C.P,color:C.ink,outline:'none'}}/>
-                <div style={{fontSize:13,color:C.mid,fontFamily:C.P,marginTop:6,lineHeight:1.4}}>We use it to show the LCBO stores near you, and which have a bottle in stock.</div>
+                  style={{width:'100%',boxSizing:'border-box',padding:'12px 14px',borderRadius:11,border:`1px solid ${T.line}`,background:T.glass,fontSize:15,fontFamily:C.P,color:T.ink,outline:'none'}}/>
+                <div style={{fontSize:13,color:T.mid,fontFamily:C.P,marginTop:6,lineHeight:1.4}}>We use it to show the LCBO stores near you, and which have a bottle in stock.</div>
               </div>}
               <Btn primary full onClick={saveLocation}>Save</Btn>
             </div>
           ):(
-            <div style={{fontSize:15,color:C.ink,fontFamily:C.P}}>
+            <div style={{fontSize:15,color:T.ink,fontFamily:C.P}}>
               {[UserPrefs.askCity(country,region)?city:'',region,country].filter(Boolean).join(', ')||'Not set'}
-              <div style={{fontSize:13,color:C.mid,marginTop:4}}>Prices show in {home.sym} ({home.code}).{UserPrefs.askCity(country,region)?(city?' LCBO stores are shown near '+city+'.':' Add your city to see the LCBO stores near you.'):''}</div>
+              <div style={{fontSize:13,color:T.mid,marginTop:4}}>Prices show in {home.sym} ({home.code}).{UserPrefs.askCity(country,region)?(city?' LCBO stores are shown near '+city+'.':' Add your city to see the LCBO stores near you.'):''}</div>
             </div>
           )}
         </AccSection>
 
         <AccSection title="What You Drink" onEdit={()=>setEditSection(editSection==='types'?null:'types')} editing={editSection==='types'}>
           <AccChips opts={ACC_TYPE_OPTS} sel={prefs.types||[]} editing={editSection==='types'} onToggle={id=>toggleMulti('types',id)}/>
-          <div style={{fontSize:13,color:C.mid,fontFamily:C.P,marginTop:8}}>Home and WineDNA open on your first pick.</div>
+          <div style={{fontSize:13,color:T.mid,fontFamily:C.P,marginTop:8}}>Home and WineDNA open on your first pick.</div>
         </AccSection>
 
         <AccSection title="Usual Spend" onEdit={()=>setEditSection(editSection==='budget'?null:'budget')} editing={editSection==='budget'}>
           <AccChips opts={UserPrefs.budgetOptions()} sel={prefs.budget} editing={editSection==='budget'} onToggle={id=>savePrefField('budget',id)}/>
-          <div style={{fontSize:13,color:C.mid,fontFamily:C.P,marginTop:8}}>Used for price suggestions until you've rated a few wines with prices.</div>
+          <div style={{fontSize:13,color:T.mid,fontFamily:C.P,marginTop:8}}>Used for price suggestions until you've rated a few wines with prices.</div>
         </AccSection>
 
         <AccSection title="Wine Knowledge" onEdit={()=>setEditSection(editSection==='experience'?null:'experience')} editing={editSection==='experience'}>
           <AccChips opts={UserPrefs.EXPERIENCE} sel={prefs.experience} editing={editSection==='experience'} onToggle={id=>savePrefField('experience',id)}/>
-          <div style={{fontSize:13,color:C.mid,fontFamily:C.P,marginTop:8}}>Sets where Learn starts, how deep articles go and how much detail WineDNA and your scans show. The detail grows as you learn.</div>
+          <div style={{fontSize:13,color:T.mid,fontFamily:C.P,marginTop:8}}>Sets where Learn starts, how deep articles go and how much detail WineDNA and your scans show. The detail grows as you learn.</div>
           <DetailSwitch/>
         </AccSection>
 
@@ -180,11 +183,11 @@ function AccountProfileScreen({nav,back,showPro}){
         <div onClick={()=>{
           const errors=ErrorLog.list();
           alert(errors.length?'Recent errors:\n\n'+errors.slice(-5).map(e=>e.context+': '+e.message).join('\n'):'No errors logged.');
-        }} style={{padding:'14px 4px 4px',fontSize:14,color:C.mid,fontFamily:C.P,cursor:'pointer',textAlign:'center'}}>View error log</div>
+        }} style={{padding:'14px 4px 4px',fontSize:14,color:T.mid,fontFamily:C.P,cursor:'pointer',textAlign:'center'}}>View error log</div>
         {/* For layout problems only a real phone shows: what this phone reports (InstallApp.screenInfo). */}
         <div onClick={()=>{ const i=InstallApp.screenInfo();
           alert(`Showing: ${i.mode}\nScreen: ${i.screen}\nWindow: ${i.window}\nVisible: ${i.visual}\nPage height: ${i.page}\nReserved by iOS: ${i.inset}\nApp area: ${i.root}\nBottom nav: ${i.nav}\n${i.ua}`); }}
-          style={{padding:'4px 4px 14px',fontSize:14,color:C.mid,fontFamily:C.P,cursor:'pointer',textAlign:'center'}}>Screen details</div>
+          style={{padding:'4px 4px 14px',fontSize:14,color:T.mid,fontFamily:C.P,cursor:'pointer',textAlign:'center'}}>Screen details</div>
         <div style={{height:8}}/>
       </div>
     </div>
@@ -195,54 +198,101 @@ Object.assign(window,{AccountProfileScreen});
 
 /* "Show all details" (DetailLevel): every screen at full detail, whatever their level. Says which
    level they're at otherwise, so turning it off isn't a mystery. */
-function DetailSwitch(){
+function DetailSwitch(){ const T=useTheme(), cr=T.lift(C.cr);
   const [on,setOn]=React.useState(()=>DetailLevel.showAll());
   const lvl=DetailLevel.LEVELS[DetailLevel.reached()];
   const now=lvl==='everything'?'You already see everything.':lvl==='more'?'You see more detail now; the rest opens as you learn more.':'You see the essentials now; more opens as you learn.';
   function flip(){ DetailLevel.setShowAll(!on); setOn(!on); }
-  return <div data-testid="detail-switch" style={{display:'flex',alignItems:'center',gap:12,marginTop:12,paddingTop:12,borderTop:`1px solid ${C.line}`}}>
+  return <div data-testid="detail-switch" style={{display:'flex',alignItems:'center',gap:12,marginTop:12,paddingTop:12,borderTop:`1px solid ${T.line}`}}>
     <div style={{flex:1,minWidth:0}}>
-      <div style={{fontSize:15,fontWeight:700,color:C.ink,fontFamily:C.P}}>Show all details</div>
-      <div style={{fontSize:13,color:C.mid,fontFamily:C.P,lineHeight:1.4}}>{on?'Every screen shows its full detail.':now}</div>
+      <div style={{fontSize:15,fontWeight:700,color:T.ink,fontFamily:C.P}}>Show all details</div>
+      <div style={{fontSize:13,color:T.mid,fontFamily:C.P,lineHeight:1.4}}>{on?'Every screen shows its full detail.':now}</div>
     </div>
     <div role="switch" aria-checked={on} aria-label="Show all details" tabIndex={0} onClick={flip} onKeyDown={e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); flip(); } }}
-      style={{width:46,height:28,borderRadius:14,background:on?C.cr:C.line,position:'relative',cursor:'pointer',flexShrink:0,transition:'background .15s'}}>
+      style={{width:46,height:28,borderRadius:14,background:on?cr:T.line,position:'relative',cursor:'pointer',flexShrink:0,transition:'background .15s'}}>
       <div style={{position:'absolute',top:3,left:on?21:3,width:22,height:22,borderRadius:11,background:'#fff',boxShadow:'0 1px 3px rgba(0,0,0,0.2)',transition:'left .15s'}}/>
     </div>
   </div>;
 }
 
 /* Text size: Standard, Large (+10%) or Extra large (+20%). Only the text grows (TextSize). */
-function TextSizeControl(){
+function TextSizeControl(){ const T=useTheme(), cr=T.lift(C.cr);
   // Always the stored size, so a size restored or synced in shows here as it shows on screen.
   const [,setTick]=React.useState(0);
   React.useEffect(()=>{ const h=()=>setTick(t=>t+1); window.addEventListener('vinterest:textsize',h); return()=>window.removeEventListener('vinterest:textsize',h); },[]);
   const cur=TextSize.get().id;
   return <Card style={{padding:14,display:'flex',flexDirection:'column',gap:10}}>
     <div>
-      <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>Text size</div>
-      <div style={{fontSize:13,color:C.mid,fontFamily:C.P}}>Make the words across the app a little bigger.</div>
+      <div style={{fontSize:16,fontWeight:700,color:T.ink,fontFamily:C.P}}>Text size</div>
+      <div style={{fontSize:13,color:T.mid,fontFamily:C.P}}>Make the words across the app a little bigger.</div>
     </div>
     <div role="radiogroup" aria-label="Text size" style={{display:'flex',gap:6}}>
       {TextSize.SIZES.map((s,i)=>{
         const on=cur===s.id;
         return <div key={s.id} role="radio" aria-checked={on} onClick={()=>TextSize.set(s.id)}
-          style={{flex:1,textAlign:'center',padding:'10px 4px',borderRadius:10,cursor:'pointer',background:on?C.crSoft:C.offWhite,border:`1.5px solid ${on?C.cr:'transparent'}`}}>
-          <div style={{fontSize:14+i*2,fontWeight:800,color:on?C.cr:C.ink,fontFamily:C.P,lineHeight:1.1}}>Aa</div>
+          style={{flex:1,textAlign:'center',padding:'10px 4px',borderRadius:10,cursor:'pointer',background:on?T.crSoft:T.soft,border:`1.5px solid ${on?cr:'transparent'}`}}>
+          <div style={{fontSize:14+i*2,fontWeight:800,color:on?cr:T.ink,fontFamily:C.P,lineHeight:1.1}}>Aa</div>
           {/* The labels stay one size so the three tiles line up; the Aa above shows the difference. */}
-          <div style={{fontSize:'13px',fontWeight:on?700:500,color:on?C.cr:C.mid,fontFamily:C.P,marginTop:3,whiteSpace:'nowrap'}}>{s.label}</div>
+          <div style={{fontSize:'13px',fontWeight:on?700:500,color:on?cr:T.mid,fontFamily:C.P,marginTop:3,whiteSpace:'nowrap'}}>{s.label}</div>
         </div>;
       })}
     </div>
   </Card>;
 }
 
-Object.assign(window,{TextSizeControl});
+/* Appearance: the story's dark stage, or light (Settings.theme). Screens that have moved onto the
+   stage follow it at once; the scan story itself is always dark. */
+/* Notifications on Profile: which categories the bell on Home collects (Notices.TYPES). A category
+   switched off writes nothing new; what's already there stays until read. */
+function NotifyControl(){ const T=useTheme(), cr=T.lift(C.cr);
+  const [prefs,setPrefs]=React.useState(()=>Notices.prefs());
+  React.useEffect(()=>{ const h=()=>setPrefs(Notices.prefs()); window.addEventListener('vinterest:notices',h); window.addEventListener('vinterest:sync',h); return()=>{ window.removeEventListener('vinterest:notices',h); window.removeEventListener('vinterest:sync',h); }; },[]);
+  return <div data-testid="notify-control"><Card style={{padding:14,display:"flex",flexDirection:"column",gap:4}}>
+    <div style={{fontSize:16,fontWeight:700,color:T.ink,fontFamily:C.P}}>Notifications</div>
+    <div style={{fontSize:13,color:T.mid,fontFamily:C.P}}>What the bell on Home collects.</div>
+    {Object.entries(Notices.TYPES).map(([id,t])=>{ const on=prefs[id]!==false; const flip=()=>Notices.setPref(id,!on);
+      return <div key={id} style={{display:'flex',alignItems:'center',gap:12,marginTop:10,paddingTop:10,borderTop:`1px solid ${T.line}`}}>
+        <div style={{flex:1,minWidth:0}}>
+          <div style={{fontSize:15,fontWeight:700,color:T.ink,fontFamily:C.P}}>{t.label}</div>
+          <div style={{fontSize:13,color:T.mid,fontFamily:C.P,lineHeight:1.4}}>{t.desc}</div>
+        </div>
+        <div role="switch" aria-checked={on} aria-label={t.label} tabIndex={0} onClick={flip} onKeyDown={e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); flip(); } }}
+          style={{width:46,height:28,borderRadius:14,background:on?cr:T.line,position:'relative',cursor:'pointer',flexShrink:0,transition:'background .15s'}}>
+          <div style={{position:'absolute',top:3,left:on?21:3,width:22,height:22,borderRadius:11,background:'#fff',boxShadow:'0 1px 3px rgba(0,0,0,0.2)',transition:'left .15s'}}/>
+        </div>
+      </div>; })}
+  </Card></div>;
+}
+
+function ThemeControl(){ const T=useTheme(), cr=T.lift(C.cr);
+  const [,setTick]=React.useState(0);
+  React.useEffect(()=>{ const h=()=>setTick(t=>t+1); window.addEventListener('vinterest:theme',h); window.addEventListener('vinterest:sync',h); return()=>{ window.removeEventListener('vinterest:theme',h); window.removeEventListener('vinterest:sync',h); }; },[]);
+  const cur=Settings.theme();
+  const opts=[{id:'dark',label:'Dark & neon'},{id:'light',label:'Paper white'}];
+  return <Card style={{padding:14,display:'flex',flexDirection:'column',gap:10}}>
+    <div>
+      <div style={{fontSize:16,fontWeight:700,color:T.ink,fontFamily:C.P}}>Appearance</div>
+      <div style={{fontSize:13,color:T.mid,fontFamily:C.P}}>How the app looks.</div>
+    </div>
+    <div role="radiogroup" aria-label="Appearance" style={{display:'flex',gap:6}}>
+      {opts.map(o=>{ const on=cur===o.id, dark=o.id==='dark';
+        return <div key={o.id} role="radio" aria-checked={on} onClick={()=>Settings.setTheme(o.id)}
+          style={{flex:1,minWidth:0,padding:'10px 12px',borderRadius:10,cursor:'pointer',background:dark?'#161618':'#FBF8F3',border:`1.5px solid ${on?cr:T.line}`,display:'flex',alignItems:'center',gap:10}}>
+          <div style={{width:22,height:22,borderRadius:11,background:dark?'#2A2A2E':'#fff',border:`1px solid ${dark?'rgba(255,255,255,0.2)':C.line}`,flexShrink:0}}/>
+          <div style={{minWidth:0}}>
+            <div style={{fontSize:14,fontWeight:700,color:dark?'#fff':C.ink,fontFamily:C.P}}>{o.label}</div>
+          </div>
+        </div>; })}
+    </div>
+  </Card>;
+}
+
+Object.assign(window,{TextSizeControl,ThemeControl});
 
 /* Optional sign-in (Account, pwa-account.js): an email, then the 6-digit code Supabase emails.
    Nothing in the app needs it; signed in, Pro and the weekly fair-use limits are checked by the
    server, and (next) their wines back up to it. Hidden when the build has no sign-in configured. */
-function AccountCard({showPro}){
+function AccountCard({showPro}){ const T=useTheme(), cr=T.lift(C.cr);
   const [,tick]=React.useState(0);
   // Opened from Home's backup offer: go straight to the email, and say that's the step left.
   const [intent]=React.useState(()=>Handoff.accountIntent.take());
@@ -260,9 +310,9 @@ function AccountCard({showPro}){
     window.addEventListener('vinterest:signin',h); return()=>window.removeEventListener('vinterest:signin',h); },[]);
   if(!Account.available()) return null;
 
-  const box={width:'100%',boxSizing:'border-box',padding:'12px 14px',borderRadius:12,border:`1.5px solid ${C.line}`,fontSize:16,fontFamily:C.P,color:C.ink,background:C.white,outline:'none'};
-  const primary={width:'100%',padding:'13px',borderRadius:12,background:C.cr,color:'#fff',fontSize:15,fontWeight:700,fontFamily:C.P,textAlign:'center',cursor:busy?'default':'pointer',opacity:busy?0.6:1};
-  const link={fontSize:14,fontWeight:600,color:C.cr,fontFamily:C.P,cursor:'pointer'};
+  const box={width:'100%',boxSizing:'border-box',padding:'12px 14px',borderRadius:12,border:`1.5px solid ${T.line}`,fontSize:16,fontFamily:C.P,color:T.ink,background:T.glass,outline:'none'};
+  const primary={width:'100%',padding:'13px',borderRadius:12,background:cr,color:'#fff',fontSize:15,fontWeight:700,fontFamily:C.P,textAlign:'center',cursor:busy?'default':'pointer',opacity:busy?0.6:1};
+  const link={fontSize:14,fontWeight:600,color:cr,fontFamily:C.P,cursor:'pointer'};
   async function send(){
     if(busy) return; setBusy(true); setErr('');
     const r=await Account.requestCode(email); setBusy(false);
@@ -286,8 +336,8 @@ function AccountCard({showPro}){
     return <Card style={{padding:14,display:'flex',flexDirection:'column',gap:8}}>
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:10}}>
         <div style={{minWidth:0}}>
-          <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>Your account</div>
-          <div style={{fontSize:14,color:C.mid,fontFamily:C.P,overflow:'hidden',textOverflow:'ellipsis'}}>{Account.email()}</div>
+          <div style={{fontSize:16,fontWeight:700,color:T.ink,fontFamily:C.P}}>Your account</div>
+          <div style={{fontSize:14,color:T.mid,fontFamily:C.P,overflow:'hidden',textOverflow:'ellipsis'}}>{Account.email()}</div>
         </div>
         <div style={{display:'flex',alignItems:'center',gap:6,flexShrink:0}}>
           <Pill active={pro} sm>{pro?'Pro':'Free'}</Pill>
@@ -296,13 +346,13 @@ function AccountCard({showPro}){
             background:'linear-gradient(135deg,#9B5E00,#C4870A)',color:'#fff',fontSize:13,fontWeight:700,fontFamily:C.P,cursor:'pointer',boxShadow:'0 1px 4px rgba(155,94,0,0.3)'}}>Upgrade</span>}
         </div>
       </div>
-      <div style={{fontSize:13,color:C.mid,fontFamily:C.P,lineHeight:1.5}}>
+      <div style={{fontSize:13,color:T.mid,fontFamily:C.P,lineHeight:1.5}}>
         {pro?'You have Pro on any phone you sign in on. ':''}Sign in on another phone and your wines, WineDNA and progress are there too.
       </div>
-      {me&&me.usage&&me.caps&&me.usage.label_scan>0&&<div style={{fontSize:13,color:C.mid,fontFamily:C.P}}>This week: {me.usage.label_scan} of {me.caps.label_scan} label scans.</div>}
+      {me&&me.usage&&me.caps&&me.usage.label_scan>0&&<div style={{fontSize:13,color:T.mid,fontFamily:C.P}}>This week: {me.usage.label_scan} of {me.caps.label_scan} label scans.</div>}
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginTop:2}}>
         <span onClick={()=>Account.signOut()} style={link}>Sign out</span>
-        {!confirmDelete&&<span onClick={()=>{setConfirmDelete(true);setErr('');}} style={{fontSize:14,color:C.mid,fontFamily:C.P,cursor:'pointer'}}>Delete account</span>}
+        {!confirmDelete&&<span onClick={()=>{setConfirmDelete(true);setErr('');}} style={{fontSize:14,color:T.mid,fontFamily:C.P,cursor:'pointer'}}>Delete account</span>}
       </div>
       {confirmDelete&&<DeleteAccountPanel busy={busy} err={err} onCancel={()=>{setConfirmDelete(false);setErr('');}} onDelete={deleteAccount}/>}
     </Card>;
@@ -311,27 +361,27 @@ function AccountCard({showPro}){
   return <div ref={cardRef} style={{scrollMarginTop:12}}><Card style={{padding:14,display:'flex',flexDirection:'column',gap:10}}>
     {intent==='backup'
       ?<div>
-        <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>One step left: sign in to back up</div>
-        <div style={{fontSize:13,color:C.ink2,fontFamily:C.P,lineHeight:1.5}}>Your wines aren't backed up yet. Enter your email, type in the code we send, and they're backed up straight away.</div>
+        <div style={{fontSize:16,fontWeight:700,color:T.ink,fontFamily:C.P}}>One step left: sign in to back up</div>
+        <div style={{fontSize:13,color:T.ink2,fontFamily:C.P,lineHeight:1.5}}>Your wines aren't backed up yet. Enter your email, type in the code we send, and they're backed up straight away.</div>
       </div>
       :intent==='listscan'
       ?<div>
-        <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>Sign in to scan wine lists</div>
-        <div style={{fontSize:13,color:C.ink2,fontFamily:C.P,lineHeight:1.5}}>Wine list scanning is part of Pro, which belongs to your account. Enter your email and type in the code we send.</div>
+        <div style={{fontSize:16,fontWeight:700,color:T.ink,fontFamily:C.P}}>Sign in to scan wine lists</div>
+        <div style={{fontSize:13,color:T.ink2,fontFamily:C.P,lineHeight:1.5}}>Wine list scanning is part of Pro, which belongs to your account. Enter your email and type in the code we send.</div>
       </div>
       :<div>
-        <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>Sign in (optional)</div>
-        <div style={{fontSize:13,color:C.mid,fontFamily:C.P,lineHeight:1.5}}>Everything works without an account. Signing in backs up your wines and progress, so a new phone picks up where this one left off.</div>
+        <div style={{fontSize:16,fontWeight:700,color:T.ink,fontFamily:C.P}}>Sign in (optional)</div>
+        <div style={{fontSize:13,color:T.mid,fontFamily:C.P,lineHeight:1.5}}>Everything works without an account. Signing in backs up your wines and progress, so a new phone picks up where this one left off.</div>
       </div>}
     {step==='idle'&&<div onClick={()=>{setStep('email');setErr('');}} style={primary}>Sign in with email</div>}
     {step==='email'&&<>
       <input type="email" inputMode="email" autoComplete="email" placeholder="you@example.com" aria-label="Email address" value={email}
         onChange={e=>setEmail(e.target.value)} onKeyDown={e=>{ if(e.key==='Enter') send(); }} style={box}/>
       <div onClick={send} style={primary}>{busy?'Sending…':'Email me a code'}</div>
-      <div style={{fontSize:13,color:C.mid,fontFamily:C.P}}>No password: we email a 6-digit code to type in here.</div>
+      <div style={{fontSize:13,color:T.mid,fontFamily:C.P}}>No password: we email a 6-digit code to type in here.</div>
     </>}
     {step==='code'&&<>
-      <div style={{fontSize:14,color:C.ink2,fontFamily:C.P}}>We sent a code to <b>{email.trim()}</b>. It can take a minute; check spam too.</div>
+      <div style={{fontSize:14,color:T.ink2,fontFamily:C.P}}>We sent a code to <b>{email.trim()}</b>. It can take a minute; check spam too.</div>
       <input inputMode="numeric" autoComplete="one-time-code" maxLength={6} placeholder="6-digit code" aria-label="Sign-in code" value={code}
         onChange={e=>setCode(e.target.value.replace(/\D/g,''))} onKeyDown={e=>{ if(e.key==='Enter') verify(); }} style={{...box,letterSpacing:4,fontSize:20,textAlign:'center'}}/>
       <div onClick={verify} style={primary}>{busy?'Checking…':'Sign in'}</div>
@@ -340,28 +390,28 @@ function AccountCard({showPro}){
         <span onClick={()=>{setStep('email');setErr('');}} style={link}>Different email</span>
       </div>
     </>}
-    {err&&<div role="alert" style={{fontSize:14,color:'#B04A3A',fontFamily:C.P}}>{err}</div>}
-    {step!=='idle'&&<span onClick={()=>{setStep('idle');setErr('');}} style={{fontSize:14,color:C.mid,fontFamily:C.P,cursor:'pointer',alignSelf:'center'}}>Not now</span>}
+    {err&&<div role="alert" style={{fontSize:14,color:T.tone.bad,fontFamily:C.P}}>{err}</div>}
+    {step!=='idle'&&<span onClick={()=>{setStep('idle');setErr('');}} style={{fontSize:14,color:T.mid,fontFamily:C.P,cursor:'pointer',alignSelf:'center'}}>Not now</span>}
   </Card></div>;
 }
 
 /* The confirmation before Account.deleteAccount: what goes (the account, its backup, and everything
    on this phone), that it can't be undone, and a backup file first for anyone who wants a copy. */
-function DeleteAccountPanel({busy,err,onCancel,onDelete}){
-  const red='#B04A3A';
-  return <div role="dialog" aria-label="Delete your account" style={{marginTop:6,padding:12,borderRadius:12,background:'#FBEFEC',border:`1px solid ${red}40`,display:'flex',flexDirection:'column',gap:10}}>
-    <div style={{fontSize:15,fontWeight:700,color:C.ink,fontFamily:C.P}}>Delete your account?</div>
-    <div style={{fontSize:13,color:C.ink2,fontFamily:C.P,lineHeight:1.5}}>
+function DeleteAccountPanel({busy,err,onCancel,onDelete}){ const T=useTheme(), cr=T.lift(C.cr);
+  const red=T.tone.bad;
+  return <div role="dialog" aria-label="Delete your account" style={{marginTop:6,padding:12,borderRadius:12,background:T.dark?_alpha(red,0.15):'#FBEFEC',border:`1px solid ${red}40`,display:'flex',flexDirection:'column',gap:10}}>
+    <div style={{fontSize:15,fontWeight:700,color:T.ink,fontFamily:C.P}}>Delete your account?</div>
+    <div style={{fontSize:13,color:T.ink2,fontFamily:C.P,lineHeight:1.5}}>
       This deletes your account and everything backed up to it, and clears Vinterest from this phone: your wines, ratings, WineDNA, XP and learning progress. It can't be undone.
     </div>
-    <div style={{fontSize:13,color:C.ink2,fontFamily:C.P,lineHeight:1.5}}>
-      Want a copy first? <span onClick={saveBackupFile} style={{fontWeight:700,color:C.cr,cursor:'pointer'}}>Save a backup file</span> to your phone. You can import it later, with or without an account.
+    <div style={{fontSize:13,color:T.ink2,fontFamily:C.P,lineHeight:1.5}}>
+      Want a copy first? <span onClick={saveBackupFile} style={{fontWeight:700,color:cr,cursor:'pointer'}}>Save a backup file</span> to your phone. You can import it later, with or without an account.
     </div>
     <div onClick={onDelete} role="button" style={{width:'100%',boxSizing:'border-box',padding:'13px',borderRadius:12,background:red,color:'#fff',fontSize:15,fontWeight:700,fontFamily:C.P,textAlign:'center',cursor:busy?'default':'pointer',opacity:busy?0.6:1}}>
       {busy?'Deleting…':'Delete my account'}
     </div>
     {err&&<div role="alert" style={{fontSize:14,color:red,fontFamily:C.P}}>{err}</div>}
-    {!busy&&<span onClick={onCancel} style={{fontSize:14,fontWeight:600,color:C.ink2,fontFamily:C.P,cursor:'pointer',alignSelf:'center'}}>Keep my account</span>}
+    {!busy&&<span onClick={onCancel} style={{fontSize:14,fontWeight:600,color:T.ink2,fontFamily:C.P,cursor:'pointer',alignSelf:'center'}}>Keep my account</span>}
   </div>;
 }
 
@@ -370,7 +420,7 @@ Object.assign(window,{AccountCard,DeleteAccountPanel});
 /* Install to the home screen (InstallApp, pwa-install.js). Offers Chrome's own install dialog when
    Chrome allows it, and otherwise says plainly why not, so a missing menu option isn't a mystery.
    Hidden once the app is opened from the home screen. */
-function InstallCard(){
+function InstallCard(){ const T=useTheme(), cr=T.lift(C.cr);
   const [,tick]=React.useState(0);
   const [note,setNote]=React.useState('');
   const [why,setWhy]=React.useState(false);
@@ -379,32 +429,32 @@ function InstallCard(){
   React.useEffect(()=>{ const h=()=>tick(t=>t+1); window.addEventListener('vinterest:install',h); return()=>window.removeEventListener('vinterest:install',h); },[]);
   const st=InstallApp.status();
   if(st==='running') return null;
-  const link={fontSize:14,fontWeight:600,color:C.cr,fontFamily:C.P,cursor:'pointer'};
-  const body={fontSize:13,color:C.mid,fontFamily:C.P,lineHeight:1.5};
+  const link={fontSize:14,fontWeight:600,color:cr,fontFamily:C.P,cursor:'pointer'};
+  const body={fontSize:13,color:T.mid,fontFamily:C.P,lineHeight:1.5};
   async function install(){
     const r=await InstallApp.prompt();
     setNote(r==='accepted'?'Installing. Vinterest will appear on your home screen in a moment.':r==='dismissed'?'No problem. You can install it from here any time.':'Chrome didn\'t show the install this time. Reload the page and try again.');
   }
   return <Card style={{padding:14,display:'flex',flexDirection:'column',gap:10}}>
     <div>
-      <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>Put Vinterest on your home screen</div>
+      <div style={{fontSize:16,fontWeight:700,color:T.ink,fontFamily:C.P}}>Put Vinterest on your home screen</div>
       <div style={body}>It opens full screen like any other app, straight to the camera when you need it.</div>
     </div>
-    {st==='available'&&<div onClick={install} style={{width:'100%',padding:'13px',borderRadius:12,background:C.cr,color:'#fff',fontSize:15,fontWeight:700,fontFamily:C.P,textAlign:'center',cursor:'pointer'}}>Install Vinterest</div>}
-    {st==='installed'&&<div style={{...body,color:C.ink2}}>It's already installed on this phone. Open Vinterest from your home screen or app list.</div>}
-    {st==='ios'&&<div style={{...body,color:C.ink2}}>In Safari, tap <b>Share</b> (the square with an arrow), then <b>Add to Home Screen</b>.</div>}
+    {st==='available'&&<div onClick={install} style={{width:'100%',padding:'13px',borderRadius:12,background:cr,color:'#fff',fontSize:15,fontWeight:700,fontFamily:C.P,textAlign:'center',cursor:'pointer'}}>Install Vinterest</div>}
+    {st==='installed'&&<div style={{...body,color:T.ink2}}>It's already installed on this phone. Open Vinterest from your home screen or app list.</div>}
+    {st==='ios'&&<div style={{...body,color:T.ink2}}>In Safari, tap <b>Share</b> (the square with an arrow), then <b>Add to Home Screen</b>.</div>}
     {st==='waiting'&&<>
-      <div style={{...body,color:C.ink2}}>Chrome hasn't offered to install Vinterest on this phone yet.</div>
+      <div style={{...body,color:T.ink2}}>Chrome hasn't offered to install Vinterest on this phone yet.</div>
       <span onClick={()=>setWhy(w=>!w)} style={link}>{why?'Hide details':'Why not?'}</span>
       {why&&<div style={{display:'flex',flexDirection:'column',gap:6}}>
         {InstallApp.why().map((w,i)=><div key={i} style={body}>• {w}</div>)}
         <div style={body}>You can also try Chrome's menu (⋮) → <b>Add to home screen</b>, if it's there.</div>
-        <div style={{...body,fontWeight:700,color:C.ink2,marginTop:4}}>What this phone sees</div>
+        <div style={{...body,fontWeight:700,color:T.ink2,marginTop:4}}>What this phone sees</div>
         {!checks&&<div style={body}>Checking…</div>}
-        {checks&&checks.map((c,i)=><div key={i} style={{...body,color:c.ok?C.mid:'#B04A3A'}}>{c.ok?'✓':'✗'} {c.text}</div>)}
+        {checks&&checks.map((c,i)=><div key={i} style={{...body,color:c.ok?T.mid:T.tone.bad}}>{c.ok?'✓':'✗'} {c.text}</div>)}
       </div>}
     </>}
-    {note&&<div role="status" style={{...body,color:C.ink2}}>{note}</div>}
+    {note&&<div role="status" style={{...body,color:T.ink2}}>{note}</div>}
   </Card>;
 }
 
@@ -412,28 +462,28 @@ Object.assign(window,{InstallCard});
 
 /* Backup (Sync, pwa-sync.js), its own section once signed in: on or not, when it last ran, what's
    waiting. "Back up now" runs a sync straight away. */
-function BackupCard(){
+function BackupCard(){ const T=useTheme(), cr=T.lift(C.cr);
   const [,tick]=React.useState(0);
   React.useEffect(()=>{ const h=()=>tick(t=>t+1); window.addEventListener('vinterest:sync',h); window.addEventListener('vinterest:account',h);
     const id=setInterval(h,30000);
     return()=>{ window.removeEventListener('vinterest:sync',h); window.removeEventListener('vinterest:account',h); clearInterval(id); }; },[]);
   const s=Sync.summary();
   if(!s) return null;
-  const col={on:C.green,working:C.amber,problem:'#B04A3A',off:'#B04A3A'}[s.tone];
+  const col={on:T.green,working:T.amber,problem:T.tone.bad,off:T.tone.bad}[s.tone];
   return <Card style={{padding:14,display:'flex',flexDirection:'column',gap:6}}>
     <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:10}}>
-      <div style={{fontSize:16,fontWeight:700,color:C.ink,fontFamily:C.P}}>Backup</div>
-      <span role="status" style={{display:'inline-flex',alignItems:'center',gap:6,padding:'3px 10px',borderRadius:20,background:s.tone==='on'?C.greenBg:C.offWhite,border:`1px solid ${col}40`}}>
+      <div style={{fontSize:16,fontWeight:700,color:T.ink,fontFamily:C.P}}>Backup</div>
+      <span role="status" style={{display:'inline-flex',alignItems:'center',gap:6,padding:'3px 10px',borderRadius:20,background:s.tone==='on'?T.greenBg:T.soft,border:`1px solid ${col}40`}}>
         <span style={{width:8,height:8,borderRadius:4,background:col,flexShrink:0}}/>
         <span style={{fontSize:13,fontWeight:700,color:col,fontFamily:C.P}}>{s.label}</span>
       </span>
     </div>
-    <div style={{fontSize:14,color:C.ink2,fontFamily:C.P}}>{s.last}</div>
-    {s.detail&&<div style={{fontSize:13,color:C.mid,fontFamily:C.P,lineHeight:1.5}}>{s.detail}</div>}
+    <div style={{fontSize:14,color:T.ink2,fontFamily:C.P}}>{s.last}</div>
+    {s.detail&&<div style={{fontSize:13,color:T.mid,fontFamily:C.P,lineHeight:1.5}}>{s.detail}</div>}
     {s.signIn
       // The account card just above opens at its email step (it listens for vinterest:signin).
-      ?<div role="button" onClick={()=>window.dispatchEvent(new Event('vinterest:signin'))} style={{fontSize:14,fontWeight:600,color:C.cr,fontFamily:C.P,cursor:'pointer',alignSelf:'flex-start',marginTop:2}}>Sign in to back up</div>
-      :<span onClick={()=>Sync.syncNow()} style={{fontSize:14,fontWeight:600,color:C.cr,fontFamily:C.P,cursor:'pointer',alignSelf:'flex-start',marginTop:2}}>Back up now</span>}
+      ?<div role="button" onClick={()=>window.dispatchEvent(new Event('vinterest:signin'))} style={{fontSize:14,fontWeight:600,color:cr,fontFamily:C.P,cursor:'pointer',alignSelf:'flex-start',marginTop:2}}>Sign in to back up</div>
+      :<span onClick={()=>Sync.syncNow()} style={{fontSize:14,fontWeight:600,color:cr,fontFamily:C.P,cursor:'pointer',alignSelf:'flex-start',marginTop:2}}>Back up now</span>}
   </Card>;
 }
 

@@ -47,11 +47,15 @@ const Entitlement = {
    UserPrefs (pwa-prefs.js); these are the rest. */
 const Settings = {
   ONBOARDED_KEY:'vinterest_onboarded', REGION_KEY:'vinterest_region', CURRENCY_KEY:'vinterest_currency',
-  SCRIPT_LENGTH_KEY:'vinterest_script_length', SCANCARD_STYLE_KEY:'vinterest_scancard_style',
+  SCRIPT_LENGTH_KEY:'vinterest_script_length', SCANCARD_STYLE_KEY:'vinterest_scancard_style', THEME_KEY:'vinterest_theme',
   onboarded(){ return !!Store.get(this.ONBOARDED_KEY); },
   setOnboarded(){ Store.set(this.ONBOARDED_KEY,'1'); },
   region(){ return Store.get(this.REGION_KEY); },
   currency(){ return Store.get(this.CURRENCY_KEY); },
+  /* Appearance: 'dark' (the story's stage, the default) or 'light'. Picked on Profile (ThemeControl);
+     every screen that has moved onto the stage reads it through DeckTheme (pwa-app.jsx). */
+  theme(){ return Store.get(this.THEME_KEY)==='light'?'light':'dark'; },
+  setTheme(t){ Store.set(this.THEME_KEY,t==='light'?'light':'dark'); try{ window.dispatchEvent(new Event('vinterest:theme')); }catch(e){} },
   /* How long sommelier scripts run: 'short' | 'long'. */
   scriptLength(){ return Store.get(this.SCRIPT_LENGTH_KEY)||'long'; },
   setScriptLength(len){ Store.set(this.SCRIPT_LENGTH_KEY,len); },

@@ -99,10 +99,11 @@ test('dist ships the PWA and worker files', async ({ request }) => {
   expect(html).toMatch(/<script src="app\.js\?v=[0-9a-f]{10}"><\/script>/);
 });
 
-test('the XP badge on Home opens the achievements overlay with no console errors', async ({ page }) => {
+test('the XP line on Home opens the achievements overlay with no console errors', async ({ page }) => {
   const errors = collectErrors(page);
   await page.goto(`${BASE}/?demo=1#home`);
-  await page.locator('#root').getByText('1805 XP', { exact: true }).click();
+  // The bell has the header slot; XP reads in Your knowledge, and its line opens the overlay.
+  await page.getByTestId('home-xp').click();
   await expect(page.locator('#root')).toContainText('Achievements');
   expect(errors).toEqual([]);
 });

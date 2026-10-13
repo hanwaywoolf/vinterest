@@ -148,7 +148,7 @@ jobs:
           PLAY_RELEASE_STATUS: ${{ vars.PLAY_RELEASE_STATUS }}
         run: |
           if [ -z "$PLAY_SERVICE_ACCOUNT_JSON" ]; then
-            echo "::notice title=Not uploaded::Built and signed. Download Vinterest-android-release from this run and upload it in Play Console, or set PLAY_SERVICE_ACCOUNT_JSON (docs/google-play.md)."
+            echo "::warning title=NOT uploaded to Google Play::PLAY_SERVICE_ACCOUNT_JSON isn't set, so nothing reached Play. Download Vinterest-android-release from this run and upload it in Play Console, or set the secret (docs/google-play.md, step 4) so every merge uploads by itself."
             exit 0
           fi
           node scripts/play-upload.mjs Vinterest.aab
