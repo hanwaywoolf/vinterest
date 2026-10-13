@@ -809,12 +809,13 @@ function DetailPrice({wine,nav,showPro}){ const T=useTheme(), cr=T.lift(C.cr);
               {/* Mid price hero */}
               <div style={{padding:'18px 16px',background:T.crSoft,display:'flex',justifyContent:'space-between',alignItems:'center',borderBottom:'1px solid '+_alpha(cr,0.4)}}>
                 <div>
-                  <div style={{fontSize:13,fontWeight:600,color:cr,fontFamily:C.P,marginBottom:2}}>Typical bottle price</div>
-                  <div style={{fontSize:11,color:cr+'99',fontFamily:C.P}}>{curr.label}</div>
+                  {/* Crimson on the crimson wash is unreadable on the dark stage: ink there, crimson on the light one. */}
+                  <div style={{fontSize:13,fontWeight:600,color:T.dark?T.ink:cr,fontFamily:C.P,marginBottom:2}}>Typical bottle price</div>
+                  <div style={{fontSize:11,color:T.dark?T.mid:cr+'99',fontFamily:C.P}}>{curr.label}</div>
                 </div>
                 <div style={{textAlign:'right'}}>
-                  <div style={{fontSize:26,fontWeight:800,color:cr,fontFamily:C.P,lineHeight:1}}>{fmtPrice(priceData.mid)}</div>
-                  <div style={{fontSize:11,fontWeight:700,color:cr+'99',fontFamily:C.P,marginTop:3,letterSpacing:'0.04em'}}>{curr.code}</div>
+                  <div style={{fontSize:26,fontWeight:800,color:T.dark?T.ink:cr,fontFamily:C.P,lineHeight:1}}>{fmtPrice(priceData.mid)}</div>
+                  <div style={{fontSize:11,fontWeight:700,color:T.dark?T.mid:cr+'99',fontFamily:C.P,marginTop:3,letterSpacing:'0.04em'}}>{curr.code}</div>
                 </div>
               </div>
               {/* Low / High row */}
