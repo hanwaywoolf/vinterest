@@ -877,15 +877,32 @@ function RatingDial({min,max=100,value,unset=false,onChange,col=C.cr,label='Rati
   const frac=(clamp(value)-min)/(max-min);
   const pt=(deg,rad=r)=>{ const a=deg*Math.PI/180; return [cx+rad*Math.sin(a),cy-rad*Math.cos(a)]; };
   const arc=(a,b,rad=r)=>{ const [x0,y0]=pt(a,rad),[x1,y1]=pt(b,rad); return `M${x0.toFixed(2)} ${y0.toFixed(2)} A${rad} ${rad} 0 ${b-a>180?1:0} 1 ${x1.toFixed(2)} ${y1.toFixed(2)}`; };
-  function at(x,y){
+  // Where a touch is on the drawing: its angle clockwise from the top (-180..180) and its distance
+  // from the centre, in the drawing's units.
+  function polar(x,y){
     const b=ref.current.getBoundingClientRect(), vx=(x-b.left)/(b.width||1)*S, vy=(y-b.top)/(b.height||1)*(S*0.9);
-    let deg=Math.atan2(vx-cx,-(vy-cy))*180/Math.PI;           // clockwise from the top, -180..180
-    if(deg>135) deg=deg>157.5?A0:135; if(deg<A0) deg=deg<-157.5?135:A0;  // the gap at the bottom goes to the nearer end
-    return clamp(Math.round(min+(deg-A0)/SWEEP*(max-min)));
+    return {deg:Math.atan2(vx-cx,-(vy-cy))*180/Math.PI,dist:Math.hypot(vx-cx,vy-cy)};
   }
-  function down(e){ if(e.button>0) return; e.stopPropagation(); drag.current=e.pointerId; try{ ref.current.setPointerCapture(e.pointerId); }catch(err){} onChange(at(e.clientX,e.clientY)); }
-  function move(e){ if(drag.current!==e.pointerId) return; e.stopPropagation(); onChange(at(e.clientX,e.clientY)); }
-  function up(e){ if(drag.current===e.pointerId) drag.current=null; }
+  const degToVal=deg=>clamp(min+(deg-A0)/SWEEP*(max-min));
+  // A tap lands the rating where the finger is; a drag then turns the dial by how far the finger
+  // has gone round since, never by where it is: the angle is unwrapped, so passing the gap at the
+  // bottom doesn't flip 100 to 50, and a finger near the centre (where a few pixels are a big angle)
+  // doesn't send it anywhere. A touch on the centre text starts a turn without landing first.
+  const DEAD=22;
+  function down(e){ if(e.button>0) return; e.stopPropagation(); try{ ref.current.setPointerCapture(e.pointerId); }catch(err){}
+    const p=polar(e.clientX,e.clientY);
+    let start=unset?min:clamp(value);
+    if(p.dist>=DEAD){ let d=p.deg; if(d>135) d=d>157.5?A0:135; if(d<A0) d=d<-157.5?135:A0; start=degToVal(d); onChange(Math.round(start)); }
+    drag.current={id:e.pointerId,last:p.deg,val:start};
+  }
+  function move(e){ const d=drag.current; if(!d||d.id!==e.pointerId) return; e.stopPropagation();
+    const p=polar(e.clientX,e.clientY);
+    if(p.dist<DEAD){ d.last=p.deg; return; }
+    let delta=p.deg-d.last; if(delta>180) delta-=360; if(delta<-180) delta+=360;
+    d.last=p.deg; d.val=clamp(d.val+delta/SWEEP*(max-min));
+    const v=Math.round(d.val); if(v!==(unset?null:value)) onChange(v);
+  }
+  function up(e){ if(drag.current&&drag.current.id===e.pointerId) drag.current=null; }
   function key(e){ const d={ArrowRight:1,ArrowUp:1,ArrowLeft:-1,ArrowDown:-1}[e.key]; if(d!=null){ e.preventDefault(); onChange(clamp((unset?min:value)+d)); } }
   const deg=A0+frac*SWEEP, [kx,ky]=pt(deg), lab=unset?'':ParkerScale.label(value);
   // The scale's colours along the arc: red below 80, amber to 89, green from 90 (ParkerScale.tone),
