@@ -250,7 +250,9 @@ function ScanCardsScreen({nav,back,showPro}){
           onAlt={()=>applyEdit({name:wine.alternative,producer:''})}/>
       : view==='reveal'
         ? <ScanReveal wine={wine} match={match} gen={gen} existingRating={existingRating} nav={nav} showPro={showPro} curr={curr}
-            onDone={v=>{ if(v==='saved') setIntent('checking'); setView(v); }}/>
+            onRated={()=>{ setIntent('tasted'); setRatingsVersion(v=>v+1); }}
+            onSaveForLater={()=>setIntent('checking')}
+            onDone={v=>{ if(v==='saved') setIntent('checking'); if(v==='detail'){ setView('result'); nav('detail'); return; } setView(v); }}/>
       : view==='deck'
         ? <CardDeck key={deckStyle} deckStyle={deckStyle} wine={wine} gen={gen} loading={loading} match={match} showPro={showPro}
             curr={curr} scanData={scanData} existingRating={existingRating} nav={nav} startIdx={scanData.deckIdx||0} onIdx={noteDeckIdx}
@@ -917,7 +919,7 @@ function RatingDial({min,max=100,value,unset=false,onChange,col=C.cr,label='Rati
   </div>;
 }
 
-function RatingPanel({wine,existingRating,nav,showPro,curr,onRated,onSaveForLater,onStage,onFinish}){ const T=useTheme();
+function RatingPanel({wine,existingRating,nav,showPro,curr,onRated,onSaveForLater,onStage,onFinish,after,skipLabel}){ const T=useTheme();
   const [score,setScore]=React.useState(existingRating||0);
   // The first bottle, revisited after scoring it: open on "Your score" (with Continue), not the picker.
   const [saved,setSaved]=React.useState(()=>!!(onFinish&&existingRating>0));
@@ -957,10 +959,13 @@ function RatingPanel({wine,existingRating,nav,showPro,curr,onRated,onSaveForLate
       </div>
     </div>
     <TastingExtras wine={wine} curr={curr}/>
+    {/* The story's end sheet supplies its own ways out under the extras (after). */}
+    {after?after():null}
+    {!after&&<>
     {/* Set apart from the optional details above so it doesn't read as one of them. */}
     <div style={{marginTop:10,paddingTop:16,borderTop:`2px solid ${T.line}`}}>
       {onFinish?<Btn primary full onClick={onFinish}>Continue</Btn>:<Btn primary full onClick={()=>setNext(true)}>Finished: what's next?</Btn>}
-    </div>
+    </div></>}
   </div>;
   return <div style={{display:'flex',flexDirection:'column',gap:14}}>
     <div style={{fontSize:20,fontWeight:800,color:T.ink,fontFamily:C.P,lineHeight:1.2,textAlign:'center'}}>How was it?</div>
@@ -974,7 +979,7 @@ function RatingPanel({wine,existingRating,nav,showPro,curr,onRated,onSaveForLate
     </div>
     <div style={{fontSize:12,color:T.mid,fontFamily:C.P,textAlign:'center',lineHeight:1.5,opacity:0.8}}>100-point scale: 96+ Extraordinary · 90–95 Outstanding · 80–89 Very good · 70–79 Average · under 70 Below average</div>
     {score>0&&<Btn primary full onClick={commit}>Save rating</Btn>}
-    {onSaveForLater&&<div onClick={onSaveForLater} style={{textAlign:'center',fontSize:15,fontWeight:600,color:T.mid,fontFamily:C.P,cursor:'pointer'}}>Not tasted it yet? Save for later</div>}
+    {onSaveForLater&&<div role="button" onClick={onSaveForLater} style={{textAlign:'center',fontSize:15,fontWeight:600,color:T.mid,fontFamily:C.P,cursor:'pointer'}}>{skipLabel||'Not tasted it yet? Save for later'}</div>}
   </div>;
 }
 
