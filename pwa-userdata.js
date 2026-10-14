@@ -84,6 +84,10 @@ const Device = {
   MASTERY_VIEW_KEY:'vinterest_mastery_view_v1',
   masteryView(){ const v=Store.getJSON(this.MASTERY_VIEW_KEY,{}); return v&&typeof v==='object'?v:{}; },
   setMasteryView(patch){ Store.setJSON(this.MASTERY_VIEW_KEY,{...this.masteryView(),...patch}); },
+  /* The Wine Skills group last picked on Learn (tasting, ordering, buying, pairing, hosting), this phone only. */
+  LEARN_SKILLS_KEY:'vinterest_learn_skills_v1',
+  learnSkills(){ return Store.get(this.LEARN_SKILLS_KEY)||null; },
+  setLearnSkills(id){ Store.set(this.LEARN_SKILLS_KEY,id); },
 };
 
 /* Wines hearted on the detail screen, by name and vintage. */

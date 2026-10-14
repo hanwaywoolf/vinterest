@@ -178,6 +178,10 @@ function AccountProfileScreen({nav,back,showPro}){ const T=useTheme(), cr=T.lift
           <DetailSwitch/>
         </AccSection>
 
+        {/* Starting over on XP and quiz progress lives here, off the Learn tab, behind a confirm. */}
+        <div onClick={()=>{ if(window.confirm('Reset your XP and quiz progress? Your wines and WineDNA stay as they are.')){ XPSystem.reset(); window.dispatchEvent(new Event('vinterest:xp')); } }} style={{textAlign:'center',padding:'8px',cursor:'pointer'}}>
+          <span style={{fontSize:13,color:T.mid,fontFamily:C.P,textDecoration:'underline'}}>Reset XP &amp; progress</span>
+        </div>
         <div style={{height:8}}/>
       </div>
     </div>
