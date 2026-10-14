@@ -158,7 +158,7 @@ function ScanReveal({wine,match,gen,existingRating,firstScan,nav,showPro,curr,on
       <span style={{fontSize:13,fontWeight:700,color:'rgba(255,255,255,0.6)',fontFamily:C.P,letterSpacing:'0.1em',textTransform:'uppercase'}}>{firstScan?'Your first bottle':'Your scan'}</span>
       {key!=='end'&&<span role="button" data-rv-stop onClick={()=>go(scenes.length-1)} style={{fontSize:14,fontWeight:700,color:'rgba(255,255,255,0.75)',fontFamily:C.P,cursor:'pointer',padding:'6px 0 6px 12px'}}>Skip</span>}
     </div>
-    <div style={{position:'relative',flex:1,minHeight:0}}>
+    <div style={{position:'relative',flex:key==='end'?'0 0 0px':1,minHeight:0,overflow:key==='end'?'hidden':undefined}}>
       {leaving&&<div aria-hidden="true" className={leaving.dir==='fwd'?'rv-leave-l':'rv-leave-r'} style={{position:'absolute',inset:0,display:'flex',flexDirection:'column',justifyContent:'center',padding:'16px 26px 44px'}}>
         <_RvScene k={leaving.key} d={d} col={col} existingRating={existingRating} still/>
       </div>}
@@ -411,7 +411,13 @@ function _RvEnd({wine,d,firstScan,existingRating,nav,showPro,curr,onDone,onRated
       <Icon n="chevron" sz={14} col="rgba(255,255,255,0.5)"/>
     </div>)}
   </div>;
-  return <DeckTheme.Provider value={_DECK_DARK}><div data-rv-stop data-testid="reveal-end" className="rv-sheet" style={{position:'relative',background:'#161618',borderRadius:'22px 22px 0 0',borderTop:'1px solid rgba(255,255,255,0.14)',padding:'18px 18px calc(18px + env(safe-area-inset-bottom))',display:'flex',flexDirection:'column',gap:12,maxHeight:'82%',overflowY:'auto'}}>
+  return <DeckTheme.Provider value={_DECK_DARK}><div data-rv-stop data-testid="reveal-end" className="rv-sheet" style={{position:'relative',flex:1,minHeight:0,marginTop:10,background:'#161618',borderRadius:'22px 22px 0 0',borderTop:'1px solid rgba(255,255,255,0.14)',padding:'18px 18px calc(18px + env(safe-area-inset-bottom))',display:'flex',flexDirection:'column',gap:12,overflowY:'auto'}}>
+    {/* The sheet takes the stage once the story is told: the bottle named at the top, the rating or the ways out under it, never pushed to the foot. */}
+    {!firstScan&&<div style={{display:'flex',alignItems:'center',gap:10,paddingBottom:4}}>
+      <div style={{width:8,height:8,borderRadius:4,background:lift,boxShadow:`0 0 10px ${lift}`,flexShrink:0}}/>
+      <div style={{flex:1,minWidth:0,fontSize:15,fontWeight:700,color:'rgba(255,255,255,0.85)',fontFamily:C.P,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{WineDNA.nameYear?WineDNA.nameYear(wine):wine.name}</div>
+    </div>}
+    <div style={{margin:'auto 0',display:'flex',flexDirection:'column',gap:12,paddingBottom:12}}>
     {firstScan
       ?<div style={{display:'flex',flexDirection:'column',gap:12}}>
         <div style={{fontSize:13,fontWeight:700,color:lift,fontFamily:C.P,letterSpacing:'0.08em',textTransform:'uppercase'}}>Your WineDNA starts here</div>
@@ -432,6 +438,7 @@ function _RvEnd({wine,d,firstScan,existingRating,nav,showPro,curr,onDone,onRated
         </div>
         {ways}
       </div>}
+    </div>
   </div></DeckTheme.Provider>;
 }
 
