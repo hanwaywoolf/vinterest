@@ -320,7 +320,7 @@ const _DEMO_SCREENS = {
 function _Layer({ l, active }) {  // remounted (key) to play its screen again
   React.useMemo(() => { if (l.setup) l.setup(); }, []);
   const S = l.Screen;
-  return <div data-layer={l.id} style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', background: C.bg,
+  return <div data-layer={l.id} style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', background: _DECK_DARK.bg,
     opacity: active ? 1 : 0, visibility: active ? 'visible' : 'hidden', transition: `opacity .4s ease, visibility 0s linear ${active ? 0 : 0.4}s` }}>
     <S nav={_DEMO_NOOP} back={_DEMO_NOOP} showPro={_DEMO_NOOP} isTablet={false} />
   </div>;
@@ -334,14 +334,15 @@ function _DemoFrame({ kind, ctl }) {
   ctl.setLayer = (id) => { ctl.layer = id; setLayer(id); };
   ctl.restart = (id) => setBumps((b) => ({ ...b, [id]: (b[id] || 0) + 1 }));
   const cur = d.layers && d.layers.find((l) => l.id === layer);
-  return <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', background: C.bg, fontFamily: C.P, position: 'relative' }}>
+  // The app's dark stage, its default (pwa-app.jsx wraps the screens in the same provider); the website shows the app as it opens.
+  return <DeckTheme.Provider value={_DECK_DARK}><div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', background: _DECK_DARK.bg, fontFamily: C.P, position: 'relative' }}>
     {/* Where the app's full-screen overlays (the Blind Call result) are drawn, so they cover the phone, not the page. */}
     <div data-portal style={{ position: 'absolute', inset: 0, transform: 'translateZ(0)', pointerEvents: 'none', zIndex: 60 }} />
     {d.layers
       ? <div style={{ flex: 1, minHeight: 0, position: 'relative' }}>{d.layers.map((l) => <_Layer key={l.id + ':' + (bumps[l.id] || 0)} l={l} active={layer === l.id} />)}</div>
       : <Screen nav={_DEMO_NOOP} back={_DEMO_NOOP} showPro={_DEMO_NOOP} isTablet={false} />}
-    <BottomNav active={(cur && cur.nav) || d.nav} nav={_DEMO_NOOP} showPro={_DEMO_NOOP} />
-  </div>;
+    <BottomNav active={(cur && cur.nav) || d.nav} nav={_DEMO_NOOP} showPro={_DEMO_NOOP} dark />
+  </div></DeckTheme.Provider>;
 }
 
 /* Ask Vinny's box as the app draws it: the text follows the cursor, so a long question shows its
@@ -379,7 +380,7 @@ function _VinnyDemo({ ctl, bare }) {
   const a = !sent ? full
     : thinking ? <span style={{ position: 'relative', display: 'block' }}>{full}<span style={{ position: 'absolute', left: 0, top: 0, fontSize: 15, fontStyle: 'italic', color: 'rgba(255,255,255,0.7)' }}>Thinking…</span></span>
     : <>{v.a.slice(0, nA)}<span style={{ opacity: 0 }}>{v.a.slice(nA)}</span></>;
-  return <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', background: C.bg, fontFamily: C.P }}>
+  return <DeckTheme.Provider value={_DECK_DARK}><div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', background: _DECK_DARK.bg, fontFamily: C.P }}>
     <div style={{ flex: 1, minHeight: 0, position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
       <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', opacity: 0.32, filter: 'blur(1px)' }}>
         <HomeScreen nav={_DEMO_NOOP} back={_DEMO_NOOP} showPro={_DEMO_NOOP} isTablet={false} />
@@ -391,8 +392,8 @@ function _VinnyDemo({ ctl, bare }) {
         </div>
       </div>
     </div>
-    {!bare && <BottomNav active="home" nav={_DEMO_NOOP} showPro={_DEMO_NOOP} />}
-  </div>;
+    {!bare && <BottomNav active="home" nav={_DEMO_NOOP} showPro={_DEMO_NOOP} dark />}
+  </div></DeckTheme.Provider>;
 }
 /* Vinny as one layer of the front page's carousel (its bottom bar is the frame's). */
 const _heroVinny = { set: null, p: 0 };
