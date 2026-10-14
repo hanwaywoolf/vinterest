@@ -5,11 +5,11 @@ function _normType(t){return(t||'').toLowerCase().replace('é','e');}
 
 /* ── QUIZ HUB / LEARN TAB ── */
 /* Dashed "N completed — show" row that expands a completed section (Wine Basics, regions). */
-function CompletedToggle({count,expanded,onToggle}){
+function CompletedToggle({count,expanded,onToggle}){ const T=useTheme();
   return(
-    <div onClick={onToggle} style={{background:C.white,borderRadius:14,padding:'10px 14px',display:'flex',alignItems:'center',gap:8,cursor:'pointer',border:`1px dashed ${C.line}`}}>
-      <Icon n="chevron" sz={12} col={C.mid} style={expanded?{transform:'rotate(-90deg)'}:undefined}/>
-      <span style={{fontSize:14,fontWeight:600,color:C.mid,fontFamily:C.P}}>{expanded?'Show less':`${count} completed — show`}</span>
+    <div onClick={onToggle} style={{background:T.glass,borderRadius:14,padding:'10px 14px',display:'flex',alignItems:'center',gap:8,cursor:'pointer',border:`1px dashed ${T.line}`}}>
+      <Icon n="chevron" sz={12} col={T.mid} style={expanded?{transform:'rotate(-90deg)'}:undefined}/>
+      <span style={{fontSize:14,fontWeight:600,color:T.mid,fontFamily:C.P}}>{expanded?'Show less':`${count} completed — show`}</span>
     </div>
   );
 }
@@ -233,13 +233,15 @@ function QuizHubScreen({nav,back,showPro}){ const T=useTheme(), cr=T.lift(C.cr);
           </div>
         </div>
         <div style={{marginBottom:12}}>
-          <div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline',marginBottom:4,gap:8}}>
-            <span style={{fontSize:15,fontWeight:700,color:T.ink,fontFamily:C.P,display:'inline-flex',alignItems:'center',gap:5}}><Icon n={XPSystem.iconFor(level)} sz={14} col={T.lift(level.color)}/>{level.name} <span style={{fontWeight:500,color:T.mid}}>· {xpData.total} XP</span></span>
-            {nextLvl&&<span style={{fontSize:13,color:T.mid,fontFamily:C.P}}>{nextLvl.min - xpData.total} to {nextLvl.name}</span>}
+          <div style={{display:'flex',alignItems:'center',gap:6,marginBottom:5,minWidth:0}}>
+            <Icon n={XPSystem.iconFor(level)} sz={15} col={T.lift(level.color)} style={{flexShrink:0}}/>
+            <span style={{fontSize:15,fontWeight:700,color:T.ink,fontFamily:C.P,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{level.name}</span>
+            <span style={{fontSize:14,fontWeight:500,color:T.mid,fontFamily:C.P,whiteSpace:'nowrap'}}>· {xpData.total} XP</span>
           </div>
           <div style={{height:7,borderRadius:4,background:T.soft,overflow:'hidden'}}>
             <div style={{height:'100%',borderRadius:4,background:T.lift(level.color),width:`${Math.round(prog*100)}%`,transition:'width .6s ease'}}/>
           </div>
+          {nextLvl&&<div style={{fontSize:12,color:T.mid,fontFamily:C.P,marginTop:4,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{nextLvl.min - xpData.total} XP to {nextLvl.name}</div>}
         </div>
       </div>
 
@@ -279,7 +281,7 @@ function QuizHubScreen({nav,back,showPro}){ const T=useTheme(), cr=T.lift(C.cr);
                 {why&&<div style={{fontSize:14,color:T.ink2,fontFamily:C.P,marginTop:6,lineHeight:1.4}}>{why}</div>}
                 <div style={{display:'flex',justifyContent:'flex-end',marginTop:6}}><span style={{fontSize:15,fontWeight:700,color:cr,fontFamily:C.P}}>Read →</span></div>
               </div>}
-              {alsoRefresh&&row('refresh','bolt',T.amber,<>Time for a refresher: {alsoRefresh.region&&<Flag region={alsoRefresh.region} size={14} style={{marginRight:5}}/>}{alsoRefresh.label}</>,`${alsoRefresh.fading} of ${alsoRefresh.total} answers fading`,'Refresh →',()=>_openLearn(alsoRefresh.learn,nav,showPro),{'data-testid':'refreshers'})}
+              {alsoRefresh&&row('refresh','bolt',T.amber,<>{alsoRefresh.region&&<Flag region={alsoRefresh.region} size={14} style={{marginRight:5}}/>}{alsoRefresh.label}</>,`Time for a refresher · ${alsoRefresh.fading} of ${alsoRefresh.total} answers fading`,'Refresh →',()=>_openLearn(alsoRefresh.learn,nav,showPro),{'data-testid':'refreshers'})}
               {alsoRegion&&row('region','map',cr,<><Flag region={alsoRegion} size={14} style={{marginRight:5}}/>{alsoRegion} quiz</>,(()=>{ const p=RegionQuizBank.get(alsoRegion)&&RegionQuizBank.progress(alsoRegion); return p&&p.correct>0?`${p.correct} of ${p.total} answered`:'5 questions a round'; })(),regionLoading===alsoRegion?'…':'Quiz →',()=>handleRegionTap(alsoRegion))}
             </div>
           </div>;
@@ -536,14 +538,16 @@ function QuizHubScreen({nav,back,showPro}){ const T=useTheme(), cr=T.lift(C.cr);
         </div>}
 
         <div style={zoneLabel}>Courses</div>
-        <div style={{background:T.glass,borderRadius:16,border:`1px solid ${T.line}`,padding:'14px 16px',marginTop:-6,position:'relative'}}>
-          <span style={{position:'absolute',top:12,right:12,fontSize:11,fontWeight:800,color:T.amber,fontFamily:C.P,letterSpacing:'0.06em',textTransform:'uppercase',padding:'3px 8px',borderRadius:999,background:_alpha(T.amber,0.15)}}>Coming soon</span>
+        <div style={{background:T.glass,borderRadius:16,border:`1px solid ${T.line}`,padding:'14px 16px',marginTop:-6}}>
           {[{icon:'globe',title:'Country courses',sub:'A whole country in one course: its regions, grapes, local wines and labels.'},
             {icon:'map',title:'Travel prep',sub:'Tell us where you\'re going and we\'ll build a course and wine picks for your trip.'}].map((c,i)=>(
             <div key={c.title} style={{display:'flex',alignItems:'center',gap:12,paddingTop:i?12:0,marginTop:i?12:0,borderTop:i?`1px solid ${T.line}`:'none'}}>
               <div style={{width:38,height:38,borderRadius:11,background:T.soft,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><Icon n={c.icon} sz={18} col={T.mid}/></div>
-              <div style={{flex:1,paddingRight:i?0:96}}>
-                <div style={{fontSize:16,fontWeight:700,color:T.ink,fontFamily:C.P}}>{c.title}</div>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{display:'flex',alignItems:'center',gap:8,flexWrap:'wrap'}}>
+                  <span style={{fontSize:16,fontWeight:700,color:T.ink,fontFamily:C.P}}>{c.title}</span>
+                  <span style={{fontSize:11,fontWeight:800,color:T.amber,fontFamily:C.P,letterSpacing:'0.06em',textTransform:'uppercase',padding:'2px 8px',borderRadius:999,background:_alpha(T.amber,0.15),whiteSpace:'nowrap'}}>Coming soon</span>
+                </div>
                 <div style={{fontSize:14,color:T.mid,fontFamily:C.P,lineHeight:1.4}}>{c.sub}</div>
               </div>
             </div>
