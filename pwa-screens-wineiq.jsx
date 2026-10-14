@@ -207,14 +207,19 @@ function DnaTasteCard({t,tLabel,notes=true}){ const T=useTheme();
 function DnaRules({t,nav,onExplore,bare}){ const T=useTheme(), col=t.col;
   const rules=WineDNA.rules(t,t.explore);
   if(!rules.length) return null;
-  const mark={reach:{bg:_alpha(T.green,0.18),col:T.green,glyph:'✓'},skip:{bg:_alpha(T.tone.bad,0.18),col:T.tone.bad,glyph:'–'},try:{bg:_alpha(col,0.18),col,glyph:'→'},more:{bg:T.soft,col:T.mid,glyph:'…'}};
+  // The marks are drawn, not typed: a text arrow sits off-centre in Poppins.
+  const line={fill:'none',strokeWidth:2.2,strokeLinecap:'round',strokeLinejoin:'round'};
+  const mark={reach:{bg:_alpha(T.green,0.18),col:T.green,glyph:<path d="M4.5 9.5l3 3 6-6" {...line} stroke={T.green}/>},
+    skip:{bg:_alpha(T.tone.bad,0.18),col:T.tone.bad,glyph:<path d="M5 9h8" {...line} stroke={T.tone.bad}/>},
+    try:{bg:_alpha(col,0.18),col,glyph:<path d="M4.5 9h9M10 5.5l3.5 3.5-3.5 3.5" {...line} stroke={col}/>},
+    more:{bg:T.soft,col:T.mid,glyph:<><circle cx="5" cy="9" r="1.2" fill={T.mid}/><circle cx="9" cy="9" r="1.2" fill={T.mid}/><circle cx="13" cy="9" r="1.2" fill={T.mid}/></>}};
   const go=r=>{ if(!r.link) return; if(r.link.region) return openRegionPage(r.link.region,nav); if(r.link.explore) return onExplore&&onExplore(); };
   return <div data-testid="dna-rules" style={{background:T.dark?'rgba(255,255,255,0.05)':'#FBF8F3',border:`1px solid ${T.line}`,borderRadius:16,padding:'12px 14px',display:'flex',flexDirection:'column',gap:10}}>
     {!bare&&<div style={{fontSize:12,fontWeight:700,letterSpacing:'0.1em',color:T.mid,fontFamily:C.P,textTransform:'uppercase'}}>Next time you're buying</div>}
     {rules.map((r,i)=>{ const m=mark[r.kind]||mark.more, tap=!!r.link;
       return <div key={i} role={tap?'button':undefined} tabIndex={tap?0:undefined} data-rule={r.kind} onClick={tap?()=>go(r):undefined} onKeyDown={tap?(e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); go(r); } }):undefined}
         style={{display:'flex',alignItems:'flex-start',gap:10,cursor:tap?'pointer':'default'}}>
-        <span aria-hidden="true" style={{width:26,height:26,borderRadius:13,background:m.bg,color:m.col,fontSize:'14px',fontWeight:800,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,fontFamily:C.P,marginTop:1}}>{m.glyph}</span>
+        <span aria-hidden="true" style={{width:26,height:26,borderRadius:13,background:m.bg,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,marginTop:1}}><svg width="18" height="18" viewBox="0 0 18 18">{m.glyph}</svg></span>
         <div style={{flex:1,minWidth:0}}>
           <div style={{fontSize:16,fontWeight:800,color:T.ink,fontFamily:C.P,lineHeight:1.25}}>{r.lead}</div>
           <div style={{fontSize:13,color:T.mid,fontFamily:C.P,lineHeight:1.4,marginTop:1}}>{r.why}</div>
