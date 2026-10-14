@@ -1397,6 +1397,7 @@ function QuizScreen({nav,back}){ const T=useTheme(), cr=T.lift(C.cr);
   const [selected,setSelected]=React.useState(null);
   const [phase,setPhase]=React.useState(allQs.length?'question':'empty');
   const [streak,setStreak]=React.useState(0);
+  const [bestStreak,setBestStreak]=React.useState(0); // the round's best run, said on the result
   const [xpGained,setXpGained]=React.useState(0);
   const [milestones,setMilestones]=React.useState([]);
   const [refreshed,setRefreshed]=React.useState(0); // fading answers brought back this round
@@ -1430,7 +1431,7 @@ function QuizScreen({nav,back}){ const T=useTheme(), cr=T.lift(C.cr);
     if(_rm) timers.current.push(setTimeout(()=>setPhase('feedback'),300));
     timers.current.push(setTimeout(()=>setPhase(p=>p==='reveal'||p==='leaving'?'feedback':p),QUIZ_SAFETY_MS));
     const correct=i===q.a;
-    setStreak(s=>correct?s+1:0);
+    setStreak(s=>{ const n=correct?s+1:0; setBestStreak(b=>Math.max(b,n)); return n; });
 
     let gained=0;
     if(q.conceptId){
@@ -1485,7 +1486,7 @@ function QuizScreen({nav,back}){ const T=useTheme(), cr=T.lift(C.cr);
     const set=quizSetFor(cfg?.mode||'concept',cfg);
     Handoff.quiz.set(cfg);
     setConfig(cfg); setAllQs(qs); setStartedComplete(!!set&&QuizMastery.isComplete(set.id,set.pool()));
-    setQIdx(0); setSelected(null); setPhase(qs.length?'question':'empty'); setStreak(0); setXpGained(0); setResults([]); setMilestones([]); setRefreshed(0); startLevel.current=XPSystem.getLevel(XPSystem.get().total).name;
+    setQIdx(0); setSelected(null); setPhase(qs.length?'question':'empty'); setStreak(0); setBestStreak(0); setXpGained(0); setResults([]); setMilestones([]); setRefreshed(0); startLevel.current=XPSystem.getLevel(XPSystem.get().total).name;
     if(scrollRef.current) scrollRef.current.scrollTop=0;
   }
   // Region and grape banks may still need generating before the next set can start.
@@ -1541,20 +1542,24 @@ function QuizScreen({nav,back}){ const T=useTheme(), cr=T.lift(C.cr);
     );
     return(
       <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden',background:T.bg}}>
-        <div style={{background:cr,padding:'26px 24px 20px',display:'flex',flexDirection:'column',alignItems:'center',gap:5,flexShrink:0}}>
-          <Icon n={justCompleted||pct===100?'trophy':pct>=80?'star':pct>=60?'check':'book'} sz={32} col="#fff"/>
-          <div style={{fontSize:22,fontWeight:800,color:'#fff',fontFamily:C.P,textAlign:'center'}}>{msg}</div>
-          {!justCompleted&&<div style={{fontSize:15,color:'rgba(255,255,255,0.8)',fontFamily:C.P}}>{mode==='region'&&<Flag region={config.region} size={15} style={{marginRight:6}}/>}{title}</div>}
-          <div style={{display:'flex',gap:16,marginTop:6}}>
+        {/* The round's pay-off, told as a reveal on the screen's own stage: a ring that fills a segment
+            per answer in the order given, the count inside rising with it, then the XP and the best run;
+            a completed set gets a fall of confetti drawn in code. */}
+        <div style={{background:`radial-gradient(ellipse at 50% -20%, ${_alpha(cr,T.dark?0.5:0.16)}, transparent 70%) ${T.dark?T.bg:C.white}`,padding:'18px 24px 16px',display:'flex',flexDirection:'column',alignItems:'center',gap:4,flexShrink:0,borderBottom:`1px solid ${T.line}`,position:'relative',overflow:'hidden'}}>
+          {justCompleted&&<_QuizConfetti col={cr} T={T}/>}
+          <_QuizRing results={results} n={allQs.length} T={T} cr={cr}/>
+          <div className="qz-rise" style={{fontSize:22,fontWeight:800,color:T.ink,fontFamily:C.P,textAlign:'center',animationDelay:_qzRingMs(allQs.length)}}>{msg}</div>
+          {!justCompleted&&<div className="qz-rise" style={{fontSize:15,color:T.mid,fontFamily:C.P,animationDelay:_qzRingMs(allQs.length)}}>{mode==='region'&&<Flag region={config.region} size={15} style={{marginRight:6}}/>}{title}{setProgress?` · ${setProgress.correct} of ${setProgress.total} answered`:''}</div>}
+          <div className="qz-rise" style={{display:'flex',gap:18,marginTop:8,alignItems:'center',animationDelay:_qzRingMs(allQs.length,120)}}>
             <div style={{textAlign:'center'}}>
-              <div style={{fontSize:28,fontWeight:800,color:'#fff',fontFamily:C.P}}>{finalScore}/{allQs.length}</div>
-              <div style={{fontSize:12,color:'rgba(255,255,255,0.7)',fontFamily:C.P}}>Correct</div>
+              <div style={{fontSize:24,fontWeight:800,color:cr,fontFamily:C.P,lineHeight:1.1}}>+<_QuizCount to={xpGained} start={_qzRingMs(allQs.length,120)}/></div>
+              <div style={{fontSize:12,color:T.mid,fontFamily:C.P}}>XP earned</div>
             </div>
-            <div style={{width:1,background:'rgba(255,255,255,0.25)'}}/>
+            {bestStreak>=2&&<><div style={{width:1,height:30,background:T.line}}/>
             <div style={{textAlign:'center'}}>
-              <div style={{fontSize:28,fontWeight:800,color:'#fff',fontFamily:C.P}}>+{xpGained}</div>
-              <div style={{fontSize:12,color:'rgba(255,255,255,0.7)',fontFamily:C.P}}>XP earned</div>
-            </div>
+              <div style={{fontSize:24,fontWeight:800,color:cr,fontFamily:C.P,lineHeight:1.1,display:'flex',alignItems:'center',gap:3,justifyContent:'center'}}><Icon n="flame" sz={20} col={cr}/>{bestStreak}</div>
+              <div style={{fontSize:12,color:T.mid,fontFamily:C.P}}>Best run</div>
+            </div></>}
           </div>
         </div>
         <div key="results" ref={scrollRef} style={{flex:1,overflowY:'auto'}}>
@@ -1578,7 +1583,7 @@ function QuizScreen({nav,back}){ const T=useTheme(), cr=T.lift(C.cr);
             <div style={{fontSize:15,fontWeight:600,color:T.mid,letterSpacing:'0.07em',textTransform:'uppercase',fontFamily:C.P,marginTop:4}}>Review</div>
             {results.map((r,i)=>(
               // Theme colours throughout: the old pale pink card put white question text on near-white on the dark stage.
-              <div key={i} style={{background:r.correct?T.greenBg:(T.dark?'rgba(242,139,125,0.12)':'#FFF0F0'),borderRadius:12,padding:'10px 14px',border:`1px solid ${r.correct?_alpha(T.green,0.35):(T.dark?_alpha(T.tone.bad,0.45):'#F5A0A0')}`}}>
+              <div key={i} className="qz-rise" style={{animationDelay:_qzRingMs(allQs.length,200+i*60),background:r.correct?T.greenBg:(T.dark?'rgba(242,139,125,0.12)':'#FFF0F0'),borderRadius:12,padding:'10px 14px',border:`1px solid ${r.correct?_alpha(T.green,0.35):(T.dark?_alpha(T.tone.bad,0.45):'#F5A0A0')}`}}>
                 <div style={{display:'flex',gap:8,alignItems:'flex-start'}}>
                   <span style={{fontSize:18,flexShrink:0,color:r.correct?T.green:(T.dark?T.tone.bad:'#C0392B'),fontWeight:800}}>{r.correct?'✓':'✗'}</span>
                   <div>
@@ -1586,6 +1591,7 @@ function QuizScreen({nav,back}){ const T=useTheme(), cr=T.lift(C.cr);
                     {!r.correct&&<div style={{fontSize:15,color:T.dark?T.tone.bad:'#C0392B',fontFamily:C.P,marginTop:3}}>Your answer: {r.selectedOpt}</div>}
                     {!r.correct&&<div style={{fontSize:15,color:T.green,fontFamily:C.P}}>Correct: {r.correctOpt}</div>}
                     {r.fact&&<div style={{fontSize:15,color:T.ink2,fontFamily:C.P,marginTop:4,lineHeight:1.45}}>{r.fact}</div>}
+                    {!r.correct&&!r.fact&&(mode==='grape'||mode==='region')&&<div onClick={()=>mode==='grape'?openGrapePage(config.grape,nav):openRegionPage(config.region,nav)} style={{fontSize:14,fontWeight:700,color:cr,fontFamily:C.P,marginTop:5,cursor:'pointer'}}>Read about {mode==='grape'?config.grape:config.region} →</div>}
                   </div>
                 </div>
               </div>
@@ -1597,6 +1603,7 @@ function QuizScreen({nav,back}){ const T=useTheme(), cr=T.lift(C.cr);
           {primary&&<Btn primary full onClick={nextLoading?undefined:primary.go}>{nextLoading?'Getting it ready…':primary.label}</Btn>}
           <Btn primary={!primary} full onClick={()=>nav('learn')}>Back to Learn</Btn>
         </div>
+        <style>{quizCss()}</style>
       </div>
     );
   }
@@ -1629,20 +1636,22 @@ function QuizScreen({nav,back}){ const T=useTheme(), cr=T.lift(C.cr);
           </div>
         </div>
         <div data-testid="quiz-progress" style={{display:'flex',gap:4}}>
-          {allQs.map((_,i)=><div key={i} style={{flex:1,height:5,borderRadius:3,background:seg(i),transition:'background .3s'}}/>)}
+          {allQs.map((_,i)=><div key={i===qIdx?'cur'+qIdx:i} className={i===qIdx&&phase==='question'?'qz-seg-pulse':''} style={{flex:1,height:5,borderRadius:3,background:seg(i),transition:'background .3s'}}/>)}
         </div>
       </div>
 
-      <div key={'q'+qIdx} ref={qRef} className="qz-in" onClick={phase==='feedback'?advance:undefined} style={{flex:1,overflowY:'auto',padding:wide?`28px ${side}`:'20px 16px',display:'flex',flexDirection:'column',gap:14,cursor:phase==='feedback'?'pointer':'default'}}>
+      <div key={'q'+qIdx} ref={qRef} onClick={phase==='feedback'?advance:undefined} style={{flex:1,overflowY:'auto',padding:wide?`28px ${side}`:'20px 16px',display:'flex',flexDirection:'column',gap:14,cursor:phase==='feedback'?'pointer':'default'}}>
         {/* The question stays as the context; once answered it steps down a size so the verdict leads. */}
-        <div style={{fontSize:phase==='feedback'?16:21,fontWeight:700,color:phase==='feedback'?T.ink2:T.ink,fontFamily:C.P,lineHeight:1.4,transition:'font-size .3s, color .3s'}}>{q.q}</div>
+        <div className="qz-in" style={{fontSize:phase==='feedback'?16:21,fontWeight:700,color:phase==='feedback'?T.ink2:T.ink,fontFamily:C.P,lineHeight:1.4,transition:'font-size .3s, color .3s'}}>{q.q}</div>
         {phase!=='feedback'&&<div style={{display:'flex',flexDirection:'column',gap:10,marginTop:4}}>
           {q.opts.map((opt,i)=>{
             const s=optColors[i]||{bg:T.glass,border:T.line,text:T.ink};
             return(
-              <div key={i} onClick={()=>choose(i)} className={phase==='leaving'?'qz-out':answered&&i===selected?(right?'qz-pop':'qz-shake'):''}
+              <div key={i} onClick={()=>choose(i)} className={'qz-opt '+(phase==='leaving'?'qz-out':answered&&i===selected?(right?'qz-pop':'qz-shake'):phase==='question'?'qz-opt-in':'')}
                 onAnimationEnd={phase==='reveal'&&i===selected?onRevealEnd:phase==='leaving'&&i===q.opts.length-1?onLeaveEnd:undefined}
-                style={{padding:'15px 16px',borderRadius:14,border:`2px solid ${s.border}`,background:s.bg,cursor:phase==='question'?'pointer':'default',transition:'background .2s, border-color .2s, opacity .25s',opacity:s.dim?0.45:1,display:'flex',alignItems:'center',gap:10,animationDelay:phase==='leaving'?`${Math.round(i*45/quizSpeed())}ms`:'0ms'}}>
+                style={{padding:'15px 16px',borderRadius:14,border:`2px solid ${s.border}`,background:s.bg,cursor:phase==='question'?'pointer':'default',transition:'background .2s, border-color .2s, opacity .25s, box-shadow .2s',opacity:s.dim?0.45:1,display:'flex',alignItems:'center',gap:10,
+                  boxShadow:answered&&i===selected&&T.dark?`0 0 0 3px ${_alpha(s.border,0.35)}`:'none',
+                  animationDelay:phase==='leaving'?`${Math.round(i*45/quizSpeed())}ms`:phase==='question'?`${Math.round((120+i*40)/quizSpeed())}ms`:undefined}}>
                 <div style={{width:28,height:28,borderRadius:14,background:s.border+'25',flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center'}}>
                   <span style={{fontSize:15,fontWeight:700,color:s.text,fontFamily:C.P}}>
                     {answered&&i===q.a?'✓':answered&&i===selected&&selected!==q.a?'✗':String.fromCharCode(65+i)}
@@ -1654,27 +1663,25 @@ function QuizScreen({nav,back}){ const T=useTheme(), cr=T.lift(C.cr);
           })}
         </div>}
         {phase==='feedback'&&(
-          <div data-testid="quiz-feedback" className="qz-rise" style={{display:'flex',flexDirection:'column',gap:12}}>
-            {/* The verdict: a ring with the mark, the word, and the right answer said plainly. */}
-            <div style={{borderRadius:16,padding:'16px',background:right?T.greenBg:bad.bg,border:`1.5px solid ${right?T.green:bad.border}`,display:'flex',flexDirection:'column',gap:10}}>
-              <div style={{display:'flex',alignItems:'center',gap:12}}>
-                <div className="qz-mark" style={{width:44,height:44,borderRadius:22,background:right?T.green:bad.border,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
-                  <span style={{fontSize:'22px',fontWeight:800,color:'#fff',fontFamily:C.P,lineHeight:1}}>{right?'✓':'✗'}</span>
+          <div data-testid="quiz-feedback" className="qz-rise" role="button" tabIndex={0} aria-label="Continue" onKeyDown={e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); advance(); } }} style={{display:'flex',flexDirection:'column',gap:12,outline:'none'}}>
+            {/* The verdict in one line, then the fact with the room: it's what they take away. */}
+            <div style={{borderRadius:16,padding:'14px 16px 16px',background:right?T.greenBg:bad.bg,border:`1.5px solid ${right?T.green:bad.border}`,display:'flex',flexDirection:'column',gap:10}}>
+              <div style={{display:'flex',alignItems:'center',gap:10}}>
+                <div className="qz-mark" style={{width:32,height:32,borderRadius:16,background:right?T.green:bad.border,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+                  <span style={{fontSize:'17px',fontWeight:800,color:'#fff',fontFamily:C.P,lineHeight:1}}>{right?'✓':'✗'}</span>
                 </div>
-                <div style={{flex:1,minWidth:0}}>
-                  <div style={{fontSize:20,fontWeight:800,color:right?T.green:bad.text,fontFamily:C.P,lineHeight:1.2}}>{right?(streak>=3?`Correct! ${streak} in a row`:'Correct!'):'Not quite'}</div>
-                </div>
+                <div style={{fontSize:20,fontWeight:800,color:right?T.green:bad.text,fontFamily:C.P,lineHeight:1.2,flex:1,minWidth:0}}>{right?(streak>=3?`Correct! ${streak} in a row`:'Correct!'):'Not quite'}</div>
               </div>
-              <div style={{fontSize:15,color:T.ink,fontFamily:C.P,lineHeight:1.45}}>
-                {right?<><span style={{color:T.mid}}>The answer: </span><b>{q.opts[q.a]}</b></>
-                  :<><span style={{color:T.mid}}>You said </span><span style={{textDecoration:'line-through',color:bad.text}}>{q.opts[selected]}</span><br/><span style={{color:T.mid}}>The answer: </span><b style={{color:T.green}}>{q.opts[q.a]}</b></>}
+              <div style={{fontSize:14,color:T.mid,fontFamily:C.P,lineHeight:1.45}}>
+                {right?<>The answer: <b style={{color:T.ink}}>{q.opts[q.a]}</b></>
+                  :<>You said <span style={{textDecoration:'line-through',color:bad.text}}>{q.opts[selected]}</span> · The answer: <b style={{color:T.green}}>{q.opts[q.a]}</b></>}
               </div>
-              {q.fact&&<div style={{fontSize:15,color:T.ink2,fontFamily:C.P,lineHeight:1.55,paddingTop:10,borderTop:`1px solid ${right?_alpha(T.green,0.25):_alpha(bad.border,0.3)}`}}>{q.fact}</div>}
+              {q.fact&&<_QuizFact text={q.fact} T={T} cr={cr}/>}
             </div>
             <div onClick={e=>{e.stopPropagation();advance();}} style={{background:cr,borderRadius:14,padding:'15px',textAlign:'center',cursor:'pointer',boxShadow:`0 6px 22px ${cr}45`,userSelect:'none',WebkitUserSelect:'none'}}>
               <span style={{fontSize:17,fontWeight:700,color:'#fff',fontFamily:C.P}}>{qIdx+1>=allQs.length?'See Results →':'Next Question →'}</span>
             </div>
-            <div style={{fontSize:13,color:T.mid,fontFamily:C.P,textAlign:'center'}}>or tap anywhere</div>
+            <div style={{fontSize:13,color:T.mid,fontFamily:C.P,textAlign:'center'}}>Tap anywhere to continue</div>
           </div>
         )}
         <div style={{height:12}}/>
@@ -1691,6 +1698,78 @@ function QuizScreen({nav,back}){ const T=useTheme(), cr=T.lift(C.cr);
    scan story has its own switch: a round of five answers would otherwise outlast a test's budget. */
 const QUIZ_SAFETY_MS=2500;
 const quizSpeed=()=>{ const v=typeof window!=='undefined'&&Number(window.VINTEREST_QUIZ_SPEED); return v>0?v:1; };
+/* When the result's ring has finished its n segments (QZ_SEG_MS apart), plus `extra`: the delay
+   the lines under it wait for, as a CSS time. */
+const QZ_SEG_MS=120, QZ_SEG_LEN=380;
+function _qzRingMs(n,extra=0){ return `${((QZ_SEG_LEN+QZ_SEG_MS*Math.max(0,n-1)+extra)/quizSpeed()/1000).toFixed(3)}s`; }
+/* A number that counts up to `to` once `start` (a CSS time) has passed, on animation frames rather
+   than a clock, so it runs the same under the tests' fixed time. */
+function _QuizCount({to,start}){
+  const [n,setN]=React.useState(0);
+  React.useEffect(()=>{
+    const rm=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if(rm||!to){ setN(to); return; }
+    const wait=Math.round(parseFloat(start)*60), frames=Math.max(1,Math.round(36/quizSpeed()));
+    let f=0, raf=0;
+    const tick=()=>{ f++; if(f>wait){ const t=Math.min(1,(f-wait)/frames), e=1-Math.pow(1-t,3); setN(Math.round(to*e)); if(t>=1) return; } raf=requestAnimationFrame(tick); };
+    raf=requestAnimationFrame(tick);
+    return ()=>cancelAnimationFrame(raf);
+  },[to,start]);
+  return <>{n}</>;
+}
+/* The result's ring: one arc segment per question with a small gap, each stroked green or red in
+   the order answered and drawn in one after another; the count inside rises with them. */
+function _QuizRing({results,n,T,cr}){
+  const R=40, C_=2*Math.PI*R, gapDeg=n>1?5:0, segDeg=(360-gapDeg*n)/n, segLen=C_*segDeg/360;
+  const [count,setCount]=React.useState(0);
+  const score=results.filter(r=>r.correct).length;
+  React.useEffect(()=>{
+    const rm=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if(rm){ setCount(score); return; }
+    const per=Math.max(1,Math.round(QZ_SEG_MS/quizSpeed()/16.7));
+    let f=0, c=0, raf=0, seen=0;
+    const tick=()=>{ f++; const i=Math.floor(f/per); while(seen<Math.min(i,results.length)){ if(results[seen].correct) c++; seen++; setCount(c); } if(seen<results.length) raf=requestAnimationFrame(tick); };
+    raf=requestAnimationFrame(tick);
+    return ()=>cancelAnimationFrame(raf);
+  },[results.length]);
+  return <div style={{position:'relative',width:104,height:104}}>
+    <svg data-testid="result-ring" width="104" height="104" viewBox="-52 -52 104 104" aria-hidden="true" style={{display:'block',overflow:'visible'}}>
+      {[...Array(n)].map((_,i)=>{ const r=results[i]; const col=!r?T.soft:r.correct?T.green:T.tone.bad; const rot=-90+i*(segDeg+gapDeg);
+        return <path key={i} d={`M ${R} 0 A ${R} ${R} 0 ${segDeg>180?1:0} 1 ${(R*Math.cos(segDeg*Math.PI/180)).toFixed(2)} ${(R*Math.sin(segDeg*Math.PI/180)).toFixed(2)}`}
+          transform={`rotate(${rot})`} fill="none" stroke={col} strokeWidth="7" strokeLinecap={n>1?'butt':'round'}
+          className={r?'qz-seg':''} style={r?{strokeDasharray:segLen,strokeDashoffset:segLen,animationDelay:`${(QZ_SEG_MS*i/quizSpeed()/1000).toFixed(3)}s`,filter:T.dark?`drop-shadow(0 0 4px ${col})`:'none'}:{opacity:0.5}}/>; })}
+    </svg>
+    <div style={{position:'absolute',inset:0,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',lineHeight:1}}>
+      <span style={{fontSize:'26px',fontWeight:800,color:T.ink,fontFamily:C.P}}>{count}<span style={{fontSize:'14px',fontWeight:600,color:T.mid}}>/{n}</span></span>
+      <span style={{fontSize:'10px',fontWeight:600,color:T.mid,fontFamily:C.P,letterSpacing:'0.08em',textTransform:'uppercase',marginTop:3}}>Correct</span>
+    </div>
+  </div>;
+}
+/* Twelve small pieces falling from the ring once, in the brand colour and green; drawn in code. */
+function _QuizConfetti({col,T}){
+  const pieces=[...Array(12)].map((_,i)=>({x:8+i*7.5+((i*37)%9),d:(i*53)%400,c:i%3===1?T.green:i%3===2?T.amber:col,r:(i*47)%360,w:5+(i%3)*2}));
+  return <div aria-hidden="true" style={{position:'absolute',inset:0,pointerEvents:'none',overflow:'hidden'}}>
+    {pieces.map((p,i)=><div key={i} className="qz-confetti" style={{position:'absolute',left:`${p.x}%`,top:-10,width:p.w,height:p.w*1.6,borderRadius:2,background:p.c,animationDelay:`${(p.d/quizSpeed()/1000).toFixed(3)}s`,transform:`rotate(${p.r}deg)`,opacity:0}}/>)}
+  </div>;
+}
+/* The fact, with its trait words (body, tannins, acidity, texture) tappable for what they mean,
+   from the same text as the palate pages (Palate.TRAITS). Teach while asking. */
+const _QZ_TRAITS={body:'body',tannin:'tannins',tannins:'tannins',acidity:'acidity',acid:'acidity',texture:'texture'};
+function _QuizFact({text,T,cr}){
+  const [open,setOpen]=React.useState(null);
+  const parts=String(text).split(/(\b(?:body|tannins?|acidity|acid|texture)\b)/i);
+  const tr=open&&typeof Palate!=='undefined'&&Palate.TRAITS[open];
+  return <div style={{paddingTop:10,borderTop:`1px solid ${T.line}`}}>
+    <div style={{fontSize:17,color:T.ink,fontFamily:C.P,lineHeight:1.5}}>
+      {parts.map((w,i)=>{ const k=_QZ_TRAITS[w.toLowerCase()]; return k
+        ?<span key={i} role="button" onClick={e=>{ e.stopPropagation(); setOpen(o=>o===k?null:k); }} style={{textDecoration:'underline dotted',textUnderlineOffset:3,textDecorationColor:cr,cursor:'pointer'}}>{w}</span>
+        :<React.Fragment key={i}>{w}</React.Fragment>; })}
+    </div>
+    {tr&&<div className="qz-rise" onClick={e=>e.stopPropagation()} style={{marginTop:8,padding:'10px 12px',borderRadius:10,background:T.glass,border:`1px solid ${T.line}`,fontSize:14,color:T.ink2,fontFamily:C.P,lineHeight:1.45}}>
+      <b style={{color:T.ink,textTransform:'capitalize'}}>{open}.</b> {tr.what} <span style={{color:T.mid}}>{tr.notice&&tr.notice[0]}</span>
+    </div>}
+  </div>;
+}
 function quizCss(){ const s=quizSpeed(), d=ms=>`${(ms/s/1000).toFixed(3)}s`;
   return `
 @keyframes qzIn{from{opacity:0;transform:translateX(28px)}to{opacity:1;transform:none}}
@@ -1700,6 +1779,15 @@ function quizCss(){ const s=quizSpeed(), d=ms=>`${(ms/s/1000).toFixed(3)}s`;
 @keyframes qzShake{0%,60%,100%{transform:none}12%{transform:translateX(-7px)}24%{transform:translateX(6px)}36%{transform:translateX(-4px)}48%{transform:translateX(2px)}}
 @keyframes qzMark{from{transform:scale(.4);opacity:0}70%{transform:scale(1.12)}to{transform:scale(1);opacity:1}}
 @keyframes qzFlame{0%{transform:scale(1)}50%{transform:scale(1.25)}100%{transform:scale(1)}}
+@keyframes qzOptIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+@keyframes qzSeg{to{stroke-dashoffset:0}}
+@keyframes qzSegPulse{0%{transform:scaleY(1)}50%{transform:scaleY(1.9)}100%{transform:scaleY(1)}}
+@keyframes qzConfetti{0%{opacity:1;transform:translateY(0) rotate(0deg)}100%{opacity:0;transform:translateY(150px) rotate(300deg)}}
+.qz-opt:active{transform:scale(.97)}
+.qz-opt-in{animation:qzOptIn ${d(300)} cubic-bezier(.2,.8,.3,1) both}
+.qz-seg{animation:qzSeg ${d(QZ_SEG_LEN)} cubic-bezier(.2,.8,.3,1) both}
+.qz-seg-pulse{animation:qzSegPulse ${d(500)} ease}
+.qz-confetti{animation:qzConfetti ${d(1200)} ease-in both}
 .qz-in{animation:qzIn ${d(320)} cubic-bezier(.2,.8,.3,1) both}
 .qz-out{animation:qzOut ${d(260)} ease-in both}
 .qz-rise{animation:qzRise ${d(380)} cubic-bezier(.2,.8,.3,1) both}
@@ -1707,7 +1795,7 @@ function quizCss(){ const s=quizSpeed(), d=ms=>`${(ms/s/1000).toFixed(3)}s`;
 .qz-shake{animation:qzShake ${d(750)} ease}
 .qz-mark{animation:qzMark ${d(450)} cubic-bezier(.2,.8,.3,1) ${d(80)} both}
 .qz-flame{animation:qzFlame ${d(400)} ease}
-@media (prefers-reduced-motion:reduce){.qz-in,.qz-out,.qz-rise,.qz-pop,.qz-shake,.qz-mark,.qz-flame{animation:none}}
+@media (prefers-reduced-motion:reduce){.qz-in,.qz-out,.qz-rise,.qz-pop,.qz-shake,.qz-mark,.qz-flame,.qz-opt-in,.qz-seg-pulse,.qz-confetti{animation:none}.qz-seg{animation:none;stroke-dashoffset:0!important}}
 `; }
 
 Object.assign(window,{QuizHubScreen,QuizScreen,MasteryMapScreen});
