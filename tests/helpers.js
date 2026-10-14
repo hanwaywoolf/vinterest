@@ -22,7 +22,7 @@ async function stubNetwork(context, { claudeRequests = [], claudeText = () => ''
   // ({ detail: 'real' }), so tests of a section don't depend on how far the test user has learnt.
   // The post-scan reveal (ScanReveal) plays only for tests of it ({ reveal: 'real' }); the rest
   // open straight on the result, as before it existed.
-  await context.addInitScript(({ d, r }) => { window.VINTEREST_REAL_PLANS = true; window.VINTEREST_DETAIL = d; window.VINTEREST_REVEAL = r; }, { d: detail, r: reveal });
+  await context.addInitScript(({ d, r }) => { window.VINTEREST_REAL_PLANS = true; window.VINTEREST_DETAIL = d; window.VINTEREST_REVEAL = r; window.VINTEREST_QUIZ_SPEED = 8; }, { d: detail, r: reveal });
   await context.route(/^https?:\/\/(?!localhost[:/])/, (route) => {
     const url = route.request().url();
     const umd = Object.entries(UMD).find(([k]) => url.includes(k));

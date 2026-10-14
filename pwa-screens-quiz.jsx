@@ -1406,16 +1406,29 @@ function QuizScreen({nav,back}){ const T=useTheme(), cr=T.lift(C.cr);
   const scrollRef=React.useRef(null);
   // Each question opens at its top: the previous one may have been scrolled to reach its answers.
   const qRef=React.useRef(null);
-  React.useLayoutEffect(()=>{ if(qRef.current) qRef.current.scrollTop=0; },[qIdx,phase==='question']);
+  React.useLayoutEffect(()=>{ if(qRef.current) qRef.current.scrollTop=0; },[qIdx,phase==='question',phase==='feedback']);
 
   const title=quizTitle(config);
 
   const q=allQs[qIdx];
 
+  // After a tap the phases run on the animations themselves (animationend), never on timers: the
+  // picked answer pops or shakes while the colours show (reveal), the options slide out one after
+  // another (leaving), and when the last has gone the verdict rises in their place (feedback).
+  // Timers were starved under the tests' fixed clock; a CSS animation runs on the compositor's own
+  // clock. Reduced motion has no animations, so it goes straight to the verdict after a beat; and a
+  // safety timer carries a browser that never fires animationend.
+  const _rm=typeof window!=='undefined'&&window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const timers=React.useRef([]);
+  React.useEffect(()=>()=>timers.current.forEach(clearTimeout),[]);
+  const onRevealEnd=e=>{ if(e.animationName==='qzPop'||e.animationName==='qzShake') setPhase(p=>p==='reveal'?'leaving':p); };
+  const onLeaveEnd=e=>{ if(e.animationName==='qzOut') setPhase(p=>p==='leaving'?'feedback':p); };
   function choose(i){
     if(phase!=='question') return;
     setSelected(i);
-    setPhase('feedback');
+    setPhase('reveal');
+    if(_rm) timers.current.push(setTimeout(()=>setPhase('feedback'),300));
+    timers.current.push(setTimeout(()=>setPhase(p=>p==='reveal'||p==='leaving'?'feedback':p),QUIZ_SAFETY_MS));
     const correct=i===q.a;
     setStreak(s=>correct?s+1:0);
 
@@ -1564,14 +1577,15 @@ function QuizScreen({nav,back}){ const T=useTheme(), cr=T.lift(C.cr);
             )}
             <div style={{fontSize:15,fontWeight:600,color:T.mid,letterSpacing:'0.07em',textTransform:'uppercase',fontFamily:C.P,marginTop:4}}>Review</div>
             {results.map((r,i)=>(
-              <div key={i} style={{background:r.correct?T.greenBg:'#FFF0F0',borderRadius:12,padding:'10px 14px',border:`1px solid ${r.correct?T.green+'30':'#F5A0A0'}`}}>
+              // Theme colours throughout: the old pale pink card put white question text on near-white on the dark stage.
+              <div key={i} style={{background:r.correct?T.greenBg:(T.dark?'rgba(242,139,125,0.12)':'#FFF0F0'),borderRadius:12,padding:'10px 14px',border:`1px solid ${r.correct?_alpha(T.green,0.35):(T.dark?_alpha(T.tone.bad,0.45):'#F5A0A0')}`}}>
                 <div style={{display:'flex',gap:8,alignItems:'flex-start'}}>
-                  <span style={{fontSize:18,flexShrink:0}}>{r.correct?'✓':'✗'}</span>
+                  <span style={{fontSize:18,flexShrink:0,color:r.correct?T.green:(T.dark?T.tone.bad:'#C0392B'),fontWeight:800}}>{r.correct?'✓':'✗'}</span>
                   <div>
                     <div style={{fontSize:15,fontWeight:600,color:T.ink,fontFamily:C.P,lineHeight:1.3}}>{r.qText}</div>
-                    {!r.correct&&<div style={{fontSize:15,color:'#C0392B',fontFamily:C.P,marginTop:3}}>Your answer: {r.selectedOpt}</div>}
+                    {!r.correct&&<div style={{fontSize:15,color:T.dark?T.tone.bad:'#C0392B',fontFamily:C.P,marginTop:3}}>Your answer: {r.selectedOpt}</div>}
                     {!r.correct&&<div style={{fontSize:15,color:T.green,fontFamily:C.P}}>Correct: {r.correctOpt}</div>}
-                    {r.fact&&<div style={{fontSize:15,color:T.mid,fontFamily:C.P,marginTop:4,lineHeight:1.4,fontStyle:'italic'}}>{r.fact}</div>}
+                    {r.fact&&<div style={{fontSize:15,color:T.ink2,fontFamily:C.P,marginTop:4,lineHeight:1.45}}>{r.fact}</div>}
                   </div>
                 </div>
               </div>
@@ -1587,14 +1601,17 @@ function QuizScreen({nav,back}){ const T=useTheme(), cr=T.lift(C.cr);
     );
   }
 
-  const progress=(qIdx+1)/allQs.length;
-  const optColors=selected===null
+  const answered=phase!=='question', right=selected===q.a;
+  const bad={bg:T.dark?'rgba(242,139,125,0.16)':'#FFF0F0',border:T.dark?T.tone.bad:'#E88080',text:T.dark?T.tone.bad:'#C0392B'};
+  const optColors=!answered
     ? q.opts.map(()=>({bg:T.glass,border:T.line,text:T.ink}))
     : q.opts.map((_,i)=>{
         if(i===q.a) return {bg:T.greenBg,border:T.green,text:T.green};
-        if(i===selected&&selected!==q.a) return {bg:T.dark?'rgba(242,139,125,0.16)':'#FFF0F0',border:T.dark?T.tone.bad:'#E88080',text:T.dark?T.tone.bad:'#C0392B'};
-        return {bg:T.glass,border:T.line,text:T.ink};
+        if(i===selected&&selected!==q.a) return bad;
+        return {bg:T.glass,border:T.line,text:T.ink,dim:true};
       });
+  // One segment per question: answered ones green or red, the current one in ink (crimson read as the wrong-answer red).
+  const seg=i=>i<results.length?(results[i].correct?T.green:T.tone.bad):i===qIdx?T.ink:T.soft;
 
   return(
     <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden',background:T.bg}}>
@@ -1607,49 +1624,90 @@ function QuizScreen({nav,back}){ const T=useTheme(), cr=T.lift(C.cr);
             <div style={{fontSize:17,fontWeight:700,color:T.ink,fontFamily:C.P}}>{mode==='region'&&<Flag region={config.region} size={17} style={{marginRight:7}}/>}{title}</div>
           </div>
           <div style={{display:'flex',alignItems:'center',gap:5}}>
-            {streak>=2&&<Icon n="flame" sz={18} col={cr}/>}
+            {streak>=2&&<span key={streak} className="qz-flame" style={{display:'inline-flex',alignItems:'center',gap:2}}><Icon n="flame" sz={18} col={cr}/><span style={{fontSize:13,fontWeight:800,color:cr,fontFamily:C.P}}>{streak}</span></span>}
             <span style={{fontSize:16,fontWeight:700,color:T.ink,fontFamily:C.P}}>{qIdx+1}/{allQs.length}</span>
           </div>
         </div>
-        <div style={{height:5,borderRadius:3,background:T.soft,overflow:'hidden'}}>
-          <div style={{height:'100%',borderRadius:3,background:cr,width:`${Math.round(progress*100)}%`,transition:'width .4s ease'}}/>
+        <div data-testid="quiz-progress" style={{display:'flex',gap:4}}>
+          {allQs.map((_,i)=><div key={i} style={{flex:1,height:5,borderRadius:3,background:seg(i),transition:'background .3s'}}/>)}
         </div>
       </div>
 
-      <div key="question" ref={qRef} onClick={phase==='feedback'?advance:undefined} style={{flex:1,overflowY:'auto',padding:wide?`28px ${side}`:'20px 16px',display:'flex',flexDirection:'column',gap:14,cursor:phase==='feedback'?'pointer':'default'}}>
-        <div style={{fontSize:21,fontWeight:700,color:T.ink,fontFamily:C.P,lineHeight:1.4}}>{q.q}</div>
-        <div style={{display:'flex',flexDirection:'column',gap:10,marginTop:4}}>
+      <div key={'q'+qIdx} ref={qRef} className="qz-in" onClick={phase==='feedback'?advance:undefined} style={{flex:1,overflowY:'auto',padding:wide?`28px ${side}`:'20px 16px',display:'flex',flexDirection:'column',gap:14,cursor:phase==='feedback'?'pointer':'default'}}>
+        {/* The question stays as the context; once answered it steps down a size so the verdict leads. */}
+        <div style={{fontSize:phase==='feedback'?16:21,fontWeight:700,color:phase==='feedback'?T.ink2:T.ink,fontFamily:C.P,lineHeight:1.4,transition:'font-size .3s, color .3s'}}>{q.q}</div>
+        {phase!=='feedback'&&<div style={{display:'flex',flexDirection:'column',gap:10,marginTop:4}}>
           {q.opts.map((opt,i)=>{
             const s=optColors[i]||{bg:T.glass,border:T.line,text:T.ink};
             return(
-              <div key={i} onClick={()=>choose(i)}
-                style={{padding:'15px 16px',borderRadius:14,border:`2px solid ${s.border}`,background:s.bg,cursor:phase==='question'?'pointer':'default',transition:'all .2s',display:'flex',alignItems:'center',gap:10}}>
+              <div key={i} onClick={()=>choose(i)} className={phase==='leaving'?'qz-out':answered&&i===selected?(right?'qz-pop':'qz-shake'):''}
+                onAnimationEnd={phase==='reveal'&&i===selected?onRevealEnd:phase==='leaving'&&i===q.opts.length-1?onLeaveEnd:undefined}
+                style={{padding:'15px 16px',borderRadius:14,border:`2px solid ${s.border}`,background:s.bg,cursor:phase==='question'?'pointer':'default',transition:'background .2s, border-color .2s, opacity .25s',opacity:s.dim?0.45:1,display:'flex',alignItems:'center',gap:10,animationDelay:phase==='leaving'?`${Math.round(i*45/quizSpeed())}ms`:'0ms'}}>
                 <div style={{width:28,height:28,borderRadius:14,background:s.border+'25',flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center'}}>
                   <span style={{fontSize:15,fontWeight:700,color:s.text,fontFamily:C.P}}>
-                    {phase==='feedback'&&i===q.a?'✓':phase==='feedback'&&i===selected&&selected!==q.a?'✗':String.fromCharCode(65+i)}
+                    {answered&&i===q.a?'✓':answered&&i===selected&&selected!==q.a?'✗':String.fromCharCode(65+i)}
                   </span>
                 </div>
                 <span style={{fontSize:17,fontWeight:500,color:s.text,fontFamily:C.P,lineHeight:1.35}}>{opt}</span>
               </div>
             );
           })}
-        </div>
+        </div>}
         {phase==='feedback'&&(
-          <div style={{animation:'fadeIn .3s ease'}}>
-            <div style={{background:selected===q.a?T.greenBg:'#FFF8F0',borderRadius:14,padding:'12px 14px',border:`1px solid ${selected===q.a?T.green+'40':'#F5C07040'}`,marginBottom:12}}>
-              <div style={{fontSize:16,fontWeight:700,color:selected===q.a?T.green:'#B87000',fontFamily:C.P,marginBottom:4}}>{selected===q.a?'Correct!':'Not quite'}</div>
-              {q.fact&&<div style={{fontSize:15,color:T.ink2,fontFamily:C.P,lineHeight:1.5}}>{q.fact}</div>}
+          <div data-testid="quiz-feedback" className="qz-rise" style={{display:'flex',flexDirection:'column',gap:12}}>
+            {/* The verdict: a ring with the mark, the word, and the right answer said plainly. */}
+            <div style={{borderRadius:16,padding:'16px',background:right?T.greenBg:bad.bg,border:`1.5px solid ${right?T.green:bad.border}`,display:'flex',flexDirection:'column',gap:10}}>
+              <div style={{display:'flex',alignItems:'center',gap:12}}>
+                <div className="qz-mark" style={{width:44,height:44,borderRadius:22,background:right?T.green:bad.border,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+                  <span style={{fontSize:'22px',fontWeight:800,color:'#fff',fontFamily:C.P,lineHeight:1}}>{right?'✓':'✗'}</span>
+                </div>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontSize:20,fontWeight:800,color:right?T.green:bad.text,fontFamily:C.P,lineHeight:1.2}}>{right?(streak>=3?`Correct! ${streak} in a row`:'Correct!'):'Not quite'}</div>
+                </div>
+              </div>
+              <div style={{fontSize:15,color:T.ink,fontFamily:C.P,lineHeight:1.45}}>
+                {right?<><span style={{color:T.mid}}>The answer: </span><b>{q.opts[q.a]}</b></>
+                  :<><span style={{color:T.mid}}>You said </span><span style={{textDecoration:'line-through',color:bad.text}}>{q.opts[selected]}</span><br/><span style={{color:T.mid}}>The answer: </span><b style={{color:T.green}}>{q.opts[q.a]}</b></>}
+              </div>
+              {q.fact&&<div style={{fontSize:15,color:T.ink2,fontFamily:C.P,lineHeight:1.55,paddingTop:10,borderTop:`1px solid ${right?_alpha(T.green,0.25):_alpha(bad.border,0.3)}`}}>{q.fact}</div>}
             </div>
             <div onClick={e=>{e.stopPropagation();advance();}} style={{background:cr,borderRadius:14,padding:'15px',textAlign:'center',cursor:'pointer',boxShadow:`0 6px 22px ${cr}45`,userSelect:'none',WebkitUserSelect:'none'}}>
               <span style={{fontSize:17,fontWeight:700,color:'#fff',fontFamily:C.P}}>{qIdx+1>=allQs.length?'See Results →':'Next Question →'}</span>
             </div>
+            <div style={{fontSize:13,color:T.mid,fontFamily:C.P,textAlign:'center'}}>or tap anywhere</div>
           </div>
         )}
         <div style={{height:12}}/>
       </div>
-      <style>{`@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}`}</style>
+      <style>{quizCss()}</style>
     </div>
   );
 }
+
+/* The quiz's motion: a new question slides in from the right; the picked answer pops (right) or
+   shakes (wrong) while its colours show; the options slip out to the left one after another; the
+   verdict rises in its place with its mark scaling up. The phases follow these animations' ends.
+   Reduced motion: none of it. Tests run it `window.VINTEREST_QUIZ_SPEED` (8) times faster, as the
+   scan story has its own switch: a round of five answers would otherwise outlast a test's budget. */
+const QUIZ_SAFETY_MS=2500;
+const quizSpeed=()=>{ const v=typeof window!=='undefined'&&Number(window.VINTEREST_QUIZ_SPEED); return v>0?v:1; };
+function quizCss(){ const s=quizSpeed(), d=ms=>`${(ms/s/1000).toFixed(3)}s`;
+  return `
+@keyframes qzIn{from{opacity:0;transform:translateX(28px)}to{opacity:1;transform:none}}
+@keyframes qzOut{to{opacity:0;transform:translateX(-36px)}}
+@keyframes qzRise{from{opacity:0;transform:translateY(28px)}to{opacity:1;transform:none}}
+@keyframes qzPop{0%{transform:scale(1)}20%{transform:scale(1.04)}40%,100%{transform:scale(1)}}
+@keyframes qzShake{0%,60%,100%{transform:none}12%{transform:translateX(-7px)}24%{transform:translateX(6px)}36%{transform:translateX(-4px)}48%{transform:translateX(2px)}}
+@keyframes qzMark{from{transform:scale(.4);opacity:0}70%{transform:scale(1.12)}to{transform:scale(1);opacity:1}}
+@keyframes qzFlame{0%{transform:scale(1)}50%{transform:scale(1.25)}100%{transform:scale(1)}}
+.qz-in{animation:qzIn ${d(320)} cubic-bezier(.2,.8,.3,1) both}
+.qz-out{animation:qzOut ${d(260)} ease-in both}
+.qz-rise{animation:qzRise ${d(380)} cubic-bezier(.2,.8,.3,1) both}
+.qz-pop{animation:qzPop ${d(700)} ease}
+.qz-shake{animation:qzShake ${d(750)} ease}
+.qz-mark{animation:qzMark ${d(450)} cubic-bezier(.2,.8,.3,1) ${d(80)} both}
+.qz-flame{animation:qzFlame ${d(400)} ease}
+@media (prefers-reduced-motion:reduce){.qz-in,.qz-out,.qz-rise,.qz-pop,.qz-shake,.qz-mark,.qz-flame{animation:none}}
+`; }
 
 Object.assign(window,{QuizHubScreen,QuizScreen,MasteryMapScreen});
