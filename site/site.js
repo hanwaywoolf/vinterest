@@ -331,9 +331,10 @@
     if (firstBad) { form.elements[firstBad].focus(); return; }
     go.disabled = true; go.textContent = 'Joining…';
     fetch('/api/beta', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(v) })
-      .then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) { return { ok: r.ok, j: j }; }); })
+      .then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) { return { ok: r.ok, status: r.status, j: j }; }); })
       .then(function (res) {
-        if (!res.ok) throw new Error(res.j.error || 'Something went wrong. Please try again in a moment.');
+        // A reply without our own words (an error page from Cloudflare, a static 405) says its status, so it can be traced.
+        if (!res.ok) throw new Error(res.j.error || 'Something went wrong (error ' + res.status + '). Please try again in a moment.');
         document.getElementById('thanks-name').textContent = v.first_name;
         form.hidden = true;
         var t = document.getElementById('beta-thanks');
