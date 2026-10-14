@@ -231,19 +231,25 @@ function DnaRules({t,nav,onExplore,bare}){ const T=useTheme(), col=t.col;
    against their choices, and "Shapes your match" where that trait is one of the match's signals
    (WineDNA.signals). Rows arrive one after another. Each opens WineDNA's own page for that trait
    (DnaTraitScreen). */
-const _DNA_SCALE={w:326,h:50,y:18,x0:8,x1:318};
+const _DNA_SCALE={w:326,h:50,y:18,pad:8};
+/* Drawn in screen pixels at the width it's given (measured, ResizeObserver), so on an iPad the
+   line runs the full row while the dots, marker and step names stay their size: scaled as one
+   viewBox, the names grew to 28px and the marker to a coin across a landscape iPad. */
 function _DnaScale({axis,v,col,T,step}){
-  const {w,h,y,x0,x1}=_DNA_SCALE, X=t=>x0+(x1-x0)*t, steps=WineDNA.STEPS[axis]||['','','','',''];
+  const ref=React.useRef(null), [w,setW]=React.useState(_DNA_SCALE.w);
+  React.useLayoutEffect(()=>{ const el=ref.current; if(!el) return; const m=()=>{ const cw=el.clientWidth; if(cw>0) setW(cw); }; m();
+    if(typeof ResizeObserver==='undefined') return; const ro=new ResizeObserver(m); ro.observe(el); return ()=>ro.disconnect(); },[]);
+  const {h,y,pad}=_DNA_SCALE, x0=pad, x1=w-pad, X=t=>x0+(x1-x0)*t, steps=WineDNA.STEPS[axis]||['','','','',''];
   const track=T.dark?'rgba(255,255,255,0.14)':'rgba(0,0,0,0.1)', dim=T.dark?'rgba(255,255,255,0.2)':'rgba(0,0,0,0.14)', name=T.dark?'rgba(255,255,255,0.45)':'rgba(0,0,0,0.45)';
   // Nine dots at i/8, larger at the five named stops, the step names under those (the same x).
   const dots=[...Array(9)].map((_,i)=>({x:X(i/8),r:i%2?2.5:4,lit:i/8<=v}));
-  return <svg viewBox={`0 0 ${w} ${h}`} width="100%" aria-hidden="true" style={{display:'block',overflow:'visible'}}>
+  return <div ref={ref} data-testid="dna-scale" style={{width:'100%'}}><svg viewBox={`0 0 ${w} ${h}`} width={w} height={h} aria-hidden="true" style={{display:'block',overflow:'visible'}}>
     <line x1={x0} y1={y} x2={x1} y2={y} stroke={track} strokeWidth="1.5"/>
     <line x1={x0} y1={y} x2={X(v)} y2={y} stroke={col} strokeWidth="1.5" style={{filter:T.dark?`drop-shadow(0 0 5px ${col})`:'none'}}/>
     {dots.map((d,i)=><circle key={i} cx={d.x} cy={y} r={d.r} fill={d.lit?_alpha(col,0.75):dim}/>)}
     <circle cx={X(v)} cy={y} r="8" fill={col} stroke="#fff" strokeWidth="2" style={{filter:T.dark?`drop-shadow(0 0 8px ${col})`:'none'}}/>
     {steps.map((label,i)=>{ const x=X(i/4), on=i===step; return <text key={i} x={x} y={h-6} textAnchor={i===0?'start':i===4?'end':'middle'} style={{fontSize:on?'12px':'10px',fontWeight:on?800:400,fill:on?(T.dark?'#fff':T.ink):name,fontFamily:C.P}}>{label}</text>; })}
-  </svg>;
+  </svg></div>;
 }
 function DnaTasteTiles({t,nav}){ const T=useTheme();
   const axes=t.axes.filter(t.showAxis).filter(k=>t.avg[k]!=null);

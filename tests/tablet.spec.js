@@ -44,6 +44,16 @@ for (const [name, viewport] of Object.entries(SIZES)) {
         const [a, b] = await Promise.all([knows.locator('svg').first().boundingBox(), page.getByTestId('knows-above').boundingBox()]);
         expect(b.x).toBeGreaterThan(a.x + 200);
       }
+      // The portrait's scales run the row's width, but their step names stay text-sized (the
+      // scale is drawn in screen pixels, not a viewBox stretched to the row).
+      const tiles = page.getByTestId('dna-taste-tiles');
+      if (await tiles.count()) {
+        await tiles.scrollIntoViewIfNeeded();
+        const box = await tiles.getByTestId('dna-scale').first().locator('text').first().boundingBox();
+        expect(box.height).toBeLessThan(20);
+        const scale = await tiles.getByTestId('dna-scale').first().boundingBox();
+        expect(scale.width).toBeGreaterThan(300);
+      }
       expect(await noOverflow(page)).toEqual([]);
       await page.screenshot({ path: path.join(info.project.outputDir, `tablet-winedna-${name}.png`), fullPage: false });
       await knows.scrollIntoViewIfNeeded();
