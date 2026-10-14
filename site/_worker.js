@@ -74,7 +74,7 @@ async function notifyTeam(env, { first, last, country, platform, email }) {
       headers: { authorization: `Bearer ${env.RESEND_API_KEY}`, "content-type": "application/json" },
       body: JSON.stringify({ from, to: [env.BETA_NOTIFY_TO], reply_to: email, subject: `Beta sign-up: ${first} ${last} (${phone}, ${country})`, text, html }),
     });
-    if (!res.ok) console.warn("Resend refused the sign-up notice:", res.status);
+    if (!res.ok) console.warn("Resend refused the sign-up notice:", res.status, await res.text().catch(() => ""));
   } catch (e) {
     console.warn("Resend couldn't be reached for the sign-up notice:", e && e.message);
   }
@@ -132,9 +132,8 @@ export async function handleBeta(request, env, ctx) {
     let inserted = [];
     try { inserted = await res.json(); } catch (e) { /* no row: no email */ }
     if (Array.isArray(inserted) && inserted.length) {
-      const jobs = [sendConfirmation(env, { first, email })];
-      if (env.BETA_NOTIFY_TO) jobs.push(notifyTeam(env, { first, last, country, platform, email }));
-      const sending = Promise.all(jobs);
+      // One after the other: Resend allows two requests a second, and two fired together can get a 429.
+      const sending = sendConfirmation(env, { first, email }).then(() => (env.BETA_NOTIFY_TO ? notifyTeam(env, { first, last, country, platform, email }) : undefined));
       if (ctx && ctx.waitUntil) ctx.waitUntil(sending); else await sending;
     }
   }
