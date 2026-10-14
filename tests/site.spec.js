@@ -62,9 +62,9 @@ test.describe('desktop', () => {
     await expect(page.locator('#scan .steps li.on h3')).toHaveText('Who made it, and when to drink it');
     await expect(page.locator('#scan .steps li.on h3')).toHaveText('Whether it\'s for you', { timeout: 6000 });
     // It finishes and stays on the last caption; it does not start again.
-    await expect(page.locator('#scan .steps li.on h3')).toHaveText('Then rate it, or see more', { timeout: 15000 });
+    await expect(page.locator('#scan .steps li.on h3')).toHaveText('Then rate it', { timeout: 15000 });
     await page.waitForTimeout(2500);
-    await expect(page.locator('#scan .steps li.on h3')).toHaveText('Then rate it, or see more');
+    await expect(page.locator('#scan .steps li.on h3')).toHaveText('Then rate it');
     // A click on a caption stops it: choose the first, and it stays there.
     await jump(page, 'scan', 0);
     await page.waitForTimeout(2500);
@@ -314,7 +314,7 @@ test.describe('desktop', () => {
 
 // Nothing in a demo section may be cut off, whatever the window: the text and the phone stay inside
 // the section, and the caption text stays clear of the header.
-const FITS = ['scan', 'learn-wine', 'rate', 'winedna', 'vinny', 'learn', 'mastery', 'my-wines'];
+const FITS = ['scan', 'rate', 'learn-wine', 'winedna', 'vinny', 'learn', 'mastery', 'my-wines'];
 async function fits(page, id) {
   await show(page, id);
   await page.waitForTimeout(300);
