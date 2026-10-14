@@ -141,7 +141,10 @@ function QuizHubScreen({nav,back,showPro}){ const T=useTheme(), cr=T.lift(C.cr);
       startQuiz({mode:'region',region});
     });
   }
-  const [grapesExpanded,setGrapesExpanded]=React.useState(false);
+  // The shelf's filter (all, in progress, mastered, locked) and shelf-or-grid, as last left on this phone.
+  const [grapeFilter,setGrapeFilter]=React.useState(()=>{ const f=Device.learnGrapes().filter; return ['all','progress','done','locked'].includes(f)?f:'all'; });
+  const [grapeGrid,setGrapeGrid]=React.useState(()=>!!Device.learnGrapes().grid);
+  const pickGrapeView=patch=>{ if(patch.filter) setGrapeFilter(patch.filter); if('grid' in patch) setGrapeGrid(patch.grid); Device.setLearnGrapes(patch); };
   // Unlocked grapes first (most-recently-unlocked first), locked grapes after in their
   // existing allowlist order. Recomputed from current unlock state on every render (not
   // just at mount) so a grape unlocked mid-session jumps to the front immediately.
@@ -455,7 +458,13 @@ function QuizHubScreen({nav,back,showPro}){ const T=useTheme(), cr=T.lift(C.cr);
           )}
         </div>
 
-        <div ref={secRefs.grapes} style={{...zoneLabel,scrollMarginTop:56}}>Grape quizzes</div>
+        <div ref={secRefs.grapes} style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:8,scrollMarginTop:56}}>
+          <div style={zoneLabel}>Grape quizzes</div>
+          <div role="button" aria-label={grapeGrid?'Show as a shelf':'Show all in a grid'} onClick={()=>pickGrapeView({grid:!grapeGrid})} style={{flex:'0 0 auto',padding:'4px 10px',borderRadius:999,background:T.glass,border:`1px solid ${T.line}`,cursor:'pointer',display:'flex',alignItems:'center',gap:5}}>
+            <Icon n={grapeGrid?'chevron':'list'} sz={12} col={T.mid} style={grapeGrid?{transform:'rotate(-90deg)'}:undefined}/>
+            <span style={{fontSize:13,fontWeight:600,color:T.mid,fontFamily:C.P,whiteSpace:'nowrap'}}>{grapeGrid?'Shelf':'Grid'}</span>
+          </div>
+        </div>
         <div style={{fontSize:14,color:T.mid,fontFamily:C.P,lineHeight:1.45,marginTop:2}}>Tap a grape for its quiz: what it tastes like, where it grows and how to spot it on a label.</div>
         <div style={{fontSize:13,fontWeight:600,color:T.ink2,fontFamily:C.P,marginTop:4}}>{unlockedGrapes.length} of {GRAPE_ALLOWLIST.length} unlocked · {isPro?'locked ones unlock as you tap'
           :unlockedGrapes.length>=FREE_GRAPE_CAP?`your ${FREE_GRAPE_CAP} free grapes are open${GrapeUnlocks.held().length?`, ${GrapeUnlocks.held().length} more waiting for Pro`:''}; Pro opens the rest`
@@ -463,8 +472,25 @@ function QuizHubScreen({nav,back,showPro}){ const T=useTheme(), cr=T.lift(C.cr);
         {/* A shelf: one row of tiles that snaps as it scrolls, unlocked grapes first by progress, each
             with its berry in the state Mastery's bunch gives it; locked ones in pencil with a lock;
             "All 50" at the end opens Mastery's grapes. The grape's name is the tile's text. */}
-        <div data-testid="grape-shelf" style={{display:'flex',gap:8,marginTop:10,overflowX:'auto',scrollSnapType:'x mandatory',scrollbarWidth:'none',padding:'2px 2px 6px',margin:'10px -2px 0'}}>
-        {[...unlockedGrapes].sort((a,b)=>{ const pa=grapePillStatus(a), pb=grapePillStatus(b), sa=pa?(pa.done?2:1):0, sb=pb?(pb.done?2:1):0; return sb-sa; }).concat(lockedGrapes).map(g=>{
+        {(()=>{
+          // Which grapes the shelf shows: all, in progress (unlocked, not yet every answer right), mastered or locked.
+          const done=g=>{ const st=grapePillStatus(g); return !!(st&&st.done); };
+          const groups={all:[...unlockedGrapes,...lockedGrapes],progress:unlockedGrapes.filter(g=>!done(g)),done:unlockedGrapes.filter(done),locked:lockedGrapes};
+          const opts=[['all','All'],['progress','In progress'],['done','Mastered'],['locked','Locked']];
+          return <div data-testid="grape-filters" style={{display:'flex',alignItems:'center',gap:6,marginTop:10,overflowX:'auto',scrollbarWidth:'none',margin:'10px -16px 0',padding:'0 16px'}}>
+            {opts.map(([id,label])=>{ const on=id===grapeFilter, n=groups[id].length;
+              return <div key={id} role="button" aria-pressed={on} onClick={()=>pickGrapeView({filter:id})} style={{flex:'0 0 auto',padding:'5px 11px',borderRadius:999,background:on?(T.dark?_alpha(cr,0.25):cr):T.glass,border:`1px solid ${on?cr:T.line}`,cursor:'pointer',display:'flex',alignItems:'center',gap:5,opacity:n?1:0.5}}>
+                <span style={{fontSize:13,fontWeight:600,color:on?'#fff':T.ink,fontFamily:C.P,whiteSpace:'nowrap'}}>{label}</span>
+                <span style={{fontSize:12,fontWeight:700,color:on?'#fff':T.mid,fontFamily:C.P}}>{n}</span>
+              </div>; })}
+          </div>; })()}
+        <div data-testid="grape-shelf" style={grapeGrid
+          ?{display:'grid',gridTemplateColumns:'repeat(auto-fill, minmax(96px, 1fr))',gap:8,marginTop:10}
+          :{display:'flex',gap:8,marginTop:10,overflowX:'auto',scrollSnapType:'x mandatory',scrollbarWidth:'none',padding:'2px 2px 6px',margin:'10px -2px 0'}}>
+        {(()=>{ const done=g=>{ const st=grapePillStatus(g); return !!(st&&st.done); };
+          const list=grapeFilter==='progress'?unlockedGrapes.filter(g=>!done(g)):grapeFilter==='done'?unlockedGrapes.filter(done):grapeFilter==='locked'?lockedGrapes
+            :[...unlockedGrapes].sort((a,b)=>{ const pa=grapePillStatus(a), pb=grapePillStatus(b), sa=pa?(pa.done?2:1):0, sb=pb?(pb.done?2:1):0; return sb-sa; }).concat(lockedGrapes);
+          return list; })().map(g=>{
           const locked=!grapeUnlocks[g], loading=grapeLoading===g;
           const col=T.lift(grapeTypeColor(g));
           const status=locked?null:grapePillStatus(g);
@@ -472,7 +498,7 @@ function QuizHubScreen({nav,back,showPro}){ const T=useTheme(), cr=T.lift(C.cr);
           const ink=T.dark?'rgba(255,255,255,0.88)':SKETCH_INK;
           const bank=!locked&&grapeQuizBank(g), prog=bank&&QuizMastery.progress('grape:'+g,bank);
           return(
-            <div key={g} role="button" aria-label={locked?`${g}, locked`:`${g} quiz`} onClick={()=>handleGrapeTap(g)} style={{flex:'0 0 96px',scrollSnapAlign:'start',padding:'10px 8px 9px',borderRadius:14,background:T.glass,border:`1px solid ${locked?T.line:_alpha(col,0.45)}`,cursor:'pointer',display:'flex',flexDirection:'column',alignItems:'center',gap:5,opacity:locked?0.75:1}}>
+            <div key={g} role="button" aria-label={locked?`${g}, locked`:`${g} quiz`} onClick={()=>handleGrapeTap(g)} style={{flex:grapeGrid?undefined:'0 0 96px',scrollSnapAlign:'start',padding:'10px 8px 9px',borderRadius:14,background:T.glass,border:`1px solid ${locked?T.line:_alpha(col,0.45)}`,cursor:'pointer',display:'flex',flexDirection:'column',alignItems:'center',gap:5,opacity:locked?0.75:1}}>
               <svg width="30" height="30" viewBox="-15 -15 30 30" aria-hidden="true" style={{overflow:'visible'}}>
                 <g style={{transform:'scale(13)'}}><SketchBerry seed={g} skin={grapeSkin(g)} state={state} ink={ink} wash={T.dark?T.lift(SKETCH_WASH[grapeSkin(g)]||SKETCH_WASH.red):undefined}/></g>
               </svg>
@@ -484,7 +510,7 @@ function QuizHubScreen({nav,back,showPro}){ const T=useTheme(), cr=T.lift(C.cr);
             </div>
           );
         })}
-          <div role="button" onClick={()=>isPro?nav('mastery-map'):showPro('mastery-map')} style={{flex:'0 0 96px',scrollSnapAlign:'start',padding:'10px 8px',borderRadius:14,background:T.glass,border:`1px dashed ${T.line}`,cursor:'pointer',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:4}}>
+          <div role="button" onClick={()=>isPro?nav('mastery-map'):showPro('mastery-map')} style={{flex:grapeGrid?undefined:'0 0 96px',gridColumn:grapeGrid?'1 / -1':undefined,scrollSnapAlign:'start',padding:'10px 8px',borderRadius:14,background:T.glass,border:`1px dashed ${T.line}`,cursor:'pointer',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:4}}>
             <span style={{fontSize:14,fontWeight:700,color:T.ink,fontFamily:C.P}}>All {GRAPE_ALLOWLIST.length} →</span>
             <span style={{fontSize:11,color:T.mid,fontFamily:C.P,textAlign:'center'}}>Your grapes in Mastery</span>
           </div>
@@ -544,11 +570,9 @@ function QuizHubScreen({nav,back,showPro}){ const T=useTheme(), cr=T.lift(C.cr);
             <div key={c.title} style={{display:'flex',alignItems:'center',gap:12,paddingTop:i?12:0,marginTop:i?12:0,borderTop:i?`1px solid ${T.line}`:'none'}}>
               <div style={{width:38,height:38,borderRadius:11,background:T.soft,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><Icon n={c.icon} sz={18} col={T.mid}/></div>
               <div style={{flex:1,minWidth:0}}>
-                <div style={{display:'flex',alignItems:'center',gap:8,flexWrap:'wrap'}}>
-                  <span style={{fontSize:16,fontWeight:700,color:T.ink,fontFamily:C.P}}>{c.title}</span>
-                  <span style={{fontSize:11,fontWeight:800,color:T.amber,fontFamily:C.P,letterSpacing:'0.06em',textTransform:'uppercase',padding:'2px 8px',borderRadius:999,background:_alpha(T.amber,0.15),whiteSpace:'nowrap'}}>Coming soon</span>
-                </div>
+                <div style={{fontSize:16,fontWeight:700,color:T.ink,fontFamily:C.P}}>{c.title}</div>
                 <div style={{fontSize:14,color:T.mid,fontFamily:C.P,lineHeight:1.4}}>{c.sub}</div>
+                <span style={{display:'inline-block',marginTop:6,fontSize:'10px',fontWeight:800,color:T.amber,fontFamily:C.P,letterSpacing:'0.05em',textTransform:'uppercase',padding:'3px 7px',borderRadius:999,background:_alpha(T.amber,0.15),whiteSpace:'nowrap',lineHeight:1.2}}>Coming soon</span>
               </div>
             </div>
           ))}

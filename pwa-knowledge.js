@@ -124,7 +124,7 @@ const KnowledgeMap = {
       this.TYPES.forEach(T=>{
         const c=wines.filter(w=>T.types.includes(WineDNA._t(w.type))).length, a=m.areas.find(x=>x.id===T.id);
         if(c&&a&&a.score<100) cands.push({area:a,label:T.label,score:a.score,level:a.level,w:c/n*(100-a.score),next:a.next,
-          why:`${c} of your ${n} wine${n===1?' is':'s are'} ${T.label.toLowerCase()}${a.score?`, and you're at ${a.score}% there`:`, and you haven't studied ${T.label.toLowerCase()} yet`}.`});
+          why:`${c} of your ${n} wine${n===1?' is':'s are'} ${T.label.toLowerCase()}${a.score?`, and it's ${a.score}% mastered`:`, and you haven't studied ${T.label.toLowerCase()} yet`}.`});
       });
       [['region','regions'],['grape','grapes']].forEach(([kind,id])=>{
         const a=m.areas.find(x=>x.id===id); if(!a) return;
@@ -138,7 +138,7 @@ const KnowledgeMap = {
           const had=c===1?(kind==='region'?`a wine from ${name}`:`a ${name}`):`${c} ${kind==='region'?`wines from ${name}`:`${name} wines`}`;
           cands.push({area:a,label:name,kind,score:it.score,level:it.level,w:c/n*(100-it.score)*(m.overall>0?this.ITEM_X:1),
             next:{label:`Take the ${name} quiz`,[kind]:name},
-            why:`You've had ${had}${it.score?`, and you're at ${it.score}% there`:` and haven't studied it yet`}.`});
+            why:`You've had ${had}${it.score?`, and it's ${it.score}% mastered`:` and haven't studied it yet`}.`});
         });
       });
     }

@@ -88,6 +88,10 @@ const Device = {
   LEARN_SKILLS_KEY:'vinterest_learn_skills_v1',
   learnSkills(){ return Store.get(this.LEARN_SKILLS_KEY)||null; },
   setLearnSkills(id){ Store.set(this.LEARN_SKILLS_KEY,id); },
+  /* How Learn's grapes were last shown on this phone: {filter: 'all'|'progress'|'done'|'locked', grid: bool}. */
+  LEARN_GRAPES_KEY:'vinterest_learn_grapes_v1',
+  learnGrapes(){ const v=Store.getJSON(this.LEARN_GRAPES_KEY,{}); return v&&typeof v==='object'?v:{}; },
+  setLearnGrapes(patch){ Store.setJSON(this.LEARN_GRAPES_KEY,{...this.learnGrapes(),...patch}); },
 };
 
 /* Wines hearted on the detail screen, by name and vintage. */
