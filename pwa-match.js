@@ -155,7 +155,7 @@ const TasteMatch = {
     // wine, not printed on the label) is never announced as a new grape.
     const typical=wine.grapes_basis==='typical', blend=!!wine.blend||(wine.grapes||[]).length>1;
     const gT=grapeName?tally(w=>this._grapes(w).has(grapeName)):null;
-    const scoredLine=t=>`you've scored ${t.n===1?'one':t.n}${blend||typical?` ${grapeName} wine${t.n===1?'':'s'}`:''}, ${t.n===1?'at':'averaging'} ${t.avg}`;
+    const scoredLine=t=>`you've rated ${t.n===1?'one':t.n}${blend||typical?` ${grapeName} wine${t.n===1?'':'s'}`:''}, ${t.n===1?'at':'averaging'} ${t.avg}`;
     if(gT) reasons.push({kind:'grape',tone:tone(gT.avg),weight:1+gT.n,
       text:typical?`Usually made mainly from ${grapeLabel}: ${scoredLine(gT)}.`
         :blend?`${grapeLabel} leads this blend: ${scoredLine(gT)}.`
@@ -164,7 +164,7 @@ const TasteMatch = {
       text:blend?`${grapeLabel}, the lead grape in this blend, is new to you.`:`${grapeLabel} is a new grape for you.`});
     const rT=region?tally(w=>this._region(w)===region):null;
     if(rT) reasons.push({kind:'region',tone:tone(rT.avg),weight:0.8+rT.n*0.8,
-      text:`${this._regionName(wine)}: you've scored ${rT.n===1?'one':rT.n}, ${rT.n===1?'at':'averaging'} ${rT.avg}.`});
+      text:`${this._regionName(wine)}: you've rated ${rT.n===1?'one':rT.n}, ${rT.n===1?'at':'averaging'} ${rT.avg}.`});
 
     // Other years of this same wine they've scored, newest first.
     const vint=scored.filter(w=>WineHistory.otherVintage(wine,w)).sort((a,b)=>(+b.vintage||0)-(+a.vintage||0));
@@ -172,7 +172,7 @@ const TasteMatch = {
     const yr=w=>`the ${w.vintage}`;
     const gave=w=>`You gave ${yr(w)} ${/^(8|11|18)/.test(String(w.rating))?'an':'a'} ${w.rating}`;
     const vText=vint.length===1?`${gave(vint[0])}${vint[0].buy_again?' and would buy it again':''}. Vintages vary, but it's the same wine.`
-      :vint.length?`You've scored ${vint.length} other vintages of this wine: ${vint.map(w=>`${w.vintage} (${w.rating})`).join(', ')}.`:null;
+      :vint.length?`You've rated ${vint.length} other vintages of this wine: ${vint.map(w=>`${w.vintage} (${w.rating})`).join(', ')}.`:null;
     if(vint.length) reasons.push({kind:'vintage',tone:tone(vMean),weight:100,text:vText});
 
     const base={typeKey,label,style,scoredCount:scored.length,profile:p};
@@ -180,7 +180,7 @@ const TasteMatch = {
       const need=this.MIN_SCORED-scored.length;
       return {...base,verdict:'early',...this.VERDICTS.early,pct:null,expected:null,confidence:'none',
         reasons:reasons.sort((a,b)=>b.weight-a.weight).slice(0,3),
-        summary:`Score ${WineDNA.noun(typeKey,need)} more and we'll start predicting how much you'll like ${L} like this.`};
+        summary:`Rate ${WineDNA.noun(typeKey,need)} more and we'll start predicting how much you'll like ${L} like this.`};
     }
     if(!axes.length&&!gT&&!rT&&!vint.length){
       return {...base,verdict:'unknown',...this.VERDICTS.unknown,pct:null,expected:null,confidence:'none',reasons:reasons.slice(0,3),
@@ -195,7 +195,7 @@ const TasteMatch = {
     // The most similar wine they've scored, when it's genuinely close in style.
     const near=nearest.find(x=>x.styleSim!=null&&x.styleSim>=0.6&&!vint.includes(x.w));
     if(near) reasons.push({kind:'similar',tone:tone(near.w.rating),weight:2+near.styleSim,
-      text:`Closest in style to ${near.w.name}, which you scored ${near.w.rating}${near.w.buy_again?' and would buy again':''}.`});
+      text:`Closest in style to ${near.w.name}, which you rated ${near.w.rating}${near.w.buy_again?' and would buy again':''}.`});
 
     // The traits that separate their 90+ wines from the rest (WineDNA's signals) nudge the
     // prediction by up to two points each and become reasons.
@@ -233,7 +233,7 @@ const TasteMatch = {
     const lovedAll=scored.filter(w=>w.rating>=ParkerScale.LOVED).length/scored.length;
     const lovedW=sims.reduce((t,x)=>t+(x.w.rating>=ParkerScale.LOVED?x.sim:0),0);
     const lovedNear=(lovedW+this.PRIOR*lovedAll)/(mass+this.PRIOR);
-    const basis=`Based on the ${WineDNA.noun(typeKey,scored.length)} you've scored`;
+    const basis=`Based on the ${WineDNA.noun(typeKey,scored.length)} you've rated`;
     const styleT=style?tally(w=>{ const x=sims.find(y=>y.w===w); return !!x&&x.styleSim!=null&&x.styleSim>=0.5; }):null;
     const breakdown=this._breakdown({vint,vMean,nearest,n:scored.length,nMean,spreadNear,avg,spreadAll,loved:lovedNear,lovedAll,e,sd,bar,pct,wineProducer:wine.producer,signalPts,L,style,styleT,gT,grapeLabel,grapeName,typical,rT,regionName:this._regionName(wine)});
     return {...base,verdict,...this.VERDICTS[verdict],pct,expected:e,sd,bar,expectedLabel:ParkerScale.label(e),confidence:vint.length?'high':confidence,
@@ -241,7 +241,7 @@ const TasteMatch = {
       reasons:reasons.sort((a,b)=>b.weight-a.weight).slice(0,3),
       // One number on screen (the match %); the prediction is said in Parker-band words.
       summary:vint.length?`${vint.length===1?gave(vint[0]):`Your other ${vint.length} vintages of it average ${Math.round(vMean)}`}, so we think you'd rate this one ${ParkerScale.label(e)}.`
-        :`${basis}, there's a ${pct}% chance you'd score it ${bar} or better; most likely about ${e}, ${ParkerScale.label(e)}.${confidence==='low'?' It\'s a rough guess: nothing you\'ve scored is very like it.':''}`};
+        :`${basis}, there's a ${pct}% chance you'd rate it ${bar} or better; most likely about ${e}, ${ParkerScale.label(e)}.${confidence==='low'?' It\'s a rough guess: nothing you\'ve rated is very like it.':''}`};
   },
 
   /* The predicted score for one wine from the scored wines of its type: every one counts,
@@ -295,14 +295,14 @@ const TasteMatch = {
   _breakdown({vint,vMean,nearest,n,nMean,spreadNear,avg,spreadAll,loved:lovedNear,lovedAll,e,sd,bar,pct,wineProducer,signalPts,L,style,styleT,gT,grapeLabel,grapeName,typical,rT,regionName}){
     const avgR=Math.round(avg), up=[], down=[], even=[];
     const put=(diff,text)=>(diff>=1.5?up:diff<=-1.5?down:even).push({text,diff:Math.round(diff)});
-    const your=(t,what)=>`your ${t.n===1?'one':t.n} ${what} ${t.n===1?'scored':'average'} ${t.avg}`;
-    if(vint&&vint.length) put(vMean-avg,`Other vintages of this wine: you scored ${vint.map(w=>`the ${w.vintage} ${w.rating}`).join(', ')}`);
+    const your=(t,what)=>`your ${t.n===1?'one':t.n} ${what} ${t.n===1?'rated':'average'} ${t.avg}`;
+    if(vint&&vint.length) put(vMean-avg,`Other vintages of this wine: you rated ${vint.map(w=>`the ${w.vintage} ${w.rating}`).join(', ')}`);
     if(gT) put(gT.avg-avg,`${typical?'Usually ':''}${grapeLabel}: ${your(gT,gT.n===1?L.replace(/s$/,''):L)}`);
     else if(grapeName&&!typical) even.push({text:`${grapeLabel} is new to you, so it counts neither way`,diff:0});
     if(rT) put(rT.avg-avg,`${regionName}: ${your(rT,'from there')}`);
     const byProducer=nearest.filter(x=>x.sameProducer&&!(vint||[]).includes(x.w));
     if(byProducer.length){ const pa=WineDNA._mean(byProducer.map(x=>x.w.rating));
-      put(pa-avg,`${wineProducer}: you scored ${byProducer.map(x=>`${x.w.name} ${x.w.rating}`).join(', ')}`); }
+      put(pa-avg,`${wineProducer}: you rated ${byProducer.map(x=>`${x.w.name} ${x.w.rating}`).join(', ')}`); }
     if(style&&styleT) put(styleT.avg-avg,`Its style (${style.toLowerCase()}): ${your(styleT,`${L} like that`)}`);
     signalPts.forEach(x=>(x.pts>0?up:down).push({text:x.text,diff:x.pts}));
     up.sort((a,b)=>b.diff-a.diff); down.sort((a,b)=>a.diff-b.diff);
@@ -313,11 +313,11 @@ const TasteMatch = {
     if(like.length<3) like=nearest.slice(0,3);
     const loved=like.filter(x=>x.w.rating>=ParkerScale.LOVED), notLoved=like.filter(x=>x.w.rating<ParkerScale.LOVED);
     const nm=x=>`${x.w.name} (${x.w.rating})`;
-    const closest=like.length?`The ${like.length===1?L.replace(/s$/,''):like.length+' '+L} most like it: you loved ${loved.length===like.length?'all of them':`${loved.length} (scored 90+)`}${notLoved.length&&loved.length<like.length?`; not ${notLoved.map(nm).join(', ')}`:''}.`:'';
+    const closest=like.length?`The ${like.length===1?L.replace(/s$/,''):like.length+' '+L} most like it: you loved ${loved.length===like.length?'all of them':`${loved.length} (rated 90+)`}${notLoved.length&&loved.length<like.length?`; not ${notLoved.map(nm).join(', ')}`:''}.`:'';
     const lovedR=Math.round(lovedNear*100), lo=Math.max(0,Math.round(e-sd)), hi=Math.min(100,Math.round(e+sd));
-    const vWhy=vint&&vint.length?`The same wine from another year is the best guide there is, so your ${vint.length===1?`score for the ${vint[0].vintage}`:`average for the other vintages (${Math.round(vMean)})`} makes up ${Math.round(this.VINTAGE_W*100)}% of the prediction and everything else you've scored the rest. `:'';
+    const vWhy=vint&&vint.length?`The same wine from another year is the best guide there is, so your ${vint.length===1?`rating for the ${vint[0].vintage}`:`average for the other vintages (${Math.round(vMean)})`} makes up ${Math.round(this.VINTAGE_W*100)}% of the prediction and everything else you've rated the rest. `:'';
     const an=v=>/^(8|11|18)/.test(String(v))?'an':'a';
-    const pctWhy=vWhy+`We expect you'd score it about ${e}, most likely somewhere between ${lo} and ${hi}. You score ${L} ${avgR} on average, so we count ${bar} or better as one you enjoyed: that's ${an(pct)} ${pct}% chance this one gets there, ${an(pct)} ${pct}% match. Weighing all ${n} ${L} you've scored by how alike they are, you've loved (90+) about ${lovedR}% of wines like this one, against ${Math.round(lovedAll*100)}% of your ${L} overall.`;
+    const pctWhy=vWhy+`We expect you'd rate it about ${e}, most likely somewhere between ${lo} and ${hi}. You rate ${L} ${avgR} on average, so we count ${bar} or better as one you enjoyed: that's ${an(pct)} ${pct}% chance this one gets there, ${an(pct)} ${pct}% match. Weighing all ${n} ${L} you've rated by how alike they are, you've loved (90+) about ${lovedR}% of wines like this one, against ${Math.round(lovedAll*100)}% of your ${L} overall.`;
     return {avg:avgR,up,down,even,closest,predicted:e,sd,bar,pctWhy};
   },
 

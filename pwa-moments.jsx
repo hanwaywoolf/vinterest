@@ -7,7 +7,7 @@
    calm screen (MOMENT_SCREENS): one earned mid-scan or mid-quiz waits until they're back on Home,
    Learn or another tab, so it never covers what they're doing. A screen that shows its own XP
    passes {xpShown}; one that shows everything (the quiz result) passes {quiet}. */
-const MOMENT_SCREENS=['home','mywines','learn','profile','scan','mastery-map','account'];
+const MOMENT_SCREENS=['home','mywines','learn','profile','mastery-map','account'];
 const _MOMENT_CSS=`@keyframes xpChipIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
 @keyframes momentIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
 .xp-chip{animation:xpChipIn .25s ease both}.moment-card{animation:momentIn .35s cubic-bezier(.2,.8,.2,1) both}
@@ -39,7 +39,7 @@ function useXPDelivery(){
    clear of titles and the buttons a screen keeps at its foot. */
 function XPChip({chip,overNav}){
   if(!chip) return null;
-  const pill=<div key={chip.xp} className="xp-chip" data-testid="xp-chip" aria-live="polite" style={{display:'inline-flex',alignItems:'center',gap:7,background:'rgba(15,15,15,0.9)',borderRadius:999,padding:'6px 12px',boxShadow:'0 4px 14px rgba(0,0,0,0.18)'}}>
+  const pill=<div key={chip.xp} className="xp-chip" data-testid="xp-chip" aria-live="polite" style={{display:'inline-flex',alignItems:'center',gap:7,background:'rgba(15,15,15,0.9)',border:'1px solid rgba(255,255,255,0.18)',borderRadius:999,padding:'6px 12px',boxShadow:'0 4px 14px rgba(0,0,0,0.18)'}}>
     <span style={{fontSize:14,fontWeight:800,color:'#E7C66B',fontFamily:C.P}}>+{chip.xp} XP</span>
     {chip.label&&<span style={{fontSize:13,fontWeight:600,color:'rgba(255,255,255,0.85)',fontFamily:C.P,maxWidth:190,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{chip.label}</span>}
   </div>;
@@ -58,7 +58,7 @@ function XPBadgeGain({chip}){
 function MomentCard({m,more,onAct,onClose}){
   if(!m) return null;
   return <div style={{position:'relative',height:0,zIndex:60}}>
-    <div key={m.id} className="moment-card" role="status" data-testid="moment-card" style={{position:'absolute',bottom:10,left:12,right:12,background:C.ink,borderRadius:16,padding:'14px 14px 12px',boxShadow:'0 10px 30px rgba(0,0,0,0.28)',display:'flex',gap:12}}>
+    <div key={m.id} className="moment-card" role="status" data-testid="moment-card" style={{position:'absolute',bottom:10,left:12,right:12,background:C.ink,border:'1px solid rgba(255,255,255,0.16)',borderRadius:16,padding:'14px 14px 12px',boxShadow:'0 10px 30px rgba(0,0,0,0.28)',display:'flex',gap:12}}>
       <div style={{width:40,height:40,borderRadius:20,background:'rgba(231,198,107,0.16)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><Icon n={m.icon} sz={19} col="#E7C66B"/></div>
       <div style={{flex:1,minWidth:0,display:'flex',flexDirection:'column',gap:3}}>
         <div style={{fontSize:13,fontWeight:600,color:'#E7C66B',fontFamily:C.P,textTransform:'uppercase',letterSpacing:'0.06em'}}>{m.kicker}{more?` · ${more} more`:''}</div>

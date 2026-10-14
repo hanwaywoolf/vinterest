@@ -21,7 +21,7 @@ test('Parker labels and quick-picks', async ({ page }) => {
   expect(out.presets).toEqual([70, 80, 85, 90, 95]);
 });
 
-test('the demo reds profile: signal, grapes, dislikes and value all come from real scores', async ({ page }) => {
+test('the demo reds profile: signal, grapes, dislikes and value all come from real ratings', async ({ page }) => {
   await page.goto(`${BASE}/?demo=1#home`);
   const p = await page.evaluate(() => {
     const x = WineDNA.profile('red', WineHistory.getAll(), 'Reds');
@@ -44,9 +44,9 @@ test('the demo reds profile: signal, grapes, dislikes and value all come from re
   for (const g of ['Grenache', 'Syrah', 'Plavac Mali']) expect(p.grapes).toContain(g);
   for (const g of ['Garnacha', 'Shiraz', 'Mlavac']) expect(p.grapes).not.toContain(g);
   // Only genuinely low scores (under 80) count as "didn't work"; 80s are Very good.
-  expect(p.disliked).toEqual([66]);
-  // Piedmont and Nebbiolo are the same two bottles: one line, not two.
-  expect(p.rethink).toEqual([['Piedmont', 'Nebbiolo']]);
+  expect(p.disliked).toEqual([72]);
+  // One disliked bottle (the Barolo) isn't a pattern to rethink.
+  expect(p.rethink).toEqual([]);
   // £28 vs £22 is not "about the same".
   expect(p.verdict.kind).not.toBe('flat');
   expect(p.confidence).toBe('strong');
@@ -55,7 +55,7 @@ test('the demo reds profile: signal, grapes, dislikes and value all come from re
 // What You Love works on their own scale: someone who scores nearly everything 90+ still learns
 // what lifts and holds back their scores, a few great bottles don't outrank many good ones, and
 // a grape and region that are the same bottles show as one line.
-test('What You Love on a generous scorer: lifts and drags against their own average', async ({ page }) => {
+test('What You Love on a generous rater: lifts and drags against their own average', async ({ page }) => {
   await page.goto(`${BASE}/#home`);
   const L = await page.evaluate(() => {
     const w = (name, producer, region, grape, rating, price, vintage) => ({ name, producer, type: 'red', region, country: { Rioja: 'Spain', 'Napa Valley': 'USA' }[region] || 'Italy', grapes: [grape], rating, price_usd: price, vintage, body: 0.6, tannins: 0.6, acidity: 0.6 });
@@ -151,7 +151,7 @@ test('one level scale: bar labels, chips and Explore Next agree', async ({ page 
   for (const s of out.shares.filter(Boolean)) expect(allowed).toContain(s);
 });
 
-test('re-scoring a wine refreshes the profile (not just adding one)', async ({ page }) => {
+test('re-rating a wine refreshes the profile (not just adding one)', async ({ page }) => {
   await page.goto(`${BASE}/?demo=1#home`);
   const out = await page.evaluate(() => {
     const before = WineDNA.signature(WineHistory.getAll());
@@ -166,7 +166,12 @@ test('the WineDNA tab shows the new sections with no console errors', async ({ p
   const errors = collectErrors(page);
   await page.goto(`${BASE}/?demo=1#profile`);
   const root = page.locator('#root');
-  for (const t of ['Based on your 6 Outstanding (90+) reds', 'Region you love most', 'How Well We Know You', 'Your reds style', 'Your 90+ reds', 'Your score at each price', 'Your best scores come from', 'How your choices are changing', 'Blind Call accuracy']) {
+  // The thin line, the palate link and the Scripts row sit above the portrait and the lifts.
+  await expect(page.getByTestId('dna-palate-link')).toContainText('Your palate');
+  await expect(page.getByTestId('dna-script-row')).toContainText('What to say when ordering');
+  await page.getByTestId('dna-script-row').click();
+  await expect(page.locator('[data-section="scripts"]')).toBeInViewport();
+  for (const t of ['Based on your 6 Outstanding (90+) reds', 'What moves your ratings', 'How Well We Know You', 'Your rating at each price', 'Your best ratings come from', 'How your choices are changing', 'Blind Call accuracy']) {
     await expect(root, t).toContainText(t);
   }
   // Removed: duplicate personality badge, XP bar, "1 of 4" arrows, generic grape claims.
@@ -230,7 +235,8 @@ test('wines named in WineDNA open their details', async ({ page }) => {
   const root = page.locator('#root');
   await expect(root.locator('[data-section="house"]')).toContainText('Your “House” Wines');
   const row = page.getByTestId('house-wines').getByRole('button').first();
-  const name = (await row.locator('div div').first().innerText()).trim().replace(/^♥/, '').trim();
+  // The row says "Name 2018"; the wine's header sets the year on its own line, so match the name alone.
+  const name = (await row.locator('div div').first().innerText()).trim().replace(/^♥/, '').replace(/\s+(19|20)\d\d$/, '').trim();
   await row.click();
   await expect(root.getByText('Details', { exact: true })).toBeVisible();
   await expect(root).toContainText(name);
@@ -304,7 +310,7 @@ test('another vintage of the same wine anchors the match and says so', async ({ 
   expect(out.summary).toBe("You gave the 2019 a 100, so we think you'd rate this one Extraordinary.");
   expect(out.pct).toBeGreaterThanOrEqual(96);
   expect(out.verdict).toBe('hit');
-  expect(out.up[0]).toBe('Other vintages of this wine: you scored the 2019 100');
+  expect(out.up[0]).toBe('Other vintages of this wine: you rated the 2019 100');
   expect(out.why).toMatch(/^The same wine from another year is the best guide there is/);
   expect(out.otherFirst).not.toBe('vintage');
 });
@@ -329,4 +335,29 @@ test('other vintages are found across loose label readings (a year in the name, 
   expect(out.expected).toBeGreaterThanOrEqual(94);
   expect(out.pct).toBeGreaterThanOrEqual(90);
   expect(out.why).toMatch(/^The same wine from another year is the best guide/);
+});
+
+// Your rules (WineDNA.rules): three things to do next time they're buying, from what the profile
+// already knows. Reach for what lifts their ratings (with the price band that does too), skip what
+// holds them back (one finding, never fused with a price band), try Explore Next's pick; before
+// enough rated wines, one rule: rate more.
+test('Your rules: reach, skip and try from the profile, and "rate more" before it is ready', async ({ page }) => {
+  await page.goto(`${BASE}/?demo=1#profile`);
+  const rules = await page.evaluate(() => { const w = WineHistory.getAll(); const p = WineDNA.profile('red', w, 'Reds'); return WineDNA.rules(p, ExploreNext.suggest('red', w, 'Reds')); });
+  expect(rules.map((r) => r.kind)).toEqual(['reach', 'skip', 'try']);
+  expect(rules[0].lead).toMatch(/^Reach for \w+(, (over|under|between) £\d+( and £\d+)?)?$/);
+  expect(rules[0].why).toMatch(/^\d+ bottles, averaging \d+: \d+ points? above your usual \d+\.$/);
+  expect(rules[1].lead).toMatch(/^Skip \w+$/);
+  expect(rules[2].lead).toMatch(/^Try /);
+  expect(rules[2].why).not.toMatch(/\(think/);
+  expect(rules[2].link).toEqual({ explore: true });
+  // The card on the tab, and its Try row opening Explore Next.
+  const card = page.getByTestId('dna-rules');
+  await expect(card).toContainText("Next time you're buying");
+  await expect(card.locator('[data-rule="reach"]')).toContainText(rules[0].lead);
+  await card.locator('[data-rule="try"]').click();
+  await expect(page.locator('[data-section="explore"]')).toBeInViewport();
+  // Too few rated: one rule, to rate more.
+  const early = await page.evaluate(() => { const w = WineHistory.getAll().filter((x) => x.type === 'red').slice(0, 3); const p = WineDNA.profile('red', w, 'Reds'); return WineDNA.rules(p, null); });
+  expect(early).toHaveLength(1); expect(early[0].kind).toBe('more'); expect(early[0].lead).toMatch(/^Rate \d+ more reds$/);
 });

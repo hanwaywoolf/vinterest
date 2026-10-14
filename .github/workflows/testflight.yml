@@ -109,6 +109,10 @@ jobs:
             2>&1 | tee "$RUNNER_TEMP/export.log" || {
             grep -E '(error|Error):' "$RUNNER_TEMP/export.log" | sort -u | head -20 | while IFS= read -r l; do echo "::error title=Upload::$l"; done
             exit 1; }
+      # Internal testers get every processed build by themselves: automatic distribution on each
+      # internal group (made if there is none), through the same API key (scripts/testflight-groups.mjs).
+      - name: Give the build to internal testers
+        run: node scripts/testflight-groups.mjs
       - name: Remove the key
         if: always()
         run: rm -rf "$RUNNER_TEMP/keys"

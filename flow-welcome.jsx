@@ -16,7 +16,7 @@ const _WELCOME_SAMPLE=_loadJSON('data/onboarding-sample.json');
 
 const _WELCOME_TILES=[
   {t:'Scan a bottle. Know if it\'s for you.',d:'Point your camera at any label or wine list. You get a match built on your own taste, and the reasons why.',preview:'match'},
-  {t:'Every bottle builds your WineDNA.',d:'Your scores add up to a profile of the grapes, regions, styles and prices you love. It remembers everything you\'ve tried, so you don\'t have to.',preview:'dna'},
+  {t:'Every bottle builds your WineDNA.',d:'Your ratings add up to a profile of the grapes, regions, styles and prices you love. It remembers everything you\'ve tried, so you don\'t have to.',preview:'dna'},
   {t:'The right wine, wherever you\'re buying.',d:'In the shop, at the restaurant or browsing online, scan and your match tells you if it\'s for you. Got a quick question? Ask Vinny. His answers come from your WineDNA.',preview:'vinny'},
   {t:'Find out why you like what you like.',d:'Articles written for you, from your WineDNA and history, on the grapes and regions behind your favourites and the ones worth trying next. Quizzes make it stick, and your mastery map shows how far you\'ve come.',preview:'learn'},
   {t:'It gets better with every bottle.',steps:[
@@ -74,7 +74,7 @@ function _PreviewMatch(){
         <div className="wp-in" style={{flex:1,minWidth:0,animationDelay:'.9s'}}>
           <div style={{fontSize:20,fontWeight:800,color:col,fontFamily:C.P,lineHeight:1.2}}>{m.label}</div>
           <div style={{fontSize:15,color:C.mid,fontFamily:C.P,marginTop:3}}>Likely about {m.expected} from you · {m.expectedLabel}</div>
-          <div style={{fontSize:13,color:C.mid,fontFamily:C.P,marginTop:2}}>{m.pct}% sure you'd score it {m.bar}+, your usual for reds</div>
+          <div style={{fontSize:13,color:C.mid,fontFamily:C.P,marginTop:2}}>{m.pct}% sure you'd rate it {m.bar}+, your usual for reds</div>
         </div>
       </div>
       <div className="wp-reasons" style={{marginTop:14,paddingTop:12,borderTop:`1px solid ${C.line}`}}><MatchReasons match={m} showSummary={false}/></div>
@@ -156,7 +156,7 @@ function _welcomeAlt(kind){
   if(kind==='match'){ const m=S.match, w=U.scanned, [pro,con]=m.reasons;
     return `Example scan result: ${w.producer} ${w.name} ${w.vintage}, a ${m.pct}% match, "${m.label}". For it: ${pro.text} Against it: ${con.text}`; }
   if(kind==='dna'){ const d=S.dna;
-    return `Example WineDNA for reds: "${d.personality}", based on ${d.lovedCount} Outstanding reds. ${d.chips.map(c=>`${c.label}: ${c.value}`).join('. ')}. ${d.confidence.n} scored, ${d.confidence.next||'a strong read'}.`; }
+    return `Example WineDNA for reds: "${d.personality}", based on ${d.lovedCount} Outstanding reds. ${d.chips.map(c=>`${c.label}: ${c.value}`).join('. ')}. ${d.confidence.n} rated, ${d.confidence.next||'a strong read'}.`; }
   if(kind==='vinny'){ const v=S.vinny[0];
     return `Example of asking Vinny from the Home screen. Question: "${v.q}" Vinny's answer, from this user's WineDNA: "${v.a}"`; }
   const st=S.article, a=S.mastery;

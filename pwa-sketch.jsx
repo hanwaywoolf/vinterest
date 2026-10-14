@@ -35,11 +35,13 @@ function sketchBerryPaths(seed){
    'start' an outline in its colour; 'grow' washed; 'ripe' washed with hatching; fading dashes
    the line and thins the wash. */
 function SketchBerry({seed,skin,state,fading,wash,ink=SKETCH_INK}){
+  // On the story's dark stage (a light ink) the paper and pencil go with it: glass and a faint pencil.
+  const dark=ink!==SKETCH_INK, PAPER=dark?'rgba(255,255,255,0.06)':'#FBF8F3', PENCIL=dark?'rgba(255,255,255,0.28)':SKETCH_PENCIL;
   const p=sketchBerryPaths(seed), col=wash||SKETCH_WASH[skin]||SKETCH_WASH.red;
   const line={fill:'none',strokeLinecap:'round',vectorEffect:'non-scaling-stroke'};
-  if(state==='locked') return <g><path d={p.wash} fill="#FBF8F3"/><path d={p.line} {...line} stroke={SKETCH_PENCIL} strokeWidth="1.1"/></g>;
+  if(state==='locked') return <g><path d={p.wash} fill={PAPER}/><path d={p.line} {...line} stroke={PENCIL} strokeWidth="1.1"/></g>;
   return <g>
-    <path d={p.wash} fill={state==='start'?'#FBF8F3':col} opacity={state==='start'?1:fading?0.28:state==='ripe'?0.72:0.55} transform={`translate(${p.dx} ${p.dy})`}/>
+    <path d={p.wash} fill={state==='start'?PAPER:col} opacity={state==='start'?1:fading?0.28:state==='ripe'?0.72:0.55} transform={`translate(${p.dx} ${p.dy})`}/>
     <path d={p.line} {...line} stroke={state==='start'?col:ink} strokeWidth={state==='start'?1.5:1.2} strokeDasharray={fading?'3 3':null}/>
     {state==='ripe'&&<path d={p.hatch} {...line} stroke={ink} strokeWidth="0.9" opacity="0.7"/>}
   </g>;
@@ -77,8 +79,8 @@ function SketchVine({x,y,s=1,leafRed,ink=SKETCH_INK}){
    pen lines alone, so a lemon stays a lemon by its shape; only the wine in the glass is washed,
    in `wine` (the type's colour), since it is wine. */
 const SKETCH_TRAIT={body:'#B4566B',acidity:'#E8C547',tannins:'#9A6440',texture:'#A9B85E'};
-function SketchTraitIcon({id,inkOnly=false,wine}){
-  const ink={fill:'none',stroke:SKETCH_INK,strokeLinecap:'round',strokeLinejoin:'round'}, wash=SKETCH_TRAIT[id];
+function SketchTraitIcon({id,inkOnly=false,wine,ink:inkCol=SKETCH_INK}){ // ink: light on the story's dark stage
+  const ink={fill:'none',stroke:inkCol,strokeLinecap:'round',strokeLinejoin:'round'}, wash=SKETCH_TRAIT[id];
   if(id==='body'){
     const bowl='M-11 -17 C-11 -4 -8 4 0 4 C8 4 11 -4 11 -17';
     const liquid='M-10.4 -7 C-9.5 0 -6 4 0 4 C6 4 9.5 0 10.4 -7 C5 -5.6 -5 -5.6 -10.4 -7 Z';
@@ -91,20 +93,20 @@ function SketchTraitIcon({id,inkOnly=false,wine}){
       <path d="M-8.5 16.5 C-4 14.6 4 14.6 8.5 16.5" {...ink} strokeWidth="1.6"/>
       {/* the tears: where alcohol, and so body, shows on the glass */}
       <path d="M-8 -15.5 C-8.4 -13 -7.6 -11 -8.1 -8.6 M-4.6 -16.4 C-5 -14.2 -4.3 -12.4 -4.7 -10.6 M8.1 -15.5 C8.5 -13.2 7.8 -11.4 8.2 -9.4" {...ink} strokeWidth="1" opacity="0.7"/>
-      <circle cx="-8.1" cy="-8.3" r="0.9" fill={SKETCH_INK} opacity="0.6"/><circle cx="-4.7" cy="-10.3" r="0.8" fill={SKETCH_INK} opacity="0.6"/><circle cx="8.2" cy="-9.1" r="0.9" fill={SKETCH_INK} opacity="0.6"/>
+      <circle cx="-8.1" cy="-8.3" r="0.9" fill={inkCol} opacity="0.6"/><circle cx="-4.7" cy="-10.3" r="0.8" fill={inkCol} opacity="0.6"/><circle cx="8.2" cy="-9.1" r="0.9" fill={inkCol} opacity="0.6"/>
     </g>;
   }
   const shape={
     acidity:{d:'M-17 0 C-17 -9 -8 -13 0 -13 C8 -13 17 -9 17 0 C17 9 8 13 0 13 C-8 13 -17 9 -17 0 Z',
       extra:<><path d="M17 0 L20.5 -0.6 M-17 0 L-20.5 0.6" {...ink} strokeWidth="1.6"/><path d="M-9 -5 C-4 -8 4 -8 9 -5" {...ink} strokeWidth="1" opacity="0.55"/>
         {/* Without its yellow, the peel's dimples and a leaf keep it a lemon. */}
-        {inkOnly&&<>{[[-8,2],[-3,5],[3,3],[8,-1],[-1,-1],[6,6],[-11,-3]].map(([x,y],i)=><circle key={i} cx={x} cy={y} r="0.75" fill={SKETCH_INK} opacity="0.5"/>)}
+        {inkOnly&&<>{[[-8,2],[-3,5],[3,3],[8,-1],[-1,-1],[6,6],[-11,-3]].map(([x,y],i)=><circle key={i} cx={x} cy={y} r="0.75" fill={inkCol} opacity="0.5"/>)}
           <path d="M18 -1 C20 -7 25 -9 28 -8 C26 -4 22 -2 18 -1 Z M18 -1 C21 -4 24 -6 27 -7.5" {...ink} strokeWidth="1.1"/></>}</>},
     tannins:{d:'M-15 -8 L15 -8 C15 4 9 12 0 12 C-9 12 -15 4 -15 -8 Z',
       extra:<><path d="M15 -4 C21 -4 21 5 13 5" {...ink} strokeWidth="1.6"/><path d="M-19 15 C-8 18 8 18 19 15" {...ink} strokeWidth="1.5"/><path d="M-4 -12 C-6 -15 -2 -17 -4 -20 M4 -12 C2 -15 6 -17 4 -20" {...ink} strokeWidth="1" opacity="0.55"/>
         {inkOnly&&<path d="M-13 -4 L13 -4" {...ink} strokeWidth="1" opacity="0.6"/>}</>},
     texture:{d:'M0 -9 C5 -14 15 -12 15 -1 C15 10 7 16 0 13 C-7 16 -15 10 -15 -1 C-15 -12 -5 -14 0 -9 Z',
-      extra:<><path d="M0 -9 C0 -13 1 -16 3 -18" {...ink} strokeWidth="1.5"/><path d="M3 -15 C7 -19 12 -18 13 -15 C9 -12 5 -13 3 -15 Z" fill={inkOnly?'none':SKETCH_WASH.leaf} opacity={inkOnly?1:0.7} stroke={SKETCH_INK} strokeWidth="1"/></>},
+      extra:<><path d="M0 -9 C0 -13 1 -16 3 -18" {...ink} strokeWidth="1.5"/><path d="M3 -15 C7 -19 12 -18 13 -15 C9 -12 5 -13 3 -15 Z" fill={inkOnly?'none':SKETCH_WASH.leaf} opacity={inkOnly?1:0.7} stroke={inkCol} strokeWidth="1"/></>},
   }[id];
   if(!shape) return null;
   return <g>
@@ -167,23 +169,14 @@ function SketchNoteIcon({note,family,ink='#fff',wash}){
   }
 }
 
-/* "Something to say": a raised glass with a speech bubble, drawn as the pen would draw it (each
-   line runs on from the last, `rv-draw` in the reveal's CSS), then the words. Consistent across
-   every wine: it's the mark for the line you can say out loud. */
+/* "Something to say": a speech bubble the pen draws in one quick stroke (`rv-draw` in the
+   reveal's CSS), with the words right behind it. The same mark on every wine: the line you can
+   say out loud. */
 function SketchSay({ink='#fff',col}){
   const line={fill:'none',stroke:ink,strokeLinecap:'round',strokeLinejoin:'round'};
-  return <svg viewBox="-20 -40 110 70" width="200" height="128" aria-hidden="true" style={{display:'block',overflow:'visible'}}>
-    {/* the glass, tilted as if raised */}
-    <g transform="rotate(-14 0 0)">
-      <path d="M-11 -17 C-11 -4 -8 4 0 4 C8 4 11 -4 11 -17" {...line} strokeWidth="1.8" pathLength="1" className="rv-draw" style={{animationDelay:'.1s'}}/>
-      <path d="M-11 -17 C-5 -18.4 5 -18.4 11 -17" {...line} strokeWidth="1.2" pathLength="1" className="rv-draw" style={{animationDelay:'.5s'}} opacity="0.75"/>
-      <path d="M-10.3 -7 C-5 -5.4 5 -5.4 10.3 -7" {...line} strokeWidth="1.1" pathLength="1" className="rv-draw" style={{animationDelay:'.7s'}} opacity="0.8"/>
-      <path d="M-10.3 -7 C-9.5 0 -6 4 0 4 C6 4 9.5 0 10.3 -7 Z" fill={col||ink} opacity="0.5" className="rv-in" style={{animationDelay:'.9s'}}/>
-      <path d="M0 4 L0 15 M-8.5 16.5 C-4 14.6 4 14.6 8.5 16.5" {...line} strokeWidth="1.8" pathLength="1" className="rv-draw" style={{animationDelay:'.85s'}}/>
-    </g>
-    {/* the bubble, pointing back at the glass */}
-    <path d="M28 -34 L78 -34 C84 -34 86 -31 86 -26 L86 -10 C86 -5 84 -2 78 -2 L42 -2 L30 8 L33 -2 L28 -2 C23 -2 21 -5 21 -10 L21 -26 C21 -31 23 -34 28 -34 Z" {...line} strokeWidth="1.6" pathLength="1" className="rv-draw" style={{animationDelay:'1.15s',animationDuration:'1s'}}/>
-    <path d="M32 -24 L74 -24 M32 -17 L70 -17 M32 -10 L58 -10" {...line} strokeWidth="1.3" opacity="0.55" pathLength="1" className="rv-draw" style={{animationDelay:'2s',animationDuration:'.7s'}}/>
+  return <svg viewBox="0 0 70 50" width="84" height="60" aria-hidden="true" style={{display:'block',overflow:'visible'}}>
+    <path d="M8 4 L60 4 C66 4 68 7 68 12 L68 30 C68 35 66 38 60 38 L24 38 L10 48 L14 38 L8 38 C3 38 1 35 1 30 L1 12 C1 7 3 4 8 4 Z" {...line} strokeWidth="2" pathLength="1" className="rv-draw" style={{animationDuration:'.7s'}}/>
+    <path d="M13 15 L56 15 M13 22 L52 22 M13 29 L38 29" stroke={col||ink} strokeWidth="2.2" strokeLinecap="round" opacity="0.75" pathLength="1" className="rv-draw" style={{animationDelay:'.5s',animationDuration:'.45s'}}/>
   </svg>;
 }
 Object.assign(window,{SketchNoteIcon,sketchNoteFamily,SKETCH_NOTE_FAMILIES,SketchSay});

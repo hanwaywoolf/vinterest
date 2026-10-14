@@ -81,3 +81,32 @@ test('flags show on region containers: a region quiz', async ({ context, page })
   await page.goto(`${BASE}/?q=1#quiz`);
   await expect(page.locator('#root').getByText('Your Provence Knowledge').locator('.vflag')).toHaveText(fr);
 });
+
+// A region's page lists real places inside it (each with what it is), never the matching aliases
+// (which hold wine names and local spellings), and names the wines made there on a line of its own.
+test('region places are places, with their kind; the wines made there are a separate line', async ({ page }) => {
+  await page.goto(`${BASE}/#home`);
+  const t = await page.evaluate(() => { const r = KNOWLEDGE.regions.Tuscany; return { places: r.places, wines: r.wines, aliases: r.aliases }; });
+  expect(t.places.map((p) => p.name)).toEqual(['Chianti Classico', 'Chianti', 'Montalcino', 'Montepulciano', 'Bolgheri', 'Maremma', 'San Gimignano']);
+  expect(t.places.find((p) => p.name === 'Chianti Classico').kind).toBe('appellation');
+  expect(t.places.find((p) => p.name === 'Montalcino').kind).toBe('town');
+  expect(t.places.map((p) => p.name)).not.toContain('Brunello di Montalcino');
+  expect(t.wines).toContain('Brunello di Montalcino');
+  expect(t.aliases).toContain('Brunello di Montalcino'); // still a matching alias
+  // Every region has both, and every place says what it is (a place can also name a wine: Barolo, Sancerre).
+  const bad = await page.evaluate(() => Object.entries(KNOWLEDGE.regions).filter(([, r]) => !Array.isArray(r.places) || !r.places.length || !Array.isArray(r.wines) || r.places.some((p) => !p.name || !p.kind)).map(([n]) => n));
+  expect(bad).toEqual([]);
+  // The page: their own label's place first and highlighted, each with its kind, then the wines.
+  const info = await page.evaluate(() => RegionInfo.get('Tuscany', [{ name: 'Tignanello', region: 'Tuscany', sub_region: 'Chianti Classico', type: 'red', rating: 96 }]));
+  expect(info.places[0]).toMatchObject({ name: 'Chianti Classico', kind: 'appellation', theirs: true });
+  expect(info.theirs).toEqual(['Chianti Classico']);
+  expect(info.wines[0]).toMatchObject({ name: 'Brunello di Montalcino', had: false });
+  expect(info.grapes[0]).toMatchObject({ name: 'Sangiovese', had: false });
+  // A bottle of Brunello with Sangiovese on it marks both as had.
+  const had = await page.evaluate(() => RegionInfo.get('Tuscany', [{ name: 'Biondi-Santi Brunello di Montalcino', region: 'Tuscany', sub_region: 'Montalcino', type: 'red', grapes: ['Sangiovese'], rating: 97 }]));
+  expect(had.wines[0]).toMatchObject({ name: 'Brunello di Montalcino', had: true });
+  expect(had.grapes[0]).toMatchObject({ name: 'Sangiovese', had: true });
+  // A Bolgheri bottle counts for "Bolgheri reds (the Super Tuscans)".
+  const bol = await page.evaluate(() => RegionInfo.get('Tuscany', [{ name: 'Ornellaia 2018', region: 'Bolgheri', type: 'red', grapes: ['Cabernet Sauvignon'], rating: 94 }]));
+  expect(bol.wines.find((w) => w.name.startsWith('Bolgheri')).had).toBe(true);
+});

@@ -42,12 +42,12 @@ const Vinny = Object.assign(_accountStore('vinterest_vinny_v1'), {
     Object.entries(counts).sort((a,b)=>b[1]-a[1]).slice(0,3).forEach(([k])=>{
       const p=WineDNA.profile(k,wines,ContentEngine._typeLabel(k)), L=p.label.toLowerCase();
       const best=[...p.scored].sort((a,b)=>b.rating-a.rating).slice(0,3).map(w=>`${w.name} (${w.rating})`);
-      const bits=[`${WineDNA.noun(k,p.wines.length)} scanned, ${p.scored.length} scored`];
+      const bits=[`${WineDNA.noun(k,p.wines.length)} scanned, ${p.scored.length} rated`];
       if(p.scored.length) bits.push(`style they choose: ${p.personality}`);
       if(p.topGrapes.length) bits.push(`grapes they pick most: ${p.topGrapes.slice(0,3).join(', ')}`);
-      if(p.favourites.regions.length) bits.push(`best-scoring regions: ${p.favourites.regions.map(r=>r.name).join(', ')}`);
-      if(best.length) bits.push(`top scores: ${best.join(', ')}`);
-      if(p.favourites.disliked.length) bits.push(`scored under 80: ${p.favourites.disliked.map(w=>w.name).join(', ')}`);
+      if(p.favourites.regions.length) bits.push(`best-rated regions: ${p.favourites.regions.map(r=>r.name).join(', ')}`);
+      if(best.length) bits.push(`top ratings: ${best.join(', ')}`);
+      if(p.favourites.disliked.length) bits.push(`rated under 80: ${p.favourites.disliked.map(w=>w.name).join(', ')}`);
       if(p.favourites.buyAgain.length) bits.push(`would buy again: ${p.favourites.buyAgain.map(w=>w.name).join(', ')}`);
       const b=SommelierScript.budget(p.wines,rc); if(b) bits.push(`usual spend: ${b}`);
       lines.push(`${p.label}: ${bits.join('; ')}.`);
@@ -72,7 +72,7 @@ const Vinny = Object.assign(_accountStore('vinterest_vinny_v1'), {
     const g=(w.grapes||[]).slice(0,3); if(g.length) bits.push(`${w.grapes_basis==='typical'?'usually ':''}${g.join(', ')}`);
     const style=(WineDNA.AXES_FOR[t]||[]).map(k=>{ const l=WineDNA.level(w[k]), A=WineDNA.AXES[k]; return l&&A?`${A[l].toLowerCase()} ${A.name.toLowerCase()}`:null; }).filter(Boolean);
     if(style.length) bits.push(`label suggests ${style.join(', ')}`);
-    bits.push(w.rating>0?`they scored it ${w.rating}`:w.scan_intent==='checking'?'saved for later, not tried':'not scored yet');
+    bits.push(w.rating>0?`they rated it ${w.rating}`:w.scan_intent==='checking'?'saved for later, not tried':'not rated yet');
     if(w.where_had) bits.push(`had at ${w.where_had}`);
     return bits.join('; ');
   },

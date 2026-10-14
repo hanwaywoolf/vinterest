@@ -138,7 +138,7 @@ function TasteProfileScreen({nav,back,showPro}){
           ):isGenerating?(
             <div style={{display:'flex',alignItems:'center',gap:10,padding:'6px 0 10px'}}>
               <div style={{width:18,height:18,borderRadius:9,border:'2px solid rgba(0,0,0,0.1)',borderTopColor:c.col,animation:'vspin 0.8s linear infinite',flexShrink:0}}/>
-              <span style={{fontSize:15,color:C.mid,fontFamily:C.P,fontStyle:'italic'}}>Writing your personalised script…</span>
+              <WritingWait compact sub="Your sommelier script" wine={null}/>
             </div>
           ):(
             <>
@@ -233,10 +233,10 @@ const _MW_TONE={good:C.green,neutral:C.amber,bad:'#B04A3A'};
 const _MW_TYPES=[['red','Red'],['white','White'],['rose','Rosé'],['sparkling','Sparkling'],['orange','Orange'],['dessert','Dessert'],['fortified','Fortified']];
 
 /* One wine, as a compact row. Swipe left for Edit and Delete; tap to open. */
-function WineRow({w,open,setOpen,onOpen,onScore,onEdit,onDelete}){
+function WineRow({w,open,setOpen,onOpen,onScore,onEdit,onDelete}){ const T=useTheme(), cr=T.lift(C.cr);
   const ref=React.useRef(null), g=React.useRef(null), moved=React.useRef(false);
   const ACTIONS=144;
-  const col=(typeof _TYPE_COLORS!=='undefined'&&_TYPE_COLORS[MyWines.type(w)])||C.cr;
+  const col=T.lift((typeof _TYPE_COLORS!=='undefined'&&_TYPE_COLORS[MyWines.type(w)])||C.cr);
   const saved=MyWines.isSaved(w), fav=Favorites.has(w), flag=Regions.wineFlag(w), price=MyWines.price(w);
   const actionsRef=React.useRef(null);
   // The Edit/Delete buttons are hidden until the row moves, so they never tint the row's edges.
@@ -260,42 +260,42 @@ function WineRow({w,open,setOpen,onOpen,onScore,onEdit,onDelete}){
     setTimeout(()=>{ moved.current=false; },0);
   }
   function tap(){ if(moved.current) return; if(open){ setOpen(null); return; } onOpen(w); }
-  return <div className="mw-row" style={{position:'relative',overflow:'hidden',borderBottom:`1px solid ${C.line}`}}>
+  return <div className="mw-row" style={{position:'relative',overflow:'hidden',borderBottom:`1px solid ${T.line}`}}>
     <div ref={actionsRef} style={{position:'absolute',top:0,bottom:0,right:0,width:ACTIONS,display:'flex',visibility:'hidden'}}>
       <button onClick={()=>{ setOpen(null); onEdit(w); }} aria-label="Edit" style={{flex:1,border:'none',background:'#8A8A8A',color:'#fff',fontFamily:C.P,fontSize:13,fontWeight:700,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:4,cursor:'pointer'}}><Icon n="edit" sz={18} col="#fff"/>Edit</button>
       <button onClick={()=>{ setOpen(null); onDelete(w); }} aria-label="Delete" style={{flex:1,border:'none',background:'#B04A3A',color:'#fff',fontFamily:C.P,fontSize:13,fontWeight:700,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:4,cursor:'pointer'}}><Icon n="trash" sz={18} col="#fff"/>Delete</button>
     </div>
     <div ref={ref} onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={up} onClick={tap}
-      style={{position:'relative',background:C.white,display:'flex',alignItems:'center',gap:12,padding:'12px 16px 12px 14px',cursor:'pointer',userSelect:'none',WebkitUserSelect:'none'}}>
+      style={{position:'relative',background:T.dark?T.card:C.white,display:'flex',alignItems:'center',gap:12,padding:'12px 16px 12px 14px',cursor:'pointer',userSelect:'none',WebkitUserSelect:'none'}}>
       {/* The wine-type strip sits in from the screen edge, where a phone case can hide it. */}
       <div style={{width:6,alignSelf:'stretch',borderRadius:3,background:col,flexShrink:0}}/>
       <div style={{flex:1,minWidth:0}}>
         <div style={{display:'flex',alignItems:'center',gap:6}}>
-          {saved&&<Icon n="bookmark" sz={14} col={C.mid}/>}
-          <div style={{fontSize:16,fontWeight:600,color:C.ink,fontFamily:C.P,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{w.name}</div>
+          {saved&&<Icon n="bookmark" sz={14} col={T.mid}/>}
+          <div style={{fontSize:16,fontWeight:600,color:T.ink,fontFamily:C.P,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{w.name}</div>
         </div>
         {/* Favourite (the heart on the wine's screen), the country's flag, then producer · region · year. */}
         <div style={{display:'flex',alignItems:'center',gap:5,marginTop:1,minWidth:0}}>
-          {fav&&<svg viewBox="0 0 20 20" width={13} height={13} role="img" aria-label="Favourite" style={{flexShrink:0}}><path d="M10 16.5C10 16.5 3 12 3 7.5C3 5 5 3.2 7.2 3.2c1.5 0 2.5 1 2.8 1.8.3-.8 1.3-1.8 2.8-1.8C15 3.2 17 5 17 7.5c0 4.5-7 9-7 9z" fill={C.cr}/></svg>}
+          {fav&&<svg viewBox="0 0 20 20" width={13} height={13} role="img" aria-label="Favourite" style={{flexShrink:0}}><path d="M10 16.5C10 16.5 3 12 3 7.5C3 5 5 3.2 7.2 3.2c1.5 0 2.5 1 2.8 1.8.3-.8 1.3-1.8 2.8-1.8C15 3.2 17 5 17 7.5c0 4.5-7 9-7 9z" fill={cr}/></svg>}
           {flag&&<span aria-hidden="true" style={{fontSize:13,lineHeight:1,flexShrink:0}}>{flag}</span>}
-          <div style={{fontSize:13,color:C.mid,fontFamily:C.P,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis',minWidth:0}}>{MyWines.subline(w)}</div>
+          <div style={{fontSize:13,color:T.mid,fontFamily:C.P,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis',minWidth:0}}>{MyWines.subline(w)}</div>
         </div>
       </div>
-      {w.times_consumed>1&&<span style={{fontSize:13,color:C.mid,fontFamily:C.P,flexShrink:0}}>×{w.times_consumed}</span>}
+      {w.times_consumed>1&&<span style={{fontSize:13,color:T.mid,fontFamily:C.P,flexShrink:0}}>×{w.times_consumed}</span>}
       {/* The score (or Saved / Score it), with the price under it: what they paid, else the average. */}
       <div style={{display:'flex',flexDirection:'column',alignItems:'flex-end',gap:2,flexShrink:0}}>
         {w.rating>0
-          ?<span style={{minWidth:34,textAlign:'right',fontSize:17,fontWeight:800,color:_MW_TONE[MyWines.scoreTone(w.rating)],fontFamily:C.P}}>{w.rating}</span>
+          ?<span style={{minWidth:34,textAlign:'right',fontSize:17,fontWeight:800,color:T.tone[MyWines.scoreTone(w.rating)],fontFamily:C.P}}>{w.rating}</span>
           :saved
-            ?<span style={{fontSize:13,fontWeight:600,color:C.mid,fontFamily:C.P}}>Saved</span>
-            :<button onClick={e=>{ e.stopPropagation(); onScore(w); }} style={{border:`1px solid ${C.crDim}`,background:C.crSoft,color:C.cr,borderRadius:20,padding:'5px 11px',fontSize:13,fontWeight:700,fontFamily:C.P,cursor:'pointer'}}>Score it</button>}
-        {price&&<span className="mw-price" aria-label={price.label} style={{fontSize:13,color:price.paid?C.ink:C.mid,fontWeight:price.paid?600:400,fontFamily:C.P,whiteSpace:'nowrap'}}>{price.text}</span>}
+            ?<span style={{fontSize:13,fontWeight:600,color:T.mid,fontFamily:C.P}}>Saved</span>
+            :<button onClick={e=>{ e.stopPropagation(); onScore(w); }} style={{border:`1px solid ${_alpha(cr,0.4)}`,background:T.crSoft,color:cr,borderRadius:20,padding:'5px 11px',fontSize:13,fontWeight:700,fontFamily:C.P,cursor:'pointer'}}>Rate it</button>}
+        {price&&<span className="mw-price" aria-label={price.label} style={{fontSize:13,color:price.paid?T.ink:T.mid,fontWeight:price.paid?600:400,fontFamily:C.P,whiteSpace:'nowrap'}}>{price.text}</span>}
       </div>
     </div>
   </div>;
 }
 
-function MyWinesScreen({nav,back}){
+function MyWinesScreen({nav,back}){ const T=useTheme(), cr=T.lift(C.cr); // the appearance picked on Profile
   // Opened from a type's "See all" (WineDNA, Home): start on that type, sorted by score.
   const [entry]=React.useState(()=>Handoff.myWinesView.take());
   const [type,setType]=React.useState(entry.type||'all');
@@ -323,36 +323,39 @@ function MyWinesScreen({nav,back}){
     setUndo({w,index}); clearTimeout(undoTimer.current); undoTimer.current=setTimeout(()=>setUndo(null),5000);
   }
   function saveEdit(patch){ WineHistory.update(editing.name,editing.vintage,patch); setEditing(null); setVersion(v=>v+1); }
-  const chip=(active,col)=>({flexShrink:0,display:'inline-flex',alignItems:'center',gap:6,padding:'7px 12px',borderRadius:20,cursor:'pointer',
-    border:`1.5px solid ${active?(col||C.ink):C.line}`,background:active?(col||C.ink):C.white,color:active?'#fff':C.ink2,fontSize:14,fontWeight:600,fontFamily:C.P,whiteSpace:'nowrap'});
+  // A lit chip is its wine colour (lifted on the dark stage), or ink: white on dark, black on light.
+  const chip=(active,col)=>{ const c=col?T.lift(col):(T.dark?'#fff':C.ink);
+    return {flexShrink:0,display:'inline-flex',alignItems:'center',gap:6,padding:'7px 12px',borderRadius:20,cursor:'pointer',
+      border:`1.5px solid ${active?c:T.line}`,background:active?c:(T.dark?T.soft:C.white),color:active?(T.dark&&!col?'#0F0F0F':'#fff'):T.ink2,fontSize:14,fontWeight:600,fontFamily:C.P,whiteSpace:'nowrap'}; };
   const sortLabel=(MyWines.SORTS.find(s=>s.id===sort)||{}).label;
 
   return(
-    <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden',background:C.bg}}>
-      <div style={{background:C.white,padding:'14px 16px 10px',flexShrink:0,borderBottom:`1px solid ${C.line}`}}>
+    <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden',background:T.bg}}>
+      {/* The stage glows crimson at the top, as the story glows in a wine's colour. */}
+      <div style={{background:`radial-gradient(ellipse at 50% -20%, ${_alpha(cr,T.dark?0.42:0.14)}, transparent 70%) ${T.dark?T.bg:C.white}`,padding:'14px 16px 10px',flexShrink:0,borderBottom:`1px solid ${T.line}`}}>
         <div style={{display:'flex',alignItems:'center',gap:10}}>
-          <div onClick={back} style={{width:34,height:34,borderRadius:17,background:C.offWhite,border:`1px solid ${C.line}`,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',flexShrink:0}}>
-            <Icon n="back" sz={16} col={C.ink}/>
+          <div onClick={back} style={{width:34,height:34,borderRadius:17,background:T.soft,border:`1px solid ${T.line}`,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',flexShrink:0}}>
+            <Icon n="back" sz={16} col={T.ink}/>
           </div>
           <div style={{flex:1,minWidth:0}}>
-            <div style={{fontSize:19,fontWeight:700,color:C.ink,fontFamily:C.P}}>My Wines</div>
-            <div style={{fontSize:13,color:C.mid,fontFamily:C.P,lineHeight:1.35}}>{MyWines.summary(list)}</div>
+            <div style={{fontSize:19,fontWeight:700,color:T.ink,fontFamily:C.P}}>My Wines</div>
+            <div style={{fontSize:13,color:T.mid,fontFamily:C.P,lineHeight:1.35}}>{MyWines.summary(list)}</div>
           </div>
           <div style={{position:'relative',flexShrink:0}}>
-            <div onClick={()=>setSortOpen(o=>!o)} role="button" aria-label="Sort" style={{display:'flex',alignItems:'center',gap:6,padding:'7px 11px',borderRadius:10,border:`1px solid ${C.line}`,background:C.offWhite,cursor:'pointer'}}>
-              <Icon n="sort" sz={15} col={C.ink2}/><span style={{fontSize:14,fontWeight:600,color:C.ink2,fontFamily:C.P}}>{sortLabel}</span>
+            <div onClick={()=>setSortOpen(o=>!o)} role="button" aria-label="Sort" style={{display:'flex',alignItems:'center',gap:6,padding:'7px 11px',borderRadius:10,border:`1px solid ${T.line}`,background:T.soft,cursor:'pointer'}}>
+              <Icon n="sort" sz={15} col={T.ink2}/><span style={{fontSize:14,fontWeight:600,color:T.ink2,fontFamily:C.P}}>{sortLabel}</span>
             </div>
-            {sortOpen&&<div style={{position:'absolute',right:0,top:'calc(100% + 6px)',background:C.white,border:`1px solid ${C.line}`,borderRadius:12,boxShadow:'0 8px 24px rgba(0,0,0,0.12)',padding:4,zIndex:20,minWidth:150}}>
-              {MyWines.SORTS.map(s=><div key={s.id} onClick={()=>{ setSort(s.id); setSortOpen(false); }} style={{padding:'10px 12px',borderRadius:8,fontSize:15,fontWeight:sort===s.id?700:500,color:sort===s.id?C.cr:C.ink,fontFamily:C.P,cursor:'pointer',background:sort===s.id?C.crSoft:'transparent'}}>{s.label}</div>)}
+            {sortOpen&&<div style={{position:'absolute',right:0,top:'calc(100% + 6px)',background:T.dark?T.card:C.white,border:`1px solid ${T.line}`,borderRadius:12,boxShadow:'0 8px 24px rgba(0,0,0,0.3)',padding:4,zIndex:20,minWidth:150}}>
+              {MyWines.SORTS.map(s=><div key={s.id} onClick={()=>{ setSort(s.id); setSortOpen(false); }} style={{padding:'10px 12px',borderRadius:8,fontSize:15,fontWeight:sort===s.id?700:500,color:sort===s.id?cr:T.ink,fontFamily:C.P,cursor:'pointer',background:sort===s.id?T.crSoft:'transparent'}}>{s.label}</div>)}
             </div>}
           </div>
         </div>
         {wines.length>0&&<>
-          <div style={{display:'flex',alignItems:'center',gap:8,marginTop:12,padding:'9px 12px',borderRadius:12,background:C.offWhite,border:`1px solid ${C.line}`}}>
-            <Icon n="search" sz={17} col={C.mid}/>
+          <div style={{display:'flex',alignItems:'center',gap:8,marginTop:12,padding:'9px 12px',borderRadius:12,background:T.soft,border:`1px solid ${T.line}`}}>
+            <Icon n="search" sz={17} col={T.mid}/>
             <input value={q} onChange={e=>setQ(e.target.value)} placeholder="Search wine, producer, grape, region" aria-label="Search your wines"
               style={{flex:1,minWidth:0,border:'none',outline:'none',background:'transparent',fontSize:16,fontFamily:C.P,color:C.ink}}/>
-            {q&&<span onClick={()=>setQ('')} role="button" aria-label="Clear search" style={{fontSize:18,lineHeight:1,color:C.mid,cursor:'pointer',padding:'0 2px'}}>×</span>}
+            {q&&<span onClick={()=>setQ('')} role="button" aria-label="Clear search" style={{fontSize:18,lineHeight:1,color:T.mid,cursor:'pointer',padding:'0 2px'}}>×</span>}
           </div>
           <div className="sc-scroll" style={{display:'flex',gap:8,overflowX:'auto',marginTop:10,paddingBottom:2}}>
             <div onClick={()=>setType('all')} style={chip(type==='all')}>All <span style={{opacity:0.7}}>{wines.length}</span></div>
@@ -361,7 +364,7 @@ function MyWinesScreen({nav,back}){
               return <div key={k} onClick={()=>setType(type===k?'all':k)} style={chip(type===k,col)}>
                 {type!==k&&<span style={{width:8,height:8,borderRadius:4,background:col}}/>}{l} <span style={{opacity:0.7}}>{counts.types[k]}</span></div>;
             })}
-            <div style={{width:1,flexShrink:0,background:C.line,margin:'4px 2px'}}/>
+            <div style={{width:1,flexShrink:0,background:T.line,margin:'4px 2px'}}/>
             {MyWines.STATUSES.filter(s=>counts.shown[s.id]).map(s=>(
               <div key={s.id} onClick={()=>setStatus(status===s.id?null:s.id)} style={chip(status===s.id,C.cr)}>{s.label} <span style={{opacity:0.7}}>{counts.status[s.id]}</span></div>
             ))}
@@ -372,33 +375,33 @@ function MyWinesScreen({nav,back}){
       <div style={{flex:1,overflowY:'auto'}} onScroll={()=>{ if(openRow) setOpenRow(null); if(sortOpen) setSortOpen(false); }}>
         {wines.length===0?(
           <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',height:'100%',padding:40,textAlign:'center',gap:12}}>
-            <Icon n="wine" sz={40} col={C.mid}/>
-            <div style={{fontSize:20,fontWeight:700,color:C.ink,fontFamily:C.P}}>No wines yet</div>
-            <div style={{fontSize:16,color:C.mid,fontFamily:C.P,lineHeight:1.5}}>Every bottle you scan lands here, with your score.</div>
+            <Icon n="wine" sz={40} col={T.mid}/>
+            <div style={{fontSize:20,fontWeight:700,color:T.ink,fontFamily:C.P}}>No wines yet</div>
+            <div style={{fontSize:16,color:T.mid,fontFamily:C.P,lineHeight:1.5}}>Every bottle you scan lands here, with your rating.</div>
             <Btn primary onClick={()=>nav('camera')}>Scan a bottle</Btn>
           </div>
         ):list.length===0?(
           <div style={{padding:40,textAlign:'center',display:'flex',flexDirection:'column',alignItems:'center',gap:10}}>
-            <div style={{fontSize:17,fontWeight:600,color:C.ink,fontFamily:C.P}}>No wines match</div>
-            {filtered&&<span onClick={()=>{ setType('all'); setStatus(null); setQ(''); }} style={{fontSize:15,fontWeight:600,color:C.cr,fontFamily:C.P,cursor:'pointer'}}>Clear filters</span>}
+            <div style={{fontSize:17,fontWeight:600,color:T.ink,fontFamily:C.P}}>No wines match</div>
+            {filtered&&<span onClick={()=>{ setType('all'); setStatus(null); setQ(''); }} style={{fontSize:15,fontWeight:600,color:cr,fontFamily:C.P,cursor:'pointer'}}>Clear filters</span>}
           </div>
         ):(
           <div style={{paddingBottom:90}}>
             {groups.map(gr=>(
               <div key={gr.label||'all'}>
-                {gr.label&&<div style={{position:'sticky',top:0,zIndex:2,background:C.bg,padding:'14px 16px 6px',fontSize:13,fontWeight:700,color:C.mid,fontFamily:C.P,letterSpacing:'0.06em',textTransform:'uppercase'}}>{gr.label}</div>}
-                <div style={{background:C.white,borderTop:`1px solid ${C.line}`}}>
+                {gr.label&&<div style={{position:'sticky',top:0,zIndex:2,background:T.bg,padding:'14px 16px 6px',fontSize:13,fontWeight:700,color:T.mid,fontFamily:C.P,letterSpacing:'0.06em',textTransform:'uppercase'}}>{gr.label}</div>}
+                <div style={{background:T.dark?'transparent':C.white,borderTop:`1px solid ${T.line}`}}>
                   {gr.wines.map(w=><WineRow key={w.name+'|'+w.vintage} w={w} open={openRow===w} setOpen={setOpenRow}
                     onOpen={open} onScore={score} onEdit={setEditing} onDelete={del}/>)}
                 </div>
               </div>
             ))}
-            {list.length>3&&!filtered&&<div style={{textAlign:'center',fontSize:13,color:C.mid,fontFamily:C.P,padding:'14px 0'}}>Swipe a wine left to edit or delete it.</div>}
+            {list.length>3&&!filtered&&<div style={{textAlign:'center',fontSize:13,color:T.mid,fontFamily:C.P,padding:'14px 0'}}>Swipe a wine left to edit or delete it.</div>}
           </div>
         )}
       </div>
 
-      {undo&&<div style={{position:'absolute',left:16,right:16,bottom:96,zIndex:30,background:C.ink,color:'#fff',borderRadius:12,padding:'12px 14px',display:'flex',alignItems:'center',gap:10,boxShadow:'0 8px 24px rgba(0,0,0,0.25)'}}>
+      {undo&&<div style={{position:'absolute',left:16,right:16,bottom:96,zIndex:30,background:C.ink,border:'1px solid rgba(255,255,255,0.16)',color:'#fff',borderRadius:12,padding:'12px 14px',display:'flex',alignItems:'center',gap:10,boxShadow:'0 8px 24px rgba(0,0,0,0.25)'}}>
         <span style={{flex:1,fontSize:14,fontFamily:C.P,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>Deleted {undo.w.name}</span>
         <span onClick={()=>{ WineHistory.restore(undo.w,undo.index); setUndo(null); setVersion(v=>v+1); }} role="button" style={{fontSize:14,fontWeight:700,color:'#F2C94C',fontFamily:C.P,cursor:'pointer'}}>Undo</span>
       </div>}
@@ -544,7 +547,7 @@ function RestaurantScript({back}){
 function LearnScreen(props){ return React.createElement(QuizHubScreen, props); }
 
 /* ── WINE LIST RESULTS SCREEN ── */
-function WineListScreen({nav,back,showPro}){
+function WineListScreen({nav,back,showPro}){ const T=useTheme(), cr=T.lift(C.cr);
   const data=React.useMemo(()=>{
     try{ return Handoff.wineList.get({}); }
     catch(e){ return {}; }
@@ -571,7 +574,7 @@ function WineListScreen({nav,back,showPro}){
   const wines=(data.wines&&data.wines.length>0)?data.wines:[];
   const listCurrency=data.currency||Regional.current().code||Settings.currency()||'GBP';
   const typeColors={red:'#8B1A2F',white:'#B8963E',rosé:'#C47A8A',rose:'#C47A8A',sparkling:'#5E8FA8',orange:'#C1652B',dessert:'#8A5A2B',fortified:'#5C2A1E'};
-  const colFor=t=>typeColors[(t||'red').toLowerCase().replace('é','e')]||C.cr;
+  const colFor=t=>typeColors[(t||'red').toLowerCase().replace('é','e')]||cr;
   const currSym=(CURRENCY_LIST.find(c=>c.code===listCurrency)||{}).sym||'';
   // Parse tiered list prices ("GLASS:16 / 1/2LTR:33 / BOTTLE:59") into clean labeled segments.
   // Markup/value badges always compare against the BOTTLE price specifically.
@@ -620,9 +623,9 @@ function WineListScreen({nav,back,showPro}){
     const listNum=bottleMatch?Number(bottleMatch[1]):(anyNums?Number(anyNums[anyNums.length-1]):NaN);
     if(!listNum||!est) return null;
     const ratio=listNum/est;
-    if(ratio<=2) return {label:'Good Value',col:C.green,bg:C.greenBg,ratio};
-    if(ratio<=3) return {label:'Fair Markup',col:C.amber,bg:C.amberBg,ratio};
-    return {label:'Marked Up',col:'#B04A3A',bg:'#F7E4E0',ratio};
+    if(ratio<=2) return {label:'Good Value',col:T.green,bg:T.greenBg,ratio};
+    if(ratio<=3) return {label:'Fair Markup',col:T.amber,bg:T.amberBg,ratio};
+    return {label:'Marked Up',col:T.tone.bad,bg:'#F7E4E0',ratio};
   }
 
   // TasteMatch, the same engine as the scan result and detail screen. Each list entry carries
@@ -639,12 +642,12 @@ function WineListScreen({nav,back,showPro}){
   const indexed=wines.map((w,i)=>({w,i,m:matches[i]}));
   const filtered=typeFilter?indexed.filter(x=>(x.w.type||'red').toLowerCase().replace('é','e')===typeFilter.replace('é','e')):indexed;
   const shown=sortMode==='match'?[...filtered].sort((a,b)=>((b.m&&b.m.pct)??-1)-((a.m&&a.m.pct)??-1)):filtered;
-  const toneCol={good:C.green,neutral:C.amber,bad:'#B04A3A'};
+  const toneCol={good:T.green,neutral:T.amber,bad:T.tone.bad};
 
   return(
-    <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden'}}>
+    <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden',background:T.bg}}>
       {/* Header */}
-      <div style={{background:C.cr,padding:'14px 20px',display:'flex',alignItems:'center',gap:12,flexShrink:0}}>
+      <div style={{background:cr,padding:'14px 20px',display:'flex',alignItems:'center',gap:12,flexShrink:0}}>
         <div onClick={back} style={{width:34,height:34,borderRadius:17,background:'rgba(255,255,255,0.2)',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer'}}>
           <Icon n="back" sz={16} col="#fff"/>
         </div>
@@ -675,21 +678,21 @@ function WineListScreen({nav,back,showPro}){
       <div style={{padding:'10px 16px 0',display:'flex',flexDirection:'column',gap:8,flexShrink:0}}>
         <div style={{display:'flex',gap:6}}>
           {[{k:'list',l:'List Order'},{k:'match',l:'Match Rate'}].map(o=>(
-            <div key={o.k} onClick={()=>setSortMode(o.k)} style={{flex:1,textAlign:'center',padding:'8px 6px',borderRadius:10,border:`1.5px solid ${sortMode===o.k?C.cr:C.line}`,background:sortMode===o.k?C.cr:'transparent',cursor:'pointer'}}>
-              <span style={{fontSize:15,fontWeight:600,color:sortMode===o.k?'#fff':C.mid,fontFamily:C.P}}>Sort: {o.l}</span>
+            <div key={o.k} onClick={()=>setSortMode(o.k)} style={{flex:1,textAlign:'center',padding:'8px 6px',borderRadius:10,border:`1.5px solid ${sortMode===o.k?cr:T.line}`,background:sortMode===o.k?cr:'transparent',cursor:'pointer'}}>
+              <span style={{fontSize:15,fontWeight:600,color:sortMode===o.k?'#fff':T.mid,fontFamily:C.P}}>Sort: {o.l}</span>
             </div>
           ))}
         </div>
         <div style={{display:'flex',gap:6,overflowX:'auto'}}>
-          <div onClick={()=>setTypeFilter(null)} style={{flexShrink:0,padding:'6px 12px',borderRadius:20,border:`1.5px solid ${!typeFilter?C.ink:C.line}`,background:!typeFilter?C.ink:'transparent',cursor:'pointer'}}>
-            <span style={{fontSize:14,fontWeight:600,color:!typeFilter?'#fff':C.mid,fontFamily:C.P,textTransform:'capitalize'}}>All Types</span>
+          <div onClick={()=>setTypeFilter(null)} style={{flexShrink:0,padding:'6px 12px',borderRadius:20,border:`1.5px solid ${!typeFilter?T.ink:T.line}`,background:!typeFilter?T.ink:'transparent',cursor:'pointer'}}>
+            <span style={{fontSize:14,fontWeight:600,color:!typeFilter?T.bg:T.mid,fontFamily:C.P,textTransform:'capitalize'}}>All Types</span>
           </div>
           {types.map(t=>{
             const active=typeFilter===t;
             const col=colFor(t);
             return(
-              <div key={t} onClick={()=>setTypeFilter(active?null:t)} style={{flexShrink:0,padding:'6px 12px',borderRadius:20,border:`1.5px solid ${active?col:C.line}`,background:active?col:'transparent',cursor:'pointer'}}>
-                <span style={{fontSize:14,fontWeight:600,color:active?'#fff':C.mid,fontFamily:C.P,textTransform:'capitalize'}}>{t}</span>
+              <div key={t} onClick={()=>setTypeFilter(active?null:t)} style={{flexShrink:0,padding:'6px 12px',borderRadius:20,border:`1.5px solid ${active?col:T.line}`,background:active?col:'transparent',cursor:'pointer'}}>
+                <span style={{fontSize:14,fontWeight:600,color:active?'#fff':T.mid,fontFamily:C.P,textTransform:'capitalize'}}>{t}</span>
               </div>
             );
           })}
@@ -698,11 +701,11 @@ function WineListScreen({nav,back,showPro}){
 
       <div style={{flex:1,overflowY:'auto'}}>
 <div style={{padding:'12px 16px',display:'flex',flexDirection:'column',gap:8}}>
-        <div style={{fontSize:15,fontWeight:600,color:C.mid,letterSpacing:'0.08em',textTransform:'uppercase',fontFamily:C.P,marginBottom:2}}>{sortMode==='match'?'Sorted by Match Rate':'Wine List Order'}</div>
+        <div style={{fontSize:15,fontWeight:600,color:T.mid,letterSpacing:'0.08em',textTransform:'uppercase',fontFamily:C.P,marginBottom:2}}>{sortMode==='match'?'Sorted by Match Rate':'Wine List Order'}</div>
         {shown.map(({w,i,m})=>{
           const col=colFor(w.type);
           const val=valueInfo(w,i);
-          const mCol=m&&m.pct!=null?toneCol[m.tone]:C.mid;
+          const mCol=m&&m.pct!=null?toneCol[m.tone]:T.mid;
           const bottle=(parsePriceTiers(w.price).find(t=>t.label==='Bottle')||parsePriceTiers(w.price)[0]||{}).value;
           return(
             <Card key={i} style={{padding:12,cursor:'pointer'}} onClick={()=>{
@@ -717,19 +720,19 @@ function WineListScreen({nav,back,showPro}){
                 </div>
                 <div style={{flex:1,minWidth:0}}>
                   <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',gap:6}}>
-                    <div style={{fontSize:17,fontWeight:700,color:C.ink,fontFamily:C.P,lineHeight:1.2,flex:1}}>{w.name}</div>
+                    <div style={{fontSize:17,fontWeight:700,color:T.ink,fontFamily:C.P,lineHeight:1.2,flex:1}}>{w.name}</div>
                     {m&&m.pct!=null
                       ?<div style={{display:'inline-flex',alignItems:'center',padding:'3px 8px',borderRadius:7,background:mCol+'14',flexShrink:0}}>
                         <span style={{fontSize:16,fontWeight:700,color:mCol,fontFamily:C.P}}>{m.pct}%</span>
                       </div>
-                      :<span style={{fontSize:13,fontWeight:600,color:C.mid,fontFamily:C.P,flexShrink:0}}>{m&&m.verdict==='early'?'Too early':'No read'}</span>}
+                      :<span style={{fontSize:13,fontWeight:600,color:T.mid,fontFamily:C.P,flexShrink:0}}>{m&&m.verdict==='early'?'Too early':'No read'}</span>}
                   </div>
-                  <div style={{fontSize:15,color:C.mid,fontFamily:C.P,marginTop:2}}>
+                  <div style={{fontSize:15,color:T.mid,fontFamily:C.P,marginTop:2}}>
                     {[w.region,w.country].filter(Boolean).join(' · ')}{w.vintage?` · ${w.vintage}`:''}
                   </div>
                   {m&&m.pct!=null&&<div style={{fontSize:14,fontWeight:600,color:mCol,fontFamily:C.P,marginTop:3}}>{m.label}{m.confidence==='low'?' · rough guess':''}</div>}
-                  {m&&m.reasons[0]&&<div style={{fontSize:13,color:C.ink2,fontFamily:C.P,marginTop:2,lineHeight:1.4}}>{m.reasons[0].text}</div>}
-                  {m&&!m.reasons[0]&&m.style&&<div style={{fontSize:13,color:C.ink2,fontFamily:C.P,marginTop:2,lineHeight:1.4}}>{m.style}</div>}
+                  {m&&m.reasons[0]&&<div style={{fontSize:13,color:T.ink2,fontFamily:C.P,marginTop:2,lineHeight:1.4}}>{m.reasons[0].text}</div>}
+                  {m&&!m.reasons[0]&&m.style&&<div style={{fontSize:13,color:T.ink2,fontFamily:C.P,marginTop:2,lineHeight:1.4}}>{m.style}</div>}
                   <div style={{display:'flex',gap:5,marginTop:6,alignItems:'center',flexWrap:'wrap'}}>
                     <Pill sm style={{background:col+'12',color:col,border:`1px solid ${col}25`,textTransform:'capitalize'}}>{w.type||'Red'}</Pill>
                     {(w.grape||w.grapes?.[0])&&<Pill sm>{w.grape||w.grapes[0]}</Pill>}
@@ -738,17 +741,17 @@ function WineListScreen({nav,back,showPro}){
                   {w.price&&(()=>{
                     const tiers=parsePriceTiers(w.price);
                     return(
-                      <div style={{display:'flex',alignItems:'baseline',gap:12,marginTop:7,paddingTop:7,borderTop:`1px solid ${C.line}`}}>
+                      <div style={{display:'flex',alignItems:'baseline',gap:12,marginTop:7,paddingTop:7,borderTop:`1px solid ${T.line}`}}>
                         {tiers.map((t,ti)=>{
                           const isBottle=t.label==='Bottle'||tiers.length===1;
                           return(
                             <div key={ti} style={{display:'flex',alignItems:'baseline',gap:4}}>
-                              {t.label&&<span style={{fontSize:11,fontWeight:600,color:C.mid,fontFamily:C.P,textTransform:'uppercase',letterSpacing:'0.04em'}}>{t.label}</span>}
-                              <span style={{fontSize:isBottle?16:14,fontWeight:isBottle?700:500,color:isBottle?C.ink:C.ink2,fontFamily:C.P}}>{currSym}{t.value}</span>
+                              {t.label&&<span style={{fontSize:11,fontWeight:600,color:T.mid,fontFamily:C.P,textTransform:'uppercase',letterSpacing:'0.04em'}}>{t.label}</span>}
+                              <span style={{fontSize:isBottle?16:14,fontWeight:isBottle?700:500,color:isBottle?T.ink:T.ink2,fontFamily:C.P}}>{currSym}{t.value}</span>
                             </div>
                           );
                         })}
-                        <span style={{fontSize:12,color:C.mid,fontFamily:C.P,marginLeft:'auto'}}>{listCurrency}</span>
+                        <span style={{fontSize:12,color:T.mid,fontFamily:C.P,marginLeft:'auto'}}>{listCurrency}</span>
                       </div>
                     );
                   })()}

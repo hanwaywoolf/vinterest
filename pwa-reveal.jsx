@@ -9,8 +9,8 @@
    of their flavour family (SketchNoteIcon), the drinking window (ScanFlow.drinkWindow) under the
    label, the grape as its page's own sketch drawing itself in with two callouts (GrapeSketch), the
    place as the wine map closing in from the whole country on the pin, which is then named, the
-   line to say from the scan cards once Claude has written them, under a glass and speech bubble
-   the pen draws (SketchSay). Every picture is drawn in code: no Claude call, nothing fetched. A
+   line to say from the scan cards once Claude has written them, under a speech bubble the pen
+   draws (SketchSay). Every picture is drawn in code: no Claude call, nothing fetched. A
    scene without its facts isn't shown. Each scene stays
    long enough to read (ScanFlow.revealLength: its words at a slow reading speed, plus time for the
    picture). A swipe left moves on and a swipe right goes back, a tap pauses and resumes, Skip goes
@@ -34,7 +34,7 @@ const REVEAL_CSS=`
 @keyframes rvLeaveR{from{opacity:1;transform:none;filter:blur(0)}to{opacity:0;transform:translateX(90px) scale(.94);filter:blur(6px)}}
 @keyframes rvTip{from{opacity:0}to{opacity:1}}
 @keyframes rvDraw{from{stroke-dashoffset:1}to{stroke-dashoffset:0}}
-@keyframes rvZoom{from{transform:var(--rv-from)}to{transform:none}}
+@keyframes rvZoom{from{transform:var(--rv-from)}to{transform:var(--rv-to)}}
 @keyframes rvOut{from{opacity:1}to{opacity:0}}
 @keyframes rvMark{from{left:0}to{left:var(--rv-at)}}
 .rv-stage{position:relative;overflow:hidden;background:#0F0F0F;color:#fff;user-select:none;-webkit-user-select:none;touch-action:none}
@@ -52,22 +52,23 @@ const REVEAL_CSS=`
 .rv-stage .rv-leave-r{animation:rvLeaveR .42s cubic-bezier(.4,0,.7,1) both;pointer-events:none}
 .rv-stage .rv-tip{animation:rvTip .4s ease both}
 .rv-stage .rv-draw{stroke-dasharray:1;stroke-dashoffset:1;animation:rvDraw .8s ease-out both}
-.rv-stage .rv-zoom{transform-origin:0 0;animation:rvZoom 1.7s cubic-bezier(.5,0,.2,1) both}
+.rv-stage .rv-zoom{transform-origin:0 0;animation:rvZoom 2.6s cubic-bezier(.45,0,.15,1) both}
 .rv-stage .rv-out{animation:rvOut .5s ease both}
 .rv-stage .rv-mark{animation:rvMark 1.2s cubic-bezier(.3,.8,.3,1) both}
 .rv-stage .rv-still *{animation:none!important}
 .rv-stage .rv-still .rv-draw{stroke-dashoffset:0}
 .rv-stage .rv-still .rv-mark{left:var(--rv-at)}
 .rv-stage .rv-still .rv-out{opacity:0}
-@media (prefers-reduced-motion: reduce){.rv-stage *{animation:none!important;transition:none!important}.rv-stage .rv-seg{transform:none}.rv-stage .rv-draw{stroke-dashoffset:0}.rv-stage .rv-mark{left:var(--rv-at)}.rv-stage .rv-out{opacity:0}}
+.rv-stage .rv-still .rv-zoom{transform:var(--rv-to)}
+@media (prefers-reduced-motion: reduce){.rv-stage *{animation:none!important;transition:none!important}.rv-stage .rv-seg{transform:none}.rv-stage .rv-draw{stroke-dashoffset:0}.rv-stage .rv-mark{left:var(--rv-at)}.rv-stage .rv-out{opacity:0}.rv-stage .rv-zoom{transform:var(--rv-to)}}
 `;
 /* The words each scene asks someone to read, for its length (ScanFlow.revealLength). */
 function _revealWords(key,d,existingRating){
   const i=d.identity, m=d.match;
   switch(key){
     case 'label': return [i.title,i.producer,i.grapes,i.region,i.window?i.window.word+' '+i.window.line:''].join(' ');
-    case 'match': return m.early?`Score 3 ${m.early.many} and every one you scan comes with a match worked out from your own scores, not a critic's`
-      :[m.label,m.expectedLabel?`Likely about ${m.expected} from you ${m.expectedLabel} ${m.pct}% sure you'd score it ${m.bar} or better`:'',existingRating>0?'You scored it we expected':'',m.pro,m.con].join(' ');
+    case 'match': return m.early?`Rate 3 ${m.early.many} and every one you scan comes with a match worked out from your own ratings, not a critic's`
+      :[m.label,m.expectedLabel?`Likely about ${m.expected} from you ${m.expectedLabel} ${m.pct}% sure you'd rate it ${m.bar} or better`:'',existingRating>0?'You rated it we expected':'',m.pro,m.con].join(' ');
     case 'taste': return d.traits.map(t=>t.word+' '+t.name+' '+_rvTraitHow(t.axis)).concat(d.notes).join(' ');
     case 'grape': return [d.grape.name,d.grape.line,...d.grape.callouts,_rvGrapeBasis(d.grape)||''].join(' ');
     case 'place': return [d.place.name,d.place.country,d.place.line,'Known for',...d.place.grapes].join(' ');
@@ -251,11 +252,11 @@ function _RvMatch({d,col,existingRating,still}){
     const p=m.early;
     return <div style={{display:'flex',flexDirection:'column',gap:16,alignItems:'center',textAlign:'center'}}>
       {_rvEyebrow('Your match','rgba(255,255,255,0.7)')}
-      <div className="rv-in" style={{..._rvDelay(.15),fontSize:30,fontWeight:800,color:'#fff',fontFamily:C.P,lineHeight:1.15}}>{p.n===0?'It starts with your first score':`${p.n} of ${p.need} ${p.many} scored`}</div>
-      <div className="rv-in" style={{..._rvDelay(.4),display:'flex',gap:8,width:'70%'}} aria-label={`${p.n} of ${p.need} ${p.many} scored`}>
+      <div className="rv-in" style={{..._rvDelay(.15),fontSize:30,fontWeight:800,color:'#fff',fontFamily:C.P,lineHeight:1.15}}>{p.n===0?'It starts with your first rating':`${p.n} of ${p.need} ${p.many} rated`}</div>
+      <div className="rv-in" style={{..._rvDelay(.4),display:'flex',gap:8,width:'70%'}} aria-label={`${p.n} of ${p.need} ${p.many} rated`}>
         {Array.from({length:p.need},(_,k)=><div key={k} style={{flex:1,height:10,borderRadius:5,background:'rgba(255,255,255,0.2)',overflow:'hidden'}}>{k<p.n&&<div className="rv-bar" style={{..._rvDelay(.6+k*.2),height:'100%',background:col}}/>}</div>)}
       </div>
-      <div className="rv-in" style={{..._rvDelay(.9),fontSize:17,color:'rgba(255,255,255,0.8)',fontFamily:C.P,lineHeight:1.5,maxWidth:320}}>Score {p.left===1?'one more':p.left} {p.left===1?p.one:p.many} and every {p.one} you scan comes with a match worked out from your own scores, not a critic's.</div>
+      <div className="rv-in" style={{..._rvDelay(.9),fontSize:17,color:'rgba(255,255,255,0.8)',fontFamily:C.P,lineHeight:1.5,maxWidth:320}}>Rate {p.left===1?'one more':p.left} {p.left===1?p.one:p.many} and every {p.one} you scan comes with a match worked out from your own ratings, not a critic's.</div>
     </div>;
   }
   return <div style={{display:'flex',flexDirection:'column',gap:14,alignItems:'center',textAlign:'center'}}>
@@ -274,8 +275,8 @@ function _RvMatch({d,col,existingRating,still}){
     </div>
     <div className="rv-in" style={{..._rvDelay(1.5),fontSize:28,fontWeight:800,color:tone,fontFamily:C.P,lineHeight:1.15}}>{m.label}</div>
     <div className="rv-in" style={{..._rvDelay(1.7),fontSize:16,color:'rgba(255,255,255,0.75)',fontFamily:C.P,lineHeight:1.45}}>
-      {existingRating>0?`You scored it ${existingRating}${m.expected!=null?` · we expected about ${m.expected}`:''}`
-        :m.expectedLabel?`Likely about ${m.expected} from you · ${m.expectedLabel}${m.bar!=null?` · ${m.pct}% sure you'd score it ${m.bar}+`:''}`:''}
+      {existingRating>0?`You rated it ${existingRating}${m.expected!=null?` · we expected about ${m.expected}`:''}`
+        :m.expectedLabel?`Likely about ${m.expected} from you · ${m.expectedLabel}${m.bar!=null?` · ${m.pct}% sure you'd rate it ${m.bar}+`:''}`:''}
     </div>
     {(m.pro||m.con)&&<div style={{display:'flex',flexDirection:'column',gap:8,marginTop:6,width:'100%',maxWidth:340,textAlign:'left'}}>
       {m.pro&&<div className="rv-in" style={{..._rvDelay(2.1),display:'flex',gap:10,alignItems:'flex-start'}}><span style={{marginTop:7,width:8,height:8,borderRadius:4,background:_RV_TONE.good,flexShrink:0}}/><span style={{fontSize:15,color:'rgba(255,255,255,0.85)',fontFamily:C.P,lineHeight:1.45}}>{m.pro}</span></div>}
@@ -324,9 +325,13 @@ function _RvGrape({d,col}){
   </div>;
 }
 
-/* 5. The place: the wine map opens on the whole country, named, then closes in on the region
-   (rv-zoom, from the wide window to the one around the pin), the pin drops and takes the
-   region's name; its climate below. */
+/* 5. The place: the wine map opens on the whole country, named, then closes in on the region in
+   one movement (rv-zoom), ending RV_TIGHT× in about the pin as it drops and takes the region's
+   name; its climate below. Both ends of the zoom are written as a scale about the pin plus an
+   offset of the pin from the centre (the country frame's offset, then none), so CSS interpolates
+   the pin along a straight line into the centre while the scale grows, instead of swinging it
+   out and back (which a translate-scale-translate of the country's centre did). */
+const RV_TIGHT=1.7;
 function _RvPlace({d,col}){
   const p=d.place, W=300, H=200;
   // The map is a window onto the view around the pin, its edges faded so it sits in the stage
@@ -335,22 +340,27 @@ function _RvPlace({d,col}){
   const m=p.map, wide=m&&m.wide, z=wide?wide.z:1;
   // The wide shot shows a window z times the close one, centred on the country; the transform
   // that puts that window into the close box is what the zoom animates away from.
-  const from=wide?`translate(${m.x}px ${m.y}px) scale(${1/z}) translate(${-wide.x}px ${-wide.y}px)`:'none';
+  // CSS transforms, so the translate arguments take commas (the SVG attribute form, with spaces,
+  // is invalid CSS and left the map still).
+  const ox=wide?(m.x-wide.x)/z:0, oy=wide?(m.y-wide.y)/z:0; // where the pin sits in the country frame
+  const from=`translate(${m.x+ox}px, ${m.y+oy}px) scale(${wide?1/z:1}) translate(${-m.x}px, ${-m.y}px)`;
+  // Without a pin (a region the guide lacks) the country only eases in a little and stays named.
+  const tight=`translate(${m.x}px, ${m.y}px) scale(${m.noPin?(1.25/z):RV_TIGHT}) translate(${-m.x}px, ${-m.y}px)`;
   const label=(x,y,text,cls,delay)=><text x={x} y={y} className={cls} style={{animationDelay:delay,fontSize:'13px',fontWeight:800,fontFamily:C.P,fill:'#fff',paintOrder:'stroke',stroke:'rgba(15,15,15,0.85)',strokeWidth:'4px',strokeLinejoin:'round'}}>{text}</text>;
   return <div style={{display:'flex',flexDirection:'column',gap:12}}>
     {m&&<div className="rv-in" data-testid="reveal-map" style={{alignSelf:'center',width:'100%',maxWidth:360,aspectRatio:`${W}/${H}`,position:'relative',overflow:'hidden',WebkitMaskImage:mask,maskImage:mask}}>
       <svg viewBox={`${m.x-W/2} ${m.y-H*0.52} ${W} ${H}`} width="100%" height="100%" aria-hidden="true" style={{overflow:'hidden'}}>
-        <g className="rv-zoom" style={{'--rv-from':from,animationDelay:'.7s'}}>
+        <g className="rv-zoom" style={{'--rv-from':from,'--rv-to':tight,animationDelay:'.7s'}}>
           <path d={m.view.land} fill="rgba(255,255,255,0.07)" stroke="rgba(255,255,255,0.35)" strokeWidth="0.8" vectorEffect="non-scaling-stroke"/>
           {m.view.borders&&<path d={m.view.borders} fill="none" stroke="rgba(255,255,255,0.14)" strokeWidth="0.6" vectorEffect="non-scaling-stroke"/>}
         </g>
-        <g transform={`translate(${m.x} ${m.y})`}>
+        {!m.noPin&&<g transform={`translate(${m.x} ${m.y})`}>
           <circle className="rv-pulse" r="9" fill="none" stroke={col} strokeWidth="1.5" style={{animationDelay:'2.6s'}}/>
-          <g className="rv-pin" style={_rvDelay(2.3)}><circle r="5.5" fill={col} stroke="#fff" strokeWidth="1.6"/></g>
-          {label(10,5,p.name,'rv-in','2.8s')}
-        </g>
+          <g className="rv-pin" style={_rvDelay(2.8)}><circle r="5.5" fill={col} stroke="#fff" strokeWidth="1.6"/></g>
+          {label(10,5,p.name,'rv-in','3.2s')}
+        </g>}
       </svg>
-      {wide&&wide.name&&<div className="rv-out" aria-hidden="true" style={{position:'absolute',left:0,right:0,top:'50%',transform:'translateY(-50%)',textAlign:'center',fontSize:'22px',fontWeight:800,color:'rgba(255,255,255,0.85)',fontFamily:C.P,letterSpacing:'0.08em',textTransform:'uppercase',textShadow:'0 2px 10px rgba(0,0,0,0.8)',animationDelay:'1.1s'}}>{wide.name}</div>}
+      {wide&&wide.name&&<div className={m.noPin?undefined:'rv-out'} aria-hidden="true" style={{position:'absolute',left:0,right:0,top:'50%',transform:'translateY(-50%)',textAlign:'center',fontSize:'22px',fontWeight:800,color:'rgba(255,255,255,0.85)',fontFamily:C.P,letterSpacing:'0.08em',textTransform:'uppercase',textShadow:'0 2px 10px rgba(0,0,0,0.8)',animationDelay:'1.1s'}}>{wide.name}</div>}
     </div>}
     {_rvEyebrow('Where it\'s from','rgba(255,255,255,0.7)')}
     <div className="rv-in" style={{..._rvDelay(2.6),display:'flex',alignItems:'center',gap:10}}>
@@ -365,45 +375,47 @@ function _RvPlace({d,col}){
   </div>;
 }
 
-/* 6. One thing to say about it, from the scan cards, under the pen's raised glass and bubble. */
+/* 6. One thing to say about it, from the scan cards, under the pen's speech bubble. The words
+   are up within a second; the scene then waits for them to be read (REVEAL_EXTRA.say). */
 function _RvSay({d,col}){
   const s=d.say;
   return <div style={{display:'flex',flexDirection:'column',gap:12}}>
     {_rvEyebrow(s.kind==='talk'?'Something to say about it':'Did you know','rgba(255,255,255,0.7)')}
-    <div className="rv-in" data-testid="reveal-say-sketch" style={{..._rvDelay(.1),marginTop:6}}><SketchSay ink="rgba(255,255,255,0.9)" col={col}/></div>
-    <div className="rv-in" style={{..._rvDelay(2.4),fontSize:24,fontWeight:600,color:'#fff',fontFamily:C.P,lineHeight:1.4}}>“{s.text}”</div>
+    <div className="rv-in" data-testid="reveal-say-sketch" style={{..._rvDelay(.05),marginTop:4}}><SketchSay ink="rgba(255,255,255,0.9)" col={col}/></div>
+    <div className="rv-in" style={{..._rvDelay(.8),fontSize:24,fontWeight:600,color:'#fff',fontFamily:C.P,lineHeight:1.4}}>“{s.text}”</div>
   </div>;
 }
 
 /* 7. What next: the ways out, on a sheet that rises over the stage. The first bottle scores
    itself here (RatingPanel with onFinish) and carries on with onboarding. */
 function _RvEnd({wine,d,firstScan,existingRating,nav,showPro,curr,onDone,onRated,onSaveForLater,onFinish}){
+  const col=d.col||C.cr;
   const rows=[
-    {key:'rate',icon:'star',label:existingRating?`Re-rate it (${existingRating})`:'Rate it',sub:existingRating?'Changed your mind?':'Score it to sharpen your WineDNA',on:()=>onDone('rate')},
-    {key:'learn',icon:'book',label:'Learn about it',sub:'The story, the taste, the region and grape',on:()=>onDone('deck')},
+    {key:'rate',icon:'star',label:existingRating?`Re-rate it (${existingRating})`:'Rate it',sub:existingRating?'Changed your mind?':'Rate it to sharpen your WineDNA',on:()=>onDone('rate')},
+    {key:'learn',icon:'book',label:'Learn more about this wine',sub:'The house, the year, how it\'s made, the table',on:()=>onDone('deck')},
     ...(existingRating?[]:[{key:'save',icon:'bookmark',label:'Save for later',sub:'Shopping, or not tasted yet',on:()=>onDone('saved')}]),
   ];
-  return <div data-rv-stop data-testid="reveal-end" className="rv-sheet" style={{position:'relative',background:C.white,borderRadius:'22px 22px 0 0',padding:'18px 18px calc(18px + env(safe-area-inset-bottom))',maxHeight:'78%',overflowY:'auto',touchAction:'pan-y',boxShadow:'0 -8px 30px rgba(0,0,0,0.4)'}}>
+  return <DeckTheme.Provider value={_DECK_DARK}><div data-rv-stop data-testid="reveal-end" className="rv-sheet" style={{position:'relative',background:'#161618',borderRadius:'22px 22px 0 0',borderTop:'1px solid rgba(255,255,255,0.14)',padding:'18px 18px calc(18px + env(safe-area-inset-bottom))',maxHeight:'78%',overflowY:'auto',touchAction:'pan-y',boxShadow:`0 -8px 40px rgba(0,0,0,0.6), 0 -1px 24px ${_alpha(col,0.25)}`}}>
     {firstScan
       ?<div style={{display:'flex',flexDirection:'column',gap:12}}>
-        <div style={{fontSize:13,fontWeight:700,color:d.col,fontFamily:C.P,letterSpacing:'0.08em',textTransform:'uppercase'}}>Your WineDNA starts here</div>
+        <div style={{fontSize:13,fontWeight:700,color:_DECK_DARK.lift(col),fontFamily:C.P,letterSpacing:'0.08em',textTransform:'uppercase'}}>Your WineDNA starts here</div>
         <RatingPanel wine={wine} existingRating={existingRating} nav={nav} showPro={showPro} curr={curr} onRated={onRated} onSaveForLater={onSaveForLater} onFinish={onFinish}/>
       </div>
       :<div style={{display:'flex',flexDirection:'column',gap:10}}>
         <div style={{display:'flex',alignItems:'baseline',justifyContent:'space-between'}}>
-          <div style={{fontSize:20,fontWeight:800,color:C.ink,fontFamily:C.P}}>What next?</div>
-          <span role="button" onClick={()=>onDone('result')} style={{fontSize:14,fontWeight:600,color:C.mid,fontFamily:C.P,cursor:'pointer'}}>See the result →</span>
+          <div style={{fontSize:20,fontWeight:800,color:'#fff',fontFamily:C.P}}>What next?</div>
+          <span role="button" onClick={()=>onDone('result')} style={{fontSize:14,fontWeight:600,color:'rgba(255,255,255,0.62)',fontFamily:C.P,cursor:'pointer'}}>See the result →</span>
         </div>
-        {rows.map(x=><div key={x.key} role="button" onClick={x.on} style={{background:C.white,border:`1.5px solid ${C.crDim}`,borderRadius:14,padding:'12px 14px',display:'flex',alignItems:'center',gap:12,cursor:'pointer'}}>
-          <div style={{width:38,height:38,borderRadius:19,background:C.crSoft,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><Icon n={x.icon} sz={18} col={C.cr}/></div>
+        {rows.map(x=><div key={x.key} role="button" onClick={x.on} style={{background:'rgba(255,255,255,0.06)',border:'1px solid rgba(255,255,255,0.14)',borderRadius:14,padding:'12px 14px',display:'flex',alignItems:'center',gap:12,cursor:'pointer'}}>
+          <div style={{width:38,height:38,borderRadius:19,background:_alpha(_DECK_DARK.lift(col),0.22),display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><Icon n={x.icon} sz={18} col={_DECK_DARK.lift(col)}/></div>
           <div style={{flex:1,minWidth:0}}>
-            <div style={{fontSize:16,fontWeight:800,color:C.ink,fontFamily:C.P,lineHeight:1.25}}>{x.label}</div>
-            <div style={{fontSize:13,color:C.mid,fontFamily:C.P,lineHeight:1.35}}>{x.sub}</div>
+            <div style={{fontSize:16,fontWeight:800,color:'#fff',fontFamily:C.P,lineHeight:1.25}}>{x.label}</div>
+            <div style={{fontSize:13,color:'rgba(255,255,255,0.62)',fontFamily:C.P,lineHeight:1.35}}>{x.sub}</div>
           </div>
-          <Icon n="chevron" sz={14} col={C.mid}/>
+          <Icon n="chevron" sz={14} col="rgba(255,255,255,0.5)"/>
         </div>)}
       </div>}
-  </div>;
+  </div></DeckTheme.Provider>;
 }
 
 Object.assign(window,{ScanReveal});

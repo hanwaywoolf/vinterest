@@ -27,7 +27,7 @@ test('Vinny knows their wines, takes a follow-up, and links to learning', async 
   await page.getByLabel('Ask', { exact: true }).click();
   await expect(root(page)).toContainText('Learn more: Tempranillo quiz');
   const first = reqs.filter((r) => r.purpose === 'wine_qa')[0].messages[0].content;
-  expect(first).toContain('Reds: 20 reds scanned');
+  expect(first).toContain('Reds: 17 reds scanned');
   expect(first).toContain('Muga Selección Especial Rioja (100)');
   expect(first).toContain('usual spend');
   expect(first).not.toContain('Conversation so far');

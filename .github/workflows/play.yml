@@ -7,7 +7,7 @@
 #   - The .aab is kept as the "Vinterest-android-release" artifact, for the first upload, which
 #     Play Console needs by hand. Once PLAY_SERVICE_ACCOUNT_JSON is set, every run uploads it
 #     (scripts/play-upload.mjs) to PLAY_TRACK (variable, default internal) as PLAY_RELEASE_STATUS
-#     (variable, default draft: a new app takes only drafts until its first release is rolled out).
+#     (variable, default completed, since the first release has been rolled out by hand; `draft` to hold one back).
 #   - Run by hand with a "verification code", it instead builds the small signed APK Google's Android
 #     developer verification asks for (the code in assets/adi-registration.properties, signed with
 #     the upload key), kept as "Vinterest-verification-apk", and uploads nothing to Play.
@@ -148,7 +148,7 @@ jobs:
           PLAY_RELEASE_STATUS: ${{ vars.PLAY_RELEASE_STATUS }}
         run: |
           if [ -z "$PLAY_SERVICE_ACCOUNT_JSON" ]; then
-            echo "::notice title=Not uploaded::Built and signed. Download Vinterest-android-release from this run and upload it in Play Console, or set PLAY_SERVICE_ACCOUNT_JSON (docs/google-play.md)."
+            echo "::warning title=NOT uploaded to Google Play::PLAY_SERVICE_ACCOUNT_JSON isn't set, so nothing reached Play. Download Vinterest-android-release from this run and upload it in Play Console, or set the secret (docs/google-play.md, step 4) so every merge uploads by itself."
             exit 0
           fi
           node scripts/play-upload.mjs Vinterest.aab

@@ -51,6 +51,7 @@ test.describe('desktop', () => {
     const hero = page.locator('.hero .phone-app');
     await expect(hero).toContainText('Crozes-Hermitage 2021');
     await expect(hero).toContainText(`${SAMPLE_MATCH.pct}%`, { timeout: 10000 });
+    await expect(hero).toContainText(SAMPLE_MATCH.label, { timeout: 10000 });
     expect(errors).toEqual([]);
   });
 
@@ -158,13 +159,36 @@ test.describe('desktop', () => {
     await expect(phone).toContainText('Rate it');
   });
 
-  test('rating a bottle slides the score up and saves it, then offers what to learn, without changing the other demos', async ({ page }) => {
+  test('the deck turns through its cards: the house, the year, how it is made, the region, the table, the tasting cues', async ({ page }) => {
+    await page.goto(BASE + '/');
+    await show(page, 'learn-wine');
+    const phone = page.locator('#learn-wine .phone-app');
+    await expect(phone).toContainText('Your match');
+    await jump(page, 'learn-wine', 1);
+    await expect(phone).toContainText('The house');
+    await expect(phone).toContainText('Alain Graillot');
+    // The same part goes on to the year: the next card of the deck.
+    await expect(phone).toContainText('The year', { timeout: 8000 });
+    await jump(page, 'learn-wine', 2);
+    await expect(phone).toContainText('How it\'s made');
+    // The region card reads on down.
+    await expect(phone).toContainText('The region', { timeout: 12000 });
+    await expect.poll(() => scrolledPx(page, 'learn-wine'), { timeout: 12000 }).toBeGreaterThan(40);
+    // At the table, then the tasting cues.
+    await jump(page, 'learn-wine', 3);
+    await expect(phone).toContainText('At the table');
+    await expect(phone).toContainText('While you taste', { timeout: 10000 });
+    await jump(page, 'learn-wine', 5);
+    await expect(phone).toContainText('Next from here');
+  });
+
+  test('rating a bottle turns the dial up and saves it, then offers what to learn, without changing the other demos', async ({ page }) => {
     await page.goto(BASE + '/?speed=8');
     await show(page, 'rate');
     const phone = page.locator('#rate .phone-app');
     await expect(phone).toContainText('How was it?');
     await jump(page, 'rate', 1);
-    await expect(phone).toContainText('Scored 92', { timeout: 8000 });
+    await expect(phone).toContainText('Rated 92', { timeout: 8000 });
     // The three quick answers fill in as the caption plays.
     await expect(phone).toContainText('On your Buy again list', { timeout: 10000 });
     await expect(phone.locator('input[aria-label="What you paid"]')).toHaveValue('30', { timeout: 10000 });
@@ -178,9 +202,26 @@ test.describe('desktop', () => {
     await expect(phone).toContainText('How was it?', { timeout: 10000 });
     // A saved rating stays in that demo: the WineDNA demo still counts the sample user's own bottles.
     await jump(page, 'rate', 1);
-    await expect(phone).toContainText('Scored 92', { timeout: 10000 });
+    await expect(phone).toContainText('Rated 92', { timeout: 10000 });
     await show(page, 'winedna');
     await expect(page.locator('#winedna .phone-app')).toContainText('12 bottles scanned');
+  });
+
+  test('Blind Call plays on the taste card: three sliders, the call locked in, then the rating and its XP', async ({ page }) => {
+    await page.goto(BASE + '/?speed=2');
+    await show(page, 'learn-wine');
+    const phone = page.locator('#learn-wine .phone-app');
+    await jump(page, 'learn-wine', 4);
+    await expect(phone).toContainText('Call it before you look', { timeout: 8000 });
+    await expect(phone.locator('[role="slider"][aria-label="Body"]')).toHaveAttribute('aria-valuenow', /^5[5-9]$/, { timeout: 8000 });
+    await expect(phone.locator('[role="slider"][aria-label="Tannins"]')).toHaveAttribute('aria-valuenow', /^(6[5-9]|7\d)$/, { timeout: 8000 });
+    await expect(phone).toContainText('How you called it', { timeout: 8000 });
+    // The rating and the XP are drawn inside the phone, not over the page.
+    await expect(phone).toContainText('XP', { timeout: 8000 });
+    await expect(phone).toContainText('% accurate');
+    // Chosen again, it starts over.
+    await jump(page, 'learn-wine', 4);
+    await expect(phone).toContainText('Call it before you look', { timeout: 8000 });
   });
 
   test('Vinny types the question again each time it is chosen, and the box follows the cursor', async ({ page }) => {
@@ -206,14 +247,14 @@ test.describe('desktop', () => {
     await show(page, 'mastery');
     const phone = page.locator('#mastery .phone-app');
     await expect(phone).toContainText('Your Mastery');
-    await expect(phone).toContainText('Your shape', { timeout: 10000 }); // the radar sits below the score
+    await expect(phone).toContainText('Your shape', { timeout: 10000 }); // the radar sits below the rating
     await jump(page, 'mastery', 1);
     await expect(phone.locator('[data-testid="grape-cluster"]')).toBeVisible({ timeout: 8000 }); // the sketched bunches
     await expect(phone).toContainText('Your wine map', { timeout: 12000 });   // the same caption plays on to the map
     // The map shows what the drinker has opened, not every region as a grey dot.
     await expect(phone.locator('[data-testid="region-map"] circle[fill="#CFC9C2"]').first()).toBeHidden();
     await jump(page, 'mastery', 2);
-    await expect(phone).toContainText('You call it grippier', { timeout: 8000 }); // seven seeded Blind Calls: the tannins tile's habit
+    await expect(phone).toContainText(/grippier/i, { timeout: 8000 }); // seven seeded Blind Calls: the tannins tile's habit
     // Mastery is its own section: the Learn section no longer carries a Mastery step.
     await expect(page.locator('#learn .steps li h3')).not.toContainText(['Mastery map']);
   });
@@ -273,7 +314,7 @@ test.describe('desktop', () => {
 
 // Nothing in a demo section may be cut off, whatever the window: the text and the phone stay inside
 // the section, and the caption text stays clear of the header.
-const FITS = ['scan', 'rate', 'winedna', 'vinny', 'learn', 'mastery', 'my-wines'];
+const FITS = ['scan', 'learn-wine', 'rate', 'winedna', 'vinny', 'learn', 'mastery', 'my-wines'];
 async function fits(page, id) {
   await show(page, id);
   await page.waitForTimeout(300);

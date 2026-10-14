@@ -46,7 +46,8 @@
 const CLAUDE_PURPOSE_LIMITS = {
   label_scan: 4096,       // pwa-screens-main.jsx — photo -> wine JSON
   list_scan: 8192,         // pwa-screens-main.jsx — photo of a wine list -> wine[]
-  scancard: 4096,          // pwa-scancards.jsx — post-scan card deck copy
+  scancard: 2048,          // pwa-scancards.jsx — the scan story's line to say and a fact
+  wine_deep: 4096,         // pwa-deep.js WineDeep — "Learn more about this wine" cards, on demand
   price: 4096,             // pwa-components.jsx fetchRetailEstimate — retail price estimate
                             // (premium wines use purpose "price_search": handlePriceSearch,
                             // web search + shared cache, PRICE_MAX_TOKENS)
@@ -74,7 +75,7 @@ const CLAUDE_PURPOSE_LIMITS = {
    make the quiz banks' wrong answers any less obvious; the quiz prompts' own rule about them does. Refusal
    fallbacks are on, so a request their safety classifier declines is answered by another model
    in the same call instead of coming back empty. Earlier models get nothing extra. */
-const PURPOSE_EFFORT = { grape_quiz: "medium", region_quiz: "medium", learn_article: "medium", winedna_summary: "medium", sommelier_script: "medium" };
+const PURPOSE_EFFORT = { grape_quiz: "medium", region_quiz: "medium", learn_article: "medium", winedna_summary: "medium", sommelier_script: "medium", wine_deep: "medium" };
 function modelOptions(model, purpose, env) {
   if (!/^claude-(sonnet|opus|fable)-5/.test(model)) return { body: {}, betas: [] };
   const effort = env.CLAUDE_EFFORT || PURPOSE_EFFORT[purpose] || "low";

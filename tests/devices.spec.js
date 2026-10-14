@@ -13,7 +13,7 @@ const SCREENS = [
   ['learn', 'Wine Basics'],
   ['profile', 'WineDNA'],
   ['account', 'Where You Buy Wine'],
-  ['scan', 'Scan'],
+  ['notices', 'Notifications'],
 ];
 
 for (const size of ['standard', 'xl']) {
@@ -49,7 +49,7 @@ for (const size of ['standard', 'xl']) {
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1)).toBe(true);
       expect.soft(wide, 'elements running off the right edge').toEqual([]);
       // The bottom navigation is on screen.
-      if (hash !== 'scan') {
+      {
         const nav = await root.getByText('WineDNA', { exact: true }).last().boundingBox();
         expect(nav && nav.y + nav.height).toBeLessThanOrEqual(page.viewportSize().height + 1);
         // Each tab label on one line (a wrapped "My Wines" pushes the whole bar up).
@@ -65,7 +65,7 @@ for (const size of ['standard', 'xl']) {
 
 // Safari paints the strip behind the home indicator with the page background, so the page
 // background follows whatever is at the bottom of the screen (a dark screen must not get a white bar).
-test('the page background matches the bottom of the screen: dark on the welcome screen, light under the nav', async ({ context, page }) => {
+test('the page background matches the bottom of the screen: dark on the welcome screen and Home, light on Home once Light is picked', async ({ context, page }) => {
   await makeDeterministic(page);
   await stubNetwork(context);
   await page.goto(`${BASE}/#home`); // first visit: onboarding opens on the dark welcome screen
@@ -76,8 +76,15 @@ test('the page background matches the bottom of the screen: dark on the welcome 
   await seedLocalStorage(page, { vinterest_onboarded: '1', vinterest_region: 'uk' });
   await page.goto(`${BASE}/?demo=1#home`);
   await expect(page.locator('#root')).toContainText('Recently scanned');
-  const light = await page.evaluate(async () => { await new Promise((r) => setTimeout(r, 500)); return getComputedStyle(document.body).backgroundColor; });
-  expect(lum(light), `home page background ${light}`).toBeGreaterThan(200);
+  const home = await page.evaluate(async () => { await new Promise((r) => setTimeout(r, 500)); return getComputedStyle(document.body).backgroundColor; });
+  expect(lum(home), `home page background ${home}`).toBeLessThan(80); // Home sits on the story's dark stage, nav and all
+  // Appearance on Profile (Settings.theme): Light turns Home's stage light, nav and all.
+  await page.evaluate(() => Settings.setTheme('light'));
+  await page.reload(); // the same URL again wouldn't navigate
+  await page.goto(`${BASE}/?demo=1#home`);
+  await expect(page.locator('#root')).toContainText('Recently scanned');
+  const homeLight = await page.evaluate(async () => { await new Promise((r) => setTimeout(r, 500)); return getComputedStyle(document.body).backgroundColor; });
+  expect(lum(homeLight), `home page background in light ${homeLight}`).toBeGreaterThan(200);
 });
 
 // Installed on an iPhone, a see-through status bar ("black-translucent") left the bottom 59pt of

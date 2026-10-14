@@ -26,12 +26,13 @@ function scoreCol(score){ return _SCORE_COL[ParkerScale.tone(score)]; }
 /* "Partner" beside a link that earns Vinterest a commission (Shops.link), so it's never hidden. */
 /* Said in words wherever shop links are (the Price tab, "House" Wines), since a tooltip never
    shows on a phone: the UK's ad rules and the FTC both want a clear note. */
-function ShopDisclosure({style}){ return <div data-testid="shop-disclosure" style={{fontSize:12,color:C.mid,fontFamily:C.P,lineHeight:1.45,...style}}>We may earn a commission if you buy through these links. It never changes your match or what we suggest.</div>; }
-function PartnerTag(){ return <span title="Vinterest may earn a commission if you buy through this link." style={{fontSize:11,fontWeight:700,color:C.mid,fontFamily:C.P,border:`1px solid ${C.line}`,borderRadius:6,padding:'1px 6px',letterSpacing:'0.04em',whiteSpace:'nowrap'}}>Partner</span>; }
+function ShopDisclosure({style}){ const T=typeof useTheme==='function'?useTheme():null; return <div data-testid="shop-disclosure" style={{fontSize:12,color:T&&T.dark?T.mid:C.mid,fontFamily:C.P,lineHeight:1.45,...style}}>We may earn a commission if you buy through these links. It never changes your match or what we suggest.</div>; }
+function PartnerTag(){ const T=typeof useTheme==='function'?useTheme():null, d=!!(T&&T.dark); return <span title="Vinterest may earn a commission if you buy through this link." style={{fontSize:11,fontWeight:700,color:d?T.mid:C.mid,fontFamily:C.P,border:`1px solid ${d?T.line:C.line}`,borderRadius:6,padding:'1px 6px',letterSpacing:'0.04em',whiteSpace:'nowrap'}}>Partner</span>; }
 function Icon({n,sz=20,col=C.ink,style:s}){
   const d={
     scan:<><rect x="3" y="3" width="6" height="6" rx="1" stroke={col} strokeWidth="1.6" fill="none"/><rect x="11" y="3" width="6" height="6" rx="1" stroke={col} strokeWidth="1.6" fill="none"/><rect x="3" y="11" width="6" height="6" rx="1" stroke={col} strokeWidth="1.6" fill="none"/><circle cx="14" cy="14" r="2.5" stroke={col} strokeWidth="1.6" fill="none"/><line x1="16.5" y1="16.5" x2="18.5" y2="18.5" stroke={col} strokeWidth="1.6" strokeLinecap="round"/></>,
     fork:<><path d="M7 2v5c0 1.5.8 2.5 2 3v8" stroke={col} strokeWidth="1.6" fill="none" strokeLinecap="round" strokeLinejoin="round"/><path d="M5 2v3" stroke={col} strokeWidth="1.6" fill="none" strokeLinecap="round"/><path d="M9 2v3" stroke={col} strokeWidth="1.6" fill="none" strokeLinecap="round"/><path d="M14 2v4l2-1v-3" stroke={col} strokeWidth="1.6" fill="none" strokeLinecap="round" strokeLinejoin="round"/><path d="M14 6c0 2.5 2 3 2 5v7" stroke={col} strokeWidth="1.6" fill="none" strokeLinecap="round"/></>,
+    bell:<><path d="M10 3a5 5 0 0 0-5 5v3.2L3.6 14h12.8L15 11.2V8a5 5 0 0 0-5-5z" stroke={col} strokeWidth="1.6" fill="none" strokeLinecap="round" strokeLinejoin="round"/><path d="M8 16.5a2 2 0 0 0 4 0" stroke={col} strokeWidth="1.6" fill="none" strokeLinecap="round"/></>,
     cart:<><path d="M2 3h2.5l2.2 10h8.6l1.8-7H6.5" stroke={col} strokeWidth="1.6" fill="none" strokeLinecap="round" strokeLinejoin="round"/><circle cx="9" cy="17" r="1.2" fill={col}/><circle cx="14.5" cy="17" r="1.2" fill={col}/></>,
     grape:<>{[[7,7],[13,7],[10,11],[4,11],[16,11],[7,15],[13,15],[10,18.5]].slice(0,7).map(([x,y],k)=><circle key={k} cx={x} cy={y} r="2.6" stroke={col} strokeWidth="1.5" fill="none"/>)}<path d="M10 4V1.5M10 3.5c1.5-1.5 3.5-1.5 4.5-1" stroke={col} strokeWidth="1.5" fill="none" strokeLinecap="round"/></>,
     torch:<><path d="M11.5 2L4.5 11h5l-1 7 7-9h-5l1-7z" stroke={col} strokeWidth="1.6" fill="none" strokeLinejoin="round"/></>,
@@ -114,40 +115,42 @@ function Icon({n,sz=20,col=C.ink,style:s}){
 
 /* Tab labels are a fixed 13px (a string size, so Text size doesn't scale them) on one line:
    five tabs share the width of a small phone, and a wrapped label pushes the whole bar up. */
-function BottomNav({active, nav, showPro}){
+function BottomNav({active, nav, showPro, dark}){
+  // Under a dark screen (Home, the scan story) the bar is dark too, so the screen runs to the edge.
+  const bg=dark?'#161618':C.white, line=dark?'rgba(255,255,255,0.14)':C.line, on=dark?'#E05A74':C.cr, off=dark?'rgba(255,255,255,0.62)':C.mid;
   const homeActive=active==='home'||active==='scan';
   const cellarActive=active==='mywines';
   const learnActive=active==='learn'||active==='quiz'||active==='article';
   const profileActive=active==='profile';
   return(
     <div style={{flexShrink:0,position:'relative',zIndex:50,overflow:'visible'}}>
-      <div style={{display:'flex',background:C.white,borderTop:`1px solid ${C.line}`,zIndex:100,overflow:'visible'}}>
+      <div style={{display:'flex',background:bg,borderTop:`1px solid ${line}`,zIndex:100,overflow:'visible'}}>
         {/* Home */}
         <div onClick={()=>nav('home')} style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:3,cursor:'pointer',padding:'9px 0 max(env(safe-area-inset-bottom,9px),9px)'}}>
-          <Icon n="home" sz={22} col={homeActive?C.cr:C.mid}/>
-          <span style={{fontSize:'13px',whiteSpace:'nowrap',fontWeight:homeActive?600:400,color:homeActive?C.cr:C.mid,fontFamily:C.P}}>Home</span>
+          <Icon n="home" sz={22} col={homeActive?on:off}/>
+          <span style={{fontSize:'13px',whiteSpace:'nowrap',fontWeight:homeActive?600:400,color:homeActive?on:off,fontFamily:C.P}}>Home</span>
         </div>
         {/* My Wines */}
         <div onClick={()=>nav('mywines')} style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:3,cursor:'pointer',padding:'9px 0 max(env(safe-area-inset-bottom,9px),9px)'}}>
-          <Icon n="wine" sz={22} col={cellarActive?C.cr:C.mid}/>
-          <span style={{fontSize:'13px',whiteSpace:'nowrap',fontWeight:cellarActive?600:400,color:cellarActive?C.cr:C.mid,fontFamily:C.P}}>My Wines</span>
+          <Icon n="wine" sz={22} col={cellarActive?on:off}/>
+          <span style={{fontSize:'13px',whiteSpace:'nowrap',fontWeight:cellarActive?600:400,color:cellarActive?on:off,fontFamily:C.P}}>My Wines</span>
         </div>
         {/* Scan FAB */}
         <div style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'flex-end',cursor:'pointer',paddingBottom:'max(env(safe-area-inset-bottom,9px),9px)'}} onClick={()=>nav('camera')}>
-          <div style={{width:54,height:54,borderRadius:27,background:C.cr,display:'flex',alignItems:'center',justifyContent:'center',marginTop:-20,boxShadow:`0 4px 22px ${C.cr}60`,border:'3px solid #fff'}}>
+          <div style={{width:54,height:54,borderRadius:27,background:C.cr,display:'flex',alignItems:'center',justifyContent:'center',marginTop:-20,boxShadow:`0 4px 22px ${C.cr}60`,border:`3px solid ${bg}`}}>
             <Icon n="camera" sz={22} col="#fff"/>
           </div>
-          <span style={{fontSize:'13px',whiteSpace:'nowrap',fontWeight:600,color:C.cr,fontFamily:C.P,marginTop:3}}>Scan</span>
+          <span style={{fontSize:'13px',whiteSpace:'nowrap',fontWeight:600,color:on,fontFamily:C.P,marginTop:3}}>Scan</span>
         </div>
         {/* Learn */}
         <div onClick={()=>nav('learn')} style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:3,cursor:'pointer',padding:'9px 0 max(env(safe-area-inset-bottom,9px),9px)'}}>
-          <Icon n="book" sz={22} col={learnActive?C.cr:C.mid}/>
-          <span style={{fontSize:'13px',whiteSpace:'nowrap',fontWeight:learnActive?600:400,color:learnActive?C.cr:C.mid,fontFamily:C.P}}>Learn</span>
+          <Icon n="book" sz={22} col={learnActive?on:off}/>
+          <span style={{fontSize:'13px',whiteSpace:'nowrap',fontWeight:learnActive?600:400,color:learnActive?on:off,fontFamily:C.P}}>Learn</span>
         </div>
         {/* WineDNA */}
         <div onClick={()=>nav('profile')} style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:3,cursor:'pointer',padding:'9px 0 max(env(safe-area-inset-bottom,9px),9px)'}}>
-          <Icon n="brain" sz={22} col={profileActive?C.cr:C.mid}/>
-          <span style={{fontSize:'13px',whiteSpace:'nowrap',fontWeight:profileActive?600:400,color:profileActive?C.cr:C.mid,fontFamily:C.P}}>WineDNA</span>
+          <Icon n="brain" sz={22} col={profileActive?on:off}/>
+          <span style={{fontSize:'13px',whiteSpace:'nowrap',fontWeight:profileActive?600:400,color:profileActive?on:off,fontFamily:C.P}}>WineDNA</span>
         </div>
       </div>
     </div>
@@ -255,7 +258,7 @@ function ProGate({feature,onClose}){
     'unlimited-scans':{icon:'♾️',title:'Unlimited Scans',desc:"You've used your 10 free scans. Pro gives you unlimited.",bullets:['Scan as many bottles as you like','Your full scan history never expires','Priority AI label recognition']},
     'taste-depth':{icon:'🎭',title:'Full Taste Profile',desc:'Unlock your complete taste breakdown across all wine types.',bullets:['Whites, Rosé & Sparkling profiles','Personalised sommelier scripts for each','Full food pairing analysis']},
     'grape-library':{icon:'🍇',title:'Every Grape',desc:`You've unlocked your ${typeof FREE_GRAPE_CAP!=='undefined'?FREE_GRAPE_CAP:5} free grapes. Pro opens all 50.`,bullets:['A quiz and article for every grape you meet','Learn what each grape tastes like, and why','New grapes unlock the moment you scan them']},
-    'mastery-map':{icon:'🏆',title:'Your Mastery',desc:'See how rounded your wine knowledge is, built from what you\'ve read and the quizzes you\'ve passed.',bullets:['A score for every wine type, region, grape and skill','Your strongest areas and your biggest gaps','The next thing to read or pass in each one']},
+    'mastery-map':{icon:'🏆',title:'Your Mastery',desc:'See how rounded your wine knowledge is, built from what you\'ve read and the quizzes you\'ve passed.',bullets:['A rating for every wine type, region, grape and skill','Your strongest areas and your biggest gaps','The next thing to read or pass in each one']},
     'regions':{icon:'🗺️',title:'Every Region',desc:`You've unlocked your ${typeof FREE_REGION_CAP!=='undefined'?FREE_REGION_CAP:5} free regions. Pro opens every region you scan.`,bullets:['Region quizzes and articles for every wine you scan','How each place shapes the wine in your glass','Personalised pieces on the regions you drink']},
     'upgrade':{icon:'🍷',title:'Vinterest Pro',desc:'Everything in Vinterest, with nothing held back.',bullets:['Unlimited label scans, and wine list scanning','Every grape and region you meet, with quizzes and articles','Your full Mastery map and every wine type in WineDNA']},
     'expert-quiz':{icon:'🎓',title:'Expert Quizzes',desc:'Advanced wine knowledge questions with bigger XP rewards.',bullets:['WSET-inspired question sets','200 XP per completed quiz','Unlock Expert badge on your profile']},
@@ -306,16 +309,23 @@ function ProGate({feature,onClose}){
 }
 
 function Pill({children,active,sm,style:s}){
-  return <span style={{display:'inline-flex',alignItems:'center',padding:sm?'3px 9px':'5px 12px',borderRadius:20,background:active?C.cr:'transparent',color:active?'#fff':C.mid,border:`1px solid ${active?C.cr:C.line}`,fontSize:sm?12:13,fontWeight:500,fontFamily:C.P,...s}}>{children}</span>;
+  const T=typeof useTheme==='function'?useTheme():null, cr=T?T.lift(C.cr):C.cr, mid=T?T.mid:C.mid, line=T?T.line:C.line;
+  return <span style={{display:'inline-flex',alignItems:'center',padding:sm?'3px 9px':'5px 12px',borderRadius:20,background:active?cr:'transparent',color:active?'#fff':mid,border:`1px solid ${active?cr:line}`,fontSize:sm?12:13,fontWeight:500,fontFamily:C.P,...s}}>{children}</span>;
 }
 function Prog({val=0.5,col,h=4,style:s}){
-  return <div style={{height:h,borderRadius:h,background:'rgba(0,0,0,0.07)',overflow:'hidden',...s}}><div style={{height:'100%',width:`${Math.min(1,val)*100}%`,borderRadius:h,background:col||C.cr}}/></div>;
+  const T=typeof useTheme==='function'?useTheme():null;
+  return <div style={{height:h,borderRadius:h,background:T&&T.dark?'rgba(255,255,255,0.14)':'rgba(0,0,0,0.07)',overflow:'hidden',...s}}><div style={{height:'100%',width:`${Math.min(1,val)*100}%`,borderRadius:h,background:col||C.cr}}/></div>;
 }
 function Card({children,style:s,onClick}){
-  return <div onClick={onClick} style={{background:C.white,borderRadius:16,padding:14,boxShadow:'0 1px 4px rgba(0,0,0,0.06)',...s}}>{children}</div>;
+  // On a dark stage (DeckTheme, pwa-scancards.jsx: the scan story, its deck, the scan result and
+  // Home) a card is glass: a faint wash with a hairline, no shadow.
+  const T=typeof useTheme==='function'?useTheme():null, dark=!!(T&&T.dark);
+  return <div onClick={onClick} style={dark?{background:T.soft,border:`1px solid ${T.line}`,borderRadius:16,padding:14,...s}:{background:C.white,borderRadius:16,padding:14,boxShadow:'0 1px 4px rgba(0,0,0,0.06)',...s}}>{children}</div>;
 }
 function Btn({children,primary,full,small,style:s,onClick}){
-  return <div onClick={onClick} style={{padding:small?'8px 14px':'12px 20px',borderRadius:12,background:primary?C.cr:C.white,color:primary?'#fff':C.ink,border:primary?'none':`1px solid ${C.line}`,fontFamily:C.P,fontSize:small?13:15,fontWeight:600,textAlign:'center',width:full?'100%':'auto',boxShadow:primary?`0 4px 16px ${C.cr}40`:'none',cursor:'pointer',boxSizing:'border-box',...s}}>{children}</div>;
+  // On the scan story's dark stage (DeckTheme, pwa-scancards.jsx) a plain button is a dark glass pill.
+  const T=typeof useTheme==='function'?useTheme():null, dark=!!(T&&T.dark);
+  return <div onClick={onClick} style={{padding:small?'8px 14px':'12px 20px',borderRadius:12,background:primary?C.cr:dark?T.soft:C.white,color:primary?'#fff':dark?T.ink:C.ink,border:primary?'none':`1px solid ${dark?T.line:C.line}`,fontFamily:C.P,fontSize:small?13:15,fontWeight:600,textAlign:'center',width:full?'100%':'auto',boxShadow:primary?`0 4px 16px ${C.cr}40`:'none',cursor:'pointer',boxSizing:'border-box',...s}}>{children}</div>;
 }
 
 /* Catches a render-time exception in a screen (e.g. static data that failed to load) so the

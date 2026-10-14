@@ -39,12 +39,16 @@ email.
 ## Then
 
 Actions → TestFlight → **Run workflow**. About 15 minutes later the build appears in App Store
-Connect → your app → TestFlight (Apple processes it for a few more minutes). Add yourself as an
-internal tester there, install **TestFlight** from the App Store on an iPhone, and the build shows
-up in it.
+Connect → your app → TestFlight (Apple processes it for a few more minutes). The run also switches
+**automatic distribution** on for every internal tester group (and makes one, "Internal testers",
+if there is none), so the only thing left to do there is add people to that group: App Store
+Connect → TestFlight → Internal Testing → the group → **+**. Each of them installs **TestFlight**
+from the App Store on an iPhone, and every build shows up in it as soon as Apple has processed it.
+External groups (people outside your team) still need Apple's review per build; the run leaves
+those alone.
 
-Each later push to `main` uploads a new build. The version is `package.json`'s `version`; the
-build number goes up by itself.
+Each later push to `main` uploads a new build and testers get it by themselves. The version is
+`package.json`'s `version`; the build number goes up by itself.
 
 ## If a run fails
 

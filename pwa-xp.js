@@ -232,7 +232,7 @@ const XPSystem = {
           {const acc=Math.max(0,Math.min(1,r.accuracy||0));
           const amount=Math.round(A.blind_call.min + acc*(A.blind_call.max-A.blind_call.min));
           d.total+=amount;
-          awards.push({label:'Blind Call scored',amount,bonus:true});}
+          awards.push({label:'Blind Call rated',amount,bonus:true});}
           break;
 
         case 'track_complete':
@@ -285,7 +285,7 @@ const XPSystem = {
       if(a.levelUp){
         const total=this.get().total, nxt=this.nextLevel(total);
         moments.push({id:'level:'+a.level,icon:'trophy',kicker:'New level',title:`You're now ${an(a.level)} ${a.level}`,
-          body:nxt?`${nxt.min-total} XP to ${nxt.name}. Scanning, scoring, reading and quizzes all count.`:'',action:{label:'See your level',level:true}});
+          body:nxt?`${nxt.min-total} XP to ${nxt.name}. Scanning, rating, reading and quizzes all count.`:'',action:{label:'See your level',level:true}});
         return;
       }
       xp+=a.amount||0;
@@ -301,7 +301,7 @@ const XPSystem = {
       if(a.wineType){
         const T=typeof KnowledgeMap!=='undefined'&&KnowledgeMap.TYPES.find(t=>t.types.includes(WineDNA._t(a.wineType)));
         moments.push({id:'type:'+a.wineType,icon:'wine',kicker:'New wine type',title:`Your first ${String(a.wineType).toLowerCase()} wine`,
-          body:`Score ${TasteMatch.MIN_SCORED} and your match for them starts.`,
+          body:`Rate ${TasteMatch.MIN_SCORED} and your match for them starts.`,
           action:T?{label:`Take the ${T.label} basics quiz`,learn:{kind:'mastery',next:{quiz:{mode:'practice',topicId:T.topic}}}}:null});
       }
     });

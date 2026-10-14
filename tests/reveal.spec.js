@@ -77,6 +77,15 @@ test('the reveal tells the scan in order: label, match, taste, grape, place, a l
   await expect(scene).toHaveAttribute('data-scene', 'place');
   await expect(page.getByTestId('reveal-map')).toContainText('Spain');
   await expect(page.getByTestId('reveal-map').locator('.rv-zoom')).toHaveCount(1);
+  // The zoom is a real CSS transform (an invalid one once left the map still for everyone): the
+  // country frame is a scale-down of the region frame, and the tighter frame scales up about the pin.
+  const zoomed = () => page.evaluate(() => {
+    const el = document.querySelector('.rv-zoom');
+    return { now: getComputedStyle(el).transform, to: el.style.getPropertyValue('--rv-to') };
+  });
+  await expect.poll(async () => (await zoomed()).now).toMatch(/^matrix\(0\.\d+, 0, 0, 0\.\d+/);
+  expect((await zoomed()).to).toMatch(/^translate\([\d.]+px, [\d.]+px\) scale\(1\.\d+\) translate\(-[\d.]+px, -[\d.]+px\)$/);
+  await expect.poll(async () => (await zoomed()).now, { timeout: 8000 }).toMatch(/^matrix\(1\.[1-9]\d*, 0, 0, 1\.[1-9]/);
   await expect(page.getByTestId('reveal-map').locator('text')).toHaveText('Rioja');
   await expect(scene).toContainText('Continental, tempered by the Atlantic');
   await expect(scene.locator('svg path').first()).toBeVisible();
@@ -92,11 +101,12 @@ test('the reveal tells the scan in order: label, match, taste, grape, place, a l
   await root.getByText('Skip', { exact: true }).click();
   await expect(scene).toHaveAttribute('data-scene', 'end');
   await expect(root).toContainText('What next?');
-  await root.getByText('Learn about it', { exact: true }).click();
+  await root.getByText('Learn more about this wine', { exact: true }).click();
   await expect(root).toContainText('1 / 9');
-  // Coming back to the screen (the deck's back, or from Details) doesn't replay it.
+  // Coming back to the screen (the deck's back, or from Details) doesn't replay it: it opens
+  // where they left, the deck.
   await page.reload();
-  await expect(root).toContainText('What next?');
+  await expect(root).toContainText('1 / 9');
   await expect(page.getByTestId('reveal-scene')).toHaveCount(0);
   expect(errors).toEqual([]);
 });
@@ -135,8 +145,8 @@ test('too early for a match it shows the meter; a wine the knowledge base lacks 
   await expect(scene).toHaveAttribute('data-scene', 'label');
   await next(page);
   await expect(scene).toHaveAttribute('data-scene', 'match');
-  await expect(scene).toContainText('It starts with your first score');
-  await expect(scene).toContainText('Score 3 sparkling wines');
+  await expect(scene).toContainText('It starts with your first rating');
+  await expect(scene).toContainText('Rate 3 sparkling wines');
   await next(page);
   await expect(scene).toHaveAttribute('data-scene', 'taste');
   await expect(scene).toContainText('Lively'); // bubbles, not texture, for sparkling
@@ -146,7 +156,23 @@ test('too early for a match it shows the meter; a wine the knowledge base lacks 
   expect(await page.getByTestId('reveal-progress').locator('> div').count()).toBe(3);
 });
 
-test('the first bottle ends on its score and carries on with onboarding', async ({ context, page }) => {
+// A region the guide doesn't cover, from a country on the map: the place scene still opens on the
+// country, named, with the label's own region and no pin; a country off every map skips it.
+test('a region the guide lacks still shows its country on the map, with no pin', async ({ context, page }) => {
+  const scene = await scan(context, page, { ...FIZZ, name: 'Test Fizz', region: 'Somewhere Alta', country: 'Spain' }, { demo: false, gen: null, seed: { vinterest_onboarded: '1', vinterest_region: 'uk' } });
+  await playIt(page);
+  await next(page); await next(page); await next(page);
+  await expect(scene).toHaveAttribute('data-scene', 'place');
+  await expect(scene).toContainText('Somewhere Alta');
+  await expect(scene).toContainText('Not in our region guide yet');
+  const map = page.getByTestId('reveal-map');
+  await expect(map).toContainText('Spain');
+  await expect(map.locator('circle')).toHaveCount(0);
+  // The sparkling regions the guide now covers resolve by their own names.
+  expect(await page.evaluate(() => ['Franciacorta', 'Sussex', 'Tasmania', 'Trentodoc', 'Crémant de Bourgogne', 'Cava'].map((r) => Regions.resolve({ region: r })))).toEqual(['Franciacorta', 'England', 'Tasmania', 'Trentino-Alto Adige', 'Burgundy', 'Penedès']);
+});
+
+test('the first bottle ends on its rating and carries on with onboarding', async ({ context, page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await makeDeterministic(page);
   await stubNetwork(context, { reveal: 'real', claudeText: (b) => b.purpose === 'label_scan' ? JSON.stringify(RIOJA) : '' });

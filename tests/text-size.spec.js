@@ -26,8 +26,8 @@ test('choosing a size scales text everywhere, straight away; the floor is 13px',
   await expect(title).toHaveCSS('font-size', '17.5px');
   expect(await page.evaluate(() => localStorage.getItem('vinterest_text_size'))).toBe('large');
 
-  // It sticks, and the XP badge beside the logo stays its size.
-  await page.goto(`${BASE}/?demo=1#home`);
+  // It sticks, and the XP badge beside the logo (on the explore pages, where it still shows) stays its size.
+  await page.goto(`${BASE}/?demo=1#similar`);
   await expect(root(page).getByText('1805 XP', { exact: true })).toHaveCSS('font-size', '15px');
   expect(errors).toEqual([]);
 });

@@ -68,8 +68,8 @@ const DetailLevel = {
 
   /* What each level adds, in words, for the moment card. */
   ADDS:{
-    more:'Your WineDNA now shows how your taste has moved over time and how well we can predict your scores, and every scan explains its match in full.',
-    everything:'Your WineDNA now shows everything: your best value, the flavours you keep coming back to, and what lifts and holds back your scores.',
+    more:'Your WineDNA now shows how your taste has moved over time and how well we can predict your ratings, and every scan explains its match in full.',
+    everything:'Your WineDNA now shows everything: your best value, the flavours you keep coming back to, and what lifts and holds back your ratings.',
   },
   _toast(award){ try{ XPSystem.toast([award]); }catch(e){} },
   _changed(){ try{ window.dispatchEvent(new CustomEvent('vinterest:detail')); }catch(e){} },

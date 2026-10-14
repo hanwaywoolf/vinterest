@@ -66,7 +66,7 @@ const Guides = Object.assign(_accountStore('vinterest_guides_v1'), {
     if(guide.personal==='script') return `Your ${L} sommelier script is ready in WineDNA, under Scripts: it says all of this for you.`;
     if(guide.personal==='pairing'){
       const top=[...p.scored].sort((a,b)=>b.rating-a.rating)[0];
-      return top?`Your top-scored ${(WineDNA.NOUNS[p.typeKey]||['wine'])[0]}, ${top.name} (${top.rating}): try it with ${this.foodsFor(top)}.`:null;
+      return top?`Your top-rated ${(WineDNA.NOUNS[p.typeKey]||['wine'])[0]}, ${top.name} (${top.rating}): try it with ${this.foodsFor(top)}.`:null;
     }
     return null;
   },
