@@ -92,3 +92,41 @@ test('Learn offers the refresher; the quiz brings answers back, with a little XP
   await page.screenshot({ path: path.join(info.project.outputDir, 'refreshed.png') });
   expect(errors).toEqual([]);
 });
+
+// A refresher asks each fact in a second wording (QuizMastery.variants, generated once per set),
+// alternating with the original, and records against the original, so recall stays per fact.
+test('a refresher asks the fact in another wording, alternating, and records against the original', async ({ context, page }) => {
+  const errors = collectErrors(page);
+  await user(context, page);
+  await context.unroute('**/claude');
+  const variants = Array.from({ length: 6 }, (_, i) => ({ for: i + 1, q: `Rioja variant ${i + 1}: a friend asks, what do you say?`, opts: ['Right', 'Other one', 'Other two', 'Other three'], a: 0, fact: 'Variant fact.' }));
+  const asked = [];
+  await stubNetwork(context, { claudeText: (body) => { if (body.purpose === 'quiz_variants') { asked.push(body.messages[0].content); return JSON.stringify(variants); } return ''; } });
+  await page.goto(`${BASE}/#home`);
+  await studiedRioja(page, 30);
+  await page.goto(`${BASE}/#learn`);
+  // Learn's refresher row has the variants made before the quiz opens.
+  await expect.poll(() => page.evaluate(() => QuizMastery.hasVariants(RegionQuizBank.setId('Rioja')))).toBe(true);
+  expect(asked.length).toBe(1);
+  expect(asked[0]).toContain('1. Rioja question 1?');
+  expect(asked[0]).toContain('Classification:');
+  await page.getByTestId('refreshers').getByText('Refresh →').click();
+  const seen = [];
+  for (let i = 0; i < 5; i++) {
+    seen.push((await root(page).locator('div', { hasText: /\?$/ }).last().innerText()).trim());
+    await root(page).getByText('Right', { exact: true }).first().click();
+    await root(page).getByText(/^(Next Question|See Results) →$/).click();
+  }
+  expect(seen.every((t) => t.startsWith('Rioja variant'))).toBe(true);
+  await expect(root(page)).toContainText('5 fading answers refreshed');
+  const after = await page.evaluate(() => {
+    const id = RegionQuizBank.setId('Rioja'), pool = RegionQuizBank.pool('Rioja');
+    return { fading: QuizMastery.freshness(id, pool).fading, next: QuizMastery.draw(id, pool).map((q) => q.q) };
+  });
+  expect(after.fading).toBe(1);
+  // The next round: the one still-fading question comes first, in its variant (not yet asked that
+  // way); the four just asked as variants come back in their original wording.
+  expect(after.next.filter((t) => t.startsWith('Rioja variant')).length).toBe(1);
+  expect(after.next.filter((t) => t.startsWith('Rioja question')).length).toBe(4);
+  expect(errors).toEqual([]);
+});

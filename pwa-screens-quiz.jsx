@@ -195,6 +195,8 @@ function QuizHubScreen({nav,back,showPro}){ const T=useTheme(), cr=T.lift(C.cr);
   const openGuide=id=>{ Handoff.guide.set(id); nav('guide'); };
   const knowledge=React.useMemo(()=>KnowledgeMap.summary(wines),[wines,progressTick]);
   const refreshers=React.useMemo(()=>{ try{ return KnowledgeMap.refreshers(); }catch(e){ return []; } },[progressTick]);
+  // The sets on offer as refreshers get their second wordings ready before the quiz is opened.
+  React.useEffect(()=>{ refreshers.slice(0,3).forEach(r=>{ try{ const cfg=r.learn&&r.learn.kind==='region'?{mode:'region',region:r.learn.region}:r.learn&&r.learn.kind==='grape'?{mode:'grape',grape:r.learn.grape,questions:grapeQuizBank(r.learn.grape)||[]}:r.learn&&r.learn.next&&r.learn.next.quiz; const set=cfg&&quizSetFor(cfg.mode,cfg); if(set) QuizMastery.prepareRefresher(set.id,set.pool()); }catch(e){} }); },[refreshers]);
   const secRefs={shelf:React.useRef(null),basics:React.useRef(null),regions:React.useRef(null),grapes:React.useRef(null),skills:React.useRef(null),progress:React.useRef(null)};
   const _rmLearn=typeof window!=='undefined'&&window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const jump=id=>{ const el=secRefs[id]&&secRefs[id].current; if(el) el.scrollIntoView({behavior:_rmLearn?'auto':'smooth',block:'start'}); };
@@ -1451,6 +1453,8 @@ function QuizScreen({nav,back}){ const T=useTheme(), cr=T.lift(C.cr);
   React.useLayoutEffect(()=>{ if(qRef.current) qRef.current.scrollTop=0; },[qIdx,phase==='question',phase==='feedback']);
 
   const title=quizTitle(config);
+  // A set with fading answers gets its second wordings made in the background, for the next round.
+  React.useEffect(()=>{ if(quizSet) QuizMastery.prepareRefresher(quizSet.id,quizSet.pool()); },[quizSet]);
 
   const q=allQs[qIdx];
 
@@ -1484,7 +1488,8 @@ function QuizScreen({nav,back}){ const T=useTheme(), cr=T.lift(C.cr);
       }
     }
     if(q.vocabTerm) VocabLedger.recordTest(q.vocabTerm,correct);
-    const rec=quizSet?QuizMastery.recordAnswer(quizSet.id,q.q,correct):false;
+    // A variant wording records against the original question's text (q.base).
+    const rec=quizSet?QuizMastery.recordAnswer(quizSet.id,q.base||q.q,correct):false;
     if(rec){
       const a=XPSystem.award([{type:rec==='refreshed'?'question_refreshed':'question_learned'}]);
       if(rec==='refreshed') setRefreshed(n=>n+1);
