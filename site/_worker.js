@@ -112,6 +112,8 @@ export async function handleBeta(request, env, ctx) {
   if (!EMAIL.test(email)) return json({ error: "That email address doesn't look right." }, 400);
 
   if (!env.SUPABASE_URL || !env.SUPABASE_SECRET_KEY) return json({ error: "Beta sign-ups aren't open just yet. Please check back soon." }, 503);
+  // A failure to save answers 503, never 502: Cloudflare keeps 502 and 504 for its own origin errors
+  // and replaces a Worker's 502 with its "Bad gateway" page, so the page would lose these words.
   let res;
   try {
     // ignore-duplicates: signing up twice is still "you're on the list", and reveals nothing about who is.
@@ -121,9 +123,9 @@ export async function handleBeta(request, env, ctx) {
       body: JSON.stringify({ first_name: first, last_name: last, country, platform, email }),
     });
   } catch (e) {
-    return json({ error: "We couldn't save that just now. Please try again in a moment." }, 502);
+    return json({ error: "We couldn't save that just now. Please try again in a moment." }, 503);
   }
-  if (!res.ok) return json({ error: "We couldn't save that just now. Please try again in a moment." }, 502);
+  if (!res.ok) return json({ error: "We couldn't save that just now. Please try again in a moment." }, 503);
   // Only a new sign-up gets the email: a repeat is ignored by the database and returns no row, so
   // submitting the form again can't be used to send someone email.
   if (env.RESEND_API_KEY) {
