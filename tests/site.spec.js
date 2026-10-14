@@ -391,27 +391,29 @@ test.describe('beta form', () => {
     await page.locator('#beta-go').click();
     await expect(page.locator('.err[data-for="first_name"]')).toHaveText('Add your first name.');
     await expect(page.locator('.err[data-for="country"]')).toHaveText('Pick your country.');
+    await expect(page.locator('.err[data-for="platform"]')).toHaveText('Pick your phone.');
     await expect(page.locator('.err[data-for="email"]')).toContainText('doesn\'t look right');
   });
 
-  test('sends the four fields and says thanks', async ({ page }) => {
+  test('sends the five fields and says thanks', async ({ page }) => {
     const sent = [];
     await page.route('**/api/beta', (r) => { sent.push(JSON.parse(r.request().postData())); return r.fulfill({ contentType: 'application/json', body: '{"ok":true}' }); });
     await page.goto(BASE + '/');
     await page.fill('#b-first', 'Ada');
     await page.fill('#b-last', 'Lovelace');
     await page.selectOption('#b-country', 'GB');
+    await page.selectOption('#b-platform', 'ios');
     await page.fill('#b-email', 'ada@example.com');
     await page.locator('#beta-go').click();
     await expect(page.locator('#beta-thanks')).toBeVisible();
     await expect(page.locator('#beta-thanks')).toContainText('Thanks, Ada');
-    expect(sent).toEqual([{ first_name: 'Ada', last_name: 'Lovelace', country: 'GB', email: 'ada@example.com', website: '' }]);
+    expect(sent).toEqual([{ first_name: 'Ada', last_name: 'Lovelace', country: 'GB', platform: 'ios', email: 'ada@example.com', website: '' }]);
   });
 
   test('shows the server\'s words when it can\'t save', async ({ page }) => {
     await page.route('**/api/beta', (r) => r.fulfill({ status: 503, contentType: 'application/json', body: '{"error":"Beta sign-ups aren\'t open just yet. Please check back soon."}' }));
     await page.goto(BASE + '/');
-    await page.fill('#b-first', 'Ada'); await page.fill('#b-last', 'Lovelace'); await page.fill('#b-email', 'ada@example.com');
+    await page.fill('#b-first', 'Ada'); await page.fill('#b-last', 'Lovelace'); await page.selectOption('#b-platform', 'android'); await page.fill('#b-email', 'ada@example.com');
     await page.locator('#beta-go').click();
     await expect(page.locator('#beta-fail')).toContainText('aren\'t open just yet');
     await expect(page.locator('#beta-go')).toBeEnabled();
@@ -430,7 +432,7 @@ test.describe('legal pages', () => {
 
 test.describe('the sign-up Worker', () => {
   const post = (body, headers = {}) => new Request('https://vinterest.app/api/beta', { method: 'POST', headers: { 'content-type': 'application/json', origin: 'https://vinterest.app', ...headers }, body: JSON.stringify(body) });
-  const good = { first_name: ' Ada ', last_name: 'Lovelace', country: 'gb', email: ' Ada@Example.COM ', website: '' };
+  const good = { first_name: ' Ada ', last_name: 'Lovelace', country: 'gb', platform: 'iOS', email: ' Ada@Example.COM ', website: '' };
   const env = { SUPABASE_URL: 'https://x.supabase.co', SUPABASE_SECRET_KEY: 'secret' };
 
   test('saves a tidy row with the server key, and answers ok', async () => {
@@ -447,7 +449,7 @@ test.describe('the sign-up Worker', () => {
     expect(calls[0].url).toBe('https://x.supabase.co/rest/v1/beta_signups?on_conflict=email');
     expect(calls[0].init.headers.apikey).toBe('secret');
     expect(calls[0].init.headers.prefer).toContain('ignore-duplicates');
-    expect(JSON.parse(calls[0].init.body)).toEqual({ first_name: 'Ada', last_name: 'Lovelace', country: 'GB', email: 'ada@example.com' });
+    expect(JSON.parse(calls[0].init.body)).toEqual({ first_name: 'Ada', last_name: 'Lovelace', country: 'GB', platform: 'ios', email: 'ada@example.com' });
   });
 
   test('emails a new sign-up through Resend, once, and never fails the sign-up if that goes wrong', async () => {
@@ -473,6 +475,8 @@ test.describe('the sign-up Worker', () => {
       expect(sent.subject).toBe('Thank you for registering for the Vinterest beta');
       for (const part of ['download links', 'updates on the beta', 'acceptance into the programme']) { expect(sent.text).toContain(part); expect(sent.html).toContain(part); }
       expect(calls.find((c) => c.url.includes('supabase')).init.headers.prefer).toContain('return=representation');
+      // Only the person is emailed until BETA_NOTIFY_TO is set.
+      expect(calls.filter((c) => c.url.includes('resend'))).toHaveLength(1);
       // Someone already on the list gets nothing more.
       calls.length = 0; inserted = false;
       res = await handleBeta(post(good, { 'cf-connecting-ip': '7.7.7.2' }), renv);
@@ -485,12 +489,43 @@ test.describe('the sign-up Worker', () => {
     } finally { globalThis.fetch = realFetch; }
   });
 
+  test('tells the team about a new sign-up when BETA_NOTIFY_TO is set, with everything the form collected', async () => {
+    const { handleBeta } = await load();
+    const nenv = { ...env, RESEND_API_KEY: 're_test', BETA_NOTIFY_TO: 'me@example.com' };
+    const realFetch = globalThis.fetch;
+    const calls = [];
+    let inserted = true;
+    globalThis.fetch = async (url, init) => {
+      calls.push({ url: String(url), init });
+      if (String(url).includes('supabase')) return new Response(JSON.stringify(inserted ? [{ email: 'ada@example.com' }] : []), { status: 201, headers: { 'content-type': 'application/json' } });
+      return new Response('{"id":"1"}', { status: 200 });
+    };
+    try {
+      let res = await handleBeta(post({ ...good, last_name: '<i>Lovelace</i>' }, { 'cf-connecting-ip': '8.8.8.1' }), nenv);
+      expect(res.status).toBe(200);
+      const mails = calls.filter((c) => c.url === 'https://api.resend.com/emails').map((c) => JSON.parse(c.init.body));
+      expect(mails).toHaveLength(2);
+      const notice = mails.find((m) => m.to[0] === 'me@example.com');
+      expect(notice.subject).toBe('Beta sign-up: Ada <i>Lovelace</i> (iPhone (iOS), GB)');
+      expect(notice.reply_to).toBe('ada@example.com');
+      for (const part of ['Ada <i>Lovelace</i>', 'ada@example.com', 'GB', 'iPhone (iOS)']) expect(notice.text).toContain(part);
+      expect(notice.html).toContain('&lt;i&gt;Lovelace&lt;/i&gt;');
+      expect(notice.html).not.toContain('<i>Lovelace</i>');
+      // A repeat sign-up tells no one.
+      calls.length = 0; inserted = false;
+      res = await handleBeta(post(good, { 'cf-connecting-ip': '8.8.8.2' }), nenv);
+      expect(res.status).toBe(200);
+      expect(calls.some((c) => c.url.includes('resend'))).toBe(false);
+    } finally { globalThis.fetch = realFetch; }
+  });
+
   test('refuses bad input, other sites, and says so plainly when sign-ups aren\'t set up', async () => {
     const { handleBeta } = await load();
     const ip = (n) => ({ 'cf-connecting-ip': `2.2.2.${n}` });
     expect((await handleBeta(post({ ...good, email: 'nope' }, ip(1)), env)).status).toBe(400);
     expect((await handleBeta(post({ ...good, first_name: '' }, ip(2)), env)).status).toBe(400);
     expect((await handleBeta(post({ ...good, country: 'Britain' }, ip(3)), env)).status).toBe(400);
+    expect((await handleBeta(post({ ...good, platform: 'windows' }, ip(6)), env)).status).toBe(400);
     expect((await handleBeta(post(good, { ...ip(4), origin: 'https://evil.example' }), env)).status).toBe(403);
     expect((await handleBeta(new Request('https://vinterest.app/api/beta', { method: 'GET' }), env)).status).toBe(405);
     const unset = await handleBeta(post(good, ip(5)), {});

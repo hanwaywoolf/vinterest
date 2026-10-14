@@ -310,6 +310,7 @@
     if (!v.first_name) bad.first_name = 'Add your first name.';
     if (!v.last_name) bad.last_name = 'Add your last name.';
     if (!v.country) bad.country = 'Pick your country.';
+    if (!v.platform) bad.platform = 'Pick your phone.';
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v.email)) bad.email = 'That email address doesn\'t look right.';
     return bad;
   }
@@ -320,11 +321,12 @@
       first_name: form.elements.first_name.value.trim(),
       last_name: form.elements.last_name.value.trim(),
       country: form.elements.country.value,
+      platform: form.elements.platform.value,
       email: form.elements.email.value.trim(),
       website: form.elements.website.value,
     };
     var bad = validate(v);
-    ['first_name', 'last_name', 'country', 'email'].forEach(function (k) { setErr(k, bad[k]); });
+    ['first_name', 'last_name', 'country', 'platform', 'email'].forEach(function (k) { setErr(k, bad[k]); });
     var firstBad = Object.keys(bad)[0];
     if (firstBad) { form.elements[firstBad].focus(); return; }
     go.disabled = true; go.textContent = 'Joining…';

@@ -1,6 +1,6 @@
 // site/_worker.js — the website's Cloudflare Pages Worker (advanced mode), for vinterest.app.
 // Serves the static site, and handles the two small routes the page needs:
-//   POST /api/beta     the beta sign-up: first name, last name, country, email -> Supabase `beta_signups`
+//   POST /api/beta     the beta sign-up: first name, last name, country, phone platform, email -> Supabase `beta_signups`
 //   GET  /api/country  the visitor's country as Cloudflare sees it, to pre-select the country box
 //
 // Set in Cloudflare Pages -> the site project -> Settings -> Variables and secrets:
@@ -9,6 +9,8 @@
 // Optional, for the confirmation email (sent through Resend after a new sign-up is saved):
 //   RESEND_API_KEY        (secret) a Resend API key. Without it, no email is sent and nothing else changes.
 //   RESEND_FROM           the sender, default "Vinterest <hello@vinterest.app>" (its domain must be verified in Resend)
+//   BETA_NOTIFY_TO        an address to tell about every new sign-up (name, country, phone, email), through Resend too.
+//                         Without it, no one is told and nothing else changes.
 // Without the Supabase pair, /api/beta answers 503 "not open yet" and the page says so; nothing else breaks.
 // The table comes from supabase/migrations/0004_beta_signups.sql. Setup steps: docs/site-setup.md.
 //
@@ -58,6 +60,26 @@ async function sendConfirmation(env, { first, email }) {
   }
 }
 
+// Tells the team about a new sign-up: everything the form collected, so the invite can be sent
+// without opening the database. Same rules as the confirmation: a failure is logged and dropped.
+async function notifyTeam(env, { first, last, country, platform, email }) {
+  const from = env.RESEND_FROM || "Vinterest <hello@vinterest.app>";
+  const phone = platform === "ios" ? "iPhone (iOS)" : "Android";
+  const lines = [["Name", `${first} ${last}`], ["Email", email], ["Country", country], ["Phone", phone], ["Signed up", new Date().toISOString().replace("T", " ").slice(0, 16) + " UTC"]];
+  const text = `New beta sign-up\n\n${lines.map(([k, v]) => `${k}: ${v}`).join("\n")}\n`;
+  const html = `<div style="font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.5;color:#1a1a1a;max-width:520px"><p><strong>New beta sign-up</strong></p><table style="border-collapse:collapse">${lines.map(([k, v]) => `<tr><td style="padding:2px 12px 2px 0;color:#666">${k}</td><td style="padding:2px 0">${escapeHtml(v)}</td></tr>`).join("")}</table></div>`;
+  try {
+    const res = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: { authorization: `Bearer ${env.RESEND_API_KEY}`, "content-type": "application/json" },
+      body: JSON.stringify({ from, to: [env.BETA_NOTIFY_TO], reply_to: email, subject: `Beta sign-up: ${first} ${last} (${phone}, ${country})`, text, html }),
+    });
+    if (!res.ok) console.warn("Resend refused the sign-up notice:", res.status);
+  } catch (e) {
+    console.warn("Resend couldn't be reached for the sign-up notice:", e && e.message);
+  }
+}
+
 // Exported so tests can run it without Cloudflare.
 export async function handleBeta(request, env, ctx) {
   if (request.method !== "POST") return json({ error: "Use POST." }, 405, { allow: "POST" });
@@ -81,10 +103,12 @@ export async function handleBeta(request, env, ctx) {
 
   const first = clean(body.first_name, 80), last = clean(body.last_name, 80);
   const country = clean(body.country, 8).toUpperCase(); // not cut to 2: "Britain" must be refused, not become BR
+  const platform = clean(body.platform, 8).toLowerCase();
   const email = clean(body.email, 254).toLowerCase();
   if (!first) return json({ error: "Add your first name." }, 400);
   if (!last) return json({ error: "Add your last name." }, 400);
   if (!/^[A-Z]{2}$/.test(country)) return json({ error: "Pick your country." }, 400);
+  if (platform !== "ios" && platform !== "android") return json({ error: "Pick your phone." }, 400);
   if (!EMAIL.test(email)) return json({ error: "That email address doesn't look right." }, 400);
 
   if (!env.SUPABASE_URL || !env.SUPABASE_SECRET_KEY) return json({ error: "Beta sign-ups aren't open just yet. Please check back soon." }, 503);
@@ -94,7 +118,7 @@ export async function handleBeta(request, env, ctx) {
     res = await fetch(`${env.SUPABASE_URL}/rest/v1/beta_signups?on_conflict=email`, {
       method: "POST",
       headers: { apikey: env.SUPABASE_SECRET_KEY, "content-type": "application/json", prefer: `resolution=ignore-duplicates,return=${env.RESEND_API_KEY ? "representation" : "minimal"}` },
-      body: JSON.stringify({ first_name: first, last_name: last, country, email }),
+      body: JSON.stringify({ first_name: first, last_name: last, country, platform, email }),
     });
   } catch (e) {
     return json({ error: "We couldn't save that just now. Please try again in a moment." }, 502);
@@ -106,7 +130,9 @@ export async function handleBeta(request, env, ctx) {
     let inserted = [];
     try { inserted = await res.json(); } catch (e) { /* no row: no email */ }
     if (Array.isArray(inserted) && inserted.length) {
-      const sending = sendConfirmation(env, { first, email });
+      const jobs = [sendConfirmation(env, { first, email })];
+      if (env.BETA_NOTIFY_TO) jobs.push(notifyTeam(env, { first, last, country, platform, email }));
+      const sending = Promise.all(jobs);
       if (ctx && ctx.waitUntil) ctx.waitUntil(sending); else await sending;
     }
   }
