@@ -241,7 +241,9 @@
     features.forEach(function (f) { if (fio) fio.observe(f.el); else f.on = true; });
     var last = 0;
     var tick = function (now) {
-      var dt = Math.min(64, now - (last || now));
+      // A frame's elapsed time, capped so a tab coming back from the background doesn't leap; the cap is loose enough that
+      // a busy page (several phones drawing at once) still plays a caption's animation in about its stated time.
+      var dt = Math.min(250, now - (last || now));
       last = now;
       features.forEach(function (f) {
         if (!f.on) return;
@@ -267,7 +269,9 @@
           f.animT += dt;
           var k = Math.min(1, f.animT / f.animMs);
           f.p = f.animFrom + (f.animTo - f.animFrom) * (f.animLinear ? k : ease(k));
-          if (k >= 1) f.phase = 'held';
+          // The last frame always lands: apply() skips a move under 0.0002, and the end of an animation can fall inside
+          // that, leaving the demo one frame short of the part it was animating to.
+          if (k >= 1) { f.phase = 'held'; f.shown = -1; }
           apply(f);
         }
       });

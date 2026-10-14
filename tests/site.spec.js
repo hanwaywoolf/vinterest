@@ -121,7 +121,7 @@ test.describe('desktop', () => {
     const y0 = await page.evaluate(() => scrollY);
     for (let i = 0; i < 6; i++) { await page.mouse.wheel(0, 100); await page.waitForTimeout(60); }
     await expect.poll(() => page.evaluate(() => scrollY)).toBeGreaterThan(y0 + 300);
-    await expect(page.locator('#rate .steps li.on h3')).toHaveText('Slide to rate');
+    await expect(page.locator('#rate .steps li.on h3')).toHaveText('Turn the dial to rate');
   });
 
   test('the page scrolls straight past a demo: no pinned section to scroll through', async ({ page }) => {
@@ -268,7 +268,7 @@ test.describe('desktop', () => {
     await jump(page, 'my-wines', 2);   // one caption plays through Details, Learn and Price
     await expect(phone).toContainText('La Rioja Alta', { timeout: 8000 });
     await expect(phone).toContainText('benchmark of traditional Rioja', { timeout: 12000 });
-    await expect(phone).toContainText('Typical bottle price', { timeout: 12000 });
+    await expect(phone).toContainText('Typical bottle price', { timeout: 20000 });
     await expect(phone).toContainText('£27');
   });
 

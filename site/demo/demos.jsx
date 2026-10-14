@@ -49,6 +49,10 @@ window.claude = {
   },
 };
 
+/* The Price tab asks a partner shop's feed for the very bottle (Shops.match, the Worker's /shop-match). The demos make no
+   network calls: no partner has it, so the tab shows the captured price estimate as before. */
+if (typeof Shops !== 'undefined') Shops.match = () => Promise.resolve(null);
+
 /* ── helpers ── */
 const _ownText = (n) => Array.from(n.childNodes).filter((c) => c.nodeType === 3).map((c) => c.textContent).join('').trim();
 const _findText = (root, re) => Array.from(root.querySelectorAll('*')).find((n) => re.test(_ownText(n)));
@@ -221,10 +225,10 @@ const _DEMO_SCREENS = {
   keep: { nav: 'scan', Screen: ScanCardsScreen, view: 'deck' },
   // One part per caption, each scrolled to the section it talks about, then reading gently on.
   dna: { nav: 'profile', Screen: WineDNAScreen, steps: [
-    { at: 0, to: 'top', drift: 0.3 },
-    { at: 0.143, to: 'top', drift: 0.7 }, // the written summary's What You Love, under the profile
-    { at: 0.286, to: '[data-section="knows"]', drift: 0.7, ms: 9000 }, // How Well We Know You, then on into the “house” wines
-    { at: 0.429, to: '[data-section="taste"]', drift: 0.4 },
+    { at: 0, to: 'top', drift: 0.2 },
+    { at: 0.143, to: '[data-testid="dna-rules"]', drift: 0.25 }, // Next time you're buying: reach for, skip, try
+    { at: 0.286, to: '[data-testid="dna-taste-tiles"]', drift: 0.3 }, // the portrait: a tile per trait
+    { at: 0.429, to: '[data-section="knows"]', drift: 0.7, ms: 9000 }, // How Well We Know You, then on into the “house” wines
     { at: 0.571, to: '[data-section="value"]', drift: 0.3 },
     { at: 0.714, to: '[data-section="explore"]', drift: 0.3 },
     { at: 0.857, to: '[data-section="scripts"]', drift: 0.4 },
