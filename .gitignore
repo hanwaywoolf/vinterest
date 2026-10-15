@@ -44,7 +44,7 @@ screens-*.jsx
 /site-dist/
 
 # Rendered films (npm run site:video)
-video/
+/video/
 model-trial.md
 lcbo-check.md
 feed-report-*.md

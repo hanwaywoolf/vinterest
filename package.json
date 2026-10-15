@@ -19,7 +19,8 @@
     "site:video": "node scripts/site-video.mjs",
     "lcbo:check": "node scripts/lcbo-check.mjs",
     "model:trial": "node scripts/model-trial.mjs",
-    "match:backtest": "node scripts/match-backtest.mjs"
+    "match:backtest": "node scripts/match-backtest.mjs",
+    "trailer": "node scripts/trailer.mjs"
   },
   "keywords": [
     "wine",
