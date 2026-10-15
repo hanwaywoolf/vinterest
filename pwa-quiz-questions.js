@@ -27,10 +27,76 @@ const QuizMastery = Object.assign(_accountStore('vinterest_quiz_mastery_v1'), {
       .sort((x,y)=>x.g-y.g||(x.g===1?x.due-y.due:0)||x.at-y.at||x.rank-y.rank||x.tie-y.tie)
       .slice(0,n)
       .map(x=>x.q);
-    const d=this.get(); const set=this._set(d,setId);
-    picked.forEach(q=>{ set.served[q.q]=now; });
+    const d=this.get(); const set=this._set(d,setId); set.form=set.form||{};
+    // A known question is asked in its other wording every other time (variants(), once
+    // generated), so a refresher checks the fact, not the memory of a sentence. A question not
+    // yet answered right is always asked as written. `base` is the original's text: progress,
+    // recall and XP are keyed to it whichever wording was asked.
+    const vs=this.variants(setId);
+    const out=picked.map(q=>{
+      set.served[q.q]=now;
+      if(!s.correct[q.q]){ set.form[q.q]='o'; return q; }
+      const v=vs[q.q];
+      if(v&&set.form[q.q]!=='v'){ set.form[q.q]='v'; return {...q,...v,base:q.q}; }
+      set.form[q.q]='o'; return q;
+    });
     this.save(d);
-    return picked;
+    return out;
+  },
+
+  /* ── Variants: a second wording of every question in a set ──
+     Generated once per set (purpose quiz_variants, prompts/quiz-variants.txt) the first time it has
+     fading answers: one new question per original on the same fact from another angle, keyed by
+     the original's text, so a refresher alternates wordings while recall stays per fact. Kept on
+     this phone only (another phone makes its own in one call); a bank that is replaced leaves
+     them unmatched and harmless. */
+  VARIANT_PREFIX:'vinterest_quiz_variants_',
+  _variantKey(setId){ return this.VARIANT_PREFIX+String(setId).replace(/[^\w:-]+/g,'_'); },
+  variants(setId){ try{ const v=Store.getJSON(this._variantKey(setId),null); return v&&typeof v==='object'&&!Array.isArray(v)?v:{}; }catch(e){ return {}; } },
+  hasVariants(setId){ return Object.keys(this.variants(setId)).length>0; },
+  _variantInFlight:new Set(),
+  _validVariant(v,orig,pool){
+    return v&&typeof v.q==='string'&&v.q.trim().length>10&&Array.isArray(v.opts)&&v.opts.length===4&&v.opts.every(o=>typeof o==='string'&&o.trim())
+      &&Number.isInteger(v.a)&&v.a>=0&&v.a<4&&v.q.trim().toLowerCase()!==orig.q.trim().toLowerCase()&&!pool.some(p=>p.q.trim().toLowerCase()===v.q.trim().toLowerCase());
+  },
+  /* What the variant prompt may build on: the region's or grape's checked facts, else the set's
+     own fact lines (Wine Basics and guides carry one per question). */
+  variantFacts(setId,pool){
+    try{
+      if(setId.startsWith('region:')&&typeof RegionQuizBank!=='undefined'&&RegionQuizBank.facts){ const f=RegionQuizBank.facts(setId.slice(7)); if(f) return f; }
+      if(setId.startsWith('grape:')&&typeof grapeFactsText==='function'){ const f=grapeFactsText(setId.slice(6)); if(f) return f; }
+    }catch(e){}
+    return pool.map(q=>q.fact).filter(Boolean).join(' ')||'Only what the original questions and their answers state.';
+  },
+  variantSubject(setId){ const i=setId.indexOf(':'); const kind=setId.slice(0,i), name=setId.slice(i+1);
+    if(kind==='topic'){ const t=(typeof QUIZ_TOPICS!=='undefined'?QUIZ_TOPICS:[]).find(x=>x.id===name); return t?t.label+' (wine basics)':name; }
+    if(kind==='guide'){ const g=typeof Guides!=='undefined'&&Guides.byId(name); return g?g.title:name; }
+    return name; },
+  ensureVariants(setId,pool,onReady){
+    const done=onReady||(()=>{});
+    if(!pool||pool.length<2||this.hasVariants(setId)){ done(this.variants(setId)); return; }
+    if(this._variantInFlight.has(setId)){ done(null); return; }
+    if(typeof window==='undefined'||!window.claude||!window.claude.complete){ done(null); return; }
+    this._variantInFlight.add(setId);
+    const questions=pool.map((q,i)=>`${i+1}. ${q.q} Options: ${q.opts.join(' / ')}. Answer: ${q.opts[q.a]}.`).join('\n');
+    const prompt=ContentEngine.fillTpl(_loadTextSync('prompts/quiz-variants.txt'),{subject:this.variantSubject(setId),facts:this.variantFacts(setId,pool),questions});
+    return window.claude.complete({purpose:'quiz_variants',max_tokens:4096,messages:[{role:'user',content:prompt}]})
+      .then(text=>{
+        let cleaned=String(text||'').replace(/```json|```/g,'').trim();
+        const s=cleaned.indexOf('['); const e=cleaned.lastIndexOf(']');
+        if(s>=0&&e>s) cleaned=cleaned.slice(s,e+1);
+        const out={}, seen=new Set();
+        JSON.parse(cleaned).forEach(v=>{ const orig=pool[(v&&v.for|0)-1]; if(!orig||out[orig.q]||seen.has(String(v.q).toLowerCase())) return;
+          if(this._validVariant(v,orig,pool)){ out[orig.q]={q:v.q.trim(),opts:v.opts.map(o=>String(o).trim()),a:v.a,fact:typeof v.fact==='string'?v.fact:orig.fact||null}; seen.add(v.q.toLowerCase()); } });
+        if(Object.keys(out).length>=Math.min(pool.length,3)) Store.setJSON(this._variantKey(setId),out);
+        return this.variants(setId);
+      })
+      .catch(()=>null)
+      .finally(()=>{ this._variantInFlight.delete(setId); done(this.variants(setId)); });
+  },
+  /* Called where a refresher is offered or starts: makes the set's variants once it has fading answers. */
+  prepareRefresher(setId,pool,now=Date.now()){
+    try{ if(pool&&pool.length&&!this.hasVariants(setId)&&this.freshness(setId,pool,now).fading>0) this.ensureVariants(setId,pool); }catch(e){}
   },
 
   /* ── Fading ──

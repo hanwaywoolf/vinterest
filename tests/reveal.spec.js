@@ -100,8 +100,12 @@ test('the reveal tells the scan in order: label, match, taste, grape, place, a l
   await expect(scene).toHaveAttribute('data-scene', 'place');
   await root.getByText('Skip', { exact: true }).click();
   await expect(scene).toHaveAttribute('data-scene', 'end');
-  await expect(root).toContainText('What next?');
-  await root.getByText('Learn more about this wine', { exact: true }).click();
+  // The rating comes first; skipping it (just checking the match) leads to the ways out.
+  await expect(root).toContainText('How was it?');
+  await root.getByText('Just checking the match? Skip the rating', { exact: true }).click();
+  await expect(root).toContainText('Saved for later');
+  await expect(page.getByTestId('reveal-ways')).toContainText('Wine details');
+  await root.getByText('Go deeper', { exact: true }).click();
   await expect(root).toContainText('1 / 9');
   // Coming back to the screen (the deck's back, or from Details) doesn't replay it: it opens
   // where they left, the deck.

@@ -221,7 +221,7 @@ const _DEMO_SCREENS = {
   // The scan story (the reveal): the app's own scenes, one per caption (label and drinking window, match, taste, grape, place, one thing to say, the ways out).
   reveal: { nav: 'scan', Screen: ScanCardsScreen, fresh: true },
   deck: { nav: 'scan', Screen: ScanCardsScreen, view: 'deck' },
-  rate: { nav: 'scan', Screen: ScanCardsScreen, view: 'deck' },
+  rate: { nav: 'scan', Screen: ScanCardsScreen, fresh: true },   // the story's end sheet: the rating, then the ways out
   keep: { nav: 'scan', Screen: ScanCardsScreen, view: 'deck' },
   // One part per caption, each scrolled to the section it talks about, then reading gently on.
   dna: { nav: 'profile', Screen: WineDNAScreen, steps: [
@@ -260,7 +260,7 @@ const _DEMO_SCREENS = {
     { at: 0.2, layer: 'list', to: 'top', do: [{ layer: 'list', type: ['input[placeholder^="Search"]', 'Rioja'] }] },
     { at: 0.4, layer: 'detail', to: 'top', drift: 0.9, ms: 9000, do: [{ layer: 'detail', tap: /^Details$/ }] },
     { at: 0.6, layer: 'detail', to: 'top', drift: 1.2, ms: 10000, do: [{ layer: 'detail', tap: /^Learn$/ }] },
-    { at: 0.8, layer: 'detail', to: 'top', drift: 0.8, ms: 8000, do: [{ layer: 'detail', tap: /^Price$/ }] },
+    { at: 0.8, layer: 'detail', to: 'top', drift: 0.8, ms: 8000, do: [{ layer: 'detail', tap: /^Shop$/ }] },
   ] },
   learn: { nav: 'learn', layers: [
     { id: 'hub', Screen: LearnScreen },
@@ -421,8 +421,9 @@ const VinterestDemo = {
       // Rendered right now, not on React's schedule: the scan screen reads the handoff as it opens, and
       // another demo mounting in the meantime would have changed it.
       ReactDOM.flushSync(() => root.render(<_DemoFrame key={gen} kind={kind} ctl={ctl} />));
-      // The rating and keep-learning demos begin on the deck's last card, the rating card.
-      if (kind === 'rate' || kind === 'keep') cancel = _until(() => { const dots = _deckDots(el); if (!dots || dots.length < _DECK_CARDS) return false; dots[_DECK_CARDS - 1].click(); return true; });
+      // The keep-learning demo begins on the deck's last card, the rating card; the rating demo on the story's end sheet (Skip takes it there).
+      if (kind === 'keep') cancel = _until(() => { const dots = _deckDots(el); if (!dots || dots.length < _DECK_CARDS) return false; dots[_DECK_CARDS - 1].click(); return true; });
+      if (kind === 'rate') cancel = _until(() => _tapText(el, /^Skip$/), 60);
     };
     draw();
 
@@ -594,7 +595,7 @@ const VinterestDemo = {
         setTimeout(() => step(n - 1), 600);
       })(40);
     };
-    let saved = false, rated = false, learned = false, boughtAgain = false, paid = false, where = false, finished = false;
+    let saved = false, rated = false, learned = false, boughtAgain = false, paid = false, where = false;
     const api = {
       update(p) {
         lastP = p;
@@ -620,18 +621,14 @@ const VinterestDemo = {
           return;
         }
         if (kind === 'rate') {
-          // Slide the rating up to a 92, save it, then read down what it asks next. Going back to the
-          // start (or choosing that part again) starts the rating over, so the slider plays again.
+          // On the story's end sheet: turn the dial up to a 92, save it, then read down what it asks next
+          // and the ways out under it. Going back to the start (or choosing that part again) starts the
+          // rating over, so the dial plays again.
           const slider0 = _scoreSlider(el);
-          if ((saved && p < 0.42) || (!saved && p < 0.05 && slider0 && _scoreNow(slider0) > 0) || (finished && p < 0.9)) {
-            saved = false; rated = false; finished = false; boughtAgain = paid = where = false; scroller = null; draw();
+          if ((saved && p < 0.42) || (!saved && p < 0.05 && slider0 && _scoreNow(slider0) > 0)) {
+            saved = false; rated = false; boughtAgain = paid = where = false; scroller = null; draw();
             if (p >= 0.05) setTimeout(() => api.update(lastP), 500); // back to where it was asked to be
             return;
-          }
-          // The last part: "Finished: what's next?", and the Keep learning options for this bottle.
-          if (p >= 0.94 && saved && !finished) {
-            finished = true;
-            _until(() => { ScanFlow.unlockLearning({ ...DemoPersona.user.scanned, confidence: 'high' }); return _tapText(el, /^Finished: what/); }, 40);
           }
           const slider = _scoreSlider(el);
           if (!saved && slider) {
@@ -645,8 +642,9 @@ const VinterestDemo = {
             if (p >= 0.74 && !boughtAgain) { boughtAgain = true; _until(() => _tapText(el, /^I'd buy this again/), 20); }
             if (p >= 0.82 && !paid) { paid = true; _until(() => { const i = el.querySelector('input[aria-label="What you paid"]'); if (!i) return false; _setInput(i, '30'); return true; }, 20); }
             if (p >= 0.9 && !where) { where = true; _until(() => { const i = el.querySelector('input[aria-label="Where did you have it"]'); if (!i) return false; _setInput(i, "At a friend's dinner"); return true; }, 20); }
-            const top = _topCard(el);
-            if (top) { const sc = _demoScroller(top); if (sc) { scroller = sc; glide.to(_ease((p - 0.55) / 0.42) * (sc.scrollHeight - sc.clientHeight)); } }
+            // The sheet scrolls itself: down through the extras to the ways out (Go deeper, Wine details, the result).
+            const sc = el.querySelector('[data-testid="reveal-end"]');
+            if (sc) { scroller = sc; glide.to(_ease((p - 0.55) / 0.42) * (sc.scrollHeight - sc.clientHeight)); }
           }
           return;
         }

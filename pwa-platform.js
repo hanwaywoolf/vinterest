@@ -29,6 +29,17 @@ const Platform = {
     if(typeof Account!=='undefined') Account.loadRemoteConfig();
   },
 
+  /* The phone's status bar follows the screen: Android's default is a white bar with white icons
+     (Capacitor's template colours), which showed as a blank strip above the dark app. Called by
+     pwa-app.jsx with the colour at the top of the screen; `dark` picks light icons. iOS ignores the
+     colour (the bar is drawn over the page there) and takes the icon style. */
+  statusBar(color,dark){
+    if(!this.native()) return;
+    const SB=(window.VinterestNative||{}).StatusBar; if(!SB) return;
+    try{ SB.setStyle({style:dark?'DARK':'LIGHT'}); }catch(e){}
+    try{ if(color) SB.setBackgroundColor({color}); }catch(e){}
+  },
+
   /* Saves a text file the reader can keep: a download on the web; in the app, written to the
      app's cache and offered through the share sheet (Files, Drive, email…). Resolves 'saved',
      'shared', 'cancelled' or 'failed'. */

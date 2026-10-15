@@ -158,7 +158,7 @@ function ScanReveal({wine,match,gen,existingRating,firstScan,nav,showPro,curr,on
       <span style={{fontSize:13,fontWeight:700,color:'rgba(255,255,255,0.6)',fontFamily:C.P,letterSpacing:'0.1em',textTransform:'uppercase'}}>{firstScan?'Your first bottle':'Your scan'}</span>
       {key!=='end'&&<span role="button" data-rv-stop onClick={()=>go(scenes.length-1)} style={{fontSize:14,fontWeight:700,color:'rgba(255,255,255,0.75)',fontFamily:C.P,cursor:'pointer',padding:'6px 0 6px 12px'}}>Skip</span>}
     </div>
-    <div style={{position:'relative',flex:1,minHeight:0}}>
+    <div style={{position:'relative',flex:key==='end'?'0 0 0px':1,minHeight:0,overflow:key==='end'?'hidden':undefined}}>
       {leaving&&<div aria-hidden="true" className={leaving.dir==='fwd'?'rv-leave-l':'rv-leave-r'} style={{position:'absolute',inset:0,display:'flex',flexDirection:'column',justifyContent:'center',padding:'16px 26px 44px'}}>
         <_RvScene k={leaving.key} d={d} col={col} existingRating={existingRating} still/>
       </div>}
@@ -389,32 +389,56 @@ function _RvSay({d,col}){
 /* 7. What next: the ways out, on a sheet that rises over the stage. The first bottle scores
    itself here (RatingPanel with onFinish) and carries on with onboarding. */
 function _RvEnd({wine,d,firstScan,existingRating,nav,showPro,curr,onDone,onRated,onSaveForLater,onFinish}){
-  const col=d.col||C.cr;
+  const col=d.col||C.cr, lift=_DECK_DARK.lift(col);
+  // The rating comes first, without a tap: the dial, or a line to skip it when they're only checking
+  // the match. Then the ways out: deeper into the story, the wine's own screen, or the result.
+  // A bottle already rated opens on the ways out with its rating and a line to change it.
+  const [stage,setStage]=React.useState(existingRating?'ways':'rate');
+  const [skipped,setSkipped]=React.useState(false);
+  const [rated,setRated]=React.useState(existingRating||0);
   const rows=[
-    {key:'rate',icon:'star',label:existingRating?`Re-rate it (${existingRating})`:'Rate it',sub:existingRating?'Changed your mind?':'Rate it to sharpen your WineDNA',on:()=>onDone('rate')},
-    {key:'learn',icon:'book',label:'Learn more about this wine',sub:'The house, the year, how it\'s made, the table',on:()=>onDone('deck')},
-    ...(existingRating?[]:[{key:'save',icon:'bookmark',label:'Save for later',sub:'Shopping, or not tasted yet',on:()=>onDone('saved')}]),
+    {key:'deck',icon:'book',label:'Go deeper',sub:'The house, the year, how it\'s made, the table',on:()=>onDone('deck')},
+    {key:'detail',icon:'wine',label:'Wine details',sub:'Tasting notes, the vintage, where to buy it',on:()=>onDone('detail')},
+    {key:'result',icon:'compass',label:'See the result',sub:'Your match and why',on:()=>onDone('result')},
   ];
-  return <DeckTheme.Provider value={_DECK_DARK}><div data-rv-stop data-testid="reveal-end" className="rv-sheet" style={{position:'relative',background:'#161618',borderRadius:'22px 22px 0 0',borderTop:'1px solid rgba(255,255,255,0.14)',padding:'18px 18px calc(18px + env(safe-area-inset-bottom))',maxHeight:'78%',overflowY:'auto',touchAction:'pan-y',boxShadow:`0 -8px 40px rgba(0,0,0,0.6), 0 -1px 24px ${_alpha(col,0.25)}`}}>
+  const ways=<div data-testid="reveal-ways" style={{display:'flex',flexDirection:'column',gap:8,marginTop:4}}>
+    {rows.map(x=><div key={x.key} role="button" onClick={x.on} style={{background:'rgba(255,255,255,0.06)',border:'1px solid rgba(255,255,255,0.14)',borderRadius:14,padding:'12px 14px',display:'flex',alignItems:'center',gap:12,cursor:'pointer'}}>
+      <div style={{width:38,height:38,borderRadius:19,background:_alpha(lift,0.22),display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><Icon n={x.icon} sz={18} col={lift}/></div>
+      <div style={{flex:1,minWidth:0}}>
+        <div style={{fontSize:16,fontWeight:800,color:'#fff',fontFamily:C.P,lineHeight:1.25}}>{x.label}</div>
+        <div style={{fontSize:13,color:'rgba(255,255,255,0.62)',fontFamily:C.P,lineHeight:1.35}}>{x.sub}</div>
+      </div>
+      <Icon n="chevron" sz={14} col="rgba(255,255,255,0.5)"/>
+    </div>)}
+  </div>;
+  return <DeckTheme.Provider value={_DECK_DARK}><div data-rv-stop data-testid="reveal-end" className="rv-sheet" style={{position:'relative',flex:1,minHeight:0,marginTop:10,background:'#161618',borderRadius:'22px 22px 0 0',borderTop:'1px solid rgba(255,255,255,0.14)',padding:'18px 18px calc(18px + env(safe-area-inset-bottom))',display:'flex',flexDirection:'column',gap:12,overflowY:'auto'}}>
+    {/* The sheet takes the stage once the story is told: the bottle named at the top, the rating or the ways out under it, never pushed to the foot. */}
+    {!firstScan&&<div style={{display:'flex',alignItems:'center',gap:10,paddingBottom:4}}>
+      <div style={{width:8,height:8,borderRadius:4,background:lift,boxShadow:`0 0 10px ${lift}`,flexShrink:0}}/>
+      <div style={{flex:1,minWidth:0,fontSize:15,fontWeight:700,color:'rgba(255,255,255,0.85)',fontFamily:C.P,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{WineDNA.nameYear?WineDNA.nameYear(wine):wine.name}</div>
+    </div>}
+    <div style={{margin:'auto 0',display:'flex',flexDirection:'column',gap:12,paddingBottom:12}}>
     {firstScan
       ?<div style={{display:'flex',flexDirection:'column',gap:12}}>
-        <div style={{fontSize:13,fontWeight:700,color:_DECK_DARK.lift(col),fontFamily:C.P,letterSpacing:'0.08em',textTransform:'uppercase'}}>Your WineDNA starts here</div>
+        <div style={{fontSize:13,fontWeight:700,color:lift,fontFamily:C.P,letterSpacing:'0.08em',textTransform:'uppercase'}}>Your WineDNA starts here</div>
         <RatingPanel wine={wine} existingRating={existingRating} nav={nav} showPro={showPro} curr={curr} onRated={onRated} onSaveForLater={onSaveForLater} onFinish={onFinish}/>
       </div>
-      :<div style={{display:'flex',flexDirection:'column',gap:10}}>
-        <div style={{display:'flex',alignItems:'baseline',justifyContent:'space-between'}}>
-          <div style={{fontSize:20,fontWeight:800,color:'#fff',fontFamily:C.P}}>What next?</div>
-          <span role="button" onClick={()=>onDone('result')} style={{fontSize:14,fontWeight:600,color:'rgba(255,255,255,0.62)',fontFamily:C.P,cursor:'pointer'}}>See the result →</span>
-        </div>
-        {rows.map(x=><div key={x.key} role="button" onClick={x.on} style={{background:'rgba(255,255,255,0.06)',border:'1px solid rgba(255,255,255,0.14)',borderRadius:14,padding:'12px 14px',display:'flex',alignItems:'center',gap:12,cursor:'pointer'}}>
-          <div style={{width:38,height:38,borderRadius:19,background:_alpha(_DECK_DARK.lift(col),0.22),display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><Icon n={x.icon} sz={18} col={_DECK_DARK.lift(col)}/></div>
+      :stage==='rate'
+      ?<RatingPanel wine={wine} existingRating={rated||undefined} nav={nav} showPro={showPro} curr={curr}
+          onRated={sc=>{ setRated(sc); if(onRated) onRated(sc); }} after={()=>ways}
+          skipLabel="Just checking the match? Skip the rating" onSaveForLater={()=>{ setSkipped(true); if(onSaveForLater) onSaveForLater(); setStage('ways'); }}/>
+      :<div style={{display:'flex',flexDirection:'column',gap:12}}>
+        <div style={{display:'flex',alignItems:'center',gap:10}}>
+          <div style={{width:36,height:36,borderRadius:18,background:rated?_alpha(_DECK_DARK.green,0.2):_alpha(lift,0.22),display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><Icon n={rated?'check':'bookmark'} sz={18} col={rated?_DECK_DARK.green:lift}/></div>
           <div style={{flex:1,minWidth:0}}>
-            <div style={{fontSize:16,fontWeight:800,color:'#fff',fontFamily:C.P,lineHeight:1.25}}>{x.label}</div>
-            <div style={{fontSize:13,color:'rgba(255,255,255,0.62)',fontFamily:C.P,lineHeight:1.35}}>{x.sub}</div>
+            <div style={{fontSize:17,fontWeight:800,color:'#fff',fontFamily:C.P}}>{rated?`Rated ${rated} · ${ParkerScale.label(rated)}`:'Saved for later'}</div>
+            <div style={{fontSize:13,color:'rgba(255,255,255,0.62)',fontFamily:C.P}}>{rated?'In My Wines':"It won't count towards your WineDNA until you taste it"}</div>
           </div>
-          <Icon n="chevron" sz={14} col="rgba(255,255,255,0.5)"/>
-        </div>)}
+          <span role="button" onClick={()=>setStage('rate')} style={{fontSize:14,fontWeight:700,color:lift,fontFamily:C.P,cursor:'pointer',whiteSpace:'nowrap'}}>{rated?'Change it':'Rate it instead'}</span>
+        </div>
+        {ways}
       </div>}
+    </div>
   </div></DeckTheme.Provider>;
 }
 

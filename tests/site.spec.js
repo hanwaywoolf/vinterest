@@ -155,8 +155,9 @@ test.describe('desktop', () => {
     await jump(page, 'scan', 5);
     await expect(scene).toHaveAttribute('data-scene', 'say', { timeout: 8000 });
     await jump(page, 'scan', 6);
-    await expect(phone).toContainText('What next?', { timeout: 8000 });
-    await expect(phone).toContainText('Rate it');
+    // The story ends on the rating, with a way to skip it.
+    await expect(phone).toContainText('How was it?', { timeout: 8000 });
+    await expect(phone).toContainText('Skip the rating');
   });
 
   test('the deck turns through its cards: the house, the year, how it is made, the region, the table, the tasting cues', async ({ page }) => {
@@ -182,7 +183,7 @@ test.describe('desktop', () => {
     await expect(phone).toContainText('Next from here');
   });
 
-  test('rating a bottle turns the dial up and saves it, then offers what to learn, without changing the other demos', async ({ page }) => {
+  test('rating a bottle at the end of its story turns the dial up and saves it, then offers the ways out, without changing the other demos', async ({ page }) => {
     await page.goto(BASE + '/?speed=8');
     await show(page, 'rate');
     const phone = page.locator('#rate .phone-app');
@@ -193,10 +194,12 @@ test.describe('desktop', () => {
     await expect(phone).toContainText('On your Buy again list', { timeout: 10000 });
     await expect(phone.locator('input[aria-label="What you paid"]')).toHaveValue('30', { timeout: 10000 });
     await expect(phone.locator('input[aria-label="Where did you have it"]')).toHaveValue("At a friend's dinner", { timeout: 10000 });
-    // Then the learning picked for this bottle.
+    // Then the ways out under the extras.
     await jump(page, 'rate', 2);
-    await expect(phone).toContainText('Keep learning', { timeout: 10000 });
-    await expect(phone).toContainText('Syrah quiz');
+    const ways = phone.locator('[data-testid="reveal-ways"]');
+    await expect(ways).toContainText('Go deeper', { timeout: 10000 });
+    await expect(ways).toContainText('Wine details');
+    await expect(ways).toContainText('See the result');
     // Going back to the start puts the rating panel back.
     await jump(page, 'rate', 0);
     await expect(phone).toContainText('How was it?', { timeout: 10000 });

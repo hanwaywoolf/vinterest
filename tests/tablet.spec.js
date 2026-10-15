@@ -31,19 +31,28 @@ for (const [name, viewport] of Object.entries(SIZES)) {
       await open(context, page, 'profile');
       const root = page.locator('#root');
       await expect(root).toContainText('How Well We Know You');
-      expect(await page.locator('[data-wide-columns]').count()).toBeGreaterThanOrEqual(2);
-      // The script and the history side by side.
-      const box = (sec) => page.locator(`[data-section="${sec}"]`).boundingBox();
-      const [sc, hi] = [await box('scripts'), await box('history')];
-      const pos = sc && hi ? [sc.x, hi.x, Math.abs(sc.y - hi.y)] : null;
-      expect(pos, 'Scripts and Your History headers').not.toBeNull();
-      expect(pos[1]).toBeGreaterThan(pos[0] + 200);
-      expect(pos[2]).toBeLessThan(40);
+      expect(await page.locator('[data-wide-columns]').count()).toBeGreaterThanOrEqual(1);
+      // Two folded sections side by side in the first pair.
+      const pair = page.locator('[data-wide-columns]').first().locator('[data-section]');
+      expect(await pair.count()).toBeGreaterThanOrEqual(2);
+      const [a, b] = [await pair.nth(0).boundingBox(), await pair.nth(1).boundingBox()];
+      expect(b.x).toBeGreaterThan(a.x + 200);
+      expect(Math.abs(a.y - b.y)).toBeLessThan(40);
       // How Well We Know You: the surprises beside the summary.
       const knows = page.getByTestId('knows');
       if (await page.getByTestId('knows-above').count()) {
         const [a, b] = await Promise.all([knows.locator('svg').first().boundingBox(), page.getByTestId('knows-above').boundingBox()]);
         expect(b.x).toBeGreaterThan(a.x + 200);
+      }
+      // The portrait's scales run the row's width, but their step names stay text-sized (the
+      // scale is drawn in screen pixels, not a viewBox stretched to the row).
+      const tiles = page.getByTestId('dna-taste-tiles');
+      if (await tiles.count()) {
+        await tiles.scrollIntoViewIfNeeded();
+        const box = await tiles.getByTestId('dna-scale').first().locator('text').first().boundingBox();
+        expect(box.height).toBeLessThan(20);
+        const scale = await tiles.getByTestId('dna-scale').first().boundingBox();
+        expect(scale.width).toBeGreaterThan(300);
       }
       expect(await noOverflow(page)).toEqual([]);
       await page.screenshot({ path: path.join(info.project.outputDir, `tablet-winedna-${name}.png`), fullPage: false });
@@ -83,10 +92,10 @@ for (const [name, viewport] of Object.entries(SIZES)) {
       await expect(root).toContainText('Details');
       if (name === 'landscape') {
         await expect(page.getByTestId('detail-price-pane')).toBeVisible();
-        await expect(root.getByText('Price', { exact: true })).toHaveCount(0);
+        await expect(root.getByText('Shop', { exact: true })).toHaveCount(0);
       } else {
         await expect(page.getByTestId('detail-price-pane')).toHaveCount(0);
-        await expect(root.getByText('Price', { exact: true })).toBeVisible();
+        await expect(root.getByText('Shop', { exact: true })).toBeVisible();
       }
       expect(await noOverflow(page)).toEqual([]);
       await page.screenshot({ path: path.join(info.project.outputDir, `tablet-detail-${name}.png`) });

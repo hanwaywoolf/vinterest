@@ -1,7 +1,7 @@
 // LCBO stock near an Ontario user (beta): the Worker's /lcbo against a fake LCBO.dev (off until
 // LCBO_ENABLED, Pro, the city found from the LCBO's own stores, the right bottle picked, the
 // nearest stores, cached, and a quiet answer when LCBO.dev fails), then the app: the city asked
-// only in Ontario, and the Price tab's "At the LCBO".
+// only in Ontario, and the Shop tab's "At the LCBO".
 const { test, expect } = require('@playwright/test');
 const path = require('node:path');
 const { pathToFileURL } = require('node:url');
@@ -117,7 +117,7 @@ async function openPrice(page) {
   await page.goto(`${BASE}/#home`);
   await page.evaluate((w) => { WineHistory.save([w]); sessionStorage.setItem('vinterest_scan_result', JSON.stringify({ wine: w })); }, WINE);
   await page.goto(`${BASE}/?d=1#detail`);
-  await page.locator('#root').getByText('Price', { exact: true }).click();
+  await page.locator('#root').getByText('Shop', { exact: true }).click();
 }
 
 test('Profile asks for a city only in Ontario, and keeps it with the location', async ({ context, page }) => {
@@ -138,7 +138,7 @@ test('Profile asks for a city only in Ontario, and keeps it with the location', 
   expect(await page.evaluate(() => [UserPrefs.location().city, Lcbo.applies()])).toEqual(['', false]);
 });
 
-test('the Price tab shows the LCBO\'s price and the stores near them that have it', async ({ context, page }) => {
+test('the Shop tab shows the LCBO\'s price and the stores near them that have it', async ({ context, page }) => {
   const asked = await boot(context, page, { ...ONTARIO, vinterest_pro: '1' }, {
     enabled: true, available: true, cityFound: true, found: true, radiusKm: 25,
     product: { sku: '222', name: 'Muga Reserva', price: 31.95, volumeMl: 750, url: 'https://www.lcbo.com/en/catalogsearch/result/?q=222' },

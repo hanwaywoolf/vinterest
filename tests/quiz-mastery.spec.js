@@ -241,14 +241,17 @@ test('one tap on a locked grape (Pro) unlocks it and opens its quiz; the pill th
   await page.goto(`${BASE}/?demo=1#learn`);
   await page.evaluate(() => localStorage.setItem('vinterest_pro', '1'));
   await page.reload();
-  await root(page).getByText(/^\+\d+ more$/).click();
+  // Every grape is on the shelf, locked ones in pencil with a lock.
   await root(page).getByText('Merlot', { exact: true }).click();
   // Straight into the quiz, no second tap.
   await expect(root(page)).toContainText('The Merlot Quiz');
   await answerQuiz(page, () => true);
   await root(page).getByText('Back to Learn', { exact: true }).click();
-  await expect(root(page).getByText('5/15', { exact: true })).toBeVisible();
+  // The tile's bar shows the progress (5 of 15): a third of its width.
   await expect(root(page).getByText('Merlot', { exact: true })).toBeVisible();
+  const tile = root(page).getByRole('button', { name: 'Merlot quiz' });
+  await expect(tile).toBeVisible();
+  expect(await tile.locator('div[style*="width: 33%"]').count()).toBe(1);
   expect(errors).toEqual([]);
 });
 
