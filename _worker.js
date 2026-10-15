@@ -122,6 +122,11 @@ export default {
       // The public sign-in settings, for an app build that wasn't given them (Account.loadRemoteConfig).
       return json(200, { supabase: env.SUPABASE_URL && env.SUPABASE_PUBLISHABLE_KEY ? { url: env.SUPABASE_URL, key: env.SUPABASE_PUBLISHABLE_KEY } : null });
     }
+    if (url.pathname === "/promo") {
+      if (request.method === "OPTIONS") return cors(new Response(null, { status: 204 }));
+      if (request.method !== "POST") return json(405, { error: "Method not allowed" });
+      return handlePromo(request, env);
+    }
     if (url.pathname === "/account/delete") {
       if (request.method === "OPTIONS") return cors(new Response(null, { status: 204 }));
       if (request.method !== "POST") return json(405, { error: "Method not allowed" });
@@ -344,12 +349,18 @@ function db(env, path, init = {}) {
    Entitlement.ALL_PRO_FOR_TESTING in pwa-userdata.js is the app's side. List scanning still
    needs sign-in, so anonymous traffic can't run up the bill. */
 const ALL_PRO_FOR_TESTING = true;
+/* Their plan from the entitlements row: {tier, expires_at} (expires_at only while Pro has an end
+   date, as a promo code's does). Pro that has run out reads as free. */
+async function entitlementOf(env, userId) {
+  const r = await db(env, `entitlements?user_id=eq.${encodeURIComponent(userId)}&select=tier,expires_at`);
+  if (!r.ok) return { tier: "free" };
+  const [e] = await r.json();
+  const pro = e && e.tier === "pro" && (!e.expires_at || new Date(e.expires_at) > new Date());
+  return pro ? { tier: "pro", expires_at: e.expires_at || null } : { tier: "free" };
+}
 async function tierOf(env, userId) {
   if (ALL_PRO_FOR_TESTING && env.ALL_PRO !== "0") return "pro";
-  const r = await db(env, `entitlements?user_id=eq.${encodeURIComponent(userId)}&select=tier,expires_at`);
-  if (!r.ok) return "free";
-  const [e] = await r.json();
-  return e && e.tier === "pro" && (!e.expires_at || new Date(e.expires_at) > new Date()) ? "pro" : "free";
+  return (await entitlementOf(env, userId)).tier;
 }
 function capFor(tier, kind) { const t = FAIR_USE[tier] || FAIR_USE.free; return kind in t ? t[kind] : t._other; }
 function weekStart(d = new Date()) {
@@ -386,11 +397,46 @@ async function handleMe(request, env) {
   catch (e) { return json(503, { error: "Accounts are unavailable right now.", code: "auth_unavailable" }); }
   if (user && user.invalid) return json(401, { error: "Your sign-in has expired.", code: "auth_expired" });
   if (!user) return json(200, { signedIn: false, accounts: accountsOn(env), tier: "free" });
-  const tier = await tierOf(env, user.id);
+  const ent = await entitlementOf(env, user.id);
+  const tier = ALL_PRO_FOR_TESTING && env.ALL_PRO !== "0" ? "pro" : ent.tier;
   const week = weekStart();
   const r = await db(env, `usage_counters?user_id=eq.${encodeURIComponent(user.id)}&period_start=eq.${week}&select=kind,count`);
   const usage = r.ok ? Object.fromEntries((await r.json()).map((u) => [u.kind, u.count])) : {};
-  return json(200, { signedIn: true, accounts: true, email: user.email, tier, week, usage, caps: FAIR_USE[tier] });
+  return json(200, { signedIn: true, accounts: true, email: user.email, tier, expires_at: ent.expires_at || null, week, usage, caps: FAIR_USE[tier] });
+}
+
+/* POST /promo {code}: redeems a promo code for the signed-in user (redeem_promo in
+   0006_promo_codes.sql grants or extends Pro by the code's months, counting the use). The code
+   is checked and spent by the database, never here; the app only learns whether it worked. */
+const PROMO_ERRORS = {
+  invalid: "That code isn't one of ours. Check it and try again.",
+  expired: "That code has expired.",
+  used_up: "That code has already been used.",
+};
+async function handlePromo(request, env) {
+  const origin = request.headers.get("origin");
+  if (!originAllowed(origin)) return json(403, { error: "Origin not allowed.", code: "origin_denied" });
+  if (!accountsOn(env)) return json(503, { error: "Accounts aren't set up on this server.", code: "accounts_off" });
+  let user;
+  try { user = await authUser(request, env); }
+  catch (e) { return json(503, { error: "We couldn't reach your account. Check your connection and try again.", code: "auth_unavailable" }); }
+  if (!user || user.invalid) return json(401, { error: "Sign in first, then enter your code.", code: "auth_expired" });
+  if (rateLimited(clientIp(request))) return json(429, { error: "Too many tries. Wait a few minutes and try again.", code: "rate_limited" });
+  let body = {};
+  try { body = await request.json(); } catch (e) {}
+  const code = String(body.code || "").replace(/\s/g, "").toUpperCase();
+  if (!code || code.length > 40) return json(400, { error: PROMO_ERRORS.invalid, code: "invalid" });
+  let r;
+  try { r = await db(env, "rpc/redeem_promo", { method: "POST", body: JSON.stringify({ p_user: user.id, p_code: code }) }); }
+  catch (e) { r = null; }
+  if (!r || !r.ok) return json(502, { error: "We couldn't check that code just now. Try again in a minute.", code: "promo_unavailable" });
+  const out = await r.json();
+  if (!out || !out.ok) {
+    const k = out && PROMO_ERRORS[out.error] ? out.error : "invalid";
+    return json(400, { error: PROMO_ERRORS[k], code: k });
+  }
+  for (const [k, v] of _authCache) if (v.user && v.user.id === user.id) _authCache.delete(k);
+  return json(200, { tier: "pro", expires_at: out.expires_at });
 }
 
 /* POST /account/delete: deletes the signed-in user for good (Apple requires this inside the app).

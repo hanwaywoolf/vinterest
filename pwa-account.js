@@ -104,6 +104,24 @@ const Account = {
       return j;
     }catch(e){ return this.me(); }
   },
+  /* Redeems a promo code (Worker /promo, which has the database grant or extend Pro by the code's
+     months). On success /me is refreshed, so Pro shows at once wherever Account.tier() is read. */
+  async redeemPromo(code){
+    if(!this.signedIn()) return {ok:false,error:'Sign in first, then enter your code.'};
+    const clean=String(code||'').replace(/\s/g,'').toUpperCase();
+    if(!clean) return {ok:false,error:'Type in your code first.'};
+    const t=await this.token();
+    if(!t) return {ok:false,error:'Your sign-in has expired. Sign in again, then enter your code.'};
+    let r; try{ r=await fetch(Platform.api('/promo'),{method:'POST',headers:{authorization:'Bearer '+t,'content-type':'application/json'},body:JSON.stringify({code:clean})}); }
+    catch(e){ return {ok:false,error:'We couldn\'t check your code. Check your connection and try again.'}; }
+    let j=null; try{ j=await r.json(); }catch(e){}
+    if(!r.ok){
+      if(r.status===401) this.signOut({localOnly:true});
+      return {ok:false,error:(j&&j.error)||'We couldn\'t check that code just now. Try again in a minute.'};
+    }
+    await this.refreshMe();
+    return {ok:true,expires_at:j&&j.expires_at||null};
+  },
   /* Deletes their account for good (Worker /account/delete: the Supabase user and every row of
      theirs), then everything Vinterest keeps on this phone, so the app starts again at onboarding.
      Nothing is removed from the phone unless the server confirms the account is gone. Sync stays
