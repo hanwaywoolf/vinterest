@@ -23,7 +23,7 @@ function ScanLocationCard({wine}){ const T=useTheme(), cr=T.lift(C.cr);
     </div>
     {editing?(
       <div style={{display:'flex',gap:8}}>
-        <input autoFocus value={val} onChange={e=>setVal(e.target.value)} onKeyDown={e=>{if(e.key==='Enter')commit();}} placeholder={copy.placeholder} style={{flex:1,minWidth:0,fontSize:15,fontFamily:C.P,padding:'8px 10px',borderRadius:9,border:`1px solid ${T.line}`,color:T.ink}}/>
+        <input autoFocus value={val} onChange={e=>setVal(e.target.value)} onKeyDown={e=>{if(e.key==='Enter')commit();}} placeholder={copy.placeholder} style={{flex:1,minWidth:0,fontSize:15,fontFamily:C.P,padding:'8px 10px',borderRadius:9,border:`1px solid ${T.line}`,color:T.ink,background:T.glass,outline:'none'}}/>
         <Btn primary style={{flexShrink:0}} onClick={commit}>Save</Btn>
       </div>
     ):(
