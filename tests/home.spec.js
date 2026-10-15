@@ -77,6 +77,27 @@ test('Home is what next: Up next, Written for you, recent scans, WineDNA, knowle
   // A brand-new user is told to scan first.
   const fresh = await page.evaluate(() => LearnNext.home([]).primary);
   expect(fresh.kind).toBe('scan');
+  // With bottles but under MIN_SCORED rated of their type, the match meter leads: it opens the
+  // unrated ones in My Wines when there are any, else the camera.
+  const early = await page.evaluate(() => {
+    const w = (t, r) => ({ name: 'x' + Math.random(), type: t, rating: r });
+    const a = LearnNext.home([w('red', 90), w('red', 0)]).primary, b = LearnNext.home([w('red', 90)]).primary;
+    return { a: { kind: a.kind, title: a.title, progress: a.progress, unrated: a.unrated, why: a.why }, b: { kind: b.kind, unrated: b.unrated } };
+  });
+  expect(early.a).toEqual({ kind: 'match', title: 'Rate 2 more reds and every red comes with a match', progress: '1 of 3 reds rated', unrated: 1, why: '1 of your reds is waiting for a rating.' });
+  expect(early.b).toEqual({ kind: 'match', unrated: 0 });
+  // Someone with the match live for a type is past the beginner series: it waits behind the rest.
+  const seasoned = await page.evaluate(() => { const w = (r) => ({ name: 'y' + Math.random(), type: 'red', rating: r }); const n = LearnNext.home([w(90), w(88), w(92)]); return [n.primary.kind, ...n.more.map((m) => m.kind)]; });
+  expect(seasoned[0]).not.toBe('onramp');
+  // The hero's match meter opens My Wines on the unrated reds.
+  await page.evaluate(() => { Store.setJSON('vinterest_wines', [{ name: 'Rated Rioja', type: 'red', rating: 90, scanned_at: new Date().toISOString() }, { name: 'Waiting Rioja', type: 'red', scanned_at: new Date().toISOString() }]); Store.set('vinterest_onboarded', '1'); });
+  await page.goto(`${BASE}/#home`); // ?demo=1 would seed its nineteen wines over these
+  await root(page).getByText('Rate 2 more reds and every red comes with a match').click();
+  await expect(root(page)).toContainText('Waiting Rioja');
+  await expect(root(page)).not.toContainText('Rated Rioja');
+  // Ratings on Home take the score's own colour band (90+ green), and Mastery is its own labelled Pro row.
+  await page.goto(`${BASE}/?demo=1#home`);
+  await expect(root(page).getByText('Your Mastery map')).toBeVisible();
   expect(errors).toEqual([]);
 });
 

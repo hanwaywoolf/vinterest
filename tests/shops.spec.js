@@ -1,5 +1,5 @@
 // Partner shops: links are tracked through Awin only when both IDs are set, a shop's own search is
-// used only when it's switched on, the Price tab lists where the live search found the wine (real
+// used only when it's switched on, the Shop tab lists where the live search found the wine (real
 // listings only), and every tracked link says "Partner". Nothing here moves a match.
 const { test, expect } = require('@playwright/test');
 const path = require('node:path');
@@ -50,13 +50,13 @@ test('with Awin IDs and a shop switched on: its search, tracked, with where it w
   expect(out.off).toEqual(['majestic']); // switched-off shops are never used
 });
 
-test('the Price tab lists where the search found it, labels the partner, and Restock goes to the partner', async ({ context, page }) => {
+test('the Shop tab lists where the search found it, labels the partner, and Restock goes to the partner', async ({ context, page }) => {
   await boot(context, page, ON);
   await page.goto(`${BASE}/#home`);
   await page.evaluate((w) => { WineHistory.save([w]); sessionStorage.setItem('vinterest_scan_result', JSON.stringify({ wine: w })); }, WINE);
   await page.goto(`${BASE}/?d=1#detail`);
   const root = page.locator('#root');
-  await root.getByText('Price', { exact: true }).click();
+  await root.getByText('Shop', { exact: true }).click();
   await expect(root).toContainText('In shops now');
   await expect(root).toContainText('Indie Cellar');
   await expect(root.getByText('Partner', { exact: true })).toHaveCount(2); // Majestic's row and the button

@@ -86,7 +86,6 @@ function AccountProfileScreen({nav,back,showPro}){ const T=useTheme(), cr=T.lift
 
         <BackupCard/>
 
-        <InstallCard/>
 
         <ThemeControl/>
         <NotifyControl/>
@@ -179,15 +178,10 @@ function AccountProfileScreen({nav,back,showPro}){ const T=useTheme(), cr=T.lift
           <DetailSwitch/>
         </AccSection>
 
-        {/* What went wrong recently, for when something misbehaves (ErrorLog, written by index.html). */}
-        <div onClick={()=>{
-          const errors=ErrorLog.list();
-          alert(errors.length?'Recent errors:\n\n'+errors.slice(-5).map(e=>e.context+': '+e.message).join('\n'):'No errors logged.');
-        }} style={{padding:'14px 4px 4px',fontSize:14,color:T.mid,fontFamily:C.P,cursor:'pointer',textAlign:'center'}}>View error log</div>
-        {/* For layout problems only a real phone shows: what this phone reports (InstallApp.screenInfo). */}
-        <div onClick={()=>{ const i=InstallApp.screenInfo();
-          alert(`Showing: ${i.mode}\nScreen: ${i.screen}\nWindow: ${i.window}\nVisible: ${i.visual}\nPage height: ${i.page}\nReserved by iOS: ${i.inset}\nApp area: ${i.root}\nBottom nav: ${i.nav}\n${i.ua}`); }}
-          style={{padding:'4px 4px 14px',fontSize:14,color:T.mid,fontFamily:C.P,cursor:'pointer',textAlign:'center'}}>Screen details</div>
+        {/* Starting over on XP and quiz progress lives here, off the Learn tab, behind a confirm. */}
+        <div onClick={()=>{ if(window.confirm('Reset your XP and quiz progress? Your wines and WineDNA stay as they are.')){ XPSystem.reset(); window.dispatchEvent(new Event('vinterest:xp')); } }} style={{textAlign:'center',padding:'8px',cursor:'pointer'}}>
+          <span style={{fontSize:13,color:T.mid,fontFamily:C.P,textDecoration:'underline'}}>Reset XP &amp; progress</span>
+        </div>
         <div style={{height:8}}/>
       </div>
     </div>
@@ -292,22 +286,34 @@ Object.assign(window,{TextSizeControl,ThemeControl});
 /* Optional sign-in (Account, pwa-account.js): an email, then the 6-digit code Supabase emails.
    Nothing in the app needs it; signed in, Pro and the weekly fair-use limits are checked by the
    server, and (next) their wines back up to it. Hidden when the build has no sign-in configured. */
+/* The end of a promo-granted Pro, as a date ("12 January 2027"). */
+const _MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
+function _proUntil(iso){ const d=new Date(iso); if(isNaN(d)) return String(iso).slice(0,10); return `${d.getDate()} ${_MONTHS[d.getMonth()]} ${d.getFullYear()}`; }
+
 function AccountCard({showPro}){ const T=useTheme(), cr=T.lift(C.cr);
   const [,tick]=React.useState(0);
   // Opened from Home's backup offer: go straight to the email, and say that's the step left.
   const [intent]=React.useState(()=>Handoff.accountIntent.take());
-  const [step,setStep]=React.useState(()=>(intent==='backup'||intent==='listscan')&&!Account.signedIn()?'email':'idle'); // idle | email | code
+  const [step,setStep]=React.useState(()=>(intent==='backup'||intent==='listscan'||intent==='promo')&&!Account.signedIn()?'email':'idle'); // idle | email | code
   const [email,setEmail]=React.useState('');
   const [code,setCode]=React.useState('');
   const [busy,setBusy]=React.useState(false);
   const [err,setErr]=React.useState('');
   const [confirmDelete,setConfirmDelete]=React.useState(false);
+  // "Have a promo code?": the field opens on the link, or straight away when the Pro sheet sent them.
+  const [promoOpen,setPromoOpen]=React.useState(intent==='promo');
+  const [promo,setPromo]=React.useState('');
+  const [promoMsg,setPromoMsg]=React.useState(''); // "Pro until …" once a code has worked
   React.useEffect(()=>{ const h=()=>tick(t=>t+1); window.addEventListener('vinterest:account',h); window.addEventListener('vinterest:sync',h);
     return()=>{ window.removeEventListener('vinterest:account',h); window.removeEventListener('vinterest:sync',h); }; },[]);
   // The Backup card's "Sign in to back up": open at the email step and bring this card into view.
   const cardRef=React.useRef(null);
   React.useEffect(()=>{ const h=()=>{ if(Account.signedIn()) return; setStep('email'); setTimeout(()=>{ const el=cardRef.current; if(el){ el.scrollIntoView({behavior:'smooth',block:'start'}); const i=el.querySelector('input'); i&&i.focus(); } },50); };
     window.addEventListener('vinterest:signin',h); return()=>window.removeEventListener('vinterest:signin',h); },[]);
+  // The Pro sheet's "Have a promo code?" while Profile is already open: open the field here.
+  React.useEffect(()=>{ const h=()=>{ Handoff.accountIntent.take(); if(Account.signedIn()){ setPromoOpen(true); setPromoMsg(''); } else setStep('email');
+      setTimeout(()=>{ const el=cardRef.current; el&&el.scrollIntoView({behavior:'smooth',block:'start'}); },50); };
+    window.addEventListener('vinterest:promo',h); return()=>window.removeEventListener('vinterest:promo',h); },[]);
   if(!Account.available()) return null;
 
   const box={width:'100%',boxSizing:'border-box',padding:'12px 14px',borderRadius:12,border:`1.5px solid ${T.line}`,fontSize:16,fontFamily:C.P,color:T.ink,background:T.glass,outline:'none'};
@@ -321,7 +327,14 @@ function AccountCard({showPro}){ const T=useTheme(), cr=T.lift(C.cr);
   async function verify(){
     if(busy) return; setBusy(true); setErr('');
     const r=await Account.verifyCode(email,code); setBusy(false);
-    if(r.ok){ setStep('idle'); setEmail(''); setCode(''); } else setErr(r.error);
+    if(r.ok){ setStep('idle'); setEmail(''); setCode(''); if(intent==='promo') setPromoOpen(true); } else setErr(r.error);
+  }
+
+  async function redeem(){
+    if(busy) return; setBusy(true); setErr('');
+    const r=await Account.redeemPromo(promo); setBusy(false);
+    if(r.ok){ setPromo(''); setPromoOpen(false); setPromoMsg(r.expires_at?`Your code worked: Pro until ${_proUntil(r.expires_at)}.`:'Your code worked: you have Pro.'); }
+    else setErr(r.error);
   }
 
   async function deleteAccount(){
@@ -333,7 +346,7 @@ function AccountCard({showPro}){ const T=useTheme(), cr=T.lift(C.cr);
 
   if(Account.signedIn()){
     const me=Account.me(), pro=Account.tier()==='pro';
-    return <Card style={{padding:14,display:'flex',flexDirection:'column',gap:8}}>
+    return <div ref={cardRef} style={{scrollMarginTop:12}}><Card style={{padding:14,display:'flex',flexDirection:'column',gap:8}}>
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:10}}>
         <div style={{minWidth:0}}>
           <div style={{fontSize:16,fontWeight:700,color:T.ink,fontFamily:C.P}}>Your account</div>
@@ -349,13 +362,22 @@ function AccountCard({showPro}){ const T=useTheme(), cr=T.lift(C.cr);
       <div style={{fontSize:13,color:T.mid,fontFamily:C.P,lineHeight:1.5}}>
         {pro?'You have Pro on any phone you sign in on. ':''}Sign in on another phone and your wines, WineDNA and progress are there too.
       </div>
+      {pro&&me&&me.expires_at&&<div style={{fontSize:13,color:T.mid,fontFamily:C.P}}>Pro until {_proUntil(me.expires_at)}.</div>}
       {me&&me.usage&&me.caps&&me.usage.label_scan>0&&<div style={{fontSize:13,color:T.mid,fontFamily:C.P}}>This week: {me.usage.label_scan} of {me.caps.label_scan} label scans.</div>}
+      {promoMsg&&<div data-testid="promo-done" style={{fontSize:14,fontWeight:600,color:T.lift(C.green),fontFamily:C.P}}>{promoMsg}</div>}
+      {!promoOpen&&!confirmDelete&&!promoMsg&&<div><span onClick={()=>{setPromoOpen(true);setErr('');}} style={link}>Have a promo code?</span></div>}
+      {promoOpen&&!confirmDelete&&<div style={{display:'flex',flexDirection:'column',gap:8,marginTop:2}}>
+        <input aria-label="Promo code" value={promo} onChange={e=>{setPromo(e.target.value);setErr('');}} placeholder="Your promo code" autoCapitalize="characters" autoCorrect="off" spellCheck={false}
+          onKeyDown={e=>{ if(e.key==='Enter') redeem(); }} style={{...box,letterSpacing:'0.08em'}}/>
+        {err&&<div style={{fontSize:14,color:T.lift(C.cr),fontFamily:C.P}}>{err}</div>}
+        <div onClick={redeem} style={primary}>{busy?'Checking…':'Redeem code'}</div>
+      </div>}
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginTop:2}}>
         <span onClick={()=>Account.signOut()} style={link}>Sign out</span>
         {!confirmDelete&&<span onClick={()=>{setConfirmDelete(true);setErr('');}} style={{fontSize:14,color:T.mid,fontFamily:C.P,cursor:'pointer'}}>Delete account</span>}
       </div>
       {confirmDelete&&<DeleteAccountPanel busy={busy} err={err} onCancel={()=>{setConfirmDelete(false);setErr('');}} onDelete={deleteAccount}/>}
-    </Card>;
+    </Card></div>;
   }
 
   return <div ref={cardRef} style={{scrollMarginTop:12}}><Card style={{padding:14,display:'flex',flexDirection:'column',gap:10}}>

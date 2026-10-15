@@ -20,7 +20,7 @@ async function loadWorker() {
 // A Supabase with two users (free and pro) that meters use_quota as the migration does.
 function fakeSupabase({ down = false, adminDown = false } = {}) {
   const users = { 'tok-free': { id: 'u-free', email: 'free@example.com' }, 'tok-pro': { id: 'u-pro', email: 'pro@example.com' } };
-  const counters = {}, calls = [], deleted = [];
+  const counters = {}, calls = [], deleted = [], promos = [];
   const res = (status, body) => new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
   const fetch = async (url, init = {}) => {
     url = String(url);
@@ -49,13 +49,20 @@ function fakeSupabase({ down = false, adminDown = false } = {}) {
       if (p_cap <= 0 || n >= p_cap) return res(200, null);
       counters[k] = n + 1; return res(200, n + 1);
     }
+    if (url === `${SB}/rest/v1/rpc/redeem_promo`) {
+      const { p_user, p_code } = JSON.parse(init.body);
+      promos.push({ p_user, p_code });
+      if (p_code === 'WELCOME3') return res(200, { ok: true, expires_at: '2027-01-12T00:00:00Z' });
+      if (p_code === 'SPENT') return res(200, { error: 'used_up' });
+      return res(200, { error: 'invalid' });
+    }
     if (url.startsWith(`${SB}/rest/v1/usage_counters`)) {
       const who = /user_id=eq\.([^&]+)/.exec(url)[1];
       return res(200, Object.entries(counters).filter(([k]) => k.startsWith(who + ':')).map(([k, count]) => ({ kind: k.split(':')[1], count })));
     }
     return res(404, {});
   };
-  return { fetch, calls, counters, deleted };
+  return { fetch, calls, counters, deleted, promos };
 }
 
 test.describe('Worker', () => {
@@ -142,6 +149,31 @@ test.describe('Worker', () => {
     expect(r.status).toBe(502);
     expect((await r.json()).code).toBe('delete_failed');
     expect(down.deleted).toEqual([]);
+  });
+
+  test('/promo redeems a code for the signed-in user through the database, in the server\'s words', async () => {
+    const sb = fakeSupabase(); globalThis.fetch = sb.fetch;
+    expect((await worker.fetch(req('/promo', { body: { code: 'welcome3' } }), env)).status).toBe(401);
+    expect(sb.promos).toEqual([]);
+    const ok = await worker.fetch(req('/promo', { token: 'tok-free', body: { code: ' welcome 3 ' } }), env);
+    expect(ok.status).toBe(200);
+    expect(await ok.json()).toEqual({ tier: 'pro', expires_at: '2027-01-12T00:00:00Z' });
+    expect(sb.promos).toEqual([{ p_user: 'u-free', p_code: 'WELCOME3' }]);
+    expect(sb.calls.find((c) => c.url.endsWith('/rpc/redeem_promo')).apikey).toBe('sb_secret_x');
+    const spent = await worker.fetch(req('/promo', { token: 'tok-free', body: { code: 'SPENT' } }), env);
+    expect(spent.status).toBe(400);
+    expect(await spent.json()).toEqual({ error: 'That code has already been used.', code: 'used_up' });
+    const bad = await worker.fetch(req('/promo', { token: 'tok-free', body: { code: 'NOPE' } }), env);
+    expect((await bad.json()).code).toBe('invalid');
+    expect((await worker.fetch(req('/promo', { token: 'tok-free', body: {} }), env)).status).toBe(400);
+    const down = fakeSupabase({ down: true }); globalThis.fetch = down.fetch;
+    expect([502, 503]).toContain((await worker.fetch(req('/promo', { token: 'tok-free', body: { code: 'WELCOME3' } }), env)).status); // 502 when the sign-in was still cached
+  });
+
+  test('/me says when promo Pro ends', async () => {
+    const sb = fakeSupabase(); globalThis.fetch = sb.fetch;
+    const r = await worker.fetch(req('/me', { token: 'tok-pro', method: 'GET' }), env);
+    expect(await r.json()).toMatchObject({ tier: 'pro', expires_at: null });
   });
 
   test('Supabase unreachable: scans still go through', async () => {
@@ -254,6 +286,48 @@ test('signed out, Profile\'s Backup says it\'s off in red, and its button opens 
   await root.getByText('Sign in to back up').click();
   await expect(page.getByLabel('Email address')).toBeFocused();
   expect(errors).toEqual([]);
+});
+
+test('a promo code from Profile: the field, a wrong code in the server\'s words, then Pro with its end date', async ({ context, page }) => {
+  const errors = collectErrors(page);
+  const me = { signedIn: true, accounts: true, email: 'carey@example.com', tier: 'free', usage: {}, caps: { label_scan: 100 } };
+  await app(context, page, { me });
+  const sent = [];
+  await context.route('**/promo', (route) => {
+    const body = JSON.parse(route.request().postData()); sent.push({ auth: route.request().headers().authorization, ...body });
+    if (body.code !== 'WELCOME3') return route.fulfill({ status: 400, contentType: 'application/json', body: JSON.stringify({ error: 'That code isn\'t one of ours. Check it and try again.', code: 'invalid' }) });
+    Object.assign(me, { tier: 'pro', expires_at: '2027-01-12T00:00:00Z' });
+    return route.fulfill({ contentType: 'application/json', body: JSON.stringify({ tier: 'pro', expires_at: '2027-01-12T00:00:00Z' }) });
+  });
+  await page.goto(`${BASE}/#home`);
+  await page.evaluate(() => { Store.setJSON('vinterest_session', { access_token: 'acc-1', refresh_token: 'ref-1', expires_at: Date.now() / 1000 + 3600, user: { id: 'u1', email: 'carey@example.com' } }); });
+  await page.goto(`${BASE}/#account`);
+  const root = page.locator('#root');
+  await expect(root).toContainText('Your account');
+  await root.getByText('Have a promo code?').click();
+  await page.getByLabel('Promo code').fill('nope');
+  await root.getByText('Redeem code').click();
+  await expect(root).toContainText('That code isn\'t one of ours');
+  expect(sent).toEqual([{ auth: 'Bearer acc-1', code: 'NOPE' }]);
+  await page.getByLabel('Promo code').fill(' welcome 3 ');
+  await root.getByText('Redeem code').click();
+  await expect(page.getByTestId('promo-done')).toContainText('Pro until 12 January 2027');
+  await expect(root).toContainText('Pro until 12 January 2027.');
+  expect(await page.evaluate(() => Entitlement.isPro())).toBe(true);
+  expect(sent.at(-1).code).toBe('WELCOME3');
+  await expect(page.getByLabel('Promo code')).toHaveCount(0);
+  expect(errors.filter((e) => !e.includes('status of 400'))).toEqual([]);
+});
+
+test('the Pro sheet\'s "Have a promo code?" opens Profile on the code field', async ({ context, page }) => {
+  await app(context, page);
+  await page.goto(`${BASE}/#home`);
+  await page.evaluate(() => { Store.setJSON('vinterest_session', { access_token: 'acc-1', refresh_token: 'ref-1', expires_at: Date.now() / 1000 + 3600, user: { id: 'u1', email: 'carey@example.com' } }); });
+  await page.goto(`${BASE}/#account`);
+  const root = page.locator('#root');
+  await root.getByText('Upgrade', { exact: true }).click();
+  await page.locator('[data-sheet="pro"]').getByText('Have a promo code?').click();
+  await expect(page.getByLabel('Promo code')).toBeVisible();
 });
 
 test('without sign-in configured, no account card appears', async ({ context, page }) => {

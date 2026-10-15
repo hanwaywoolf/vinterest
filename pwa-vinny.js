@@ -15,7 +15,9 @@ const Vinny = Object.assign(_accountStore('vinterest_vinny_v1'), {
   remember(q){ const d=this.get(); d.recent=[q,...(d.recent||[]).filter(x=>x.toLowerCase()!==q.toLowerCase())].slice(0,this.RECENT); this.save(d); },
 
   /* Questions to suggest, from their own wines first, then general ones. */
-  GENERIC:["What does 'tannic' mean?","What's the difference between Malbec and Merlot?","Should red wine be chilled?","What does 'dry' mean for wine?","How long should wine breathe before drinking?","What's the difference between Old World and New World wine?","How do I pick a wine for a gift?","What wine goes with a curry?"],
+  // Each fits Home's bar on one line at the standard size (about 34 characters), so a suggestion
+  // is never cut mid-word while it types.
+  GENERIC:["What does 'tannic' mean?","Malbec or Merlot: how do they differ?","Should red wine be chilled?","What does 'dry' mean for wine?","How long should wine breathe?","What does 'Old World' mean?","How do I pick a wine as a gift?","What wine goes with a curry?"],
   suggestions(wines){
     wines=(wines||[]).filter(w=>WineDNA.chosen(w));
     const pool=[];
@@ -25,7 +27,7 @@ const Vinny = Object.assign(_accountStore('vinterest_vinny_v1'), {
       const regions=count(w=>[Regions.of(w)]).slice(0,2);
       const best=[...wines].filter(w=>w.rating>0).sort((a,b)=>b.rating-a.rating)[0];
       grapes.forEach(g=>pool.push(`Why do I keep picking ${g}?`));
-      if(best) pool.push(`What should I eat with ${best.name}?`);
+      if(best) pool.push(`What goes with ${best.name}?`);
       regions.forEach(r=>pool.push(`What should I try if I like ${r}?`));
       if(grapes[0]) pool.push(`What's like ${grapes[0]} but different?`);
     }

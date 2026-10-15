@@ -80,12 +80,14 @@ test('read a guide, pass its questions, see it in Learn and in Mastery (Pro)', a
   await page.goto(`${BASE}/#learn`);
   await expect(root(page)).toContainText('Wine Skills');
   await expect(root(page)).not.toContainText('Concept Check');
-  await expect(root(page)).toContainText('Your wine knowledge · 0%');
-  // Free: the Mastery card opens the Pro sheet.
-  await root(page).getByText('Your wine knowledge · 0%').click();
+  await expect(page.getByTestId('learn-mastery-link')).toContainText('0%');
+  // Free: the Mastery link in the header opens the Pro sheet.
+  await page.getByTestId('learn-mastery-link').click();
   await expect(root(page)).toContainText('A rating for every wine type, region, grape and skill');
   await page.reload();
 
+  // Guides sit under their group's chip; the group last picked is remembered on the phone.
+  await page.getByTestId('skills-groups').getByText('Food pairing', { exact: true }).click();
   await root(page).getByText('Four pairing rules that actually work', { exact: true }).click();
   await expect(root(page)).toContainText('Wine Skills · Food pairing');
   // The line from their own wines.

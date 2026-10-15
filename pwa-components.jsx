@@ -299,8 +299,11 @@ function ProGate({feature,onClose}){
             <div style={{fontSize:18,fontWeight:700,color:'#fff',fontFamily:C.P}}>Upgrade to Pro</div>
             <div style={{fontSize:15,color:'rgba(255,255,255,0.68)',fontFamily:C.P,marginTop:2}}>£4.99/month · Cancel anytime</div>
           </div>}
-          <div onClick={onClose} style={{textAlign:'center',cursor:'pointer',paddingBottom:4}}>
-            <span style={{fontSize:16,color:C.mid,fontFamily:C.P}}>Maybe later</span>
+          <div style={{display:'flex',justifyContent:'center',gap:18,paddingBottom:4}}>
+            <span onClick={onClose} style={{fontSize:16,color:C.mid,fontFamily:C.P,cursor:'pointer'}}>Maybe later</span>
+            {/* A reviewer's or tester's code: Profile opens on the code field (sign-in first if need be). */}
+            {typeof Account!=='undefined'&&Account.available()&&<span onClick={()=>{ Handoff.accountIntent.set('promo'); onClose(); window.location.hash='#account'; window.dispatchEvent(new Event('vinterest:promo')); }}
+              style={{fontSize:16,fontWeight:600,color:C.cr,fontFamily:C.P,cursor:'pointer'}}>Have a promo code?</span>}
           </div>
         </div>
       </div>

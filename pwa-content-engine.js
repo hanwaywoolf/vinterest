@@ -151,6 +151,8 @@ function _ceShuffle(arr){ const a=[...arr]; for(let i=a.length-1;i>0;i--){ const
    through it lives in QuizMastery under 'region:<name>'. */
 const RegionQuizBank = {
   _inFlight:new Set(),
+  /* The region's checked facts as one line, for the quiz prompt and its variants. */
+  facts(region){ const info=KNOWLEDGE.regions[region]; if(!info) return null; return `${region} (${info.country}). Classification: ${info.classification}. Key grapes: ${(info.keyGrapes||[]).join(', ')}. Climate: ${info.climate}. Aging rules: ${info.agingRules||'none specific'}. Classic producers: ${(info.classicProducers||[]).join(', ')}.`; },
   key(region){ return 'vinterest_region_quiz_bank_'+region.replace(/\s+/g,'_'); },
   get(region){
     // Near-duplicates filtered on read, so banks saved before the filter existed are cleaned too.
@@ -170,7 +172,7 @@ const RegionQuizBank = {
     const info=KNOWLEDGE.regions[region];
     if(!info){ onReady(null); return; }
     this._inFlight.add(region);
-    const facts=`${region} (${info.country}). Classification: ${info.classification}. Key grapes: ${(info.keyGrapes||[]).join(', ')}. Climate: ${info.climate}. Aging rules: ${info.agingRules||'none specific'}. Classic producers: ${(info.classicProducers||[]).join(', ')}.`;
+    const facts=this.facts(region);
     const prompt=ContentEngine.fillTpl(_loadTextSync('prompts/region-quiz.txt'),{region,facts});
     window.claude.complete({purpose:'region_quiz',max_tokens:4096,messages:[{role:'user',content:prompt}]})
       .then(text=>{

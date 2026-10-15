@@ -35,11 +35,12 @@ function ScanLocationCard({wine}){ const T=useTheme(), cr=T.lift(C.cr);
 }
 
 function WineDetailScreen({back,nav,showPro}){ const T=useTheme(), cr=T.lift(C.cr);
-  const [tab,setTab]=React.useState(0);
-  /* On an iPad on its side the Price tab becomes a panel beside the other two (where to buy stays in
-     view while they read); upright, the three tabs as on a phone, in a centred column. */
+  /* On an iPad on its side the Shop tab becomes a panel beside the other two (where to buy stays in
+     view while they read); upright, the three tabs as on a phone, in a centred column. A handoff
+     with tab 'shop' (Restock on WineDNA's Buy again) opens on it. */
   const size=useLayoutSize(), split=size==='roomy', wide=size!=='phone';
-  const tabs=split?['Details','Learn']:['Details','Learn','Price'];
+  const tabs=split?['Details','Learn']:['Details','Learn','Shop'];
+  const [tab,setTab]=React.useState(()=>{ try{ return !split&&Handoff.scanResult.get({}).tab==='shop'?2:0; }catch(e){ return 0; } });
   React.useEffect(()=>{ if(split&&tab===2) setTab(0); },[split]);
   const scanData=React.useMemo(()=>{
     try{ return Handoff.scanResult.get({}); }
@@ -642,7 +643,7 @@ const REGION_CURRENCY = {
 /* The bottle itself at the partner shop for their country (Shops.match: the shop's own product
    feed), with "Buy at <shop>" on its page through /go, labelled Partner. Without this vintage it
    says so and lists the vintages the shop has; nothing at all when the shop doesn't list the wine.
-   Money never moves a match: it's only here, on the Price tab. */
+   Money never moves a match: it's only here, on the Shop tab. */
 function ShopBottle({wine,onShop}){ const T=useTheme(), cr=T.lift(C.cr);
   const [d,setD]=React.useState(null);
   // onShop: 'pending' while it looks, then the shop's name or null.
@@ -808,12 +809,13 @@ function DetailPrice({wine,nav,showPro}){ const T=useTheme(), cr=T.lift(C.cr);
               {/* Mid price hero */}
               <div style={{padding:'18px 16px',background:T.crSoft,display:'flex',justifyContent:'space-between',alignItems:'center',borderBottom:'1px solid '+_alpha(cr,0.4)}}>
                 <div>
-                  <div style={{fontSize:13,fontWeight:600,color:cr,fontFamily:C.P,marginBottom:2}}>Typical bottle price</div>
-                  <div style={{fontSize:11,color:cr+'99',fontFamily:C.P}}>{curr.label}</div>
+                  {/* Crimson on the crimson wash is unreadable on the dark stage: ink there, crimson on the light one. */}
+                  <div style={{fontSize:13,fontWeight:600,color:T.dark?T.ink:cr,fontFamily:C.P,marginBottom:2}}>Typical bottle price</div>
+                  <div style={{fontSize:11,color:T.dark?T.mid:cr+'99',fontFamily:C.P}}>{curr.label}</div>
                 </div>
                 <div style={{textAlign:'right'}}>
-                  <div style={{fontSize:26,fontWeight:800,color:cr,fontFamily:C.P,lineHeight:1}}>{fmtPrice(priceData.mid)}</div>
-                  <div style={{fontSize:11,fontWeight:700,color:cr+'99',fontFamily:C.P,marginTop:3,letterSpacing:'0.04em'}}>{curr.code}</div>
+                  <div style={{fontSize:26,fontWeight:800,color:T.dark?T.ink:cr,fontFamily:C.P,lineHeight:1}}>{fmtPrice(priceData.mid)}</div>
+                  <div style={{fontSize:11,fontWeight:700,color:T.dark?T.mid:cr+'99',fontFamily:C.P,marginTop:3,letterSpacing:'0.04em'}}>{curr.code}</div>
                 </div>
               </div>
               {/* Low / High row */}

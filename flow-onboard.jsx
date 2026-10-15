@@ -1,38 +1,39 @@
 /* Vinterest — New User Flow: setup (age + location) and the three taste questions.
    Only questions the app uses: see UserPrefs in pwa-prefs.js for what each answer drives. */
 
-function OnboardHeader({step,total,onBack,onSkip}){
+function OnboardHeader({step,total,onBack,onSkip}){ const T=useTheme(), cr=T.lift(C.cr);
   return(
     <div style={{padding:'calc(env(safe-area-inset-top) + 16px) 22px 8px',flexShrink:0}}>
       <div style={{display:'flex',alignItems:'center',gap:14}}>
         <div onClick={onBack||undefined} style={{opacity:onBack?1:0.25,cursor:onBack?'pointer':'default',padding:4,marginLeft:-4}}>
-          <Icon n="back" sz={22} col={C.ink}/>
+          <Icon n="back" sz={22} col={T.ink}/>
         </div>
         <div style={{flex:1,display:'flex',gap:5}}>
           {Array.from({length:total}).map((_,i)=>(
-            <div key={i} style={{flex:1,height:5,borderRadius:3,background:i<=step?C.cr:C.line,transition:'background .3s'}}></div>
+            <div key={i} style={{flex:1,height:5,borderRadius:3,background:i<=step?cr:T.line,transition:'background .3s'}}></div>
           ))}
         </div>
-        {onSkip?<span onClick={onSkip} style={{fontSize:14,color:C.mid,fontFamily:C.P,fontWeight:500,cursor:'pointer'}}>Skip</span>:<span style={{width:28}}/>}
+        {onSkip?<span onClick={onSkip} style={{fontSize:14,color:T.mid,fontFamily:C.P,fontWeight:500,cursor:'pointer'}}>Skip</span>:<span style={{width:28}}/>}
       </div>
     </div>
   );
 }
 
-function OnboardFooter({label,enabled,onClick,note}){
+function OnboardFooter({label,enabled,onClick,note}){ const T=useTheme(), cr=T.lift(C.cr);
   return(
-    <div style={{padding:'12px 24px 36px',flexShrink:0,background:C.white,borderTop:`1px solid ${C.line}`}}>
+    <div style={{padding:'12px 24px 36px',flexShrink:0,background:T.dark?'transparent':C.white,borderTop:`1px solid ${T.line}`}}>
       <div onClick={enabled?onClick:undefined} role="button" aria-disabled={!enabled}
-        style={{background:enabled?C.cr:'#C9C9C9',borderRadius:14,padding:'16px',textAlign:'center',cursor:enabled?'pointer':'default',boxShadow:enabled?`0 8px 26px ${C.cr}45`:'none',transition:'all .2s'}}>
-        <span style={{fontSize:16.5,fontWeight:700,color:'#fff',fontFamily:C.P}}>{label}</span>
+        style={{background:enabled?C.cr:(T.dark?'rgba(255,255,255,0.12)':'#C9C9C9'),borderRadius:14,padding:'16px',textAlign:'center',cursor:enabled?'pointer':'default',boxShadow:enabled?`0 8px 26px ${C.cr}45`:'none',transition:'all .2s'}}>
+        {/* The label dims with the button on the dark stage, so a dead button reads as one. */}
+        <span style={{fontSize:16.5,fontWeight:700,color:enabled||!T.dark?'#fff':'rgba(255,255,255,0.45)',fontFamily:C.P}}>{label}</span>
       </div>
-      {note&&<div style={{textAlign:'center',marginTop:10,fontSize:13,color:C.mid,fontFamily:C.P}}>{note}</div>}
+      {note&&<div style={{textAlign:'center',marginTop:10,fontSize:13,color:T.mid,fontFamily:C.P}}>{note}</div>}
     </div>
   );
 }
 
 /* ── Step 1: legal drinking age + where they buy wine (sets prices and currency) ── */
-function OnboardSetup({step,total,onBack,onDone}){
+function OnboardSetup({step,total,onBack,onDone}){ const T=useTheme(), cr=T.lift(C.cr);
   const [age,setAge]=React.useState(UserPrefs.ageConfirmed());
   const [underage,setUnderage]=React.useState(false);
   const [country,setCountry]=React.useState(()=>UserPrefs.location().country||UserPrefs.guessCountry()||'');
@@ -42,47 +43,47 @@ function OnboardSetup({step,total,onBack,onDone}){
   const ready=age&&!!c;
   // A city brought down by sign-in (WelcomeSignIn) stays.
   function done(){ UserPrefs.confirmAge(); UserPrefs.setLocation({country,state,city:UserPrefs.location().city}); onDone(); }
-  const field={width:'100%',boxSizing:'border-box',padding:'15px 16px',borderRadius:13,border:`1px solid ${C.line}`,background:C.white,fontSize:16,fontFamily:C.P,color:C.ink,outline:'none'};
+  const field={width:'100%',boxSizing:'border-box',padding:'15px 16px',borderRadius:13,border:`1px solid ${T.line}`,background:T.glass,fontSize:16,fontFamily:C.P,color:T.ink,outline:'none',colorScheme:T.dark?'dark':'light'};
 
   if(underage) return(
-    <div style={{flex:1,background:C.bg,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:32,textAlign:'center',gap:12}}>
-      <div style={{fontSize:22,fontWeight:800,color:C.ink,fontFamily:C.P}}>Sorry, not yet</div>
-      <div style={{fontSize:16,color:C.mid,fontFamily:C.P,lineHeight:1.5}}>Vinterest is only for people of legal drinking age where they live.</div>
-      <span onClick={()=>setUnderage(false)} style={{fontSize:15,fontWeight:600,color:C.cr,fontFamily:C.P,cursor:'pointer',marginTop:8}}>Go back</span>
+    <div style={{flex:1,background:T.bg,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:32,textAlign:'center',gap:12}}>
+      <div style={{fontSize:22,fontWeight:800,color:T.ink,fontFamily:C.P}}>Sorry, not yet</div>
+      <div style={{fontSize:16,color:T.mid,fontFamily:C.P,lineHeight:1.5}}>Vinterest is only for people of legal drinking age where they live.</div>
+      <span onClick={()=>setUnderage(false)} style={{fontSize:15,fontWeight:600,color:cr,fontFamily:C.P,cursor:'pointer',marginTop:8}}>Go back</span>
     </div>
   );
 
   return(
-    <div style={{flex:1,background:C.bg,display:'flex',flexDirection:'column',overflow:'hidden'}}>
+    <div style={{flex:1,background:T.dark?`radial-gradient(ellipse 90% 40% at 50% -10%, ${C.cr}55, ${T.bg} 70%)`:C.bg,display:'flex',flexDirection:'column',overflow:'hidden'}}>
       <OnboardHeader step={step} total={total} onBack={onBack}/>
       <div style={{flex:1,overflowY:'auto',padding:'8px 22px 16px',display:'flex',flexDirection:'column',gap:22}}>
         <div>
-          <div style={{fontSize:26,fontWeight:800,color:C.ink,fontFamily:C.P,letterSpacing:'-0.5px',lineHeight:1.15}}>Two quick checks</div>
-          <div style={{fontSize:15,color:C.mid,fontFamily:C.P,marginTop:6,lineHeight:1.45}}>Then you'll scan your first bottle.</div>
+          <div style={{fontSize:26,fontWeight:800,color:T.ink,fontFamily:C.P,letterSpacing:'-0.5px',lineHeight:1.15}}>Two quick checks</div>
+          <div style={{fontSize:15,color:T.mid,fontFamily:C.P,marginTop:6,lineHeight:1.45}}>Then you'll scan your first bottle.</div>
         </div>
 
         <div>
-          <div style={{fontSize:13,fontWeight:700,color:C.mid,fontFamily:C.P,textTransform:'uppercase',letterSpacing:'0.06em',marginBottom:8}}>Your age</div>
+          <div style={{fontSize:13,fontWeight:700,color:T.mid,fontFamily:C.P,textTransform:'uppercase',letterSpacing:'0.06em',marginBottom:8}}>Your age</div>
           <div onClick={()=>setAge(a=>!a)} role="checkbox" aria-checked={age}
-            style={{display:'flex',alignItems:'center',gap:12,padding:'15px 16px',borderRadius:14,border:`2px solid ${age?C.cr:C.line}`,background:age?C.crSoft:C.white,cursor:'pointer'}}>
-            <div style={{width:24,height:24,borderRadius:7,border:`2px solid ${age?C.cr:C.line}`,background:age?C.cr:'transparent',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>{age&&<Icon n="check" sz={13} col="#fff"/>}</div>
-            <span style={{fontSize:16,fontWeight:600,color:C.ink,fontFamily:C.P,lineHeight:1.35}}>I'm of legal drinking age where I live</span>
+            style={{display:'flex',alignItems:'center',gap:12,padding:'15px 16px',borderRadius:14,border:`2px solid ${age?cr:T.line}`,background:age?T.crSoft:T.glass,cursor:'pointer'}}>
+            <div style={{width:24,height:24,borderRadius:7,border:`2px solid ${age?cr:T.line}`,background:age?cr:'transparent',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>{age&&<Icon n="check" sz={13} col="#fff"/>}</div>
+            <span style={{fontSize:16,fontWeight:600,color:T.ink,fontFamily:C.P,lineHeight:1.35}}>I'm of legal drinking age where I live</span>
           </div>
-          <span onClick={()=>setUnderage(true)} style={{display:'inline-block',marginTop:8,fontSize:14,color:C.mid,fontFamily:C.P,cursor:'pointer'}}>I'm not</span>
+          <span onClick={()=>setUnderage(true)} style={{display:'inline-block',marginTop:8,fontSize:14,color:T.mid,fontFamily:C.P,cursor:'pointer'}}>I'm not</span>
         </div>
 
         <div>
-          <div style={{fontSize:13,fontWeight:700,color:C.mid,fontFamily:C.P,textTransform:'uppercase',letterSpacing:'0.06em',marginBottom:8}}>Where you buy wine</div>
+          <div style={{fontSize:13,fontWeight:700,color:T.mid,fontFamily:C.P,textTransform:'uppercase',letterSpacing:'0.06em',marginBottom:8}}>Where you buy wine</div>
           <div style={{position:'relative'}}>
             <select value={country} onChange={e=>setCountry(e.target.value)} aria-label="Country"
-              style={{...field,border:`1px solid ${c?C.cr:C.line}`,color:c?C.ink:C.mid,appearance:'none',WebkitAppearance:'none'}}>
+              style={{...field,border:`1px solid ${c?cr:T.line}`,color:c?T.ink:T.mid,appearance:'none',WebkitAppearance:'none'}}>
               <option value="" disabled>Select your country</option>
               {UserPrefs.COUNTRIES.map(x=><option key={x.name} value={x.name}>{x.name}</option>)}
             </select>
-            <div style={{position:'absolute',right:16,top:'50%',transform:'translateY(-50%)',pointerEvents:'none'}}><Icon n="chevron" sz={15} col={C.mid} style={{transform:'rotate(90deg)'}}/></div>
+            <div style={{position:'absolute',right:16,top:'50%',transform:'translateY(-50%)',pointerEvents:'none'}}><Icon n="chevron" sz={15} col={T.mid} style={{transform:'rotate(90deg)'}}/></div>
           </div>
           {c&&c.stateLabel&&<input value={state} onChange={e=>setState(e.target.value)} placeholder={`${c.stateLabel} (optional)`} aria-label={c.stateLabel} style={{...field,marginTop:10}}/>}
-          {cur&&<div style={{fontSize:14,color:C.mid,fontFamily:C.P,lineHeight:1.45,marginTop:8}}>Prices will show in {cur.sym} ({cur.code}). Travelling? Turn on Travel Mode in your profile.</div>}
+          {cur&&<div style={{fontSize:14,color:T.mid,fontFamily:C.P,lineHeight:1.45,marginTop:8}}>Prices will show in {cur.sym} ({cur.code}). Travelling? Turn on Travel Mode in your profile.</div>}
         </div>
       </div>
       <OnboardFooter label="Continue" enabled={ready} onClick={done} note="No account needed. Your wines stay on this device."/>
@@ -91,7 +92,7 @@ function OnboardSetup({step,total,onBack,onDone}){
 }
 
 /* ── Steps 3–5: what they drink, what they spend, how well they know wine ── */
-function OnboardTaste({step,total,onBack,onDone,scanned}){
+function OnboardTaste({step,total,onBack,onDone,scanned}){ const T=useTheme(), cr=T.lift(C.cr);
   // "Saved in My Wines" confirms the first bottle once, on arrival, then fades; the flow passes
   // scanned only on the first visit, so going back to the bottle and forward again doesn't repeat it.
   const [savedNote,setSavedNote]=React.useState(!!scanned);
@@ -120,26 +121,26 @@ function OnboardTaste({step,total,onBack,onDone,scanned}){
   function advance(){ if(q<QS.length-1) setQ(q+1); else { saveAll(answers); onDone(); } }
   const on=id=>Q.multi?sel.includes(id):sel===id;
   return(
-    <div style={{flex:1,background:C.bg,display:'flex',flexDirection:'column',overflow:'hidden'}}>
+    <div style={{flex:1,background:T.dark?`radial-gradient(ellipse 90% 40% at 50% -10%, ${C.cr}55, ${T.bg} 70%)`:C.bg,display:'flex',flexDirection:'column',overflow:'hidden'}}>
       <OnboardHeader step={step+q} total={total} onBack={q>0?()=>setQ(q-1):onBack} onSkip={()=>{ saveAll(answers); onDone(); }}/>
       <div style={{flex:1,overflowY:'auto',padding:'8px 22px 16px'}}>
-        {scanned&&q===0&&<div data-saved-note style={{display:'flex',alignItems:'center',gap:10,padding:'10px 12px',borderRadius:12,background:C.greenBg,border:`1px solid ${C.green}30`,opacity:savedNote?1:0,maxHeight:savedNote?120:0,marginBottom:savedNote?18:0,paddingTop:savedNote?10:0,paddingBottom:savedNote?10:0,overflow:'hidden',transition:'opacity .4s, max-height .4s .3s, margin .4s .3s, padding .4s .3s'}} aria-hidden={!savedNote}>
-          <Icon n="check" sz={16} col={C.green}/>
-          <span style={{fontSize:14,color:C.ink2,fontFamily:C.P,lineHeight:1.4}}><b>{scanned.name}</b> is saved in My Wines.</span>
+        {scanned&&q===0&&<div data-saved-note style={{display:'flex',alignItems:'center',gap:10,padding:'10px 12px',borderRadius:12,background:T.greenBg,border:`1px solid ${T.green}30`,opacity:savedNote?1:0,maxHeight:savedNote?120:0,marginBottom:savedNote?18:0,paddingTop:savedNote?10:0,paddingBottom:savedNote?10:0,overflow:'hidden',transition:'opacity .4s, max-height .4s .3s, margin .4s .3s, padding .4s .3s'}} aria-hidden={!savedNote}>
+          <Icon n="check" sz={16} col={T.green}/>
+          <span style={{fontSize:14,color:T.ink2,fontFamily:C.P,lineHeight:1.4}}><b>{scanned.name}</b> is saved in My Wines.</span>
         </div>}
-        <div style={{fontSize:26,fontWeight:800,color:C.ink,fontFamily:C.P,letterSpacing:'-0.5px',lineHeight:1.15}}>{Q.title}</div>
-        <div style={{fontSize:15,color:C.mid,fontFamily:C.P,margin:'6px 0 20px',lineHeight:1.45}}>{Q.sub}</div>
+        <div style={{fontSize:26,fontWeight:800,color:T.ink,fontFamily:C.P,letterSpacing:'-0.5px',lineHeight:1.15}}>{Q.title}</div>
+        <div style={{fontSize:15,color:T.mid,fontFamily:C.P,margin:'6px 0 20px',lineHeight:1.45}}>{Q.sub}</div>
         <div style={Q.multi?{display:'flex',flexWrap:'wrap',gap:10}:{display:'flex',flexDirection:'column',gap:10}}>
           {Q.opts.map(opt=>(
             <div key={opt.id} onClick={()=>choose(opt.id)} role={Q.multi?'checkbox':'radio'} aria-checked={on(opt.id)}
-              style={{display:'flex',alignItems:'center',gap:10,padding:Q.multi?'12px 16px':'15px 16px',borderRadius:14,border:`2px solid ${on(opt.id)?(opt.col||C.cr):C.line}`,
-                background:on(opt.id)?(opt.col||C.cr)+'14':C.white,cursor:'pointer',transition:'all .14s'}}>
-              {opt.col&&<span style={{width:12,height:12,borderRadius:6,background:opt.col,flexShrink:0}}/>}
+              style={{display:'flex',alignItems:'center',gap:10,padding:Q.multi?'12px 16px':'15px 16px',borderRadius:14,border:`2px solid ${on(opt.id)?T.lift(opt.col||C.cr):T.line}`,
+                background:on(opt.id)?T.tint(opt.col||C.cr):T.glass,cursor:'pointer',transition:'all .14s'}}>
+              {opt.col&&<span style={{width:12,height:12,borderRadius:6,background:T.lift(opt.col),flexShrink:0}}/>}
               <div style={{flex:Q.multi?'none':1,minWidth:0}}>
-                <div style={{fontSize:16,fontWeight:on(opt.id)?700:600,color:C.ink,fontFamily:C.P,lineHeight:1.2}}>{opt.label}</div>
-                {opt.d&&<div style={{fontSize:14,color:C.mid,fontFamily:C.P,marginTop:3,lineHeight:1.35}}>{opt.d}</div>}
+                <div style={{fontSize:16,fontWeight:on(opt.id)?700:600,color:T.ink,fontFamily:C.P,lineHeight:1.2}}>{opt.label}</div>
+                {opt.d&&<div style={{fontSize:14,color:T.mid,fontFamily:C.P,marginTop:3,lineHeight:1.35}}>{opt.d}</div>}
               </div>
-              {!Q.multi&&on(opt.id)&&<div style={{width:22,height:22,borderRadius:11,background:C.cr,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><Icon n="check" sz={12} col="#fff"/></div>}
+              {!Q.multi&&on(opt.id)&&<div style={{width:22,height:22,borderRadius:11,background:cr,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><Icon n="check" sz={12} col="#fff"/></div>}
             </div>
           ))}
         </div>
@@ -155,24 +156,24 @@ function OnboardTaste({step,total,onBack,onDone,scanned}){
    each level adds, those beyond their starting level faded with "as you learn". */
 const _DETAIL_ADDS=[
   {level:'simple',items:['Your taste in pictures','Favourites','The bottles you come back to','What to try next','What to say when ordering']},
-  {level:'more',items:['What moves your ratings','How your taste is changing','How well we can predict your ratings','Every reason behind a match']},
+  {level:'more',items:['Why you rate what you rate','How your taste is changing','How well we can predict your ratings','Every reason behind a match']},
   {level:'everything',items:['Your best value']},
 ];
-function DetailPreview({exp}){
+function DetailPreview({exp}){ const T=useTheme();
   const {t}=_dnaTab(), start=DetailLevel.base(exp);
-  return <div data-testid="detail-preview" data-level={DetailLevel.LEVELS[start]} style={{marginTop:18,padding:14,borderRadius:16,background:C.white,border:`1px solid ${C.line}`,display:'flex',flexDirection:'column',gap:10}}>
-    <div style={{fontSize:13,fontWeight:700,color:C.mid,fontFamily:C.P,letterSpacing:'0.08em',textTransform:'uppercase'}}>What you'll see</div>
+  return <div data-testid="detail-preview" data-level={DetailLevel.LEVELS[start]} style={{marginTop:18,padding:14,borderRadius:16,background:T.glass,border:`1px solid ${T.line}`,display:'flex',flexDirection:'column',gap:10}}>
+    <div style={{fontSize:13,fontWeight:700,color:T.mid,fontFamily:C.P,letterSpacing:'0.08em',textTransform:'uppercase'}}>What you'll see</div>
     <div inert="" aria-hidden="true" style={{pointerEvents:'none',display:'flex',flexDirection:'column',gap:8}}>
       <DnaTasteTiles t={t} nav={()=>{}}/>
-      <div style={{fontSize:12,color:C.mid,fontFamily:C.P}}>An example: yours will be drawn from your own wines.</div>
+      <div style={{fontSize:12,color:T.mid,fontFamily:C.P}}>An example: yours will be drawn from your own wines.</div>
     </div>
     <div style={{display:'flex',flexDirection:'column',gap:5,marginTop:2}}>
       {_DETAIL_ADDS.filter((g,gi)=>gi<=start).flatMap(g=>g.items).map(it=><div key={it} style={{display:'flex',alignItems:'center',gap:8}}>
-        <Icon n="check" sz={13} col={C.green}/><span style={{fontSize:14,color:C.ink2,fontFamily:C.P}}>{it}</span></div>)}
-      {start<2&&<div style={{fontSize:12,fontWeight:700,color:C.mid,fontFamily:C.P,letterSpacing:'0.06em',textTransform:'uppercase',marginTop:6}}>Opens as you learn</div>}
+        <Icon n="check" sz={13} col={T.green}/><span style={{fontSize:14,color:T.ink2,fontFamily:C.P}}>{it}</span></div>)}
+      {start<2&&<div style={{fontSize:12,fontWeight:700,color:T.mid,fontFamily:C.P,letterSpacing:'0.06em',textTransform:'uppercase',marginTop:6}}>Opens as you learn</div>}
       {_DETAIL_ADDS.filter((g,gi)=>gi>start).flatMap(g=>g.items).map(it=><div key={it} style={{display:'flex',alignItems:'center',gap:8,opacity:0.5}}>
-        <span style={{width:13,display:'flex',justifyContent:'center',flexShrink:0}}><span style={{width:6,height:6,borderRadius:3,background:C.mid}}/></span>
-        <span style={{fontSize:14,color:C.ink2,fontFamily:C.P}}>{it}</span></div>)}
+        <span style={{width:13,display:'flex',justifyContent:'center',flexShrink:0}}><span style={{width:6,height:6,borderRadius:3,background:T.mid}}/></span>
+        <span style={{fontSize:14,color:T.ink2,fontFamily:C.P}}>{it}</span></div>)}
     </div>
   </div>;
 }

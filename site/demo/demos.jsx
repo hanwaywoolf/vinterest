@@ -233,7 +233,7 @@ const _DEMO_SCREENS = {
     { at: 0.2, layer: 'list', to: 'top', do: [{ layer: 'list', type: ['input[placeholder^="Search"]', 'Rioja'] }] },
     { at: 0.4, layer: 'detail', to: 'top', drift: 0.9, ms: 9000, do: [{ layer: 'detail', tap: /^Details$/ }] },
     { at: 0.6, layer: 'detail', to: 'top', drift: 1.2, ms: 10000, do: [{ layer: 'detail', tap: /^Learn$/ }] },
-    { at: 0.8, layer: 'detail', to: 'top', drift: 0.8, ms: 8000, do: [{ layer: 'detail', tap: /^Price$/ }] },
+    { at: 0.8, layer: 'detail', to: 'top', drift: 0.8, ms: 8000, do: [{ layer: 'detail', tap: /^Shop$/ }] },
   ] },
   learn: { nav: 'learn', layers: [
     { id: 'hub', Screen: LearnScreen },

@@ -24,6 +24,15 @@ begin
   perform set_config('role', 'postgres', true);
   return n;
 end $$;
+create function pg_temp.result(role text, uid text, sql text) returns text language plpgsql as $$
+declare r text;
+begin
+  perform set_config('role', role, true);
+  perform set_config('request.jwt.claim.sub', coalesce(uid, ''), true);
+  execute sql into r;
+  perform set_config('role', 'postgres', true);
+  return r;
+end $$;
 create function pg_temp.check(ok boolean, what text) returns void language plpgsql as $$
 begin if not ok then raise exception 'FAILED: %', what; end if; raise notice 'ok: %', what; end $$;
 
@@ -54,6 +63,21 @@ select pg_temp.check(pg_temp.refused('authenticated', :B, $q$insert into public.
 select pg_temp.check(pg_temp.refused('authenticated', :A, $q$update public.entitlements set expires_at = '2099-01-01'$q$), 'A cannot extend their own Pro');
 select pg_temp.check(pg_temp.refused('authenticated', :A, $q$update public.usage_counters set count = 0$q$), 'A cannot reset their usage');
 select pg_temp.check(pg_temp.refused('authenticated', :A, $q$delete from public.usage_counters$q$), 'A cannot delete their usage');
+
+-- Promo codes: only the server reaches the table or redeems; a code grants Pro for its months,
+-- extends Pro that hasn't run out, and stops at its use count.
+select pg_temp.check(not pg_temp.refused('service_role', null, $q$insert into public.promo_codes (code, months, max_uses, note) values ('WELCOME3', 3, 2, 'test')$q$), 'the server makes a promo code');
+select pg_temp.check(pg_temp.refused('authenticated', :A, 'select count(*) from public.promo_codes'), 'A cannot read promo codes');
+select pg_temp.check(pg_temp.refused('authenticated', :A, $q$select public.redeem_promo('aaaaaaaa-0000-0000-0000-00000000000a', 'WELCOME3')$q$), 'A cannot redeem a code directly');
+select pg_temp.check(pg_temp.refused('anon', null, $q$select public.redeem_promo('aaaaaaaa-0000-0000-0000-00000000000a', 'WELCOME3')$q$), 'signed-out cannot redeem a code');
+select pg_temp.check((pg_temp.result('service_role', null, $q$select public.redeem_promo('bbbbbbbb-0000-0000-0000-00000000000b', ' welcome3 ')$q$)::jsonb)->>'ok' = 'true', 'the server redeems a code for B (spaces and case forgiven)');
+select pg_temp.check(pg_temp.count_as('authenticated', :B, $q$select count(*)::int from public.entitlements where tier = 'pro' and source = 'promo' and expires_at between now() + interval '89 days' and now() + interval '93 days'$q$) = 1, 'B has Pro for three months');
+select pg_temp.check((pg_temp.result('service_role', null, $q$select public.redeem_promo('bbbbbbbb-0000-0000-0000-00000000000b', 'WELCOME3')$q$)::jsonb)->>'ok' = 'true', 'B redeems it again');
+select pg_temp.check(pg_temp.count_as('authenticated', :B, $q$select count(*)::int from public.entitlements where expires_at > now() + interval '175 days'$q$) = 1, 'the second code extends from the end of the first');
+select pg_temp.check((pg_temp.result('service_role', null, $q$select public.redeem_promo('aaaaaaaa-0000-0000-0000-00000000000a', 'WELCOME3')$q$)::jsonb)->>'error' = 'used_up', 'a code stops at its use count');
+select pg_temp.check((pg_temp.result('service_role', null, $q$select public.redeem_promo('aaaaaaaa-0000-0000-0000-00000000000a', 'NOPE')$q$)::jsonb)->>'error' = 'invalid', 'an unknown code is invalid');
+select pg_temp.check(not pg_temp.refused('service_role', null, $q$insert into public.promo_codes (code, months, expires_at) values ('OLD', 1, now() - interval '1 day')$q$), 'the server makes an expired code');
+select pg_temp.check((pg_temp.result('service_role', null, $q$select public.redeem_promo('aaaaaaaa-0000-0000-0000-00000000000a', 'OLD')$q$)::jsonb)->>'error' = 'expired', 'an expired code says so');
 
 -- Signed out: nothing at all.
 select pg_temp.check(pg_temp.refused('anon', null, 'select count(*) from public.wines'), 'signed-out cannot read wines');

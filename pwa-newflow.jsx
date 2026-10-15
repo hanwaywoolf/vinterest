@@ -14,11 +14,13 @@ function NewUserFlow({onComplete}){
 
   switch(step){
     case 'welcome': return <WelcomeScreen next={()=>go('setup')} returning={onComplete}/>;
-    case 'setup':   return <OnboardSetup step={0} total={TOTAL} onBack={()=>go('welcome')} onDone={()=>go('scan')}/>;
+    // Onboarding is dark from end to end, whatever Appearance later says: the welcome slides,
+    // these checks, the camera, the story and the questions all sit on the one stage.
+    case 'setup':   return <DeckTheme.Provider value={_DECK_DARK}><OnboardSetup step={0} total={TOTAL} onBack={()=>go('welcome')} onDone={()=>go('scan')}/></DeckTheme.Provider>;
     case 'scan':    return <ScanScreen nav={()=>{}} back={()=>go('setup')} onSkip={()=>go('taste')} onComplete={w=>{ setScanned(w||null); go(w?'story':'taste'); }}/>;
     case 'story':   return <FirstScanStory wine={scanned} onDone={()=>go('taste')}/>;
     case 'taste':   { const first=!tasteSeen.current; tasteSeen.current=true;
-                      return <OnboardTaste step={2} total={TOTAL} scanned={first?scanned:null} onBack={()=>go(scanned?'story':'scan')} onDone={()=>{ onComplete(); ScanFlow.flushToasts(); }}/>; }
+                      return <DeckTheme.Provider value={_DECK_DARK}><OnboardTaste step={2} total={TOTAL} scanned={first?scanned:null} onBack={()=>go(scanned?'story':'scan')} onDone={()=>{ onComplete(); ScanFlow.flushToasts(); }}/></DeckTheme.Provider>; }
     default: return null;
   }
 }

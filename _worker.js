@@ -55,6 +55,8 @@ const CLAUDE_PURPOSE_LIMITS = {
   explore_info: 4096,      // pwa-screens-explore.jsx useClaudeData — region/varietal/similar-wines
   grape_quiz: 4096,        // pwa-grape-learning.js — generated grape quiz questions
   region_quiz: 4096,       // pwa-content-engine.js RegionQuizBank — generated region quiz questions
+  quiz_variants: 4096,     // pwa-quiz-questions.js QuizMastery.ensureVariants — a second wording of a
+                            // set's questions for refreshers (prompts/quiz-variants.txt), once per set
   match_explain: 4096,     // pwa-screens-detail.jsx — "why this wine matches you"
   vintage_info: 4096,      // pwa-screens-detail.jsx — vintage quality + drinking window
   education: 4096,         // pwa-screens-detail.jsx — grape/vocabulary deep-dive
@@ -75,7 +77,7 @@ const CLAUDE_PURPOSE_LIMITS = {
    make the quiz banks' wrong answers any less obvious; the quiz prompts' own rule about them does. Refusal
    fallbacks are on, so a request their safety classifier declines is answered by another model
    in the same call instead of coming back empty. Earlier models get nothing extra. */
-const PURPOSE_EFFORT = { grape_quiz: "medium", region_quiz: "medium", learn_article: "medium", winedna_summary: "medium", sommelier_script: "medium", wine_deep: "medium" };
+const PURPOSE_EFFORT = { grape_quiz: "medium", region_quiz: "medium", quiz_variants: "medium", learn_article: "medium", winedna_summary: "medium", sommelier_script: "medium", wine_deep: "medium" };
 function modelOptions(model, purpose, env) {
   if (!/^claude-(sonnet|opus|fable)-5/.test(model)) return { body: {}, betas: [] };
   const effort = env.CLAUDE_EFFORT || PURPOSE_EFFORT[purpose] || "low";
@@ -119,6 +121,11 @@ export default {
       if (request.method !== "GET") return json(405, { error: "Method not allowed" });
       // The public sign-in settings, for an app build that wasn't given them (Account.loadRemoteConfig).
       return json(200, { supabase: env.SUPABASE_URL && env.SUPABASE_PUBLISHABLE_KEY ? { url: env.SUPABASE_URL, key: env.SUPABASE_PUBLISHABLE_KEY } : null });
+    }
+    if (url.pathname === "/promo") {
+      if (request.method === "OPTIONS") return cors(new Response(null, { status: 204 }));
+      if (request.method !== "POST") return json(405, { error: "Method not allowed" });
+      return handlePromo(request, env);
     }
     if (url.pathname === "/account/delete") {
       if (request.method === "OPTIONS") return cors(new Response(null, { status: 204 }));
@@ -342,12 +349,18 @@ function db(env, path, init = {}) {
    Entitlement.ALL_PRO_FOR_TESTING in pwa-userdata.js is the app's side. List scanning still
    needs sign-in, so anonymous traffic can't run up the bill. */
 const ALL_PRO_FOR_TESTING = true;
+/* Their plan from the entitlements row: {tier, expires_at} (expires_at only while Pro has an end
+   date, as a promo code's does). Pro that has run out reads as free. */
+async function entitlementOf(env, userId) {
+  const r = await db(env, `entitlements?user_id=eq.${encodeURIComponent(userId)}&select=tier,expires_at`);
+  if (!r.ok) return { tier: "free" };
+  const [e] = await r.json();
+  const pro = e && e.tier === "pro" && (!e.expires_at || new Date(e.expires_at) > new Date());
+  return pro ? { tier: "pro", expires_at: e.expires_at || null } : { tier: "free" };
+}
 async function tierOf(env, userId) {
   if (ALL_PRO_FOR_TESTING && env.ALL_PRO !== "0") return "pro";
-  const r = await db(env, `entitlements?user_id=eq.${encodeURIComponent(userId)}&select=tier,expires_at`);
-  if (!r.ok) return "free";
-  const [e] = await r.json();
-  return e && e.tier === "pro" && (!e.expires_at || new Date(e.expires_at) > new Date()) ? "pro" : "free";
+  return (await entitlementOf(env, userId)).tier;
 }
 function capFor(tier, kind) { const t = FAIR_USE[tier] || FAIR_USE.free; return kind in t ? t[kind] : t._other; }
 function weekStart(d = new Date()) {
@@ -384,11 +397,46 @@ async function handleMe(request, env) {
   catch (e) { return json(503, { error: "Accounts are unavailable right now.", code: "auth_unavailable" }); }
   if (user && user.invalid) return json(401, { error: "Your sign-in has expired.", code: "auth_expired" });
   if (!user) return json(200, { signedIn: false, accounts: accountsOn(env), tier: "free" });
-  const tier = await tierOf(env, user.id);
+  const ent = await entitlementOf(env, user.id);
+  const tier = ALL_PRO_FOR_TESTING && env.ALL_PRO !== "0" ? "pro" : ent.tier;
   const week = weekStart();
   const r = await db(env, `usage_counters?user_id=eq.${encodeURIComponent(user.id)}&period_start=eq.${week}&select=kind,count`);
   const usage = r.ok ? Object.fromEntries((await r.json()).map((u) => [u.kind, u.count])) : {};
-  return json(200, { signedIn: true, accounts: true, email: user.email, tier, week, usage, caps: FAIR_USE[tier] });
+  return json(200, { signedIn: true, accounts: true, email: user.email, tier, expires_at: ent.expires_at || null, week, usage, caps: FAIR_USE[tier] });
+}
+
+/* POST /promo {code}: redeems a promo code for the signed-in user (redeem_promo in
+   0006_promo_codes.sql grants or extends Pro by the code's months, counting the use). The code
+   is checked and spent by the database, never here; the app only learns whether it worked. */
+const PROMO_ERRORS = {
+  invalid: "That code isn't one of ours. Check it and try again.",
+  expired: "That code has expired.",
+  used_up: "That code has already been used.",
+};
+async function handlePromo(request, env) {
+  const origin = request.headers.get("origin");
+  if (!originAllowed(origin)) return json(403, { error: "Origin not allowed.", code: "origin_denied" });
+  if (!accountsOn(env)) return json(503, { error: "Accounts aren't set up on this server.", code: "accounts_off" });
+  let user;
+  try { user = await authUser(request, env); }
+  catch (e) { return json(503, { error: "We couldn't reach your account. Check your connection and try again.", code: "auth_unavailable" }); }
+  if (!user || user.invalid) return json(401, { error: "Sign in first, then enter your code.", code: "auth_expired" });
+  if (rateLimited(clientIp(request))) return json(429, { error: "Too many tries. Wait a few minutes and try again.", code: "rate_limited" });
+  let body = {};
+  try { body = await request.json(); } catch (e) {}
+  const code = String(body.code || "").replace(/\s/g, "").toUpperCase();
+  if (!code || code.length > 40) return json(400, { error: PROMO_ERRORS.invalid, code: "invalid" });
+  let r;
+  try { r = await db(env, "rpc/redeem_promo", { method: "POST", body: JSON.stringify({ p_user: user.id, p_code: code }) }); }
+  catch (e) { r = null; }
+  if (!r || !r.ok) return json(502, { error: "We couldn't check that code just now. Try again in a minute.", code: "promo_unavailable" });
+  const out = await r.json();
+  if (!out || !out.ok) {
+    const k = out && PROMO_ERRORS[out.error] ? out.error : "invalid";
+    return json(400, { error: PROMO_ERRORS[k], code: k });
+  }
+  for (const [k, v] of _authCache) if (v.user && v.user.id === user.id) _authCache.delete(k);
+  return json(200, { tier: "pro", expires_at: out.expires_at });
 }
 
 /* POST /account/delete: deletes the signed-in user for good (Apple requires this inside the app).
@@ -525,7 +573,7 @@ async function handlePriceSearch(payload, env, key, ctx) {
   return json(200, { text: await _signListings(env, res.text), cached: false });
 }
 
-/* The shops the search found the wine at (up to 3), for the Price tab's "In shops now". A link is
+/* The shops the search found the wine at (up to 3), for the Shop tab's "In shops now". A link is
    kept only when the search really returned a page on that site, so a shop the model made up,
    or a link it guessed, never reaches the screen. https only, and never a search engine. */
 function _listedShops(shops, content) {
@@ -554,7 +602,7 @@ function _listedShops(shops, content) {
    from the shop's own product feed, loaded nightly into Supabase's shop_products
    (scripts/shop-feeds.mjs). It prefers a single 75cl bottle of the scanned vintage; without one it
    names the vintages the shop does have. The app links the listing's page through /go (placement
-   "buy"), which adds the Awin tracking. Money never moves a match: this sits on the Price tab only.
+   "buy"), which adds the Awin tracking. Money never moves a match: this sits on the Shop tab only.
    Without Supabase or a feed shop for the country it answers {items:[]}. */
 const SHOP_MATCH_TTL_S = 6 * 3600;
 const SHOP_COLOURS = { red: "red", rouge: "red", tinto: "red", rosso: "red", white: "white", blanc: "white", blanco: "white", bianco: "white", weiss: "white", rose: "rose", rosado: "rose", rosato: "rose" };
