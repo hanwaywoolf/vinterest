@@ -86,7 +86,6 @@ function AccountProfileScreen({nav,back,showPro}){ const T=useTheme(), cr=T.lift
 
         <BackupCard/>
 
-        <InstallCard/>
 
         <ThemeControl/>
         <NotifyControl/>
@@ -179,15 +178,10 @@ function AccountProfileScreen({nav,back,showPro}){ const T=useTheme(), cr=T.lift
           <DetailSwitch/>
         </AccSection>
 
-        {/* What went wrong recently, for when something misbehaves (ErrorLog, written by index.html). */}
-        <div onClick={()=>{
-          const errors=ErrorLog.list();
-          alert(errors.length?'Recent errors:\n\n'+errors.slice(-5).map(e=>e.context+': '+e.message).join('\n'):'No errors logged.');
-        }} style={{padding:'14px 4px 4px',fontSize:14,color:T.mid,fontFamily:C.P,cursor:'pointer',textAlign:'center'}}>View error log</div>
-        {/* For layout problems only a real phone shows: what this phone reports (InstallApp.screenInfo). */}
-        <div onClick={()=>{ const i=InstallApp.screenInfo();
-          alert(`Showing: ${i.mode}\nScreen: ${i.screen}\nWindow: ${i.window}\nVisible: ${i.visual}\nPage height: ${i.page}\nReserved by iOS: ${i.inset}\nApp area: ${i.root}\nBottom nav: ${i.nav}\n${i.ua}`); }}
-          style={{padding:'4px 4px 14px',fontSize:14,color:T.mid,fontFamily:C.P,cursor:'pointer',textAlign:'center'}}>Screen details</div>
+        {/* Starting over on XP and quiz progress lives here, off the Learn tab, behind a confirm. */}
+        <div onClick={()=>{ if(window.confirm('Reset your XP and quiz progress? Your wines and WineDNA stay as they are.')){ XPSystem.reset(); window.dispatchEvent(new Event('vinterest:xp')); } }} style={{textAlign:'center',padding:'8px',cursor:'pointer'}}>
+          <span style={{fontSize:13,color:T.mid,fontFamily:C.P,textDecoration:'underline'}}>Reset XP &amp; progress</span>
+        </div>
         <div style={{height:8}}/>
       </div>
     </div>

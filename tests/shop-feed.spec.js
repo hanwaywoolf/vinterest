@@ -1,6 +1,6 @@
 // The bottle itself at a partner shop: the nightly feed job's reading of Winebuyers' listings
 // (scripts/shop-feeds.mjs), the Worker's /shop-match picking the right one (real listing names
-// from the feed, a fake Supabase), and the Price tab's "Buy at Winebuyers".
+// from the feed, a fake Supabase), and the Shop tab's "Buy at Winebuyers".
 const { test, expect } = require('@playwright/test');
 const fs = require('node:fs');
 const path = require('node:path');
@@ -106,13 +106,13 @@ test('no feed shop for the country, or no database: nothing, and no lookup', asy
   expect(off.out[0]).toEqual({ items: [] });
 });
 
-// ── The Price tab ──
+// ── The Shop tab ──
 const FOUND = { shop: { id: 'winebuyers', name: 'Winebuyers' }, vintage: 2019, exact: null,
   others: [{ id: '1', name: '2021 Antinori, Tignanello, IGT', vintage: 2021, price: 159, pack: 1, sizeMl: 750, perBottle: 159, currency: 'GBP', url: 'https://winebuyers.com/en_GB/products/p1', image: null, seller: null },
     { id: '2', name: '2022 Antinori, Tignanello, IGT', vintage: 2022, price: 150, pack: 1, sizeMl: 750, perBottle: 150, currency: 'GBP', url: 'https://winebuyers.com/en_GB/products/p2', image: null, seller: null }] };
 FOUND.items = FOUND.others;
 
-test('the Price tab shows the bottle at Winebuyers with Buy, through /go with Awin tracking', async ({ context, page }) => {
+test('the Shop tab shows the bottle at Winebuyers with Buy, through /go with Awin tracking', async ({ context, page }) => {
   await makeDeterministic(page);
   await seedLocalStorage(page, { vinterest_onboarded: '1', vinterest_age_ok: '1', vinterest_region: 'uk', vinterest_wineDNA_unlock_seen: '1' });
   await stubNetwork(context, { claudeText: () => '' });
@@ -123,7 +123,7 @@ test('the Price tab shows the bottle at Winebuyers with Buy, through /go with Aw
   await page.evaluate((w) => { WineHistory.save([w]); sessionStorage.setItem('vinterest_scan_result', JSON.stringify({ wine: w })); }, wine);
   await page.goto(`${BASE}/?d=1#detail`);
   const root = page.locator('#root');
-  await root.getByText('Price', { exact: true }).click();
+  await root.getByText('Shop', { exact: true }).click();
   const card = root.getByTestId('shop-bottle');
   await expect(card).toContainText('At Winebuyers');
   await expect(card).toContainText("Winebuyers doesn't list the 2019 right now");

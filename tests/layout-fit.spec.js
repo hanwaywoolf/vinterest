@@ -41,7 +41,7 @@ test('Profile scrolls all the way down, and #settings (merged into it) opens it'
   await open(context, page, '#settings');
   const root = page.locator('#root');
   await expect(root).toContainText('Where You Buy Wine');
-  const log = root.getByText('View error log');
+  const log = root.getByText('Show all details');
   await swipeTo(page, log);
   expect(await inView(page, log)).toBe(true);
   // One place sets where they buy: region and currency move with the country.

@@ -4,6 +4,12 @@
    appearance picked on Profile (Settings.theme): under them the nav and the XP badge follow it too.
    Every other screen still draws itself light until it moves over. */
 const THEMED_SCREENS=['notices','home','profile','dna-trait','identified','mywines','detail','learn','account','quiz','article','gen-article','guide','grape','region-page','palate-trait','mastery-map','style-explore','winelist','region','varietal','similar'];
+/* A quiz, article or guide lifts up over the screen it was opened from (a card rising), rather
+   than replacing it in a frame; reduced motion shows it at once. The wrapper keeps the screen's
+   own flex column. */
+function ScreenLift({children}){
+  return <div className="scr-lift" style={{flex:1,display:'flex',flexDirection:'column',minHeight:0,overflow:'hidden'}}>{children}</div>;
+}
 function App(){
   const [screen,setScreen]=React.useState(()=>{
     if(!Settings.onboarded()) return 'onboarding';
@@ -122,9 +128,14 @@ function App(){
   React.useEffect(()=>{
     let raf=0;
     const sync=()=>{ cancelAnimationFrame(raf); raf=requestAnimationFrame(()=>{
-      let el=document.elementFromPoint(window.innerWidth/2,window.innerHeight-2), c='';
-      for(;el&&el!==document.documentElement;el=el.parentElement){ const b=getComputedStyle(el).backgroundColor; if(b&&b!=='transparent'&&!/,\s*0\)$/.test(b)){ c=b; break; } }
+      const at=y=>{ let el=document.elementFromPoint(window.innerWidth/2,y);
+        for(;el&&el!==document.documentElement;el=el.parentElement){ const b=getComputedStyle(el).backgroundColor; if(b&&b!=='transparent'&&!/,\s*0\)$/.test(b)) return b; }
+        return ''; };
+      const c=at(window.innerHeight-2);
       if(c){ document.documentElement.style.backgroundColor=c; document.body.style.backgroundColor=c; }
+      // The phone's status bar takes the colour at the top of the screen, with icons to suit.
+      const top=at(2)||c; if(top){ const m=top.match(/\d+/g)||[], [r,g,b]=m.map(Number), hex='#'+[r,g,b].map(x=>(x||0).toString(16).padStart(2,'0')).join('');
+        Platform.statusBar(hex,(0.299*r+0.587*g+0.114*b)<128); }
     }); };
     sync(); const t=setTimeout(sync,350);
     const mo=new MutationObserver(sync); const root=document.getElementById('root');
@@ -160,15 +171,15 @@ function App(){
         {screen==='profile'   && <WineDNAScreen {...ctx}/>}
         {screen==='mywines'   && <MyWinesScreen {...ctx}/>}
         {screen==='learn'     && <ScreenErrorBoundary><QuizHubScreen {...ctx}/></ScreenErrorBoundary>}
-        {screen==='quiz'      && <QuizScreen {...ctx}/>}
+        {screen==='quiz'      && <ScreenLift><QuizScreen {...ctx}/></ScreenLift>}
         {screen==='mastery-map' && <MasteryMapScreen {...ctx}/>}
         {screen==='grape' && <GrapeScreen {...ctx}/>}
         {screen==='region-page' && <RegionPageScreen {...ctx}/>}
         {screen==='palate-trait' && <PalateTraitScreen {...ctx}/>}
         {screen==='dna-trait' && <DnaTraitScreen {...ctx}/>}
-        {screen==='article'   && <ScreenErrorBoundary><LearnArticleScreen {...ctx}/></ScreenErrorBoundary>}
-        {screen==='gen-article'&& <ScreenErrorBoundary><GenArticleScreen {...ctx}/></ScreenErrorBoundary>}
-        {screen==='guide'&& <ScreenErrorBoundary><GuideScreen {...ctx}/></ScreenErrorBoundary>}
+        {screen==='article'   && <ScreenLift><ScreenErrorBoundary><LearnArticleScreen {...ctx}/></ScreenErrorBoundary></ScreenLift>}
+        {screen==='gen-article'&& <ScreenLift><ScreenErrorBoundary><GenArticleScreen {...ctx}/></ScreenErrorBoundary></ScreenLift>}
+        {screen==='guide'&& <ScreenLift><ScreenErrorBoundary><GuideScreen {...ctx}/></ScreenErrorBoundary></ScreenLift>}
         {screen==='account'   && <AccountProfileScreen {...ctx}/>}
         {screen==='settings'  && <AccountProfileScreen {...ctx}/>/* Settings merged into Profile; old links land there */}
       </div></DeckTheme.Provider>
@@ -273,7 +284,10 @@ function App(){
       {!showXpBadge&&!showNav&&<XPChip chip={xpDel.chip}/>}
       <style>{_MOMENT_CSS}</style>
       {proGate&&<ProGate feature={proGate} onClose={()=>setProGate(null)}/>}
-      <style>{`@keyframes slideUp{from{transform:translateY(100%)}to{transform:none}}`}</style>
+      <style>{`@keyframes slideUp{from{transform:translateY(100%)}to{transform:none}}
+@keyframes scrLift{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:none}}
+.scr-lift{animation:scrLift ${(0.26/(typeof quizSpeed==='function'?quizSpeed():1)).toFixed(3)}s cubic-bezier(.2,.8,.3,1) both}
+@media (prefers-reduced-motion:reduce){.scr-lift{animation:none}}`}</style>
     </div>
   );
 }

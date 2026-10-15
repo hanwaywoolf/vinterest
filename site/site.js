@@ -241,7 +241,9 @@
     features.forEach(function (f) { if (fio) fio.observe(f.el); else f.on = true; });
     var last = 0;
     var tick = function (now) {
-      var dt = Math.min(64, now - (last || now));
+      // A frame's elapsed time, capped so a tab coming back from the background doesn't leap; the cap is loose enough that
+      // a busy page (several phones drawing at once) still plays a caption's animation in about its stated time.
+      var dt = Math.min(250, now - (last || now));
       last = now;
       features.forEach(function (f) {
         if (!f.on) return;
@@ -267,7 +269,9 @@
           f.animT += dt;
           var k = Math.min(1, f.animT / f.animMs);
           f.p = f.animFrom + (f.animTo - f.animFrom) * (f.animLinear ? k : ease(k));
-          if (k >= 1) f.phase = 'held';
+          // The last frame always lands: apply() skips a move under 0.0002, and the end of an animation can fall inside
+          // that, leaving the demo one frame short of the part it was animating to.
+          if (k >= 1) { f.phase = 'held'; f.shown = -1; }
           apply(f);
         }
       });
@@ -306,6 +310,7 @@
     if (!v.first_name) bad.first_name = 'Add your first name.';
     if (!v.last_name) bad.last_name = 'Add your last name.';
     if (!v.country) bad.country = 'Pick your country.';
+    if (!v.platform) bad.platform = 'Pick your phone.';
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v.email)) bad.email = 'That email address doesn\'t look right.';
     return bad;
   }
@@ -316,18 +321,20 @@
       first_name: form.elements.first_name.value.trim(),
       last_name: form.elements.last_name.value.trim(),
       country: form.elements.country.value,
+      platform: form.elements.platform.value,
       email: form.elements.email.value.trim(),
       website: form.elements.website.value,
     };
     var bad = validate(v);
-    ['first_name', 'last_name', 'country', 'email'].forEach(function (k) { setErr(k, bad[k]); });
+    ['first_name', 'last_name', 'country', 'platform', 'email'].forEach(function (k) { setErr(k, bad[k]); });
     var firstBad = Object.keys(bad)[0];
     if (firstBad) { form.elements[firstBad].focus(); return; }
     go.disabled = true; go.textContent = 'Joining…';
     fetch('/api/beta', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(v) })
-      .then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) { return { ok: r.ok, j: j }; }); })
+      .then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) { return { ok: r.ok, status: r.status, j: j }; }); })
       .then(function (res) {
-        if (!res.ok) throw new Error(res.j.error || 'Something went wrong. Please try again in a moment.');
+        // A reply without our own words (an error page from Cloudflare, a static 405) says its status, so it can be traced.
+        if (!res.ok) throw new Error(res.j.error || 'Something went wrong (error ' + res.status + '). Please try again in a moment.');
         document.getElementById('thanks-name').textContent = v.first_name;
         form.hidden = true;
         var t = document.getElementById('beta-thanks');

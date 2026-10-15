@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=540"/>
+<title>Vinterest: your WineDNA</title>
+<link rel="stylesheet" href="/fonts/fonts.css"/>
+<link rel="stylesheet" href="/site.css"/>
+<style>
+  /* One 540 x 960 scene (recorded at 1080 x 1920). Everything is driven from the clock T in render().
+     A phone, a bottle label held up to its camera, then the app's own screens. */
+  html, body { margin: 0; background: #0b0606; overflow: hidden; width: 1080px; height: 1920px; font-family: 'Poppins', sans-serif; }
+  #scene { position: absolute; left: 0; top: 0; width: 540px; height: 960px; overflow: hidden; transform: scale(2); transform-origin: 0 0;
+    background: radial-gradient(70% 45% at 85% 12%, rgba(139,26,47,.55), transparent 70%), radial-gradient(60% 40% at 5% 95%, rgba(139,26,47,.35), transparent 70%), #0b0606; }
+  *, *::before, *::after { transition: none !important; animation: none !important; }
+  #cap { position: absolute; left: 28px; right: 28px; top: 44px; z-index: 7; text-align: center; color: #fff; font-weight: 600; font-size: 26px; letter-spacing: -.03em; line-height: 1.15; opacity: 0; }
+  #cap b { color: #ff5a73; font-weight: 700; }
+  #phone { position: absolute; left: 0; top: 0; z-index: 5; transform-origin: 0 0; --s: .9; }
+  #phone .phone-slot { --s: 1; }
+  /* The camera screen, drawn over the app's own area while the label is scanned. */
+  /* "Analysing label…": the app's own wording and layout while Claude reads the photo. */
+  #fade { position: absolute; inset: 0; z-index: 6; background: #fff; opacity: 0; pointer-events: none; }
+  #end { position: absolute; inset: 0; z-index: 9; background: #0b0606; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px; opacity: 0; text-align: center; padding: 0 36px;
+    background-image: radial-gradient(70% 45% at 85% 12%, rgba(139,26,47,.55), transparent 70%), radial-gradient(60% 40% at 5% 95%, rgba(139,26,47,.35), transparent 70%); }
+  #end h1 { margin: 0; font-weight: 500; font-size: 44px; letter-spacing: -.05em; line-height: 1.1; color: #fff; }
+  #end h1 strong { color: #ff5a73; font-weight: 700; }
+  #end img { height: 44px; filter: brightness(0) invert(1); }
+  #end .btn { margin-top: 6px; display: inline-block; padding: 14px 30px; border-radius: 14px; background: #8B1A2F; color: #fff; font-weight: 600; font-size: 20px; }
+  #end p { margin: 0; color: rgba(255,255,255,.55); font-size: 16px; }
+</style>
+</head>
+<body>
+<div id="scene">
+  <div id="cap"></div>
+  <div id="phone"><div class="phone-slot"><div class="phone"><div class="phone-screen">
+    <div class="statusbar"><span>9:41</span><span class="sig"><i style="width:18px"></i><i style="width:24px"></i></span></div>
+    <div class="phone-app" id="app"></div>
+    <div id="fade"></div>
+    <span class="island"></span>
+  </div></div></div></div>
+  <div id="end"><img src="/logo.png" alt="Vinterest"/><h1>Find wines you'll <strong>love</strong>.<br>Learn while you <strong>sip</strong>.</h1><span class="btn">Join the beta</span><p>vinterest.app</p></div>
+</div>
+<script src="/demo.js"></script>
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var app = $('app'), phoneEl = $('phone'), fade = $('fade');
+  var ease = function (t) { t = Math.max(0, Math.min(1, t)); return t * t * (3 - 2 * t); };
+  var seg = function (T, a, b) { return Math.max(0, Math.min(1, (T - a) / (b - a))); };
+  var S = 0.92;
+  phoneEl.style.transform = 'translate(' + (270 - 205 * S) + 'px,118px) scale(' + S + ')';
+
+  /* The drinker is the film's maker: a real backup (site/video/private/, git-ignored) replaces the sample user in the demo's memory-only
+     store. Claude's text for it (the written summary, the sommelier scripts) was captured once, by prompt, with `site:video winedna-demo --record`. */
+  var READY = false, ANSWERS = null, REC = !!window.__filmRecord;
+  Promise.all([fetch('/backup.json').then(function (r) { return r.text(); }), REC ? Promise.resolve(null) : fetch('/winedna-demo-captured.json').then(function (r) { return r.json(); })]).then(function (r) {
+    ANSWERS = r[1] && r[1].byPrompt;
+    DemoPersona.reset();
+    [false, true].forEach(function (sess) { Store._area(sess)._map.clear(); });
+    var rd = Backup.read(r[0]);
+    if (!rd.ok) throw new Error(rd.error);
+    Backup.apply(rd.data);
+    ['vinterest_onboarded', 'vinterest_age_ok'].forEach(function (k) { Store.set(k, k === 'vinterest_onboarded' ? '1' : new Date().toISOString()); });
+    Flags.markDnaWelcomeSeen();   // the first-visit "What is WineDNA?" note
+    Flags.setExploreReadySeen(ExploreNext.readyTypes(WineHistory.getAll())); // the once-only "Explore Next is ready" tile
+    DemoPersona.rebase();
+    READY = true;
+  });
+  var _complete = window.claude.complete;
+  window.claude.complete = function (arg) {
+    var purpose = arg && arg.purpose, prompt = String((arg && arg.messages && arg.messages[0] && arg.messages[0].content) || '');
+    if (REC) return window.__film_ask(purpose, prompt);
+    var key = purpose + '|' + prompt, hit = ANSWERS && (ANSWERS[key] || ANSWERS[Object.keys(ANSWERS).filter(function (k) { return k.indexOf(purpose + '|' + prompt.slice(0, 160)) === 0; })[0]]);
+    return hit ? Promise.resolve(hit) : Promise.reject(new Error('Not captured: ' + purpose));
+  };
+
+  /* The film: one beat per part of WineDNA. [the dnafilm demo's step, seconds, caption] */
+  var BEATS = [
+    [0.00, 3.2, 'A <b>WineDNA</b> profile for every type of wine you drink.'],
+    [0.06, 2.8, 'White has its own DNA.'],
+    [0.12, 2.8, 'So does <b>rosé</b>.'],
+    [0.18, 2.8, 'And <b>sparkling</b>.'],
+    [0.24, 3.6, 'Each one is built from the bottles you score. Now, <b>inside red</b>.'],
+    [0.30, 9.0, 'What you love, <b>in plain words</b>, from your own scores.'],
+    [0.36, 9.0, 'It tests itself on your scores, so you can see <b>how well it knows you</b>.'],
+    [0.42, 8.6, 'Your <b>“house” wines</b>: the bottles you keep coming back to.'],
+    [0.48, 9.0, 'Your <b>taste</b>, visualised, with what each word means.'],
+    [0.54, 8.6, '<b>Value</b>: what you pay, and the bottles that beat their price.'],
+    [0.60, 9.0, '<b>Explore</b>: styles just outside your comfort zone.'],
+    [0.66, 9.0, 'A <b>sommelier script</b>, ready for your next dinner.'],
+  ];
+  var START = 0.8, STARTS = [], t_ = START;
+  BEATS.forEach(function (b) { STARTS.push(t_); t_ += b[1]; });
+  var END_AT = t_, END = END_AT + 3.4;
+  var api = null;
+  function render(T) {
+    if (!READY || !window.VinterestDemo) return;
+    if (!api) { api = window.VinterestDemo.mount(app, 'dnafilm'); api.update(0); }
+    var k = 0; STARTS.forEach(function (s0, i) { if (T >= s0) k = i; });
+    api.update(BEATS[k][0] + 0.001);
+    var c = BEATS[k], t0 = STARTS[k], DUR = c[1];
+    var capEl = $('cap'), live = T >= START && T < END_AT;
+    var o = live ? Math.min(ease(seg(T, t0, t0 + 0.4)), 1 - ease(seg(T, t0 + DUR - 0.35, t0 + DUR))) : 0;
+    if (capEl.dataset.k !== c[2]) { capEl.dataset.k = c[2]; capEl.innerHTML = c[2]; }
+    capEl.style.opacity = o; capEl.style.transform = 'translateY(' + (1 - o) * 6 + 'px)';
+    fade.style.opacity = 0;
+    $('end').style.opacity = ease(seg(T, END_AT + 0.2, END_AT + 1.2));
+    phoneEl.style.opacity = 1 - ease(seg(T, END_AT + 0.2, END_AT + 1.0));
+  }
+  var T0 = null, STARTED = false, MANUAL = null;
+  window.__ready = function () { return READY && !!window.VinterestDemo; };
+  window.__start = function () { STARTED = true; T0 = performance.now(); };
+  window.__setT = function (t) { MANUAL = t; };
+  window.__END = END;
+  function frame(now) {
+    if (MANUAL != null) render(MANUAL);
+    else if (STARTED) render(Math.min(END, (now - T0) / 1000));
+    else render(0);
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

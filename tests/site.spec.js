@@ -47,10 +47,11 @@ test.describe('desktop', () => {
     page.on('pageerror', (e) => errors.push(`pageerror: ${e.message}`));
     await page.goto(BASE + '/');
     await expect(page.locator('h1')).toContainText("Find wines you'll love. Learn while you sip");
+    // The first tile is the start of the scan story: the wine, then its match a few seconds in.
     const hero = page.locator('.hero .phone-app');
     await expect(hero).toContainText('Crozes-Hermitage 2021');
-    await expect(hero).toContainText(`${SAMPLE_MATCH.pct}%`);
-    await expect(hero).toContainText(SAMPLE_MATCH.label);
+    await expect(hero).toContainText(`${SAMPLE_MATCH.pct}%`, { timeout: 10000 });
+    await expect(hero).toContainText(SAMPLE_MATCH.label, { timeout: 10000 });
     expect(errors).toEqual([]);
   });
 
@@ -58,18 +59,19 @@ test.describe('desktop', () => {
     await page.goto(BASE + '/?speed=8');
     await show(page, 'scan');
     await expect(page.locator('#scan .phone-app')).toContainText('Crozes-Hermitage 2021');
-    await expect(page.locator('#scan .steps li.on h3')).toHaveText('A match score you can easily understand');
-    await expect(page.locator('#scan .steps li.on h3')).toHaveText('Reasons for and against, and exactly why', { timeout: 6000 });
+    await expect(page.locator('#scan .steps li.on h3')).toHaveText('Who made it, and when to drink it');
+    await expect(page.locator('#scan .steps li.on h3')).toHaveText('Whether it\'s for you', { timeout: 6000 });
     // It finishes and stays on the last caption; it does not start again.
+    await expect(page.locator('#scan .steps li.on h3')).toHaveText('Then rate it', { timeout: 15000 });
     await page.waitForTimeout(2500);
-    await expect(page.locator('#scan .steps li.on h3')).toHaveText('Reasons for and against, and exactly why');
+    await expect(page.locator('#scan .steps li.on h3')).toHaveText('Then rate it');
     // A click on a caption stops it: choose the first, and it stays there.
     await jump(page, 'scan', 0);
     await page.waitForTimeout(2500);
-    await expect(page.locator('#scan .steps li.on h3')).toHaveText('A match score you can easily understand');
+    await expect(page.locator('#scan .steps li.on h3')).toHaveText('Who made it, and when to drink it');
     // The arrows and the progress lines still move it.
     await page.locator('#scan .arrow.next').click();
-    await expect(page.locator('#scan .steps li.on h3')).toHaveText('Reasons for and against, and exactly why');
+    await expect(page.locator('#scan .steps li.on h3')).toHaveText('Whether it\'s for you');
   });
 
   test('the progress bar is centred over the phone', async ({ page }) => {
@@ -95,29 +97,19 @@ test.describe('desktop', () => {
     await expect(page.locator('.hero .phone-app')).toContainText('Crozes-Hermitage 2021');
   });
 
-  test('a caption stops the autoplay and holds the demo on that part', async ({ page }) => {
+  test('a caption stops the autoplay and holds the scan story on that scene', async ({ page }) => {
     await page.goto(BASE + '/');
     await show(page, 'scan');
     const phone = page.locator('#scan .phone-app');
-    await jump(page, 'scan', 1);
-    await expect(page.locator('#scan .steps li.on h3')).toHaveText('Reasons for and against, and exactly why');
-    // The demo opened "Why N%?" so the working is on screen, and it stays put.
-    await expect(phone).toContainText('HOLDS IT BACK', { ignoreCase: true });
-    await page.waitForTimeout(2500);
-    // It has scrolled far enough to reach where the working adds up to the match, and that line is on screen.
-    const inView = await page.evaluate(() => {
-      const root = document.querySelector('#scan .phone-app');
-      const line = Array.from(root.querySelectorAll('*')).find((n) => /We expect you'd rate it about/.test(n.textContent) && n.children.length === 0);
-      const r = line.getBoundingClientRect(), s = root.getBoundingClientRect();
-      return r.top >= s.top && r.bottom <= s.bottom - 60;
-    });
-    expect(inView).toBe(true);
-    const held = await scrolledPx(page, 'scan');
-    await page.waitForTimeout(2500);
-    expect(Math.abs((await scrolledPx(page, 'scan')) - held)).toBeLessThan(3);
-    await expect(page.locator('#scan .steps li.on h3')).toHaveText('Reasons for and against, and exactly why');
+    await jump(page, 'scan', 3);
+    await expect(page.locator('#scan .steps li.on h3')).toHaveText('The grape');
+    await expect(phone.locator('[data-testid="reveal-scene"]')).toHaveAttribute('data-scene', 'grape', { timeout: 8000 });
+    await expect(phone).toContainText('Syrah');
+    // The story would move on by itself after the scene's reading time; held, it doesn't.
+    await page.waitForTimeout(6000);
+    await expect(phone.locator('[data-testid="reveal-scene"]')).toHaveAttribute('data-scene', 'grape');
     await jump(page, 'scan', 0);
-    await expect(phone).not.toContainText('HOLDS IT BACK', { ignoreCase: true });
+    await expect(phone.locator('[data-testid="reveal-scene"]')).toHaveAttribute('data-scene', 'label', { timeout: 8000 });
   });
 
   test('the wheel over the text scrolls the page and never moves the demo', async ({ page }) => {
@@ -129,7 +121,7 @@ test.describe('desktop', () => {
     const y0 = await page.evaluate(() => scrollY);
     for (let i = 0; i < 6; i++) { await page.mouse.wheel(0, 100); await page.waitForTimeout(60); }
     await expect.poll(() => page.evaluate(() => scrollY)).toBeGreaterThan(y0 + 300);
-    await expect(page.locator('#rate .steps li.on h3')).toHaveText('Slide to rate');
+    await expect(page.locator('#rate .steps li.on h3')).toHaveText('Turn the dial to rate');
   });
 
   test('the page scrolls straight past a demo: no pinned section to scroll through', async ({ page }) => {
@@ -142,6 +134,30 @@ test.describe('desktop', () => {
     await page.mouse.move(ph.x + ph.width / 2, ph.y + ph.height / 2);
     await page.mouse.wheel(0, 700);
     await expect.poll(() => page.evaluate(() => scrollY)).toBeGreaterThan(before + 600);
+  });
+
+  test('the scan story plays its scenes: label, match, taste, grape, region, something to say, then what next', async ({ page }) => {
+    await page.goto(BASE + '/');
+    await show(page, 'scan');
+    const phone = page.locator('#scan .phone-app');
+    const scene = phone.locator('[data-testid="reveal-scene"]');
+    await expect(phone).toContainText('Alain Graillot');
+    await expect(phone).toContainText('Drinking');          // the drinking window under the label
+    await jump(page, 'scan', 1);
+    await expect(scene).toHaveAttribute('data-scene', 'match', { timeout: 8000 });
+    await expect(phone).toContainText(`${SAMPLE_MATCH.pct}%`, { timeout: 8000 });
+    await jump(page, 'scan', 2);
+    await expect(scene).toHaveAttribute('data-scene', 'taste', { timeout: 8000 });
+    await expect(phone).toContainText('Blackberry', { timeout: 8000 });   // the tasting notes
+    await jump(page, 'scan', 4);
+    await expect(scene).toHaveAttribute('data-scene', 'place', { timeout: 8000 });
+    await expect(phone).toContainText('Rhône Valley', { timeout: 8000 });
+    await jump(page, 'scan', 5);
+    await expect(scene).toHaveAttribute('data-scene', 'say', { timeout: 8000 });
+    await jump(page, 'scan', 6);
+    // The story ends on the rating, with a way to skip it.
+    await expect(phone).toContainText('How was it?', { timeout: 8000 });
+    await expect(phone).toContainText('Skip the rating');
   });
 
   test('the deck turns through its cards: the house, the year, how it is made, the region, the table, the tasting cues', async ({ page }) => {
@@ -167,36 +183,31 @@ test.describe('desktop', () => {
     await expect(phone).toContainText('Next from here');
   });
 
-  test('rating a bottle slides the rating up and saves it, without changing the other demos', async ({ page }) => {
-    await page.goto(BASE + '/');
+  test('rating a bottle at the end of its story turns the dial up and saves it, then offers the ways out, without changing the other demos', async ({ page }) => {
+    await page.goto(BASE + '/?speed=8');
     await show(page, 'rate');
     const phone = page.locator('#rate .phone-app');
     await expect(phone).toContainText('How was it?');
     await jump(page, 'rate', 1);
     await expect(phone).toContainText('Rated 92', { timeout: 8000 });
+    // The three quick answers fill in as the caption plays.
+    await expect(phone).toContainText('On your Buy again list', { timeout: 10000 });
+    await expect(phone.locator('input[aria-label="What you paid"]')).toHaveValue('30', { timeout: 10000 });
+    await expect(phone.locator('input[aria-label="Where did you have it"]')).toHaveValue("At a friend's dinner", { timeout: 10000 });
+    // Then the ways out under the extras.
     await jump(page, 'rate', 2);
-    await expect(phone).toContainText('On your Buy again list', { timeout: 6000 });
-    // The other two quick answers are filled in as well.
-    await expect(phone.locator('input[aria-label="What you paid"]')).toHaveValue('30', { timeout: 6000 });
-    await expect(phone.locator('input[aria-label="Where did you have it"]')).toHaveValue("At a friend's dinner", { timeout: 6000 });
+    const ways = phone.locator('[data-testid="reveal-ways"]');
+    await expect(ways).toContainText('Go deeper', { timeout: 10000 });
+    await expect(ways).toContainText('Wine details');
+    await expect(ways).toContainText('See the result');
     // Going back to the start puts the rating panel back.
     await jump(page, 'rate', 0);
-    await expect(phone).toContainText('How was it?', { timeout: 8000 });
+    await expect(phone).toContainText('How was it?', { timeout: 10000 });
     // A saved rating stays in that demo: the WineDNA demo still counts the sample user's own bottles.
     await jump(page, 'rate', 1);
-    await expect(phone).toContainText('Rated 92', { timeout: 8000 });
+    await expect(phone).toContainText('Rated 92', { timeout: 10000 });
     await show(page, 'winedna');
     await expect(page.locator('#winedna .phone-app')).toContainText('12 bottles scanned');
-  });
-
-  test('after a rating, Keep learning offers quizzes and articles for the bottle', async ({ page }) => {
-    await page.goto(BASE + '/');
-    await show(page, 'keep-learning');
-    const phone = page.locator('#keep-learning .phone-app');
-    await expect(phone).toContainText('Keep learning', { timeout: 10000 });
-    await expect(phone).toContainText('Syrah quiz');
-    await jump(page, 'keep-learning', 1);
-    await expect(phone).toContainText('Get to Know Syrah', { timeout: 6000 });
   });
 
   test('Blind Call plays on the taste card: three sliders, the call locked in, then the rating and its XP', async ({ page }) => {
@@ -235,42 +246,42 @@ test.describe('desktop', () => {
   });
 
   test('Mastery shows the whole picture, the grapes, the region map and the palate, from the current build', async ({ page }) => {
-    await page.goto(BASE + '/');
+    await page.goto(BASE + '/?speed=8');
     await show(page, 'mastery');
     const phone = page.locator('#mastery .phone-app');
     await expect(phone).toContainText('Your Mastery');
     await expect(phone).toContainText('Your shape', { timeout: 10000 }); // the radar sits below the rating
     await jump(page, 'mastery', 1);
-    await expect(phone).toContainText('Tempranillo', { timeout: 8000 }); // the red-grape list
+    await expect(phone.locator('[data-testid="grape-cluster"]')).toBeVisible({ timeout: 8000 }); // the sketched bunches
+    await expect(phone).toContainText('Your wine map', { timeout: 12000 });   // the same caption plays on to the map
+    // The map shows what the drinker has opened, not every region as a grey dot.
+    await expect(phone.locator('[data-testid="region-map"] circle[fill="#CFC9C2"]').first()).toBeHidden();
     await jump(page, 'mastery', 2);
-    await expect(phone).toContainText('Your wine map', { timeout: 8000 });
-    await jump(page, 'mastery', 3);
-    await expect(phone).toContainText('Grippier', { timeout: 8000 }); // seven seeded Blind Calls: the tannins tile's habit
+    await expect(phone).toContainText(/grippier/i, { timeout: 8000 }); // seven seeded Blind Calls: the tannins tile's habit
     // Mastery is its own section: the Learn section no longer carries a Mastery step.
     await expect(page.locator('#learn .steps li h3')).not.toContainText(['Mastery map']);
   });
 
-  test('My Wines types the search, opens a bottle, and shows its story and its price', async ({ page }) => {
-    await page.goto(BASE + '/');
+  test('My Wines types the search, then opens a bottle and shows its story and its price', async ({ page }) => {
+    await page.goto(BASE + '/?speed=8');
     await show(page, 'my-wines');
     const phone = page.locator('#my-wines .phone-app');
     await jump(page, 'my-wines', 1);
-    await expect(phone.locator('input[placeholder^="Search"]')).toHaveValue('Rioja', { timeout: 6000 });
-    await jump(page, 'my-wines', 3);
-    await expect(phone).toContainText('La Rioja Alta', { timeout: 6000 });
-    await expect(phone).toContainText('benchmark of traditional Rioja');
-    await jump(page, 'my-wines', 4);
-    await expect(phone).toContainText('Typical bottle price', { timeout: 6000 });
+    await expect(phone.locator('input[placeholder^="Search"]')).toHaveValue('Rioja', { timeout: 8000 });
+    await jump(page, 'my-wines', 2);   // one caption plays through Details, Learn and Price
+    await expect(phone).toContainText('La Rioja Alta', { timeout: 8000 });
+    await expect(phone).toContainText('benchmark of traditional Rioja', { timeout: 12000 });
+    await expect(phone).toContainText('Typical bottle price', { timeout: 20000 });
     await expect(phone).toContainText('£27');
   });
 
   test('Vinny types the question and answers it', async ({ page }) => {
-    await page.goto(BASE + '/');
+    await page.goto(BASE + '/?speed=8');
     await show(page, 'vinny');
     const phone = page.locator('#vinny .phone-app');
-    await jump(page, 'vinny', 2);
-    await expect(phone).toContainText('Steak tonight. What should I look for?');
-    await expect(phone).toContainText('Rioja');
+    await jump(page, 'vinny', 1);
+    await expect(phone).toContainText('Steak tonight. What should I look for?', { timeout: 10000 });
+    await expect(phone).toContainText('Rioja', { timeout: 10000 });
   });
 
   test('each demo screen mounts, with the sample user\'s wines', async ({ page }) => {
@@ -306,7 +317,7 @@ test.describe('desktop', () => {
 
 // Nothing in a demo section may be cut off, whatever the window: the text and the phone stay inside
 // the section, and the caption text stays clear of the header.
-const FITS = ['scan', 'learn-wine', 'rate', 'keep-learning', 'winedna', 'vinny', 'learn', 'mastery', 'my-wines'];
+const FITS = ['scan', 'rate', 'learn-wine', 'winedna', 'vinny', 'learn', 'mastery', 'my-wines'];
 async function fits(page, id) {
   await show(page, id);
   await page.waitForTimeout(300);
@@ -370,7 +381,6 @@ test.describe('reduced motion', () => {
     for (const li of await page.locator('#scan .steps li').all()) { await expect(li).toBeVisible(); await expect(li.locator('p')).toBeVisible(); }
     await expect(page.locator('#scan .phone-app')).toContainText('Crozes-Hermitage 2021');
     await page.waitForTimeout(1500);
-    expect(await scrolledPx(page, 'scan')).toBe(0);
   });
 });
 
@@ -384,27 +394,29 @@ test.describe('beta form', () => {
     await page.locator('#beta-go').click();
     await expect(page.locator('.err[data-for="first_name"]')).toHaveText('Add your first name.');
     await expect(page.locator('.err[data-for="country"]')).toHaveText('Pick your country.');
+    await expect(page.locator('.err[data-for="platform"]')).toHaveText('Pick your phone.');
     await expect(page.locator('.err[data-for="email"]')).toContainText('doesn\'t look right');
   });
 
-  test('sends the four fields and says thanks', async ({ page }) => {
+  test('sends the five fields and says thanks', async ({ page }) => {
     const sent = [];
     await page.route('**/api/beta', (r) => { sent.push(JSON.parse(r.request().postData())); return r.fulfill({ contentType: 'application/json', body: '{"ok":true}' }); });
     await page.goto(BASE + '/');
     await page.fill('#b-first', 'Ada');
     await page.fill('#b-last', 'Lovelace');
     await page.selectOption('#b-country', 'GB');
+    await page.selectOption('#b-platform', 'ios');
     await page.fill('#b-email', 'ada@example.com');
     await page.locator('#beta-go').click();
     await expect(page.locator('#beta-thanks')).toBeVisible();
     await expect(page.locator('#beta-thanks')).toContainText('Thanks, Ada');
-    expect(sent).toEqual([{ first_name: 'Ada', last_name: 'Lovelace', country: 'GB', email: 'ada@example.com', website: '' }]);
+    expect(sent).toEqual([{ first_name: 'Ada', last_name: 'Lovelace', country: 'GB', platform: 'ios', email: 'ada@example.com', website: '' }]);
   });
 
   test('shows the server\'s words when it can\'t save', async ({ page }) => {
     await page.route('**/api/beta', (r) => r.fulfill({ status: 503, contentType: 'application/json', body: '{"error":"Beta sign-ups aren\'t open just yet. Please check back soon."}' }));
     await page.goto(BASE + '/');
-    await page.fill('#b-first', 'Ada'); await page.fill('#b-last', 'Lovelace'); await page.fill('#b-email', 'ada@example.com');
+    await page.fill('#b-first', 'Ada'); await page.fill('#b-last', 'Lovelace'); await page.selectOption('#b-platform', 'android'); await page.fill('#b-email', 'ada@example.com');
     await page.locator('#beta-go').click();
     await expect(page.locator('#beta-fail')).toContainText('aren\'t open just yet');
     await expect(page.locator('#beta-go')).toBeEnabled();
@@ -423,7 +435,7 @@ test.describe('legal pages', () => {
 
 test.describe('the sign-up Worker', () => {
   const post = (body, headers = {}) => new Request('https://vinterest.app/api/beta', { method: 'POST', headers: { 'content-type': 'application/json', origin: 'https://vinterest.app', ...headers }, body: JSON.stringify(body) });
-  const good = { first_name: ' Ada ', last_name: 'Lovelace', country: 'gb', email: ' Ada@Example.COM ', website: '' };
+  const good = { first_name: ' Ada ', last_name: 'Lovelace', country: 'gb', platform: 'iOS', email: ' Ada@Example.COM ', website: '' };
   const env = { SUPABASE_URL: 'https://x.supabase.co', SUPABASE_SECRET_KEY: 'secret' };
 
   test('saves a tidy row with the server key, and answers ok', async () => {
@@ -440,7 +452,7 @@ test.describe('the sign-up Worker', () => {
     expect(calls[0].url).toBe('https://x.supabase.co/rest/v1/beta_signups?on_conflict=email');
     expect(calls[0].init.headers.apikey).toBe('secret');
     expect(calls[0].init.headers.prefer).toContain('ignore-duplicates');
-    expect(JSON.parse(calls[0].init.body)).toEqual({ first_name: 'Ada', last_name: 'Lovelace', country: 'GB', email: 'ada@example.com' });
+    expect(JSON.parse(calls[0].init.body)).toEqual({ first_name: 'Ada', last_name: 'Lovelace', country: 'GB', platform: 'ios', email: 'ada@example.com' });
   });
 
   test('emails a new sign-up through Resend, once, and never fails the sign-up if that goes wrong', async () => {
@@ -463,7 +475,11 @@ test.describe('the sign-up Worker', () => {
       expect(sent.to).toEqual(['ada@example.com']);
       expect(sent.from).toBe('Vinterest <hello@vinterest.app>');
       expect(sent.html).not.toContain('<b>Ada</b>'); // the name is escaped in the HTML
+      expect(sent.subject).toBe('Thank you for registering for the Vinterest beta');
+      for (const part of ['download links', 'updates on the beta', 'acceptance into the programme']) { expect(sent.text).toContain(part); expect(sent.html).toContain(part); }
       expect(calls.find((c) => c.url.includes('supabase')).init.headers.prefer).toContain('return=representation');
+      // Only the person is emailed until BETA_NOTIFY_TO is set.
+      expect(calls.filter((c) => c.url.includes('resend'))).toHaveLength(1);
       // Someone already on the list gets nothing more.
       calls.length = 0; inserted = false;
       res = await handleBeta(post(good, { 'cf-connecting-ip': '7.7.7.2' }), renv);
@@ -476,12 +492,43 @@ test.describe('the sign-up Worker', () => {
     } finally { globalThis.fetch = realFetch; }
   });
 
+  test('tells the team about a new sign-up when BETA_NOTIFY_TO is set, with everything the form collected', async () => {
+    const { handleBeta } = await load();
+    const nenv = { ...env, RESEND_API_KEY: 're_test', BETA_NOTIFY_TO: 'me@example.com' };
+    const realFetch = globalThis.fetch;
+    const calls = [];
+    let inserted = true;
+    globalThis.fetch = async (url, init) => {
+      calls.push({ url: String(url), init });
+      if (String(url).includes('supabase')) return new Response(JSON.stringify(inserted ? [{ email: 'ada@example.com' }] : []), { status: 201, headers: { 'content-type': 'application/json' } });
+      return new Response('{"id":"1"}', { status: 200 });
+    };
+    try {
+      let res = await handleBeta(post({ ...good, last_name: '<i>Lovelace</i>' }, { 'cf-connecting-ip': '8.8.8.1' }), nenv);
+      expect(res.status).toBe(200);
+      const mails = calls.filter((c) => c.url === 'https://api.resend.com/emails').map((c) => JSON.parse(c.init.body));
+      expect(mails).toHaveLength(2);
+      const notice = mails.find((m) => m.to[0] === 'me@example.com');
+      expect(notice.subject).toBe('Beta sign-up: Ada <i>Lovelace</i> (iPhone (iOS), GB)');
+      expect(notice.reply_to).toBe('ada@example.com');
+      for (const part of ['Ada <i>Lovelace</i>', 'ada@example.com', 'GB', 'iPhone (iOS)']) expect(notice.text).toContain(part);
+      expect(notice.html).toContain('&lt;i&gt;Lovelace&lt;/i&gt;');
+      expect(notice.html).not.toContain('<i>Lovelace</i>');
+      // A repeat sign-up tells no one.
+      calls.length = 0; inserted = false;
+      res = await handleBeta(post(good, { 'cf-connecting-ip': '8.8.8.2' }), nenv);
+      expect(res.status).toBe(200);
+      expect(calls.some((c) => c.url.includes('resend'))).toBe(false);
+    } finally { globalThis.fetch = realFetch; }
+  });
+
   test('refuses bad input, other sites, and says so plainly when sign-ups aren\'t set up', async () => {
     const { handleBeta } = await load();
     const ip = (n) => ({ 'cf-connecting-ip': `2.2.2.${n}` });
     expect((await handleBeta(post({ ...good, email: 'nope' }, ip(1)), env)).status).toBe(400);
     expect((await handleBeta(post({ ...good, first_name: '' }, ip(2)), env)).status).toBe(400);
     expect((await handleBeta(post({ ...good, country: 'Britain' }, ip(3)), env)).status).toBe(400);
+    expect((await handleBeta(post({ ...good, platform: 'windows' }, ip(6)), env)).status).toBe(400);
     expect((await handleBeta(post(good, { ...ip(4), origin: 'https://evil.example' }), env)).status).toBe(403);
     expect((await handleBeta(new Request('https://vinterest.app/api/beta', { method: 'GET' }), env)).status).toBe(405);
     const unset = await handleBeta(post(good, ip(5)), {});

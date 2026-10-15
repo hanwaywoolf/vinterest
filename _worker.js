@@ -55,6 +55,8 @@ const CLAUDE_PURPOSE_LIMITS = {
   explore_info: 4096,      // pwa-screens-explore.jsx useClaudeData — region/varietal/similar-wines
   grape_quiz: 4096,        // pwa-grape-learning.js — generated grape quiz questions
   region_quiz: 4096,       // pwa-content-engine.js RegionQuizBank — generated region quiz questions
+  quiz_variants: 4096,     // pwa-quiz-questions.js QuizMastery.ensureVariants — a second wording of a
+                            // set's questions for refreshers (prompts/quiz-variants.txt), once per set
   match_explain: 4096,     // pwa-screens-detail.jsx — "why this wine matches you"
   vintage_info: 4096,      // pwa-screens-detail.jsx — vintage quality + drinking window
   education: 4096,         // pwa-screens-detail.jsx — grape/vocabulary deep-dive
@@ -75,7 +77,7 @@ const CLAUDE_PURPOSE_LIMITS = {
    make the quiz banks' wrong answers any less obvious; the quiz prompts' own rule about them does. Refusal
    fallbacks are on, so a request their safety classifier declines is answered by another model
    in the same call instead of coming back empty. Earlier models get nothing extra. */
-const PURPOSE_EFFORT = { grape_quiz: "medium", region_quiz: "medium", learn_article: "medium", winedna_summary: "medium", sommelier_script: "medium", wine_deep: "medium" };
+const PURPOSE_EFFORT = { grape_quiz: "medium", region_quiz: "medium", quiz_variants: "medium", learn_article: "medium", winedna_summary: "medium", sommelier_script: "medium", wine_deep: "medium" };
 function modelOptions(model, purpose, env) {
   if (!/^claude-(sonnet|opus|fable)-5/.test(model)) return { body: {}, betas: [] };
   const effort = env.CLAUDE_EFFORT || PURPOSE_EFFORT[purpose] || "low";
@@ -525,7 +527,7 @@ async function handlePriceSearch(payload, env, key, ctx) {
   return json(200, { text: await _signListings(env, res.text), cached: false });
 }
 
-/* The shops the search found the wine at (up to 3), for the Price tab's "In shops now". A link is
+/* The shops the search found the wine at (up to 3), for the Shop tab's "In shops now". A link is
    kept only when the search really returned a page on that site, so a shop the model made up,
    or a link it guessed, never reaches the screen. https only, and never a search engine. */
 function _listedShops(shops, content) {
@@ -554,7 +556,7 @@ function _listedShops(shops, content) {
    from the shop's own product feed, loaded nightly into Supabase's shop_products
    (scripts/shop-feeds.mjs). It prefers a single 75cl bottle of the scanned vintage; without one it
    names the vintages the shop does have. The app links the listing's page through /go (placement
-   "buy"), which adds the Awin tracking. Money never moves a match: this sits on the Price tab only.
+   "buy"), which adds the Awin tracking. Money never moves a match: this sits on the Shop tab only.
    Without Supabase or a feed shop for the country it answers {items:[]}. */
 const SHOP_MATCH_TTL_S = 6 * 3600;
 const SHOP_COLOURS = { red: "red", rouge: "red", tinto: "red", rosso: "red", white: "white", blanc: "white", blanco: "white", bianco: "white", weiss: "white", rose: "rose", rosado: "rose", rosato: "rose" };
