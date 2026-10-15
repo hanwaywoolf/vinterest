@@ -6,6 +6,7 @@ function _openLearn(item,nav,showPro){
   if(!item) return;
   const quiz=cfg=>{ Handoff.quiz.set(cfg); nav('quiz'); };
   if(item.kind==='scan') return nav('camera');
+  if(item.kind==='match'){ if(item.unrated){ Handoff.myWinesView.set({type:item.type,status:'unrated'}); return nav('mywines'); } return nav('camera'); }
   if(item.kind==='pro') return showPro&&showPro(item.feature);
   if(item.kind==='article'){ Handoff.genArticle.set(item.stub); return nav('gen-article'); }
   if(item.kind==='guide'){ Handoff.guide.set(item.guide); return nav('guide'); }
@@ -84,8 +85,10 @@ function WineChatWidget({wines,nav,showPro}){
           <input ref={inputRef} value={q} onChange={e=>onType(e.target.value)} onKeyDown={onKey} onFocus={()=>setFocused(true)} onBlur={()=>setFocused(false)} aria-label="Ask Vinny"
             placeholder={open?'Ask a follow-up…':'Ask Vinny about wine…'} style={{position:'absolute',inset:0,width:'100%',border:'none',outline:'none',background:'transparent',fontSize:16,fontFamily:C.P,color:'#fff'}}/>
           {idle&&(
-            <div onClick={()=>fill(prompts[pIdx])} style={{position:'absolute',inset:0,display:'flex',alignItems:'center',background:'#1C1C1F',cursor:'text'}}>
-              <span style={{fontSize:16,color:'rgba(255,255,255,0.75)',fontFamily:C.P,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{typed}<span style={{display:'inline-block',width:1.5,height:15,background:'rgba(255,255,255,0.75)',marginLeft:2,verticalAlign:'-2px',animation:'homeCaret 0.9s step-end infinite'}}/></span>
+            <div onClick={()=>fill(prompts[pIdx])} style={{position:'absolute',inset:0,display:'flex',alignItems:'center',overflow:'hidden',background:'#1C1C1F',cursor:'text'}}>
+              {/* A long suggestion steps down a size rather than being cut mid-word; px sizes,
+                  since it has to fit the bar's one line whatever the text-size setting. */}
+              <span style={{fontSize:(prompts[pIdx]||'').length>40?'12px':(prompts[pIdx]||'').length>32?'13px':(prompts[pIdx]||'').length>27?'14px':'16px',color:'rgba(255,255,255,0.75)',fontFamily:C.P,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{typed}<span style={{display:'inline-block',width:1.5,height:15,background:'rgba(255,255,255,0.75)',marginLeft:2,verticalAlign:'-2px',animation:'homeCaret 0.9s step-end infinite'}}/></span>
             </div>
           )}
       </>}/>
@@ -249,11 +252,13 @@ function HomeScreen({nav, showPro, isTablet}){
     <span style={{fontSize:16,fontWeight:700,color:T.ink,fontFamily:C.P}}>{title}</span>
     {link&&<span onClick={onLink} role="button" style={{fontSize:15,fontWeight:600,color:T.lift(C.cr),fontFamily:C.P,cursor:'pointer'}}>{link}</span>}
   </div>;
+  const clamp2={display:'-webkit-box',WebkitLineClamp:2,WebkitBoxOrient:'vertical',overflow:'hidden',lineHeight:1.35};
   const row=(key,icon,col,title,sub,onClick,right)=><div key={key} onClick={onClick} role="button" style={{display:'flex',alignItems:'center',gap:12,padding:'10px 14px',borderTop:`1px solid ${T.line}`,cursor:'pointer'}}>
-    <div style={{width:34,height:34,borderRadius:10,background:_alpha(T.lift(col),0.2),flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center'}}><Icon n={icon} sz={16} col={T.lift(col)}/></div>
+    <div style={{width:34,height:34,borderRadius:10,background:_alpha(T.lift(col),0.2),flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center'}}>
+      {icon==='dot'?<span style={{width:14,height:14,borderRadius:7,background:T.lift(col)}}/>:<Icon n={icon} sz={16} col={T.lift(col)}/>}</div>
     <div style={{flex:1,minWidth:0}}>
-      <div style={{fontSize:15,fontWeight:600,color:T.ink,fontFamily:C.P,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{title}</div>
-      {sub&&<div style={{fontSize:13,color:T.mid,fontFamily:C.P,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{sub}</div>}
+      <div style={{fontSize:15,fontWeight:600,color:T.ink,fontFamily:C.P,...clamp2}}>{title}</div>
+      {sub&&<div style={{fontSize:13,color:T.mid,fontFamily:C.P,...clamp2}}>{sub}</div>}
     </div>
     {right||<Icon n="chevron" sz={13} col={T.mid}/>}
   </div>;
@@ -290,33 +295,35 @@ function HomeScreen({nav, showPro, isTablet}){
         {/* Recently scanned */}
         {recentWines.length>0&&<Card style={{padding:0,overflow:'hidden'}}>
           {head('Recently scanned','All →',()=>nav('mywines'))}
-          {recentWines.map((w,i)=>row('r'+i,'wine',colFor(w),w.name,MyWines.subline(w),()=>openWine(w),
-            w.rating>0?<span style={{fontSize:15,fontWeight:700,color:T.amber,fontFamily:C.P,flexShrink:0}}>{w.rating}</span>
+          {recentWines.map((w,i)=>row('r'+i,'wine',colFor(w),w.name,<><Flag wine={w} size={13} style={{marginRight:5}}/>{MyWines.subline(w)}</>,()=>openWine(w),
+            w.rating>0?<span style={{fontSize:15,fontWeight:700,color:T.tone[ParkerScale.tone(w.rating)],fontFamily:C.P,flexShrink:0}}>{w.rating}</span>
               :<span style={{fontSize:13,color:T.lift(C.cr),fontFamily:C.P,flexShrink:0,fontWeight:600}}>Rate it →</span>))}
         </Card>}
 
         {/* WineDNA at a glance */}
         {dna.types.length>0&&<Card style={{padding:0,overflow:'hidden'}}>
           {head('Your WineDNA','Open →',()=>{ UserPrefs.openDNA(dna.types[0].key); nav('profile'); })}
-          {dna.types.map(t=>row(t.key,'wine',t.col,t.tab,t.line,()=>{ UserPrefs.openDNA(t.key); nav('profile'); }))}
+          {dna.types.map(t=>row(t.key,'dot',t.col,t.tab,t.line,()=>{ UserPrefs.openDNA(t.key); nav('profile'); }))}
           {dna.pick&&row('explore','compass',C.cr,`Try next: ${dna.pick.style.name}`,`Explore Next · ${dna.pick.style.country}`,()=>{
             ExploreNext.markOpened(dna.pick.style.id); Handoff.styleExplore.set({id:dna.pick.style.id,typeKey:dna.pick.typeKey,label:dna.pick.typeLabel}); nav('style-explore'); })}
           {row('script','message',C.cr,`Your ${(WineDNA.NOUNS[dna.types[0].key]||['wine'])[0]} sommelier script`,'What to say when you order',()=>{ UserPrefs.openDNA(dna.types[0].key,'scripts'); nav('profile'); })}
         </Card>}
 
         {/* Your knowledge: level and XP, and the Mastery teaser (the full map is Pro) */}
-        <Card onClick={()=>knowledge?(isPro?nav('mastery-map'):showPro('mastery-map')):nav('learn')} style={{padding:14,cursor:'pointer',display:'flex',flexDirection:'column',gap:8}}>
+        <Card style={{padding:0,overflow:'hidden'}}>
+          <div onClick={()=>nav('learn')} role="button" style={{padding:14,cursor:'pointer',display:'flex',flexDirection:'column',gap:8}}>
           <div style={{display:'flex',alignItems:'center',gap:8}}>
             <span style={{fontSize:16,fontWeight:700,color:T.ink,fontFamily:C.P,flex:1}}>{lv.badge} {lv.name}</span>
             <span data-testid="home-xp" onClick={e=>{ e.stopPropagation(); try{ window.dispatchEvent(new Event('vinterest:xp-overlay')); }catch(err){} }} style={{fontSize:13,color:T.mid,fontFamily:C.P,cursor:'pointer'}}>{xpData.total} XP{nx?` · ${nx.min-xpData.total} to ${nx.name}`:''}</span>
           </div>
           <Prog val={pg} h={5} col={T.lift(C.cr)}/>
-          {knowledge&&<div style={{display:'flex',alignItems:'center',gap:8}}>
-            <div style={{flex:1,fontSize:14,color:T.ink2,fontFamily:C.P,lineHeight:1.45}}>
-              Wine knowledge {knowledge.overall}%{knowledge.strongest?<> · strongest in <b>{knowledge.strongest.label}</b></>:null}{knowledge.gap?<> · biggest gap <b>{knowledge.gap.label}</b></>:null}
-            </div>
-            {!isPro&&<ProBadge/>}
+          {knowledge&&<div style={{fontSize:14,color:T.ink2,fontFamily:C.P,lineHeight:1.45}}>
+            Wine knowledge {knowledge.overall}%{knowledge.strongest?<> · strongest in <b>{knowledge.strongest.label}</b></>:null}{knowledge.gap?<> · biggest gap <b>{knowledge.gap.label}</b></>:null}
           </div>}
+          </div>
+          {/* Mastery is Pro: said on its own row, so the card above never opens a paywall by surprise. */}
+          {knowledge&&row('mastery','trophy',C.cr,'Your Mastery map','Every wine type, region, grape and skill, as a shape',()=>isPro?nav('mastery-map'):showPro('mastery-map'),
+            isPro?<Icon n="chevron" sz={13} col={T.mid}/>:<ProBadge/>)}
         </Card>
   </>;
   const cell=x=><div style={{display:'flex',flexDirection:'column',gap:12,minWidth:0}}>{x}</div>;
@@ -362,7 +369,7 @@ function HomeScreen({nav, showPro, isTablet}){
       <div style={{flex:1,overflowY:'auto',overscrollBehavior:'none',WebkitOverflowScrolling:'touch'}}>
       <div style={{padding:'10px 20px 8px',display:'flex',flexDirection:'column',gap:12}}>
 
-        {wide?<WideColumns gap={16}>{cell(doNext)}{cell(done)}</WideColumns>:<>{doNext}{done}</>}
+        {wide&&allWines.length>=3?<WideColumns gap={16}>{cell(doNext)}{cell(done)}</WideColumns>:<>{doNext}{done}</>}
 
         <div style={{height:8}}/>
       </div>

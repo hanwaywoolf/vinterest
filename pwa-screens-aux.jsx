@@ -299,7 +299,7 @@ function MyWinesScreen({nav,back}){ const T=useTheme(), cr=T.lift(C.cr); // the 
   // Opened from a type's "See all" (WineDNA, Home): start on that type, sorted by score.
   const [entry]=React.useState(()=>Handoff.myWinesView.take());
   const [type,setType]=React.useState(entry.type||'all');
-  const [status,setStatus]=React.useState(null);
+  const [status,setStatus]=React.useState(entry.status||null); // Home's match meter opens the unrated ones
   const [sort,setSort]=React.useState(entry.sort||'recent');
   const [q,setQ]=React.useState('');
   const [sortOpen,setSortOpen]=React.useState(false);

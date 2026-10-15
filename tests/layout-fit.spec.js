@@ -50,7 +50,7 @@ test('Profile scrolls all the way down, and #settings (merged into it) opens it'
 
 test('the Pro sheet fits the screen, or scrolls, down to "Maybe later"', async ({ context, page }) => {
   await open(context, page, '#home');
-  const card = page.locator('#root').getByText(/Wine knowledge \d+%/);
+  const card = page.locator('#root').getByText('Your Mastery map'); // the Pro row under the knowledge card
   await card.scrollIntoViewIfNeeded();
   await card.click();
   const later = page.locator('#root').getByText('Maybe later');

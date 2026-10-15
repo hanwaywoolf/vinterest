@@ -170,7 +170,7 @@ test('Learn opens Written for you, and nothing shows it anywhere before Learn do
     keep: LearnNext.forWine(WineHistory.getAll()[0]).filter((t) => t.kind === 'article').length,
     dna: ContentEngine.forType('red').length,
   }));
-  expect(before).toEqual({ open: false, primary: 'onramp', written: 1, keep: 0, dna: 0 });
+  expect(before).toEqual({ open: false, primary: 'match', written: 1, keep: 0, dna: 0 }); // one red rated: the match meter leads, the beginner series next
 
   await page.goto(`${BASE}/#learn`);
   const locked = page.locator('[data-shelf-locked]');
