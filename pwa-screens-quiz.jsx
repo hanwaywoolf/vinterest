@@ -1054,7 +1054,7 @@ function MilestoneMoment({items}){ const T=useTheme(), cr=T.lift(C.cr), INK=T.da
   const [share,said]=_useShare();
   if(!items||!items.length) return null;
   return(
-    <div data-testid="milestone-moment" className="milestone-in" style={{background:T.ink,borderRadius:16,padding:'14px 16px',display:'flex',flexDirection:'column',gap:8}}>
+    <div data-testid="milestone-moment" className="milestone-in" style={{background:T.dark?'rgba(231,198,107,0.12)':T.ink,border:T.dark?'1px solid rgba(231,198,107,0.38)':'none',borderRadius:16,padding:'14px 16px',display:'flex',flexDirection:'column',gap:8}}>
       <div style={{fontSize:13,fontWeight:600,color:'#E7C66B',fontFamily:C.P,textTransform:'uppercase',letterSpacing:'0.06em'}}>{items.length===1?(items[0].id.startsWith('level:')?'New level':'New milestone'):`${items.length} new milestones`}</div>
       {items.map(x=>(
         <div key={x.id} style={{display:'flex',alignItems:'center',gap:12}}>

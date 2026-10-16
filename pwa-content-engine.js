@@ -295,7 +295,7 @@ const SommelierScript = {
     return `${rc.base}${lo}–${rc.base}${hi} ${rc.code}`;
   },
   cached(length,typeKey,wines){ return Store.get(this.key(length,typeKey,this.sig(wines),Regional.current().code)); },
-  // Calls onReady(text) once the script exists (immediately if cached), or onReady(null) on failure.
+  // Calls onReady(text) once the script exists (immediately if cached), or onReady(null, error) on failure.
   get(length,typeKey,label,wines,onReady){
     const rc=Regional.current();
     const sig=this.sig(wines);
@@ -305,8 +305,11 @@ const SommelierScript = {
     if(hit){ onReady(hit); return; }
     if(this._inFlight[want]){ this._inFlight[want].push(onReady); return; }
     const waiters=this._inFlight[want]=[onReady];
-    const done=text=>{ delete this._inFlight[want]; waiters.forEach(f=>f(text)); };
-    const ask=prompt=>window.claude.complete({purpose:'sommelier_script',messages:[{role:'user',content:prompt}]}).then(t=>{ t=(t||'').trim(); if(!t) throw new Error('empty script'); return t; });
+    const done=(text,err)=>{ delete this._inFlight[want]; waiters.forEach(f=>f(text,err)); };
+    const once=prompt=>window.claude.complete({purpose:'sommelier_script',messages:[{role:'user',content:prompt}]}).then(t=>{ t=(t||'').trim(); if(!t) throw new Error('Claude sent back an empty script.'); return t; });
+    // One more try after a short pause: a dropped connection or an empty answer shouldn't leave the card with nothing.
+    // A sign-in, plan or fair-use refusal (err.code) won't change on a second go, so those fail at once.
+    const ask=prompt=>once(prompt).catch(e=>{ if(e&&(e.code||e.status===401||e.status===402||e.status===429)) throw e; return new Promise(r=>setTimeout(r,1200)).then(()=>once(prompt)); });
     const makeLong=()=>{
       const cachedLong=Store.get(kLong);
       if(cachedLong) return Promise.resolve(cachedLong);
@@ -327,7 +330,7 @@ const SommelierScript = {
           .then(t=>{ Store.set(kShort,t); return t; });
       })
       .then(done)
-      .catch(()=>done(null));
+      .catch(e=>{ console.warn('[Vinterest] sommelier script failed:',e&&e.message); done(null,e); });
   }
 };
 

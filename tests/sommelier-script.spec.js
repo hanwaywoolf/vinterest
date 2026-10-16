@@ -95,3 +95,22 @@ test('once the Shop tab finds a shop price, WineDNA and the script budget use it
   expect(out.after).toEqual({ price: 22, budget: 'around £20 GBP', saved: { amount: 22, code: 'GBP', source: 'estimate' } });
   expect(out.paid).toBe(30); // what they paid still comes first
 });
+
+// The bug: when Claude couldn't write the script, WineDNA sat on "Generating…" for good, with no
+// reason and no way to try again. Now it says it couldn't and offers Try again.
+test('a script that fails shows why and Try again writes it', async ({ context, page }) => {
+  let working = false;
+  await stubNetwork(context, { claudeText: (body) => (body.purpose === 'sommelier_script' && working ? '"I like structured reds."' : '') });
+  await makeDeterministic(page);
+  await seedLocalStorage(page, { vinterest_wineDNA_unlock_seen: '1', vinterest_script_length: 'long' });
+  await page.goto(`${BASE}/?demo=1#home`);
+  await page.locator('#root').getByText('Your red sommelier script', { exact: true }).click();
+  const err = page.getByTestId('script-error');
+  await expect(err).toContainText("We couldn't write your script just now.", { timeout: 15000 });
+  await expect(err).toContainText('empty script');
+  await expect(page.locator('#root')).not.toContainText('Generating…');
+  working = true;
+  await err.getByText('Try again').click();
+  await expect(page.locator('#root').getByText('I like structured reds.')).toBeVisible();
+  await expect(err).toHaveCount(0);
+});
