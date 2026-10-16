@@ -114,3 +114,14 @@ test('a script that fails shows why and Try again writes it', async ({ context, 
   await expect(page.locator('#root').getByText('I like structured reds.')).toBeVisible();
   await expect(err).toHaveCount(0);
 });
+
+// A request that never comes back (red hung while white worked) ends in the same Try again card.
+test('a script request that never answers times out into Try again', async ({ context, page }) => {
+  await stubNetwork(context, { claudeText: (body) => (body.purpose === 'sommelier_script' ? new Promise(() => {}) : '') });
+  await makeDeterministic(page);
+  await seedLocalStorage(page, { vinterest_wineDNA_unlock_seen: '1', vinterest_script_length: 'long' });
+  await page.goto(`${BASE}/?demo=1#home`);
+  await page.evaluate(() => { SommelierScript.WAIT_MS = 300; });
+  await page.locator('#root').getByText('Your red sommelier script', { exact: true }).click();
+  await expect(page.getByTestId('script-error')).toContainText('took too long', { timeout: 15000 });
+});
