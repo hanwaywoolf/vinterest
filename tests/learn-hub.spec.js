@@ -86,3 +86,23 @@ test('the library also lists the beginner articles they have read, and opens the
   await expect.poll(() => page.evaluate(() => location.hash)).toBe('#article');
   await expect(root).toContainText(second);
 });
+
+// The article's "Next read" went nowhere: it asked the app for the screen it was already on, which
+// did nothing, and the article reads which one to show only when it opens.
+test('"Next read" opens the next beginner article', async ({ context, page }) => {
+  await stubNetwork(context);
+  await makeDeterministic(page);
+  await seedLocalStorage(page, { vinterest_onboarded: '1', vinterest_age_ok: '1', vinterest_region: 'uk' });
+  await page.goto(`${BASE}/#home`);
+  await page.evaluate(() => Handoff.onRampIdx.set('0'));
+  await page.goto(`${BASE}/#article`);
+  const root = page.locator('#root');
+  const [t0, t1] = await page.evaluate(() => [ON_RAMP[0].title, ON_RAMP[1].title]);
+  await expect(root).toContainText(t0);
+  await root.getByText('Mark as Read', { exact: false }).first().click();
+  await expect(root).toContainText('Nice work!');
+  await root.getByText('Next read', { exact: true }).click();
+  await expect(root).toContainText(t1);
+  await expect(root).not.toContainText('Nice work!'); // a fresh article, not the finished one
+  await expect(root).not.toContainText(t0);
+});

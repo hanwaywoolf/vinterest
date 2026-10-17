@@ -53,7 +53,10 @@ function App(){
   const go=ns=>{ const to=ns[ns.length-1]; stackRef.current=ns; screenRef0.current=to; setStack(ns); setScreen(to); };
   function nav(to){
     const s=stackRef.current, i=s.lastIndexOf(to), up=s.length-1-i;
-    if(i>=0&&up===0){ go(s); return; }
+    // Asked for the screen they're already on: on a main tab that's a no-op, but a detail screen
+    // (an article's "Next read", a quiz's next suggestion) has just been handed new data through
+    // Handoff, and reads it once at mount, so it opens afresh instead of sitting there doing nothing.
+    if(i>=0&&up===0){ if(!['home','mywines','learn','profile','notices','camera'].includes(to)) setDataGen(g=>g+1); go([...s]); return; }
     if(i>=0&&up<=pushed.current){ pushed.current-=up; go(s.slice(0,i+1)); history.go(-up); return; }
     if(i>=0||to==='home'){ go(i>=0?s.slice(0,i+1):['home']); history.replaceState(null,'','#'+to); return; }
     pushed.current++; go([...s,to]); window.location.hash=to;
