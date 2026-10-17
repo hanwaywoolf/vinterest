@@ -204,11 +204,16 @@ function ScanCardsScreen({nav,back,showPro}){
      entry's state says it's ours. */
   const sub=React.useRef(!!(typeof history!=='undefined'&&history.state&&history.state.scanView));
   const pendingNav=React.useRef(null);
+  // A deck opened from the story's end sheet goes back to that sheet (kept on the handoff, so a
+  // return from a page the deck opened still knows); any other deck goes back to the result.
+  const fromStory=React.useRef(!!scanData.deckFromStory);
+  const returnFromDeck=React.useCallback(()=>{ setViewRaw(fromStory.current?'story-end':'result'); },[]);
   const setView=React.useCallback(v=>{
     if((v==='deck'||v==='rate')&&!sub.current){ try{ history.pushState({scanView:v},'',location.href); sub.current=true; }catch(e){} }
     else if(v==='result'&&sub.current){ history.back(); return; } // the pop sets the view
     setViewRaw(v);
   },[]);
+  const leaveDeck=React.useCallback(()=>{ if(sub.current) history.back(); else returnFromDeck(); },[returnFromDeck]);
   const navH=React.useCallback(to=>{ if(!sub.current) return nav(to); pendingNav.current=to; history.back(); },[nav]);
   // Opened straight onto the deck or the rating (back from a page the deck opened restores it from
   // the handoff): give it its entry again, so the gesture still returns to the result.
@@ -218,13 +223,13 @@ function ScanCardsScreen({nav,back,showPro}){
       if(!sub.current) return;
       sub.current=false;
       const to=pendingNav.current; pendingNav.current=null;
-      if(to) nav(to); else setViewRaw('result');
+      if(to) nav(to); else returnFromDeck();
     };
     window.addEventListener('popstate',onPop); return ()=>window.removeEventListener('popstate',onPop);
   },[nav]);
   // The view (and the deck's card) is kept on the handoff, so coming back from a page opened from
   // here (a region's page from the deck, the wine's Details) lands where they left, not on the result.
-  React.useEffect(()=>{ if(!confirmed||(view!=='result'&&view!=='deck')) return; try{ const sd=Handoff.scanResult.get({}); if(sd.view!==view){ sd.view=view; Handoff.openWine(sd); } }catch(e){} },[view,confirmed]);
+  React.useEffect(()=>{ if(!confirmed||(view!=='result'&&view!=='deck')) return; try{ const sd=Handoff.scanResult.get({}); if(sd.view!==view||!!sd.deckFromStory!==fromStory.current){ sd.view=view; sd.deckFromStory=fromStory.current; Handoff.openWine(sd); } }catch(e){} },[view,confirmed]);
   const noteDeckIdx=React.useCallback(i=>{ try{ const sd=Handoff.scanResult.get({}); if(sd.deckIdx!==i){ sd.deckIdx=i; Handoff.openWine(sd); } }catch(e){} },[]);
   const deckStyle=useDeckStyle();
   const appTheme=useTheme();
@@ -268,17 +273,17 @@ function ScanCardsScreen({nav,back,showPro}){
 
   // The story and the deck are always on the dark stage; the result and "Is this it?" follow the
   // appearance picked on Profile (the app's DeckTheme, pwa-app.jsx).
-  const reveal=confirmed&&view==='reveal', story=reveal||(confirmed&&view==='deck'), stage=story?_DECK_DARK:appTheme;
+  const reveal=confirmed&&(view==='reveal'||view==='story-end'), story=reveal||(confirmed&&view==='deck'), stage=story?_DECK_DARK:appTheme;
   return <DeckTheme.Provider value={stage}><div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden',background:stage.bg}}>
-    {!reveal&&<ScanHeader wine={wine} nav={navH} back={view==='deck'&&confirmed?()=>setView('result'):back} plain={!(confirmed&&view==='deck')}/>}
+    {!reveal&&<ScanHeader wine={wine} nav={navH} back={view==='deck'&&confirmed?leaveDeck:back} plain={!(confirmed&&view==='deck')}/>}
     {!confirmed
       ? <ConfirmGate wine={wine} onYes={confirm} onEdit={()=>setEditing(true)} nav={navH}
           onAlt={()=>applyEdit({name:wine.alternative,producer:''})}/>
-      : view==='reveal'
-        ? <ScanReveal wine={wine} match={match} gen={gen} existingRating={existingRating} nav={navH} showPro={showPro} curr={curr}
+      : view==='reveal'||view==='story-end'
+        ? <ScanReveal key={view} startAt={view==='story-end'?'end':undefined} wine={wine} match={match} gen={gen} existingRating={existingRating} nav={navH} showPro={showPro} curr={curr}
             onRated={()=>{ setIntent('tasted'); setRatingsVersion(v=>v+1); }}
             onSaveForLater={()=>setIntent('checking')}
-            onDone={v=>{ if(v==='saved') setIntent('checking'); if(v==='detail'){ setViewRaw('result'); nav('detail'); return; } if(v==='home'){ setViewRaw('result'); nav('home'); return; } setView(v); }}/>
+            onDone={v=>{ if(v==='saved') setIntent('checking'); if(v==='detail'){ setViewRaw('result'); nav('detail'); return; } if(v==='home'){ setViewRaw('result'); nav('home'); return; } if(v==='deck') fromStory.current=true; setView(v); }}/>
       : view==='deck'
         ? <CardDeck key={deckStyle} deckStyle={deckStyle} wine={wine} gen={gen} loading={loading} match={match} showPro={showPro}
             curr={curr} scanData={scanData} existingRating={existingRating} nav={navH} startIdx={scanData.deckIdx||0} onIdx={noteDeckIdx}
@@ -630,14 +635,17 @@ function CardFace({card,ctx}){ const T=useTheme();
   </div>;
 
   if(card.kind==='match'){
-    // The story gave the number and a reason each way; here is the whole working.
+    // The result in full: the story gave the number and a reason each way; here is the whole working.
+    const rated=(ctx.existingRating||(WineHistory.find(wine)||{}).rating||0);
     return <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:14,textAlign:'center'}}>
       <MatchRing match={match} size={120}/>
       <H>{match?match.label:'—'}</H>
-      {match&&match.expected!=null&&<div style={{fontSize:15,color:T.mid,fontFamily:P,marginTop:-8}}>Likely about {match.expected} from you · {match.expectedLabel}</div>}
+      {match&&match.expected!=null&&<div style={{fontSize:15,color:T.mid,fontFamily:P,marginTop:-8}}>{rated>0?`We expected about ${match.expected} · you rated ${rated}`:`Likely about ${match.expected} from you · ${match.expectedLabel}`}</div>}
+      {match&&match.expected!=null&&match.bar!=null&&!(rated>0)&&<div style={{fontSize:13,color:T.mid,fontFamily:P,marginTop:-8}}>{match.pct}% sure you'd rate it {match.bar}+, your usual for {WineDNA.NOUNS[WineDNA._t(wine.type)]?.[1]||'wines'}</div>}
+      {match&&match.confidence==='low'&&<div style={{fontSize:13,color:T.mid,fontFamily:P,marginTop:-8}}>Rough guess</div>}
       <div style={{width:'100%',textAlign:'left',padding:'12px 14px',borderRadius:12,background:T.soft,border:`1px solid ${T.line}`}}>
         <div style={{fontSize:13,fontWeight:700,color:T.mid,fontFamily:P,letterSpacing:'0.06em',textTransform:'uppercase',marginBottom:6}}>How we got this</div>
-        <MatchReasons match={match} col={T.ink2} brief={!expanded}/>
+        <MatchReasons match={match} col={T.ink2} brief={!expanded} priceNote={TasteMatch.priceNote(wine,WineDNA.priceOf(wine,curr),WineHistory.getAll(),curr)}/>
         {expanded&&match&&match.breakdown&&<div style={{marginTop:4}}><MatchBreakdown match={match}/></div>}
       </div>
       {match&&(match.reasons.length>2||match.breakdown)&&<More/>}
@@ -1148,7 +1156,7 @@ function CardDeck({deckStyle,wine,gen,loading,match,curr,scanData,existingRating
   React.useEffect(()=>{ if(deep||!wine||!wine.name) return; let live=true; setDeepLoading(true);
     WineDeep.load(wine,match,d=>{ if(!live) return; setDeep(d); setDeepLoading(false); }); return()=>{ live=false; }; },[wine&&wine.name,wine&&wine.vintage]);
   const facts=React.useMemo(()=>WineDeep.facts(wine),[wine&&wine.name,wine&&wine.vintage]);
-  const ctx={wine,gen,loading,match,curr,scanData,onBlindCall,finishStage,firstScan,deep,deepLoading,facts,nav,showPro,
+  const ctx={wine,gen,loading,match,curr,scanData,existingRating,onBlindCall,finishStage,firstScan,deep,deepLoading,facts,nav,showPro,
     finish:()=><>
       {firstScan&&finishStage==='rate'&&<div style={{marginBottom:16}}><MatchComingSoon wine={wine} compact/></div>}
       <RatingPanel wine={wine} existingRating={existingRating} nav={nav} showPro={showPro} curr={curr} onRated={onRated} onSaveForLater={existingRating?null:onSaveForLater} onStage={setFinishStage} onFinish={onFinish}/>

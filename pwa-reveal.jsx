@@ -97,13 +97,14 @@ function _revealScenes(d,existingRating){
   return keys.map(key=>({key,ms:ScanFlow.revealLength(_revealWords(key,d,existingRating),key)})).concat([{key:'end',ms:0}]);
 }
 
-function ScanReveal({wine,match,gen,existingRating,firstScan,nav,showPro,curr,onDone,onRated,onSaveForLater,onFinish}){
+/* startAt 'end': open straight on the end sheet (back from a deck opened there), with no tips. */
+function ScanReveal({wine,match,gen,existingRating,firstScan,nav,showPro,curr,onDone,onRated,onSaveForLater,onFinish,startAt}){
   const d=React.useMemo(()=>ScanFlow.reveal(wine,match,gen),[wine,match,gen]);
   const scenes=React.useMemo(()=>_revealScenes(d,existingRating),[d,existingRating]);
-  const [key,setKey]=React.useState('label');
+  const [key,setKey]=React.useState(startAt==='end'?'end':'label');
   const [paused,setPaused]=React.useState(false);
   // The first couple of reveals open on how to drive it; the stage waits underneath.
-  const [tips,setTips]=React.useState(()=>Flags.revealTipsDue());
+  const [tips,setTips]=React.useState(()=>startAt!=='end'&&Flags.revealTipsDue());
   React.useEffect(()=>{ if(tips) Flags.markRevealTips(); },[]);
   const idx=Math.max(0,scenes.findIndex(s=>s.key===key)), scene=scenes[idx];
   const still=_reducedMotion();
@@ -174,7 +175,7 @@ function ScanReveal({wine,match,gen,existingRating,firstScan,nav,showPro,curr,on
       <span style={{fontSize:13,fontWeight:700,color:'rgba(255,255,255,0.8)',fontFamily:C.P,letterSpacing:'0.1em',textTransform:'uppercase',padding:'7px 14px',borderRadius:20,background:'rgba(255,255,255,0.14)'}}>Paused · tap to go on</span>
     </div>}
     {tips&&<_RvTips onDone={()=>setTips(false)}/>}
-    {key==='end'&&<_RvEnd wine={wine} d={d} firstScan={firstScan} existingRating={existingRating} nav={nav} showPro={showPro} curr={curr}
+    {key==='end'&&<_RvEnd wine={wine} d={d} firstScan={firstScan} existingRating={existingRating} reopened={startAt==='end'} nav={nav} showPro={showPro} curr={curr}
       onDone={onDone} onRated={onRated} onSaveForLater={onSaveForLater} onFinish={onFinish}/>}
   </div>;
 }
@@ -388,18 +389,18 @@ function _RvSay({d,col}){
 
 /* 7. What next: the ways out, on a sheet that rises over the stage. The first bottle scores
    itself here (RatingPanel with onFinish) and carries on with onboarding. */
-function _RvEnd({wine,d,firstScan,existingRating,nav,showPro,curr,onDone,onRated,onSaveForLater,onFinish}){
+function _RvEnd({wine,d,firstScan,existingRating,nav,showPro,curr,onDone,onRated,onSaveForLater,onFinish,reopened}){
   const col=d.col||C.cr, lift=_DECK_DARK.lift(col);
   // The rating comes first, without a tap: the dial, or a line to skip it when they're only checking
   // the match. Then the ways out: the result (with the deck behind it), or Finish to Home.
   // A bottle already rated opens on the ways out with its rating and a line to change it.
-  const [stage,setStage]=React.useState(existingRating?'ways':'rate');
+  const [stage,setStage]=React.useState(existingRating||reopened?'ways':'rate'); // reopened (back from the deck): straight to the ways out
   const [skipped,setSkipped]=React.useState(false);
   const [rated,setRated]=React.useState(existingRating||0);
-  // Two ways out: the result (the deck, "Learn more about this wine", and the wine's own screen are
-  // one tap from there), or Finish, which goes Home.
+  // Two ways out: the deck, whose first card is the result in full (the house, the year and the rest
+  // follow it), or Finish, which goes Home.
   const rows=[
-    {key:'result',icon:'compass',label:'See the result and learn more',sub:'Your match and why, the house, the year, how it\'s made',on:()=>onDone('result')},
+    {key:'deck',icon:'compass',label:'See the result and learn more',sub:'Your match and why, then the house, the year, how it\'s made',on:()=>onDone('deck')},
     {key:'finish',icon:'home',label:'Finish',sub:'Back to Home',on:()=>onDone('home')},
   ];
   const ways=<div data-testid="reveal-ways" style={{display:'flex',flexDirection:'column',gap:8,marginTop:4}}>
