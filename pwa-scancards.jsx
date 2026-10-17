@@ -291,7 +291,7 @@ function ScanCardsScreen({nav,back,showPro}){
         ? <ScanReveal key={view} backRef={stepRef} startAt={view==='story-end'?'end':undefined} wine={wine} match={match} gen={gen} existingRating={existingRating} nav={navH} showPro={showPro} curr={curr}
             onRated={()=>{ setIntent('tasted'); setRatingsVersion(v=>v+1); }}
             onSaveForLater={()=>setIntent('checking')}
-            onDone={v=>{ if(v==='saved') setIntent('checking'); if(v==='detail'){ setViewRaw('result'); nav('detail'); return; } if(v==='home'){ setViewRaw('result'); nav('home'); return; } if(v==='deck') fromStory.current=true; setView(v); }}/>
+            onDone={v=>{ if(v==='saved') setIntent('checking'); if(v==='detail'){ setViewRaw('result'); navH('detail'); return; } if(v==='home'){ setViewRaw('result'); navH('home'); return; } if(v==='deck') fromStory.current=true; setView(v); }}/>
       : view==='deck'
         ? <CardDeck key={deckStyle} backRef={stepRef} onEdit={()=>setEditing(true)} deckStyle={deckStyle} wine={wine} gen={gen} loading={loading} match={match} showPro={showPro}
             curr={curr} scanData={scanData} existingRating={existingRating} nav={navH} startIdx={deckStart()} onIdx={noteDeckIdx}

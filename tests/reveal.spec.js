@@ -268,3 +268,51 @@ test('the drinking window and how sure the grape is: estimates from style, Claud
   expect(out.lines).toEqual(['Tempranillo, Garnacha', 'Tempranillo, Garnacha', 'Usually Tempranillo and Garnacha', 'Tempranillo 80%, Garnacha 20%', 'Usually Tempranillo and Garnacha']);
   expect(out.words).toEqual(['Red-skinned: Thick, dark skins', 'Medium berries in a medium bunch']);
 });
+
+// Finish goes Home from every place it appears (the end sheet, and the deck's last card once rated
+// or saved). It once rewound one history entry too far, onto the camera, because the story's
+// history entry was still on top when the app navigated.
+async function toDeck(context, page) {
+  // The way someone really gets here: Home, then the Scan button (so the app rewinds by history
+  // entries, rather than replacing the entry as it does for a page opened on #camera).
+  await page.setViewportSize({ width: 390, height: 844 });
+  await makeDeterministic(page);
+  await seedLocalStorage(page, { vinterest_wineDNA_unlock_seen: '1' });
+  await stubNetwork(context, { reveal: 'real', claudeText: (b) => b.purpose === 'label_scan' ? JSON.stringify(RIOJA) : b.purpose === 'scancard' ? JSON.stringify(GEN) : '' });
+  await page.goto(`${BASE}/?demo=1#home`);
+  await page.getByText('Scan', { exact: true }).last().click();
+  await page.getByTestId('scan-file').setInputFiles({ name: 'label.png', mimeType: 'image/png', buffer: PNG });
+  const root = page.locator('#root');
+  await playIt(page).catch(() => {});
+  await root.getByText('Skip', { exact: true }).click();
+  return root;
+}
+test('Finish on the end sheet goes Home', async ({ context, page }) => {
+  const root = await toDeck(context, page);
+  await root.getByText('Just checking the match? Skip the rating', { exact: true }).click();
+  await root.getByText('Finish', { exact: true }).click();
+  await expect(page).toHaveURL(/#home/);
+  await expect(root).toContainText('Up next');
+});
+async function ratedOnDeck(context, page) {
+  const root = await toDeck(context, page);
+  await root.getByText('Just checking the match? Skip the rating', { exact: true }).click();
+  await root.getByText('See the result and learn more', { exact: true }).click();
+  for (let i = 0; i < 8; i++) await page.locator('#root div[style*="scaleX(-1)"]').click();
+  await expect(root).toContainText('9 / 9');
+  await root.getByText('90', { exact: true }).click();
+  await root.getByText('Save rating').click();
+  await root.getByText('Finished: what\'s next?').click();
+  return root;
+}
+test('Finish on the deck\'s last card goes Home', async ({ context, page }) => {
+  const root = await ratedOnDeck(context, page);
+  await root.getByText('Finish', { exact: true }).click();
+  await expect(page).toHaveURL(/#home/);
+  await expect(root).toContainText('Up next');
+});
+test('See full wine details on the deck\'s last card opens the wine', async ({ context, page }) => {
+  const root = await ratedOnDeck(context, page);
+  await root.getByText('See full wine details').click();
+  await expect(page).toHaveURL(/#detail/);
+});
