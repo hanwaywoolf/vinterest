@@ -195,7 +195,33 @@ function ScanCardsScreen({nav,back,showPro}){
   // A fresh scan opens on the reveal (ScanReveal, pwa-reveal.jsx), then the result; coming back
   // to the screen (from Details, say: `tracked`) or a screen that asked for a view skips it.
   const fresh=!scanData.view&&!scanData.tracked&&(source==='camera'||source==='list')&&!_revealOff();
-  const [view,setView]=React.useState(()=>scanData.view||(fresh?'reveal':'result'));
+  const [view,setViewRaw]=React.useState(()=>scanData.view||(fresh?'reveal':'result'));
+  /* The deck and the rating open as a history entry on the same hash, so the phone's back gesture
+     (popstate) returns to the result rather than leaving the screen for the camera. The app's own
+     popstate handler sees the hash unchanged and leaves its stack alone. `sub` is true while that
+     entry is on the history; a navigation away while it's there pops it first (`navH`), so the
+     app's count of entries stays right. On a remount (back from a page the deck opened) the
+     entry's state says it's ours. */
+  const sub=React.useRef(!!(typeof history!=='undefined'&&history.state&&history.state.scanView));
+  const pendingNav=React.useRef(null);
+  const setView=React.useCallback(v=>{
+    if((v==='deck'||v==='rate')&&!sub.current){ try{ history.pushState({scanView:v},'',location.href); sub.current=true; }catch(e){} }
+    else if(v==='result'&&sub.current){ history.back(); return; } // the pop sets the view
+    setViewRaw(v);
+  },[]);
+  const navH=React.useCallback(to=>{ if(!sub.current) return nav(to); pendingNav.current=to; history.back(); },[nav]);
+  // Opened straight onto the deck or the rating (back from a page the deck opened restores it from
+  // the handoff): give it its entry again, so the gesture still returns to the result.
+  React.useEffect(()=>{ if((view==='deck'||view==='rate')&&!sub.current){ try{ history.pushState({scanView:view},'',location.href); sub.current=true; }catch(e){} } },[]);
+  React.useEffect(()=>{
+    const onPop=()=>{
+      if(!sub.current) return;
+      sub.current=false;
+      const to=pendingNav.current; pendingNav.current=null;
+      if(to) nav(to); else setViewRaw('result');
+    };
+    window.addEventListener('popstate',onPop); return ()=>window.removeEventListener('popstate',onPop);
+  },[nav]);
   // The view (and the deck's card) is kept on the handoff, so coming back from a page opened from
   // here (a region's page from the deck, the wine's Details) lands where they left, not on the result.
   React.useEffect(()=>{ if(!confirmed||(view!=='result'&&view!=='deck')) return; try{ const sd=Handoff.scanResult.get({}); if(sd.view!==view){ sd.view=view; Handoff.openWine(sd); } }catch(e){} },[view,confirmed]);
@@ -244,22 +270,22 @@ function ScanCardsScreen({nav,back,showPro}){
   // appearance picked on Profile (the app's DeckTheme, pwa-app.jsx).
   const reveal=confirmed&&view==='reveal', story=reveal||(confirmed&&view==='deck'), stage=story?_DECK_DARK:appTheme;
   return <DeckTheme.Provider value={stage}><div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden',background:stage.bg}}>
-    {!reveal&&<ScanHeader wine={wine} nav={nav} back={view==='deck'&&confirmed?()=>setView('result'):back} plain={!(confirmed&&view==='deck')}/>}
+    {!reveal&&<ScanHeader wine={wine} nav={navH} back={view==='deck'&&confirmed?()=>setView('result'):back} plain={!(confirmed&&view==='deck')}/>}
     {!confirmed
-      ? <ConfirmGate wine={wine} onYes={confirm} onEdit={()=>setEditing(true)} nav={nav}
+      ? <ConfirmGate wine={wine} onYes={confirm} onEdit={()=>setEditing(true)} nav={navH}
           onAlt={()=>applyEdit({name:wine.alternative,producer:''})}/>
       : view==='reveal'
-        ? <ScanReveal wine={wine} match={match} gen={gen} existingRating={existingRating} nav={nav} showPro={showPro} curr={curr}
+        ? <ScanReveal wine={wine} match={match} gen={gen} existingRating={existingRating} nav={navH} showPro={showPro} curr={curr}
             onRated={()=>{ setIntent('tasted'); setRatingsVersion(v=>v+1); }}
             onSaveForLater={()=>setIntent('checking')}
-            onDone={v=>{ if(v==='saved') setIntent('checking'); if(v==='detail'){ setView('result'); nav('detail'); return; } if(v==='home'){ setView('result'); nav('home'); return; } setView(v); }}/>
+            onDone={v=>{ if(v==='saved') setIntent('checking'); if(v==='detail'){ setViewRaw('result'); nav('detail'); return; } if(v==='home'){ setViewRaw('result'); nav('home'); return; } setView(v); }}/>
       : view==='deck'
         ? <CardDeck key={deckStyle} deckStyle={deckStyle} wine={wine} gen={gen} loading={loading} match={match} showPro={showPro}
-            curr={curr} scanData={scanData} existingRating={existingRating} nav={nav} startIdx={scanData.deckIdx||0} onIdx={noteDeckIdx}
+            curr={curr} scanData={scanData} existingRating={existingRating} nav={navH} startIdx={scanData.deckIdx||0} onIdx={noteDeckIdx}
             onRated={()=>{ setIntent('tasted'); setRatingsVersion(v=>v+1); }}
             onSaveForLater={()=>{ setIntent('checking'); setView('saved'); }}
             onBlindCall={()=>setIntent('tasting')}/>
-        : <ScanResult wine={wine} match={match} curr={curr} scanData={scanData} existingRating={existingRating} nav={nav} showPro={showPro}
+        : <ScanResult wine={wine} match={match} curr={curr} scanData={scanData} existingRating={existingRating} nav={navH} showPro={showPro}
             view={view} setView={setView} onEdit={()=>setEditing(true)}
             onRated={()=>{ setIntent('tasted'); setRatingsVersion(v=>v+1); }}
             onSaveForLater={()=>{ setIntent('checking'); setView('saved'); }}

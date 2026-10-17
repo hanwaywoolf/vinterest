@@ -423,6 +423,17 @@ test('back from a region page opened on the deck returns to the deck, on the sam
   await page.goBack();
   await expect(root).toContainText('5 / 9');
   await expect(root).toContainText('The region');
+  // The phone's back gesture from the deck returns to the result, not the camera (the deck is a
+  // history entry of its own); from the result it leaves the screen as before.
+  await page.goBack();
+  await expect(root).toContainText('Learn more about this wine');
+  await expect(page).toHaveURL(/#identified/);
+  await root.getByText('Learn more about this wine', { exact: true }).click();
+  await expect(root).toContainText('5 / 9'); // reopens on the card they left
+  await page.goBack();
+  await expect(root).toContainText('Learn more about this wine');
+  await page.goBack();
+  await expect(page).not.toHaveURL(/#identified/);
 });
 
 // Real touch input (through the browser's own gesture handling, unlike a mouse): a gentle swipe
