@@ -111,6 +111,7 @@ test('the reveal tells the scan in order: label, match, taste, grape, place, a l
   // The deck opens straight away, its first card the result in full.
   await expect(root).toContainText('1 / 9');
   await expect(root).toContainText('How we got this');
+  await expect(page.getByTestId('scan-price')).toContainText(/In shops.*about .*est\./); // the price travels with the result
   // Back is always one step: the card before, then out of the deck to the story's end sheet,
   // then the story's scene before it; never the camera.
   await page.locator('#root div[style*="scaleX(-1)"]').click();

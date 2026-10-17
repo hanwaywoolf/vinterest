@@ -444,6 +444,39 @@ function EditWineSheet({wine,onSave,onClose}){
 }
 
 /* ── the result: everything needed to decide, on one screen ── */
+/* The price, as the result shows it: the shop estimate (or the price found in shops now), the
+   list's price against it when the wine came from a wine list, and how it sits against their usual
+   spend. Shared by the result screen and the deck's first card, so the story's flow keeps it. */
+function ScanPrice({wine,match,curr,scanData,sub,boxStyle}){ const T=useTheme(); // boxStyle: a frame drawn only when there's a price to show
+  const [shop,setShop]=React.useState(()=>curr.isTravel?null:ScanFlow.shopPrice(wine,curr));
+  const [shopFound,setShopFound]=React.useState(false); // from current shop listings, not an estimate
+  React.useEffect(()=>{ let live=true; ScanFlow.shopEstimate(wine,curr).then(d=>{ if(live&&d){ setShop(d.mid); setShopFound(d.source==='search'); } }); return()=>{ live=false; }; },[wine&&wine.name,curr.code]);
+  // A list read abroad is priced in its own currency: compare like with like.
+  const lc=scanData&&scanData.listCurrency;
+  const list=scanData&&scanData.listPrice?(lc&&lc!==curr.code?scanData.listPrice/(USD_FX[lc]||1)*(USD_FX[curr.code]||1):scanData.listPrice):null;
+  const mk=ScanFlow.markup(list,shop);
+  const sweet=match&&match.profile&&match.profile.value&&match.profile.value.sweetSpot;
+  if(!shop&&!list) return null;
+  return <div data-testid="scan-price" style={boxStyle}>
+    <div style={{...sub,marginBottom:6}}>Price</div>
+    {shop&&<div style={{display:'flex',alignItems:'baseline',gap:8}}>
+      <span style={{fontSize:15,color:T.ink,fontFamily:C.P,flex:1}}>{curr.isTravel?`In shops in ${curr.label}`:'In shops'}</span>
+      <span style={{fontSize:15,fontWeight:800,color:T.ink,fontFamily:C.P}}>about {ScanFlow.money(shop,curr)}</span>
+      <span style={{fontSize:13,color:T.mid,fontFamily:C.P}}>{shopFound?'in shops now':'est.'}</span>
+    </div>}
+    {list&&<div style={{display:'flex',alignItems:'baseline',gap:8,marginTop:4}}>
+      <span style={{fontSize:15,color:T.ink,fontFamily:C.P,flex:1}}>On this list</span>
+      <span style={{fontSize:15,fontWeight:800,color:T.ink,fontFamily:C.P}}>{ScanFlow.money(list,curr)}</span>
+      {mk&&<span style={{fontSize:13,color:T.mid,fontFamily:C.P}}>{mk.ratio.toFixed(1)}× shop</span>}
+    </div>}
+    {mk&&<div style={{fontSize:13,color:T.ink2,fontFamily:C.P,marginTop:4}}>{mk.text}</div>}
+    {sweet&&<div style={{fontSize:13,color:T.mid,fontFamily:C.P,marginTop:6}}>Your Outstanding {match.profile.label.toLowerCase()} usually cost {sweet}.</div>}
+    {/* Until WineDNA has a sweet spot from their own scores, compare with the spend they gave. */}
+    {!sweet&&shop&&(()=>{ const fit=UserPrefs.spendFit(shop,curr), b=UserPrefs.budget(curr); if(!fit) return null;
+      return <div style={{fontSize:13,color:T.mid,fontFamily:C.P,marginTop:6}}>{fit==='within'?`Within your usual spend (${b.label}).`:fit==='above'?`Above your usual spend (${b.label}).`:`Below your usual spend (${b.label}).`}</div>; })()}
+  </div>;
+}
+
 function ScanResult({wine,match,curr,scanData,existingRating,nav,showPro,view,setView,onEdit,onRated,onSaveForLater,onDeck}){
   const T=useTheme();
   const col=T.tone[match?match.tone:'neutral'], typeCol=T.lift(_typeCol(wine));
@@ -453,8 +486,6 @@ function ScanResult({wine,match,curr,scanData,existingRating,nav,showPro,view,se
   // A list read abroad is priced in its own currency: compare like with like.
   const lc=scanData.listCurrency;
   const list=scanData.listPrice?(lc&&lc!==curr.code?scanData.listPrice/(USD_FX[lc]||1)*(USD_FX[curr.code]||1):scanData.listPrice):null;
-  const mk=ScanFlow.markup(list,shop);
-  const sweet=match&&match.profile&&match.profile.value&&match.profile.value.sweetSpot;
   const sub={fontSize:13,fontWeight:700,color:T.mid,fontFamily:C.P,textTransform:'uppercase',letterSpacing:'0.06em'};
   // Each section arrives a beat after the one above, the way the story's scenes do.
   const rise=i=>({animation:`scRise .5s cubic-bezier(.2,.7,.2,1) ${i*0.08}s both`});
@@ -535,24 +566,7 @@ function ScanResult({wine,match,curr,scanData,existingRating,nav,showPro,view,se
         <div style={{fontSize:15,color:T.ink,fontFamily:C.P,lineHeight:1.5}}>{match.style}</div>
         <div style={{fontSize:13,color:T.mid,fontFamily:C.P,marginTop:2}}>Estimated from the label: what this wine is typically like.</div>
       </div>}
-      {(shop||list)&&<div style={{paddingTop:match&&match.style?10:0,borderTop:match&&match.style?`1px solid ${T.line}`:'none'}}>
-        <div style={{...sub,marginBottom:6}}>Price</div>
-        {shop&&<div style={{display:'flex',alignItems:'baseline',gap:8}}>
-          <span style={{fontSize:15,color:T.ink,fontFamily:C.P,flex:1}}>{curr.isTravel?`In shops in ${curr.label}`:'In shops'}</span>
-          <span style={{fontSize:15,fontWeight:800,color:T.ink,fontFamily:C.P}}>about {ScanFlow.money(shop,curr)}</span>
-          <span style={{fontSize:13,color:T.mid,fontFamily:C.P}}>{shopFound?'in shops now':'est.'}</span>
-        </div>}
-        {list&&<div style={{display:'flex',alignItems:'baseline',gap:8,marginTop:4}}>
-          <span style={{fontSize:15,color:T.ink,fontFamily:C.P,flex:1}}>On this list</span>
-          <span style={{fontSize:15,fontWeight:800,color:T.ink,fontFamily:C.P}}>{ScanFlow.money(list,curr)}</span>
-          {mk&&<span style={{fontSize:13,color:T.mid,fontFamily:C.P}}>{mk.ratio.toFixed(1)}× shop</span>}
-        </div>}
-        {mk&&<div style={{fontSize:13,color:T.ink2,fontFamily:C.P,marginTop:4}}>{mk.text}</div>}
-        {sweet&&<div style={{fontSize:13,color:T.mid,fontFamily:C.P,marginTop:6}}>Your Outstanding {match.profile.label.toLowerCase()} usually cost {sweet}.</div>}
-        {/* Until WineDNA has a sweet spot from their own scores, compare with the spend they gave. */}
-        {!sweet&&shop&&(()=>{ const fit=UserPrefs.spendFit(shop,curr), b=UserPrefs.budget(curr); if(!fit) return null;
-          return <div style={{fontSize:13,color:T.mid,fontFamily:C.P,marginTop:6}}>{fit==='within'?`Within your usual spend (${b.label}).`:fit==='above'?`Above your usual spend (${b.label}).`:`Below your usual spend (${b.label}).`}</div>; })()}
-      </div>}
+      {(shop||list)&&<div style={{paddingTop:match&&match.style?10:0,borderTop:match&&match.style?`1px solid ${T.line}`:'none'}}><ScanPrice wine={wine} match={match} curr={curr} scanData={scanData} sub={sub}/></div>}
     </Card>}
 
     </div>
@@ -657,6 +671,8 @@ function CardFace({card,ctx}){ const T=useTheme();
         {expanded&&match&&match.breakdown&&<div style={{marginTop:4}}><MatchBreakdown match={match}/></div>}
       </div>
       {match&&(match.reasons.length>2||match.breakdown)&&<More/>}
+      <ScanPrice wine={wine} match={match} curr={curr} scanData={scanData} sub={{fontSize:13,fontWeight:700,color:T.mid,fontFamily:P,letterSpacing:'0.06em',textTransform:'uppercase'}}
+        boxStyle={{width:'100%',textAlign:'left',padding:'12px 14px',borderRadius:12,background:T.soft,border:`1px solid ${T.line}`}}/>
     </div>;
   }
 
