@@ -196,40 +196,48 @@ function ScanCardsScreen({nav,back,showPro}){
   // to the screen (from Details, say: `tracked`) or a screen that asked for a view skips it.
   const fresh=!scanData.view&&!scanData.tracked&&(source==='camera'||source==='list')&&!_revealOff();
   const [view,setViewRaw]=React.useState(()=>scanData.view||(fresh?'reveal':'result'));
-  /* The deck and the rating open as a history entry on the same hash, so the phone's back gesture
-     (popstate) returns to the result rather than leaving the screen for the camera. The app's own
-     popstate handler sees the hash unchanged and leaves its stack alone. `sub` is true while that
-     entry is on the history; a navigation away while it's there pops it first (`navH`), so the
-     app's count of entries stays right. On a remount (back from a page the deck opened) the
-     entry's state says it's ours. */
-  const sub=React.useRef(!!(typeof history!=='undefined'&&history.state&&history.state.scanView));
-  const pendingNav=React.useRef(null);
-  // A deck opened from the story's end sheet goes back to that sheet (kept on the handoff, so a
-  // return from a page the deck opened still knows); any other deck goes back to the result.
-  const fromStory=React.useRef(!!scanData.deckFromStory);
-  const returnFromDeck=React.useCallback(()=>{ setViewRaw(fromStory.current?'story-end':'result'); },[]);
+  /* Back steps one card or one scene at a time, in both stories, and only leaves the screen from
+     the story's first scene. The story and the deck are views inside this screen, so the phone's
+     back gesture would otherwise pop the whole screen and land on the camera: while a story view
+     is up, one history entry of our own sits on top (`trap`, same hash, so the app's popstate
+     handler leaves its stack alone). A pop then asks the view to step back a card or scene
+     (`stepRef`, set by ScanReveal and CardDeck) and traps again; at the first card the deck
+     returns to the story's end sheet (or the result, for a deck opened there), and at the
+     story's first scene the pop goes through as the app's own Back. A navigation away pops the
+     entry first (`navH`), so the app's count of entries stays right. */
+  const STORY_VIEWS=React.useMemo(()=>new Set(['reveal','story-end','deck','rate']),[]);
+  // On a remount (back from a page the deck opened) the entry landed on may already be ours: adopt it rather than push another.
+  const sub=React.useRef(!!(typeof history!=='undefined'&&history.state&&history.state.scanView)), pendingNav=React.useRef(null), pendingView=React.useRef(null), stepRef=React.useRef(null), viewRef=React.useRef(view);
+  const fromStory=React.useRef(!!scanData.deckFromStory); // the deck was opened from the story's end sheet (kept on the handoff)
+  const trap=React.useCallback(()=>{ try{ history.pushState({scanView:viewRef.current},'',location.href); sub.current=true; }catch(e){} },[]);
+  React.useEffect(()=>{ viewRef.current=view; if(confirmed&&STORY_VIEWS.has(view)&&!sub.current) trap(); },[view,confirmed]);
+  const returnFromSub=React.useCallback(()=>{ setViewRaw(viewRef.current==='deck'&&fromStory.current?'story-end':'result'); },[]);
   const setView=React.useCallback(v=>{
-    if((v==='deck'||v==='rate')&&!sub.current){ try{ history.pushState({scanView:v},'',location.href); sub.current=true; }catch(e){} }
-    else if(v==='result'&&sub.current){ history.back(); return; } // the pop sets the view
+    if(v==='result'&&sub.current){ pendingView.current='result'; history.back(); return; } // the pop sets the view
     setViewRaw(v);
   },[]);
-  const leaveDeck=React.useCallback(()=>{ if(sub.current) history.back(); else returnFromDeck(); },[returnFromDeck]);
+  // The header's arrow on the deck: the card before, else out of the deck.
+  const deckBack=React.useCallback(()=>{ if(stepRef.current&&stepRef.current()) return; if(sub.current){ pendingView.current=fromStory.current?'story-end':'result'; history.back(); } else returnFromSub(); },[returnFromSub]);
   const navH=React.useCallback(to=>{ if(!sub.current) return nav(to); pendingNav.current=to; history.back(); },[nav]);
-  // Opened straight onto the deck or the rating (back from a page the deck opened restores it from
-  // the handoff): give it its entry again, so the gesture still returns to the result.
-  React.useEffect(()=>{ if((view==='deck'||view==='rate')&&!sub.current){ try{ history.pushState({scanView:view},'',location.href); sub.current=true; }catch(e){} } },[]);
   React.useEffect(()=>{
     const onPop=()=>{
       if(!sub.current) return;
       sub.current=false;
       const to=pendingNav.current; pendingNav.current=null;
-      if(to) nav(to); else returnFromDeck();
+      if(to){ nav(to); return; }
+      const pv=pendingView.current; pendingView.current=null;
+      if(pv){ setViewRaw(pv); return; } // a story view traps again through the effect
+      if(stepRef.current&&stepRef.current()){ trap(); return; } // a card or scene back
+      if(viewRef.current==='deck'||viewRef.current==='rate'){ returnFromSub(); return; }
+      back(); // the story's first scene: the app's own Back
     };
     window.addEventListener('popstate',onPop); return ()=>window.removeEventListener('popstate',onPop);
-  },[nav]);
+  },[nav,back,returnFromSub,trap]);
   // The view (and the deck's card) is kept on the handoff, so coming back from a page opened from
   // here (a region's page from the deck, the wine's Details) lands where they left, not on the result.
   React.useEffect(()=>{ if(!confirmed||(view!=='result'&&view!=='deck')) return; try{ const sd=Handoff.scanResult.get({}); if(sd.view!==view||!!sd.deckFromStory!==fromStory.current){ sd.view=view; sd.deckFromStory=fromStory.current; Handoff.openWine(sd); } }catch(e){} },[view,confirmed]);
+  // Where the deck opens: the card they left (read live, since scanData is as the screen mounted).
+  const deckStart=()=>{ try{ return Handoff.scanResult.get({}).deckIdx||0; }catch(e){ return 0; } };
   const noteDeckIdx=React.useCallback(i=>{ try{ const sd=Handoff.scanResult.get({}); if(sd.deckIdx!==i){ sd.deckIdx=i; Handoff.openWine(sd); } }catch(e){} },[]);
   const deckStyle=useDeckStyle();
   const appTheme=useTheme();
@@ -275,18 +283,18 @@ function ScanCardsScreen({nav,back,showPro}){
   // appearance picked on Profile (the app's DeckTheme, pwa-app.jsx).
   const reveal=confirmed&&(view==='reveal'||view==='story-end'), story=reveal||(confirmed&&view==='deck'), stage=story?_DECK_DARK:appTheme;
   return <DeckTheme.Provider value={stage}><div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden',background:stage.bg}}>
-    {!reveal&&<ScanHeader wine={wine} nav={navH} back={view==='deck'&&confirmed?leaveDeck:back} plain={!(confirmed&&view==='deck')}/>}
+    {!reveal&&<ScanHeader wine={wine} nav={navH} back={view==='deck'&&confirmed?deckBack:back} plain={!(confirmed&&view==='deck')}/>}
     {!confirmed
       ? <ConfirmGate wine={wine} onYes={confirm} onEdit={()=>setEditing(true)} nav={navH}
           onAlt={()=>applyEdit({name:wine.alternative,producer:''})}/>
       : view==='reveal'||view==='story-end'
-        ? <ScanReveal key={view} startAt={view==='story-end'?'end':undefined} wine={wine} match={match} gen={gen} existingRating={existingRating} nav={navH} showPro={showPro} curr={curr}
+        ? <ScanReveal key={view} backRef={stepRef} startAt={view==='story-end'?'end':undefined} wine={wine} match={match} gen={gen} existingRating={existingRating} nav={navH} showPro={showPro} curr={curr}
             onRated={()=>{ setIntent('tasted'); setRatingsVersion(v=>v+1); }}
             onSaveForLater={()=>setIntent('checking')}
             onDone={v=>{ if(v==='saved') setIntent('checking'); if(v==='detail'){ setViewRaw('result'); nav('detail'); return; } if(v==='home'){ setViewRaw('result'); nav('home'); return; } if(v==='deck') fromStory.current=true; setView(v); }}/>
       : view==='deck'
-        ? <CardDeck key={deckStyle} deckStyle={deckStyle} wine={wine} gen={gen} loading={loading} match={match} showPro={showPro}
-            curr={curr} scanData={scanData} existingRating={existingRating} nav={navH} startIdx={scanData.deckIdx||0} onIdx={noteDeckIdx}
+        ? <CardDeck key={deckStyle} backRef={stepRef} deckStyle={deckStyle} wine={wine} gen={gen} loading={loading} match={match} showPro={showPro}
+            curr={curr} scanData={scanData} existingRating={existingRating} nav={navH} startIdx={deckStart()} onIdx={noteDeckIdx}
             onRated={()=>{ setIntent('tasted'); setRatingsVersion(v=>v+1); }}
             onSaveForLater={()=>{ setIntent('checking'); setView('saved'); }}
             onBlindCall={()=>setIntent('tasting')}/>
@@ -354,7 +362,7 @@ function FirstScanStory({wine,onDone}){
 
 function ScanHeader({wine,nav,back,plain}){ const T=useTheme(); // plain: just Back and Details, when the screen names the wine itself
   return <div style={{padding:'12px 16px 10px',flexShrink:0,display:'flex',alignItems:'center',gap:12,background:T.dark?T.bg:T.card,borderBottom:`1px solid ${T.line}`}}>
-    <div onClick={back} style={{width:34,height:34,borderRadius:17,background:T.soft,border:`1px solid ${T.line}`,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',flexShrink:0}}>
+    <div role="button" aria-label="Back" onClick={back} style={{width:34,height:34,borderRadius:17,background:T.soft,border:`1px solid ${T.line}`,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',flexShrink:0}}>
       <Icon n="back" sz={16} col={T.ink}/>
     </div>
     <div style={{flex:1,minWidth:0}}>
@@ -1147,7 +1155,7 @@ function TasteCard({wine,gen,accent,onBlindCall}){ const T=useTheme();
 }
 
 /* ── the deck (three interaction styles) ── */
-function CardDeck({deckStyle,wine,gen,loading,match,curr,scanData,existingRating,nav,showPro,onRated,onSaveForLater,onBlindCall,firstScan,onFinish,startIdx=0,onIdx}){ const T=useTheme();
+function CardDeck({deckStyle,wine,gen,loading,match,curr,scanData,existingRating,nav,showPro,onRated,onSaveForLater,onBlindCall,firstScan,onFinish,startIdx=0,onIdx,backRef}){ const T=useTheme();
   const cards=React.useMemo(()=>buildCards({match,wine}),[match&&match.tone,match&&match.verdict,wine&&wine.type]);
   const [finishStage,setFinishStage]=React.useState('rate');
   // "Learn more about this wine" is written the first time the deck opens, then kept on the phone.
@@ -1166,6 +1174,8 @@ function CardDeck({deckStyle,wine,gen,loading,match,curr,scanData,existingRating
 
   const total=cards.length;
   const go=d=>setIdx(i=>Math.max(0,Math.min(total-1,i+d)));
+  // Back (the header's arrow, the phone's gesture) is the card before; false at the first card.
+  React.useEffect(()=>{ if(!backRef) return; backRef.current=()=>{ if(deckStyle==='deck'&&idx>0){ setIdx(idx-1); return true; } return false; }; return()=>{ backRef.current=null; }; },[idx,deckStyle]);
 
   const common={cards,ctx};
 

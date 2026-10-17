@@ -111,10 +111,19 @@ test('the reveal tells the scan in order: label, match, taste, grape, place, a l
   // The deck opens straight away, its first card the result in full.
   await expect(root).toContainText('1 / 9');
   await expect(root).toContainText('How we got this');
-  // Back from a deck opened here returns to the story's end sheet, not the camera.
+  // Back is always one step: the card before, then out of the deck to the story's end sheet,
+  // then the story's scene before it; never the camera.
+  await page.locator('#root div[style*="scaleX(-1)"]').click();
+  await expect(root).toContainText('2 / 9');
   await page.goBack();
+  await expect(root).toContainText('1 / 9');
+  await root.getByRole('button', { name: 'Back' }).click();
   await expect(root).toContainText('Saved for later');
   await expect(page.getByTestId('reveal-ways')).toContainText('Finish');
+  await page.goBack();
+  await expect(scene).toHaveAttribute('data-scene', 'say');
+  await expect(page).toHaveURL(/#identified/);
+  await root.getByText('Skip', { exact: true }).click();
   await root.getByText('See the result and learn more', { exact: true }).click();
   await expect(root).toContainText('1 / 9');
   // Coming back to the screen (the deck's back, or from Details) doesn't replay it: it opens

@@ -98,7 +98,7 @@ function _revealScenes(d,existingRating){
 }
 
 /* startAt 'end': open straight on the end sheet (back from a deck opened there), with no tips. */
-function ScanReveal({wine,match,gen,existingRating,firstScan,nav,showPro,curr,onDone,onRated,onSaveForLater,onFinish,startAt}){
+function ScanReveal({wine,match,gen,existingRating,firstScan,nav,showPro,curr,onDone,onRated,onSaveForLater,onFinish,startAt,backRef}){
   const d=React.useMemo(()=>ScanFlow.reveal(wine,match,gen),[wine,match,gen]);
   const scenes=React.useMemo(()=>_revealScenes(d,existingRating),[d,existingRating]);
   const [key,setKey]=React.useState(startAt==='end'?'end':'label');
@@ -116,6 +116,8 @@ function ScanReveal({wine,match,gen,existingRating,firstScan,nav,showPro,curr,on
     const d=n>idx?'fwd':'back'; setDir(d); if(!still) setLeaving({key,dir:d}); setKey(scenes[n].key);
   },[scenes,key,idx,still]);
   React.useEffect(()=>{ if(!leaving) return; const t=setTimeout(()=>setLeaving(null),450); return()=>clearTimeout(t); },[leaving]);
+  // The phone's back gesture is the scene before (the end sheet included); false at the first scene.
+  React.useEffect(()=>{ if(!backRef) return; backRef.current=()=>{ if(idx>0){ go(idx-1); return true; } return false; }; return()=>{ backRef.current=null; }; },[idx,go]);
   // Each scene moves on by itself unless the finger is down or motion is reduced. A pause keeps
   // what's elapsed, so a long press doesn't restart the scene.
   const elapsed=React.useRef(0), startedAt=React.useRef(0);
