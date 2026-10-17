@@ -316,3 +316,22 @@ test('See full wine details on the deck\'s last card opens the wine', async ({ c
   await root.getByText('See full wine details').click();
   await expect(page).toHaveURL(/#detail/);
 });
+
+// A bottle rated in the story isn't asked for its rating again on the deck's last card, and the
+// price is on screen on the first card without scrolling.
+test('rated in the story: the deck shows the price up front and the last card shows the rating', async ({ context, page }) => {
+  const root = await toDeck(context, page);
+  await root.getByText('90', { exact: true }).click();
+  await root.getByText('Save rating').click();
+  await root.getByText('See the result and learn more', { exact: true }).click();
+  await expect(root).toContainText('1 / 9');
+  await expect(page.getByTestId('scan-price')).toBeInViewport({ ratio: 1 });
+  for (let i = 0; i < 8; i++) await page.locator('#root div[style*="scaleX(-1)"]').click();
+  await expect(root).toContainText('9 / 9');
+  await expect(page.getByTestId('rating-settled')).toContainText('Rated 90 · Outstanding');
+  await expect(root).not.toContainText('Save rating');
+  await expect(root).not.toContainText('How was it?');
+  // "Change it" brings the dial back.
+  await root.getByText('Change it', { exact: true }).click();
+  await expect(root).toContainText('Save rating');
+});

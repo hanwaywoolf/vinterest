@@ -671,6 +671,8 @@ function CardFace({card,ctx}){ const T=useTheme();
       {match&&match.expected!=null&&<div style={{fontSize:15,color:T.mid,fontFamily:P,marginTop:-8}}>{rated>0?`We expected about ${match.expected} · you rated ${rated}`:`Likely about ${match.expected} from you · ${match.expectedLabel}`}</div>}
       {match&&match.expected!=null&&match.bar!=null&&!(rated>0)&&<div style={{fontSize:13,color:T.mid,fontFamily:P,marginTop:-8}}>{match.pct}% sure you'd rate it {match.bar}+, your usual for {WineDNA.NOUNS[WineDNA._t(wine.type)]?.[1]||'wines'}</div>}
       {match&&match.confidence==='low'&&<div style={{fontSize:13,color:T.mid,fontFamily:P,marginTop:-8}}>Rough guess</div>}
+      <ScanPrice wine={wine} match={match} curr={curr} scanData={scanData} sub={{fontSize:13,fontWeight:700,color:T.mid,fontFamily:P,letterSpacing:'0.06em',textTransform:'uppercase'}}
+        boxStyle={{width:'100%',textAlign:'left',padding:'12px 14px',borderRadius:12,background:T.soft,border:`1px solid ${T.line}`}}/>
       <div style={{width:'100%',textAlign:'left',padding:'12px 14px',borderRadius:12,background:T.soft,border:`1px solid ${T.line}`}}>
         <div style={{fontSize:13,fontWeight:700,color:T.mid,fontFamily:P,letterSpacing:'0.06em',textTransform:'uppercase',marginBottom:6}}>How we got this</div>
         <MatchReasons match={match} col={T.ink2} brief={!expanded} priceNote={TasteMatch.priceNote(wine,WineDNA.priceOf(wine,curr),WineHistory.getAll(),curr)}/>
@@ -682,8 +684,6 @@ function CardFace({card,ctx}){ const T=useTheme();
         <div style={{fontSize:15,color:T.ink,fontFamily:P,lineHeight:1.5}}>{match.style}</div>
         <div style={{fontSize:13,color:T.mid,fontFamily:P,marginTop:2}}>Estimated from the label: what this wine is typically like.</div>
       </div>}
-      <ScanPrice wine={wine} match={match} curr={curr} scanData={scanData} sub={{fontSize:13,fontWeight:700,color:T.mid,fontFamily:P,letterSpacing:'0.06em',textTransform:'uppercase'}}
-        boxStyle={{width:'100%',textAlign:'left',padding:'12px 14px',borderRadius:12,background:T.soft,border:`1px solid ${T.line}`}}/>
     </div>;
   }
 
@@ -1005,13 +1005,16 @@ function RatingDial({min,max=100,value,unset=false,onChange,col=C.cr,label='Rati
   </div>;
 }
 
-function RatingPanel({wine,existingRating,nav,showPro,curr,onRated,onSaveForLater,onStage,onFinish,after,skipLabel}){ const T=useTheme();
+function RatingPanel({wine,existingRating,nav,showPro,curr,onRated,onSaveForLater,onStage,onFinish,after,skipLabel,settled}){ const T=useTheme();
   const [score,setScore]=React.useState(existingRating||0);
+  // settled: a bottle already rated (in the story, say) opens on its rating with the ways out, not
+  // the dial and "Save rating" again; "Change it" brings the dial back.
+  const [settledView,setSettledView]=React.useState(!!settled&&existingRating>0&&!onFinish); // the first bottle has its own Continue (onFinish)
   // The first bottle, revisited after scoring it: open on "Your score" (with Continue), not the picker.
   const [saved,setSaved]=React.useState(()=>!!(onFinish&&existingRating>0));
   const [next,setNext]=React.useState(false);
   // Tells the deck which step it's on, so the card's label follows (Rate it → Your score → Keep learning).
-  React.useEffect(()=>{ if(onStage) onStage(next?'next':saved?'saved':'rate'); },[saved,next]);
+  React.useEffect(()=>{ if(onStage) onStage(next?'next':(saved||settledView)?'saved':'rate'); },[saved,next,settledView]);
   const label=ParkerScale.label(score);
   const tc=_typeCol(wine);
   function commit(){
@@ -1027,6 +1030,20 @@ function RatingPanel({wine,existingRating,nav,showPro,curr,onRated,onSaveForLate
     setSaved(true);
     if(onRated) onRated(score);
   }
+  if(settledView) return <div data-testid="rating-settled" style={{display:'flex',flexDirection:'column',gap:14}}>
+    <div style={{display:'flex',alignItems:'center',gap:10}}>
+      <div style={{width:36,height:36,borderRadius:18,background:T.greenBg,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><Icon n="check" sz={18} col={T.green}/></div>
+      <div style={{flex:1,minWidth:0}}>
+        <div style={{fontSize:17,fontWeight:800,color:T.ink,fontFamily:C.P}}>Rated {existingRating} · {ParkerScale.label(existingRating)}</div>
+        <div style={{fontSize:13,color:T.mid,fontFamily:C.P}}>Saved to My Wines</div>
+      </div>
+      <span role="button" onClick={()=>setSettledView(false)} style={{fontSize:14,fontWeight:700,color:T.lift(C.cr),fontFamily:C.P,cursor:'pointer',whiteSpace:'nowrap'}}>Change it</span>
+    </div>
+    <div style={{marginTop:6,paddingTop:16,borderTop:`2px solid ${T.line}`,display:'flex',flexDirection:'column',gap:10}}>
+      <Btn primary full onClick={()=>nav('home')}>Finish</Btn>
+      <Btn full onClick={()=>nav('detail')}>See full wine details</Btn>
+    </div>
+  </div>;
   // After the score and the optional details: what to learn next, then the ways out.
   if(saved&&next) return <div style={{display:'flex',flexDirection:'column',gap:14}}>
     <KeepLearning wine={wine} nav={nav} showPro={showPro} reveal/>
@@ -1194,7 +1211,7 @@ function CardDeck({deckStyle,wine,gen,loading,match,curr,scanData,existingRating
   const ctx={wine,gen,loading,match,curr,scanData,existingRating,onEdit,onBlindCall,finishStage,firstScan,deep,deepLoading,facts,nav,showPro,
     finish:()=><>
       {firstScan&&finishStage==='rate'&&<div style={{marginBottom:16}}><MatchComingSoon wine={wine} compact/></div>}
-      <RatingPanel wine={wine} existingRating={existingRating} nav={nav} showPro={showPro} curr={curr} onRated={onRated} onSaveForLater={existingRating?null:onSaveForLater} onStage={setFinishStage} onFinish={onFinish}/>
+      <RatingPanel wine={wine} existingRating={existingRating} settled nav={nav} showPro={showPro} curr={curr} onRated={onRated} onSaveForLater={existingRating?null:onSaveForLater} onStage={setFinishStage} onFinish={onFinish}/>
     </>};
   const [idx,setIdx]=React.useState(()=>Math.max(0,Math.min(startIdx,cards.length-1)));
   React.useEffect(()=>{ if(onIdx) onIdx(idx); },[idx]);
