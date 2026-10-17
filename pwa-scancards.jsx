@@ -651,39 +651,48 @@ function CardFace({card,ctx}){ const T=useTheme();
   const More=()=>expanded?null:<div role="button" data-card-more onClick={e=>{ e.stopPropagation(); setExpanded(true); }}
     style={{alignSelf:'flex-start',fontSize:15,fontWeight:700,color:a||C.cr,fontFamily:P,cursor:'pointer',padding:'2px 0'}}>More →</div>;
 
+  // What the result screen led with, shared by both forms of the first card (a match, or the meter
+  // while there are too few ratings): the label's reading with a way to correct it, the Style line
+  // and the price. Dropping any of these loses something the person had on the result screen.
+  const idLine=[wine.producer,WineDNA.grapeLine(wine),wine.region!==wine.country?wine.region:null].filter(Boolean).join(' · ');
+  const identityRow=(idLine||ctx.onEdit)?<div data-testid="deck-identity" style={{width:'100%',textAlign:'left',display:'flex',alignItems:'baseline',gap:10,flexWrap:'wrap'}}>
+    {idLine&&<div style={{flex:1,minWidth:0,fontSize:14,color:T.mid,fontFamily:P,lineHeight:1.45}}>{idLine}</div>}
+    {ctx.onEdit&&<span role="button" onClick={e=>{ e.stopPropagation(); ctx.onEdit(); }} style={{fontSize:13,fontWeight:600,color:T.lift(C.cr),fontFamily:P,cursor:'pointer',whiteSpace:'nowrap'}}>Not right? Edit</span>}
+  </div>:null;
+  const priceBox=<ScanPrice wine={wine} match={match} curr={curr} scanData={scanData} sub={{fontSize:13,fontWeight:700,color:T.mid,fontFamily:P,letterSpacing:'0.06em',textTransform:'uppercase'}}
+    boxStyle={{width:'100%',textAlign:'left',padding:'12px 14px',borderRadius:12,background:T.soft,border:`1px solid ${T.line}`}}/>;
+  const styleBox=match&&match.style?<div style={{width:'100%',textAlign:'left',padding:'12px 14px',borderRadius:12,background:T.soft,border:`1px solid ${T.line}`}}>
+    <div style={{fontSize:13,fontWeight:700,color:T.mid,fontFamily:P,letterSpacing:'0.06em',textTransform:'uppercase',marginBottom:4}}>Style</div>
+    <div style={{fontSize:15,color:T.ink,fontFamily:P,lineHeight:1.5}}>{match.style}</div>
+    <div style={{fontSize:13,color:T.mid,fontFamily:P,marginTop:2}}>Estimated from the label: what this wine is typically like.</div>
+  </div>:null;
+
   if(card.kind==='first-match') return <div style={{display:'flex',flexDirection:'column',gap:16}}>
+    {identityRow}
+    {priceBox}
     <H>Your match, from your own taste</H>
     <MatchComingSoon wine={wine}/>
+    {styleBox}
   </div>;
 
   if(card.kind==='match'){
     // The result in full: the story gave the number and a reason each way; here is the whole working.
     const rated=(ctx.existingRating||(WineHistory.find(wine)||{}).rating||0);
-    const idLine=[wine.producer,WineDNA.grapeLine(wine),wine.region!==wine.country?wine.region:null].filter(Boolean).join(' · ');
     return <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:14,textAlign:'center'}}>
-      {/* What the label said, as the result screen led with it, and the way to correct a misread. */}
-      {(idLine||ctx.onEdit)&&<div data-testid="deck-identity" style={{width:'100%',textAlign:'left',display:'flex',alignItems:'baseline',gap:10,flexWrap:'wrap'}}>
-        {idLine&&<div style={{flex:1,minWidth:0,fontSize:14,color:T.mid,fontFamily:P,lineHeight:1.45}}>{idLine}</div>}
-        {ctx.onEdit&&<span role="button" onClick={e=>{ e.stopPropagation(); ctx.onEdit(); }} style={{fontSize:13,fontWeight:600,color:T.lift(C.cr),fontFamily:P,cursor:'pointer',whiteSpace:'nowrap'}}>Not right? Edit</span>}
-      </div>}
+      {identityRow}
       <MatchRing match={match} size={120}/>
       <H>{match?match.label:'—'}</H>
       {match&&match.expected!=null&&<div style={{fontSize:15,color:T.mid,fontFamily:P,marginTop:-8}}>{rated>0?`We expected about ${match.expected} · you rated ${rated}`:`Likely about ${match.expected} from you · ${match.expectedLabel}`}</div>}
       {match&&match.expected!=null&&match.bar!=null&&!(rated>0)&&<div style={{fontSize:13,color:T.mid,fontFamily:P,marginTop:-8}}>{match.pct}% sure you'd rate it {match.bar}+, your usual for {WineDNA.NOUNS[WineDNA._t(wine.type)]?.[1]||'wines'}</div>}
       {match&&match.confidence==='low'&&<div style={{fontSize:13,color:T.mid,fontFamily:P,marginTop:-8}}>Rough guess</div>}
-      <ScanPrice wine={wine} match={match} curr={curr} scanData={scanData} sub={{fontSize:13,fontWeight:700,color:T.mid,fontFamily:P,letterSpacing:'0.06em',textTransform:'uppercase'}}
-        boxStyle={{width:'100%',textAlign:'left',padding:'12px 14px',borderRadius:12,background:T.soft,border:`1px solid ${T.line}`}}/>
+      {priceBox}
       <div style={{width:'100%',textAlign:'left',padding:'12px 14px',borderRadius:12,background:T.soft,border:`1px solid ${T.line}`}}>
         <div style={{fontSize:13,fontWeight:700,color:T.mid,fontFamily:P,letterSpacing:'0.06em',textTransform:'uppercase',marginBottom:6}}>How we got this</div>
         <MatchReasons match={match} col={T.ink2} brief={!expanded} priceNote={TasteMatch.priceNote(wine,WineDNA.priceOf(wine,curr),WineHistory.getAll(),curr)}/>
         {expanded&&match&&match.breakdown&&<div style={{marginTop:4}}><MatchBreakdown match={match}/></div>}
       </div>
       {match&&(match.reasons.length>2||match.breakdown)&&<More/>}
-      {match&&match.style&&<div style={{width:'100%',textAlign:'left',padding:'12px 14px',borderRadius:12,background:T.soft,border:`1px solid ${T.line}`}}>
-        <div style={{fontSize:13,fontWeight:700,color:T.mid,fontFamily:P,letterSpacing:'0.06em',textTransform:'uppercase',marginBottom:4}}>Style</div>
-        <div style={{fontSize:15,color:T.ink,fontFamily:P,lineHeight:1.5}}>{match.style}</div>
-        <div style={{fontSize:13,color:T.mid,fontFamily:P,marginTop:2}}>Estimated from the label: what this wine is typically like.</div>
-      </div>}
+      {styleBox}
     </div>;
   }
 

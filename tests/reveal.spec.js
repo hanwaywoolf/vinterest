@@ -335,3 +335,26 @@ test('rated in the story: the deck shows the price up front and the last card sh
   await root.getByText('Change it', { exact: true }).click();
   await expect(root).toContainText('Save rating');
 });
+
+// Someone with too few ratings for a match (every new tester) gets the meter on card 1, and still
+// gets everything the result screen had: the label's reading with Edit, the price and the Style.
+test('too few ratings: card 1 still has the label, Edit, price and style', async ({ context, page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await makeDeterministic(page);
+  await seedLocalStorage(page, { vinterest_wineDNA_unlock_seen: '1', vinterest_onboarded: '1', vinterest_age_ok: '1', vinterest_region: 'uk', vinterest_wines: '[]' });
+  await stubNetwork(context, { reveal: 'real', claudeText: (b) => b.purpose === 'label_scan' ? JSON.stringify(RIOJA) : b.purpose === 'scancard' ? JSON.stringify(GEN) : '' });
+  await page.goto(`${BASE}/#home`);
+  await page.getByText('Scan', { exact: true }).last().click();
+  await page.getByTestId('scan-file').setInputFiles({ name: 'label.png', mimeType: 'image/png', buffer: PNG });
+  const root = page.locator('#root');
+  await playIt(page).catch(() => {});
+  await root.getByText('Skip', { exact: true }).click();
+  await root.getByText('Just checking the match? Skip the rating', { exact: true }).click();
+  await root.getByText('See the result and learn more', { exact: true }).click();
+  await expect(root).toContainText('Your match, from your own taste');
+  await expect(page.getByTestId('deck-identity')).toContainText('CVNE');
+  await expect(page.getByTestId('deck-identity')).toContainText('Not right? Edit');
+  await expect(page.getByTestId('scan-price')).toContainText(/about/);
+  await expect(page.getByTestId('scan-price')).toBeInViewport({ ratio: 1 });
+  await expect(root).toContainText('Estimated from the label');
+});
