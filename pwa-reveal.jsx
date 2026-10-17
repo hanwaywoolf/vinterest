@@ -391,15 +391,16 @@ function _RvSay({d,col}){
 function _RvEnd({wine,d,firstScan,existingRating,nav,showPro,curr,onDone,onRated,onSaveForLater,onFinish}){
   const col=d.col||C.cr, lift=_DECK_DARK.lift(col);
   // The rating comes first, without a tap: the dial, or a line to skip it when they're only checking
-  // the match. Then the ways out: deeper into the story, the wine's own screen, or the result.
+  // the match. Then the ways out: the result (with the deck behind it), or Finish to Home.
   // A bottle already rated opens on the ways out with its rating and a line to change it.
   const [stage,setStage]=React.useState(existingRating?'ways':'rate');
   const [skipped,setSkipped]=React.useState(false);
   const [rated,setRated]=React.useState(existingRating||0);
+  // Two ways out: the result (the deck, "Learn more about this wine", and the wine's own screen are
+  // one tap from there), or Finish, which goes Home.
   const rows=[
-    {key:'deck',icon:'book',label:'Go deeper',sub:'The house, the year, how it\'s made, the table',on:()=>onDone('deck')},
-    {key:'detail',icon:'wine',label:'Wine details',sub:'Tasting notes, the vintage, where to buy it',on:()=>onDone('detail')},
-    {key:'result',icon:'compass',label:'See the result',sub:'Your match and why',on:()=>onDone('result')},
+    {key:'result',icon:'compass',label:'See the result and learn more',sub:'Your match and why, the house, the year, how it\'s made',on:()=>onDone('result')},
+    {key:'finish',icon:'home',label:'Finish',sub:'Back to Home',on:()=>onDone('home')},
   ];
   const ways=<div data-testid="reveal-ways" style={{display:'flex',flexDirection:'column',gap:8,marginTop:4}}>
     {rows.map(x=><div key={x.key} role="button" onClick={x.on} style={{background:'rgba(255,255,255,0.06)',border:'1px solid rgba(255,255,255,0.14)',borderRadius:14,padding:'12px 14px',display:'flex',alignItems:'center',gap:12,cursor:'pointer'}}>

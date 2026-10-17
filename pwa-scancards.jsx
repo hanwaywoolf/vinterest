@@ -252,7 +252,7 @@ function ScanCardsScreen({nav,back,showPro}){
         ? <ScanReveal wine={wine} match={match} gen={gen} existingRating={existingRating} nav={nav} showPro={showPro} curr={curr}
             onRated={()=>{ setIntent('tasted'); setRatingsVersion(v=>v+1); }}
             onSaveForLater={()=>setIntent('checking')}
-            onDone={v=>{ if(v==='saved') setIntent('checking'); if(v==='detail'){ setView('result'); nav('detail'); return; } setView(v); }}/>
+            onDone={v=>{ if(v==='saved') setIntent('checking'); if(v==='detail'){ setView('result'); nav('detail'); return; } if(v==='home'){ setView('result'); nav('home'); return; } setView(v); }}/>
       : view==='deck'
         ? <CardDeck key={deckStyle} deckStyle={deckStyle} wine={wine} gen={gen} loading={loading} match={match} showPro={showPro}
             curr={curr} scanData={scanData} existingRating={existingRating} nav={nav} startIdx={scanData.deckIdx||0} onIdx={noteDeckIdx}
