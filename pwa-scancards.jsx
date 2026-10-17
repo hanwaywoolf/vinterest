@@ -293,7 +293,7 @@ function ScanCardsScreen({nav,back,showPro}){
             onSaveForLater={()=>setIntent('checking')}
             onDone={v=>{ if(v==='saved') setIntent('checking'); if(v==='detail'){ setViewRaw('result'); nav('detail'); return; } if(v==='home'){ setViewRaw('result'); nav('home'); return; } if(v==='deck') fromStory.current=true; setView(v); }}/>
       : view==='deck'
-        ? <CardDeck key={deckStyle} backRef={stepRef} deckStyle={deckStyle} wine={wine} gen={gen} loading={loading} match={match} showPro={showPro}
+        ? <CardDeck key={deckStyle} backRef={stepRef} onEdit={()=>setEditing(true)} deckStyle={deckStyle} wine={wine} gen={gen} loading={loading} match={match} showPro={showPro}
             curr={curr} scanData={scanData} existingRating={existingRating} nav={navH} startIdx={deckStart()} onIdx={noteDeckIdx}
             onRated={()=>{ setIntent('tasted'); setRatingsVersion(v=>v+1); }}
             onSaveForLater={()=>{ setIntent('checking'); setView('saved'); }}
@@ -659,7 +659,13 @@ function CardFace({card,ctx}){ const T=useTheme();
   if(card.kind==='match'){
     // The result in full: the story gave the number and a reason each way; here is the whole working.
     const rated=(ctx.existingRating||(WineHistory.find(wine)||{}).rating||0);
+    const idLine=[wine.producer,WineDNA.grapeLine(wine),wine.region!==wine.country?wine.region:null].filter(Boolean).join(' · ');
     return <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:14,textAlign:'center'}}>
+      {/* What the label said, as the result screen led with it, and the way to correct a misread. */}
+      {(idLine||ctx.onEdit)&&<div data-testid="deck-identity" style={{width:'100%',textAlign:'left',display:'flex',alignItems:'baseline',gap:10,flexWrap:'wrap'}}>
+        {idLine&&<div style={{flex:1,minWidth:0,fontSize:14,color:T.mid,fontFamily:P,lineHeight:1.45}}>{idLine}</div>}
+        {ctx.onEdit&&<span role="button" onClick={e=>{ e.stopPropagation(); ctx.onEdit(); }} style={{fontSize:13,fontWeight:600,color:T.lift(C.cr),fontFamily:P,cursor:'pointer',whiteSpace:'nowrap'}}>Not right? Edit</span>}
+      </div>}
       <MatchRing match={match} size={120}/>
       <H>{match?match.label:'—'}</H>
       {match&&match.expected!=null&&<div style={{fontSize:15,color:T.mid,fontFamily:P,marginTop:-8}}>{rated>0?`We expected about ${match.expected} · you rated ${rated}`:`Likely about ${match.expected} from you · ${match.expectedLabel}`}</div>}
@@ -671,6 +677,11 @@ function CardFace({card,ctx}){ const T=useTheme();
         {expanded&&match&&match.breakdown&&<div style={{marginTop:4}}><MatchBreakdown match={match}/></div>}
       </div>
       {match&&(match.reasons.length>2||match.breakdown)&&<More/>}
+      {match&&match.style&&<div style={{width:'100%',textAlign:'left',padding:'12px 14px',borderRadius:12,background:T.soft,border:`1px solid ${T.line}`}}>
+        <div style={{fontSize:13,fontWeight:700,color:T.mid,fontFamily:P,letterSpacing:'0.06em',textTransform:'uppercase',marginBottom:4}}>Style</div>
+        <div style={{fontSize:15,color:T.ink,fontFamily:P,lineHeight:1.5}}>{match.style}</div>
+        <div style={{fontSize:13,color:T.mid,fontFamily:P,marginTop:2}}>Estimated from the label: what this wine is typically like.</div>
+      </div>}
       <ScanPrice wine={wine} match={match} curr={curr} scanData={scanData} sub={{fontSize:13,fontWeight:700,color:T.mid,fontFamily:P,letterSpacing:'0.06em',textTransform:'uppercase'}}
         boxStyle={{width:'100%',textAlign:'left',padding:'12px 14px',borderRadius:12,background:T.soft,border:`1px solid ${T.line}`}}/>
     </div>;
@@ -1171,7 +1182,7 @@ function TasteCard({wine,gen,accent,onBlindCall}){ const T=useTheme();
 }
 
 /* ── the deck (three interaction styles) ── */
-function CardDeck({deckStyle,wine,gen,loading,match,curr,scanData,existingRating,nav,showPro,onRated,onSaveForLater,onBlindCall,firstScan,onFinish,startIdx=0,onIdx,backRef}){ const T=useTheme();
+function CardDeck({deckStyle,wine,gen,loading,match,curr,scanData,existingRating,nav,showPro,onRated,onSaveForLater,onBlindCall,firstScan,onFinish,startIdx=0,onIdx,backRef,onEdit}){ const T=useTheme();
   const cards=React.useMemo(()=>buildCards({match,wine}),[match&&match.tone,match&&match.verdict,wine&&wine.type]);
   const [finishStage,setFinishStage]=React.useState('rate');
   // "Learn more about this wine" is written the first time the deck opens, then kept on the phone.
@@ -1180,7 +1191,7 @@ function CardDeck({deckStyle,wine,gen,loading,match,curr,scanData,existingRating
   React.useEffect(()=>{ if(deep||!wine||!wine.name) return; let live=true; setDeepLoading(true);
     WineDeep.load(wine,match,d=>{ if(!live) return; setDeep(d); setDeepLoading(false); }); return()=>{ live=false; }; },[wine&&wine.name,wine&&wine.vintage]);
   const facts=React.useMemo(()=>WineDeep.facts(wine),[wine&&wine.name,wine&&wine.vintage]);
-  const ctx={wine,gen,loading,match,curr,scanData,existingRating,onBlindCall,finishStage,firstScan,deep,deepLoading,facts,nav,showPro,
+  const ctx={wine,gen,loading,match,curr,scanData,existingRating,onEdit,onBlindCall,finishStage,firstScan,deep,deepLoading,facts,nav,showPro,
     finish:()=><>
       {firstScan&&finishStage==='rate'&&<div style={{marginBottom:16}}><MatchComingSoon wine={wine} compact/></div>}
       <RatingPanel wine={wine} existingRating={existingRating} nav={nav} showPro={showPro} curr={curr} onRated={onRated} onSaveForLater={existingRating?null:onSaveForLater} onStage={setFinishStage} onFinish={onFinish}/>
