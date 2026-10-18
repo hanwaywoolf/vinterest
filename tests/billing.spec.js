@@ -150,10 +150,10 @@ test.describe('Worker', () => {
 
 // ---- The app: the Pro sheet with a fake store plugin ----
 
-async function asIosApp(page, { purchase = 'ok', restore = 'pro' } = {}) {
-  await page.addInitScript(({ purchase, restore }) => {
-    window.CapacitorCustomPlatform = { name: 'ios' };
-    window.Capacitor = { isNativePlatform: () => true, getPlatform: () => 'ios' };
+async function asIosApp(page, { purchase = 'ok', restore = 'pro', offer = 'grant', platform = 'ios' } = {}) {
+  await page.addInitScript(({ purchase, restore, offer, platform }) => {
+    window.CapacitorCustomPlatform = { name: platform };
+    window.Capacitor = { isNativePlatform: () => true, getPlatform: () => platform };
     const calls = (window.__rc = []);
     const fake = {
       configure: async (o) => { calls.push(['configure', o.apiKey, o.appUserID || null]); },
@@ -171,10 +171,11 @@ async function asIosApp(page, { purchase = 'ok', restore = 'pro' } = {}) {
       },
       restorePurchases: async () => { calls.push(['restore']); if (restore === 'pro') window.__bought = true; },
       showManageSubscriptions: async () => { calls.push(['manage']); },
+      presentCodeRedemptionSheet: async () => { calls.push(['offer']); if (offer === 'grant') window.__bought = true; },
     };
     let native;
     Object.defineProperty(window, 'VinterestNative', { configurable: true, get: () => native, set: (v) => { native = { ...v, Purchases: fake }; } });
-  }, { purchase, restore });
+  }, { purchase, restore, offer, platform });
 }
 async function setup(context, page, { signedIn = true, source = null } = {}) {
   await makeDeterministic(page);
@@ -285,7 +286,53 @@ test.describe('the Pro sheet in the app', () => {
     await expect(page.getByRole('dialog', { name: 'Delete your account' })).toContainText("isn't cancelled by deleting your account");
   });
 
-  test('on the web nothing is sold: no store plugin, no billing', async ({ context, page }) => {
+  test.describe('promo codes on iPhone are Apple offer codes', () => {
+  const quick = (page) => page.evaluate(() => { Billing.OFFER_WAITS = [0, 50]; });
+
+  test('"Have a promo code?" opens Apple\'s redeem sheet, not a field of ours, and Pro shows once it is redeemed', async ({ context, page }) => {
+    await asIosApp(page);
+    const hits = await setup(context, page);
+    await page.goto(`${BASE}/#account`);
+    await quick(page);
+    await page.getByText('Have a promo code?').click();
+    await expect(page.getByTestId('promo-done')).toContainText('Your code worked');
+    await expect(page.getByLabel('Promo code')).toHaveCount(0);
+    expect(await page.evaluate(() => window.__rc.filter((c) => c[0] === 'offer').length)).toBe(1);
+    expect(hits).not.toContain('/promo');
+    expect(await page.evaluate(() => Account.tier())).toBe('pro');
+  });
+
+  test('if nothing was redeemed it says so gently and they stay free', async ({ context, page }) => {
+    await asIosApp(page, { offer: 'none' });
+    await setup(context, page);
+    await page.goto(`${BASE}/#account`);
+    await quick(page);
+    await page.getByText('Have a promo code?').click();
+    await expect(page.getByTestId('promo-done')).toContainText('If your code worked');
+    expect(await page.evaluate(() => Account.tier())).toBe('free');
+  });
+
+  test('the Pro sheet\'s link goes straight to Apple\'s sheet when signed in', async ({ context, page }) => {
+    await asIosApp(page);
+    await setup(context, page);
+    await openSheet(page);
+    await quick(page);
+    await page.locator('[data-sheet="pro"]').getByText('Have a promo code?').click();
+    await expect(page.getByTestId('promo-done')).toContainText('Your code worked');
+    expect(await page.evaluate(() => window.__rc.filter((c) => c[0] === 'offer').length)).toBe(1);
+  });
+
+  test('Android keeps the typed code field and never opens Apple\'s sheet', async ({ context, page }) => {
+    await asIosApp(page, { platform: 'android' });
+    await setup(context, page);
+    await page.goto(`${BASE}/#account`);
+    await page.getByText('Have a promo code?').click();
+    await expect(page.getByLabel('Promo code')).toBeVisible();
+    expect(await page.evaluate(() => [Billing.offerCodes(), window.__rc.some((c) => c[0] === 'offer')])).toEqual([false, false]);
+  });
+});
+
+test('on the web nothing is sold: no store plugin, no billing', async ({ context, page }) => {
     await makeDeterministic(page);
     await seedLocalStorage(page, { vinterest_onboarded: '1', vinterest_region: 'uk' });
     await stubNetwork(context);

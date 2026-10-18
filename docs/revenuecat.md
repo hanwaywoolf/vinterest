@@ -27,6 +27,21 @@ The keys come to the app from `GET /config`, so changing them needs a web deploy
 
 It ships off: Pro comes only from a subscription or a promo code, and list scanning and LCBO stock need Pro. The switch is still there for a test build: `Entitlement.ALL_PRO_FOR_TESTING` and the Worker's `ALL_PRO_FOR_TESTING` (both `false`) open everything for signed-in accounts when set to `true`.
 
+## Promo codes on iPhone: Apple offer codes
+
+App Review (3.1.1) doesn't allow an iPhone app to unlock features with codes of its own, so on iOS "Have a promo code?" opens Apple's own redeem sheet (`Billing.redeemOfferCode`, RevenueCat's `presentCodeRedemptionSheet`). Android and the web keep the codes in Supabase's `promo_codes`.
+
+To make codes:
+1. App Store Connect → Apps → Vinterest → Subscriptions → the subscription (do the monthly one; a code can be used on either product if you make an offer on each).
+2. Offers → Offer Codes → create an offer: a name, who is eligible (new subscribers, and optionally past ones), type Free, the length (for example 3 months) and the countries.
+3. Create codes for it: one-time codes (a batch to hand out or paste into review notes, with an expiry) or a custom code (a word you choose, with a redemption limit). Apple's page shows the current limits.
+4. People redeem by tapping "Have a promo code?" in the app, or in the App Store app (Account → Redeem Gift Card or Code), or from a link of the form `https://apps.apple.com/redeem?ctx=offercodes&id=<the app's Apple ID>&code=<CODE>`.
+
+Things to know:
+- A redeemed code starts a real subscription with a free period, so it renews to the paid price afterwards unless they cancel. Apple's sheet says so. Supabase promo codes simply end.
+- It reaches Pro the same way a purchase does: Apple → RevenueCat → `POST /billing/sync` (the app checks a few times after the sheet closes) and the webhook. The entitlement's source is `revenuecat`.
+- Reviewers: put a one-time offer code in the review notes if you want them to see Pro without paying. Check Apple's page for whether it can be tested in sandbox.
+
 ## Testing a purchase
 
 - iOS: a sandbox Apple ID (App Store Connect → Users and Access → Sandbox) on a TestFlight build. Subscriptions renew every few minutes in sandbox.

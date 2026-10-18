@@ -103,6 +103,24 @@ const Billing = {
     if(!s.ok) return s;
     return s.tier==='pro'?{ok:true}:{ok:false,error:'There\'s no Pro subscription on this Apple or Google account to restore.'};
   },
+  /* On iPhone a free period is given with Apple's own offer codes (App Store Connect → the
+     subscription → Offers), not a code of ours: App Review (3.1.1) doesn't allow an app to unlock
+     features with its own codes there. So on iOS "Have a promo code?" opens Apple's redeem sheet;
+     Android and the web keep the codes in Supabase (Account.redeemPromo). */
+  offerCodes(){ return Platform.name()==='ios'&&this.available(); },
+  OFFER_WAITS:[0,3000,8000,15000],
+  /* Opens Apple's redeem sheet. It closes whether or not they redeemed, and the store takes a moment
+     to tell RevenueCat, so look a few times: {ok} once Pro shows, {pending} if it hasn't, {error}. */
+  async redeemOfferCode(){
+    try{ await this._ready(); await this.identify(); await this.sdk().presentCodeRedemptionSheet(); }
+    catch(e){ return {ok:false,error:'We couldn\'t open the code screen. Check your connection and try again.'}; }
+    for(const wait of this.OFFER_WAITS){
+      if(wait) await new Promise(r=>setTimeout(r,wait));
+      const s=await this.sync();
+      if(s.ok&&s.tier==='pro') return {ok:true};
+    }
+    return {ok:false,pending:true};
+  },
   /* The store's own page for changing or cancelling a subscription. */
   async manage(){ try{ await this._ready(); await this.sdk().showManageSubscriptions(); }catch(e){} },
 };

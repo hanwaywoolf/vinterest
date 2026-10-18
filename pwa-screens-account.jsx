@@ -301,9 +301,11 @@ function AccountCard({showPro}){ const T=useTheme(), cr=T.lift(C.cr);
   const [err,setErr]=React.useState('');
   const [confirmDelete,setConfirmDelete]=React.useState(false);
   // "Have a promo code?": the field opens on the link, or straight away when the Pro sheet sent them.
-  const [promoOpen,setPromoOpen]=React.useState(intent==='promo');
+  const [promoOpen,setPromoOpen]=React.useState(intent==='promo'&&!Billing.offerCodes());
   const [promo,setPromo]=React.useState('');
   const [promoMsg,setPromoMsg]=React.useState(''); // "Pro until …" once a code has worked
+  // On iPhone the code is Apple's offer code (Billing.redeemOfferCode); the typed field below is for Android and the web.
+  React.useEffect(()=>{ if(intent==='promo'&&Account.signedIn()&&Billing.offerCodes()) offer(); },[]);
   React.useEffect(()=>{ const h=()=>tick(t=>t+1); window.addEventListener('vinterest:account',h); window.addEventListener('vinterest:sync',h);
     return()=>{ window.removeEventListener('vinterest:account',h); window.removeEventListener('vinterest:sync',h); }; },[]);
   // The Backup card's "Sign in to back up": open at the email step and bring this card into view.
@@ -311,7 +313,7 @@ function AccountCard({showPro}){ const T=useTheme(), cr=T.lift(C.cr);
   React.useEffect(()=>{ const h=()=>{ if(Account.signedIn()) return; setStep('email'); setTimeout(()=>{ const el=cardRef.current; if(el){ el.scrollIntoView({behavior:'smooth',block:'start'}); const i=el.querySelector('input'); i&&i.focus(); } },50); };
     window.addEventListener('vinterest:signin',h); return()=>window.removeEventListener('vinterest:signin',h); },[]);
   // The Pro sheet's "Have a promo code?" while Profile is already open: open the field here.
-  React.useEffect(()=>{ const h=()=>{ Handoff.accountIntent.take(); if(Account.signedIn()){ setPromoOpen(true); setPromoMsg(''); } else setStep('email');
+  React.useEffect(()=>{ const h=()=>{ Handoff.accountIntent.take(); if(Account.signedIn()){ if(Billing.offerCodes()) offer(); else { setPromoOpen(true); setPromoMsg(''); } } else setStep('email');
       setTimeout(()=>{ const el=cardRef.current; el&&el.scrollIntoView({behavior:'smooth',block:'start'}); },50); };
     window.addEventListener('vinterest:promo',h); return()=>window.removeEventListener('vinterest:promo',h); },[]);
   if(!Account.available()) return null;
@@ -327,9 +329,16 @@ function AccountCard({showPro}){ const T=useTheme(), cr=T.lift(C.cr);
   async function verify(){
     if(busy) return; setBusy(true); setErr('');
     const r=await Account.verifyCode(email,code); setBusy(false);
-    if(r.ok){ setStep('idle'); setEmail(''); setCode(''); if(intent==='promo') setPromoOpen(true); } else setErr(r.error);
+    if(r.ok){ setStep('idle'); setEmail(''); setCode(''); if(intent==='promo'){ if(Billing.offerCodes()) offer(); else setPromoOpen(true); } } else setErr(r.error);
   }
 
+  async function offer(){
+    if(busy) return; setBusy(true); setErr(''); setPromoMsg('');
+    const r=await Billing.redeemOfferCode(); setBusy(false);
+    if(r.ok) setPromoMsg('Your code worked: you have Pro.');
+    else if(r.pending) setPromoMsg('If your code worked, Pro will show in a minute. If it doesn\'t, tap Restore purchases on the Pro screen.');
+    else setErr(r.error);
+  }
   async function redeem(){
     if(busy) return; setBusy(true); setErr('');
     const r=await Account.redeemPromo(promo); setBusy(false);
@@ -366,7 +375,8 @@ function AccountCard({showPro}){ const T=useTheme(), cr=T.lift(C.cr);
       {pro&&me&&me.source==='revenuecat'&&Billing.available()&&<div><span role="button" data-testid="manage-subscription" onClick={()=>Billing.manage()} style={link}>Manage subscription</span></div>}
       {me&&me.usage&&me.caps&&me.usage.label_scan>0&&<div style={{fontSize:13,color:T.mid,fontFamily:C.P}}>This week: {me.usage.label_scan} of {me.caps.label_scan} label scans.</div>}
       {promoMsg&&<div data-testid="promo-done" style={{fontSize:14,fontWeight:600,color:T.lift(C.green),fontFamily:C.P}}>{promoMsg}</div>}
-      {!promoOpen&&!confirmDelete&&!promoMsg&&<div><span onClick={()=>{setPromoOpen(true);setErr('');}} style={link}>Have a promo code?</span></div>}
+      {err&&!promoOpen&&!confirmDelete&&<div role="alert" style={{fontSize:14,color:T.lift(C.cr),fontFamily:C.P}}>{err}</div>}
+      {!promoOpen&&!confirmDelete&&!promoMsg&&<div><span role="button" onClick={()=>{ if(Billing.offerCodes()) offer(); else { setPromoOpen(true); setErr(''); } }} style={link}>Have a promo code?</span></div>}
       {promoOpen&&!confirmDelete&&<div style={{display:'flex',flexDirection:'column',gap:8,marginTop:2}}>
         <input aria-label="Promo code" value={promo} onChange={e=>{setPromo(e.target.value);setErr('');}} placeholder="Your promo code" autoCapitalize="characters" autoCorrect="off" spellCheck={false}
           onKeyDown={e=>{ if(e.key==='Enter') redeem(); }} style={{...box,letterSpacing:'0.08em'}}/>
