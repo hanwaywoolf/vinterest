@@ -36,6 +36,7 @@ const Account = {
   session(){ return Store.getJSON(this.SESSION_KEY,null); },
   signedIn(){ const s=this.session(); return !!(s&&s.refresh_token); },
   email(){ const s=this.session(); return (s&&s.user&&s.user.email)||null; },
+  userId(){ const s=this.session(); return (s&&s.refresh_token&&s.user&&s.user.id)||null; },
   /* The server's last word on their plan and this week's usage: {tier, usage, caps, …}. */
   me(){ return this.signedIn()?Store.getJSON(this.ME_KEY,null):null; },
   tier(){ const m=this.me(); return (m&&m.tier)||'free'; },

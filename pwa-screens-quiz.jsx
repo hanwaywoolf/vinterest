@@ -70,7 +70,8 @@ function QuizHubScreen({nav,back,showPro}){ const T=useTheme(), cr=T.lift(C.cr);
   const wide=useWide(), list=wide?{display:'grid',gridTemplateColumns:'repeat(2,minmax(0,1fr))',gap:8,alignItems:'stretch'}:{display:'flex',flexDirection:'column',gap:8};
   const [xpData,setXpData]=React.useState(()=>XPSystem.get());
   const [isPro,setIsPro]=React.useState(()=>Entitlement.isPro());
-  React.useEffect(()=>{const h=()=>setIsPro(true);window.addEventListener('vinterest:pro',h);return()=>window.removeEventListener('vinterest:pro',h);},[]);
+  // Re-read, never assume: the event also fires when the Worker changes whether everyone is Pro, and a purchase or promo changes the account.
+  React.useEffect(()=>{const h=()=>setIsPro(Entitlement.isPro());window.addEventListener('vinterest:pro',h);window.addEventListener('vinterest:account',h);return()=>{window.removeEventListener('vinterest:pro',h);window.removeEventListener('vinterest:account',h);};},[]);
   const level=XPSystem.getLevel(xpData.total);
   const nextLvl=XPSystem.nextLevel(xpData.total);
   const prog=XPSystem.levelProgress(xpData.total);

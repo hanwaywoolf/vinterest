@@ -18,7 +18,13 @@ const Entitlement = {
      accounts). Set false to bring the free plan back. Tests set window.VINTEREST_REAL_PLANS to
      check the free plan as it will ship. */
   ALL_PRO_FOR_TESTING:true,
-  allPro(){ return this.ALL_PRO_FOR_TESTING&&!(typeof window!=='undefined'&&window.VINTEREST_REAL_PLANS); },
+  /* The Worker's /config says whether everyone is Pro (its ALL_PRO variable, Billing.allPro), so the
+     test can end without an app update; until it has been heard, the constant above. */
+  allPro(){
+    if(typeof window!=='undefined'&&window.VINTEREST_REAL_PLANS) return false;
+    const w=typeof Billing!=='undefined'?Billing.allPro():null;
+    return w===null?this.ALL_PRO_FOR_TESTING:w;
+  },
   isPro(){
     if(this.allPro()) return true;
     if(typeof Account!=='undefined'&&Account.signedIn()) return Account.tier()==='pro';

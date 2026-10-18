@@ -120,7 +120,23 @@ export default {
       if (request.method === "OPTIONS") return cors(new Response(null, { status: 204 }));
       if (request.method !== "GET") return json(405, { error: "Method not allowed" });
       // The public sign-in settings, for an app build that wasn't given them (Account.loadRemoteConfig).
-      return json(200, { supabase: env.SUPABASE_URL && env.SUPABASE_PUBLISHABLE_KEY ? { url: env.SUPABASE_URL, key: env.SUPABASE_PUBLISHABLE_KEY } : null });
+      // Also the stores' public RevenueCat SDK keys (Billing in pwa-billing.js) and whether everyone
+      // is Pro while testing (Entitlement.allPro), so ending the test is a Cloudflare variable
+      // (ALL_PRO=0), not an app update.
+      return json(200, {
+        supabase: env.SUPABASE_URL && env.SUPABASE_PUBLISHABLE_KEY ? { url: env.SUPABASE_URL, key: env.SUPABASE_PUBLISHABLE_KEY } : null,
+        billing: env.REVENUECAT_IOS_KEY || env.REVENUECAT_ANDROID_KEY ? { ios: env.REVENUECAT_IOS_KEY || null, android: env.REVENUECAT_ANDROID_KEY || null } : null,
+        allPro: ALL_PRO_FOR_TESTING && env.ALL_PRO !== "0",
+      });
+    }
+    if (url.pathname === "/billing/sync") {
+      if (request.method === "OPTIONS") return cors(new Response(null, { status: 204 }));
+      if (request.method !== "POST") return json(405, { error: "Method not allowed" });
+      return handleBillingSync(request, env);
+    }
+    if (url.pathname === "/revenuecat") {
+      if (request.method !== "POST") return json(405, { error: "Method not allowed" });
+      return handleRevenueCat(request, env);
     }
     if (url.pathname === "/promo") {
       if (request.method === "OPTIONS") return cors(new Response(null, { status: 204 }));
@@ -352,11 +368,11 @@ const ALL_PRO_FOR_TESTING = true;
 /* Their plan from the entitlements row: {tier, expires_at} (expires_at only while Pro has an end
    date, as a promo code's does). Pro that has run out reads as free. */
 async function entitlementOf(env, userId) {
-  const r = await db(env, `entitlements?user_id=eq.${encodeURIComponent(userId)}&select=tier,expires_at`);
+  const r = await db(env, `entitlements?user_id=eq.${encodeURIComponent(userId)}&select=tier,expires_at,source`);
   if (!r.ok) return { tier: "free" };
   const [e] = await r.json();
   const pro = e && e.tier === "pro" && (!e.expires_at || new Date(e.expires_at) > new Date());
-  return pro ? { tier: "pro", expires_at: e.expires_at || null } : { tier: "free" };
+  return pro ? { tier: "pro", expires_at: e.expires_at || null, source: e.source || null } : { tier: "free" };
 }
 async function tierOf(env, userId) {
   if (ALL_PRO_FOR_TESTING && env.ALL_PRO !== "0") return "pro";
@@ -402,7 +418,7 @@ async function handleMe(request, env) {
   const week = weekStart();
   const r = await db(env, `usage_counters?user_id=eq.${encodeURIComponent(user.id)}&period_start=eq.${week}&select=kind,count`);
   const usage = r.ok ? Object.fromEntries((await r.json()).map((u) => [u.kind, u.count])) : {};
-  return json(200, { signedIn: true, accounts: true, email: user.email, tier, expires_at: ent.expires_at || null, week, usage, caps: FAIR_USE[tier] });
+  return json(200, { signedIn: true, accounts: true, email: user.email, tier, expires_at: ent.expires_at || null, source: ent.source || null, week, usage, caps: FAIR_USE[tier] });
 }
 
 /* POST /promo {code}: redeems a promo code for the signed-in user (redeem_promo in
@@ -439,6 +455,91 @@ async function handlePromo(request, env) {
   return json(200, { tier: "pro", expires_at: out.expires_at });
 }
 
+/* ── Purchases (RevenueCat) ──
+   The app sells Pro through RevenueCat (pwa-billing.js; the stores' own purchase sheets), with the
+   Supabase user id as RevenueCat's app user id. RevenueCat is the record of what they bought; this
+   copies it into `entitlements`, the one place the rest of the Worker reads Pro from, in two ways:
+   POST /billing/sync (the app, right after a purchase or a restore, so Pro shows at once) and
+   POST /revenuecat (RevenueCat's webhook: renewals, cancellations, refunds, expiry). Both ask
+   RevenueCat for the customer's current entitlements (REST, REVENUECAT_SECRET_KEY) instead of
+   reading the event, so the answer is the same however the news came and a late or repeated event
+   can't leave Pro wrong. A promo code's Pro (source 'promo') is never shortened by a lapsed
+   subscription, and a subscription never shortens a promo's end. */
+const RC_API = "https://api.revenuecat.com/v1";
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+function rcOn(env) { return !!(env.REVENUECAT_SECRET_KEY && accountsOn(env)); }
+async function rcSubscriber(env, userId) {
+  const r = await fetch(`${RC_API}/subscribers/${encodeURIComponent(userId)}`, { headers: { authorization: `Bearer ${env.REVENUECAT_SECRET_KEY}`, "content-type": "application/json" } });
+  if (!r.ok) throw new Error("revenuecat_" + r.status);
+  return (await r.json()).subscriber || {};
+}
+/* {active, expires_at} for the Pro entitlement (REVENUECAT_ENTITLEMENT, default "pro"), null when they've never had it. */
+function rcPro(env, sub) {
+  const e = sub && sub.entitlements && sub.entitlements[env.REVENUECAT_ENTITLEMENT || "pro"];
+  if (!e) return null;
+  const end = e.expires_date ? new Date(e.expires_date) : null;
+  return { active: !end || end > new Date(), expires_at: end ? end.toISOString() : null };
+}
+async function applyRevenueCat(env, userId, sub) {
+  const rc = rcPro(env, sub);
+  const id = encodeURIComponent(userId);
+  const cur = await db(env, `entitlements?user_id=eq.${id}&select=tier,source,expires_at`);
+  const [row] = cur.ok ? await cur.json() : [];
+  const held = row && row.tier === "pro" && (!row.expires_at || new Date(row.expires_at) > new Date());
+  let write = null;
+  if (rc && rc.active) {
+    // Pro until the later of the subscription's end and what they already hold (no end beats any end).
+    let until = rc.expires_at;
+    if (held && until !== null) until = row.expires_at === null ? null : (new Date(row.expires_at) > new Date(until) ? row.expires_at : until);
+    write = { tier: "pro", source: held && row.source === "promo" && until === row.expires_at ? "promo" : "revenuecat", expires_at: until };
+  } else if (row && row.source === "revenuecat" && row.tier === "pro") {
+    write = { tier: "free", source: "revenuecat", expires_at: rc ? rc.expires_at : null };
+  }
+  if (write) {
+    const w = await db(env, "entitlements?on_conflict=user_id", { method: "POST", headers: { prefer: "resolution=merge-duplicates,return=minimal" }, body: JSON.stringify({ user_id: userId, ...write, updated_at: new Date().toISOString() }) });
+    if (!w.ok) throw new Error("entitlement_write_failed");
+  }
+  return entitlementOf(env, userId);
+}
+
+async function handleBillingSync(request, env) {
+  const origin = request.headers.get("origin");
+  if (!originAllowed(origin)) return json(403, { error: "Origin not allowed.", code: "origin_denied" });
+  if (!rcOn(env)) return json(503, { error: "Purchases aren't set up on this server yet.", code: "billing_off" });
+  let user;
+  try { user = await authUser(request, env); }
+  catch (e) { return json(503, { error: "We couldn't reach your account. Check your connection and try again.", code: "auth_unavailable" }); }
+  if (!user || user.invalid) return json(401, { error: "Sign in again, then restore your purchase.", code: "auth_expired" });
+  if (rateLimited(clientIp(request))) return json(429, { error: "Too many tries. Wait a few minutes and try again.", code: "rate_limited" });
+  try {
+    const ent = await applyRevenueCat(env, user.id, await rcSubscriber(env, user.id));
+    return json(200, { tier: ent.tier, expires_at: ent.expires_at || null });
+  } catch (e) {
+    return json(502, { error: "We couldn't check your purchase just now. Try again in a minute.", code: "billing_unavailable" });
+  }
+}
+
+/* RevenueCat's webhook. Its "Authorization header value" setting must equal REVENUECAT_WEBHOOK_AUTH. */
+async function handleRevenueCat(request, env) {
+  const want = env.REVENUECAT_WEBHOOK_AUTH || "";
+  const got = request.headers.get("authorization") || "";
+  let diff = want.length === got.length ? 0 : 1;
+  for (let i = 0; i < want.length; i++) diff |= want.charCodeAt(i) ^ (got.charCodeAt(i) || 0);
+  if (!want || diff) return json(401, { error: "Unauthorized" });
+  if (!rcOn(env)) return json(503, { error: "Purchases aren't set up on this server yet." });
+  let body = {};
+  try { body = await request.json(); } catch (e) {}
+  const ev = (body && body.event) || {};
+  // Our users are the UUIDs; an anonymous RevenueCat id (before sign-in) isn't one of them.
+  const ids = [...new Set([ev.app_user_id, ev.original_app_user_id, ...(ev.aliases || []), ...(ev.transferred_to || []), ...(ev.transferred_from || [])].filter((x) => typeof x === "string" && UUID_RE.test(x)))];
+  try {
+    for (const id of ids) await applyRevenueCat(env, id, await rcSubscriber(env, id));
+  } catch (e) {
+    return json(500, { error: "Couldn't apply the change; RevenueCat will retry." });
+  }
+  return json(200, { ok: true, users: ids.length });
+}
+
 /* POST /account/delete: deletes the signed-in user for good (Apple requires this inside the app).
    The auth user goes first: every table references auth.users on delete cascade, so if that fails
    nothing has changed and the app keeps its data. The row deletes after it are a second guarantee,
@@ -454,9 +555,12 @@ async function handleAccountDelete(request, env) {
   if (!user || user.invalid) return json(401, { error: "Sign in again, then delete your account.", code: "auth_expired" });
   const id = encodeURIComponent(user.id);
 
-  // TODO(RevenueCat): once purchases go through RevenueCat, cancel or detach this user's
-  // subscription here (DELETE /v1/subscribers/{app_user_id}) before their account goes, and tell
-  // them that an App Store subscription is cancelled in Settings, not by deleting the account.
+  // RevenueCat keeps a customer record under their id: delete it with the account (best effort; a
+  // failure must not stop the delete). The store subscription itself isn't cancelled by this, only
+  // the person can do that in Settings, which the delete screen says.
+  if (env.REVENUECAT_SECRET_KEY) {
+    try { await fetch(`${RC_API}/subscribers/${id}`, { method: "DELETE", headers: { authorization: `Bearer ${env.REVENUECAT_SECRET_KEY}` } }); } catch (e) {}
+  }
   // TODO(Sign in with Apple): once Sign in with Apple exists, revoke the user's Apple token here
   // (POST https://appleid.apple.com/auth/revoke with the stored refresh token), as Apple requires.
 

@@ -363,6 +363,7 @@ function AccountCard({showPro}){ const T=useTheme(), cr=T.lift(C.cr);
         {pro?'You have Pro on any phone you sign in on. ':''}Sign in on another phone and your wines, WineDNA and progress are there too.
       </div>
       {pro&&me&&me.expires_at&&<div style={{fontSize:13,color:T.mid,fontFamily:C.P}}>Pro until {_proUntil(me.expires_at)}.</div>}
+      {pro&&me&&me.source==='revenuecat'&&Billing.available()&&<div><span role="button" data-testid="manage-subscription" onClick={()=>Billing.manage()} style={link}>Manage subscription</span></div>}
       {me&&me.usage&&me.caps&&me.usage.label_scan>0&&<div style={{fontSize:13,color:T.mid,fontFamily:C.P}}>This week: {me.usage.label_scan} of {me.caps.label_scan} label scans.</div>}
       {promoMsg&&<div data-testid="promo-done" style={{fontSize:14,fontWeight:600,color:T.lift(C.green),fontFamily:C.P}}>{promoMsg}</div>}
       {!promoOpen&&!confirmDelete&&!promoMsg&&<div><span onClick={()=>{setPromoOpen(true);setErr('');}} style={link}>Have a promo code?</span></div>}
@@ -390,6 +391,11 @@ function AccountCard({showPro}){ const T=useTheme(), cr=T.lift(C.cr);
       ?<div>
         <div style={{fontSize:16,fontWeight:700,color:T.ink,fontFamily:C.P}}>Sign in to scan wine lists</div>
         <div style={{fontSize:13,color:T.ink2,fontFamily:C.P,lineHeight:1.5}}>Wine list scanning is part of Pro, which belongs to your account. Enter your email and type in the code we send.</div>
+      </div>
+      :intent==='subscribe'
+      ?<div>
+        <div style={{fontSize:16,fontWeight:700,color:T.ink,fontFamily:C.P}}>Sign in to go Pro</div>
+        <div style={{fontSize:13,color:T.ink2,fontFamily:C.P,lineHeight:1.5}}>Pro belongs to your account, so it follows you to a new phone. Enter your email and type in the code we send, then tap Upgrade.</div>
       </div>
       :<div>
         <div style={{fontSize:16,fontWeight:700,color:T.ink,fontFamily:C.P}}>Sign in (optional)</div>
@@ -425,6 +431,9 @@ function DeleteAccountPanel({busy,err,onCancel,onDelete}){ const T=useTheme(), c
     <div style={{fontSize:15,fontWeight:700,color:T.ink,fontFamily:C.P}}>Delete your account?</div>
     <div style={{fontSize:13,color:T.ink2,fontFamily:C.P,lineHeight:1.5}}>
       This deletes your account and everything backed up to it, and clears Vinterest from this phone: your wines, ratings, WineDNA, XP and learning progress. It can't be undone.
+    </div>
+    <div style={{fontSize:13,color:T.ink2,fontFamily:C.P,lineHeight:1.5}}>
+      {(Account.me()||{}).source==='revenuecat'&&<>A subscription bought through the App Store or Google Play isn't cancelled by deleting your account: cancel it in your phone's subscription settings, or it carries on billing. </>}
     </div>
     <div style={{fontSize:13,color:T.ink2,fontFamily:C.P,lineHeight:1.5}}>
       Want a copy first? <span onClick={saveBackupFile} style={{fontWeight:700,color:cr,cursor:'pointer'}}>Save a backup file</span> to your phone. You can import it later, with or without an account.
