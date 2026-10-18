@@ -40,6 +40,8 @@ const DemoPersona = (() => {
     vinterest_wineDNA_unlock_seen: '1',
     // The demos show what the app can do, so every screen at full detail (DetailLevel).
     vinterest_detail_all: '1', vinterest_detail_intro: '1',
+    // The visitor sees the whole app, Pro included (Mastery is a Pro screen).
+    vinterest_pro: '1',
   }).forEach(([k, v]) => local.setItem(k, v));
 
   // Written for you opens once the first beginner article is read (ContentEngine.shelfOpen), and a

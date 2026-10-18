@@ -118,8 +118,8 @@ test('the Worker\'s /config gives the public sign-in settings, or null without t
   const worker = (await import(pathToFileURL(copy).href)).default;
   const get = (env) => worker.fetch(new Request('https://vinterest.pages.dev/config'), env).then((r) => r.json());
   expect(await get({ SUPABASE_URL: 'https://p.supabase.co', SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_x', SUPABASE_SECRET_KEY: 'never' }))
-    .toEqual({ supabase: { url: 'https://p.supabase.co', key: 'sb_publishable_x' } });
-  expect(await get({})).toEqual({ supabase: null });
+    .toMatchObject({ supabase: { url: 'https://p.supabase.co', key: 'sb_publishable_x' }, billing: null });
+  expect(await get({})).toMatchObject({ supabase: null });
 });
 
 test('the iOS icon is 1024×1024 with no alpha channel (the App Store rejects one), and the launch screen is 2732 square', async () => {

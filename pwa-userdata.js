@@ -13,12 +13,18 @@ const Entitlement = {
   FREE_SCANS:10,
   // Signed in, Pro is whatever the server says (Account.me(), from /me). Signed out, the device
   // flag the Pro sheet sets (no real purchases exist yet); the server never trusts it.
-  /* While testing, before real purchases exist, everyone is Pro: every Pro feature is open and
-     no Pro sheet or scan limit shows (the Worker's ALL_PRO_FOR_TESTING matches, for signed-in
-     accounts). Set false to bring the free plan back. Tests set window.VINTEREST_REAL_PLANS to
-     check the free plan as it will ship. */
-  ALL_PRO_FOR_TESTING:true,
-  allPro(){ return this.ALL_PRO_FOR_TESTING&&!(typeof window!=='undefined'&&window.VINTEREST_REAL_PLANS); },
+  /* The testing switch: true makes everyone Pro (every Pro feature open, no Pro sheet or scan
+     limit), matched by the Worker's ALL_PRO_FOR_TESTING for signed-in accounts. It ships false:
+     Pro comes from a subscription (Billing) or a promo code. Tests set window.VINTEREST_REAL_PLANS
+     to be sure of the plans as they ship. */
+  ALL_PRO_FOR_TESTING:false,
+  /* The Worker's /config says whether everyone is Pro (its ALL_PRO variable, Billing.allPro), so the
+     test can end without an app update; until it has been heard, the constant above. */
+  allPro(){
+    if(typeof window!=='undefined'&&window.VINTEREST_REAL_PLANS) return false;
+    const w=typeof Billing!=='undefined'?Billing.allPro():null;
+    return w===null?this.ALL_PRO_FOR_TESTING:w;
+  },
   isPro(){
     if(this.allPro()) return true;
     if(typeof Account!=='undefined'&&Account.signedIn()) return Account.tier()==='pro';
@@ -32,12 +38,11 @@ const Entitlement = {
   /* What wine list scanning still needs: null (go ahead), 'signin' or 'pro'. The Worker checks this
      itself (list_scan is PRO_ONLY in _worker.js) and never trusts the device flag, so with sign-in
      configured a signed-out phone needs to sign in even after "Start Pro", and a signed-in one needs
-     Pro on the account. Without sign-in configured the Worker can't check, so the device flag counts. */
+     Pro on the account (a subscription or a promo code). Without sign-in configured the Worker can't check, so the device flag counts. */
   listScanNeeds(){
     if(typeof Account!=='undefined'&&Account.available()){
       if(!Account.signedIn()) return 'signin';
-      // While testing, any signed-in account may scan lists (OPEN_TO_SIGNED_IN in _worker.js).
-      return null;
+      return this.isPro()?null:'pro';
     }
     return this.isPro()?null:'pro';
   },

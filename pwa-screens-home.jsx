@@ -21,6 +21,7 @@ function _openLearn(item,nav,showPro){
    the user's WineDNA, takes a follow-up, and ends each answer with a "Learn more" link. A
    suggestion tapped fills the box; nothing is sent until they press the arrow. */
 function WineChatWidget({wines,nav,showPro}){
+  const wideBar=useWide(); // on an iPad the bar is far wider than a phone's, so its text can be larger
   const [q,setQ]=React.useState('');
   const [turns,setTurns]=React.useState([]); // [{q,a,link,err}]
   const [asking,setAsking]=React.useState(false);
@@ -83,12 +84,12 @@ function WineChatWidget({wines,nav,showPro}){
     <div style={{margin:'0 16px 4px'}}>
       <VinnyBar onSubmit={()=>doAsk(q.trim())} hasText={!!q} canSend={!asking&&!!q.trim()} lit={!!q.trim()} onClear={clearQ} field={<>
           <input ref={inputRef} value={q} onChange={e=>onType(e.target.value)} onKeyDown={onKey} onFocus={()=>setFocused(true)} onBlur={()=>setFocused(false)} aria-label="Ask Vinny"
-            placeholder={open?'Ask a follow-up…':'Ask Vinny about wine…'} style={{position:'absolute',inset:0,width:'100%',border:'none',outline:'none',background:'transparent',fontSize:16,fontFamily:C.P,color:'#fff'}}/>
+            placeholder={open?'Ask a follow-up…':'Ask Vinny about wine…'} style={{position:'absolute',inset:0,width:'100%',border:'none',outline:'none',background:'transparent',fontSize:wideBar?19:16,fontFamily:C.P,color:'#fff'}}/>
           {idle&&(
             <div onClick={()=>fill(prompts[pIdx])} style={{position:'absolute',inset:0,display:'flex',alignItems:'center',overflow:'hidden',background:'#1C1C1F',cursor:'text'}}>
               {/* A long suggestion steps down a size rather than being cut mid-word; px sizes,
                   since it has to fit the bar's one line whatever the text-size setting. */}
-              <span style={{fontSize:(prompts[pIdx]||'').length>40?'12px':(prompts[pIdx]||'').length>32?'13px':(prompts[pIdx]||'').length>27?'14px':'16px',color:'rgba(255,255,255,0.75)',fontFamily:C.P,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{typed}<span style={{display:'inline-block',width:1.5,height:15,background:'rgba(255,255,255,0.75)',marginLeft:2,verticalAlign:'-2px',animation:'homeCaret 0.9s step-end infinite'}}/></span>
+              <span style={{fontSize:wideBar?'19px':(prompts[pIdx]||'').length>40?'12px':(prompts[pIdx]||'').length>32?'13px':(prompts[pIdx]||'').length>27?'14px':'16px',color:'rgba(255,255,255,0.75)',fontFamily:C.P,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{typed}<span style={{display:'inline-block',width:1.5,height:15,background:'rgba(255,255,255,0.75)',marginLeft:2,verticalAlign:'-2px',animation:'homeCaret 0.9s step-end infinite'}}/></span>
             </div>
           )}
       </>}/>

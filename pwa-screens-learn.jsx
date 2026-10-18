@@ -6,6 +6,9 @@ try{ ON_RAMP=_loadJSON('data/onramp.json')||[]; }catch(e){ console.error('[Vinte
 function onRampDone(id){ return LearnProgress.onRampDone(id); }
 function onRampProgress(){ return ON_RAMP.filter(a=>onRampDone(a.id)).length; }
 
+/* The article hero lines its text up with the body below it: ReadingLayout's text column is 760px,
+   and on an iPad on its side the column and its side panel together are 760 + 344. */
+function _heroPad(size){ return `32px max(20px, calc((100% - ${size==='roomy'?1104:760}px) / 2)) 28px`; }
 /* Side panels for reading screens on an iPad (ReadingLayout): cards of context beside the text. */
 const _asideCardOf=T=>({background:T.glass,borderRadius:16,border:`1px solid ${T.line}`,padding:'14px 16px',display:'flex',flexDirection:'column',gap:8});
 const _asideHead=t=><div style={{fontSize:12,fontWeight:700,color:C.mid,letterSpacing:'0.08em',textTransform:'uppercase',fontFamily:C.P}}>{t}</div>;
@@ -35,7 +38,7 @@ function _AsideLinks({links}){ const T=useTheme(), cr=T.lift(C.cr);
 }
 
 function LearnArticleScreen({nav,back}){ const T=useTheme(), cr=T.lift(C.cr);
-  const wide=useWide();
+  const wide=useWide(), size=useLayoutSize();
   const idx=React.useMemo(()=>{ const i=parseInt(Handoff.onRampIdx.get()||'0',10); return isNaN(i)?0:Math.min(i,ON_RAMP.length-1); },[]);
   const article=ON_RAMP[idx];
   const [completed,setCompleted]=React.useState(()=>onRampDone(article.id));
@@ -64,7 +67,7 @@ function LearnArticleScreen({nav,back}){ const T=useTheme(), cr=T.lift(C.cr);
 
       <div style={{flex:1,overflowY:'auto'}}>
         {/* Hero */}
-        <div style={{background:T.dark?T.card:C.ink,padding:wide?'32px max(20px, calc((100% - 760px) / 2)) 28px':'24px 20px 22px'}}>
+        <div style={{background:T.dark?T.card:C.ink,padding:wide?_heroPad(size):'24px 20px 22px'}}>
           <div style={{display:'inline-flex',alignItems:'center',gap:6,padding:'4px 12px',borderRadius:20,background:'rgba(255,255,255,0.1)',marginBottom:12}}>
             <Icon n="book" sz={12} col="rgba(255,255,255,0.55)"/>
             <span style={{fontSize:13,fontWeight:600,color:'rgba(255,255,255,0.55)',fontFamily:C.P}}>Quick Read</span>
@@ -143,7 +146,7 @@ Object.assign(window,{LearnArticleScreen});
    A fixed guide (Guides, pwa-guides.js): a line from the reader's own wines, the sections, then
    three questions and something to try. Read + every question right = finished. */
 function GuideScreen({nav,back}){ const T=useTheme(), cr=T.lift(C.cr);
-  const wide=useWide();
+  const wide=useWide(), size=useLayoutSize();
   const guide=React.useMemo(()=>Guides.byId(Handoff.guide.get()||''),[]);
   const [read,setRead]=React.useState(()=>!!guide&&Guides.isRead(guide.id));
   const personal=React.useMemo(()=>guide?Guides.personal(guide):null,[guide&&guide.id]);
@@ -163,7 +166,7 @@ function GuideScreen({nav,back}){ const T=useTheme(), cr=T.lift(C.cr);
         {read&&passed&&<span style={{fontSize:15,fontWeight:700,color:T.green,fontFamily:C.P}}>✓ Done</span>}
       </div>
       <div style={{flex:1,overflowY:'auto'}}>
-        <div style={{background:T.dark?T.card:C.ink,padding:wide?'32px max(20px, calc((100% - 760px) / 2)) 28px':'24px 20px 22px'}}>
+        <div style={{background:T.dark?T.card:C.ink,padding:wide?_heroPad(size):'24px 20px 22px'}}>
           <div style={{fontSize:26,fontWeight:800,color:'#fff',fontFamily:C.P,lineHeight:1.2,marginBottom:10}}>{guide.title}</div>
           <div style={{fontSize:16,color:'rgba(255,255,255,0.55)',fontFamily:C.P,lineHeight:1.6}}>{guide.subtitle}</div>
         </div>
@@ -234,7 +237,7 @@ Object.assign(window,{GuideScreen});
 
 /* ── GENERATED ARTICLE SCREEN ── */
 function GenArticleScreen({nav,back,showPro}){ const T=useTheme(), cr=T.lift(C.cr);
-  const wide=useWide();
+  const wide=useWide(), size=useLayoutSize();
   const stub=React.useMemo(()=>{
     try{ return Handoff.genArticle.get(); }catch(e){ return null; }
   },[]);
@@ -308,7 +311,7 @@ function GenArticleScreen({nav,back,showPro}){ const T=useTheme(), cr=T.lift(C.c
 
       <div style={{flex:1,overflowY:'auto'}}>
         {/* Hero */}
-        <div style={{background:T.dark?T.card:C.ink,padding:wide?'32px max(20px, calc((100% - 760px) / 2)) 28px':'24px 20px 22px'}}>
+        <div style={{background:T.dark?T.card:C.ink,padding:wide?_heroPad(size):'24px 20px 22px'}}>
           <div style={{display:'inline-flex',alignItems:'center',gap:6,padding:'4px 12px',borderRadius:20,background:'rgba(255,255,255,0.1)',marginBottom:12}}>
             <Icon n={stub.iconName||'read'} sz={14} col="rgba(255,255,255,0.6)"/>
             <span style={{fontSize:13,fontWeight:600,color:'rgba(255,255,255,0.55)',fontFamily:C.P}}>Written for you</span>

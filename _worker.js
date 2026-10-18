@@ -120,7 +120,28 @@ export default {
       if (request.method === "OPTIONS") return cors(new Response(null, { status: 204 }));
       if (request.method !== "GET") return json(405, { error: "Method not allowed" });
       // The public sign-in settings, for an app build that wasn't given them (Account.loadRemoteConfig).
-      return json(200, { supabase: env.SUPABASE_URL && env.SUPABASE_PUBLISHABLE_KEY ? { url: env.SUPABASE_URL, key: env.SUPABASE_PUBLISHABLE_KEY } : null });
+      // Also the stores' public RevenueCat SDK keys (Billing in pwa-billing.js) and whether everyone
+      // is Pro while testing (Entitlement.allPro), so ending the test is a Cloudflare variable
+      // (ALL_PRO=0), not an app update.
+      return json(200, {
+        supabase: env.SUPABASE_URL && env.SUPABASE_PUBLISHABLE_KEY ? { url: env.SUPABASE_URL, key: env.SUPABASE_PUBLISHABLE_KEY } : null,
+        billing: env.REVENUECAT_IOS_KEY || env.REVENUECAT_ANDROID_KEY ? { ios: env.REVENUECAT_IOS_KEY || null, android: env.REVENUECAT_ANDROID_KEY || null } : null,
+        allPro: ALL_PRO_FOR_TESTING && env.ALL_PRO !== "0",
+      });
+    }
+    if (url.pathname === "/billing/sync") {
+      if (request.method === "OPTIONS") return cors(new Response(null, { status: 204 }));
+      if (request.method !== "POST") return json(405, { error: "Method not allowed" });
+      return handleBillingSync(request, env);
+    }
+    if (url.pathname === "/revenuecat") {
+      if (request.method !== "POST") return json(405, { error: "Method not allowed" });
+      return handleRevenueCat(request, env);
+    }
+    if (url.pathname === "/reviewer/login") {
+      if (request.method === "OPTIONS") return cors(new Response(null, { status: 204 }));
+      if (request.method !== "POST") return json(405, { error: "Method not allowed" });
+      return handleReviewerLogin(request, env);
     }
     if (url.pathname === "/promo") {
       if (request.method === "OPTIONS") return cors(new Response(null, { status: 204 }));
@@ -313,10 +334,9 @@ const FAIR_USE = {
   pro:  { label_scan: 600, list_scan: 150, price_search: 300, _other: 3000 },
 };
 const PRO_ONLY = { list_scan: "Wine list scanning is part of Vinterest Pro.", lcbo: "LCBO stock near you is part of Vinterest Pro." };
-/* While testing, before real purchases exist: these Pro features are open to any signed-in account
-   (metered by FAIR_USE.free); signed out still asks them to sign in. Remove an entry to make it Pro
-   again, and change Entitlement.listScanNeeds in pwa-userdata.js to match. */
-const OPEN_TO_SIGNED_IN = { list_scan: true };
+/* Pro-only purposes any signed-in account may use anyway (metered by FAIR_USE.free). None: list
+   scanning and LCBO stock need Pro, from a subscription or a promo code. */
+const OPEN_TO_SIGNED_IN = {};
 const AUTH_CACHE_MS = 5 * 60 * 1000;
 const _authCache = new Map();
 
@@ -344,19 +364,18 @@ async function authUser(request, env) {
 function db(env, path, init = {}) {
   return fetch(`${env.SUPABASE_URL}/rest/v1/${path}`, { ...init, headers: { apikey: env.SUPABASE_SECRET_KEY, "content-type": "application/json", ...(init.headers || {}) } });
 }
-/* While testing, before real purchases exist, every signed-in account is Pro (metered at
-   FAIR_USE.pro). Set false to bring the free plan back; tests pass ALL_PRO: "0" to check it.
-   Entitlement.ALL_PRO_FOR_TESTING in pwa-userdata.js is the app's side. List scanning still
-   needs sign-in, so anonymous traffic can't run up the bill. */
-const ALL_PRO_FOR_TESTING = true;
+/* The testing switch: true makes every signed-in account Pro (metered at FAIR_USE.pro). It ships
+   false: Pro is a subscription (RevenueCat) or a promo code. Entitlement.ALL_PRO_FOR_TESTING in
+   pwa-userdata.js is the app's side. */
+const ALL_PRO_FOR_TESTING = false;
 /* Their plan from the entitlements row: {tier, expires_at} (expires_at only while Pro has an end
    date, as a promo code's does). Pro that has run out reads as free. */
 async function entitlementOf(env, userId) {
-  const r = await db(env, `entitlements?user_id=eq.${encodeURIComponent(userId)}&select=tier,expires_at`);
+  const r = await db(env, `entitlements?user_id=eq.${encodeURIComponent(userId)}&select=tier,expires_at,source`);
   if (!r.ok) return { tier: "free" };
   const [e] = await r.json();
   const pro = e && e.tier === "pro" && (!e.expires_at || new Date(e.expires_at) > new Date());
-  return pro ? { tier: "pro", expires_at: e.expires_at || null } : { tier: "free" };
+  return pro ? { tier: "pro", expires_at: e.expires_at || null, source: e.source || null } : { tier: "free" };
 }
 async function tierOf(env, userId) {
   if (ALL_PRO_FOR_TESTING && env.ALL_PRO !== "0") return "pro";
@@ -402,7 +421,7 @@ async function handleMe(request, env) {
   const week = weekStart();
   const r = await db(env, `usage_counters?user_id=eq.${encodeURIComponent(user.id)}&period_start=eq.${week}&select=kind,count`);
   const usage = r.ok ? Object.fromEntries((await r.json()).map((u) => [u.kind, u.count])) : {};
-  return json(200, { signedIn: true, accounts: true, email: user.email, tier, expires_at: ent.expires_at || null, week, usage, caps: FAIR_USE[tier] });
+  return json(200, { signedIn: true, accounts: true, email: user.email, tier, expires_at: ent.expires_at || null, source: ent.source || null, week, usage, caps: FAIR_USE[tier] });
 }
 
 /* POST /promo {code}: redeems a promo code for the signed-in user (redeem_promo in
@@ -439,6 +458,136 @@ async function handlePromo(request, env) {
   return json(200, { tier: "pro", expires_at: out.expires_at });
 }
 
+/* ── App review sign-in ──
+   Apple's and Google's reviewers can't read the emailed sign-in code, and Pro is bought by an
+   account, so without a way in they never reach the Pro sheet. With REVIEWER_EMAIL and
+   REVIEWER_CODE (6 digits, so it fits the app's code box) set as Cloudflare secrets, POST
+   /reviewer/login signs that one address in when its fixed code is typed. Unset them (after
+   review) and the route answers 404 like any other path. The app only tries it after the normal
+   code has failed, so ordinary sign-in doesn't touch it. The account is an ordinary free one.
+   It works by asking Supabase for a one-time code for that address (admin generate_link) and
+   spending it at once, so no password or session secret exists. */
+async function handleReviewerLogin(request, env) {
+  const origin = request.headers.get("origin");
+  if (!originAllowed(origin)) return json(403, { error: "Origin not allowed.", code: "origin_denied" });
+  if (!env.REVIEWER_EMAIL || !env.REVIEWER_CODE || !accountsOn(env)) return json(404, { error: "Not found." });
+  if (rateLimited(clientIp(request))) return json(429, { error: "Too many tries. Wait a few minutes and try again.", code: "rate_limited" });
+  let body = {};
+  try { body = await request.json(); } catch (e) {}
+  const email = String(body.email || "").trim().toLowerCase();
+  const code = String(body.code || "").replace(/\D/g, "");
+  // Both checks always run, so a wrong address and a wrong code take the same time.
+  const okEmail = safeEqual(email, String(env.REVIEWER_EMAIL).trim().toLowerCase());
+  const okCode = safeEqual(code, String(env.REVIEWER_CODE).replace(/\D/g, ""));
+  if (!okEmail || !okCode) return json(401, { error: "That code didn't work.", code: "invalid" });
+  try {
+    const g = await fetch(`${env.SUPABASE_URL}/auth/v1/admin/generate_link`, { method: "POST", headers: { apikey: env.SUPABASE_SECRET_KEY, "content-type": "application/json" }, body: JSON.stringify({ type: "magiclink", email }) });
+    const otp = g.ok ? (await g.json()).email_otp : null;
+    if (!otp) throw new Error("no_otp");
+    let v = null;
+    for (const type of ["magiclink", "email"]) {
+      v = await fetch(`${env.SUPABASE_URL}/auth/v1/verify`, { method: "POST", headers: { apikey: env.SUPABASE_PUBLISHABLE_KEY, "content-type": "application/json" }, body: JSON.stringify({ type, email, token: otp }) });
+      if (v.ok) break;
+    }
+    const s = v && v.ok ? await v.json() : null;
+    if (!s || !s.access_token) throw new Error("no_session");
+    return json(200, { access_token: s.access_token, refresh_token: s.refresh_token, expires_in: s.expires_in, expires_at: s.expires_at, user: s.user && { id: s.user.id, email: s.user.email } });
+  } catch (e) {
+    return json(502, { error: "We couldn't sign you in just now. Try again in a minute.", code: "reviewer_unavailable" });
+  }
+}
+
+/* ── Purchases (RevenueCat) ──
+   The app sells Pro through RevenueCat (pwa-billing.js; the stores' own purchase sheets), with the
+   Supabase user id as RevenueCat's app user id. RevenueCat is the record of what they bought; this
+   copies it into `entitlements`, the one place the rest of the Worker reads Pro from, in two ways:
+   POST /billing/sync (the app, right after a purchase or a restore, so Pro shows at once) and
+   POST /revenuecat (RevenueCat's webhook: renewals, cancellations, refunds, expiry). Both ask
+   RevenueCat for the customer's current entitlements (REST, REVENUECAT_SECRET_KEY) instead of
+   reading the event, so the answer is the same however the news came and a late or repeated event
+   can't leave Pro wrong. A promo code's Pro (source 'promo') is never shortened by a lapsed
+   subscription, and a subscription never shortens a promo's end. */
+const RC_API = "https://api.revenuecat.com/v1";
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+function rcOn(env) { return !!(env.REVENUECAT_SECRET_KEY && accountsOn(env)); }
+async function rcSubscriber(env, userId) {
+  const r = await fetch(`${RC_API}/subscribers/${encodeURIComponent(userId)}`, { headers: { authorization: `Bearer ${env.REVENUECAT_SECRET_KEY}`, "content-type": "application/json" } });
+  if (!r.ok) throw new Error("revenuecat_" + r.status);
+  return (await r.json()).subscriber || {};
+}
+/* {active, expires_at} for the Pro entitlement (REVENUECAT_ENTITLEMENT, default "pro"), null when they've never had it. */
+function rcPro(env, sub) {
+  const e = sub && sub.entitlements && sub.entitlements[env.REVENUECAT_ENTITLEMENT || "pro"];
+  if (!e) return null;
+  const end = e.expires_date ? new Date(e.expires_date) : null;
+  return { active: !end || end > new Date(), expires_at: end ? end.toISOString() : null };
+}
+async function applyRevenueCat(env, userId, sub) {
+  const rc = rcPro(env, sub);
+  const id = encodeURIComponent(userId);
+  const cur = await db(env, `entitlements?user_id=eq.${id}&select=tier,source,expires_at`);
+  const [row] = cur.ok ? await cur.json() : [];
+  const held = row && row.tier === "pro" && (!row.expires_at || new Date(row.expires_at) > new Date());
+  let write = null;
+  if (rc && rc.active) {
+    // Pro until the later of the subscription's end and what they already hold (no end beats any end).
+    let until = rc.expires_at;
+    if (held && until !== null) until = row.expires_at === null ? null : (new Date(row.expires_at) > new Date(until) ? row.expires_at : until);
+    write = { tier: "pro", source: held && row.source === "promo" && until === row.expires_at ? "promo" : "revenuecat", expires_at: until };
+  } else if (row && row.source === "revenuecat" && row.tier === "pro") {
+    write = { tier: "free", source: "revenuecat", expires_at: rc ? rc.expires_at : null };
+  }
+  if (write) {
+    const w = await db(env, "entitlements?on_conflict=user_id", { method: "POST", headers: { prefer: "resolution=merge-duplicates,return=minimal" }, body: JSON.stringify({ user_id: userId, ...write, updated_at: new Date().toISOString() }) });
+    if (!w.ok) throw new Error("entitlement_write_failed");
+  }
+  return entitlementOf(env, userId);
+}
+
+async function handleBillingSync(request, env) {
+  const origin = request.headers.get("origin");
+  if (!originAllowed(origin)) return json(403, { error: "Origin not allowed.", code: "origin_denied" });
+  if (!rcOn(env)) return json(503, { error: "Purchases aren't set up on this server yet.", code: "billing_off" });
+  let user;
+  try { user = await authUser(request, env); }
+  catch (e) { return json(503, { error: "We couldn't reach your account. Check your connection and try again.", code: "auth_unavailable" }); }
+  if (!user || user.invalid) return json(401, { error: "Sign in again, then restore your purchase.", code: "auth_expired" });
+  if (rateLimited(clientIp(request))) return json(429, { error: "Too many tries. Wait a few minutes and try again.", code: "rate_limited" });
+  try {
+    const ent = await applyRevenueCat(env, user.id, await rcSubscriber(env, user.id));
+    return json(200, { tier: ent.tier, expires_at: ent.expires_at || null });
+  } catch (e) {
+    return json(502, { error: "We couldn't check your purchase just now. Try again in a minute.", code: "billing_unavailable" });
+  }
+}
+
+/* Equal strings, compared without stopping at the first difference. */
+function safeEqual(a, b) {
+  a = String(a); b = String(b);
+  let diff = a.length === b.length ? 0 : 1;
+  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ (b.charCodeAt(i) || 0);
+  return diff === 0;
+}
+
+/* RevenueCat's webhook. Its "Authorization header value" setting must equal REVENUECAT_WEBHOOK_AUTH. */
+async function handleRevenueCat(request, env) {
+  const want = env.REVENUECAT_WEBHOOK_AUTH || "";
+  const got = request.headers.get("authorization") || "";
+  if (!want || !safeEqual(want, got)) return json(401, { error: "Unauthorized" });
+  if (!rcOn(env)) return json(503, { error: "Purchases aren't set up on this server yet." });
+  let body = {};
+  try { body = await request.json(); } catch (e) {}
+  const ev = (body && body.event) || {};
+  // Our users are the UUIDs; an anonymous RevenueCat id (before sign-in) isn't one of them.
+  const ids = [...new Set([ev.app_user_id, ev.original_app_user_id, ...(ev.aliases || []), ...(ev.transferred_to || []), ...(ev.transferred_from || [])].filter((x) => typeof x === "string" && UUID_RE.test(x)))];
+  try {
+    for (const id of ids) await applyRevenueCat(env, id, await rcSubscriber(env, id));
+  } catch (e) {
+    return json(500, { error: "Couldn't apply the change; RevenueCat will retry." });
+  }
+  return json(200, { ok: true, users: ids.length });
+}
+
 /* POST /account/delete: deletes the signed-in user for good (Apple requires this inside the app).
    The auth user goes first: every table references auth.users on delete cascade, so if that fails
    nothing has changed and the app keeps its data. The row deletes after it are a second guarantee,
@@ -454,9 +603,12 @@ async function handleAccountDelete(request, env) {
   if (!user || user.invalid) return json(401, { error: "Sign in again, then delete your account.", code: "auth_expired" });
   const id = encodeURIComponent(user.id);
 
-  // TODO(RevenueCat): once purchases go through RevenueCat, cancel or detach this user's
-  // subscription here (DELETE /v1/subscribers/{app_user_id}) before their account goes, and tell
-  // them that an App Store subscription is cancelled in Settings, not by deleting the account.
+  // RevenueCat keeps a customer record under their id: delete it with the account (best effort; a
+  // failure must not stop the delete). The store subscription itself isn't cancelled by this, only
+  // the person can do that in Settings, which the delete screen says.
+  if (env.REVENUECAT_SECRET_KEY) {
+    try { await fetch(`${RC_API}/subscribers/${id}`, { method: "DELETE", headers: { authorization: `Bearer ${env.REVENUECAT_SECRET_KEY}` } }); } catch (e) {}
+  }
   // TODO(Sign in with Apple): once Sign in with Apple exists, revoke the user's Apple token here
   // (POST https://appleid.apple.com/auth/revoke with the stored refresh token), as Apple requires.
 

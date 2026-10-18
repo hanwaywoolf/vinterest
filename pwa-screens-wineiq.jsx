@@ -585,6 +585,8 @@ function WineDNAScreen({nav,back,showPro}){
   const [generatingSummary,setGeneratingSummary]=React.useState(null);
   const [genScripts,setGenScripts]=React.useState({});
   const [generatingScript,setGeneratingScript]=React.useState(null);
+  const [scriptErr,setScriptErr]=React.useState({}); // type -> why its script couldn't be written
+  const [scriptTry,setScriptTry]=React.useState(0); // Try again bumps it, which re-runs the effect
   const [copied,setCopied]=React.useState(null);
   const [scriptLength,setScriptLength]=React.useState(Settings.scriptLength());
   const [collapsed,setCollapsed]=React.useState(()=>{
@@ -676,11 +678,13 @@ function WineDNAScreen({nav,back,showPro}){
     if(!t.wines.length) return;
     const typeKey=t.key;
     setGeneratingScript(typeKey);
-    SommelierScript.get(scriptLength,typeKey,t.label,t.wines,text=>{
+    setScriptErr(e=>e[typeKey]?{...e,[typeKey]:null}:e);
+    SommelierScript.get(scriptLength,typeKey,t.label,t.wines,(text,err)=>{
       setGeneratingScript(g=>g===typeKey?null:g);
       if(text) setGenScripts(g=>({...g,[typeKey]:text}));
+      else setScriptErr(e=>({...e,[typeKey]:(err&&err.message)||'Something went wrong.'}));
     });
-  },[typeIdx,allWines.length,scriptLength]);
+  },[typeIdx,allWines.length,scriptLength,scriptTry]);
 
   /* Swipe */
   function onTouchStart(e){touchX.current=e.touches[0].clientX;touchY.current=e.touches[0].clientY;}
@@ -1077,7 +1081,13 @@ function WineDNAScreen({nav,back,showPro}){
               </div>
             ):(
               <>
-                <div style={{fontSize:15,color:T.ink2,fontFamily:C.P,fontStyle:'italic',lineHeight:1.65,marginBottom:genScripts[t.key]?10:0}}>{genScripts[t.key]||'Generating…'}</div>
+                {genScripts[t.key]?<div style={{fontSize:15,color:T.ink2,fontFamily:C.P,fontStyle:'italic',lineHeight:1.65,marginBottom:10}}>{genScripts[t.key]}</div>
+                  :scriptErr[t.key]?<div data-testid="script-error" style={{display:'flex',flexDirection:'column',gap:10,alignItems:'flex-start'}}>
+                    <div style={{fontSize:15,color:T.ink2,fontFamily:C.P,lineHeight:1.5}}>We couldn't write your script just now.</div>
+                    <div style={{fontSize:13,color:T.mid,fontFamily:C.P,lineHeight:1.4}}>{scriptErr[t.key]}</div>
+                    <Btn primary small style={{background:t.col}} onClick={()=>setScriptTry(n=>n+1)}>Try again</Btn>
+                  </div>
+                  :<div style={{fontSize:15,color:T.ink2,fontFamily:C.P,fontStyle:'italic',lineHeight:1.65}}>Writing…</div>}
                 {genScripts[t.key]&&(
                   <Btn primary small style={{background:t.col,boxShadow:`0 3px 12px ${t.col}40`,marginTop:4}} onClick={()=>{
                     try{navigator.clipboard.writeText((genScripts[t.key]||'').replace(/"/g,''));setCopied(t.key);setTimeout(()=>setCopied(null),2000);}catch(e){}

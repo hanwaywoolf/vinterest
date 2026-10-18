@@ -70,7 +70,8 @@ function QuizHubScreen({nav,back,showPro}){ const T=useTheme(), cr=T.lift(C.cr);
   const wide=useWide(), list=wide?{display:'grid',gridTemplateColumns:'repeat(2,minmax(0,1fr))',gap:8,alignItems:'stretch'}:{display:'flex',flexDirection:'column',gap:8};
   const [xpData,setXpData]=React.useState(()=>XPSystem.get());
   const [isPro,setIsPro]=React.useState(()=>Entitlement.isPro());
-  React.useEffect(()=>{const h=()=>setIsPro(true);window.addEventListener('vinterest:pro',h);return()=>window.removeEventListener('vinterest:pro',h);},[]);
+  // Re-read, never assume: the event also fires when the Worker changes whether everyone is Pro, and a purchase or promo changes the account.
+  React.useEffect(()=>{const h=()=>setIsPro(Entitlement.isPro());window.addEventListener('vinterest:pro',h);window.addEventListener('vinterest:account',h);return()=>{window.removeEventListener('vinterest:pro',h);window.removeEventListener('vinterest:account',h);};},[]);
   const level=XPSystem.getLevel(xpData.total);
   const nextLvl=XPSystem.nextLevel(xpData.total);
   const prog=XPSystem.levelProgress(xpData.total);
@@ -1054,7 +1055,7 @@ function MilestoneMoment({items}){ const T=useTheme(), cr=T.lift(C.cr), INK=T.da
   const [share,said]=_useShare();
   if(!items||!items.length) return null;
   return(
-    <div data-testid="milestone-moment" className="milestone-in" style={{background:T.ink,borderRadius:16,padding:'14px 16px',display:'flex',flexDirection:'column',gap:8}}>
+    <div data-testid="milestone-moment" className="milestone-in" style={{background:T.dark?'rgba(231,198,107,0.12)':T.ink,border:T.dark?'1px solid rgba(231,198,107,0.38)':'none',borderRadius:16,padding:'14px 16px',display:'flex',flexDirection:'column',gap:8}}>
       <div style={{fontSize:13,fontWeight:600,color:'#E7C66B',fontFamily:C.P,textTransform:'uppercase',letterSpacing:'0.06em'}}>{items.length===1?(items[0].id.startsWith('level:')?'New level':'New milestone'):`${items.length} new milestones`}</div>
       {items.map(x=>(
         <div key={x.id} style={{display:'flex',alignItems:'center',gap:12}}>

@@ -104,8 +104,32 @@ test('the reveal tells the scan in order: label, match, taste, grape, place, a l
   await expect(root).toContainText('How was it?');
   await root.getByText('Just checking the match? Skip the rating', { exact: true }).click();
   await expect(root).toContainText('Saved for later');
-  await expect(page.getByTestId('reveal-ways')).toContainText('Wine details');
-  await root.getByText('Go deeper', { exact: true }).click();
+  // Two ways out: the result (the deck one tap from there) or Finish, to Home.
+  await expect(page.getByTestId('reveal-ways')).toContainText('Finish');
+  await expect(page.getByTestId('reveal-ways')).not.toContainText('Wine details');
+  await root.getByText('See the result and learn more', { exact: true }).click();
+  // The deck opens straight away, its first card the result in full.
+  await expect(root).toContainText('1 / 9');
+  await expect(root).toContainText('How we got this');
+  await expect(page.getByTestId('scan-price')).toContainText(/In shops.*about .*est\./); // the price travels with the result
+  // As does everything else the result screen led with: the label's reading with a way to correct it, and the style line.
+  await expect(page.getByTestId('deck-identity')).toContainText('CVNE');
+  await expect(page.getByTestId('deck-identity')).toContainText('Not right? Edit');
+  await expect(root).toContainText('Estimated from the label');
+  // Back is always one step: the card before, then out of the deck to the story's end sheet,
+  // then the story's scene before it; never the camera.
+  await page.locator('#root div[style*="scaleX(-1)"]').click();
+  await expect(root).toContainText('2 / 9');
+  await page.goBack();
+  await expect(root).toContainText('1 / 9');
+  await root.getByRole('button', { name: 'Back' }).click();
+  await expect(root).toContainText('Saved for later');
+  await expect(page.getByTestId('reveal-ways')).toContainText('Finish');
+  await page.goBack();
+  await expect(scene).toHaveAttribute('data-scene', 'say');
+  await expect(page).toHaveURL(/#identified/);
+  await root.getByText('Skip', { exact: true }).click();
+  await root.getByText('See the result and learn more', { exact: true }).click();
   await expect(root).toContainText('1 / 9');
   // Coming back to the screen (the deck's back, or from Details) doesn't replay it: it opens
   // where they left, the deck.
@@ -243,4 +267,94 @@ test('the drinking window and how sure the grape is: estimates from style, Claud
   expect(out.claude).toEqual(['young', 2030, 2040, 'claude', 'Best from 2030 to 2040']);
   expect(out.lines).toEqual(['Tempranillo, Garnacha', 'Tempranillo, Garnacha', 'Usually Tempranillo and Garnacha', 'Tempranillo 80%, Garnacha 20%', 'Usually Tempranillo and Garnacha']);
   expect(out.words).toEqual(['Red-skinned: Thick, dark skins', 'Medium berries in a medium bunch']);
+});
+
+// Finish goes Home from every place it appears (the end sheet, and the deck's last card once rated
+// or saved). It once rewound one history entry too far, onto the camera, because the story's
+// history entry was still on top when the app navigated.
+async function toDeck(context, page) {
+  // The way someone really gets here: Home, then the Scan button (so the app rewinds by history
+  // entries, rather than replacing the entry as it does for a page opened on #camera).
+  await page.setViewportSize({ width: 390, height: 844 });
+  await makeDeterministic(page);
+  await seedLocalStorage(page, { vinterest_wineDNA_unlock_seen: '1' });
+  await stubNetwork(context, { reveal: 'real', claudeText: (b) => b.purpose === 'label_scan' ? JSON.stringify(RIOJA) : b.purpose === 'scancard' ? JSON.stringify(GEN) : '' });
+  await page.goto(`${BASE}/?demo=1#home`);
+  await page.getByText('Scan', { exact: true }).last().click();
+  await page.getByTestId('scan-file').setInputFiles({ name: 'label.png', mimeType: 'image/png', buffer: PNG });
+  const root = page.locator('#root');
+  await playIt(page).catch(() => {});
+  await root.getByText('Skip', { exact: true }).click();
+  return root;
+}
+test('Finish on the end sheet goes Home', async ({ context, page }) => {
+  const root = await toDeck(context, page);
+  await root.getByText('Just checking the match? Skip the rating', { exact: true }).click();
+  await root.getByText('Finish', { exact: true }).click();
+  await expect(page).toHaveURL(/#home/);
+  await expect(root).toContainText('Up next');
+});
+async function ratedOnDeck(context, page) {
+  const root = await toDeck(context, page);
+  await root.getByText('Just checking the match? Skip the rating', { exact: true }).click();
+  await root.getByText('See the result and learn more', { exact: true }).click();
+  for (let i = 0; i < 8; i++) await page.locator('#root div[style*="scaleX(-1)"]').click();
+  await expect(root).toContainText('9 / 9');
+  await root.getByText('90', { exact: true }).click();
+  await root.getByText('Save rating').click();
+  await root.getByText('Finished: what\'s next?').click();
+  return root;
+}
+test('Finish on the deck\'s last card goes Home', async ({ context, page }) => {
+  const root = await ratedOnDeck(context, page);
+  await root.getByText('Finish', { exact: true }).click();
+  await expect(page).toHaveURL(/#home/);
+  await expect(root).toContainText('Up next');
+});
+test('See full wine details on the deck\'s last card opens the wine', async ({ context, page }) => {
+  const root = await ratedOnDeck(context, page);
+  await root.getByText('See full wine details').click();
+  await expect(page).toHaveURL(/#detail/);
+});
+
+// A bottle rated in the story isn't asked for its rating again on the deck's last card, and the
+// price is on screen on the first card without scrolling.
+test('rated in the story: the deck shows the price up front and the last card shows the rating', async ({ context, page }) => {
+  const root = await toDeck(context, page);
+  await root.getByText('90', { exact: true }).click();
+  await root.getByText('Save rating').click();
+  await root.getByText('See the result and learn more', { exact: true }).click();
+  await expect(root).toContainText('1 / 9');
+  await expect(page.getByTestId('scan-price')).toBeInViewport({ ratio: 1 });
+  for (let i = 0; i < 8; i++) await page.locator('#root div[style*="scaleX(-1)"]').click();
+  await expect(root).toContainText('9 / 9');
+  await expect(page.getByTestId('rating-settled')).toContainText('Rated 90 · Outstanding');
+  await expect(root).not.toContainText('Save rating');
+  await expect(root).not.toContainText('How was it?');
+  // "Change it" brings the dial back.
+  await root.getByText('Change it', { exact: true }).click();
+  await expect(root).toContainText('Save rating');
+});
+
+// Someone with too few ratings for a match (every new tester) gets the meter on card 1, and still
+// gets everything the result screen had: the label's reading with Edit, the price and the Style.
+test('too few ratings: card 1 still has the label, Edit, price and style', async ({ context, page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await makeDeterministic(page);
+  await seedLocalStorage(page, { vinterest_wineDNA_unlock_seen: '1', vinterest_onboarded: '1', vinterest_age_ok: '1', vinterest_region: 'uk', vinterest_wines: '[]' });
+  await stubNetwork(context, { reveal: 'real', claudeText: (b) => b.purpose === 'label_scan' ? JSON.stringify(RIOJA) : b.purpose === 'scancard' ? JSON.stringify(GEN) : '' });
+  await page.goto(`${BASE}/#home`);
+  await page.getByText('Scan', { exact: true }).last().click();
+  await page.getByTestId('scan-file').setInputFiles({ name: 'label.png', mimeType: 'image/png', buffer: PNG });
+  const root = page.locator('#root');
+  await playIt(page).catch(() => {});
+  await root.getByText('Skip', { exact: true }).click();
+  await root.getByText('Just checking the match? Skip the rating', { exact: true }).click();
+  await root.getByText('See the result and learn more', { exact: true }).click();
+  await expect(root).toContainText('Your match, from your own taste');
+  await expect(page.getByTestId('deck-identity')).toContainText('CVNE');
+  await expect(page.getByTestId('deck-identity')).toContainText('Not right? Edit');
+  await expect(page.getByTestId('scan-price')).toContainText(/about/);
+  await expect(page.getByTestId('scan-price')).toBeInViewport({ ratio: 1 });
+  await expect(root).toContainText('Estimated from the label');
 });
