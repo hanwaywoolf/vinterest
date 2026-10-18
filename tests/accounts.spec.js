@@ -95,21 +95,21 @@ test.describe('Worker', () => {
     expect(sb.calls[0]).toEqual({ url: `${SB}/auth/v1/user`, apikey: 'sb_publishable_x' });
   });
 
-  test('while testing, any signed-in account may scan lists (metered); Pro ones too', async () => {
+  test('list scanning is Pro only: a free account is told so, a Pro one is metered', async () => {
     const sb = fakeSupabase(); globalThis.fetch = sb.fetch;
-    expect((await scan('list_scan', 'tok-free')).status).toBe(200);
-    expect(sb.counters['u-free:list_scan']).toBe(1);
+    expect((await scan('list_scan', 'tok-free')).status).toBe(402);
+    expect(sb.counters['u-free:list_scan']).toBeUndefined();
     expect((await scan('list_scan', 'tok-pro')).status).toBe(200);
     expect(sb.counters['u-pro:list_scan']).toBe(1);
     expect(sb.calls.filter((c) => c.url.includes('/rest/v1/')).every((c) => c.apikey === 'sb_secret_x')).toBe(true);
   });
 
-  test('while testing, every signed-in account is Pro (ALL_PRO_FOR_TESTING); list scans still need sign-in', async () => {
+  test('as shipped, nobody is Pro without a subscription or a promo code, whatever the environment says', async () => {
     const sb = fakeSupabase(); globalThis.fetch = sb.fetch;
-    const testing = { ...env }; delete testing.ALL_PRO;
-    const me = await (await worker.fetch(req('/me', { token: 'tok-free', method: 'GET' }), testing)).json();
-    expect(me.tier).toBe('pro');
-    expect((await scan('list_scan', null, testing)).status).toBe(402);
+    const shipped = { ...env }; delete shipped.ALL_PRO;
+    const me = await (await worker.fetch(req('/me', { token: 'tok-free', method: 'GET' }), shipped)).json();
+    expect(me.tier).toBe('free');
+    expect((await scan('list_scan', 'tok-free', shipped)).status).toBe(402);
   });
 
   test('the weekly fair-use limit answers 429 once reached, and /me reports usage', async () => {

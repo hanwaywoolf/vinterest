@@ -329,10 +329,9 @@ const FAIR_USE = {
   pro:  { label_scan: 600, list_scan: 150, price_search: 300, _other: 3000 },
 };
 const PRO_ONLY = { list_scan: "Wine list scanning is part of Vinterest Pro.", lcbo: "LCBO stock near you is part of Vinterest Pro." };
-/* While testing, before real purchases exist: these Pro features are open to any signed-in account
-   (metered by FAIR_USE.free); signed out still asks them to sign in. Remove an entry to make it Pro
-   again, and change Entitlement.listScanNeeds in pwa-userdata.js to match. */
-const OPEN_TO_SIGNED_IN = { list_scan: true };
+/* Pro-only purposes any signed-in account may use anyway (metered by FAIR_USE.free). None: list
+   scanning and LCBO stock need Pro, from a subscription or a promo code. */
+const OPEN_TO_SIGNED_IN = {};
 const AUTH_CACHE_MS = 5 * 60 * 1000;
 const _authCache = new Map();
 
@@ -360,11 +359,10 @@ async function authUser(request, env) {
 function db(env, path, init = {}) {
   return fetch(`${env.SUPABASE_URL}/rest/v1/${path}`, { ...init, headers: { apikey: env.SUPABASE_SECRET_KEY, "content-type": "application/json", ...(init.headers || {}) } });
 }
-/* While testing, before real purchases exist, every signed-in account is Pro (metered at
-   FAIR_USE.pro). Set false to bring the free plan back; tests pass ALL_PRO: "0" to check it.
-   Entitlement.ALL_PRO_FOR_TESTING in pwa-userdata.js is the app's side. List scanning still
-   needs sign-in, so anonymous traffic can't run up the bill. */
-const ALL_PRO_FOR_TESTING = true;
+/* The testing switch: true makes every signed-in account Pro (metered at FAIR_USE.pro). It ships
+   false: Pro is a subscription (RevenueCat) or a promo code. Entitlement.ALL_PRO_FOR_TESTING in
+   pwa-userdata.js is the app's side. */
+const ALL_PRO_FOR_TESTING = false;
 /* Their plan from the entitlements row: {tier, expires_at} (expires_at only while Pro has an end
    date, as a promo code's does). Pro that has run out reads as free. */
 async function entitlementOf(env, userId) {

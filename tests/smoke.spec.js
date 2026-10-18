@@ -108,11 +108,11 @@ test('the XP line on Home opens the achievements overlay with no console errors'
   expect(errors).toEqual([]);
 });
 
-// While testing, everyone is Pro in the app (Entitlement.ALL_PRO_FOR_TESTING); the other tests set
-// VINTEREST_REAL_PLANS (helpers.stubNetwork) to check the free plan as it will ship.
-test('while testing, everyone is Pro: no scan limit, every unlock open', async ({ page }) => {
+// The app ships with nobody Pro until they subscribe or redeem a promo code. The testing switch
+// (Entitlement.ALL_PRO_FOR_TESTING, or the Worker's /config allPro) can still open everything.
+test('as shipped nobody is Pro; the testing switch opens every unlock when turned on', async ({ page }) => {
   await page.goto(`${BASE}/?demo=1#home`);
-  // This file's beforeEach (stubNetwork) asks for the real plans; this test is about the switch.
-  expect(await page.evaluate(() => { window.VINTEREST_REAL_PLANS = false; return [Entitlement.isPro(), Entitlement.atScanLimit(), Entitlement.listScanNeeds() !== 'pro']; })).toEqual([true, false, true]);
+  expect(await page.evaluate(() => { window.VINTEREST_REAL_PLANS = false; return [Entitlement.allPro(), Entitlement.isPro(), Entitlement.listScanNeeds()]; })).toEqual([false, false, 'pro']);
+  expect(await page.evaluate(() => { Entitlement.ALL_PRO_FOR_TESTING = true; return [Entitlement.isPro(), Entitlement.atScanLimit()]; })).toEqual([true, false]);
   expect(await page.evaluate(() => { window.VINTEREST_REAL_PLANS = true; return Entitlement.atScanLimit(); })).toBe(true);
 });

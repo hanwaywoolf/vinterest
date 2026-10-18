@@ -23,9 +23,9 @@ How Pro is sold in the iPhone and Android apps. The code is `pwa-billing.js` (`B
 
 The keys come to the app from `GET /config`, so changing them needs a web deploy, not an app update.
 
-## Ending the "everyone is Pro" testing period
+## Everyone-is-Pro testing switch
 
-While `ALL_PRO_FOR_TESTING` is on (`pwa-userdata.js` and `_worker.js`), everyone is Pro and the sheet seldom shows. Set the Cloudflare variable `ALL_PRO` to `0` and the Worker stops treating signed-in accounts as Pro, and `/config` tells every phone the same (`Entitlement.allPro`, `Billing.allPro`), with no app update. To test buying in TestFlight or a Play internal build, set it on the Preview environment first. Before submitting, flip the two constants to `false` too, so a phone that's offline at first launch starts on the real plans.
+It ships off: Pro comes only from a subscription or a promo code, and list scanning and LCBO stock need Pro. The switch is still there for a test build: `Entitlement.ALL_PRO_FOR_TESTING` and the Worker's `ALL_PRO_FOR_TESTING` (both `false`) open everything for signed-in accounts when set to `true`.
 
 ## Testing a purchase
 

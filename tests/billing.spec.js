@@ -61,7 +61,7 @@ test.describe('Worker', () => {
   test('/config carries the public store keys and whether everyone is Pro', async () => {
     const get = (e) => worker.fetch(new Request('https://vinterest.pages.dev/config'), e).then((r) => r.json());
     expect(await get({ ...env, REVENUECAT_IOS_KEY: 'appl_x', REVENUECAT_ANDROID_KEY: 'goog_x' })).toMatchObject({ billing: { ios: 'appl_x', android: 'goog_x' }, allPro: false });
-    expect(await get({})).toMatchObject({ billing: null, allPro: true });
+    expect(await get({})).toMatchObject({ billing: null, allPro: false });
   });
 
   test('the webhook refuses anyone without the shared secret, and applies nothing', async () => {
@@ -293,13 +293,13 @@ test.describe('the Pro sheet in the app', () => {
     expect(await page.evaluate(() => [Billing.available(), Billing.sdk()])).toEqual([false, null]);
   });
 
-  test('"everyone is Pro while testing" follows the Worker, so the test ends without an app update', async ({ context, page }) => {
+  test('the testing switch follows the Worker and ships off', async ({ context, page }) => {
     await makeDeterministic(page);
     await seedLocalStorage(page, { vinterest_onboarded: '1', vinterest_region: 'uk', vinterest_billing_config: JSON.stringify({ allPro: false }) });
     await context.addInitScript(() => { window.VINTEREST_REAL_PLANS = false; });
     await page.goto(`${BASE}/#home`);
     expect(await page.evaluate(() => [Entitlement.allPro(), Billing.allPro()])).toEqual([false, false]);
     await page.evaluate(() => localStorage.removeItem('vinterest_billing_config'));
-    expect(await page.evaluate(() => Entitlement.allPro())).toBe(true);
+    expect(await page.evaluate(() => Entitlement.allPro())).toBe(false);
   });
 });
