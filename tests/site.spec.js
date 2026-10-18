@@ -416,7 +416,12 @@ test.describe('legal pages', () => {
     for (const p of ['/privacy/', '/terms/']) {
       await page.goto(BASE + p);
       await expect(page.locator('h1')).toBeVisible();
-      await expect(page.locator('.draft')).toContainText('Draft');
+      if (p === '/terms/') await expect(page.locator('.draft')).toContainText('Draft');
+      else {
+        await expect(page.locator('.draft')).toHaveCount(0);
+        await expect(page.locator('body')).not.toContainText('[');
+        await expect(page.getByRole('heading', { name: 'What is sent to an AI service' })).toBeVisible();
+      }
     }
   });
 });
