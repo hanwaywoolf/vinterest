@@ -412,17 +412,21 @@ test.describe('beta form', () => {
 });
 
 test.describe('legal pages', () => {
-  test('privacy and terms exist and link back', async ({ page }) => {
+  test('privacy and terms exist, say what the app does, and have no draft banner or leftover [brackets]', async ({ page }) => {
+    const heading = { '/privacy/': 'What is sent to an AI service', '/terms/': 'Subscriptions' };
     for (const p of ['/privacy/', '/terms/']) {
       await page.goto(BASE + p);
       await expect(page.locator('h1')).toBeVisible();
-      if (p === '/terms/') await expect(page.locator('.draft')).toContainText('Draft');
-      else {
-        await expect(page.locator('.draft')).toHaveCount(0);
-        await expect(page.locator('body')).not.toContainText('[');
-        await expect(page.getByRole('heading', { name: 'What is sent to an AI service' })).toBeVisible();
-      }
+      await expect(page.locator('.draft')).toHaveCount(0);
+      await expect(page.locator('body')).not.toContainText('[');
+      await expect(page.getByRole('heading', { name: heading[p] })).toBeVisible();
+      await expect(page.locator('meta[name="robots"]')).toHaveCount(0);
     }
+    // The auto-renewal wording Apple asks for, and the way to cancel.
+    await expect(page.locator('body')).toBeVisible();
+    await page.goto(BASE + '/terms/');
+    await expect(page.locator('body')).toContainText('cancel it at least 24 hours before the period ends');
+    await expect(page.locator('body')).toContainText('Manage subscription');
   });
 });
 

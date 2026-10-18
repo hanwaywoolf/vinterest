@@ -138,6 +138,11 @@ export default {
       if (request.method !== "POST") return json(405, { error: "Method not allowed" });
       return handleRevenueCat(request, env);
     }
+    if (url.pathname === "/reviewer/login") {
+      if (request.method === "OPTIONS") return cors(new Response(null, { status: 204 }));
+      if (request.method !== "POST") return json(405, { error: "Method not allowed" });
+      return handleReviewerLogin(request, env);
+    }
     if (url.pathname === "/promo") {
       if (request.method === "OPTIONS") return cors(new Response(null, { status: 204 }));
       if (request.method !== "POST") return json(405, { error: "Method not allowed" });
@@ -453,6 +458,45 @@ async function handlePromo(request, env) {
   return json(200, { tier: "pro", expires_at: out.expires_at });
 }
 
+/* ── App review sign-in ──
+   Apple's and Google's reviewers can't read the emailed sign-in code, and Pro is bought by an
+   account, so without a way in they never reach the Pro sheet. With REVIEWER_EMAIL and
+   REVIEWER_CODE (6 digits, so it fits the app's code box) set as Cloudflare secrets, POST
+   /reviewer/login signs that one address in when its fixed code is typed. Unset them (after
+   review) and the route answers 404 like any other path. The app only tries it after the normal
+   code has failed, so ordinary sign-in doesn't touch it. The account is an ordinary free one.
+   It works by asking Supabase for a one-time code for that address (admin generate_link) and
+   spending it at once, so no password or session secret exists. */
+async function handleReviewerLogin(request, env) {
+  const origin = request.headers.get("origin");
+  if (!originAllowed(origin)) return json(403, { error: "Origin not allowed.", code: "origin_denied" });
+  if (!env.REVIEWER_EMAIL || !env.REVIEWER_CODE || !accountsOn(env)) return json(404, { error: "Not found." });
+  if (rateLimited(clientIp(request))) return json(429, { error: "Too many tries. Wait a few minutes and try again.", code: "rate_limited" });
+  let body = {};
+  try { body = await request.json(); } catch (e) {}
+  const email = String(body.email || "").trim().toLowerCase();
+  const code = String(body.code || "").replace(/\D/g, "");
+  // Both checks always run, so a wrong address and a wrong code take the same time.
+  const okEmail = safeEqual(email, String(env.REVIEWER_EMAIL).trim().toLowerCase());
+  const okCode = safeEqual(code, String(env.REVIEWER_CODE).replace(/\D/g, ""));
+  if (!okEmail || !okCode) return json(401, { error: "That code didn't work.", code: "invalid" });
+  try {
+    const g = await fetch(`${env.SUPABASE_URL}/auth/v1/admin/generate_link`, { method: "POST", headers: { apikey: env.SUPABASE_SECRET_KEY, "content-type": "application/json" }, body: JSON.stringify({ type: "magiclink", email }) });
+    const otp = g.ok ? (await g.json()).email_otp : null;
+    if (!otp) throw new Error("no_otp");
+    let v = null;
+    for (const type of ["magiclink", "email"]) {
+      v = await fetch(`${env.SUPABASE_URL}/auth/v1/verify`, { method: "POST", headers: { apikey: env.SUPABASE_PUBLISHABLE_KEY, "content-type": "application/json" }, body: JSON.stringify({ type, email, token: otp }) });
+      if (v.ok) break;
+    }
+    const s = v && v.ok ? await v.json() : null;
+    if (!s || !s.access_token) throw new Error("no_session");
+    return json(200, { access_token: s.access_token, refresh_token: s.refresh_token, expires_in: s.expires_in, expires_at: s.expires_at, user: s.user && { id: s.user.id, email: s.user.email } });
+  } catch (e) {
+    return json(502, { error: "We couldn't sign you in just now. Try again in a minute.", code: "reviewer_unavailable" });
+  }
+}
+
 /* ── Purchases (RevenueCat) ──
    The app sells Pro through RevenueCat (pwa-billing.js; the stores' own purchase sheets), with the
    Supabase user id as RevenueCat's app user id. RevenueCat is the record of what they bought; this
@@ -517,13 +561,19 @@ async function handleBillingSync(request, env) {
   }
 }
 
+/* Equal strings, compared without stopping at the first difference. */
+function safeEqual(a, b) {
+  a = String(a); b = String(b);
+  let diff = a.length === b.length ? 0 : 1;
+  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ (b.charCodeAt(i) || 0);
+  return diff === 0;
+}
+
 /* RevenueCat's webhook. Its "Authorization header value" setting must equal REVENUECAT_WEBHOOK_AUTH. */
 async function handleRevenueCat(request, env) {
   const want = env.REVENUECAT_WEBHOOK_AUTH || "";
   const got = request.headers.get("authorization") || "";
-  let diff = want.length === got.length ? 0 : 1;
-  for (let i = 0; i < want.length; i++) diff |= want.charCodeAt(i) ^ (got.charCodeAt(i) || 0);
-  if (!want || diff) return json(401, { error: "Unauthorized" });
+  if (!want || !safeEqual(want, got)) return json(401, { error: "Unauthorized" });
   if (!rcOn(env)) return json(503, { error: "Purchases aren't set up on this server yet." });
   let body = {};
   try { body = await request.json(); } catch (e) {}

@@ -236,8 +236,9 @@ test('sign in with an emailed code from Profile, then sign out', async ({ contex
   await root.getByText('Sign out').click();
   await expect(root).toContainText('Sign in (optional)');
   expect(await page.evaluate(() => [Store.get('vinterest_session'), Store.get('vinterest_me')])).toEqual([null, null]);
-  // The wrong code's 403 is logged by the browser itself; nothing else may be.
-  expect(errors.filter((e) => !e.includes('status of 403'))).toEqual([]);
+  // The wrong code's 403, and the app-review sign-in's 404 while it is switched off (Account._reviewerLogin),
+  // are logged by the browser itself; nothing else may be.
+  expect(errors.filter((e) => !e.includes('status of 403') && !e.includes('status of 404'))).toEqual([]);
 });
 
 test('signed in, Pro is what the server says, not the device flag', async ({ context, page }) => {

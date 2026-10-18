@@ -72,7 +72,10 @@ const Account = {
   async verifyCode(email,code){
     email=this._cleanEmail(email); code=String(code||'').replace(/\D/g,'');
     if(code.length<6) return {ok:false,error:'Enter the 6-digit code from the email.'};
-    const r=await this._auth('verify',{type:'email',email,token:code});
+    let r=await this._auth('verify',{type:'email',email,token:code});
+    // A code that isn't the emailed one may be the app-review account's fixed code (Worker /reviewer/login,
+    // only live while REVIEWER_EMAIL and REVIEWER_CODE are set); any other answer leaves the failure as it was.
+    if((!r.ok||!r.body||!r.body.access_token)&&r.status!==0) r=await this._reviewerLogin(email,code)||r;
     if(!r.ok||!r.body||!r.body.access_token){
       if(r.status===0) return {ok:false,error:'We couldn\'t reach the sign-in service. Check your connection and try again.'};
       return {ok:false,error:'That code didn\'t work. It may have expired: check it, or send a new one.'};
@@ -80,6 +83,14 @@ const Account = {
     this._save(r.body);
     await this.refreshMe();
     return {ok:true};
+  },
+  async _reviewerLogin(email,code){
+    try{
+      const r=await fetch(Platform.api('/reviewer/login'),{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({email,code})});
+      if(!r.ok) return null;
+      const j=await r.json();
+      return j&&j.access_token?{ok:true,status:200,body:j}:null;
+    }catch(e){ return null; }
   },
   /* A current access token for the Worker (refreshed when it's about to run out), or null. */
   async token(){
