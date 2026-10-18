@@ -52,7 +52,9 @@ const TasteMatch = {
   // go either way", under it "Probably not for you"; "Likely a favourite" needs the chance at
   // HIT_FROM and an expected score at least FAV_ABOVE over their average for the type (up with
   // their best, not merely enjoyed).
-  HIT_FROM:78, GOOD_FROM:58, MIXED_FROM:38, FAV_ABOVE:2,
+  // GOOD_FROM was 58 and MIXED_FROM 38 until a 58% was called "a good bet" on a bottle that had a
+  // 42% chance of missing the person's own bar: a lean, not a bet. 68 and 45 say it more carefully.
+  HIT_FROM:78, GOOD_FROM:68, MIXED_FROM:45, FAV_ABOVE:2,
   VERDICTS:{
     hit:  {label:'Likely a favourite',   tone:'good'},
     good: {label:'A good bet',           tone:'good'},
