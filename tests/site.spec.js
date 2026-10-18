@@ -423,6 +423,36 @@ test.describe('beta form', () => {
   });
 });
 
+test.describe('search engines', () => {
+  test('the page carries its structured data, with the FAQ exactly as the page says it', async ({ page }) => {
+    await page.goto(BASE + '/');
+    const data = JSON.parse(await page.locator('script[type="application/ld+json"]').textContent());
+    const types = data['@graph'].map((n) => n['@type']);
+    expect(types).toEqual(['Organization', 'WebSite', 'MobileApplication', 'FAQPage']);
+    const faq = data['@graph'].find((n) => n['@type'] === 'FAQPage').mainEntity;
+    const shown = await page.locator('.faq details').evaluateAll((ds) => ds.map((d) => ({ q: d.querySelector('summary').textContent.trim(), a: d.querySelector('p').textContent.replace(/\s+/g, ' ').trim() })));
+    expect(faq.map((x) => ({ q: x.name, a: x.acceptedAnswer.text }))).toEqual(shown);
+    await expect(page).toHaveTitle(/wine scanner app/);
+  });
+
+  test('the sitemap lists only pages that may be indexed, and robots.txt points to it', async ({ request }) => {
+    const map = await (await request.get(BASE + '/sitemap.xml')).text();
+    expect(map).toContain('<loc>https://vinterest.app/</loc>');
+    expect(map).not.toContain('/privacy/');
+    expect(await (await request.get(BASE + '/robots.txt')).text()).toContain('Sitemap: https://vinterest.app/sitemap.xml');
+  });
+
+  test('www redirects to the bare domain, and preview hosts are kept out of search', async () => {
+    const { default: worker } = await load();
+    const env = { ASSETS: { fetch: async () => new Response('<html></html>', { headers: { 'content-type': 'text/html' } }) } };
+    const www = await worker.fetch(new Request('https://www.vinterest.app/privacy/?a=1'), env);
+    expect(www.status).toBe(301);
+    expect(www.headers.get('location')).toBe('https://vinterest.app/privacy/?a=1');
+    expect((await worker.fetch(new Request('https://vinterest.app/'), env)).headers.get('x-robots-tag')).toBeNull();
+    expect((await worker.fetch(new Request('https://abc123.vinterest-site.pages.dev/'), env)).headers.get('x-robots-tag')).toBe('noindex');
+  });
+});
+
 test.describe('legal pages', () => {
   test('privacy and terms exist and link back', async ({ page }) => {
     for (const p of ['/privacy/', '/terms/']) {

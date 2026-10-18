@@ -79,6 +79,24 @@ function fill(html, vars) {
   return out;
 }
 
+/* Structured data for search engines (schema.org JSON-LD): who makes it, the site, the app, and the
+   page's own questions and answers. The FAQ is read from the page's <details> at build time, so the
+   markup can never say something the page doesn't. */
+export function structuredData(html, origin) {
+  const text = (h) => h.replace(/<[^>]+>/g, '').replace(/&rsquo;|&#39;/g, "'").replace(/&ldquo;|&rdquo;|&quot;/g, '"').replace(/&amp;/g, '&').replace(/\s+/g, ' ').trim();
+  const faq = [...html.matchAll(/<details><summary>([\s\S]*?)<\/summary><p>([\s\S]*?)<\/p><\/details>/g)]
+    .map(([, q, a]) => ({ '@type': 'Question', name: text(q), acceptedAnswer: { '@type': 'Answer', text: text(a) } }));
+  const desc = (html.match(/<meta name="description" content="([^"]*)"/) || [])[1] || '';
+  const graph = [
+    { '@type': 'Organization', '@id': `${origin}/#org`, name: 'Vinterest', url: `${origin}/`, logo: `${origin}/icons/icon-512.png`, email: 'hello@vinterest.app' },
+    { '@type': 'WebSite', '@id': `${origin}/#site`, name: 'Vinterest', url: `${origin}/`, publisher: { '@id': `${origin}/#org` }, inLanguage: 'en-GB' },
+    { '@type': 'MobileApplication', name: 'Vinterest', operatingSystem: 'iOS, Android', applicationCategory: 'LifestyleApplication', description: desc, publisher: { '@id': `${origin}/#org` } },
+  ];
+  if (faq.length) graph.push({ '@type': 'FAQPage', mainEntity: faq });
+  // "<" is escaped so no answer's text can close the script tag.
+  return `<script type="application/ld+json">${JSON.stringify({ '@context': 'https://schema.org', '@graph': graph }).replace(/</g, '\\u003c')}</script>`;
+}
+
 async function build() {
   const origin = (process.env.SITE_ORIGIN || 'https://vinterest.app').replace(/\/+$/, '');
   fs.rmSync(OUT, { recursive: true, force: true });
@@ -93,6 +111,7 @@ async function build() {
 
   const token = process.env.CF_ANALYTICS_TOKEN;
   const vars = {
+    JSONLD: structuredData(read('site/index.html'), origin),
     ORIGIN: origin,
     CSS_V: hash(css), JS_V: hash(js), DEMO_V: hash(demo),
     ANALYTICS: token
@@ -114,7 +133,8 @@ async function build() {
   fs.writeFileSync(path.join(OUT, 'robots.txt'), `User-agent: *\nAllow: /\nSitemap: ${origin}/sitemap.xml\n`);
   fs.writeFileSync(path.join(OUT, 'sitemap.xml'),
     `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
-    ['/', '/privacy/', '/terms/'].map((p) => `  <url><loc>${origin}${p}</loc></url>\n`).join('') + `</urlset>\n`);
+    // Only pages search engines may index: the legal pages are drafts marked noindex.
+    ['/'].map((p) => `  <url><loc>${origin}${p}</loc><lastmod>${new Date().toISOString().slice(0, 10)}</lastmod></url>\n`).join('') + `</urlset>\n`);
   buildFonts(OUT);
 
   console.log(`Built site-dist/ — demo.js ${(demo.length / 1024).toFixed(0)} KB, site.js ${(js.length / 1024).toFixed(0)} KB, site.css ${(css.length / 1024).toFixed(0)} KB${token ? ', analytics on' : ', no analytics token'}`);

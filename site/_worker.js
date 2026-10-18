@@ -148,6 +148,9 @@ export default {
       const c = request.headers.get("cf-ipcountry") || (request.cf && request.cf.country) || "";
       return json({ country: /^[A-Z]{2}$/.test(c) && c !== "XX" && c !== "T1" ? c : "" });
     }
+    // One address for search engines: www goes to the bare domain, and every other host (the
+    // pages.dev previews) is served but kept out of search, so it never competes with vinterest.app.
+    if (url.hostname === "www.vinterest.app") return Response.redirect(`https://vinterest.app${url.pathname}${url.search}`, 301);
     const res = await env.ASSETS.fetch(request);
     const type = res.headers.get("content-type") || "";
     const out = new Response(res.body, res);
@@ -157,6 +160,7 @@ export default {
     else if (/^\/(fonts|icons)\//.test(url.pathname) || url.pathname === "/logo.png") out.headers.set("cache-control", "public, max-age=2592000");
     out.headers.set("x-content-type-options", "nosniff");
     out.headers.set("referrer-policy", "strict-origin-when-cross-origin");
+    if (url.hostname !== "vinterest.app") out.headers.set("x-robots-tag", "noindex");
     return out;
   },
 };
