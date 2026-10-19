@@ -241,9 +241,35 @@ function TextSizeControl(){ const T=useTheme(), cr=T.lift(C.cr);
 function NotifyControl(){ const T=useTheme(), cr=T.lift(C.cr);
   const [prefs,setPrefs]=React.useState(()=>Notices.prefs());
   React.useEffect(()=>{ const h=()=>setPrefs(Notices.prefs()); window.addEventListener('vinterest:notices',h); window.addEventListener('vinterest:sync',h); return()=>{ window.removeEventListener('vinterest:notices',h); window.removeEventListener('vinterest:sync',h); }; },[]);
+  // Push to this phone (Push, pwa-push.js): only in the apps, and only once the server can send.
+  const [ps,setPs]=React.useState('unavailable'), [pbusy,setPbusy]=React.useState(false), [pmsg,setPmsg]=React.useState('');
+  React.useEffect(()=>{ let on=true; const h=()=>{ Push.status().then(s=>{ if(on) setPs(s); }); };
+    h(); window.addEventListener('vinterest:push',h); window.addEventListener('vinterest:account',h);
+    return()=>{ on=false; window.removeEventListener('vinterest:push',h); window.removeEventListener('vinterest:account',h); }; },[]);
+  async function flipPush(){
+    if(pbusy) return; setPbusy(true); setPmsg('');
+    const r=ps==='on'?await Push.disable():await Push.enable();
+    setPbusy(false); if(!r.ok) setPmsg(r.error||'');
+  }
+  async function testPush(){ if(pbusy) return; setPbusy(true); const r=await Push.test(); setPbusy(false); setPmsg(r.ok?'Sent. It should arrive in a moment.':r.error); }
+  const pushDesc=ps==='signin'?'Sign in to get reminders on this phone, even when the app is closed.':ps==='blocked'?'Turned off in your phone\'s settings. Turn Vinterest\'s notifications on there, then come back.':'Reminders and Pro alerts on this phone, even when the app is closed.';
   return <div data-testid="notify-control"><Card style={{padding:14,display:"flex",flexDirection:"column",gap:4}}>
     <div style={{fontSize:16,fontWeight:700,color:T.ink,fontFamily:C.P}}>Notifications</div>
-    <div style={{fontSize:13,color:T.mid,fontFamily:C.P}}>What the bell on Home collects.</div>
+    <div style={{fontSize:13,color:T.mid,fontFamily:C.P}}>What the bell on Home collects{ps==='unavailable'?'.':', and what we may send to your phone.'}</div>
+    {ps!=='unavailable'&&<div data-testid="push-control" style={{display:'flex',alignItems:'center',gap:12,marginTop:10,paddingTop:10,borderTop:`1px solid ${T.line}`}}>
+      <div style={{flex:1,minWidth:0}}>
+        <div style={{fontSize:15,fontWeight:700,color:T.ink,fontFamily:C.P}}>Push notifications</div>
+        <div style={{fontSize:13,color:T.mid,fontFamily:C.P,lineHeight:1.4}}>{pushDesc}</div>
+      </div>
+      {ps==='signin'?<span role="button" onClick={()=>window.dispatchEvent(new Event('vinterest:signin'))} style={{fontSize:14,fontWeight:600,color:cr,fontFamily:C.P,cursor:'pointer'}}>Sign in</span>
+      :ps==='blocked'?null
+      :<div role="switch" aria-checked={ps==='on'} aria-label="Push notifications" tabIndex={0} onClick={flipPush} onKeyDown={e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); flipPush(); } }}
+        style={{width:46,height:28,borderRadius:14,background:ps==='on'?cr:T.line,position:'relative',cursor:'pointer',flexShrink:0,opacity:pbusy?0.6:1,transition:'background .15s'}}>
+        <div style={{position:'absolute',top:3,left:ps==='on'?21:3,width:22,height:22,borderRadius:11,background:'#fff',boxShadow:'0 1px 3px rgba(0,0,0,0.2)',transition:'left .15s'}}/>
+      </div>}
+    </div>}
+    {ps==='on'&&<div><span role="button" data-testid="push-test" onClick={testPush} style={{fontSize:14,fontWeight:600,color:cr,fontFamily:C.P,cursor:'pointer'}}>Send me a test</span></div>}
+    {pmsg&&<div role="status" data-testid="push-msg" style={{fontSize:13,color:T.mid,fontFamily:C.P,lineHeight:1.4}}>{pmsg}</div>}
     {Object.entries(Notices.TYPES).map(([id,t])=>{ const on=prefs[id]!==false; const flip=()=>Notices.setPref(id,!on);
       return <div key={id} style={{display:'flex',alignItems:'center',gap:12,marginTop:10,paddingTop:10,borderTop:`1px solid ${T.line}`}}>
         <div style={{flex:1,minWidth:0}}>

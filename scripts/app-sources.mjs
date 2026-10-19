@@ -34,6 +34,7 @@ export const APP_SOURCES = [
   'pwa-backup.js',
   'pwa-account.js',
   'pwa-billing.js',
+  'pwa-push.js',
   'pwa-install.js',
   'pwa-sync.js',
   'pwa-components.jsx',

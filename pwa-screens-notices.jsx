@@ -15,8 +15,10 @@ function NoticeBell({nav,dark}){
 }
 
 /* Where a notice points. */
-function _openNotice(n,nav,showPro){
-  const link=Notices.open(n.id)||{};
+function _openNotice(n,nav,showPro){ return _openLink(Notices.open(n.id)||{},nav,showPro); }
+/* Where a link goes: a notice's, or a push notification's (same shapes: {learn}, {wine}, {dna}, {screen}). */
+function _openLink(link,nav,showPro){
+  link=link||{};
   if(link.learn){ const l=link.learn; if(l.kind==='article'){ const stub=ContentEngine.openShelf(WineHistory.getAll()).find(s=>s.id===l.id); if(!stub) return nav('learn'); return _openLearn({kind:'article',stub},nav,showPro); } return _openLearn(l,nav,showPro); }
   if(link.wine){ const w=WineHistory.find(link.wine); if(!w) return nav('mywines'); Handoff.openWine({demo:false,source:'history',view:'rate',wine:w}); return nav('identified'); }
   if(link.dna){ UserPrefs.openDNA(link.dna.type,link.dna.section); return nav('profile'); }

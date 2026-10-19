@@ -13,7 +13,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
-import { patchInfoPlist, patchManifest, patchAppGradle, patchIconBackground } from './native-config.mjs';
+import { patchInfoPlist, patchManifest, patchAppGradle, patchIconBackground, entitlementsPlist, patchPbxproj, ENTITLEMENTS_PATH } from './native-config.mjs';
 import { ANDROID_DENSITIES, ANDROID_ICON_BACKGROUND } from './app-icons.mjs';
 
 const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
@@ -28,7 +28,14 @@ cap('sync', platform);
 
 if (platform === 'ios') {
   const file = path.join(ROOT, 'ios/App/App/Info.plist');
-  fs.writeFileSync(file, patchInfoPlist(fs.readFileSync(file, 'utf8'), config.ios && config.ios.infoPlist));
+  const push = process.env.VINTEREST_PUSH === '1';
+  fs.writeFileSync(file, patchInfoPlist(fs.readFileSync(file, 'utf8'), { ...(config.ios && config.ios.infoPlist), ...(push ? { UIBackgroundModes: ['remote-notification'] } : {}) }));
+  if (push) {
+    // Push notifications: the aps-environment entitlement, and the project setting that uses it.
+    fs.writeFileSync(path.join(ROOT, 'ios/App', ENTITLEMENTS_PATH), entitlementsPlist());
+    const pbx = path.join(ROOT, 'ios/App/App.xcodeproj/project.pbxproj');
+    fs.writeFileSync(pbx, patchPbxproj(fs.readFileSync(pbx, 'utf8')));
+  }
   // The app icon and launch screen, rendered from assets/*.svg by scripts/app-icons.mjs.
   const xc = path.join(ROOT, 'ios/App/App/Assets.xcassets');
   fs.copyFileSync(path.join(ROOT, 'assets/ios/AppIcon-1024.png'), path.join(xc, 'AppIcon.appiconset/AppIcon-512@2x.png'));

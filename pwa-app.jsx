@@ -154,6 +154,17 @@ function App(){
     window.addEventListener('vinterest:sync',h); return()=>window.removeEventListener('vinterest:sync',h);
   },[]);
 
+  // A tap on a push notification opens where it points (Push, pwa-push.js), as a bell record would;
+  // a tap that launched the app waits for it to be ready.
+  const navRef=React.useRef(nav); navRef.current=nav;
+  React.useEffect(()=>{
+    const go=l=>{ if(l) _openLink(l,(...a)=>navRef.current(...a),setProGate); };
+    const h=e=>{ Push.takePending(); go(e.detail); };
+    window.addEventListener('vinterest:push-open',h);
+    const p=Push.takePending(); if(p) setTimeout(()=>go(p),400);
+    return()=>window.removeEventListener('vinterest:push-open',h);
+  },[]);
+
   const ctx={nav,back,showPro:setProGate,isTablet};
   const theme=THEMED_SCREENS.includes(screen)&&Settings.theme()==='dark'?_DECK_DARK:_DECK_LIGHT, darkChrome=theme.dark;
 

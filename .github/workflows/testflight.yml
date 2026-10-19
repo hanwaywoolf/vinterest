@@ -48,6 +48,9 @@ jobs:
       APPLE_TEAM_ID: ${{ vars.APPLE_TEAM_ID }}
       SUPABASE_URL: ${{ vars.SUPABASE_URL }}
       SUPABASE_PUBLISHABLE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
+      # Push notifications (docs/push.md): on once the variable PUSH_ENABLED is 1 (the APNs key is made and the
+      # App ID has Push Notifications). Off, this workflow does exactly what it did before.
+      VINTEREST_PUSH: ${{ vars.PUSH_ENABLED == '1' && '1' || '' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -74,6 +77,10 @@ jobs:
       - name: Archive (unsigned)
         run: |
           set -o pipefail
+          # With push on the app must carry its aps-environment entitlement, which only a signature
+          # holds: signed ad hoc ("-", no profile), then re-signed for distribution at upload.
+          if [ "$VINTEREST_PUSH" = "1" ]; then SIGN="CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY=- CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=YES PROVISIONING_PROFILE_SPECIFIER="
+          else SIGN="CODE_SIGN_STYLE=Automatic CODE_SIGNING_ALLOWED=NO"; fi
           VERSION=$(node -p "require('./package.json').version")
           BUILD=$(( ${{ github.run_number }} * 10 + ${{ github.run_attempt }} ))
           echo "Vinterest $VERSION ($BUILD)"
@@ -81,13 +88,19 @@ jobs:
             -destination 'generic/platform=iOS' -archivePath "$RUNNER_TEMP/Vinterest.xcarchive" \
             -allowProvisioningUpdates \
             -authenticationKeyPath "$ASC_KEY_PATH" -authenticationKeyID "$ASC_KEY_ID" -authenticationKeyIssuerID "$ASC_ISSUER_ID" \
-            DEVELOPMENT_TEAM="$APPLE_TEAM_ID" CODE_SIGN_STYLE=Automatic CODE_SIGNING_ALLOWED=NO \
+            DEVELOPMENT_TEAM="$APPLE_TEAM_ID" $SIGN \
             MARKETING_VERSION="$VERSION" CURRENT_PROJECT_VERSION="$BUILD" \
             archive 2>&1 | tee "$RUNNER_TEMP/archive.log" || {
             # Xcode's own error lines as annotations, so a failure says why on the run's summary
             # (exit code 65 alone doesn't).
             grep -E '(error|Error):' "$RUNNER_TEMP/archive.log" | sort -u | head -20 | while IFS= read -r l; do echo "::error title=Archive::$l"; done
             exit 1; }
+      - name: Check the app carries its push entitlement
+        if: env.VINTEREST_PUSH == '1'
+        run: |
+          APP=$(ls -d "$RUNNER_TEMP"/Vinterest.xcarchive/Products/Applications/*.app | head -1)
+          codesign -d --entitlements :- "$APP" 2>/dev/null | tee "$RUNNER_TEMP/ent.txt"
+          grep -q aps-environment "$RUNNER_TEMP/ent.txt" || { echo "::error title=Push::The archive has no aps-environment entitlement, so notifications would never arrive. Unset PUSH_ENABLED to go back to the plain build."; exit 1; }
       - name: Upload to TestFlight
         run: |
           set -o pipefail

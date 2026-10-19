@@ -166,6 +166,8 @@ const Account = {
   expired(){ this.signOut({localOnly:true}); },
   async signOut({localOnly=false}={}){
     const s=this.session();
+    // Their phone stops getting their reminders (Push.unlink needs the session, so before it goes).
+    if(!localOnly&&typeof Push!=='undefined'&&Push.isOn()) await Push.disable();
     if(!localOnly&&s&&s.access_token) await this._auth('logout',{},s.access_token);
     Store.remove(this.SESSION_KEY); Store.remove(this.ME_KEY);
     this._emit();
