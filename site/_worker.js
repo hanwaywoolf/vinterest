@@ -1,6 +1,7 @@
 // site/_worker.js — the website's Cloudflare Pages Worker (advanced mode), for vinterest.app.
 // Serves the static site, and handles the two small routes the page needs:
-//   POST /api/beta     the beta sign-up: first name, last name, country, phone platform, email -> Supabase `beta_signups`
+//   POST /api/beta     the beta sign-up: first name, last name, country, phone platform, email, and where they came
+//                      from (referring site, UTM tags) -> Supabase `beta_signups`
 //   GET  /api/country  the visitor's country as Cloudflare sees it, to pre-select the country box
 //
 // Set in Cloudflare Pages -> the site project -> Settings -> Variables and secrets:
@@ -62,10 +63,10 @@ async function sendConfirmation(env, { first, email }) {
 
 // Tells the team about a new sign-up: everything the form collected, so the invite can be sent
 // without opening the database. Same rules as the confirmation: a failure is logged and dropped.
-async function notifyTeam(env, { first, last, country, platform, email }) {
+async function notifyTeam(env, { first, last, country, platform, email, source }) {
   const from = env.RESEND_FROM || "Vinterest <hello@vinterest.app>";
   const phone = platform === "ios" ? "iPhone (iOS)" : "Android";
-  const lines = [["Name", `${first} ${last}`], ["Email", email], ["Country", country], ["Phone", phone], ["Signed up", new Date().toISOString().replace("T", " ").slice(0, 16) + " UTC"]];
+  const lines = [["Name", `${first} ${last}`], ["Email", email], ["Country", country], ["Phone", phone], ["Came from", sourceLine(source || {})], ["Signed up", new Date().toISOString().replace("T", " ").slice(0, 16) + " UTC"]];
   const text = `New beta sign-up\n\n${lines.map(([k, v]) => `${k}: ${v}`).join("\n")}\n`;
   const html = `<div style="font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.5;color:#1a1a1a;max-width:520px"><p><strong>New beta sign-up</strong></p><table style="border-collapse:collapse">${lines.map(([k, v]) => `<tr><td style="padding:2px 12px 2px 0;color:#666">${k}</td><td style="padding:2px 0">${escapeHtml(v)}</td></tr>`).join("")}</table></div>`;
   try {
@@ -79,6 +80,23 @@ async function notifyTeam(env, { first, last, country, platform, email }) {
     console.warn("Resend couldn't be reached for the sign-up notice:", e && e.message);
   }
 }
+
+// Where the visitor came from: the referring site's host only (never its path, which can hold a
+// search or a person's page), dropped when it's this site itself, and the three UTM tags as written
+// on the link. Anything else in `source` is ignored.
+const OWN_HOSTS = /(^|\.)vinterest\.app$|\.pages\.dev$|^localhost$/;
+function cleanSource(src) {
+  const s = src && typeof src === "object" ? src : {};
+  let referrer = "";
+  try {
+    const u = new URL(String(s.referrer || ""));
+    if (/^https?:$/.test(u.protocol) && !OWN_HOSTS.test(u.hostname)) referrer = u.hostname.toLowerCase().replace(/^www\./, "").slice(0, 100);
+  } catch (e) { /* not an address: none */ }
+  const tag = (v) => clean(v, 100).toLowerCase();
+  return { referrer, utm_source: tag(s.utm_source), utm_medium: tag(s.utm_medium), utm_campaign: tag(s.utm_campaign) };
+}
+// "instagram / social / beta", else the referring site, else "direct": one line for the email.
+const sourceLine = (src) => [src.utm_source, src.utm_medium, src.utm_campaign].filter(Boolean).join(" / ") + (src.referrer ? `${src.utm_source ? " via " : ""}${src.referrer}` : "") || "direct (no link or referring site)";
 
 // Exported so tests can run it without Cloudflare.
 export async function handleBeta(request, env, ctx) {
@@ -109,6 +127,9 @@ export async function handleBeta(request, env, ctx) {
   if (!last) return json({ error: "Add your last name." }, 400);
   if (!/^[A-Z]{2}$/.test(country)) return json({ error: "Pick your country." }, 400);
   if (platform !== "ios" && platform !== "android") return json({ error: "Pick your phone." }, 400);
+  const source = cleanSource(body.source);
+  // Only the columns that have a value, so a sign-up with no source writes nulls, not empty strings.
+  const sourceCols = Object.fromEntries(Object.entries(source).filter(([, v]) => v));
   if (!EMAIL.test(email)) return json({ error: "That email address doesn't look right." }, 400);
 
   if (!env.SUPABASE_URL || !env.SUPABASE_SECRET_KEY) return json({ error: "Beta sign-ups aren't open just yet. Please check back soon." }, 503);
@@ -120,7 +141,7 @@ export async function handleBeta(request, env, ctx) {
     res = await fetch(`${env.SUPABASE_URL}/rest/v1/beta_signups?on_conflict=email`, {
       method: "POST",
       headers: { apikey: env.SUPABASE_SECRET_KEY, "content-type": "application/json", prefer: `resolution=ignore-duplicates,return=${env.RESEND_API_KEY ? "representation" : "minimal"}` },
-      body: JSON.stringify({ first_name: first, last_name: last, country, platform, email }),
+      body: JSON.stringify({ first_name: first, last_name: last, country, platform, email, ...sourceCols }),
     });
   } catch (e) {
     return json({ error: "We couldn't save that just now. Please try again in a moment." }, 503);
@@ -133,7 +154,7 @@ export async function handleBeta(request, env, ctx) {
     try { inserted = await res.json(); } catch (e) { /* no row: no email */ }
     if (Array.isArray(inserted) && inserted.length) {
       // One after the other: Resend allows two requests a second, and two fired together can get a 429.
-      const sending = sendConfirmation(env, { first, email }).then(() => (env.BETA_NOTIFY_TO ? notifyTeam(env, { first, last, country, platform, email }) : undefined));
+      const sending = sendConfirmation(env, { first, email }).then(() => (env.BETA_NOTIFY_TO ? notifyTeam(env, { first, last, country, platform, email, source }) : undefined));
       if (ctx && ctx.waitUntil) ctx.waitUntil(sending); else await sending;
     }
   }

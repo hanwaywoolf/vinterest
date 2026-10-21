@@ -314,6 +314,15 @@
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v.email)) bad.email = 'That email address doesn\'t look right.';
     return bad;
   }
+  // Where this visit came from, for counting sign-ups by channel: the UTM tags on the link they
+  // arrived by and the site that linked here (the Worker keeps only its host). Read from this page's
+  // own address and referrer, so nothing is stored on the visitor's device.
+  function signupSource() {
+    var q = new URLSearchParams(location.search), out = {};
+    ['utm_source', 'utm_medium', 'utm_campaign'].forEach(function (k) { var v = q.get(k); if (v) out[k] = v; });
+    try { if (document.referrer) out.referrer = new URL(document.referrer).origin; } catch (e) { /* none */ }
+    return out;
+  }
   form.addEventListener('submit', function (ev) {
     ev.preventDefault();
     fail.hidden = true;
@@ -324,6 +333,7 @@
       platform: form.elements.platform.value,
       email: form.elements.email.value.trim(),
       website: form.elements.website.value,
+      source: signupSource(),
     };
     var bad = validate(v);
     ['first_name', 'last_name', 'country', 'platform', 'email'].forEach(function (k) { setErr(k, bad[k]); });

@@ -410,7 +410,17 @@ test.describe('beta form', () => {
     await page.locator('#beta-go').click();
     await expect(page.locator('#beta-thanks')).toBeVisible();
     await expect(page.locator('#beta-thanks')).toContainText('Thanks, Ada');
-    expect(sent).toEqual([{ first_name: 'Ada', last_name: 'Lovelace', country: 'GB', platform: 'ios', email: 'ada@example.com', website: '' }]);
+    expect(sent).toEqual([{ first_name: 'Ada', last_name: 'Lovelace', country: 'GB', platform: 'ios', email: 'ada@example.com', website: '', source: {} }]);
+  });
+
+  test('sends where the visit came from: the link\'s UTM tags and the referring site', async ({ page }) => {
+    const sent = [];
+    await page.route('**/api/beta', (r) => { sent.push(JSON.parse(r.request().postData())); return r.fulfill({ contentType: 'application/json', body: '{"ok":true}' }); });
+    await page.goto(BASE + '/?utm_source=instagram&utm_medium=social&utm_campaign=beta#beta', { referer: 'https://l.instagram.com/some/path?x=1' });
+    await page.fill('#b-first', 'Ada'); await page.fill('#b-last', 'Lovelace'); await page.selectOption('#b-platform', 'android'); await page.fill('#b-email', 'ada@example.com');
+    await page.locator('#beta-go').click();
+    await expect(page.locator('#beta-thanks')).toBeVisible();
+    expect(sent[0].source).toEqual({ utm_source: 'instagram', utm_medium: 'social', utm_campaign: 'beta', referrer: 'https://l.instagram.com' });
   });
 
   test('shows the server\'s words when it can\'t save', async ({ page }) => {
@@ -522,6 +532,22 @@ test.describe('the sign-up Worker', () => {
     } finally { globalThis.fetch = realFetch; }
   });
 
+  test('keeps where a sign-up came from: the referring host only, the UTM tags, and nothing for its own pages', async () => {
+    const { handleBeta } = await load();
+    const realFetch = globalThis.fetch;
+    const rows = [];
+    globalThis.fetch = async (url, init) => { if (String(url).includes('supabase')) rows.push(JSON.parse(init.body)); return new Response(null, { status: 201 }); };
+    try {
+      await handleBeta(post({ ...good, source: { referrer: 'https://www.Google.com/search?q=private', utm_source: ' Instagram ', utm_medium: 'social', utm_campaign: 'Beta', extra: 'x' } }, { 'cf-connecting-ip': '9.9.9.1' }), env);
+      await handleBeta(post({ ...good, source: { referrer: 'https://vinterest.app/' } }, { 'cf-connecting-ip': '9.9.9.2' }), env);
+      await handleBeta(post({ ...good, source: { referrer: 'javascript:alert(1)' } }, { 'cf-connecting-ip': '9.9.9.3' }), env);
+      await handleBeta(post(good, { 'cf-connecting-ip': '9.9.9.4' }), env);
+    } finally { globalThis.fetch = realFetch; }
+    expect(rows[0]).toMatchObject({ referrer: 'google.com', utm_source: 'instagram', utm_medium: 'social', utm_campaign: 'beta' });
+    expect(rows[0].extra).toBeUndefined();
+    for (const r of rows.slice(1)) for (const k of ['referrer', 'utm_source', 'utm_medium', 'utm_campaign']) expect(r[k]).toBeUndefined();
+  });
+
   test('tells the team about a new sign-up when BETA_NOTIFY_TO is set, with everything the form collected', async () => {
     const { handleBeta } = await load();
     const nenv = { ...env, RESEND_API_KEY: 're_test', BETA_NOTIFY_TO: 'me@example.com' };
@@ -541,9 +567,14 @@ test.describe('the sign-up Worker', () => {
       const notice = mails.find((m) => m.to[0] === 'me@example.com');
       expect(notice.subject).toBe('Beta sign-up: Ada <i>Lovelace</i> (iPhone (iOS), GB)');
       expect(notice.reply_to).toBe('ada@example.com');
-      for (const part of ['Ada <i>Lovelace</i>', 'ada@example.com', 'GB', 'iPhone (iOS)']) expect(notice.text).toContain(part);
+      for (const part of ['Ada <i>Lovelace</i>', 'ada@example.com', 'GB', 'iPhone (iOS)', 'Came from: direct']) expect(notice.text).toContain(part);
       expect(notice.html).toContain('&lt;i&gt;Lovelace&lt;/i&gt;');
       expect(notice.html).not.toContain('<i>Lovelace</i>');
+      // A sign-up from a tagged link says where it came from.
+      calls.length = 0;
+      await handleBeta(post({ ...good, email: 'grace@example.com', source: { utm_source: 'instagram', utm_medium: 'social', referrer: 'https://l.instagram.com' } }, { 'cf-connecting-ip': '8.8.8.3' }), nenv);
+      const tagged = calls.filter((c) => c.url === 'https://api.resend.com/emails').map((c) => JSON.parse(c.init.body)).find((m) => m.to[0] === 'me@example.com');
+      expect(tagged.text).toContain('Came from: instagram / social via l.instagram.com');
       // A repeat sign-up tells no one.
       calls.length = 0; inserted = false;
       res = await handleBeta(post(good, { 'cf-connecting-ip': '8.8.8.2' }), nenv);
