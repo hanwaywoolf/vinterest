@@ -372,7 +372,7 @@ test.describe('in the app', () => {
     await sw.click();
     await expect.poll(() => seen.unregister.length).toBe(1);
     expect(seen.unregister[0].token).toContain('tok-device-');
-    expect(await page.evaluate(() => window.__push.some((c) => c[0] === 'unregister'))).toBe(true);
+    await expect.poll(() => page.evaluate(() => window.__push.some((c) => c[0] === 'unregister'))).toBe(true);
     await expect(sw).toHaveAttribute('aria-checked', 'false');
   });
 
