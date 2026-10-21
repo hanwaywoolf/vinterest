@@ -88,7 +88,8 @@ async function buildVendor() {
         "import { TextZoom } from '@capacitor/text-zoom';",
         "import { StatusBar } from '@capacitor/status-bar';",
         "import { Purchases } from '@revenuecat/purchases-capacitor';",
-        'window.VinterestNative = { Capacitor, Share, Filesystem, TextZoom, StatusBar, Purchases };',
+        "import { PushNotifications } from '@capacitor/push-notifications';",
+        'window.VinterestNative = { Capacitor, Share, Filesystem, TextZoom, StatusBar, Purchases, PushNotifications };',
       ].join('\n'),
       resolveDir: ROOT,
       sourcefile: 'vendor-react.js',
@@ -104,6 +105,8 @@ async function buildVendor() {
 }
 
 // The Capacitor app has no server behind it: it calls the Worker on the live site (Platform.api).
+// Push is built in only when the release build has what it needs (docs/push.md): VINTEREST_PUSH=1.
+const PUSH_BUILT = JSON.stringify(process.env.VINTEREST_PUSH === '1');
 const API_ORIGIN = JSON.stringify((process.env.VINTEREST_API_ORIGIN || 'https://vinterest.pages.dev').replace(/\/+$/, ''));
 
 // Sign-in (pwa-account.js): the project URL and publishable key are public, and come from
@@ -116,7 +119,7 @@ export async function transformSource(file, version) {
     loader: file.endsWith('.jsx') ? 'jsx' : 'js',
     jsx: 'transform', // classic JSX, against the global React
     jsxFactory: '_h', // React.createElement with the reader's text size (pwa-textsize.js)
-    define: { __APP_VERSION__: JSON.stringify(version), __SUPABASE__: SUPABASE_CONFIG, __API_ORIGIN__: API_ORIGIN },
+    define: { __APP_VERSION__: JSON.stringify(version), __SUPABASE__: SUPABASE_CONFIG, __API_ORIGIN__: API_ORIGIN, __PUSH__: PUSH_BUILT },
     sourcefile: file,
     charset: 'utf8',
   });

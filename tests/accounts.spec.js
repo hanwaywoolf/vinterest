@@ -131,7 +131,7 @@ test.describe('Worker', () => {
     expect(r.status).toBe(200);
     expect(await r.json()).toEqual({ deleted: true });
     expect(sb.deleted[0]).toBe('auth:u-free');
-    expect(sb.deleted.slice(1).sort()).toEqual(['entitlements', 'usage_counters', 'user_docs', 'wines'].map((t) => `${t}?user_id=eq.u-free`));
+    expect(sb.deleted.slice(1).sort()).toEqual(['entitlements', 'push_devices', 'push_sent', 'usage_counters', 'user_docs', 'wines'].map((t) => `${t}?user_id=eq.u-free`));
     const admin = sb.calls.find((c) => c.url.includes('/admin/users/'));
     expect(admin).toEqual({ url: `${SB}/auth/v1/admin/users/u-free`, apikey: 'sb_secret_x', method: 'DELETE' });
     // The old token no longer works, even from the Worker's own cache.

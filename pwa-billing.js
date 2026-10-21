@@ -25,8 +25,10 @@ const Billing = {
     try{
       const r=await fetch(Platform.api('/config')); if(!r.ok) return this.config();
       const j=await r.json(), b=j&&j.billing||{}, before=this.allPro();
-      Store.setJSON(this.CONFIG_KEY,{ios:b.ios||null,android:b.android||null,allPro:typeof j.allPro==='boolean'?j.allPro:null});
+      Store.setJSON(this.CONFIG_KEY,{ios:b.ios||null,android:b.android||null,allPro:typeof j.allPro==='boolean'?j.allPro:null,push:!!j.push});
       if(before!==this.allPro()){ try{ window.dispatchEvent(new Event('vinterest:pro')); }catch(e){} }
+      // The same answer says whether push can be used (Push.available), which the Profile switch waits on.
+      try{ window.dispatchEvent(new Event('vinterest:push')); }catch(e){}
     }catch(e){}
     return this.config();
   },
