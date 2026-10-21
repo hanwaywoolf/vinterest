@@ -251,7 +251,12 @@ function NotifyControl(){ const T=useTheme(), cr=T.lift(C.cr);
     const r=ps==='on'?await Push.disable():await Push.enable();
     setPbusy(false); if(!r.ok) setPmsg(r.error||'');
   }
-  async function testPush(){ if(pbusy) return; setPbusy(true); const r=await Push.test(); setPbusy(false); setPmsg(r.ok?'Sent. It should arrive in a moment.':r.error); }
+  // A phone shows a notification only while the app isn't open: the server waits ten seconds, so close the app or lock the screen.
+  async function testPush(){
+    if(pbusy) return; setPbusy(true);
+    setPmsg('Sending in 10 seconds. Close Vinterest or lock your phone now: notifications only show when the app isn\'t open.');
+    const r=await Push.test(10); setPbusy(false); setPmsg(r.ok?'Sent. Look at your notifications.':r.error);
+  }
   const pushDesc=ps==='signin'?'Sign in to get reminders on this phone, even when the app is closed.':ps==='blocked'?'Turned off in your phone\'s settings. Turn Vinterest\'s notifications on there, then come back.':'Reminders and Pro alerts on this phone, even when the app is closed.';
   return <div data-testid="notify-control"><Card style={{padding:14,display:"flex",flexDirection:"column",gap:4}}>
     <div style={{fontSize:16,fontWeight:700,color:T.ink,fontFamily:C.P}}>Notifications</div>

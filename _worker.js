@@ -598,6 +598,10 @@ async function handlePush(request, env, action) {
   const since = new Date(Date.now() - 3600 * 1000).toISOString();
   const recent = await db(env, `push_sent?user_id=eq.${uid}&kind=eq.test&sent_at=gte.${since}&select=key`);
   if (recent.ok && (await recent.json()).length >= 3) return json(429, { error: "That's three tests this hour. Try again later.", code: "rate_limited" });
+  // A phone shows a notification only while the app isn't open, so the app asks for a pause (up to 15s)
+  // to give them time to close it or lock the screen.
+  const wait = Math.min(15, Math.max(0, parseInt(body.delay, 10) || 0));
+  if (wait) await new Promise((r) => setTimeout(r, wait * 1000));
   const out = await pushToUser(env, user.id, { title: "Vinterest notifications are on", body: "This is how a reminder will look.", link: { screen: "home" } });
   if (!out.sent) return json(502, { error: out.gone ? "This phone's notification token had expired. Open the app again and turn notifications off and on." : "We couldn't reach your phone just now. Try again in a minute.", code: "push_failed" });
   await pushRecord(env, user.id, "test", [Date.now() + "-" + Math.random().toString(36).slice(2, 8)]);
