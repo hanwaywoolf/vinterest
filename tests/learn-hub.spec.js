@@ -136,3 +136,20 @@ test('guide Try it links open the section they name', async ({ page }) => {
   expect(out.section).toBe('palate');
   expect(out.dna).toBe('scripts');
 });
+
+// Marking a Written for you article read grows its box; the Reading List button it reveals is
+// brought on screen rather than left under the nav.
+test('marking an article read scrolls its Reading List button into view', async ({ context, page }) => {
+  const article = { forYou: 'For you.', sections: Array.from({ length: 6 }, (_, i) => ({ term: `Part ${i + 1}`, iconName: 'grape', plain: 'A paragraph of reading. '.repeat(12), detail: 'Detail. '.repeat(20), examples: ['One', 'Two'] })) };
+  await stubNetwork(context, { claudeText: (b) => (b.purpose === 'learn_article' ? JSON.stringify(article) : '') });
+  await makeDeterministic(page);
+  await seedLocalStorage(page, { vinterest_onboarded: '1', vinterest_age_ok: '1', vinterest_region: 'uk' });
+  await page.goto(`${BASE}/#home`);
+  await page.evaluate(() => sessionStorage.setItem('vinterest_gen_article', JSON.stringify({ id: 'ev_test_scroll', archetypeId: 'palate_vs_textbook', iconName: 'compass', readTime: '3 min', title: 'A long read', subtitle: 's', brief: 'b', slots: { region: 'Rioja' }, facts: 'f' })));
+  await page.goto(`${BASE}/#gen-article`);
+  const root = page.locator('#root');
+  await root.getByText('Mark as Read', { exact: false }).first().click();
+  const btn = root.getByText('Reading List', { exact: true }).first();
+  await expect(btn).toBeVisible();
+  await expect.poll(async () => { const b = await btn.boundingBox(); const v = page.viewportSize(); return !!b && b.y + b.height <= v.height - 56; }).toBe(true);
+});

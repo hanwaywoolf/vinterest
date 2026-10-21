@@ -288,8 +288,11 @@ function GenArticleScreen({nav,back,showPro}){ const T=useTheme(), cr=T.lift(C.c
     LearnProgress.markArticle(stub.id);
     setCompleted(true);
   }
+  // Marking it read grows the box and pushed the Reading List button under the nav: bring it up.
+  const ctaRef=React.useRef(null);
+  React.useEffect(()=>{ const el=ctaRef.current; if(completed&&el&&el.scrollIntoView) el.scrollIntoView({block:'end',behavior:_reducedMotion()?'auto':'smooth'}); },[completed]);
 
-  const forYou=(cached&&stub&&ContentEngine.forYouLine(stub,cached.forYou))||'Nobody else gets this article. It\'s written from your WineDNA: the wines you\'ve scanned, how you rated them and what you paid.';
+  const forYou=(cached&&stub&&ContentEngine.forYouLine(stub,cached.forYou))||'Every wine has its story, but this article is written just for you.';
   if(!stub) return(
     <div style={{flex:1,display:'flex',alignItems:'center',justifyContent:'center',padding:32}}>
       <span style={{fontSize:16,color:T.mid,fontFamily:C.P}}>Article not found.</span>
@@ -336,8 +339,8 @@ function GenArticleScreen({nav,back,showPro}){ const T=useTheme(), cr=T.lift(C.c
           </>:null}>
           {/* Loading state */}
           {generating&&(
-            <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'40px 20px',gap:14}}>
-              <WritingWait sub="Your article" wine={null}/>
+            <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'20px 12px',gap:14}}>
+              <WritingWait slim sub="Your article" wine={null}/>
             </div>
           )}
 
@@ -369,7 +372,7 @@ function GenArticleScreen({nav,back,showPro}){ const T=useTheme(), cr=T.lift(C.c
 
           {/* Completion CTA */}
           {sections&&(
-            <div style={{background:completed?T.greenBg:T.crSoft,borderRadius:16,padding:'18px 16px',textAlign:'center',border:`1px solid ${completed?T.green+'30':_alpha(cr,0.4)}`}}>
+            <div ref={ctaRef} style={{scrollMarginBottom:72,background:completed?T.greenBg:T.crSoft,borderRadius:16,padding:'18px 16px',textAlign:'center',border:`1px solid ${completed?T.green+'30':_alpha(cr,0.4)}`}}>
               {completed?(
                 <>
                   <div style={{width:56,height:56,borderRadius:28,background:T.greenBg,display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 8px'}}><Icon n="check" sz={26} col={T.green}/></div>

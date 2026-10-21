@@ -27,6 +27,8 @@ function WineChatWidget({wines,nav,showPro}){
   const [asking,setAsking]=React.useState(false);
   const [focused,setFocused]=React.useState(false);
   const inputRef=React.useRef(null);
+  const sugRef=React.useRef(null);
+  React.useLayoutEffect(()=>{ const el=sugRef.current; if(el) el.scrollLeft=el.scrollWidth; });
   const prompts=React.useMemo(()=>[...Vinny.suggestions(wines)].sort(()=>Math.random()-0.5).slice(0,3),[wines?.length]);
   const [pIdx,setPIdx]=React.useState(0);
   const [typed,setTyped]=React.useState('');
@@ -86,10 +88,10 @@ function WineChatWidget({wines,nav,showPro}){
           <input ref={inputRef} value={q} onChange={e=>onType(e.target.value)} onKeyDown={onKey} onFocus={()=>setFocused(true)} onBlur={()=>setFocused(false)} aria-label="Ask Vinny"
             placeholder={open?'Ask a follow-up…':'Ask Vinny about wine…'} style={{position:'absolute',inset:0,width:'100%',border:'none',outline:'none',background:'transparent',fontSize:wideBar?19:16,fontFamily:C.P,color:'#fff'}}/>
           {idle&&(
-            <div onClick={()=>fill(prompts[pIdx])} style={{position:'absolute',inset:0,display:'flex',alignItems:'center',overflow:'hidden',background:'#1C1C1F',cursor:'text'}}>
-              {/* A long suggestion steps down a size rather than being cut mid-word; px sizes,
-                  since it has to fit the bar's one line whatever the text-size setting. */}
-              <span style={{fontSize:wideBar?'19px':(prompts[pIdx]||'').length>40?'12px':(prompts[pIdx]||'').length>32?'13px':(prompts[pIdx]||'').length>27?'14px':'16px',color:'rgba(255,255,255,0.75)',fontFamily:C.P,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{typed}<span style={{display:'inline-block',width:1.5,height:15,background:'rgba(255,255,255,0.75)',marginLeft:2,verticalAlign:'-2px',animation:'homeCaret 0.9s step-end infinite'}}/></span>
+            <div ref={sugRef} onClick={()=>fill(prompts[pIdx])} style={{position:'absolute',inset:0,display:'flex',alignItems:'center',overflow:'hidden',background:'#1C1C1F',cursor:'text'}}>
+              {/* The suggestion types at the bar's own size; one longer than the bar slides left
+                  as it goes so the caret and the latest words stay in view (sugRef), never cut. */}
+              <span style={{fontSize:wideBar?'19px':'16px',color:'rgba(255,255,255,0.75)',fontFamily:C.P,whiteSpace:'nowrap',paddingRight:8}}>{typed}<span style={{display:'inline-block',width:1.5,height:15,background:'rgba(255,255,255,0.75)',marginLeft:2,verticalAlign:'-2px',animation:'homeCaret 0.9s step-end infinite'}}/></span>
             </div>
           )}
       </>}/>

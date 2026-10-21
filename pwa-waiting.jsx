@@ -14,21 +14,23 @@ const _WAIT_CSS=`
 @media (prefers-reduced-motion: reduce){.wt-pour,.wt-sway,.wt-tip{animation:none!important}}
 `;
 const WAIT_TIP_MS=5000;
-function WritingWait({title='Writing something personalised for you…',sub,wine,col,compact=false}){
+/* `compact` is the small form for a card; `slim` the quiet one for a page already carrying its own
+   heading (the article): a small glass, the line under it, and the tidbits as plain muted text. */
+function WritingWait({title='Writing something personalised for you…',sub,wine,col,compact=false,slim=false}){
   const tips=React.useMemo(()=>WineDeep.tidbits(wine),[wine&&wine.name,wine&&wine.vintage]);
   const [i,setI]=React.useState(0);
   React.useEffect(()=>{ if(tips.length<2||_reducedMotion()) return; const t=setInterval(()=>setI(x=>(x+1)%tips.length),WAIT_TIP_MS); return()=>clearInterval(t); },[tips.length]);
   const T=typeof useTheme==='function'?useTheme():null, ink=T?T.ink:C.ink, ink2=T?T.ink2:C.ink2, mid=T?T.mid:C.mid, soft=T?T.soft:C.offWhite, line=T?T.line:C.line, pen=T&&T.dark?'rgba(255,255,255,0.9)':SKETCH_INK;
   const c=T&&T.dark?T.lift(col||C.cr):(col||C.cr);
+  if(slim) return <div data-testid="writing-wait" role="status" aria-live="polite" style={{display:'flex',flexDirection:'column',alignItems:'center',textAlign:'center',gap:6,padding:'6px 8px'}}>
+    <style>{_WAIT_CSS}</style>
+    <WritingWait._glass c={c} pen={pen} w={36} h={42}/>
+    <div style={{fontSize:15,fontWeight:700,color:ink,fontFamily:C.P,lineHeight:1.3,marginTop:4}}>{title}</div>
+    {tips.length>0&&<div key={i} className="wt-tip" data-testid="writing-tip" style={{fontSize:13,color:mid,fontFamily:C.P,lineHeight:1.5,maxWidth:320,marginTop:6}}>{tips[i]}</div>}
+  </div>;
   return <div data-testid="writing-wait" role="status" aria-live="polite" style={{display:'flex',flexDirection:'column',alignItems:'center',textAlign:'center',gap:compact?8:12,padding:compact?'10px 8px':'18px 12px'}}>
     <style>{_WAIT_CSS}</style>
-    <svg className="wt-sway" viewBox="-20 -24 40 46" width={compact?44:64} height={compact?50:74} aria-hidden="true" style={{overflow:'visible'}}>
-      <defs><clipPath id="wtBowl"><path d="M-11 -17 C-11 -4 -8 4 0 4 C8 4 11 -4 11 -17 Z"/></clipPath></defs>
-      <g clipPath="url(#wtBowl)"><g className="wt-pour"><path d="M-14 -6 C-9 -9 -4 -3 0 -6 C4 -9 9 -3 14 -6 L14 12 L-14 12 Z" fill={c} opacity="0.7"/></g></g>
-      <path d="M-11 -17 C-11 -4 -8 4 0 4 C8 4 11 -4 11 -17" fill="none" stroke={pen} strokeWidth="1.6" strokeLinecap="round"/>
-      <path d="M-11 -17 C-5 -18.2 5 -18.2 11 -17" fill="none" stroke={pen} strokeWidth="1.1" opacity="0.7" strokeLinecap="round"/>
-      <path d="M0 4 L0 15 M-8.5 16.5 C-4 14.6 4 14.6 8.5 16.5" fill="none" stroke={pen} strokeWidth="1.6" strokeLinecap="round"/>
-    </svg>
+    <WritingWait._glass c={c} pen={pen} w={compact?44:64} h={compact?50:74}/>
     <div>
       <div style={{fontSize:compact?15:17,fontWeight:800,color:ink,fontFamily:C.P,lineHeight:1.3}}>{title}</div>
       {sub&&<div style={{fontSize:13,fontWeight:700,color:c,fontFamily:C.P,letterSpacing:'0.06em',textTransform:'uppercase',marginTop:4}}>{sub}</div>}
@@ -38,4 +40,14 @@ function WritingWait({title='Writing something personalised for you…',sub,wine
     </div>}
   </div>;
 }
+// The sketched glass that fills, shared by every form.
+WritingWait._glass=function _WaitGlass({c,pen,w,h}){
+  return <svg className="wt-sway" viewBox="-20 -24 40 46" width={w} height={h} aria-hidden="true" style={{overflow:'visible'}}>
+    <defs><clipPath id="wtBowl"><path d="M-11 -17 C-11 -4 -8 4 0 4 C8 4 11 -4 11 -17 Z"/></clipPath></defs>
+    <g clipPath="url(#wtBowl)"><g className="wt-pour"><path d="M-14 -6 C-9 -9 -4 -3 0 -6 C4 -9 9 -3 14 -6 L14 12 L-14 12 Z" fill={c} opacity="0.7"/></g></g>
+    <path d="M-11 -17 C-11 -4 -8 4 0 4 C8 4 11 -4 11 -17" fill="none" stroke={pen} strokeWidth="1.6" strokeLinecap="round"/>
+    <path d="M-11 -17 C-5 -18.2 5 -18.2 11 -17" fill="none" stroke={pen} strokeWidth="1.1" opacity="0.7" strokeLinecap="round"/>
+    <path d="M0 4 L0 15 M-8.5 16.5 C-4 14.6 4 14.6 8.5 16.5" fill="none" stroke={pen} strokeWidth="1.6" strokeLinecap="round"/>
+  </svg>;
+};
 Object.assign(window,{WritingWait,WAIT_TIP_MS});
