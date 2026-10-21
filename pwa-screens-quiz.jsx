@@ -555,13 +555,15 @@ function QuizHubScreen({nav,back,showPro}){ const T=useTheme(), cr=T.lift(C.cr);
 
         <div ref={secRefs.progress} style={{...zoneLabel,scrollMarginTop:56}}>Your Mastery</div>
         {/* The header's ring has the figure; here, the one step that closes their biggest gap (KnowledgeMap.focus). */}
-        {knowledge.gap&&knowledge.gap.score<100&&<div role="button" data-testid="learn-start-here" onClick={()=>knowledge.gap.next?_openLearn({kind:'mastery',next:knowledge.gap.next},nav,showPro):(isPro?nav('mastery-map'):showPro('mastery-map'))}
+        {knowledge.gap&&knowledge.gap.score<100&&<div role="button" data-testid="learn-start-here" onClick={()=>knowledge.gap.next&&knowledge.gap.next.grape?handleGrapeTap(knowledge.gap.next.grape):knowledge.gap.next?_openLearn({kind:'mastery',next:knowledge.gap.next},nav,showPro):(isPro?nav('mastery-map'):showPro('mastery-map'))}
           style={{background:T.glass,borderRadius:16,border:`1px solid ${T.line}`,padding:'12px 16px',display:'flex',alignItems:'center',gap:12,cursor:'pointer',marginTop:-6}}>
           <div style={{width:42,height:42,borderRadius:12,background:T.soft,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><Icon n="trophy" sz={19} col={T.ink}/></div>
           <div style={{flex:1,minWidth:0}}>
             <div style={{fontSize:12,fontWeight:600,color:T.mid,fontFamily:C.P,textTransform:'uppercase',letterSpacing:'0.06em'}}>Start here</div>
             <div style={{fontSize:16,fontWeight:700,color:T.ink,fontFamily:C.P}}>{knowledge.gap.area&&knowledge.gap.area.id==='regions'&&<Flag region={knowledge.gap.label} size={16} style={{marginRight:6}}/>}{knowledge.gap.next?knowledge.gap.next.label:knowledge.gap.label}</div>
             {knowledge.gap.why&&<div style={{fontSize:13,color:T.mid,fontFamily:C.P,lineHeight:1.4,marginTop:2}}>{knowledge.gap.why}</div>}
+            {knowledge.gap.next&&knowledge.gap.next.grape===grapeLoading&&grapeLoading&&<div data-testid="start-here-status" style={{fontSize:13,color:T.mid,fontFamily:C.P,marginTop:4}}>Preparing your {grapeLoading} quiz… the first time takes a few seconds.</div>}
+            {knowledge.gap.next&&knowledge.gap.next.grape===grapeError&&!grapeLoading&&<div data-testid="start-here-status" style={{fontSize:13,color:'#C0392B',fontFamily:C.P,marginTop:4}}>Couldn't load the {grapeError} quiz. Check your connection and tap again.</div>}
           </div>
           <Icon n="chevron" sz={13} col={T.mid}/>
         </div>}
