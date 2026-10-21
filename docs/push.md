@@ -35,7 +35,7 @@ These are the same things the bell on Home collects. New articles, milestones an
 - `PUSH_CRON_SECRET`: secret. A long random string you make up.
 
 **5. GitHub** (Settings → Secrets and variables → Actions):
-- Secret `GOOGLE_SERVICES_JSON`: `google-services.json` as base64 (on a Mac or Linux: `base64 -w0 google-services.json`, on a Mac `base64 -i google-services.json`). Android builds include push once this exists.
+- Secret `GOOGLE_SERVICES_JSON`: the whole text of `google-services.json`, pasted as it is (base64 also works). Android builds include push once this exists, and the build stops with a clear message if the file isn't for `app.vinterest`.
 - Secret `PUSH_CRON_SECRET`: the same string as in Cloudflare.
 - Variable `PUSH_ENABLED` = `1`: iPhone builds include push. Set it only after step 2, because it changes how the iPhone app is signed (the archive carries the push entitlement; a check step fails the build with a clear message if it doesn't). Unset it to go back to the plain build.
 
