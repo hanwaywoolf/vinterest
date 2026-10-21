@@ -260,3 +260,15 @@ test('a grape piece says how the grape sits in each bottle: lead or supporting, 
   expect(brief).toContain('its label calls Grenache "Garnacha"');
   expect(brief).toMatch(/Château Rayas 2015 \(Châteauneuf-du-Pape\), grapes: Grenache, rated 95/);
 });
+
+// An Explore Next piece says why it's for them once: the subtitle is about the wine and the
+// because line gives the reason, and a piece saved with the old "Picked from your WineDNA"
+// subtitle heals on read.
+test('an Explore Next piece never says "Picked from your WineDNA" twice', async ({ context, page }) => {
+  await stubNetwork(context);
+  await makeDeterministic(page);
+  await seedLocalStorage(page, { vinterest_onboarded: '1', vinterest_age_ok: '1', vinterest_region: 'uk', vinterest_gen_stubs: JSON.stringify([{ id: 'ev_explore_x', archetypeId: 'explore_style_intro', iconName: 'compass', readTime: '3 min', title: 'Explore Next: Valpolicella Ripasso', subtitle: 'Picked from your WineDNA — what it tastes like, why, and how to find it', brief: 'b', slots: { style: 'Valpolicella Ripasso', region: null }, facts: 'f' }]) });
+  await page.goto(`${BASE}/#home`);
+  const out = await page.evaluate(() => { const s = ContentEngine.shelf(WineHistory.getAll()).find((x) => x.id === 'ev_explore_x'); return [s.subtitle, ContentEngine.because(s)]; });
+  expect(out).toEqual(['What it tastes like, why it suits you and how to find it', "Because it's close to the wines you rate highest"]);
+});
