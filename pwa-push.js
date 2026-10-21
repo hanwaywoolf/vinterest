@@ -79,6 +79,7 @@ const Push = {
     if(!this.available()) return {ok:false,error:'Notifications aren\'t available on this phone yet.'};
     if(!Account.signedIn()) return {ok:false,error:'Sign in first, so we can reach this phone.'};
     const P=this.plugin();
+    await this.start(); // the listeners are in before the phone answers, whatever the order the app woke in
     try{
       let perm=(await P.checkPermissions()).receive;
       if(perm!=='granted') perm=(await P.requestPermissions()).receive;
