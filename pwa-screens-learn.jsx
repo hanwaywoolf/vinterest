@@ -145,7 +145,7 @@ Object.assign(window,{LearnArticleScreen});
 /* ── WINE SKILLS GUIDE ──
    A fixed guide (Guides, pwa-guides.js): a line from the reader's own wines, the sections, then
    three questions and something to try. Read + every question right = finished. */
-function GuideScreen({nav,back}){ const T=useTheme(), cr=T.lift(C.cr);
+function GuideScreen({nav,back,showPro}){ const T=useTheme(), cr=T.lift(C.cr);
   const wide=useWide(), size=useLayoutSize();
   const guide=React.useMemo(()=>Guides.byId(Handoff.guide.get()||''),[]);
   const [read,setRead]=React.useState(()=>!!guide&&Guides.isRead(guide.id));
@@ -182,7 +182,7 @@ function GuideScreen({nav,back}){ const T=useTheme(), cr=T.lift(C.cr);
             <Btn primary full onClick={check}>{passed?'Practise again':'Answer the questions'}</Btn>
             {!read&&<Btn full onClick={markRead}>Mark as read · +50 XP</Btn>}
           </div>
-          {guide.tryIt&&<div role="button" onClick={()=>{ markRead(); nav(guide.tryIt.nav); }} style={{padding:'12px 14px',borderRadius:14,background:T.glass,border:`1px solid ${T.line}`,display:'flex',alignItems:'center',gap:10,cursor:'pointer'}}>
+          {guide.tryIt&&<div role="button" onClick={()=>{ markRead(); Guides.openTry(guide.tryIt,nav,showPro); }} style={{padding:'12px 14px',borderRadius:14,background:T.glass,border:`1px solid ${T.line}`,display:'flex',alignItems:'center',gap:10,cursor:'pointer'}}>
             <Icon n="bolt" sz={18} col={cr}/>
             <span style={{flex:1,fontSize:15,fontWeight:700,color:T.ink,fontFamily:C.P}}>Try it: {guide.tryIt.label}</span>
             <Icon n="chevron" sz={13} col={T.mid}/>
@@ -219,7 +219,7 @@ function GuideScreen({nav,back}){ const T=useTheme(), cr=T.lift(C.cr);
             <Btn primary full onClick={check}>{passed?'Practise again':'Answer the questions'}</Btn>
             {!read&&<Btn full onClick={markRead}>Mark as read · +50 XP</Btn>}
           </div>
-          {guide.tryIt&&<div role="button" onClick={()=>{ markRead(); nav(guide.tryIt.nav); }} style={{padding:'12px 14px',borderRadius:14,background:T.glass,border:`1px solid ${T.line}`,display:'flex',alignItems:'center',gap:10,cursor:'pointer'}}>
+          {guide.tryIt&&<div role="button" onClick={()=>{ markRead(); Guides.openTry(guide.tryIt,nav,showPro); }} style={{padding:'12px 14px',borderRadius:14,background:T.glass,border:`1px solid ${T.line}`,display:'flex',alignItems:'center',gap:10,cursor:'pointer'}}>
             <Icon n="bolt" sz={18} col={cr}/>
             <span style={{flex:1,fontSize:15,fontWeight:700,color:T.ink,fontFamily:C.P}}>Try it: {guide.tryIt.label}</span>
             <Icon n="chevron" sz={13} col={T.mid}/>

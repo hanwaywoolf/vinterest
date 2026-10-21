@@ -106,3 +106,33 @@ test('"Next read" opens the next beginner article', async ({ context, page }) =>
   await expect(root).not.toContainText('Nice work!'); // a fresh article, not the finished one
   await expect(root).not.toContainText(t0);
 });
+
+// Mastery's "Start here" step opens something for every wine type: a grape quiz or an article,
+// never a tap that lands back on Learn.
+test('a Mastery step to finish grape quizzes or read more targets a grape or an article', async ({ page }) => {
+  await page.goto(`${BASE}/?demo=1#learn`);
+  const out = await page.evaluate(() => {
+    const m = KnowledgeMap.compute(WineHistory.getAll());
+    return m.areas.filter((a) => a.next && /grape quizzes|Read more/.test(a.next.label)).map((a) => ({ label: a.next.label, ok: !!(a.next.grape || a.next.article) || a.next.nav === 'learn' }));
+  });
+  for (const o of out) expect(o.ok).toBe(true);
+});
+
+// A guide's "Try it" goes where it says: the palate to Mastery's palate section, the script and
+// value to those WineDNA sections, never just the top of WineDNA.
+test('guide Try it links open the section they name', async ({ page }) => {
+  await page.goto(`${BASE}/?demo=1#learn`);
+  const out = await page.evaluate(() => {
+    const go = [];
+    const nav = (s) => go.push(s);
+    const palate = Guides.all ? null : null;
+    const tries = (typeof GUIDES !== 'undefined' ? GUIDES : []).map((g) => g.tryIt).filter(Boolean);
+    Guides.openTry({ label: 'x', nav: 'mastery-map', section: 'palate' }, nav, null);
+    const section = Handoff.masterySection.take();
+    Guides.openTry({ label: 'x', nav: 'dna', dna: 'scripts' }, nav, null);
+    return { go, section, dna: UserPrefs.takeDNASection(), profileLeft: tries.filter((t) => t.nav === 'profile').length };
+  });
+  expect(out.go).toEqual(['mastery-map', 'profile']);
+  expect(out.section).toBe('palate');
+  expect(out.dna).toBe('scripts');
+});

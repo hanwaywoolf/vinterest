@@ -1239,6 +1239,12 @@ function MasteryMapScreen({nav,back,showPro}){ const T=useTheme(), cr=T.lift(C.c
   const go=next=>{ if(next) _openLearn({kind:'mastery',next},nav,showPro); };
   // Sections they've folded away stay folded next time (Device.masteryCollapsed).
   const [folded,setFolded]=React.useState(()=>Device.masteryCollapsed());
+  // A link that names a section (a guide's "See your palate") opens it and scrolls to it.
+  const wantSection=React.useRef(Handoff.masterySection.take());
+  React.useEffect(()=>{ const id=wantSection.current; if(!id) return;
+    setFolded(f=>{ if(!f[id]) return f; const n={...f}; delete n[id]; Device.setMasteryCollapsed(n); return n; });
+    const t=setTimeout(()=>{ const el=listRef.current&&listRef.current.querySelector(`[data-section="${id}"]`); if(el&&el.scrollIntoView) el.scrollIntoView({block:'start'}); },60);
+    return ()=>clearTimeout(t); },[]);
   const toggle=id=>setFolded(f=>{ const n={...f}; if(n[id]) delete n[id]; else n[id]=true; Device.setMasteryCollapsed(n); return n; });
   const cluster=React.useMemo(()=>KnowledgeMap.grapeCluster(m),[m]);
   const mapCount=React.useMemo(()=>KnowledgeMap.mapCount(views),[views]);

@@ -167,6 +167,19 @@ const QuizMastery = Object.assign(_accountStore('vinterest_quiz_mastery_v1'), {
       if(this._kept.size>500) this._kept.clear(); this._kept.set(k,idx); }
     return idx.map(i=>qs[i]);
   },
+  /* A question whose stem hands over its answer: the right option holds a telling word of the stem
+     that no wrong option does ("…in Tuscany?" answered "Chianti from Tuscany"; a pizza night with
+     one pizza among the dishes), or it asks "which grape / region" and the right option is the
+     quiz's own subject, so the title gives it away. */
+  _giveaway(q,subject){
+    const opts=Array.isArray(q.opts)?q.opts:[]; if(opts.length<2||typeof q.a!=='number'||!opts[q.a]) return false;
+    const stem=this._words(q.q,''), ow=opts.map(o=>this._words(o,''));
+    const leak=[...ow[q.a]].some(x=>x.length>=4&&!this._GENERIC.has(x)&&stem.has(x)&&!ow.some((s,i)=>i!==q.a&&s.has(x)));
+    if(leak) return true;
+    const sub=String(subject||'').toLowerCase().trim();
+    return !!sub&&/\bwhich (grape|variety|region|area|appellation)\b/i.test(q.q)&&
+      String(opts[q.a]).toLowerCase().includes(sub)&&!opts.some((o,i)=>i!==q.a&&String(o).toLowerCase().includes(sub));
+  },
   distinct(qs,subject){
     const kept=[];
     const neg=q=>/\b(least|not|except|never|worst|unlikely)\b/i.test(q.q);
@@ -174,6 +187,7 @@ const QuizMastery = Object.assign(_accountStore('vinterest_quiz_mastery_v1'), {
     const answer=q=>key(Array.isArray(q.opts)?q.opts[q.a]:'');
     const premise=/^\s*(given that|since|because|as)\b/i;
     (qs||[]).forEach(q=>{
+      if(this._giveaway(q,subject)) return;
       const w=this._words(q.q,subject), a=answer(q), stem=key(q.q);
       const clash=kept.some(k=>{
         const kw=k._w, inter=[...w].filter(x=>kw.has(x)).length, sim=inter/((w.size+kw.size-inter)||1);
