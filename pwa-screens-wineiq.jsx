@@ -1048,7 +1048,7 @@ function WineDNAScreen({nav,back,showPro}){
                 {!collapsed.portrait&&<>
                   <DnaTasteTiles t={t} nav={nav}/>
                   {/* The portrait is what they choose; how well they taste these traits is Mastery's palate. */}
-                  <div role="button" tabIndex={0} data-testid="dna-palate-link" onClick={()=>isPro?nav('mastery-map'):showPro('mastery-map')} onKeyDown={e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); isPro?nav('mastery-map'):showPro('mastery-map'); } }}
+                  <div role="button" tabIndex={0} data-testid="dna-palate-link" onClick={()=>{ Handoff.masterySection.set('palate'); isPro?nav('mastery-map'):showPro('mastery-map'); }} onKeyDown={e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); Handoff.masterySection.set('palate'); isPro?nav('mastery-map'):showPro('mastery-map'); } }}
                     style={{display:'flex',alignItems:'center',gap:8,fontSize:13,color:T.mid,fontFamily:C.P,cursor:'pointer',marginTop:-4}}>
                     <span style={{flex:1}}>The wines you choose. How well you can taste these is your palate.</span>
                     <span style={{color:T.lift(C.cr),fontWeight:700,whiteSpace:'nowrap'}}>Your palate →</span>

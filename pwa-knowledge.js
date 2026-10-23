@@ -43,10 +43,13 @@ const KnowledgeMap = {
     // Rosé, sparkling and orange have no grapes of their own colour on the list: basics and reading carry it.
     const parts=T.colours.length?[[topicF.strength,.5],[grapeF,.25],[readF,.25]]:[[topicF.strength,.6],[readF,.4]];
     const score=this._pct(parts.reduce((a,[f,w])=>a+f*w,0));
+    // The grape quiz furthest from done, and the first unread piece about the type, so the step opens something.
+    const nextGrape=[...grapes].sort((a,b)=>this._grapeFrac(a)-this._grapeFrac(b))[0];
+    const unread=shelf.find(s=>!this._read(s)&&T.types.includes(ContentEngine._subjectType(s.slots,ContentEngine._related(s.slots,wines))));
     const next=topicP.correct<topicP.total?{label:`Take the ${T.label} basics quiz`,quiz:{mode:'practice',topicId:T.topic}}
       :T.colours.length&&!grapes.length?{label:`Scan a ${T.label.toLowerCase()} to unlock its grape quiz`,nav:'camera'}
-      :T.colours.length&&grapeF<1?{label:`Finish your ${T.label.toLowerCase()} grape quizzes`,nav:'learn'}
-      :readF<1?{label:`Read more about your ${T.label.toLowerCase()} wines`,nav:'learn'}:null;
+      :T.colours.length&&grapeF<1?{label:`Finish your ${T.label.toLowerCase()} grape quizzes`,grape:nextGrape}
+      :readF<1?{label:`Read more about your ${T.label.toLowerCase()} wines`,...(unread?{article:unread}:{nav:'learn'})}:null;
     return {id:T.id,group:'types',label:T.label,score,level:this.level(score),next,
       detail:`Basics ${topicP.correct}/${topicP.total}${T.colours.length?` · ${grapes.length} grape quiz${grapes.length===1?'':'zes'}`:''} · ${reads} article${reads===1?'':'s'} read`};
   },

@@ -149,6 +149,20 @@ test.describe('Worker', () => {
     expect((await post('/push/test', { token: 'tok-1' })).status).toBe(429);
   });
 
+  test('a test can wait, so there is time to close the app (a phone shows nothing while it is open)', async () => {
+    const f = fakes(); globalThis.fetch = f.fetch;
+    await reg('tok-1');
+    const t0 = Date.now();
+    const r = await post('/push/test', { token: 'tok-1', body: { delay: 2 } });
+    expect(r.status).toBe(200);
+    expect(Date.now() - t0).toBeGreaterThanOrEqual(1900);
+    expect(f.apns).toHaveLength(1);
+    // Capped at fifteen seconds, never negative.
+    const t1 = Date.now();
+    await post('/push/test', { token: 'tok-1', body: { delay: -5 } });
+    expect(Date.now() - t1).toBeLessThan(1500);
+  });
+
   test('Android goes through FCM v1 with an access token made from the service account, the link in data', async () => {
     const f = fakes(); globalThis.fetch = f.fetch;
     await reg('tok-1', { token: TOKEN_AND, platform: 'android' });
@@ -330,13 +344,13 @@ async function boot(context, page, { native = true, built = true, signedIn = tru
     ...(signedIn ? { vinterest_session: JSON.stringify({ access_token: 'a', refresh_token: 'r', expires_at: Date.now() / 1000 + 3600, user: { id: U1, email: 'a@example.com' } }) } : {}) });
   await stubNetwork(context);
   const seen = { register: [], unregister: [], test: 0 };
-  const handler = (route) => {
+  const handler = async (route) => {
     const p = new URL(route.request().url()).pathname, body = route.request().postData() ? JSON.parse(route.request().postData()) : null;
     const ok = (o) => route.fulfill({ contentType: 'application/json', body: JSON.stringify(o) });
     if (p === '/config') return ok({ supabase: null, billing: null, allPro: false, push: serverPush });
     if (p === '/push/register') { seen.register.push(body); return ok({ ok: true }); }
     if (p === '/push/unregister') { seen.unregister.push(body); return ok({ ok: true }); }
-    if (p === '/push/test') { seen.test++; return ok({ ok: true }); }
+    if (p === '/push/test') { seen.test++; await new Promise((r) => setTimeout(r, 1200)); return ok({ ok: true }); } // the server waits, as it does for real
     if (p === '/me') return ok({ signedIn: true, accounts: true, tier: 'free', usage: {}, caps: {} });
     return ok({ text: '' });
   };
@@ -359,8 +373,9 @@ test.describe('in the app', () => {
     expect(await page.evaluate(() => window.__push.map((c) => c[0]))).toEqual(['request', 'register']);
     await expect(control(page).getByRole('switch')).toHaveAttribute('aria-checked', 'true');
     await page.getByTestId('push-test').click();
-    await expect.poll(() => seen.test).toBe(1);
-    await expect(page.getByTestId('push-msg')).toContainText('Sent');
+    await expect(page.getByTestId('push-msg')).toContainText('Close Vinterest or lock your phone');
+    await expect.poll(() => seen.test, { timeout: 20000 }).toBe(1);
+    await expect(page.getByTestId('push-msg')).toContainText('Sent', { timeout: 20000 });
   });
 
   test('turning it off tells the server to forget this phone and the phone to stop', async ({ context, page }) => {

@@ -76,6 +76,9 @@ jobs:
       # Firebase's google-services.json (secret GOOGLE_SERVICES_JSON: the file's text pasted as it is,
       # or as base64): the Gradle plugin Capacitor's template already carries picks it up, so
       # Android can receive push.
+      - name: Push is not included
+        if: env.GOOGLE_SERVICES_JSON == ''
+        run: echo "::warning title=Push notifications not included::The secret GOOGLE_SERVICES_JSON is empty or isn't a repository Actions secret (Settings, Secrets and variables, Actions, Repository secrets), so this Android build has no push. See docs/push.md."
       - name: Firebase file
         if: env.GOOGLE_SERVICES_JSON != ''
         run: |

@@ -48,6 +48,17 @@ const Guides = Object.assign(_accountStore('vinterest_guides_v1'), {
       dessert:'blue cheese or a fruit tart',fortified:'nuts, chocolate or blue cheese'}[t]||'a meal of similar weight';
   },
   /* One line about the reader, from their own wines, or null when there's nothing to say yet. */
+  /* A guide's "Try it": the camera, a WineDNA section (opened and scrolled to) or a Mastery section.
+     Mastery is Pro, so without Pro it opens the Pro sheet instead. */
+  openTry(t,nav,showPro){
+    if(!t) return;
+    if(t.dna){ UserPrefs.openDNA(null,t.dna); return nav('profile'); }
+    if(t.nav==='mastery-map'){
+      if(t.section) Handoff.masterySection.set(t.section);
+      return Entitlement.isPro()||!showPro?nav('mastery-map'):showPro('mastery-map');
+    }
+    nav(t.nav);
+  },
   personal(guide,wines){
     wines=wines||WineHistory.getAll();
     const p=this._main(wines), rc=Regional.current();

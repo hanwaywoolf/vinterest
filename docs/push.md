@@ -45,6 +45,7 @@ These are the same things the bell on Home collects. New articles, milestones an
 
 ## Notes
 
+- A phone shows a notification only while the app is closed or in the background; with the app open it arrives silently. "Send me a test" therefore waits ten seconds so you can close the app or lock the screen first.
 - Pages has no cron, so `.github/workflows/push-run.yml` calls `/push/run` every hour. A run handles five people and says if there are more (`PUSH_BATCH`), and the workflow carries on; Cloudflare's free plan allows 50 requests per run.
 - Turning push off, signing out on purpose, or deleting the account removes the token. A token Apple or Google says is dead is deleted when we next try it.
 - Local time comes from the phone's time zone sent at registration; "6pm" is `PUSH_HOUR` in `_worker.js`.

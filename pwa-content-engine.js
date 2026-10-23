@@ -735,7 +735,6 @@ const ContentEngine = {
           stub.slots.country=match?match.country:KNOWLEDGE.regions[stub.slots.region]?.country;
         }
       });
-      if(archetype.id==='explore_style_intro') return;
       const title=this.fillTpl(archetype.titleTpl,stub.slots);
       const subtitle=this.subtitleFor(archetype,stub.slots,wines);
       const series=archetype.series||null;
@@ -805,6 +804,8 @@ const ContentEngine = {
     if(s.conceptLabel) return 'Because a quiz question caught you out';
     if(s.descriptor) return `Because "${s.descriptor}" came up in your tasting notes`;
     if(s.trait) return 'Because of a pattern in your ratings';
+    // An Explore Next piece: the style was picked to sit near their best third (ExploreNext).
+    if(s.style) return "Because it's close to the wines you rate highest";
     return 'Picked from your WineDNA';
   },
   /* The article's "why this is for you" box. Articles saved before the prompt said otherwise

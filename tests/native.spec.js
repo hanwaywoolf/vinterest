@@ -252,3 +252,10 @@ test('push notifications: the entitlement file, the project setting that uses it
   expect(done.match(new RegExp(`CODE_SIGN_ENTITLEMENTS = ${ENTITLEMENTS_PATH};`, 'g'))).toHaveLength(2);
   expect(patchPbxproj(done)).toBe(done);
 });
+
+test('the Play upload says what is wrong when its secret is not a service account key', async () => {
+  const { accessToken } = await import(pathToFileURL(path.join(__dirname, '..', 'scripts/play-upload.mjs')).href);
+  // google-services.json, the Firebase file, has no private_key: the mistake this message is for.
+  await expect(accessToken({ project_info: { project_id: 'x' }, client: [] })).rejects.toThrow(/not a service account key/);
+  await expect(accessToken(null)).rejects.toThrow(/PLAY_SERVICE_ACCOUNT_JSON/);
+});

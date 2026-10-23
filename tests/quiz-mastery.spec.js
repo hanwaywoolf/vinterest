@@ -333,6 +333,21 @@ test('a quiz never asks the same point three ways', async ({ page }) => {
   expect(kept).toEqual(['Which statement best', 'What does new', 'Which region makes']);
 });
 
+// A question whose stem hands over the answer is dropped: the right option holds a telling word of
+// the stem that no wrong option does (Tuscany, pizza), or the right option is the quiz's own subject.
+test('a quiz drops questions whose stem gives the answer away', async ({ page }) => {
+  await page.goto(`${BASE}/?demo=1#learn`);
+  const kept = await page.evaluate(() => QuizMastery.distinct([
+    { q: 'Which Tuscan town gives its name to a famous Sangiovese made in Tuscany?', opts: ['Chianti from Tuscany', 'Barolo', 'Rioja', 'Priorat'], a: 0 },
+    { q: 'Which grape is the backbone of Chianti Classico?', opts: ['Sangiovese', 'Merlot', 'Nebbiolo', 'Barbera'], a: 0 },
+    { q: 'What suits a pizza night with a Sangiovese?', opts: ['A margherita pizza', 'Oysters', 'Sushi', 'Trifle'], a: 0 },
+    { q: 'What does Sangiovese usually show on the nose?', opts: ['Sour cherry', 'Lychee', 'Gooseberry', 'Banana'], a: 0 },
+    { q: 'What suits a pizza night with a Sangiovese?', opts: ['A margherita pizza', 'A pepperoni pizza', 'A four cheese pizza', 'A calzone pizza'], a: 3 },
+  ], 'Sangiovese').map((q) => q.opts[q.a]));
+  // the all-pizza version of the dish question is fair and stays; the one-pizza version goes
+  expect(kept).toEqual(['Sour cherry', 'A calzone pizza']);
+});
+
 // Every grape on the Learn list has checked facts for each angle the quiz prompt spreads its
 // questions over, so no quiz is built on a single idea (Chardonnay's was "neutral" three times).
 test('every grape has facts for every quiz angle, and the prompt gets them all', async ({ page }) => {

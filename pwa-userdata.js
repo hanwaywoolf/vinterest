@@ -179,6 +179,9 @@ const Handoff = {
      lands on the grapes, not the top of the screen. Read once. */
   masteryReturn:{ set:v=>Store.setJSON('vinterest_mastery_return',v,{session:true}),
     take(){ const v=Store.getJSON('vinterest_mastery_return',null,{session:true}); Store.remove('vinterest_mastery_return',{session:true}); return v; } },
+  /* Which Mastery section to open and scroll to ('palate'), read once. */
+  masterySection:{ set:v=>Store.set('vinterest_mastery_section',v,{session:true}),
+    take(){ const v=Store.get('vinterest_mastery_section',{session:true}); Store.remove('vinterest_mastery_section',{session:true}); return v; } },
   get onRampIdx(){ return this._s('vinterest_onramp_idx'); },
   get styleExplore(){ return this._j('vinterest_style_explore'); },
   /* How My Wines should open (type and sort), read once. */
