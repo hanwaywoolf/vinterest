@@ -128,6 +128,11 @@ export default {
         billing: env.REVENUECAT_IOS_KEY || env.REVENUECAT_ANDROID_KEY ? { ios: env.REVENUECAT_IOS_KEY || null, android: env.REVENUECAT_ANDROID_KEY || null } : null,
         allPro: ALL_PRO_FOR_TESTING && env.ALL_PRO !== "0",
         push: pushOn(env),
+        // IOS_TYPED_PROMO=1 keeps the typed promo field on iPhone (Billing.offerCodes false), so beta
+        // testers on TestFlight redeem our Supabase codes: Apple's offer codes can't be made before the
+        // subscription is approved and don't redeem reliably from TestFlight. Set it back before the
+        // App Store submission (review rule 3.1.1).
+        iosTypedPromo: env.IOS_TYPED_PROMO === "1",
       });
     }
     if (url.pathname === "/push/register" || url.pathname === "/push/unregister" || url.pathname === "/push/test" || url.pathname === "/push/run") {
