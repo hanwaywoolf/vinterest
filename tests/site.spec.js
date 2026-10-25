@@ -197,9 +197,8 @@ test.describe('desktop', () => {
     // Then the ways out under the extras.
     await jump(page, 'rate', 2);
     const ways = phone.locator('[data-testid="reveal-ways"]');
-    await expect(ways).toContainText('Go deeper', { timeout: 10000 });
-    await expect(ways).toContainText('Wine details');
-    await expect(ways).toContainText('See the result');
+    await expect(ways).toContainText('See the result and learn more', { timeout: 10000 });
+    await expect(ways).toContainText('Finish');
     // Going back to the start puts the rating panel back.
     await jump(page, 'rate', 0);
     await expect(phone).toContainText('How was it?', { timeout: 10000 });
@@ -478,12 +477,21 @@ test.describe('search engines', () => {
 });
 
 test.describe('legal pages', () => {
-  test('privacy and terms exist and link back', async ({ page }) => {
+  test('privacy and terms exist, say what the app does, and have no draft banner or leftover [brackets]', async ({ page }) => {
+    const heading = { '/privacy/': 'What is sent to an AI service', '/terms/': 'Subscriptions' };
     for (const p of ['/privacy/', '/terms/']) {
       await page.goto(BASE + p);
       await expect(page.locator('h1')).toBeVisible();
-      await expect(page.locator('.draft')).toContainText('Draft');
+      await expect(page.locator('.draft')).toHaveCount(0);
+      await expect(page.locator('body')).not.toContainText('[');
+      await expect(page.getByRole('heading', { name: heading[p] })).toBeVisible();
+      await expect(page.locator('meta[name="robots"]')).toHaveCount(0);
     }
+    // The auto-renewal wording Apple asks for, and the way to cancel.
+    await expect(page.locator('body')).toBeVisible();
+    await page.goto(BASE + '/terms/');
+    await expect(page.locator('body')).toContainText('cancel it at least 24 hours before the period ends');
+    await expect(page.locator('body')).toContainText('Manage subscription');
   });
 });
 

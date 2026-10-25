@@ -268,6 +268,7 @@ const USD_FX={GBP:0.79,CAD:1.36,AUD:1.53,NZD:1.64,EUR:0.92,USD:1.0,JPY:150,CNY:7
    the model, so it's grounded and identical everywhere. */
 const SommelierScript = {
   _inFlight:{},
+  WAIT_MS:35000,
   // The script is cached until the wines behind it change: a new scan, a score, a price paid
   // or a "buy again" all write a new one (a script written at scan time used to outlive the score).
   key(length,typeKey,sig,code){ return `vinterest_script_${length}_${typeKey}_${sig}_${code}_v5`; },
@@ -295,7 +296,7 @@ const SommelierScript = {
     return `${rc.base}${lo}–${rc.base}${hi} ${rc.code}`;
   },
   cached(length,typeKey,wines){ return Store.get(this.key(length,typeKey,this.sig(wines),Regional.current().code)); },
-  // Calls onReady(text) once the script exists (immediately if cached), or onReady(null) on failure.
+  // Calls onReady(text) once the script exists (immediately if cached), or onReady(null, error) on failure.
   get(length,typeKey,label,wines,onReady){
     const rc=Regional.current();
     const sig=this.sig(wines);
@@ -305,14 +306,22 @@ const SommelierScript = {
     if(hit){ onReady(hit); return; }
     if(this._inFlight[want]){ this._inFlight[want].push(onReady); return; }
     const waiters=this._inFlight[want]=[onReady];
-    const done=text=>{ delete this._inFlight[want]; waiters.forEach(f=>f(text)); };
-    const ask=prompt=>window.claude.complete({purpose:'sommelier_script',messages:[{role:'user',content:prompt}]}).then(t=>{ t=(t||'').trim(); if(!t) throw new Error('empty script'); return t; });
+    const done=(text,err)=>{ delete this._inFlight[want]; waiters.forEach(f=>f(text,err)); };
+    // A request that never comes back used to leave the card on "Writing…" for good: give each try SCRIPT_WAIT_MS.
+    const once=prompt=>Promise.race([
+      window.claude.complete({purpose:'sommelier_script',messages:[{role:'user',content:prompt}]}),
+      new Promise((_,rej)=>setTimeout(()=>rej(new Error('Claude took too long to answer.')),this.WAIT_MS))
+    ]).then(t=>{ t=(t||'').trim(); if(!t) throw new Error('Claude sent back an empty script.'); return t; });
+    // One more try after a short pause: a dropped connection or an empty answer shouldn't leave the card with nothing.
+    // A sign-in, plan or fair-use refusal (err.code) won't change on a second go, so those fail at once.
+    const ask=prompt=>once(prompt).catch(e=>{ if(e&&(e.code||e.status===401||e.status===402||e.status===429)) throw e; return new Promise(r=>setTimeout(r,1200)).then(()=>once(prompt)); });
     const makeLong=()=>{
       const cachedLong=Store.get(kLong);
       if(cachedLong) return Promise.resolve(cachedLong);
       // Best-loved first, so the script leans on what they enjoyed (and would buy again).
       const ranked=[...wines].sort((a,b)=>(b.buy_again?1:0)-(a.buy_again?1:0)||(b.rating||0)-(a.rating||0));
-      const wineList=ranked.slice(0,8).map(w=>`${w.name}${w.vintage>0?' '+w.vintage:''} from ${w.region||w.country||'unknown'}${w.rating?' (rated '+w.rating+'/100)':''}${w.buy_again?', would buy again':''}`).join('; ');
+      const clean=v=>String(v||'').replace(/[\u0000-\u001f"“”]+/g,' ').replace(/\s+/g,' ').trim().slice(0,70); // a stray quote or line break in a label shouldn't reach the prompt
+      const wineList=ranked.slice(0,8).map(w=>`${clean(w.name)}${w.vintage>0?' '+w.vintage:''} from ${clean(w.region||w.country)||'unknown'}${w.rating?' (rated '+w.rating+'/100)':''}${w.buy_again?', would buy again':''}`).join('; ');
       const budget=this.budget(wines,rc);
       const budgetInst=budget
         ?`Include my typical budget, written exactly as "${budget}" — do not change the numbers, symbol or currency code.`
@@ -327,7 +336,7 @@ const SommelierScript = {
           .then(t=>{ Store.set(kShort,t); return t; });
       })
       .then(done)
-      .catch(()=>done(null));
+      .catch(e=>{ console.warn('[Vinterest] sommelier script failed:',e&&e.message); done(null,e); });
   }
 };
 
@@ -726,7 +735,6 @@ const ContentEngine = {
           stub.slots.country=match?match.country:KNOWLEDGE.regions[stub.slots.region]?.country;
         }
       });
-      if(archetype.id==='explore_style_intro') return;
       const title=this.fillTpl(archetype.titleTpl,stub.slots);
       const subtitle=this.subtitleFor(archetype,stub.slots,wines);
       const series=archetype.series||null;
@@ -796,6 +804,8 @@ const ContentEngine = {
     if(s.conceptLabel) return 'Because a quiz question caught you out';
     if(s.descriptor) return `Because "${s.descriptor}" came up in your tasting notes`;
     if(s.trait) return 'Because of a pattern in your ratings';
+    // An Explore Next piece: the style was picked to sit near their best third (ExploreNext).
+    if(s.style) return "Because it's close to the wines you rate highest";
     return 'Picked from your WineDNA';
   },
   /* The article's "why this is for you" box. Articles saved before the prompt said otherwise

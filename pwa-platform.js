@@ -27,6 +27,18 @@ const Platform = {
     const TZ=(window.VinterestNative||{}).TextZoom;
     if(TZ){ try{ await TZ.set({value:1}); }catch(e){} }
     if(typeof Account!=='undefined') Account.loadRemoteConfig();
+    if(typeof Billing!=='undefined') Billing.start().catch(()=>{}).then(()=>{ if(typeof Push!=='undefined') Push.start(); });
+  },
+
+  /* The phone's status bar follows the screen: Android's default is a white bar with white icons
+     (Capacitor's template colours), which showed as a blank strip above the dark app. Called by
+     pwa-app.jsx with the colour at the top of the screen; `dark` picks light icons. iOS ignores the
+     colour (the bar is drawn over the page there) and takes the icon style. */
+  statusBar(color,dark){
+    if(!this.native()) return;
+    const SB=(window.VinterestNative||{}).StatusBar; if(!SB) return;
+    try{ SB.setStyle({style:dark?'DARK':'LIGHT'}); }catch(e){}
+    try{ if(color) SB.setBackgroundColor({color}); }catch(e){}
   },
 
   /* The phone's status bar follows the screen: Android's default is a white bar with white icons

@@ -53,7 +53,10 @@ function App(){
   const go=ns=>{ const to=ns[ns.length-1]; stackRef.current=ns; screenRef0.current=to; setStack(ns); setScreen(to); };
   function nav(to){
     const s=stackRef.current, i=s.lastIndexOf(to), up=s.length-1-i;
-    if(i>=0&&up===0){ go(s); return; }
+    // Asked for the screen they're already on: on a main tab that's a no-op, but a detail screen
+    // (an article's "Next read", a quiz's next suggestion) has just been handed new data through
+    // Handoff, and reads it once at mount, so it opens afresh instead of sitting there doing nothing.
+    if(i>=0&&up===0){ if(!['home','mywines','learn','profile','notices','camera'].includes(to)) setDataGen(g=>g+1); go([...s]); return; }
     if(i>=0&&up<=pushed.current){ pushed.current-=up; go(s.slice(0,i+1)); history.go(-up); return; }
     if(i>=0||to==='home'){ go(i>=0?s.slice(0,i+1):['home']); history.replaceState(null,'','#'+to); return; }
     pushed.current++; go([...s,to]); window.location.hash=to;
@@ -149,6 +152,17 @@ function App(){
   React.useEffect(()=>{
     const h=e=>{ if(e.detail&&e.detail.changed&&['home','mywines','profile','learn','account'].includes(screenRef.current)) setDataGen(g=>g+1); };
     window.addEventListener('vinterest:sync',h); return()=>window.removeEventListener('vinterest:sync',h);
+  },[]);
+
+  // A tap on a push notification opens where it points (Push, pwa-push.js), as a bell record would;
+  // a tap that launched the app waits for it to be ready.
+  const navRef=React.useRef(nav); navRef.current=nav;
+  React.useEffect(()=>{
+    const go=l=>{ if(l) _openLink(l,(...a)=>navRef.current(...a),setProGate); };
+    const h=e=>{ Push.takePending(); go(e.detail); };
+    window.addEventListener('vinterest:push-open',h);
+    const p=Push.takePending(); if(p) setTimeout(()=>go(p),400);
+    return()=>window.removeEventListener('vinterest:push-open',h);
   },[]);
 
   const ctx={nav,back,showPro:setProGate,isTablet};

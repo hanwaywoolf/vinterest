@@ -120,7 +120,40 @@ export default {
       if (request.method === "OPTIONS") return cors(new Response(null, { status: 204 }));
       if (request.method !== "GET") return json(405, { error: "Method not allowed" });
       // The public sign-in settings, for an app build that wasn't given them (Account.loadRemoteConfig).
-      return json(200, { supabase: env.SUPABASE_URL && env.SUPABASE_PUBLISHABLE_KEY ? { url: env.SUPABASE_URL, key: env.SUPABASE_PUBLISHABLE_KEY } : null });
+      // Also the stores' public RevenueCat SDK keys (Billing in pwa-billing.js) and whether everyone
+      // is Pro while testing (Entitlement.allPro), so ending the test is a Cloudflare variable
+      // (ALL_PRO=0), not an app update.
+      return json(200, {
+        supabase: env.SUPABASE_URL && env.SUPABASE_PUBLISHABLE_KEY ? { url: env.SUPABASE_URL, key: env.SUPABASE_PUBLISHABLE_KEY } : null,
+        billing: env.REVENUECAT_IOS_KEY || env.REVENUECAT_ANDROID_KEY ? { ios: env.REVENUECAT_IOS_KEY || null, android: env.REVENUECAT_ANDROID_KEY || null } : null,
+        allPro: ALL_PRO_FOR_TESTING && env.ALL_PRO !== "0",
+        push: pushOn(env),
+      });
+    }
+    if (url.pathname === "/push/register" || url.pathname === "/push/unregister" || url.pathname === "/push/test" || url.pathname === "/push/run") {
+      if (request.method === "OPTIONS") return cors(new Response(null, { status: 204 }));
+      if (request.method !== "POST") return json(405, { error: "Method not allowed" });
+      if (url.pathname === "/push/run") return handlePushRun(request, env);
+      return handlePush(request, env, url.pathname.slice(6));
+    }
+    if (url.pathname === "/billing/sync") {
+      if (request.method === "OPTIONS") return cors(new Response(null, { status: 204 }));
+      if (request.method !== "POST") return json(405, { error: "Method not allowed" });
+      return handleBillingSync(request, env);
+    }
+    if (url.pathname === "/revenuecat") {
+      if (request.method !== "POST") return json(405, { error: "Method not allowed" });
+      return handleRevenueCat(request, env);
+    }
+    if (url.pathname === "/reviewer/login") {
+      if (request.method === "OPTIONS") return cors(new Response(null, { status: 204 }));
+      if (request.method !== "POST") return json(405, { error: "Method not allowed" });
+      return handleReviewerLogin(request, env);
+    }
+    if (url.pathname === "/promo") {
+      if (request.method === "OPTIONS") return cors(new Response(null, { status: 204 }));
+      if (request.method !== "POST") return json(405, { error: "Method not allowed" });
+      return handlePromo(request, env);
     }
     if (url.pathname === "/account/delete") {
       if (request.method === "OPTIONS") return cors(new Response(null, { status: 204 }));
@@ -308,10 +341,9 @@ const FAIR_USE = {
   pro:  { label_scan: 600, list_scan: 150, price_search: 300, _other: 3000 },
 };
 const PRO_ONLY = { list_scan: "Wine list scanning is part of Vinterest Pro.", lcbo: "LCBO stock near you is part of Vinterest Pro." };
-/* While testing, before real purchases exist: these Pro features are open to any signed-in account
-   (metered by FAIR_USE.free); signed out still asks them to sign in. Remove an entry to make it Pro
-   again, and change Entitlement.listScanNeeds in pwa-userdata.js to match. */
-const OPEN_TO_SIGNED_IN = { list_scan: true };
+/* Pro-only purposes any signed-in account may use anyway (metered by FAIR_USE.free). None: list
+   scanning and LCBO stock need Pro, from a subscription or a promo code. */
+const OPEN_TO_SIGNED_IN = {};
 const AUTH_CACHE_MS = 5 * 60 * 1000;
 const _authCache = new Map();
 
@@ -339,17 +371,22 @@ async function authUser(request, env) {
 function db(env, path, init = {}) {
   return fetch(`${env.SUPABASE_URL}/rest/v1/${path}`, { ...init, headers: { apikey: env.SUPABASE_SECRET_KEY, "content-type": "application/json", ...(init.headers || {}) } });
 }
-/* While testing, before real purchases exist, every signed-in account is Pro (metered at
-   FAIR_USE.pro). Set false to bring the free plan back; tests pass ALL_PRO: "0" to check it.
-   Entitlement.ALL_PRO_FOR_TESTING in pwa-userdata.js is the app's side. List scanning still
-   needs sign-in, so anonymous traffic can't run up the bill. */
-const ALL_PRO_FOR_TESTING = true;
+/* The testing switch: true makes every signed-in account Pro (metered at FAIR_USE.pro). It ships
+   false: Pro is a subscription (RevenueCat) or a promo code. Entitlement.ALL_PRO_FOR_TESTING in
+   pwa-userdata.js is the app's side. */
+const ALL_PRO_FOR_TESTING = false;
+/* Their plan from the entitlements row: {tier, expires_at} (expires_at only while Pro has an end
+   date, as a promo code's does). Pro that has run out reads as free. */
+async function entitlementOf(env, userId) {
+  const r = await db(env, `entitlements?user_id=eq.${encodeURIComponent(userId)}&select=tier,expires_at,source`);
+  if (!r.ok) return { tier: "free" };
+  const [e] = await r.json();
+  const pro = e && e.tier === "pro" && (!e.expires_at || new Date(e.expires_at) > new Date());
+  return pro ? { tier: "pro", expires_at: e.expires_at || null, source: e.source || null } : { tier: "free" };
+}
 async function tierOf(env, userId) {
   if (ALL_PRO_FOR_TESTING && env.ALL_PRO !== "0") return "pro";
-  const r = await db(env, `entitlements?user_id=eq.${encodeURIComponent(userId)}&select=tier,expires_at`);
-  if (!r.ok) return "free";
-  const [e] = await r.json();
-  return e && e.tier === "pro" && (!e.expires_at || new Date(e.expires_at) > new Date()) ? "pro" : "free";
+  return (await entitlementOf(env, userId)).tier;
 }
 function capFor(tier, kind) { const t = FAIR_USE[tier] || FAIR_USE.free; return kind in t ? t[kind] : t._other; }
 function weekStart(d = new Date()) {
@@ -386,18 +423,414 @@ async function handleMe(request, env) {
   catch (e) { return json(503, { error: "Accounts are unavailable right now.", code: "auth_unavailable" }); }
   if (user && user.invalid) return json(401, { error: "Your sign-in has expired.", code: "auth_expired" });
   if (!user) return json(200, { signedIn: false, accounts: accountsOn(env), tier: "free" });
-  const tier = await tierOf(env, user.id);
+  const ent = await entitlementOf(env, user.id);
+  const tier = ALL_PRO_FOR_TESTING && env.ALL_PRO !== "0" ? "pro" : ent.tier;
   const week = weekStart();
   const r = await db(env, `usage_counters?user_id=eq.${encodeURIComponent(user.id)}&period_start=eq.${week}&select=kind,count`);
   const usage = r.ok ? Object.fromEntries((await r.json()).map((u) => [u.kind, u.count])) : {};
-  return json(200, { signedIn: true, accounts: true, email: user.email, tier, week, usage, caps: FAIR_USE[tier] });
+  return json(200, { signedIn: true, accounts: true, email: user.email, tier, expires_at: ent.expires_at || null, source: ent.source || null, week, usage, caps: FAIR_USE[tier] });
+}
+
+/* POST /promo {code}: redeems a promo code for the signed-in user (redeem_promo in
+   0006_promo_codes.sql grants or extends Pro by the code's months, counting the use). The code
+   is checked and spent by the database, never here; the app only learns whether it worked. */
+const PROMO_ERRORS = {
+  invalid: "That code isn't one of ours. Check it and try again.",
+  expired: "That code has expired.",
+  used_up: "That code has already been used.",
+};
+async function handlePromo(request, env) {
+  const origin = request.headers.get("origin");
+  if (!originAllowed(origin)) return json(403, { error: "Origin not allowed.", code: "origin_denied" });
+  if (!accountsOn(env)) return json(503, { error: "Accounts aren't set up on this server.", code: "accounts_off" });
+  let user;
+  try { user = await authUser(request, env); }
+  catch (e) { return json(503, { error: "We couldn't reach your account. Check your connection and try again.", code: "auth_unavailable" }); }
+  if (!user || user.invalid) return json(401, { error: "Sign in first, then enter your code.", code: "auth_expired" });
+  if (rateLimited(clientIp(request))) return json(429, { error: "Too many tries. Wait a few minutes and try again.", code: "rate_limited" });
+  let body = {};
+  try { body = await request.json(); } catch (e) {}
+  const code = String(body.code || "").replace(/\s/g, "").toUpperCase();
+  if (!code || code.length > 40) return json(400, { error: PROMO_ERRORS.invalid, code: "invalid" });
+  let r;
+  try { r = await db(env, "rpc/redeem_promo", { method: "POST", body: JSON.stringify({ p_user: user.id, p_code: code }) }); }
+  catch (e) { r = null; }
+  if (!r || !r.ok) return json(502, { error: "We couldn't check that code just now. Try again in a minute.", code: "promo_unavailable" });
+  const out = await r.json();
+  if (!out || !out.ok) {
+    const k = out && PROMO_ERRORS[out.error] ? out.error : "invalid";
+    return json(400, { error: PROMO_ERRORS[k], code: k });
+  }
+  for (const [k, v] of _authCache) if (v.user && v.user.id === user.id) _authCache.delete(k);
+  return json(200, { tier: "pro", expires_at: out.expires_at });
+}
+
+/* ── Push notifications (APNs and FCM) ──
+   The phone registers its token (POST /push/register, signed in: the reminders are about their
+   wines, which sync to Supabase). Delivery is the Worker's: Apple's APNs over HTTP/2 with a JWT
+   made from the .p8 key (APNS_KEY_P8, APNS_KEY_ID, APNS_TEAM_ID), Google's FCM v1 with an access
+   token made from the service account (FCM_SERVICE_ACCOUNT_JSON). Both stay Cloudflare secrets.
+   What is sent, from what the server already holds (they are the same records as the app's
+   bell, Notices): a bottle waiting for its rating and a long gap since the last scan (Reminders,
+   switched off by vinterest_notify.reminder in their synced settings), and Pro access ending
+   soon or a payment that didn't go through (the account, always on). At most one a day and
+   three a week, at about 6pm where they are. POST /push/run is the hourly job (a GitHub
+   workflow with PUSH_CRON_SECRET, since Pages has no cron). Nothing here moves a match or a rating. */
+// A run handles a few people (each costs about seven requests to Supabase and the services, and Pages
+// allows 50 on the free plan); it says when there are more and the workflow asks again from there.
+const PUSH_HOUR = 18, PUSH_MAX_PER_WEEK = 3, PUSH_BATCH = 5, PUSH_MAX_DEVICES = 10;
+const PUSH_RATE_AFTER_MS = 20 * 3600 * 1000, PUSH_LAPSE_DAYS = 14, PUSH_PRO_ENDING_DAYS = 3;
+function apnsOn(env) { return !!(env.APNS_KEY_P8 && env.APNS_KEY_ID && env.APNS_TEAM_ID); }
+function fcmOn(env) { return !!env.FCM_SERVICE_ACCOUNT_JSON; }
+function pushOn(env) { return accountsOn(env) && (apnsOn(env) || fcmOn(env)); }
+
+const b64url = (buf) => btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+function pemToDer(pem) {
+  const bin = atob(String(pem).replace(/\\n/g, "\n").replace(/-----[A-Z ]+-----/g, "").replace(/\s+/g, ""));
+  const a = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) a[i] = bin.charCodeAt(i);
+  return a.buffer;
+}
+async function signJwt(alg, header, claims, key) {
+  const enc = (o) => b64url(new TextEncoder().encode(JSON.stringify(o)));
+  const data = enc(header) + "." + enc(claims);
+  const algo = alg === "ES256" ? { name: "ECDSA", hash: "SHA-256" } : { name: "RSASSA-PKCS1-v1_5" };
+  return data + "." + b64url(await crypto.subtle.sign(algo, key, new TextEncoder().encode(data)));
+}
+let _apnsJwt = null, _fcmAccess = null;
+async function apnsToken(env) {
+  const now = Math.floor(Date.now() / 1000);
+  if (_apnsJwt && now - _apnsJwt.at < 45 * 60 && _apnsJwt.kid === env.APNS_KEY_ID) return _apnsJwt.token;
+  const key = await crypto.subtle.importKey("pkcs8", pemToDer(env.APNS_KEY_P8), { name: "ECDSA", namedCurve: "P-256" }, false, ["sign"]);
+  const token = await signJwt("ES256", { alg: "ES256", kid: env.APNS_KEY_ID }, { iss: env.APNS_TEAM_ID, iat: now }, key);
+  _apnsJwt = { token, at: now, kid: env.APNS_KEY_ID };
+  return token;
+}
+async function fcmAccessToken(env, sa) {
+  const now = Math.floor(Date.now() / 1000);
+  if (_fcmAccess && _fcmAccess.exp - 300 > now && _fcmAccess.email === sa.client_email) return _fcmAccess.token;
+  const key = await crypto.subtle.importKey("pkcs8", pemToDer(sa.private_key), { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" }, false, ["sign"]);
+  const jwt = await signJwt("RS256", { alg: "RS256", typ: "JWT" }, { iss: sa.client_email, scope: "https://www.googleapis.com/auth/firebase.messaging", aud: "https://oauth2.googleapis.com/token", iat: now, exp: now + 3600 }, key);
+  const r = await fetch("https://oauth2.googleapis.com/token", { method: "POST", headers: { "content-type": "application/x-www-form-urlencoded" }, body: `grant_type=${encodeURIComponent("urn:ietf:params:oauth:grant-type:jwt-bearer")}&assertion=${jwt}` });
+  if (!r.ok) throw new Error("fcm_auth_" + r.status);
+  const j = await r.json();
+  _fcmAccess = { token: j.access_token, exp: now + (j.expires_in || 3600), email: sa.client_email };
+  return _fcmAccess.token;
+}
+/* One notification to one phone: {ok}, or {ok:false, gone:true} when the service says the token is dead. */
+async function sendPushOne(env, device, msg) {
+  try {
+    if (device.platform === "ios") {
+      if (!apnsOn(env)) return { ok: false, error: "apns_off" };
+      const r = await fetch(`${env.APNS_HOST || "https://api.push.apple.com"}/3/device/${device.token}`, {
+        method: "POST",
+        headers: { authorization: `bearer ${await apnsToken(env)}`, "apns-topic": env.APNS_TOPIC || "app.vinterest", "apns-push-type": "alert", "apns-priority": "10", "content-type": "application/json" },
+        body: JSON.stringify({ aps: { alert: { title: msg.title, body: msg.body }, sound: "default" }, link: msg.link || null }),
+      });
+      if (r.ok) return { ok: true };
+      let reason = ""; try { reason = (await r.json()).reason || ""; } catch (e) {}
+      if (reason === "ExpiredProviderToken") _apnsJwt = null;
+      return { ok: false, gone: r.status === 410 || ["BadDeviceToken", "Unregistered", "DeviceTokenNotForTopic"].includes(reason), error: `apns ${r.status} ${reason}` };
+    }
+    if (!fcmOn(env)) return { ok: false, error: "fcm_off" };
+    const sa = JSON.parse(env.FCM_SERVICE_ACCOUNT_JSON);
+    const r = await fetch(`https://fcm.googleapis.com/v1/projects/${sa.project_id}/messages:send`, {
+      method: "POST",
+      headers: { authorization: `Bearer ${await fcmAccessToken(env, sa)}`, "content-type": "application/json" },
+      body: JSON.stringify({ message: { token: device.token, notification: { title: msg.title, body: msg.body }, data: { link: JSON.stringify(msg.link || null) }, android: { priority: "HIGH" } } }),
+    });
+    if (r.ok) return { ok: true };
+    let status = "", code = 0; try { const e = (await r.json()).error || {}; status = e.status || ""; code = e.code || 0; } catch (e) {}
+    return { ok: false, gone: r.status === 404 || status === "NOT_FOUND" || status === "UNREGISTERED" || (r.status === 400 && status === "INVALID_ARGUMENT"), error: `fcm ${r.status} ${status || code}` };
+  } catch (e) {
+    return { ok: false, error: String(e && e.message || e) };
+  }
+}
+/* Sends to every phone a user has registered; tokens the services call dead are deleted. */
+async function pushToUser(env, userId, msg) {
+  const r = await db(env, `push_devices?user_id=eq.${encodeURIComponent(userId)}&select=token,platform`);
+  const devices = r.ok ? await r.json() : [];
+  let sent = 0; const gone = [], errors = [];
+  for (const d of devices) {
+    const o = await sendPushOne(env, d, msg);
+    if (o.ok) sent++; else if (o.gone) gone.push(d.token); else errors.push(o.error);
+  }
+  if (gone.length) await db(env, `push_devices?token=in.(${gone.map((t) => `"${t}"`).join(",")})`, { method: "DELETE" }).catch(() => null);
+  return { sent, gone: gone.length, errors };
+}
+async function pushRecord(env, userId, kind, keys) {
+  await db(env, "push_sent?on_conflict=user_id,kind,key", { method: "POST", headers: { prefer: "resolution=merge-duplicates,return=minimal" },
+    body: JSON.stringify(keys.map((key) => ({ user_id: userId, kind, key, sent_at: new Date().toISOString() }))) }).catch(() => null);
+}
+
+/* POST /push/register {token, platform, tz, app_version}, /push/unregister {token}, /push/test: signed-in app calls. */
+async function handlePush(request, env, action) {
+  const origin = request.headers.get("origin");
+  if (!originAllowed(origin)) return json(403, { error: "Origin not allowed.", code: "origin_denied" });
+  if (!pushOn(env)) return json(503, { error: "Notifications aren't set up on this server yet.", code: "push_off" });
+  let user;
+  try { user = await authUser(request, env); }
+  catch (e) { return json(503, { error: "We couldn't reach your account. Check your connection and try again.", code: "auth_unavailable" }); }
+  if (!user || user.invalid) return json(401, { error: "Sign in again, then turn notifications on.", code: "auth_expired" });
+  if (rateLimited(clientIp(request))) return json(429, { error: "Too many tries. Wait a few minutes and try again.", code: "rate_limited" });
+  let body = {};
+  try { body = await request.json(); } catch (e) {}
+  const uid = encodeURIComponent(user.id);
+  if (action === "register") {
+    const token = String(body.token || ""), platform = body.platform;
+    if (token.length < 20 || token.length > 4096 || !/^[\x21-\x7e]+$/.test(token) || !["ios", "android"].includes(platform)) return json(400, { error: "That doesn't look like a phone token.", code: "invalid" });
+    const tz = /^[A-Za-z_]+(\/[A-Za-z_+\-0-9]+){0,2}$/.test(String(body.tz || "")) ? String(body.tz) : null;
+    const w = await db(env, "push_devices?on_conflict=token", { method: "POST", headers: { prefer: "resolution=merge-duplicates,return=minimal" },
+      body: JSON.stringify({ token, user_id: user.id, platform, tz, app_version: String(body.app_version || "").slice(0, 40) || null, last_seen: new Date().toISOString() }) });
+    if (!w.ok) return json(502, { error: "We couldn't save that just now. Try again in a minute.", code: "push_unavailable" });
+    // A user keeps their newest few phones.
+    const all = await db(env, `push_devices?user_id=eq.${uid}&select=token&order=last_seen.desc&offset=${PUSH_MAX_DEVICES}`);
+    const extra = all.ok ? await all.json() : [];
+    if (extra.length) await db(env, `push_devices?token=in.(${extra.map((d) => `"${d.token}"`).join(",")})`, { method: "DELETE" }).catch(() => null);
+    return json(200, { ok: true });
+  }
+  if (action === "unregister") {
+    const token = String(body.token || "");
+    await db(env, token ? `push_devices?user_id=eq.${uid}&token=eq.${encodeURIComponent(token)}` : `push_devices?user_id=eq.${uid}`, { method: "DELETE" }).catch(() => null);
+    return json(200, { ok: true });
+  }
+  // test: one notification to their own phones, three an hour at most.
+  const since = new Date(Date.now() - 3600 * 1000).toISOString();
+  const recent = await db(env, `push_sent?user_id=eq.${uid}&kind=eq.test&sent_at=gte.${since}&select=key`);
+  if (recent.ok && (await recent.json()).length >= 3) return json(429, { error: "That's three tests this hour. Try again later.", code: "rate_limited" });
+  // A phone shows a notification only while the app isn't open, so the app asks for a pause (up to 15s)
+  // to give them time to close it or lock the screen.
+  const wait = Math.min(15, Math.max(0, parseInt(body.delay, 10) || 0));
+  if (wait) await new Promise((r) => setTimeout(r, wait * 1000));
+  const out = await pushToUser(env, user.id, { title: "Vinterest notifications are on", body: "This is how a reminder will look.", link: { screen: "home" } });
+  if (!out.sent) return json(502, { error: out.gone ? "This phone's notification token had expired. Open the app again and turn notifications off and on." : "We couldn't reach your phone just now. Try again in a minute.", code: "push_failed" });
+  await pushRecord(env, user.id, "test", [Date.now() + "-" + Math.random().toString(36).slice(2, 8)]);
+  return json(200, { ok: true, sent: out.sent });
+}
+
+function localHour(tz, now) {
+  try { return parseInt(new Intl.DateTimeFormat("en-GB", { hour: "numeric", hour12: false, timeZone: tz || "Europe/London" }).format(new Date(now)), 10) % 24; }
+  catch (e) { return new Date(now).getUTCHours(); }
+}
+const _day = 24 * 3600 * 1000;
+/* What this user should hear today, or null. Reads what the server already holds. */
+async function pushPlan(env, userId, now) {
+  const uid = encodeURIComponent(userId);
+  const get = async (path) => { const r = await db(env, path); return r.ok ? r.json() : []; };
+  const sent = await get(`push_sent?user_id=eq.${uid}&sent_at=gte.${new Date(now - 30 * _day).toISOString()}&select=kind,key,sent_at`);
+  const real = sent.filter((s) => s.kind !== "test" && s.kind !== "billing");
+  if (real.some((s) => now - Date.parse(s.sent_at) < PUSH_RATE_AFTER_MS)) return null; // one a day
+  if (real.filter((s) => now - Date.parse(s.sent_at) < 7 * _day).length >= PUSH_MAX_PER_WEEK) return null;
+  const ents = await get(`entitlements?user_id=eq.${uid}&select=tier,source,expires_at`);
+  const e = ents[0];
+  if (e && e.tier === "pro" && e.source === "promo" && e.expires_at) {
+    const left = Date.parse(e.expires_at) - now, key = e.expires_at.slice(0, 10);
+    if (left > 0 && left <= PUSH_PRO_ENDING_DAYS * _day && !sent.some((s) => s.kind === "pro_ending" && s.key === key)) {
+      const date = new Date(e.expires_at).toLocaleDateString("en-GB", { day: "numeric", month: "long", timeZone: "UTC" });
+      return { kind: "pro_ending", keys: [key], title: "Your Pro access ends soon", body: `Pro ends on ${date}. Subscribe in the app to keep wine list scanning and every grape and region.`, link: { screen: "profile" } };
+    }
+  }
+  const docs = await get(`user_docs?user_id=eq.${uid}&doc_key=eq.settings&select=data`);
+  let prefs = {}; try { const raw = docs[0] && docs[0].data && docs[0].data.values && docs[0].data.values.vinterest_notify; prefs = typeof raw === "string" ? JSON.parse(raw) : (raw || {}); } catch (e2) {}
+  if (prefs && prefs.reminder === false) return null;
+  const wines = await get(`wines?user_id=eq.${uid}&deleted_at=is.null&select=wine_key,data,rating,last_scanned&limit=1000`);
+  const at = (w) => Date.parse(w.last_scanned || (w.data && w.data.scanned_at) || 0) || 0;
+  const waiting = wines.filter((w) => {
+    const d = w.data || {};
+    return !(w.rating > 0 || d.rating > 0) && (d.scan_intent === "tasting" || d.scan_intent === "tasted" || d.bought === true)
+      && now - at(w) >= PUSH_RATE_AFTER_MS && !sent.some((s) => s.kind === "rate" && s.key === w.wine_key);
+  }).sort((a, b) => at(b) - at(a));
+  if (waiting.length) {
+    const d = waiting[0].data || {};
+    const name = `${d.name || "bottle"}${d.vintage && !String(d.name).includes(String(d.vintage)) ? " " + d.vintage : ""}`;
+    return waiting.length === 1
+      ? { kind: "rate", keys: [waiting[0].wine_key], title: `Rate the ${name}`, body: "Every rating sharpens your matches.", link: { wine: { name: d.name, vintage: d.vintage } } }
+      : { kind: "rate", keys: waiting.map((w) => w.wine_key), title: `${waiting.length} bottles waiting for your rating`, body: "Every rating sharpens your matches.", link: { screen: "mywines" } };
+  }
+  const last = Math.max(0, ...wines.map(at));
+  if (last && now - last >= PUSH_LAPSE_DAYS * _day && !sent.some((s) => s.kind === "lapse")) {
+    const days = Math.floor((now - last) / _day);
+    return { kind: "lapse", keys: [new Date(now).toISOString().slice(0, 10)], title: `${days} days since your last scan`, body: "The next bottle you open is a match waiting to be checked.", link: { screen: "camera" } };
+  }
+  return null;
+}
+/* Everyone whose local time is the push hour gets at most one. dry: say what would go, send nothing. */
+async function runPushJob(env, { now = Date.now(), dry = false, hour = PUSH_HOUR, offset = 0 } = {}) {
+  const r = await db(env, "push_devices?select=user_id,tz&order=last_seen.desc&limit=2000");
+  const devices = r.ok ? await r.json() : [];
+  const tzOf = new Map();
+  for (const d of devices) if (!tzOf.has(d.user_id)) tzOf.set(d.user_id, d.tz);
+  const batch = Math.max(1, parseInt(env.PUSH_BATCH, 10) || PUSH_BATCH);
+  const all = [...tzOf].filter(([, tz]) => localHour(tz, now) === hour).map(([u]) => u).sort();
+  const users = all.slice(offset, offset + batch);
+  const out = { users: all.length, sent: [], skipped: 0, errors: [], more: all.length > offset + batch, next: offset + batch };
+  for (const u of users) {
+    const plan = await pushPlan(env, u, now);
+    if (!plan) { out.skipped++; continue; }
+    if (dry) { out.sent.push({ user: u, kind: plan.kind, title: plan.title }); continue; }
+    const o = await pushToUser(env, u, plan);
+    if (o.sent) { await pushRecord(env, u, plan.kind, plan.keys); out.sent.push({ user: u, kind: plan.kind }); }
+    out.errors.push(...o.errors);
+  }
+  return out;
+}
+async function handlePushRun(request, env) {
+  const want = env.PUSH_CRON_SECRET || "";
+  const got = (request.headers.get("authorization") || "").replace(/^Bearer\s+/i, "");
+  if (!want || !safeEqual(want, got)) return json(401, { error: "Unauthorized" });
+  if (!pushOn(env)) return json(503, { error: "Notifications aren't set up on this server yet." });
+  let body = {};
+  try { body = await request.json(); } catch (e) {}
+  const out = await runPushJob(env, { dry: !!body.dry, hour: Number.isInteger(body.hour) ? body.hour : PUSH_HOUR, now: Number.isFinite(body.now) ? body.now : Date.now(), offset: Number.isInteger(body.offset) && body.offset > 0 ? body.offset : 0 });
+  return json(200, out);
+}
+
+/* ── App review sign-in ──
+   Apple's and Google's reviewers can't read the emailed sign-in code, and Pro is bought by an
+   account, so without a way in they never reach the Pro sheet. With REVIEWER_EMAIL and
+   REVIEWER_CODE (6 digits, so it fits the app's code box) set as Cloudflare secrets, POST
+   /reviewer/login signs that one address in when its fixed code is typed. Unset them (after
+   review) and the route answers 404 like any other path. The app only tries it after the normal
+   code has failed, so ordinary sign-in doesn't touch it. The account is an ordinary free one.
+   It works by asking Supabase for a one-time code for that address (admin generate_link) and
+   spending it at once, so no password or session secret exists. */
+async function handleReviewerLogin(request, env) {
+  const origin = request.headers.get("origin");
+  if (!originAllowed(origin)) return json(403, { error: "Origin not allowed.", code: "origin_denied" });
+  if (!env.REVIEWER_EMAIL || !env.REVIEWER_CODE || !accountsOn(env)) return json(404, { error: "Not found." });
+  if (rateLimited(clientIp(request))) return json(429, { error: "Too many tries. Wait a few minutes and try again.", code: "rate_limited" });
+  let body = {};
+  try { body = await request.json(); } catch (e) {}
+  const email = String(body.email || "").trim().toLowerCase();
+  const code = String(body.code || "").replace(/\D/g, "");
+  // Both checks always run, so a wrong address and a wrong code take the same time.
+  const okEmail = safeEqual(email, String(env.REVIEWER_EMAIL).trim().toLowerCase());
+  const okCode = safeEqual(code, String(env.REVIEWER_CODE).replace(/\D/g, ""));
+  if (!okEmail || !okCode) return json(401, { error: "That code didn't work.", code: "invalid" });
+  try {
+    const g = await fetch(`${env.SUPABASE_URL}/auth/v1/admin/generate_link`, { method: "POST", headers: { apikey: env.SUPABASE_SECRET_KEY, "content-type": "application/json" }, body: JSON.stringify({ type: "magiclink", email }) });
+    const otp = g.ok ? (await g.json()).email_otp : null;
+    if (!otp) throw new Error("no_otp");
+    let v = null;
+    for (const type of ["magiclink", "email"]) {
+      v = await fetch(`${env.SUPABASE_URL}/auth/v1/verify`, { method: "POST", headers: { apikey: env.SUPABASE_PUBLISHABLE_KEY, "content-type": "application/json" }, body: JSON.stringify({ type, email, token: otp }) });
+      if (v.ok) break;
+    }
+    const s = v && v.ok ? await v.json() : null;
+    if (!s || !s.access_token) throw new Error("no_session");
+    return json(200, { access_token: s.access_token, refresh_token: s.refresh_token, expires_in: s.expires_in, expires_at: s.expires_at, user: s.user && { id: s.user.id, email: s.user.email } });
+  } catch (e) {
+    return json(502, { error: "We couldn't sign you in just now. Try again in a minute.", code: "reviewer_unavailable" });
+  }
+}
+
+/* ── Purchases (RevenueCat) ──
+   The app sells Pro through RevenueCat (pwa-billing.js; the stores' own purchase sheets), with the
+   Supabase user id as RevenueCat's app user id. RevenueCat is the record of what they bought; this
+   copies it into `entitlements`, the one place the rest of the Worker reads Pro from, in two ways:
+   POST /billing/sync (the app, right after a purchase or a restore, so Pro shows at once) and
+   POST /revenuecat (RevenueCat's webhook: renewals, cancellations, refunds, expiry). Both ask
+   RevenueCat for the customer's current entitlements (REST, REVENUECAT_SECRET_KEY) instead of
+   reading the event, so the answer is the same however the news came and a late or repeated event
+   can't leave Pro wrong. A promo code's Pro (source 'promo') is never shortened by a lapsed
+   subscription, and a subscription never shortens a promo's end. */
+const RC_API = "https://api.revenuecat.com/v1";
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+function rcOn(env) { return !!(env.REVENUECAT_SECRET_KEY && accountsOn(env)); }
+async function rcSubscriber(env, userId) {
+  const r = await fetch(`${RC_API}/subscribers/${encodeURIComponent(userId)}`, { headers: { authorization: `Bearer ${env.REVENUECAT_SECRET_KEY}`, "content-type": "application/json" } });
+  if (!r.ok) throw new Error("revenuecat_" + r.status);
+  return (await r.json()).subscriber || {};
+}
+/* {active, expires_at} for the Pro entitlement (REVENUECAT_ENTITLEMENT, default "pro"), null when they've never had it. */
+function rcPro(env, sub) {
+  const e = sub && sub.entitlements && sub.entitlements[env.REVENUECAT_ENTITLEMENT || "pro"];
+  if (!e) return null;
+  const end = e.expires_date ? new Date(e.expires_date) : null;
+  return { active: !end || end > new Date(), expires_at: end ? end.toISOString() : null };
+}
+async function applyRevenueCat(env, userId, sub) {
+  const rc = rcPro(env, sub);
+  const id = encodeURIComponent(userId);
+  const cur = await db(env, `entitlements?user_id=eq.${id}&select=tier,source,expires_at`);
+  const [row] = cur.ok ? await cur.json() : [];
+  const held = row && row.tier === "pro" && (!row.expires_at || new Date(row.expires_at) > new Date());
+  let write = null;
+  if (rc && rc.active) {
+    // Pro until the later of the subscription's end and what they already hold (no end beats any end).
+    let until = rc.expires_at;
+    if (held && until !== null) until = row.expires_at === null ? null : (new Date(row.expires_at) > new Date(until) ? row.expires_at : until);
+    write = { tier: "pro", source: held && row.source === "promo" && until === row.expires_at ? "promo" : "revenuecat", expires_at: until };
+  } else if (row && row.source === "revenuecat" && row.tier === "pro") {
+    write = { tier: "free", source: "revenuecat", expires_at: rc ? rc.expires_at : null };
+  }
+  if (write) {
+    const w = await db(env, "entitlements?on_conflict=user_id", { method: "POST", headers: { prefer: "resolution=merge-duplicates,return=minimal" }, body: JSON.stringify({ user_id: userId, ...write, updated_at: new Date().toISOString() }) });
+    if (!w.ok) throw new Error("entitlement_write_failed");
+  }
+  return entitlementOf(env, userId);
+}
+
+async function handleBillingSync(request, env) {
+  const origin = request.headers.get("origin");
+  if (!originAllowed(origin)) return json(403, { error: "Origin not allowed.", code: "origin_denied" });
+  if (!rcOn(env)) return json(503, { error: "Purchases aren't set up on this server yet.", code: "billing_off" });
+  let user;
+  try { user = await authUser(request, env); }
+  catch (e) { return json(503, { error: "We couldn't reach your account. Check your connection and try again.", code: "auth_unavailable" }); }
+  if (!user || user.invalid) return json(401, { error: "Sign in again, then restore your purchase.", code: "auth_expired" });
+  if (rateLimited(clientIp(request))) return json(429, { error: "Too many tries. Wait a few minutes and try again.", code: "rate_limited" });
+  try {
+    const ent = await applyRevenueCat(env, user.id, await rcSubscriber(env, user.id));
+    return json(200, { tier: ent.tier, expires_at: ent.expires_at || null });
+  } catch (e) {
+    return json(502, { error: "We couldn't check your purchase just now. Try again in a minute.", code: "billing_unavailable" });
+  }
+}
+
+/* Equal strings, compared without stopping at the first difference. */
+function safeEqual(a, b) {
+  a = String(a); b = String(b);
+  let diff = a.length === b.length ? 0 : 1;
+  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ (b.charCodeAt(i) || 0);
+  return diff === 0;
+}
+
+/* RevenueCat's webhook. Its "Authorization header value" setting must equal REVENUECAT_WEBHOOK_AUTH. */
+async function handleRevenueCat(request, env) {
+  const want = env.REVENUECAT_WEBHOOK_AUTH || "";
+  const got = request.headers.get("authorization") || "";
+  if (!want || !safeEqual(want, got)) return json(401, { error: "Unauthorized" });
+  if (!rcOn(env)) return json(503, { error: "Purchases aren't set up on this server yet." });
+  let body = {};
+  try { body = await request.json(); } catch (e) {}
+  const ev = (body && body.event) || {};
+  // Our users are the UUIDs; an anonymous RevenueCat id (before sign-in) isn't one of them.
+  const ids = [...new Set([ev.app_user_id, ev.original_app_user_id, ...(ev.aliases || []), ...(ev.transferred_to || []), ...(ev.transferred_from || [])].filter((x) => typeof x === "string" && UUID_RE.test(x)))];
+  try {
+    for (const id of ids) await applyRevenueCat(env, id, await rcSubscriber(env, id));
+  } catch (e) {
+    return json(500, { error: "Couldn't apply the change; RevenueCat will retry." });
+  }
+  // A failed renewal payment: tell them once, in words, where to fix it.
+  if (ev.type === "BILLING_ISSUE" && pushOn(env) && ids[0]) {
+    try {
+      const key = String(ev.id || ev.event_timestamp_ms || new Date().toISOString().slice(0, 10));
+      const done = await db(env, `push_sent?user_id=eq.${ids[0]}&kind=eq.billing&key=eq.${encodeURIComponent(key)}&select=key`);
+      if (!(done.ok && (await done.json()).length)) {
+        const o = await pushToUser(env, ids[0], { title: "Your Pro payment didn't go through", body: "Update your payment details in your phone's subscription settings to keep Pro.", link: { screen: "profile" } });
+        if (o.sent) await pushRecord(env, ids[0], "billing", [key]);
+      }
+    } catch (e) {}
+  }
+  return json(200, { ok: true, users: ids.length });
 }
 
 /* POST /account/delete: deletes the signed-in user for good (Apple requires this inside the app).
    The auth user goes first: every table references auth.users on delete cascade, so if that fails
    nothing has changed and the app keeps its data. The row deletes after it are a second guarantee,
    so no table is ever left holding their rows if a cascade is missing. */
-const USER_TABLES = ["wines", "user_docs", "usage_counters", "entitlements"];
+const USER_TABLES = ["wines", "user_docs", "usage_counters", "entitlements", "push_devices", "push_sent"];
 async function handleAccountDelete(request, env) {
   const origin = request.headers.get("origin");
   if (!originAllowed(origin)) return json(403, { error: "Origin not allowed.", code: "origin_denied" });
@@ -408,9 +841,12 @@ async function handleAccountDelete(request, env) {
   if (!user || user.invalid) return json(401, { error: "Sign in again, then delete your account.", code: "auth_expired" });
   const id = encodeURIComponent(user.id);
 
-  // TODO(RevenueCat): once purchases go through RevenueCat, cancel or detach this user's
-  // subscription here (DELETE /v1/subscribers/{app_user_id}) before their account goes, and tell
-  // them that an App Store subscription is cancelled in Settings, not by deleting the account.
+  // RevenueCat keeps a customer record under their id: delete it with the account (best effort; a
+  // failure must not stop the delete). The store subscription itself isn't cancelled by this, only
+  // the person can do that in Settings, which the delete screen says.
+  if (env.REVENUECAT_SECRET_KEY) {
+    try { await fetch(`${RC_API}/subscribers/${id}`, { method: "DELETE", headers: { authorization: `Bearer ${env.REVENUECAT_SECRET_KEY}` } }); } catch (e) {}
+  }
   // TODO(Sign in with Apple): once Sign in with Apple exists, revoke the user's Apple token here
   // (POST https://appleid.apple.com/auth/revoke with the stored refresh token), as Apple requires.
 

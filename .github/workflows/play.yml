@@ -53,6 +53,9 @@ jobs:
     env:
       SUPABASE_URL: ${{ vars.SUPABASE_URL }}
       SUPABASE_PUBLISHABLE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
+      # Push notifications (docs/push.md): built in once the Firebase file is a secret.
+      VINTEREST_PUSH: ${{ secrets.GOOGLE_SERVICES_JSON != '' && '1' || '' }}
+      GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -70,6 +73,21 @@ jobs:
           export ANDROID_VERSION_CODE=$(( ${{ github.run_number }} * 10 + ${{ github.run_attempt }} ))
           echo "Vinterest $(node -p "require('./package.json').version") ($ANDROID_VERSION_CODE)"
           node scripts/native.mjs android
+      # Firebase's google-services.json (secret GOOGLE_SERVICES_JSON: the file's text pasted as it is,
+      # or as base64): the Gradle plugin Capacitor's template already carries picks it up, so
+      # Android can receive push.
+      - name: Push is not included
+        if: env.GOOGLE_SERVICES_JSON == ''
+        run: echo "::warning title=Push notifications not included::The secret GOOGLE_SERVICES_JSON is empty or isn't a repository Actions secret (Settings, Secrets and variables, Actions, Repository secrets), so this Android build has no push. See docs/push.md."
+      - name: Firebase file
+        if: env.GOOGLE_SERVICES_JSON != ''
+        run: |
+          if printf '%s' "$GOOGLE_SERVICES_JSON" | grep -q '^[[:space:]]*{'; then
+            printf '%s' "$GOOGLE_SERVICES_JSON" > android/app/google-services.json
+          else
+            printf '%s' "$GOOGLE_SERVICES_JSON" | base64 -d > android/app/google-services.json
+          fi
+          node -e "const j=JSON.parse(require('fs').readFileSync('android/app/google-services.json','utf8')); if(!(j.client||[]).some(c=>c.client_info&&c.client_info.android_client_info&&c.client_info.android_client_info.package_name==='app.vinterest')) { console.error('::error title=Firebase::google-services.json has no Android app with the package name app.vinterest'); process.exit(1); }"
       - name: Upload key
         env:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}

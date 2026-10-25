@@ -241,9 +241,40 @@ function TextSizeControl(){ const T=useTheme(), cr=T.lift(C.cr);
 function NotifyControl(){ const T=useTheme(), cr=T.lift(C.cr);
   const [prefs,setPrefs]=React.useState(()=>Notices.prefs());
   React.useEffect(()=>{ const h=()=>setPrefs(Notices.prefs()); window.addEventListener('vinterest:notices',h); window.addEventListener('vinterest:sync',h); return()=>{ window.removeEventListener('vinterest:notices',h); window.removeEventListener('vinterest:sync',h); }; },[]);
+  // Push to this phone (Push, pwa-push.js): only in the apps, and only once the server can send.
+  const [ps,setPs]=React.useState('unavailable'), [pbusy,setPbusy]=React.useState(false), [pmsg,setPmsg]=React.useState('');
+  React.useEffect(()=>{ let on=true; const h=()=>{ Push.status().then(s=>{ if(on) setPs(s); }); };
+    h(); window.addEventListener('vinterest:push',h); window.addEventListener('vinterest:account',h);
+    return()=>{ on=false; window.removeEventListener('vinterest:push',h); window.removeEventListener('vinterest:account',h); }; },[]);
+  async function flipPush(){
+    if(pbusy) return; setPbusy(true); setPmsg('');
+    const r=ps==='on'?await Push.disable():await Push.enable();
+    setPbusy(false); if(!r.ok) setPmsg(r.error||'');
+  }
+  // A phone shows a notification only while the app isn't open: the server waits ten seconds, so close the app or lock the screen.
+  async function testPush(){
+    if(pbusy) return; setPbusy(true);
+    setPmsg('Sending in 10 seconds. Close Vinterest or lock your phone now: notifications only show when the app isn\'t open.');
+    const r=await Push.test(10); setPbusy(false); setPmsg(r.ok?'Sent. Look at your notifications.':r.error);
+  }
+  const pushDesc=ps==='signin'?'Sign in to get reminders on this phone, even when the app is closed.':ps==='blocked'?'Turned off in your phone\'s settings. Turn Vinterest\'s notifications on there, then come back.':'Reminders and Pro alerts on this phone, even when the app is closed.';
   return <div data-testid="notify-control"><Card style={{padding:14,display:"flex",flexDirection:"column",gap:4}}>
     <div style={{fontSize:16,fontWeight:700,color:T.ink,fontFamily:C.P}}>Notifications</div>
-    <div style={{fontSize:13,color:T.mid,fontFamily:C.P}}>What the bell on Home collects.</div>
+    <div style={{fontSize:13,color:T.mid,fontFamily:C.P}}>What the bell on Home collects{ps==='unavailable'?'.':', and what we may send to your phone.'}</div>
+    {ps!=='unavailable'&&<div data-testid="push-control" style={{display:'flex',alignItems:'center',gap:12,marginTop:10,paddingTop:10,borderTop:`1px solid ${T.line}`}}>
+      <div style={{flex:1,minWidth:0}}>
+        <div style={{fontSize:15,fontWeight:700,color:T.ink,fontFamily:C.P}}>Push notifications</div>
+        <div style={{fontSize:13,color:T.mid,fontFamily:C.P,lineHeight:1.4}}>{pushDesc}</div>
+      </div>
+      {ps==='signin'?<span role="button" onClick={()=>window.dispatchEvent(new Event('vinterest:signin'))} style={{fontSize:14,fontWeight:600,color:cr,fontFamily:C.P,cursor:'pointer'}}>Sign in</span>
+      :ps==='blocked'?null
+      :<div role="switch" aria-checked={ps==='on'} aria-label="Push notifications" tabIndex={0} onClick={flipPush} onKeyDown={e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); flipPush(); } }}
+        style={{width:46,height:28,borderRadius:14,background:ps==='on'?cr:T.line,position:'relative',cursor:'pointer',flexShrink:0,opacity:pbusy?0.6:1,transition:'background .15s'}}>
+        <div style={{position:'absolute',top:3,left:ps==='on'?21:3,width:22,height:22,borderRadius:11,background:'#fff',boxShadow:'0 1px 3px rgba(0,0,0,0.2)',transition:'left .15s'}}/>
+      </div>}
+    </div>}
+    {ps==='on'&&<div><span role="button" data-testid="push-test" onClick={testPush} style={{fontSize:14,fontWeight:600,color:cr,fontFamily:C.P,cursor:'pointer'}}>Send me a test</span></div>}
+    {pmsg&&<div role="status" data-testid="push-msg" style={{fontSize:13,color:T.mid,fontFamily:C.P,lineHeight:1.4}}>{pmsg}</div>}
     {Object.entries(Notices.TYPES).map(([id,t])=>{ const on=prefs[id]!==false; const flip=()=>Notices.setPref(id,!on);
       return <div key={id} style={{display:'flex',alignItems:'center',gap:12,marginTop:10,paddingTop:10,borderTop:`1px solid ${T.line}`}}>
         <div style={{flex:1,minWidth:0}}>
@@ -286,22 +317,36 @@ Object.assign(window,{TextSizeControl,ThemeControl});
 /* Optional sign-in (Account, pwa-account.js): an email, then the 6-digit code Supabase emails.
    Nothing in the app needs it; signed in, Pro and the weekly fair-use limits are checked by the
    server, and (next) their wines back up to it. Hidden when the build has no sign-in configured. */
+/* The end of a promo-granted Pro, as a date ("12 January 2027"). */
+const _MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
+function _proUntil(iso){ const d=new Date(iso); if(isNaN(d)) return String(iso).slice(0,10); return `${d.getDate()} ${_MONTHS[d.getMonth()]} ${d.getFullYear()}`; }
+
 function AccountCard({showPro}){ const T=useTheme(), cr=T.lift(C.cr);
   const [,tick]=React.useState(0);
   // Opened from Home's backup offer: go straight to the email, and say that's the step left.
   const [intent]=React.useState(()=>Handoff.accountIntent.take());
-  const [step,setStep]=React.useState(()=>(intent==='backup'||intent==='listscan')&&!Account.signedIn()?'email':'idle'); // idle | email | code
+  const [step,setStep]=React.useState(()=>(intent==='backup'||intent==='listscan'||intent==='promo')&&!Account.signedIn()?'email':'idle'); // idle | email | code
   const [email,setEmail]=React.useState('');
   const [code,setCode]=React.useState('');
   const [busy,setBusy]=React.useState(false);
   const [err,setErr]=React.useState('');
   const [confirmDelete,setConfirmDelete]=React.useState(false);
+  // "Have a promo code?": the field opens on the link, or straight away when the Pro sheet sent them.
+  const [promoOpen,setPromoOpen]=React.useState(intent==='promo'&&!Billing.offerCodes());
+  const [promo,setPromo]=React.useState('');
+  const [promoMsg,setPromoMsg]=React.useState(''); // "Pro until …" once a code has worked
+  // On iPhone the code is Apple's offer code (Billing.redeemOfferCode); the typed field below is for Android and the web.
+  React.useEffect(()=>{ if(intent==='promo'&&Account.signedIn()&&Billing.offerCodes()) offer(); },[]);
   React.useEffect(()=>{ const h=()=>tick(t=>t+1); window.addEventListener('vinterest:account',h); window.addEventListener('vinterest:sync',h);
     return()=>{ window.removeEventListener('vinterest:account',h); window.removeEventListener('vinterest:sync',h); }; },[]);
   // The Backup card's "Sign in to back up": open at the email step and bring this card into view.
   const cardRef=React.useRef(null);
   React.useEffect(()=>{ const h=()=>{ if(Account.signedIn()) return; setStep('email'); setTimeout(()=>{ const el=cardRef.current; if(el){ el.scrollIntoView({behavior:'smooth',block:'start'}); const i=el.querySelector('input'); i&&i.focus(); } },50); };
     window.addEventListener('vinterest:signin',h); return()=>window.removeEventListener('vinterest:signin',h); },[]);
+  // The Pro sheet's "Have a promo code?" while Profile is already open: open the field here.
+  React.useEffect(()=>{ const h=()=>{ Handoff.accountIntent.take(); if(Account.signedIn()){ if(Billing.offerCodes()) offer(); else { setPromoOpen(true); setPromoMsg(''); } } else setStep('email');
+      setTimeout(()=>{ const el=cardRef.current; el&&el.scrollIntoView({behavior:'smooth',block:'start'}); },50); };
+    window.addEventListener('vinterest:promo',h); return()=>window.removeEventListener('vinterest:promo',h); },[]);
   if(!Account.available()) return null;
 
   const box={width:'100%',boxSizing:'border-box',padding:'12px 14px',borderRadius:12,border:`1.5px solid ${T.line}`,fontSize:16,fontFamily:C.P,color:T.ink,background:T.glass,outline:'none'};
@@ -315,7 +360,21 @@ function AccountCard({showPro}){ const T=useTheme(), cr=T.lift(C.cr);
   async function verify(){
     if(busy) return; setBusy(true); setErr('');
     const r=await Account.verifyCode(email,code); setBusy(false);
-    if(r.ok){ setStep('idle'); setEmail(''); setCode(''); } else setErr(r.error);
+    if(r.ok){ setStep('idle'); setEmail(''); setCode(''); if(intent==='promo'){ if(Billing.offerCodes()) offer(); else setPromoOpen(true); } } else setErr(r.error);
+  }
+
+  async function offer(){
+    if(busy) return; setBusy(true); setErr(''); setPromoMsg('');
+    const r=await Billing.redeemOfferCode(); setBusy(false);
+    if(r.ok) setPromoMsg('Your code worked: you have Pro.');
+    else if(r.pending) setPromoMsg('If your code worked, Pro will show in a minute. If it doesn\'t, tap Restore purchases on the Pro screen.');
+    else setErr(r.error);
+  }
+  async function redeem(){
+    if(busy) return; setBusy(true); setErr('');
+    const r=await Account.redeemPromo(promo); setBusy(false);
+    if(r.ok){ setPromo(''); setPromoOpen(false); setPromoMsg(r.expires_at?`Your code worked: Pro until ${_proUntil(r.expires_at)}.`:'Your code worked: you have Pro.'); }
+    else setErr(r.error);
   }
 
   async function deleteAccount(){
@@ -327,7 +386,7 @@ function AccountCard({showPro}){ const T=useTheme(), cr=T.lift(C.cr);
 
   if(Account.signedIn()){
     const me=Account.me(), pro=Account.tier()==='pro';
-    return <Card style={{padding:14,display:'flex',flexDirection:'column',gap:8}}>
+    return <div ref={cardRef} style={{scrollMarginTop:12}}><Card style={{padding:14,display:'flex',flexDirection:'column',gap:8}}>
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:10}}>
         <div style={{minWidth:0}}>
           <div style={{fontSize:16,fontWeight:700,color:T.ink,fontFamily:C.P}}>Your account</div>
@@ -343,13 +402,24 @@ function AccountCard({showPro}){ const T=useTheme(), cr=T.lift(C.cr);
       <div style={{fontSize:13,color:T.mid,fontFamily:C.P,lineHeight:1.5}}>
         {pro?'You have Pro on any phone you sign in on. ':''}Sign in on another phone and your wines, WineDNA and progress are there too.
       </div>
+      {pro&&me&&me.expires_at&&<div style={{fontSize:13,color:T.mid,fontFamily:C.P}}>Pro until {_proUntil(me.expires_at)}.</div>}
+      {pro&&me&&me.source==='revenuecat'&&Billing.available()&&<div><span role="button" data-testid="manage-subscription" onClick={()=>Billing.manage()} style={link}>Manage subscription</span></div>}
       {me&&me.usage&&me.caps&&me.usage.label_scan>0&&<div style={{fontSize:13,color:T.mid,fontFamily:C.P}}>This week: {me.usage.label_scan} of {me.caps.label_scan} label scans.</div>}
+      {promoMsg&&<div data-testid="promo-done" style={{fontSize:14,fontWeight:600,color:T.lift(C.green),fontFamily:C.P}}>{promoMsg}</div>}
+      {err&&!promoOpen&&!confirmDelete&&<div role="alert" style={{fontSize:14,color:T.lift(C.cr),fontFamily:C.P}}>{err}</div>}
+      {!promoOpen&&!confirmDelete&&!promoMsg&&<div><span role="button" onClick={()=>{ if(Billing.offerCodes()) offer(); else { setPromoOpen(true); setErr(''); } }} style={link}>Have a promo code?</span></div>}
+      {promoOpen&&!confirmDelete&&<div style={{display:'flex',flexDirection:'column',gap:8,marginTop:2}}>
+        <input aria-label="Promo code" value={promo} onChange={e=>{setPromo(e.target.value);setErr('');}} placeholder="Your promo code" autoCapitalize="characters" autoCorrect="off" spellCheck={false}
+          onKeyDown={e=>{ if(e.key==='Enter') redeem(); }} style={{...box,letterSpacing:'0.08em'}}/>
+        {err&&<div style={{fontSize:14,color:T.lift(C.cr),fontFamily:C.P}}>{err}</div>}
+        <div onClick={redeem} style={primary}>{busy?'Checking…':'Redeem code'}</div>
+      </div>}
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginTop:2}}>
         <span onClick={()=>Account.signOut()} style={link}>Sign out</span>
         {!confirmDelete&&<span onClick={()=>{setConfirmDelete(true);setErr('');}} style={{fontSize:14,color:T.mid,fontFamily:C.P,cursor:'pointer'}}>Delete account</span>}
       </div>
       {confirmDelete&&<DeleteAccountPanel busy={busy} err={err} onCancel={()=>{setConfirmDelete(false);setErr('');}} onDelete={deleteAccount}/>}
-    </Card>;
+    </Card></div>;
   }
 
   return <div ref={cardRef} style={{scrollMarginTop:12}}><Card style={{padding:14,display:'flex',flexDirection:'column',gap:10}}>
@@ -362,6 +432,11 @@ function AccountCard({showPro}){ const T=useTheme(), cr=T.lift(C.cr);
       ?<div>
         <div style={{fontSize:16,fontWeight:700,color:T.ink,fontFamily:C.P}}>Sign in to scan wine lists</div>
         <div style={{fontSize:13,color:T.ink2,fontFamily:C.P,lineHeight:1.5}}>Wine list scanning is part of Pro, which belongs to your account. Enter your email and type in the code we send.</div>
+      </div>
+      :intent==='subscribe'
+      ?<div>
+        <div style={{fontSize:16,fontWeight:700,color:T.ink,fontFamily:C.P}}>Sign in to go Pro</div>
+        <div style={{fontSize:13,color:T.ink2,fontFamily:C.P,lineHeight:1.5}}>Pro belongs to your account, so it follows you to a new phone. Enter your email and type in the code we send, then tap Upgrade.</div>
       </div>
       :<div>
         <div style={{fontSize:16,fontWeight:700,color:T.ink,fontFamily:C.P}}>Sign in (optional)</div>
@@ -397,6 +472,9 @@ function DeleteAccountPanel({busy,err,onCancel,onDelete}){ const T=useTheme(), c
     <div style={{fontSize:15,fontWeight:700,color:T.ink,fontFamily:C.P}}>Delete your account?</div>
     <div style={{fontSize:13,color:T.ink2,fontFamily:C.P,lineHeight:1.5}}>
       This deletes your account and everything backed up to it, and clears Vinterest from this phone: your wines, ratings, WineDNA, XP and learning progress. It can't be undone.
+    </div>
+    <div style={{fontSize:13,color:T.ink2,fontFamily:C.P,lineHeight:1.5}}>
+      {(Account.me()||{}).source==='revenuecat'&&<>A subscription bought through the App Store or Google Play isn't cancelled by deleting your account: cancel it in your phone's subscription settings, or it carries on billing. </>}
     </div>
     <div style={{fontSize:13,color:T.ink2,fontFamily:C.P,lineHeight:1.5}}>
       Want a copy first? <span onClick={saveBackupFile} style={{fontWeight:700,color:cr,cursor:'pointer'}}>Save a backup file</span> to your phone. You can import it later, with or without an account.

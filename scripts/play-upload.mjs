@@ -16,6 +16,9 @@ const API = 'https://androidpublisher.googleapis.com';
 const b64url = (b) => Buffer.from(b).toString('base64url');
 /* A short-lived access token for the Android Publisher API, from the service account's key. */
 export async function accessToken(account, fetchFn = fetch) {
+  if (!account || !account.private_key || !account.client_email) {
+    throw new Error('PLAY_SERVICE_ACCOUNT_JSON is not a service account key: it has no "private_key" and "client_email". It should be the JSON key of the Google Cloud service account that publishes to Play (not google-services.json, and not the Firebase key). Create a new key for that account, replace the secret, and run this workflow again.');
+  }
   const now = Math.floor(Date.now() / 1000);
   const head = b64url(JSON.stringify({ alg: 'RS256', typ: 'JWT' }));
   const claims = b64url(JSON.stringify({

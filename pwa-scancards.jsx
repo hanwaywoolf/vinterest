@@ -94,7 +94,7 @@ const _DECK_LIGHT={dark:false,bg:C.bg,card:C.white,glass:C.white,ink:C.ink,ink2:
   green:C.green,greenBg:C.greenBg,amber:C.amber,amberBg:C.amberBg,tone:_TONE_COL,fade0:'rgba(255,255,255,0)',shadow:'0 6px 22px rgba(0,0,0,0.08)',
   lift:c=>c,tint:(c,soft)=>soft||_alpha(c,0.12)};
 const _DECK_DARK_LIFT={[C.cr]:'#E05A74',[C.green]:'#5FD48F',[C.amber]:'#F2B84B',[C.ink]:'#FFFFFF','#9B6B00':'#F2B84B','#6B2D8B':'#C08BE0','#B04A3A':'#F28B7D','#1E7B4B':'#5FD48F',
-  '#5C2A1E':'#B8775C','#8A5A2B':'#D09A58','#B8963E':'#E2BC5A','#C1652B':'#E8854A'}; // crimson, fortified, dessert, white, orange lifted; rosé and sparkling read as they are
+  '#5C2A1E':'#B8775C','#8A5A2B':'#D09A58','#B8963E':'#E2BC5A','#C1652B':'#E8854A','#2563A8':'#7FB3F0'}; // crimson, fortified, dessert, white, orange and the match's blue lifted; rosé and sparkling read as they are
 const _DECK_DARK={dark:true,bg:'#0F0F0F',card:'#1A1A1C',glass:'rgba(255,255,255,0.07)',ink:'#FFFFFF',ink2:'rgba(255,255,255,0.86)',mid:'rgba(255,255,255,0.62)',line:'rgba(255,255,255,0.14)',soft:'rgba(255,255,255,0.07)',crSoft:'rgba(224,90,116,0.22)',
   green:'#5FD48F',greenBg:'rgba(95,212,143,0.16)',amber:'#F2B84B',amberBg:'rgba(242,184,75,0.16)',tone:{good:'#5FD48F',neutral:'#F2B84B',bad:'#F28B7D'},fade0:'rgba(26,26,28,0)',shadow:'0 10px 30px rgba(0,0,0,0.55)',
   lift:c=>_DECK_DARK_LIFT[c]||c,tint:c=>_alpha(_DECK_DARK_LIFT[c]||c,0.22)};
@@ -195,10 +195,49 @@ function ScanCardsScreen({nav,back,showPro}){
   // A fresh scan opens on the reveal (ScanReveal, pwa-reveal.jsx), then the result; coming back
   // to the screen (from Details, say: `tracked`) or a screen that asked for a view skips it.
   const fresh=!scanData.view&&!scanData.tracked&&(source==='camera'||source==='list')&&!_revealOff();
-  const [view,setView]=React.useState(()=>scanData.view||(fresh?'reveal':'result'));
+  const [view,setViewRaw]=React.useState(()=>scanData.view||(fresh?'reveal':'result'));
+  /* Back steps one card or one scene at a time, in both stories, and only leaves the screen from
+     the story's first scene. The story and the deck are views inside this screen, so the phone's
+     back gesture would otherwise pop the whole screen and land on the camera: while a story view
+     is up, one history entry of our own sits on top (`trap`, same hash, so the app's popstate
+     handler leaves its stack alone). A pop then asks the view to step back a card or scene
+     (`stepRef`, set by ScanReveal and CardDeck) and traps again; at the first card the deck
+     returns to the story's end sheet (or the result, for a deck opened there), and at the
+     story's first scene the pop goes through as the app's own Back. A navigation away pops the
+     entry first (`navH`), so the app's count of entries stays right. */
+  const STORY_VIEWS=React.useMemo(()=>new Set(['reveal','story-end','deck','rate']),[]);
+  // On a remount (back from a page the deck opened) the entry landed on may already be ours: adopt it rather than push another.
+  const sub=React.useRef(!!(typeof history!=='undefined'&&history.state&&history.state.scanView)), pendingNav=React.useRef(null), pendingView=React.useRef(null), stepRef=React.useRef(null), viewRef=React.useRef(view);
+  const fromStory=React.useRef(!!scanData.deckFromStory); // the deck was opened from the story's end sheet (kept on the handoff)
+  const trap=React.useCallback(()=>{ try{ history.pushState({scanView:viewRef.current},'',location.href); sub.current=true; }catch(e){} },[]);
+  React.useEffect(()=>{ viewRef.current=view; if(confirmed&&STORY_VIEWS.has(view)&&!sub.current) trap(); },[view,confirmed]);
+  const returnFromSub=React.useCallback(()=>{ setViewRaw(viewRef.current==='deck'&&fromStory.current?'story-end':'result'); },[]);
+  const setView=React.useCallback(v=>{
+    if(v==='result'&&sub.current){ pendingView.current='result'; history.back(); return; } // the pop sets the view
+    setViewRaw(v);
+  },[]);
+  // The header's arrow on the deck: the card before, else out of the deck.
+  const deckBack=React.useCallback(()=>{ if(stepRef.current&&stepRef.current()) return; if(sub.current){ pendingView.current=fromStory.current?'story-end':'result'; history.back(); } else returnFromSub(); },[returnFromSub]);
+  const navH=React.useCallback(to=>{ if(!sub.current) return nav(to); pendingNav.current=to; history.back(); },[nav]);
+  React.useEffect(()=>{
+    const onPop=()=>{
+      if(!sub.current) return;
+      sub.current=false;
+      const to=pendingNav.current; pendingNav.current=null;
+      if(to){ nav(to); return; }
+      const pv=pendingView.current; pendingView.current=null;
+      if(pv){ setViewRaw(pv); return; } // a story view traps again through the effect
+      if(stepRef.current&&stepRef.current()){ trap(); return; } // a card or scene back
+      if(viewRef.current==='deck'||viewRef.current==='rate'){ returnFromSub(); return; }
+      back(); // the story's first scene: the app's own Back
+    };
+    window.addEventListener('popstate',onPop); return ()=>window.removeEventListener('popstate',onPop);
+  },[nav,back,returnFromSub,trap]);
   // The view (and the deck's card) is kept on the handoff, so coming back from a page opened from
   // here (a region's page from the deck, the wine's Details) lands where they left, not on the result.
-  React.useEffect(()=>{ if(!confirmed||(view!=='result'&&view!=='deck')) return; try{ const sd=Handoff.scanResult.get({}); if(sd.view!==view){ sd.view=view; Handoff.openWine(sd); } }catch(e){} },[view,confirmed]);
+  React.useEffect(()=>{ if(!confirmed||(view!=='result'&&view!=='deck')) return; try{ const sd=Handoff.scanResult.get({}); if(sd.view!==view||!!sd.deckFromStory!==fromStory.current){ sd.view=view; sd.deckFromStory=fromStory.current; Handoff.openWine(sd); } }catch(e){} },[view,confirmed]);
+  // Where the deck opens: the card they left (read live, since scanData is as the screen mounted).
+  const deckStart=()=>{ try{ return Handoff.scanResult.get({}).deckIdx||0; }catch(e){ return 0; } };
   const noteDeckIdx=React.useCallback(i=>{ try{ const sd=Handoff.scanResult.get({}); if(sd.deckIdx!==i){ sd.deckIdx=i; Handoff.openWine(sd); } }catch(e){} },[]);
   const deckStyle=useDeckStyle();
   const appTheme=useTheme();
@@ -242,24 +281,24 @@ function ScanCardsScreen({nav,back,showPro}){
 
   // The story and the deck are always on the dark stage; the result and "Is this it?" follow the
   // appearance picked on Profile (the app's DeckTheme, pwa-app.jsx).
-  const reveal=confirmed&&view==='reveal', story=reveal||(confirmed&&view==='deck'), stage=story?_DECK_DARK:appTheme;
+  const reveal=confirmed&&(view==='reveal'||view==='story-end'), story=reveal||(confirmed&&view==='deck'), stage=story?_DECK_DARK:appTheme;
   return <DeckTheme.Provider value={stage}><div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden',background:stage.bg}}>
-    {!reveal&&<ScanHeader wine={wine} nav={nav} back={view==='deck'&&confirmed?()=>setView('result'):back} plain={!(confirmed&&view==='deck')}/>}
+    {!reveal&&<ScanHeader wine={wine} nav={navH} back={view==='deck'&&confirmed?deckBack:back} plain={!(confirmed&&view==='deck')}/>}
     {!confirmed
-      ? <ConfirmGate wine={wine} onYes={confirm} onEdit={()=>setEditing(true)} nav={nav}
+      ? <ConfirmGate wine={wine} onYes={confirm} onEdit={()=>setEditing(true)} nav={navH}
           onAlt={()=>applyEdit({name:wine.alternative,producer:''})}/>
-      : view==='reveal'
-        ? <ScanReveal wine={wine} match={match} gen={gen} existingRating={existingRating} nav={nav} showPro={showPro} curr={curr}
+      : view==='reveal'||view==='story-end'
+        ? <ScanReveal key={view} backRef={stepRef} startAt={view==='story-end'?'end':undefined} wine={wine} match={match} gen={gen} existingRating={existingRating} nav={navH} showPro={showPro} curr={curr}
             onRated={()=>{ setIntent('tasted'); setRatingsVersion(v=>v+1); }}
             onSaveForLater={()=>setIntent('checking')}
-            onDone={v=>{ if(v==='saved') setIntent('checking'); if(v==='detail'){ setView('result'); nav('detail'); return; } setView(v); }}/>
+            onDone={v=>{ if(v==='saved') setIntent('checking'); if(v==='detail'){ setViewRaw('result'); navH('detail'); return; } if(v==='home'){ setViewRaw('result'); navH('home'); return; } if(v==='deck') fromStory.current=true; setView(v); }}/>
       : view==='deck'
-        ? <CardDeck key={deckStyle} deckStyle={deckStyle} wine={wine} gen={gen} loading={loading} match={match} showPro={showPro}
-            curr={curr} scanData={scanData} existingRating={existingRating} nav={nav} startIdx={scanData.deckIdx||0} onIdx={noteDeckIdx}
+        ? <CardDeck key={deckStyle} backRef={stepRef} onEdit={()=>setEditing(true)} deckStyle={deckStyle} wine={wine} gen={gen} loading={loading} match={match} showPro={showPro}
+            curr={curr} scanData={scanData} existingRating={existingRating} nav={navH} startIdx={deckStart()} onIdx={noteDeckIdx}
             onRated={()=>{ setIntent('tasted'); setRatingsVersion(v=>v+1); }}
             onSaveForLater={()=>{ setIntent('checking'); setView('saved'); }}
             onBlindCall={()=>setIntent('tasting')}/>
-        : <ScanResult wine={wine} match={match} curr={curr} scanData={scanData} existingRating={existingRating} nav={nav} showPro={showPro}
+        : <ScanResult wine={wine} match={match} curr={curr} scanData={scanData} existingRating={existingRating} nav={navH} showPro={showPro}
             view={view} setView={setView} onEdit={()=>setEditing(true)}
             onRated={()=>{ setIntent('tasted'); setRatingsVersion(v=>v+1); }}
             onSaveForLater={()=>{ setIntent('checking'); setView('saved'); }}
@@ -323,7 +362,7 @@ function FirstScanStory({wine,onDone}){
 
 function ScanHeader({wine,nav,back,plain}){ const T=useTheme(); // plain: just Back and Details, when the screen names the wine itself
   return <div style={{padding:'12px 16px 10px',flexShrink:0,display:'flex',alignItems:'center',gap:12,background:T.dark?T.bg:T.card,borderBottom:`1px solid ${T.line}`}}>
-    <div onClick={back} style={{width:34,height:34,borderRadius:17,background:T.soft,border:`1px solid ${T.line}`,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',flexShrink:0}}>
+    <div role="button" aria-label="Back" onClick={back} style={{width:34,height:34,borderRadius:17,background:T.soft,border:`1px solid ${T.line}`,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',flexShrink:0}}>
       <Icon n="back" sz={16} col={T.ink}/>
     </div>
     <div style={{flex:1,minWidth:0}}>
@@ -405,6 +444,39 @@ function EditWineSheet({wine,onSave,onClose}){
 }
 
 /* ── the result: everything needed to decide, on one screen ── */
+/* The price, as the result shows it: the shop estimate (or the price found in shops now), the
+   list's price against it when the wine came from a wine list, and how it sits against their usual
+   spend. Shared by the result screen and the deck's first card, so the story's flow keeps it. */
+function ScanPrice({wine,match,curr,scanData,sub,boxStyle}){ const T=useTheme(); // boxStyle: a frame drawn only when there's a price to show
+  const [shop,setShop]=React.useState(()=>curr.isTravel?null:ScanFlow.shopPrice(wine,curr));
+  const [shopFound,setShopFound]=React.useState(false); // from current shop listings, not an estimate
+  React.useEffect(()=>{ let live=true; ScanFlow.shopEstimate(wine,curr).then(d=>{ if(live&&d){ setShop(d.mid); setShopFound(d.source==='search'); } }); return()=>{ live=false; }; },[wine&&wine.name,curr.code]);
+  // A list read abroad is priced in its own currency: compare like with like.
+  const lc=scanData&&scanData.listCurrency;
+  const list=scanData&&scanData.listPrice?(lc&&lc!==curr.code?scanData.listPrice/(USD_FX[lc]||1)*(USD_FX[curr.code]||1):scanData.listPrice):null;
+  const mk=ScanFlow.markup(list,shop);
+  const sweet=match&&match.profile&&match.profile.value&&match.profile.value.sweetSpot;
+  if(!shop&&!list) return null;
+  return <div data-testid="scan-price" style={boxStyle}>
+    <div style={{...sub,marginBottom:6}}>Price</div>
+    {shop&&<div style={{display:'flex',alignItems:'baseline',gap:8}}>
+      <span style={{fontSize:15,color:T.ink,fontFamily:C.P,flex:1}}>{curr.isTravel?`In shops in ${curr.label}`:'In shops'}</span>
+      <span style={{fontSize:15,fontWeight:800,color:T.ink,fontFamily:C.P}}>about {ScanFlow.money(shop,curr)}</span>
+      <span style={{fontSize:13,color:T.mid,fontFamily:C.P}}>{shopFound?'in shops now':'est.'}</span>
+    </div>}
+    {list&&<div style={{display:'flex',alignItems:'baseline',gap:8,marginTop:4}}>
+      <span style={{fontSize:15,color:T.ink,fontFamily:C.P,flex:1}}>On this list</span>
+      <span style={{fontSize:15,fontWeight:800,color:T.ink,fontFamily:C.P}}>{ScanFlow.money(list,curr)}</span>
+      {mk&&<span style={{fontSize:13,color:T.mid,fontFamily:C.P}}>{mk.ratio.toFixed(1)}× shop</span>}
+    </div>}
+    {mk&&<div style={{fontSize:13,color:T.ink2,fontFamily:C.P,marginTop:4}}>{mk.text}</div>}
+    {sweet&&<div style={{fontSize:13,color:T.mid,fontFamily:C.P,marginTop:6}}>Your Outstanding {match.profile.label.toLowerCase()} usually cost {sweet}.</div>}
+    {/* Until WineDNA has a sweet spot from their own scores, compare with the spend they gave. */}
+    {!sweet&&shop&&(()=>{ const fit=UserPrefs.spendFit(shop,curr), b=UserPrefs.budget(curr); if(!fit) return null;
+      return <div style={{fontSize:13,color:T.mid,fontFamily:C.P,marginTop:6}}>{fit==='within'?`Within your usual spend (${b.label}).`:fit==='above'?`Above your usual spend (${b.label}).`:`Below your usual spend (${b.label}).`}</div>; })()}
+  </div>;
+}
+
 function ScanResult({wine,match,curr,scanData,existingRating,nav,showPro,view,setView,onEdit,onRated,onSaveForLater,onDeck}){
   const T=useTheme();
   const col=T.tone[match?match.tone:'neutral'], typeCol=T.lift(_typeCol(wine));
@@ -414,8 +486,6 @@ function ScanResult({wine,match,curr,scanData,existingRating,nav,showPro,view,se
   // A list read abroad is priced in its own currency: compare like with like.
   const lc=scanData.listCurrency;
   const list=scanData.listPrice?(lc&&lc!==curr.code?scanData.listPrice/(USD_FX[lc]||1)*(USD_FX[curr.code]||1):scanData.listPrice):null;
-  const mk=ScanFlow.markup(list,shop);
-  const sweet=match&&match.profile&&match.profile.value&&match.profile.value.sweetSpot;
   const sub={fontSize:13,fontWeight:700,color:T.mid,fontFamily:C.P,textTransform:'uppercase',letterSpacing:'0.06em'};
   // Each section arrives a beat after the one above, the way the story's scenes do.
   const rise=i=>({animation:`scRise .5s cubic-bezier(.2,.7,.2,1) ${i*0.08}s both`});
@@ -496,24 +566,7 @@ function ScanResult({wine,match,curr,scanData,existingRating,nav,showPro,view,se
         <div style={{fontSize:15,color:T.ink,fontFamily:C.P,lineHeight:1.5}}>{match.style}</div>
         <div style={{fontSize:13,color:T.mid,fontFamily:C.P,marginTop:2}}>Estimated from the label: what this wine is typically like.</div>
       </div>}
-      {(shop||list)&&<div style={{paddingTop:match&&match.style?10:0,borderTop:match&&match.style?`1px solid ${T.line}`:'none'}}>
-        <div style={{...sub,marginBottom:6}}>Price</div>
-        {shop&&<div style={{display:'flex',alignItems:'baseline',gap:8}}>
-          <span style={{fontSize:15,color:T.ink,fontFamily:C.P,flex:1}}>{curr.isTravel?`In shops in ${curr.label}`:'In shops'}</span>
-          <span style={{fontSize:15,fontWeight:800,color:T.ink,fontFamily:C.P}}>about {ScanFlow.money(shop,curr)}</span>
-          <span style={{fontSize:13,color:T.mid,fontFamily:C.P}}>{shopFound?'in shops now':'est.'}</span>
-        </div>}
-        {list&&<div style={{display:'flex',alignItems:'baseline',gap:8,marginTop:4}}>
-          <span style={{fontSize:15,color:T.ink,fontFamily:C.P,flex:1}}>On this list</span>
-          <span style={{fontSize:15,fontWeight:800,color:T.ink,fontFamily:C.P}}>{ScanFlow.money(list,curr)}</span>
-          {mk&&<span style={{fontSize:13,color:T.mid,fontFamily:C.P}}>{mk.ratio.toFixed(1)}× shop</span>}
-        </div>}
-        {mk&&<div style={{fontSize:13,color:T.ink2,fontFamily:C.P,marginTop:4}}>{mk.text}</div>}
-        {sweet&&<div style={{fontSize:13,color:T.mid,fontFamily:C.P,marginTop:6}}>Your Outstanding {match.profile.label.toLowerCase()} usually cost {sweet}.</div>}
-        {/* Until WineDNA has a sweet spot from their own scores, compare with the spend they gave. */}
-        {!sweet&&shop&&(()=>{ const fit=UserPrefs.spendFit(shop,curr), b=UserPrefs.budget(curr); if(!fit) return null;
-          return <div style={{fontSize:13,color:T.mid,fontFamily:C.P,marginTop:6}}>{fit==='within'?`Within your usual spend (${b.label}).`:fit==='above'?`Above your usual spend (${b.label}).`:`Below your usual spend (${b.label}).`}</div>; })()}
-      </div>}
+      {(shop||list)&&<div style={{paddingTop:match&&match.style?10:0,borderTop:match&&match.style?`1px solid ${T.line}`:'none'}}><ScanPrice wine={wine} match={match} curr={curr} scanData={scanData} sub={sub}/></div>}
     </Card>}
 
     </div>
@@ -598,23 +651,48 @@ function CardFace({card,ctx}){ const T=useTheme();
   const More=()=>expanded?null:<div role="button" data-card-more onClick={e=>{ e.stopPropagation(); setExpanded(true); }}
     style={{alignSelf:'flex-start',fontSize:15,fontWeight:700,color:a||C.cr,fontFamily:P,cursor:'pointer',padding:'2px 0'}}>More →</div>;
 
+  // What the result screen led with, shared by both forms of the first card (a match, or the meter
+  // while there are too few ratings): the label's reading with a way to correct it, the Style line
+  // and the price. Dropping any of these loses something the person had on the result screen.
+  const idLine=[wine.producer,WineDNA.grapeLine(wine),wine.region!==wine.country?wine.region:null].filter(Boolean).join(' · ');
+  const identityRow=(idLine||ctx.onEdit)?<div data-testid="deck-identity" style={{width:'100%',textAlign:'left',display:'flex',alignItems:'baseline',gap:10,flexWrap:'wrap'}}>
+    {idLine&&<div style={{flex:1,minWidth:0,fontSize:14,color:T.mid,fontFamily:P,lineHeight:1.45}}>{idLine}</div>}
+    {ctx.onEdit&&<span role="button" onClick={e=>{ e.stopPropagation(); ctx.onEdit(); }} style={{fontSize:13,fontWeight:600,color:T.lift(C.cr),fontFamily:P,cursor:'pointer',whiteSpace:'nowrap'}}>Not right? Edit</span>}
+  </div>:null;
+  const priceBox=<ScanPrice wine={wine} match={match} curr={curr} scanData={scanData} sub={{fontSize:13,fontWeight:700,color:T.mid,fontFamily:P,letterSpacing:'0.06em',textTransform:'uppercase'}}
+    boxStyle={{width:'100%',textAlign:'left',padding:'12px 14px',borderRadius:12,background:T.soft,border:`1px solid ${T.line}`}}/>;
+  const styleBox=match&&match.style?<div style={{width:'100%',textAlign:'left',padding:'12px 14px',borderRadius:12,background:T.soft,border:`1px solid ${T.line}`}}>
+    <div style={{fontSize:13,fontWeight:700,color:T.mid,fontFamily:P,letterSpacing:'0.06em',textTransform:'uppercase',marginBottom:4}}>Style</div>
+    <div style={{fontSize:15,color:T.ink,fontFamily:P,lineHeight:1.5}}>{match.style}</div>
+    <div style={{fontSize:13,color:T.mid,fontFamily:P,marginTop:2}}>Estimated from the label: what this wine is typically like.</div>
+  </div>:null;
+
   if(card.kind==='first-match') return <div style={{display:'flex',flexDirection:'column',gap:16}}>
+    {identityRow}
+    {priceBox}
     <H>Your match, from your own taste</H>
     <MatchComingSoon wine={wine}/>
+    {styleBox}
   </div>;
 
   if(card.kind==='match'){
-    // The story gave the number and a reason each way; here is the whole working.
+    // The result in full: the story gave the number and a reason each way; here is the whole working.
+    const rated=(ctx.existingRating||(WineHistory.find(wine)||{}).rating||0);
     return <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:14,textAlign:'center'}}>
+      {identityRow}
       <MatchRing match={match} size={120}/>
       <H>{match?match.label:'—'}</H>
-      {match&&match.expected!=null&&<div style={{fontSize:15,color:T.mid,fontFamily:P,marginTop:-8}}>Likely about {match.expected} from you · {match.expectedLabel}</div>}
+      {match&&match.expected!=null&&<div style={{fontSize:15,color:T.mid,fontFamily:P,marginTop:-8}}>{rated>0?`We expected about ${match.expected} · you rated ${rated}`:`Likely about ${match.expected} from you · ${match.expectedLabel}`}</div>}
+      {match&&match.expected!=null&&match.bar!=null&&!(rated>0)&&<div style={{fontSize:13,color:T.mid,fontFamily:P,marginTop:-8}}>{match.pct}% sure you'd rate it {match.bar}+, your usual for {WineDNA.NOUNS[WineDNA._t(wine.type)]?.[1]||'wines'}</div>}
+      {match&&match.confidence==='low'&&<div style={{fontSize:13,color:T.mid,fontFamily:P,marginTop:-8}}>Rough guess</div>}
+      {priceBox}
       <div style={{width:'100%',textAlign:'left',padding:'12px 14px',borderRadius:12,background:T.soft,border:`1px solid ${T.line}`}}>
         <div style={{fontSize:13,fontWeight:700,color:T.mid,fontFamily:P,letterSpacing:'0.06em',textTransform:'uppercase',marginBottom:6}}>How we got this</div>
-        <MatchReasons match={match} col={T.ink2} brief={!expanded}/>
+        <MatchReasons match={match} col={T.ink2} brief={!expanded} priceNote={TasteMatch.priceNote(wine,WineDNA.priceOf(wine,curr),WineHistory.getAll(),curr)}/>
         {expanded&&match&&match.breakdown&&<div style={{marginTop:4}}><MatchBreakdown match={match}/></div>}
       </div>
       {match&&(match.reasons.length>2||match.breakdown)&&<More/>}
+      {styleBox}
     </div>;
   }
 
@@ -936,13 +1014,16 @@ function RatingDial({min,max=100,value,unset=false,onChange,col=C.cr,label='Rati
   </div>;
 }
 
-function RatingPanel({wine,existingRating,nav,showPro,curr,onRated,onSaveForLater,onStage,onFinish,after,skipLabel}){ const T=useTheme();
+function RatingPanel({wine,existingRating,nav,showPro,curr,onRated,onSaveForLater,onStage,onFinish,after,skipLabel,settled}){ const T=useTheme();
   const [score,setScore]=React.useState(existingRating||0);
+  // settled: a bottle already rated (in the story, say) opens on its rating with the ways out, not
+  // the dial and "Save rating" again; "Change it" brings the dial back.
+  const [settledView,setSettledView]=React.useState(!!settled&&existingRating>0&&!onFinish); // the first bottle has its own Continue (onFinish)
   // The first bottle, revisited after scoring it: open on "Your score" (with Continue), not the picker.
   const [saved,setSaved]=React.useState(()=>!!(onFinish&&existingRating>0));
   const [next,setNext]=React.useState(false);
   // Tells the deck which step it's on, so the card's label follows (Rate it → Your score → Keep learning).
-  React.useEffect(()=>{ if(onStage) onStage(next?'next':saved?'saved':'rate'); },[saved,next]);
+  React.useEffect(()=>{ if(onStage) onStage(next?'next':(saved||settledView)?'saved':'rate'); },[saved,next,settledView]);
   const label=ParkerScale.label(score);
   const tc=_typeCol(wine);
   function commit(){
@@ -958,6 +1039,20 @@ function RatingPanel({wine,existingRating,nav,showPro,curr,onRated,onSaveForLate
     setSaved(true);
     if(onRated) onRated(score);
   }
+  if(settledView) return <div data-testid="rating-settled" style={{display:'flex',flexDirection:'column',gap:14}}>
+    <div style={{display:'flex',alignItems:'center',gap:10}}>
+      <div style={{width:36,height:36,borderRadius:18,background:T.greenBg,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><Icon n="check" sz={18} col={T.green}/></div>
+      <div style={{flex:1,minWidth:0}}>
+        <div style={{fontSize:17,fontWeight:800,color:T.ink,fontFamily:C.P}}>Rated {existingRating} · {ParkerScale.label(existingRating)}</div>
+        <div style={{fontSize:13,color:T.mid,fontFamily:C.P}}>Saved to My Wines</div>
+      </div>
+      <span role="button" onClick={()=>setSettledView(false)} style={{fontSize:14,fontWeight:700,color:T.lift(C.cr),fontFamily:C.P,cursor:'pointer',whiteSpace:'nowrap'}}>Change it</span>
+    </div>
+    <div style={{marginTop:6,paddingTop:16,borderTop:`2px solid ${T.line}`,display:'flex',flexDirection:'column',gap:10}}>
+      <Btn primary full onClick={()=>nav('home')}>Finish</Btn>
+      <Btn full onClick={()=>nav('detail')}>See full wine details</Btn>
+    </div>
+  </div>;
   // After the score and the optional details: what to learn next, then the ways out.
   if(saved&&next) return <div style={{display:'flex',flexDirection:'column',gap:14}}>
     <KeepLearning wine={wine} nav={nav} showPro={showPro} reveal/>
@@ -1113,7 +1208,7 @@ function TasteCard({wine,gen,accent,onBlindCall}){ const T=useTheme();
 }
 
 /* ── the deck (three interaction styles) ── */
-function CardDeck({deckStyle,wine,gen,loading,match,curr,scanData,existingRating,nav,showPro,onRated,onSaveForLater,onBlindCall,firstScan,onFinish,startIdx=0,onIdx}){ const T=useTheme();
+function CardDeck({deckStyle,wine,gen,loading,match,curr,scanData,existingRating,nav,showPro,onRated,onSaveForLater,onBlindCall,firstScan,onFinish,startIdx=0,onIdx,backRef,onEdit}){ const T=useTheme();
   const cards=React.useMemo(()=>buildCards({match,wine}),[match&&match.tone,match&&match.verdict,wine&&wine.type]);
   const [finishStage,setFinishStage]=React.useState('rate');
   // "Learn more about this wine" is written the first time the deck opens, then kept on the phone.
@@ -1122,16 +1217,18 @@ function CardDeck({deckStyle,wine,gen,loading,match,curr,scanData,existingRating
   React.useEffect(()=>{ if(deep||!wine||!wine.name) return; let live=true; setDeepLoading(true);
     WineDeep.load(wine,match,d=>{ if(!live) return; setDeep(d); setDeepLoading(false); }); return()=>{ live=false; }; },[wine&&wine.name,wine&&wine.vintage]);
   const facts=React.useMemo(()=>WineDeep.facts(wine),[wine&&wine.name,wine&&wine.vintage]);
-  const ctx={wine,gen,loading,match,curr,scanData,onBlindCall,finishStage,firstScan,deep,deepLoading,facts,nav,showPro,
+  const ctx={wine,gen,loading,match,curr,scanData,existingRating,onEdit,onBlindCall,finishStage,firstScan,deep,deepLoading,facts,nav,showPro,
     finish:()=><>
       {firstScan&&finishStage==='rate'&&<div style={{marginBottom:16}}><MatchComingSoon wine={wine} compact/></div>}
-      <RatingPanel wine={wine} existingRating={existingRating} nav={nav} showPro={showPro} curr={curr} onRated={onRated} onSaveForLater={existingRating?null:onSaveForLater} onStage={setFinishStage} onFinish={onFinish}/>
+      <RatingPanel wine={wine} existingRating={existingRating} settled nav={nav} showPro={showPro} curr={curr} onRated={onRated} onSaveForLater={existingRating?null:onSaveForLater} onStage={setFinishStage} onFinish={onFinish}/>
     </>};
   const [idx,setIdx]=React.useState(()=>Math.max(0,Math.min(startIdx,cards.length-1)));
   React.useEffect(()=>{ if(onIdx) onIdx(idx); },[idx]);
 
   const total=cards.length;
   const go=d=>setIdx(i=>Math.max(0,Math.min(total-1,i+d)));
+  // Back (the header's arrow, the phone's gesture) is the card before; false at the first card.
+  React.useEffect(()=>{ if(!backRef) return; backRef.current=()=>{ if(deckStyle==='deck'&&idx>0){ setIdx(idx-1); return true; } return false; }; return()=>{ backRef.current=null; }; },[idx,deckStyle]);
 
   const common={cards,ctx};
 

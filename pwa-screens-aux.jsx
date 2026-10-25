@@ -299,7 +299,7 @@ function MyWinesScreen({nav,back}){ const T=useTheme(), cr=T.lift(C.cr); // the 
   // Opened from a type's "See all" (WineDNA, Home): start on that type, sorted by score.
   const [entry]=React.useState(()=>Handoff.myWinesView.take());
   const [type,setType]=React.useState(entry.type||'all');
-  const [status,setStatus]=React.useState(null);
+  const [status,setStatus]=React.useState(entry.status||null); // Home's match meter opens the unrated ones
   const [sort,setSort]=React.useState(entry.sort||'recent');
   const [q,setQ]=React.useState('');
   const [sortOpen,setSortOpen]=React.useState(false);
@@ -354,7 +354,7 @@ function MyWinesScreen({nav,back}){ const T=useTheme(), cr=T.lift(C.cr); // the 
           <div style={{display:'flex',alignItems:'center',gap:8,marginTop:12,padding:'9px 12px',borderRadius:12,background:T.soft,border:`1px solid ${T.line}`}}>
             <Icon n="search" sz={17} col={T.mid}/>
             <input value={q} onChange={e=>setQ(e.target.value)} placeholder="Search wine, producer, grape, region" aria-label="Search your wines"
-              style={{flex:1,minWidth:0,border:'none',outline:'none',background:'transparent',fontSize:16,fontFamily:C.P,color:C.ink}}/>
+              style={{flex:1,minWidth:0,border:'none',outline:'none',background:'transparent',fontSize:16,fontFamily:C.P,color:T.ink}}/>
             {q&&<span onClick={()=>setQ('')} role="button" aria-label="Clear search" style={{fontSize:18,lineHeight:1,color:T.mid,cursor:'pointer',padding:'0 2px'}}>×</span>}
           </div>
           <div className="sc-scroll" style={{display:'flex',gap:8,overflowX:'auto',marginTop:10,paddingBottom:2}}>

@@ -6,13 +6,14 @@ function _openLearn(item,nav,showPro){
   if(!item) return;
   const quiz=cfg=>{ Handoff.quiz.set(cfg); nav('quiz'); };
   if(item.kind==='scan') return nav('camera');
+  if(item.kind==='match'){ if(item.unrated){ Handoff.myWinesView.set({type:item.type,status:'unrated'}); return nav('mywines'); } return nav('camera'); }
   if(item.kind==='pro') return showPro&&showPro(item.feature);
   if(item.kind==='article'){ Handoff.genArticle.set(item.stub); return nav('gen-article'); }
   if(item.kind==='guide'){ Handoff.guide.set(item.guide); return nav('guide'); }
   if(item.kind==='onramp'){ Handoff.onRampIdx.set(String(item.idx)); return nav('article'); }
   if(item.kind==='region') return RegionQuizBank.load(item.region,()=>quiz({mode:'region',region:item.region}));
   if(item.kind==='grape') return getGrapeQuiz(item.grape,qs=>{ if(qs&&qs.length) quiz({mode:'grape',grape:item.grape,questions:qs}); else nav('learn'); });
-  if(item.kind==='mastery'){ const n=item.next||{}; if(n.region) return _openLearn({kind:'region',region:n.region},nav,showPro); if(n.grape) return _openLearn({kind:'grape',grape:n.grape},nav,showPro); if(n.quiz) return quiz(n.quiz); if(n.guide){ Handoff.guide.set(n.guide); return nav('guide'); } return nav(n.nav||'learn'); }
+  if(item.kind==='mastery'){ const n=item.next||{}; if(n.region) return _openLearn({kind:'region',region:n.region},nav,showPro); if(n.grape) return _openLearn({kind:'grape',grape:n.grape},nav,showPro); if(n.quiz) return quiz(n.quiz); if(n.article) return _openLearn({kind:'article',stub:n.article},nav,showPro); if(n.guide){ Handoff.guide.set(n.guide); return nav('guide'); } return nav(n.nav||'learn'); }
   nav('learn');
 }
 
@@ -20,11 +21,14 @@ function _openLearn(item,nav,showPro){
    the user's WineDNA, takes a follow-up, and ends each answer with a "Learn more" link. A
    suggestion tapped fills the box; nothing is sent until they press the arrow. */
 function WineChatWidget({wines,nav,showPro}){
+  const wideBar=useWide(); // on an iPad the bar is far wider than a phone's, so its text can be larger
   const [q,setQ]=React.useState('');
   const [turns,setTurns]=React.useState([]); // [{q,a,link,err}]
   const [asking,setAsking]=React.useState(false);
   const [focused,setFocused]=React.useState(false);
   const inputRef=React.useRef(null);
+  const sugRef=React.useRef(null);
+  React.useLayoutEffect(()=>{ const el=sugRef.current; if(el) el.scrollLeft=el.scrollWidth; });
   const prompts=React.useMemo(()=>[...Vinny.suggestions(wines)].sort(()=>Math.random()-0.5).slice(0,3),[wines?.length]);
   const [pIdx,setPIdx]=React.useState(0);
   const [typed,setTyped]=React.useState('');
@@ -82,10 +86,12 @@ function WineChatWidget({wines,nav,showPro}){
     <div style={{margin:'0 16px 4px'}}>
       <VinnyBar onSubmit={()=>doAsk(q.trim())} hasText={!!q} canSend={!asking&&!!q.trim()} lit={!!q.trim()} onClear={clearQ} field={<>
           <input ref={inputRef} value={q} onChange={e=>onType(e.target.value)} onKeyDown={onKey} onFocus={()=>setFocused(true)} onBlur={()=>setFocused(false)} aria-label="Ask Vinny"
-            placeholder={open?'Ask a follow-up…':'Ask Vinny about wine…'} style={{position:'absolute',inset:0,width:'100%',border:'none',outline:'none',background:'transparent',fontSize:16,fontFamily:C.P,color:'#fff'}}/>
+            placeholder={open?'Ask a follow-up…':'Ask Vinny about wine…'} style={{position:'absolute',inset:0,width:'100%',border:'none',outline:'none',background:'transparent',fontSize:wideBar?19:16,fontFamily:C.P,color:'#fff'}}/>
           {idle&&(
-            <div onClick={()=>fill(prompts[pIdx])} style={{position:'absolute',inset:0,display:'flex',alignItems:'center',background:'#1C1C1F',cursor:'text'}}>
-              <span style={{fontSize:16,color:'rgba(255,255,255,0.75)',fontFamily:C.P,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{typed}<span style={{display:'inline-block',width:1.5,height:15,background:'rgba(255,255,255,0.75)',marginLeft:2,verticalAlign:'-2px',animation:'homeCaret 0.9s step-end infinite'}}/></span>
+            <div ref={sugRef} onClick={()=>fill(prompts[pIdx])} style={{position:'absolute',inset:0,display:'flex',alignItems:'center',overflow:'hidden',background:'#1C1C1F',cursor:'text'}}>
+              {/* The suggestion types at the bar's own size; one longer than the bar slides left
+                  as it goes so the caret and the latest words stay in view (sugRef), never cut. */}
+              <span style={{fontSize:wideBar?'19px':'16px',color:'rgba(255,255,255,0.75)',fontFamily:C.P,whiteSpace:'nowrap',paddingRight:8}}>{typed}<span style={{display:'inline-block',width:1.5,height:15,background:'rgba(255,255,255,0.75)',marginLeft:2,verticalAlign:'-2px',animation:'homeCaret 0.9s step-end infinite'}}/></span>
             </div>
           )}
       </>}/>
@@ -249,11 +255,13 @@ function HomeScreen({nav, showPro, isTablet}){
     <span style={{fontSize:16,fontWeight:700,color:T.ink,fontFamily:C.P}}>{title}</span>
     {link&&<span onClick={onLink} role="button" style={{fontSize:15,fontWeight:600,color:T.lift(C.cr),fontFamily:C.P,cursor:'pointer'}}>{link}</span>}
   </div>;
+  const clamp2={display:'-webkit-box',WebkitLineClamp:2,WebkitBoxOrient:'vertical',overflow:'hidden',lineHeight:1.35};
   const row=(key,icon,col,title,sub,onClick,right)=><div key={key} onClick={onClick} role="button" style={{display:'flex',alignItems:'center',gap:12,padding:'10px 14px',borderTop:`1px solid ${T.line}`,cursor:'pointer'}}>
-    <div style={{width:34,height:34,borderRadius:10,background:_alpha(T.lift(col),0.2),flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center'}}><Icon n={icon} sz={16} col={T.lift(col)}/></div>
+    <div style={{width:34,height:34,borderRadius:10,background:_alpha(T.lift(col),0.2),flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center'}}>
+      {icon==='dot'?<span style={{width:14,height:14,borderRadius:7,background:T.lift(col)}}/>:<Icon n={icon} sz={16} col={T.lift(col)}/>}</div>
     <div style={{flex:1,minWidth:0}}>
-      <div style={{fontSize:15,fontWeight:600,color:T.ink,fontFamily:C.P,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{title}</div>
-      {sub&&<div style={{fontSize:13,color:T.mid,fontFamily:C.P,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{sub}</div>}
+      <div style={{fontSize:15,fontWeight:600,color:T.ink,fontFamily:C.P,...clamp2}}>{title}</div>
+      {sub&&<div style={{fontSize:13,color:T.mid,fontFamily:C.P,...clamp2}}>{sub}</div>}
     </div>
     {right||<Icon n="chevron" sz={13} col={T.mid}/>}
   </div>;
@@ -290,33 +298,35 @@ function HomeScreen({nav, showPro, isTablet}){
         {/* Recently scanned */}
         {recentWines.length>0&&<Card style={{padding:0,overflow:'hidden'}}>
           {head('Recently scanned','All →',()=>nav('mywines'))}
-          {recentWines.map((w,i)=>row('r'+i,'wine',colFor(w),w.name,MyWines.subline(w),()=>openWine(w),
-            w.rating>0?<span style={{fontSize:15,fontWeight:700,color:T.amber,fontFamily:C.P,flexShrink:0}}>{w.rating}</span>
+          {recentWines.map((w,i)=>row('r'+i,'wine',colFor(w),w.name,<><Flag wine={w} size={13} style={{marginRight:5}}/>{MyWines.subline(w)}</>,()=>openWine(w),
+            w.rating>0?<span style={{fontSize:15,fontWeight:700,color:T.tone[ParkerScale.tone(w.rating)],fontFamily:C.P,flexShrink:0}}>{w.rating}</span>
               :<span style={{fontSize:13,color:T.lift(C.cr),fontFamily:C.P,flexShrink:0,fontWeight:600}}>Rate it →</span>))}
         </Card>}
 
         {/* WineDNA at a glance */}
         {dna.types.length>0&&<Card style={{padding:0,overflow:'hidden'}}>
           {head('Your WineDNA','Open →',()=>{ UserPrefs.openDNA(dna.types[0].key); nav('profile'); })}
-          {dna.types.map(t=>row(t.key,'wine',t.col,t.tab,t.line,()=>{ UserPrefs.openDNA(t.key); nav('profile'); }))}
+          {dna.types.map(t=>row(t.key,'dot',t.col,t.tab,t.line,()=>{ UserPrefs.openDNA(t.key); nav('profile'); }))}
           {dna.pick&&row('explore','compass',C.cr,`Try next: ${dna.pick.style.name}`,`Explore Next · ${dna.pick.style.country}`,()=>{
             ExploreNext.markOpened(dna.pick.style.id); Handoff.styleExplore.set({id:dna.pick.style.id,typeKey:dna.pick.typeKey,label:dna.pick.typeLabel}); nav('style-explore'); })}
           {row('script','message',C.cr,`Your ${(WineDNA.NOUNS[dna.types[0].key]||['wine'])[0]} sommelier script`,'What to say when you order',()=>{ UserPrefs.openDNA(dna.types[0].key,'scripts'); nav('profile'); })}
         </Card>}
 
         {/* Your knowledge: level and XP, and the Mastery teaser (the full map is Pro) */}
-        <Card onClick={()=>knowledge?(isPro?nav('mastery-map'):showPro('mastery-map')):nav('learn')} style={{padding:14,cursor:'pointer',display:'flex',flexDirection:'column',gap:8}}>
+        <Card style={{padding:0,overflow:'hidden'}}>
+          <div onClick={()=>nav('learn')} role="button" style={{padding:14,cursor:'pointer',display:'flex',flexDirection:'column',gap:8}}>
           <div style={{display:'flex',alignItems:'center',gap:8}}>
             <span style={{fontSize:16,fontWeight:700,color:T.ink,fontFamily:C.P,flex:1}}>{lv.badge} {lv.name}</span>
             <span data-testid="home-xp" onClick={e=>{ e.stopPropagation(); try{ window.dispatchEvent(new Event('vinterest:xp-overlay')); }catch(err){} }} style={{fontSize:13,color:T.mid,fontFamily:C.P,cursor:'pointer'}}>{xpData.total} XP{nx?` · ${nx.min-xpData.total} to ${nx.name}`:''}</span>
           </div>
           <Prog val={pg} h={5} col={T.lift(C.cr)}/>
-          {knowledge&&<div style={{display:'flex',alignItems:'center',gap:8}}>
-            <div style={{flex:1,fontSize:14,color:T.ink2,fontFamily:C.P,lineHeight:1.45}}>
-              Wine knowledge {knowledge.overall}%{knowledge.strongest?<> · strongest in <b>{knowledge.strongest.label}</b></>:null}{knowledge.gap?<> · biggest gap <b>{knowledge.gap.label}</b></>:null}
-            </div>
-            {!isPro&&<ProBadge/>}
+          {knowledge&&<div style={{fontSize:14,color:T.ink2,fontFamily:C.P,lineHeight:1.45}}>
+            Wine knowledge {knowledge.overall}%{knowledge.strongest?<> · strongest in <b>{knowledge.strongest.label}</b></>:null}{knowledge.gap?<> · biggest gap <b>{knowledge.gap.label}</b></>:null}
           </div>}
+          </div>
+          {/* Mastery is Pro: said on its own row, so the card above never opens a paywall by surprise. */}
+          {knowledge&&row('mastery','trophy',C.cr,'Your Mastery map','Every wine type, region, grape and skill, as a shape',()=>isPro?nav('mastery-map'):showPro('mastery-map'),
+            isPro?<Icon n="chevron" sz={13} col={T.mid}/>:<ProBadge/>)}
         </Card>
   </>;
   const cell=x=><div style={{display:'flex',flexDirection:'column',gap:12,minWidth:0}}>{x}</div>;
@@ -362,7 +372,7 @@ function HomeScreen({nav, showPro, isTablet}){
       <div style={{flex:1,overflowY:'auto',overscrollBehavior:'none',WebkitOverflowScrolling:'touch'}}>
       <div style={{padding:'10px 20px 8px',display:'flex',flexDirection:'column',gap:12}}>
 
-        {wide?<WideColumns gap={16}>{cell(doNext)}{cell(done)}</WideColumns>:<>{doNext}{done}</>}
+        {wide&&allWines.length>=3?<WideColumns gap={16}>{cell(doNext)}{cell(done)}</WideColumns>:<>{doNext}{done}</>}
 
         <div style={{height:8}}/>
       </div>

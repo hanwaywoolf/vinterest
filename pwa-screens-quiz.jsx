@@ -70,7 +70,8 @@ function QuizHubScreen({nav,back,showPro}){ const T=useTheme(), cr=T.lift(C.cr);
   const wide=useWide(), list=wide?{display:'grid',gridTemplateColumns:'repeat(2,minmax(0,1fr))',gap:8,alignItems:'stretch'}:{display:'flex',flexDirection:'column',gap:8};
   const [xpData,setXpData]=React.useState(()=>XPSystem.get());
   const [isPro,setIsPro]=React.useState(()=>Entitlement.isPro());
-  React.useEffect(()=>{const h=()=>setIsPro(true);window.addEventListener('vinterest:pro',h);return()=>window.removeEventListener('vinterest:pro',h);},[]);
+  // Re-read, never assume: the event also fires when the Worker changes whether everyone is Pro, and a purchase or promo changes the account.
+  React.useEffect(()=>{const h=()=>setIsPro(Entitlement.isPro());window.addEventListener('vinterest:pro',h);window.addEventListener('vinterest:account',h);return()=>{window.removeEventListener('vinterest:pro',h);window.removeEventListener('vinterest:account',h);};},[]);
   const level=XPSystem.getLevel(xpData.total);
   const nextLvl=XPSystem.nextLevel(xpData.total);
   const prog=XPSystem.levelProgress(xpData.total);
@@ -554,13 +555,15 @@ function QuizHubScreen({nav,back,showPro}){ const T=useTheme(), cr=T.lift(C.cr);
 
         <div ref={secRefs.progress} style={{...zoneLabel,scrollMarginTop:56}}>Your Mastery</div>
         {/* The header's ring has the figure; here, the one step that closes their biggest gap (KnowledgeMap.focus). */}
-        {knowledge.gap&&knowledge.gap.score<100&&<div role="button" data-testid="learn-start-here" onClick={()=>knowledge.gap.next?_openLearn({kind:'mastery',next:knowledge.gap.next},nav,showPro):(isPro?nav('mastery-map'):showPro('mastery-map'))}
+        {knowledge.gap&&knowledge.gap.score<100&&<div role="button" data-testid="learn-start-here" onClick={()=>knowledge.gap.next&&knowledge.gap.next.grape?handleGrapeTap(knowledge.gap.next.grape):knowledge.gap.next?_openLearn({kind:'mastery',next:knowledge.gap.next},nav,showPro):(isPro?nav('mastery-map'):showPro('mastery-map'))}
           style={{background:T.glass,borderRadius:16,border:`1px solid ${T.line}`,padding:'12px 16px',display:'flex',alignItems:'center',gap:12,cursor:'pointer',marginTop:-6}}>
           <div style={{width:42,height:42,borderRadius:12,background:T.soft,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><Icon n="trophy" sz={19} col={T.ink}/></div>
           <div style={{flex:1,minWidth:0}}>
             <div style={{fontSize:12,fontWeight:600,color:T.mid,fontFamily:C.P,textTransform:'uppercase',letterSpacing:'0.06em'}}>Start here</div>
             <div style={{fontSize:16,fontWeight:700,color:T.ink,fontFamily:C.P}}>{knowledge.gap.area&&knowledge.gap.area.id==='regions'&&<Flag region={knowledge.gap.label} size={16} style={{marginRight:6}}/>}{knowledge.gap.next?knowledge.gap.next.label:knowledge.gap.label}</div>
             {knowledge.gap.why&&<div style={{fontSize:13,color:T.mid,fontFamily:C.P,lineHeight:1.4,marginTop:2}}>{knowledge.gap.why}</div>}
+            {knowledge.gap.next&&knowledge.gap.next.grape===grapeLoading&&grapeLoading&&<div data-testid="start-here-status" style={{fontSize:13,color:T.mid,fontFamily:C.P,marginTop:4}}>Preparing your {grapeLoading} quiz… the first time takes a few seconds.</div>}
+            {knowledge.gap.next&&knowledge.gap.next.grape===grapeError&&!grapeLoading&&<div data-testid="start-here-status" style={{fontSize:13,color:'#C0392B',fontFamily:C.P,marginTop:4}}>Couldn't load the {grapeError} quiz. Check your connection and tap again.</div>}
           </div>
           <Icon n="chevron" sz={13} col={T.mid}/>
         </div>}
@@ -1054,7 +1057,7 @@ function MilestoneMoment({items}){ const T=useTheme(), cr=T.lift(C.cr), INK=T.da
   const [share,said]=_useShare();
   if(!items||!items.length) return null;
   return(
-    <div data-testid="milestone-moment" className="milestone-in" style={{background:T.ink,borderRadius:16,padding:'14px 16px',display:'flex',flexDirection:'column',gap:8}}>
+    <div data-testid="milestone-moment" className="milestone-in" style={{background:T.dark?'rgba(231,198,107,0.12)':T.ink,border:T.dark?'1px solid rgba(231,198,107,0.38)':'none',borderRadius:16,padding:'14px 16px',display:'flex',flexDirection:'column',gap:8}}>
       <div style={{fontSize:13,fontWeight:600,color:'#E7C66B',fontFamily:C.P,textTransform:'uppercase',letterSpacing:'0.06em'}}>{items.length===1?(items[0].id.startsWith('level:')?'New level':'New milestone'):`${items.length} new milestones`}</div>
       {items.map(x=>(
         <div key={x.id} style={{display:'flex',alignItems:'center',gap:12}}>
@@ -1238,6 +1241,12 @@ function MasteryMapScreen({nav,back,showPro}){ const T=useTheme(), cr=T.lift(C.c
   const go=next=>{ if(next) _openLearn({kind:'mastery',next},nav,showPro); };
   // Sections they've folded away stay folded next time (Device.masteryCollapsed).
   const [folded,setFolded]=React.useState(()=>Device.masteryCollapsed());
+  // A link that names a section (a guide's "See your palate") opens it and scrolls to it.
+  const wantSection=React.useRef(Handoff.masterySection.take());
+  React.useEffect(()=>{ const id=wantSection.current; if(!id) return;
+    setFolded(f=>{ if(!f[id]) return f; const n={...f}; delete n[id]; Device.setMasteryCollapsed(n); return n; });
+    const t=setTimeout(()=>{ const el=listRef.current&&listRef.current.querySelector(`[data-section="${id}"]`); if(el&&el.scrollIntoView) el.scrollIntoView({block:'start'}); },60);
+    return ()=>clearTimeout(t); },[]);
   const toggle=id=>setFolded(f=>{ const n={...f}; if(n[id]) delete n[id]; else n[id]=true; Device.setMasteryCollapsed(n); return n; });
   const cluster=React.useMemo(()=>KnowledgeMap.grapeCluster(m),[m]);
   const mapCount=React.useMemo(()=>KnowledgeMap.mapCount(views),[views]);

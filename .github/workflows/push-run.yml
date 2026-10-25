@@ -1,0 +1,38 @@
+# Sends the day's push notifications (docs/push.md): every hour it asks the Worker to run its job,
+# which sends at most one reminder to each person whose local time is about 6pm. Pages has no cron,
+# so this is the clock. Also on demand (Actions → Push notifications → Run workflow; tick "dry run" to
+# see what would be sent without sending). Needs the secret PUSH_CRON_SECRET, the same string as the
+# Cloudflare secret of that name; until it's set the job says so and does nothing.
+name: Push notifications
+on:
+  schedule:
+    - cron: '7 * * * *'
+  workflow_dispatch:
+    inputs:
+      dry:
+        description: "Dry run: say what would be sent, send nothing"
+        type: boolean
+        default: true
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Run the job
+        env:
+          PUSH_CRON_SECRET: ${{ secrets.PUSH_CRON_SECRET }}
+          API_ORIGIN: ${{ vars.API_ORIGIN }}
+          DRY: ${{ github.event_name == 'workflow_dispatch' && inputs.dry || 'false' }}
+        run: |
+          if [ -z "$PUSH_CRON_SECRET" ]; then echo "::notice title=Push skipped::PUSH_CRON_SECRET isn't set yet. See docs/push.md."; exit 0; fi
+          ORIGIN="${API_ORIGIN:-https://vinterest.pages.dev}"
+          # A run handles a few people and says if there are more; ask again from where it stopped.
+          # Only counts are printed: the response names people, and logs are not the place for that.
+          OFFSET=0
+          for i in $(seq 1 40); do
+            R=$(curl -fsS -X POST "$ORIGIN/push/run" -H "authorization: Bearer $PUSH_CRON_SECRET" -H 'content-type: application/json' -d "{\"dry\": $DRY, \"offset\": $OFFSET}")
+            echo "$R" | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{const j=JSON.parse(s);console.log('users in the hour:',j.users,'| sent:',j.sent.length,'| skipped:',j.skipped,'| errors:',(j.errors||[]).length)})"
+            MORE=$(echo "$R" | node -p "JSON.parse(require('fs').readFileSync(0,'utf8')).more")
+            [ "$MORE" = "true" ] || break
+            OFFSET=$(echo "$R" | node -p "JSON.parse(require('fs').readFileSync(0,'utf8')).next")
+          done

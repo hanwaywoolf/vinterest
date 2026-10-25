@@ -293,14 +293,17 @@ function ProGate({feature,onClose}){
               </div>
             ))}
           </div>
-          {Account.signedIn()?<div style={{fontSize:14,color:C.mid,fontFamily:C.P,textAlign:'center',lineHeight:1.5}}>You're signed in, so Pro goes on your account. It isn't on sale yet: we'll let you know when it is.</div>:
+          {typeof Billing!=='undefined'&&Billing.available()?<ProBuy onClose={onClose}/>:Account.signedIn()?<div style={{fontSize:14,color:C.mid,fontFamily:C.P,textAlign:'center',lineHeight:1.5}}>You're signed in, so Pro goes on your account. It isn't on sale yet: we'll let you know when it is.</div>:
           <div onClick={()=>{Entitlement.startPro();onClose();}}
             style={{background:`linear-gradient(135deg,${C.cr},${C.crL})`,borderRadius:14,padding:'15px',textAlign:'center',cursor:'pointer',boxShadow:`0 6px 28px ${C.cr}45`,marginTop:2}}>
             <div style={{fontSize:18,fontWeight:700,color:'#fff',fontFamily:C.P}}>Upgrade to Pro</div>
             <div style={{fontSize:15,color:'rgba(255,255,255,0.68)',fontFamily:C.P,marginTop:2}}>£4.99/month · Cancel anytime</div>
           </div>}
-          <div onClick={onClose} style={{textAlign:'center',cursor:'pointer',paddingBottom:4}}>
-            <span style={{fontSize:16,color:C.mid,fontFamily:C.P}}>Maybe later</span>
+          <div style={{display:'flex',justifyContent:'center',gap:18,paddingBottom:4}}>
+            <span onClick={onClose} style={{fontSize:16,color:C.mid,fontFamily:C.P,cursor:'pointer'}}>Maybe later</span>
+            {/* A reviewer's or tester's code: Profile opens on the code field (sign-in first if need be). */}
+            {typeof Account!=='undefined'&&Account.available()&&<span onClick={()=>{ Handoff.accountIntent.set('promo'); onClose(); window.location.hash='#account'; window.dispatchEvent(new Event('vinterest:promo')); }}
+              style={{fontSize:16,fontWeight:600,color:C.cr,fontFamily:C.P,cursor:'pointer'}}>Have a promo code?</span>}
           </div>
         </div>
       </div>

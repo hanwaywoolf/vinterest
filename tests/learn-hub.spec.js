@@ -86,3 +86,70 @@ test('the library also lists the beginner articles they have read, and opens the
   await expect.poll(() => page.evaluate(() => location.hash)).toBe('#article');
   await expect(root).toContainText(second);
 });
+
+// The article's "Next read" went nowhere: it asked the app for the screen it was already on, which
+// did nothing, and the article reads which one to show only when it opens.
+test('"Next read" opens the next beginner article', async ({ context, page }) => {
+  await stubNetwork(context);
+  await makeDeterministic(page);
+  await seedLocalStorage(page, { vinterest_onboarded: '1', vinterest_age_ok: '1', vinterest_region: 'uk' });
+  await page.goto(`${BASE}/#home`);
+  await page.evaluate(() => Handoff.onRampIdx.set('0'));
+  await page.goto(`${BASE}/#article`);
+  const root = page.locator('#root');
+  const [t0, t1] = await page.evaluate(() => [ON_RAMP[0].title, ON_RAMP[1].title]);
+  await expect(root).toContainText(t0);
+  await root.getByText('Mark as Read', { exact: false }).first().click();
+  await expect(root).toContainText('Nice work!');
+  await root.getByText('Next read', { exact: true }).click();
+  await expect(root).toContainText(t1);
+  await expect(root).not.toContainText('Nice work!'); // a fresh article, not the finished one
+  await expect(root).not.toContainText(t0);
+});
+
+// Mastery's "Start here" step opens something for every wine type: a grape quiz or an article,
+// never a tap that lands back on Learn.
+test('a Mastery step to finish grape quizzes or read more targets a grape or an article', async ({ page }) => {
+  await page.goto(`${BASE}/?demo=1#learn`);
+  const out = await page.evaluate(() => {
+    const m = KnowledgeMap.compute(WineHistory.getAll());
+    return m.areas.filter((a) => a.next && /grape quizzes|Read more/.test(a.next.label)).map((a) => ({ label: a.next.label, ok: !!(a.next.grape || a.next.article) || a.next.nav === 'learn' }));
+  });
+  for (const o of out) expect(o.ok).toBe(true);
+});
+
+// A guide's "Try it" goes where it says: the palate to Mastery's palate section, the script and
+// value to those WineDNA sections, never just the top of WineDNA.
+test('guide Try it links open the section they name', async ({ page }) => {
+  await page.goto(`${BASE}/?demo=1#learn`);
+  const out = await page.evaluate(() => {
+    const go = [];
+    const nav = (s) => go.push(s);
+    const palate = Guides.all ? null : null;
+    const tries = (typeof GUIDES !== 'undefined' ? GUIDES : []).map((g) => g.tryIt).filter(Boolean);
+    Guides.openTry({ label: 'x', nav: 'mastery-map', section: 'palate' }, nav, null);
+    const section = Handoff.masterySection.take();
+    Guides.openTry({ label: 'x', nav: 'dna', dna: 'scripts' }, nav, null);
+    return { go, section, dna: UserPrefs.takeDNASection(), profileLeft: tries.filter((t) => t.nav === 'profile').length };
+  });
+  expect(out.go).toEqual(['mastery-map', 'profile']);
+  expect(out.section).toBe('palate');
+  expect(out.dna).toBe('scripts');
+});
+
+// Marking a Written for you article read grows its box; the Reading List button it reveals is
+// brought on screen rather than left under the nav.
+test('marking an article read scrolls its Reading List button into view', async ({ context, page }) => {
+  const article = { forYou: 'For you.', sections: Array.from({ length: 6 }, (_, i) => ({ term: `Part ${i + 1}`, iconName: 'grape', plain: 'A paragraph of reading. '.repeat(12), detail: 'Detail. '.repeat(20), examples: ['One', 'Two'] })) };
+  await stubNetwork(context, { claudeText: (b) => (b.purpose === 'learn_article' ? JSON.stringify(article) : '') });
+  await makeDeterministic(page);
+  await seedLocalStorage(page, { vinterest_onboarded: '1', vinterest_age_ok: '1', vinterest_region: 'uk' });
+  await page.goto(`${BASE}/#home`);
+  await page.evaluate(() => sessionStorage.setItem('vinterest_gen_article', JSON.stringify({ id: 'ev_test_scroll', archetypeId: 'palate_vs_textbook', iconName: 'compass', readTime: '3 min', title: 'A long read', subtitle: 's', brief: 'b', slots: { region: 'Rioja' }, facts: 'f' })));
+  await page.goto(`${BASE}/#gen-article`);
+  const root = page.locator('#root');
+  await root.getByText('Mark as Read', { exact: false }).first().click();
+  const btn = root.getByText('Reading List', { exact: true }).first();
+  await expect(btn).toBeVisible();
+  await expect.poll(async () => { const b = await btn.boundingBox(); const v = page.viewportSize(); return !!b && b.y + b.height <= v.height - 56; }).toBe(true);
+});

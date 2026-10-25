@@ -118,8 +118,8 @@ test('the Worker\'s /config gives the public sign-in settings, or null without t
   const worker = (await import(pathToFileURL(copy).href)).default;
   const get = (env) => worker.fetch(new Request('https://vinterest.pages.dev/config'), env).then((r) => r.json());
   expect(await get({ SUPABASE_URL: 'https://p.supabase.co', SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_x', SUPABASE_SECRET_KEY: 'never' }))
-    .toEqual({ supabase: { url: 'https://p.supabase.co', key: 'sb_publishable_x' } });
-  expect(await get({})).toEqual({ supabase: null });
+    .toMatchObject({ supabase: { url: 'https://p.supabase.co', key: 'sb_publishable_x' }, billing: null });
+  expect(await get({})).toMatchObject({ supabase: null });
 });
 
 test('the iOS icon is 1024×1024 with no alpha channel (the App Store rejects one), and the launch screen is 2732 square', async () => {
@@ -236,4 +236,26 @@ test('the Google Play upload signs in with the service account and makes one edi
   // Google's own words come through when it refuses.
   const refuse = async (url, opts) => url.startsWith('https://oauth2') ? json(200, { access_token: 't' }) : json(403, { error: { message: 'The caller does not have permission' } });
   await expect(upload({ account, bundle: Buffer.from('x'), fetchFn: refuse })).rejects.toThrow('Google Play (403): The caller does not have permission');
+});
+
+test('push notifications: the entitlement file, the project setting that uses it and the background mode, all safe to apply twice', async () => {
+  const { patchInfoPlist, patchPbxproj, entitlementsPlist, ENTITLEMENTS_PATH } = await import(pathToFileURL(path.join(__dirname, '..', 'scripts/native-config.mjs')).href);
+  const plist = '<?xml version="1.0"?>\n<plist version="1.0">\n<dict>\n\t<key>CFBundleName</key>\n\t<string>App</string>\n</dict>\n</plist>\n';
+  const once = patchInfoPlist(plist, { UIBackgroundModes: ['remote-notification'] });
+  expect(once).toContain('<key>UIBackgroundModes</key>\n\t<array><string>remote-notification</string></array>');
+  expect(patchInfoPlist(once, { UIBackgroundModes: ['remote-notification'] })).toBe(once);
+  const ent = entitlementsPlist();
+  expect(ent).toContain('<key>aps-environment</key>');
+  expect(ent).toContain('<string>production</string>');
+  const pbx = '\t\t\t\tINFOPLIST_FILE = App/Info.plist;\n\t\t\t\tPRODUCT_NAME = App;\n\t\t\t};\n\t\t\t\tINFOPLIST_FILE = App/Info.plist;\n\t\t\t\tPRODUCT_NAME = App;\n';
+  const done = patchPbxproj('\n' + pbx);
+  expect(done.match(new RegExp(`CODE_SIGN_ENTITLEMENTS = ${ENTITLEMENTS_PATH};`, 'g'))).toHaveLength(2);
+  expect(patchPbxproj(done)).toBe(done);
+});
+
+test('the Play upload says what is wrong when its secret is not a service account key', async () => {
+  const { accessToken } = await import(pathToFileURL(path.join(__dirname, '..', 'scripts/play-upload.mjs')).href);
+  // google-services.json, the Firebase file, has no private_key: the mistake this message is for.
+  await expect(accessToken({ project_info: { project_id: 'x' }, client: [] })).rejects.toThrow(/not a service account key/);
+  await expect(accessToken(null)).rejects.toThrow(/PLAY_SERVICE_ACCOUNT_JSON/);
 });

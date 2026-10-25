@@ -24,7 +24,7 @@ Runtime variables (Settings -> Variables and secrets), for the beta sign-up:
 
 ## Database
 
-Run `supabase/migrations/0004_beta_signups.sql`, `0006_beta_platform.sql` (the iPhone/Android answer) and `0007_beta_source.sql` (where each sign-up came from) once in the Supabase SQL editor (same steps as the
+Run `supabase/migrations/0004_beta_signups.sql`, `0008_beta_platform.sql` (the iPhone/Android answer) and `0009_beta_source.sql` (where each sign-up came from) once in the Supabase SQL editor (same steps as the
 earlier migrations in `supabase/README.md`). The table has row-level security on and no policy for
 anyone, so only the Worker (secret key) can read or write it. `npm run test:db` proves that.
 

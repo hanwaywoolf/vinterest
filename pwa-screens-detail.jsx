@@ -23,7 +23,7 @@ function ScanLocationCard({wine}){ const T=useTheme(), cr=T.lift(C.cr);
     </div>
     {editing?(
       <div style={{display:'flex',gap:8}}>
-        <input autoFocus value={val} onChange={e=>setVal(e.target.value)} onKeyDown={e=>{if(e.key==='Enter')commit();}} placeholder={copy.placeholder} style={{flex:1,minWidth:0,fontSize:15,fontFamily:C.P,padding:'8px 10px',borderRadius:9,border:`1px solid ${T.line}`,color:T.ink}}/>
+        <input autoFocus value={val} onChange={e=>setVal(e.target.value)} onKeyDown={e=>{if(e.key==='Enter')commit();}} placeholder={copy.placeholder} style={{flex:1,minWidth:0,fontSize:15,fontFamily:C.P,padding:'8px 10px',borderRadius:9,border:`1px solid ${T.line}`,color:T.ink,background:T.glass,outline:'none'}}/>
         <Btn primary style={{flexShrink:0}} onClick={commit}>Save</Btn>
       </div>
     ):(
@@ -273,8 +273,8 @@ function DetailMerged({wine,nav,existingRating=0,match}){ const T=useTheme(), cr
     const v=match?match.verdict:'unknown';
     if(v==='hit'||v==='good') return {descriptor:match.label,title:'Why it should suit you',bg:T.greenBg,border:`1px solid ${T.green}25`,col:T.green};
     if(v==='miss') return {descriptor:match.label,title:'Why it might not be for you',bg:T.crSoft,border:`1px solid ${_alpha(cr,0.4)}`,col:cr};
-    return {descriptor:match?match.label:null,title:'What to expect',bg:'#EEF6FF',border:'1px solid #4A90D930',col:'#2563A8'};
-  },[match]);
+    const blue=T.lift('#2563A8'); return {descriptor:match?match.label:null,title:'What to expect',bg:T.tint('#2563A8','#EEF6FF'),border:`1px solid ${_alpha(blue,0.25)}`,col:blue};
+  },[match,T]);
   function pairingIcon(text){
     const t=(text||'').toLowerCase();
     if(/lamb|mutton|sheep/.test(t)) return 'food-lamb';

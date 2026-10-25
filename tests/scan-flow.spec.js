@@ -423,6 +423,21 @@ test('back from a region page opened on the deck returns to the deck, on the sam
   await page.goBack();
   await expect(root).toContainText('5 / 9');
   await expect(root).toContainText('The region');
+  // The phone's back gesture is the card before, not the camera; the header's arrow the same;
+  // from the first card either leaves the deck for the result, and from the result the gesture
+  // leaves the screen as before.
+  await page.goBack();
+  await expect(root).toContainText('4 / 9');
+  await expect(page).toHaveURL(/#identified/);
+  for (let i = 0; i < 3; i++) { await root.getByRole('button', { name: 'Back' }).click(); await expect(root).toContainText(`${3 - i} / 9`); }
+  await root.getByRole('button', { name: 'Back' }).click();
+  await expect(root).toContainText('Learn more about this wine');
+  await root.getByText('Learn more about this wine', { exact: true }).click();
+  await expect(root).toContainText('1 / 9');
+  await page.goBack();
+  await expect(root).toContainText('Learn more about this wine');
+  await page.goBack();
+  await expect(page).not.toHaveURL(/#identified/);
 });
 
 // Real touch input (through the browser's own gesture handling, unlike a mouse): a gentle swipe

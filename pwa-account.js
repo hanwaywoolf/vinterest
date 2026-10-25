@@ -36,6 +36,7 @@ const Account = {
   session(){ return Store.getJSON(this.SESSION_KEY,null); },
   signedIn(){ const s=this.session(); return !!(s&&s.refresh_token); },
   email(){ const s=this.session(); return (s&&s.user&&s.user.email)||null; },
+  userId(){ const s=this.session(); return (s&&s.refresh_token&&s.user&&s.user.id)||null; },
   /* The server's last word on their plan and this week's usage: {tier, usage, caps, …}. */
   me(){ return this.signedIn()?Store.getJSON(this.ME_KEY,null):null; },
   tier(){ const m=this.me(); return (m&&m.tier)||'free'; },
@@ -71,7 +72,10 @@ const Account = {
   async verifyCode(email,code){
     email=this._cleanEmail(email); code=String(code||'').replace(/\D/g,'');
     if(code.length<6) return {ok:false,error:'Enter the 6-digit code from the email.'};
-    const r=await this._auth('verify',{type:'email',email,token:code});
+    let r=await this._auth('verify',{type:'email',email,token:code});
+    // A code that isn't the emailed one may be the app-review account's fixed code (Worker /reviewer/login,
+    // only live while REVIEWER_EMAIL and REVIEWER_CODE are set); any other answer leaves the failure as it was.
+    if((!r.ok||!r.body||!r.body.access_token)&&r.status!==0) r=await this._reviewerLogin(email,code)||r;
     if(!r.ok||!r.body||!r.body.access_token){
       if(r.status===0) return {ok:false,error:'We couldn\'t reach the sign-in service. Check your connection and try again.'};
       return {ok:false,error:'That code didn\'t work. It may have expired: check it, or send a new one.'};
@@ -79,6 +83,14 @@ const Account = {
     this._save(r.body);
     await this.refreshMe();
     return {ok:true};
+  },
+  async _reviewerLogin(email,code){
+    try{
+      const r=await fetch(Platform.api('/reviewer/login'),{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({email,code})});
+      if(!r.ok) return null;
+      const j=await r.json();
+      return j&&j.access_token?{ok:true,status:200,body:j}:null;
+    }catch(e){ return null; }
   },
   /* A current access token for the Worker (refreshed when it's about to run out), or null. */
   async token(){
@@ -103,6 +115,24 @@ const Account = {
       this._emit();
       return j;
     }catch(e){ return this.me(); }
+  },
+  /* Redeems a promo code (Worker /promo, which has the database grant or extend Pro by the code's
+     months). On success /me is refreshed, so Pro shows at once wherever Account.tier() is read. */
+  async redeemPromo(code){
+    if(!this.signedIn()) return {ok:false,error:'Sign in first, then enter your code.'};
+    const clean=String(code||'').replace(/\s/g,'').toUpperCase();
+    if(!clean) return {ok:false,error:'Type in your code first.'};
+    const t=await this.token();
+    if(!t) return {ok:false,error:'Your sign-in has expired. Sign in again, then enter your code.'};
+    let r; try{ r=await fetch(Platform.api('/promo'),{method:'POST',headers:{authorization:'Bearer '+t,'content-type':'application/json'},body:JSON.stringify({code:clean})}); }
+    catch(e){ return {ok:false,error:'We couldn\'t check your code. Check your connection and try again.'}; }
+    let j=null; try{ j=await r.json(); }catch(e){}
+    if(!r.ok){
+      if(r.status===401) this.signOut({localOnly:true});
+      return {ok:false,error:(j&&j.error)||'We couldn\'t check that code just now. Try again in a minute.'};
+    }
+    await this.refreshMe();
+    return {ok:true,expires_at:j&&j.expires_at||null};
   },
   /* Deletes their account for good (Worker /account/delete: the Supabase user and every row of
      theirs), then everything Vinterest keeps on this phone, so the app starts again at onboarding.
@@ -136,6 +166,8 @@ const Account = {
   expired(){ this.signOut({localOnly:true}); },
   async signOut({localOnly=false}={}){
     const s=this.session();
+    // Their phone stops getting their reminders (Push.unlink needs the session, so before it goes).
+    if(!localOnly&&typeof Push!=='undefined'&&Push.isOn()) await Push.disable();
     if(!localOnly&&s&&s.access_token) await this._auth('logout',{},s.access_token);
     Store.remove(this.SESSION_KEY); Store.remove(this.ME_KEY);
     this._emit();
