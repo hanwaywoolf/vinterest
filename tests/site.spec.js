@@ -413,6 +413,20 @@ test.describe('beta form', () => {
     expect(sent).toEqual([{ first_name: 'Ada', last_name: 'Lovelace', country: 'GB', platform: 'ios', email: 'ada@example.com', website: '', source: {} }]);
   });
 
+  test('tells them which email to use for their phone: the Apple ID or the Google Play account', async ({ page }) => {
+    await page.goto(BASE + '/');
+    const hint = page.locator('#b-email-hint');
+    await expect(hint).toContainText('Apple ID');
+    await expect(hint).toContainText('Google Play');
+    await expect(page.locator('#b-email')).toHaveAttribute('aria-describedby', 'b-email-hint');
+    await page.selectOption('#b-platform', 'ios');
+    await expect(hint).toHaveText(/Apple ID.*TestFlight/);
+    await page.selectOption('#b-platform', 'android');
+    await expect(hint).toHaveText(/Google account.*Google Play/);
+    await page.selectOption('#b-platform', '');
+    await expect(hint).toContainText('Apple ID');
+  });
+
   test('sends where the visit came from: the link\'s UTM tags and the referring site', async ({ page }) => {
     const sent = [];
     await page.route('**/api/beta', (r) => { sent.push(JSON.parse(r.request().postData())); return r.fulfill({ contentType: 'application/json', body: '{"ok":true}' }); });

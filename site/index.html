@@ -281,7 +281,7 @@
           <div class="field"><label for="b-country">Country</label><select id="b-country" name="country" autocomplete="country" required><option value="">Select your country</option></select><span class="err" data-for="country"></span></div>
           <div class="field"><label for="b-platform">Your phone</label><select id="b-platform" name="platform" required><option value="">iPhone or Android?</option><option value="ios">iPhone (iOS)</option><option value="android">Android</option></select><span class="err" data-for="platform"></span></div>
         </div>
-        <div class="field"><label for="b-email">Email address</label><input id="b-email" name="email" type="email" inputmode="email" autocomplete="email" required maxlength="254"/><span class="err" data-for="email"></span></div>
+        <div class="field"><label for="b-email">Email address</label><input id="b-email" name="email" type="email" inputmode="email" autocomplete="email" required maxlength="254" aria-describedby="b-email-hint"/><span class="hint" id="b-email-hint">Use the email of your Apple ID (iPhone) or your Google Play account (Android). That's where your invite to test the app is sent.</span><span class="err" data-for="email"></span></div>
         <div class="hp" aria-hidden="true"><label>Website<input name="website" tabindex="-1" autocomplete="off"/></label></div>
         <button class="btn primary" type="submit" id="beta-go">Join the beta</button>
         <p class="fine">We use your name, country, phone type and email to invite you to the beta and to contact you about it. Nothing else, and never sold. See the <a href="/privacy/">privacy notice</a>.</p>

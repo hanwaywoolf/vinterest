@@ -292,6 +292,15 @@
     select.appendChild(o);
   });
   // A best guess from where the visit came from (the Worker reads it from Cloudflare); never blocks typing.
+  // The email is where the test invite goes: TestFlight sends it to the Apple ID, and Google Play
+  // lets in the Google account on the phone. Say which, once they've picked their phone.
+  var platformBox = document.getElementById('b-platform'), emailHint = document.getElementById('b-email-hint');
+  var HINTS = {
+    '': emailHint.textContent,
+    ios: 'Use the email of your Apple ID. TestFlight sends your invite there, so it has to be the account on your iPhone.',
+    android: 'Use the Google account email you use for Google Play on your phone. That account is the one let into the test.',
+  };
+  platformBox.addEventListener('change', function () { emailHint.textContent = HINTS[platformBox.value] || HINTS['']; });
   fetch('/api/country').then(function (r) { return r.ok ? r.json() : null; }).then(function (j) {
     var code = j && j.country;
     if (code && !select.value && select.querySelector('option[value="' + code + '"]')) select.value = code;
