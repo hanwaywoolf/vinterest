@@ -40,7 +40,8 @@ const GEN = { fact: 'La Rioja Alta was founded in 1890 by five families from Rio
   fit: 'x', caution: 'x', origin: 'x', region_style: 'x', estate: 'x',
   talk: ['Ardanza is a Tempranillo-led blend that rests in oak for years before release', 'x', 'x'], fact2: 'x' };
 // What Claude really wrote for the sample user (the website demos' capture), so WineDNA's script reads as it does in the app.
-const CAPTURED = JSON.parse(fs.readFileSync(path.join(ROOT, 'site/demo/captured.json'), 'utf8')).answers;
+const CAPTURED_ALL = JSON.parse(fs.readFileSync(path.join(ROOT, 'site/demo/captured.json'), 'utf8'));
+const CAPTURED = CAPTURED_ALL.answers;
 const LABEL_SCAN_S = 1.7; // how long "Analysing label…" shows over the photo
 
 fs.mkdirSync(path.dirname(OUT), { recursive: true });
@@ -62,7 +63,7 @@ try {
       sessionStorage.setItem('__seeded', '1');
       const seed = { vinterest_onboarded: '1', vinterest_age_ok: '1', vinterest_region: 'uk', vinterest_pro: '1', vinterest_wines: JSON.stringify(wines),
         vinterest_onramp_1_done: '1', vinterest_wineDNA_unlock_seen: '1', vinterest_dna_welcome_seen: '1', vinterest_reveal_tips_v1: '9', vinterest_gallery_hint_v1: '9',
-        vinterest_xp_v3: JSON.stringify({ total: 1240 }) };
+        vinterest_xp_v3: JSON.stringify({ version: 1, accounts: { local: { total: 1240, events: [], scansThisWeek: [], totalRatings: 11, grapesSeen: [], quizCompleted: {}, quizStreaks: {} } } }) };
       for (const [k, v] of Object.entries(seed)) localStorage.setItem(k, v);
     }
     let s = 0x2f6b1a; // the same Math.random every run
@@ -217,17 +218,41 @@ try {
   };
   /* The sample user has studied a little, so Mastery has a shape (the site demo's study history, replayed
      through the app's own modules). */
-  const study = () => app().evaluate(() => {
+  const study = () => app().evaluate((banks) => {
+    Device.setMasteryView({ grapes: 'bunch', shape: 'chart' });
+    Object.keys(banks).forEach((k) => Store.set(k, banks[k]));
     WineHistory.getAll().forEach((w) => { try { ScanFlow.unlockLearning({ ...w, confidence: 'high' }); } catch (e) {} });
     const answer = (setId, pool, n) => (pool || []).slice(0, n).forEach((q) => QuizMastery.recordAnswer(setId, q.q, true));
+    [['Tempranillo', 13], ['Grenache', 9], ['Syrah', 8], ['Malbec', 6], ['Nebbiolo', 3]].forEach(([g, n]) => answer('grape:' + g, grapeQuizBank(g), n));
     [['red_grapes', 14], ['white_grapes', 6], ['rose', 3], ['sparkling', 5]].forEach(([t, n]) => answer('topic:' + t, QuizMastery.topicPool(t), n));
-    try { ['Rioja', 'Rhône Valley', 'Mendoza'].forEach((r, i) => answer(RegionQuizBank.setId(r), RegionQuizBank.get(r), [14, 9, 7][i])); } catch (e) {}
+    try { [['Rioja', 6], ['Rhône Valley', 9], ['Mendoza', 7], ['Piedmont', 3]].forEach(([r, n]) => answer(RegionQuizBank.setId(r), RegionQuizBank.get(r), n)); } catch (e) {}
     _loadJSON('data/onramp.json').slice(0, 4).forEach((a) => Store.set('vinterest_' + a.id + '_done', '1'));
+    // Seven Blind Calls, close to each label's profile but calling the tannins a little grippier, so the palate has a shape.
+    const off = [[0.04, -0.06, 0.15], [-0.05, 0.05, 0.2], [0.08, 0.03, 0.12], [-0.03, -0.04, 0.17], [0.06, 0.07, 0.1], [0.02, -0.02, 0.18], [-0.06, 0.04, 0.14]];
+    WineHistory.getAll().filter((w) => typeof w.body === 'number').slice(0, 7).forEach((w, i) => {
+      const o = off[i], c = (v) => Math.max(0, Math.min(1, v));
+      const guess = { body: c(w.body + o[0]), acidity: c(w.acidity + o[1]), tannins: c(w.tannins + o[2]) };
+      const miss = ['body', 'acidity', 'tannins'].map((k) => Math.abs(guess[k] - w[k]));
+      const accuracy = Math.max(0, 1 - (miss[0] + miss[1] + miss[2]) / 3 * 1.6);
+      ScanFlow.saveBlindResult(w, { accuracy, amount: Math.round(accuracy * 40), guess });
+    });
     const m = KnowledgeMap.compute(WineHistory.getAll()), then = Date.now() - 35 * 864e5, a = {};
     m.areas.forEach((x) => { a[x.id] = Math.round(x.score * 0.55); });
     Store.setJSON(KnowledgeMap.HISTORY_KEY, { [KnowledgeMap._week(then)]: { t: then, o: Math.round(m.overall * 0.55), a } });
     KnowledgeMap.note(m);
-  });
+    try { Milestones.check(KnowledgeMap.compute(), Palate.compute()); } catch (e) {} // what the study history already reached is filed, not shown as new
+  }, CAPTURED_ALL.banks || {});
+  /* Answer the quiz question on screen: the right option from the region's bank, or a wrong one. */
+  const answerQ = (right) => app().evaluate((right) => {
+    const text = document.querySelector('#root').innerText;
+    const q = RegionQuizBank.pool('Rioja').find((q) => text.includes(q.q)); if (!q) return false;
+    const opts = [...document.querySelectorAll('.qz-opt')];
+    const want = right ? q.opts[q.a] : q.opts[(q.a + 1) % q.opts.length];
+    const el = opts.find((o) => o.textContent.trim() === want) || opts.find((o) => o.textContent.trim().includes(want));
+    if (el) el.click(); return !!el;
+  }, right);
+  const feedbackUp = () => !!document.querySelector('[data-testid="quiz-feedback"]');
+  const questionUp = () => document.querySelectorAll('.qz-opt').length >= 2 && !document.querySelector('[data-testid="quiz-feedback"]');
   const sceneIs = (k) => { const s = document.querySelector('[data-testid="reveal-scene"]'); return !!s && s.getAttribute('data-scene') === k; };
 
   /* ── The sections. Each runs with `at` from its own start and returns its length. ── */
@@ -293,11 +318,53 @@ try {
       return 44.0;
     },
     // Placeholders, carried over from the first cut; each is rebuilt in turn.
+    /* Learning: the Learn hub, a round of the Rioja quiz (one right, one wrong, the rest at pace, then the
+       result), and Mastery's sections. */
     async learn() {
       await study();
-      await caption('Learn as you <b>sip</b>.', 'Quizzes, short reads and Mastery, built from your bottles.'); await go('learn', 0.4, 1.8);
-      await at(2.3); await go('mastery-map', 0.12, 1.5, 0.45);
-      await at(4.5); return 4.5;
+      await app().evaluate(() => { window.location.hash = '#learn'; });
+      await until(() => !!document.querySelector('[data-testid="up-next"]'), null);
+      await at(0.4);
+      await caption('Learn as you <b>sip</b>.', 'Short reads, quizzes and skills, built from the bottles you scan.');
+      await at(5.4); await glide('[data-testid="grape-shelf"]', 1.4, 60);
+      await caption('Your grapes, <b>one by one</b>.', 'Every grape on your labels opens its own quiz and its own page.');
+      await at(11.2); await glide('[data-testid="skills-groups"]', 1.4, 60);
+      await caption('<b>Wine Skills</b>.', 'Ordering out, buying, pairing, hosting: short guides, each with a question at the end.');
+      // The quiz: Rioja, their most-scanned region.
+      await at(16.4);
+      await app().evaluate(() => { Handoff.quiz.set({ mode: 'region', region: 'Rioja' }); window.location.hash = '#quiz'; });
+      await until(questionUp, null);
+      await caption("Quiz what you've <b>tasted</b>.", 'Five questions on the Rioja you drink, with the fact behind every answer.');
+      await at(20.2); await answerQ(true);
+      await until(feedbackUp, null);
+      await at(24.6); await tap(/^Next Question →$/);
+      await until(questionUp, null);
+      await at(26.4); await caption('Wrong answers <b>teach</b> too.', 'Not quite, says the app, and here is why.');
+      await at(28.4); await answerQ(false);
+      await until(feedbackUp, null);
+      await at(33.4); await caption('Every right answer <b>counts</b>.', 'XP, a streak, and answers that fade until you refresh them.');
+      // The last three at pace, to the result.
+      await app().evaluate(() => { window.VINTEREST_QUIZ_SPEED = 5; });
+      for (let k = 0; k < 3; k++) { await tap(/^(Next Question|See Results) →$/); await until(questionUp, null, 8); await at(now() - clock + 0.5); await answerQ(true); await until(feedbackUp, null, 8); await at(now() - clock + 0.7); }
+      await app().evaluate(() => { window.VINTEREST_QUIZ_SPEED = 1; });
+      await tap(/^See Results →$/);
+      await until(() => !!document.querySelector('[data-testid="result-ring"]'), null);
+      const tQ = now() - clock;
+      await at(tQ + 5.6);
+      // Mastery.
+      await app().evaluate(() => { window.location.hash = '#mastery-map'; });
+      await until(() => !!document.querySelector('[data-testid="mastery-radar"]'), null);
+      await at(now() - clock + 0.3);
+      await caption('Your <b>Mastery</b> map.', 'What you know, what is fading, and where to start.');
+      const tM = now() - clock;
+      await at(tM + 5.6); await glide('[data-section="grapes"]', 1.4, 60);
+      await caption('Your grapes, as a <b>bunch</b>.', 'Each berry fills in as you study it.');
+      await at(tM + 11.4); await glide('[data-section="map"]', 1.4, 60);
+      await caption('Your <b>wine map</b>.', 'A pin for every region, lit as you learn it.');
+      await at(tM + 17.2); await glide('[data-section="palate"]', 1.4, 60);
+      await caption('Your <b>palate</b>.', 'How well you taste what the label says, from your Blind Calls.');
+      await at(tM + 23.0);
+      return now() - clock;
     },
     async wines() {
       await caption('Every bottle, <b>remembered</b>.', 'What you drank, what you paid, what you thought of it.'); await go('mywines', 0.45, 2.0);
