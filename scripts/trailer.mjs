@@ -283,14 +283,14 @@ try {
       await caption('<b>What to say</b> to a sommelier.', 'Your taste in a sentence, ready for the wine list.');
       await at(21.4); await glide('[data-section="moves"]', 1.4);
       await caption('Why you rate what you <b>rate</b>.', 'Grapes, regions and producers, as points above or below your average.');
-      await at(27.4); await glide('[data-section="knows"]', 1.4);
-      await caption('How well we <b>know you</b>.', 'Every match checked against the rating you gave.');
-      await at(32.6); await glide('[data-section="house"]', 1.4);
+      await at(27.4); await glide('[data-section="house"]', 1.4);
       await caption('The bottles you\'d <b>buy again</b>.', 'And Restock, straight to the shops that have them.');
-      await at(37.2); await glide('[data-section="explore"]', 1.4);
+      await at(32.6); await glide('[data-section="explore"]', 1.4);
       await caption('Where to go <b>next</b>.', 'Styles picked from your DNA, a step from what you already love.');
-      await at(42.6);
-      return 42.6;
+      await at(37.8); await glide('[data-section="knows"]', 1.4);
+      await caption('How well we <b>know you</b>.', 'Every match checked against the rating you gave.');
+      await at(44.0);
+      return 44.0;
     },
     // Placeholders, carried over from the first cut; each is rebuilt in turn.
     async learn() {
