@@ -262,7 +262,7 @@ try {
       await app().evaluate(() => { window.location.hash = '#camera'; });
       await until(() => !!document.querySelector('[aria-label="Take photo"]'), null);
       await at(0.4);
-      await caption('Scan any <b>label</b>.', 'A bottle, a wine list, or a photo from your library.');
+      await caption('Scan any <b>label or list</b>.', "Use your phone's camera to scan any bottle, wine list or upload a photo from your library.");
       await at(2.4); await app().evaluate(() => document.querySelector('[aria-label="Take photo"]').click());
       // "Analysing label…" over the photo (the read is held), then the reading arrives and the story opens on the label.
       while (!scanRoute && now() < clock + 10) await frame();
