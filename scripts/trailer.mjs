@@ -39,6 +39,8 @@ const WINE = { name: 'Viña Ardanza Reserva', confidence: 'high', alternative: '
 const GEN = { fact: 'La Rioja Alta was founded in 1890 by five families from Rioja and the Basque Country who pooled resources to make wine together.',
   fit: 'x', caution: 'x', origin: 'x', region_style: 'x', estate: 'x',
   talk: ['Ardanza is a Tempranillo-led blend that rests in oak for years before release', 'x', 'x'], fact2: 'x' };
+// What Claude really wrote for the sample user (the website demos' capture), so WineDNA's script reads as it does in the app.
+const CAPTURED = JSON.parse(fs.readFileSync(path.join(ROOT, 'site/demo/captured.json'), 'utf8')).answers;
 const LABEL_SCAN_S = 1.7; // how long "Analysing label…" shows over the photo
 
 fs.mkdirSync(path.dirname(OUT), { recursive: true });
@@ -105,7 +107,9 @@ try {
   await context.route('**/claude', (route) => {
     const b = JSON.parse(route.request().postData() || '{}');
     if (b.purpose === 'label_scan') { scanRoute = route; return; }
-    const text = b.purpose === 'scancard' ? JSON.stringify(GEN) : '';
+    const text = b.purpose === 'scancard' ? JSON.stringify(GEN)
+      : b.purpose === 'winedna_summary' ? CAPTURED.winedna_summary
+      : b.purpose === 'sommelier_script' ? CAPTURED.sommelier_long : '';
     return route.fulfill({ contentType: 'application/json', body: JSON.stringify({ text }) });
   });
   await context.route('**/me', (route) => route.fulfill({ contentType: 'application/json', body: JSON.stringify({ signedIn: false, accounts: false, tier: 'free' }) }));
@@ -191,6 +195,26 @@ try {
       await frame();
     }
   };
+  /* Glide the screen's scroller over `secs` so the element `sel` (a selector) sits at the top, eased, from wherever it is. */
+  const glide = async (sel, secs, gap = 12) => {
+    const steps = Math.round(secs * FPS);
+    let from = null;
+    for (let i = 1; i <= steps; i++) {
+      from = await app().evaluate(([sel, u, from, gap]) => {
+        const el = document.querySelector(sel); if (!el) return null;
+        const s = [...document.querySelectorAll('#root div')].find((e) => { const cs = getComputedStyle(e); return /(auto|scroll)/.test(cs.overflowY) && e.scrollHeight > e.clientHeight + 10 && e.contains(el); });
+        if (!s) return null;
+        if (from == null) from = s.scrollTop;
+        const to = Math.max(0, Math.min(s.scrollHeight - s.clientHeight, s.scrollTop + el.getBoundingClientRect().top - s.getBoundingClientRect().top - gap));
+        const e = u < 0.5 ? 2 * u * u : 1 - Math.pow(-2 * u + 2, 2) / 2;
+        s.scrollTop = from + (to - from) * e;
+        return from;
+      }, [sel, i / steps, from, gap]);
+      if (from == null) { console.log('  glide: nothing at ' + sel); return false; }
+      await frame();
+    }
+    return true;
+  };
   /* The sample user has studied a little, so Mastery has a shape (the site demo's study history, replayed
      through the app's own modules). */
   const study = () => app().evaluate(() => {
@@ -245,11 +269,30 @@ try {
       await at(31.2);
       return 31.2;
     },
-    // Placeholders, carried over from the first cut; each is rebuilt in turn.
+    /* WineDNA: the red tab, read down section by section, each held long enough to take in. */
     async dna() {
-      await caption('Your <b>WineDNA</b>.', 'What you reach for, and what lifts your ratings.'); await go('profile', 0.5, 3.9);
-      await at(5.0); return 5.0;
+      await app().evaluate(() => { window.location.hash = '#profile'; });
+      await until(() => !!document.querySelector('[data-testid="dna-rules"]'), null);
+      await at(0.4);
+      await caption('Your <b>WineDNA</b>.', 'Your taste, worked out from every bottle you\'ve rated.');
+      await at(3.6); await glide('[data-section="rules"]', 1.4);
+      await caption('What to <b>reach for</b>.', 'Next time you\'re buying: written from what lifts your own ratings, with the evidence.');
+      await at(9.4); await glide('[data-section="portrait"]', 1.4);
+      await caption('Your <b>portrait</b>.', 'Where the wines you choose sit, from light to full, soft to grippy.');
+      await at(15.6); await glide('[data-section="scripts"]', 1.4);
+      await caption('<b>What to say</b> to a sommelier.', 'Your taste in a sentence, ready for the wine list.');
+      await at(21.4); await glide('[data-section="moves"]', 1.4);
+      await caption('Why you rate what you <b>rate</b>.', 'Grapes, regions and producers, as points above or below your average.');
+      await at(27.4); await glide('[data-section="knows"]', 1.4);
+      await caption('How well we <b>know you</b>.', 'Every match checked against the rating you gave.');
+      await at(32.6); await glide('[data-section="house"]', 1.4);
+      await caption('The bottles you\'d <b>buy again</b>.', 'And Restock, straight to the shops that have them.');
+      await at(37.2); await glide('[data-section="explore"]', 1.4);
+      await caption('Where to go <b>next</b>.', 'Styles picked from your DNA, a step from what you already love.');
+      await at(42.6);
+      return 42.6;
     },
+    // Placeholders, carried over from the first cut; each is rebuilt in turn.
     async learn() {
       await study();
       await caption('Learn as you <b>sip</b>.', 'Quizzes, short reads and Mastery, built from your bottles.'); await go('learn', 0.4, 1.8);
