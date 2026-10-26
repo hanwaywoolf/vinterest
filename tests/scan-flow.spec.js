@@ -194,6 +194,9 @@ test('wine list: real match results per wine, and a tapped wine is saved as a sh
   await expect(root).toContainText('Probably not for you');
   await expect(root.getByText('Rioja Test Reserva')).toBeVisible();
   await expect(root).toContainText('Too early');
+  // On the dark stage a red wine's type pill is the lifted crimson, never crimson text on a crimson wash.
+  const pillCol = await root.getByText('red', { exact: true }).last().evaluate((el) => getComputedStyle(el).color);
+  expect(pillCol).toBe('rgb(224, 90, 116)');
   await root.getByText('Rioja Test Reserva').click();
   await expect(root).toContainText('On this list');
   const w = (await history(page)).find((x) => x.name === 'Rioja Test Reserva');
