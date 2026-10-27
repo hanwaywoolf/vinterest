@@ -271,13 +271,13 @@ try {
       if (scanRoute) { await scanRoute.fulfill({ contentType: 'application/json', body: JSON.stringify({ text: JSON.stringify(WINE) }) }); scanRoute = null; }
       await until(sceneIs, 'label', 20);
       // 1. The label, with where the vintage is in its life.
-      await at(4.6); await caption('Who made it, and <b>when to drink it</b>.', 'The wine, the vintage, and where it is in its life.');
+      await at(4.6); await caption('Who, what, where and <b>when</b>.', 'The wine name, producer, grape and drink window to help you learn and decide.');
       await at(8.2); await swipe();
       // 2. The match.
-      await at(8.6); await caption("Know if you'll <b>love</b> it.", "A match from your own ratings, not a critic's.");
+      await at(8.6); await caption('A match made <b>just for you</b>.', "Matched from your rating history and WineDNA, not some critic's rating.");
       await at(12.8); await swipe();
       // 3. How it'll feel.
-      await at(13.2); await caption('How it will <b>taste</b>.', 'Body, tannins and acidity in everyday words.');
+      await at(13.2); await caption('A <b>portrait</b> of taste.', 'The character of the wine, how it will feel, by wine type.');
       await at(16.2); await swipe();
       // 4. The grape.
       await at(16.6); await caption('Meet the <b>grape</b>.', "What's in the glass, and what to expect from it.");
