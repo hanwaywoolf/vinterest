@@ -24,11 +24,33 @@ Runtime variables (Settings -> Variables and secrets), for the beta sign-up:
 
 ## Database
 
-Run `supabase/migrations/0004_beta_signups.sql` once in the Supabase SQL editor (same steps as the
+Run `supabase/migrations/0004_beta_signups.sql`, `0008_beta_platform.sql` (the iPhone/Android answer) and `0009_beta_source.sql` (where each sign-up came from) once in the Supabase SQL editor (same steps as the
 earlier migrations in `supabase/README.md`). The table has row-level security on and no policy for
 anyone, so only the Worker (secret key) can read or write it. `npm run test:db` proves that.
 
 Read the list in the Supabase dashboard (Table editor -> `beta_signups`), or export it as CSV.
+
+## Where sign-ups come from
+
+Each sign-up keeps the site that linked to the page (`referrer`, its host only, e.g. `google.com`;
+empty when someone typed the address or the browser withheld it) and the UTM tags on the link they
+followed. Tag every link you share so it can be counted, lower case, one word per value:
+
+```
+https://vinterest.app/?utm_source=instagram&utm_medium=social&utm_campaign=beta
+https://vinterest.app/?utm_source=newsletter&utm_medium=email&utm_campaign=launch
+```
+
+`utm_source` is where (instagram, reddit, a friend's name), `utm_medium` the kind (social, email,
+ad, qr) and `utm_campaign` what for (beta, launch). A QR code on a printed card can carry
+`utm_medium=qr`. Count sign-ups by channel in the SQL editor:
+
+```sql
+select coalesce(utm_source, referrer, 'direct') as came_from, count(*)
+from beta_signups group by 1 order by 2 desc;
+```
+
+The notification email says the same in its "Came from" line.
 
 ## /test: the web app moves
 
@@ -62,7 +84,7 @@ placeholder contact address.
 
 ## Confirmation emails (Resend)
 
-A new sign-up gets a short "You're on the list" email, sent by the Worker through Resend. It is optional:
+A new sign-up gets a short "Thank you for registering for the Vinterest beta" email (download links and updates on release and acceptance to follow), sent by the Worker through Resend. It is optional:
 without `RESEND_API_KEY` nothing is sent and the form works as before. A failed email never fails the
 sign-up, and someone who signs up twice is emailed once.
 
@@ -77,5 +99,10 @@ sign-up, and someone who signs up twice is emailed once.
 5. Redeploy (Deployments -> Retry deployment), then sign up with your own address to check it arrives.
 
 Replies go to `hello@vinterest.app`, so that mailbox has to exist (Cloudflare Email Routing can forward it).
+
+To be told about every new sign-up, add `BETA_NOTIFY_TO` (your own address) beside `RESEND_API_KEY`.
+Each new sign-up then also sends you "Beta sign-up: <name> (<phone>, <country>)" with the name, email,
+country, iPhone or Android and the time; replying to it replies to the person. A repeat sign-up sends
+nothing, like the confirmation.
 Legal pages mention that email is used only for the beta; keep the email's wording in step with them.
 
