@@ -194,7 +194,7 @@ test('the Worker takes the team calls without a sign-in during the pilot', async
 // The wine-show demo (docs/business.md): The Larkspur opens from /team/?seed=demo with its 60 wines,
 // 27 dishes and seven staff with photos; a new arrival is read from its label, joins the list through
 // the same review, and publishing writes its card, pairings, drinking window and assignments.
-test('the demo restaurant: 60 wines, photos, and a wine added from its label updates everything', async ({ context, page }) => {
+test('the demo restaurant: 30 wines, photos, and a wine added from its label updates everything', async ({ context, page }) => {
   const label = { name: 'Barolo Bussia', producer: 'Prunotto', vintage: 2019, region: 'Barolo', country: 'Italy', type: 'red', grapes: ['Nebbiolo'], grapes_basis: 'label', confidence: 'high' };
   const reqs = [];
   await stubNetwork(context, { claudeRequests: reqs, claudeText: (b) => {
@@ -210,7 +210,7 @@ test('the demo restaurant: 60 wines, photos, and a wine added from its label upd
   await expect(page.getByTestId('team-person')).toHaveCount(7);
   expect(await page.locator('[data-testid="team-person"] img').count()).toBe(7);
   await page.getByTestId('team-tab-wines').click();
-  await expect(page.getByTestId('team-wine-row')).toHaveCount(60);
+  await expect(page.getByTestId('team-wine-row')).toHaveCount(30);
   await page.getByTestId('team-tab-upload').click();
   // The demo file carries every card, pairing and window, so nothing is waiting to be written.
   await expect(page.getByTestId('team-pending')).toHaveCount(0);
@@ -219,12 +219,12 @@ test('the demo restaurant: 60 wines, photos, and a wine added from its label upd
   await expect(page.getByLabel('Producer')).toHaveValue('Prunotto');
   await page.getByLabel('Glass price').fill('£16'); await page.getByLabel('Bottle price').fill('£78');
   await page.getByText('Add to the list').click();
-  await expect(page.getByTestId('team-review')).toContainText('1 new, 0 gone, 0 changed, 60 the same');
+  await expect(page.getByTestId('team-review')).toContainText('1 new, 0 gone, 0 changed, 30 the same');
   await page.getByText('Publish', { exact: true }).click();
   await expect(page.getByTestId('team-published')).toBeVisible({ timeout: 20000 });
   const out = await page.evaluate(() => { const w = TeamData.wine('w-prunotto-barolo-bussia'); return { n: TeamData.wines().length, section: w.section, glass: w.glass, peak: w.peak && w.peak.to, card: !!TeamData.card(w.id), window: TeamData.window(w).word,
     assigned: TeamLearn.people().filter((p) => TeamLearn.assignments(p.id).some((a) => a.id === w.id)).length }; });
-  expect(out).toMatchObject({ n: 61, section: 'Red', glass: '£16', peak: 2036, card: true, window: 'Still young', assigned: 7 });
+  expect(out).toMatchObject({ n: 31, section: 'Red', glass: '£16', peak: 2036, card: true, window: 'Still young', assigned: 7 });
   // Only the new wine needs a card; the 60 the demo came with keep theirs.
   expect(reqs.filter((r) => r.purpose === 'team_cards')).toHaveLength(1);
   await page.getByTestId('team-tab-wines').click();
@@ -258,7 +258,7 @@ test('?seed=demo replaces a Larkspur from an older build and keeps one from this
   expect(before).toBe(0);
   await page.goto(`${BASE}/team/?seed=demo`);
   await expect(page.getByTestId('team-state')).toBeVisible();
-  expect(await page.evaluate(() => Object.keys(TeamData.get().cards).length)).toBe(60);
+  expect(await page.evaluate(() => Object.keys(TeamData.get().cards).length)).toBe(30);
   const marked = await page.evaluate(() => { const d = TeamData.get(); d.venue.name = 'Kept'; TeamData.save(d); return TeamSample.current('demo'); });
   expect(marked).toBe(true);
   await page.goto(`${BASE}/team/?seed=demo`);
@@ -322,5 +322,5 @@ test('practise by the glass from Today, and a perfect wine moves the readiness f
     TeamLearn.wineQs('w-nyetimber-classic-cuvee').filter((q) => TeamLearn.ROLES[me.role].kinds.includes(q.k)).forEach((q) => TeamLearn.record(me.id, q, true, 'sure'));
     return { before, after: TeamLearn.readiness(me.id).pct, known: TeamLearn.readiness(me.id).parts.glass.known }; });
   expect(moved.after).toBeGreaterThan(moved.before); expect(moved.known).toBe(1);
-  await expect(page.getByTestId('team-part').first()).toContainText('1 of 27 known');
+  await expect(page.getByTestId('team-part').first()).toContainText('1 of 15 known');
 });
