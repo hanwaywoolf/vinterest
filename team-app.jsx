@@ -14,8 +14,9 @@ function TeamApp(){
   React.useEffect(()=>{ const h=()=>refresh(); window.addEventListener('vbiz:data',h); window.addEventListener('vinterest:account',h);
     return ()=>{ window.removeEventListener('vbiz:data',h); window.removeEventListener('vinterest:account',h); }; },[]);
   // /team/?seed=demo opens straight onto the demo restaurant (the wine-show laptop), replacing whatever
-  // restaurant the device holds unless it's already that one (so a reload keeps written cards and progress).
-  React.useEffect(()=>{ try{ const seed=new URLSearchParams(location.search).get('seed'); if(seed){ const cur=TeamData.get().venue||{}; if(!TeamLearn.me()||cur.sample!==seed) TeamSample.load(seed); history.replaceState(null,'',location.pathname); refresh(); } }catch(e){} },[]);
+  // restaurant the device holds unless it's already this build's copy of it (so a reload keeps progress, and a
+  // new build with more written in replaces a stale one).
+  React.useEffect(()=>{ try{ const seed=new URLSearchParams(location.search).get('seed'); if(seed){ if(!TeamLearn.me()||!TeamSample.current(seed)) TeamSample.load(seed); history.replaceState(null,'',location.pathname); refresh(); } }catch(e){} },[]);
   const me=TeamLearn.me(), set=!!me;
   const manager=me&&['manager','buyer'].includes(me.role);
   const tabs=TEAM_TABS.filter(t=>!t.manager||manager);

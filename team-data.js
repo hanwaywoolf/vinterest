@@ -289,7 +289,7 @@ const TeamSample = {
     if(which==='demo'&&(!s||s.pending)) s={..._loadJSON('data/team-demo-list.json'),cards:{},pairings:{},staff:null};
     if(!s) return false;
     const now=Date.now(), d=TeamData._empty();
-    d.venue={name:s.venue.name,created:now,sample:which};
+    d.venue={name:s.venue.name,created:now,sample:which,seeded:s.exported||null}; // seeded: which copy of the file this is, so a newer build reloads it
     s.wines.forEach((w,i)=>{ d.wines[w.id]={...w,onList:true,order:i,addedAt:now-30*86400000}; });
     s.dishes.forEach((x,i)=>{ d.dishes[x.id]={...x,onMenu:true,order:i,addedAt:now}; });
     Object.values(s.cards).forEach(c=>{ d.cards[c.id]={...TeamData._cleanCard(c,d),at:now}; });
@@ -302,6 +302,9 @@ const TeamSample = {
     return true;
   },
   // The Larkspur's team (photos in team/faces/). The manager is first, so the demo opens as her.
+  /* Whether the restaurant on the device is this seed as the build now carries it. */
+  current(which){ const v=TeamData.get().venue||{}; if(v.sample!==which) return false;
+    const s=which==='demo'?_loadJSON('data/team-demo.json'):_loadJSON('data/team-sample.json'); return (v.seeded||null)===((s&&s.exported)||null); },
   DEMO_STAFF:[{name:'Elena Ruiz',role:'manager',photo:'faces/1.png'},{name:'Claire Whitfield',role:'sommelier',photo:'faces/3.png'},{name:'David Chen',role:'buyer',photo:'faces/6.png'},
     {name:'Marco Delgado',role:'bartender',photo:'faces/5.png'},{name:'Dani Haddad',role:'server',photo:'faces/2.png'},{name:'Priya Nair',role:'server',photo:'faces/7.png'},{name:'Amara Okafor',role:'server',photo:'faces/4.png'}],
 };

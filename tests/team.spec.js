@@ -247,3 +247,20 @@ test('the demo seeds staff at different stages of training', async ({ context, p
   await page.getByTestId('team-tab-team').click();
   await expect(page.locator('#root')).toContainText('1 ready, 1 slipping');
 });
+
+// A laptop that opened the demo before its training was written holds a stale Larkspur; the next
+// build's ?seed=demo replaces it, while a reload of the same build keeps what's there.
+test('?seed=demo replaces a Larkspur from an older build and keeps one from this build', async ({ context, page }) => {
+  await stubNetwork(context);
+  await page.goto(`${BASE}/team/?seed=demo`);
+  await expect(page.getByTestId('team-state')).toBeVisible();
+  const before = await page.evaluate(() => { const d = TeamData.get(); d.venue.seeded = 'older'; d.cards = {}; TeamData.save(d); return Object.keys(TeamData.get().cards).length; });
+  expect(before).toBe(0);
+  await page.goto(`${BASE}/team/?seed=demo`);
+  await expect(page.getByTestId('team-state')).toBeVisible();
+  expect(await page.evaluate(() => Object.keys(TeamData.get().cards).length)).toBe(60);
+  const marked = await page.evaluate(() => { const d = TeamData.get(); d.venue.name = 'Kept'; TeamData.save(d); return TeamSample.current('demo'); });
+  expect(marked).toBe(true);
+  await page.goto(`${BASE}/team/?seed=demo`);
+  await expect(page.locator('#root')).toContainText('Kept');
+});
