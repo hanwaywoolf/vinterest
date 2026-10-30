@@ -29,7 +29,8 @@ const TeamLearn = {
   },
   PART_LABEL:{glass:'By the glass',bottle:'Bottles',dishes:'Menu pairings'},
 
-  team(){ const t=Store.getJSON(this.KEY,null); return t&&t.people?t:{people:{},me:null,targets:{}}; },
+  team(){ const raw=Store.get(this.KEY); if(raw!==null&&raw===this._teamRaw) return this._teamVal;
+    const t=raw?Store.getJSON(this.KEY,null):null, v=t&&t.people?t:{people:{},me:null,targets:{}}; this._teamRaw=raw; this._teamVal=v; return v; },
   _saveTeam(t){ Store.setJSON(this.KEY,t); try{ window.dispatchEvent(new Event('vbiz:data')); }catch(e){} },
   people(){ return Object.values(this.team().people).sort((a,b)=>a.created-b.created); },
   person(id){ return this.team().people[id]||null; },
@@ -42,7 +43,9 @@ const TeamLearn = {
   need(role){ const t=this.team(); return {...this.ROLES[role].need,...((t.targets||{})[role]||{})}; },
   setNeed(role,part,v){ const t=this.team(); t.targets=t.targets||{}; t.targets[role]={...(t.targets[role]||{}),[part]:v}; this._saveTeam(t); },
 
-  _all(){ return Store.getJSON(this.PROGRESS,{})||{}; },
+  // Progress is read per question in the drill and the readiness figures; parsed once per stored text, as TeamData.get.
+  _all(){ const raw=Store.get(this.PROGRESS); if(raw!==null&&raw===this._allRaw) return this._allVal;
+    const v=(raw?Store.getJSON(this.PROGRESS,{}):null)||{}; this._allRaw=raw; this._allVal=v; return v; },
   _saveAll(p){ Store.setJSON(this.PROGRESS,p); },
   _mine(p,pid){ p[pid]=p[pid]||{items:{},checks:[],assigned:{}}; return p[pid]; },
 

@@ -33,11 +33,12 @@ One restaurant on one device, made to be shown to a restaurant before accounts e
 
 `/team/?seed=demo` opens The Larkspur (Bristol, modern British): 60 wines and 27 dishes
 (`data/team-demo-list.json`), and seven staff with circle-cropped photos (`team/faces/`, `TeamSample.DEMO_STAFF`).
-Once the training has been written (a manager publishes, then "Export this
-restaurant's list, menu and training as a file" and the file becomes `data/team-demo.json`), the demo
-opens with every card, pairing and drinking window in place and no network needed, and `TeamDemo.seedProgress`
-puts each person at a stage: Claire (sommelier) ready, Marco (bartender) slipping after three weeks without a
-drill, Dani (server) part way, Priya (server) overdue, Amara (server) in her first week, David (buyer) most of
+Its training is written: `data/team-demo.json` holds every staff card (six questions each), the pairings
+for all 27 dishes and a drinking window for each of the 53 dated wines, written once through the Worker
+(to rewrite it, publish from a fresh device, then "Export this restaurant's list, menu and training as a
+file" and replace the file), so the demo opens complete with no network needed, and `TeamDemo.seedProgress`
+puts each person at a stage: Claire (sommelier) ready, Marco (bartender) slipping at about half after three
+weeks without drilling the rest, Dani (server) part way, Priya (server) overdue, Amara (server) in her first week, David (buyer) most of
 the way. The live moment is **Add a wine from its label** on Upload: the consumer app's label scan reads the
 bottle, the manager sets its section and prices, the review says "1 new", and Publish writes its card, pairings
 and drinking window and assigns it to everyone who sells it.

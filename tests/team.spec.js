@@ -212,7 +212,8 @@ test('the demo restaurant: 60 wines, photos, and a wine added from its label upd
   await page.getByTestId('team-tab-wines').click();
   await expect(page.getByTestId('team-wine-row')).toHaveCount(60);
   await page.getByTestId('team-tab-upload').click();
-  await expect(page.getByTestId('team-pending')).toContainText('60 wines without a staff card, 27 dishes without pairings, 53 drinking windows to check');
+  // The demo file carries every card, pairing and window, so nothing is waiting to be written.
+  await expect(page.getByTestId('team-pending')).toHaveCount(0);
   await page.getByTestId('team-label-file').setInputFiles({ name: 'l.png', mimeType: 'image/png', buffer: PNG });
   await expect(page.getByTestId('team-found')).toBeVisible();
   await expect(page.getByLabel('Producer')).toHaveValue('Prunotto');
@@ -224,29 +225,20 @@ test('the demo restaurant: 60 wines, photos, and a wine added from its label upd
   const out = await page.evaluate(() => { const w = TeamData.wine('w-prunotto-barolo-bussia'); return { n: TeamData.wines().length, section: w.section, glass: w.glass, peak: w.peak && w.peak.to, card: !!TeamData.card(w.id), window: TeamData.window(w).word,
     assigned: TeamLearn.people().filter((p) => TeamLearn.assignments(p.id).some((a) => a.id === w.id)).length }; });
   expect(out).toMatchObject({ n: 61, section: 'Red', glass: '£16', peak: 2036, card: true, window: 'Still young', assigned: 7 });
-  // Publishing also catches up: the 60 wines that had no card yet get theirs (four a call), so 61 wines take 16 calls.
-  expect(reqs.filter((r) => r.purpose === 'team_cards')).toHaveLength(16);
+  // Only the new wine needs a card; the 60 the demo came with keep theirs.
+  expect(reqs.filter((r) => r.purpose === 'team_cards')).toHaveLength(1);
   await page.getByTestId('team-tab-wines').click();
   await page.getByText('Prunotto Barolo Bussia').click();
   await expect(page.getByTestId('team-window')).toContainText('Best from 2027 to 2036');
 });
 
-// With cards written, the demo seeds each person at a different stage: ready, slipping, part way,
-// overdue and just started, with surprise re-check history behind the retention figures.
+// With its cards in the demo file, loading the demo seeds each person at a different stage: ready,
+// slipping, part way, overdue and just started, with re-check history behind the retention figures.
 test('the demo seeds staff at different stages of training', async ({ context, page }) => {
   await stubNetwork(context);
   await page.goto(`${BASE}/team/?seed=demo`);
   await expect(page.getByTestId('team-state')).toBeVisible();
-  const states = await page.evaluate(() => {
-    // Stand-in cards for every wine, as the exported demo file will carry.
-    const d = TeamData.get();
-    TeamData.wines().forEach((w) => { d.cards[w.id] = { id: w.id, pitch: 'p', taste: 't', style: { body: 3, acid: 3, tannin: 3, sweet: 1 }, grape: 'g', place: 'p', producer: '', serve: {}, dishes: [], alts: [],
-      qs: ['recognise', 'recognise', 'recall', 'recall', 'apply', 'contrast'].map((k, i) => ({ id: w.id + '#' + i, k, q: `${k} ${w.name}?`, opts: ['a', 'b', 'c', 'd'], a: 0, ans: 'a', acc: [], key: ['a'], why: 'w' })) }; });
-    TeamData.dishes().forEach((x, i) => { d.pairings[x.id] = { best: [{ id: TeamData.wines()[i % 60].id, why: 'w' }, { id: TeamData.wines()[(i + 7) % 60].id, why: 'w' }], glass: null, avoid: null }; });
-    TeamData.save(d);
-    TeamDemo.seedProgress();
-    return Object.fromEntries(TeamLearn.people().map((p) => { const r = TeamLearn.readiness(p.id); return [p.name.split(' ')[0], { state: r.state, pct: r.pct, overdue: r.overdue }]; }));
-  });
+  const states = await page.evaluate(() => Object.fromEntries(TeamLearn.people().map((p) => { const r = TeamLearn.readiness(p.id); return [p.name.split(' ')[0], { state: r.state, pct: r.pct, overdue: r.overdue }]; })));
   expect(states.Claire.state).toBe('ready');
   expect(states.Marco.state).toBe('slipping');
   expect(states.Dani.pct).toBeGreaterThan(40); expect(states.Dani.pct).toBeLessThan(100);
