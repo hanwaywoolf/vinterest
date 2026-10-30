@@ -46,7 +46,7 @@ const TeamLearn = {
   // Progress is read per question in the drill and the readiness figures; parsed once per stored text, as TeamData.get.
   _all(){ const raw=Store.get(this.PROGRESS); if(raw!==null&&raw===this._allRaw) return this._allVal;
     const v=(raw?Store.getJSON(this.PROGRESS,{}):null)||{}; this._allRaw=raw; this._allVal=v; return v; },
-  _saveAll(p){ Store.setJSON(this.PROGRESS,p); },
+  _saveAll(p){ Store.setJSON(this.PROGRESS,p); try{ window.dispatchEvent(new Event('vbiz:data')); }catch(e){} }, // so Today redraws its figures after a drill
   _mine(p,pid){ p[pid]=p[pid]||{items:{},checks:[],assigned:{}}; return p[pid]; },
 
   /* Every question for a wine (its card's) and for a dish (written here from its pairing: no call). */
@@ -125,17 +125,19 @@ const TeamLearn = {
   /* Today's drill for a person: assigned new wines and dishes first, then what's due (least
      remembered first), then the next new questions in list order (by the glass first), and now and
      then an unannounced re-ask of something they know (a retention check). */
-  drill(pid,size=this.DRILL_SIZE){
+  // `part` ('glass' | 'bottle' | 'dishes') drills one part of the role's minimum alone, from Today's rows.
+  drill(pid,size=this.DRILL_SIZE,part=null){
     const person=this.person(pid); if(!person) return [];
     const role=person.role, kinds=this.ROLES[role].kinds, mine=this._mine(this._all(),pid), items=mine.items, now=Date.now();
-    const sc=this.scope(role), wines=[...sc.glass,...sc.bottle], dishes=sc.dishes;
+    const sc0=this.scope(role), sc=part?{glass:part==='glass'?sc0.glass:[],bottle:part==='bottle'?sc0.bottle:[],dishes:part==='dishes'?sc0.dishes:[]}:sc0, wines=[...sc.glass,...sc.bottle], dishes=sc.dishes;
+    const inPart=key=>!part||(key.startsWith('w:')?wines.some(w=>w.id===key.slice(2)):dishes.some(x=>x.id===key.slice(2)));
     const qsFor=w=>this.wineQs(w.id), out=[], has=id=>out.some(q=>q.id===id);
     const nextFor=(qs)=>{ // the lowest open rung's first question not yet answered right
       for(const k of this.LADDER){ if(!this._open(qs,items,k,kinds)) continue; const q=qs.find(q=>q.k===k&&!(items[q.id]&&items[q.id].reps)); if(q) return q; }
       return null;
     };
     const assigned=Object.entries(mine.assigned||{}).filter(([,a])=>!a.done).sort((a,b)=>a[1].due-b[1].due);
-    assigned.forEach(([key])=>{ if(out.length>=size) return; const [t,id]=[key.slice(0,1),key.slice(2)];
+    assigned.forEach(([key])=>{ if(out.length>=size||!inPart(key)) return; const [t,id]=[key.slice(0,1),key.slice(2)];
       const q=nextFor(t==='w'?qsFor({id}).filter(q=>kinds.includes(q.k)):this.dishQs(id)); if(q&&!has(q.id)) out.push(q); });
     const pool=[...wines.flatMap(qsFor),...dishes.flatMap(x=>this.dishQs(x.id))].filter(q=>kinds.includes(q.k)||q.dish);
     const byId=Object.fromEntries(pool.map(q=>[q.id,q]));

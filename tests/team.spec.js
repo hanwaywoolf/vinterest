@@ -26,7 +26,7 @@ async function openSample(context, page, opts = {}) {
 test('the sample restaurant opens on Today: not ready yet, with every wine and dish to learn', async ({ context, page }) => {
   const errors = await openSample(context, page);
   await expect(page.getByTestId('team-state')).toHaveText('Not ready yet');
-  await expect(page.locator('#root')).toContainText('0 of 7 · need 80%'); // seven wines by the glass, a manager's minimum
+  await expect(page.locator('#root')).toContainText('0 of 7 known · need 80%'); // seven wines by the glass, a manager's minimum
   await expect(page.locator('#root')).toContainText('New to learn (17)'); // ten wines and seven dishes
   await page.getByTestId('team-tab-wines').click();
   await expect(page.getByTestId('team-wine-row')).toHaveCount(10);
@@ -284,7 +284,7 @@ test('the drill asks typed questions as pills, keeps the wine out of the header 
   await page.goto(`${BASE}/team/`);
   await page.getByTestId('team-tab-wines').click();
   await page.getByText('Nyetimber Classic Cuvée').click();
-  await page.getByText('Practise this wine').click();
+  await page.getByText('Practise this wine').first().click();
   const seen = [];
   for (let i = 0; i < 5; i++) {
     const q = page.getByTestId('drill-q'); if (!(await q.isVisible().catch(() => false))) break;
@@ -304,4 +304,23 @@ test('the drill asks typed questions as pills, keeps the wine out of the header 
   await expect(page.getByTestId('drill-item')).toHaveCount(1);
   await expect(page.getByTestId('drill-item')).toContainText('Nyetimber Classic Cuvée');
   await expect(page.getByTestId('drill-item')).toContainText('Recognise');
+});
+
+// Today lets a person practise one part of their minimum (by the glass, bottles, pairings), and a
+// perfect run on a wine moves the figures: its answers are held, the bar fills, readiness rises.
+test('practise by the glass from Today, and a perfect wine moves the readiness figures', async ({ context, page }) => {
+  await stubNetwork(context);
+  await page.goto(`${BASE}/team/?seed=demo`);
+  await expect(page.getByTestId('team-state')).toBeVisible();
+  expect(await page.getByTestId('team-part').count()).toBe(3);
+  await page.getByTestId('team-part-practise').first().click();
+  await expect(page.getByTestId('drill-q')).toBeVisible();
+  const header = await page.locator('[data-testid="team-drill"] > div').nth(1).innerText();
+  expect(header).toMatch(/Sparkling|White|Red|Rosé|Sweet|Fortified|·/);
+  await page.goto(`${BASE}/team/`);
+  const moved = await page.evaluate(() => { const me = TeamLearn.me(); const before = TeamLearn.readiness(me.id).pct;
+    TeamLearn.wineQs('w-nyetimber-classic-cuvee').filter((q) => TeamLearn.ROLES[me.role].kinds.includes(q.k)).forEach((q) => TeamLearn.record(me.id, q, true, 'sure'));
+    return { before, after: TeamLearn.readiness(me.id).pct, known: TeamLearn.readiness(me.id).parts.glass.known }; });
+  expect(moved.after).toBeGreaterThan(moved.before); expect(moved.known).toBe(1);
+  await expect(page.getByTestId('team-part').first()).toContainText('1 of 27 known');
 });

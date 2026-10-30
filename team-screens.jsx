@@ -60,10 +60,13 @@ function TeamToday({pid,open}){ const T=useTheme(), cr=T.lift(C.cr);
       </div>
     </Card>
     <Card style={{marginTop:10}}>
-      {Object.entries(r.parts).map(([k,p])=><div key={k} style={{marginBottom:10}}>
-        <div style={{display:'flex',justifyContent:'space-between',fontSize:14,fontFamily:C.P,color:T.ink2}}><span>{TeamLearn.PART_LABEL[k]}</span><span>{p.known} of {p.total} · need {Math.round(p.need*100)}%</span></div>
-        <div style={{position:'relative',marginTop:5}}><Prog val={p.share} col={p.share>=p.need?'#5FD48F':cr} h={6}/><div style={{position:'absolute',left:`${p.need*100}%`,top:-3,width:2,height:12,background:T.ink,opacity:0.6}}/></div>
+      {Object.entries(r.parts).map(([k,p])=><div key={k} data-testid="team-part" style={{marginBottom:12}}>
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:8,fontSize:14,fontFamily:C.P,color:T.ink2}}><span style={{fontWeight:700,color:T.ink}}>{TeamLearn.PART_LABEL[k]}</span><span>{p.known} of {p.total} known · need {Math.round(p.need*100)}%</span></div>
+        <div style={{position:'relative',marginTop:5}}><Prog val={p.partial} col={p.share>=p.need?'#5FD48F':cr} h={6}/><div style={{position:'absolute',left:`${p.need*100}%`,top:-3,width:2,height:12,background:T.ink,opacity:0.6}}/></div>
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginTop:6}}><span style={{fontSize:12,color:T.mid,fontFamily:C.P}}>{Math.round(p.partial*100)}% of the answers held</span>
+          <span role="button" data-testid="team-part-practise" onClick={()=>open({view:'drill',part:k})} style={{fontSize:13,fontWeight:700,color:cr,fontFamily:C.P,cursor:'pointer'}}>Practise {TeamLearn.PART_LABEL[k].toLowerCase()} →</span></div>
       </div>)}
+      <div style={{fontSize:12,color:T.mid,fontFamily:C.P,lineHeight:1.45}}>A wine or dish is known once every question on it is right and still fresh; the bar fills with every answer you hold.</div>
       {ret.asked>=3&&<div style={{fontSize:13,color:T.mid,fontFamily:C.P}}>Surprise re-checks this month: {ret.right} of {ret.asked} remembered.</div>}
     </Card>
     <Btn primary full style={{marginTop:14}} onClick={()=>open({view:'drill'})}>{r.due||as.length?`Start today's drill`:'Practise'} · 5 questions</Btn>
@@ -78,8 +81,8 @@ function TeamToday({pid,open}){ const T=useTheme(), cr=T.lift(C.cr);
   </div>; }
 
 /* The drill: one question at a time, how sure they are, then what's right and why. */
-function TeamDrill({pid,only,back}){ const T=useTheme(), cr=T.lift(C.cr);
-  const [qs]=React.useState(()=>only?TeamLearn.wineQs(only).filter(q=>TeamLearn.ROLES[TeamLearn.person(pid).role].kinds.includes(q.k)):TeamLearn.drill(pid));
+function TeamDrill({pid,only,part,back}){ const T=useTheme(), cr=T.lift(C.cr);
+  const [qs]=React.useState(()=>only?TeamLearn.wineQs(only).filter(q=>TeamLearn.ROLES[TeamLearn.person(pid).role].kinds.includes(q.k)):TeamLearn.drill(pid,undefined,part||null));
   // Where they stood as the drill began, so the summary can say what moved.
   const [before]=React.useState(()=>{ const r=TeamLearn.readiness(pid); const items={};
     qs.forEach(q=>{ const id=q.wine||q.dish; if(id&&!items[id]) items[id]=TeamLearn.progress(pid,id,{dish:!q.wine}); }); return {pct:r?r.pct:0,items}; });
@@ -167,6 +170,7 @@ function TeamWine({id,pid,open}){ const T=useTheme(), w=TeamData.wine(id), c=Tea
     <div style={{fontSize:12,fontWeight:700,color:col,fontFamily:C.P,letterSpacing:'0.08em',textTransform:'uppercase'}}>{w.section||w.type}</div>
     {_tH(T,TeamData.short(w),[w.vintage||'NV',w.region,w.country].filter(Boolean).join(' · '))}
     <div style={{display:'flex',gap:6,flexWrap:'wrap',marginBottom:10}}>{w.glass&&<Pill sm>Glass {w.glass}</Pill>}{w.bottle&&<Pill sm>Bottle {w.bottle}</Pill>}{w.other&&<Pill sm>{w.other}</Pill>}{(w.grapes||[]).map(g=><Pill sm key={g}>{g}</Pill>)}</div>
+    {c&&<div style={{marginBottom:12}}><Btn small primary onClick={()=>open({view:'drill',only:id})}>Practise this wine</Btn></div>}
     {!c?<div data-testid="team-no-card"><Card>{busy?<WritingWait compact title="Writing this wine's staff card…" wine={{name:w.name,grapes:w.grapes,region:w.region}}/>:<>
         <div style={{fontSize:15,fontWeight:700,color:T.ink,fontFamily:C.P}}>No staff card yet</div>
         <div style={{fontSize:14,color:T.ink2,fontFamily:C.P,marginTop:4,lineHeight:1.5}}>{manager?'Write it here, or write every missing card from the Upload tab.':'Your manager writes the staff cards from the Upload tab.'}</div>

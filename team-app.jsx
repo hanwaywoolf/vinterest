@@ -26,7 +26,7 @@ function TeamApp(){
   let body;
   if(!set) body=<TeamSetup onDone={refresh}/>;
   else if(top) body=top.view==='wine'?<TeamWine id={top.id} pid={me.id} open={open}/>:top.view==='dish'?<TeamDish id={top.id} open={open}/>
-    :<TeamDrill key={stack.length} pid={me.id} only={top.only} back={back}/>;
+    :<TeamDrill key={stack.length} pid={me.id} only={top.only} part={top.part} back={back}/>;
   else body=tab==='today'?<TeamToday pid={me.id} open={open}/>:tab==='wines'?<TeamWines pid={me.id} open={open}/>:tab==='menu'?<TeamMenu open={open}/>
     :tab==='upload'?<TeamUpload onChanged={refresh}/>:<TeamPeople open={open} onChanged={refresh}/>;
   return <DeckTheme.Provider value={_DECK_DARK}>
