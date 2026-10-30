@@ -83,9 +83,11 @@ function TeamConsole({me,onPhone,refresh,section,setSection,open}){ const T=useT
   </div>; }
 /* The logo with TEAMS set under it, as one mark: the word takes the logo's width. */
 function TeamLogo({size=18}){ const T=useTheme(), cr=T.lift(C.cr);
-  return <div data-testid="team-logo" style={{display:'inline-flex',flexDirection:'column',alignItems:'stretch',width:'fit-content'}}>
+  // The column is as wide as the logo and no wider (the word's own width is 0, so it never sets the
+  // width); the letters are spread across exactly that, with no letter-spacing to trail past the end.
+  return <div data-testid="team-logo" style={{display:'inline-grid',gridTemplateColumns:'max-content',justifyItems:'stretch'}}>
     <img src="/logo.png" alt="Vinterest" style={{height:size,display:'block',filter:T.dark?'invert(1)':'none'}} onError={e=>{ e.target.style.display='none'; }}/>
-    <div aria-label="Teams" style={{display:'flex',justifyContent:'space-between',fontSize:Math.round(size*0.56)+'px',fontWeight:700,color:cr,fontFamily:C.P,letterSpacing:'0.1em',lineHeight:1,marginTop:3,paddingLeft:1}}>{'TEAMS'.split('').map((ch,i)=><span key={i}>{ch}</span>)}</div>
+    <div aria-label="Teams" style={{width:0,minWidth:'100%',display:'flex',justifyContent:'space-between',fontSize:Math.round(size*0.5)+'px',fontWeight:700,color:cr,fontFamily:C.P,lineHeight:1,marginTop:2}}>{'TEAMS'.split('').map((ch,i)=><span key={i}>{ch}</span>)}</div>
   </div>; }
 /* Console or the phone app, as a switch (a manager drills as someone on the phone view). */
 function _CViewToggle({phone,onPhone,onConsole,compact}){ const T=useTheme(), cr=T.lift(C.cr);
