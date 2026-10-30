@@ -54,9 +54,14 @@ Built for retention rather than points. No XP or streaks: the motivation is bein
 wine without being caught out.
 
 - **The ladder.** Each wine has six questions on four rungs: recognise (four options, first exposure
-  only), recall (typed), apply (a guest at a table, answered in their own words and marked by Claude
-  against the key, `prompts/team-grade.txt`) and contrast (telling it from the most similar wine on
-  the list). A rung opens once the one below is answered right. Servers and bartenders need the first
+  only), recall, apply (a guest at a table) and contrast (telling it from the most similar wine on
+  the list). Recall, apply and contrast are answered from pills (`TeamLearn.choices`: ten, with the
+  right ones among them, the three grapes or the three things to say, and the rest wrong but believable,
+  drawn from the same kind of answer on the list's other wines, a grape for a grape and a price for a
+  price; right only when the picked set is exactly right, `gradeChoices`), since typing on a phone mid
+  shift was too hard; `team_grade` stays for a typed mode later. The header over a question names the
+  wine only when the question itself does, never when the wine is the answer ("what would you offer
+  from the list"). A rung opens once the one below is answered right. Servers and bartenders need the first
   three; sommeliers and the buyer all four. Each dish has two questions written from its pairing,
   with no Claude call.
 - **The schedule.** Every question has its own review date, from how that person answered it: a

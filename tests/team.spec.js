@@ -264,3 +264,44 @@ test('?seed=demo replaces a Larkspur from an older build and keeps one from this
   await page.goto(`${BASE}/team/?seed=demo`);
   await expect(page.locator('#root')).toContainText('Kept');
 });
+
+// Recall, apply and contrast questions are answered from pills (ten, a few right), the header never
+// names the wine when the question is to pick it, and the summary shows each wine's rungs and the
+// readiness figure before and after.
+test('the drill asks typed questions as pills, keeps the wine out of the header when it is the answer, and sums up per wine', async ({ context, page }) => {
+  await stubNetwork(context);
+  await page.goto(`${BASE}/team/?seed=demo`);
+  await expect(page.getByTestId('team-state')).toBeVisible();
+  const r = await page.evaluate(() => {
+    const q = TeamLearn.wineQs('w-nyetimber-classic-cuvee');
+    const recall = TeamLearn.choices(q.find((x) => x.k === 'recall')), apply = TeamLearn.choices(q.find((x) => x.k === 'apply'));
+    return { recallN: recall.n, recallOpts: recall.opts.length, recallRight: recall.right.map((i) => recall.opts[i]).sort(), applyN: apply.n, applyOpts: apply.opts.length,
+      ok: TeamLearn.gradeChoices(q.find((x) => x.k === 'recall'), recall.right).ok, partly: TeamLearn.gradeChoices(q.find((x) => x.k === 'recall'), recall.right.slice(0, 1)).verdict };
+  });
+  expect(r).toMatchObject({ recallN: 3, recallOpts: 10, recallRight: ['Chardonnay', 'Pinot Meunier', 'Pinot Noir'], applyN: 3, applyOpts: 10, ok: true, partly: 'partly' });
+  // Drill Nyetimber alone as Dani (a server: recognise, recall, apply): the apply question's header must not name it.
+  await page.evaluate(() => { const dani = TeamLearn.people().find((p) => p.name.startsWith('Dani')); TeamLearn.setMe(dani.id); });
+  await page.goto(`${BASE}/team/`);
+  await page.getByTestId('team-tab-wines').click();
+  await page.getByText('Nyetimber Classic Cuvée').click();
+  await page.getByText('Practise this wine').click();
+  const seen = [];
+  for (let i = 0; i < 5; i++) {
+    const q = page.getByTestId('drill-q'); if (!(await q.isVisible().catch(() => false))) break;
+    const header = await page.locator('[data-testid="team-drill"] > div').nth(1).innerText();
+    const text = await q.innerText(); seen.push({ header, text });
+    if (/from the list/i.test(text)) expect(header).not.toMatch(/Nyetimber/i);
+    const choose = page.getByTestId('drill-choose');
+    if (await choose.isVisible().catch(() => false)) { const n = Number((await choose.innerText()).match(/Choose (\d+)/)[1]); for (let k = 0; k < n; k++) await page.getByTestId('drill-opt').nth(k).click(); }
+    else await page.getByTestId('drill-opt').first().click();
+    await page.getByText('Check', { exact: true }).click();
+    await expect(page.getByTestId('drill-result')).toBeVisible();
+    const btn = page.getByText(/^(Next|Finish)$/); await btn.click();
+    if (await page.getByTestId('drill-done').isVisible().catch(() => false)) break;
+  }
+  await expect(page.getByTestId('drill-done')).toBeVisible();
+  await expect(page.getByTestId('drill-done')).toContainText(/Readiness \d+% → \d+%/);
+  await expect(page.getByTestId('drill-item')).toHaveCount(1);
+  await expect(page.getByTestId('drill-item')).toContainText('Nyetimber Classic Cuvée');
+  await expect(page.getByTestId('drill-item')).toContainText('Recognise');
+});

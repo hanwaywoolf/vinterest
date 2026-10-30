@@ -80,39 +80,57 @@ function TeamToday({pid,open}){ const T=useTheme(), cr=T.lift(C.cr);
 /* The drill: one question at a time, how sure they are, then what's right and why. */
 function TeamDrill({pid,only,back}){ const T=useTheme(), cr=T.lift(C.cr);
   const [qs]=React.useState(()=>only?TeamLearn.wineQs(only).filter(q=>TeamLearn.ROLES[TeamLearn.person(pid).role].kinds.includes(q.k)):TeamLearn.drill(pid));
-  const [i,setI]=React.useState(0), [ans,setAns]=React.useState(null), [text,setText]=React.useState(''), [sure,setSure]=React.useState('think');
+  // Where they stood as the drill began, so the summary can say what moved.
+  const [before]=React.useState(()=>{ const r=TeamLearn.readiness(pid); const items={};
+    qs.forEach(q=>{ const id=q.wine||q.dish; if(id&&!items[id]) items[id]=TeamLearn.progress(pid,id,{dish:!q.wine}); }); return {pct:r?r.pct:0,items}; });
+  const [i,setI]=React.useState(0), [ans,setAns]=React.useState(null), [picks,setPicks]=React.useState([]), [sure,setSure]=React.useState('think');
   const [res,setRes]=React.useState(null), [busy,setBusy]=React.useState(false), [tally,setTally]=React.useState({right:0,of:0});
   const q=qs[i];
   if(!qs.length) return <div>{_tH(T,'Nothing to drill yet','Your training appears once the wine list has staff cards.')}<Btn full onClick={back}>Back</Btn></div>;
-  if(!q){ const r=TeamLearn.note(pid);
+  if(!q){ const r=TeamLearn.note(pid), rise=r.pct-before.pct;
+    const rows=Object.entries(before.items).map(([id,was])=>{ const dish=!qs.some(x=>x.wine===id), now=TeamLearn.progress(pid,id,{dish}), name=dish?(TeamData.dish(id)||{}).name:TeamData.short(TeamData.wine(id)||{}); return {id,name,was,now,dish}; });
     return <div data-testid="drill-done">{_tH(T,`${tally.right} of ${tally.of} right`,'Each answer now has its own review date: the ones you missed come back soonest.')}
-      <Card style={{display:'flex',gap:14,alignItems:'center'}}><TeamRing pct={r.pct} col={_tState[r.state].col} size={72}/><div style={{fontSize:15,fontWeight:700,color:_tState[r.state].col,fontFamily:C.P}}>{_tState[r.state].label}</div></Card>
+      <Card>
+        <div style={{display:'flex',gap:14,alignItems:'center'}}><TeamRing pct={r.pct} col={_tState[r.state].col} size={72}/>
+          <div><div data-testid="drill-readiness" style={{fontSize:15,fontWeight:700,color:_tState[r.state].col,fontFamily:C.P}}>{_tState[r.state].label}</div>
+            <div style={{fontSize:14,color:T.ink2,fontFamily:C.P,marginTop:2}}>Readiness {before.pct}% → {r.pct}%{rise>0?<span style={{color:'#5FD48F',fontWeight:700}}> ▲{rise}</span>:rise<0?<span style={{color:'#F28B7D',fontWeight:700}}> ▼{-rise}</span>:' · no change'}</div></div></div>
+        <div style={{fontSize:13,color:T.mid,fontFamily:C.P,marginTop:10,lineHeight:1.45}}>Every answer you hold counts a little; a wine counts in full for the minimum once every rung is right and still fresh.</div>
+      </Card>
+      {_tLabel(T,'In this drill')}<Card style={{padding:0}}>{rows.map((x,k)=><div key={x.id} data-testid="drill-item" style={{padding:'10px 14px',borderTop:k?`1px solid ${T.line}`:'none'}}>
+        <div style={{display:'flex',justifyContent:'space-between',gap:10,fontSize:15,fontFamily:C.P,color:T.ink}}><span style={{fontWeight:700}}>{x.name}</span><span style={{color:x.now.known>x.was.known?'#5FD48F':T.ink2,whiteSpace:'nowrap'}}>{x.now.known} of {x.now.total}{x.now.known>x.was.known?` ▲${x.now.known-x.was.known}`:x.now.known<x.was.known?` ▼${x.was.known-x.now.known}`:''}</span></div>
+        {x.now.rungs.length>0&&<div style={{display:'flex',gap:6,flexWrap:'wrap',marginTop:6}}>{x.now.rungs.map(rg=><span key={rg.k} style={{fontSize:12,fontFamily:C.P,padding:'3px 8px',borderRadius:8,border:`1px solid ${rg.done?'#5FD48F':T.line}`,color:rg.done?'#5FD48F':T.mid}}>{rg.done?'✓ ':''}{rg.label}</span>)}</div>}
+      </div>)}</Card>
       <Btn primary full style={{marginTop:14}} onClick={back}>Done</Btn></div>; }
-  const w=q.wine?TeamData.wine(q.wine):null, typed=q.k!=='recognise';
-  const submit=async()=>{ if(busy) return; const a=typed?text:ans; if(a===null||(typed&&!String(a).trim())) return;
-    setBusy(true); const g=await TeamLearn.grade(q,a); setBusy(false);
+  const w=q.wine?TeamData.wine(q.wine):null, multi=q.k!=='recognise', ch=multi?TeamLearn.choices(q):null;
+  // The wine is named over the question only when the question itself names it: "what would you offer from the list" must not say.
+  const names=w&&new RegExp(TeamData.short(w).replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'i').test(q.q);
+  const submit=async()=>{ if(busy) return; if(multi?!picks.length:ans===null) return;
+    setBusy(true); const g=multi?TeamLearn.gradeChoices(q,picks):await TeamLearn.grade(q,ans); setBusy(false);
     if(!g.offline) TeamLearn.record(pid,q,g.ok,sure);
     setRes(g); setTally(t=>({right:t.right+(g.ok?1:0),of:t.of+1})); };
-  const next=()=>{ setI(i+1); setAns(null); setText(''); setRes(null); setSure('think'); };
-  const kindLabel={recognise:'Recognise',recall:'Recall',apply:'At the table',contrast:'Tell them apart'}[q.k];
+  const next=()=>{ setI(i+1); setAns(null); setPicks([]); setRes(null); setSure('think'); };
+  const kindLabel=TeamLearn.KIND_LABEL[q.k];
+  const opt=(label,k,{picked,right,wrong,onClick})=><div key={k} role="button" aria-pressed={picked} data-testid="drill-opt" onClick={onClick} style={{padding:'12px 14px',borderRadius:12,border:`1.5px solid ${right?'#5FD48F':wrong?'#F28B7D':picked?cr:T.line}`,background:picked?T.soft:'transparent',color:T.ink,fontSize:15,fontFamily:C.P,cursor:res?'default':'pointer',lineHeight:1.35}}>{label}</div>;
   return <div data-testid="team-drill">
     <div style={{display:'flex',gap:4,marginBottom:14}}>{qs.map((_,k)=><div key={k} style={{flex:1,height:4,borderRadius:2,background:k<i?cr:k===i?T.ink:T.line}}/>)}</div>
-    <div style={{fontSize:12,fontWeight:700,color:w?_tTypeCol(T,w.type):T.mid,fontFamily:C.P,letterSpacing:'0.08em',textTransform:'uppercase'}}>{kindLabel}{w?` · ${TeamData.short(w)}`:''}</div>
+    <div style={{fontSize:12,fontWeight:700,color:w?_tTypeCol(T,w.type):T.mid,fontFamily:C.P,letterSpacing:'0.08em',textTransform:'uppercase'}}>{kindLabel}{w&&names?` · ${TeamData.short(w)}`:w?` · ${w.section||w.type}`:''}</div>
     <div data-testid="drill-q" style={{fontSize:19,fontWeight:700,color:T.ink,fontFamily:C.P,lineHeight:1.35,margin:'6px 0 14px'}}>{q.q}</div>
-    {!typed&&<div style={{display:'flex',flexDirection:'column',gap:8}}>{q.opts.map((o,k)=>{ const picked=ans===k, right=res&&k===q.a, wrong=res&&picked&&k!==q.a;
-      return <div key={k} role="button" data-testid="drill-opt" onClick={()=>!res&&setAns(k)} style={{padding:'12px 14px',borderRadius:12,border:`1.5px solid ${right?'#5FD48F':wrong?'#F28B7D':picked?cr:T.line}`,background:picked?T.soft:'transparent',color:T.ink,fontSize:15,fontFamily:C.P,cursor:res?'default':'pointer'}}>{o}</div>; })}</div>}
-    {typed&&<textarea data-testid="drill-text" aria-label="Your answer" value={text} disabled={!!res} onChange={e=>setText(e.target.value)} rows={q.k==='apply'?4:2} placeholder={q.k==='apply'?'What would you say to the guest?':'Your answer'}
-      style={{width:'100%',padding:'12px 14px',borderRadius:12,border:`1px solid ${T.line}`,background:T.soft,color:T.ink,fontFamily:C.P,fontSize:16,outline:'none',resize:'none'}}/>}
+    {!multi&&<div style={{display:'flex',flexDirection:'column',gap:8}}>{q.opts.map((o,k)=>opt(o,k,{picked:ans===k,right:res&&k===q.a,wrong:res&&ans===k&&k!==q.a,onClick:()=>!res&&setAns(k)}))}</div>}
+    {multi&&<>
+      <div data-testid="drill-choose" style={{fontSize:13,color:T.mid,fontFamily:C.P,marginBottom:8}}>Choose {ch.n}{picks.length?` · ${picks.length} picked`:''}</div>
+      <div style={{display:'flex',flexDirection:'column',gap:8}}>{ch.opts.map((o,k)=>{ const picked=picks.includes(k), isRight=ch.right.includes(k);
+        return opt(o,k,{picked,right:res&&isRight,wrong:res&&picked&&!isRight,onClick:()=>{ if(res) return; setPicks(p=>picked?p.filter(x=>x!==k):p.length<ch.n?[...p,k]:p); }}); })}</div>
+    </>}
     {!res&&<>
       <div style={{fontSize:13,color:T.mid,fontFamily:C.P,margin:'14px 0 6px'}}>How sure are you?</div>
       <div style={{display:'flex',gap:6}}>{[['sure','Sure'],['think','Think so'],['guess','Guessing']].map(([k,l])=><div key={k} role="button" onClick={()=>setSure(k)} style={{flex:1,textAlign:'center',padding:'8px 0',borderRadius:10,border:`1px solid ${sure===k?cr:T.line}`,background:sure===k?T.soft:'transparent',color:sure===k?T.ink:T.mid,fontSize:14,fontFamily:C.P,cursor:'pointer'}}>{l}</div>)}</div>
-      <Btn primary full style={{marginTop:14,opacity:(typed?text.trim():ans!==null)?1:0.45}} onClick={submit}>{busy?'Marking…':'Check'}</Btn>
+      <Btn primary full style={{marginTop:14,opacity:(multi?picks.length:ans!==null)?1:0.45}} onClick={submit}>{busy?'Marking…':'Check'}</Btn>
     </>}
     {res&&<div data-testid="drill-result" style={{marginTop:14}}>
       <Card>
         <div style={{fontSize:17,fontWeight:800,fontFamily:C.P,color:res.ok?'#5FD48F':res.verdict==='partly'?'#F2B84B':res.offline?T.mid:'#F28B7D'}}>{res.ok?'Right':res.verdict==='partly'?'Partly':res.offline?'Not marked':'Not quite'}{q.check?' · surprise re-check':''}</div>
-        {!res.ok&&q.k!=='apply'&&<div style={{fontSize:14,color:T.ink2,fontFamily:C.P,marginTop:4}}>The answer: <b>{q.k==='recognise'?q.opts[q.a]:q.ans}</b></div>}
-        {q.k==='apply'&&<div style={{fontSize:14,color:T.ink2,fontFamily:C.P,marginTop:4}}>A good answer: {q.key.join('; ')}.</div>}
+        {!res.ok&&!multi&&<div style={{fontSize:14,color:T.ink2,fontFamily:C.P,marginTop:4}}>The answer: <b>{q.opts[q.a]}</b></div>}
+        {!res.ok&&multi&&<div style={{fontSize:14,color:T.ink2,fontFamily:C.P,marginTop:4}}>{ch.n===1?'The answer is':'The right ones are'} in green above.</div>}
         {res.say&&<div style={{fontSize:15,color:T.ink,fontFamily:C.P,marginTop:8,lineHeight:1.5}}>{res.say}</div>}
         {q.why&&<div style={{fontSize:15,color:T.ink2,fontFamily:C.P,marginTop:8,lineHeight:1.5}}>{q.why}</div>}
       </Card>

@@ -88,6 +88,17 @@ const TeamLearn = {
   },
   knowsWine(pid,role,id,items){ const kinds=this.ROLES[role].kinds, qs=this.wineQs(id).filter(q=>kinds.includes(q.k)); return qs.length>0&&qs.every(q=>this.known(items[q.id])); },
   knowsDish(pid,id,items){ const qs=this.dishQs(id); return qs.length>0&&qs.every(q=>this.known(items[q.id])); },
+  /* How much of a wine (the role's questions) or a dish they hold today: {known, total, rungs:[{k,label,done}]}.
+     The drill's summary shows it per wine, and readiness counts it as partial credit. */
+  progress(pid,id,{dish=false}={}){
+    const person=this.person(pid); if(!person) return {known:0,total:0,rungs:[]};
+    const items=this._mine(this._all(),pid).items;
+    if(dish){ const qs=this.dishQs(id); return {known:qs.filter(q=>this.known(items[q.id])).length,total:qs.length,rungs:[]}; }
+    const kinds=this.ROLES[person.role].kinds, qs=this.wineQs(id).filter(q=>kinds.includes(q.k));
+    const rungs=this.LADDER.filter(k=>kinds.includes(k)).map(k=>{ const rq=qs.filter(q=>q.k===k); return {k,label:this.KIND_LABEL[k],done:rq.length>0&&rq.every(q=>this.known(items[q.id]))}; });
+    return {known:qs.filter(q=>this.known(items[q.id])).length,total:qs.length,rungs};
+  },
+  KIND_LABEL:{recognise:'Recognise',recall:'Recall',apply:'At the table',contrast:'Tell them apart'},
 
   /* {pct, parts:{glass:{known,total,need,share}}, state:'ready'|'slipping'|'not', overdue, due} */
   readiness(pid){
@@ -97,10 +108,12 @@ const TeamLearn = {
     ['glass','bottle','dishes'].forEach(k=>{
       if(!need[k]) return;
       const list=sc[k], known=list.filter(x=>k==='dishes'?this.knowsDish(pid,x.id,items):this.knowsWine(pid,role,x.id,items)).length;
-      parts[k]={known,total:list.length,need:need[k],share:list.length?known/list.length:1};
+      // partial: every answer they hold counts, so the figure moves with each drill; a wine is known (for the minimum) only whole.
+      const partial=list.reduce((a,x)=>{ const pr=this.progress(pid,x.id,{dish:k==='dishes'}); return a+(pr.total?pr.known/pr.total:0); },0);
+      parts[k]={known,total:list.length,need:need[k],share:list.length?known/list.length:1,partial:list.length?partial/list.length:1};
     });
     const ks=Object.keys(parts), met=ks.every(k=>parts[k].share>=parts[k].need-1e-9);
-    const pct=ks.length?Math.round(100*ks.reduce((a,k)=>a+Math.min(1,parts[k].share/parts[k].need),0)/ks.length):0;
+    const pct=ks.length?Math.round(100*ks.reduce((a,k)=>a+Math.min(1,parts[k].partial/parts[k].need),0)/ks.length):0;
     const overdue=Object.values(mine.assigned||{}).filter(a=>!a.done&&a.due<now).length;
     const due=Object.values(items).filter(it=>it.reps&&it.due<=now).length;
     return {pct,parts,state:met?'ready':mine.wasReady?'slipping':'not',overdue,due,role};
@@ -146,6 +159,44 @@ const TeamLearn = {
   localMatch(q,answer){
     const a=this._norm(answer); if(!a) return false;
     return [q.ans,...(q.acc||[])].filter(Boolean).map(x=>this._norm(x)).some(k=>k===a||(k.length>3&&(a.includes(k)||(a.length>3&&k.includes(a)&&a.length>=k.length*0.6)))||(k.length>4&&this._lev(k,a)<=Math.floor(k.length/6)+1));
+  },
+  /* Typed answers were hard on a phone, so every recall, apply and contrast question is answered by
+     picking from CHOICES (10) pills, several right (the three grapes, the three things to say) and the
+     rest wrong but believable, drawn from the same kind of answer on the other wines of this list.
+     {opts, right: indices, n}. Fixed per question (seeded by its id). */
+  CHOICES:10,
+  choices(q){
+    const norm=x=>String(x).toLowerCase().replace(/[^a-z0-9£$€%]+/g,' ').trim();
+    // A list answer ("Chardonnay, Pinot Noir and Pinot Meunier") becomes one pill per item; a sentence with a comma stays one pill.
+    const split=a=>{ const ps=String(a||'').split(/,|\band\b|;/).map(x=>x.trim()).filter(Boolean); return ps.length>=2&&ps.every(x=>x.split(/\s+/).length<=3)?ps:[String(a||'').trim()].filter(Boolean); };
+    let right;
+    if(q.k==='apply') right=[...(q.key||[])];
+    else if(q.k==='contrast') right=[q.ans,...(q.acc||[])].filter(Boolean);
+    else { right=split(q.ans); }
+    right=right.filter((x,i,a)=>a.findIndex(y=>norm(y)===norm(x))===i).slice(0,3);
+    const seen=new Set(right.map(norm)), pool=[], wines=TeamData.wines();
+    const add=x=>{ const n=norm(x); if(!n||seen.has(n)) return; seen.add(n); pool.push(String(x).trim()); };
+    // Wrong answers of the same kind as the right ones: a grape for a grape, a place for a place, a price
+    // for a price, a figure for a figure; then the other wines' answers to this kind of question.
+    const grapes=new Set(wines.flatMap(w=>w.grapes||[]).map(norm)), places=new Set(wines.flatMap(w=>[w.region,w.country]).filter(Boolean).map(norm));
+    const cls=x=>grapes.has(norm(x))?'grape':places.has(norm(x))?'place':/[£$€]/.test(x)?'money':/\d/.test(x)?'figure':'text';
+    const want=cls(right[0]||'');
+    if(want==='grape') wines.flatMap(w=>w.grapes||[]).forEach(add);
+    if(want==='place') wines.flatMap(w=>[w.region,w.country]).filter(Boolean).forEach(add);
+    const alike=[...pool];
+    for(const w of wines){ if(w.id===q.wine) continue; for(const o of this.wineQs(w.id)){ if(o.k!==q.k) continue;
+      if(o.k==='apply') (o.key||[]).forEach(add); else if(o.k==='contrast') [o.ans,...(o.acc||[])].forEach(add); else split(o.ans).forEach(add); } }
+    const same=pool.filter(x=>!alike.includes(x)&&cls(x)===want), rest=pool.filter(x=>!alike.includes(x)&&!same.includes(x));
+    const wrong=[...this._shuffle(alike,q.id+'a'),...this._shuffle(same,q.id+'b'),...this._shuffle(rest,q.id+'d')].slice(0,Math.max(0,this.CHOICES-right.length));
+    const all=[...right.map(x=>({x,ok:true})),...wrong.map(x=>({x,ok:false}))], order=this._shuffle(all.map((_,i)=>i),q.id+'c');
+    const opts=order.map(i=>all[i].x), rightIdx=order.map((i,j)=>all[i].ok?j:-1).filter(j=>j>=0);
+    return {opts,right:rightIdx,n:rightIdx.length};
+  },
+  /* Marks a set of picked pills: right only when it's exactly the right set; partly when some of it is. */
+  gradeChoices(q,picked){
+    const {right}=this.choices(q), a=new Set(picked||[]), hit=right.filter(i=>a.has(i)).length, extra=[...a].filter(i=>!right.includes(i)).length;
+    if(hit===right.length&&!extra) return {ok:true,score:1,verdict:'right'};
+    return {ok:false,score:right.length?Math.max(0,hit-extra)/right.length:0,verdict:hit>0&&hit>=extra?'partly':'wrong'};
   },
   async grade(q,answer){
     if(q.k==='recognise') return answer===q.a?{ok:true,score:1,verdict:'right'}:{ok:false,score:0,verdict:'wrong'};
