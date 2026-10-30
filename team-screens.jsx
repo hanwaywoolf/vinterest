@@ -13,6 +13,33 @@ function TeamFace({person,size=36,ring}){ const T=useTheme();
   return person&&person.photo?<img src={person.photo} alt="" width={size} height={size} style={{...st,objectFit:'cover',display:'block'}}/>
     :<div aria-hidden="true" style={{...st,background:T.soft,border:`1px solid ${T.line}`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:size*0.38+'px',fontWeight:700,color:T.ink2,fontFamily:C.P}}>{init}</div>; }
 function _tDays(ms){ const d=Math.round((ms-Date.now())/86400000); return d<0?`${-d} day${d===-1?'':'s'} overdue`:d===0?'due today':`due in ${d} day${d===1?'':'s'}`; }
+/* The background job after a publish (TeamJobs): re-renders on every step. */
+function useTeamJob(){ const [,bump]=React.useReducer(x=>x+1,0); React.useEffect(()=>{ window.addEventListener('vbiz:job',bump); return ()=>window.removeEventListener('vbiz:job',bump); },[]); return TeamJobs.current(); }
+/* Where the writing is, as a strip the manager can leave alone: the step and its count with a thin bar
+   while it runs, "Published" when done, and the reason with Resume if it stopped. A tap opens Upload. */
+function TeamJobChip({onOpen,style}){ const T=useTheme(), cr=T.lift(C.cr), job=useTeamJob(); if(!job) return null;
+  const col=job.error?T.amber:job.done?T.green:cr;
+  return <div data-testid="team-job" data-state={job.error?'error':job.done?'done':'running'} role="button" onClick={onOpen} style={{display:'flex',alignItems:'center',gap:10,padding:'9px 12px',borderRadius:12,border:`1px solid ${col}66`,background:T.soft,marginBottom:12,cursor:'pointer',...style}}>
+    <div style={{flex:1,minWidth:0}}>
+      <div style={{display:'flex',justifyContent:'space-between',gap:8,fontSize:13,fontFamily:C.P,color:T.ink}}><span style={{fontWeight:700,color:col}}>{job.error?'Writing stopped':job.done?'Published':'Writing in the background'}</span><span style={{color:T.mid,whiteSpace:'nowrap'}}>{job.error?'':job.done?'Training is up to date':job.b?`${job.step} · ${job.a} of ${job.b}`:job.step}</span></div>
+      {job.error?<div style={{fontSize:12,color:T.ink2,fontFamily:C.P,marginTop:2}}>{job.error} What was written is kept.</div>:!job.done&&<Prog val={job.b?job.a/job.b:0.05} col={cr} h={4} style={{marginTop:6}}/>}
+    </div>
+    {!job.running&&<div role="button" aria-label="Dismiss" onClick={e=>{ e.stopPropagation(); TeamJobs.dismiss(); }} style={{width:26,height:26,borderRadius:13,border:`1px solid ${T.line}`,display:'flex',alignItems:'center',justifyContent:'center',color:T.mid,fontFamily:C.P,fontSize:14,flexShrink:0}}>×</div>}
+  </div>; }
+/* The figures a manager wants on the move, on the phone's Today: the console has the rest. */
+function TeamKpiStrip({open}){ const T=useTheme(), o=TeamReport.overview(), s=TeamReport.salesSummary(7);
+  const tile=(label,value,sub,col,onClick,testid)=><div key={label} role="button" data-testid={testid} onClick={onClick} style={{flex:'1 1 120px',padding:'10px 12px',borderRadius:12,border:`1px solid ${T.line}`,background:T.soft,cursor:'pointer',minWidth:0}}>
+    <div style={{fontSize:12,color:T.mid,fontFamily:C.P}}>{label}</div><div style={{fontSize:22,fontWeight:700,color:col||T.ink,fontFamily:C.P,lineHeight:1.1,marginTop:2}}>{value}</div>{sub&&<div style={{fontSize:11,color:T.mid,fontFamily:C.P,marginTop:2,lineHeight:1.35}}>{sub}</div>}</div>;
+  return <div data-testid="team-kpis" style={{marginBottom:14}}>
+    <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
+      {tile('Team readiness',`${o.avg}%`,`${o.ready} of ${o.total} ready`,null,()=>open({tab:'team'}),'kpi-readiness')}
+      {tile('Overdue',o.overdue,o.overdue?'assignments':'none',o.overdue?T.tone.bad:null,()=>open({tab:'team'}))}
+      {tile('Slipping',o.slipping,o.slipping?'were ready':'none',o.slipping?T.amber:null,()=>open({tab:'team'}))}
+      {o.adoption.length>0&&tile('New on the list',o.adoption.length,`${o.adoption.filter(a=>a.knows<a.of).length} not yet known by all`,null,()=>open({tab:'wines'}))}
+      {s&&tile('Wine sales, 7 nights',`£${Math.round(s.revenue)}`,`${s.delta.revenue==null?'':(s.delta.revenue>0?'▲':'▼')+Math.abs(s.delta.revenue)+'% · '}${TeamSales.demo()?'demo data':'from the till'}`,null,()=>open({tab:'team'}),'kpi-sales')}
+    </div>
+    <div style={{fontSize:12,color:T.mid,fontFamily:C.P,marginTop:6}}>Open this on a tablet or a laptop for the whole console.</div>
+  </div>; }
 
 /* A ring for a readiness figure. */
 function TeamRing({pct,col,size=88}){ const T=useTheme(), r=size/2-7, c=2*Math.PI*r;
@@ -51,6 +78,7 @@ function TeamToday({pid,open}){ const T=useTheme(), cr=T.lift(C.cr);
   return <div>
     <div style={{display:'flex',alignItems:'center',gap:14,marginBottom:12}}><TeamFace person={person} size={64} ring={st.col}/>
       <div><div style={{fontSize:22,fontWeight:800,color:T.ink,fontFamily:C.P,lineHeight:1.2}}>Hi {person.name.split(' ')[0]}</div><div style={{fontSize:14,color:T.mid,fontFamily:C.P,marginTop:3}}>{TeamLearn.ROLES[person.role].label} at {TeamData.get().venue.name||'your restaurant'}</div></div></div>
+    {!empty&&['manager','buyer'].includes(person.role)&&<TeamKpiStrip open={open}/>}
     {empty?<Card><div style={{fontSize:15,color:T.ink2,fontFamily:C.P,lineHeight:1.5}}>No wine list yet. {TeamLearn.ROLES[person.role].label==='Manager'||person.role==='buyer'?'Upload it from the Upload tab and your training is written from it.':'Your manager uploads it, then your training appears here.'}</div></Card>:<>
     <Card style={{display:'flex',gap:14,alignItems:'center'}}>
       <TeamRing pct={r.pct} col={st.col}/>
@@ -158,7 +186,8 @@ function TeamWines({pid,open}){ const T=useTheme();
   </div>; }
 
 /* A wine's staff card. */
-function TeamWine({id,pid,open}){ const T=useTheme(), w=TeamData.wine(id), c=TeamData.card(id);
+function TeamWine({id,pid,open,manage}){ const T=useTheme(), w=TeamData.wine(id), c=TeamData.card(id);
+  const [editing,setEditing]=React.useState(false), [pitch,setPitch]=React.useState('');
   // No card yet: nothing on this screen writes one by itself. A manager writes this one here; anyone
   // else is told who does. A failed write says so, never a wait that doesn't end.
   const me=TeamLearn.person?TeamLearn.person(pid):null, manager=me&&['manager','buyer'].includes(me.role);
@@ -176,7 +205,11 @@ function TeamWine({id,pid,open}){ const T=useTheme(), w=TeamData.wine(id), c=Tea
         <div style={{fontSize:14,color:T.ink2,fontFamily:C.P,marginTop:4,lineHeight:1.5}}>{manager?'Write it here, or write every missing card from the Upload tab.':'Your manager writes the staff cards from the Upload tab.'}</div>
         {err&&<div data-testid="team-card-error" style={{fontSize:14,color:'#F2B84B',fontFamily:C.P,marginTop:6}}>{err}</div>}
         {manager&&<div style={{marginTop:10}}><Btn small primary onClick={writeIt}>{err?'Try again':'Write it now'}</Btn></div>}</>}</Card></div>:<>
-      <Card style={{borderColor:col+'66'}}><div style={{fontSize:12,fontWeight:700,color:T.mid,fontFamily:C.P,textTransform:'uppercase',letterSpacing:'0.08em'}}>Say it to a guest</div><div data-testid="team-pitch" style={{fontSize:17,color:T.ink,fontFamily:C.P,lineHeight:1.5,marginTop:6}}>{c.pitch}</div></Card>
+      <Card style={{borderColor:col+'66'}}><div style={{display:'flex',justifyContent:'space-between',gap:8}}><div style={{fontSize:12,fontWeight:700,color:T.mid,fontFamily:C.P,textTransform:'uppercase',letterSpacing:'0.08em'}}>Say it to a guest{c.edited?' · edited by a manager':''}</div>{manage&&!editing&&<span role="button" data-testid="team-pitch-edit" onClick={()=>{ setPitch(c.pitch||''); setEditing(true); }} style={{fontSize:13,fontWeight:700,color:T.lift(C.cr),fontFamily:C.P,cursor:'pointer'}}>Edit</span>}</div>
+        {editing?<div style={{marginTop:6}}><textarea aria-label="What to say" value={pitch} onChange={e=>setPitch(e.target.value)} rows={4} style={{width:'100%',padding:'10px 12px',borderRadius:10,border:`1px solid ${T.line}`,background:T.soft,color:T.ink,fontFamily:C.P,fontSize:15,lineHeight:1.5,outline:'none',resize:'vertical'}}/>
+          <div style={{display:'flex',gap:8,marginTop:8}}><Btn small primary onClick={()=>{ if(pitch.trim()) TeamData.setCard(id,{pitch:pitch.trim()}); setEditing(false); }}>Save</Btn><Btn small onClick={()=>setEditing(false)}>Cancel</Btn></div>
+          <div style={{fontSize:12,color:T.mid,fontFamily:C.P,marginTop:6}}>Your words replace the written line on every phone at once; the questions stay as they are.</div></div>
+        :<div data-testid="team-pitch" style={{fontSize:17,color:T.ink,fontFamily:C.P,lineHeight:1.5,marginTop:6}}>{c.pitch}</div>}</Card>
       {_tLabel(T,'What it tastes like')}<Card><div style={{fontSize:15,color:T.ink2,fontFamily:C.P,lineHeight:1.5,marginBottom:10}}>{c.taste}</div>
         {c.style&&<>{bar('b','Body',c.style.body,Palate.HOW.body)}{bar('a','Acidity',c.style.acid,Palate.HOW.acidity)}{w.type==='red'||c.style.tannin?bar('t','Tannin',c.style.tannin,Palate.HOW.tannins):null}{bar('s','Sweetness',c.style.sweet)}</>}</Card>
       {_tLabel(T,'Grape and place')}<Card><div style={{fontSize:15,color:T.ink2,fontFamily:C.P,lineHeight:1.55}}>{c.grape} {c.place}{c.producer?' '+c.producer:''}</div></Card>
@@ -232,7 +265,7 @@ function _tReadFile(file){ return new Promise((res,rej)=>{ const fr=new FileRead
   fr.onerror=rej; fr.readAsDataURL(file); }); }
 
 /* Upload a list or menu, review what changed, publish, and watch the training get written. */
-function TeamUpload({onChanged}){ const T=useTheme(), cr=T.lift(C.cr);
+function TeamUpload({onChanged,background}){ const T=useTheme(), cr=T.lift(C.cr), job=useTeamJob();
   const [stage,setStage]=React.useState(()=>TeamData.get().draft?'review':'idle'), [kind,setKind]=React.useState(()=>(TeamData.get().draft||{}).kind||'list');
   const [prog,setProg]=React.useState(null), [err,setErr]=React.useState(''), [diff,setDiff]=React.useState(()=>TeamData.diff());
   const fileRef=React.useRef(null), labelRef=React.useRef(null), pend=TeamData.pending();
@@ -242,7 +275,14 @@ function TeamUpload({onChanged}){ const T=useTheme(), cr=T.lift(C.cr);
     try{ const {data}=await _tReadFile(f); const w=await TeamData.readLabel(data); if(!w) throw new Error('No wine label found in that photo. Try again with the label filling the frame.');
       setFound({...w,section:TeamData._sectionFor(w.type)}); setStage('found'); }
     catch(x){ setErr(x.message||'We couldn\'t read that label.'); setStage('idle'); } };
-  const addFound=()=>{ setDiff(TeamData.draftAdd(found)); setFound(null); setStage('review'); };
+  const addFound=()=>{ const {prepared,photo,confidence,...item}=found; setDiff(TeamData.draftAdd(item)); setFound(null); setStage('review'); };
+  // The demo's prepared arrivals (TeamSample.ARRIVALS): the label already read, the training written ahead.
+  const arrivals=TeamData.isDemo()?TeamSample.ARRIVALS():[];
+  const pickPrepared=a=>{ setErr(''); setFound({...a.label,section:TeamData._sectionFor(a.label.type),prepared:a.key,photo:a.photo}); setStage('found'); };
+  const readLive=async()=>{ setStage('reading'); setErr(''); setProg({label:'Reading the label',a:0,b:1});
+    try{ const r=await fetch(found.photo), blob=await r.blob(), {data}=await _tReadFile(new File([blob],'label.jpg',{type:'image/jpeg'})); const w=await TeamData.readLabel(data); if(!w) throw new Error('No wine label found in that photo.');
+      setFound({...w,section:TeamData._sectionFor(w.type)}); setStage('found'); }
+    catch(x){ setErr(x.message||'We couldn\'t read that label.'); setStage('idle'); } };
   const pick=k=>{ setKind(k); setErr(''); fileRef.current&&fileRef.current.click(); };
   const appendRef=React.useRef(false);
   const onFiles=async e=>{ const fs=[...(e.target.files||[])]; e.target.value=''; if(!fs.length) return;
@@ -251,12 +291,18 @@ function TeamUpload({onChanged}){ const T=useTheme(), cr=T.lift(C.cr);
     try{ const files=await Promise.all(fs.map(_tReadFile)); const d=await TeamData.read(kind,files,(a,b)=>setProg({label:`Reading your ${kind==='list'?'wine list':'menu'}`,a,b}),{append});
       setDiff(d); setStage('review'); }
     catch(x){ setErr(x.message||'We couldn\'t read that. Try a sharper photo or the PDF.'); setStage('idle'); } };
-  const publish=async()=>{ const res=TeamData.publish(); setStage('writing'); setErr('');
+  // With `background` (the console, and the phone when asked) the writing runs as a TeamJobs job: the
+  // screen is free at once and the chip says where it is; otherwise the screen waits on it, as before.
+  const publish=async()=>{ const res=TeamData.publish(); setErr('');
+    if(background){ TeamJobs.start(res); setStage('idle'); onChanged&&onChanged(); return; }
+    setStage('writing');
     try{ await TeamData.refresh(res,(label,a,b)=>setProg({label,a,b})); setStage('done'); }
     catch(x){ setErr((x.message||'Writing the training stopped.')+' What was written is kept; carry on below.'); setStage('idle'); }
     onChanged&&onChanged(); };
-  const resume=async()=>{ setStage('writing'); setErr('');
-    try{ await TeamData.refresh({kind:'list',added:[],removed:[],changed:[]},(label,a,b)=>setProg({label,a,b})); setStage('done'); }catch(x){ setErr(x.message||'Stopped again.'); setStage('idle'); } onChanged&&onChanged(); };
+  const resume=async()=>{ setErr(''); const res={kind:'list',added:[],removed:[],changed:[]};
+    if(background){ TeamJobs.start(res,{label:'Writing what was missing'}); onChanged&&onChanged(); return; }
+    setStage('writing');
+    try{ await TeamData.refresh(res,(label,a,b)=>setProg({label,a,b})); setStage('done'); }catch(x){ setErr(x.message||'Stopped again.'); setStage('idle'); } onChanged&&onChanged(); };
   const secs=[...new Set(TeamData.wines().map(w=>w.section).filter(Boolean))];
   const fld={padding:'10px 12px',borderRadius:10,border:`1px solid ${T.line}`,background:T.soft,color:T.ink,fontFamily:C.P,fontSize:16,outline:'none',minWidth:0};
   const sec=(t,items,render)=>items.length>0&&<>{_tLabel(T,`${t} (${items.length})`)}<Card style={{padding:0}}>{items.slice(0,40).map((x,i)=><div key={i} style={{padding:'10px 14px',borderTop:i?`1px solid ${T.line}`:'none',fontSize:14,color:T.ink2,fontFamily:C.P}}>{render(x)}</div>)}{items.length>40&&<div style={{padding:'10px 14px',fontSize:13,color:T.mid,fontFamily:C.P}}>and {items.length-40} more</div>}</Card></>;
@@ -267,18 +313,25 @@ function TeamUpload({onChanged}){ const T=useTheme(), cr=T.lift(C.cr);
       {_tH(T,'Upload','A photo or PDF of your wine list or menu. Several photos for a long list. Nothing reaches your staff until you approve what changed.')}
       {stage==='done'&&<Card style={{marginBottom:12,borderColor:'#5FD48F66'}}><div data-testid="team-published" style={{fontSize:15,color:'#5FD48F',fontWeight:700,fontFamily:C.P}}>Published. Your staff's training is up to date.</div></Card>}
       {err&&<Card style={{marginBottom:12,borderColor:'#F28B7D66'}}><div style={{fontSize:14,color:'#F28B7D',fontFamily:C.P}}>{err}</div></Card>}
-      {(pend.cards>0||pend.pairings>0||pend.windows>0)&&<Card style={{marginBottom:12}}><div data-testid="team-pending" style={{fontSize:14,color:T.ink2,fontFamily:C.P,marginBottom:8}}>{[pend.cards&&`${pend.cards} wine${pend.cards===1?'':'s'} without a staff card`,pend.pairings&&`${pend.pairings} dish${pend.pairings===1?'':'es'} without pairings`,pend.windows&&`${pend.windows} drinking window${pend.windows===1?'':'s'} to check`].filter(Boolean).join(', ')}.</div><Btn small onClick={resume}>Write them now</Btn></Card>}
+      {(pend.cards>0||pend.pairings>0||pend.windows>0)&&!(job&&job.running)&&<Card style={{marginBottom:12}}><div data-testid="team-pending" style={{fontSize:14,color:T.ink2,fontFamily:C.P,marginBottom:8}}>{[pend.cards&&`${pend.cards} wine${pend.cards===1?'':'s'} without a staff card`,pend.pairings&&`${pend.pairings} dish${pend.pairings===1?'':'es'} without pairings`,pend.windows&&`${pend.windows} drinking window${pend.windows===1?'':'s'} to check`].filter(Boolean).join(', ')}.</div><Btn small onClick={resume}>Write them now</Btn></Card>}
       <div style={{display:'flex',flexDirection:'column',gap:10}}>
         <Card onClick={()=>pick('list')} style={{cursor:'pointer',display:'flex',gap:12,alignItems:'center'}}><Icon n="wine" sz={22} col={cr}/><div><div style={{fontSize:16,fontWeight:700,color:T.ink,fontFamily:C.P}}>Wine list</div><div style={{fontSize:13,color:T.mid,fontFamily:C.P}}>{TeamData.wines().length?`${TeamData.wines().length} wines live. Upload the new one to update it.`:'Your full list, by the glass and by the bottle.'}</div></div></Card>
         <Card onClick={()=>pick('menu')} style={{cursor:'pointer',display:'flex',gap:12,alignItems:'center'}}><Icon n="fork" sz={22} col={cr}/><div><div style={{fontSize:16,fontWeight:700,color:T.ink,fontFamily:C.P}}>Menu</div><div style={{fontSize:13,color:T.mid,fontFamily:C.P}}>{TeamData.dishes().length?`${TeamData.dishes().length} dishes live.`:'So every wine is paired with your dishes.'}</div></div></Card>
         {TeamData.wines().length>0&&<Card onClick={()=>labelRef.current&&labelRef.current.click()} style={{cursor:'pointer',display:'flex',gap:12,alignItems:'center'}}><Icon n="camera" sz={22} col={cr}/><div><div style={{fontSize:16,fontWeight:700,color:T.ink,fontFamily:C.P}}>Add a wine from its label</div><div style={{fontSize:13,color:T.mid,fontFamily:C.P}}>A new arrival: photograph the bottle and it joins the list, with its card, pairings and drinking window.</div></div></Card>}
         <input ref={labelRef} type="file" accept="image/*" capture="environment" onChange={onLabel} data-testid="team-label-file" style={{display:'none'}}/>
+        {arrivals.length>0&&TeamData.wines().length>0&&<div data-testid="team-arrivals"><Card><div style={{fontSize:12,fontWeight:700,color:T.mid,fontFamily:C.P,letterSpacing:'0.08em',textTransform:'uppercase'}}>New arrivals, prepared for the demo</div>
+          <div style={{fontSize:13,color:T.mid,fontFamily:C.P,marginTop:3,lineHeight:1.45}}>Two real bottles read ahead, their card, pairings and drinking window written: they publish in seconds with no connection. Any other bottle goes through the live reading above.</div>
+          <div style={{display:'flex',gap:10,marginTop:10,flexWrap:'wrap'}}>{arrivals.map(a=>{ const cur=TeamData.wine(TeamData.wineId(a.label)), onList=!!cur&&cur.onList&&cur.vintage===a.label.vintage;
+            return <div key={a.key} role="button" data-testid="team-arrival" aria-disabled={onList} onClick={()=>!onList&&pickPrepared(a)} style={{flex:'1 1 150px',display:'flex',gap:10,alignItems:'center',padding:8,borderRadius:12,border:`1px solid ${T.line}`,opacity:onList?0.5:1,cursor:onList?'default':'pointer'}}>
+              <img src={a.photo} alt="" width={44} height={60} style={{width:44,height:60,objectFit:'cover',borderRadius:6,flexShrink:0}}/>
+              <div style={{minWidth:0}}><div style={{fontSize:14,fontWeight:700,color:T.ink,fontFamily:C.P,lineHeight:1.25}}>{[a.label.producer,a.label.name].filter(Boolean).join(' ')}</div><div style={{fontSize:12,color:T.mid,fontFamily:C.P}}>{onList&&a.kind!=='changed'?'Already on the list':[a.label.vintage,a.label.region,a.kind==='changed'?'a new vintage of one on the list':'new to the list'].filter(Boolean).join(' · ')}</div></div></div>; })}</div></Card></div>}
       </div>
       {TeamData.wines().length>0&&<div role="button" data-testid="team-export" onClick={()=>TeamData.exportFile()} style={{fontSize:13,color:T.mid,fontFamily:C.P,marginTop:18,cursor:'pointer',textDecoration:'underline'}}>Export this restaurant's list, menu and training as a file</div>}
       </>}
     {stage==='found'&&found&&<div data-testid="team-found">
-      {_tH(T,'New arrival',`Read from the label${found.confidence!=='high'?', check it':''}. Set where it sits on the list and its prices, then add it.`)}
+      {_tH(T,'New arrival',found.prepared?'Read from the label ahead of the demo; its training is already written. Set where it sits on the list and its prices, then add it.':`Read from the label${found.confidence!=='high'?', check it':''}. Set where it sits on the list and its prices, then add it.`)}
       <Card><div style={{display:'flex',flexDirection:'column',gap:8}}>
+        {found.photo&&<div style={{display:'flex',gap:10,alignItems:'center'}}><img src={found.photo} alt="" width={56} height={76} style={{width:56,height:76,objectFit:'cover',borderRadius:8}}/><div style={{fontSize:13,color:T.mid,fontFamily:C.P,lineHeight:1.45}}>Prepared for the demo. <span role="button" data-testid="team-read-live" onClick={readLive} style={{color:cr,fontWeight:700,cursor:'pointer'}}>Read this label live instead</span> to show the real scan (needs a connection, about ten seconds).</div></div>}
         <div style={{display:'flex',gap:8}}><input aria-label="Producer" value={found.producer} onChange={e=>setFound({...found,producer:e.target.value})} placeholder="Producer" style={{...fld,flex:1}}/><input aria-label="Vintage" value={found.vintage||''} onChange={e=>setFound({...found,vintage:/^\d{4}$/.test(e.target.value)?+e.target.value:null})} placeholder="Year" style={{...fld,width:90}}/></div>
         <input aria-label="Wine" value={found.name} onChange={e=>setFound({...found,name:e.target.value})} placeholder="Wine" style={fld}/>
         <div style={{fontSize:13,color:T.mid,fontFamily:C.P}}>{[found.type,found.region,found.country,(found.grapes||[]).join(', ')].filter(Boolean).join(' · ')}</div>
@@ -334,4 +387,4 @@ function TeamPeople({open,onChanged}){ const T=useTheme(), cr=T.lift(C.cr);
     </div>; })}<div style={{fontSize:12,color:T.mid,fontFamily:C.P}}>Tap a figure to raise it (it wraps back to 50%).</div></Card>
   </div>; }
 
-Object.assign(window,{TeamFace,TeamRing,TeamSetup,TeamToday,TeamDrill,TeamWines,TeamWine,TeamMenu,TeamDish,TeamUpload,TeamPeople});
+Object.assign(window,{TeamFace,TeamRing,TeamSetup,TeamToday,TeamDrill,TeamWines,TeamWine,TeamMenu,TeamDish,TeamUpload,TeamPeople,TeamJobChip,TeamKpiStrip,useTeamJob});

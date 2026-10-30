@@ -68,7 +68,10 @@ export const APP_SOURCES = [
 export const TEAM_SOURCES = [
   'team-data.js',
   'team-learn.js',
+  'team-sales.js',
+  'team-report.js',
   'team-screens.jsx',
+  'team-console.jsx',
   'team-app.jsx',
 ];
 export const TEAM_ALL = [...APP_SOURCES.filter((f) => f !== 'pwa-app.jsx'), ...TEAM_SOURCES];
@@ -88,4 +91,5 @@ export const STATIC_FILES = [
   'rescue.html',
   'tweaks-inline.compiled.js',
   'team/faces', // the demo restaurant's staff photos, served beside the team app (docs/business.md)
+  'team/labels', // the demo's prepared new arrivals: two label photos (TeamSample.ARRIVALS)
 ];

@@ -21,6 +21,8 @@ const TeamData = {
   save(d){ Store.setJSON(this.KEY,d); try{ window.dispatchEvent(new Event('vbiz:data')); }catch(e){} },
   reset(){ Store.remove(this.KEY); try{ window.dispatchEvent(new Event('vbiz:data')); }catch(e){} },
   setVenue(fields){ const d=this.get(); d.venue={...d.venue,...fields}; this.save(d); },
+  setSetting(k,v){ const d=this.get(); d.settings={...(d.settings||{}),[k]:v}; this.save(d); },
+  isDemo(){ return (this.get().venue||{}).sample==='demo'; },
   currency(){ try{ return Regional.current(); }catch(e){ return {sym:'£',code:'GBP'}; } },
 
   wines(){ return Object.values(this.get().wines).filter(w=>w.onList).sort((a,b)=>a.order-b.order); },
@@ -107,6 +109,7 @@ const TeamData = {
         if((m.vintage||null)!==(it.vintage||null)) what.push(`vintage ${m.vintage||'NV'} → ${it.vintage||'NV'}`);
         if(m.glass!==it.glass) what.push(it.glass?(m.glass?`glass ${m.glass} → ${it.glass}`:`now by the glass (${it.glass})`):'no longer by the glass');
         if(m.bottle!==it.bottle&&m.bottle&&it.bottle) what.push(`bottle ${m.bottle} → ${it.bottle}`);
+        if((m.section||'')!==(it.section||'')&&it.section) what.push(`section ${m.section||'none'} → ${it.section}`);
         if(what.length) changed.push({id:m.id,item:it,what}); else same++;
       });
       return {kind:'list',added,removed:live.filter(w=>!used.has(w.id)),changed,same,match};
@@ -116,7 +119,8 @@ const TeamData = {
       const m=live.find(x=>!used.has(x.id)&&x.id===this.dishId(it));
       if(!m){ added.push(it); return; }
       used.add(m.id);
-      if(m.desc!==it.desc) changed.push({id:m.id,item:it,what:['description changed']}); else same++;
+      const what=[]; if(m.desc!==it.desc) what.push('description changed'); if(String(m.price||'')!==String(it.price||'')&&it.price) what.push(`price ${m.price||'none'} → ${it.price}`);
+      if(what.length) changed.push({id:m.id,item:it,what}); else same++;
     });
     return {kind:'menu',added,removed:live.filter(x=>!used.has(x.id)),changed,same};
   },
@@ -197,8 +201,9 @@ const TeamData = {
     const venue=this.get().venue.name||'the restaurant';
     const list=this.wines().map(w=>{ const c=this.card(w.id), s=c&&c.style; return `${w.id} | ${this.label(w)} | ${w.type} | ${[w.glass&&'glass '+w.glass,w.bottle&&'bottle '+w.bottle].filter(Boolean).join(', ')}${s?` | body ${s.body}/5, acidity ${s.acid}/5, tannin ${s.tannin}/5, sweetness ${s.sweet}/5`:''}`; }).join('\n');
     let done=0; onStep&&onStep(0,dishIds.length);
-    for(let i=0;i<dishIds.length;i+=this.PAIR_BATCH){
-      const xs=dishIds.slice(i,i+this.PAIR_BATCH).map(id=>this.dish(id)).filter(Boolean);
+    // The batches run at once (a 27-dish menu is three calls: 15 seconds together rather than 45 in a row).
+    const batches=[]; for(let i=0;i<dishIds.length;i+=this.PAIR_BATCH) batches.push(dishIds.slice(i,i+this.PAIR_BATCH).map(id=>this.dish(id)).filter(Boolean));
+    await Promise.all(batches.map(async xs=>{
       const prompt=tpl.replace(/\{\{venue\}\}/g,venue).replace('{{list}}',list)
         .replace('{{dishes}}',xs.map(x=>`${x.name} | ${x.desc} | main: ${x.main} | ${x.cook} | ${(x.flav||[]).join(', ')}`).join('\n'));
       const j=this._json(await window.claude.complete({purpose:'team_pairings',messages:[{role:'user',content:prompt}]}))||{};
@@ -210,34 +215,44 @@ const TeamData = {
       });
       this.save(d);
       done+=xs.length; onStep&&onStep(done,dishIds.length);
-    }
+    }));
   },
   /* After a publish: cards for wines without one, then pairings for every dish (a new wine can be the
      best match for a dish that hasn't changed), then the new wines and dishes assigned to staff.
      onStep(label, done, total). */
   async refresh(res,onStep){
+    // The demo's prepared arrivals (TeamSample.ARRIVALS) carry their card, pairings and window already,
+    // so a bottle from that set publishes with no call at all; anything else is written here.
+    const prepared=[...(res.added||[]),...(res.changed||[])].filter(id=>TeamSample.applyPrepared(id));
     const missing=this.wines().filter(w=>!this.card(w.id)).map(w=>w.id);
     if(missing.length) await this.writeCards(missing,(a,b)=>onStep&&onStep('Writing staff cards',a,b));
     const dishes=this.dishes().map(x=>x.id);
-    if(dishes.length&&this.wines().length&&(res.kind==='list'||res.added.length||res.changed.length||res.removed.length||dishes.some(id=>!this.pairing(id))))
-      await this.writePairings(dishes,(a,b)=>onStep&&onStep('Matching wines to the menu',a,b));
+    const onlyPrepared=res.kind==='list'&&prepared.length&&prepared.length===(res.added||[]).length+(res.changed||[]).length&&!(res.removed||[]).length;
+    const needPairs=dishes.length&&this.wines().length&&!onlyPrepared&&(res.kind==='list'||res.added.length||res.changed.length||res.removed.length||dishes.some(id=>!this.pairing(id)));
     const dated=this.wines().filter(w=>w.vintage&&!w.peak).map(w=>w.id);
-    if(dated.length) await this.writeWindows(dated,(a,b)=>onStep&&onStep('Checking drinking windows',a,b));
+    // Pairings and windows don't depend on each other, so they're written at the same time, reported as one step.
+    const prog={p:0,w:0}, total=(needPairs?dishes.length:0)+dated.length, tell=()=>onStep&&onStep(needPairs&&dated.length?'Matching the menu and checking drinking windows':needPairs?'Matching wines to the menu':'Checking drinking windows',prog.p+prog.w,total);
+    const jobs=[];
+    if(needPairs) jobs.push(this.writePairings(dishes,(a)=>{ prog.p=a; tell(); }));
+    if(dated.length) jobs.push(this.writeWindows(dated,(a)=>{ prog.w=a; tell(); }));
+    if(jobs.length){ tell(); await Promise.all(jobs); }
     if(typeof TeamLearn!=='undefined') TeamLearn.assign(res);
   },
   /* The drinking window for each dated wine (the consumer app's vintage_info, open to every account),
      kept on the wine as `peak` {from,to,rating,note}; the Wines tab and the card say where it is today. */
   async writeWindows(ids,onStep){
     const yr=new Date().getFullYear(); let done=0; onStep&&onStep(0,ids.length);
-    for(const id of ids){
-      const w=this.wine(id); done++;
+    const queue=[...ids], one=async()=>{ while(queue.length){ const id=queue.shift(); await this._window(id,yr); done++; onStep&&onStep(done,ids.length); } };
+    await Promise.all(Array.from({length:Math.min(this.WINDOW_AT_ONCE,ids.length)},one));
+  },
+  WINDOW_AT_ONCE:3,
+  async _window(id,yr){
+      const w=this.wine(id);
       if(w&&w.vintage&&!w.peak){
         const prompt=`You are a sommelier. Assess the vintage quality and realistic drinking window for this specific wine. Wine: ${this.label(w)}. Type: ${w.type||'red'}, Region: ${w.region||''}, Country: ${w.country||''}. Grapes: ${(w.grapes||[]).join(', ')||'unknown'}. Return ONLY valid JSON (no markdown): {"vintage_rating":"Exceptional|Outstanding|Very Good|Good|Average","drink_from":${yr},"drink_to":2032,"peak_from":2025,"peak_to":2029,"note":"one concrete sentence on how this wine is developing right now and why, with no numbers in it"}.`;
         try{ const j=this._json(await window.claude.complete({purpose:'vintage_info',messages:[{role:'user',content:prompt}]}));
           if(j&&j.peak_from>0&&j.peak_to>=j.peak_from){ const d=this.get(); if(d.wines[id]) d.wines[id].peak={from:+j.peak_from,to:+j.peak_to,until:+j.drink_to||+j.peak_to,rating:j.vintage_rating||'',note:j.note||''}; this.save(d); } }catch(e){}
       }
-      onStep&&onStep(done,ids.length);
-    }
   },
   /* Where a wine is in its life today: {stage:'young'|'ready'|'old', word, line}, from its window
      when written, else the consumer app's estimate from type (ScanFlow.drinkWindow). */
@@ -263,6 +278,8 @@ const TeamData = {
     const text=await window.claude.complete({purpose:'label_scan',messages:[{role:'user',content:[{type:'image',source:{type:'base64',media_type:'image/jpeg',data:b64}},{type:'text',text:_loadTextSync('prompts/label-scan.txt')}]}]});
     const w=WineDNA.cleanWine(JSON.parse(String(text).replace(/```json|```/g,'').trim()));
     if(!w||w.error==='no_wine_label'||!w.name) return null;
+    // The year belongs in `vintage`, never in the name, or "Viña Ardanza Reserva 2016" is a different wine from the list's "Viña Ardanza Reserva".
+    const yr=/^\d{4}$/.test(String(w.vintage))?String(w.vintage):null; if(yr) w.name=w.name.replace(new RegExp('\\s*\\b'+yr+'\\b\\s*$'),'').trim()||w.name;
     return {producer:w.producer||'',name:w.name,vintage:/^\d{4}$/.test(String(w.vintage))?+w.vintage:null,type:String(w.type||'red').toLowerCase().replace('rose','rosé'),
       region:w.region||'',country:w.country||'',grapes:w.grapes||[],grapes_basis:w.grapes_basis||'typical',section:'',glass:'',bottle:'',other:'',bin:'',confidence:w.confidence||'medium',price_usd:w.price_usd||null};
   },
@@ -270,8 +287,19 @@ const TeamData = {
   draftAdd(item){
     const live=this.wines().map(w=>({...w}));
     const next={...item,section:item.section||this._sectionFor(item.type)};
+    // The same wine already on the list (another vintage, say) is replaced in the draft, so the review
+    // says "vintage 2015 → 2016" rather than "1 new" for a wine the floor already knows.
+    const i=live.findIndex(w=>this._same(w,next));
+    if(i>=0){ live[i]={...live[i],...next,id:live[i].id,section:next.section||live[i].section}; return this.setDraft('list',live); }
     return this.setDraft('list',[...live,{...next,order:live.length}]);
   },
+  /* The console's edits go through the same draft and Publish as an upload, so one audit trail (versions)
+     holds every change: a wine's prices, section or glass/bottle; a wine taken off; a dish's price or words. */
+  draftEdit(id,fields){ const live=this.wines().map(w=>({...w})), i=live.findIndex(w=>w.id===id); if(i<0) return null; live[i]={...live[i],...fields}; return this.setDraft('list',live.map((w,k)=>({...w,order:k}))); },
+  draftRemove(id){ if(!this.wine(id)) return null; return this.setDraft('list',this.wines().filter(w=>w.id!==id).map((w,k)=>({...w,order:k}))); },
+  draftEditDish(id,fields){ const live=this.dishes().map(x=>({...x})), i=live.findIndex(x=>x.id===id); if(i<0) return null; live[i]={...live[i],...fields}; return this.setDraft('menu',live.map((x,k)=>({...x,order:k}))); },
+  /* A manager's own words on a card replace Claude's; the card remembers it was edited. */
+  setCard(id,fields){ const d=this.get(); if(!d.cards[id]) return; d.cards[id]={...d.cards[id],...fields,edited:Date.now()}; this.save(d); },
   _sectionFor(type){ const secs=this.wines().map(w=>w.section).filter(Boolean); const t=String(type||'').toLowerCase();
     const want=t==='sparkling'?/spark|champ|fizz/i:t==='white'?/white/i:t==='rosé'||t==='rose'||t==='orange'?/ros|orange/i:t==='dessert'||t==='fortified'?/sweet|dessert|fortif|port|sherry/i:/red/i;
     return secs.find(s=>want.test(s))||secs[0]||''; },
@@ -296,7 +324,7 @@ const TeamSample = {
     Object.entries(s.pairings).forEach(([id,p])=>{ d.pairings[id]={...p,at:now}; });
     d.versions.push({kind:'list',at:now,added:Object.keys(d.wines),removed:[],changed:[]});
     TeamData.save(d);
-    Store.remove(TeamLearn.KEY); TeamLearn.resetProgress();
+    Store.remove(TeamLearn.KEY); TeamLearn.resetProgress(); if(typeof TeamSales!=='undefined') TeamSales.clear();
     (s.staff||this.DEMO_STAFF).forEach(p=>TeamLearn.addPerson(p.name,p.role,p.photo||null));
     if(which==='demo'&&Object.keys(d.cards).length) TeamDemo.seedProgress();
     return true;
@@ -305,6 +333,21 @@ const TeamSample = {
   /* Whether the restaurant on the device is this seed as the build now carries it. */
   current(which){ const v=TeamData.get().venue||{}; if(v.sample!==which) return false;
     const s=which==='demo'?_loadJSON('data/team-demo.json'):_loadJSON('data/team-sample.json'); return (v.seeded||null)===((s&&s.exported)||null); },
+  /* The demo's prepared new arrivals (data/team-demo-arrivals.json, photos in team/labels/): two real
+     bottles whose label reading, staff card, pairings and drinking window were written once through
+     the Worker, so "Add a wine from its label" can run with no network and in seconds. Live reading
+     of any other bottle stays as it is. */
+  ARRIVALS(){ const j=_loadJSON('data/team-demo-arrivals.json'); return j&&Array.isArray(j.arrivals)?j.arrivals.filter(a=>a.label):[]; },
+  arrival(id){ return this.ARRIVALS().find(a=>TeamData.wineId(a.label)===id)||null; },
+  /* Puts a prepared arrival's card, window and pairings in place for a wine just published (TeamData.refresh).
+     Only in the demo restaurant: the card talks about The Larkspur's menu. Returns whether it did. */
+  applyPrepared(id){ if(!TeamData.isDemo()) return false; const a=this.arrival(id); if(!a) return false; const d=TeamData.get(); if(!d.wines[id]||!d.wines[id].onList) return false;
+    if(a.card) d.cards[id]={...TeamData._cleanCard({...a.card,id},d),at:Date.now(),prepared:true};
+    if(a.peak&&d.wines[id].vintage===a.peakVintage) d.wines[id].peak={...a.peak}; else if(a.peak&&d.wines[id].vintage) delete d.wines[id].peak;
+    const ok=x=>x&&d.wines[x.id]&&d.wines[x.id].onList;
+    Object.entries(a.pairings||{}).forEach(([did,p])=>{ if(!d.dishes[did]||!d.dishes[did].onMenu) return; const mentions=[...(p.best||[]),p.glass,p.avoid].some(x=>x&&x.id===id); if(!mentions) return;
+      d.pairings[did]={best:(p.best||[]).filter(ok),glass:ok(p.glass)?p.glass:null,avoid:ok(p.avoid)?p.avoid:null,at:Date.now()}; });
+    TeamData.save(d); return true; },
   DEMO_STAFF:[{name:'Elena Ruiz',role:'manager',photo:'faces/1.png'},{name:'Claire Whitfield',role:'sommelier',photo:'faces/3.png'},{name:'David Chen',role:'buyer',photo:'faces/6.png'},
     {name:'Marco Delgado',role:'bartender',photo:'faces/5.png'},{name:'Dani Haddad',role:'server',photo:'faces/2.png'},{name:'Priya Nair',role:'server',photo:'faces/7.png'},{name:'Amara Okafor',role:'server',photo:'faces/4.png'}],
 };
@@ -341,7 +384,26 @@ const TeamDemo = {
     if(srv[2]){ learn(srv[2].id,glass.slice(0,5),['recognise','recall'],now-2*this.DAY,'think'); const m=TeamLearn._mine(P,srv[2].id); Object.values(m.assigned).forEach(a=>{ a.at=now-2*this.DAY; a.due=now+5*this.DAY; }); }
     TeamLearn._batchP=null; TeamLearn._saveAll(P);
     ppl.forEach(p=>TeamLearn.note(p.id));
+    // Three wines went on the list nine days ago, so new-wine adoption has something to show; then the till.
+    const d=TeamData.get(), recent=[...glass.slice(-2),...bottle.slice(-1)]; recent.forEach(w=>{ if(d.wines[w.id]) d.wines[w.id].addedAt=now-9*this.DAY; }); TeamData.save(d);
+    if(typeof TeamSales!=='undefined') TeamSales.seedDemo();
   },
 };
-Object.assign(window,{TeamDemo});
+/* The writing after a publish, run in the background (docs/business.md): a manager publishes and
+   carries on with the console or the app while the cards, pairings and windows are written; a chip
+   says where it is (team-screens.jsx TeamJobChip) and what's written lands as it's saved. One job
+   at a time; a job that stops keeps what it wrote, and the Upload tab's "Write them now" resumes. */
+const TeamJobs = {
+  _cur:null,
+  current(){ return this._cur; },
+  _emit(){ try{ window.dispatchEvent(new Event('vbiz:job')); }catch(e){} },
+  start(res,{label}={}){ if(this._cur&&this._cur.running) return this._cur;
+    const job=this._cur={id:Date.now(),running:true,label:label||'Writing the training',step:'Starting',a:0,b:0,error:null,done:false,kind:res&&res.kind,added:(res&&res.added||[]).length};
+    this._emit();
+    Promise.resolve().then(()=>TeamData.refresh(res,(step,a,b)=>{ Object.assign(job,{step,a,b}); this._emit(); }))
+      .then(()=>{ job.running=false; job.done=true; job.step='Published'; this._emit(); },e=>{ job.running=false; job.error=(e&&e.message)||'Writing the training stopped.'; this._emit(); });
+    return job; },
+  dismiss(){ if(this._cur&&!this._cur.running) this._cur=null; this._emit(); },
+};
+Object.assign(window,{TeamDemo,TeamJobs});
 Object.assign(window,{TeamData,TeamSample});
