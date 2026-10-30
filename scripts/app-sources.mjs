@@ -87,4 +87,5 @@ export const STATIC_FILES = [
   'reset.html',
   'rescue.html',
   'tweaks-inline.compiled.js',
+  'team/faces', // the demo restaurant's staff photos, served beside the team app (docs/business.md)
 ];

@@ -8,6 +8,7 @@ const { pathToFileURL } = require('url');
 const { stubNetwork } = require('./helpers');
 
 const BASE = 'http://localhost:4173';
+const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', 'base64');
 const DAY = 86400000;
 
 async function openSample(context, page, opts = {}) {
@@ -189,4 +190,69 @@ test('the Worker keeps the team calls to Pro: signed out with accounts on, it as
     expect(r.status).toBe(402);
     expect((await r.json()).signIn).toBe(true);
   }
+});
+
+// The wine-show demo (docs/business.md): The Larkspur opens from /team/?seed=demo with its 60 wines,
+// 27 dishes and seven staff with photos; a new arrival is read from its label, joins the list through
+// the same review, and publishing writes its card, pairings, drinking window and assignments.
+test('the demo restaurant: 60 wines, photos, and a wine added from its label updates everything', async ({ context, page }) => {
+  const label = { name: 'Barolo Bussia', producer: 'Prunotto', vintage: 2019, region: 'Barolo', country: 'Italy', type: 'red', grapes: ['Nebbiolo'], grapes_basis: 'label', confidence: 'high' };
+  const reqs = [];
+  await stubNetwork(context, { claudeRequests: reqs, claudeText: (b) => {
+    if (b.purpose === 'label_scan') return JSON.stringify(label);
+    if (b.purpose === 'team_cards') return JSON.stringify({ cards: [{ id: 'w-prunotto-barolo-bussia', pitch: 'A serious Barolo.', taste: 'Cherry, tar, rose.', style: { body: 4, acid: 4, tannin: 5, sweet: 1 }, grape: 'Nebbiolo.', place: 'Barolo.', producer: '', serve: { temp: '17°C', glass: 'large red', decant: '1 hour' }, dishes: [{ dish: 'Venison loin, celeriac, blackberries', why: 'Tannin for the game.' }], alts: [], qs: [{ k: 'recognise', q: 'What grape is the Prunotto Barolo?', opts: ['Nebbiolo', 'Barbera', 'Dolcetto', 'Sangiovese'], a: 0, why: 'Barolo is Nebbiolo.' }] }] });
+    if (b.purpose === 'team_pairings') return '{"pairings":[]}';
+    if (b.purpose === 'vintage_info') return '{"vintage_rating":"Outstanding","drink_from":2025,"drink_to":2040,"peak_from":2027,"peak_to":2036,"note":"Firm and still knitting together."}';
+    return '';
+  } });
+  await page.goto(`${BASE}/team/?seed=demo`);
+  await expect(page.getByTestId('team-state')).toBeVisible();
+  await page.getByTestId('team-tab-team').click();
+  await expect(page.getByTestId('team-person')).toHaveCount(7);
+  expect(await page.locator('[data-testid="team-person"] img').count()).toBe(7);
+  await page.getByTestId('team-tab-wines').click();
+  await expect(page.getByTestId('team-wine-row')).toHaveCount(60);
+  await page.getByTestId('team-tab-upload').click();
+  await expect(page.getByTestId('team-pending')).toContainText('60 wines without a staff card, 27 dishes without pairings, 53 drinking windows to check');
+  await page.getByTestId('team-label-file').setInputFiles({ name: 'l.png', mimeType: 'image/png', buffer: PNG });
+  await expect(page.getByTestId('team-found')).toBeVisible();
+  await expect(page.getByLabel('Producer')).toHaveValue('Prunotto');
+  await page.getByLabel('Glass price').fill('£16'); await page.getByLabel('Bottle price').fill('£78');
+  await page.getByText('Add to the list').click();
+  await expect(page.getByTestId('team-review')).toContainText('1 new, 0 gone, 0 changed, 60 the same');
+  await page.getByText('Publish', { exact: true }).click();
+  await expect(page.getByTestId('team-published')).toBeVisible({ timeout: 20000 });
+  const out = await page.evaluate(() => { const w = TeamData.wine('w-prunotto-barolo-bussia'); return { n: TeamData.wines().length, section: w.section, glass: w.glass, peak: w.peak && w.peak.to, card: !!TeamData.card(w.id), window: TeamData.window(w).word,
+    assigned: TeamLearn.people().filter((p) => TeamLearn.assignments(p.id).some((a) => a.id === w.id)).length }; });
+  expect(out).toMatchObject({ n: 61, section: 'Red', glass: '£16', peak: 2036, card: true, window: 'Still young', assigned: 7 });
+  // Publishing also catches up: the 60 wines that had no card yet get theirs (four a call), so 61 wines take 16 calls.
+  expect(reqs.filter((r) => r.purpose === 'team_cards')).toHaveLength(16);
+  await page.getByTestId('team-tab-wines').click();
+  await page.getByText('Prunotto Barolo Bussia').click();
+  await expect(page.getByTestId('team-window')).toContainText('Best from 2027 to 2036');
+});
+
+// With cards written, the demo seeds each person at a different stage: ready, slipping, part way,
+// overdue and just started, with surprise re-check history behind the retention figures.
+test('the demo seeds staff at different stages of training', async ({ context, page }) => {
+  await stubNetwork(context);
+  await page.goto(`${BASE}/team/?seed=demo`);
+  await expect(page.getByTestId('team-state')).toBeVisible();
+  const states = await page.evaluate(() => {
+    // Stand-in cards for every wine, as the exported demo file will carry.
+    const d = TeamData.get();
+    TeamData.wines().forEach((w) => { d.cards[w.id] = { id: w.id, pitch: 'p', taste: 't', style: { body: 3, acid: 3, tannin: 3, sweet: 1 }, grape: 'g', place: 'p', producer: '', serve: {}, dishes: [], alts: [],
+      qs: ['recognise', 'recognise', 'recall', 'recall', 'apply', 'contrast'].map((k, i) => ({ id: w.id + '#' + i, k, q: `${k} ${w.name}?`, opts: ['a', 'b', 'c', 'd'], a: 0, ans: 'a', acc: [], key: ['a'], why: 'w' })) }; });
+    TeamData.dishes().forEach((x, i) => { d.pairings[x.id] = { best: [{ id: TeamData.wines()[i % 60].id, why: 'w' }, { id: TeamData.wines()[(i + 7) % 60].id, why: 'w' }], glass: null, avoid: null }; });
+    TeamData.save(d);
+    TeamDemo.seedProgress();
+    return Object.fromEntries(TeamLearn.people().map((p) => { const r = TeamLearn.readiness(p.id); return [p.name.split(' ')[0], { state: r.state, pct: r.pct, overdue: r.overdue }]; }));
+  });
+  expect(states.Claire.state).toBe('ready');
+  expect(states.Marco.state).toBe('slipping');
+  expect(states.Dani.pct).toBeGreaterThan(40); expect(states.Dani.pct).toBeLessThan(100);
+  expect(states.Priya.overdue).toBeGreaterThan(0);
+  expect(states.Amara.state).toBe('not'); expect(states.Amara.overdue).toBe(0);
+  await page.getByTestId('team-tab-team').click();
+  await expect(page.locator('#root')).toContainText('1 ready, 1 slipping');
 });

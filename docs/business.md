@@ -29,6 +29,24 @@ One restaurant on one device, made to be shown to a restaurant before accounts e
 - **Learning** (`team-learn.js`): see below. **Team** (managers): everyone's readiness, who's overdue,
   the wines the floor knows least, surprise re-check results, and each role's minimum.
 
+## The wine-show demo
+
+`/team/?seed=demo` opens The Larkspur (Bristol, modern British): 60 wines and 27 dishes
+(`data/team-demo-list.json`), and seven staff with circle-cropped photos (`team/faces/`, `TeamSample.DEMO_STAFF`).
+Once the training has been written (a manager publishes with a Pro account, then "Export this
+restaurant's list, menu and training as a file" and the file becomes `data/team-demo.json`), the demo
+opens with every card, pairing and drinking window in place and no network needed, and `TeamDemo.seedProgress`
+puts each person at a stage: Claire (sommelier) ready, Marco (bartender) slipping after three weeks without a
+drill, Dani (server) part way, Priya (server) overdue, Amara (server) in her first week, David (buyer) most of
+the way. The live moment is **Add a wine from its label** on Upload: the consumer app's label scan reads the
+bottle, the manager sets its section and prices, the review says "1 new", and Publish writes its card, pairings
+and drinking window and assigns it to everyone who sells it.
+
+Drinking windows come from the consumer app's `vintage_info` at publish (`TeamData.writeWindows`, kept on the
+wine as `peak`), and `TeamData.window` says where a wine is today: Still young, At its peak, Drinking well or
+Past its best, on the Wines tab and the card. A dated wine without one gets the consumer app's estimate, said
+to be one.
+
 ## How staff learn
 
 Built for retention rather than points. No XP or streaks: the motivation is being able to sell the

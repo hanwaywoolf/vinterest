@@ -34,8 +34,8 @@ const TeamLearn = {
   people(){ return Object.values(this.team().people).sort((a,b)=>a.created-b.created); },
   person(id){ return this.team().people[id]||null; },
   me(){ const t=this.team(); return t.people[t.me]||null; },
-  addPerson(name,role){ const t=this.team(), id='p'+Date.now().toString(36)+Math.random().toString(36).slice(2,5);
-    t.people[id]={id,name:String(name).trim(),role,created:Date.now()}; if(!t.me) t.me=id; this._saveTeam(t);
+  addPerson(name,role,photo){ const t=this.team(), id='p'+Date.now().toString(36)+Math.random().toString(36).slice(2,5);
+    t.people[id]={id,name:String(name).trim(),role,photo:photo||null,created:Date.now()}; if(!t.me) t.me=id; this._saveTeam(t);
     this.assignExisting(id); return id; },
   removePerson(id){ const t=this.team(); delete t.people[id]; if(t.me===id) t.me=Object.keys(t.people)[0]||null; this._saveTeam(t); const p=this._all(); delete p[id]; this._saveAll(p); },
   setMe(id){ const t=this.team(); t.me=id; this._saveTeam(t); },
@@ -159,7 +159,8 @@ const TeamLearn = {
 
   /* Records an answer and moves the question's review date. sure: 'sure' | 'think' | 'guess'. */
   record(pid,q,ok,sure='think',now=Date.now()){
-    const p=this._all(), m=this._mine(p,pid), it=m.items[q.id]||{s:0,d:5,reps:0,lapses:0,last:0,due:0};
+    // _batchP: many answers at once (the demo's seeding) write to one object, saved once at the end.
+    const p=this._batchP||this._all(), m=this._mine(p,pid), it=m.items[q.id]||{s:0,d:5,reps:0,lapses:0,last:0,due:0};
     const R=this.recall(it,now);
     if(q.check) m.checks.push({at:now,ok:!!ok,id:q.id});
     if(!ok){
@@ -181,7 +182,7 @@ const TeamLearn = {
       const done=q.wine?this.knowsWine(pid,person.role,q.wine,m.items):this.knowsDish(pid,q.dish,m.items);
       if(done) m.assigned[key].done=now;
     }
-    this._saveAll(p);
+    if(!this._batchP) this._saveAll(p);
     return it;
   },
 

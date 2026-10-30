@@ -6,6 +6,12 @@ const _tState={ready:{label:'Ready',col:'#5FD48F'},slipping:{label:'Slipping',co
 const _tH=(T,t,sub)=><div style={{marginBottom:10}}><div style={{fontSize:22,fontWeight:800,color:T.ink,fontFamily:C.P,lineHeight:1.2}}>{t}</div>{sub&&<div style={{fontSize:14,color:T.mid,fontFamily:C.P,marginTop:3,lineHeight:1.45}}>{sub}</div>}</div>;
 const _tLabel=(T,t)=><div style={{fontSize:12,fontWeight:700,color:T.mid,fontFamily:C.P,letterSpacing:'0.08em',textTransform:'uppercase',margin:'16px 0 8px'}}>{t}</div>;
 const _tTypeCol=(T,t)=>T.lift(_TYPE_COLORS[String(t||'red').toLowerCase().replace('é','e')]||C.cr);
+/* A person's face in a circle (team/faces/, served beside the app), else their initials. */
+function TeamFace({person,size=36,ring}){ const T=useTheme();
+  const init=String(person&&person.name||'?').split(/\s+/).map(w=>w[0]).join('').slice(0,2).toUpperCase();
+  const st={width:size,height:size,borderRadius:size/2,flexShrink:0,boxShadow:ring?`0 0 0 2px ${ring}`:'none'};
+  return person&&person.photo?<img src={person.photo} alt="" width={size} height={size} style={{...st,objectFit:'cover',display:'block'}}/>
+    :<div aria-hidden="true" style={{...st,background:T.soft,border:`1px solid ${T.line}`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:size*0.38+'px',fontWeight:700,color:T.ink2,fontFamily:C.P}}>{init}</div>; }
 function _tDays(ms){ const d=Math.round((ms-Date.now())/86400000); return d<0?`${-d} day${d===-1?'':'s'} overdue`:d===0?'due today':`due in ${d} day${d===1?'':'s'}`; }
 
 /* A ring for a readiness figure. */
@@ -21,8 +27,7 @@ function TeamSetup({onDone}){ const T=useTheme(), cr=T.lift(C.cr);
   const [venue,setVenue]=React.useState(''), [name,setName]=React.useState('');
   const field={width:'100%',padding:'12px 14px',borderRadius:12,border:`1px solid ${T.line}`,background:T.soft,color:T.ink,fontFamily:C.P,fontSize:16,outline:'none'};
   const go=sample=>{ if(!sample&&(!venue.trim()||!name.trim())) return;
-    if(sample) TeamSample.load(); else TeamData.setVenue({name:venue.trim()});
-    if(!sample) TeamLearn.addPerson(name.trim(),'manager');
+    if(sample) TeamSample.load(sample); else { TeamData.setVenue({name:venue.trim()}); TeamLearn.addPerson(name.trim(),'manager'); }
     onDone(); };
   return <div style={{padding:'calc(env(safe-area-inset-top) + 28px) 20px 24px',maxWidth:520,margin:'0 auto'}}>
     <div style={{fontSize:13,fontWeight:700,color:cr,fontFamily:C.P,letterSpacing:'0.1em',textTransform:'uppercase'}}>Vinterest for teams</div>
@@ -32,7 +37,8 @@ function TeamSetup({onDone}){ const T=useTheme(), cr=T.lift(C.cr);
       <input aria-label="Your name" placeholder="Your name" value={name} onChange={e=>setName(e.target.value)} style={field}/>
       <Btn primary full onClick={()=>go(false)}>Set up my restaurant</Btn>
       <div style={{textAlign:'center',fontSize:14,color:T.mid,fontFamily:C.P,margin:'6px 0'}}>or</div>
-      <Btn full onClick={()=>go(true)}>Look around with a sample restaurant</Btn>
+      <Btn full onClick={()=>go('sample')}>Look around with a sample restaurant</Btn>
+      <div data-testid="team-load-demo"><Btn full onClick={()=>go('demo')}>Open The Larkspur: 60 wines, 27 dishes, a team of seven</Btn></div>
     </div>
   </div>; }
 
@@ -43,7 +49,8 @@ function TeamToday({pid,open}){ const T=useTheme(), cr=T.lift(C.cr);
   const st=_tState[r.state];
   const empty=!TeamData.wines().length;
   return <div>
-    {_tH(T,`Hi ${person.name.split(' ')[0]}`,`${TeamLearn.ROLES[person.role].label} at ${TeamData.get().venue.name||'your restaurant'}`)}
+    <div style={{display:'flex',alignItems:'center',gap:14,marginBottom:12}}><TeamFace person={person} size={64} ring={st.col}/>
+      <div><div style={{fontSize:22,fontWeight:800,color:T.ink,fontFamily:C.P,lineHeight:1.2}}>Hi {person.name.split(' ')[0]}</div><div style={{fontSize:14,color:T.mid,fontFamily:C.P,marginTop:3}}>{TeamLearn.ROLES[person.role].label} at {TeamData.get().venue.name||'your restaurant'}</div></div></div>
     {empty?<Card><div style={{fontSize:15,color:T.ink2,fontFamily:C.P,lineHeight:1.5}}>No wine list yet. {TeamLearn.ROLES[person.role].label==='Manager'||person.role==='buyer'?'Upload it from the Upload tab and your training is written from it.':'Your manager uploads it, then your training appears here.'}</div></Card>:<>
     <Card style={{display:'flex',gap:14,alignItems:'center'}}>
       <TeamRing pct={r.pct} col={st.col}/>
@@ -123,7 +130,8 @@ function TeamWines({pid,open}){ const T=useTheme();
       return <div key={w.id} role="button" data-testid="team-wine-row" onClick={()=>open({view:'wine',id:w.id})} style={{display:'flex',alignItems:'center',gap:10,padding:'11px 14px',borderTop:i?`1px solid ${T.line}`:'none',cursor:'pointer'}}>
         <div style={{width:8,height:8,borderRadius:4,background:_tTypeCol(T,w.type),flexShrink:0}}/>
         <div style={{flex:1,minWidth:0}}><div style={{fontSize:15,fontWeight:600,color:T.ink,fontFamily:C.P}}>{TeamData.short(w)}</div>
-          <div style={{fontSize:13,color:T.mid,fontFamily:C.P}}>{[w.vintage||'NV',w.region,w.glass&&`glass ${w.glass}`,w.bottle&&`bottle ${w.bottle}`].filter(Boolean).join(' · ')}</div></div>
+          <div style={{fontSize:13,color:T.mid,fontFamily:C.P}}>{[w.vintage||'NV',w.region,w.glass&&`glass ${w.glass}`,w.bottle&&`bottle ${w.bottle}`].filter(Boolean).join(' · ')}</div>
+          {(()=>{ const dw=TeamData.window(w); return dw&&<div style={{fontSize:12,fontWeight:600,color:dw.stage==='ready'?'#5FD48F':dw.stage==='young'?'#7FB3F0':'#F2B84B',fontFamily:C.P,marginTop:2}}>{dw.word}{dw.source==='claude'?` · ${dw.line}`:''}</div>; })()}</div>
         {k&&<Icon n="check" sz={16} col="#5FD48F"/>}<Icon n="chevron" sz={12} col={T.mid}/>
       </div>; })}</Card></div>)}
   </div>; }
@@ -141,6 +149,18 @@ function TeamWine({id,pid,open}){ const T=useTheme(), w=TeamData.wine(id), c=Tea
       {_tLabel(T,'What it tastes like')}<Card><div style={{fontSize:15,color:T.ink2,fontFamily:C.P,lineHeight:1.5,marginBottom:10}}>{c.taste}</div>
         {c.style&&<>{bar('b','Body',c.style.body,Palate.HOW.body)}{bar('a','Acidity',c.style.acid,Palate.HOW.acidity)}{w.type==='red'||c.style.tannin?bar('t','Tannin',c.style.tannin,Palate.HOW.tannins):null}{bar('s','Sweetness',c.style.sweet)}</>}</Card>
       {_tLabel(T,'Grape and place')}<Card><div style={{fontSize:15,color:T.ink2,fontFamily:C.P,lineHeight:1.55}}>{c.grape} {c.place}{c.producer?' '+c.producer:''}</div></Card>
+      {(()=>{ const dw=TeamData.window(w); return dw&&<div data-testid="team-window">{_tLabel(T,'Where it is in its life')}<Card>
+        <div style={{fontSize:16,fontWeight:700,fontFamily:C.P,color:dw.stage==='ready'?'#5FD48F':dw.stage==='young'?'#7FB3F0':'#F2B84B'}}>{dw.word}</div>
+        <div style={{fontSize:14,color:T.ink2,fontFamily:C.P,marginTop:3}}>{dw.line}{w.peak&&w.peak.rating?` · ${w.peak.rating} vintage`:''}</div>
+        {w.peak&&w.peak.note&&<div style={{fontSize:14,color:T.mid,fontFamily:C.P,marginTop:6,lineHeight:1.5}}>{w.peak.note}</div>}
+        {(()=>{ const v=w.vintage, span=Math.max(2,(dw.until-v)*1.3), yr=new Date().getFullYear(), at=x=>Math.max(0.02,Math.min(0.98,(x-v)/span))*100;
+          return <div style={{position:'relative',height:10,marginTop:12,borderRadius:5,background:T.line}}>
+            <div style={{position:'absolute',left:at(dw.from)+'%',width:(at(dw.to)-at(dw.from))+'%',top:0,bottom:0,borderRadius:5,background:'#5FD48F66'}}/>
+            <div style={{position:'absolute',left:at(yr)+'%',top:-3,width:3,height:16,marginLeft:-1,borderRadius:2,background:T.ink}}/>
+            <div style={{position:'absolute',left:0,top:14,fontSize:11,color:T.mid,fontFamily:C.P}}>{v}</div><div style={{position:'absolute',right:0,top:14,fontSize:11,color:T.mid,fontFamily:C.P}}>{dw.until+2}</div>
+          </div>; })()}
+        <div style={{height:14}}/>
+      </Card></div>; })()}
       {c.serve&&<>{_tLabel(T,'Serving')}<Card><div style={{fontSize:15,color:T.ink2,fontFamily:C.P,lineHeight:1.55}}>{[c.serve.temp,c.serve.glass,c.serve.decant&&c.serve.decant!=='no'?`decant ${c.serve.decant}`:'no need to decant'].filter(Boolean).join(' · ')}</div></Card></>}
       {c.dishes&&c.dishes.length>0&&<>{_tLabel(T,'With our menu')}<Card style={{padding:0}}>{c.dishes.map((x,i)=><div key={i} style={{padding:'11px 14px',borderTop:i?`1px solid ${T.line}`:'none'}}><div style={{fontSize:15,fontWeight:600,color:T.ink,fontFamily:C.P}}>{x.dish}</div><div style={{fontSize:14,color:T.mid,fontFamily:C.P,lineHeight:1.45}}>{x.why}</div></div>)}</Card></>}
       {c.alts&&c.alts.length>0&&<>{_tLabel(T,'Offer instead')}<Card style={{padding:0}}>{c.alts.map((a,i)=>{ const o=TeamData.wine(a.id); return o&&<div key={i} role="button" onClick={()=>open({view:'wine',id:a.id})} style={{padding:'11px 14px',borderTop:i?`1px solid ${T.line}`:'none',cursor:'pointer'}}><div style={{fontSize:15,fontWeight:600,color:T.ink,fontFamily:C.P}}>{TeamData.short(o)}</div><div style={{fontSize:14,color:T.mid,fontFamily:C.P}}>{a.when}</div></div>; })}</Card></>}
@@ -184,7 +204,14 @@ function _tReadFile(file){ return new Promise((res,rej)=>{ const fr=new FileRead
 function TeamUpload({onChanged}){ const T=useTheme(), cr=T.lift(C.cr);
   const [stage,setStage]=React.useState(()=>TeamData.get().draft?'review':'idle'), [kind,setKind]=React.useState(()=>(TeamData.get().draft||{}).kind||'list');
   const [prog,setProg]=React.useState(null), [err,setErr]=React.useState(''), [diff,setDiff]=React.useState(()=>TeamData.diff());
-  const fileRef=React.useRef(null), pend=TeamData.pending();
+  const fileRef=React.useRef(null), labelRef=React.useRef(null), pend=TeamData.pending();
+  const [found,setFound]=React.useState(null); // a bottle read from its label, before it joins the draft
+  const onLabel=async e=>{ const f=e.target.files&&e.target.files[0]; e.target.value=''; if(!f) return;
+    setStage('reading'); setErr(''); setProg({label:'Reading the label',a:0,b:1});
+    try{ const {data}=await _tReadFile(f); const w=await TeamData.readLabel(data); if(!w) throw new Error('No wine label found in that photo. Try again with the label filling the frame.');
+      setFound({...w,section:TeamData._sectionFor(w.type)}); setStage('found'); }
+    catch(x){ setErr(x.message||'We couldn\'t read that label.'); setStage('idle'); } };
+  const addFound=()=>{ setDiff(TeamData.draftAdd(found)); setFound(null); setStage('review'); };
   const pick=k=>{ setKind(k); setErr(''); fileRef.current&&fileRef.current.click(); };
   const appendRef=React.useRef(false);
   const onFiles=async e=>{ const fs=[...(e.target.files||[])]; e.target.value=''; if(!fs.length) return;
@@ -199,6 +226,8 @@ function TeamUpload({onChanged}){ const T=useTheme(), cr=T.lift(C.cr);
     onChanged&&onChanged(); };
   const resume=async()=>{ setStage('writing'); setErr('');
     try{ await TeamData.refresh({kind:'list',added:[],removed:[],changed:[]},(label,a,b)=>setProg({label,a,b})); setStage('done'); }catch(x){ setErr(x.message||'Stopped again.'); setStage('idle'); } onChanged&&onChanged(); };
+  const secs=[...new Set(TeamData.wines().map(w=>w.section).filter(Boolean))];
+  const fld={padding:'10px 12px',borderRadius:10,border:`1px solid ${T.line}`,background:T.soft,color:T.ink,fontFamily:C.P,fontSize:16,outline:'none',minWidth:0};
   const sec=(t,items,render)=>items.length>0&&<>{_tLabel(T,`${t} (${items.length})`)}<Card style={{padding:0}}>{items.slice(0,40).map((x,i)=><div key={i} style={{padding:'10px 14px',borderTop:i?`1px solid ${T.line}`:'none',fontSize:14,color:T.ink2,fontFamily:C.P}}>{render(x)}</div>)}{items.length>40&&<div style={{padding:'10px 14px',fontSize:13,color:T.mid,fontFamily:C.P}}>and {items.length-40} more</div>}</Card></>;
   const wl=w=>`${TeamData.label(w)}${w.glass?` · glass ${w.glass}`:''}${w.bottle?` · bottle ${w.bottle}`:''}`;
   return <div data-testid="team-upload">
@@ -207,11 +236,26 @@ function TeamUpload({onChanged}){ const T=useTheme(), cr=T.lift(C.cr);
       {_tH(T,'Upload','A photo or PDF of your wine list or menu. Several photos for a long list. Nothing reaches your staff until you approve what changed.')}
       {stage==='done'&&<Card style={{marginBottom:12,borderColor:'#5FD48F66'}}><div data-testid="team-published" style={{fontSize:15,color:'#5FD48F',fontWeight:700,fontFamily:C.P}}>Published. Your staff's training is up to date.</div></Card>}
       {err&&<Card style={{marginBottom:12,borderColor:'#F28B7D66'}}><div style={{fontSize:14,color:'#F28B7D',fontFamily:C.P}}>{err}</div></Card>}
-      {(pend.cards>0||pend.pairings>0)&&<Card style={{marginBottom:12}}><div style={{fontSize:14,color:T.ink2,fontFamily:C.P,marginBottom:8}}>{[pend.cards&&`${pend.cards} wine${pend.cards===1?'':'s'} without a staff card`,pend.pairings&&`${pend.pairings} dish${pend.pairings===1?'':'es'} without pairings`].filter(Boolean).join(' and ')}.</div><Btn small onClick={resume}>Finish writing them</Btn></Card>}
+      {(pend.cards>0||pend.pairings>0||pend.windows>0)&&<Card style={{marginBottom:12}}><div data-testid="team-pending" style={{fontSize:14,color:T.ink2,fontFamily:C.P,marginBottom:8}}>{[pend.cards&&`${pend.cards} wine${pend.cards===1?'':'s'} without a staff card`,pend.pairings&&`${pend.pairings} dish${pend.pairings===1?'':'es'} without pairings`,pend.windows&&`${pend.windows} drinking window${pend.windows===1?'':'s'} to check`].filter(Boolean).join(', ')}.</div><Btn small onClick={resume}>Write them now</Btn></Card>}
       <div style={{display:'flex',flexDirection:'column',gap:10}}>
         <Card onClick={()=>pick('list')} style={{cursor:'pointer',display:'flex',gap:12,alignItems:'center'}}><Icon n="wine" sz={22} col={cr}/><div><div style={{fontSize:16,fontWeight:700,color:T.ink,fontFamily:C.P}}>Wine list</div><div style={{fontSize:13,color:T.mid,fontFamily:C.P}}>{TeamData.wines().length?`${TeamData.wines().length} wines live. Upload the new one to update it.`:'Your full list, by the glass and by the bottle.'}</div></div></Card>
         <Card onClick={()=>pick('menu')} style={{cursor:'pointer',display:'flex',gap:12,alignItems:'center'}}><Icon n="fork" sz={22} col={cr}/><div><div style={{fontSize:16,fontWeight:700,color:T.ink,fontFamily:C.P}}>Menu</div><div style={{fontSize:13,color:T.mid,fontFamily:C.P}}>{TeamData.dishes().length?`${TeamData.dishes().length} dishes live.`:'So every wine is paired with your dishes.'}</div></div></Card>
-      </div></>}
+        {TeamData.wines().length>0&&<Card onClick={()=>labelRef.current&&labelRef.current.click()} style={{cursor:'pointer',display:'flex',gap:12,alignItems:'center'}}><Icon n="camera" sz={22} col={cr}/><div><div style={{fontSize:16,fontWeight:700,color:T.ink,fontFamily:C.P}}>Add a wine from its label</div><div style={{fontSize:13,color:T.mid,fontFamily:C.P}}>A new arrival: photograph the bottle and it joins the list, with its card, pairings and drinking window.</div></div></Card>}
+        <input ref={labelRef} type="file" accept="image/*" capture="environment" onChange={onLabel} data-testid="team-label-file" style={{display:'none'}}/>
+      </div>
+      {TeamData.wines().length>0&&<div role="button" data-testid="team-export" onClick={()=>TeamData.exportFile()} style={{fontSize:13,color:T.mid,fontFamily:C.P,marginTop:18,cursor:'pointer',textDecoration:'underline'}}>Export this restaurant's list, menu and training as a file</div>}
+      </>}
+    {stage==='found'&&found&&<div data-testid="team-found">
+      {_tH(T,'New arrival',`Read from the label${found.confidence!=='high'?', check it':''}. Set where it sits on the list and its prices, then add it.`)}
+      <Card><div style={{display:'flex',flexDirection:'column',gap:8}}>
+        <div style={{display:'flex',gap:8}}><input aria-label="Producer" value={found.producer} onChange={e=>setFound({...found,producer:e.target.value})} placeholder="Producer" style={{...fld,flex:1}}/><input aria-label="Vintage" value={found.vintage||''} onChange={e=>setFound({...found,vintage:/^\d{4}$/.test(e.target.value)?+e.target.value:null})} placeholder="Year" style={{...fld,width:90}}/></div>
+        <input aria-label="Wine" value={found.name} onChange={e=>setFound({...found,name:e.target.value})} placeholder="Wine" style={fld}/>
+        <div style={{fontSize:13,color:T.mid,fontFamily:C.P}}>{[found.type,found.region,found.country,(found.grapes||[]).join(', ')].filter(Boolean).join(' · ')}</div>
+        <select aria-label="Section" value={found.section} onChange={e=>setFound({...found,section:e.target.value})} style={{...fld,background:T.card,colorScheme:'dark'}}>{secs.map(x=><option key={x} value={x}>{x}</option>)}</select>
+        <div style={{display:'flex',gap:8}}><input aria-label="Glass price" value={found.glass} onChange={e=>setFound({...found,glass:e.target.value})} placeholder="Glass price (or blank)" style={{...fld,flex:1}}/><input aria-label="Bottle price" value={found.bottle} onChange={e=>setFound({...found,bottle:e.target.value})} placeholder="Bottle price" style={{...fld,flex:1}}/></div>
+      </div></Card>
+      <div style={{display:'flex',gap:8,marginTop:14}}><Btn style={{flex:1}} onClick={()=>{ setFound(null); setStage('idle'); }}>Cancel</Btn><Btn primary style={{flex:2}} onClick={addFound}>Add to the list</Btn></div>
+    </div>}
     {(stage==='reading'||stage==='writing')&&<Card style={{marginTop:20}}><WritingWait title={prog?`${prog.label}… ${prog.a} of ${prog.b}`:'Starting…'} sub={stage==='reading'?'Checking every line':'Staff cards, questions and pairings'} wine={null}/></Card>}
     {stage==='review'&&diff&&<div data-testid="team-review">
       {_tH(T,`Check the new ${diff.kind==='list'?'wine list':'menu'}`,`${diff.added.length} new, ${diff.removed.length} gone, ${diff.changed.length} changed, ${diff.same} the same. Publishing writes training for what's new and assigns it to your staff.`)}
@@ -228,16 +272,23 @@ function TeamUpload({onChanged}){ const T=useTheme(), cr=T.lift(C.cr);
 function TeamPeople({open,onChanged}){ const T=useTheme(), cr=T.lift(C.cr);
   const [name,setName]=React.useState(''), [role,setRole]=React.useState('server'), [,bump]=React.useState(0);
   const ppl=TeamLearn.people(), weak=TeamLearn.weakWines().filter(x=>x.of>0).slice(0,8), ret=TeamLearn.retention(null);
-  const add=()=>{ if(!name.trim()) return; TeamLearn.addPerson(name.trim(),role); setName(''); bump(x=>x+1); onChanged&&onChanged(); };
+  const [photo,setPhoto]=React.useState(null), photoRef=React.useRef(null);
+  const onPhoto=e=>{ const f=e.target.files&&e.target.files[0]; e.target.value=''; if(!f) return; const fr=new FileReader(); fr.onload=()=>{ const img=new Image(); img.onload=()=>{
+    const side=Math.min(img.width,img.height), top=Math.max(0,Math.round(img.height*0.42-side/2)), cv=document.createElement('canvas'); cv.width=cv.height=256; const c=cv.getContext('2d');
+    c.beginPath(); c.arc(128,128,128,0,Math.PI*2); c.clip(); c.drawImage(img,0,top,side,side,0,0,256,256); setPhoto(cv.toDataURL('image/png')); }; img.src=fr.result; }; fr.readAsDataURL(f); };
+  const add=()=>{ if(!name.trim()) return; TeamLearn.addPerson(name.trim(),role,photo); setName(''); setPhoto(null); bump(x=>x+1); onChanged&&onChanged(); };
   const counts={ready:0,slipping:0,not:0}; ppl.forEach(p=>{ const r=TeamLearn.readiness(p.id); if(r) counts[r.state]++; });
   return <div data-testid="team-people">{_tH(T,'Your team',`${counts.ready} ready, ${counts.slipping} slipping, ${counts.not} not ready yet`)}
     <Card style={{padding:0}}>{ppl.map((p,i)=>{ const r=TeamLearn.readiness(p.id), st=_tState[r.state];
-      return <div key={p.id} role="button" onClick={()=>{ TeamLearn.setMe(p.id); onChanged&&onChanged(); open({tab:'today'}); }} style={{display:'flex',alignItems:'center',gap:10,padding:'11px 14px',borderTop:i?`1px solid ${T.line}`:'none',cursor:'pointer'}}>
+      return <div key={p.id} role="button" data-testid="team-person" onClick={()=>{ TeamLearn.setMe(p.id); onChanged&&onChanged(); open({tab:'today'}); }} style={{display:'flex',alignItems:'center',gap:12,padding:'11px 14px',borderTop:i?`1px solid ${T.line}`:'none',cursor:'pointer'}}>
+        <TeamFace person={p} size={44} ring={st.col}/>
         <div style={{flex:1,minWidth:0}}><div style={{fontSize:15,fontWeight:600,color:T.ink,fontFamily:C.P}}>{p.name}</div><div style={{fontSize:13,color:T.mid,fontFamily:C.P}}>{TeamLearn.ROLES[p.role].label}{r.overdue?` · ${r.overdue} overdue`:''}</div></div>
         <div style={{textAlign:'right'}}><div style={{fontSize:15,fontWeight:800,color:st.col,fontFamily:C.P}}>{r.pct}%</div><div style={{fontSize:12,color:st.col,fontFamily:C.P}}>{st.label}</div></div>
       </div>; })}</Card>
     {_tLabel(T,'Add someone')}
     <Card><div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
+      <input ref={photoRef} type="file" accept="image/*" onChange={onPhoto} style={{display:'none'}}/>
+      <div role="button" aria-label="Photo" onClick={()=>photoRef.current&&photoRef.current.click()} style={{cursor:'pointer'}}><TeamFace person={{name:name||'+',photo}} size={44}/></div>
       <input aria-label="Name" placeholder="Name" value={name} onChange={e=>setName(e.target.value)} style={{flex:'1 1 140px',padding:'10px 12px',borderRadius:10,border:`1px solid ${T.line}`,background:T.soft,color:T.ink,fontFamily:C.P,fontSize:16,outline:'none'}}/>
       <select aria-label="Role" value={role} onChange={e=>setRole(e.target.value)} style={{padding:'10px 12px',borderRadius:10,border:`1px solid ${T.line}`,background:T.card,color:T.ink,fontFamily:C.P,fontSize:16,colorScheme:'dark'}}>{Object.entries(TeamLearn.ROLES).map(([k,r])=><option key={k} value={k}>{r.label}</option>)}</select>
       <Btn primary small onClick={add}>Add</Btn></div>
@@ -252,4 +303,4 @@ function TeamPeople({open,onChanged}){ const T=useTheme(), cr=T.lift(C.cr);
     </div>; })}<div style={{fontSize:12,color:T.mid,fontFamily:C.P}}>Tap a figure to raise it (it wraps back to 50%).</div></Card>
   </div>; }
 
-Object.assign(window,{TeamRing,TeamSetup,TeamToday,TeamDrill,TeamWines,TeamWine,TeamMenu,TeamDish,TeamUpload,TeamPeople});
+Object.assign(window,{TeamFace,TeamRing,TeamSetup,TeamToday,TeamDrill,TeamWines,TeamWine,TeamMenu,TeamDish,TeamUpload,TeamPeople});
