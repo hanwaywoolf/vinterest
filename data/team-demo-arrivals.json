@@ -1,0 +1,313 @@
+{
+ "exported": "2026-10-30T22:48:52.167Z",
+ "note": "The demo's prepared new arrivals (docs/business.md): each label read by the consumer app's label scan, and its staff card, pairings and drinking window written through the Worker against The Larkspur's list and menu. Photos in team/labels/.",
+ "arrivals": [
+  {
+   "key": "ardanza",
+   "photo": "labels/ardanza.jpg",
+   "label": {
+    "producer": "La Rioja Alta",
+    "name": "Viña Ardanza Reserva",
+    "vintage": 2016,
+    "type": "red",
+    "region": "Rioja",
+    "country": "Spain",
+    "grapes": [
+     "Tempranillo",
+     "Garnacha"
+    ],
+    "grapes_basis": "known",
+    "section": "Red",
+    "glass": "£14",
+    "bottle": "£62",
+    "other": "",
+    "bin": ""
+   },
+   "kind": "changed",
+   "card": null,
+   "peak": {
+    "from": 2027,
+    "to": 2034,
+    "until": 2038,
+    "rating": "Outstanding",
+    "note": "The wine is moving out of its primary fruit phase into a more complex stage, with Tempranillo's red cherry now layering with leather, dried herbs and sweet vanilla spice from long American oak ageing, while the Garnacha adds warmth and the firm but resolving tannins and fresh acidity promise slow, graceful evolution."
+   },
+   "peakVintage": 2016,
+   "pairings": {
+    "d-braised-lamb-shoulder-white-beans-rosemary": {
+     "best": [
+      {
+       "id": "w-domaine-tempier-bandol",
+       "why": "Bandol's herby, savoury character echoes the rosemary and salsa verde, and its firm tannin handles the rich, soft lamb."
+      },
+      {
+       "id": "w-cvne-imperial-reserva",
+       "why": "Rioja's gentle tannin and savoury, herbal notes suit slow-cooked lamb without overwhelming the beans."
+      },
+      {
+       "id": "w-la-rioja-alta-vina-ardanza-reserva",
+       "why": "The tannin cuts through the richness of the lamb, and the mellow, mature flavours suit the long braise."
+      }
+     ],
+     "glass": {
+      "id": "w-la-rioja-alta-vina-ardanza-reserva",
+      "why": "The only proper structured red by the glass that works here: tannin for the fat, savoury notes for the rosemary."
+     },
+     "avoid": {
+      "id": "w-cloudy-bay-sauvignon-blanc",
+      "why": "Sharp, grassy Sauvignon has nothing to stand up to eight hours of braised lamb and would taste thin and sour."
+     }
+    }
+   }
+  },
+  {
+   "key": "chablis",
+   "photo": "labels/chablis.jpg",
+   "label": {
+    "producer": "Patrick Piuze",
+    "name": "Chablis Terroir de Fleys",
+    "vintage": 2024,
+    "type": "white",
+    "region": "Chablis",
+    "country": "France",
+    "grapes": [
+     "Chardonnay"
+    ],
+    "grapes_basis": "label",
+    "section": "White",
+    "glass": "£15",
+    "bottle": "£68",
+    "other": "",
+    "bin": ""
+   },
+   "kind": "added",
+   "card": {
+    "pitch": "This is a Chablis, a crisp white from northern France made from Chardonnay, and Chardonnay can taste lean and citrussy or rich and buttery depending on how it's made. If you like a fresh, clean white that works well with seafood, it's a lovely choice, and it's £15 a glass or £68 a bottle.",
+    "taste": "Most likely fresh and citrussy with a clean, lean feel, though how much oak or creaminess it shows depends on how it was made, so check with the team if a guest asks.",
+    "style": {
+     "body": 3,
+     "acid": 4,
+     "tannin": 0,
+     "sweet": 1
+    },
+    "grape": "Chardonnay is a neutral grape, which means it takes on whatever the winemaker does to it: oak gives vanilla and butter, while steel tanks keep it lean and citrussy.",
+    "place": "Chablis is in northern France, where the climate is cool and frosty weather is a regular risk, and cool places like this usually give fresher, sharper white wines; the name is protected (AOC) and has four tiers: Petit Chablis, Chablis, Premier Cru and Grand Cru.",
+    "producer": "",
+    "serve": {
+     "temp": "8-10°C",
+     "glass": "medium white wine glass",
+     "decant": "no"
+    },
+    "dishes": [
+     {
+      "dish": "Oysters, shallot vinegar",
+      "why": "Unoaked, lean Chardonnay suits oysters, and the wine's freshness matches the salty, sharp, delicate flavours of the dish."
+     },
+     {
+      "dish": "Whole lemon sole, caper butter",
+      "why": "A white fish like lemon sole is a classic partner for a lean, citrussy Chardonnay, and the wine's freshness lifts the caper butter."
+     },
+     {
+      "dish": "Roast chicken, morels, tarragon cream",
+      "why": "A creamy sauce suits a Chardonnay with a bit of richness, so if the guest likes a rounder style this is a good match."
+     }
+    ],
+    "alts": [
+     {
+      "id": "w-domaine-laroche-chablis-saint-martin",
+      "when": "same grape and region, a little cheaper at £13 a glass or £58 a bottle"
+     },
+     {
+      "id": "w-william-fevre-chablis-premier-cru-montmains",
+      "when": "same style, more structure, for a special occasion"
+     },
+     {
+      "id": "w-pascal-jolivet-sancerre",
+      "when": "a different grape, crisp and fresh, under £65 a bottle"
+     }
+    ],
+    "qs": [
+     {
+      "k": "recognise",
+      "q": "Which grape is the Patrick Piuze Chablis Terroir de Fleys made from?",
+      "opts": [
+       "Chardonnay",
+       "Sauvignon Blanc",
+       "Riesling",
+       "Grüner Veltliner"
+      ],
+      "a": 0,
+      "why": "The label says Chardonnay, which is the grape of Chablis.",
+      "id": "w-patrick-piuze-chablis-terroir-de-fleys#0"
+     },
+     {
+      "k": "recognise",
+      "q": "What does the climate in Chablis, where the Patrick Piuze Chablis Terroir de Fleys comes from, look like?",
+      "opts": [
+       "Cool, with frost a regular risk",
+       "Hot and dry all year",
+       "Warm and humid by the sea",
+       "Mild with no frosts at all"
+      ],
+      "a": 0,
+      "why": "Chablis has a cool continental climate with frost a regular risk.",
+      "id": "w-patrick-piuze-chablis-terroir-de-fleys#1"
+     },
+     {
+      "k": "recall",
+      "q": "Which country is the Patrick Piuze Chablis Terroir de Fleys from?",
+      "ans": "France",
+      "acc": [
+       "France",
+       "Chablis, France",
+       "northern France"
+      ],
+      "why": "Chablis is a region in France.",
+      "id": "w-patrick-piuze-chablis-terroir-de-fleys#2"
+     },
+     {
+      "k": "recall",
+      "q": "What price is a glass of the Patrick Piuze Chablis Terroir de Fleys?",
+      "ans": "£15",
+      "acc": [
+       "£15",
+       "15 pounds",
+       "fifteen pounds"
+      ],
+      "why": "It is £15 a glass and £68 a bottle.",
+      "id": "w-patrick-piuze-chablis-terroir-de-fleys#3"
+     },
+     {
+      "k": "apply",
+      "q": "A guest orders the oysters and asks for a glass of white to go with them. How do you suggest the Patrick Piuze Chablis Terroir de Fleys?",
+      "key": [
+       "Say it is a crisp Chablis made from Chardonnay",
+       "Explain that lean, unoaked-style Chardonnay suits oysters",
+       "Give the price: £15 a glass"
+      ],
+      "why": "Lean, fresh Chardonnay is a classic partner for oysters, and the server should name the price.",
+      "id": "w-patrick-piuze-chablis-terroir-de-fleys#4"
+     },
+     {
+      "k": "contrast",
+      "q": "How does the Patrick Piuze Chablis Terroir de Fleys differ in price from the Domaine Laroche Chablis Saint Martin by the glass?",
+      "ans": "The Patrick Piuze is £15 a glass and the Laroche is £13, so the Piuze costs £2 more",
+      "acc": [
+       "Piuze is £2 more",
+       "Piuze £15 Laroche £13",
+       "Piuze costs more"
+      ],
+      "why": "Both are Chablis from Chardonnay, but the Piuze is £15 a glass against £13 for the Laroche.",
+      "id": "w-patrick-piuze-chablis-terroir-de-fleys#5"
+     }
+    ]
+   },
+   "peak": {
+    "from": 2027,
+    "to": 2031,
+    "until": 2033,
+    "rating": "Good",
+    "note": "Still very young and tightly wound, this Fleys shows crisp citrus, oyster-shell minerality and bright acidity that will soften into richer, more textured fruit with a little cellar time, though the small, frost-affected harvest gives it a leaner, more linear frame than a generous vintage."
+   },
+   "peakVintage": 2024,
+   "pairings": {
+    "d-sourdough-cultured-butter": {
+     "best": [
+      {
+       "id": "w-billecart-salmon-brut-reserve",
+       "why": "Its toasty, bready notes mirror the sourdough crust while the bubbles cut through the butter."
+      },
+      {
+       "id": "w-patrick-piuze-chablis-terroir-de-fleys",
+       "why": "Chablis has a creamy, savoury depth that loves butter, and its acidity keeps each bite fresh with the salt."
+      },
+      {
+       "id": "w-brundlmayer-gruner-veltliner-kamptal-terrassen",
+       "why": "Gruner's gentle spice and crisp acidity cleanse the palate after rich butter and salty crust."
+      }
+     ],
+     "glass": {
+      "id": "w-brundlmayer-gruner-veltliner-kamptal-terrassen",
+      "why": "A nicely priced glass that is crisp and easygoing, ideal for nibbling bread while you decide."
+     },
+     "avoid": {
+      "id": "w-g-d-vajra-barolo-albe",
+      "why": "Heavy tannin has nothing to grip in simple bread and butter and would taste harsh and drying."
+     }
+    },
+    "d-seared-scallops-cauliflower-brown-butter": {
+     "best": [
+      {
+       "id": "w-patrick-piuze-chablis-terroir-de-fleys",
+       "why": "Chablis has the richness to match brown butter and the acidity to lift the sweet scallops and cut the capers."
+      },
+      {
+       "id": "w-william-fevre-chablis-premier-cru-montmains",
+       "why": "A premier cru has extra depth and mineral length for the nutty butter and the sweetness of the raisins."
+      },
+      {
+       "id": "w-gusbourne-blanc-de-blancs",
+       "why": "Fine bubbles and citrus freshness lift the richness while respecting the delicate scallops."
+      }
+     ],
+     "glass": {
+      "id": "w-patrick-piuze-chablis-terroir-de-fleys",
+      "why": "A glass of this creamy, mineral Chablis suits the sweet scallops and nutty butter beautifully."
+     },
+     "avoid": {
+      "id": "w-catena-malbec",
+      "why": "Its tannins and heavy fruit would overpower the delicate scallops and taste metallic against the shellfish."
+     }
+    },
+    "d-roast-chicken-morels-tarragon-cream": {
+     "best": [
+      {
+       "id": "w-domaine-laroche-chablis-saint-martin",
+       "why": "Chablis has the crisp acidity to cut through the tarragon cream, and its soft, stony fruit sits nicely with the earthy morels."
+      },
+      {
+       "id": "w-patrick-piuze-chablis-terroir-de-fleys",
+       "why": "A touch more richness and depth than the Saint Martin, so it matches the creamy sauce and the savoury mushrooms beautifully."
+      },
+      {
+       "id": "w-louis-jadot-bourgogne-pinot-noir-couvent-des-jacobins",
+       "why": "Light red Burgundy and morels are a classic pairing, and the bright acidity keeps the cream from feeling heavy."
+      }
+     ],
+     "glass": {
+      "id": "w-domaine-laroche-chablis-saint-martin",
+      "why": "By the glass this is the one: fresh enough to cut the cream, gentle enough not to bully the chicken."
+     },
+     "avoid": {
+      "id": "w-g-d-vajra-barolo-albe",
+      "why": "Barolo's big tannins would flatten the delicate chicken and the tarragon."
+     }
+    },
+    "d-wild-mushroom-risotto-aged-parmesan": {
+     "best": [
+      {
+       "id": "w-produttori-del-barbaresco-barbaresco",
+       "why": "Earthy, savoury Nebbiolo is a natural with mushrooms and truffle, and its acidity cuts through the creamy Parmesan."
+      },
+      {
+       "id": "w-patrick-piuze-chablis-terroir-de-fleys",
+       "why": "A richer, more textured Chablis that matches the creamy risotto while its acidity keeps things fresh."
+      },
+      {
+       "id": "w-louis-jadot-bourgogne-pinot-noir-couvent-des-jacobins",
+       "why": "Pinot Noir and mushrooms share the same forest-floor character, and it is light enough not to crush the rice."
+      }
+     ],
+     "glass": {
+      "id": "w-louis-jadot-bourgogne-pinot-noir-couvent-des-jacobins",
+      "why": "Earthy red fruit mirrors the mushrooms and the acidity cuts through the Parmesan richness."
+     },
+     "avoid": {
+      "id": "w-cloudy-bay-sauvignon-blanc",
+      "why": "Its sharp, grassy edge would fight the earthy truffle and creamy rice."
+     }
+    }
+   }
+  }
+ ]
+}

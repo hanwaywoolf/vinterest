@@ -164,7 +164,8 @@ test('an uploaded list is reviewed before it goes live; publishing writes cards 
   // Nothing is live until it's published.
   expect(await page.evaluate(() => TeamData.wines().length)).toBe(10);
   await page.getByText('Publish', { exact: true }).click();
-  await expect(page.getByTestId('team-published')).toBeVisible();
+  // Publishing writes in the background (TeamJobs): the screen is free at once and the chip says when it's done.
+  await expect(page.getByTestId('team-job')).toHaveAttribute('data-state', 'done');
   const out = await page.evaluate(() => ({
     live: TeamData.wines().map((w) => w.id), vintage: TeamData.wine('w-catena-malbec').vintage,
     card: !!TeamData.card('w-tenuta-di-arceno-chianti-classico'), pair: TeamData.pairing('d-lamb'),
@@ -221,7 +222,7 @@ test('the demo restaurant: 30 wines, photos, and a wine added from its label upd
   await page.getByText('Add to the list').click();
   await expect(page.getByTestId('team-review')).toContainText('1 new, 0 gone, 0 changed, 30 the same');
   await page.getByText('Publish', { exact: true }).click();
-  await expect(page.getByTestId('team-published')).toBeVisible({ timeout: 20000 });
+  await expect(page.getByTestId('team-job')).toHaveAttribute('data-state', 'done', { timeout: 20000 });
   const out = await page.evaluate(() => { const w = TeamData.wine('w-prunotto-barolo-bussia'); return { n: TeamData.wines().length, section: w.section, glass: w.glass, peak: w.peak && w.peak.to, card: !!TeamData.card(w.id), window: TeamData.window(w).word,
     assigned: TeamLearn.people().filter((p) => TeamLearn.assignments(p.id).some((a) => a.id === w.id)).length }; });
   expect(out).toMatchObject({ n: 31, section: 'Red', glass: '£16', peak: 2036, card: true, window: 'Still young', assigned: 7 });
@@ -323,4 +324,157 @@ test('practise by the glass from Today, and a perfect wine moves the readiness f
     return { before, after: TeamLearn.readiness(me.id).pct, known: TeamLearn.readiness(me.id).parts.glass.known }; });
   expect(moved.after).toBeGreaterThan(moved.before); expect(moved.known).toBe(1);
   await expect(page.getByTestId('team-part').first()).toContainText('1 of 15 known');
+});
+
+// ── The management console (team-console.jsx, docs/business.md) ──
+// A manager on a tablet or laptop (or anyone with ?view=console) gets the console: a sidebar of
+// sections and a Dashboard whose every figure is TeamReport's, with the demo's invented sales
+// labelled as such; staff never see it.
+test('the console: dashboard figures from TeamReport, the demo sales labelled, and sections that open', async ({ context, browser }) => {
+  const ctx = await browser.newContext({ viewport: { width: 1280, height: 800 } });
+  const page = await ctx.newPage();
+  const errors = []; page.on('pageerror', (e) => errors.push(e.message));
+  await stubNetwork(ctx);
+  await page.goto(`${BASE}/team/?seed=demo&view=console`);
+  await expect(page.getByTestId('team-console')).toBeVisible();
+  const want = await page.evaluate(() => { const o = TeamReport.overview(), s = TeamReport.salesSummary(7); return { avg: o.avg, overdue: o.overdue, revenue: Math.round(s.revenue), rows: TeamSales.get().rows.length, lift: TeamReport.trainedLift(28).pct, unmapped: TeamSales.unmapped().map((x) => x.item) }; });
+  expect(want.rows).toBeGreaterThan(1000);
+  await expect(page.getByTestId('dash-readiness')).toHaveText(`${want.avg}%`);
+  await expect(page.getByTestId('dash-overdue')).toHaveText(String(want.overdue));
+  await expect(page.getByTestId('sales-revenue')).toContainText(String(want.revenue));
+  await expect(page.getByTestId('sales-lift')).toContainText(`${want.lift}%`);
+  // The till knows a Picpoul the list doesn't: the "new on the list?" signal.
+  expect(want.unmapped).toEqual(['Picpoul de Pinet 175']);
+  await expect(page.getByTestId('sales-new-item')).toContainText('Picpoul');
+  expect(await page.getByTestId('demo-tag').count()).toBeGreaterThan(0);
+  // Marco's by-the-glass sales dipped the weeks he stopped drilling.
+  const marco = await page.evaluate(() => { const m = TeamLearn.people().find((p) => p.name.startsWith('Marco')); const t = TeamReport.serverTrend(m.id, 8).filter((x) => x.shifts); return { first: t[0].perShift, last: t[t.length - 1].perShift }; });
+  expect(marco.last).toBeLessThan(marco.first * 0.7);
+  // Every section opens; a row opens its detail in the panel.
+  for (const s of ['team', 'wines', 'menu', 'upload', 'pos', 'admin']) { await page.getByTestId(`console-nav-${s}`).click(); await expect(page.getByTestId(`console-${s}`)).toBeVisible(); }
+  await page.getByTestId('console-nav-team').click();
+  await page.getByTestId('team-row').first().click();
+  await expect(page.getByTestId('console-person')).toBeVisible();
+  await page.getByTestId('console-panel-close').click();
+  await expect(page.getByTestId('console-panel')).toHaveCount(0);
+  // "Train on the phone view" shows the phone app; Console brings the console back.
+  await page.getByTestId('console-who').click();
+  await expect(page.getByTestId('team-state')).toBeVisible();
+  await page.getByTestId('team-to-console').click();
+  await expect(page.getByTestId('team-console')).toBeVisible();
+  expect(errors).toEqual([]);
+  await ctx.close();
+});
+
+test('a server on a wide screen keeps the phone app; a manager on a phone gets the KPI strip, not the console', async ({ context, browser }) => {
+  const ctx = await browser.newContext({ viewport: { width: 1280, height: 800 } });
+  const page = await ctx.newPage();
+  await stubNetwork(ctx);
+  await page.goto(`${BASE}/team/?seed=demo`);
+  await expect(page.getByTestId('team-console')).toBeVisible();
+  await page.evaluate(() => { TeamLearn.setMe(TeamLearn.people().find((p) => p.role === 'server').id); });
+  await page.reload();
+  await expect(page.getByTestId('team-state')).toBeVisible();
+  await expect(page.getByTestId('team-console')).toHaveCount(0);
+  await expect(page.getByTestId('team-kpis')).toHaveCount(0);
+  await ctx.close();
+  // The phone (the default device): the manager's Today carries the KPI strip, tapping through to Team.
+  const phone = await context.newPage();
+  await stubNetwork(context);
+  await phone.goto(`${BASE}/team/?seed=demo`);
+  await expect(phone.getByTestId('team-kpis')).toBeVisible();
+  await expect(phone.getByTestId('team-console')).toHaveCount(0);
+  const avg = await phone.evaluate(() => TeamReport.overview().avg);
+  await expect(phone.getByTestId('kpi-readiness')).toContainText(`${avg}%`);
+  await expect(phone.getByTestId('kpi-sales')).toContainText('demo data');
+  await phone.getByTestId('kpi-readiness').click();
+  await expect(phone.getByTestId('team-people')).toBeVisible();
+});
+
+// A wine's prices edited on the console go through the draft: the review says what changed and
+// nothing is live until Publish; the card's line can be rewritten in the manager's own words.
+test('the console edits a wine through the draft and review, and a manager can rewrite what to say', async ({ browser }) => {
+  const ctx = await browser.newContext({ viewport: { width: 1280, height: 800 } });
+  const page = await ctx.newPage();
+  await stubNetwork(ctx, { claudeText: (b) => (b.purpose === 'team_pairings' ? '{"pairings":[]}' : '') });
+  await page.goto(`${BASE}/team/?seed=demo&view=console`);
+  await page.getByTestId('console-nav-wines').click();
+  await page.getByTestId('wines-edit').first().click();
+  await page.getByLabel('Glass price').fill('£15');
+  await page.getByText('Review the change').click();
+  await expect(page.getByTestId('team-review')).toContainText('0 new, 0 gone, 1 changed, 29 the same');
+  await expect(page.getByTestId('team-review')).toContainText('glass £14 → £15');
+  expect(await page.evaluate(() => TeamData.wines()[0].glass)).toBe('£14');
+  await page.getByText('Publish', { exact: true }).click();
+  await expect(page.getByTestId('team-job')).toHaveAttribute('data-state', 'done');
+  expect(await page.evaluate(() => TeamData.wines()[0].glass)).toBe('£15');
+  // The card's line.
+  await page.getByTestId('console-nav-wines').click();
+  await page.getByTestId('wines-row').first().click();
+  await page.getByTestId('team-pitch-edit').click();
+  await page.getByLabel('What to say').fill('Our house fizz: Sussex chalk, a touch of brioche.');
+  await page.getByText('Save', { exact: true }).click();
+  await expect(page.getByTestId('team-pitch')).toHaveText('Our house fizz: Sussex chalk, a touch of brioche.');
+  expect(await page.evaluate(() => !!TeamData.card(TeamData.wines()[0].id).edited)).toBe(true);
+  await ctx.close();
+});
+
+// The demo's prepared arrivals (data/team-demo-arrivals.json): Carey's two bottles, read ahead and
+// their training written, publish with no Claude call: the Chablis as a new wine with its card,
+// pairings and window; the Viña Ardanza 2016 as a new vintage of the 2015 on the list, card kept.
+test('prepared arrivals publish offline: a new Chablis with its card, and a new vintage of the Ardanza', async ({ context, page }) => {
+  const reqs = [];
+  await stubNetwork(context, { claudeRequests: reqs });
+  await page.goto(`${BASE}/team/?seed=demo`);
+  await expect(page.getByTestId('team-state')).toBeVisible();
+  await page.getByTestId('team-tab-upload').click();
+  await expect(page.getByTestId('team-arrival')).toHaveCount(2);
+  await page.getByTestId('team-arrival').nth(1).click();
+  await expect(page.getByLabel('Producer')).toHaveValue('Patrick Piuze');
+  await expect(page.getByLabel('Glass price')).toHaveValue('£15');
+  await expect(page.getByTestId('team-read-live')).toBeVisible();
+  await page.getByText('Add to the list').click();
+  await expect(page.getByTestId('team-review')).toContainText('1 new, 0 gone, 0 changed, 30 the same');
+  await page.getByText('Publish', { exact: true }).click();
+  await expect(page.getByTestId('team-job')).toHaveAttribute('data-state', 'done');
+  const chablis = await page.evaluate(() => { const id = 'w-patrick-piuze-chablis-terroir-de-fleys', w = TeamData.wine(id), d = TeamData.get(); return { n: TeamData.wines().length, card: !!TeamData.card(id), qs: TeamData.card(id).qs.length, window: TeamData.window(w).word,
+    mentions: Object.values(d.pairings).filter((pp) => [...(pp.best || []), pp.glass, pp.avoid].some((x) => x && x.id === id)).length, assigned: TeamLearn.people().filter((p) => TeamLearn.assignments(p.id).some((a) => a.id === id)).length, pending: TeamData.pending() }; });
+  expect(chablis).toMatchObject({ n: 31, card: true, qs: 6, window: 'Still young', assigned: 7, pending: { cards: 0, pairings: 0, windows: 0 } });
+  expect(chablis.mentions).toBeGreaterThan(0);
+  await page.getByTestId('team-job').getByLabel('Dismiss').click();
+  await page.getByTestId('team-arrival').nth(0).click();
+  await page.getByText('Add to the list').click();
+  await expect(page.getByTestId('team-review')).toContainText('0 new, 0 gone, 1 changed, 30 the same');
+  await expect(page.getByTestId('team-review')).toContainText('vintage 2015 → 2016');
+  await page.getByText('Publish', { exact: true }).click();
+  await expect(page.getByTestId('team-job')).toHaveAttribute('data-state', 'done');
+  const ardanza = await page.evaluate(() => { const w = TeamData.wine('w-la-rioja-alta-vina-ardanza-reserva'); return { vintage: w.vintage, peakTo: w.peak.to, card: !!TeamData.card(w.id), n: TeamData.wines().length }; });
+  expect(ardanza).toEqual({ vintage: 2016, peakTo: 2034, card: true, n: 31 });
+  expect(reqs).toEqual([]);
+});
+
+// A sales file from any till: the columns are read by name, lines are never counted twice, and an
+// item with no wine behind it waits for the manager to confirm the match.
+test('a CSV of sales is imported once, mapped to wines, and sales never move readiness', async ({ browser }) => {
+  const ctx = await browser.newContext({ viewport: { width: 1280, height: 800 } });
+  const page = await ctx.newPage();
+  await stubNetwork(ctx);
+  await page.goto(`${BASE}/team/?seed=demo&view=console`);
+  await page.getByTestId('console-nav-pos').click();
+  const before = await page.evaluate(() => ({ rows: TeamSales.get().rows.length, ready: TeamLearn.people().map((p) => TeamLearn.readiness(p.id).pct) }));
+  const csv = ['Date,Item,Qty,Net Amount,Server,Order ID', '2026-10-29 19:40,Catena Malbec 175,2,22.00,Dani Haddad,A1', '2026-10-29 20:05,Nyetimber Classic Cuvee Btl,1,68.00,Claire Whitfield,A2', '2026-10-29 21:10,Picpoul de Pinet 175,3,28.50,Priya,A3', 'not a date,Nothing,1,1,x,A4'].join('\n');
+  await page.getByTestId('pos-csv').setInputFiles({ name: 'sales.csv', mimeType: 'text/csv', buffer: Buffer.from(csv) });
+  await expect(page.getByTestId('pos-import-msg')).toContainText('3 new lines read from 3, 1 skipped');
+  await page.getByTestId('pos-csv').setInputFiles({ name: 'sales.csv', mimeType: 'text/csv', buffer: Buffer.from(csv) });
+  await expect(page.getByTestId('pos-import-msg')).toContainText('0 new lines');
+  const after = await page.evaluate(() => { const rows = TeamSales.get().rows; const r = rows.filter((x) => x.i.startsWith('csv-')); const dani = TeamLearn.people().find((p) => p.name.startsWith('Dani'));
+    return { rows: rows.length, csv: r.map((x) => [x.n, x.q, x.p, x.s, x.v === dani.id]), items: TeamSales.items().filter((x) => !x.mapped).map((x) => [x.item, x.suggest && x.suggest.id]), ready: TeamLearn.people().map((p) => TeamLearn.readiness(p.id).pct) }; });
+  expect(after.rows).toBe(before.rows + 3);
+  expect(after.csv).toContainEqual(['Catena Malbec 175', 2, 11, 'glass', true]);
+  expect(after.csv).toContainEqual(['Nyetimber Classic Cuvee Btl', 1, 68, 'bottle', false]);
+  // The file's unaccented "Cuvee" is a new till item: proposed as the Nyetimber, mapped only once confirmed; the Picpoul matches nothing.
+  expect(after.items).toEqual(expect.arrayContaining([['Picpoul de Pinet 175', null], ['Nyetimber Classic Cuvee Btl', 'w-nyetimber-classic-cuvee']]));
+  expect(after.items).toHaveLength(2);
+  expect(after.ready).toEqual(before.ready);
+  await ctx.close();
 });

@@ -85,84 +85,88 @@ the Worker's per-IP limit. They go into `PRO_ONLY` (with `TEAM_PRO`) once restau
 and the Upload tab's sign-in card comes back with them. Roughly, on Sonnet 4.6: a staff card with its questions is 3 cents, a
 250-wine list from scratch about $8, a menu's pairings $1.40, a marked answer under a cent.
 
-## The management console (planned, not built)
+## The management console (built)
 
-The phone is for the person learning. A manager wants the whole floor at once, and that needs a
-screen: the same `/team/` app, laid out for a tablet or a laptop browser from 768px wide, the way the
-consumer app's iPad layouts work (`useLayoutSize`, `WideColumns` in `pwa-components.jsx`). One build, one
-store, one set of logic modules: a wide window shows the console, a phone shows the tabs, and nothing a
-manager sees on the console is computed anywhere but `TeamLearn`, `TeamData` and a new `TeamReport`
-module beside them. The phone keeps Today, Wines, Menu, Upload and Team; for a manager, Today gains a
-short strip of the figures that matter on the move (team readiness, who's overdue, what's slipping,
-new on the list), each tapping through to the Team tab. Everything longer waits for the big screen.
-
-### Layout
-
-A sidebar on the left, the restaurant's name and the signed-in manager at its top, the person switcher
-under it (the pilot's "who is this?" chips, moved), then the sections. The content area is a page per
-section, a 1100px column at most, cards two or three across on a landscape tablet or laptop and one
-across on an upright tablet. Dark stage throughout, as the phone app is. Every number is a tap away
-from the people and wines behind it, so a figure is never a dead end.
+The phone is for the person learning. A manager wants the whole floor at once, so the same `/team/`
+app lays itself out as a console on a tablet or a laptop browser from 768px (`useLayoutSize`, the
+consumer app's iPad rule): a manager or buyer gets it, staff keep the phone app whatever the screen,
+and `?view=console` forces it on a narrow window so it can be checked on a phone. One build, one store:
+every figure on it is a function in `TeamReport` (`team-report.js`) over `TeamLearn`, `TeamData` and
+`TeamSales`; the screens (`team-console.jsx`) compute nothing. Every number opens the people or wines
+behind it in a drawer (a wine's card, a dish's pairings, a person's ladder). "Train on the phone view"
+in the sidebar shows the phone app inside the console (for a drill as someone), and Console brings it
+back. The phone's Today, for a manager or buyer, carries a strip of the figures that matter on the move
+(`TeamKpiStrip`: team readiness, overdue, slipping, new on the list, this week's wine sales), each
+tapping through to Team.
 
 Sections, in sidebar order:
 
-1. **Dashboard.** Readiness by person (`TeamLearn.readiness`), as a ranked list with each role's minimum
-   drawn on the bar; readiness by role; who's overdue and by how long (`assignments`); what's slipping
-   and why (answers faded, or new wines nobody has learnt); the retention check rate for the month
-   (`retention`); the wines the floor knows least (`weakWines`), by the glass first; new-wine adoption
-   (for each wine published in the last 30 days, how many of the people who sell it know it, and days
-   since publish); list coverage (how much of the live list and menu has at least one person ready on
-   it, and the holes: a by-the-glass wine no server on tonight's rota knows). Once sales arrive (below),
-   a second row: this week's wine sales by wine, server attach rate, glass-to-bottle, trained against
-   untrained. Every tile opens the people or wines it counts.
-2. **Team.** Everyone, with role, readiness, the rungs they've reached per wine (the drill summary's
-   per-wine view, for the whole list), their last drill, their checks, and the assignment list with due
-   dates; add and remove people, set roles, set each role's minimum per part (`setNeed`, the figures
-   now buried on the Team tab), and an invite (a link or code for their own phone, which needs accounts;
-   until then the manager adds them here and they pick themselves on the device, as now).
-3. **Wines.** The live list as a table: section, by the glass or bottle, prices, drinking window, who
-   knows it and who doesn't, its card. Edit in place (price, section, glass or bottle, off the list),
-   which goes through the same draft and Publish path as an upload so the audit trail (`versions`) stays
-   one. The card is editable too: a manager who disagrees with "what to say" fixes the line and the
-   questions written from it are flagged for rewriting.
-4. **Menu.** The dishes the same way, each with its pairings and the one to steer away from, editable,
-   and the menu's gaps (a dish without a good match on the list, the buyer's analysis from Next 3).
-5. **Upload.** The existing flow (photos or PDF, draft, diff, Publish, watching the training get
-   written), with room on a wide screen to show the draft beside what's live.
-6. **Integrations.** The POS connection (which system, connected or not, last sync, rows ingested), the
-   mapping table of POS items to our wines with the unmatched ones at the top, and the stock source if
-   any. See the next section.
-7. **Admin.** The restaurant's details, sites (once there are accounts), billing (Stripe, Next 4), data
-   export (the existing Export file), and the danger zone (Start again).
+1. **Dashboard.** Team readiness (the average, with each role's), overdue assignments, who's slipping,
+   re-checks remembered, how much of the glass list the floor covers; readiness by person as ranked
+   bars in their state's colour; what needs attention and why (`TeamReport.slipping`: answers faded,
+   new wines not learnt, no drill for a week); new on the list and how many of its sellers know each
+   (`adoption`, wines published in the last 30 days); coverage (a wine is covered when at least half
+   the people who sell it, and at least two, know it; the holes are by-the-glass wines under that);
+   and "learn first" (`priority`: sells most, known least) once the till is in. Then the sales row
+   (`_CSales`): wine sales for the last seven nights against the seven before, wine per cover, bottles
+   and their share, the trained lift (what a server sells of a wine per shift when they know it against
+   when they don't, with the caveat that shifts and sections confound it), the weekly trend, what sells,
+   who sells (lines per shift, compared within a role), slow movers by the glass with the card's line
+   to say, and items on the till with no wine on the list behind them.
+2. **Team.** Everyone with readiness, state, overdue, fading answers, last drill and re-check record;
+   a person opens to their parts against the minimum, their by-the-glass selling by week (the shape of
+   Marco's dip), every wine their role sells with its rungs as dots, and every dish; add and remove
+   people; each role's minimum per part. Inviting someone to their own phone needs accounts (next).
+3. **Wines.** The list as a table by section: year, prices, drinking window, who knows it, sold in 28
+   nights, whether it has a card. Edit (section, glass, bottle) and "take off the list" go through
+   `TeamData.draftEdit`/`draftRemove` into the same draft, review and Publish as an upload, so
+   `versions` stays the one audit trail and nothing reaches staff unreviewed. On a wine's card the
+   manager can rewrite "what to say" in their own words (`TeamData.setCard`; the card says it was edited).
+4. **Menu.** The dishes with their best wine, by-the-glass pick and the one to steer away from; dishes
+   without pairings called out; price and description edits through `draftEditDish`.
+5. **Upload.** The existing flow beside what's live and what was published when.
+6. **Integrations.** The till (below): its state, a CSV import that works today, the live connectors and
+   what each needs, the map of till items to wines with the unmatched ones first, and stock.
+7. **Admin.** The restaurant's name and days-to-learn, data (all on the device; export; start again),
+   accounts and billing (next), and what the writing costs.
 
-### Two demos
+### Publishing in the background
 
-Both from the same seeded Larkspur, so a number on the console is the number a staff member's phone
-shows:
+A publish no longer holds the screen. `TeamJobs` (`team-data.js`) runs the writing as a job: the
+Upload tab is free at once, a chip at the top of every screen (`TeamJobChip`) says the step and its
+count with a thin bar, "Published" when done, or why it stopped with Resume, and what's written lands
+as it's saved. The writing itself is faster: a menu's pairings go in parallel batches (three calls at
+once rather than in a row), windows three at a time, and pairings and windows together. Measured on
+the Larkspur through the Worker on Sonnet 5.5: a label reads in about 5 seconds; a new wine's card 11
+seconds; the 27 dishes' pairings about 29 seconds together (they were 65 in a row); a window 3 seconds.
+So a bottle added from its label is fully on the floor, card, pairings and window, in about 45 seconds,
+and the manager can be showing the dashboard while it happens.
 
-- `/team/?seed=demo` on a phone: the staff demo, as now (Claire ready, Marco slipping, Priya overdue,
-  Amara in her first week; the drill; the live "add a wine from its label" moment on Upload).
-- `/team/?seed=demo&view=console` on a tablet or laptop: the management demo. It opens on the
-  Dashboard as Elena, the manager. The sales figures behind the dashboard's second row are invented for
-  the demo (`data/team-demo-sales.json`, a few weeks of wine lines by server and night, shaped so the
-  story holds: Claire sells more bottles than anyone, the wines nobody knows don't move, Marco's
-  by-the-glass sales dipped the week he stopped drilling) and labelled "Demo data" wherever they show.
-  `view=console` forces the wide layout on a narrow window too, so it can be checked on a phone, and
-  without it the layout follows the width.
+### Two demos, and the prepared arrivals
 
-### Build order
+Both from the same seeded Larkspur, so a figure on the console is the figure a phone shows:
 
-1. `TeamReport` (`team-report.js`): every dashboard figure as a pure function of `TeamLearn`, `TeamData`
-   and the sales store, with tests. Nothing in a screen computes a number.
-2. The console shell (`team-console.jsx`): sidebar, sections, the wide-layout switch in `team-app.jsx`,
-   the `view=console` flag. Dashboard and Team first, since they only read what exists; then Wines and
-   Menu editing through the draft path; Integrations and Admin as real screens showing real state, with
-   the parts that need accounts or a POS saying so plainly rather than mocking them.
-3. The manager's KPI strip on the phone's Today.
-4. The sales store (`TeamSales`, `team-sales.js`): the import (CSV first), the item map, and the
-   dashboard's sales row, with the demo's invented sales.
+- `/team/?seed=demo` on a phone: the staff demo (Claire ready, Marco slipping, Priya overdue, Amara in
+  her first week; the drill; Elena's Today with the KPI strip).
+- `/team/?seed=demo&view=console` on a tablet or laptop: the management demo, opening on the Dashboard
+  as Elena. Its sales are invented (`TeamSales.seedDemo`: eight weeks, seeded, shaped so the console
+  tells a true story about this team: Claire sells more bottles than anyone, wines nobody has learnt
+  don't move, Marco's by-the-glass sales dipped the weeks he stopped drilling, Priya sells less per
+  shift than Dani, Amara has only her first nights, and a Picpoul the till knows that the list doesn't)
+  and labelled "Demo data" wherever they show.
 
-## POS and stock integration (research, nothing built)
+The live moment, "Add a wine from its label", also has a prepared set for a quick or offline demo:
+Carey's two bottles, photographed (`team/labels/`), each read once by the consumer app's label scan and
+its training written once through the Worker against the Larkspur's list and menu
+(`data/team-demo-arrivals.json`: the label reading, the staff card, the pairings it appears in, the
+drinking window). On Upload in the demo, "New arrivals, prepared for the demo" offers them: Patrick
+Piuze's Chablis Terroir de Fleys 2024 as a new wine (card, four pairings, window, assigned to everyone,
+no call), and La Rioja Alta's Viña Ardanza Reserva 2016 as a new vintage of the 2015 on the list (the
+review says "vintage 2015 → 2016", the card is kept, the window is the 2016's). "Read this label live
+instead" sends the bundled photo through the real scan for the live version, and any other bottle goes
+through the live path as before (`TeamSample.applyPrepared`, only in the demo restaurant).
+
+## POS and stock integration (the CSV import and item map built; connectors researched)
 
 What we want from a till is small: each wine line sold, with quantity, price, time, the server, the
 table or covers, and whether it was a glass or a bottle. From that we can say what sells, who sells
@@ -220,17 +224,42 @@ integrations (https://www.olo.com/omnivoreapi). Unified-commerce APIs such as Co
 among others. Either is a per-venue fee we'd pass on, and worth it only once a venue on one of those
 tills is asking.
 
-### The plan to put to Carey
+### What Square would give the app
 
-1. **A file import first.** Every till can produce a CSV of item sales by day: Toast's nightly export,
-   Square's Reports export, Zonal's and Lightspeed's reports. A manager drops the file on the
-   Integrations page (or we pull it from Toast's SFTP nightly once a venue gives us a key). We read the
-   columns we need and ignore the rest. This works for the pilot restaurant whatever till it has, and
-   it's what the demo's invented sales are shaped as.
-2. **The item map.** POS item names never match a wine list ("HSE RED 175", "Rioja Res Btl"). The map
-   from POS item to our wine id is made once per venue: we propose matches with the consumer app's
-   name matching (`WineHistory.same`, `shopScore`'s word matching in `_worker.js` is the closer model),
-   the manager confirms or fixes them on the Integrations page, and the map is kept. An item that
+Square is the first live connector because it's the one a venue can switch on without a sales call,
+and because its three APIs map onto exactly what the console needs:
+
+- **Orders** (`SearchOrders` by closed date, the `order.created`/`order.updated` webhooks, scope
+  `ORDERS_READ`): every line sold with its catalog object id, quantity, price, the employee who rang it
+  (`team_member_id` once Team is on) and the table or ticket name. That is `TeamSales.ingest` with
+  real rows: the dashboard's sales row, who sells, the trained lift and the slow movers run as they do
+  on the demo data, nightly or as orders close.
+- **Catalog** (`ITEMS_READ`): item names and variations. A wine is one item whose variations are the
+  glass sizes and the bottle, so the item map is mostly made for us: variations of one item map to one
+  wine with a size. A catalog item that appears with no wine behind it is the "new on the list?"
+  signal, shown on the Dashboard and the Upload page before anyone has photographed a list.
+- **Inventory** (`INVENTORY_READ`, the `inventory.count.updated` webhook): counts per variation where
+  the venue tracks stock in Square. That gives "running low" beside a wine the floor is pushing,
+  "delivery arrived" when a count jumps (a nudge to re-check the vintage), and a wine that sold out
+  leaving the staff's assignments until it's back.
+
+What it never does: move readiness. Sales reorder what people learn first and what the manager sees.
+The connector lives in `_worker.js` (`/pos/square/connect` for the OAuth exchange, `/pos/square/sync`
+on a schedule, the venue's tokens in Supabase, never in the app) and needs restaurant accounts first,
+which is why the CSV import comes first: it does the same job by hand today.
+
+### The plan
+
+1. **A file import first (built).** Every till can produce a CSV of item sales by day: Toast's nightly
+   export, Square's Reports export, Zonal's and Lightspeed's reports. A manager drops the file on the
+   Integrations page (`TeamSales.importCSV`: the date, item, quantity, price, server and id columns
+   read by name, the rest ignored, a line never counted twice, servers matched to the team by name).
+   Later we pull it from Toast's SFTP nightly once a venue gives us a key. This works for the pilot
+   restaurant whatever till it has, and it's the shape the demo's invented sales take.
+2. **The item map (built).** POS item names never match a wine list ("HSE RED 175", "Rioja Res Btl").
+   The map from till item to our wine id is made once per venue: `TeamSales.suggest` proposes a match
+   on the item's telling words against each wine's producer and name (sizes and "Btl" ignored), the
+   manager confirms or fixes it on the Integrations page, and the map is kept (`vbiz_sales_v1`). An item that
    appears on the till with no match is the "new on the list?" signal, shown on the Dashboard and the
    Upload page. A glass and a bottle of one wine are two POS items mapped to one wine with a size.
 3. **Square as the first live connector**, since it's self-serve and the OAuth, Orders and Catalog
@@ -257,9 +286,7 @@ counts.
 
 - Which till does the pilot restaurant use? That decides whether the first connector is Square or a
   CSV import, and whether to start the Toast application now.
-- Should the demo's sales be invented (quick, shaped to tell the story, clearly labelled) or sampled
-  from a real export someone can give us (slower, truer, needs anonymising)? Invented is the
-  recommendation for next week; a real one replaces it when a venue is on.
+- The demo's sales are invented and labelled; a real venue's export replaces them when one is on.
 - Does any venue in reach count stock in Square or a beverage-inventory tool, or is stock a manual
   count for now?
 
