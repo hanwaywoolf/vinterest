@@ -12,7 +12,6 @@ function TeamApp(){
   const [tab,setTab]=React.useState('today'), [stack,setStack]=React.useState([]);
   const [switching,setSwitching]=React.useState(false);
   React.useEffect(()=>{ const h=()=>refresh(); window.addEventListener('vbiz:data',h); window.addEventListener('vinterest:account',h);
-    try{ Account.loadRemoteConfig(); if(Account.signedIn()) Account.refreshMe(); }catch(e){}
     return ()=>{ window.removeEventListener('vbiz:data',h); window.removeEventListener('vinterest:account',h); }; },[]);
   // /team/?seed=demo opens straight onto the demo restaurant (the wine-show laptop), replacing whatever
   // restaurant the device holds unless it's already that one (so a reload keeps written cards and progress).
@@ -41,7 +40,6 @@ function TeamApp(){
         {TeamLearn.people().map(p=><div key={p.id} role="button" onClick={()=>{ TeamLearn.setMe(p.id); setSwitching(false); setStack([]); if(!['manager','buyer'].includes(p.role)&&['upload','team'].includes(tab)) setTab('today'); refresh(); }} style={{display:'flex',alignItems:'center',gap:6,padding:'4px 10px 4px 4px',borderRadius:16,border:`1px solid ${p.id===me.id?cr:T.line}`,fontSize:13,fontFamily:C.P,color:T.ink,cursor:'pointer'}}><TeamFace person={p} size={24}/>{p.name.split(' ')[0]} · {TeamLearn.ROLES[p.role].label}</div>)}
         <div role="button" onClick={()=>{ if(confirm('Start again? This clears the restaurant and everyone\'s training on this device.')){ TeamData.reset(); Store.remove(TeamLearn.KEY); TeamLearn.resetProgress(); setSwitching(false); setStack([]); setTab('today'); refresh(); } }} style={{padding:'6px 10px',fontSize:13,fontFamily:C.P,color:T.mid,cursor:'pointer'}}>Start again</div>
       </div>}
-      {set&&!Account.signedIn()&&manager&&tab==='upload'&&!top&&<TeamSignIn/>}
       <div style={{flex:1,overflowY:'auto',padding:'16px 16px 24px'}}><div style={{maxWidth:720,margin:'0 auto'}}><ScreenErrorBoundary>{body}</ScreenErrorBoundary></div></div>
       {set&&!top&&<div style={{display:'flex',borderTop:`1px solid ${T.line}`,background:T.bg,paddingBottom:'env(safe-area-inset-bottom)'}}>
         {tabs.map(t=><div key={t.k} role="button" data-testid={'team-tab-'+t.k} onClick={()=>{ setTab(t.k); setStack([]); }} style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',gap:3,padding:'9px 0 8px',cursor:'pointer'}}>
@@ -52,17 +50,6 @@ function TeamApp(){
 }
 /* Reading a list and writing training are Claude calls the Worker keeps to Pro accounts during the
    pilot, so a manager signs in (the same emailed code as the consumer app) before uploading. */
-function TeamSignIn(){ const T=useTheme();
-  const [email,setEmail]=React.useState(''), [code,setCode]=React.useState(''), [step,setStep]=React.useState('email'), [err,setErr]=React.useState('');
-  const field={flex:1,padding:'10px 12px',borderRadius:10,border:`1px solid ${T.line}`,background:T.soft,color:T.ink,fontFamily:C.P,fontSize:16,outline:'none',minWidth:0};
-  if(!Account.available()) return null;
-  return <div style={{padding:'12px 16px',borderBottom:`1px solid ${T.line}`}}>
-    <div style={{fontSize:14,color:T.ink2,fontFamily:C.P,marginBottom:8}}>Sign in with your Vinterest Pro account to read lists and write training.</div>
-    <div style={{display:'flex',gap:8}}>
-      {step==='email'?<><input aria-label="Email" placeholder="Email" value={email} onChange={e=>setEmail(e.target.value)} style={field}/><Btn small primary onClick={async()=>{ const r=await Account.requestCode(email); if(r.ok){ setStep('code'); setErr(''); } else setErr(r.error); }}>Send code</Btn></>
-      :<><input aria-label="Code" placeholder="6-digit code" inputMode="numeric" value={code} onChange={e=>setCode(e.target.value)} style={field}/><Btn small primary onClick={async()=>{ const r=await Account.verifyCode(email,code); if(r.ok){ setErr(''); Account.refreshMe(); } else setErr(r.error); }}>Sign in</Btn></>}
-    </div>
-    {err&&<div style={{fontSize:13,color:'#F28B7D',fontFamily:C.P,marginTop:6}}>{err}</div>}
-  </div>;
-}
+// Sign-in is off during the pilot (the Worker's team purposes are open); the account card returns when
+// restaurants have accounts.
 ReactDOM.createRoot(document.getElementById('root')).render(<TeamApp/>);

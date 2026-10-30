@@ -351,9 +351,11 @@ const FAIR_USE = {
   free: { label_scan: 100, list_scan: 30, price_search: 50, _other: 500 },
   pro:  { label_scan: 600, list_scan: 150, price_search: 300, _other: 3000 },
 };
+/* The team purposes (team_list, team_menu, team_cards, team_pairings, team_grade) are open while the
+   pilot is two people on one laptop: no sign-in, metered only by the per-IP limit. Add them here
+   with TEAM_PRO once restaurants have accounts. */
 const TEAM_PRO = "Vinterest for teams needs a Pro account while it's in pilot.";
-const PRO_ONLY = { list_scan: "Wine list scanning is part of Vinterest Pro.", lcbo: "LCBO stock near you is part of Vinterest Pro.",
-  team_list: TEAM_PRO, team_menu: TEAM_PRO, team_cards: TEAM_PRO, team_pairings: TEAM_PRO, team_grade: TEAM_PRO };
+const PRO_ONLY = { list_scan: "Wine list scanning is part of Vinterest Pro.", lcbo: "LCBO stock near you is part of Vinterest Pro." };
 /* Pro-only purposes any signed-in account may use anyway (metered by FAIR_USE.free). None: list
    scanning and LCBO stock need Pro, from a subscription or a promo code. */
 const OPEN_TO_SIGNED_IN = {};

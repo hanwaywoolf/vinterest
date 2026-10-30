@@ -180,15 +180,14 @@ test('an uploaded list is reviewed before it goes live; publishing writes cards 
   expect(listReq.messages[0].content[0].type).toBe('document'); // a PDF goes to Claude as a document
 });
 
-test('the Worker keeps the team calls to Pro: signed out with accounts on, it asks them to sign in', async () => {
+test('the Worker takes the team calls without a sign-in during the pilot', async () => {
   const copy = path.join(require('node:os').tmpdir(), `worker-team-${process.pid}.mjs`);
   require('node:fs').copyFileSync(path.join(__dirname, '..', '_worker.js'), copy);
   const worker = (await import(pathToFileURL(copy).href + `?t=${Date.now()}`)).default;
   const env = { ANTHROPIC_API_KEY: 'test', SUPABASE_URL: 'https://x.supabase.co', SUPABASE_PUBLISHABLE_KEY: 'pk', SUPABASE_SECRET_KEY: 'sk' };
   for (const purpose of ['team_list', 'team_menu', 'team_cards', 'team_pairings', 'team_grade']) {
     const r = await worker.fetch(new Request('https://vinterest.pages.dev/claude', { method: 'POST', headers: { 'content-type': 'application/json', origin: 'https://vinterest.pages.dev' }, body: JSON.stringify({ purpose, messages: [{ role: 'user', content: 'x' }] }) }), env);
-    expect(r.status).toBe(402);
-    expect((await r.json()).signIn).toBe(true);
+    expect(r.status).not.toBe(402);
   }
 });
 

@@ -33,7 +33,7 @@ One restaurant on one device, made to be shown to a restaurant before accounts e
 
 `/team/?seed=demo` opens The Larkspur (Bristol, modern British): 60 wines and 27 dishes
 (`data/team-demo-list.json`), and seven staff with circle-cropped photos (`team/faces/`, `TeamSample.DEMO_STAFF`).
-Once the training has been written (a manager publishes with a Pro account, then "Export this
+Once the training has been written (a manager publishes, then "Export this
 restaurant's list, menu and training as a file" and the file becomes `data/team-demo.json`), the demo
 opens with every card, pairing and drinking window in place and no network needed, and `TeamDemo.seedProgress`
 puts each person at a stage: Claire (sommelier) ready, Marco (bartender) slipping after three weeks without a
@@ -73,9 +73,10 @@ wine without being caught out.
 
 ## Access and cost
 
-The team purposes (`team_list`, `team_menu`, `team_cards`, `team_pairings`, `team_grade`) are
-`PRO_ONLY` in `_worker.js` during the pilot, so a manager signs in with a Pro account (a promo code
-works) before uploading. Roughly, on Sonnet 4.6: a staff card with its questions is 3 cents, a
+The team purposes (`team_list`, `team_menu`, `team_cards`, `team_pairings`, `team_grade`) are open
+in `_worker.js` while the pilot is two people on one laptop: no sign-in, no account, metered only by
+the Worker's per-IP limit. They go into `PRO_ONLY` (with `TEAM_PRO`) once restaurants have accounts,
+and the Upload tab's sign-in card comes back with them. Roughly, on Sonnet 4.6: a staff card with its questions is 3 cents, a
 250-wine list from scratch about $8, a menu's pairings $1.40, a marked answer under a cent.
 
 ## Next
