@@ -15,7 +15,21 @@ const _cAgo=ms=>{ if(!ms) return 'never'; const d=Math.round((Date.now()-ms)/864
 const _cDate=ms=>new Date(ms).toLocaleDateString(undefined,{day:'numeric',month:'short'});
 /* A section heading on a console page. */
 const _cH=(T,t,sub,right)=><div style={{display:'flex',alignItems:'flex-end',justifyContent:'space-between',gap:12,margin:'0 0 12px'}}><div><div style={{fontSize:22,fontWeight:800,color:T.ink,fontFamily:C.P,lineHeight:1.2}}>{t}</div>{sub&&<div style={{fontSize:14,color:T.mid,fontFamily:C.P,marginTop:3,lineHeight:1.45}}>{sub}</div>}</div>{right}</div>;
-const _cLabel=(T,t,right)=><div style={{display:'flex',justifyContent:'space-between',alignItems:'center',fontSize:12,fontWeight:700,color:T.mid,fontFamily:C.P,letterSpacing:'0.08em',textTransform:'uppercase',margin:'0 0 8px'}}><span>{t}</span>{right}</div>;
+const _cLabel=(T,t,right)=><div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:8,fontSize:12,fontWeight:700,color:T.ink,fontFamily:C.P,letterSpacing:'0.08em',textTransform:'uppercase',margin:'0 0 10px'}}><span style={{display:'flex',alignItems:'center',gap:8,minWidth:0}}><span style={{width:3,height:12,borderRadius:2,background:T.lift(C.cr),flexShrink:0}}/><span>{t}</span></span>{right}</div>;
+/* A second section inside the same card: a divider above it, so it never reads as the tail of the one before. */
+const _cSub=(T,t,right)=><div style={{marginTop:18,paddingTop:14,borderTop:`1px solid ${T.line}`}}>{_cLabel(T,t,right)}</div>;
+const _cNote=(T,t)=><div style={{fontSize:12,color:T.mid,fontFamily:C.P,marginTop:10,lineHeight:1.45}}>{t}</div>;
+/* A wine's name with its type's dot before it. */
+const _cWineLead=(T,w)=><span style={{width:8,height:8,borderRadius:4,background:_tTypeCol(T,w.type),flexShrink:0,display:'inline-block'}}/>;
+/* A small chip: a count with a colour that says what kind of thing it is. */
+const _cChip=(T,label,col)=><span style={{display:'inline-flex',alignItems:'center',gap:5,padding:'2px 8px',borderRadius:8,border:`1px solid ${col||T.line}66`,background:_alpha(col||'#888888',0.12),fontSize:12,fontWeight:600,color:col||T.ink2,fontFamily:C.P,whiteSpace:'nowrap'}}>{label}</span>;
+/* A row with a thin bar: the dot, the name, the figure at the right, the bar in the given colour under. */
+function _CRow({lead,label,value,share,col,sub,right,onClick,testid}){ const T=useTheme();
+  return <div role={onClick?'button':undefined} data-testid={testid} onClick={onClick} style={{padding:'8px 0',borderTop:`1px solid ${T.line}`,cursor:onClick?'pointer':'default'}}>
+    <div style={{display:'flex',justifyContent:'space-between',gap:8,alignItems:'center',fontSize:13,fontFamily:C.P,color:T.ink}}><span style={{display:'flex',alignItems:'center',gap:8,minWidth:0}}>{lead}<span style={{fontWeight:600,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{label}</span></span>{value!=null&&<span style={{fontVariantNumeric:'tabular-nums',fontWeight:600,flexShrink:0}}>{value}</span>}</div>
+    {share!=null&&<div style={{position:'relative',height:6,borderRadius:3,background:T.line,marginTop:6}}><div style={{position:'absolute',left:0,top:0,bottom:0,width:`${Math.max(2,Math.min(100,100*share))}%`,borderRadius:3,background:col||T.lift(C.cr)}}/></div>}
+    {(sub||right)&&<div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:8,marginTop:5,flexWrap:'wrap'}}><span style={{fontSize:12,color:T.mid,fontFamily:C.P,lineHeight:1.4,minWidth:0}}>{sub}</span>{right&&<span style={{display:'flex',gap:6,flexShrink:0}}>{right}</span>}</div>}
+  </div>; }
 /* "Demo data": on every sales figure while the till is invented. */
 function _CDemoTag(){ const T=useTheme(); if(!TeamSales.demo()) return null; return <span data-testid="demo-tag" style={{fontSize:11,fontWeight:700,fontFamily:C.P,color:T.amber,border:`1px solid ${T.amber}66`,borderRadius:6,padding:'1px 6px',letterSpacing:'0.04em'}}>Demo data</span>; }
 /* A stat tile: label, value, an optional signed delta against the period before, and a line under it. */
@@ -102,74 +116,86 @@ function _CPanel({panel,me,open,close,narrow}){ const T=useTheme();
   </div>; }
 
 /* ── Dashboard ── */
+const _WHY_COL={faded:'amber',new:'cr',overdue:'bad',idle:'mid'};
 function _CDash({open,setSection}){ const T=useTheme(), cr=T.lift(C.cr), size=useLayoutSize(), cols=size==='roomy'?2:1;
   const o=TeamReport.overview(), ps=TeamReport.people().sort((a,b)=>b.r.pct-a.r.pct), slip=TeamReport.slipping(), sales=TeamReport.salesSummary(7), demo=TeamSales.demo();
   const byRole=TeamReport.byRole(), pri=TeamSales.has()?TeamReport.priority():[], weak=TeamLearn.weakWines().filter(x=>x.of>0).slice(0,6);
   const grid=n=>({display:'grid',gridTemplateColumns:`repeat(${size==='phone'?2:n},minmax(0,1fr))`,gap:10,alignItems:'stretch'});
   const two={display:'grid',gridTemplateColumns:`repeat(${cols},minmax(0,1fr))`,gap:14,alignItems:'start',marginTop:14};
   const name=x=>`${x.person.name.split(' ')[0]} · ${TeamLearn.ROLES[x.r.role].label}`;
+  const whyCol=k=>({amber:T.amber,cr:cr,bad:T.tone.bad,mid:T.mid})[_WHY_COL[k]||'mid'];
+  const topGlass=Math.max(1,...pri.map(x=>x.qty),...weak.map(()=>1));
   return <div data-testid="console-dash">
     {_cH(T,'Dashboard',`${TeamData.get().venue.name||'Your restaurant'} · ${TeamData.wines().length} wines, ${TeamData.dishes().length} dishes · ${o.total} people training`)}
     <div style={grid(5)}>
       <_CStat hero label="Team readiness" value={`${o.avg}%`} sub={`${o.ready} of ${o.total} ready · ${byRole.filter(r=>r.n>1||r.role==='server').map(r=>`${r.label}s ${r.avg}%`).slice(0,2).join(' · ')}`} testid="dash-readiness" onClick={()=>setSection('team')}/>
       <_CStat label="Overdue" value={o.overdue} sub={o.overdue?`assignments past their date`:'nothing past its date'} testid="dash-overdue" onClick={()=>setSection('team')}/>
       <_CStat label="Slipping" value={o.slipping} sub={o.slipping?'were ready, now below':'nobody below after being ready'} onClick={()=>setSection('team')}/>
-      <_CStat label="Re-checks" value={o.retention.rate==null?'—':_cPct(o.retention.rate)} sub={`${o.retention.right} of ${o.retention.asked} surprise re-asks, 30 days`}/>
+      <_CStat label="Re-checks" value={o.retention.rate==null?'—':_cPct(o.retention.rate)} sub={`${o.retention.right} of ${o.retention.asked} surprise re-asks remembered, 30 days`}/>
       <_CStat label="Glass list" value={`${o.coverage.glass.covered} of ${o.coverage.glass.total}`} sub={o.coverage.holes.length?`${o.coverage.holes.length} by-the-glass wine${o.coverage.holes.length===1?'':'s'} too few people know`:'every glass wine known by enough people'} testid="dash-coverage" onClick={()=>setSection('wines')}/>
     </div>
     <div style={two}>
       <Card>{_cLabel(T,'Readiness by person',<span style={{fontSize:11,color:T.mid,fontFamily:C.P,textTransform:'none',letterSpacing:0,fontWeight:500,whiteSpace:'nowrap'}}>100% = minimum met</span>)}
-        <_CBars testid="dash-people" max={100} fmt={v=>`${v}%`} rows={ps.map(x=>({key:x.person.id,label:name(x),value:x.r.pct,col:_tState[x.r.state].col,lead:<TeamFace person={x.person} size={22}/>,tag:x.r.overdue?<span style={{fontSize:11,color:T.tone.bad,fontFamily:C.P}}>{x.r.overdue} overdue</span>:null,onClick:()=>open({view:'person',id:x.person.id})}))}/>
-        <div style={{fontSize:12,color:T.mid,fontFamily:C.P,marginTop:10,lineHeight:1.45}}>Every part of their role's minimum met is 100%; the colour is their state. Readiness comes only from drills, never from sales.</div></Card>
+        <_CBars testid="dash-people" max={100} fmt={v=>`${v}%`} rows={ps.map(x=>({key:x.person.id,label:name(x),value:x.r.pct,col:_tState[x.r.state].col,lead:<TeamFace person={x.person} size={22}/>,tag:x.r.overdue?_cChip(T,`${x.r.overdue} overdue`,T.tone.bad):null,onClick:()=>open({view:'person',id:x.person.id})}))}/>
+        {_cNote(T,'The colour is their state: green ready, amber slipping, red not ready yet. Readiness comes only from drills, never from sales.')}</Card>
       <Card>{_cLabel(T,'What needs attention')}
-        {slip.length?<div style={{display:'flex',flexDirection:'column',gap:10}}>{slip.map(x=><div key={x.person.id} role="button" data-testid="dash-slip" onClick={()=>open({view:'person',id:x.person.id})} style={{display:'flex',gap:10,alignItems:'flex-start',cursor:'pointer'}}><TeamFace person={x.person} size={32} ring={_tState[x.r.state].col}/>
-          <div style={{minWidth:0}}><div style={{fontSize:14,fontWeight:700,color:T.ink,fontFamily:C.P}}>{x.person.name} <span style={{fontWeight:400,color:T.mid}}>· {TeamLearn.ROLES[x.r.role].label} · {x.r.pct}%</span></div><div style={{fontSize:13,color:T.ink2,fontFamily:C.P,lineHeight:1.4}}><_CState r={x.r}/>{x.why.length?` · ${x.why.join(', ')}`:''}</div></div></div>)}</div>
+        {slip.length?<div>{slip.map((x,i)=><div key={x.person.id} role="button" data-testid="dash-slip" onClick={()=>open({view:'person',id:x.person.id})} style={{display:'flex',gap:10,alignItems:'center',cursor:'pointer',padding:'9px 0',borderTop:i?`1px solid ${T.line}`:'none'}}><TeamFace person={x.person} size={34} ring={_tState[x.r.state].col}/>
+          <div style={{minWidth:0,flex:1}}><div style={{display:'flex',justifyContent:'space-between',gap:8,alignItems:'baseline'}}><div style={{fontSize:14,fontWeight:700,color:T.ink,fontFamily:C.P,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{x.person.name} <span style={{fontWeight:400,color:T.mid,fontSize:12}}>{TeamLearn.ROLES[x.r.role].label}</span></div><span style={{fontSize:13,fontWeight:700,color:_tState[x.r.state].col,fontFamily:C.P,whiteSpace:'nowrap'}}>{x.r.pct}% · {_tState[x.r.state].label}</span></div>
+            <div style={{display:'flex',gap:6,flexWrap:'wrap',marginTop:5}}>{x.why.map((w,k)=><span key={k}>{_cChip(T,w.label,whyCol(w.k))}</span>)}{!x.why.length&&_cChip(T,'below the minimum',T.mid)}</div></div></div>)}</div>
           :<div style={{fontSize:14,color:T.green,fontFamily:C.P}}>Everyone is ready.</div>}
-        {o.adoption.length>0&&<div style={{marginTop:14}}>{_cLabel(T,'New on the list')}<div style={{display:'flex',flexDirection:'column',gap:6}}>{o.adoption.map(a=><div key={a.wine.id} role="button" data-testid="dash-adoption" onClick={()=>open({view:'wine',id:a.wine.id})} style={{display:'flex',justifyContent:'space-between',gap:8,fontSize:13,fontFamily:C.P,color:T.ink2,cursor:'pointer'}}><span style={{minWidth:0,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{TeamData.short(a.wine)}</span><span style={{whiteSpace:'nowrap',color:a.knows<a.of?T.amber:T.green}}>{a.knows} of {a.of} know it · {a.days}d</span></div>)}</div></div>}
       </Card>
     </div>
     <div style={two}>
       <Card>{_cLabel(T,TeamSales.has()?'Learn first: sells most, known least':'Wines the floor knows least',TeamSales.has()&&<_CDemoTag/>)}
-        {TeamSales.has()?(pri.length?<_CBars testid="dash-priority" fmt={v=>`${v} sold`} rows={pri.map(x=>({key:x.wine.id,label:TeamData.short(x.wine),value:x.qty,sub:`${x.knows} of ${x.of} who sell it know it`,onClick:()=>open({view:'wine',id:x.wine.id})}))}/>:<div style={{fontSize:14,color:T.green,fontFamily:C.P}}>Everything that sells is known by everyone who sells it.</div>)
-          :<_CBars testid="dash-weak" max={1} fmt={v=>_cPct(v)} rows={weak.map(x=>({key:x.wine.id,label:TeamData.short(x.wine),value:x.share,sub:`${x.knows} of ${x.of} who sell it know it`,onClick:()=>open({view:'wine',id:x.wine.id})}))}/>}
-        <div style={{fontSize:12,color:T.mid,fontFamily:C.P,marginTop:10,lineHeight:1.45}}>{TeamSales.has()?'Sales set the order the team learns in, not whether anyone is ready.':'Connect the till or import a sales file and this becomes what sells most and is known least.'}</div></Card>
-      <Card>{_cLabel(T,'Coverage')}
-        <div style={{display:'flex',gap:18,flexWrap:'wrap'}}>{[['By the glass',o.coverage.glass],['Bottles',o.coverage.bottle]].map(([l,c])=><div key={l}><div style={{fontSize:13,color:T.mid,fontFamily:C.P}}>{l}</div><div style={{fontSize:22,fontWeight:700,color:T.ink,fontFamily:C.P}}>{c.covered} <span style={{fontSize:14,color:T.mid,fontWeight:400}}>of {c.total} covered</span></div></div>)}</div>
-        <div style={{fontSize:12,color:T.mid,fontFamily:C.P,marginTop:6,lineHeight:1.45}}>A wine is covered when at least half the people who sell it (and at least two) know it.</div>
-        {o.coverage.holes.length>0&&<div style={{marginTop:10}}>{o.coverage.holes.slice(0,6).map(h=><div key={h.wine.id} role="button" onClick={()=>open({view:'wine',id:h.wine.id})} style={{display:'flex',justifyContent:'space-between',gap:8,fontSize:13,fontFamily:C.P,color:T.ink2,padding:'4px 0',cursor:'pointer'}}><span style={{minWidth:0,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{TeamData.short(h.wine)}</span><span style={{color:T.tone.bad,whiteSpace:'nowrap'}}>{h.knows} of {h.of}</span></div>)}</div>}
+        {TeamSales.has()?(pri.length?<div data-testid="dash-priority">{pri.map(x=><_CRow key={x.wine.id} lead={_cWineLead(T,x.wine)} label={TeamData.short(x.wine)} value={`${x.qty} sold`} share={x.qty/topGlass} col={_tTypeCol(T,x.wine.type)} right={_cChip(T,`${x.knows} of ${x.of} know it`,x.knows<Math.ceil(x.of/2)?T.tone.bad:T.amber)} onClick={()=>open({view:'wine',id:x.wine.id})}/>)}</div>:<div style={{fontSize:14,color:T.green,fontFamily:C.P}}>Everything that sells is known by everyone who sells it.</div>)
+          :<div data-testid="dash-weak">{weak.map(x=><_CRow key={x.wine.id} lead={_cWineLead(T,x.wine)} label={TeamData.short(x.wine)} value={_cPct(x.share)} share={x.share} col={_tTypeCol(T,x.wine.type)} sub={`${x.knows} of ${x.of} who sell it know it`} onClick={()=>open({view:'wine',id:x.wine.id})}/>)}</div>}
+        {_cNote(T,TeamSales.has()?'Bars are how much sold in 28 nights, in the wine\'s colour; the chip is how many of its sellers know it. Sales set the order the team learns in, never whether anyone is ready.':'Connect the till or import a sales file and this becomes what sells most and is known least.')}</Card>
+      <Card>{_cLabel(T,'New on the list',<span style={{fontSize:11,color:T.mid,fontFamily:C.P,textTransform:'none',letterSpacing:0,fontWeight:500}}>last 30 days</span>)}
+        {o.adoption.length?<div>{o.adoption.map(a=><_CRow key={a.wine.id} testid="dash-adoption" lead={_cWineLead(T,a.wine)} label={TeamData.short(a.wine)} value={`${a.knows} of ${a.of}`} share={a.of?a.knows/a.of:0} col={_tTypeCol(T,a.wine.type)} right={_cChip(T,`${a.days}d on the list`,T.mid)} sub={a.knows<a.of?`${a.of-a.knows} of the people who sell it still to learn it`:'everyone who sells it knows it'} onClick={()=>open({view:'wine',id:a.wine.id})}/>)}</div>
+          :<div style={{fontSize:14,color:T.mid,fontFamily:C.P}}>Nothing published in the last 30 days.</div>}
+        {_cSub(T,'Coverage')}
+        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>{[['By the glass',o.coverage.glass],['Bottles',o.coverage.bottle]].map(([l,c])=>{ const share=c.total?c.covered/c.total:0, col=share>=0.8?T.green:share>=0.5?T.amber:T.tone.bad; return <div key={l}><div style={{display:'flex',justifyContent:'space-between',fontSize:13,fontFamily:C.P,color:T.ink2}}><span>{l}</span><span style={{fontWeight:700,color:T.ink}}>{c.covered} <span style={{color:T.mid,fontWeight:400}}>of {c.total}</span></span></div><Prog val={share} col={col} h={8} style={{marginTop:6}}/></div>; })}</div>
+        {o.coverage.holes.length>0&&<div style={{marginTop:10}}>{o.coverage.holes.slice(0,5).map(h=><_CRow key={h.wine.id} lead={_cWineLead(T,h.wine)} label={TeamData.short(h.wine)} right={_cChip(T,`${h.knows} of ${h.of} know it`,T.tone.bad)} onClick={()=>open({view:'wine',id:h.wine.id})}/>)}</div>}
+        {_cNote(T,'A wine is covered when at least half the people who sell it, and at least two, know it. The red chips are by-the-glass wines under that.')}
       </Card>
     </div>
     {sales&&<_CSales open={open} setSection={setSection} sales={sales} demo={demo}/>}
     {!TeamSales.has()&&<Card style={{marginTop:14}}><div style={{fontSize:14,color:T.ink2,fontFamily:C.P,lineHeight:1.5}}>No sales yet. <span role="button" onClick={()=>setSection('pos')} style={{color:cr,fontWeight:700,cursor:'pointer'}}>Connect the till or import a sales file</span> and the dashboard adds what sells, who sells it, and what trained servers sell that untrained ones don't.</div></Card>}
   </div>; }
-/* The sales row of the dashboard: this week against last, the trend, what sells, who sells, trained against untrained, slow movers, new on the till. */
-function _CSales({open,setSection,sales,demo}){ const T=useTheme(), size=useLayoutSize(), cols=size==='roomy'?2:1;
+/* The sales row of the dashboard: this week against last, the trend, what sells, who sells, trained against untrained, slow movers, new on the till. One toggle (revenue, glasses, bottles) drives the week chart and the people bars. */
+function _CSales({open,setSection,sales,demo}){ const T=useTheme(), cr=T.lift(C.cr), size=useLayoutSize(), cols=size==='roomy'?2:1;
   const byWine=TeamReport.salesByWine(28), slow=TeamReport.slowMovers(28), byServer=TeamReport.salesByServer(28), lift=TeamReport.trainedLift(28), trend=TeamReport.weeklyTrend(8), till=TeamReport.newOnTill();
   const grid={display:'grid',gridTemplateColumns:`repeat(${size==='phone'?2:4},minmax(0,1fr))`,gap:10,alignItems:'stretch'}, two={display:'grid',gridTemplateColumns:`repeat(${cols},minmax(0,1fr))`,gap:14,alignItems:'start',marginTop:14};
-  const [measure,setMeasure]=React.useState('revenue'); // the weekly chart: money, glasses or bottles
-  const series={revenue:{label:'Revenue',pts:trend.map(t=>Math.round(t.revenue)),fmt:v=>_cMoney(v)},glasses:{label:'Glasses',pts:trend.map(t=>t.glasses),fmt:v=>`${v}`},bottles:{label:'Bottles',pts:trend.map(t=>t.bottles),fmt:v=>`${v}`}}[measure];
+  const [measure,setMeasure]=React.useState('revenue');
+  const M={revenue:{label:'Revenue',pts:trend.map(t=>Math.round(t.revenue)),fmt:v=>_cMoney(v),per:x=>x.revenuePerShift,perFmt:v=>_cMoney(v),perLabel:'revenue per shift'},
+    glasses:{label:'Glasses',pts:trend.map(t=>t.glasses),fmt:v=>`${v}`,per:x=>x.glassesPerShift,perFmt:v=>v.toFixed(1),perLabel:'glasses per shift'},
+    bottles:{label:'Bottles',pts:trend.map(t=>t.bottles),fmt:v=>`${v}`,per:x=>x.bottlesPerShift,perFmt:v=>v.toFixed(1),perLabel:'bottles per shift'}}, m=M[measure];
+  const toggle=<div data-testid="sales-measure" style={{display:'flex',gap:6}}>{[['revenue','Revenue'],['glasses','Glasses'],['bottles','Bottles']].map(([k,l])=><div key={k} role="button" aria-pressed={measure===k} onClick={()=>setMeasure(k)} style={{padding:'4px 10px',borderRadius:10,border:`1px solid ${measure===k?cr:T.line}`,background:measure===k?T.soft:'transparent',color:measure===k?T.ink:T.mid,fontSize:12,fontWeight:600,fontFamily:C.P,cursor:'pointer',textTransform:'none',letterSpacing:0}}>{l}</div>)}</div>;
+  const servers=byServer.filter(x=>x.shifts>0).map(x=>({...x,v:m.per(x)||0})).sort((a,b)=>b.v-a.v), topWine=Math.max(1,...byWine.slice(0,8).map(x=>x.revenue)), topSlow=Math.max(0.1,...byWine.filter(x=>TeamData.byGlass(x.wine)).map(x=>x.perNight));
   return <div data-testid="console-sales" style={{marginTop:22}}>
     <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:10,flexWrap:'wrap'}}><div style={{fontSize:18,fontWeight:800,color:T.ink,fontFamily:C.P}}>From the till</div><_CDemoTag/><span style={{fontSize:12,color:T.mid,fontFamily:C.P}}>{demo?'':`${(TeamSales.source()||{}).label||''} · `}last 7 nights against the 7 before</span></div>
     <div style={grid}>
       <_CStat label="Wine sales, 7 nights" value={_cMoney(sales.revenue)} delta={sales.delta.revenue} sub={`${sales.lines} glasses and bottles · ${sales.covers} covers`} testid="sales-revenue"/>
       <_CStat label="Wine per cover" value={sales.attach==null?'—':sales.attach.toFixed(2)} delta={sales.delta.attach} sub="glasses and bottles sold per guest"/>
       <_CStat label="Bottles" value={sales.bottles} delta={sales.delta.bottles} sub={`${_cPct(sales.bottleShare)} of wine lines were bottles`}/>
-      <_CStat label="Trained lift" value={lift.pct==null?'—':`${lift.pct>0?'+':''}${lift.pct}%`} up="good" sub={lift.wines?`a server sells ${lift.known.toFixed(2)} of a wine per shift when they know it, ${lift.unknown.toFixed(2)} when not · ${lift.wines} wines compared`:'needs servers who know and don\'t know the same wine'} testid="sales-lift"/>
+      <_CStat label="Trained lift" value={lift.pct==null?'—':`${lift.pct>0?'+':''}${lift.pct}%`} up="good" sub={lift.wines?`a server sells ${lift.known.toFixed(2)} of a wine per shift when they know it, ${lift.unknown.toFixed(2)} when not`:'needs servers who know and don\'t know the same wine'} testid="sales-lift"/>
     </div>
     <div style={two}>
-      <Card>{_cLabel(T,'Wine sales by week',<_CDemoTag/>)}
-        <div data-testid="sales-measure" style={{display:'flex',gap:6,marginBottom:8}}>{[['revenue','Revenue'],['glasses','Glasses'],['bottles','Bottles']].map(([k,l])=><div key={k} role="button" aria-pressed={measure===k} onClick={()=>setMeasure(k)} style={{padding:'4px 10px',borderRadius:10,border:`1px solid ${measure===k?T.lift(C.cr):T.line}`,background:measure===k?T.soft:'transparent',color:measure===k?T.ink:T.mid,fontSize:12,fontWeight:600,fontFamily:C.P,cursor:'pointer'}}>{l}</div>)}</div>
-        <_CSpark points={series.pts} fmt={series.fmt}/>
-        <div style={{fontSize:12,color:T.mid,fontFamily:C.P,marginTop:6}}>{series.label} of wine sold, eight weeks, oldest first.</div>
-        <div style={{marginTop:14}}>{_cLabel(T,'Who sells wine',<span style={{fontSize:12,color:T.mid,fontFamily:C.P}}>lines per shift, 28 nights</span>)}
-          <_CBars testid="sales-servers" fmt={v=>v.toFixed(1)} rows={byServer.filter(x=>x.perShift!=null).map(x=>({key:x.person.id,label:`${x.person.name.split(' ')[0]} · ${TeamLearn.ROLES[x.person.role].label}`,value:x.perShift,lead:<TeamFace person={x.person} size={22}/>,sub:`${x.shifts} shifts · ${x.bottles} bottles · readiness ${x.readiness?x.readiness.pct:0}%`,onClick:()=>open({view:'person',id:x.person.id})}))}/>
-          <div style={{fontSize:12,color:T.mid,fontFamily:C.P,marginTop:8,lineHeight:1.45}}>Roles differ (the bar pours for walk-ins, the sommelier sells bottles), so compare within a role. Shifts and sections confound the trained lift too; it's a pointer, not a proof.</div></div></Card>
-      <Card>{_cLabel(T,'What sells',<span style={{fontSize:12,color:T.mid,fontFamily:C.P}}>28 nights</span>)}
-        <_CBars testid="sales-wines" fmt={v=>_cMoney(v)} rows={byWine.slice(0,8).map(x=>({key:x.id,label:TeamData.short(x.wine),value:Math.round(x.revenue),sub:`${x.glasses} glasses, ${x.bottles} bottles · ${x.knows} of ${x.of} who sell it know it`,onClick:()=>open({view:'wine',id:x.id})}))}/>
-        <div style={{marginTop:14}}>{_cLabel(T,'Slow movers by the glass')}
-          {slow.map(x=><div key={x.wine.id} role="button" data-testid="sales-slow" onClick={()=>open({view:'wine',id:x.wine.id})} style={{padding:'7px 0',borderTop:`1px solid ${T.line}`,cursor:'pointer'}}><div style={{display:'flex',justifyContent:'space-between',gap:8,fontSize:13,fontFamily:C.P,color:T.ink}}><span style={{fontWeight:600}}>{TeamData.short(x.wine)}</span><span style={{color:T.mid,whiteSpace:'nowrap'}}>{x.perNight.toFixed(1)} a night · {x.knows} of {x.of} know it</span></div>{x.pitch&&<div style={{fontSize:12,color:T.mid,fontFamily:C.P,lineHeight:1.4,marginTop:2}}>Say: “{x.pitch.length>110?x.pitch.slice(0,108)+'…':x.pitch}”</div>}</div>)}</div>
-        {till.length>0&&<div style={{marginTop:14}}>{_cLabel(T,'On the till, not on the list')}{till.map(x=><div key={x.item} role="button" data-testid="sales-new-item" onClick={()=>setSection('pos')} style={{display:'flex',justifyContent:'space-between',gap:8,fontSize:13,fontFamily:C.P,color:T.ink2,padding:'4px 0',cursor:'pointer'}}><span>{x.item}</span><span style={{color:T.amber,whiteSpace:'nowrap'}}>{x.qty} sold · map it →</span></div>)}
-          <div style={{fontSize:12,color:T.mid,fontFamily:C.P,marginTop:4}}>A till item with no wine on the list behind it: a new arrival nobody has uploaded, or a name to map.</div></div>}
+      <Card>{_cLabel(T,'Wine sales by week',toggle)}<_CSpark points={m.pts} fmt={m.fmt}/>
+        {_cNote(T,`${m.label} of wine sold, eight weeks, oldest first.`)}
+        {_cSub(T,'Who sells wine',<span style={{fontSize:11,color:T.mid,fontFamily:C.P,textTransform:'none',letterSpacing:0,fontWeight:500,whiteSpace:'nowrap'}}>{m.perLabel}, 28 nights</span>)}
+        <_CBars testid="sales-servers" fmt={m.perFmt} rows={servers.map(x=>({key:x.person.id,label:`${x.person.name.split(' ')[0]} · ${TeamLearn.ROLES[x.person.role].label}`,value:x.v,col:_tState[x.readiness?x.readiness.state:'not'].col,lead:<TeamFace person={x.person} size={22}/>,sub:`${x.shifts} shifts · ${x.glasses} glasses, ${x.bottles} bottles · readiness ${x.readiness?x.readiness.pct:0}%`,onClick:()=>open({view:'person',id:x.person.id})}))}/>
+        {_cNote(T,'Bars take the person\'s readiness colour. Roles differ (the bar pours for walk-ins, the sommelier sells bottles), so compare within a role; shifts and sections confound the trained lift too. A pointer, not a proof.')}</Card>
+      <Card>{_cLabel(T,'What sells',<span style={{fontSize:11,color:T.mid,fontFamily:C.P,textTransform:'none',letterSpacing:0,fontWeight:500}}>28 nights</span>)}
+        <div data-testid="sales-wines">{byWine.slice(0,8).map(x=><_CRow key={x.id} lead={_cWineLead(T,x.wine)} label={TeamData.short(x.wine)} value={_cMoney(Math.round(x.revenue))} share={x.revenue/topWine} col={_tTypeCol(T,x.wine.type)} sub={`${x.glasses} glasses, ${x.bottles} bottles`} right={_cChip(T,`${x.knows} of ${x.of} know it`,x.knows<Math.ceil(x.of/2)?T.tone.bad:x.knows<x.of?T.amber:T.green)} onClick={()=>open({view:'wine',id:x.id})}/>)}</div>
+        {_cSub(T,'Slow movers by the glass')}
+        <div>{slow.map(x=><div key={x.wine.id} role="button" data-testid="sales-slow" onClick={()=>open({view:'wine',id:x.wine.id})} style={{padding:'8px 0',borderTop:`1px solid ${T.line}`,cursor:'pointer'}}>
+          <div style={{display:'flex',justifyContent:'space-between',gap:8,alignItems:'center',fontSize:13,fontFamily:C.P,color:T.ink}}><span style={{display:'flex',alignItems:'center',gap:8,minWidth:0}}>{_cWineLead(T,x.wine)}<span style={{fontWeight:600,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{TeamData.short(x.wine)}</span></span><span style={{display:'flex',gap:6,flexShrink:0}}>{_cChip(T,`${x.perNight.toFixed(1)} a night`,T.amber)}{_cChip(T,`${x.knows} of ${x.of} know it`,x.knows<Math.ceil(x.of/2)?T.tone.bad:T.mid)}</span></div>
+          <div style={{position:'relative',height:6,borderRadius:3,background:T.line,marginTop:6}}><div style={{position:'absolute',left:0,top:0,bottom:0,width:`${Math.max(2,Math.min(100,100*x.perNight/topSlow))}%`,borderRadius:3,background:_tTypeCol(T,x.wine.type)}}/></div>
+          {x.pitch&&<div style={{fontSize:12,color:T.ink2,fontFamily:C.P,lineHeight:1.45,marginTop:6,paddingLeft:10,borderLeft:`2px solid ${_tTypeCol(T,x.wine.type)}`}}>Say: “{x.pitch.length>120?x.pitch.slice(0,118)+'…':x.pitch}”</div>}</div>)}</div>
+        {_cNote(T,'The bar is pours a night against the best-selling glass; the line is what the staff card says to say.')}
+        {till.length>0&&<>{_cSub(T,'On the till, not on the list')}{till.map(x=><_CRow key={x.item} testid="sales-new-item" lead={<span style={{width:8,height:8,borderRadius:4,border:`1.5px solid ${T.amber}`,display:'inline-block'}}/>} label={x.item} right={_cChip(T,`${x.qty} sold · map it →`,T.amber)} onClick={()=>setSection('pos')}/>)}
+          {_cNote(T,'A till item with no wine on the list behind it: a new arrival nobody has uploaded, or a name to map.')}</>}
       </Card>
     </div>
   </div>; }
@@ -249,7 +275,7 @@ function _CMenu({open,goUpload}){ const T=useTheme(), cr=T.lift(C.cr), xs=TeamDa
   const gaps=xs.filter(x=>{ const p=TeamData.pairing(x.id); return !p||!p.best||!p.best.length; });
   const save=()=>{ TeamData.draftEditDish(edit.id,{price:edit.price.trim(),desc:edit.desc.trim()}); setEdit(null); goUpload(); };
   const groups=[]; xs.forEach(x=>{ const s=x.section||'Menu'; let g=groups.find(y=>y.s===s); if(!g) groups.push(g={s,xs:[]}); g.xs.push(x); });
-  const wn=b=>{ const w=b&&TeamData.wine(b.id); return w?TeamData.short(w):<span style={{color:T.mid}}>—</span>; };
+  const wn=b=>{ const w=b&&TeamData.wine(b.id); return w?<span style={{display:'inline-flex',alignItems:'center',gap:7}}>{_cWineLead(T,w)}<span>{TeamData.short(w)}</span></span>:<span style={{color:T.mid}}>—</span>; };
   // The glass pick, then a bottle for the table: the best match that isn't the glass pick, a bottle-only wine first.
   const picks=p=>{ const best=p.best||[], glass=p.glass||best.find(b=>{ const w=TeamData.wine(b.id); return w&&TeamData.byGlass(w); })||null, gid=glass&&glass.id;
     const bottle=best.find(b=>{ const w=TeamData.wine(b.id); return w&&b.id!==gid&&!TeamData.byGlass(w); })||best.find(b=>b.id!==gid)||null; return {glass,bottle}; };

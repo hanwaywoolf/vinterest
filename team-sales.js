@@ -92,13 +92,15 @@ const TeamSales = {
     const rows=[], nights={}; const now=new Date(); now.setHours(0,0,0,0);
     for(let d=weeks*7;d>=1;d--){
       const day=new Date(now.getTime()-d*this.DAY), dow=day.getDay(); if(dow===1) continue; // closed Mondays
-      const covers=Math.round([90,0,55,65,80,105,120][dow]*(0.85+rnd()*0.3)), key=this.night(day.getTime());
+      // The last week is a busy one with the sommelier on form: more covers and bottles, slightly less wine per guest, so the deltas show both ways.
+      const base=Math.round([90,0,55,65,80,105,120][dow]*(0.85+rnd()*0.3)), covers=Math.round(base*(d<=7?1.18:1)), key=this.night(day.getTime());
       const shifts=[]; if(dani&&dow!==2) shifts.push(dani); if(priya&&dow!==0) shifts.push(priya); if(amara&&d<=4) shifts.push(amara); if(claire&&dow>=3) shifts.push(claire); if(marco) shifts.push(marco);
       nights[key]={covers,shifts:shifts.map(p=>p.id)};
       const servers=shifts.filter(p=>p.role==='server');
       const agg={}; const add=(w,size,p,qty,price,item)=>{ const k=`${item}|${p?p.id:'-'}`; const x=agg[k]||(agg[k]={w,size,p,qty:0,price,item}); x.qty+=qty; };
       // By the glass: about half the covers take a glass; the bar pours a share of them (less in Marco's slipping weeks).
-      const glassLines=Math.round(covers*(0.5+rnd()*0.12)), barShare=marco?(d<=21?0.2:0.34):0;
+      // Pours follow the covers before the lift, so the busy week sells more wine but a little less per guest.
+      const glassLines=Math.round(base*(0.5+rnd()*0.12)), barShare=marco?(d<=21?0.2:0.34):0;
       for(let i=0;i<glassLines;i++){
         const w=pick(glass,glass.map(x=>merit(x,'glass'))); const bar=rnd()<barShare;
         let p=bar?marco:servers.length?pick(servers,servers.map(x=>(x===priya?0.7:1)*(knows(x,w)?1.45:1))):null;
@@ -106,7 +108,7 @@ const TeamSales = {
         add(w,'glass',p,1,Math.round(price*100)/100,`${TeamData.short(w)} ${ml}`);
       }
       // Bottles: the sommelier sells most of them when she's on.
-      const bottleLines=Math.round(covers*(0.1+rnd()*0.05));
+      const bottleLines=Math.round(base*(0.1+rnd()*0.05)*(d<=7?1.3:1));
       for(let i=0;i<bottleLines;i++){
         const w=pick(bottle,bottle.map(x=>merit(x,'bottle'))); const som=claire&&shifts.includes(claire)&&rnd()<0.45;
         const p=som?claire:servers.length?pick(servers,servers.map(x=>(x===priya?0.6:1)*(knows(x,w)?1.6:1))):null;

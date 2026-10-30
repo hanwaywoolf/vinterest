@@ -18,11 +18,12 @@ const TeamReport = {
     return Object.values(out).map(o=>({...o,avg:Math.round(o.sum/o.n)})).sort((a,b)=>b.n-a.n); },
   /* Who is below their minimum and why: answers that have faded, new wines not yet learnt, nothing started. */
   slipping(){ const now=Date.now(), recent=new Set(this.adoption().map(a=>a.wine.id));
+    // why: [{k, n, label}] with k one of faded | new | overdue | idle, so a screen can colour each.
     return this.people().filter(x=>x.r.state!=='ready').map(x=>{ const as=TeamLearn.assignments(x.person.id), newW=as.filter(a=>a.kind==='wine'&&recent.has(a.id)).length, why=[];
-      if(x.r.due) why.push(`${x.r.due} answer${x.r.due===1?'':'s'} faded`);
-      if(newW) why.push(`${newW} new wine${newW===1?'':'s'} not learnt yet`);
-      if(x.r.overdue) why.push(`${x.r.overdue} overdue`);
-      if(!x.lastDrill) why.push('no drill yet'); else if(now-x.lastDrill>7*this.DAY) why.push(`last drill ${Math.round((now-x.lastDrill)/this.DAY)} days ago`);
+      if(x.r.due) why.push({k:'faded',n:x.r.due,label:`${x.r.due} faded`});
+      if(newW) why.push({k:'new',n:newW,label:`${newW} new wine${newW===1?'':'s'}`});
+      if(x.r.overdue) why.push({k:'overdue',n:x.r.overdue,label:`${x.r.overdue} overdue`});
+      if(!x.lastDrill) why.push({k:'idle',n:0,label:'no drill yet'}); else if(now-x.lastDrill>7*this.DAY) why.push({k:'idle',n:Math.round((now-x.lastDrill)/this.DAY),label:`last drill ${Math.round((now-x.lastDrill)/this.DAY)}d ago`});
       return {...x,why}; }).sort((a,b)=>(a.r.state==='slipping'?0:1)-(b.r.state==='slipping'?0:1)||a.r.pct-b.r.pct); },
   /* Who sells a wine (the roles whose scope has it) and how many of them know it. */
   _sellers(w){ const all=TeamLearn._all(); const ps=TeamLearn.people().filter(p=>{ const sc=TeamLearn.scope(p.role); return [...sc.glass,...sc.bottle].some(x=>x.id===w.id); });
@@ -44,7 +45,8 @@ const TeamReport = {
   _sum(rows){ return rows.reduce((a,r)=>({revenue:a.revenue+r.q*r.p,lines:a.lines+r.q,glasses:a.glasses+(r.s==='glass'?r.q:0),bottles:a.bottles+(r.s==='bottle'?r.q:0)}),{revenue:0,lines:0,glasses:0,bottles:0}); },
   _covers(nights){ return nights.reduce((a,n)=>a+(n.covers||0),0); },
   /* This period against the one before it. */
-  salesSummary(days=7){ if(!TeamSales.has()) return null; const now=Date.now(), rows=TeamSales.rows(0), nights=TeamSales.nights(0);
+  // Windows end at last midnight, so "the last 7 nights" is seven whole days against the seven before, never a part-night.
+  salesSummary(days=7){ if(!TeamSales.has()) return null; const now=new Date().setHours(0,0,0,0), rows=TeamSales.rows(0), nights=TeamSales.nights(0);
     const cut=(from,to)=>rows.filter(r=>r.t>=from&&r.t<to), nk=(from,to)=>nights.filter(n=>{ const t=new Date(n.night).getTime(); return t>=from&&t<to; });
     const a=cut(now-days*this.DAY,now), b=cut(now-2*days*this.DAY,now-days*this.DAY), sa=this._sum(a), sb=this._sum(b), ca=this._covers(nk(now-days*this.DAY,now)), cb=this._covers(nk(now-2*days*this.DAY,now-days*this.DAY));
     const pct=(x,y)=>y>0?Math.round(100*(x-y)/y):null;
@@ -60,9 +62,9 @@ const TeamReport = {
     return TeamData.wines().filter(TeamData.byGlass).map(w=>{ const s=sold[w.id], c=TeamData.card(w.id); return {wine:w,qty:s?s.qty:0,perNight:(s?s.qty:0)/nights,pitch:c&&c.pitch||'',...this._sellers(w)}; }).sort((a,b)=>a.qty-b.qty).slice(0,n); },
   /* Each person's selling: shifts worked (from the nights), lines and bottles, and per shift. */
   salesByServer(days=28){ const rows=TeamSales.rows(days), nights=TeamSales.nights(days), by={};
-    TeamLearn.people().forEach(p=>{ by[p.id]={person:p,shifts:nights.filter(n=>(n.shifts||[]).includes(p.id)).length,lines:0,bottles:0,revenue:0}; });
-    rows.forEach(r=>{ if(!r.v||!by[r.v]) return; const x=by[r.v]; x.lines+=r.q; x.revenue+=r.q*r.p; if(r.s==='bottle') x.bottles+=r.q; });
-    return Object.values(by).filter(x=>x.lines>0||x.shifts>0).map(x=>({...x,perShift:x.shifts?x.lines/x.shifts:null,bottlesPerShift:x.shifts?x.bottles/x.shifts:null,readiness:TeamLearn.readiness(x.person.id)})).sort((a,b)=>(b.perShift||0)-(a.perShift||0)); },
+    TeamLearn.people().forEach(p=>{ by[p.id]={person:p,shifts:nights.filter(n=>(n.shifts||[]).includes(p.id)).length,lines:0,glasses:0,bottles:0,revenue:0}; });
+    rows.forEach(r=>{ if(!r.v||!by[r.v]) return; const x=by[r.v]; x.lines+=r.q; x.revenue+=r.q*r.p; if(r.s==='bottle') x.bottles+=r.q; else x.glasses+=r.q; });
+    return Object.values(by).filter(x=>x.lines>0||x.shifts>0).map(x=>({...x,perShift:x.shifts?x.lines/x.shifts:null,glassesPerShift:x.shifts?x.glasses/x.shifts:null,bottlesPerShift:x.shifts?x.bottles/x.shifts:null,revenuePerShift:x.shifts?x.revenue/x.shifts:null,readiness:TeamLearn.readiness(x.person.id)})).sort((a,b)=>(b.perShift||0)-(a.perShift||0)); },
   /* Trained against untrained: for each wine, how much of it a server sells per shift when they know
      it against when they don't, across the servers who worked. An honest caveat goes with it on
      screen: shifts and sections confound it. */
