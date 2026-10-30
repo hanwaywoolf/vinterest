@@ -67,7 +67,13 @@ const CLAUDE_PURPOSE_LIMITS = {
                             // as a backstop if the model ever ignores the length instruction.
   sommelier_script: 4096,  // pwa-screens-home.jsx / pwa-screens-aux.jsx / pwa-screens-wineiq.jsx
   learn_article: 4096,     // pwa-screens-learn.jsx — generated learning article body
-  winedna_summary: 4096    // pwa-screens-wineiq.jsx — Wine DNA personality summary
+  winedna_summary: 4096,   // pwa-screens-wineiq.jsx — Wine DNA personality summary
+  // The restaurant staff-training app (team-*.js, docs/business.md), Pro only (PRO_ONLY below):
+  team_list: 16384,        // team-data.js TeamData.readList — a wine list photo or PDF -> wines with prices and sections
+  team_menu: 8192,         // team-data.js TeamData.readMenu — a menu photo or PDF -> dishes
+  team_cards: 12288,       // team-data.js TeamData.writeCards — staff cards and questions, a few wines a call
+  team_pairings: 8192,     // team-data.js TeamData.writePairings — the list's best matches for each dish
+  team_grade: 600          // team-learn.js TeamLearn.grade — marks a typed answer against its key
 };
 
 /* Claude 5 models take settings Sonnet 4.6 didn't need. Sonnet 5.5 thinks by default, which
@@ -77,7 +83,7 @@ const CLAUDE_PURPOSE_LIMITS = {
    make the quiz banks' wrong answers any less obvious; the quiz prompts' own rule about them does. Refusal
    fallbacks are on, so a request their safety classifier declines is answered by another model
    in the same call instead of coming back empty. Earlier models get nothing extra. */
-const PURPOSE_EFFORT = { grape_quiz: "medium", region_quiz: "medium", quiz_variants: "medium", learn_article: "medium", winedna_summary: "medium", sommelier_script: "medium", wine_deep: "medium" };
+const PURPOSE_EFFORT = { team_cards: "medium", team_pairings: "medium", grape_quiz: "medium", region_quiz: "medium", quiz_variants: "medium", learn_article: "medium", winedna_summary: "medium", sommelier_script: "medium", wine_deep: "medium" };
 function modelOptions(model, purpose, env) {
   if (!/^claude-(sonnet|opus|fable)-5/.test(model)) return { body: {}, betas: [] };
   const effort = env.CLAUDE_EFFORT || PURPOSE_EFFORT[purpose] || "low";
@@ -128,6 +134,11 @@ export default {
         billing: env.REVENUECAT_IOS_KEY || env.REVENUECAT_ANDROID_KEY ? { ios: env.REVENUECAT_IOS_KEY || null, android: env.REVENUECAT_ANDROID_KEY || null } : null,
         allPro: ALL_PRO_FOR_TESTING && env.ALL_PRO !== "0",
         push: pushOn(env),
+        // IOS_TYPED_PROMO=1 keeps the typed promo field on iPhone (Billing.offerCodes false), so beta
+        // testers on TestFlight redeem our Supabase codes: Apple's offer codes can't be made before the
+        // subscription is approved and don't redeem reliably from TestFlight. Set it back before the
+        // App Store submission (review rule 3.1.1).
+        iosTypedPromo: env.IOS_TYPED_PROMO === "1",
       });
     }
     if (url.pathname === "/push/register" || url.pathname === "/push/unregister" || url.pathname === "/push/test" || url.pathname === "/push/run") {
@@ -340,6 +351,10 @@ const FAIR_USE = {
   free: { label_scan: 100, list_scan: 30, price_search: 50, _other: 500 },
   pro:  { label_scan: 600, list_scan: 150, price_search: 300, _other: 3000 },
 };
+/* The team purposes (team_list, team_menu, team_cards, team_pairings, team_grade) are open while the
+   pilot is two people on one laptop: no sign-in, metered only by the per-IP limit. Add them here
+   with TEAM_PRO once restaurants have accounts. */
+const TEAM_PRO = "Vinterest for teams needs a Pro account while it's in pilot.";
 const PRO_ONLY = { list_scan: "Wine list scanning is part of Vinterest Pro.", lcbo: "LCBO stock near you is part of Vinterest Pro." };
 /* Pro-only purposes any signed-in account may use anyway (metered by FAIR_USE.free). None: list
    scanning and LCBO stock need Pro, from a subscription or a promo code. */

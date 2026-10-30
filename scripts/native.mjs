@@ -25,6 +25,8 @@ const cap = (...args) => execFileSync(process.execPath, [path.join(ROOT, 'node_m
 
 if (!fs.existsSync(path.join(ROOT, platform))) cap('add', platform);
 cap('sync', platform);
+// Vinterest for teams (dist/team/) is a web app for restaurants, not part of the phone app.
+for (const pub of ['ios/App/App/public/team', 'android/app/src/main/assets/public/team']) fs.rmSync(path.join(ROOT, pub), { recursive: true, force: true });
 
 if (platform === 'ios') {
   const file = path.join(ROOT, 'ios/App/App/Info.plist');

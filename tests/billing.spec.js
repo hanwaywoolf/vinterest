@@ -62,6 +62,8 @@ test.describe('Worker', () => {
     const get = (e) => worker.fetch(new Request('https://vinterest.pages.dev/config'), e).then((r) => r.json());
     expect(await get({ ...env, REVENUECAT_IOS_KEY: 'appl_x', REVENUECAT_ANDROID_KEY: 'goog_x' })).toMatchObject({ billing: { ios: 'appl_x', android: 'goog_x' }, allPro: false });
     expect(await get({})).toMatchObject({ billing: null, allPro: false });
+    expect(await get({ IOS_TYPED_PROMO: '1' })).toMatchObject({ iosTypedPromo: true });
+    expect((await get({})).iosTypedPromo).toBe(false);
   });
 
   test('the webhook refuses anyone without the shared secret, and applies nothing', async () => {
@@ -177,7 +179,7 @@ async function asIosApp(page, { purchase = 'ok', restore = 'pro', offer = 'grant
     Object.defineProperty(window, 'VinterestNative', { configurable: true, get: () => native, set: (v) => { native = { ...v, Purchases: fake }; } });
   }, { purchase, restore, offer, platform });
 }
-async function setup(context, page, { signedIn = true, source = null } = {}) {
+async function setup(context, page, { signedIn = true, source = null, typedPromo = false } = {}) {
   await makeDeterministic(page);
   await page.addInitScript((sb) => { window.VINTEREST_SUPABASE = { url: sb, key: 'k' }; }, SB);
   await seedLocalStorage(page, { vinterest_onboarded: '1', vinterest_region: 'uk',
@@ -189,7 +191,7 @@ async function setup(context, page, { signedIn = true, source = null } = {}) {
     hits.push(p);
     const body = (o) => route.fulfill({ contentType: 'application/json', body: JSON.stringify(o) });
     return page.evaluate(() => !!window.__bought).catch(() => false).then((bought) => {
-      if (p === '/config') return body({ supabase: null, billing: { ios: 'appl_test', android: 'goog_test' }, allPro: false });
+      if (p === '/config') return body({ supabase: null, billing: { ios: 'appl_test', android: 'goog_test' }, allPro: false, iosTypedPromo: typedPromo });
       if (p === '/billing/sync') return body({ tier: bought ? 'pro' : 'free', expires_at: null });
       if (p === '/me') return body({ signedIn: true, accounts: true, email: 'a@example.com', tier: bought ? 'pro' : 'free', source: bought ? (source || 'revenuecat') : null, expires_at: null, usage: {}, caps: {} });
       return body({ text: '' });
@@ -320,6 +322,15 @@ test.describe('the Pro sheet in the app', () => {
     await page.locator('[data-sheet="pro"]').getByText('Have a promo code?').click();
     await expect(page.getByTestId('promo-done')).toContainText('Your code worked');
     expect(await page.evaluate(() => window.__rc.filter((c) => c[0] === 'offer').length)).toBe(1);
+  });
+
+  test('with IOS_TYPED_PROMO on, iPhone keeps the typed code field too (the TestFlight beta)', async ({ context, page }) => {
+    await asIosApp(page);
+    await setup(context, page, { typedPromo: true });
+    await page.goto(`${BASE}/#account`);
+    await page.getByText('Have a promo code?').click();
+    await expect(page.getByLabel('Promo code')).toBeVisible();
+    expect(await page.evaluate(() => [Billing.offerCodes(), Billing.iosTypedPromo(), window.__rc.some((c) => c[0] === 'offer')])).toEqual([false, true, false]);
   });
 
   test('Android keeps the typed code field and never opens Apple\'s sheet', async ({ context, page }) => {

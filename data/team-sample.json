@@ -1,0 +1,1504 @@
+{
+ "venue": {
+  "name": "The Copper Pan"
+ },
+ "wines": [
+  {
+   "id": "w-nino-franco-rustico",
+   "section": "Sparkling",
+   "producer": "Nino Franco",
+   "name": "Rustico Valdobbiadene Prosecco Superiore",
+   "vintage": null,
+   "type": "sparkling",
+   "region": "Valdobbiadene, Veneto",
+   "country": "Italy",
+   "grapes": [
+    "Glera"
+   ],
+   "grapes_basis": "label",
+   "glass": "£9",
+   "bottle": "£42",
+   "other": "",
+   "bin": ""
+  },
+  {
+   "id": "w-laroche-chablis",
+   "section": "White",
+   "producer": "Domaine Laroche",
+   "name": "Chablis Saint Martin",
+   "vintage": 2022,
+   "type": "white",
+   "region": "Chablis, Burgundy",
+   "country": "France",
+   "grapes": [
+    "Chardonnay"
+   ],
+   "grapes_basis": "label",
+   "glass": "£13",
+   "bottle": "£58",
+   "other": "",
+   "bin": ""
+  },
+  {
+   "id": "w-jolivet-sancerre",
+   "section": "White",
+   "producer": "Pascal Jolivet",
+   "name": "Sancerre",
+   "vintage": 2023,
+   "type": "white",
+   "region": "Sancerre, Loire",
+   "country": "France",
+   "grapes": [
+    "Sauvignon Blanc"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "£62",
+   "other": "",
+   "bin": ""
+  },
+  {
+   "id": "w-brundlmayer-gruner",
+   "section": "White",
+   "producer": "Bründlmayer",
+   "name": "Grüner Veltliner Kamptal Terrassen",
+   "vintage": 2022,
+   "type": "white",
+   "region": "Kamptal",
+   "country": "Austria",
+   "grapes": [
+    "Grüner Veltliner"
+   ],
+   "grapes_basis": "label",
+   "glass": "£11",
+   "bottle": "£49",
+   "other": "",
+   "bin": ""
+  },
+  {
+   "id": "w-minuty-m",
+   "section": "Rosé",
+   "producer": "Château Minuty",
+   "name": "M de Minuty Côtes de Provence",
+   "vintage": 2023,
+   "type": "rosé",
+   "region": "Côtes de Provence",
+   "country": "France",
+   "grapes": [
+    "Grenache",
+    "Cinsault"
+   ],
+   "grapes_basis": "typical",
+   "glass": "£12",
+   "bottle": "£52",
+   "other": "",
+   "bin": ""
+  },
+  {
+   "id": "w-jadot-bourgogne",
+   "section": "Red",
+   "producer": "Louis Jadot",
+   "name": "Bourgogne Pinot Noir Couvent des Jacobins",
+   "vintage": 2021,
+   "type": "red",
+   "region": "Burgundy",
+   "country": "France",
+   "grapes": [
+    "Pinot Noir"
+   ],
+   "grapes_basis": "label",
+   "glass": "£14",
+   "bottle": "£60",
+   "other": "",
+   "bin": ""
+  },
+  {
+   "id": "w-catena-malbec",
+   "section": "Red",
+   "producer": "Catena",
+   "name": "Malbec",
+   "vintage": 2021,
+   "type": "red",
+   "region": "Mendoza",
+   "country": "Argentina",
+   "grapes": [
+    "Malbec"
+   ],
+   "grapes_basis": "label",
+   "glass": "£12",
+   "bottle": "£50",
+   "other": "",
+   "bin": ""
+  },
+  {
+   "id": "w-guigal-cdr",
+   "section": "Red",
+   "producer": "E. Guigal",
+   "name": "Côtes du Rhône Rouge",
+   "vintage": 2020,
+   "type": "red",
+   "region": "Côtes du Rhône",
+   "country": "France",
+   "grapes": [
+    "Grenache",
+    "Syrah",
+    "Mourvèdre"
+   ],
+   "grapes_basis": "known",
+   "glass": "",
+   "bottle": "£46",
+   "other": "",
+   "bin": ""
+  },
+  {
+   "id": "w-ardanza-reserva",
+   "section": "Red",
+   "producer": "La Rioja Alta",
+   "name": "Viña Ardanza Reserva",
+   "vintage": 2016,
+   "type": "red",
+   "region": "Rioja",
+   "country": "Spain",
+   "grapes": [
+    "Tempranillo",
+    "Garnacha"
+   ],
+   "grapes_basis": "known",
+   "glass": "",
+   "bottle": "£72",
+   "other": "",
+   "bin": ""
+  },
+  {
+   "id": "w-lions-suduiraut",
+   "section": "Sweet",
+   "producer": "Château Suduiraut",
+   "name": "Lions de Suduiraut Sauternes",
+   "vintage": 2019,
+   "type": "dessert",
+   "region": "Sauternes, Bordeaux",
+   "country": "France",
+   "grapes": [
+    "Sémillon",
+    "Sauvignon Blanc"
+   ],
+   "grapes_basis": "label",
+   "glass": "£9 (75ml)",
+   "bottle": "£55 (37.5cl)",
+   "other": "",
+   "bin": ""
+  }
+ ],
+ "dishes": [
+  {
+   "id": "d-burrata",
+   "section": "Starters",
+   "name": "Burrata, heritage tomatoes, basil",
+   "desc": "Burrata, heritage tomatoes, basil oil, sourdough",
+   "price": "£11",
+   "main": "burrata",
+   "cook": "raw",
+   "flav": [
+    "creamy",
+    "acidic",
+    "herby"
+   ],
+   "diet": []
+  },
+  {
+   "id": "d-scallops",
+   "section": "Starters",
+   "name": "Seared scallops, cauliflower, brown butter",
+   "desc": "Hand-dived scallops, cauliflower purée, brown butter, capers",
+   "price": "£16",
+   "main": "scallops",
+   "cook": "seared",
+   "flav": [
+    "rich",
+    "delicate",
+    "salty"
+   ],
+   "diet": []
+  },
+  {
+   "id": "d-goats-tart",
+   "section": "Starters",
+   "name": "Goat's cheese tart, red onion marmalade",
+   "desc": "Goat's cheese, red onion marmalade, thyme pastry, rocket",
+   "price": "£10",
+   "main": "goat's cheese",
+   "cook": "baked",
+   "flav": [
+    "acidic",
+    "sweet",
+    "herby"
+   ],
+   "diet": []
+  },
+  {
+   "id": "d-chicken",
+   "section": "Mains",
+   "name": "Roast chicken, morels, tarragon cream",
+   "desc": "Free-range chicken, morel mushrooms, tarragon cream sauce",
+   "price": "£26",
+   "main": "chicken",
+   "cook": "roasted",
+   "flav": [
+    "creamy",
+    "earthy",
+    "herby"
+   ],
+   "diet": []
+  },
+  {
+   "id": "d-lamb",
+   "section": "Mains",
+   "name": "Braised lamb shoulder, white beans, rosemary",
+   "desc": "Lamb shoulder braised for eight hours, white beans, rosemary, salsa verde",
+   "price": "£28",
+   "main": "lamb",
+   "cook": "braised",
+   "flav": [
+    "rich",
+    "herby",
+    "umami"
+   ],
+   "diet": []
+  },
+  {
+   "id": "d-sirloin",
+   "section": "Mains",
+   "name": "28-day sirloin, chips, béarnaise",
+   "desc": "28-day aged sirloin, triple-cooked chips, béarnaise",
+   "price": "£34",
+   "main": "beef",
+   "cook": "grilled",
+   "flav": [
+    "rich",
+    "charred",
+    "umami"
+   ],
+   "diet": []
+  },
+  {
+   "id": "d-lemon-tart",
+   "section": "Desserts",
+   "name": "Lemon tart, crème fraîche",
+   "desc": "Lemon tart, crème fraîche, candied zest",
+   "price": "£9",
+   "main": "lemon",
+   "cook": "baked",
+   "flav": [
+    "sweet",
+    "acidic"
+   ],
+   "diet": []
+  }
+ ],
+ "cards": {
+  "w-nino-franco-rustico": {
+   "pitch": "It's a crisp, dry Prosecco from the steep hills of Valdobbiadene, the best part of the region. Light, fresh and full of green apple and pear, it's the perfect way to start.",
+   "taste": "Green apple, pear and white flowers, with fine bubbles and a clean, dry finish.",
+   "style": {
+    "body": 1,
+    "acid": 4,
+    "tannin": 0,
+    "sweet": 1
+   },
+   "grape": "Glera is Prosecco's grape: light, fruity and floral rather than toasty.",
+   "place": "Valdobbiadene is in the hills of the Veneto in north-east Italy; Superiore DOCG is the higher tier of Prosecco, from these hillsides.",
+   "producer": "",
+   "serve": {
+    "temp": "6-8°C",
+    "glass": "white wine glass or flute",
+    "decant": "no"
+   },
+   "dishes": [
+    {
+     "dish": "Burrata, heritage tomatoes, basil",
+     "why": "Its bubbles and freshness lift the creamy burrata without weighing it down."
+    }
+   ],
+   "alts": [
+    {
+     "id": "w-brundlmayer-gruner",
+     "when": "a still white with the same freshness"
+    },
+    {
+     "id": "w-minuty-m",
+     "when": "something pink and dry by the glass"
+    }
+   ],
+   "qs": [
+    {
+     "k": "recognise",
+     "q": "What grape is the Nino Franco Rustico Prosecco made from?",
+     "opts": [
+      "Glera",
+      "Chardonnay",
+      "Pinot Noir",
+      "Trebbiano"
+     ],
+     "a": 0,
+     "why": "Glera is the grape of Prosecco."
+    },
+    {
+     "k": "recognise",
+     "q": "How does the Nino Franco Rustico taste?",
+     "opts": [
+      "Dry, with green apple and pear",
+      "Sweet and honeyed",
+      "Toasty and nutty, like brioche",
+      "Rich with dark fruit"
+     ],
+     "a": 0,
+     "why": "Rustico is a dry, fresh Prosecco: fruit and flowers rather than toast."
+    },
+    {
+     "k": "recall",
+     "q": "Which Italian region is the Nino Franco Rustico from?",
+     "ans": "Veneto",
+     "acc": [
+      "Valdobbiadene",
+      "the Veneto"
+     ],
+     "why": "Valdobbiadene sits in the hills of the Veneto, north of Venice."
+    },
+    {
+     "k": "recall",
+     "q": "At what temperature do we serve the Nino Franco Rustico?",
+     "ans": "6-8°C",
+     "acc": [
+      "6 to 8 degrees",
+      "well chilled",
+      "6-8 degrees"
+     ],
+     "why": "Sparkling wine is served well chilled, about 6-8°C, to keep the bubbles lively."
+    },
+    {
+     "k": "apply",
+     "q": "A guest wants a glass of something sparkling while they look at the menu, and says they don't like sweet wine. What do you suggest and how do you describe it?",
+     "key": [
+      "the Nino Franco Rustico Prosecco by the glass",
+      "it is dry",
+      "fresh green apple and pear"
+     ],
+     "why": "Rustico is dry and fresh, the ideal aperitif for someone avoiding sweetness."
+    },
+    {
+     "k": "contrast",
+     "q": "What grape is the Nino Franco Rustico made from, and what grape is the Domaine Laroche Chablis made from?",
+     "ans": "Glera and Chardonnay",
+     "acc": [
+      "glera, chardonnay",
+      "prosecco is glera, chablis is chardonnay"
+     ],
+     "why": "Prosecco is Glera; Chablis is always Chardonnay."
+    }
+   ],
+   "id": "w-nino-franco-rustico"
+  },
+  "w-laroche-chablis": {
+   "pitch": "It's a classic Chablis: pure Chardonnay from the cool north of Burgundy, crisp and mineral with lemon and green apple. If you like fresh whites without oak, this is the one.",
+   "taste": "Lemon, green apple and a stony, mineral freshness, with no oaky vanilla.",
+   "style": {
+    "body": 2,
+    "acid": 4,
+    "tannin": 0,
+    "sweet": 1
+   },
+   "grape": "Chardonnay here is grown in a cool climate, so it stays lean and citrusy rather than rich and buttery.",
+   "place": "Chablis is the northernmost part of Burgundy, cool enough that its wines are known for crisp acidity and minerality.",
+   "producer": "",
+   "serve": {
+    "temp": "10-12°C",
+    "glass": "white wine glass",
+    "decant": "no"
+   },
+   "dishes": [
+    {
+     "dish": "Seared scallops, cauliflower, brown butter",
+     "why": "Its crisp acidity cuts the brown butter while staying gentle enough for sweet scallops."
+    },
+    {
+     "dish": "Roast chicken, morels, tarragon cream",
+     "why": "Fresh enough to cut the cream, and Chardonnay loves chicken."
+    }
+   ],
+   "alts": [
+    {
+     "id": "w-jolivet-sancerre",
+     "when": "more zesty and aromatic, by the bottle"
+    },
+    {
+     "id": "w-brundlmayer-gruner",
+     "when": "a little cheaper by the glass, with a peppery twist"
+    }
+   ],
+   "qs": [
+    {
+     "k": "recognise",
+     "q": "What grape is the Domaine Laroche Chablis made from?",
+     "opts": [
+      "Chardonnay",
+      "Sauvignon Blanc",
+      "Riesling",
+      "Chenin Blanc"
+     ],
+     "a": 0,
+     "why": "All white Chablis is Chardonnay."
+    },
+    {
+     "k": "recognise",
+     "q": "Which part of France is the Domaine Laroche Chablis from?",
+     "opts": [
+      "The north of Burgundy",
+      "The Loire Valley",
+      "Alsace",
+      "Bordeaux"
+     ],
+     "a": 0,
+     "why": "Chablis is Burgundy's northernmost district."
+    },
+    {
+     "k": "recall",
+     "q": "How would you describe the style of the Domaine Laroche Chablis in a few words?",
+     "ans": "crisp, mineral and unoaked",
+     "acc": [
+      "crisp and mineral",
+      "fresh lemony no oak",
+      "crisp citrus",
+      "dry crisp"
+     ],
+     "why": "Cool-climate Chardonnay: crisp, citrusy and mineral, without oak's vanilla."
+    },
+    {
+     "k": "recall",
+     "q": "What do we pour the Domaine Laroche Chablis by the glass for?",
+     "ans": "£13",
+     "acc": [
+      "13",
+      "thirteen pounds",
+      "£13 a glass"
+     ],
+     "why": "It's £13 a glass and £58 a bottle."
+    },
+    {
+     "k": "apply",
+     "q": "A guest ordering the scallops asks for a white that won't overpower them. What do you recommend and why?",
+     "key": [
+      "the Domaine Laroche Chablis",
+      "crisp acidity cuts the brown butter",
+      "light enough not to overpower the scallops"
+     ],
+     "why": "Chablis's freshness meets the brown butter without masking delicate scallops."
+    },
+    {
+     "k": "contrast",
+     "q": "A guest likes Chardonnay but wants something more aromatic. Which white on our list do you move them to from the Chablis?",
+     "ans": "Pascal Jolivet Sancerre",
+     "acc": [
+      "sancerre",
+      "the sancerre",
+      "jolivet"
+     ],
+     "why": "Sancerre's Sauvignon Blanc is more aromatic and zesty than Chablis's Chardonnay."
+    }
+   ],
+   "id": "w-laroche-chablis"
+  },
+  "w-jolivet-sancerre": {
+   "pitch": "This is Sancerre, Sauvignon Blanc at its most elegant: zesty citrus, gooseberry and a flinty edge. It's bright and refreshing, and it's brilliant with goat's cheese.",
+   "taste": "Grapefruit, lime and gooseberry, with a flinty, mineral finish.",
+   "style": {
+    "body": 2,
+    "acid": 5,
+    "tannin": 0,
+    "sweet": 1
+   },
+   "grape": "Sauvignon Blanc gives zesty citrus and green, grassy notes.",
+   "place": "Sancerre is in the eastern Loire Valley, where chalky and flinty soils give the wine its mineral edge.",
+   "producer": "",
+   "serve": {
+    "temp": "8-10°C",
+    "glass": "white wine glass",
+    "decant": "no"
+   },
+   "dishes": [
+    {
+     "dish": "Goat's cheese tart, red onion marmalade",
+     "why": "Goat's cheese and Sancerre are a famous match from the same part of France: the acidity meets the cheese's tang."
+    }
+   ],
+   "alts": [
+    {
+     "id": "w-laroche-chablis",
+     "when": "rounder and less aromatic, also by the glass"
+    },
+    {
+     "id": "w-brundlmayer-gruner",
+     "when": "by the glass, with a peppery note"
+    }
+   ],
+   "qs": [
+    {
+     "k": "recognise",
+     "q": "What grape is the Pascal Jolivet Sancerre made from?",
+     "opts": [
+      "Sauvignon Blanc",
+      "Chardonnay",
+      "Pinot Grigio",
+      "Viognier"
+     ],
+     "a": 0,
+     "why": "White Sancerre is always Sauvignon Blanc."
+    },
+    {
+     "k": "recognise",
+     "q": "Which dish on our menu is the classic match for the Pascal Jolivet Sancerre?",
+     "opts": [
+      "Goat's cheese tart, red onion marmalade",
+      "28-day sirloin, chips, béarnaise",
+      "Braised lamb shoulder, white beans, rosemary",
+      "Lemon tart, crème fraîche"
+     ],
+     "a": 0,
+     "why": "Goat's cheese and Sancerre is a classic Loire pairing."
+    },
+    {
+     "k": "recall",
+     "q": "Which French wine region is the Pascal Jolivet Sancerre from?",
+     "ans": "the Loire",
+     "acc": [
+      "loire valley",
+      "loire"
+     ],
+     "why": "Sancerre is in the eastern Loire Valley."
+    },
+    {
+     "k": "recall",
+     "q": "Name two flavours you can promise a guest in the Pascal Jolivet Sancerre.",
+     "ans": "citrus and gooseberry",
+     "acc": [
+      "grapefruit and gooseberry",
+      "lime and flint",
+      "citrus and flint",
+      "grapefruit",
+      "gooseberry"
+     ],
+     "why": "Expect grapefruit, lime and gooseberry with a flinty finish."
+    },
+    {
+     "k": "apply",
+     "q": "A guest ordering the goat's cheese tart wants a bottle of white. What do you suggest and what do you say about it?",
+     "key": [
+      "the Pascal Jolivet Sancerre",
+      "its acidity meets the tang of the goat's cheese",
+      "zesty citrus and gooseberry"
+     ],
+     "why": "Sancerre's acidity and the cheese's tang are made for each other."
+    },
+    {
+     "k": "contrast",
+     "q": "Both the Sancerre and the Chablis are crisp French whites. Which is more aromatic, with gooseberry and grapefruit?",
+     "ans": "the Sancerre",
+     "acc": [
+      "sancerre",
+      "pascal jolivet sancerre",
+      "jolivet"
+     ],
+     "why": "Sauvignon Blanc is the aromatic one; Chablis's Chardonnay is quieter and more mineral."
+    }
+   ],
+   "id": "w-jolivet-sancerre"
+  },
+  "w-brundlmayer-gruner": {
+   "pitch": "It's Austria's signature white: fresh and crisp with green apple, citrus and a little twist of white pepper. A lovely, food-friendly glass if you fancy something different.",
+   "taste": "Green apple and lemon with a hint of white pepper, fresh and dry.",
+   "style": {
+    "body": 2,
+    "acid": 4,
+    "tannin": 0,
+    "sweet": 1
+   },
+   "grape": "Grüner Veltliner is Austria's most planted grape, known for its peppery spice and freshness.",
+   "place": "Kamptal is one of Austria's best regions for Grüner Veltliner, along the Danube west of Vienna.",
+   "producer": "",
+   "serve": {
+    "temp": "8-10°C",
+    "glass": "white wine glass",
+    "decant": "no"
+   },
+   "dishes": [
+    {
+     "dish": "Burrata, heritage tomatoes, basil",
+     "why": "Its freshness and peppery note pick up the basil and tomatoes."
+    },
+    {
+     "dish": "Goat's cheese tart, red onion marmalade",
+     "why": "Crisp enough for the cheese, by the glass."
+    }
+   ],
+   "alts": [
+    {
+     "id": "w-laroche-chablis",
+     "when": "a classic French alternative by the glass"
+    },
+    {
+     "id": "w-jolivet-sancerre",
+     "when": "more aromatic, by the bottle"
+    }
+   ],
+   "qs": [
+    {
+     "k": "recognise",
+     "q": "Which country is the Bründlmayer Grüner Veltliner from?",
+     "opts": [
+      "Austria",
+      "Germany",
+      "Switzerland",
+      "Hungary"
+     ],
+     "a": 0,
+     "why": "Grüner Veltliner is Austria's signature grape; Kamptal is in Austria."
+    },
+    {
+     "k": "recognise",
+     "q": "What spicy note is Grüner Veltliner known for?",
+     "opts": [
+      "White pepper",
+      "Cinnamon",
+      "Clove",
+      "Liquorice"
+     ],
+     "a": 0,
+     "why": "Grüner Veltliner is famous for a twist of white pepper."
+    },
+    {
+     "k": "recall",
+     "q": "What grape is the Bründlmayer Kamptal Terrassen made from?",
+     "ans": "Grüner Veltliner",
+     "acc": [
+      "gruner veltliner",
+      "gruner",
+      "grüner"
+     ],
+     "why": "It's 100% Grüner Veltliner."
+    },
+    {
+     "k": "recall",
+     "q": "What's the glass price of the Bründlmayer Grüner Veltliner?",
+     "ans": "£11",
+     "acc": [
+      "11",
+      "eleven pounds"
+     ],
+     "why": "£11 a glass, £49 a bottle."
+    },
+    {
+     "k": "apply",
+     "q": "A guest who usually drinks Pinot Grigio wants to try something new by the glass with the burrata. What do you suggest and how do you sell it?",
+     "key": [
+      "the Bründlmayer Grüner Veltliner",
+      "fresh and crisp like Pinot Grigio but with more character",
+      "green apple and a twist of white pepper"
+     ],
+     "why": "Grüner is the easy step up from Pinot Grigio: just as fresh, with more flavour."
+    },
+    {
+     "k": "contrast",
+     "q": "Which by-the-glass white has a peppery note: the Bründlmayer or the Laroche Chablis?",
+     "ans": "the Bründlmayer Grüner Veltliner",
+     "acc": [
+      "bründlmayer",
+      "brundlmayer",
+      "gruner",
+      "grüner veltliner"
+     ],
+     "why": "White pepper is Grüner Veltliner's signature; Chablis is mineral and citrusy."
+    }
+   ],
+   "id": "w-brundlmayer-gruner"
+  },
+  "w-minuty-m": {
+   "pitch": "This is a classic pale Provence rosé: dry, delicate and refreshing with strawberry and citrus. Summer in a glass, and lovely with lighter starters.",
+   "taste": "Strawberry, peach and citrus, light and dry.",
+   "style": {
+    "body": 1,
+    "acid": 3,
+    "tannin": 0,
+    "sweet": 1
+   },
+   "grape": "Provence rosé is usually a blend led by Grenache with Cinsault, giving red-berry fruit and a pale colour.",
+   "place": "Côtes de Provence is in the south of France, the home of pale, dry rosé.",
+   "producer": "",
+   "serve": {
+    "temp": "8-10°C",
+    "glass": "white wine glass",
+    "decant": "no"
+   },
+   "dishes": [
+    {
+     "dish": "Burrata, heritage tomatoes, basil",
+     "why": "Dry rosé and tomatoes are a natural match, fresh enough for the creamy burrata."
+    }
+   ],
+   "alts": [
+    {
+     "id": "w-nino-franco-rustico",
+     "when": "something dry with bubbles"
+    },
+    {
+     "id": "w-jadot-bourgogne",
+     "when": "a light red instead"
+    }
+   ],
+   "qs": [
+    {
+     "k": "recognise",
+     "q": "How would you describe the M de Minuty rosé to a guest?",
+     "opts": [
+      "Pale, dry and delicate",
+      "Deep pink and sweet",
+      "Sparkling and fruity",
+      "Rich and oaky"
+     ],
+     "a": 0,
+     "why": "Provence rosé is famously pale and dry."
+    },
+    {
+     "k": "recognise",
+     "q": "Which grape usually leads a Côtes de Provence rosé like the M de Minuty?",
+     "opts": [
+      "Grenache",
+      "Cabernet Sauvignon",
+      "Merlot",
+      "Nebbiolo"
+     ],
+     "a": 0,
+     "why": "Provence rosé is usually Grenache-led with Cinsault."
+    },
+    {
+     "k": "recall",
+     "q": "Which region of France is the M de Minuty rosé from?",
+     "ans": "Provence",
+     "acc": [
+      "cotes de provence",
+      "côtes de provence",
+      "south of france"
+     ],
+     "why": "It's a Côtes de Provence rosé."
+    },
+    {
+     "k": "recall",
+     "q": "Is the M de Minuty rosé sweet or dry?",
+     "ans": "dry",
+     "acc": [
+      "dry",
+      "it is dry"
+     ],
+     "why": "Provence rosé is dry, whatever its pale pink colour suggests."
+    },
+    {
+     "k": "apply",
+     "q": "A guest worries rosé will be sweet but wants a pink wine with the burrata. What do you say?",
+     "key": [
+      "the M de Minuty Côtes de Provence",
+      "it is dry",
+      "fresh strawberry and citrus that suits tomatoes and burrata"
+     ],
+     "why": "Reassure them: Provence rosé is dry, and its freshness suits the starter."
+    },
+    {
+     "k": "contrast",
+     "q": "A guest with the burrata wants a glass. Which suits it: the M de Minuty rosé or the Catena Malbec?",
+     "ans": "the M de Minuty rosé",
+     "acc": [
+      "minuty",
+      "m de minuty",
+      "the rosé",
+      "rose",
+      "rosé"
+     ],
+     "why": "A dry rosé suits tomatoes and burrata; the Malbec's tannin would trample them."
+    }
+   ],
+   "id": "w-minuty-m"
+  },
+  "w-jadot-bourgogne": {
+   "pitch": "This is red Burgundy, Pinot Noir: light, silky and full of red cherry and raspberry. It's the red to choose when you want something elegant rather than heavy.",
+   "taste": "Red cherry and raspberry, silky and light, with gentle tannin.",
+   "style": {
+    "body": 2,
+    "acid": 4,
+    "tannin": 2,
+    "sweet": 1
+   },
+   "grape": "Pinot Noir is a thin-skinned grape that makes light, fragrant reds with soft tannin.",
+   "place": "Burgundy is Pinot Noir's home in eastern France; Bourgogne is its regional level.",
+   "producer": "",
+   "serve": {
+    "temp": "14-16°C",
+    "glass": "large-bowled red glass",
+    "decant": "no"
+   },
+   "dishes": [
+    {
+     "dish": "Roast chicken, morels, tarragon cream",
+     "why": "Light enough for chicken, and Pinot Noir's earthiness loves the morels."
+    }
+   ],
+   "alts": [
+    {
+     "id": "w-guigal-cdr",
+     "when": "a bit fuller and spicier"
+    },
+    {
+     "id": "w-minuty-m",
+     "when": "lighter still, a dry rosé"
+    }
+   ],
+   "qs": [
+    {
+     "k": "recognise",
+     "q": "What grape is the Louis Jadot Bourgogne made from?",
+     "opts": [
+      "Pinot Noir",
+      "Gamay",
+      "Merlot",
+      "Syrah"
+     ],
+     "a": 0,
+     "why": "Red Bourgogne is Pinot Noir."
+    },
+    {
+     "k": "recognise",
+     "q": "Which dish on our menu suits the Louis Jadot Pinot Noir best?",
+     "opts": [
+      "Roast chicken, morels, tarragon cream",
+      "28-day sirloin, chips, béarnaise",
+      "Lemon tart, crème fraîche",
+      "Goat's cheese tart, red onion marmalade"
+     ],
+     "a": 0,
+     "why": "Pinot Noir's lightness and earthiness suit chicken and mushrooms."
+    },
+    {
+     "k": "recall",
+     "q": "How would you describe the body of the Louis Jadot Bourgogne Pinot Noir?",
+     "ans": "light",
+     "acc": [
+      "light bodied",
+      "light to medium",
+      "lighter"
+     ],
+     "why": "Pinot Noir is one of the lightest reds."
+    },
+    {
+     "k": "recall",
+     "q": "At what temperature do we serve the Louis Jadot Bourgogne?",
+     "ans": "14-16°C",
+     "acc": [
+      "14 to 16",
+      "slightly cool",
+      "cellar temperature",
+      "14-16 degrees"
+     ],
+     "why": "Light reds taste best slightly cool, around 14-16°C."
+    },
+    {
+     "k": "apply",
+     "q": "A guest having the roast chicken wants a red but says big reds are too heavy for them. What do you suggest and why?",
+     "key": [
+      "the Louis Jadot Bourgogne Pinot Noir",
+      "light with soft tannin",
+      "its earthy notes suit the morels"
+     ],
+     "why": "Pinot Noir is light and silky, and its earthiness meets the morels."
+    },
+    {
+     "k": "contrast",
+     "q": "Which of our reds is lighter: the Louis Jadot Bourgogne or the Catena Malbec?",
+     "ans": "the Louis Jadot Bourgogne",
+     "acc": [
+      "jadot",
+      "bourgogne",
+      "the pinot noir",
+      "pinot noir"
+     ],
+     "why": "Pinot Noir is light and silky; Malbec is fuller and plummier."
+    }
+   ],
+   "id": "w-jadot-bourgogne"
+  },
+  "w-catena-malbec": {
+   "pitch": "A rich, smooth Malbec from high in the Andes: plum, blackberry and a hint of violet with soft tannins. It's the one for steak.",
+   "taste": "Plum, blackberry and violet, smooth and full.",
+   "style": {
+    "body": 4,
+    "acid": 3,
+    "tannin": 3,
+    "sweet": 1
+   },
+   "grape": "Malbec gives dark plum fruit, deep colour and soft, rounded tannins.",
+   "place": "Mendoza in Argentina grows Malbec at high altitude, where sunny days and cool nights keep the fruit ripe and fresh.",
+   "producer": "",
+   "serve": {
+    "temp": "16-18°C",
+    "glass": "large red glass",
+    "decant": "no"
+   },
+   "dishes": [
+    {
+     "dish": "28-day sirloin, chips, béarnaise",
+     "why": "Its dark fruit and tannin stand up to the steak's char and richness."
+    }
+   ],
+   "alts": [
+    {
+     "id": "w-ardanza-reserva",
+     "when": "more savoury and aged, by the bottle"
+    },
+    {
+     "id": "w-guigal-cdr",
+     "when": "spicier and a little lighter"
+    }
+   ],
+   "qs": [
+    {
+     "k": "recognise",
+     "q": "Which country is the Catena Malbec from?",
+     "opts": [
+      "Argentina",
+      "Chile",
+      "Spain",
+      "Australia"
+     ],
+     "a": 0,
+     "why": "Catena is in Mendoza, Argentina."
+    },
+    {
+     "k": "recognise",
+     "q": "Which dish on our menu is the classic match for the Catena Malbec?",
+     "opts": [
+      "28-day sirloin, chips, béarnaise",
+      "Seared scallops, cauliflower, brown butter",
+      "Burrata, heritage tomatoes, basil",
+      "Lemon tart, crème fraîche"
+     ],
+     "a": 0,
+     "why": "Malbec with steak is a classic."
+    },
+    {
+     "k": "recall",
+     "q": "Name the Argentine region the Catena Malbec comes from.",
+     "ans": "Mendoza",
+     "acc": [
+      "mendoza"
+     ],
+     "why": "Mendoza is Argentina's main wine region, high in the Andes foothills."
+    },
+    {
+     "k": "recall",
+     "q": "Name two flavours you can promise a guest in the Catena Malbec.",
+     "ans": "plum and blackberry",
+     "acc": [
+      "plum",
+      "blackberry",
+      "violet",
+      "dark fruit",
+      "plum and violet"
+     ],
+     "why": "Plum, blackberry and a floral hint of violet."
+    },
+    {
+     "k": "apply",
+     "q": "A guest ordering the sirloin asks for a red by the glass. What do you suggest and how do you describe it?",
+     "key": [
+      "the Catena Malbec by the glass",
+      "rich and smooth with plum and blackberry",
+      "stands up to the steak"
+     ],
+     "why": "Malbec's dark fruit and tannin match the steak, and it's by the glass."
+    },
+    {
+     "k": "contrast",
+     "q": "Both suit the sirloin. Which is more savoury and aged: the Catena Malbec or the Viña Ardanza Reserva?",
+     "ans": "the Viña Ardanza Reserva",
+     "acc": [
+      "ardanza",
+      "vina ardanza",
+      "the rioja",
+      "rioja"
+     ],
+     "why": "Ardanza is an aged Rioja Reserva, savoury and mellow; Malbec is fruitier and younger."
+    }
+   ],
+   "id": "w-catena-malbec"
+  },
+  "w-guigal-cdr": {
+   "pitch": "A warm, spicy red from the southern Rhône: raspberry, blackberry and a touch of pepper and herbs. Easy to love and great value.",
+   "taste": "Red and black berries, black pepper and dried herbs, medium-bodied.",
+   "style": {
+    "body": 3,
+    "acid": 3,
+    "tannin": 3,
+    "sweet": 1
+   },
+   "grape": "This house's blend is documented: Grenache for juicy fruit, Syrah for pepper and colour, Mourvèdre for depth.",
+   "place": "Côtes du Rhône is the wide southern Rhône Valley, warm and sunny, known for Grenache-led blends.",
+   "producer": "",
+   "serve": {
+    "temp": "16-18°C",
+    "glass": "red wine glass",
+    "decant": "no"
+   },
+   "dishes": [
+    {
+     "dish": "Braised lamb shoulder, white beans, rosemary",
+     "why": "Its pepper and herbs echo the rosemary, and it's soft enough for slow-cooked lamb."
+    }
+   ],
+   "alts": [
+    {
+     "id": "w-jadot-bourgogne",
+     "when": "lighter and more delicate"
+    },
+    {
+     "id": "w-ardanza-reserva",
+     "when": "a step up, aged and savoury"
+    }
+   ],
+   "qs": [
+    {
+     "k": "recognise",
+     "q": "Which grape leads the Guigal Côtes du Rhône blend?",
+     "opts": [
+      "Grenache",
+      "Cabernet Sauvignon",
+      "Pinot Noir",
+      "Tempranillo"
+     ],
+     "a": 0,
+     "why": "Southern Rhône reds are Grenache-led, with Syrah and Mourvèdre."
+    },
+    {
+     "k": "recognise",
+     "q": "What does the Guigal Côtes du Rhône taste of, beyond fruit?",
+     "opts": [
+      "Black pepper and dried herbs",
+      "Vanilla and coconut",
+      "Petrol and honey",
+      "Butter and toast"
+     ],
+     "a": 0,
+     "why": "Syrah and the warm south give pepper and herby notes."
+    },
+    {
+     "k": "recall",
+     "q": "Name the three grapes in the Guigal Côtes du Rhône.",
+     "ans": "Grenache, Syrah and Mourvèdre",
+     "acc": [
+      "grenache syrah mourvedre",
+      "grenache, syrah, mourvèdre",
+      "grenache and syrah"
+     ],
+     "why": "Grenache, Syrah and Mourvèdre: the southern Rhône trio."
+    },
+    {
+     "k": "recall",
+     "q": "Which French river valley is the Guigal Côtes du Rhône from?",
+     "ans": "the Rhône",
+     "acc": [
+      "rhone",
+      "rhône valley",
+      "southern rhone"
+     ],
+     "why": "It's from the southern Rhône Valley."
+    },
+    {
+     "k": "apply",
+     "q": "A table having the lamb shoulder wants a red bottle under £50. What do you suggest and why?",
+     "key": [
+      "the Guigal Côtes du Rhône at £46",
+      "pepper and herbs echo the rosemary",
+      "soft enough for slow-cooked lamb"
+     ],
+     "why": "It's under £50 and its herbs and spice suit the lamb."
+    },
+    {
+     "k": "contrast",
+     "q": "Which red is spicier with black pepper: the Guigal Côtes du Rhône or the Louis Jadot Bourgogne?",
+     "ans": "the Guigal Côtes du Rhône",
+     "acc": [
+      "guigal",
+      "cotes du rhone",
+      "côtes du rhône"
+     ],
+     "why": "Syrah in the blend brings pepper; Pinot Noir is about red fruit."
+    }
+   ],
+   "id": "w-guigal-cdr"
+  },
+  "w-ardanza-reserva": {
+   "pitch": "One of Rioja's classics, aged for years before release: mellow red fruit, vanilla and spice from American oak, smooth and savoury. A special bottle for the lamb or the steak.",
+   "taste": "Dried red cherry, vanilla, sweet spice and leather, smooth and mellow.",
+   "style": {
+    "body": 4,
+    "acid": 3,
+    "tannin": 3,
+    "sweet": 1
+   },
+   "grape": "Not printed on the label, but this house's blend is known: Tempranillo for structure and red fruit, with Garnacha for warmth.",
+   "place": "Rioja in northern Spain; a Reserva has to age for years, part of it in oak, before it's sold.",
+   "producer": "",
+   "serve": {
+    "temp": "16-18°C",
+    "glass": "large red glass",
+    "decant": "30 minutes"
+   },
+   "dishes": [
+    {
+     "dish": "Braised lamb shoulder, white beans, rosemary",
+     "why": "Rioja and lamb are a Spanish classic: the wine's mellow fruit and spice suit the slow-cooked meat."
+    },
+    {
+     "dish": "28-day sirloin, chips, béarnaise",
+     "why": "Smooth tannin and savoury depth for the aged beef."
+    }
+   ],
+   "alts": [
+    {
+     "id": "w-guigal-cdr",
+     "when": "lighter and under £50"
+    },
+    {
+     "id": "w-catena-malbec",
+     "when": "fruitier, by the glass"
+    }
+   ],
+   "qs": [
+    {
+     "k": "recognise",
+     "q": "What grape leads the Viña Ardanza Reserva?",
+     "opts": [
+      "Tempranillo",
+      "Garnacha",
+      "Cabernet Sauvignon",
+      "Merlot"
+     ],
+     "a": 0,
+     "why": "Tempranillo leads, with Garnacha."
+    },
+    {
+     "k": "recognise",
+     "q": "Where does the vanilla and spice in the Viña Ardanza Reserva come from?",
+     "opts": [
+      "Ageing in American oak",
+      "The Garnacha grapes",
+      "Added flavourings",
+      "The high altitude"
+     ],
+     "a": 0,
+     "why": "American oak gives Rioja its vanilla and sweet spice."
+    },
+    {
+     "k": "recall",
+     "q": "Which country is the Viña Ardanza Reserva from?",
+     "ans": "Spain",
+     "acc": [
+      "spain",
+      "rioja",
+      "northern spain"
+     ],
+     "why": "It's a Rioja, from northern Spain."
+    },
+    {
+     "k": "recall",
+     "q": "How long do we decant the Viña Ardanza Reserva for?",
+     "ans": "30 minutes",
+     "acc": [
+      "half an hour",
+      "30 mins",
+      "about 30 minutes"
+     ],
+     "why": "Half an hour lets an aged Reserva open up."
+    },
+    {
+     "k": "apply",
+     "q": "A table celebrating with the lamb shoulder want a special red bottle. What do you suggest and how do you describe it?",
+     "key": [
+      "the Viña Ardanza Reserva",
+      "an aged Rioja: mellow, smooth, vanilla and spice",
+      "a classic match for lamb"
+     ],
+     "why": "Rioja Reserva and lamb is a classic, and Ardanza is the list's special red."
+    },
+    {
+     "k": "contrast",
+     "q": "Which of our reds has been aged longer before release: the Viña Ardanza Reserva or the Catena Malbec?",
+     "ans": "the Viña Ardanza Reserva",
+     "acc": [
+      "ardanza",
+      "the rioja",
+      "vina ardanza",
+      "rioja"
+     ],
+     "why": "A Rioja Reserva must age for years before release; the Malbec is a young, fruity wine."
+    }
+   ],
+   "id": "w-ardanza-reserva"
+  },
+  "w-lions-suduiraut": {
+   "pitch": "It's Sauternes, the famous sweet wine of Bordeaux: honey, apricot and orange peel, rich but with fresh acidity so it never cloys. Wonderful with the lemon tart.",
+   "taste": "Honey, apricot and candied orange, sweet and rich with fresh acidity.",
+   "style": {
+    "body": 4,
+    "acid": 4,
+    "tannin": 0,
+    "sweet": 5
+   },
+   "grape": "Sémillon gives the richness and Sauvignon Blanc the freshness.",
+   "place": "Sauternes, in Bordeaux, makes sweet wine from grapes shrivelled by noble rot (botrytis), which concentrates their sugar.",
+   "producer": "",
+   "serve": {
+    "temp": "8-10°C",
+    "glass": "small white or dessert glass",
+    "decant": "no"
+   },
+   "dishes": [
+    {
+     "dish": "Lemon tart, crème fraîche",
+     "why": "The wine must be at least as sweet as the dessert; its acidity matches the lemon."
+    }
+   ],
+   "alts": [],
+   "qs": [
+    {
+     "k": "recognise",
+     "q": "What makes Sauternes like the Lions de Suduiraut so sweet?",
+     "opts": [
+      "Noble rot shrivels the grapes and concentrates the sugar",
+      "Sugar is added after fermentation",
+      "The grapes are frozen on the vine",
+      "It is blended with grape juice"
+     ],
+     "a": 0,
+     "why": "Botrytis, or noble rot, concentrates the grapes' sugar."
+    },
+    {
+     "k": "recognise",
+     "q": "Which region is the Lions de Suduiraut from?",
+     "opts": [
+      "Bordeaux",
+      "Burgundy",
+      "The Loire",
+      "Alsace"
+     ],
+     "a": 0,
+     "why": "Sauternes is in Bordeaux."
+    },
+    {
+     "k": "recall",
+     "q": "What's the main grape in Sauternes like the Lions de Suduiraut?",
+     "ans": "Sémillon",
+     "acc": [
+      "semillon",
+      "sémillon"
+     ],
+     "why": "Sémillon leads, with Sauvignon Blanc."
+    },
+    {
+     "k": "recall",
+     "q": "How do we sell the Lions de Suduiraut by the glass?",
+     "ans": "a 75ml glass at £9",
+     "acc": [
+      "75ml",
+      "£9",
+      "9",
+      "small glass"
+     ],
+     "why": "A 75ml glass at £9, or a half bottle at £55."
+    },
+    {
+     "k": "apply",
+     "q": "A guest ordering the lemon tart asks if there's a wine to go with it. What do you suggest and why?",
+     "key": [
+      "the Lions de Suduiraut Sauternes by the glass",
+      "it must be as sweet as the dessert",
+      "its acidity matches the lemon"
+     ],
+     "why": "A dessert wine should be at least as sweet as the dessert; Sauternes's acidity meets the lemon."
+    },
+    {
+     "k": "contrast",
+     "q": "Which of our wines is sweet: the Lions de Suduiraut or the Nino Franco Rustico?",
+     "ans": "the Lions de Suduiraut",
+     "acc": [
+      "suduiraut",
+      "lions de suduiraut",
+      "sauternes"
+     ],
+     "why": "Sauternes is sweet; the Rustico Prosecco is dry."
+    }
+   ],
+   "id": "w-lions-suduiraut"
+  }
+ },
+ "pairings": {
+  "d-burrata": {
+   "best": [
+    {
+     "id": "w-minuty-m",
+     "why": "A dry Provence rosé loves tomatoes and is fresh enough for the creamy burrata."
+    },
+    {
+     "id": "w-brundlmayer-gruner",
+     "why": "Crisp and peppery, it picks up the basil."
+    }
+   ],
+   "glass": {
+    "id": "w-minuty-m",
+    "why": "The rosé is by the glass."
+   },
+   "avoid": {
+    "id": "w-catena-malbec",
+    "why": "Its tannin and dark fruit would trample the delicate cheese."
+   }
+  },
+  "d-scallops": {
+   "best": [
+    {
+     "id": "w-laroche-chablis",
+     "why": "Crisp acidity cuts the brown butter without overpowering the scallops."
+    },
+    {
+     "id": "w-jolivet-sancerre",
+     "why": "Zesty enough to meet the capers."
+    }
+   ],
+   "glass": {
+    "id": "w-laroche-chablis",
+    "why": "The Chablis is by the glass."
+   },
+   "avoid": {
+    "id": "w-ardanza-reserva",
+    "why": "Oak and tannin would swamp the scallops' sweetness."
+   }
+  },
+  "d-goats-tart": {
+   "best": [
+    {
+     "id": "w-jolivet-sancerre",
+     "why": "Goat's cheese and Sancerre is a classic: the acidity meets the cheese's tang."
+    },
+    {
+     "id": "w-brundlmayer-gruner",
+     "why": "Fresh enough for the cheese, by the glass."
+    }
+   ],
+   "glass": {
+    "id": "w-brundlmayer-gruner",
+    "why": "The Grüner is the glass choice."
+   },
+   "avoid": {
+    "id": "w-catena-malbec",
+    "why": "Tannin clashes with tangy goat's cheese."
+   }
+  },
+  "d-chicken": {
+   "best": [
+    {
+     "id": "w-jadot-bourgogne",
+     "why": "Light Pinot Noir with earthy notes that love the morels."
+    },
+    {
+     "id": "w-laroche-chablis",
+     "why": "Fresh enough to cut the cream."
+    }
+   ],
+   "glass": {
+    "id": "w-jadot-bourgogne",
+    "why": "The Pinot Noir is by the glass."
+   },
+   "avoid": {
+    "id": "w-catena-malbec",
+    "why": "Too big and plummy for chicken and cream."
+   }
+  },
+  "d-lamb": {
+   "best": [
+    {
+     "id": "w-ardanza-reserva",
+     "why": "Rioja and lamb is a classic: mellow fruit and spice for slow-cooked meat."
+    },
+    {
+     "id": "w-guigal-cdr",
+     "why": "Pepper and herbs echo the rosemary."
+    }
+   ],
+   "glass": {
+    "id": "w-catena-malbec",
+    "why": "By the glass, the Malbec has the body for lamb."
+   },
+   "avoid": {
+    "id": "w-nino-franco-rustico",
+    "why": "Too light and delicate for a rich braise."
+   }
+  },
+  "d-sirloin": {
+   "best": [
+    {
+     "id": "w-catena-malbec",
+     "why": "Dark fruit and tannin stand up to the char and richness."
+    },
+    {
+     "id": "w-ardanza-reserva",
+     "why": "Smooth and savoury for aged beef."
+    }
+   ],
+   "glass": {
+    "id": "w-catena-malbec",
+    "why": "The Malbec is by the glass."
+   },
+   "avoid": {
+    "id": "w-minuty-m",
+    "why": "A delicate rosé disappears next to steak."
+   }
+  },
+  "d-lemon-tart": {
+   "best": [
+    {
+     "id": "w-lions-suduiraut",
+     "why": "Sweet enough for the tart, with acidity to match the lemon."
+    }
+   ],
+   "glass": {
+    "id": "w-lions-suduiraut",
+    "why": "A 75ml glass of Sauternes."
+   },
+   "avoid": {
+    "id": "w-catena-malbec",
+    "why": "A dry red tastes sour and bitter next to a sweet dessert."
+   }
+  }
+ },
+ "staff": [
+  {
+   "name": "You",
+   "role": "manager"
+  },
+  {
+   "name": "Sam",
+   "role": "server"
+  },
+  {
+   "name": "Alex",
+   "role": "bartender"
+  },
+  {
+   "name": "Priya",
+   "role": "sommelier"
+  }
+ ]
+}

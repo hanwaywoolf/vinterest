@@ -25,7 +25,7 @@ const Billing = {
     try{
       const r=await fetch(Platform.api('/config')); if(!r.ok) return this.config();
       const j=await r.json(), b=j&&j.billing||{}, before=this.allPro();
-      Store.setJSON(this.CONFIG_KEY,{ios:b.ios||null,android:b.android||null,allPro:typeof j.allPro==='boolean'?j.allPro:null,push:!!j.push});
+      Store.setJSON(this.CONFIG_KEY,{ios:b.ios||null,android:b.android||null,allPro:typeof j.allPro==='boolean'?j.allPro:null,push:!!j.push,iosTypedPromo:!!j.iosTypedPromo});
       if(before!==this.allPro()){ try{ window.dispatchEvent(new Event('vinterest:pro')); }catch(e){} }
       // The same answer says whether push can be used (Push.available), which the Profile switch waits on.
       try{ window.dispatchEvent(new Event('vinterest:push')); }catch(e){}
@@ -109,7 +109,11 @@ const Billing = {
      subscription → Offers), not a code of ours: App Review (3.1.1) doesn't allow an app to unlock
      features with its own codes there. So on iOS "Have a promo code?" opens Apple's redeem sheet;
      Android and the web keep the codes in Supabase (Account.redeemPromo). */
-  offerCodes(){ return Platform.name()==='ios'&&this.available(); },
+  offerCodes(){ return Platform.name()==='ios'&&this.available()&&!this.iosTypedPromo(); },
+  /* The Worker's IOS_TYPED_PROMO variable: during the beta iPhone keeps the typed field and our own
+     codes, since Apple's can't be made before the subscription is approved and don't redeem reliably
+     from TestFlight. Off before the App Store submission. */
+  iosTypedPromo(){ const c=this.config(); return !!(c&&c.iosTypedPromo); },
   OFFER_WAITS:[0,3000,8000,15000],
   /* Opens Apple's redeem sheet. It closes whether or not they redeemed, and the store takes a moment
      to tell RevenueCat, so look a few times: {ok} once Pro shows, {pending} if it hasn't, {error}. */
