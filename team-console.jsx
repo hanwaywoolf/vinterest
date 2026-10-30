@@ -21,11 +21,12 @@ function _CDemoTag(){ const T=useTheme(); if(!TeamSales.demo()) return null; ret
 /* A stat tile: label, value, an optional signed delta against the period before, and a line under it. */
 function _CStat({label,value,delta,up='good',sub,onClick,testid,hero,demo}){ const T=useTheme();
   const col=delta==null||delta===0?T.mid:(delta>0)===(up==='good')?T.green:T.tone.bad;
-  return <Card onClick={onClick} style={{cursor:onClick?'pointer':'default',minWidth:0}}>
-    <div style={{display:'flex',justifyContent:'space-between',gap:6,alignItems:'center'}}><div style={{fontSize:13,color:T.mid,fontFamily:C.P}}>{label}</div>{demo&&<_CDemoTag/>}</div>
-    <div style={{display:'flex',alignItems:'baseline',gap:8,marginTop:4,flexWrap:'wrap'}}><div data-testid={testid} style={{fontSize:hero?44:26,fontWeight:700,color:T.ink,fontFamily:C.P,lineHeight:1.05}}>{value}</div>
+  // Every tile in a row is the same shape: a one-line label, the value at one size, two lines of room under it.
+  return <Card onClick={onClick} style={{cursor:onClick?'pointer':'default',minWidth:0,height:'100%',display:'flex',flexDirection:'column'}}>
+    <div style={{display:'flex',justifyContent:'space-between',gap:6,alignItems:'center',minHeight:18}}><div style={{fontSize:13,color:T.mid,fontFamily:C.P,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{label}</div>{demo&&<_CDemoTag/>}</div>
+    <div style={{display:'flex',alignItems:'baseline',gap:8,marginTop:6,flexWrap:'wrap'}}><div data-testid={testid} style={{fontSize:30,fontWeight:700,color:T.ink,fontFamily:C.P,lineHeight:1.05}}>{value}</div>
       {delta!=null&&<div style={{fontSize:13,fontWeight:700,color:col,fontFamily:C.P}}>{delta>0?'▲':delta<0?'▼':'·'} {Math.abs(delta)}%</div>}</div>
-    {sub&&<div style={{fontSize:12,color:T.mid,fontFamily:C.P,marginTop:4,lineHeight:1.4}}>{sub}</div>}
+    <div style={{fontSize:12,color:T.mid,fontFamily:C.P,marginTop:6,lineHeight:1.4,minHeight:34,display:'-webkit-box',WebkitLineClamp:2,WebkitBoxOrient:'vertical',overflow:'hidden'}}>{sub||''}</div>
   </Card>; }
 /* Ranked horizontal bars: one thin bar per row (<= 18px, rounded at the data end), the value at the
    tip, an optional mark on the track (a minimum), each row a tap. One hue unless a row says otherwise. */
@@ -52,8 +53,8 @@ function _CSpark({points,fmt=v=>String(v),h=56,col}){ const T=useTheme(), cr=col
 function _CTable({cols,rows,testid,empty}){ const T=useTheme();
   if(!rows.length) return <div style={{fontSize:14,color:T.mid,fontFamily:C.P,padding:'8px 0'}}>{empty||'Nothing here yet.'}</div>;
   return <div data-testid={testid} style={{overflowX:'auto'}}><table style={{width:'100%',borderCollapse:'collapse',fontFamily:C.P,fontSize:14,color:T.ink}}>
-    <thead><tr>{cols.map((c,i)=><th key={i} style={{textAlign:c.align||'left',fontSize:12,fontWeight:700,color:T.mid,letterSpacing:'0.06em',textTransform:'uppercase',padding:'6px 8px',borderBottom:`1px solid ${T.line}`,whiteSpace:'nowrap',width:c.w}}>{c.h}</th>)}</tr></thead>
-    <tbody>{rows.map((r,i)=><tr key={r.key||i} data-testid={r.testid} onClick={r.onClick} style={{cursor:r.onClick?'pointer':'default',background:r.hi?T.soft:'transparent'}}>{r.cells.map((x,j)=><td key={j} style={{padding:'9px 8px',borderBottom:`1px solid ${T.line}`,textAlign:cols[j]&&cols[j].align||'left',verticalAlign:'middle',fontVariantNumeric:'tabular-nums'}}>{x}</td>)}</tr>)}</tbody>
+    <thead><tr>{cols.map((c,i)=><th key={i} style={{textAlign:c.align||'left',fontSize:11,fontWeight:700,color:T.mid,letterSpacing:'0.06em',textTransform:'uppercase',padding:'6px 10px',borderBottom:`1px solid ${T.line}`,whiteSpace:'nowrap',width:c.w}}>{c.h}</th>)}</tr></thead>
+    <tbody>{rows.map((r,i)=><tr key={r.key||i} data-testid={r.testid} onClick={r.onClick} style={{cursor:r.onClick?'pointer':'default',background:r.hi?T.soft:'transparent'}}>{r.cells.map((x,j)=><td key={j} style={{padding:'10px 10px',borderBottom:i<rows.length-1?`1px solid ${T.line}`:'none',textAlign:cols[j]&&cols[j].align||'left',verticalAlign:'middle',fontVariantNumeric:'tabular-nums',lineHeight:1.35}}>{x}</td>)}</tr>)}</tbody>
   </table></div>; }
 function _CState({r}){ const st=_tState[r.state]; return <span style={{display:'inline-flex',alignItems:'center',gap:6,fontSize:13,fontWeight:700,color:st.col,fontFamily:C.P}}><span style={{width:8,height:8,borderRadius:4,background:st.col}}/>{st.label}</span>; }
 const _cInput=(T,extra)=>({padding:'8px 10px',borderRadius:10,border:`1px solid ${T.line}`,background:T.soft,color:T.ink,fontFamily:C.P,fontSize:15,outline:'none',minWidth:0,...extra});
@@ -64,9 +65,11 @@ function TeamConsole({me,onPhone,refresh,section,setSection,open}){ const T=useT
   const go=v=>{ if(v.tab){ setSection(v.tab==='today'?'dash':v.tab); setPanel(null); return; } if(v.view==='drill'){ onPhone(v); return; } setPanel(v); };
   const venue=TeamData.get().venue;
   const side=<div style={narrow?{display:'flex',gap:6,overflowX:'auto',padding:'8px 12px',borderBottom:`1px solid ${T.line}`}:{width:220,flexShrink:0,borderRight:`1px solid ${T.line}`,padding:'18px 12px',display:'flex',flexDirection:'column',gap:4}}>
-    {!narrow&&<div style={{padding:'0 8px 14px'}}><div style={{display:'flex',alignItems:'center',gap:8}}><img src="/logo.png" alt="" style={{height:18,filter:'invert(1)'}} onError={e=>{ e.target.style.display='none'; }}/><span style={{fontSize:11,fontWeight:700,color:T.mid,fontFamily:C.P,letterSpacing:'0.08em',textTransform:'uppercase'}}>for teams</span></div>
-      <div style={{fontSize:16,fontWeight:800,color:T.ink,fontFamily:C.P,marginTop:10,lineHeight:1.2}}>{venue.name||'Your restaurant'}</div>
-      <div role="button" data-testid="console-who" onClick={()=>onPhone({tab:'today'})} style={{display:'flex',alignItems:'center',gap:8,marginTop:10,cursor:'pointer'}}><TeamFace person={me} size={28}/><div style={{minWidth:0}}><div style={{fontSize:13,color:T.ink,fontFamily:C.P,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{me.name}</div><div style={{fontSize:11,color:T.mid,fontFamily:C.P}}>{TeamLearn.ROLES[me.role].label} · Train on the phone view →</div></div></div></div>}
+    {!narrow&&<div style={{padding:'0 8px 14px'}}><TeamLogo/>
+      <div style={{fontSize:16,fontWeight:800,color:T.ink,fontFamily:C.P,marginTop:14,lineHeight:1.2}}>{venue.name||'Your restaurant'}</div>
+      <div style={{display:'flex',alignItems:'center',gap:8,marginTop:10}}><TeamFace person={me} size={28}/><div style={{minWidth:0}}><div style={{fontSize:13,color:T.ink,fontFamily:C.P,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{me.name}</div><div style={{fontSize:11,color:T.mid,fontFamily:C.P}}>{TeamLearn.ROLES[me.role].label}</div></div></div>
+      <_CViewToggle phone={false} onPhone={()=>onPhone({tab:'today'})}/></div>}
+    {narrow&&<_CViewToggle phone={false} onPhone={()=>onPhone({tab:'today'})} compact/>}
     {CONSOLE_SECTIONS.map(s=>{ const on=section===s.k; return <div key={s.k} role="button" data-testid={'console-nav-'+s.k} onClick={()=>{ setSection(s.k); setPanel(null); }} style={{display:'flex',alignItems:'center',gap:10,padding:narrow?'6px 12px':'9px 10px',borderRadius:10,background:on?T.soft:'transparent',border:narrow?`1px solid ${on?cr:T.line}`:'none',color:on?T.ink:T.mid,fontSize:14,fontWeight:on?700:500,fontFamily:C.P,cursor:'pointer',whiteSpace:'nowrap',flexShrink:0}}><Icon n={s.icon} sz={16} col={on?cr:T.mid}/>{s.label}</div>; })}
     {!narrow&&<div style={{flex:1}}/>}
     {!narrow&&<div style={{fontSize:11,color:T.mid,fontFamily:C.P,padding:'8px 10px',lineHeight:1.5}}>Management console · {TeamData.isDemo()?'The Larkspur demo':'pilot'}</div>}
@@ -78,6 +81,16 @@ function TeamConsole({me,onPhone,refresh,section,setSection,open}){ const T=useT
     <div style={{flex:1,minWidth:0,overflowY:'auto',padding:narrow?'14px 14px 40px':'22px 28px 60px'}}><div style={{maxWidth:1100,margin:'0 auto'}}><TeamJobChip onOpen={()=>setSection('upload')}/><ScreenErrorBoundary>{page}</ScreenErrorBoundary></div></div>
     {panel&&<_CPanel panel={panel} me={me} open={go} close={()=>setPanel(null)} narrow={narrow}/>}
   </div>; }
+/* The logo with TEAMS set under it, as one mark: the word takes the logo's width. */
+function TeamLogo({size=18}){ const T=useTheme(), cr=T.lift(C.cr);
+  return <div data-testid="team-logo" style={{display:'inline-flex',flexDirection:'column',alignItems:'stretch',width:'fit-content'}}>
+    <img src="/logo.png" alt="Vinterest" style={{height:size,display:'block',filter:T.dark?'invert(1)':'none'}} onError={e=>{ e.target.style.display='none'; }}/>
+    <div aria-label="Teams" style={{display:'flex',justifyContent:'space-between',fontSize:Math.round(size*0.56)+'px',fontWeight:700,color:cr,fontFamily:C.P,letterSpacing:'0.1em',lineHeight:1,marginTop:3,paddingLeft:1}}>{'TEAMS'.split('').map((ch,i)=><span key={i}>{ch}</span>)}</div>
+  </div>; }
+/* Console or the phone app, as a switch (a manager drills as someone on the phone view). */
+function _CViewToggle({phone,onPhone,onConsole,compact}){ const T=useTheme(), cr=T.lift(C.cr);
+  const seg=(on,label,click,testid)=><div role="button" aria-pressed={on} data-testid={testid} onClick={click} style={{flex:1,textAlign:'center',padding:compact?'5px 10px':'6px 0',borderRadius:9,background:on?T.soft:'transparent',color:on?T.ink:T.mid,fontSize:12,fontWeight:on?700:500,fontFamily:C.P,cursor:on?'default':'pointer',whiteSpace:'nowrap',border:`1px solid ${on?cr:'transparent'}`}}>{label}</div>;
+  return <div data-testid="console-view-toggle" style={{display:'flex',gap:4,padding:3,borderRadius:12,border:`1px solid ${T.line}`,marginTop:compact?0:12,flexShrink:0}}>{seg(!phone,'Console',onConsole,'view-console')}{seg(phone,'Phone view',onPhone,'console-who')}</div>; }
 /* A detail opened from a table or a bar: a wine's card, a dish's pairings or a person's ladder, in a drawer. */
 function _CPanel({panel,me,open,close,narrow}){ const T=useTheme();
   const body=panel.view==='wine'?<TeamWine id={panel.id} pid={me.id} open={open} manage/>:panel.view==='dish'?<TeamDish id={panel.id} open={open}/>:panel.view==='person'?<_CPerson id={panel.id} open={open}/>:null;
@@ -90,20 +103,20 @@ function _CPanel({panel,me,open,close,narrow}){ const T=useTheme();
 function _CDash({open,setSection}){ const T=useTheme(), cr=T.lift(C.cr), size=useLayoutSize(), cols=size==='roomy'?2:1;
   const o=TeamReport.overview(), ps=TeamReport.people().sort((a,b)=>b.r.pct-a.r.pct), slip=TeamReport.slipping(), sales=TeamReport.salesSummary(7), demo=TeamSales.demo();
   const byRole=TeamReport.byRole(), pri=TeamSales.has()?TeamReport.priority():[], weak=TeamLearn.weakWines().filter(x=>x.of>0).slice(0,6);
-  const grid=n=>({display:'grid',gridTemplateColumns:`repeat(${size==='phone'?2:n},minmax(0,1fr))`,gap:10});
+  const grid=n=>({display:'grid',gridTemplateColumns:`repeat(${size==='phone'?2:n},minmax(0,1fr))`,gap:10,alignItems:'stretch'});
   const two={display:'grid',gridTemplateColumns:`repeat(${cols},minmax(0,1fr))`,gap:14,alignItems:'start',marginTop:14};
   const name=x=>`${x.person.name.split(' ')[0]} · ${TeamLearn.ROLES[x.r.role].label}`;
   return <div data-testid="console-dash">
     {_cH(T,'Dashboard',`${TeamData.get().venue.name||'Your restaurant'} · ${TeamData.wines().length} wines, ${TeamData.dishes().length} dishes · ${o.total} people training`)}
     <div style={grid(5)}>
-      <_CStat hero label="Team readiness" value={`${o.avg}%`} sub={`${o.ready} of ${o.total} ready · ${byRole.map(r=>`${r.label}s ${r.avg}%`).slice(0,3).join(' · ')}`} testid="dash-readiness" onClick={()=>setSection('team')}/>
+      <_CStat hero label="Team readiness" value={`${o.avg}%`} sub={`${o.ready} of ${o.total} ready · ${byRole.filter(r=>r.n>1||r.role==='server').map(r=>`${r.label}s ${r.avg}%`).slice(0,2).join(' · ')}`} testid="dash-readiness" onClick={()=>setSection('team')}/>
       <_CStat label="Overdue" value={o.overdue} sub={o.overdue?`assignments past their date`:'nothing past its date'} testid="dash-overdue" onClick={()=>setSection('team')}/>
       <_CStat label="Slipping" value={o.slipping} sub={o.slipping?'were ready, now below':'nobody below after being ready'} onClick={()=>setSection('team')}/>
-      <_CStat label="Re-checks remembered" value={o.retention.rate==null?'—':_cPct(o.retention.rate)} sub={`${o.retention.right} of ${o.retention.asked} surprise re-asks, 30 days`}/>
-      <_CStat label="Glass list covered" value={`${o.coverage.glass.covered} of ${o.coverage.glass.total}`} sub={o.coverage.holes.length?`${o.coverage.holes.length} by-the-glass wine${o.coverage.holes.length===1?'':'s'} too few people know`:'every glass wine known by enough people'} testid="dash-coverage" onClick={()=>setSection('wines')}/>
+      <_CStat label="Re-checks" value={o.retention.rate==null?'—':_cPct(o.retention.rate)} sub={`${o.retention.right} of ${o.retention.asked} surprise re-asks, 30 days`}/>
+      <_CStat label="Glass list" value={`${o.coverage.glass.covered} of ${o.coverage.glass.total}`} sub={o.coverage.holes.length?`${o.coverage.holes.length} by-the-glass wine${o.coverage.holes.length===1?'':'s'} too few people know`:'every glass wine known by enough people'} testid="dash-coverage" onClick={()=>setSection('wines')}/>
     </div>
     <div style={two}>
-      <Card>{_cLabel(T,'Readiness by person',<span style={{fontSize:12,color:T.mid,fontFamily:C.P}}>100% is their minimum met</span>)}
+      <Card>{_cLabel(T,'Readiness by person',<span style={{fontSize:11,color:T.mid,fontFamily:C.P,textTransform:'none',letterSpacing:0,fontWeight:500,whiteSpace:'nowrap'}}>100% = minimum met</span>)}
         <_CBars testid="dash-people" max={100} fmt={v=>`${v}%`} rows={ps.map(x=>({key:x.person.id,label:name(x),value:x.r.pct,col:_tState[x.r.state].col,lead:<TeamFace person={x.person} size={22}/>,tag:x.r.overdue?<span style={{fontSize:11,color:T.tone.bad,fontFamily:C.P}}>{x.r.overdue} overdue</span>:null,onClick:()=>open({view:'person',id:x.person.id})}))}/>
         <div style={{fontSize:12,color:T.mid,fontFamily:C.P,marginTop:10,lineHeight:1.45}}>Every part of their role's minimum met is 100%; the colour is their state. Readiness comes only from drills, never from sales.</div></Card>
       <Card>{_cLabel(T,'What needs attention')}
@@ -130,18 +143,22 @@ function _CDash({open,setSection}){ const T=useTheme(), cr=T.lift(C.cr), size=us
 /* The sales row of the dashboard: this week against last, the trend, what sells, who sells, trained against untrained, slow movers, new on the till. */
 function _CSales({open,setSection,sales,demo}){ const T=useTheme(), size=useLayoutSize(), cols=size==='roomy'?2:1;
   const byWine=TeamReport.salesByWine(28), slow=TeamReport.slowMovers(28), byServer=TeamReport.salesByServer(28), lift=TeamReport.trainedLift(28), trend=TeamReport.weeklyTrend(8), till=TeamReport.newOnTill();
-  const grid={display:'grid',gridTemplateColumns:`repeat(${size==='phone'?2:4},minmax(0,1fr))`,gap:10}, two={display:'grid',gridTemplateColumns:`repeat(${cols},minmax(0,1fr))`,gap:14,alignItems:'start',marginTop:14};
+  const grid={display:'grid',gridTemplateColumns:`repeat(${size==='phone'?2:4},minmax(0,1fr))`,gap:10,alignItems:'stretch'}, two={display:'grid',gridTemplateColumns:`repeat(${cols},minmax(0,1fr))`,gap:14,alignItems:'start',marginTop:14};
+  const [measure,setMeasure]=React.useState('revenue'); // the weekly chart: money, glasses or bottles
+  const series={revenue:{label:'Revenue',pts:trend.map(t=>Math.round(t.revenue)),fmt:v=>_cMoney(v)},glasses:{label:'Glasses',pts:trend.map(t=>t.glasses),fmt:v=>`${v}`},bottles:{label:'Bottles',pts:trend.map(t=>t.bottles),fmt:v=>`${v}`}}[measure];
   return <div data-testid="console-sales" style={{marginTop:22}}>
-    <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:10}}><div style={{fontSize:18,fontWeight:800,color:T.ink,fontFamily:C.P}}>From the till</div><_CDemoTag/><span style={{fontSize:12,color:T.mid,fontFamily:C.P}}>{TeamSales.source()&&TeamSales.source().label} · last 7 nights against the 7 before</span></div>
+    <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:10,flexWrap:'wrap'}}><div style={{fontSize:18,fontWeight:800,color:T.ink,fontFamily:C.P}}>From the till</div><_CDemoTag/><span style={{fontSize:12,color:T.mid,fontFamily:C.P}}>{demo?'':`${(TeamSales.source()||{}).label||''} · `}last 7 nights against the 7 before</span></div>
     <div style={grid}>
-      <_CStat label="Wine sales, 7 nights" value={_cMoney(sales.revenue)} delta={sales.delta.revenue} sub={`${sales.lines} glasses and bottles · ${sales.covers} covers`} testid="sales-revenue" demo={demo}/>
-      <_CStat label="Wine per cover" value={sales.attach==null?'—':sales.attach.toFixed(2)} delta={sales.delta.attach} sub="glasses and bottles sold per guest" demo={demo}/>
-      <_CStat label="Bottles" value={sales.bottles} delta={sales.delta.bottles} sub={`${_cPct(sales.bottleShare)} of wine lines were bottles`} demo={demo}/>
-      <_CStat label="Trained lift" value={lift.pct==null?'—':`${lift.pct>0?'+':''}${lift.pct}%`} up="good" sub={lift.wines?`a server sells ${lift.known.toFixed(2)} of a wine per shift when they know it, ${lift.unknown.toFixed(2)} when not · ${lift.wines} wines compared`:'needs servers who know and don\'t know the same wine'} testid="sales-lift" demo={demo}/>
+      <_CStat label="Wine sales, 7 nights" value={_cMoney(sales.revenue)} delta={sales.delta.revenue} sub={`${sales.lines} glasses and bottles · ${sales.covers} covers`} testid="sales-revenue"/>
+      <_CStat label="Wine per cover" value={sales.attach==null?'—':sales.attach.toFixed(2)} delta={sales.delta.attach} sub="glasses and bottles sold per guest"/>
+      <_CStat label="Bottles" value={sales.bottles} delta={sales.delta.bottles} sub={`${_cPct(sales.bottleShare)} of wine lines were bottles`}/>
+      <_CStat label="Trained lift" value={lift.pct==null?'—':`${lift.pct>0?'+':''}${lift.pct}%`} up="good" sub={lift.wines?`a server sells ${lift.known.toFixed(2)} of a wine per shift when they know it, ${lift.unknown.toFixed(2)} when not · ${lift.wines} wines compared`:'needs servers who know and don\'t know the same wine'} testid="sales-lift"/>
     </div>
     <div style={two}>
-      <Card>{_cLabel(T,'Wine sales by week',<_CDemoTag/>)}<_CSpark points={trend.map(t=>Math.round(t.revenue))} fmt={v=>_cMoney(v)}/>
-        <div style={{fontSize:12,color:T.mid,fontFamily:C.P,marginTop:6}}>Eight weeks, oldest first.</div>
+      <Card>{_cLabel(T,'Wine sales by week',<_CDemoTag/>)}
+        <div data-testid="sales-measure" style={{display:'flex',gap:6,marginBottom:8}}>{[['revenue','Revenue'],['glasses','Glasses'],['bottles','Bottles']].map(([k,l])=><div key={k} role="button" aria-pressed={measure===k} onClick={()=>setMeasure(k)} style={{padding:'4px 10px',borderRadius:10,border:`1px solid ${measure===k?T.lift(C.cr):T.line}`,background:measure===k?T.soft:'transparent',color:measure===k?T.ink:T.mid,fontSize:12,fontWeight:600,fontFamily:C.P,cursor:'pointer'}}>{l}</div>)}</div>
+        <_CSpark points={series.pts} fmt={series.fmt}/>
+        <div style={{fontSize:12,color:T.mid,fontFamily:C.P,marginTop:6}}>{series.label} of wine sold, eight weeks, oldest first.</div>
         <div style={{marginTop:14}}>{_cLabel(T,'Who sells wine',<span style={{fontSize:12,color:T.mid,fontFamily:C.P}}>lines per shift, 28 nights</span>)}
           <_CBars testid="sales-servers" fmt={v=>v.toFixed(1)} rows={byServer.filter(x=>x.perShift!=null).map(x=>({key:x.person.id,label:`${x.person.name.split(' ')[0]} · ${TeamLearn.ROLES[x.person.role].label}`,value:x.perShift,lead:<TeamFace person={x.person} size={22}/>,sub:`${x.shifts} shifts · ${x.bottles} bottles · readiness ${x.readiness?x.readiness.pct:0}%`,onClick:()=>open({view:'person',id:x.person.id})}))}/>
           <div style={{fontSize:12,color:T.mid,fontFamily:C.P,marginTop:8,lineHeight:1.45}}>Roles differ (the bar pours for walk-ins, the sommelier sells bottles), so compare within a role. Shifts and sections confound the trained lift too; it's a pointer, not a proof.</div></div></Card>
@@ -161,11 +178,12 @@ function _CTeam({open,refresh}){ const T=useTheme(), cr=T.lift(C.cr);
   const add=()=>{ if(!name.trim()) return; TeamLearn.addPerson(name.trim(),role,null); setName(''); refresh&&refresh(); };
   const remove=p=>{ if(confirm(`Remove ${p.name} and their training on this device?`)){ TeamLearn.removePerson(p.id); refresh&&refresh(); } };
   return <div data-testid="console-team">{_cH(T,'Team',`${ps.length} people · ${ps.filter(x=>x.r.state==='ready').length} ready`)}
-    <Card style={{padding:'6px 8px'}}><_CTable testid="team-table" cols={[{h:''},{h:'Name'},{h:'Role'},{h:'Readiness',w:220},{h:'State'},{h:'Overdue',align:'right'},{h:'Fading',align:'right'},{h:'Last drill'},{h:'Re-checks'},{h:''}]}
-      rows={ps.map(x=>({key:x.person.id,testid:'team-row',onClick:()=>open({view:'person',id:x.person.id}),cells:[<TeamFace person={x.person} size={30} ring={_tState[x.r.state].col}/>,<b>{x.person.name}</b>,TeamLearn.ROLES[x.r.role].label,
-        <div style={{display:'flex',alignItems:'center',gap:8}}><Prog val={x.r.pct/100} col={_tState[x.r.state].col} h={8} style={{flex:1}}/><span style={{width:38,textAlign:'right'}}>{x.r.pct}%</span></div>,<_CState r={x.r}/>,
-        <span style={{color:x.r.overdue?T.tone.bad:T.mid}}>{x.r.overdue||'—'}</span>,<span style={{color:x.r.due?T.amber:T.mid}}>{x.r.due||'—'}</span>,<span style={{color:T.mid}}>{_cAgo(x.lastDrill)}</span>,<span style={{color:T.mid}}>{x.checks.asked?`${x.checks.right}/${x.checks.asked}`:'—'}</span>,
-        <span role="button" aria-label={`Remove ${x.person.name}`} onClick={e=>{ e.stopPropagation(); remove(x.person); }} style={{color:T.mid,cursor:'pointer',padding:'0 4px'}}><Icon n="trash" sz={14} col={T.mid}/></span>]}))}/></Card>
+    <Card style={{padding:'6px 8px'}}><_CTable testid="team-table" cols={[{h:'Person',w:'30%'},{h:'Readiness',w:'30%'},{h:'Overdue',align:'right',w:70},{h:'Fading',align:'right',w:70},{h:'Last drill',align:'right',w:100},{h:'Re-checks',align:'right',w:90},{h:'',w:36}]}
+      rows={ps.map(x=>({key:x.person.id,testid:'team-row',onClick:()=>open({view:'person',id:x.person.id}),cells:[
+        <div style={{display:'flex',alignItems:'center',gap:10,minWidth:0}}><TeamFace person={x.person} size={34} ring={_tState[x.r.state].col}/><div style={{minWidth:0}}><div style={{fontWeight:700,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{x.person.name}</div><div style={{fontSize:12,color:T.mid}}>{TeamLearn.ROLES[x.r.role].label}</div></div></div>,
+        <div style={{minWidth:150}}><div style={{display:'flex',alignItems:'center',gap:8}}><Prog val={x.r.pct/100} col={_tState[x.r.state].col} h={8} style={{flex:1}}/><span style={{width:40,textAlign:'right',fontWeight:600}}>{x.r.pct}%</span></div><div style={{marginTop:4,whiteSpace:'nowrap'}}><_CState r={x.r}/></div></div>,
+        <span style={{color:x.r.overdue?T.tone.bad:T.mid}}>{x.r.overdue||'—'}</span>,<span style={{color:x.r.due?T.amber:T.mid}}>{x.r.due||'—'}</span>,<span style={{color:T.mid,whiteSpace:'nowrap'}}>{_cAgo(x.lastDrill)}</span>,<span style={{color:T.mid}}>{x.checks.asked?`${x.checks.right} of ${x.checks.asked}`:'—'}</span>,
+        <span role="button" aria-label={`Remove ${x.person.name}`} onClick={e=>{ e.stopPropagation(); remove(x.person); }} style={{color:T.mid,cursor:'pointer',padding:'0 4px',display:'inline-flex'}}><Icon n="trash" sz={14} col={T.mid}/></span>]}))}/></Card>
     <div style={{display:'grid',gridTemplateColumns:useLayoutSize()==='phone'?'1fr':'1fr 1fr',gap:14,marginTop:14,alignItems:'start'}}>
       <Card>{_cLabel(T,'Add someone')}<div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
         <input aria-label="Name" placeholder="Name" value={name} onChange={e=>setName(e.target.value)} style={_cInput(T,{flex:'1 1 140px'})}/>
@@ -230,12 +248,15 @@ function _CMenu({open,goUpload}){ const T=useTheme(), cr=T.lift(C.cr), xs=TeamDa
   const save=()=>{ TeamData.draftEditDish(edit.id,{price:edit.price.trim(),desc:edit.desc.trim()}); setEdit(null); goUpload(); };
   const groups=[]; xs.forEach(x=>{ const s=x.section||'Menu'; let g=groups.find(y=>y.s===s); if(!g) groups.push(g={s,xs:[]}); g.xs.push(x); });
   const wn=b=>{ const w=b&&TeamData.wine(b.id); return w?TeamData.short(w):<span style={{color:T.mid}}>—</span>; };
+  // The glass pick, then a bottle for the table: the best match that isn't the glass pick, a bottle-only wine first.
+  const picks=p=>{ const best=p.best||[], glass=p.glass||best.find(b=>{ const w=TeamData.wine(b.id); return w&&TeamData.byGlass(w); })||null, gid=glass&&glass.id;
+    const bottle=best.find(b=>{ const w=TeamData.wine(b.id); return w&&b.id!==gid&&!TeamData.byGlass(w); })||best.find(b=>b.id!==gid)||null; return {glass,bottle}; };
   return <div data-testid="console-menu">{_cH(T,'Menu',`${xs.length} dishes · ${gaps.length?`${gaps.length} without a good match on the list`:'every dish has its wines'}`,<Btn small onClick={goUpload}>Upload a new menu</Btn>)}
     {gaps.length>0&&<Card style={{marginBottom:14,borderColor:T.amber+'66'}}><div style={{fontSize:14,color:T.amber,fontWeight:700,fontFamily:C.P}}>Dishes without pairings</div><div style={{fontSize:13,color:T.ink2,fontFamily:C.P,marginTop:4}}>{gaps.map(x=>x.name).join(' · ')}</div><div style={{fontSize:12,color:T.mid,fontFamily:C.P,marginTop:4}}>Written at the next publish, or from Upload with "Write them now".</div></Card>}
     {groups.map(g=><div key={g.s} style={{marginBottom:14}}>{_cLabel(T,g.s)}<Card style={{padding:'6px 8px'}}>
-      <_CTable testid="menu-table" cols={[{h:'Dish'},{h:'Price',align:'right'},{h:'Best with'},{h:'By the glass'},{h:'Steer away from'},{h:''}]}
-        rows={g.xs.flatMap(x=>{ const p=TeamData.pairing(x.id)||{}, ed=edit&&edit.id===x.id;
-          const row={key:x.id,testid:'menu-row',onClick:()=>open({view:'dish',id:x.id}),cells:[<span><b>{x.name}</b>{x.desc&&<span style={{color:T.mid,fontSize:12,display:'block'}}>{x.desc}</span>}</span>,x.price||<span style={{color:T.mid}}>—</span>,wn(p.best&&p.best[0]),wn(p.glass),wn(p.avoid),
+      <_CTable testid="menu-table" cols={[{h:'Dish'},{h:'Price',align:'right'},{h:'By the glass'},{h:'By the bottle'},{h:'Steer away from'},{h:''}]}
+        rows={g.xs.flatMap(x=>{ const p=TeamData.pairing(x.id)||{}, ed=edit&&edit.id===x.id, pk=picks(p);
+          const row={key:x.id,testid:'menu-row',onClick:()=>open({view:'dish',id:x.id}),cells:[<span><b>{x.name}</b>{x.desc&&<span style={{color:T.mid,fontSize:12,display:'block'}}>{x.desc}</span>}</span>,x.price||<span style={{color:T.mid}}>—</span>,wn(pk.glass),wn(pk.bottle),wn(p.avoid),
             <span role="button" aria-label={`Edit ${x.name}`} data-testid="menu-edit" onClick={e=>{ e.stopPropagation(); setEdit(ed?null:{id:x.id,price:x.price||'',desc:x.desc||''}); }} style={{color:cr,cursor:'pointer',fontSize:13,fontWeight:700}}>Edit</span>]};
           if(!ed) return [row];
           return [row,{key:x.id+'-edit',hi:true,cells:[<div onClick={e=>e.stopPropagation()} style={{display:'flex',gap:8,flexWrap:'wrap',alignItems:'center'}}>
@@ -304,4 +325,4 @@ function _CAdmin({refresh}){ const T=useTheme(), d=TeamData.get(), [name,setName
     </div>
   </div>; }
 
-Object.assign(window,{TeamConsole,CONSOLE_SECTIONS});
+Object.assign(window,{TeamConsole,CONSOLE_SECTIONS,TeamLogo});
