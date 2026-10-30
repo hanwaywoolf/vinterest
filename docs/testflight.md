@@ -1,7 +1,7 @@
 # Getting the iPhone app onto TestFlight
 
 `.github/workflows/testflight.yml` builds the iPhone app on a GitHub Mac, signs it and uploads it to
-TestFlight on every push to `main` (or on demand: Actions → TestFlight → Run workflow). No Mac of
+TestFlight on demand (Actions → TestFlight → Run workflow; releases are the web app, so nothing builds on a push). No Mac of
 your own and no certificate files: Xcode's automatic signing uses an App Store Connect API key, and
 Apple creates and keeps the certificate and provisioning profile.
 

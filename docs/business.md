@@ -31,13 +31,14 @@ One restaurant on one device, made to be shown to a restaurant before accounts e
 
 ## The wine-show demo
 
-`/team/?seed=demo` opens The Larkspur (Bristol, modern British): 60 wines and 27 dishes
+`/team/?seed=demo` opens The Larkspur (Bristol, modern British): 30 wines (15 by the glass) and 27 dishes
 (`data/team-demo-list.json`), and seven staff with circle-cropped photos (`team/faces/`, `TeamSample.DEMO_STAFF`).
-Once the training has been written (a manager publishes, then "Export this
-restaurant's list, menu and training as a file" and the file becomes `data/team-demo.json`), the demo
-opens with every card, pairing and drinking window in place and no network needed, and `TeamDemo.seedProgress`
-puts each person at a stage: Claire (sommelier) ready, Marco (bartender) slipping after three weeks without a
-drill, Dani (server) part way, Priya (server) overdue, Amara (server) in her first week, David (buyer) most of
+Its training is written: `data/team-demo.json` holds every staff card (six questions each), the pairings
+for all 27 dishes and a drinking window for each of the 27 dated wines, written once through the Worker
+(to rewrite it, publish from a fresh device, then "Export this restaurant's list, menu and training as a
+file" and replace the file), so the demo opens complete with no network needed, and `TeamDemo.seedProgress`
+puts each person at a stage: Claire (sommelier) ready, Marco (bartender) slipping at about half after three
+weeks without drilling the rest, Dani (server) part way, Priya (server) overdue, Amara (server) in her first week, David (buyer) most of
 the way. The live moment is **Add a wine from its label** on Upload: the consumer app's label scan reads the
 bottle, the manager sets its section and prices, the review says "1 new", and Publish writes its card, pairings
 and drinking window and assigns it to everyone who sells it.
@@ -53,9 +54,14 @@ Built for retention rather than points. No XP or streaks: the motivation is bein
 wine without being caught out.
 
 - **The ladder.** Each wine has six questions on four rungs: recognise (four options, first exposure
-  only), recall (typed), apply (a guest at a table, answered in their own words and marked by Claude
-  against the key, `prompts/team-grade.txt`) and contrast (telling it from the most similar wine on
-  the list). A rung opens once the one below is answered right. Servers and bartenders need the first
+  only), recall, apply (a guest at a table) and contrast (telling it from the most similar wine on
+  the list). Recall, apply and contrast are answered from pills (`TeamLearn.choices`: ten, with the
+  right ones among them, the three grapes or the three things to say, and the rest wrong but believable,
+  drawn from the same kind of answer on the list's other wines, a grape for a grape and a price for a
+  price; right only when the picked set is exactly right, `gradeChoices`), since typing on a phone mid
+  shift was too hard; `team_grade` stays for a typed mode later. The header over a question names the
+  wine only when the question itself does, never when the wine is the answer ("what would you offer
+  from the list"). A rung opens once the one below is answered right. Servers and bartenders need the first
   three; sommeliers and the buyer all four. Each dish has two questions written from its pairing,
   with no Claude call.
 - **The schedule.** Every question has its own review date, from how that person answered it: a

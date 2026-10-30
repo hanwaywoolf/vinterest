@@ -14,8 +14,9 @@ function TeamApp(){
   React.useEffect(()=>{ const h=()=>refresh(); window.addEventListener('vbiz:data',h); window.addEventListener('vinterest:account',h);
     return ()=>{ window.removeEventListener('vbiz:data',h); window.removeEventListener('vinterest:account',h); }; },[]);
   // /team/?seed=demo opens straight onto the demo restaurant (the wine-show laptop), replacing whatever
-  // restaurant the device holds unless it's already that one (so a reload keeps written cards and progress).
-  React.useEffect(()=>{ try{ const seed=new URLSearchParams(location.search).get('seed'); if(seed){ const cur=TeamData.get().venue||{}; if(!TeamLearn.me()||cur.sample!==seed) TeamSample.load(seed); history.replaceState(null,'',location.pathname); refresh(); } }catch(e){} },[]);
+  // restaurant the device holds unless it's already this build's copy of it (so a reload keeps progress, and a
+  // new build with more written in replaces a stale one).
+  React.useEffect(()=>{ try{ const seed=new URLSearchParams(location.search).get('seed'); if(seed){ if(!TeamLearn.me()||!TeamSample.current(seed)) TeamSample.load(seed); history.replaceState(null,'',location.pathname); refresh(); } }catch(e){} },[]);
   const me=TeamLearn.me(), set=!!me;
   const manager=me&&['manager','buyer'].includes(me.role);
   const tabs=TEAM_TABS.filter(t=>!t.manager||manager);
@@ -25,7 +26,7 @@ function TeamApp(){
   let body;
   if(!set) body=<TeamSetup onDone={refresh}/>;
   else if(top) body=top.view==='wine'?<TeamWine id={top.id} pid={me.id} open={open}/>:top.view==='dish'?<TeamDish id={top.id} open={open}/>
-    :<TeamDrill key={stack.length} pid={me.id} only={top.only} back={back}/>;
+    :<TeamDrill key={stack.length} pid={me.id} only={top.only} part={top.part} back={back}/>;
   else body=tab==='today'?<TeamToday pid={me.id} open={open}/>:tab==='wines'?<TeamWines pid={me.id} open={open}/>:tab==='menu'?<TeamMenu open={open}/>
     :tab==='upload'?<TeamUpload onChanged={refresh}/>:<TeamPeople open={open} onChanged={refresh}/>;
   return <DeckTheme.Provider value={_DECK_DARK}>

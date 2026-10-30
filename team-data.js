@@ -13,7 +13,11 @@ const TeamData = {
   PAIR_BATCH:12,      // dishes per pairing call
   PDF_PAGES:2,        // PDF pages read per call, so no single answer runs long
   _empty(){ return {venue:{name:'',created:Date.now()},wines:{},dishes:{},cards:{},pairings:{},versions:[],draft:null,settings:{dueDays:7}}; },
-  get(){ const d=Store.getJSON(this.KEY,null); return d&&d.wines?d:this._empty(); },
+  /* The venue is one 300KB document once the cards are written, and the screens and TeamLearn read
+     it many times a render, so the parsed copy is kept until the stored text changes (the text is
+     compared, never trusted by reference, so a write from anywhere else is seen). */
+  get(){ const raw=Store.get(this.KEY); if(raw!==null&&raw===this._raw) return this._val;
+    const d=raw?Store.getJSON(this.KEY,null):null, v=d&&d.wines?d:this._empty(); this._raw=raw; this._val=v; return v; },
   save(d){ Store.setJSON(this.KEY,d); try{ window.dispatchEvent(new Event('vbiz:data')); }catch(e){} },
   reset(){ Store.remove(this.KEY); try{ window.dispatchEvent(new Event('vbiz:data')); }catch(e){} },
   setVenue(fields){ const d=this.get(); d.venue={...d.venue,...fields}; this.save(d); },
@@ -285,7 +289,7 @@ const TeamSample = {
     if(which==='demo'&&(!s||s.pending)) s={..._loadJSON('data/team-demo-list.json'),cards:{},pairings:{},staff:null};
     if(!s) return false;
     const now=Date.now(), d=TeamData._empty();
-    d.venue={name:s.venue.name,created:now,sample:which};
+    d.venue={name:s.venue.name,created:now,sample:which,seeded:s.exported||null}; // seeded: which copy of the file this is, so a newer build reloads it
     s.wines.forEach((w,i)=>{ d.wines[w.id]={...w,onList:true,order:i,addedAt:now-30*86400000}; });
     s.dishes.forEach((x,i)=>{ d.dishes[x.id]={...x,onMenu:true,order:i,addedAt:now}; });
     Object.values(s.cards).forEach(c=>{ d.cards[c.id]={...TeamData._cleanCard(c,d),at:now}; });
@@ -298,6 +302,9 @@ const TeamSample = {
     return true;
   },
   // The Larkspur's team (photos in team/faces/). The manager is first, so the demo opens as her.
+  /* Whether the restaurant on the device is this seed as the build now carries it. */
+  current(which){ const v=TeamData.get().venue||{}; if(v.sample!==which) return false;
+    const s=which==='demo'?_loadJSON('data/team-demo.json'):_loadJSON('data/team-sample.json'); return (v.seeded||null)===((s&&s.exported)||null); },
   DEMO_STAFF:[{name:'Elena Ruiz',role:'manager',photo:'faces/1.png'},{name:'Claire Whitfield',role:'sommelier',photo:'faces/3.png'},{name:'David Chen',role:'buyer',photo:'faces/6.png'},
     {name:'Marco Delgado',role:'bartender',photo:'faces/5.png'},{name:'Dani Haddad',role:'server',photo:'faces/2.png'},{name:'Priya Nair',role:'server',photo:'faces/7.png'},{name:'Amara Okafor',role:'server',photo:'faces/4.png'}],
 };
@@ -321,11 +328,13 @@ const TeamDemo = {
     const claire=by('sommelier'); if(claire){ spaced(claire.id,all,['recognise','recall','apply','contrast'],70,4); dishes(claire.id,menu,now-5*this.DAY); check(claire.id,14,0.93); }
     // David, buyer: most of it, the sweet wines and a few reds still to do.
     const david=by('buyer'); if(david){ spaced(david.id,all.filter(w=>!/sweet|fortif/i.test(w.section)).slice(0,38),['recognise','recall','apply','contrast'],50,3); dishes(david.id,menu.slice(0,20),now-8*this.DAY); check(david.id,9,0.78); }
-    // Marco, bartender: was ready; learned the glass list 24 days ago and hasn't drilled since, so it's slipping.
-    const marco=by('bartender'); if(marco){ learn(marco.id,glass,['recognise','recall','apply'],now-24*this.DAY); dishes(marco.id,menu.slice(0,14),now-24*this.DAY,false);
+    // Marco, bartender: was ready; kept half the glass list fresh, learned the rest 24 days ago and hasn't
+    // drilled it since, so he's slipping at about half.
+    const marco=by('bartender'); if(marco){ const half=Math.ceil(glass.length/2); spaced(marco.id,glass.slice(0,half),['recognise','recall','apply'],40,3); learn(marco.id,glass.slice(half),['recognise','recall','apply'],now-24*this.DAY);
+      dishes(marco.id,menu.slice(0,8),now-6*this.DAY); dishes(marco.id,menu.slice(8,14),now-24*this.DAY,false);
       TeamLearn._mine(P,marco.id).wasReady=now-20*this.DAY; check(marco.id,6,0.5); }
     // Dani: about 60% through, drilling daily.
-    if(srv[0]){ spaced(srv[0].id,glass,['recognise','recall','apply'],30,3); spaced(srv[0].id,bottle.slice(0,14),['recognise','recall','apply'],20,2); dishes(srv[0].id,menu.slice(0,16),now-3*this.DAY); check(srv[0].id,7,0.86); }
+    if(srv[0]){ spaced(srv[0].id,glass,['recognise','recall','apply'],30,3); spaced(srv[0].id,bottle.slice(0,5),['recognise','recall','apply'],20,2); dishes(srv[0].id,menu.slice(0,13),now-3*this.DAY); check(srv[0].id,7,0.86); }
     // Priya: assigned the list 12 days ago, barely started: overdue.
     if(srv[1]){ learn(srv[1].id,glass.slice(0,6),['recognise'],now-10*this.DAY,'guess'); const m=TeamLearn._mine(P,srv[1].id); Object.values(m.assigned).forEach(a=>{ a.at=now-12*this.DAY; a.due=now-5*this.DAY; }); }
     // Amara: joined this week, five wines in.
