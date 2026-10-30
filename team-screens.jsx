@@ -138,13 +138,22 @@ function TeamWines({pid,open}){ const T=useTheme();
 
 /* A wine's staff card. */
 function TeamWine({id,pid,open}){ const T=useTheme(), w=TeamData.wine(id), c=TeamData.card(id);
+  // No card yet: nothing on this screen writes one by itself. A manager writes this one here; anyone
+  // else is told who does. A failed write says so, never a wait that doesn't end.
+  const me=TeamLearn.person?TeamLearn.person(pid):null, manager=me&&['manager','buyer'].includes(me.role);
+  const [busy,setBusy]=React.useState(false), [err,setErr]=React.useState(''), [,bump]=React.useReducer(x=>x+1,0);
+  const writeIt=async()=>{ setBusy(true); setErr(''); try{ await TeamData.writeCards([id]); if(w.vintage&&!w.peak) await TeamData.writeWindows([id]); }catch(x){ setErr(x.message||'Stopped.'); } setBusy(false); bump(); };
   if(!w) return null; const col=_tTypeCol(T,w.type);
   const bar=(k,label,v,how)=>v==null?null:<div key={k} style={{marginBottom:9}}><div style={{display:'flex',justifyContent:'space-between',fontSize:14,fontFamily:C.P,color:T.ink2}}><span>{label}</span><span>{v}/5</span></div><Prog val={v/5} col={col} h={5} style={{marginTop:4}}/>{how&&<div style={{fontSize:12,color:T.mid,fontFamily:C.P,marginTop:3}}>{how}</div>}</div>;
   return <div data-testid="team-wine">
     <div style={{fontSize:12,fontWeight:700,color:col,fontFamily:C.P,letterSpacing:'0.08em',textTransform:'uppercase'}}>{w.section||w.type}</div>
     {_tH(T,TeamData.short(w),[w.vintage||'NV',w.region,w.country].filter(Boolean).join(' · '))}
     <div style={{display:'flex',gap:6,flexWrap:'wrap',marginBottom:10}}>{w.glass&&<Pill sm>Glass {w.glass}</Pill>}{w.bottle&&<Pill sm>Bottle {w.bottle}</Pill>}{w.other&&<Pill sm>{w.other}</Pill>}{(w.grapes||[]).map(g=><Pill sm key={g}>{g}</Pill>)}</div>
-    {!c?<Card><WritingWait compact title="Writing this wine's staff card…" wine={{name:w.name,grapes:w.grapes,region:w.region}}/></Card>:<>
+    {!c?<div data-testid="team-no-card"><Card>{busy?<WritingWait compact title="Writing this wine's staff card…" wine={{name:w.name,grapes:w.grapes,region:w.region}}/>:<>
+        <div style={{fontSize:15,fontWeight:700,color:T.ink,fontFamily:C.P}}>No staff card yet</div>
+        <div style={{fontSize:14,color:T.ink2,fontFamily:C.P,marginTop:4,lineHeight:1.5}}>{manager?'Write it here, or write every missing card from the Upload tab.':'Your manager writes the staff cards from the Upload tab.'}</div>
+        {err&&<div data-testid="team-card-error" style={{fontSize:14,color:'#F2B84B',fontFamily:C.P,marginTop:6}}>{err}</div>}
+        {manager&&<div style={{marginTop:10}}><Btn small primary onClick={writeIt}>{err?'Try again':'Write it now'}</Btn></div>}</>}</Card></div>:<>
       <Card style={{borderColor:col+'66'}}><div style={{fontSize:12,fontWeight:700,color:T.mid,fontFamily:C.P,textTransform:'uppercase',letterSpacing:'0.08em'}}>Say it to a guest</div><div data-testid="team-pitch" style={{fontSize:17,color:T.ink,fontFamily:C.P,lineHeight:1.5,marginTop:6}}>{c.pitch}</div></Card>
       {_tLabel(T,'What it tastes like')}<Card><div style={{fontSize:15,color:T.ink2,fontFamily:C.P,lineHeight:1.5,marginBottom:10}}>{c.taste}</div>
         {c.style&&<>{bar('b','Body',c.style.body,Palate.HOW.body)}{bar('a','Acidity',c.style.acid,Palate.HOW.acidity)}{w.type==='red'||c.style.tannin?bar('t','Tannin',c.style.tannin,Palate.HOW.tannins):null}{bar('s','Sweetness',c.style.sweet)}</>}</Card>
