@@ -62,6 +62,17 @@ export const APP_SOURCES = [
   'pwa-app.jsx',
 ];
 
+// The restaurant staff-training app (docs/business.md), built to dist/team/ as team.js: every app
+// source above except pwa-app.jsx (which boots the consumer app), so the wine facts, scanning,
+// quizzes and components are shared, then these, which boot the team app instead.
+export const TEAM_SOURCES = [
+  'team-data.js',
+  'team-learn.js',
+  'team-screens.jsx',
+  'team-app.jsx',
+];
+export const TEAM_ALL = [...APP_SOURCES.filter((f) => f !== 'pwa-app.jsx'), ...TEAM_SOURCES];
+
 // Copied into dist/ unchanged. Directories are copied recursively.
 export const STATIC_FILES = [
   'manifest.json',

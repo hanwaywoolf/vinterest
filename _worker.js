@@ -67,7 +67,13 @@ const CLAUDE_PURPOSE_LIMITS = {
                             // as a backstop if the model ever ignores the length instruction.
   sommelier_script: 4096,  // pwa-screens-home.jsx / pwa-screens-aux.jsx / pwa-screens-wineiq.jsx
   learn_article: 4096,     // pwa-screens-learn.jsx — generated learning article body
-  winedna_summary: 4096    // pwa-screens-wineiq.jsx — Wine DNA personality summary
+  winedna_summary: 4096,   // pwa-screens-wineiq.jsx — Wine DNA personality summary
+  // The restaurant staff-training app (team-*.js, docs/business.md), Pro only (PRO_ONLY below):
+  team_list: 16384,        // team-data.js TeamData.readList — a wine list photo or PDF -> wines with prices and sections
+  team_menu: 8192,         // team-data.js TeamData.readMenu — a menu photo or PDF -> dishes
+  team_cards: 12288,       // team-data.js TeamData.writeCards — staff cards and questions, a few wines a call
+  team_pairings: 8192,     // team-data.js TeamData.writePairings — the list's best matches for each dish
+  team_grade: 600          // team-learn.js TeamLearn.grade — marks a typed answer against its key
 };
 
 /* Claude 5 models take settings Sonnet 4.6 didn't need. Sonnet 5.5 thinks by default, which
@@ -77,7 +83,7 @@ const CLAUDE_PURPOSE_LIMITS = {
    make the quiz banks' wrong answers any less obvious; the quiz prompts' own rule about them does. Refusal
    fallbacks are on, so a request their safety classifier declines is answered by another model
    in the same call instead of coming back empty. Earlier models get nothing extra. */
-const PURPOSE_EFFORT = { grape_quiz: "medium", region_quiz: "medium", quiz_variants: "medium", learn_article: "medium", winedna_summary: "medium", sommelier_script: "medium", wine_deep: "medium" };
+const PURPOSE_EFFORT = { team_cards: "medium", team_pairings: "medium", grape_quiz: "medium", region_quiz: "medium", quiz_variants: "medium", learn_article: "medium", winedna_summary: "medium", sommelier_script: "medium", wine_deep: "medium" };
 function modelOptions(model, purpose, env) {
   if (!/^claude-(sonnet|opus|fable)-5/.test(model)) return { body: {}, betas: [] };
   const effort = env.CLAUDE_EFFORT || PURPOSE_EFFORT[purpose] || "low";
@@ -345,7 +351,9 @@ const FAIR_USE = {
   free: { label_scan: 100, list_scan: 30, price_search: 50, _other: 500 },
   pro:  { label_scan: 600, list_scan: 150, price_search: 300, _other: 3000 },
 };
-const PRO_ONLY = { list_scan: "Wine list scanning is part of Vinterest Pro.", lcbo: "LCBO stock near you is part of Vinterest Pro." };
+const TEAM_PRO = "Vinterest for teams needs a Pro account while it's in pilot.";
+const PRO_ONLY = { list_scan: "Wine list scanning is part of Vinterest Pro.", lcbo: "LCBO stock near you is part of Vinterest Pro.",
+  team_list: TEAM_PRO, team_menu: TEAM_PRO, team_cards: TEAM_PRO, team_pairings: TEAM_PRO, team_grade: TEAM_PRO };
 /* Pro-only purposes any signed-in account may use anyway (metered by FAIR_USE.free). None: list
    scanning and LCBO stock need Pro, from a subscription or a promo code. */
 const OPEN_TO_SIGNED_IN = {};

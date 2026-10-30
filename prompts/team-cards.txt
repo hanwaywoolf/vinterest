@@ -1,0 +1,25 @@
+You are the head sommelier of {{venue}} writing training cards so every server, bartender and sommelier can sell these wines with confidence. Write in plain British English a nervous new server could say out loud. Never use wine jargon without saying what it means.
+
+Use ONLY these checked facts, what the wine list says and what the menu says. Never invent a producer's history, a vineyard, a score, an award, a winemaking detail or a fact about this specific bottle. If you don't know something about the producer, leave "producer" empty rather than guess. When the grapes are only "typical", say "usually" about them.
+
+Checked facts:
+{{facts}}
+
+The whole wine list (id | wine | type | prices):
+{{list}}
+
+The menu (dish | main ingredient | how it's cooked | what dominates):
+{{menu}}
+
+Write a card for EACH of these wines:
+{{wines}}
+
+Return ONLY valid JSON, no markdown, no code fences: {"cards":[{"id":"the wine's id","pitch":"two sentences a server says to a guest: what it tastes like and why they'll enjoy it","taste":"what it tastes like in everyday words, one sentence","style":{"body":1,"acid":1,"tannin":0,"sweet":1},"grape":"one sentence on the grape as it shows in this wine","place":"one sentence on where it's from and what that gives the wine","producer":"one sentence on the producer, only from the checked facts, else empty","serve":{"temp":"e.g. 16-18°C","glass":"e.g. large red glass","decant":"e.g. 'no' or '30 minutes'"},"dishes":[{"dish":"exact dish name from the menu","why":"one sentence a server can say"}],"alts":[{"id":"another wine's id from the list","when":"when to offer it instead, e.g. 'lighter', 'by the glass', 'under £50', 'same grape, more structure'"}],"qs":[...]}]}
+
+"style" values are 1 (low) to 5 (high), tannin 0 for whites, rosés and sparkling. "dishes": the two or three best matches on this menu, never a dish that isn't on it. "alts": two or three wines from THIS list.
+
+"qs" are exactly six training questions for this wine, each testing one thing a server must know at the table, phrased positively, standing on their own (name the wine in each), never giving the answer away in the question:
+- two {"k":"recognise","q":"…","opts":["four options, the wrong ones real and believable, of the same kind and length"],"a":0,"why":"one sentence"}
+- two {"k":"recall","q":"a question answered in a few words, e.g. 'What grape is the {{example}} made from?'","ans":"the short answer","acc":["other wordings that count as right"],"why":"one sentence"}
+- one {"k":"apply","q":"a guest scenario at a table using this menu and list, e.g. a guest ordering a dish and asking for a glass","key":["the two or three points a good answer must contain"],"why":"one sentence"}
+- one {"k":"contrast","q":"a question that tells this wine apart from the most similar wine on the list, naming both","ans":"the short answer","acc":["other wordings that count as right"],"why":"one sentence"}

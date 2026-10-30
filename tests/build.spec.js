@@ -21,9 +21,14 @@ test('source order matches the precompiled markers in bundle.js', async () => {
 test('dist/app.js has no synchronous XHR and inlines every loader path', async () => {
   const app = fs.readFileSync(path.join(ROOT, 'dist/app.js'), 'utf8');
   expect(app).not.toContain('XMLHttpRequest');
-  const inlined = JSON.parse(/const __VINTEREST_ASSETS__ = Object\.freeze\((\{.*?\})\);\n/s.exec(app)[1]);
+  const assets = (js) => JSON.parse(/const __VINTEREST_ASSETS__ = Object\.freeze\((\{.*?\})\);\n/s.exec(js)[1]);
+  // The team app (dist/team/team.js) carries everything the consumer app does plus its own sample.
+  const team = fs.readFileSync(path.join(ROOT, 'dist/team/team.js'), 'utf8');
+  expect(team).not.toContain('XMLHttpRequest');
+  const inlined = assets(app), teamInlined = assets(team);
   for (const file of fs.readdirSync(path.join(ROOT, 'data'))) {
-    expect(inlined[`data/${file}`], `data/${file}`).toBe(fs.readFileSync(path.join(ROOT, 'data', file), 'utf8'));
+    const own = file.startsWith('team-') ? teamInlined : inlined;
+    expect(own[`data/${file}`], `data/${file}`).toBe(fs.readFileSync(path.join(ROOT, 'data', file), 'utf8'));
   }
 });
 
