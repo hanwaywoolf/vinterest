@@ -100,12 +100,12 @@ function TeamConsole({me,onPhone,refresh,section,setSection,open}){ const T=useT
 /* The logo with TEAMS set under it as one mark. logo.png has clear padding round the drawing (the mark
    fills x 41–1039 of 1086 and y 41–183 of 224), so the image is scaled and cropped to the mark itself and
    the word is spread across exactly the mark's width, from the V to the final T. `size` is the mark's height. */
-const _LOGO={l:41/1086,r:1039/1086,t:41/224,b:183/224,ar:1086/224};
+const _LOGO={l:41/1086,r:1039/1086,t:41/224,b:183/224,ar:1086/224,wordL:(99-41)/998,wordR:(1003-41)/998}; // the word runs from the V's point (x 99) to the foot of the T (x 1003)
 function TeamLogo({size=20}){ const T=useTheme(), cr=T.lift(C.cr);
   const imgH=size/(_LOGO.b-_LOGO.t), imgW=imgH*_LOGO.ar, w=imgW*(_LOGO.r-_LOGO.l);
   return <div data-testid="team-logo" style={{display:'inline-block',width:w}}>
     <div style={{width:w,height:size,overflow:'hidden',position:'relative'}}><img src="/logo.png" alt="Vinterest" style={{position:'absolute',left:-imgW*_LOGO.l,top:-imgH*_LOGO.t,width:imgW,height:imgH,maxWidth:'none',display:'block',filter:T.dark?'invert(1)':'none'}} onError={e=>{ e.target.style.display='none'; }}/></div>
-    <div aria-label="Teams" style={{width:w,display:'flex',justifyContent:'space-between',fontSize:Math.round(size*0.55)+'px',fontWeight:700,color:cr,fontFamily:C.P,lineHeight:1,marginTop:4}}>{'TEAMS'.split('').map((ch,i)=><span key={i}>{ch}</span>)}</div>
+    <div aria-label="Teams" style={{marginLeft:w*_LOGO.wordL,width:w*(_LOGO.wordR-_LOGO.wordL),display:'flex',justifyContent:'space-between',fontSize:Math.round(size*0.55)+'px',fontWeight:700,color:cr,fontFamily:C.P,lineHeight:1,marginTop:4}}>{'TEAMS'.split('').map((ch,i)=><span key={i}>{ch}</span>)}</div>
   </div>; }
 /* Console or the phone app, as a switch (a manager drills as someone on the phone view). */
 function _CViewToggle({phone,onPhone,onConsole,compact}){ const T=useTheme(), cr=T.lift(C.cr);
