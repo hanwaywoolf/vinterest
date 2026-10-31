@@ -68,8 +68,8 @@ function _CSpark({points,fmt=v=>String(v),h=56,col}){ const T=useTheme(), cr=col
 function _CTable({cols,rows,testid,empty}){ const T=useTheme();
   if(!rows.length) return <div style={{fontSize:14,color:T.mid,fontFamily:C.P,padding:'8px 0'}}>{empty||'Nothing here yet.'}</div>;
   return <div data-testid={testid} style={{overflowX:'auto'}}><table style={{width:'100%',borderCollapse:'collapse',fontFamily:C.P,fontSize:14,color:T.ink}}>
-    <thead><tr>{cols.map((c,i)=><th key={i} style={{textAlign:c.align||'left',fontSize:11,fontWeight:700,color:T.mid,letterSpacing:'0.06em',textTransform:'uppercase',padding:'6px 10px',borderBottom:`1px solid ${T.line}`,whiteSpace:'nowrap',width:c.w}}>{c.h}</th>)}</tr></thead>
-    <tbody>{rows.map((r,i)=><tr key={r.key||i} data-testid={r.testid} onClick={r.onClick} style={{cursor:r.onClick?'pointer':'default',background:r.hi?T.soft:'transparent'}}>{r.cells.map((x,j)=><td key={j} style={{padding:'10px 10px',borderBottom:i<rows.length-1?`1px solid ${T.line}`:'none',textAlign:cols[j]&&cols[j].align||'left',verticalAlign:'middle',fontVariantNumeric:'tabular-nums',lineHeight:1.35}}>{x}</td>)}</tr>)}</tbody>
+    <thead><tr>{cols.map((c,i)=><th key={i} style={{textAlign:c.align||'left',fontSize:11,fontWeight:700,color:T.mid,letterSpacing:'0.06em',textTransform:'uppercase',padding:'6px 8px',borderBottom:`1px solid ${T.line}`,whiteSpace:'nowrap',width:c.w}}>{c.h}</th>)}</tr></thead>
+    <tbody>{rows.map((r,i)=><tr key={r.key||i} data-testid={r.testid} onClick={r.onClick} style={{cursor:r.onClick?'pointer':'default',background:r.hi?T.soft:'transparent'}}>{r.cells.map((x,j)=><td key={j} style={{padding:'10px 8px',borderBottom:i<rows.length-1?`1px solid ${T.line}`:'none',textAlign:cols[j]&&cols[j].align||'left',verticalAlign:'middle',fontVariantNumeric:'tabular-nums',lineHeight:1.35}}>{x}</td>)}</tr>)}</tbody>
   </table></div>; }
 function _CState({r}){ const st=_tState[r.state]; return <span style={{display:'inline-flex',alignItems:'center',gap:6,fontSize:13,fontWeight:700,color:st.col,fontFamily:C.P}}><span style={{width:8,height:8,borderRadius:4,background:st.col}}/>{st.label}</span>; }
 const _cInput=(T,extra)=>({padding:'8px 10px',borderRadius:10,border:`1px solid ${T.line}`,background:T.soft,color:T.ink,fontFamily:C.P,fontSize:15,outline:'none',minWidth:0,...extra});
@@ -80,14 +80,15 @@ function TeamConsole({me,onPhone,refresh,section,setSection,open}){ const T=useT
   const go=v=>{ if(v.tab){ setSection(v.tab==='today'?'dash':v.tab); setPanel(null); return; } if(v.view==='drill'){ onPhone(v); return; } setPanel(v); };
   const venue=TeamData.get().venue;
   const side=<div style={narrow?{display:'flex',gap:6,overflowX:'auto',padding:'8px 12px',borderBottom:`1px solid ${T.line}`}:{width:220,flexShrink:0,borderRight:`1px solid ${T.line}`,padding:'18px 12px',display:'flex',flexDirection:'column',gap:4}}>
-    {!narrow&&<div style={{padding:'0 8px 14px'}}><TeamLogo/>
-      <div style={{fontSize:16,fontWeight:800,color:T.ink,fontFamily:C.P,marginTop:14,lineHeight:1.2}}>{venue.name||'Your restaurant'}</div>
-      <div style={{display:'flex',alignItems:'center',gap:8,marginTop:10}}><TeamFace person={me} size={28}/><div style={{minWidth:0}}><div style={{fontSize:13,color:T.ink,fontFamily:C.P,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{me.name}</div><div style={{fontSize:11,color:T.mid,fontFamily:C.P}}>{TeamLearn.ROLES[me.role].label}</div></div></div>
-      <_CViewToggle phone={false} onPhone={()=>onPhone({tab:'today'})}/></div>}
+    {!narrow&&<div style={{padding:'0 8px 18px'}}><TeamLogo/>
+      <div style={{fontSize:16,fontWeight:800,color:T.ink,fontFamily:C.P,marginTop:14,lineHeight:1.2}}>{venue.name||'Your restaurant'}</div></div>}
     {narrow&&<_CViewToggle phone={false} onPhone={()=>onPhone({tab:'today'})} compact/>}
     {CONSOLE_SECTIONS.map(s=>{ const on=section===s.k; return <div key={s.k} role="button" data-testid={'console-nav-'+s.k} onClick={()=>{ setSection(s.k); setPanel(null); }} style={{display:'flex',alignItems:'center',gap:10,padding:narrow?'6px 12px':'9px 10px',borderRadius:10,background:on?T.soft:'transparent',border:narrow?`1px solid ${on?cr:T.line}`:'none',color:on?T.ink:T.mid,fontSize:14,fontWeight:on?700:500,fontFamily:C.P,cursor:'pointer',whiteSpace:'nowrap',flexShrink:0}}><Icon n={s.icon} sz={16} col={on?cr:T.mid}/>{s.label}</div>; })}
     {!narrow&&<div style={{flex:1}}/>}
-    {!narrow&&<div style={{fontSize:11,color:T.mid,fontFamily:C.P,padding:'8px 10px',lineHeight:1.5}}>Management console · {TeamData.isDemo()?'The Larkspur demo':'pilot'}</div>}
+    {!narrow&&<div style={{padding:'0 8px'}}>
+      <div style={{display:'flex',alignItems:'center',gap:8,paddingTop:12,borderTop:`1px solid ${T.line}`}}><TeamFace person={me} size={30}/><div style={{minWidth:0}}><div style={{fontSize:13,fontWeight:600,color:T.ink,fontFamily:C.P,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{me.name}</div><div style={{fontSize:11,color:T.mid,fontFamily:C.P}}>{TeamLearn.ROLES[me.role].label}</div></div></div>
+      <_CViewToggle phone={false} onPhone={()=>onPhone({tab:'today'})}/>
+      {TeamData.isDemo()&&<div style={{fontSize:11,color:T.mid,fontFamily:C.P,padding:'12px 2px 0',lineHeight:1.5}}>Management console · The Larkspur demo</div>}</div>}
   </div>;
   const page=section==='team'?<_CTeam open={go} refresh={refresh}/>:section==='wines'?<_CWines open={go} goUpload={()=>setSection('upload')}/>:section==='menu'?<_CMenu open={go} goUpload={()=>setSection('upload')}/>
     :section==='upload'?<_CUpload refresh={refresh}/>:section==='pos'?<_CPos open={go}/>:section==='admin'?<_CAdmin refresh={refresh}/>:<_CDash open={go} setSection={setSection}/>;
@@ -96,13 +97,15 @@ function TeamConsole({me,onPhone,refresh,section,setSection,open}){ const T=useT
     <div style={{flex:1,minWidth:0,overflowY:'auto',padding:narrow?'14px 14px 40px':'22px 28px 60px'}}><div style={{maxWidth:1100,margin:'0 auto'}}><TeamJobChip onOpen={()=>setSection('upload')}/><ScreenErrorBoundary>{page}</ScreenErrorBoundary></div></div>
     {panel&&<_CPanel panel={panel} me={me} open={go} close={()=>setPanel(null)} narrow={narrow}/>}
   </div>; }
-/* The logo with TEAMS set under it, as one mark: the word takes the logo's width. */
-function TeamLogo({size=22}){ const T=useTheme(), cr=T.lift(C.cr);
-  // The column is as wide as the logo and no wider (the word's own width is 0, so it never sets the
-  // width); the letters are spread across exactly that, with no letter-spacing to trail past the end.
-  return <div data-testid="team-logo" style={{display:'inline-flex',flexDirection:'column',alignItems:'flex-start'}}>
-    <img src="/logo.png" alt="Vinterest" style={{height:size,width:'auto',maxWidth:'none',display:'block',filter:T.dark?'invert(1)':'none'}} onError={e=>{ e.target.style.display='none'; }}/>
-    <div aria-label="Teams" style={{fontSize:'11px',fontWeight:700,color:cr,fontFamily:C.P,lineHeight:1,marginTop:3,letterSpacing:'0.2em',paddingLeft:2}}>TEAMS</div>
+/* The logo with TEAMS set under it as one mark. logo.png has clear padding round the drawing (the mark
+   fills x 41–1039 of 1086 and y 41–183 of 224), so the image is scaled and cropped to the mark itself and
+   the word is spread across exactly the mark's width, from the V to the final T. `size` is the mark's height. */
+const _LOGO={l:41/1086,r:1039/1086,t:41/224,b:183/224,ar:1086/224};
+function TeamLogo({size=20}){ const T=useTheme(), cr=T.lift(C.cr);
+  const imgH=size/(_LOGO.b-_LOGO.t), imgW=imgH*_LOGO.ar, w=imgW*(_LOGO.r-_LOGO.l);
+  return <div data-testid="team-logo" style={{display:'inline-block',width:w}}>
+    <div style={{width:w,height:size,overflow:'hidden',position:'relative'}}><img src="/logo.png" alt="Vinterest" style={{position:'absolute',left:-imgW*_LOGO.l,top:-imgH*_LOGO.t,width:imgW,height:imgH,maxWidth:'none',display:'block',filter:T.dark?'invert(1)':'none'}} onError={e=>{ e.target.style.display='none'; }}/></div>
+    <div aria-label="Teams" style={{width:w,display:'flex',justifyContent:'space-between',fontSize:Math.round(size*0.55)+'px',fontWeight:700,color:cr,fontFamily:C.P,lineHeight:1,marginTop:4}}>{'TEAMS'.split('').map((ch,i)=><span key={i}>{ch}</span>)}</div>
   </div>; }
 /* Console or the phone app, as a switch (a manager drills as someone on the phone view). */
 function _CViewToggle({phone,onPhone,onConsole,compact}){ const T=useTheme(), cr=T.lift(C.cr);
@@ -207,7 +210,7 @@ function _CTeam({open,refresh}){ const T=useTheme(), cr=T.lift(C.cr);
   const add=()=>{ if(!name.trim()) return; TeamLearn.addPerson(name.trim(),role,null); setName(''); refresh&&refresh(); };
   const remove=p=>{ if(confirm(`Remove ${p.name} and their training on this device?`)){ TeamLearn.removePerson(p.id); refresh&&refresh(); } };
   return <div data-testid="console-team">{_cH(T,'Team',`${ps.length} people · ${ps.filter(x=>x.r.state==='ready').length} ready`)}
-    <Card style={{padding:'6px 8px'}}><_CTable testid="team-table" cols={[{h:'Person',w:'30%'},{h:'Readiness',w:'30%'},{h:'Overdue',align:'right',w:70},{h:'Fading',align:'right',w:70},{h:'Last drill',align:'right',w:100},{h:'Re-checks',align:'right',w:90},{h:'',w:36}]}
+    <Card style={{padding:'6px 8px'}}><_CTable testid="team-table" cols={[{h:'Person',w:'30%'},{h:'Readiness',w:'30%'},{h:'Overdue',align:'center',w:80},{h:'Fading',align:'center',w:80},{h:'Last drill',align:'center',w:110},{h:'Re-checks',align:'center',w:100},{h:'',w:36,align:'right'}]}
       rows={ps.map(x=>({key:x.person.id,testid:'team-row',onClick:()=>open({view:'person',id:x.person.id}),cells:[
         <div style={{display:'flex',alignItems:'center',gap:10,minWidth:0}}><TeamFace person={x.person} size={34} ring={_tState[x.r.state].col}/><div style={{minWidth:0}}><div style={{fontWeight:700,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{x.person.name}</div><div style={{fontSize:12,color:T.mid}}>{TeamLearn.ROLES[x.r.role].label}</div></div></div>,
         <div style={{minWidth:150}}><div style={{display:'flex',alignItems:'center',gap:8}}><Prog val={x.r.pct/100} col={_tState[x.r.state].col} h={8} style={{flex:1}}/><span style={{width:40,textAlign:'right',fontWeight:600}}>{x.r.pct}%</span></div><div style={{marginTop:4,whiteSpace:'nowrap'}}><_CState r={x.r}/></div></div>,
@@ -254,15 +257,15 @@ function _CWines({open,goUpload}){ const T=useTheme(), cr=T.lift(C.cr), ws=TeamD
   const groups=[]; ws.forEach(w=>{ const s=w.section||'The list'; let g=groups.find(x=>x.s===s); if(!g) groups.push(g={s,ws:[]}); g.ws.push(w); });
   return <div data-testid="console-wines">{_cH(T,'Wines',`${ws.length} on the list · ${ws.filter(TeamData.byGlass).length} by the glass · ${cov.glass.covered+cov.bottle.covered} covered by the floor`,<Btn small onClick={goUpload}>Upload a new list</Btn>)}
     {!ws.length&&<Card><div style={{fontSize:14,color:T.mid,fontFamily:C.P}}>No list yet. Upload one and it appears here with who knows what.</div></Card>}
-    {groups.map(g=><div key={g.s} style={{marginBottom:14}}>{_cLabel(T,g.s)}<Card style={{padding:'6px 8px'}}>
-      <_CTable testid="wines-table" cols={[{h:''},{h:'Wine'},{h:'Year'},{h:'Glass',align:'right'},{h:'Bottle',align:'right'},{h:'Window'},{h:'Known by'},...(sold?[{h:'Sold, 28 nights',align:'right'}]:[]),{h:'Card'},{h:''}]}
+    {groups.map(g=><div key={g.s} style={{marginBottom:14}}>{_cLabel(T,g.s,sold&&<span style={{fontSize:11,color:T.mid,fontFamily:C.P,textTransform:'none',letterSpacing:0,fontWeight:500}}>sold in 28 nights</span>)}<Card style={{padding:'6px 4px'}}>
+      <_CTable testid="wines-table" cols={[{h:'Wine'},{h:'Year',align:'center',w:56},{h:'Glass',align:'center',w:64},{h:'Bottle',align:'center',w:68},{h:'Window',align:'center',w:96},{h:'Known by',align:'center',w:84},...(sold?[{h:'Sold',align:'center',w:56}]:[]),{h:'Card',align:'center',w:52},{h:'',align:'right',w:72}]}
         rows={g.ws.flatMap(w=>{ const x=by[w.id]||{knows:0,of:0}, dw=TeamData.window(w), c=TeamData.card(w.id), s=sold&&sold[w.id]; const ed=edit&&edit.id===w.id;
-          const row={key:w.id,testid:'wines-row',onClick:()=>open({view:'wine',id:w.id}),cells:[<div style={{width:8,height:8,borderRadius:4,background:_tTypeCol(T,w.type)}}/>,<span><b>{TeamData.short(w)}</b><span style={{color:T.mid,fontSize:12}}> · {[w.region,w.country].filter(Boolean).join(', ')}</span></span>,w.vintage||'NV',
-            w.glass||<span style={{color:T.mid}}>—</span>,w.bottle||<span style={{color:T.mid}}>—</span>,dw?<span style={{color:dw.stage==='ready'?T.green:dw.stage==='young'?'#7FB3F0':T.amber,fontSize:13}}>{dw.word}</span>:<span style={{color:T.mid}}>—</span>,
-            <span style={{color:x.of&&x.knows<Math.ceil(x.of/2)?T.tone.bad:T.ink2}}>{x.knows} of {x.of}</span>,...(sold?[s?`${s.qty}`:'0']:[]),c?<Icon n="check" sz={14} col={T.green}/>:<span style={{color:T.amber,fontSize:12}}>none</span>,
+          const row={key:w.id,testid:'wines-row',onClick:()=>open({view:'wine',id:w.id}),cells:[<div style={{display:'flex',alignItems:'flex-start',gap:8,minWidth:160}}><span style={{width:8,height:8,borderRadius:4,background:_tTypeCol(T,w.type),flexShrink:0,marginTop:6}}/><span><b>{TeamData.short(w)}</b><span style={{color:T.mid,fontSize:12,display:'block'}}>{[w.region,w.country].filter(Boolean).join(', ')}</span></span></div>,w.vintage||'NV',
+            w.glass||<span style={{color:T.mid}}>—</span>,w.bottle||<span style={{color:T.mid}}>—</span>,dw?<span style={{color:dw.stage==='ready'?T.green:dw.stage==='young'?'#7FB3F0':T.amber,fontSize:13,whiteSpace:'nowrap'}}>{dw.word}</span>:<span style={{color:T.mid}}>—</span>,
+            <span style={{color:x.of&&x.knows<Math.ceil(x.of/2)?T.tone.bad:T.ink2,whiteSpace:'nowrap'}}>{x.knows} of {x.of}</span>,...(sold?[s?`${s.qty}`:'0']:[]),c?<Icon n="check" sz={14} col={T.green} style={{display:'inline-block',verticalAlign:'middle'}}/>:<span style={{color:T.amber,fontSize:12}}>none</span>,
             <span style={{display:'flex',gap:6,justifyContent:'flex-end'}}><span role="button" aria-label={`Edit ${TeamData.short(w)}`} data-testid="wines-edit" onClick={e=>{ e.stopPropagation(); setEdit(ed?null:{id:w.id,glass:w.glass||'',bottle:w.bottle||'',section:w.section||''}); }} style={{color:cr,cursor:'pointer',fontSize:13,fontWeight:700}}>Edit</span><span role="button" aria-label={`Take ${TeamData.short(w)} off the list`} onClick={e=>{ e.stopPropagation(); off(w); }} style={{cursor:'pointer',padding:'0 2px'}}><Icon n="trash" sz={14} col={T.mid}/></span></span>]};
           if(!ed) return [row];
-          return [row,{key:w.id+'-edit',hi:true,cells:[<span/>,<div data-testid="wines-edit-row" onClick={e=>e.stopPropagation()} style={{display:'flex',gap:8,flexWrap:'wrap',alignItems:'center'}}>
+          return [row,{key:w.id+'-edit',hi:true,cells:[<div data-testid="wines-edit-row" onClick={e=>e.stopPropagation()} style={{display:'flex',gap:8,flexWrap:'wrap',alignItems:'center'}}>
             <select aria-label="Section" value={edit.section} onChange={e=>setEdit({...edit,section:e.target.value})} style={_cInput(T,{background:T.card,colorScheme:'dark',fontSize:14})}>{secs.map(x=><option key={x} value={x}>{x}</option>)}</select>
             <input aria-label="Glass price" value={edit.glass} onChange={e=>setEdit({...edit,glass:e.target.value})} placeholder="Glass (or blank)" style={_cInput(T,{width:130,fontSize:14})}/>
             <input aria-label="Bottle price" value={edit.bottle} onChange={e=>setEdit({...edit,bottle:e.target.value})} placeholder="Bottle" style={_cInput(T,{width:110,fontSize:14})}/>
@@ -283,7 +286,7 @@ function _CMenu({open,goUpload}){ const T=useTheme(), cr=T.lift(C.cr), xs=TeamDa
   return <div data-testid="console-menu">{_cH(T,'Menu',`${xs.length} dishes · ${gaps.length?`${gaps.length} without a good match on the list`:'every dish has its wines'}`,<Btn small onClick={goUpload}>Upload a new menu</Btn>)}
     {gaps.length>0&&<Card style={{marginBottom:14,borderColor:T.amber+'66'}}><div style={{fontSize:14,color:T.amber,fontWeight:700,fontFamily:C.P}}>Dishes without pairings</div><div style={{fontSize:13,color:T.ink2,fontFamily:C.P,marginTop:4}}>{gaps.map(x=>x.name).join(' · ')}</div><div style={{fontSize:12,color:T.mid,fontFamily:C.P,marginTop:4}}>Written at the next publish, or from Upload with "Write them now".</div></Card>}
     {groups.map(g=><div key={g.s} style={{marginBottom:14}}>{_cLabel(T,g.s)}<Card style={{padding:'6px 8px'}}>
-      <_CTable testid="menu-table" cols={[{h:'Dish'},{h:'Price',align:'right'},{h:'By the glass'},{h:'By the bottle'},{h:'Steer away from'},{h:''}]}
+      <_CTable testid="menu-table" cols={[{h:'Dish'},{h:'Price',align:'center'},{h:'By the glass'},{h:'By the bottle'},{h:'Steer away from'},{h:'',align:'right'}]}
         rows={g.xs.flatMap(x=>{ const p=TeamData.pairing(x.id)||{}, ed=edit&&edit.id===x.id, pk=picks(p);
           const row={key:x.id,testid:'menu-row',onClick:()=>open({view:'dish',id:x.id}),cells:[<span><b>{x.name}</b>{x.desc&&<span style={{color:T.mid,fontSize:12,display:'block'}}>{x.desc}</span>}</span>,x.price||<span style={{color:T.mid}}>—</span>,wn(pk.glass),wn(pk.bottle),wn(p.avoid),
             <span role="button" aria-label={`Edit ${x.name}`} data-testid="menu-edit" onClick={e=>{ e.stopPropagation(); setEdit(ed?null:{id:x.id,price:x.price||'',desc:x.desc||''}); }} style={{color:cr,cursor:'pointer',fontSize:13,fontWeight:700}}>Edit</span>]};
@@ -327,7 +330,7 @@ function _CPos({open}){ const T=useTheme(), cr=T.lift(C.cr), src=TeamSales.sourc
       </Card>
     </div>
     {TeamSales.has()&&<div style={{marginTop:14}}>{_cLabel(T,`Till items → wines · ${unm.length?`${unm.length} to confirm`:'all mapped'}`)}
-      <Card style={{padding:'6px 8px'}}><_CTable testid="pos-map" cols={[{h:'Till item'},{h:'Sold, 90 days',align:'right'},{h:'Our wine'},{h:''}]}
+      <Card style={{padding:'6px 8px'}}><_CTable testid="pos-map" cols={[{h:'Till item'},{h:'Sold, 90 days',align:'center'},{h:'Our wine'},{h:'',align:'right'}]}
         rows={items.slice(0,80).map(x=>({key:x.item,testid:x.mapped?'pos-map-row':'pos-unmapped',hi:!x.mapped,cells:[<span><b>{x.item}</b>{!x.mapped&&<span style={{display:'block',fontSize:12,color:T.amber}}>New on the till{x.suggest?` · looks like ${TeamData.short(x.suggest)}`:' · no wine on the list matches'}</span>}</span>,`${x.qty} · ${_cMoney(x.sales)}`,
           <select aria-label={`Wine for ${x.item}`} value={x.mapped?(x.wine?x.wine.id:''):(x.suggest?x.suggest.id:'?')} onChange={e=>{ if(e.target.value==='?') return; TeamSales.setMap(x.item,e.target.value); bump(); }} style={_cInput(T,{background:T.card,colorScheme:'dark',fontSize:13,maxWidth:260})}>
             {!x.mapped&&<option value="?">Choose…</option>}<option value="">Not a wine on the list</option>{wines.map(w=><option key={w.id} value={w.id}>{TeamData.short(w)}</option>)}</select>,
