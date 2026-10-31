@@ -216,11 +216,13 @@ function TeamWine({id,pid,open,manage}){ const T=useTheme(), w=TeamData.wine(id)
         :<div data-testid="team-pitch" style={{fontSize:16,color:T.ink,fontFamily:C.P,lineHeight:1.5,marginTop:6}}>{c.pitch}</div>}</Card>
       {_tLabel(T,'What it tastes like')}<Card><div style={{fontSize:15,color:T.ink2,fontFamily:C.P,lineHeight:1.5,marginBottom:12}}>{c.taste}</div>
         {c.style&&<>{bar('b','Body',c.style.body,Palate.HOW.body)}{bar('a','Acidity',c.style.acid,Palate.HOW.acidity)}{w.type==='red'||c.style.tannin?bar('t','Tannin',c.style.tannin,Palate.HOW.tannins):null}{bar('s','Sweetness',c.style.sweet)}</>}</Card>
-      {_tLabel(T,'Grape and place')}<Card><div style={{fontSize:15,color:T.ink2,fontFamily:C.P,lineHeight:1.55}}>{c.grape} {c.place}{c.producer?' '+c.producer:''}</div></Card>
+      {_tLabel(T,'Grape and region')}<Card style={{padding:'4px 14px'}}>{[['Grape',(w.grapes||[]).join(', ')||null,c.grape],['Region',[w.region,w.country].filter(Boolean).join(', ')||null,c.place],['Producer',w.producer||null,c.producer]].filter(([,,text])=>text).map(([k,name,text],i)=><div key={k} style={{padding:'11px 0',borderTop:i?`1px solid ${T.line}`:'none'}}>
+        <div style={{display:'flex',justifyContent:'space-between',gap:8,alignItems:'baseline'}}><span style={{fontSize:12,fontWeight:700,color:T.mid,fontFamily:C.P,letterSpacing:'0.08em',textTransform:'uppercase'}}>{k}</span>{name&&<span style={{fontSize:14,fontWeight:700,color:T.ink,fontFamily:C.P,textAlign:'right'}}>{name}</span>}</div>
+        <div style={{fontSize:15,color:T.ink2,fontFamily:C.P,lineHeight:1.55,marginTop:4}}>{text}</div></div>)}</Card>
       {(()=>{ const dw=TeamData.window(w); return dw&&<div data-testid="team-window">{_tLabel(T,'Where it is in its life')}<Card>
-        <div style={{fontSize:15,fontWeight:700,fontFamily:C.P,color:dw.stage==='ready'?'#5FD48F':dw.stage==='young'?'#7FB3F0':'#F2B84B'}}>{dw.word}</div>
-        <div style={{fontSize:15,color:T.ink2,fontFamily:C.P,marginTop:3}}>{dw.line}{w.peak&&w.peak.rating?` · ${w.peak.rating} vintage`:''}</div>
-        {w.peak&&w.peak.note&&<div style={{fontSize:13,color:T.mid,fontFamily:C.P,marginTop:6,lineHeight:1.5}}>{w.peak.note}</div>}
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:8,flexWrap:'wrap'}}><div style={{fontSize:17,fontWeight:800,fontFamily:C.P,color:dw.stage==='ready'?'#5FD48F':dw.stage==='young'?'#7FB3F0':'#F2B84B'}}>{dw.word}</div>
+          {w.peak&&w.peak.rating&&<span style={{fontSize:12,fontWeight:700,fontFamily:C.P,color:T.ink,padding:'3px 9px',borderRadius:8,background:T.soft,border:`1px solid ${T.line}`}}>{w.peak.rating} vintage</span>}</div>
+        <div style={{fontSize:15,color:T.ink2,fontFamily:C.P,marginTop:4}}>{dw.line}</div>
         {(()=>{ const v=w.vintage, span=Math.max(2,(dw.until-v)*1.3), yr=new Date().getFullYear(), at=x=>Math.max(0.02,Math.min(0.98,(x-v)/span))*100;
           return <div style={{position:'relative',height:10,marginTop:12,borderRadius:5,background:T.line}}>
             <div style={{position:'absolute',left:at(dw.from)+'%',width:(at(dw.to)-at(dw.from))+'%',top:0,bottom:0,borderRadius:5,background:'#5FD48F66'}}/>
@@ -228,6 +230,7 @@ function TeamWine({id,pid,open,manage}){ const T=useTheme(), w=TeamData.wine(id)
             <div style={{position:'absolute',left:0,top:14,fontSize:11,color:T.mid,fontFamily:C.P}}>{v}</div><div style={{position:'absolute',right:0,top:14,fontSize:11,color:T.mid,fontFamily:C.P}}>{dw.until+2}</div>
           </div>; })()}
         <div style={{height:14}}/>
+        {w.peak&&w.peak.note&&<div style={{fontSize:14,color:T.ink2,fontFamily:C.P,marginTop:8,paddingTop:10,borderTop:`1px solid ${T.line}`,lineHeight:1.55}}><span style={{fontSize:12,fontWeight:700,color:T.mid,letterSpacing:'0.08em',textTransform:'uppercase',display:'block',marginBottom:4}}>Right now</span>{w.peak.note}</div>}
       </Card></div>; })()}
       {c.serve&&<>{_tLabel(T,'Serving')}<Card><div style={{fontSize:15,color:T.ink2,fontFamily:C.P,lineHeight:1.55}}>{[c.serve.temp,c.serve.glass,c.serve.decant&&c.serve.decant!=='no'?`decant ${c.serve.decant}`:'no need to decant'].filter(Boolean).join(' · ')}</div></Card></>}
       {c.dishes&&c.dishes.length>0&&<>{_tLabel(T,'With our menu')}<Card style={{padding:0}}>{c.dishes.map((x,i)=><div key={i} style={{padding:'11px 14px',borderTop:i?`1px solid ${T.line}`:'none'}}><div style={{fontSize:15,fontWeight:600,color:T.ink,fontFamily:C.P}}>{x.dish}</div><div style={{fontSize:13,color:T.mid,fontFamily:C.P,lineHeight:1.45,marginTop:2}}>{x.why}</div></div>)}</Card></>}

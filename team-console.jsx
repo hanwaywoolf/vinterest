@@ -22,7 +22,8 @@ const _cNote=(T,t)=><div style={{fontSize:12,color:T.mid,fontFamily:C.P,marginTo
 /* A wine's name with its type's dot before it. */
 const _cWineLead=(T,w)=><span style={{width:8,height:8,borderRadius:4,background:_tTypeCol(T,w.type),flexShrink:0,display:'inline-block'}}/>;
 /* A small chip: a count with a colour that says what kind of thing it is. */
-const _cChip=(T,label,col)=><span style={{display:'inline-flex',alignItems:'center',gap:5,padding:'2px 8px',borderRadius:8,border:`1px solid ${col||T.line}66`,background:_alpha(col||'#888888',0.12),fontSize:12,fontWeight:600,color:col||T.ink2,fontFamily:C.P,whiteSpace:'nowrap'}}>{label}</span>;
+const _cGrey='#A8ACB3';
+const _cChip=(T,label,col)=>{ const c=/^#/.test(col||'')?col:_cGrey; return <span style={{display:'inline-flex',alignItems:'center',gap:5,padding:'2px 8px',borderRadius:8,border:`1px solid ${_alpha(c,0.45)}`,background:_alpha(c,0.12),fontSize:12,fontWeight:600,color:c,fontFamily:C.P,whiteSpace:'nowrap'}}>{label}</span>; };
 /* A row with a thin bar: the dot, the name, the figure at the right, the bar in the given colour under. */
 function _CRow({lead,label,value,share,col,sub,right,onClick,testid}){ const T=useTheme();
   return <div role={onClick?'button':undefined} data-testid={testid} onClick={onClick} style={{padding:'8px 0',borderTop:`1px solid ${T.line}`,cursor:onClick?'pointer':'default'}}>
@@ -96,12 +97,12 @@ function TeamConsole({me,onPhone,refresh,section,setSection,open}){ const T=useT
     {panel&&<_CPanel panel={panel} me={me} open={go} close={()=>setPanel(null)} narrow={narrow}/>}
   </div>; }
 /* The logo with TEAMS set under it, as one mark: the word takes the logo's width. */
-function TeamLogo({size=18}){ const T=useTheme(), cr=T.lift(C.cr);
+function TeamLogo({size=22}){ const T=useTheme(), cr=T.lift(C.cr);
   // The column is as wide as the logo and no wider (the word's own width is 0, so it never sets the
   // width); the letters are spread across exactly that, with no letter-spacing to trail past the end.
-  return <div data-testid="team-logo" style={{display:'inline-grid',gridTemplateColumns:'max-content',justifyItems:'stretch'}}>
-    <img src="/logo.png" alt="Vinterest" style={{height:size,display:'block',filter:T.dark?'invert(1)':'none'}} onError={e=>{ e.target.style.display='none'; }}/>
-    <div aria-label="Teams" style={{width:0,minWidth:'100%',display:'flex',justifyContent:'space-between',fontSize:Math.round(size*0.5)+'px',fontWeight:700,color:cr,fontFamily:C.P,lineHeight:1,marginTop:2}}>{'TEAMS'.split('').map((ch,i)=><span key={i}>{ch}</span>)}</div>
+  return <div data-testid="team-logo" style={{display:'inline-flex',flexDirection:'column',alignItems:'flex-start'}}>
+    <img src="/logo.png" alt="Vinterest" style={{height:size,width:'auto',maxWidth:'none',display:'block',filter:T.dark?'invert(1)':'none'}} onError={e=>{ e.target.style.display='none'; }}/>
+    <div aria-label="Teams" style={{fontSize:'11px',fontWeight:700,color:cr,fontFamily:C.P,lineHeight:1,marginTop:3,letterSpacing:'0.2em',paddingLeft:2}}>TEAMS</div>
   </div>; }
 /* Console or the phone app, as a switch (a manager drills as someone on the phone view). */
 function _CViewToggle({phone,onPhone,onConsole,compact}){ const T=useTheme(), cr=T.lift(C.cr);
@@ -123,7 +124,7 @@ function _CDash({open,setSection}){ const T=useTheme(), cr=T.lift(C.cr), size=us
   const grid=n=>({display:'grid',gridTemplateColumns:`repeat(${size==='phone'?2:n},minmax(0,1fr))`,gap:10,alignItems:'stretch'});
   const two={display:'grid',gridTemplateColumns:`repeat(${cols},minmax(0,1fr))`,gap:14,alignItems:'start',marginTop:14};
   const name=x=>`${x.person.name.split(' ')[0]} · ${TeamLearn.ROLES[x.r.role].label}`;
-  const whyCol=k=>({amber:T.amber,cr:cr,bad:T.tone.bad,mid:T.mid})[_WHY_COL[k]||'mid'];
+  const whyCol=k=>({amber:T.amber,cr:cr,bad:T.tone.bad,mid:_cGrey})[_WHY_COL[k]||'mid'];
   const topGlass=Math.max(1,...pri.map(x=>x.qty),...weak.map(()=>1));
   return <div data-testid="console-dash">
     {_cH(T,'Dashboard',`${TeamData.get().venue.name||'Your restaurant'} · ${TeamData.wines().length} wines, ${TeamData.dishes().length} dishes · ${o.total} people training`)}
@@ -141,7 +142,7 @@ function _CDash({open,setSection}){ const T=useTheme(), cr=T.lift(C.cr), size=us
       <Card>{_cLabel(T,'What needs attention')}
         {slip.length?<div>{slip.map((x,i)=><div key={x.person.id} role="button" data-testid="dash-slip" onClick={()=>open({view:'person',id:x.person.id})} style={{display:'flex',gap:10,alignItems:'center',cursor:'pointer',padding:'9px 0',borderTop:i?`1px solid ${T.line}`:'none'}}><TeamFace person={x.person} size={34} ring={_tState[x.r.state].col}/>
           <div style={{minWidth:0,flex:1}}><div style={{display:'flex',justifyContent:'space-between',gap:8,alignItems:'baseline'}}><div style={{fontSize:14,fontWeight:700,color:T.ink,fontFamily:C.P,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{x.person.name} <span style={{fontWeight:400,color:T.mid,fontSize:12}}>{TeamLearn.ROLES[x.r.role].label}</span></div><span style={{fontSize:13,fontWeight:700,color:_tState[x.r.state].col,fontFamily:C.P,whiteSpace:'nowrap'}}>{x.r.pct}% · {_tState[x.r.state].label}</span></div>
-            <div style={{display:'flex',gap:6,flexWrap:'wrap',marginTop:5}}>{x.why.map((w,k)=><span key={k}>{_cChip(T,w.label,whyCol(w.k))}</span>)}{!x.why.length&&_cChip(T,'below the minimum',T.mid)}</div></div></div>)}</div>
+            <div style={{display:'flex',gap:6,flexWrap:'wrap',marginTop:5}}>{x.why.map((w,k)=><span key={k}>{_cChip(T,w.label,whyCol(w.k))}</span>)}{!x.why.length&&_cChip(T,'below the minimum',_cGrey)}</div></div></div>)}</div>
           :<div style={{fontSize:14,color:T.green,fontFamily:C.P}}>Everyone is ready.</div>}
       </Card>
     </div>
@@ -151,7 +152,7 @@ function _CDash({open,setSection}){ const T=useTheme(), cr=T.lift(C.cr), size=us
           :<div data-testid="dash-weak">{weak.map(x=><_CRow key={x.wine.id} lead={_cWineLead(T,x.wine)} label={TeamData.short(x.wine)} value={_cPct(x.share)} share={x.share} col={_tTypeCol(T,x.wine.type)} sub={`${x.knows} of ${x.of} who sell it know it`} onClick={()=>open({view:'wine',id:x.wine.id})}/>)}</div>}
         {_cNote(T,TeamSales.has()?'Bars are how much sold in 28 nights, in the wine\'s colour; the chip is how many of its sellers know it. Sales set the order the team learns in, never whether anyone is ready.':'Connect the till or import a sales file and this becomes what sells most and is known least.')}</Card>
       <Card>{_cLabel(T,'New on the list',<span style={{fontSize:11,color:T.mid,fontFamily:C.P,textTransform:'none',letterSpacing:0,fontWeight:500}}>last 30 days</span>)}
-        {o.adoption.length?<div>{o.adoption.map(a=><_CRow key={a.wine.id} testid="dash-adoption" lead={_cWineLead(T,a.wine)} label={TeamData.short(a.wine)} value={`${a.knows} of ${a.of}`} share={a.of?a.knows/a.of:0} col={_tTypeCol(T,a.wine.type)} right={_cChip(T,`${a.days}d on the list`,T.mid)} sub={a.knows<a.of?`${a.of-a.knows} of the people who sell it still to learn it`:'everyone who sells it knows it'} onClick={()=>open({view:'wine',id:a.wine.id})}/>)}</div>
+        {o.adoption.length?<div>{o.adoption.map(a=><_CRow key={a.wine.id} testid="dash-adoption" lead={_cWineLead(T,a.wine)} label={TeamData.short(a.wine)} value={`${a.knows} of ${a.of}`} share={a.of?a.knows/a.of:0} col={_tTypeCol(T,a.wine.type)} right={_cChip(T,`${a.days}d on the list`,_cGrey)} sub={a.knows<a.of?`${a.of-a.knows} of the people who sell it still to learn it`:'everyone who sells it knows it'} onClick={()=>open({view:'wine',id:a.wine.id})}/>)}</div>
           :<div style={{fontSize:14,color:T.mid,fontFamily:C.P}}>Nothing published in the last 30 days.</div>}
         {_cSub(T,'Coverage')}
         <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>{[['By the glass',o.coverage.glass],['Bottles',o.coverage.bottle]].map(([l,c])=>{ const share=c.total?c.covered/c.total:0, col=share>=0.8?T.green:share>=0.5?T.amber:T.tone.bad; return <div key={l}><div style={{display:'flex',justifyContent:'space-between',fontSize:13,fontFamily:C.P,color:T.ink2}}><span>{l}</span><span style={{fontWeight:700,color:T.ink}}>{c.covered} <span style={{color:T.mid,fontWeight:400}}>of {c.total}</span></span></div><Prog val={share} col={col} h={8} style={{marginTop:6}}/></div>; })}</div>
@@ -190,7 +191,7 @@ function _CSales({open,setSection,sales,demo}){ const T=useTheme(), cr=T.lift(C.
         <div data-testid="sales-wines">{byWine.slice(0,8).map(x=><_CRow key={x.id} lead={_cWineLead(T,x.wine)} label={TeamData.short(x.wine)} value={_cMoney(Math.round(x.revenue))} share={x.revenue/topWine} col={_tTypeCol(T,x.wine.type)} sub={`${x.glasses} glasses, ${x.bottles} bottles`} right={_cChip(T,`${x.knows} of ${x.of} know it`,x.knows<Math.ceil(x.of/2)?T.tone.bad:x.knows<x.of?T.amber:T.green)} onClick={()=>open({view:'wine',id:x.id})}/>)}</div>
         {_cSub(T,'Slow movers by the glass')}
         <div>{slow.map(x=><div key={x.wine.id} role="button" data-testid="sales-slow" onClick={()=>open({view:'wine',id:x.wine.id})} style={{padding:'8px 0',borderTop:`1px solid ${T.line}`,cursor:'pointer'}}>
-          <div style={{display:'flex',justifyContent:'space-between',gap:8,alignItems:'center',fontSize:13,fontFamily:C.P,color:T.ink}}><span style={{display:'flex',alignItems:'center',gap:8,minWidth:0}}>{_cWineLead(T,x.wine)}<span style={{fontWeight:600,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{TeamData.short(x.wine)}</span></span><span style={{display:'flex',gap:6,flexShrink:0}}>{_cChip(T,`${x.perNight.toFixed(1)} a night`,T.amber)}{_cChip(T,`${x.knows} of ${x.of} know it`,x.knows<Math.ceil(x.of/2)?T.tone.bad:T.mid)}</span></div>
+          <div style={{display:'flex',justifyContent:'space-between',gap:8,alignItems:'center',fontSize:13,fontFamily:C.P,color:T.ink}}><span style={{display:'flex',alignItems:'center',gap:8,minWidth:0}}>{_cWineLead(T,x.wine)}<span style={{fontWeight:600,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{TeamData.short(x.wine)}</span></span><span style={{display:'flex',gap:6,flexShrink:0}}>{_cChip(T,`${x.perNight.toFixed(1)} a night`,T.amber)}{_cChip(T,`${x.knows} of ${x.of} know it`,x.knows<Math.ceil(x.of/2)?T.tone.bad:_cGrey)}</span></div>
           <div style={{position:'relative',height:6,borderRadius:3,background:T.line,marginTop:6}}><div style={{position:'absolute',left:0,top:0,bottom:0,width:`${Math.max(2,Math.min(100,100*x.perNight/topSlow))}%`,borderRadius:3,background:_tTypeCol(T,x.wine.type)}}/></div>
           {x.pitch&&<div style={{fontSize:12,color:T.ink2,fontFamily:C.P,lineHeight:1.45,marginTop:6,paddingLeft:10,borderLeft:`2px solid ${_tTypeCol(T,x.wine.type)}`}}>Say: “{x.pitch.length>120?x.pitch.slice(0,118)+'…':x.pitch}”</div>}</div>)}</div>
         {_cNote(T,'The bar is pours a night against the best-selling glass; the line is what the staff card says to say.')}
