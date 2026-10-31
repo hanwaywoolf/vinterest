@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vinterest for teams · mockup C: editorial</title>
+<meta name="robots" content="noindex">
+<link rel="stylesheet" href="/fonts/fonts.css">
+<link rel="stylesheet" href="mock.css">
+<style>
+/* C: editorial. Large type with Instrument Serif accents, a story told in numbered chapters, each
+   with one real screen set into the text. The page alternates the dark stage with the app's paper
+   white, the way the consumer site does. The nav is a single line that stays out of the way. */
+.top { position: absolute; top: 0; left: 0; right: 0; z-index: 50; }
+.top .wrap { display: flex; align-items: center; justify-content: space-between; height: 72px; gap: 16px; }
+.top nav { display: flex; align-items: center; gap: 24px; }
+.top nav a { font-size: 14px; font-weight: 500; color: var(--dim-2); text-decoration: none; }
+.top nav a.cta { font-weight: 700; color: #fff; border-bottom: 2px solid var(--cr-lift); padding-bottom: 2px; }
+
+.hero { min-height: 92svh; display: flex; align-items: center; padding: 120px 0 72px; }
+.hero .wrap { display: grid; grid-template-columns: 1.2fr .8fr; gap: 40px; align-items: end; }
+.hero h1 { font-size: clamp(44px, 7.4vw, 96px); font-weight: 400; letter-spacing: -.05em; line-height: .98; }
+.hero h1 b { font-weight: 800; }
+.hero .lead { font-size: 20px; margin-top: 28px; max-width: 28em; }
+.hero .cta { display: flex; gap: 12px; margin-top: 30px; flex-wrap: wrap; }
+.hero .side { color: var(--dim); font-size: 14px; display: grid; gap: 10px; border-left: 1px solid rgba(255, 255, 255, .14); padding-left: 22px; }
+.hero .side b { display: block; color: #fff; font-size: 22px; font-weight: 800; letter-spacing: -.02em; }
+
+.chapter { padding: 112px 0; }
+.chapter.light { background: var(--off); color: var(--ink); }
+.chapter .wrap { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 72px; align-items: center; }
+.chapter.flip .text { order: 2; }
+.chapter .num { font-family: var(--serif); font-style: italic; font-size: 64px; line-height: 1; color: var(--cr-lift); }
+.chapter.light .num { color: var(--cr); }
+.chapter h2 { font-size: clamp(32px, 4.4vw, 54px); font-weight: 400; letter-spacing: -.045em; line-height: 1.04; margin-top: 10px; }
+.chapter h2 b { font-weight: 800; }
+.chapter p { margin-top: 20px; font-size: 18px; color: var(--dim-2); max-width: 30em; }
+.chapter.light p { color: var(--ink-2); }
+.chapter p + p { margin-top: 14px; }
+.chapter .aside { margin-top: 24px; padding-left: 18px; border-left: 2px solid var(--cr-lift); font-size: 15px; color: var(--dim); max-width: 28em; }
+.chapter.light .aside { border-color: var(--cr); color: var(--mid); }
+.chapter .art { display: flex; justify-content: center; align-items: center; }
+.chapter .art .phone { --s: .62; }
+.chapter .art.pair { gap: 20px; }
+.chapter .art.pair .phone { --s: .5; }
+.chapter .art.pair .phone:last-child { margin-top: 72px; }
+.chapter .art .laptop { width: 100%; }
+.chapter.wide .wrap { grid-template-columns: 1fr; gap: 40px; }
+.chapter.wide .text { max-width: 760px; }
+.chapter.wide .art .laptop { max-width: 1000px; }
+
+.quote { padding: 96px 0; text-align: center; }
+.quote blockquote { font-family: var(--serif); font-style: italic; font-size: clamp(30px, 4.6vw, 56px); line-height: 1.12; letter-spacing: -.02em; max-width: 20em; margin: 0 auto; }
+.quote cite { display: block; margin-top: 22px; font-style: normal; font-size: 14px; color: var(--dim); }
+
+.end { padding: 112px 0; text-align: center; }
+.end h2 { font-size: clamp(36px, 5.4vw, 72px); font-weight: 400; letter-spacing: -.05em; line-height: 1; }
+.end h2 b { font-weight: 800; }
+.end .lead { margin: 20px auto 0; }
+.end .cta { display: flex; justify-content: center; gap: 12px; margin-top: 30px; flex-wrap: wrap; }
+.end .fine { margin-top: 18px; font-size: 13px; color: var(--dim); }
+
+@media (max-width: 1024px) { .chapter .wrap { gap: 40px; } }
+@media (max-width: 900px) {
+  .top nav a:not(.cta) { display: none; }
+  .hero { min-height: 0; padding: 100px 0 56px; }
+  .hero .wrap { grid-template-columns: 1fr; gap: 28px; }
+  .hero .side { border-left: 0; padding-left: 0; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+  .chapter { padding: 64px 0; }
+  .chapter .wrap { grid-template-columns: 1fr; gap: 32px; }
+  .chapter.flip .text { order: 0; }
+  .chapter .num { font-size: 48px; }
+  .chapter p { font-size: 17px; }
+  .chapter .art .phone { --s: .55; }
+  .chapter .art.pair .phone { --s: .42; }
+  .chapter .art.pair .phone:last-child { margin-top: 48px; }
+  .quote, .end { padding: 64px 0; }
+}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <a class="tlogo" href="#" aria-label="Vinterest for teams"><div class="mark"><img src="/logo.png" alt=""></div><div class="word"><span>T</span><span>E</span><span>A</span><span>M</span><span>S</span></div></a>
+    <nav><a href="#">Restaurants</a><a href="#">Wineries</a><a href="#">Security</a><a href="#">Pricing</a><a class="cta" href="#demo">Book a demo</a></nav>
+  </div>
+</header>
+
+<section class="hero glow">
+  <div class="wrap">
+    <div>
+      <h1>Nobody should be caught out at <b>table nine.</b></h1>
+      <p class="lead">Vinterest for teams reads your wine list and your menu, writes a card for every bottle, and drills each person five questions a day until they can sell it. You see who's ready before service.</p>
+      <div class="cta"><a class="btn primary" href="#demo">Book a demo</a><a class="btn ghost" href="#c1">How it works</a></div>
+    </div>
+    <div class="side">
+      <div><b>45 seconds</b>from a bottle's label to its card, pairings and drinking window on the floor</div>
+      <div><b>5 a day</b>questions per person, assigned wines first, then what's due, then what's new</div>
+      <div><b>One number</b>per person, against their role's minimum: ready, slipping or not yet</div>
+    </div>
+  </div>
+</section>
+
+<section class="chapter" id="c1">
+  <div class="wrap">
+    <div class="text">
+      <div class="num">1</div>
+      <h2>The list changes. <b>The training follows it.</b></h2>
+      <p>A photo or a PDF of the wine list and the menu. Vinterest reads it and shows what's new, what's gone and what changed: a new vintage, a new price, by the glass now. Nothing reaches staff until the manager says Publish.</p>
+      <p>A new arrival is photographed from its label. Its card, its pairings and its drinking window are on the floor in about 45 seconds, assigned to everyone who sells it.</p>
+      <div class="aside">A new vintage is the same wine moving on, so nobody relearns it. Every publish is a version you can look back at.</div>
+    </div>
+    <div class="art pair">
+      <div class="phone"><div class="body"><div class="island"></div><img src="img/phone-arrivals.jpg" alt="Upload: wine list, menu, add a wine from its label"></div></div>
+      <div class="phone"><div class="body"><div class="island"></div><img src="img/phone-wines.jpg" alt="The Wines tab"></div></div>
+    </div>
+  </div>
+</section>
+
+<section class="chapter light flip">
+  <div class="wrap">
+    <div class="text">
+      <div class="num">2</div>
+      <h2>One card per wine, <b>written for the floor.</b></h2>
+      <p>What to say to a guest, in plain words. What it tastes like, with body, acidity, tannin and sweetness each explained in a line, because not everyone on a Friday rota went to wine school. Grape and place, how to serve it, which dishes on this menu, and what to offer instead from this list.</p>
+      <p>Every dish gets its best wines, the by-the-glass pick, and the one to steer guests away from. All of it grounded in checked facts about the region and the grape, and the manager can rewrite the line in the house's own words.</p>
+    </div>
+    <div class="art pair">
+      <div class="phone"><div class="body"><div class="island"></div><img src="img/phone-card.jpg" alt="A staff card for Nyetimber Classic Cuvée"></div></div>
+      <div class="phone"><div class="body"><div class="island"></div><img src="img/phone-dish.jpg" alt="A dish's best wines"></div></div>
+    </div>
+  </div>
+</section>
+
+<section class="chapter">
+  <div class="wrap">
+    <div class="text">
+      <div class="num">3</div>
+      <h2>Five questions a day, <b>built for remembering.</b></h2>
+      <p>Each wine has four rungs: recognise it, recall it, apply it at a table, and tell it from the most similar wine on the list. A rung opens once the one below is right. Servers need three; the sommelier and the buyer all four.</p>
+      <p>Every question comes back on its own schedule. They say how sure they are before answering: a confident wrong answer returns within hours, a right guess grows slowly. About one question in ten is an unannounced re-check, so what the team remembers is measured honestly.</p>
+      <div class="aside">No points, no streaks. The motivation is not being caught out.</div>
+    </div>
+    <div class="art">
+      <div class="phone"><div class="body"><div class="island"></div><img src="img/phone-drill.jpg" alt="A drill question with how sure are you"></div></div>
+    </div>
+  </div>
+</section>
+
+<section class="quote">
+  <div class="wrap">
+    <blockquote>Readiness comes only from drills. Sales change what people learn first, never what they're said to know.</blockquote>
+    <cite>The one rule the console is built on</cite>
+  </div>
+</section>
+
+<section class="chapter light wide">
+  <div class="wrap">
+    <div class="text">
+      <div class="num">4</div>
+      <h2>The manager sees <b>who's ready before service.</b></h2>
+      <p>On a tablet or a laptop the same app is a console. Readiness per person against the minimum for their role: a server needs 80% of the glass list, a sommelier 90% of everything. Who's overdue, who's slipping, which new wines nobody knows yet, which by-the-glass wines too few people can sell. Every number opens the people or wines behind it.</p>
+    </div>
+    <div class="art"><div class="laptop"><div class="screen"><img src="img/console-dash.jpg" alt="The console dashboard"></div><div class="base"></div></div></div>
+  </div>
+</section>
+
+<section class="chapter wide">
+  <div class="wrap">
+    <div class="text">
+      <div class="num">5</div>
+      <h2>The till says <b>what to teach first.</b></h2>
+      <p>Import a night's sales from any till as a CSV today; the Square connector comes next. What sells most and is known least goes to the top of everyone's drill. The console shows what sells, who sells it, the slow movers by the glass with the card's line to say beside each, and whether a trained server sells more of a wine than one who isn't, with the honest caveat that shifts and sections confound it.</p>
+    </div>
+    <div class="art"><div class="laptop"><div class="screen"><img src="img/console-sales.jpg" alt="The console's sales row"></div><div class="base"></div></div></div>
+  </div>
+</section>
+
+<section class="end glow" id="demo">
+  <div class="wrap">
+    <h2>See it on <b>your own list.</b></h2>
+    <p class="lead">Send a photo of your wine list and we'll show you the cards, the drill and the console built from it, with your dishes paired.</p>
+    <div class="cta"><a class="btn primary" href="#">Book a demo</a><a class="btn ghost" href="#">For wineries and tasting rooms</a></div>
+    <p class="fine">In pilot now. Accounts and billing come next; the pilot runs on one device per restaurant.</p>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <a class="tlogo" href="#" aria-label="Vinterest for teams"><div class="mark"><img src="/logo.png" alt=""></div><div class="word"><span>T</span><span>E</span><span>A</span><span>M</span><span>S</span></div></a>
+    <nav><a href="#">Restaurants</a><a href="#">Wineries</a><a href="#">Security</a><a href="#">Pricing</a><a href="#">Privacy</a><a href="#">Terms</a><a href="#">Vinterest for drinkers</a></nav>
+    <span>© 2026 Vinterest</span>
+  </div>
+</footer>
+
+<div class="mockbar">Mockup <a href="a.html">A</a><a href="b.html">B</a><a class="on" href="c.html">C</a></div>
+</body>
+</html>

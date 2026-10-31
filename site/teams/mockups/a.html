@@ -1,0 +1,284 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vinterest for teams · mockup A: enterprise</title>
+<meta name="robots" content="noindex">
+<link rel="stylesheet" href="/fonts/fonts.css">
+<link rel="stylesheet" href="mock.css">
+<style>
+/* A: enterprise SaaS. Fixed top nav, split hero with the console in a laptop beside the phone, a
+   works-with strip, feature rows alternating copy and real screens, a metrics band, a CTA band. */
+.top { position: fixed; top: 0; left: 0; right: 0; z-index: 50; background: rgba(15, 15, 15, .82); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-bottom: 1px solid rgba(255, 255, 255, .08); }
+.top .wrap { display: flex; align-items: center; justify-content: space-between; height: 68px; gap: 16px; }
+.top nav { display: flex; align-items: center; gap: 26px; }
+.top nav a.link { font-size: 14px; font-weight: 500; color: var(--dim-2); text-decoration: none; }
+.top nav a.link:hover { color: #fff; }
+.top .actions { display: flex; align-items: center; gap: 10px; }
+.top .actions a.signin { font-size: 14px; font-weight: 600; color: var(--dim-2); text-decoration: none; }
+
+.hero { padding: 136px 0 72px; }
+.hero .wrap { display: grid; grid-template-columns: .9fr 1.1fr; gap: 48px; align-items: center; }
+.hero h1 { font-weight: 800; }
+.hero h1 strong { color: var(--cr-lift); font-weight: 800; }
+.hero .cta { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 30px; }
+.hero .note { margin-top: 16px; font-size: 13px; color: var(--dim); }
+.hero .note b { color: #fff; font-weight: 600; }
+.hero .shot { position: relative; padding-right: 110px; }
+.hero .shot .phone { position: absolute; right: 0; bottom: -24px; --s: .4; }
+
+.strip { padding: 26px 0; border-top: 1px solid rgba(255, 255, 255, .08); border-bottom: 1px solid rgba(255, 255, 255, .08); }
+.strip .wrap { display: flex; flex-wrap: wrap; align-items: center; gap: 14px 28px; }
+.strip .lbl { font-size: 12px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--dim); }
+.strip .till { display: flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 600; color: var(--dim-2); }
+.strip .till i { width: 8px; height: 8px; border-radius: 50%; background: var(--green); }
+.strip .till.next i { background: var(--amber); }
+.strip .till small { font-size: 12px; font-weight: 500; color: var(--dim); }
+
+.features { padding: 40px 0 20px; }
+.feature { display: grid; grid-template-columns: 1fr 1fr; gap: 56px; align-items: center; padding: 56px 0; border-bottom: 1px solid rgba(255, 255, 255, .07); }
+.feature:last-child { border-bottom: 0; }
+.feature.flip .copy { order: 2; }
+.feature h2 { font-size: clamp(26px, 3.2vw, 38px); }
+.feature p { margin-top: 14px; color: var(--dim-2); font-size: 16px; max-width: 32em; }
+.feature .points { list-style: none; margin-top: 18px; display: grid; gap: 8px; }
+.feature .points li { display: flex; gap: 10px; align-items: flex-start; font-size: 15px; color: var(--dim-2); }
+.feature .points li::before { content: ''; flex: none; width: 6px; height: 6px; border-radius: 50%; background: var(--cr-lift); margin-top: 9px; }
+.feature .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 16px; }
+.feature .stage { display: flex; justify-content: center; align-items: center; min-height: 420px; }
+.feature .stage.two { gap: 18px; }
+.feature .stage .phone { --s: .52; }
+.feature .stage.two .phone:last-child { margin-top: 60px; }
+
+.metrics { padding: 56px 0; background: #141414; border-top: 1px solid rgba(255, 255, 255, .07); border-bottom: 1px solid rgba(255, 255, 255, .07); }
+.metrics .wrap { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+.metric { padding: 22px 24px; }
+.metric .n { font-size: 40px; font-weight: 800; letter-spacing: -.03em; line-height: 1; color: #fff; }
+.metric .n small { font-size: 18px; font-weight: 600; color: var(--dim); margin-left: 3px; }
+.metric .t { margin-top: 10px; font-size: 14px; color: var(--dim-2); }
+
+.who { padding: 88px 0; }
+.who .cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 36px; }
+.who .card { padding: 26px; }
+.who .card .k { font-size: 12px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--cr-lift); }
+.who .card h3 { margin-top: 10px; }
+.who .card p { margin-top: 10px; font-size: 15px; color: var(--dim-2); }
+.who .card a { display: inline-block; margin-top: 14px; font-size: 14px; font-weight: 700; color: #fff; text-decoration: none; }
+
+.book { padding: 96px 0; }
+.book .wrap { display: grid; grid-template-columns: 1.1fr .9fr; gap: 56px; align-items: center; }
+.book h2 { font-size: clamp(30px, 4vw, 48px); }
+.book .form { padding: 28px; }
+.book .form label { display: block; font-size: 13px; font-weight: 600; color: var(--dim-2); margin: 12px 0 6px; }
+.book .form .in { height: 48px; border-radius: 12px; border: 1px solid var(--glass-line); background: rgba(255, 255, 255, .04); padding: 0 14px; display: flex; align-items: center; font-size: 15px; color: var(--dim); }
+.book .form .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.book .form .btn { width: 100%; margin-top: 18px; }
+.book .form .fine { margin-top: 12px; font-size: 12px; color: var(--dim); }
+
+@media (max-width: 1024px) {
+  .hero .wrap { grid-template-columns: 1fr; gap: 36px; }
+  .hero .shot { padding-right: 90px; }
+  .feature { gap: 32px; }
+  .metrics .wrap { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 900px) {
+  .top nav, .top .actions .signin { display: none; }
+  .hero { padding: 100px 0 48px; }
+  .hero .shot { padding-right: 70px; }
+  .hero .shot .phone { --s: .3; bottom: -16px; }
+  .feature, .feature.flip { grid-template-columns: 1fr; padding: 40px 0; }
+  .feature.flip .copy { order: 0; }
+  .feature .stage { min-height: 0; }
+  .feature .stage .phone { --s: .48; }
+  .feature .stage.two .phone:last-child { margin-top: 40px; }
+  .who .cards, .book .wrap { grid-template-columns: 1fr; }
+  .who, .book { padding: 64px 0; }
+  .book .form .row { grid-template-columns: 1fr; }
+}
+@media (max-width: 480px) { .metrics .wrap { grid-template-columns: 1fr 1fr; gap: 10px; } .metric { padding: 16px; } .metric .n { font-size: 30px; } .feature .stage.two { gap: 8px; } .feature .stage.two .phone { --s: .4; } }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <a class="tlogo" href="#" aria-label="Vinterest for teams"><div class="mark"><img src="/logo.png" alt=""></div><div class="word"><span>T</span><span>E</span><span>A</span><span>M</span><span>S</span></div></a>
+    <nav>
+      <a class="link" href="#product">Product</a>
+      <a class="link" href="#how">How it works</a>
+      <a class="link" href="#who">Restaurants</a>
+      <a class="link" href="#who">Wineries</a>
+      <a class="link" href="#">Security</a>
+      <a class="link" href="#">Pricing</a>
+    </nav>
+    <div class="actions">
+      <a class="signin" href="#">Sign in</a>
+      <a class="btn primary small" href="#demo">Book a demo</a>
+    </div>
+  </div>
+</header>
+
+<section class="hero glow">
+  <div class="wrap">
+    <div>
+      <div class="eyebrow">Staff training on your own wine list</div>
+      <h1>Every server, ready to sell <strong>every wine</strong> on the list.</h1>
+      <p class="lead">Upload the list and the menu. Vinterest writes a card for each bottle, drills each person five questions a day, and tells you who's ready before service.</p>
+      <div class="cta">
+        <a class="btn primary" href="#demo">Book a demo</a>
+        <a class="btn ghost" href="#product">See the console</a>
+      </div>
+      <p class="note">In pilot with restaurants now. <b>Readiness comes only from drills, never from sales.</b></p>
+    </div>
+    <div class="shot">
+      <div class="laptop"><div class="screen"><img src="img/console-dash.jpg" alt="The management console's dashboard: team readiness 46%, 57 overdue, readiness by person as bars, what needs attention"></div><div class="base"></div></div>
+      <div class="phone"><div class="body"><div class="island"></div><img src="img/phone-today-staff.jpg" alt="A bartender's Today screen: 59%, Slipping, by the glass 8 of 15 known, Start today's drill"></div></div>
+    </div>
+  </div>
+</section>
+
+<section class="strip">
+  <div class="wrap">
+    <span class="lbl">Works with your till</span>
+    <span class="till"><i></i>Any till, by CSV <small>today</small></span>
+    <span class="till next"><i></i>Square <small>connector next</small></span>
+    <span class="till next"><i></i>Toast <small>partner application in</small></span>
+    <span class="till next"><i></i>Lightspeed <small>planned</small></span>
+    <span class="till next"><i></i>Clover <small>planned</small></span>
+  </div>
+</section>
+
+<section class="features" id="product">
+  <div class="wrap">
+
+    <div class="feature" id="how">
+      <div class="copy">
+        <div class="eyebrow">1 · Upload</div>
+        <h2>A photo of the list. Nothing reaches staff until you say so.</h2>
+        <p>Photos or a PDF of the wine list and the menu. The review says what's new, what's gone and what changed: a new vintage, a new price, by the glass now. Publish writes the training.</p>
+        <ul class="points">
+          <li>A new arrival from its label: card, pairings and drinking window on the floor in about 45 seconds.</li>
+          <li>A new vintage is the same wine moving on, so nobody relearns it.</li>
+          <li>Every publish is a version you can look back at.</li>
+        </ul>
+      </div>
+      <div class="stage two">
+        <div class="phone"><div class="body"><div class="island"></div><img src="img/phone-arrivals.jpg" alt="Upload: wine list, menu, add a wine from its label, and two prepared new arrivals"></div></div>
+        <div class="phone"><div class="body"><div class="island"></div><img src="img/phone-wines.jpg" alt="The Wines tab on the phone"></div></div>
+      </div>
+    </div>
+
+    <div class="feature flip">
+      <div class="copy">
+        <div class="eyebrow">2 · The card</div>
+        <h2>One card per wine, written for the floor.</h2>
+        <p>What to say to a guest, in plain words. What it tastes like, with body, acidity, tannin and sweetness each explained. Grape and place, how to serve it, which dishes on this menu, and what to offer instead from this list.</p>
+        <ul class="points">
+          <li>Grounded in checked facts about the region and grape, never invented.</li>
+          <li>A manager can rewrite "what to say" in the house's own words.</li>
+          <li>Every dish gets its best wines, the by-the-glass pick and the one to steer away from.</li>
+        </ul>
+      </div>
+      <div class="stage two">
+        <div class="phone"><div class="body"><div class="island"></div><img src="img/phone-card.jpg" alt="A staff card: Nyetimber Classic Cuvée, say it to a guest, what it tastes like"></div></div>
+        <div class="phone"><div class="body"><div class="island"></div><img src="img/phone-dish.jpg" alt="A dish: best with, by the glass, steer them away from"></div></div>
+      </div>
+    </div>
+
+    <div class="feature">
+      <div class="copy">
+        <div class="eyebrow">3 · The drill</div>
+        <h2>Five questions a day. Built for remembering, not for points.</h2>
+        <p>Each wine has four rungs: recognise it, recall it, apply it at a table, tell it from the most similar wine on the list. Each question comes back on its own schedule, sooner after a confident wrong answer, later as it holds.</p>
+        <ul class="points">
+          <li>No XP, no streaks. The motivation is not being caught out at table nine.</li>
+          <li>About one question in ten is an unannounced re-check, so retention is measured honestly.</li>
+          <li>Servers need three rungs, sommeliers and the buyer all four.</li>
+        </ul>
+        <div class="chips"><span class="chip mid">Recognise</span><span class="chip mid">Recall</span><span class="chip mid">Apply</span><span class="chip mid">Contrast</span></div>
+      </div>
+      <div class="stage">
+        <div class="phone"><div class="body"><div class="island"></div><img src="img/phone-drill.jpg" alt="A drill question: a guest orders the sirloin, which wine on our list suits it best, with how sure are you"></div></div>
+      </div>
+    </div>
+
+    <div class="feature flip">
+      <div class="copy">
+        <div class="eyebrow">4 · The console</div>
+        <h2>Who's ready before service, and why not.</h2>
+        <p>Readiness per person against the minimum for their role: a server needs 80% of the glass list, a sommelier 90% of everything. Who's overdue, who's slipping, which new wines nobody knows yet, and which by-the-glass wines too few people can sell.</p>
+        <div class="chips"><span class="chip green">Ready</span><span class="chip amber">Slipping</span><span class="chip red">Not ready yet</span><span class="chip cr">3 new wines</span><span class="chip amber">47 faded</span></div>
+      </div>
+      <div class="stage">
+        <div class="laptop"><div class="screen"><img src="img/console-team.jpg" alt="The Team page: seven people with readiness bars, overdue, fading, last drill, re-checks"></div><div class="base"></div></div>
+      </div>
+    </div>
+
+    <div class="feature">
+      <div class="copy">
+        <div class="eyebrow">5 · The till</div>
+        <h2>What sells most and is known least gets learnt first.</h2>
+        <p>Import a night's sales from any till as a CSV. The console shows what sells, who sells it, the slow movers by the glass with the card's line to say, and whether a trained server sells more of a wine than one who isn't. The Square connector comes next.</p>
+        <ul class="points">
+          <li>Sales reorder what people learn. They never move anyone's readiness.</li>
+          <li>An item on the till with no wine behind it is the "new on the list?" signal.</li>
+        </ul>
+      </div>
+      <div class="stage">
+        <div class="laptop"><div class="screen"><img src="img/console-sales.jpg" alt="The sales row: who sells wine, what sells, slow movers by the glass with the line to say"></div><div class="base"></div></div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<section class="metrics">
+  <div class="wrap">
+    <div class="metric glass"><div class="n">45<small>s</small></div><div class="t">from a bottle's label to a card, pairings and a drinking window on the floor</div></div>
+    <div class="metric glass"><div class="n">5</div><div class="t">questions a day per person. Assigned wines first, then what's due, then what's new</div></div>
+    <div class="metric glass"><div class="n">6</div><div class="t">questions per wine, on four rungs, each on its own review schedule</div></div>
+    <div class="metric glass"><div class="n">1</div><div class="t">number per person: ready, slipping or not ready yet, against their role's minimum</div></div>
+  </div>
+</section>
+
+<section class="who" id="who">
+  <div class="wrap">
+    <div class="eyebrow">Who it's for</div>
+    <h2>Anywhere a person sells wine across a counter.</h2>
+    <div class="cards">
+      <div class="card glass"><div class="k">Restaurants</div><h3>The floor knows the list</h3><p>Servers, bartenders and the sommelier on one list and one menu, each held to their own minimum. Pairings written for your dishes, not generic ones.</p><a href="#">For restaurants →</a></div>
+      <div class="card glass"><div class="k">Wineries and tasting rooms</div><h3>The cellar door knows the range</h3><p>Your range is the list; the tasting flight is the menu. Seasonal staff can talk about every wine on the bench in their first week.</p><a href="#">For wineries →</a></div>
+      <div class="card glass"><div class="k">Groups</div><h3>Every site, one view</h3><p>Accounts for restaurants come next: each person on their own phone, each site's list, the manager's dashboard on the web. Until then, one restaurant trains on one device.</p><a href="#">What's next →</a></div>
+    </div>
+  </div>
+</section>
+
+<section class="book glow" id="demo">
+  <div class="wrap">
+    <div>
+      <div class="eyebrow">Book a demo</div>
+      <h2>See it on your own list.</h2>
+      <p class="lead">Send a photo of your wine list and we'll show you the cards, the drill and the console built from it, with your dishes paired.</p>
+    </div>
+    <div class="form glass">
+      <div class="row"><div><label>First name</label><div class="in">Elena</div></div><div><label>Last name</label><div class="in">Ruiz</div></div></div>
+      <label>Work email</label><div class="in">elena@thelarkspur.co.uk</div>
+      <div class="row"><div><label>Restaurant or winery</label><div class="in">The Larkspur, Bristol</div></div><div><label>Your till</label><div class="in">Square</div></div></div>
+      <a class="btn primary" href="#">Book a demo</a>
+      <div class="fine">We'll reply within a working day. No account needed for the demo.</div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <a class="tlogo" href="#" aria-label="Vinterest for teams"><div class="mark"><img src="/logo.png" alt=""></div><div class="word"><span>T</span><span>E</span><span>A</span><span>M</span><span>S</span></div></a>
+    <nav><a href="#">Product</a><a href="#">Restaurants</a><a href="#">Wineries</a><a href="#">Security</a><a href="#">Pricing</a><a href="#">Privacy</a><a href="#">Terms</a><a href="#">Vinterest for drinkers</a></nav>
+    <span>© 2026 Vinterest</span>
+  </div>
+</footer>
+
+<div class="mockbar">Mockup <a class="on" href="a.html">A</a><a href="b.html">B</a><a href="c.html">C</a></div>
+</body>
+</html>

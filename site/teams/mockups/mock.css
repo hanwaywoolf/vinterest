@@ -1,0 +1,109 @@
+/* Vinterest for teams: home-page mockups. The consumer site's tokens (site/site.css) plus the console's
+   own vocabulary: the dark stage, glass cards, a crimson lifted for black, chips whose colour says what
+   they are, a crimson mark on section headers. Shared by a.html, b.html and c.html; each page adds its
+   own layout. Not part of the built site: these are for choosing a direction. */
+:root {
+  --cr: #8B1A2F; --cr-l: #B02440; --cr-lift: #E8536B; --cr-soft: rgba(139, 26, 47, .07); --cr-dim: rgba(139, 26, 47, .13);
+  --ink: #0F0F0F; --ink-2: #3A3A3A; --mid: #8A8A8A; --line: #E8E8E8;
+  --bg: #FAFAFA; --white: #fff; --off: #F5F3F0;
+  --dark: #0F0F0F; --dim: rgba(255, 255, 255, .62); --dim-2: rgba(255, 255, 255, .78);
+  --glass: rgba(255, 255, 255, .05); --glass-line: rgba(255, 255, 255, .11);
+  --green: #3DBE7A; --amber: #E9A93C; --red: #F0665E; --blue: #6AA7D8; --rose: #E88CA0;
+  --sans: 'Poppins', system-ui, sans-serif; --serif: 'Instrument Serif', Georgia, serif;
+  --wrap: 1180px; --gutter: 24px;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+body { font-family: var(--sans); background: var(--dark); color: #fff; line-height: 1.5; -webkit-font-smoothing: antialiased; overflow-x: hidden; }
+img { max-width: 100%; display: block; }
+a { color: inherit; }
+button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
+.wrap { width: 100%; max-width: var(--wrap); margin: 0 auto; padding: 0 var(--gutter); }
+
+/* Type */
+h1, h2, h3 { font-weight: 800; letter-spacing: -.03em; line-height: 1.08; }
+h1 { font-size: clamp(36px, 5.6vw, 64px); letter-spacing: -.045em; }
+h2 { font-size: clamp(28px, 3.8vw, 44px); }
+h3 { font-size: 20px; letter-spacing: -.01em; line-height: 1.3; }
+.serif { font-family: var(--serif); font-style: italic; font-weight: 400; letter-spacing: -.01em; }
+h1 .serif, h2 .serif { font-size: 1.08em; }
+.lead { font-size: 18px; color: var(--dim-2); max-width: 34em; margin-top: 18px; }
+.eyebrow { display: flex; align-items: center; gap: 10px; font-size: 12px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: #fff; margin-bottom: 14px; }
+.eyebrow::before { content: ''; width: 3px; height: 14px; border-radius: 2px; background: var(--cr-lift); }
+.light .eyebrow::before { background: var(--cr); }
+.light .lead { color: var(--ink-2); }
+
+/* Buttons */
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 10px; min-height: 48px; padding: 0 22px; border-radius: 14px; font-size: 15px; font-weight: 700; text-decoration: none; border: 1px solid transparent; cursor: pointer; transition: transform .15s, background .15s; white-space: nowrap; }
+.btn:active { transform: scale(.98); }
+.btn.primary { background: var(--cr); color: #fff; box-shadow: 0 10px 40px rgba(139, 26, 47, .38); }
+.btn.primary:hover { background: var(--cr-l); }
+.btn.ghost { background: rgba(255, 255, 255, .08); border-color: rgba(255, 255, 255, .18); color: #fff; }
+.btn.ghost:hover { background: rgba(255, 255, 255, .14); }
+.light .btn.ghost { background: #fff; border-color: var(--line); color: var(--ink); }
+.btn.small { min-height: 40px; padding: 0 16px; font-size: 14px; border-radius: 11px; box-shadow: none; }
+
+/* Logo: the mark cropped from /logo.png (clear padding: x 41–1039 of 1086, y 41–183 of 224) with TEAMS
+   under it from the V's point to the T's foot, the way TeamLogo in team-console.jsx draws it. */
+.tlogo { display: inline-block; --h: 20px; --imgH: calc(var(--h) / .634); --imgW: calc(var(--imgH) * 4.848); --w: calc(var(--imgW) * .919); width: var(--w); text-decoration: none; }
+.tlogo .mark { width: var(--w); height: var(--h); overflow: hidden; position: relative; }
+.tlogo .mark img { position: absolute; left: calc(var(--imgW) * -.0378); top: calc(var(--imgH) * -.183); width: var(--imgW); height: var(--imgH); max-width: none; filter: invert(1); }
+.light .tlogo .mark img { filter: none; }
+.tlogo .word { margin-left: calc(var(--w) * .02); width: calc(var(--w) * .96); display: flex; justify-content: space-between; font-size: calc(var(--h) * .55); font-weight: 700; color: var(--cr-lift); line-height: 1; margin-top: 4px; }
+.light .tlogo .word { color: var(--cr); }
+
+/* Chips, the console's colour language: a chip says what it is by its colour. */
+.chip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; font-size: 13px; font-weight: 600; border: 1px solid; white-space: nowrap; }
+.chip.green { color: var(--green); border-color: rgba(61, 190, 122, .5); background: rgba(61, 190, 122, .08); }
+.chip.amber { color: var(--amber); border-color: rgba(233, 169, 60, .5); background: rgba(233, 169, 60, .08); }
+.chip.red { color: var(--red); border-color: rgba(240, 102, 94, .5); background: rgba(240, 102, 94, .08); }
+.chip.cr { color: var(--cr-lift); border-color: rgba(232, 83, 107, .5); background: rgba(232, 83, 107, .08); }
+.chip.mid { color: var(--dim); border-color: var(--glass-line); background: var(--glass); }
+
+/* Glass */
+.glass { background: var(--glass); border: 1px solid var(--glass-line); border-radius: 18px; }
+.light .glass { background: #fff; border-color: var(--line); }
+
+/* The stage glow at the top of a dark section, as the app draws it. */
+.glow { position: relative; overflow: clip; }
+.glow::before { content: ''; position: absolute; left: 50%; top: -30vw; width: 110vw; height: 60vw; transform: translateX(-50%); border-radius: 50%; background: radial-gradient(ellipse at center, rgba(139, 26, 47, .34), transparent 60%); pointer-events: none; }
+.glow > * { position: relative; }
+
+/* Laptop frame: a thin dark bezel, the screen, a base. The screenshot is the console at 1440×900. */
+.laptop { position: relative; width: 100%; }
+.laptop .screen { border-radius: 14px; padding: 10px; background: #1a1a1a; box-shadow: inset 0 0 0 1px #3a3a3a, 0 40px 90px rgba(0, 0, 0, .55); }
+.laptop .screen img { border-radius: 6px; width: 100%; aspect-ratio: 16 / 10; object-fit: cover; object-position: top; }
+.laptop .base { height: 14px; margin: 0 -2%; border-radius: 0 0 14px 14px; background: linear-gradient(#2a2a2a, #161616); box-shadow: 0 2px 0 #0a0a0a; }
+.laptop .base::after { content: ''; display: block; width: 14%; height: 5px; margin: 0 auto; border-radius: 0 0 6px 6px; background: #0c0c0c; }
+
+/* Phone frame: the consumer site's phone (410×864 outer, 390×844 screen), scaled with --s. */
+.phone { position: relative; width: calc(410px * var(--s, .6)); height: calc(864px * var(--s, .6)); flex: none; }
+.phone .body { position: absolute; left: 0; top: 0; width: 410px; height: 864px; padding: 10px; border-radius: 58px; background: #101010; transform: scale(var(--s, .6)); transform-origin: 0 0; box-shadow: inset 0 0 0 1.5px #3a3a3a, 0 40px 80px rgba(0, 0, 0, .45), 0 8px 24px rgba(0, 0, 0, .3); }
+.phone .body img { width: 390px; height: 844px; border-radius: 48px; object-fit: cover; object-position: top; }
+.phone .island { position: absolute; top: 21px; left: 50%; width: 112px; height: 32px; margin-left: -56px; border-radius: 16px; background: #000; z-index: 3; }
+
+/* Browser frame, for a screenshot of the console shown as a web page. */
+.browser { border-radius: 14px; overflow: hidden; background: #1a1a1a; box-shadow: inset 0 0 0 1px #3a3a3a, 0 40px 90px rgba(0, 0, 0, .55); }
+.browser .bar { height: 38px; display: flex; align-items: center; gap: 8px; padding: 0 14px; background: #202020; border-bottom: 1px solid #333; }
+.browser .bar i { width: 11px; height: 11px; border-radius: 50%; background: #3a3a3a; }
+.browser .bar span { margin-left: 12px; flex: 1; max-width: 420px; height: 22px; border-radius: 6px; background: #2b2b2b; font-size: 12px; color: var(--dim); display: flex; align-items: center; padding: 0 10px; font-family: ui-monospace, monospace; }
+.browser img { width: 100%; display: block; }
+
+/* Footer */
+footer { color: var(--dim); padding: 48px 0 56px; font-size: 14px; border-top: 1px solid rgba(255, 255, 255, .08); }
+footer .wrap { display: flex; flex-wrap: wrap; gap: 20px 40px; justify-content: space-between; align-items: center; }
+footer nav { display: flex; gap: 22px; flex-wrap: wrap; }
+footer a { text-decoration: none; }
+footer a:hover { color: #fff; }
+
+/* The strip that says which mockup this is. */
+.mockbar { position: fixed; left: 50%; bottom: 14px; transform: translateX(-50%); z-index: 90; display: flex; align-items: center; gap: 6px; padding: 6px 8px 6px 14px; border-radius: 999px; background: rgba(15, 15, 15, .9); border: 1px solid rgba(255, 255, 255, .18); backdrop-filter: blur(10px); font-size: 13px; color: var(--dim); white-space: nowrap; }
+.mockbar a { padding: 5px 11px; border-radius: 999px; text-decoration: none; color: #fff; font-weight: 600; }
+.mockbar a.on { background: var(--cr); }
+.mockbar a:not(.on):hover { background: rgba(255, 255, 255, .1); }
+
+@media (max-width: 900px) {
+  :root { --gutter: 20px; }
+  .lead { font-size: 17px; }
+}
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } .btn { transition: none; } }

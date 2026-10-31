@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vinterest for teams · mockup B: product-led</title>
+<meta name="robots" content="noindex">
+<link rel="stylesheet" href="/fonts/fonts.css">
+<link rel="stylesheet" href="mock.css">
+<style>
+/* B: product-led. A thin nav, one line of headline, then the console itself, full width, with its own
+   sections as tabs over it (on the real site this is the live console demo driven by the Larkspur
+   data, each tab a section of it). Then the phone as a row of screens, a short grid of what's in it,
+   and the demo form. The product does the talking; the copy is captions. */
+.top { position: sticky; top: 0; z-index: 50; background: rgba(15, 15, 15, .88); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-bottom: 1px solid rgba(255, 255, 255, .08); }
+.top .wrap { display: flex; align-items: center; justify-content: space-between; height: 56px; gap: 16px; }
+.top nav { display: flex; align-items: center; gap: 22px; }
+.top nav a { font-size: 14px; font-weight: 500; color: var(--dim-2); text-decoration: none; }
+.top nav a:hover { color: #fff; }
+
+.hero { padding: 64px 0 28px; text-align: center; }
+.hero h1 { max-width: 15em; margin: 0 auto; font-weight: 800; }
+.hero h1 em { font-style: normal; color: var(--cr-lift); }
+.hero .lead { margin: 16px auto 0; max-width: 36em; }
+.hero .cta { display: flex; justify-content: center; flex-wrap: wrap; gap: 10px; margin-top: 24px; }
+
+.console { padding: 12px 0 64px; }
+.console .wrap { max-width: 1320px; }
+.tabs { display: flex; justify-content: center; gap: 4px; flex-wrap: wrap; margin: 0 auto 14px; padding: 4px; border-radius: 14px; background: var(--glass); border: 1px solid var(--glass-line); width: max-content; max-width: 100%; }
+.tabs button { padding: 8px 14px; border-radius: 10px; font-size: 14px; font-weight: 600; color: var(--dim-2); white-space: nowrap; }
+.tabs button[aria-selected="true"] { background: rgba(255, 255, 255, .1); color: #fff; box-shadow: inset 0 0 0 1px var(--cr-lift); }
+.console .browser img { aspect-ratio: 16 / 10; object-fit: cover; object-position: top; }
+.console .cap { text-align: center; margin-top: 16px; font-size: 15px; color: var(--dim-2); max-width: 46em; margin-left: auto; margin-right: auto; min-height: 3em; }
+.console .cap b { color: #fff; font-weight: 600; }
+.console .demo-tag { display: inline-flex; margin-top: 10px; white-space: normal; text-align: center; }
+
+.phones { padding: 64px 0; border-top: 1px solid rgba(255, 255, 255, .07); }
+.phones .head { display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
+.phones .head h2 { font-size: clamp(26px, 3.4vw, 40px); max-width: 16em; }
+.phones .head p { color: var(--dim-2); max-width: 30em; }
+.phones .row { display: flex; gap: 20px; margin-top: 36px; overflow-x: auto; padding: 0 var(--gutter) 24px; margin-left: calc(var(--gutter) * -1); margin-right: calc(var(--gutter) * -1); scroll-snap-type: x mandatory; scrollbar-width: none; }
+.phones .row::-webkit-scrollbar { display: none; }
+.phones .item { flex: none; scroll-snap-align: start; width: calc(410px * .5); }
+.phones .item .phone { --s: .5; }
+.phones .item h3 { margin-top: 18px; font-size: 16px; }
+.phones .item p { margin-top: 4px; font-size: 14px; color: var(--dim-2); }
+
+.grid { padding: 64px 0; border-top: 1px solid rgba(255, 255, 255, .07); }
+.grid .cells { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 30px; }
+.cell { padding: 22px; }
+.cell .k { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.cell h3 { font-size: 17px; }
+.cell p { margin-top: 8px; font-size: 14px; color: var(--dim-2); }
+
+.book { padding: 80px 0; text-align: center; }
+.book h2 { font-size: clamp(30px, 4vw, 48px); }
+.book .lead { margin: 14px auto 0; }
+.book .form { max-width: 520px; margin: 28px auto 0; padding: 8px; display: flex; gap: 8px; border-radius: 16px; }
+.book .form .in { flex: 1; min-width: 0; height: 48px; border-radius: 11px; padding: 0 14px; display: flex; align-items: center; font-size: 15px; color: var(--dim); background: rgba(255, 255, 255, .04); }
+.book .fine { margin-top: 12px; font-size: 13px; color: var(--dim); }
+
+@media (max-width: 900px) {
+  .top nav { display: none; }
+  .hero { padding: 44px 0 20px; }
+  .tabs { width: 100%; justify-content: flex-start; overflow-x: auto; flex-wrap: nowrap; scrollbar-width: none; }
+  .console .browser img { aspect-ratio: auto; }
+  .grid .cells { grid-template-columns: 1fr; }
+  .phones, .grid { padding: 48px 0; }
+  .book .form { flex-direction: column; }
+}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <a class="tlogo" href="#" aria-label="Vinterest for teams" style="--h:16px"><div class="mark"><img src="/logo.png" alt=""></div><div class="word"><span>T</span><span>E</span><span>A</span><span>M</span><span>S</span></div></a>
+    <nav><a href="#console">Console</a><a href="#phone">Phone</a><a href="#">Restaurants</a><a href="#">Wineries</a><a href="#">Security</a><a href="#">Pricing</a></nav>
+    <a class="btn primary small" href="#demo">Book a demo</a>
+  </div>
+</header>
+
+<section class="hero glow">
+  <div class="wrap">
+    <h1>See who can sell the list <em>before service.</em></h1>
+    <p class="lead">Vinterest for teams trains a restaurant's staff on its own wine list and menu, and shows the manager who's ready. This is the console, on a real list, with demo sales.</p>
+    <div class="cta"><a class="btn primary" href="#demo">Book a demo</a><a class="btn ghost" href="#phone">What staff see</a></div>
+  </div>
+</section>
+
+<section class="console" id="console">
+  <div class="wrap">
+    <div class="tabs" role="tablist">
+      <button role="tab" aria-selected="true" data-img="console-dash" data-cap="<b>Dashboard.</b> Team readiness against each role's minimum, who's overdue, who's slipping, what the floor knows least. Every number opens the people or wines behind it.">Dashboard</button>
+      <button role="tab" data-img="console-sales" data-cap="<b>Sales.</b> Seven nights against the seven before, what sells, who sells it, and the slow movers by the glass with the card's line to say. From a CSV off any till today.">Sales</button>
+      <button role="tab" data-img="console-team" data-cap="<b>Team.</b> Everyone with their readiness, overdue assignments, fading answers, last drill and re-check record. Each role's minimum is set here.">Team</button>
+      <button role="tab" data-img="console-wines" data-cap="<b>Wines.</b> The list by section: year, prices, drinking window, who knows it, sold in 28 nights, whether it has a card. Edits go through the same review and publish as an upload.">Wines</button>
+      <button role="tab" data-img="console-wine-card" data-cap="<b>A wine's card.</b> What to say to a guest, what it tastes like with every word explained, grape and place. The manager can rewrite the line in the house's own words.">Card</button>
+      <button role="tab" data-img="console-menu" data-cap="<b>Menu.</b> Every dish with its best wine, the by-the-glass pick and the one to steer guests away from, rewritten whenever the list changes.">Menu</button>
+      <button role="tab" data-img="console-pos" data-cap="<b>Integrations.</b> The till's sales mapped to wines: a suggested match for each item, the unmatched ones first. Square is the first live connector; CSV works today.">Integrations</button>
+    </div>
+    <div class="browser"><div class="bar"><i></i><i></i><i></i><span>app.vinterest.app/team · The Larkspur</span></div><img id="shot" src="img/console-dash.jpg" alt="The management console"></div>
+    <p class="cap" id="cap"><b>Dashboard.</b> Team readiness against each role's minimum, who's overdue, who's slipping, what the floor knows least. Every number opens the people or wines behind it.</p>
+    <div style="text-align:center"><span class="chip amber demo-tag">Demo data · The Larkspur, 30 wines, 27 dishes, 7 people</span></div>
+  </div>
+</section>
+
+<section class="phones" id="phone">
+  <div class="wrap">
+    <div class="head">
+      <h2>On the phone, each person gets five questions a day.</h2>
+      <p>No XP, no streaks. A question comes back on its own schedule, sooner after a confident wrong answer, later as it holds. About one in ten is an unannounced re-check.</p>
+    </div>
+    <div class="row">
+      <div class="item"><div class="phone"><div class="body"><div class="island"></div><img src="img/phone-today-staff.jpg" alt="Today for a bartender"></div></div><h3>Today</h3><p>Where they stand against their role's minimum, by the glass and by the menu, and the drill.</p></div>
+      <div class="item"><div class="phone"><div class="body"><div class="island"></div><img src="img/phone-drill.jpg" alt="A drill question"></div></div><h3>The drill</h3><p>Recognise, recall, apply at a table, contrast with the most similar wine. They say how sure they are first.</p></div>
+      <div class="item"><div class="phone"><div class="body"><div class="island"></div><img src="img/phone-card.jpg" alt="A staff card"></div></div><h3>The card</h3><p>What to say to a guest, what it tastes like with body and acidity explained, grape and place, the dishes it suits.</p></div>
+      <div class="item"><div class="phone"><div class="body"><div class="island"></div><img src="img/phone-dish.jpg" alt="A dish's pairings"></div></div><h3>The dish</h3><p>Best with, the by-the-glass pick, and the one to steer guests away from, with the reason.</p></div>
+      <div class="item"><div class="phone"><div class="body"><div class="island"></div><img src="img/phone-arrivals.jpg" alt="Upload and new arrivals"></div></div><h3>Upload</h3><p>A photo of the list, or one bottle from its label: card, pairings and drinking window in about 45 seconds.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="grid">
+  <div class="wrap">
+    <div class="eyebrow">What's in it</div>
+    <h2>Built, and what comes next.</h2>
+    <div class="cells">
+      <div class="cell glass"><div class="k"><h3>Upload and publish</h3><span class="chip green">Built</span></div><p>Photos or a PDF of the list and menu. A review of what's new, gone and changed. Nothing reaches staff until Publish.</p></div>
+      <div class="cell glass"><div class="k"><h3>Cards and pairings</h3><span class="chip green">Built</span></div><p>A card per wine grounded in checked facts, pairings per dish, a drinking window per vintage.</p></div>
+      <div class="cell glass"><div class="k"><h3>The daily drill</h3><span class="chip green">Built</span></div><p>Four rungs, a review schedule per question, re-checks, readiness against each role's minimum.</p></div>
+      <div class="cell glass"><div class="k"><h3>Management console</h3><span class="chip green">Built</span></div><p>Dashboard, Team, Wines, Menu, Upload, Integrations and Admin, on a tablet or a laptop.</p></div>
+      <div class="cell glass"><div class="k"><h3>Sales import and item map</h3><span class="chip green">Built</span></div><p>A CSV from any till. Till items mapped to wines once. Sales set what's learnt first and never move readiness.</p></div>
+      <div class="cell glass"><div class="k"><h3>Square connector</h3><span class="chip amber">Next</span></div><p>Self-serve OAuth, orders and catalogue, nightly. Toast through its nightly export; Lightspeed and Clover after.</p></div>
+      <div class="cell glass"><div class="k"><h3>Accounts and billing</h3><span class="chip amber">Next</span></div><p>Each person on their own phone, each site its own list, the console on the web, billing per site.</p></div>
+      <div class="cell glass"><div class="k"><h3>Cellar stock</h3><span class="chip mid">Planned</span></div><p>A spreadsheet import, a label scan on delivery, "running low" beside a wine the floor is pushing.</p></div>
+      <div class="cell glass"><div class="k"><h3>Guest role-play</h3><span class="chip mid">Planned</span></div><p>A guest at a table, played by Vinny, asking about the list; the buyer's list analysis.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="book glow" id="demo">
+  <div class="wrap">
+    <h2>Try it on your own list.</h2>
+    <p class="lead">Send a photo of your wine list. We'll show you the cards, the drill and the console built from it.</p>
+    <div class="form glass"><div class="in">Work email</div><a class="btn primary" href="#">Book a demo</a></div>
+    <p class="fine">In pilot now. Accounts and billing come next; the pilot runs on one device per restaurant.</p>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <a class="tlogo" href="#" aria-label="Vinterest for teams"><div class="mark"><img src="/logo.png" alt=""></div><div class="word"><span>T</span><span>E</span><span>A</span><span>M</span><span>S</span></div></a>
+    <nav><a href="#">Console</a><a href="#">Restaurants</a><a href="#">Wineries</a><a href="#">Security</a><a href="#">Pricing</a><a href="#">Privacy</a><a href="#">Terms</a><a href="#">Vinterest for drinkers</a></nav>
+    <span>© 2026 Vinterest</span>
+  </div>
+</footer>
+
+<div class="mockbar">Mockup <a href="a.html">A</a><a class="on" href="b.html">B</a><a href="c.html">C</a></div>
+<script>
+  // The tabs swap the screenshot; on the real site each is a section of the live console demo.
+  const tabs = document.querySelectorAll('.tabs [role="tab"]'), shot = document.getElementById('shot'), cap = document.getElementById('cap');
+  tabs.forEach((t) => t.addEventListener('click', () => {
+    tabs.forEach((x) => x.setAttribute('aria-selected', x === t ? 'true' : 'false'));
+    shot.src = 'img/' + t.dataset.img + '.jpg'; cap.innerHTML = t.dataset.cap;
+  }));
+</script>
+</body>
+</html>

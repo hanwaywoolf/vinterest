@@ -92,4 +92,5 @@ export const STATIC_FILES = [
   'tweaks-inline.compiled.js',
   'team/faces', // the demo restaurant's staff photos, served beside the team app (docs/business.md)
   'team/labels', // the demo's prepared new arrivals: two label photos (TeamSample.ARRIVALS)
+  'site/teams/mockups', // the teams website's home-page mockups, on the preview for review only; comes out when the site is built
 ];
