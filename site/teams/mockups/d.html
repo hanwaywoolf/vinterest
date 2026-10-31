@@ -1,0 +1,362 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vinterest for teams · direction D: the list</title>
+<meta name="robots" content="noindex">
+<link rel="stylesheet" href="/fonts/fonts.css">
+<style>
+/* Direction D: the page is set like a good restaurant's wine list. Paper, one serif, hairline rules,
+   dotted leaders between an item and its figure. It sells the money and the embarrassment, not the
+   features; the product appears as evidence (its own words, a crop of a screen), never as a hero shot.
+   Nothing here shares the consumer site's dark stage, glass or glows. */
+:root {
+  --paper: #F4EFE6; --paper-2: #EBE4D8; --ink: #1B1612; --ink-2: #4A423B; --mute: #8C8277; --rule: #D6CCBC;
+  --claret: #7A1B2E; --claret-2: #9A2740; --ok: #2F6B4A;
+  --serif: 'Instrument Serif', Georgia, 'Times New Roman', serif; --sans: 'Poppins', system-ui, sans-serif;
+  --wrap: 1120px; --g: 28px;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+body { background: var(--paper); color: var(--ink); font-family: var(--sans); font-size: 16px; line-height: 1.55; -webkit-font-smoothing: antialiased; }
+img { display: block; max-width: 100%; }
+a { color: inherit; }
+button, input { font: inherit; color: inherit; }
+.wrap { max-width: var(--wrap); margin: 0 auto; padding: 0 var(--g); }
+.serif { font-family: var(--serif); font-weight: 400; letter-spacing: -.01em; }
+.sc { font-size: 12px; font-weight: 600; letter-spacing: .16em; text-transform: uppercase; color: var(--mute); }
+.rule { border: 0; border-top: 1px solid var(--rule); }
+.btn { display: inline-flex; align-items: center; justify-content: center; min-height: 50px; padding: 0 24px; border-radius: 4px; text-decoration: none; font-weight: 600; font-size: 15px; border: 1.5px solid var(--ink); background: var(--ink); color: var(--paper); transition: background .15s, color .15s; }
+.btn:hover { background: var(--claret); border-color: var(--claret); }
+.btn.quiet { background: transparent; color: var(--ink); }
+.btn.quiet:hover { background: var(--ink); color: var(--paper); }
+
+/* Leaders: item on the left, dots, figure on the right, as a wine list sets a price. */
+.ld { display: flex; align-items: baseline; gap: 10px; }
+.ld .dots { flex: 1; border-bottom: 1.5px dotted var(--rule); transform: translateY(-5px); min-width: 24px; }
+.ld .fig { white-space: nowrap; }
+
+/* Nav: a wordmark and three words. */
+.top { position: sticky; top: 0; z-index: 20; background: rgba(244, 239, 230, .9); backdrop-filter: blur(8px); border-bottom: 1px solid var(--rule); }
+.top .wrap { height: 64px; display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+.brand { display: flex; align-items: baseline; gap: 10px; text-decoration: none; white-space: nowrap; }
+.brand .mark { --h: 17px; --imgH: calc(var(--h) / .634); --imgW: calc(var(--imgH) * 4.848); width: calc(var(--imgW) * .919); height: var(--h); overflow: hidden; position: relative; }
+.brand .mark img { position: absolute; left: calc(var(--imgW) * -.0378); top: calc(var(--imgH) * -.183); width: var(--imgW); height: var(--imgH); max-width: none; }
+.brand .for { font-family: var(--serif); font-size: 19px; color: var(--ink-2); line-height: 1; }
+.top nav { display: flex; align-items: center; gap: 26px; font-size: 14px; }
+.top nav a { text-decoration: none; color: var(--ink-2); }
+.top nav a:hover { color: var(--claret); }
+.top nav .btn { min-height: 40px; padding: 0 16px; font-size: 14px; white-space: nowrap; }
+
+/* Hero: one sentence, then the page's own wine list. */
+.hero { padding: 88px 0 64px; }
+.hero h1 { font-family: var(--serif); font-weight: 400; font-size: clamp(42px, 7vw, 92px); line-height: .98; letter-spacing: -.025em; max-width: 12em; }
+.hero h1 em { font-style: italic; color: var(--claret); }
+.hero .under { display: grid; grid-template-columns: 1fr 1fr; gap: 56px; margin-top: 56px; align-items: start; }
+.hero p.lede { font-size: 19px; color: var(--ink-2); max-width: 26em; }
+.hero .cta { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 28px; }
+.hero .fine { margin-top: 14px; font-size: 13px; color: var(--mute); }
+.list { border-top: 1px solid var(--ink); }
+.list .row { padding: 16px 0; border-bottom: 1px solid var(--rule); }
+.list .row .ld { font-size: 18px; }
+.list .row .fig { font-family: var(--serif); font-size: 22px; }
+.list .row small { display: block; font-size: 13px; color: var(--mute); margin-top: 2px; }
+
+/* Overheard: what a guest asks, what they hear now, what they could hear. The product's own words. */
+.heard { padding: 72px 0; border-top: 1px solid var(--ink); }
+.heard h2 { font-family: var(--serif); font-weight: 400; font-size: clamp(32px, 4.4vw, 54px); line-height: 1.02; letter-spacing: -.02em; max-width: 14em; }
+.heard .intro { margin-top: 14px; color: var(--ink-2); max-width: 36em; }
+.table { margin-top: 44px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; border-top: 1px solid var(--rule); }
+.table .col { padding: 26px 26px 30px 0; border-right: 1px solid var(--rule); }
+.table .col:last-child { border-right: 0; padding-right: 0; }
+.table .col + .col { padding-left: 26px; }
+.table .q { font-family: var(--serif); font-size: 26px; line-height: 1.15; min-height: 3.5em; }
+.table .q::before { content: '“'; color: var(--claret); }
+.table .q::after { content: '”'; color: var(--claret); }
+.table .now { margin-top: 22px; font-size: 14px; color: var(--mute); }
+.table .now b { display: block; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; font-size: 11px; margin-bottom: 4px; }
+.table .now s { text-decoration-color: var(--claret); }
+.table .then { margin-top: 18px; font-size: 15px; color: var(--ink); border-left: 2px solid var(--claret); padding-left: 14px; }
+.table .then b { display: block; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; font-size: 11px; color: var(--claret); margin-bottom: 4px; }
+.table .then small { display: block; color: var(--mute); margin-top: 8px; font-size: 12px; }
+
+/* The maths: a bill, with the figures the owner changes. */
+.maths { padding: 72px 0; background: var(--paper-2); border-top: 1px solid var(--ink); }
+.maths .wrap { display: grid; grid-template-columns: .9fr 1.1fr; gap: 64px; align-items: start; }
+.maths h2 { font-family: var(--serif); font-weight: 400; font-size: clamp(32px, 4.4vw, 54px); line-height: 1.02; letter-spacing: -.02em; }
+.maths .intro { margin-top: 14px; color: var(--ink-2); max-width: 30em; }
+.maths .caveat { margin-top: 22px; font-size: 13px; color: var(--mute); max-width: 30em; }
+.bill { border-top: 1px solid var(--ink); }
+.bill .row { display: grid; grid-template-columns: 1fr auto; gap: 16px; align-items: center; padding: 14px 0; border-bottom: 1px solid var(--rule); }
+.bill .row label { font-size: 15px; }
+.bill .row label small { display: block; font-size: 12px; color: var(--mute); }
+.bill .row .val { font-family: var(--serif); font-size: 26px; min-width: 4.5em; text-align: right; }
+.bill .row input[type=range] { grid-column: 1 / -1; width: 100%; accent-color: var(--claret); height: 22px; }
+.bill .total { padding: 22px 0 6px; display: flex; justify-content: space-between; align-items: baseline; gap: 16px; border-bottom: 2px solid var(--ink); }
+.bill .total .lbl { font-size: 14px; color: var(--ink-2); max-width: 16em; }
+.bill .total .sum { font-family: var(--serif); font-size: clamp(44px, 6vw, 72px); line-height: 1; letter-spacing: -.02em; color: var(--claret); }
+.bill .week { margin-top: 10px; font-size: 14px; color: var(--mute); text-align: right; }
+
+/* How: three courses, short. */
+.how { padding: 72px 0; border-top: 1px solid var(--ink); }
+.how .head { display: flex; justify-content: space-between; align-items: baseline; gap: 20px; flex-wrap: wrap; }
+.how h2 { font-family: var(--serif); font-weight: 400; font-size: clamp(32px, 4.4vw, 54px); line-height: 1.02; letter-spacing: -.02em; }
+.courses { margin-top: 40px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 36px; }
+.course .n { font-family: var(--serif); font-size: 20px; color: var(--claret); }
+.course h3 { font-family: var(--serif); font-weight: 400; font-size: 28px; line-height: 1.1; margin-top: 6px; }
+.course p { margin-top: 10px; font-size: 15px; color: var(--ink-2); }
+.course .shot { margin-top: 20px; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 0 rgba(0, 0, 0, .06), 0 20px 40px -20px rgba(27, 22, 18, .5); background: #111; }
+.course .shot img { width: 100%; }
+.course .cap { margin-top: 8px; font-size: 12px; color: var(--mute); }
+
+/* Before doors: the manager's view, one crop, three notes. */
+.doors { padding: 72px 0; background: var(--ink); color: var(--paper); }
+.doors .wrap { display: grid; grid-template-columns: 1fr 1.2fr; gap: 56px; align-items: center; }
+.doors h2 { font-family: var(--serif); font-weight: 400; font-size: clamp(32px, 4.4vw, 54px); line-height: 1.02; letter-spacing: -.02em; }
+.doors p { margin-top: 14px; color: rgba(244, 239, 230, .72); max-width: 28em; }
+.doors .notes { margin-top: 26px; border-top: 1px solid rgba(244, 239, 230, .2); }
+.doors .notes .ld { padding: 12px 0; border-bottom: 1px solid rgba(244, 239, 230, .14); font-size: 15px; }
+.doors .notes .dots { border-color: rgba(244, 239, 230, .3); }
+.doors .notes .fig { font-family: var(--serif); font-size: 20px; }
+.doors .shot { border-radius: 10px; overflow: hidden; box-shadow: 0 30px 60px -20px rgba(0, 0, 0, .7); border: 1px solid rgba(255, 255, 255, .12); }
+.doors .cap { margin-top: 10px; font-size: 12px; color: rgba(244, 239, 230, .5); }
+
+/* Objections, as courses on a set menu. */
+.obj { padding: 72px 0; }
+.obj h2 { font-family: var(--serif); font-weight: 400; font-size: clamp(32px, 4.4vw, 54px); line-height: 1.02; letter-spacing: -.02em; }
+.obj .rows { margin-top: 36px; border-top: 1px solid var(--ink); }
+.obj .row { display: grid; grid-template-columns: 1fr 1.6fr; gap: 32px; padding: 22px 0; border-bottom: 1px solid var(--rule); }
+.obj .row .q { font-family: var(--serif); font-size: 24px; line-height: 1.15; }
+.obj .row .a { font-size: 15px; color: var(--ink-2); }
+.obj .row .a b { color: var(--ink); font-weight: 600; }
+
+/* Cellar door. */
+.cellar { padding: 56px 0; background: var(--paper-2); border-top: 1px solid var(--ink); }
+.cellar .wrap { display: grid; grid-template-columns: 1fr 1.6fr; gap: 32px; align-items: baseline; }
+.cellar h2 { font-family: var(--serif); font-weight: 400; font-size: 34px; line-height: 1.05; }
+.cellar p { color: var(--ink-2); max-width: 36em; }
+.cellar a { color: var(--claret); font-weight: 600; text-decoration: none; }
+
+/* Send us your list. */
+.send { padding: 88px 0; border-top: 1px solid var(--ink); }
+.send .wrap { display: grid; grid-template-columns: 1fr 1fr; gap: 56px; align-items: start; }
+.send h2 { font-family: var(--serif); font-weight: 400; font-size: clamp(40px, 5.6vw, 72px); line-height: .98; letter-spacing: -.025em; }
+.send p { margin-top: 16px; color: var(--ink-2); max-width: 26em; }
+.form { border-top: 1px solid var(--ink); }
+.form .f { display: grid; grid-template-columns: 11em 1fr; gap: 16px; align-items: center; padding: 14px 0; border-bottom: 1px solid var(--rule); font-size: 15px; }
+.form .f .in { font-family: var(--serif); font-size: 20px; color: var(--mute); }
+.form .f .in.on { color: var(--ink); }
+.form .go { margin-top: 22px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.form .go small { font-size: 12px; color: var(--mute); }
+
+footer { padding: 36px 0 48px; border-top: 1px solid var(--rule); font-size: 13px; color: var(--mute); }
+footer .wrap { display: flex; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
+footer nav { display: flex; gap: 20px; flex-wrap: wrap; }
+footer a { text-decoration: none; }
+
+.mockbar { position: fixed; left: 50%; bottom: 14px; transform: translateX(-50%); z-index: 90; display: flex; align-items: center; gap: 6px; padding: 6px 8px 6px 14px; border-radius: 999px; background: var(--ink); color: rgba(244, 239, 230, .7); font-size: 13px; white-space: nowrap; box-shadow: 0 10px 30px rgba(0, 0, 0, .25); }
+.mockbar a { padding: 5px 11px; border-radius: 999px; text-decoration: none; color: var(--paper); font-weight: 600; }
+.mockbar a.on { background: var(--claret); }
+
+@media (max-width: 1024px) { .table .q { font-size: 22px; } .courses { gap: 24px; } }
+@media (max-width: 860px) {
+  :root { --g: 20px; }
+  .top nav a:not(.btn) { display: none; }
+  .hero { padding: 56px 0 48px; }
+  .hero .under { grid-template-columns: 1fr; gap: 36px; margin-top: 36px; }
+  .table { grid-template-columns: 1fr; }
+  .table .col { border-right: 0; border-bottom: 1px solid var(--rule); padding: 22px 0; }
+  .table .col + .col { padding-left: 0; }
+  .table .q { min-height: 0; }
+  .maths .wrap, .doors .wrap, .send .wrap, .cellar .wrap { grid-template-columns: 1fr; gap: 32px; }
+  .courses { grid-template-columns: 1fr; }
+  .obj .row { grid-template-columns: 1fr; gap: 8px; }
+  .form .f { grid-template-columns: 1fr; gap: 4px; }
+  .heard, .maths, .how, .doors, .obj, .send { padding: 56px 0; }
+}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="#"><span class="mark"><img src="/logo.png" alt="Vinterest"></span><span class="for">for teams</span></a>
+    <nav><a href="#maths">The maths</a><a href="#how">How it works</a><a href="#cellar">Wineries</a><a class="btn quiet" href="#send">Send your list</a></nav>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="wrap">
+    <h1>The most profitable page in the building is the one <em>your staff haven't read.</em></h1>
+    <div class="under">
+      <div>
+        <p class="lede">A guest asks about the Picpoul and gets "it's a white, quite nice". They order a beer. Vinterest for teams makes every server fluent in your list in their first fortnight, and keeps them that way as it changes. You see who's ready before doors.</p>
+        <div class="cta"><a class="btn" href="#send">Send us a photo of your list</a><a class="btn quiet" href="#maths">What it's worth</a></div>
+        <p class="fine">We build the training from it and show you, on your own wines, in a week.</p>
+      </div>
+      <div class="list">
+        <div class="row"><div class="ld"><span>What you give us</span><span class="dots"></span><span class="fig">a photo</span></div><small>The list and the menu, as they are. A PDF if you have one.</small></div>
+        <div class="row"><div class="ld"><span>What it asks of each server</span><span class="dots"></span><span class="fig">5 min a shift</span></div><small>Five questions on your wines and your dishes, before service.</small></div>
+        <div class="row"><div class="ld"><span>What you see</span><span class="dots"></span><span class="fig">who's ready</span></div><small>One figure per person against the standard you set for their role.</small></div>
+        <div class="row"><div class="ld"><span>When the list changes</span><span class="dots"></span><span class="fig">same day</span></div><small>A new bottle is on the floor with its card in under a minute.</small></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="heard">
+  <div class="wrap">
+    <div class="sc">Overheard at the table</div>
+    <h2>Three questions a guest asks every night, and what they hear.</h2>
+    <p class="intro">The second answer in each is a server's own card, written for your list and your menu. Not a tasting note; a thing to say.</p>
+    <div class="table">
+      <div class="col">
+        <div class="q">We're having the olives to start. What should we drink?</div>
+        <div class="now"><b>Now</b><s>I'll check with the bar.</s></div>
+        <div class="then"><b>With the card</b>The Grüner by the glass. Its peppery, herby edge echoes the rosemary and its crisp acidity freshens up all that salt.<small>Gordal olives · Bründlmayer Grüner Veltliner, glass £11</small></div>
+      </div>
+      <div class="col">
+        <div class="q">Is the English fizz any good, or should we get Champagne?</div>
+        <div class="now"><b>Now</b><s>Both are popular.</s></div>
+        <div class="then"><b>With the card</b>It's from Sussex, crisp and zesty, like biting into a green apple with a hint of lemon. Lovely on its own or with the oysters.<small>Nyetimber Classic Cuvée, glass £14</small></div>
+      </div>
+      <div class="col">
+        <div class="q">We'll have the Amarone with the olives, I think.</div>
+        <div class="now"><b>Now</b><s>Great choice.</s></div>
+        <div class="then"><b>With the card</b>It's big and sweet-edged, so it would flatten the orange and herbs and make the salt feel harsh. Shall I bring the Sancerre instead, and the Amarone for the lamb?<small>The card's "steer them away from", with what to offer instead</small></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="maths" id="maths">
+  <div class="wrap">
+    <div>
+      <div class="sc">The maths</div>
+      <h2>Wine is the margin. Fluency moves it.</h2>
+      <p class="intro">Put your own numbers in. A floor that can recommend sells more wine per cover, and a manager who can see who's slipping fixes it before a Saturday, not after.</p>
+      <p class="caveat">The lift is yours to set; we don't claim one for you. Once your till's sales are in, the console measures the real figure: what a server sells of a wine when they know it against when they don't, with the honest caveat that shifts and sections confound it.</p>
+    </div>
+    <div class="bill" id="bill">
+      <div class="row"><label>Covers a night<small>Dinner, across the week</small></label><div class="val" data-out="covers">120</div><input type="range" min="30" max="400" step="10" value="120" data-in="covers" aria-label="Covers a night"></div>
+      <div class="row"><label>Nights a week</label><div class="val" data-out="nights">6</div><input type="range" min="3" max="7" step="1" value="6" data-in="nights" aria-label="Nights a week"></div>
+      <div class="row"><label>Wine spend per cover now<small>Wine takings divided by covers</small></label><div class="val" data-out="spend">£9</div><input type="range" min="3" max="30" step="1" value="9" data-in="spend" aria-label="Wine spend per cover"></div>
+      <div class="row"><label>Lift from a fluent floor<small>Your guess. Change it.</small></label><div class="val" data-out="lift">10%</div><input type="range" min="0" max="30" step="1" value="10" data-in="lift" aria-label="Lift"></div>
+      <div class="total"><div class="lbl">Extra wine takings a year, at those figures</div><div class="sum" data-out="year">£33,696</div></div>
+      <div class="week" data-out="week">£648 a week · illustrative, from your own inputs</div>
+    </div>
+  </div>
+</section>
+
+<section class="how" id="how">
+  <div class="wrap">
+    <div class="head"><h2>Three courses.</h2><div class="sc">How it comes to be</div></div>
+    <div class="courses">
+      <div class="course">
+        <div class="n">I</div><h3>You send the list.</h3>
+        <p>A photo of the list and the menu. We read them and write a card for every wine and a pairing for every dish, from checked facts about the region and the grape, in your list's own prices and sections. Nothing reaches staff until you've seen what changed and said yes.</p>
+        <div class="shot"><img src="img/crop-arrivals.jpg" alt="Upload: a wine list, a menu, and a new bottle added from its label"></div>
+        <div class="cap">A new bottle joins from a photo of its label, card and pairings written, in under a minute.</div>
+      </div>
+      <div class="course">
+        <div class="n">II</div><h3>They get five minutes a shift.</h3>
+        <p>Five questions before service: the wines they sell most, the dish a guest just ordered, the one bottle on your list easiest to confuse with another. They say how sure they are first. What they get wrong comes back sooner; what they know comes back later, so it stays known.</p>
+        <div class="shot"><img src="img/crop-drill.jpg" alt="A question: a guest orders the sirloin, which wine on our list suits it best"></div>
+        <div class="cap">No points, no leaderboard. The reward is not being caught out.</div>
+      </div>
+      <div class="course">
+        <div class="n">III</div><h3>You see who's ready.</h3>
+        <p>One figure per person against the standard you set for their role: a server might need four in five wines by the glass, the sommelier nine in ten of everything. Ready, slipping, or not yet. Who's overdue, which new wines nobody knows, which glass pours too few people can sell.</p>
+        <div class="shot"><img src="img/crop-say.jpg" alt="Say it to a guest: the line a server learns for Nyetimber"></div>
+        <div class="cap">Every card has a line to say. The manager can rewrite it in the house's words.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="doors">
+  <div class="wrap">
+    <div>
+      <div class="sc" style="color:rgba(244,239,230,.5)">Before doors</div>
+      <h2>Saturday, 5pm. Who can sell the list tonight?</h2>
+      <p>Readiness isn't a quiz score. It's the share of your live list and menu a person can talk about right now, with answers that have been checked again without warning. Sales never move it; only drills do.</p>
+      <div class="notes">
+        <div class="ld"><span>Claire, sommelier</span><span class="dots"></span><span class="fig">Ready</span></div>
+        <div class="ld"><span>Marco, bar, three weeks without a drill</span><span class="dots"></span><span class="fig">Slipping</span></div>
+        <div class="ld"><span>Priya, server, 57 overdue</span><span class="dots"></span><span class="fig">Not yet</span></div>
+        <div class="ld"><span>New on the list, still unknown to most</span><span class="dots"></span><span class="fig">3 wines</span></div>
+      </div>
+    </div>
+    <div>
+      <div class="shot"><img src="img/crop-readiness.jpg" alt="Readiness by person: seven bars in green, amber and red"></div>
+      <div class="cap">The console, on a tablet or a laptop, with the demo restaurant's team.</div>
+    </div>
+  </div>
+</section>
+
+<section class="obj">
+  <div class="wrap">
+    <div class="sc">Fair questions</div>
+    <h2>What owners ask before they say yes.</h2>
+    <div class="rows">
+      <div class="row"><div class="q">Our list changes every week.</div><div class="a">Good. Send the new one, or photograph the new bottle. The review shows what's new, gone and changed; a new vintage is the same wine moving on, so nobody relearns it. <b>The training follows the list, same day.</b></div></div>
+      <div class="row"><div class="q">My staff won't do homework.</div><div class="a">It's five questions, before service, on the phone they're already holding. It takes less time than a cigarette. <b>Nobody is asked to study; they're asked five things about tonight.</b></div></div>
+      <div class="row"><div class="q">Will it write nonsense about my wines?</div><div class="a">Every card is grounded in checked facts about the region and grape, written against your list and menu, and you read it before anyone else does. <b>You can rewrite the line in your own words</b> and that's what they learn.</div></div>
+      <div class="row"><div class="q">What about the till?</div><div class="a">A sales export from any till (CSV) works today and tells the console what sells and who sells it, so the wine that moves forty glasses a night is learnt first. <b>A Square connector is next.</b> Sales never change anyone's readiness.</div></div>
+      <div class="row"><div class="q">What does it cost?</div><div class="a">Per site, per month, with no charge for the number of staff. <b>We're in pilot now</b>, so the first restaurants set it up with us and pay a pilot rate. Accounts and billing per site come next.</div></div>
+      <div class="row"><div class="q">Where does our list go?</div><div class="a">Your list and menu are read once to write the training, and the training stays with your restaurant. We hold no guest data and sell nothing to anyone else. <b>Each site's data belongs to that site.</b></div></div>
+    </div>
+  </div>
+</section>
+
+<section class="cellar" id="cellar">
+  <div class="wrap">
+    <h2>Also at the cellar door.</h2>
+    <p>A tasting room is a wine list with the winemaker next door. Seasonal staff can talk about every wine on the bench in their first week, the flight is the menu, and the owner sees who's ready for the Saturday coach. <a href="#">For wineries and tasting rooms →</a></p>
+  </div>
+</section>
+
+<section class="send" id="send">
+  <div class="wrap">
+    <div>
+      <h2>Send us your list.</h2>
+      <p>We'll build the cards, the questions and the manager's view from it and walk you through them on your own wines. No account to make, nothing to install for the look.</p>
+    </div>
+    <div class="form">
+      <div class="f"><span>Your name</span><span class="in">Elena Ruiz</span></div>
+      <div class="f"><span>Restaurant or winery</span><span class="in">The Larkspur, Bristol</span></div>
+      <div class="f"><span>Work email</span><span class="in on">elena@thelarkspur.co.uk</span></div>
+      <div class="f"><span>Your till</span><span class="in">Square</span></div>
+      <div class="f"><span>The list</span><span class="in">Attach a photo or PDF</span></div>
+      <div class="go"><a class="btn" href="#">Send it</a><small>We reply within a working day.</small></div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <span>© 2026 Vinterest · for teams</span>
+    <nav><a href="#">Restaurants</a><a href="#">Wineries</a><a href="#">Data</a><a href="#">Pricing</a><a href="#">Privacy</a><a href="#">Terms</a><a href="#">Vinterest for drinkers</a></nav>
+  </div>
+</footer>
+
+<div class="mockbar">Direction <a class="on" href="d.html">D</a><a href="e.html">E</a></div>
+<script>
+  // The bill: the owner's own figures, nothing claimed for them.
+  const bill = document.getElementById('bill');
+  const money = (n) => '£' + Math.round(n).toLocaleString('en-GB');
+  function calc() {
+    const v = {}; bill.querySelectorAll('[data-in]').forEach((i) => v[i.dataset.in] = Number(i.value));
+    bill.querySelector('[data-out=covers]').textContent = v.covers;
+    bill.querySelector('[data-out=nights]').textContent = v.nights;
+    bill.querySelector('[data-out=spend]').textContent = '£' + v.spend;
+    bill.querySelector('[data-out=lift]').textContent = v.lift + '%';
+    const week = v.covers * v.nights * v.spend * v.lift / 100;
+    bill.querySelector('[data-out=year]').textContent = money(week * 52);
+    bill.querySelector('[data-out=week]').textContent = money(week) + ' a week · illustrative, from your own inputs';
+  }
+  bill.addEventListener('input', calc); calc();
+</script>
+</body>
+</html>
