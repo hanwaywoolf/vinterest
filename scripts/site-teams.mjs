@@ -5,6 +5,7 @@
 //   site/teams/index.html       the page (a template: %%TOKENS%% are filled in below)
 //   site/teams/img/             the product screens on it
 //   site/_headers               long cache on fonts
+//   site/teams/_redirects       www.vinterest.team to vinterest.team
 //
 // Settings (Cloudflare Pages build variables, all optional):
 //   DEMO_ORIGIN           where the interactive demo (the team app at /team/) is served; default
@@ -51,6 +52,7 @@ export function build() {
   fs.cpSync(path.join(SRC, 'img'), path.join(OUT, 'img'), { recursive: true });
   fs.copyFileSync(path.join(ROOT, 'logo.png'), path.join(OUT, 'logo.png'));
   fs.copyFileSync(path.join(ROOT, 'site/_headers'), path.join(OUT, '_headers'));
+  fs.copyFileSync(path.join(SRC, '_redirects'), path.join(OUT, '_redirects')); // www to the apex
   fs.writeFileSync(path.join(OUT, 'robots.txt'), `User-agent: *\nAllow: /\nSitemap: ${origin}/sitemap.xml\n`);
   fs.writeFileSync(path.join(OUT, 'sitemap.xml'),
     `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n  <url><loc>${origin}/</loc></url>\n</urlset>\n`);
