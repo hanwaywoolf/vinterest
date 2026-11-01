@@ -28,6 +28,9 @@ function TeamApp(){
   const open=v=>{ if(v.tab){ setTab(v.tab); setStack([]); return; } setStack(s=>[...s,v]); };
   const consoleOn=set&&manager&&(forceConsole||size!=='phone')&&!phoneView;
   const toPhone=v=>{ setPhoneView(true); setStack([]); if(v&&v.pid&&TeamLearn.person(v.pid)) TeamLearn.setMe(v.pid); if(v&&v.tab) setTab(v.tab); else setTab('today'); if(v&&v.view==='drill') setStack([{view:'drill',only:v.only,part:v.part}]); refresh(); };
+  // One scroll area holds every screen, so a new screen (another tab, a wine, a drill) opens at its top;
+  // Back returns to where the screen below was left.
+  const place=tab+'/'+stack.map(v=>v.view+':'+(v.id||'')).join('/'), scroller=useScrollPlace(place);
   if(consoleOn) return <DeckTheme.Provider value={_DECK_DARK}><div data-gen={gen} style={{position:'absolute',inset:0,color:T.ink}}><ScreenErrorBoundary><TeamConsole me={me} onPhone={toPhone} refresh={refresh} section={section} setSection={setSection}/></ScreenErrorBoundary></div></DeckTheme.Provider>;
   const back=()=>setStack(s=>s.slice(0,-1));
   const top=stack[stack.length-1];
@@ -54,7 +57,7 @@ function TeamApp(){
         {TeamLearn.people().map(p=><div key={p.id} role="button" onClick={()=>{ TeamLearn.setMe(p.id); setSwitching(false); setStack([]); if(!['manager','buyer'].includes(p.role)&&['upload','team'].includes(tab)) setTab('today'); refresh(); }} style={{display:'flex',alignItems:'center',gap:6,padding:'4px 10px 4px 4px',borderRadius:16,border:`1px solid ${p.id===me.id?cr:T.line}`,fontSize:13,fontFamily:C.P,color:T.ink,cursor:'pointer'}}><TeamFace person={p} size={24}/>{p.name.split(' ')[0]} · {TeamLearn.ROLES[p.role].label}</div>)}
         <div role="button" onClick={()=>{ if(confirm('Start again? This clears the restaurant and everyone\'s training on this device.')){ TeamData.reset(); Store.remove(TeamLearn.KEY); TeamLearn.resetProgress(); setSwitching(false); setStack([]); setTab('today'); refresh(); } }} style={{padding:'6px 10px',fontSize:13,fontFamily:C.P,color:T.mid,cursor:'pointer'}}>Start again</div>
       </div>}
-      <div style={{flex:1,overflowY:'auto',padding:'16px 16px 24px'}}><div style={{maxWidth:720,margin:'0 auto'}}>{set&&<TeamJobChip onOpen={()=>{ if(manager){ setTab('upload'); setStack([]); } }}/>}<ScreenErrorBoundary>{body}</ScreenErrorBoundary></div></div>
+      <div ref={scroller} data-testid="team-scroll" style={{flex:1,overflowY:'auto',padding:'16px 16px 24px'}}><div style={{maxWidth:720,margin:'0 auto'}}>{set&&<TeamJobChip onOpen={()=>{ if(manager){ setTab('upload'); setStack([]); } }}/>}<ScreenErrorBoundary>{body}</ScreenErrorBoundary></div></div>
       {set&&!top&&<div style={{display:'flex',borderTop:`1px solid ${T.line}`,background:T.bg,paddingBottom:'env(safe-area-inset-bottom)'}}>
         {tabs.map(t=><div key={t.k} role="button" data-testid={'team-tab-'+t.k} onClick={()=>{ setTab(t.k); setStack([]); }} style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',gap:3,padding:'9px 0 8px',cursor:'pointer'}}>
           {t.k==='vinny'?<div style={{width:20,height:20,borderRadius:10,background:tab===t.k?cr:T.mid,display:'flex',alignItems:'center',justifyContent:'center'}}><span style={{fontSize:'11px',fontWeight:800,color:T.bg,fontFamily:C.P,lineHeight:1}}>V</span></div>:<Icon n={t.icon} sz={20} col={tab===t.k?cr:T.mid}/>}<span style={{fontSize:'11px',fontWeight:600,fontFamily:C.P,color:tab===t.k?cr:T.mid}}>{t.label}</span></div>)}

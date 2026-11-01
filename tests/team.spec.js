@@ -570,3 +570,26 @@ test('a guest at the table: Vinny opens, the server answers, and the table is ma
   expect(reqs.filter((r) => r.purpose === 'team_guest')[1].messages[0].content).toContain('SERVER: The Grüner by the glass');
   expect(errors).toEqual([]);
 });
+
+// One scroll area holds every screen: a wine opened from far down the list starts at its top, Back
+// returns to the place in the list, and another tab opens at its top too.
+test('a new screen opens at its top, and Back returns to where the list was', async ({ context, page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await stubNetwork(context);
+  await page.goto(`${BASE}/team/?seed=demo`);
+  await expect(page.getByTestId('team-state')).toBeVisible();
+  await page.getByTestId('team-tab-wines').click();
+  const scroller = page.getByTestId('team-scroll');
+  await scroller.evaluate((el) => { el.scrollTop = 900; });
+  const listAt = await scroller.evaluate((el) => el.scrollTop);
+  expect(listAt).toBeGreaterThan(500);
+  await page.getByTestId('team-wine-row').nth(12).click();
+  await expect(page.getByTestId('team-wine')).toBeVisible();
+  expect(await scroller.evaluate((el) => el.scrollTop)).toBe(0);
+  await scroller.evaluate((el) => { el.scrollTop = 400; });
+  await page.getByRole('button', { name: 'Back' }).click();
+  await expect(page.getByTestId('team-wine')).toBeHidden();
+  expect(await scroller.evaluate((el) => el.scrollTop)).toBe(listAt);
+  await page.getByTestId('team-tab-menu').click();
+  expect(await scroller.evaluate((el) => el.scrollTop)).toBe(0);
+});

@@ -407,3 +407,19 @@ function TeamPeople({open,onChanged}){ const T=useTheme(), cr=T.lift(C.cr);
   </div>; }
 
 Object.assign(window,{TeamFace,TeamRing,TeamSetup,TeamToday,TeamDrill,TeamWines,TeamWine,TeamMenu,TeamDish,TeamUpload,TeamPeople,TeamJobChip,TeamKpiStrip,useTeamJob});
+
+/* Where a scroll area stands for each screen it shows (`place`, a path such as "wines/wine:w3"): a new
+   place opens at the top; going back to a place that leads to this one (a prefix of it) returns to
+   where it was left, and forgets the deeper ones, so a wine opened again later starts at its top. */
+function useScrollPlace(place){
+  const el=React.useRef(null), saved=React.useRef({}), cur=React.useRef(place);
+  const on=React.useRef(()=>{ if(el.current) saved.current[cur.current]=el.current.scrollTop; });
+  // A callback ref, since the scroll area can mount after the first render (the console shows first on a laptop).
+  const ref=React.useCallback(node=>{ if(el.current) el.current.removeEventListener('scroll',on.current); el.current=node; if(node) node.addEventListener('scroll',on.current,{passive:true}); },[]);
+  React.useLayoutEffect(()=>{ const was=cur.current; if(was===place) return; cur.current=place; if(!el.current) return;
+    const back=was.startsWith(place+'/')||(was.startsWith(place)&&place.endsWith('/'));
+    Object.keys(saved.current).forEach(k=>{ if(k!==place&&k.startsWith(place)) delete saved.current[k]; });
+    el.current.scrollTop=back?(saved.current[place]||0):0; },[place]);
+  return ref;
+}
+

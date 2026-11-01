@@ -168,7 +168,7 @@
         <div><span>New on the list, still unknown to most</span><b>3 wines</b></div>
       </div>
     </div>
-    <div><div class="shot"><img src="img/crop-readiness2.jpg" alt="Readiness by person"></div></div>
+    <div><div class="mwin"><div class="mbar"><i></i><i></i><i></i><span>Dashboard · The Larkspur</span></div><div class="stage mstage" id="mstage" role="img" aria-label="The console's dashboard scrolling: readiness by person, what needs attention, what to learn first, and what's new on the list"></div></div></div>
   </div>
 </section>
 
@@ -272,6 +272,7 @@ const order = tabs.map((t) => t.dataset.scene), lap = player(stage, SW, SH, 'img
 let cur = 'ready', held = reduced, inView = false, playing = false;
 async function play(name) {
   cur = name; playing = true; const sc = SCENES[name];
+  { const sel = tabs.find((t) => t.dataset.scene === name), box = sel.parentElement; if (box.scrollWidth > box.clientWidth) box.scrollTo({ left: sel.offsetLeft - (box.clientWidth - sel.offsetWidth) / 2, behavior: reduced ? 'auto' : 'smooth' }); }
   tabs.forEach((t) => { t.setAttribute('aria-selected', t.dataset.scene === name ? 'true' : 'false'); const bar = t.querySelector('i'); bar.style.animation = 'none'; void bar.offsetWidth; bar.style.animation = ''; if (t.dataset.scene === name) t.style.setProperty('--dwell', (lap.length(sc.steps) + 600) + 'ms'); });
   cap.innerHTML = sc.cap;
   const finished = await lap.play(sc.steps); if (!finished) return;
@@ -346,6 +347,18 @@ fgo(0); new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersectin
   items.forEach((it, i) => it.addEventListener('click', () => { held = true; box.classList.add('held'); pick(i); }));
   new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting && !seen) { seen = true; pick(0, true); } else if (!e.isIntersecting) clear(); else if (e.isIntersecting && seen && !held) pick(cur, true); }), { threshold: .4 }).observe(document.getElementById('vinny'));
   show('ask');
+})();
+
+// The manager's dashboard: readiness, what needs attention, learn first and new on the list, scrolled
+// through while the section is on screen, then back to the top.
+(function () {
+  const el = document.getElementById('mstage'), MW = 584, MH = 720;
+  const mp = player(el, MW, MH, 'img/scenes/', 'wheel');
+  const steps = [{ pan: { img: 'mgr', x: 0, w: MW, h: 2432, from: 0, to: 0, ms: 1800 } }, { pan: { img: 'mgr', x: 0, w: MW, h: 2432, from: 0, to: 1, ms: 15000 }, keep: true }, { pan: { img: 'mgr', x: 0, w: MW, h: 2432, from: 1, to: 1, ms: 2200 }, keep: true }];
+  let on = false;
+  async function loop() { while (on) { const ok = await mp.play(steps); if (!ok || reduced) return; } }
+  if (reduced) { mp.play([steps[0]]); return; }
+  new IntersectionObserver((es) => { const vis = es[0].isIntersecting; if (vis && !on) { on = true; loop(); } else if (!vis && on) { on = false; mp.stop(); } }, { threshold: .35 }).observe(el);
 })();
 
 // The guess slider shows itself moving once, so it reads as something to try.
