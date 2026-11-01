@@ -73,7 +73,9 @@ const CLAUDE_PURPOSE_LIMITS = {
   team_menu: 8192,         // team-data.js TeamData.readMenu — a menu photo or PDF -> dishes
   team_cards: 12288,       // team-data.js TeamData.writeCards — staff cards and questions, a few wines a call
   team_pairings: 8192,     // team-data.js TeamData.writePairings — the list's best matches for each dish
-  team_grade: 600          // team-learn.js TeamLearn.grade — marks a typed answer against its key
+  team_grade: 600,         // team-learn.js TeamLearn.grade — marks a typed answer against its key
+  team_vinny: 500,         // team-vinny.js TeamVinny.ask — Ask Vinny, a quick answer about the list and menu (prompts/team-vinny.txt)
+  team_guest: 700          // team-vinny.js TeamVinny.guest — Vinny plays a guest at a table and marks the server (prompts/team-guest.txt)
 };
 
 /* Claude 5 models take settings Sonnet 4.6 didn't need. Sonnet 5.5 thinks by default, which
@@ -351,7 +353,7 @@ const FAIR_USE = {
   free: { label_scan: 100, list_scan: 30, price_search: 50, _other: 500 },
   pro:  { label_scan: 600, list_scan: 150, price_search: 300, _other: 3000 },
 };
-/* The team purposes (team_list, team_menu, team_cards, team_pairings, team_grade) are open while the
+/* The team purposes (team_list, team_menu, team_cards, team_pairings, team_grade, team_vinny, team_guest) are open while the
    pilot is two people on one laptop: no sign-in, metered only by the per-IP limit. Add them here
    with TEAM_PRO once restaurants have accounts. */
 const TEAM_PRO = "Vinterest for teams needs a Pro account while it's in pilot.";
