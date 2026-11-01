@@ -102,6 +102,7 @@ function TeamToday({pid,open}){ const T=useTheme(), cr=T.lift(C.cr);
       {ret.asked>=3&&<div style={{fontSize:13,color:T.mid,fontFamily:C.P}}>Surprise re-checks this month: {ret.right} of {ret.asked} remembered.</div>}
     </Card>
     <Btn primary full style={{marginTop:14}} onClick={()=>open({view:'drill'})}>{r.due||as.length?`Start today's drill`:'Practise'} · 5 questions</Btn>
+    {(()=>{ const vt=TeamVinny.test(pid); return vt.none?null:<div data-testid="today-vinny" role="button" onClick={()=>open({view:'drill',qs:vt.qs,intro:{title:vt.title,why:vt.why}})} style={{display:'flex',gap:12,alignItems:'center',marginTop:10,padding:'12px 14px',borderRadius:14,border:`1px solid ${T.line}`,cursor:'pointer'}}><TeamVinnyMark size={32}/><div style={{flex:1,minWidth:0}}><div style={{fontSize:15,fontWeight:700,color:T.ink,fontFamily:C.P}}>Vinny's test · {vt.qs.length} questions</div><div style={{fontSize:13,color:T.mid,fontFamily:C.P,lineHeight:1.4,marginTop:2}}>{vt.why}</div></div><Icon n="chevron" sz={12} col={T.mid}/></div>; })()}
     {as.length>0&&<>{_tLabel(T,`New to learn (${as.length})`)}
       <Card style={{padding:0}}>{as.slice(0,8).map((a,i)=>{ const x=a.kind==='wine'?TeamData.wine(a.id):TeamData.dish(a.id); if(!x) return null;
         return <div key={a.key} role="button" onClick={()=>open({view:a.kind,id:a.id})} style={{display:'flex',alignItems:'center',gap:10,padding:'11px 14px',borderTop:i?`1px solid ${T.line}`:'none',cursor:'pointer'}}>
@@ -113,8 +114,9 @@ function TeamToday({pid,open}){ const T=useTheme(), cr=T.lift(C.cr);
   </div>; }
 
 /* The drill: one question at a time, how sure they are, then what's right and why. */
-function TeamDrill({pid,only,part,back,open}){ const T=useTheme(), cr=T.lift(C.cr);
-  const [qs]=React.useState(()=>only?TeamLearn.wineQs(only).filter(q=>TeamLearn.ROLES[TeamLearn.person(pid).role].kinds.includes(q.k)):TeamLearn.drill(pid,undefined,part||null));
+function TeamDrill({pid,only,part,given,intro,back,open}){ const T=useTheme(), cr=T.lift(C.cr);
+  // given: questions chosen elsewhere (Vinny's test, team-vinny.js), with intro {title, why} over the first.
+  const [qs]=React.useState(()=>given&&given.length?given:only?TeamLearn.wineQs(only).filter(q=>TeamLearn.ROLES[TeamLearn.person(pid).role].kinds.includes(q.k)):TeamLearn.drill(pid,undefined,part||null));
   // Where they stood as the drill began, so the summary can say what moved.
   const [before]=React.useState(()=>{ const r=TeamLearn.readiness(pid); const items={};
     qs.forEach(q=>{ const id=q.wine||q.dish; if(id&&!items[id]) items[id]=TeamLearn.progress(pid,id,{dish:!q.wine}); }); return {pct:r?r.pct:0,items}; });
@@ -148,6 +150,7 @@ function TeamDrill({pid,only,part,back,open}){ const T=useTheme(), cr=T.lift(C.c
   const kindLabel=TeamLearn.KIND_LABEL[q.k];
   const opt=(label,k,{picked,right,wrong,onClick})=><div key={k} role="button" aria-pressed={picked} data-testid="drill-opt" onClick={onClick} style={{padding:'12px 14px',borderRadius:12,border:`1.5px solid ${right?'#5FD48F':wrong?'#F28B7D':picked?cr:T.line}`,background:picked?T.soft:'transparent',color:T.ink,fontSize:15,fontFamily:C.P,cursor:res?'default':'pointer',lineHeight:1.35}}>{label}</div>;
   return <div data-testid="team-drill">
+    {intro&&i===0&&!res&&<div data-testid="drill-intro" style={{display:'flex',gap:10,alignItems:'flex-start',marginBottom:14}}><TeamVinnyMark size={28}/><div><div style={{fontSize:15,fontWeight:700,color:T.ink,fontFamily:C.P}}>{intro.title}</div><div style={{fontSize:13,color:T.mid,fontFamily:C.P,lineHeight:1.45,marginTop:2}}>{intro.why}</div></div></div>}
     <div style={{display:'flex',gap:4,marginBottom:14}}>{qs.map((_,k)=><div key={k} style={{flex:1,height:4,borderRadius:2,background:k<i?cr:k===i?T.ink:T.line}}/>)}</div>
     <div style={{fontSize:12,fontWeight:700,color:w?_tTypeCol(T,w.type):T.mid,fontFamily:C.P,letterSpacing:'0.08em',textTransform:'uppercase'}}>{kindLabel}{w&&names?` · ${TeamData.short(w)}`:w?` · ${w.section||w.type}`:''}</div>
     <div data-testid="drill-q" style={{fontSize:19,fontWeight:700,color:T.ink,fontFamily:C.P,lineHeight:1.35,margin:'6px 0 14px'}}>{q.q}</div>

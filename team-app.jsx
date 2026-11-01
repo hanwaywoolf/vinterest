@@ -3,7 +3,7 @@
    Team), with detail views (a wine, a dish, the drill) pushed on top and Back popping them. Always
    on the dark stage. Booted instead of the consumer app's pwa-app.jsx (scripts/app-sources.mjs). */
 const TEAM_TABS=[
-  {k:'today',label:'Today',icon:'home'},{k:'wines',label:'Wines',icon:'wine'},{k:'menu',label:'Menu',icon:'fork'},
+  {k:'today',label:'Today',icon:'home'},{k:'vinny',label:'Vinny',icon:'vinny'},{k:'wines',label:'Wines',icon:'wine'},{k:'menu',label:'Menu',icon:'fork'},
   {k:'upload',label:'Upload',icon:'camera',manager:true},{k:'team',label:'Team',icon:'user',manager:true},
 ];
 function TeamApp(){
@@ -36,8 +36,9 @@ function TeamApp(){
   // Every view on the stack stays mounted under the one on top (hidden), so a drill's summary is still there,
   // with its answers, when Back returns from a wine it opened.
   else if(top) body=stack.map((v,i)=><div key={i} style={{display:i===stack.length-1?'block':'none'}}>{v.view==='wine'?<TeamWine id={v.id} pid={me.id} open={open}/>:v.view==='dish'?<TeamDish id={v.id} open={open}/>
-    :<TeamDrill pid={me.id} only={v.only} part={v.part} back={back} open={open}/>}</div>);
-  else body=tab==='today'?<TeamToday pid={me.id} open={open}/>:tab==='wines'?<TeamWines pid={me.id} open={open}/>:tab==='menu'?<TeamMenu open={open}/>
+    :v.view==='guest'?<TeamGuest pid={me.id} back={back} open={open}/>
+    :<TeamDrill pid={me.id} only={v.only} part={v.part} given={v.qs} intro={v.intro} back={back} open={open}/>}</div>);
+  else body=tab==='today'?<TeamToday pid={me.id} open={open}/>:tab==='vinny'?<TeamVinnyTab pid={me.id} open={open}/>:tab==='wines'?<TeamWines pid={me.id} open={open}/>:tab==='menu'?<TeamMenu open={open}/>
     :tab==='upload'?<TeamUpload onChanged={refresh} background/>:<TeamPeople open={open} onChanged={refresh}/>;
   return <DeckTheme.Provider value={_DECK_DARK}>
     <div data-gen={gen} style={{position:'absolute',inset:0,display:'flex',flexDirection:'column',background:`radial-gradient(ellipse at 50% -10%, ${_alpha(cr,0.3)}, transparent 60%) ${T.bg}`,color:T.ink}}>
@@ -56,7 +57,7 @@ function TeamApp(){
       <div style={{flex:1,overflowY:'auto',padding:'16px 16px 24px'}}><div style={{maxWidth:720,margin:'0 auto'}}>{set&&<TeamJobChip onOpen={()=>{ if(manager){ setTab('upload'); setStack([]); } }}/>}<ScreenErrorBoundary>{body}</ScreenErrorBoundary></div></div>
       {set&&!top&&<div style={{display:'flex',borderTop:`1px solid ${T.line}`,background:T.bg,paddingBottom:'env(safe-area-inset-bottom)'}}>
         {tabs.map(t=><div key={t.k} role="button" data-testid={'team-tab-'+t.k} onClick={()=>{ setTab(t.k); setStack([]); }} style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',gap:3,padding:'9px 0 8px',cursor:'pointer'}}>
-          <Icon n={t.icon} sz={20} col={tab===t.k?cr:T.mid}/><span style={{fontSize:'11px',fontWeight:600,fontFamily:C.P,color:tab===t.k?cr:T.mid}}>{t.label}</span></div>)}
+          {t.k==='vinny'?<div style={{width:20,height:20,borderRadius:10,background:tab===t.k?cr:T.mid,display:'flex',alignItems:'center',justifyContent:'center'}}><span style={{fontSize:'11px',fontWeight:800,color:T.bg,fontFamily:C.P,lineHeight:1}}>V</span></div>:<Icon n={t.icon} sz={20} col={tab===t.k?cr:T.mid}/>}<span style={{fontSize:'11px',fontWeight:600,fontFamily:C.P,color:tab===t.k?cr:T.mid}}>{t.label}</span></div>)}
       </div>}
     </div>
   </DeckTheme.Provider>;
