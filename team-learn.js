@@ -212,6 +212,10 @@ const TeamLearn = {
     const grapes=new Set(wines.flatMap(w=>w.grapes||[]).map(norm)), places=new Set(wines.flatMap(w=>[w.region,w.country]).filter(Boolean).map(norm));
     const cls=x=>grapes.has(norm(x))?'grape':places.has(norm(x))?'place':/[£$€]/.test(x)?'money':/\d/.test(x)?'figure':'text';
     const want=cls(right[0]||'');
+    // A recall question's wrong answers are the same kind of answer as its right one: flavours for a
+    // flavour question, climates for a climate one. Taken from the other wines' questions of that kind and a
+    // short checked list per kind (DECOYS), never from whatever the other wines happened to be asked.
+    if(q.k==='recall'&&want!=='money'){ const t=this._topic(q.q); if(t){ const r=this._topicChoices(q,t,right,split); if(r) return r; } }
     // A price is asked one way: every pill in the same form ("£14 a glass"), the wrong ones the list's own
     // prices of that kind, the nearest first, so a glass question never offers a bottle price or a bare figure.
     if(want==='money'&&q.k==='recall'){ const m=this._moneyChoices(q,right); if(m) return m; }
@@ -225,6 +229,67 @@ const TeamLearn = {
     const all=[...right.map(x=>({x,ok:true})),...wrong.map(x=>({x,ok:false}))], order=this._shuffle(all.map((_,i)=>i),q.id+'c');
     const opts=order.map(i=>this._cap(all[i].x)), rightIdx=order.map((i,j)=>all[i].ok?j:-1).filter(j=>j>=0);
     return {opts,right:rightIdx,n:rightIdx.length};
+  },
+  /* What a recall question asks about, read from its words; null when it isn't one of these. */
+  _topic(text){ const t=String(text).toLowerCase();
+    if(/\bword for\b/.test(t)) return 'word';
+    if(/vintage year|which year|what year/.test(t)) return 'year';
+    if(/what stops/.test(t)) return 'stopper';
+    if(/\bvalley\b/.test(t)) return 'place';
+    if(/\bmean\b|in plain words|what is botrytis/.test(t)) return 'term';
+    if(/\bbank\b/.test(t)) return 'bank';
+    if(/flavou?r|aroma|\btaste|\badd\b|\bnotes?\b/.test(t)) return 'flavour';
+    if(/\briver\b|\bwinds?\b|\binfluence\b|\bcools?\b|moderates|what gives/.test(t)) return 'influence';
+    if(/climate/.test(t)) return 'climate';
+    if(/\bferment|keep the sweetness|stays sweet|\bstop/.test(t)) return 'method';
+    if(/\bgrapes?\b/.test(t)) return 'grape';
+    if(/\bregion\b|\bcountry\b|\bvalley\b|\barea\b|\bcounty\b|\bwhere\b/.test(t)) return 'place';
+    if(/what happens/.test(t)) return 'change';
+    if(/\bage\b|\bages\b|\baged\b|\bageing\b|\byoung\b|\bkept\b|how long|\bminimum\b|\btime\b/.test(t)) return 'duration';
+    return null; },
+  // Only lists of names are split into one pill each ("Chardonnay, Pinot Noir and Pinot Meunier"); a
+  // climate, a meaning or a change is one answer, commas and all.
+  SPLIT_TOPICS:['grape','flavour'],
+  DECOYS:{
+    flavour:['Blackcurrant','Cedar','Lemon','Green apple','Peach','Black pepper','Plum','Honey','Toast','Gooseberry','Leather','Vanilla','Violet','Grapefruit','Dried fig','Liquorice','Mint','Smoke','Pineapple','Chocolate'],
+    climate:['Hot, dry Mediterranean','Cool continental','Cool maritime','Warm continental','High-altitude desert','Mild Atlantic','Tropical and humid'],
+    influence:['The Atlantic','The Mediterranean Sea','The Gironde estuary','The Pacific','The Andes','Altitude in the hills','Fog from the coast'],
+    term:['Wine from a single vineyard','Wine aged in new oak barrels','Sweet wine made from frozen grapes','Wine made only from red grapes','Wine aged on its lees for extra texture','Wine from a single year'],
+    word:['Ripasso','Riserva','Classico','Superiore','Frizzante'],
+    stopper:['Adding sugar','Chilling the tank','Adding sulphur','Filtering out the yeast','Grain spirit'],
+    method:['Sugar is added before bottling','The grapes are frozen on the vine','The grapes are dried before pressing','Fermentation runs until the wine is dry','The wine is aged in new oak'],
+    duration:['Drunk young','A decade or more','Two to three years','Twenty years or more','Within a year of the vintage','Five to eight years'],
+    change:['It softens','It gets more tannic','It turns sweeter','It loses its fruit within a year','It turns savoury and gamey','It gets darker in colour'],
+    bank:['The Right Bank','Entre-Deux-Mers','The Graves'],
+  },
+  // Word sets with a plural or "-s" verb ending dropped, so "It softens" and "They soften" are one answer.
+  _stems(s){ return this._words(s).filter(w=>!['it','they','its','their'].includes(w)).map(w=>w.length>4?w.replace(/(es|s)$/,''):w); },
+  _topicChoices(q,topic,right,split){
+    const sp=this.SPLIT_TOPICS.includes(topic)?split:(a=>[String(a||'').trim()].filter(Boolean));
+    right=sp(q.ans).slice(0,3);
+    const norm=x=>this._norm(x).replace(/^the /,''), seen=new Set(right.map(norm)), wines=TeamData.wines(), pool=[];
+    const rightWords=new Set(right.flatMap(r=>this._words(r)));
+    // A wrong pill that says the same as a right one in fewer or other words ("Grape spirit" beside
+    // "Fermentation is stopped with grape spirit") isn't wrong: it's left out.
+    const nums=x=>(String(x).match(/\d+/g)||[]).join(' ');
+    const same=x=>{ const a=this._stems(x); return a.length&&right.some(r=>{ if(nums(r)!==nums(x)) return false; const b=new Set(this._stems(r)); return a.every(w=>b.has(w))||[...b].every(w=>a.includes(w)); }); };
+    const add=x=>{ const n=norm(x); if(!n||seen.has(n)||same(x)) return; seen.add(n); pool.push(String(x).trim()); };
+    // The other wines' answers to questions of this kind come first: the list's own flavours, climates, places.
+    for(const w of wines){ if(w.id===q.wine) continue; for(const o of this.wineQs(w.id)) if(o.k==='recall'&&this._topic(o.q)===topic) sp(o.ans).forEach(add); }
+    if(topic==='year'){ const y=this._num(right[0]); if(y) [y-1,y+1,y-2,y+2,y-3,y+3].forEach(v=>add(String(v))); }
+    if(topic==='duration'&&/month/i.test(right[0])) ['6 months','12 months','18 months','24 months','36 months'].forEach(add);
+    if(topic==='place') wines.flatMap(w=>[w.region,w.country]).filter(Boolean).forEach(add);
+    if(topic==='grape') wines.flatMap(w=>w.grapes||[]).forEach(add);
+    (this.DECOYS[topic]||[]).forEach(add);
+    // Like for like within a kind: a months answer against months, a valley against valleys.
+    if(/month/i.test(right[0])){ const m=pool.filter(x=>/month/i.test(x)); pool.length=0; pool.push(...m); }
+    if(topic==='place'&&/valley/i.test(right[0])){ ['The Rhône Valley','The Douro Valley','The Napa Valley','The Mosel Valley','The Barossa Valley'].forEach(add); const v=pool.filter(x=>/valley/i.test(x)); pool.length=0; pool.push(...v); }
+    // A flavour pill that shares a word with a right one ("Black cherry" beside "Red cherry") would be unfair either way.
+    const wrong=this._shuffle(pool.filter(x=>topic!=='flavour'||!this._words(x).some(w=>rightWords.has(w))),q.id+'t');
+    if(wrong.length<3) return null;
+    const total=Math.min(this.CHOICES,right.length+Math.max(3,Math.min(7,wrong.length)));
+    const all=[...right.map(x=>({x,ok:true})),...wrong.slice(0,total-right.length).map(x=>({x,ok:false}))], order=this._shuffle(all.map((_,i)=>i),q.id+'c');
+    return {opts:order.map(i=>this._cap(all[i].x)),right:order.map((i,j)=>all[i].ok?j:-1).filter(j=>j>=0),n:right.length};
   },
   _cap(x){ const t=String(x||'').trim(); return t.charAt(0).toUpperCase()+t.slice(1); },
   _num(s){ const m=String(s||'').replace(/,/g,'').match(/(\d+(?:\.\d+)?)/); return m?Number(m[1]):null; },

@@ -659,3 +659,22 @@ test('drill answers: no question gives its answer away, prices are asked one way
   expect(r.lower).toEqual([]);
   expect(errors).toEqual([]);
 });
+
+test('a recall question offers wrong answers of its own kind: flavours for a flavour, climates for a climate', async ({ context, page }) => {
+  const errors = await asMarco(context, page);
+  const r = await page.evaluate(() => {
+    const rs = TeamLearn.allQs().filter((q) => q.wine && q.k === 'recall');
+    const pick = (re) => { const q = rs.find((x) => re.test(x.q)); const c = TeamLearn.choices(q); return { opts: c.opts, right: c.right.map((i) => c.opts[i]) }; };
+    return {
+      untyped: rs.filter((q) => !TeamLearn._topic(q.q) && !/price|much|glass|bottle/i.test(q.q)).map((q) => q.q),
+      flavour: pick(/flavours does Pinot Noir/), climate: pick(/climate of Provence/), port: pick(/keep the sweetness/), months: pick(/minimum time/),
+    };
+  });
+  expect(r.untyped).toEqual([]); // every recall question is read as one kind
+    expect(r.flavour.opts.some((o) => /fermentation|climate|valley|bank/i.test(o))).toBe(false);
+  expect(r.climate.right).toEqual(['Hot, dry Mediterranean']); // one answer, commas and all
+  expect(r.climate.opts.every((o) => /mediterranean|continental|maritime|atlantic|desert|tropical/i.test(o))).toBe(true);
+  expect(r.port.opts.filter((o) => /grape spirit/i.test(o))).toEqual(['Fermentation is stopped with grape spirit']); // no same-meaning decoy
+  expect(r.months.opts.every((o) => /month/i.test(o))).toBe(true);
+  expect(errors).toEqual([]);
+});
