@@ -628,3 +628,34 @@ test('a guest at the table comes with choices, hints or none, and two tables tha
   await expect(page.getByTestId('guest-hints')).toHaveCount(0);
   expect(errors).toEqual([]);
 });
+
+test('drill answers: no question gives its answer away, prices are asked one way, and a table is two short lists', async ({ context, page }) => {
+  const errors = await asMarco(context, page);
+  const r = await page.evaluate(() => {
+    const words = (s) => TeamLearn._words(s);
+    const all = TeamLearn.allQs().filter((q) => q.wine);
+    // A question whose answer is in its own words: "Which grape is the … Pinot Noir made from?"
+    const spoilt = all.filter((q) => { const ans = q.k === 'recognise' ? [q.opts[q.a]] : q.k === 'recall' ? String(q.ans).split(/,|\band\b|;/) : [];
+      const t = new Set(words(q.q)); return ans.some((a) => { const w = words(a); return w.length && w.every((x) => t.has(x)); }); }).map((q) => q.q);
+    const jadot = TeamData.wines().find((w) => /Jadot/.test(w.producer + ' ' + w.name));
+    const grapeQ = TeamLearn.wineQs(jadot.id).find((q) => /which grape/i.test(q.q));
+    const money = all.filter((q) => q.k === 'recall' && /glass price|bottle price/i.test(q.q)).map((q) => ({ side: /glass/i.test(q.q) ? 'glass' : 'bottle', opts: TeamLearn.choices(q).opts }));
+    const apply = all.filter((q) => q.k === 'apply').map((q) => TeamLearn.choices(q));
+    const pills = all.flatMap((q) => (q.k === 'recognise' ? q.opts : TeamLearn.choices(q).opts));
+    return { spoilt, grapeQ: grapeQ && grapeQ.q, money, apply, lower: pills.filter((o) => /^[a-z]/.test(o)) };
+  });
+  expect(r.spoilt).toEqual([]);
+  expect(r.grapeQ).toContain('Louis Jadot');
+  expect(r.grapeQ).not.toMatch(/Pinot Noir/);
+  expect(r.money.length).toBeGreaterThan(0);
+  for (const m of r.money) for (const o of m.opts) expect(o).toMatch(m.side === 'glass' ? /a glass|Not by the glass/ : /a bottle$/);
+  const grouped = r.apply.filter((c) => c.groups);
+  expect(grouped.length).toBeGreaterThan(r.apply.length * 0.9);
+  for (const c of grouped) {
+    expect(c.groups.map((g) => g.label)).toEqual(['What do you suggest?', 'Why it works']);
+    expect(c.opts.slice(0, c.groups[0].to).every((o) => /^The /.test(o))).toBe(true); // every suggestion names a wine
+    expect(c.opts.slice(c.groups[1].from).some((o) => /^The .*£\d/.test(o))).toBe(false); // and no reason is a price or an offer
+  }
+  expect(r.lower).toEqual([]);
+  expect(errors).toEqual([]);
+});
