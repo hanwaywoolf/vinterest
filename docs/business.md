@@ -77,9 +77,40 @@ wine without being caught out.
   the next new question in list order (by the glass first). About one in ten is an unannounced
   re-ask of something known, which measures retention honestly; the Team tab shows the rate.
 
+## Vinny in the staff app (built)
+
+A Vinny tab (between Today and Wines) and a row on Today, all in `team-vinny.js` (logic) and `team-vinny.jsx` (screens):
+
+- **Vinny's test** (`TeamVinny.test`): a drill of ten aimed at what this person needs, from what `TeamLearn`
+  already holds: answers that have faded or were missed first, then what the till sells most that they don't
+  know (`TeamReport.priority`, once sales are in), then what's assigned, then the parts of their role's
+  minimum they're short of, round-robin across wines and dishes so ten questions don't land on one bottle.
+  A request narrows it, read without a call ("the reds under £50", "the dessert wines", "by the glass",
+  "the menu", "what's new", a grape, a producer or a dish); a request that names nothing says so. The
+  questions are the cards' own, open to their role and rung, answered in the ordinary drill (with Vinny's
+  reason over the first), so they count like any drill. When nothing has faded or is new, it's review.
+  No Claude call: the reason ("4 answers have faded, mostly on the sweet and fortified. What sells most
+  and you know least comes first.") is written in `TeamVinny.why`.
+- **Ask Vinny** (`TeamVinny.ask`, purpose `team_vinny`, `prompts/team-vinny.txt`): a quick answer, three
+  sentences at most, to anything about the list, a bottle, a grape, the menu, a pairing or a price. The
+  prompt carries the whole list and menu as one line each (tagged W1…, D1…: producer, name, vintage, type,
+  section, place, grapes, glass and bottle prices, drinking window; each dish with its best, by-the-glass and
+  steer-away wines), and the staff cards of the wines the question is about (named in it, or paired with a
+  dish named in it). It never invents a wine, dish or price; the answer names its wines and dishes by tag,
+  shown as chips that open their cards. The last two turns go with a follow-up.
+- **A guest at your table** (`TeamVinny.scenario`, `TeamVinny.guest`, purpose `team_guest`,
+  `prompts/team-guest.txt`): Vinny plays a diner. The table is built here from the dish's pairing so there's
+  a right answer: a dish this person knows least, and a wish (a bottle under a budget, something lighter, one
+  bottle for four, a glass at the bar, or the guest's own wrong idea to steer away from, with the wine
+  offered for another dish instead). The guest opens, the server types a reply, the guest answers, and after
+  the server has recommended (or three replies) the table is marked against the key: what worked, what was
+  missing, and a line they could have said. It never moves readiness, which comes only from drills.
+
+Measured costs are to come; both prompts are about the size of a pairings call's input with a short output.
+
 ## Access and cost
 
-The team purposes (`team_list`, `team_menu`, `team_cards`, `team_pairings`, `team_grade`) are open
+The team purposes (`team_list`, `team_menu`, `team_cards`, `team_pairings`, `team_grade`, `team_vinny`, `team_guest`) are open
 in `_worker.js` while the pilot is two people on one laptop: no sign-in, no account, metered only by
 the Worker's per-IP limit. They go into `PRO_ONLY` (with `TEAM_PRO`) once restaurants have accounts,
 and the Upload tab's sign-in card comes back with them. Roughly, on Sonnet 4.6: a staff card with its questions is 3 cents, a
@@ -295,7 +326,7 @@ counts.
 1. Accounts for restaurants: organisations, sites and members with roles in Supabase, row security
    by membership, each person on their own phone, the manager's dashboard on the web.
 2. Cellar stock (spreadsheet import, label scan on delivery), role tracks, a weekly "new on the list".
-3. The guest role-play with Vinny; the buyer's list analysis (dishes without a good match, price gaps,
+3. The buyer's list analysis (dishes without a good match, price gaps,
    too much of one style).
 4. Till and stock-system connections (the plan above); billing per site through Stripe (Apple 3.1.3(c) lets an app
    sold to businesses for their staff take payment outside the App Store).

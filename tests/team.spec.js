@@ -186,7 +186,7 @@ test('the Worker takes the team calls without a sign-in during the pilot', async
   require('node:fs').copyFileSync(path.join(__dirname, '..', '_worker.js'), copy);
   const worker = (await import(pathToFileURL(copy).href + `?t=${Date.now()}`)).default;
   const env = { ANTHROPIC_API_KEY: 'test', SUPABASE_URL: 'https://x.supabase.co', SUPABASE_PUBLISHABLE_KEY: 'pk', SUPABASE_SECRET_KEY: 'sk' };
-  for (const purpose of ['team_list', 'team_menu', 'team_cards', 'team_pairings', 'team_grade']) {
+  for (const purpose of ['team_list', 'team_menu', 'team_cards', 'team_pairings', 'team_grade', 'team_vinny', 'team_guest']) {
     const r = await worker.fetch(new Request('https://vinterest.pages.dev/claude', { method: 'POST', headers: { 'content-type': 'application/json', origin: 'https://vinterest.pages.dev' }, body: JSON.stringify({ purpose, messages: [{ role: 'user', content: 'x' }] }) }), env);
     expect(r.status).not.toBe(402);
   }
@@ -500,4 +500,73 @@ test('a CSV of sales is imported once, mapped to wines, and sales never move rea
   expect(after.items).toHaveLength(2);
   expect(after.ready).toEqual(before.ready);
   await ctx.close();
+});
+
+// Vinny in the staff app (team-vinny.js): a test aimed at what this person needs, answers about the
+// list and menu, and a guest at a table, all from the restaurant's own list, menu, cards and pairings.
+async function asMarco(context, page, opts = {}) {
+  const errors = [];
+  page.on('pageerror', (e) => errors.push(e.message));
+  page.on('console', (m) => { if (m.type() === 'error' && !/404/.test(m.text())) errors.push(m.text()); });
+  await stubNetwork(context, opts);
+  await page.goto(`${BASE}/team/?seed=demo`);
+  await expect(page.getByTestId('team-state')).toBeVisible();
+  await page.getByTestId('team-who').click();
+  await page.getByRole('button', { name: /Marco/ }).first().click();
+  await expect(page.locator('#root')).toContainText('Hi Marco');
+  return errors;
+}
+
+test("Vinny's test aims at what this person needs, and a request narrows it", async ({ context, page }) => {
+  const errors = await asMarco(context, page);
+  await page.getByTestId('team-tab-vinny').click();
+  await expect(page.getByTestId('vinny-test-why')).toContainText(/faded|new to you/); // Marco's demo answers have faded
+  await page.getByTestId('vinny-test-ask').fill('the moon');
+  await expect(page.getByTestId('vinny-test-asked')).toContainText('Nothing you sell matches');
+  await page.getByTestId('vinny-test-ask').fill('the reds');
+  await expect(page.getByTestId('vinny-test-asked')).toContainText(/\d+ questions/);
+  await page.getByTestId('vinny-test-ask').fill('');
+  await page.getByText("Start Vinny's test").click();
+  await expect(page.getByTestId('drill-intro')).toContainText("Vinny's test");
+  await expect(page.getByTestId('drill-q')).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
+test('Ask Vinny answers from the list and menu, and opens the wines it names', async ({ context, page }) => {
+  const reqs = [];
+  const errors = await asMarco(context, page, { claudeRequests: reqs, claudeText: (b) => {
+    if (b.purpose !== 'team_vinny') return '';
+    const tag = (b.messages[0].content.match(/(W\d+) Bründlmayer/) || [])[1];
+    return JSON.stringify({ answer: 'The Grüner by the glass at £11: peppery and fresh, and it loves the salt.', wines: [tag], dishes: [] });
+  } });
+  await page.getByTestId('team-tab-vinny').click();
+  await page.getByTestId('vinny-input').fill('What goes with the olives by the glass?');
+  await page.getByLabel('Ask', { exact: true }).click();
+  await expect(page.getByTestId('vinny-answer')).toContainText('Grüner by the glass');
+  const prompt = reqs.find((r) => r.purpose === 'team_vinny').messages[0].content;
+  expect(prompt).toContain('Gordal olives'); // the menu is in it
+  expect(prompt).toMatch(/Bründlmayer[^\n]*say "/); // with the card of the wine the dish pairs with
+  await page.getByTestId('vinny-chip').first().click();
+  await expect(page.getByTestId('team-pitch')).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
+test('a guest at the table: Vinny opens, the server answers, and the table is marked', async ({ context, page }) => {
+  const reqs = [];
+  const errors = await asMarco(context, page, { claudeRequests: reqs, claudeText: (b) => {
+    if (b.purpose !== 'team_guest') return '';
+    const c = b.messages[0].content;
+    if (!/SERVER:/.test(c)) return '{"guest":"Evening! What would you pour with this?","done":false}';
+    return JSON.stringify({ guest: 'Perfect, we will have that.', done: true, mark: { score: 0.8, verdict: 'right', good: 'You named the wine and why.', missing: '', better: 'Try the Grüner at £11.' } });
+  } });
+  await page.getByTestId('team-tab-vinny').click();
+  await page.getByText('Take a table').click();
+  await expect(page.getByTestId('guest-line')).toContainText('What would you pour');
+  await page.getByTestId('guest-reply').fill('The Grüner by the glass, it is peppery and fresh.');
+  await page.getByText('Say', { exact: true }).click();
+  await expect(page.getByTestId('guest-mark')).toContainText('That landed');
+  const first = reqs.find((r) => r.purpose === 'team_guest').messages[0].content;
+  expect(first).toMatch(/What a good answer[\s\S]*- /); // the marking key, from the dish's pairing
+  expect(reqs.filter((r) => r.purpose === 'team_guest')[1].messages[0].content).toContain('SERVER: The Grüner by the glass');
+  expect(errors).toEqual([]);
 });
