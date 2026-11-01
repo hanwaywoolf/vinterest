@@ -537,12 +537,14 @@ test('Ask Vinny answers from the list and menu, and opens the wines it names', a
   const errors = await asMarco(context, page, { claudeRequests: reqs, claudeText: (b) => {
     if (b.purpose !== 'team_vinny') return '';
     const tag = (b.messages[0].content.match(/(W\d+) Bründlmayer/) || [])[1];
-    return JSON.stringify({ answer: 'The Grüner by the glass at £11: peppery and fresh, and it loves the salt.', wines: [tag], dishes: [] });
+    return JSON.stringify({ answer: `The Grüner by the glass (${tag}) at £11: peppery and fresh, and it loves the salt (D1) .`, wines: [tag], dishes: ['D1'] });
   } });
   await page.getByTestId('team-tab-vinny').click();
   await page.getByTestId('vinny-input').fill('What goes with the olives by the glass?');
   await page.getByLabel('Ask', { exact: true }).click();
   await expect(page.getByTestId('vinny-answer')).toContainText('Grüner by the glass');
+  // the list's tags never reach the server, with or without their brackets, and leave no empty brackets behind
+  await expect(page.getByTestId('vinny-answer')).toHaveText('The Grüner by the glass at £11: peppery and fresh, and it loves the salt.');
   const prompt = reqs.find((r) => r.purpose === 'team_vinny').messages[0].content;
   expect(prompt).toContain('Gordal olives'); // the menu is in it
   expect(prompt).toMatch(/Bründlmayer[^\n]*say "/); // with the card of the wine the dish pairs with

@@ -148,12 +148,15 @@ const TeamVinny = {
       .replace('{{cards}}',about.length?about.map(w=>this._cardText(w)).join('\n\n'):'(none named)')
       .replace('{{history}}',history?history+'\n\n':'').replace('{{question}}',String(question).slice(0,400));
   },
+  /* The answer with the list's tags taken out: "the Chablis (W3)" and "cod (D12, D13)" lose their brackets whole, a bare
+     W3 goes too, and a space left before a comma or full stop is closed up, so no "cod ()" reaches a server. */
+  clean(text){ return String(text||'').replace(/\s*\(\s*[WD]\d+(?:\s*[,;\/]\s*[WD]\d+)*\s*\)/gi,'').replace(/\s*\b[WD]\d+\b/g,'').replace(/\(\s*\)/g,'').replace(/\s+([,.;:!?])/g,'$1').replace(/  +/g,' ').trim(); },
   /* {answer, wines:[id], dishes:[id]}; throws when Claude can't be reached. */
   async ask(question,turns=[]){
     const text=await window.claude.complete({purpose:'team_vinny',messages:[{role:'user',content:this.prompt(question,turns)}]});
     const {ws,ds}=this._lines(); let j=null; try{ j=TeamData._json(text); }catch(e){}
     const ids=(tags,arr,p)=>[...new Set((tags||[]).map(t=>{ const m=String(t).match(new RegExp('^'+p+'(\\d+)$','i')); return m&&arr[+m[1]-1]?arr[+m[1]-1].id:null; }).filter(Boolean))];
-    const answer=String((j&&j.answer)||text||'').replace(/\s*\b[WD]\d+\b/g,'').trim();
+    const answer=this.clean((j&&j.answer)||text);
     this.remember(question);
     return {answer,wines:ids(j&&j.wines,ws,'W'),dishes:ids(j&&j.dishes,ds,'D')};
   },
