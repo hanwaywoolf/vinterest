@@ -572,3 +572,59 @@ test('a guest at the table: Vinny opens, the server answers, and the table is ma
   expect(reqs.filter((r) => r.purpose === 'team_guest')[1].messages[0].content).toContain('SERVER: The Grüner by the glass');
   expect(errors).toEqual([]);
 });
+
+test('a guest at the table comes with choices, hints or none, and two tables that land move someone up a step', async ({ context, page }) => {
+  const reqs = [];
+  const errors = await asMarco(context, page, { claudeRequests: reqs, claudeText: (b) => {
+    if (b.purpose !== 'team_guest') return '';
+    if (!/SERVER:/.test(b.messages[0].content)) return '{"guest":"Evening! What would you pour with this?","done":false}';
+    return JSON.stringify({ guest: 'Lovely.', done: true, mark: { score: 0.8, verdict: 'right', good: 'Named it and why.', missing: '', better: '' } });
+  } });
+  // A sommelier starts on their own; someone with no answers held starts with choices.
+  const starts = await page.evaluate(() => {
+    const people = TeamLearn.people();
+    const som = people.find((p) => p.role === 'sommelier');
+    return { som: som ? TeamVinny._startLevel(som.id) : 'own' };
+  });
+  expect(starts.som).toBe('own');
+
+  await page.getByTestId('team-tab-vinny').click();
+  await page.getByText('Take a table').click();
+  await expect(page.getByTestId('guest-line')).toBeVisible();
+  await page.getByTestId('guest-help-choices').click();
+  // Three wines; a wrong one says why and the right one opens the reasons.
+  await expect(page.getByTestId('guest-choice')).toHaveCount(3);
+  for (let i = 0; i < 3 && !(await page.getByTestId('guest-reason').count()); i++) await page.getByTestId('guest-choice').nth(i).click();
+  await expect(page.getByTestId('guest-reason').first()).toBeVisible();
+  for (let i = 0; i < 3 && !(await page.getByTestId('guest-reply').inputValue()); i++) await page.getByTestId('guest-reason').nth(i).click();
+  await expect(page.getByTestId('guest-reply')).toHaveValue(/I'd (go for|steer)/);
+  await page.getByText('Say', { exact: true }).click();
+  await expect(page.getByTestId('guest-help-used')).toHaveText('With choices');
+  await expect(page.getByTestId('guest-moved')).toHaveCount(0);
+
+  // A second table that lands at the same step moves them up to hints.
+  await page.getByText('Another table').click();
+  await expect(page.getByTestId('guest-help-choices')).toHaveAttribute('aria-checked', 'true');
+  await expect(page.getByTestId('guest-choices')).toBeVisible();
+  await page.getByTestId('guest-reply').fill('The house white, it is fresh.');
+  await page.getByText('Say', { exact: true }).click();
+  await expect(page.getByTestId('guest-moved')).toContainText('just hints');
+  await page.getByText('Another table').click();
+  await expect(page.getByTestId('guest-help-hints')).toHaveAttribute('aria-checked', 'true');
+
+  // Hints come one at a time, up to three, and the mark says how many were used.
+  await expect(page.getByTestId('guest-hint-btn')).toContainText('1 of 3');
+  for (let i = 0; i < 3; i++) await page.getByTestId('guest-hint-btn').click();
+  await expect(page.getByTestId('guest-hint')).toHaveCount(3);
+  await expect(page.getByTestId('guest-hint-btn')).toHaveCount(0);
+  await page.getByTestId('guest-reply').fill('The Grüner by the glass.');
+  await page.getByText('Say', { exact: true }).click();
+  await expect(page.getByTestId('guest-help-used')).toHaveText('With 3 hints');
+
+  // On your own: no choices and no hints.
+  await page.getByText('Another table').click();
+  await page.getByTestId('guest-help-own').click();
+  await expect(page.getByTestId('guest-choices')).toHaveCount(0);
+  await expect(page.getByTestId('guest-hints')).toHaveCount(0);
+  expect(errors).toEqual([]);
+});

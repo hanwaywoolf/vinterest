@@ -106,6 +106,18 @@ A Vinny tab (between Today and Wines) and a row on Today, all in `team-vinny.js`
   the server has recommended (or three replies) the table is marked against the key: what worked, what was
   missing, and a line they could have said. It never moves readiness, which comes only from drills.
 
+  Help at the table follows the person (`TeamVinny.level`, `noteTable`). **Choices**: three wines to pick
+  from (the right one, the table's wrong idea or a near miss, and one that doesn't pair), each wrong pick
+  saying why, then three reasons (the pairing's own and two from dishes in the same course), built into a
+  reply they can change before saying it. **Hints**: up to three, asked for one at a time: what the guest
+  wants, the wines worth a look, the reason to give. **On your own**: nothing. A sommelier or buyer starts on
+  their own; anyone else starts from readiness (choices under 40%, hints to 75%, then on their own). Two
+  tables in a row that land move them up a step (with hints, only if they used one or none); a table that
+  doesn't land moves them down one. They can pick the step themselves on the table's screen. The choices
+  and hints are built from the same pairing as the marking key, so they always agree with the mark, and
+  the mark never changes with the help: it's on what was said. The step and the tables that moved it are
+  kept on the device (`vbiz_vinny_v1`).
+
 Measured costs are to come; both prompts are about the size of a pairings call's input with a short output.
 
 ## Access and cost
