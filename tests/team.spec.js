@@ -730,3 +730,31 @@ test('scrolling: the next question opens at its top, a new screen opens at its t
   expect(await top()).toBe(0);
   expect(errors).toEqual([]);
 });
+
+test('every recall question, about a wine or a dish, offers only answers of its own kind', async ({ context, page }) => {
+  const errors = await asMarco(context, page);
+  const r = await page.evaluate(() => {
+    const norm = (x) => TeamLearn._norm(x);
+    const recall = TeamLearn.allQs().filter((q) => q.k === 'recall' && !/price|much|glass|bottle/i.test(q.q));
+    // Every right answer, filed under the kind of question it answers.
+    const kindOf = {}; recall.forEach((q) => { const t = TeamLearn._topic(q.q); String(q.ans).split(/,|\band\b|;/).forEach((a) => { const k = norm(a); if (k) (kindOf[k] = kindOf[k] || new Set()).add(t); }); });
+    const names = new Set(TeamData.wines().map((w) => norm(TeamData.short(w))));
+    const untyped = recall.filter((q) => !TeamLearn._topic(q.q)).map((q) => q.q);
+    const mixed = [], notWines = [];
+    for (const q of recall) {
+      const t = TeamLearn._topic(q.q), c = TeamLearn.choices(TeamLearn.deal(q, 'k'));
+      for (const o of c.opts) {
+        const ks = kindOf[norm(o)];
+        if (ks && !ks.has(t)) mixed.push(`${q.q.slice(0, 50)} → ${o}`);
+        if (t === 'wine' && !names.has(norm(o))) notWines.push(`${q.q.slice(0, 50)} → ${o}`);
+      }
+    }
+    const dishQ = recall.find((q) => q.dish), dc = TeamLearn.choices(TeamLearn.deal(dishQ, 'd'));
+    return { untyped, mixed, notWines, dishOpts: dc.opts.length };
+  });
+  expect(r.untyped).toEqual([]);
+  expect(r.mixed).toEqual([]); // no answer to another kind of question turns up as a wrong option
+  expect(r.notWines).toEqual([]); // "Name a wine for the cod" offers only wines on the list
+  expect(r.dishOpts).toBeGreaterThan(3);
+  expect(errors).toEqual([]);
+});

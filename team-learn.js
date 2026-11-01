@@ -226,22 +226,26 @@ const TeamLearn = {
     // flavour question, climates for a climate one. Taken from the other wines' questions of that kind and a
     // short checked list per kind (DECOYS), never from whatever the other wines happened to be asked.
     if(q.k==='recall'&&want!=='money'){ const t=this._topic(q.q); if(t){ const r=this._topicChoices(q,t,right,split); if(r) return r; } }
+    // Anything else draws wrong answers only from questions asked the same way (the same first words), never
+    // from whatever the other wines happened to be asked.
+    const stem=x=>this._words(x).slice(0,3).join(' ');
     // A price is asked one way: every pill in the same form ("£14 a glass"), the wrong ones the list's own
     // prices of that kind, the nearest first, so a glass question never offers a bottle price or a bare figure.
     if(want==='money'&&q.k==='recall'){ const m=this._moneyChoices(q,right); if(m) return m; }
     if(want==='grape') wines.flatMap(w=>w.grapes||[]).forEach(add);
     if(want==='place') wines.flatMap(w=>[w.region,w.country]).filter(Boolean).forEach(add);
     const alike=[...pool];
-    for(const w of wines){ if(w.id===q.wine) continue; for(const o of this.wineQs(w.id)){ if(o.k!==q.k) continue;
+    for(const w of wines){ if(w.id===q.wine) continue; for(const o of this.wineQs(w.id)){ if(o.k!==q.k) continue; if(q.k==='recall'&&stem(o.q)!==stem(q.q)) continue;
       if(o.k==='apply') (o.key||[]).forEach(add); else if(o.k==='contrast') [o.ans,...(o.acc||[])].forEach(add); else split(o.ans).forEach(add); } }
     const same=pool.filter(x=>!alike.includes(x)&&cls(x)===want), rest=pool.filter(x=>!alike.includes(x)&&!same.includes(x));
-    const wrong=[...this._shuffle(alike,this._seed(q)+'a'),...this._shuffle(same,this._seed(q)+'b'),...this._shuffle(rest,this._seed(q)+'d')].slice(0,Math.max(0,this.CHOICES-right.length));
+    const wrong=[...this._shuffle(alike,this._seed(q)+'a'),...this._shuffle(same,this._seed(q)+'b'),...(q.k==='recall'?[]:this._shuffle(rest,this._seed(q)+'d'))].slice(0,Math.max(0,this.CHOICES-right.length));
     const all=[...right.map(x=>({x,ok:true})),...wrong.map(x=>({x,ok:false}))], order=this._shuffle(all.map((_,i)=>i),this._seed(q)+'c');
     const opts=order.map(i=>this._cap(all[i].x)), rightIdx=order.map((i,j)=>all[i].ok?j:-1).filter(j=>j>=0);
     return {opts,right:rightIdx,n:rightIdx.length};
   },
   /* What a recall question asks about, read from its words; null when it isn't one of these. */
   _topic(text){ const t=String(text).toLowerCase();
+    if(/\bname a wine\b|\bwhich wine\b|\bwhat wine\b|\bwine from (our|the) list\b/.test(t)) return 'wine';
     if(/\bword for\b/.test(t)) return 'word';
     if(/vintage year|which year|what year/.test(t)) return 'year';
     if(/what stops/.test(t)) return 'stopper';
@@ -286,6 +290,17 @@ const TeamLearn = {
     const add=x=>{ const n=norm(x); if(!n||seen.has(n)||same(x)) return; seen.add(n); pool.push(String(x).trim()); };
     // The other wines' answers to questions of this kind come first: the list's own flavours, climates, places.
     for(const w of wines){ if(w.id===q.wine) continue; for(const o of this.wineQs(w.id)) if(o.k==='recall'&&this._topic(o.q)===topic) sp(o.ans).forEach(add); }
+    // A wine for a dish: the other wines on the list, the one to steer away from first, then the nearest
+    // styles; never one of the dish's own pairings, which would be right too.
+    if(topic==='wine'){
+      const p=q.dish?TeamData.pairing(q.dish):null, ok=new Set([...(p&&p.best||[]).map(b=>b.id),p&&p.glass&&p.glass.id].filter(Boolean));
+      const rw=wines.find(w=>right.some(r=>norm(r)===norm(TeamData.short(w)))), near=['sparkling','white','rosé','orange','red','sweet','fortified'];
+      const dist=w=>rw?Math.abs(near.indexOf(w.type)-near.indexOf(rw.type)):0;
+      const avoid=p&&p.avoid&&TeamData.wine(p.avoid.id); if(avoid&&!ok.has(avoid.id)) add(TeamData.short(avoid));
+      this._shuffle(wines.filter(w=>!ok.has(w.id)&&w.id!==q.wine),this._seed(q)+'n').sort((a,b)=>dist(a)-dist(b)).forEach(w=>add(TeamData.short(w)));
+      const keep=pool.slice(0,7), all=[...right.map(x=>({x,ok:true})),...keep.map(x=>({x,ok:false}))], order=this._shuffle(all.map((_,i)=>i),this._seed(q)+'c');
+      return {opts:order.map(i=>this._cap(all[i].x)),right:order.map((i,j)=>all[i].ok?j:-1).filter(j=>j>=0),n:right.length};
+    }
     if(topic==='year'){ const y=this._num(right[0]); if(y) [y-1,y+1,y-2,y+2,y-3,y+3].forEach(v=>add(String(v))); }
     if(topic==='duration'&&/month/i.test(right[0])) ['6 months','12 months','18 months','24 months','36 months'].forEach(add);
     if(topic==='place') wines.flatMap(w=>[w.region,w.country]).filter(Boolean).forEach(add);
