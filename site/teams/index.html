@@ -204,6 +204,29 @@ h3 { font-size: 19px; letter-spacing: -.01em; line-height: 1.3; }
 .orbit .slot[data-pos="2"] { transform: translate(230px, -58%) scale(.42); opacity: .5; z-index: 1; filter: brightness(.45); }
 @media (prefers-reduced-motion: reduce) { .orbit .slot { transition: none; } }
 
+/* Vinny: three things beside a phone that shows each, real screens from the demo restaurant. */
+.vinny { padding: 96px 0; background: var(--bg-2); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); overflow-x: clip; }
+.vgrid { display: grid; grid-template-columns: 1fr .8fr; gap: 48px; align-items: center; }
+.vitems { margin-top: 28px; display: grid; gap: 8px; }
+.vitem { text-align: left; background: transparent; border: 1px solid transparent; border-radius: 14px; padding: 14px 16px 14px 18px; cursor: pointer; position: relative; transition: background .2s, border-color .2s; }
+.vitem h3 { font-size: 18px; }
+.vitem p { margin-top: 4px; font-size: 15px; color: var(--ink-2); max-width: 34em; }
+.vitem[aria-selected="false"] { opacity: .6; }
+.vitem[aria-selected="false"] p { display: none; }
+.vitem[aria-selected="true"] { background: #fff; border-color: var(--line); box-shadow: 0 10px 30px -20px rgba(15,15,15,.4); }
+.vitem .vbar { position: absolute; left: 7px; top: 14px; bottom: 14px; width: 3px; border-radius: 2px; background: var(--line); overflow: hidden; }
+.vitem .vbar i { position: absolute; left: 0; top: 0; width: 100%; height: 100%; background: var(--cr); transform: scaleY(0); transform-origin: 50% 0; }
+.vitem[aria-selected="true"] .vbar i { animation: vfill var(--vdwell, 8s) linear forwards; }
+.vitems.held .vitem .vbar i { animation: none; transform: scaleY(1); }
+@keyframes vfill { to { transform: scaleY(1); } }
+.vphone { display: flex; justify-content: center; }
+.vphone .phone { width: 260px; aspect-ratio: auto; }
+.vphone .phone .scr::before { flex: none; height: 30px; }
+.vstage { position: relative; aspect-ratio: 390 / 844; overflow: hidden; background: #0f0f0f; }
+.vstage img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: top; opacity: 0; transition: opacity .5s ease; }
+.vstage img.on { opacity: 1; }
+@media (prefers-reduced-motion: reduce) { .vstage img { transition: none; } }
+
 /* Manager's view, dark. */
 .dark { background: var(--dark); color: #fff; }
 .mgr { padding: 96px 0; position: relative; overflow: clip; }
@@ -273,6 +296,9 @@ footer a { text-decoration: none; }
   .step .phone { align-self: flex-start; }
   .rooms .grid { grid-template-columns: 1fr 1fr; }
   .fgrid { grid-template-columns: 1fr; gap: 16px; }
+  .vgrid { grid-template-columns: 1fr; gap: 28px; }
+  .vinny { padding: 64px 0; }
+  .vphone .phone { width: 220px; }
   .orbit { height: 440px; }
   .orbit .slot .phone { width: 190px; }
   .orbit .slot { width: 190px; margin-left: -95px; }
@@ -289,7 +315,7 @@ footer a { text-decoration: none; }
 <header class="top">
   <div class="wrap">
     <a class="tlogo" href="#" aria-label="Vinterest Teams"><div class="mark"><img src="/logo.png" alt=""></div><div class="word"><span>T</span><span>E</span><span>A</span><span>M</span><span>S</span></div></a>
-    <nav><a href="#">Restaurants</a><a href="#">Groups</a><a href="#">Wineries</a><a href="#">Pricing</a></nav>
+    <nav><a href="#vinny">Vinny</a><a href="#">Restaurants</a><a href="#">Groups</a><a href="#">Wineries</a><a href="#">Pricing</a></nav>
     <div class="doors"><a class="btn ghost small" href="%%DEMO_ORIGIN%%/team/?seed=demo&view=console" target="_blank" rel="noopener">Try Restaurant Demo</a><a class="btn primary small" href="#test">Test Your List</a></div>
   </div>
 </header>
@@ -409,6 +435,30 @@ footer a { text-decoration: none; }
         <div class="slot" data-title="The list" data-desc="Every wine on the list, with what they know of it and its drinking window."><div class="phone"><div class="scr"><img src="img/phone-wines.jpg" alt="The wine list"></div></div></div>
         <div class="slot" data-title="The menu" data-desc="Every dish, already paired, so the answer is there before the guest asks."><div class="phone"><div class="scr"><img src="img/phone-menu.jpg" alt="The menu"></div></div></div>
       </div>
+    </div>
+  </div>
+</section>
+
+<section class="vinny" id="vinny">
+  <div class="wrap">
+    <div class="vgrid">
+      <div class="vtext">
+        <div class="eyebrow" style="--c:var(--cr)">Vinny</div>
+        <h2>A sommelier on every shift.</h2>
+        <p class="lead">Your list's own expert, in every server's pocket.</p>
+        <div class="vitems" id="vitems" role="tablist">
+          <button class="vitem" role="tab" aria-selected="true" data-shots="ask"><span class="vbar"><i></i></span><h3>Ask anything</h3><p>Which glass with the olives? Is the Barolo ready? Vinny answers from your list, menu and prices, in a line they can say at the table.</p></button>
+          <button class="vitem" role="tab" aria-selected="false" data-shots="test drill"><span class="vbar"><i></i></span><h3>A test on what they need</h3><p>Vinny sees what's fading and what's new, and sets ten questions on exactly that. Or they ask: "test me on the reds under £50".</p></button>
+          <button class="vitem" role="tab" aria-selected="false" data-shots="guest mark"><span class="vbar"><i></i></span><h3>A guest at the table</h3><p>Vinny plays a diner with a budget, a taste or a wrong idea. They answer in their own words; Vinny tells them how it landed.</p></button>
+        </div>
+      </div>
+      <div class="vphone"><div class="phone"><div class="scr"><div class="vstage" id="vstage">
+        <img src="img/vinny/ask.jpg" alt="Vinny answers which glass goes with the olives" data-k="ask" class="on">
+        <img src="img/vinny/test.jpg" alt="Vinny's test: ten questions on what this person needs" data-k="test">
+        <img src="img/vinny/drill.jpg" alt="The first question of Vinny's test" data-k="drill">
+        <img src="img/vinny/guest.jpg" alt="Vinny plays a guest asking for a glass with the roast chicken" data-k="guest">
+        <img src="img/vinny/mark.jpg" alt="Vinny marks the answer: that landed" data-k="mark">
+      </div></div></div></div>
     </div>
   </div>
 </section>
@@ -606,6 +656,26 @@ document.getElementById('fprev').addEventListener('click', () => { fgo(fi - 1); 
 document.getElementById('fnext').addEventListener('click', () => { fgo(fi + 1); fhold(); });
 slots.forEach((sl, i) => sl.addEventListener('click', () => { fgo(i); fhold(); }));
 fgo(0); new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting) fturn(); else clearInterval(ftimer); })).observe(orbit);
+
+// Vinny: each item shows its screens in turn (an answer; the test then its first question; a guest
+// then the mark), and the items turn on their own until one is chosen.
+(function () {
+  const items = Array.from(document.querySelectorAll('#vitems .vitem')), imgs = Array.from(document.querySelectorAll('#vstage img')), box = document.getElementById('vitems');
+  let cur = 0, timers = [], held = reduced, seen = false;
+  const SHOT_MS = 4200;
+  const clear = () => { timers.forEach(clearTimeout); timers = []; };
+  const show = (k) => imgs.forEach((im) => im.classList.toggle('on', im.dataset.k === k));
+  function pick(i, auto) {
+    clear(); cur = i; const shots = items[i].dataset.shots.split(' ');
+    items.forEach((it, k) => { it.setAttribute('aria-selected', k === i ? 'true' : 'false'); const bar = it.querySelector('.vbar i'); bar.style.animation = 'none'; void bar.offsetWidth; bar.style.animation = ''; });
+    items[i].style.setProperty('--vdwell', shots.length * SHOT_MS + 'ms');
+    shots.forEach((k, n) => timers.push(setTimeout(() => show(k), n * SHOT_MS)));
+    if (!held) timers.push(setTimeout(() => pick((i + 1) % items.length, true), shots.length * SHOT_MS));
+  }
+  items.forEach((it, i) => it.addEventListener('click', () => { held = true; box.classList.add('held'); pick(i); }));
+  new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting && !seen) { seen = true; pick(0, true); } else if (!e.isIntersecting) clear(); else if (e.isIntersecting && seen && !held) pick(cur, true); }), { threshold: .4 }).observe(document.getElementById('vinny'));
+  show('ask');
+})();
 
 // The guess slider shows itself moving once, so it reads as something to try.
 const liftIn = document.getElementById('liftIn');
