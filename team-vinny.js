@@ -15,7 +15,8 @@
      wrong idea, built here from the pairings so there's a right answer; the server replies in their
      own words, and Vinny answers as the guest, then marks the exchange against that answer
      (prompts/team-guest.txt, purpose team_guest). It never moves readiness: that comes from drills.
-   Nothing here is stored but the last few questions asked (this device, vbiz_vinny_v1). */
+   Stored on this device (vbiz_vinny_v1): the last few questions asked, and each person's step of help at
+   the table (choices, hints or on their own) with the tables that moved it. */
 const TeamVinny = {
   KEY:'vbiz_vinny_v1', TEST_SIZE:10, TURNS:2, GUEST_TURNS:3, LIST_MAX:150, CARDS_MAX:4,
 
@@ -148,12 +149,15 @@ const TeamVinny = {
       .replace('{{cards}}',about.length?about.map(w=>this._cardText(w)).join('\n\n'):'(none named)')
       .replace('{{history}}',history?history+'\n\n':'').replace('{{question}}',String(question).slice(0,400));
   },
+  /* The answer with the list's tags taken out: "the Chablis (W3)" and "cod (D12, D13)" lose their brackets whole, a bare
+     W3 goes too, and a space left before a comma or full stop is closed up, so no "cod ()" reaches a server. */
+  clean(text){ return String(text||'').replace(/\s*\(\s*[WD]\d+(?:\s*[,;\/]\s*[WD]\d+)*\s*\)/gi,'').replace(/\s*\b[WD]\d+\b/g,'').replace(/\(\s*\)/g,'').replace(/\s+([,.;:!?])/g,'$1').replace(/  +/g,' ').trim(); },
   /* {answer, wines:[id], dishes:[id]}; throws when Claude can't be reached. */
   async ask(question,turns=[]){
     const text=await window.claude.complete({purpose:'team_vinny',messages:[{role:'user',content:this.prompt(question,turns)}]});
     const {ws,ds}=this._lines(); let j=null; try{ j=TeamData._json(text); }catch(e){}
     const ids=(tags,arr,p)=>[...new Set((tags||[]).map(t=>{ const m=String(t).match(new RegExp('^'+p+'(\\d+)$','i')); return m&&arr[+m[1]-1]?arr[+m[1]-1].id:null; }).filter(Boolean))];
-    const answer=String((j&&j.answer)||text||'').replace(/\s*\b[WD]\d+\b/g,'').trim();
+    const answer=this.clean((j&&j.answer)||text);
     this.remember(question);
     return {answer,wines:ids(j&&j.wines,ws,'W'),dishes:ids(j&&j.dishes,ds,'D')};
   },
@@ -189,7 +193,85 @@ const TeamVinny = {
       const alt=TeamData.dishes().find(d=>{ const q=TeamData.pairing(d.id); return q&&(q.best||[]).some(b=>b.id===avoid.id); }); if(alt) key[2]=`Suggest the ${TeamData.short(avoid)} with the ${alt.name} instead, so it isn't a no`; }
     else { guest=`A guest at the bar with the ${x.name}; they'd like just a glass of something that goes with it.`;
       wines=[glass.id]; key=[`Offer the ${TeamData.short(glass)} by the glass (${glass.glass})`,`Say why: ${p.glass.why}`,'Keep it short: one line on the taste']; }
-    return {dish:x.id,dishName:x.name,wish,guest,key,wines,seed};
+    const sc={dish:x.id,dishName:x.name,wish,guest,key,wines,seed};
+    return {...sc,help:this._help(sc,{x,p,best,avoid,glass,cost,sym,seed})};
+  },
+
+  /* ── Help at the table: choices, hints, or none ──
+     Someone new to the list gets choices (three wines to pick from, then three reasons, built into a reply
+     they can change before saying it); someone part way gets hints they can ask for one at a time (what the
+     guest wants, the wines worth a look, the reason to give); someone who knows it gets nothing. It starts
+     from readiness (a sommelier or buyer starts on their own) and then follows the tables: two in a row that
+     land move them up a step (with hints, only if they used at most one), a table that doesn't land moves them
+     down one. They can pick a step themselves; the next table carries on from there. The mark never changes
+     with the help: the guest is marked on what was said. */
+  LEVELS:['choices','hints','own'],
+  LEVEL_LABEL:{choices:'Choices',hints:'Hints',own:'On your own'},
+  LEVEL_FROM:{hints:40,own:75},   // readiness % to start at that step
+  UP_AFTER:2,                     // tables in a row that land, to move up
+  LAND:0.67, MISS:0.34,           // a mark's score for "landed" and "didn't"
+  _guestDoc(){ const d=Store.getJSON(this.KEY,{})||{}; d.tables=d.tables||{}; return d; },
+  _startLevel(pid){
+    const person=TeamLearn.person(pid); if(person&&['sommelier','buyer'].includes(person.role)) return 'own';
+    const r=TeamLearn.readiness(pid), pct=r?r.pct:0;
+    return pct>=this.LEVEL_FROM.own?'own':pct>=this.LEVEL_FROM.hints?'hints':'choices';
+  },
+  /* {level, streak, picked, log:[{at, level, score, hints}]} for this person. */
+  tableState(pid){ const t=this._guestDoc().tables[pid]; return t&&this.LEVELS.includes(t.level)?t:{level:this._startLevel(pid),streak:0,log:[]}; },
+  level(pid){ return this.tableState(pid).level; },
+  setLevel(pid,level){ if(!this.LEVELS.includes(level)) return; const d=this._guestDoc(), t=this.tableState(pid);
+    d.tables[pid]={...t,level,streak:0,picked:true}; Store.setJSON(this.KEY,d); },
+  /* Records a marked table and moves the step: returns {level, moved:'up'|'down'|null}. */
+  noteTable(pid,{level,score,hints=0}){
+    const d=this._guestDoc(), t=this.tableState(pid), i=this.LEVELS.indexOf(level);
+    const landed=score>=this.LAND&&(level!=='hints'||hints<=1);
+    let next=level, streak=landed?(t.level===level?t.streak:0)+1:0, moved=null;
+    if(landed&&streak>=this.UP_AFTER&&i<this.LEVELS.length-1){ next=this.LEVELS[i+1]; streak=0; moved='up'; }
+    else if(score<this.MISS&&i>0){ next=this.LEVELS[i-1]; streak=0; moved='down'; }
+    d.tables[pid]={level:next,streak,picked:t.picked&&!moved,log:[...(t.log||[]),{at:Date.now(),level,score,hints}].slice(-30)};
+    Store.setJSON(this.KEY,d); return {level:next,moved};
+  },
+  /* What the screen shows for each step, built from the same pairing as the marking key, so the choices
+     and hints always agree with how the table is marked.
+     wines: three to pick from [{id, ok, note}] (note says why a wrong one is wrong);
+     reasons: three [{text, ok}]; hints: three lines, gentlest first; say(wineId, reason): a reply to start from. */
+  _help(sc,{x,p,best,avoid,glass,cost,sym,seed}){
+    const short=id=>{ const w=TeamData.wine(id); return w?TeamData.short(w):''; };
+    const rightIds=sc.wines, right=TeamData.wine(rightIds[0]);
+    const priceOf=w=>sc.wish==='glass'||(sc.wish==='light'&&w.glass)?(w.glass?`${w.glass} a glass`:''):(w.bottle?`${w.bottle} a bottle`:w.glass?`${w.glass} a glass`:'');
+    const bestIds=new Set(best.map(b=>b.id)), all=TeamData.wines();
+    const rot=(arr,n)=>arr.length?arr.map((_,i)=>arr[(i+Math.abs(n))%arr.length]):arr;
+    // Decoys: first the wrong idea this table holds, then a near miss, then something that doesn't suit.
+    const decoys=[];
+    const add=(w,note)=>{ if(w&&!rightIds.includes(w.id)&&!decoys.some(d=>d.id===w.id)) decoys.push({id:w.id,ok:false,note}); };
+    if(sc.wish==='avoid'&&avoid) add(avoid,`This is the one to steer them away from: ${p.avoid.why}`);
+    if(sc.wish==='budget'){ const over=best.filter(b=>b.w.bottle&&!rightIds.includes(b.id)).sort((a,b)=>cost(b.w)-cost(a.w))[0]; if(over) add(over.w,`It suits the dish, but at ${over.w.bottle} it's over what they want to spend.`); }
+    if(sc.wish==='light'){ const heavy=best.filter(b=>!rightIds.includes(b.id))[0]; if(heavy) add(heavy.w,'It suits the dish, but it\'s the fuller choice; they asked for something lighter.'); }
+    if(sc.wish==='glass'){ const btl=best.find(b=>!b.w.glass); if(btl) add(btl.w,'It suits the dish, but it isn\'t poured by the glass.'); }
+    if(avoid) add(avoid,`It's the wine to steer away from with this dish: ${p.avoid.why}`);
+    const others=rot(all.filter(w=>!bestIds.has(w.id)&&(!avoid||w.id!==avoid.id)&&(!right||w.type===right.type)),seed);
+    const elsewhere=rot(all.filter(w=>!bestIds.has(w.id)&&(!avoid||w.id!==avoid.id)),seed>>2);
+    for(const w of [...others,...elsewhere]){ if(decoys.length>=2) break; add(w,`A good wine, but not one of the pairings for the ${x.name}.`); }
+    const okWine=rightIds.map(id=>TeamData.wine(id)).filter(Boolean)[0];
+    const wines=okWine?[{id:okWine.id,ok:true,note:''},...decoys.slice(0,2)]:[];
+    // Three orders, so the right one isn't always in the same place.
+    const order=[[0,1,2],[1,0,2],[2,0,1],[1,2,0]][Math.abs(seed)%4].filter(i=>i<wines.length);
+    const pickedWines=order.map(i=>wines[i]);
+    // Reasons: the pairing's own reason for the right wine, and two from other dishes' pairings.
+    const whyRight=(()=>{ if(!okWine) return ''; if(sc.wish==='glass'&&p.glass) return p.glass.why; const b=best.find(b=>b.id===okWine.id); return b?b.why:''; })();
+    // Wrong reasons from the same course first (a main against other mains), so they can't be ruled out at a glance.
+    const whysOf=ds=>ds.flatMap(d=>{ const q=TeamData.pairing(d.id); return q?[...(q.best||[]),q.glass].filter(Boolean).map(b=>b.why):[]; }).filter(w=>w&&w!==whyRight);
+    const others2=TeamData.dishes().filter(d=>d.id!==x.id), same=others2.filter(d=>d.section&&d.section===x.section);
+    const otherWhys=[...new Set([...rot(whysOf(same),seed>>1),...rot(whysOf(others2.filter(d=>!same.includes(d))),seed>>1)])].slice(0,2);
+    const reasons=whyRight?[{text:whyRight,ok:true},...otherWhys.map(t=>({text:t,ok:false}))]:[];
+    const rOrder=[[1,0,2],[0,2,1],[2,1,0]][Math.abs(seed>>1)%3].filter(i=>i<reasons.length);
+    const wishLine={budget:`They want a bottle and have a budget: keep under it.`,light:'They want something lighter: think body, not colour.',bottle:'One bottle for the whole table: pick the one that works with most of it, and say it with confidence.',avoid:`They've named a wine that doesn't suit the ${x.name}: steer them, kindly, and offer something better.`,glass:'Just a glass: look at what\'s poured by the glass.'}[sc.wish];
+    const look=rot(pickedWines.map(w=>short(w.id)),0).filter(Boolean);
+    const hints=[wishLine,`Worth a look: ${look.join(', ')}.`,okWine?`The reason to give for the ${short(okWine.id)}: ${whyRight}`:''].filter(Boolean);
+    const say=(id,reason)=>{ const w=TeamData.wine(id); if(!w) return ''; const pr=priceOf(w);
+      const steer=sc.wish==='avoid'&&avoid?`I'd steer you away from the ${TeamData.short(avoid)} with this. `:'';
+      return `${steer}I'd go for the ${TeamData.short(w)}${pr?` at ${pr}`:''}.${reason?` ${reason}`:''}`; };
+    return {wines:pickedWines,reasons:rOrder.map(i=>reasons[i]),hints,say};
   },
   /* One turn: the guest's next line, and once the table's served, the mark. turns: [{who:'guest'|'you', text}].
      {line, done, mark:{score, verdict, good, missing, better}|null} */

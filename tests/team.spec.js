@@ -537,12 +537,14 @@ test('Ask Vinny answers from the list and menu, and opens the wines it names', a
   const errors = await asMarco(context, page, { claudeRequests: reqs, claudeText: (b) => {
     if (b.purpose !== 'team_vinny') return '';
     const tag = (b.messages[0].content.match(/(W\d+) Bründlmayer/) || [])[1];
-    return JSON.stringify({ answer: 'The Grüner by the glass at £11: peppery and fresh, and it loves the salt.', wines: [tag], dishes: [] });
+    return JSON.stringify({ answer: `The Grüner by the glass (${tag}) at £11: peppery and fresh, and it loves the salt (D1) .`, wines: [tag], dishes: ['D1'] });
   } });
   await page.getByTestId('team-tab-vinny').click();
   await page.getByTestId('vinny-input').fill('What goes with the olives by the glass?');
   await page.getByLabel('Ask', { exact: true }).click();
   await expect(page.getByTestId('vinny-answer')).toContainText('Grüner by the glass');
+  // the list's tags never reach the server, with or without their brackets, and leave no empty brackets behind
+  await expect(page.getByTestId('vinny-answer')).toHaveText('The Grüner by the glass at £11: peppery and fresh, and it loves the salt.');
   const prompt = reqs.find((r) => r.purpose === 'team_vinny').messages[0].content;
   expect(prompt).toContain('Gordal olives'); // the menu is in it
   expect(prompt).toMatch(/Bründlmayer[^\n]*say "/); // with the card of the wine the dish pairs with
@@ -568,5 +570,92 @@ test('a guest at the table: Vinny opens, the server answers, and the table is ma
   const first = reqs.find((r) => r.purpose === 'team_guest').messages[0].content;
   expect(first).toMatch(/What a good answer[\s\S]*- /); // the marking key, from the dish's pairing
   expect(reqs.filter((r) => r.purpose === 'team_guest')[1].messages[0].content).toContain('SERVER: The Grüner by the glass');
+  expect(errors).toEqual([]);
+});
+
+test('a guest at the table comes with choices, hints or none, and two tables that land move someone up a step', async ({ context, page }) => {
+  const reqs = [];
+  const errors = await asMarco(context, page, { claudeRequests: reqs, claudeText: (b) => {
+    if (b.purpose !== 'team_guest') return '';
+    if (!/SERVER:/.test(b.messages[0].content)) return '{"guest":"Evening! What would you pour with this?","done":false}';
+    return JSON.stringify({ guest: 'Lovely.', done: true, mark: { score: 0.8, verdict: 'right', good: 'Named it and why.', missing: '', better: '' } });
+  } });
+  // A sommelier starts on their own; someone with no answers held starts with choices.
+  const starts = await page.evaluate(() => {
+    const people = TeamLearn.people();
+    const som = people.find((p) => p.role === 'sommelier');
+    return { som: som ? TeamVinny._startLevel(som.id) : 'own' };
+  });
+  expect(starts.som).toBe('own');
+
+  await page.getByTestId('team-tab-vinny').click();
+  await page.getByText('Take a table').click();
+  await expect(page.getByTestId('guest-line')).toBeVisible();
+  await page.getByTestId('guest-help-choices').click();
+  // Three wines; a wrong one says why and the right one opens the reasons.
+  await expect(page.getByTestId('guest-choice')).toHaveCount(3);
+  for (let i = 0; i < 3 && !(await page.getByTestId('guest-reason').count()); i++) await page.getByTestId('guest-choice').nth(i).click();
+  await expect(page.getByTestId('guest-reason').first()).toBeVisible();
+  for (let i = 0; i < 3 && !(await page.getByTestId('guest-reply').inputValue()); i++) await page.getByTestId('guest-reason').nth(i).click();
+  await expect(page.getByTestId('guest-reply')).toHaveValue(/I'd (go for|steer)/);
+  await page.getByText('Say', { exact: true }).click();
+  await expect(page.getByTestId('guest-help-used')).toHaveText('With choices');
+  await expect(page.getByTestId('guest-moved')).toHaveCount(0);
+
+  // A second table that lands at the same step moves them up to hints.
+  await page.getByText('Another table').click();
+  await expect(page.getByTestId('guest-help-choices')).toHaveAttribute('aria-checked', 'true');
+  await expect(page.getByTestId('guest-choices')).toBeVisible();
+  await page.getByTestId('guest-reply').fill('The house white, it is fresh.');
+  await page.getByText('Say', { exact: true }).click();
+  await expect(page.getByTestId('guest-moved')).toContainText('just hints');
+  await page.getByText('Another table').click();
+  await expect(page.getByTestId('guest-help-hints')).toHaveAttribute('aria-checked', 'true');
+
+  // Hints come one at a time, up to three, and the mark says how many were used.
+  await expect(page.getByTestId('guest-hint-btn')).toContainText('1 of 3');
+  for (let i = 0; i < 3; i++) await page.getByTestId('guest-hint-btn').click();
+  await expect(page.getByTestId('guest-hint')).toHaveCount(3);
+  await expect(page.getByTestId('guest-hint-btn')).toHaveCount(0);
+  await page.getByTestId('guest-reply').fill('The Grüner by the glass.');
+  await page.getByText('Say', { exact: true }).click();
+  await expect(page.getByTestId('guest-help-used')).toHaveText('With 3 hints');
+
+  // On your own: no choices and no hints.
+  await page.getByText('Another table').click();
+  await page.getByTestId('guest-help-own').click();
+  await expect(page.getByTestId('guest-choices')).toHaveCount(0);
+  await expect(page.getByTestId('guest-hints')).toHaveCount(0);
+  expect(errors).toEqual([]);
+});
+
+test('drill answers: no question gives its answer away, prices are asked one way, and a table is two short lists', async ({ context, page }) => {
+  const errors = await asMarco(context, page);
+  const r = await page.evaluate(() => {
+    const words = (s) => TeamLearn._words(s);
+    const all = TeamLearn.allQs().filter((q) => q.wine);
+    // A question whose answer is in its own words: "Which grape is the … Pinot Noir made from?"
+    const spoilt = all.filter((q) => { const ans = q.k === 'recognise' ? [q.opts[q.a]] : q.k === 'recall' ? String(q.ans).split(/,|\band\b|;/) : [];
+      const t = new Set(words(q.q)); return ans.some((a) => { const w = words(a); return w.length && w.every((x) => t.has(x)); }); }).map((q) => q.q);
+    const jadot = TeamData.wines().find((w) => /Jadot/.test(w.producer + ' ' + w.name));
+    const grapeQ = TeamLearn.wineQs(jadot.id).find((q) => /which grape/i.test(q.q));
+    const money = all.filter((q) => q.k === 'recall' && /glass price|bottle price/i.test(q.q)).map((q) => ({ side: /glass/i.test(q.q) ? 'glass' : 'bottle', opts: TeamLearn.choices(q).opts }));
+    const apply = all.filter((q) => q.k === 'apply').map((q) => TeamLearn.choices(q));
+    const pills = all.flatMap((q) => (q.k === 'recognise' ? q.opts : TeamLearn.choices(q).opts));
+    return { spoilt, grapeQ: grapeQ && grapeQ.q, money, apply, lower: pills.filter((o) => /^[a-z]/.test(o)) };
+  });
+  expect(r.spoilt).toEqual([]);
+  expect(r.grapeQ).toContain('Louis Jadot');
+  expect(r.grapeQ).not.toMatch(/Pinot Noir/);
+  expect(r.money.length).toBeGreaterThan(0);
+  for (const m of r.money) for (const o of m.opts) expect(o).toMatch(m.side === 'glass' ? /a glass|Not by the glass/ : /a bottle$/);
+  const grouped = r.apply.filter((c) => c.groups);
+  expect(grouped.length).toBeGreaterThan(r.apply.length * 0.9);
+  for (const c of grouped) {
+    expect(c.groups.map((g) => g.label)).toEqual(['What do you suggest?', 'Why it works']);
+    expect(c.opts.slice(0, c.groups[0].to).every((o) => /^The /.test(o))).toBe(true); // every suggestion names a wine
+    expect(c.opts.slice(c.groups[1].from).some((o) => /^The .*£\d/.test(o))).toBe(false); // and no reason is a price or an offer
+  }
+  expect(r.lower).toEqual([]);
   expect(errors).toEqual([]);
 });
