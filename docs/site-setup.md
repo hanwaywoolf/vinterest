@@ -79,3 +79,37 @@ sign-up, and someone who signs up twice is emailed once.
 Replies go to `hello@vinterest.app`, so that mailbox has to exist (Cloudflare Email Routing can forward it).
 Legal pages mention that email is used only for the beta; keep the email's wording in step with them.
 
+
+## Vinterest Teams (vinterest.team)
+
+The teams website is `site/teams/` and builds to `site-teams-dist/` with `npm run site:teams:build`
+(`scripts/site-teams.mjs`). It is its own Cloudflare Pages project, separate from the consumer
+site above and from the app, so it can carry its own domain.
+
+| Setting | Value |
+| --- | --- |
+| Framework preset | None |
+| Build command | `npm ci && npm run site:teams:build` |
+| Build output directory | `site-teams-dist` |
+| Production branch | `main` |
+| Custom domain | `vinterest.team` (and `www`, redirected to it) |
+
+Setup, once: Workers & Pages → Create → Pages → Connect to Git → the vinterest repository (a second
+project on the same repository is fine) → the settings above. Then Custom domains → Set up a custom
+domain → `vinterest.team`. With the domain's DNS on Cloudflare the records are added for you;
+otherwise add the CNAME it shows at the registrar. Add `www.vinterest.team` the same way; Pages
+redirects it to the apex.
+
+Every push of a branch deploys a preview at `https://<branch with / as ->.<project name>.pages.dev`.
+
+Build variables (all optional):
+
+- `DEMO_ORIGIN`: where the interactive demo (the team app, `/team/?seed=demo&view=console`) is
+  served. Default `https://vinterest.pages.dev`, the app's project. Until the console branch
+  (`claude/teams-console`) is on `main`, set it to that branch's preview,
+  `https://claude-teams-console.vinterest.pages.dev`, on the Preview environment at least.
+- `CF_ANALYTICS_TOKEN`: as for the consumer site; a separate Web Analytics site for this domain.
+- `SITE_ORIGIN`: the public address for the sitemap. Default `https://vinterest.team`.
+
+"Test Your List" on the page is a mockup of the flow for now: the upload control works but nothing
+is read until the site build wires it to the Worker.
