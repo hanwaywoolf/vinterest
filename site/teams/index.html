@@ -72,11 +72,15 @@ h3 { font-size: 19px; letter-spacing: -.01em; line-height: 1.3; }
 .hero .grid { display: grid; grid-template-columns: 1.1fr .9fr; gap: 48px; align-items: center; }
 .hero .copy { max-width: 640px; }
 .hero .side { position: relative; display: flex; justify-content: center; }
-.hero .side .phone { width: 250px; transform: rotate(-3deg); }
-.hero .float { position: absolute; background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; box-shadow: 0 16px 40px -20px rgba(15, 15, 15, .5); display: flex; align-items: center; gap: 10px; font-size: 13px; font-weight: 600; }
-.hero .float.a { left: 0; top: 4%; }
-.hero .float.b { right: 0; bottom: 12%; }
-.hero .float span.who { color: var(--ink-2); font-weight: 500; }
+.hero .side .phone { width: 270px; transform: rotate(-3deg); aspect-ratio: auto; }
+.hero .side .phone .scr::before { flex: none; height: 30px; }
+.phone .pstage { aspect-ratio: 390 / 844; flex: none; }
+.phone .pstage { position: relative; flex: 1; min-height: 0; overflow: hidden; background: #0f0f0f; }
+.pstage .ly { position: absolute; top: 0; left: 0; width: 100%; display: block; will-change: transform; transition: opacity .4s ease; }
+.pstage .ly.out { opacity: 0; }
+.pstage .cursor { position: absolute; width: 18px; height: 18px; margin: -9px 0 0 -9px; border-radius: 50%; border: 2px solid #fff; background: rgba(232, 83, 107, .55); opacity: 0; pointer-events: none; }
+.pstage .cursor.on { opacity: 1; animation: tap .9s ease-out; }
+
 .hero h1 em { font-style: normal; color: var(--cr); }
 .hero .lead { font-size: 20px; max-width: 30em; }
 .hero .cta { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 28px; align-items: center; }
@@ -274,9 +278,7 @@ footer a { text-decoration: none; }
       </div>
     </div>
     <div class="side" aria-hidden="true">
-      <div class="phone"><div class="scr"><img src="img/phone-today-staff.jpg" alt=""></div></div>
-      <div class="float a"><span class="who">Claire · Sommelier</span><span class="chip green">Ready</span></div>
-      <div class="float b"><span class="who">Marco · Bar</span><span class="chip amber">Slipping</span></div>
+      <div class="phone big"><div class="scr"><div class="pstage" id="pstage"></div></div></div>
     </div>
     </div>
     <div class="demo" id="demo">
@@ -451,48 +453,69 @@ footer a { text-decoration: none; }
 // The console demo: scenes drawn from the real console's screens. Each tab is a run of steps; a step
 // shows a static frame and pans a tall capture inside the stage, with a tap marker before a drawer opens.
 // (On the built site these become the live console; the choreography stays the same.)
-const SW = 1440, SH = 900, SB = 220, IMG = 'img/scenes/';
-const SCENES = {
-  ready: { cap: '<b>Who\'s ready tonight.</b> One figure per person, against the standard you set for their role.', steps: [{ frame: 'sidebar', pan: { img: 'dash', x: SB, w: SW - SB, h: 3273, from: 0, to: .18, ms: 7000 } }] },
-  team: { cap: '<b>Each person.</b> Who\'s slipping, who\'s overdue, and what they\'ve been checked on without warning.', steps: [{ pan: { img: 'team', x: 0, w: SW, h: 900, from: 0, to: 0, ms: 6000 } }] },
-  wines: { cap: '<b>Your list, live.</b> Every wine with who knows it, what it sold, and its drinking window.', steps: [{ frame: 'sidebar', pan: { img: 'wines', x: SB, w: SW - SB, h: 2322, from: 0, to: 1, ms: 9000 } }] },
-  cards: { cap: '<b>A card per wine.</b> What to say to a guest, in words you can edit.', steps: [{ frame: 'sidebar', pan: { img: 'wines', x: SB, w: SW - SB, h: 2322, from: 0, to: 0, ms: 1800 }, tap: { x: 400, y: 173 } }, { frame: 'card-bg', pan: { img: 'card', x: 840, w: 600, h: 1705, from: 0, to: 1, ms: 8000 } }] },
-  menu: { cap: '<b>Your menu, paired.</b> The best wine for every dish, and the one to steer guests away from.', steps: [{ frame: 'sidebar', pan: { img: 'menu', x: SB, w: SW - SB, h: 2682, from: 0, to: .35, ms: 4500 } }, { frame: 'sidebar', pan: { img: 'menu', x: SB, w: SW - SB, h: 2682, from: 0, to: 0, ms: 1200 }, tap: { x: 390, y: 173 } }, { frame: 'dish-bg', pan: { img: 'dish', x: 840, w: 600, h: 900, from: 0, to: 0, ms: 5000 } }] },
-  sales: { cap: '<b>The till.</b> What sells, who sells it, and which wines are worth a push.', steps: [{ frame: 'sidebar', pan: { img: 'dash', x: SB, w: SW - SB, h: 3273, from: .5, to: .5, ms: 1500 } }, { pan: { img: 'dash', x: SB, w: SW - SB, h: 3273, from: .5, to: 1, ms: 8000 }, keep: true }] },
-};
-const stage = document.getElementById('stage'), tabs = Array.from(document.querySelectorAll('#tabs [role=tab]')), cap = document.getElementById('cap');
-const order = tabs.map((t) => t.dataset.scene);
-let cur = 'ready', run = 0, held = matchMedia('(prefers-reduced-motion: reduce)').matches, raf = 0, inView = false;
 const ease = (x) => x < .5 ? 2 * x * x : 1 - Math.pow(-2 * x + 2, 2) / 2;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-function layer(name, x, w) { const img = document.createElement('img'); img.className = 'ly'; img.src = IMG + name + '.jpg'; img.alt = ''; img.style.left = (x / SW * 100) + '%'; img.style.width = (w / SW * 100) + '%'; stage.appendChild(img); return img; }
-async function playStep(step, token) {
-  let pan = step.keep ? stage.querySelector('.ly[data-pan]') : null;
-  if (!pan) {
-    const old = Array.from(stage.querySelectorAll('.ly'));
-    if (step.frame) layer(step.frame, 0, step.frame === 'sidebar' ? SB : SW);
-    pan = layer(step.pan.img, step.pan.x, step.pan.w); pan.dataset.pan = '1';
-    old.forEach((o) => { o.classList.add('out'); setTimeout(() => o.remove(), 500); });
+const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+// A stage plays steps: each step lays a static frame and a tall capture that pans inside the stage (a
+// layer is {img, x, y, w, h} in the capture's own pixels, panned by h), then a tap marker.
+function player(stage, W, H, dir) {
+  let run = 0, raf = 0;
+  const layer = (l) => { const img = document.createElement('img'); img.className = 'ly'; img.src = dir + l.img + '.jpg'; img.alt = ''; img.style.left = (l.x / W * 100) + '%'; img.style.top = ((l.y || 0) / H * 100) + '%'; img.style.width = (l.w / W * 100) + '%'; stage.appendChild(img); return img; };
+  async function step(st, token) {
+    let pan = st.keep ? stage.querySelector('.ly[data-pan]') : null;
+    if (!pan) { const old = Array.from(stage.querySelectorAll('.ly')); (st.frames || []).forEach(layer); pan = layer(st.pan); pan.dataset.pan = '1'; (st.over || []).forEach(layer); old.forEach((o) => { o.classList.add('out'); setTimeout(() => o.remove(), 450); }); }
+    const scale = stage.clientWidth / W, top = (st.pan.y || 0) * scale, room = stage.clientHeight - top - (st.pan.below || 0) * scale, travel = Math.max(0, st.pan.h * scale - room);
+    const t0 = performance.now(), { from, to, ms } = st.pan;
+    await new Promise((done) => { const tick = (t) => { if (token !== run) return done(); const p = Math.min(1, (t - t0) / ms); const f = from + (to - from) * (reduced ? 1 : ease(p)); pan.style.transform = `translateY(${-f * travel}px)`; if (p < 1 && !reduced) raf = requestAnimationFrame(tick); else done(); }; raf = requestAnimationFrame(tick); });
+    if (token !== run) return;
+    if (st.tap) { const c = document.createElement('div'); c.className = 'cursor'; c.style.left = (st.tap.x / W * 100) + '%'; c.style.top = (st.tap.y / H * 100) + '%'; stage.appendChild(c); requestAnimationFrame(() => c.classList.add('on')); await sleep(reduced ? 0 : 800); c.remove(); }
   }
-  const scale = stage.clientWidth / SW, travel = Math.max(0, step.pan.h * scale - stage.clientHeight);
-  const t0 = performance.now(), { from, to, ms } = step.pan;
-  await new Promise((done) => { const tick = (t) => { if (token !== run) return done(); const p = Math.min(1, (t - t0) / ms); const f = from + (to - from) * (held ? 1 : ease(p)); pan.style.transform = `translateY(${-f * travel}px)`; if (p < 1 && !held) raf = requestAnimationFrame(tick); else done(); }; raf = requestAnimationFrame(tick); });
-  if (token !== run) return;
-  if (step.tap) { const c = document.createElement('div'); c.className = 'cursor'; c.style.left = (step.tap.x / SW * 100) + '%'; c.style.top = (step.tap.y / SH * 100) + '%'; stage.appendChild(c); requestAnimationFrame(() => c.classList.add('on')); await sleep(held ? 0 : 800); c.remove(); }
+  return { async play(steps) { run += 1; const token = run; cancelAnimationFrame(raf); for (const st of steps) { if (token !== run) return false; await step(st, token); } return token === run; }, stop() { run += 1; cancelAnimationFrame(raf); }, length: (steps) => steps.reduce((a, st) => a + st.pan.ms + (st.tap ? 800 : 0), 0) };
 }
-async function play(name, auto) {
-  run += 1; const token = run; cur = name; cancelAnimationFrame(raf);
-  const sc = SCENES[name], total = sc.steps.reduce((a, st) => a + st.pan.ms + (st.tap ? 800 : 0), 0) + 600;
-  tabs.forEach((t) => { t.setAttribute('aria-selected', t.dataset.scene === name ? 'true' : 'false'); const bar = t.querySelector('i'); bar.style.animation = 'none'; void bar.offsetWidth; bar.style.animation = ''; if (t.dataset.scene === name) t.style.setProperty('--dwell', total + 'ms'); });
+
+// The laptop: the console's pages, one scene per tab.
+const SW = 1440, SH = 900, SB = 220;
+const side = [{ img: 'sidebar', x: 0, w: SB, h: SH }];
+const SCENES = {
+  ready: { cap: '<b>Who\'s ready tonight.</b> One figure per person, against the standard you set for their role.', steps: [{ frames: side, pan: { img: 'dash', x: SB, w: SW - SB, h: 3273, from: 0, to: 0, ms: 2500 } }, { pan: { img: 'dash', x: SB, w: SW - SB, h: 3273, from: 0, to: .2, ms: 6000 }, keep: true }] },
+  team: { cap: '<b>Each person.</b> Who\'s slipping, who\'s overdue, and what they\'ve been checked on without warning.', steps: [{ pan: { img: 'team', x: 0, w: SW, h: 900, from: 0, to: 0, ms: 6000 } }] },
+  wines: { cap: '<b>Your list, live.</b> Every wine with who knows it, what it sold, and its drinking window.', steps: [{ frames: side, pan: { img: 'wines', x: SB, w: SW - SB, h: 2322, from: 0, to: 1, ms: 9000 } }] },
+  cards: { cap: '<b>A card per wine.</b> What to say to a guest, in words you can edit.', steps: [{ frames: side, pan: { img: 'wines', x: SB, w: SW - SB, h: 2322, from: 0, to: 0, ms: 1800 }, tap: { x: 400, y: 173 } }, { frames: [{ img: 'card-bg', x: 0, w: SW, h: SH }], pan: { img: 'card', x: 840, w: 600, h: 1705, from: 0, to: 1, ms: 8000 } }] },
+  menu: { cap: '<b>Your menu, paired.</b> The best wine for every dish, and the one to steer guests away from.', steps: [{ frames: side, pan: { img: 'menu', x: SB, w: SW - SB, h: 2682, from: 0, to: .35, ms: 4500 } }, { frames: side, pan: { img: 'menu', x: SB, w: SW - SB, h: 2682, from: 0, to: 0, ms: 1200 }, tap: { x: 390, y: 173 } }, { frames: [{ img: 'dish-bg', x: 0, w: SW, h: SH }], pan: { img: 'dish', x: 840, w: 600, h: 900, from: 0, to: 0, ms: 5000 } }] },
+  sales: { cap: '<b>The till.</b> What sells, who sells it, and which wines are worth a push.', steps: [{ frames: side, pan: { img: 'dash', x: SB, w: SW - SB, h: 3273, from: .5, to: .5, ms: 1500 } }, { pan: { img: 'dash', x: SB, w: SW - SB, h: 3273, from: .5, to: 1, ms: 8000 }, keep: true }] },
+};
+const stage = document.getElementById('stage'), tabs = Array.from(document.querySelectorAll('#tabs [role=tab]')), cap = document.getElementById('cap');
+const order = tabs.map((t) => t.dataset.scene), lap = player(stage, SW, SH, 'img/scenes/');
+let cur = 'ready', held = reduced, inView = false, playing = false;
+async function play(name) {
+  cur = name; playing = true; const sc = SCENES[name];
+  tabs.forEach((t) => { t.setAttribute('aria-selected', t.dataset.scene === name ? 'true' : 'false'); const bar = t.querySelector('i'); bar.style.animation = 'none'; void bar.offsetWidth; bar.style.animation = ''; if (t.dataset.scene === name) t.style.setProperty('--dwell', (lap.length(sc.steps) + 600) + 'ms'); });
   cap.innerHTML = sc.cap;
-  for (const st of sc.steps) { if (token !== run) return; await playStep(st, token); }
-  if (token !== run) return;
-  await sleep(600);
-  if (token === run && !held && inView) play(order[(order.indexOf(name) + 1) % order.length], true);
+  const finished = await lap.play(sc.steps); if (!finished) return;
+  await sleep(600); playing = false;
+  if (!held && inView) play(order[(order.indexOf(name) + 1) % order.length]);
 }
 tabs.forEach((t) => t.addEventListener('click', () => { held = false; play(t.dataset.scene); }));
-new IntersectionObserver((es) => es.forEach((e) => { inView = e.isIntersecting; if (inView && !stage.querySelector('.ly')) play(cur); else if (inView && run === 0) play(cur); })).observe(document.getElementById('demo'));
-if (!stage.querySelector('.ly')) play(cur);
+new IntersectionObserver((es) => es.forEach((e) => { inView = e.isIntersecting; if (inView && !playing) play(cur); })).observe(document.getElementById('demo'));
+play(cur);
+
+// The phone in the hero: a bartender's Today, the drill answered, a card read through, on a loop.
+const PW = 390, PH = 844, PHEAD = 61, PTAB = 58, pstage = document.getElementById('pstage');
+if (pstage) {
+  const ph = player(pstage, PW, PH - 0, 'img/phone/');
+  const head = (img) => [{ img, x: 0, y: 0, w: PW, h: PHEAD }], tabbar = [{ img: 'tabbar', x: 0, y: PH - PTAB, w: PW, h: PTAB }];
+  const PHONE = [
+    { over: [...head('head-today'), ...tabbar], pan: { img: 'today', x: 0, y: PHEAD, below: PTAB, w: PW, h: 969, from: 0, to: 0, ms: 1800 } },
+    { pan: { img: 'today', x: 0, y: PHEAD, below: PTAB, w: PW, h: 969, from: 0, to: 1, ms: 3500 }, keep: true, tap: { x: 195, y: 341 } },
+    { pan: { img: 'q', x: 0, y: 0, w: PW, h: PH, from: 0, to: 0, ms: 2200 }, tap: { x: 195, y: 438 } },
+    { pan: { img: 'q-picked', x: 0, y: 0, w: PW, h: PH, from: 0, to: 0, ms: 900 }, tap: { x: 195, y: 578 } },
+    { pan: { img: 'q-result', x: 0, y: 0, w: PW, h: PH, from: 0, to: 0, ms: 4000 } },
+    { pan: { img: 'wines-top', x: 0, y: 0, w: PW, h: PH, from: 0, to: 0, ms: 1600 }, tap: { x: 195, y: 204 } },
+    { over: head('head-card'), pan: { img: 'card', x: 0, y: PHEAD, w: PW, h: 1980, from: 0, to: 1, ms: 7000 } },
+  ];
+  (async function loop() { while (true) { const ok = await ph.play(PHONE); if (!ok) return; await sleep(800); if (reduced) return; } })();
+}
+
 
 // Overheard: each card tells its exchange in turn: the question, what the guest hears now, that struck
 // through, then the ready answer.
