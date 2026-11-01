@@ -123,12 +123,15 @@ function TeamDrill({pid,only,part,given,intro,back,open}){ const T=useTheme(), c
   const [before]=React.useState(()=>{ const r=TeamLearn.readiness(pid); const items={};
     qs.forEach(q=>{ const id=q.wine||q.dish; if(id&&!items[id]) items[id]=TeamLearn.progress(pid,id,{dish:!q.wine}); }); return {pct:r?r.pct:0,items}; });
   const [i,setI]=React.useState(0), [ans,setAns]=React.useState(null), [picks,setPicks]=React.useState([]), [sure,setSure]=React.useState('think');
+  // Each question (and the summary after the last) opens at its top: the previous one may have been scrolled to reach its answers.
+  const rootRef=React.useRef(null);
+  React.useLayoutEffect(()=>{ const el=rootRef.current&&rootRef.current.closest('[data-scroll]'); if(el&&i>0) el.scrollTop=0; },[i]);
   const [res,setRes]=React.useState(null), [busy,setBusy]=React.useState(false), [tally,setTally]=React.useState({right:0,of:0});
   const q=qs[i];
   if(!qs.length) return <div>{_tH(T,'Nothing to drill yet','Your training appears once the wine list has staff cards.')}<Btn full onClick={back}>Back</Btn></div>;
   if(!q){ const r=TeamLearn.note(pid), rise=r.pct-before.pct;
     const rows=Object.entries(before.items).map(([id,was])=>{ const dish=!qs.some(x=>x.wine===id), now=TeamLearn.progress(pid,id,{dish}), name=dish?(TeamData.dish(id)||{}).name:TeamData.short(TeamData.wine(id)||{}); return {id,name,was,now,dish}; });
-    return <div data-testid="drill-done">{_tH(T,`${tally.right} of ${tally.of} right`,'Each answer now has its own review date: the ones you missed come back soonest.')}
+    return <div ref={rootRef} data-testid="drill-done">{_tH(T,`${tally.right} of ${tally.of} right`,'Each answer now has its own review date: the ones you missed come back soonest.')}
       <Card>
         <div style={{display:'flex',gap:14,alignItems:'center'}}><TeamRing pct={r.pct} col={_tState[r.state].col} size={72}/>
           <div><div data-testid="drill-readiness" style={{fontSize:15,fontWeight:700,color:_tState[r.state].col,fontFamily:C.P}}>{_tState[r.state].label}</div>
@@ -151,7 +154,7 @@ function TeamDrill({pid,only,part,given,intro,back,open}){ const T=useTheme(), c
   const next=()=>{ setI(i+1); setAns(null); setPicks([]); setRes(null); setSure('think'); };
   const kindLabel=TeamLearn.KIND_LABEL[q.k];
   const opt=(label,k,{picked,right,wrong,onClick})=><div key={k} role="button" aria-pressed={picked} data-testid="drill-opt" onClick={onClick} style={{padding:'12px 14px',borderRadius:12,border:`1.5px solid ${right?'#5FD48F':wrong?'#F28B7D':picked?cr:T.line}`,background:picked?T.soft:'transparent',color:T.ink,fontSize:15,fontFamily:C.P,cursor:res?'default':'pointer',lineHeight:1.35}}>{label}</div>;
-  return <div data-testid="team-drill">
+  return <div ref={rootRef} data-testid="team-drill">
     {intro&&i===0&&!res&&<div data-testid="drill-intro" style={{display:'flex',gap:10,alignItems:'flex-start',marginBottom:14}}><TeamVinnyMark size={28}/><div><div style={{fontSize:15,fontWeight:700,color:T.ink,fontFamily:C.P}}>{intro.title}</div><div style={{fontSize:13,color:T.mid,fontFamily:C.P,lineHeight:1.45,marginTop:2}}>{intro.why}</div></div></div>}
     <div style={{display:'flex',gap:4,marginBottom:14}}>{qs.map((_,k)=><div key={k} style={{flex:1,height:4,borderRadius:2,background:k<i?cr:k===i?T.ink:T.line}}/>)}</div>
     <div style={{fontSize:12,fontWeight:700,color:w?_tTypeCol(T,w.type):T.mid,fontFamily:C.P,letterSpacing:'0.08em',textTransform:'uppercase'}}>{kindLabel}{w&&names?` · ${TeamData.short(w)}`:w?` · ${w.section||w.type}`:''}</div>

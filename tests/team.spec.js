@@ -696,3 +696,37 @@ test('options are dealt afresh each time: the right answer spreads across places
   expect(r.graded).toBe(true);
   expect(errors).toEqual([]);
 });
+
+test('scrolling: the next question opens at its top, a new screen opens at its top, and Back returns to where you were', async ({ context, page }) => {
+  await page.setViewportSize({ width: 390, height: 560 });
+  const errors = await asMarco(context, page);
+  const scroller = page.locator('[data-scroll]').first();
+  const top = () => scroller.evaluate((el) => el.scrollTop);
+  // A list scrolled down, then a wine opened from it: the wine opens at its top, and Back returns to the list where it was.
+  await page.getByTestId('team-tab-wines').click();
+  await scroller.evaluate((el) => { el.scrollTop = 600; });
+  const listAt = await top();
+  expect(listAt).toBeGreaterThan(300);
+  // Tap a row where it already is, as a finger would (a locator's click scrolls it into view first).
+  const box = await scroller.boundingBox();
+  await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+  await expect(page.getByTestId('team-pitch')).toBeVisible();
+  expect(await top()).toBe(0);
+  await scroller.evaluate((el) => { el.scrollTop = 400; });
+  await page.getByLabel('Back').click();
+  expect(Math.abs((await top()) - listAt)).toBeLessThan(2);
+  // A tab opens at its top.
+  await page.getByTestId('team-tab-menu').click();
+  expect(await top()).toBe(0);
+  // In a drill, the next question opens at its top however far the last one was scrolled.
+  await page.getByTestId('team-tab-today').click();
+  await page.getByText(/Start today's drill|Practise · 5 questions/).first().click();
+  await expect(page.getByTestId('drill-q')).toBeVisible();
+  await page.getByTestId('drill-opt').first().click();
+  await page.getByText('Check', { exact: true }).click();
+  await scroller.evaluate((el) => { el.scrollTop = el.scrollHeight; });
+  expect(await top()).toBeGreaterThan(0);
+  await page.getByText(/^(Next|Finish)$/).first().click();
+  expect(await top()).toBe(0);
+  expect(errors).toEqual([]);
+});
