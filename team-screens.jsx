@@ -113,7 +113,7 @@ function TeamToday({pid,open}){ const T=useTheme(), cr=T.lift(C.cr);
   </div>; }
 
 /* The drill: one question at a time, how sure they are, then what's right and why. */
-function TeamDrill({pid,only,part,back}){ const T=useTheme(), cr=T.lift(C.cr);
+function TeamDrill({pid,only,part,back,open}){ const T=useTheme(), cr=T.lift(C.cr);
   const [qs]=React.useState(()=>only?TeamLearn.wineQs(only).filter(q=>TeamLearn.ROLES[TeamLearn.person(pid).role].kinds.includes(q.k)):TeamLearn.drill(pid,undefined,part||null));
   // Where they stood as the drill began, so the summary can say what moved.
   const [before]=React.useState(()=>{ const r=TeamLearn.readiness(pid); const items={};
@@ -131,8 +131,9 @@ function TeamDrill({pid,only,part,back}){ const T=useTheme(), cr=T.lift(C.cr);
             <div style={{fontSize:14,color:T.ink2,fontFamily:C.P,marginTop:2}}>Readiness {before.pct}% → {r.pct}%{rise>0?<span style={{color:'#5FD48F',fontWeight:700}}> ▲{rise}</span>:rise<0?<span style={{color:'#F28B7D',fontWeight:700}}> ▼{-rise}</span>:' · no change'}</div></div></div>
         <div style={{fontSize:13,color:T.mid,fontFamily:C.P,marginTop:10,lineHeight:1.45}}>Every answer you hold counts a little; a wine counts in full for the minimum once every rung is right and still fresh.</div>
       </Card>
-      {_tLabel(T,'In this drill')}<Card style={{padding:0}}>{rows.map((x,k)=><div key={x.id} data-testid="drill-item" style={{padding:'10px 14px',borderTop:k?`1px solid ${T.line}`:'none'}}>
-        <div style={{display:'flex',justifyContent:'space-between',gap:10,fontSize:15,fontFamily:C.P,color:T.ink}}><span style={{fontWeight:700}}>{x.name}</span><span style={{color:x.now.known>x.was.known?'#5FD48F':T.ink2,whiteSpace:'nowrap'}}>{x.now.known} of {x.now.total}{x.now.known>x.was.known?` ▲${x.now.known-x.was.known}`:x.now.known<x.was.known?` ▼${x.was.known-x.now.known}`:''}</span></div>
+      {_tLabel(T,'In this drill')}<div style={{fontSize:13,color:T.mid,fontFamily:C.P,margin:'-4px 0 8px'}}>Tap a wine or dish to open its card and keep going.</div>
+      <Card style={{padding:0}}>{rows.map((x,k)=><div key={x.id} data-testid="drill-item" role={open?'button':undefined} onClick={()=>open&&open({view:x.dish?'dish':'wine',id:x.id})} style={{padding:'10px 14px',borderTop:k?`1px solid ${T.line}`:'none',cursor:open?'pointer':'default'}}>
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:10,fontSize:15,fontFamily:C.P,color:T.ink}}><span style={{fontWeight:700,minWidth:0}}>{x.name}</span><span style={{display:'flex',alignItems:'center',gap:8,flexShrink:0}}><span style={{color:x.now.known>x.was.known?'#5FD48F':T.ink2,whiteSpace:'nowrap'}}>{x.now.known} of {x.now.total}{x.now.known>x.was.known?` ▲${x.now.known-x.was.known}`:x.now.known<x.was.known?` ▼${x.was.known-x.now.known}`:''}</span>{open&&<Icon n="chevron" sz={12} col={T.mid}/>}</span></div>
         {x.now.rungs.length>0&&<div style={{display:'flex',gap:6,flexWrap:'wrap',marginTop:6}}>{x.now.rungs.map(rg=><span key={rg.k} style={{fontSize:12,fontFamily:C.P,padding:'3px 8px',borderRadius:8,border:`1px solid ${rg.done?'#5FD48F':T.line}`,color:rg.done?'#5FD48F':T.mid}}>{rg.done?'✓ ':''}{rg.label}</span>)}</div>}
       </div>)}</Card>
       <Btn primary full style={{marginTop:14}} onClick={back}>Done</Btn></div>; }
