@@ -111,10 +111,10 @@ The project is `vinterest-teams`: production at https://vinterest-teams.pages.de
 
 Build variables (all optional):
 
-- `DEMO_ORIGIN`: where the interactive demo (the team app, `/team/?seed=demo&view=console`) is
-  served. Default `https://vinterest.pages.dev`, the app's project. Until the console branch
-  (`claude/teams-console`) is on `main`, set it to that branch's preview,
-  `https://claude-teams-console.vinterest.pages.dev`, on the Preview environment at least.
+- The restaurant demo buttons open the app project's build of the same branch, so the demo always
+  matches the site: `https://vinterest.pages.dev` from `main`, `https://<branch>.vinterest.pages.dev`
+  from any other branch (from `CF_PAGES_BRANCH`, which Cloudflare sets). `TEAM_DEMO_ORIGIN` overrides
+  it. The old `DEMO_ORIGIN` variable is ignored and can be deleted.
 - `CF_ANALYTICS_TOKEN`: as for the consumer site; a separate Web Analytics site for this domain.
 - `SITE_ORIGIN`: the public address for the sitemap. Default `https://vinterest.team`.
 

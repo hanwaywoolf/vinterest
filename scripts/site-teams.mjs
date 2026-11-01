@@ -12,9 +12,11 @@
 //   site/teams/_redirects       www.vinterest.team to vinterest.team
 //
 // Settings (Cloudflare Pages build variables, all optional):
-//   DEMO_ORIGIN           where the interactive demo (the team app at /team/) is served; default
-//                         https://vinterest.pages.dev. Until the console branch is on main, point it at
-//                         that branch's preview.
+//   The restaurant demo (the team app at /team/) comes from the app project's build of the same branch,
+//   so the demo always shows the app as this site describes it: on main https://vinterest.pages.dev,
+//   on any other branch its preview, https://<branch>.vinterest.pages.dev (CF_PAGES_BRANCH, which
+//   Cloudflare sets). TEAM_DEMO_ORIGIN overrides it. (DEMO_ORIGIN, its old name, is ignored: it was
+//   set to a branch that has since gone.)
 //   CF_ANALYTICS_TOKEN    Cloudflare Web Analytics token; without it no analytics script is added
 //   SITE_ORIGIN           the site's public address, for the sitemap (default https://vinterest.team)
 import { createHash } from 'node:crypto';
@@ -36,9 +38,16 @@ function fill(html, vars) {
   });
 }
 
+// Cloudflare's branch address: lower case, anything but letters and digits as '-', at most 28 characters.
+export function demoOrigin(branch) {
+  if (!branch || branch === 'main') return 'https://vinterest.pages.dev';
+  const alias = branch.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 28).replace(/^-+|-+$/g, '');
+  return `https://${alias}.vinterest.pages.dev`;
+}
+
 export function build() {
   const origin = (process.env.SITE_ORIGIN || 'https://vinterest.team').replace(/\/+$/, '');
-  const demo = (process.env.DEMO_ORIGIN || 'https://vinterest.pages.dev').replace(/\/+$/, '');
+  const demo = (process.env.TEAM_DEMO_ORIGIN || demoOrigin(process.env.CF_PAGES_BRANCH)).replace(/\/+$/, '');
   fs.rmSync(OUT, { recursive: true, force: true });
   fs.mkdirSync(OUT, { recursive: true });
   buildFonts(OUT);
