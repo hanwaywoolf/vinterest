@@ -99,6 +99,17 @@ const TeamLearn = {
     return {known:qs.filter(q=>this.known(items[q.id])).length,total:qs.length,rungs};
   },
   KIND_LABEL:{recognise:'Recognise',recall:'Recall',apply:'At the table',contrast:'Tell them apart'},
+  /* Where a person stands with one wine, for its card: the rungs, the next one to climb, how many answers are
+     fading or missed, and a word for it (new | learning | fading | known). */
+  standing(pid,id){
+    const person=this.person(pid); if(!person) return null;
+    const pr=this.progress(pid,id), items=this._mine(this._all(),pid).items, now=Date.now();
+    const qs=this.wineQs(id).filter(q=>this.ROLES[person.role].kinds.includes(q.k));
+    const seen=qs.filter(q=>items[q.id]&&items[q.id].reps).length, due=qs.filter(q=>{ const it=items[q.id]; return it&&it.reps&&(it.wrong||it.due<=now); }).length;
+    const next=pr.rungs.find(r=>!r.done)||null, nextDue=qs.map(q=>items[q.id]).filter(it=>it&&it.reps&&!it.wrong&&it.due>now).reduce((a,it)=>Math.min(a,it.due),Infinity);
+    const state=!seen?'new':pr.total&&pr.known===pr.total?'known':due?'fading':'learning';
+    return {...pr,seen,due,next,nextDue:isFinite(nextDue)?nextDue:null,state,role:person.role};
+  },
 
   /* {pct, parts:{glass:{known,total,need,share}}, state:'ready'|'slipping'|'not', overdue, due} */
   readiness(pid){
