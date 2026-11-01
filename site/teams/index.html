@@ -80,6 +80,9 @@ h3 { font-size: 19px; letter-spacing: -.01em; line-height: 1.3; }
 .pstage .ly.out { opacity: 0; }
 .pstage .cursor { position: absolute; width: 18px; height: 18px; margin: -9px 0 0 -9px; border-radius: 50%; border: 2px solid #fff; background: rgba(232, 83, 107, .55); opacity: 0; pointer-events: none; }
 .pstage .cursor.on { opacity: 1; animation: tap .9s ease-out; }
+.pstage .thumb { position: absolute; width: 34px; height: 34px; margin: -17px 0 0 -17px; border-radius: 50%; background: radial-gradient(circle, rgba(255,255,255,.35), rgba(255,255,255,.08) 70%, transparent 72%); opacity: 0; pointer-events: none; will-change: transform, opacity; }
+@media (prefers-reduced-motion: no-preference) { .hero .side .phone { animation: hold 7s ease-in-out infinite; } }
+@keyframes hold { 0%, 100% { transform: rotate(-3deg) translateY(0); } 50% { transform: rotate(-2.4deg) translateY(-4px); } }
 
 .hero h1 em { font-style: normal; color: var(--cr); }
 .hero .lead { font-size: 20px; max-width: 30em; }
@@ -458,15 +461,40 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 // A stage plays steps: each step lays a static frame and a tall capture that pans inside the stage (a
 // layer is {img, x, y, w, h} in the capture's own pixels, panned by h), then a tap marker.
-function player(stage, W, H, dir) {
+function player(stage, W, H, dir, mode) {
   let run = 0, raf = 0;
+  const wait = (ms, token) => new Promise((r) => { const t0 = performance.now(); const tick = (t) => { if (token !== run || t - t0 >= ms) return r(); raf = requestAnimationFrame(tick); }; raf = requestAnimationFrame(tick); });
   const layer = (l) => { const img = document.createElement('img'); img.className = 'ly'; img.src = dir + l.img + '.jpg'; img.alt = ''; img.style.left = (l.x / W * 100) + '%'; img.style.top = ((l.y || 0) / H * 100) + '%'; img.style.width = (l.w / W * 100) + '%'; stage.appendChild(img); return img; };
   async function step(st, token) {
     let pan = st.keep ? stage.querySelector('.ly[data-pan]') : null;
     if (!pan) { const old = Array.from(stage.querySelectorAll('.ly')); (st.frames || []).forEach(layer); pan = layer(st.pan); pan.dataset.pan = '1'; (st.over || []).forEach(layer); old.forEach((o) => { o.classList.add('out'); setTimeout(() => o.remove(), 450); }); }
     const scale = stage.clientWidth / W, top = (st.pan.y || 0) * scale, room = stage.clientHeight - top - (st.pan.below || 0) * scale, travel = Math.max(0, st.pan.h * scale - room);
-    const t0 = performance.now(), { from, to, ms } = st.pan;
-    await new Promise((done) => { const tick = (t) => { if (token !== run) return done(); const p = Math.min(1, (t - t0) / ms); const f = from + (to - from) * (reduced ? 1 : ease(p)); pan.style.transform = `translateY(${-f * travel}px)`; if (p < 1 && !reduced) raf = requestAnimationFrame(tick); else done(); }; raf = requestAnimationFrame(tick); });
+    const { from, to, ms } = st.pan;
+    const setY = (f) => { pan.style.transform = `translateY(${-f * travel}px)`; };
+    if (reduced || from === to || travel === 0) { setY(to); await wait(reduced ? 0 : ms, token); }
+    else if (mode === 'touch') {
+      // A person scrolling: a run of thumb flicks, each a quick swipe that eases out, with a pause to read
+      // between them. The thumb shows as a soft touch mark that moves with the swipe.
+      const dist = (to - from) * travel, n = Math.max(1, Math.round(Math.abs(dist) / (room * .55))), per = dist / n;
+      let f = from; const readMs = Math.max(250, (ms - n * 520) / n);
+      for (let i = 0; i < n; i++) {
+        if (token !== run) return; const start = f, end = f + per / travel;
+        const th = document.createElement('div'); th.className = 'thumb'; const x0 = W * .62, y0 = (st.pan.y || 0) + st.pan.h * 0 + room / scale * .72; th.style.left = (x0 / W * 100) + '%'; th.style.top = (y0 / H * 100) + '%'; stage.appendChild(th);
+        const t0 = performance.now();
+        await new Promise((done) => { const tick = (t) => { if (token !== run) return done(); const p = Math.min(1, (t - t0) / 520); const e = 1 - Math.pow(1 - p, 3); f = start + (end - start) * e; setY(f); th.style.transform = `translateY(${-per * e * .9}px)`; th.style.opacity = p < .7 ? .9 : .9 * (1 - (p - .7) / .3); if (p < 1) raf = requestAnimationFrame(tick); else done(); }; raf = requestAnimationFrame(tick); });
+        th.remove(); if (token !== run) return;
+        await wait(readMs * (0.8 + 0.4 * ((i * 7) % 5) / 5), token);
+      }
+      setY(to);
+    } else {
+      // A wheel: notches of a few lines, a breath between runs.
+      const dist = (to - from) * travel, notch = 90, n = Math.max(1, Math.round(Math.abs(dist) / notch)), per = dist / n, gap = Math.max(40, (ms - n * 140) / n);
+      let f = from;
+      for (let i = 0; i < n; i++) { if (token !== run) return; const start = f, end = f + per / travel, t0 = performance.now();
+        await new Promise((done) => { const tick = (t) => { if (token !== run) return done(); const p = Math.min(1, (t - t0) / 140); f = start + (end - start) * (1 - Math.pow(1 - p, 2)); setY(f); if (p < 1) raf = requestAnimationFrame(tick); else done(); }; raf = requestAnimationFrame(tick); });
+        await wait(gap * ((i + 1) % 4 === 0 ? 3 : 1), token); }
+      setY(to);
+    }
     if (token !== run) return;
     if (st.tap) { const c = document.createElement('div'); c.className = 'cursor'; c.style.left = (st.tap.x / W * 100) + '%'; c.style.top = (st.tap.y / H * 100) + '%'; stage.appendChild(c); requestAnimationFrame(() => c.classList.add('on')); await sleep(reduced ? 0 : 800); c.remove(); }
   }
@@ -485,7 +513,7 @@ const SCENES = {
   sales: { cap: '<b>The till.</b> What sells, who sells it, and which wines are worth a push.', steps: [{ frames: side, pan: { img: 'dash', x: SB, w: SW - SB, h: 3273, from: .5, to: .5, ms: 1500 } }, { pan: { img: 'dash', x: SB, w: SW - SB, h: 3273, from: .5, to: 1, ms: 8000 }, keep: true }] },
 };
 const stage = document.getElementById('stage'), tabs = Array.from(document.querySelectorAll('#tabs [role=tab]')), cap = document.getElementById('cap');
-const order = tabs.map((t) => t.dataset.scene), lap = player(stage, SW, SH, 'img/scenes/');
+const order = tabs.map((t) => t.dataset.scene), lap = player(stage, SW, SH, 'img/scenes/', 'wheel');
 let cur = 'ready', held = reduced, inView = false, playing = false;
 async function play(name) {
   cur = name; playing = true; const sc = SCENES[name];
@@ -502,7 +530,7 @@ play(cur);
 // The phone in the hero: a bartender's Today, the drill answered, a card read through, on a loop.
 const PW = 390, PH = 844, PHEAD = 61, PTAB = 58, pstage = document.getElementById('pstage');
 if (pstage) {
-  const ph = player(pstage, PW, PH - 0, 'img/phone/');
+  const ph = player(pstage, PW, PH, 'img/phone/', 'touch');
   const head = (img) => [{ img, x: 0, y: 0, w: PW, h: PHEAD }], tabbar = [{ img: 'tabbar', x: 0, y: PH - PTAB, w: PW, h: PTAB }];
   const PHONE = [
     { over: [...head('head-today'), ...tabbar], pan: { img: 'today', x: 0, y: PHEAD, below: PTAB, w: PW, h: 969, from: 0, to: 0, ms: 1800 } },
