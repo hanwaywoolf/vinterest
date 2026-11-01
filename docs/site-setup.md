@@ -97,8 +97,15 @@ site above and from the app, so it can carry its own domain.
 Setup, once: Workers & Pages → Create → Pages → Connect to Git → the vinterest repository (a second
 project on the same repository is fine) → the settings above. Then Custom domains → Set up a custom
 domain → `vinterest.team`. With the domain's DNS on Cloudflare the records are added for you;
-otherwise add the CNAME it shows at the registrar. Add `www.vinterest.team` the same way; Pages
-redirects it to the apex.
+otherwise add the CNAME it shows at the registrar. Add `www.vinterest.team` the same way, as a custom
+domain on this project and not only a DNS record (a DNS record alone gives a 522); the site's
+`_redirects` then sends it to the apex.
+
+Pages: `index.html` (/), `restaurants.html`, `groups.html`, `wineries.html`, `pricing.html`, each
+served without `.html`. They share `site.css`, `site.js` (the Test Your List form) and three parts
+filled in at build time: `_nav.html`, `_test.html`, `_footer.html`. A new page is a new `.html` file
+in `site/teams/`: the build picks it up, adds it to the sitemap, and `tests/teams-site.spec.js`
+should list it in `PAGES`.
 
 The project is `vinterest-teams`: production at https://vinterest-teams.pages.dev, and every push of a branch deploys a preview at `https://<branch with / as ->.vinterest-teams.pages.dev`. While the site lives on `claude/teams-site`, that branch is set as the production branch; set it back to `main` at the merge.
 

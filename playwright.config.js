@@ -32,6 +32,8 @@ module.exports = defineConfig({
     { command: 'npm run build && node scripts/serve.mjs dist 4173', url: 'http://localhost:4173/', reuseExistingServer: !process.env.CI },
     // The marketing site (site/), built separately from the app: tests/site.spec.js.
     { command: 'npm run site:build && node scripts/serve.mjs site-dist 4175', url: 'http://localhost:4175/', reuseExistingServer: !process.env.CI },
+    // The Vinterest Teams website (site/teams/, vinterest.team): tests/teams-site.spec.js.
+    { command: 'npm run site:teams:build && node scripts/serve.mjs site-teams-dist 4176', url: 'http://localhost:4176/', reuseExistingServer: !process.env.CI },
     // The repo root with the hand-compiled bundle.js, for tests/parity.spec.js. Goes away with bundle.js.
     ...(hasLegacyBundle
       ? [{ command: 'node scripts/serve.mjs . 4174', url: 'http://localhost:4174/', reuseExistingServer: !process.env.CI }]
