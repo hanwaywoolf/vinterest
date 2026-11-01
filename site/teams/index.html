@@ -154,8 +154,8 @@ h3 { font-size: 19px; letter-spacing: -.01em; line-height: 1.3; }
 .out .t .n { font-size: clamp(20px, 2.4vw, 28px); font-weight: 800; letter-spacing: -.03em; margin-top: 4px; font-variant-numeric: tabular-nums; color: var(--ink); }
 .out .t.pick .n { color: var(--c); }
 .out .t .w { font-size: 12px; color: var(--mute); margin-top: 2px; font-variant-numeric: tabular-nums; }
-.own.top { margin: 0 0 6px; padding: 12px 14px; border-radius: 12px; background: var(--cr-soft); border: 1px solid rgba(139, 26, 47, .2); font-weight: 600; color: var(--ink); }
-.own.top input { accent-color: var(--cr); }
+.own.lead { margin: 0 0 6px; padding: 12px 14px; border-radius: 12px; background: var(--cr-soft); border: 1px solid rgba(139, 26, 47, .2); font-weight: 600; color: var(--ink); }
+.own.lead input { accent-color: var(--cr); }
 .own { margin-top: 12px; display: grid; grid-template-columns: auto 1fr auto; gap: 12px; align-items: center; font-size: 13px; color: var(--ink-2); }
 .own input { accent-color: var(--cr); width: 100%; }
 .own b { font-variant-numeric: tabular-nums; font-weight: 700; color: var(--ink); min-width: 3em; text-align: right; }
@@ -333,7 +333,7 @@ footer a { text-decoration: none; }
       <p class="caveat">We claim no lift for you. Once your till's sales are in, the console measures the real one.</p>
     </div>
     <div class="card" id="calcCard">
-      <div class="own top"><span>Your guess at the lift</span><input type="range" min="0" max="30" step="1" value="5" data-in="lift" aria-label="Your lift" id="liftIn"><b data-out="lift">5%</b></div>
+      <div class="own lead"><span>Your guess at the lift</span><input type="range" min="0" max="30" step="1" value="5" data-in="lift" aria-label="Your lift" id="liftIn"><b data-out="lift">5%</b></div>
       <div class="assume" id="ownOut" style="padding:0 0 14px"></div>
       <div class="mode" role="group" aria-label="Detail"><button aria-pressed="true" data-mode="basic">What I know offhand</button><button aria-pressed="false" data-mode="precise">I track wine sales</button></div>
       <div class="fld"><label>Covers a night<small>Dinner, averaged over the week</small></label><div class="v" data-out="covers">120</div><input type="range" min="30" max="400" step="10" value="120" data-in="covers" aria-label="Covers a night"></div>
