@@ -116,7 +116,9 @@ function TeamToday({pid,open}){ const T=useTheme(), cr=T.lift(C.cr);
 /* The drill: one question at a time, how sure they are, then what's right and why. */
 function TeamDrill({pid,only,part,given,intro,back,open}){ const T=useTheme(), cr=T.lift(C.cr);
   // given: questions chosen elsewhere (Vinny's test, team-vinny.js), with intro {title, why} over the first.
-  const [qs]=React.useState(()=>given&&given.length?given:only?TeamLearn.wineQs(only).filter(q=>TeamLearn.ROLES[TeamLearn.person(pid).role].kinds.includes(q.k)):TeamLearn.drill(pid,undefined,part||null));
+  // Every drill deals its questions afresh, so a question seen before comes back in a new order.
+  const [qs]=React.useState(()=>{ const raw=given&&given.length?given:only?TeamLearn.wineQs(only).filter(q=>TeamLearn.ROLES[TeamLearn.person(pid).role].kinds.includes(q.k)):TeamLearn.drill(pid,undefined,part||null);
+    const nonce=Date.now().toString(36); return raw.map((q,i)=>TeamLearn.deal(q,nonce+i)); });
   // Where they stood as the drill began, so the summary can say what moved.
   const [before]=React.useState(()=>{ const r=TeamLearn.readiness(pid); const items={};
     qs.forEach(q=>{ const id=q.wine||q.dish; if(id&&!items[id]) items[id]=TeamLearn.progress(pid,id,{dish:!q.wine}); }); return {pct:r?r.pct:0,items}; });

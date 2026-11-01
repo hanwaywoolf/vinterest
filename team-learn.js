@@ -84,8 +84,18 @@ const TeamLearn = {
     ];
   },
   // The same order every time for a question, so a re-draw doesn't reshuffle what they've seen.
-  _shuffle(arr,seed){ let h=0; for(const c of String(seed)) h=(h*31+c.charCodeAt(0))|0; const a=[...arr];
-    for(let i=a.length-1;i>0;i--){ h=(h*1103515245+12345)|0; const j=Math.abs(h)%(i+1); [a[i],a[j]]=[a[j],a[i]]; } return a; },
+  /* A shuffle seeded by a string: an FNV-1a hash of the seed into mulberry32, then Fisher-Yates. The old
+     linear generator took its low bits for the position, and those repeat in a short cycle, so the right
+     answer kept landing in the same place (most often last). */
+  _shuffle(arr,seed){ let h=2166136261>>>0; for(const c of String(seed)){ h^=c.charCodeAt(0); h=Math.imul(h,16777619)>>>0; }
+    const rnd=()=>{ h=(h+0x6D2B79F5)>>>0; let t=h; t=Math.imul(t^(t>>>15),t|1); t^=t+Math.imul(t^(t>>>7),t|61); return ((t^(t>>>14))>>>0)/4294967296; };
+    const a=[...arr]; for(let i=a.length-1;i>0;i--){ const j=Math.floor(rnd()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; },
+  /* Each time a question is shown it's dealt afresh: its options in a new order (and, for pills, a new
+     draw of wrong ones), fixed for that showing so the screen and the marking agree. Progress is keyed to
+     the question's id, never the deal. */
+  _seed(q){ return q.id+(q.deal?':'+q.deal:''); },
+  deal(q,nonce){ const d={...q,deal:String(nonce)}; if(q.k!=='recognise'||!q.opts) return d;
+    const order=this._shuffle(q.opts.map((_,i)=>i),this._seed(d)); return {...d,opts:order.map(i=>q.opts[i]),a:order.indexOf(q.a)}; },
   allQs(){ return [...TeamData.wines().flatMap(w=>this.wineQs(w.id)),...TeamData.dishes().flatMap(x=>this.dishQs(x.id))]; },
 
   /* How likely they are to remember a question now: 1 just after a right answer, RETAIN at its due date. */
@@ -225,8 +235,8 @@ const TeamLearn = {
     for(const w of wines){ if(w.id===q.wine) continue; for(const o of this.wineQs(w.id)){ if(o.k!==q.k) continue;
       if(o.k==='apply') (o.key||[]).forEach(add); else if(o.k==='contrast') [o.ans,...(o.acc||[])].forEach(add); else split(o.ans).forEach(add); } }
     const same=pool.filter(x=>!alike.includes(x)&&cls(x)===want), rest=pool.filter(x=>!alike.includes(x)&&!same.includes(x));
-    const wrong=[...this._shuffle(alike,q.id+'a'),...this._shuffle(same,q.id+'b'),...this._shuffle(rest,q.id+'d')].slice(0,Math.max(0,this.CHOICES-right.length));
-    const all=[...right.map(x=>({x,ok:true})),...wrong.map(x=>({x,ok:false}))], order=this._shuffle(all.map((_,i)=>i),q.id+'c');
+    const wrong=[...this._shuffle(alike,this._seed(q)+'a'),...this._shuffle(same,this._seed(q)+'b'),...this._shuffle(rest,this._seed(q)+'d')].slice(0,Math.max(0,this.CHOICES-right.length));
+    const all=[...right.map(x=>({x,ok:true})),...wrong.map(x=>({x,ok:false}))], order=this._shuffle(all.map((_,i)=>i),this._seed(q)+'c');
     const opts=order.map(i=>this._cap(all[i].x)), rightIdx=order.map((i,j)=>all[i].ok?j:-1).filter(j=>j>=0);
     return {opts,right:rightIdx,n:rightIdx.length};
   },
@@ -285,10 +295,10 @@ const TeamLearn = {
     if(/month/i.test(right[0])){ const m=pool.filter(x=>/month/i.test(x)); pool.length=0; pool.push(...m); }
     if(topic==='place'&&/valley/i.test(right[0])){ ['The Rhône Valley','The Douro Valley','The Napa Valley','The Mosel Valley','The Barossa Valley'].forEach(add); const v=pool.filter(x=>/valley/i.test(x)); pool.length=0; pool.push(...v); }
     // A flavour pill that shares a word with a right one ("Black cherry" beside "Red cherry") would be unfair either way.
-    const wrong=this._shuffle(pool.filter(x=>topic!=='flavour'||!this._words(x).some(w=>rightWords.has(w))),q.id+'t');
+    const wrong=this._shuffle(pool.filter(x=>topic!=='flavour'||!this._words(x).some(w=>rightWords.has(w))),this._seed(q)+'t');
     if(wrong.length<3) return null;
     const total=Math.min(this.CHOICES,right.length+Math.max(3,Math.min(7,wrong.length)));
-    const all=[...right.map(x=>({x,ok:true})),...wrong.slice(0,total-right.length).map(x=>({x,ok:false}))], order=this._shuffle(all.map((_,i)=>i),q.id+'c');
+    const all=[...right.map(x=>({x,ok:true})),...wrong.slice(0,total-right.length).map(x=>({x,ok:false}))], order=this._shuffle(all.map((_,i)=>i),this._seed(q)+'c');
     return {opts:order.map(i=>this._cap(all[i].x)),right:order.map((i,j)=>all[i].ok?j:-1).filter(j=>j>=0),n:right.length};
   },
   _cap(x){ const t=String(x||'').trim(); return t.charAt(0).toUpperCase()+t.slice(1); },
@@ -303,7 +313,7 @@ const TeamLearn = {
     const prices=[...new Set(wines.map(w=>this._num(side==='glass'?w.glass:w.bottle)).filter(x=>x!=null&&x!==n))]
       .sort((a,b)=>Math.abs(a-n)-Math.abs(b-n)).slice(0,this.CHOICES-1);
     if(prices.length<3) return null;
-    const all=[{x:rightText,ok:true},...this._shuffle(prices,q.id+'m').map(p=>({x:fmt(p),ok:false}))], order=this._shuffle(all.map((_,i)=>i),q.id+'c');
+    const all=[{x:rightText,ok:true},...this._shuffle(prices,this._seed(q)+'m').map(p=>({x:fmt(p),ok:false}))], order=this._shuffle(all.map((_,i)=>i),this._seed(q)+'c');
     return {opts:order.map(i=>all[i].x),right:order.map((i,j)=>all[i].ok?j:-1).filter(j=>j>=0),n:1};
   },
   /* At the table: two short lists instead of one mixed one. First the wine to suggest (one of four wines of
@@ -324,7 +334,7 @@ const TeamLearn = {
     // for a glass, wines poured by the glass, so the price alone never gives the right one away.
     const near=['sparkling','white','rosé','orange','red','sweet','fortified'], dist=w=>Math.abs(near.indexOf(w.type)-near.indexOf(rw.type));
     const fit=w=>side==='glass'&&!w.glass?1:0;
-    const offers=[{x:offer(rw),ok:true},...this._shuffle(wines.filter(w=>w.id!==rw.id),q.id+'o').sort((a,b)=>dist(a)-dist(b)||fit(a)-fit(b)).slice(0,3).map(w=>({x:offer(w),ok:false}))];
+    const offers=[{x:offer(rw),ok:true},...this._shuffle(wines.filter(w=>w.id!==rw.id),this._seed(q)+'o').sort((a,b)=>dist(a)-dist(b)||fit(a)-fit(b)).slice(0,3).map(w=>({x:offer(w),ok:false}))];
     // A reason as something to say: "Say it's dry" → "It's dry"; price clauses and offers dropped.
     // Serving notes (decant, temperature) and bare instructions ("Link the wine to the dish") aren't reasons.
     const reason=s=>{ if(/^(offer|suggest|recommend|pour|go for|link|name|serve)\b/i.test(s)||/\bdecant|°C|\bserve at\b/i.test(s)||named(s).length) return '';
@@ -335,10 +345,10 @@ const TeamLearn = {
     if(!rights.length) return null;
     const seen=new Set(rights.map(norm)), wrongs=[];
     const others=[...wines.filter(w=>w.id!==rw.id&&w.type===rw.type),...wines.filter(w=>w.type!==rw.type)];
-    for(const w of this._shuffle(others,q.id+'r')){ for(const o of this.wineQs(w.id)){ if(o.k!=='apply') continue;
+    for(const w of this._shuffle(others,this._seed(q)+'r')){ for(const o of this.wineQs(w.id)){ if(o.k!=='apply') continue;
       for(const k of o.key||[]){ const t=reason(k); if(t&&!seen.has(norm(t))){ seen.add(norm(t)); wrongs.push(t); } } } if(wrongs.length>=8) break; }
-    const reasons=[...rights.map(x=>({x,ok:true})),...this._shuffle(wrongs,q.id+'w').slice(0,6-rights.length).map(x=>({x,ok:false}))];
-    const o1=this._shuffle(offers.map((_,i)=>i),q.id+'c1').map(i=>offers[i]), o2=this._shuffle(reasons.map((_,i)=>i),q.id+'c2').map(i=>reasons[i]);
+    const reasons=[...rights.map(x=>({x,ok:true})),...this._shuffle(wrongs,this._seed(q)+'w').slice(0,6-rights.length).map(x=>({x,ok:false}))];
+    const o1=this._shuffle(offers.map((_,i)=>i),this._seed(q)+'c1').map(i=>offers[i]), o2=this._shuffle(reasons.map((_,i)=>i),this._seed(q)+'c2').map(i=>reasons[i]);
     const all=[...o1,...o2];
     return {opts:all.map(a=>a.x),right:all.map((a,j)=>a.ok?j:-1).filter(j=>j>=0),n:1+rights.length,
       groups:[{label:'What do you suggest?',from:0,to:o1.length,n:1},{label:'Why it works',from:o1.length,to:all.length,n:rights.length}]};

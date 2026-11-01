@@ -678,3 +678,21 @@ test('a recall question offers wrong answers of its own kind: flavours for a fla
   expect(r.months.opts.every((o) => /month/i.test(o))).toBe(true);
   expect(errors).toEqual([]);
 });
+
+test('options are dealt afresh each time: the right answer spreads across places, and a question seen again comes back reordered', async ({ context, page }) => {
+  const errors = await asMarco(context, page);
+  const r = await page.evaluate(() => {
+    const rec = TeamLearn.allQs().filter((q) => q.k === 'recognise'), pos = [0, 0, 0, 0];
+    for (let n = 0; n < 10; n++) rec.forEach((q, i) => pos[TeamLearn.deal(q, `t${n}-${i}`).a]++);
+    const q = rec[0], orders = new Set(); for (let n = 0; n < 10; n++) orders.add(TeamLearn.deal(q, `o${n}`).opts.join('|'));
+    const pc = TeamLearn.allQs().find((x) => x.k === 'recall'), dealt = TeamLearn.deal(pc, 'g');
+    return { share: pos.map((x) => x / pos.reduce((a, b) => a + b, 0)), orders: orders.size,
+      again: TeamLearn.deal(q, 'same').opts.join() === TeamLearn.deal(q, 'same').opts.join(),
+      graded: TeamLearn.gradeChoices(dealt, TeamLearn.choices(dealt).right).ok };
+  });
+  for (const s of r.share) expect(s).toBeGreaterThan(0.18); // no place holds the answer far more than its share
+  expect(r.orders).toBeGreaterThan(4);
+  expect(r.again).toBe(true); // one showing stays put, so the screen and the marking agree
+  expect(r.graded).toBe(true);
+  expect(errors).toEqual([]);
+});
