@@ -207,6 +207,7 @@ const TeamLearn = {
   CHOICES:10,
   choices(q){
     if(q.k==='apply'){ const g=this._applyChoices(q); if(g) return g; }
+    if(q.k==='contrast'){ const g=this._contrastChoices(q); if(g) return g; }
     const norm=x=>String(x).toLowerCase().replace(/[^a-z0-9£$€%]+/g,' ').trim();
     // A list answer ("Chardonnay, Pinot Noir and Pinot Meunier") becomes one pill per item; a sentence with a comma stays one pill.
     const split=a=>{ const ps=String(a||'').split(/,|\band\b|;/).map(x=>x.trim()).filter(Boolean); return ps.length>=2&&ps.every(x=>x.split(/\s+/).length<=3)?ps:[String(a||'').trim()].filter(Boolean); };
@@ -241,7 +242,7 @@ const TeamLearn = {
     const wrong=[...this._shuffle(alike,this._seed(q)+'a'),...this._shuffle(same,this._seed(q)+'b'),...(q.k==='recall'?[]:this._shuffle(rest,this._seed(q)+'d'))].slice(0,Math.max(0,this.CHOICES-right.length));
     const all=[...right.map(x=>({x,ok:true})),...wrong.map(x=>({x,ok:false}))], order=this._shuffle(all.map((_,i)=>i),this._seed(q)+'c');
     const opts=order.map(i=>this._cap(all[i].x)), rightIdx=order.map((i,j)=>all[i].ok?j:-1).filter(j=>j>=0);
-    return {opts,right:rightIdx,n:rightIdx.length};
+    return {opts,right:rightIdx,n:rightIdx.length,via:'pool'};
   },
   /* What a recall question asks about, read from its words; null when it isn't one of these. */
   _topic(text){ const t=String(text).toLowerCase();
@@ -298,6 +299,7 @@ const TeamLearn = {
       const dist=w=>rw?Math.abs(near.indexOf(w.type)-near.indexOf(rw.type)):0;
       const avoid=p&&p.avoid&&TeamData.wine(p.avoid.id); if(avoid&&!ok.has(avoid.id)) add(TeamData.short(avoid));
       this._shuffle(wines.filter(w=>!ok.has(w.id)&&w.id!==q.wine),this._seed(q)+'n').sort((a,b)=>dist(a)-dist(b)).forEach(w=>add(TeamData.short(w)));
+      if(pool.length<4) this.offList(rw?this.kindOf(rw):'red',4-pool.length,this._seed(q)+'f').forEach(add);
       const keep=pool.slice(0,7), all=[...right.map(x=>({x,ok:true})),...keep.map(x=>({x,ok:false}))], order=this._shuffle(all.map((_,i)=>i),this._seed(q)+'c');
       return {opts:order.map(i=>this._cap(all[i].x)),right:order.map((i,j)=>all[i].ok?j:-1).filter(j=>j>=0),n:right.length};
     }
@@ -316,6 +318,87 @@ const TeamLearn = {
     const all=[...right.map(x=>({x,ok:true})),...wrong.slice(0,total-right.length).map(x=>({x,ok:false}))], order=this._shuffle(all.map((_,i)=>i),this._seed(q)+'c');
     return {opts:order.map(i=>this._cap(all[i].x)),right:order.map((i,j)=>all[i].ok?j:-1).filter(j=>j>=0),n:right.length};
   },
+  /* Telling two wines apart: the right answers are the card's; the wrong ones are about the same two
+     wines, built from the list itself with one thing turned round (their places, grapes, prices, which
+     is poured by the glass, which is older), so every option is about the question and only the facts
+     decide it. Null when the question doesn't name a second wine on the list. */
+  _contrastChoices(q){
+    const norm=x=>this._norm(x), A=TeamData.wine(q.wine); if(!A) return null;
+    // The second wine is the one the question names as the list does (producer and name), never a bare
+    // grape ("Riesling" is Trimbach's name too).
+    const text=norm(q.q), B=TeamData.wines().filter(w=>w.id!==A.id&&text.includes(norm(TeamData.short(w)))).sort((x,y)=>TeamData.short(y).length-TeamData.short(x).length)[0];
+    if(!B) return null;
+    const right=[...new Set([q.ans,...(q.acc||[])].filter(Boolean).map(x=>String(x).trim()))].slice(0,3);
+    const said=' '+norm(right.join(' '))+' ', GENERIC=new Set(['chateau','domaine','domaines','bodegas','tenuta','weingut','maison','cave','the','les','des','del','della','de','du','la','le','classico','reserva','riserva','premier','cru','grand','late','harvest','old','year','brut','reserve','nv']);
+    // Every way the card calls each wine ("Cloudy Bay", "Louis Jadot", "Jadot"): runs of words from its name that
+    // appear in the answers, longest first, leaving out words both names share ("Pinot Noir") or that say nothing alone.
+    const words=w=>TeamData.short(w).split(/\s+/);
+    const shared=new Set(words(A).map(norm).filter(x=>words(B).map(norm).includes(x)));
+    // A grape or place inside a name ("Santa Barbara County", "Riesling") is about the grape or place in an
+    // answer, so it is never swapped as if it were the wine.
+    const facts=w=>new Set([...(w.grapes||[]),w.region,w.country].filter(Boolean).flatMap(x=>norm(x).split(' ')));
+    const forms=w=>{ const ws=words(w), fx=facts(w), out=[]; for(let i=0;i<ws.length;i++) for(let j=ws.length;j>i;j--){ const run=ws.slice(i,j), n=norm(run.join(' '));
+      if(run.every(x=>GENERIC.has(norm(x))||shared.has(norm(x)))||run.some(x=>fx.has(norm(x)))||n.length<3) continue; if(said.includes(' '+n+' ')) out.push(run.join(' ')); }
+      return [...new Set(out)].sort((x,y)=>y.length-x.length); };
+    const fa=forms(A), fb=forms(B);
+    // Unnamed in the answers: the producer's surname ("Fèvre", "Jadot").
+    const nick=(w,f)=>f[0]||String(w.producer||'').split(/\s+/).filter(x=>!GENERIC.has(norm(x))).pop()||words(w).find(x=>!GENERIC.has(norm(x))&&!shared.has(norm(x)))||TeamData.short(w);
+    const a=nick(A,fa), b=nick(B,fb), sym=TeamData.currency().sym||'£', price=w=>this._num(w.bottle)||this._num(w.glass);
+    const place=w=>[w.region,w.country].filter(Boolean)[0]||'', grapes=w=>(w.grapes||[]).join(' and ');
+    const wrong=[];
+    if(place(A)&&place(B)&&norm(place(A))!==norm(place(B))) wrong.push(`${a} is from ${place(B)}; ${b} is from ${place(A)}`,`They're both from ${place(A)}`);
+    if(grapes(A)&&grapes(B)&&norm(grapes(A))!==norm(grapes(B))) wrong.push(`${a} is ${grapes(B)}; ${b} is ${grapes(A)}`,`They're made from the same grapes`);
+    if(price(A)&&price(B)&&price(A)!==price(B)) wrong.push(price(A)>price(B)?`${a} is the cheaper of the two`:`${a} costs more than ${b}`);
+    if(!!A.glass!==!!B.glass) wrong.push(A.glass?`${a} is bottle only; ${b} is poured by the glass`:`${a} is poured by the glass; ${b} is bottle only`);
+    else wrong.push(A.glass?`Only ${b} is poured by the glass`:`Both are poured by the glass`);
+    const ya=this._num(A.vintage), yb=this._num(B.vintage);
+    if(ya&&yb&&ya!==yb) wrong.push(ya<yb?`${a} is the younger vintage`:`${a} is the older vintage`);
+    if(A.type!==B.type) wrong.push(`They're both ${A.type} wines`);
+    // Style, from each card's own figures (1 to 5), said the wrong way round.
+    const sa=(TeamData.card(A.id)||{}).style||{}, sb=(TeamData.card(B.id)||{}).style||{};
+    const AX={body:['fuller-bodied','lighter-bodied'],tannin:['more tannic, with more grip','softer, with less tannin'],acid:['fresher, with more acidity','softer, with less acidity'],sweet:['sweeter','drier']};
+    Object.entries(AX).forEach(([k,[more,less]])=>{ const x=sa[k], y=sb[k]; if(x!=null&&y!=null&&Math.abs(x-y)>=1) wrong.push(x>y?`${a} is ${less} than ${b}`:`${a} is ${more} than ${b}`); });
+    // The best wrong answer is a right one with the two wines swapped ("Barbaresco needs 38 months; Barolo
+    // needs 26"): the same point, the same words, turned the wrong way round.
+    const esc=x=>x.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'), alts=[...fa.map(f=>[f,b]),...fb.map(f=>[f,a])].sort((x,y)=>y[0].length-x[0].length);
+    const swap=t=>{ if(!alts.length) return t; const re=new RegExp(`(?<![\\p{L}])(${alts.map(x=>esc(x[0])).join('|')})(?![\\p{L}])`,'gu'); return t.replace(re,m=>(alts.find(x=>x[0]===m)||[0,m])[1]); };
+    const swapped=right.map(swap).filter(t=>!right.some(r=>norm(r)===norm(t)));
+    // Only decoys about what the question asks: its grapes, its place, its price, how it's sold, its age.
+    const ASPECT={style:/style|taste|flavour|body|bodied|rich|lighter|tannin|acid|sweet|dry/,grape:/grape|blend|variet/,place:/origin|where|place|region|country|come from|comes from/,price:/price|cost|cheap|dear|expensive|spend/,sold:/sold|glass|bottle|bought|pour/,age:/vintage|older|younger|age/};
+    const want=Object.keys(ASPECT).filter(k=>ASPECT[k].test(norm(q.q)));
+    const aspectOf=t=>{ const n=norm(t); return /bodied|tannic|tannin|acidity|sweeter|drier/.test(n)?'style':/grape/.test(n)?'grape':/ from |both from/.test(' '+n)?'place':/cheaper|costs more/.test(n)?'price':/glass|bottle only/.test(n)?'sold':/vintage/.test(n)?'age':'type'; };
+    // A question about something the list can't speak to (style, legal ageing) gets its swaps alone.
+    const onTopic=want.length?wrong.filter(t=>want.includes(aspectOf(t))):(swapped.length>=2?[]:wrong);
+    const seen=new Set(right.map(norm)), wr=[...swapped,...onTopic,...(onTopic.length+swapped.length<2?wrong:[])].filter(x=>{ const n=norm(x); if(seen.has(n)) return false; seen.add(n); return true; });
+    if(wr.length<2) return null;
+    const keep=[...wr.slice(0,swapped.length),...this._shuffle(wr.slice(swapped.length),this._seed(q)+'x')].slice(0,Math.max(3,6-right.length));
+    const all=[...right.map(x=>({x,ok:true})),...keep.map(x=>({x,ok:false}))], order=this._shuffle(all.map((_,i)=>i),this._seed(q)+'c');
+    return {opts:order.map(i=>this._cap(all[i].x)),right:order.map((i,j)=>all[i].ok?j:-1).filter(j=>j>=0),n:right.length};
+  },
+  /* When the list itself is too short to make a question hard, well-known wines that aren't on it make up
+     the numbers: knowing which bottles are yours is part of the job. */
+  // Reasons that sound like wine talk but are wrong for that kind of wine at any table, used only when the
+  // list has too few of its own to borrow.
+  WRONG_REASONS:{
+    sparkling:['Its firm tannin grips the fat in the dish','It is a heavy, oaky wine that matches the richness','Its sweetness covers the salt in the dish','It needs decanting for an hour to open up'],
+    white:['Its firm tannin grips the fat in the dish','Its dark-berry fruit matches the sauce','It is a sweet wine, so it balances the salt','It needs decanting for an hour to open up'],
+    rosé:['Its firm tannin grips the fat in the dish','It is a full, oaky wine that stands up to anything','Its sweetness balances the spice','It improves for years in the bottle'],
+    red:['Its bubbles cleanse the palate','It is sweet, so it balances the salt','Its crisp citrus fruit lifts the dish','It is light and fizzy, so it refreshes'],
+    sweet:['It is bone dry, so it cuts the sugar','Its firm tannin grips the fat in the dish','Its bubbles cleanse the palate','It is light and crisp, so it refreshes'],
+    fortified:['It is light and crisp, so it refreshes','Its bubbles cleanse the palate','It is bone dry, so it cuts the sugar','It is low in alcohol, so it stays light'],
+    orange:['Its bubbles cleanse the palate','It is sweet, so it balances the salt','It is light and fizzy, so it refreshes'],
+  },
+  OFF_LIST:{
+    red:['Marqués de Riscal Reserva','Guigal Côtes du Rhône','Penfolds Bin 28 Shiraz','Antinori Peppoli Chianti Classico','Louis Latour Beaujolais-Villages','Concha y Toro Casillero del Diablo Cabernet Sauvignon'],
+    white:['Hugel Gentil','Villa Maria Sauvignon Blanc','Louis Jadot Mâcon-Villages','Pieropan Soave Classico','Dr. Loosen Riesling','Domaine Huet Vouvray Le Haut-Lieu'],
+    rosé:['Whispering Angel','Miraval Rosé','Mateus Rosé','Domaine Tempier Bandol Rosé'],
+    sparkling:['Moët & Chandon Brut Impérial','Veuve Clicquot Yellow Label','Bollinger Special Cuvée','Ridgeview Bloomsbury','Freixenet Cordon Negro Cava'],
+    sweet:['Royal Tokaji 5 Puttonyos','Inniskillin Vidal Icewine','Château Rieussec Sauternes','Dr. Loosen Beerenauslese'],
+    fortified:["Graham's Six Grapes","Dow's 20 Year Old Tawny","Tio Pepe Fino","Blandy's 10 Year Old Malmsey Madeira"],
+    orange:['Gravner Ribolla Gialla','Radikon Oslavje'],
+  },
+  offList(type,n,seed){ const pool=this.OFF_LIST[type]||this.OFF_LIST.red, mine=new Set(TeamData.wines().map(w=>this._norm(TeamData.short(w))));
+    return this._shuffle(pool.filter(x=>!mine.has(this._norm(x))),seed).slice(0,n); },
   _cap(x){ const t=String(x||'').trim(); return t.charAt(0).toUpperCase()+t.slice(1); },
   _num(s){ const m=String(s||'').replace(/,/g,'').match(/(\d+(?:\.\d+)?)/); return m?Number(m[1]):null; },
   _moneyChoices(q,right){
@@ -335,9 +418,14 @@ const TeamLearn = {
      the same kind, each with its price said the same way), then why it works (the card's reasons and ones
      from other wines' tables, said as things to tell the guest). A point that's only a price is part of the
      suggestion, so it's not a pill of its own. {opts, right, n, groups:[{label, from, to, n}]}. */
+  // What kind of wine it is for a server: the list's section first (a Sauternes is filed as white under
+  // "Sweet"), then its type.
+  kindOf(w){ const sec=String(w&&w.section||'').toLowerCase(); return /sweet|dessert|pudding/.test(sec)?'sweet':/fortified|port|sherry|madeira/.test(sec)?'fortified':/sparkling|fizz|champagne/.test(sec)?'sparkling':(w&&w.type)||'red'; },
   _applyChoices(q){
     const wines=TeamData.wines(), norm=x=>this._norm(x), key=(q.key||[]).map(String);
-    const named=s=>wines.filter(w=>{ const t=norm(s); return [TeamData.short(w),w.name].some(n=>n&&norm(n).length>3&&t.includes(norm(n))); });
+    // A sentence offers a wine when it names the wine as the list does (producer and name); a grape alone
+    // ("Sauvignon Blanc", "Malbec") is a reason's word, not an offer.
+    const named=s=>wines.filter(w=>{ const t=norm(s), n=norm(TeamData.short(w)); return n.length>3&&t.includes(n); });
     const own=TeamData.wine(q.wine), offered=key.flatMap(named).filter(w=>w.id!==q.wine);
     const rw=key.some(k=>named(k).some(w=>w.id===q.wine))||!offered.length?own:offered[0]; if(!rw) return null;
     const side=/\bglass\b/i.test(q.q)?'glass':/\bbottle\b/i.test(q.q)?'bottle':rw.glass?'glass':'bottle';
@@ -347,9 +435,13 @@ const TeamLearn = {
       return `The ${TeamData.short(w)}${pr?`, ${pr}`:''}`; };
     // Decoys a guest could believe: the nearest styles first (sparkling beside white, rosé beside both), and
     // for a glass, wines poured by the glass, so the price alone never gives the right one away.
-    const near=['sparkling','white','rosé','orange','red','sweet','fortified'], dist=w=>Math.abs(near.indexOf(w.type)-near.indexOf(rw.type));
+    const near=['sparkling','white','rosé','orange','red','sweet','fortified'], dist=w=>Math.abs(near.indexOf(this.kindOf(w))-near.indexOf(this.kindOf(rw)));
     const fit=w=>side==='glass'&&!w.glass?1:0;
-    const offers=[{x:offer(rw),ok:true},...this._shuffle(wines.filter(w=>w.id!==rw.id),this._seed(q)+'o').sort((a,b)=>dist(a)-dist(b)||fit(a)-fit(b)).slice(0,3).map(w=>({x:offer(w),ok:false}))];
+    const listDecoys=this._shuffle(wines.filter(w=>w.id!==rw.id&&dist(w)<=1),this._seed(q)+'o').sort((a,b)=>dist(a)-dist(b)||fit(a)-fit(b)).slice(0,3).map(w=>({x:offer(w),ok:false}));
+    // Too few wines of the kind on the list: a well-known bottle that isn't on it, priced like the list's own.
+    const priceLike=side==='glass'&&rw.glass?`${rw.glass} a glass`:rw.bottle?`${rw.bottle} a bottle`:'';
+    const extra=this.offList(this.kindOf(rw),3-listDecoys.length,this._seed(q)+'f').map(n=>({x:`The ${n}${priceLike?`, ${priceLike}`:''}`,ok:false}));
+    const offers=[{x:offer(rw),ok:true},...listDecoys,...extra];
     // A reason as something to say: "Say it's dry" → "It's dry"; price clauses and offers dropped.
     // Serving notes (decant, temperature) and bare instructions ("Link the wine to the dish") aren't reasons.
     const reason=s=>{ if(/^(offer|suggest|recommend|pour|go for|link|name|serve)\b/i.test(s)||/\bdecant|°C|\bserve at\b/i.test(s)||named(s).length) return '';
@@ -358,13 +450,29 @@ const TeamLearn = {
       return norm(t).split(' ').length>=3?this._cap(t):''; };
     const rights=[...new Set(key.map(reason).filter(Boolean))].slice(0,2);
     if(!rights.length) return null;
-    const seen=new Set(rights.map(norm)), wrongs=[];
-    const others=[...wines.filter(w=>w.id!==rw.id&&w.type===rw.type),...wines.filter(w=>w.type!==rw.type)];
-    for(const w of this._shuffle(others,this._seed(q)+'r')){ for(const o of this.wineQs(w.id)){ if(o.k!=='apply') continue;
-      for(const k of o.key||[]){ const t=reason(k); if(t&&!seen.has(norm(t))){ seen.add(norm(t)); wrongs.push(t); } } } if(wrongs.length>=8) break; }
+    // Wrong reasons a server could believe: what wines of the same kind are said to do with another dish on
+    // the menu ("Rich lamb softens the high tannin" at a table having the sirloin). A reason that names no
+    // dish could be true of this table too, so it's never offered as wrong; nor is one from another kind of
+    // wine ("The bubbles cleanse the palate" for a red).
+    const dishes=TeamData.dishes(), here=dishes.filter(d=>this._words(d.name).some(w=>w.length>3&&norm(q.q).split(' ').includes(w)));
+    const hereWords=new Set(here.flatMap(d=>this._words(d.name+' '+(d.desc||''))));
+    const foodWords=new Set(dishes.flatMap(d=>this._words(d.name+' '+(d.desc||''))).filter(w=>w.length>3&&!hereWords.has(w)));
+    const aboutOther=t=>{ const ws=this._words(t); return ws.some(w=>foodWords.has(w))&&!ws.some(w=>hereWords.has(w)); };
+    const seen=new Set(rights.map(norm)), wrongs=[], kept=[...rights];
+    // Two reasons that say much the same thing ("Its high acidity cuts through rich fried pork" twice) count once.
+    const alike=(x,y)=>{ const p=new Set(this._stems(x)), q2=this._stems(y); if(!p.size||!q2.length) return false; const both=q2.filter(w=>p.has(w)).length; return both/Math.min(p.size,q2.length)>=0.6; };
+    const take=t=>{ if(!t||seen.has(norm(t))||/^(yes|no)\b/i.test(t)||kept.some(k=>alike(k,t))) return; seen.add(norm(t)); kept.push(t); wrongs.push(t); };
+    const others=this._shuffle(wines.filter(w=>w.id!==rw.id),this._seed(q)+'r').sort((x,y)=>dist(x)-dist(y));
+    for(const w of others){ if(dist(w)>1) break; for(const o of this.wineQs(w.id)){ if(o.k!=='apply') continue;
+      for(const k of o.key||[]){ const t=reason(k); if(t&&aboutOther(t)) take(t); } } if(wrongs.length>=6) break; }
+    if(wrongs.length<3) this._shuffle(this.WRONG_REASONS[this.kindOf(rw)]||this.WRONG_REASONS.red,this._seed(q)+'g').forEach(t=>wrongs.length<4&&take(t));
+    if(wrongs.length<2) return null;
     const reasons=[...rights.map(x=>({x,ok:true})),...this._shuffle(wrongs,this._seed(q)+'w').slice(0,6-rights.length).map(x=>({x,ok:false}))];
-    const o1=this._shuffle(offers.map((_,i)=>i),this._seed(q)+'c1').map(i=>offers[i]), o2=this._shuffle(reasons.map((_,i)=>i),this._seed(q)+'c2').map(i=>reasons[i]);
+    // A question that already names the wine ("How do you suggest the William Fèvre…?") asks only why.
+    const inQ=[TeamData.short(rw),rw.name].some(n=>n&&norm(q.q).includes(norm(n)));
+    const o1=inQ?[]:this._shuffle(offers.map((_,i)=>i),this._seed(q)+'c1').map(i=>offers[i]), o2=this._shuffle(reasons.map((_,i)=>i),this._seed(q)+'c2').map(i=>reasons[i]);
     const all=[...o1,...o2];
+    if(inQ) return {opts:all.map(a=>a.x),right:all.map((a,j)=>a.ok?j:-1).filter(j=>j>=0),n:rights.length,groups:[{label:'Why it works',from:0,to:all.length,n:rights.length}]};
     return {opts:all.map(a=>a.x),right:all.map((a,j)=>a.ok?j:-1).filter(j=>j>=0),n:1+rights.length,
       groups:[{label:'What do you suggest?',from:0,to:o1.length,n:1},{label:'Why it works',from:o1.length,to:all.length,n:rights.length}]};
   },

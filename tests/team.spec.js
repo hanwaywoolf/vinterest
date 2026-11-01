@@ -652,9 +652,14 @@ test('drill answers: no question gives its answer away, prices are asked one way
   const grouped = r.apply.filter((c) => c.groups);
   expect(grouped.length).toBeGreaterThan(r.apply.length * 0.9);
   for (const c of grouped) {
-    expect(c.groups.map((g) => g.label)).toEqual(['What do you suggest?', 'Why it works']);
-    expect(c.opts.slice(0, c.groups[0].to).every((o) => /^The /.test(o))).toBe(true); // every suggestion names a wine
-    expect(c.opts.slice(c.groups[1].from).some((o) => /^The .*£\d/.test(o))).toBe(false); // and no reason is a price or an offer
+    // A question that already names the wine asks only why; otherwise the wine first, then why.
+    const labels = c.groups.map((g) => g.label);
+    expect(labels[labels.length - 1]).toBe('Why it works');
+    if (labels.length === 2) {
+      expect(labels[0]).toBe('What do you suggest?');
+      expect(c.opts.slice(0, c.groups[0].to).every((o) => /^The /.test(o))).toBe(true); // every suggestion names a wine
+    }
+    expect(c.opts.slice(c.groups[labels.length - 1].from).some((o) => /^The .*£\d/.test(o))).toBe(false); // and no reason is a price or an offer
   }
   expect(r.lower).toEqual([]);
   expect(errors).toEqual([]);
@@ -756,5 +761,42 @@ test('every recall question, about a wine or a dish, offers only answers of its 
   expect(r.mixed).toEqual([]); // no answer to another kind of question turns up as a wrong option
   expect(r.notWines).toEqual([]); // "Name a wine for the cod" offers only wines on the list
   expect(r.dishOpts).toBeGreaterThan(3);
+  expect(errors).toEqual([]);
+});
+
+test('no question offers answers from all over: comparisons stay on their two wines, tables on their reasons, nothing falls back to the mixed pool', async ({ context, page }) => {
+  const errors = await asMarco(context, page);
+  const r = await page.evaluate(() => {
+    const norm = (x) => TeamLearn._norm(x), all = TeamLearn.allQs(), wines = TeamData.wines();
+    const pooled = all.filter((q) => q.k !== 'recognise' && TeamLearn.choices(TeamLearn.deal(q, 'p')).via === 'pool').map((q) => `${q.k}: ${q.q.slice(0, 60)}`);
+    // A comparison's options talk about its two wines only: no third wine on the list is named in them.
+    const third = [];
+    for (const q of all.filter((x) => x.k === 'contrast')) {
+      const named = wines.filter((w) => norm(q.q).includes(norm(TeamData.short(w))));
+      const others = wines.filter((w) => !named.includes(w) && w.id !== q.wine);
+      for (const o of TeamLearn.choices(TeamLearn.deal(q, 'c')).opts) {
+        const hit = others.find((w) => norm(o).includes(norm(TeamData.short(w))) || (w.producer && norm(w.producer).length > 5 && norm(o).includes(norm(w.producer))));
+        if (hit) third.push(`${q.q.slice(0, 50)} → ${o}`);
+      }
+    }
+    const tables = all.filter((q) => q.k === 'apply').map((q) => TeamLearn.choices(TeamLearn.deal(q, 't')));
+    return { pooled, third, ungrouped: tables.filter((c) => !c.groups).length, priced: tables.flatMap((c) => c.groups ? c.opts.slice(c.groups[c.groups.length - 1].from) : []).filter((o) => /£\d/.test(o)) };
+  });
+  expect(r.pooled).toEqual([]); // every recall, comparison and table question builds its own options
+  expect(r.third).toEqual([]);
+  expect(r.ungrouped).toBe(0);
+  expect(r.priced).toEqual([]); // "Why it works" never offers a price
+  expect(errors).toEqual([]);
+});
+
+test('when the list is short of a kind of wine, well-known bottles that are not on it make up the choices', async ({ context, page }) => {
+  const errors = await asMarco(context, page);
+  const r = await page.evaluate(() => {
+    const mine = new Set(TeamData.wines().map((w) => TeamLearn._norm(TeamData.short(w))));
+    const off = TeamLearn.offList('sweet', 3, 's');
+    return { n: off.length, onList: off.filter((x) => mine.has(TeamLearn._norm(x))) };
+  });
+  expect(r.n).toBe(3);
+  expect(r.onList).toEqual([]);
   expect(errors).toEqual([]);
 });
