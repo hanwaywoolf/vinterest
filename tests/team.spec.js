@@ -266,6 +266,29 @@ test('?seed=demo replaces a Larkspur from an older build and keeps one from this
   await expect(page.locator('#root')).toContainText('Kept');
 });
 
+// The drill's summary lists what was in it; a row opens that wine's card (or dish), and Back returns to the summary.
+test('a row of the drill summary opens the wine card, and Back returns to the summary', async ({ context, page }) => {
+  await stubNetwork(context);
+  await page.goto(`${BASE}/team/?seed=demo`);
+  await expect(page.getByTestId('team-state')).toBeVisible();
+  await page.getByText(/Start today's drill|Practise/).first().click();
+  for (let i = 0; i < 5; i++) {
+    await expect(page.getByTestId('drill-q')).toBeVisible();
+    await page.getByTestId('drill-opt').first().click();
+    await page.getByText('Check').click();
+    await expect(page.getByTestId('drill-result')).toBeVisible();
+    await page.getByText(/^Next$|^Finish$/).click();
+  }
+  await expect(page.getByTestId('drill-done')).toBeVisible();
+  const first = page.getByTestId('drill-item').first();
+  const name = (await first.locator('span').first().textContent()).trim();
+  await first.click();
+  await expect(page.locator('[data-testid="team-wine"], [data-testid="team-dish"]').first()).toBeVisible();
+  await expect(page.locator('#root')).toContainText(name.slice(0, 12));
+  await page.getByLabel('Back').click();
+  await expect(page.getByTestId('drill-done')).toBeVisible();
+});
+
 // Recall, apply and contrast questions are answered from pills (ten, a few right), the header never
 // names the wine when the question is to pick it, and the summary shows each wine's rungs and the
 // readiness figure before and after.
