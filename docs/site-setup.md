@@ -100,7 +100,7 @@ domain → `vinterest.team`. With the domain's DNS on Cloudflare the records are
 otherwise add the CNAME it shows at the registrar. Add `www.vinterest.team` the same way; Pages
 redirects it to the apex.
 
-Every push of a branch deploys a preview at `https://<branch with / as ->.<project name>.pages.dev`.
+The project is `vinterest-teams`: production at https://vinterest-teams.pages.dev, and every push of a branch deploys a preview at `https://<branch with / as ->.vinterest-teams.pages.dev`. While the site lives on `claude/teams-site`, that branch is set as the production branch; set it back to `main` at the merge.
 
 Build variables (all optional):
 
