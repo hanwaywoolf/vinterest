@@ -70,7 +70,9 @@ export const TEAM_SOURCES = [
   'team-learn.js',
   'team-sales.js',
   'team-report.js',
+  'team-vinny.js',
   'team-screens.jsx',
+  'team-vinny.jsx',
   'team-console.jsx',
   'team-app.jsx',
 ];
