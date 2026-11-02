@@ -180,8 +180,13 @@ const TeamData = {
   _menuLines(){ return this.dishes().map(x=>`${x.name} | ${x.main} | ${x.cook} | ${(x.flav||[]).join(', ')}`).join('\n')||'(no menu uploaded yet)'; },
 
   /* One Claude call, tried a second time after a short pause if the first fails. */
-  async _callRetry(purpose,content){ try{ return await window.claude.complete({purpose,messages:[{role:'user',content}]}); }
-    catch(e){ if(e&&(e.code==='pro'||e.status===402||e.status===429)) throw e; await new Promise(r=>setTimeout(r,1500)); return window.claude.complete({purpose,messages:[{role:'user',content}]}); } },
+  // A busy moment upstream comes back as a 502; it passes in seconds, so the waits grow (RETRY_WAITS).
+  RETRY_WAITS:[3000,8000,20000],
+  async _callRetry(purpose,content){ let last;
+    for(let i=0;i<=this.RETRY_WAITS.length;i++){
+      try{ return await window.claude.complete({purpose,messages:[{role:'user',content}]}); }
+      catch(e){ last=e; if(e&&(e.code==='pro'||e.status===402||e.status===429||e.code==='refused')) throw e; if(i<this.RETRY_WAITS.length) await new Promise(r=>setTimeout(r,(window.VINTEREST_RETRY_FAST?10:this.RETRY_WAITS[i]))); } }
+    throw last; },
   /* Staff cards and their questions for these wines, a few a call (prompts/team-cards.txt). */
   async writeCards(ids,onStep){
     // Cocktails and other mixed drinks are written from their own prompt, after the wines.
