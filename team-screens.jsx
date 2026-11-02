@@ -25,7 +25,7 @@ function TeamJobChip({onOpen,style}){ const T=useTheme(), cr=T.lift(C.cr), job=u
   const col=job.error?T.amber:job.done?T.green:cr;
   return <div data-testid="team-job" data-state={job.error?'error':job.done?'done':'running'} role="button" onClick={onOpen} style={{display:'flex',alignItems:'center',gap:10,padding:'9px 12px',borderRadius:12,border:`1px solid ${col}66`,background:T.soft,marginBottom:12,cursor:'pointer',...style}}>
     <div style={{flex:1,minWidth:0}}>
-      <div style={{display:'flex',justifyContent:'space-between',gap:8,fontSize:13,fontFamily:C.P,color:T.ink}}><span style={{fontWeight:700,color:col}}>{job.error?'Writing stopped':job.done?'Published':'Writing in the background'}</span><span style={{color:T.mid,whiteSpace:'nowrap'}}>{job.error?'':job.done?'Training is up to date':job.b?`${job.step} · ${job.a} of ${job.b}`:job.step}</span></div>
+      <div style={{display:'flex',justifyContent:'space-between',gap:8,fontSize:13,fontFamily:C.P,color:T.ink}}><span style={{fontWeight:700,color:col}}>{job.error?'Writing stopped':job.done?'Published':'Writing in the background'}</span><span style={{color:T.mid,whiteSpace:'nowrap'}}>{job.error?'':job.done?TeamData.checkedLine():job.b?`${job.step} · ${job.a} of ${job.b}`:job.step}</span></div>
       {job.error?<div style={{fontSize:12,color:T.ink2,fontFamily:C.P,marginTop:2}}>{job.error} What was written is kept.</div>:!job.done&&<Prog val={job.b?job.a/job.b:0.05} col={cr} h={4} style={{marginTop:6}}/>}
     </div>
     {!job.running&&<div role="button" aria-label="Dismiss" onClick={e=>{ e.stopPropagation(); TeamJobs.dismiss(); }} style={{width:26,height:26,borderRadius:13,border:`1px solid ${T.line}`,display:'flex',alignItems:'center',justifyContent:'center',color:T.mid,fontFamily:C.P,fontSize:14,flexShrink:0}}>×</div>}
@@ -68,8 +68,7 @@ function TeamSetup({onDone}){ const T=useTheme(), cr=T.lift(C.cr);
       <input aria-label="Your name" placeholder="Your name" value={name} onChange={e=>setName(e.target.value)} style={field}/>
       <Btn primary full onClick={()=>go(false)}>Set up my restaurant</Btn>
       <div style={{textAlign:'center',fontSize:14,color:T.mid,fontFamily:C.P,margin:'6px 0'}}>or</div>
-      <Btn full onClick={()=>go('sample')}>Look around with a sample restaurant</Btn>
-      <div data-testid="team-load-demo"><Btn full onClick={()=>go('demo')}>Open The Larkspur: 60 wines, 27 dishes, a team of seven</Btn></div>
+      <div data-testid="team-load-demo"><Btn full onClick={()=>go('demo')}>Open The Larkspur: {TeamSample.demoLine()}</Btn></div>
     </div>
   </div>; }
 

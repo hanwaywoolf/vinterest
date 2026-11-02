@@ -17,11 +17,26 @@ async function openSample(context, page, opts = {}) {
   // /config is answered by the Worker, which the static test server doesn't run.
   page.on('console', (m) => { if (m.type() === 'error' && !/404/.test(m.text())) errors.push(m.text()); });
   await stubNetwork(context, opts);
-  await page.goto(`${BASE}/team/`);
-  await page.getByText('Look around with a sample restaurant').click();
+  await page.goto(`${BASE}/team/?seed=sample`); // The Copper Pan: no longer offered on the setup screen, kept as the tests' small restaurant
   await expect(page.getByTestId('team-state')).toBeVisible();
   return errors;
 }
+
+test('the setup screen offers The Larkspur only, a device left on The Copper Pan goes back to it, and Change restaurant returns there', async ({ context, page }) => {
+  await openSample(context, page);
+  await page.goto(`${BASE}/team/`); // no seed: the Copper Pan is retired
+  await expect(page.getByTestId('team-load-demo')).toBeVisible();
+  await expect(page.getByText('Look around with a sample restaurant')).toHaveCount(0);
+  await expect(page.getByTestId('team-load-demo')).toContainText(/Open The Larkspur: 30 wines, 27 dishes, a team of \w+/);
+  await page.getByTestId('team-load-demo').click();
+  await expect(page.locator('#root')).toContainText('The Larkspur');
+  await page.reload(); // The Larkspur stays put
+  await expect(page.locator('#root')).toContainText('The Larkspur');
+  page.once('dialog', (d) => d.accept());
+  await page.getByTestId('team-who').click();
+  await page.getByTestId('team-change-restaurant').click();
+  await expect(page.getByTestId('team-load-demo')).toBeVisible();
+});
 
 test('the sample restaurant opens on Today: not ready yet, with every wine and dish to learn', async ({ context, page }) => {
   const errors = await openSample(context, page);
@@ -138,6 +153,41 @@ test('the drill on screen: pick, say how sure, see the answer and why, then the 
   await expect(page.getByTestId('drill-done')).toContainText('of 5 right');
 });
 
+test('the publish check: every question is checked, the ones that fail are rewritten under the same id, and the demo is only counted', async ({ context, page }) => {
+  const reqs = [];
+  const errors = await openSample(context, page, { claudeRequests: reqs, claudeText: (b) => {
+    if (b.purpose !== 'team_fix') return '';
+    const ids = [...b.messages[0].content.matchAll(/^ID (\S+)/gm)].map((m) => m[1]);
+    return JSON.stringify({ fixes: ids.filter((id) => id === 'w-ardanza-reserva#bad').map((id) => ({ id, q: { q: 'Which grape leads the blend in the La Rioja Alta Viña Ardanza Reserva?', ans: 'Tempranillo', acc: [], why: 'Ardanza is mostly Tempranillo.' } })) });
+  } });
+  const r = await page.evaluate(async () => {
+    // A question that offers its own answer as one of two.
+    const d = TeamData.get(); d.cards['w-ardanza-reserva'].qs.push({ id: 'w-ardanza-reserva#bad', k: 'recall', q: 'Is the La Rioja Alta Viña Ardanza Reserva drunk young or aged?', ans: 'Aged', acc: [], why: 'x' }); TeamData.save(d);
+    const before = TeamLearn.audit().map((f) => f.q.id);
+    const checked = await TeamData.checkQuestions();
+    const q = TeamData.card('w-ardanza-reserva').qs.find((x) => x.id === 'w-ardanza-reserva#bad');
+    return { before, checked, q, after: TeamLearn.audit().map((f) => f.q.id), line: TeamData.checkedLine() };
+  });
+  expect(r.before).toContain('w-ardanza-reserva#bad');
+  expect(r.q.q).toMatch(/Which grape leads/); // rewritten in place, same id and kind
+  expect(r.q.k).toBe('recall');
+  expect(r.after).not.toContain('w-ardanza-reserva#bad');
+  expect(r.checked.fixed).toBeGreaterThanOrEqual(1);
+  expect(r.checked.failed).toBe(r.before.length);
+  expect(r.line).toMatch(/questions checked · \d+ rewritten/);
+  const fix = reqs.filter((x) => x.purpose === 'team_fix');
+  expect(fix.length).toBeGreaterThan(0);
+  expect(fix[0].messages[0].content).toMatch(/PROBLEM giveaway/);
+  // The demo restaurant runs offline: it's counted, never sent.
+  await page.goto(`${BASE}/team/?seed=demo`);
+  await expect(page.getByTestId('team-state')).toBeVisible();
+  const n = reqs.length;
+  const demo = await page.evaluate(() => TeamData.checkQuestions());
+  expect(reqs.length).toBe(n);
+  expect(demo.asked).toBeGreaterThan(100);
+  expect(errors).toEqual([]);
+});
+
 test('an uploaded list is reviewed before it goes live; publishing writes cards and pairings and assigns the new wine', async ({ context, page }) => {
   const reqs = [];
   const list = { wines: [
@@ -186,7 +236,7 @@ test('the Worker takes the team calls without a sign-in during the pilot', async
   require('node:fs').copyFileSync(path.join(__dirname, '..', '_worker.js'), copy);
   const worker = (await import(pathToFileURL(copy).href + `?t=${Date.now()}`)).default;
   const env = { ANTHROPIC_API_KEY: 'test', SUPABASE_URL: 'https://x.supabase.co', SUPABASE_PUBLISHABLE_KEY: 'pk', SUPABASE_SECRET_KEY: 'sk' };
-  for (const purpose of ['team_list', 'team_menu', 'team_cards', 'team_pairings', 'team_grade', 'team_vinny', 'team_guest']) {
+  for (const purpose of ['team_list', 'team_menu', 'team_cards', 'team_pairings', 'team_grade', 'team_vinny', 'team_guest', 'team_fix']) {
     const r = await worker.fetch(new Request('https://vinterest.pages.dev/claude', { method: 'POST', headers: { 'content-type': 'application/json', origin: 'https://vinterest.pages.dev' }, body: JSON.stringify({ purpose, messages: [{ role: 'user', content: 'x' }] }) }), env);
     expect(r.status).not.toBe(402);
   }
@@ -681,7 +731,9 @@ test('drill answers: no question gives its answer away, prices are asked one way
     const all = TeamLearn.allQs().filter((q) => q.wine);
     // A question whose answer is in its own words: "Which grape is the … Pinot Noir made from?"
     const spoilt = all.filter((q) => { const ans = q.k === 'recognise' ? [q.opts[q.a]] : q.k === 'recall' ? String(q.ans).split(/,|\band\b|;/) : [];
-      const t = new Set(words(q.q)); return ans.some((a) => { const w = words(a); return w.length && w.every((x) => t.has(x)); }); }).map((q) => q.q);
+      // A figure answers only when the figure is there too ("£9 a glass" isn't in "by the glass?").
+      const nums = (x) => String(x || '').match(/\d+(?:\.\d+)?/g) || [], tn = new Set(nums(q.q));
+      const t = new Set(words(q.q)); return ans.some((a) => { const w = words(a); return w.length && w.every((x) => t.has(x)) && nums(a).every((n) => tn.has(n)); }); }).map((q) => q.q);
     const jadot = TeamData.wines().find((w) => /Jadot/.test(w.producer + ' ' + w.name));
     const grapeQ = TeamLearn.wineQs(jadot.id).find((q) => /which grape/i.test(q.q));
     const money = all.filter((q) => q.k === 'recall' && /glass price|bottle price/i.test(q.q)).map((q) => ({ side: /glass/i.test(q.q) ? 'glass' : 'bottle', opts: TeamLearn.choices(q).opts }));
@@ -699,7 +751,7 @@ test('drill answers: no question gives its answer away, prices are asked one way
   for (const c of grouped) {
     // A question that already names the wine asks only why; otherwise the wine first, then why.
     const labels = c.groups.map((g) => g.label);
-    expect(labels[labels.length - 1]).toBe('Why it works');
+    expect(labels[labels.length - 1]).toBe(c.steer ? 'What do you say?' : 'Why it works'); // a guest asking for a wine that doesn't suit is steered
     if (labels.length === 2) {
       expect(labels[0]).toBe('What do you suggest?');
       expect(c.opts.slice(0, c.groups[0].to).every((o) => /^The /.test(o))).toBe(true); // every suggestion names a wine
@@ -708,6 +760,62 @@ test('drill answers: no question gives its answer away, prices are asked one way
   }
   expect(r.lower).toEqual([]);
   expect(errors).toEqual([]);
+});
+
+test('at the table, wrong reasons are about this dish and wrong for this wine, and a wine that does not suit the dish is a steer', async ({ context, page }) => {
+  const errors = await asMarco(context, page);
+  const r = await page.evaluate(() => {
+    const out = { offDish: [], notWrong: [], steers: [] };
+    TeamData.wines().forEach((w) => TeamLearn.wineQs(w.id).filter((q) => q.k === 'apply').forEach((q) => {
+      const c = TeamLearn.choices(q), dish = TeamLearn.dishIn(q.q); if (!c || !dish) return;
+      const g = c.groups[c.groups.length - 1], wrong = c.opts.slice(g.from, g.to).filter((o, i) => !c.right.includes(g.from + i));
+      // No wrong reason names another dish's food.
+      const here = new Set(TeamLearn._words(dish.name + ' ' + (dish.desc || '')));
+      const other = new Set(TeamData.dishes().filter((d) => d.id !== dish.id).flatMap((d) => TeamLearn._words(d.name)).filter((x) => x.length > 4 && !here.has(x) && !['with', 'sauce', 'roast'].includes(x)));
+      wrong.forEach((o) => { if (TeamLearn._words(o).some((x) => other.has(x))) out.offDish.push(o); });
+      if (c.steer) out.steers.push({ wine: TeamData.short(w), dish: dish.name, right: c.right.map((i) => c.opts[i]), wrong });
+      else wrong.forEach((o) => { if (!TeamLearn.contradicts(o, (TeamData.card(w.id) || {}).style || {}, TeamLearn.kindOf(w)) && !/^Steer|^Pour/.test(o)) out.notWrong.push(TeamData.short(w) + ': ' + o); });
+    }));
+    out.fit = TeamLearn.tableFit(TeamData.wines().find((w) => /Minuty/.test(w.producer + w.name)).id, TeamLearn.dishIn('braised lamb shoulder').id);
+    out.barolo = TeamLearn.tableFit(TeamData.wines().find((w) => /Barolo/.test(w.name)).id, TeamLearn.dishIn('braised lamb shoulder').id);
+    out.cod = TeamLearn.dishIn('A guest orders the pan-roast cod').name;
+    return out;
+  });
+  expect(r.offDish).toEqual([]);
+  expect(r.notWrong).toEqual([]);
+  expect(r.fit).toBe('steer'); // a pale Provence rosé with a braised lamb shoulder
+  expect(r.barolo).toBe('good'); // a Barolo is fine with it, though not one of the three picks
+  expect(r.cod).toMatch(/^Pan-roast cod/);
+  const minuty = r.steers.find((x) => /Minuty/.test(x.wine));
+  expect(minuty.right.some((t) => /^Steer them to the /.test(t))).toBe(true);
+  expect(minuty.wrong.some((t) => /^Pour it gladly/.test(t))).toBe(true); // "it's a classic match" is a wrong answer
+  expect(errors).toEqual([]);
+});
+
+test('a four-option question never gives itself away: no wrong answer of another kind of wine, no word shared by the question and the right answer alone', async ({ context, page }) => {
+  for (const seed of ['demo', 'sample']) {
+    await stubNetwork(context);
+    await page.goto(`${BASE}/team/?seed=${seed}`);
+    await expect(page.getByTestId('team-state')).toBeVisible();
+    const r = await page.evaluate(() => {
+      const out = { other: [], give: [], count: 0 };
+      TeamData.wines().forEach((w) => TeamLearn.wineQs(w.id).filter((q) => q.k === 'recognise').forEach((q) => {
+        out.count++;
+        if (TeamLearn.givesAway(q)) out.give.push(q.q);
+        if (TeamLearn._kindsIn(q.opts[q.a]).length) {
+          const fits = TeamLearn.KIND_FITS[TeamLearn.kindOf(w)];
+          q.opts.forEach((o, i) => { const ks = TeamLearn._kindsIn(o); if (i !== q.a && ks.length && !ks.some((k) => fits.includes(k))) out.other.push(q.q + ' → ' + o); });
+        }
+      }));
+      const ott = TeamData.wines().find((w) => /Ott/.test(w.producer || ''));
+      out.ott = ott && TeamLearn.wineQs(ott.id).filter((q) => q.k === 'recognise' && /description/i.test(q.q)).map((q) => q.opts)[0];
+      return out;
+    });
+    expect(r.count).toBeGreaterThan(15);
+    expect(r.give).toEqual([]);
+    expect(r.other).toEqual([]);
+    if (seed === 'demo') expect(r.ott.every((o) => /rosé/i.test(o))).toBe(true); // all four are rosés
+  }
 });
 
 test('a recall question offers wrong answers of its own kind: flavours for a flavour, climates for a climate', async ({ context, page }) => {

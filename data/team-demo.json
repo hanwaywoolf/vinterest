@@ -1935,12 +1935,12 @@
     },
     {
      "k": "recall",
-     "q": "Should the Pascal Jolivet Sancerre be drunk young or aged for years?",
-     "ans": "Young",
+     "q": "What flavour pair does the Pascal Jolivet Sancerre 2023 show, as a style meant for drinking young?",
+     "ans": "Flint and citrus",
      "acc": [
-      "young",
-      "drink it young",
-      "drunk young and fresh"
+      "flint and citrus",
+      "citrus and flint",
+      "flinty and citrusy"
      ],
      "why": "Sancerre is a flint-and-citrus style meant to be enjoyed young.",
      "id": "w-pascal-jolivet-sancerre#3"
@@ -2549,26 +2549,25 @@
     },
     {
      "k": "recall",
-     "q": "Should the Château Minuty M de Minuty Côtes de Provence 2023 be aged or drunk now?",
-     "ans": "Drunk now, young",
+     "q": "What is the price of a glass of the Château Minuty M de Minuty Côtes de Provence 2023?",
+     "ans": "£12",
      "acc": [
-      "drink now",
-      "drink young",
-      "immediately",
-      "no ageing needed"
+      "£12",
+      "12 pounds",
+      "£12 a glass"
      ],
-     "why": "Provence rosé has no ageing mandate and is built for immediate drinking.",
+     "why": "The wine is listed at £12 by the glass and £52 by the bottle.",
      "id": "w-chateau-minuty-m-de-minuty-cotes-de-provence#3"
     },
     {
      "k": "apply",
      "q": "A guest ordering the braised lamb shoulder wants a glass of the Château Minuty M de Minuty Côtes de Provence 2023. How do you respond?",
      "key": [
-      "Say it works with herby Mediterranean dishes like rosemary lamb",
-      "It is £12 a glass, served chilled",
-      "Mention it is dry and fruity, not sweet"
+      "Explain that this pale, light, dry rosé is too delicate for a rich, braised lamb dish and would be overpowered",
+      "Steer them to a more structured red from the list, such as the Domaine Tempier Bandol 2019 at £96 a bottle, for the lamb",
+      "Offer the Minuty at £12 a glass with a dish it suits, such as the burrata with heritage tomatoes and basil"
      ],
-     "why": "The wine suits roast and herby dishes and is available by the glass.",
+     "why": "A light rosé does not stand up to rich braised lamb, but it suits fresh, herby dishes like the burrata.",
      "id": "w-chateau-minuty-m-de-minuty-cotes-de-provence#4"
     },
     {
@@ -2685,13 +2684,13 @@
     },
     {
      "k": "apply",
-     "q": "A guest ordering the lamb rump with harissa asks for a glass of the Domaines Ott Château de Selle Côtes de Provence Rosé 2022. What do you say?",
+     "q": "A guest ordering the lamb rump with harissa asks for the Domaines Ott Château de Selle Côtes de Provence Rosé 2022. What do you say?",
      "key": [
-      "It is only sold by the bottle at £78, not by the glass",
-      "Offer the Château Minuty by the glass at £12 as a similar Provence rosé",
-      "It is a dry rosé that goes well with smoky, spicy meat"
+      "Explain that this pale, light, dry rosé would be overpowered by rich, spicy, smoky lamb",
+      "Steer them to a more structured red from the list, such as the Domaine Tempier Bandol 2019 at £96 a bottle",
+      "Offer the Château de Selle at £78 a bottle (bottle only) with something lighter, such as the oysters or the pan-roast cod"
      ],
-     "why": "The server must be honest that this wine has no glass option and give a sensible alternative.",
+     "why": "A pale rosé is too light for harissa-spiced lamb, so guide the guest to a red and keep the rosé for lighter dishes.",
      "id": "w-domaines-ott-chateau-de-selle-cotes-de-provence-rose#4"
     },
     {
@@ -2795,14 +2794,13 @@
     },
     {
      "k": "recall",
-     "q": "Should the Château Musar Jeune Rosé 2022 be drunk young or aged?",
-     "ans": "Drunk young",
+     "q": "Which grape, pale in colour with low tannin and soft red berry fruit, is the base of the Château Musar Jeune Rosé 2022?",
+     "ans": "Cinsault",
      "acc": [
-      "young",
-      "drink young",
-      "for drinking young"
+      "Cinsault grape",
+      "Cinsaut"
      ],
-     "why": "The facts say it is for drinking young.",
+     "why": "Cinsault is the pale, low-tannin, soft red berry grape that forms the base of this rosé, blended with Mourvèdre and Tempranillo.",
      "id": "w-chateau-musar-jeune-rose#3"
     },
     {
@@ -3889,16 +3887,12 @@
     },
     {
      "k": "recall",
-     "q": "Should the Allegrini Valpolicella Classico 2022 be kept for many years or drunk young?",
-     "ans": "Drunk young",
+     "q": "Which grape, giving tart cherry fruit and light-to-medium tannin, is the main grape in the Allegrini Valpolicella Classico 2022?",
+     "ans": "Corvina",
      "acc": [
-      "drink young",
-      "drink it young",
-      "young",
-      "drink now",
-      "no need to age it"
+      "Corvina grape"
      ],
-     "why": "Light Valpolicella is for drinking young, unlike Amarone.",
+     "why": "Corvina is the main grape of Valpolicella and gives tart cherry fruit with light-to-medium tannin.",
      "id": "w-allegrini-valpolicella-classico#3"
     },
     {
@@ -5713,5 +5707,5 @@
    "at": 1793386414232
   }
  },
- "exported": "2026-11-02T00:07:06Z"
+ "exported": "2026-11-02T15:00:11Z"
 }

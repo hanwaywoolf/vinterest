@@ -127,7 +127,13 @@ A Vinny tab (between Today and Wines) and a row on Today, all in `team-vinny.js`
 
 Measured costs are to come; both prompts are about the size of a pairings call's input with a short output.
 
-### Vinny's voice at the table (built)
+### Checking the questions (built)
+
+Every staff card's questions are written by Claude, and a model slips: a question that holds its own answer, an either/or that hands it over, a rosé asked against an oaky white, a comparison with nothing believable to pick from, a guest pairing a pale rosé with braised lamb. The drill already leaves these out or repairs them as it asks, but a customer loading a 200-wine list shouldn't lose questions to it. So the last step of every publish checks them all.
+
+`TeamData.checkQuestions` runs after the cards and pairings are written and before anyone is assigned anything. `TeamLearn.audit` puts every question through exactly what the drill does with it and names the failures: giveaway, thin or mismatch. Only the failures go back to Claude (`team_fix`, eight a call), each with the reason, the wine's card and the dishes it suits, and each comes back rewritten under the same id and kind, so nobody's progress shifts. The rewrite is checked again; anything that still fails stays out of the drill. The publish chip says what happened ("180 questions checked · 6 rewritten · 1 held back"). On the demo list it costs nothing: The Larkspur's questions were checked and rewritten before it shipped, and the demo restaurant is counted, never sent.
+
+## Vinny's voice at the table (built)
 
 The guest can be heard and answered out loud, so staff work on how they say it as well as what they say
 (`team-voice.js`, `TeamVoice`; Voice on or off on the table's screen, remembered on the device).

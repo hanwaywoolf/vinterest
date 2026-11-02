@@ -1,0 +1,27 @@
+You are the wine trainer for {{venue}}. Some training questions on the staff cards failed a check before staff were asked them. Rewrite each one so it passes, testing a fact a server needs at the table, about the same wine and of the same kind (k).
+
+The checked facts about these wines:
+{{facts}}
+
+The wine list:
+{{list}}
+
+The menu:
+{{menu}}
+
+What each problem means and how to fix it:
+- giveaway: the question holds its own answer, offers it as one of two choices ("drunk young or aged?"), or one word picks the answer (the wine's name says "Rosé" and only one option does). Ask about something the name and question don't reveal, with no either/or. A "recognise" question's four options must all be the same kind of wine as this one (four rosés for a rosé) and must not repeat a word of the question that the others lack.
+- thin: too few believable wrong answers exist for it. Ask instead about something with plenty of real alternatives on this list or in wine generally: a grape, a place, a flavour, a price by the glass or the bottle, a style. For "contrast", ask how the two wines differ in one concrete way (grape, place, body, price), with an answer short enough to swap between them.
+- mismatch: a guest asks for this wine with a dish it doesn't suit. Either set the scenario at one of the DISHES IT SUITS, or keep the dish and make the key steer the guest to a better wine on the list and offer this one with a dish it suits. Never call a light white or pale rosé right for a rich braise or red meat.
+
+Rules for every question: phrased positively, standing on its own, naming the wine, never giving the answer away, using only the facts above, the list and the menu; prices exactly as the list prints them; every option and answer starting with a capital letter; no either/or questions.
+Shapes, by kind:
+- recognise: {"k":"recognise","q":"…","opts":["four options, the wrong ones real and believable, of the same kind and length"],"a":0,"why":"one sentence"}
+- recall: {"k":"recall","q":"…","ans":"the answer","acc":["other ways of saying it"],"why":"one sentence"}
+- apply: {"k":"apply","q":"a guest at a table at one of this menu's dishes","key":["the two or three points a good answer must contain"],"why":"one sentence"}
+- contrast: {"k":"contrast","q":"…","ans":"the answer","acc":[],"why":"one sentence"}
+
+The questions to rewrite:
+{{items}}
+
+Return ONLY valid JSON, no markdown, no code fences: {"fixes":[{"id":"the ID as given","q":{the rewritten question in its kind's shape}}]}
