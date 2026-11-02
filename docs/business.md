@@ -100,9 +100,16 @@ A Vinny tab (between Today and Wines) and a row on Today, all in `team-vinny.js`
   shown as chips that open their cards. The last two turns go with a follow-up.
 - **A guest at your table** (`TeamVinny.scenario`, `TeamVinny.guest`, purpose `team_guest`,
   `prompts/team-guest.txt`): Vinny plays a diner. The table is built here from the dish's pairing so there's
-  a right answer: a dish this person knows least, and a wish (a bottle under a budget, something lighter, one
-  bottle for four, a glass at the bar, or the guest's own wrong idea to steer away from, with the wine
-  offered for another dish instead). The guest opens, the server types a reply, the guest answers, and after
+  a right answer: a dish and a wish (a bottle under a budget, something lighter, one bottle for four, a glass
+  at the bar, or the guest's own wrong idea to steer away from, with the wine offered for another dish
+  instead). Tables are picked for the person, not dealt the same to everyone (`pickTable`): every dish they
+  serve, with every wish its pairing allows, is scored on what they need (`TABLE_W`): how little they hold of
+  the wines a good answer names (from drills, none yet counting as weak), a wish whose tables they haven't
+  landed lately (the log keeps each table's dish, wish and wines), how well those wines sell, wines or the
+  dish assigned to them, how little they know the dish's pairings, and a table they've just had counts
+  against it. One of the best three dishes is taken, then one of its wishes close to its best, so it stays
+  varied, and the table says why under its heading ("Picked for you: you haven't started on the Bründlmayer
+  yet, and it's on your list to learn"; `tableWhy`). The guest opens, the server types a reply, the guest answers, and after
   the server has recommended (or three replies) the table is marked against the key: what worked, what was
   missing, and a line they could have said. It never moves readiness, which comes only from drills.
 

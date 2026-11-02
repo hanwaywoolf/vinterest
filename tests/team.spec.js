@@ -629,6 +629,51 @@ test('a guest at the table comes with choices, hints or none, and two tables tha
   expect(errors).toEqual([]);
 });
 
+test('tables are picked for the person: wines they don\'t know, requests they\'ve missed, no repeats, and the screen says why', async ({ context, page }) => {
+  const errors = await asMarco(context, page, { claudeText: (b) => b.purpose === 'team_guest' ? '{"guest":"Evening! What would you pour with this?","done":false}' : '' });
+  const r = await page.evaluate(() => {
+    const pid = TeamLearn.people()[0].id, held = (id) => { const p = TeamLearn.progress(pid, id); return p.total ? p.known / p.total : 0; };
+    const out = {};
+    // Every table it could set, scored: the pick is among the best few and leans on wines they hold least.
+    const tables = []; for (let s = 1; s <= 40; s++) tables.push(TeamVinny.scenario(pid, s * 7919));
+    out.allWhy = tables.every((t) => Array.isArray(t.why));
+    const pickedWeak = tables.reduce((a, t) => a + (1 - held(t.wines[0])), 0) / tables.length;
+    const all = TeamData.dishes().map((x) => ({ x, p: TeamData.pairing(x.id) })).filter((d) => d.p && d.p.best && d.p.best.length);
+    const every = []; all.forEach(({ x, p }) => TeamVinny.wishesFor(p).forEach((w) => { const t = TeamVinny._build(x, p, w, 1); if (t && t.wines.length) every.push(t); }));
+    const anyWeak = every.reduce((a, t) => a + (1 - held(t.wines[0])), 0) / every.length;
+    out.pickedWeak = pickedWeak; out.anyWeak = anyWeak;
+    // Some variety: more than one table across seeds.
+    out.distinct = new Set(tables.map((t) => t.dish + ':' + t.wish)).size;
+    // Two missed steer-away tables make steer-away tables come up more.
+    const wishShare = (k) => { let n = 0; for (let s = 1; s <= 40; s++) if (TeamVinny.scenario(pid, s * 104729).wish === k) n++; return n / 40; };
+    const before = wishShare('avoid');
+    const miss = every.find((t) => t.wish === 'avoid');
+    TeamVinny.noteTable(pid, { level: 'choices', score: 0.1, table: { dish: miss.dish, wish: 'avoid', wines: miss.wines } });
+    TeamVinny.noteTable(pid, { level: 'choices', score: 0.2, table: { dish: miss.dish, wish: 'avoid', wines: miss.wines } });
+    out.before = before; out.after = wishShare('avoid');
+    out.log = TeamVinny.tableState(pid).log.slice(-1)[0];
+    // The table just played isn't set again straight away.
+    const last = TeamVinny.scenario(pid, 3);
+    TeamVinny.noteTable(pid, { level: 'choices', score: 0.8, table: last });
+    let repeats = 0; for (let s = 1; s <= 20; s++) { const t = TeamVinny.scenario(pid, s * 31); if (t.dish === last.dish && t.wish === last.wish) repeats++; }
+    out.repeats = repeats;
+    out.missedWhy = TeamVinny.tableWhy({ ...miss, parts: { missed: 2, weak: 0 }, raw: { missedN: 2, weak: 0 } });
+    return out;
+  });
+  expect(r.allWhy).toBe(true);
+  expect(r.pickedWeak).toBeGreaterThanOrEqual(r.anyWeak);
+  expect(r.distinct).toBeGreaterThan(1);
+  expect(r.after).toBeGreaterThan(r.before);
+  expect(r.log).toMatchObject({ wish: 'avoid' });
+  expect(r.log.dish).toBeTruthy();
+  expect(r.repeats).toBe(0);
+  expect(r.missedWhy[0]).toMatch(/steering a guest away from a wine hasn't landed for you 2 times lately/);
+  await page.getByTestId('team-tab-vinny').click();
+  await page.getByText('Take a table').click();
+  await expect(page.getByTestId('guest-why')).toContainText('Picked for you:');
+  expect(errors).toEqual([]);
+});
+
 test('drill answers: no question gives its answer away, prices are asked one way, and a table is two short lists', async ({ context, page }) => {
   const errors = await asMarco(context, page);
   const r = await page.evaluate(() => {

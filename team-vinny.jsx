@@ -110,7 +110,7 @@ function TeamGuest({pid,back,open}){ const T=useTheme(), cr=T.lift(C.cr);
     try{ const r=await TeamVinny.guest(sc,ts); const next=r.line?[...ts,{who:'guest',text:r.line}]:ts; setTurns(next);
       if(r.done){ const m=r.mark||{score:0,verdict:'',good:'',missing:'',better:''}; setMark(m);
         const ds=dels.current.filter(Boolean), d=ds.length?{wpm:ds.find(x=>x.wpm!=null)?.wpm??null,waitMs:ds[0].waitMs,fillers:ds.reduce((a,x)=>a+x.fillers,0),hedges:ds.reduce((a,x)=>a+x.hedges,0),words:ds.reduce((a,x)=>a+x.words,0)}:null;
-        setMoved(TeamVinny.noteTable(pid,{level:levelRef.current,score:m.score,hints:hintsRef.current,delivery:d})); }
+        setMoved(TeamVinny.noteTable(pid,{level:levelRef.current,score:m.score,hints:hintsRef.current,delivery:d,table:sc})); }
       setBusy(false); sayLine(r.line); }
     catch(e){ setErr((e&&e.message)||'Couldn\'t reach Vinny.'); setBusy(false); } };
   const listenRef=React.useRef(null); listenRef.current=listening;
@@ -143,6 +143,7 @@ function TeamGuest({pid,back,open}){ const T=useTheme(), cr=T.lift(C.cr);
     :moved&&moved.moved==='down'?(moved.level==='choices'?'Next table comes with choices again, to steady it.':'Next table comes with hints again.'):'';
   return <div data-testid="team-guest">
     {_tH(T,'A guest at your table',`They're having the ${sc.dishName}. Answer as you would at the table.`)}
+    {sc.why&&sc.why.length>0&&<div data-testid="guest-why" style={{fontSize:13,color:T.mid,fontFamily:C.P,lineHeight:1.45,margin:'-4px 0 10px'}}>Picked for you: {sc.why.join(', and ')}.</div>}
     {!mark&&yours===0&&<_GuestHelpSwitch level={level} onPick={pick}/>}
     {TeamVoice.canSpeak()&&<div style={{display:'flex',justifyContent:'flex-end',marginBottom:8}}>
       <div role="switch" aria-checked={voice} data-testid="guest-voice" onClick={toggleVoice} style={{display:'inline-flex',alignItems:'center',gap:6,padding:'5px 12px',borderRadius:14,border:`1px solid ${voice?cr:T.line}`,color:voice?T.ink:T.mid,fontSize:13,fontWeight:600,fontFamily:C.P,cursor:'pointer'}}>{voice?'🔊 Voice on':'🔇 Voice off'}</div></div>}
