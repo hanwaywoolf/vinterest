@@ -2083,5 +2083,42 @@
    "by": "",
    "note": ""
   }
+ ],
+ "staff": [
+  {
+   "name": "Elena Ruiz",
+   "role": "manager",
+   "photo": "faces/1.png"
+  },
+  {
+   "name": "Claire Whitfield",
+   "role": "sommelier",
+   "photo": "faces/3.png"
+  },
+  {
+   "name": "Marco Delgado",
+   "role": "bartender",
+   "photo": "faces/5.png"
+  },
+  {
+   "name": "Dani Haddad",
+   "role": "server",
+   "photo": "faces/2.png"
+  },
+  {
+   "name": "Priya Nair",
+   "role": "server",
+   "photo": "faces/7.png"
+  },
+  {
+   "name": "Amara Okafor",
+   "role": "server",
+   "photo": "faces/4.png"
+  },
+  {
+   "name": "David Chen",
+   "role": "server",
+   "photo": "faces/6.png"
+  }
  ]
 }

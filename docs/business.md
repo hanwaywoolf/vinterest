@@ -60,9 +60,15 @@ is "Lamb Rack, Saffron Risotto" so it isn't the tapas chops). The venue carries 
 CAD, so `TeamData.currency()` reads the venue's before the device's) and its branding: `venue.brand` {logo,
 logoDark, mark, accent}, the white "per se SOCIAL CORNER" wordmark in place of the restaurant's name in the
 header and the console, the circle emblem in place of the Vinterest logo, and the gold accent (#A88963) in the
-header's glow (`TeamVenueLogo`, files in `team/brand/social-corner/`). Primary buttons stay crimson. No staff
-are invented: whoever opens it gives their name and starts as its manager (`TeamSetup`'s installed form), and
-adds the team from the Team tab. Its training (`data/team-social.json`: every card, pairing and drinking window)
+header's glow (`TeamVenueLogo`, files in `team/brand/social-corner/`). Primary buttons stay crimson. For the
+demo it carries a team (`staff` in the list file): the Larkspur's people and photos in Social Corner roles, Elena
+Ruiz the manager it opens as, Claire Whitfield sommelier, Marco Delgado bartender, and Dani Haddad, Priya Nair,
+Amara Okafor and David Chen serving. `TeamDemo.seedProgress` gives them the Larkspur's stories (Claire ready, wines
+and cocktails; Marco slipping, most of the cocktails; Dani part way; Priya overdue; Amara in her first week; David
+steady on the glass list) and `TeamSales.seedDemo` eight weeks of invented till sales, labelled Demo data: open
+every day, busier than the Larkspur, 5oz and 8oz pours at the list's own dollar prices, and the happy-hour white
+(The Hatch B. Yanco, $42) as the till item the list doesn't carry. Without that `staff` an install opens on
+`TeamSetup`'s installed form, where whoever opens it becomes the manager. Its training (`data/team-social.json`: every card, pairing and drinking window)
 was written once through the branch preview's Worker on Claude Opus 5.5 (`TEAM_MODEL`), then exported; until
 that file holds it, the list and menu load alone and Upload's "Write them now" writes it.
 

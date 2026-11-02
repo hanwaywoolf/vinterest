@@ -419,8 +419,9 @@ const TeamSample = {
     if(mixes.length) d.versions.push({kind:'cocktails',at:now,added:Object.keys(d.cocktails),removed:[],changed:[]});
     TeamData.save(d);
     Store.remove(TeamLearn.KEY); TeamLearn.resetProgress(); if(typeof TeamSales!=='undefined') TeamSales.clear();
-    (s.staff||(which==='social'?[]:this.DEMO_STAFF)).forEach(p=>TeamLearn.addPerson(p.name,p.role,p.photo||null));
-    if(which==='demo'&&Object.keys(d.cards).length) TeamDemo.seedProgress();
+    // The Social Corner's demo team is the Larkspur's people and photos in its own roles (data/team-social-list.json staff).
+    (s.staff||(which==='social'?(_loadJSON('data/team-social-list.json')||{}).staff||[]:this.DEMO_STAFF)).forEach(p=>TeamLearn.addPerson(p.name,p.role,p.photo||null));
+    if((which==='demo'||which==='social')&&Object.keys(d.cards).length) TeamDemo.seedProgress();
     return true;
   },
   /* The demo's size in words for the button that opens it, from its own files. */
@@ -482,6 +483,13 @@ const TeamDemo = {
     if(srv[0]){ spaced(srv[0].id,glass,['recognise','recall','apply'],30,3); spaced(srv[0].id,bottle.slice(0,5),['recognise','recall','apply'],20,2); dishes(srv[0].id,menu.slice(0,13),now-3*this.DAY); check(srv[0].id,7,0.86); }
     // Priya: assigned the list 12 days ago, barely started: overdue.
     if(srv[1]){ learn(srv[1].id,glass.slice(0,6),['recognise'],now-10*this.DAY,'guess'); const m=TeamLearn._mine(P,srv[1].id); Object.values(m.assigned).forEach(a=>{ a.at=now-12*this.DAY; a.due=now-5*this.DAY; }); }
+    // Cocktails, where the restaurant has them (The Social Corner): Marco knows the list but for the newest
+    // spritzes and the sangrias, Claire the classics and the signatures (enough for her minimum), Dani a few; nobody else has started.
+    const mixes=TeamData.cocktails(), mixLearn=(p,cs,firstDaysAgo,steps)=>p&&cs.forEach(c=>TeamLearn.cocktailQs(c.id).filter(q=>TeamLearn.kindsFor(p.role,c.id).includes(q.k)).forEach(q=>{ let t=now-firstDaysAgo*this.DAY, it=null;
+      for(let i=0;i<12&&(i<steps||(it&&it.due<now+this.DAY));i++){ it=TeamLearn.record(p.id,q,true,'sure',t); t=Math.min(now-this.DAY/2,it.due); } }));
+    if(mixes.length){ mixLearn(marco,mixes.slice(0,13),45,3); mixLearn(claire,mixes.filter(c=>/Inspired|Signature/i.test(c.section)),40,3); mixLearn(srv[0],mixes.slice(0,4),15,2); }
+    // David (The Social Corner, a server there): steady, the glass list known and the first of the bottles.
+    if(srv[3]){ spaced(srv[3].id,glass,['recognise','recall','apply'],35,3); spaced(srv[3].id,bottle.slice(0,3),['recognise','recall','apply'],18,2); dishes(srv[3].id,menu.slice(0,20),now-4*this.DAY); check(srv[3].id,8,0.88); }
     // Amara: joined this week, five wines in.
     if(srv[2]){ learn(srv[2].id,glass.slice(0,5),['recognise','recall'],now-2*this.DAY,'think'); const m=TeamLearn._mine(P,srv[2].id); Object.values(m.assigned).forEach(a=>{ a.at=now-2*this.DAY; a.due=now+5*this.DAY; }); }
     TeamLearn._batchP=null; TeamLearn._saveAll(P);

@@ -24,41 +24,46 @@ async function openSample(context, page, opts = {}) {
 
 // The Social Corner (Vancouver), installed from its website (intake/perse/): /team/?seed=social opens its own
 // list and menu with its logo and Canadian dollars, and no invented staff: whoever opens it becomes its manager.
-test('The Social Corner opens from ?seed=social with its own logo, prices in dollars and no invented staff', async ({ context, page }) => {
+test('The Social Corner opens from ?seed=social on its own team, logo, dollars and invented sales', async ({ context, page }) => {
   const errors = [];
   page.on('pageerror', (e) => errors.push(e.message));
   await stubNetwork(context);
   await page.goto(`${BASE}/team/?seed=social`);
-  await expect(page.getByTestId('team-setup-installed')).toBeVisible();
   await expect(page.getByTestId('team-venue-logo')).toHaveAttribute('src', 'brand/social-corner/wordmark-white.png');
-  await expect(page.getByTestId('team-setup-installed')).toContainText(/41 wines and 62 dishes from The Social Corner/);
   const logo = await page.request.get(`${BASE}/team/brand/social-corner/wordmark-white.png`);
   expect(logo.status()).toBe(200);
-  await page.getByLabel('Your name').fill('Alex Morgan');
-  await page.getByText('Start training').click();
-  const who = await page.evaluate(() => ({ people: TeamLearn.people().map((p) => [p.name, p.role]), sym: TeamData.currency().sym, venue: TeamData.get().venue }));
-  expect(who.people).toEqual([['Alex Morgan', 'manager']]);
-  expect(who.sym).toBe('$');
-  expect(who.venue).toMatchObject({ name: 'The Social Corner', city: 'Vancouver', sample: 'social', brand: { accent: '#A88963' } });
+  const st = await page.evaluate(() => {
+    const ppl = TeamLearn.people(), state = (n) => TeamLearn.readiness(ppl.find((p) => p.name.startsWith(n)).id).state;
+    const rows = TeamSales.get().rows;
+    return { me: TeamLearn.me().name, people: ppl.map((p) => [p.name, p.role]), sym: TeamData.currency().sym, venue: TeamData.get().venue,
+      claire: state('Claire'), marco: state('Marco'), demo: TeamSales.demo(), rows: rows.length,
+      sellers: [...new Set(rows.map((r) => r.v).filter(Boolean))].map((id) => TeamLearn.person(id).name.split(' ')[0]).sort(),
+      happy: rows.some((r) => /Hatch B\. Yanco/.test(r.n) && !r.w) };
+  });
+  expect(st.me).toBe('Elena Ruiz');
+  expect(st.people).toEqual([['Elena Ruiz', 'manager'], ['Claire Whitfield', 'sommelier'], ['Marco Delgado', 'bartender'], ['Dani Haddad', 'server'], ['Priya Nair', 'server'], ['Amara Okafor', 'server'], ['David Chen', 'server']]);
+  expect(st.sym).toBe('$');
+  expect(st.venue).toMatchObject({ name: 'The Social Corner', city: 'Vancouver', sample: 'social', brand: { accent: '#A88963' } });
+  expect(st).toMatchObject({ claire: 'ready', marco: 'slipping', demo: true, happy: true });
+  expect(st.rows).toBeGreaterThan(1000);
+  expect(st.sellers).toEqual(['Amara', 'Claire', 'Dani', 'David', 'Marco', 'Priya']);
   await page.getByTestId('team-tab-wines').click();
   await expect(page.locator('#root')).toContainText('Antinori Tignanello');
   await expect(page.locator('#root')).toContainText('bottle $350');
   await expect(page.locator('#root')).not.toContainText('£');
-  await page.reload(); // stays put, with its manager
+  await page.reload(); // stays put, with its team
   await expect(page.getByTestId('team-venue-logo')).toBeVisible();
+  expect(await page.evaluate(() => TeamLearn.people().length)).toBe(7);
   expect(errors).toEqual([]);
 });
 
-// Cocktails (team-learn.js cocktailQs, team-screens.jsx TeamCocktail): The Social Corner's 20, each with a card and
-// four-option questions; their own part of readiness (a bartender's on all four rungs), drilled and recorded
-// like a wine; on each dish they suit. A restaurant without cocktails has no cocktail part.
 test('The Social Corner cocktails: cards, their own part of readiness, drilled, and on the dishes they suit', async ({ context, page }) => {
   await stubNetwork(context);
   await page.goto(`${BASE}/team/?seed=social`);
-  await page.getByLabel('Your name').fill('Sam Reyes');
-  await page.getByText('Start training').click();
+  // A fresh person, so the cocktail they answer below starts unknown (the demo team has its own progress).
+  await page.evaluate(() => { TeamLearn.setMe(TeamLearn.addPerson('Sam Reyes', 'manager')); });
   const st = await page.evaluate(() => {
-    const me = TeamLearn.me(), bar = TeamLearn.addPerson('Lukas Purm', 'bartender');
+    const me = TeamLearn.me();
     const cs = TeamData.cocktails(), qs = TeamLearn.cocktailQs(cs[0].id);
     return { n: cs.length, cards: cs.filter((c) => TeamData.cocktailCard(c.id)).length, mc: qs.every((q) => q.mc && q.opts.length === 4 && q.opts[q.a]),
       parts: Object.keys(TeamLearn.readiness(me.id).parts), barKinds: TeamLearn.kindsFor('bartender', cs[0].id), barNeed: TeamLearn.readiness(TeamLearn.people().find((p) => p.role === 'bartender').id).parts.cocktails.need };
