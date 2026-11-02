@@ -82,6 +82,10 @@ test('The Social Corner cocktails: cards, their own part of readiness, drilled, 
   await page.getByTestId('team-cocktail-row').filter({ hasText: 'The Negroni' }).click();
   await expect(page.getByTestId('team-cocktail')).toContainText('Roku Gin');
   await expect(page.getByTestId('team-pitch')).not.toBeEmpty();
+  // Anything that stands on its own starts with a capital, however the card was written: pills, the base spirit, "Offer instead".
+  const lower = await page.getByTestId('team-cocktail').locator('[data-pill]').evaluateAll((els) => els.map((e) => e.textContent.trim()).filter((t) => /^[a-z]/.test(t)));
+  expect(lower).toEqual([]);
+  await expect(page.getByTestId('team-cocktail')).toContainText('Gin');
   // The drill asks a cocktail question as four options.
   await page.getByText(/Practise this cocktail|Start this cocktail/).click();
   await expect(page.getByTestId('drill-opt')).toHaveCount(4);

@@ -261,8 +261,8 @@ function _CCocktails({open}){ const T=useTheme(), cov=TeamReport.cocktailCoverag
     {groups.map(g=><div key={g.s} style={{marginBottom:14}}>{_cLabel(T,g.s)}<Card style={{padding:'6px 4px'}}>
       <_CTable testid="cocktails-table" cols={[{h:'Cocktail'},{h:'Price',align:'center',w:64},{h:'Base spirit',w:150},{h:'Known by',align:'center',w:84},{h:'Card',align:'center',w:52}]}
         rows={g.xs.map(x=>{ const c=x.cocktail, k=TeamData.cocktailCard(c.id); return {key:c.id,testid:'cocktails-row',onClick:()=>open({view:'cocktail',id:c.id}),cells:[
-          <div style={{display:'flex',alignItems:'flex-start',gap:8,minWidth:160}}><span style={{width:8,height:8,borderRadius:4,background:col,flexShrink:0,marginTop:6}}/><div><div style={{fontWeight:600,color:T.ink}}>{c.name}</div><div style={{fontSize:12,color:T.mid,lineHeight:1.4}}>{(c.ingredients||[]).join(', ')}</div></div></div>,
-          c.price,<span style={{color:T.ink2}}>{(k&&k.spirit)||'—'}</span>,
+          <div style={{display:'flex',alignItems:'flex-start',gap:8,minWidth:160}}><span style={{width:8,height:8,borderRadius:4,background:col,flexShrink:0,marginTop:6}}/><div><div style={{fontWeight:600,color:T.ink}}>{c.name}</div><div style={{fontSize:12,color:T.mid,lineHeight:1.4}}>{_tCaps(c.ingredients)}</div></div></div>,
+          c.price,<span style={{color:T.ink2}}>{(k&&_tCap(k.spirit))||'—'}</span>,
           <span style={{color:x.of&&x.knows<Math.ceil(x.of/2)?T.tone.bad:T.ink2,whiteSpace:'nowrap'}}>{x.knows} of {x.of}</span>,
           x.card?<Icon n="check" sz={14} col={T.green} style={{display:'inline-block',verticalAlign:'middle'}}/>:<span style={{color:T.mid}}>—</span>]}; })}/></Card></div>)}
   </div>; }
