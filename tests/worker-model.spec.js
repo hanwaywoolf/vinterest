@@ -101,7 +101,8 @@ test('TEAM_MODEL moves only the staff-training purposes, with room for Opus to t
   expect(upstream[0].body.thinking).toBeUndefined();
   expect(upstream[0].body).toMatchObject({ output_config: { effort: 'medium' }, fallbacks: 'default', max_tokens: 24576 });
   expect(upstream[1].body.max_tokens).toBe(16384);
-  expect(upstream[2].body.max_tokens).toBe(500);
+  // A short answer (Ask Vinny) gets room to think too: at 500 the thinking used it all and the answer came back cut off.
+  expect(upstream[2].body.max_tokens).toBe(4096);
   // The consumer app's calls are exactly what they were.
   expect(upstream[3].body).toMatchObject({ thinking: { type: 'between_tools' }, max_tokens: 4096 });
   // Without TEAM_MODEL the team purposes follow CLAUDE_MODEL as before.

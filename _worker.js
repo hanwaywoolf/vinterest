@@ -112,8 +112,13 @@ function modelFor(purpose, env) {
    writing caps (CLAUDE_PURPOSE_LIMITS) were set for a model that doesn't think, so a four-wine card call
    could be cut off part way; on those models they're doubled. Unused tokens cost nothing. */
 const THINKING_DOUBLED = { team_list: 1, team_menu: 1, team_cards: 1, team_cocktails: 1, team_pairings: 1, team_fix: 1 };
+// The short team answers (a guest's line with its choices, Ask Vinny, a marked answer) were sized for a model that
+// doesn't think: on Opus the thinking used the whole cap and the answer came back cut off mid-JSON. They get room.
+const THINKING_FLOOR = { team_vinny: 4096, team_guest: 4096, team_grade: 2048 };
 function thinkingCap(model, purpose, cap) {
-  return /^claude-(opus|fable)-5/.test(model) && THINKING_DOUBLED[purpose] ? cap * 2 : cap;
+  if (!/^claude-(opus|fable)-5/.test(model)) return cap;
+  if (THINKING_DOUBLED[purpose]) return cap * 2;
+  return Math.max(cap, THINKING_FLOOR[purpose] || 0);
 }
 
 const ALLOWED_ORIGINS = [

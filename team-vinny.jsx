@@ -90,7 +90,7 @@ function _GuestChoices({help,onSay}){ const T=useTheme(), cr=T.lift(C.cr);
     {wine&&help.reasons.length>0&&<>
       <div style={{fontSize:12,fontWeight:700,color:T.mid,fontFamily:C.P,letterSpacing:'0.08em',textTransform:'uppercase',marginTop:14}}>2 · Why does it suit?</div>
       <div style={{display:'flex',flexDirection:'column',gap:8,marginTop:8}}>{help.reasons.map((r,i)=>{ const st=done&&r.ok?'ok':rTried.includes(i)?'no':null;
-        return row(i,r.text,st==='no'?'That reason is about another dish on the menu.':'',done&&!st?'off':st,()=>{ if(done) return; if(r.ok){ setDone(true); onSay(help.say(wine,r.text)); } else setRTried(t=>[...t,i]); },'guest-reason'); })}</div></>}
+        return row(i,r.text,st==='no'?(r.note||'That reason is about another dish on the menu.'):'',done&&!st?'off':st,()=>{ if(done) return; if(r.ok){ setDone(true); onSay(help.say(wine,r.text)); } else setRTried(t=>[...t,i]); },'guest-reason'); })}</div></>}
     {done&&<div style={{fontSize:13,color:T.mid,fontFamily:C.P,marginTop:12,lineHeight:1.45}}>Your reply is ready below. Put it in your own words if you like, then Say.</div>}
   </Card></div>; }
 /* Replies to pick from for a guest's follow-up: a weaker one says why and stays crossed out; the right one fills the box. */

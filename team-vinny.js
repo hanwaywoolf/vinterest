@@ -157,7 +157,8 @@ const TeamVinny = {
     const text=await window.claude.complete({purpose:'team_vinny',messages:[{role:'user',content:this.prompt(question,turns)}]});
     const {ws,ds}=this._lines(); let j=null; try{ j=TeamData._json(text); }catch(e){}
     const ids=(tags,arr,p)=>[...new Set((tags||[]).map(t=>{ const m=String(t).match(new RegExp('^'+p+'(\\d+)$','i')); return m&&arr[+m[1]-1]?arr[+m[1]-1].id:null; }).filter(Boolean))];
-    const answer=this.clean((j&&j.answer)||text);
+    // An answer cut off before its JSON closed still shows its words, never the raw {"answer": … (TeamVinny.loose).
+    const answer=this.clean((j&&j.answer)||this.loose(text,'answer')||text);
     this.remember(question);
     return {answer,wines:ids(j&&j.wines,ws,'W'),dishes:ids(j&&j.dishes,ds,'D')};
   },
@@ -167,6 +168,9 @@ const TeamVinny = {
   /* A table aimed at this person (tableWhy says why it was picked). Every dish they serve, with every
      request it allows, is a possible table; each is scored on what this person needs (pickTable), and one of
      the best few is taken, so it stays varied. {dish, wish, guest, key, wines:[id], why:[…], help}. */
+  /* A field's text from JSON that was cut off before it closed: {"answer": "Our list… → Our list… */
+  loose(text,field){ const m=new RegExp('"'+field+'"\\s*:\\s*"((?:[^"\\\\]|\\\\.)*)').exec(String(text||'')); if(!m) return '';
+    try{ return JSON.parse('"'+m[1].replace(/\\$/,'')+'"'); }catch(e){ return m[1]; } },
   scenario(pid,seed=Date.now()){
     const c=this._ctx(pid); if(!c) return null;
     const pool=c.dishes.map(x=>({x,p:TeamData.pairing(x.id)})).filter(d=>d.p&&d.p.best&&d.p.best.length);
@@ -326,13 +330,20 @@ const TeamVinny = {
     // Three orders, so the right one isn't always in the same place.
     const order=[[0,1,2],[1,0,2],[2,0,1],[1,2,0]][Math.abs(seed)%4].filter(i=>i<wines.length);
     const pickedWines=order.map(i=>wines[i]);
-    // Reasons: the pairing's own reason for the right wine, and two from other dishes' pairings.
+    // Reasons, all about the wine they picked: the pairing's own reason for it, and two that sound right but its own
+    // card rules out at this dish (TeamLearn.styleWrong: light where it's full, no tannin where it's firm), so the
+    // second step is about the first answer, never another wine's reason from another dish.
     const whyRight=(()=>{ if(!okWine) return ''; if(sc.wish==='glass'&&p.glass) return p.glass.why; const b=best.find(b=>b.id===okWine.id); return b?b.why:''; })();
     // Wrong reasons from the same course first (a main against other mains), so they can't be ruled out at a glance.
     const whysOf=ds=>ds.flatMap(d=>{ const q=TeamData.pairing(d.id); return q?[...(q.best||[]),q.glass].filter(Boolean).map(b=>b.why):[]; }).filter(w=>w&&w!==whyRight);
     const others2=TeamData.dishes().filter(d=>d.id!==x.id), same=others2.filter(d=>d.section&&d.section===x.section);
     const otherWhys=[...new Set([...rot(whysOf(same),seed>>1),...rot(whysOf(others2.filter(d=>!same.includes(d))),seed>>1)])].slice(0,2);
-    const reasons=whyRight?[{text:whyRight,ok:true},...otherWhys.map(t=>({text:t,ok:false}))]:[];
+    const card=okWine&&TeamData.card(okWine.id), st=(card&&card.style)||{};
+    const sentence=t=>{ const s=String(t||'').trim(); return s?s.charAt(0).toUpperCase()+s.slice(1)+(/[.!?]$/.test(s)?'':'.'):''; };
+    const notTrue=card&&card.taste?`Not the ${short(okWine.id)}: its card says "${card.taste.replace(/\.$/,'')}".`:`That isn't how the ${short(okWine.id)} tastes: check its card.`;
+    const ownWrong=okWine?TeamLearn.styleWrong(st,TeamLearn.kindOf(okWine),x.name,seed).map(sentence).filter(t=>t&&t!==whyRight):[];
+    const wrongs=[...ownWrong.map(t=>({text:t,ok:false,note:notTrue})),...otherWhys.map(t=>({text:t,ok:false,note:'That reason is about another wine and dish on the menu.'}))].slice(0,2);
+    const reasons=whyRight?[{text:whyRight,ok:true},...wrongs]:[];
     const rOrder=[[1,0,2],[0,2,1],[2,1,0]][Math.abs(seed>>1)%3].filter(i=>i<reasons.length);
     const wishLine={budget:`They want a bottle and have a budget: keep under it.`,light:'They want something lighter: think body, not colour.',bottle:'One bottle for the whole table: pick the one that works with most of it, and say it with confidence.',avoid:`They've named a wine that doesn't suit the ${x.name}: steer them, kindly, and offer something better.`,glass:'Just a glass: look at what\'s poured by the glass.'}[sc.wish];
     const look=rot(pickedWines.map(w=>short(w.id)),0).filter(Boolean);

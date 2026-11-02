@@ -155,7 +155,7 @@ A Vinny tab (between Today and Wines) and a row on Today, all in `team-vinny.js`
 
   Help at the table follows the person (`TeamVinny.level`, `noteTable`). **Choices**: three wines to pick
   from (the right one, the table's wrong idea or a near miss, and one that doesn't pair), each wrong pick
-  saying why, then three reasons (the pairing's own and two from dishes in the same course), built into a
+  saying why, then three reasons (the pairing's own for the wine picked and two claims its own card rules out at this dish, so the second step is about the first answer), built into a
   reply they can change before saying it. **Hints**: up to three, asked for one at a time: what the guest
   wants, the wines worth a look, the reason to give. **On your own**: nothing. A sommelier or buyer starts on
   their own; anyone else starts from readiness (choices under 40%, hints to 75%, then on their own). Two

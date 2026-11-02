@@ -1146,6 +1146,34 @@ test('a guest follow-up comes with replies to pick from, or a hint, so choices l
   expect(errors).toEqual([]);
 });
 
+// "Why does it suit?" is about the wine they just picked: the wrong reasons are claims its own card rules out at
+// this dish, never another wine's reason from another dish; and Ask Vinny cut off mid-JSON still shows its words.
+test('the guest\'s reasons are all about the chosen wine, and a cut-off Vinny answer shows words, not JSON', async ({ context, page }) => {
+  const errors = await asMarco(context, page);
+  const r = await page.evaluate(async () => {
+    const out = [];
+    for (let i = 0; i < 12; i++) {
+      const sc = TeamVinny.scenario(TeamLearn.me().id, 1000 + i * 7919);
+      if (!sc) continue;
+      const h = sc.help;
+      if (!h || !h.reasons || !h.reasons.length) continue;
+      const card = TeamData.card(h.wines.find((w) => w.ok).id);
+      const otherWhys = TeamData.dishes().filter((d) => d.name !== sc.dish).flatMap((d) => { const q = TeamData.pairing(d.id); return q ? [...(q.best || []), q.glass].filter(Boolean).map((b) => b.why) : []; });
+      out.push({ wrong: h.reasons.filter((x) => !x.ok), fromOther: h.reasons.filter((x) => !x.ok && otherWhys.includes(x.text)).length, taste: card && card.taste });
+    }
+    const cut = TeamVinny.loose('{"answer": "Our list doesn\'t mark a house red, but the Road 13 Cabernet', 'answer');
+    return { out, cut };
+  });
+  expect(r.out.length).toBeGreaterThan(3);
+  for (const o of r.out) {
+    expect(o.wrong.length).toBe(2);
+    expect(o.fromOther).toBe(0);
+    for (const w of o.wrong) expect(w.note).toMatch(/^Not the .+: its card says/);
+  }
+  expect(r.cut).toBe("Our list doesn't mark a house red, but the Road 13 Cabernet");
+  expect(errors).toEqual([]);
+});
+
 test('a spoken table: the guest is said aloud, the reply is spoken into the box, and the result coaches the delivery', async ({ context, page }) => {
   // Stand-ins for the browser's speech engines: the voice finishes at once; the microphone "hears" a reply.
   await context.addInitScript(() => {
