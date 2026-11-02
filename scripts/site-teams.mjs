@@ -12,11 +12,12 @@
 //   site/teams/_redirects       www.vinterest.team to vinterest.team
 //
 // Settings (Cloudflare Pages build variables, all optional):
-//   The restaurant demo (the team app at /team/) comes from the app project's build of the same branch,
-//   so the demo always shows the app as this site describes it: on main https://vinterest.pages.dev,
-//   on any other branch its preview, https://<branch>.vinterest.pages.dev (CF_PAGES_BRANCH, which
-//   Cloudflare sets). TEAM_DEMO_ORIGIN overrides it. (DEMO_ORIGIN, its old name, is ignored: it was
-//   set to a branch that has since gone.)
+//   The restaurant demo buttons open the team app's console for The Larkspur from the app project's
+//   build of the same branch, so the demo always shows the app as this site describes it: on main its
+//   own address, https://demo.vinterest.team (a custom domain on the app project, served by
+//   serveTeamDemo in _worker.js); on any other branch that branch's preview,
+//   https://<branch>.vinterest.pages.dev/team/ (CF_PAGES_BRANCH, which Cloudflare sets).
+//   TEAM_DEMO_URL overrides it. (DEMO_ORIGIN, an old setting, is ignored.)
 //   CF_ANALYTICS_TOKEN    Cloudflare Web Analytics token; without it no analytics script is added
 //   SITE_ORIGIN           the site's public address, for the sitemap (default https://vinterest.team)
 import { createHash } from 'node:crypto';
@@ -38,22 +39,24 @@ function fill(html, vars) {
   });
 }
 
-// Cloudflare's branch address: lower case, anything but letters and digits as '-', at most 28 characters.
-export function demoOrigin(branch) {
-  if (!branch || branch === 'main') return 'https://vinterest.pages.dev';
+// Where the demo buttons go. Cloudflare's branch address is lower case, anything but letters and
+// digits as '-', at most 28 characters.
+export function demoUrl(branch) {
+  const q = '?seed=demo&view=console';
+  if (!branch || branch === 'main') return `https://demo.vinterest.team/${q}`;
   const alias = branch.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 28).replace(/^-+|-+$/g, '');
-  return `https://${alias}.vinterest.pages.dev`;
+  return `https://${alias}.vinterest.pages.dev/team/${q}`;
 }
 
 export function build() {
   const origin = (process.env.SITE_ORIGIN || 'https://vinterest.team').replace(/\/+$/, '');
-  const demo = (process.env.TEAM_DEMO_ORIGIN || demoOrigin(process.env.CF_PAGES_BRANCH)).replace(/\/+$/, '');
+  const demo = process.env.TEAM_DEMO_URL || demoUrl(process.env.CF_PAGES_BRANCH);
   fs.rmSync(OUT, { recursive: true, force: true });
   fs.mkdirSync(OUT, { recursive: true });
   buildFonts(OUT);
   const token = process.env.CF_ANALYTICS_TOKEN;
   const vars = {
-    DEMO_ORIGIN: demo,
+    DEMO_URL: demo.replace(/&/g, '&amp;'),
     FONTS_V: hash(fs.readFileSync(path.join(OUT, 'fonts/fonts.css'), 'utf8')),
     ANALYTICS: token
       ? `<script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "${token}"}'></script>`

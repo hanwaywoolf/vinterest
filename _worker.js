@@ -99,6 +99,7 @@ const ALLOWED_ORIGINS = [
   "https://vinterest.app",
   "https://test.vinterest.app", // the web app's test address (a custom domain on the vinterest Pages project)
   "https://vinterest.pages.dev",
+  "https://demo.vinterest.team", // the teams demo (serveTeamDemo), a custom domain on this project
   "capacitor://localhost",
   "https://localhost"
 ];
@@ -107,6 +108,25 @@ const ALLOWED_ORIGINS = [
 // docs/native-migration-spec.md section 6 depends on exercising those
 // previews, so they're allowed too.
 const PREVIEW_ORIGIN_RE = /^https:\/\/[a-z0-9-]+\.vinterest\.pages\.dev$/;
+
+// The teams demo's own address (a custom domain on this Pages project, docs/site-setup.md): the team
+// app (dist/team/) served at its root, The Larkspur seeded on a first visit. Its script and photos
+// are relative (team.js, faces/, labels/), so they're read from /team/; fonts and icons are the
+// site's own, from the root. The API routes above answer as on any other address.
+const TEAM_DEMO_HOSTS = ["demo.vinterest.team"];
+const TEAM_DEMO_FILE = /^\/(team\.js$|faces\/|labels\/)/;
+async function serveTeamDemo(request, url, env) {
+  if (url.pathname === "/" && !url.search) return Response.redirect(`${url.origin}/?seed=demo`, 302);
+  if (url.pathname.startsWith("/team/")) return Response.redirect(`${url.origin}${url.pathname.slice(5)}${url.search}`, 301);
+  // A page address the demo doesn't have would fall through to the consumer app's page: send it home.
+  if (url.pathname !== "/" && !url.pathname.includes(".") && !TEAM_DEMO_FILE.test(url.pathname)) return Response.redirect(`${url.origin}/${url.search}`, 302);
+  const path = url.pathname === "/" ? "/team/" : TEAM_DEMO_FILE.test(url.pathname) ? "/team" + url.pathname : url.pathname;
+  const res = await env.ASSETS.fetch(new Request(new URL(path, url.origin), request));
+  if (path !== "/team/") return res;
+  const headers = new Headers(res.headers);
+  headers.set("Cache-Control", "no-cache, must-revalidate");
+  return new Response(res.body, { status: res.status, headers });
+}
 
 const MAX_BODY_BYTES = 6 * 1024 * 1024; // headroom above a 1024px-JPEG scan payload
 
@@ -191,6 +211,9 @@ export default {
       if (request.method !== "POST") return json(405, { error: "Method not allowed" });
       return handleClaude(request, env, ctx);
     }
+
+    // demo.vinterest.team is the teams demo on its own address, so it doesn't open on the consumer app.
+    if (TEAM_DEMO_HOSTS.includes(url.hostname)) return serveTeamDemo(request, url, env);
 
     const res = await env.ASSETS.fetch(request);
 

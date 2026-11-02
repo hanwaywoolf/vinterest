@@ -57,3 +57,35 @@ test('the sitemap lists every page', async ({ request }) => {
   const xml = await (await request.get(BASE + '/sitemap.xml')).text();
   for (const p of PAGES) expect(xml).toContain(`https://vinterest.team${p === '/' ? '/' : p}<`);
 });
+
+// demo.vinterest.team: the app's Worker serves the team app at the root of its own address, so the
+// demo never opens on the consumer app; the script and photos come from /team/, fonts from the root.
+test('the demo address serves the team app at its root', async () => {
+  const fs = require('node:fs'), os = require('node:os'), path = require('node:path');
+  const copy = path.join(os.tmpdir(), `worker-demo-${process.pid}.mjs`);
+  fs.copyFileSync(path.join(__dirname, '..', '_worker.js'), copy);
+  const worker = (await import(require('node:url').pathToFileURL(copy).href + `?t=${Date.now()}`)).default;
+  const asked = [];
+  const env = { ASSETS: { fetch: async (req) => { const p = new URL(req.url).pathname; asked.push(p); return new Response(p, { status: 200, headers: { 'content-type': 'text/plain' } }); } } };
+  const get = (u) => worker.fetch(new Request(u, { redirect: 'manual' }), env);
+  let r = await get('https://demo.vinterest.team/');
+  expect(r.status).toBe(302); expect(r.headers.get('location')).toBe('https://demo.vinterest.team/?seed=demo');
+  r = await get('https://demo.vinterest.team/?seed=demo&view=console');
+  expect(await r.text()).toBe('/team/'); expect(r.headers.get('cache-control')).toContain('no-cache');
+  expect(await (await get('https://demo.vinterest.team/team.js?v=1')).text()).toBe('/team/team.js');
+  expect(await (await get('https://demo.vinterest.team/faces/1.png')).text()).toBe('/team/faces/1.png');
+  expect(await (await get('https://demo.vinterest.team/fonts/fonts.css')).text()).toBe('/fonts/fonts.css');
+  r = await get('https://demo.vinterest.team/team/?seed=demo');
+  expect(r.status).toBe(301); expect(r.headers.get('location')).toBe('https://demo.vinterest.team/?seed=demo');
+  r = await get('https://demo.vinterest.team/wines');
+  expect(r.status).toBe(302);
+  // The app's own address is untouched.
+  expect(await (await get('https://vinterest.pages.dev/')).text()).toBe('/');
+});
+
+test('the demo buttons follow the branch', async () => {
+  const { demoUrl } = await import(require('node:url').pathToFileURL(require('node:path').join(__dirname, '..', 'scripts', 'site-teams.mjs')).href);
+  expect(demoUrl('main')).toBe('https://demo.vinterest.team/?seed=demo&view=console');
+  expect(demoUrl(undefined)).toBe('https://demo.vinterest.team/?seed=demo&view=console');
+  expect(demoUrl('claude/teams-site')).toBe('https://claude-teams-site.vinterest.pages.dev/team/?seed=demo&view=console');
+});

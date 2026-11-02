@@ -111,10 +111,15 @@ The project is `vinterest-teams`: production at https://vinterest-teams.pages.de
 
 Build variables (all optional):
 
-- The restaurant demo buttons open the app project's build of the same branch, so the demo always
-  matches the site: `https://vinterest.pages.dev` from `main`, `https://<branch>.vinterest.pages.dev`
-  from any other branch (from `CF_PAGES_BRANCH`, which Cloudflare sets). `TEAM_DEMO_ORIGIN` overrides
-  it. The old `DEMO_ORIGIN` variable is ignored and can be deleted.
+- The restaurant demo buttons open the teams app from the same branch as the site:
+  `https://demo.vinterest.team` from `main`, `https://<branch>.vinterest.pages.dev/team/` from any
+  other branch (from `CF_PAGES_BRANCH`, which Cloudflare sets). `TEAM_DEMO_URL` overrides it. The
+  old `DEMO_ORIGIN` variable is ignored and can be deleted.
+
+  `demo.vinterest.team` is a custom domain on the **app** project (`vinterest`), not this one: Workers
+  & Pages → vinterest → Custom domains → Set up a custom domain → `demo.vinterest.team`. The app's
+  Worker (`serveTeamDemo` in `_worker.js`) serves the team app at that address's root and seeds The
+  Larkspur on a first visit; `https://vinterest.pages.dev/` stays the consumer app.
 - `CF_ANALYTICS_TOKEN`: as for the consumer site; a separate Web Analytics site for this domain.
 - `SITE_ORIGIN`: the public address for the sitemap. Default `https://vinterest.team`.
 
