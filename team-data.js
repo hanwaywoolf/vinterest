@@ -295,9 +295,12 @@ const TeamData = {
     // The batches run at once (a 27-dish menu is three calls: 15 seconds together rather than 45 in a row).
     const batches=[]; for(let i=0;i<dishIds.length;i+=this.PAIR_BATCH) batches.push(dishIds.slice(i,i+this.PAIR_BATCH).map(id=>this.dish(id)).filter(Boolean));
     await Promise.all(batches.map(async xs=>{
-      const prompt=tpl.replace(/\{\{venue\}\}/g,venue).replace('{{about}}',this.about()).replace('{{list}}',list).replace('{{cocktails}}',this._drinkLines())
-        .replace('{{dishes}}',xs.map(x=>`${x.name} | ${x.desc} | main: ${x.main} | ${x.cook} | ${(x.flav||[]).join(', ')}`).join('\n'));
-      const j=this._json(await window.claude.complete({purpose:'team_pairings',messages:[{role:'user',content:prompt}]}))||{};
+      const ask=ys=>tpl.replace(/\{\{venue\}\}/g,venue).replace('{{about}}',this.about()).replace('{{list}}',list).replace('{{cocktails}}',this._drinkLines())
+        .replace('{{dishes}}',ys.map(x=>`${x.name} | ${x.desc} | main: ${x.main} | ${x.cook} | ${(x.flav||[]).join(', ')}`).join('\n'));
+      // As with the cards: a batch that fails is tried again, then one dish at a time.
+      let j;
+      try{ j=this._json(await this._callRetry('team_pairings',ask(xs)))||{}; }
+      catch(e){ if(xs.length<2) throw e; j={pairings:[]}; for(const one of xs){ const j1=this._json(await this._callRetry('team_pairings',ask([one])))||{}; (j1.pairings||[]).forEach(p=>j.pairings.push(p)); } }
       const d=this.get();
       (j.pairings||[]).forEach(p=>{
         const x=xs.find(x=>x.name===p.dish); if(!x) return;
