@@ -29,21 +29,23 @@
       <div class="phone big"><div class="scr"><div class="pstage" id="pstage"></div></div></div>
     </div>
     </div>
-    <div class="demo" id="demo">
-      <div class="tabs" role="tablist" id="tabs">
-        <button role="tab" aria-selected="true" data-scene="ready">Readiness<i></i></button>
-        <button role="tab" data-scene="team">Team<i></i></button>
-        <button role="tab" data-scene="wines">Wines<i></i></button>
-        <button role="tab" data-scene="cards">Cards<i></i></button>
-        <button role="tab" data-scene="menu">Menu<i></i></button>
-        <button role="tab" data-scene="sales">Sales<i></i></button>
+    <div class="demo dgrid" id="demo">
+      <div class="dside">
+        <div class="tabs" role="tablist" id="tabs" aria-label="The management console">
+          <button role="tab" aria-selected="true" data-scene="ready"><b>Readiness</b><span>One figure per person against the standard for their role, who's slipping or overdue, and what each is short of before service.</span><i></i></button>
+          <button role="tab" data-scene="team"><b>Team</b><span>Readiness, fading answers, overdue drills and how many surprise re-checks each person has passed. The standard for each role is set here.</span><i></i></button>
+          <button role="tab" data-scene="wines"><b>Wines</b><span>Every wine with how many of the team know it, what it sold, and whether it's young, at its best or fading.</span><i></i></button>
+          <button role="tab" data-scene="cards"><b>Cards</b><span>What to say to a guest, how it tastes with every word explained, serving, and the dishes it suits. Rewrite any line.</span><i></i></button>
+          <button role="tab" data-scene="menu"><b>Menu</b><span>For every dish: the best wines, the pick by the glass, and the one to steer guests away from, each with the reason.</span><i></i></button>
+          <button role="tab" data-scene="sales"><b>Sales</b><span>What sells, who sells it, and the slow movers nobody can describe yet. Sales set what's learnt first and never move readiness.</span><i></i></button>
+        </div>
+        <p class="cap" id="cap"></p>
+        <button class="btn ghost small explore" type="button" data-demo-open>Explore it yourself →</button>
       </div>
-      <p class="cap" id="cap"></p>
       <div class="laptop">
-        <div class="lid"><div class="stage" id="stage" aria-label="The management console, scrolling through its pages"></div></div>
+        <div class="lid" role="button" tabindex="0" data-demo-open aria-label="Open the demo restaurant's console full screen"><div class="stage" id="stage" aria-hidden="true"></div><span class="hint">Click to explore the demo</span></div>
         <div class="base"></div>
       </div>
-      <div class="open"><a class="btn ghost small" href="%%DEMO_URL%%" target="_blank" rel="noopener">Open the interactive demo →</a></div>
     </div>
     </div>
   </div>
@@ -274,7 +276,7 @@ async function play(name) {
   cur = name; playing = true; const sc = SCENES[name];
   { const sel = tabs.find((t) => t.dataset.scene === name), box = sel.parentElement; if (box.scrollWidth > box.clientWidth) box.scrollTo({ left: sel.offsetLeft - (box.clientWidth - sel.offsetWidth) / 2, behavior: reduced ? 'auto' : 'smooth' }); }
   tabs.forEach((t) => { t.setAttribute('aria-selected', t.dataset.scene === name ? 'true' : 'false'); const bar = t.querySelector('i'); bar.style.animation = 'none'; void bar.offsetWidth; bar.style.animation = ''; if (t.dataset.scene === name) t.style.setProperty('--dwell', (lap.length(sc.steps) + 600) + 'ms'); });
-  cap.innerHTML = sc.cap;
+  { const sel = tabs.find((t) => t.dataset.scene === name); cap.innerHTML = `<b>${sel.querySelector('b').textContent}.</b> ${sel.querySelector('span').textContent}`; }
   const finished = await lap.play(sc.steps); if (!finished) return;
   await sleep(600); playing = false;
   if (!held && inView) play(order[(order.indexOf(name) + 1) % order.length]);

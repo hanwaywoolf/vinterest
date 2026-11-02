@@ -89,3 +89,28 @@ test('the demo buttons follow the branch', async () => {
   expect(demoUrl(undefined)).toBe('https://demo.vinterest.team/?seed=demo&view=console');
   expect(demoUrl('claude/teams-site')).toBe('https://claude-teams-site.vinterest.pages.dev/team/?seed=demo&view=console');
 });
+
+// The demo restaurant opens full screen over the page, from the laptop and from every link to it, and
+// loads the console only when first opened; Esc and × close it.
+test('the demo opens full screen over the page and closes again', async ({ browser }) => {
+  const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
+  await page.route('https://demo.vinterest.team/**', (r) => r.fulfill({ contentType: 'text/html', body: '<title>demo</title><p>The Larkspur</p>' }));
+  await page.goto(BASE + '/');
+  const box = page.locator('#demoBox');
+  await expect(box).toBeHidden();
+  expect(await box.locator('iframe').getAttribute('src')).toBeNull();
+  await page.locator('.lid').click();
+  await expect(box).toBeVisible();
+  expect(await box.locator('iframe').getAttribute('src')).toBe('https://demo.vinterest.team/?seed=demo&view=console');
+  await page.keyboard.press('Escape');
+  await expect(box).toBeHidden();
+  await page.locator('header nav ~ .doors a', { hasText: 'Try Restaurant Demo' }).click();
+  await expect(box).toBeVisible();
+  await page.locator('[data-demo-close]').click();
+  await expect(box).toBeHidden();
+  // Every page carries it, so the nav's link works everywhere.
+  await page.goto(BASE + '/pricing');
+  await page.locator('header .doors a', { hasText: 'Try Restaurant Demo' }).click();
+  await expect(page.locator('#demoBox')).toBeVisible();
+  await page.close();
+});
