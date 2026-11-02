@@ -132,11 +132,11 @@ function TeamToday({pid,open}){ const T=useTheme(), cr=T.lift(C.cr);
 function TeamDrill({pid,only,part,given,intro,back,open}){ const T=useTheme(), cr=T.lift(C.cr);
   // given: questions chosen elsewhere (Vinny's test, team-vinny.js), with intro {title, why} over the first.
   // Every drill deals its questions afresh, so a question seen before comes back in a new order.
-  const [qs]=React.useState(()=>{ const raw=given&&given.length?given:only?TeamLearn.wineQs(only).filter(q=>TeamLearn.ROLES[TeamLearn.person(pid).role].kinds.includes(q.k)):TeamLearn.drill(pid,undefined,part||null);
+  const [qs]=React.useState(()=>{ const raw=given&&given.length?given:only?TeamLearn.qsOf(only).filter(q=>TeamLearn.kindsFor(TeamLearn.person(pid).role,only).includes(q.k)):TeamLearn.drill(pid,undefined,part||null);
     const nonce=Date.now().toString(36); return raw.map((q,i)=>TeamLearn.deal(q,nonce+i)); });
   // Where they stood as the drill began, so the summary can say what moved.
   const [before]=React.useState(()=>{ const r=TeamLearn.readiness(pid); const items={};
-    qs.forEach(q=>{ const id=q.wine||q.dish; if(id&&!items[id]) items[id]=TeamLearn.progress(pid,id,{dish:!q.wine}); }); return {pct:r?r.pct:0,items}; });
+    qs.forEach(q=>{ const id=q.wine||q.cocktail||q.dish; if(id&&!items[id]) items[id]=TeamLearn.progress(pid,id,{dish:!q.wine&&!q.cocktail}); }); return {pct:r?r.pct:0,items}; });
   const [i,setI]=React.useState(0), [ans,setAns]=React.useState(null), [picks,setPicks]=React.useState([]), [sure,setSure]=React.useState('think');
   // Each question (and the summary after the last) opens at its top: the previous one may have been scrolled to reach its answers.
   const rootRef=React.useRef(null);
@@ -145,7 +145,7 @@ function TeamDrill({pid,only,part,given,intro,back,open}){ const T=useTheme(), c
   const q=qs[i];
   if(!qs.length) return <div>{_tH(T,'Nothing to drill yet','Your training appears once the wine list has staff cards.')}<Btn full onClick={back}>Back</Btn></div>;
   if(!q){ const r=TeamLearn.note(pid), rise=r.pct-before.pct;
-    const rows=Object.entries(before.items).map(([id,was])=>{ const dish=!qs.some(x=>x.wine===id), now=TeamLearn.progress(pid,id,{dish}), name=dish?(TeamData.dish(id)||{}).name:TeamData.short(TeamData.wine(id)||{}); return {id,name,was,now,dish}; });
+    const rows=Object.entries(before.items).map(([id,was])=>{ const mix=TeamLearn.isCocktail(id), dish=!mix&&!qs.some(x=>x.wine===id), now=TeamLearn.progress(pid,id,{dish}), name=mix?(TeamData.cocktail(id)||{}).name:dish?(TeamData.dish(id)||{}).name:TeamData.short(TeamData.wine(id)||{}); return {id,name,was,now,dish,mix}; });
     return <div ref={rootRef} data-testid="drill-done">{_tH(T,`${tally.right} of ${tally.of} right`,'Each answer now has its own review date: the ones you missed come back soonest.')}
       <Card>
         <div style={{display:'flex',gap:14,alignItems:'center'}}><TeamRing pct={r.pct} col={_tState[r.state].col} size={72}/>
@@ -154,12 +154,13 @@ function TeamDrill({pid,only,part,given,intro,back,open}){ const T=useTheme(), c
         <div style={{fontSize:13,color:T.mid,fontFamily:C.P,marginTop:10,lineHeight:1.45}}>Every answer you hold counts a little; a wine counts in full for the minimum once every rung is right and still fresh.</div>
       </Card>
       {_tLabel(T,'In this drill')}<div style={{fontSize:13,color:T.mid,fontFamily:C.P,margin:'-4px 0 8px'}}>Tap a wine or dish to open its card and keep going.</div>
-      <Card style={{padding:0}}>{rows.map((x,k)=><div key={x.id} data-testid="drill-item" role={open?'button':undefined} onClick={()=>open&&open({view:x.dish?'dish':'wine',id:x.id})} style={{padding:'10px 14px',borderTop:k?`1px solid ${T.line}`:'none',cursor:open?'pointer':'default'}}>
+      <Card style={{padding:0}}>{rows.map((x,k)=><div key={x.id} data-testid="drill-item" role={open?'button':undefined} onClick={()=>open&&open({view:x.mix?'cocktail':x.dish?'dish':'wine',id:x.id})} style={{padding:'10px 14px',borderTop:k?`1px solid ${T.line}`:'none',cursor:open?'pointer':'default'}}>
         <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:10,fontSize:15,fontFamily:C.P,color:T.ink}}><span style={{fontWeight:700,minWidth:0}}>{x.name}</span><span style={{display:'flex',alignItems:'center',gap:8,flexShrink:0}}><span style={{color:x.now.known>x.was.known?'#5FD48F':T.ink2,whiteSpace:'nowrap'}}>{x.now.known} of {x.now.total}{x.now.known>x.was.known?` ▲${x.now.known-x.was.known}`:x.now.known<x.was.known?` ▼${x.was.known-x.now.known}`:''}</span>{open&&<Icon n="chevron" sz={12} col={T.mid}/>}</span></div>
         {x.now.rungs.length>0&&<div style={{display:'flex',gap:6,flexWrap:'wrap',marginTop:6}}>{x.now.rungs.map(rg=><span key={rg.k} style={{fontSize:12,fontFamily:C.P,padding:'3px 8px',borderRadius:8,border:`1px solid ${rg.done?'#5FD48F':T.line}`,color:rg.done?'#5FD48F':T.mid}}>{rg.done?'✓ ':''}{rg.label}</span>)}</div>}
       </div>)}</Card>
       <Btn primary full style={{marginTop:14}} onClick={back}>Done</Btn></div>; }
-  const w=q.wine?TeamData.wine(q.wine):null, multi=q.k!=='recognise', ch=multi?TeamLearn.choices(q):null;
+  const w=q.wine?TeamData.wine(q.wine):null, mix=q.cocktail?TeamData.cocktail(q.cocktail):null, multi=q.k!=='recognise'&&!q.mc, ch=multi?TeamLearn.choices(q):null;
+  const mixNamed=mix&&q.q.toLowerCase().includes(mix.name.toLowerCase());
   // The wine is named over the question only when the question itself names it: "what would you offer from the list" must not say.
   const names=w&&new RegExp(TeamData.short(w).replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'i').test(q.q);
   const submit=async()=>{ if(busy) return; if(multi?!picks.length:ans===null) return;
@@ -172,7 +173,7 @@ function TeamDrill({pid,only,part,given,intro,back,open}){ const T=useTheme(), c
   return <div ref={rootRef} data-testid="team-drill">
     {intro&&i===0&&!res&&<div data-testid="drill-intro" style={{display:'flex',gap:10,alignItems:'flex-start',marginBottom:14}}><TeamVinnyMark size={28}/><div><div style={{fontSize:15,fontWeight:700,color:T.ink,fontFamily:C.P}}>{intro.title}</div><div style={{fontSize:13,color:T.mid,fontFamily:C.P,lineHeight:1.45,marginTop:2}}>{intro.why}</div></div></div>}
     <div style={{display:'flex',gap:4,marginBottom:14}}>{qs.map((_,k)=><div key={k} style={{flex:1,height:4,borderRadius:2,background:k<i?cr:k===i?T.ink:T.line}}/>)}</div>
-    <div style={{fontSize:12,fontWeight:700,color:w?_tTypeCol(T,w.type):T.mid,fontFamily:C.P,letterSpacing:'0.08em',textTransform:'uppercase'}}>{kindLabel}{w&&names?` · ${TeamData.short(w)}`:w?` · ${w.section||w.type}`:''}</div>
+    <div style={{fontSize:12,fontWeight:700,color:w?_tTypeCol(T,w.type):mix?_tMixCol(T):T.mid,fontFamily:C.P,letterSpacing:'0.08em',textTransform:'uppercase'}}>{kindLabel}{w&&names?` · ${TeamData.short(w)}`:w?` · ${w.section||w.type}`:mix?` · ${mixNamed?mix.name:'Cocktails'}`:''}</div>
     <div data-testid="drill-q" style={{fontSize:19,fontWeight:700,color:T.ink,fontFamily:C.P,lineHeight:1.35,margin:'6px 0 14px'}}>{q.q}</div>
     {!multi&&<div style={{display:'flex',flexDirection:'column',gap:8}}>{q.opts.map((o,k)=>opt(o,k,{picked:ans===k,right:res&&k===q.a,wrong:res&&ans===k&&k!==q.a,onClick:()=>!res&&setAns(k)}))}</div>}
     {multi&&<>
@@ -214,6 +215,56 @@ function TeamWines({pid,open}){ const T=useTheme();
           {(()=>{ const dw=TeamData.window(w); return dw&&<div style={{fontSize:12,fontWeight:600,color:dw.stage==='ready'?'#5FD48F':dw.stage==='young'?'#7FB3F0':'#F2B84B',fontFamily:C.P,marginTop:2}}>{dw.word}{dw.source==='claude'?` · ${dw.line}`:''}</div>; })()}</div>
         {k&&<Icon n="check" sz={16} col="#5FD48F"/>}<Icon n="chevron" sz={12} col={T.mid}/>
       </div>; })}</Card></div>)}
+    <TeamCocktailList pid={pid} open={open}/>
+  </div>; }
+
+/* The cocktail colour: the stage's amber, lifted on the dark stage like a wine colour. */
+function _tMixCol(T){ return T.lift?T.lift('#C98A2B'):'#C98A2B'; }
+
+/* The cocktail list, by its own sections (Signatures, Spritzes…), under the wines. */
+function TeamCocktailList({pid,open}){ const T=useTheme(), cs=TeamData.cocktails(); if(!cs.length) return null;
+  const person=TeamLearn.person(pid), items=(TeamLearn._all()[pid]||{}).items||{}, col=_tMixCol(T);
+  const secs=[]; cs.forEach(c=>{ const s=c.section||'Cocktails'; let g=secs.find(x=>x.s===s); if(!g) secs.push(g={s,cs:[]}); g.cs.push(c); });
+  return <div data-testid="team-cocktails">
+    <div style={{marginTop:26}}>{_tH(T,'Cocktails',`${cs.length} on the list`)}</div>
+    {secs.map(g=><div key={g.s}>{_tLabel(T,g.s)}<Card style={{padding:0}}>{g.cs.map((c,i)=>{ const k=person&&TeamLearn.knowsWine(pid,person.role,c.id,items);
+      return <div key={c.id} role="button" data-testid="team-cocktail-row" onClick={()=>open({view:'cocktail',id:c.id})} style={{display:'flex',alignItems:'center',gap:10,padding:'11px 14px',borderTop:i?`1px solid ${T.line}`:'none',cursor:'pointer'}}>
+        <div style={{width:8,height:8,borderRadius:4,background:col,flexShrink:0}}/>
+        <div style={{flex:1,minWidth:0}}><div style={{fontSize:15,fontWeight:600,color:T.ink,fontFamily:C.P}}>{c.name} <span style={{fontWeight:400,color:T.mid,fontSize:13}}>{c.price}</span></div>
+          <div style={{fontSize:13,color:T.mid,fontFamily:C.P,lineHeight:1.4}}>{(c.ingredients||[]).join(', ')}</div></div>
+        {k&&<Icon n="check" sz={16} col="#5FD48F"/>}<Icon n="chevron" sz={12} col={T.mid}/>
+      </div>; })}</Card></div>)}
+  </div>; }
+
+/* A cocktail's card: what to say, what's in it (as the list prints it, with the unusual parts explained),
+   how it tastes, which dishes it suits, what to offer instead, and where this person stands with it. */
+function TeamCocktail({id,pid,open}){ const T=useTheme(), x=TeamData.cocktail(id), c=TeamData.cocktailCard(id), col=_tMixCol(T);
+  if(!x) return null;
+  const bar=(k,label,v,how)=>v==null?null:<div key={k} style={{marginBottom:10}}><div style={{display:'flex',justifyContent:'space-between',fontSize:15,fontFamily:C.P,color:T.ink}}><span style={{fontWeight:600}}>{label}</span><span style={{color:T.ink2}}>{v}/5</span></div><Prog val={v/5} col={col} h={5} style={{marginTop:5}}/>{how&&<div style={{fontSize:13,color:T.mid,fontFamily:C.P,marginTop:4,lineHeight:1.4}}>{how}</div>}</div>;
+  const st=c&&TeamLearn.standing(pid,id);
+  return <div data-testid="team-cocktail">
+    <div style={{fontSize:12,fontWeight:700,color:col,fontFamily:C.P,letterSpacing:'0.08em',textTransform:'uppercase'}}>{x.section||'Cocktail'}</div>
+    {_tH(T,x.name,[c&&c.spirit,x.by&&`by ${x.by}`].filter(Boolean).join(' · ')||null)}
+    {c&&c.say&&<div data-testid="team-say" role="button" onClick={()=>{ TeamVoice.unlock(); TeamVoice.speak(c.say); }} style={{display:'inline-flex',alignItems:'center',gap:8,margin:'-4px 0 12px',padding:'6px 12px',borderRadius:14,border:`1px solid ${T.line}`,cursor:'pointer'}}>
+      <span style={{fontSize:14}}>🔊</span><span style={{fontSize:13,color:T.mid,fontFamily:C.P}}>Say it:</span><span style={{fontSize:14,fontWeight:700,color:T.ink,fontFamily:C.P}}>{c.say}</span></div>}
+    <div style={{display:'flex',gap:6,flexWrap:'wrap',marginBottom:10}}>{_tPill(T,'glass',x.price,col)}{x.note&&_tPill(T,'other',x.note,col)}</div>
+    {st&&st.total>0&&<div data-testid="team-standing" style={{marginBottom:12}}><Card>
+      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:8,flexWrap:'wrap'}}><div style={{fontSize:12,fontWeight:700,color:T.mid,fontFamily:C.P,letterSpacing:'0.08em',textTransform:'uppercase'}}>Where you stand</div><div style={{fontSize:13,fontWeight:700,color:st.state==='known'?T.green:st.state==='fading'?T.amber:T.ink2,fontFamily:C.P}}>{st.state==='known'?'You know this cocktail':st.state==='fading'?'Fading':st.state==='learning'?`${st.known} of ${st.total} held`:'Not started yet'}</div></div>
+      <div style={{display:'flex',gap:6,flexWrap:'wrap',marginTop:10}}>{st.rungs.map(rg=><span key={rg.k} style={{fontSize:12,fontFamily:C.P,fontWeight:600,padding:'4px 10px',borderRadius:9,border:`1px solid ${rg.done?T.green:T.line}`,color:rg.done?T.green:T.mid}}>{rg.done?'✓ ':''}{rg.label}</span>)}</div>
+      <div style={{marginTop:10}}><Btn small primary onClick={()=>open({view:'drill',only:id})}>{st.state==='new'?'Start this cocktail':'Practise this cocktail'}</Btn></div>
+    </Card></div>}
+    {c&&<Card style={{borderColor:col+'66'}}><div style={{fontSize:12,fontWeight:700,color:T.mid,fontFamily:C.P,textTransform:'uppercase',letterSpacing:'0.08em'}}>Say it to a guest</div>
+      <div data-testid="team-pitch" style={{fontSize:15,color:T.ink2,fontFamily:C.P,lineHeight:1.55,marginTop:6}}>{c.pitch}</div></Card>}
+    {_tLabel(T,"What's in it")}<Card><div style={{display:'flex',gap:6,flexWrap:'wrap'}}>{(x.ingredients||[]).map(g=><span key={g}>{_tPill(T,'grape',g,col)}</span>)}</div>
+      {c&&(c.explain||[]).length>0&&<div style={{marginTop:10}}>{c.explain.map(e=><div key={e.term} style={{fontSize:14,color:T.ink2,fontFamily:C.P,lineHeight:1.5,marginTop:6}}><b style={{color:T.ink}}>{e.term}</b>: {e.means}</div>)}</div>}</Card>
+    {c&&<>{_tLabel(T,'What it tastes like')}<Card><div style={{fontSize:15,color:T.ink2,fontFamily:C.P,lineHeight:1.5,marginBottom:12}}>{c.taste}</div>
+      {c.style&&<>{bar('st','Strength',c.style.strength,'How boozy it tastes.')}{bar('sw','Sweetness',c.style.sweet)}{bar('so','Sourness',c.style.sour,'The citrus edge that makes your mouth water.')}{bar('bi','Bitterness',c.style.bitter,'The pleasant bite of Campari, vermouth or bitters.')}</>}</Card>
+      {(c.dishes||[]).length>0&&<>{_tLabel(T,'With the menu')}<Card style={{padding:0}}>{c.dishes.map((d,i)=>{ const dish=TeamData.dishes().find(z=>z.name===d.dish); return <div key={d.dish} role="button" onClick={()=>dish&&open({view:'dish',id:dish.id})} style={{padding:'11px 14px',borderTop:i?`1px solid ${T.line}`:'none',cursor:dish?'pointer':'default'}}>
+        <div style={{fontSize:15,fontWeight:600,color:T.ink,fontFamily:C.P}}>{d.dish}</div><div style={{fontSize:14,color:T.ink2,fontFamily:C.P,lineHeight:1.45}}>{d.why}</div></div>; })}</Card></>}
+      {(c.alts||[]).length>0&&<>{_tLabel(T,'Offer instead')}<Card style={{padding:0}}>{c.alts.map((a,i)=>{ const o=TeamData.cocktail(a.id); return o&&<div key={a.id} role="button" onClick={()=>open({view:'cocktail',id:a.id})} style={{padding:'11px 14px',borderTop:i?`1px solid ${T.line}`:'none',cursor:'pointer'}}>
+        <div style={{fontSize:15,fontWeight:600,color:T.ink,fontFamily:C.P}}>{o.name} <span style={{fontWeight:400,color:T.mid,fontSize:13}}>{o.price}</span></div><div style={{fontSize:14,color:T.ink2,fontFamily:C.P}}>{a.when}</div></div>; })}</Card></>}
+    </>}
+    {!c&&<Card><div style={{fontSize:15,color:T.mid,fontFamily:C.P}}>No card yet: your manager writes the cocktail cards from the Upload tab.</div></Card>}
   </div>; }
 
 /* A wine's staff card. */
@@ -298,6 +349,8 @@ function TeamDish({id,open}){ const T=useTheme(), x=TeamData.dish(id), p=TeamDat
       {p.glass&&<>{_tLabel(T,'By the glass')}<Card style={{padding:0}}>{row(p.glass,0,'g')}</Card></>}
       {p.avoid&&<>{_tLabel(T,'Steer them away from')}<Card style={{padding:0}}>{row(p.avoid,0,'a')}</Card></>}
     </>}
+    {(()=>{ const ms=TeamData.cocktailsFor(x.name); return ms.length>0&&<div data-testid="team-dish-cocktails">{_tLabel(T,'Cocktails with it')}<Card style={{padding:0}}>{ms.map((m,i)=><div key={m.cocktail.id} role="button" onClick={()=>open({view:'cocktail',id:m.cocktail.id})} style={{padding:'11px 14px',borderTop:i?`1px solid ${T.line}`:'none',cursor:'pointer'}}>
+      <div style={{fontSize:15,fontWeight:600,color:T.ink,fontFamily:C.P}}>{m.cocktail.name} <span style={{fontWeight:400,color:T.mid,fontSize:13}}>{m.cocktail.price}</span></div><div style={{fontSize:14,color:T.ink2,fontFamily:C.P,lineHeight:1.45}}>{m.why}</div></div>)}</Card></div>; })()}
   </div>; }
 
 /* Reads a photo (resized as the consumer app's list scan does, 1600px) or a PDF as base64. */
@@ -427,8 +480,8 @@ function TeamPeople({open,onChanged}){ const T=useTheme(), cr=T.lift(C.cr);
     {_tLabel(T,'Minimum to work the floor')}
     <Card>{['server','bartender','sommelier'].map(rk=>{ const n=TeamLearn.need(rk); return <div key={rk} style={{marginBottom:10}}>
       <div style={{fontSize:14,fontWeight:700,color:T.ink,fontFamily:C.P}}>{TeamLearn.ROLES[rk].label}</div>
-      <div style={{display:'flex',gap:6,flexWrap:'wrap',marginTop:4}}>{Object.keys(TeamLearn.PART_LABEL).filter(k=>TeamLearn.ROLES[rk].need[k]>0).map(k=><div key={k} role="button" onClick={()=>{ const v=n[k]>=0.95?0.5:Math.round((n[k]+0.1)*10)/10; TeamLearn.setNeed(rk,k,v); bump(x=>x+1); }} style={{padding:'5px 10px',borderRadius:10,border:`1px solid ${T.line}`,fontSize:13,color:T.ink2,fontFamily:C.P,cursor:'pointer'}}>{TeamLearn.PART_LABEL[k]} {Math.round(n[k]*100)}%</div>)}</div>
+      <div style={{display:'flex',gap:6,flexWrap:'wrap',marginTop:4}}>{Object.keys(TeamLearn.PART_LABEL).filter(k=>TeamLearn.ROLES[rk].need[k]>0&&(k!=='cocktails'||TeamData.cocktails().length)).map(k=><div key={k} role="button" onClick={()=>{ const v=n[k]>=0.95?0.5:Math.round((n[k]+0.1)*10)/10; TeamLearn.setNeed(rk,k,v); bump(x=>x+1); }} style={{padding:'5px 10px',borderRadius:10,border:`1px solid ${T.line}`,fontSize:13,color:T.ink2,fontFamily:C.P,cursor:'pointer'}}>{TeamLearn.PART_LABEL[k]} {Math.round(n[k]*100)}%</div>)}</div>
     </div>; })}<div style={{fontSize:12,color:T.mid,fontFamily:C.P}}>Tap a figure to raise it (it wraps back to 50%).</div></Card>
   </div>; }
 
-Object.assign(window,{TeamFace,TeamVenueLogo,TeamRing,TeamSetup,TeamToday,TeamDrill,TeamWines,TeamWine,TeamMenu,TeamDish,TeamUpload,TeamPeople,TeamJobChip,TeamKpiStrip,useTeamJob});
+Object.assign(window,{TeamFace,TeamVenueLogo,TeamCocktail,TeamCocktailList,TeamRing,TeamSetup,TeamToday,TeamDrill,TeamWines,TeamWine,TeamMenu,TeamDish,TeamUpload,TeamPeople,TeamJobChip,TeamKpiStrip,useTeamJob});

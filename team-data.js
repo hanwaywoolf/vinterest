@@ -12,7 +12,7 @@ const TeamData = {
   CARD_BATCH:4,       // wines per staff-card call: six questions each fit well inside team_cards' tokens
   PAIR_BATCH:12,      // dishes per pairing call
   PDF_PAGES:2,        // PDF pages read per call, so no single answer runs long
-  _empty(){ return {venue:{name:'',created:Date.now()},wines:{},dishes:{},cards:{},pairings:{},versions:[],draft:null,settings:{dueDays:7}}; },
+  _empty(){ return {venue:{name:'',created:Date.now()},wines:{},dishes:{},cards:{},pairings:{},cocktails:{},cocktailCards:{},versions:[],draft:null,settings:{dueDays:7}}; },
   /* The venue is one 300KB document once the cards are written, and the screens and TeamLearn read
      it many times a render, so the parsed copy is kept until the stored text changes (the text is
      compared, never trusted by reference, so a write from anywhere else is seen). */
@@ -34,6 +34,13 @@ const TeamData = {
   dish(id){ return this.get().dishes[id]||null; },
   card(id){ return this.get().cards[id]||null; },
   pairing(dishId){ return this.get().pairings[dishId]||null; },
+  /* The cocktail list, where the restaurant has one (The Social Corner's, from its drinks page): each with its
+     ingredients as the list prints them, and a card written by prompts/team-cocktail-cards.txt. */
+  cocktails(){ return Object.values(this.get().cocktails||{}).filter(c=>c.onList).sort((a,b)=>a.order-b.order); },
+  cocktail(id){ return (this.get().cocktails||{})[id]||null; },
+  cocktailCard(id){ return (this.get().cocktailCards||{})[id]||null; },
+  /* Which cocktails a dish suits, from the cocktails' own cards (no extra call). [{cocktail, why}] */
+  cocktailsFor(dishName){ return this.cocktails().map(c=>{ const k=this.cocktailCard(c.id), d=k&&(k.dishes||[]).find(x=>x.dish===dishName); return d?{cocktail:c,why:d.why}:null; }).filter(Boolean); },
   byGlass(w){ return !!(w&&w.glass); },
   label(w){ return [w.producer,w.name,w.vintage||'NV'].filter(Boolean).join(' '); },
   short(w){ return [w.producer,w.name].filter(Boolean).join(' '); },
@@ -265,6 +272,25 @@ const TeamData = {
       done+=xs.length; onStep&&onStep(done,dishIds.length);
     }));
   },
+  /* Cocktail cards, CARD_BATCH a call, with the whole cocktail list and the menu (purpose team_cocktails). */
+  async writeCocktailCards(ids,onStep){
+    const tpl=_loadTextSync('prompts/team-cocktail-cards.txt'), venue=this.get().venue.name||'the restaurant';
+    const line=c=>`${c.id} | ${c.name} | ${c.section} | ${c.price}${c.note?' ('+c.note+')':''} | ${(c.ingredients||[]).join(', ')}${c.by?' | by '+c.by:''}`;
+    const list=this.cocktails().map(line).join('\n');
+    let done=0; onStep&&onStep(0,ids.length);
+    for(let i=0;i<ids.length;i+=this.CARD_BATCH){
+      const cs=ids.slice(i,i+this.CARD_BATCH).map(id=>this.cocktail(id)).filter(Boolean);
+      const prompt=tpl.replace(/\{\{venue\}\}/g,venue).replace('{{list}}',list).replace('{{menu}}',this._menuLines()).replace('{{cocktails}}',cs.map(line).join('\n'));
+      const j=this._json(await window.claude.complete({purpose:'team_cocktails',messages:[{role:'user',content:prompt}]}))||{};
+      const d=this.get(); d.cocktailCards=d.cocktailCards||{};
+      const onMenu=new Set(this.dishes().map(x=>x.name));
+      (j.cards||[]).forEach(c=>{ if(!c||!d.cocktails||!d.cocktails[c.id]) return;
+        const qs=(c.qs||[]).filter(q=>q&&q.q&&Array.isArray(q.opts)&&q.opts.length===4&&q.opts[q.a]!=null).map((q,k)=>({...q,id:c.id+'#'+k}));
+        d.cocktailCards[c.id]={...c,dishes:(c.dishes||[]).filter(x=>onMenu.has(x.dish)),alts:(c.alts||[]).filter(a=>d.cocktails[a.id]&&a.id!==c.id),qs,at:Date.now()}; });
+      this.save(d);
+      done+=cs.length; onStep&&onStep(done,ids.length);
+    }
+  },
   /* After a publish: cards for wines without one, then pairings for every dish (a new wine can be the
      best match for a dish that hasn't changed), then the new wines and dishes assigned to staff.
      onStep(label, done, total). */
@@ -274,6 +300,8 @@ const TeamData = {
     const prepared=[...(res.added||[]),...(res.changed||[])].filter(id=>TeamSample.applyPrepared(id));
     const missing=this.wines().filter(w=>!this.card(w.id)).map(w=>w.id);
     if(missing.length) await this.writeCards(missing,(a,b)=>onStep&&onStep('Writing staff cards',a,b));
+    const mixes=this.cocktails().filter(c=>!this.cocktailCard(c.id)).map(c=>c.id);
+    if(mixes.length) await this.writeCocktailCards(mixes,(a,b)=>onStep&&onStep('Writing cocktail cards',a,b));
     const dishes=this.dishes().map(x=>x.id);
     const onlyPrepared=res.kind==='list'&&prepared.length&&prepared.length===(res.added||[]).length+(res.changed||[]).length&&!(res.removed||[]).length;
     const needPairs=dishes.length&&this.wines().length&&!onlyPrepared&&(res.kind==='list'||res.added.length||res.changed.length||res.removed.length||dishes.some(id=>!this.pairing(id)));
@@ -319,7 +347,8 @@ const TeamData = {
   /* The whole restaurant as one JSON file (what data/team-demo.json holds for the demo), downloaded. */
   async exportFile(){
     const d=this.get();
-    const out={venue:{name:d.venue.name},wines:Object.values(d.wines).filter(w=>w.onList).sort((a,b)=>a.order-b.order),dishes:Object.values(d.dishes).filter(x=>x.onMenu).sort((a,b)=>a.order-b.order),cards:d.cards,pairings:d.pairings,exported:new Date().toISOString()};
+    const out={venue:{name:d.venue.name},wines:Object.values(d.wines).filter(w=>w.onList).sort((a,b)=>a.order-b.order),dishes:Object.values(d.dishes).filter(x=>x.onMenu).sort((a,b)=>a.order-b.order),cards:d.cards,pairings:d.pairings,
+      ...(this.cocktails().length?{cocktails:this.cocktails(),cocktailCards:d.cocktailCards||{}}:{}),exported:new Date().toISOString()};
     const name=`vinterest-team-${this._slug(d.venue.name||'restaurant')}.json`;
     try{ await Platform.saveFile(name,JSON.stringify(out,null,1)); }catch(e){ const a=document.createElement('a'); a.href='data:application/json;charset=utf-8,'+encodeURIComponent(JSON.stringify(out)); a.download=name; a.click(); }
     return out;
@@ -355,7 +384,7 @@ const TeamData = {
     const want=t==='sparkling'?/spark|champ|fizz/i:t==='white'?/white/i:t==='rosé'||t==='rose'||t==='orange'?/ros|orange/i:t==='dessert'||t==='fortified'?/sweet|dessert|fortif|port|sherry/i:/red/i;
     return secs.find(s=>want.test(s))||secs[0]||''; },
   /* What still needs writing (an upload that was interrupted): wines without cards, dishes without pairings. */
-  pending(){ return {cards:this.wines().filter(w=>!this.card(w.id)).length,pairings:this.wines().length?this.dishes().filter(x=>!this.pairing(x.id)).length:0,windows:this.wines().filter(w=>w.vintage&&!w.peak).length}; },
+  pending(){ return {cocktails:this.cocktails().filter(c=>!this.cocktailCard(c.id)).length,cards:this.wines().filter(w=>!this.card(w.id)).length,pairings:this.wines().length?this.dishes().filter(x=>!this.pairing(x.id)).length:0,windows:this.wines().filter(w=>w.vintage&&!w.peak).length}; },
 };
 /* The sample restaurant (data/team-sample.json): a ten-wine list, a seven-dish menu, their staff cards
    and pairings written ahead, and four staff, so the app can be shown without an upload or a call. */
@@ -382,7 +411,12 @@ const TeamSample = {
     s.dishes.forEach((x,i)=>{ d.dishes[x.id]={...x,onMenu:true,order:i,addedAt:now}; });
     Object.values(s.cards).forEach(c=>{ d.cards[c.id]={...TeamData._cleanCard(c,d),at:now}; });
     Object.entries(s.pairings).forEach(([id,p])=>{ d.pairings[id]={...p,at:now}; });
+    // The Social Corner's cocktails come from its list file; their cards, once written, from its training file.
+    const mixes=s.cocktails||(which==='social'?(_loadJSON('data/team-social-list.json')||{}).cocktails:null)||[];
+    mixes.forEach((c,i)=>{ d.cocktails[c.id]={...c,onList:true,order:i,addedAt:now}; });
+    Object.entries(s.cocktailCards||{}).forEach(([id,c])=>{ if(d.cocktails[id]) d.cocktailCards[id]={...c,at:now}; });
     d.versions.push({kind:'list',at:now,added:Object.keys(d.wines),removed:[],changed:[]});
+    if(mixes.length) d.versions.push({kind:'cocktails',at:now,added:Object.keys(d.cocktails),removed:[],changed:[]});
     TeamData.save(d);
     Store.remove(TeamLearn.KEY); TeamLearn.resetProgress(); if(typeof TeamSales!=='undefined') TeamSales.clear();
     (s.staff||(which==='social'?[]:this.DEMO_STAFF)).forEach(p=>TeamLearn.addPerson(p.name,p.role,p.photo||null));

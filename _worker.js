@@ -77,6 +77,7 @@ const CLAUDE_PURPOSE_LIMITS = {
   team_menu: 8192,         // team-data.js TeamData.readMenu — a menu photo or PDF -> dishes
   team_cards: 12288,       // team-data.js TeamData.writeCards — staff cards and questions, a few wines a call
   team_pairings: 8192,     // team-data.js TeamData.writePairings — the list's best matches for each dish
+  team_cocktails: 12288,   // team-data.js TeamData.writeCocktailCards — cocktail cards and their questions (prompts/team-cocktail-cards.txt)
   team_grade: 600,         // team-learn.js TeamLearn.grade — marks a typed answer against its key
   team_vinny: 500,         // team-vinny.js TeamVinny.ask — Ask Vinny, a quick answer about the list and menu (prompts/team-vinny.txt)
   team_guest: 700,         // team-vinny.js TeamVinny.guest — Vinny plays a guest at a table and marks the server (prompts/team-guest.txt)
@@ -90,7 +91,7 @@ const CLAUDE_PURPOSE_LIMITS = {
    make the quiz banks' wrong answers any less obvious; the quiz prompts' own rule about them does. Refusal
    fallbacks are on, so a request their safety classifier declines is answered by another model
    in the same call instead of coming back empty. Earlier models get nothing extra. */
-const PURPOSE_EFFORT = { team_cards: "medium", team_fix: "medium", team_pairings: "medium", grape_quiz: "medium", region_quiz: "medium", quiz_variants: "medium", learn_article: "medium", winedna_summary: "medium", sommelier_script: "medium", wine_deep: "medium" };
+const PURPOSE_EFFORT = { team_cards: "medium", team_cocktails: "medium", team_fix: "medium", team_pairings: "medium", grape_quiz: "medium", region_quiz: "medium", quiz_variants: "medium", learn_article: "medium", winedna_summary: "medium", sommelier_script: "medium", wine_deep: "medium" };
 function modelOptions(model, purpose, env) {
   if (!/^claude-(sonnet|opus|fable)-5/.test(model)) return { body: {}, betas: [] };
   const effort = env.CLAUDE_EFFORT || PURPOSE_EFFORT[purpose] || "low";
@@ -110,7 +111,7 @@ function modelFor(purpose, env) {
 /* Opus 5 and Fable 5 always think, and the thinking is counted against max_tokens. The team's long
    writing caps (CLAUDE_PURPOSE_LIMITS) were set for a model that doesn't think, so a four-wine card call
    could be cut off part way; on those models they're doubled. Unused tokens cost nothing. */
-const THINKING_DOUBLED = { team_list: 1, team_menu: 1, team_cards: 1, team_pairings: 1, team_fix: 1 };
+const THINKING_DOUBLED = { team_list: 1, team_menu: 1, team_cards: 1, team_cocktails: 1, team_pairings: 1, team_fix: 1 };
 function thinkingCap(model, purpose, cap) {
   return /^claude-(opus|fable)-5/.test(model) && THINKING_DOUBLED[purpose] ? cap * 2 : cap;
 }
@@ -422,7 +423,7 @@ const FAIR_USE = {
   free: { label_scan: 100, list_scan: 30, price_search: 50, _other: 500 },
   pro:  { label_scan: 600, list_scan: 150, price_search: 300, _other: 3000 },
 };
-/* The team purposes (team_list, team_menu, team_cards, team_pairings, team_grade, team_vinny, team_guest, team_fix) are open while the
+/* The team purposes (team_list, team_menu, team_cards, team_cocktails, team_pairings, team_grade, team_vinny, team_guest, team_fix) are open while the
    pilot is two people on one laptop: no sign-in, metered only by the per-IP limit. Add them here
    with TEAM_PRO once restaurants have accounts. */
 const TEAM_PRO = "Vinterest for teams needs a Pro account while it's in pilot.";

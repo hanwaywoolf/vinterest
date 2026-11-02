@@ -116,7 +116,7 @@ function _CViewToggle({phone,onPhone,onConsole,compact}){ const T=useTheme(), cr
   return <div data-testid="console-view-toggle" style={{display:'flex',gap:4,padding:3,borderRadius:12,border:`1px solid ${T.line}`,marginTop:compact?0:12,flexShrink:0}}>{seg(!phone,'Console',onConsole,'view-console')}{seg(phone,'Phone view',onPhone,'console-who')}</div>; }
 /* A detail opened from a table or a bar: a wine's card, a dish's pairings or a person's ladder, in a drawer. */
 function _CPanel({panel,me,open,close,narrow}){ const T=useTheme();
-  const body=panel.view==='wine'?<TeamWine id={panel.id} pid={me.id} open={open} manage/>:panel.view==='dish'?<TeamDish id={panel.id} open={open}/>:panel.view==='person'?<_CPerson id={panel.id} open={open}/>:null;
+  const body=panel.view==='wine'?<TeamWine id={panel.id} pid={me.id} open={open} manage/>:panel.view==='cocktail'?<TeamCocktail id={panel.id} pid={me.id} open={open}/>:panel.view==='dish'?<TeamDish id={panel.id} open={open}/>:panel.view==='person'?<_CPerson id={panel.id} open={open}/>:null;
   // A wider drawer over a dimmed page: the content behind it isn't meant to be read while it's open, and a tap on the dim closes it.
   return <><div data-testid="console-scrim" onClick={close} style={{position:'absolute',inset:0,background:'rgba(0,0,0,0.45)'}}/>
   <div data-testid="console-panel" style={{position:'absolute',top:0,right:0,bottom:0,width:narrow?'100%':'min(600px, 72%)',background:T.card,borderLeft:`1px solid ${T.line}`,boxShadow:T.shadow,overflowY:'auto',padding:'16px 22px 40px'}} data-scroll>
@@ -229,7 +229,7 @@ function _CTeam({open,refresh}){ const T=useTheme(), cr=T.lift(C.cr);
         <div style={{fontSize:12,color:T.mid,fontFamily:C.P,marginTop:8,lineHeight:1.5}}>Their whole list and menu becomes their first assignment, due in {TeamData.get().settings.dueDays||7} days. Inviting someone to their own phone needs accounts, which come next; in the pilot everyone trains on this device.</div></Card>
       <Card>{_cLabel(T,'Minimum to work the floor')}
         {['server','bartender','sommelier','buyer','manager'].map(rk=>{ const n=TeamLearn.need(rk); return <div key={rk} style={{display:'flex',alignItems:'center',gap:8,flexWrap:'wrap',marginBottom:8}}><div style={{width:92,fontSize:14,fontWeight:700,color:T.ink,fontFamily:C.P}}>{TeamLearn.ROLES[rk].label}</div>
-          {Object.keys(TeamLearn.PART_LABEL).filter(k=>TeamLearn.ROLES[rk].need[k]>0).map(k=><div key={k} role="button" data-testid="console-need" onClick={()=>{ const v=n[k]>=0.95?0.5:Math.round((n[k]+0.1)*10)/10; TeamLearn.setNeed(rk,k,v); bump(); refresh&&refresh(); }} style={{padding:'4px 9px',borderRadius:9,border:`1px solid ${T.line}`,fontSize:13,color:T.ink2,fontFamily:C.P,cursor:'pointer'}}>{TeamLearn.PART_LABEL[k]} {Math.round(n[k]*100)}%</div>)}</div>; })}
+          {Object.keys(TeamLearn.PART_LABEL).filter(k=>TeamLearn.ROLES[rk].need[k]>0&&(k!=='cocktails'||TeamData.cocktails().length)).map(k=><div key={k} role="button" data-testid="console-need" onClick={()=>{ const v=n[k]>=0.95?0.5:Math.round((n[k]+0.1)*10)/10; TeamLearn.setNeed(rk,k,v); bump(); refresh&&refresh(); }} style={{padding:'4px 9px',borderRadius:9,border:`1px solid ${T.line}`,fontSize:13,color:T.ink2,fontFamily:C.P,cursor:'pointer'}}>{TeamLearn.PART_LABEL[k]} {Math.round(n[k]*100)}%</div>)}</div>; })}
         <div style={{fontSize:12,color:T.mid,fontFamily:C.P}}>Tap a figure to raise it by ten points (it wraps back to 50%). Readiness is recomputed against the new minimum at once.</div></Card>
     </div>
   </div>; }

@@ -21,13 +21,19 @@ const TeamLearn = {
   DAY:86400000, MAX_DAYS:60, RETAIN:0.9, DRILL_SIZE:5, CHECK_SHARE:0.1, PASS:0.67,
   LADDER:['recognise','recall','apply','contrast'],
   ROLES:{
-    server:{label:'Server',kinds:['recognise','recall','apply'],need:{glass:0.8,bottle:0.6,dishes:0.8}},
-    bartender:{label:'Bartender',kinds:['recognise','recall','apply'],need:{glass:0.9,bottle:0,dishes:0.5}},
-    sommelier:{label:'Sommelier',kinds:['recognise','recall','apply','contrast'],need:{glass:0.9,bottle:0.9,dishes:0.9}},
-    buyer:{label:'Buyer',kinds:['recognise','recall','apply','contrast'],need:{glass:0.9,bottle:0.9,dishes:0.9}},
-    manager:{label:'Manager',kinds:['recognise','recall','apply'],need:{glass:0.8,bottle:0.6,dishes:0.8}},
+    server:{label:'Server',kinds:['recognise','recall','apply'],need:{glass:0.8,bottle:0.6,dishes:0.8,cocktails:0.5}},
+    bartender:{label:'Bartender',kinds:['recognise','recall','apply'],cocktailKinds:['recognise','recall','apply','contrast'],need:{glass:0.9,bottle:0,dishes:0.5,cocktails:0.9}},
+    sommelier:{label:'Sommelier',kinds:['recognise','recall','apply','contrast'],need:{glass:0.9,bottle:0.9,dishes:0.9,cocktails:0.5}},
+    buyer:{label:'Buyer',kinds:['recognise','recall','apply','contrast'],need:{glass:0.9,bottle:0.9,dishes:0.9,cocktails:0}},
+    manager:{label:'Manager',kinds:['recognise','recall','apply'],need:{glass:0.8,bottle:0.6,dishes:0.8,cocktails:0.5}},
   },
-  PART_LABEL:{glass:'By the glass',bottle:'Bottles',dishes:'Menu pairings'},
+  // Cocktails count only where the restaurant has a cocktail list (The Social Corner); everywhere else the part doesn't exist.
+  PART_LABEL:{glass:'By the glass',bottle:'Bottles',dishes:'Menu pairings',cocktails:'Cocktails'},
+  /* The rungs a role needs for one item: a cocktail's for the bartender all four (it's their list), a wine's by role. */
+  kindsFor(role,id){ const r=this.ROLES[role]; return this.isCocktail(id)&&r.cocktailKinds?r.cocktailKinds:r.kinds; },
+  isCocktail(id){ return /^c-/.test(String(id||'')); },
+  /* A wine's or a cocktail's questions, by its id. */
+  qsOf(id){ return this.isCocktail(id)?this.cocktailQs(id):this.wineQs(id); },
 
   team(){ const raw=Store.get(this.KEY); if(raw!==null&&raw===this._teamRaw) return this._teamVal;
     const t=raw?Store.getJSON(this.KEY,null):null, v=t&&t.people?t:{people:{},me:null,targets:{}}; this._teamRaw=raw; this._teamVal=v; return v; },
@@ -155,6 +161,13 @@ const TeamLearn = {
       text=text.replace(new RegExp(esc(nm),'gi'),masked); }
     return gives(text)?null:{...q,q:text};
   },
+  /* A cocktail's questions (prompts/team-cocktail-cards.txt): every one four options with one right, the
+     wrong ones from this bar's own other cocktails, so they're asked as written (mc), shuffled by their id. */
+  cocktailQs(id){ const doc=TeamData.get(); let m=this._qsCache.get(doc); if(!m){ m=new Map(); this._qsCache.set(doc,m); }
+    if(!m.has(id)){ const c=TeamData.cocktailCard(id);
+      m.set(id,(c&&c.qs||[]).filter(q=>q&&q.q&&Array.isArray(q.opts)&&q.opts.length===4&&q.opts[q.a]!=null).map(q=>({...q,cocktail:id,mc:true}))
+        .filter(q=>!this.givesAway(q)).map(q=>{ const order=this._shuffle(q.opts.map((_,i)=>i),q.id); return {...q,opts:order.map(i=>this._cap(q.opts[i])),a:order.indexOf(q.a)}; })); }
+    return m.get(id).map(q=>({...q})); },
   dishQs(id){
     const x=TeamData.dish(id), p=TeamData.pairing(id); if(!x||!p||!p.best||!p.best.length) return [];
     const best=TeamData.wine(p.best[0].id); if(!best) return [];
@@ -179,9 +192,9 @@ const TeamLearn = {
      draw of wrong ones), fixed for that showing so the screen and the marking agree. Progress is keyed to
      the question's id, never the deal. */
   _seed(q){ return q.id+(q.deal?':'+q.deal:''); },
-  deal(q,nonce){ const d={...q,deal:String(nonce)}; if(q.k!=='recognise'||!q.opts) return d;
+  deal(q,nonce){ const d={...q,deal:String(nonce)}; if((q.k!=='recognise'&&!q.mc)||!q.opts) return d;
     const order=this._shuffle(q.opts.map((_,i)=>i),this._seed(d)); return {...d,opts:order.map(i=>q.opts[i]),a:order.indexOf(q.a)}; },
-  allQs(){ return [...TeamData.wines().flatMap(w=>this.wineQs(w.id)),...TeamData.dishes().flatMap(x=>this.dishQs(x.id))]; },
+  allQs(){ return [...TeamData.wines().flatMap(w=>this.wineQs(w.id)),...TeamData.cocktails().flatMap(c=>this.cocktailQs(c.id)),...TeamData.dishes().flatMap(x=>this.dishQs(x.id))]; },
 
   /* How likely they are to remember a question now: 1 just after a right answer, RETAIN at its due date. */
   recall(it,now=Date.now()){ if(!it||!it.reps||!it.s) return 0; const days=(now-it.last)/this.DAY; return Math.exp(Math.log(this.RETAIN)*days/it.s); },
@@ -190,7 +203,7 @@ const TeamLearn = {
   /* Which wines and dishes a role sells: a bartender the by-the-glass list, everyone else all of it. */
   scope(role){
     const need=this.need(role), ws=TeamData.wines();
-    return {glass:need.glass>0?ws.filter(w=>TeamData.byGlass(w)):[],bottle:need.bottle>0?ws.filter(w=>!TeamData.byGlass(w)):[],dishes:need.dishes>0?TeamData.dishes():[]};
+    return {glass:need.glass>0?ws.filter(w=>TeamData.byGlass(w)):[],bottle:need.bottle>0?ws.filter(w=>!TeamData.byGlass(w)):[],dishes:need.dishes>0?TeamData.dishes():[],cocktails:need.cocktails>0?TeamData.cocktails():[]};
   },
   // A rung opens once every question on the rung below has been answered right at least once.
   _open(qs,items,kind,kinds){
@@ -198,7 +211,7 @@ const TeamLearn = {
     for(let r=0;r<idx;r++){ const k=this.LADDER[r]; if(!kinds.includes(k)) continue; const below=qs.filter(q=>q.k===k); if(below.some(q=>!(items[q.id]&&items[q.id].reps))) return false; }
     return true;
   },
-  knowsWine(pid,role,id,items){ const kinds=this.ROLES[role].kinds, qs=this.wineQs(id).filter(q=>kinds.includes(q.k)); return qs.length>0&&qs.every(q=>this.known(items[q.id])); },
+  knowsWine(pid,role,id,items){ const kinds=this.kindsFor(role,id), qs=this.qsOf(id).filter(q=>kinds.includes(q.k)); return qs.length>0&&qs.every(q=>this.known(items[q.id])); },
   knowsDish(pid,id,items){ const qs=this.dishQs(id); return qs.length>0&&qs.every(q=>this.known(items[q.id])); },
   /* How much of a wine (the role's questions) or a dish they hold today: {known, total, rungs:[{k,label,done}]}.
      The drill's summary shows it per wine, and readiness counts it as partial credit. */
@@ -206,7 +219,7 @@ const TeamLearn = {
     const person=this.person(pid); if(!person) return {known:0,total:0,rungs:[]};
     const items=this._mine(this._all(),pid).items;
     if(dish){ const qs=this.dishQs(id); return {known:qs.filter(q=>this.known(items[q.id])).length,total:qs.length,rungs:[]}; }
-    const kinds=this.ROLES[person.role].kinds, qs=this.wineQs(id).filter(q=>kinds.includes(q.k));
+    const kinds=this.kindsFor(person.role,id), qs=this.qsOf(id).filter(q=>kinds.includes(q.k));
     const rungs=this.LADDER.filter(k=>kinds.includes(k)).map(k=>{ const rq=qs.filter(q=>q.k===k); return {k,label:this.KIND_LABEL[k],done:rq.length>0&&rq.every(q=>this.known(items[q.id]))}; });
     return {known:qs.filter(q=>this.known(items[q.id])).length,total:qs.length,rungs};
   },
@@ -216,7 +229,7 @@ const TeamLearn = {
   standing(pid,id){
     const person=this.person(pid); if(!person) return null;
     const pr=this.progress(pid,id), items=this._mine(this._all(),pid).items, now=Date.now();
-    const qs=this.wineQs(id).filter(q=>this.ROLES[person.role].kinds.includes(q.k));
+    const qs=this.qsOf(id).filter(q=>this.kindsFor(person.role,id).includes(q.k));
     const seen=qs.filter(q=>items[q.id]&&items[q.id].reps).length, due=qs.filter(q=>{ const it=items[q.id]; return it&&it.reps&&(it.wrong||it.due<=now); }).length;
     const next=pr.rungs.find(r=>!r.done)||null, nextDue=qs.map(q=>items[q.id]).filter(it=>it&&it.reps&&!it.wrong&&it.due>now).reduce((a,it)=>Math.min(a,it.due),Infinity);
     const state=!seen?'new':pr.total&&pr.known===pr.total?'known':due?'fading':'learning';
@@ -228,8 +241,9 @@ const TeamLearn = {
     const person=this.person(pid); if(!person) return null;
     const role=person.role, need=this.need(role), sc=this.scope(role), mine=this._mine(this._all(),pid), items=mine.items, now=Date.now();
     const parts={};
-    ['glass','bottle','dishes'].forEach(k=>{
+    ['glass','bottle','dishes','cocktails'].forEach(k=>{
       if(!need[k]) return;
+      if(k==='cocktails'&&!sc.cocktails.length) return; // no cocktail list, no cocktail part
       const list=sc[k], known=list.filter(x=>k==='dishes'?this.knowsDish(pid,x.id,items):this.knowsWine(pid,role,x.id,items)).length;
       // partial: every answer they hold counts, so the figure moves with each drill; a wine is known (for the minimum) only whole.
       const partial=list.reduce((a,x)=>{ const pr=this.progress(pid,x.id,{dish:k==='dishes'}); return a+(pr.total?pr.known/pr.total:0); },0);
@@ -252,17 +266,19 @@ const TeamLearn = {
   drill(pid,size=this.DRILL_SIZE,part=null){
     const person=this.person(pid); if(!person) return [];
     const role=person.role, kinds=this.ROLES[role].kinds, mine=this._mine(this._all(),pid), items=mine.items, now=Date.now();
-    const sc0=this.scope(role), sc=part?{glass:part==='glass'?sc0.glass:[],bottle:part==='bottle'?sc0.bottle:[],dishes:part==='dishes'?sc0.dishes:[]}:sc0, wines=[...sc.glass,...sc.bottle], dishes=sc.dishes;
-    const inPart=key=>!part||(key.startsWith('w:')?wines.some(w=>w.id===key.slice(2)):dishes.some(x=>x.id===key.slice(2)));
-    const qsFor=w=>this.wineQs(w.id), out=[], has=id=>out.some(q=>q.id===id);
+    const sc0=this.scope(role), sc=part?{glass:part==='glass'?sc0.glass:[],bottle:part==='bottle'?sc0.bottle:[],dishes:part==='dishes'?sc0.dishes:[],cocktails:part==='cocktails'?sc0.cocktails:[]}:sc0, wines=[...sc.glass,...sc.bottle], dishes=sc.dishes, cocktails=sc.cocktails||[];
+    const inPart=key=>!part||(key.startsWith('w:')?wines.some(w=>w.id===key.slice(2)):key.startsWith('c:')?cocktails.some(c=>c.id===key.slice(2)):dishes.some(x=>x.id===key.slice(2)));
+    // A wine's or a cocktail's questions at the rungs this role needs for it.
+    const qsFor=w=>this.qsOf(w.id).filter(q=>this.kindsFor(role,w.id).includes(q.k)), out=[], has=id=>out.some(q=>q.id===id);
     const nextFor=(qs)=>{ // the lowest open rung's first question not yet answered right
-      for(const k of this.LADDER){ if(!this._open(qs,items,k,kinds)) continue; const q=qs.find(q=>q.k===k&&!(items[q.id]&&items[q.id].reps)); if(q) return q; }
+      const kk=qs.length&&qs[0].cocktail?this.kindsFor(role,qs[0].cocktail):kinds;
+      for(const k of this.LADDER){ if(!this._open(qs,items,k,kk)) continue; const q=qs.find(q=>q.k===k&&!(items[q.id]&&items[q.id].reps)); if(q) return q; }
       return null;
     };
     const assigned=Object.entries(mine.assigned||{}).filter(([,a])=>!a.done).sort((a,b)=>a[1].due-b[1].due);
     assigned.forEach(([key])=>{ if(out.length>=size||!inPart(key)) return; const [t,id]=[key.slice(0,1),key.slice(2)];
-      const q=nextFor(t==='w'?qsFor({id}).filter(q=>kinds.includes(q.k)):this.dishQs(id)); if(q&&!has(q.id)) out.push(q); });
-    const pool=[...wines.flatMap(qsFor),...dishes.flatMap(x=>this.dishQs(x.id))].filter(q=>kinds.includes(q.k)||q.dish);
+      const q=nextFor(t==='w'||t==='c'?qsFor({id}):this.dishQs(id)); if(q&&!has(q.id)) out.push(q); });
+    const pool=[...wines.flatMap(qsFor),...cocktails.flatMap(qsFor),...dishes.flatMap(x=>this.dishQs(x.id))];
     const byId=Object.fromEntries(pool.map(q=>[q.id,q]));
     Object.entries(items).filter(([id,it])=>byId[id]&&it.reps&&(it.wrong||it.due<=now)).sort((a,b)=>this.recall(a[1],now)-this.recall(b[1],now))
       .forEach(([id])=>{ if(out.length<size&&!has(id)) out.push(byId[id]); });
@@ -270,7 +286,7 @@ const TeamLearn = {
       const knownIds=Object.entries(items).filter(([id,it])=>byId[id]&&this.known(it,now)).map(([id])=>id);
       if(knownIds.length&&Math.random()<this.CHECK_SHARE*size){ const id=knownIds[Math.floor(Math.random()*knownIds.length)]; if(!has(id)) out.push({...byId[id],check:true}); }
     }
-    for(const w of [...wines.map(w=>({qs:qsFor(w).filter(q=>kinds.includes(q.k))})),...dishes.map(x=>({qs:this.dishQs(x.id)}))]){
+    for(const w of [...wines.map(w=>({qs:qsFor(w)})),...cocktails.map(c=>({qs:qsFor(c)})),...dishes.map(x=>({qs:this.dishQs(x.id)}))]){
       if(out.length>=size) break; const q=nextFor(w.qs); if(q&&!has(q.id)) out.push(q);
     }
     return out.slice(0,size);
@@ -648,7 +664,7 @@ const TeamLearn = {
     return {ok:false,score:right.length?Math.max(0,hit-extra)/right.length:0,verdict:hit>0&&hit>=extra?'partly':'wrong'};
   },
   async grade(q,answer){
-    if(q.k==='recognise') return answer===q.a?{ok:true,score:1,verdict:'right'}:{ok:false,score:0,verdict:'wrong'};
+    if(q.k==='recognise'||q.mc) return answer===q.a?{ok:true,score:1,verdict:'right'}:{ok:false,score:0,verdict:'wrong'};
     if(!String(answer||'').trim()) return {ok:false,score:0,verdict:'wrong'};
     if(q.k!=='apply'&&this.localMatch(q,answer)) return {ok:true,score:1,verdict:'right'};
     const key=q.k==='apply'?q.key:[q.ans,...(q.acc||[]).map(x=>`(also right: ${x})`)];
@@ -680,9 +696,9 @@ const TeamLearn = {
     it.s=Math.min(this.MAX_DAYS,it.s); it.last=now; it.due=now+it.s*this.DAY;
     m.items[q.id]=it;
     // An assignment is done once the wine or dish is known at the level their role needs.
-    const key=q.wine?'w:'+q.wine:q.dish?'d:'+q.dish:null, person=this.person(pid);
+    const key=q.wine?'w:'+q.wine:q.cocktail?'c:'+q.cocktail:q.dish?'d:'+q.dish:null, person=this.person(pid);
     if(key&&m.assigned[key]&&!m.assigned[key].done&&person){
-      const done=q.wine?this.knowsWine(pid,person.role,q.wine,m.items):this.knowsDish(pid,q.dish,m.items);
+      const done=q.wine||q.cocktail?this.knowsWine(pid,person.role,q.wine||q.cocktail,m.items):this.knowsDish(pid,q.dish,m.items);
       if(done) m.assigned[key].done=now;
     }
     if(!this._batchP) this._saveAll(p);
@@ -695,9 +711,10 @@ const TeamLearn = {
     if(!res) return; const due=Date.now()+(TeamData.get().settings.dueDays||7)*this.DAY, p=this._all();
     this.people().forEach(person=>{
       const m=this._mine(p,person.id), sc=this.scope(person.role);
-      const ids=res.kind==='list'?[...sc.glass,...sc.bottle].map(w=>w.id):sc.dishes.map(x=>x.id);
-      (res.added||[]).filter(id=>ids.includes(id)).forEach(id=>{ const k=(res.kind==='list'?'w:':'d:')+id; if(!m.assigned[k]) m.assigned[k]={at:Date.now(),due}; });
-      (res.removed||[]).forEach(id=>{ delete m.assigned[(res.kind==='list'?'w:':'d:')+id]; });
+      const pre=res.kind==='list'?'w:':res.kind==='cocktails'?'c:':'d:';
+      const ids=res.kind==='list'?[...sc.glass,...sc.bottle].map(w=>w.id):res.kind==='cocktails'?(sc.cocktails||[]).map(c=>c.id):sc.dishes.map(x=>x.id);
+      (res.added||[]).filter(id=>ids.includes(id)).forEach(id=>{ const k=pre+id; if(!m.assigned[k]) m.assigned[k]={at:Date.now(),due}; });
+      (res.removed||[]).forEach(id=>{ delete m.assigned[pre+id]; });
     });
     this._saveAll(p);
   },
@@ -705,9 +722,10 @@ const TeamLearn = {
   assignExisting(pid){ const person=this.person(pid); if(!person) return; const due=Date.now()+(TeamData.get().settings.dueDays||7)*this.DAY, p=this._all(), m=this._mine(p,pid), sc=this.scope(person.role);
     [...sc.glass,...sc.bottle].forEach(w=>{ m.assigned['w:'+w.id]=m.assigned['w:'+w.id]||{at:Date.now(),due}; });
     sc.dishes.forEach(x=>{ m.assigned['d:'+x.id]=m.assigned['d:'+x.id]||{at:Date.now(),due}; });
+    (sc.cocktails||[]).forEach(c=>{ m.assigned['c:'+c.id]=m.assigned['c:'+c.id]||{at:Date.now(),due}; });
     this._saveAll(p); },
   assignments(pid){ const m=this._mine(this._all(),pid), now=Date.now();
-    return Object.entries(m.assigned||{}).filter(([,a])=>!a.done).map(([k,a])=>({key:k,kind:k[0]==='w'?'wine':'dish',id:k.slice(2),due:a.due,overdue:a.due<now})).sort((a,b)=>a.due-b.due); },
+    return Object.entries(m.assigned||{}).filter(([,a])=>!a.done).map(([k,a])=>({key:k,kind:k[0]==='w'?'wine':k[0]==='c'?'cocktail':'dish',id:k.slice(2),due:a.due,overdue:a.due<now})).sort((a,b)=>a.due-b.due); },
 
   /* Retention from the unannounced checks over the last `days`: {asked, right, rate}. */
   retention(pid,days=30){ const since=Date.now()-days*this.DAY, all=this._all();

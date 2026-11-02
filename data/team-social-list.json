@@ -1777,5 +1777,311 @@
     "vegetarian"
    ]
   }
+ ],
+ "cocktails": [
+  {
+   "id": "c-luz-de-pasion",
+   "section": "Signatures",
+   "name": "Luz de Pasion",
+   "price": "$22",
+   "ingredients": [
+    "Teremana Blanco",
+    "Cocchi Rossa",
+    "passion fruit",
+    "absinthe",
+    "lemon juice"
+   ],
+   "by": "",
+   "note": "2oz"
+  },
+  {
+   "id": "c-flora-fizz",
+   "section": "Signatures",
+   "name": "Flora Fizz",
+   "price": "$22",
+   "ingredients": [
+    "Ketel One Vodka",
+    "fresh lime juice",
+    "house rosé syrup",
+    "soda",
+    "cranberry"
+   ],
+   "by": "",
+   "note": "2oz"
+  },
+  {
+   "id": "c-the-pear-se",
+   "section": "Signatures",
+   "name": "The Pear Se",
+   "price": "$22",
+   "ingredients": [
+    "Seventh Heaven Gin",
+    "Belle de Brillet Pear Cognac",
+    "pear purée",
+    "lemon",
+    "rosemary tincture"
+   ],
+   "by": "Todd Zimmerman",
+   "note": "2oz"
+  },
+  {
+   "id": "c-blue-rose",
+   "section": "Signatures",
+   "name": "Blue Rose",
+   "price": "$22",
+   "ingredients": [
+    "Roku Gin",
+    "house blueberry rosemary syrup",
+    "Cabernet Sauvignon",
+    "lemon",
+    "egg whites"
+   ],
+   "by": "Lukas Purm",
+   "note": "2oz"
+  },
+  {
+   "id": "c-strawberry-fields",
+   "section": "Signatures",
+   "name": "Strawberry Fields",
+   "price": "$22",
+   "ingredients": [
+    "El Tequileño Blanco",
+    "Licor 43",
+    "Campari",
+    "house strawberry syrup",
+    "lime",
+    "aromatic bitters"
+   ],
+   "by": "Santi Bernal",
+   "note": "2oz"
+  },
+  {
+   "id": "c-la-vita-colada",
+   "section": "Signatures",
+   "name": "La Vita Colada",
+   "price": "$22",
+   "ingredients": [
+    "Flor de Caña Rum",
+    "pineapple juice",
+    "coconut water",
+    "lemon",
+    "milk clarification",
+    "Glenfiddich 15-Year foam"
+   ],
+   "by": "Patrick Gaudet",
+   "note": "2oz"
+  },
+  {
+   "id": "c-ciclo-espresso-martini",
+   "section": "Inspired Cocktails",
+   "name": "Ciclo Espresso Martini",
+   "price": "$22",
+   "ingredients": [
+    "Teremana Blanco or Ketel One Vodka",
+    "Tia Maria Coffee Liqueur",
+    "Licor 43",
+    "Ciclo Espresso",
+    "demerara syrup",
+    "Grand Marnier wash"
+   ],
+   "by": "",
+   "note": ""
+  },
+  {
+   "id": "c-the-old-fashioned",
+   "section": "Inspired Cocktails",
+   "name": "The Old Fashioned",
+   "price": "$22",
+   "ingredients": [
+    "Brown butter-washed Traveller Whisky",
+    "Angostura",
+    "orange bitters"
+   ],
+   "by": "",
+   "note": ""
+  },
+  {
+   "id": "c-the-negroni",
+   "section": "Inspired Cocktails",
+   "name": "The Negroni",
+   "price": "$22",
+   "ingredients": [
+    "Roku Gin",
+    "Campari",
+    "sweet vermouth"
+   ],
+   "by": "",
+   "note": ""
+  },
+  {
+   "id": "c-silk-stone-martini",
+   "section": "Inspired Cocktails",
+   "name": "Silk & Stone Martini",
+   "price": "$22",
+   "ingredients": [
+    "EVOO-washed Grey Goose",
+    "Lillet Blanc",
+    "orange bitters",
+    "olives"
+   ],
+   "by": "",
+   "note": ""
+  },
+  {
+   "id": "c-dr-mario",
+   "section": "Inspired Cocktails",
+   "name": "Dr. Mario",
+   "price": "$22",
+   "ingredients": [
+    "Johnnie Walker Black",
+    "Laphroaig",
+    "honey syrup",
+    "clarified citrus"
+   ],
+   "by": "",
+   "note": ""
+  },
+  {
+   "id": "c-summer-blush",
+   "section": "Spritzes",
+   "name": "Summer Blush",
+   "price": "$19",
+   "ingredients": [
+    "Empress Elderflower",
+    "white peach",
+    "lemon juice",
+    "Prosecco",
+    "soda"
+   ],
+   "by": "",
+   "note": ""
+  },
+  {
+   "id": "c-rose-alla-fragola",
+   "section": "Spritzes",
+   "name": "Rose Alla Fragola",
+   "price": "$19",
+   "ingredients": [
+    "Grey Goose",
+    "Cointreau",
+    "lemon juice",
+    "strawberry syrup",
+    "Mionetto Rosé",
+    "rose lemonade"
+   ],
+   "by": "",
+   "note": ""
+  },
+  {
+   "id": "c-paradise-spritz",
+   "section": "Spritzes",
+   "name": "Paradise Spritz",
+   "price": "$19",
+   "ingredients": [
+    "Appleton Estate Rum",
+    "Campari",
+    "pineapple cordial",
+    "blood orange",
+    "lime juice",
+    "Prosecco",
+    "soda"
+   ],
+   "by": "",
+   "note": ""
+  },
+  {
+   "id": "c-brasa-roja-mezcal",
+   "section": "Margaritas",
+   "name": "Brasa-Roja Mezcal",
+   "price": "$20",
+   "ingredients": [
+    "Fandango Mezcal",
+    "Cointreau",
+    "blood orange syrup",
+    "lime juice",
+    "salt"
+   ],
+   "by": "",
+   "note": ""
+  },
+  {
+   "id": "c-red-velvet",
+   "section": "Margaritas",
+   "name": "Red Velvet",
+   "price": "$20",
+   "ingredients": [
+    "El Tequileño Blanco",
+    "Cointreau",
+    "house raspberry syrup",
+    "agave",
+    "black salt"
+   ],
+   "by": "",
+   "note": ""
+  },
+  {
+   "id": "c-costa-coco",
+   "section": "Margaritas",
+   "name": "Costa Coco",
+   "price": "$20",
+   "ingredients": [
+    "Patron Blanco",
+    "Cointreau",
+    "pineapple cordial",
+    "coconut reduction",
+    "Tajín"
+   ],
+   "by": "",
+   "note": ""
+  },
+  {
+   "id": "c-sangria-blanca",
+   "section": "Sangria",
+   "name": "Sangria Blanca",
+   "price": "$19",
+   "ingredients": [
+    "Chardonnay-Chenin blanc",
+    "St. Rémy VSOP",
+    "Cointreau",
+    "Giffard Pêche",
+    "citrus",
+    "Sprite"
+   ],
+   "by": "",
+   "note": ""
+  },
+  {
+   "id": "c-sangria-rosa",
+   "section": "Sangria",
+   "name": "Sangria Rosa",
+   "price": "$19",
+   "ingredients": [
+    "Malbec",
+    "St. Rémy VSOP",
+    "Cointreau",
+    "Chambord",
+    "citrus",
+    "grapefruit",
+    "Sprite"
+   ],
+   "by": "",
+   "note": ""
+  },
+  {
+   "id": "c-sangria-tinta",
+   "section": "Sangria",
+   "name": "Sangria Tinta",
+   "price": "$19",
+   "ingredients": [
+    "Cabernet Sauvignon",
+    "St. Rémy VSOP Brandy",
+    "Cointreau",
+    "Chambord",
+    "citrus",
+    "orange"
+   ],
+   "by": "",
+   "note": ""
+  }
  ]
 }
