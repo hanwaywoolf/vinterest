@@ -141,9 +141,12 @@ const TeamLearn = {
     const w=TeamData.wine(q.wine); if(!w) return q;
     // A comparison's answer is checked whole and without the wines' own names: "Which is lighter: the Jadot or
     // the Malbec?" answered "The Jadot" is a fair question, while an answer whose substance is in the question isn't.
-    const nameWords=q.k==='contrast'?new Set(TeamData.wines().flatMap(x=>this._words(TeamData.short(x)+' '+(x.name||'')))):null;
+    // Only when the question names a second wine: a "comparison" that names one ("Which fruit gives The Pear Se
+    // its flavour?") is checked like any question, its own name included.
+    const others=TeamData.wines().filter(x=>x.id!==q.wine&&this._norm(q.q).includes(this._norm(TeamData.short(x))));
+    const nameWords=q.k==='contrast'&&others.length?new Set(TeamData.wines().flatMap(x=>this._words(TeamData.short(x)+' '+(x.name||'')))):null;
     const plain=a=>nameWords?this._words(a).filter(x=>!nameWords.has(x)).join(' '):a;
-    const answers=q.k==='recognise'?[q.opts[q.a]]:q.k==='recall'?String(q.ans||'').split(/,|\band\b|;/).map(x=>x.trim()).filter(Boolean):q.k==='contrast'&&q.ans?[plain(q.ans)].filter(Boolean):[];
+    const answers=q.k==='recognise'?[q.opts[q.a]]:q.k==='recall'?String(q.ans||'').split(/,|\band\b|;/).map(x=>x.trim()).filter(Boolean):q.k==='contrast'&&q.ans?(nameWords?[plain(q.ans)]:String(q.ans).split(/,|\band\b|;/).map(x=>x.trim())).filter(Boolean):[];
     // An answer with a figure in it ("£9 a glass, £45 a bottle") is given away only if its figures are too.
     const nums=x=>String(x||'').match(/\d+(?:\.\d+)?/g)||[];
     const gives=text=>{ const t=new Set(this._words(text)), tn=new Set(nums(text)); return answers.some(a=>{ const ws=this._words(a); return ws.length&&ws.every(x=>t.has(x))&&nums(a).every(n=>tn.has(n)); }); };
@@ -154,6 +157,9 @@ const TeamLearn = {
     for(const nm of [`${TeamData.short(w)}${w.vintage?' '+w.vintage:''}`,TeamData.short(w),w.name].filter(Boolean)){
       const masked=nm.split(/\s+/).filter(x=>!drop.has(this._norm(x))).join(' ');
       text=text.replace(new RegExp(esc(nm),'gi'),masked); }
+    // A name masked down to one word ("The Pear Se" to "The Se") reads as nonsense: the question is left out.
+    const masked=[TeamData.short(w),w.name].filter(Boolean).map(nm=>nm.split(/\s+/).filter(x=>!drop.has(this._norm(x))&&!/^the$/i.test(x)));
+    if(text!==q.q&&masked.some(ws=>ws.length&&ws.every(x=>this._norm(x).length<=3))) return null;
     return gives(text)?null:{...q,q:text};
   },
   dishQs(id){
@@ -663,8 +669,9 @@ const TeamLearn = {
     const dishes=TeamData.dishes(), hereDish=this.dishIn(q.q), here=hereDish?[hereDish]:[];
     const hereWords=new Set(here.flatMap(d=>this._words(d.name+' '+(d.desc||''))));
     const foodWords=new Set(dishes.flatMap(d=>this._words(d.name+' '+(d.desc||''))).filter(w=>w.length>3&&!hereWords.has(w)));
-    const ownGrapes=new Set(this._words([rw.grape,rw.name,(TeamData.card(rw.id)||{}).grape].join(' ')));
-    const grapeWords=new Set(wines.flatMap(w=>this._words([w.grape,(TeamData.card(w.id)||{}).grape].join(' '))).filter(w=>w.length>3&&!ownGrapes.has(w)));
+    // Grape names only (a card's grape line is a sentence, whose everyday words would rule out every reason).
+    const ownGrapes=new Set(this._words([...(rw.grapes||[]),rw.name].join(' ')));
+    const grapeWords=new Set(wines.flatMap(w=>this._words((w.grapes||[]).join(' '))).filter(w=>w.length>3&&!ownGrapes.has(w)));
     const offTable=t=>this._words(t).some(w=>foodWords.has(w)||grapeWords.has(w));
     const style={...((TeamData.card(rw.id)||{}).style||{}),fizz:/soda|prosecco|fizz|sprite|sparkling|champagne|lemonade|tonic|rosé\b/i.test((rw.spec||[]).join(' '))}, kind=this.kindOf(rw);
     const wrongFor=t=>this.contradicts(t,style,kind);
@@ -676,6 +683,13 @@ const TeamLearn = {
     here.forEach(d=>{ const pr=TeamData.pairing(d.id)||{}; [...(pr.best||[]),pr.glass,pr.cocktail].filter(Boolean).forEach(b=>{ if(b.id!==rw.id&&b.why) borrowed.push(b.why); }); });
     wines.filter(w=>w.id!==rw.id).forEach(w=>this.wineQs(w.id).forEach(o=>{ if(o.k==='apply'&&here.some(d=>this._words(d.name).some(x=>x.length>3&&norm(o.q).split(' ').includes(x)))) (o.key||[]).forEach(k=>borrowed.push(k)); }));
     this._shuffle(borrowed,this._seed(q)+'r').forEach(k=>{ if(wrongs.length>=4) return; const t=reason(k); if(t&&!offTable(t)&&wrongFor(t)) take(t); });
+    // A cocktail is also told apart by how it tastes: the taste lines of drinks clearly unlike it (3 or more
+    // apart on sweet, sour, bitter and strong together) are wrong descriptions of this one.
+    if(kind==='cocktail'&&wrongs.length<4){ const gap=o=>['sweet','sour','bitter','strong'].reduce((a,k)=>a+Math.abs((o[k]||0)-(style[k]||0)),0);
+      this._shuffle(wines.filter(w=>w.id!==rw.id&&TeamData.isDrink(w)),this._seed(q)+'k').forEach(w=>{ const c=TeamData.card(w.id); if(wrongs.length>=4||!c||!c.taste||!c.style||gap(c.style)<3) return;
+        // Taste words ("lemon", "coffee") are on the menu too, so only another dish's name rules a line out here.
+        const t=String(c.taste).replace(/\.\s*$/,''), dishNames=new Set(dishes.filter(x=>!here.includes(x)).flatMap(x=>this._words(String(x.name).split(',')[0])).filter(x=>x.length>3));
+        if(!this._words(t).some(x=>dishNames.has(x)||grapeWords.has(x))&&!this._words(t).some(x=>this._words(w.name).includes(x)&&x.length>3)) take(t); }); }
     const dishName=here.length?String(here[0].name).split(',')[0].trim().toLowerCase():'dish';
     if(wrongs.length<4) this._shuffle(this.styleWrong(style,kind,dishName,this._seed(q)),this._seed(q)+'g').forEach(t=>wrongs.length<4&&take(t));
     if(wrongs.length<2) return null;
