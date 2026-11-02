@@ -80,6 +80,16 @@ test('The Social Corner opens from the setup screen, for a phone whose link lost
   expect(await page.evaluate(() => [TeamLearn.me().name, TeamLearn.people().length, TeamSales.get().rows.length > 1000])).toEqual(['Elena Ruiz', 7, true]);
 });
 
+test('?view=phone keeps the phone app on a wide screen, for the manager too', async ({ context, page }) => {
+  await stubNetwork(context);
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto(`${BASE}/team/?seed=social&view=phone`);
+  await expect(page.getByTestId('team-tab-today')).toBeVisible();
+  await expect(page.getByTestId('console-nav-dash')).toHaveCount(0);
+  await page.goto(`${BASE}/team/`); // without it, the manager on a wide screen gets the console
+  await expect(page.getByTestId('console-nav-dash')).toBeVisible();
+});
+
 test('The Social Corner cocktails: cards, their own part of readiness, drilled, and on the dishes they suit', async ({ context, page }) => {
   await stubNetwork(context);
   await page.goto(`${BASE}/team/?seed=social`);

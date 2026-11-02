@@ -19,8 +19,9 @@ function TeamApp(){
   // The management console (team-console.jsx): a manager or buyer on a tablet or laptop (768px+), or
   // anyone with ?view=console (kept in the URL, so a reload keeps it); "Train on the phone view" shows
   // the phone app inside it, and the header's Console button comes back.
-  const size=useLayoutSize(), forceConsole=(()=>{ try{ return new URLSearchParams(location.search).get('view')==='console'; }catch(e){ return false; } })();
-  const [phoneView,setPhoneView]=React.useState(false), [section,setSection]=React.useState('dash');
+  // ?view=phone is the opposite: the phone app on any screen, for trying the staff's own view on a laptop or tablet.
+  const viewParam=(()=>{ try{ return new URLSearchParams(location.search).get('view'); }catch(e){ return null; } })(), size=useLayoutSize(), forceConsole=viewParam==='console';
+  const [phoneView,setPhoneView]=React.useState(viewParam==='phone'), [section,setSection]=React.useState('dash');
   React.useEffect(()=>{ const h=()=>refresh(); window.addEventListener('vbiz:data',h); window.addEventListener('vinterest:account',h);
     return ()=>{ window.removeEventListener('vbiz:data',h); window.removeEventListener('vinterest:account',h); }; },[]);
   // /team/?seed=demo opens straight onto the demo restaurant (the wine-show laptop), replacing whatever
