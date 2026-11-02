@@ -57,6 +57,21 @@ test('The Social Corner opens from ?seed=social on its own team, logo, dollars a
   expect(errors).toEqual([]);
 });
 
+// A device that opened The Social Corner from an older build (here: before its team and sales, set up by whoever
+// opened it) reloads it from ?seed=social once the list file has moved on, though the training file is the same.
+test('a device holding an older Social Corner takes the new one, with or without ?seed=social', async ({ context, page }) => {
+  await stubNetwork(context);
+  await page.goto(`${BASE}/team/?seed=social`);
+  await page.evaluate(() => { const d = TeamData.get(); d.venue.seeded = 'an older copy'; TeamData.save(d);
+    Store.remove(TeamLearn.KEY); TeamLearn.resetProgress(); TeamSales.clear(); TeamLearn.setMe(TeamLearn.addPerson('Alex Morgan', 'manager')); });
+  await page.goto(`${BASE}/team/`); // even without ?seed
+
+  await expect.poll(() => page.evaluate(() => TeamLearn.people().length)).toBe(7);
+  expect(await page.evaluate(() => [TeamLearn.me().name, TeamSales.get().rows.length > 1000])).toEqual(['Elena Ruiz', true]);
+  await page.reload(); // and keeps it after that
+  expect(await page.evaluate(() => TeamLearn.people().length)).toBe(7);
+});
+
 test('The Social Corner cocktails: cards, their own part of readiness, drilled, and on the dishes they suit', async ({ context, page }) => {
   await stubNetwork(context);
   await page.goto(`${BASE}/team/?seed=social`);

@@ -26,7 +26,9 @@ function TeamApp(){
   // /team/?seed=demo opens straight onto the demo restaurant (the wine-show laptop), replacing whatever
   // restaurant the device holds unless it's already this build's copy of it (so a reload keeps progress, and a
   // new build with more written in replaces a stale one).
-  React.useEffect(()=>{ try{ const q=new URLSearchParams(location.search), seed=q.get('seed'); if(!seed&&TeamSample.retire()) refresh(); if(seed){ if(!TeamLearn.me()||!TeamSample.current(seed)) TeamSample.load(seed); q.delete('seed'); const rest=q.toString(); history.replaceState(null,'',location.pathname+(rest?'?'+rest:'')); refresh(); } }catch(e){} },[]);
+  React.useEffect(()=>{ try{ const q=new URLSearchParams(location.search), seed=q.get('seed'); if(!seed&&TeamSample.retire()) refresh();
+    // The Social Corner is a demo install: a device holding an older copy of its files takes the new one, with or without ?seed.
+    if(!seed&&(TeamData.get().venue||{}).sample==='social'&&!TeamSample.current('social')){ TeamSample.load('social'); refresh(); } if(seed){ if(!TeamLearn.me()||!TeamSample.current(seed)) TeamSample.load(seed); q.delete('seed'); const rest=q.toString(); history.replaceState(null,'',location.pathname+(rest?'?'+rest:'')); refresh(); } }catch(e){} },[]);
   const me=TeamLearn.me(), set=!!me, brand=TeamData.brand();
   const manager=me&&['manager','buyer'].includes(me.role);
   const tabs=TEAM_TABS.filter(t=>!t.manager||manager);
