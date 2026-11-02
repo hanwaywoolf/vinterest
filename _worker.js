@@ -133,6 +133,7 @@ export default {
       // (ALL_PRO=0), not an app update.
       return json(200, {
         supabase: env.SUPABASE_URL && env.SUPABASE_PUBLISHABLE_KEY ? { url: env.SUPABASE_URL, key: env.SUPABASE_PUBLISHABLE_KEY } : null,
+        tts: !!ttsProvider(env),
         billing: env.REVENUECAT_IOS_KEY || env.REVENUECAT_ANDROID_KEY ? { ios: env.REVENUECAT_IOS_KEY || null, android: env.REVENUECAT_ANDROID_KEY || null } : null,
         allPro: ALL_PRO_FOR_TESTING && env.ALL_PRO !== "0",
         push: pushOn(env),
@@ -186,6 +187,11 @@ export default {
       if (request.method !== "POST") return json(405, { error: "Method not allowed" });
       return handleLcbo(request, env);
     }
+    if (url.pathname === "/tts") {
+      if (request.method === "OPTIONS") return cors(new Response(null, { status: 204 }));
+      if (request.method !== "POST") return json(405, { error: "Method not allowed" });
+      return handleTts(request, env, ctx);
+    }
     if (url.pathname === "/claude") {
       if (request.method === "OPTIONS") return cors(new Response(null, { status: 204 }));
       if (request.method !== "POST") return json(405, { error: "Method not allowed" });
@@ -231,6 +237,48 @@ export default {
     return res;
   }
 };
+
+/* A guest's line said aloud by a cloud voice (Vinterest for teams: Vinny at the table, team-voice.js).
+   ElevenLabs when ELEVENLABS_API_KEY is set, else OpenAI's speech model with OPENAI_API_KEY; without either
+   it answers 404 {enabled:false} and the app speaks with the browser's own voice. The key never leaves the
+   Worker; the text is short (TTS_MAX_CHARS), the same origins and per-IP limit as /claude apply, and each
+   clip is cached by its voice and words, so a line said twice is fetched once. Nothing is stored. */
+const TTS_MAX_CHARS = 600;
+const TTS_VOICES = {
+  // Four diners, so the tables don't all sound alike. ElevenLabs' premade voices; ELEVENLABS_VOICES (comma
+  // separated ids) replaces them.
+  elevenlabs: ["21m00Tcm4TlvDq8ikWAM", "pNInz6obpgDQGcFmaJgB", "EXAVITQu4vr4xnSDxMaL", "ErXwobaYiN019PkySvjV"],
+  openai: ["coral", "ash", "sage", "verse"]
+};
+function ttsProvider(env) { return env.ELEVENLABS_API_KEY ? "elevenlabs" : env.OPENAI_API_KEY ? "openai" : null; }
+async function handleTts(request, env, ctx) {
+  const provider = ttsProvider(env);
+  if (!provider) return json(404, { enabled: false, error: "No voice is set up on the server.", code: "tts_off" });
+  if (!originAllowed(request.headers.get("origin"))) return json(403, { error: "Origin not allowed.", code: "origin_denied" });
+  if (rateLimited(clientIp(request))) return json(429, { error: "Too many requests. Please slow down and try again shortly.", code: "rate_limited" });
+  let body; try { body = await request.json(); } catch (e) { return json(400, { error: "Invalid JSON body.", code: "invalid_json" }); }
+  const text = String(body && body.text || "").replace(/\s+/g, " ").trim().slice(0, TTS_MAX_CHARS);
+  if (!text) return json(400, { error: "Nothing to say.", code: "empty" });
+  const list = provider === "elevenlabs" && env.ELEVENLABS_VOICES ? String(env.ELEVENLABS_VOICES).split(",").map(x => x.trim()).filter(Boolean) : TTS_VOICES[provider];
+  const voice = list[Math.abs(parseInt(body.voice, 10) || 0) % list.length];
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(provider + "|" + voice + "|" + text));
+  const id = [...new Uint8Array(digest)].map(b => b.toString(16).padStart(2, "0")).join("");
+  const cacheKey = new Request("https://tts.cache.vinterest/" + id);
+  const cache = typeof caches !== "undefined" ? caches.default : null;
+  if (cache) { const hit = await cache.match(cacheKey); if (hit) return cors(new Response(hit.body, { status: 200, headers: { "content-type": "audio/mpeg", "x-tts": "cache" } })); }
+  let up;
+  try {
+    up = provider === "elevenlabs"
+      ? await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voice}?output_format=mp3_44100_64`, { method: "POST", headers: { "xi-api-key": env.ELEVENLABS_API_KEY, "content-type": "application/json", accept: "audio/mpeg" },
+          body: JSON.stringify({ text, model_id: env.ELEVENLABS_MODEL || "eleven_flash_v2_5", voice_settings: { stability: 0.45, similarity_boost: 0.75 } }) })
+      : await fetch("https://api.openai.com/v1/audio/speech", { method: "POST", headers: { authorization: `Bearer ${env.OPENAI_API_KEY}`, "content-type": "application/json" },
+          body: JSON.stringify({ model: env.OPENAI_TTS_MODEL || "gpt-4o-mini-tts", voice, input: text, response_format: "mp3", instructions: "You are a relaxed diner at a restaurant table, talking to your server. Natural, warm, conversational; not a narrator." }) });
+  } catch (e) { return json(502, { error: "The voice service couldn't be reached.", code: "tts_unreachable" }); }
+  if (!up.ok) return json(502, { error: "The voice service didn't answer.", code: "tts_failed", status: up.status });
+  const audio = await up.arrayBuffer();
+  if (cache && ctx && ctx.waitUntil) ctx.waitUntil(cache.put(cacheKey, new Response(audio, { headers: { "content-type": "audio/mpeg", "cache-control": "public, max-age=2592000" } })));
+  return cors(new Response(audio, { status: 200, headers: { "content-type": "audio/mpeg", "x-tts": provider } }));
+}
 
 function originAllowed(origin) {
   if (!origin) return true; // no Origin header — native/webview clients; rate limiting is the backstop

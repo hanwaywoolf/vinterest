@@ -800,3 +800,74 @@ test('when the list is short of a kind of wine, well-known bottles that are not 
   expect(r.onList).toEqual([]);
   expect(errors).toEqual([]);
 });
+
+test('delivery: pace, time to start, fillers, hedges and whether the wine\'s name came through', async ({ context, page }) => {
+  const errors = await asMarco(context, page);
+  const r = await page.evaluate(() => {
+    const t0 = 1_000_000;
+    const d = TeamVoice.delivery({ text: "Um, I think I'd go for the Gusbourne, it's sort of crisp and maybe lovely with the crab", startedAt: t0, askedAt: t0, firstAt: t0 + 5200, lastAt: t0 + 5200 + 6000,
+      names: [{ name: 'Gusbourne Blanc de Blancs', say: 'GUZ-born' }, { name: 'Dönnhoff Riesling Trocken', say: 'DURN-hoff' }], expected: ['Dönnhoff Riesling Trocken'] });
+    // No wine on the list came through: the expected one's sounds-like spelling is offered.
+    const lost = TeamVoice.delivery({ text: "I'd go for the dern off, it's dry and racy with the pork", startedAt: t0, askedAt: t0, firstAt: t0 + 900, lastAt: t0 + 4000,
+      names: [{ name: 'Dönnhoff Riesling Trocken', say: 'DURN-hoff' }], expected: ['Dönnhoff Riesling Trocken'] });
+    return { d, lost, heardSplit: TeamVoice.heardName('the don hoff riesling please', 'Dönnhoff Riesling Trocken'), missed: TeamVoice.heardName('the gooseberry one', 'Gusbourne Blanc de Blancs') };
+  });
+  expect(r.d.fillers).toBe(2); // "um", "sort of"
+  expect(r.d.hedges).toBe(2); // "I think", "maybe"
+  expect(r.d.wpm).toBeGreaterThan(150);
+  expect(r.d.waitMs).toBe(5200);
+  expect(r.d.notes.some((n) => n.k === 'wait' && !n.good)).toBe(true);
+  expect(r.d.names.find((n) => /Gusbourne/.test(n.name)).heard).toBe(true);
+  expect(r.d.notes.some((n) => n.k === 'name' && !n.good)).toBe(false); // they named a wine clearly: choosing it is the guest's mark, not a name problem
+  expect(r.lost.notes.some((n) => n.k === 'name' && /DURN-hoff/.test(n.text))).toBe(true); // no name came through: here's how to say it
+  expect(r.heardSplit).toBe(true); // speech-to-text splitting a name it doesn't know still counts
+  expect(r.missed).toBe(false);
+  expect(errors).toEqual([]);
+});
+
+test('a spoken table: the guest is said aloud, the reply is spoken into the box, and the result coaches the delivery', async ({ context, page }) => {
+  // Stand-ins for the browser's speech engines: the voice finishes at once; the microphone "hears" a reply.
+  await context.addInitScript(() => {
+    window.__spoken = [];
+    Object.defineProperty(window, 'speechSynthesis', { configurable: true, value: { speak(u) { window.__spoken.push(u.text); setTimeout(() => u.onend && u.onend(), 5); }, cancel() {}, getVoices() { return []; } } });
+    window.SpeechSynthesisUtterance = function (t) { this.text = t; };
+    window.SpeechRecognition = class { start() { this._t = setTimeout(() => { const res = [{ 0: { transcript: "Um I'd go for the Grüner by the glass, it's peppery and fresh with the olives" }, isFinal: true, length: 1 }]; this.onresult && this.onresult({ resultIndex: 0, results: res }); }, 300); }
+      stop() { clearTimeout(this._t); setTimeout(() => this.onend && this.onend(), 5); } };
+  });
+  const errors = await asMarco(context, page, { claudeText: (b) => {
+    if (b.purpose !== 'team_guest') return '';
+    if (!/SERVER:/.test(b.messages[0].content)) return '{"guest":"Evening! What would you pour with the olives?","done":false}';
+    return JSON.stringify({ guest: 'Lovely, thank you.', done: true, mark: { score: 0.8, verdict: 'right', good: 'Named it and why.', missing: '', better: '' } });
+  } });
+  await page.getByTestId('team-tab-vinny').click();
+  await page.getByText('Take a table').click();
+  await expect(page.getByTestId('guest-line')).toContainText('olives');
+  await expect(page.getByTestId('guest-voice')).toHaveAttribute('aria-checked', 'true');
+  await expect.poll(() => page.evaluate(() => window.__spoken.join('|'))).toContain('What would you pour'); // the guest said aloud
+  await page.getByTestId('guest-mic').click();
+  await expect(page.getByTestId('voice-notice')).toBeVisible(); // where the words go, said once
+  await expect(page.getByTestId('guest-reply')).toHaveValue(/Grüner by the glass/);
+  await page.getByTestId('guest-mic').click(); // tap when finished
+  await page.getByText('Say', { exact: true }).click();
+  await expect(page.getByTestId('you-line')).toContainText('🎙');
+  await expect(page.getByTestId('you-delivery')).toContainText('filler');
+  await expect(page.getByTestId('guest-delivery')).toContainText('Your delivery');
+  await expect(page.getByTestId('delivery-note').first()).toBeVisible();
+  // Voice off: no microphone, typing as before.
+  await page.getByText('Another table').click();
+  await page.getByTestId('guest-voice').click();
+  await expect(page.getByTestId('guest-mic')).toHaveCount(0);
+  await expect(page.getByTestId('guest-reply')).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
+test('a wine card says how to pronounce the wine, and Say it speaks it', async ({ context, page }) => {
+  await context.addInitScript(() => { window.__spoken = []; Object.defineProperty(window, 'speechSynthesis', { configurable: true, value: { speak(u) { window.__spoken.push(u.text); setTimeout(() => u.onend && u.onend(), 5); }, cancel() {}, getVoices() { return []; } } }); window.SpeechSynthesisUtterance = function (t) { this.text = t; }; });
+  const errors = await asMarco(context, page);
+  await page.getByTestId('team-tab-wines').click();
+  await page.getByText(/Dönnhoff/).first().click();
+  await expect(page.getByTestId('team-say')).toContainText('DURN-hoff');
+  await page.getByTestId('team-say').click();
+  await expect.poll(() => page.evaluate(() => window.__spoken.join('|'))).toContain('DURN-hoff');
+  expect(errors).toEqual([]);
+});

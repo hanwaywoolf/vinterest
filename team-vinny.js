@@ -222,13 +222,25 @@ const TeamVinny = {
   setLevel(pid,level){ if(!this.LEVELS.includes(level)) return; const d=this._guestDoc(), t=this.tableState(pid);
     d.tables[pid]={...t,level,streak:0,picked:true}; Store.setJSON(this.KEY,d); },
   /* Records a marked table and moves the step: returns {level, moved:'up'|'down'|null}. */
-  noteTable(pid,{level,score,hints=0}){
+  /* How their spoken delivery is moving: the last three spoken tables against the three before them
+     (fillers and hedges per table, and how long before they started). Private to them; never readiness. */
+  deliveryTrend(pid){
+    const log=(this.tableState(pid).log||[]).filter(x=>x.d); if(log.length<4) return null;
+    const avg=(xs,f)=>xs.reduce((a,x)=>a+f(x),0)/xs.length, now=log.slice(-3), was=log.slice(-6,-3);
+    const tics=x=>(x.d.fillers||0)+(x.d.hedges||0), wait=x=>x.d.waitMs==null?null:x.d.waitMs;
+    const t1=avg(now,tics), t0=avg(was,tics), w1=avg(now.filter(x=>wait(x)!=null),wait)||0, w0=avg(was.filter(x=>wait(x)!=null),wait)||0;
+    const bits=[];
+    if(t0-t1>=0.5) bits.push('fewer fillers and hedges than before'); else if(t1-t0>=0.5) bits.push('more fillers and hedges creeping in');
+    if(w0&&w1&&w0-w1>=700) bits.push('starting sooner'); else if(w0&&w1&&w1-w0>=700) bits.push('taking longer to start');
+    return bits.length?`Over your last tables: ${bits.join(', ')}.`:'Over your last tables: steady.';
+  },
+  noteTable(pid,{level,score,hints=0,delivery=null}){
     const d=this._guestDoc(), t=this.tableState(pid), i=this.LEVELS.indexOf(level);
     const landed=score>=this.LAND&&(level!=='hints'||hints<=1);
     let next=level, streak=landed?(t.level===level?t.streak:0)+1:0, moved=null;
     if(landed&&streak>=this.UP_AFTER&&i<this.LEVELS.length-1){ next=this.LEVELS[i+1]; streak=0; moved='up'; }
     else if(score<this.MISS&&i>0){ next=this.LEVELS[i-1]; streak=0; moved='down'; }
-    d.tables[pid]={level:next,streak,picked:t.picked&&!moved,log:[...(t.log||[]),{at:Date.now(),level,score,hints}].slice(-30)};
+    d.tables[pid]={level:next,streak,picked:t.picked&&!moved,log:[...(t.log||[]),{at:Date.now(),level,score,hints,...(delivery?{d:{wpm:delivery.wpm,waitMs:delivery.waitMs,fillers:delivery.fillers,hedges:delivery.hedges,words:delivery.words}}:{})}].slice(-30)};
     Store.setJSON(this.KEY,d); return {level:next,moved};
   },
   /* What the screen shows for each step, built from the same pairing as the marking key, so the choices
