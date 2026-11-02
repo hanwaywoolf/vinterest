@@ -173,6 +173,9 @@ const TeamData = {
   _listLines(){ return this.wines().map(w=>`${w.id} | ${this.label(w)} | ${w.type} | ${[w.glass&&'glass '+w.glass,w.bottle&&'bottle '+w.bottle].filter(Boolean).join(', ')}`).join('\n'); },
   _menuLines(){ return this.dishes().map(x=>`${x.name} | ${x.main} | ${x.cook} | ${(x.flav||[]).join(', ')}`).join('\n')||'(no menu uploaded yet)'; },
 
+  /* One Claude call, tried a second time after a short pause if the first fails. */
+  async _callRetry(purpose,content){ try{ return await window.claude.complete({purpose,messages:[{role:'user',content}]}); }
+    catch(e){ if(e&&(e.code==='pro'||e.status===402||e.status===429)) throw e; await new Promise(r=>setTimeout(r,1500)); return window.claude.complete({purpose,messages:[{role:'user',content}]}); } },
   /* Staff cards and their questions for these wines, a few a call (prompts/team-cards.txt). */
   async writeCards(ids,onStep){
     const tpl=_loadTextSync('prompts/team-cards.txt');
@@ -184,7 +187,16 @@ const TeamData = {
         .replace('{{list}}',this._listLines()).replace('{{menu}}',this._menuLines())
         .replace('{{wines}}',ws.map(w=>`${w.id} | ${this.label(w)} | ${w.type} | ${w.region}, ${w.country} | grapes: ${(w.grapes||[]).join(', ')||'unknown'} (${w.grapes_basis}) | ${[w.glass&&'glass '+w.glass,w.bottle&&'bottle '+w.bottle].filter(Boolean).join(', ')}`).join('\n'))
         .replace('{{example}}',this.short(ws[0]));
-      const j=this._json(await window.claude.complete({purpose:'team_cards',messages:[{role:'user',content:prompt}]}))||{};
+      // A long answer (four wines, six questions each) can fail on the way back; one failed batch shouldn't
+      // stop a publish, so it's tried again, then one wine at a time, before the error stands.
+      let j;
+      try{ j=this._json(await this._callRetry('team_cards',prompt))||{}; }
+      catch(e){ if(ws.length<2) throw e; j={cards:[]};
+        for(const one of ws){ const p1=tpl.replace(/\{\{venue\}\}/g,venue).replace('{{about}}',this.about()).replace('{{facts}}',this.facts(one))
+            .replace('{{list}}',this._listLines()).replace('{{menu}}',this._menuLines())
+            .replace('{{wines}}',`${one.id} | ${this.label(one)} | ${one.type} | ${one.region}, ${one.country} | grapes: ${(one.grapes||[]).join(', ')||'unknown'} (${one.grapes_basis}) | ${[one.glass&&'glass '+one.glass,one.bottle&&'bottle '+one.bottle].filter(Boolean).join(', ')}`)
+            .replace('{{example}}',this.short(one));
+          const j1=this._json(await this._callRetry('team_cards',p1))||{}; (j1.cards||[]).forEach(c=>j.cards.push(c)); } }
       const d=this.get();
       (j.cards||[]).forEach(c=>{ if(c&&d.wines[c.id]) d.cards[c.id]={...this._cleanCard(c,d),at:Date.now()}; });
       this.save(d);
