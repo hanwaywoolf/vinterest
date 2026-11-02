@@ -127,8 +127,11 @@ const TeamVinny = {
     const sym=TeamData.currency().sym||'£', ws=TeamData.wines().slice(0,this.LIST_MAX), ds=TeamData.dishes();
     const wl=ws.map((w,i)=>{ const win=TeamData.window(w); return `W${i+1} ${TeamData.short(w)} ${w.vintage||'NV'} · ${w.type}${w.section?` · ${w.section}`:''} · ${[w.region,w.country].filter(Boolean).join(', ')}${(w.grapes||[]).length?` · ${w.grapes.join(', ')}`:''}${w.glass?` · glass ${w.glass}`:''}${w.bottle?` · bottle ${w.bottle}`:''}${win?` · ${win.word} (${win.line})`:''}`; });
     const tag=id=>{ const i=ws.findIndex(w=>w.id===id); return i>=0?`W${i+1}`:''; };
-    const dl=ds.map((x,i)=>{ const p=TeamData.pairing(x.id), nm=id=>{ const w=TeamData.wine(id); return w?`${TeamData.short(w)} (${tag(id)})`:''; };
-      return `D${i+1} ${x.name}${x.section?` · ${x.section}`:''}${x.price?` · ${x.price}`:''}${x.desc?` · ${x.desc}`:''}${p&&p.best&&p.best.length?` · best with ${p.best.map(b=>nm(b.id)).filter(Boolean).join('; ')}`:''}${p&&p.glass?` · by the glass ${nm(p.glass.id)}`:''}${p&&p.avoid?` · steer away from ${nm(p.avoid.id)}`:''}`; });
+    // A dish's pairing names one by-the-glass pick, which Vinny once read as the only glass that goes
+    // ("nothing else comes by the glass", with another glass among the best). So each wine in "best
+    // with" says whether it's poured by the glass, and the pick is labelled the first choice.
+    const dl=ds.map((x,i)=>{ const p=TeamData.pairing(x.id), nm=(id,mark)=>{ const w=TeamData.wine(id); return w?`${TeamData.short(w)} (${tag(id)})${mark&&TeamData.byGlass(w)?' also by the glass':''}`:''; };
+      return `D${i+1} ${x.name}${x.section?` · ${x.section}`:''}${x.price?` · ${x.price}`:''}${x.desc?` · ${x.desc}`:''}${p&&p.best&&p.best.length?` · best with ${p.best.map(b=>nm(b.id,true)).filter(Boolean).join('; ')}`:''}${p&&p.glass?` · first pick by the glass ${nm(p.glass.id)}`:''}${p&&p.avoid?` · steer away from ${nm(p.avoid.id)}`:''}`; });
     return {ws,ds,text:`WINE LIST (${sym}):\n${wl.join('\n')}\n\nMENU:\n${dl.join('\n')}`,sym};
   },
   // The wines a question is about: named in it, or paired with a dish named in it.
