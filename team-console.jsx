@@ -104,7 +104,10 @@ function TeamConsole({me,onPhone,refresh,section,setSection,open}){ const T=useT
    fills x 41–1039 of 1086 and y 41–183 of 224), so the image is scaled and cropped to the mark itself and
    the word is spread across exactly the mark's width, from the V to the final T. `size` is the mark's height. */
 const _LOGO={l:41/1086,r:1039/1086,t:41/224,b:183/224,ar:1086/224,wordL:(99-41)/998,wordR:(1003-41)/998}; // the word runs from the V's point (x 99) to the foot of the T (x 1003)
-function TeamLogo({size=20}){ const T=useTheme(), cr=T.lift(C.cr);
+function TeamLogo({size=20}){ const T=useTheme(), cr=T.lift(C.cr), brand=TeamBrand.get();
+  // A restaurant with its own wordmark leads with it, with "Teams by Vinterest" small beneath.
+  if(brand&&brand.wordmark) return <div data-testid="team-brand-logo" style={{display:'flex',flexDirection:'column',gap:4}}><img src={TeamBrand.asset(T.dark?brand.wordmark:(brand.wordmarkDark||brand.wordmark))} alt={TeamData.get().venue.name} style={{height:size,width:'auto',maxWidth:180,objectFit:'contain',objectPosition:'left'}}/>
+    <div style={{fontSize:'10px',fontWeight:700,letterSpacing:'0.12em',color:cr,fontFamily:C.P}}>TEAMS BY VINTEREST</div></div>;
   const imgH=size/(_LOGO.b-_LOGO.t), imgW=imgH*_LOGO.ar, w=imgW*(_LOGO.r-_LOGO.l);
   return <div data-testid="team-logo" style={{display:'inline-block',width:w}}>
     <div style={{width:w,height:size,overflow:'hidden',position:'relative'}}><img src="/logo.png" alt="Vinterest" style={{position:'absolute',left:-imgW*_LOGO.l,top:-imgH*_LOGO.t,width:imgW,height:imgH,maxWidth:'none',display:'block',filter:T.dark?'invert(1)':'none'}} onError={e=>{ e.target.style.display='none'; }}/></div>

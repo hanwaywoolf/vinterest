@@ -95,4 +95,5 @@ export const STATIC_FILES = [
   'tweaks-inline.compiled.js',
   'team/faces', // the demo restaurant's staff photos, served beside the team app (docs/business.md)
   'team/labels', // the demo's prepared new arrivals: two label photos (TeamSample.ARRIVALS)
+  'team/brands', // pilot restaurants' own wordmarks, marks and a photo or two (TeamBrand, venue.brand)
 ];

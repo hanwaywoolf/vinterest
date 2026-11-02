@@ -38,6 +38,32 @@ test('the setup screen offers The Larkspur only, a device left on The Copper Pan
   await expect(page.getByTestId('team-load-demo')).toBeVisible();
 });
 
+test('a pilot restaurant opens from its link in its own look: Social Corner, staff join by name and role, prices in Canadian dollars', async ({ context, page }) => {
+  const reqs = [];
+  await stubNetwork(context, { claudeRequests: reqs, claudeText: () => '{"cards":[]}' });
+  await page.goto(`${BASE}/team/?seed=perse`);
+  await expect(page.getByTestId('team-join')).toContainText('Join the Social Corner team.');
+  await expect(page.getByTestId('team-join')).toContainText('41 wines and 54 dishes');
+  await page.getByLabel('Your name').fill('Martin');
+  await page.getByTestId('team-role-manager').click();
+  await page.getByText('Join', { exact: true }).click();
+  await expect(page.getByTestId('team-state')).toBeVisible();
+  await expect(page.getByTestId('team-brand')).toHaveAttribute('src', /brands\/perse\/wordmark-white\.png/);
+  const r = await page.evaluate(() => ({ cur: TeamData.currency(), me: TeamLearn.me(), accent: C.cr, about: TeamData.about(), tig: TeamData.wines().find((w) => /Tignanello/.test(w.name)) }));
+  expect(r.cur).toMatchObject({ sym: '$', code: 'CAD' });
+  expect(r.me).toMatchObject({ name: 'Martin', role: 'manager' });
+  expect(r.accent).toBe('#A88963');
+  expect(r.about).toMatch(/Canadian English/);
+  expect(r.tig.bottle).toBe('$350');
+  // Their description reaches what Claude writes from.
+  await page.evaluate(() => TeamData.writeCards([TeamData.wines()[0].id]).catch(() => {}));
+  expect(reqs.find((x) => x.purpose === 'team_cards').messages[0].content).toMatch(/About the restaurant: Social Corner/);
+  // Another restaurant puts Vinterest's crimson back.
+  await page.goto(`${BASE}/team/?seed=demo`);
+  await expect(page.getByTestId('team-state')).toBeVisible();
+  expect(await page.evaluate(() => C.cr)).not.toBe('#A88963');
+});
+
 test('the sample restaurant opens on Today: not ready yet, with every wine and dish to learn', async ({ context, page }) => {
   const errors = await openSample(context, page);
   await expect(page.getByTestId('team-state')).toHaveText('Not ready yet');

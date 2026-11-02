@@ -7,6 +7,7 @@ const TEAM_TABS=[
   {k:'upload',label:'Upload',icon:'camera',manager:true},{k:'team',label:'Team',icon:'user',manager:true},
 ];
 function TeamApp(){
+  TeamBrand.apply(); // first, so every colour below is the restaurant's own
   const T=_DECK_DARK, cr=T.lift(C.cr);
   const [gen,setGen]=React.useState(0), refresh=()=>setGen(g=>g+1);
   const [tab,setTab]=React.useState('today'), [stack,setStack]=React.useState([]);
@@ -27,6 +28,7 @@ function TeamApp(){
   // restaurant the device holds unless it's already this build's copy of it (so a reload keeps progress, and a
   // new build with more written in replaces a stale one).
   React.useEffect(()=>{ try{ const q=new URLSearchParams(location.search), seed=q.get('seed'); if(!seed&&TeamSample.retire()) refresh(); if(seed){ if(!TeamLearn.me()||!TeamSample.current(seed)) TeamSample.load(seed); q.delete('seed'); const rest=q.toString(); history.replaceState(null,'',location.pathname+(rest?'?'+rest:'')); refresh(); } }catch(e){} },[]);
+  const brand=TeamBrand.apply(); // again after a seed may have just loaded a restaurant
   const me=TeamLearn.me(), set=!!me;
   const manager=me&&['manager','buyer'].includes(me.role);
   const tabs=TEAM_TABS.filter(t=>!t.manager||manager);
@@ -50,8 +52,10 @@ function TeamApp(){
     <div data-gen={gen} style={{position:'absolute',inset:0,display:'flex',flexDirection:'column',background:`radial-gradient(ellipse at 50% -10%, ${_alpha(cr,0.3)}, transparent 60%) ${T.bg}`,color:T.ink}}>
       {set&&<div style={{padding:'calc(env(safe-area-inset-top) + 12px) 16px 10px',display:'flex',alignItems:'center',gap:10,borderBottom:`1px solid ${T.line}`}}>
         {top?<div role="button" aria-label="Back" onClick={back} style={{width:34,height:34,borderRadius:17,border:`1px solid ${T.line}`,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer'}}><Icon n="back" sz={16} col={T.ink}/></div>
-          :<img src="/logo.png" alt="" style={{height:20,filter:'invert(1)'}} onError={e=>{ e.target.style.display='none'; }}/>}
-        <div style={{flex:1,minWidth:0,fontSize:15,fontWeight:700,fontFamily:C.P,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{TeamData.get().venue.name||'Your restaurant'}</div>
+          :brand&&brand.wordmark?null:<img src="/logo.png" alt="" style={{height:20,filter:'invert(1)'}} onError={e=>{ e.target.style.display='none'; }}/>}
+        {/* A restaurant with its own wordmark shows that in place of the name (it is the name). */}
+        {brand&&brand.wordmark?<div style={{flex:1,minWidth:0,display:'flex',alignItems:'center'}}><img data-testid="team-brand" src={TeamBrand.asset(brand.wordmark)} alt={TeamData.get().venue.name} style={{height:18,maxWidth:'100%',objectFit:'contain',objectPosition:'left'}}/></div>
+          :<div style={{flex:1,minWidth:0,fontSize:15,fontWeight:700,fontFamily:C.P,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{TeamData.get().venue.name||'Your restaurant'}</div>}
         {manager&&(forceConsole||size!=='phone')&&<div role="button" data-testid="team-to-console" onClick={()=>{ setPhoneView(false); setStack([]); }} style={{padding:'5px 10px',borderRadius:14,border:`1px solid ${T.line}`,fontSize:12,fontFamily:C.P,color:T.ink2,cursor:'pointer',whiteSpace:'nowrap'}}>Console</div>}
         {/* On a phone the person is their face alone, so the restaurant's name has the room; the switcher it opens names everyone, and Today greets them by name and role. */}
         <div role="button" data-testid="team-who" aria-label={`${me.name}, ${TeamLearn.ROLES[me.role].label}. Switch person`} onClick={()=>setSwitching(x=>!x)} style={{display:'flex',alignItems:'center',gap:8,padding:size==='phone'?2:'4px 10px 4px 4px',borderRadius:18,border:`1px solid ${T.line}`,fontSize:13,fontFamily:C.P,color:T.ink2,cursor:'pointer',flexShrink:0}}><TeamFace person={me} size={28}/>{size!=='phone'&&<>{me.name.split(' ')[0]} · {TeamLearn.ROLES[me.role].label}</>}</div>

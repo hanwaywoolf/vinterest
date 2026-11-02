@@ -1,5 +1,7 @@
 You are the wine trainer for {{venue}}. Some training questions on the staff cards failed a check before staff were asked them. Rewrite each one so it passes, testing a fact a server needs at the table, about the same wine and of the same kind (k).
 
+About the restaurant: {{about}}
+
 The checked facts about these wines:
 {{facts}}
 

@@ -23,7 +23,11 @@ const TeamData = {
   setVenue(fields){ const d=this.get(); d.venue={...d.venue,...fields}; this.save(d); },
   setSetting(k,v){ const d=this.get(); d.settings={...(d.settings||{}),[k]:v}; this.save(d); },
   isDemo(){ return (this.get().venue||{}).sample==='demo'; },
-  currency(){ try{ return Regional.current(); }catch(e){ return {sym:'£',code:'GBP'}; } },
+  // The restaurant's own currency when it has one (Social Corner prices in Canadian dollars wherever the
+  // phone is), else the device's.
+  currency(){ const c=(this.get().venue||{}).currency; if(c&&c.sym) return c; try{ return Regional.current(); }catch(e){ return {sym:'£',code:'GBP'}; } },
+  /* What the training is written for: the restaurant in its own words, for every prompt's {{about}}. */
+  about(){ const v=this.get().venue||{}; return v.about||[v.name,v.style,v.city].filter(Boolean).join(', ')||'A restaurant. Write in British English.'; },
 
   wines(){ return Object.values(this.get().wines).filter(w=>w.onList).sort((a,b)=>a.order-b.order); },
   dishes(){ return Object.values(this.get().dishes).filter(x=>x.onMenu).sort((a,b)=>a.order-b.order); },
@@ -176,7 +180,7 @@ const TeamData = {
     let done=0; onStep&&onStep(0,ids.length);
     for(let i=0;i<ids.length;i+=this.CARD_BATCH){
       const ws=ids.slice(i,i+this.CARD_BATCH).map(id=>this.wine(id)).filter(Boolean);
-      const prompt=tpl.replace(/\{\{venue\}\}/g,venue).replace('{{facts}}',ws.map(w=>this.facts(w)).join('\n'))
+      const prompt=tpl.replace(/\{\{venue\}\}/g,venue).replace('{{about}}',this.about()).replace('{{facts}}',ws.map(w=>this.facts(w)).join('\n'))
         .replace('{{list}}',this._listLines()).replace('{{menu}}',this._menuLines())
         .replace('{{wines}}',ws.map(w=>`${w.id} | ${this.label(w)} | ${w.type} | ${w.region}, ${w.country} | grapes: ${(w.grapes||[]).join(', ')||'unknown'} (${w.grapes_basis}) | ${[w.glass&&'glass '+w.glass,w.bottle&&'bottle '+w.bottle].filter(Boolean).join(', ')}`).join('\n'))
         .replace('{{example}}',this.short(ws[0]));
@@ -213,7 +217,7 @@ const TeamData = {
         const items=part.map(f=>{ const w=this.wine(f.wine), c=this.card(f.wine)||{};
           const suits=this.dishes().filter(x=>{ const p=this.pairing(x.id); return p&&[...(p.best||[]),p.glass].filter(Boolean).some(b=>b.id===w.id); }).map(x=>x.name);
           return `ID ${f.q.id}\nWINE ${this.label(w)} | ${w.type} | ${w.region}, ${w.country} | grapes: ${(w.grapes||[]).join(', ')||'unknown'} | ${[w.glass&&'glass '+w.glass,w.bottle&&'bottle '+w.bottle].filter(Boolean).join(', ')}\nCARD taste: ${c.taste||''} | style: body ${(c.style||{}).body}/5, acidity ${(c.style||{}).acid}/5, tannin ${(c.style||{}).tannin}/5, sweetness ${(c.style||{}).sweet}/5 | grape: ${c.grape||''} | place: ${c.place||''}\nDISHES IT SUITS ${suits.join('; ')||'none listed'}\nPROBLEM ${f.why}: ${f.note}\nQUESTION ${JSON.stringify(f.q)}`; }).join('\n\n');
-        const prompt=tpl.replace(/\{\{venue\}\}/g,venue).replace('{{facts}}',[...new Set(part.map(f=>f.wine))].map(id=>this.facts(this.wine(id))).join('\n'))
+        const prompt=tpl.replace(/\{\{venue\}\}/g,venue).replace('{{about}}',this.about()).replace('{{facts}}',[...new Set(part.map(f=>f.wine))].map(id=>this.facts(this.wine(id))).join('\n'))
           .replace('{{list}}',this._listLines()).replace('{{menu}}',this._menuLines()).replace('{{items}}',items);
         let j=null; try{ j=this._json(await window.claude.complete({purpose:'team_fix',messages:[{role:'user',content:prompt}]})); }catch(e){}
         const d=this.get();
@@ -249,7 +253,7 @@ const TeamData = {
     // The batches run at once (a 27-dish menu is three calls: 15 seconds together rather than 45 in a row).
     const batches=[]; for(let i=0;i<dishIds.length;i+=this.PAIR_BATCH) batches.push(dishIds.slice(i,i+this.PAIR_BATCH).map(id=>this.dish(id)).filter(Boolean));
     await Promise.all(batches.map(async xs=>{
-      const prompt=tpl.replace(/\{\{venue\}\}/g,venue).replace('{{list}}',list)
+      const prompt=tpl.replace(/\{\{venue\}\}/g,venue).replace('{{about}}',this.about()).replace('{{list}}',list)
         .replace('{{dishes}}',xs.map(x=>`${x.name} | ${x.desc} | main: ${x.main} | ${x.cook} | ${(x.flav||[]).join(', ')}`).join('\n'));
       const j=this._json(await window.claude.complete({purpose:'team_pairings',messages:[{role:'user',content:prompt}]}))||{};
       const d=this.get();
@@ -360,12 +364,19 @@ const TeamSample = {
   /* `which`: 'sample' (The Copper Pan, small, written by hand) or 'demo' (The Larkspur, 60 wines and 27
      dishes for the wine-show demo: data/team-demo.json once it has been written by a publish and
      exported, else just its list and menu, data/team-demo-list.json, for the training to be written). */
+  /* A seeded restaurant's file: its written training when that has been exported, else just its list
+     and menu for the training to be written. 'perse' is Social Corner, the first pilot (docs/business.md). */
+  _file(which){ return which==='demo'?_loadJSON('data/team-demo.json'):which==='perse'?_loadJSON('data/team-perse.json'):_loadJSON('data/team-sample.json'); },
+  _listFile(which){ return which==='demo'?_loadJSON('data/team-demo-list.json'):which==='perse'?_loadJSON('data/team-perse-list.json'):null; },
   load(which='sample'){
-    let s=which==='demo'?_loadJSON('data/team-demo.json'):_loadJSON('data/team-sample.json');
-    if(which==='demo'&&(!s||s.pending)) s={..._loadJSON('data/team-demo-list.json'),cards:{},pairings:{},staff:null};
+    let s=this._file(which);
+    if(!s||s.pending){ const l=this._listFile(which); if(l) s={...l,cards:{},pairings:{},staff:null}; }
     if(!s) return false;
+    // A pilot restaurant's own venue details (its description, currency and brand) come from its list file,
+    // which is where they're kept up to date, even once its written training has been exported.
+    const lv=(this._listFile(which)||{}).venue||{};
     const now=Date.now(), d=TeamData._empty();
-    d.venue={name:s.venue.name,created:now,sample:which,seeded:s.exported||null}; // seeded: which copy of the file this is, so a newer build reloads it
+    d.venue={...lv,...s.venue,name:s.venue.name,created:now,sample:which,seeded:s.exported||null}; // seeded: which copy of the file this is, so a newer build reloads it
     s.wines.forEach((w,i)=>{ d.wines[w.id]={...w,onList:true,order:i,addedAt:now-30*86400000}; });
     s.dishes.forEach((x,i)=>{ d.dishes[x.id]={...x,onMenu:true,order:i,addedAt:now}; });
     Object.values(s.cards).forEach(c=>{ d.cards[c.id]={...TeamData._cleanCard(c,d),at:now}; });
@@ -373,7 +384,8 @@ const TeamSample = {
     d.versions.push({kind:'list',at:now,added:Object.keys(d.wines),removed:[],changed:[]});
     TeamData.save(d);
     Store.remove(TeamLearn.KEY); TeamLearn.resetProgress(); if(typeof TeamSales!=='undefined') TeamSales.clear();
-    (s.staff||this.DEMO_STAFF).forEach(p=>TeamLearn.addPerson(p.name,p.role,p.photo||null));
+    // A real restaurant arrives with nobody on it: each person joins with their own name and role (TeamSetup).
+    (s.staff||(which==='perse'?[]:this.DEMO_STAFF)).forEach(p=>TeamLearn.addPerson(p.name,p.role,p.photo||null));
     if(which==='demo'&&Object.keys(d.cards).length) TeamDemo.seedProgress();
     return true;
   },
@@ -388,7 +400,7 @@ const TeamSample = {
   // The Larkspur's team (photos in team/faces/). The manager is first, so the demo opens as her.
   /* Whether the restaurant on the device is this seed as the build now carries it. */
   current(which){ const v=TeamData.get().venue||{}; if(v.sample!==which) return false;
-    const s=which==='demo'?_loadJSON('data/team-demo.json'):_loadJSON('data/team-sample.json'); return (v.seeded||null)===((s&&s.exported)||null); },
+    const s=this._file(which); return (v.seeded||null)===((s&&s.exported)||null); },
   /* The demo's prepared new arrivals (data/team-demo-arrivals.json, photos in team/labels/): two real
      bottles whose label reading, staff card, pairings and drinking window were written once through
      the Worker, so "Add a wine from its label" can run with no network and in seconds. Live reading
@@ -462,4 +474,13 @@ const TeamJobs = {
   dismiss(){ if(this._cur&&!this._cur.running) this._cur=null; this._emit(); },
 };
 Object.assign(window,{TeamDemo,TeamJobs});
-Object.assign(window,{TeamData,TeamSample});
+/* A restaurant's own look (venue.brand from its list file): its accent in place of Vinterest's crimson,
+   its wordmark in the header, a photo of the room on the join screen. apply() runs on every render of
+   the team app, so changing restaurant changes the look at once; with no brand it puts the crimson back. */
+const TeamBrand = {
+  _crimson:null,
+  get(){ return (TeamData.get().venue||{}).brand||null; },
+  apply(){ if(this._crimson==null) this._crimson=C.cr; const b=this.get(); C.cr=b&&b.accent?b.accent:this._crimson; return b; },
+  asset(p){ return p?'/team/'+String(p).replace(/^\/+/,''):''; },
+};
+Object.assign(window,{TeamData,TeamSample,TeamBrand});

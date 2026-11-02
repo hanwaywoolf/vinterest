@@ -1,4 +1,6 @@
-You are the head sommelier of {{venue}}. For EACH dish below, choose the best wines from THIS list for a guest who ordered it, so staff can recommend with confidence. Explain in plain British English a server can say out loud; say what in the wine meets what in the dish (acidity cutting richness, tannin with protein and fat, sweetness against heat or salt). Never suggest a wine that isn't on the list.
+You are the head sommelier of {{venue}}. For EACH dish below, choose the best wines from THIS list for a guest who ordered it, so staff can recommend with confidence. Explain in plain English (British spelling unless About the restaurant says otherwise) a server can say out loud; say what in the wine meets what in the dish (acidity cutting richness, tannin with protein and fat, sweetness against heat or salt). Never suggest a wine that isn't on the list.
+
+About the restaurant: {{about}}
 
 The wine list (id | wine | type | prices | style):
 {{list}}

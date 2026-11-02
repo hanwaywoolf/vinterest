@@ -145,7 +145,7 @@ const TeamVinny = {
   prompt(question,turns=[]){
     const tpl=_loadTextSync('prompts/team-vinny.txt'), {ws,ds,text}=this._lines(), about=this._about(question,ws,ds);
     const history=turns.slice(-this.TURNS).filter(t=>t.a).map(t=>`Earlier question: "${t.q}"\nYour answer: "${t.a}"`).join('\n');
-    return tpl.replace('{{venue}}',TeamData.get().venue.name||'the restaurant').replace('{{list}}',text)
+    return tpl.replace('{{venue}}',TeamData.get().venue.name||'the restaurant').replace('{{about}}',TeamData.about()).replace('{{list}}',text)
       .replace('{{cards}}',about.length?about.map(w=>this._cardText(w)).join('\n\n'):'(none named)')
       .replace('{{history}}',history?history+'\n\n':'').replace('{{question}}',String(question).slice(0,400));
   },
@@ -348,7 +348,7 @@ const TeamVinny = {
     const tpl=_loadTextSync('prompts/team-guest.txt'), {text}=this._lines();
     const yours=turns.filter(t=>t.who==='you').length, last=yours>=this.GUEST_TURNS;
     const script=turns.map(t=>`${t.who==='guest'?'GUEST':'SERVER'}: ${t.text}`).join('\n');
-    const content=tpl.replace('{{venue}}',TeamData.get().venue.name||'the restaurant').replace('{{list}}',text)
+    const content=tpl.replace('{{venue}}',TeamData.get().venue.name||'the restaurant').replace('{{about}}',TeamData.about()).replace('{{list}}',text)
       .replace('{{cards}}',sc.wines.map(id=>TeamData.wine(id)).filter(Boolean).map(w=>this._cardText(w)).join('\n\n')||'(none)')
       .replace('{{scenario}}',sc.guest).replace('{{key}}',sc.key.map(k=>`- ${k}`).join('\n'))
       .replace('{{transcript}}',script||'(the guest hasn\'t spoken yet)').replace('{{last}}',last?'This was the server\'s last reply: end the table now and mark it.':'');

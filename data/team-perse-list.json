@@ -1,0 +1,1609 @@
+{
+ "venue": {
+  "name": "Social Corner",
+  "city": "Vancouver",
+  "style": "Italian and Spanish, Michelin-recommended",
+  "about": "Social Corner (Per Se Social Corner, Per Se Hospitality Group) is a Michelin-recommended restaurant in Vancouver with two locations, Yaletown and Coal Harbour, sharing one menu. It brings the flavours of Italy and Spain together: tapas, fresh pasta, 800-degree wood-fired pizza, paellas, steaks, a caviar programme (bumps from $15) and a well-known burger, with a cocktail-led bar. The room is lively, social and warm, polished yet approachable: 'luxury with approachability'. Staff are in Canada: write in Canadian English, and give prices in Canadian dollars exactly as the list prints them (glasses are 5oz, some also 8oz).",
+  "currency": {
+   "sym": "$",
+   "code": "CAD"
+  },
+  "brand": {
+   "accent": "#A88963",
+   "wordmark": "brands/perse/wordmark-white.png",
+   "wordmarkDark": "brands/perse/wordmark-black.png",
+   "mark": "brands/perse/mark.png",
+   "badge": "brands/perse/michelin-white.png",
+   "photo": "brands/perse/bar.jpg",
+   "font": "Montserrat"
+  }
+ },
+ "wines": [
+  {
+   "id": "w-mionetto-prosecco-doc",
+   "section": "Sparkling",
+   "producer": "Mionetto",
+   "name": "Prosecco DOC",
+   "vintage": null,
+   "type": "sparkling",
+   "region": "Treviso, Veneto",
+   "country": "Italy",
+   "grapes": [
+    "Glera"
+   ],
+   "grapes_basis": "label",
+   "glass": "$15 (5oz)",
+   "bottle": "$69",
+   "other": "",
+   "bin": "1"
+  },
+  {
+   "id": "w-mionetto-prosecco-doc-rose",
+   "section": "Sparkling",
+   "producer": "Mionetto",
+   "name": "Prosecco DOC Rosé",
+   "vintage": null,
+   "type": "sparkling",
+   "region": "Veneto",
+   "country": "Italy",
+   "grapes": [
+    "Glera",
+    "Pinot Noir"
+   ],
+   "grapes_basis": "known",
+   "glass": "$15 (5oz)",
+   "bottle": "$69",
+   "other": "",
+   "bin": "2"
+  },
+  {
+   "id": "w-medici-ermete-lambrusco-reggiano",
+   "section": "Sparkling",
+   "producer": "Medici Ermete",
+   "name": "Lambrusco Reggiano",
+   "vintage": null,
+   "type": "sparkling",
+   "region": "Emilia-Romagna",
+   "country": "Italy",
+   "grapes": [
+    "Lambrusco"
+   ],
+   "grapes_basis": "label",
+   "glass": "$17 (5oz)",
+   "bottle": "$72",
+   "other": "",
+   "bin": "3"
+  },
+  {
+   "id": "w-veuve-clicquot-brut",
+   "section": "Sparkling",
+   "producer": "Veuve Clicquot",
+   "name": "Brut",
+   "vintage": null,
+   "type": "sparkling",
+   "region": "Champagne",
+   "country": "France",
+   "grapes": [
+    "Pinot Noir",
+    "Chardonnay",
+    "Pinot Meunier"
+   ],
+   "grapes_basis": "known",
+   "glass": "$29 (5oz)",
+   "bottle": "$175",
+   "other": "",
+   "bin": "4"
+  },
+  {
+   "id": "w-veuve-clicquot-rose",
+   "section": "Sparkling",
+   "producer": "Veuve Clicquot",
+   "name": "Rosé",
+   "vintage": null,
+   "type": "sparkling",
+   "region": "Champagne",
+   "country": "France",
+   "grapes": [
+    "Pinot Noir",
+    "Chardonnay",
+    "Pinot Meunier"
+   ],
+   "grapes_basis": "known",
+   "glass": "$39 (5oz)",
+   "bottle": "$185",
+   "other": "",
+   "bin": "5"
+  },
+  {
+   "id": "w-lanson-black-label-brut",
+   "section": "Sparkling",
+   "producer": "Lanson",
+   "name": "Black Label Brut",
+   "vintage": null,
+   "type": "sparkling",
+   "region": "Champagne",
+   "country": "France",
+   "grapes": [
+    "Pinot Noir",
+    "Chardonnay",
+    "Pinot Meunier"
+   ],
+   "grapes_basis": "known",
+   "glass": "",
+   "bottle": "$140",
+   "other": "",
+   "bin": "6"
+  },
+  {
+   "id": "w-avenue-rose",
+   "section": "Rosé",
+   "producer": "Avenue",
+   "name": "Rosé",
+   "vintage": 2025,
+   "type": "rosé",
+   "region": "",
+   "country": "France",
+   "grapes": [
+    "Syrah",
+    "Grenache"
+   ],
+   "grapes_basis": "label",
+   "glass": "$14 (5oz)",
+   "bottle": "$67",
+   "other": "8oz $23",
+   "bin": "7"
+  },
+  {
+   "id": "w-la-vieille-ferme-rose",
+   "section": "Rosé",
+   "producer": "La Vieille Ferme",
+   "name": "Rosé",
+   "vintage": 2025,
+   "type": "rosé",
+   "region": "",
+   "country": "France",
+   "grapes": [
+    "Grenache",
+    "Cinsault",
+    "Syrah"
+   ],
+   "grapes_basis": "typical",
+   "glass": "$16 (5oz)",
+   "bottle": "$75",
+   "other": "8oz $25",
+   "bin": "8"
+  },
+  {
+   "id": "w-il-poggione-lo-sbrancato-rosato",
+   "section": "Rosé",
+   "producer": "Il Poggione",
+   "name": "Lo Sbrancato Rosato",
+   "vintage": 2022,
+   "type": "rosé",
+   "region": "Tuscany",
+   "country": "Italy",
+   "grapes": [
+    "Sangiovese"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "$78",
+   "other": "",
+   "bin": "9"
+  },
+  {
+   "id": "w-monvin-pinot-grigio",
+   "section": "White",
+   "producer": "Monvin",
+   "name": "Pinot Grigio",
+   "vintage": null,
+   "type": "white",
+   "region": "",
+   "country": "Italy",
+   "grapes": [
+    "Pinot Grigio"
+   ],
+   "grapes_basis": "label",
+   "glass": "$15 (5oz)",
+   "bottle": "",
+   "other": "8oz $24",
+   "bin": "10"
+  },
+  {
+   "id": "w-black-swift-kurkjian-vineyard-riesling",
+   "section": "White",
+   "producer": "Black Swift",
+   "name": "Kurkjian Vineyard Riesling",
+   "vintage": 2023,
+   "type": "white",
+   "region": "Okanagan Valley, British Columbia",
+   "country": "Canada",
+   "grapes": [
+    "Riesling"
+   ],
+   "grapes_basis": "label",
+   "glass": "$14 (5oz)",
+   "bottle": "$67",
+   "other": "8oz $22",
+   "bin": "11"
+  },
+  {
+   "id": "w-mission-hill-family-estate-sauvignon-blanc",
+   "section": "White",
+   "producer": "Mission Hill Family Estate",
+   "name": "Sauvignon Blanc",
+   "vintage": 2024,
+   "type": "white",
+   "region": "Okanagan Valley, British Columbia",
+   "country": "Canada",
+   "grapes": [
+    "Sauvignon Blanc"
+   ],
+   "grapes_basis": "label",
+   "glass": "$16 (5oz)",
+   "bottle": "$78",
+   "other": "8oz $27",
+   "bin": "12"
+  },
+  {
+   "id": "w-chateau-ste-michelle-columbia-valley-chardonnay",
+   "section": "White",
+   "producer": "Chateau Ste. Michelle",
+   "name": "Columbia Valley Chardonnay",
+   "vintage": 2022,
+   "type": "white",
+   "region": "Columbia Valley, Washington",
+   "country": "USA",
+   "grapes": [
+    "Chardonnay"
+   ],
+   "grapes_basis": "label",
+   "glass": "$18 (5oz)",
+   "bottle": "$80",
+   "other": "8oz $32",
+   "bin": "13"
+  },
+  {
+   "id": "w-burrowing-owl-vineyards-pinot-gris",
+   "section": "White",
+   "producer": "Burrowing Owl Vineyards",
+   "name": "Pinot Gris",
+   "vintage": 2024,
+   "type": "white",
+   "region": "Okanagan Valley, British Columbia",
+   "country": "Canada",
+   "grapes": [
+    "Pinot Gris"
+   ],
+   "grapes_basis": "label",
+   "glass": "$18 (5oz)",
+   "bottle": "$80",
+   "other": "8oz $32",
+   "bin": "14"
+  },
+  {
+   "id": "w-tenuta-alzatura-cortili-montefalco-bianco",
+   "section": "White",
+   "producer": "Tenuta Alzatura",
+   "name": "Cortili Montefalco Bianco",
+   "vintage": 2023,
+   "type": "white",
+   "region": "Montefalco, Umbria",
+   "country": "Italy",
+   "grapes": [
+    "Grechetto",
+    "Trebbiano"
+   ],
+   "grapes_basis": "typical",
+   "glass": "$18 (5oz)",
+   "bottle": "$80",
+   "other": "8oz $32",
+   "bin": "15"
+  },
+  {
+   "id": "w-chateau-de-maligny-jean-durup-petit-chablis",
+   "section": "White",
+   "producer": "Chateau de Maligny \"Jean Durup\"",
+   "name": "Petit Chablis",
+   "vintage": 2023,
+   "type": "white",
+   "region": "Chablis, Burgundy",
+   "country": "France",
+   "grapes": [
+    "Chardonnay"
+   ],
+   "grapes_basis": "label",
+   "glass": "$22 (5oz)",
+   "bottle": "$115",
+   "other": "8oz $38",
+   "bin": "16"
+  },
+  {
+   "id": "w-santa-margherita-valdadige-pinot-grigio",
+   "section": "White",
+   "producer": "Santa Margherita",
+   "name": "Valdadige Pinot Grigio",
+   "vintage": 2024,
+   "type": "white",
+   "region": "Valdadige, Trentino-Alto Adige",
+   "country": "Italy",
+   "grapes": [
+    "Pinot Grigio"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "$70",
+   "other": "",
+   "bin": "17"
+  },
+  {
+   "id": "w-ogio-pinot-grigio",
+   "section": "White",
+   "producer": "Ogio",
+   "name": "Pinot Grigio",
+   "vintage": 2024,
+   "type": "white",
+   "region": "",
+   "country": "Italy",
+   "grapes": [
+    "Pinot Grigio"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "$60",
+   "other": "",
+   "bin": "18"
+  },
+  {
+   "id": "w-le-vieux-pin-ava",
+   "section": "White",
+   "producer": "Le Vieux Pin",
+   "name": "Ava",
+   "vintage": 2024,
+   "type": "white",
+   "region": "Okanagan Valley, British Columbia",
+   "country": "Canada",
+   "grapes": [
+    "Viognier"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "$95",
+   "other": "",
+   "bin": "19"
+  },
+  {
+   "id": "w-pascal-jolivet-sauvignon-blanc",
+   "section": "White",
+   "producer": "Pascal Jolivet",
+   "name": "Sauvignon Blanc",
+   "vintage": 2023,
+   "type": "white",
+   "region": "Loire Valley",
+   "country": "France",
+   "grapes": [
+    "Sauvignon Blanc"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "$90",
+   "other": "",
+   "bin": "20"
+  },
+  {
+   "id": "w-pascal-jolivet-sancerre",
+   "section": "White",
+   "producer": "Pascal Jolivet",
+   "name": "Sancerre",
+   "vintage": 2023,
+   "type": "white",
+   "region": "Sancerre, Loire Valley",
+   "country": "France",
+   "grapes": [
+    "Sauvignon Blanc"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "$122",
+   "other": "",
+   "bin": "21"
+  },
+  {
+   "id": "w-martin-s-lane-simes-vineyard-riesling",
+   "section": "White",
+   "producer": "Martin's Lane",
+   "name": "Simes Vineyard Riesling",
+   "vintage": 2023,
+   "type": "white",
+   "region": "Okanagan Valley, British Columbia",
+   "country": "Canada",
+   "grapes": [
+    "Riesling"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "$122",
+   "other": "",
+   "bin": "22"
+  },
+  {
+   "id": "w-monvin-cabernet-sauvignon",
+   "section": "Red",
+   "producer": "Monvin",
+   "name": "Cabernet Sauvignon",
+   "vintage": null,
+   "type": "red",
+   "region": "",
+   "country": "Italy",
+   "grapes": [
+    "Cabernet Sauvignon"
+   ],
+   "grapes_basis": "label",
+   "glass": "$15 (5oz)",
+   "bottle": "",
+   "other": "8oz $24",
+   "bin": "23"
+  },
+  {
+   "id": "w-the-hatch-ross-o-blend",
+   "section": "Red",
+   "producer": "The Hatch",
+   "name": "Ross O Blend",
+   "vintage": 2021,
+   "type": "red",
+   "region": "Okanagan Valley, British Columbia",
+   "country": "Canada",
+   "grapes": [],
+   "grapes_basis": "typical",
+   "glass": "$15 (5oz)",
+   "bottle": "$76",
+   "other": "8oz $26",
+   "bin": "24"
+  },
+  {
+   "id": "w-salentein-portillo-pinot-noir",
+   "section": "Red",
+   "producer": "Salentein",
+   "name": "Portillo Pinot Noir",
+   "vintage": 2024,
+   "type": "red",
+   "region": "Uco Valley, Mendoza",
+   "country": "Argentina",
+   "grapes": [
+    "Pinot Noir"
+   ],
+   "grapes_basis": "label",
+   "glass": "$15 (5oz)",
+   "bottle": "$76",
+   "other": "8oz $26",
+   "bin": "25"
+  },
+  {
+   "id": "w-road-13-cabernet-merlot",
+   "section": "Red",
+   "producer": "Road 13",
+   "name": "Cabernet Merlot",
+   "vintage": 2022,
+   "type": "red",
+   "region": "Okanagan Valley, British Columbia",
+   "country": "Canada",
+   "grapes": [
+    "Cabernet Sauvignon",
+    "Merlot"
+   ],
+   "grapes_basis": "label",
+   "glass": "$16 (5oz)",
+   "bottle": "$78",
+   "other": "8oz $27",
+   "bin": "26"
+  },
+  {
+   "id": "w-batasiolo-langhe-nebbiolo",
+   "section": "Red",
+   "producer": "Batasiolo",
+   "name": "Langhe Nebbiolo",
+   "vintage": 2023,
+   "type": "red",
+   "region": "Langhe, Piedmont",
+   "country": "Italy",
+   "grapes": [
+    "Nebbiolo"
+   ],
+   "grapes_basis": "label",
+   "glass": "$17 (5oz)",
+   "bottle": "$80",
+   "other": "8oz $29",
+   "bin": "27"
+  },
+  {
+   "id": "w-santa-carolina-reserva-de-familia-cabernet-sauvignon",
+   "section": "Red",
+   "producer": "Santa Carolina",
+   "name": "Reserva de Familia Cabernet Sauvignon",
+   "vintage": 2021,
+   "type": "red",
+   "region": "",
+   "country": "Chile",
+   "grapes": [
+    "Cabernet Sauvignon"
+   ],
+   "grapes_basis": "label",
+   "glass": "$18 (5oz)",
+   "bottle": "$84",
+   "other": "8oz $32",
+   "bin": "28"
+  },
+  {
+   "id": "w-la-stella-fortissimo",
+   "section": "Red",
+   "producer": "La Stella",
+   "name": "Fortissimo",
+   "vintage": 2021,
+   "type": "red",
+   "region": "Okanagan Valley, British Columbia",
+   "country": "Canada",
+   "grapes": [
+    "Cabernet Sauvignon"
+   ],
+   "grapes_basis": "label",
+   "glass": "$19 (5oz)",
+   "bottle": "$95",
+   "other": "8oz $33",
+   "bin": "29"
+  },
+  {
+   "id": "w-fontanafredda-barolo-serralunga-d-alba",
+   "section": "Red",
+   "producer": "Fontanafredda",
+   "name": "Barolo Serralunga d'Alba",
+   "vintage": 2020,
+   "type": "red",
+   "region": "Barolo, Piedmont",
+   "country": "Italy",
+   "grapes": [
+    "Nebbiolo"
+   ],
+   "grapes_basis": "label",
+   "glass": "$24 (5oz)",
+   "bottle": "$148",
+   "other": "8oz $35",
+   "bin": "30"
+  },
+  {
+   "id": "w-faustino-crianza-art-collection",
+   "section": "Red",
+   "producer": "Faustino",
+   "name": "Crianza \"Art Collection\"",
+   "vintage": 2022,
+   "type": "red",
+   "region": "Rioja",
+   "country": "Spain",
+   "grapes": [
+    "Tempranillo"
+   ],
+   "grapes_basis": "typical",
+   "glass": "",
+   "bottle": "$78",
+   "other": "",
+   "bin": "31"
+  },
+  {
+   "id": "w-lopez-de-haro-reserva",
+   "section": "Red",
+   "producer": "Lopez de Haro",
+   "name": "Reserva",
+   "vintage": 2019,
+   "type": "red",
+   "region": "Rioja",
+   "country": "Spain",
+   "grapes": [
+    "Tempranillo"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "$85",
+   "other": "",
+   "bin": "32"
+  },
+  {
+   "id": "w-chateau-rousselle-cotes-de-bourg",
+   "section": "Red",
+   "producer": "Chateau Rousselle",
+   "name": "Côtes de Bourg",
+   "vintage": 2019,
+   "type": "red",
+   "region": "Côtes de Bourg, Bordeaux",
+   "country": "France",
+   "grapes": [
+    "Merlot",
+    "Cabernet Sauvignon",
+    "Malbec"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "$90",
+   "other": "",
+   "bin": "33"
+  },
+  {
+   "id": "w-hito-ribera-del-duero",
+   "section": "Red",
+   "producer": "Hito",
+   "name": "Ribera del Duero",
+   "vintage": 2023,
+   "type": "red",
+   "region": "Ribera del Duero",
+   "country": "Spain",
+   "grapes": [
+    "Tempranillo"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "$90",
+   "other": "",
+   "bin": "34"
+  },
+  {
+   "id": "w-la-stella-espressivo",
+   "section": "Red",
+   "producer": "La Stella",
+   "name": "Espressivo",
+   "vintage": 2022,
+   "type": "red",
+   "region": "Okanagan Valley, British Columbia",
+   "country": "Canada",
+   "grapes": [
+    "Cabernet Franc",
+    "Cabernet Sauvignon",
+    "Merlot"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "$130",
+   "other": "",
+   "bin": "35"
+  },
+  {
+   "id": "w-il-sasso-mauro-vannucci-carmignano",
+   "section": "Red",
+   "producer": "Il Sasso, Mauro Vannucci",
+   "name": "Carmignano",
+   "vintage": 2022,
+   "type": "red",
+   "region": "Carmignano, Tuscany",
+   "country": "Italy",
+   "grapes": [
+    "Sangiovese",
+    "Cabernet Sauvignon"
+   ],
+   "grapes_basis": "typical",
+   "glass": "",
+   "bottle": "$165",
+   "other": "",
+   "bin": "36"
+  },
+  {
+   "id": "w-giuseppe-campagnola-amarone-della-valpolicella-classico",
+   "section": "Red",
+   "producer": "Giuseppe Campagnola",
+   "name": "Amarone della Valpolicella Classico",
+   "vintage": 2020,
+   "type": "red",
+   "region": "Valpolicella, Veneto",
+   "country": "Italy",
+   "grapes": [
+    "Corvina",
+    "Rondinella",
+    "Molinara"
+   ],
+   "grapes_basis": "known",
+   "glass": "",
+   "bottle": "$165",
+   "other": "",
+   "bin": "37"
+  },
+  {
+   "id": "w-vanessa-syrah",
+   "section": "Red",
+   "producer": "Vanessa",
+   "name": "Syrah",
+   "vintage": 2020,
+   "type": "red",
+   "region": "Similkameen Valley, British Columbia",
+   "country": "Canada",
+   "grapes": [
+    "Syrah"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "$178",
+   "other": "",
+   "bin": "38"
+  },
+  {
+   "id": "w-altesino-brunello-di-montalcino",
+   "section": "Red",
+   "producer": "Altesino",
+   "name": "Brunello di Montalcino",
+   "vintage": 2020,
+   "type": "red",
+   "region": "Montalcino, Tuscany",
+   "country": "Italy",
+   "grapes": [
+    "Sangiovese"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "$178",
+   "other": "",
+   "bin": "39"
+  },
+  {
+   "id": "w-antinori-tignanello",
+   "section": "Red",
+   "producer": "Antinori",
+   "name": "Tignanello",
+   "vintage": 2021,
+   "type": "red",
+   "region": "Tuscany",
+   "country": "Italy",
+   "grapes": [
+    "Sangiovese",
+    "Cabernet Sauvignon",
+    "Cabernet Franc"
+   ],
+   "grapes_basis": "known",
+   "glass": "",
+   "bottle": "$350",
+   "other": "",
+   "bin": "40"
+  },
+  {
+   "id": "w-mural-de-favaios-moscatel",
+   "section": "Dessert wine",
+   "producer": "Mural de Favaios",
+   "name": "Moscatel",
+   "vintage": null,
+   "type": "dessert",
+   "region": "Douro",
+   "country": "Portugal",
+   "grapes": [
+    "Muscat"
+   ],
+   "grapes_basis": "label",
+   "glass": "$12 (2oz)",
+   "bottle": "",
+   "other": "",
+   "bin": "41"
+  }
+ ],
+ "dishes": [
+  {
+   "id": "d-fresh-oysters",
+   "section": "Tapas",
+   "name": "Fresh Oysters",
+   "desc": "Red wine vinegar mignonette, piccante and horseradish",
+   "price": "MP",
+   "main": "oysters",
+   "cook": "raw",
+   "flav": [
+    "briny",
+    "acidic"
+   ],
+   "diet": []
+  },
+  {
+   "id": "d-jamon-iberico-de-bellota",
+   "section": "Tapas",
+   "name": "Jamón Ibérico de Bellota",
+   "desc": "48-month 100% Spanish pata negra cured ham, served with pan con tomate",
+   "price": "$39",
+   "main": "cured ham",
+   "cook": "cured",
+   "flav": [
+    "salty",
+    "nutty",
+    "rich"
+   ],
+   "diet": []
+  },
+  {
+   "id": "d-iberico-meatballs",
+   "section": "Tapas",
+   "name": "Ibérico Meatballs",
+   "desc": "Spanish-inspired meatballs, San Marzano marinara and Parmigiano Reggiano",
+   "price": "$28",
+   "main": "pork",
+   "cook": "braised",
+   "flav": [
+    "savoury",
+    "tomato"
+   ],
+   "diet": []
+  },
+  {
+   "id": "d-patatas-bravas",
+   "section": "Tapas",
+   "name": "Patatas Bravas",
+   "desc": "Double-cooked Spanish-style potatoes, spicy marinara, smoked paprika and vegan aioli",
+   "price": "$19",
+   "main": "potatoes",
+   "cook": "fried",
+   "flav": [
+    "spicy",
+    "smoky"
+   ],
+   "diet": [
+    "vegan",
+    "vegetarian"
+   ]
+  },
+  {
+   "id": "d-hummus",
+   "section": "Tapas",
+   "name": "Hummus",
+   "desc": "Garbanzo beans, extra virgin olive oil, tahini, fresh lemon and garlic confit, with house forno flatbread",
+   "price": "$22",
+   "main": "chickpeas",
+   "cook": "raw",
+   "flav": [
+    "earthy",
+    "lemony"
+   ],
+   "diet": [
+    "vegan",
+    "vegetarian"
+   ]
+  },
+  {
+   "id": "d-beets-e-burrata",
+   "section": "Tapas",
+   "name": "Beets e Burrata",
+   "desc": "Murgella burrata di Puglia, local beets, radicchio, arugula, grilled ciabatta and Italian sherry vinaigrette",
+   "price": "$36",
+   "main": "burrata",
+   "cook": "raw",
+   "flav": [
+    "creamy",
+    "earthy",
+    "tangy"
+   ],
+   "diet": [
+    "vegetarian"
+   ]
+  },
+  {
+   "id": "d-wagyu-beef-carpaccio",
+   "section": "Tapas",
+   "name": "Wagyu Beef Carpaccio",
+   "desc": "Tajima Wagyu, Parmigiano-infused EVOO, smoked aioli, arugula, balsamico di Modena and grilled oregano flatbread",
+   "price": "$29",
+   "main": "beef",
+   "cook": "raw",
+   "flav": [
+    "rich",
+    "savoury",
+    "peppery"
+   ],
+   "diet": []
+  },
+  {
+   "id": "d-boga-boga-cioppino",
+   "section": "Tapas",
+   "name": "Boga Boga (Cioppino)",
+   "desc": "Mussels, clams, tiger prawns, squid and scallops in roasted garlic, San Marzano tomato and white wine sauce, with sourdough",
+   "price": "$39",
+   "main": "shellfish",
+   "cook": "braised",
+   "flav": [
+    "briny",
+    "tomato",
+    "garlicky"
+   ],
+   "diet": []
+  },
+  {
+   "id": "d-mediterranean-olives",
+   "section": "Tapas",
+   "name": "Mediterranean Olives",
+   "desc": "Warm house-marinated mixed olives, citrus and herbs",
+   "price": "$12",
+   "main": "olives",
+   "cook": "marinated",
+   "flav": [
+    "salty",
+    "herby"
+   ],
+   "diet": [
+    "vegan",
+    "vegetarian"
+   ]
+  },
+  {
+   "id": "d-charcuteria-formaggi",
+   "section": "Tapas",
+   "name": "Charcutería & Formaggi",
+   "desc": "Premium cured meats, imported cheeses, candied walnuts and gherkins, with 72-hour fermented flatbread. Serves 2–3",
+   "price": "$44",
+   "main": "cured meats",
+   "cook": "cured",
+   "flav": [
+    "salty",
+    "rich"
+   ],
+   "diet": []
+  },
+  {
+   "id": "d-calamari-di-mamma",
+   "section": "Tapas",
+   "name": "Calamari di Mamma",
+   "desc": "Lightly battered, flash-fried baby squid, sliced jalapeño, house tartar and chipotle aioli",
+   "price": "$27",
+   "main": "squid",
+   "cook": "fried",
+   "flav": [
+    "crisp",
+    "spicy"
+   ],
+   "diet": []
+  },
+  {
+   "id": "d-oyster-duo",
+   "section": "Tapas",
+   "name": "Oyster Duo",
+   "desc": "San Marzano, horseradish, shallots and sturgeon caviar",
+   "price": "$23",
+   "main": "oysters",
+   "cook": "raw",
+   "flav": [
+    "briny",
+    "rich"
+   ],
+   "diet": []
+  },
+  {
+   "id": "d-charred-chorizo",
+   "section": "Tapas",
+   "name": "Charred Chorizo",
+   "desc": "Grilled Ibérico pata negra chorizo, kaffir lime mint yogurt and 72-hour fermented flatbread",
+   "price": "$26",
+   "main": "chorizo",
+   "cook": "grilled",
+   "flav": [
+    "smoky",
+    "spicy",
+    "rich"
+   ],
+   "diet": []
+  },
+  {
+   "id": "d-truffle-fries",
+   "section": "Tapas",
+   "name": "Truffle Fries",
+   "desc": "Parmigiano Reggiano and truffle aioli",
+   "price": "$15",
+   "main": "potatoes",
+   "cook": "fried",
+   "flav": [
+    "earthy",
+    "salty"
+   ],
+   "diet": [
+    "vegetarian"
+   ]
+  },
+  {
+   "id": "d-garlic-flatbread",
+   "section": "Tapas",
+   "name": "Garlic Flatbread",
+   "desc": "72-hour fermented dough baked in an open-flame brick forno with garlic confit",
+   "price": "$12",
+   "main": "bread",
+   "cook": "baked",
+   "flav": [
+    "garlicky"
+   ],
+   "diet": [
+    "vegan",
+    "vegetarian"
+   ]
+  },
+  {
+   "id": "d-lobster-crab-ravioli",
+   "section": "Pasta",
+   "name": "Lobster & Crab Ravioli",
+   "desc": "Fresh stuffed raviolo, roasted red peppers, chipotle and coconut milk reduction (tapas size $24)",
+   "price": "$47",
+   "main": "lobster",
+   "cook": "boiled",
+   "flav": [
+    "rich",
+    "sweet",
+    "smoky"
+   ],
+   "diet": []
+  },
+  {
+   "id": "d-gnocchi-al-pomodoro",
+   "section": "Pasta",
+   "name": "Gnocchi al Pomodoro",
+   "desc": "Fresh gnocchi, San Marzano marinara, Parmigiano Reggiano, basil and Sicilian extra virgin olive oil",
+   "price": "$36",
+   "main": "gnocchi",
+   "cook": "boiled",
+   "flav": [
+    "tomato",
+    "herby"
+   ],
+   "diet": [
+    "vegetarian"
+   ]
+  },
+  {
+   "id": "d-linguine-ai-frutti-di-mare",
+   "section": "Pasta",
+   "name": "Linguine ai Frutti di Mare",
+   "desc": "Mussels, clams, baby squid, tiger prawns, scallops, roasted garlic, cherry tomatoes and house-made pasta",
+   "price": "$49",
+   "main": "shellfish",
+   "cook": "sautéed",
+   "flav": [
+    "briny",
+    "garlicky"
+   ],
+   "diet": []
+  },
+  {
+   "id": "d-rigatone-bolognese",
+   "section": "Pasta",
+   "name": "Rigatone Bolognese",
+   "desc": "Nonna's recipe with San Marzano, premium ground beef, brasato, house-made pasta and Grana Padano",
+   "price": "$43",
+   "main": "beef",
+   "cook": "braised",
+   "flav": [
+    "rich",
+    "savoury",
+    "tomato"
+   ],
+   "diet": []
+  },
+  {
+   "id": "d-medaglioni-al-tartufo-e-funghi",
+   "section": "Pasta",
+   "name": "Medaglioni al Tartufo e Funghi",
+   "desc": "Fresh pasta stuffed with mushrooms, ricotta and mozzarella, black truffle crema and Parmigiano Reggiano",
+   "price": "$44",
+   "main": "mushrooms",
+   "cook": "boiled",
+   "flav": [
+    "earthy",
+    "creamy",
+    "rich"
+   ],
+   "diet": [
+    "vegetarian"
+   ]
+  },
+  {
+   "id": "d-goat-cheese-salad",
+   "section": "Greens + Soup",
+   "name": "Goat Cheese Salad",
+   "desc": "Crispy goat cheese, cherry tomatoes, candied walnuts and heritage greens in pear truffle vinaigrette",
+   "price": "$26",
+   "main": "goat cheese",
+   "cook": "fried",
+   "flav": [
+    "tangy",
+    "creamy"
+   ],
+   "diet": [
+    "vegetarian"
+   ]
+  },
+  {
+   "id": "d-social-corner-caesar",
+   "section": "Greens + Soup",
+   "name": "Social Corner Caesar",
+   "desc": "Baby romaine, house Caesar dressing, brioche Parmigiano croutons and Parmigiano Reggiano",
+   "price": "$24",
+   "main": "romaine",
+   "cook": "raw",
+   "flav": [
+    "salty",
+    "creamy"
+   ],
+   "diet": []
+  },
+  {
+   "id": "d-insalata-verde-di-casa",
+   "section": "Greens + Soup",
+   "name": "Insalata Verde di Casa",
+   "desc": "Heritage greens and kale, cherry tomatoes, carrots, cucumber, crispy cipollini and balsamic vinaigrette",
+   "price": "$20",
+   "main": "greens",
+   "cook": "raw",
+   "flav": [
+    "fresh",
+    "tangy"
+   ],
+   "diet": [
+    "vegetarian"
+   ]
+  },
+  {
+   "id": "d-crema-di-pomodori",
+   "section": "Greens + Soup",
+   "name": "Crema di Pomodori",
+   "desc": "San Marzano tomatoes, crema, mascarpone and Sicilian extra virgin olive oil, with 72-hour fermented flatbread",
+   "price": "$21",
+   "main": "tomato",
+   "cook": "simmered",
+   "flav": [
+    "tomato",
+    "creamy"
+   ],
+   "diet": [
+    "vegetarian"
+   ]
+  },
+  {
+   "id": "d-burratina-pizza",
+   "section": "Pizza",
+   "name": "Burratina Pizza",
+   "desc": "San Marzano, burrata di Puglia, Calabrian chili, soppressata, Ezzo pepperoni, caramelized pear, fior di latte and drop peppers",
+   "price": "$42",
+   "main": "burrata",
+   "cook": "wood-fired",
+   "flav": [
+    "spicy",
+    "creamy",
+    "sweet"
+   ],
+   "diet": []
+  },
+  {
+   "id": "d-criminale-pizza",
+   "section": "Pizza",
+   "name": "Criminale Pizza",
+   "desc": "San Marzano, fior di latte, prosciutto cotto, soppressata piccante, applewood smoked bacon and red onions",
+   "price": "$35",
+   "main": "cured meats",
+   "cook": "wood-fired",
+   "flav": [
+    "spicy",
+    "smoky",
+    "salty"
+   ],
+   "diet": []
+  },
+  {
+   "id": "d-black-truffle-pizza",
+   "section": "Pizza",
+   "name": "Black Truffle Pizza",
+   "desc": "Bianco sauce, black truffle paste, Modena onions, roasted mushrooms, Kalamata olives, fior di latte, fontina and Parmigiano",
+   "price": "$38",
+   "main": "mushrooms",
+   "cook": "wood-fired",
+   "flav": [
+    "earthy",
+    "rich"
+   ],
+   "diet": [
+    "vegetarian"
+   ]
+  },
+  {
+   "id": "d-tartufina-pizza",
+   "section": "Pizza",
+   "name": "Tartufina Pizza",
+   "desc": "Bianco sauce, roasted pears, gorgonzola, candied walnuts, fior di latte and truffle-infused EVOO",
+   "price": "$32",
+   "main": "gorgonzola",
+   "cook": "wood-fired",
+   "flav": [
+    "sweet",
+    "salty",
+    "earthy"
+   ],
+   "diet": [
+    "vegetarian"
+   ]
+  },
+  {
+   "id": "d-carbonara-pizza",
+   "section": "Pizza",
+   "name": "Carbonara Pizza",
+   "desc": "Bianco sauce, guanciale riserva, fontina, free-range eggs, fior di latte and Pecorino Romano",
+   "price": "$33",
+   "main": "guanciale",
+   "cook": "wood-fired",
+   "flav": [
+    "rich",
+    "salty",
+    "creamy"
+   ],
+   "diet": []
+  },
+  {
+   "id": "d-margherita-pizza",
+   "section": "Pizza",
+   "name": "Margherita Pizza",
+   "desc": "San Marzano tomato sauce, basil, fior di latte, Pecorino Romano and cold-pressed extra virgin olive oil",
+   "price": "$27",
+   "main": "mozzarella",
+   "cook": "wood-fired",
+   "flav": [
+    "tomato",
+    "herby"
+   ],
+   "diet": [
+    "vegetarian"
+   ]
+  },
+  {
+   "id": "d-forza-italia-pizza",
+   "section": "Pizza",
+   "name": "Forza Italia Pizza",
+   "desc": "San Marzano, fior di latte, arugula, 24-month Prosciutto di Parma, Parmigiano Reggiano and EVOO",
+   "price": "$35",
+   "main": "prosciutto",
+   "cook": "wood-fired",
+   "flav": [
+    "salty",
+    "peppery"
+   ],
+   "diet": []
+  },
+  {
+   "id": "d-capricciosa-pizza",
+   "section": "Pizza",
+   "name": "Capricciosa Pizza",
+   "desc": "San Marzano, fior di latte, prosciutto cotto, artichoke hearts, oregano, black olives and capers",
+   "price": "$33",
+   "main": "ham",
+   "cook": "wood-fired",
+   "flav": [
+    "salty",
+    "herby",
+    "tangy"
+   ],
+   "diet": []
+  },
+  {
+   "id": "d-funghi-pizza",
+   "section": "Pizza",
+   "name": "Funghi Pizza",
+   "desc": "Bianco sauce, roasted organic mushrooms, fior di latte and Pecorino Romano",
+   "price": "$32",
+   "main": "mushrooms",
+   "cook": "wood-fired",
+   "flav": [
+    "earthy"
+   ],
+   "diet": [
+    "vegetarian"
+   ]
+  },
+  {
+   "id": "d-spicy-vodka-stracciatella-pizza",
+   "section": "Pizza",
+   "name": "Spicy Vodka & Stracciatella Pizza",
+   "desc": "Spicy vodka sauce, fior di latte, stracciatella, peperoncino and Parmigiano Reggiano",
+   "price": "$33",
+   "main": "stracciatella",
+   "cook": "wood-fired",
+   "flav": [
+    "spicy",
+    "creamy"
+   ],
+   "diet": [
+    "vegetarian"
+   ]
+  },
+  {
+   "id": "d-marinara-pizza",
+   "section": "Pizza",
+   "name": "Marinara Pizza",
+   "desc": "San Marzano, confit garlic, herb-infused olive oil and crispy garlic",
+   "price": "$20",
+   "main": "tomato",
+   "cook": "wood-fired",
+   "flav": [
+    "tomato",
+    "garlicky"
+   ],
+   "diet": [
+    "vegan",
+    "vegetarian"
+   ]
+  },
+  {
+   "id": "d-pepperoni-e-ricotta-pizza",
+   "section": "Pizza",
+   "name": "Pepperoni e Ricotta Pizza",
+   "desc": "Bianco sauce, pepperoni Italiano, dehydrated ricotta, fior di latte and chili-infused honey",
+   "price": "$35",
+   "main": "pepperoni",
+   "cook": "wood-fired",
+   "flav": [
+    "spicy",
+    "sweet",
+    "salty"
+   ],
+   "diet": []
+  },
+  {
+   "id": "d-chicken-paella",
+   "section": "Entrées",
+   "name": "Chicken Paella",
+   "desc": "Slow-braised, flash-fried half chicken, saffron-lemon marinade, bomba rice, pata negra chorizo, saffron aioli. Serves two",
+   "price": "$69",
+   "main": "chicken",
+   "cook": "baked",
+   "flav": [
+    "saffron",
+    "savoury",
+    "smoky"
+   ],
+   "diet": []
+  },
+  {
+   "id": "d-the-burger",
+   "section": "Entrées",
+   "name": "The Burger",
+   "desc": "8 oz hand-ground organic Alberta beef, brioche, fontina, truffle aioli, Syrah caramelized onions and crispy shallots",
+   "price": "$39",
+   "main": "beef",
+   "cook": "grilled",
+   "flav": [
+    "rich",
+    "savoury",
+    "sweet"
+   ],
+   "diet": []
+  },
+  {
+   "id": "d-seafood-paella",
+   "section": "Entrées",
+   "name": "Seafood Paella",
+   "desc": "Clams, mussels, tiger prawns, squid, scallops, Spanish bomba rice, saffron aioli and charred lemon. Serves two",
+   "price": "$82",
+   "main": "shellfish",
+   "cook": "baked",
+   "flav": [
+    "saffron",
+    "briny"
+   ],
+   "diet": []
+  },
+  {
+   "id": "d-fire-charred-lamb-chops",
+   "section": "Entrées",
+   "name": "Fire-Charred Lamb Chops",
+   "desc": "House-marinated New Zealand lamb rack, saffron risotto and Sicilian herbs (two chops as a tapa, $27, with kaffir lime mint yogurt)",
+   "price": "$59",
+   "main": "lamb",
+   "cook": "grilled",
+   "flav": [
+    "herby",
+    "charred",
+    "rich"
+   ],
+   "diet": []
+  },
+  {
+   "id": "d-bone-in-new-york-paella",
+   "section": "Entrées",
+   "name": "Bone-In New York Paella",
+   "desc": "22 oz Certified Angus striploin on toasted bomba rice with brasato, artichokes, mushrooms and saffron aioli. Serves 2–3",
+   "price": "$159",
+   "main": "beef",
+   "cook": "grilled",
+   "flav": [
+    "rich",
+    "charred",
+    "saffron"
+   ],
+   "diet": []
+  },
+  {
+   "id": "d-half-chicken-frites",
+   "section": "Entrées",
+   "name": "Half Chicken & Frites",
+   "desc": "Saffron-lemon half chicken, braised and flash-fried, brava marinara, saffron aioli and hand-cut fries",
+   "price": "$48",
+   "main": "chicken",
+   "cook": "fried",
+   "flav": [
+    "saffron",
+    "spicy"
+   ],
+   "diet": []
+  },
+  {
+   "id": "d-branzino-frito",
+   "section": "Entrées",
+   "name": "Branzino Frito",
+   "desc": "Whole Spanish-style lemon-herb branzino, charred lemon, broccolini and risotto aglio olio e peperoncino. Serves two",
+   "price": "$69",
+   "main": "sea bass",
+   "cook": "fried",
+   "flav": [
+    "lemony",
+    "herby"
+   ],
+   "diet": []
+  },
+  {
+   "id": "d-22-oz-bone-in-ny-striploin",
+   "section": "Entrées",
+   "name": "22 oz Bone-In NY Striploin",
+   "desc": "Certified Angus striploin with hand-cut fries; saffron aioli, peppercorn sauce or chimichurri",
+   "price": "$139",
+   "main": "beef",
+   "cook": "grilled",
+   "flav": [
+    "rich",
+    "charred"
+   ],
+   "diet": []
+  },
+  {
+   "id": "d-risotto-burro-e-sablefish",
+   "section": "Entrées",
+   "name": "Risotto Burro e Sablefish",
+   "desc": "Smoked honey-glazed sablefish on Arborio risotto, grilled radicchio, balsamico di Modena and Parmigiano",
+   "price": "$52",
+   "main": "sablefish",
+   "cook": "glazed",
+   "flav": [
+    "rich",
+    "sweet",
+    "smoky"
+   ],
+   "diet": []
+  },
+  {
+   "id": "d-10-oz-wagyu-striploin",
+   "section": "Entrées",
+   "name": "10 oz Wagyu Striploin",
+   "desc": "Australian Tajima Wagyu with hand-cut fries; saffron aioli, peppercorn sauce or chimichurri",
+   "price": "$89",
+   "main": "beef",
+   "cook": "grilled",
+   "flav": [
+    "rich",
+    "charred"
+   ],
+   "diet": []
+  },
+  {
+   "id": "d-8-oz-filet",
+   "section": "Entrées",
+   "name": "8 oz Filet",
+   "desc": "Alberta AAA tenderloin with hand-cut fries; saffron aioli, peppercorn sauce or chimichurri",
+   "price": "$78",
+   "main": "beef",
+   "cook": "grilled",
+   "flav": [
+    "lean",
+    "savoury"
+   ],
+   "diet": []
+  },
+  {
+   "id": "d-sturgeon-caviar-bump",
+   "section": "Caviar",
+   "name": "Sturgeon Caviar Bump",
+   "desc": "A 5 g bump of Baerii ($15) or Oscietra ($20) sturgeon caviar, eaten from the back of the hand; tableside service 30 g and 50 g",
+   "price": "$15",
+   "main": "caviar",
+   "cook": "raw",
+   "flav": [
+    "briny",
+    "buttery"
+   ],
+   "diet": []
+  },
+  {
+   "id": "d-tiramisu",
+   "section": "Dessert",
+   "name": "Tiramisu",
+   "desc": "Mascarpone, Sheringham espresso liqueur, savoiardi",
+   "price": "$17",
+   "main": "mascarpone",
+   "cook": "set",
+   "flav": [
+    "coffee",
+    "creamy",
+    "sweet"
+   ],
+   "diet": [
+    "vegetarian"
+   ]
+  },
+  {
+   "id": "d-croissant-bread-pudding",
+   "section": "Dessert",
+   "name": "Croissant Bread Pudding",
+   "desc": "Vanilla bean custard, berry coulis and gelato (Yaletown only)",
+   "price": "$14",
+   "main": "bread pudding",
+   "cook": "baked",
+   "flav": [
+    "sweet",
+    "vanilla"
+   ],
+   "diet": [
+    "vegetarian"
+   ]
+  },
+  {
+   "id": "d-cherry-pistachio-mousse",
+   "section": "Dessert",
+   "name": "Cherry Pistachio Mousse",
+   "desc": "Cherry mousse, pistachio sponge, Kirsch cream, sour cherries, dark chocolate crémeux and amarena gelato (Yaletown only)",
+   "price": "$18",
+   "main": "cherry",
+   "cook": "set",
+   "flav": [
+    "sweet",
+    "tart",
+    "chocolate"
+   ],
+   "diet": [
+    "vegetarian"
+   ]
+  },
+  {
+   "id": "d-panna-cotta",
+   "section": "Dessert",
+   "name": "Panna Cotta",
+   "desc": "Red berry compote, raspberry moss sponge and chocolate tuile (Yaletown only)",
+   "price": "$17",
+   "main": "cream",
+   "cook": "set",
+   "flav": [
+    "sweet",
+    "berry"
+   ],
+   "diet": [
+    "vegetarian"
+   ]
+  },
+  {
+   "id": "d-affogato",
+   "section": "Dessert",
+   "name": "Affogato",
+   "desc": "Vanilla gelato drowned in a Ciclo espresso shot",
+   "price": "$14",
+   "main": "gelato",
+   "cook": "raw",
+   "flav": [
+    "coffee",
+    "sweet"
+   ],
+   "diet": [
+    "vegetarian"
+   ]
+  },
+  {
+   "id": "d-pizza-nutella",
+   "section": "Dessert",
+   "name": "Pizza Nutella",
+   "desc": "Nutella and banana with gelato and toasted almonds",
+   "price": "$25",
+   "main": "chocolate",
+   "cook": "wood-fired",
+   "flav": [
+    "sweet",
+    "chocolate",
+    "nutty"
+   ],
+   "diet": [
+    "vegetarian"
+   ]
+  }
+ ]
+}

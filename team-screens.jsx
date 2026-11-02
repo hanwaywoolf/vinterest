@@ -55,8 +55,26 @@ function TeamRing({pct,col,size=88}){ const T=useTheme(), r=size/2-7, c=2*Math.P
 
 /* First run: the restaurant's name and who's setting it up. */
 function TeamSetup({onDone}){ const T=useTheme(), cr=T.lift(C.cr);
-  const [venue,setVenue]=React.useState(''), [name,setName]=React.useState('');
+  const [venue,setVenue]=React.useState(''), [name,setName]=React.useState(''), [role,setRole]=React.useState('server');
   const field={width:'100%',padding:'12px 14px',borderRadius:12,border:`1px solid ${T.line}`,background:T.soft,color:T.ink,fontFamily:C.P,fontSize:16,outline:'none'};
+  // A restaurant that's already on this device with nobody on it (a pilot loaded by its link) asks each
+  // person to join it with their name and role, under the restaurant's own look.
+  const here=TeamData.get().venue||{}, brand=TeamBrand.get();
+  if(here.name&&TeamData.wines().length){
+    const join=()=>{ if(!name.trim()) return; const id=TeamLearn.addPerson(name.trim(),role); TeamLearn.setMe(id); onDone(); };
+    return <div data-testid="team-join" style={{padding:'calc(env(safe-area-inset-top) + 20px) 20px 24px',maxWidth:520,margin:'0 auto'}}>
+      {brand&&brand.photo&&<div style={{height:150,borderRadius:16,margin:'0 0 18px',background:`center/cover url(${TeamBrand.asset(brand.photo)})`,position:'relative',overflow:'hidden'}}><div style={{position:'absolute',inset:0,background:'linear-gradient(180deg,rgba(0,0,0,0.15),rgba(0,0,0,0.6))'}}/>
+        {brand.wordmark&&<img src={TeamBrand.asset(brand.wordmark)} alt={here.name} style={{position:'absolute',left:18,right:18,bottom:16,width:'calc(100% - 36px)',maxWidth:320}}/>}</div>}
+      <div style={{fontSize:13,fontWeight:700,color:cr,fontFamily:C.P,letterSpacing:'0.1em',textTransform:'uppercase'}}>Staff training</div>
+      {_tH(T,`Join the ${here.name} team.`,`${TeamData.wines().length} wines and ${TeamData.dishes().length} dishes from your own list and menu. Learn what to say about each, what goes with what, and keep it fresh in a few minutes a day.`)}
+      <div style={{display:'flex',flexDirection:'column',gap:10,marginTop:14}}>
+        <input aria-label="Your name" placeholder="Your name" value={name} onChange={e=>setName(e.target.value)} style={field}/>
+        <div role="radiogroup" aria-label="Your role" style={{display:'flex',flexWrap:'wrap',gap:8}}>
+          {Object.entries(TeamLearn.ROLES).map(([k,r])=><div key={k} role="radio" aria-checked={role===k} data-testid={`team-role-${k}`} onClick={()=>setRole(k)} style={{padding:'8px 14px',borderRadius:18,border:`1px solid ${role===k?cr:T.line}`,background:role===k?_alpha(cr,0.16):'transparent',color:T.ink,fontSize:14,fontFamily:C.P,cursor:'pointer'}}>{r.label}</div>)}
+        </div>
+        <Btn primary full onClick={join}>Join</Btn>
+      </div>
+    </div>; }
   const go=sample=>{ if(!sample&&(!venue.trim()||!name.trim())) return;
     if(sample) TeamSample.load(sample); else { TeamData.setVenue({name:venue.trim()}); TeamLearn.addPerson(name.trim(),'manager'); }
     onDone(); };
