@@ -72,6 +72,14 @@ test('a device holding an older Social Corner takes the new one, with or without
   expect(await page.evaluate(() => TeamLearn.people().length)).toBe(7);
 });
 
+test('The Social Corner opens from the setup screen, for a phone whose link lost ?seed=social', async ({ context, page }) => {
+  await stubNetwork(context);
+  await page.goto(`${BASE}/team/`);
+  await page.getByTestId('team-load-social').click();
+  await expect(page.getByTestId('team-venue-logo')).toBeVisible();
+  expect(await page.evaluate(() => [TeamLearn.me().name, TeamLearn.people().length, TeamSales.get().rows.length > 1000])).toEqual(['Elena Ruiz', 7, true]);
+});
+
 test('The Social Corner cocktails: cards, their own part of readiness, drilled, and on the dishes they suit', async ({ context, page }) => {
   await stubNetwork(context);
   await page.goto(`${BASE}/team/?seed=social`);
@@ -121,12 +129,14 @@ test('The Social Corner cocktails: cards, their own part of readiness, drilled, 
   await expect(page.getByTestId('team-list-switch')).toHaveCount(0);
 });
 
-test('the setup screen offers The Larkspur only, a device left on The Copper Pan goes back to it, and Change restaurant returns there', async ({ context, page }) => {
+test('the setup screen offers The Social Corner and The Larkspur, a device left on The Copper Pan goes back to it, and Change restaurant returns there', async ({ context, page }) => {
   await openSample(context, page);
   await page.goto(`${BASE}/team/`); // no seed: the Copper Pan is retired
   await expect(page.getByTestId('team-load-demo')).toBeVisible();
   await expect(page.getByText('Look around with a sample restaurant')).toHaveCount(0);
   await expect(page.getByTestId('team-load-demo')).toContainText(/Open The Larkspur: 30 wines, 27 dishes, a team of \w+/);
+  await expect(page.getByTestId('team-load-social')).toContainText('Open The Social Corner');
+  await expect(page.getByTestId('team-load-social')).toContainText('41 wines, 20 cocktails, 62 dishes, a team of 7');
   await page.getByTestId('team-load-demo').click();
   await expect(page.locator('#root')).toContainText('The Larkspur');
   await page.reload(); // The Larkspur stays put

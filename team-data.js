@@ -428,6 +428,9 @@ const TeamSample = {
   demoLine(){ const s=_loadJSON('data/team-demo-list.json')||{}, d=_loadJSON('data/team-demo.json')||{}, n=k=>(s[k]||[]).length;
     const staff=((d.staff&&d.staff.length)?d.staff:this.DEMO_STAFF).length;
     return `${n('wines')} wines, ${n('dishes')} dishes, a team of ${['','one','two','three','four','five','six','seven','eight','nine','ten'][staff]||staff}`; },
+  /* The Social Corner's size in words for its button on the setup screen. */
+  socialLine(){ const s=_loadJSON('data/team-social-list.json')||{}, n=k=>(s[k]||[]).length;
+    return `Vancouver · ${n('wines')} wines, ${n('cocktails')} cocktails, ${n('dishes')} dishes, a team of ${n('staff')}`; },
   /* The Copper Pan is no longer offered (the setup screen has only The Larkspur); it stays for the tests,
      which open it with ?seed=sample. A device left on it without asking goes back to the setup screen. */
   retire(){ const v=TeamData.get().venue||{}; if(v.sample!=='sample') return false;

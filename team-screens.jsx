@@ -88,6 +88,12 @@ function TeamSetup({onDone}){ const T=useTheme(), cr=T.lift(C.cr);
       <input aria-label="Your name" placeholder="Your name" value={name} onChange={e=>setName(e.target.value)} style={field}/>
       <Btn primary full onClick={()=>go(false)}>Set up my restaurant</Btn>
       <div style={{textAlign:'center',fontSize:14,color:T.mid,fontFamily:C.P,margin:'6px 0'}}>or</div>
+      {/* The Social Corner, the first real restaurant's install, first: a phone opening plain /team/ (a link that lost
+          its ?seed=social) can still get to it. */}
+      <div data-testid="team-load-social" role="button" onClick={()=>go('social')} style={{display:'flex',alignItems:'center',gap:12,padding:'12px 14px',borderRadius:14,border:`1px solid ${T.line}`,background:T.soft,cursor:'pointer'}}>
+        <img src="brand/social-corner/mark.png" alt="" style={{width:36,height:36,borderRadius:18,flexShrink:0}} onError={e=>{ e.target.style.display='none'; }}/>
+        <div style={{flex:1,minWidth:0}}><div style={{fontSize:15,fontWeight:700,color:T.ink,fontFamily:C.P}}>Open The Social Corner</div><div style={{fontSize:13,color:T.mid,fontFamily:C.P}}>{TeamSample.socialLine()}</div></div>
+        <Icon n="chevron" sz={12} col={T.mid}/></div>
       <div data-testid="team-load-demo"><Btn full onClick={()=>go('demo')}>Open The Larkspur: {TeamSample.demoLine()}</Btn></div>
     </div>
   </div>; }
