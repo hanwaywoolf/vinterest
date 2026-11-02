@@ -141,7 +141,7 @@
         <div class="vitems" id="vitems" role="tablist">
           <button class="vitem" role="tab" aria-selected="true" data-shots="ask"><span class="vbar"><i></i></span><h3>Ask anything</h3><p>Which glass with the olives? Is the Barolo ready? Vinny answers from your list, menu and prices, in a line they can say at the table.</p></button>
           <button class="vitem" role="tab" aria-selected="false" data-shots="test drill"><span class="vbar"><i></i></span><h3>A test on what they need</h3><p>Vinny sees what's fading and what's new, and sets ten questions on exactly that. Or they ask: "test me on the reds under £50".</p></button>
-          <button class="vitem" role="tab" aria-selected="false" data-shots="guest mark"><span class="vbar"><i></i></span><h3>A guest at the table</h3><p>Vinny plays a diner with a budget, a taste or a wrong idea. They answer in their own words; Vinny tells them how it landed.</p></button>
+          <button class="vitem" role="tab" aria-selected="false" data-shots="guest mark"><span class="vbar"><i></i></span><h3>A guest at the table</h3><p>Vinny plays a diner with a budget, a taste or a wrong idea. They answer in their own words, with choices or hints until they don't need them, and Vinny tells them how it landed.</p></button>
         </div>
       </div>
       <div class="vphone"><div class="phone"><div class="scr"><div class="vstage" id="vstage">
@@ -263,7 +263,7 @@ const SCENES = {
   ready: { cap: '<b>Who\'s ready tonight.</b> One figure per person, against the standard you set for their role.', steps: [{ frames: side, pan: { img: 'dash', x: SB, w: SW - SB, h: 3273, from: 0, to: 0, ms: 2500 } }, { pan: { img: 'dash', x: SB, w: SW - SB, h: 3273, from: 0, to: .2, ms: 6000 }, keep: true }] },
   team: { cap: '<b>Each person.</b> Who\'s slipping, who\'s overdue, and what they\'ve been checked on without warning.', steps: [{ pan: { img: 'team', x: 0, w: SW, h: 900, from: 0, to: 0, ms: 6000 } }] },
   wines: { cap: '<b>Your list, live.</b> Every wine with who knows it, what it sold, and its drinking window.', steps: [{ frames: side, pan: { img: 'wines', x: SB, w: SW - SB, h: 2322, from: 0, to: 1, ms: 9000 } }] },
-  cards: { cap: '<b>A card per wine.</b> What to say to a guest, in words you can edit.', steps: [{ frames: side, pan: { img: 'wines', x: SB, w: SW - SB, h: 2322, from: 0, to: 0, ms: 1800 }, tap: { x: 400, y: 173 } }, { frames: [{ img: 'card-bg', x: 0, w: SW, h: SH }], pan: { img: 'card', x: 840, w: 600, h: 1818, from: 0, to: 1, ms: 8000 } }] },
+  cards: { cap: '<b>A card per wine.</b> What to say to a guest, in words you can edit.', steps: [{ frames: side, pan: { img: 'wines', x: SB, w: SW - SB, h: 2322, from: 0, to: 0, ms: 1800 }, tap: { x: 400, y: 173 } }, { frames: [{ img: 'card-bg', x: 0, w: SW, h: SH }], pan: { img: 'card', x: 840, w: 600, h: 1861, from: 0, to: 1, ms: 8000 } }] },
   menu: { cap: '<b>Your menu, paired.</b> The best wine for every dish, and the one to steer guests away from.', steps: [{ frames: side, pan: { img: 'menu', x: SB, w: SW - SB, h: 2682, from: 0, to: .35, ms: 4500 } }, { frames: side, pan: { img: 'menu', x: SB, w: SW - SB, h: 2682, from: 0, to: 0, ms: 1200 }, tap: { x: 390, y: 173 } }, { frames: [{ img: 'dish-bg', x: 0, w: SW, h: SH }], pan: { img: 'dish', x: 840, w: 600, h: 900, from: 0, to: 0, ms: 5000 } }] },
   sales: { cap: '<b>The till.</b> What sells, who sells it, and which wines are worth a push.', steps: [{ frames: side, pan: { img: 'dash', x: SB, w: SW - SB, h: 3273, from: .5, to: .5, ms: 1500 } }, { pan: { img: 'dash', x: SB, w: SW - SB, h: 3273, from: .5, to: 1, ms: 8000 }, keep: true }] },
 };
@@ -295,7 +295,7 @@ if (pstage) {
     { pan: { img: 'q-picked', x: 0, y: 0, w: PW, h: PH, from: 0, to: 0, ms: 900 }, tap: { x: 195, y: 574 } },
     { pan: { img: 'q-result', x: 0, y: 0, w: PW, h: PH, from: 0, to: 0, ms: 4000 } },
     { pan: { img: 'wines-top', x: 0, y: 0, w: PW, h: PH, from: 0, to: 0, ms: 1600 }, tap: { x: 195, y: 200 } },
-    { over: head('head-card'), pan: { img: 'card', x: 0, y: PHEAD, w: PW, h: 2170, from: 0, to: 1, ms: 7000 } },
+    { over: head('head-card'), pan: { img: 'card', x: 0, y: PHEAD, w: PW, h: 2213, from: 0, to: 1, ms: 7000 } },
   ];
   (async function loop() { while (true) { const ok = await ph.play(PHONE); if (!ok) return; await sleep(800); if (reduced) return; } })();
 }
