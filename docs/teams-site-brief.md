@@ -6,16 +6,15 @@ and the money; the sections marked *Martin* are the ones his answers feed first.
 
 ## Who we're selling to
 
-The owner or general manager of an independent restaurant signs. The head sommelier or whoever runs
-wine sets it up. Servers and bartenders use it. Restaurant groups are a second buyer with the same
-product and a bigger conversation; a page for them, not a different pitch. *Martin: who has to want
-it first at a group like Cactus Club, and what the titles are in Ontario and the UK.*
+The ideal customers, after talking with Martin (2 November 2026): higher-end restaurants, wine bars,
+restaurant groups and wineries. Pubs and small independents aren't excluded, but the site's customer
+types, examples and pricing tiers aren't built around them. The owner or general manager signs; the
+head sommelier or whoever runs wine sets it up; servers and bartenders use it. Groups are the same
+product with a bigger conversation, on their own page.
 
-The range is wide: a pub with a dozen wines and no expectation of wine talk, a neighbourhood
-restaurant with 30 to 80 wines, fine dining with a sommelier team. The rigour scales with the venue
-(the console already sets the minimum per role), and so should the pitch: a pub is sold "your bar
-staff can say one true sentence about every wine", fine dining "every server to the sommelier's
-standard, checked". Pricing tiers follow the same axis (below).
+Rigour scales by role, not by venue: the console sets a standard for each role (a bartender's, a
+server's, a sommelier's), and the copy talks about those standards. "Bar" means a customer type or a
+place on the site, never a measure: no "raise the bar" or "meet the bar".
 
 Pilot markets: London and Toronto/Ontario, with groups in Ontario and a winery connection
 (Château des Charmes). So: pounds and dollars both, "till" and "POS" both, Square and Lightspeed
@@ -107,8 +106,8 @@ the first restaurants. Data strictness is implied for every size and never sold 
    see who's ready.
 6. The manager's view: the live console demo in full (readiness, slipping, new on the list, the
    till's slow movers).
-7. Built for your kind of room: pub, restaurant, fine dining, group, winery, each one line and a
-   link.
+7. Built for your kind of room: restaurant, fine dining, wine bar, group, winery, each one line and
+   a link.
 8. Fair questions (objections).
 9. Try it on your list.
 
