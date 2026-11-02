@@ -116,17 +116,22 @@ function TeamToday({pid,open}){ const T=useTheme(), cr=T.lift(C.cr);
 /* The drill: one question at a time, how sure they are, then what's right and why. */
 function TeamDrill({pid,only,part,given,intro,back,open}){ const T=useTheme(), cr=T.lift(C.cr);
   // given: questions chosen elsewhere (Vinny's test, team-vinny.js), with intro {title, why} over the first.
-  const [qs]=React.useState(()=>given&&given.length?given:only?TeamLearn.wineQs(only).filter(q=>TeamLearn.ROLES[TeamLearn.person(pid).role].kinds.includes(q.k)):TeamLearn.drill(pid,undefined,part||null));
+  // Every drill deals its questions afresh, so a question seen before comes back in a new order.
+  const [qs]=React.useState(()=>{ const raw=given&&given.length?given:only?TeamLearn.wineQs(only).filter(q=>TeamLearn.ROLES[TeamLearn.person(pid).role].kinds.includes(q.k)):TeamLearn.drill(pid,undefined,part||null);
+    const nonce=Date.now().toString(36); return raw.map((q,i)=>TeamLearn.deal(q,nonce+i)); });
   // Where they stood as the drill began, so the summary can say what moved.
   const [before]=React.useState(()=>{ const r=TeamLearn.readiness(pid); const items={};
     qs.forEach(q=>{ const id=q.wine||q.dish; if(id&&!items[id]) items[id]=TeamLearn.progress(pid,id,{dish:!q.wine}); }); return {pct:r?r.pct:0,items}; });
   const [i,setI]=React.useState(0), [ans,setAns]=React.useState(null), [picks,setPicks]=React.useState([]), [sure,setSure]=React.useState('think');
+  // Each question (and the summary after the last) opens at its top: the previous one may have been scrolled to reach its answers.
+  const rootRef=React.useRef(null);
+  React.useLayoutEffect(()=>{ const el=rootRef.current&&rootRef.current.closest('[data-scroll]'); if(el&&i>0) el.scrollTop=0; },[i]);
   const [res,setRes]=React.useState(null), [busy,setBusy]=React.useState(false), [tally,setTally]=React.useState({right:0,of:0});
   const q=qs[i];
   if(!qs.length) return <div>{_tH(T,'Nothing to drill yet','Your training appears once the wine list has staff cards.')}<Btn full onClick={back}>Back</Btn></div>;
   if(!q){ const r=TeamLearn.note(pid), rise=r.pct-before.pct;
     const rows=Object.entries(before.items).map(([id,was])=>{ const dish=!qs.some(x=>x.wine===id), now=TeamLearn.progress(pid,id,{dish}), name=dish?(TeamData.dish(id)||{}).name:TeamData.short(TeamData.wine(id)||{}); return {id,name,was,now,dish}; });
-    return <div data-testid="drill-done">{_tH(T,`${tally.right} of ${tally.of} right`,'Each answer now has its own review date: the ones you missed come back soonest.')}
+    return <div ref={rootRef} data-testid="drill-done">{_tH(T,`${tally.right} of ${tally.of} right`,'Each answer now has its own review date: the ones you missed come back soonest.')}
       <Card>
         <div style={{display:'flex',gap:14,alignItems:'center'}}><TeamRing pct={r.pct} col={_tState[r.state].col} size={72}/>
           <div><div data-testid="drill-readiness" style={{fontSize:15,fontWeight:700,color:_tState[r.state].col,fontFamily:C.P}}>{_tState[r.state].label}</div>
@@ -149,16 +154,19 @@ function TeamDrill({pid,only,part,given,intro,back,open}){ const T=useTheme(), c
   const next=()=>{ setI(i+1); setAns(null); setPicks([]); setRes(null); setSure('think'); };
   const kindLabel=TeamLearn.KIND_LABEL[q.k];
   const opt=(label,k,{picked,right,wrong,onClick})=><div key={k} role="button" aria-pressed={picked} data-testid="drill-opt" onClick={onClick} style={{padding:'12px 14px',borderRadius:12,border:`1.5px solid ${right?'#5FD48F':wrong?'#F28B7D':picked?cr:T.line}`,background:picked?T.soft:'transparent',color:T.ink,fontSize:15,fontFamily:C.P,cursor:res?'default':'pointer',lineHeight:1.35}}>{label}</div>;
-  return <div data-testid="team-drill">
+  return <div ref={rootRef} data-testid="team-drill">
     {intro&&i===0&&!res&&<div data-testid="drill-intro" style={{display:'flex',gap:10,alignItems:'flex-start',marginBottom:14}}><TeamVinnyMark size={28}/><div><div style={{fontSize:15,fontWeight:700,color:T.ink,fontFamily:C.P}}>{intro.title}</div><div style={{fontSize:13,color:T.mid,fontFamily:C.P,lineHeight:1.45,marginTop:2}}>{intro.why}</div></div></div>}
     <div style={{display:'flex',gap:4,marginBottom:14}}>{qs.map((_,k)=><div key={k} style={{flex:1,height:4,borderRadius:2,background:k<i?cr:k===i?T.ink:T.line}}/>)}</div>
     <div style={{fontSize:12,fontWeight:700,color:w?_tTypeCol(T,w.type):T.mid,fontFamily:C.P,letterSpacing:'0.08em',textTransform:'uppercase'}}>{kindLabel}{w&&names?` · ${TeamData.short(w)}`:w?` · ${w.section||w.type}`:''}</div>
     <div data-testid="drill-q" style={{fontSize:19,fontWeight:700,color:T.ink,fontFamily:C.P,lineHeight:1.35,margin:'6px 0 14px'}}>{q.q}</div>
     {!multi&&<div style={{display:'flex',flexDirection:'column',gap:8}}>{q.opts.map((o,k)=>opt(o,k,{picked:ans===k,right:res&&k===q.a,wrong:res&&ans===k&&k!==q.a,onClick:()=>!res&&setAns(k)}))}</div>}
     {multi&&<>
-      <div data-testid="drill-choose" style={{fontSize:13,color:T.mid,fontFamily:C.P,marginBottom:8}}>Choose {ch.n}{picks.length?` · ${picks.length} picked`:''}</div>
-      <div style={{display:'flex',flexDirection:'column',gap:8}}>{ch.opts.map((o,k)=>{ const picked=picks.includes(k), isRight=ch.right.includes(k);
-        return opt(o,k,{picked,right:res&&isRight,wrong:res&&picked&&!isRight,onClick:()=>{ if(res) return; setPicks(p=>picked?p.filter(x=>x!==k):p.length<ch.n?[...p,k]:p); }}); })}</div>
+      {(ch.groups||[{label:null,from:0,to:ch.opts.length,n:ch.n}]).map((g,gi)=>{ const inG=picks.filter(k=>k>=g.from&&k<g.to);
+        return <div key={gi} data-testid="drill-group" style={{marginTop:gi?18:0}}>
+          <div data-testid="drill-choose" style={{fontSize:13,color:T.mid,fontFamily:C.P,marginBottom:8}}>{g.label?<b style={{color:T.ink2,fontWeight:700}}>{g.label}</b>:null}{g.label?' · ':''}Choose {g.n}{inG.length?` · ${inG.length} picked`:''}</div>
+          <div style={{display:'flex',flexDirection:'column',gap:8}}>{ch.opts.slice(g.from,g.to).map((o,j)=>{ const k=g.from+j, picked=picks.includes(k), isRight=ch.right.includes(k);
+            // One pick in a group of one swaps; otherwise picks stop at the group's count.
+            return opt(o,k,{picked,right:res&&isRight,wrong:res&&picked&&!isRight,onClick:()=>{ if(res) return; setPicks(p=>picked?p.filter(x=>x!==k):g.n===1?[...p.filter(x=>x<g.from||x>=g.to),k]:inG.length<g.n?[...p,k]:p); }}); })}</div></div>; })}
     </>}
     {!res&&<>
       <div style={{fontSize:13,color:T.mid,fontFamily:C.P,margin:'14px 0 6px'}}>How sure are you?</div>
@@ -206,6 +214,8 @@ function TeamWine({id,pid,open,manage}){ const T=useTheme(), w=TeamData.wine(id)
   return <div data-testid="team-wine">
     <div style={{fontSize:12,fontWeight:700,color:col,fontFamily:C.P,letterSpacing:'0.08em',textTransform:'uppercase'}}>{w.section||w.type}</div>
     {_tH(T,TeamData.short(w),<span style={{display:'inline-flex',alignItems:'center',gap:6}}><span>{w.vintage||'NV'}</span><span>·</span><Flag wine={w} size={14}/><span>{[w.region,w.country].filter(Boolean).join(' · ')}</span></span>)}
+    {c&&c.say&&<div data-testid="team-say" role="button" onClick={()=>{ TeamVoice.unlock(); TeamVoice.speak(c.say); }} style={{display:'inline-flex',alignItems:'center',gap:8,margin:'-4px 0 12px',padding:'6px 12px',borderRadius:14,border:`1px solid ${T.line}`,cursor:'pointer'}}>
+      <span style={{fontSize:14}}>🔊</span><span style={{fontSize:13,color:T.mid,fontFamily:C.P}}>Say it:</span><span style={{fontSize:14,fontWeight:700,color:T.ink,fontFamily:C.P}}>{c.say}</span></div>}
     <div style={{display:'flex',gap:6,flexWrap:'wrap',marginBottom:10}}>{w.glass&&_tPill(T,'glass',`Glass ${w.glass}`,col)}{w.bottle&&_tPill(T,'bottle',`Bottle ${w.bottle}`,col)}{w.other&&_tPill(T,'other',w.other,col)}{(w.grapes||[]).map(g=><span key={g}>{_tPill(T,'grape',g,col)}</span>)}</div>
     {c&&(()=>{ const st=TeamLearn.standing(pid,id); if(!st||!st.total) return null; const scol=st.state==='known'?T.green:st.state==='fading'?T.amber:st.state==='learning'?col:T.mid;
       const word=st.state==='known'?'You know this wine':st.state==='fading'?'Fading: a few answers are due':st.state==='learning'?`Learning: ${st.known} of ${st.total} answers held`:'Not started yet';
@@ -407,19 +417,3 @@ function TeamPeople({open,onChanged}){ const T=useTheme(), cr=T.lift(C.cr);
   </div>; }
 
 Object.assign(window,{TeamFace,TeamRing,TeamSetup,TeamToday,TeamDrill,TeamWines,TeamWine,TeamMenu,TeamDish,TeamUpload,TeamPeople,TeamJobChip,TeamKpiStrip,useTeamJob});
-
-/* Where a scroll area stands for each screen it shows (`place`, a path such as "wines/wine:w3"): a new
-   place opens at the top; going back to a place that leads to this one (a prefix of it) returns to
-   where it was left, and forgets the deeper ones, so a wine opened again later starts at its top. */
-function useScrollPlace(place){
-  const el=React.useRef(null), saved=React.useRef({}), cur=React.useRef(place);
-  const on=React.useRef(()=>{ if(el.current) saved.current[cur.current]=el.current.scrollTop; });
-  // A callback ref, since the scroll area can mount after the first render (the console shows first on a laptop).
-  const ref=React.useCallback(node=>{ if(el.current) el.current.removeEventListener('scroll',on.current); el.current=node; if(node) node.addEventListener('scroll',on.current,{passive:true}); },[]);
-  React.useLayoutEffect(()=>{ const was=cur.current; if(was===place) return; cur.current=place; if(!el.current) return;
-    const back=was.startsWith(place+'/')||(was.startsWith(place)&&place.endsWith('/'));
-    Object.keys(saved.current).forEach(k=>{ if(k!==place&&k.startsWith(place)) delete saved.current[k]; });
-    el.current.scrollTop=back?(saved.current[place]||0):0; },[place]);
-  return ref;
-}
-

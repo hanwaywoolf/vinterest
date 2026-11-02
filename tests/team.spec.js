@@ -537,12 +537,14 @@ test('Ask Vinny answers from the list and menu, and opens the wines it names', a
   const errors = await asMarco(context, page, { claudeRequests: reqs, claudeText: (b) => {
     if (b.purpose !== 'team_vinny') return '';
     const tag = (b.messages[0].content.match(/(W\d+) Bründlmayer/) || [])[1];
-    return JSON.stringify({ answer: 'The Grüner by the glass at £11: peppery and fresh, and it loves the salt.', wines: [tag], dishes: [] });
+    return JSON.stringify({ answer: `The Grüner by the glass (${tag}) at £11: peppery and fresh, and it loves the salt (D1) .`, wines: [tag], dishes: ['D1'] });
   } });
   await page.getByTestId('team-tab-vinny').click();
   await page.getByTestId('vinny-input').fill('What goes with the olives by the glass?');
   await page.getByLabel('Ask', { exact: true }).click();
   await expect(page.getByTestId('vinny-answer')).toContainText('Grüner by the glass');
+  // the list's tags never reach the server, with or without their brackets, and leave no empty brackets behind
+  await expect(page.getByTestId('vinny-answer')).toHaveText('The Grüner by the glass at £11: peppery and fresh, and it loves the salt.');
   const prompt = reqs.find((r) => r.purpose === 'team_vinny').messages[0].content;
   expect(prompt).toContain('Gordal olives'); // the menu is in it
   expect(prompt).toMatch(/Bründlmayer[^\n]*say "/); // with the card of the wine the dish pairs with
@@ -571,25 +573,346 @@ test('a guest at the table: Vinny opens, the server answers, and the table is ma
   expect(errors).toEqual([]);
 });
 
-// One scroll area holds every screen: a wine opened from far down the list starts at its top, Back
-// returns to the place in the list, and another tab opens at its top too.
-test('a new screen opens at its top, and Back returns to where the list was', async ({ context, page }) => {
-  await page.setViewportSize({ width: 390, height: 844 });
-  await stubNetwork(context);
-  await page.goto(`${BASE}/team/?seed=demo`);
-  await expect(page.getByTestId('team-state')).toBeVisible();
+test('a guest at the table comes with choices, hints or none, and two tables that land move someone up a step', async ({ context, page }) => {
+  const reqs = [];
+  const errors = await asMarco(context, page, { claudeRequests: reqs, claudeText: (b) => {
+    if (b.purpose !== 'team_guest') return '';
+    if (!/SERVER:/.test(b.messages[0].content)) return '{"guest":"Evening! What would you pour with this?","done":false}';
+    return JSON.stringify({ guest: 'Lovely.', done: true, mark: { score: 0.8, verdict: 'right', good: 'Named it and why.', missing: '', better: '' } });
+  } });
+  // A sommelier starts on their own; someone with no answers held starts with choices.
+  const starts = await page.evaluate(() => {
+    const people = TeamLearn.people();
+    const som = people.find((p) => p.role === 'sommelier');
+    return { som: som ? TeamVinny._startLevel(som.id) : 'own' };
+  });
+  expect(starts.som).toBe('own');
+
+  await page.getByTestId('team-tab-vinny').click();
+  await page.getByText('Take a table').click();
+  await expect(page.getByTestId('guest-line')).toBeVisible();
+  await page.getByTestId('guest-help-choices').click();
+  // Three wines; a wrong one says why and the right one opens the reasons.
+  await expect(page.getByTestId('guest-choice')).toHaveCount(3);
+  for (let i = 0; i < 3 && !(await page.getByTestId('guest-reason').count()); i++) await page.getByTestId('guest-choice').nth(i).click();
+  await expect(page.getByTestId('guest-reason').first()).toBeVisible();
+  for (let i = 0; i < 3 && !(await page.getByTestId('guest-reply').inputValue()); i++) await page.getByTestId('guest-reason').nth(i).click();
+  await expect(page.getByTestId('guest-reply')).toHaveValue(/I'd (go for|steer)/);
+  await page.getByText('Say', { exact: true }).click();
+  await expect(page.getByTestId('guest-help-used')).toHaveText('With choices');
+  await expect(page.getByTestId('guest-moved')).toHaveCount(0);
+
+  // A second table that lands at the same step moves them up to hints.
+  await page.getByText('Another table').click();
+  await expect(page.getByTestId('guest-help-choices')).toHaveAttribute('aria-checked', 'true');
+  await expect(page.getByTestId('guest-choices')).toBeVisible();
+  await page.getByTestId('guest-reply').fill('The house white, it is fresh.');
+  await page.getByText('Say', { exact: true }).click();
+  await expect(page.getByTestId('guest-moved')).toContainText('just hints');
+  await page.getByText('Another table').click();
+  await expect(page.getByTestId('guest-help-hints')).toHaveAttribute('aria-checked', 'true');
+
+  // Hints come one at a time, up to three, and the mark says how many were used.
+  await expect(page.getByTestId('guest-hint-btn')).toContainText('1 of 3');
+  for (let i = 0; i < 3; i++) await page.getByTestId('guest-hint-btn').click();
+  await expect(page.getByTestId('guest-hint')).toHaveCount(3);
+  await expect(page.getByTestId('guest-hint-btn')).toHaveCount(0);
+  await page.getByTestId('guest-reply').fill('The Grüner by the glass.');
+  await page.getByText('Say', { exact: true }).click();
+  await expect(page.getByTestId('guest-help-used')).toHaveText('With 3 hints');
+
+  // On your own: no choices and no hints.
+  await page.getByText('Another table').click();
+  await page.getByTestId('guest-help-own').click();
+  await expect(page.getByTestId('guest-choices')).toHaveCount(0);
+  await expect(page.getByTestId('guest-hints')).toHaveCount(0);
+  expect(errors).toEqual([]);
+});
+
+test('tables are picked for the person: wines they don\'t know, requests they\'ve missed, no repeats, and the screen says why', async ({ context, page }) => {
+  const errors = await asMarco(context, page, { claudeText: (b) => b.purpose === 'team_guest' ? '{"guest":"Evening! What would you pour with this?","done":false}' : '' });
+  const r = await page.evaluate(() => {
+    const pid = TeamLearn.people()[0].id, held = (id) => { const p = TeamLearn.progress(pid, id); return p.total ? p.known / p.total : 0; };
+    const out = {};
+    // Every table it could set, scored: the pick is among the best few and leans on wines they hold least.
+    const tables = []; for (let s = 1; s <= 40; s++) tables.push(TeamVinny.scenario(pid, s * 7919));
+    out.allWhy = tables.every((t) => Array.isArray(t.why));
+    const pickedWeak = tables.reduce((a, t) => a + (1 - held(t.wines[0])), 0) / tables.length;
+    const all = TeamData.dishes().map((x) => ({ x, p: TeamData.pairing(x.id) })).filter((d) => d.p && d.p.best && d.p.best.length);
+    const every = []; all.forEach(({ x, p }) => TeamVinny.wishesFor(p).forEach((w) => { const t = TeamVinny._build(x, p, w, 1); if (t && t.wines.length) every.push(t); }));
+    const anyWeak = every.reduce((a, t) => a + (1 - held(t.wines[0])), 0) / every.length;
+    out.pickedWeak = pickedWeak; out.anyWeak = anyWeak;
+    // Some variety: more than one table across seeds.
+    out.distinct = new Set(tables.map((t) => t.dish + ':' + t.wish)).size;
+    // Two missed steer-away tables make steer-away tables come up more.
+    const wishShare = (k) => { let n = 0; for (let s = 1; s <= 40; s++) if (TeamVinny.scenario(pid, s * 104729).wish === k) n++; return n / 40; };
+    const before = wishShare('avoid');
+    const miss = every.find((t) => t.wish === 'avoid');
+    TeamVinny.noteTable(pid, { level: 'choices', score: 0.1, table: { dish: miss.dish, wish: 'avoid', wines: miss.wines } });
+    TeamVinny.noteTable(pid, { level: 'choices', score: 0.2, table: { dish: miss.dish, wish: 'avoid', wines: miss.wines } });
+    out.before = before; out.after = wishShare('avoid');
+    out.log = TeamVinny.tableState(pid).log.slice(-1)[0];
+    // The table just played isn't set again straight away.
+    const last = TeamVinny.scenario(pid, 3);
+    TeamVinny.noteTable(pid, { level: 'choices', score: 0.8, table: last });
+    let repeats = 0; for (let s = 1; s <= 20; s++) { const t = TeamVinny.scenario(pid, s * 31); if (t.dish === last.dish && t.wish === last.wish) repeats++; }
+    out.repeats = repeats;
+    out.missedWhy = TeamVinny.tableWhy({ ...miss, parts: { missed: 2, weak: 0 }, raw: { missedN: 2, weak: 0 } });
+    return out;
+  });
+  expect(r.allWhy).toBe(true);
+  expect(r.pickedWeak).toBeGreaterThanOrEqual(r.anyWeak);
+  expect(r.distinct).toBeGreaterThan(1);
+  expect(r.after).toBeGreaterThan(r.before);
+  expect(r.log).toMatchObject({ wish: 'avoid' });
+  expect(r.log.dish).toBeTruthy();
+  expect(r.repeats).toBe(0);
+  expect(r.missedWhy[0]).toMatch(/steering a guest away from a wine hasn't landed for you 2 times lately/);
+  await page.getByTestId('team-tab-vinny').click();
+  await page.getByText('Take a table').click();
+  await expect(page.getByTestId('guest-why')).toContainText('Picked for you:');
+  expect(errors).toEqual([]);
+});
+
+test('drill answers: no question gives its answer away, prices are asked one way, and a table is two short lists', async ({ context, page }) => {
+  const errors = await asMarco(context, page);
+  const r = await page.evaluate(() => {
+    const words = (s) => TeamLearn._words(s);
+    const all = TeamLearn.allQs().filter((q) => q.wine);
+    // A question whose answer is in its own words: "Which grape is the … Pinot Noir made from?"
+    const spoilt = all.filter((q) => { const ans = q.k === 'recognise' ? [q.opts[q.a]] : q.k === 'recall' ? String(q.ans).split(/,|\band\b|;/) : [];
+      const t = new Set(words(q.q)); return ans.some((a) => { const w = words(a); return w.length && w.every((x) => t.has(x)); }); }).map((q) => q.q);
+    const jadot = TeamData.wines().find((w) => /Jadot/.test(w.producer + ' ' + w.name));
+    const grapeQ = TeamLearn.wineQs(jadot.id).find((q) => /which grape/i.test(q.q));
+    const money = all.filter((q) => q.k === 'recall' && /glass price|bottle price/i.test(q.q)).map((q) => ({ side: /glass/i.test(q.q) ? 'glass' : 'bottle', opts: TeamLearn.choices(q).opts }));
+    const apply = all.filter((q) => q.k === 'apply').map((q) => TeamLearn.choices(q));
+    const pills = all.flatMap((q) => (q.k === 'recognise' ? q.opts : TeamLearn.choices(q).opts));
+    return { spoilt, grapeQ: grapeQ && grapeQ.q, money, apply, lower: pills.filter((o) => /^[a-z]/.test(o)) };
+  });
+  expect(r.spoilt).toEqual([]);
+  expect(r.grapeQ).toContain('Louis Jadot');
+  expect(r.grapeQ).not.toMatch(/Pinot Noir/);
+  expect(r.money.length).toBeGreaterThan(0);
+  for (const m of r.money) for (const o of m.opts) expect(o).toMatch(m.side === 'glass' ? /a glass|Not by the glass/ : /a bottle$/);
+  const grouped = r.apply.filter((c) => c.groups);
+  expect(grouped.length).toBeGreaterThan(r.apply.length * 0.9);
+  for (const c of grouped) {
+    // A question that already names the wine asks only why; otherwise the wine first, then why.
+    const labels = c.groups.map((g) => g.label);
+    expect(labels[labels.length - 1]).toBe('Why it works');
+    if (labels.length === 2) {
+      expect(labels[0]).toBe('What do you suggest?');
+      expect(c.opts.slice(0, c.groups[0].to).every((o) => /^The /.test(o))).toBe(true); // every suggestion names a wine
+    }
+    expect(c.opts.slice(c.groups[labels.length - 1].from).some((o) => /^The .*£\d/.test(o))).toBe(false); // and no reason is a price or an offer
+  }
+  expect(r.lower).toEqual([]);
+  expect(errors).toEqual([]);
+});
+
+test('a recall question offers wrong answers of its own kind: flavours for a flavour, climates for a climate', async ({ context, page }) => {
+  const errors = await asMarco(context, page);
+  const r = await page.evaluate(() => {
+    const rs = TeamLearn.allQs().filter((q) => q.wine && q.k === 'recall');
+    const pick = (re) => { const q = rs.find((x) => re.test(x.q)); const c = TeamLearn.choices(q); return { opts: c.opts, right: c.right.map((i) => c.opts[i]) }; };
+    return {
+      untyped: rs.filter((q) => !TeamLearn._topic(q.q) && !/price|much|glass|bottle/i.test(q.q)).map((q) => q.q),
+      flavour: pick(/flavours does Pinot Noir/), climate: pick(/climate of Provence/), port: pick(/keep the sweetness/), months: pick(/minimum time/),
+    };
+  });
+  expect(r.untyped).toEqual([]); // every recall question is read as one kind
+    expect(r.flavour.opts.some((o) => /fermentation|climate|valley|bank/i.test(o))).toBe(false);
+  expect(r.climate.right).toEqual(['Hot, dry Mediterranean']); // one answer, commas and all
+  expect(r.climate.opts.every((o) => /mediterranean|continental|maritime|atlantic|desert|tropical/i.test(o))).toBe(true);
+  expect(r.port.opts.filter((o) => /grape spirit/i.test(o))).toEqual(['Fermentation is stopped with grape spirit']); // no same-meaning decoy
+  expect(r.months.opts.every((o) => /month/i.test(o))).toBe(true);
+  expect(errors).toEqual([]);
+});
+
+test('options are dealt afresh each time: the right answer spreads across places, and a question seen again comes back reordered', async ({ context, page }) => {
+  const errors = await asMarco(context, page);
+  const r = await page.evaluate(() => {
+    const rec = TeamLearn.allQs().filter((q) => q.k === 'recognise'), pos = [0, 0, 0, 0];
+    for (let n = 0; n < 10; n++) rec.forEach((q, i) => pos[TeamLearn.deal(q, `t${n}-${i}`).a]++);
+    const q = rec[0], orders = new Set(); for (let n = 0; n < 10; n++) orders.add(TeamLearn.deal(q, `o${n}`).opts.join('|'));
+    const pc = TeamLearn.allQs().find((x) => x.k === 'recall'), dealt = TeamLearn.deal(pc, 'g');
+    return { share: pos.map((x) => x / pos.reduce((a, b) => a + b, 0)), orders: orders.size,
+      again: TeamLearn.deal(q, 'same').opts.join() === TeamLearn.deal(q, 'same').opts.join(),
+      graded: TeamLearn.gradeChoices(dealt, TeamLearn.choices(dealt).right).ok };
+  });
+  for (const s of r.share) expect(s).toBeGreaterThan(0.18); // no place holds the answer far more than its share
+  expect(r.orders).toBeGreaterThan(4);
+  expect(r.again).toBe(true); // one showing stays put, so the screen and the marking agree
+  expect(r.graded).toBe(true);
+  expect(errors).toEqual([]);
+});
+
+test('scrolling: the next question opens at its top, a new screen opens at its top, and Back returns to where you were', async ({ context, page }) => {
+  await page.setViewportSize({ width: 390, height: 560 });
+  const errors = await asMarco(context, page);
+  const scroller = page.locator('[data-scroll]').first();
+  const top = () => scroller.evaluate((el) => el.scrollTop);
+  // A list scrolled down, then a wine opened from it: the wine opens at its top, and Back returns to the list where it was.
   await page.getByTestId('team-tab-wines').click();
-  const scroller = page.getByTestId('team-scroll');
-  await scroller.evaluate((el) => { el.scrollTop = 900; });
-  const listAt = await scroller.evaluate((el) => el.scrollTop);
-  expect(listAt).toBeGreaterThan(500);
-  await page.getByTestId('team-wine-row').nth(12).click();
-  await expect(page.getByTestId('team-wine')).toBeVisible();
-  expect(await scroller.evaluate((el) => el.scrollTop)).toBe(0);
+  await scroller.evaluate((el) => { el.scrollTop = 600; });
+  const listAt = await top();
+  expect(listAt).toBeGreaterThan(300);
+  // Tap a row where it already is, as a finger would (a locator's click scrolls it into view first).
+  const box = await scroller.boundingBox();
+  await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+  await expect(page.getByTestId('team-pitch')).toBeVisible();
+  expect(await top()).toBe(0);
   await scroller.evaluate((el) => { el.scrollTop = 400; });
-  await page.getByRole('button', { name: 'Back' }).click();
-  await expect(page.getByTestId('team-wine')).toBeHidden();
-  expect(await scroller.evaluate((el) => el.scrollTop)).toBe(listAt);
+  await page.getByLabel('Back').click();
+  expect(Math.abs((await top()) - listAt)).toBeLessThan(2);
+  // A tab opens at its top.
   await page.getByTestId('team-tab-menu').click();
-  expect(await scroller.evaluate((el) => el.scrollTop)).toBe(0);
+  expect(await top()).toBe(0);
+  // In a drill, the next question opens at its top however far the last one was scrolled.
+  await page.getByTestId('team-tab-today').click();
+  await page.getByText(/Start today's drill|Practise · 5 questions/).first().click();
+  await expect(page.getByTestId('drill-q')).toBeVisible();
+  await page.getByTestId('drill-opt').first().click();
+  await page.getByText('Check', { exact: true }).click();
+  await scroller.evaluate((el) => { el.scrollTop = el.scrollHeight; });
+  expect(await top()).toBeGreaterThan(0);
+  await page.getByText(/^(Next|Finish)$/).first().click();
+  expect(await top()).toBe(0);
+  expect(errors).toEqual([]);
+});
+
+test('every recall question, about a wine or a dish, offers only answers of its own kind', async ({ context, page }) => {
+  const errors = await asMarco(context, page);
+  const r = await page.evaluate(() => {
+    const norm = (x) => TeamLearn._norm(x);
+    const recall = TeamLearn.allQs().filter((q) => q.k === 'recall' && !/price|much|glass|bottle/i.test(q.q));
+    // Every right answer, filed under the kind of question it answers.
+    const kindOf = {}; recall.forEach((q) => { const t = TeamLearn._topic(q.q); String(q.ans).split(/,|\band\b|;/).forEach((a) => { const k = norm(a); if (k) (kindOf[k] = kindOf[k] || new Set()).add(t); }); });
+    const names = new Set(TeamData.wines().map((w) => norm(TeamData.short(w))));
+    const untyped = recall.filter((q) => !TeamLearn._topic(q.q)).map((q) => q.q);
+    const mixed = [], notWines = [];
+    for (const q of recall) {
+      const t = TeamLearn._topic(q.q), c = TeamLearn.choices(TeamLearn.deal(q, 'k'));
+      for (const o of c.opts) {
+        const ks = kindOf[norm(o)];
+        if (ks && !ks.has(t)) mixed.push(`${q.q.slice(0, 50)} → ${o}`);
+        if (t === 'wine' && !names.has(norm(o))) notWines.push(`${q.q.slice(0, 50)} → ${o}`);
+      }
+    }
+    const dishQ = recall.find((q) => q.dish), dc = TeamLearn.choices(TeamLearn.deal(dishQ, 'd'));
+    return { untyped, mixed, notWines, dishOpts: dc.opts.length };
+  });
+  expect(r.untyped).toEqual([]);
+  expect(r.mixed).toEqual([]); // no answer to another kind of question turns up as a wrong option
+  expect(r.notWines).toEqual([]); // "Name a wine for the cod" offers only wines on the list
+  expect(r.dishOpts).toBeGreaterThan(3);
+  expect(errors).toEqual([]);
+});
+
+test('no question offers answers from all over: comparisons stay on their two wines, tables on their reasons, nothing falls back to the mixed pool', async ({ context, page }) => {
+  const errors = await asMarco(context, page);
+  const r = await page.evaluate(() => {
+    const norm = (x) => TeamLearn._norm(x), all = TeamLearn.allQs(), wines = TeamData.wines();
+    const pooled = all.filter((q) => q.k !== 'recognise' && TeamLearn.choices(TeamLearn.deal(q, 'p')).via === 'pool').map((q) => `${q.k}: ${q.q.slice(0, 60)}`);
+    // A comparison's options talk about its two wines only: no third wine on the list is named in them.
+    const third = [];
+    for (const q of all.filter((x) => x.k === 'contrast')) {
+      const named = wines.filter((w) => norm(q.q).includes(norm(TeamData.short(w))));
+      const others = wines.filter((w) => !named.includes(w) && w.id !== q.wine);
+      for (const o of TeamLearn.choices(TeamLearn.deal(q, 'c')).opts) {
+        const hit = others.find((w) => norm(o).includes(norm(TeamData.short(w))) || (w.producer && norm(w.producer).length > 5 && norm(o).includes(norm(w.producer))));
+        if (hit) third.push(`${q.q.slice(0, 50)} → ${o}`);
+      }
+    }
+    const tables = all.filter((q) => q.k === 'apply').map((q) => TeamLearn.choices(TeamLearn.deal(q, 't')));
+    return { pooled, third, ungrouped: tables.filter((c) => !c.groups).length, priced: tables.flatMap((c) => c.groups ? c.opts.slice(c.groups[c.groups.length - 1].from) : []).filter((o) => /£\d/.test(o)) };
+  });
+  expect(r.pooled).toEqual([]); // every recall, comparison and table question builds its own options
+  expect(r.third).toEqual([]);
+  expect(r.ungrouped).toBe(0);
+  expect(r.priced).toEqual([]); // "Why it works" never offers a price
+  expect(errors).toEqual([]);
+});
+
+test('when the list is short of a kind of wine, well-known bottles that are not on it make up the choices', async ({ context, page }) => {
+  const errors = await asMarco(context, page);
+  const r = await page.evaluate(() => {
+    const mine = new Set(TeamData.wines().map((w) => TeamLearn._norm(TeamData.short(w))));
+    const off = TeamLearn.offList('sweet', 3, 's');
+    return { n: off.length, onList: off.filter((x) => mine.has(TeamLearn._norm(x))) };
+  });
+  expect(r.n).toBe(3);
+  expect(r.onList).toEqual([]);
+  expect(errors).toEqual([]);
+});
+
+test('delivery: pace, time to start, fillers, hedges and whether the wine\'s name came through', async ({ context, page }) => {
+  const errors = await asMarco(context, page);
+  const r = await page.evaluate(() => {
+    const t0 = 1_000_000;
+    const d = TeamVoice.delivery({ text: "Um, I think I'd go for the Gusbourne, it's sort of crisp and maybe lovely with the crab", startedAt: t0, askedAt: t0, firstAt: t0 + 5200, lastAt: t0 + 5200 + 6000,
+      names: [{ name: 'Gusbourne Blanc de Blancs', say: 'GUZ-born' }, { name: 'Dönnhoff Riesling Trocken', say: 'DURN-hoff' }], expected: ['Dönnhoff Riesling Trocken'] });
+    // No wine on the list came through: the expected one's sounds-like spelling is offered.
+    const lost = TeamVoice.delivery({ text: "I'd go for the dern off, it's dry and racy with the pork", startedAt: t0, askedAt: t0, firstAt: t0 + 900, lastAt: t0 + 4000,
+      names: [{ name: 'Dönnhoff Riesling Trocken', say: 'DURN-hoff' }], expected: ['Dönnhoff Riesling Trocken'] });
+    return { d, lost, heardSplit: TeamVoice.heardName('the don hoff riesling please', 'Dönnhoff Riesling Trocken'), missed: TeamVoice.heardName('the gooseberry one', 'Gusbourne Blanc de Blancs') };
+  });
+  expect(r.d.fillers).toBe(2); // "um", "sort of"
+  expect(r.d.hedges).toBe(2); // "I think", "maybe"
+  expect(r.d.wpm).toBeGreaterThan(150);
+  expect(r.d.waitMs).toBe(5200);
+  expect(r.d.notes.some((n) => n.k === 'wait' && !n.good)).toBe(true);
+  expect(r.d.names.find((n) => /Gusbourne/.test(n.name)).heard).toBe(true);
+  expect(r.d.notes.some((n) => n.k === 'name' && !n.good)).toBe(false); // they named a wine clearly: choosing it is the guest's mark, not a name problem
+  expect(r.lost.notes.some((n) => n.k === 'name' && /DURN-hoff/.test(n.text))).toBe(true); // no name came through: here's how to say it
+  expect(r.heardSplit).toBe(true); // speech-to-text splitting a name it doesn't know still counts
+  expect(r.missed).toBe(false);
+  expect(errors).toEqual([]);
+});
+
+test('a spoken table: the guest is said aloud, the reply is spoken into the box, and the result coaches the delivery', async ({ context, page }) => {
+  // Stand-ins for the browser's speech engines: the voice finishes at once; the microphone "hears" a reply.
+  await context.addInitScript(() => {
+    window.__spoken = [];
+    Object.defineProperty(window, 'speechSynthesis', { configurable: true, value: { speak(u) { window.__spoken.push(u.text); setTimeout(() => u.onend && u.onend(), 5); }, cancel() {}, getVoices() { return []; } } });
+    window.SpeechSynthesisUtterance = function (t) { this.text = t; };
+    window.SpeechRecognition = class { start() { this._t = setTimeout(() => { const res = [{ 0: { transcript: "Um I'd go for the Grüner by the glass, it's peppery and fresh with the olives" }, isFinal: true, length: 1 }]; this.onresult && this.onresult({ resultIndex: 0, results: res }); }, 300); }
+      stop() { clearTimeout(this._t); setTimeout(() => this.onend && this.onend(), 5); } };
+  });
+  const errors = await asMarco(context, page, { claudeText: (b) => {
+    if (b.purpose !== 'team_guest') return '';
+    if (!/SERVER:/.test(b.messages[0].content)) return '{"guest":"Evening! What would you pour with the olives?","done":false}';
+    return JSON.stringify({ guest: 'Lovely, thank you.', done: true, mark: { score: 0.8, verdict: 'right', good: 'Named it and why.', missing: '', better: '' } });
+  } });
+  await page.getByTestId('team-tab-vinny').click();
+  await page.getByText('Take a table').click();
+  await expect(page.getByTestId('guest-line')).toContainText('olives');
+  await expect(page.getByTestId('guest-voice')).toHaveAttribute('aria-checked', 'true');
+  await expect.poll(() => page.evaluate(() => window.__spoken.join('|'))).toContain('What would you pour'); // the guest said aloud
+  await page.getByTestId('guest-mic').click();
+  await expect(page.getByTestId('voice-notice')).toBeVisible(); // where the words go, said once
+  await expect(page.getByTestId('guest-reply')).toHaveValue(/Grüner by the glass/);
+  await page.getByTestId('guest-mic').click(); // tap when finished
+  await page.getByText('Say', { exact: true }).click();
+  await expect(page.getByTestId('you-line')).toContainText('🎙');
+  await expect(page.getByTestId('you-delivery')).toContainText('filler');
+  await expect(page.getByTestId('guest-delivery')).toContainText('Your delivery');
+  await expect(page.getByTestId('delivery-note').first()).toBeVisible();
+  // Voice off: no microphone, typing as before.
+  await page.getByText('Another table').click();
+  await page.getByTestId('guest-voice').click();
+  await expect(page.getByTestId('guest-mic')).toHaveCount(0);
+  await expect(page.getByTestId('guest-reply')).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
+test('a wine card says how to pronounce the wine, and Say it speaks it', async ({ context, page }) => {
+  await context.addInitScript(() => { window.__spoken = []; Object.defineProperty(window, 'speechSynthesis', { configurable: true, value: { speak(u) { window.__spoken.push(u.text); setTimeout(() => u.onend && u.onend(), 5); }, cancel() {}, getVoices() { return []; } } }); window.SpeechSynthesisUtterance = function (t) { this.text = t; }; });
+  const errors = await asMarco(context, page);
+  await page.getByTestId('team-tab-wines').click();
+  await page.getByText(/Dönnhoff/).first().click();
+  await expect(page.getByTestId('team-say')).toContainText('DURN-hoff');
+  await page.getByTestId('team-say').click();
+  await expect.poll(() => page.evaluate(() => window.__spoken.join('|'))).toContain('DURN-hoff');
+  expect(errors).toEqual([]);
 });

@@ -92,10 +92,13 @@ function TeamConsole({me,onPhone,refresh,section,setSection,open}){ const T=useT
   </div>;
   const page=section==='team'?<_CTeam open={go} refresh={refresh}/>:section==='wines'?<_CWines open={go} goUpload={()=>setSection('upload')}/>:section==='menu'?<_CMenu open={go} goUpload={()=>setSection('upload')}/>
     :section==='upload'?<_CUpload refresh={refresh}/>:section==='pos'?<_CPos open={go}/>:section==='admin'?<_CAdmin refresh={refresh}/>:<_CDash open={go} setSection={setSection}/>;
+  // A section opens at its top; the drawer is a new one for each thing it shows, so it opens at its top too.
+  const pageRef=React.useRef(null);
+  React.useLayoutEffect(()=>{ if(pageRef.current) pageRef.current.scrollTop=0; },[section]);
   return <div data-testid="team-console" style={{position:'absolute',inset:0,display:'flex',flexDirection:narrow?'column':'row',background:`radial-gradient(ellipse at 20% -10%, ${_alpha(cr,0.25)}, transparent 55%) ${T.bg}`,color:T.ink}}>
     {side}
-    <div key={section} data-testid="console-scroll" style={{flex:1,minWidth:0,overflowY:'auto',padding:narrow?'14px 14px 40px':'22px 28px 60px'}}><div style={{maxWidth:1100,margin:'0 auto'}}><TeamJobChip onOpen={()=>setSection('upload')}/><ScreenErrorBoundary>{page}</ScreenErrorBoundary></div></div>
-    {panel&&<_CPanel panel={panel} me={me} open={go} close={()=>setPanel(null)} narrow={narrow}/>}
+    <div ref={pageRef} data-scroll style={{flex:1,minWidth:0,overflowY:'auto',padding:narrow?'14px 14px 40px':'22px 28px 60px'}}><div style={{maxWidth:1100,margin:'0 auto'}}><TeamJobChip onOpen={()=>setSection('upload')}/><ScreenErrorBoundary>{page}</ScreenErrorBoundary></div></div>
+    {panel&&<_CPanel key={panel.view+':'+panel.id} panel={panel} me={me} open={go} close={()=>setPanel(null)} narrow={narrow}/>}
   </div>; }
 /* The logo with TEAMS set under it as one mark. logo.png has clear padding round the drawing (the mark
    fills x 41–1039 of 1086 and y 41–183 of 224), so the image is scaled and cropped to the mark itself and
@@ -116,7 +119,7 @@ function _CPanel({panel,me,open,close,narrow}){ const T=useTheme();
   const body=panel.view==='wine'?<TeamWine id={panel.id} pid={me.id} open={open} manage/>:panel.view==='dish'?<TeamDish id={panel.id} open={open}/>:panel.view==='person'?<_CPerson id={panel.id} open={open}/>:null;
   // A wider drawer over a dimmed page: the content behind it isn't meant to be read while it's open, and a tap on the dim closes it.
   return <><div data-testid="console-scrim" onClick={close} style={{position:'absolute',inset:0,background:'rgba(0,0,0,0.45)'}}/>
-  <div key={panel.view+':'+panel.id} data-testid="console-panel" style={{position:'absolute',top:0,right:0,bottom:0,width:narrow?'100%':'min(600px, 72%)',background:T.card,borderLeft:`1px solid ${T.line}`,boxShadow:T.shadow,overflowY:'auto',padding:'16px 22px 40px'}}>
+  <div data-testid="console-panel" style={{position:'absolute',top:0,right:0,bottom:0,width:narrow?'100%':'min(600px, 72%)',background:T.card,borderLeft:`1px solid ${T.line}`,boxShadow:T.shadow,overflowY:'auto',padding:'16px 22px 40px'}} data-scroll>
     <div style={{display:'flex',justifyContent:'flex-end',marginBottom:6}}><div role="button" aria-label="Close" data-testid="console-panel-close" onClick={close} style={{width:32,height:32,borderRadius:16,border:`1px solid ${T.line}`,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',color:T.ink,fontFamily:C.P,fontSize:16}}>×</div></div>
     {body}
   </div></>; }

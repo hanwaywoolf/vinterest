@@ -59,3 +59,36 @@ test('the price search stays on Sonnet 4.6 while CLAUDE_MODEL is on trial', asyn
   expect(upstream[0].body.model).toBe('claude-sonnet-4-6');
   expect(upstream[0].body.thinking).toBeUndefined();
 });
+
+// The guest's voice at the table (Vinterest for teams): /tts with a cloud voice, or off without a key.
+async function tts(env, body, origin = 'https://vinterest.pages.dev') {
+  const worker = await loadWorker();
+  const upstream = [], realFetch = global.fetch;
+  global.fetch = async (url, init) => { upstream.push({ url: String(url), body: JSON.parse(init.body), headers: init.headers }); return new Response(new Uint8Array([1, 2, 3]), { status: 200, headers: { 'content-type': 'audio/mpeg' } }); };
+  try {
+    const r = await worker.fetch(new Request('https://vinterest.pages.dev/tts', { method: 'POST', headers: { 'content-type': 'application/json', origin }, body: JSON.stringify(body) }), env, { waitUntil() {} });
+    return { status: r.status, type: r.headers.get('content-type'), upstream, json: r.headers.get('content-type')?.includes('json') ? await r.json() : null };
+  } finally { global.fetch = realFetch; }
+}
+test('/tts: off without a voice key, so the app speaks with the phone\'s own voice', async () => {
+  const r = await tts({}, { text: 'Evening!' });
+  expect(r.status).toBe(404);
+  expect(r.json).toMatchObject({ enabled: false, code: 'tts_off' });
+  expect(r.upstream).toEqual([]);
+});
+test('/tts: ElevenLabs when its key is set, a diner\'s voice per table, the key kept on the server', async () => {
+  const r = await tts({ ELEVENLABS_API_KEY: 'k' }, { text: 'Evening! What would you pour with the cod?', voice: 1 });
+  expect(r.status).toBe(200);
+  expect(r.type).toBe('audio/mpeg');
+  expect(r.upstream[0].url).toContain('api.elevenlabs.io/v1/text-to-speech/pNInz6obpgDQGcFmaJgB');
+  expect(r.upstream[0].headers['xi-api-key']).toBe('k');
+  expect(r.upstream[0].body.text).toBe('Evening! What would you pour with the cod?');
+});
+test('/tts: OpenAI\'s speech model with only its key; long text cut short; other origins refused', async () => {
+  const r = await tts({ OPENAI_API_KEY: 'o' }, { text: 'x'.repeat(2000), voice: 2 });
+  expect(r.upstream[0].url).toBe('https://api.openai.com/v1/audio/speech');
+  expect(r.upstream[0].body.voice).toBe('sage');
+  expect(r.upstream[0].body.input.length).toBe(600);
+  const denied = await tts({ OPENAI_API_KEY: 'o' }, { text: 'Hi' }, 'https://evil.example');
+  expect(denied.status).toBe(403);
+});
