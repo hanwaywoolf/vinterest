@@ -51,7 +51,13 @@ const TeamLearn = {
 
   /* Every question for a wine (its card's) and for a dish (written here from its pairing: no call). */
   // Four options are shown in an order fixed per question, so the right one isn't always where it was written.
-  wineQs(id){ const c=TeamData.card(id); return (c&&c.qs||[]).map(q=>this._unspoil({...q,wine:id})).filter(Boolean).map(x=>{ if(x.k!=='recognise') return x;
+  // A wine's questions as the drill asks them, built once per version of the restaurant's data (TeamData.get
+  // keeps one parsed document until the stored text changes) and handed out as copies.
+  _qsCache:new WeakMap(),
+  wineQs(id){ const doc=TeamData.get(); let m=this._qsCache.get(doc); if(!m){ m=new Map(); this._qsCache.set(doc,m); }
+    if(!m.has(id)) m.set(id,this._buildQs(id));
+    return m.get(id).map(q=>({...q})); },
+  _buildQs(id){ const c=TeamData.card(id); return (c&&c.qs||[]).map(q=>this._unspoil({...q,wine:id})).filter(Boolean).map(x=>{ if(x.k!=='recognise') return x;
     x=this._sameKind(x); if(!x||this.givesAway(x)) return null;
     const order=this._shuffle(x.opts.map((_,i)=>i),x.id); return {...x,opts:order.map(i=>this._cap(x.opts[i])),a:order.indexOf(x.a)}; }).filter(Boolean); },
   /* A server always knows what kind of wine it is (the list says so), so a wrong answer describing another
@@ -132,7 +138,11 @@ const TeamLearn = {
   _words(s){ return this._norm(s).split(' ').filter(w=>w.length>2&&!['the','and','wine','with','from'].includes(w)); },
   _unspoil(q){
     const w=TeamData.wine(q.wine); if(!w) return q;
-    const answers=q.k==='recognise'?[q.opts[q.a]]:q.k==='recall'?String(q.ans||'').split(/,|\band\b|;/).map(x=>x.trim()).filter(Boolean):[];
+    // A comparison's answer is checked whole and without the wines' own names: "Which is lighter: the Jadot or
+    // the Malbec?" answered "The Jadot" is a fair question, while an answer whose substance is in the question isn't.
+    const nameWords=q.k==='contrast'?new Set(TeamData.wines().flatMap(x=>this._words(TeamData.short(x)+' '+(x.name||'')))):null;
+    const plain=a=>nameWords?this._words(a).filter(x=>!nameWords.has(x)).join(' '):a;
+    const answers=q.k==='recognise'?[q.opts[q.a]]:q.k==='recall'?String(q.ans||'').split(/,|\band\b|;/).map(x=>x.trim()).filter(Boolean):q.k==='contrast'&&q.ans?[plain(q.ans)].filter(Boolean):[];
     // An answer with a figure in it ("£9 a glass, £45 a bottle") is given away only if its figures are too.
     const nums=x=>String(x||'').match(/\d+(?:\.\d+)?/g)||[];
     const gives=text=>{ const t=new Set(this._words(text)), tn=new Set(nums(text)); return answers.some(a=>{ const ws=this._words(a); return ws.length&&ws.every(x=>t.has(x))&&nums(a).every(n=>tn.has(n)); }); };
@@ -567,7 +577,10 @@ const TeamLearn = {
     // ("Sauvignon Blanc", "Malbec") is a reason's word, not an offer.
     const named=s=>wines.filter(w=>{ const t=norm(s), n=norm(TeamData.short(w)); return n.length>3&&t.includes(n); });
     const own=TeamData.wine(q.wine), offered=key.flatMap(named).filter(w=>w.id!==q.wine);
-    const rw=key.some(k=>named(k).some(w=>w.id===q.wine))||!offered.length?own:offered[0]; if(!rw) return null;
+    // The question naming its own wine ("…wants a glass of the Minuty") makes it that wine, whatever other
+    // wine the key steers to.
+    const ownInQ=own&&[TeamData.short(own),own.name].some(n=>n&&norm(q.q).includes(norm(n)));
+    const rw=ownInQ||key.some(k=>named(k).some(w=>w.id===q.wine))||!offered.length?own:offered[0]; if(!rw) return null;
     const side=/\bglass\b/i.test(q.q)?'glass':/\bbottle\b/i.test(q.q)?'bottle':rw.glass?'glass':'bottle';
     // "£8 (75ml)" reads "£8 a glass (75ml)": the measure after the unit, never inside it.
     const per=(p,u)=>{ const m=String(p).match(/^(.*?)\s*(\([^)]*\))\s*$/); return m?`${m[1]} a ${u} ${m[2]}`:`${p} a ${u}`; };

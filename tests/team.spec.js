@@ -788,7 +788,7 @@ test('at the table, wrong reasons are about this dish and wrong for this wine, a
   expect(r.cod).toMatch(/^Pan-roast cod/);
   const minuty = r.steers.find((x) => /Minuty/.test(x.wine));
   expect(minuty.right.some((t) => /^Steer them to the /.test(t))).toBe(true);
-  expect(minuty.wrong.some((t) => /rosemary lamb/.test(t))).toBe(true); // the card's own "it works" is now wrong
+  expect(minuty.wrong.some((t) => /^Pour it gladly/.test(t))).toBe(true); // "it's a classic match" is a wrong answer
   expect(errors).toEqual([]);
 });
 
