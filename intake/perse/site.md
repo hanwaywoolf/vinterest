@@ -138,9 +138,7 @@ So: black and white with warm gold as the one accent, on white or a warm off-whi
 
 ## Menu files
 
-There are no linked menu PDFs or images: every current menu is an HTML page (snapshots in `files/`, with the food menu's embedded data rows in `files/food-menu-data.txt`). The site's media library (`/wp-json/wp/v2/media?mime_type=application/pdf`) still holds 40 older PDFs from December 2023 to October 2024, none linked from any page, so I didn't download them. They'd be out of date for pricing, but two have nothing current to replace them if the next session wants them:
-- Spirit list: https://persesocialcorner.com/wp-content/uploads/2024/08/Social-Corner-BarMenu_Spirit-listAug-9th-2024.pdf
-- Cocktails & wine, Fall 2024: https://persesocialcorner.com/wp-content/uploads/2024/10/Per-Se-Social-Corner-Cocktails-Wine-List-Fall-2024-USE-THIS-ONE.pdf
+The menus on the website are the menus: every one is an HTML page, with no PDFs or menu images linked. Snapshots are in `files/`, and the food menu's embedded data rows are in `files/food-menu-data.txt`.
 
 ## Pages visited
 

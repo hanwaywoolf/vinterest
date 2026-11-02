@@ -2,7 +2,7 @@
 
 Collected 2 November 2026 from https://persesocialcorner.com/. All prices are in Canadian dollars, as printed on the site (no $ sign where the site shows none). The site says every dish is available at both locations (Yaletown and Coal Harbour) unless marked otherwise.
 
-**Where these come from.** None of the current menus is a PDF or image. Each is an HTML page, and the food menu's data is held in the page's own script as `category | name | price | description | extras | diets` rows (a comment says "Order follows the printed menu"; the pizza and entrée blocks say "EXACT PDF ROW ORDER", so a printed PDF exists but isn't linked). The page snapshots are in `files/`. Older menu PDFs from 2023–24 sit in the site's media library but aren't linked from any page; see `site.md`.
+**Where these come from.** None of the current menus is a PDF or image. Each is an HTML page, and the food menu's data is held in the page's own script as `category | name | price | description | extras | diets` rows. The page snapshots are in `files/`.
 
 Diet tags on food come from the site's filters: `vegan-friendly`, `vegetarian`, `gluten-friendly`.
 
@@ -351,7 +351,7 @@ Source: https://persesocialcorner.com/home/menu-social-corner/drinks/ — "Drink
 > Please drink responsibly. Menu pricing is subject to change. Taxes and gratuity are not included.
 > Groups of 8 or more are subject to a 20% Service Charge on the total bill including applicable taxes and One Bill will be provided for the table
 
-No spirits list is on the current site (the 2024 bar/spirit-list PDFs in the media library are unlinked).
+The site has no spirits list.
 
 ---
 
