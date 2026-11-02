@@ -9,6 +9,10 @@
 //   CLAUDE_EFFORT       (optional)  Claude 5 models only: low | medium | high, for every purpose
 //                                   (default: PURPOSE_EFFORT, else low)
 //   CLAUDE_THINKING     (optional)  Claude Sonnet 5.5 only: "on" lets it think (slower); default off
+//   TEAM_MODEL          (optional)  model for the staff-training app's purposes only (team_*), e.g.
+//                                   claude-opus-5-5 for its cards and pairings. Everything else stays
+//                                   on CLAUDE_MODEL, so the consumer app never changes with it.
+//                                   (default: CLAUDE_MODEL)
 //   PRICE_MODEL         (optional)  model for the premium-wine price search only
 //                                   (default: claude-sonnet-4-6, whatever CLAUDE_MODEL is: the
 //                                   search tool and its timing were tuned on it)
@@ -94,6 +98,21 @@ function modelOptions(model, purpose, env) {
   if (/^claude-sonnet-5-5/.test(model) && env.CLAUDE_THINKING !== "on") body.thinking = { type: "between_tools" };
   if (/^claude-(sonnet-5-5|opus-5|fable-5-1)/.test(model)) { body.fallbacks = "default"; betas.push("server-side-fallback-2026-07-01"); }
   return { body, betas };
+}
+
+/* The staff-training app (team_*) can run on its own model, TEAM_MODEL, so its cards and pairings can be
+   written by a stronger model without the consumer app's scans, articles and Vinny changing with it. */
+function modelFor(purpose, env) {
+  if (env.TEAM_MODEL && /^team_/.test(purpose)) return env.TEAM_MODEL;
+  return env.CLAUDE_MODEL || "claude-sonnet-4-6";
+}
+
+/* Opus 5 and Fable 5 always think, and the thinking is counted against max_tokens. The team's long
+   writing caps (CLAUDE_PURPOSE_LIMITS) were set for a model that doesn't think, so a four-wine card call
+   could be cut off part way; on those models they're doubled. Unused tokens cost nothing. */
+const THINKING_DOUBLED = { team_list: 1, team_menu: 1, team_cards: 1, team_pairings: 1, team_fix: 1 };
+function thinkingCap(model, purpose, cap) {
+  return /^claude-(opus|fable)-5/.test(model) && THINKING_DOUBLED[purpose] ? cap * 2 : cap;
 }
 
 const ALLOWED_ORIGINS = [
@@ -358,8 +377,9 @@ async function handleClaude(request, env, ctx) {
   }
 
   // The model always comes from the environment — never from the request.
-  const model = env.CLAUDE_MODEL || "claude-sonnet-4-6";
-  const max_tokens = Math.min(Number(payload.max_tokens) || purposeCap, purposeCap);
+  const model = modelFor(purpose, env);
+  const cap = thinkingCap(model, purpose, purposeCap);
+  const max_tokens = Math.min(Number(payload.max_tokens) || cap, cap);
 
   const opts = modelOptions(model, purpose, env);
   try {

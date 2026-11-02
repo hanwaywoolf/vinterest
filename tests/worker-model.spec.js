@@ -92,3 +92,19 @@ test('/tts: OpenAI\'s speech model with only its key; long text cut short; other
   const denied = await tts({ OPENAI_API_KEY: 'o' }, { text: 'Hi' }, 'https://evil.example');
   expect(denied.status).toBe(403);
 });
+
+test('TEAM_MODEL moves only the staff-training purposes, with room for Opus to think on the long writing', async () => {
+  const env = { CLAUDE_MODEL: 'claude-sonnet-5-5', TEAM_MODEL: 'claude-opus-5-5' };
+  const { upstream } = await run(env, [msg('team_cards'), msg('team_pairings'), msg('team_vinny'), msg('label_scan'), msg('learn_article'), msg('wine_qa')]);
+  expect(upstream.map((u) => u.body.model)).toEqual(['claude-opus-5-5', 'claude-opus-5-5', 'claude-opus-5-5', 'claude-sonnet-5-5', 'claude-sonnet-5-5', 'claude-sonnet-5-5']);
+  // Opus always thinks: no thinking setting sent, effort by purpose, fallbacks on, long caps doubled.
+  expect(upstream[0].body.thinking).toBeUndefined();
+  expect(upstream[0].body).toMatchObject({ output_config: { effort: 'medium' }, fallbacks: 'default', max_tokens: 24576 });
+  expect(upstream[1].body.max_tokens).toBe(16384);
+  expect(upstream[2].body.max_tokens).toBe(500);
+  // The consumer app's calls are exactly what they were.
+  expect(upstream[3].body).toMatchObject({ thinking: { type: 'between_tools' }, max_tokens: 4096 });
+  // Without TEAM_MODEL the team purposes follow CLAUDE_MODEL as before.
+  const plain = await run({ CLAUDE_MODEL: 'claude-sonnet-5-5' }, [msg('team_cards')]);
+  expect(plain.upstream[0].body).toMatchObject({ model: 'claude-sonnet-5-5', max_tokens: 12288 });
+});

@@ -174,6 +174,11 @@ the Worker's per-IP limit. They go into `PRO_ONLY` (with `TEAM_PRO`) once restau
 and the Upload tab's sign-in card comes back with them. Roughly, on Sonnet 4.6: a staff card with its questions is 3 cents, a
 250-wine list from scratch about $8, a menu's pairings $1.40, a marked answer under a cent.
 
+The team purposes can run on their own model: `TEAM_MODEL` on Cloudflare (e.g. `claude-opus-5-5`) moves
+only `team_*` calls, so the consumer app stays on `CLAUDE_MODEL`. Opus 5.5 is $4/$20 per million tokens
+against Sonnet 5.5's $2/$10 and always thinks, so a list's training costs roughly two to three times as
+much; it's written once at publish, so for a 40-wine list that's a few dollars.
+
 ## The management console (built)
 
 The phone is for the person learning. A manager wants the whole floor at once, so the same `/team/`
