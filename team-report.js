@@ -36,6 +36,10 @@ const TeamReport = {
   coverage(){ const rows=TeamData.wines().map(w=>({wine:w,...this._sellers(w)})).map(x=>({...x,covered:x.of>0&&x.knows>=Math.max(Math.min(this.HOLE_MIN,x.of),Math.ceil(x.of/2))}));
     const part=f=>{ const xs=rows.filter(f); return {covered:xs.filter(x=>x.covered).length,total:xs.length}; };
     return {glass:part(x=>TeamData.byGlass(x.wine)),bottle:part(x=>!TeamData.byGlass(x.wine)),holes:rows.filter(x=>!x.covered&&TeamData.byGlass(x.wine)).sort((a,b)=>a.knows/Math.max(1,a.of)-b.knows/Math.max(1,b.of)),rows}; },
+  /* Who knows each cocktail, among the people whose role needs cocktails: [{cocktail, knows, of, card}]. */
+  cocktailCoverage(){ const all=TeamLearn._all(), ppl=TeamLearn.people().filter(p=>TeamLearn.need(p.role).cocktails>0);
+    return TeamData.cocktails().map(c=>({cocktail:c,of:ppl.length,card:!!TeamData.cocktailCard(c.id),
+      knows:ppl.filter(p=>TeamLearn.knowsWine(p.id,p.role,c.id,(all[p.id]||{}).items||{})).length})); },
   /* A person's ladder: every wine their role sells with the rungs done, and every dish. */
   ladder(pid){ const p=TeamLearn.person(pid); if(!p) return {wines:[],dishes:[]}; const sc=TeamLearn.scope(p.role);
     return {wines:[...sc.glass,...sc.bottle].map(w=>({wine:w,...TeamLearn.progress(pid,w.id)})),dishes:sc.dishes.map(x=>({dish:x,...TeamLearn.progress(pid,x.id,{dish:true})}))}; },

@@ -76,6 +76,8 @@ test('The Social Corner cocktails: cards, their own part of readiness, drilled, 
   expect(moved.after).toBeGreaterThan(moved.before);
   // The list and a card on screen.
   await page.getByTestId('team-tab-wines').click();
+  await expect(page.getByTestId('team-cocktail-row')).toHaveCount(0); // wines first
+  await page.getByTestId('team-list-cocktails').click();
   await expect(page.getByTestId('team-cocktail-row')).toHaveCount(20);
   await page.getByTestId('team-cocktail-row').filter({ hasText: 'The Negroni' }).click();
   await expect(page.getByTestId('team-cocktail')).toContainText('Roku Gin');
@@ -83,11 +85,16 @@ test('The Social Corner cocktails: cards, their own part of readiness, drilled, 
   // The drill asks a cocktail question as four options.
   await page.getByText(/Practise this cocktail|Start this cocktail/).click();
   await expect(page.getByTestId('drill-opt')).toHaveCount(4);
+  // The console has a Cocktails section beside Wines.
+  await page.goto(`${BASE}/team/?view=console`);
+  await page.getByTestId('console-nav-cocktails').click();
+  await expect(page.getByTestId('cocktails-row')).toHaveCount(20);
   // The Larkspur has no cocktail part.
   await page.goto(`${BASE}/team/?seed=demo`);
   const demo = await page.evaluate(() => ({ n: TeamData.cocktails().length, parts: TeamLearn.people().map((p) => Object.keys(TeamLearn.readiness(p.id).parts)).flat() }));
   expect(demo.n).toBe(0);
   expect(demo.parts).not.toContain('cocktails');
+  await expect(page.getByTestId('team-list-switch')).toHaveCount(0);
 });
 
 test('the setup screen offers The Larkspur only, a device left on The Copper Pan goes back to it, and Change restaurant returns there', async ({ context, page }) => {

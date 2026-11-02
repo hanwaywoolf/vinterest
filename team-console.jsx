@@ -6,7 +6,7 @@
    so it can be checked on a phone. Sales figures are labelled "Demo data" while the till is the
    demo's invented sales (TeamSales.demo). */
 const CONSOLE_SECTIONS=[
-  {k:'dash',label:'Dashboard',icon:'home'},{k:'team',label:'Team',icon:'user'},{k:'wines',label:'Wines',icon:'wine'},{k:'menu',label:'Menu',icon:'fork'},
+  {k:'dash',label:'Dashboard',icon:'home'},{k:'team',label:'Team',icon:'user'},{k:'wines',label:'Wines',icon:'wine'},{k:'cocktails',label:'Cocktails',icon:'wine',only:()=>TeamData.cocktails().length>0},{k:'menu',label:'Menu',icon:'fork'},
   {k:'upload',label:'Upload',icon:'camera'},{k:'pos',label:'Integrations',icon:'bolt'},{k:'admin',label:'Admin',icon:'edit'},
 ];
 const _cMoney=(n,{dp=0}={})=>{ const cur=TeamData.currency(); const v=Math.abs(n)>=10000&&!dp?`${(n/1000).toFixed(1)}k`:n.toFixed(dp); return `${cur.sym}${v}`; };
@@ -83,14 +83,14 @@ function TeamConsole({me,onPhone,refresh,section,setSection,open}){ const T=useT
     {!narrow&&<div style={{padding:'0 8px 18px'}}><TeamLogo/>
       {TeamData.brand()?<TeamVenueLogo height={20} style={{marginTop:16}}/>:<div style={{fontSize:16,fontWeight:800,color:T.ink,fontFamily:C.P,marginTop:14,lineHeight:1.2}}>{venue.name||'Your restaurant'}</div>}</div>}
     {narrow&&<_CViewToggle phone={false} onPhone={()=>onPhone({tab:'today'})} compact/>}
-    {CONSOLE_SECTIONS.map(s=>{ const on=section===s.k; return <div key={s.k} role="button" data-testid={'console-nav-'+s.k} onClick={()=>{ setSection(s.k); setPanel(null); }} style={{display:'flex',alignItems:'center',gap:10,padding:narrow?'6px 12px':'9px 10px',borderRadius:10,background:on?T.soft:'transparent',border:narrow?`1px solid ${on?cr:T.line}`:'none',color:on?T.ink:T.mid,fontSize:14,fontWeight:on?700:500,fontFamily:C.P,cursor:'pointer',whiteSpace:'nowrap',flexShrink:0}}><Icon n={s.icon} sz={16} col={on?cr:T.mid}/>{s.label}</div>; })}
+    {CONSOLE_SECTIONS.filter(s=>!s.only||s.only()).map(s=>{ const on=section===s.k; return <div key={s.k} role="button" data-testid={'console-nav-'+s.k} onClick={()=>{ setSection(s.k); setPanel(null); }} style={{display:'flex',alignItems:'center',gap:10,padding:narrow?'6px 12px':'9px 10px',borderRadius:10,background:on?T.soft:'transparent',border:narrow?`1px solid ${on?cr:T.line}`:'none',color:on?T.ink:T.mid,fontSize:14,fontWeight:on?700:500,fontFamily:C.P,cursor:'pointer',whiteSpace:'nowrap',flexShrink:0}}><Icon n={s.icon} sz={16} col={on?cr:T.mid}/>{s.label}</div>; })}
     {!narrow&&<div style={{flex:1}}/>}
     {!narrow&&<div style={{padding:'0 8px'}}>
       <div style={{display:'flex',alignItems:'center',gap:8,paddingTop:12,borderTop:`1px solid ${T.line}`}}><TeamFace person={me} size={30}/><div style={{minWidth:0}}><div style={{fontSize:13,fontWeight:600,color:T.ink,fontFamily:C.P,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{me.name}</div><div style={{fontSize:11,color:T.mid,fontFamily:C.P}}>{TeamLearn.ROLES[me.role].label}</div></div></div>
       <_CViewToggle phone={false} onPhone={()=>onPhone({tab:'today'})}/>
       {TeamData.isDemo()&&<div style={{fontSize:11,color:T.mid,fontFamily:C.P,padding:'12px 2px 0',lineHeight:1.5}}>Management console · The Larkspur demo</div>}</div>}
   </div>;
-  const page=section==='team'?<_CTeam open={go} refresh={refresh}/>:section==='wines'?<_CWines open={go} goUpload={()=>setSection('upload')}/>:section==='menu'?<_CMenu open={go} goUpload={()=>setSection('upload')}/>
+  const page=section==='team'?<_CTeam open={go} refresh={refresh}/>:section==='wines'?<_CWines open={go} goUpload={()=>setSection('upload')}/>:section==='cocktails'?<_CCocktails open={go}/>:section==='menu'?<_CMenu open={go} goUpload={()=>setSection('upload')}/>
     :section==='upload'?<_CUpload refresh={refresh}/>:section==='pos'?<_CPos open={go}/>:section==='admin'?<_CAdmin refresh={refresh}/>:<_CDash open={go} setSection={setSection}/>;
   // A section opens at its top; the drawer is a new one for each thing it shows, so it opens at its top too.
   const pageRef=React.useRef(null);
@@ -253,6 +253,19 @@ function _CPerson({id,open}){ const T=useTheme(), p=TeamLearn.person(id), r=Team
   </div>; }
 
 /* ── Wines ── */
+/* The cocktail list (a restaurant that has one): by its own sections, with price, base spirit and who on the
+   floor knows each one (TeamReport.cocktailCoverage). */
+function _CCocktails({open}){ const T=useTheme(), cov=TeamReport.cocktailCoverage(), col=_tMixCol(T);
+  const groups=[]; cov.forEach(x=>{ const s=x.cocktail.section||'Cocktails'; let g=groups.find(y=>y.s===s); if(!g) groups.push(g={s,xs:[]}); g.xs.push(x); });
+  return <div data-testid="console-cocktails">{_cH(T,'Cocktails',`${cov.length} on the list · ${cov.filter(x=>x.of&&x.knows>=Math.ceil(x.of/2)).length} known by most of the floor`)}
+    {groups.map(g=><div key={g.s} style={{marginBottom:14}}>{_cLabel(T,g.s)}<Card style={{padding:'6px 4px'}}>
+      <_CTable testid="cocktails-table" cols={[{h:'Cocktail'},{h:'Price',align:'center',w:64},{h:'Base spirit',w:150},{h:'Known by',align:'center',w:84},{h:'Card',align:'center',w:52}]}
+        rows={g.xs.map(x=>{ const c=x.cocktail, k=TeamData.cocktailCard(c.id); return {key:c.id,testid:'cocktails-row',onClick:()=>open({view:'cocktail',id:c.id}),cells:[
+          <div style={{display:'flex',alignItems:'flex-start',gap:8,minWidth:160}}><span style={{width:8,height:8,borderRadius:4,background:col,flexShrink:0,marginTop:6}}/><div><div style={{fontWeight:600,color:T.ink}}>{c.name}</div><div style={{fontSize:12,color:T.mid,lineHeight:1.4}}>{(c.ingredients||[]).join(', ')}</div></div></div>,
+          c.price,<span style={{color:T.ink2}}>{(k&&k.spirit)||'—'}</span>,
+          <span style={{color:x.of&&x.knows<Math.ceil(x.of/2)?T.tone.bad:T.ink2,whiteSpace:'nowrap'}}>{x.knows} of {x.of}</span>,
+          x.card?<Icon n="check" sz={14} col={T.green} style={{display:'inline-block',verticalAlign:'middle'}}/>:<span style={{color:T.mid}}>—</span>]}; })}/></Card></div>)}
+  </div>; }
 function _CWines({open,goUpload}){ const T=useTheme(), cr=T.lift(C.cr), ws=TeamData.wines(), cov=TeamReport.coverage(), by=Object.fromEntries(cov.rows.map(x=>[x.wine.id,x]));
   const [edit,setEdit]=React.useState(null); // {id, glass, bottle, section}
   const secs=[...new Set(ws.map(w=>w.section).filter(Boolean))];

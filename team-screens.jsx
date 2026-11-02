@@ -202,11 +202,18 @@ function TeamDrill({pid,only,part,given,intro,back,open}){ const T=useTheme(), c
   </div>; }
 
 /* The list, by its own sections, with what this person knows. */
+/* Wines | Cocktails at the top of the list tab, where the restaurant has cocktails. */
+let _teamListView='wines';
+function _TListSwitch({view,set}){ const T=useTheme(), cr=T.lift(C.cr);
+  return <div data-testid="team-list-switch" style={{display:'flex',gap:4,padding:3,borderRadius:12,border:`1px solid ${T.line}`,marginBottom:14}}>{[['wines',`Wines (${TeamData.wines().length})`],['cocktails',`Cocktails (${TeamData.cocktails().length})`]].map(([k,l])=>
+    <div key={k} role="button" aria-pressed={view===k} data-testid={'team-list-'+k} onClick={()=>{ _teamListView=k; set(k); }} style={{flex:1,textAlign:'center',padding:'8px 0',borderRadius:9,background:view===k?_alpha(cr,0.18):'transparent',color:view===k?T.ink:T.mid,fontSize:14,fontWeight:700,fontFamily:C.P,cursor:'pointer'}}>{l}</div>)}</div>; }
 function TeamWines({pid,open}){ const T=useTheme();
   const ws=TeamData.wines(), person=TeamLearn.person(pid), items=(TeamLearn._all()[pid]||{}).items||{};
+  const mixes=TeamData.cocktails().length>0, [view,setView]=React.useState(mixes?_teamListView:'wines');
+  if(mixes&&view==='cocktails') return <div><_TListSwitch view={view} set={setView}/><TeamCocktailList pid={pid} open={open} top/></div>;
   if(!ws.length) return <div>{_tH(T,'Wine list','Nothing uploaded yet.')}</div>;
   const secs=[]; ws.forEach(w=>{ const s=w.section||'The list'; let g=secs.find(x=>x.s===s); if(!g) secs.push(g={s,ws:[]}); g.ws.push(w); });
-  return <div>{_tH(T,'Wine list',`${ws.length} wines · ${ws.filter(TeamData.byGlass).length} by the glass`)}
+  return <div>{mixes&&<_TListSwitch view={view} set={setView}/>}{_tH(T,'Wine list',`${ws.length} wines · ${ws.filter(TeamData.byGlass).length} by the glass`)}
     {secs.map(g=><div key={g.s}>{_tLabel(T,g.s)}<Card style={{padding:0}}>{g.ws.map((w,i)=>{ const k=person&&TeamLearn.knowsWine(pid,person.role,w.id,items);
       return <div key={w.id} role="button" data-testid="team-wine-row" onClick={()=>open({view:'wine',id:w.id})} style={{display:'flex',alignItems:'center',gap:10,padding:'11px 14px',borderTop:i?`1px solid ${T.line}`:'none',cursor:'pointer'}}>
         <div style={{width:8,height:8,borderRadius:4,background:_tTypeCol(T,w.type),flexShrink:0}}/>
@@ -215,18 +222,17 @@ function TeamWines({pid,open}){ const T=useTheme();
           {(()=>{ const dw=TeamData.window(w); return dw&&<div style={{fontSize:12,fontWeight:600,color:dw.stage==='ready'?'#5FD48F':dw.stage==='young'?'#7FB3F0':'#F2B84B',fontFamily:C.P,marginTop:2}}>{dw.word}{dw.source==='claude'?` · ${dw.line}`:''}</div>; })()}</div>
         {k&&<Icon n="check" sz={16} col="#5FD48F"/>}<Icon n="chevron" sz={12} col={T.mid}/>
       </div>; })}</Card></div>)}
-    <TeamCocktailList pid={pid} open={open}/>
   </div>; }
 
 /* The cocktail colour: the stage's amber, lifted on the dark stage like a wine colour. */
 function _tMixCol(T){ return T.lift?T.lift('#C98A2B'):'#C98A2B'; }
 
 /* The cocktail list, by its own sections (Signatures, Spritzes…), under the wines. */
-function TeamCocktailList({pid,open}){ const T=useTheme(), cs=TeamData.cocktails(); if(!cs.length) return null;
+function TeamCocktailList({pid,open,top}){ const T=useTheme(), cs=TeamData.cocktails(); if(!cs.length) return null;
   const person=TeamLearn.person(pid), items=(TeamLearn._all()[pid]||{}).items||{}, col=_tMixCol(T);
   const secs=[]; cs.forEach(c=>{ const s=c.section||'Cocktails'; let g=secs.find(x=>x.s===s); if(!g) secs.push(g={s,cs:[]}); g.cs.push(c); });
   return <div data-testid="team-cocktails">
-    <div style={{marginTop:26}}>{_tH(T,'Cocktails',`${cs.length} on the list`)}</div>
+    <div style={{marginTop:top?0:26}}>{_tH(T,'Cocktails',`${cs.length} on the list`)}</div>
     {secs.map(g=><div key={g.s}>{_tLabel(T,g.s)}<Card style={{padding:0}}>{g.cs.map((c,i)=>{ const k=person&&TeamLearn.knowsWine(pid,person.role,c.id,items);
       return <div key={c.id} role="button" data-testid="team-cocktail-row" onClick={()=>open({view:'cocktail',id:c.id})} style={{display:'flex',alignItems:'center',gap:10,padding:'11px 14px',borderTop:i?`1px solid ${T.line}`:'none',cursor:'pointer'}}>
         <div style={{width:8,height:8,borderRadius:4,background:col,flexShrink:0}}/>

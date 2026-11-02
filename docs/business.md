@@ -78,7 +78,7 @@ ingredient against ingredients, a spirit against spirits), so they're asked as w
 wine pills; `TeamLearn.givesAway` still drops any whose name gives the answer (the Brasa-Roja **Mezcal**). Cocktails
 are their own part of readiness (`PART_LABEL.cocktails`: bartender 90% on all four rungs, `cocktailKinds`; server,
 manager and sommelier 50%; buyer none), assigned, drilled and recorded like wines (`TeamLearn.qsOf`, `kindsFor`,
-keys `c:`), listed under the wines (`TeamCocktailList`, `TeamCocktail`) and shown on every dish their cards name
+keys `c:`), listed in their own section: on the phone a Wines | Cocktails switch at the top of the list tab (`_TListSwitch`, `TeamCocktailList`, `TeamCocktail`), in the console a Cocktails section beside Wines with price, base spirit, who knows each and its card (`_CCocktails` over `TeamReport.cocktailCoverage`), both only where there are cocktails and shown on every dish their cards name
 ("Cocktails with it", `TeamData.cocktailsFor`). A restaurant with no cocktails has no cocktail part anywhere.
 Vinny's test stays on the wine list and menu.
 
