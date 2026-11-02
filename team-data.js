@@ -187,6 +187,51 @@ const TeamData = {
       done+=ws.length; onStep&&onStep(done,ids.length);
     }
   },
+  /* The publish check (docs/business.md "Checking the questions"): every question on these wines' cards is
+     put through what the drill does with it (TeamLearn.audit), and the ones that would be left out or asked
+     badly are sent back to be rewritten (prompts/team-fix.txt, purpose team_fix, FIX_BATCH a call), each
+     with why it failed and the facts to write it from. A rewrite replaces the question under the same id,
+     so nobody's progress moves, and is checked again; one that still fails stays out of the drill, as it
+     would have anyway. The result is kept as venue.checked {at, asked, failed, fixed, left} for the job
+     chip and the console. The demo restaurant runs offline, so it's only counted there. */
+  /* The check in words for the job chip: "180 questions checked · 6 rewritten". */
+  checkedLine(){ const c=(this.get().venue||{}).checked; if(!c) return 'Training is up to date';
+    return `${c.asked} questions checked${c.fixed?` · ${c.fixed} rewritten`:''}${c.left?` · ${c.left} held back`:''}`; },
+  FIX_BATCH:8, FIX_ROUNDS:2,
+  async checkQuestions(ids,onStep){
+    const all=ids||this.wines().map(w=>w.id), asked=all.reduce((n,id)=>n+((this.card(id)||{}).qs||[]).length,0);
+    const failed=TeamLearn.audit(all);
+    let fixed=0;
+    if(failed.length&&!this.isDemo()){
+      const tpl=_loadTextSync('prompts/team-fix.txt'), venue=this.get().venue.name||'the restaurant';
+      onStep&&onStep(0,failed.length);
+      // Up to FIX_ROUNDS goes: a rewrite that fails the check again is sent back once more with its new reason.
+      let todo=failed;
+      for(let round=0;round<this.FIX_ROUNDS&&todo.length;round++){
+      for(let i=0;i<todo.length;i+=this.FIX_BATCH){
+        const part=todo.slice(i,i+this.FIX_BATCH);
+        const items=part.map(f=>{ const w=this.wine(f.wine), c=this.card(f.wine)||{};
+          const suits=this.dishes().filter(x=>{ const p=this.pairing(x.id); return p&&[...(p.best||[]),p.glass].filter(Boolean).some(b=>b.id===w.id); }).map(x=>x.name);
+          return `ID ${f.q.id}\nWINE ${this.label(w)} | ${w.type} | ${w.region}, ${w.country} | grapes: ${(w.grapes||[]).join(', ')||'unknown'} | ${[w.glass&&'glass '+w.glass,w.bottle&&'bottle '+w.bottle].filter(Boolean).join(', ')}\nCARD taste: ${c.taste||''} | style: body ${(c.style||{}).body}/5, acidity ${(c.style||{}).acid}/5, tannin ${(c.style||{}).tannin}/5, sweetness ${(c.style||{}).sweet}/5 | grape: ${c.grape||''} | place: ${c.place||''}\nDISHES IT SUITS ${suits.join('; ')||'none listed'}\nPROBLEM ${f.why}: ${f.note}\nQUESTION ${JSON.stringify(f.q)}`; }).join('\n\n');
+        const prompt=tpl.replace(/\{\{venue\}\}/g,venue).replace('{{facts}}',[...new Set(part.map(f=>f.wine))].map(id=>this.facts(this.wine(id))).join('\n'))
+          .replace('{{list}}',this._listLines()).replace('{{menu}}',this._menuLines()).replace('{{items}}',items);
+        let j=null; try{ j=this._json(await window.claude.complete({purpose:'team_fix',messages:[{role:'user',content:prompt}]})); }catch(e){}
+        const d=this.get();
+        (j&&j.fixes||[]).forEach(fx=>{ const f=part.find(x=>x.q.id===fx.id); if(!f||!fx.q) return; const c=d.cards[f.wine]; if(!c) return;
+          const nq={...fx.q,k:f.q.k,id:f.q.id};
+          const ok=nq.q&&(nq.k==='recognise'?Array.isArray(nq.opts)&&nq.opts.length===4&&nq.opts[nq.a]:nq.k==='apply'?Array.isArray(nq.key)&&nq.key.length:!!nq.ans);
+          if(ok) c.qs=c.qs.map(q=>q.id===f.q.id?nq:q); });
+        this.save(d);
+        if(!round) onStep&&onStep(Math.min(failed.length,i+this.FIX_BATCH),failed.length);
+      }
+      const ids2=new Set(todo.map(f=>f.q.id)); todo=TeamLearn.audit([...new Set(todo.map(f=>f.wine))]).filter(f=>ids2.has(f.q.id));
+      }
+      const still=new Set(TeamLearn.audit([...new Set(failed.map(f=>f.wine))]).map(f=>f.q.id));
+      fixed=failed.filter(f=>!still.has(f.q.id)).length;
+    }
+    const d=this.get(); d.venue.checked={at:Date.now(),asked,failed:failed.length,fixed,left:failed.length-fixed}; this.save(d);
+    return d.venue.checked;
+  },
   // Keeps only what the card may hold: dishes that are on the menu, alternatives that are on the list,
   // and questions that have what their kind needs.
   _cleanCard(c,d){
@@ -236,6 +281,9 @@ const TeamData = {
     if(needPairs) jobs.push(this.writePairings(dishes,(a)=>{ prog.p=a; tell(); }));
     if(dated.length) jobs.push(this.writeWindows(dated,(a)=>{ prog.w=a; tell(); }));
     if(jobs.length){ tell(); await Promise.all(jobs); }
+    // Last, once the pairings are in (a table question is checked against them): every question checked
+    // and the ones that fail rewritten, before anyone is assigned them.
+    if(typeof TeamLearn!=='undefined'&&this.wines().length) await this.checkQuestions(null,(a,b)=>onStep&&onStep('Checking every question',a,b));
     if(typeof TeamLearn!=='undefined') TeamLearn.assign(res);
   },
   /* The drinking window for each dated wine (the consumer app's vintage_info, open to every account),
@@ -329,6 +377,14 @@ const TeamSample = {
     if(which==='demo'&&Object.keys(d.cards).length) TeamDemo.seedProgress();
     return true;
   },
+  /* The demo's size in words for the button that opens it, from its own files. */
+  demoLine(){ const s=_loadJSON('data/team-demo-list.json')||{}, d=_loadJSON('data/team-demo.json')||{}, n=k=>(s[k]||[]).length;
+    const staff=((d.staff&&d.staff.length)?d.staff:this.DEMO_STAFF).length;
+    return `${n('wines')} wines, ${n('dishes')} dishes, a team of ${['','one','two','three','four','five','six','seven','eight','nine','ten'][staff]||staff}`; },
+  /* The Copper Pan is no longer offered (the setup screen has only The Larkspur); it stays for the tests,
+     which open it with ?seed=sample. A device left on it without asking goes back to the setup screen. */
+  retire(){ const v=TeamData.get().venue||{}; if(v.sample!=='sample') return false;
+    TeamData.reset(); Store.remove(TeamLearn.KEY); TeamLearn.resetProgress(); if(typeof TeamSales!=='undefined') TeamSales.clear(); return true; },
   // The Larkspur's team (photos in team/faces/). The manager is first, so the demo opens as her.
   /* Whether the restaurant on the device is this seed as the build now carries it. */
   current(which){ const v=TeamData.get().venue||{}; if(v.sample!==which) return false;
