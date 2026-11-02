@@ -36,7 +36,11 @@ const TeamData = {
   card(id){ return this.get().cards[id]||null; },
   pairing(dishId){ return this.get().pairings[dishId]||null; },
   byGlass(w){ return !!(w&&w.glass); },
-  label(w){ return [w.producer,w.name,w.vintage||'NV'].filter(Boolean).join(' '); },
+  /* A mixed drink on the list (a cocktail, a spritz, a sangria, an alcohol-free one) rather than a wine:
+     it has a recipe instead of a grape and a vintage, its own card (prompts/team-cocktail-cards.txt), its
+     own part of readiness (TeamLearn 'drinks') and its own pick on each dish. */
+  isDrink(w){ return !!w&&w.type==='cocktail'; },
+  label(w){ return this.isDrink(w)?w.name:[w.producer,w.name,w.vintage||'NV'].filter(Boolean).join(' '); },
   short(w){ return [w.producer,w.name].filter(Boolean).join(' '); },
 
   // One id per wine whatever the vintage, so a new vintage on the list is the same wine moving on.
@@ -170,7 +174,9 @@ const TeamData = {
       f.grapeKnown?`${f.grape}: ${(KNOWLEDGE.grapes[f.grape]||{}).profile||''} Winemaking: ${f.winemaking} Ageing: ${f.ageing} Food: ${f.food}`:'',
     ].filter(Boolean).join(' ');
   },
-  _listLines(){ return this.wines().map(w=>`${w.id} | ${this.label(w)} | ${w.type} | ${[w.glass&&'glass '+w.glass,w.bottle&&'bottle '+w.bottle].filter(Boolean).join(', ')}`).join('\n'); },
+  _listLines(){ return this.wines().filter(w=>!this.isDrink(w)).map(w=>`${w.id} | ${this.label(w)} | ${w.type} | ${[w.glass&&'glass '+w.glass,w.bottle&&'bottle '+w.bottle].filter(Boolean).join(', ')}`).join('\n'); },
+  // The drinks list as the cocktail prompts see it: every ingredient as the menu lists it, and the price.
+  _drinkLines(){ return this.wines().filter(w=>this.isDrink(w)).map(w=>`${w.id} | ${w.name} | ${w.section} | base: ${w.spirit||'not given'} | ${(w.spec||[]).join(', ')} | ${w.glass}${w.credit?` | created by ${w.credit}`:''}`).join('\n')||'(no cocktails)'; },
   _menuLines(){ return this.dishes().map(x=>`${x.name} | ${x.main} | ${x.cook} | ${(x.flav||[]).join(', ')}`).join('\n')||'(no menu uploaded yet)'; },
 
   /* One Claude call, tried a second time after a short pause if the first fails. */
@@ -178,6 +184,10 @@ const TeamData = {
     catch(e){ if(e&&(e.code==='pro'||e.status===402||e.status===429)) throw e; await new Promise(r=>setTimeout(r,1500)); return window.claude.complete({purpose,messages:[{role:'user',content}]}); } },
   /* Staff cards and their questions for these wines, a few a call (prompts/team-cards.txt). */
   async writeCards(ids,onStep){
+    // Cocktails and other mixed drinks are written from their own prompt, after the wines.
+    const drinks=ids.filter(id=>this.isDrink(this.wine(id))); if(drinks.length){ const rest=ids.filter(id=>!drinks.includes(id));
+      if(rest.length) await this.writeCards(rest,(a,b)=>onStep&&onStep(a,ids.length));
+      return this.writeDrinkCards(drinks,(a)=>onStep&&onStep(rest.length+a,ids.length)); }
     const tpl=_loadTextSync('prompts/team-cards.txt');
     const venue=this.get().venue.name||'the restaurant';
     let done=0; onStep&&onStep(0,ids.length);
@@ -248,6 +258,22 @@ const TeamData = {
     const d=this.get(); d.venue.checked={at:Date.now(),asked,failed:failed.length,fixed,left:failed.length-fixed}; this.save(d);
     return d.venue.checked;
   },
+  /* Cards for cocktails and other mixed drinks, four a call (prompts/team-cocktail-cards.txt), from the
+     menu's own recipe: what's listed is fact; how a drink is usually served is said as usual, never asked. */
+  async writeDrinkCards(ids,onStep){
+    const tpl=_loadTextSync('prompts/team-cocktail-cards.txt'), venue=this.get().venue.name||'the restaurant';
+    let done=0; onStep&&onStep(0,ids.length);
+    for(let i=0;i<ids.length;i+=this.CARD_BATCH){
+      const ws=ids.slice(i,i+this.CARD_BATCH).map(id=>this.wine(id)).filter(Boolean);
+      const prompt=tpl.replace(/\{\{venue\}\}/g,venue).replace('{{about}}',this.about()).replace('{{drinks}}',this._drinkLines()).replace('{{list}}',this._listLines()).replace('{{menu}}',this._menuLines())
+        .replace('{{these}}',ws.map(w=>`${w.id} | ${w.name} | ${w.section} | base: ${w.spirit||'not given'} | ${(w.spec||[]).join(', ')} | ${w.glass}${w.credit?` | created by ${w.credit}`:''}`).join('\n'));
+      const j=this._json(await this._callRetry('team_cards',prompt))||{};
+      const d=this.get();
+      (j.cards||[]).forEach(c=>{ if(c&&d.wines[c.id]&&this.isDrink(d.wines[c.id])) d.cards[c.id]={...this._cleanCard(c,d),at:Date.now()}; });
+      this.save(d);
+      done+=ws.length; onStep&&onStep(done,ids.length);
+    }
+  },
   // Keeps only what the card may hold: dishes that are on the menu, alternatives that are on the list,
   // and questions that have what their kind needs.
   _cleanCard(c,d){
@@ -260,19 +286,20 @@ const TeamData = {
   async writePairings(dishIds,onStep){
     const tpl=_loadTextSync('prompts/team-pairings.txt');
     const venue=this.get().venue.name||'the restaurant';
-    const list=this.wines().map(w=>{ const c=this.card(w.id), s=c&&c.style; return `${w.id} | ${this.label(w)} | ${w.type} | ${[w.glass&&'glass '+w.glass,w.bottle&&'bottle '+w.bottle].filter(Boolean).join(', ')}${s?` | body ${s.body}/5, acidity ${s.acid}/5, tannin ${s.tannin}/5, sweetness ${s.sweet}/5`:''}`; }).join('\n');
+    const list=this.wines().filter(w=>!this.isDrink(w)).map(w=>{ const c=this.card(w.id), s=c&&c.style; return `${w.id} | ${this.label(w)} | ${w.type} | ${[w.glass&&'glass '+w.glass,w.bottle&&'bottle '+w.bottle].filter(Boolean).join(', ')}${s?` | body ${s.body}/5, acidity ${s.acid}/5, tannin ${s.tannin}/5, sweetness ${s.sweet}/5`:''}`; }).join('\n');
     let done=0; onStep&&onStep(0,dishIds.length);
     // The batches run at once (a 27-dish menu is three calls: 15 seconds together rather than 45 in a row).
     const batches=[]; for(let i=0;i<dishIds.length;i+=this.PAIR_BATCH) batches.push(dishIds.slice(i,i+this.PAIR_BATCH).map(id=>this.dish(id)).filter(Boolean));
     await Promise.all(batches.map(async xs=>{
-      const prompt=tpl.replace(/\{\{venue\}\}/g,venue).replace('{{about}}',this.about()).replace('{{list}}',list)
+      const prompt=tpl.replace(/\{\{venue\}\}/g,venue).replace('{{about}}',this.about()).replace('{{list}}',list).replace('{{cocktails}}',this._drinkLines())
         .replace('{{dishes}}',xs.map(x=>`${x.name} | ${x.desc} | main: ${x.main} | ${x.cook} | ${(x.flav||[]).join(', ')}`).join('\n'));
       const j=this._json(await window.claude.complete({purpose:'team_pairings',messages:[{role:'user',content:prompt}]}))||{};
       const d=this.get();
       (j.pairings||[]).forEach(p=>{
         const x=xs.find(x=>x.name===p.dish); if(!x) return;
         const ok=id=>id&&d.wines[id]&&d.wines[id].onList;
-        d.pairings[x.id]={best:(p.best||[]).filter(b=>ok(b.id)),glass:p.glass&&ok(p.glass.id)?p.glass:null,avoid:p.avoid&&ok(p.avoid.id)?p.avoid:null,at:Date.now()};
+        const wine=id=>ok(id)&&!this.isDrink(d.wines[id]), drink=id=>ok(id)&&this.isDrink(d.wines[id]);
+        d.pairings[x.id]={best:(p.best||[]).filter(b=>wine(b.id)),glass:p.glass&&wine(p.glass.id)?p.glass:null,avoid:p.avoid&&wine(p.avoid.id)?p.avoid:null,cocktail:p.cocktail&&drink(p.cocktail.id)?p.cocktail:null,at:Date.now()};
       });
       this.save(d);
       done+=xs.length; onStep&&onStep(done,dishIds.length);
@@ -389,7 +416,10 @@ const TeamSample = {
     const lv=(this._listFile(which)||{}).venue||{};
     const now=Date.now(), d=TeamData._empty();
     d.venue={...lv,...s.venue,name:s.venue.name,created:now,sample:which,seeded:s.exported||null}; // seeded: which copy of the file this is, so a newer build reloads it
-    s.wines.forEach((w,i)=>{ d.wines[w.id]={...w,onList:true,order:i,addedAt:now-30*86400000}; });
+    // Anything on the list file that the exported training doesn't have yet (Social Corner's cocktails, added
+    // after its wines were written) joins the list, so the next publish writes it.
+    const extra=((this._listFile(which)||{}).wines||[]).filter(w=>!s.wines.some(x=>x.id===w.id));
+    [...s.wines,...extra].forEach((w,i)=>{ d.wines[w.id]={...w,onList:true,order:i,addedAt:now-30*86400000}; });
     s.dishes.forEach((x,i)=>{ d.dishes[x.id]={...x,onMenu:true,order:i,addedAt:now}; });
     Object.values(s.cards).forEach(c=>{ d.cards[c.id]={...TeamData._cleanCard(c,d),at:now}; });
     Object.entries(s.pairings).forEach(([id,p])=>{ d.pairings[id]={...p,at:now}; });

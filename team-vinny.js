@@ -24,7 +24,7 @@ const TeamVinny = {
   _ctx(pid){
     const person=TeamLearn.person(pid); if(!person) return null;
     const role=person.role, kinds=TeamLearn.ROLES[role].kinds, items=TeamLearn._mine(TeamLearn._all(),pid).items, sc=TeamLearn.scope(role);
-    return {person,role,kinds,items,sc,wines:[...sc.glass,...sc.bottle],dishes:sc.dishes,now:Date.now()};
+    return {person,role,kinds,items,sc,wines:[...sc.glass,...sc.bottle,...(sc.drinks||[])],dishes:sc.dishes,now:Date.now()};
   },
   // The questions on a wine or dish this person may be asked now: rungs open to them, unknown first.
   _qsFor(c,{wine,dish}){

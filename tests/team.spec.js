@@ -43,7 +43,7 @@ test('a pilot restaurant opens from its link in its own look: Social Corner, sta
   await stubNetwork(context, { claudeRequests: reqs, claudeText: () => '{"cards":[]}' });
   await page.goto(`${BASE}/team/?seed=perse`);
   await expect(page.getByTestId('team-join')).toContainText('Join the Social Corner team.');
-  await expect(page.getByTestId('team-join')).toContainText('41 wines and 54 dishes');
+  await expect(page.getByTestId('team-join')).toContainText('41 wines, 22 cocktails and 54 dishes');
   await page.getByLabel('Your name').fill('Martin');
   await page.getByTestId('team-role-manager').click();
   await page.getByText('Join', { exact: true }).click();
@@ -62,6 +62,46 @@ test('a pilot restaurant opens from its link in its own look: Social Corner, sta
   await page.goto(`${BASE}/team/?seed=demo`);
   await expect(page.getByTestId('team-state')).toBeVisible();
   expect(await page.evaluate(() => C.cr)).not.toBe('#A88963');
+});
+
+test('cocktails: their own card, their own part of readiness, and answers that stay among cocktails', async ({ context, page }) => {
+  await stubNetwork(context);
+  await page.goto(`${BASE}/team/?seed=perse`);
+  await page.getByLabel('Your name').fill('Sam');
+  await page.getByTestId('team-role-bartender').click();
+  await page.getByText('Join', { exact: true }).click();
+  await expect(page.getByTestId('team-state')).toBeVisible();
+  const r = await page.evaluate(() => {
+    const id = 'c-the-negroni', d = TeamData.get();
+    d.cards[id] = { id, pitch: 'Bitter, stirred and grown-up.', taste: 'Bitter orange, herbs and a sweet finish.', style: { sweet: 2, sour: 0, bitter: 5, strong: 4 }, spirit: 'Gin', usually: { method: 'Stirred', glass: 'A rocks glass', garnish: 'An orange peel' }, story: 'A classic from Florence.', dishes: [{ dish: 'Charred Chorizo', why: 'Bitterness cuts the fat.' }], alts: [],
+      qs: [
+        { id: id + '#0', k: 'recall', q: 'Which spirit is the base of The Negroni?', ans: 'Gin', acc: [], why: 'Roku Gin.' },
+        { id: id + '#1', k: 'recall', q: 'Which bitter Italian liqueur is in The Negroni?', ans: 'Campari', acc: [], why: 'Campari.' },
+        { id: id + '#2', k: 'recall', q: 'What does The Negroni cost?', ans: '$22', acc: [], why: '$22.' },
+        { id: id + '#3', k: 'apply', q: 'A guest having the Charred Chorizo wants a cocktail with a bitter edge. What do you suggest and why?', key: ['Offer The Negroni', 'Its bitterness cuts the richness of the chorizo', 'Gin and Campari, stirred'], why: 'x' },
+      ] };
+    TeamData.save(d);
+    const qs = TeamLearn.wineQs(id), ch = (n) => { const c = TeamLearn.choices(qs[n]); return { opts: c.opts, right: c.right.map((i) => c.opts[i]), groups: c.groups }; };
+    const me = TeamLearn.me();
+    return { parts: Object.keys(TeamLearn.readiness(me.id).parts), drinks: TeamLearn.scope('bartender').drinks.length, glass: TeamLearn.scope('bartender').glass.some((w) => TeamData.isDrink(w)),
+      spirit: ch(0), liqueur: ch(1), price: ch(2), apply: ch(3), kind: TeamLearn.kindOf(TeamData.wine(id)), spec: TeamData.wine(id).spec };
+  });
+  expect(r.parts).toContain('drinks');
+  expect(r.drinks).toBe(22);
+  expect(r.glass).toBe(false); // cocktails aren't counted as wines by the glass
+  expect(r.kind).toBe('cocktail');
+  const spirits = ['Gin', 'Vodka', 'White rum', 'Aged rum', 'Blanco tequila', 'Mezcal', 'Bourbon', 'Rye whiskey', 'Scotch whisky', 'Cognac', 'Pisco', 'Tequila', 'Rum', 'Whisky', 'Tequila or vodka', 'Elderflower and Prosecco', 'Wine and brandy', 'None (alcohol-free)'];
+  for (const o of r.spirit.opts) expect(spirits).toContain(o);
+  for (const o of r.liqueur.opts) if (o !== 'Campari') expect(r.spec).not.toContain(o); // nothing that's in the drink is a wrong answer
+  for (const o of r.price.opts) expect(o).toMatch(/^\$\d+$/);
+  const offers = r.apply.groups.length === 2 ? r.apply.opts.slice(0, r.apply.groups[0].to) : [];
+  for (const o of offers) expect(o).not.toMatch(/Tignanello|Barolo|Prosecco DOC|Riesling/); // cocktails offered among cocktails
+  const reasons = r.apply.opts.slice(r.apply.groups[r.apply.groups.length - 1].from);
+  expect(reasons.some((x) => /bitter|chorizo/i.test(x))).toBe(true);
+  await page.getByTestId('team-tab-wines').click();
+  await page.getByText('The Negroni').click();
+  await expect(page.getByTestId('team-drink')).toContainText('Roku Gin');
+  await expect(page.getByTestId('team-usually')).toContainText('check with the bar');
 });
 
 test('the sample restaurant opens on Today: not ready yet, with every wine and dish to learn', async ({ context, page }) => {

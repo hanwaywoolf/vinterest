@@ -66,7 +66,7 @@ function TeamSetup({onDone}){ const T=useTheme(), cr=T.lift(C.cr);
       {brand&&brand.photo&&<div style={{height:150,borderRadius:16,margin:'0 0 18px',background:`center/cover url(${TeamBrand.asset(brand.photo)})`,position:'relative',overflow:'hidden'}}><div style={{position:'absolute',inset:0,background:'linear-gradient(180deg,rgba(0,0,0,0.15),rgba(0,0,0,0.6))'}}/>
         {brand.wordmark&&<img src={TeamBrand.asset(brand.wordmark)} alt={here.name} style={{position:'absolute',left:18,right:18,bottom:16,width:'calc(100% - 36px)',maxWidth:320}}/>}</div>}
       <div style={{fontSize:13,fontWeight:700,color:cr,fontFamily:C.P,letterSpacing:'0.1em',textTransform:'uppercase'}}>Staff training</div>
-      {_tH(T,`Join the ${here.name} team.`,`${TeamData.wines().length} wines and ${TeamData.dishes().length} dishes from your own list and menu. Learn what to say about each, what goes with what, and keep it fresh in a few minutes a day.`)}
+      {_tH(T,`Join the ${here.name} team.`,`${(()=>{ const all=TeamData.wines(), nd=all.filter(w=>TeamData.isDrink(w)).length, nw=all.length-nd; return nd?`${nw} wines, ${nd} cocktails`:`${nw} wines`; })()} and ${TeamData.dishes().length} dishes from your own list and menu. Learn what to say about each, what goes with what, and keep it fresh in a few minutes a day.`)}
       <div style={{display:'flex',flexDirection:'column',gap:10,marginTop:14}}>
         <input aria-label="Your name" placeholder="Your name" value={name} onChange={e=>setName(e.target.value)} style={field}/>
         <div role="radiogroup" aria-label="Your role" style={{display:'flex',flexWrap:'wrap',gap:8}}>
@@ -207,19 +207,45 @@ function TeamWines({pid,open}){ const T=useTheme();
   const ws=TeamData.wines(), person=TeamLearn.person(pid), items=(TeamLearn._all()[pid]||{}).items||{};
   if(!ws.length) return <div>{_tH(T,'Wine list','Nothing uploaded yet.')}</div>;
   const secs=[]; ws.forEach(w=>{ const s=w.section||'The list'; let g=secs.find(x=>x.s===s); if(!g) secs.push(g={s,ws:[]}); g.ws.push(w); });
-  return <div>{_tH(T,'Wine list',`${ws.length} wines · ${ws.filter(TeamData.byGlass).length} by the glass`)}
+  const nd=ws.filter(w=>TeamData.isDrink(w)).length, wine=ws.filter(w=>!TeamData.isDrink(w));
+  return <div>{_tH(T,nd?'Wines and cocktails':'Wine list',`${wine.length} wines · ${wine.filter(TeamData.byGlass).length} by the glass${nd?` · ${nd} cocktails`:''}`)}
     {secs.map(g=><div key={g.s}>{_tLabel(T,g.s)}<Card style={{padding:0}}>{g.ws.map((w,i)=>{ const k=person&&TeamLearn.knowsWine(pid,person.role,w.id,items);
       return <div key={w.id} role="button" data-testid="team-wine-row" onClick={()=>open({view:'wine',id:w.id})} style={{display:'flex',alignItems:'center',gap:10,padding:'11px 14px',borderTop:i?`1px solid ${T.line}`:'none',cursor:'pointer'}}>
         <div style={{width:8,height:8,borderRadius:4,background:_tTypeCol(T,w.type),flexShrink:0}}/>
         <div style={{flex:1,minWidth:0}}><div style={{fontSize:15,fontWeight:600,color:T.ink,fontFamily:C.P}}>{TeamData.short(w)}</div>
-          <div style={{fontSize:13,color:T.mid,fontFamily:C.P,display:'flex',alignItems:'center',gap:5,flexWrap:'wrap'}}><span>{w.vintage||'NV'} ·</span><Flag wine={w} size={13}/><span>{[w.region,w.glass&&`glass ${w.glass}`,w.bottle&&`bottle ${w.bottle}`].filter(Boolean).join(' · ')}</span></div>
+          {TeamData.isDrink(w)?<div style={{fontSize:13,color:T.mid,fontFamily:C.P}}>{[w.spirit,w.glass].filter(Boolean).join(' · ')}</div>:<div style={{fontSize:13,color:T.mid,fontFamily:C.P,display:'flex',alignItems:'center',gap:5,flexWrap:'wrap'}}><span>{w.vintage||'NV'} ·</span><Flag wine={w} size={13}/><span>{[w.region,w.glass&&`glass ${w.glass}`,w.bottle&&`bottle ${w.bottle}`].filter(Boolean).join(' · ')}</span></div>}
           {(()=>{ const dw=TeamData.window(w); return dw&&<div style={{fontSize:12,fontWeight:600,color:dw.stage==='ready'?'#5FD48F':dw.stage==='young'?'#7FB3F0':'#F2B84B',fontFamily:C.P,marginTop:2}}>{dw.word}{dw.source==='claude'?` · ${dw.line}`:''}</div>; })()}</div>
         {k&&<Icon n="check" sz={16} col="#5FD48F"/>}<Icon n="chevron" sz={12} col={T.mid}/>
       </div>; })}</Card></div>)}
   </div>; }
 
 /* A wine's staff card. */
+/* A cocktail's card: what's in it as the menu lists it, its style on sweet, sour, bitter and strong,
+   how a drink like it is usually served (said as usual: the menu doesn't say), who created it, what to
+   pair it with. Teach while asking: each style word says what it means. */
+const _DRINK_HOW={sweet:'Sugar and fruit: syrups, liqueurs, juice.',sour:'Citrus and acidity: lemon, lime, sharp fruit.',bitter:'The grip of Campari, bitters, coffee or amaro.',strong:'How much spirit you taste.'};
+function TeamDrink({id,pid,open}){ const T=useTheme(), w=TeamData.wine(id), c=TeamData.card(id), cr=T.lift(C.cr);
+  if(!w) return null; const st=TeamLearn.standing(pid,id);
+  const bar=(k,label)=>{ const v=c&&c.style&&c.style[k]; return v==null?null:<div key={k} style={{marginBottom:10}}><div style={{display:'flex',justifyContent:'space-between',fontSize:15,fontFamily:C.P,color:T.ink}}><span style={{fontWeight:600}}>{label}</span><span style={{color:T.mid}}>{v}/5</span></div>
+    <div style={{height:6,borderRadius:3,background:T.line,marginTop:4}}><div style={{width:(v/5*100)+'%',height:'100%',borderRadius:3,background:cr}}/></div><div style={{fontSize:13,color:T.mid,fontFamily:C.P,marginTop:3}}>{_DRINK_HOW[k]}</div></div>; };
+  return <div data-testid="team-drink">
+    <div style={{fontSize:12,fontWeight:700,color:cr,fontFamily:C.P,letterSpacing:'0.08em',textTransform:'uppercase'}}>{w.section}</div>
+    {_tH(T,w.name,[w.spirit,w.glass,w.credit&&`created by ${w.credit}`].filter(Boolean).join(' · '))}
+    {c&&c.say&&<div data-testid="team-say" role="button" onClick={()=>{ TeamVoice.unlock(); TeamVoice.speak(c.say); }} style={{display:'inline-flex',alignItems:'center',gap:8,margin:'-4px 0 12px',padding:'6px 12px',borderRadius:14,border:`1px solid ${T.line}`,cursor:'pointer'}}><span style={{fontSize:14}}>🔊</span><span style={{fontSize:14,fontWeight:700,color:T.ink,fontFamily:C.P}}>{c.say}</span></div>}
+    {st&&st.total>0&&<div data-testid="team-standing" style={{fontSize:14,color:T.mid,fontFamily:C.P,marginBottom:10}}>{st.state==='known'?'You know this drink':st.state==='new'?'Not started yet':`${st.known} of ${st.total} answers held`}</div>}
+    {c&&<Card style={{borderColor:_alpha(cr,0.4)}}><div style={{fontSize:12,fontWeight:700,color:T.mid,fontFamily:C.P,textTransform:'uppercase',letterSpacing:'0.08em'}}>Say it to a guest</div><div data-testid="team-pitch" style={{fontSize:15,color:T.ink2,fontFamily:C.P,lineHeight:1.55,marginTop:6}}>{c.pitch}</div></Card>}
+    {_tLabel(T,"What's in it")}<Card style={{padding:'4px 14px'}} data-testid="team-spec">{(w.spec||[]).map((x,i)=><div key={i} style={{padding:'9px 0',borderTop:i?`1px solid ${T.line}`:'none',fontSize:15,color:T.ink,fontFamily:C.P}}>{x}</div>)}</Card>
+    {c&&<>{_tLabel(T,'What it tastes like')}<Card><div style={{fontSize:15,color:T.ink2,fontFamily:C.P,lineHeight:1.5,marginBottom:12}}>{c.taste}</div>{bar('sweet','Sweet')}{bar('sour','Sour')}{bar('bitter','Bitter')}{bar('strong','Strength')}</Card>
+      {c.usually&&<div data-testid="team-usually">{_tLabel(T,'How a drink like this is usually served')}<Card><div style={{fontSize:15,color:T.ink2,fontFamily:C.P,lineHeight:1.55}}>{[c.usually.method,c.usually.glass,c.usually.garnish].filter(Boolean).join(' · ')}</div>
+        <div style={{fontSize:13,color:T.mid,fontFamily:C.P,marginTop:6}}>The menu doesn't say how ours is made: check with the bar.</div></Card></div>}
+      {c.story&&<>{_tLabel(T,'The story')}<Card><div style={{fontSize:15,color:T.ink2,fontFamily:C.P,lineHeight:1.55}}>{c.story}</div></Card></>}
+      {c.dishes&&c.dishes.length>0&&<>{_tLabel(T,'With our menu')}<Card style={{padding:0}}>{c.dishes.map((x,i)=><div key={i} style={{padding:'11px 14px',borderTop:i?`1px solid ${T.line}`:'none'}}><div style={{fontSize:15,fontWeight:600,color:T.ink,fontFamily:C.P}}>{x.dish}</div><div style={{fontSize:14,color:T.ink2,fontFamily:C.P,lineHeight:1.45}}>{x.why}</div></div>)}</Card></>}
+      {c.alts&&c.alts.length>0&&<>{_tLabel(T,'Offer instead')}<Card style={{padding:0}}>{c.alts.map((a,i)=>{ const o=TeamData.wine(a.id); return o&&<div key={i} role="button" onClick={()=>open({view:'wine',id:a.id})} style={{padding:'11px 14px',borderTop:i?`1px solid ${T.line}`:'none',cursor:'pointer'}}><div style={{fontSize:15,fontWeight:600,color:T.ink,fontFamily:C.P}}>{TeamData.short(o)}</div><div style={{fontSize:13,color:T.mid,fontFamily:C.P}}>{a.when}</div></div>; })}</Card></>}
+      <Btn primary full style={{marginTop:16}} onClick={()=>open({view:'drill',only:id})}>Practise this drink</Btn></>}
+    {!c&&<Card><div style={{fontSize:15,color:T.mid,fontFamily:C.P}}>This drink's card is written when the list is published.</div></Card>}
+  </div>; }
 function TeamWine({id,pid,open,manage}){ const T=useTheme(), w=TeamData.wine(id), c=TeamData.card(id);
+  if(TeamData.isDrink(w)) return <TeamDrink id={id} pid={pid} open={open}/>;
   const [editing,setEditing]=React.useState(false), [pitch,setPitch]=React.useState('');
   // No card yet: nothing on this screen writes one by itself. A manager writes this one here; anyone
   // else is told who does. A failed write says so, never a wait that doesn't end.
@@ -299,6 +325,7 @@ function TeamDish({id,open}){ const T=useTheme(), x=TeamData.dish(id), p=TeamDat
       {_tLabel(T,'Best with')}<Card style={{padding:0}}>{p.best.map((b,i)=>row(b,i,'b'))}</Card>
       {p.glass&&<>{_tLabel(T,'By the glass')}<Card style={{padding:0}}>{row(p.glass,0,'g')}</Card></>}
       {p.avoid&&<>{_tLabel(T,'Steer them away from')}<Card style={{padding:0}}>{row(p.avoid,0,'a')}</Card></>}
+      {p.cocktail&&TeamData.wine(p.cocktail.id)&&<div data-testid="team-dish-cocktail">{_tLabel(T,'Cocktail with this')}<Card style={{padding:0}}>{row(p.cocktail,0,'c')}</Card></div>}
     </>}
   </div>; }
 
