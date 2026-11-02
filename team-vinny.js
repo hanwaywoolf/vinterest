@@ -164,18 +164,75 @@ const TeamVinny = {
 
   /* ── A guest at the table ── */
   WISHES:['budget','light','bottle','avoid','glass'],
-  /* A table: a dish, what the guest wants, and what a good answer contains, from the dish's pairing.
-     Prefers dishes this person knows least. {dish, wish, guest, key, wines:[id]}. */
+  /* A table aimed at this person (tableWhy says why it was picked). Every dish they serve, with every
+     request it allows, is a possible table; each is scored on what this person needs (pickTable), and one of
+     the best few is taken, so it stays varied. {dish, wish, guest, key, wines:[id], why:[…], help}. */
   scenario(pid,seed=Date.now()){
     const c=this._ctx(pid); if(!c) return null;
     const pool=c.dishes.map(x=>({x,p:TeamData.pairing(x.id)})).filter(d=>d.p&&d.p.best&&d.p.best.length);
     if(!pool.length) return null;
-    const ranked=pool.map(d=>({...d,k:TeamLearn.progress(c.person.id,d.x.id,{dish:true})})).sort((a,b)=>(a.k.total?a.k.known/a.k.total:0)-(b.k.total?b.k.known/b.k.total:0));
-    const pick=ranked[Math.abs(seed)%Math.min(ranked.length,6)], {x,p}=pick, sym=TeamData.currency().sym||'£';
+    const cands=[];
+    pool.forEach(({x,p})=>this.wishesFor(p).forEach(wish=>{ const t=this._build(x,p,wish,seed); if(t&&t.wines.length) cands.push(t); }));
+    if(!cands.length) return null;
+    return this.pickTable(c.person.id,cands,seed);
+  },
+  // The requests a dish's pairing can carry: a steer away needs a wine to avoid, a glass a by-the-glass pick, a bottle or budget a bottle.
+  wishesFor(p){ const best=(p.best||[]).map(b=>TeamData.wine(b.id)).filter(Boolean);
+    return this.WISHES.filter(k=>k!=='avoid'||(p.avoid&&TeamData.wine(p.avoid.id))).filter(k=>k!=='glass'||(p.glass&&TeamData.wine(p.glass.id))).filter(k=>!['bottle','budget'].includes(k)||best.some(w=>w.bottle)); },
+  /* What makes a table worth practising for this person, each 0 to 1, weighted (TABLE_W):
+     weak — the wines a good answer needs, by how much of each they hold from drills (none yet counts as weak);
+     missed — tables with this request they haven't landed lately; sells — how much those wines sell
+     (TeamReport.salesByWine); assigned — wines or the dish assigned to them and not learnt; and a repeat
+     of a recent table counts against it. */
+  TABLE_W:{weak:3,missed:2,sells:1,assigned:1.5,dish:1,repeat:-4},
+  TABLE_TOP:3,
+  WISH_WORDS:{budget:'a bottle on a budget',light:'something lighter',bottle:'one bottle for the table',avoid:'steering a guest away from a wine',glass:'a glass at the bar'},
+  pickTable(pid,cands,seed){
+    const W=this.TABLE_W, log=(this.tableState(pid).log||[]).slice(-12), recent=log.slice(-3);
+    const held=id=>{ const pr=TeamLearn.progress(pid,id); return pr.total?pr.known/pr.total:0; };
+    const dishHeld=id=>{ const pr=TeamLearn.progress(pid,id,{dish:true}); return pr.total?pr.known/pr.total:0; };
+    let sold={}; try{ sold=Object.fromEntries(TeamReport.salesByWine(28).map(x=>[x.id,x.qty||0])); }catch(e){}
+    const topSold=Math.max(1,...Object.values(sold));
+    const assigned=new Set(TeamLearn.assignments(pid).map(a=>a.id));
+    const missedBy={}; log.forEach(x=>{ if(x.wish&&x.score<this.LAND) missedBy[x.wish]=(missedBy[x.wish]||0)+1; });
+    const scored=cands.map(t=>{
+      const weak=t.wines.reduce((a,id)=>a+(1-held(id)),0)/t.wines.length;
+      const missed=Math.min(1,(missedBy[t.wish]||0)/2);
+      const sells=t.wines.reduce((a,id)=>Math.max(a,(sold[id]||0)/topSold),0);
+      const asg=t.wines.some(id=>assigned.has(id))||assigned.has(t.dish)?1:0;
+      const dish=1-dishHeld(t.dish);
+      const rep=recent.some(x=>x.dish===t.dish&&x.wish===t.wish)?1:recent.slice(-1).some(x=>x.dish===t.dish)?0.5:0;
+      const parts={weak:W.weak*weak,missed:W.missed*missed,sells:W.sells*sells,assigned:W.assigned*asg,dish:W.dish*dish,repeat:W.repeat*rep};
+      return {...t,score:Object.values(parts).reduce((a,b)=>a+b,0),parts,raw:{weak,missed,sells,asg,missedN:missedBy[t.wish]||0}};
+    }).sort((a,b)=>b.score-a.score);
+    // One of the best few dishes, so the next table isn't always the same one, then one of that dish's
+    // requests that scores close to its best (a missed request wins outright, being worth two points).
+    const dishes=[]; scored.forEach(t=>{ if(!dishes.includes(t.dish)) dishes.push(t.dish); });
+    const h=k=>{ let x=(Math.abs(seed)^k)>>>0; x=Math.imul(x^(x>>>16),2246822507)>>>0; x=Math.imul(x^(x>>>13),3266489909)>>>0; return (x^(x>>>16))>>>0; };
+    const dish=dishes.slice(0,this.TABLE_TOP)[h(1)%Math.min(this.TABLE_TOP,dishes.length)];
+    const mine=scored.filter(t=>t.dish===dish), near=mine.filter(t=>t.score>=mine[0].score-0.5), pick=near[h(2)%near.length];
+    return {...pick,why:this.tableWhy(pick)};
+  },
+  /* Why this table, in words: its two strongest reasons. */
+  tableWhy(t){
+    const w=TeamData.wine(t.wines[0]), full=w?TeamData.short(w):'', name=!w?'this wine':w.producer&&(full.split(/\s+/).length>4||String(w.producer).toLowerCase().includes(String(w.name||'').toLowerCase()))?w.producer:full, out=[];
+    const dishShort=String(t.dishName||'').split(',')[0].trim();
+    const order=Object.entries(t.parts).filter(([k,v])=>v>0.4&&k!=='repeat').sort((a,b)=>b[1]-a[1]).map(([k])=>k);
+    for(const k of order){
+      if(k==='weak') out.push(t.raw.weak>=0.99?`you haven't started on the ${name} yet`:`you're still learning the ${name}`);
+      else if(k==='missed') out.push(`${this.WISH_WORDS[t.wish]} hasn't landed for you ${t.raw.missedN===1?'once lately':`${t.raw.missedN} times lately`}`);
+      else if(k==='sells') out.push(`the ${name} is one of your best sellers`);
+      else if(k==='assigned') out.push(`it's on your list to learn`);
+      else if(k==='dish') out.push(`you're still learning what goes with the ${dishShort.toLowerCase()}`);
+      if(out.length>=2) break;
+    }
+    return out;
+  },
+  /* One table from a dish, its pairing and a request. */
+  _build(x,p,wish,seed){
+    const sym=TeamData.currency().sym||'£';
     const best=p.best.map(b=>({...b,w:TeamData.wine(b.id)})).filter(b=>b.w), cost=w=>this._price(w.bottle)||this._price(w.glass)||0;
     const avoid=p.avoid&&TeamData.wine(p.avoid.id), glass=p.glass&&TeamData.wine(p.glass.id);
-    const wishes=this.WISHES.filter(k=>k!=='avoid'||avoid).filter(k=>k!=='glass'||glass).filter(k=>!['bottle','budget'].includes(k)||best.some(b=>b.w.bottle));
-    const wish=wishes[Math.abs(seed>>3)%wishes.length];
     let guest, key, wines;
     if(wish==='budget'){ const ok=best.filter(b=>b.w.bottle).sort((a,b)=>cost(a.w)-cost(b.w)); const cap=ok.length?Math.ceil((cost(ok[0].w)+5)/5)*5:null;
       guest=`A table of two, ordering the ${x.name}; they want a bottle${cap?` and don't want to spend more than about ${sym}${cap}`:''}.`;
@@ -216,19 +273,31 @@ const TeamVinny = {
     const r=TeamLearn.readiness(pid), pct=r?r.pct:0;
     return pct>=this.LEVEL_FROM.own?'own':pct>=this.LEVEL_FROM.hints?'hints':'choices';
   },
-  /* {level, streak, picked, log:[{at, level, score, hints}]} for this person. */
+  /* {level, streak, picked, log:[{at, level, score, hints, dish, wish, wines, d}]} for this person (the table's dish, request and wines steer the next table). */
   tableState(pid){ const t=this._guestDoc().tables[pid]; return t&&this.LEVELS.includes(t.level)?t:{level:this._startLevel(pid),streak:0,log:[]}; },
   level(pid){ return this.tableState(pid).level; },
   setLevel(pid,level){ if(!this.LEVELS.includes(level)) return; const d=this._guestDoc(), t=this.tableState(pid);
     d.tables[pid]={...t,level,streak:0,picked:true}; Store.setJSON(this.KEY,d); },
   /* Records a marked table and moves the step: returns {level, moved:'up'|'down'|null}. */
-  noteTable(pid,{level,score,hints=0}){
+  /* How their spoken delivery is moving: the last three spoken tables against the three before them
+     (fillers and hedges per table, and how long before they started). Private to them; never readiness. */
+  deliveryTrend(pid){
+    const log=(this.tableState(pid).log||[]).filter(x=>x.d); if(log.length<4) return null;
+    const avg=(xs,f)=>xs.reduce((a,x)=>a+f(x),0)/xs.length, now=log.slice(-3), was=log.slice(-6,-3);
+    const tics=x=>(x.d.fillers||0)+(x.d.hedges||0), wait=x=>x.d.waitMs==null?null:x.d.waitMs;
+    const t1=avg(now,tics), t0=avg(was,tics), w1=avg(now.filter(x=>wait(x)!=null),wait)||0, w0=avg(was.filter(x=>wait(x)!=null),wait)||0;
+    const bits=[];
+    if(t0-t1>=0.5) bits.push('fewer fillers and hedges than before'); else if(t1-t0>=0.5) bits.push('more fillers and hedges creeping in');
+    if(w0&&w1&&w0-w1>=700) bits.push('starting sooner'); else if(w0&&w1&&w1-w0>=700) bits.push('taking longer to start');
+    return bits.length?`Over your last tables: ${bits.join(', ')}.`:'Over your last tables: steady.';
+  },
+  noteTable(pid,{level,score,hints=0,delivery=null,table=null}){
     const d=this._guestDoc(), t=this.tableState(pid), i=this.LEVELS.indexOf(level);
     const landed=score>=this.LAND&&(level!=='hints'||hints<=1);
     let next=level, streak=landed?(t.level===level?t.streak:0)+1:0, moved=null;
     if(landed&&streak>=this.UP_AFTER&&i<this.LEVELS.length-1){ next=this.LEVELS[i+1]; streak=0; moved='up'; }
     else if(score<this.MISS&&i>0){ next=this.LEVELS[i-1]; streak=0; moved='down'; }
-    d.tables[pid]={level:next,streak,picked:t.picked&&!moved,log:[...(t.log||[]),{at:Date.now(),level,score,hints}].slice(-30)};
+    d.tables[pid]={level:next,streak,picked:t.picked&&!moved,log:[...(t.log||[]),{at:Date.now(),level,score,hints,...(table?{dish:table.dish,wish:table.wish,wines:table.wines}:{}),...(delivery?{d:{wpm:delivery.wpm,waitMs:delivery.waitMs,fillers:delivery.fillers,hedges:delivery.hedges,words:delivery.words}}:{})}].slice(-30)};
     Store.setJSON(this.KEY,d); return {level:next,moved};
   },
   /* What the screen shows for each step, built from the same pairing as the marking key, so the choices

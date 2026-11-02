@@ -100,9 +100,16 @@ A Vinny tab (between Today and Wines) and a row on Today, all in `team-vinny.js`
   shown as chips that open their cards. The last two turns go with a follow-up.
 - **A guest at your table** (`TeamVinny.scenario`, `TeamVinny.guest`, purpose `team_guest`,
   `prompts/team-guest.txt`): Vinny plays a diner. The table is built here from the dish's pairing so there's
-  a right answer: a dish this person knows least, and a wish (a bottle under a budget, something lighter, one
-  bottle for four, a glass at the bar, or the guest's own wrong idea to steer away from, with the wine
-  offered for another dish instead). The guest opens, the server types a reply, the guest answers, and after
+  a right answer: a dish and a wish (a bottle under a budget, something lighter, one bottle for four, a glass
+  at the bar, or the guest's own wrong idea to steer away from, with the wine offered for another dish
+  instead). Tables are picked for the person, not dealt the same to everyone (`pickTable`): every dish they
+  serve, with every wish its pairing allows, is scored on what they need (`TABLE_W`): how little they hold of
+  the wines a good answer names (from drills, none yet counting as weak), a wish whose tables they haven't
+  landed lately (the log keeps each table's dish, wish and wines), how well those wines sell, wines or the
+  dish assigned to them, how little they know the dish's pairings, and a table they've just had counts
+  against it. One of the best three dishes is taken, then one of its wishes close to its best, so it stays
+  varied, and the table says why under its heading ("Picked for you: you haven't started on the Bründlmayer
+  yet, and it's on your list to learn"; `tableWhy`). The guest opens, the server types a reply, the guest answers, and after
   the server has recommended (or three replies) the table is marked against the key: what worked, what was
   missing, and a line they could have said. It never moves readiness, which comes only from drills.
 
@@ -119,6 +126,39 @@ A Vinny tab (between Today and Wines) and a row on Today, all in `team-vinny.js`
   kept on the device (`vbiz_vinny_v1`).
 
 Measured costs are to come; both prompts are about the size of a pairings call's input with a short output.
+
+### Vinny's voice at the table (built)
+
+The guest can be heard and answered out loud, so staff work on how they say it as well as what they say
+(`team-voice.js`, `TeamVoice`; Voice on or off on the table's screen, remembered on the device).
+
+- **The guest speaks.** Each guest line is said aloud, with a replay button beside it. With a voice key on the
+  server, a cloud voice reads it (the Worker's `POST /tts`: ElevenLabs when `ELEVENLABS_API_KEY` is set, else
+  OpenAI's speech model with `OPENAI_API_KEY`; four diners' voices so tables don't all sound alike;
+  `ELEVENLABS_VOICES` takes a comma-separated list of voice ids to use instead; clips cached by their words,
+  nothing stored). Without a key `/tts` answers 404 and the phone's own voice reads it. Setting one up: add
+  the key as a Cloudflare secret on the vinterest Pages project and redeploy; `/config` then says `tts: true`.
+- **The server answers.** "Tap and speak to the guest" turns what they say into words in the reply box, to
+  check (a misheard name can be fixed) and send with Say. On the web the browser does it (Chrome uses
+  Google's service, Safari Apple's), and the screen says so the first time. Only the words are kept.
+- **Delivery.** Each spoken reply is coached from its words and timings, with no Claude call
+  (`TeamVoice.delivery`): pace in words a minute (`PACE`), how long before they started after the guest
+  finished asking (`WAIT_SLOW_MS`), fillers and hedges ("um", "sort of", "I think", "maybe"), length, and
+  whether a wine's name came through (`heardName`, forgiving how speech-to-text spells names it doesn't know).
+  A wrong choice is the guest's mark to judge, so a name is flagged only when no wine on the list came through,
+  with the expected wine's sounds-like spelling. The result's "Your delivery" lists it, with how it's moving
+  over their last tables (`TeamVinny.deliveryTrend`). Only the person sees it; it never moves readiness, the
+  mark or the help level, and the console doesn't show it.
+- **Saying the names.** Every card carries `say`, a sounds-like spelling of the producer and wine
+  ("doh-MEN la-ROSH, sha-BLEE"), written with the card (`prompts/team-cards.txt`) and, for the demo, by hand.
+  The wine card's "Say it" speaks it; a plain voice reading the spelling gets the name right.
+- **In the phone apps.** Their web views have no speech recognition, so `TeamVoice` uses the Capacitor
+  plugins when they're there (`window.VinterestNative.SpeechRecognition`, `.TextToSpeech`:
+  `@capacitor-community/speech-recognition` and `@capacitor-community/text-to-speech`) and the browser's
+  engines otherwise. Before the team app ships in the phone apps (today `scripts/native.mjs` leaves
+  `dist/team/` out): add both plugins to the native bundle, the microphone and speech-recognition wording to
+  `vinterestNative` for iOS (`NSMicrophoneUsageDescription`, `NSSpeechRecognitionUsageDescription`) and
+  Android's `RECORD_AUDIO` permission, and test both on devices. The cloud voice works the same in the apps.
 
 ## Access and cost
 

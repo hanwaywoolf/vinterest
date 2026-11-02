@@ -1474,7 +1474,8 @@
      "id": "w-nyetimber-classic-cuvee#5"
     }
    ],
-   "at": 1793386329710
+   "at": 1793386329710,
+   "say": "NYE-tim-ber"
   },
   "w-gusbourne-blanc-de-blancs": {
    "id": "w-gusbourne-blanc-de-blancs",
@@ -1597,7 +1598,8 @@
      "id": "w-gusbourne-blanc-de-blancs#5"
     }
    ],
-   "at": 1793386329710
+   "at": 1793386329710,
+   "say": "GUZ-born blon duh BLON"
   },
   "w-domaine-laroche-chablis-saint-martin": {
    "id": "w-domaine-laroche-chablis-saint-martin",
@@ -1719,7 +1721,8 @@
      "id": "w-domaine-laroche-chablis-saint-martin#5"
     }
    ],
-   "at": 1793386329710
+   "at": 1793386329710,
+   "say": "doh-MEN la-ROSH, sha-BLEE san mar-TAN"
   },
   "w-william-fevre-chablis-premier-cru-montmains": {
    "id": "w-william-fevre-chablis-premier-cru-montmains",
@@ -1842,7 +1845,8 @@
      "id": "w-william-fevre-chablis-premier-cru-montmains#5"
     }
    ],
-   "at": 1793386329710
+   "at": 1793386329710,
+   "say": "William FEV-ruh, sha-BLEE prem-YAY kroo mon-MAN"
   },
   "w-pascal-jolivet-sancerre": {
    "id": "w-pascal-jolivet-sancerre",
@@ -1965,7 +1969,8 @@
      "id": "w-pascal-jolivet-sancerre#5"
     }
    ],
-   "at": 1793386329710
+   "at": 1793386329710,
+   "say": "pas-KAL zho-lee-VAY, son-SAIR"
   },
   "w-trimbach-riesling": {
    "id": "w-trimbach-riesling",
@@ -2087,7 +2092,8 @@
      "id": "w-trimbach-riesling#5"
     }
    ],
-   "at": 1793386329710
+   "at": 1793386329710,
+   "say": "TRIM-bak REEZ-ling"
   },
   "w-donnhoff-riesling-trocken": {
    "id": "w-donnhoff-riesling-trocken",
@@ -2209,7 +2215,8 @@
      "id": "w-donnhoff-riesling-trocken#5"
     }
    ],
-   "at": 1793386329710
+   "at": 1793386329710,
+   "say": "DURN-hoff REEZ-ling TROCK-en"
   },
   "w-brundlmayer-gruner-veltliner-kamptal-terrassen": {
    "id": "w-brundlmayer-gruner-veltliner-kamptal-terrassen",
@@ -2331,7 +2338,8 @@
      "id": "w-brundlmayer-gruner-veltliner-kamptal-terrassen#5"
     }
    ],
-   "at": 1793386329710
+   "at": 1793386329710,
+   "say": "BRUNDL-my-er GROO-ner VELT-lee-ner, KAMP-tahl"
   },
   "w-cloudy-bay-sauvignon-blanc": {
    "id": "w-cloudy-bay-sauvignon-blanc",
@@ -2575,7 +2583,8 @@
      "id": "w-chateau-minuty-m-de-minuty-cotes-de-provence#5"
     }
    ],
-   "at": 1793386329710
+   "at": 1793386329710,
+   "say": "sha-TOH mee-noo-TEE, coat duh pro-VONSS"
   },
   "w-domaines-ott-chateau-de-selle-cotes-de-provence-rose": {
    "id": "w-domaines-ott-chateau-de-selle-cotes-de-provence-rose",
@@ -2697,7 +2706,8 @@
      "id": "w-domaines-ott-chateau-de-selle-cotes-de-provence-rose#5"
     }
    ],
-   "at": 1793386329710
+   "at": 1793386329710,
+   "say": "doh-MEN OTT, sha-TOH duh SELL"
   },
   "w-chateau-musar-jeune-rose": {
    "id": "w-chateau-musar-jeune-rose",
@@ -2818,7 +2828,8 @@
      "id": "w-chateau-musar-jeune-rose#5"
     }
    ],
-   "at": 1793386329710
+   "at": 1793386329710,
+   "say": "sha-TOH moo-SAR, ZHURN roh-ZAY"
   },
   "w-chateau-haut-bages-liberal-pauillac": {
    "id": "w-chateau-haut-bages-liberal-pauillac",
@@ -2939,7 +2950,8 @@
      "id": "w-chateau-haut-bages-liberal-pauillac#5"
     }
    ],
-   "at": 1793386329710
+   "at": 1793386329710,
+   "say": "sha-TOH oh-BAHZH lee-bay-RAL, POY-yak"
   },
   "w-chateau-pichon-baron-les-griffons-de-pichon-baron": {
    "id": "w-chateau-pichon-baron-les-griffons-de-pichon-baron",
@@ -3061,7 +3073,8 @@
      "id": "w-chateau-pichon-baron-les-griffons-de-pichon-baron#5"
     }
    ],
-   "at": 1793386329710
+   "at": 1793386329710,
+   "say": "sha-TOH PEE-shon ba-RON, lay gree-FON"
   },
   "w-domaine-tempier-bandol": {
    "id": "w-domaine-tempier-bandol",
@@ -3181,7 +3194,8 @@
      "id": "w-domaine-tempier-bandol#5"
     }
    ],
-   "at": 1793386329710
+   "at": 1793386329710,
+   "say": "doh-MEN tom-pee-AY, bon-DOL"
   },
   "w-catena-malbec": {
    "id": "w-catena-malbec",
@@ -3301,7 +3315,8 @@
      "id": "w-catena-malbec#5"
     }
    ],
-   "at": 1793386329710
+   "at": 1793386329710,
+   "say": "ka-TAY-na MAL-bek"
   },
   "w-la-rioja-alta-vina-ardanza-reserva": {
    "id": "w-la-rioja-alta-vina-ardanza-reserva",
@@ -3421,7 +3436,8 @@
      "id": "w-la-rioja-alta-vina-ardanza-reserva#5"
     }
    ],
-   "at": 1793386329710
+   "at": 1793386329710,
+   "say": "la ree-OH-ha AL-ta, VEEN-ya ar-DAN-tha ray-ZAIR-va"
   },
   "w-cvne-imperial-reserva": {
    "id": "w-cvne-imperial-reserva",
@@ -3541,7 +3557,8 @@
      "id": "w-cvne-imperial-reserva#5"
     }
    ],
-   "at": 1793386329710
+   "at": 1793386329710,
+   "say": "KOO-neh eem-pair-ee-AL ray-ZAIR-va"
   },
   "w-g-d-vajra-barolo-albe": {
    "id": "w-g-d-vajra-barolo-albe",
@@ -3661,7 +3678,8 @@
      "id": "w-g-d-vajra-barolo-albe#5"
     }
    ],
-   "at": 1793386329710
+   "at": 1793386329710,
+   "say": "jee-dee VYE-ra, ba-ROH-loh AL-bay"
   },
   "w-produttori-del-barbaresco-barbaresco": {
    "id": "w-produttori-del-barbaresco-barbaresco",
@@ -3781,7 +3799,8 @@
      "id": "w-produttori-del-barbaresco-barbaresco#5"
     }
    ],
-   "at": 1793386329710
+   "at": 1793386329710,
+   "say": "pro-doo-TOR-ee del bar-ba-RES-ko"
   },
   "w-allegrini-valpolicella-classico": {
    "id": "w-allegrini-valpolicella-classico",
@@ -3906,7 +3925,8 @@
      "id": "w-allegrini-valpolicella-classico#5"
     }
    ],
-   "at": 1793386329710
+   "at": 1793386329710,
+   "say": "al-leh-GREE-nee val-pol-ee-CHEL-la"
   },
   "w-allegrini-amarone-della-valpolicella-classico": {
    "id": "w-allegrini-amarone-della-valpolicella-classico",
@@ -4030,7 +4050,8 @@
      "id": "w-allegrini-amarone-della-valpolicella-classico#5"
     }
    ],
-   "at": 1793386329710
+   "at": 1793386329710,
+   "say": "al-leh-GREE-nee am-a-ROH-neh"
   },
   "w-au-bon-climat-santa-barbara-county-pinot-noir": {
    "id": "w-au-bon-climat-santa-barbara-county-pinot-noir",
@@ -4153,7 +4174,8 @@
      "id": "w-au-bon-climat-santa-barbara-county-pinot-noir#5"
     }
    ],
-   "at": 1793386329710
+   "at": 1793386329710,
+   "say": "oh bon klee-MAH, PEE-noh NWAHR"
   },
   "w-felton-road-bannockburn-pinot-noir": {
    "id": "w-felton-road-bannockburn-pinot-noir",
@@ -4272,7 +4294,8 @@
      "id": "w-felton-road-bannockburn-pinot-noir#5"
     }
    ],
-   "at": 1793386329710
+   "at": 1793386329710,
+   "say": "Felton Road BAN-uk-burn, PEE-noh NWAHR"
   },
   "w-chateau-suduiraut-lions-de-suduiraut-sauternes": {
    "id": "w-chateau-suduiraut-lions-de-suduiraut-sauternes",
@@ -4394,7 +4417,8 @@
      "id": "w-chateau-suduiraut-lions-de-suduiraut-sauternes#5"
     }
    ],
-   "at": 1793386329710
+   "at": 1793386329710,
+   "say": "sha-TOH soo-dwee-ROH, soh-TAIRN"
   },
   "w-disznoko-tokaji-late-harvest": {
    "id": "w-disznoko-tokaji-late-harvest",
@@ -4514,7 +4538,8 @@
      "id": "w-disznoko-tokaji-late-harvest#5"
     }
    ],
-   "at": 1793386329710
+   "at": 1793386329710,
+   "say": "DEES-noh-kur TOH-kai"
   },
   "w-taylor-s-10-year-old-tawny-port": {
    "id": "w-taylor-s-10-year-old-tawny-port",
@@ -4883,7 +4908,8 @@
      "id": "w-billecart-salmon-brut-reserve#5"
     }
    ],
-   "at": 1793386352740
+   "at": 1793386352740,
+   "say": "BEEL-kar sal-MON broot ray-ZAIRV"
   },
   "w-louis-jadot-bourgogne-pinot-noir-couvent-des-jacobins": {
    "id": "w-louis-jadot-bourgogne-pinot-noir-couvent-des-jacobins",
@@ -5006,7 +5032,8 @@
      "id": "w-louis-jadot-bourgogne-pinot-noir-couvent-des-jacobins#5"
     }
    ],
-   "at": 1793386352740
+   "at": 1793386352740,
+   "say": "LOO-ee zha-DOH, boor-GOYN PEE-noh NWAHR"
   }
  },
  "pairings": {
@@ -5686,5 +5713,5 @@
    "at": 1793386414232
   }
  },
- "exported": "2026-10-30T18:53:34.236Z"
+ "exported": "2026-11-02T00:07:06Z"
 }
