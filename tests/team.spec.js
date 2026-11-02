@@ -22,6 +22,33 @@ async function openSample(context, page, opts = {}) {
   return errors;
 }
 
+// The Social Corner (Vancouver), installed from its website (intake/perse/): /team/?seed=social opens its own
+// list and menu with its logo and Canadian dollars, and no invented staff: whoever opens it becomes its manager.
+test('The Social Corner opens from ?seed=social with its own logo, prices in dollars and no invented staff', async ({ context, page }) => {
+  const errors = [];
+  page.on('pageerror', (e) => errors.push(e.message));
+  await stubNetwork(context);
+  await page.goto(`${BASE}/team/?seed=social`);
+  await expect(page.getByTestId('team-setup-installed')).toBeVisible();
+  await expect(page.getByTestId('team-venue-logo')).toHaveAttribute('src', 'brand/social-corner/wordmark-white.png');
+  await expect(page.getByTestId('team-setup-installed')).toContainText(/41 wines and 62 dishes from The Social Corner/);
+  const logo = await page.request.get(`${BASE}/team/brand/social-corner/wordmark-white.png`);
+  expect(logo.status()).toBe(200);
+  await page.getByLabel('Your name').fill('Alex Morgan');
+  await page.getByText('Start training').click();
+  const who = await page.evaluate(() => ({ people: TeamLearn.people().map((p) => [p.name, p.role]), sym: TeamData.currency().sym, venue: TeamData.get().venue }));
+  expect(who.people).toEqual([['Alex Morgan', 'manager']]);
+  expect(who.sym).toBe('$');
+  expect(who.venue).toMatchObject({ name: 'The Social Corner', city: 'Vancouver', sample: 'social', brand: { accent: '#A88963' } });
+  await page.getByTestId('team-tab-wines').click();
+  await expect(page.locator('#root')).toContainText('Antinori Tignanello');
+  await expect(page.locator('#root')).toContainText('bottle $350');
+  await expect(page.locator('#root')).not.toContainText('£');
+  await page.reload(); // stays put, with its manager
+  await expect(page.getByTestId('team-venue-logo')).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
 test('the setup screen offers The Larkspur only, a device left on The Copper Pan goes back to it, and Change restaurant returns there', async ({ context, page }) => {
   await openSample(context, page);
   await page.goto(`${BASE}/team/`); // no seed: the Copper Pan is retired

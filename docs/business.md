@@ -48,6 +48,24 @@ wine as `peak`), and `TeamData.window` says where a wine is today: Still young, 
 Past its best, on the Wines tab and the card. A dated wine without one gets the consumer app's estimate, said
 to be one.
 
+## The Social Corner install
+
+`/team/?seed=social` opens The Social Corner (Vancouver, Italian and Spanish; Per Se Hospitality Group), the
+first install for a real restaurant, built from its website (`intake/perse/`: the site's copy, every menu
+transcribed with its prices, its logos and photos). `data/team-social-list.json` holds its 41 wines (the
+drinks page's sparkling, rosé, white and red, 5oz price as the glass, 8oz under "other", plus the Moscatel on
+the dessert menu) and 62 dishes (tapas, pasta, greens and soup, pizza, entrées, caviar, brunch and dessert;
+sides and add-ons are left out, the Lobster & Crab Ravioli is one dish at both its prices, and the entrée lamb
+is "Lamb Rack, Saffron Risotto" so it isn't the tapas chops). The venue carries its city, its currency (`$`,
+CAD, so `TeamData.currency()` reads the venue's before the device's) and its branding: `venue.brand` {logo,
+logoDark, mark, accent}, the white "per se SOCIAL CORNER" wordmark in place of the restaurant's name in the
+header and the console, the circle emblem in place of the Vinterest logo, and the gold accent (#A88963) in the
+header's glow (`TeamVenueLogo`, files in `team/brand/social-corner/`). Primary buttons stay crimson. No staff
+are invented: whoever opens it gives their name and starts as its manager (`TeamSetup`'s installed form), and
+adds the team from the Team tab. Its training (`data/team-social.json`: every card, pairing and drinking window)
+was written once through the branch preview's Worker on Claude Opus 5.5 (`TEAM_MODEL`), then exported; until
+that file holds it, the list and menu load alone and Upload's "Write them now" writes it.
+
 ## How staff learn
 
 Built for retention rather than points. No XP or streaks: the motivation is being able to sell the
