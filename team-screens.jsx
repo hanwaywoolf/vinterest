@@ -40,10 +40,14 @@ function TeamKpiStrip({open}){ const T=useTheme(), o=TeamReport.overview(), s=Te
       {tile('Overdue',o.overdue,o.overdue?'assignments':'none',o.overdue?T.tone.bad:null,()=>open({tab:'team'}))}
       {tile('Slipping',o.slipping,o.slipping?'were ready':'none',o.slipping?T.amber:null,()=>open({tab:'team'}))}
       {o.adoption.length>0&&tile('New on the list',o.adoption.length,`${o.adoption.filter(a=>a.knows<a.of).length} not yet known by all`,null,()=>open({tab:'wines'}))}
-      {s&&tile('Wine sales, 7 nights',`£${Math.round(s.revenue)}`,`${s.delta.revenue==null?'':(s.delta.revenue>0?'▲':'▼')+Math.abs(s.delta.revenue)+'% · '}${TeamSales.demo()?'demo data':'from the till'}`,null,()=>open({tab:'team'}),'kpi-sales')}
+      {s&&tile('Wine sales, 7 nights',`${TeamData.currency().sym||'£'}${Math.round(s.revenue)}`,`${s.delta.revenue==null?'':(s.delta.revenue>0?'▲':'▼')+Math.abs(s.delta.revenue)+'% · '}${TeamSales.demo()?'demo data':'from the till'}`,null,()=>open({tab:'team'}),'kpi-sales')}
     </div>
     <div style={{fontSize:12,color:T.mid,fontFamily:C.P,marginTop:6}}>Open this on a tablet or a laptop for the whole console.</div>
   </div>; }
+
+/* The installed restaurant's own logo (venue.brand): its wordmark in white on the dark stage. */
+function TeamVenueLogo({height=22,style}){ const b=TeamData.brand(); if(!b||!b.logo) return null;
+  return <img data-testid="team-venue-logo" src={b.logo} alt={TeamData.get().venue.name||''} style={{height,maxWidth:'100%',objectFit:'contain',display:'block',...style}} onError={e=>{ e.target.style.display='none'; }}/>; }
 
 /* A ring for a readiness figure. */
 function TeamRing({pct,col,size=88}){ const T=useTheme(), r=size/2-7, c=2*Math.PI*r;
@@ -57,6 +61,18 @@ function TeamRing({pct,col,size=88}){ const T=useTheme(), r=size/2-7, c=2*Math.P
 function TeamSetup({onDone}){ const T=useTheme(), cr=T.lift(C.cr);
   const [venue,setVenue]=React.useState(''), [name,setName]=React.useState('');
   const field={width:'100%',padding:'12px 14px',borderRadius:12,border:`1px solid ${T.line}`,background:T.soft,color:T.ink,fontFamily:C.P,fontSize:16,outline:'none'};
+  // A restaurant installed with its list and training (/team/?seed=social) needs only the person setting it up.
+  const installed=TeamData.get().venue, brand=TeamData.brand();
+  if(installed&&installed.name&&TeamData.wines().length) return <div data-testid="team-setup-installed" style={{padding:'calc(env(safe-area-inset-top) + 28px) 20px 24px',maxWidth:520,margin:'0 auto'}}>
+    {brand&&brand.logo?<TeamVenueLogo height={40} style={{marginBottom:18}}/>:<div style={{fontSize:13,fontWeight:700,color:cr,fontFamily:C.P,letterSpacing:'0.1em',textTransform:'uppercase'}}>{installed.name}</div>}
+    {(()=>{ const n=TeamData.wines().length, m=TeamData.dishes().length, ready=TeamData.wines().every(w=>TeamData.card(w.id));
+      return _tH(T,ready?'Your floor training is ready.':'Your list and menu are in.',`${n} wines and ${m} dishes from ${installed.name}'s list and menu${ready?', each wine with a staff card and every dish with its pairings':''}. Add your name to start as the manager; you add the rest of the team from the Team tab.`); })()}
+    <div style={{display:'flex',flexDirection:'column',gap:10,marginTop:14}}>
+      <input aria-label="Your name" placeholder="Your name" value={name} onChange={e=>setName(e.target.value)} style={field}/>
+      <Btn primary full onClick={()=>{ if(!name.trim()) return; TeamLearn.addPerson(name.trim(),'manager'); onDone(); }}>Start training</Btn>
+    </div>
+    <div style={{fontSize:12,color:T.mid,fontFamily:C.P,marginTop:22,display:'flex',alignItems:'center',gap:8}}><img src="/logo.png" alt="" style={{height:12,filter:'invert(1)',opacity:0.7}} onError={e=>{ e.target.style.display='none'; }}/>Vinterest for teams</div>
+  </div>;
   const go=sample=>{ if(!sample&&(!venue.trim()||!name.trim())) return;
     if(sample) TeamSample.load(sample); else { TeamData.setVenue({name:venue.trim()}); TeamLearn.addPerson(name.trim(),'manager'); }
     onDone(); };
@@ -415,4 +431,4 @@ function TeamPeople({open,onChanged}){ const T=useTheme(), cr=T.lift(C.cr);
     </div>; })}<div style={{fontSize:12,color:T.mid,fontFamily:C.P}}>Tap a figure to raise it (it wraps back to 50%).</div></Card>
   </div>; }
 
-Object.assign(window,{TeamFace,TeamRing,TeamSetup,TeamToday,TeamDrill,TeamWines,TeamWine,TeamMenu,TeamDish,TeamUpload,TeamPeople,TeamJobChip,TeamKpiStrip,useTeamJob});
+Object.assign(window,{TeamFace,TeamVenueLogo,TeamRing,TeamSetup,TeamToday,TeamDrill,TeamWines,TeamWine,TeamMenu,TeamDish,TeamUpload,TeamPeople,TeamJobChip,TeamKpiStrip,useTeamJob});

@@ -47,7 +47,7 @@ function TeamVinnyTab({pid,open}){ const T=useTheme(), cr=T.lift(C.cr);
       <div style={{fontSize:17,fontWeight:800,color:T.ink,fontFamily:C.P}}>{test&&!test.none?`${test.qs.length} questions on what you need`:'Nothing to test yet'}</div>
       <div data-testid="vinny-test-why" style={{fontSize:14,color:T.ink2,fontFamily:C.P,lineHeight:1.5,marginTop:4}}>{test?test.why:''}</div>
       {test&&!test.none&&<Btn primary full style={{marginTop:12}} onClick={()=>startTest(test)}>Start Vinny's test</Btn>}
-      <div style={{fontSize:13,color:T.mid,fontFamily:C.P,margin:'14px 0 6px'}}>Or ask for one: "the reds under £50", "the dessert wines", "the menu", "what's new"</div>
+      <div style={{fontSize:13,color:T.mid,fontFamily:C.P,margin:'14px 0 6px'}}>Or ask for one: "the reds under {TeamData.currency().sym||'£'}50", "the dessert wines", "the menu", "what's new"</div>
       <div style={{display:'flex',gap:8}}>
         <input data-testid="vinny-test-ask" value={ask} onChange={e=>setAsk(e.target.value)} onKeyDown={e=>{ if(e.key==='Enter'&&asked) startTest(asked); }} placeholder="Test me on…" aria-label="Test me on" style={{flex:1,minWidth:0,height:42,borderRadius:10,border:`1px solid ${T.line}`,background:'transparent',color:T.ink,padding:'0 12px',fontSize:'15px',fontFamily:C.P,outline:'none'}}/>
         <Btn onClick={()=>asked&&startTest(asked)} style={{opacity:asked&&!asked.none?1:0.45}}>Go</Btn>
