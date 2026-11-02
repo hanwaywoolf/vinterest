@@ -755,6 +755,32 @@ test('at the table, wrong reasons are about this dish and wrong for this wine, a
   expect(errors).toEqual([]);
 });
 
+test('a four-option question never gives itself away: no wrong answer of another kind of wine, no word shared by the question and the right answer alone', async ({ context, page }) => {
+  for (const seed of ['demo', 'sample']) {
+    await stubNetwork(context);
+    await page.goto(`${BASE}/team/?seed=${seed}`);
+    await expect(page.getByTestId('team-state')).toBeVisible();
+    const r = await page.evaluate(() => {
+      const out = { other: [], give: [], count: 0 };
+      TeamData.wines().forEach((w) => TeamLearn.wineQs(w.id).filter((q) => q.k === 'recognise').forEach((q) => {
+        out.count++;
+        if (TeamLearn.givesAway(q)) out.give.push(q.q);
+        if (TeamLearn._kindsIn(q.opts[q.a]).length) {
+          const fits = TeamLearn.KIND_FITS[TeamLearn.kindOf(w)];
+          q.opts.forEach((o, i) => { const ks = TeamLearn._kindsIn(o); if (i !== q.a && ks.length && !ks.some((k) => fits.includes(k))) out.other.push(q.q + ' → ' + o); });
+        }
+      }));
+      const ott = TeamData.wines().find((w) => /Ott/.test(w.producer || ''));
+      out.ott = ott && TeamLearn.wineQs(ott.id).filter((q) => q.k === 'recognise' && /description/i.test(q.q)).map((q) => q.opts)[0];
+      return out;
+    });
+    expect(r.count).toBeGreaterThan(15);
+    expect(r.give).toEqual([]);
+    expect(r.other).toEqual([]);
+    if (seed === 'demo') expect(r.ott.every((o) => /rosé/i.test(o))).toBe(true); // all four are rosés
+  }
+});
+
 test('a recall question offers wrong answers of its own kind: flavours for a flavour, climates for a climate', async ({ context, page }) => {
   const errors = await asMarco(context, page);
   const r = await page.evaluate(() => {

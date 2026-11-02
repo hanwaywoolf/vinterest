@@ -52,7 +52,57 @@ const TeamLearn = {
   /* Every question for a wine (its card's) and for a dish (written here from its pairing: no call). */
   // Four options are shown in an order fixed per question, so the right one isn't always where it was written.
   wineQs(id){ const c=TeamData.card(id); return (c&&c.qs||[]).map(q=>this._unspoil({...q,wine:id})).filter(Boolean).map(x=>{ if(x.k!=='recognise') return x;
-    const order=this._shuffle(x.opts.map((_,i)=>i),x.id); return {...x,opts:order.map(i=>this._cap(x.opts[i])),a:order.indexOf(x.a)}; }); },
+    x=this._sameKind(x); if(!x||this.givesAway(x)) return null;
+    const order=this._shuffle(x.opts.map((_,i)=>i),x.id); return {...x,opts:order.map(i=>this._cap(x.opts[i])),a:order.indexOf(x.a)}; }).filter(Boolean); },
+  /* A server always knows what kind of wine it is (the list says so), so a wrong answer describing another
+     kind ("Full-bodied oaky white" for a rosé, "Golden with honey" for a Barolo) gives the answer away.
+     Each one is swapped for a description of the same kind with this wine's style turned round
+     (kindDecoys). */
+  /* A last check on any four-option question: a telling word of the question that the right option holds
+     and no wrong option does ("rosé" in "…Côtes de Provence Rosé?" and only in "Pale, dry rosé…") picks
+     the answer without knowing anything. Such a question is left out rather than asked. */
+  GIVEAWAY_SKIP:new Set(['wine','wines','which','what','does','best','describes','description','fits','this','that','usually','style','guest','would','your','list','made','from','with','they','colour','smell','smells','taste','tastes','flavour','flavours','describe','would']),
+  givesAway(q){ if(!q.opts||q.a==null) return false; const stem=new Set(this._words(q.q).filter(w=>w.length>3&&!this.GIVEAWAY_SKIP.has(w)));
+    const ws=o=>new Set(this._words(o)), right=ws(q.opts[q.a]), wrong=q.opts.filter((_,i)=>i!==q.a).map(ws);
+    return [...right].some(w=>stem.has(w)&&!wrong.some(x=>x.has(w))); },
+  KIND_TAGS:[
+    ['red',/\breds?\b(?!\s*(berr|fruit|cherr|currant|apple|onion|pepper|plum|flower|meat|wine vinegar))|\bdeep purple\b|\bruby\b/],
+    ['white',/\bwhites?\b(?!\s*(pepper|flower|peach|fruit|truffle|blossom|stone|meat|fish))|\bgolden\b|\bstraw[- ]coloured\b/],
+    ['rosé',/\brosés?(?![a-z])|\brose wine\b|\bpink\b|\bsalmon[- ]coloured\b/],
+    ['sparkling',/\bsparkling\b|\bfizzy\b|\bfizz\b|\bbubbles\b|\bbubbly\b/],
+    ['sweet',/\bdessert wine\b|\bsweet wine\b|\bsyrupy\b|^sweet\b|\bsweet (and|with|fortified)\b|\bluscious\b/],
+    ['fortified',/\bfortified\b|\bport\b|\bsherry\b|\bmadeira\b|\braisin/],
+  ],
+  KIND_FITS:{red:['red'],white:['white'],rosé:['rosé'],orange:['white'],sparkling:['sparkling','white','rosé'],sweet:['sweet','white'],fortified:['fortified','sweet','red']},
+  _kindsIn(t){ const x=String(t||'').toLowerCase(); return this.KIND_TAGS.filter(([,re])=>re.test(x)).map(([k])=>k); },
+  _sameKind(q){ const w=TeamData.wine(q.wine); if(!w||!q.opts) return q; const kind=this.kindOf(w), fits=this.KIND_FITS[kind]||[kind];
+    // Only where the right answer names the kind itself ("Pale, dry rosé…"): that's when a wrong answer of
+    // another kind is ruled out by the wine's name alone. A flavour or method question is left as it is.
+    if(!this._kindsIn(q.opts[q.a]).length) return q;
+    const bad=i=>i!==q.a&&(()=>{ const ks=this._kindsIn(q.opts[i]); return ks.length&&!ks.some(k=>fits.includes(k)); })();
+    if(!q.opts.some((_,i)=>bad(i))) return q;
+    const st=(TeamData.card(w.id)||{}).style||{}, spare=this.kindDecoys(st,kind).filter(d=>!q.opts.some(o=>this._norm(o)===this._norm(d)));
+    const opts=q.opts.map((o,i)=>bad(i)?(spare.shift()||null):o);
+    if(opts.some(o=>o==null)) return null;
+    return {...q,opts}; },
+  /* Descriptions of this kind of wine that this one isn't: its style turned round on body, sweetness,
+     acidity and tannin, each with flavours that go with that style. */
+  kindDecoys(st,kind){ const v=k=>typeof st[k]==='number'?st[k]:null, noun={red:'red',white:'white',rosé:'rosé',orange:'orange wine',sparkling:'sparkling wine',sweet:'dessert wine',fortified:'fortified wine'}[kind]||'wine';
+    const fl={rosé:{rich:'ripe strawberry and spice',sweet:'candied strawberry and cream',soft:'watermelon and peach',light:'redcurrant and grapefruit'},red:{rich:'jammy black fruit and vanilla',sweet:'raisins and chocolate',soft:'ripe plum and soft spice',light:'tart red cherry and cranberry'},
+      white:{rich:'ripe tropical fruit and buttery oak',sweet:'honey and apricot',soft:'peach and melon',light:'green apple and lime'},sparkling:{rich:'toasty brioche and baked apple',sweet:'sweet pear and honey',soft:'soft pear and cream',light:'lemon and green apple'},
+      sweet:{rich:'raisins and toffee',sweet:'honey and apricot',soft:'peach and melon',light:'lemon and green apple'},fortified:{rich:'raisins and toffee',sweet:'honey and fig',soft:'soft plum',light:'citrus peel and almond'}}[kind]||{rich:'ripe dark fruit',sweet:'honey',soft:'soft fruit',light:'crisp citrus'};
+    // Only a trait this wine is clearly at one end of is turned round: a middling one could be either.
+    const out=[];
+    if(v('body')!=null&&v('body')<=2) out.push(`Deep-coloured, full-bodied ${noun} with ${fl.rich}`);
+    if(v('body')!=null&&v('body')>=4) out.push(`Pale, light-bodied ${noun} with ${fl.light}`);
+    if(v('sweet')!=null&&v('sweet')<=1) out.push(`Off-dry, soft ${noun} with ${fl.sweet}`);
+    if(v('sweet')!=null&&v('sweet')>=4) out.push(`Bone-dry, lean ${kind==='sweet'?'white':noun} with ${fl.light}`);
+    if(v('acid')!=null&&v('acid')>=4) out.push(`Round, low-acid ${noun} with ${fl.soft}`);
+    if(v('acid')!=null&&v('acid')<=2) out.push(`Sharp, high-acid ${noun} with ${fl.light}`);
+    if(kind==='red'&&v('tannin')!=null&&v('tannin')>=4) out.push(`Silky, barely tannic red with ${fl.light}`);
+    if(kind==='red'&&v('tannin')!=null&&v('tannin')<=1) out.push(`Firmly tannic, powerful red with ${fl.rich}`);
+    if(kind!=='sparkling'&&kind!=='fortified') out.push(`Sparkling ${noun} with fine bubbles, ${fl.light}`);
+    return out; },
   /* A question mustn't hold its own answer: "Which grape is the Louis Jadot Bourgogne Pinot Noir made from?".
      When the answer is in the wine's name, the name is said without those words ("the Louis Jadot Bourgogne
      Couvent des Jacobins"); when it's still in the question after that, the question is left out. */
