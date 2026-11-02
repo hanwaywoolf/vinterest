@@ -17,11 +17,26 @@ async function openSample(context, page, opts = {}) {
   // /config is answered by the Worker, which the static test server doesn't run.
   page.on('console', (m) => { if (m.type() === 'error' && !/404/.test(m.text())) errors.push(m.text()); });
   await stubNetwork(context, opts);
-  await page.goto(`${BASE}/team/`);
-  await page.getByText('Look around with a sample restaurant').click();
+  await page.goto(`${BASE}/team/?seed=sample`); // The Copper Pan: no longer offered on the setup screen, kept as the tests' small restaurant
   await expect(page.getByTestId('team-state')).toBeVisible();
   return errors;
 }
+
+test('the setup screen offers The Larkspur only, a device left on The Copper Pan goes back to it, and Change restaurant returns there', async ({ context, page }) => {
+  await openSample(context, page);
+  await page.goto(`${BASE}/team/`); // no seed: the Copper Pan is retired
+  await expect(page.getByTestId('team-load-demo')).toBeVisible();
+  await expect(page.getByText('Look around with a sample restaurant')).toHaveCount(0);
+  await expect(page.getByTestId('team-load-demo')).toContainText(/Open The Larkspur: 30 wines, 27 dishes, a team of \w+/);
+  await page.getByTestId('team-load-demo').click();
+  await expect(page.locator('#root')).toContainText('The Larkspur');
+  await page.reload(); // The Larkspur stays put
+  await expect(page.locator('#root')).toContainText('The Larkspur');
+  page.once('dialog', (d) => d.accept());
+  await page.getByTestId('team-who').click();
+  await page.getByTestId('team-change-restaurant').click();
+  await expect(page.getByTestId('team-load-demo')).toBeVisible();
+});
 
 test('the sample restaurant opens on Today: not ready yet, with every wine and dish to learn', async ({ context, page }) => {
   const errors = await openSample(context, page);

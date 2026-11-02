@@ -26,7 +26,7 @@ function TeamApp(){
   // /team/?seed=demo opens straight onto the demo restaurant (the wine-show laptop), replacing whatever
   // restaurant the device holds unless it's already this build's copy of it (so a reload keeps progress, and a
   // new build with more written in replaces a stale one).
-  React.useEffect(()=>{ try{ const q=new URLSearchParams(location.search), seed=q.get('seed'); if(seed){ if(!TeamLearn.me()||!TeamSample.current(seed)) TeamSample.load(seed); q.delete('seed'); const rest=q.toString(); history.replaceState(null,'',location.pathname+(rest?'?'+rest:'')); refresh(); } }catch(e){} },[]);
+  React.useEffect(()=>{ try{ const q=new URLSearchParams(location.search), seed=q.get('seed'); if(!seed&&TeamSample.retire()) refresh(); if(seed){ if(!TeamLearn.me()||!TeamSample.current(seed)) TeamSample.load(seed); q.delete('seed'); const rest=q.toString(); history.replaceState(null,'',location.pathname+(rest?'?'+rest:'')); refresh(); } }catch(e){} },[]);
   const me=TeamLearn.me(), set=!!me;
   const manager=me&&['manager','buyer'].includes(me.role);
   const tabs=TEAM_TABS.filter(t=>!t.manager||manager);
@@ -58,7 +58,7 @@ function TeamApp(){
       </div>}
       {switching&&<div style={{padding:'8px 16px',borderBottom:`1px solid ${T.line}`,display:'flex',gap:6,flexWrap:'wrap'}}>
         {TeamLearn.people().map(p=><div key={p.id} role="button" onClick={()=>{ TeamLearn.setMe(p.id); setSwitching(false); setStack([]); if(!['manager','buyer'].includes(p.role)&&['upload','team'].includes(tab)) setTab('today'); refresh(); }} style={{display:'flex',alignItems:'center',gap:6,padding:'4px 10px 4px 4px',borderRadius:16,border:`1px solid ${p.id===me.id?cr:T.line}`,fontSize:13,fontFamily:C.P,color:T.ink,cursor:'pointer'}}><TeamFace person={p} size={24}/>{p.name.split(' ')[0]} · {TeamLearn.ROLES[p.role].label}</div>)}
-        <div role="button" onClick={()=>{ if(confirm('Start again? This clears the restaurant and everyone\'s training on this device.')){ TeamData.reset(); Store.remove(TeamLearn.KEY); TeamLearn.resetProgress(); setSwitching(false); setStack([]); setTab('today'); refresh(); } }} style={{padding:'6px 10px',fontSize:13,fontFamily:C.P,color:T.mid,cursor:'pointer'}}>Start again</div>
+        <div role="button" onClick={()=>{ if(confirm('Change restaurant? This clears this restaurant and everyone\'s training on this device, and goes back to the start.')){ TeamData.reset(); Store.remove(TeamLearn.KEY); TeamLearn.resetProgress(); if(typeof TeamSales!=='undefined') TeamSales.clear(); setSwitching(false); setStack([]); setTab('today'); refresh(); } }} data-testid="team-change-restaurant" style={{padding:'4px 12px',borderRadius:16,border:`1px solid ${T.line}`,fontSize:13,fontFamily:C.P,color:T.ink2,cursor:'pointer'}}>Change restaurant</div>
       </div>}
       <div ref={scrollRef} data-scroll style={{flex:1,overflowY:'auto',padding:'16px 16px 24px'}}><div style={{maxWidth:720,margin:'0 auto'}}>{set&&<TeamJobChip onOpen={()=>{ if(manager){ setTab('upload'); setStack([]); } }}/>}<ScreenErrorBoundary>{body}</ScreenErrorBoundary></div></div>
       {set&&!top&&<div style={{display:'flex',borderTop:`1px solid ${T.line}`,background:T.bg,paddingBottom:'env(safe-area-inset-bottom)'}}>

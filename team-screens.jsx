@@ -68,8 +68,7 @@ function TeamSetup({onDone}){ const T=useTheme(), cr=T.lift(C.cr);
       <input aria-label="Your name" placeholder="Your name" value={name} onChange={e=>setName(e.target.value)} style={field}/>
       <Btn primary full onClick={()=>go(false)}>Set up my restaurant</Btn>
       <div style={{textAlign:'center',fontSize:14,color:T.mid,fontFamily:C.P,margin:'6px 0'}}>or</div>
-      <Btn full onClick={()=>go('sample')}>Look around with a sample restaurant</Btn>
-      <div data-testid="team-load-demo"><Btn full onClick={()=>go('demo')}>Open The Larkspur: 60 wines, 27 dishes, a team of seven</Btn></div>
+      <div data-testid="team-load-demo"><Btn full onClick={()=>go('demo')}>Open The Larkspur: {TeamSample.demoLine()}</Btn></div>
     </div>
   </div>; }
 

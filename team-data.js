@@ -329,6 +329,14 @@ const TeamSample = {
     if(which==='demo'&&Object.keys(d.cards).length) TeamDemo.seedProgress();
     return true;
   },
+  /* The demo's size in words for the button that opens it, from its own files. */
+  demoLine(){ const s=_loadJSON('data/team-demo-list.json')||{}, d=_loadJSON('data/team-demo.json')||{}, n=k=>(s[k]||[]).length;
+    const staff=((d.staff&&d.staff.length)?d.staff:this.DEMO_STAFF).length;
+    return `${n('wines')} wines, ${n('dishes')} dishes, a team of ${['','one','two','three','four','five','six','seven','eight','nine','ten'][staff]||staff}`; },
+  /* The Copper Pan is no longer offered (the setup screen has only The Larkspur); it stays for the tests,
+     which open it with ?seed=sample. A device left on it without asking goes back to the setup screen. */
+  retire(){ const v=TeamData.get().venue||{}; if(v.sample!=='sample') return false;
+    TeamData.reset(); Store.remove(TeamLearn.KEY); TeamLearn.resetProgress(); if(typeof TeamSales!=='undefined') TeamSales.clear(); return true; },
   // The Larkspur's team (photos in team/faces/). The manager is first, so the demo opens as her.
   /* Whether the restaurant on the device is this seed as the build now carries it. */
   current(which){ const v=TeamData.get().venue||{}; if(v.sample!==which) return false;
