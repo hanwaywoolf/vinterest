@@ -1,0 +1,396 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vinterest Teams · A sommelier at every table</title>
+<meta name="description" content="Vinterest Teams trains a restaurant's staff on its own wine list and menu, tests them before service, and shows the manager who's ready.">
+<link rel="stylesheet" href="/fonts/fonts.css?v=%%FONTS_V%%">
+<link rel="stylesheet" href="/site.css?v=%%CSS_V%%">
+</head>
+<body>
+
+%%NAV%%
+
+<section class="hero">
+  <div class="wrap">
+    <div class="grid">
+    <div class="copy">
+      <div class="eyebrow">Vinterest Teams</div>
+      <h1>A sommelier at <em>every table.</em></h1>
+      <p class="lead">Your wine list, known by the whole floor. Trained on your bottles and your dishes, tested before service, ready when the guest asks.</p>
+      <div class="cta">
+        <a class="btn primary" href="#test">Test Your List</a>
+        <a class="btn ghost" href="%%DEMO_URL%%" target="_blank" rel="noopener">Interactive Restaurant Demo</a>
+        <span class="fine">The demo opens in a new tab. No sign-up.</span>
+      </div>
+    </div>
+    <div class="side" aria-hidden="true">
+      <div class="phone big"><div class="scr"><div class="pstage" id="pstage"></div></div></div>
+    </div>
+    </div>
+    <div class="demo" id="demo">
+      <div class="tabs" role="tablist" id="tabs">
+        <button role="tab" aria-selected="true" data-scene="ready">Readiness<i></i></button>
+        <button role="tab" data-scene="team">Team<i></i></button>
+        <button role="tab" data-scene="wines">Wines<i></i></button>
+        <button role="tab" data-scene="cards">Cards<i></i></button>
+        <button role="tab" data-scene="menu">Menu<i></i></button>
+        <button role="tab" data-scene="sales">Sales<i></i></button>
+      </div>
+      <p class="cap" id="cap"></p>
+      <div class="laptop">
+        <div class="lid"><div class="stage" id="stage" aria-label="The management console, scrolling through its pages"></div></div>
+        <div class="base"></div>
+      </div>
+      <div class="open"><a class="btn ghost small" href="%%DEMO_URL%%" target="_blank" rel="noopener">Open the interactive demo →</a></div>
+    </div>
+    </div>
+  </div>
+</section>
+
+<section class="night">
+  <div class="wrap">
+    <div class="head">
+      <div class="eyebrow" style="--c:var(--gold)">Overheard</div>
+      <h2>What your guests hear now. What they could.</h2>
+      <p class="lead">Three questions a guest asks every night, and the difference a floor that knows your list makes.</p>
+    </div>
+    <div class="ex" id="ex">
+      <div class="c" style="--c:var(--gold)"><div class="q">"We're having the olives. What should we drink?"</div><div class="now"><div class="lbl">Now</div><s>Let me ask someone.</s></div><div class="then"><div class="lbl">Ready</div>The Grüner by the glass. Peppery and herby, and the acidity freshens up all that salt.<small>Gordal olives · Bründlmayer Grüner Veltliner, £11</small></div></div>
+      <div class="c" style="--c:var(--sky)"><div class="q">"Is the English fizz any good, or should we get Champagne?"</div><div class="now"><div class="lbl">Now</div><s>Both are popular.</s></div><div class="then"><div class="lbl">Ready</div>It's from Sussex, crisp and zesty, like a green apple with a hint of lemon. Lovely with the oysters.<small>Nyetimber Classic Cuvée, £14</small></div></div>
+      <div class="c" style="--c:var(--neon)"><div class="q">"We'll have the Amarone with the olives."</div><div class="now"><div class="lbl">Now</div><s>Great choice.</s></div><div class="then"><div class="lbl">Ready</div>It's big and sweet-edged, so it'd flatten the olives. Shall I bring the Sancerre, and the Amarone for the lamb?<small>A steer, and a bottle instead of a glass</small></div></div>
+    </div>
+  </div>
+</section>
+
+<section class="calc" id="calc" style="--c:var(--cr)">
+  <div class="wrap">
+    <div>
+      <div class="eyebrow">What it's worth</div>
+      <h2>Knowledge sells wine. Count it.</h2>
+      <p class="lead">A floor that can say why a bottle suits the table sells the bottle. Put your own numbers in and see what a 2, 5 or 10% lift is worth at your place.</p>
+      <div class="mech">
+        <div>One glass becomes a second.</div>
+        <div>A round of house red becomes the bottle that suits the mains.</div>
+        <div>A pairing printed beside the dish gets sold by someone who can explain it.</div>
+      </div>
+      <p class="caveat">We claim no lift for you. Once your till's sales are in, the console measures the real one.</p>
+    </div>
+    <div class="card" id="calcCard">
+      <div class="own lead"><span>Your guess at the lift</span><input type="range" min="0" max="30" step="1" value="5" data-in="lift" aria-label="Your lift" id="liftIn"><b data-out="lift">5%</b></div>
+      <div class="assume" id="ownOut" style="padding:0 0 14px"></div>
+      <div class="mode" role="group" aria-label="Detail"><button aria-pressed="true" data-mode="basic">What I know offhand</button><button aria-pressed="false" data-mode="precise">I track wine sales</button></div>
+      <div class="fld"><label>Covers a night<small>Dinner, averaged over the week</small></label><div class="v" data-out="covers">120</div><input type="range" min="30" max="400" step="10" value="120" data-in="covers" aria-label="Covers a night"></div>
+      <div class="fld"><label>Nights a week</label><div class="v" data-out="nights">6</div><input type="range" min="3" max="7" step="1" value="6" data-in="nights" aria-label="Nights a week"></div>
+      <div class="fld" data-basic><label>Average glass price</label><div class="v" data-out="glass">£9</div><input type="range" min="4" max="25" step="1" value="9" data-in="glass" aria-label="Glass price"></div>
+      <div class="fld" data-basic><label>Average bottle price</label><div class="v" data-out="bottle">£42</div><input type="range" min="18" max="150" step="2" value="42" data-in="bottle" aria-label="Bottle price"></div>
+      <div class="fld" data-precise hidden><label>Glasses sold a night</label><div class="v" data-out="glasses">60</div><input type="range" min="0" max="400" step="5" value="60" data-in="glasses" aria-label="Glasses a night"></div>
+      <div class="fld" data-precise hidden><label>Bottles sold a night</label><div class="v" data-out="bottles">12</div><input type="range" min="0" max="120" step="1" value="12" data-in="bottles" aria-label="Bottles a night"></div>
+      <div class="assume" id="assume"></div>
+      <div class="out">
+        <div class="t" style="--c:var(--amber)"><div class="k">2% lift</div><div class="n" data-sc="2">£0</div><div class="w" data-scw="2"></div></div>
+        <div class="t pick" style="--c:var(--cr)"><div class="k">5% lift</div><div class="n" data-sc="5">£0</div><div class="w" data-scw="5"></div></div>
+        <div class="t" style="--c:var(--green)"><div class="k">10% lift</div><div class="n" data-sc="10">£0</div><div class="w" data-scw="10"></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="how" id="how">
+  <div class="wrap">
+    <div class="head">
+      <div class="eyebrow" style="--c:var(--sky)">How it works</div>
+      <h2>From a photo of your list to a floor that's ready.</h2>
+    </div>
+    <div class="steps">
+      <div class="step" style="--c:var(--sky)"><span class="n">1</span><h3>Upload your list.</h3><p>A photo of the list and the menu. Vinny writes the training for every bottle and every dish, in your words if you like.</p><div class="phone"><div class="scr"><img src="img/phone-upload.jpg" alt="Upload the list, the menu, or one bottle from its label"></div></div></div>
+      <div class="step" style="--c:var(--gold)"><span class="n">2</span><h3>Train on the floor.</h3><p>Minutes before service, on their own phone, on your wines and your dishes. Tested, not told, so it sticks.</p><div class="phone"><div class="scr"><img src="img/phone-drill.jpg" alt="A question before service"></div></div></div>
+      <div class="step" style="--c:var(--neon)"><span class="n">3</span><h3>Know who's ready.</h3><p>One readiness figure per person, checked without warning, against the standard you set for each role, every service.</p><div class="phone"><div class="scr"><img src="img/phone-today-staff.jpg" alt="A bartender's readiness"></div></div></div>
+    </div>
+  </div>
+</section>
+
+<section class="floor" id="floor">
+  <div class="wrap">
+    <div class="fgrid">
+      <div class="ftext">
+        <div class="eyebrow" style="--c:var(--rose)">On the floor</div>
+        <h2 style="font-size:clamp(26px,3vw,36px)">Everything a server needs, in their pocket.</h2>
+        <div class="fcap" id="fcap" aria-live="polite"><h3 id="ftitle">The card</h3><p id="fdesc">What to say to a guest, what it tastes like with every word explained, and the dishes it suits.</p></div>
+        <div class="fnav"><button class="arrow" id="fprev" aria-label="Previous screen">←</button><div class="fdots" id="fdots"></div><button class="arrow" id="fnext" aria-label="Next screen">→</button></div>
+      </div>
+      <div class="orbit" id="orbit">
+        <div class="slot" data-title="The card" data-desc="What to say to a guest, what it tastes like with every word explained, and the dishes it suits."><div class="phone"><div class="scr"><img src="img/phone-card.jpg" alt="A wine's card"></div></div></div>
+        <div class="slot" data-title="The dish" data-desc="Best with, the by-the-glass pick, and the one to steer guests away from, each with the reason."><div class="phone"><div class="scr"><img src="img/phone-dish.jpg" alt="A dish's pairings"></div></div></div>
+        <div class="slot" data-title="Today" data-desc="Where they stand for their role, what's due, and today's drill."><div class="phone"><div class="scr"><img src="img/phone-today-staff.jpg" alt="Today"></div></div></div>
+        <div class="slot" data-title="The list" data-desc="Every wine on the list, with what they know of it and its drinking window."><div class="phone"><div class="scr"><img src="img/phone-wines.jpg" alt="The wine list"></div></div></div>
+        <div class="slot" data-title="The menu" data-desc="Every dish, already paired, so the answer is there before the guest asks."><div class="phone"><div class="scr"><img src="img/phone-menu.jpg" alt="The menu"></div></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="vinny" id="vinny">
+  <div class="wrap">
+    <div class="vgrid">
+      <div class="vtext">
+        <div class="eyebrow" style="--c:var(--cr)">Vinny</div>
+        <h2>A sommelier on every shift.</h2>
+        <p class="lead">Your list's own expert, in every server's pocket.</p>
+        <div class="vitems" id="vitems" role="tablist">
+          <button class="vitem" role="tab" aria-selected="true" data-shots="ask"><span class="vbar"><i></i></span><h3>Ask anything</h3><p>Which glass with the olives? Is the Barolo ready? Vinny answers from your list, menu and prices, in a line they can say at the table.</p></button>
+          <button class="vitem" role="tab" aria-selected="false" data-shots="test drill"><span class="vbar"><i></i></span><h3>A test on what they need</h3><p>Vinny sees what's fading and what's new, and sets ten questions on exactly that. Or they ask: "test me on the reds under £50".</p></button>
+          <button class="vitem" role="tab" aria-selected="false" data-shots="guest mark"><span class="vbar"><i></i></span><h3>A guest at the table</h3><p>Vinny plays a diner with a budget, a taste or a wrong idea. They answer in their own words, with choices or hints until they don't need them, and Vinny tells them how it landed.</p></button>
+        </div>
+      </div>
+      <div class="vphone"><div class="phone"><div class="scr"><div class="vstage" id="vstage">
+        <img src="img/vinny/ask.jpg" alt="Vinny answers which glass goes with the olives" data-k="ask" class="on">
+        <img src="img/vinny/test.jpg" alt="Vinny's test: ten questions on what this person needs" data-k="test">
+        <img src="img/vinny/drill.jpg" alt="The first question of Vinny's test" data-k="drill">
+        <img src="img/vinny/guest.jpg" alt="Vinny plays a guest asking for a glass with the roast chicken" data-k="guest">
+        <img src="img/vinny/mark.jpg" alt="Vinny marks the answer: that landed" data-k="mark">
+      </div></div></div></div>
+    </div>
+  </div>
+</section>
+
+<section class="dark mgr">
+  <div class="wrap">
+    <div>
+      <div class="eyebrow">For the manager</div>
+      <h2>Saturday, 5pm. Who's ready?</h2>
+      <p class="lead">Readiness is what each person can actually say about your list tonight. Tested, not told. Sales never move it; they only decide what gets learnt first.</p>
+      <div class="stats">
+        <div><span>Claire, sommelier</span><span class="chip green">Ready</span></div>
+        <div><span>Marco, bartender, three weeks off the drill</span><span class="chip amber">Slipping</span></div>
+        <div><span>Priya, server</span><span class="chip red">57 overdue</span></div>
+        <div><span>New on the list, still unknown to most</span><b>3 wines</b></div>
+      </div>
+    </div>
+    <div><div class="mwin"><div class="mbar"><i></i><i></i><i></i><span>Dashboard · The Larkspur</span></div><div class="stage mstage" id="mstage" role="img" aria-label="The console's dashboard scrolling: readiness by person, what needs attention, what to learn first, and what's new on the list"></div></div></div>
+  </div>
+</section>
+
+<section class="rooms">
+  <div class="wrap">
+    <div class="head" style="max-width:700px">
+      <div class="eyebrow" style="--c:var(--plum)">Your kind of room</div>
+      <h2>Built for rooms where wine matters.</h2>
+      <p class="lead">A bartender needs one true sentence about each wine. A sommelier needs all of it. You set the standard for each role; everything follows.</p>
+    </div>
+    <div class="grid">
+      <a class="room" href="/restaurants" style="--c:var(--cr)"><h3>Restaurants</h3><p>The glass list, the bottles and every pairing, by heart.</p><div class="bar"><i style="--w:70%"></i></div><small>Standard</small></a>
+      <a class="room" href="/restaurants#sommelier" style="--c:var(--plum)"><h3>Fine dining</h3><p>The whole list, to the sommelier's standard.</p><div class="bar"><i style="--w:95%"></i></div><small>Full</small></a>
+      <a class="room" href="/restaurants" style="--c:var(--gold)"><h3>Wine bars</h3><p>A long list by the glass, and guests who want to talk about it.</p><div class="bar"><i style="--w:85%"></i></div><small>By the glass</small></a>
+      <a class="room" href="/groups" style="--c:var(--sky)"><h3>Groups</h3><p>Every site on its own list, one view across them.</p><div class="bar"><i style="--w:65%"></i></div><small>Per site</small></a>
+      <a class="room" href="/wineries" style="--c:var(--rose)"><h3>Wineries</h3><p>The range is the list; the cellar door is the floor.</p><div class="bar"><i style="--w:65%"></i></div><small>Tasting room</small></a>
+    </div>
+  </div>
+</section>
+
+<section class="faq">
+  <div class="wrap">
+    <div><div class="eyebrow" style="--c:var(--green-n)">Fair questions</div><h2>Before you say yes.</h2></div>
+    <div>
+      <details open><summary>Our list changes every week.</summary><p>Good. Upload the new one, or photograph the new bottle, and Vinny has the training ready the same day. A new vintage is the same wine moving on; nobody relearns it.</p></details>
+      <details><summary>My staff won't do homework.</summary><p>It isn't homework. It's a few minutes before service, on the phone they're already holding, about tonight's wines and dishes.</p></details>
+      <details><summary>Will it write nonsense about my wines?</summary><p>Every card is grounded in checked facts about the region and the grape, written against your list, and you read it before anyone else does. Rewrite any line in your own words.</p></details>
+      <details><summary>What about our till?</summary><p>A sales export from any till works today. It tells us what sells and who sells it, so what matters most is learnt first. Square is next. Sales never change anyone's readiness.</p></details>
+      <details><summary>What does it cost?</summary><p>Per site, per month, any number of staff, with tiers by the size of the team and the list and the standard you want. Pilot rates for the first restaurants; groups by conversation.</p></details>
+      <details><summary>Where does our list go?</summary><p>It's read once to write your training, which stays with your restaurant. No guest data, nothing sold on. The same standard for one restaurant or a group of forty.</p></details>
+    </div>
+  </div>
+</section>
+
+%%TEST%%
+
+%%FOOTER%%
+
+<script>
+// The console demo: scenes drawn from the real console's screens. Each tab is a run of steps; a step
+// shows a static frame and pans a tall capture inside the stage, with a tap marker before a drawer opens.
+// (On the built site these become the live console; the choreography stays the same.)
+const ease = (x) => x < .5 ? 2 * x * x : 1 - Math.pow(-2 * x + 2, 2) / 2;
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+// A stage plays steps: each step lays a static frame and a tall capture that pans inside the stage (a
+// layer is {img, x, y, w, h} in the capture's own pixels, panned by h), then a tap marker.
+function player(stage, W, H, dir, mode) {
+  let run = 0, raf = 0;
+  const wait = (ms, token) => new Promise((r) => { const t0 = performance.now(); const tick = (t) => { if (token !== run || t - t0 >= ms) return r(); raf = requestAnimationFrame(tick); }; raf = requestAnimationFrame(tick); });
+  const layer = (l) => { const img = document.createElement('img'); img.className = 'ly'; img.src = dir + l.img + '.jpg'; img.alt = ''; img.style.left = (l.x / W * 100) + '%'; img.style.top = ((l.y || 0) / H * 100) + '%'; img.style.width = (l.w / W * 100) + '%'; stage.appendChild(img); return img; };
+  async function step(st, token) {
+    let pan = st.keep ? stage.querySelector('.ly[data-pan]') : null;
+    if (!pan) { const old = Array.from(stage.querySelectorAll('.ly')); (st.frames || []).forEach(layer); pan = layer(st.pan); pan.dataset.pan = '1'; (st.over || []).forEach(layer); old.forEach((o) => { o.classList.add('out'); setTimeout(() => o.remove(), 450); }); }
+    const scale = stage.clientWidth / W, top = (st.pan.y || 0) * scale, room = stage.clientHeight - top - (st.pan.below || 0) * scale, travel = Math.max(0, st.pan.h * scale - room);
+    const { from, to, ms } = st.pan;
+    const setY = (f) => { pan.style.transform = `translateY(${-f * travel}px)`; };
+    if (reduced || from === to || travel === 0) { setY(to); await wait(reduced ? 0 : ms, token); }
+    else if (mode === 'touch') {
+      // A person scrolling: a run of thumb flicks, each a quick swipe that eases out, with a pause to read
+      // between them. The thumb shows as a soft touch mark that moves with the swipe.
+      const dist = (to - from) * travel, n = Math.max(1, Math.round(Math.abs(dist) / (room * .55))), per = dist / n;
+      let f = from; const readMs = Math.max(250, (ms - n * 520) / n);
+      for (let i = 0; i < n; i++) {
+        if (token !== run) return; const start = f, end = f + per / travel;
+        const th = document.createElement('div'); th.className = 'thumb'; const x0 = W * .62, y0 = (st.pan.y || 0) + st.pan.h * 0 + room / scale * .72; th.style.left = (x0 / W * 100) + '%'; th.style.top = (y0 / H * 100) + '%'; stage.appendChild(th);
+        const t0 = performance.now();
+        await new Promise((done) => { const tick = (t) => { if (token !== run) return done(); const p = Math.min(1, (t - t0) / 520); const e = 1 - Math.pow(1 - p, 3); f = start + (end - start) * e; setY(f); th.style.transform = `translateY(${-per * e * .9}px)`; th.style.opacity = p < .7 ? .9 : .9 * (1 - (p - .7) / .3); if (p < 1) raf = requestAnimationFrame(tick); else done(); }; raf = requestAnimationFrame(tick); });
+        th.remove(); if (token !== run) return;
+        await wait(readMs * (0.8 + 0.4 * ((i * 7) % 5) / 5), token);
+      }
+      setY(to);
+    } else {
+      // A wheel: notches of a few lines, a breath between runs.
+      const dist = (to - from) * travel, notch = 90, n = Math.max(1, Math.round(Math.abs(dist) / notch)), per = dist / n, gap = Math.max(40, (ms - n * 140) / n);
+      let f = from;
+      for (let i = 0; i < n; i++) { if (token !== run) return; const start = f, end = f + per / travel, t0 = performance.now();
+        await new Promise((done) => { const tick = (t) => { if (token !== run) return done(); const p = Math.min(1, (t - t0) / 140); f = start + (end - start) * (1 - Math.pow(1 - p, 2)); setY(f); if (p < 1) raf = requestAnimationFrame(tick); else done(); }; raf = requestAnimationFrame(tick); });
+        await wait(gap * ((i + 1) % 4 === 0 ? 3 : 1), token); }
+      setY(to);
+    }
+    if (token !== run) return;
+    if (st.tap) { const c = document.createElement('div'); c.className = 'cursor'; c.style.left = (st.tap.x / W * 100) + '%'; c.style.top = (st.tap.y / H * 100) + '%'; stage.appendChild(c); requestAnimationFrame(() => c.classList.add('on')); await sleep(reduced ? 0 : 800); c.remove(); }
+  }
+  return { async play(steps) { run += 1; const token = run; cancelAnimationFrame(raf); for (const st of steps) { if (token !== run) return false; await step(st, token); } return token === run; }, stop() { run += 1; cancelAnimationFrame(raf); }, length: (steps) => steps.reduce((a, st) => a + st.pan.ms + (st.tap ? 800 : 0), 0) };
+}
+
+// The laptop: the console's pages, one scene per tab.
+const SW = 1440, SH = 900, SB = 220;
+const side = [{ img: 'sidebar', x: 0, w: SB, h: SH }];
+const SCENES = {
+  ready: { cap: '<b>Who\'s ready tonight.</b> One figure per person, against the standard you set for their role.', steps: [{ frames: side, pan: { img: 'dash', x: SB, w: SW - SB, h: 3273, from: 0, to: 0, ms: 2500 } }, { pan: { img: 'dash', x: SB, w: SW - SB, h: 3273, from: 0, to: .2, ms: 6000 }, keep: true }] },
+  team: { cap: '<b>Each person.</b> Who\'s slipping, who\'s overdue, and what they\'ve been checked on without warning.', steps: [{ pan: { img: 'team', x: 0, w: SW, h: 900, from: 0, to: 0, ms: 6000 } }] },
+  wines: { cap: '<b>Your list, live.</b> Every wine with who knows it, what it sold, and its drinking window.', steps: [{ frames: side, pan: { img: 'wines', x: SB, w: SW - SB, h: 2322, from: 0, to: 1, ms: 9000 } }] },
+  cards: { cap: '<b>A card per wine.</b> What to say to a guest, in words you can edit.', steps: [{ frames: side, pan: { img: 'wines', x: SB, w: SW - SB, h: 2322, from: 0, to: 0, ms: 1800 }, tap: { x: 400, y: 173 } }, { frames: [{ img: 'card-bg', x: 0, w: SW, h: SH }], pan: { img: 'card', x: 840, w: 600, h: 1861, from: 0, to: 1, ms: 8000 } }] },
+  menu: { cap: '<b>Your menu, paired.</b> The best wine for every dish, and the one to steer guests away from.', steps: [{ frames: side, pan: { img: 'menu', x: SB, w: SW - SB, h: 2682, from: 0, to: .35, ms: 4500 } }, { frames: side, pan: { img: 'menu', x: SB, w: SW - SB, h: 2682, from: 0, to: 0, ms: 1200 }, tap: { x: 390, y: 173 } }, { frames: [{ img: 'dish-bg', x: 0, w: SW, h: SH }], pan: { img: 'dish', x: 840, w: 600, h: 900, from: 0, to: 0, ms: 5000 } }] },
+  sales: { cap: '<b>The till.</b> What sells, who sells it, and which wines are worth a push.', steps: [{ frames: side, pan: { img: 'dash', x: SB, w: SW - SB, h: 3273, from: .5, to: .5, ms: 1500 } }, { pan: { img: 'dash', x: SB, w: SW - SB, h: 3273, from: .5, to: 1, ms: 8000 }, keep: true }] },
+};
+const stage = document.getElementById('stage'), tabs = Array.from(document.querySelectorAll('#tabs [role=tab]')), cap = document.getElementById('cap');
+const order = tabs.map((t) => t.dataset.scene), lap = player(stage, SW, SH, 'img/scenes/', 'wheel');
+let cur = 'ready', held = reduced, inView = false, playing = false;
+async function play(name) {
+  cur = name; playing = true; const sc = SCENES[name];
+  { const sel = tabs.find((t) => t.dataset.scene === name), box = sel.parentElement; if (box.scrollWidth > box.clientWidth) box.scrollTo({ left: sel.offsetLeft - (box.clientWidth - sel.offsetWidth) / 2, behavior: reduced ? 'auto' : 'smooth' }); }
+  tabs.forEach((t) => { t.setAttribute('aria-selected', t.dataset.scene === name ? 'true' : 'false'); const bar = t.querySelector('i'); bar.style.animation = 'none'; void bar.offsetWidth; bar.style.animation = ''; if (t.dataset.scene === name) t.style.setProperty('--dwell', (lap.length(sc.steps) + 600) + 'ms'); });
+  cap.innerHTML = sc.cap;
+  const finished = await lap.play(sc.steps); if (!finished) return;
+  await sleep(600); playing = false;
+  if (!held && inView) play(order[(order.indexOf(name) + 1) % order.length]);
+}
+tabs.forEach((t) => t.addEventListener('click', () => { held = false; play(t.dataset.scene); }));
+new IntersectionObserver((es) => es.forEach((e) => { inView = e.isIntersecting; if (inView && !playing) play(cur); })).observe(document.getElementById('demo'));
+play(cur);
+
+// The phone in the hero: a bartender's Today, the drill answered, a card read through, on a loop.
+const PW = 390, PH = 844, PHEAD = 57, PTAB = 58, pstage = document.getElementById('pstage');
+if (pstage) {
+  const ph = player(pstage, PW, PH, 'img/phone/', 'touch');
+  const head = (img) => [{ img, x: 0, y: 0, w: PW, h: PHEAD }], tabbar = [{ img: 'tabbar', x: 0, y: PH - PTAB, w: PW, h: PTAB }];
+  const PHONE = [
+    { over: [...head('head-today'), ...tabbar], pan: { img: 'today', x: 0, y: PHEAD, below: PTAB, w: PW, h: 1084, from: 0, to: 0, ms: 1800 } },
+    { pan: { img: 'today', x: 0, y: PHEAD, below: PTAB, w: PW, h: 1084, from: 0, to: 1, ms: 3500 }, keep: true, tap: { x: 195, y: 226 } },
+    { pan: { img: 'q', x: 0, y: 0, w: PW, h: PH, from: 0, to: 0, ms: 2200 }, tap: { x: 195, y: 380 } },
+    { pan: { img: 'q-picked', x: 0, y: 0, w: PW, h: PH, from: 0, to: 0, ms: 900 }, tap: { x: 195, y: 574 } },
+    { pan: { img: 'q-result', x: 0, y: 0, w: PW, h: PH, from: 0, to: 0, ms: 4000 } },
+    { pan: { img: 'wines-top', x: 0, y: 0, w: PW, h: PH, from: 0, to: 0, ms: 1600 }, tap: { x: 195, y: 200 } },
+    { over: head('head-card'), pan: { img: 'card', x: 0, y: PHEAD, w: PW, h: 2213, from: 0, to: 1, ms: 7000 } },
+  ];
+  (async function loop() { while (true) { const ok = await ph.play(PHONE); if (!ok) return; await sleep(800); if (reduced) return; } })();
+}
+
+
+// Overheard: each card tells its exchange in turn: the question, what the guest hears now, that struck
+// through, then the ready answer.
+const ex = document.getElementById('ex'), exCards = Array.from(ex.querySelectorAll('.c'));
+if (!matchMedia('(prefers-reduced-motion: reduce)').matches) {
+  ex.classList.add('play');
+  let started = false;
+  new IntersectionObserver(async (es) => { if (!es[0].isIntersecting || started) return; started = true;
+    for (const c of exCards) { for (const st of ['s1', 's2', 's3', 's4']) { c.classList.add(st); await sleep(st === 's3' ? 550 : 650); } }
+  }, { threshold: .35 }).observe(ex);
+}
+
+// The floor carousel: turns every seven seconds; the arrows and dots hold it.
+const orbit = document.getElementById('orbit'), slots = Array.from(orbit.querySelectorAll('.slot')), fdots = document.getElementById('fdots');
+let fi = 0, ftimer = 0;
+slots.forEach((_, i) => { const d = document.createElement('button'); d.setAttribute('aria-label', 'Screen ' + (i + 1)); d.addEventListener('click', () => { fgo(i); fhold(); }); fdots.appendChild(d); });
+function fgo(i) {
+  fi = (i + slots.length) % slots.length;
+  slots.forEach((sl, k) => { let d = k - fi; if (d > slots.length / 2) d -= slots.length; if (d < -slots.length / 2) d += slots.length; sl.dataset.pos = Math.abs(d) <= 2 ? String(d) : 'x'; });
+  document.getElementById('ftitle').textContent = slots[fi].dataset.title; document.getElementById('fdesc').textContent = slots[fi].dataset.desc;
+  Array.from(fdots.children).forEach((d, k) => d.setAttribute('aria-current', k === fi ? 'true' : 'false'));
+}
+function fturn() { clearInterval(ftimer); if (reduced) return; ftimer = setInterval(() => fgo(fi + 1), 7000); }
+function fhold() { clearInterval(ftimer); }
+document.getElementById('fprev').addEventListener('click', () => { fgo(fi - 1); fhold(); });
+document.getElementById('fnext').addEventListener('click', () => { fgo(fi + 1); fhold(); });
+slots.forEach((sl, i) => sl.addEventListener('click', () => { fgo(i); fhold(); }));
+fgo(0); new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting) fturn(); else clearInterval(ftimer); })).observe(orbit);
+
+// Vinny: each item shows its screens in turn (an answer; the test then its first question; a guest
+// then the mark), and the items turn on their own until one is chosen.
+(function () {
+  const items = Array.from(document.querySelectorAll('#vitems .vitem')), imgs = Array.from(document.querySelectorAll('#vstage img')), box = document.getElementById('vitems');
+  let cur = 0, timers = [], held = reduced, seen = false;
+  const SHOT_MS = 4200;
+  const clear = () => { timers.forEach(clearTimeout); timers = []; };
+  const show = (k) => imgs.forEach((im) => im.classList.toggle('on', im.dataset.k === k));
+  function pick(i, auto) {
+    clear(); cur = i; const shots = items[i].dataset.shots.split(' ');
+    items.forEach((it, k) => { it.setAttribute('aria-selected', k === i ? 'true' : 'false'); const bar = it.querySelector('.vbar i'); bar.style.animation = 'none'; void bar.offsetWidth; bar.style.animation = ''; });
+    items[i].style.setProperty('--vdwell', shots.length * SHOT_MS + 'ms');
+    shots.forEach((k, n) => timers.push(setTimeout(() => show(k), n * SHOT_MS)));
+    if (!held) timers.push(setTimeout(() => pick((i + 1) % items.length, true), shots.length * SHOT_MS));
+  }
+  items.forEach((it, i) => it.addEventListener('click', () => { held = true; box.classList.add('held'); pick(i); }));
+  new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting && !seen) { seen = true; pick(0, true); } else if (!e.isIntersecting) clear(); else if (e.isIntersecting && seen && !held) pick(cur, true); }), { threshold: .4 }).observe(document.getElementById('vinny'));
+  show('ask');
+})();
+
+// The manager's dashboard: readiness, what needs attention, learn first and new on the list, scrolled
+// through while the section is on screen, then back to the top.
+(function () {
+  const el = document.getElementById('mstage'), MW = 584, MH = 720;
+  const mp = player(el, MW, MH, 'img/scenes/', 'wheel');
+  const steps = [{ pan: { img: 'mgr', x: 0, w: MW, h: 2432, from: 0, to: 0, ms: 1800 } }, { pan: { img: 'mgr', x: 0, w: MW, h: 2432, from: 0, to: 1, ms: 15000 }, keep: true }, { pan: { img: 'mgr', x: 0, w: MW, h: 2432, from: 1, to: 1, ms: 2200 }, keep: true }];
+  let on = false;
+  async function loop() { while (on) { const ok = await mp.play(steps); if (!ok || reduced) return; } }
+  if (reduced) { mp.play([steps[0]]); return; }
+  new IntersectionObserver((es) => { const vis = es[0].isIntersecting; if (vis && !on) { on = true; loop(); } else if (!vis && on) { on = false; mp.stop(); } }, { threshold: .35 }).observe(el);
+})();
+
+// The guess slider shows itself moving once, so it reads as something to try.
+const liftIn = document.getElementById('liftIn');
+if (!matchMedia('(prefers-reduced-motion: reduce)').matches) {
+  let nudged = false;
+  new IntersectionObserver(async (es) => { if (!es[0].isIntersecting || nudged) return; nudged = true; await sleep(600);
+    for (const v of [6, 7, 8, 9, 10, 9, 8, 7, 6, 5]) { if (liftIn.matches(':active')) break; liftIn.value = v; liftIn.dispatchEvent(new Event('input', { bubbles: true })); await sleep(90); }
+  }, { threshold: .6 }).observe(liftIn);
+}
+
+// The calculator.
+const card = document.getElementById('calcCard'), money = (n) => '£' + Math.round(n).toLocaleString('en-GB');
+let mode = 'basic';
+card.querySelectorAll('.mode button').forEach((b) => b.addEventListener('click', () => { mode = b.dataset.mode; card.querySelectorAll('.mode button').forEach((x) => x.setAttribute('aria-pressed', x === b ? 'true' : 'false')); card.querySelectorAll('[data-basic]').forEach((f) => f.hidden = mode !== 'basic'); card.querySelectorAll('[data-precise]').forEach((f) => f.hidden = mode !== 'precise'); calc(); }));
+function calc() {
+  const v = {}; card.querySelectorAll('[data-in]').forEach((i) => v[i.dataset.in] = Number(i.value));
+  card.querySelector('[data-out=covers]').textContent = v.covers; card.querySelector('[data-out=nights]').textContent = v.nights;
+  card.querySelector('[data-out=glass]').textContent = '£' + v.glass; card.querySelector('[data-out=bottle]').textContent = '£' + v.bottle;
+  card.querySelector('[data-out=glasses]').textContent = v.glasses; card.querySelector('[data-out=bottles]').textContent = v.bottles;
+  card.querySelector('[data-out=lift]').textContent = v.lift + '%';
+  let night, note;
+  if (mode === 'basic') { night = v.covers * (0.5 * v.glass + 0.1 * v.bottle); note = `Assumes half your covers take a glass and one table in ten takes a bottle: about <b>${money(night / v.covers)} of wine per cover</b>. Switch to “I track wine sales” to use your own figures.`; }
+  else { night = v.glasses * v.glass + v.bottles * v.bottle; note = `From your figures: about <b>${money(night)} of wine a night</b>, ${money(night / v.covers)} per cover.`; }
+  document.getElementById('assume').innerHTML = note;
+  const year = night * v.nights * 52;
+  [2, 5, 10].forEach((p) => { card.querySelector(`[data-sc="${p}"]`).textContent = money(year * p / 100); card.querySelector(`[data-scw="${p}"]`).textContent = money(night * v.nights * p / 100) + ' a week'; });
+  document.getElementById('ownOut').innerHTML = `At ${v.lift}%: <b>${money(year * v.lift / 100)} a year</b>, ${money(night * v.nights * v.lift / 100)} a week. Illustrative, from your inputs.`;
+}
+card.addEventListener('input', calc); calc();
+
+</script>
+<script src="/site.js?v=%%JS_V%%" defer></script>
+</body>
+</html>

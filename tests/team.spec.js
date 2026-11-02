@@ -1024,3 +1024,17 @@ test('a wine card says how to pronounce the wine, and Say it speaks it', async (
   await expect.poll(() => page.evaluate(() => window.__spoken.join('|'))).toContain('DURN-hoff');
   expect(errors).toEqual([]);
 });
+
+// Vinny once said "nothing else comes by the glass" with another glass among the olives' best: each
+// dish's line now marks which of its best wines are poured by the glass, and names the first pick.
+test("Vinny's menu lines mark every by-the-glass wine in a dish's pairing", async ({ context, page }) => {
+  await stubNetwork(context);
+  await page.goto(`${BASE}/team/?seed=demo`);
+  await expect(page.getByTestId('team-state')).toBeVisible();
+  const line = await page.evaluate(() => TeamVinny._lines().text.split('\n').find((l) => /Gordal olives/.test(l)));
+  expect(line).toMatch(/best with [^·]*Nyetimber Classic Cuvée \(W\d+\) also by the glass/);
+  expect(line).toMatch(/first pick by the glass Bründlmayer/);
+  expect(line).not.toMatch(/Sancerre \(W\d+\) also by the glass/);
+  const prompt = await page.evaluate(() => _loadTextSync('prompts/team-vinny.txt'));
+  expect(prompt).toContain('not the only one');
+});

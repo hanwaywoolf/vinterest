@@ -79,3 +79,49 @@ sign-up, and someone who signs up twice is emailed once.
 Replies go to `hello@vinterest.app`, so that mailbox has to exist (Cloudflare Email Routing can forward it).
 Legal pages mention that email is used only for the beta; keep the email's wording in step with them.
 
+
+## Vinterest Teams (vinterest.team)
+
+The teams website is `site/teams/` and builds to `site-teams-dist/` with `npm run site:teams:build`
+(`scripts/site-teams.mjs`). It is its own Cloudflare Pages project, separate from the consumer
+site above and from the app, so it can carry its own domain.
+
+| Setting | Value |
+| --- | --- |
+| Framework preset | None |
+| Build command | `npm ci && npm run site:teams:build` |
+| Build output directory | `site-teams-dist` |
+| Production branch | `main` |
+| Custom domain | `vinterest.team` (and `www`, redirected to it) |
+
+Setup, once: Workers & Pages → Create → Pages → Connect to Git → the vinterest repository (a second
+project on the same repository is fine) → the settings above. Then Custom domains → Set up a custom
+domain → `vinterest.team`. With the domain's DNS on Cloudflare the records are added for you;
+otherwise add the CNAME it shows at the registrar. Add `www.vinterest.team` the same way, as a custom
+domain on this project and not only a DNS record (a DNS record alone gives a 522); the site's
+`_redirects` then sends it to the apex.
+
+Pages: `index.html` (/), `restaurants.html`, `groups.html`, `wineries.html`, `pricing.html`, each
+served without `.html`. They share `site.css`, `site.js` (the Test Your List form) and three parts
+filled in at build time: `_nav.html`, `_test.html`, `_footer.html`. A new page is a new `.html` file
+in `site/teams/`: the build picks it up, adds it to the sitemap, and `tests/teams-site.spec.js`
+should list it in `PAGES`.
+
+The project is `vinterest-teams`: production at https://vinterest-teams.pages.dev, and every push of a branch deploys a preview at `https://<branch with / as ->.vinterest-teams.pages.dev`. While the site lives on `claude/teams-site`, that branch is set as the production branch; set it back to `main` at the merge.
+
+Build variables (all optional):
+
+- The restaurant demo buttons open the teams app from the same branch as the site:
+  `https://demo.vinterest.team` from `main`, `https://<branch>.vinterest.pages.dev/team/` from any
+  other branch (from `CF_PAGES_BRANCH`, which Cloudflare sets). `TEAM_DEMO_URL` overrides it. The
+  old `DEMO_ORIGIN` variable is ignored and can be deleted.
+
+  `demo.vinterest.team` is a custom domain on the **app** project (`vinterest`), not this one: Workers
+  & Pages → vinterest → Custom domains → Set up a custom domain → `demo.vinterest.team`. The app's
+  Worker (`serveTeamDemo` in `_worker.js`) serves the team app at that address's root and seeds The
+  Larkspur on a first visit; `https://vinterest.pages.dev/` stays the consumer app.
+- `CF_ANALYTICS_TOKEN`: as for the consumer site; a separate Web Analytics site for this domain.
+- `SITE_ORIGIN`: the public address for the sitemap. Default `https://vinterest.team`.
+
+"Test Your List" on the page is a mockup of the flow for now: the upload control works but nothing
+is read until the site build wires it to the Worker.
