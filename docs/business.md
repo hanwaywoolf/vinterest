@@ -66,6 +66,22 @@ adds the team from the Team tab. Its training (`data/team-social.json`: every ca
 was written once through the branch preview's Worker on Claude Opus 5.5 (`TEAM_MODEL`), then exported; until
 that file holds it, the list and menu load alone and Upload's "Write them now" writes it.
 
+**Cocktails.** A restaurant can have a cocktail list beside its wines: The Social Corner's 20 from its drinks page
+(Signatures, Inspired Cocktails, Spritzes, Margaritas, Sangria; the three sangrias named "Sangria Blanca" and so on),
+ingredients exactly as listed, the bartender credited where the list credits one. Each gets a card
+(`TeamData.writeCocktailCards`, `prompts/team-cocktail-cards.txt`, purpose `team_cocktails`, four a call with the
+whole cocktail list and the menu): what to say, the base spirit, every unusual ingredient or technique explained
+(a "wash", "milk clarification", Licor 43), strength, sweetness, sourness and bitterness, one or two dishes and two
+cocktails to offer instead. It never invents a measure, garnish, glass or method the list doesn't give. Its six
+questions are all four options with one right (`q.mc`), the wrong ones drawn from the bar's own other cocktails (an
+ingredient against ingredients, a spirit against spirits), so they're asked as written rather than through the
+wine pills; `TeamLearn.givesAway` still drops any whose name gives the answer (the Brasa-Roja **Mezcal**). Cocktails
+are their own part of readiness (`PART_LABEL.cocktails`: bartender 90% on all four rungs, `cocktailKinds`; server,
+manager and sommelier 50%; buyer none), assigned, drilled and recorded like wines (`TeamLearn.qsOf`, `kindsFor`,
+keys `c:`), listed under the wines (`TeamCocktailList`, `TeamCocktail`) and shown on every dish their cards name
+("Cocktails with it", `TeamData.cocktailsFor`). A restaurant with no cocktails has no cocktail part anywhere.
+Vinny's test stays on the wine list and menu.
+
 ## How staff learn
 
 Built for retention rather than points. No XP or streaks: the motivation is being able to sell the

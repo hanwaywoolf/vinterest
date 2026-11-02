@@ -49,6 +49,47 @@ test('The Social Corner opens from ?seed=social with its own logo, prices in dol
   expect(errors).toEqual([]);
 });
 
+// Cocktails (team-learn.js cocktailQs, team-screens.jsx TeamCocktail): The Social Corner's 20, each with a card and
+// four-option questions; their own part of readiness (a bartender's on all four rungs), drilled and recorded
+// like a wine; on each dish they suit. A restaurant without cocktails has no cocktail part.
+test('The Social Corner cocktails: cards, their own part of readiness, drilled, and on the dishes they suit', async ({ context, page }) => {
+  await stubNetwork(context);
+  await page.goto(`${BASE}/team/?seed=social`);
+  await page.getByLabel('Your name').fill('Sam Reyes');
+  await page.getByText('Start training').click();
+  const st = await page.evaluate(() => {
+    const me = TeamLearn.me(), bar = TeamLearn.addPerson('Lukas Purm', 'bartender');
+    const cs = TeamData.cocktails(), qs = TeamLearn.cocktailQs(cs[0].id);
+    return { n: cs.length, cards: cs.filter((c) => TeamData.cocktailCard(c.id)).length, mc: qs.every((q) => q.mc && q.opts.length === 4 && q.opts[q.a]),
+      parts: Object.keys(TeamLearn.readiness(me.id).parts), barKinds: TeamLearn.kindsFor('bartender', cs[0].id), barNeed: TeamLearn.readiness(TeamLearn.people().find((p) => p.role === 'bartender').id).parts.cocktails.need };
+  });
+  expect(st).toMatchObject({ n: 20, cards: 20, mc: true, barNeed: 0.9 });
+  expect(st.parts).toContain('cocktails');
+  expect(st.barKinds).toEqual(['recognise', 'recall', 'apply', 'contrast']);
+  // Answering every question on one cocktail right makes it known, and the part moves.
+  const moved = await page.evaluate(() => {
+    const me = TeamLearn.me(), id = TeamData.cocktails()[0].id, before = TeamLearn.readiness(me.id).parts.cocktails.partial;
+    TeamLearn.qsOf(id).filter((q) => TeamLearn.kindsFor(me.role, id).includes(q.k)).forEach((q) => TeamLearn.record(me.id, q, true, 'sure'));
+    return { before, after: TeamLearn.readiness(me.id).parts.cocktails.partial, known: TeamLearn.knowsWine(me.id, me.role, id, TeamLearn._all()[me.id].items) };
+  });
+  expect(moved.known).toBe(true);
+  expect(moved.after).toBeGreaterThan(moved.before);
+  // The list and a card on screen.
+  await page.getByTestId('team-tab-wines').click();
+  await expect(page.getByTestId('team-cocktail-row')).toHaveCount(20);
+  await page.getByTestId('team-cocktail-row').filter({ hasText: 'The Negroni' }).click();
+  await expect(page.getByTestId('team-cocktail')).toContainText('Roku Gin');
+  await expect(page.getByTestId('team-pitch')).not.toBeEmpty();
+  // The drill asks a cocktail question as four options.
+  await page.getByText(/Practise this cocktail|Start this cocktail/).click();
+  await expect(page.getByTestId('drill-opt')).toHaveCount(4);
+  // The Larkspur has no cocktail part.
+  await page.goto(`${BASE}/team/?seed=demo`);
+  const demo = await page.evaluate(() => ({ n: TeamData.cocktails().length, parts: TeamLearn.people().map((p) => Object.keys(TeamLearn.readiness(p.id).parts)).flat() }));
+  expect(demo.n).toBe(0);
+  expect(demo.parts).not.toContain('cocktails');
+});
+
 test('the setup screen offers The Larkspur only, a device left on The Copper Pan goes back to it, and Change restaurant returns there', async ({ context, page }) => {
   await openSample(context, page);
   await page.goto(`${BASE}/team/`); // no seed: the Copper Pan is retired

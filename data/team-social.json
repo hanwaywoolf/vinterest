@@ -8856,6 +8856,2982 @@
    "at": 1793637444334
   }
  },
+ "cocktails": [
+  {
+   "id": "c-luz-de-pasion",
+   "section": "Signatures",
+   "name": "Luz de Pasion",
+   "price": "$22",
+   "ingredients": [
+    "Teremana Blanco",
+    "Cocchi Rossa",
+    "passion fruit",
+    "absinthe",
+    "lemon juice"
+   ],
+   "by": "",
+   "note": "2oz",
+   "onList": true,
+   "order": 0,
+   "addedAt": 1793638695240
+  },
+  {
+   "id": "c-flora-fizz",
+   "section": "Signatures",
+   "name": "Flora Fizz",
+   "price": "$22",
+   "ingredients": [
+    "Ketel One Vodka",
+    "fresh lime juice",
+    "house rosé syrup",
+    "soda",
+    "cranberry"
+   ],
+   "by": "",
+   "note": "2oz",
+   "onList": true,
+   "order": 1,
+   "addedAt": 1793638695240
+  },
+  {
+   "id": "c-the-pear-se",
+   "section": "Signatures",
+   "name": "The Pear Se",
+   "price": "$22",
+   "ingredients": [
+    "Seventh Heaven Gin",
+    "Belle de Brillet Pear Cognac",
+    "pear purée",
+    "lemon",
+    "rosemary tincture"
+   ],
+   "by": "Todd Zimmerman",
+   "note": "2oz",
+   "onList": true,
+   "order": 2,
+   "addedAt": 1793638695240
+  },
+  {
+   "id": "c-blue-rose",
+   "section": "Signatures",
+   "name": "Blue Rose",
+   "price": "$22",
+   "ingredients": [
+    "Roku Gin",
+    "house blueberry rosemary syrup",
+    "Cabernet Sauvignon",
+    "lemon",
+    "egg whites"
+   ],
+   "by": "Lukas Purm",
+   "note": "2oz",
+   "onList": true,
+   "order": 3,
+   "addedAt": 1793638695240
+  },
+  {
+   "id": "c-strawberry-fields",
+   "section": "Signatures",
+   "name": "Strawberry Fields",
+   "price": "$22",
+   "ingredients": [
+    "El Tequileño Blanco",
+    "Licor 43",
+    "Campari",
+    "house strawberry syrup",
+    "lime",
+    "aromatic bitters"
+   ],
+   "by": "Santi Bernal",
+   "note": "2oz",
+   "onList": true,
+   "order": 4,
+   "addedAt": 1793638695240
+  },
+  {
+   "id": "c-la-vita-colada",
+   "section": "Signatures",
+   "name": "La Vita Colada",
+   "price": "$22",
+   "ingredients": [
+    "Flor de Caña Rum",
+    "pineapple juice",
+    "coconut water",
+    "lemon",
+    "milk clarification",
+    "Glenfiddich 15-Year foam"
+   ],
+   "by": "Patrick Gaudet",
+   "note": "2oz",
+   "onList": true,
+   "order": 5,
+   "addedAt": 1793638695240
+  },
+  {
+   "id": "c-ciclo-espresso-martini",
+   "section": "Inspired Cocktails",
+   "name": "Ciclo Espresso Martini",
+   "price": "$22",
+   "ingredients": [
+    "Teremana Blanco or Ketel One Vodka",
+    "Tia Maria Coffee Liqueur",
+    "Licor 43",
+    "Ciclo Espresso",
+    "demerara syrup",
+    "Grand Marnier wash"
+   ],
+   "by": "",
+   "note": "",
+   "onList": true,
+   "order": 6,
+   "addedAt": 1793638695240
+  },
+  {
+   "id": "c-the-old-fashioned",
+   "section": "Inspired Cocktails",
+   "name": "The Old Fashioned",
+   "price": "$22",
+   "ingredients": [
+    "Brown butter-washed Traveller Whisky",
+    "Angostura",
+    "orange bitters"
+   ],
+   "by": "",
+   "note": "",
+   "onList": true,
+   "order": 7,
+   "addedAt": 1793638695240
+  },
+  {
+   "id": "c-the-negroni",
+   "section": "Inspired Cocktails",
+   "name": "The Negroni",
+   "price": "$22",
+   "ingredients": [
+    "Roku Gin",
+    "Campari",
+    "sweet vermouth"
+   ],
+   "by": "",
+   "note": "",
+   "onList": true,
+   "order": 8,
+   "addedAt": 1793638695240
+  },
+  {
+   "id": "c-silk-stone-martini",
+   "section": "Inspired Cocktails",
+   "name": "Silk & Stone Martini",
+   "price": "$22",
+   "ingredients": [
+    "EVOO-washed Grey Goose",
+    "Lillet Blanc",
+    "orange bitters",
+    "olives"
+   ],
+   "by": "",
+   "note": "",
+   "onList": true,
+   "order": 9,
+   "addedAt": 1793638695240
+  },
+  {
+   "id": "c-dr-mario",
+   "section": "Inspired Cocktails",
+   "name": "Dr. Mario",
+   "price": "$22",
+   "ingredients": [
+    "Johnnie Walker Black",
+    "Laphroaig",
+    "honey syrup",
+    "clarified citrus"
+   ],
+   "by": "",
+   "note": "",
+   "onList": true,
+   "order": 10,
+   "addedAt": 1793638695240
+  },
+  {
+   "id": "c-summer-blush",
+   "section": "Spritzes",
+   "name": "Summer Blush",
+   "price": "$19",
+   "ingredients": [
+    "Empress Elderflower",
+    "white peach",
+    "lemon juice",
+    "Prosecco",
+    "soda"
+   ],
+   "by": "",
+   "note": "",
+   "onList": true,
+   "order": 11,
+   "addedAt": 1793638695240
+  },
+  {
+   "id": "c-rose-alla-fragola",
+   "section": "Spritzes",
+   "name": "Rose Alla Fragola",
+   "price": "$19",
+   "ingredients": [
+    "Grey Goose",
+    "Cointreau",
+    "lemon juice",
+    "strawberry syrup",
+    "Mionetto Rosé",
+    "rose lemonade"
+   ],
+   "by": "",
+   "note": "",
+   "onList": true,
+   "order": 12,
+   "addedAt": 1793638695240
+  },
+  {
+   "id": "c-paradise-spritz",
+   "section": "Spritzes",
+   "name": "Paradise Spritz",
+   "price": "$19",
+   "ingredients": [
+    "Appleton Estate Rum",
+    "Campari",
+    "pineapple cordial",
+    "blood orange",
+    "lime juice",
+    "Prosecco",
+    "soda"
+   ],
+   "by": "",
+   "note": "",
+   "onList": true,
+   "order": 13,
+   "addedAt": 1793638695240
+  },
+  {
+   "id": "c-brasa-roja-mezcal",
+   "section": "Margaritas",
+   "name": "Brasa-Roja Mezcal",
+   "price": "$20",
+   "ingredients": [
+    "Fandango Mezcal",
+    "Cointreau",
+    "blood orange syrup",
+    "lime juice",
+    "salt"
+   ],
+   "by": "",
+   "note": "",
+   "onList": true,
+   "order": 14,
+   "addedAt": 1793638695240
+  },
+  {
+   "id": "c-red-velvet",
+   "section": "Margaritas",
+   "name": "Red Velvet",
+   "price": "$20",
+   "ingredients": [
+    "El Tequileño Blanco",
+    "Cointreau",
+    "house raspberry syrup",
+    "agave",
+    "black salt"
+   ],
+   "by": "",
+   "note": "",
+   "onList": true,
+   "order": 15,
+   "addedAt": 1793638695240
+  },
+  {
+   "id": "c-costa-coco",
+   "section": "Margaritas",
+   "name": "Costa Coco",
+   "price": "$20",
+   "ingredients": [
+    "Patron Blanco",
+    "Cointreau",
+    "pineapple cordial",
+    "coconut reduction",
+    "Tajín"
+   ],
+   "by": "",
+   "note": "",
+   "onList": true,
+   "order": 16,
+   "addedAt": 1793638695240
+  },
+  {
+   "id": "c-sangria-blanca",
+   "section": "Sangria",
+   "name": "Sangria Blanca",
+   "price": "$19",
+   "ingredients": [
+    "Chardonnay-Chenin blanc",
+    "St. Rémy VSOP",
+    "Cointreau",
+    "Giffard Pêche",
+    "citrus",
+    "Sprite"
+   ],
+   "by": "",
+   "note": "",
+   "onList": true,
+   "order": 17,
+   "addedAt": 1793638695240
+  },
+  {
+   "id": "c-sangria-rosa",
+   "section": "Sangria",
+   "name": "Sangria Rosa",
+   "price": "$19",
+   "ingredients": [
+    "Malbec",
+    "St. Rémy VSOP",
+    "Cointreau",
+    "Chambord",
+    "citrus",
+    "grapefruit",
+    "Sprite"
+   ],
+   "by": "",
+   "note": "",
+   "onList": true,
+   "order": 18,
+   "addedAt": 1793638695240
+  },
+  {
+   "id": "c-sangria-tinta",
+   "section": "Sangria",
+   "name": "Sangria Tinta",
+   "price": "$19",
+   "ingredients": [
+    "Cabernet Sauvignon",
+    "St. Rémy VSOP Brandy",
+    "Cointreau",
+    "Chambord",
+    "citrus",
+    "orange"
+   ],
+   "by": "",
+   "note": "",
+   "onList": true,
+   "order": 19,
+   "addedAt": 1793638695240
+  }
+ ],
+ "cocktailCards": {
+  "c-luz-de-pasion": {
+   "id": "c-luz-de-pasion",
+   "pitch": "The Luz de Pasion is bright and tart, with tropical passion fruit and fresh lemon over blanco tequila, plus a light herbal, licorice-like hint from a touch of absinthe. It's perfect for tequila fans who like their drinks sour and fruity with a little adventure.",
+   "say": "Luz de Pasion: LOOS deh pah-see-OHN; Teremana: teh-reh-MAH-nah; Cocchi Rossa: KOH-kee ROH-sah; absinthe: AB-sinth",
+   "taste": "Tart and tropical, with passion fruit and lemon up front, a gentle bittersweet wine note and a faint herbal licorice finish.",
+   "spirit": "blanco tequila",
+   "style": {
+    "strength": 3,
+    "sweet": 2,
+    "sour": 4,
+    "bitter": 2
+   },
+   "explain": [
+    {
+     "term": "Teremana Blanco",
+     "means": "A blanco tequila, which means clear and unaged, so it tastes fresh and peppery with a hint of agave, the plant tequila is made from."
+    },
+    {
+     "term": "Cocchi Rossa",
+     "means": "An Italian red wine flavoured with herbs and spices, which adds a soft bittersweet, fruity depth to the drink."
+    },
+    {
+     "term": "absinthe",
+     "means": "A very strong herbal spirit that tastes of anise, which is like licorice, so a small amount gives the drink a fragrant herbal note."
+    }
+   ],
+   "dishes": [
+    {
+     "dish": "Fresh Oysters",
+     "why": "The tart passion fruit and lemon work like a squeeze of citrus on the salty, delicate oysters."
+    },
+    {
+     "dish": "Calamari di Mamma",
+     "why": "The sour, fruity drink cuts through the fried, salty, spicy squid and keeps every bite fresh."
+    }
+   ],
+   "alts": [
+    {
+     "id": "c-strawberry-fields",
+     "when": "wants tequila but fruitier, with a bitter edge and no licorice"
+    },
+    {
+     "id": "c-flora-fizz",
+     "when": "no tequila, or something lighter and fizzy"
+    }
+   ],
+   "qs": [
+    {
+     "k": "recognise",
+     "q": "What is the base spirit of the Luz de Pasion?",
+     "opts": [
+      "Mezcal",
+      "Blanco tequila",
+      "Vodka",
+      "Gin"
+     ],
+     "a": 1,
+     "why": "The Luz de Pasion is built on Teremana Blanco, an unaged blanco tequila.",
+     "id": "c-luz-de-pasion#0"
+    },
+    {
+     "k": "recognise",
+     "q": "Which description of the Luz de Pasion is the right one to give a guest?",
+     "opts": [
+      "Sweet and creamy, with rich coffee and vanilla",
+      "Smoky and boozy, with honey and citrus",
+      "Tart and tropical, with passion fruit, lemon and a faint herbal licorice note",
+      "Strong and bitter, with no fruit or citrus at all"
+     ],
+     "a": 2,
+     "why": "Passion fruit and lemon make it tart and tropical, and the absinthe adds a light licorice-like herbal note.",
+     "id": "c-luz-de-pasion#1"
+    },
+    {
+     "k": "recall",
+     "q": "Which of these is in the Luz de Pasion?",
+     "opts": [
+      "Laphroaig",
+      "Licor 43",
+      "Lillet Blanc",
+      "Absinthe"
+     ],
+     "a": 3,
+     "why": "Absinthe is on the Luz de Pasion's line; the others belong to the Dr. Mario, Strawberry Fields and Silk & Stone Martini.",
+     "id": "c-luz-de-pasion#2"
+    },
+    {
+     "k": "recall",
+     "q": "What does the absinthe bring to the Luz de Pasion?",
+     "opts": [
+      "A herbal, licorice-like anise note",
+      "A smoky, peaty note",
+      "A silky, foamy texture",
+      "A sweet vanilla note"
+     ],
+     "a": 0,
+     "why": "Absinthe is an anise-flavoured herbal spirit, so even a little gives a fragrant licorice-like note.",
+     "id": "c-luz-de-pasion#3"
+    },
+    {
+     "k": "apply",
+     "q": "A guest who loves tequila wants something tart and tropical with a herbal twist. Which cocktail do you suggest?",
+     "opts": [
+      "Red Velvet",
+      "Costa Coco",
+      "Luz de Pasion",
+      "Ciclo Espresso Martini"
+     ],
+     "a": 2,
+     "why": "The Luz de Pasion pairs blanco tequila with tart passion fruit and lemon, and the absinthe gives it the herbal twist.",
+     "id": "c-luz-de-pasion#4"
+    },
+    {
+     "k": "contrast",
+     "q": "Both the Luz de Pasion and the Strawberry Fields are blanco tequila signatures. Which ingredient is in the Luz de Pasion?",
+     "opts": [
+      "Campari",
+      "Cocchi Rossa",
+      "Licor 43",
+      "Aromatic bitters"
+     ],
+     "a": 1,
+     "why": "Cocchi Rossa is in the Luz de Pasion, while Campari, Licor 43 and aromatic bitters are all in the Strawberry Fields.",
+     "id": "c-luz-de-pasion#5"
+    }
+   ],
+   "at": 1793638812422
+  },
+  "c-flora-fizz": {
+   "id": "c-flora-fizz",
+   "pitch": "The Flora Fizz is light, bubbly and refreshing, with Ketel One vodka, fresh lime, cranberry and our house-made rosé syrup, topped with soda. It's great for anyone who wants something easy-drinking, fruity and not too strong.",
+   "say": "Ketel One: KET-ul WUN; rosé: roh-ZAY",
+   "taste": "Light and fizzy, with tart lime and cranberry balanced by a soft, fruity sweetness.",
+   "spirit": "vodka",
+   "style": {
+    "strength": 2,
+    "sweet": 3,
+    "sour": 3,
+    "bitter": 1
+   },
+   "explain": [
+    {
+     "term": "house rosé syrup",
+     "means": "A sweet syrup made here in-house with a rosé flavour, which gives the drink its sweetness and a soft, fruity note."
+    },
+    {
+     "term": "soda",
+     "means": "Soda water, plain fizzy water, which adds bubbles and makes the drink lighter and more refreshing."
+    }
+   ],
+   "dishes": [
+    {
+     "dish": "Calamari di Mamma",
+     "why": "The bubbles and tart lime cut through the fried, salty squid and refresh the palate."
+    },
+    {
+     "dish": "Goat Cheese Salad",
+     "why": "The light, tart-sweet fizz matches the salad's tangy dressing and balances the creamy goat cheese."
+    }
+   ],
+   "alts": [
+    {
+     "id": "c-rose-alla-fragola",
+     "when": "wants bubbles from sparkling wine instead of soda"
+    },
+    {
+     "id": "c-silk-stone-martini",
+     "when": "wants a stronger, less sweet vodka drink"
+    }
+   ],
+   "qs": [
+    {
+     "k": "recognise",
+     "q": "What is the base spirit of the Flora Fizz?",
+     "opts": [
+      "Gin",
+      "Blanco tequila",
+      "Vodka",
+      "Rum"
+     ],
+     "a": 2,
+     "why": "The Flora Fizz is made with Ketel One Vodka.",
+     "id": "c-flora-fizz#0"
+    },
+    {
+     "k": "recognise",
+     "q": "Which description of the Flora Fizz is the right one to give a guest?",
+     "opts": [
+      "Light, fizzy and tart-sweet, with lime and cranberry",
+      "Rich and bitter, strong and stirred, with no citrus",
+      "Smoky and spicy, with a salt rim",
+      "Creamy and sweet, with coffee"
+     ],
+     "a": 0,
+     "why": "Lime and cranberry give it tartness, the rosé syrup sweetens it, and soda makes it light and fizzy.",
+     "id": "c-flora-fizz#1"
+    },
+    {
+     "k": "recall",
+     "q": "Which of these is in the Flora Fizz?",
+     "opts": [
+      "White peach",
+      "Blood orange",
+      "Pineapple juice",
+      "Cranberry"
+     ],
+     "a": 3,
+     "why": "Cranberry is on the Flora Fizz's line; the others come from the Summer Blush, Paradise Spritz and La Vita Colada.",
+     "id": "c-flora-fizz#2"
+    },
+    {
+     "k": "recall",
+     "q": "What does the soda do in the Flora Fizz?",
+     "opts": [
+      "Adds a smoky note",
+      "Adds bubbles and lightens the drink",
+      "Adds a silky foam on top",
+      "Adds a bitter edge"
+     ],
+     "a": 1,
+     "why": "Soda is plain fizzy water, so it adds bubbles and makes the drink lighter.",
+     "id": "c-flora-fizz#3"
+    },
+    {
+     "k": "apply",
+     "q": "A guest wants a light, refreshing vodka drink with lime and cranberry that isn't too strong. Which cocktail do you suggest?",
+     "opts": [
+      "Silk & Stone Martini",
+      "Ciclo Espresso Martini",
+      "Summer Blush",
+      "Flora Fizz"
+     ],
+     "a": 3,
+     "why": "The Flora Fizz is Ketel One vodka with fresh lime, cranberry and soda, so it's light, tart and easy-drinking.",
+     "id": "c-flora-fizz#4"
+    },
+    {
+     "k": "contrast",
+     "q": "Both the Flora Fizz and the Rose Alla Fragola are vodka drinks. Which of these is in the Flora Fizz and not in the Rose Alla Fragola?",
+     "opts": [
+      "Lemon juice",
+      "Cointreau",
+      "Fresh lime juice",
+      "Strawberry syrup"
+     ],
+     "a": 2,
+     "why": "The Flora Fizz uses fresh lime juice, while lemon juice, Cointreau and strawberry syrup are all in the Rose Alla Fragola.",
+     "id": "c-flora-fizz#5"
+    }
+   ],
+   "at": 1793638812423
+  },
+  "c-the-pear-se": {
+   "id": "c-the-pear-se",
+   "pitch": "The Pear Se, created by Todd Zimmerman, is soft and juicy, with gin, a cognac pear liqueur and pear purée, freshened with lemon and a hint of rosemary. It's ideal for gin lovers who want something fruity and smooth rather than bitter.",
+   "say": "The Pear Se: PAIR SAY; Belle de Brillet: BELL duh bree-YAY; Cognac: KOHN-yak; purée: pyoo-RAY",
+   "taste": "Smooth, juicy pear with a fresh squeeze of lemon and a light herbal rosemary note.",
+   "spirit": "gin",
+   "style": {
+    "strength": 3,
+    "sweet": 3,
+    "sour": 3,
+    "bitter": 1
+   },
+   "explain": [
+    {
+     "term": "Belle de Brillet Pear Cognac",
+     "means": "A French pear liqueur blended with cognac, a French brandy, which adds rich, ripe pear flavour and a little warmth."
+    },
+    {
+     "term": "pear purée",
+     "means": "Pear blended until smooth, which gives the drink a juicy, fuller body and fresh fruit taste."
+    },
+    {
+     "term": "rosemary tincture",
+     "means": "A very concentrated rosemary extract used in tiny amounts, which adds a fragrant, piney herbal note."
+    }
+   ],
+   "dishes": [
+    {
+     "dish": "Tartufina",
+     "why": "The juicy pear in the drink echoes the pear on this pizza and balances the salty gorgonzola."
+    },
+    {
+     "dish": "Charcutería & Formaggi",
+     "why": "The soft, fruity sweetness is a lovely contrast to the salty cured meats and rich cheeses."
+    }
+   ],
+   "alts": [
+    {
+     "id": "c-blue-rose",
+     "when": "wants a gin drink with berry, red wine and a silky texture"
+    },
+    {
+     "id": "c-summer-blush",
+     "when": "wants something lighter and bubbly"
+    }
+   ],
+   "qs": [
+    {
+     "k": "recognise",
+     "q": "What is the base spirit of The Pear Se?",
+     "opts": [
+      "Vodka",
+      "Gin",
+      "Rum",
+      "Blanco tequila"
+     ],
+     "a": 1,
+     "why": "The Pear Se is built on Seventh Heaven Gin, with the cognac liqueur adding depth.",
+     "id": "c-the-pear-se#0"
+    },
+    {
+     "k": "recognise",
+     "q": "Which description of The Pear Se is the right one to give a guest?",
+     "opts": [
+      "Smoky and peaty, with honey",
+      "Strong and bitter, with no fruit",
+      "Tart and tropical, with a licorice finish",
+      "Smooth and juicy, with lemon and a light herbal note"
+     ],
+     "a": 3,
+     "why": "Pear purée and pear liqueur make it smooth and juicy, lemon freshens it, and rosemary tincture adds the herbal note.",
+     "id": "c-the-pear-se#1"
+    },
+    {
+     "k": "recall",
+     "q": "Which of these is in The Pear Se?",
+     "opts": [
+      "Tia Maria",
+      "Chambord",
+      "Belle de Brillet",
+      "Giffard Pêche"
+     ],
+     "a": 2,
+     "why": "Belle de Brillet is in The Pear Se; Tia Maria, Chambord and Giffard Pêche belong to the espresso martini and the sangrias.",
+     "id": "c-the-pear-se#2"
+    },
+    {
+     "k": "recall",
+     "q": "What does the rosemary tincture do in The Pear Se?",
+     "opts": [
+      "Adds a concentrated herbal, piney note in tiny amounts",
+      "Adds a smoky, peaty edge",
+      "Adds a silky foam",
+      "Adds bubbles"
+     ],
+     "a": 0,
+     "why": "A tincture is a very concentrated extract, so a tiny amount gives a fragrant rosemary note.",
+     "id": "c-the-pear-se#3"
+    },
+    {
+     "k": "apply",
+     "q": "A gin lover wants something fruity, smooth and gently sweet, with no wine, no bubbles and no egg. Which cocktail do you suggest?",
+     "opts": [
+      "The Pear Se",
+      "The Negroni",
+      "Blue Rose",
+      "Summer Blush"
+     ],
+     "a": 0,
+     "why": "The Pear Se is fruity gin with no wine, bubbles or egg, unlike the Blue Rose, Summer Blush or the bitter Negroni with vermouth.",
+     "id": "c-the-pear-se#4"
+    },
+    {
+     "k": "contrast",
+     "q": "Both The Pear Se and the Blue Rose are gin signatures with lemon and rosemary. Which gin is in The Pear Se?",
+     "opts": [
+      "Roku Gin",
+      "Empress Elderflower",
+      "Seventh Heaven Gin",
+      "Traveller Whisky"
+     ],
+     "a": 2,
+     "why": "The Pear Se uses Seventh Heaven Gin, while the Blue Rose uses Roku Gin.",
+     "id": "c-the-pear-se#5"
+    }
+   ],
+   "at": 1793638812423
+  },
+  "c-blue-rose": {
+   "id": "c-blue-rose",
+   "pitch": "The Blue Rose, created by Lukas Purm, mixes Japanese Roku Gin with our house blueberry rosemary syrup, a splash of Cabernet Sauvignon and lemon, with egg whites for a silky, foamy texture. It's perfect for guests who love both gin and red wine and want something fruity and smooth.",
+   "say": "Roku: ROH-koo; Cabernet Sauvignon: ka-ber-NAY so-vin-YOHN",
+   "taste": "Tart berry and lemon with a dry red-wine edge, a hint of rosemary and a soft, silky texture.",
+   "spirit": "gin",
+   "style": {
+    "strength": 3,
+    "sweet": 3,
+    "sour": 3,
+    "bitter": 1
+   },
+   "explain": [
+    {
+     "term": "Roku Gin",
+     "means": "A Japanese gin, which brings a clean, fragrant, lightly floral base."
+    },
+    {
+     "term": "house blueberry rosemary syrup",
+     "means": "A sweet syrup made here in-house from blueberry and rosemary, which gives the drink its berry sweetness and herbal note."
+    },
+    {
+     "term": "Cabernet Sauvignon",
+     "means": "A full-bodied red wine, which adds dark fruit and a dry, grippy edge."
+    },
+    {
+     "term": "egg whites",
+     "means": "Egg whites give the drink a silky, foamy texture; always tell guests with egg allergies or vegan guests."
+    }
+   ],
+   "dishes": [
+    {
+     "dish": "Fire-Charred Lamb Chops",
+     "why": "The red wine and rosemary in the drink match the herby, charred, rich lamb."
+    },
+    {
+     "dish": "Charcutería & Formaggi",
+     "why": "The tart berry and dry wine edge cut through the salty, rich meats and cheese."
+    }
+   ],
+   "alts": [
+    {
+     "id": "c-the-pear-se",
+     "when": "wants gin without egg or wine"
+    },
+    {
+     "id": "c-sangria-tinta",
+     "when": "wants something more wine-forward"
+    }
+   ],
+   "qs": [
+    {
+     "k": "recognise",
+     "q": "What is the base spirit of the Blue Rose?",
+     "opts": [
+      "Vodka",
+      "Brandy",
+      "Rum",
+      "Gin"
+     ],
+     "a": 3,
+     "why": "The Blue Rose is built on Roku Gin, a Japanese gin.",
+     "id": "c-blue-rose#0"
+    },
+    {
+     "k": "recognise",
+     "q": "Which description of the Blue Rose is the right one to give a guest?",
+     "opts": [
+      "Tart berry and lemon with a dry red-wine edge and a silky texture",
+      "Light and fizzy, with lime and cranberry",
+      "Smoky and spicy, with a salt rim",
+      "Strong and bitter, with no fruit or citrus"
+     ],
+     "a": 0,
+     "why": "Blueberry syrup and lemon make it tart and fruity, Cabernet adds a dry wine edge, and egg whites make it silky.",
+     "id": "c-blue-rose#1"
+    },
+    {
+     "k": "recall",
+     "q": "Which of these is in the Blue Rose?",
+     "opts": [
+      "Malbec",
+      "Cabernet Sauvignon",
+      "Chardonnay-Chenin blanc",
+      "Prosecco"
+     ],
+     "a": 1,
+     "why": "The Blue Rose uses Cabernet Sauvignon; Malbec and Chardonnay-Chenin blanc are in the sangrias and Prosecco is in the spritzes.",
+     "id": "c-blue-rose#2"
+    },
+    {
+     "k": "recall",
+     "q": "What do the egg whites do in the Blue Rose?",
+     "opts": [
+      "Add bubbles",
+      "Add a smoky note",
+      "Give it a silky, foamy texture",
+      "Add sweetness"
+     ],
+     "a": 2,
+     "why": "Egg whites create a silky foam, which is also why you must mention them to guests with egg allergies or vegan guests.",
+     "id": "c-blue-rose#3"
+    },
+    {
+     "k": "apply",
+     "q": "A guest who drinks gin but also loves red wine wants something fruity and silky to go with the Fire-Charred Lamb Chops. Which cocktail do you suggest?",
+     "opts": [
+      "The Pear Se",
+      "The Negroni",
+      "Blue Rose",
+      "Sangria Tinta"
+     ],
+     "a": 2,
+     "why": "The Blue Rose combines gin with Cabernet Sauvignon, berry and a silky texture, and its rosemary suits the herby lamb.",
+     "id": "c-blue-rose#4"
+    },
+    {
+     "k": "contrast",
+     "q": "Both the Blue Rose and The Pear Se are gin signatures with rosemary. What brings the rosemary into the Blue Rose?",
+     "opts": [
+      "Rosemary tincture",
+      "House blueberry rosemary syrup",
+      "House rosé syrup",
+      "Honey syrup"
+     ],
+     "a": 1,
+     "why": "The Blue Rose gets its rosemary from the house blueberry rosemary syrup, while The Pear Se uses a rosemary tincture.",
+     "id": "c-blue-rose#5"
+    }
+   ],
+   "at": 1793638812423
+  },
+  "c-strawberry-fields": {
+   "id": "c-strawberry-fields",
+   "pitch": "Strawberry Fields is fruity and bright, with ripe strawberry and fresh lime, a soft vanilla sweetness from Licor 43 and a gentle bitter finish from Campari. It's perfect for tequila fans and anyone who likes a fruity drink that isn't too sugary.",
+   "say": "El Tequileño: el teh-kee-LEN-yoh; Licor 43: lee-KOR kwah-REN-tah ee TRESS; Campari: kahm-PAH-ree",
+   "taste": "Sweet strawberry and tangy lime, softened by vanilla and citrus, with a light bitter edge at the end.",
+   "spirit": "blanco tequila",
+   "style": {
+    "strength": 3,
+    "sweet": 3,
+    "sour": 3,
+    "bitter": 2
+   },
+   "explain": [
+    {
+     "term": "Licor 43",
+     "means": "A sweet Spanish liqueur that tastes of vanilla and citrus, and it adds a smooth, rounded sweetness to the drink."
+    },
+    {
+     "term": "Campari",
+     "means": "A bright red, bitter Italian aperitivo (a drink meant to wake up your appetite before a meal), and it gives the drink a pleasant bitter-orange finish."
+    },
+    {
+     "term": "Aromatic bitters",
+     "means": "A strong herbal and spice flavouring used a few drops at a time, and it adds depth and balance to the drink."
+    },
+    {
+     "term": "El Tequileño Blanco",
+     "means": "A blanco tequila, meaning a clear, unaged tequila with a fresh agave taste."
+    }
+   ],
+   "dishes": [
+    {
+     "dish": "Patatas Bravas",
+     "why": "The juicy strawberry and lime cool down the spicy, smoky potatoes."
+    },
+    {
+     "dish": "Burratina",
+     "why": "The fruit and the bitter finish cut through the creamy burrata and salty salami."
+    }
+   ],
+   "alts": [
+    {
+     "id": "c-red-velvet",
+     "when": "tequila and berry flavour but no bitterness, in a margarita style"
+    },
+    {
+     "id": "c-paradise-spritz",
+     "when": "lighter and bubbly, with the same Campari bitter edge"
+    }
+   ],
+   "qs": [
+    {
+     "k": "recognise",
+     "q": "What is the base spirit in the Strawberry Fields?",
+     "opts": [
+      "Gin",
+      "Mezcal",
+      "Blanco tequila",
+      "Vodka"
+     ],
+     "a": 2,
+     "why": "The Strawberry Fields is built on El Tequileño Blanco, which is a blanco tequila.",
+     "id": "c-strawberry-fields#0"
+    },
+    {
+     "k": "recognise",
+     "q": "A guest asks what the Strawberry Fields tastes like. Which description is right?",
+     "opts": [
+      "Dry, strong and bitter, with no fruit at all",
+      "Fruity strawberry and lime, softened by vanilla, with a light bitter finish",
+      "Rich coffee and caramel, sweet and smooth",
+      "Smoky, salty and sharp with blood orange"
+     ],
+     "a": 1,
+     "why": "Strawberry syrup and lime give the fruit, Licor 43 adds vanilla, and Campari adds a gentle bitter finish.",
+     "id": "c-strawberry-fields#1"
+    },
+    {
+     "k": "recall",
+     "q": "Which of these is in the Strawberry Fields?",
+     "opts": [
+      "Cointreau",
+      "Lillet Blanc",
+      "Chambord",
+      "Campari"
+     ],
+     "a": 3,
+     "why": "The Strawberry Fields has Campari. The other three come from other cocktails on the list.",
+     "id": "c-strawberry-fields#2"
+    },
+    {
+     "k": "recall",
+     "q": "What does the Licor 43 add to the Strawberry Fields?",
+     "opts": [
+      "A sweet vanilla and citrus softness",
+      "A smoky, earthy flavour",
+      "A sharp bitter-orange bite",
+      "A dry red wine backbone"
+     ],
+     "a": 0,
+     "why": "Licor 43 is a Spanish liqueur that tastes of vanilla and citrus, so it rounds out the drink.",
+     "id": "c-strawberry-fields#3"
+    },
+    {
+     "k": "apply",
+     "q": "A guest who loves tequila wants something fruity with a gentle bitter edge, not too sugary. Which cocktail do you suggest?",
+     "opts": [
+      "Red Velvet",
+      "Strawberry Fields",
+      "Rose Alla Fragola",
+      "Brasa-Roja Mezcal"
+     ],
+     "a": 1,
+     "why": "The Strawberry Fields pairs blanco tequila and fruit with Campari for a light bitter finish.",
+     "id": "c-strawberry-fields#4"
+    },
+    {
+     "k": "contrast",
+     "q": "The Strawberry Fields and the Red Velvet both use El Tequileño Blanco. What does the Strawberry Fields have that the Red Velvet does not?",
+     "opts": [
+      "Cointreau and agave",
+      "Black salt and house raspberry syrup",
+      "Campari and Licor 43",
+      "Prosecco and soda"
+     ],
+     "a": 2,
+     "why": "Campari and Licor 43 are only in the Strawberry Fields. The Red Velvet uses Cointreau, raspberry syrup, agave and black salt.",
+     "id": "c-strawberry-fields#5"
+    }
+   ],
+   "at": 1793638916101
+  },
+  "c-la-vita-colada": {
+   "id": "c-la-vita-colada",
+   "pitch": "La Vita Colada is a tropical rum drink with pineapple and coconut water. It's made silky and clear instead of heavy, and it's finished with a Glenfiddich 15-Year whisky foam. It's great for anyone who loves a piña colada but wants something lighter and smoother.",
+   "say": "Flor de Caña: flor deh KAHN-yah; Glenfiddich: glen-FID-ik",
+   "taste": "Tropical pineapple and coconut, light and silky rather than creamy, with a soft whisky note from the foam on top.",
+   "spirit": "rum",
+   "style": {
+    "strength": 3,
+    "sweet": 3,
+    "sour": 2,
+    "bitter": 1
+   },
+   "explain": [
+    {
+     "term": "Milk clarification",
+     "means": "Milk is added to the drink so it curdles, and then the solids are strained out, which leaves a clear, extra-smooth, silky drink with no milky taste."
+    },
+    {
+     "term": "Glenfiddich 15-Year foam",
+     "means": "A foam on top of the drink flavoured with Glenfiddich 15-Year, a single malt Scotch whisky, and it adds a soft, fruity, honeyed whisky aroma."
+    },
+    {
+     "term": "Flor de Caña Rum",
+     "means": "A rum from Nicaragua, and it's the main spirit in the drink."
+    },
+    {
+     "term": "Coconut water",
+     "means": "The clear, light liquid from inside a coconut, and it gives coconut flavour without the heaviness of cream."
+    }
+   ],
+   "dishes": [
+    {
+     "dish": "Calamari di Mamma",
+     "why": "The cool pineapple and coconut freshen the palate after the salty, spicy fried squid."
+    },
+    {
+     "dish": "Charred Chorizo",
+     "why": "The tropical sweetness balances the smoky, spicy chorizo."
+    }
+   ],
+   "alts": [
+    {
+     "id": "c-costa-coco",
+     "when": "pineapple and coconut but with tequila, in a margarita style"
+    },
+    {
+     "id": "c-paradise-spritz",
+     "when": "rum and pineapple but lighter and bubbly, with a bitter edge"
+    }
+   ],
+   "qs": [
+    {
+     "k": "recognise",
+     "q": "What is the base spirit in La Vita Colada?",
+     "opts": [
+      "Blanco tequila",
+      "Rum",
+      "Vodka",
+      "Gin"
+     ],
+     "a": 1,
+     "why": "La Vita Colada is built on Flor de Caña Rum. The Glenfiddich only appears in the foam on top.",
+     "id": "c-la-vita-colada#0"
+    },
+    {
+     "k": "recognise",
+     "q": "A guest asks what La Vita Colada tastes like. Which description is right?",
+     "opts": [
+      "Bitter, herbal and strong, with no fruit",
+      "Tart lime and salt with smoky heat",
+      "Rich coffee with vanilla sweetness",
+      "Tropical pineapple and coconut, light and silky, with a soft whisky note on top"
+     ],
+     "a": 3,
+     "why": "Pineapple juice and coconut water give the tropical taste, milk clarification makes it silky, and the Glenfiddich foam adds a whisky note.",
+     "id": "c-la-vita-colada#1"
+    },
+    {
+     "k": "recall",
+     "q": "Which of these is in La Vita Colada?",
+     "opts": [
+      "Coconut water",
+      "Coconut reduction",
+      "Pineapple cordial",
+      "Blood orange syrup"
+     ],
+     "a": 0,
+     "why": "La Vita Colada uses coconut water. Coconut reduction, pineapple cordial and blood orange syrup belong to other cocktails on the list.",
+     "id": "c-la-vita-colada#2"
+    },
+    {
+     "k": "recall",
+     "q": "What does the milk clarification do to La Vita Colada?",
+     "opts": [
+      "It makes the drink thick and creamy like a milkshake",
+      "It adds bubbles",
+      "It makes the drink clear and silky smooth",
+      "It adds a smoky flavour"
+     ],
+     "a": 2,
+     "why": "The milk curdles and is strained out, which leaves a clear, smooth drink instead of a creamy one.",
+     "id": "c-la-vita-colada#3"
+    },
+    {
+     "k": "apply",
+     "q": "A guest who likes rum wants a tropical, pineapple-forward drink that's smooth and silky, not bubbly and not heavy or creamy. Which cocktail do you suggest?",
+     "opts": [
+      "Paradise Spritz",
+      "Costa Coco",
+      "La Vita Colada",
+      "Summer Blush"
+     ],
+     "a": 2,
+     "why": "La Vita Colada is rum with pineapple and coconut water, clarified so it's silky and light, and it has no bubbles.",
+     "id": "c-la-vita-colada#4"
+    },
+    {
+     "k": "contrast",
+     "q": "La Vita Colada and the Costa Coco both bring pineapple and coconut. Which of these is true of La Vita Colada?",
+     "opts": [
+      "It's tequila-based, with Tajín",
+      "It's rum-based, with a Glenfiddich 15-Year foam",
+      "It's made with Cointreau and coconut reduction",
+      "It's mezcal-based, with salt"
+     ],
+     "a": 1,
+     "why": "La Vita Colada uses Flor de Caña Rum and a Glenfiddich foam. The Costa Coco is Patron Blanco tequila with Cointreau, coconut reduction and Tajín.",
+     "id": "c-la-vita-colada#5"
+    }
+   ],
+   "at": 1793638916101
+  },
+  "c-ciclo-espresso-martini": {
+   "id": "c-ciclo-espresso-martini",
+   "pitch": "Our Ciclo Espresso Martini is bold espresso with coffee liqueur, a vanilla touch from Licor 43, brown-sugar sweetness and a hint of orange from Grand Marnier. It's ideal for coffee lovers and after dinner, and you can have it with vodka or with tequila.",
+   "say": "Teremana: teh-reh-MAH-nah; Tia Maria: TEE-ah mah-REE-ah; Licor 43: lee-KOR kwah-REN-tah ee TRESS; Grand Marnier: grahn mar-NYAY; demerara: dem-er-AIR-ah",
+   "taste": "Bold, rich coffee, sweet with vanilla and brown sugar, and a light hint of orange.",
+   "spirit": "vodka or blanco tequila",
+   "style": {
+    "strength": 3,
+    "sweet": 3,
+    "sour": 1,
+    "bitter": 2
+   },
+   "explain": [
+    {
+     "term": "Tia Maria Coffee Liqueur",
+     "means": "A sweet coffee liqueur that deepens the coffee flavour and adds sweetness."
+    },
+    {
+     "term": "Licor 43",
+     "means": "A sweet Spanish liqueur that tastes of vanilla and citrus, and it adds a smooth vanilla note."
+    },
+    {
+     "term": "Demerara syrup",
+     "means": "A syrup made from demerara, a light brown cane sugar, and it gives a toffee-like sweetness."
+    },
+    {
+     "term": "Grand Marnier wash",
+     "means": "A 'wash' means only a light touch of Grand Marnier (an orange liqueur made with Cognac) is used, so it adds a hint of orange rather than a full pour."
+    }
+   ],
+   "dishes": [
+    {
+     "dish": "Tiramisu",
+     "why": "The sweet, creamy mascarpone and the bold coffee are a natural after-dinner match."
+    },
+    {
+     "dish": "Croissant Bread Pudding",
+     "why": "The vanilla and brown-sugar notes in the drink suit the rich, sweet pudding."
+    }
+   ],
+   "alts": [
+    {
+     "id": "c-the-old-fashioned",
+     "when": "something stronger and less sweet after dinner"
+    },
+    {
+     "id": "c-strawberry-fields",
+     "when": "tequila and Licor 43 but fruity instead of coffee"
+    }
+   ],
+   "qs": [
+    {
+     "k": "recognise",
+     "q": "Which base spirit can a guest choose for the Ciclo Espresso Martini?",
+     "opts": [
+      "Gin or vodka",
+      "Rum or blanco tequila",
+      "Vodka or blanco tequila",
+      "Mezcal or whisky"
+     ],
+     "a": 2,
+     "why": "The Ciclo Espresso Martini comes with either Teremana Blanco tequila or Ketel One Vodka.",
+     "id": "c-ciclo-espresso-martini#0"
+    },
+    {
+     "k": "recognise",
+     "q": "A guest asks what the Ciclo Espresso Martini tastes like. Which description is right?",
+     "opts": [
+      "Bold coffee, sweet with vanilla and brown sugar, and a hint of orange",
+      "Tart and fruity with strawberry and a bitter finish",
+      "Dry, savoury and briny with olives",
+      "Light, bubbly and floral"
+     ],
+     "a": 0,
+     "why": "Espresso and Tia Maria give the coffee, Licor 43 and demerara syrup the sweetness, and the Grand Marnier wash the orange hint.",
+     "id": "c-ciclo-espresso-martini#1"
+    },
+    {
+     "k": "recall",
+     "q": "Which of these is in the Ciclo Espresso Martini?",
+     "opts": [
+      "Cointreau",
+      "Chambord",
+      "Giffard Pêche",
+      "Tia Maria Coffee Liqueur"
+     ],
+     "a": 3,
+     "why": "The Ciclo Espresso Martini has Tia Maria. The other three come from other cocktails on the list.",
+     "id": "c-ciclo-espresso-martini#2"
+    },
+    {
+     "k": "recall",
+     "q": "What does the Grand Marnier wash add to the Ciclo Espresso Martini?",
+     "opts": [
+      "The main coffee flavour",
+      "A hint of orange and Cognac",
+      "A smoky peat flavour",
+      "A clear, silky texture"
+     ],
+     "a": 1,
+     "why": "Grand Marnier is an orange liqueur made with Cognac, and a wash means only a light touch of it is used.",
+     "id": "c-ciclo-espresso-martini#3"
+    },
+    {
+     "k": "apply",
+     "q": "A guest wants an after-dinner coffee cocktail but prefers tequila to vodka. Which cocktail do you suggest?",
+     "opts": [
+      "Strawberry Fields",
+      "Costa Coco",
+      "Ciclo Espresso Martini",
+      "The Old Fashioned"
+     ],
+     "a": 2,
+     "why": "The Ciclo Espresso Martini is a coffee cocktail that can be made with Teremana Blanco tequila.",
+     "id": "c-ciclo-espresso-martini#4"
+    },
+    {
+     "k": "contrast",
+     "q": "The Ciclo Espresso Martini and the Strawberry Fields both contain Licor 43. What sets the Ciclo Espresso Martini apart?",
+     "opts": [
+      "Campari and aromatic bitters",
+      "Espresso and Tia Maria Coffee Liqueur",
+      "House strawberry syrup and lime",
+      "Cointreau and salt"
+     ],
+     "a": 1,
+     "why": "Only the Ciclo Espresso Martini has espresso and Tia Maria. Campari, bitters, strawberry syrup and lime belong to the Strawberry Fields.",
+     "id": "c-ciclo-espresso-martini#5"
+    }
+   ],
+   "at": 1793638916101
+  },
+  "c-the-old-fashioned": {
+   "id": "c-the-old-fashioned",
+   "pitch": "Our Old Fashioned is strong and smooth. The whisky is washed with brown butter, so it tastes nutty and rich, with warm spice from Angostura and a touch of orange bitters. It's the one for whisky lovers who want a classic, spirit-forward drink with a twist.",
+   "say": "Angostura: an-guh-STOOR-ah",
+   "taste": "Strong, smooth whisky with a nutty, buttery richness, warm spice and a hint of orange.",
+   "spirit": "whisky",
+   "style": {
+    "strength": 5,
+    "sweet": 2,
+    "sour": 1,
+    "bitter": 2
+   },
+   "explain": [
+    {
+     "term": "Brown butter-washed",
+     "means": "The whisky is mixed with melted brown butter, then the butter is chilled and strained out, which leaves a nutty, buttery flavour and a smoother feel with no butter in the glass."
+    },
+    {
+     "term": "Angostura",
+     "means": "A famous aromatic bitters, which is a strong spice-and-herb flavouring used a few drops at a time, and it adds warm spice and depth."
+    },
+    {
+     "term": "Orange bitters",
+     "means": "A strong orange-peel flavouring used in drops, and it adds a bright orange note."
+    }
+   ],
+   "dishes": [
+    {
+     "dish": "22 oz Bone-In NY Striploin",
+     "why": "The strong, nutty whisky stands up to the charred, rich steak."
+    },
+    {
+     "dish": "Truffle Fries",
+     "why": "The brown-butter nuttiness matches the earthy, salty truffle."
+    }
+   ],
+   "alts": [
+    {
+     "id": "c-dr-mario",
+     "when": "whisky but smoky, with honey and citrus"
+    },
+    {
+     "id": "c-the-negroni",
+     "when": "just as strong but bitter, with gin instead of whisky"
+    }
+   ],
+   "qs": [
+    {
+     "k": "recognise",
+     "q": "What is the base spirit in The Old Fashioned?",
+     "opts": [
+      "Gin",
+      "Rum",
+      "Mezcal",
+      "Whisky"
+     ],
+     "a": 3,
+     "why": "The Old Fashioned is built on brown butter-washed Traveller Whisky.",
+     "id": "c-the-old-fashioned#0"
+    },
+    {
+     "k": "recognise",
+     "q": "A guest asks what The Old Fashioned tastes like. Which description is right?",
+     "opts": [
+      "Light, bubbly and fruity",
+      "Strong and smooth, nutty and buttery, with warm spice and orange",
+      "Tropical and silky with pineapple",
+      "Sweet, tart and berry-forward with salt"
+     ],
+     "a": 1,
+     "why": "Brown butter-washed whisky with Angostura and orange bitters makes a strong, nutty, spiced drink.",
+     "id": "c-the-old-fashioned#1"
+    },
+    {
+     "k": "recall",
+     "q": "Which of these is in The Old Fashioned?",
+     "opts": [
+      "Lillet Blanc",
+      "Sweet vermouth",
+      "Angostura",
+      "Honey syrup"
+     ],
+     "a": 2,
+     "why": "The Old Fashioned has Angostura. The other three come from other cocktails on the list.",
+     "id": "c-the-old-fashioned#2"
+    },
+    {
+     "k": "recall",
+     "q": "What does the brown butter wash do to the whisky in The Old Fashioned?",
+     "opts": [
+      "It gives a nutty, buttery flavour and a smoother feel, with no butter left in the glass",
+      "It makes the whisky smoky like a peated Scotch",
+      "It adds sweetness like a syrup",
+      "It adds a bright orange aroma"
+     ],
+     "a": 0,
+     "why": "The butter's flavour stays in the whisky, but the fat is chilled and strained out.",
+     "id": "c-the-old-fashioned#3"
+    },
+    {
+     "k": "apply",
+     "q": "A guest wants a strong, spirit-forward whisky drink that isn't smoky. Which cocktail do you suggest?",
+     "opts": [
+      "Dr. Mario",
+      "The Negroni",
+      "Silk & Stone Martini",
+      "The Old Fashioned"
+     ],
+     "a": 3,
+     "why": "The Old Fashioned is a strong whisky drink with nutty, spiced flavours. The Dr. Mario has smoky Laphroaig.",
+     "id": "c-the-old-fashioned#4"
+    },
+    {
+     "k": "contrast",
+     "q": "The Old Fashioned and the Dr. Mario are both whisky cocktails. Which of these is true of The Old Fashioned?",
+     "opts": [
+      "It uses Johnnie Walker Black and Laphroaig",
+      "It uses brown butter-washed Traveller Whisky with Angostura and orange bitters",
+      "It has honey syrup and clarified citrus",
+      "It has Lillet Blanc and olives"
+     ],
+     "a": 1,
+     "why": "The Old Fashioned is Traveller Whisky with bitters. The Dr. Mario uses Johnnie Walker Black, Laphroaig, honey syrup and clarified citrus.",
+     "id": "c-the-old-fashioned#5"
+    }
+   ],
+   "at": 1793638916101
+  },
+  "c-the-negroni": {
+   "id": "c-the-negroni",
+   "pitch": "The Negroni is a classic bitter cocktail: bold and boozy, with a gentle herbal sweetness from the vermouth. It's perfect for anyone who likes their drinks strong, bittersweet and not fruity, and it makes a great before-dinner drink.",
+   "say": "Roku: ROH-koo. Campari: kahm-PAH-ree. Vermouth: ver-MOOTH.",
+   "taste": "Strong and bitter with a soft, herbal sweetness and a bitter-orange edge.",
+   "spirit": "gin",
+   "style": {
+    "strength": 4,
+    "sweet": 2,
+    "sour": 1,
+    "bitter": 5
+   },
+   "explain": [
+    {
+     "term": "Roku Gin",
+     "means": "A Japanese gin made with Japanese botanicals such as yuzu (a Japanese citrus), sakura (cherry blossom) and green tea, so it gives the drink a bright, slightly floral base."
+    },
+    {
+     "term": "Campari",
+     "means": "A bright red Italian bitter liqueur with bitter orange and herbal flavours, and it's what makes the Negroni taste bitter."
+    },
+    {
+     "term": "sweet vermouth",
+     "means": "A red wine that has been strengthened with extra alcohol, sweetened and flavoured with herbs and spices, and it softens the bitterness with a rich, herbal sweetness."
+    }
+   ],
+   "dishes": [
+    {
+     "dish": "Charcutería & Formaggi",
+     "why": "The bitterness cuts right through the salty, rich cured meats and cheese, so each bite feels fresh again."
+    },
+    {
+     "dish": "Mediterranean Olives",
+     "why": "Salty, herby olives and a bitter Negroni are a natural before-dinner match."
+    }
+   ],
+   "alts": [
+    {
+     "id": "c-paradise-spritz",
+     "when": "lighter, bubbly and less boozy, but still with a Campari bitter edge"
+    },
+    {
+     "id": "c-strawberry-fields",
+     "when": "sweeter and fruitier, with just a touch of Campari"
+    }
+   ],
+   "qs": [
+    {
+     "k": "recognise",
+     "q": "What is the base spirit of The Negroni?",
+     "opts": [
+      "Vodka",
+      "Gin",
+      "Blanco tequila",
+      "Rum"
+     ],
+     "a": 1,
+     "why": "The Negroni is built on Roku Gin.",
+     "id": "c-the-negroni#0"
+    },
+    {
+     "k": "recognise",
+     "q": "A guest asks what The Negroni tastes like. Which description is right?",
+     "opts": [
+      "Sweet and fruity, with bright lime sourness",
+      "Light, bubbly and gently floral",
+      "Strong and bitter, with a soft herbal sweetness",
+      "Smoky and honeyed, with a gentle sour lift"
+     ],
+     "a": 2,
+     "why": "Campari makes it bitter, sweet vermouth adds herbal sweetness, and there is no juice in it.",
+     "id": "c-the-negroni#1"
+    },
+    {
+     "k": "recall",
+     "q": "Which of these is in The Negroni?",
+     "opts": [
+      "Sweet vermouth",
+      "Lillet Blanc",
+      "Cocchi Rossa",
+      "Licor 43"
+     ],
+     "a": 0,
+     "why": "The Negroni is Roku Gin, Campari and sweet vermouth.",
+     "id": "c-the-negroni#2"
+    },
+    {
+     "k": "recall",
+     "q": "Which ingredient gives The Negroni its bitter edge?",
+     "opts": [
+      "Licor 43",
+      "Cointreau",
+      "Chambord",
+      "Campari"
+     ],
+     "a": 3,
+     "why": "Campari is a bitter Italian liqueur and the source of the Negroni's bitterness.",
+     "id": "c-the-negroni#3"
+    },
+    {
+     "k": "apply",
+     "q": "A guest wants a strong, bittersweet drink before dinner and says nothing fruity or bubbly. Which cocktail do you suggest?",
+     "opts": [
+      "Paradise Spritz",
+      "The Negroni",
+      "Strawberry Fields",
+      "Summer Blush"
+     ],
+     "a": 1,
+     "why": "The Negroni is strong and bitter, with no fruit juice and no bubbles.",
+     "id": "c-the-negroni#4"
+    },
+    {
+     "k": "contrast",
+     "q": "The Negroni and the Paradise Spritz both contain Campari. Which ingredient is in the Paradise Spritz but not in The Negroni?",
+     "opts": [
+      "Sweet vermouth",
+      "Roku Gin",
+      "Prosecco",
+      "Lillet Blanc"
+     ],
+     "a": 2,
+     "why": "The Paradise Spritz is topped with Prosecco and soda, so it is lighter and bubbly, while the Negroni has no bubbles.",
+     "id": "c-the-negroni#5"
+    }
+   ],
+   "at": 1793639003608
+  },
+  "c-silk-stone-martini": {
+   "id": "c-silk-stone-martini",
+   "pitch": "The Silk & Stone Martini is a smooth, dry vodka martini with a savoury olive-oil richness and a soft hint of orange. It's ideal for anyone who loves a classic dirty or olive martini and wants something extra silky.",
+   "say": "Lillet Blanc: lee-LAY BLAHN. EVOO: say each letter, E-V-O-O, which stands for extra virgin olive oil.",
+   "taste": "Smooth, dry and savoury, with olive flavour, a silky feel and a light touch of orange.",
+   "spirit": "vodka",
+   "style": {
+    "strength": 4,
+    "sweet": 2,
+    "sour": 1,
+    "bitter": 1
+   },
+   "explain": [
+    {
+     "term": "EVOO-washed Grey Goose",
+     "means": "A 'wash' means the vodka has been mixed with extra virgin olive oil and the oil taken back out, which leaves the olive flavour and a silkier feel without any oiliness."
+    },
+    {
+     "term": "Lillet Blanc",
+     "means": "A French aperitif wine (a wine-based drink meant to be sipped before a meal), made from white wine and citrus liqueurs, which adds a light, slightly sweet, orangey softness."
+    },
+    {
+     "term": "orange bitters",
+     "means": "A few drops of a strong orange-and-spice flavouring that adds a hint of orange peel aroma rather than real bitterness."
+    }
+   ],
+   "dishes": [
+    {
+     "dish": "Fresh Oysters",
+     "why": "The salty, delicate oysters go beautifully with a clean, savoury olive martini."
+    },
+    {
+     "dish": "Caviar Bump",
+     "why": "Salty, rich caviar and an ice-cold, silky vodka martini are a classic match."
+    }
+   ],
+   "alts": [
+    {
+     "id": "c-the-negroni",
+     "when": "wants something stirred and strong but more bitter"
+    },
+    {
+     "id": "c-ciclo-espresso-martini",
+     "when": "wants a martini that's sweeter, with coffee"
+    }
+   ],
+   "qs": [
+    {
+     "k": "recognise",
+     "q": "What is the base spirit of the Silk & Stone Martini?",
+     "opts": [
+      "Gin",
+      "Blanco tequila",
+      "Vodka",
+      "Whisky"
+     ],
+     "a": 2,
+     "why": "The Silk & Stone Martini is made with Grey Goose, a vodka.",
+     "id": "c-silk-stone-martini#0"
+    },
+    {
+     "k": "recognise",
+     "q": "A guest asks what the Silk & Stone Martini tastes like. Which description is right?",
+     "opts": [
+      "Dry, silky and savoury, with olive and a soft hint of orange",
+      "Strong and bitter, with a sweet herbal edge",
+      "Sweet and rich, with coffee",
+      "Tart and fruity, with fresh lime"
+     ],
+     "a": 0,
+     "why": "Olive oil-washed vodka, Lillet Blanc, orange bitters and olives make it dry, savoury and silky.",
+     "id": "c-silk-stone-martini#1"
+    },
+    {
+     "k": "recall",
+     "q": "Which of these is in the Silk & Stone Martini?",
+     "opts": [
+      "Cocchi Rossa",
+      "Sweet vermouth",
+      "Licor 43",
+      "Lillet Blanc"
+     ],
+     "a": 3,
+     "why": "The Silk & Stone Martini uses Lillet Blanc alongside the olive oil-washed Grey Goose.",
+     "id": "c-silk-stone-martini#2"
+    },
+    {
+     "k": "recall",
+     "q": "What does the EVOO wash do to the Grey Goose in the Silk & Stone Martini?",
+     "opts": [
+      "Adds a nutty, toasty richness",
+      "Gives it olive oil flavour and a silkier feel",
+      "Adds a light orange liqueur aroma",
+      "Makes it crystal clear by removing cloudiness"
+     ],
+     "a": 1,
+     "why": "Washing the vodka with extra virgin olive oil leaves olive flavour and a smoother, silkier texture.",
+     "id": "c-silk-stone-martini#3"
+    },
+    {
+     "k": "apply",
+     "q": "A guest who loves olives wants a dry, savoury martini but doesn't drink gin. Which cocktail do you suggest?",
+     "opts": [
+      "Ciclo Espresso Martini",
+      "The Negroni",
+      "Silk & Stone Martini",
+      "Dr. Mario"
+     ],
+     "a": 2,
+     "why": "The Silk & Stone Martini is a dry, savoury vodka martini with olive oil and olives.",
+     "id": "c-silk-stone-martini#4"
+    },
+    {
+     "k": "contrast",
+     "q": "The Silk & Stone Martini and the Ciclo Espresso Martini can both be made with vodka. Which description fits the Silk & Stone Martini?",
+     "opts": [
+      "Sweet and rich, with coffee",
+      "Dry and savoury, with olive oil and olives",
+      "Bitter and red, with sweet vermouth",
+      "Smoky, with honey and citrus"
+     ],
+     "a": 1,
+     "why": "The Silk & Stone Martini is dry and savoury, while the Ciclo Espresso Martini is sweeter, with coffee liqueur and espresso.",
+     "id": "c-silk-stone-martini#5"
+    }
+   ],
+   "at": 1793639003608
+  },
+  "c-dr-mario": {
+   "id": "c-dr-mario",
+   "pitch": "The Dr. Mario is a smoky Scotch cocktail sweetened with honey and brightened with citrus, so it's smooth, warming and a little tart. It's perfect for whisky lovers, especially anyone who enjoys a peaty, smoky Scotch.",
+   "say": "Laphroaig: la-FROYG.",
+   "taste": "Smoky and honeyed, with a gentle sour lift from the citrus.",
+   "spirit": "Scotch whisky",
+   "style": {
+    "strength": 4,
+    "sweet": 3,
+    "sour": 3,
+    "bitter": 1
+   },
+   "explain": [
+    {
+     "term": "Johnnie Walker Black",
+     "means": "A smooth blended Scotch whisky that gives the drink a rich, slightly smoky backbone."
+    },
+    {
+     "term": "Laphroaig",
+     "means": "A single malt Scotch whisky from the island of Islay, famous for its big, peaty smoke (peat is a fuel that gives whisky a smoky, earthy taste), and it's what makes the drink smoky."
+    },
+    {
+     "term": "honey syrup",
+     "means": "Honey thinned into a syrup so it mixes easily, which adds a soft, floral sweetness."
+    },
+    {
+     "term": "clarified citrus",
+     "means": "Citrus juice that has been made clear by removing the pulp and cloudiness, so it adds sourness while keeping the drink smooth and clear."
+    }
+   ],
+   "dishes": [
+    {
+     "dish": "Charred Chorizo",
+     "why": "The smoky, spicy chorizo matches the smoke in the whisky, and the honey calms the heat."
+    },
+    {
+     "dish": "Fire-Charred Lamb Chops",
+     "why": "Charred, rich lamb loves a smoky Scotch drink with a bit of citrus to keep it fresh."
+    }
+   ],
+   "alts": [
+    {
+     "id": "c-brasa-roja-mezcal",
+     "when": "wants smoky but fruitier, with mezcal instead of whisky"
+    },
+    {
+     "id": "c-the-old-fashioned",
+     "when": "wants whisky that's stronger, with no citrus"
+    }
+   ],
+   "qs": [
+    {
+     "k": "recognise",
+     "q": "What is the base spirit of the Dr. Mario?",
+     "opts": [
+      "Mezcal",
+      "Rum",
+      "Brandy",
+      "Scotch whisky"
+     ],
+     "a": 3,
+     "why": "The Dr. Mario is made with Johnnie Walker Black and Laphroaig, both Scotch whiskies.",
+     "id": "c-dr-mario#0"
+    },
+    {
+     "k": "recognise",
+     "q": "A guest asks what the Dr. Mario tastes like. Which description is right?",
+     "opts": [
+      "Smoky and honeyed, with a gentle sour lift",
+      "Strong and bitter, with a herbal sweetness",
+      "Light, bubbly and gently floral",
+      "Dry, silky and savoury, with olive"
+     ],
+     "a": 0,
+     "why": "Smoky Scotch, honey syrup and clarified citrus make it smoky, sweet and a little tart.",
+     "id": "c-dr-mario#1"
+    },
+    {
+     "k": "recall",
+     "q": "Which of these is in the Dr. Mario?",
+     "opts": [
+      "Demerara syrup",
+      "Honey syrup",
+      "Agave",
+      "House rosé syrup"
+     ],
+     "a": 1,
+     "why": "The Dr. Mario is sweetened with honey syrup.",
+     "id": "c-dr-mario#2"
+    },
+    {
+     "k": "recall",
+     "q": "Which ingredient gives the Dr. Mario its big smoky character?",
+     "opts": [
+      "Fandango Mezcal",
+      "Glenfiddich 15-Year",
+      "Laphroaig",
+      "Traveller Whisky"
+     ],
+     "a": 2,
+     "why": "Laphroaig is a peaty Islay Scotch, famous for its smoke.",
+     "id": "c-dr-mario#3"
+    },
+    {
+     "k": "apply",
+     "q": "A guest who loves smoky Scotch wants a cocktail that's a little sweet and a little sour. Which cocktail do you suggest?",
+     "opts": [
+      "The Old Fashioned",
+      "Brasa-Roja Mezcal",
+      "La Vita Colada",
+      "Dr. Mario"
+     ],
+     "a": 3,
+     "why": "The Dr. Mario combines smoky Laphroaig with honey syrup and clarified citrus.",
+     "id": "c-dr-mario#4"
+    },
+    {
+     "k": "contrast",
+     "q": "The Dr. Mario and The Old Fashioned are both whisky cocktails. Which ingredient is in the Dr. Mario but not in The Old Fashioned?",
+     "opts": [
+      "Clarified citrus",
+      "Angostura",
+      "Orange bitters",
+      "Brown butter-washed Traveller Whisky"
+     ],
+     "a": 0,
+     "why": "The Dr. Mario has clarified citrus for a sour lift, while The Old Fashioned has no citrus juice.",
+     "id": "c-dr-mario#5"
+    }
+   ],
+   "at": 1793639003608
+  },
+  "c-summer-blush": {
+   "id": "c-summer-blush",
+   "pitch": "The Summer Blush is a light, bubbly spritz with floral elderflower, juicy white peach and a squeeze of lemon. It's great for anyone who wants something refreshing and easy-drinking that isn't too boozy.",
+   "say": "Prosecco: proh-SEK-oh.",
+   "taste": "Light and bubbly, with floral elderflower, soft white peach and a little lemony tartness.",
+   "spirit": "elderflower gin",
+   "style": {
+    "strength": 2,
+    "sweet": 3,
+    "sour": 2,
+    "bitter": 1
+   },
+   "explain": [
+    {
+     "term": "Empress Elderflower",
+     "means": "An elderflower-flavoured gin from Empress 1908, which gives the drink its floral, perfumed taste."
+    },
+    {
+     "term": "Prosecco",
+     "means": "A light, fruity Italian sparkling wine that adds bubbles and freshness."
+    },
+    {
+     "term": "spritz",
+     "means": "A light, bubbly drink topped up with sparkling wine and/or soda water, made for easy sipping."
+    }
+   ],
+   "dishes": [
+    {
+     "dish": "Insalata Verde di Casa",
+     "why": "A delicate, herby green salad suits a light, floral spritz that won't overpower it."
+    },
+    {
+     "dish": "Branzino Frito",
+     "why": "The bubbles and lemon refresh the palate after delicate fried sea bass."
+    }
+   ],
+   "alts": [
+    {
+     "id": "c-rose-alla-fragola",
+     "when": "wants a fruitier strawberry spritz, made with vodka instead of gin"
+    },
+    {
+     "id": "c-paradise-spritz",
+     "when": "wants a spritz with a bitter Campari edge"
+    }
+   ],
+   "qs": [
+    {
+     "k": "recognise",
+     "q": "What is the base spirit of the Summer Blush?",
+     "opts": [
+      "Vodka",
+      "Rum",
+      "Gin",
+      "Brandy"
+     ],
+     "a": 2,
+     "why": "The Summer Blush is built on Empress Elderflower, a gin.",
+     "id": "c-summer-blush#0"
+    },
+    {
+     "k": "recognise",
+     "q": "A guest asks what the Summer Blush tastes like. Which description is right?",
+     "opts": [
+      "Strong and bitter, with a herbal sweetness",
+      "Light and bubbly, with floral elderflower and soft peach",
+      "Smoky and honeyed, with a sour lift",
+      "Dry, silky and savoury, with olive"
+     ],
+     "a": 1,
+     "why": "Elderflower gin, white peach, lemon, Prosecco and soda make it light, floral and bubbly.",
+     "id": "c-summer-blush#1"
+    },
+    {
+     "k": "recall",
+     "q": "Which of these is in the Summer Blush?",
+     "opts": [
+      "Blood orange",
+      "Pear purée",
+      "Passion fruit",
+      "White peach"
+     ],
+     "a": 3,
+     "why": "The Summer Blush uses white peach with the elderflower gin.",
+     "id": "c-summer-blush#2"
+    },
+    {
+     "k": "recall",
+     "q": "Which ingredient gives the Summer Blush its floral character?",
+     "opts": [
+      "Empress Elderflower",
+      "Giffard Pêche",
+      "Chambord",
+      "Cointreau"
+     ],
+     "a": 0,
+     "why": "Empress Elderflower is an elderflower gin, and it's what makes the drink floral.",
+     "id": "c-summer-blush#3"
+    },
+    {
+     "k": "apply",
+     "q": "A guest wants something light, bubbly and not too boozy for a sunny afternoon, with no bitterness. Which cocktail do you suggest?",
+     "opts": [
+      "Paradise Spritz",
+      "The Negroni",
+      "Dr. Mario",
+      "Summer Blush"
+     ],
+     "a": 3,
+     "why": "The Summer Blush is a light, floral spritz with no bitter Campari.",
+     "id": "c-summer-blush#4"
+    },
+    {
+     "k": "contrast",
+     "q": "The Summer Blush and the Rose Alla Fragola are both spritzes. The Rose Alla Fragola leans on strawberry. Which fruit leads the Summer Blush?",
+     "opts": [
+      "Blood orange",
+      "White peach",
+      "Pineapple",
+      "Pear"
+     ],
+     "a": 1,
+     "why": "The Summer Blush is built around white peach, while the Rose Alla Fragola uses strawberry syrup.",
+     "id": "c-summer-blush#5"
+    }
+   ],
+   "at": 1793639003608
+  },
+  "c-rose-alla-fragola": {
+   "id": "c-rose-alla-fragola",
+   "pitch": "The Rose Alla Fragola is a light, sweet-tart sparkler: Grey Goose vodka with strawberry, lemon and orange liqueur, topped with sparkling rosé wine and rose lemonade. It's perfect for anyone who loves fruity, bubbly drinks and doesn't want anything bitter or too boozy.",
+   "say": "Rose Alla Fragola: rose AH-lah FRAH-goh-lah ('fragola' is Italian for strawberry); Cointreau: KWAN-troh; Mionetto: mee-oh-NET-oh",
+   "taste": "Sweet strawberry and bright lemon with a hint of orange, made light and fizzy by sparkling rosé and rose lemonade.",
+   "spirit": "vodka",
+   "style": {
+    "strength": 2,
+    "sweet": 4,
+    "sour": 3,
+    "bitter": 1
+   },
+   "explain": [
+    {
+     "term": "Spritz",
+     "means": "A drink topped with sparkling wine and/or something fizzy, which keeps it light, bubbly and easy to sip."
+    },
+    {
+     "term": "Cointreau",
+     "means": "A clear French orange liqueur that adds a sweet orange note."
+    },
+    {
+     "term": "Mionetto Rosé",
+     "means": "A sparkling rosé wine from Mionetto, an Italian sparkling wine maker; it gives the drink its pink bubbles."
+    },
+    {
+     "term": "Rose lemonade",
+     "means": "Lemonade flavoured with rose; it adds a floral touch and a sweet-tart lift."
+    }
+   ],
+   "dishes": [
+    {
+     "dish": "Burratina",
+     "why": "The sweet strawberry and bubbles play nicely off the creamy burrata and salty salami."
+    },
+    {
+     "dish": "Fresh Oysters",
+     "why": "Light, lemony bubbles are a refreshing match for salty, delicate oysters."
+    }
+   ],
+   "alts": [
+    {
+     "id": "c-paradise-spritz",
+     "when": "less sweet, with a bitter edge"
+    },
+    {
+     "id": "c-flora-fizz",
+     "when": "another vodka drink, with soda instead of sparkling wine"
+    }
+   ],
+   "qs": [
+    {
+     "k": "recognise",
+     "q": "What is the base spirit in the Rose Alla Fragola?",
+     "opts": [
+      "Vodka",
+      "Rum",
+      "Gin",
+      "Mezcal"
+     ],
+     "a": 0,
+     "why": "The Rose Alla Fragola is built on Grey Goose, which is a vodka.",
+     "id": "c-rose-alla-fragola#0"
+    },
+    {
+     "k": "recognise",
+     "q": "How would you describe the taste of the Rose Alla Fragola to a guest?",
+     "opts": [
+      "Sweet-tart and fruity, with strawberry and lemon, light and bubbly",
+      "Bittersweet and tropical, with pineapple, blood orange and a bitter red liqueur",
+      "Smoky and tangy, with blood orange, lime and a touch of salt",
+      "Strong and spirit-forward, with smoky Scotch and honey"
+     ],
+     "a": 0,
+     "why": "Strawberry syrup, lemon juice, sparkling rosé and rose lemonade make it sweet-tart, fruity and fizzy with no bitterness.",
+     "id": "c-rose-alla-fragola#1"
+    },
+    {
+     "k": "recall",
+     "q": "Which of these is in the Rose Alla Fragola?",
+     "opts": [
+      "Cointreau",
+      "Campari",
+      "Lillet Blanc",
+      "Tia Maria Coffee Liqueur"
+     ],
+     "a": 0,
+     "why": "Cointreau, an orange liqueur, is on the Rose Alla Fragola's list; the others belong to other cocktails.",
+     "id": "c-rose-alla-fragola#2"
+    },
+    {
+     "k": "recall",
+     "q": "In the Rose Alla Fragola, which ingredient does the Italian word 'Fragola' in the name point to?",
+     "opts": [
+      "Strawberry syrup",
+      "Blood orange syrup",
+      "House raspberry syrup",
+      "Pineapple cordial"
+     ],
+     "a": 0,
+     "why": "'Fragola' is Italian for strawberry, and strawberry syrup gives the drink its main fruit flavour.",
+     "id": "c-rose-alla-fragola#3"
+    },
+    {
+     "k": "apply",
+     "q": "A guest wants something light, bubbly and fruity with strawberry, and says they like vodka. Which cocktail do you suggest?",
+     "opts": [
+      "Rose Alla Fragola",
+      "Strawberry Fields",
+      "Flora Fizz",
+      "Paradise Spritz"
+     ],
+     "a": 0,
+     "why": "The Rose Alla Fragola is Grey Goose vodka with strawberry, topped with sparkling rosé and rose lemonade.",
+     "id": "c-rose-alla-fragola#4"
+    },
+    {
+     "k": "contrast",
+     "q": "What is the difference between the Rose Alla Fragola and the Summer Blush?",
+     "opts": [
+      "The Rose Alla Fragola has vodka, strawberry and sparkling rosé; the Summer Blush has Empress Elderflower, white peach and Prosecco",
+      "The Rose Alla Fragola has Empress Elderflower and white peach; the Summer Blush has vodka and strawberry",
+      "The Rose Alla Fragola has rum and Campari; the Summer Blush has vodka and strawberry",
+      "The Rose Alla Fragola has Prosecco and soda; the Summer Blush has sparkling rosé and rose lemonade"
+     ],
+     "a": 0,
+     "why": "Both are spritzes with lemon, but the Rose Alla Fragola is vodka, strawberry and sparkling rosé, while the Summer Blush is Empress Elderflower, white peach and Prosecco.",
+     "id": "c-rose-alla-fragola#5"
+    }
+   ],
+   "at": 1793639099628
+  },
+  "c-paradise-spritz": {
+   "id": "c-paradise-spritz",
+   "pitch": "The Paradise Spritz is bittersweet and tropical: Appleton Estate rum with pineapple, blood orange and lime, a splash of bitter Campari, and Prosecco and soda on top. It's great for guests who like an Aperol- or Campari-style spritz but want a sunny, fruity twist.",
+   "say": "Campari: kam-PAH-ree; Prosecco: proh-SEK-oh",
+   "taste": "Juicy pineapple and blood orange with tangy lime and a pleasant bitter edge, all light and bubbly.",
+   "spirit": "rum",
+   "style": {
+    "strength": 2,
+    "sweet": 3,
+    "sour": 3,
+    "bitter": 3
+   },
+   "explain": [
+    {
+     "term": "Campari",
+     "means": "A bright red Italian bitter liqueur, a classic aperitivo (a before-dinner drink meant to wake up your appetite), which gives this drink its bittersweet orange edge."
+    },
+    {
+     "term": "Pineapple cordial",
+     "means": "A sweet, concentrated pineapple syrup that adds tropical fruit and sweetness."
+    },
+    {
+     "term": "Blood orange",
+     "means": "A red-fleshed orange with a sweet, slightly berry-like taste."
+    },
+    {
+     "term": "Prosecco",
+     "means": "An Italian sparkling white wine that tops the drink and makes it light and fizzy."
+    }
+   ],
+   "dishes": [
+    {
+     "dish": "Charred Chorizo",
+     "why": "The fruity, bittersweet bubbles cool down the smoky, spicy chorizo."
+    },
+    {
+     "dish": "Calamari di Mamma",
+     "why": "Bubbles and lime cut through the fried squid, and the fruit balances its salt and spice."
+    }
+   ],
+   "alts": [
+    {
+     "id": "c-the-negroni",
+     "when": "something stronger with the same bitter Campari edge"
+    },
+    {
+     "id": "c-rose-alla-fragola",
+     "when": "sweeter and fruitier, with no bitterness"
+    }
+   ],
+   "qs": [
+    {
+     "k": "recognise",
+     "q": "What is the base spirit in the Paradise Spritz?",
+     "opts": [
+      "Rum",
+      "Vodka",
+      "Mezcal",
+      "Gin"
+     ],
+     "a": 0,
+     "why": "The Paradise Spritz is built on Appleton Estate, which is a rum.",
+     "id": "c-paradise-spritz#0"
+    },
+    {
+     "k": "recognise",
+     "q": "How would you describe the taste of the Paradise Spritz to a guest?",
+     "opts": [
+      "Bittersweet and tropical, with pineapple and blood orange, light and bubbly",
+      "Sweet and fruity, with strawberry and pink bubbles and no bitterness",
+      "Smoky and tangy, with blood orange, lime and a touch of salt",
+      "Strong and spirit-forward, bitter, with gin and sweet vermouth"
+     ],
+     "a": 0,
+     "why": "Pineapple, blood orange and lime bring the fruit, Campari adds the bitterness, and Prosecco and soda make it light and fizzy.",
+     "id": "c-paradise-spritz#1"
+    },
+    {
+     "k": "recall",
+     "q": "Which of these is in the Paradise Spritz?",
+     "opts": [
+      "Pineapple cordial",
+      "Mionetto Rosé",
+      "Giffard Pêche",
+      "Cocchi Rossa"
+     ],
+     "a": 0,
+     "why": "Pineapple cordial is on the Paradise Spritz's list; the others belong to other cocktails.",
+     "id": "c-paradise-spritz#2"
+    },
+    {
+     "k": "recall",
+     "q": "In the Paradise Spritz, which ingredient adds the bitter edge?",
+     "opts": [
+      "Campari",
+      "Lillet Blanc",
+      "Licor 43",
+      "Chambord"
+     ],
+     "a": 0,
+     "why": "Campari is a bitter Italian liqueur and the only one of these in the Paradise Spritz.",
+     "id": "c-paradise-spritz#3"
+    },
+    {
+     "k": "apply",
+     "q": "A guest loves Campari but wants something light, bubbly and tropical rather than strong. Which cocktail do you suggest?",
+     "opts": [
+      "Paradise Spritz",
+      "The Negroni",
+      "Strawberry Fields",
+      "Summer Blush"
+     ],
+     "a": 0,
+     "why": "The Paradise Spritz has Campari with pineapple and blood orange, topped with Prosecco and soda.",
+     "id": "c-paradise-spritz#4"
+    },
+    {
+     "k": "contrast",
+     "q": "What is the difference between the Paradise Spritz and the Summer Blush?",
+     "opts": [
+      "The Paradise Spritz has rum, Campari, pineapple and blood orange; the Summer Blush has Empress Elderflower and white peach",
+      "The Paradise Spritz has Empress Elderflower and white peach; the Summer Blush has rum and Campari",
+      "The Paradise Spritz has vodka and strawberry; the Summer Blush has rum and Campari",
+      "The Paradise Spritz has sparkling rosé; the Summer Blush has Campari and pineapple"
+     ],
+     "a": 0,
+     "why": "Both are topped with Prosecco and soda, but only the Paradise Spritz has rum, bitter Campari and tropical fruit.",
+     "id": "c-paradise-spritz#5"
+    }
+   ],
+   "at": 1793639099628
+  },
+  "c-brasa-roja-mezcal": {
+   "id": "c-brasa-roja-mezcal",
+   "pitch": "The Brasa-Roja Mezcal is a smoky margarita: Fandango mezcal with orange liqueur, blood orange, fresh lime and a touch of salt. It's for margarita lovers who want something bolder, with a smoky edge.",
+   "say": "Brasa-Roja: BRAH-sah ROH-hah (Spanish for 'red embers'); Mezcal: mez-KAHL; Cointreau: KWAN-troh",
+   "taste": "Smoky and tangy, with sweet-tart blood orange, sharp lime and a salty finish.",
+   "spirit": "mezcal",
+   "style": {
+    "strength": 3,
+    "sweet": 3,
+    "sour": 4,
+    "bitter": 1
+   },
+   "explain": [
+    {
+     "term": "Mezcal",
+     "means": "A Mexican spirit made from agave, the same family of plants as tequila, known for its smoky taste."
+    },
+    {
+     "term": "Cointreau",
+     "means": "A clear French orange liqueur that adds sweetness and orange flavour, as in a classic margarita."
+    },
+    {
+     "term": "Blood orange syrup",
+     "means": "A sweet syrup made from blood orange, a red-fleshed orange with a slightly berry-like taste."
+    },
+    {
+     "term": "Margarita",
+     "means": "A classic made with agave spirit, orange liqueur and lime; this one swaps in mezcal for a smoky version."
+    }
+   ],
+   "dishes": [
+    {
+     "dish": "Charred Chorizo",
+     "why": "The smoky mezcal matches the smoky, spicy chorizo, and the lime cuts its richness."
+    },
+    {
+     "dish": "Patatas Bravas",
+     "why": "Smoke meets smoke, and the tangy lime stands up to the spicy potatoes."
+    }
+   ],
+   "alts": [
+    {
+     "id": "c-red-velvet",
+     "when": "no smoke, fruitier and sweeter"
+    },
+    {
+     "id": "c-dr-mario",
+     "when": "smoky but stronger, with Scotch whisky instead of mezcal"
+    }
+   ],
+   "qs": [
+    {
+     "k": "recognise",
+     "q": "What is the base spirit in the Brasa-Roja Mezcal?",
+     "opts": [
+      "Mezcal",
+      "Blanco tequila",
+      "Rum",
+      "Vodka"
+     ],
+     "a": 0,
+     "why": "The Brasa-Roja Mezcal is built on Fandango Mezcal.",
+     "id": "c-brasa-roja-mezcal#0"
+    },
+    {
+     "k": "recognise",
+     "q": "How would you describe the taste of the Brasa-Roja Mezcal to a guest?",
+     "opts": [
+      "Smoky and tangy, with blood orange, lime and a touch of salt",
+      "Sweet and fruity, with raspberry and agave and no smoke",
+      "Bittersweet and tropical, with pineapple, lifted by bubbles",
+      "Strong and spirit-forward, with gin, Campari and sweet vermouth"
+     ],
+     "a": 0,
+     "why": "Mezcal brings the smoke, blood orange syrup and lime make it sweet-tart, and salt finishes it.",
+     "id": "c-brasa-roja-mezcal#1"
+    },
+    {
+     "k": "recall",
+     "q": "Which of these is in the Brasa-Roja Mezcal?",
+     "opts": [
+      "Blood orange syrup",
+      "House raspberry syrup",
+      "Coconut reduction",
+      "Demerara syrup"
+     ],
+     "a": 0,
+     "why": "Blood orange syrup is on the Brasa-Roja Mezcal's list; the others belong to other cocktails.",
+     "id": "c-brasa-roja-mezcal#2"
+    },
+    {
+     "k": "recall",
+     "q": "What gives the Brasa-Roja Mezcal its smoky taste?",
+     "opts": [
+      "Fandango Mezcal",
+      "Glenfiddich 15-Year foam",
+      "Brown butter-washed Traveller Whisky",
+      "Teremana Blanco"
+     ],
+     "a": 0,
+     "why": "Mezcal is known for its smoky flavour, and Fandango Mezcal is the base of this drink.",
+     "id": "c-brasa-roja-mezcal#3"
+    },
+    {
+     "k": "apply",
+     "q": "A guest who loves a margarita but wants something smoky asks what to order. Which cocktail do you suggest?",
+     "opts": [
+      "Brasa-Roja Mezcal",
+      "Red Velvet",
+      "Costa Coco",
+      "Dr. Mario"
+     ],
+     "a": 0,
+     "why": "The Brasa-Roja Mezcal is a margarita made with smoky mezcal.",
+     "id": "c-brasa-roja-mezcal#4"
+    },
+    {
+     "k": "contrast",
+     "q": "What is the difference between the Brasa-Roja Mezcal and the Red Velvet?",
+     "opts": [
+      "The Brasa-Roja Mezcal has mezcal and blood orange syrup; the Red Velvet has blanco tequila, raspberry syrup and agave",
+      "The Brasa-Roja Mezcal has blanco tequila and raspberry syrup; the Red Velvet has mezcal and blood orange syrup",
+      "The Brasa-Roja Mezcal has no Cointreau; the Red Velvet has Cointreau",
+      "The Brasa-Roja Mezcal has black salt and agave; the Red Velvet has plain salt and blood orange"
+     ],
+     "a": 0,
+     "why": "Both margaritas have Cointreau and salt, but the Brasa-Roja is smoky mezcal with blood orange, and the Red Velvet is blanco tequila with raspberry.",
+     "id": "c-brasa-roja-mezcal#5"
+    }
+   ],
+   "at": 1793639099628
+  },
+  "c-red-velvet": {
+   "id": "c-red-velvet",
+   "pitch": "The Red Velvet is a fruity margarita: El Tequileño blanco tequila with raspberry, orange liqueur, a little agave sweetness and black salt. It's great for guests who like their margaritas on the sweeter, berry side, with no smoke and no bitterness.",
+   "say": "El Tequileño: el teh-kee-LEN-yoh; Blanco: BLAHN-koh; Cointreau: KWAN-troh; Agave: ah-GAH-vay",
+   "taste": "Sweet raspberry and orange over smooth blanco tequila, with a salty edge from black salt.",
+   "spirit": "blanco tequila",
+   "style": {
+    "strength": 3,
+    "sweet": 4,
+    "sour": 3,
+    "bitter": 1
+   },
+   "explain": [
+    {
+     "term": "Blanco tequila",
+     "means": "Clear, unaged tequila, made from the agave plant, with a fresh, clean taste."
+    },
+    {
+     "term": "Cointreau",
+     "means": "A clear French orange liqueur that adds sweetness and orange flavour, as in a classic margarita."
+    },
+    {
+     "term": "Agave",
+     "means": "A sweetener made from the same plant tequila comes from, which adds a smooth sweetness."
+    },
+    {
+     "term": "Black salt",
+     "means": "Salt that is black in colour; it adds the salty touch that balances the sweet fruit."
+    }
+   ],
+   "dishes": [
+    {
+     "dish": "Pepperoni e Ricotta",
+     "why": "The sweet raspberry and salt match the spicy, sweet and salty flavours of the pizza."
+    },
+    {
+     "dish": "Calamari di Mamma",
+     "why": "The fruity sweetness cools the spice, and the salt matches the salty fried squid."
+    }
+   ],
+   "alts": [
+    {
+     "id": "c-brasa-roja-mezcal",
+     "when": "something smoky"
+    },
+    {
+     "id": "c-strawberry-fields",
+     "when": "same tequila but more bittersweet, with Campari"
+    }
+   ],
+   "qs": [
+    {
+     "k": "recognise",
+     "q": "What is the base spirit in the Red Velvet?",
+     "opts": [
+      "Blanco tequila",
+      "Mezcal",
+      "Rum",
+      "Gin"
+     ],
+     "a": 0,
+     "why": "The Red Velvet is built on El Tequileño Blanco, which is a blanco tequila.",
+     "id": "c-red-velvet#0"
+    },
+    {
+     "k": "recognise",
+     "q": "How would you describe the taste of the Red Velvet to a guest?",
+     "opts": [
+      "Sweet and fruity, with raspberry and orange and a salty edge, no smoke",
+      "Smoky and tangy, with blood orange, lime and a touch of salt",
+      "Bittersweet and tropical, with pineapple, lifted by bubbles",
+      "Strong and spirit-forward, with smoky Scotch and honey"
+     ],
+     "a": 0,
+     "why": "Raspberry syrup, agave and Cointreau make it sweet and fruity, black salt adds the salty edge, and blanco tequila means no smoke.",
+     "id": "c-red-velvet#1"
+    },
+    {
+     "k": "recall",
+     "q": "Which of these is in the Red Velvet?",
+     "opts": [
+      "Agave",
+      "Demerara syrup",
+      "Honey syrup",
+      "Pineapple cordial"
+     ],
+     "a": 0,
+     "why": "Agave is on the Red Velvet's list; the others belong to other cocktails.",
+     "id": "c-red-velvet#2"
+    },
+    {
+     "k": "recall",
+     "q": "In the Red Velvet, which ingredient gives the main berry flavour?",
+     "opts": [
+      "House raspberry syrup",
+      "Chambord",
+      "Strawberry syrup",
+      "Blood orange syrup"
+     ],
+     "a": 0,
+     "why": "House raspberry syrup is the fruit in the Red Velvet; Chambord, strawberry syrup and blood orange syrup are in other cocktails.",
+     "id": "c-red-velvet#3"
+    },
+    {
+     "k": "apply",
+     "q": "A guest wants a sweet, fruity margarita with no smoke and no bitterness. Which cocktail do you suggest?",
+     "opts": [
+      "Red Velvet",
+      "Brasa-Roja Mezcal",
+      "Strawberry Fields",
+      "Paradise Spritz"
+     ],
+     "a": 0,
+     "why": "The Red Velvet is a blanco tequila margarita with raspberry and agave, with no smoky mezcal and no bitter Campari.",
+     "id": "c-red-velvet#4"
+    },
+    {
+     "k": "contrast",
+     "q": "What is the difference between the Red Velvet and the Brasa-Roja Mezcal?",
+     "opts": [
+      "The Red Velvet has blanco tequila, raspberry syrup and agave; the Brasa-Roja Mezcal has smoky mezcal and blood orange syrup",
+      "The Red Velvet has mezcal and blood orange syrup; the Brasa-Roja Mezcal has blanco tequila and raspberry syrup",
+      "The Red Velvet has no Cointreau; the Brasa-Roja Mezcal has Cointreau",
+      "The Red Velvet has plain salt and lime juice; the Brasa-Roja Mezcal has black salt and agave"
+     ],
+     "a": 0,
+     "why": "Both margaritas have Cointreau and salt, but the Red Velvet is fruity blanco tequila with raspberry, and the Brasa-Roja is smoky mezcal with blood orange.",
+     "id": "c-red-velvet#5"
+    }
+   ],
+   "at": 1793639099628
+  },
+  "c-costa-coco": {
+   "id": "c-costa-coco",
+   "pitch": "The Costa Coco is our tropical margarita: Patrón Blanco tequila with orange liqueur, sweet pineapple and rich coconut, plus a salty chili-lime kick from Tajín. It's perfect for anyone who loves a piña colada vibe but still wants the bite of a tequila margarita.",
+   "say": "Costa Coco: KOH-stah KOH-koh; Patrón: pah-TRONE; Cointreau: KWAHN-troh; Tajín: tah-HEEN",
+   "taste": "Sweet and tropical, with pineapple and coconut over clean tequila and a little salty, spicy, limey kick.",
+   "spirit": "blanco tequila",
+   "style": {
+    "strength": 3,
+    "sweet": 4,
+    "sour": 2,
+    "bitter": 1
+   },
+   "explain": [
+    {
+     "term": "Cointreau",
+     "means": "A clear French orange liqueur that adds sweet orange flavour, the classic orange part of a margarita."
+    },
+    {
+     "term": "pineapple cordial",
+     "means": "A sweet pineapple syrup that gives the drink its juicy, tropical pineapple flavour."
+    },
+    {
+     "term": "coconut reduction",
+     "means": "Coconut cooked down so its flavour is thicker and stronger, giving the drink a rich, creamy coconut taste."
+    },
+    {
+     "term": "Tajín",
+     "means": "A Mexican seasoning of chili, lime and salt that adds a salty, gently spicy, tangy kick."
+    }
+   ],
+   "dishes": [
+    {
+     "dish": "Calamari di Mamma",
+     "why": "The sweet pineapple and coconut cool down the spicy, salty fried squid, and the Tajín picks up on the heat."
+    },
+    {
+     "dish": "Charred Chorizo",
+     "why": "Smoky, spicy chorizo loves a sweet, tropical drink that softens the heat."
+    }
+   ],
+   "alts": [
+    {
+     "id": "c-la-vita-colada",
+     "when": "no tequila, but still pineapple and coconut"
+    },
+    {
+     "id": "c-brasa-roja-mezcal",
+     "when": "wants a smoky margarita instead of a tropical one"
+    }
+   ],
+   "qs": [
+    {
+     "k": "recognise",
+     "q": "What is the base spirit in the Costa Coco?",
+     "opts": [
+      "Fandango Mezcal",
+      "Patrón Blanco tequila",
+      "Flor de Caña Rum",
+      "Ketel One Vodka"
+     ],
+     "a": 1,
+     "why": "The Costa Coco is built on Patrón Blanco, an unaged tequila.",
+     "id": "c-costa-coco#0"
+    },
+    {
+     "k": "recognise",
+     "q": "Which description of the Costa Coco would you give a guest?",
+     "opts": [
+      "Smoky and tart, with blood orange and a salty edge",
+      "Bitter, strong and stirred, with no fruit at all",
+      "Sweet and tropical, with pineapple and coconut over tequila and a chili-lime kick",
+      "Light, dry and bubbly, with lemon and sparkling wine"
+     ],
+     "a": 2,
+     "why": "Pineapple cordial and coconut reduction make it sweet and tropical, and Tajín adds the chili-lime kick.",
+     "id": "c-costa-coco#1"
+    },
+    {
+     "k": "recall",
+     "q": "Which of these is in the Costa Coco?",
+     "opts": [
+      "Blood orange syrup",
+      "House raspberry syrup",
+      "Black salt",
+      "Coconut reduction"
+     ],
+     "a": 3,
+     "why": "Coconut reduction is in the Costa Coco; the others belong to the Brasa-Roja Mezcal and the Red Velvet.",
+     "id": "c-costa-coco#2"
+    },
+    {
+     "k": "recall",
+     "q": "What does the Tajín bring to the Costa Coco?",
+     "opts": [
+      "A salty, gently spicy chili-lime kick",
+      "A smoky, campfire flavour",
+      "A floral, perfumed sweetness",
+      "A bitter orange edge"
+     ],
+     "a": 0,
+     "why": "Tajín is a Mexican seasoning of chili, lime and salt.",
+     "id": "c-costa-coco#3"
+    },
+    {
+     "k": "apply",
+     "q": "A guest who loves margaritas wants one that tastes tropical, with pineapple and coconut. Which cocktail do you suggest?",
+     "opts": [
+      "Red Velvet",
+      "Costa Coco",
+      "Brasa-Roja Mezcal",
+      "La Vita Colada"
+     ],
+     "a": 1,
+     "why": "The Costa Coco is the margarita with pineapple cordial and coconut reduction; La Vita Colada is a rum drink, not a margarita.",
+     "id": "c-costa-coco#4"
+    },
+    {
+     "k": "contrast",
+     "q": "Both the Costa Coco and the Red Velvet are blanco tequila margaritas with Cointreau. How are they different?",
+     "opts": [
+      "The Costa Coco uses mezcal, and the Red Velvet uses tequila",
+      "The Costa Coco has no Cointreau, and the Red Velvet does",
+      "The Costa Coco has raspberry syrup and black salt, and the Red Velvet has pineapple cordial and Tajín",
+      "The Costa Coco has pineapple cordial, coconut reduction and Tajín, and the Red Velvet has raspberry syrup, agave and black salt"
+     ],
+     "a": 3,
+     "why": "The Costa Coco goes tropical with pineapple and coconut, while the Red Velvet is fruity with raspberry and black salt.",
+     "id": "c-costa-coco#5"
+    }
+   ],
+   "at": 1793639194290
+  },
+  "c-sangria-blanca": {
+   "id": "c-sangria-blanca",
+   "pitch": "The Sangria Blanca is our white wine sangria: Chardonnay-Chenin blanc with brandy, orange liqueur and peach liqueur, topped with Sprite. It's light, fruity and easy to drink, great for anyone who prefers white wine or wants something refreshing.",
+   "say": "Sangria Blanca: san-GREE-ah BLAHN-kah; Chardonnay: SHAR-doh-nay; Chenin blanc: SHEH-nin BLAHN; St. Rémy: san RAY-mee; Cointreau: KWAHN-troh; Giffard Pêche: zhee-FAR PESH",
+   "taste": "Light, fruity and fairly sweet, like white wine with peach and orange and a lemon-lime fizz.",
+   "spirit": "white wine and brandy",
+   "style": {
+    "strength": 2,
+    "sweet": 4,
+    "sour": 2,
+    "bitter": 1
+   },
+   "explain": [
+    {
+     "term": "Chardonnay-Chenin blanc",
+     "means": "A white wine made from two grapes, Chardonnay and Chenin blanc, which is the base of this sangria."
+    },
+    {
+     "term": "St. Rémy VSOP",
+     "means": "A French brandy; VSOP means it has been aged longer, and it adds warmth and a little depth to the wine."
+    },
+    {
+     "term": "Cointreau",
+     "means": "A clear French orange liqueur that adds sweet orange flavour."
+    },
+    {
+     "term": "Giffard Pêche",
+     "means": "A French peach liqueur that gives the sangria its sweet, juicy peach flavour."
+    }
+   ],
+   "dishes": [
+    {
+     "dish": "Branzino Frito",
+     "why": "Light, fruity white sangria suits the delicate, herby fried sea bass without overpowering it."
+    },
+    {
+     "dish": "Goat Cheese Salad",
+     "why": "The peach and citrus are lovely with tangy, creamy goat cheese."
+    }
+   ],
+   "alts": [
+    {
+     "id": "c-summer-blush",
+     "when": "wants peach flavour in a bubbly spritz instead of a sangria"
+    },
+    {
+     "id": "c-sangria-rosa",
+     "when": "prefers red wine"
+    }
+   ],
+   "qs": [
+    {
+     "k": "recognise",
+     "q": "What are the base alcohols in the Sangria Blanca?",
+     "opts": [
+      "Malbec and St. Rémy VSOP brandy",
+      "Chardonnay-Chenin blanc and St. Rémy VSOP brandy",
+      "Cabernet Sauvignon and St. Rémy VSOP brandy",
+      "Prosecco and Empress Elderflower"
+     ],
+     "a": 1,
+     "why": "The Sangria Blanca is built on a Chardonnay-Chenin blanc white wine with St. Rémy VSOP brandy.",
+     "id": "c-sangria-blanca#0"
+    },
+    {
+     "k": "recognise",
+     "q": "Which description of the Sangria Blanca would you give a guest?",
+     "opts": [
+      "Deep and bold red wine with berries, and no fizz",
+      "Bitter, herbal and strong",
+      "Smoky and tart, with a salty edge",
+      "Light, fruity and fairly sweet, with white wine, peach and a lemon-lime fizz"
+     ],
+     "a": 3,
+     "why": "White wine, peach liqueur, orange liqueur and Sprite make it light, fruity and sweet.",
+     "id": "c-sangria-blanca#1"
+    },
+    {
+     "k": "recall",
+     "q": "Which of these is in the Sangria Blanca?",
+     "opts": [
+      "Giffard Pêche",
+      "Chambord",
+      "Licor 43",
+      "Tia Maria Coffee Liqueur"
+     ],
+     "a": 0,
+     "why": "Giffard Pêche, a peach liqueur, is in the Sangria Blanca; Chambord is in the red sangrias.",
+     "id": "c-sangria-blanca#2"
+    },
+    {
+     "k": "recall",
+     "q": "What does the Giffard Pêche add to the Sangria Blanca?",
+     "opts": [
+      "Black raspberry flavour",
+      "Bitter orange flavour",
+      "Sweet peach flavour",
+      "Coffee notes"
+     ],
+     "a": 2,
+     "why": "Giffard Pêche is a French peach liqueur.",
+     "id": "c-sangria-blanca#3"
+    },
+    {
+     "k": "apply",
+     "q": "A guest wants a sangria but prefers white wine to red. Which cocktail do you suggest?",
+     "opts": [
+      "Sangria Rosa",
+      "Sangria Tinta",
+      "Summer Blush",
+      "Sangria Blanca"
+     ],
+     "a": 3,
+     "why": "The Sangria Blanca is the only sangria made with white wine.",
+     "id": "c-sangria-blanca#4"
+    },
+    {
+     "k": "contrast",
+     "q": "How is the Sangria Blanca different from the Sangria Rosa?",
+     "opts": [
+      "The Sangria Blanca has no Sprite, and the Sangria Rosa does",
+      "The Sangria Blanca uses white wine and peach liqueur, and the Sangria Rosa uses Malbec and Chambord",
+      "The Sangria Blanca uses brandy, and the Sangria Rosa has none",
+      "The Sangria Blanca uses Cabernet Sauvignon, and the Sangria Rosa uses Chardonnay"
+     ],
+     "a": 1,
+     "why": "Both have brandy, Cointreau and Sprite, but the Blanca is white wine with peach, while the Rosa is Malbec with black raspberry.",
+     "id": "c-sangria-blanca#5"
+    }
+   ],
+   "at": 1793639194290
+  },
+  "c-sangria-rosa": {
+   "id": "c-sangria-rosa",
+   "pitch": "The Sangria Rosa is a juicy red wine sangria: Malbec with brandy, orange liqueur, black raspberry liqueur and grapefruit, topped with Sprite. It's fruity with a tart edge and a little fizz, great for red wine lovers who want something lighter and more refreshing.",
+   "say": "Sangria Rosa: san-GREE-ah ROH-sah; Malbec: MAL-bek; St. Rémy: san RAY-mee; Cointreau: KWAHN-troh; Chambord: sham-BOR",
+   "taste": "Juicy red wine with raspberry and orange, a tart grapefruit edge and a light lemon-lime fizz.",
+   "spirit": "red wine and brandy",
+   "style": {
+    "strength": 2,
+    "sweet": 3,
+    "sour": 3,
+    "bitter": 2
+   },
+   "explain": [
+    {
+     "term": "Malbec",
+     "means": "A red wine known for dark, plummy fruit, which is the base of this sangria."
+    },
+    {
+     "term": "St. Rémy VSOP",
+     "means": "A French brandy; VSOP means it has been aged longer, and it adds warmth and depth to the wine."
+    },
+    {
+     "term": "Cointreau",
+     "means": "A clear French orange liqueur that adds sweet orange flavour."
+    },
+    {
+     "term": "Chambord",
+     "means": "A French black raspberry liqueur that adds sweet, rich berry flavour."
+    }
+   ],
+   "dishes": [
+    {
+     "dish": "Charcutería & Formaggi",
+     "why": "Fruity red wine with a tart grapefruit edge is great with salty cured meats and cheese."
+    },
+    {
+     "dish": "Ibérico Meatballs",
+     "why": "The juicy red fruit stands up to the rich, savoury braised pork meatballs."
+    }
+   ],
+   "alts": [
+    {
+     "id": "c-sangria-tinta",
+     "when": "wants a bolder red sangria with no soda"
+    },
+    {
+     "id": "c-sangria-blanca",
+     "when": "prefers white wine"
+    }
+   ],
+   "qs": [
+    {
+     "k": "recognise",
+     "q": "What are the base alcohols in the Sangria Rosa?",
+     "opts": [
+      "Chardonnay-Chenin blanc and St. Rémy VSOP brandy",
+      "Mionetto Rosé and Grey Goose",
+      "Malbec and St. Rémy VSOP brandy",
+      "Cabernet Sauvignon and St. Rémy VSOP brandy"
+     ],
+     "a": 2,
+     "why": "The Sangria Rosa is built on Malbec red wine with St. Rémy VSOP brandy.",
+     "id": "c-sangria-rosa#0"
+    },
+    {
+     "k": "recognise",
+     "q": "Which description of the Sangria Rosa would you give a guest?",
+     "opts": [
+      "Juicy red wine with raspberry, a tart grapefruit edge and a light fizz",
+      "Light white wine with peach and lots of sweetness",
+      "Strong, bitter and stirred, with no fruit",
+      "Creamy and tropical, with coconut"
+     ],
+     "a": 0,
+     "why": "Malbec, Chambord, grapefruit and Sprite make it juicy, a little tart and lightly fizzy.",
+     "id": "c-sangria-rosa#1"
+    },
+    {
+     "k": "recall",
+     "q": "Which of these is in the Sangria Rosa?",
+     "opts": [
+      "Giffard Pêche",
+      "Grapefruit",
+      "White peach",
+      "Lillet Blanc"
+     ],
+     "a": 1,
+     "why": "Grapefruit is in the Sangria Rosa and gives it a tart edge.",
+     "id": "c-sangria-rosa#2"
+    },
+    {
+     "k": "recall",
+     "q": "What does the Chambord add to the Sangria Rosa?",
+     "opts": [
+      "Sweet peach flavour",
+      "Coffee notes",
+      "Vanilla and citrus sweetness",
+      "Sweet black raspberry flavour"
+     ],
+     "a": 3,
+     "why": "Chambord is a French black raspberry liqueur.",
+     "id": "c-sangria-rosa#3"
+    },
+    {
+     "k": "apply",
+     "q": "A guest wants a red wine sangria with a little fizz and a tart citrus edge. Which cocktail do you suggest?",
+     "opts": [
+      "Sangria Tinta",
+      "Sangria Blanca",
+      "Sangria Rosa",
+      "Paradise Spritz"
+     ],
+     "a": 2,
+     "why": "The Sangria Rosa is the red sangria with grapefruit and Sprite; the Tinta has no Sprite, and the Blanca is white wine.",
+     "id": "c-sangria-rosa#4"
+    },
+    {
+     "k": "contrast",
+     "q": "How is the Sangria Rosa different from the Sangria Tinta?",
+     "opts": [
+      "The Sangria Rosa has Chambord, and the Sangria Tinta does not",
+      "The Sangria Rosa uses white wine, and the Sangria Tinta uses red",
+      "The Sangria Rosa uses Malbec with grapefruit and Sprite, and the Sangria Tinta uses Cabernet Sauvignon with orange and no Sprite",
+      "The Sangria Rosa has no brandy, and the Sangria Tinta has St. Rémy"
+     ],
+     "a": 2,
+     "why": "Both have brandy, Cointreau and Chambord, but the wine, the fruit and the Sprite are different.",
+     "id": "c-sangria-rosa#5"
+    }
+   ],
+   "at": 1793639194290
+  },
+  "c-sangria-tinta": {
+   "id": "c-sangria-tinta",
+   "pitch": "The Sangria Tinta is our boldest sangria: Cabernet Sauvignon with brandy, orange liqueur, black raspberry liqueur, citrus and orange. It's rich and fruity, perfect for red wine lovers or anyone eating a hearty meat dish.",
+   "say": "Sangria Tinta: san-GREE-ah TEEN-tah; Cabernet Sauvignon: KAB-er-nay SOH-vin-yohn; St. Rémy: san RAY-mee; Cointreau: KWAHN-troh; Chambord: sham-BOR",
+   "taste": "Rich, full red wine with warm brandy, black raspberry and orange.",
+   "spirit": "red wine and brandy",
+   "style": {
+    "strength": 3,
+    "sweet": 3,
+    "sour": 2,
+    "bitter": 1
+   },
+   "explain": [
+    {
+     "term": "Cabernet Sauvignon",
+     "means": "A full-bodied red wine with dark fruit flavour, which gives this sangria its bold character."
+    },
+    {
+     "term": "St. Rémy VSOP Brandy",
+     "means": "A French brandy; VSOP means it has been aged longer, and it adds warmth and depth to the wine."
+    },
+    {
+     "term": "Cointreau",
+     "means": "A clear French orange liqueur that adds sweet orange flavour."
+    },
+    {
+     "term": "Chambord",
+     "means": "A French black raspberry liqueur that adds sweet, rich berry flavour."
+    }
+   ],
+   "dishes": [
+    {
+     "dish": "Rigatone Bolognese",
+     "why": "A bold red wine sangria stands up to the rich, savoury braised beef sauce."
+    },
+    {
+     "dish": "Fire-Charred Lamb Chops",
+     "why": "Full red fruit and brandy match the charred, rich lamb."
+    }
+   ],
+   "alts": [
+    {
+     "id": "c-sangria-rosa",
+     "when": "wants a lighter red sangria with a little fizz"
+    },
+    {
+     "id": "c-blue-rose",
+     "when": "wants red wine flavour in a stronger gin cocktail"
+    }
+   ],
+   "qs": [
+    {
+     "k": "recognise",
+     "q": "What are the base alcohols in the Sangria Tinta?",
+     "opts": [
+      "Malbec and St. Rémy VSOP brandy",
+      "Cabernet Sauvignon and Roku Gin",
+      "Chardonnay-Chenin blanc and St. Rémy VSOP brandy",
+      "Cabernet Sauvignon and St. Rémy VSOP brandy"
+     ],
+     "a": 3,
+     "why": "The Sangria Tinta is built on Cabernet Sauvignon with St. Rémy VSOP brandy; Cabernet with Roku Gin is the Blue Rose.",
+     "id": "c-sangria-tinta#0"
+    },
+    {
+     "k": "recognise",
+     "q": "Which description of the Sangria Tinta would you give a guest?",
+     "opts": [
+      "Light white wine with peach and lemon-lime fizz",
+      "Rich, full red wine with brandy, black raspberry and orange",
+      "Smoky and tart, with blood orange and salt",
+      "Bitter and herbal, with gin and vermouth"
+     ],
+     "a": 1,
+     "why": "Cabernet Sauvignon, brandy, Chambord and orange make it rich, full and fruity.",
+     "id": "c-sangria-tinta#1"
+    },
+    {
+     "k": "recall",
+     "q": "Which of these is in the Sangria Tinta?",
+     "opts": [
+      "Giffard Pêche",
+      "Grapefruit",
+      "Chambord",
+      "Campari"
+     ],
+     "a": 2,
+     "why": "Chambord, a black raspberry liqueur, is in the Sangria Tinta.",
+     "id": "c-sangria-tinta#2"
+    },
+    {
+     "k": "recall",
+     "q": "Which ingredient gives the Sangria Tinta its bold, full-bodied red wine character?",
+     "opts": [
+      "Cabernet Sauvignon",
+      "Malbec",
+      "Chardonnay-Chenin blanc",
+      "Prosecco"
+     ],
+     "a": 0,
+     "why": "The Sangria Tinta is made with Cabernet Sauvignon, a full-bodied red wine.",
+     "id": "c-sangria-tinta#3"
+    },
+    {
+     "k": "apply",
+     "q": "A guest ordering the Rigatone Bolognese wants a bold red wine sangria without soda. Which cocktail do you suggest?",
+     "opts": [
+      "Sangria Rosa",
+      "Sangria Blanca",
+      "Blue Rose",
+      "Sangria Tinta"
+     ],
+     "a": 3,
+     "why": "The Sangria Tinta is the Cabernet Sauvignon sangria, and it has no Sprite on its list.",
+     "id": "c-sangria-tinta#4"
+    },
+    {
+     "k": "contrast",
+     "q": "How is the Sangria Tinta different from the Sangria Rosa?",
+     "opts": [
+      "The Sangria Tinta uses Cabernet Sauvignon with orange and no Sprite, and the Sangria Rosa uses Malbec with grapefruit and Sprite",
+      "The Sangria Tinta uses Malbec, and the Sangria Rosa uses Cabernet Sauvignon",
+      "The Sangria Tinta has no Cointreau, and the Sangria Rosa does",
+      "The Sangria Tinta has peach liqueur, and the Sangria Rosa has Chambord"
+     ],
+     "a": 0,
+     "why": "Both share brandy, Cointreau and Chambord, but the Tinta is Cabernet with orange and no soda, while the Rosa is Malbec with grapefruit and Sprite.",
+     "id": "c-sangria-tinta#5"
+    }
+   ],
+   "at": 1793639194290
+  }
+ },
  "checked": {
   "at": 1793637611488,
   "asked": 246,
@@ -8863,5 +11839,5 @@
   "fixed": 18,
   "left": 4
  },
- "exported": "2026-11-02T16:40:20.841Z"
+ "exported": "2026-11-02T17:06:44.494Z"
 }

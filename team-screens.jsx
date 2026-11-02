@@ -113,15 +113,15 @@ function TeamToday({pid,open}){ const T=useTheme(), cr=T.lift(C.cr);
         <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginTop:6}}><span style={{fontSize:12,color:T.mid,fontFamily:C.P}}>{Math.round(p.partial*100)}% of the answers held</span>
           <span role="button" data-testid="team-part-practise" onClick={()=>open({view:'drill',part:k})} style={{fontSize:13,fontWeight:700,color:cr,fontFamily:C.P,cursor:'pointer'}}>Practise {TeamLearn.PART_LABEL[k].toLowerCase()} →</span></div>
       </div>)}
-      <div style={{fontSize:12,color:T.mid,fontFamily:C.P,lineHeight:1.45}}>A wine or dish is known once every question on it is right and still fresh; the bar fills with every answer you hold.</div>
+      <div style={{fontSize:12,color:T.mid,fontFamily:C.P,lineHeight:1.45}}>A wine, dish or cocktail is known once every question on it is right and still fresh; the bar fills with every answer you hold.</div>
       {ret.asked>=3&&<div style={{fontSize:13,color:T.mid,fontFamily:C.P}}>Surprise re-checks this month: {ret.right} of {ret.asked} remembered.</div>}
     </Card>
     <Btn primary full style={{marginTop:14}} onClick={()=>open({view:'drill'})}>{r.due||as.length?`Start today's drill`:'Practise'} · 5 questions</Btn>
     {(()=>{ const vt=TeamVinny.test(pid); return vt.none?null:<div data-testid="today-vinny" role="button" onClick={()=>open({view:'drill',qs:vt.qs,intro:{title:vt.title,why:vt.why}})} style={{display:'flex',gap:12,alignItems:'center',marginTop:10,padding:'12px 14px',borderRadius:14,border:`1px solid ${T.line}`,cursor:'pointer'}}><TeamVinnyMark size={32}/><div style={{flex:1,minWidth:0}}><div style={{fontSize:15,fontWeight:700,color:T.ink,fontFamily:C.P}}>Vinny's test · {vt.qs.length} questions</div><div style={{fontSize:13,color:T.mid,fontFamily:C.P,lineHeight:1.4,marginTop:2}}>{vt.why}</div></div><Icon n="chevron" sz={12} col={T.mid}/></div>; })()}
     {as.length>0&&<>{_tLabel(T,`New to learn (${as.length})`)}
-      <Card style={{padding:0}}>{as.slice(0,8).map((a,i)=>{ const x=a.kind==='wine'?TeamData.wine(a.id):TeamData.dish(a.id); if(!x) return null;
+      <Card style={{padding:0}}>{as.slice(0,8).map((a,i)=>{ const x=a.kind==='wine'?TeamData.wine(a.id):a.kind==='cocktail'?TeamData.cocktail(a.id):TeamData.dish(a.id); if(!x) return null;
         return <div key={a.key} role="button" onClick={()=>open({view:a.kind,id:a.id})} style={{display:'flex',alignItems:'center',gap:10,padding:'11px 14px',borderTop:i?`1px solid ${T.line}`:'none',cursor:'pointer'}}>
-          <Icon n={a.kind==='wine'?'wine':'fork'} sz={16} col={a.kind==='wine'?_tTypeCol(T,x.type):T.mid}/>
+          <Icon n={a.kind==='fork'?'fork':a.kind==='dish'?'fork':'wine'} sz={16} col={a.kind==='wine'?_tTypeCol(T,x.type):a.kind==='cocktail'?_tMixCol(T):T.mid}/>
           <div style={{flex:1,minWidth:0,fontSize:14,color:T.ink,fontFamily:C.P,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{a.kind==='wine'?TeamData.short(x):x.name}</div>
           <span style={{fontSize:12,color:a.overdue?'#F28B7D':T.mid,fontFamily:C.P,flexShrink:0}}>{_tDays(a.due)}</span>
         </div>; })}</Card></>}
