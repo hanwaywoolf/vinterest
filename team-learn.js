@@ -58,6 +58,25 @@ const TeamLearn = {
      kind ("Full-bodied oaky white" for a rosé, "Golden with honey" for a Barolo) gives the answer away.
      Each one is swapped for a description of the same kind with this wine's style turned round
      (kindDecoys). */
+  /* The publish check: every question on these wines' cards put through what the drill does with it,
+     before anyone is asked it. A question fails when the drill would leave it out or ask it badly:
+       giveaway  its answer is in the question, or one telling word picks it (_unspoil, givesAway), or its
+                 wrong answers are another kind of wine with nothing of this kind to put in their place
+       thin      fewer than three believable wrong answers to choose from
+       mismatch  a guest at a dish this wine doesn't suit (tableFit), which the card set as a good match
+     [{wine, q, why, note}] with the card's own question as written. TeamData.checkQuestions rewrites them. */
+  MIN_WRONG:3,
+  audit(ids){ const out=[];
+    (ids||TeamData.wines().map(w=>w.id)).forEach(id=>{ const c=TeamData.card(id); (c&&c.qs||[]).forEach(raw=>{ const q={...raw,wine:id};
+      const fail=(why,note)=>out.push({wine:id,q:raw,why,note});
+      const un=this._unspoil(q); if(!un) return fail('giveaway',/\bor\b/i.test(q.q)?'it offers its own answer as one of two choices in the question':'the answer is in the question');
+      if(q.k==='recognise'){ const k=this._sameKind(un); if(!k) return fail('giveaway','the wrong answers are another kind of wine'); if(this.givesAway(k)) return fail('giveaway','a word in the question is only in the right answer'); return; }
+      let c2=null; try{ c2=this.choices(un); }catch(e){}
+      const wrong=c2?c2.opts.length-c2.right.length:0;
+      if(!c2||wrong<this.MIN_WRONG) return fail('thin','too few believable wrong answers');
+      if(q.k==='apply'){ const d=this.dishIn(q.q); if(d&&this.tableFit(id,d.id)!=='good') return fail('mismatch',`the guest's dish, the ${d.name}, doesn't suit this wine`); }
+    }); });
+    return out; },
   /* A last check on any four-option question: a telling word of the question that the right option holds
      and no wrong option does ("rosé" in "…Côtes de Provence Rosé?" and only in "Pale, dry rosé…") picks
      the answer without knowing anything. Such a question is left out rather than asked. */
@@ -110,7 +129,9 @@ const TeamLearn = {
   _unspoil(q){
     const w=TeamData.wine(q.wine); if(!w) return q;
     const answers=q.k==='recognise'?[q.opts[q.a]]:q.k==='recall'?String(q.ans||'').split(/,|\band\b|;/).map(x=>x.trim()).filter(Boolean):[];
-    const gives=text=>{ const t=new Set(this._words(text)); return answers.some(a=>{ const ws=this._words(a); return ws.length&&ws.every(x=>t.has(x)); }); };
+    // An answer with a figure in it ("£9 a glass, £45 a bottle") is given away only if its figures are too.
+    const nums=x=>String(x||'').match(/\d+(?:\.\d+)?/g)||[];
+    const gives=text=>{ const t=new Set(this._words(text)), tn=new Set(nums(text)); return answers.some(a=>{ const ws=this._words(a); return ws.length&&ws.every(x=>t.has(x))&&nums(a).every(n=>tn.has(n)); }); };
     if(!answers.length||!gives(q.q)) return q;
     const drop=new Set(answers.flatMap(a=>this._words(a)));
     const esc=x=>String(x).replace(/[.*+?^${}()|[\]\\]/g,'\\$&');

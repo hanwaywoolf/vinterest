@@ -153,6 +153,41 @@ test('the drill on screen: pick, say how sure, see the answer and why, then the 
   await expect(page.getByTestId('drill-done')).toContainText('of 5 right');
 });
 
+test('the publish check: every question is checked, the ones that fail are rewritten under the same id, and the demo is only counted', async ({ context, page }) => {
+  const reqs = [];
+  const errors = await openSample(context, page, { claudeRequests: reqs, claudeText: (b) => {
+    if (b.purpose !== 'team_fix') return '';
+    const ids = [...b.messages[0].content.matchAll(/^ID (\S+)/gm)].map((m) => m[1]);
+    return JSON.stringify({ fixes: ids.filter((id) => id === 'w-ardanza-reserva#bad').map((id) => ({ id, q: { q: 'Which grape leads the blend in the La Rioja Alta Viña Ardanza Reserva?', ans: 'Tempranillo', acc: [], why: 'Ardanza is mostly Tempranillo.' } })) });
+  } });
+  const r = await page.evaluate(async () => {
+    // A question that offers its own answer as one of two.
+    const d = TeamData.get(); d.cards['w-ardanza-reserva'].qs.push({ id: 'w-ardanza-reserva#bad', k: 'recall', q: 'Is the La Rioja Alta Viña Ardanza Reserva drunk young or aged?', ans: 'Aged', acc: [], why: 'x' }); TeamData.save(d);
+    const before = TeamLearn.audit().map((f) => f.q.id);
+    const checked = await TeamData.checkQuestions();
+    const q = TeamData.card('w-ardanza-reserva').qs.find((x) => x.id === 'w-ardanza-reserva#bad');
+    return { before, checked, q, after: TeamLearn.audit().map((f) => f.q.id), line: TeamData.checkedLine() };
+  });
+  expect(r.before).toContain('w-ardanza-reserva#bad');
+  expect(r.q.q).toMatch(/Which grape leads/); // rewritten in place, same id and kind
+  expect(r.q.k).toBe('recall');
+  expect(r.after).not.toContain('w-ardanza-reserva#bad');
+  expect(r.checked.fixed).toBeGreaterThanOrEqual(1);
+  expect(r.checked.failed).toBe(r.before.length);
+  expect(r.line).toMatch(/questions checked · \d+ rewritten/);
+  const fix = reqs.filter((x) => x.purpose === 'team_fix');
+  expect(fix.length).toBeGreaterThan(0);
+  expect(fix[0].messages[0].content).toMatch(/PROBLEM giveaway/);
+  // The demo restaurant runs offline: it's counted, never sent.
+  await page.goto(`${BASE}/team/?seed=demo`);
+  await expect(page.getByTestId('team-state')).toBeVisible();
+  const n = reqs.length;
+  const demo = await page.evaluate(() => TeamData.checkQuestions());
+  expect(reqs.length).toBe(n);
+  expect(demo.asked).toBeGreaterThan(100);
+  expect(errors).toEqual([]);
+});
+
 test('an uploaded list is reviewed before it goes live; publishing writes cards and pairings and assigns the new wine', async ({ context, page }) => {
   const reqs = [];
   const list = { wines: [
@@ -201,7 +236,7 @@ test('the Worker takes the team calls without a sign-in during the pilot', async
   require('node:fs').copyFileSync(path.join(__dirname, '..', '_worker.js'), copy);
   const worker = (await import(pathToFileURL(copy).href + `?t=${Date.now()}`)).default;
   const env = { ANTHROPIC_API_KEY: 'test', SUPABASE_URL: 'https://x.supabase.co', SUPABASE_PUBLISHABLE_KEY: 'pk', SUPABASE_SECRET_KEY: 'sk' };
-  for (const purpose of ['team_list', 'team_menu', 'team_cards', 'team_pairings', 'team_grade', 'team_vinny', 'team_guest']) {
+  for (const purpose of ['team_list', 'team_menu', 'team_cards', 'team_pairings', 'team_grade', 'team_vinny', 'team_guest', 'team_fix']) {
     const r = await worker.fetch(new Request('https://vinterest.pages.dev/claude', { method: 'POST', headers: { 'content-type': 'application/json', origin: 'https://vinterest.pages.dev' }, body: JSON.stringify({ purpose, messages: [{ role: 'user', content: 'x' }] }) }), env);
     expect(r.status).not.toBe(402);
   }
@@ -696,7 +731,9 @@ test('drill answers: no question gives its answer away, prices are asked one way
     const all = TeamLearn.allQs().filter((q) => q.wine);
     // A question whose answer is in its own words: "Which grape is the … Pinot Noir made from?"
     const spoilt = all.filter((q) => { const ans = q.k === 'recognise' ? [q.opts[q.a]] : q.k === 'recall' ? String(q.ans).split(/,|\band\b|;/) : [];
-      const t = new Set(words(q.q)); return ans.some((a) => { const w = words(a); return w.length && w.every((x) => t.has(x)); }); }).map((q) => q.q);
+      // A figure answers only when the figure is there too ("£9 a glass" isn't in "by the glass?").
+      const nums = (x) => String(x || '').match(/\d+(?:\.\d+)?/g) || [], tn = new Set(nums(q.q));
+      const t = new Set(words(q.q)); return ans.some((a) => { const w = words(a); return w.length && w.every((x) => t.has(x)) && nums(a).every((n) => tn.has(n)); }); }).map((q) => q.q);
     const jadot = TeamData.wines().find((w) => /Jadot/.test(w.producer + ' ' + w.name));
     const grapeQ = TeamLearn.wineQs(jadot.id).find((q) => /which grape/i.test(q.q));
     const money = all.filter((q) => q.k === 'recall' && /glass price|bottle price/i.test(q.q)).map((q) => ({ side: /glass/i.test(q.q) ? 'glass' : 'bottle', opts: TeamLearn.choices(q).opts }));
