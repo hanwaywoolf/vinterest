@@ -74,7 +74,11 @@ const TeamLearn = {
       let c2=null; try{ c2=this.choices(un); }catch(e){}
       const wrong=c2?c2.opts.length-c2.right.length:0;
       if(!c2||wrong<this.MIN_WRONG) return fail('thin','too few believable wrong answers');
-      if(q.k==='apply'){ const d=this.dishIn(q.q); if(d&&this.tableFit(id,d.id)!=='good') return fail('mismatch',`the guest's dish, the ${d.name}, doesn't suit this wine`); }
+      // A guest at a dish this wine doesn't suit is fine when the key already steers them to another wine
+      // on the list; it fails only where the card set it as a good match.
+      if(q.k==='apply'){ const d=this.dishIn(q.q); if(d&&this.tableFit(id,d.id)!=='good'){ const others=TeamData.wines().filter(w=>w.id!==id).map(w=>this._norm(TeamData.short(w)));
+        const steers=(q.key||[]).some(k=>{ const t=this._norm(k); return /\b(steer|instead|rather)\b/.test(t)&&others.some(n=>n.length>3&&t.includes(n)); });
+        if(!steers) return fail('mismatch',`the guest's dish, the ${d.name}, doesn't suit this wine`); } }
     }); });
     return out; },
   /* A last check on any four-option question: a telling word of the question that the right option holds
