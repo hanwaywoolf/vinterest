@@ -344,19 +344,34 @@ const TeamVinny = {
   },
   /* One turn: the guest's next line, and once the table's served, the mark. turns: [{who:'guest'|'you', text}].
      {line, done, mark:{score, verdict, good, missing, better}|null} */
-  async guest(sc,turns){
+  /* Help on a follow-up line, written with it (the opening line's help is built from the pairing, _GuestChoices):
+     choices, three replies the server could give, one right and two believable but weaker, each with why; hints,
+     one nudge toward a good reply. Never for the opening line or a closing one. */
+  _HELP:{
+    choices:'The server is learning with choices. With every line except your opening and closing ones, also write three short replies the server could give to it, in the server\'s voice: exactly one is a good answer (it uses a wine from the list with its real price where it matters, and answers what you just asked, from the staff cards), and two are believable but weaker (the wrong wine for what you asked, a price or fact that isn\'t right, or one that doesn\'t answer the question). Give each one line on why it works or doesn\'t, as a trainer would say it.',
+    hints:'The server is learning with hints. With every line except your opening and closing ones, also write one short hint that points them toward a good reply to it (what to mention, from the staff cards and the list), without writing the reply for them.',
+  },
+  _HELPFIELDS:{ choices:', "replies": [{"text": "a reply", "ok": true, "why": "why it works"}, {"text": "…", "ok": false, "why": "why it falls short"}, {"text": "…", "ok": false, "why": "…"}]', hints:', "hint": "the hint"' },
+  async guest(sc,turns,level){
     const tpl=_loadTextSync('prompts/team-guest.txt'), {text}=this._lines();
     const yours=turns.filter(t=>t.who==='you').length, last=yours>=this.GUEST_TURNS;
     const script=turns.map(t=>`${t.who==='guest'?'GUEST':'SERVER'}: ${t.text}`).join('\n');
     const content=tpl.replace('{{venue}}',TeamData.get().venue.name||'the restaurant').replace('{{list}}',text)
       .replace('{{cards}}',sc.wines.map(id=>TeamData.wine(id)).filter(Boolean).map(w=>this._cardText(w)).join('\n\n')||'(none)')
       .replace('{{scenario}}',sc.guest).replace('{{key}}',sc.key.map(k=>`- ${k}`).join('\n'))
-      .replace('{{transcript}}',script||'(the guest hasn\'t spoken yet)').replace('{{last}}',last?'This was the server\'s last reply: end the table now and mark it.':'');
+      .replace('{{transcript}}',script||'(the guest hasn\'t spoken yet)').replace('{{last}}',last?'This was the server\'s last reply: end the table now and mark it.':'')
+      .replace('{{help}}',yours&&!last&&this._HELP[level]?this._HELP[level]:'').replace('{{helpfields}}',yours&&!last&&this._HELPFIELDS[level]?this._HELPFIELDS[level]:'');
     const raw=await window.claude.complete({purpose:'team_guest',messages:[{role:'user',content}]});
     let j=null; try{ j=TeamData._json(raw); }catch(e){}
     if(!j) return {line:String(raw||'').trim(),done:last,mark:null};
     const m=j.mark&&typeof j.mark==='object'?{score:Math.max(0,Math.min(1,Number(j.mark.score)||0)),verdict:j.mark.verdict||'',good:j.mark.good||'',missing:j.mark.missing||'',better:j.mark.better||''}:null;
-    return {line:String(j.guest||'').trim(),done:!!(j.done||last||m),mark:m};
+    const done=!!(j.done||last||m);
+    // A follow-up's help, kept only when it's whole: three replies with exactly one right, shuffled; or a hint.
+    let replies=null, hint=null;
+    if(!done&&Array.isArray(j.replies)){ const rs=j.replies.filter(r=>r&&String(r.text||'').trim()).map(r=>({text:String(r.text).trim(),ok:!!r.ok,why:String(r.why||'').trim()}));
+      if(rs.length>=2&&rs.filter(r=>r.ok).length===1) replies=TeamLearn._shuffle(rs,sc.seed+':'+turns.length); }
+    if(!done&&j.hint) hint=String(j.hint).trim()||null;
+    return {line:String(j.guest||'').trim(),done,mark:m,replies,hint};
   },
 };
 Object.assign(window,{TeamVinny});

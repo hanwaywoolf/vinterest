@@ -1097,6 +1097,55 @@ test('delivery: pace, time to start, fillers, hedges and whether the wine\'s nam
   expect(errors).toEqual([]);
 });
 
+// The guest's follow-up comes with its own help: replies to pick from (one right, two weaker, each saying why) with
+// choices, a hint with hints; the opening line's help is the pairing's, and the closing line has none.
+test('a guest follow-up comes with replies to pick from, or a hint, so choices last the whole table', async ({ context, page }) => {
+  const reqs = [];
+  const follow = { guest: 'Sounds nice. Is it very dry?', done: false,
+    replies: [{ text: 'Not bone dry: it is fresh and peppery, with a little fruit.', ok: true, why: 'Answers the question from the card.' },
+      { text: 'It is very sweet, like a dessert wine.', ok: false, why: 'The card says it is dry.' },
+      { text: 'Let me get the Amarone instead.', ok: false, why: 'Does not answer what they asked.' }],
+    hint: 'Say how dry it is, from its card.' };
+  const errors = await asMarco(context, page, { claudeRequests: reqs, claudeText: (b) => {
+    if (b.purpose !== 'team_guest') return '';
+    const c = b.messages[0].content, n = (c.match(/SERVER:/g) || []).length;
+    if (!n) return '{"guest":"Evening! What would you pour with this?","done":false}';
+    if (n === 1) return JSON.stringify(follow);
+    return JSON.stringify({ guest: 'Lovely.', done: true, mark: { score: 0.8, verdict: 'right', good: 'Answered it.', missing: '', better: '' } });
+  } });
+  await page.getByTestId('team-tab-vinny').click();
+  await page.getByText('Take a table').click();
+  await page.getByTestId('guest-help-choices').click();
+  await expect(page.getByTestId('guest-choices')).toBeVisible();
+  await page.getByTestId('guest-reply').fill('The Grüner by the glass, peppery and fresh.');
+  await page.getByText('Say', { exact: true }).click();
+  // The follow-up's own choices: a weaker reply says why and stays out; the right one fills the box.
+  await expect(page.getByTestId('guest-follow')).toHaveCount(3);
+  await expect(page.getByTestId('guest-choices')).toHaveCount(0);
+  const weak = page.getByTestId('guest-follow').filter({ hasText: 'very sweet' });
+  await weak.click();
+  await expect(weak).toContainText('The card says it is dry.');
+  await expect(page.getByTestId('guest-reply')).toHaveValue('');
+  await page.getByTestId('guest-follow').filter({ hasText: 'Not bone dry' }).click();
+  await expect(page.getByTestId('guest-reply')).toHaveValue(/Not bone dry/);
+  // The request asked for them, and only after the server had spoken.
+  const gs = reqs.filter((r) => r.purpose === 'team_guest').map((r) => r.messages[0].content);
+  expect(gs[0]).not.toContain('three short replies');
+  expect(gs[1]).toContain('three short replies');
+  await page.getByText('Say', { exact: true }).click();
+  await expect(page.getByTestId('guest-mark')).toBeVisible();
+  await expect(page.getByTestId('guest-follow')).toHaveCount(0);
+  // With hints: the follow-up has one, shown when asked.
+  await page.getByText('Another table').click();
+  await page.getByTestId('guest-help-hints').click();
+  await page.getByTestId('guest-reply').fill('The Grüner by the glass.');
+  await page.getByText('Say', { exact: true }).click();
+  await expect(page.getByTestId('guest-follow')).toHaveCount(0);
+  await page.getByTestId('guest-hint-btn').click();
+  await expect(page.getByTestId('guest-hint')).toHaveText('Say how dry it is, from its card.');
+  expect(errors).toEqual([]);
+});
+
 test('a spoken table: the guest is said aloud, the reply is spoken into the box, and the result coaches the delivery', async ({ context, page }) => {
   // Stand-ins for the browser's speech engines: the voice finishes at once; the microphone "hears" a reply.
   await context.addInitScript(() => {

@@ -21,7 +21,9 @@ Otherwise, if the server has recommended a wine and handled what the guest wante
 
 Mark against the good answer above: did they offer a right wine from the list, give a reason in plain words that would make a guest want it, and meet the guest's wish (budget, style, a steer away)? Never mark them down for wording; mark what they said. Offering something not on the list is wrong.
 
+{{help}}
+
 Reply with JSON only, no other text:
-{"guest": "the guest's line", "done": false}
+{"guest": "the guest's line", "done": false{{helpfields}}}
 or, when the table ends:
 {"guest": "the guest's closing line", "done": true, "mark": {"score": 0.0 to 1.0, "verdict": "right" | "partly" | "wrong", "good": "one short line on what worked, or empty", "missing": "one short line on what was missing, or empty", "better": "one or two sentences they could have said, using the list's own wine and price"}}

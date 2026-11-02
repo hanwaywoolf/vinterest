@@ -93,6 +93,21 @@ function _GuestChoices({help,onSay}){ const T=useTheme(), cr=T.lift(C.cr);
         return row(i,r.text,st==='no'?'That reason is about another dish on the menu.':'',done&&!st?'off':st,()=>{ if(done) return; if(r.ok){ setDone(true); onSay(help.say(wine,r.text)); } else setRTried(t=>[...t,i]); },'guest-reason'); })}</div></>}
     {done&&<div style={{fontSize:13,color:T.mid,fontFamily:C.P,marginTop:12,lineHeight:1.45}}>Your reply is ready below. Put it in your own words if you like, then Say.</div>}
   </Card></div>; }
+/* Replies to pick from for a guest's follow-up: a weaker one says why and stays crossed out; the right one fills the box. */
+function _GuestReplies({replies,onSay}){ const T=useTheme(), [tried,setTried]=React.useState([]), [done,setDone]=React.useState(-1);
+  return <div data-testid="guest-replies"><Card style={{marginTop:12}}>
+    <div style={{fontSize:12,fontWeight:700,color:T.mid,fontFamily:C.P,letterSpacing:'0.08em',textTransform:'uppercase'}}>What do you say?</div>
+    <div style={{display:'flex',flexDirection:'column',gap:8,marginTop:8}}>{replies.map((r,i)=>{ const st=done===i?'ok':tried.includes(i)?'no':done>=0?'off':null;
+      return <div key={i} role="button" data-testid="guest-follow" data-ok={st==='ok'?'1':undefined} onClick={st?undefined:()=>{ if(r.ok){ setDone(i); onSay(r.text); } else setTried(t=>[...t,i]); }}
+        style={{padding:'10px 12px',borderRadius:12,border:`1px solid ${st==='ok'?T.green:st==='no'?_alpha('#F28B7D',0.6):T.line}`,background:st==='ok'?_alpha('#5FD48F',0.1):'transparent',cursor:st?'default':'pointer',opacity:st==='no'?0.75:st==='off'?0.5:1}}>
+        <div style={{fontSize:15,color:T.ink,fontFamily:C.P,lineHeight:1.4}}>{st==='ok'?'✓ ':st==='no'?'✗ ':''}{r.text}</div>
+        {(st==='no'||st==='ok')&&r.why&&<div style={{fontSize:13,color:st==='no'?'#F28B7D':T.mid,fontFamily:C.P,marginTop:3,lineHeight:1.45}}>{r.why}</div>}</div>; })}</div>
+    {done>=0&&<div style={{fontSize:13,color:T.mid,fontFamily:C.P,marginTop:12,lineHeight:1.45}}>Your reply is ready below. Put it in your own words if you like, then Say.</div>}
+  </Card></div>; }
+/* A hint for a guest's follow-up, shown when asked (it counts toward the hints used). */
+function _GuestFollowHint({hint,onUse}){ const T=useTheme(), [shown,setShown]=React.useState(false);
+  return <div data-testid="guest-hints" style={{marginTop:12}}>{shown?<div data-testid="guest-hint" style={{fontSize:14,color:T.ink2,fontFamily:C.P,lineHeight:1.5,padding:'8px 12px',borderLeft:`3px solid ${T.amber}`,background:_alpha('#F2B84B',0.08),borderRadius:'0 10px 10px 0'}}>{hint}</div>
+    :<div role="button" data-testid="guest-hint-btn" onClick={()=>{ setShown(true); onUse(); }} style={{display:'inline-block',fontSize:13,fontWeight:700,color:T.amber,fontFamily:C.P,cursor:'pointer',padding:'4px 0'}}>Give me a hint</div>}</div>; }
 function TeamGuest({pid,back,open}){ const T=useTheme(), cr=T.lift(C.cr);
   const [sc,setSc]=React.useState(()=>TeamVinny.scenario(pid)), [turns,setTurns]=React.useState([]), [mark,setMark]=React.useState(null);
   const [say,setSay]=React.useState(''), [busy,setBusy]=React.useState(false), [err,setErr]=React.useState('');
@@ -107,7 +122,7 @@ function TeamGuest({pid,back,open}){ const T=useTheme(), cr=T.lift(C.cr);
   const voiceNo=sc?Math.abs(sc.seed||0)%4:0;
   const sayLine=async(text)=>{ if(voiceRef.current&&text) await TeamVoice.speak(text,{voice:voiceNo}); askedAt.current=Date.now(); };
   const step=async(ts)=>{ setBusy(true); setErr('');
-    try{ const r=await TeamVinny.guest(sc,ts); const next=r.line?[...ts,{who:'guest',text:r.line}]:ts; setTurns(next);
+    try{ const r=await TeamVinny.guest(sc,ts,levelRef.current); const next=r.line?[...ts,{who:'guest',text:r.line,replies:r.replies,hint:r.hint}]:ts; setTurns(next);
       if(r.done){ const m=r.mark||{score:0,verdict:'',good:'',missing:'',better:''}; setMark(m);
         const ds=dels.current.filter(Boolean), d=ds.length?{wpm:ds.find(x=>x.wpm!=null)?.wpm??null,waitMs:ds[0].waitMs,fillers:ds.reduce((a,x)=>a+x.fillers,0),hedges:ds.reduce((a,x)=>a+x.hedges,0),words:ds.reduce((a,x)=>a+x.words,0)}:null;
         setMoved(TeamVinny.noteTable(pid,{level:levelRef.current,score:m.score,hints:hintsRef.current,delivery:d,table:sc})); }
@@ -160,7 +175,12 @@ function TeamGuest({pid,back,open}){ const T=useTheme(), cr=T.lift(C.cr);
       {err&&<div style={{fontSize:14,color:'#F28B7D',fontFamily:C.P}}>{err} <span role="button" onClick={()=>step(turns)} style={{fontWeight:700,cursor:'pointer',textDecoration:'underline'}}>Try again</span></div>}
     </div>
     {open1&&level==='choices'&&yours===0&&<_GuestChoices key={sc.seed} help={sc.help} onSay={setSay}/>}
-    {open1&&level==='hints'&&<div data-testid="guest-hints" style={{marginTop:12}}>
+    {/* After the first reply, the guest's follow-up comes with its own help (TeamVinny.guest): replies to pick from, or a hint. */}
+    {(()=>{ const g=turns[turns.length-1]; if(!open1||yours===0||!g||g.who!=='guest') return null;
+      if(level==='choices'&&g.replies) return <_GuestReplies key={turns.length} replies={g.replies} onSay={setSay}/>;
+      if(level==='hints'&&g.hint) return <_GuestFollowHint key={turns.length} hint={g.hint} onUse={()=>setHints(n=>n+1)}/>;
+      return null; })()}
+    {open1&&level==='hints'&&yours===0&&<div data-testid="guest-hints" style={{marginTop:12}}>
       {sc.help.hints.slice(0,hints).map((h,i)=><div key={i} data-testid="guest-hint" style={{fontSize:14,color:T.ink2,fontFamily:C.P,lineHeight:1.5,padding:'8px 12px',borderLeft:`3px solid ${T.amber}`,background:_alpha('#F2B84B',0.08),borderRadius:'0 10px 10px 0',marginBottom:6}}>{h}</div>)}
       {hints<sc.help.hints.length&&<div role="button" data-testid="guest-hint-btn" onClick={()=>setHints(n=>n+1)} style={{display:'inline-block',fontSize:13,fontWeight:700,color:T.amber,fontFamily:C.P,cursor:'pointer',padding:'4px 0'}}>{hints?'Another hint':'Give me a hint'} ({hints+1} of {sc.help.hints.length})</div>}
     </div>}
