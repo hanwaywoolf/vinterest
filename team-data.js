@@ -267,7 +267,11 @@ const TeamData = {
       const ws=ids.slice(i,i+this.CARD_BATCH).map(id=>this.wine(id)).filter(Boolean);
       const prompt=tpl.replace(/\{\{venue\}\}/g,venue).replace('{{about}}',this.about()).replace('{{drinks}}',this._drinkLines()).replace('{{list}}',this._listLines()).replace('{{menu}}',this._menuLines())
         .replace('{{these}}',ws.map(w=>`${w.id} | ${w.name} | ${w.section} | base: ${w.spirit||'not given'} | ${(w.spec||[]).join(', ')} | ${w.glass}${w.credit?` | created by ${w.credit}`:''}`).join('\n'));
-      const j=this._json(await this._callRetry('team_cards',prompt))||{};
+      const line=w=>`${w.id} | ${w.name} | ${w.section} | base: ${w.spirit||'not given'} | ${(w.spec||[]).join(', ')} | ${w.glass}${w.credit?` | created by ${w.credit}`:''}`;
+      let j;
+      try{ j=this._json(await this._callRetry('team_cards',prompt))||{}; }
+      catch(e){ if(ws.length<2) throw e; j={cards:[]}; // as with the wines: then one drink at a time
+        for(const one of ws){ const j1=this._json(await this._callRetry('team_cards',prompt.replace(ws.map(line).join('\n'),line(one))))||{}; (j1.cards||[]).forEach(c=>j.cards.push(c)); } }
       const d=this.get();
       (j.cards||[]).forEach(c=>{ if(c&&d.wines[c.id]&&this.isDrink(d.wines[c.id])) d.cards[c.id]={...this._cleanCard(c,d),at:Date.now()}; });
       this.save(d);
