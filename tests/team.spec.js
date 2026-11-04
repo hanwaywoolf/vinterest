@@ -270,6 +270,12 @@ test('the drill on screen: pick, say how sure, see the answer and why, then the 
     await page.getByText(i < 4 ? 'Next' : 'Finish', { exact: true }).click();
   }
   await expect(page.getByTestId('drill-done')).toContainText('of 5 right');
+  // Back on Today, the drill reads as done for the day, with more on offer rather than asked for again.
+  await page.getByText('Done', { exact: true }).click();
+  await expect(page.getByTestId('today-done')).toContainText("Today's drill done");
+  await expect(page.getByText(/Start today's drill/)).toHaveCount(0);
+  await page.getByText('Do another 5 questions').click();
+  await expect(page.getByTestId('drill-q')).toBeVisible();
 });
 
 test('the publish check: every question is checked, the ones that fail are rewritten under the same id, and the demo is only counted', async ({ context, page }) => {

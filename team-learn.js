@@ -54,6 +54,12 @@ const TeamLearn = {
     const v=(raw?Store.getJSON(this.PROGRESS,{}):null)||{}; this._allRaw=raw; this._allVal=v; return v; },
   _saveAll(p){ Store.setJSON(this.PROGRESS,p); try{ window.dispatchEvent(new Event('vbiz:data')); }catch(e){} }, // so Today redraws its figures after a drill
   _mine(p,pid){ p[pid]=p[pid]||{items:{},checks:[],assigned:{}}; return p[pid]; },
+  /* Today's drill, done: the daily drill (not a part's practice or Vinny's test) finished on this phone's calendar
+     day, so Today can say it's done and offer more rather than ask again as if it hadn't been. {n, right, of} or null. */
+  _day(now=Date.now()){ const d=new Date(now); return `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`; },
+  drillDone(pid,right,of,now=Date.now()){ const p=this._all(), m=this._mine(p,pid), k=this._day(now), was=(m.drills||{})[k]||{n:0,right:0,of:0};
+    m.drills={[k]:{n:was.n+1,right:was.right+right,of:was.of+of,at:now}}; this._saveAll(p); },
+  doneToday(pid,now=Date.now()){ const m=(this._all()[pid]||{}); return ((m.drills||{})[this._day(now)])||null; },
 
   /* Every question for a wine (its card's) and for a dish (written here from its pairing: no call). */
   // Four options are shown in an order fixed per question, so the right one isn't always where it was written.
