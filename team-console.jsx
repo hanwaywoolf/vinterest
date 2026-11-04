@@ -81,15 +81,17 @@ function TeamConsole({me,onPhone,refresh,section,setSection,open}){ const T=useT
   const go=v=>{ if(v.tab){ setSection(v.tab==='today'?'dash':v.tab); setPanel(null); return; } if(v.view==='drill'){ onPhone(v); return; } setPanel(v); };
   const venue=TeamData.get().venue;
   const side=<div style={narrow?{display:'flex',gap:6,overflowX:'auto',padding:'8px 12px',borderBottom:`1px solid ${T.line}`}:{width:220,flexShrink:0,borderRight:`1px solid ${T.line}`,padding:'18px 12px',display:'flex',flexDirection:'column',gap:4}}>
-    {!narrow&&<div style={{padding:'0 8px 18px'}}><TeamLogo/>
-      {TeamData.brand()?<TeamVenueLogo height={20} style={{marginTop:16}}/>:<div style={{fontSize:16,fontWeight:800,color:T.ink,fontFamily:C.P,marginTop:14,lineHeight:1.2}}>{venue.name||'Your restaurant'}</div>}</div>}
+    {/* A restaurant with its own logo leads with it, given the room; Vinterest moves to the foot, small. */}
+    {!narrow&&(TeamData.brand()?<div data-testid="console-venue" style={{padding:'4px 8px 22px'}}><TeamVenueLogo height={30}/></div>
+      :<div style={{padding:'0 8px 18px'}}><TeamLogo/><div style={{fontSize:16,fontWeight:800,color:T.ink,fontFamily:C.P,marginTop:14,lineHeight:1.2}}>{venue.name||'Your restaurant'}</div></div>)}
     {narrow&&<_CViewToggle phone={false} onPhone={()=>onPhone({tab:'today'})} compact/>}
     {CONSOLE_SECTIONS.filter(s=>!s.only||s.only()).map(s=>{ const on=section===s.k; return <div key={s.k} role="button" data-testid={'console-nav-'+s.k} onClick={()=>{ setSection(s.k); setPanel(null); }} style={{display:'flex',alignItems:'center',gap:10,padding:narrow?'6px 12px':'9px 10px',borderRadius:10,background:on?T.soft:'transparent',border:narrow?`1px solid ${on?cr:T.line}`:'none',color:on?T.ink:T.mid,fontSize:14,fontWeight:on?700:500,fontFamily:C.P,cursor:'pointer',whiteSpace:'nowrap',flexShrink:0}}><Icon n={s.icon} sz={16} col={on?cr:T.mid}/>{s.label}</div>; })}
     {!narrow&&<div style={{flex:1}}/>}
     {!narrow&&<div style={{padding:'0 8px'}}>
       <div style={{display:'flex',alignItems:'center',gap:8,paddingTop:12,borderTop:`1px solid ${T.line}`}}><TeamFace person={me} size={30}/><div style={{minWidth:0}}><div style={{fontSize:13,fontWeight:600,color:T.ink,fontFamily:C.P,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{me.name}</div><div style={{fontSize:11,color:T.mid,fontFamily:C.P}}>{TeamLearn.ROLES[me.role].label}</div></div></div>
       <_CViewToggle phone={false} onPhone={()=>onPhone({tab:'today'})}/>
-      {TeamData.isDemo()&&<div style={{fontSize:11,color:T.mid,fontFamily:C.P,padding:'12px 2px 0',lineHeight:1.5}}>Management console · The Larkspur demo</div>}</div>}
+      {TeamData.brand()&&<div data-testid="console-powered" style={{display:'flex',alignItems:'center',gap:8,padding:'14px 2px 0'}}><span style={{fontSize:11,color:T.mid,fontFamily:C.P,whiteSpace:"nowrap"}}>Powered by</span><TeamLogo size={14}/></div>}
+      {TeamData.isDemo()&&<div style={{fontSize:11,color:T.mid,fontFamily:C.P,padding:'8px 2px 0',lineHeight:1.5}}>Management console · {venue.name||'The Larkspur'} demo</div>}</div>}
   </div>;
   const page=section==='team'?<_CTeam open={go} refresh={refresh}/>:section==='wines'?<_CWines open={go} goUpload={()=>setSection('upload')}/>:section==='cocktails'?<_CCocktails open={go}/>:section==='menu'?<_CMenu open={go} goUpload={()=>setSection('upload')}/>
     :section==='upload'?<_CUpload refresh={refresh}/>:section==='pos'?<_CPos open={go}/>:section==='admin'?<_CAdmin refresh={refresh}/>:<_CDash open={go} setSection={setSection}/>;
