@@ -42,6 +42,7 @@ screens-*.jsx
 /ios/
 /android/
 /site-dist/
+/site-teams-dist/
 
 # Rendered films (npm run site:video)
 /video/

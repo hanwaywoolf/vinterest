@@ -24,7 +24,9 @@ http
   .createServer((req, res) => {
     let rel = decodeURIComponent(new URL(req.url, 'http://x').pathname);
     if (rel.endsWith('/')) rel += 'index.html';
-    const file = path.join(root, rel);
+    let file = path.join(root, rel);
+    // Like Cloudflare Pages: /pricing serves pricing.html.
+    if (!path.extname(file) && fs.existsSync(file + '.html')) file += '.html';
     if (!file.startsWith(root + path.sep) || !fs.existsSync(file) || fs.statSync(file).isDirectory()) {
       res.writeHead(404, { 'content-type': 'text/plain' });
       res.end('Not found');
