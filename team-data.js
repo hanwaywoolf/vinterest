@@ -48,6 +48,9 @@ const TeamData = {
   byGlass(w){ return !!(w&&w.glass); },
   label(w){ return [w.producer,w.name,w.vintage||'NV'].filter(Boolean).join(' '); },
   short(w){ return [w.producer,w.name].filter(Boolean).join(' '); },
+  /* A wine's name where a long one won't fit (a list row's "Best with", a suggestion): the producer when the full
+     name runs past four words ("Mionetto" for "Mionetto Prosecco DOC Treviso"), else the short name. */
+  nick(w){ const s=this.short(w); return s.split(/\s+/).length>4&&w.producer?String(w.producer):s; },
 
   // One id per wine whatever the vintage, so a new vintage on the list is the same wine moving on.
   _slug(s){ return String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,''); },

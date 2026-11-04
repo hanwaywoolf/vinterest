@@ -732,6 +732,10 @@ async function asMarco(context, page, opts = {}) {
 test("Vinny's test aims at what this person needs, and a request narrows it", async ({ context, page }) => {
   const errors = await asMarco(context, page);
   await page.getByTestId('team-tab-vinny').click();
+  // The hub leads with the next thing to do and says what the list is worth here, then the three doors.
+  await expect(page.getByTestId('vinny-next')).toBeVisible();
+  await expect(page.getByTestId('vinny-worth')).toContainText(/a shift|more wine/);
+  await page.getByTestId('vinny-door-test').click();
   await expect(page.getByTestId('vinny-test-why')).toContainText(/faded|new to you/); // Marco's demo answers have faded
   await page.getByTestId('vinny-test-ask').fill('the moon');
   await expect(page.getByTestId('vinny-test-asked')).toContainText('Nothing you sell matches');
@@ -752,6 +756,11 @@ test('Ask Vinny answers from the list and menu, and opens the wines it names', a
     return JSON.stringify({ answer: `The Grüner by the glass (${tag}) at £11: peppery and fresh, and it loves the salt (D1) .`, wines: [tag], dishes: ['D1'] });
   } });
   await page.getByTestId('team-tab-vinny').click();
+  await page.getByTestId('vinny-door-ask').click();
+  await expect(page.getByTestId('vinny-sugg')).toHaveCount(await page.getByTestId('vinny-sugg').count()); // three short suggestions, none repeating a wine
+  const sugg = await page.getByTestId('vinny-sugg').allTextContents();
+  expect(sugg.length).toBeGreaterThanOrEqual(3); expect(sugg.length).toBeLessThanOrEqual(4);
+  sugg.forEach((s) => expect(s.split(/\s+/).length).toBeLessThanOrEqual(9));
   await page.getByTestId('vinny-input').fill('What goes with the olives by the glass?');
   await page.getByLabel('Ask', { exact: true }).click();
   await expect(page.getByTestId('vinny-answer')).toContainText('Grüner by the glass');
@@ -774,7 +783,7 @@ test('a guest at the table: Vinny opens, the server answers, and the table is ma
     return JSON.stringify({ guest: 'Perfect, we will have that.', done: true, mark: { score: 0.8, verdict: 'right', good: 'You named the wine and why.', missing: '', better: 'Try the Grüner at £11.' } });
   } });
   await page.getByTestId('team-tab-vinny').click();
-  await page.getByText('Take a table').click();
+  await page.getByTestId('vinny-door-guest').click();
   await expect(page.getByTestId('guest-line')).toContainText('What would you pour');
   await page.getByTestId('guest-reply').fill('The Grüner by the glass, it is peppery and fresh.');
   await page.getByText('Say', { exact: true }).click();
@@ -801,7 +810,7 @@ test('a guest at the table comes with choices, hints or none, and two tables tha
   expect(starts.som).toBe('own');
 
   await page.getByTestId('team-tab-vinny').click();
-  await page.getByText('Take a table').click();
+  await page.getByTestId('vinny-door-guest').click();
   await expect(page.getByTestId('guest-line')).toBeVisible();
   await page.getByTestId('guest-help-choices').click();
   // Three wines; a wrong one says why and the right one opens the reasons.
@@ -881,7 +890,7 @@ test('tables are picked for the person: wines they don\'t know, requests they\'v
   expect(r.repeats).toBe(0);
   expect(r.missedWhy[0]).toMatch(/steering a guest away from a wine hasn't landed for you 2 times lately/);
   await page.getByTestId('team-tab-vinny').click();
-  await page.getByText('Take a table').click();
+  await page.getByTestId('vinny-door-guest').click();
   await expect(page.getByTestId('guest-why')).toContainText('Picked for you:');
   expect(errors).toEqual([]);
 });
@@ -1160,7 +1169,7 @@ test('a guest follow-up comes with replies to pick from, or a hint, so choices l
     return JSON.stringify({ guest: 'Lovely.', done: true, mark: { score: 0.8, verdict: 'right', good: 'Answered it.', missing: '', better: '' } });
   } });
   await page.getByTestId('team-tab-vinny').click();
-  await page.getByText('Take a table').click();
+  await page.getByTestId('vinny-door-guest').click();
   await page.getByTestId('guest-help-choices').click();
   await expect(page.getByTestId('guest-choices')).toBeVisible();
   await page.getByTestId('guest-reply').fill('The Grüner by the glass, peppery and fresh.');
@@ -1246,7 +1255,7 @@ test('a spoken table: the guest is said aloud, the reply is spoken into the box,
     return JSON.stringify({ guest: 'Lovely, thank you.', done: true, mark: { score: 0.8, verdict: 'right', good: 'Named it and why.', missing: '', better: '' } });
   } });
   await page.getByTestId('team-tab-vinny').click();
-  await page.getByText('Take a table').click();
+  await page.getByTestId('vinny-door-guest').click();
   await expect(page.getByTestId('guest-line')).toContainText('olives');
   await expect(page.getByTestId('guest-voice')).toHaveAttribute('aria-checked', 'true');
   await expect.poll(() => page.evaluate(() => window.__spoken.join('|'))).toContain('What would you pour'); // the guest said aloud
@@ -1350,7 +1359,7 @@ test('a spoken reply is written down by the server when it has speech to text', 
   await context.route('**/stt', async (r) => { sent.push(r.request().headers()['content-type']); await r.fulfill({ json: { text: "I'd go for the Grüner by the glass, it's peppery and fresh", words: [{ text: "I'd", start: 0.9, end: 1.1 }, { text: 'fresh', start: 4.2, end: 4.6 }] } }); });
   const errors = await asMarco(context, page, { claudeText: (b) => b.purpose === 'team_guest' ? (/SERVER:/.test(b.messages[0].content) ? JSON.stringify({ guest: 'Lovely.', done: true, mark: { score: 0.8, verdict: 'right', good: 'Named it.', missing: '', better: '' } }) : '{"guest":"Evening! What would you pour with the olives?","done":false}') : '' });
   await page.getByTestId('team-tab-vinny').click();
-  await page.getByText('Take a table').click();
+  await page.getByTestId('vinny-door-guest').click();
   await expect(page.getByTestId('guest-line')).toContainText('olives');
   await page.getByTestId('guest-mic').click();
   await expect(page.getByTestId('voice-notice')).toContainText('ElevenLabs');

@@ -106,6 +106,43 @@ const TeamVinny = {
     return (lead.charAt(0).toUpperCase()+lead.slice(1)+why2).trim();
   },
 
+  /* ── The practice hub ──
+     The one thing to do now, chosen for this person, so the Vinny tab leads with a decision made rather than three
+     doors of equal weight: today's drill until it's done; then a guest table aimed at what they're weakest on
+     (TeamVinny.scenario's why); then the test when answers have faded; else another table. {kind, title, why, cta, open}. */
+  next(pid){
+    const person=TeamLearn.person(pid); if(!person||!TeamData.wines().length) return null;
+    const r=TeamLearn.readiness(pid), as=TeamLearn.assignments(pid), done=TeamLearn.doneToday(pid);
+    if(!done){ const parts=[]; if(r&&r.due) parts.push(`${r.due} answer${r.due===1?' is':'s are'} due`); if(as.length) parts.push(`${as.length} ${as.length===1?'thing is':'things are'} new to you`);
+      return {kind:'drill',title:"Today's drill · 5 questions",why:parts.length?parts.join(' and ')+'. Two to three minutes.':'Nothing is due; five questions keep it fresh. Two to three minutes.',cta:'Start',open:{view:'drill'}}; }
+    const sc=this.scenario(pid); const t=this.test(pid);
+    if(sc){ const dish=String(sc.dishName||'').split(',')[0].trim(); const why=(sc.why||[]).length?sc.why.join(', and ')+'.':'Answer as you would at the table.';
+      return {kind:'guest',title:`A guest having the ${dish}`,why:why.charAt(0).toUpperCase()+why.slice(1),cta:'Take the table',open:{view:'guest'}}; }
+    if(t&&!t.none) return {kind:'test',title:`Vinny's test · ${t.qs.length} questions`,why:t.why,cta:'Start',open:{view:'drill',qs:t.qs,intro:{title:t.title,why:t.why}}};
+    return null;
+  },
+  /* Three suggestions for the Ask screen, each short and about a different thing: tonight's feature or an 86'd dish
+     once the venue sets them (status on an item), the top seller they haven't learnt, a dish, a price. Never two about
+     the same wine, never a long name: a wine with more than four words goes by its producer. */
+  _nick(w){ return TeamData.nick(w); },
+  suggest(pid){
+    const ws=TeamData.wines(), ds=TeamData.dishes(), out=[], used=new Set();
+    const add=(s,id)=>{ if(out.length>=3||!s||(id&&used.has(id))) return; if(id) used.add(id); out.push(s); };
+    const live=x=>x&&x.status&&x.status.kind;
+    const feat=ws.find(w=>live(w)&&w.status.kind==='feature'), off=ds.find(d=>live(d)&&d.status.kind==='off');
+    if(feat) add(`What do I say about the ${this._nick(feat)}?`,feat.id);
+    if(off) add(`What's off tonight?`);
+    let sells=[]; try{ if(TeamSales.has()) sells=TeamReport.priority(28,4).map(x=>x.wine); }catch(e){}
+    const me=pid&&TeamLearn.person(pid), items=me?TeamLearn._mine(TeamLearn._all(),pid).items:{};
+    const unknown=sells.find(w=>!me||!TeamLearn.knowsWine(pid,me.role,w.id,items)); if(unknown) add(`How do I sell the ${this._nick(unknown)}?`,unknown.id);
+    const main=ds.find(x=>/main/i.test(x.section||''))||ds[Math.floor(ds.length/2)]||ds[0]; if(main) add(`What goes with the ${main.name.split(',')[0]}?`);
+    const glass=ws.filter(w=>TeamData.byGlass(w)).map(w=>this._price(w.glass)).filter(Boolean).sort((a,b)=>a-b);
+    if(glass.length) add(`By the glass under ${TeamData.money(Math.ceil(glass[Math.floor(glass.length/2)]))}?`);
+    const reds=ws.filter(w=>w.type==='red'&&this._price(w.bottle)); if(reds.length) add(`Reds under ${TeamData.money(Math.ceil(this._price(reds.sort((a,b)=>this._price(a.bottle)-this._price(b.bottle))[Math.floor(reds.length/2)].bottle)/10)*10)}?`);
+    add('What should I say about our house red?');
+    return out.slice(0,3);
+  },
+
   /* ── Ask Vinny ── */
   recent(){ return (Store.getJSON(this.KEY,{})||{}).recent||[]; },
   remember(q){ const d=Store.getJSON(this.KEY,{})||{}; d.recent=[q,...(d.recent||[]).filter(x=>x.toLowerCase()!==q.toLowerCase())].slice(0,5); Store.setJSON(this.KEY,d); },

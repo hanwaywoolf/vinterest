@@ -94,6 +94,28 @@ const TeamReport = {
     for(let i=weeks-1;i>=0;i--){ const to=now-i*7*this.DAY, from=to-7*this.DAY; const sh=nights.filter(n=>{ const t=new Date(n.night).getTime(); return t>=from&&t<to&&(n.shifts||[]).includes(pid); }).length;
       const q=rows.filter(r=>r.v===pid&&r.t>=from&&r.t<to).reduce((a,r)=>a+r.q,0); out.push({from,to,shifts:sh,lines:q,perShift:sh?q/sh:null}); }
     return out; },
+  /* What knowing the list is worth to one person, in their own money, from this venue's till: the wines among the top
+     sellers they don't yet know, each at the gap between what a server sells of it per shift when they know it and when
+     they don't (trainedLift's per-wine form), at its price; tips at TIP_LOW to TIP_HIGH of the extra. Honest about its
+     floor: WORTH_NIGHTS of sales and two servers a side, else null and the screen says the research figure instead.
+     Never a promise; the caveat goes with it. {perShift, tipLow, tipHigh, wines, demo, caveat} */
+  TIP_LOW:0.15, TIP_HIGH:0.2, WORTH_NIGHTS:28,
+  worth(pid,days=28){ if(!TeamSales.has()) return null; const p=TeamLearn.person(pid); if(!p) return null;
+    const nights=TeamSales.nights(days); if(nights.length<this.WORTH_NIGHTS) return null;
+    const rows=TeamSales.rows(days), all=TeamLearn._all(), servers=TeamLearn.people().filter(x=>['server','bartender','sommelier'].includes(x.role));
+    const shifts=Object.fromEntries(servers.map(x=>[x.id,nights.filter(n=>(n.shifts||[]).includes(x.id)).length]));
+    const items=(all[pid]||{items:{}}).items, top=this.salesByWine(days).slice(0,8);
+    let extra=0, n=0;
+    top.forEach(x=>{ const w=x.wine; if(TeamLearn.knowsWine(pid,p.role,w.id,items)) return;
+      const k=servers.filter(s=>shifts[s.id]&&TeamLearn.knowsWine(s.id,s.role,w.id,(all[s.id]||{items:{}}).items)), u=servers.filter(s=>shifts[s.id]&&!k.includes(s));
+      if(k.length<2||u.length<2) return;
+      const q=ps=>rows.filter(rw=>rw.w===w.id&&ps.some(s=>s.id===rw.v)).reduce((a,rw)=>a+rw.q,0), sh=ps=>ps.reduce((a,s)=>a+shifts[s.id],0);
+      const gap=q(k)/sh(k)-q(u)/sh(u); if(gap<=0) return;
+      const price=rows.filter(rw=>rw.w===w.id).reduce((a,rw)=>a+rw.p*rw.q,0)/Math.max(1,rows.filter(rw=>rw.w===w.id).reduce((a,rw)=>a+rw.q,0));
+      extra+=gap*price; n++; });
+    if(!n) return null;
+    return {perShift:extra,tipLow:extra*this.TIP_LOW,tipHigh:extra*this.TIP_HIGH,wines:n,demo:TeamSales.demo(),
+      caveat:`From this restaurant's till over ${days} nights: what servers who know each of your top sellers sell of it per shift, against those who don't, over the ${n} you don't know yet. Sections and nights vary; some of it replaces other sales. Not a promise.`}; },
   newOnTill(){ return TeamSales.has()?TeamSales.unmapped():[]; },
   /* What a manager needs to know from the till, in a few sentences, most telling first: the week against the one
      before, wine per guest, the best seller and whether the floor knows it, top sellers known by too few, slow glasses,
