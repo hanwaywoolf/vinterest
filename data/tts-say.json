@@ -1,0 +1,4 @@
+{
+  "note": "How the guest's voice (/tts) says names it gets wrong. Each key is a name as it's written on the list or menu; each value is a spelling the voice reads right. Whole words only, longest first. Add a fix after the listening check (npm run tts:check) and redeploy.",
+  "say": {}
+}

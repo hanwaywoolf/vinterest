@@ -277,6 +277,27 @@ const TTS_VOICES = {
   openai: ["coral", "ash", "sage", "verse"]
 };
 function ttsProvider(env) { return env.ELEVENLABS_API_KEY ? "elevenlabs" : env.OPENAI_API_KEY ? "openai" : null; }
+/* How the voice says the names it gets wrong (data/tts-say.json, read as deployed like retailers.json, so a fix is
+   a web deploy): each "say" entry swaps a name for a spelling the voice reads right, whole words only and the
+   longest name first, before the text is sent or cached, so every guest line and every Say it says it the same way.
+   Built from the listening check (npm run tts:check). */
+let _ttsSay = null;
+async function ttsSay(env, request) {
+  if (_ttsSay && Date.now() - _ttsSay.at < 5 * 60 * 1000) return _ttsSay.rules;
+  let rules = [];
+  try {
+    const r = env && env.ASSETS ? await env.ASSETS.fetch(new Request(new URL("/data/tts-say.json", request.url))) : null;
+    if (r && r.ok) rules = ttsRules((await r.json()).say);
+  } catch (e) {}
+  _ttsSay = { at: Date.now(), rules };
+  return rules;
+}
+function ttsRules(say) {
+  const esc = (x) => x.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return Object.entries(say || {}).filter(([k, v]) => k && v).sort((a, b) => b[0].length - a[0].length)
+    .map(([k, v]) => ({ re: new RegExp("(^|[^\\p{L}])" + esc(k) + "(?![\\p{L}])", "giu"), to: String(v) }));
+}
+function ttsApply(text, rules) { return rules.reduce((t, r) => t.replace(r.re, (m, pre) => pre + r.to), text); }
 async function handleTts(request, env, ctx) {
   const provider = ttsProvider(env);
   if (!provider) return json(404, { enabled: false, error: "No voice is set up on the server.", code: "tts_off" });
@@ -285,9 +306,10 @@ async function handleTts(request, env, ctx) {
   let body; try { body = await request.json(); } catch (e) { return json(400, { error: "Invalid JSON body.", code: "invalid_json" }); }
   const text = String(body && body.text || "").replace(/\s+/g, " ").trim().slice(0, TTS_MAX_CHARS);
   if (!text) return json(400, { error: "Nothing to say.", code: "empty" });
+  const spoken = ttsApply(text, await ttsSay(env, request));
   const list = provider === "elevenlabs" && env.ELEVENLABS_VOICES ? String(env.ELEVENLABS_VOICES).split(",").map(x => x.trim()).filter(Boolean) : TTS_VOICES[provider];
   const voice = list[Math.abs(parseInt(body.voice, 10) || 0) % list.length];
-  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(provider + "|" + voice + "|" + (provider === "elevenlabs" ? (env.ELEVENLABS_MODEL || "eleven_flash_v2_5") : "") + "|" + text));
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(provider + "|" + voice + "|" + (provider === "elevenlabs" ? (env.ELEVENLABS_MODEL || "eleven_flash_v2_5") : "") + "|" + spoken));
   // The model is in the key, so changing ELEVENLABS_MODEL is heard at once rather than after a month of old clips.
   const id = [...new Uint8Array(digest)].map(b => b.toString(16).padStart(2, "0")).join("");
   const cacheKey = new Request("https://tts.cache.vinterest/" + id);
@@ -297,9 +319,9 @@ async function handleTts(request, env, ctx) {
   try {
     up = provider === "elevenlabs"
       ? await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voice}?output_format=mp3_44100_64`, { method: "POST", headers: { "xi-api-key": env.ELEVENLABS_API_KEY, "content-type": "application/json", accept: "audio/mpeg" },
-          body: JSON.stringify({ text, model_id: env.ELEVENLABS_MODEL || "eleven_flash_v2_5", voice_settings: { stability: 0.45, similarity_boost: 0.75 } }) })
+          body: JSON.stringify({ text: spoken, model_id: env.ELEVENLABS_MODEL || "eleven_flash_v2_5", voice_settings: { stability: 0.45, similarity_boost: 0.75 } }) })
       : await fetch("https://api.openai.com/v1/audio/speech", { method: "POST", headers: { authorization: `Bearer ${env.OPENAI_API_KEY}`, "content-type": "application/json" },
-          body: JSON.stringify({ model: env.OPENAI_TTS_MODEL || "gpt-4o-mini-tts", voice, input: text, response_format: "mp3", instructions: "You are a relaxed diner at a restaurant table, talking to your server. Natural, warm, conversational; not a narrator." }) });
+          body: JSON.stringify({ model: env.OPENAI_TTS_MODEL || "gpt-4o-mini-tts", voice, input: spoken, response_format: "mp3", instructions: "You are a relaxed diner at a restaurant table, talking to your server. Natural, warm, conversational; not a narrator." }) });
   } catch (e) { return json(502, { error: "The voice service couldn't be reached.", code: "tts_unreachable" }); }
   if (!up.ok) return json(502, { error: "The voice service didn't answer.", code: "tts_failed", status: up.status });
   const audio = await up.arrayBuffer();

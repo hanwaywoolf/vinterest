@@ -20,7 +20,8 @@
     "lcbo:check": "node scripts/lcbo-check.mjs",
     "model:trial": "node scripts/model-trial.mjs",
     "match:backtest": "node scripts/match-backtest.mjs",
-    "trailer": "node scripts/trailer.mjs"
+    "trailer": "node scripts/trailer.mjs",
+    "tts:check": "node scripts/tts-check.mjs"
   },
   "keywords": [
     "wine",

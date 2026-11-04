@@ -109,3 +109,12 @@ test('TEAM_MODEL moves only the staff-training purposes, with room for Opus to t
   const plain = await run({ CLAUDE_MODEL: 'claude-sonnet-5-5' }, [msg('team_cards')]);
   expect(plain.upstream[0].body).toMatchObject({ model: 'claude-sonnet-5-5', max_tokens: 12288 });
 });
+// data/tts-say.json as deployed: a name the voice gets wrong is swapped for a spelling it reads right, whole words
+// only and the longest first, before it's sent; the model is chosen by ELEVENLABS_MODEL.
+test('/tts: names are said as data/tts-say.json spells them, and ELEVENLABS_MODEL picks the model', async () => {
+  const say = { say: { Jolivet: 'zho-lee-VAY', 'Pascal Jolivet': 'pas-KAL zho-lee-VAY' } };
+  const ASSETS = { fetch: async (req) => new URL(req.url).pathname === '/data/tts-say.json' ? new Response(JSON.stringify(say)) : new Response('', { status: 404 }) };
+  const r = await tts({ ELEVENLABS_API_KEY: 'k', ELEVENLABS_MODEL: 'eleven_multilingual_v2', ASSETS }, { text: 'The Pascal Jolivet, or another Jolivet? Not the Jolivets.' });
+  expect(r.upstream[0].body.text).toBe('The pas-KAL zho-lee-VAY, or another zho-lee-VAY? Not the Jolivets.');
+  expect(r.upstream[0].body.model_id).toBe('eleven_multilingual_v2');
+});

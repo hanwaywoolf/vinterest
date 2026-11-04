@@ -181,7 +181,7 @@ The guest can be heard and answered out loud, so staff work on how they say it a
 - **The guest speaks.** Each guest line is said aloud, with a replay button beside it. With a voice key on the
   server, a cloud voice reads it (the Worker's `POST /tts`: ElevenLabs when `ELEVENLABS_API_KEY` is set, else
   OpenAI's speech model with `OPENAI_API_KEY`; four diners' voices so tables don't all sound alike;
-  `ELEVENLABS_VOICES` takes a comma-separated list of voice ids to use instead; clips cached by their words,
+  `ELEVENLABS_VOICES` takes a comma-separated list of voice ids to use instead; `ELEVENLABS_MODEL` picks the model (`eleven_multilingual_v2` says French, Italian and Spanish names far better than the default flash model); names it still gets wrong go in `data/tts-say.json` as the name and a spelling it reads right, found with the listening check, `npm run tts:check`, which has the deployed voice say every name on the list into one page; clips cached by their words,
   nothing stored). Without a key `/tts` answers 404 and the phone's own voice reads it. Setting one up: add
   the key as a Cloudflare secret on the vinterest Pages project and redeploy; `/config` then says `tts: true`.
 - **The server answers.** "Tap and speak to the guest" turns what they say into words in the reply box, to

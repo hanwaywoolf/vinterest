@@ -85,6 +85,7 @@ export const STATIC_FILES = [
   'sw.js',
   '_worker.js',
   'data/retailers.json', // read by the Worker's /go, so link routing follows the deployed list
+  'data/tts-say.json', // read by the Worker's /tts: how the voice says the names it gets wrong
   '_headers',
   '_redirects',
   'icons',
