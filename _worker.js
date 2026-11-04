@@ -333,7 +333,7 @@ async function handleTts(request, env, ctx) {
     return json(502, { error: "The voice service didn't answer.", code: "tts_failed", status: up.status, detail }); }
   const audio = await up.arrayBuffer();
   if (cache && ctx && ctx.waitUntil) ctx.waitUntil(cache.put(cacheKey, new Response(audio, { headers: { "content-type": "audio/mpeg", "cache-control": "public, max-age=2592000" } })));
-  return cors(new Response(audio, { status: 200, headers: { "content-type": "audio/mpeg", "x-tts": provider } }));
+  return cors(new Response(audio, { status: 200, headers: { "content-type": "audio/mpeg", "x-tts": provider, "x-tts-model": provider === "elevenlabs" ? (env.ELEVENLABS_MODEL || "eleven_flash_v2_5") : (env.OPENAI_TTS_MODEL || "gpt-4o-mini-tts") } }));
 }
 
 function originAllowed(origin) {
