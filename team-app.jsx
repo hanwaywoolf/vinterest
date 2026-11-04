@@ -34,7 +34,7 @@ function TeamApp(){
     if(host&&!q.get('seed')){ if(!TeamLearn.me()||!TeamSample.current(host)) TeamSample.load(host); refresh(); return; }
     const seed=q.get('seed'); if(!seed&&TeamSample.retire()) refresh();
     // The Social Corner is a demo install: a device holding an older copy of its files takes the new one, with or without ?seed.
-    if(!seed&&(TeamData.get().venue||{}).sample==='social'&&!TeamSample.current('social')){ TeamSample.load('social'); refresh(); } if(seed){ if(!TeamLearn.me()||!TeamSample.current(seed)) TeamSample.load(seed); q.delete('seed'); const rest=q.toString(); history.replaceState(null,'',location.pathname+(rest?'?'+rest:'')); refresh(); } }catch(e){} },[]);
+    const held=(TeamData.get().venue||{}).sample; if(!seed&&TeamSample.social(held)&&!TeamSample.current(held)){ TeamSample.load(held); refresh(); } if(seed){ if(!TeamLearn.me()||!TeamSample.current(seed)) TeamSample.load(seed); q.delete('seed'); const rest=q.toString(); history.replaceState(null,'',location.pathname+(rest?'?'+rest:'')); refresh(); } }catch(e){} },[]);
   const me=TeamLearn.me(), set=!!me, brand=TeamData.brand();
   const manager=me&&TeamLearn.manages(me.role);
   const tabs=TEAM_TABS.filter(t=>!t.manager||manager);

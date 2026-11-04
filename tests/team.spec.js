@@ -57,6 +57,24 @@ test('The Social Corner opens from ?seed=social on its own team, logo, dollars a
   expect(errors).toEqual([]);
 });
 
+// The Social Corner cloned for the V2 work: ?seed=socialv2 (and socialcorner-v2.vinterest.team) opens the same install
+// from its own files, so the pilot's copy and the V2 copy can move apart.
+test('The Social Corner (V2) opens from ?seed=socialv2 as the same install on its own seed', async ({ context, page }) => {
+  await stubNetwork(context);
+  await page.goto(`${BASE}/team/?seed=socialv2`);
+  await expect(page.getByTestId('team-venue-logo')).toHaveAttribute('src', 'brand/social-corner/wordmark-white.png');
+  const st = await page.evaluate(() => ({ me: TeamLearn.me().name, people: TeamLearn.people().length, wines: TeamData.wines().length, cards: Object.keys(TeamData.get().cards).length,
+    venue: TeamData.get().venue, rows: TeamSales.get().rows.length, host: TeamSample.hostSeed('socialcorner-v2.vinterest.team'), current: TeamSample.current('socialv2'), social: TeamSample.social('socialv2') }));
+  expect(st).toMatchObject({ me: 'Elena Ruiz', people: 7, wines: 41, cards: 41, host: 'socialv2', current: true, social: true });
+  expect(st.venue).toMatchObject({ name: 'The Social Corner', sample: 'socialv2', edition: 'V2', currency: { code: 'CAD' } });
+  expect(st.rows).toBeGreaterThan(1000);
+  // Its row on the setup screen opens it too.
+  await page.evaluate(() => { TeamData.reset(); Store.remove(TeamLearn.KEY); TeamLearn.resetProgress(); TeamSales.clear(); });
+  await page.goto(`${BASE}/team/`);
+  await page.getByTestId('team-load-socialv2').click();
+  await expect.poll(() => page.evaluate(() => (TeamData.get().venue || {}).sample)).toBe('socialv2');
+});
+
 // A device that opened The Social Corner from an older build (here: before its team and sales, set up by whoever
 // opened it) reloads it from ?seed=social once the list file has moved on, though the training file is the same.
 test('a device holding an older Social Corner takes the new one, with or without ?seed=social, keeping who was there and their progress', async ({ context, page }) => {

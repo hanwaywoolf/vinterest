@@ -400,11 +400,20 @@ const TeamSample = {
      website (intake/perse/): its list and menu (data/team-social-list.json), its branding and currency, and
      its training once written and exported (data/team-social.json). No invented staff: whoever opens it
      sets themselves up as its manager (TeamSetup). */
-  file(which){ return which==='demo'?_loadJSON('data/team-demo.json'):which==='social'?_loadJSON('data/team-social.json'):_loadJSON('data/team-sample.json'); },
+  /* Every seed the build carries. `kind` is how it behaves (a real install's copy, 'social', or a demo, 'demo'); the
+     paths are literal in file() and list() because the build collects _loadJSON's paths by scanning for them.
+     'socialv2' is The Social Corner cloned for the V2 work (its own address, socialcorner-v2.vinterest.team), so
+     the pilot's own copy keeps its data while the new content lands in the v2 files. */
+  SEEDS:{sample:{kind:'sample'},demo:{kind:'demo'},social:{kind:'social',label:'The Social Corner'},socialv2:{kind:'social',label:'The Social Corner (V2)'}},
+  kind(which){ return (this.SEEDS[which]||{}).kind||null; },
+  social(which){ return this.kind(which)==='social'; },
+  file(which){ return which==='demo'?_loadJSON('data/team-demo.json'):which==='social'?_loadJSON('data/team-social.json'):which==='socialv2'?_loadJSON('data/team-socialv2.json'):_loadJSON('data/team-sample.json'); },
+  /* The list file: where an installed restaurant's venue details, cocktails and staff live. */
+  list(which){ return which==='demo'?_loadJSON('data/team-demo-list.json'):which==='social'?_loadJSON('data/team-social-list.json'):which==='socialv2'?_loadJSON('data/team-socialv2-list.json'):null; },
   load(which='sample'){
     let s=this.file(which);
     if(which==='demo'&&(!s||s.pending)) s={..._loadJSON('data/team-demo-list.json'),cards:{},pairings:{},staff:null};
-    if(which==='social'&&(!s||s.pending)) s={..._loadJSON('data/team-social-list.json'),cards:{},pairings:{},staff:[]};
+    if(this.social(which)&&(!s||s.pending)) s={...this.list(which),cards:{},pairings:{},staff:[]};
     if(!s) return false;
     const now=Date.now(), d=TeamData._empty();
     // A newer copy of the restaurant already on this phone (a build with rewritten training or a new list) replaces
@@ -413,14 +422,14 @@ const TeamSample = {
     const keep=(TeamData.get().venue||{}).sample===which&&TeamLearn.people().length>0;
     // The installed restaurant's own details (city, style, currency, brand) come with it; the list file is
     // where they're kept, so a training file exported later doesn't need to carry them.
-    const meta=which==='social'?(_loadJSON('data/team-social-list.json')||{}).venue||{}:which==='demo'?(_loadJSON('data/team-demo-list.json')||{}).venue||{}:{};
+    const meta=(this.list(which)||{}).venue||{};
     d.venue={...meta,name:s.venue.name,created:now,sample:which,seeded:this.stamp(which)}; // seeded: which copy of the files this is, so a newer build reloads it
     s.wines.forEach((w,i)=>{ d.wines[w.id]={...w,onList:true,order:i,addedAt:now-30*86400000}; });
     s.dishes.forEach((x,i)=>{ d.dishes[x.id]={...x,onMenu:true,order:i,addedAt:now}; });
     Object.values(s.cards).forEach(c=>{ d.cards[c.id]={...TeamData._cleanCard(c,d),at:now}; });
     Object.entries(s.pairings).forEach(([id,p])=>{ d.pairings[id]={...p,at:now}; });
     // The Social Corner's cocktails come from its list file; their cards, once written, from its training file.
-    const mixes=s.cocktails||(which==='social'?(_loadJSON('data/team-social-list.json')||{}).cocktails:null)||[];
+    const mixes=s.cocktails||(this.social(which)?(this.list(which)||{}).cocktails:null)||[];
     mixes.forEach((c,i)=>{ d.cocktails[c.id]={...c,onList:true,order:i,addedAt:now}; });
     Object.entries(s.cocktailCards||{}).forEach(([id,c])=>{ if(d.cocktails[id]) d.cocktailCards[id]={...c,at:now}; });
     d.versions.push({kind:'list',at:now,added:Object.keys(d.wines),removed:[],changed:[]});
@@ -428,14 +437,14 @@ const TeamSample = {
     TeamData.save(d);
     if(keep){ // anyone the new copy's team adds joins (by name), and the demo sales are written if there are none
       const have=new Set(TeamLearn.people().map(p=>p.name.toLowerCase()));
-      (s.staff||(which==='social'?(_loadJSON('data/team-social-list.json')||{}).staff||[]:[])).filter(p=>!have.has(String(p.name).toLowerCase())).forEach(p=>TeamLearn.addPerson(p.name,p.role,p.photo||null));
+      (s.staff||(this.social(which)?(this.list(which)||{}).staff||[]:[])).filter(p=>!have.has(String(p.name).toLowerCase())).forEach(p=>TeamLearn.addPerson(p.name,p.role,p.photo||null));
       TeamLearn.people().forEach(p=>TeamLearn.assignExisting(p.id));
-      if((which==='demo'||which==='social')&&typeof TeamSales!=='undefined'&&!(TeamSales.get().rows||[]).length) TeamSales.seedDemo();
+      if((which==='demo'||this.social(which))&&typeof TeamSales!=='undefined'&&!(TeamSales.get().rows||[]).length) TeamSales.seedDemo();
       return true; }
     Store.remove(TeamLearn.KEY); TeamLearn.resetProgress(); if(typeof TeamSales!=='undefined') TeamSales.clear();
     // The Social Corner's demo team is the Larkspur's people and photos in its own roles (data/team-social-list.json staff).
-    (s.staff||(which==='social'?(_loadJSON('data/team-social-list.json')||{}).staff||[]:this.DEMO_STAFF)).forEach(p=>TeamLearn.addPerson(p.name,p.role,p.photo||null));
-    if((which==='demo'||which==='social')&&Object.keys(d.cards).length) TeamDemo.seedProgress();
+    (s.staff||(this.social(which)?(this.list(which)||{}).staff||[]:this.DEMO_STAFF)).forEach(p=>TeamLearn.addPerson(p.name,p.role,p.photo||null));
+    if((which==='demo'||this.social(which))&&Object.keys(d.cards).length) TeamDemo.seedProgress();
     return true;
   },
   /* The demo's size in words for the button that opens it, from its own files. */
@@ -443,7 +452,7 @@ const TeamSample = {
     const staff=((d.staff&&d.staff.length)?d.staff:this.DEMO_STAFF).length;
     return `${n('wines')} wines, ${n('dishes')} dishes, a team of ${['','one','two','three','four','five','six','seven','eight','nine','ten'][staff]||staff}`; },
   /* The Social Corner's size in words for its button on the setup screen. */
-  socialLine(){ const s=_loadJSON('data/team-social-list.json')||{}, n=k=>(s[k]||[]).length;
+  socialLine(which='social'){ const s=this.list(which)||{}, n=k=>(s[k]||[]).length;
     return `Vancouver · ${n('wines')} wines, ${n('cocktails')} cocktails, ${n('dishes')} dishes, a team of ${n('staff')}`; },
   /* The Copper Pan is no longer offered (the setup screen has only The Larkspur); it stays for the tests,
      which open it with ?seed=sample. A device left on it without asking goes back to the setup screen. */
@@ -452,7 +461,7 @@ const TeamSample = {
   // The Larkspur's team (photos in team/faces/). The manager is first, so the demo opens as her.
   /* The restaurant a demo address opens (socialcorner.vinterest.team → The Social Corner), as ?seed would; the
      Worker's VENUE_HOSTS sends that address's root to /team/. Null anywhere else. */
-  HOSTS:{'socialcorner.vinterest.team':'social'},
+  HOSTS:{'socialcorner.vinterest.team':'social','socialcorner-v2.vinterest.team':'socialv2'},
   hostSeed(host){ try{ return this.HOSTS[String(host==null?location.hostname:host).toLowerCase()]||null; }catch(e){ return null; } },
   /* Whether the restaurant on the device is this seed as the build now carries it. */
   current(which){ const v=TeamData.get().venue||{}; if(v.sample!==which) return false;
@@ -460,8 +469,8 @@ const TeamSample = {
   /* Which copy of a seed's files this build carries: the training file's export time, and for The Social Corner
      the list file's `rev` too, since its team, cocktails and staff live there (a new team with the same training
      must still reload a device that opened the old one). */
-  stamp(which){ const s=this.file(which), base=(s&&s.exported)||null; if(which!=='social'&&which!=='demo') return base;
-    const rev=(which==='social'?_loadJSON('data/team-social-list.json'):_loadJSON('data/team-demo-list.json')||{}).rev||null; return base||rev?`${base||''}|${rev||''}`:null; },
+  stamp(which){ const s=this.file(which), base=(s&&s.exported)||null; if(!this.social(which)&&which!=='demo') return base;
+    const rev=(this.list(which)||{}).rev||null; return base||rev?`${base||''}|${rev||''}`:null; },
   /* The demo's prepared new arrivals (data/team-demo-arrivals.json, photos in team/labels/): two real
      bottles whose label reading, staff card, pairings and drinking window were written once through
      the Worker, so "Add a wine from its label" can run with no network and in seconds. Live reading

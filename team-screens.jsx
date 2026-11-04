@@ -95,6 +95,11 @@ function TeamSetup({onDone}){ const T=useTheme(), cr=T.lift(C.cr);
         <img src="brand/social-corner/mark.png" alt="" style={{width:36,height:36,borderRadius:18,flexShrink:0}} onError={e=>{ e.target.style.display='none'; }}/>
         <div style={{flex:1,minWidth:0}}><div style={{fontSize:15,fontWeight:700,color:T.ink,fontFamily:C.P}}>Open The Social Corner</div><div style={{fontSize:13,color:T.mid,fontFamily:C.P}}>{TeamSample.socialLine()}</div></div>
         <Icon n="chevron" sz={12} col={T.mid}/></div>
+      {/* The V2 clone of The Social Corner (socialcorner-v2.vinterest.team): the same install, where the V2 content lands. */}
+      <div data-testid="team-load-socialv2" role="button" onClick={()=>go('socialv2')} style={{display:'flex',alignItems:'center',gap:12,padding:'12px 14px',borderRadius:14,border:`1px solid ${T.line}`,background:T.soft,cursor:'pointer'}}>
+        <img src="brand/social-corner/mark.png" alt="" style={{width:36,height:36,borderRadius:18,flexShrink:0}} onError={e=>{ e.target.style.display='none'; }}/>
+        <div style={{flex:1,minWidth:0}}><div style={{fontSize:15,fontWeight:700,color:T.ink,fontFamily:C.P}}>Open The Social Corner (V2)</div><div style={{fontSize:13,color:T.mid,fontFamily:C.P}}>{TeamSample.socialLine('socialv2')}</div></div>
+        <Icon n="chevron" sz={12} col={T.mid}/></div>
       <div data-testid="team-load-demo"><Btn full onClick={()=>go('demo')}>Open The Larkspur: {TeamSample.demoLine()}</Btn></div>
     </div>
   </div>; }
