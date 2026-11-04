@@ -541,5 +541,18 @@ const TeamJobs = {
     return job; },
   dismiss(){ if(this._cur&&!this._cur.running) this._cur=null; this._emit(); },
 };
-Object.assign(window,{TeamDemo,TeamJobs});
+/* How each person has laid out the console's dashboard: the order of its cards and which are folded, kept per
+   person on this device (vbiz_console_layout_v1, never synced). A card the console adds later joins at the end in
+   its default place; one it drops is forgotten. */
+const TeamLayout = {
+  KEY:'vbiz_console_layout_v1',
+  _all(){ return Store.getJSON(this.KEY,{})||{}; },
+  get(pid,ids){ const d=(this._all()[pid])||{}, seen=(d.order||[]).filter(k=>ids.includes(k));
+    return {order:[...seen,...ids.filter(k=>!seen.includes(k))],folded:new Set((d.folded||[]).filter(k=>ids.includes(k)))}; },
+  _save(pid,order,folded){ const all=this._all(); all[pid]={order,folded:[...folded]}; Store.setJSON(this.KEY,all); },
+  move(pid,ids,id,to){ const {order,folded}=this.get(pid,ids), from=order.indexOf(id); if(from<0) return; order.splice(from,1); order.splice(Math.max(0,Math.min(order.length,to)),0,id); this._save(pid,order,folded); },
+  toggle(pid,ids,id){ const {order,folded}=this.get(pid,ids); folded.has(id)?folded.delete(id):folded.add(id); this._save(pid,order,folded); },
+  reset(pid){ const all=this._all(); delete all[pid]; Store.setJSON(this.KEY,all); },
+};
+Object.assign(window,{TeamDemo,TeamJobs,TeamLayout});
 Object.assign(window,{TeamData,TeamSample});

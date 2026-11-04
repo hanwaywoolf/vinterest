@@ -548,6 +548,13 @@ test('the console: dashboard figures from TeamReport, the demo sales labelled, a
   expect(want.rows).toBeGreaterThan(1000);
   await expect(page.getByTestId('dash-readiness')).toHaveText(`${want.avg}%`);
   await expect(page.getByTestId('dash-overdue')).toHaveText(String(want.overdue));
+  // The dashboard rolls sales up into a tile and three lines; the detail is on Sales Insights.
+  await expect(page.getByTestId('dash-sales')).toContainText(want.revenue.toLocaleString('en-US'));
+  await expect(page.getByTestId('dash-sales-brief').getByTestId('sales-brief')).toHaveCount(3);
+  await expect(page.getByTestId('console-sales')).toHaveCount(0);
+  await page.getByTestId('dash-open-sales').click();
+  await expect(page.getByTestId('console-sales-tab')).toBeVisible();
+  expect(await page.getByTestId('sales-brief-list').getByTestId('sales-brief').count()).toBeGreaterThan(3);
   // Money is written in full with its thousands grouped: $8,774, never $8774 or 8.8k.
   await expect(page.getByTestId('sales-revenue')).toContainText(want.revenue.toLocaleString('en-US'));
   const m = await page.evaluate(() => ({ sym: TeamData.currency().sym, out: [TeamData.money(8774), TeamData.money(12480), TeamData.money(1250.5, { dp: 2 }), TeamData.money(-42)] }));
@@ -561,7 +568,7 @@ test('the console: dashboard figures from TeamReport, the demo sales labelled, a
   const marco = await page.evaluate(() => { const m = TeamLearn.people().find((p) => p.name.startsWith('Marco')); const t = TeamReport.serverTrend(m.id, 8).filter((x) => x.shifts); return { first: t[0].perShift, last: t[t.length - 1].perShift }; });
   expect(marco.last).toBeLessThan(marco.first * 0.7);
   // Every section opens; a row opens its detail in the panel.
-  for (const s of ['team', 'wines', 'menu', 'upload', 'pos', 'admin']) { await page.getByTestId(`console-nav-${s}`).click(); await expect(page.getByTestId(`console-${s}`)).toBeVisible(); }
+  for (const s of ['dash', 'sales', 'team', 'wines', 'menu', 'upload', 'pos', 'admin']) { await page.getByTestId(`console-nav-${s}`).click(); await expect(page.getByTestId(s === 'sales' ? 'console-sales-tab' : `console-${s}`)).toBeVisible(); }
   await page.getByTestId('console-nav-team').click();
   await page.getByTestId('team-row').first().click();
   await expect(page.getByTestId('console-person')).toBeVisible();
@@ -1354,4 +1361,32 @@ test('a dish has Say it too, speaking its own name slowly', async ({ context, pa
   await expect.poll(() => page.evaluate(() => JSON.stringify(window.__spoken))).toContain(name);
   expect(await page.evaluate((n) => window.__spoken.find((x) => x[0] === n)[1], name)).toBe(0.8);
   expect(errors).toEqual([]);
+});
+
+// The dashboard is the person's own: a card folds to one line, Edit layout moves a card to the top, and both
+// survive a reload; Reset puts the default back.
+test('the console dashboard folds and reorders, and remembers it', async ({ browser }) => {
+  const ctx = await browser.newContext({ viewport: { width: 1280, height: 800 } });
+  const page = await ctx.newPage();
+  await stubNetwork(ctx);
+  await page.goto(`${BASE}/team/?seed=demo&view=console`);
+  await expect(page.getByTestId('console-dash')).toBeVisible();
+  const order = () => page.getByTestId('dash-card').evaluateAll((els) => els.map((e) => e.dataset.card));
+  expect((await order())[0]).toBe('glance');
+  await page.getByTestId('dash-fold-people').click();
+  await expect(page.locator('[data-card="people"]').getByTestId('dash-summary')).toContainText('ready');
+  await page.getByTestId('dash-edit').click();
+  await page.getByTestId('dash-top-learn').click();
+  await page.getByTestId('dash-down-learn').click();
+  expect((await order()).slice(0, 2)).toEqual(['glance', 'learn']);
+  await page.getByTestId('dash-edit').click();
+  await page.reload();
+  await expect(page.getByTestId('console-dash')).toBeVisible();
+  expect((await order()).slice(0, 2)).toEqual(['glance', 'learn']);
+  await expect(page.locator('[data-card="people"]').getByTestId('dash-summary')).toBeVisible();
+  await page.getByTestId('dash-edit').click();
+  await page.getByTestId('dash-reset').click();
+  expect((await order())[1]).toBe('attention');
+  await expect(page.locator('[data-card="people"]').getByTestId('dash-summary')).toHaveCount(0);
+  await ctx.close();
 });

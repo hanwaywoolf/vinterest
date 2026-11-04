@@ -95,5 +95,26 @@ const TeamReport = {
       const q=rows.filter(r=>r.v===pid&&r.t>=from&&r.t<to).reduce((a,r)=>a+r.q,0); out.push({from,to,shifts:sh,lines:q,perShift:sh?q/sh:null}); }
     return out; },
   newOnTill(){ return TeamSales.has()?TeamSales.unmapped():[]; },
+  /* What a manager needs to know from the till, in a few sentences, most telling first: the week against the one
+     before, wine per guest, the best seller and whether the floor knows it, top sellers known by too few, slow glasses,
+     what training is worth in sales, who to drill, till items with no wine behind them. Each {k, tone: good|bad|note,
+     title, text, open?} where open is what tapping it should show. Never moves readiness; null without sales. */
+  salesBrief(){ if(!TeamSales.has()) return null; const s=this.salesSummary(7); if(!s) return null;
+    const out=[], m=n=>TeamData.money(Math.round(n)), byWine=this.salesByWine(28), slow=this.slowMovers(28,5), lift=this.trainedLift(28), till=this.newOnTill();
+    const d=s.delta.revenue;
+    out.push({k:'week',tone:d==null?'note':d>=0?'good':'bad',title:`${m(s.revenue)} of wine over 7 nights`,text:d==null?`${s.lines} glasses and bottles to ${s.covers} guests.`:`${d>=0?'Up':'Down'} ${Math.abs(d)}% on the week before (${m(s.prev.revenue||0)}), ${s.lines} glasses and bottles to ${s.covers} guests.`});
+    if(s.perCover!=null) out.push({k:'cover',tone:s.delta.attach==null?'note':s.delta.attach>=0?'good':'bad',title:`${m(s.perCover)} of wine per guest`,text:`${s.attach.toFixed(2)} glasses or bottles each${s.delta.attach==null?'':`, ${s.delta.attach>=0?'up':'down'} ${Math.abs(s.delta.attach)}% on the week before`}; ${Math.round(100*(s.bottleShare||0))}% of wine sold by the bottle.`});
+    const top=byWine[0];
+    if(top) out.push({k:'top',tone:top.of&&top.knows<top.of?'bad':'good',title:`Best seller: ${TeamData.short(top.wine)}`,text:`${m(top.revenue)} over 28 nights, ${Math.round(100*top.share)}% of wine sales. ${top.of?(top.knows<top.of?`Only ${top.knows} of the ${top.of} people who sell it know it.`:`Everyone who sells it knows it.`):''}`,open:{view:'wine',id:top.wine.id}});
+    const gaps=byWine.slice(0,8).filter(x=>x.of&&x.knows<Math.ceil(x.of/2));
+    if(gaps.length) out.push({k:'gaps',tone:'bad',title:`${gaps.length} of your top 8 sellers known by fewer than half their sellers`,text:gaps.slice(0,3).map(x=>`${TeamData.short(x.wine)} (${x.knows} of ${x.of})`).join(', ')+'. These are the wines to drill first.',open:{view:'wine',id:gaps[0].wine.id}});
+    if(lift.pct!=null&&lift.wines) out.push({k:'lift',tone:lift.pct>0?'good':'note',title:lift.pct>0?`Training is worth ${lift.pct}% more sales`:`No sales lift from training yet`,text:lift.pct>0?`A server sells ${lift.known.toFixed(2)} of a wine per shift once they know it, against ${lift.unknown.toFixed(2)} before. Shifts and sections affect this too, so read it as a pointer.`:`Across ${lift.wines} wines, servers who know a wine don't yet sell more of it.`});
+    const seller=this.salesByServer(28).filter(x=>x.shifts>0&&['server','bartender'].includes(x.person.role));
+    if(seller.length>2){ const low=[...seller].sort((a,b)=>(a.perShift||0)-(b.perShift||0))[0];
+      if(low&&low.readiness&&low.readiness.state!=='ready') out.push({k:'drill',tone:'bad',title:`${low.person.name.split(' ')[0]} sells the least wine per shift`,text:`${(low.perShift||0).toFixed(1)} glasses and bottles a shift, and ${low.readiness.pct}% ready. A few drills on what sells is the quickest lift.`,open:{view:'person',id:low.person.id}}); }
+    const dead=slow.filter(x=>x.perNight<0.5);
+    if(dead.length) out.push({k:'slow',tone:'note',title:`${dead.length} by-the-glass wine${dead.length===1?'':'s'} barely moving`,text:dead.slice(0,3).map(x=>TeamData.short(x.wine)).join(', ')+`: under one glass every two nights. Give the floor the line to say, or rethink the pour.`,open:{view:'wine',id:dead[0].wine.id}});
+    if(till.length) out.push({k:'till',tone:'note',title:`${till.length} till item${till.length===1?'':'s'} not matched to the list`,text:`${till.slice(0,2).map(x=>x.item).join(', ')}: a new arrival nobody has uploaded, or a name to map.`,open:{tab:'pos'}});
+    return out; },
 };
 Object.assign(window,{TeamReport});

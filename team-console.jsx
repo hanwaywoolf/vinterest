@@ -6,7 +6,7 @@
    so it can be checked on a phone. Sales figures are labelled "Demo data" while the till is the
    demo's invented sales (TeamSales.demo). */
 const CONSOLE_SECTIONS=[
-  {k:'dash',label:'Dashboard',icon:'home'},{k:'team',label:'Team',icon:'user'},{k:'wines',label:'Wines',icon:'wine'},{k:'cocktails',label:'Cocktails',icon:'wine',only:()=>TeamData.cocktails().length>0},{k:'menu',label:'Menu',icon:'fork'},
+  {k:'dash',label:'Dashboard',icon:'home'},{k:'sales',label:'Sales Insights',icon:'cart'},{k:'team',label:'Team',icon:'user'},{k:'wines',label:'Wines',icon:'wine'},{k:'cocktails',label:'Cocktails',icon:'wine',only:()=>TeamData.cocktails().length>0},{k:'menu',label:'Menu',icon:'fork'},
   {k:'upload',label:'Upload',icon:'camera'},{k:'pos',label:'Integrations',icon:'bolt'},{k:'admin',label:'Admin',icon:'edit'},
 ];
 // Money on the console is written in full with its thousands grouped ("$12,480"), never shortened to "12.5k".
@@ -94,7 +94,7 @@ function TeamConsole({me,onPhone,refresh,section,setSection,open}){ const T=useT
       {TeamData.isDemo()&&<div style={{fontSize:11,color:T.mid,fontFamily:C.P,padding:'8px 2px 0',lineHeight:1.5}}>Management console · {venue.name||'The Larkspur'} demo</div>}</div>}
   </div>;
   const page=section==='team'?<_CTeam open={go} refresh={refresh}/>:section==='wines'?<_CWines open={go} goUpload={()=>setSection('upload')}/>:section==='cocktails'?<_CCocktails open={go}/>:section==='menu'?<_CMenu open={go} goUpload={()=>setSection('upload')}/>
-    :section==='upload'?<_CUpload refresh={refresh}/>:section==='pos'?<_CPos open={go}/>:section==='admin'?<_CAdmin refresh={refresh}/>:<_CDash open={go} setSection={setSection}/>;
+    :section==='upload'?<_CUpload refresh={refresh}/>:section==='pos'?<_CPos open={go}/>:section==='admin'?<_CAdmin refresh={refresh}/>:section==='sales'?<_CSalesTab open={go} setSection={setSection}/>:<_CDash open={go} setSection={setSection} me={me}/>;
   // A section opens at its top; the drawer is a new one for each thing it shows, so it opens at its top too.
   const pageRef=React.useRef(null);
   React.useLayoutEffect(()=>{ if(pageRef.current) pageRef.current.scrollTop=0; },[section]);
@@ -129,50 +129,96 @@ function _CPanel({panel,me,open,close,narrow}){ const T=useTheme();
 
 /* ── Dashboard ── */
 const _WHY_COL={faded:'amber',new:'cr',overdue:'bad',idle:'mid'};
-function _CDash({open,setSection}){ const T=useTheme(), cr=T.lift(C.cr), size=useLayoutSize(), cols=size==='roomy'?2:1;
+/* The dashboard: a summary of every area as cards, each folding to one line, in the order the person viewing chose
+   (TeamLayout: "Edit layout" to drag a card or move it up and down, Reset to the default). Sales live on their own
+   tab (Sales Insights); here they're three lines and a link. */
+const _DASH_DEFAULT=['glance','attention','sales','people','learn','new','cocktails'];
+function _CDash({open,setSection,me}){ const T=useTheme(), cr=T.lift(C.cr), size=useLayoutSize(), cols=size==='roomy'?2:1;
   const o=TeamReport.overview(), ps=TeamReport.people().sort((a,b)=>b.r.pct-a.r.pct), slip=TeamReport.slipping(), sales=TeamReport.salesSummary(7), demo=TeamSales.demo();
-  const byRole=TeamReport.byRole(), pri=TeamSales.has()?TeamReport.priority():[], weak=TeamLearn.weakWines().filter(x=>x.of>0).slice(0,6);
+  const byRole=TeamReport.byRole(), pri=TeamSales.has()?TeamReport.priority():[], weak=TeamLearn.weakWines().filter(x=>x.of>0).slice(0,6), brief=TeamReport.salesBrief();
   const grid=n=>({display:'grid',gridTemplateColumns:`repeat(${size==='phone'?2:n},minmax(0,1fr))`,gap:10,alignItems:'stretch'});
-  const two={display:'grid',gridTemplateColumns:`repeat(${cols},minmax(0,1fr))`,gap:14,alignItems:'start',marginTop:14};
   const name=x=>`${x.person.name.split(' ')[0]} · ${TeamLearn.ROLES[x.r.role].label}`;
   const whyCol=k=>({amber:T.amber,cr:cr,bad:T.tone.bad,mid:_cGrey})[_WHY_COL[k]||'mid'];
   const topGlass=Math.max(1,...pri.map(x=>x.qty),...weak.map(()=>1));
-  return <div data-testid="console-dash">
-    {_cH(T,'Dashboard',`${TeamData.get().venue.name||'Your restaurant'} · ${TeamData.wines().length} wines, ${TeamData.dishes().length} dishes · ${o.total} people training`)}
-    <div style={grid(5)}>
+  const cov=TeamData.cocktails().length?TeamReport.cocktailCoverage():[], covOk=cov.filter(c=>c.of&&c.knows>=Math.max(1,Math.ceil(c.of/2))).length;
+  const pid=(me&&me.id)||'console', [edit,setEdit]=React.useState(false), [,bump]=React.useReducer(x=>x+1,0), [drag,setDrag]=React.useState(null);
+  const cards={
+    glance:{title:'At a glance',wide:true,summary:`${o.avg}% ready · ${o.overdue} overdue · ${o.slipping} slipping${sales?` · ${_cMoney(sales.revenue)} wine this week`:''}`,body:<div style={grid(sales?3:5)}>
       <_CStat hero label="Team readiness" value={`${o.avg}%`} sub={`${o.ready} of ${o.total} ready · ${byRole.filter(r=>r.n>1||r.role==='server').map(r=>`${r.label}s ${r.avg}%`).slice(0,2).join(' · ')}`} testid="dash-readiness" onClick={()=>setSection('team')}/>
       <_CStat label="Overdue" value={o.overdue} sub={o.overdue?`assignments past their date`:'nothing past its date'} testid="dash-overdue" onClick={()=>setSection('team')}/>
       <_CStat label="Slipping" value={o.slipping} sub={o.slipping?'were ready, now below':'nobody below after being ready'} onClick={()=>setSection('team')}/>
       <_CStat label="Re-checks" value={o.retention.rate==null?'—':_cPct(o.retention.rate)} sub={`${o.retention.right} of ${o.retention.asked} surprise re-asks remembered, 30 days`}/>
       <_CStat label="Glass list" value={`${o.coverage.glass.covered} of ${o.coverage.glass.total}`} sub={o.coverage.holes.length?`${o.coverage.holes.length} by-the-glass wine${o.coverage.holes.length===1?'':'s'} too few people know`:'every glass wine known by enough people'} testid="dash-coverage" onClick={()=>setSection('wines')}/>
-    </div>
-    <div style={two}>
-      <Card>{_cLabel(T,'Readiness by person',<span style={{fontSize:11,color:T.mid,fontFamily:C.P,textTransform:'none',letterSpacing:0,fontWeight:500,whiteSpace:'nowrap'}}>100% = minimum met</span>)}
-        <_CBars testid="dash-people" max={100} fmt={v=>`${v}%`} rows={ps.map(x=>({key:x.person.id,label:name(x),value:x.r.pct,col:_tState[x.r.state].col,lead:<TeamFace person={x.person} size={22}/>,tag:x.r.overdue?_cChip(T,`${x.r.overdue} overdue`,T.tone.bad):null,onClick:()=>open({view:'person',id:x.person.id})}))}/>
-        {_cNote(T,'The colour is their state: green ready, amber slipping, red not ready yet. Readiness comes only from drills, never from sales.')}</Card>
-      <Card>{_cLabel(T,'What needs attention')}
+      {sales&&<_CStat label="Wine sales, 7 nights" value={_cMoney(sales.revenue)} delta={sales.delta.revenue} sub={`${sales.lines} glasses and bottles · ${sales.covers} covers`} demo={demo} testid="dash-sales" onClick={()=>setSection('sales')}/>}
+    </div>},
+    attention:{title:'What needs attention',summary:slip.length?`${slip.length} ${slip.length===1?'person needs':'people need'} attention: ${slip.slice(0,3).map(x=>x.person.name.split(' ')[0]).join(', ')}`:'Everyone is ready.',body:<>
         {slip.length?<div>{slip.map((x,i)=><div key={x.person.id} role="button" data-testid="dash-slip" onClick={()=>open({view:'person',id:x.person.id})} style={{display:'flex',gap:10,alignItems:'center',cursor:'pointer',padding:'9px 0',borderTop:i?`1px solid ${T.line}`:'none'}}><TeamFace person={x.person} size={34} ring={_tState[x.r.state].col}/>
           <div style={{minWidth:0,flex:1}}><div style={{display:'flex',justifyContent:'space-between',gap:8,alignItems:'baseline'}}><div style={{fontSize:14,fontWeight:700,color:T.ink,fontFamily:C.P,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{x.person.name} <span style={{fontWeight:400,color:T.mid,fontSize:12}}>{TeamLearn.ROLES[x.r.role].label}</span></div><span style={{fontSize:13,fontWeight:700,color:_tState[x.r.state].col,fontFamily:C.P,whiteSpace:'nowrap'}}>{x.r.pct}% · {_tState[x.r.state].label}</span></div>
             <div style={{display:'flex',gap:6,flexWrap:'wrap',marginTop:5}}>{x.why.map((w,k)=><span key={k}>{_cChip(T,w.label,whyCol(w.k))}</span>)}{!x.why.length&&_cChip(T,'below the minimum',_cGrey)}</div></div></div>)}</div>
           :<div style={{fontSize:14,color:T.green,fontFamily:C.P}}>Everyone is ready.</div>}
-      </Card>
-    </div>
-    <div style={two}>
-      <Card>{_cLabel(T,TeamSales.has()?'Learn first: sells most, known least':'Wines the floor knows least',TeamSales.has()&&<_CDemoTag/>)}
+      </>},
+    sales:{title:'Sales at a glance',right:TeamSales.has()?<_CDemoTag/>:null,summary:brief&&brief.length?brief[0].title:'No sales yet',body:brief?<div data-testid="dash-sales-brief">
+        {brief.slice(0,3).map(b=><_CBrief key={b.k} b={b} open={open}/>)}
+        <div role="button" data-testid="dash-open-sales" onClick={()=>setSection('sales')} style={{marginTop:12,fontSize:14,fontWeight:700,color:cr,fontFamily:C.P,cursor:'pointer'}}>Open Sales Insights →</div></div>
+      :<div style={{fontSize:14,color:T.ink2,fontFamily:C.P,lineHeight:1.5}}>No sales yet. <span role="button" onClick={()=>setSection('pos')} style={{color:cr,fontWeight:700,cursor:'pointer'}}>Connect the till or import a sales file</span> and this shows what sells, who sells it and what training is worth.</div>},
+    people:{title:'Readiness by person',right:<span style={{fontSize:11,color:T.mid,fontFamily:C.P,textTransform:'none',letterSpacing:0,fontWeight:500,whiteSpace:'nowrap'}}>100% = minimum met</span>,summary:`${o.ready} of ${o.total} ready · ${ps.slice(0,3).map(x=>`${x.person.name.split(' ')[0]} ${x.r.pct}%`).join(', ')}`,body:<>
+        <_CBars testid="dash-people" max={100} fmt={v=>`${v}%`} rows={ps.map(x=>({key:x.person.id,label:name(x),value:x.r.pct,col:_tState[x.r.state].col,lead:<TeamFace person={x.person} size={22}/>,tag:x.r.overdue?_cChip(T,`${x.r.overdue} overdue`,T.tone.bad):null,onClick:()=>open({view:'person',id:x.person.id})}))}/>
+        {_cNote(T,'The colour is their state: green ready, amber slipping, red not ready yet. Readiness comes only from drills, never from sales.')}</>},
+    learn:{title:TeamSales.has()?'Learn first: sells most, known least':'Wines the floor knows least',right:TeamSales.has()?<_CDemoTag/>:null,summary:(TeamSales.has()?pri:weak).slice(0,3).map(x=>TeamData.short(x.wine)).join(', ')||'Nothing to flag',body:<>
         {TeamSales.has()?(pri.length?<div data-testid="dash-priority">{pri.map(x=><_CRow key={x.wine.id} lead={_cWineLead(T,x.wine)} label={TeamData.short(x.wine)} value={`${x.qty} sold`} share={x.qty/topGlass} col={_tTypeCol(T,x.wine.type)} right={_cChip(T,`${x.knows} of ${x.of} know it`,x.knows<Math.ceil(x.of/2)?T.tone.bad:T.amber)} onClick={()=>open({view:'wine',id:x.wine.id})}/>)}</div>:<div style={{fontSize:14,color:T.green,fontFamily:C.P}}>Everything that sells is known by everyone who sells it.</div>)
           :<div data-testid="dash-weak">{weak.map(x=><_CRow key={x.wine.id} lead={_cWineLead(T,x.wine)} label={TeamData.short(x.wine)} value={_cPct(x.share)} share={x.share} col={_tTypeCol(T,x.wine.type)} sub={`${x.knows} of ${x.of} who sell it know it`} onClick={()=>open({view:'wine',id:x.wine.id})}/>)}</div>}
-        {_cNote(T,TeamSales.has()?'Bars are how much sold in 28 nights, in the wine\'s colour; the chip is how many of its sellers know it. Sales set the order the team learns in, never whether anyone is ready.':'Connect the till or import a sales file and this becomes what sells most and is known least.')}</Card>
-      <Card>{_cLabel(T,'New on the list',<span style={{fontSize:11,color:T.mid,fontFamily:C.P,textTransform:'none',letterSpacing:0,fontWeight:500}}>last 30 days</span>)}
+        {_cNote(T,TeamSales.has()?'Bars are how much sold in 28 nights, in the wine\'s colour; the chip is how many of its sellers know it. Sales set the order the team learns in, never whether anyone is ready.':'Connect the till or import a sales file and this becomes what sells most and is known least.')}</>},
+    new:{title:'New on the list',right:<span style={{fontSize:11,color:T.mid,fontFamily:C.P,textTransform:'none',letterSpacing:0,fontWeight:500}}>last 30 days</span>,summary:`${o.adoption.length} new in 30 days · ${o.coverage.glass.covered} of ${o.coverage.glass.total} glass wines covered`,body:<>
         {o.adoption.length?<div>{o.adoption.map(a=><_CRow key={a.wine.id} testid="dash-adoption" lead={_cWineLead(T,a.wine)} label={TeamData.short(a.wine)} value={`${a.knows} of ${a.of}`} share={a.of?a.knows/a.of:0} col={_tTypeCol(T,a.wine.type)} right={_cChip(T,`${a.days}d on the list`,_cGrey)} sub={a.knows<a.of?`${a.of-a.knows} of the people who sell it still to learn it`:'everyone who sells it knows it'} onClick={()=>open({view:'wine',id:a.wine.id})}/>)}</div>
           :<div style={{fontSize:14,color:T.mid,fontFamily:C.P}}>Nothing published in the last 30 days.</div>}
         {_cSub(T,'Coverage')}
         <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>{[['By the glass',o.coverage.glass],['Bottles',o.coverage.bottle]].map(([l,c])=>{ const share=c.total?c.covered/c.total:0, col=share>=0.8?T.green:share>=0.5?T.amber:T.tone.bad; return <div key={l}><div style={{display:'flex',justifyContent:'space-between',fontSize:13,fontFamily:C.P,color:T.ink2}}><span>{l}</span><span style={{fontWeight:700,color:T.ink}}>{c.covered} <span style={{color:T.mid,fontWeight:400}}>of {c.total}</span></span></div><Prog val={share} col={col} h={8} style={{marginTop:6}}/></div>; })}</div>
         {o.coverage.holes.length>0&&<div style={{marginTop:10}}>{o.coverage.holes.slice(0,5).map(h=><_CRow key={h.wine.id} lead={_cWineLead(T,h.wine)} label={TeamData.short(h.wine)} right={_cChip(T,`${h.knows} of ${h.of} know it`,T.tone.bad)} onClick={()=>open({view:'wine',id:h.wine.id})}/>)}</div>}
         {_cNote(T,'A wine is covered when at least half the people who sell it, and at least two, know it. The red chips are by-the-glass wines under that.')}
-      </Card>
+      </>},
+    ...(cov.length?{cocktails:{title:'Cocktails',summary:`${covOk} of ${cov.length} known by enough of the floor`,body:<div data-testid="dash-cocktails">
+      {[...cov].sort((a,b)=>(a.knows/(a.of||1))-(b.knows/(b.of||1))).slice(0,5).map(c=><_CRow key={c.cocktail.id} lead={<span style={{width:8,height:8,borderRadius:4,background:_tMixCol(T),display:'inline-block'}}/>} label={c.cocktail.name} value={`${c.knows} of ${c.of}`} share={c.of?c.knows/c.of:0} col={_tMixCol(T)} onClick={()=>open({view:'cocktail',id:c.cocktail.id})}/>)}
+      {_cNote(T,'The cocktails the fewest people know, first. Open Cocktails for the whole bar.')}</div>}}:{}),
+  };
+  const ids=_DASH_DEFAULT.filter(k=>cards[k]), lay=TeamLayout.get(pid,ids);
+  const move=(id,to)=>{ TeamLayout.move(pid,ids,id,to); bump(); }, fold=id=>{ TeamLayout.toggle(pid,ids,id); bump(); };
+  const small=(label,onClick,testid,disabled)=><span role="button" aria-label={label} data-testid={testid} onClick={disabled?undefined:onClick} style={{fontSize:12,fontWeight:700,color:disabled?T.line:T.ink2,fontFamily:C.P,cursor:disabled?'default':'pointer',padding:'3px 8px',borderRadius:8,border:`1px solid ${T.line}`}}>{label}</span>;
+  return <div data-testid="console-dash">
+    {_cH(T,'Dashboard',`${TeamData.get().venue.name||'Your restaurant'} · ${TeamData.wines().length} wines, ${TeamData.dishes().length} dishes · ${o.total} people training`,
+      <div style={{display:'flex',gap:8}}>{edit&&<span role="button" data-testid="dash-reset" onClick={()=>{ TeamLayout.reset(pid); bump(); }} style={{fontSize:13,fontWeight:700,color:T.mid,fontFamily:C.P,cursor:'pointer',padding:'6px 10px'}}>Reset</span>}
+        <span role="button" data-testid="dash-edit" aria-pressed={edit} onClick={()=>setEdit(e=>!e)} style={{fontSize:13,fontWeight:700,color:edit?T.ink:cr,fontFamily:C.P,cursor:'pointer',padding:'6px 12px',borderRadius:10,border:`1px solid ${edit?cr:T.line}`,background:edit?_alpha(cr,0.18):'transparent'}}>{edit?'Done':'Edit layout'}</span></div>)}
+    {edit&&<div style={{fontSize:13,color:T.mid,fontFamily:C.P,margin:'-4px 0 12px'}}>Drag a card by its handle, or use the arrows, to put what matters most to you at the top. Your layout is kept on this device.</div>}
+    <div style={{display:'grid',gridTemplateColumns:`repeat(${cols},minmax(0,1fr))`,gap:14,alignItems:'start'}}>
+      {lay.order.map((id,i)=>{ const c=cards[id], folded=lay.folded.has(id);
+        return <div key={id} data-testid="dash-card" data-card={id} draggable={edit} onDragStart={e=>{ setDrag(id); try{ e.dataTransfer.effectAllowed='move'; e.dataTransfer.setData('text/plain',id); }catch(x){} }} onDragEnd={()=>setDrag(null)}
+          onDragOver={e=>{ if(edit&&drag&&drag!==id) e.preventDefault(); }} onDrop={e=>{ e.preventDefault(); if(drag&&drag!==id) move(drag,i); setDrag(null); }}
+          style={{gridColumn:c.wide&&cols>1?'1 / -1':undefined,opacity:drag===id?0.5:1,outline:edit?`1px dashed ${drag&&drag!==id?cr:T.line}`:'none',outlineOffset:4,borderRadius:18}}>
+          <Card>
+            <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:folded?0:10}}>
+              {edit&&<span aria-hidden="true" style={{cursor:'grab',color:T.mid,fontSize:16,letterSpacing:-2,userSelect:'none'}}>⋮⋮</span>}
+              <div role="button" data-testid={'dash-fold-'+id} aria-expanded={!folded} onClick={()=>fold(id)} style={{flex:1,minWidth:0,display:'flex',alignItems:'center',gap:8,cursor:'pointer'}}>
+                <span style={{fontSize:12,fontWeight:700,color:T.ink,fontFamily:C.P,letterSpacing:'0.08em',textTransform:'uppercase'}}>{c.title}</span>
+                <span style={{color:T.mid,fontSize:12,transform:folded?'rotate(-90deg)':'none',transition:'transform .15s'}}>▾</span></div>
+              {!edit&&!folded&&c.right}
+              {edit&&<div style={{display:'flex',gap:6}}>{small('↑',()=>move(id,i-1),'dash-up-'+id,i===0)}{small('↓',()=>move(id,i+1),'dash-down-'+id,i===lay.order.length-1)}{small('Top',()=>move(id,0),'dash-top-'+id,i===0)}</div>}
+            </div>
+            {folded?<div data-testid="dash-summary" style={{fontSize:13,color:T.mid,fontFamily:C.P,marginTop:6,lineHeight:1.45}}>{c.summary}</div>:c.body}
+          </Card></div>; })}
     </div>
-    {sales&&<_CSales open={open} setSection={setSection} sales={sales} demo={demo}/>}
-    {!TeamSales.has()&&<Card style={{marginTop:14}}><div style={{fontSize:14,color:T.ink2,fontFamily:C.P,lineHeight:1.5}}>No sales yet. <span role="button" onClick={()=>setSection('pos')} style={{color:cr,fontWeight:700,cursor:'pointer'}}>Connect the till or import a sales file</span> and the dashboard adds what sells, who sells it, and what trained servers sell that untrained ones don't.</div></Card>}
+  </div>; }
+/* One line of the sales briefing: a dot in its tone, the headline, the sentence; a tap opens what it's about. */
+function _CBrief({b,open}){ const T=useTheme(), col=b.tone==='good'?T.green:b.tone==='bad'?T.tone.bad:T.amber;
+  return <div role={b.open?'button':undefined} data-testid="sales-brief" data-tone={b.tone} onClick={b.open?()=>open(b.open):undefined} style={{display:'flex',gap:10,padding:'9px 0',borderTop:`1px solid ${T.line}`,cursor:b.open?'pointer':'default'}}>
+    <span style={{width:9,height:9,borderRadius:5,background:col,flexShrink:0,marginTop:6}}/>
+    <div style={{minWidth:0,flex:1}}><div style={{fontSize:14,fontWeight:700,color:T.ink,fontFamily:C.P,lineHeight:1.35}}>{b.title}</div><div style={{fontSize:13,color:T.ink2,fontFamily:C.P,lineHeight:1.45,marginTop:2}}>{b.text}</div></div>
+    {b.open&&<Icon n="chevron" sz={12} col={T.mid}/>}</div>; }
+/* Sales Insights: what a manager needs to know first, in sentences, then the detail from the till. */
+function _CSalesTab({open,setSection}){ const T=useTheme(), cr=T.lift(C.cr), sales=TeamReport.salesSummary(7), brief=TeamReport.salesBrief(), demo=TeamSales.demo();
+  return <div data-testid="console-sales-tab">{_cH(T,'Sales Insights',sales?`${demo?'Demo data':(TeamSales.source()||{}).label||'From the till'} · the last 7 nights against the 7 before, and 28 nights of detail`:'Connect the till to see what sells')}
+    {!sales?<Card><div style={{fontSize:14,color:T.ink2,fontFamily:C.P,lineHeight:1.5}}>No sales yet. <span role="button" onClick={()=>setSection('pos')} style={{color:cr,fontWeight:700,cursor:'pointer'}}>Connect the till or import a sales file</span> and this shows what sells, who sells it and what training is worth.</div></Card>
+    :<><Card>{_cLabel(T,'What you need to know',<_CDemoTag/>)}<div data-testid="sales-brief-list">{brief.map(b=><_CBrief key={b.k} b={b} open={open}/>)}</div>
+        {_cNote(T,'Sales set what the team learns first and what you see here; they never change anyone\'s readiness.')}</Card>
+      <_CSales open={open} setSection={setSection} sales={sales} demo={demo}/></>}
   </div>; }
 /* The sales row of the dashboard: this week against last, the trend, what sells, who sells, trained against untrained, slow movers, new on the till. One toggle (revenue, glasses, bottles) drives the week chart and the people bars. */
 function _CSales({open,setSection,sales,demo}){ const T=useTheme(), cr=T.lift(C.cr), size=useLayoutSize(), cols=size==='roomy'?2:1;
