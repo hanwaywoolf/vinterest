@@ -20,6 +20,10 @@ const TeamLearn = {
   KEY:'vbiz_team_v1', PROGRESS:'vbiz_learn_v1',
   DAY:86400000, MAX_DAYS:60, RETAIN:0.9, DRILL_SIZE:5, CHECK_SHARE:0.1, PASS:0.67,
   LADDER:['recognise','recall','apply','contrast'],
+  // Who runs the wine programme: they get the management console on a tablet or laptop, Upload and Team on the
+  // phone, the team figures on Today, and may edit what to say on a card. Everyone else gets the training app.
+  MANAGES:['manager','buyer','sommelier'],
+  manages(role){ return this.MANAGES.includes(role); },
   ROLES:{
     server:{label:'Server',kinds:['recognise','recall','apply'],need:{glass:0.8,bottle:0.6,dishes:0.8,cocktails:0.5}},
     bartender:{label:'Bartender',kinds:['recognise','recall','apply'],cocktailKinds:['recognise','recall','apply','contrast'],need:{glass:0.9,bottle:0,dishes:0.5,cocktails:0.9}},

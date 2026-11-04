@@ -229,13 +229,13 @@ much; it's written once at publish, so for a 40-wine list that's a few dollars.
 
 The phone is for the person learning. A manager wants the whole floor at once, so the same `/team/`
 app lays itself out as a console on a tablet or a laptop browser from 768px (`useLayoutSize`, the
-consumer app's iPad rule): a manager or buyer gets it, staff keep the phone app whatever the screen,
+consumer app's iPad rule): a manager, buyer or sommelier (whoever runs the wine programme) gets it, staff keep the phone app whatever the screen,
 and `?view=console` forces it on a narrow window so it can be checked on a phone. One build, one store:
 every figure on it is a function in `TeamReport` (`team-report.js`) over `TeamLearn`, `TeamData` and
 `TeamSales`; the screens (`team-console.jsx`) compute nothing. Every number opens the people or wines
 behind it in a drawer (a wine's card, a dish's pairings, a person's ladder). "Train on the phone view"
 in the sidebar shows the phone app inside the console (for a drill as someone), and Console brings it
-back. The phone's Today, for a manager or buyer, carries a strip of the figures that matter on the move
+back. The phone's Today, for a manager, buyer or sommelier, carries a strip of the figures that matter on the move
 (`TeamKpiStrip`: team readiness, overdue, slipping, new on the list, this week's wine sales), each
 tapping through to Team.
 

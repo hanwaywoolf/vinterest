@@ -1390,3 +1390,18 @@ test('the console dashboard folds and reorders, and remembers it', async ({ brow
   await expect(page.locator('[data-card="people"]').getByTestId('dash-summary')).toHaveCount(0);
   await ctx.close();
 });
+
+test('the sommelier runs the wine programme too: the console on a wide screen, Upload and Team on the phone', async ({ browser }) => {
+  const ctx = await browser.newContext({ viewport: { width: 1280, height: 800 } });
+  const page = await ctx.newPage();
+  await stubNetwork(ctx);
+  await page.goto(`${BASE}/team/?seed=demo`);
+  await page.evaluate(() => { TeamLearn.setMe(TeamLearn.people().find((p) => p.role === 'sommelier').id); });
+  await page.reload();
+  await expect(page.getByTestId('team-console')).toBeVisible();
+  await page.goto(`${BASE}/team/?view=phone`);
+  await expect(page.getByTestId('team-tab-upload')).toBeVisible();
+  await expect(page.getByTestId('team-tab-team')).toBeVisible();
+  expect(await page.evaluate(() => [TeamLearn.manages('sommelier'), TeamLearn.manages('server'), TeamLearn.manages('bartender')])).toEqual([true, false, false]);
+  await ctx.close();
+});

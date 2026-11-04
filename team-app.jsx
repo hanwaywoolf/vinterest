@@ -1,5 +1,5 @@
 /* The restaurant staff-training app's shell (docs/business.md): set-up on first run, then tabs for
-   the person training on this device (staff: Today, Wines, Menu; a manager or buyer also Upload and
+   the person training on this device (staff: Today, Wines, Menu; a manager, buyer or sommelier also Upload and
    Team), with detail views (a wine, a dish, the drill) pushed on top and Back popping them. Always
    on the dark stage. Booted instead of the consumer app's pwa-app.jsx (scripts/app-sources.mjs). */
 const TEAM_TABS=[
@@ -18,7 +18,7 @@ function TeamApp(){
   const scrollRef=React.useRef(null), posRef=React.useRef([]), pendRef=React.useRef(null);
   const scrollNow=()=>scrollRef.current?scrollRef.current.scrollTop:0;
   React.useLayoutEffect(()=>{ const el=scrollRef.current, to=pendRef.current; pendRef.current=null; if(el&&to!=null) el.scrollTop=to; },[tab,stack]);
-  // The management console (team-console.jsx): a manager or buyer on a tablet or laptop (768px+), or
+  // The management console (team-console.jsx): a manager, buyer or sommelier on a tablet or laptop (768px+), or
   // anyone with ?view=console (kept in the URL, so a reload keeps it); "Train on the phone view" shows
   // the phone app inside it, and the header's Console button comes back.
   // ?view=phone is the opposite: the phone app on any screen, for trying the staff's own view on a laptop or tablet.
@@ -36,7 +36,7 @@ function TeamApp(){
     // The Social Corner is a demo install: a device holding an older copy of its files takes the new one, with or without ?seed.
     if(!seed&&(TeamData.get().venue||{}).sample==='social'&&!TeamSample.current('social')){ TeamSample.load('social'); refresh(); } if(seed){ if(!TeamLearn.me()||!TeamSample.current(seed)) TeamSample.load(seed); q.delete('seed'); const rest=q.toString(); history.replaceState(null,'',location.pathname+(rest?'?'+rest:'')); refresh(); } }catch(e){} },[]);
   const me=TeamLearn.me(), set=!!me, brand=TeamData.brand();
-  const manager=me&&['manager','buyer'].includes(me.role);
+  const manager=me&&TeamLearn.manages(me.role);
   const tabs=TEAM_TABS.filter(t=>!t.manager||manager);
   const goTab=k=>{ posRef.current=[]; pendRef.current=0; setTab(k); setStack([]); };
   const open=v=>{ if(v.tab){ goTab(v.tab); return; } posRef.current[stack.length]=scrollNow(); pendRef.current=0; setStack(s=>[...s,v]); };
@@ -68,7 +68,7 @@ function TeamApp(){
         <div role="button" data-testid="team-who" aria-label={`${me.name}, ${TeamLearn.ROLES[me.role].label}. Switch person`} onClick={()=>setSwitching(x=>!x)} style={{display:'flex',alignItems:'center',gap:8,padding:size==='phone'?2:'4px 10px 4px 4px',borderRadius:18,border:`1px solid ${T.line}`,fontSize:13,fontFamily:C.P,color:T.ink2,cursor:'pointer',flexShrink:0}}><TeamFace person={me} size={28}/>{size!=='phone'&&<>{me.name.split(' ')[0]} · {TeamLearn.ROLES[me.role].label}</>}</div>
       </div>}
       {switching&&<div style={{padding:'8px 16px',borderBottom:`1px solid ${T.line}`,display:'flex',gap:6,flexWrap:'wrap'}}>
-        {TeamLearn.people().map(p=><div key={p.id} role="button" onClick={()=>{ TeamLearn.setMe(p.id); setSwitching(false); setStack([]); if(!['manager','buyer'].includes(p.role)&&['upload','team'].includes(tab)) setTab('today'); refresh(); }} style={{display:'flex',alignItems:'center',gap:6,padding:'4px 10px 4px 4px',borderRadius:16,border:`1px solid ${p.id===me.id?cr:T.line}`,fontSize:13,fontFamily:C.P,color:T.ink,cursor:'pointer'}}><TeamFace person={p} size={24}/>{p.name.split(' ')[0]} · {TeamLearn.ROLES[p.role].label}</div>)}
+        {TeamLearn.people().map(p=><div key={p.id} role="button" onClick={()=>{ TeamLearn.setMe(p.id); setSwitching(false); setStack([]); if(!TeamLearn.manages(p.role)&&['upload','team'].includes(tab)) setTab('today'); refresh(); }} style={{display:'flex',alignItems:'center',gap:6,padding:'4px 10px 4px 4px',borderRadius:16,border:`1px solid ${p.id===me.id?cr:T.line}`,fontSize:13,fontFamily:C.P,color:T.ink,cursor:'pointer'}}><TeamFace person={p} size={24}/>{p.name.split(' ')[0]} · {TeamLearn.ROLES[p.role].label}</div>)}
         <div role="button" onClick={()=>{ if(confirm('Change restaurant? This clears this restaurant and everyone\'s training on this device, and goes back to the start.')){ TeamData.reset(); Store.remove(TeamLearn.KEY); TeamLearn.resetProgress(); if(typeof TeamSales!=='undefined') TeamSales.clear(); setSwitching(false); setStack([]); setTab('today'); refresh(); } }} data-testid="team-change-restaurant" style={{padding:'4px 12px',borderRadius:16,border:`1px solid ${T.line}`,fontSize:13,fontFamily:C.P,color:T.ink2,cursor:'pointer'}}>Change restaurant</div>
       </div>}
       <div ref={scrollRef} data-scroll style={{flex:1,overflowY:'auto',padding:'16px 16px 24px'}}><div style={{maxWidth:720,margin:'0 auto'}}>{set&&<TeamJobChip onOpen={()=>{ if(manager){ setTab('upload'); setStack([]); } }}/>}<ScreenErrorBoundary>{body}</ScreenErrorBoundary></div></div>

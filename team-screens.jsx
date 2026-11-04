@@ -108,7 +108,7 @@ function TeamToday({pid,open}){ const T=useTheme(), cr=T.lift(C.cr);
   return <div>
     <div style={{display:'flex',alignItems:'center',gap:14,marginBottom:12}}><TeamFace person={person} size={64} ring={st.col}/>
       <div><div style={{fontSize:22,fontWeight:800,color:T.ink,fontFamily:C.P,lineHeight:1.2}}>Hi {person.name.split(' ')[0]}</div><div style={{fontSize:14,color:T.mid,fontFamily:C.P,marginTop:3}}>{TeamLearn.ROLES[person.role].label} at {TeamData.get().venue.name||'your restaurant'}</div></div></div>
-    {!empty&&['manager','buyer'].includes(person.role)&&<TeamKpiStrip open={open}/>}
+    {!empty&&TeamLearn.manages(person.role)&&<TeamKpiStrip open={open}/>}
     {empty?<Card><div style={{fontSize:15,color:T.ink2,fontFamily:C.P,lineHeight:1.5}}>No wine list yet. {TeamLearn.ROLES[person.role].label==='Manager'||person.role==='buyer'?'Upload it from the Upload tab and your training is written from it.':'Your manager uploads it, then your training appears here.'}</div></Card>:<>
     <Card style={{display:'flex',gap:14,alignItems:'center'}}>
       <TeamRing pct={r.pct} col={st.col}/>
@@ -323,7 +323,7 @@ function TeamWine({id,pid,open,manage}){ const T=useTheme(), w=TeamData.wine(id)
   const [editing,setEditing]=React.useState(false), [pitch,setPitch]=React.useState('');
   // No card yet: nothing on this screen writes one by itself. A manager writes this one here; anyone
   // else is told who does. A failed write says so, never a wait that doesn't end.
-  const me=TeamLearn.person?TeamLearn.person(pid):null, manager=me&&['manager','buyer'].includes(me.role);
+  const me=TeamLearn.person?TeamLearn.person(pid):null, manager=me&&TeamLearn.manages(me.role);
   const [busy,setBusy]=React.useState(false), [err,setErr]=React.useState(''), [,bump]=React.useReducer(x=>x+1,0);
   const writeIt=async()=>{ setBusy(true); setErr(''); try{ await TeamData.writeCards([id]); if(w.vintage&&!w.peak) await TeamData.writeWindows([id]); }catch(x){ setErr(x.message||'Stopped.'); } setBusy(false); bump(); };
   if(!w) return null; const col=_tTypeCol(T,w.type);
