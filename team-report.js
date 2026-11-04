@@ -85,6 +85,12 @@ const TeamReport = {
   priority(days=28,n=6){ const sold=Object.fromEntries(this.salesByWine(days).map(x=>[x.id,x]));
     return TeamData.wines().map(w=>{ const s=sold[w.id], sel=this._sellers(w), gap=sel.of?1-sel.knows/sel.of:0; return {wine:w,qty:s?s.qty:0,...sel,gap,score:(s?s.qty:0)*(0.25+gap)}; })
       .filter(x=>x.gap>0&&x.qty>0).sort((a,b)=>b.score-a.score).slice(0,n); },
+  /* What one wine sells here, for the drill's summary: {perWeek, glasses, bottles, demo} over the last 28 nights, or null. */
+  sells(wineId,days=28){ if(!TeamSales.has()) return null; const x=this.salesByWine(days).find(y=>y.id===wineId); if(!x||!x.qty) return null;
+    const weeks=Math.max(1,TeamSales.nights(days).length/7); return {perWeek:x.qty/weeks,glasses:x.glasses/weeks,bottles:x.bottles/weeks,revenue:x.revenue/weeks,demo:TeamSales.demo()}; },
+  sellsLine(wineId){ const s=this.sells(wineId); if(!s) return ''; const w=TeamData.wine(wineId); if(!w) return '';
+    const g=Math.round(s.glasses), b=Math.round(s.bottles), bits=[g&&`${g} glass${g===1?'':'es'}`,b&&`${b} bottle${b===1?'':'s'}`].filter(Boolean);
+    return bits.length?`The ${TeamData.nick(w)} sells ${bits.join(' and ')} a week here${s.demo?' (demo data)':''}.`:''; },
   /* Weekly wine revenue, oldest first, for the sparkline. */
   weeklyTrend(weeks=8){ const rows=TeamSales.rows(0), now=Date.now(), out=[];
     for(let i=weeks-1;i>=0;i--){ const to=now-i*7*this.DAY, from=to-7*this.DAY, rs=rows.filter(r=>r.t>=from&&r.t<to), s=this._sum(rs); out.push({from,to,...s}); }

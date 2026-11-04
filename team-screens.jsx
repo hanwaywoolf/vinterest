@@ -167,6 +167,8 @@ function TeamDrill({pid,only,part,given,intro,back,open}){ const T=useTheme(), c
   const rootRef=React.useRef(null);
   React.useLayoutEffect(()=>{ const el=rootRef.current&&rootRef.current.closest('[data-scroll]'); if(el&&i>0) el.scrollTop=0; },[i]);
   const [res,setRes]=React.useState(null), [busy,setBusy]=React.useState(false), [tally,setTally]=React.useState({right:0,of:0});
+  const rightRef=React.useRef([]); // the questions answered right in this drill, for the summary's words
+  const [how,setHow]=React.useState(false);
   // Answering is the consumer quiz's phases on one screen: `q` (the options), `reveal` (the picks turn green or red,
   // the right ones shown), `leaving` (the options slide away one after another) and `feedback` (the question steps
   // down and the answer and its context rise in their place). Reduced motion goes straight to the answer; tests run
@@ -181,19 +183,29 @@ function TeamDrill({pid,only,part,given,intro,back,open}){ const T=useTheme(), c
   const daily=!given&&!only&&!part, marked=React.useRef(false);
   React.useEffect(()=>{ if(!q&&qs.length&&daily&&!marked.current){ marked.current=true; TeamLearn.drillDone(pid,tally.right,tally.of); } },[q]);
   if(!qs.length) return <div>{_tH(T,'Nothing to drill yet','Your training appears once the wine list has staff cards.')}<Btn full onClick={back}>Back</Btn></div>;
-  if(!q){ const r=TeamLearn.note(pid), rise=r.pct-before.pct;
+  if(!q){ const r=TeamLearn.note(pid), rise=r.pct-before.pct, right=rightRef.current;
     const rows=Object.entries(before.items).map(([id,was])=>{ const mix=TeamLearn.isCocktail(id), dish=!mix&&!qs.some(x=>x.wine===id), now=TeamLearn.progress(pid,id,{dish}), name=mix?(TeamData.cocktail(id)||{}).name:dish?(TeamData.dish(id)||{}).name:TeamData.short(TeamData.wine(id)||{}); return {id,name,was,now,dish,mix}; });
-    return <div ref={rootRef} data-testid="drill-done">{_tH(T,`${tally.right} of ${tally.of} right`,'Each answer now has its own review date: the ones you missed come back soonest.')}
+    // The summary says the result in words (what they now know, when it comes back), then the figures; the mechanism waits behind a tap.
+    const known=TeamLearn.knownLine(right), when=TeamLearn.comesBack(pid,right);
+    // One line on what the wine they drilled is worth here, from the till: the drilled wine that sells most.
+    const sells=(()=>{ try{ const ids=[...new Set(qs.map(x=>x.wine).filter(Boolean))]; const best=ids.map(id=>({id,s:TeamReport.sells(id)})).filter(x=>x.s).sort((a,b)=>b.s.perWeek-a.s.perWeek)[0]; return best?TeamReport.sellsLine(best.id):''; }catch(e){ return ''; } })();
+    return <div ref={rootRef} data-testid="drill-done">{_tH(T,`${tally.right} of ${tally.of} right`,known||(tally.of?'Not this time. The ones you missed come back soonest.':''))}
+      {(when||sells)&&<Card style={{marginBottom:10}}>
+        {when&&<div data-testid="drill-when" style={{fontSize:16,color:T.ink,fontFamily:C.P,lineHeight:1.45}}>{when}</div>}
+        {sells&&<div data-testid="drill-sells" style={{fontSize:15,color:T.ink2,fontFamily:C.P,lineHeight:1.45,marginTop:when?8:0}}>{sells}</div>}
+      </Card>}
       <Card>
-        <div style={{display:'flex',gap:14,alignItems:'center'}}><TeamRing pct={r.pct} col={_tState[r.state].col} size={72}/>
+        <div style={{display:'flex',gap:14,alignItems:'center'}}><TeamRing pct={r.pct} col={_tState[r.state].col} size={64}/>
           <div><div data-testid="drill-readiness" style={{fontSize:15,fontWeight:700,color:_tState[r.state].col,fontFamily:C.P}}>{_tState[r.state].label}</div>
-            <div style={{fontSize:14,color:T.ink2,fontFamily:C.P,marginTop:2}}>Readiness {before.pct}% → {r.pct}%{rise>0?<span style={{color:'#5FD48F',fontWeight:700}}> ▲{rise}</span>:rise<0?<span style={{color:'#F28B7D',fontWeight:700}}> ▼{-rise}</span>:' · no change'}</div></div></div>
-        <div style={{fontSize:14,color:T.mid,fontFamily:C.P,marginTop:10,lineHeight:1.45}}>Every answer you hold counts a little; a wine counts in full for the minimum once every rung is right and still fresh.</div>
+            <div style={{fontSize:15,color:T.ink2,fontFamily:C.P,marginTop:2}}>Readiness {before.pct}% → {r.pct}%{rise>0?<span style={{color:'#5FD48F',fontWeight:700}}> ▲{rise}</span>:rise<0?<span style={{color:'#F28B7D',fontWeight:700}}> ▼{-rise}</span>:' · no change'}</div></div></div>
+        <div role="button" data-testid="drill-how" onClick={()=>setHow(x=>!x)} style={{fontSize:14,fontWeight:600,color:T.lift(C.cr),fontFamily:C.P,marginTop:10,cursor:'pointer'}}>{how?'Less':'How this works ›'}</div>
+        {how&&<div style={{fontSize:14,color:T.mid,fontFamily:C.P,marginTop:6,lineHeight:1.45}}>Each answer has its own review date: the ones you miss come back soonest, and the ones you hold come back later each time. Every answer you hold counts a little toward readiness; a wine counts in full for the minimum once every rung is right and still fresh.</div>}
       </Card>
-      {_tLabel(T,'In this drill')}<div style={{fontSize:14,color:T.mid,fontFamily:C.P,margin:'-4px 0 8px'}}>Tap a wine or dish to open its card and keep going.</div>
-      <Card style={{padding:0}}>{rows.map((x,k)=><div key={x.id} data-testid="drill-item" role={open?'button':undefined} onClick={()=>open&&open({view:x.mix?'cocktail':x.dish?'dish':'wine',id:x.id})} style={{padding:'10px 14px',borderTop:k?`1px solid ${T.line}`:'none',cursor:open?'pointer':'default'}}>
-        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:10,fontSize:15,fontFamily:C.P,color:T.ink}}><span style={{fontWeight:700,minWidth:0}}>{x.name}</span><span style={{display:'flex',alignItems:'center',gap:8,flexShrink:0}}><span style={{color:x.now.known>x.was.known?'#5FD48F':T.ink2,whiteSpace:'nowrap'}}>{x.now.known} of {x.now.total}{x.now.known>x.was.known?` ▲${x.now.known-x.was.known}`:x.now.known<x.was.known?` ▼${x.was.known-x.now.known}`:''}</span>{open&&<Icon n="chevron" sz={12} col={T.mid}/>}</span></div>
-        {x.now.rungs.length>0&&<div style={{display:'flex',gap:6,flexWrap:'wrap',marginTop:6}}>{x.now.rungs.map(rg=><span key={rg.k} style={{fontSize:14,fontFamily:C.P,padding:'3px 8px',borderRadius:8,border:`1px solid ${rg.done?'#5FD48F':T.line}`,color:rg.done?'#5FD48F':T.mid}}>{rg.done?'✓ ':''}{rg.label}</span>)}</div>}
+      {_tLabel(T,'In this drill')}
+      <Card style={{padding:0}}>{rows.map((x,k)=><div key={x.id} data-testid="drill-item" role={open?'button':undefined} onClick={()=>open&&open({view:x.mix?'cocktail':x.dish?'dish':'wine',id:x.id})} style={{padding:'11px 14px',borderTop:k?`1px solid ${T.line}`:'none',cursor:open?'pointer':'default'}}>
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:10,fontSize:16,fontFamily:C.P,color:T.ink}}><span style={{fontWeight:700,minWidth:0}}>{x.name}</span><span style={{display:'flex',alignItems:'center',gap:8,flexShrink:0}}><span style={{color:x.now.known>x.was.known?'#5FD48F':T.ink2,whiteSpace:'nowrap',fontSize:15}}>{x.now.known} of {x.now.total}{x.now.known>x.was.known?` ▲${x.now.known-x.was.known}`:x.now.known<x.was.known?` ▼${x.was.known-x.now.known}`:''}</span>{open&&<Icon n="chevron" sz={12} col={T.mid}/>}</span></div>
+        {/* The rungs as one line of dots with their names, lit where held: a quarter of the space the chips took. */}
+        {x.now.rungs.length>0&&<div style={{display:'flex',gap:12,flexWrap:'wrap',marginTop:5,fontSize:13,fontFamily:C.P,color:T.mid}}>{x.now.rungs.map(rg=><span key={rg.k} style={{display:'inline-flex',alignItems:'center',gap:5,color:rg.done?'#5FD48F':T.mid}}><span style={{width:8,height:8,borderRadius:4,background:rg.done?'#5FD48F':'transparent',border:`1.5px solid ${rg.done?'#5FD48F':T.line}`,display:'inline-block'}}/>{rg.label}</span>)}</div>}
       </div>)}</Card>
       <Btn primary full style={{marginTop:14}} onClick={back}>Done</Btn></div>; }
   const w=q.wine?TeamData.wine(q.wine):null, mix=q.cocktail?TeamData.cocktail(q.cocktail):null, multi=q.k!=='recognise'&&!q.mc, ch=multi?TeamLearn.choices(q):null;
@@ -204,6 +216,7 @@ function TeamDrill({pid,only,part,given,intro,back,open}){ const T=useTheme(), c
     setBusy(true); const g=multi?TeamLearn.gradeChoices(q,picks):await TeamLearn.grade(q,ans); setBusy(false);
     const asks=TeamLearn.asksConfidence(q), quick=Date.now()-shownAt.current<_T_QUICK_MS;
     if(!g.offline) TeamLearn.record(pid,q,g.ok,asks?sure:(g.ok&&quick?'sure':'think'));
+    if(g.ok) rightRef.current.push(q);
     setRes(g); setTally(t=>({right:t.right+(g.ok?1:0),of:t.of+1})); reveal(); };
   const next=()=>{ timers.current.forEach(clearTimeout); timers.current=[]; setI(i+1); setAns(null); setPicks([]); setRes(null); setSure('think'); setPhase('q'); shownAt.current=Date.now(); };
   const sp=_tQuizSpeed(), fb=phase==='feedback';

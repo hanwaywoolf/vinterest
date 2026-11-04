@@ -327,6 +327,27 @@ const TeamLearn = {
     return out.slice(0,size);
   },
 
+  /* The drill's summary in words (TeamDrill): what they now know from the answers they got right, as a sentence
+     ("You know the Lambrusco's grape and the Veuve Brut's price now"), and when the first of them comes back. The
+     mechanism (every answer has its own review date) stays behind a tap; the words are the result. */
+  _what(q){ const nm=q.wine?TeamData.nick(TeamData.wine(q.wine)||{}):q.cocktail?(TeamData.cocktail(q.cocktail)||{}).name:q.dish?(TeamData.dish(q.dish)||{}).name:'it';
+    if(q.dish) return `what to pour with the ${nm}`;
+    if(q.k==='recognise') return `what the ${nm} is like`;
+    if(q.k==='apply') return `what to say about the ${nm} at the table`;
+    if(q.k==='contrast') return `the ${nm} from its neighbour`;
+    if(q.k==='recall'||q.mc){ if(/[£$€]/.test(String(q.ans||''))) return `the ${nm}'s price`; const t=this._topic(q.q);
+      return t==='grape'?`the ${nm}'s grape`:t==='place'?`where the ${nm} is from`:t==='flavour'?`how the ${nm} tastes`:t==='duration'||t==='change'?`how the ${nm} ages`:t==='method'||t==='stopper'?`how the ${nm} is made`:`the ${nm}`; }
+    return `the ${nm}`; },
+  knownLine(right){ const ws=[...new Set(right.map(q=>this._what(q)))]; if(!ws.length) return '';
+    const head=ws.slice(0,3), rest=ws.length-head.length;
+    const join=head.length===1?head[0]:head.slice(0,-1).join(', ')+' and '+head[head.length-1];
+    return `You know ${join} now${rest?`, and ${rest} more`:''}.`; },
+  comesBack(pid,right,now=Date.now()){ const items=this._mine(this._all(),pid).items;
+    const dues=right.map(q=>items[q.id]&&items[q.id].due).filter(d=>d&&d>now).sort((a,b)=>a-b); if(!dues.length) return '';
+    const first=dues[0], days=Math.round((first-now)/this.DAY), same=dues.filter(d=>Math.round((d-now)/this.DAY)===days).length;
+    const when=days<=0?'later today':days===1?'tomorrow':days<7?`on ${new Date(first).toLocaleDateString(undefined,{weekday:'long'})}`:`in ${days} days`;
+    return `${same===1?'One of these comes':same===right.length?'They come':`${['','One','Two','Three','Four','Five'][same]||same} of these come`} back ${when}.`; },
+
   /* Marks a typed answer: locally when it plainly matches the answer or a wording that counts,
      else by Claude against the key (prompts/team-grade.txt). {ok, score, verdict, say, missing}. */
   _norm(s){ return String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[^a-z0-9 ]+/g,' ').replace(/\s+/g,' ').trim(); },
