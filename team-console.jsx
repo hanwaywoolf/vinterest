@@ -91,7 +91,7 @@ function TeamConsole({me,onPhone,refresh,section,setSection,open}){ const T=useT
       <div style={{display:'flex',alignItems:'center',gap:8,paddingTop:12,borderTop:`1px solid ${T.line}`}}><TeamFace person={me} size={30}/><div style={{minWidth:0}}><div style={{fontSize:13,fontWeight:600,color:T.ink,fontFamily:C.P,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{me.name}</div><div style={{fontSize:11,color:T.mid,fontFamily:C.P}}>{TeamLearn.ROLES[me.role].label}</div></div></div>
       <_CViewToggle phone={false} onPhone={()=>onPhone({tab:'today'})}/>
       {TeamData.brand()&&<div data-testid="console-powered" style={{display:'flex',alignItems:'center',gap:8,padding:'14px 2px 0'}}><span style={{fontSize:11,color:T.mid,fontFamily:C.P,whiteSpace:"nowrap"}}>Powered by</span><TeamLogo size={14}/></div>}
-      {TeamData.isDemo()&&<div style={{fontSize:11,color:T.mid,fontFamily:C.P,padding:'8px 2px 0',lineHeight:1.5}}>Management console · {venue.name||'The Larkspur'} demo</div>}</div>}
+</div>}
   </div>;
   const page=section==='team'?<_CTeam open={go} refresh={refresh}/>:section==='wines'?<_CWines open={go} goUpload={()=>setSection('upload')}/>:section==='cocktails'?<_CCocktails open={go}/>:section==='menu'?<_CMenu open={go} goUpload={()=>setSection('upload')}/>
     :section==='upload'?<_CUpload refresh={refresh}/>:section==='pos'?<_CPos open={go}/>:section==='admin'?<_CAdmin refresh={refresh}/>:section==='sales'?<_CSalesTab open={go} setSection={setSection}/>:<_CDash open={go} setSection={setSection} me={me}/>;
