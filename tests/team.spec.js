@@ -1343,3 +1343,15 @@ test('a spoken reply is written down by the server when it has speech to text', 
   expect(await page.evaluate(() => window.__local)).toBe(true);
   expect(errors.filter((e) => !/502/.test(e))).toEqual([]);
 });
+
+test('a dish has Say it too, speaking its own name slowly', async ({ context, page }) => {
+  await context.addInitScript(() => { window.__spoken = []; Object.defineProperty(window, 'speechSynthesis', { configurable: true, value: { speak(u) { window.__spoken.push([u.text, u.rate]); setTimeout(() => u.onend && u.onend(), 5); }, cancel() {}, getVoices() { return []; } } }); window.SpeechSynthesisUtterance = function (t) { this.text = t; }; });
+  const errors = await asMarco(context, page);
+  await page.getByTestId('team-tab-menu').click();
+  const name = await page.evaluate(() => TeamData.dishes()[0].name);
+  await page.getByText(name, { exact: true }).first().click();
+  await page.getByTestId('team-dish').getByTestId('team-say').click();
+  await expect.poll(() => page.evaluate(() => JSON.stringify(window.__spoken))).toContain(name);
+  expect(await page.evaluate((n) => window.__spoken.find((x) => x[0] === n)[1], name)).toBe(0.8);
+  expect(errors).toEqual([]);
+});

@@ -394,7 +394,11 @@ function TeamDish({id,open}){ const T=useTheme(), x=TeamData.dish(id), p=TeamDat
   const row=(b,i,label)=>{ const w=b&&TeamData.wine(b.id); return w&&<div key={label+i} role="button" onClick={()=>open({view:'wine',id:w.id})} style={{padding:'11px 14px',borderTop:i?`1px solid ${T.line}`:'none',cursor:'pointer'}}>
     <div style={{fontSize:15,fontWeight:600,color:T.ink,fontFamily:C.P,display:'flex',alignItems:'center',gap:6,flexWrap:'wrap'}}><Flag wine={w} size={14}/><span>{TeamData.short(w)}</span> <span style={{fontWeight:400,color:T.mid,fontSize:13}}>{[w.glass&&`glass ${w.glass}`,w.bottle&&`bottle ${w.bottle}`].filter(Boolean).join(' · ')}</span></div>
     <div style={{fontSize:14,color:T.ink2,fontFamily:C.P,lineHeight:1.45}}>{b.why}</div></div>; };
+  // Say it, as on a wine or cocktail: the dish's own name in the guest's voice, slowly, so Italian and French names
+  // on the menu (Insalata Verde di Casa, Charcutería & Formaggi) can be heard and copied.
   return <div data-testid="team-dish">{_tH(T,x.name,x.desc)}
+    <div data-testid="team-say" role="button" onClick={()=>{ TeamVoice.unlock(); TeamVoice.speak(x.name,{pace:'slow'}); }} style={{display:'inline-flex',alignItems:'center',gap:8,margin:'-4px 0 12px',padding:'6px 12px',borderRadius:14,border:`1px solid ${T.line}`,cursor:'pointer'}}>
+      <span style={{fontSize:14}}>🔊</span><span style={{fontSize:14,fontWeight:700,color:T.ink,fontFamily:C.P}}>Say it</span></div>
     {!p?<Card><div style={{fontSize:15,color:T.mid,fontFamily:C.P}}>Pairings are written once the wine list is uploaded.</div></Card>:<>
       {_tLabel(T,'Best with')}<Card style={{padding:0}}>{p.best.map((b,i)=>row(b,i,'b'))}</Card>
       {p.glass&&<>{_tLabel(T,'By the glass')}<Card style={{padding:0}}>{row(p.glass,0,'g')}</Card></>}
