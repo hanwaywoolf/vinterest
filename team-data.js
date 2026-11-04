@@ -413,7 +413,7 @@ const TeamSample = {
     const keep=(TeamData.get().venue||{}).sample===which&&TeamLearn.people().length>0;
     // The installed restaurant's own details (city, style, currency, brand) come with it; the list file is
     // where they're kept, so a training file exported later doesn't need to carry them.
-    const meta=which==='social'?(_loadJSON('data/team-social-list.json')||{}).venue||{}:{};
+    const meta=which==='social'?(_loadJSON('data/team-social-list.json')||{}).venue||{}:which==='demo'?(_loadJSON('data/team-demo-list.json')||{}).venue||{}:{};
     d.venue={...meta,name:s.venue.name,created:now,sample:which,seeded:this.stamp(which)}; // seeded: which copy of the files this is, so a newer build reloads it
     s.wines.forEach((w,i)=>{ d.wines[w.id]={...w,onList:true,order:i,addedAt:now-30*86400000}; });
     s.dishes.forEach((x,i)=>{ d.dishes[x.id]={...x,onMenu:true,order:i,addedAt:now}; });
@@ -460,8 +460,8 @@ const TeamSample = {
   /* Which copy of a seed's files this build carries: the training file's export time, and for The Social Corner
      the list file's `rev` too, since its team, cocktails and staff live there (a new team with the same training
      must still reload a device that opened the old one). */
-  stamp(which){ const s=this.file(which), base=(s&&s.exported)||null; if(which!=='social') return base;
-    const rev=(_loadJSON('data/team-social-list.json')||{}).rev||null; return base||rev?`${base||''}|${rev||''}`:null; },
+  stamp(which){ const s=this.file(which), base=(s&&s.exported)||null; if(which!=='social'&&which!=='demo') return base;
+    const rev=(which==='social'?_loadJSON('data/team-social-list.json'):_loadJSON('data/team-demo-list.json')||{}).rev||null; return base||rev?`${base||''}|${rev||''}`:null; },
   /* The demo's prepared new arrivals (data/team-demo-arrivals.json, photos in team/labels/): two real
      bottles whose label reading, staff card, pairings and drinking window were written once through
      the Worker, so "Add a wine from its label" can run with no network and in seconds. Live reading

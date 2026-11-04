@@ -143,10 +143,10 @@ const VENUE_HOSTS = { "socialcorner.vinterest.team": "social" };
 
 // The teams demo's own address (a custom domain on this Pages project, docs/site-setup.md): the team
 // app (dist/team/) served at its root, The Larkspur seeded on a first visit. Its script and photos
-// are relative (team.js, faces/, labels/), so they're read from /team/; fonts and icons are the
+// are relative (team.js, faces/, labels/, brand/), so they're read from /team/; fonts and icons are the
 // site's own, from the root. The API routes above answer as on any other address.
 const TEAM_DEMO_HOSTS = ["demo.vinterest.team"];
-const TEAM_DEMO_FILE = /^\/(team\.js$|faces\/|labels\/)/;
+const TEAM_DEMO_FILE = /^\/(team\.js$|faces\/|labels\/|brand\/)/;
 async function serveTeamDemo(request, url, env) {
   if (url.pathname === "/" && !url.search) return Response.redirect(`${url.origin}/?seed=demo`, 302);
   if (url.pathname.startsWith("/team/")) return Response.redirect(`${url.origin}${url.pathname.slice(5)}${url.search}`, 301);
