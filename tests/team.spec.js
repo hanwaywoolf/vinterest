@@ -1274,3 +1274,19 @@ test('a restaurant demo address names its restaurant, and nowhere else does', as
   await asMarco(context, page);
   expect(await page.evaluate(() => [TeamSample.hostSeed('socialcorner.vinterest.team'), TeamSample.hostSeed('SocialCorner.vinterest.team'), TeamSample.hostSeed('vinterest.pages.dev'), TeamSample.hostSeed()])).toEqual(['social', 'social', null, null]);
 });
+
+// Android Chrome sends every result as the whole utterance so far and repeats finals; the reply must come out once.
+test('a spoken reply comes out once, however the phone repeats its results', async ({ context, page }) => {
+  await asMarco(context, page);
+  const r = await page.evaluate(() => {
+    const said = "I'd suggest the Black Swift Curtain Vineyard Riesling, it's about 67 dollars a bottle and pairs nicely with the hint of sweetness";
+    const cum = said.split(' ').map((_, i, a) => a.slice(0, i + 1).join(' ')).filter((_, i) => i % 4 === 3);
+    const loop = Array(12).fill('it\'s about 67 dollars a bottle and pairs nicely with the hint of sweetness').join(' ');
+    return { android: TeamVoice.joinResults(cum.concat([said, said])), desktop: TeamVoice.joinResults(["I'd suggest the Riesling", "it's about 67 dollars a bottle"]),
+      loop: TeamVoice.dedupe('Black Swift ' + loop), real: TeamVoice.dedupe('Very very good, a good good wine') };
+  });
+  expect(r.android).toBe("I'd suggest the Black Swift Curtain Vineyard Riesling, it's about 67 dollars a bottle and pairs nicely with the hint of sweetness");
+  expect(r.desktop).toBe("I'd suggest the Riesling it's about 67 dollars a bottle");
+  expect(r.loop).toBe("Black Swift it's about 67 dollars a bottle and pairs nicely with the hint of sweetness");
+  expect(r.real).toBe('Very very good, a good good wine'); // short repeats people really say are left alone
+});

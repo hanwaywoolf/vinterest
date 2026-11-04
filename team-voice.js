@@ -83,7 +83,7 @@ const TeamVoice = {
      onWords(text) is called as words are heard. firstAt/lastAt are when the first and last words came, for pace. */
   listen({onWords}={}){
     const startedAt=Date.now(); let firstAt=0, lastAt=0, text='', finals='', done=null, stopped=false;
-    const heard=(t)=>{ const now=Date.now(); if(!firstAt&&t.trim()) firstAt=now; if(t.trim()) lastAt=now; text=t; onWords&&onWords(t); };
+    const heard=(t)=>{ t=this.dedupe(t); const now=Date.now(); if(!firstAt&&t.trim()) firstAt=now; if(t.trim()) lastAt=now; text=t; onWords&&onWords(t); };
     // When the words come back in one piece there's no last-word time, so the moment they stopped speaking counts.
     const finish=()=>({text:text.trim(),firstAt,lastAt:lastAt>firstAt?lastAt:(firstAt?Date.now():0),startedAt});
     const n=this.native().sr;
@@ -97,12 +97,31 @@ const TeamVoice = {
     }
     const SR=this._SR(); if(!SR) return {stop:async()=>finish(),unsupported:true};
     const rec=new SR(); rec.lang=this._lang(); rec.interimResults=true; rec.continuous=true; rec.maxAlternatives=1;
-    rec.onresult=e=>{ let interim=''; for(let i=e.resultIndex;i<e.results.length;i++){ const r=e.results[i]; if(r.isFinal) finals+=r[0].transcript+' '; else interim+=r[0].transcript; } heard((finals+interim).replace(/\s+/g,' ')); };
-    rec.onend=()=>{ if(done){ done(finish()); done=null; } else if(!stopped){ try{ rec.start(); }catch(e){} } };  // Chrome stops after a pause; keep listening until they tap
+    // Each event is read whole (every result of this session, rebuilt from scratch), never added onto the last: Android
+    // Chrome sends every result as the whole utterance so far and repeats finals, and summing them ("finals +=")
+    // filled the box with the same sentence twenty times over. A result that grows the one before replaces it.
+    let session='';
+    rec.onresult=e=>{ session=this.joinResults(Array.from(e.results).map(r=>r[0]&&r[0].transcript||'')); heard((finals+' '+session).replace(/\s+/g,' ').trim()); };
+    rec.onend=()=>{ finals=(finals+' '+session).trim(); session='';  // what this session heard is kept when Chrome restarts it
+      if(done){ done(finish()); done=null; } else if(!stopped){ try{ rec.start(); }catch(e){} } };  // Chrome stops after a pause; keep listening until they tap
     rec.onerror=()=>{};
     try{ rec.start(); }catch(e){}
     return {stop:()=>new Promise(res=>{ stopped=true; done=res; try{ rec.stop(); }catch(e){ res(finish()); } setTimeout(()=>{ if(done){ done(finish()); done=null; } },1500); })};
   },
+
+  /* The results of one recognition session as one line: a result that starts with (or repeats) what came before
+     replaces or is dropped rather than appended, so a recogniser that sends cumulative text doesn't duplicate it. */
+  joinResults(parts){ let acc=''; for(const raw of parts){ const t=String(raw||'').trim(); if(!t) continue; const a=this._norm(acc), b=this._norm(t);
+      if(!a||b.startsWith(a)) acc=t; else if(a.endsWith(b)||a.includes(b)) continue; else acc=acc+' '+t; }
+    return acc.trim(); },
+  /* Takes out a run of words said again straight after itself ("it's about 67 dollars a bottle it's about 67 dollars a
+     bottle"), longest first, so a recogniser's echo never reaches the guest or the delivery coaching. */
+  dedupe(text){ let w=String(text||'').split(/\s+/).filter(Boolean); if(w.length<6||w.length>600) return w.join(' ');
+    const n=x=>x.toLowerCase().replace(/[^a-z0-9']/g,'');
+    for(let changed=true;changed;){ changed=false;
+      outer: for(let k=Math.floor(w.length/2);k>=3;k--) for(let i=0;i+2*k<=w.length;i++){ let same=true; for(let j=0;j<k;j++) if(n(w[i+j])!==n(w[i+k+j])){ same=false; break; }
+          if(same){ w.splice(i+k,k); changed=true; break outer; } } }
+    return w.join(' '); },
 
   /* ── Delivery ── */
   _norm(s){ return String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[^a-z0-9' ]+/g,' ').replace(/\s+/g,' ').trim(); },
