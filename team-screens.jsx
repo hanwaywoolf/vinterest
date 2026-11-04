@@ -117,11 +117,12 @@ function TeamToday({pid,open}){ const T=useTheme(), cr=T.lift(C.cr);
       </div>
     </Card>
     <Card style={{marginTop:10}}>
-      {Object.entries(r.parts).map(([k,p])=><div key={k} data-testid="team-part" style={{marginBottom:12}}>
+      {Object.entries(r.parts).map(([k,p])=><div key={k} data-testid="team-part" style={{marginBottom:18}}>
         <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:8,fontSize:14,fontFamily:C.P,color:T.ink2}}><span style={{fontWeight:700,color:T.ink}}>{TeamLearn.PART_LABEL[k]}</span><span>{p.known} of {p.total} known · need {Math.round(p.need*100)}%</span></div>
         <div style={{position:'relative',marginTop:5}}><Prog val={p.partial} col={p.share>=p.need?'#5FD48F':cr} h={6}/><div style={{position:'absolute',left:`${p.need*100}%`,top:-3,width:2,height:12,background:T.ink,opacity:0.6}}/></div>
-        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginTop:6}}><span style={{fontSize:12,color:T.mid,fontFamily:C.P}}>{Math.round(p.partial*100)}% of the answers held</span>
-          <span role="button" data-testid="team-part-practise" onClick={()=>open({view:'drill',part:k})} style={{fontSize:13,fontWeight:700,color:cr,fontFamily:C.P,cursor:'pointer'}}>Practise {TeamLearn.PART_LABEL[k].toLowerCase()} →</span></div>
+        <div style={{fontSize:12,color:T.mid,fontFamily:C.P,marginTop:6}}>{Math.round(p.partial*100)}% of the answers held</div>
+        {/* A clear button per part: a green outline with white text, so practising one part is an obvious next step. */}
+        <div role="button" data-testid="team-part-practise" onClick={()=>open({view:'drill',part:k})} style={{display:'flex',alignItems:'center',justifyContent:'center',gap:8,marginTop:8,padding:'11px 14px',borderRadius:12,border:'1.5px solid #5FD48F',background:_alpha('#5FD48F',0.1),color:T.ink,fontSize:15,fontWeight:700,fontFamily:C.P,cursor:'pointer'}}>Practise {TeamLearn.PART_LABEL[k].toLowerCase()}<span style={{color:'#5FD48F'}}>→</span></div>
       </div>)}
       <div style={{fontSize:12,color:T.mid,fontFamily:C.P,lineHeight:1.45}}>A wine, dish or cocktail is known once every question on it is right and still fresh; the bar fills with every answer you hold.</div>
       {ret.asked>=3&&<div style={{fontSize:13,color:T.mid,fontFamily:C.P}}>Surprise re-checks this month: {ret.right} of {ret.asked} remembered.</div>}
