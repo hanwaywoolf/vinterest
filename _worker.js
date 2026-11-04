@@ -133,6 +133,12 @@ const ALLOWED_ORIGINS = [
 // docs/native-migration-spec.md section 6 depends on exercising those
 // previews, so they're allowed too.
 const PREVIEW_ORIGIN_RE = /^https:\/\/[a-z0-9-]+\.vinterest\.pages\.dev$/;
+// A restaurant's own demo address (socialcorner.vinterest.team): a custom domain on the vinterest Pages project,
+// whose staff app calls /claude and /tts like any other page of ours.
+const VENUE_ORIGIN_RE = /^https:\/\/[a-z0-9-]+\.vinterest\.team$/;
+// Which restaurant each of those addresses opens (TeamSample.hostSeed in team-data.js reads the same list):
+// its root goes straight to the staff app.
+const VENUE_HOSTS = { "socialcorner.vinterest.team": "social" };
 
 const MAX_BODY_BYTES = 6 * 1024 * 1024; // headroom above a 1024px-JPEG scan payload
 
@@ -145,6 +151,10 @@ const _rateLimitBuckets = new Map();
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
+    // A restaurant's demo address opens its staff app, not the consumer app.
+    if (VENUE_HOSTS[url.hostname] && (url.pathname === "/" || url.pathname === "/index.html")) {
+      return Response.redirect(new URL("/team/" + url.search, url).toString(), 302);
+    }
     if (url.pathname === "/me") {
       if (request.method === "OPTIONS") return cors(new Response(null, { status: 204 }));
       if (request.method !== "GET") return json(405, { error: "Method not allowed" });
@@ -338,7 +348,7 @@ async function handleTts(request, env, ctx) {
 
 function originAllowed(origin) {
   if (!origin) return true; // no Origin header — native/webview clients; rate limiting is the backstop
-  return ALLOWED_ORIGINS.includes(origin) || PREVIEW_ORIGIN_RE.test(origin);
+  return ALLOWED_ORIGINS.includes(origin) || PREVIEW_ORIGIN_RE.test(origin) || VENUE_ORIGIN_RE.test(origin);
 }
 
 function clientIp(request) {

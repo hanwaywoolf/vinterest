@@ -130,3 +130,14 @@ test('/tts: an unhurried pace, slower still for a name on its own', async () => 
   const oa = await tts({ OPENAI_API_KEY: 'o' }, { text: 'Evening!' });
   expect(oa.upstream[0].body.speed).toBe(0.9);
 });
+// A restaurant's demo address: its root opens the staff app, and its pages may call the voice and Claude.
+test('socialcorner.vinterest.team opens the staff app and is an allowed origin', async () => {
+  const worker = await loadWorker();
+  const r = await worker.fetch(new Request('https://socialcorner.vinterest.team/'), {}, { waitUntil() {} });
+  expect(r.status).toBe(302);
+  expect(r.headers.get('location')).toBe('https://socialcorner.vinterest.team/team/');
+  const ok = await tts({ ELEVENLABS_API_KEY: 'k' }, { text: 'Hi' }, 'https://socialcorner.vinterest.team');
+  expect(ok.status).toBe(200);
+  const no = await tts({ ELEVENLABS_API_KEY: 'k' }, { text: 'Hi' }, 'https://socialcorner.vinterest.team.evil.example');
+  expect(no.status).toBe(403);
+});

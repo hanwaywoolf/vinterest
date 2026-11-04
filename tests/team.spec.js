@@ -1269,3 +1269,8 @@ test('the names check plays each name through the guest voice, numbered like the
   expect(said).toEqual([]);
   expect(errors).toEqual([]);
 });
+
+test('a restaurant demo address names its restaurant, and nowhere else does', async ({ context, page }) => {
+  await asMarco(context, page);
+  expect(await page.evaluate(() => [TeamSample.hostSeed('socialcorner.vinterest.team'), TeamSample.hostSeed('SocialCorner.vinterest.team'), TeamSample.hostSeed('vinterest.pages.dev'), TeamSample.hostSeed()])).toEqual(['social', 'social', null, null]);
+});
