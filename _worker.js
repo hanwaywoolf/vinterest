@@ -287,7 +287,8 @@ async function handleTts(request, env, ctx) {
   if (!text) return json(400, { error: "Nothing to say.", code: "empty" });
   const list = provider === "elevenlabs" && env.ELEVENLABS_VOICES ? String(env.ELEVENLABS_VOICES).split(",").map(x => x.trim()).filter(Boolean) : TTS_VOICES[provider];
   const voice = list[Math.abs(parseInt(body.voice, 10) || 0) % list.length];
-  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(provider + "|" + voice + "|" + text));
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(provider + "|" + voice + "|" + (provider === "elevenlabs" ? (env.ELEVENLABS_MODEL || "eleven_flash_v2_5") : "") + "|" + text));
+  // The model is in the key, so changing ELEVENLABS_MODEL is heard at once rather than after a month of old clips.
   const id = [...new Uint8Array(digest)].map(b => b.toString(16).padStart(2, "0")).join("");
   const cacheKey = new Request("https://tts.cache.vinterest/" + id);
   const cache = typeof caches !== "undefined" ? caches.default : null;
