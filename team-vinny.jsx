@@ -60,9 +60,27 @@ function TeamVinnyTab({pid,open}){ const T=useTheme(), cr=T.lift(C.cr);
       <div style={{fontSize:15,color:T.ink2,fontFamily:C.P,lineHeight:1.5}}>Vinny plays a guest ordering from your menu, with a budget, a taste or a wrong idea. Answer as you would at the table; Vinny tells you how it landed and what you could have said.</div>
       <Btn primary full style={{marginTop:12}} onClick={()=>{ TeamVoice.unlock(); open({view:'guest'}); }}>Take a table</Btn>
     </Card></div>
+    <div role="button" data-testid="vinny-say-check" onClick={()=>{ TeamVoice.unlock(); open({view:'say'}); }} style={{marginTop:10,fontSize:14,fontWeight:700,color:cr,fontFamily:C.P,cursor:'pointer',padding:'6px 0'}}>How the guest's voice says your names →</div>
     </>}
   </div>; }
 
+/* The listening check: every name on the list as the guest's voice says it (TeamVoice.speak, the same voice and
+   fixes as a table), numbered so the ones it gets wrong can be reported and respelled in data/tts-say.json. */
+function TeamSayCheck(){ const T=useTheme(), cr=T.lift(C.cr), rows=React.useMemo(()=>TeamVinny.sayLines(),[]);
+  const [playing,setPlaying]=React.useState(null), [cloud,setCloud]=React.useState(null);
+  React.useEffect(()=>{ let on=true; TeamVoice.cloudReady().then(v=>on&&setCloud(!!v)); return ()=>{ on=false; TeamVoice.stop(); }; },[]);
+  const play=async r=>{ if(playing===r.n){ TeamVoice.stop(); setPlaying(null); return; } setPlaying(r.n); await TeamVoice.speak(r.line,{voice:0}); setPlaying(p=>p===r.n?null:p); };
+  const kinds=[...new Set(rows.map(r=>r.kind))];
+  return <div data-testid="say-check">{_tH(T,'How the voice says your names',`${rows.length} names, said the way a guest would. Note the numbers that sound wrong and send them over.`)}
+    {cloud===false&&<div style={{fontSize:13,color:T.amber,fontFamily:C.P,marginBottom:10}}>The cloud voice isn't set up here, so this is your phone's own voice.</div>}
+    {kinds.map(k=><div key={k}>{_tLabel(T,k)}<Card style={{padding:0}}>{rows.filter(r=>r.kind===k).map((r,i)=>
+      <div key={r.n} role="button" data-testid="say-row" onClick={()=>play(r)} style={{display:'flex',alignItems:'center',gap:12,padding:'11px 14px',borderTop:i?`1px solid ${T.line}`:'none',cursor:'pointer'}}>
+        <div style={{width:30,fontSize:14,fontWeight:800,color:cr,fontFamily:C.P,fontVariantNumeric:'tabular-nums'}}>{r.n}</div>
+        <div style={{flex:1,minWidth:0}}><div style={{fontSize:15,fontWeight:600,color:T.ink,fontFamily:C.P}}>{r.name}</div>
+          {r.hint&&<div style={{fontSize:13,color:T.mid,fontFamily:C.P,marginTop:2}}>Card says: {r.hint}</div>}</div>
+        <div style={{fontSize:13,fontWeight:700,color:playing===r.n?T.ink:cr,fontFamily:C.P,padding:'5px 12px',borderRadius:14,border:`1px solid ${cr}`,background:playing===r.n?_alpha(cr,0.25):'transparent'}}>{playing===r.n?'Stop':'Play'}</div>
+      </div>)}</Card></div>)}
+  </div>; }
 /* A guest at the table: the guest's lines, the server's typed replies, then the mark. How much help they get
    (choices, hints or none) is TeamVinny's step for this person; they can change it here. */
 const _GUEST_HELP={choices:'Pick the wine, then the reason, and Vinny puts it into words you can change.',hints:'Ask for a hint when you need one, up to three.',own:'No help: answer as you would at the table.'};

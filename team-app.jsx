@@ -9,7 +9,9 @@ const TEAM_TABS=[
 function TeamApp(){
   const T=_DECK_DARK, cr=T.lift(C.cr);
   const [gen,setGen]=React.useState(0), refresh=()=>setGen(g=>g+1);
-  const [tab,setTab]=React.useState('today'), [stack,setStack]=React.useState([]);
+  // ?view=say opens the names check (TeamSayCheck) straight away, on the phone view.
+  const sayLink=(()=>{ try{ return new URLSearchParams(location.search).get('view')==='say'; }catch(e){ return false; } })();
+  const [tab,setTab]=React.useState(sayLink?'vinny':'today'), [stack,setStack]=React.useState(sayLink?[{view:'say'}]:[]);
   const [switching,setSwitching]=React.useState(false);
   // One scrolling area holds every screen, so where it is scrolled to is set on every move: a new screen
   // or tab opens at its top, and Back returns to where they were on the screen underneath (pos, by depth).
@@ -21,7 +23,7 @@ function TeamApp(){
   // the phone app inside it, and the header's Console button comes back.
   // ?view=phone is the opposite: the phone app on any screen, for trying the staff's own view on a laptop or tablet.
   const viewParam=(()=>{ try{ return new URLSearchParams(location.search).get('view'); }catch(e){ return null; } })(), size=useLayoutSize(), forceConsole=viewParam==='console';
-  const [phoneView,setPhoneView]=React.useState(viewParam==='phone'), [section,setSection]=React.useState('dash');
+  const [phoneView,setPhoneView]=React.useState(viewParam==='phone'||viewParam==='say'), [section,setSection]=React.useState('dash');
   React.useEffect(()=>{ const h=()=>refresh(); window.addEventListener('vbiz:data',h); window.addEventListener('vinterest:account',h);
     return ()=>{ window.removeEventListener('vbiz:data',h); window.removeEventListener('vinterest:account',h); }; },[]);
   // /team/?seed=demo opens straight onto the demo restaurant (the wine-show laptop), replacing whatever
@@ -46,6 +48,7 @@ function TeamApp(){
   // with its answers, when Back returns from a wine it opened.
   else if(top) body=stack.map((v,i)=><div key={i} style={{display:i===stack.length-1?'block':'none'}}>{v.view==='wine'?<TeamWine id={v.id} pid={me.id} open={open}/>:v.view==='cocktail'?<TeamCocktail id={v.id} pid={me.id} open={open}/>:v.view==='dish'?<TeamDish id={v.id} open={open}/>
     :v.view==='guest'?<TeamGuest pid={me.id} back={back} open={open}/>
+    :v.view==='say'?<TeamSayCheck/>
     :<TeamDrill pid={me.id} only={v.only} part={v.part} given={v.qs} intro={v.intro} back={back} open={open}/>}</div>);
   else body=tab==='today'?<TeamToday pid={me.id} open={open}/>:tab==='vinny'?<TeamVinnyTab pid={me.id} open={open}/>:tab==='wines'?<TeamWines pid={me.id} open={open}/>:tab==='menu'?<TeamMenu open={open}/>
     :tab==='upload'?<TeamUpload onChanged={refresh} background/>:<TeamPeople open={open} onChanged={refresh}/>;

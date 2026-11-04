@@ -1249,3 +1249,21 @@ test('a wine card says how to pronounce the wine, and Say it speaks it', async (
   await expect.poll(() => page.evaluate(() => window.__spoken.join('|'))).toContain('DURN-hoff');
   expect(errors).toEqual([]);
 });
+
+// The names check in the app: every wine, cocktail and dish in the order the script numbers them, each played
+// through the same voice as a table.
+test('the names check plays each name through the guest voice, numbered like the listening check', async ({ context, page }) => {
+  const errors = await asMarco(context, page);
+  await page.getByTestId('team-tab-vinny').click();
+  await page.getByTestId('vinny-say-check').click();
+  await expect(page.getByTestId('say-check')).toBeVisible();
+  const n = await page.evaluate(() => TeamData.wines().length + TeamData.cocktails().length + TeamData.dishes().length);
+  await expect(page.getByTestId('say-row')).toHaveCount(n);
+  const said = await page.evaluate(async () => { const got = []; const was = TeamVoice.speak; TeamVoice.speak = async (t) => { got.push(t); }; return got; });
+  await page.evaluate(() => { window.__said = []; TeamVoice.speak = async (t) => { window.__said.push(t); }; });
+  await page.getByTestId('say-row').first().click();
+  const first = await page.evaluate(() => [window.__said[0], TeamData.short(TeamData.wines()[0])]);
+  expect(first[0]).toBe(`Could we get a bottle of the ${first[1]}, please?`);
+  expect(said).toEqual([]);
+  expect(errors).toEqual([]);
+});

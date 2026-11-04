@@ -171,6 +171,13 @@ const TeamVinny = {
   /* A field's text from JSON that was cut off before it closed: {"answer": "Our list… → Our list… */
   loose(text,field){ const m=new RegExp('"'+field+'"\\s*:\\s*"((?:[^"\\\\]|\\\\.)*)').exec(String(text||'')); if(!m) return '';
     try{ return JSON.parse('"'+m[1].replace(/\\$/,'')+'"'); }catch(e){ return m[1]; } },
+  /* The listening check in the app: every wine, cocktail and dish as a guest would say it, numbered in the order
+     scripts/tts-check.mjs uses (wines, cocktails, dishes), so a number heard here is the number to fix. */
+  sayLines(){ let n=0; const out=[];
+    TeamData.wines().forEach(w=>{ const nm=TeamData.short(w); out.push({n:++n,kind:'Wines',name:nm,line:`Could we get a bottle of the ${nm}, please?`,hint:(TeamData.card(w.id)||{}).say||''}); });
+    TeamData.cocktails().forEach(c=>out.push({n:++n,kind:'Cocktails',name:c.name,line:`I'll start with a ${c.name}.`,hint:''}));
+    TeamData.dishes().forEach(d=>out.push({n:++n,kind:'Dishes',name:d.name,line:`I'm having the ${d.name}.`,hint:''}));
+    return out; },
   scenario(pid,seed=Date.now()){
     const c=this._ctx(pid); if(!c) return null;
     const pool=c.dishes.map(x=>({x,p:TeamData.pairing(x.id)})).filter(d=>d.p&&d.p.best&&d.p.best.length);
