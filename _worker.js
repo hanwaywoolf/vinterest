@@ -190,6 +190,7 @@ export default {
       return json(200, {
         supabase: env.SUPABASE_URL && env.SUPABASE_PUBLISHABLE_KEY ? { url: env.SUPABASE_URL, key: env.SUPABASE_PUBLISHABLE_KEY } : null,
         tts: !!ttsProvider(env),
+        stt: !!env.ELEVENLABS_API_KEY,
         billing: env.REVENUECAT_IOS_KEY || env.REVENUECAT_ANDROID_KEY ? { ios: env.REVENUECAT_IOS_KEY || null, android: env.REVENUECAT_ANDROID_KEY || null } : null,
         allPro: ALL_PRO_FOR_TESTING && env.ALL_PRO !== "0",
         push: pushOn(env),
@@ -247,6 +248,11 @@ export default {
       if (request.method === "OPTIONS") return cors(new Response(null, { status: 204 }));
       if (request.method !== "POST") return json(405, { error: "Method not allowed" });
       return handleTts(request, env, ctx);
+    }
+    if (url.pathname === "/stt") {
+      if (request.method === "OPTIONS") return cors(new Response(null, { status: 204 }));
+      if (request.method !== "POST") return json(405, { error: "Method not allowed" });
+      return handleStt(request, env);
     }
     if (url.pathname === "/claude") {
       if (request.method === "OPTIONS") return cors(new Response(null, { status: 204 }));
@@ -331,6 +337,36 @@ function ttsRules(say) {
     .map(([k, v]) => ({ re: new RegExp("(^|[^\\p{L}])" + esc(k) + "(?![\\p{L}])", "giu"), to: String(v) }));
 }
 function ttsApply(text, rules) { return rules.reduce((t, r) => t.replace(r.re, (m, pre) => pre + r.to), text); }
+/* POST /stt: a spoken reply at a guest's table, as recorded audio (the body, audio/webm or audio/mp4), turned
+   into words by ElevenLabs' speech-to-text (Scribe, ELEVENLABS_STT_MODEL, default scribe_v1) with each word's
+   start and end, for the delivery coaching. The recording is passed straight through and never kept or cached.
+   404 without ELEVENLABS_API_KEY, and the phone's own recognition takes over. */
+const STT_MAX_BYTES = 3 * 1024 * 1024; // a couple of minutes of speech at the 32 kbps the app records
+async function handleStt(request, env) {
+  if (!env.ELEVENLABS_API_KEY) return json(404, { enabled: false, error: "Speech to text isn't set up on the server.", code: "stt_off" });
+  if (!originAllowed(request.headers.get("origin"))) return json(403, { error: "Origin not allowed.", code: "origin_denied" });
+  if (rateLimited(clientIp(request))) return json(429, { error: "Too many requests. Please slow down and try again shortly.", code: "rate_limited" });
+  const type = (request.headers.get("content-type") || "audio/webm").split(";")[0].trim();
+  if (!/^audio\//.test(type)) return json(400, { error: "Send the recording as audio.", code: "not_audio" });
+  const audio = await request.arrayBuffer();
+  if (!audio.byteLength) return json(400, { error: "The recording was empty.", code: "empty" });
+  if (audio.byteLength > STT_MAX_BYTES) return json(413, { error: "That recording is too long.", code: "too_long" });
+  const form = new FormData();
+  form.append("model_id", env.ELEVENLABS_STT_MODEL || "scribe_v1");
+  form.append("file", new Blob([audio], { type }), type.includes("mp4") ? "reply.mp4" : type.includes("ogg") ? "reply.ogg" : "reply.webm");
+  form.append("timestamps_granularity", "word");
+  form.append("tag_audio_events", "false");
+  if (env.ELEVENLABS_STT_LANGUAGE) form.append("language_code", env.ELEVENLABS_STT_LANGUAGE);
+  let up;
+  try { up = await fetch("https://api.elevenlabs.io/v1/speech-to-text", { method: "POST", headers: { "xi-api-key": env.ELEVENLABS_API_KEY }, body: form }); }
+  catch (e) { return json(502, { error: "The speech service couldn't be reached.", code: "stt_unreachable" }); }
+  if (!up.ok) { let detail = ""; try { detail = (await up.text()).slice(0, 300); } catch (e) {}
+    return json(502, { error: "The speech service didn't answer.", code: "stt_failed", status: up.status, detail }); }
+  let j; try { j = await up.json(); } catch (e) { return json(502, { error: "The speech service sent something unreadable.", code: "stt_bad" }); }
+  const words = (Array.isArray(j.words) ? j.words : []).filter((w) => w && w.type !== "spacing" && w.type !== "audio_event" && String(w.text || "").trim())
+    .map((w) => ({ text: String(w.text).trim(), start: Number(w.start) || 0, end: Number(w.end) || 0 }));
+  return json(200, { text: String(j.text || "").trim(), words, language: j.language_code || null });
+}
 async function handleTts(request, env, ctx) {
   const provider = ttsProvider(env);
   if (!provider) return json(404, { enabled: false, error: "No voice is set up on the server.", code: "tts_off" });

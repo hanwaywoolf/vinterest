@@ -148,9 +148,15 @@ function TeamGuest({pid,back,open}){ const T=useTheme(), cr=T.lift(C.cr);
     catch(e){ setErr((e&&e.message)||'Couldn\'t reach Vinny.'); setBusy(false); } };
   const listenRef=React.useRef(null); listenRef.current=listening;
   React.useEffect(()=>()=>{ TeamVoice.stop(); if(listenRef.current) listenRef.current.stop(); },[]);
+  // Whether the server writes replies down (ElevenLabs' speech-to-text) is known before the first tap of the mic.
+  const [,bumpVoice]=React.useReducer(x=>x+1,0), [writing,setWriting]=React.useState(false), [heardErr,setHeardErr]=React.useState('');
+  React.useEffect(()=>{ let on=true; TeamVoice.cloudReady().then(()=>on&&bumpVoice()); return ()=>{ on=false; }; },[]);
   const toggleVoice=()=>{ const v=!voice; TeamVoice.setOn(v); setVoice(v); if(v) TeamVoice.unlock(); };
   const mic=async()=>{
-    if(listening){ const l=listening; setListening(null); const res=await l.stop(); if(res.text) setSay(res.text); setSpoken(res.text?{...res,askedAt:askedAt.current}:null); return; }
+    if(listening){ const l=listening; setListening(null); if(l.cloud) setWriting(true); const res=await l.stop(); setWriting(false);
+      setHeardErr(res.error?(res.error==='mic'?'The microphone didn\'t start. Allow it for this page, or type your reply.':'That didn\'t come through. Tap and speak again, or type your reply.'):'');
+      if(res.text) setSay(res.text); setSpoken(res.text?{...res,askedAt:askedAt.current}:null); return; }
+    setHeardErr('');
     TeamVoice.stop(); TeamVoice.unlock();
     if(!TeamVoice.noticeSeen()){ setNotice(true); TeamVoice.markNotice(); }
     setSay(''); setListening(TeamVoice.listen({onWords:t=>setSay(t)})); };
@@ -160,7 +166,7 @@ function TeamGuest({pid,back,open}){ const T=useTheme(), cr=T.lift(C.cr);
   const names=()=>TeamData.wines().map(w=>({name:TeamData.short(w),say:(TeamData.card(w.id)||{}).say||''}));
   const expected=()=>sc.wines.map(id=>TeamData.wine(id)).filter(Boolean).map(w=>TeamData.short(w));
   const reply=async()=>{ let t=say.trim(), sp=spoken;
-    if(listening){ const l=listening; setListening(null); const res=await l.stop(); t=(res.text||t).trim(); sp=res.text?{...res,askedAt:askedAt.current}:sp; }
+    if(listening){ const l=listening; setListening(null); if(l.cloud) setWriting(true); const res=await l.stop(); setWriting(false); t=(res.text||t).trim(); sp=res.text?{...res,askedAt:askedAt.current}:sp; }
     if(!t||busy||mark) return; setSay(''); setSpoken(null);
     // A spoken reply is coached on how it was said (the words they sent, the timings of the speaking).
     const idx=turns.filter(x=>x.who==='you').length; dels.current[idx]=sp?TeamVoice.delivery({...sp,text:t,names:names(),expected:expected()}):null;
@@ -220,8 +226,9 @@ function TeamGuest({pid,back,open}){ const T=useTheme(), cr=T.lift(C.cr);
       <div style={{display:'flex',gap:8,marginTop:14}}><Btn primary style={{flex:1}} onClick={again}>Another table</Btn><Btn style={{flex:1}} onClick={back}>Done</Btn></div>
     </Card></div>}
     {!mark&&turns.length>0&&voice&&TeamVoice.canListen()&&<div style={{marginTop:14}}>
-      <div role="button" data-testid="guest-mic" aria-pressed={!!listening} onClick={mic} style={{display:'flex',alignItems:'center',justifyContent:'center',gap:10,padding:'14px 16px',borderRadius:16,border:`1.5px solid ${listening?'#F28B7D':cr}`,background:listening?_alpha('#F28B7D',0.12):_alpha(C.cr,0.18),color:T.ink,fontSize:16,fontWeight:700,fontFamily:C.P,cursor:'pointer'}}>
-        <span style={{width:12,height:12,borderRadius:6,background:listening?'#F28B7D':cr,animation:listening?'tmPulse 1s ease-in-out infinite':'none'}}/>{listening?'Listening… tap when you\'ve finished':spoken?'Say it again':'Tap and speak to the guest'}</div>
+      <div role="button" data-testid="guest-mic" aria-pressed={!!listening} onClick={writing?undefined:mic} style={{display:'flex',alignItems:'center',justifyContent:'center',gap:10,padding:'14px 16px',borderRadius:16,border:`1.5px solid ${listening?'#F28B7D':cr}`,background:listening?_alpha('#F28B7D',0.12):_alpha(C.cr,0.18),color:T.ink,fontSize:16,fontWeight:700,fontFamily:C.P,cursor:'pointer'}}>
+        <span style={{width:12,height:12,borderRadius:6,background:listening?'#F28B7D':cr,animation:listening?'tmPulse 1s ease-in-out infinite':'none'}}/>{writing?'Writing down what you said…':listening?'Listening… tap when you\'ve finished':spoken?'Say it again':'Tap and speak to the guest'}</div>
+      {heardErr&&<div data-testid="voice-error" style={{fontSize:13,color:'#F28B7D',fontFamily:C.P,marginTop:6,lineHeight:1.45}}>{heardErr}</div>}
       <style>{'@keyframes tmPulse{0%,100%{opacity:1}50%{opacity:.3}}'}</style>
       {notice&&<div data-testid="voice-notice" style={{fontSize:12,color:T.mid,fontFamily:C.P,marginTop:6,lineHeight:1.45}}>{TeamVoice.where()}</div>}
       {spoken&&!listening&&<div style={{fontSize:12,color:T.mid,fontFamily:C.P,marginTop:6}}>Check the words below (fix a misheard name), then Say.</div>}

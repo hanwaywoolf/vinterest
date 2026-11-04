@@ -141,3 +141,22 @@ test('socialcorner.vinterest.team opens the staff app and is an allowed origin',
   const no = await tts({ ELEVENLABS_API_KEY: 'k' }, { text: 'Hi' }, 'https://socialcorner.vinterest.team.evil.example');
   expect(no.status).toBe(403);
 });
+// /stt: the recording goes to ElevenLabs' speech-to-text with word times; the words come back, nothing is kept.
+test('/stt: a recording written down by ElevenLabs, off without its key, other origins refused', async () => {
+  const worker = await loadWorker();
+  const post = (env, origin = 'https://vinterest.pages.dev', type = 'audio/webm') => worker.fetch(new Request('https://vinterest.pages.dev/stt', { method: 'POST', headers: { 'content-type': type, origin }, body: new Uint8Array([1, 2, 3, 4]) }), env, { waitUntil() {} });
+  const realFetch = global.fetch, up = [];
+  global.fetch = async (url, init) => { up.push({ url: String(url), init, form: init.body }); return new Response(JSON.stringify({ text: 'The Grüner by the glass', language_code: 'en', words: [{ text: 'The', start: 0.2, end: 0.3, type: 'word' }, { text: ' ', type: 'spacing' }, { text: 'Grüner', start: 0.4, end: 0.8, type: 'word' }] }), { status: 200 }); };
+  try {
+    const r = await post({ ELEVENLABS_API_KEY: 'k' });
+    expect(r.status).toBe(200);
+    expect(await r.json()).toEqual({ text: 'The Grüner by the glass', words: [{ text: 'The', start: 0.2, end: 0.3 }, { text: 'Grüner', start: 0.4, end: 0.8 }], language: 'en' });
+    expect(up[0].url).toBe('https://api.elevenlabs.io/v1/speech-to-text');
+    expect(up[0].init.headers['xi-api-key']).toBe('k');
+    expect(up[0].form.get('model_id')).toBe('scribe_v1');
+    expect(up[0].form.get('timestamps_granularity')).toBe('word');
+    expect((await post({})).status).toBe(404);
+    expect((await post({ ELEVENLABS_API_KEY: 'k' }, 'https://evil.example')).status).toBe(403);
+    expect((await post({ ELEVENLABS_API_KEY: 'k' }, undefined, 'text/plain')).status).toBe(400);
+  } finally { global.fetch = realFetch; }
+});

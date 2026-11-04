@@ -185,8 +185,13 @@ The guest can be heard and answered out loud, so staff work on how they say it a
   nothing stored). Without a key `/tts` answers 404 and the phone's own voice reads it. Setting one up: add
   the key as a Cloudflare secret on the vinterest Pages project and redeploy; `/config` then says `tts: true`.
 - **The server answers.** "Tap and speak to the guest" turns what they say into words in the reply box, to
-  check (a misheard name can be fixed) and send with Say. On the web the browser does it (Chrome uses
-  Google's service, Safari Apple's), and the screen says so the first time. Only the words are kept.
+  check (a misheard name can be fixed) and send with Say. With `ELEVENLABS_API_KEY` set, the reply is recorded
+  and written down by ElevenLabs' speech-to-text (Scribe) through the Worker's `POST /stt`: better with wine names
+  than a phone's recognition, the same on every phone, and with a time for every word for the coaching. The
+  words land a second or two after they tap to finish ("Writing down what you said…"); the recording is passed
+  straight through and never kept, and the screen says so the first time. Without the key, or if the service
+  fails (said on the screen), the browser does it instead (Chrome uses Google's service, Safari Apple's), and
+  only the words are kept.
 - **Delivery.** Each spoken reply is coached from its words and timings, with no Claude call
   (`TeamVoice.delivery`): pace in words a minute (`PACE`), how long before they started after the guest
   finished asking (`WAIT_SLOW_MS`), fillers and hedges ("um", "sort of", "I think", "maybe"), length, and
@@ -197,7 +202,8 @@ The guest can be heard and answered out loud, so staff work on how they say it a
   mark or the help level, and the console doesn't show it.
 - **Saying the names.** Every card carries `say`, a sounds-like spelling of the producer and wine
   ("doh-MEN la-ROSH, sha-BLEE"), written with the card (`prompts/team-cards.txt`) and, for the demo, by hand.
-  The wine card's "Say it" speaks it; a plain voice reading the spelling gets the name right.
+  It shows on the wine card's "Say it" as a guide; the button speaks the name itself, which the cloud voice says
+  better than it reads a respelling.
 - **In the phone apps.** Their web views have no speech recognition, so `TeamVoice` uses the Capacitor
   plugins when they're there (`window.VinterestNative.SpeechRecognition`, `.TextToSpeech`:
   `@capacitor-community/speech-recognition` and `@capacitor-community/text-to-speech`) and the browser's

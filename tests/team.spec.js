@@ -1304,3 +1304,39 @@ test("Vinny's menu lines mark every by-the-glass wine in a dish's pairing", asyn
   const prompt = await page.evaluate(() => _loadTextSync('prompts/team-vinny.txt'));
   expect(prompt).toContain('not the only one');
 });
+
+// With the server's speech-to-text on, the reply is recorded and written down by ElevenLabs through /stt: the words
+// land in the box once they've finished, the privacy line says the recording is sent, and the delivery uses the
+// service's own word times.
+test('a spoken reply is written down by the server when it has speech to text', async ({ context, page }) => {
+  await context.addInitScript(() => {
+    Object.defineProperty(window, 'speechSynthesis', { configurable: true, value: { speak(u) { setTimeout(() => u.onend && u.onend(), 5); }, cancel() {}, getVoices() { return []; } } });
+    window.SpeechSynthesisUtterance = function (t) { this.text = t; };
+    window.SpeechRecognition = class { start() { window.__local = true; } stop() {} };
+    navigator.mediaDevices.getUserMedia = async () => ({ getTracks: () => [{ stop() { window.__released = true; } }] });
+    window.MediaRecorder = class { static isTypeSupported(t) { return t.startsWith('audio/webm'); } constructor(s, o) { this.mimeType = o.mimeType; }
+      start() {} stop() { this.ondataavailable({ data: new Blob(['fake audio'], { type: 'audio/webm' }) }); setTimeout(() => this.onstop(), 5); } };
+  });
+  const sent = [];
+  await context.route('**/config', (r) => r.fulfill({ json: { tts: false, stt: true } }));
+  await context.route('**/stt', async (r) => { sent.push(r.request().headers()['content-type']); await r.fulfill({ json: { text: "I'd go for the Grüner by the glass, it's peppery and fresh", words: [{ text: "I'd", start: 0.9, end: 1.1 }, { text: 'fresh', start: 4.2, end: 4.6 }] } }); });
+  const errors = await asMarco(context, page, { claudeText: (b) => b.purpose === 'team_guest' ? (/SERVER:/.test(b.messages[0].content) ? JSON.stringify({ guest: 'Lovely.', done: true, mark: { score: 0.8, verdict: 'right', good: 'Named it.', missing: '', better: '' } }) : '{"guest":"Evening! What would you pour with the olives?","done":false}') : '' });
+  await page.getByTestId('team-tab-vinny').click();
+  await page.getByText('Take a table').click();
+  await expect(page.getByTestId('guest-line')).toContainText('olives');
+  await page.getByTestId('guest-mic').click();
+  await expect(page.getByTestId('voice-notice')).toContainText('ElevenLabs');
+  await page.getByTestId('guest-mic').click(); // finished
+  await expect(page.getByTestId('guest-reply')).toHaveValue(/Grüner by the glass/);
+  expect(sent).toEqual(['audio/webm']);
+  expect(await page.evaluate(() => [!!window.__released, !!window.__local])).toEqual([true, false]);
+  // The service failing says so and hands the next reply to the phone's own recognition.
+  await context.unroute('**/stt');
+  await context.route('**/stt', (r) => r.fulfill({ status: 502, json: { error: 'down' } }));
+  await page.getByTestId('guest-mic').click();
+  await page.getByTestId('guest-mic').click();
+  await expect(page.getByTestId('voice-error')).toContainText("didn't come through");
+  await page.getByTestId('guest-mic').click();
+  expect(await page.evaluate(() => window.__local)).toBe(true);
+  expect(errors.filter((e) => !/502/.test(e))).toEqual([]);
+});
