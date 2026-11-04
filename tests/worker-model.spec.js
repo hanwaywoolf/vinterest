@@ -118,3 +118,14 @@ test('/tts: names are said as data/tts-say.json spells them, and ELEVENLABS_MODE
   expect(r.upstream[0].body.text).toBe('The pas-KAL zho-lee-VAY, or another zho-lee-VAY? Not the Jolivets.');
   expect(r.upstream[0].body.model_id).toBe('eleven_multilingual_v2');
 });
+// The voice teaches, so it's unhurried: 0.9 for a guest's line, 0.8 for a name said on its own, both settable.
+test('/tts: an unhurried pace, slower still for a name on its own', async () => {
+  const line = await tts({ ELEVENLABS_API_KEY: 'k' }, { text: 'Evening!' });
+  expect(line.upstream[0].body.voice_settings).toMatchObject({ speed: 0.9, stability: 0.6 });
+  const name = await tts({ ELEVENLABS_API_KEY: 'k' }, { text: 'Veuve Clicquot Brut', pace: 'slow' });
+  expect(name.upstream[0].body.voice_settings.speed).toBe(0.8);
+  const set = await tts({ ELEVENLABS_API_KEY: 'k', TTS_SPEED: '0.85', TTS_SLOW: '0.5' }, { text: 'Hi', pace: 'slow' });
+  expect(set.upstream[0].body.voice_settings.speed).toBe(0.7); // clamped to what ElevenLabs takes
+  const oa = await tts({ OPENAI_API_KEY: 'o' }, { text: 'Evening!' });
+  expect(oa.upstream[0].body.speed).toBe(0.9);
+});

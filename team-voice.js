@@ -53,13 +53,14 @@ const TeamVoice = {
   stop(){ try{ this._audio&&this._audio.pause(); }catch(e){} try{ window.speechSynthesis&&speechSynthesis.cancel(); }catch(e){} try{ const t=this.native().tts; t&&t.stop&&t.stop(); }catch(e){} },
   _lang(){ return (navigator.language||'en-GB').startsWith('en')?navigator.language||'en-GB':'en-GB'; },
   /* Says text; resolves when it has been said (or couldn't be). voice: 0-3, a table's diner. */
-  async speak(text,{voice=0,cloud=true}={}){
+  // pace 'slow' for a name said on its own (Say it, the names check), so it can be heard and copied.
+  async speak(text,{voice=0,cloud=true,pace}={}){
     const t=String(text||'').trim(); if(!t) return;
     this.stop();
     if(cloud&&await this.cloudReady()){
       try{
-        const key=voice+'|'+t; let url=this._cache[key];
-        if(!url){ const r=await fetch(Platform.api('/tts'),{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({text:t,voice})});
+        const key=voice+'|'+(pace||'')+'|'+t; let url=this._cache[key];
+        if(!url){ const r=await fetch(Platform.api('/tts'),{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({text:t,voice,pace})});
           if(r.status===404) this._cloud=false; if(!r.ok) throw new Error('tts '+r.status);
           url=URL.createObjectURL(await r.blob()); this._cache[key]=url; }
         if(!this._audio){ this._audio=new Audio(); this._audio.playsInline=true; }
@@ -69,9 +70,9 @@ const TeamVoice = {
       }catch(e){ /* fall through to the phone's own voice */ }
     }
     const n=this.native().tts;
-    if(n){ try{ await n.speak({text:t,lang:this._lang(),rate:1.0,pitch:1.0,volume:1.0,category:'playback'}); return; }catch(e){} }
+    if(n){ try{ await n.speak({text:t,lang:this._lang(),rate:pace==='slow'?0.8:0.9,pitch:1.0,volume:1.0,category:'playback'}); return; }catch(e){} }
     if(window.speechSynthesis){
-      await new Promise(res=>{ try{ const u=new SpeechSynthesisUtterance(t); u.lang=this._lang(); u.rate=1; u.onend=res; u.onerror=res;
+      await new Promise(res=>{ try{ const u=new SpeechSynthesisUtterance(t); u.lang=this._lang(); u.rate=pace==='slow'?0.8:0.9; u.onend=res; u.onerror=res;
         const vs=speechSynthesis.getVoices().filter(v=>v.lang&&v.lang.startsWith('en')); if(vs.length) u.voice=vs[voice%vs.length];
         speechSynthesis.speak(u); setTimeout(res,Math.max(4000,t.length*90)); }catch(e){ res(); } });
     }
