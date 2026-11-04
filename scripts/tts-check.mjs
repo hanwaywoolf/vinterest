@@ -52,18 +52,20 @@ console.log(`\n${calls} clips via ${provider || 'cache'}`);
 
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const fixed = (n) => Object.keys(say).some((k) => n.toLowerCase().includes(k.toLowerCase()));
-const html = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Pronunciation Check</title><style>
-:root{--bg:#141012;--card:#1e191b;--ink:#f4ece6;--mid:#b3a69f;--line:#3a3134;--acc:#e0607a;--ok:#5fd48f}
-@media (prefers-color-scheme: light){:root:not([data-theme="dark"]){--bg:#faf6f2;--card:#fff;--ink:#231c1e;--mid:#6f6266;--line:#e6dcd6;--acc:#8b1a2f;--ok:#1f8a4c}}
-:root[data-theme="light"]{--bg:#faf6f2;--card:#fff;--ink:#231c1e;--mid:#6f6266;--line:#e6dcd6;--acc:#8b1a2f;--ok:#1f8a4c}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif}
-main{max-width:720px;margin:0 auto;padding:24px 16px 64px}h1{font-size:26px;margin:0 0 6px}h2{font-size:19px;margin:32px 0 6px}
-p{color:var(--mid);margin:0 0 12px}.row{display:grid;grid-template-columns:36px 1fr auto;gap:10px;align-items:center;padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--card);margin-top:8px}
+const html = `<title>Pronunciation Check</title><meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap"><style>
+/* One column of numbered rows to play through on a phone; the wine-list's crimson on the app's dark stage. */
+:root{--bg:#141012;--card:#1e191b;--ink:#f4ece6;--mid:#b3a69f;--line:#3a3134;--acc:#e0607a;--ok:#5fd48f;--sans:"Poppins",system-ui,-apple-system,"Segoe UI",sans-serif;color-scheme:dark}
+@media (prefers-color-scheme: light){:root:not([data-theme="dark"]){--bg:#faf6f2;--card:#fff;--ink:#231c1e;--mid:#6f6266;--line:#e6dcd6;--acc:#8b1a2f;--ok:#1f8a4c;color-scheme:light}}
+:root[data-theme="light"]{--bg:#faf6f2;--card:#fff;--ink:#231c1e;--mid:#6f6266;--line:#e6dcd6;--acc:#8b1a2f;--ok:#1f8a4c;color-scheme:light}
+*{box-sizing:border-box}body{background:var(--bg);color:var(--ink);font:16px/1.45 var(--sans)}
+main{max-width:720px;margin:0 auto;padding-block:24px 64px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+h1{font-size:26px;margin:0 0 6px;text-wrap:balance}h2{font-size:19px;margin:32px 0 6px}
+p{color:var(--mid);margin:0 0 12px;max-width:65ch}.row{display:grid;grid-template-columns:40px minmax(0,1fr) auto;gap:10px;align-items:center;padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--card);margin-top:8px}
 .n{font-weight:700;color:var(--acc);font-variant-numeric:tabular-nums}.name{font-weight:600}.sub{font-size:14px;color:var(--mid)}.tag{font-size:12px;color:var(--ok);font-weight:700}
-button{font:inherit;font-weight:700;border:1px solid var(--acc);color:var(--acc);background:transparent;border-radius:999px;padding:6px 14px;cursor:pointer;min-width:64px}
-button[aria-pressed="true"]{background:var(--acc);color:var(--bg)}.kind{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--mid)}
-</style></head><body><main>
+button{font:inherit;font-weight:700;border:1px solid var(--acc);color:var(--acc);background:transparent;border-radius:999px;padding:6px 14px;cursor:pointer;min-width:68px}
+button:focus-visible{outline:2px solid var(--acc);outline-offset:2px}button[aria-pressed="true"]{background:var(--acc);color:var(--bg)}
+</style><main>
 <h1>Pronunciation check</h1>
 <p>${esc(list.venue && list.venue.name || venue)} · ${rows.length} names, as the guest's voice says them now (${esc(provider || 'cached')}). Tap Play, and note the numbers that sound wrong. Under each wine is the sounds-like spelling from its card, as a guide.</p>
 ${['Wine', 'Cocktail', 'Dish'].map((k) => { const rs = rows.filter((r) => r.kind === k); return rs.length ? `<h2>${k === 'Dish' ? 'Dishes' : k + 's'}</h2>` + rs.map((r) => `<div class="row"><div class="n">${r.n}</div><div><div class="name">${esc(r.name)}</div>${r.hint ? `<div class="sub">Card says: ${esc(r.hint)}</div>` : ''}${fixed(r.name) ? '<div class="tag">Has a fix</div>' : ''}</div><button data-a="a${r.n}" aria-pressed="false">Play</button><audio id="a${r.n}" preload="none" src="data:audio/mpeg;base64,${r.audio}"></audio></div>`).join('') : ''; }).join('')}
@@ -73,7 +75,7 @@ ${voiceRows.map((r, i) => `<div class="row"><div class="n">V${r.v + 1}</div><div
 let cur=null;document.addEventListener('click',e=>{const b=e.target.closest('button[data-a]');if(!b)return;const a=document.getElementById(b.dataset.a);
 if(cur&&cur!==a){cur.pause();cur.currentTime=0;document.querySelector('[data-a="'+cur.id+'"]').setAttribute('aria-pressed','false');}
 if(a.paused){a.play();b.setAttribute('aria-pressed','true');cur=a;a.onended=()=>b.setAttribute('aria-pressed','false');}else{a.pause();b.setAttribute('aria-pressed','false');}});
-</script></body></html>`;
+</script>`;
 writeFileSync(`${out}/index.html`, html);
 for (let i = 1; i <= calls; i++) try { execFileSync('rm', ['-f', `${out}/clip-${i}.mp3`]); } catch (e) {}
 console.log(`Wrote ${out}/index.html`);
