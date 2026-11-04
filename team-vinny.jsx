@@ -83,12 +83,12 @@ function _GuestChoices({help,onSay}){ const T=useTheme(), cr=T.lift(C.cr);
     {sub&&<div style={{fontSize:13,color:state==='no'?'#F28B7D':T.mid,fontFamily:C.P,marginTop:3,lineHeight:1.45}}>{sub}</div>}</div>;
   if(!help.wines.length) return null;
   return <div data-testid="guest-choices"><Card style={{marginTop:12}}>
-    <div style={{fontSize:12,fontWeight:700,color:T.mid,fontFamily:C.P,letterSpacing:'0.08em',textTransform:'uppercase'}}>1 · Which wine?</div>
+    <div style={{fontSize:15,fontWeight:700,color:T.ink,fontFamily:C.P,lineHeight:1.4}}>1 · {help.ask||'Which wine?'}</div>
     <div style={{display:'flex',flexDirection:'column',gap:8,marginTop:8}}>{help.wines.map(o=>{ const w=TeamData.wine(o.id); if(!w) return null;
       const st=wine===o.id?'ok':tried.includes(o.id)?'no':null, price=[w.glass&&`glass ${w.glass}`,w.bottle&&`bottle ${w.bottle}`].filter(Boolean).join(' · ');
-      return row(o.id,TeamData.short(w),st==='no'?o.note:price,wine&&!st?'off':st,()=>{ if(wine) return; o.ok?setWine(o.id):setTried(t=>[...t,o.id]); },'guest-choice'); })}</div>
+      return row(o.id,o.label||TeamData.short(w),st==='no'?o.note:price,wine&&!st?'off':st,()=>{ if(wine) return; o.ok?setWine(o.id):setTried(t=>[...t,o.id]); },'guest-choice'); })}</div>
     {wine&&help.reasons.length>0&&<>
-      <div style={{fontSize:12,fontWeight:700,color:T.mid,fontFamily:C.P,letterSpacing:'0.08em',textTransform:'uppercase',marginTop:14}}>2 · Why does it suit?</div>
+      <div style={{fontSize:15,fontWeight:700,color:T.ink,fontFamily:C.P,lineHeight:1.4,marginTop:14}}>2 · {help.askWhy||'Why does it suit?'}</div>
       <div style={{display:'flex',flexDirection:'column',gap:8,marginTop:8}}>{help.reasons.map((r,i)=>{ const st=done&&r.ok?'ok':rTried.includes(i)?'no':null;
         return row(i,r.text,st==='no'?(r.note||'That reason is about another dish on the menu.'):'',done&&!st?'off':st,()=>{ if(done) return; if(r.ok){ setDone(true); onSay(help.say(wine,r.text)); } else setRTried(t=>[...t,i]); },'guest-reason'); })}</div></>}
     {done&&<div style={{fontSize:13,color:T.mid,fontFamily:C.P,marginTop:12,lineHeight:1.45}}>Your reply is ready below. Put it in your own words if you like, then Say.</div>}

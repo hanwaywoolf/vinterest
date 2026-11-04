@@ -1170,6 +1170,17 @@ test('the guest\'s reasons are all about the chosen wine, and a cut-off Vinny an
     expect(o.fromOther).toBe(0);
     for (const w of o.wrong) expect(w.note).toMatch(/^Not the .+: its card says/);
   }
+  // A guest who has named a wine that doesn't suit is asked about as such: what do you suggest instead?
+  const steer = await page.evaluate(() => {
+    const pid = TeamLearn.me().id;
+    for (let s = 1; s <= 400; s++) { const sc = TeamVinny.scenario(pid, s * 104729); if (sc && sc.wish === 'avoid') return { ask: sc.help.ask, why: sc.help.askWhy, labels: sc.help.wines.map((w) => w.label), dish: sc.dishName }; }
+    return null;
+  });
+  expect(steer).not.toBeNull();
+  expect(steer.ask).toMatch(/^They want the .+\. What do you suggest\?$/);
+  expect(steer.why).toBe(`Why is it better with the ${steer.dish}?`);
+  expect(steer.labels.filter((l) => /as they asked$/.test(l))).toHaveLength(1);
+  expect(steer.labels.filter((l) => /^Suggest the .+ instead$/.test(l))).toHaveLength(2);
   expect(r.cut).toBe("Our list doesn't mark a house red, but the Road 13 Cabernet");
   expect(errors).toEqual([]);
 });

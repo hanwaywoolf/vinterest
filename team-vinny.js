@@ -329,7 +329,13 @@ const TeamVinny = {
     const wines=okWine?[{id:okWine.id,ok:true,note:''},...decoys.slice(0,2)]:[];
     // Three orders, so the right one isn't always in the same place.
     const order=[[0,1,2],[1,0,2],[2,0,1],[1,2,0]][Math.abs(seed)%4].filter(i=>i<wines.length);
-    const pickedWines=order.map(i=>wines[i]);
+    // Step one asks what the guest's request asks. A guest who has named a wine that doesn't suit gets
+    // "They want the Hito: what do you suggest?", with the wine they named as one answer ("Go with it, as they asked")
+    // and the others offered in its place; never "Which wine?" as if they hadn't asked for one.
+    const named=sc.wish==='avoid'&&avoid?TeamData.short(avoid):'';
+    const pickedWines=order.map(i=>wines[i]).map(o=>named?{...o,label:o.id===avoid.id?`Go with the ${named}, as they asked`:`Suggest the ${short(o.id)} instead`}:o);
+    const ask=named?`They want the ${named}. What do you suggest?`:({budget:'Which bottle fits their budget?',light:'Which lighter wine?',bottle:'Which bottle for the table?',glass:'Which wine by the glass?'}[sc.wish]||'Which wine?');
+    const askWhy=named?`Why is it better with the ${x.name}?`:`Why does it suit the ${x.name}?`;
     // Reasons, all about the wine they picked: the pairing's own reason for it, and two that sound right but its own
     // card rules out at this dish (TeamLearn.styleWrong: light where it's full, no tannin where it's firm), so the
     // second step is about the first answer, never another wine's reason from another dish.
@@ -351,7 +357,7 @@ const TeamVinny = {
     const say=(id,reason)=>{ const w=TeamData.wine(id); if(!w) return ''; const pr=priceOf(w);
       const steer=sc.wish==='avoid'&&avoid?`I'd steer you away from the ${TeamData.short(avoid)} with this. `:'';
       return `${steer}I'd go for the ${TeamData.short(w)}${pr?` at ${pr}`:''}.${reason?` ${reason}`:''}`; };
-    return {wines:pickedWines,reasons:rOrder.map(i=>reasons[i]),hints,say};
+    return {wines:pickedWines,reasons:rOrder.map(i=>reasons[i]),hints,say,ask,askWhy};
   },
   /* One turn: the guest's next line, and once the table's served, the mark. turns: [{who:'guest'|'you', text}].
      {line, done, mark:{score, verdict, good, missing, better}|null} */
