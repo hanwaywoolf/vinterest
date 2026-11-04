@@ -328,7 +328,9 @@ async function handleTts(request, env, ctx) {
       : await fetch("https://api.openai.com/v1/audio/speech", { method: "POST", headers: { authorization: `Bearer ${env.OPENAI_API_KEY}`, "content-type": "application/json" },
           body: JSON.stringify({ model: env.OPENAI_TTS_MODEL || "gpt-4o-mini-tts", voice, input: spoken, response_format: "mp3", speed, instructions: slow ? "Say this name slowly and clearly, the way a teacher models a pronunciation, then stop." : "You are a relaxed diner at a restaurant table, talking to your server. Natural, warm, conversational and unhurried, with natural pauses; not a narrator." }) });
   } catch (e) { return json(502, { error: "The voice service couldn't be reached.", code: "tts_unreachable" }); }
-  if (!up.ok) return json(502, { error: "The voice service didn't answer.", code: "tts_failed", status: up.status });
+  // The provider's own reason comes back (cut short) so a wrong model id or setting can be seen and fixed.
+  if (!up.ok) { let detail = ""; try { detail = (await up.text()).slice(0, 300); } catch (e) {}
+    return json(502, { error: "The voice service didn't answer.", code: "tts_failed", status: up.status, detail }); }
   const audio = await up.arrayBuffer();
   if (cache && ctx && ctx.waitUntil) ctx.waitUntil(cache.put(cacheKey, new Response(audio, { headers: { "content-type": "audio/mpeg", "cache-control": "public, max-age=2592000" } })));
   return cors(new Response(audio, { status: 200, headers: { "content-type": "audio/mpeg", "x-tts": provider } }));
