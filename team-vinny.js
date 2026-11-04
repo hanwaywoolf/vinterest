@@ -49,8 +49,8 @@ const TeamVinny = {
     else if(/\bbottles?\b/.test(a)){ wines=wines.filter(w=>!TeamData.byGlass(w)); dishes=[]; label.push('the bottles'); }
     const under=a.match(/(?:under|below|less than|up to)\s*[£$€]?\s*(\d+)/), over=a.match(/(?:over|above|more than)\s*[£$€]?\s*(\d+)/);
     const cost=w=>this._price(w.bottle)||this._price(w.glass);
-    if(under){ wines=wines.filter(w=>cost(w)!=null&&cost(w)<=+under[1]); dishes=[]; label.push(`under ${TeamData.currency().sym||'£'}${under[1]}`); }
-    if(over){ wines=wines.filter(w=>cost(w)!=null&&cost(w)>=+over[1]); dishes=[]; label.push(`over ${TeamData.currency().sym||'£'}${over[1]}`); }
+    if(under){ wines=wines.filter(w=>cost(w)!=null&&cost(w)<=+under[1]); dishes=[]; label.push(`under ${TeamData.money(+under[1])}`); }
+    if(over){ wines=wines.filter(w=>cost(w)!=null&&cost(w)>=+over[1]); dishes=[]; label.push(`over ${TeamData.money(+over[1])}`); }
     if(/\bnew\b|\bassigned\b|\bjust arrived\b/.test(a)){ const as=new Set(TeamLearn.assignments(c.person.id).map(x=>x.id)); wines=wines.filter(w=>as.has(w.id)); dishes=dishes.filter(x=>as.has(x.id)); label.push('what\'s new'); }
     if(wantMenu){ wines=[]; label.push('the menu'); }
     // Names: a producer, wine, grape, region, country or section word; a dish's words.
@@ -113,7 +113,7 @@ const TeamVinny = {
   suggestions(){
     const ws=TeamData.wines(), ds=TeamData.dishes(), sym=TeamData.currency().sym||'£', out=[];
     const glass=ws.filter(w=>TeamData.byGlass(w)).map(w=>this._price(w.glass)).filter(Boolean).sort((a,b)=>a-b);
-    if(glass.length) out.push(`What's by the glass under ${sym}${Math.ceil(glass[Math.floor(glass.length/2)])}?`);
+    if(glass.length) out.push(`What's by the glass under ${TeamData.money(Math.ceil(glass[Math.floor(glass.length/2)]))}?`);
     const main=ds.find(x=>/main/i.test(x.section||''))||ds[0]; if(main) out.push(`What goes with the ${main.name.split(',')[0].toLowerCase()}?`);
     const sp=ws.find(w=>w.type==='sparkling'); if(sp) out.push(`How do I serve the ${TeamData.short(sp)}?`);
     const reds=ws.filter(w=>w.type==='red'&&w.vintage); if(reds.length) out.push('Which of our reds are ready to drink?');
@@ -249,7 +249,7 @@ const TeamVinny = {
     const avoid=p.avoid&&TeamData.wine(p.avoid.id), glass=p.glass&&TeamData.wine(p.glass.id);
     let guest, key, wines;
     if(wish==='budget'){ const ok=best.filter(b=>b.w.bottle).sort((a,b)=>cost(a.w)-cost(b.w)); const cap=ok.length?Math.ceil((cost(ok[0].w)+5)/5)*5:null;
-      guest=`A table of two, ordering the ${x.name}; they want a bottle${cap?` and don't want to spend more than about ${sym}${cap}`:''}.`;
+      guest=`A table of two, ordering the ${x.name}; they want a bottle${cap?` and don't want to spend more than about ${TeamData.money(cap)}`:''}.`;
       const fit=ok.filter(b=>!cap||cost(b.w)<=cap); wines=fit.map(b=>b.w.id);
       key=[`Recommend ${fit.map(b=>`${TeamData.short(b.w)} (bottle ${b.w.bottle})`).join(' or ')}`,`Say why it suits the dish: ${fit[0].why}`,'Stay within their budget']; }
     else if(wish==='light'){ const lt=[...best].sort((a,b)=>((TeamData.card(a.id)||{}).style||{}).body-((TeamData.card(b.id)||{}).style||{}).body)[0];

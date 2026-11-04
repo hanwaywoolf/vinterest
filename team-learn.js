@@ -500,10 +500,10 @@ const TeamLearn = {
   _moneyChoices(q,right){
     const sym=TeamData.currency().sym||'£', wines=TeamData.wines();
     const side=/\bglass\b/i.test(q.q)?'glass':/\bbottle\b/i.test(q.q)?'bottle':/glass/i.test(right[0])?'glass':'bottle';
-    const fmt=n=>`${sym}${n} a ${side}`, n=this._num(right[0]); if(n==null) return null;
+    const fmt=n=>`${TeamData.money(n,{dp:n%1?2:0})} a ${side}`, n=this._num(right[0]); if(n==null) return null;
     // A glass question about a wine sold only by the bottle has that as its answer, said in words.
     const own=TeamData.wine(q.wine), bottleOnly=side==='glass'&&own&&!own.glass&&/bottle|not by the glass/i.test(right[0]);
-    const rightText=bottleOnly?`Not by the glass: ${sym}${n} a bottle`:fmt(n);
+    const rightText=bottleOnly?`Not by the glass: ${TeamData.money(n,{dp:n%1?2:0})} a bottle`:fmt(n);
     const prices=[...new Set(wines.map(w=>this._num(side==='glass'?w.glass:w.bottle)).filter(x=>x!=null&&x!==n))]
       .sort((a,b)=>Math.abs(a-n)-Math.abs(b-n)).slice(0,this.CHOICES-1);
     if(prices.length<3) return null;

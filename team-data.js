@@ -24,6 +24,10 @@ const TeamData = {
   setSetting(k,v){ const d=this.get(); d.settings={...(d.settings||{}),[k]:v}; this.save(d); },
   isDemo(){ return (this.get().venue||{}).sample==='demo'; },
   /* A restaurant installed from its own file carries its currency (The Social Corner: CAD); otherwise the device's. */
+  /* An amount in the restaurant's currency, thousands grouped with commas ("$8,774", "£1,250.50"), the one way
+     every screen writes money it works out. dp is the decimal places (0 by default). */
+  money(n,{dp=0}={}){ const sym=this.currency().sym||'£', v=Number(n)||0;
+    return (v<0?'-':'')+sym+Math.abs(v).toLocaleString('en-US',{minimumFractionDigits:dp,maximumFractionDigits:dp}); },
   currency(){ const c=(this.get().venue||{}).currency; if(c&&c.sym) return c; try{ return Regional.current(); }catch(e){ return {sym:'£',code:'GBP'}; } },
   /* The restaurant's own branding when it was installed with it (venue.brand: logo, logoDark, mark, accent). */
   brand(){ return (this.get().venue||{}).brand||null; },

@@ -9,7 +9,8 @@ const CONSOLE_SECTIONS=[
   {k:'dash',label:'Dashboard',icon:'home'},{k:'team',label:'Team',icon:'user'},{k:'wines',label:'Wines',icon:'wine'},{k:'cocktails',label:'Cocktails',icon:'wine',only:()=>TeamData.cocktails().length>0},{k:'menu',label:'Menu',icon:'fork'},
   {k:'upload',label:'Upload',icon:'camera'},{k:'pos',label:'Integrations',icon:'bolt'},{k:'admin',label:'Admin',icon:'edit'},
 ];
-const _cMoney=(n,{dp=0}={})=>{ const cur=TeamData.currency(); const v=Math.abs(n)>=10000&&!dp?`${(n/1000).toFixed(1)}k`:n.toFixed(dp); return `${cur.sym}${v}`; };
+// Money on the console is written in full with its thousands grouped ("$12,480"), never shortened to "12.5k".
+const _cMoney=(n,{dp=0}={})=>TeamData.money(n,{dp});
 const _cPct=v=>v==null?'—':`${Math.round(v*100)}%`;
 const _cAgo=ms=>{ if(!ms) return 'never'; const d=Math.round((Date.now()-ms)/86400000); return d<=0?'today':d===1?'yesterday':`${d} days ago`; };
 const _cDate=ms=>new Date(ms).toLocaleDateString(undefined,{day:'numeric',month:'short'});

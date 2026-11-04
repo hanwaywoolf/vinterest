@@ -548,7 +548,10 @@ test('the console: dashboard figures from TeamReport, the demo sales labelled, a
   expect(want.rows).toBeGreaterThan(1000);
   await expect(page.getByTestId('dash-readiness')).toHaveText(`${want.avg}%`);
   await expect(page.getByTestId('dash-overdue')).toHaveText(String(want.overdue));
-  await expect(page.getByTestId('sales-revenue')).toContainText(String(want.revenue));
+  // Money is written in full with its thousands grouped: $8,774, never $8774 or 8.8k.
+  await expect(page.getByTestId('sales-revenue')).toContainText(want.revenue.toLocaleString('en-US'));
+  const m = await page.evaluate(() => ({ sym: TeamData.currency().sym, out: [TeamData.money(8774), TeamData.money(12480), TeamData.money(1250.5, { dp: 2 }), TeamData.money(-42)] }));
+  expect(m.out).toEqual([`${m.sym}8,774`, `${m.sym}12,480`, `${m.sym}1,250.50`, `-${m.sym}42`]);
   await expect(page.getByTestId('sales-lift')).toContainText(`${want.lift}%`);
   // The till knows a Picpoul the list doesn't: the "new on the list?" signal.
   expect(want.unmapped).toEqual(['Picpoul de Pinet 175']);

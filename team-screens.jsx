@@ -44,7 +44,7 @@ function TeamKpiStrip({open}){ const T=useTheme(), o=TeamReport.overview(), s=Te
       {tile('Overdue',o.overdue,o.overdue?'assignments':'none',o.overdue?T.tone.bad:null,()=>open({tab:'team'}))}
       {tile('Slipping',o.slipping,o.slipping?'were ready':'none',o.slipping?T.amber:null,()=>open({tab:'team'}))}
       {o.adoption.length>0&&tile('New on the list',o.adoption.length,`${o.adoption.filter(a=>a.knows<a.of).length} not yet known by all`,null,()=>open({tab:'wines'}))}
-      {s&&tile('Wine sales, 7 nights',`${TeamData.currency().sym||'£'}${Math.round(s.revenue)}`,`${s.delta.revenue==null?'':(s.delta.revenue>0?'▲':'▼')+Math.abs(s.delta.revenue)+'% · '}${TeamSales.demo()?'demo data':'from the till'}`,null,()=>open({tab:'team'}),'kpi-sales')}
+      {s&&tile('Wine sales, 7 nights',TeamData.money(Math.round(s.revenue)),`${s.delta.revenue==null?'':(s.delta.revenue>0?'▲':'▼')+Math.abs(s.delta.revenue)+'% · '}${TeamSales.demo()?'demo data':'from the till'}`,null,()=>open({tab:'team'}),'kpi-sales')}
     </div>
     <div style={{fontSize:12,color:T.mid,fontFamily:C.P,marginTop:6}}>Open this on a tablet or a laptop for the whole console.</div>
   </div>; }
