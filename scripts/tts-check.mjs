@@ -68,13 +68,18 @@ button:focus-visible{outline:2px solid var(--acc);outline-offset:2px}button[aria
 </style><main>
 <h1>Pronunciation check</h1>
 <p>${esc(list.venue && list.venue.name || venue)} · ${rows.length} names, as the guest's voice says them now (${esc(provider || 'cached')}). Tap Play, and note the numbers that sound wrong. Under each wine is the sounds-like spelling from its card, as a guide.</p>
-${['Wine', 'Cocktail', 'Dish'].map((k) => { const rs = rows.filter((r) => r.kind === k); return rs.length ? `<h2>${k === 'Dish' ? 'Dishes' : k + 's'}</h2>` + rs.map((r) => `<div class="row"><div class="n">${r.n}</div><div><div class="name">${esc(r.name)}</div>${r.hint ? `<div class="sub">Card says: ${esc(r.hint)}</div>` : ''}${fixed(r.name) ? '<div class="tag">Has a fix</div>' : ''}</div><button data-a="a${r.n}" aria-pressed="false">Play</button><audio id="a${r.n}" preload="none" src="data:audio/mpeg;base64,${r.audio}"></audio></div>`).join('') : ''; }).join('')}
+${['Wine', 'Cocktail', 'Dish'].map((k) => { const rs = rows.filter((r) => r.kind === k); return rs.length ? `<h2>${k === 'Dish' ? 'Dishes' : k + 's'}</h2>` + rs.map((r) => `<div class="row"><div class="n">${r.n}</div><div><div class="name">${esc(r.name)}</div>${r.hint ? `<div class="sub">Card says: ${esc(r.hint)}</div>` : ''}${fixed(r.name) ? '<div class="tag">Has a fix</div>' : ''}<div class="err sub"></div></div><button data-a="a${r.n}" aria-pressed="false">Play</button><audio id="a${r.n}" data-b64="${r.audio}"></audio></div>`).join('') : ''; }).join('')}
 <h2>The voices</h2><p>The same lines in each of the ${voices} voices the guests use now (voice 1 is the first id in ELEVENLABS_VOICES).</p>
-${voiceRows.map((r, i) => `<div class="row"><div class="n">V${r.v + 1}</div><div><div class="sub">${esc(r.line)}</div></div><button data-a="v${i}" aria-pressed="false">Play</button><audio id="v${i}" preload="none" src="data:audio/mpeg;base64,${r.audio}"></audio></div>`).join('')}
+${voiceRows.map((r, i) => `<div class="row"><div class="n">V${r.v + 1}</div><div><div class="sub">${esc(r.line)}</div><div class="err sub"></div></div><button data-a="v${i}" aria-pressed="false">Play</button><audio id="v${i}" data-b64="${r.audio}"></audio></div>`).join('')}
 </main><script>
-let cur=null;document.addEventListener('click',e=>{const b=e.target.closest('button[data-a]');if(!b)return;const a=document.getElementById(b.dataset.a);
+// The clips ride in the page as base64 and play from blob: URLs, since a viewer may refuse data: audio.
+let cur=null;const say=(b,t)=>{const n=b.closest('.row').querySelector('.err');if(n)n.textContent=t;};
+function src(a){if(a.src)return;const bin=atob(a.dataset.b64),u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);a.src=URL.createObjectURL(new Blob([u],{type:'audio/mpeg'}));}
+document.addEventListener('click',e=>{const b=e.target.closest('button[data-a]');if(!b)return;const a=document.getElementById(b.dataset.a);
 if(cur&&cur!==a){cur.pause();cur.currentTime=0;document.querySelector('[data-a="'+cur.id+'"]').setAttribute('aria-pressed','false');}
-if(a.paused){a.play();b.setAttribute('aria-pressed','true');cur=a;a.onended=()=>b.setAttribute('aria-pressed','false');}else{a.pause();b.setAttribute('aria-pressed','false');}});
+if(a.paused){src(a);b.setAttribute('aria-pressed','true');cur=a;a.onended=()=>b.setAttribute('aria-pressed','false');
+a.play().then(()=>say(b,'')).catch(err=>{b.setAttribute('aria-pressed','false');say(b,'This clip would not play here ('+(err&&err.name||'error')+'). Check the phone\'s media volume.');});}
+else{a.pause();b.setAttribute('aria-pressed','false');}});
 </script>`;
 writeFileSync(`${out}/index.html`, html);
 for (let i = 1; i <= calls; i++) try { execFileSync('rm', ['-f', `${out}/clip-${i}.mp3`]); } catch (e) {}
