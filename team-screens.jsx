@@ -285,6 +285,8 @@ function TeamCocktailList({pid,open,top}){ const T=useTheme(), cs=TeamData.cockt
 
 /* A cocktail's card: what to say, what's in it (as the list prints it, with the unusual parts explained),
    how it tastes, which dishes it suits, what to offer instead, and where this person stands with it. */
+/* Say it speaks the name itself, not the sounds-like spelling under it: the cloud voice (multilingual) says the
+   real name better than it reads a respelling, and data/tts-say.json fixes the ones it gets wrong. */
 function TeamCocktail({id,pid,open}){ const T=useTheme(), x=TeamData.cocktail(id), c=TeamData.cocktailCard(id), col=_tMixCol(T);
   if(!x) return null;
   const bar=(k,label,v,how)=>v==null?null:<div key={k} style={{marginBottom:10}}><div style={{display:'flex',justifyContent:'space-between',fontSize:15,fontFamily:C.P,color:T.ink}}><span style={{fontWeight:600}}>{label}</span><span style={{color:T.ink2}}>{v}/5</span></div><Prog val={v/5} col={col} h={5} style={{marginTop:5}}/>{how&&<div style={{fontSize:13,color:T.mid,fontFamily:C.P,marginTop:4,lineHeight:1.4}}>{how}</div>}</div>;
@@ -292,7 +294,7 @@ function TeamCocktail({id,pid,open}){ const T=useTheme(), x=TeamData.cocktail(id
   return <div data-testid="team-cocktail">
     <div style={{fontSize:12,fontWeight:700,color:col,fontFamily:C.P,letterSpacing:'0.08em',textTransform:'uppercase'}}>{x.section||'Cocktail'}</div>
     {_tH(T,x.name,[c&&_tCap(c.spirit),x.by&&`By ${x.by}`].filter(Boolean).join(' · ')||null)}
-    {c&&c.say&&<div data-testid="team-say" role="button" onClick={()=>{ TeamVoice.unlock(); TeamVoice.speak(c.say); }} style={{display:'inline-flex',alignItems:'center',gap:8,margin:'-4px 0 12px',padding:'6px 12px',borderRadius:14,border:`1px solid ${T.line}`,cursor:'pointer'}}>
+    {c&&c.say&&<div data-testid="team-say" role="button" onClick={()=>{ TeamVoice.unlock(); TeamVoice.speak(x.name); }} style={{display:'inline-flex',alignItems:'center',gap:8,margin:'-4px 0 12px',padding:'6px 12px',borderRadius:14,border:`1px solid ${T.line}`,cursor:'pointer'}}>
       <span style={{fontSize:14}}>🔊</span><span style={{fontSize:13,color:T.mid,fontFamily:C.P}}>Say it:</span><span style={{fontSize:14,fontWeight:700,color:T.ink,fontFamily:C.P}}>{c.say}</span></div>}
     <div style={{display:'flex',gap:6,flexWrap:'wrap',marginBottom:10}}>{_tPill(T,'glass',x.price,col)}{x.note&&_tPill(T,'other',x.note,col)}</div>
     {st&&st.total>0&&<div data-testid="team-standing" style={{marginBottom:12}}><Card>
@@ -327,7 +329,7 @@ function TeamWine({id,pid,open,manage}){ const T=useTheme(), w=TeamData.wine(id)
   return <div data-testid="team-wine">
     <div style={{fontSize:12,fontWeight:700,color:col,fontFamily:C.P,letterSpacing:'0.08em',textTransform:'uppercase'}}>{w.section||w.type}</div>
     {_tH(T,TeamData.short(w),<span style={{display:'inline-flex',alignItems:'center',gap:6}}><span>{w.vintage||'NV'}</span><span>·</span><Flag wine={w} size={14}/><span>{[w.region,w.country].filter(Boolean).join(' · ')}</span></span>)}
-    {c&&c.say&&<div data-testid="team-say" role="button" onClick={()=>{ TeamVoice.unlock(); TeamVoice.speak(c.say); }} style={{display:'inline-flex',alignItems:'center',gap:8,margin:'-4px 0 12px',padding:'6px 12px',borderRadius:14,border:`1px solid ${T.line}`,cursor:'pointer'}}>
+    {c&&c.say&&<div data-testid="team-say" role="button" onClick={()=>{ TeamVoice.unlock(); TeamVoice.speak(TeamData.short(w)); }} style={{display:'inline-flex',alignItems:'center',gap:8,margin:'-4px 0 12px',padding:'6px 12px',borderRadius:14,border:`1px solid ${T.line}`,cursor:'pointer'}}>
       <span style={{fontSize:14}}>🔊</span><span style={{fontSize:13,color:T.mid,fontFamily:C.P}}>Say it:</span><span style={{fontSize:14,fontWeight:700,color:T.ink,fontFamily:C.P}}>{c.say}</span></div>}
     <div style={{display:'flex',gap:6,flexWrap:'wrap',marginBottom:10}}>{w.glass&&_tPill(T,'glass',`Glass ${w.glass}`,col)}{w.bottle&&_tPill(T,'bottle',`Bottle ${w.bottle}`,col)}{w.other&&_tPill(T,'other',w.other,col)}{(w.grapes||[]).map(g=><span key={g}>{_tPill(T,'grape',g,col)}</span>)}</div>
     {c&&(()=>{ const st=TeamLearn.standing(pid,id); if(!st||!st.total) return null; const scol=st.state==='known'?T.green:st.state==='fading'?T.amber:st.state==='learning'?col:T.mid;

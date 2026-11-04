@@ -1239,14 +1239,16 @@ test('a spoken table: the guest is said aloud, the reply is spoken into the box,
   expect(errors).toEqual([]);
 });
 
-test('a wine card says how to pronounce the wine, and Say it speaks it', async ({ context, page }) => {
+test('a wine card shows how to pronounce the wine, and Say it speaks the name itself', async ({ context, page }) => {
   await context.addInitScript(() => { window.__spoken = []; Object.defineProperty(window, 'speechSynthesis', { configurable: true, value: { speak(u) { window.__spoken.push(u.text); setTimeout(() => u.onend && u.onend(), 5); }, cancel() {}, getVoices() { return []; } } }); window.SpeechSynthesisUtterance = function (t) { this.text = t; }; });
   const errors = await asMarco(context, page);
   await page.getByTestId('team-tab-wines').click();
   await page.getByText(/Dönnhoff/).first().click();
   await expect(page.getByTestId('team-say')).toContainText('DURN-hoff');
   await page.getByTestId('team-say').click();
-  await expect.poll(() => page.evaluate(() => window.__spoken.join('|'))).toContain('DURN-hoff');
+  // The spelling is shown as a guide; the voice is given the wine's own name, which it says better than a respelling.
+  await expect.poll(() => page.evaluate(() => window.__spoken.join('|'))).toContain('Dönnhoff');
+  expect(await page.evaluate(() => window.__spoken.join('|'))).not.toContain('DURN-hoff');
   expect(errors).toEqual([]);
 });
 
