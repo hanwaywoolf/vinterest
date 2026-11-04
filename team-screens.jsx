@@ -158,6 +158,15 @@ function TeamDrill({pid,only,part,given,intro,back,open}){ const T=useTheme(), c
   const rootRef=React.useRef(null);
   React.useLayoutEffect(()=>{ const el=rootRef.current&&rootRef.current.closest('[data-scroll]'); if(el&&i>0) el.scrollTop=0; },[i]);
   const [res,setRes]=React.useState(null), [busy,setBusy]=React.useState(false), [tally,setTally]=React.useState({right:0,of:0});
+  // Answering is the consumer quiz's phases on one screen: `q` (the options), `reveal` (the picks turn green or red,
+  // the right ones shown), `leaving` (the options slide away one after another) and `feedback` (the question steps
+  // down and the answer and its context rise in their place). Reduced motion goes straight to the answer; tests run
+  // it VINTEREST_QUIZ_SPEED times faster, as the consumer quiz.
+  const [phase,setPhase]=React.useState('q'), timers=React.useRef([]);
+  React.useEffect(()=>()=>timers.current.forEach(clearTimeout),[]);
+  const reveal=()=>{ const still=typeof matchMedia!=='undefined'&&matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if(still){ setPhase('feedback'); return; } const sp=_tQuizSpeed(); setPhase('reveal');
+    timers.current.push(setTimeout(()=>setPhase('leaving'),_T_REVEAL_MS/sp),setTimeout(()=>setPhase('feedback'),(_T_REVEAL_MS+_T_LEAVE_MS)/sp)); };
   const q=qs[i];
   // The daily drill reaching its summary marks today's drill done (once), so Today stops asking for it.
   const daily=!given&&!only&&!part, marked=React.useRef(false);
@@ -185,41 +194,54 @@ function TeamDrill({pid,only,part,given,intro,back,open}){ const T=useTheme(), c
   const submit=async()=>{ if(busy) return; if(multi?!picks.length:ans===null) return;
     setBusy(true); const g=multi?TeamLearn.gradeChoices(q,picks):await TeamLearn.grade(q,ans); setBusy(false);
     if(!g.offline) TeamLearn.record(pid,q,g.ok,sure);
-    setRes(g); setTally(t=>({right:t.right+(g.ok?1:0),of:t.of+1})); };
-  const next=()=>{ setI(i+1); setAns(null); setPicks([]); setRes(null); setSure('think'); };
+    setRes(g); setTally(t=>({right:t.right+(g.ok?1:0),of:t.of+1})); reveal(); };
+  const next=()=>{ timers.current.forEach(clearTimeout); timers.current=[]; setI(i+1); setAns(null); setPicks([]); setRes(null); setSure('think'); setPhase('q'); };
+  const sp=_tQuizSpeed(), fb=phase==='feedback';
   const kindLabel=TeamLearn.KIND_LABEL[q.k];
-  const opt=(label,k,{picked,right,wrong,onClick})=><div key={k} role="button" aria-pressed={picked} data-testid="drill-opt" onClick={onClick} style={{padding:'12px 14px',borderRadius:12,border:`1.5px solid ${right?'#5FD48F':wrong?'#F28B7D':picked?cr:T.line}`,background:picked?T.soft:'transparent',color:T.ink,fontSize:15,fontFamily:C.P,cursor:res?'default':'pointer',lineHeight:1.35}}>{label}</div>;
+  // An option: while answering it's a choice; at the reveal the picks turn green or red and the right ones show, the
+  // rest dim; then they slide out to the left one after another.
+  const opt=(label,k,{picked,right,wrong,onClick,n=0})=><div key={k} role="button" aria-pressed={picked} data-testid="drill-opt" onClick={onClick} style={{padding:'12px 14px',borderRadius:12,border:`1.5px solid ${right?'#5FD48F':wrong?'#F28B7D':picked?cr:T.line}`,background:right?_alpha('#5FD48F',0.12):wrong?_alpha('#F28B7D',0.12):picked?T.soft:'transparent',color:T.ink,fontSize:15,fontFamily:C.P,cursor:res?'default':'pointer',lineHeight:1.35,
+    opacity:res&&!right&&!wrong?0.4:1,transition:'opacity .25s, background .25s, border-color .25s',animation:phase==='leaving'?`tq-out ${260/sp}ms ease-in ${n*40/sp}ms both`:res&&(right||wrong)?`${wrong?'tq-shake':'tq-pop'} ${320/sp}ms ease-out both`:undefined}}>{right?'✓ ':wrong?'✗ ':''}{label}</div>;
   return <div ref={rootRef} data-testid="team-drill">
     {intro&&i===0&&!res&&<div data-testid="drill-intro" style={{display:'flex',gap:10,alignItems:'flex-start',marginBottom:14}}><TeamVinnyMark size={28}/><div><div style={{fontSize:15,fontWeight:700,color:T.ink,fontFamily:C.P}}>{intro.title}</div><div style={{fontSize:13,color:T.mid,fontFamily:C.P,lineHeight:1.45,marginTop:2}}>{intro.why}</div></div></div>}
     <div style={{display:'flex',gap:4,marginBottom:14}}>{qs.map((_,k)=><div key={k} style={{flex:1,height:4,borderRadius:2,background:k<i?cr:k===i?T.ink:T.line}}/>)}</div>
     <div style={{fontSize:12,fontWeight:700,color:w?_tTypeCol(T,w.type):mix?_tMixCol(T):T.mid,fontFamily:C.P,letterSpacing:'0.08em',textTransform:'uppercase'}}>{kindLabel}{w&&names?` · ${TeamData.short(w)}`:w?` · ${w.section||w.type}`:mix?` · ${mixNamed?mix.name:'Cocktails'}`:''}</div>
-    <div data-testid="drill-q" style={{fontSize:19,fontWeight:700,color:T.ink,fontFamily:C.P,lineHeight:1.35,margin:'6px 0 14px'}}>{q.q}</div>
-    {!multi&&<div style={{display:'flex',flexDirection:'column',gap:8}}>{q.opts.map((o,k)=>opt(o,k,{picked:ans===k,right:res&&k===q.a,wrong:res&&ans===k&&k!==q.a,onClick:()=>!res&&setAns(k)}))}</div>}
-    {multi&&<>
+    <style>{_T_QUIZ_CSS}</style>
+    <div data-testid="drill-q" style={{fontSize:fb?16:19,fontWeight:700,color:fb?T.ink2:T.ink,fontFamily:C.P,lineHeight:1.35,margin:'6px 0 14px',transition:'font-size .25s, color .25s'}}>{q.q}</div>
+    {!fb&&!multi&&<div style={{display:'flex',flexDirection:'column',gap:8}}>{q.opts.map((o,k)=>opt(o,k,{n:k,picked:ans===k,right:res&&k===q.a,wrong:res&&ans===k&&k!==q.a,onClick:()=>!res&&setAns(k)}))}</div>}
+    {!fb&&multi&&<>
       {(ch.groups||[{label:null,from:0,to:ch.opts.length,n:ch.n}]).map((g,gi)=>{ const inG=picks.filter(k=>k>=g.from&&k<g.to);
         return <div key={gi} data-testid="drill-group" style={{marginTop:gi?18:0}}>
           <div data-testid="drill-choose" style={{fontSize:13,color:T.mid,fontFamily:C.P,marginBottom:8}}>{g.label?<b style={{color:T.ink2,fontWeight:700}}>{g.label}</b>:null}{g.label?' · ':''}Choose {g.n}{inG.length?` · ${inG.length} picked`:''}</div>
           <div style={{display:'flex',flexDirection:'column',gap:8}}>{ch.opts.slice(g.from,g.to).map((o,j)=>{ const k=g.from+j, picked=picks.includes(k), isRight=ch.right.includes(k);
             // One pick in a group of one swaps; otherwise picks stop at the group's count.
-            return opt(o,k,{picked,right:res&&isRight,wrong:res&&picked&&!isRight,onClick:()=>{ if(res) return; setPicks(p=>picked?p.filter(x=>x!==k):g.n===1?[...p.filter(x=>x<g.from||x>=g.to),k]:inG.length<g.n?[...p,k]:p); }}); })}</div></div>; })}
+            return opt(o,k,{n:j,picked,right:res&&isRight,wrong:res&&picked&&!isRight,onClick:()=>{ if(res) return; setPicks(p=>picked?p.filter(x=>x!==k):g.n===1?[...p.filter(x=>x<g.from||x>=g.to),k]:inG.length<g.n?[...p,k]:p); }}); })}</div></div>; })}
     </>}
     {!res&&<>
       <div style={{fontSize:13,color:T.mid,fontFamily:C.P,margin:'14px 0 6px'}}>How sure are you?</div>
       <div style={{display:'flex',gap:6}}>{[['sure','Sure'],['think','Think so'],['guess','Guessing']].map(([k,l])=><div key={k} role="button" onClick={()=>setSure(k)} style={{flex:1,textAlign:'center',padding:'8px 0',borderRadius:10,border:`1px solid ${sure===k?cr:T.line}`,background:sure===k?T.soft:'transparent',color:sure===k?T.ink:T.mid,fontSize:14,fontFamily:C.P,cursor:'pointer'}}>{l}</div>)}</div>
       <Btn primary full style={{marginTop:14,opacity:(multi?picks.length:ans!==null)?1:0.45}} onClick={submit}>{busy?'Marking…':'Check'}</Btn>
     </>}
-    {res&&<div data-testid="drill-result" style={{marginTop:14}}>
+    {res&&fb&&<div data-testid="drill-result" style={{animation:`tq-rise ${360/sp}ms ease-out both`}}>
       <Card>
-        <div style={{fontSize:17,fontWeight:800,fontFamily:C.P,color:res.ok?'#5FD48F':res.verdict==='partly'?'#F2B84B':res.offline?T.mid:'#F28B7D'}}>{res.ok?'Right':res.verdict==='partly'?'Partly':res.offline?'Not marked':'Not quite'}{q.check?' · surprise re-check':''}</div>
-        {!res.ok&&!multi&&<div style={{fontSize:14,color:T.ink2,fontFamily:C.P,marginTop:4}}>The answer: <b>{q.opts[q.a]}</b></div>}
-        {!res.ok&&multi&&<div style={{fontSize:14,color:T.ink2,fontFamily:C.P,marginTop:4}}>{ch.n===1?'The answer is':'The right ones are'} in green above.</div>}
-        {res.say&&<div style={{fontSize:15,color:T.ink,fontFamily:C.P,marginTop:8,lineHeight:1.5}}>{res.say}</div>}
-        {q.why&&<div style={{fontSize:15,color:T.ink2,fontFamily:C.P,marginTop:8,lineHeight:1.5}}>{q.why}</div>}
+        <div style={{display:'flex',alignItems:'center',gap:10}}>
+          <div style={{width:34,height:34,borderRadius:17,flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center',fontSize:18,fontWeight:800,fontFamily:C.P,color:'#0F1A13',background:res.ok?'#5FD48F':res.verdict==='partly'?'#F2B84B':res.offline?T.line:'#F28B7D'}}>{res.ok?'✓':res.verdict==='partly'?'~':res.offline?'?':'✗'}</div>
+          <div style={{fontSize:18,fontWeight:800,fontFamily:C.P,color:res.ok?'#5FD48F':res.verdict==='partly'?'#F2B84B':res.offline?T.mid:'#F28B7D'}}>{res.ok?'Right':res.verdict==='partly'?'Partly':res.offline?'Not marked':'Not quite'}{q.check?' · surprise re-check':''}</div></div>
+        {!multi&&<div data-testid="drill-answer" style={{fontSize:14,color:T.mid,fontFamily:C.P,marginTop:10,lineHeight:1.5}}>{ans!==q.a&&ans!==null?<><span>You said </span><s>{q.opts[ans]}</s><span> · </span></>:null}<span>The answer: </span><b style={{color:T.ink}}>{q.opts[q.a]}</b></div>}
+        {multi&&<div data-testid="drill-answer" style={{marginTop:10}}>{(ch.groups||[{label:null,from:0,to:ch.opts.length}]).map((g,gi)=>{ const idx=[...Array(g.to-g.from)].map((_,j)=>g.from+j), rights=idx.filter(k=>ch.right.includes(k)), wrongs=idx.filter(k=>picks.includes(k)&&!ch.right.includes(k));
+          return <div key={gi} style={{marginTop:gi?12:0}}>{g.label&&<div style={{fontSize:13,fontWeight:700,color:T.ink2,fontFamily:C.P,marginBottom:6}}>{g.label}</div>}
+            <div style={{display:'flex',flexDirection:'column',gap:6}}>{rights.map(k=><div key={k} style={{fontSize:15,color:T.ink,fontFamily:C.P,lineHeight:1.4}}><span style={{color:'#5FD48F',fontWeight:800}}>✓ </span>{ch.opts[k]}{!picks.includes(k)&&<span style={{fontSize:12,color:'#F2B84B',fontWeight:700}}> · you missed this one</span>}</div>)}
+              {wrongs.map(k=><div key={k} style={{fontSize:14,color:T.mid,fontFamily:C.P,lineHeight:1.4}}><span style={{color:'#F28B7D',fontWeight:800}}>✗ </span><s>{ch.opts[k]}</s></div>)}</div></div>; })}</div>}
+        {res.say&&<div style={{fontSize:15,color:T.ink,fontFamily:C.P,marginTop:12,lineHeight:1.5}}>{res.say}</div>}
+        {q.why&&<div style={{fontSize:16,color:T.ink,fontFamily:C.P,marginTop:12,lineHeight:1.55,paddingTop:12,borderTop:`1px solid ${T.line}`}}>{q.why}</div>}
       </Card>
       <Btn primary full style={{marginTop:12}} onClick={next}>{i+1<qs.length?'Next':'Finish'}</Btn>
     </div>}
   </div>; }
 
+const _T_REVEAL_MS=750, _T_LEAVE_MS=420;
+const _tQuizSpeed=()=>{ const v=typeof window!=='undefined'&&Number(window.VINTEREST_QUIZ_SPEED); return v>0?v:1; };
+const _T_QUIZ_CSS=`@keyframes tq-out{to{opacity:0;transform:translateX(-28px)}}@keyframes tq-rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}@keyframes tq-pop{0%{transform:scale(1)}45%{transform:scale(1.03)}100%{transform:scale(1)}}@keyframes tq-shake{0%,100%{transform:none}25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}@media (prefers-reduced-motion: reduce){[data-testid=team-drill] *{animation:none!important;transition:none!important}}`;
 /* The list, by its own sections, with what this person knows. */
 /* Wines | Cocktails at the top of the list tab, where the restaurant has cocktails. */
 let _teamListView='wines';

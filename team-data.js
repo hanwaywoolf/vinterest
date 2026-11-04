@@ -403,6 +403,10 @@ const TeamSample = {
     if(which==='social'&&(!s||s.pending)) s={..._loadJSON('data/team-social-list.json'),cards:{},pairings:{},staff:[]};
     if(!s) return false;
     const now=Date.now(), d=TeamData._empty();
+    // A newer copy of the restaurant already on this phone (a build with rewritten training or a new list) replaces
+    // the list, cards and pairings but keeps the team, everyone's progress and the sales: answers are keyed by wine
+    // and question id, which a new copy keeps, so testing carries on where it was instead of starting again.
+    const keep=(TeamData.get().venue||{}).sample===which&&TeamLearn.people().length>0;
     // The installed restaurant's own details (city, style, currency, brand) come with it; the list file is
     // where they're kept, so a training file exported later doesn't need to carry them.
     const meta=which==='social'?(_loadJSON('data/team-social-list.json')||{}).venue||{}:{};
@@ -418,6 +422,12 @@ const TeamSample = {
     d.versions.push({kind:'list',at:now,added:Object.keys(d.wines),removed:[],changed:[]});
     if(mixes.length) d.versions.push({kind:'cocktails',at:now,added:Object.keys(d.cocktails),removed:[],changed:[]});
     TeamData.save(d);
+    if(keep){ // anyone the new copy's team adds joins (by name), and the demo sales are written if there are none
+      const have=new Set(TeamLearn.people().map(p=>p.name.toLowerCase()));
+      (s.staff||(which==='social'?(_loadJSON('data/team-social-list.json')||{}).staff||[]:[])).filter(p=>!have.has(String(p.name).toLowerCase())).forEach(p=>TeamLearn.addPerson(p.name,p.role,p.photo||null));
+      TeamLearn.people().forEach(p=>TeamLearn.assignExisting(p.id));
+      if((which==='demo'||which==='social')&&typeof TeamSales!=='undefined'&&!(TeamSales.get().rows||[]).length) TeamSales.seedDemo();
+      return true; }
     Store.remove(TeamLearn.KEY); TeamLearn.resetProgress(); if(typeof TeamSales!=='undefined') TeamSales.clear();
     // The Social Corner's demo team is the Larkspur's people and photos in its own roles (data/team-social-list.json staff).
     (s.staff||(which==='social'?(_loadJSON('data/team-social-list.json')||{}).staff||[]:this.DEMO_STAFF)).forEach(p=>TeamLearn.addPerson(p.name,p.role,p.photo||null));

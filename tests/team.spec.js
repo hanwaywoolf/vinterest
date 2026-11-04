@@ -59,17 +59,19 @@ test('The Social Corner opens from ?seed=social on its own team, logo, dollars a
 
 // A device that opened The Social Corner from an older build (here: before its team and sales, set up by whoever
 // opened it) reloads it from ?seed=social once the list file has moved on, though the training file is the same.
-test('a device holding an older Social Corner takes the new one, with or without ?seed=social', async ({ context, page }) => {
+test('a device holding an older Social Corner takes the new one, with or without ?seed=social, keeping who was there and their progress', async ({ context, page }) => {
   await stubNetwork(context);
   await page.goto(`${BASE}/team/?seed=social`);
   await page.evaluate(() => { const d = TeamData.get(); d.venue.seeded = 'an older copy'; TeamData.save(d);
     Store.remove(TeamLearn.KEY); TeamLearn.resetProgress(); TeamSales.clear(); TeamLearn.setMe(TeamLearn.addPerson('Alex Morgan', 'manager')); });
   await page.goto(`${BASE}/team/`); // even without ?seed
 
-  await expect.poll(() => page.evaluate(() => TeamLearn.people().length)).toBe(7);
-  expect(await page.evaluate(() => [TeamLearn.me().name, TeamSales.get().rows.length > 1000])).toEqual(['Elena Ruiz', true]);
+  // The new copy's team joins the person already here, who stays signed in; the demo sales are written.
+  await expect.poll(() => page.evaluate(() => TeamLearn.people().length)).toBe(8);
+  expect(await page.evaluate(() => [TeamLearn.me().name, TeamLearn.people().some((p) => p.name === 'Elena Ruiz'), TeamSales.get().rows.length > 1000])).toEqual(['Alex Morgan', true, true]);
+  expect(await page.evaluate(() => TeamSample.current('social'))).toBe(true);
   await page.reload(); // and keeps it after that
-  expect(await page.evaluate(() => TeamLearn.people().length)).toBe(7);
+  expect(await page.evaluate(() => TeamLearn.people().length)).toBe(8);
 });
 
 test('The Social Corner opens from the setup screen, for a phone whose link lost ?seed=social', async ({ context, page }) => {
@@ -267,9 +269,16 @@ test('the drill on screen: pick, say how sure, see the answer and why, then the 
     await page.getByText('Sure', { exact: true }).click();
     await page.getByText('Check', { exact: true }).click();
     await expect(page.getByTestId('drill-result')).toBeVisible();
+    // As in the consumer quiz, the options have gone: the answer and its context are what's left.
+    await expect(page.getByTestId('drill-opt')).toHaveCount(0);
+    await expect(page.getByTestId('drill-answer')).toBeVisible();
     await page.getByText(i < 4 ? 'Next' : 'Finish', { exact: true }).click();
   }
   await expect(page.getByTestId('drill-done')).toContainText('of 5 right');
+  // A newer copy of the restaurant (a new build's training) keeps everyone's progress and the day's drill.
+  const kept = await page.evaluate(() => { const pid = TeamLearn.me().id, was = JSON.stringify(TeamLearn._all()[pid].items); TeamSample.load('sample');
+    return { same: JSON.stringify((TeamLearn._all()[pid] || {}).items) === was, me: TeamLearn.me().id === pid }; });
+  expect(kept).toEqual({ same: true, me: true });
   // Back on Today, the drill reads as done for the day, with more on offer rather than asked for again.
   await page.getByText('Done', { exact: true }).click();
   await expect(page.getByTestId('today-done')).toContainText("Today's drill done");
@@ -1007,6 +1016,9 @@ test('scrolling: the next question opens at its top, a new screen opens at its t
   await expect(page.getByTestId('drill-q')).toBeVisible();
   await page.getByTestId('drill-opt').first().click();
   await page.getByText('Check', { exact: true }).click();
+  // The answer replaces the options, so a short screen is what makes it scroll.
+  await expect(page.getByTestId('drill-result')).toBeVisible();
+  await page.setViewportSize({ width: 390, height: 360 });
   await scroller.evaluate((el) => { el.scrollTop = el.scrollHeight; });
   expect(await top()).toBeGreaterThan(0);
   await page.getByText(/^(Next|Finish)$/).first().click();
