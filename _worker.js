@@ -314,7 +314,7 @@ async function handleTts(request, env, ctx) {
   const speed = Math.min(1.2, Math.max(0.7, Number(slow ? env.TTS_SLOW || 0.8 : env.TTS_SPEED || 0.9) || 0.9));
   const list = provider === "elevenlabs" && env.ELEVENLABS_VOICES ? String(env.ELEVENLABS_VOICES).split(",").map(x => x.trim()).filter(Boolean) : TTS_VOICES[provider];
   const voice = list[Math.abs(parseInt(body.voice, 10) || 0) % list.length];
-  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(provider + "|" + voice + "|" + (provider === "elevenlabs" ? (env.ELEVENLABS_MODEL || "eleven_flash_v2_5") : "") + "|" + speed + "|" + spoken));
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(provider + "|" + voice + "|" + (provider === "elevenlabs" ? (env.ELEVENLABS_MODEL || "eleven_v4") : "") + "|" + speed + "|" + spoken));
   // The model is in the key, so changing ELEVENLABS_MODEL is heard at once rather than after a month of old clips.
   const id = [...new Uint8Array(digest)].map(b => b.toString(16).padStart(2, "0")).join("");
   const cacheKey = new Request("https://tts.cache.vinterest/" + id);
@@ -324,7 +324,7 @@ async function handleTts(request, env, ctx) {
   try {
     up = provider === "elevenlabs"
       ? await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voice}?output_format=mp3_44100_64`, { method: "POST", headers: { "xi-api-key": env.ELEVENLABS_API_KEY, "content-type": "application/json", accept: "audio/mpeg" },
-          body: JSON.stringify({ text: spoken, model_id: env.ELEVENLABS_MODEL || "eleven_flash_v2_5", voice_settings: { stability: 0.6, similarity_boost: 0.75, speed } }) })
+          body: JSON.stringify({ text: spoken, model_id: env.ELEVENLABS_MODEL || "eleven_v4", voice_settings: { stability: 0.6, similarity_boost: 0.75, speed } }) })
       : await fetch("https://api.openai.com/v1/audio/speech", { method: "POST", headers: { authorization: `Bearer ${env.OPENAI_API_KEY}`, "content-type": "application/json" },
           body: JSON.stringify({ model: env.OPENAI_TTS_MODEL || "gpt-4o-mini-tts", voice, input: spoken, response_format: "mp3", speed, instructions: slow ? "Say this name slowly and clearly, the way a teacher models a pronunciation, then stop." : "You are a relaxed diner at a restaurant table, talking to your server. Natural, warm, conversational and unhurried, with natural pauses; not a narrator." }) });
   } catch (e) { return json(502, { error: "The voice service couldn't be reached.", code: "tts_unreachable" }); }
@@ -333,7 +333,7 @@ async function handleTts(request, env, ctx) {
     return json(502, { error: "The voice service didn't answer.", code: "tts_failed", status: up.status, detail }); }
   const audio = await up.arrayBuffer();
   if (cache && ctx && ctx.waitUntil) ctx.waitUntil(cache.put(cacheKey, new Response(audio, { headers: { "content-type": "audio/mpeg", "cache-control": "public, max-age=2592000" } })));
-  return cors(new Response(audio, { status: 200, headers: { "content-type": "audio/mpeg", "x-tts": provider, "x-tts-model": provider === "elevenlabs" ? (env.ELEVENLABS_MODEL || "eleven_flash_v2_5") : (env.OPENAI_TTS_MODEL || "gpt-4o-mini-tts") } }));
+  return cors(new Response(audio, { status: 200, headers: { "content-type": "audio/mpeg", "x-tts": provider, "x-tts-model": provider === "elevenlabs" ? (env.ELEVENLABS_MODEL || "eleven_v4") : (env.OPENAI_TTS_MODEL || "gpt-4o-mini-tts") } }));
 }
 
 function originAllowed(origin) {

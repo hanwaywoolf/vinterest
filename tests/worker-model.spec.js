@@ -82,6 +82,7 @@ test('/tts: ElevenLabs when its key is set, a diner\'s voice per table, the key 
   expect(r.type).toBe('audio/mpeg');
   expect(r.upstream[0].url).toContain('api.elevenlabs.io/v1/text-to-speech/pNInz6obpgDQGcFmaJgB');
   expect(r.upstream[0].headers['xi-api-key']).toBe('k');
+  expect(r.upstream[0].body.model_id).toBe('eleven_v4'); // the default, chosen by ear
   expect(r.upstream[0].body.text).toBe('Evening! What would you pour with the cod?');
 });
 test('/tts: OpenAI\'s speech model with only its key; long text cut short; other origins refused', async () => {
