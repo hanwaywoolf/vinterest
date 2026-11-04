@@ -161,6 +161,8 @@ function TeamDrill({pid,only,part,given,intro,back,open}){ const T=useTheme(), c
   const [before]=React.useState(()=>{ const r=TeamLearn.readiness(pid); const items={};
     qs.forEach(q=>{ const id=q.wine||q.cocktail||q.dish; if(id&&!items[id]) items[id]=TeamLearn.progress(pid,id,{dish:!q.wine&&!q.cocktail}); }); return {pct:r?r.pct:0,items}; });
   const [i,setI]=React.useState(0), [ans,setAns]=React.useState(null), [picks,setPicks]=React.useState([]), [sure,setSure]=React.useState('think');
+  // When the question doesn't ask how sure they are, a right answer inside QUICK_MS reads as sure (confidence from speed, not a tap).
+  const shownAt=React.useRef(Date.now());
   // Each question (and the summary after the last) opens at its top: the previous one may have been scrolled to reach its answers.
   const rootRef=React.useRef(null);
   React.useLayoutEffect(()=>{ const el=rootRef.current&&rootRef.current.closest('[data-scroll]'); if(el&&i>0) el.scrollTop=0; },[i]);
@@ -200,9 +202,10 @@ function TeamDrill({pid,only,part,given,intro,back,open}){ const T=useTheme(), c
   const names=w&&new RegExp(TeamData.short(w).replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'i').test(q.q);
   const submit=async()=>{ if(busy) return; if(multi?!picks.length:ans===null) return;
     setBusy(true); const g=multi?TeamLearn.gradeChoices(q,picks):await TeamLearn.grade(q,ans); setBusy(false);
-    if(!g.offline) TeamLearn.record(pid,q,g.ok,sure);
+    const asks=TeamLearn.asksConfidence(q), quick=Date.now()-shownAt.current<_T_QUICK_MS;
+    if(!g.offline) TeamLearn.record(pid,q,g.ok,asks?sure:(g.ok&&quick?'sure':'think'));
     setRes(g); setTally(t=>({right:t.right+(g.ok?1:0),of:t.of+1})); reveal(); };
-  const next=()=>{ timers.current.forEach(clearTimeout); timers.current=[]; setI(i+1); setAns(null); setPicks([]); setRes(null); setSure('think'); setPhase('q'); };
+  const next=()=>{ timers.current.forEach(clearTimeout); timers.current=[]; setI(i+1); setAns(null); setPicks([]); setRes(null); setSure('think'); setPhase('q'); shownAt.current=Date.now(); };
   const sp=_tQuizSpeed(), fb=phase==='feedback';
   const kindLabel=TeamLearn.KIND_LABEL[q.k];
   // An option: while answering it's a choice; at the reveal the picks turn green or red and the right ones show, the
@@ -225,8 +228,9 @@ function TeamDrill({pid,only,part,given,intro,back,open}){ const T=useTheme(), c
             return opt(o,k,{n:j,picked,right:res&&isRight,wrong:res&&picked&&!isRight,onClick:()=>{ if(res) return; setPicks(p=>picked?p.filter(x=>x!==k):g.n===1?[...p.filter(x=>x<g.from||x>=g.to),k]:inG.length<g.n?[...p,k]:p); }}); })}</div></div>; })}
     </>}
     {!res&&<>
-      <div style={{fontSize:14,color:T.mid,fontFamily:C.P,margin:'14px 0 6px'}}>How sure are you?</div>
-      <div style={{display:'flex',gap:6}}>{[['sure','Sure'],['think','Think so'],['guess','Guessing']].map(([k,l])=><div key={k} role="button" onClick={()=>setSure(k)} style={{flex:1,textAlign:'center',padding:'8px 0',borderRadius:10,border:`1px solid ${sure===k?cr:T.line}`,background:sure===k?T.soft:'transparent',color:sure===k?T.ink:T.mid,fontSize:14,fontFamily:C.P,cursor:'pointer'}}>{l}</div>)}</div>
+      {/* Only a price or an allergen asks how sure they are (TeamLearn.asksConfidence): a wrong one reaches the bill or a guest, and it counts double. */}
+      {TeamLearn.asksConfidence(q)&&<div data-testid="drill-sure"><div style={{fontSize:14,color:T.mid,fontFamily:C.P,margin:'14px 0 6px'}}>How sure are you? <span style={{color:T.faint||T.mid}}>A wrong price counts double.</span></div>
+      <div style={{display:'flex',gap:6}}>{[['sure','Sure'],['think','Think so'],['guess','Guessing']].map(([k,l])=><div key={k} role="button" onClick={()=>setSure(k)} style={{flex:1,textAlign:'center',padding:'10px 0',borderRadius:10,border:`1px solid ${sure===k?cr:T.line}`,background:sure===k?T.soft:'transparent',color:sure===k?T.ink:T.mid,fontSize:15,fontFamily:C.P,cursor:'pointer'}}>{l}</div>)}</div></div>}
       <Btn primary full style={{marginTop:14,opacity:(multi?picks.length:ans!==null)?1:0.45}} onClick={submit}>{busy?'Marking…':'Check'}</Btn>
     </>}
     {res&&fb&&<div data-testid="drill-result" style={{animation:`tq-rise ${360/sp}ms ease-out both`}}>
@@ -246,7 +250,7 @@ function TeamDrill({pid,only,part,given,intro,back,open}){ const T=useTheme(), c
     </div>}
   </div>; }
 
-const _T_REVEAL_MS=750, _T_LEAVE_MS=420;
+const _T_REVEAL_MS=750, _T_LEAVE_MS=420, _T_QUICK_MS=4000;
 const _tQuizSpeed=()=>{ const v=typeof window!=='undefined'&&Number(window.VINTEREST_QUIZ_SPEED); return v>0?v:1; };
 const _T_QUIZ_CSS=`@keyframes tq-out{to{opacity:0;transform:translateX(-28px)}}@keyframes tq-rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}@keyframes tq-pop{0%{transform:scale(1)}45%{transform:scale(1.03)}100%{transform:scale(1)}}@keyframes tq-shake{0%,100%{transform:none}25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}@media (prefers-reduced-motion: reduce){[data-testid=team-drill] *{animation:none!important;transition:none!important}}`;
 /* The list, by its own sections, with what this person knows. */

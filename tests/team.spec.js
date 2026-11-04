@@ -278,13 +278,45 @@ test('a typed answer is marked locally when it plainly matches, and by Claude ag
   expect(reqs.filter((r) => r.purpose === 'team_grade')).toHaveLength(1);
 });
 
+// The drill recipe (TeamLearn.drill): one question per wine or dish; what's due first; at most NEW_MAX new things once
+// anything is due, dealt one per list section; a recall question five pills (seven for a three-grape blend); a grape
+// question never offers a wine's name; "How sure are you?" asked on a price alone.
+test('the drill deals one question per wine, caps new things once answers are due, keeps recall to five pills and asks confidence on prices only', async ({ context, page }) => {
+  await stubNetwork(context);
+  await page.goto(`${BASE}/team/?seed=socialv2`);
+  await expect(page.getByTestId('team-state')).toBeVisible();
+  const r = await page.evaluate(() => {
+    const who = (n) => TeamLearn.people().find((p) => p.name.startsWith(n)).id, item = (q) => q.wine || q.dish || q.cocktail;
+    const amara = who('Amara'), priya = who('Priya'), items = TeamLearn._all();
+    const dueFor = (pid) => Object.values((items[pid] || { items: {} }).items).filter((it) => it.reps && (it.wrong || it.due <= Date.now())).length;
+    const d = TeamLearn.drill(priya), ids = d.map(item);
+    const fresh = d.filter((q) => !(items[priya].items[q.id] && items[priya].items[q.id].reps) && !q.check).length;
+    // A new server with nothing due: five new things from different sections of the list.
+    const fresh2 = TeamLearn.addPerson('Sam New', 'server'); const d2 = TeamLearn.drill(fresh2);
+    const secs = d2.map((q) => (TeamData.wine(q.wine) || TeamData.dish(q.dish) || {}).section);
+    const sizes = {}; let wineAsGrape = 0, conf = 0, money = 0;
+    TeamData.wines().forEach((w) => TeamLearn.wineQs(w.id).forEach((q) => { if (q.k === 'recognise') return; const c = TeamLearn.choices(q);
+      if (q.k === 'recall') { sizes[c.opts.length] = (sizes[c.opts.length] || 0) + 1; if (TeamLearn._topic(q.q) === 'grape') c.opts.forEach((o) => { if (TeamData.wines().some((x) => TeamLearn._norm(o).includes(TeamLearn._norm(TeamData.short(x))))) wineAsGrape++; }); }
+      if (TeamLearn.asksConfidence(q)) { conf++; if (/[£$€]/.test(String(q.ans || ''))) money++; } }));
+    TeamLearn.removePerson(fresh2);
+    return { due: dueFor(priya), n: d.length, distinct: new Set(ids).size, fresh, secs: new Set(secs).size, sizes, wineAsGrape, conf, money };
+  });
+  expect(r.n).toBe(5);
+  expect(r.distinct).toBe(5); // one per wine or dish
+  expect(r.due).toBeGreaterThan(0); expect(r.fresh).toBeLessThanOrEqual(2); // new things capped once anything is due
+  expect(r.secs).toBeGreaterThanOrEqual(3); // a first drill spreads over the list's sections
+  expect(Math.max(...Object.keys(r.sizes).map(Number))).toBeLessThanOrEqual(7); expect(Math.min(...Object.keys(r.sizes).map(Number))).toBeGreaterThanOrEqual(4);
+  expect(r.wineAsGrape).toBe(0);
+  expect(r.conf).toBeGreaterThan(0); expect(r.conf).toBe(r.money); // confidence is asked on prices, nowhere else yet
+});
+
 test('the drill on screen: pick, say how sure, see the answer and why, then the summary', async ({ context, page }) => {
   await openSample(context, page);
   await page.getByText(/Start today's drill/).click();
   for (let i = 0; i < 5; i++) {
     await expect(page.getByTestId('drill-q')).toBeVisible();
     await page.getByTestId('drill-opt').first().click();
-    await page.getByText('Sure', { exact: true }).click();
+    const sure = page.getByText('Sure', { exact: true }); if (await sure.isVisible().catch(() => false)) await sure.click(); // asked on a price question only
     await page.getByText('Check', { exact: true }).click();
     await expect(page.getByTestId('drill-result')).toBeVisible();
     // As in the consumer quiz, the options have gone: the answer and its context are what's left.
@@ -504,7 +536,7 @@ test('the drill asks typed questions as pills, keeps the wine out of the header 
     return { recallN: recall.n, recallOpts: recall.opts.length, recallRight: recall.right.map((i) => recall.opts[i]).sort(), applyN: apply.n, applyOpts: apply.opts.length,
       ok: TeamLearn.gradeChoices(q.find((x) => x.k === 'recall'), recall.right).ok, partly: TeamLearn.gradeChoices(q.find((x) => x.k === 'recall'), recall.right.slice(0, 1)).verdict };
   });
-  expect(r).toMatchObject({ recallN: 3, recallOpts: 10, recallRight: ['Chardonnay', 'Pinot Meunier', 'Pinot Noir'], applyN: 3, applyOpts: 10, ok: true, partly: 'partly' });
+  expect(r).toMatchObject({ recallN: 3, recallOpts: 7, recallRight: ['Chardonnay', 'Pinot Meunier', 'Pinot Noir'], applyN: 3, applyOpts: 10, ok: true, partly: 'partly' });
   // Drill Nyetimber alone as Dani (a server: recognise, recall, apply): the apply question's header must not name it.
   await page.evaluate(() => { const dani = TeamLearn.people().find((p) => p.name.startsWith('Dani')); TeamLearn.setMe(dani.id); });
   await page.goto(`${BASE}/team/`);
