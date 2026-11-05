@@ -200,7 +200,7 @@ function TeamGuest({pid,back,open}){ const T=useTheme(), cr=T.lift(C.cr);
     setSay(''); setListening(TeamVoice.listen({onWords:t=>setSay(t)})); };
   React.useEffect(()=>{ if(sc&&!turns.length) step([]); },[sc]);
   React.useEffect(()=>{ try{ endRef.current&&endRef.current.scrollIntoView({block:'end',behavior:'smooth'}); }catch(e){} },[turns.length,mark,busy,hints]);
-  if(!sc) return <div>{_tH(T,'No table yet','A guest needs a menu with pairings. Once the menu is published, Vinny can play one.')}<Btn full onClick={back}>Back</Btn></div>;
+  if(!sc) return <div data-testid="team-guest" style={{position:'absolute',inset:0,background:T.bg,color:T.ink,padding:'calc(env(safe-area-inset-top) + 24px) 16px'}}>{_tH(T,'No table yet','A guest needs a menu with pairings. Once the menu is published, Vinny can play one.')}<Btn full onClick={back}>Back</Btn></div>;
   const names=()=>TeamData.wines().map(w=>({name:TeamData.short(w),say:(TeamData.card(w.id)||{}).say||''}));
   const expected=()=>sc.wines.map(id=>TeamData.wine(id)).filter(Boolean).map(w=>TeamData.short(w));
   const reply=async()=>{ let t=say.trim(), sp=spoken;
@@ -218,19 +218,44 @@ function TeamGuest({pid,back,open}){ const T=useTheme(), cr=T.lift(C.cr);
   const helpUsed=level==='choices'?'With choices':level==='hints'?(hints?`With ${hints} hint${hints===1?'':'s'}`:'No hints used'):'On your own';
   const movedLine=moved&&moved.moved==='up'?(moved.level==='hints'?'Two tables in a row. Next table: no choices, just hints when you ask.':'Two tables in a row. Next table: on your own.')
     :moved&&moved.moved==='down'?(moved.level==='choices'?'Next table comes with choices again, to steady it.':'Next table comes with hints again.'):'';
-  return <div data-testid="team-guest">
-    {_tH(T,'A guest at your table',`They're having the ${sc.dishName}. Answer as you would at the table.`)}
-    {sc.why&&sc.why.length>0&&<div data-testid="guest-why" style={{fontSize:14,color:T.mid,fontFamily:C.P,lineHeight:1.45,margin:'-4px 0 10px'}}>Picked for you: {sc.why.join(', and ')}.</div>}
+  /* The table takes the whole screen, over the app's header and tabs (team-app.jsx mounts it as a layer): a slim bar
+     with the dish and Voice, the conversation scrolling between, and the mic and reply box pinned to the foot, so
+     the back and forth has the room a chat needs. Back on the bar is one step, out of the table. */
+  const bar=<div style={{padding:'calc(env(safe-area-inset-top) + 10px) 12px 10px 12px',display:'flex',alignItems:'center',gap:10,borderBottom:`1px solid ${T.line}`,flexShrink:0}}>
+    <div role="button" aria-label="Back" data-testid="guest-back" onClick={back} style={{width:34,height:34,borderRadius:17,border:`1px solid ${T.line}`,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',flexShrink:0}}><Icon n="back" sz={16} col={T.ink}/></div>
+    <div style={{flex:1,minWidth:0}}>
+      <div style={{fontSize:16,fontWeight:800,color:T.ink,fontFamily:C.P,lineHeight:1.2}}>A guest at your table</div>
+      <div style={{fontSize:13,color:T.mid,fontFamily:C.P,marginTop:2,lineHeight:1.3,display:'-webkit-box',WebkitLineClamp:2,WebkitBoxOrient:'vertical',overflow:'hidden'}}>Having the {sc.dishName}</div></div>
+    {TeamVoice.canSpeak()&&<div role="switch" aria-checked={voice} data-testid="guest-voice" onClick={toggleVoice} style={{display:'inline-flex',alignItems:'center',gap:6,padding:'5px 12px',borderRadius:14,border:`1px solid ${voice?cr:T.line}`,color:voice?T.ink:T.mid,fontSize:14,fontWeight:600,fontFamily:C.P,cursor:'pointer',flexShrink:0}}>{voice?'🔊 Voice on':'🔇 Voice off'}</div>}
+  </div>;
+  const foot=!mark&&turns.length>0?<div style={{borderTop:`1px solid ${T.line}`,background:T.bg,padding:'10px 16px calc(env(safe-area-inset-bottom) + 10px)',flexShrink:0}}><div style={{maxWidth:720,margin:'0 auto'}}>
+      {voice&&TeamVoice.canListen()&&<div style={{marginBottom:10}}>
+        <div role="button" data-testid="guest-mic" aria-pressed={!!listening} onClick={writing?undefined:mic} style={{display:'flex',alignItems:'center',justifyContent:'center',gap:10,padding:'11px 16px',borderRadius:16,border:`1.5px solid ${listening?'#F28B7D':cr}`,background:listening?_alpha('#F28B7D',0.12):_alpha(C.cr,0.18),color:T.ink,fontSize:16,fontWeight:700,fontFamily:C.P,cursor:'pointer'}}>
+          <span style={{width:12,height:12,borderRadius:6,background:listening?'#F28B7D':cr,animation:listening?'tmPulse 1s ease-in-out infinite':'none'}}/>{writing?'Writing down what you said…':listening?'Listening… tap when you\'ve finished':spoken?'Say it again':'Tap and speak to the guest'}</div>
+        {heardErr&&<div data-testid="voice-error" style={{fontSize:14,color:'#F28B7D',fontFamily:C.P,marginTop:6,lineHeight:1.45}}>{heardErr}</div>}
+        <style>{'@keyframes tmPulse{0%,100%{opacity:1}50%{opacity:.3}}'}</style>
+        {notice&&<div data-testid="voice-notice" style={{fontSize:14,color:T.mid,fontFamily:C.P,marginTop:6,lineHeight:1.45}}>{TeamVoice.where()}</div>}
+        {spoken&&!listening&&<div style={{fontSize:14,color:T.mid,fontFamily:C.P,marginTop:6}}>Check the words below (fix a misheard name), then Say.</div>}
+      </div>}
+      <div style={{display:'flex',gap:8,alignItems:'flex-end'}}>
+        <textarea data-testid="guest-reply" value={say} onChange={e=>setSay(e.target.value)} onKeyDown={e=>{ if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); reply(); } }} rows={say.length>60?3:2} placeholder="What do you say?" aria-label="Your reply" style={{flex:1,minWidth:0,borderRadius:12,border:`1px solid ${T.line}`,background:T.glass,color:T.ink,padding:'10px 12px',fontSize:'16px',fontFamily:C.P,resize:'none',outline:'none',lineHeight:1.4}}/>
+        <Btn primary onClick={reply} style={{opacity:(say.trim()||listening)&&!busy?1:0.45}}>Say</Btn>
+      </div>
+    </div></div>
+    :mark?<div style={{borderTop:`1px solid ${T.line}`,background:T.bg,padding:'10px 16px calc(env(safe-area-inset-bottom) + 10px)',flexShrink:0}}><div style={{maxWidth:720,margin:'0 auto',display:'flex',gap:8}}><Btn primary style={{flex:1}} onClick={again}>Another table</Btn><Btn style={{flex:1}} onClick={back}>Done</Btn></div></div>
+    :null;
+  return <div data-testid="team-guest" style={{position:'absolute',inset:0,display:'flex',flexDirection:'column',background:`radial-gradient(ellipse at 50% -10%, ${_alpha(cr,0.3)}, transparent 60%) ${T.bg}`,color:T.ink}}>
+    {bar}
+    <div style={{flex:1,overflowY:'auto',padding:'14px 16px 20px'}}><div style={{maxWidth:720,margin:'0 auto'}}>
+    {sc.why&&sc.why.length>0&&<div data-testid="guest-why" style={{fontSize:14,color:T.mid,fontFamily:C.P,lineHeight:1.45,margin:'0 0 12px'}}>Picked for you: {sc.why.join(', and ')}.</div>}
     {!mark&&yours===0&&<_GuestHelpSwitch level={level} onPick={pick}/>}
-    {TeamVoice.canSpeak()&&<div style={{display:'flex',justifyContent:'flex-end',marginBottom:8}}>
-      <div role="switch" aria-checked={voice} data-testid="guest-voice" onClick={toggleVoice} style={{display:'inline-flex',alignItems:'center',gap:6,padding:'5px 12px',borderRadius:14,border:`1px solid ${voice?cr:T.line}`,color:voice?T.ink:T.mid,fontSize:14,fontWeight:600,fontFamily:C.P,cursor:'pointer'}}>{voice?'🔊 Voice on':'🔇 Voice off'}</div></div>}
     <div style={{display:'flex',flexDirection:'column',gap:10}}>
       {turns.map((t,i)=>{ if(t.who!=='guest') youN++; const d=t.who==='guest'?null:dels.current[youN];
         return t.who==='guest'
-        ?<div key={i} data-testid="guest-line" style={{display:'flex',gap:10,alignItems:'flex-start'}}><TeamVinnyMark size={28}/><div style={{background:T.glass,border:`1px solid ${T.line}`,borderRadius:'4px 16px 16px 16px',padding:'10px 14px',fontSize:16,color:T.ink,fontFamily:C.P,lineHeight:1.45,maxWidth:'85%'}}>{t.text}</div>
+        ?<div key={i} data-testid="guest-line" style={{display:'flex',gap:10,alignItems:'flex-start'}}><TeamVinnyMark size={28}/><div style={{background:T.glass,border:`1px solid ${T.line}`,borderRadius:'4px 16px 16px 16px',padding:'11px 14px',fontSize:17,color:T.ink,fontFamily:C.P,lineHeight:1.45,maxWidth:'85%'}}>{t.text}</div>
           {voice&&<div role="button" aria-label="Hear it again" data-testid="guest-replay" onClick={()=>TeamVoice.speak(t.text,{voice:voiceNo})} style={{alignSelf:'center',fontSize:16,cursor:'pointer',color:T.mid,padding:4}}>🔊</div>}</div>
         :<div key={i} style={{alignSelf:'flex-end',maxWidth:'85%',display:'flex',flexDirection:'column',alignItems:'flex-end'}}>
-          <div data-testid="you-line" style={{background:T.soft,border:`1px solid ${cr}`,borderRadius:'16px 4px 16px 16px',padding:'10px 14px',fontSize:15,color:T.ink,fontFamily:C.P,lineHeight:1.45}}>{t.spoken?'🎙 ':''}{t.text}</div>
+          <div data-testid="you-line" style={{background:T.soft,border:`1px solid ${cr}`,borderRadius:'16px 4px 16px 16px',padding:'11px 14px',fontSize:16,color:T.ink,fontFamily:C.P,lineHeight:1.45}}>{t.spoken?'🎙 ':''}{t.text}</div>
           {d&&<div data-testid="you-delivery" style={{fontSize:14,color:T.mid,fontFamily:C.P,marginTop:4}}>{[d.wpm!=null&&`${d.wpm} words a minute`,d.waitMs!=null&&`started in ${(d.waitMs/1000).toFixed(1)}s`,`${d.fillers+d.hedges} filler${d.fillers+d.hedges===1?'':'s'} and hedges`].filter(Boolean).join(' · ')}</div>}
         </div>; })}
       {busy&&<div style={{display:'flex',gap:10,alignItems:'center'}}><TeamVinnyMark size={28}/><span style={{fontSize:14,color:T.mid,fontFamily:C.P}}>…</span></div>}
@@ -261,21 +286,10 @@ function TeamGuest({pid,back,open}){ const T=useTheme(), cr=T.lift(C.cr);
       </div>}
       {movedLine&&<div data-testid="guest-moved" style={{fontSize:14,fontWeight:600,color:moved.moved==='up'?'#5FD48F':T.ink2,fontFamily:C.P,marginTop:12,lineHeight:1.45}}>{movedLine}</div>}
       <_TVChips wines={sc.wines} dishes={[sc.dish]} open={open}/>
-      <div style={{display:'flex',gap:8,marginTop:14}}><Btn primary style={{flex:1}} onClick={again}>Another table</Btn><Btn style={{flex:1}} onClick={back}>Done</Btn></div>
     </Card></div>}
-    {!mark&&turns.length>0&&voice&&TeamVoice.canListen()&&<div style={{marginTop:14}}>
-      <div role="button" data-testid="guest-mic" aria-pressed={!!listening} onClick={writing?undefined:mic} style={{display:'flex',alignItems:'center',justifyContent:'center',gap:10,padding:'14px 16px',borderRadius:16,border:`1.5px solid ${listening?'#F28B7D':cr}`,background:listening?_alpha('#F28B7D',0.12):_alpha(C.cr,0.18),color:T.ink,fontSize:16,fontWeight:700,fontFamily:C.P,cursor:'pointer'}}>
-        <span style={{width:12,height:12,borderRadius:6,background:listening?'#F28B7D':cr,animation:listening?'tmPulse 1s ease-in-out infinite':'none'}}/>{writing?'Writing down what you said…':listening?'Listening… tap when you\'ve finished':spoken?'Say it again':'Tap and speak to the guest'}</div>
-      {heardErr&&<div data-testid="voice-error" style={{fontSize:14,color:'#F28B7D',fontFamily:C.P,marginTop:6,lineHeight:1.45}}>{heardErr}</div>}
-      <style>{'@keyframes tmPulse{0%,100%{opacity:1}50%{opacity:.3}}'}</style>
-      {notice&&<div data-testid="voice-notice" style={{fontSize:14,color:T.mid,fontFamily:C.P,marginTop:6,lineHeight:1.45}}>{TeamVoice.where()}</div>}
-      {spoken&&!listening&&<div style={{fontSize:14,color:T.mid,fontFamily:C.P,marginTop:6}}>Check the words below (fix a misheard name), then Say.</div>}
-    </div>}
-    {!mark&&turns.length>0&&<div style={{display:'flex',gap:8,marginTop:14,alignItems:'flex-end'}}>
-      <textarea data-testid="guest-reply" value={say} onChange={e=>setSay(e.target.value)} onKeyDown={e=>{ if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); reply(); } }} rows={level==='choices'&&say?3:2} placeholder="What do you say?" aria-label="Your reply" style={{flex:1,minWidth:0,borderRadius:12,border:`1px solid ${T.line}`,background:'transparent',color:T.ink,padding:'10px 12px',fontSize:'15px',fontFamily:C.P,resize:'none',outline:'none'}}/>
-      <Btn primary onClick={reply} style={{opacity:(say.trim()||listening)&&!busy?1:0.45}}>Say</Btn>
-    </div>}
     <div ref={endRef}/>
+    </div></div>
+    {foot}
   </div>; }
 
 Object.assign(window,{TeamVinnyTab,TeamVinnyAsk,TeamVinnyTest,TeamGuest,TeamVinnyMark});

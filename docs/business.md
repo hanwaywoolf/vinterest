@@ -189,7 +189,9 @@ A Vinny tab (between Today and Wines) and a row on Today, all in `team-vinny.js`
   dish named in it). It never invents a wine, dish or price; the answer names its wines and dishes by tag,
   shown as chips that open their cards. The last two turns go with a follow-up.
 - **A guest at your table** (`TeamVinny.scenario`, `TeamVinny.guest`, purpose `team_guest`,
-  `prompts/team-guest.txt`): Vinny plays a diner. The table is built here from the dish's pairing so there's
+  `prompts/team-guest.txt`): Vinny plays a diner, on a screen of its own over the app (no header or tabs:
+  a bar with the dish and Voice, the conversation scrolling, the mic and reply box pinned to the foot;
+  `team-app.jsx` mounts it as a layer, kept under a wine it opens). The table is built here from the dish's pairing so there's
   a right answer: a dish and a wish (a bottle under a budget, something lighter, one bottle for four, a glass
   at the bar, or the guest's own wrong idea to steer away from, with the wine offered for another dish
   instead). Tables are picked for the person, not dealt the same to everyone (`pickTable`): every dish they

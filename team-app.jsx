@@ -50,7 +50,7 @@ function TeamApp(){
   // Every view on the stack stays mounted under the one on top (hidden), so a drill's summary is still there,
   // with its answers, when Back returns from a wine it opened.
   else if(top) body=stack.map((v,i)=><div key={i} style={{display:i===stack.length-1?'block':'none'}}>{v.view==='wine'?<TeamWine id={v.id} pid={me.id} open={open}/>:v.view==='cocktail'?<TeamCocktail id={v.id} pid={me.id} open={open}/>:v.view==='dish'?<TeamDish id={v.id} pid={me.id} open={open}/>
-    :v.view==='guest'?<TeamGuest pid={me.id} back={back} open={open}/>
+    :v.view==='guest'?null /* the table is a layer over the whole app, below */
     :v.view==='ask'?<TeamVinnyAsk pid={me.id} open={open}/>
     :v.view==='tonight'?<TeamTonightEdit back={back}/>
     :v.view==='vtest'?<TeamVinnyTest pid={me.id} open={open}/>
@@ -61,7 +61,7 @@ function TeamApp(){
   return <DeckTheme.Provider value={_DECK_DARK}>
     <div data-gen={gen} style={{position:'absolute',inset:0,display:'flex',flexDirection:'column',background:`radial-gradient(ellipse at 50% -10%, ${_alpha((brand&&brand.accent)||cr,0.3)}, transparent 60%) ${T.bg}`,color:T.ink}}>
       {set&&<div style={{padding:'calc(env(safe-area-inset-top) + 12px) 16px 10px',display:'flex',alignItems:'center',gap:10,borderBottom:`1px solid ${T.line}`}}>
-        {top?<div role="button" aria-label="Back" onClick={back} style={{width:34,height:34,borderRadius:17,border:`1px solid ${T.line}`,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer'}}><Icon n="back" sz={16} col={T.ink}/></div>
+        {top&&top.view!=='guest'?<div role="button" aria-label="Back" onClick={back} style={{width:34,height:34,borderRadius:17,border:`1px solid ${T.line}`,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer'}}><Icon n="back" sz={16} col={T.ink}/></div>
           :brand&&brand.mark?<img src={brand.mark} alt="" style={{height:26,width:26,borderRadius:13,boxShadow:`0 0 0 1px ${_alpha(brand.accent||'#ffffff',0.6)}`}} onError={e=>{ e.target.style.display='none'; }}/>
           :<img src="/logo.png" alt="" style={{height:20,filter:'invert(1)'}} onError={e=>{ e.target.style.display='none'; }}/>}
         {/* An installed restaurant shows its own wordmark where the name would be (venue.brand). */}
@@ -79,6 +79,9 @@ function TeamApp(){
         {tabs.map(t=><div key={t.k} role="button" data-testid={'team-tab-'+t.k} onClick={()=>goTab(t.k)} style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',gap:3,padding:'9px 0 8px',cursor:'pointer'}}>
           {t.k==='vinny'?<div style={{width:20,height:20,borderRadius:10,background:tab===t.k?cr:T.mid,display:'flex',alignItems:'center',justifyContent:'center'}}><span style={{fontSize:'11px',fontWeight:800,color:T.bg,fontFamily:C.P,lineHeight:1}}>V</span></div>:<Icon n={t.icon} sz={20} col={tab===t.k?cr:T.mid}/>}<span style={{fontSize:'11px',fontWeight:600,fontFamily:C.P,color:tab===t.k?cr:T.mid}}>{t.label}</span></div>)}
       </div>}
+      {/* A guest at the table (TeamGuest) covers the header and tabs: a chat wants the whole screen. It stays mounted
+          under a wine or dish it opened, and comes back when that is popped. */}
+      {set&&stack.map((v,i)=>v.view==='guest'&&<div key={i} style={{position:'absolute',inset:0,zIndex:20,display:i===stack.length-1?'block':'none'}}><ScreenErrorBoundary><TeamGuest pid={me.id} back={back} open={open}/></ScreenErrorBoundary></div>)}
     </div>
   </DeckTheme.Provider>;
 }
