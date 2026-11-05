@@ -41,7 +41,7 @@ function TeamKpiStrip({open}){ const T=useTheme(), o=TeamReport.overview(), s=Te
   return <div data-testid="team-kpis" style={{marginBottom:14}}>
     <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
       {tile('Team readiness',`${o.avg}%`,`${o.ready} of ${o.total} ready`,null,()=>open({tab:'team'}),'kpi-readiness')}
-      {tile('Overdue',o.overdue,o.overdue?'assignments':'none',o.overdue?T.tone.bad:null,()=>open({tab:'team'}))}
+      {tile('Behind',o.behind,o.behind?'past their wave':'all on track',o.behind?T.tone.bad:null,()=>open({tab:'team'}))}
       {tile('Slipping',o.slipping,o.slipping?'were ready':'none',o.slipping?T.amber:null,()=>open({tab:'team'}))}
       {o.adoption.length>0&&tile('New on the list',o.adoption.length,`${o.adoption.filter(a=>a.knows<a.of).length} not yet known by all`,null,()=>open({tab:'wines'}))}
       {s&&tile('Wine sales, 7 nights',TeamData.money(Math.round(s.revenue)),`${s.delta.revenue==null?'':(s.delta.revenue>0?'▲':'▼')+Math.abs(s.delta.revenue)+'% · '}${TeamSales.demo()?'demo data':'from the till'}`,null,()=>open({tab:'team'}),'kpi-sales')}
@@ -106,8 +106,13 @@ function TeamSetup({onDone}){ const T=useTheme(), cr=T.lift(C.cr);
 
 /* Today: where this person stands, what's assigned, and the drill. */
 function TeamToday({pid,open}){ const T=useTheme(), cr=T.lift(C.cr);
-  const person=TeamLearn.person(pid), r=TeamLearn.note(pid), as=TeamLearn.assignments(pid), ret=TeamLearn.retention(pid);
+  const person=TeamLearn.person(pid), r=TeamLearn.note(pid), as=TeamLearn.assignments(pid), ret=TeamLearn.retention(pid), pl=TeamLearn.plan(pid);
   if(!person||!r) return null;
+  // Someone who hasn't drilled yet sees a plan, not a verdict: the first wave, its days, and one button. The ring and the
+  // parts arrive once there's something to measure. Afterwards the current wave sits as one line over the parts.
+  const fresh=pl&&!pl.started&&pl.current;
+  const waveLine=pl&&pl.current?`Wave ${pl.current.n} of ${pl.waves.length} · ${pl.current.label} · day ${pl.current.day} of ${pl.current.days} · ${pl.current.done} of ${pl.current.total} known`:'';
+  const inWave=pl&&pl.current?as.filter(a=>TeamLearn._keyPart(a.key)===pl.current.part):as;
   const st=_tState[r.state];
   const empty=!TeamData.wines().length;
   return <div>
@@ -115,13 +120,18 @@ function TeamToday({pid,open}){ const T=useTheme(), cr=T.lift(C.cr);
       <div><div style={{fontSize:22,fontWeight:800,color:T.ink,fontFamily:C.P,lineHeight:1.2}}>Hi {person.name.split(' ')[0]}</div><div style={{fontSize:14,color:T.mid,fontFamily:C.P,marginTop:3}}>{TeamLearn.ROLES[person.role].label} at {TeamData.get().venue.name||'your restaurant'}</div></div></div>
     {!empty&&TeamLearn.manages(person.role)&&<TeamKpiStrip open={open}/>}
     {empty?<Card><div style={{fontSize:15,color:T.ink2,fontFamily:C.P,lineHeight:1.5}}>No wine list yet. {TeamLearn.ROLES[person.role].label==='Manager'||person.role==='buyer'?'Upload it from the Upload tab and your training is written from it.':'Your manager uploads it, then your training appears here.'}</div></Card>:<>
-    <Card style={{display:'flex',gap:14,alignItems:'center'}}>
+    {fresh?<div data-testid="team-plan"><Card style={{borderColor:_alpha(cr,0.6)}}>
+      <div style={{fontSize:12,fontWeight:700,color:cr,fontFamily:C.P,letterSpacing:'0.1em',textTransform:'uppercase'}}>Your first {pl.current.days} days</div>
+      <div data-testid="team-state" data-pct={r.pct} style={{fontSize:20,fontWeight:800,color:T.ink,fontFamily:C.P,lineHeight:1.2,marginTop:4}}>{pl.current.part==='dishes'?`The ${pl.current.total} dishes on the menu`:pl.current.part==='cocktails'?`The ${pl.current.total} cocktails`:pl.current.part==='glass'?`The ${pl.current.total} wines by the glass`:`The ${pl.current.total} bottles`}</div>
+      <div style={{fontSize:15,color:T.ink2,fontFamily:C.P,lineHeight:1.45,marginTop:4}}>Day {pl.current.day} of {pl.current.days}. Five questions a day, what sells most first; {pl.waves.length>1?`then ${pl.waves.slice(1).map(w=>w.label.toLowerCase()).join(', then ')}`:'that\'s the whole list'}. Your readiness shows once you've done a drill.</div>
+    </Card></div>:<Card style={{display:'flex',gap:14,alignItems:'center'}}>
       <TeamRing pct={r.pct} col={st.col}/>
       <div style={{flex:1,minWidth:0}}>
         <div data-testid="team-state" data-pct={r.pct} style={{fontSize:17,fontWeight:800,color:st.col,fontFamily:C.P}}>{st.label}</div>
         <div style={{fontSize:14,color:T.mid,fontFamily:C.P,lineHeight:1.45,marginTop:2}}>{r.state==='ready'?'You know what your role sells. Keep the daily drill going so it stays that way.':r.state==='slipping'?'Some answers have faded or new wines arrived. A few drills puts you back.':'Your minimum for working the floor, below.'}</div>
       </div>
-    </Card>
+    </Card>}
+    {!fresh&&waveLine&&<div data-testid="team-wave" style={{fontSize:14,color:pl.behind?'#F28B7D':T.mid,fontFamily:C.P,margin:'10px 2px 0',lineHeight:1.4}}>{waveLine}{pl.behind?` · ${pl.behind} day${pl.behind===1?'':'s'} behind`:' · on track'}</div>}
     <Card style={{marginTop:10}}>
       {Object.entries(r.parts).map(([k,p])=><div key={k} data-testid="team-part" style={{marginBottom:18}}>
         <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:8,fontSize:14,fontFamily:C.P,color:T.ink2}}><span style={{fontWeight:700,color:T.ink}}>{TeamLearn.PART_LABEL[k]}</span><span>{p.known} of {p.total} known · need {Math.round(p.need*100)}%</span></div>
@@ -141,8 +151,8 @@ function TeamToday({pid,open}){ const T=useTheme(), cr=T.lift(C.cr);
             <div style={{fontSize:14,color:T.mid,fontFamily:C.P,lineHeight:1.4,marginTop:2}}>{dn.right} of {dn.of} right{dn.n>1?` over ${dn.n} drills`:''}. The next one is ready tomorrow; more now only helps.</div></div></div>
         <Btn full style={{marginTop:10}} onClick={()=>open({view:'drill'})}>Do another 5 questions</Btn></>; })()}
     {(()=>{ const vt=TeamVinny.test(pid); return vt.none?null:<div data-testid="today-vinny" role="button" onClick={()=>open({view:'drill',qs:vt.qs,intro:{title:vt.title,why:vt.why}})} style={{display:'flex',gap:12,alignItems:'center',marginTop:10,padding:'12px 14px',borderRadius:14,border:`1px solid ${T.line}`,cursor:'pointer'}}><TeamVinnyMark size={32}/><div style={{flex:1,minWidth:0}}><div style={{fontSize:15,fontWeight:700,color:T.ink,fontFamily:C.P}}>Vinny's test · {vt.qs.length} questions</div><div style={{fontSize:14,color:T.mid,fontFamily:C.P,lineHeight:1.4,marginTop:2}}>{vt.why}</div></div><Icon n="chevron" sz={12} col={T.mid}/></div>; })()}
-    {as.length>0&&<>{_tLabel(T,`New to learn (${as.length})`)}
-      <Card style={{padding:0}}>{as.slice(0,8).map((a,i)=>{ const x=a.kind==='wine'?TeamData.wine(a.id):a.kind==='cocktail'?TeamData.cocktail(a.id):TeamData.dish(a.id); if(!x) return null;
+    {inWave.length>0&&<>{_tLabel(T,pl&&pl.current?`This wave: ${pl.current.label.toLowerCase()} (${inWave.length} to go)`:`New to learn (${as.length})`)}
+      <Card style={{padding:0}}>{inWave.slice(0,8).map((a,i)=>{ const x=a.kind==='wine'?TeamData.wine(a.id):a.kind==='cocktail'?TeamData.cocktail(a.id):TeamData.dish(a.id); if(!x) return null;
         return <div key={a.key} role="button" onClick={()=>open({view:a.kind,id:a.id})} style={{display:'flex',alignItems:'center',gap:10,padding:'11px 14px',borderTop:i?`1px solid ${T.line}`:'none',cursor:'pointer'}}>
           <Icon n={a.kind==='fork'?'fork':a.kind==='dish'?'fork':'wine'} sz={16} col={a.kind==='wine'?_tTypeCol(T,x.type):a.kind==='cocktail'?_tMixCol(T):T.mid}/>
           <div style={{flex:1,minWidth:0,fontSize:14,color:T.ink,fontFamily:C.P,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{a.kind==='wine'?TeamData.short(x):x.name}</div>

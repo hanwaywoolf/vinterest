@@ -179,9 +179,11 @@ test('the setup screen offers The Social Corner and The Larkspur, a device left 
 
 test('the sample restaurant opens on Today: not ready yet, with every wine and dish to learn', async ({ context, page }) => {
   const errors = await openSample(context, page);
-  await expect(page.getByTestId('team-state')).toHaveText('Not ready yet');
+  // Someone who hasn't drilled yet is shown a plan, not a verdict: the first wave (the glass list) with its days.
+  await expect(page.getByTestId('team-plan')).toContainText('Your first 10 days');
+  await expect(page.getByTestId('team-state')).toHaveText('The 7 wines by the glass');
   await expect(page.locator('#root')).toContainText('0 of 7 known · need 80%'); // seven wines by the glass, a manager's minimum
-  await expect(page.locator('#root')).toContainText('New to learn (17)'); // ten wines and seven dishes
+  await expect(page.locator('#root')).toContainText('This wave: by the glass (7 to go)'); // the bottles and dishes come in later waves
   await page.getByTestId('team-tab-wines').click();
   await expect(page.getByTestId('team-wine-row')).toHaveCount(10);
   await page.getByText('Viña Ardanza Reserva').first().click();
@@ -594,7 +596,7 @@ test('the console: dashboard figures from TeamReport, the demo sales labelled, a
   await stubNetwork(ctx);
   await page.goto(`${BASE}/team/?seed=demo&view=console`);
   await expect(page.getByTestId('team-console')).toBeVisible();
-  const want = await page.evaluate(() => { const o = TeamReport.overview(), s = TeamReport.salesSummary(7); return { avg: o.avg, overdue: o.overdue, revenue: Math.round(s.revenue), rows: TeamSales.get().rows.length, lift: TeamReport.trainedLift(28).pct, unmapped: TeamSales.unmapped().map((x) => x.item) }; });
+  const want = await page.evaluate(() => { const o = TeamReport.overview(), s = TeamReport.salesSummary(7); return { avg: o.avg, overdue: o.behind, revenue: Math.round(s.revenue), rows: TeamSales.get().rows.length, lift: TeamReport.trainedLift(28).pct, unmapped: TeamSales.unmapped().map((x) => x.item) }; });
   expect(want.rows).toBeGreaterThan(1000);
   await expect(page.getByTestId('dash-readiness')).toHaveText(`${want.avg}%`);
   await expect(page.getByTestId('dash-overdue')).toHaveText(String(want.overdue));

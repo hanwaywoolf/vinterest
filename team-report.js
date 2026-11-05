@@ -12,7 +12,8 @@ const TeamReport = {
       return {person:p,r,lastDrill:last||null,checks:TeamLearn.retention(p.id),due:r?r.due:0}; }).filter(x=>x.r); },
   overview(){ const ps=this.people(), c={ready:0,slipping:0,not:0}; ps.forEach(x=>c[x.r.state]++);
     const avg=ps.length?Math.round(ps.reduce((a,x)=>a+x.r.pct,0)/ps.length):0, overdue=ps.reduce((a,x)=>a+x.r.overdue,0), due=ps.reduce((a,x)=>a+x.r.due,0);
-    return {...c,total:ps.length,avg,overdue,due,retention:TeamLearn.retention(null),adoption:this.adoption(),coverage:this.coverage(),idle:ps.filter(x=>!x.lastDrill||Date.now()-x.lastDrill>7*this.DAY).length}; },
+    const behind=ps.filter(x=>x.r.behind>0).length;
+    return {...c,total:ps.length,avg,overdue,behind,due,retention:TeamLearn.retention(null),adoption:this.adoption(),coverage:this.coverage(),idle:ps.filter(x=>!x.lastDrill||Date.now()-x.lastDrill>7*this.DAY).length}; },
   byRole(){ const ps=this.people(), out={};
     ps.forEach(x=>{ const o=out[x.r.role]||(out[x.r.role]={role:x.r.role,label:TeamLearn.ROLES[x.r.role].label,n:0,sum:0,ready:0}); o.n++; o.sum+=x.r.pct; if(x.r.state==='ready') o.ready++; });
     return Object.values(out).map(o=>({...o,avg:Math.round(o.sum/o.n)})).sort((a,b)=>b.n-a.n); },
@@ -22,7 +23,7 @@ const TeamReport = {
     return this.people().filter(x=>x.r.state!=='ready').map(x=>{ const as=TeamLearn.assignments(x.person.id), newW=as.filter(a=>a.kind==='wine'&&recent.has(a.id)).length, why=[];
       if(x.r.due) why.push({k:'faded',n:x.r.due,label:`${x.r.due} faded`});
       if(newW) why.push({k:'new',n:newW,label:`${newW} new wine${newW===1?'':'s'}`});
-      if(x.r.overdue) why.push({k:'overdue',n:x.r.overdue,label:`${x.r.overdue} overdue`});
+      if(x.r.behind) why.push({k:'overdue',n:x.r.behind,label:`${x.r.behind} day${x.r.behind===1?'':'s'} behind`});
       if(!x.lastDrill) why.push({k:'idle',n:0,label:'no drill yet'}); else if(now-x.lastDrill>7*this.DAY) why.push({k:'idle',n:Math.round((now-x.lastDrill)/this.DAY),label:`last drill ${Math.round((now-x.lastDrill)/this.DAY)}d ago`});
       return {...x,why}; }).sort((a,b)=>(a.r.state==='slipping'?0:1)-(b.r.state==='slipping'?0:1)||a.r.pct-b.r.pct); },
   /* Who sells a wine (the roles whose scope has it) and how many of them know it. */

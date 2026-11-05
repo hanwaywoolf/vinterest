@@ -267,7 +267,8 @@ const TeamLearn = {
     const pct=ks.length?Math.round(100*ks.reduce((a,k)=>a+Math.min(1,parts[k].partial/parts[k].need),0)/ks.length):0;
     const overdue=Object.values(mine.assigned||{}).filter(a=>!a.done&&a.due<now).length;
     const due=Object.values(items).filter(it=>it.reps&&it.due<=now).length;
-    return {pct,parts,state:met?'ready':mine.wasReady?'slipping':'not',overdue,due,role};
+    const behind=Object.values(mine.assigned||{}).filter(a=>!a.done&&a.due<now).reduce((a,x)=>Math.max(a,Math.floor((now-x.due)/this.DAY)),0);
+    return {pct,parts,state:met?'ready':mine.wasReady?'slipping':'not',overdue,behind,due,role};
   },
   /* Remembers that they've been ready, so dropping below the minimum later reads as Slipping. */
   note(pid){ const r=this.readiness(pid); if(!r) return r; const p=this._all(), m=this._mine(p,pid);
@@ -775,12 +776,28 @@ const TeamLearn = {
     });
     this._saveAll(p);
   },
-  // Someone new starts with the whole list and menu as their first assignments.
-  assignExisting(pid){ const person=this.person(pid); if(!person) return; const due=Date.now()+(TeamData.get().settings.dueDays||7)*this.DAY, p=this._all(), m=this._mine(p,pid), sc=this.scope(person.role);
-    [...sc.glass,...sc.bottle].forEach(w=>{ m.assigned['w:'+w.id]=m.assigned['w:'+w.id]||{at:Date.now(),due}; });
-    sc.dishes.forEach(x=>{ m.assigned['d:'+x.id]=m.assigned['d:'+x.id]||{at:Date.now(),due}; });
-    (sc.cocktails||[]).forEach(c=>{ m.assigned['c:'+c.id]=m.assigned['c:'+c.id]||{at:Date.now(),due}; });
+  /* Someone new learns the list in waves, not as one assignment due in a week (which made every new server 120
+     "overdue" on day eight): the part their role sells with first, each wave with its own days, the next starting
+     when the one before ends. WAVES is the order per role; a part the role doesn't need is skipped. */
+  WAVES:{
+    server:[['glass',10],['bottle',10],['dishes',10],['cocktails',7]], manager:[['glass',10],['bottle',10],['dishes',10],['cocktails',7]],
+    bartender:[['cocktails',7],['glass',10],['dishes',10]], sommelier:[['glass',7],['bottle',10],['dishes',10],['cocktails',7]], buyer:[['glass',7],['bottle',10],['dishes',10]],
+  },
+  waves(role){ const need=this.need(role), sc=this.scope(role); return (this.WAVES[role]||this.WAVES.server).filter(([k])=>need[k]>0&&(sc[k]||[]).length>0).map(([k,days],i)=>({n:i+1,part:k,days,label:this.PART_LABEL[k]})); },
+  _keyPart(key){ const [t,id]=[key.slice(0,1),key.slice(2)]; if(t==='d') return 'dishes'; if(t==='c') return 'cocktails'; const w=TeamData.wine(id); return w&&TeamData.byGlass(w)?'glass':'bottle'; },
+  assignExisting(pid,now=Date.now()){ const person=this.person(pid); if(!person) return; const p=this._all(), m=this._mine(p,pid), sc=this.scope(person.role);
+    let start=now; this.waves(person.role).forEach(w=>{ const due=start+w.days*this.DAY, pre=w.part==='dishes'?'d:':w.part==='cocktails'?'c:':'w:';
+      (sc[w.part]||[]).forEach(x=>{ const k=pre+x.id; m.assigned[k]=m.assigned[k]||{at:now,from:start,due,wave:w.n}; }); start=due; }); // from: when its wave starts
     this._saveAll(p); },
+  /* Where someone is in their waves (Today's plan, the console's "on track"): each wave with what's done, the one
+     they're on, the day they're on in it, and how many days behind it is. An assignment from before waves existed
+     is put in its part's wave. {waves:[{n,part,label,total,done,start,due,day,days,behind}], current, behind, started} */
+  plan(pid,now=Date.now()){ const person=this.person(pid); if(!person) return null; const m=this._mine(this._all(),pid), items=m.items;
+    const ws=this.waves(person.role).map(w=>({...w,total:0,done:0,start:Infinity,due:0}));
+    Object.entries(m.assigned||{}).forEach(([k,a])=>{ const part=this._keyPart(k), w=ws.find(x=>x.part===part); if(!w) return; w.total++; if(a.done) w.done++; w.start=Math.min(w.start,a.from||Infinity,a.at||now); w.due=Math.max(w.due,a.due||now); });
+    const out=ws.filter(w=>w.total).map(w=>{ const days=Math.max(1,Math.round((w.due-w.start)/this.DAY)), day=Math.min(days,Math.max(1,Math.floor((now-w.start)/this.DAY)+1)), behind=w.done<w.total?Math.max(0,Math.floor((now-w.due)/this.DAY)):0; return {...w,days,day,behind}; });
+    const current=out.find(w=>w.done<w.total)||null, started=Object.values(items).some(it=>it.reps);
+    return {waves:out,current,behind:out.reduce((a,w)=>Math.max(a,w.behind),0),started}; },
   assignments(pid){ const m=this._mine(this._all(),pid), now=Date.now();
     return Object.entries(m.assigned||{}).filter(([,a])=>!a.done).map(([k,a])=>({key:k,kind:k[0]==='w'?'wine':k[0]==='c'?'cocktail':'dish',id:k.slice(2),due:a.due,overdue:a.due<now})).sort((a,b)=>a.due-b.due); },
 
