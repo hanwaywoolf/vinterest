@@ -190,9 +190,10 @@ const TeamLearn = {
   dishQs(id,{allergen=true}={}){
     const x=TeamData.dish(id); if(!x) return [];
     const out=[], c=TeamData.dishCard(id), dishes=TeamData.dishes();
-    if(c&&c.say){ const others=[...dishes.filter(d=>d.id!==id&&d.section===x.section),...dishes.filter(d=>d.id!==id&&d.section!==x.section)].map(d=>TeamData.dishCard(d.id)).filter(o=>o&&o.say&&o.say!==c.say).slice(0,3);
-      if(others.length===3){ const opts=[c.say,...others.map(o=>o.say)], order=this._shuffle([0,1,2,3],id+'k');
-        out.push({id:'d:'+id+'#know',dish:id,k:'recognise',q:`A guest asks what the ${x.name} is.`,opts:order.map(i=>opts[i]),a:order.indexOf(0),why:x.desc?`The menu says: ${x.desc}.`:''}); } }
+    // Know it: the dish's own sentence against three near-misses of the same dish (a wrong sauce, cut or richness,
+    // written with the notes). Never another dish's description: the dish is named in the question, so that taught nothing.
+    if(c&&c.say&&(c.wrong||[]).length>=3){ const opts=[c.say,...c.wrong.slice(0,3)], order=this._shuffle([0,1,2,3],id+'k');
+      out.push({id:'d:'+id+'#know',dish:id,k:'recognise',q:`A guest asks what the ${x.name} is.`,opts:order.map(i=>opts[i]),a:order.indexOf(0),why:x.desc?`The menu says: ${x.desc}.`:''}); }
     const conf=TeamData.allergensOf(id);
     if(allergen&&conf){ const list=TeamData.allergenList(), names=conf.map(code=>TeamData.allergenName(code));
       const opts=[...list.map(a=>a.name),'None of these'], right=conf.length?conf.map(code=>list.findIndex(a=>a.code===code)).filter(i=>i>=0):[opts.length-1];

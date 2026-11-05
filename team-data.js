@@ -54,7 +54,7 @@ const TeamData = {
   cocktails(){ return Object.values(this.get().cocktails||{}).filter(c=>c.onList).sort((a,b)=>a.order-b.order); },
   cocktail(id){ return (this.get().cocktails||{})[id]||null; },
   cocktailCard(id){ return (this.get().cocktailCards||{})[id]||null; },
-  /* A dish's front-of-house notes (prompts/team-dish-cards.txt, purpose team_dishes): the dish in a sentence, its
+  /* A dish's front-of-house notes (prompts/team-dish-cards.txt, purpose team_dishes): the dish in a sentence (with three near-miss descriptions of the same dish, `wrong`, for the know-it question), its
      allergens as drafted (the kitchen confirms them on the console before any server is asked; a draft is never
      shown as fact), what can change, what guests ask. {say, allergens:{draft:[{code,sure}], note, confirmed:[codes]|null,
      confirmedAt, by}, mods:[{ask,can,say}], ask:[{q,a}], at} */
@@ -92,7 +92,8 @@ const TeamData = {
     const draft=(Array.isArray(c.allergens)?c.allergens:[]).map(a=>typeof a==='string'?{code:a,sure:'likely'}:a).filter(a=>a&&codes.has(a.code)).map(a=>({code:a.code,sure:a.sure==='printed'?'printed':'likely'}));
     return {say:String(c.say||'').trim(),allergens:{draft,note:String(c.note||'').trim(),confirmed:Array.isArray(c.allergens&&c.allergens.confirmed)?c.allergens.confirmed:(c.confirmed||null)},
       mods:(c.mods||[]).filter(m=>m&&m.ask&&m.say).map(m=>({ask:String(m.ask).trim(),can:['yes','no','ask'].includes(m.can)?m.can:'ask',say:String(m.say).trim()})).slice(0,4),
-      ask:(c.ask||[]).filter(a=>a&&a.q&&a.a).map(a=>({q:String(a.q).trim(),a:String(a.a).trim()})).slice(0,3)}; },
+      ask:(c.ask||[]).filter(a=>a&&a.q&&a.a).map(a=>({q:String(a.q).trim(),a:String(a.a).trim()})).slice(0,3),
+      wrong:(Array.isArray(c.wrong)?c.wrong:[]).map(x=>String(x||'').trim()).filter(x=>x&&x!==c.say).slice(0,3)}; },
   /* Which cocktails a dish suits, from the cocktails' own cards (no extra call). [{cocktail, why}] */
   cocktailsFor(dishName){ return this.cocktails().map(c=>{ const k=this.cocktailCard(c.id), d=k&&(k.dishes||[]).find(x=>x.dish===dishName); return d?{cocktail:c,why:d.why}:null; }).filter(Boolean); },
   byGlass(w){ return !!(w&&w.glass); },

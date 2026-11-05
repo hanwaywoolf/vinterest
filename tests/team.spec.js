@@ -328,8 +328,13 @@ test('the menu module: allergens are drafted, confirmed by the kitchen, then sho
   await stubNetwork(ctx);
   await page.goto(`${BASE}/team/?seed=social&view=console`);
   await expect(page.getByTestId('console-dash')).toBeVisible();
-  const before = await page.evaluate(() => ({ notes: Object.keys(TeamData.get().dishCards || {}).length, conf: TeamData.allergensOf('d-fresh-oysters'), parts: Object.keys(TeamLearn.readiness(TeamLearn.me().id).parts), qs: TeamLearn.dishQs('d-fresh-oysters').map((q) => q.id) }));
+  const before = await page.evaluate(() => ({ notes: Object.keys(TeamData.get().dishCards || {}).length, conf: TeamData.allergensOf('d-fresh-oysters'), parts: Object.keys(TeamLearn.readiness(TeamLearn.me().id).parts), qs: TeamLearn.dishQs('d-fresh-oysters').map((q) => q.id),
+    know: TeamLearn.dishQs('d-fresh-oysters').find((q) => /#know$/.test(q.id)), others: TeamData.dishes().filter((x) => x.id !== 'd-fresh-oysters').map((x) => (TeamData.dishCard(x.id) || {}).say).filter(Boolean) }));
   expect(before.notes).toBeGreaterThan(30); expect(before.conf).toBeNull();
+  // Know it asks the dish's own sentence against near-misses of the same dish, never another dish's description
+  // (the question names the dish, so "the lamb shoulder" against "a lemon tart" taught nothing).
+  expect(before.know.opts).toHaveLength(4); expect(before.know.opts.filter((o) => /oysters/i.test(o)).length).toBeGreaterThanOrEqual(3);
+  before.know.opts.forEach((o) => expect(before.others).not.toContain(o));
   expect(before.parts).not.toContain('allergens'); // no allergen part until the kitchen has confirmed a dish
   expect(before.qs.some((id) => /#allergen$/.test(id))).toBe(false); expect(before.qs.some((id) => /#know$/.test(id))).toBe(true);
   // The kitchen confirms the oysters on the Menu tab: the draft is offered, one chip is dropped, Confirm.

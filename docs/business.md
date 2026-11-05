@@ -156,8 +156,10 @@ Wave 1 and 2 of its roadmap are built, on The Social Corner and the demo alike.
   currency), what can change (`mods`, each yes, no or ask) and what guests ask. The draft is never
   shown as fact: the kitchen confirms each dish's allergens on the console's Menu tab
   (`TeamData.confirmAllergens`), which assigns the dish's allergen question to everyone. A dish's ladder
-  is then know it, allergens (a choose-all against the list with confidence, a miss back within the
-  shift), a change a guest asks for, and its pairings. Allergens are their own readiness part at 100%
+  is then know it (the dish's own sentence against three near-misses of the same dish that the notes
+  write, `wrong`: a borrowed sauce, the wrong cut or cooking, the wrong richness; never another dish's
+  description, which the question's own name gave away), allergens (a choose-all against the list with
+  confidence, a miss back within the shift), a change a guest asks for, and its pairings. Allergens are their own readiness part at 100%
   for every role, the one hard gate; the Team tab's sign-off register (`TeamReport.allergenRegister`,
   Export CSV) says who holds every confirmed dish and when it falls due.
 - **The wine card** leads with the price as a guest hears it, a hook (one telling detail, from the
