@@ -12,7 +12,8 @@ const TeamData = {
   CARD_BATCH:4,       // wines per staff-card call: six questions each fit well inside team_cards' tokens
   PAIR_BATCH:12,      // dishes per pairing call
   PDF_PAGES:2,        // PDF pages read per call, so no single answer runs long
-  _empty(){ return {venue:{name:'',created:Date.now()},wines:{},dishes:{},cards:{},pairings:{},cocktails:{},cocktailCards:{},versions:[],draft:null,settings:{dueDays:7}}; },
+  _empty(){ return {venue:{name:'',created:Date.now()},wines:{},dishes:{},cards:{},pairings:{},cocktails:{},cocktailCards:{},dishCards:{},versions:[],draft:null,settings:{dueDays:7}}; },
+  DISH_BATCH:8,       // dishes per dish-notes call
   /* The venue is one 300KB document once the cards are written, and the screens and TeamLearn read
      it many times a render, so the parsed copy is kept until the stored text changes (the text is
      compared, never trusted by reference, so a write from anywhere else is seen). */
@@ -53,6 +54,44 @@ const TeamData = {
   cocktails(){ return Object.values(this.get().cocktails||{}).filter(c=>c.onList).sort((a,b)=>a.order-b.order); },
   cocktail(id){ return (this.get().cocktails||{})[id]||null; },
   cocktailCard(id){ return (this.get().cocktailCards||{})[id]||null; },
+  /* A dish's front-of-house notes (prompts/team-dish-cards.txt, purpose team_dishes): the dish in a sentence, its
+     allergens as drafted (the kitchen confirms them on the console before any server is asked; a draft is never
+     shown as fact), what can change, what guests ask. {say, allergens:{draft:[{code,sure}], note, confirmed:[codes]|null,
+     confirmedAt, by}, mods:[{ask,can,say}], ask:[{q,a}], at} */
+  dishCard(id){ return (this.get().dishCards||{})[id]||null; },
+  /* The statutory allergen list for the venue's country (venue.country, else its currency): Canada's eleven, the UK and
+     EU's fourteen, the US's nine. Codes are what the drill and the register use; names are what people read. */
+  ALLERGENS:{
+    CA:[['milk','Milk'],['egg','Egg'],['fish','Fish'],['shellfish','Crustaceans and molluscs'],['peanut','Peanuts'],['treenut','Tree nuts'],['wheat','Wheat and gluten'],['soy','Soy'],['sesame','Sesame'],['mustard','Mustard'],['sulphite','Sulphites']],
+    GB:[['gluten','Cereals containing gluten'],['crustacean','Crustaceans'],['mollusc','Molluscs'],['egg','Egg'],['fish','Fish'],['peanut','Peanuts'],['treenut','Tree nuts'],['soy','Soya'],['milk','Milk'],['celery','Celery'],['mustard','Mustard'],['sesame','Sesame'],['sulphite','Sulphites'],['lupin','Lupin']],
+    US:[['milk','Milk'],['egg','Egg'],['fish','Fish'],['shellfish','Crustacean shellfish'],['treenut','Tree nuts'],['peanut','Peanuts'],['wheat','Wheat'],['soy','Soybeans'],['sesame','Sesame']],
+  },
+  allergenCountry(){ const v=this.get().venue||{}; if(v.country&&this.ALLERGENS[v.country]) return v.country; const code=(v.currency||{}).code||(typeof Regional!=='undefined'&&Regional.currency&&Regional.currency().code)||''; return code==='CAD'?'CA':code==='USD'?'US':'GB'; },
+  allergenList(){ return this.ALLERGENS[this.allergenCountry()].map(([code,name])=>({code,name})); },
+  allergenName(code){ const a=this.allergenList().find(x=>x.code===code); return a?a.name:code; },
+  /* The allergens a server is taught for a dish: only what the kitchen confirmed. null until then. */
+  allergensOf(id){ const c=this.dishCard(id); return c&&c.allergens&&Array.isArray(c.allergens.confirmed)?c.allergens.confirmed:null; },
+  confirmAllergens(id,codes,by){ const doc=this.get(); doc.dishCards=doc.dishCards||{}; const c=doc.dishCards[id]||{say:'',allergens:{draft:[],note:''},mods:[],ask:[]};
+    doc.dishCards[id]={...c,allergens:{...(c.allergens||{}),confirmed:[...new Set((codes||[]).filter(Boolean))],confirmedAt:Date.now(),by:by||null}}; this.save(doc); },
+  /* Writes the dish notes, DISH_BATCH dishes a call. */
+  async writeDishCards(ids,onStep){
+    const tpl=_loadTextSync('prompts/team-dish-cards.txt'), venue=this.get().venue.name||'the restaurant';
+    const line=x=>`${x.id} | ${x.section||''} | ${x.name} | ${x.desc||''} | ${x.price||''} | ${(x.diet||[]).join(', ')}`;
+    let done=0; onStep&&onStep(0,ids.length);
+    for(let i=0;i<ids.length;i+=this.DISH_BATCH){
+      const xs=ids.slice(i,i+this.DISH_BATCH).map(id=>this.dish(id)).filter(Boolean);
+      const prompt=tpl.replace(/\{\{venue\}\}/g,venue).replace('{{allergens}}',this.allergenList().map(a=>`${a.code} (${a.name})`).join(', ')).replace('{{dishes}}',this.dishes().map(line).join('\n')).replace('{{batch}}',xs.map(line).join('\n'));
+      const j=this._json(await window.claude.complete({purpose:'team_dishes',messages:[{role:'user',content:prompt}]}))||{};
+      const doc=this.get(); doc.dishCards=doc.dishCards||{};
+      (j.dishes||[]).forEach(c=>{ if(c&&doc.dishes[c.id]) doc.dishCards[c.id]={...this._cleanDishCard(c),...(doc.dishCards[c.id]&&doc.dishCards[c.id].allergens&&doc.dishCards[c.id].allergens.confirmed?{allergens:{...this._cleanDishCard(c).allergens,confirmed:doc.dishCards[c.id].allergens.confirmed,confirmedAt:doc.dishCards[c.id].allergens.confirmedAt,by:doc.dishCards[c.id].allergens.by}}:{}),at:Date.now()}; });
+      this.save(doc); done+=xs.length; onStep&&onStep(done,ids.length);
+    }
+  },
+  _cleanDishCard(c){ const codes=new Set(this.allergenList().map(a=>a.code));
+    const draft=(Array.isArray(c.allergens)?c.allergens:[]).map(a=>typeof a==='string'?{code:a,sure:'likely'}:a).filter(a=>a&&codes.has(a.code)).map(a=>({code:a.code,sure:a.sure==='printed'?'printed':'likely'}));
+    return {say:String(c.say||'').trim(),allergens:{draft,note:String(c.note||'').trim(),confirmed:Array.isArray(c.allergens&&c.allergens.confirmed)?c.allergens.confirmed:(c.confirmed||null)},
+      mods:(c.mods||[]).filter(m=>m&&m.ask&&m.say).map(m=>({ask:String(m.ask).trim(),can:['yes','no','ask'].includes(m.can)?m.can:'ask',say:String(m.say).trim()})).slice(0,4),
+      ask:(c.ask||[]).filter(a=>a&&a.q&&a.a).map(a=>({q:String(a.q).trim(),a:String(a.a).trim()})).slice(0,3)}; },
   /* Which cocktails a dish suits, from the cocktails' own cards (no extra call). [{cocktail, why}] */
   cocktailsFor(dishName){ return this.cocktails().map(c=>{ const k=this.cocktailCard(c.id), d=k&&(k.dishes||[]).find(x=>x.dish===dishName); return d?{cocktail:c,why:d.why}:null; }).filter(Boolean); },
   byGlass(w){ return !!(w&&w.glass); },
@@ -329,6 +368,8 @@ const TeamData = {
     if(needPairs) jobs.push(this.writePairings(dishes,(a)=>{ prog.p=a; tell(); }));
     if(dated.length) jobs.push(this.writeWindows(dated,(a)=>{ prog.w=a; tell(); }));
     if(jobs.length){ tell(); await Promise.all(jobs); }
+    const noNotes=this.dishes().filter(x=>!this.dishCard(x.id)).map(x=>x.id);
+    if(noNotes.length) await this.writeDishCards(noNotes,(a,b)=>onStep&&onStep('Writing the dish notes',a,b));
     // Last, once the pairings are in (a table question is checked against them): every question checked
     // and the ones that fail rewritten, before anyone is assigned them.
     if(typeof TeamLearn!=='undefined'&&this.wines().length) await this.checkQuestions(null,(a,b)=>onStep&&onStep('Checking every question',a,b));
@@ -365,7 +406,7 @@ const TeamData = {
   async exportFile(){
     const d=this.get();
     const out={venue:{name:d.venue.name},wines:Object.values(d.wines).filter(w=>w.onList).sort((a,b)=>a.order-b.order),dishes:Object.values(d.dishes).filter(x=>x.onMenu).sort((a,b)=>a.order-b.order),cards:d.cards,pairings:d.pairings,
-      ...(this.cocktails().length?{cocktails:this.cocktails(),cocktailCards:d.cocktailCards||{}}:{}),exported:new Date().toISOString()};
+      ...(this.cocktails().length?{cocktails:this.cocktails(),cocktailCards:d.cocktailCards||{}}:{}),...(Object.keys(d.dishCards||{}).length?{dishCards:d.dishCards}:{}),exported:new Date().toISOString()};
     const name=`vinterest-team-${this._slug(d.venue.name||'restaurant')}.json`;
     try{ await Platform.saveFile(name,JSON.stringify(out,null,1)); }catch(e){ const a=document.createElement('a'); a.href='data:application/json;charset=utf-8,'+encodeURIComponent(JSON.stringify(out)); a.download=name; a.click(); }
     return out;
@@ -401,7 +442,7 @@ const TeamData = {
     const want=t==='sparkling'?/spark|champ|fizz/i:t==='white'?/white/i:t==='rosé'||t==='rose'||t==='orange'?/ros|orange/i:t==='dessert'||t==='fortified'?/sweet|dessert|fortif|port|sherry/i:/red/i;
     return secs.find(s=>want.test(s))||secs[0]||''; },
   /* What still needs writing (an upload that was interrupted): wines without cards, dishes without pairings. */
-  pending(){ return {cocktails:this.cocktails().filter(c=>!this.cocktailCard(c.id)).length,cards:this.wines().filter(w=>!this.card(w.id)).length,pairings:this.wines().length?this.dishes().filter(x=>!this.pairing(x.id)).length:0,windows:this.wines().filter(w=>w.vintage&&!w.peak).length}; },
+  pending(){ return {dishNotes:this.dishes().filter(x=>!this.dishCard(x.id)).length,cocktails:this.cocktails().filter(c=>!this.cocktailCard(c.id)).length,cards:this.wines().filter(w=>!this.card(w.id)).length,pairings:this.wines().length?this.dishes().filter(x=>!this.pairing(x.id)).length:0,windows:this.wines().filter(w=>w.vintage&&!w.peak).length}; },
 };
 /* The sample restaurant (data/team-sample.json): a ten-wine list, a seven-dish menu, their staff cards
    and pairings written ahead, and four staff, so the app can be shown without an upload or a call. */
@@ -445,6 +486,7 @@ const TeamSample = {
     const mixes=s.cocktails||(this.social(which)?(this.list(which)||{}).cocktails:null)||[];
     mixes.forEach((c,i)=>{ d.cocktails[c.id]={...c,onList:true,order:i,addedAt:now}; });
     Object.entries(s.cocktailCards||{}).forEach(([id,c])=>{ if(d.cocktails[id]) d.cocktailCards[id]={...c,at:now}; });
+    d.dishCards={}; Object.entries(s.dishCards||{}).forEach(([id,c])=>{ if(d.dishes[id]) d.dishCards[id]={...c,at:now}; });
     d.versions.push({kind:'list',at:now,added:Object.keys(d.wines),removed:[],changed:[]});
     if(mixes.length) d.versions.push({kind:'cocktails',at:now,added:Object.keys(d.cocktails),removed:[],changed:[]});
     TeamData.save(d);

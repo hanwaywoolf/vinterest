@@ -23,7 +23,8 @@
     "model:trial": "node scripts/model-trial.mjs",
     "match:backtest": "node scripts/match-backtest.mjs",
     "trailer": "node scripts/trailer.mjs",
-    "tts:check": "node scripts/tts-check.mjs"
+    "tts:check": "node scripts/tts-check.mjs",
+    "team:dishes": "node scripts/team-dishes.mjs"
   },
   "keywords": [
     "wine",
