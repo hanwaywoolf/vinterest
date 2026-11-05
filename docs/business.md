@@ -123,8 +123,7 @@ The V2 audit (docs/audit/teams-v2-audit.html) found the learning model sound and
 use: 13px text on a dark stage, a Vinny tab with two text fields and three jobs, a new server shown four
 zeros and "Not ready yet" on day one, 123 "overdue" on day eight, a recall question with eight pills and a
 confidence tap on every question, nothing about what learning is worth, and no menu module beyond pairings.
-Wave 1 and 2 of its roadmap are built; the pilot's Social Corner keeps its data while the V2 copy
-(`?seed=socialv2`, socialcorner-v2.vinterest.team) carries the new content.
+Wave 1 and 2 of its roadmap are built, on The Social Corner and the demo alike.
 
 - **Type.** Nothing visible under 12px on the staff phone, body 14 to 16, list rows a 16px name over
   the one fact a server needs (the price, in white), the vintage and region on the card.

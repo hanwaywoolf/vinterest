@@ -140,7 +140,7 @@ const PREVIEW_ORIGIN_RE = /^https:\/\/[a-z0-9-]+\.vinterest\.pages\.dev$/;
 const VENUE_ORIGIN_RE = /^https:\/\/[a-z0-9-]+\.vinterest\.team$/;
 // Which restaurant each of those addresses opens (TeamSample.hostSeed in team-data.js reads the same list):
 // its root goes straight to the staff app.
-const VENUE_HOSTS = { "socialcorner.vinterest.team": "social", "socialcorner-v2.vinterest.team": "socialv2" };
+const VENUE_HOSTS = { "socialcorner.vinterest.team": "social" };
 
 // The teams demo's own address (a custom domain on this Pages project, docs/site-setup.md): the team
 // app (dist/team/) served at its root, The Larkspur seeded on a first visit. Its script and photos

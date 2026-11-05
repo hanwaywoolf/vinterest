@@ -2,7 +2,7 @@
 /* Writes a venue's dish notes (prompts/team-dish-cards.txt, purpose team_dishes) through the deployed Worker and
    saves them into its training file as `dishCards`, so the seed opens with them and no phone has to write them:
 
-     npm run team:dishes -- [--base https://claude-perse-intake.vinterest.pages.dev] [--venue socialv2] [--only d-fresh-oysters,…]
+     npm run team:dishes -- [--base https://claude-perse-intake.vinterest.pages.dev] [--venue social] [--only d-fresh-oysters,…]
 
    Every call is a real, billed Claude call on the Worker's TEAM_MODEL. Allergens come back as a draft for the
    kitchen to confirm on the console; nothing here marks one confirmed. Runs with curl, since Node's fetch doesn't
@@ -10,7 +10,7 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 const arg = (k, d) => { const i = process.argv.indexOf('--' + k); return i > 0 ? process.argv[i + 1] : d; };
-const base = arg('base', 'https://claude-perse-intake.vinterest.pages.dev').replace(/\/$/, ''), venue = arg('venue', 'socialv2'), only = (arg('only', '') || '').split(',').filter(Boolean);
+const base = arg('base', 'https://claude-perse-intake.vinterest.pages.dev').replace(/\/$/, ''), venue = arg('venue', 'social'), only = (arg('only', '') || '').split(',').filter(Boolean);
 const listFile = `data/team-${venue}-list.json`, trainFile = `data/team-${venue}.json`;
 const list = JSON.parse(readFileSync(listFile, 'utf8')), train = JSON.parse(readFileSync(trainFile, 'utf8'));
 const ALLERGENS = { CA: [['milk','Milk'],['egg','Egg'],['fish','Fish'],['shellfish','Crustaceans and molluscs'],['peanut','Peanuts'],['treenut','Tree nuts'],['wheat','Wheat and gluten'],['soy','Soy'],['sesame','Sesame'],['mustard','Mustard'],['sulphite','Sulphites']],

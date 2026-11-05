@@ -458,15 +458,13 @@ const TeamSample = {
      its training once written and exported (data/team-social.json). No invented staff: whoever opens it
      sets themselves up as its manager (TeamSetup). */
   /* Every seed the build carries. `kind` is how it behaves (a real install's copy, 'social', or a demo, 'demo'); the
-     paths are literal in file() and list() because the build collects _loadJSON's paths by scanning for them.
-     'socialv2' is The Social Corner cloned for the V2 work (its own address, socialcorner-v2.vinterest.team), so
-     the pilot's own copy keeps its data while the new content lands in the v2 files. */
-  SEEDS:{sample:{kind:'sample'},demo:{kind:'demo'},social:{kind:'social',label:'The Social Corner'},socialv2:{kind:'social',label:'The Social Corner (V2)'}},
+     paths are literal in file() and list() because the build collects _loadJSON's paths by scanning for them. */
+  SEEDS:{sample:{kind:'sample'},demo:{kind:'demo'},social:{kind:'social',label:'The Social Corner'}},
   kind(which){ return (this.SEEDS[which]||{}).kind||null; },
   social(which){ return this.kind(which)==='social'; },
-  file(which){ return which==='demo'?_loadJSON('data/team-demo.json'):which==='social'?_loadJSON('data/team-social.json'):which==='socialv2'?_loadJSON('data/team-socialv2.json'):_loadJSON('data/team-sample.json'); },
+  file(which){ return which==='demo'?_loadJSON('data/team-demo.json'):which==='social'?_loadJSON('data/team-social.json'):_loadJSON('data/team-sample.json'); },
   /* The list file: where an installed restaurant's venue details, cocktails and staff live. */
-  list(which){ return which==='demo'?_loadJSON('data/team-demo-list.json'):which==='social'?_loadJSON('data/team-social-list.json'):which==='socialv2'?_loadJSON('data/team-socialv2-list.json'):null; },
+  list(which){ return which==='demo'?_loadJSON('data/team-demo-list.json'):which==='social'?_loadJSON('data/team-social-list.json'):null; },
   load(which='sample'){
     let s=this.file(which);
     if(which==='demo'&&(!s||s.pending)) s={..._loadJSON('data/team-demo-list.json'),cards:{},pairings:{},staff:null};
@@ -519,7 +517,7 @@ const TeamSample = {
   // The Larkspur's team (photos in team/faces/). The manager is first, so the demo opens as her.
   /* The restaurant a demo address opens (socialcorner.vinterest.team → The Social Corner), as ?seed would; the
      Worker's VENUE_HOSTS sends that address's root to /team/. Null anywhere else. */
-  HOSTS:{'socialcorner.vinterest.team':'social','socialcorner-v2.vinterest.team':'socialv2'},
+  HOSTS:{'socialcorner.vinterest.team':'social'},
   hostSeed(host){ try{ return this.HOSTS[String(host==null?location.hostname:host).toLowerCase()]||null; }catch(e){ return null; } },
   /* Whether the restaurant on the device is this seed as the build now carries it. */
   current(which){ const v=TeamData.get().venue||{}; if(v.sample!==which) return false;
