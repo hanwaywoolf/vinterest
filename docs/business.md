@@ -117,6 +117,55 @@ wine without being caught out.
   the next new question in list order (by the glass first). About one in ten is an unannounced
   re-ask of something known, which measures retention honestly; the Team tab shows the rate.
 
+## V2: what the audit changed (built, November 2026)
+
+The V2 audit (docs/audit/teams-v2-audit.html) found the learning model sound and the front of it hard to
+use: 13px text on a dark stage, a Vinny tab with two text fields and three jobs, a new server shown four
+zeros and "Not ready yet" on day one, 123 "overdue" on day eight, a recall question with eight pills and a
+confidence tap on every question, nothing about what learning is worth, and no menu module beyond pairings.
+Wave 1 and 2 of its roadmap are built; the pilot's Social Corner keeps its data while the V2 copy
+(`?seed=socialv2`, socialcorner-v2.vinterest.team) carries the new content.
+
+- **Type.** Nothing visible under 12px on the staff phone, body 14 to 16, list rows a 16px name over
+  the one fact a server needs (the price, in white), the vintage and region on the card.
+- **The Vinny tab is a practice hub.** One card with the thing to do now (`TeamVinny.next`: today's
+  drill until it's done, then a guest table aimed at what they're weakest on, then the test), a line on
+  what knowing the list is worth here (`TeamReport.worth`: from the till's known-against-unknown gap on
+  the top sellers, as a tip range per shift with its caveat; the research figure, said as research,
+  until there are 28 nights), then three doors, each its own screen: Ask Vinny (three short suggestions,
+  `TeamVinny.suggest`, tonight's feature and 86'd first), a guest at the table, Vinny's test.
+- **The drill recipe.** One question per wine, dish or cocktail; due first, least remembered first; at
+  most `NEW_MAX` (2) new things once anything is due, in the till's order and one per list section; a
+  re-check never takes a wine's place. A recall question is the right answers plus at most `WRONG_MAX`
+  (4) wrong pills; a grape question offers only grapes. "How sure are you?" is asked on a price or an
+  allergen alone (`TeamLearn.asksConfidence`); elsewhere a right answer inside four seconds reads as
+  sure. The summary says what they now know in words (`knownLine`), when it comes back (`comesBack`)
+  and what the drilled wine sells here (`TeamReport.sellsLine`), the mechanism behind a tap.
+- **Waves, not a cliff.** Someone new learns in waves (`TeamLearn.WAVES`: the glass list in ten days,
+  then allergens in seven, then bottles, the menu, cocktails; a bartender starts on cocktails), each
+  with its own window. Today shows a person who hasn't drilled yet the plan (`TeamLearn.plan`), then
+  the wave they're on as one line; the console says Behind (people past their wave) in place of an
+  overdue count.
+- **Tonight.** What's 86'd and what's on feature, set for the day by whoever runs the floor (the
+  manager's Today or the console's Tonight card, which leads the dashboard; `TeamData.tonight`), on
+  everyone's Today with the two by-the-glass wines that person should look at before service
+  (`TeamLearn.slippingOn`), each with a line to say and Say it. Never scored.
+- **The menu.** Every dish gets front-of-house notes (`prompts/team-dish-cards.txt`, purpose
+  `team_dishes`, `TeamData.writeDishCards`, written at a menu publish or by `npm run team:dishes` for a
+  seed): the dish in a sentence, its allergens as a draft against the venue's statutory list
+  (`TeamData.ALLERGENS`: Canada's eleven, the UK's fourteen, the US's nine, by `venue.country` or the
+  currency), what can change (`mods`, each yes, no or ask) and what guests ask. The draft is never
+  shown as fact: the kitchen confirms each dish's allergens on the console's Menu tab
+  (`TeamData.confirmAllergens`), which assigns the dish's allergen question to everyone. A dish's ladder
+  is then know it, allergens (a choose-all against the list with confidence, a miss back within the
+  shift), a change a guest asks for, and its pairings. Allergens are their own readiness part at 100%
+  for every role, the one hard gate; the Team tab's sign-off register (`TeamReport.allergenRegister`,
+  Export CSV) says who holds every confirmed dish and when it falls due.
+- **The wine card** leads with the price as a guest hears it, a hook (one telling detail, from the
+  card prompt, for cards written from now on), the pitch with a Say it that speaks it, the menu with
+  the reasons first and the dish to steer away from, the alternatives with their price, then where
+  they stand and the reference material.
+
 ## Vinny in the staff app (built)
 
 A Vinny tab (between Today and Wines) and a row on Today, all in `team-vinny.js` (logic) and `team-vinny.jsx` (screens):

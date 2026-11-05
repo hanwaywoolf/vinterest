@@ -123,6 +123,17 @@ const TeamReport = {
     if(!n) return null;
     return {perShift:extra,tipLow:extra*this.TIP_LOW,tipHigh:extra*this.TIP_HIGH,wines:n,demo:TeamSales.demo(),
       caveat:`From this restaurant's till over ${days} nights: what servers who know each of your top sellers sell of it per shift, against those who don't, over the ${n} you don't know yet. Sections and nights vary; some of it replaces other sales. Not a promise.`}; },
+  /* The allergen sign-off register (docs/business.md, "The menu"): for each person, how many of the kitchen-confirmed
+     dishes' allergen questions they hold now, when they last held them all (passed), and the soonest one falls due;
+     plus the register as CSV for an inspector or HR. Only the kitchen's confirmed allergens are ever counted. */
+  allergenRegister(){ const all=TeamLearn._all(), dishes=TeamData.dishes().filter(x=>TeamData.allergensOf(x.id)!=null);
+    return TeamLearn.people().map(p=>{ const items=(all[p.id]||{items:{}}).items, qs=dishes.map(x=>TeamLearn.allergenQ(x.id)).filter(Boolean);
+      const known=qs.filter(q=>TeamLearn.known(items[q.id])).length, lasts=qs.map(q=>items[q.id]&&items[q.id].reps&&!items[q.id].wrong?items[q.id].last:0), dues=qs.map(q=>items[q.id]&&TeamLearn.known(items[q.id])?items[q.id].due:Infinity);
+      const passed=qs.length&&known===qs.length?Math.max(...lasts):null, due=qs.length&&known===qs.length?Math.min(...dues):null;
+      return {person:p,known,total:qs.length,passed,due,state:!qs.length?'none':known===qs.length?'passed':known?'partial':'none'}; }); },
+  allergenCsv(){ const venue=TeamData.get().venue.name||'', d=ms=>ms?new Date(ms).toISOString().slice(0,10):'';
+    const rows=[['Venue','Person','Role','Dishes confirmed','Held now','Passed on','Falls due'],...this.allergenRegister().map(x=>[venue,x.person.name,TeamLearn.ROLES[x.person.role].label,x.total,x.known,d(x.passed),d(x.due)])];
+    return rows.map(r=>r.map(v=>/[",\n]/.test(String(v))?'"'+String(v).replace(/"/g,'""')+'"':String(v)).join(',')).join('\n')+'\n'; },
   newOnTill(){ return TeamSales.has()?TeamSales.unmapped():[]; },
   /* What a manager needs to know from the till, in a few sentences, most telling first: the week against the one
      before, wine per guest, the best seller and whether the floor knows it, top sellers known by too few, slow glasses,

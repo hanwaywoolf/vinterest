@@ -337,6 +337,66 @@ test('tonight: 86d and the feature set by a manager show on everyone\'s Today wi
   expect(r.tomorrow.off).toEqual([]); expect(r.tomorrow.feature).toEqual([]); expect(r.off).toBe(true);
 });
 
+// The menu module (docs/business.md, "The menu"): a dish's notes say what it is, what can change and what guests ask; its
+// allergens are a draft until the kitchen confirms them on the console, and only then are they shown on the dish, asked
+// in the drill (choose all, with confidence, a miss back within the shift), counted in readiness (the Allergens part, at
+// 100%) and entered in the sign-off register.
+test('the menu module: allergens are drafted, confirmed by the kitchen, then shown, drilled and registered', async ({ browser }) => {
+  const ctx = await browser.newContext({ viewport: { width: 1280, height: 800 } }), page = await ctx.newPage();
+  await stubNetwork(ctx);
+  await page.goto(`${BASE}/team/?seed=socialv2&view=console`);
+  await expect(page.getByTestId('console-dash')).toBeVisible();
+  const before = await page.evaluate(() => ({ notes: Object.keys(TeamData.get().dishCards || {}).length, conf: TeamData.allergensOf('d-fresh-oysters'), parts: Object.keys(TeamLearn.readiness(TeamLearn.me().id).parts), qs: TeamLearn.dishQs('d-fresh-oysters').map((q) => q.id) }));
+  expect(before.notes).toBeGreaterThan(30); expect(before.conf).toBeNull();
+  expect(before.parts).not.toContain('allergens'); // no allergen part until the kitchen has confirmed a dish
+  expect(before.qs.some((id) => /#allergen$/.test(id))).toBe(false); expect(before.qs.some((id) => /#know$/.test(id))).toBe(true);
+  // The kitchen confirms the oysters on the Menu tab: the draft is offered, one chip is dropped, Confirm.
+  await page.getByText('Menu', { exact: true }).first().click();
+  await expect(page.getByTestId('menu-allergen-todo')).toContainText('allergens to confirm');
+  const row = page.getByTestId('menu-row').filter({ hasText: 'Fresh Oysters' });
+  await expect(row.getByTestId('menu-allergens')).toContainText('Draft');
+  await row.getByTestId('menu-confirm').click();
+  const pressed = page.getByTestId('menu-allergen-toggle').filter({ has: page.locator('[aria-pressed="true"]') });
+  await page.getByTestId('menu-allergen-toggle').filter({ hasText: 'Sulphites' }).click(); // not in it, says the chef
+  await page.getByText('Confirm these').click();
+  const after = await page.evaluate(() => ({ conf: TeamData.allergensOf('d-fresh-oysters'), by: TeamData.dishCard('d-fresh-oysters').allergens.by, parts: Object.keys(TeamLearn.readiness(TeamLearn.me().id).parts),
+    q: TeamLearn.allergenQ('d-fresh-oysters'), assigned: TeamLearn.people().every((p) => TeamLearn.assignments(p.id).some((a) => a.kind === 'allergen' && a.id === 'd-fresh-oysters')) }));
+  expect(after.conf).toEqual(['shellfish']); expect(after.by).toBe('Elena Ruiz'); expect(after.parts).toContain('allergens'); expect(after.assigned).toBe(true);
+  expect(after.q.conf).toBe(true); expect(after.q.pills.groups[0].all).toBe(true); expect(after.q.pills.opts[after.q.pills.right[0]]).toBe('Crustaceans and molluscs');
+  await expect(row.getByTestId('menu-allergens')).toContainText('Crustaceans and molluscs');
+  // The register on the Team tab now counts one confirmed dish, nobody holding it yet; the CSV has a row per person.
+  await page.getByText('Team', { exact: true }).first().click();
+  await expect(page.getByTestId('register-table')).toBeVisible();
+  await expect(page.getByTestId('register-row').first()).toContainText('0 of 1');
+  const csv = await page.evaluate(() => TeamReport.allergenCsv());
+  expect(csv.split('\n')[0]).toBe('Venue,Person,Role,Dishes confirmed,Held now,Passed on,Falls due'); expect(csv.split('\n').filter(Boolean).length).toBe(8);
+  // On the phone, as Priya: the dish shows the confirmed allergens (never the draft), the Allergens part has its own bar,
+  // and practising it asks the choose-all question with How sure; a right answer passes her in the register.
+  await page.evaluate(() => { TeamLearn.setMe(TeamLearn.people().find((p) => p.name.startsWith('Priya')).id); });
+  await page.goto(`${BASE}/team/?view=phone`);
+  await expect(page.getByTestId('team-state')).toBeVisible();
+  await expect(page.getByTestId('team-part').filter({ hasText: 'Allergens' })).toContainText('0 of 1 known · need 100%');
+  await page.getByTestId('team-tab-menu').click();
+  await page.getByText('Fresh Oysters', { exact: true }).first().click();
+  await expect(page.getByTestId('dish-allergens')).toContainText('Crustaceans and molluscs');
+  await expect(page.getByTestId('dish-allergens')).not.toContainText('Sulphites');
+  await expect(page.getByTestId('dish-say')).toContainText(/oysters/i);
+  await expect(page.getByTestId('dish-mod').first()).toBeVisible();
+  await page.getByLabel('Back').click();
+  await page.getByTestId('team-tab-today').click();
+  await page.getByTestId('team-part').filter({ hasText: 'Allergens' }).getByTestId('team-part-practise').click();
+  await expect(page.getByTestId('drill-q')).toContainText('Which of these are in the Fresh Oysters?');
+  await expect(page.getByTestId('drill-choose')).toContainText('Choose all that apply');
+  await expect(page.getByTestId('drill-sure')).toBeVisible();
+  await page.getByTestId('drill-opt').filter({ hasText: 'Crustaceans and molluscs' }).click();
+  await page.getByText('Sure', { exact: true }).click();
+  await page.getByText('Check', { exact: true }).click();
+  await expect(page.getByTestId('drill-result')).toContainText('Right');
+  const reg = await page.evaluate(() => TeamReport.allergenRegister().find((x) => x.person.name.startsWith('Priya')));
+  expect(reg.state).toBe('passed'); expect(reg.known).toBe(1);
+  await ctx.close();
+});
+
 test('the drill on screen: pick, say how sure, see the answer and why, then the summary', async ({ context, page }) => {
   await openSample(context, page);
   await page.getByText(/Start today's drill/).click();

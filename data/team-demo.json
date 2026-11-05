@@ -5707,5 +5707,1345 @@
    "at": 1793386414232
   }
  },
- "exported": "2026-11-02T15:00:11Z"
+ "exported": "2026-11-05T00:21:34.559Z",
+ "dishCards": {
+  "d-gordal-olives-orange-zest": {
+   "say": "These are big, meaty Spanish Gordal olives marinated with orange zest and rosemary, a small bowl to nibble on while you look at the menu.",
+   "allergens": {
+    "draft": [
+     {
+      "code": "sulphite",
+      "sure": "likely"
+     }
+    ],
+    "note": "Check the olive brine and marinade for sulphites and any garlic or chilli; confirm whether the olives are stoned.",
+    "confirmed": null
+   },
+   "mods": [
+    {
+     "ask": "vegan",
+     "can": "yes",
+     "say": "Yes, these are vegan just as they come."
+    },
+    {
+     "ask": "gluten-free",
+     "can": "ask",
+     "say": "There's nothing with gluten on the menu description, but let me just confirm the marinade with the kitchen."
+    },
+    {
+     "ask": "without the orange",
+     "can": "ask",
+     "say": "The zest goes into the marinade, so I'll check with the kitchen whether they can do some without it."
+    }
+   ],
+   "ask": [
+    {
+     "q": "Do they have stones in?",
+     "a": "Let me check with the kitchen, as I don't want to guess, and if they do I'll bring you a dish for the stones."
+    },
+    {
+     "q": "How big is the portion?",
+     "a": "It's a small snack bowl, nice for one or two people to share before a starter."
+    }
+   ],
+   "at": 1793837956188,
+   "model": "claude-opus-5-5"
+  },
+  "d-crispy-pig-s-head-apple-sauce": {
+   "say": "These are crispy breadcrumbed croquettes made with slow-cooked pig's head meat, served with Bramley apple sauce and mustard, a rich, savoury snack.",
+   "allergens": {
+    "draft": [
+     {
+      "code": "mustard",
+      "sure": "printed"
+     },
+     {
+      "code": "gluten",
+      "sure": "likely"
+     },
+     {
+      "code": "egg",
+      "sure": "likely"
+     },
+     {
+      "code": "milk",
+      "sure": "likely"
+     },
+     {
+      "code": "celery",
+      "sure": "likely"
+     },
+     {
+      "code": "sulphite",
+      "sure": "likely"
+     }
+    ],
+    "note": "Confirm crumb and egg wash, whether the filling is bound with a white sauce or butter, celery in the braising stock, and the fryer oil for cross-contact.",
+    "confirmed": null
+   },
+   "mods": [
+    {
+     "ask": "gluten-free",
+     "can": "no",
+     "say": "I'm sorry, the croquettes are breadcrumbed, so they can't be made gluten-free, but the Gordal olives or the oysters would be a good snack instead."
+    },
+    {
+     "ask": "without the mustard",
+     "can": "yes",
+     "say": "Yes, I can ask for the mustard to be left off so you just get the apple sauce."
+    },
+    {
+     "ask": "vegetarian",
+     "can": "no",
+     "say": "No, these are made with pork, but the Gordal olives or the sourdough and butter are both vegetarian."
+    }
+   ],
+   "ask": [
+    {
+     "q": "What is pig's head, exactly?",
+     "a": "It's the tender, rich meat from the head, slow-cooked and shredded, so it eats like soft pulled pork inside a crisp crumb."
+    },
+    {
+     "q": "How many do you get?",
+     "a": "It's a snack-sized portion; let me check with the kitchen for today's exact number."
+    }
+   ],
+   "at": 1793837956189,
+   "model": "claude-opus-5-5"
+  },
+  "d-oysters-shallot-vinegar": {
+   "say": "Six raw Carlingford oysters from Ireland, served on the half shell with shallot vinegar and lemon, clean, briny and fresh.",
+   "allergens": {
+    "draft": [
+     {
+      "code": "mollusc",
+      "sure": "printed"
+     },
+     {
+      "code": "sulphite",
+      "sure": "likely"
+     }
+    ],
+    "note": "Confirm the vinegar type for sulphites; oysters are served raw, so flag for pregnant or vulnerable guests.",
+    "confirmed": null
+   },
+   "mods": [
+    {
+     "ask": "without the vinegar",
+     "can": "yes",
+     "say": "Yes, they can come with just lemon, or I can bring the vinegar on the side."
+    },
+    {
+     "ask": "cooked oysters",
+     "can": "ask",
+     "say": "They're served raw, so I'll need to ask the kitchen whether they can do anything else with them today."
+    },
+    {
+     "ask": "a smaller portion",
+     "can": "ask",
+     "say": "They come as six, but I'll check with the kitchen whether they can do fewer."
+    }
+   ],
+   "ask": [
+    {
+     "q": "Are they raw?",
+     "a": "Yes, they're served raw on the half shell, so they're not advised if you're pregnant or have a weakened immune system."
+    },
+    {
+     "q": "Where are they from?",
+     "a": "They're Carlingford oysters, from Carlingford Lough in Ireland."
+    }
+   ],
+   "at": 1793837956189,
+   "model": "claude-opus-5-5"
+  },
+  "d-sourdough-cultured-butter": {
+   "say": "Our own house-baked sourdough with cultured butter and Maldon sea salt, a simple, generous bread course to start.",
+   "allergens": {
+    "draft": [
+     {
+      "code": "gluten",
+      "sure": "printed"
+     },
+     {
+      "code": "milk",
+      "sure": "printed"
+     }
+    ],
+    "note": "Confirm flours in the house sourdough (wheat, rye) and any seeds in or on the loaf.",
+    "confirmed": null
+   },
+   "mods": [
+    {
+     "ask": "gluten-free",
+     "can": "no",
+     "say": "I'm sorry, the bread is sourdough, so it does contain gluten, but the Gordal olives are a good gluten-free snack."
+    },
+    {
+     "ask": "dairy-free or vegan",
+     "can": "ask",
+     "say": "The bread comes with butter, so I'll ask the kitchen whether they can serve it with olive oil instead."
+    },
+    {
+     "ask": "extra bread",
+     "can": "yes",
+     "say": "Yes, I can bring you another portion, it's charged as a second serving."
+    }
+   ],
+   "ask": [
+    {
+     "q": "Is the bread made here?",
+     "a": "Yes, it's our house sourdough, baked in our kitchen."
+    },
+    {
+     "q": "What is cultured butter?",
+     "a": "It's butter made from cream that's been lightly fermented, so it tastes richer and slightly tangy."
+    }
+   ],
+   "at": 1793837956189,
+   "model": "claude-opus-5-5"
+  },
+  "d-burrata-heritage-tomatoes-basil": {
+   "say": "A whole creamy burrata with heritage tomatoes, basil oil and aged balsamic, a fresh, light but indulgent starter.",
+   "allergens": {
+    "draft": [
+     {
+      "code": "milk",
+      "sure": "printed"
+     },
+     {
+      "code": "sulphite",
+      "sure": "likely"
+     }
+    ],
+    "note": "Check the balsamic for sulphites, whether the burrata uses animal rennet for strict vegetarians, and that the basil oil has no nuts or cheese.",
+    "confirmed": null
+   },
+   "mods": [
+    {
+     "ask": "dairy-free",
+     "can": "no",
+     "say": "I'm sorry, the burrata is the heart of the dish and it's a cheese, but the Gordal olives are dairy-free, or for a main the aubergine with miso is vegan."
+    },
+    {
+     "ask": "without the balsamic",
+     "can": "yes",
+     "say": "Yes, I can ask for it without the balsamic."
+    },
+    {
+     "ask": "gluten-free",
+     "can": "ask",
+     "say": "Nothing on the menu description has gluten, but I'll confirm with the kitchen before I put it through."
+    }
+   ],
+   "ask": [
+    {
+     "q": "What is burrata?",
+     "a": "It's a soft Italian cheese, a ball of mozzarella with a creamy, stringy centre."
+    },
+    {
+     "q": "Is it good to share?",
+     "a": "It's a single starter, but it's rich enough that two people could share it alongside something else."
+    }
+   ],
+   "at": 1793837956189,
+   "model": "claude-opus-5-5"
+  },
+  "d-seared-scallops-cauliflower-brown-butter": {
+   "say": "Hand-dived scallops, seared, with a smooth cauliflower purée, nutty brown butter, capers and raisins, a rich, sweet-and-salty starter.",
+   "allergens": {
+    "draft": [
+     {
+      "code": "mollusc",
+      "sure": "printed"
+     },
+     {
+      "code": "milk",
+      "sure": "printed"
+     },
+     {
+      "code": "sulphite",
+      "sure": "likely"
+     }
+    ],
+    "note": "Confirm cream or butter in the purée, sulphites in the raisins and capers, and whether any shellfish stock is used.",
+    "confirmed": null
+   },
+   "mods": [
+    {
+     "ask": "dairy-free",
+     "can": "ask",
+     "say": "The brown butter and probably the purée have dairy, so I'll ask the kitchen whether they can do a version without."
+    },
+    {
+     "ask": "without the raisins",
+     "can": "yes",
+     "say": "Yes, I can ask for it without the raisins."
+    },
+    {
+     "ask": "gluten-free",
+     "can": "ask",
+     "say": "Nothing on the menu description has gluten, but I'll confirm with the kitchen first."
+    }
+   ],
+   "ask": [
+    {
+     "q": "What does hand-dived mean?",
+     "a": "It means the scallops are picked by divers rather than dredged, which is gentler on the seabed and the scallops."
+    },
+    {
+     "q": "How many scallops are there?",
+     "a": "Let me check today's number with the kitchen for you; it's a starter-sized portion."
+    }
+   ],
+   "at": 1793837956189,
+   "model": "claude-opus-5-5"
+  },
+  "d-beef-tartare-egg-yolk-sourdough-crisps": {
+   "say": "Hand-cut raw Hereford beef with a cured egg yolk and chopped cornichons, served with crisp sourdough to scoop it up, a rich, savoury starter.",
+   "allergens": {
+    "draft": [
+     {
+      "code": "egg",
+      "sure": "printed"
+     },
+     {
+      "code": "gluten",
+      "sure": "printed"
+     },
+     {
+      "code": "sulphite",
+      "sure": "likely"
+     },
+     {
+      "code": "mustard",
+      "sure": "likely"
+     }
+    ],
+    "note": "Confirm the tartare seasoning for mustard and Worcestershire sauce (fish), sulphites in the cornichons, and raw beef and cured yolk for pregnant guests.",
+    "confirmed": null
+   },
+   "mods": [
+    {
+     "ask": "gluten-free",
+     "can": "ask",
+     "say": "The sourdough crisps have gluten, so I'll ask the kitchen whether they can leave them off and check the seasoning too."
+    },
+    {
+     "ask": "cooked beef",
+     "can": "no",
+     "say": "No, tartare is served raw by nature, but if you'd like beef cooked, the 28-day sirloin is a lovely main."
+    },
+    {
+     "ask": "without the egg yolk",
+     "can": "ask",
+     "say": "I'll check with the kitchen whether they can leave the yolk off, and whether there's egg anywhere else in it."
+    }
+   ],
+   "ask": [
+    {
+     "q": "Is the beef raw?",
+     "a": "Yes, the beef is raw and the yolk is cured rather than cooked, so it isn't advised if you're pregnant or have a weakened immune system."
+    },
+    {
+     "q": "Is it spicy?",
+     "a": "It's seasoned and tangy from the cornichons rather than hot, but I'll check with the kitchen if you're sensitive to it."
+    }
+   ],
+   "at": 1793837956189,
+   "model": "claude-opus-5-5"
+  },
+  "d-goat-s-cheese-tart-red-onion-marmalade": {
+   "say": "A goat's cheese tart in thyme pastry, with sweet red onion marmalade and a little peppery rocket, a warm, rich vegetarian starter.",
+   "allergens": {
+    "draft": [
+     {
+      "code": "milk",
+      "sure": "printed"
+     },
+     {
+      "code": "gluten",
+      "sure": "likely"
+     },
+     {
+      "code": "egg",
+      "sure": "likely"
+     },
+     {
+      "code": "sulphite",
+      "sure": "likely"
+     }
+    ],
+    "note": "Confirm pastry flour, butter and egg wash, egg in the filling, wine or vinegar in the marmalade, and whether the goat's cheese uses animal rennet.",
+    "confirmed": null
+   },
+   "mods": [
+    {
+     "ask": "gluten-free",
+     "can": "no",
+     "say": "I'm sorry, the tart is made with pastry, so it can't be gluten-free, but the burrata with heritage tomatoes is a good vegetarian starter instead."
+    },
+    {
+     "ask": "without the rocket",
+     "can": "yes",
+     "say": "Yes, I can ask for it without the rocket."
+    },
+    {
+     "ask": "vegan",
+     "can": "no",
+     "say": "No, it's made with goat's cheese and pastry, but the Gordal olives are vegan, and for a main the miso aubergine is vegan."
+    }
+   ],
+   "ask": [
+    {
+     "q": "Is it strong goat's cheese?",
+     "a": "It has that tangy goat's cheese flavour, softened by the sweet onion marmalade; I can check with the kitchen how strong today's cheese is."
+    },
+    {
+     "q": "Is it served warm?",
+     "a": "Let me confirm with the kitchen how it's served today so I give you the right answer."
+    }
+   ],
+   "at": 1793837956189,
+   "model": "claude-opus-5-5"
+  },
+  "d-cured-sea-trout-cucumber-dill": {
+   "say": "This is sea trout cured with beetroot, so it's bright pink and silky, served with pickled cucumber, a dill crème fraîche and rye; it's a fresh, light starter.",
+   "allergens": {
+    "draft": [
+     {
+      "code": "fish",
+      "sure": "printed"
+     },
+     {
+      "code": "milk",
+      "sure": "printed"
+     },
+     {
+      "code": "gluten",
+      "sure": "printed"
+     },
+     {
+      "code": "sulphite",
+      "sure": "likely"
+     }
+    ],
+    "note": "Confirm what the rye is (bread or crispbread, and whether it also has wheat), and whether the cucumber pickle uses mustard seed or a sulphite vinegar.",
+    "confirmed": null
+   },
+   "mods": [
+    {
+     "ask": "gluten-free",
+     "can": "ask",
+     "say": "The rye contains gluten, so I'll ask the kitchen whether they can serve it without and check everything else on the plate."
+    },
+    {
+     "ask": "without the dairy",
+     "can": "ask",
+     "say": "The dill crème fraîche is the only dairy listed, so I'll check with the kitchen whether they can leave it off for you."
+    },
+    {
+     "ask": "no fish",
+     "can": "no",
+     "say": "The trout is the heart of this dish, so I'm afraid not, but the roast beetroot with whipped feta and hazelnuts is a lovely fresh alternative."
+    }
+   ],
+   "ask": [
+    {
+     "q": "Is the fish raw?",
+     "a": "It's cured rather than cooked, so it has a soft, silky texture, and if you're pregnant I'll ask the kitchen to advise."
+    },
+    {
+     "q": "Is it smoked?",
+     "a": "No, it's cured with beetroot, which gives it the colour and a gentle earthy sweetness rather than a smoky flavour."
+    }
+   ],
+   "at": 1793838021420,
+   "model": "claude-opus-5-5"
+  },
+  "d-chicken-liver-parfait-brioche": {
+   "say": "This is a smooth chicken liver parfait with toasted brioche and a fig chutney; it's a rich starter.",
+   "allergens": {
+    "draft": [
+     {
+      "code": "gluten",
+      "sure": "printed"
+     },
+     {
+      "code": "egg",
+      "sure": "likely"
+     },
+     {
+      "code": "milk",
+      "sure": "likely"
+     },
+     {
+      "code": "sulphite",
+      "sure": "likely"
+     }
+    ],
+    "note": "Confirm whether the parfait contains alcohol (port, brandy or wine), egg and butter, and what is in the fig chutney.",
+    "confirmed": null
+   },
+   "mods": [
+    {
+     "ask": "gluten-free",
+     "can": "ask",
+     "say": "The brioche contains gluten, so I'll ask the kitchen whether they have a gluten-free alternative to serve with the parfait."
+    },
+    {
+     "ask": "dairy-free",
+     "can": "ask",
+     "say": "Parfait is usually made with butter and brioche usually has milk, so I'll check with the kitchen, but if it can't be done the Gordal olives are dairy-free."
+    },
+    {
+     "ask": "vegetarian",
+     "can": "no",
+     "say": "I'm afraid not, as it's made from chicken liver, but the goat's cheese tart with red onion marmalade is a lovely vegetarian starter."
+    }
+   ],
+   "ask": [
+    {
+     "q": "Is it safe to eat in pregnancy?",
+     "a": "Liver is generally advised against in pregnancy, so I'd suggest another starter, and I'm happy to help you choose one."
+    },
+    {
+     "q": "How rich is it?",
+     "a": "It's very smooth and rich, and the fig chutney gives it a sweet, fruity balance."
+    }
+   ],
+   "at": 1793838021420,
+   "model": "claude-opus-5-5"
+  },
+  "d-roast-beetroot-whipped-feta-hazelnuts": {
+   "say": "This is salt-baked beetroot with whipped feta, toasted hazelnuts and a little honey; it's a vegetarian starter that's earthy, creamy and slightly sweet.",
+   "allergens": {
+    "draft": [
+     {
+      "code": "milk",
+      "sure": "printed"
+     },
+     {
+      "code": "treenut",
+      "sure": "printed"
+     }
+    ],
+    "note": "Contains honey, so it's vegetarian but not vegan; check nut cross-contact if the hazelnuts are left off for a guest.",
+    "confirmed": null
+   },
+   "mods": [
+    {
+     "ask": "without the nuts",
+     "can": "ask",
+     "say": "I'll ask the kitchen whether they can leave the hazelnuts off, but I can't promise there's no trace of nuts, so please let me know if it's an allergy."
+    },
+    {
+     "ask": "vegan or dairy-free",
+     "can": "no",
+     "say": "I'm afraid not, as the whipped feta and honey are central to the dish, but the Gordal olives are vegan and the miso-glazed aubergine is a vegan main."
+    },
+    {
+     "ask": "gluten-free",
+     "can": "ask",
+     "say": "There's nothing listed that contains gluten, but I'll confirm with the kitchen before I put it through."
+    }
+   ],
+   "ask": [
+    {
+     "q": "Is it vegan?",
+     "a": "No, it has whipped feta and honey, but it is vegetarian."
+    },
+    {
+     "q": "Is it sweet?",
+     "a": "There's a touch of sweetness from the honey and the beetroot, balanced by the salty feta."
+    }
+   ],
+   "at": 1793838021420,
+   "model": "claude-opus-5-5"
+  },
+  "d-crab-on-toast-brown-crab-mayonnaise": {
+   "say": "This is Devon crab on toasted sourdough with a mayonnaise made from the brown crab meat and a bit of chilli; it's a rich, generous starter.",
+   "allergens": {
+    "draft": [
+     {
+      "code": "crustacean",
+      "sure": "printed"
+     },
+     {
+      "code": "gluten",
+      "sure": "printed"
+     },
+     {
+      "code": "egg",
+      "sure": "likely"
+     },
+     {
+      "code": "mustard",
+      "sure": "likely"
+     }
+    ],
+    "note": "Confirm whether the mayonnaise contains mustard and whether the toast is buttered (milk).",
+    "confirmed": null
+   },
+   "mods": [
+    {
+     "ask": "without the chilli",
+     "can": "ask",
+     "say": "I'll ask the kitchen whether they can leave the chilli out for you."
+    },
+    {
+     "ask": "gluten-free",
+     "can": "ask",
+     "say": "The sourdough contains gluten, so I'll check with the kitchen whether they can serve the crab without the toast or with an alternative."
+    },
+    {
+     "ask": "egg-free",
+     "can": "no",
+     "say": "I'm afraid not, as the brown crab mayonnaise is likely made with egg, but the burrata with heritage tomatoes is a lovely egg-free starter, and I'll confirm with the kitchen."
+    }
+   ],
+   "ask": [
+    {
+     "q": "Is it spicy?",
+     "a": "There's chilli in it, so it has some warmth, and I can check with the kitchen how hot it is today."
+    },
+    {
+     "q": "Is it white or brown crab?",
+     "a": "It's Devon crab with a mayonnaise made from the brown meat, which is richer and stronger in flavour."
+    }
+   ],
+   "at": 1793838021420,
+   "model": "claude-opus-5-5"
+  },
+  "d-roast-chicken-morels-tarragon-cream": {
+   "say": "This is free-range roast chicken with morel mushrooms, a tarragon cream sauce and buttered greens; it's a comforting, fairly rich main.",
+   "allergens": {
+    "draft": [
+     {
+      "code": "milk",
+      "sure": "printed"
+     }
+    ],
+    "note": "Confirm whether the cream sauce uses wine (sulphites) or stock containing celery, and whether it's thickened with flour (gluten).",
+    "confirmed": null
+   },
+   "mods": [
+    {
+     "ask": "dairy-free",
+     "can": "ask",
+     "say": "The sauce is cream-based and the greens are buttered, so I'll ask the kitchen whether they can do a dairy-free version."
+    },
+    {
+     "ask": "without the mushrooms",
+     "can": "ask",
+     "say": "I'll ask the kitchen whether they can leave the morels out for you."
+    },
+    {
+     "ask": "gluten-free",
+     "can": "ask",
+     "say": "There's nothing listed that contains gluten, but I'll check with the kitchen how the sauce is made before I put it through."
+    }
+   ],
+   "ask": [
+    {
+     "q": "What are morels?",
+     "a": "They're a prized wild mushroom with a honeycomb look and a deep, earthy flavour."
+    },
+    {
+     "q": "Is it rich?",
+     "a": "It's fairly rich because of the cream sauce, but the tarragon keeps it fresh."
+    }
+   ],
+   "at": 1793838021420,
+   "model": "claude-opus-5-5"
+  },
+  "d-braised-lamb-shoulder-white-beans-rosemary": {
+   "say": "This is lamb shoulder braised for eight hours so it's meltingly tender, with white beans, rosemary and a salsa verde; it's a hearty, generous main.",
+   "allergens": {
+    "draft": [
+     {
+      "code": "fish",
+      "sure": "likely"
+     },
+     {
+      "code": "mustard",
+      "sure": "likely"
+     }
+    ],
+    "note": "Confirm whether the salsa verde contains anchovy and mustard, and whether the braise uses wine (sulphites) or celery.",
+    "confirmed": null
+   },
+   "mods": [
+    {
+     "ask": "without the salsa verde",
+     "can": "ask",
+     "say": "I'll ask the kitchen whether they can serve it without the salsa verde or on the side."
+    },
+    {
+     "ask": "gluten-free",
+     "can": "ask",
+     "say": "There's nothing listed that contains gluten, but I'll confirm with the kitchen before I put it through."
+    },
+    {
+     "ask": "dairy-free",
+     "can": "ask",
+     "say": "There's no dairy listed, but I'll check with the kitchen to be certain."
+    }
+   ],
+   "ask": [
+    {
+     "q": "Will it be pink?",
+     "a": "No, it's braised for eight hours, so it's cooked through and very tender rather than pink."
+    },
+    {
+     "q": "Is it a big portion?",
+     "a": "It's a hearty main, and shoulder is a rich, flavourful cut."
+    }
+   ],
+   "at": 1793838021420,
+   "model": "claude-opus-5-5"
+  },
+  "d-28-day-sirloin-chips-b-arnaise": {
+   "say": "This is a 28-day aged Hereford sirloin with triple-cooked chips, béarnaise sauce and watercress; it's our most substantial main.",
+   "allergens": {
+    "draft": [
+     {
+      "code": "egg",
+      "sure": "likely"
+     },
+     {
+      "code": "milk",
+      "sure": "likely"
+     },
+     {
+      "code": "sulphite",
+      "sure": "likely"
+     }
+    ],
+    "note": "Check fryer cross-contact for the chips (gluten), whether the steak is basted in butter, and the béarnaise reduction (wine or vinegar).",
+    "confirmed": null
+   },
+   "mods": [
+    {
+     "ask": "sauce on the side or without the béarnaise",
+     "can": "yes",
+     "say": "Of course, I can ask for the béarnaise on the side or leave it off."
+    },
+    {
+     "ask": "dairy-free",
+     "can": "ask",
+     "say": "The béarnaise has butter, so I'll ask the kitchen whether they can leave it off and cook the steak without butter."
+    },
+    {
+     "ask": "gluten-free",
+     "can": "ask",
+     "say": "There's nothing listed that contains gluten, but I'll check with the kitchen about the fryer the chips are cooked in."
+    }
+   ],
+   "ask": [
+    {
+     "q": "How big is the steak?",
+     "a": "I'll check today's weight with the kitchen for you."
+    },
+    {
+     "q": "What does 28-day aged mean?",
+     "a": "The beef has been aged for 28 days, which makes it more tender and gives it a deeper, richer flavour."
+    }
+   ],
+   "at": 1793838021420,
+   "model": "claude-opus-5-5"
+  },
+  "d-pan-roast-cod-brown-shrimp-samphire": {
+   "say": "This is pan-roast Cornish cod with brown shrimp butter, samphire and new potatoes; it's a lighter main, rich from the butter.",
+   "allergens": {
+    "draft": [
+     {
+      "code": "fish",
+      "sure": "printed"
+     },
+     {
+      "code": "crustacean",
+      "sure": "printed"
+     },
+     {
+      "code": "milk",
+      "sure": "printed"
+     }
+    ],
+    "note": "Confirm whether the cod is dusted in flour before roasting (gluten).",
+    "confirmed": null
+   },
+   "mods": [
+    {
+     "ask": "without the shrimp",
+     "can": "no",
+     "say": "I'm afraid the shrimp is cooked into the butter, but the whole lemon sole with caper and parsley butter could work, and I'll check it with the kitchen for shellfish."
+    },
+    {
+     "ask": "dairy-free",
+     "can": "ask",
+     "say": "The brown shrimp butter is the main dairy, so I'll ask the kitchen whether they can do a dairy-free version."
+    },
+    {
+     "ask": "gluten-free",
+     "can": "ask",
+     "say": "There's nothing listed that contains gluten, but I'll confirm with the kitchen how the cod is cooked."
+    }
+   ],
+   "ask": [
+    {
+     "q": "What is samphire?",
+     "a": "It's a sea vegetable that grows on the coast, crunchy and naturally salty."
+    },
+    {
+     "q": "Are there bones?",
+     "a": "It's a piece of cod rather than a whole fish, but I'll check with the kitchen to be sure."
+    }
+   ],
+   "at": 1793838021420,
+   "model": "claude-opus-5-5"
+  },
+  "d-pork-belly-black-pudding-apple": {
+   "say": "Slow-roast pork belly with black pudding, apple purée, a cider jus and a piece of crackling; it's a hearty, rich main.",
+   "allergens": {
+    "draft": [
+     {
+      "code": "gluten",
+      "sure": "likely"
+     },
+     {
+      "code": "sulphite",
+      "sure": "likely"
+     },
+     {
+      "code": "celery",
+      "sure": "likely"
+     }
+    ],
+    "note": "Check whether the black pudding has oats or barley, whether the jus stock has celery, and whether the apple purée has butter.",
+    "confirmed": null
+   },
+   "mods": [
+    {
+     "ask": "gluten-free",
+     "can": "ask",
+     "say": "The black pudding and the jus may contain gluten, so I'll ask the kitchen whether they can serve it without them."
+    },
+    {
+     "ask": "without the black pudding",
+     "can": "ask",
+     "say": "I'll check with the kitchen, as they may be happy to leave it off."
+    },
+    {
+     "ask": "dairy-free",
+     "can": "ask",
+     "say": "There's no dairy on the menu description, but I'll ask the kitchen to confirm the purée and jus are dairy-free."
+    }
+   ],
+   "ask": [
+    {
+     "q": "Is the crackling crunchy?",
+     "a": "Yes, it comes with a piece of crackling on the side of the pork belly."
+    },
+    {
+     "q": "Is it a big portion?",
+     "a": "It's a full, rich main of pork belly with black pudding, so it's a filling plate."
+    }
+   ],
+   "at": 1793838069641,
+   "model": "claude-opus-5-5"
+  },
+  "d-venison-loin-celeriac-blackberries": {
+   "say": "Roe deer loin with a celeriac purée, fresh blackberries and a juniper jus; it's a rich, gamey main.",
+   "allergens": {
+    "draft": [
+     {
+      "code": "celery",
+      "sure": "printed"
+     },
+     {
+      "code": "milk",
+      "sure": "likely"
+     },
+     {
+      "code": "sulphite",
+      "sure": "likely"
+     }
+    ],
+    "note": "Celeriac counts as celery for allergens; check the purée for butter or cream, and the jus for wine, celery or flour.",
+    "confirmed": null
+   },
+   "mods": [
+    {
+     "ask": "dairy-free",
+     "can": "ask",
+     "say": "The celeriac purée may have butter or cream in it, so I'll check with the kitchen."
+    },
+    {
+     "ask": "gluten-free",
+     "can": "ask",
+     "say": "There's no gluten on the menu description, but I'll ask the kitchen to confirm the jus isn't thickened with flour."
+    },
+    {
+     "ask": "celery-free",
+     "can": "no",
+     "say": "I'm sorry, the celeriac counts as celery, so this one won't work, but the duck breast with cherries has no celeriac in it."
+    }
+   ],
+   "ask": [
+    {
+     "q": "What does venison taste like?",
+     "a": "Roe deer is a lean, tender game meat with a deeper flavour than beef, and the blackberries and juniper suit it well."
+    },
+    {
+     "q": "How is it cooked?",
+     "a": "Loin is usually served pink, and I'll ask the kitchen if you'd like it cooked differently."
+    }
+   ],
+   "at": 1793838069641,
+   "model": "claude-opus-5-5"
+  },
+  "d-wild-mushroom-risotto-aged-parmesan": {
+   "say": "A Carnaroli rice risotto with wild mushrooms, aged Parmesan and a finish of truffle oil; it's creamy, rich and vegetarian.",
+   "allergens": {
+    "draft": [
+     {
+      "code": "milk",
+      "sure": "printed"
+     },
+     {
+      "code": "celery",
+      "sure": "likely"
+     },
+     {
+      "code": "sulphite",
+      "sure": "likely"
+     }
+    ],
+    "note": "Confirm the Parmesan uses vegetarian rennet, as true Parmesan usually doesn't, and check the stock for celery and gluten and whether wine goes in.",
+    "confirmed": null
+   },
+   "mods": [
+    {
+     "ask": "vegan or dairy-free",
+     "can": "no",
+     "say": "I'm sorry, the Parmesan is part of the dish, so it can't be made vegan, but the miso-glazed aubergine is our vegan main."
+    },
+    {
+     "ask": "gluten-free",
+     "can": "ask",
+     "say": "Rice is naturally gluten-free, but I'll ask the kitchen to confirm the stock is too."
+    },
+    {
+     "ask": "without the truffle oil",
+     "can": "yes",
+     "say": "Yes, the kitchen can leave the truffle oil off."
+    }
+   ],
+   "ask": [
+    {
+     "q": "Is it vegetarian?",
+     "a": "Yes, it's marked vegetarian, and the kitchen has confirmed the cheese for us."
+    },
+    {
+     "q": "Is it heavy?",
+     "a": "It's a creamy, cheesy risotto, so it's on the rich side."
+    }
+   ],
+   "at": 1793838069641,
+   "model": "claude-opus-5-5"
+  },
+  "d-duck-breast-cherries-turnip": {
+   "say": "Gressingham duck breast with a cherry sauce, glazed turnip and a potato cooked in duck fat; it's a rich, full main.",
+   "allergens": {
+    "draft": [
+     {
+      "code": "sulphite",
+      "sure": "likely"
+     },
+     {
+      "code": "milk",
+      "sure": "likely"
+     },
+     {
+      "code": "celery",
+      "sure": "likely"
+     }
+    ],
+    "note": "Check the cherry sauce for wine, stock or celery, and whether the turnip is glazed with butter.",
+    "confirmed": null
+   },
+   "mods": [
+    {
+     "ask": "dairy-free",
+     "can": "ask",
+     "say": "The turnip may be glazed with butter, so I'll check with the kitchen."
+    },
+    {
+     "ask": "gluten-free",
+     "can": "ask",
+     "say": "There's no gluten on the menu description, but I'll ask the kitchen to confirm the sauce is gluten-free."
+    },
+    {
+     "ask": "cooked well done",
+     "can": "ask",
+     "say": "I'll ask the kitchen, though duck breast is usually served pink."
+    }
+   ],
+   "ask": [
+    {
+     "q": "Is the sauce sweet?",
+     "a": "It's a cherry sauce, so it has a fruity sweetness that balances the rich duck."
+    },
+    {
+     "q": "How is the duck cooked?",
+     "a": "Duck breast is usually served pink, and I can ask the kitchen if you'd prefer it otherwise."
+    }
+   ],
+   "at": 1793838069641,
+   "model": "claude-opus-5-5"
+  },
+  "d-whole-lemon-sole-caper-butter": {
+   "say": "A whole grilled lemon sole on the bone, with a caper and parsley butter and spinach; it's a generous, delicate fish main.",
+   "allergens": {
+    "draft": [
+     {
+      "code": "fish",
+      "sure": "printed"
+     },
+     {
+      "code": "milk",
+      "sure": "printed"
+     },
+     {
+      "code": "sulphite",
+      "sure": "likely"
+     }
+    ],
+    "note": "Capers in brine or vinegar can contain sulphites; check whether the fish is floured before grilling.",
+    "confirmed": null
+   },
+   "mods": [
+    {
+     "ask": "dairy-free",
+     "can": "ask",
+     "say": "The caper butter has dairy, so I'll ask the kitchen whether they can serve the sole without it."
+    },
+    {
+     "ask": "gluten-free",
+     "can": "ask",
+     "say": "There's no gluten on the menu description, but I'll check the fish isn't dusted with flour."
+    },
+    {
+     "ask": "off the bone",
+     "can": "ask",
+     "say": "It comes whole on the bone, so I'll ask the kitchen whether they can fillet it for you."
+    }
+   ],
+   "ask": [
+    {
+     "q": "Does it have bones?",
+     "a": "Yes, it's a whole fish served on the bone."
+    },
+    {
+     "q": "How big is it?",
+     "a": "It's a whole lemon sole, so it's a generous main, though sizes vary a little fish to fish."
+    }
+   ],
+   "at": 1793838069641,
+   "model": "claude-opus-5-5"
+  },
+  "d-lamb-rump-harissa-aubergine": {
+   "say": "Grilled lamb rump with harissa, smoked aubergine, yoghurt and mint; it's a warm, smoky main with a bit of chilli.",
+   "allergens": {
+    "draft": [
+     {
+      "code": "milk",
+      "sure": "printed"
+     }
+    ],
+    "note": "Check whether the smoked aubergine has tahini (sesame) and what goes into the harissa.",
+    "confirmed": null
+   },
+   "mods": [
+    {
+     "ask": "without the yoghurt",
+     "can": "ask",
+     "say": "I'll ask the kitchen to leave the yoghurt off and check nothing else on the plate has dairy."
+    },
+    {
+     "ask": "less spicy",
+     "can": "ask",
+     "say": "The harissa is a chilli paste, so I'll ask the kitchen whether they can go lighter on it."
+    },
+    {
+     "ask": "gluten-free",
+     "can": "ask",
+     "say": "There's no gluten on the menu description, but I'll ask the kitchen to confirm."
+    }
+   ],
+   "ask": [
+    {
+     "q": "Is it spicy?",
+     "a": "The harissa is a chilli paste, so it has some warmth, and the yoghurt and mint cool it down."
+    },
+    {
+     "q": "How is the lamb cooked?",
+     "a": "It's grilled lamb rump, and I can ask the kitchen how they usually serve it or if you'd like it done differently."
+    }
+   ],
+   "at": 1793838069641,
+   "model": "claude-opus-5-5"
+  },
+  "d-aubergine-miso-sesame": {
+   "say": "Miso-glazed aubergine with sesame and spring onion, served with steamed rice; it's our vegan main, savoury and filling.",
+   "allergens": {
+    "draft": [
+     {
+      "code": "soy",
+      "sure": "printed"
+     },
+     {
+      "code": "sesame",
+      "sure": "printed"
+     },
+     {
+      "code": "gluten",
+      "sure": "likely"
+     }
+    ],
+    "note": "Many misos contain barley, and glazes often use soy sauce (wheat) or mirin; confirm the miso and glaze ingredients.",
+    "confirmed": null
+   },
+   "mods": [
+    {
+     "ask": "gluten-free",
+     "can": "ask",
+     "say": "Miso glazes often contain gluten, so I'll check with the kitchen."
+    },
+    {
+     "ask": "without the sesame",
+     "can": "ask",
+     "say": "I'll ask the kitchen, as the sesame may be in the glaze as well as on top."
+    },
+    {
+     "ask": "soya-free",
+     "can": "no",
+     "say": "I'm sorry, the miso is made from soya, but if you eat dairy, the wild mushroom risotto has no soya on its menu description, and I'll check it with the kitchen."
+    }
+   ],
+   "ask": [
+    {
+     "q": "Is it vegan?",
+     "a": "Yes, it's marked vegan."
+    },
+    {
+     "q": "Is it filling enough as a main?",
+     "a": "Yes, it comes with steamed rice, so it's a proper main."
+    }
+   ],
+   "at": 1793838069641,
+   "model": "claude-opus-5-5"
+  },
+  "d-lemon-tart-cr-me-fra-che": {
+   "say": "A lemon tart with crème fraîche and candied lemon zest; it's sharp and sweet, a lighter way to finish.",
+   "allergens": {
+    "draft": [
+     {
+      "code": "milk",
+      "sure": "printed"
+     },
+     {
+      "code": "gluten",
+      "sure": "likely"
+     },
+     {
+      "code": "egg",
+      "sure": "likely"
+     }
+    ],
+    "note": "Check the pastry for butter and ground almonds, and confirm the filling contains egg.",
+    "confirmed": null
+   },
+   "mods": [
+    {
+     "ask": "without the crème fraîche",
+     "can": "yes",
+     "say": "Yes, the kitchen can serve it without the crème fraîche."
+    },
+    {
+     "ask": "gluten-free",
+     "can": "ask",
+     "say": "The pastry is likely made with wheat flour, so I'll check with the kitchen."
+    },
+    {
+     "ask": "dairy-free",
+     "can": "ask",
+     "say": "We can leave off the crème fraîche, but the tart itself may contain butter, so I'll ask the kitchen."
+    }
+   ],
+   "ask": [
+    {
+     "q": "Is it very sharp?",
+     "a": "It's a lemon tart, so it's bright and tangy, and the crème fraîche softens it."
+    },
+    {
+     "q": "Does it have nuts?",
+     "a": "No nuts are listed, but I'll ask the kitchen to confirm the pastry is nut-free."
+    }
+   ],
+   "at": 1793838069641,
+   "model": "claude-opus-5-5"
+  },
+  "d-dark-chocolate-delice-salted-caramel": {
+   "say": "It's a dark chocolate delice, a smooth, rich chocolate dessert, served with salted caramel and a crunchy hazelnut praline; it's one of our richest puddings.",
+   "allergens": {
+    "draft": [
+     {
+      "code": "treenut",
+      "sure": "printed"
+     },
+     {
+      "code": "milk",
+      "sure": "likely"
+     },
+     {
+      "code": "egg",
+      "sure": "likely"
+     },
+     {
+      "code": "soy",
+      "sure": "likely"
+     }
+    ],
+    "note": "Check whether the delice has a biscuit or sponge base (gluten), and confirm the vegetarian status, for example no gelatine.",
+    "confirmed": null
+   },
+   "mods": [
+    {
+     "ask": "without the nuts",
+     "can": "ask",
+     "say": "The hazelnut praline might be left off, but I'll need to check with the kitchen whether the rest of the dish is safe for a nut allergy."
+    },
+    {
+     "ask": "dairy-free",
+     "can": "no",
+     "say": "I'm afraid the caramel and chocolate almost certainly contain dairy, and none of our desserts are dairy-free, but I can ask the kitchen whether they can do anything for you."
+    },
+    {
+     "ask": "gluten-free",
+     "can": "ask",
+     "say": "I'll need to check with the kitchen whether there's any gluten in the delice before I can say yes."
+    }
+   ],
+   "ask": [
+    {
+     "q": "Is it very rich?",
+     "a": "Yes, it's dark chocolate with salted caramel, so it's a rich one and good for sharing if you like."
+    },
+    {
+     "q": "Does it have nuts?",
+     "a": "Yes, it comes with a hazelnut praline, so it isn't suitable for a nut allergy as served."
+    }
+   ],
+   "at": 1793838094559,
+   "model": "claude-opus-5-5"
+  },
+  "d-sticky-toffee-pudding-clotted-cream": {
+   "say": "It's a warm sticky toffee pudding with toffee sauce and a spoonful of clotted cream: a proper, comforting, generous pudding.",
+   "allergens": {
+    "draft": [
+     {
+      "code": "milk",
+      "sure": "printed"
+     },
+     {
+      "code": "gluten",
+      "sure": "likely"
+     },
+     {
+      "code": "egg",
+      "sure": "likely"
+     }
+    ],
+    "note": "Confirm what's in the sponge and sauce (for example dates, which can carry sulphites) and check for nut cross-contact with the praline.",
+    "confirmed": null
+   },
+   "mods": [
+    {
+     "ask": "without the clotted cream",
+     "can": "yes",
+     "say": "Of course, we can serve it without the clotted cream, though the toffee sauce itself will still have dairy in it."
+    },
+    {
+     "ask": "gluten-free",
+     "can": "no",
+     "say": "I'm sorry, the sponge is made with flour, so it isn't gluten-free; the cheese board without the oatcakes may work instead, and I'll check with the kitchen."
+    },
+    {
+     "ask": "dairy-free",
+     "can": "no",
+     "say": "I'm afraid the toffee sauce and cream both contain dairy, and we don't have a dairy-free dessert, but I can ask the kitchen what they can do."
+    }
+   ],
+   "ask": [
+    {
+     "q": "Is it served hot?",
+     "a": "Yes, the pudding comes warm with the toffee sauce, and the clotted cream on the side melts into it."
+    },
+    {
+     "q": "How big is it?",
+     "a": "It's a generous, filling portion, so it's a good choice if you've still got room."
+    }
+   ],
+   "at": 1793838094559,
+   "model": "claude-opus-5-5"
+  },
+  "d-british-cheeses-oatcakes-quince": {
+   "say": "It's a board of three British cheeses, Montgomery Cheddar, Stichelton blue and soft Tunworth, served with oatcakes and quince paste.",
+   "allergens": {
+    "draft": [
+     {
+      "code": "milk",
+      "sure": "printed"
+     },
+     {
+      "code": "gluten",
+      "sure": "likely"
+     }
+    ],
+    "note": "Confirm the oatcake recipe (oats and often wheat flour), confirm the vegetarian rennet for each cheese as the board is listed as vegetarian, and confirm which cheeses are unpasteurised.",
+    "confirmed": null
+   },
+   "mods": [
+    {
+     "ask": "gluten-free",
+     "can": "ask",
+     "say": "The cheeses themselves don't contain gluten, so I'll ask the kitchen whether they can swap or leave out the oatcakes for you."
+    },
+    {
+     "ask": "to share",
+     "can": "yes",
+     "say": "Yes, it works well shared between two at the end of a meal."
+    },
+    {
+     "ask": "without the blue cheese",
+     "can": "ask",
+     "say": "I'll check with the kitchen whether they can leave out the Stichelton or give you more of the other two."
+    }
+   ],
+   "ask": [
+    {
+     "q": "Can I eat it if I'm pregnant?",
+     "a": "Some of these cheeses may be unpasteurised, and one is blue and one is soft, so let me check with the kitchen before you order."
+    },
+    {
+     "q": "What are the cheeses like?",
+     "a": "The Montgomery is a strong, crumbly Cheddar, the Stichelton is a rich blue, and the Tunworth is soft and creamy, a bit like Camembert."
+    }
+   ],
+   "at": 1793838094559,
+   "model": "claude-opus-5-5"
+  }
+ }
 }

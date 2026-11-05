@@ -49,7 +49,7 @@ function TeamApp(){
   if(!set) body=<TeamSetup onDone={refresh}/>;
   // Every view on the stack stays mounted under the one on top (hidden), so a drill's summary is still there,
   // with its answers, when Back returns from a wine it opened.
-  else if(top) body=stack.map((v,i)=><div key={i} style={{display:i===stack.length-1?'block':'none'}}>{v.view==='wine'?<TeamWine id={v.id} pid={me.id} open={open}/>:v.view==='cocktail'?<TeamCocktail id={v.id} pid={me.id} open={open}/>:v.view==='dish'?<TeamDish id={v.id} open={open}/>
+  else if(top) body=stack.map((v,i)=><div key={i} style={{display:i===stack.length-1?'block':'none'}}>{v.view==='wine'?<TeamWine id={v.id} pid={me.id} open={open}/>:v.view==='cocktail'?<TeamCocktail id={v.id} pid={me.id} open={open}/>:v.view==='dish'?<TeamDish id={v.id} pid={me.id} open={open}/>
     :v.view==='guest'?<TeamGuest pid={me.id} back={back} open={open}/>
     :v.view==='ask'?<TeamVinnyAsk pid={me.id} open={open}/>
     :v.view==='tonight'?<TeamTonightEdit back={back}/>

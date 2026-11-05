@@ -72,7 +72,8 @@ const TeamData = {
   /* The allergens a server is taught for a dish: only what the kitchen confirmed. null until then. */
   allergensOf(id){ const c=this.dishCard(id); return c&&c.allergens&&Array.isArray(c.allergens.confirmed)?c.allergens.confirmed:null; },
   confirmAllergens(id,codes,by){ const doc=this.get(); doc.dishCards=doc.dishCards||{}; const c=doc.dishCards[id]||{say:'',allergens:{draft:[],note:''},mods:[],ask:[]};
-    doc.dishCards[id]={...c,allergens:{...(c.allergens||{}),confirmed:[...new Set((codes||[]).filter(Boolean))],confirmedAt:Date.now(),by:by||null}}; this.save(doc); },
+    doc.dishCards[id]={...c,allergens:{...(c.allergens||{}),confirmed:[...new Set((codes||[]).filter(Boolean))],confirmedAt:Date.now(),by:by||null}}; this.save(doc);
+    if(typeof TeamLearn!=='undefined') TeamLearn.assignAllergen(id); },
   /* Writes the dish notes, DISH_BATCH dishes a call. */
   async writeDishCards(ids,onStep){
     const tpl=_loadTextSync('prompts/team-dish-cards.txt'), venue=this.get().venue.name||'the restaurant';
@@ -368,7 +369,9 @@ const TeamData = {
     if(needPairs) jobs.push(this.writePairings(dishes,(a)=>{ prog.p=a; tell(); }));
     if(dated.length) jobs.push(this.writeWindows(dated,(a)=>{ prog.w=a; tell(); }));
     if(jobs.length){ tell(); await Promise.all(jobs); }
-    const noNotes=this.dishes().filter(x=>!this.dishCard(x.id)).map(x=>x.id);
+    // Dish notes are written when the menu is published (or asked for from Upload), never on a list publish, so a new
+    // bottle at the demo still publishes with no call.
+    const noNotes=res.kind==='menu'||res.notes?this.dishes().filter(x=>!this.dishCard(x.id)).map(x=>x.id):[];
     if(noNotes.length) await this.writeDishCards(noNotes,(a,b)=>onStep&&onStep('Writing the dish notes',a,b));
     // Last, once the pairings are in (a table question is checked against them): every question checked
     // and the ones that fail rewritten, before anyone is assigned them.

@@ -11839,5 +11839,2966 @@
   "fixed": 18,
   "left": 4
  },
- "exported": "2026-11-02T17:06:44.494Z"
+ "exported": "2026-11-05T00:16:49.676Z",
+ "dishCards": {
+  "d-fresh-oysters": {
+   "say": "These are fresh oysters served raw on the half shell, with a red wine vinegar mignonette, a piccante hot sauce and horseradish on the side; they're light, briny and sold at market price.",
+   "allergens": {
+    "draft": [
+     {
+      "code": "shellfish",
+      "sure": "printed"
+     },
+     {
+      "code": "sulphite",
+      "sure": "likely"
+     }
+    ],
+    "note": "Check whether the horseradish is plain or a prepared or creamed version, which may contain mustard, milk or egg, and confirm what goes into the piccante.",
+    "confirmed": null
+   },
+   "mods": [
+    {
+     "ask": "Sauces on the side or left off",
+     "can": "yes",
+     "say": "Of course, I can ask for the mignonette, piccante and horseradish on the side so you can add as much as you like."
+    },
+    {
+     "ask": "Shellfish allergy",
+     "can": "no",
+     "say": "I'm sorry, oysters are shellfish, so this one isn't safe for you, but the Mediterranean Olives or the Hummus would be a lovely start instead."
+    },
+    {
+     "ask": "Less spicy",
+     "can": "yes",
+     "say": "Yes, just leave off the piccante and the horseradish and enjoy them with the mignonette."
+    }
+   ],
+   "ask": [
+    {
+     "q": "Are they raw?",
+     "a": "Yes, they're served fresh and raw, as oysters traditionally are."
+    },
+    {
+     "q": "How much are they and how many come in an order?",
+     "a": "They're at market price today, so let me check the price and the order size with the kitchen for you."
+    }
+   ],
+   "at": 1793837459325,
+   "model": "claude-opus-5-5"
+  },
+  "d-fire-charred-lamb-chops": {
+   "say": "Two New Zealand lamb chops, marinated in the house Mediterranean style and charred on the grill, served with a fresh kaffir lime and mint yogurt; a hearty tapa, and you can add an extra chop for 14.",
+   "allergens": {
+    "draft": [
+     {
+      "code": "milk",
+      "sure": "printed"
+     }
+    ],
+    "note": "Marinade ingredients are not printed; confirm it is free of mustard, sulphites and dairy before promising anything.",
+    "confirmed": null
+   },
+   "mods": [
+    {
+     "ask": "Without the yogurt / dairy-free",
+     "can": "ask",
+     "say": "I can ask for the yogurt to be left off, but I'll need the kitchen to confirm the marinade is dairy-free as well."
+    },
+    {
+     "ask": "A bigger portion",
+     "can": "yes",
+     "say": "Yes, we can add an extra lamb chop for 14."
+    },
+    {
+     "ask": "Cooked a particular way",
+     "can": "ask",
+     "say": "Let me tell the kitchen how you like your lamb and they'll do their best."
+    }
+   ],
+   "ask": [
+    {
+     "q": "Is it spicy?",
+     "a": "Nothing spicy is listed; the kaffir lime and mint yogurt makes it fresh and zesty rather than hot."
+    },
+    {
+     "q": "How big is it?",
+     "a": "It's two lamb chops, so it's a good tapa for one or a taste for two, and you can add a third."
+    }
+   ],
+   "at": 1793837459325,
+   "model": "claude-opus-5-5"
+  },
+  "d-jamon-iberico-de-bellota": {
+   "say": "This is 100% Spanish pata negra Ibérico ham, acorn-fed and cured for 48 months, sliced and served with pan con tomate, which is bread rubbed with tomato; it's rich, nutty and one of our most special tapas.",
+   "allergens": {
+    "draft": [
+     {
+      "code": "wheat",
+      "sure": "likely"
+     }
+    ],
+    "note": "Confirm the bread used for the pan con tomate and whether the ham has any added preservatives or sulphites.",
+    "confirmed": null
+   },
+   "mods": [
+    {
+     "ask": "Gluten-free",
+     "can": "ask",
+     "say": "The ham itself should be fine, but the bread isn't, so I'll ask the kitchen whether they can swap in gluten-free bread or serve the ham on its own."
+    },
+    {
+     "ask": "Without the bread",
+     "can": "ask",
+     "say": "I'll ask the kitchen whether they can serve the ham on its own for you."
+    }
+   ],
+   "ask": [
+    {
+     "q": "What does pata negra and bellota mean?",
+     "a": "Pata negra means 'black hoof', from the black Ibérico pig, and bellota means the pigs are fed on acorns, which gives the ham its nutty flavour."
+    },
+    {
+     "q": "Is it raw?",
+     "a": "It isn't cooked, it's cured for 48 months, a bit like prosciutto but richer."
+    }
+   ],
+   "at": 1793837459325,
+   "model": "claude-opus-5-5"
+  },
+  "d-iberico-meatballs": {
+   "say": "Spanish-inspired Ibérico meatballs in a San Marzano tomato marinara, finished with Parmigiano Reggiano; warm, comforting and a satisfying tapa.",
+   "allergens": {
+    "draft": [
+     {
+      "code": "milk",
+      "sure": "printed"
+     },
+     {
+      "code": "wheat",
+      "sure": "likely"
+     },
+     {
+      "code": "egg",
+      "sure": "likely"
+     }
+    ],
+    "note": "Confirm the meatball binder (breadcrumbs, egg, cheese) and whether the marinara has any wine in it.",
+    "confirmed": null
+   },
+   "mods": [
+    {
+     "ask": "Without the cheese",
+     "can": "yes",
+     "say": "Yes, I can ask for them without the Parmigiano on top."
+    },
+    {
+     "ask": "Dairy-free",
+     "can": "ask",
+     "say": "I'll check with the kitchen, because the meatballs themselves may have cheese in them as well as on top."
+    },
+    {
+     "ask": "Gluten-free",
+     "can": "ask",
+     "say": "Meatballs usually have breadcrumbs in, so I'll need the kitchen to confirm before I can say yes."
+    }
+   ],
+   "ask": [
+    {
+     "q": "What meat is in them?",
+     "a": "They're made with Ibérico pork, the same prized Spanish breed as our jamón."
+    },
+    {
+     "q": "Are they spicy?",
+     "a": "No, they're in a classic San Marzano tomato marinara, so they're rich rather than hot."
+    }
+   ],
+   "at": 1793837459325,
+   "model": "claude-opus-5-5"
+  },
+  "d-patatas-bravas": {
+   "say": "Spanish-style potatoes, cooked twice so they're crispy outside and fluffy inside, with a spicy marinara, smoked paprika and a vegan aioli; a shareable tapa that's fully vegan-friendly.",
+   "allergens": {
+    "draft": [
+     {
+      "code": "soy",
+      "sure": "likely"
+     }
+    ],
+    "note": "Confirm the vegan aioli base (often soy, sometimes mustard) and whether the potatoes share a fryer with battered calamari.",
+    "confirmed": null
+   },
+   "mods": [
+    {
+     "ask": "Vegan",
+     "can": "yes",
+     "say": "Yes, it's vegan-friendly as it comes, and the aioli is a vegan one made without egg."
+    },
+    {
+     "ask": "Less spicy",
+     "can": "ask",
+     "say": "I'll ask whether the kitchen can put the spicy marinara on the side so you control the heat."
+    },
+    {
+     "ask": "Gluten-free",
+     "can": "ask",
+     "say": "There's no wheat listed, but I'll check with the kitchen about the fryer before I promise it's safe."
+    }
+   ],
+   "ask": [
+    {
+     "q": "Is it spicy?",
+     "a": "It has a kick from the spicy marinara and smoked paprika, though the aioli cools it down."
+    },
+    {
+     "q": "Is the aioli made with egg?",
+     "a": "No, it's a vegan aioli, so there's no egg in it."
+    }
+   ],
+   "at": 1793837459325,
+   "model": "claude-opus-5-5"
+  },
+  "d-lobster-crab-ravioli": {
+   "say": "Fresh ravioli stuffed with lobster and crab, served with roasted red peppers in a chipotle and coconut milk reduction; it's rich and creamy, 24 as a tapa or 47 as a full pasta, and you can add tiger prawns for 15.",
+   "allergens": {
+    "draft": [
+     {
+      "code": "shellfish",
+      "sure": "printed"
+     },
+     {
+      "code": "wheat",
+      "sure": "likely"
+     },
+     {
+      "code": "egg",
+      "sure": "likely"
+     }
+    ],
+    "note": "Contains coconut, which some guests treat as a tree nut; confirm whether the reduction or filling has butter, cream or cheese.",
+    "confirmed": null
+   },
+   "mods": [
+    {
+     "ask": "A bigger portion",
+     "can": "yes",
+     "say": "Yes, you can have it as a full pasta for 47, and add tiger prawns for 15."
+    },
+    {
+     "ask": "Gluten-free",
+     "can": "no",
+     "say": "I'm sorry, the ravioli are fresh pasta so we can't make them gluten-free, but the Linguine ai Frutti di Mare can be made with gluten-free pasta for 4."
+    },
+    {
+     "ask": "Dairy-free",
+     "can": "ask",
+     "say": "The sauce is made with coconut milk, but I'll check with the kitchen that there's no butter or cheese in the filling or sauce."
+    }
+   ],
+   "ask": [
+    {
+     "q": "Is it spicy?",
+     "a": "The chipotle gives it a gentle, smoky warmth, balanced by the creamy coconut milk."
+    },
+    {
+     "q": "How big is it?",
+     "a": "The tapa size is a starter portion, and the pasta size at 47 is a full main."
+    }
+   ],
+   "at": 1793837459325,
+   "model": "claude-opus-5-5"
+  },
+  "d-hummus": {
+   "say": "Smooth chickpea hummus with tahini, extra virgin olive oil, fresh lemon and soft garlic confit, served with our house flatbread from the forno; you can add carrots and celery for 5 or swap to gluten-free bread for 4.",
+   "allergens": {
+    "draft": [
+     {
+      "code": "sesame",
+      "sure": "printed"
+     },
+     {
+      "code": "wheat",
+      "sure": "likely"
+     }
+    ],
+    "note": "Flatbread is wheat unless the gluten-free bread is ordered; check cross-contact in the forno for gluten-free guests.",
+    "confirmed": null
+   },
+   "mods": [
+    {
+     "ask": "Gluten-free",
+     "can": "yes",
+     "say": "Yes, we can swap the flatbread for gluten-free bread for 4, or add carrots and celery for 5."
+    },
+    {
+     "ask": "Sesame-free",
+     "can": "no",
+     "say": "I'm sorry, the hummus is made with tahini, which is sesame, but the Mediterranean Olives would be a lovely alternative."
+    },
+    {
+     "ask": "Vegan",
+     "can": "yes",
+     "say": "Yes, it's listed as vegan-friendly."
+    }
+   ],
+   "ask": [
+    {
+     "q": "What is garlic confit?",
+     "a": "It's garlic cooked slowly in oil until it's soft, sweet and mellow."
+    },
+    {
+     "q": "Is it vegan?",
+     "a": "Yes, it's marked vegan-friendly, bread and all."
+    }
+   ],
+   "at": 1793837459325,
+   "model": "claude-opus-5-5"
+  },
+  "d-beets-e-burrata": {
+   "say": "Creamy Murgella burrata from Puglia with local beets, radicchio and rocket in an Italian sherry vinaigrette, served with grilled ciabatta; fresh but indulgent, and you can add prosciutto for 14.",
+   "allergens": {
+    "draft": [
+     {
+      "code": "milk",
+      "sure": "printed"
+     },
+     {
+      "code": "wheat",
+      "sure": "likely"
+     },
+     {
+      "code": "sulphite",
+      "sure": "likely"
+     }
+    ],
+    "note": "Confirm whether the sherry vinaigrette contains mustard or honey.",
+    "confirmed": null
+   },
+   "mods": [
+    {
+     "ask": "Gluten-free / without the bread",
+     "can": "ask",
+     "say": "I'll ask the kitchen to leave off the ciabatta and confirm the dressing is gluten-free too."
+    },
+    {
+     "ask": "Dairy-free",
+     "can": "no",
+     "say": "I'm sorry, the burrata is the heart of this dish, but the Hummus is a lovely dairy-free starter."
+    },
+    {
+     "ask": "Add meat",
+     "can": "yes",
+     "say": "Yes, we can add prosciutto for 14, though it won't be vegetarian then."
+    }
+   ],
+   "ask": [
+    {
+     "q": "What is burrata?",
+     "a": "It's a fresh Italian cheese, a soft mozzarella-style shell filled with cream, so it's rich and milky."
+    },
+    {
+     "q": "Is it vegetarian?",
+     "a": "Yes, it's marked vegetarian, unless you add the prosciutto."
+    }
+   ],
+   "at": 1793837459325,
+   "model": "claude-opus-5-5"
+  },
+  "d-wagyu-beef-carpaccio": {
+   "say": "Our Wagyu Beef Carpaccio is thin slices of Tajima Wagyu dressed with Parmigiano-infused olive oil, smoked aioli, arugula and balsamico di Modena, served with grilled oregano flatbread; it's a light, rich tapas plate that's lovely to share.",
+   "allergens": {
+    "draft": [
+     {
+      "code": "milk",
+      "sure": "printed"
+     },
+     {
+      "code": "wheat",
+      "sure": "printed"
+     },
+     {
+      "code": "egg",
+      "sure": "likely"
+     },
+     {
+      "code": "sulphite",
+      "sure": "likely"
+     }
+    ],
+    "note": "Confirm what is in the smoked aioli (egg, possibly mustard) and whether the balsamico contains sulphites.",
+    "confirmed": null
+   },
+   "mods": [
+    {
+     "ask": "without the cheese",
+     "can": "ask",
+     "say": "The Parmigiano is infused into the olive oil, so I'll need to check with the kitchen whether they can dress it without."
+    },
+    {
+     "ask": "gluten-free",
+     "can": "ask",
+     "say": "The flatbread contains gluten, so I'll ask the kitchen whether they can serve it without, or with gluten-free bread instead."
+    },
+    {
+     "ask": "without the aioli",
+     "can": "ask",
+     "say": "I'll check with the kitchen whether they can leave off the smoked aioli for you."
+    }
+   ],
+   "ask": [
+    {
+     "q": "Is the beef raw?",
+     "a": "Yes, carpaccio is very thinly sliced raw beef."
+    },
+    {
+     "q": "How big is it?",
+     "a": "It's a tapas plate, so it works well as a starter or for sharing between two."
+    }
+   ],
+   "at": 1793837507711,
+   "model": "claude-opus-5-5"
+  },
+  "d-boga-boga-cioppino": {
+   "say": "Boga Boga is our cioppino: fresh mussels, clams, tiger prawns, squid and scallops in a roasted garlic, San Marzano tomato and white wine sauce, with sourdough for dipping; it's a generous, hearty seafood dish.",
+   "allergens": {
+    "draft": [
+     {
+      "code": "shellfish",
+      "sure": "printed"
+     },
+     {
+      "code": "wheat",
+      "sure": "printed"
+     },
+     {
+      "code": "sulphite",
+      "sure": "likely"
+     }
+    ],
+    "note": "Confirm whether the sauce uses a fish stock (fish allergen), and check the chorizo add-on for its allergens.",
+    "confirmed": null
+   },
+   "mods": [
+    {
+     "ask": "gluten-free",
+     "can": "ask",
+     "say": "The sourdough contains gluten, so I'll ask the kitchen whether they can serve it without the bread or with a gluten-free option."
+    },
+    {
+     "ask": "add chorizo",
+     "can": "yes",
+     "say": "Yes, we can add sliced Spanish chorizo for an extra 11 dollars."
+    },
+    {
+     "ask": "without the shellfish",
+     "can": "no",
+     "say": "I'm afraid shellfish is the whole dish, but our Ibérico Meatballs in San Marzano marinara would give you a similar rich tomato sauce."
+    }
+   ],
+   "ask": [
+    {
+     "q": "Is it spicy?",
+     "a": "Nothing spicy is listed; it's a roasted garlic, tomato and white wine sauce, but I'm happy to check with the kitchen."
+    },
+    {
+     "q": "Is it enough to share?",
+     "a": "It's a generous tapas dish with five kinds of seafood, so it shares nicely between two."
+    }
+   ],
+   "at": 1793837507711,
+   "model": "claude-opus-5-5"
+  },
+  "d-mediterranean-olives": {
+   "say": "Our Mediterranean Olives are a bowl of warm, house-marinated mixed olives with citrus and herbs; a small, simple nibble to start.",
+   "allergens": {
+    "draft": [],
+    "note": "Confirm the full marinade ingredients and whether the olives contain sulphites; check whether they are pitted today.",
+    "confirmed": null
+   },
+   "mods": [
+    {
+     "ask": "vegan",
+     "can": "yes",
+     "say": "Yes, the olives are marked vegan-friendly on our menu."
+    },
+    {
+     "ask": "gluten-free",
+     "can": "ask",
+     "say": "There's no bread listed with them, but I'll confirm with the kitchen that the marinade is gluten-free."
+    },
+    {
+     "ask": "served cold",
+     "can": "ask",
+     "say": "They're normally served warm, so I'll ask the kitchen whether they can serve them cold for you."
+    }
+   ],
+   "ask": [
+    {
+     "q": "Do the olives have stones in them?",
+     "a": "I'll check with the kitchen whether today's olives are pitted, so please take care until I confirm."
+    },
+    {
+     "q": "Are they spicy?",
+     "a": "They're marinated with citrus and herbs, with nothing spicy listed."
+    }
+   ],
+   "at": 1793837507711,
+   "model": "claude-opus-5-5"
+  },
+  "d-charcuteria-formaggi": {
+   "say": "The Charcutería & Formaggi is a board of selected premium cured meats and imported cheeses with candied walnuts and gherkins, served with our 72-hour fermented flatbread; it serves two to three people.",
+   "allergens": {
+    "draft": [
+     {
+      "code": "milk",
+      "sure": "printed"
+     },
+     {
+      "code": "treenut",
+      "sure": "printed"
+     },
+     {
+      "code": "wheat",
+      "sure": "printed"
+     },
+     {
+      "code": "sulphite",
+      "sure": "likely"
+     }
+    ],
+    "note": "Selection changes, so confirm today's meats and cheeses; check the gherkins and cured meats for mustard and sulphites, and walnut cross-contact if the nuts are held.",
+    "confirmed": null
+   },
+   "mods": [
+    {
+     "ask": "without the walnuts",
+     "can": "ask",
+     "say": "I'll ask the kitchen whether they can leave off the candied walnuts, and whether there's a cross-contact risk on the board."
+    },
+    {
+     "ask": "gluten-free",
+     "can": "ask",
+     "say": "The flatbread contains gluten, so I'll check with the kitchen whether they can swap in gluten-free bread."
+    },
+    {
+     "ask": "add burrata",
+     "can": "yes",
+     "say": "Yes, we can add Burrata Pugliese for an extra 14 dollars."
+    }
+   ],
+   "ask": [
+    {
+     "q": "Which meats and cheeses are on it today?",
+     "a": "It's a selection that changes, so I'll check with the kitchen for today's board."
+    },
+    {
+     "q": "How many people does it feed?",
+     "a": "It's made for two to three people to share."
+    }
+   ],
+   "at": 1793837507711,
+   "model": "claude-opus-5-5"
+  },
+  "d-calamari-di-mamma": {
+   "say": "Calamari di Mamma is lightly battered, flash-fried baby squid with sliced jalapeño, our house-made tartar and chipotle aioli; it's crispy, with a bit of a kick.",
+   "allergens": {
+    "draft": [
+     {
+      "code": "shellfish",
+      "sure": "printed"
+     },
+     {
+      "code": "egg",
+      "sure": "likely"
+     },
+     {
+      "code": "wheat",
+      "sure": "likely"
+     }
+    ],
+    "note": "Marked gluten-friendly: confirm the batter is gluten-free and whether the fryer is shared; check the tartar and aioli for mustard.",
+    "confirmed": null
+   },
+   "mods": [
+    {
+     "ask": "gluten-free",
+     "can": "ask",
+     "say": "It's marked gluten-friendly, but I'll confirm the batter and fryer with the kitchen before I promise anything."
+    },
+    {
+     "ask": "not spicy",
+     "can": "ask",
+     "say": "I'll ask the kitchen whether they can leave off the jalapeño and serve just the tartar instead of the chipotle aioli."
+    },
+    {
+     "ask": "sauces on the side",
+     "can": "ask",
+     "say": "I'll check with the kitchen whether they can put the tartar and aioli on the side."
+    }
+   ],
+   "ask": [
+    {
+     "q": "Is it spicy?",
+     "a": "The sliced jalapeño and chipotle aioli give it some heat."
+    },
+    {
+     "q": "Is it squid or octopus?",
+     "a": "It's baby squid."
+    }
+   ],
+   "at": 1793837507711,
+   "model": "claude-opus-5-5"
+  },
+  "d-oyster-duo": {
+   "say": "The Oyster Duo is two oysters topped with San Marzano tomato, horseradish, shallots and sturgeon caviar; a small, elegant bite.",
+   "allergens": {
+    "draft": [
+     {
+      "code": "shellfish",
+      "sure": "printed"
+     },
+     {
+      "code": "fish",
+      "sure": "printed"
+     }
+    ],
+    "note": "Confirm how the oysters are prepared today and whether the toppings contain anything else.",
+    "confirmed": null
+   },
+   "mods": [
+    {
+     "ask": "without the caviar",
+     "can": "ask",
+     "say": "I'll check with the kitchen whether they can serve them without the caviar."
+    },
+    {
+     "ask": "without the horseradish",
+     "can": "ask",
+     "say": "I'll ask the kitchen whether they can leave off the horseradish."
+    }
+   ],
+   "ask": [
+    {
+     "q": "How many oysters do I get?",
+     "a": "It's a duo, so two oysters."
+    },
+    {
+     "q": "What's on top?",
+     "a": "San Marzano tomato, horseradish, shallots and sturgeon caviar."
+    }
+   ],
+   "at": 1793837507711,
+   "model": "claude-opus-5-5"
+  },
+  "d-charred-chorizo": {
+   "say": "Our Charred Chorizo is grilled Ibérico pata negra chorizo with kaffir lime mint yogurt and our 72-hour fermented flatbread; it's a rich, smoky tapas plate.",
+   "allergens": {
+    "draft": [
+     {
+      "code": "milk",
+      "sure": "printed"
+     },
+     {
+      "code": "wheat",
+      "sure": "printed"
+     },
+     {
+      "code": "sulphite",
+      "sure": "likely"
+     }
+    ],
+    "note": "Confirm the chorizo's full ingredients (sulphites, milk or other additives) with the supplier spec.",
+    "confirmed": null
+   },
+   "mods": [
+    {
+     "ask": "dairy-free",
+     "can": "ask",
+     "say": "The yogurt contains milk, so I'll ask the kitchen whether they can leave it off and check the chorizo itself."
+    },
+    {
+     "ask": "gluten-free",
+     "can": "ask",
+     "say": "The flatbread contains gluten, so I'll check with the kitchen whether they can serve it without or swap in gluten-free bread."
+    }
+   ],
+   "ask": [
+    {
+     "q": "Is it spicy?",
+     "a": "Chorizo can carry some heat, so I'll check with the kitchen how spicy this one is."
+    },
+    {
+     "q": "What is pata negra?",
+     "a": "It's Spanish Ibérico pork, from the black-footed pigs that also give us our famous cured ham."
+    }
+   ],
+   "at": 1793837507711,
+   "model": "claude-opus-5-5"
+  },
+  "d-truffle-fries": {
+   "say": "Our Truffle Fries come topped with Parmigiano Reggiano and served with truffle aioli; a rich side that's good for sharing.",
+   "allergens": {
+    "draft": [
+     {
+      "code": "milk",
+      "sure": "printed"
+     },
+     {
+      "code": "egg",
+      "sure": "likely"
+     }
+    ],
+    "note": "Check fryer cross-contact with battered items like the calamari (wheat, shellfish); confirm the Parmigiano rennet for strict vegetarians.",
+    "confirmed": null
+   },
+   "mods": [
+    {
+     "ask": "without the cheese",
+     "can": "ask",
+     "say": "I'll ask the kitchen whether they can leave off the Parmigiano."
+    },
+    {
+     "ask": "aioli on the side",
+     "can": "ask",
+     "say": "I'll check with the kitchen whether they can serve the truffle aioli on the side."
+    },
+    {
+     "ask": "vegan",
+     "can": "no",
+     "say": "With the cheese and aioli it isn't vegan, but our Patatas Bravas with vegan aioli is marked vegan-friendly."
+    }
+   ],
+   "ask": [
+    {
+     "q": "Are they vegetarian?",
+     "a": "They're marked vegetarian, though I'll check the Parmigiano with the kitchen if you're strict."
+    },
+    {
+     "q": "How big is the portion?",
+     "a": "It's a tapas-sized portion, good as a side or for sharing."
+    }
+   ],
+   "at": 1793837507711,
+   "model": "claude-opus-5-5"
+  },
+  "d-garlic-flatbread": {
+   "say": "Our garlic flatbread is made from a dough we ferment for 72 hours, baked in the open-flame brick oven with soft garlic confit, a light, simple bread for the table that's vegan as it comes.",
+   "allergens": {
+    "draft": [
+     {
+      "code": "wheat",
+      "sure": "printed"
+     }
+    ],
+    "note": "Vegan as served; the Burrata Pugliese add-on adds milk. Check the shared oven and work surfaces for milk cross-contact for strict vegans.",
+    "confirmed": null
+   },
+   "mods": [
+    {
+     "ask": "with burrata",
+     "can": "yes",
+     "say": "Yes, we can add Burrata Pugliese for $14, though that means it's no longer vegan."
+    },
+    {
+     "ask": "gluten-free",
+     "can": "no",
+     "say": "I'm afraid the flatbread is made from wheat dough, but the Hummus comes with gluten-free bread for $4, and the Marinara pizza is gluten-friendly."
+    },
+    {
+     "ask": "vegan",
+     "can": "yes",
+     "say": "Yes, as it comes it's vegan-friendly, just don't add the burrata."
+    }
+   ],
+   "ask": [
+    {
+     "q": "How big is it?",
+     "a": "It's a starter-sized flatbread, good for sharing between two or three with other tapas."
+    },
+    {
+     "q": "Is it very garlicky?",
+     "a": "It's made with garlic confit, which is slow-cooked garlic, so it's mellow and sweet rather than harsh."
+    }
+   ],
+   "at": 1793837559246,
+   "model": "claude-opus-5-5"
+  },
+  "d-gnocchi-al-pomodoro": {
+   "say": "Our gnocchi al pomodoro is fresh potato dumplings in San Marzano tomato sauce with Parmigiano Reggiano, fresh basil and Sicilian olive oil, a comforting, full pasta-sized vegetarian dish.",
+   "allergens": {
+    "draft": [
+     {
+      "code": "milk",
+      "sure": "printed"
+     },
+     {
+      "code": "wheat",
+      "sure": "likely"
+     },
+     {
+      "code": "egg",
+      "sure": "likely"
+     }
+    ],
+    "note": "Confirm whether the gnocchi contains flour and egg. The chorizo add-on is meat and may contain milk or sulphites, and the burrata add-on adds milk.",
+    "confirmed": null
+   },
+   "mods": [
+    {
+     "ask": "without the cheese",
+     "can": "ask",
+     "say": "I'll check with the kitchen whether they can leave off the Parmigiano, but the gnocchi itself may still contain dairy or egg."
+    },
+    {
+     "ask": "with chorizo or burrata",
+     "can": "yes",
+     "say": "Yes, we can add Spanish chorizo for $11 or Burrata Pugliese for $14, but chorizo means it's no longer vegetarian."
+    },
+    {
+     "ask": "gluten-free",
+     "can": "ask",
+     "say": "Gnocchi usually contains flour, so I'll check with the kitchen. If it does, the Linguine ai Frutti di Mare with gluten-free pasta or one of our gluten-friendly pizzas would work."
+    }
+   ],
+   "ask": [
+    {
+     "q": "Is it spicy?",
+     "a": "No, it's a simple tomato and basil sauce with no chilli listed."
+    },
+    {
+     "q": "Is it vegetarian?",
+     "a": "Yes, it's on the menu as vegetarian, though I can check with the kitchen how the Parmigiano is made if you're strict about that."
+    }
+   ],
+   "at": 1793837559246,
+   "model": "claude-opus-5-5"
+  },
+  "d-linguine-ai-frutti-di-mare": {
+   "say": "Our linguine ai frutti di mare is house-made pasta with mussels, clams, baby squid, tiger prawns and scallops, roasted garlic and cherry tomatoes, a generous, hearty seafood pasta.",
+   "allergens": {
+    "draft": [
+     {
+      "code": "shellfish",
+      "sure": "printed"
+     },
+     {
+      "code": "wheat",
+      "sure": "printed"
+     },
+     {
+      "code": "egg",
+      "sure": "likely"
+     }
+    ],
+    "note": "Contains both crustaceans and molluscs. If a guest orders gluten-free pasta, check for a separate pot and water. Confirm whether the house pasta contains egg. The chorizo add-on is meat.",
+    "confirmed": null
+   },
+   "mods": [
+    {
+     "ask": "gluten-free",
+     "can": "yes",
+     "say": "Yes, we can make it with gluten-free pasta for $4 extra. I'll let the kitchen know it's for a gluten need."
+    },
+    {
+     "ask": "without the prawns or shellfish",
+     "can": "no",
+     "say": "I'm sorry, the whole dish is built on shellfish, so I can't make it safe; the Rigatone Bolognese or Gnocchi al Pomodoro would be a good alternative."
+    },
+    {
+     "ask": "with chorizo",
+     "can": "yes",
+     "say": "Yes, we can add Spanish chorizo for $11."
+    }
+   ],
+   "ask": [
+    {
+     "q": "Is there any cheese in it?",
+     "a": "No cheese is listed on the menu, but I'll confirm with the kitchen if it's a dairy allergy."
+    },
+    {
+     "q": "How big is it?",
+     "a": "It's a full main-sized pasta, generous with seafood."
+    }
+   ],
+   "at": 1793837559246,
+   "model": "claude-opus-5-5"
+  },
+  "d-rigatone-bolognese": {
+   "say": "Our rigatone bolognese is Nonna's recipe, with house-made pasta in a rich San Marzano tomato sauce with ground beef and slow-braised brasato beef, finished with Grana Padano. It's a hearty, filling main.",
+   "allergens": {
+    "draft": [
+     {
+      "code": "wheat",
+      "sure": "printed"
+     },
+     {
+      "code": "milk",
+      "sure": "printed"
+     },
+     {
+      "code": "egg",
+      "sure": "likely"
+     },
+     {
+      "code": "sulphite",
+      "sure": "likely"
+     }
+    ],
+    "note": "Confirm whether the brasato or sauce uses wine (sulphites) and whether the house pasta contains egg. The burrata add-on adds milk.",
+    "confirmed": null
+   },
+   "mods": [
+    {
+     "ask": "without the cheese",
+     "can": "ask",
+     "say": "I'll ask the kitchen whether they can leave off the Grana Padano, and I'll check whether there's any dairy in the sauce itself."
+    },
+    {
+     "ask": "gluten-free",
+     "can": "ask",
+     "say": "Gluten-free pasta is only listed for the linguine, so I'll check with the kitchen; if not, the Linguine ai Frutti di Mare with gluten-free pasta is an option."
+    },
+    {
+     "ask": "with burrata",
+     "can": "yes",
+     "say": "Yes, we can add Burrata Pugliese on top for $14."
+    }
+   ],
+   "ask": [
+    {
+     "q": "What's brasato?",
+     "a": "It's beef that's been slowly braised until it's very tender, mixed into the sauce with the ground beef."
+    },
+    {
+     "q": "Is it spicy?",
+     "a": "No, it's a rich meat and tomato sauce with no chilli listed."
+    }
+   ],
+   "at": 1793837559246,
+   "model": "claude-opus-5-5"
+  },
+  "d-medaglioni-al-tartufo-e-funghi": {
+   "say": "Our medaglioni are fresh pasta parcels filled with mushrooms, ricotta and mozzarella, in a black truffle cream with Parmigiano Reggiano. It's a rich, indulgent vegetarian pasta.",
+   "allergens": {
+    "draft": [
+     {
+      "code": "milk",
+      "sure": "printed"
+     },
+     {
+      "code": "wheat",
+      "sure": "printed"
+     },
+     {
+      "code": "egg",
+      "sure": "likely"
+     }
+    ],
+    "note": "Confirm whether the fresh pasta contains egg. The braised beef add-on makes it non-vegetarian, and the burrata add-on adds more milk.",
+    "confirmed": null
+   },
+   "mods": [
+    {
+     "ask": "dairy-free",
+     "can": "no",
+     "say": "I'm sorry, the filling and the sauce are both made with cheese and cream; the Linguine ai Frutti di Mare has no cheese listed, which I can confirm with the kitchen."
+    },
+    {
+     "ask": "with beef",
+     "can": "yes",
+     "say": "Yes, we can add braised beef for $8, though it won't be vegetarian then."
+    },
+    {
+     "ask": "gluten-free",
+     "can": "no",
+     "say": "I'm afraid the pasta is stuffed fresh, so it can't be made gluten-free, but the Linguine ai Frutti di Mare comes with gluten-free pasta, or there are our gluten-friendly pizzas."
+    }
+   ],
+   "ask": [
+    {
+     "q": "Is it heavy?",
+     "a": "Yes, it's on the rich side, with a cheese filling and a truffle cream sauce."
+    },
+    {
+     "q": "Is it vegetarian?",
+     "a": "Yes, it's on the menu as vegetarian, though I can check with the kitchen how the Parmigiano is made if you're strict about that."
+    }
+   ],
+   "at": 1793837559246,
+   "model": "claude-opus-5-5"
+  },
+  "d-goat-cheese-salad": {
+   "say": "Our goat cheese salad is crispy goat cheese with cherry tomatoes, candied walnuts and heritage greens in a house-made pear and truffle vinaigrette, topped with Parmigiano. It's a satisfying, starter-sized vegetarian salad.",
+   "allergens": {
+    "draft": [
+     {
+      "code": "milk",
+      "sure": "printed"
+     },
+     {
+      "code": "treenut",
+      "sure": "printed"
+     },
+     {
+      "code": "wheat",
+      "sure": "likely"
+     },
+     {
+      "code": "egg",
+      "sure": "likely"
+     }
+    ],
+    "note": "Confirm how the goat cheese is coated (likely flour and egg) and whether the vinaigrette contains mustard. The salmon add-on adds fish. Check walnut cross-contact if a guest has a nut allergy.",
+    "confirmed": null
+   },
+   "mods": [
+    {
+     "ask": "without the walnuts",
+     "can": "ask",
+     "say": "I'll check with the kitchen, as candied walnuts are prepared in the kitchen and they'll need to confirm there's no cross-contact for an allergy."
+    },
+    {
+     "ask": "with salmon",
+     "can": "yes",
+     "say": "Yes, we can add grilled Kuterra salmon for $16."
+    },
+    {
+     "ask": "without the cheese",
+     "can": "no",
+     "say": "The goat cheese is really the heart of this salad, so I'd suggest the Insalata Verde di Casa instead."
+    }
+   ],
+   "ask": [
+    {
+     "q": "How is the goat cheese crispy?",
+     "a": "It's served crispy on the outside, most likely coated and cooked, so I'll check with the kitchen if you need to avoid gluten or egg."
+    },
+    {
+     "q": "Is it big enough for a main?",
+     "a": "It's a starter-sized salad, but adding the salmon makes it more of a light main."
+    }
+   ],
+   "at": 1793837559246,
+   "model": "claude-opus-5-5"
+  },
+  "d-social-corner-caesar": {
+   "say": "Our Caesar is baby romaine with our house-made Caesar dressing, brioche and Parmigiano croutons and shaved Parmigiano Reggiano. It's a classic, fairly rich starter salad.",
+   "allergens": {
+    "draft": [
+     {
+      "code": "milk",
+      "sure": "printed"
+     },
+     {
+      "code": "wheat",
+      "sure": "printed"
+     },
+     {
+      "code": "egg",
+      "sure": "likely"
+     },
+     {
+      "code": "fish",
+      "sure": "likely"
+     }
+    ],
+    "note": "Confirm whether the Caesar dressing contains anchovy, egg and mustard. The brioche croutons likely contain egg and milk.",
+    "confirmed": null
+   },
+   "mods": [
+    {
+     "ask": "with chicken",
+     "can": "yes",
+     "say": "Yes, we can add organic chicken breast for $14."
+    },
+    {
+     "ask": "without croutons or gluten-free",
+     "can": "ask",
+     "say": "I'll check with the kitchen whether they can leave the croutons off and make sure the dressing is gluten-free."
+    },
+    {
+     "ask": "vegetarian",
+     "can": "no",
+     "say": "A Caesar dressing usually contains anchovy, so I can't promise it's vegetarian; the Insalata Verde di Casa or Goat Cheese Salad would suit you."
+    }
+   ],
+   "ask": [
+    {
+     "q": "Is there anchovy in the dressing?",
+     "a": "Caesar dressing usually has anchovy, and I'll confirm with the kitchen for you."
+    },
+    {
+     "q": "Can I have it as a main?",
+     "a": "It's a starter-sized salad, but adding the chicken makes it more filling."
+    }
+   ],
+   "at": 1793837559246,
+   "model": "claude-opus-5-5"
+  },
+  "d-insalata-verde-di-casa": {
+   "say": "Our house green salad is mixed heritage greens and kale with cherry tomatoes, carrots, shaved cucumber and crispy cipollini onion flakes in a house-made balsamic vinaigrette. It's a light, fresh vegetarian salad.",
+   "allergens": {
+    "draft": [
+     {
+      "code": "wheat",
+      "sure": "likely"
+     },
+     {
+      "code": "sulphite",
+      "sure": "likely"
+     }
+    ],
+    "note": "Confirm whether the crispy cipollini flakes are coated in flour, whether the vinaigrette contains mustard or honey, and the sulphites in the balsamic. The striploin add-on is beef.",
+    "confirmed": null
+   },
+   "mods": [
+    {
+     "ask": "with steak",
+     "can": "yes",
+     "say": "Yes, we can add Certified Angus striploin for $16."
+    },
+    {
+     "ask": "gluten-free",
+     "can": "ask",
+     "say": "I'll check with the kitchen, as the crispy onion flakes may contain flour, and they can probably leave them off."
+    },
+    {
+     "ask": "vegan",
+     "can": "ask",
+     "say": "There's no cheese listed, but I'll confirm with the kitchen that the vinaigrette and onion flakes are vegan."
+    }
+   ],
+   "ask": [
+    {
+     "q": "Is there any cheese or nuts in it?",
+     "a": "No cheese or nuts are listed, but I'll confirm with the kitchen if it's for an allergy."
+    },
+    {
+     "q": "Is it light?",
+     "a": "Yes, it's our lightest salad, all fresh vegetables with a balsamic dressing."
+    }
+   ],
+   "at": 1793837559246,
+   "model": "claude-opus-5-5"
+  },
+  "d-crema-di-pomodori": {
+   "say": "Crema di Pomodori is a rich, creamy tomato soup made with San Marzano tomatoes, cream and mascarpone, finished with Sicilian extra virgin olive oil and served with our 72-hour fermented flatbread.",
+   "allergens": {
+    "draft": [
+     {
+      "code": "milk",
+      "sure": "printed"
+     },
+     {
+      "code": "wheat",
+      "sure": "likely"
+     }
+    ],
+    "note": "Confirm the flatbread flour and whether a gluten-free bread can be swapped in. Confirm whether the soup base uses any stock or thickener.",
+    "confirmed": null
+   },
+   "mods": [
+    {
+     "ask": "dairy-free",
+     "can": "no",
+     "say": "I'm sorry, the cream and mascarpone are part of the soup itself, but our Hummus or Mediterranean Olives are both vegan-friendly if you'd like something without dairy."
+    },
+    {
+     "ask": "gluten-free / without the bread",
+     "can": "ask",
+     "say": "We can certainly leave the flatbread off, and I'll ask the kitchen whether the soup itself is gluten-free and whether they can offer a gluten-free bread with it."
+    }
+   ],
+   "ask": [
+    {
+     "q": "Is it vegetarian?",
+     "a": "Yes, it's marked vegetarian on our menu."
+    },
+    {
+     "q": "Is it spicy?",
+     "a": "No, there's no chilli listed in it; it's a rich, creamy tomato soup."
+    }
+   ],
+   "at": 1793837612197,
+   "model": "claude-opus-5-5"
+  },
+  "d-burratina": {
+   "say": "The Burratina is one of our richest pizzas, with San Marzano tomato, creamy burrata from Puglia, fior di latte, soppressata and Italian pepperoni, balanced with caramelised pear, Calabrian chilli and little drop peppers.",
+   "allergens": {
+    "draft": [
+     {
+      "code": "milk",
+      "sure": "printed"
+     },
+     {
+      "code": "wheat",
+      "sure": "likely"
+     }
+    ],
+    "note": "Check the soppressata and pepperoni for sulphites and mustard. Confirm the gluten-friendly base and the flour cross-contact risk in the forno.",
+    "confirmed": null
+   },
+   "mods": [
+    {
+     "ask": "gluten-free",
+     "can": "ask",
+     "say": "This pizza is marked gluten-friendly, so I'll check with the kitchen on the gluten-free base and how they handle flour in the oven before I promise anything."
+    },
+    {
+     "ask": "less spicy / without the chilli",
+     "can": "ask",
+     "say": "I'll ask the kitchen if they can leave off the Calabrian chilli, though the pepperoni may still have a little warmth."
+    },
+    {
+     "ask": "vegetarian",
+     "can": "no",
+     "say": "I'm afraid the cured meats are central to this one, but our Tartufina or Margherita are both vegetarian and just as satisfying."
+    }
+   ],
+   "ask": [
+    {
+     "q": "Is it spicy?",
+     "a": "It has a gentle kick from the Calabrian chilli and pepperoni, softened by the sweet pear and creamy burrata."
+    },
+    {
+     "q": "What's on it?",
+     "a": "It has tomato, burrata, fior di latte, soppressata, pepperoni, caramelised pear, Calabrian chilli and drop peppers."
+    }
+   ],
+   "at": 1793837612197,
+   "model": "claude-opus-5-5"
+  },
+  "d-criminale": {
+   "say": "The Criminale is our meat lover's pizza, with San Marzano tomato sauce and fior di latte topped with prosciutto cotto, spicy soppressata, applewood smoked bacon and sliced red onion.",
+   "allergens": {
+    "draft": [
+     {
+      "code": "milk",
+      "sure": "printed"
+     },
+     {
+      "code": "wheat",
+      "sure": "likely"
+     }
+    ],
+    "note": "Check the soppressata, prosciutto cotto and bacon for sulphites and mustard. Confirm the gluten-friendly base and the flour cross-contact risk in the forno.",
+    "confirmed": null
+   },
+   "mods": [
+    {
+     "ask": "without the onions",
+     "can": "yes",
+     "say": "Of course, we can leave the red onions off for you."
+    },
+    {
+     "ask": "gluten-free",
+     "can": "ask",
+     "say": "It's marked gluten-friendly, so I'll check with the kitchen on the gluten-free base and the oven before confirming."
+    },
+    {
+     "ask": "vegetarian",
+     "can": "no",
+     "say": "This one is all about the meats, so I'd suggest our Margherita or Funghi, which are both vegetarian."
+    }
+   ],
+   "ask": [
+    {
+     "q": "Is it spicy?",
+     "a": "There's a bit of heat from the soppressata piccante, but it isn't a fiery pizza."
+    },
+    {
+     "q": "What meats are on it?",
+     "a": "It has prosciutto cotto, which is cooked ham, plus spicy soppressata salami and applewood smoked bacon."
+    }
+   ],
+   "at": 1793837612197,
+   "model": "claude-opus-5-5"
+  },
+  "d-black-truffle": {
+   "say": "The Black Truffle is a rich, earthy white pizza with a bianco sauce, black truffle paste, oven-roasted organic mushrooms, caramelised Modena onions and Kalamata olives, topped with fior di latte, fontina and Parmigiano Reggiano.",
+   "allergens": {
+    "draft": [
+     {
+      "code": "milk",
+      "sure": "printed"
+     },
+     {
+      "code": "wheat",
+      "sure": "likely"
+     },
+     {
+      "code": "sulphite",
+      "sure": "likely"
+     }
+    ],
+    "note": "Confirm what's in the bianco sauce (cream, flour or egg?) and the truffle paste, and check the Modena onions for balsamic sulphites. Confirm the gluten-friendly base and the forno cross-contact risk.",
+    "confirmed": null
+   },
+   "mods": [
+    {
+     "ask": "without the olives",
+     "can": "yes",
+     "say": "No problem, we can leave the Kalamata olives off."
+    },
+    {
+     "ask": "gluten-free",
+     "can": "ask",
+     "say": "It's marked gluten-friendly, but I'll check the gluten-free base and the bianco sauce with the kitchen before confirming."
+    },
+    {
+     "ask": "vegetarian",
+     "can": "ask",
+     "say": "There's no meat on it, but it isn't marked vegetarian, so I'll ask the kitchen why; if you'd prefer one that's confirmed, the Funghi or Tartufina are marked vegetarian."
+    }
+   ],
+   "ask": [
+    {
+     "q": "Is there tomato on it?",
+     "a": "No, it's a white pizza with a bianco sauce instead of tomato."
+    },
+    {
+     "q": "Is it rich?",
+     "a": "Yes, with three cheeses, truffle and mushrooms it's one of our richer, more indulgent pizzas."
+    }
+   ],
+   "at": 1793837612197,
+   "model": "claude-opus-5-5"
+  },
+  "d-tartufina": {
+   "say": "The Tartufina is a sweet-and-savoury white pizza with bianco sauce, oven-roasted pears, gorgonzola, candied walnuts and fior di latte, finished with truffle-infused olive oil, and you can add spicy soppressata for seven dollars.",
+   "allergens": {
+    "draft": [
+     {
+      "code": "milk",
+      "sure": "printed"
+     },
+     {
+      "code": "treenut",
+      "sure": "printed"
+     },
+     {
+      "code": "wheat",
+      "sure": "likely"
+     }
+    ],
+    "note": "Confirm what's in the bianco sauce, and check the candied walnuts for other nuts or peanut. Confirm the gluten-friendly base and the forno cross-contact risk.",
+    "confirmed": null
+   },
+   "mods": [
+    {
+     "ask": "without the walnuts / nut allergy",
+     "can": "ask",
+     "say": "We can leave the walnuts off, but for a nut allergy I need the kitchen to confirm the cross-contact risk first, or I'd suggest the Margherita instead."
+    },
+    {
+     "ask": "add meat",
+     "can": "yes",
+     "say": "Yes, we can add spicy soppressata salami for seven dollars."
+    },
+    {
+     "ask": "gluten-free",
+     "can": "ask",
+     "say": "It's marked gluten-friendly, so I'll check with the kitchen on the gluten-free base and the oven before confirming."
+    }
+   ],
+   "ask": [
+    {
+     "q": "Is it vegetarian?",
+     "a": "Yes, it's marked vegetarian as it comes, without the soppressata add-on."
+    },
+    {
+     "q": "Is it sweet?",
+     "a": "It's a balance of sweet and savoury, with roasted pear and candied walnuts against salty gorgonzola."
+    }
+   ],
+   "at": 1793837612197,
+   "model": "claude-opus-5-5"
+  },
+  "d-carbonara": {
+   "say": "Our Carbonara pizza takes the classic pasta onto a white base, with bianco sauce, guanciale riserva cured pork cheek, local free-range eggs, fontina, fior di latte and Pecorino Romano.",
+   "allergens": {
+    "draft": [
+     {
+      "code": "egg",
+      "sure": "printed"
+     },
+     {
+      "code": "milk",
+      "sure": "printed"
+     },
+     {
+      "code": "wheat",
+      "sure": "likely"
+     }
+    ],
+    "note": "Confirm what's in the bianco sauce and how the eggs are cooked (runny or set). Check the guanciale for sulphites, and confirm the gluten-friendly base and the forno cross-contact risk.",
+    "confirmed": null
+   },
+   "mods": [
+    {
+     "ask": "without the egg",
+     "can": "ask",
+     "say": "I'll check with the kitchen whether they can leave the egg off, as it's a key part of this pizza."
+    },
+    {
+     "ask": "vegetarian",
+     "can": "no",
+     "say": "The guanciale is pork, so this one isn't vegetarian, but the Funghi or Margherita would suit you nicely."
+    },
+    {
+     "ask": "gluten-free",
+     "can": "ask",
+     "say": "It's marked gluten-friendly, so I'll confirm the gluten-free base and the oven with the kitchen first."
+    }
+   ],
+   "ask": [
+    {
+     "q": "What is guanciale?",
+     "a": "It's Italian cured pork cheek, a bit like a richer, silkier bacon."
+    },
+    {
+     "q": "Are the eggs runny?",
+     "a": "I'll check with the kitchen how they're cooked tonight so I can tell you for certain."
+    }
+   ],
+   "at": 1793837612197,
+   "model": "claude-opus-5-5"
+  },
+  "d-margherita": {
+   "say": "The Margherita is our classic pizza, simple and light, with San Marzano tomato sauce, fresh basil, fior di latte, Pecorino Romano and cold-pressed extra virgin olive oil.",
+   "allergens": {
+    "draft": [
+     {
+      "code": "milk",
+      "sure": "printed"
+     },
+     {
+      "code": "wheat",
+      "sure": "likely"
+     }
+    ],
+    "note": "Confirm the gluten-friendly base and the forno cross-contact risk. Check the Pecorino rennet for guests who are strict vegetarians.",
+    "confirmed": null
+   },
+   "mods": [
+    {
+     "ask": "vegan / without the cheese",
+     "can": "no",
+     "say": "The cheese is what makes a Margherita, but our Marinara pizza is vegan-friendly, with tomato, confit garlic and herb oil."
+    },
+    {
+     "ask": "gluten-free",
+     "can": "ask",
+     "say": "It's marked gluten-friendly, so I'll check with the kitchen on the gluten-free base and the oven before confirming."
+    },
+    {
+     "ask": "add meat",
+     "can": "ask",
+     "say": "There's no meat add-on listed for this one, so I'll ask the kitchen, or the Forza Italia is a similar pizza with Prosciutto di Parma."
+    }
+   ],
+   "ask": [
+    {
+     "q": "Is it vegetarian?",
+     "a": "Yes, it's marked vegetarian."
+    },
+    {
+     "q": "Is it a good choice for children?",
+     "a": "Yes, it's our simplest pizza, just tomato, cheese and basil, with nothing spicy on it."
+    }
+   ],
+   "at": 1793837612197,
+   "model": "claude-opus-5-5"
+  },
+  "d-forza-italia": {
+   "say": "The Forza Italia has San Marzano tomato sauce and fior di latte, topped with fresh arugula, which is rocket, 24-month Prosciutto di Parma, Parmigiano Reggiano and extra virgin olive oil.",
+   "allergens": {
+    "draft": [
+     {
+      "code": "milk",
+      "sure": "printed"
+     },
+     {
+      "code": "wheat",
+      "sure": "likely"
+     }
+    ],
+    "note": "Confirm the gluten-friendly base and the forno cross-contact risk, and check the prosciutto has no added preservatives.",
+    "confirmed": null
+   },
+   "mods": [
+    {
+     "ask": "without the prosciutto",
+     "can": "yes",
+     "say": "Yes, we can leave the prosciutto off, though for a properly vegetarian pizza I'd suggest the Margherita."
+    },
+    {
+     "ask": "without the arugula",
+     "can": "yes",
+     "say": "Of course, we can leave the arugula off."
+    },
+    {
+     "ask": "gluten-free",
+     "can": "ask",
+     "say": "It's marked gluten-friendly, so I'll check with the kitchen on the gluten-free base and the oven first."
+    }
+   ],
+   "ask": [
+    {
+     "q": "Is the prosciutto cooked?",
+     "a": "No, it's 24-month aged Prosciutto di Parma, a cured ham served as it is rather than cooked like ham."
+    },
+    {
+     "q": "Is it spicy?",
+     "a": "No, there's no chilli on it; the arugula just gives it a fresh, peppery bite."
+    }
+   ],
+   "at": 1793837612197,
+   "model": "claude-opus-5-5"
+  },
+  "d-capricciosa": {
+   "say": "The Capricciosa is a classic Italian pizza with San Marzano tomato sauce, fior di latte mozzarella, cooked ham, artichoke hearts, oregano, black olives and capers, so it's salty, savoury and well loaded.",
+   "allergens": {
+    "draft": [
+     {
+      "code": "milk",
+      "sure": "printed"
+     },
+     {
+      "code": "wheat",
+      "sure": "likely"
+     }
+    ],
+    "note": "Confirm the gluten-free base and shared-oven cross-contact; check the olives and capers for sulphites.",
+    "confirmed": null
+   },
+   "mods": [
+    {
+     "ask": "gluten-free",
+     "can": "ask",
+     "say": "We do a gluten-friendly version, but it's baked in the same oven, so I'll check with the kitchen how safe that is for you."
+    },
+    {
+     "ask": "without the ham, to make it vegetarian",
+     "can": "ask",
+     "say": "I'll ask the kitchen if they can leave the ham off, or the Margherita is a lovely vegetarian pizza."
+    },
+    {
+     "ask": "without the cheese",
+     "can": "ask",
+     "say": "I'll check with the kitchen, and if you'd like a pizza with no cheese at all, the Marinara is made that way."
+    }
+   ],
+   "ask": [
+    {
+     "q": "What kind of ham is it?",
+     "a": "It's prosciutto cotto, which is a cooked Italian ham rather than a cured one."
+    },
+    {
+     "q": "Is it salty?",
+     "a": "It's on the salty side, because of the olives, capers and ham."
+    }
+   ],
+   "at": 1793837656634,
+   "model": "claude-opus-5-5"
+  },
+  "d-funghi": {
+   "say": "The Funghi is a white pizza with no tomato: it's a bianco sauce topped with oven-roasted organic mushrooms, fior di latte mozzarella and Pecorino Romano, and it's rich, earthy and cheesy.",
+   "allergens": {
+    "draft": [
+     {
+      "code": "milk",
+      "sure": "printed"
+     },
+     {
+      "code": "wheat",
+      "sure": "likely"
+     }
+    ],
+    "note": "Confirm what's in the bianco sauce, the gluten-free base and shared oven; Pecorino is often made with animal rennet, so check this for strict vegetarians.",
+    "confirmed": null
+   },
+   "mods": [
+    {
+     "ask": "add bacon",
+     "can": "yes",
+     "say": "Yes, we can add crumbled bacon for five dollars."
+    },
+    {
+     "ask": "gluten-free",
+     "can": "ask",
+     "say": "We do a gluten-friendly version, but it's baked in the same oven, so I'll check with the kitchen how safe that is for you."
+    },
+    {
+     "ask": "vegan or dairy-free",
+     "can": "no",
+     "say": "I'm afraid it's built on cheese and a white sauce, but the Marinara pizza is vegan-friendly."
+    }
+   ],
+   "ask": [
+    {
+     "q": "Is there tomato on it?",
+     "a": "No, it's a white pizza with a bianco sauce instead of tomato."
+    },
+    {
+     "q": "Is it vegetarian?",
+     "a": "It's marked vegetarian, but I'll check the cheese with the kitchen if you're strict, as some Italian cheeses use animal rennet."
+    }
+   ],
+   "at": 1793837656634,
+   "model": "claude-opus-5-5"
+  },
+  "d-spicy-vodka-stracciatella": {
+   "say": "This pizza has a spicy vodka sauce, fior di latte mozzarella, fresh creamy stracciatella, peperoncino chilli and Parmigiano Reggiano, so it's rich and creamy with a real kick.",
+   "allergens": {
+    "draft": [
+     {
+      "code": "milk",
+      "sure": "printed"
+     },
+     {
+      "code": "wheat",
+      "sure": "likely"
+     }
+    ],
+    "note": "Confirm what's in the vodka sauce (probably cream), whether the alcohol is cooked off, the gluten-free base and shared oven; Parmigiano is made with animal rennet.",
+    "confirmed": null
+   },
+   "mods": [
+    {
+     "ask": "less spicy",
+     "can": "ask",
+     "say": "The heat is in the sauce and the chilli, so I'll ask the kitchen if they can tone it down."
+    },
+    {
+     "ask": "gluten-free",
+     "can": "ask",
+     "say": "We do a gluten-friendly version, but it's baked in the same oven, so I'll check with the kitchen how safe that is for you."
+    },
+    {
+     "ask": "dairy-free",
+     "can": "no",
+     "say": "I'm afraid it's built around cream and cheese, but the Marinara pizza has no dairy."
+    }
+   ],
+   "ask": [
+    {
+     "q": "Is it spicy?",
+     "a": "Yes, it has a spicy sauce and peperoncino chilli, so expect a proper bit of heat."
+    },
+    {
+     "q": "Does it have alcohol in it?",
+     "a": "The sauce is made with vodka, and I'll check with the kitchen how much of it is cooked off."
+    }
+   ],
+   "at": 1793837656634,
+   "model": "claude-opus-5-5"
+  },
+  "d-marinara": {
+   "say": "The Marinara is a simple, light pizza with no cheese: San Marzano tomato sauce, confit garlic, herb-infused olive oil and crispy garlic, and it's very garlicky.",
+   "allergens": {
+    "draft": [
+     {
+      "code": "wheat",
+      "sure": "likely"
+     }
+    ],
+    "note": "The Burrata add-on brings milk; confirm the gluten-free base and shared-oven cross-contact with cheese.",
+    "confirmed": null
+   },
+   "mods": [
+    {
+     "ask": "add burrata",
+     "can": "yes",
+     "say": "Yes, we can add Burrata Pugliese for fourteen dollars, though that means it's no longer vegan."
+    },
+    {
+     "ask": "gluten-free",
+     "can": "ask",
+     "say": "We do a gluten-friendly version, but it's baked in the same oven, so I'll check with the kitchen how safe that is for you."
+    },
+    {
+     "ask": "vegan",
+     "can": "yes",
+     "say": "Yes, as it comes it's vegan-friendly, with no cheese, and I'll ask the kitchen to confirm the base and oven for you."
+    }
+   ],
+   "ask": [
+    {
+     "q": "Is there any cheese on it?",
+     "a": "No, it comes without cheese, but you can add burrata if you'd like."
+    },
+    {
+     "q": "Is it very garlicky?",
+     "a": "Yes, it has both confit garlic and crispy garlic, so it's garlic-forward."
+    }
+   ],
+   "at": 1793837656634,
+   "model": "claude-opus-5-5"
+  },
+  "d-pepperoni-e-ricotta": {
+   "say": "This is a white pizza with bianco sauce, Italian pepperoni, dried ricotta and fior di latte mozzarella, finished with a chilli-infused honey, so it's sweet, salty and a little spicy.",
+   "allergens": {
+    "draft": [
+     {
+      "code": "milk",
+      "sure": "printed"
+     },
+     {
+      "code": "wheat",
+      "sure": "likely"
+     }
+    ],
+    "note": "Check the pepperoni for mustard and sulphites; confirm the bianco sauce, the gluten-free base and the shared oven.",
+    "confirmed": null
+   },
+   "mods": [
+    {
+     "ask": "without the chilli honey",
+     "can": "ask",
+     "say": "I'll ask the kitchen if they can leave the honey off or serve it on the side."
+    },
+    {
+     "ask": "gluten-free",
+     "can": "ask",
+     "say": "We do a gluten-friendly version, but it's baked in the same oven, so I'll check with the kitchen how safe that is for you."
+    },
+    {
+     "ask": "vegetarian",
+     "can": "no",
+     "say": "The pepperoni is the heart of this one, but the Funghi is a vegetarian white pizza you'd probably enjoy."
+    }
+   ],
+   "ask": [
+    {
+     "q": "Is it spicy?",
+     "a": "It has a gentle heat from the pepperoni and the chilli honey, balanced by the sweetness."
+    },
+    {
+     "q": "Is there tomato on it?",
+     "a": "No, it's a white pizza with a bianco sauce."
+    }
+   ],
+   "at": 1793837656634,
+   "model": "claude-opus-5-5"
+  },
+  "d-chicken-paella": {
+   "say": "Our Chicken Paella serves two: it's a half chicken marinated in saffron and lemon, slow-braised then flash-fried, on bomba rice with pata negra chorizo, confit garlic, saffron aioli and charred lemon, so it's a hearty sharing dish.",
+   "allergens": {
+    "draft": [
+     {
+      "code": "egg",
+      "sure": "likely"
+     }
+    ],
+    "note": "Check whether the chicken is floured before frying (wheat); check the chorizo for milk and sulphites and the aioli for mustard; the prawn add-on brings shellfish.",
+    "confirmed": null
+   },
+   "mods": [
+    {
+     "ask": "add prawns",
+     "can": "yes",
+     "say": "Yes, we can add tiger prawns for fifteen dollars."
+    },
+    {
+     "ask": "without the chorizo",
+     "can": "ask",
+     "say": "I'll check with the kitchen if they can leave the chorizo out."
+    },
+    {
+     "ask": "gluten-free",
+     "can": "ask",
+     "say": "The rice itself is naturally gluten-free, but I'll check with the kitchen how the chicken is fried before I promise anything."
+    }
+   ],
+   "ask": [
+    {
+     "q": "How big is it?",
+     "a": "It's made to serve two people, with a half chicken on a pan of rice."
+    },
+    {
+     "q": "Is it spicy?",
+     "a": "It isn't listed as spicy, though the chorizo adds a smoky warmth."
+    }
+   ],
+   "at": 1793837656634,
+   "model": "claude-opus-5-5"
+  },
+  "d-the-burger": {
+   "say": "The Burger is an eight-ounce patty of organic Alberta beef we grind in-house, on a brioche bun with fontina cheese, truffle aioli, Syrah caramelised onions and crispy shallots, so it's big and rich, and we only make a limited number.",
+   "allergens": {
+    "draft": [
+     {
+      "code": "milk",
+      "sure": "printed"
+     },
+     {
+      "code": "wheat",
+      "sure": "likely"
+     },
+     {
+      "code": "egg",
+      "sure": "likely"
+     },
+     {
+      "code": "sulphite",
+      "sure": "likely"
+     }
+    ],
+    "note": "Brioche likely has egg and milk; aioli likely has egg; Syrah onions likely have sulphites; check whether the crispy shallots are floured.",
+    "confirmed": null
+   },
+   "mods": [
+    {
+     "ask": "gluten-free",
+     "can": "ask",
+     "say": "It comes on a brioche bun and there's no gluten-free bun on the menu, so I'll ask the kitchen what they can do."
+    },
+    {
+     "ask": "without the cheese",
+     "can": "ask",
+     "say": "I'll check with the kitchen, but bear in mind the brioche bun probably has milk in it too."
+    },
+    {
+     "ask": "add bacon, mushrooms or foie gras",
+     "can": "yes",
+     "say": "Yes, we can add crumbled bacon or sautéed mushrooms for five dollars each, or grade A Québec foie gras for twenty-six."
+    }
+   ],
+   "ask": [
+    {
+     "q": "How big is it?",
+     "a": "It's an eight-ounce patty, so it's a proper filling burger."
+    },
+    {
+     "q": "Does it come with fries?",
+     "a": "The menu doesn't list a side with it, so I'll check with the kitchen for you."
+    }
+   ],
+   "at": 1793837656634,
+   "model": "claude-opus-5-5"
+  },
+  "d-seafood-paella": {
+   "say": "The Seafood Paella serves two: it's clams, mussels, tiger prawns, squid and scallops on Spanish bomba rice with saffron aioli and charred lemon, so it's a generous sharing pan.",
+   "allergens": {
+    "draft": [
+     {
+      "code": "shellfish",
+      "sure": "printed"
+     },
+     {
+      "code": "egg",
+      "sure": "likely"
+     }
+    ],
+    "note": "Check the aioli for mustard; the chorizo add-on may bring sulphites or milk; check what stock is used in the rice.",
+    "confirmed": null
+   },
+   "mods": [
+    {
+     "ask": "add chorizo or chicken",
+     "can": "yes",
+     "say": "Yes, we can add sliced Spanish chorizo for eleven dollars or a half chicken for thirty-three."
+    },
+    {
+     "ask": "without the aioli",
+     "can": "ask",
+     "say": "I'll ask the kitchen if they can leave the aioli off or serve it on the side."
+    },
+    {
+     "ask": "without shellfish",
+     "can": "no",
+     "say": "I'm afraid the shellfish is the whole dish, but the Chicken Paella also serves two, and I'll check with the kitchen about cross-contact."
+    }
+   ],
+   "ask": [
+    {
+     "q": "How big is it?",
+     "a": "It's made to serve two people as a main."
+    },
+    {
+     "q": "What seafood is in it?",
+     "a": "There are clams, mussels, tiger prawns, squid and scallops."
+    }
+   ],
+   "at": 1793837656634,
+   "model": "claude-opus-5-5"
+  },
+  "d-lamb-rack-saffron-risotto": {
+   "say": "This is our fire-charred New Zealand lamb rack, house-marinated and grilled Mediterranean-style, served on a saffron risotto with Sicilian herbs; it's a full, hearty main for one.",
+   "allergens": {
+    "draft": [
+     {
+      "code": "milk",
+      "sure": "likely"
+     },
+     {
+      "code": "sulphite",
+      "sure": "likely"
+     }
+    ],
+    "note": "Confirm what's in the lamb marinade, and whether the risotto is finished with butter or cheese and made with wine.",
+    "confirmed": null
+   },
+   "mods": [
+    {
+     "ask": "dairy-free",
+     "can": "ask",
+     "say": "Risotto is often finished with butter or cheese, so I'll check with the kitchen whether they can make it without."
+    },
+    {
+     "ask": "gluten-free",
+     "can": "ask",
+     "say": "Nothing on the menu suggests gluten, but I'll ask the kitchen to confirm the marinade and the risotto stock."
+    },
+    {
+     "ask": "a smaller portion",
+     "can": "no",
+     "say": "We don't do a smaller rack, but the Fire-Charred Lamb Chops on the tapas menu are the same lamb as two chops with kaffir lime mint yoghurt."
+    }
+   ],
+   "ask": [
+    {
+     "q": "Is it spicy?",
+     "a": "It's not described as spicy; the flavour comes from the Mediterranean-style marinade, the fire and the Sicilian herbs."
+    },
+    {
+     "q": "How is the lamb cooked?",
+     "a": "It's grilled over the fire, and I'll pass on how you'd like it done and check with the kitchen."
+    }
+   ],
+   "at": 1793837715930,
+   "model": "claude-opus-5-5"
+  },
+  "d-bone-in-new-york-paella": {
+   "say": "This is a 22 oz bone-in Certified Angus striploin served on toasted Spanish bomba rice with braised beef, artichokes, organic mushrooms and saffron aioli; it's a big, rich sharing dish for two to three people.",
+   "allergens": {
+    "draft": [
+     {
+      "code": "egg",
+      "sure": "likely"
+     },
+     {
+      "code": "sulphite",
+      "sure": "likely"
+     }
+    ],
+    "note": "Check the saffron aioli for mustard, the brasato for wine, the paella stock, and cross-contact with the seafood paella pans; check the foie gras garnish if it's added.",
+    "confirmed": null
+   },
+   "mods": [
+    {
+     "ask": "without the aioli",
+     "can": "ask",
+     "say": "I'll ask the kitchen whether they can leave the saffron aioli off or put it on the side."
+    },
+    {
+     "ask": "vegetarian",
+     "can": "no",
+     "say": "This one is built around steak and braised beef, but the Medaglioni al Tartufo e Funghi is a rich vegetarian option with mushrooms and truffle."
+    },
+    {
+     "ask": "add foie gras",
+     "can": "yes",
+     "say": "Yes, we can add Québec foie gras for an extra 26 dollars."
+    }
+   ],
+   "ask": [
+    {
+     "q": "How many does it feed?",
+     "a": "It's a 22 oz steak on a paella and serves two to three people."
+    },
+    {
+     "q": "Is there seafood in it?",
+     "a": "No seafood is listed in this one, but I'll check with the kitchen about the stock and the pans if it's an allergy."
+    }
+   ],
+   "at": 1793837715930,
+   "model": "claude-opus-5-5"
+  },
+  "d-half-chicken-frites": {
+   "say": "This is half a chicken in a saffron-lemon marinade, braised and then flash-fried, served with brava marinara, saffron aioli and hand-cut fries; it's a generous main for one.",
+   "allergens": {
+    "draft": [
+     {
+      "code": "egg",
+      "sure": "likely"
+     }
+    ],
+    "note": "Confirm whether the chicken is dusted in flour before frying, whether the aioli contains mustard, and whether the fries share a fryer with battered items.",
+    "confirmed": null
+   },
+   "mods": [
+    {
+     "ask": "without the aioli",
+     "can": "yes",
+     "say": "Yes, we can leave the saffron aioli off for you."
+    },
+    {
+     "ask": "gluten-free",
+     "can": "ask",
+     "say": "I'll check with the kitchen whether the chicken has any coating and whether the fries share a fryer with battered food."
+    },
+    {
+     "ask": "sauce on the side",
+     "can": "ask",
+     "say": "I'll ask the kitchen to put the brava marinara on the side so you can control the heat."
+    }
+   ],
+   "ask": [
+    {
+     "q": "Is it spicy?",
+     "a": "The brava marinara has a bit of a kick, and the chicken itself is lemony rather than hot."
+    },
+    {
+     "q": "How big is it?",
+     "a": "It's half a chicken with fries, so it's a proper main course for one."
+    }
+   ],
+   "at": 1793837715930,
+   "model": "claude-opus-5-5"
+  },
+  "d-branzino-frito": {
+   "say": "This is a whole fresh branzino, marinated Spanish-style in lemon and herbs and fried, served with charred lemon, broccolini and a garlic, olive oil and chilli risotto; it's for two people to share.",
+   "allergens": {
+    "draft": [
+     {
+      "code": "fish",
+      "sure": "printed"
+     },
+     {
+      "code": "wheat",
+      "sure": "likely"
+     },
+     {
+      "code": "milk",
+      "sure": "likely"
+     },
+     {
+      "code": "sulphite",
+      "sure": "likely"
+     }
+    ],
+    "note": "Confirm whether the fish is floured before frying, and whether the risotto has butter, cheese or wine; the aglio olio style may mean it doesn't.",
+    "confirmed": null
+   },
+   "mods": [
+    {
+     "ask": "filleted or off the bone",
+     "can": "ask",
+     "say": "It comes as a whole fish, so I'll ask the kitchen whether they can take it off the bone for you."
+    },
+    {
+     "ask": "less spicy",
+     "can": "ask",
+     "say": "The risotto has chilli in it, so I'll check whether the kitchen can make it milder."
+    },
+    {
+     "ask": "gluten-free",
+     "can": "ask",
+     "say": "I'll check with the kitchen whether the fish is dusted in flour before it's fried."
+    }
+   ],
+   "ask": [
+    {
+     "q": "Does it have bones?",
+     "a": "Yes, it's served whole, so expect bones and the head."
+    },
+    {
+     "q": "Is it spicy?",
+     "a": "The fish is lemon and herbs, but the risotto has peperoncino, so there's a gentle chilli warmth."
+    }
+   ],
+   "at": 1793837715930,
+   "model": "claude-opus-5-5"
+  },
+  "d-22-oz-bone-in-ny-striploin": {
+   "say": "This is a 22 oz bone-in Certified Angus New York striploin with hand-cut fries and your choice of saffron aioli, peppercorn sauce or chimichurri; it's a very big steak that many guests share.",
+   "allergens": {
+    "draft": [
+     {
+      "code": "egg",
+      "sure": "likely"
+     },
+     {
+      "code": "milk",
+      "sure": "likely"
+     },
+     {
+      "code": "sulphite",
+      "sure": "likely"
+     }
+    ],
+    "note": "The allergens depend on the sauce chosen: egg, and possibly mustard, in the aioli; cream, and possibly flour or brandy, in the peppercorn sauce; vinegar in the chimichurri. Check the fryer for cross-contact.",
+    "confirmed": null
+   },
+   "mods": [
+    {
+     "ask": "dairy-free and egg-free",
+     "can": "ask",
+     "say": "The chimichurri is the most likely sauce to work, but I'll have the kitchen confirm it before you order."
+    },
+    {
+     "ask": "gluten-free",
+     "can": "ask",
+     "say": "The steak itself should be fine, but I'll check the fryer and whether the peppercorn sauce is thickened with flour."
+    },
+    {
+     "ask": "sauce on the side",
+     "can": "yes",
+     "say": "Yes, we can bring your sauce on the side."
+    }
+   ],
+   "ask": [
+    {
+     "q": "Is it big enough to share?",
+     "a": "It's 22 oz on the bone, so it's a large steak that many guests share, though the menu doesn't list it as a sharing dish."
+    },
+    {
+     "q": "Can I choose how it's cooked?",
+     "a": "Yes, just tell me how you'd like it and I'll pass that to the kitchen."
+    }
+   ],
+   "at": 1793837715930,
+   "model": "claude-opus-5-5"
+  },
+  "d-risotto-burro-e-sablefish": {
+   "say": "This is a sablefish fillet glazed with smoked honey, served on a buttery Arborio risotto with grilled radicchio, balsamic from Modena and Parmigiano Reggiano; it's a rich, indulgent main for one.",
+   "allergens": {
+    "draft": [
+     {
+      "code": "fish",
+      "sure": "printed"
+     },
+     {
+      "code": "milk",
+      "sure": "printed"
+     },
+     {
+      "code": "sulphite",
+      "sure": "likely"
+     }
+    ],
+    "note": "Confirm whether the risotto is made with wine; check the balsamic and the honey glaze.",
+    "confirmed": null
+   },
+   "mods": [
+    {
+     "ask": "without the cheese",
+     "can": "ask",
+     "say": "I'll check whether the kitchen can leave the Parmigiano off, though the risotto is made with butter."
+    },
+    {
+     "ask": "dairy-free",
+     "can": "no",
+     "say": "The risotto is built on butter and Parmigiano, so it can't be dairy-free, but the Seafood Paella has no dairy listed and I can check it with the kitchen for you."
+    },
+    {
+     "ask": "gluten-free",
+     "can": "ask",
+     "say": "Nothing listed suggests gluten, but I'll ask the kitchen to confirm the glaze and the stock."
+    }
+   ],
+   "ask": [
+    {
+     "q": "What is sablefish?",
+     "a": "It's also called black cod, a rich, silky white fish with a buttery texture."
+    },
+    {
+     "q": "Is it sweet?",
+     "a": "The smoked honey glaze gives it a touch of sweetness, balanced by the balsamic and the slightly bitter radicchio."
+    }
+   ],
+   "at": 1793837715930,
+   "model": "claude-opus-5-5"
+  },
+  "d-10-oz-striploin": {
+   "say": "This is a 10 oz Australian Tajima Wagyu striploin with hand-cut fries and your choice of saffron aioli, peppercorn sauce or chimichurri; it's a richly marbled steak for one.",
+   "allergens": {
+    "draft": [
+     {
+      "code": "egg",
+      "sure": "likely"
+     },
+     {
+      "code": "milk",
+      "sure": "likely"
+     },
+     {
+      "code": "sulphite",
+      "sure": "likely"
+     }
+    ],
+    "note": "The allergens depend on the sauce chosen: egg, and possibly mustard, in the aioli; cream, and possibly flour or brandy, in the peppercorn sauce; vinegar in the chimichurri. Check the fryer for cross-contact.",
+    "confirmed": null
+   },
+   "mods": [
+    {
+     "ask": "dairy-free and egg-free",
+     "can": "ask",
+     "say": "The chimichurri is the most likely sauce to work, but I'll have the kitchen confirm it before you order."
+    },
+    {
+     "ask": "gluten-free",
+     "can": "ask",
+     "say": "The steak itself should be fine, but I'll check the fryer and whether the peppercorn sauce is thickened with flour."
+    },
+    {
+     "ask": "sauce on the side",
+     "can": "yes",
+     "say": "Yes, we can bring your sauce on the side."
+    }
+   ],
+   "ask": [
+    {
+     "q": "What is Tajima Wagyu?",
+     "a": "It's Australian Wagyu from the Tajima bloodline, known for heavy marbling and a very rich, tender bite."
+    },
+    {
+     "q": "How big is it?",
+     "a": "It's 10 oz with fries, a good-sized steak for one person."
+    }
+   ],
+   "at": 1793837715930,
+   "model": "claude-opus-5-5"
+  },
+  "d-8-oz-filet": {
+   "say": "This is an 8 oz Alberta premium AAA beef tenderloin with hand-cut fries and your choice of saffron aioli, peppercorn sauce or chimichurri; it's our leanest, most tender steak, and you can add Québec foie gras.",
+   "allergens": {
+    "draft": [
+     {
+      "code": "egg",
+      "sure": "likely"
+     },
+     {
+      "code": "milk",
+      "sure": "likely"
+     },
+     {
+      "code": "sulphite",
+      "sure": "likely"
+     }
+    ],
+    "note": "The allergens depend on the sauce chosen: egg, and possibly mustard, in the aioli; cream, and possibly flour or brandy, in the peppercorn sauce; vinegar in the chimichurri. Check the fryer and the foie gras garnish if it's added.",
+    "confirmed": null
+   },
+   "mods": [
+    {
+     "ask": "dairy-free and egg-free",
+     "can": "ask",
+     "say": "The chimichurri is the most likely sauce to work, but I'll have the kitchen confirm it before you order."
+    },
+    {
+     "ask": "gluten-free",
+     "can": "ask",
+     "say": "The steak itself should be fine, but I'll check the fryer and whether the peppercorn sauce is thickened with flour."
+    },
+    {
+     "ask": "add foie gras",
+     "can": "yes",
+     "say": "Yes, we can add Québec foie gras for an extra 26 dollars."
+    }
+   ],
+   "ask": [
+    {
+     "q": "Which steak is the most tender?",
+     "a": "The filet is the tenderloin, so it's the most tender and the leanest of our steaks."
+    },
+    {
+     "q": "How big is it?",
+     "a": "It's 8 oz with fries, a comfortable steak for one person."
+    }
+   ],
+   "at": 1793837715930,
+   "model": "claude-opus-5-5"
+  },
+  "d-caviar-bump": {
+   "say": "The Caviar Bump is a single 5 g taste of sturgeon caviar served on the back of your hand, in Baerii for $15 or Oscietra for $20, and it's a quick, salty, luxurious mouthful rather than a starter.",
+   "allergens": {
+    "draft": [
+     {
+      "code": "fish",
+      "sure": "printed"
+     }
+    ],
+    "note": "Caviar is fish roe; confirm nothing else is used on the hand (no crème fraîche or other garnish).",
+    "confirmed": null
+   },
+   "mods": [
+    {
+     "ask": "Can I have it on a spoon instead of my hand?",
+     "can": "ask",
+     "say": "It's traditionally served on the back of the hand, but I'll ask the kitchen whether we can serve it on a spoon for you."
+    },
+    {
+     "ask": "Can I have a bigger portion?",
+     "can": "no",
+     "say": "The bump is always 5 g, but if you'd like more, the Tableside Caviar Service comes in 30 g or 50 g for two to four people."
+    },
+    {
+     "ask": "Is there a fish-free version?",
+     "can": "no",
+     "say": "I'm afraid not, caviar is fish roe, so if you're avoiding fish I'd suggest the Mediterranean Olives as a small bite instead."
+    }
+   ],
+   "ask": [
+    {
+     "q": "How big is it?",
+     "a": "It's 5 g, so it's one small taste, enough for a single mouthful."
+    },
+    {
+     "q": "What's the difference between Baerii and Oscietra?",
+     "a": "Both are sturgeon caviar, with Baerii at $15 and Oscietra at $20, and I'm happy to ask the kitchen to describe how they differ in taste."
+    }
+   ],
+   "at": 1793837773884,
+   "model": "claude-opus-5-5"
+  },
+  "d-tableside-caviar-service": {
+   "say": "The Tableside Caviar Service is Baerii or Oscietra sturgeon caviar brought to your table with traditional accompaniments, for two to four people, in 30 g or 50 g, starting at $90.",
+   "allergens": {
+    "draft": [
+     {
+      "code": "fish",
+      "sure": "printed"
+     },
+     {
+      "code": "milk",
+      "sure": "likely"
+     },
+     {
+      "code": "egg",
+      "sure": "likely"
+     },
+     {
+      "code": "wheat",
+      "sure": "likely"
+     }
+    ],
+    "note": "Accompaniments aren't listed on the menu: confirm exactly what goes out (blinis, crème fraîche, chopped egg and so on) before giving allergen answers.",
+    "confirmed": null
+   },
+   "mods": [
+    {
+     "ask": "Gluten-free",
+     "can": "ask",
+     "say": "The caviar itself has no gluten, but I'll check with the kitchen what the accompaniments are and whether they can swap anything."
+    },
+    {
+     "ask": "Without dairy",
+     "can": "ask",
+     "say": "The caviar has no dairy, but some of the traditional accompaniments may, so I'll ask the kitchen what can be left off."
+    },
+    {
+     "ask": "Can we have a smaller or bigger amount?",
+     "can": "yes",
+     "say": "Yes, it comes in 30 g or 50 g: Baerii is $90 or $130, and Oscietra is $100 or $140."
+    }
+   ],
+   "ask": [
+    {
+     "q": "How many people does it serve?",
+     "a": "It's designed for two to four people, and the 50 g size goes further for a bigger group."
+    },
+    {
+     "q": "What comes with it?",
+     "a": "It comes with traditional accompaniments, and I'll check with the kitchen exactly what's on the plate today."
+    }
+   ],
+   "at": 1793837773884,
+   "model": "claude-opus-5-5"
+  },
+  "d-the-brunch-burger": {
+   "say": "The Brunch Burger is a hearty 8 oz patty of in-house hand-ground organic Alberta beef on a fresh brioche bun with a sunny side up egg, melted fontina, truffle aioli and Syrah caramelised onions, and we only make a limited number.",
+   "allergens": {
+    "draft": [
+     {
+      "code": "egg",
+      "sure": "printed"
+     },
+     {
+      "code": "milk",
+      "sure": "printed"
+     },
+     {
+      "code": "wheat",
+      "sure": "likely"
+     },
+     {
+      "code": "sulphite",
+      "sure": "likely"
+     },
+     {
+      "code": "mustard",
+      "sure": "likely"
+     }
+    ],
+    "note": "Brioche likely has egg and milk too; confirm whether the truffle aioli contains mustard and whether the Syrah onions carry sulphites.",
+    "confirmed": null
+   },
+   "mods": [
+    {
+     "ask": "Without the egg",
+     "can": "ask",
+     "say": "We can leave off the fried egg, but the bun and the aioli likely contain egg too, so I'll check with the kitchen if egg is an allergy."
+    },
+    {
+     "ask": "Without the cheese",
+     "can": "yes",
+     "say": "Yes, we can leave off the fontina, but the brioche bun likely contains milk, so it won't be fully dairy-free."
+    },
+    {
+     "ask": "Gluten-free",
+     "can": "ask",
+     "say": "It comes on a brioche bun, so I'll ask the kitchen whether there's a gluten-free option today."
+    }
+   ],
+   "ask": [
+    {
+     "q": "How big is it?",
+     "a": "It's a generous 8 oz beef patty with an egg on top, so it's a proper filling meal."
+    },
+    {
+     "q": "Can I add anything?",
+     "a": "Yes, you can add crumbled bacon for $5 or Québec grade A foie gras for $26."
+    }
+   ],
+   "at": 1793837773884,
+   "model": "claude-opus-5-5"
+  },
+  "d-avocado-sourdough": {
+   "say": "Our Avocado and Sourdough is sourdough bread topped with avocado and organic extra virgin olive oil, served with heritage greens, a light and fresh vegetarian brunch, and you can add two poached eggs for $8.",
+   "allergens": {
+    "draft": [
+     {
+      "code": "wheat",
+      "sure": "likely"
+     }
+    ],
+    "note": "Adding poached eggs brings in egg; confirm the sourdough contains no milk or egg if a guest asks for it vegan.",
+    "confirmed": null
+   },
+   "mods": [
+    {
+     "ask": "Can I add eggs?",
+     "can": "yes",
+     "say": "Yes, you can add two poached eggs for $8."
+    },
+    {
+     "ask": "Gluten-free",
+     "can": "ask",
+     "say": "It's served on sourdough, so I'll ask the kitchen whether they can swap in gluten-free bread today."
+    },
+    {
+     "ask": "Vegan",
+     "can": "ask",
+     "say": "There's no egg or dairy listed without the add-on eggs, but I'll check with the kitchen that the bread is vegan too."
+    }
+   ],
+   "ask": [
+    {
+     "q": "Is it filling?",
+     "a": "It's on the lighter side, and adding the two poached eggs makes it more substantial."
+    },
+    {
+     "q": "Is it vegetarian?",
+     "a": "Yes, it's vegetarian as it comes, and with the poached eggs added it still is."
+    }
+   ],
+   "at": 1793837773884,
+   "model": "claude-opus-5-5"
+  },
+  "d-eggs-benedict": {
+   "say": "Our Eggs Benedict is poached eggs and hollandaise on fresh artisanal ciabatta with roasted potatoes and heritage greens, and you choose your topping: prosciutto cotto for $23, brasato beef or mushrooms or avocado for $24, smoked salmon for $25, or charred chorizo for $27.",
+   "allergens": {
+    "draft": [
+     {
+      "code": "egg",
+      "sure": "printed"
+     },
+     {
+      "code": "milk",
+      "sure": "likely"
+     },
+     {
+      "code": "wheat",
+      "sure": "likely"
+     },
+     {
+      "code": "fish",
+      "sure": "printed"
+     }
+    ],
+    "note": "Fish applies to the smoked salmon version only; check the hollandaise for butter or mustard and the cured meats for sulphites.",
+    "confirmed": null
+   },
+   "mods": [
+    {
+     "ask": "Vegetarian",
+     "can": "yes",
+     "say": "Yes, we do a vegetarian version with mushrooms or avocado for $24."
+    },
+    {
+     "ask": "Gluten-free",
+     "can": "ask",
+     "say": "It comes on ciabatta, so I'll ask the kitchen whether they can serve it on gluten-free bread."
+    },
+    {
+     "ask": "Without the hollandaise",
+     "can": "ask",
+     "say": "I'll check with the kitchen, as the hollandaise is a big part of the dish but they may be able to leave it off."
+    }
+   ],
+   "ask": [
+    {
+     "q": "Does it come with sides?",
+     "a": "Yes, it comes with roasted potatoes and heritage greens."
+    },
+    {
+     "q": "Which topping do you recommend?",
+     "a": "They're all popular, but if you'd like something heartier, the brasato beef or the charred chorizo are the richest options."
+    }
+   ],
+   "at": 1793837773884,
+   "model": "claude-opus-5-5"
+  },
+  "d-brunch-bravas": {
+   "say": "Brunch Bravas is double-cooked Spanish-style potatoes with poached eggs and spicy marinara, topped with hollandaise, smoked paprika and chipotle aioli, with your choice of crumbled bacon, braised beef or avocado, and it's a filling plate with some heat.",
+   "allergens": {
+    "draft": [
+     {
+      "code": "egg",
+      "sure": "printed"
+     },
+     {
+      "code": "milk",
+      "sure": "likely"
+     }
+    ],
+    "note": "Confirm the potatoes' fryer isn't shared with battered items (wheat) and check the hollandaise and aioli for mustard.",
+    "confirmed": null
+   },
+   "mods": [
+    {
+     "ask": "Vegetarian",
+     "can": "yes",
+     "say": "Yes, just choose the avocado instead of bacon or beef."
+    },
+    {
+     "ask": "Less spicy",
+     "can": "ask",
+     "say": "The spice comes from the marinara and the chipotle aioli, so I'll ask the kitchen whether they can tone it down or put the aioli on the side."
+    },
+    {
+     "ask": "Without dairy",
+     "can": "ask",
+     "say": "The hollandaise likely contains butter, so I'll ask the kitchen whether they can leave it off."
+    }
+   ],
+   "ask": [
+    {
+     "q": "Is it spicy?",
+     "a": "Yes, there's a moderate kick from the spicy marinara, chipotle aioli and smoked paprika."
+    },
+    {
+     "q": "Is it gluten-free?",
+     "a": "There's no bread or wheat listed in it, but I'll check with the kitchen about the fryer and sauces before I promise."
+    }
+   ],
+   "at": 1793837773884,
+   "model": "claude-opus-5-5"
+  },
+  "d-spanish-breakfast": {
+   "say": "The Spanish Breakfast is grilled Spanish chorizo with two sunny side up eggs, double-cooked Spanish-style potatoes, spicy marinara, roasted garlic, smoked paprika, chipotle aioli and kaffir lime mint yoghurt, a big, hearty plate with a bit of a kick.",
+   "allergens": {
+    "draft": [
+     {
+      "code": "milk",
+      "sure": "printed"
+     },
+     {
+      "code": "egg",
+      "sure": "printed"
+     },
+     {
+      "code": "sulphite",
+      "sure": "likely"
+     }
+    ],
+    "note": "Check the chorizo for sulphites and wheat, the potatoes' fryer for cross-contact with battered items, and the aioli for mustard.",
+    "confirmed": null
+   },
+   "mods": [
+    {
+     "ask": "Vegetarian",
+     "can": "no",
+     "say": "The chorizo is the centre of this dish, so for a vegetarian option I'd suggest the Brunch Bravas with avocado."
+    },
+    {
+     "ask": "Without dairy",
+     "can": "ask",
+     "say": "The yoghurt can likely be left off, but I'll check with the kitchen that nothing else on the plate has dairy."
+    },
+    {
+     "ask": "Less spicy",
+     "can": "ask",
+     "say": "The heat comes from the chorizo, spicy marinara and chipotle aioli, so I'll ask whether the kitchen can put the sauces on the side."
+    }
+   ],
+   "ask": [
+    {
+     "q": "Is it spicy?",
+     "a": "Yes, it has some heat from the spicy marinara, chipotle aioli and smoked paprika, with the yoghurt to cool it down."
+    },
+    {
+     "q": "How filling is it?",
+     "a": "It's very filling, with chorizo, two eggs and potatoes all on one plate."
+    }
+   ],
+   "at": 1793837773884,
+   "model": "claude-opus-5-5"
+  },
+  "d-tiramisu": {
+   "say": "Our Tiramisu is the classic Italian dessert of savoiardi sponge fingers soaked in Sheringham espresso liqueur and layered with mascarpone, rich and creamy, and it's vegetarian.",
+   "allergens": {
+    "draft": [
+     {
+      "code": "milk",
+      "sure": "printed"
+     },
+     {
+      "code": "egg",
+      "sure": "likely"
+     },
+     {
+      "code": "wheat",
+      "sure": "likely"
+     }
+    ],
+    "note": "Contains alcohol from the espresso liqueur; confirm whether the mascarpone cream is made with egg.",
+    "confirmed": null
+   },
+   "mods": [
+    {
+     "ask": "Without alcohol",
+     "can": "no",
+     "say": "The liqueur is soaked into the sponge, so it can't be taken out, but the Affogato or Gelato and Sorbetto are lovely alcohol-free choices."
+    },
+    {
+     "ask": "Gluten-free",
+     "can": "no",
+     "say": "The savoiardi are sponge fingers made with flour, so I'd suggest the Gelato and Sorbetto, and I'll check today's flavours for you."
+    },
+    {
+     "ask": "A smaller portion to share",
+     "can": "ask",
+     "say": "I'll ask the kitchen, but we can certainly bring extra spoons so you can share it."
+    }
+   ],
+   "ask": [
+    {
+     "q": "Does it have alcohol in it?",
+     "a": "Yes, the sponge fingers are soaked in Sheringham espresso liqueur."
+    },
+    {
+     "q": "Does it have coffee in it?",
+     "a": "Yes, the coffee flavour comes from the espresso liqueur, so it does contain some caffeine."
+    }
+   ],
+   "at": 1793837773884,
+   "model": "claude-opus-5-5"
+  },
+  "d-croissant-bread-pudding": {
+   "say": "Our croissant bread pudding is baked croissant in a vanilla bean custard, served warm with a berry coulis and a scoop of gelato; it's rich and comforting, and it's only at Yaletown and in limited numbers, so it can sell out.",
+   "allergens": {
+    "draft": [
+     {
+      "code": "wheat",
+      "sure": "likely"
+     },
+     {
+      "code": "milk",
+      "sure": "likely"
+     },
+     {
+      "code": "egg",
+      "sure": "likely"
+     }
+    ],
+    "note": "Check which gelato flavour goes on it tonight in case it carries nuts or other allergens, and check for nut cross-contact with the pistachio and almond desserts.",
+    "confirmed": null
+   },
+   "mods": [
+    {
+     "ask": "gluten-free",
+     "can": "no",
+     "say": "I'm sorry, it's made from croissant so it can't be gluten-free, but I can ask the kitchen which of our gelato or sorbetto flavours would suit you."
+    },
+    {
+     "ask": "without the gelato",
+     "can": "yes",
+     "say": "Of course, I can ask for it without the gelato, just the pudding and the berry coulis."
+    },
+    {
+     "ask": "dairy-free",
+     "can": "no",
+     "say": "I'm afraid the croissant, custard and gelato all have dairy, but I can check with the kitchen whether a sorbetto is dairy-free tonight."
+    }
+   ],
+   "ask": [
+    {
+     "q": "Is it served warm?",
+     "a": "It's a baked bread pudding served with cold gelato, and I'll confirm with the kitchen exactly how warm it comes out."
+    },
+    {
+     "q": "Do you have it here?",
+     "a": "It's only made at our Yaletown location and in limited quantities, so I'll check it's still available."
+    }
+   ],
+   "at": 1793837809676,
+   "model": "claude-opus-5-5"
+  },
+  "d-cherry-pistachio-mousse": {
+   "say": "This is a cherry mousse on a pistachio sponge with kirsch cream, sour cherries, a dark chocolate crémeux and amarena cherry gelato; it's a layered, fairly rich dessert with a nice sharpness from the cherries, and it's only at Yaletown.",
+   "allergens": {
+    "draft": [
+     {
+      "code": "treenut",
+      "sure": "printed"
+     },
+     {
+      "code": "milk",
+      "sure": "likely"
+     },
+     {
+      "code": "egg",
+      "sure": "likely"
+     },
+     {
+      "code": "wheat",
+      "sure": "likely"
+     }
+    ],
+    "note": "Confirm whether the dark chocolate contains soy lecithin and whether the amarena cherries contain sulphites; the kirsch cream contains alcohol.",
+    "confirmed": null
+   },
+   "mods": [
+    {
+     "ask": "nut-free",
+     "can": "no",
+     "say": "I'm sorry, the sponge is made with pistachio so it can't be made nut-free, but I can ask the kitchen which gelato or sorbetto flavours are safe for you."
+    },
+    {
+     "ask": "gluten-free",
+     "can": "no",
+     "say": "I'm afraid the sponge most likely contains wheat, but I can check with the kitchen for a gelato or sorbetto that would work."
+    },
+    {
+     "ask": "alcohol-free",
+     "can": "ask",
+     "say": "The kirsch cream has cherry brandy in it, so let me ask the kitchen whether they can leave it off for you."
+    }
+   ],
+   "ask": [
+    {
+     "q": "Does it have alcohol in it?",
+     "a": "Yes, the cream is flavoured with kirsch, which is a cherry brandy."
+    },
+    {
+     "q": "Is it very sweet?",
+     "a": "The sour cherries and dark chocolate keep it balanced, so it's rich rather than sugary."
+    }
+   ],
+   "at": 1793837809676,
+   "model": "claude-opus-5-5"
+  },
+  "d-panna-cotta": {
+   "say": "Our panna cotta is a smooth, set Italian cream served with a fresh red berry compote, a raspberry moss sponge and a chocolate tuile; it's light and creamy, and it's only at Yaletown.",
+   "allergens": {
+    "draft": [
+     {
+      "code": "milk",
+      "sure": "likely"
+     },
+     {
+      "code": "wheat",
+      "sure": "likely"
+     },
+     {
+      "code": "egg",
+      "sure": "likely"
+     }
+    ],
+    "note": "Confirm what sets the panna cotta, since it is listed as vegetarian, and check the moss sponge for nut flour and the tuile chocolate for soy.",
+    "confirmed": null
+   },
+   "mods": [
+    {
+     "ask": "gluten-free",
+     "can": "ask",
+     "say": "The sponge and tuile most likely contain wheat, so let me ask the kitchen whether they can serve the panna cotta and berries without them."
+    },
+    {
+     "ask": "dairy-free",
+     "can": "no",
+     "say": "I'm sorry, panna cotta is made with cream, but I can check with the kitchen whether a sorbetto is dairy-free tonight."
+    },
+    {
+     "ask": "nut-free",
+     "can": "ask",
+     "say": "There are no nuts listed in it, but let me check with the kitchen about the sponge and any cross-contact before I promise anything."
+    }
+   ],
+   "ask": [
+    {
+     "q": "Is it vegetarian?",
+     "a": "Yes, it's listed as vegetarian, and I'll confirm with the kitchen what it's set with if that's important to you."
+    },
+    {
+     "q": "Is it heavy?",
+     "a": "It's one of our lighter desserts, creamy and smooth with fresh berries to cut through it."
+    }
+   ],
+   "at": 1793837809676,
+   "model": "claude-opus-5-5"
+  },
+  "d-gelato-sorbetto": {
+   "say": "We have organic, artisanal gelato and sorbetto from a local maker, and I can tell you tonight's flavours; it's a light, simple way to finish.",
+   "allergens": {
+    "draft": [
+     {
+      "code": "milk",
+      "sure": "likely"
+     }
+    ],
+    "note": "Flavours change, so check each one for nuts, egg, wheat, soy and dairy; sorbetto is usually dairy-free but confirm.",
+    "confirmed": null
+   },
+   "mods": [
+    {
+     "ask": "dairy-free",
+     "can": "ask",
+     "say": "Sorbetto is usually made without dairy, so let me check tonight's flavours with the kitchen."
+    },
+    {
+     "ask": "nut-free",
+     "can": "ask",
+     "say": "It depends on the flavour, so I'll ask the kitchen which ones are nut-free and safe from cross-contact."
+    },
+    {
+     "ask": "vegan",
+     "can": "ask",
+     "say": "Let me confirm with the kitchen which sorbetto flavours are vegan tonight."
+    }
+   ],
+   "ask": [
+    {
+     "q": "What flavours do you have?",
+     "a": "They change regularly, so let me check with the kitchen and tell you tonight's flavours."
+    },
+    {
+     "q": "Where does it come from?",
+     "a": "It's organic, artisanal gelato and sorbetto made locally."
+    }
+   ],
+   "at": 1793837809676,
+   "model": "claude-opus-5-5"
+  },
+  "d-affogato": {
+   "say": "Our affogato is a scoop of vanilla gelato with a hot shot of Ciclo espresso poured over it at the table; it's small, simple and a lovely pick-me-up after dinner.",
+   "allergens": {
+    "draft": [
+     {
+      "code": "milk",
+      "sure": "likely"
+     }
+    ],
+    "note": "Check whether the vanilla gelato contains egg or any nut cross-contact.",
+    "confirmed": null
+   },
+   "mods": [
+    {
+     "ask": "decaf",
+     "can": "ask",
+     "say": "Let me check with the bar whether we can make it with decaf espresso tonight."
+    },
+    {
+     "ask": "dairy-free",
+     "can": "ask",
+     "say": "The vanilla gelato has dairy, so let me ask the kitchen whether a sorbetto could be used instead."
+    },
+    {
+     "ask": "extra scoop",
+     "can": "ask",
+     "say": "I'll ask the kitchen whether they can add an extra scoop and let you know if it changes the price."
+    }
+   ],
+   "ask": [
+    {
+     "q": "Does it have caffeine?",
+     "a": "Yes, it's made with a full espresso shot."
+    },
+    {
+     "q": "How big is it?",
+     "a": "It's one scoop of gelato with one espresso shot, so it's a small dessert."
+    }
+   ],
+   "at": 1793837809676,
+   "model": "claude-opus-5-5"
+  },
+  "d-pizza-nutella": {
+   "say": "Our Pizza Nutella is a dessert pizza spread with Nutella and banana, topped with gelato and toasted almond slivers; it's sweet and rich, and it's a good one to share.",
+   "allergens": {
+    "draft": [
+     {
+      "code": "treenut",
+      "sure": "printed"
+     },
+     {
+      "code": "wheat",
+      "sure": "likely"
+     },
+     {
+      "code": "milk",
+      "sure": "likely"
+     },
+     {
+      "code": "soy",
+      "sure": "likely"
+     }
+    ],
+    "note": "Nutella contains hazelnuts as well as the almonds; confirm whether a gluten-free base is offered for this pizza, and check the gelato flavour.",
+    "confirmed": null
+   },
+   "mods": [
+    {
+     "ask": "without the almonds",
+     "can": "yes",
+     "say": "Yes, we can leave the almonds off, but please know Nutella itself contains hazelnuts."
+    },
+    {
+     "ask": "nut-free",
+     "can": "no",
+     "say": "I'm sorry, Nutella is made with hazelnuts so it can't be nut-free, but I can ask the kitchen which gelato or sorbetto flavours are safe for you."
+    },
+    {
+     "ask": "gluten-free",
+     "can": "ask",
+     "say": "Many of our pizzas can be gluten-friendly, so let me check with the kitchen whether they can do this one on a gluten-free base."
+    }
+   ],
+   "ask": [
+    {
+     "q": "How big is it?",
+     "a": "It's a whole dessert pizza, so it's good for sharing between the table."
+    },
+    {
+     "q": "Does it have nuts?",
+     "a": "Yes, it has toasted almonds on top and Nutella, which is made with hazelnuts."
+    }
+   ],
+   "at": 1793837809676,
+   "model": "claude-opus-5-5"
+  }
+ }
 }

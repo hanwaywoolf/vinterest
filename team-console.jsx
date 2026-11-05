@@ -102,7 +102,7 @@ function TeamConsole({me,onPhone,refresh,section,setSection,open}){ const T=useT
       {TeamData.brand()&&<div data-testid="console-powered" style={{display:'flex',alignItems:'center',gap:8,padding:'14px 2px 0'}}><span style={{fontSize:11,color:T.mid,fontFamily:C.P,whiteSpace:"nowrap"}}>Powered by</span><TeamLogo size={14}/></div>}
 </div>}
   </div>;
-  const page=section==='team'?<_CTeam open={go} refresh={refresh}/>:section==='wines'?<_CWines open={go} goUpload={()=>setSection('upload')}/>:section==='cocktails'?<_CCocktails open={go}/>:section==='menu'?<_CMenu open={go} goUpload={()=>setSection('upload')}/>
+  const page=section==='team'?<_CTeam open={go} refresh={refresh}/>:section==='wines'?<_CWines open={go} goUpload={()=>setSection('upload')}/>:section==='cocktails'?<_CCocktails open={go}/>:section==='menu'?<_CMenu open={go} goUpload={()=>setSection('upload')} me={me}/>
     :section==='upload'?<_CUpload refresh={refresh}/>:section==='pos'?<_CPos open={go}/>:section==='admin'?<_CAdmin refresh={refresh}/>:section==='sales'?<_CSalesTab open={go} setSection={setSection}/>:<_CDash open={go} setSection={setSection} me={me}/>;
   // A section opens at its top; the drawer is a new one for each thing it shows, so it opens at its top too.
   const pageRef=React.useRef(null);
@@ -283,6 +283,14 @@ function _CTeam({open,refresh}){ const T=useTheme(), cr=T.lift(C.cr);
         <div style={{minWidth:150}}><div style={{display:'flex',alignItems:'center',gap:8}}><Prog val={x.r.pct/100} col={_tState[x.r.state].col} h={8} style={{flex:1}}/><span style={{width:40,textAlign:'right',fontWeight:600}}>{x.r.pct}%</span></div><div style={{marginTop:4,whiteSpace:'nowrap'}}><_CState r={x.r}/></div></div>,
         <span style={{color:x.r.behind?T.tone.bad:T.mid,whiteSpace:'nowrap'}}>{x.r.behind?`${x.r.behind} day${x.r.behind===1?'':'s'}`:'—'}</span>,<span style={{color:x.r.due?T.amber:T.mid}}>{x.r.due||'—'}</span>,<span style={{color:T.mid,whiteSpace:'nowrap'}}>{_cAgo(x.lastDrill)}</span>,<span style={{color:T.mid}}>{x.checks.asked?`${x.checks.right} of ${x.checks.asked}`:'—'}</span>,
         <span role="button" aria-label={`Remove ${x.person.name}`} onClick={e=>{ e.stopPropagation(); remove(x.person); }} style={{color:T.mid,cursor:'pointer',padding:'0 4px',display:'inline-flex'}}><Icon n="trash" sz={14} col={T.mid}/></span>]}))}/></Card>
+    {(()=>{ const reg=TeamReport.allergenRegister(), total=reg.length?reg[0].total:0; const d=ms=>ms?new Date(ms).toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric'}):'—';
+      const save=()=>{ const csv=TeamReport.allergenCsv(); try{ Platform.saveFile(`allergen-register-${TeamData._slug(TeamData.get().venue.name||'venue')}.csv`,csv,'text/csv'); }catch(e){ const a=document.createElement('a'); a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv); a.download='allergen-register.csv'; a.click(); } };
+      return <div style={{marginTop:14}}>{_cLabel(T,'Allergen sign-off',<span role="button" data-testid="register-export" onClick={save} style={{fontSize:12,fontWeight:700,color:cr,fontFamily:C.P,cursor:'pointer',textTransform:'none',letterSpacing:0}}>Export CSV</span>)}
+        <Card style={{padding:'6px 8px'}}>{total?<_CTable testid="register-table" cols={[{h:'Person',w:'34%'},{h:'Confirmed dishes held',align:'center'},{h:'Passed on',align:'center'},{h:'Falls due',align:'center'}]}
+          rows={reg.map(x=>({key:x.person.id,testid:'register-row',cells:[<div style={{display:'flex',alignItems:'center',gap:10}}><TeamFace person={x.person} size={28}/><span><b>{x.person.name}</b> <span style={{color:T.mid,fontSize:12}}>{TeamLearn.ROLES[x.person.role].label}</span></span></div>,
+            <span style={{color:x.state==='passed'?T.green:x.known?T.amber:T.mid,fontWeight:700}}>{x.known} of {x.total}</span>,<span style={{color:x.passed?T.green:T.mid}}>{x.state==='passed'?d(x.passed):x.known?'in progress':'not started'}</span>,<span style={{color:T.mid}}>{x.due?d(x.due):'—'}</span>]}))}/>
+          :<div style={{fontSize:14,color:T.mid,fontFamily:C.P,padding:'8px 0'}}>No dish has its allergens confirmed by the kitchen yet. Confirm them on the Menu tab; the register fills as people hold them.</div>}
+        {_cNote(T,'Only the kitchen\'s confirmed allergens count. A person has passed when they hold every confirmed dish; an answer falls due on its own review date, and a miss comes back within the shift.')}</Card></div>; })()}
     <div style={{display:'grid',gridTemplateColumns:useLayoutSize()==='phone'?'1fr':'1fr 1fr',gap:14,marginTop:14,alignItems:'start'}}>
       <Card>{_cLabel(T,'Add someone')}<div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
         <input aria-label="Name" placeholder="Name" value={name} onChange={e=>setName(e.target.value)} style={_cInput(T,{flex:'1 1 140px'})}/>
@@ -355,7 +363,10 @@ function _CWines({open,goUpload}){ const T=useTheme(), cr=T.lift(C.cr), ws=TeamD
   </div>; }
 
 /* ── Menu ── */
-function _CMenu({open,goUpload}){ const T=useTheme(), cr=T.lift(C.cr), xs=TeamData.dishes(), [edit,setEdit]=React.useState(null);
+function _CMenu({open,goUpload,me}){ const T=useTheme(), cr=T.lift(C.cr), xs=TeamData.dishes(), [edit,setEdit]=React.useState(null), [conf,setConf]=React.useState(null), [,bump]=React.useReducer(x=>x+1,0);
+  const unconfirmed=xs.filter(x=>TeamData.dishCard(x.id)&&TeamData.allergensOf(x.id)==null).length, noNotes=xs.filter(x=>!TeamData.dishCard(x.id)).length;
+  const startConf=x=>{ const card=TeamData.dishCard(x.id)||{allergens:{draft:[]}}; const have=TeamData.allergensOf(x.id); setConf({id:x.id,codes:have||(card.allergens.draft||[]).map(a=>a.code)}); };
+  const confirm=()=>{ TeamData.confirmAllergens(conf.id,conf.codes,me&&me.name); setConf(null); bump(); };
   const gaps=xs.filter(x=>{ const p=TeamData.pairing(x.id); return !p||!p.best||!p.best.length; });
   const save=()=>{ TeamData.draftEditDish(edit.id,{price:edit.price.trim(),desc:edit.desc.trim()}); setEdit(null); goUpload(); };
   const groups=[]; xs.forEach(x=>{ const s=x.section||'Menu'; let g=groups.find(y=>y.s===s); if(!g) groups.push(g={s,xs:[]}); g.xs.push(x); });
@@ -365,13 +376,23 @@ function _CMenu({open,goUpload}){ const T=useTheme(), cr=T.lift(C.cr), xs=TeamDa
     const bottle=best.find(b=>{ const w=TeamData.wine(b.id); return w&&b.id!==gid&&!TeamData.byGlass(w); })||best.find(b=>b.id!==gid)||null; return {glass,bottle}; };
   return <div data-testid="console-menu">{_cH(T,'Menu',`${xs.length} dishes · ${gaps.length?`${gaps.length} without a good match on the list`:'every dish has its wines'}`,<Btn small onClick={goUpload}>Upload a new menu</Btn>)}
     {gaps.length>0&&<Card style={{marginBottom:14,borderColor:T.amber+'66'}}><div style={{fontSize:14,color:T.amber,fontWeight:700,fontFamily:C.P}}>Dishes without pairings</div><div style={{fontSize:13,color:T.ink2,fontFamily:C.P,marginTop:4}}>{gaps.map(x=>x.name).join(' · ')}</div><div style={{fontSize:12,color:T.mid,fontFamily:C.P,marginTop:4}}>Written at the next publish, or from Upload with "Write them now".</div></Card>}
+    {(unconfirmed>0||noNotes>0)&&<Card style={{marginBottom:14,borderColor:'#F28B7D66'}}><div data-testid="menu-allergen-todo" style={{fontSize:14,color:'#F28B7D',fontWeight:700,fontFamily:C.P}}>{unconfirmed?`${unconfirmed} dish${unconfirmed===1?'':'es'} with allergens to confirm`:''}{unconfirmed&&noNotes?' · ':''}{noNotes?`${noNotes} without dish notes yet`:''}</div>
+      <div style={{fontSize:13,color:T.ink2,fontFamily:C.P,marginTop:4,lineHeight:1.5}}>The allergens on each dish are a draft read from the menu until the kitchen confirms them here. A server is never asked, and never shown, an allergen the kitchen hasn't confirmed. Confirming assigns the dish's allergen question to everyone, due in a week; readiness needs every confirmed dish at 100%.</div></Card>}
     {groups.map(g=><div key={g.s} style={{marginBottom:14}}>{_cLabel(T,g.s)}<Card style={{padding:'6px 8px'}}>
-      <_CTable testid="menu-table" cols={[{h:'Dish'},{h:'Price',align:'center'},{h:'By the glass'},{h:'By the bottle'},{h:'Steer away from'},{h:'',align:'right'}]}
+      <_CTable testid="menu-table" cols={[{h:'Dish'},{h:'Price',align:'center'},{h:'Allergens'},{h:'By the glass'},{h:'By the bottle'},{h:'',align:'right'}]}
         rows={g.xs.flatMap(x=>{ const p=TeamData.pairing(x.id)||{}, ed=edit&&edit.id===x.id, pk=picks(p);
-          const row={key:x.id,testid:'menu-row',onClick:()=>open({view:'dish',id:x.id}),cells:[<span><b>{x.name}</b>{x.desc&&<span style={{color:T.mid,fontSize:12,display:'block'}}>{x.desc}</span>}</span>,x.price||<span style={{color:T.mid}}>—</span>,wn(pk.glass),wn(pk.bottle),wn(p.avoid),
+          const card=TeamData.dishCard(x.id), have=TeamData.allergensOf(x.id), cf=conf&&conf.id===x.id;
+          const al=<span data-testid="menu-allergens" onClick={e=>e.stopPropagation()} style={{display:'inline-flex',flexWrap:'wrap',gap:4,alignItems:'center'}}>{have?(have.length?have.map(code=>_cChip(T,TeamData.allergenName(code),'#F28B7D')):_cChip(T,'None confirmed','#5FD48F')):card?<span style={{color:T.amber,fontSize:12}}>Draft: {(card.allergens.draft||[]).map(a=>TeamData.allergenName(a.code)+(a.sure==='likely'?'?':'')).join(', ')||'none'}</span>:<span style={{color:T.mid,fontSize:12}}>no notes yet</span>}
+            {card&&<span role="button" data-testid="menu-confirm" onClick={()=>cf?setConf(null):startConf(x)} style={{color:have?T.mid:cr,cursor:'pointer',fontSize:12,fontWeight:700,marginLeft:4}}>{have?'Change':'Confirm'}</span>}</span>;
+          const row={key:x.id,testid:'menu-row',onClick:()=>open({view:'dish',id:x.id}),cells:[<span><b>{x.name}</b>{x.desc&&<span style={{color:T.mid,fontSize:12,display:'block'}}>{x.desc}</span>}</span>,x.price||<span style={{color:T.mid}}>—</span>,al,wn(pk.glass),wn(pk.bottle),
             <span role="button" aria-label={`Edit ${x.name}`} data-testid="menu-edit" onClick={e=>{ e.stopPropagation(); setEdit(ed?null:{id:x.id,price:x.price||'',desc:x.desc||''}); }} style={{color:cr,cursor:'pointer',fontSize:13,fontWeight:700}}>Edit</span>]};
-          if(!ed) return [row];
-          return [row,{key:x.id+'-edit',hi:true,cells:[<div onClick={e=>e.stopPropagation()} style={{display:'flex',gap:8,flexWrap:'wrap',alignItems:'center'}}>
+          const confRow=cf&&{key:x.id+'-conf',hi:true,cells:[<div data-testid="menu-confirm-row" onClick={e=>e.stopPropagation()} style={{display:'flex',gap:8,flexWrap:'wrap',alignItems:'center'}}>
+            <span style={{fontSize:13,color:T.ink2,fontFamily:C.P,marginRight:4}}>In the {x.name}:</span>
+            {TeamData.allergenList().map(a=>{ const on=conf.codes.includes(a.code), drafted=(card.allergens.draft||[]).find(z=>z.code===a.code); return <span key={a.code} role="button" aria-pressed={on} data-testid="menu-allergen-toggle" onClick={()=>setConf({...conf,codes:on?conf.codes.filter(z=>z!==a.code):[...conf.codes,a.code]})} style={{padding:'4px 10px',borderRadius:10,border:`1px solid ${on?'#F28B7D':T.line}`,background:on?_alpha('#F28B7D',0.14):'transparent',color:on?T.ink:T.mid,fontSize:13,fontFamily:C.P,cursor:'pointer'}}>{a.name}{drafted&&drafted.sure==='likely'&&!on?' ?':''}</span>; })}
+            {card.allergens.note&&<span style={{fontSize:12,color:T.amber,fontFamily:C.P,width:'100%'}}>Note for the kitchen: {card.allergens.note}</span>}
+            <Btn small primary onClick={confirm}>Confirm these</Btn><Btn small onClick={()=>setConf(null)}>Cancel</Btn></div>,<span/>,<span/>,<span/>,<span/>,<span/>]};
+          if(!ed) return confRow?[row,confRow]:[row];
+          return [row,...(confRow?[confRow]:[]),{key:x.id+'-edit',hi:true,cells:[<div onClick={e=>e.stopPropagation()} style={{display:'flex',gap:8,flexWrap:'wrap',alignItems:'center'}}>
             <input aria-label="Price" value={edit.price} onChange={e=>setEdit({...edit,price:e.target.value})} placeholder="Price" style={_cInput(T,{width:90,fontSize:14})}/>
             <input aria-label="Description" value={edit.desc} onChange={e=>setEdit({...edit,desc:e.target.value})} placeholder="Description" style={_cInput(T,{flex:'1 1 240px',fontSize:14})}/>
             <Btn small primary onClick={save}>Review the change</Btn><Btn small onClick={()=>setEdit(null)}>Cancel</Btn></div>,<span/>,<span/>,<span/>,<span/>,<span/>]}];
