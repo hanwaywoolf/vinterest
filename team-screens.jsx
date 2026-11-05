@@ -104,6 +104,41 @@ function TeamSetup({onDone}){ const T=useTheme(), cr=T.lift(C.cr);
     </div>
   </div>; }
 
+/* Tonight, before service (docs/business.md, "Pre-shift"): what's 86'd, the feature with one line to say, and the two
+   by-the-glass wines this person should look at (slipping, or a top seller not started), each with its line and Say it.
+   Ninety seconds at clock-in, nothing scored. Shown only when there's something on it. */
+function TeamTonightCard({pid,open,manage}){ const T=useTheme(), cr=T.lift(C.cr), tn=TeamData.tonight(), look=TeamLearn.slippingOn(pid,2);
+  const off=tn.off.map(id=>TeamData.dish(id)).filter(Boolean), feat=tn.feature.map(id=>TeamData.wine(id)||TeamData.cocktail(id)).filter(Boolean);
+  const say=(x)=>{ TeamVoice.unlock(); TeamVoice.speak(x.name&&!x.producer?x.name:TeamData.short(x),{pace:'slow'}); };
+  const line=w=>{ const c=TeamData.card(w.id)||TeamData.cocktailCard(w.id); const p=c&&c.pitch?String(c.pitch).split(/(?<=[.!?])\s+/)[0]:''; return p; };
+  const wineRow=(w,why,key)=><div key={key} role="button" onClick={()=>open({view:TeamLearn.isCocktail(w.id)?'cocktail':'wine',id:w.id})} style={{display:'flex',gap:10,alignItems:'flex-start',padding:'10px 0',borderTop:`1px solid ${T.line}`,cursor:'pointer'}}>
+    <div style={{flex:1,minWidth:0}}><div style={{fontSize:16,fontWeight:700,color:T.ink,fontFamily:C.P,lineHeight:1.3}}>{TeamData.short(w)}{why&&<span style={{fontSize:13,fontWeight:600,color:T.amber,marginLeft:8}}>{why}</span>}</div>
+      {line(w)&&<div style={{fontSize:15,color:T.ink2,fontFamily:C.P,lineHeight:1.45,marginTop:2}}>{line(w)}</div>}</div>
+    <div role="button" aria-label={`Say ${TeamData.short(w)}`} onClick={e=>{ e.stopPropagation(); say(w); }} style={{width:36,height:36,borderRadius:18,border:`1px solid ${T.line}`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:15,flexShrink:0}}>🔊</div></div>;
+  if(!off.length&&!feat.length&&!look.length&&!manage) return null;
+  return <div data-testid="team-tonight" style={{marginBottom:12}}><Card style={{borderColor:_alpha(cr,0.5)}}>
+    <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:8}}><div style={{fontSize:12,fontWeight:700,color:cr,fontFamily:C.P,letterSpacing:'0.1em',textTransform:'uppercase'}}>Tonight</div>
+      {manage&&<span role="button" data-testid="tonight-edit" onClick={()=>open({view:'tonight'})} style={{fontSize:14,fontWeight:700,color:cr,fontFamily:C.P,cursor:'pointer'}}>{off.length||feat.length?'Change':'Set tonight'}</span>}</div>
+    {off.length>0&&<div data-testid="tonight-off" style={{marginTop:8,fontSize:16,color:T.ink,fontFamily:C.P,lineHeight:1.4}}><b style={{color:'#F28B7D'}}>86'd:</b> {off.map(x=>x.name).join(', ')}</div>}
+    {feat.length>0&&<div data-testid="tonight-feature" style={{marginTop:off.length?6:8,fontSize:14,color:T.mid,fontFamily:C.P}}>On feature</div>}
+    {feat.map(w=>wineRow(w,'',`f${w.id}`))}
+    {look.length>0&&<div data-testid="tonight-look" style={{marginTop:10,fontSize:14,color:T.mid,fontFamily:C.P}}>Worth a look before service</div>}
+    {look.map(x=>wineRow(x.wine,x.why,`l${x.wine.id}`))}
+    {!off.length&&!feat.length&&manage&&<div style={{fontSize:14,color:T.mid,fontFamily:C.P,marginTop:6,lineHeight:1.45}}>Nothing set for tonight: what's 86'd and what's on feature show on everyone's Today.</div>}
+  </Card></div>; }
+/* The manager's editor for tonight: tap a dish to 86 it, a wine or cocktail to put it on feature. Clears itself tomorrow. */
+function TeamTonightEdit({back}){ const T=useTheme(), cr=T.lift(C.cr), [,bump]=React.useReducer(x=>x+1,0), [q,setQ]=React.useState('');
+  const tn=TeamData.tonight(), norm=x=>String(x||'').toLowerCase(), hit=x=>!q.trim()||norm(x).includes(norm(q.trim()));
+  const row=(kind,id,name,sub,on,col)=><div key={kind+id} role="button" data-testid={`tonight-${kind}`} aria-pressed={on} onClick={()=>{ TeamData.toggleTonight(kind,id); bump(); }} style={{display:'flex',alignItems:'center',gap:10,padding:'10px 14px',borderTop:`1px solid ${T.line}`,cursor:'pointer',background:on?_alpha(col,0.12):'transparent'}}>
+    <div style={{flex:1,minWidth:0}}><div style={{fontSize:15,fontWeight:600,color:T.ink,fontFamily:C.P}}>{name}</div>{sub&&<div style={{fontSize:14,color:T.mid,fontFamily:C.P}}>{sub}</div>}</div>
+    <span style={{fontSize:13,fontWeight:700,fontFamily:C.P,color:on?col:T.mid,padding:'4px 10px',borderRadius:10,border:`1px solid ${on?col:T.line}`}}>{on?(kind==='off'?"86'd":'On feature'):(kind==='off'?'86 it':'Feature')}</span></div>;
+  return <div data-testid="team-tonight-edit">{_tH(T,'Tonight',"What's 86'd and what's on feature, on everyone's Today until the end of the day.")}
+    <input aria-label="Find a dish or wine" placeholder="Find a dish, wine or cocktail" value={q} onChange={e=>setQ(e.target.value)} style={{width:'100%',padding:'11px 14px',borderRadius:12,border:`1px solid ${T.line}`,background:T.soft,color:T.ink,fontFamily:C.P,fontSize:16,outline:'none',marginBottom:4}}/>
+    {_tLabel(T,`86'd (${tn.off.length})`)}<Card style={{padding:0}}>{TeamData.dishes().filter(x=>hit(x.name)||tn.off.includes(x.id)).slice(0,q?30:12).map(x=>row('off',x.id,x.name,x.section,tn.off.includes(x.id),'#F28B7D'))}</Card>
+    {_tLabel(T,`On feature (${tn.feature.length})`)}<Card style={{padding:0}}>{[...TeamData.wines(),...TeamData.cocktails()].filter(x=>hit(x.producer?TeamData.short(x):x.name)||tn.feature.includes(x.id)).slice(0,q?30:12).map(x=>row('feature',x.id,x.producer?TeamData.short(x):x.name,x.glass?`glass ${x.glass}`:x.price||x.bottle,tn.feature.includes(x.id),'#5FD48F'))}</Card>
+    <Btn primary full style={{marginTop:14}} onClick={back}>Done</Btn>
+  </div>; }
+
 /* Today: where this person stands, what's assigned, and the drill. */
 function TeamToday({pid,open}){ const T=useTheme(), cr=T.lift(C.cr);
   const person=TeamLearn.person(pid), r=TeamLearn.note(pid), as=TeamLearn.assignments(pid), ret=TeamLearn.retention(pid), pl=TeamLearn.plan(pid);
@@ -118,6 +153,7 @@ function TeamToday({pid,open}){ const T=useTheme(), cr=T.lift(C.cr);
   return <div>
     <div style={{display:'flex',alignItems:'center',gap:14,marginBottom:12}}><TeamFace person={person} size={64} ring={st.col}/>
       <div><div style={{fontSize:22,fontWeight:800,color:T.ink,fontFamily:C.P,lineHeight:1.2}}>Hi {person.name.split(' ')[0]}</div><div style={{fontSize:14,color:T.mid,fontFamily:C.P,marginTop:3}}>{TeamLearn.ROLES[person.role].label} at {TeamData.get().venue.name||'your restaurant'}</div></div></div>
+    {!empty&&<TeamTonightCard pid={pid} open={open} manage={TeamLearn.manages(person.role)}/>}
     {!empty&&TeamLearn.manages(person.role)&&<TeamKpiStrip open={open}/>}
     {empty?<Card><div style={{fontSize:15,color:T.ink2,fontFamily:C.P,lineHeight:1.5}}>No wine list yet. {TeamLearn.ROLES[person.role].label==='Manager'||person.role==='buyer'?'Upload it from the Upload tab and your training is written from it.':'Your manager uploads it, then your training appears here.'}</div></Card>:<>
     {fresh?<div data-testid="team-plan"><Card style={{borderColor:_alpha(cr,0.6)}}>
@@ -573,4 +609,4 @@ function TeamPeople({open,onChanged}){ const T=useTheme(), cr=T.lift(C.cr);
     </div>; })}<div style={{fontSize:14,color:T.mid,fontFamily:C.P}}>Tap a figure to raise it (it wraps back to 50%).</div></Card>
   </div>; }
 
-Object.assign(window,{TeamFace,TeamVenueLogo,TeamCocktail,TeamCocktailList,TeamRing,TeamSetup,TeamToday,TeamDrill,TeamWines,TeamWine,TeamMenu,TeamDish,TeamUpload,TeamPeople,TeamJobChip,TeamKpiStrip,useTeamJob});
+Object.assign(window,{TeamTonightCard,TeamTonightEdit,TeamFace,TeamVenueLogo,TeamCocktail,TeamCocktailList,TeamRing,TeamSetup,TeamToday,TeamDrill,TeamWines,TeamWine,TeamMenu,TeamDish,TeamUpload,TeamPeople,TeamJobChip,TeamKpiStrip,useTeamJob});

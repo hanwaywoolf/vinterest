@@ -250,6 +250,14 @@ const TeamLearn = {
     return {...pr,seen,due,next,nextDue:isFinite(nextDue)?nextDue:null,state,role:person.role};
   },
 
+  /* The wines to look at before service (the Tonight card): by-the-glass wines this person is slipping on (answers due or
+     missed), the most due first, then the glass wines they haven't started that sell most. [{wine, why}] up to n. */
+  slippingOn(pid,n=2){ const person=this.person(pid); if(!person) return []; const sc=this.scope(person.role), out=[];
+    sc.glass.map(w=>({w,st:this.standing(pid,w.id)})).filter(x=>x.st&&x.st.state==='fading').sort((a,b)=>b.st.due-a.st.due).slice(0,n).forEach(x=>out.push({wine:x.w,why:`${x.st.due} answer${x.st.due===1?'':'s'} fading`}));
+    if(out.length<n){ let pri=[]; try{ pri=TeamSales.has()?TeamReport.priority(28,8).map(x=>x.wine.id):[]; }catch(e){}
+      const fresh=sc.glass.filter(w=>!out.some(o=>o.wine.id===w.id)).map(w=>({w,st:this.standing(pid,w.id)})).filter(x=>x.st&&x.st.state==='new').sort((a,b)=>(pri.indexOf(a.w.id)<0?99:pri.indexOf(a.w.id))-(pri.indexOf(b.w.id)<0?99:pri.indexOf(b.w.id)));
+      fresh.slice(0,n-out.length).forEach(x=>out.push({wine:x.w,why:pri.includes(x.w.id)?'a top seller you haven\'t started':'not started yet'})); }
+    return out; },
   /* {pct, parts:{glass:{known,total,need,share}}, state:'ready'|'slipping'|'not', overdue, due} */
   readiness(pid){
     const person=this.person(pid); if(!person) return null;

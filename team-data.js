@@ -23,6 +23,16 @@ const TeamData = {
   setVenue(fields){ const d=this.get(); d.venue={...d.venue,...fields}; this.save(d); },
   setSetting(k,v){ const d=this.get(); d.settings={...(d.settings||{}),[k]:v}; this.save(d); },
   isDemo(){ return (this.get().venue||{}).sample==='demo'; },
+  /* Tonight (docs/business.md, "Pre-shift"): what's 86'd and what's on feature, set at four o'clock by whoever runs the
+     floor (the manager's phone or the console) and gone at the end of the phone's calendar day. Nothing here is scored:
+     it feeds the Tonight card on every Today, Vinny's suggestions and the guest's tables, not readiness. */
+  _day(now=Date.now()){ const x=new Date(now); return `${x.getFullYear()}-${x.getMonth()+1}-${x.getDate()}`; },
+  tonight(now=Date.now()){ const t=(this.get().tonight)||null; const empty={day:this._day(now),off:[],feature:[],note:''};
+    if(!t||t.day!==this._day(now)) return empty; return {...empty,...t,off:(t.off||[]).filter(id=>this.dishes().some(x=>x.id===id)),feature:(t.feature||[]).filter(id=>this.wines().some(w=>w.id===id)||this.cocktails().some(c=>c.id===id))}; },
+  setTonight(fields,now=Date.now()){ const doc=this.get(), t=this.tonight(now); doc.tonight={...t,...fields,day:this._day(now),at:now}; this.save(doc); },
+  toggleTonight(kind,id,now=Date.now()){ const t=this.tonight(now), list=[...(t[kind]||[])], i=list.indexOf(id); if(i>=0) list.splice(i,1); else list.push(id); this.setTonight({[kind]:list},now); return i<0; },
+  isOff(dishId){ return this.tonight().off.includes(dishId); },
+  isFeature(id){ return this.tonight().feature.includes(id); },
   /* A restaurant installed from its own file carries its currency (The Social Corner: CAD); otherwise the device's. */
   /* An amount in the restaurant's currency, thousands grouped with commas ("$8,774", "£1,250.50"), the one way
      every screen writes money it works out. dp is the decimal places (0 by default). */

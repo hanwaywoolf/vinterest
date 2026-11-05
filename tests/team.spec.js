@@ -312,6 +312,31 @@ test('the drill deals one question per wine, caps new things once answers are du
   expect(r.conf).toBeGreaterThan(0); expect(r.conf).toBe(r.money); // confidence is asked on prices, nowhere else yet
 });
 
+// Tonight (TeamData.tonight): a manager 86s a dish and puts a wine on feature; every Today shows it until the day ends,
+// with the two by-the-glass wines that person should look at; Vinny's suggestions pick it up; nothing is scored.
+test('tonight: 86d and the feature set by a manager show on everyone\'s Today with two wines to look at, and clear tomorrow', async ({ context, page }) => {
+  await stubNetwork(context);
+  await page.goto(`${BASE}/team/?seed=socialv2`);
+  await expect(page.getByTestId('team-state')).toBeVisible();
+  await expect(page.getByTestId('team-tonight')).toContainText('Set tonight'); // the manager sees the card empty, with the way in
+  await page.getByTestId('tonight-edit').click();
+  await page.getByTestId('tonight-off').filter({ hasText: 'Fresh Oysters' }).click();
+  await page.getByTestId('tonight-feature').filter({ hasText: 'Lambrusco' }).click();
+  await page.getByText('Done', { exact: true }).click();
+  await expect(page.getByTestId('tonight-off')).toContainText('Fresh Oysters');
+  await expect(page.getByTestId('tonight-feature')).toBeVisible();
+  await expect(page.getByTestId('team-tonight')).toContainText('Lambrusco');
+  // A server sees the same, plus two wines to look at before service, each with Say it.
+  await page.getByTestId('team-who').click(); await page.getByText('Priya ·').click();
+  await expect(page.getByTestId('team-tonight')).toContainText("86'd: Fresh Oysters");
+  await expect(page.getByTestId('tonight-look')).toBeVisible();
+  expect(await page.getByLabel(/^Say /).count()).toBeGreaterThanOrEqual(3);
+  await expect(page.getByTestId('tonight-edit')).toHaveCount(0);
+  const r = await page.evaluate(() => ({ sugg: TeamVinny.suggest(TeamLearn.me().id), tomorrow: TeamData.tonight(Date.now() + 86400000), off: TeamData.isOff('d-fresh-oysters') }));
+  expect(r.sugg[0]).toMatch(/Lambrusco|Medici/); expect(r.sugg).toContain("What's off tonight?");
+  expect(r.tomorrow.off).toEqual([]); expect(r.tomorrow.feature).toEqual([]); expect(r.off).toBe(true);
+});
+
 test('the drill on screen: pick, say how sure, see the answer and why, then the summary', async ({ context, page }) => {
   await openSample(context, page);
   await page.getByText(/Start today's drill/).click();
@@ -1433,21 +1458,21 @@ test('the console dashboard folds and reorders, and remembers it', async ({ brow
   await page.goto(`${BASE}/team/?seed=demo&view=console`);
   await expect(page.getByTestId('console-dash')).toBeVisible();
   const order = () => page.getByTestId('dash-card').evaluateAll((els) => els.map((e) => e.dataset.card));
-  expect((await order())[0]).toBe('glance');
+  expect((await order())[0]).toBe('tonight'); // Tonight leads the dashboard
   await page.getByTestId('dash-fold-people').click();
   await expect(page.locator('[data-card="people"]').getByTestId('dash-summary')).toContainText('ready');
   await page.getByTestId('dash-edit').click();
   await page.getByTestId('dash-top-learn').click();
   await page.getByTestId('dash-down-learn').click();
-  expect((await order()).slice(0, 2)).toEqual(['glance', 'learn']);
+  expect((await order()).slice(0, 2)).toEqual(['tonight', 'learn']);
   await page.getByTestId('dash-edit').click();
   await page.reload();
   await expect(page.getByTestId('console-dash')).toBeVisible();
-  expect((await order()).slice(0, 2)).toEqual(['glance', 'learn']);
+  expect((await order()).slice(0, 2)).toEqual(['tonight', 'learn']);
   await expect(page.locator('[data-card="people"]').getByTestId('dash-summary')).toBeVisible();
   await page.getByTestId('dash-edit').click();
   await page.getByTestId('dash-reset').click();
-  expect((await order())[1]).toBe('attention');
+  expect((await order())[1]).toBe('glance');
   await expect(page.locator('[data-card="people"]').getByTestId('dash-summary')).toHaveCount(0);
   await ctx.close();
 });

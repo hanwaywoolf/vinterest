@@ -128,8 +128,7 @@ const TeamVinny = {
   suggest(pid){
     const ws=TeamData.wines(), ds=TeamData.dishes(), out=[], used=new Set();
     const add=(s,id)=>{ if(out.length>=3||!s||(id&&used.has(id))) return; if(id) used.add(id); out.push(s); };
-    const live=x=>x&&x.status&&x.status.kind;
-    const feat=ws.find(w=>live(w)&&w.status.kind==='feature'), off=ds.find(d=>live(d)&&d.status.kind==='off');
+    const tn=TeamData.tonight(), feat=ws.find(w=>tn.feature.includes(w.id)), off=ds.find(x=>tn.off.includes(x.id));
     if(feat) add(`What do I say about the ${this._nick(feat)}?`,feat.id);
     if(off) add(`What's off tonight?`);
     let sells=[]; try{ if(TeamSales.has()) sells=TeamReport.priority(28,4).map(x=>x.wine); }catch(e){}

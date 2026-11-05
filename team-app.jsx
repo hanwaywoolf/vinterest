@@ -52,6 +52,7 @@ function TeamApp(){
   else if(top) body=stack.map((v,i)=><div key={i} style={{display:i===stack.length-1?'block':'none'}}>{v.view==='wine'?<TeamWine id={v.id} pid={me.id} open={open}/>:v.view==='cocktail'?<TeamCocktail id={v.id} pid={me.id} open={open}/>:v.view==='dish'?<TeamDish id={v.id} open={open}/>
     :v.view==='guest'?<TeamGuest pid={me.id} back={back} open={open}/>
     :v.view==='ask'?<TeamVinnyAsk pid={me.id} open={open}/>
+    :v.view==='tonight'?<TeamTonightEdit back={back}/>
     :v.view==='vtest'?<TeamVinnyTest pid={me.id} open={open}/>
     :v.view==='say'?<TeamSayCheck/>
     :<TeamDrill pid={me.id} only={v.only} part={v.part} given={v.qs} intro={v.intro} back={back} open={open}/>}</div>);

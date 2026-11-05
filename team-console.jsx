@@ -33,6 +33,15 @@ function _CRow({lead,label,value,share,col,sub,right,onClick,testid}){ const T=u
     {(sub||right)&&<div style={{display:'flex',justifyContent:sub?'space-between':'flex-start',alignItems:'center',gap:8,marginTop:5,flexWrap:'wrap'}}>{sub&&<span style={{fontSize:12,color:T.mid,fontFamily:C.P,lineHeight:1.4,minWidth:0}}>{sub}</span>}{right&&<span style={{display:'flex',gap:6,flexShrink:0}}>{right}</span>}</div>}
   </div>; }
 /* "Demo data": on every sales figure while the till is invented. */
+/* The console's Tonight: two columns of chips, tap to 86 a dish or feature a wine. */
+function _CTonight({tn,bump}){ const T=useTheme();
+  const chip=(kind,id,name,on,col)=><span key={kind+id} role="button" data-testid={`dash-tonight-${kind}`} aria-pressed={on} onClick={()=>{ TeamData.toggleTonight(kind,id); bump(); }} style={{display:'inline-block',padding:'5px 11px',borderRadius:12,border:`1px solid ${on?col:T.line}`,background:on?_alpha(col,0.14):'transparent',color:on?T.ink:T.mid,fontSize:13,fontFamily:C.P,cursor:'pointer',margin:'0 6px 6px 0'}}>{name}</span>;
+  const [more,setMore]=React.useState(false), ds=TeamData.dishes(), ws=TeamData.wines();
+  return <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:14}}>
+    <div>{_cLabel(T,"86'd tonight")}<div>{(more?ds:[...ds.filter(x=>tn.off.includes(x.id)),...ds.filter(x=>!tn.off.includes(x.id))].slice(0,10)).map(x=>chip('off',x.id,x.name,tn.off.includes(x.id),'#F28B7D'))}</div></div>
+    <div>{_cLabel(T,'On feature')}<div>{(more?ws:[...ws.filter(x=>tn.feature.includes(x.id)),...ws.filter(x=>!tn.feature.includes(x.id))].slice(0,10)).map(x=>chip('feature',x.id,TeamData.short(x),tn.feature.includes(x.id),'#5FD48F'))}</div></div>
+    <div role="button" onClick={()=>setMore(x=>!x)} style={{fontSize:13,fontWeight:700,color:T.lift(C.cr),fontFamily:C.P,cursor:'pointer'}}>{more?'Fewer':'Show the whole list and menu'}</div>
+  </div>; }
 function _CDemoTag(){ const T=useTheme(); if(!TeamSales.demo()) return null; return <span data-testid="demo-tag" style={{fontSize:11,fontWeight:700,fontFamily:C.P,color:T.amber,border:`1px solid ${T.amber}66`,borderRadius:6,padding:'1px 6px',letterSpacing:'0.04em'}}>Demo data</span>; }
 /* A stat tile: label, value, an optional signed delta against the period before, and a line under it. */
 function _CStat({label,value,delta,up='good',sub,onClick,testid,hero,demo}){ const T=useTheme();
@@ -132,7 +141,7 @@ const _WHY_COL={faded:'amber',new:'cr',overdue:'bad',idle:'mid'};
 /* The dashboard: a summary of every area as cards, each folding to one line, in the order the person viewing chose
    (TeamLayout: "Edit layout" to drag a card or move it up and down, Reset to the default). Sales live on their own
    tab (Sales Insights); here they're three lines and a link. */
-const _DASH_DEFAULT=['glance','attention','sales','people','learn','new','cocktails'];
+const _DASH_DEFAULT=['tonight','glance','attention','sales','people','learn','new','cocktails'];
 function _CDash({open,setSection,me}){ const T=useTheme(), cr=T.lift(C.cr), size=useLayoutSize(), cols=size==='roomy'?2:1;
   const o=TeamReport.overview(), ps=TeamReport.people().sort((a,b)=>b.r.pct-a.r.pct), slip=TeamReport.slipping(), sales=TeamReport.salesSummary(7), demo=TeamSales.demo();
   const byRole=TeamReport.byRole(), pri=TeamSales.has()?TeamReport.priority():[], weak=TeamLearn.weakWines().filter(x=>x.of>0).slice(0,6), brief=TeamReport.salesBrief();
@@ -142,7 +151,11 @@ function _CDash({open,setSection,me}){ const T=useTheme(), cr=T.lift(C.cr), size
   const topGlass=Math.max(1,...pri.map(x=>x.qty),...weak.map(()=>1));
   const cov=TeamData.cocktails().length?TeamReport.cocktailCoverage():[], covOk=cov.filter(c=>c.of&&c.knows>=Math.max(1,Math.ceil(c.of/2))).length;
   const pid=(me&&me.id)||'console', [edit,setEdit]=React.useState(false), [,bump]=React.useReducer(x=>x+1,0), [drag,setDrag]=React.useState(null);
+  const tn=TeamData.tonight(), [,bumpT]=React.useReducer(x=>x+1,0);
   const cards={
+    tonight:{title:'Tonight',wide:true,summary:tn.off.length||tn.feature.length?`${tn.off.length} 86'd · ${tn.feature.length} on feature`:'Nothing set yet',body:<div data-testid="dash-tonight">
+      <_CTonight tn={tn} bump={bumpT}/>
+      {_cNote(T,"What's 86'd and what's on feature, on every Today until the end of the day, with the two wines each person should look at before service. Never scored.")}</div>},
     glance:{title:'At a glance',wide:true,summary:`${o.avg}% ready · ${o.behind} behind · ${o.slipping} slipping${sales?` · ${_cMoney(sales.revenue)} wine this week`:''}`,body:<div style={grid(sales?3:5)}>
       <_CStat hero label="Team readiness" value={`${o.avg}%`} sub={`${o.ready} of ${o.total} ready · ${byRole.filter(r=>r.n>1||r.role==='server').map(r=>`${r.label}s ${r.avg}%`).slice(0,2).join(' · ')}`} testid="dash-readiness" onClick={()=>setSection('team')}/>
       <_CStat label="Behind" value={o.behind} sub={o.behind?`${o.behind===1?'person is':'people are'} past the wave they're on`:'everyone on track with their waves'} testid="dash-overdue" onClick={()=>setSection('team')}/>
