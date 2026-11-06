@@ -93,6 +93,18 @@ A question is only worth asking if a trained sommelier would stand behind its an
 
 Ten questions also have to read as ten different things. `TeamLearn.spread` keeps one question per right answer (near-identical answers count as one) and deals them so no two in a row are about the same wine or dish, ask about the same thing (a grape, a place, a flavour, a dish, a table) or share an answer. Vinny's test draws three candidates per question and the drill two, in priority order, so faded and missed answers still lead.
 
+### How a question earns its place (built)
+
+The rules every question is held to, and checked against in code and in `tests/team.spec.js`:
+
+1. **One defensible answer.** The key is what a head sommelier would say; every wrong answer is one the restaurant's own pairings rule out (`clearlyWrong`: the dish's avoid, far from every pick in style (`DECOY_GAP`), or a colour none of its picks has), never merely less good. A Barolo beside a Brunello at a Bolognese is never offered as wrong.
+2. **Believable wrong answers.** The same kind and register as the right one, and real mistakes: a wrong wine is on the list at its own price, honours what the guest asked for (`wishIn`: a white when they asked for a white, by the glass when they asked for a glass) and is the nearest plausible kind (`NEAR`), never a dessert wine at a steak. A wrong reason is a different mistake from the others (`claimsIn`: one per claim, so "light" and "low in tannin" aren't three answers ruled out at once), never a claim no wine of this kind could make (bubbles for a still wine, sweetness for a red, tannin for a white), and leads with ones written for the question (`wrong`, three per table question, from the card prompts at publish and backfilled for the restaurants already in the repo by `scripts/team-wrong.mjs`).
+3. **No clues.** No right answer stands out by its length (`lengthCue` at publish; at a table, a terse right reason beside long wrong ones is left out), by naming the dish when the wrong ones don't (the fallback wrong reasons never name it), or by a word the question gives away (`givesAway`).
+4. **The decision, then the reason.** A table question that names its own wine is asked as the guest would ask it ("…What would you suggest, and why?", `_decide`) wherever the list holds at least two wines that honour the request and are clearly wrong for the dish; the right reasons lead with the sommelier's own reason for that wine at that dish. Where there's no fair choice, the question says which wine and asks why ("You suggest the Nyetimber. Why does it work?"), rather than offer a choice of one.
+5. **Watched in use.** `TeamLearn.questionHealth` reads each person's first answer to each question (`first`, recorded in `record`, never for seeded demo answers); once four or more have answered, one right first time by nearly everyone and surely is flagged as possibly giving itself away, one missed by most as worth checking. The console's Wines section lists them as "Questions to look at".
+
+On the restaurants in the repo, 10 of the Larkspur's 30 table questions and 11 of Social Corner's 63 ask for the choice (or a steer); the rest name the wine and ask why, because on those lists everything of the kind the guest asked for suits the dish. The next step is to have the card prompt set each table's request so the list holds wines of that kind that are clearly wrong for it ("a red that isn't heavy" with the duck, where the big reds are wrong).
+
 ## Vinny in the staff app (built)
 
 A Vinny tab (between Today and Wines) and a row on Today, all in `team-vinny.js` (logic) and `team-vinny.jsx` (screens):

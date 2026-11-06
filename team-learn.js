@@ -93,7 +93,18 @@ const TeamLearn = {
   wineQs(id){ const doc=TeamData.get(); let m=this._qsCache.get(doc); if(!m){ m=new Map(); this._qsCache.set(doc,m); }
     if(!m.has(id)) m.set(id,this._buildQs(id));
     return m.get(id).map(q=>({...q})); },
-  _buildQs(id){ const c=TeamData.card(id); return (c&&c.qs||[]).map(q=>this._unspoil({...q,wine:id})).filter(Boolean).map(x=>{ if(x.k!=='recognise') return x;
+  _buildQs(id){ const c=TeamData.card(id); return (c&&c.qs||[]).map(q=>this._unspoil({...q,wine:id})).filter(Boolean).map(x=>{
+    // A table question whose answers can't be built from what the list says (too few believable wrong ones)
+    // isn't asked; the publish check sends it back to be rewritten.
+    if(x.k==='apply'){ const d=this._decide(x); let c=null; try{ c=this._applyChoices(d); }catch(e){ return d; } if(!c) return null;
+      // No fair choice of wine here (nothing on the list the guest's request and the dish both rule out): the
+      // question says which wine it is, so "Why it works" has something to be about.
+      const w=TeamData.wine(id), named=w&&[TeamData.short(w),w.name].some(n=>n&&this._norm(d.q).includes(this._norm(n)));
+      if(w&&!named&&!c.steer&&c.groups&&c.groups.length===1&&c.groups[0].label==='Why it works'){ const sents=(String(d.q).match(/[^.?!]+[.?!]*/g)||[d.q]).map(t=>t.trim()).filter(Boolean);
+        const scen=sents.length>1&&/\?$/.test(sents[sents.length-1])?sents.slice(0,-1).join(' '):sents.join(' ');
+        return {...d,q:`${/[.?!]$/.test(scen)?scen:scen+'.'} You suggest the ${TeamData.short(w)}. Why does it work?`}; }
+      return d; }
+    if(x.k!=='recognise') return x;
     x=this._sameKind(x); if(!x||this.givesAway(x)) return null;
     const order=this._shuffle(x.opts.map((_,i)=>i),x.id); return {...x,opts:order.map(i=>this._cap(x.opts[i])),a:order.indexOf(x.a)}; }).filter(Boolean); },
   /* Low's own questions, built from the card with no Claude call: which line you'd tell a guest about it
@@ -123,11 +134,51 @@ const TeamLearn = {
     const ranked=menu.filter(x=>this.rankAt(id,x.id)<99).sort((a,b)=>this.rankAt(id,a.id)-this.rankAt(id,b.id)||((TeamData.pairing(a.id)||{}).best||[]).length-((TeamData.pairing(b.id)||{}).best||[]).length||this._hash(id+a.id)-this._hash(id+b.id));
     const top=ranked[0]||menu.find(x=>own.has(x.id));
     if(top){ const p=TeamData.pairing(top.id)||{}, pick=[...(p.best||[]),p.cocktail,p.glass].filter(Boolean).find(b=>b.id===id), cw=(c.dishes||[]).find(x=>byName(x.dish)===top);
-      const wrongFor=x=>x.id!==top.id&&!own.has(x.id)&&this.rankAt(id,x.id)===99&&(drink||this.tableFit(id,x.id)!=='good');
+      const wrongFor=x=>x.id!==top.id&&!own.has(x.id)&&this.rankAt(id,x.id)===99&&(drink||this.clearlyWrong(id,x.id));
       const wrong=this._shuffle(menu.filter(wrongFor),id).slice(0,3);
       if(wrong.length===3) out.push(this._light(id+'#pair',`Which dish on our menu is the best match for the ${name}?`,[top.name,...wrong.map(x=>x.name)],(pick&&pick.why)||(cw&&cw.why)||'',id)); }
     return out.filter(q=>!this.givesAway(q)); },
   _light(qid,q,opts,why,wine){ const order=this._shuffle(opts.map((_,i)=>i),qid); return {id:qid,k:'recognise',q,opts:order.map(i=>this._cap(opts[i])),a:order.indexOf(0),why,wine,light:true}; },
+  /* At the table the decision comes first. A card's table question often names its own wine ("A guest is
+     having the venison and wants a bottle with character. How would you recommend the Bandol?"), which hands
+     over the pairing and leaves only the reason to test. Where the scenario stands without the wine's name
+     and names a dish the wine suits, it's asked as the guest would ask it: "…What would you suggest, and
+     why?", so the server picks the wine from four (three the pairings rule out) and then says why. The id is
+     unchanged, so progress on it carries over. A key that steers to another wine is left as written. */
+  // The wrong wines for a table: on the list (never invented, never another price), ones the pairings rule out
+  // for this dish, of the nearest plausible kinds (a rosé or a white beside a red; a dessert or fortified wine
+  // only for one), wines and cocktails apart.
+  NEAR:{red:['red','orange','rosé','white'],white:['white','orange','sparkling','rosé'],'rosé':['rosé','white','sparkling','red'],sparkling:['sparkling','white','rosé'],orange:['orange','white','red','rosé'],sweet:['sweet','fortified','white'],fortified:['fortified','sweet','red'],cocktail:['cocktail']},
+  /* Clearly wrong at a dish, the standard for a wrong answer: the dish's own avoid, or far from every pick in
+     body, tannin and sweetness together (DECOY_GAP), or a colour none of its picks has. A Barolo beside a Brunello at a Bolognese is neither: a sommelier would pour it, so it's
+     never offered as wrong. */
+  DECOY_GAP:5,
+  clearlyWrong(wineId,dishId){ const pr=TeamData.pairing(dishId); if(!pr) return false; if(pr.avoid&&pr.avoid.id===wineId) return true;
+    const picks=[...(pr.best||[]).map(b=>b.id),pr.glass&&pr.glass.id].filter(Boolean); if(!picks.length||picks.includes(wineId)) return false;
+    const st=id=>(TeamData.card(id)||{}).style||{}, a=st(wineId); if(a.body==null) return false;
+    const gap=Math.min(...picks.map(id=>{ const b=st(id); return b.body==null?99:Math.abs(a.body-b.body)+Math.abs((a.tannin||0)-(b.tannin||0))+Math.abs((a.sweet||0)-(b.sweet||0)); }));
+    const w=TeamData.wine(wineId), otherColour=w&&picks.every(id=>{ const p=TeamData.wine(id); return p&&this.kindOf(p)!==this.kindOf(w); });
+    // A colour none of the dish's picks has is a deliberate "no" (a Sancerre with venison whose picks are all
+    // red, a red with oysters), whatever the figures say: a light Pinot pick sits near a crisp white on paper.
+    return gap>=this.DECOY_GAP||otherColour; },
+  // What the guest asked for, read from the question: a colour or kind, and a glass or a bottle. Every wrong
+  // wine honours it, or the request alone would point at the answer.
+  wishIn(text){ const t=String(text||'').toLowerCase();
+    const kind=/\bcocktail|\bmocktail|\bspritz\b/.test(t)?'cocktail':/\bsparkling|\bfizz|\bbubbl|champagne/.test(t)?'sparkling':/\bros[eé]\b/.test(t)?'rosé':/\bwhite\b/.test(t)?'white':/\bred\b/.test(t)?'red':/\bsweet\b|\bdessert wine|\bsticky\b/.test(t)?'sweet':/\bport\b|\bsherry\b|fortified/.test(t)?'fortified':null;
+    return {kind,side:/\bglass\b/.test(t)?'glass':/\bbottle\b/.test(t)?'bottle':null}; },
+  tableDecoys(rw,dish,seed,fit=()=>0,wish={}){ const pr=TeamData.pairing(dish.id)||{}, picks=new Set([...(pr.best||[]).map(b=>b.id),pr.glass&&pr.glass.id,pr.cocktail&&pr.cocktail.id].filter(Boolean));
+    const order=wish.kind?[wish.kind]:(this.NEAR[this.kindOf(rw)]||[this.kindOf(rw)]), plaus=w=>order.indexOf(this.kindOf(w));
+    const sold=w=>wish.side==='glass'?!!w.glass:wish.side==='bottle'?!!w.bottle:true;
+    return this._shuffle(TeamData.wines().filter(w=>w.id!==rw.id&&plaus(w)>=0&&sold(w)&&!picks.has(w.id)&&this.clearlyWrong(w.id,dish.id)),seed).sort((a,b)=>plaus(a)-plaus(b)||fit(a)-fit(b)).slice(0,3); },
+  _decide(q){ const w=TeamData.wine(q.wine); if(!w) return q;
+    const names=[TeamData.short(w),w.name].filter(Boolean).map(n=>this._norm(n)), names_in=s=>names.some(n=>n.length>3&&this._norm(s).includes(n));
+    const sents=(String(q.q).match(/[^.?!]+[.?!]*/g)||[q.q]).map(x=>x.trim()).filter(Boolean);
+    if(!sents.some(names_in)) return q;
+    const others=TeamData.wines().filter(o=>o.id!==w.id).map(o=>this._norm(TeamData.short(o))).filter(n=>n.length>3);
+    if((q.key||[]).some(k=>others.some(n=>this._norm(k).includes(n)))) return q;
+    const kept=sents.filter(x=>!names_in(x)); if(!kept.length) return q;
+    const scen=kept.join(' ').replace(/[,;:\s]+$/,''), d=this.dishIn(scen); if(!d||this.tableFit(w.id,d.id)!=='good'||this.tableDecoys(w,d,q.id,undefined,this.wishIn(scen)).length<2) return q;
+    return {...q,q:`${/[.?!]$/.test(scen)?scen:scen+'.'} What would you suggest, and why?`,decided:true}; },
   /* A server always knows what kind of wine it is (the list says so), so a wrong answer describing another
      kind ("Full-bodied oaky white" for a rosé, "Golden with honey" for a Barolo) gives the answer away.
      Each one is swapped for a description of the same kind with this wine's style turned round
@@ -144,7 +195,8 @@ const TeamLearn = {
     (ids||TeamData.wines().map(w=>w.id)).forEach(id=>{ const c=TeamData.card(id); (c&&c.qs||[]).forEach(raw=>{ const q={...raw,wine:id};
       const fail=(why,note)=>out.push({wine:id,q:raw,why,note});
       const un=this._unspoil(q); if(!un) return fail('giveaway',/\bor\b/i.test(q.q)?'it offers its own answer as one of two choices in the question':'the answer is in the question');
-      if(q.k==='recognise'){ const k=this._sameKind(un); if(!k) return fail('giveaway','the wrong answers are another kind of wine'); if(this.givesAway(k)) return fail('giveaway','a word in the question is only in the right answer'); return; }
+      if(q.k==='recognise'){ const k=this._sameKind(un); if(!k) return fail('giveaway','the wrong answers are another kind of wine'); if(this.givesAway(k)) return fail('giveaway','a word in the question is only in the right answer');
+        if(this.lengthCue(k)) return fail('cue','the right answer stands out by its length: make every option about as long'); return; }
       let c2=null; try{ c2=this.choices(un); }catch(e){}
       const wrong=c2?c2.opts.length-c2.right.length:0;
       if(!c2||wrong<this.MIN_WRONG) return fail('thin','too few believable wrong answers');
@@ -155,6 +207,18 @@ const TeamLearn = {
         if(!steers) return fail('mismatch',`the guest's dish, the ${d.name}, doesn't suit this wine`); } }
     }); });
     return out; },
+  // The right option much longer or much shorter than every wrong one picks itself out.
+  lengthCue(q){ if(!q.opts||q.a==null) return false; const L=q.opts.map(o=>String(o).length), r=L[q.a], w=L.filter((_,i)=>i!==q.a); return r>1.6*Math.max(...w)||r<0.6*Math.min(...w); },
+  /* How each question does in use, from every person's first answer to it (`first`, set in record): right
+     first time by nearly everyone, and surely, means a clue in it or nothing worth asking; missed by most
+     means a doubtful answer or an unfair question. The console lists both for the manager to look at. */
+  HEALTH_MIN:4,
+  questionHealth(){ const all=this._all(), by={};
+    Object.values(all).forEach(m=>Object.entries((m&&m.items)||{}).forEach(([id,it])=>{ if(!it||!it.first) return; const b=by[id]=by[id]||{n:0,right:0,sure:0}; b.n++; if(it.first.ok){ b.right++; if(it.first.sure==='sure') b.sure++; } }));
+    const qs=new Map(); TeamData.wines().forEach(w=>[...this.wineQs(w.id),...this.lightQs(w.id)].forEach(q=>qs.set(q.id,q))); TeamData.dishes().forEach(d=>this.dishQs(d.id).forEach(q=>qs.set(q.id,q)));
+    return Object.entries(by).filter(([id,b])=>b.n>=this.HEALTH_MIN&&qs.has(id)).map(([id,b])=>{ const share=b.right/b.n;
+      return {q:qs.get(id),n:b.n,share,flag:share>=0.95&&b.sure/b.n>=0.75?'easy':share<=0.3?'missed':null}; })
+      .filter(x=>x.flag).sort((a,b)=>(a.flag===b.flag?0:a.flag==='missed'?-1:1)||b.n-a.n); },
   /* A last check on any four-option question: a telling word of the question that the right option holds
      and no wrong option does ("rosé" in "…Côtes de Provence Rosé?" and only in "Pale, dry rosé…") picks
      the answer without knowing anything. Such a question is left out rather than asked. */
@@ -235,7 +299,7 @@ const TeamLearn = {
     // Wrong wines are ones a sommelier would steer away from here (the dish's avoid, then wines tableFit
     // calls a steer), wines and cocktails kept apart; none of its picks, so "best" has one answer.
     const drink=TeamData.isDrink(best), picks=new Set([...p.best.map(b=>b.id),p.glass&&p.glass.id,p.cocktail&&p.cocktail.id].filter(Boolean));
-    const clear=TeamData.wines().filter(w=>!picks.has(w.id)&&TeamData.isDrink(w)===drink&&this.tableFit(w.id,id)!=='good');
+    const clear=TeamData.wines().filter(w=>!picks.has(w.id)&&TeamData.isDrink(w)===drink&&this.clearlyWrong(w.id,id));
     const pick=[...(p.avoid&&TeamData.wine(p.avoid.id)&&!picks.has(p.avoid.id)?[TeamData.wine(p.avoid.id)]:[]),...this._shuffle(clear.filter(w=>w.type===best.type),id),...this._shuffle(clear,id+'x')]
       .filter((w,i,a)=>a.indexOf(w)===i).slice(0,3);
     const opts=[best,...pick].map(w=>TeamData.short(w)), order=this._shuffle([0,1,2,3],id);
@@ -508,7 +572,7 @@ const TeamLearn = {
       // Only wines this dish plainly doesn't suit (tableFit), so a wine that would also work never sits among the
       // wrong answers; a short list is made up from well-known bottles that aren't on it.
       const drinkQ=rw?TeamData.isDrink(rw):false;
-      this._shuffle(wines.filter(w=>!ok.has(w.id)&&w.id!==q.wine&&TeamData.isDrink(w)===drinkQ&&(!q.dish||this.tableFit(w.id,q.dish)!=='good')),this._seed(q)+'n').sort((a,b)=>dist(a)-dist(b)).forEach(w=>add(TeamData.short(w)));
+      this._shuffle(wines.filter(w=>!ok.has(w.id)&&w.id!==q.wine&&TeamData.isDrink(w)===drinkQ&&(!q.dish||this.clearlyWrong(w.id,q.dish))),this._seed(q)+'n').sort((a,b)=>dist(a)-dist(b)).forEach(w=>add(TeamData.short(w)));
       if(pool.length<4) this.offList(rw?this.kindOf(rw):'red',4-pool.length,this._seed(q)+'f').forEach(add);
       const keep=pool.slice(0,7), all=[...right.map(x=>({x,ok:true})),...keep.map(x=>({x,ok:false}))], order=this._shuffle(all.map((_,i)=>i),this._seed(q)+'c');
       return {opts:order.map(i=>this._cap(all[i].x)),right:order.map((i,j)=>all[i].ok?j:-1).filter(j=>j>=0),n:right.length};
@@ -631,23 +695,26 @@ const TeamLearn = {
       const strong=/\bstrong\b|boozy|spirit-forward|powerful|stands up/.test(x), light=/low in alcohol|alcohol-free|\blight\b|gentle/.test(x), fizz=/\bbubbles?\b|\bfizz|sparkling|spritz/.test(x);
       return (sweet&&v('sweet')!=null&&v('sweet')<=1)||(dry&&v('sweet')!=null&&v('sweet')>=4)||(bitter&&v('bitter')!=null&&v('bitter')<=1)||(sour&&v('sour')!=null&&v('sour')<=1)
         ||(strong&&v('strong')!=null&&v('strong')<=1)||(light&&v('strong')!=null&&v('strong')>=4)||(fizz&&st.fizz===false); }
-    const claims={
-      tannin:/\btannin|\bgrip|\bgrippy|\bstructured?\b/.test(x)&&!/(soft|low|no|gentle|silky|light|little|without)\s+(\w+\s+)?tannin|tannin[- ]free|almost no tannin/.test(x),
-      full:/full[- ]bodied|full body|\b(its|a) (full|big|bold|heavy|powerful|weighty)\b|\bheavyweight\b|\bweight to\b/.test(x),
-      light:/\b(light|delicate|lean)[- ](bodied|and|wine)|\bit'?s light\b|\bit is light\b|light body/.test(x),
-      sweet:/\b(its|the|of) (gentle |rich |honeyed )?sweetness\b|\bit'?s sweet\b|\bit is sweet\b|\bsweet wine\b|\bhoneyed\b|\bluscious\b/.test(x)&&!/not (too )?sweet|off-dry/.test(x),
-      dry:/bone[- ]dry|\bit'?s dry\b|\bit is dry\b|\bdry wine\b/.test(x),
-      bubbles:/\bbubble|\bfizz|\bsparkl|\bmousse\b/.test(x),
-      acid:/high acid|\bcrisp\b|\bzesty\b|\bzippy\b|\bsharp\b|bright acid|acidity cuts|racy/.test(x),
-      soft:/soft acid|low acid|gentle acid|low in acidity/.test(x),
-      untannic:/almost no tannin|tannin[- ]free|no tannin|soft tannin|low tannin/.test(x),
-      still:/\bstill\b/.test(x),
-    };
+    const claims=this.claimsIn(x);
     return (claims.tannin&&v('tannin')!=null&&v('tannin')<=1)||(claims.full&&v('body')!=null&&v('body')<=2)||(claims.light&&v('body')!=null&&v('body')>=4)
       ||(claims.sweet&&v('sweet')!=null&&v('sweet')<=1)||(claims.dry&&v('sweet')!=null&&v('sweet')>=4)||(claims.bubbles&&kind!=='sparkling')
       ||(claims.acid&&v('acid')!=null&&v('acid')<=2)||(claims.soft&&v('acid')!=null&&v('acid')>=4)||(claims.untannic&&v('tannin')!=null&&v('tannin')>=4)||(claims.still&&kind==='sparkling'); },
+  // What a reason claims about a wine's style, as flags; contradicts checks them against the card, and a table
+  // question keeps one wrong reason per claim.
+  claimsIn(t){ const x=String(t||'').toLowerCase(); return {
+      tannin:/\btannin|\bgrip|\bgrippy|\bstructured?\b/.test(x)&&!/(soft|low|no|gentle|silky|light|little|without)\s+(\w+\s+)?tannin|tannin[- ]free|almost no tannin/.test(x),
+      full:/full[- ]bodied|full body|\b(its|a) (full|big|bold|heavy|powerful|weighty)\b|\bheavyweight\b|\bweight to\b|\bweighty\b/.test(x),
+      light:/\b(light|delicate|lean)[- ](bodied|and|wine)|\bit'?s light\b|\bit is light\b|light body|being light|light, fresh body/.test(x),
+      sweet:/\b(its|the|of|a) (gentle |rich |honeyed )?sweetness\b|\bit'?s sweet\b|\bit is sweet\b|\bsweet wine\b|\bhoneyed\b|\bluscious\b|\boff-dry\b|hint of sweetness|touch of sweetness/.test(x)&&!/not (too )?sweet/.test(x),
+      dry:/bone[- ]dry|\bit'?s dry\b|\bit is dry\b|\bdry wine\b|\bdry finish\b/.test(x),
+      bubbles:/\bbubble|\bfizz|\bsparkl|\bmousse\b/.test(x),
+      acid:/high acid|\bcrisp\b|\bzesty\b|\bzippy\b|\bsharp\b|bright acid|acidity cuts|racy/.test(x),
+      soft:/soft acid|low acid|gentle acid|low in acidity|round acidity|soft, round acidity|mellow and low|low acidity/.test(x),
+      untannic:/almost no tannin|tannin[- ]free|no tannin|soft tannin|low tannin|low in tannin|gentle tannins|soft, gentle tannins/.test(x),
+      still:/\bstill\b/.test(x),
+    }; },
   /* This wine's style turned round at this table, one line per trait it sits at an end of. */
-  styleWrong(st,kind,dish,seed=''){ const v=k=>typeof st[k]==='number'?st[k]:null, out=[], d=`the ${dish}`;
+  styleWrong(st,kind,dish,seed=''){ const v=k=>typeof st[k]==='number'?st[k]:null, out=[], d='the food';
     const one=(...xs)=>out.push(xs[Math.abs(this._hash(String(seed)+xs[0]))%xs.length]);
     if(kind==='cocktail'){
       if(v('sweet')!=null&&v('sweet')<=1) one(`Its rich sweetness balances the savoury flavours of ${d}`,`It's a sweet, dessert-like drink that softens ${d}`);
@@ -659,16 +726,19 @@ const TeamLearn = {
       if(v('sour')!=null&&v('sour')<=1) one(`Its sharp, tart citrus cuts through ${d}`);
       if(st.fizz===false) one(`Its bubbles scrub the palate clean between bites of ${d}`);
       return out; }
-    if(v('tannin')!=null&&v('tannin')<=1) one(`Its firm tannins grip the richness of ${d}`,`It has the grippy tannin to stand up to ${d}`);
-    if(v('tannin')!=null&&v('tannin')>=4) one(`It has almost no tannin, so it stays soft beside ${d}`,`Its silky, tannin-free texture is gentle with ${d}`);
-    if(v('body')!=null&&v('body')<=2) one(`Its full, heavy body matches the weight of ${d}`,`It's a big, powerful wine with the weight for ${d}`);
-    if(v('body')!=null&&v('body')>=4) one(`It's light and delicate, so it won't overpower ${d}`,`Its light body lets ${d} take the lead`);
-    if(v('sweet')!=null&&v('sweet')<=1) one(`Its sweetness balances the savoury flavours of ${d}`,`It's a sweet wine, so it softens the salt in ${d}`);
-    if(v('sweet')!=null&&v('sweet')>=4) one(`It's bone dry, so it cuts straight through ${d}`,`Its dry, lean finish refreshes after ${d}`);
-    if(v('acid')!=null&&v('acid')<=2) one(`Its sharp, high acidity cuts through ${d}`,`It's crisp and zesty, so it lifts ${d}`);
-    if(v('acid')!=null&&v('acid')>=4) one(`Its soft, low acidity keeps it gentle with ${d}`,`It's round and low in acidity, so it never fights ${d}`);
-    if(kind!=='sparkling') one(`Its bubbles scrub the palate clean between bites of ${d}`,`Its fine fizz refreshes the palate after ${d}`);
-    if(kind==='sparkling') one(`It's a still, rich wine that lets ${d} take the lead`);
+    // A wine is wrong about itself only in ways a server could believe of it: a red's tannin, body and
+    // acidity; a white's, rosé's or sparkling wine's body, acidity and a touch of sweetness. Never another kind
+    // of wine (fizz for a Bandol, sweetness for a Barolo), which anyone can rule out. No dish name either, since
+    // a wrong answer that names the dish when the right one doesn't is a clue in itself.
+    const red=kind==='red'||kind==='fortified'||kind==='orange', white=['white','rosé','sparkling'].includes(kind);
+    if(red&&v('tannin')!=null&&v('tannin')<=1) one(`Its firm tannins give it the grip a rich dish needs`,`It has plenty of tannin to stand up to the meat`,`Its grippy structure holds its own against the food`);
+    if(red&&v('tannin')!=null&&v('tannin')>=4) one(`Its soft, gentle tannins keep it smooth with the food`,`It's low in tannin, so it stays silky alongside the food`,`Soft tannins mean it won't clash with the dish`);
+    if(v('body')!=null&&v('body')<=2) one(`It's full-bodied, with the weight to match a rich dish`,`Its big, powerful body matches the weight of the food`,`A weighty wine for a weighty plate`);
+    if(v('body')!=null&&v('body')>=4) one(`It's light-bodied, so it won't overpower the food`,`Its light, fresh body lets the dish take the lead`,`Being light, it keeps the pairing delicate`);
+    if(v('acid')!=null&&v('acid')<=2) one(`Its high acidity cuts through the richness`,`It's crisp and fresh, so it lifts every bite`,`Bright, zesty acidity refreshes the palate between bites`);
+    if(v('acid')!=null&&v('acid')>=4) one(`Its soft, round acidity keeps it gentle with the food`,`It's mellow and low in acidity, so it never fights the dish`,`Low acidity keeps it smooth against the sauce`);
+    if(white&&v('sweet')!=null&&v('sweet')<=1) one(`A touch of sweetness balances the salt and spice`,`Its hint of sweetness softens any heat in the dish`,`Being off-dry, it rounds out the savoury flavours`);
+    if((white||kind==='sweet')&&v('sweet')!=null&&v('sweet')>=4) one(`It's bone dry, so it cleanses the palate`,`Its dry finish cuts straight through the food`);
     return out; },
   _hash(str){ let h=2166136261; for(let i=0;i<str.length;i++){ h^=str.charCodeAt(i); h=Math.imul(h,16777619); } return h>>>0; },
   /* The dish a question is about: the menu dish with the largest share of its name's telling words in the
@@ -734,11 +804,18 @@ const TeamLearn = {
     // A cocktail is offered among cocktails and a wine among wines, never one for the other.
     const near=['sparkling','white','rosé','orange','red','sweet','fortified'], dist=w=>TeamData.isDrink(w)!==TeamData.isDrink(rw)?9:TeamData.isDrink(w)?0:Math.abs(near.indexOf(this.kindOf(w))-near.indexOf(this.kindOf(rw)));
     const fit=w=>side==='glass'&&!w.glass?1:0;
-    const listDecoys=this._shuffle(wines.filter(w=>w.id!==rw.id&&dist(w)<=1),this._seed(q)+'o').sort((a,b)=>dist(a)-dist(b)||fit(a)-fit(b)).slice(0,3).map(w=>({x:offer(w),ok:false}));
-    // Too few wines of the kind on the list: a well-known bottle that isn't on it, priced like the list's own.
+    // With a dish in the question, a wrong wine is one the pairings rule out for it (never another of its
+    // picks, which a sommelier would pour too), of the nearest kind so it's a mistake a server could make.
+    const tableDish=this.dishIn(q.q), pr0=tableDish?TeamData.pairing(tableDish.id)||{}:{}, picks0=new Set([...(pr0.best||[]).map(b=>b.id),pr0.glass&&pr0.glass.id,pr0.cocktail&&pr0.cocktail.id].filter(Boolean));
+    const ruledOut=w=>!tableDish||(!picks0.has(w.id)&&this.tableFit(w.id,tableDish.id)!=='good');
+    const listDecoys=(tableDish?this.tableDecoys(rw,tableDish,this._seed(q)+'o',fit,this.wishIn(q.q)):this._shuffle(wines.filter(w=>w.id!==rw.id&&dist(w)<=1),this._seed(q)+'o').sort((a,b)=>dist(a)-dist(b)||fit(a)-fit(b)).slice(0,3)).map(w=>({x:offer(w),ok:false}));
+    // Too few wines of the kind on the list, away from a table: a well-known bottle that isn't on it, priced
+    // like the list's own. At a table the list's own ruled-out wines are enough; three options beat an invented one.
     const priceLike=side==='glass'&&rw.glass?`${rw.glass} a glass`:rw.bottle?`${rw.bottle} a bottle`:'';
-    const extra=this.offList(this.kindOf(rw),3-listDecoys.length,this._seed(q)+'f').map(n=>({x:`The ${n}${priceLike?`, ${priceLike}`:''}`,ok:false}));
+    const extra=tableDish?[]:this.offList(this.kindOf(rw),3-listDecoys.length,this._seed(q)+'f').map(n=>({x:`The ${n}${priceLike?`, ${priceLike}`:''}`,ok:false}));
     const offers=[{x:offer(rw),ok:true},...listDecoys,...extra];
+    // A choice of one isn't a choice: with fewer than two wrong wines, the question asks only why.
+    const choose=offers.length>=3;
     // A reason as something to say: "Say it's dry" → "It's dry"; price clauses and offers dropped.
     // Serving notes (decant, temperature) and bare instructions ("Link the wine to the dish") aren't reasons.
     const reason=s=>{ if(/^(offer|suggest|recommend|pour|go for|link|name|serve)\b/i.test(s)||/\bdecant|°C|\bserve at\b/i.test(s)||named(s).length) return '';
@@ -752,7 +829,13 @@ const TeamLearn = {
     // wine with a dish it does suit.
     const fitDish=this.dishIn(q.q);
     if(inQ&&fitDish&&this.tableFit(rw.id,fitDish.id)!=='good'){ const g=this._steerChoices(q,rw,fitDish,side,key.map(reason).filter(Boolean)); if(g) return g; }
-    const rights=[...new Set(key.map(reason).filter(Boolean))].slice(0,2);
+    // The right reasons lead with the sommelier's own reason for this wine at this dish (the pairing's why, else
+    // the card's), a full sentence and the thing worth being able to say; then the card's longest point. Terse
+    // points alone ("It is dry") would stand out beside full-sentence wrong ones by their length.
+    const atDish=this.dishIn(q.q), prw=atDish?TeamData.pairing(atDish.id)||{}:{}, rc=TeamData.card(rw.id)||{};
+    const dishWhy=atDish&&(([...(prw.best||[]),prw.glass,prw.cocktail].filter(Boolean).find(b=>b.id===rw.id)||{}).why||((rc.dishes||[]).find(x=>this._norm(x.dish)===this._norm(atDish.name))||{}).why);
+    const keyR=[...new Set(key.map(reason).filter(Boolean))].sort((a,b)=>b.length-a.length);
+    const rights=[...(dishWhy?[this._cap(String(dishWhy).replace(/\.\s*$/,''))]:[]),...keyR].filter((x,i,a)=>a.findIndex(y=>this._overlap(x,y)>=0.6)===i).slice(0,2);
     if(!rights.length) return null;
     // Wrong reasons a server could believe are about this same table and wrong for this wine: what a wine of
     // another style is said to do with this dish ("Firm tannins grip the lamb" offered for a rosé), and,
@@ -771,11 +854,28 @@ const TeamLearn = {
     const seen=new Set(rights.map(norm)), wrongs=[], kept=[...rights];
     // Two reasons that say much the same thing ("Its high acidity cuts through rich fried pork" twice) count once.
     const alike=(x,y)=>{ const p=new Set(this._stems(x)), q2=this._stems(y); if(!p.size||!q2.length) return false; const both=q2.filter(w=>p.has(w)).length; return both/Math.min(p.size,q2.length)>=0.6; };
-    const take=t=>{ t=t&&String(t).replace(/\.\s*$/,''); if(!t||seen.has(norm(t))||/^(yes|no)\b/i.test(t)||kept.some(k=>alike(k,t))) return; seen.add(norm(t)); kept.push(t); wrongs.push(t); };
+    // Each wrong reason is a different mistake: two that both claim it's light and low in tannin are ruled out
+    // together by anyone who knows it's big and tannic, which makes the question easier than it looks.
+    const claimed=new Set(), claimKey=t=>{ const c=this.claimsIn(t); return Object.keys(c).filter(k=>c[k]); };
+    // A claim no wine of this kind could make (bubbles for a still wine, sweetness for a red) is ruled out by
+    // anyone who can read the list, so it's never a wrong answer.
+    const offKind=ks=>ks.includes('bubbles')||ks.includes('still')||(['red','orange','fortified'].includes(kind)&&ks.includes('sweet'))||(['white','rosé','sparkling','sweet'].includes(kind)&&(ks.includes('tannin')||ks.includes('untannic')));
+    const take=t=>{ t=t&&String(t).replace(/\.\s*$/,''); if(!t||seen.has(norm(t))||/^(yes|no)\b/i.test(t)||kept.some(k=>alike(k,t))) return;
+      const ks=claimKey(t); if(kind!=='cocktail'&&offKind(ks)) return; if(ks.length&&ks.every(k=>claimed.has(k))) return; ks.forEach(k=>claimed.add(k)); seen.add(norm(t)); kept.push(t); wrongs.push(t); };
+    // Wrong reasons the card writer authored for this question (`wrong`, each a different mistake), checked like
+    // any other: never alike to a right one, never a claim no wine of this kind could make.
+    (q.wrong||[]).forEach(t=>{ if(wrongs.length<4) take(String(t)); });
+    const authored=wrongs.length>=3; // written for this question: no template lines beside them
     const borrowed=[];
-    here.forEach(d=>{ const pr=TeamData.pairing(d.id)||{}; [...(pr.best||[]),pr.glass,pr.cocktail].filter(Boolean).forEach(b=>{ if(b.id!==rw.id&&b.why) borrowed.push(b.why); }); });
-    wines.filter(w=>w.id!==rw.id).forEach(w=>this.wineQs(w.id).forEach(o=>{ if(o.k==='apply'&&here.some(d=>this._words(d.name).some(x=>x.length>3&&norm(o.q).split(' ').includes(x)))) (o.key||[]).forEach(k=>borrowed.push(k)); }));
+    const sameSide=b=>{ const w=TeamData.wine(b.id); return w&&TeamData.isDrink(w)===TeamData.isDrink(rw); };
+    here.forEach(d=>{ const pr=TeamData.pairing(d.id)||{}; [...(pr.best||[]),pr.glass,pr.cocktail].filter(Boolean).forEach(b=>{ if(b.id!==rw.id&&b.why&&sameSide(b)) borrowed.push(b.why); }); });
+    wines.filter(w=>w.id!==rw.id).forEach(w=>((TeamData.card(w.id)||{}).qs||[]).forEach(o=>{ if(o.k==='apply'&&here.some(d=>this._words(d.name).some(x=>x.length>3&&norm(o.q).split(' ').includes(x)))) (o.key||[]).forEach(k=>borrowed.push(k)); }));
     this._shuffle(borrowed,this._seed(q)+'r').forEach(k=>{ if(wrongs.length>=4) return; const t=reason(k); if(t&&!offTable(t)&&wrongFor(t)) take(t); });
+    // Then what other wines of the same kind are said to do anywhere on the menu, where it names no other food
+    // and claims a style this wine doesn't have: real reasons in a server's words, wrong only for this wine.
+    if(wrongs.length<4){ const wide=[]; wines.filter(w=>w.id!==rw.id&&this.kindOf(w)===kind).forEach(w=>{ ((TeamData.card(w.id)||{}).qs||[]).forEach(o=>{ if(o.k==='apply') (o.key||[]).forEach(k=>wide.push(k)); });
+        TeamData.dishes().forEach(d=>{ const pr=TeamData.pairing(d.id)||{}; [...(pr.best||[]),pr.glass,pr.cocktail].filter(Boolean).forEach(b=>{ if(b.id===w.id&&b.why) wide.push(b.why); }); }); });
+      this._shuffle(wide,this._seed(q)+'v').forEach(k=>{ if(wrongs.length>=4) return; const t=reason(k); if(t&&!offTable(t)&&wrongFor(t)) take(t); }); }
     // A cocktail is also told apart by how it tastes: the taste lines of drinks clearly unlike it (3 or more
     // apart on sweet, sour, bitter and strong together) are wrong descriptions of this one.
     if(kind==='cocktail'&&wrongs.length<4){ const gap=o=>['sweet','sour','bitter','strong'].reduce((a,k)=>a+Math.abs((o[k]||0)-(style[k]||0)),0);
@@ -784,14 +884,22 @@ const TeamLearn = {
         const t=String(c.taste).replace(/\.\s*$/,''), dishNames=new Set(dishes.filter(x=>!here.includes(x)).flatMap(x=>this._words(String(x.name).split(',')[0])).filter(x=>x.length>3));
         if(!this._words(t).some(x=>dishNames.has(x)||grapeWords.has(x))&&!this._words(t).some(x=>this._words(w.name).includes(x)&&x.length>3)) take(t); }); }
     const dishName=here.length?String(here[0].name).split(',')[0].trim().toLowerCase():'dish';
-    if(wrongs.length<4) this._shuffle(this.styleWrong(style,kind,dishName,this._seed(q)),this._seed(q)+'g').forEach(t=>wrongs.length<4&&take(t));
-    if(wrongs.length<2) return null;
-    const reasons=[...rights.map(x=>({x,ok:true})),...this._shuffle(wrongs,this._seed(q)+'w').slice(0,6-rights.length).map(x=>({x,ok:false}))];
-    const o1=inQ?[]:this._shuffle(offers.map((_,i)=>i),this._seed(q)+'c1').map(i=>offers[i]), o2=this._shuffle(reasons.map((_,i)=>i),this._seed(q)+'c2').map(i=>reasons[i]);
+    if(wrongs.length<4&&!authored) this._shuffle(this.styleWrong(style,kind,dishName,this._seed(q)),this._seed(q)+'g').forEach(t=>wrongs.length<4&&take(t));
+    // Too few believable wrong reasons: a question that asks for the wine still tests the choice alone.
+    if(wrongs.length<2){ if(inQ||!choose) return null; const o1=this._shuffle(offers.map((_,i)=>i),this._seed(q)+'c1').map(i=>offers[i]);
+      return {opts:o1.map(a=>a.x),right:o1.map((a,j)=>a.ok?j:-1).filter(j=>j>=0),n:1,groups:[{label:'What do you suggest?',from:0,to:o1.length,n:1}]}; }
+    // No answer stands out by its length: the wrong reasons kept are the ones nearest the right ones in length.
+    const L=rights.reduce((a,x)=>a+x.length,0)/rights.length;
+    const chosenW=this._shuffle(wrongs,this._seed(q)+'w').sort((a,b)=>Math.abs(a.length-L)-Math.abs(b.length-L)).slice(0,6-rights.length);
+    // A right reason under half the length of every wrong one is a clue in itself; with another right one to
+    // stand on, it's left out.
+    const minW=Math.min(...chosenW.map(x=>x.length)), keepR=rights.filter(x=>x.length>=0.5*minW), rs=keepR.length?keepR:rights;
+    const reasons=[...rs.map(x=>({x,ok:true})),...chosenW.map(x=>({x,ok:false}))];
+    const o1=inQ||!choose?[]:this._shuffle(offers.map((_,i)=>i),this._seed(q)+'c1').map(i=>offers[i]), o2=this._shuffle(reasons.map((_,i)=>i),this._seed(q)+'c2').map(i=>reasons[i]);
     const all=[...o1,...o2];
-    if(inQ) return {opts:all.map(a=>a.x),right:all.map((a,j)=>a.ok?j:-1).filter(j=>j>=0),n:rights.length,groups:[{label:'Why it works',from:0,to:all.length,n:rights.length}]};
-    return {opts:all.map(a=>a.x),right:all.map((a,j)=>a.ok?j:-1).filter(j=>j>=0),n:1+rights.length,
-      groups:[{label:'What do you suggest?',from:0,to:o1.length,n:1},{label:'Why it works',from:o1.length,to:all.length,n:rights.length}]};
+    if(inQ||!choose) return {opts:all.map(a=>a.x),right:all.map((a,j)=>a.ok?j:-1).filter(j=>j>=0),n:rs.length,groups:[{label:'Why it works',from:0,to:all.length,n:rs.length}]};
+    return {opts:all.map(a=>a.x),right:all.map((a,j)=>a.ok?j:-1).filter(j=>j>=0),n:1+rs.length,
+      groups:[{label:'What do you suggest?',from:0,to:o1.length,n:1},{label:'Why it works',from:o1.length,to:all.length,n:rs.length}]};
   },
   /* Marks a set of picked pills: right only when it's exactly the right set; partly when some of it is. */
   gradeChoices(q,picked){
@@ -815,7 +923,9 @@ const TeamLearn = {
   /* Records an answer and moves the question's review date. sure: 'sure' | 'think' | 'guess'. */
   record(pid,q,ok,sure='think',now=Date.now()){
     // _batchP: many answers at once (the demo's seeding) write to one object, saved once at the end.
-    const p=this._batchP||this._all(), m=this._mine(p,pid), it=m.items[q.id]||{s:0,d:5,reps:0,lapses:0,last:0,due:0};
+    const p=this._batchP||this._all(), m=this._mine(p,pid), fresh=!m.items[q.id], it=m.items[q.id]||{s:0,d:5,reps:0,lapses:0,last:0,due:0};
+    // The first answer anyone gives a question is what questionHealth reads (a seeded demo answer isn't one).
+    if(fresh&&!this._batchP) it.first={ok:!!ok,sure,at:now};
     const R=this.recall(it,now);
     if(q.check) m.checks.push({at:now,ok:!!ok,id:q.id});
     if(!ok){

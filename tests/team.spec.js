@@ -418,7 +418,10 @@ test('the drill asks typed questions as pills, keeps the wine out of the header 
     return { recallN: recall.n, recallOpts: recall.opts.length, recallRight: recall.right.map((i) => recall.opts[i]).sort(), applyN: apply.n, applyOpts: apply.opts.length,
       ok: TeamLearn.gradeChoices(q.find((x) => x.k === 'recall'), recall.right).ok, partly: TeamLearn.gradeChoices(q.find((x) => x.k === 'recall'), recall.right.slice(0, 1)).verdict };
   });
-  expect(r).toMatchObject({ recallN: 3, recallOpts: 10, recallRight: ['Chardonnay', 'Pinot Meunier', 'Pinot Noir'], applyN: 3, applyOpts: 10, ok: true, partly: 'partly' });
+  // The Nyetimber's table (oysters, a glass of sparkling) has nothing sparkling on the list that's clearly wrong
+  // with oysters, so there's no fair choice of wine: it names the wine and asks why, two right reasons among wrong ones.
+  expect(r).toMatchObject({ recallN: 3, recallOpts: 10, recallRight: ['Chardonnay', 'Pinot Meunier', 'Pinot Noir'], applyN: 2, ok: true, partly: 'partly' });
+  expect(r.applyOpts).toBeGreaterThanOrEqual(5);
   // Drill Nyetimber alone as Dani (a server: recognise, recall, apply): the apply question's header must not name it.
   await page.evaluate(() => { const dani = TeamLearn.people().find((p) => p.name.startsWith('Dani')); TeamLearn.setMe(dani.id); });
   await page.goto(`${BASE}/team/`);
@@ -817,6 +820,8 @@ test('drill answers: no question gives its answer away, prices are asked one way
   for (const c of grouped) {
     // A question that already names the wine asks only why; otherwise the wine first, then why.
     const labels = c.groups.map((g) => g.label);
+    // A question with too few believable wrong reasons still asks for the wine on its own.
+    if (labels.length === 1 && labels[0] === 'What do you suggest?') continue;
     expect(labels[labels.length - 1]).toBe(c.steer ? 'What do you say?' : 'Why it works'); // a guest asking for a wine that doesn't suit is steered
     if (labels.length === 2) {
       expect(labels[0]).toBe('What do you suggest?');
@@ -834,13 +839,19 @@ test('at the table, wrong reasons are about this dish and wrong for this wine, a
     const out = { offDish: [], notWrong: [], steers: [] };
     TeamData.wines().forEach((w) => TeamLearn.wineQs(w.id).filter((q) => q.k === 'apply').forEach((q) => {
       const c = TeamLearn.choices(q), dish = TeamLearn.dishIn(q.q); if (!c || !dish) return;
-      const g = c.groups[c.groups.length - 1], wrong = c.opts.slice(g.from, g.to).filter((o, i) => !c.right.includes(g.from + i));
+      const g = c.groups[c.groups.length - 1]; if (g.label === 'What do you suggest?') return; // the wine alone: no reasons to check
+      const wrong = c.opts.slice(g.from, g.to).filter((o, i) => !c.right.includes(g.from + i));
       // No wrong reason names another dish's food.
       const here = new Set(TeamLearn._words(dish.name + ' ' + (dish.desc || '')));
       const other = new Set(TeamData.dishes().filter((d) => d.id !== dish.id).flatMap((d) => TeamLearn._words(d.name)).filter((x) => x.length > 4 && !here.has(x) && !['with', 'sauce', 'roast'].includes(x)));
-      wrong.forEach((o) => { if (TeamLearn._words(o).some((x) => other.has(x))) out.offDish.push(o); });
+      // (judged on word stems, so "cheese" is the British cheeses; reasons written for this question are about it by design)
+      const authoredHere = new Set(((TeamData.card(w.id) || {}).qs || []).flatMap((x) => x.wrong || []).map((t) => TeamLearn._norm(t)));
+      const hereStems = new Set(TeamLearn._stems(dish.name + ' ' + (dish.desc || '')));
+      wrong.forEach((o) => { if (!authoredHere.has(TeamLearn._norm(o)) && TeamLearn._words(o).some((x) => other.has(x) && !hereStems.has(TeamLearn._stems(x)[0]))) out.offDish.push(o); });
       if (c.steer) out.steers.push({ wine: TeamData.short(w), dish: dish.name, right: c.right.map((i) => c.opts[i]), wrong });
-      else wrong.forEach((o) => { if (!TeamLearn.contradicts(o, (TeamData.card(w.id) || {}).style || {}, TeamLearn.kindOf(w)) && !/^Steer|^Pour/.test(o)) out.notWrong.push(TeamData.short(w) + ': ' + o); });
+      // Every wrong reason is either written for this question as wrong (the card's `wrong`) or claims a style this wine plainly lacks.
+      else { const authored = new Set(((TeamData.card(w.id) || {}).qs || []).flatMap((x) => x.wrong || []).map((t) => TeamLearn._norm(t)));
+        wrong.forEach((o) => { if (!authored.has(TeamLearn._norm(o)) && !TeamLearn.contradicts(o, (TeamData.card(w.id) || {}).style || {}, TeamLearn.kindOf(w)) && !/^Steer|^Pour/.test(o)) out.notWrong.push(TeamData.short(w) + ': ' + o); }); }
     }));
     out.fit = TeamLearn.tableFit(TeamData.wines().find((w) => /Minuty/.test(w.producer + w.name)).id, TeamLearn.dishIn('braised lamb shoulder').id);
     out.barolo = TeamLearn.tableFit(TeamData.wines().find((w) => /Barolo/.test(w.name)).id, TeamLearn.dishIn('braised lamb shoulder').id);
@@ -999,7 +1010,7 @@ test('no question offers answers from all over: comparisons stay on their two wi
       }
     }
     const tables = all.filter((q) => q.k === 'apply').map((q) => TeamLearn.choices(TeamLearn.deal(q, 't')));
-    return { pooled, third, ungrouped: tables.filter((c) => !c.groups).length, priced: tables.flatMap((c) => c.groups ? c.opts.slice(c.groups[c.groups.length - 1].from) : []).filter((o) => /£\d/.test(o)) };
+    return { pooled, third, ungrouped: tables.filter((c) => !c.groups).length, priced: tables.flatMap((c) => c.groups && c.groups[c.groups.length - 1].label !== 'What do you suggest?' ? c.opts.slice(c.groups[c.groups.length - 1].from) : []).filter((o) => /£\d/.test(o)) };
   });
   expect(r.pooled).toEqual([]); // every recall, comparison and table question builds its own options
   expect(r.third).toEqual([]);
@@ -1125,10 +1136,10 @@ test('training levels: the console sets them, cards and drills follow, a role ca
   expect(pair.opts).toHaveLength(4);
   // The right dish is the one the pairings rank this wine highest at; every wrong one is a dish it isn't a pick for
   // and plainly doesn't suit, so the question has one answer a sommelier would stand behind.
-  const ranks = await page.evaluate((q) => q.opts.map((o) => { const d = TeamData.dishes().find((x) => x.name === o); return { r: TeamLearn.rankAt(q.wine, d.id), fit: TeamLearn.tableFit(q.wine, d.id) }; }), pair);
+  const ranks = await page.evaluate((q) => q.opts.map((o) => { const d = TeamData.dishes().find((x) => x.name === o); return { r: TeamLearn.rankAt(q.wine, d.id), wrong: TeamLearn.clearlyWrong(q.wine, d.id) }; }), pair);
   const best = Math.min(...(await page.evaluate((id) => TeamData.dishes().map((d) => TeamLearn.rankAt(id, d.id)), pair.wine)));
   expect(ranks[pair.a].r).toBe(best);
-  ranks.forEach((x, i) => { if (i !== pair.a) { expect(x.r).toBe(99); expect(x.fit).not.toBe('good'); } });
+  ranks.forEach((x, i) => { if (i !== pair.a) { expect(x.r).toBe(99); expect(x.wrong).toBe(true); } });
 
   // The console's Team section sets the restaurant to Low and the sommelier back to High.
   await page.getByTestId('console-nav-team').click();
@@ -1198,8 +1209,8 @@ test('a test mixes its questions: no answer twice, nothing grouped, and wrong pa
         sameShapeInARow: shape.filter((x, i) => i && x === shape[i - 1]).length };
     }
     TeamLearn.setLevel('high');
-    // Every "which wine suits this dish best" offers its first pick against wines the dish plainly doesn't suit.
-    const bad = TeamData.dishes().flatMap((d) => TeamLearn.dishQs(d.id).filter((q) => q.opts).flatMap((q) => q.opts.filter((o, i) => i !== q.a).map((o) => TeamData.wines().find((w) => TeamData.short(w) === o)).filter((w) => w && TeamLearn.tableFit(w.id, d.id) === 'good').map((w) => d.name + ': ' + TeamData.short(w))));
+    // Every "which wine suits this dish best" offers its first pick against wines that are clearly wrong for the dish.
+    const bad = TeamData.dishes().flatMap((d) => TeamLearn.dishQs(d.id).filter((q) => q.opts).flatMap((q) => q.opts.filter((o, i) => i !== q.a).map((o) => TeamData.wines().find((w) => TeamData.short(w) === o)).filter((w) => w && !TeamLearn.clearlyWrong(w.id, d.id)).map((w) => d.name + ': ' + TeamData.short(w))));
     return { out, bad };
   });
   for (const lv of ['low', 'medium', 'high']) {
@@ -1209,4 +1220,66 @@ test('a test mixes its questions: no answer twice, nothing grouped, and wrong pa
     expect(r.out[lv].sameShapeInARow).toBeLessThanOrEqual(3); // a new server has only the first rung open, so a level with two kinds of question can run out of one
   }
   expect(r.bad).toEqual([]);
+});
+
+// Table questions test the decision, then the reason (TeamLearn._decide, _applyChoices): the wrong wines are
+// on the list, honour what the guest asked for and are clearly wrong for the dish; nothing gives the answer
+// away by its length, by being the only one of its colour asked for, or by three wrong answers making the
+// same claim; and question health flags what's answered right by everyone at once or missed by most.
+test('table questions: the choice first, wrong answers that are believable and clearly wrong, and question health', async ({ context, page }) => {
+  await stubNetwork(context);
+  const check = async (seed) => {
+    await page.goto(`${BASE}/team/?seed=${seed}`);
+    await page.waitForFunction(() => window.TeamLearn && TeamData.wines().length > 0);
+    return page.evaluate(() => {
+      const out = { tooFew: [], lengthCue: [], sameClaim: [], wrongWine: [], wish: [], decided: 0, total: 0 };
+      TeamData.wines().forEach((w) => TeamLearn.wineQs(w.id).filter((q) => q.k === 'apply').forEach((q) => {
+        out.total++;
+        const c = TeamLearn.choices(q), dish = TeamLearn.dishIn(q.q), wish = TeamLearn.wishIn(q.q);
+        if (c.steer || c.groups[0].label === 'What do you suggest?') out.decided++; // the server makes the call
+        c.groups.forEach((g) => {
+          const opts = c.opts.slice(g.from, g.to), right = opts.filter((o, i) => c.right.includes(g.from + i)), wrong = opts.filter((o, i) => !c.right.includes(g.from + i));
+          if (wrong.length < 2) out.tooFew.push(q.q.slice(0, 60));
+          if (g.label === 'Why it works' && !c.steer) {
+            const minR = Math.min(...right.map((x) => x.length)), minW = Math.min(...wrong.map((x) => x.length));
+            if (minR < 0.5 * minW) out.lengthCue.push(right.join(' / ').slice(0, 80));
+            const ks = wrong.map((t) => Object.entries(TeamLearn.claimsIn(t)).filter(([, v]) => v).map(([k]) => k).sort().join(',')).filter(Boolean);
+            if (ks.length - new Set(ks).size > 1) out.sameClaim.push(q.q.slice(0, 60));
+          }
+          if (g.label === 'What do you suggest?' && dish) wrong.forEach((o) => {
+            const ow = TeamData.wines().find((x) => o.startsWith('The ' + TeamData.short(x) + ','));
+            if (!ow) return out.wrongWine.push('not on the list: ' + o);
+            if (!TeamLearn.clearlyWrong(ow.id, dish.id)) out.wrongWine.push(`${dish.name}: ${TeamData.short(ow)}`);
+            if (wish.kind && TeamLearn.kindOf(ow) !== wish.kind) out.wish.push(`${wish.kind} asked: ${TeamData.short(ow)}`);
+            if (wish.side === 'glass' && !ow.glass) out.wish.push(`glass asked: ${TeamData.short(ow)}`);
+          });
+        });
+      }));
+      return out;
+    });
+  };
+  for (const seed of ['demo', 'perse']) {
+    const r = await check(seed);
+    expect(r.tooFew).toEqual([]); // no choice of one or two
+    expect(r.lengthCue).toEqual([]);
+    expect(r.sameClaim).toEqual([]);
+    expect(r.wrongWine).toEqual([]); // every wrong wine is on the list and clearly wrong for the dish
+    expect(r.wish).toEqual([]); // and is what the guest asked for: a white for a white, by the glass for a glass
+    expect(r.decided).toBeGreaterThanOrEqual(r.total / 8); // a floor: only where the list allows a fair choice (demo 11 of 29, Social Corner 11 of 63)
+  }
+  // The Bandol with the venison asks for the wine, then why; the question no longer names it.
+  await page.goto(`${BASE}/team/?seed=demo`);
+  await page.waitForFunction(() => window.TeamLearn && TeamData.wines().length > 0);
+  const b = await page.evaluate(() => { const q = TeamLearn.wineQs('w-domaine-tempier-bandol').find((x) => x.k === 'apply'), c = TeamLearn.choices(q);
+    return { q: q.q, labels: c.groups.map((g) => g.label), right: c.right.map((i) => c.opts[i]) }; });
+  expect(b.q).not.toMatch(/Bandol|Tempier/);
+  expect(b.labels).toEqual(['What do you suggest?', 'Why it works']);
+  expect(b.right[0]).toMatch(/^The Domaine Tempier Bandol/);
+  // Question health: everyone right and sure first time is flagged as too easy, most wrong as worth checking.
+  const h = await page.evaluate(() => {
+    const qs = TeamLearn.wineQs('w-nyetimber-classic-cuvee'), easy = qs[0], hard = qs[1];
+    for (let i = 0; i < 5; i++) { const p = TeamLearn.addPerson('Tester ' + i, 'server', null); TeamLearn.record(p, easy, true, 'sure'); TeamLearn.record(p, hard, i === 0, 'think'); }
+    const hs = TeamLearn.questionHealth(); return { easy: (hs.find((x) => x.q.id === easy.id) || {}).flag, hard: (hs.find((x) => x.q.id === hard.id) || {}).flag };
+  });
+  expect(h).toEqual({ easy: 'easy', hard: 'missed' });
 });

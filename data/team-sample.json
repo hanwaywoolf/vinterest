@@ -383,7 +383,12 @@
       "it is dry",
       "fresh green apple and pear"
      ],
-     "why": "Rustico is dry and fresh, the ideal aperitif for someone avoiding sweetness."
+     "why": "Rustico is dry and fresh, the ideal aperitif for someone avoiding sweetness.",
+     "wrong": [
+      "Its full, creamy body makes it a rich glass to start with.",
+      "Its gentle sweetness and soft finish suit guests who like it off-dry.",
+      "Its ripe tropical fruit and toasty oak give it plenty of richness."
+     ]
     },
     {
      "k": "contrast",
@@ -491,7 +496,12 @@
       "crisp acidity cuts the brown butter",
       "light enough not to overpower the scallops"
      ],
-     "why": "Chablis's freshness meets the brown butter without masking delicate scallops."
+     "why": "Chablis's freshness meets the brown butter without masking delicate scallops.",
+     "wrong": [
+      "It has a full, buttery body that matches the richness of the scallops.",
+      "Its gentle sweetness balances the brown butter and the scallops' saltiness.",
+      "Its vanilla oak and toasty notes add depth to the sweet scallops."
+     ]
     },
     {
      "k": "contrast",
@@ -596,7 +606,12 @@
       "its acidity meets the tang of the goat's cheese",
       "zesty citrus and gooseberry"
      ],
-     "why": "Sancerre's acidity and the cheese's tang are made for each other."
+     "why": "Sancerre's acidity and the cheese's tang are made for each other.",
+     "wrong": [
+      "It is a rich, full-bodied white that holds its own against the tart.",
+      "Its soft, low acidity mellows the sharpness of the goat's cheese.",
+      "Its toasty oak and butter flavours soften the tang of the cheese."
+     ]
     },
     {
      "k": "contrast",
@@ -703,7 +718,12 @@
       "fresh and crisp like Pinot Grigio but with more character",
       "green apple and a twist of white pepper"
      ],
-     "why": "Grüner is the easy step up from Pinot Grigio: just as fresh, with more flavour."
+     "why": "Grüner is the easy step up from Pinot Grigio: just as fresh, with more flavour.",
+     "wrong": [
+      "It is a full, creamy white with far more weight than Pinot Grigio.",
+      "Its soft, rounded sweetness is smoother than Pinot Grigio on the palate.",
+      "Its ripe tropical fruit and vanilla oak make the burrata taste richer."
+     ]
     },
     {
      "k": "contrast",
@@ -807,7 +827,12 @@
       "it is dry",
       "fresh strawberry and citrus that suits tomatoes and burrata"
      ],
-     "why": "Reassure them: Provence rosé is dry, and its freshness suits the starter."
+     "why": "Reassure them: Provence rosé is dry, and its freshness suits the starter.",
+     "wrong": [
+      "It is a full, rich rosé with weight that suits creamy burrata.",
+      "Its soft tannin and gentle sweetness balance the acidity of the tomatoes.",
+      "Its ripe jammy berry and vanilla flavours make the burrata taste richer."
+     ]
     },
     {
      "k": "contrast",
@@ -914,7 +939,12 @@
       "light with soft tannin",
       "its earthy notes suit the morels"
      ],
-     "why": "Pinot Noir is light and silky, and its earthiness meets the morels."
+     "why": "Pinot Noir is light and silky, and its earthiness meets the morels.",
+     "wrong": [
+      "It is a full, powerful red with plenty of weight for the chicken.",
+      "Its firm, grippy tannin cuts through the richness of the cream sauce.",
+      "Its smoky oak and black plum flavours bring out the roast chicken's char."
+     ]
     },
     {
      "k": "contrast",
@@ -1019,7 +1049,12 @@
       "rich and smooth with plum and blackberry",
       "stands up to the steak"
      ],
-     "why": "Malbec's dark fruit and tannin match the steak, and it's by the glass."
+     "why": "Malbec's dark fruit and tannin match the steak, and it's by the glass.",
+     "wrong": [
+      "It is a light, delicate red that keeps the steak from feeling heavy.",
+      "Its sharp, high acidity and bright tartness cut through the sirloin's fat.",
+      "Its pale, subtle fruit and herbal notes soften the beef's flavour."
+     ]
     },
     {
      "k": "contrast",
@@ -1124,7 +1159,12 @@
       "pepper and herbs echo the rosemary",
       "soft enough for slow-cooked lamb"
      ],
-     "why": "It's under £50 and its herbs and spice suit the lamb."
+     "why": "It's under £50 and its herbs and spice suit the lamb.",
+     "wrong": [
+      "It is a light, delicate red that keeps the slow-cooked lamb feeling fresh.",
+      "Its firm, drying tannin and sharp acidity cut right through the fatty lamb.",
+      "Its sweet jammy fruit and vanilla soften the savoury flavour of the lamb."
+     ]
     },
     {
      "k": "contrast",
@@ -1232,7 +1272,12 @@
       "an aged Rioja: mellow, smooth, vanilla and spice",
       "a classic match for lamb"
      ],
-     "why": "Rioja Reserva and lamb is a classic, and Ardanza is the list's special red."
+     "why": "Rioja Reserva and lamb is a classic, and Ardanza is the list's special red.",
+     "wrong": [
+      "Its light, delicate body keeps the lamb shoulder from feeling too heavy.",
+      "Its firm, grippy tannin cuts through the fat like a sharp knife.",
+      "Its fresh berry fruit lifts the lamb and keeps the meat tasting bright."
+     ]
     },
     {
      "k": "contrast",
@@ -1328,7 +1373,12 @@
       "it must be as sweet as the dessert",
       "its acidity matches the lemon"
      ],
-     "why": "A dessert wine should be at least as sweet as the dessert; Sauternes's acidity meets the lemon."
+     "why": "A dessert wine should be at least as sweet as the dessert; Sauternes's acidity meets the lemon.",
+     "wrong": [
+      "It is a light, delicate wine that sits gently beside the tart.",
+      "Its low acidity keeps the lemon tart tasting soft and rounded.",
+      "Its savoury, earthy flavours bring out the pastry and hide the lemon."
+     ]
     },
     {
      "k": "contrast",

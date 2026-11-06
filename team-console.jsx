@@ -308,6 +308,14 @@ function _CWines({open,goUpload}){ const T=useTheme(), cr=T.lift(C.cr), ws=TeamD
   const groups=[]; ws.forEach(w=>{ const s=w.section||'The list'; let g=groups.find(x=>x.s===s); if(!g) groups.push(g={s,ws:[]}); g.ws.push(w); });
   return <div data-testid="console-wines">{_cH(T,'Wines',`${ws.length} on the list · ${ws.filter(TeamData.byGlass).length} by the glass · ${cov.glass.covered+cov.bottle.covered} covered by the floor`,<Btn small onClick={goUpload}>Upload a new list</Btn>)}
     {!ws.length&&<Card><div style={{fontSize:14,color:T.mid,fontFamily:C.P}}>No list yet. Upload one and it appears here with who knows what.</div></Card>}
+    {(()=>{ const hs=TeamLearn.questionHealth(); if(!hs.length) return null; const pct=x=>Math.round(x*100)+'%';
+      return <Card style={{marginBottom:14}}><div data-testid="console-question-health">{_cLabel(T,'Questions to look at')}
+        {hs.slice(0,8).map((h,i)=>{ const w=h.q.wine&&TeamData.wine(h.q.wine), d=h.q.dish&&TeamData.dish(h.q.dish);
+          return <div key={h.q.id} role="button" onClick={()=>w?open({view:'wine',id:w.id}):d&&open({view:'dish',id:d.id})} style={{padding:'9px 0',borderTop:i?`1px solid ${T.line}`:'none',cursor:'pointer'}}>
+            <div style={{display:'flex',justifyContent:'space-between',gap:10,alignItems:'baseline'}}><span style={{fontSize:14,color:T.ink,fontFamily:C.P,lineHeight:1.45}}>{h.q.q}</span>
+              {_cChip(T,h.flag==='easy'?`${pct(h.share)} right first time`:`${pct(h.share)} right first time`,h.flag==='easy'?T.amber:T.tone.bad)}</div>
+            <div style={{fontSize:12,color:T.mid,fontFamily:C.P,marginTop:2}}>{w?TeamData.short(w):d?d.name:''} · {h.n} people · {h.flag==='easy'?'Almost everyone gets it right straight away: it may give its answer away.':'Most people miss it first time: check the answer is right and fair.'}</div></div>; })}
+        {_cNote(T,'From each person\'s first answer to each question, once four or more have answered it. A question here is still asked; a new list is checked again when it\'s published.')}</div></Card>; })()}
     {groups.map(g=><div key={g.s} style={{marginBottom:14}}>{_cLabel(T,g.s,sold&&<span style={{fontSize:11,color:T.mid,fontFamily:C.P,textTransform:'none',letterSpacing:0,fontWeight:500}}>sold in 28 nights</span>)}<Card style={{padding:'6px 4px'}}>
       <_CTable testid="wines-table" cols={[{h:'Wine'},{h:'Year',align:'center',w:56},{h:'Glass',align:'center',w:64},{h:'Bottle',align:'center',w:68},{h:'Window',align:'center',w:96},{h:'Known by',align:'center',w:84},...(sold?[{h:'Sold',align:'center',w:56}]:[]),{h:'Card',align:'center',w:52},{h:'',align:'right',w:72}]}
         rows={g.ws.flatMap(w=>{ const x=by[w.id]||{knows:0,of:0}, dw=TeamData.window(w), c=TeamData.card(w.id), s=sold&&sold[w.id]; const ed=edit&&edit.id===w.id;

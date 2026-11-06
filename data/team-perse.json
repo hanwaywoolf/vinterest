@@ -2475,7 +2475,12 @@
       "Explain the freshness and bubbles cut through the salty, briny oysters"
      ],
      "why": "Crisp, fizzy, fresh Prosecco is a classic partner for briny raw oysters.",
-     "id": "w-mionetto-prosecco-doc#4"
+     "id": "w-mionetto-prosecco-doc#4",
+     "wrong": [
+      "Say it's rich and full-bodied, so it stands up to the oysters",
+      "Explain its soft, low acidity keeps the oysters tasting mellow and round",
+      "Say its sweet, creamy fruit hides the briny, salty taste of the oysters"
+     ]
     },
     {
      "k": "contrast",
@@ -2598,7 +2603,12 @@
       "Mention it's light and fruity, and a bottle is $69 if the table wants to share"
      ],
      "why": "Fresh bubbles balance salty, rich cured ham.",
-     "id": "w-mionetto-prosecco-doc-rose#4"
+     "id": "w-mionetto-prosecco-doc-rose#4",
+     "wrong": [
+      "Explain it's a weighty, full-bodied pink that matches the richness of the ham",
+      "Say its firm tannins grip the fat and salt in the ham",
+      "Mention its sweet, jammy berry flavour smothers the saltiness of the ham"
+     ]
     },
     {
      "k": "contrast",
@@ -2720,7 +2730,12 @@
       "It's served chilled, around 10-12°C"
      ],
      "why": "Lambrusco's fizz and juicy fruit refresh the palate against salty, spicy cured meat.",
-     "id": "w-medici-ermete-lambrusco-reggiano#4"
+     "id": "w-medici-ermete-lambrusco-reggiano#4",
+     "wrong": [
+      "Say it's a heavy, full-bodied wine that matches the weight of the pizza",
+      "Explain its firm tannins grip the spicy topping and calm the heat",
+      "Say its rich, sweet dessert-style fruit mellows the spicy, smoky topping"
+     ]
     },
     {
      "k": "contrast",
@@ -2843,7 +2858,12 @@
       "Mention it's a dry Champagne so it won't clash with the saltiness"
      ],
      "why": "Crisp, dry bubbles are a classic match for briny, raw oysters.",
-     "id": "w-veuve-clicquot-brut#4"
+     "id": "w-veuve-clicquot-brut#4",
+     "wrong": [
+      "Explain it's a light, delicate fizz that stays quiet beside the oysters",
+      "Say its soft, low acidity keeps the oysters tasting round and gentle",
+      "Mention its sweet, honeyed fruit covers the briny taste of the oysters"
+     ]
     },
     {
      "k": "contrast",
@@ -2965,7 +2985,12 @@
       "Mention the red-berry fruit adds a lovely contrast"
      ],
      "why": "Fresh bubbles and acidity balance salty, rich cured ham.",
-     "id": "w-veuve-clicquot-rose#4"
+     "id": "w-veuve-clicquot-rose#4",
+     "wrong": [
+      "Say it's a rich, heavy wine that matches the weight of the ham",
+      "Explain its grippy tannins cut through the fat of the ham",
+      "Mention its sweet, candied fruit covers up the saltiness of the ham"
+     ]
     },
     {
      "k": "contrast",
@@ -3088,7 +3113,12 @@
       "Mention it's a Champagne, so it feels like a celebration, and offer to pour it ice-cold"
      ],
      "why": "High-acid, dry Champagne is a classic partner for briny raw oysters.",
-     "id": "w-lanson-black-label-brut#4"
+     "id": "w-lanson-black-label-brut#4",
+     "wrong": [
+      "Explain it's a full, creamy wine that gives weight to the delicate oysters",
+      "Say its soft, gentle acidity keeps the oysters tasting smooth and mellow",
+      "Mention its off-dry sweetness softens the briny, salty taste of the oysters"
+     ]
     },
     {
      "k": "contrast",
@@ -3211,7 +3241,12 @@
       "Explain the freshness cools the spicy, smoky potatoes"
      ],
      "why": "A crisp, chilled dry rosé is a natural partner for spicy fried potatoes.",
-     "id": "w-avenue-rose#4"
+     "id": "w-avenue-rose#4",
+     "wrong": [
+      "Say it's a rich, full-bodied rosé that matches the weight of the potatoes",
+      "Explain its firm tannins grip the oily potatoes and calm the spice",
+      "Mention its sweet, ripe berry flavour mellows the spicy, smoky sauce"
+     ]
     },
     {
      "k": "contrast",
@@ -3335,7 +3370,12 @@
       "Explain the chilled, fruity wine cools the spice and handles the smokiness"
      ],
      "why": "A fresh, fruity rosé suits spicy fried potatoes well.",
-     "id": "w-la-vieille-ferme-rose#4"
+     "id": "w-la-vieille-ferme-rose#4",
+     "wrong": [
+      "Say it's a heavy, full-bodied rosé that stands up to the potatoes",
+      "Explain its gripping tannins soak up the spice and smokiness of the dish",
+      "Mention its sweet, syrupy fruit softens the heat and hides the smokiness"
+     ]
     },
     {
      "k": "contrast",
@@ -3457,7 +3497,12 @@
       "It's $78 a bottle, no glass pour, so offer the bottle for the table"
      ],
      "why": "Sangiovese loves tomato, and the pizza's tomato and herby flavours are a natural match for this fresh rosé.",
-     "id": "w-il-poggione-lo-sbrancato-rosato#4"
+     "id": "w-il-poggione-lo-sbrancato-rosato#4",
+     "wrong": [
+      "Yes, its full, weighty body stands up to the cheesy, doughy pizza base",
+      "Its soft, low acidity keeps the tomato sauce gentle and rounded on the palate",
+      "Its ripe tropical sweetness balances the salty cheese and sits well with the basil"
+     ]
     },
     {
      "k": "contrast",
@@ -3580,7 +3625,12 @@
       "Give the price: $15 for a 5oz glass"
      ],
      "why": "Light, high-acid whites are a classic match for raw, briny seafood.",
-     "id": "w-monvin-pinot-grigio#4"
+     "id": "w-monvin-pinot-grigio#4",
+     "wrong": [
+      "Say it is full and creamy, so it cushions the oysters like butter",
+      "Mention the gentle sweetness softens the briny oysters and rounds off the sharp edges",
+      "Explain its toasty oak flavour adds a rich, smoky depth to the fresh oysters"
+     ]
     },
     {
      "k": "contrast",
@@ -3703,7 +3753,12 @@
       "Riesling can be a little off-dry, which helps with spice"
      ],
      "why": "Riesling's brightness and light sweetness are a classic match for spicy food.",
-     "id": "w-black-swift-kurkjian-vineyard-riesling#4"
+     "id": "w-black-swift-kurkjian-vineyard-riesling#4",
+     "wrong": [
+      "Its full, heavy body soaks up the spicy, smoky heat of the potatoes",
+      "Its soft, low acidity calms the heat and keeps the sauce gentle",
+      "Its rich buttery oak flavour coats the tongue and covers the spice"
+     ]
     },
     {
      "k": "contrast",
@@ -3825,7 +3880,12 @@
       "Explain its freshness matches the tangy goat cheese"
      ],
      "why": "Goat's cheese is a classic match for Sauvignon Blanc because the wine's acidity balances the tang and creaminess.",
-     "id": "w-mission-hill-family-estate-sauvignon-blanc#4"
+     "id": "w-mission-hill-family-estate-sauvignon-blanc#4",
+     "wrong": [
+      "Say it is full and creamy, which suits the rich weight of the salad",
+      "Mention its soft, low acidity gently rounds off the sharp tang of the cheese",
+      "Explain its oaky vanilla flavour sweetens the goat cheese and balances the dressing"
+     ]
     },
     {
      "k": "contrast",
@@ -3947,7 +4007,12 @@
       "Offer a 5oz glass at $18, or the bottle at $80 if the table is sharing"
      ],
      "why": "Oaked, creamy Chardonnay suits lobster and creamy sauces, and the glass and bottle prices come straight from the list.",
-     "id": "w-chateau-ste-michelle-columbia-valley-chardonnay#4"
+     "id": "w-chateau-ste-michelle-columbia-valley-chardonnay#4",
+     "wrong": [
+      "Say it is a light, delicate Chardonnay that keeps the pasta feeling fresh",
+      "Mention its sharp, searing acidity cuts through the cream sauce and cleans the palate",
+      "Link it to the sparkle on the tongue, which lifts the lobster and crab"
+     ]
     },
     {
      "k": "contrast",
@@ -4069,7 +4134,12 @@
       "Serve it well chilled, around 7-10°C"
      ],
      "why": "A crisp, citrusy white with high acidity is a classic partner for briny raw seafood.",
-     "id": "w-burrowing-owl-vineyards-pinot-gris#4"
+     "id": "w-burrowing-owl-vineyards-pinot-gris#4",
+     "wrong": [
+      "It's a rich, full-bodied white that gives the oysters weight and creaminess",
+      "Its noticeable sweetness softens the briny oysters and balances the salt",
+      "Its toasty oak and buttery flavours add depth to the delicate oysters"
+     ]
     },
     {
      "k": "contrast",
@@ -4189,7 +4259,12 @@
       "Mention it's from Umbria and is crisp but gently rounded"
      ],
      "why": "The wine's freshness matches the seafood pasta, and the server should give the glass price clearly.",
-     "id": "w-tenuta-alzatura-cortili-montefalco-bianco#4"
+     "id": "w-tenuta-alzatura-cortili-montefalco-bianco#4",
+     "wrong": [
+      "Say it's a full, heavy Italian white that stands up to the shellfish",
+      "Mention its soft, low acidity keeps the garlic and brine gentle on the palate",
+      "Explain its sweet tropical fruit balances the garlicky, salty frutti di mare"
+     ]
     },
     {
      "k": "contrast",
@@ -4312,7 +4387,12 @@
       "Say its freshness matches the briny, acidic oysters"
      ],
      "why": "Lean, citrusy Chardonnay is a classic match for oysters.",
-     "id": "w-chateau-de-maligny-jean-durup-petit-chablis#4"
+     "id": "w-chateau-de-maligny-jean-durup-petit-chablis#4",
+     "wrong": [
+      "Say it is a rich, full-bodied Chardonnay that gives the oysters weight",
+      "Explain its soft, low acidity and gentle sweetness smooth out the briny oysters",
+      "Say its heavy buttery oak flavour adds richness to the fresh oysters"
+     ]
     },
     {
      "k": "contrast",
@@ -4436,7 +4516,12 @@
       "Quote the bottle price of $70"
      ],
      "why": "Crisp, high-acid Pinot Grigio suits briny raw seafood.",
-     "id": "w-santa-margherita-valdadige-pinot-grigio#4"
+     "id": "w-santa-margherita-valdadige-pinot-grigio#4",
+     "wrong": [
+      "Say it's a full, creamy white that gives the oysters real weight.",
+      "Mention it's soft and low in acidity, so it feels gentle and mellow.",
+      "Say it's rich and oaky, with buttery flavours that cover the oysters' saltiness."
+     ]
     },
     {
      "k": "contrast",
@@ -4558,7 +4643,12 @@
       "Mention it's light and refreshing so it won't overpower the seafood"
      ],
      "why": "Light, high-acid Italian Pinot Grigio is a classic match for raw shellfish.",
-     "id": "w-ogio-pinot-grigio#4"
+     "id": "w-ogio-pinot-grigio#4",
+     "wrong": [
+      "It's a full, rich white with plenty of weight to stand up to the oysters.",
+      "Its gentle, low acidity keeps things soft and smooth next to the oysters.",
+      "Its sweet, tropical fruit softens the oysters' saltiness and makes them taste milder."
+     ]
     },
     {
      "k": "contrast",
@@ -4684,7 +4774,12 @@
       "Mention it's $95 a bottle and best served well chilled"
      ],
      "why": "A full, perfumed white matches the richness and sweetness of lobster and crab.",
-     "id": "w-le-vieux-pin-ava#4"
+     "id": "w-le-vieux-pin-ava#4",
+     "wrong": [
+      "Say it's a light, delicate white that keeps the ravioli feeling fresh and airy.",
+      "Explain its sharp, zingy acidity cuts through the rich lobster and crab sauce.",
+      "Say it's crisp and grassy, with herby flavours that lift the shellfish."
+     ]
     },
     {
      "k": "contrast",
@@ -4807,7 +4902,12 @@
       "It's bottle only at $90, so offer the Mission Hill Sauvignon Blanc by the glass at $16 if they want just a glass"
      ],
      "why": "Goat's cheese and salads are classic partners for this crisp style, and the glass alternative is another Sauvignon Blanc.",
-     "id": "w-pascal-jolivet-sauvignon-blanc#4"
+     "id": "w-pascal-jolivet-sauvignon-blanc#4",
+     "wrong": [
+      "Yes, it's a full, creamy white that gives the salad real weight.",
+      "It's soft and low in acidity, so it mellows the tangy goat cheese.",
+      "It's sweet and honeyed, which smooths over the cheese and hides the tang."
+     ]
     },
     {
      "k": "contrast",
@@ -4929,7 +5029,12 @@
       "it's a bottle at $122, and you can describe it as zesty, citrusy and grassy"
      ],
      "why": "The wine's sharp freshness balances the tangy, creamy dish.",
-     "id": "w-pascal-jolivet-sancerre#4"
+     "id": "w-pascal-jolivet-sancerre#4",
+     "wrong": [
+      "Say it's a full, rich white with the weight to match the cheese.",
+      "Mention its soft, gentle acidity, which keeps the tangy goat cheese feeling mellow.",
+      "Say it's oaky and buttery, with creamy flavours that echo the goat cheese."
+     ]
     },
     {
      "k": "contrast",
@@ -5054,7 +5159,12 @@
       "Mention the price, $122 a bottle"
      ],
      "why": "Riesling's sharp freshness and aroma are made for spicy dishes like these.",
-     "id": "w-martin-s-lane-simes-vineyard-riesling#4"
+     "id": "w-martin-s-lane-simes-vineyard-riesling#4",
+     "wrong": [
+      "Say it's a full, rich white with the weight to stand up to chorizo.",
+      "Explain its soft, low acidity gently calms the spice and smoky richness.",
+      "Say it's a deep, oaky white whose toasty flavour deepens the smoky chorizo."
+     ]
     },
     {
      "k": "contrast",
@@ -5177,7 +5287,12 @@
       "Quote $15 for a 5oz glass"
      ],
      "why": "Fatty red meat is the classic match for a high-tannin red like Cabernet Sauvignon.",
-     "id": "w-monvin-cabernet-sauvignon#4"
+     "id": "w-monvin-cabernet-sauvignon#4",
+     "wrong": [
+      "Say it's a light, delicate red that keeps the lamb feeling fresh.",
+      "Explain it's smooth and tannin-free, so it feels soft and silky with the lamb.",
+      "Say it's sweet and jammy, with candied fruit that sweetens the charred lamb."
+     ]
     },
     {
      "k": "contrast",
@@ -5302,7 +5417,12 @@
       "Say it matches the rich, tomatoey beef sauce without overpowering it"
      ],
      "why": "A medium-bodied, fruity red suits a rich tomato and beef pasta.",
-     "id": "w-the-hatch-ross-o-blend#4"
+     "id": "w-the-hatch-ross-o-blend#4",
+     "wrong": [
+      "Describe it as a big, full-bodied red with real power and heavy weight.",
+      "Say it's sharp and tannic, so its grip cuts through the creamy sauce.",
+      "Say it's oaky and smoky, with bold flavours that take over the beef sauce."
+     ]
     },
     {
      "k": "contrast",
@@ -5426,7 +5546,12 @@
       "Give the price: $15 for a 5oz glass (or $76 for the bottle)"
      ],
      "why": "Pinot Noir's earthy character mirrors mushrooms, and its freshness balances the creamy, rich pasta.",
-     "id": "w-salentein-portillo-pinot-noir#4"
+     "id": "w-salentein-portillo-pinot-noir#4",
+     "wrong": [
+      "Say it's a full, powerful red that stands up to rich dishes",
+      "Explain its high tannin grips the creamy sauce and cleans the palate",
+      "Link its sweet jammy fruit to the truffle so the dish tastes richer"
+     ]
     },
     {
      "k": "contrast",
@@ -5548,7 +5673,12 @@
       "Offer the glass at $16 (5oz), or the bottle at $78 if the table wants to share"
      ],
      "why": "Fatty grilled red meat is the classic match for a tannic Cabernet blend.",
-     "id": "w-road-13-cabernet-merlot#4"
+     "id": "w-road-13-cabernet-merlot#4",
+     "wrong": [
+      "Say it's a light, delicate red that won't overpower the steak",
+      "Explain the wine's sweet fruit balances the salty char on the steak",
+      "Say its bright, tangy acidity lifts the meat and makes it taste leaner"
+     ]
     },
     {
      "k": "contrast",
@@ -5672,7 +5802,12 @@
       "Mention that its freshness and grip cut through the creamy richness"
      ],
      "why": "Nebbiolo is a classic partner for truffle and mushrooms, and its acidity balances the creamy filling.",
-     "id": "w-batasiolo-langhe-nebbiolo#4"
+     "id": "w-batasiolo-langhe-nebbiolo#4",
+     "wrong": [
+      "Say it's a rich, heavy red that matches the weight of the pasta",
+      "Explain its soft, gentle tannin melts into the creamy sauce",
+      "Mention its ripe, sweet fruit adds sweetness to the truffle and mushrooms"
+     ]
     },
     {
      "k": "contrast",
@@ -5796,7 +5931,12 @@
       "Mention it's $18 for a 5oz glass, or $84 for the bottle if the table is sharing"
      ],
      "why": "Grilled fatty red meat is the classic match for a firm, full Cabernet.",
-     "id": "w-santa-carolina-reserva-de-familia-cabernet-sauvignon#4"
+     "id": "w-santa-carolina-reserva-de-familia-cabernet-sauvignon#4",
+     "wrong": [
+      "Say it's a light, easy red that keeps the steak the star",
+      "Explain its sweet, jammy fruit takes the edge off the charred meat",
+      "Say its soft, silky tannin makes the steak taste juicier and richer"
+     ]
     },
     {
      "k": "contrast",
@@ -5921,7 +6061,12 @@
       "It's $19 for a 5oz glass, or $95 a bottle"
      ],
      "why": "Fatty red meat softens the wine's grip, making the pairing smooth and satisfying.",
-     "id": "w-la-stella-fortissimo#4"
+     "id": "w-la-stella-fortissimo#4",
+     "wrong": [
+      "It's a light, delicate Pinot Noir with fresh strawberry flavour",
+      "Its sweet, ripe fruit balances the salty crust on the steak",
+      "Its gentle, soft feel lets the steak's flavour come through unchanged"
+     ]
     },
     {
      "k": "contrast",
@@ -6045,7 +6190,12 @@
       "Explain that it is a Nebbiolo with high tannin and high acidity, whose grip suits rich grilled beef"
      ],
      "why": "The Barolo's firm tannin and acidity suit rich grilled red meat, while the Bolognese is better with a lighter Nebbiolo.",
-     "id": "w-fontanafredda-barolo-serralunga-d-alba#4"
+     "id": "w-fontanafredda-barolo-serralunga-d-alba#4",
+     "wrong": [
+      "Pair the Barolo with the Rigatone Bolognese since its light, delicate body suits pasta",
+      "Explain it's a sweet, fruity Nebbiolo, so it balances the tomato sauce",
+      "Say its low tannin and soft acidity make it easy with any dish"
+     ]
     },
     {
      "k": "contrast",
@@ -6168,7 +6318,12 @@
       "Mention it's from Rioja, Spain, with oak ageing giving savoury spice"
      ],
      "why": "Lamb is a traditional Rioja pairing and this bottle is priced just under the guest's budget.",
-     "id": "w-faustino-crianza-art-collection#4"
+     "id": "w-faustino-crianza-art-collection#4",
+     "wrong": [
+      "Explain it's a big, heavy red whose power matches the strong lamb",
+      "Say its sweet, jammy fruit softens the char on the lamb chops",
+      "Mention its sharp, firm tannin strips the fat from the lamb and cleans the palate"
+     ]
     },
     {
      "k": "contrast",
@@ -6291,7 +6446,12 @@
       "Mention it is $85 a bottle, and suggest a 30-minute decant and a large red glass"
      ],
      "why": "Roast and grilled lamb is a classic Rioja pairing, and this dish is one a sommelier would pour it with.",
-     "id": "w-lopez-de-haro-reserva#4"
+     "id": "w-lopez-de-haro-reserva#4",
+     "wrong": [
+      "Say it's a light, juicy red that keeps the lamb feeling delicate",
+      "Explain its soft, fruity sweetness balances the herby, charred lamb",
+      "Say its crisp, sharp acidity hides the lamb's flavour so it tastes milder"
+     ]
     },
     {
      "k": "contrast",
@@ -6412,7 +6572,12 @@
       "Suggest it with a dish it suits, such as the 8 oz Filet"
      ],
      "why": "The Chateau Rousselle's soft tannin and plum fruit suit the lean 8 oz Filet better than a rich tomato ragù.",
-     "id": "w-chateau-rousselle-cotes-de-bourg#4"
+     "id": "w-chateau-rousselle-cotes-de-bourg#4",
+     "wrong": [
+      "Its light, delicate body keeps the rich Bolognese from feeling heavy.",
+      "Its sharp, racy acidity cuts through the tomato sauce beautifully.",
+      "Its smoky pepper and gamey notes bring out the savoury beef ragù."
+     ]
     },
     {
      "k": "contrast",
@@ -6534,7 +6699,12 @@
       "Mention it's a bottle at $90, served in a large red glass"
      ],
      "why": "Grilled lamb is a classic match for a grippy Ribera del Duero red.",
-     "id": "w-hito-ribera-del-duero#4"
+     "id": "w-hito-ribera-del-duero#4",
+     "wrong": [
+      "Its light, silky body lets the delicate lamb flavour shine through.",
+      "Its soft, supple tannin keeps things smooth beside the charred lamb.",
+      "Its sweet, jammy fruit cools the smoky char on the chops."
+     ]
     },
     {
      "k": "contrast",
@@ -6656,7 +6826,12 @@
       "Suggest decanting for about 30 minutes and serving at 16-18°C"
      ],
      "why": "The lamb's herby, rich, charred character suits a structured red with a leafy edge.",
-     "id": "w-la-stella-espressivo#4"
+     "id": "w-la-stella-espressivo#4",
+     "wrong": [
+      "Its light, easy body keeps the lamb from feeling too heavy.",
+      "Its soft, gentle tannin melts away beside the charred lamb.",
+      "Its ripe, sweet chocolate notes balance the smoky char on the chops."
+     ]
     },
     {
      "k": "contrast",
@@ -6778,7 +6953,12 @@
       "It's $165 a bottle only, so mention a glass option like the Batasiolo Langhe Nebbiolo if they want less"
      ],
      "why": "Fresh acidity and savoury character make Tuscan reds a natural partner for tomato and beef.",
-     "id": "w-il-sasso-mauro-vannucci-carmignano#4"
+     "id": "w-il-sasso-mauro-vannucci-carmignano#4",
+     "wrong": [
+      "It's a big, full-bodied red with the weight to match rich Bolognese.",
+      "Its soft, low acidity keeps the tomato sauce tasting gentle and smooth.",
+      "Its sweet jammy fruit rounds off the savoury beef ragù nicely."
+     ]
     },
     {
      "k": "contrast",
@@ -6900,7 +7080,12 @@
       "Explain that the grapes are dried before fermenting, giving a rich, full-bodied wine"
      ],
      "why": "Amarone's rich, raisined character suits desserts, while the Bolognese is better with a fresher red.",
-     "id": "w-giuseppe-campagnola-amarone-della-valpolicella-classico#4"
+     "id": "w-giuseppe-campagnola-amarone-della-valpolicella-classico#4",
+     "wrong": [
+      "It's a light, fresh red that sits gently alongside the Bolognese.",
+      "Its high, zesty acidity cuts through the tomato sauce beautifully.",
+      "Its raisined richness brings out the savoury beef flavours in the ragù."
+     ]
     },
     {
      "k": "contrast",
@@ -7026,7 +7211,12 @@
       "Offer a red by the glass as an alternative, such as the Santa Carolina Reserva de Familia Cabernet Sauvignon at $18, or suggest the bottle if they are sharing"
      ],
      "why": "Honesty about the list matters: this wine has no glass price, but it's right for the dish and there's a good glass alternative.",
-     "id": "w-vanessa-syrah#4"
+     "id": "w-vanessa-syrah#4",
+     "wrong": [
+      "It's a light, juicy red that keeps the lamb feeling delicate.",
+      "Its soft, silky tannin keeps things smooth against the charred meat.",
+      "Its sweet, jammy fruit softens the smoky char on the lamb."
+     ]
     },
     {
      "k": "contrast",
@@ -7148,7 +7338,12 @@
       "It's $178 a bottle, so mention the price and suggest decanting for 30 minutes"
      ],
      "why": "Tomato-based pasta and rich meat are classic Sangiovese partners.",
-     "id": "w-altesino-brunello-di-montalcino#4"
+     "id": "w-altesino-brunello-di-montalcino#4",
+     "wrong": [
+      "It's a big, heavy, full-bodied red that matches the rich Bolognese.",
+      "Its soft, low acidity sits smoothly beside the tomato in the sauce.",
+      "Its sweet, jammy fruit lifts the savoury beef in the ragù."
+     ]
     },
     {
      "k": "contrast",
@@ -7269,7 +7464,12 @@
       "Mention it's $350 a bottle and offer to decant for about 30 minutes"
      ],
      "why": "The wine's structure and savoury character suit grilled red meat, and the server should be clear on price and serving.",
-     "id": "w-antinori-tignanello#4"
+     "id": "w-antinori-tignanello#4",
+     "wrong": [
+      "It's a light, delicate red that lets the steak flavour shine.",
+      "Its soft, silky tannin melts away beside the rich, charred beef.",
+      "Its sweet, jammy fruit softens the smoky char on the striploin."
+     ]
     },
     {
      "k": "contrast",
@@ -7392,7 +7592,12 @@
       "Explain it matches the sweet, tart cherry and the chocolate"
      ],
      "why": "A sweet grapey dessert wine suits a sweet, fruity dessert.",
-     "id": "w-mural-de-favaios-moscatel#4"
+     "id": "w-mural-de-favaios-moscatel#4",
+     "wrong": [
+      "Light and crisp, so it stays out of the way of the mousse",
+      "Bone dry and zesty, which cuts through the sweet cherry and pistachio",
+      "Rich with firm tannin, so it grips the chocolate and cherry"
+     ]
     },
     {
      "k": "contrast",
@@ -7509,7 +7714,12 @@
       "The acidity suits briny oysters"
      ],
      "why": "Its sour, citrusy style mirrors the acidity of oysters.",
-     "id": "c-luz-de-pasion#4"
+     "id": "c-luz-de-pasion#4",
+     "wrong": [
+      "Heavy and creamy, so it coats the oysters nicely",
+      "Very sweet and syrupy, which balances the salty oyster brine",
+      "Smoky and peppery, so it adds a charred edge to the oysters"
+     ]
     },
     {
      "k": "contrast",
@@ -7625,7 +7835,12 @@
       "Rosé syrup adds a gentle sweetness"
      ],
      "why": "Soda and citrus make it an easy opening drink.",
-     "id": "c-flora-fizz#4"
+     "id": "c-flora-fizz#4",
+     "wrong": [
+      "Strong, spirit-heavy and warming, so it kicks the evening off boldly",
+      "Very sweet and syrupy, a dessert-style drink to open the meal",
+      "Bold coffee and chocolate notes make it a rich, deep starter"
+     ]
     },
     {
      "k": "contrast",
@@ -7738,7 +7953,12 @@
       "Sweet pear pairs with salty ham"
      ],
      "why": "It has no bitter ingredients and pairs well with cured ham.",
-     "id": "c-the-pear-se#4"
+     "id": "c-the-pear-se#4",
+     "wrong": [
+      "Heavy and creamy, so it stands up to the rich ham",
+      "Very bitter and dry, which cuts through the fat of the ham",
+      "Smoky and peppery flavours match the cured, nutty ham"
+     ]
     },
     {
      "k": "contrast",
@@ -7851,7 +8071,12 @@
       "Gin base with blueberry keeps it fruity"
      ],
      "why": "Wine and rosemary flavours suit lamb.",
-     "id": "c-blue-rose#4"
+     "id": "c-blue-rose#4",
+     "wrong": [
+      "Very light and watery, so it never overpowers the lamb",
+      "Grippy and tannic like a big red, which cuts the lamb's fat",
+      "Smoky and charred in flavour, so it copies the grilled lamb"
+     ]
     },
     {
      "k": "contrast",
@@ -7966,7 +8191,12 @@
       "Licor 43 gives a hint of vanilla-orange sweetness, which suits the creamy, spicy, sweet pizza"
      ],
      "why": "Strawberry Fields balances fruit, bitterness and gentle sweetness, which suits a creamy, spicy pizza.",
-     "id": "c-strawberry-fields#4"
+     "id": "c-strawberry-fields#4",
+     "wrong": [
+      "Very sweet and syrupy, a dessert-style drink that mirrors the pizza",
+      "Light and watery in body, so it vanishes next to the cheese",
+      "Creamy coconut and pineapple flavours make it taste tropical with the burrata"
+     ]
     },
     {
      "k": "contrast",
@@ -8080,7 +8310,12 @@
       "The freshness and lemon lift the saffron, smoky chicken"
      ],
      "why": "Its bright, fresh tropical flavours lift a saffron and smoky paella.",
-     "id": "c-la-vita-colada#4"
+     "id": "c-la-vita-colada#4",
+     "wrong": [
+      "Very bitter and dry, which cuts through the rich paella",
+      "Thick, heavy and creamy like a milkshake, so it fills the table",
+      "Smoky, savoury flavours that echo the saffron and chicken"
+     ]
     },
     {
      "k": "contrast",
@@ -8195,7 +8430,12 @@
       "They can choose tequila or vodka"
      ],
      "why": "Coffee flavours echo each other, so the pairing feels natural.",
-     "id": "c-ciclo-espresso-martini#4"
+     "id": "c-ciclo-espresso-martini#4",
+     "wrong": [
+      "Light and watery in body, so it refreshes between bites",
+      "Sharp, tart and zesty, which cuts through the creamy tiramisu",
+      "Fruity strawberry and lime flavours lift the tiramisu's cocoa and cream"
+     ]
     },
     {
      "k": "contrast",
@@ -8309,7 +8549,12 @@
       "Rich, buttery whisky matches the charred steak"
      ],
      "why": "A bold, spirit-forward drink stands up to a rich steak.",
-     "id": "c-the-old-fashioned#4"
+     "id": "c-the-old-fashioned#4",
+     "wrong": [
+      "Light and delicate, so it never competes with the big steak.",
+      "Bright, tart citrus acidity that cuts through the fatty striploin.",
+      "Sweet and fruity, which softens the char on the meat."
+     ]
     },
     {
      "k": "contrast",
@@ -8423,7 +8668,12 @@
       "Its bitterness balances the salty, rich ham"
      ],
      "why": "Campari's bitterness cuts through the salty, nutty ham.",
-     "id": "c-the-negroni#4"
+     "id": "c-the-negroni#4",
+     "wrong": [
+      "Light and delicate, so it leaves the fine ham alone.",
+      "Soft and sweet, which smooths out the salty cured flavour.",
+      "Creamy and mellow, so it coats the ham in richness."
+     ]
     },
     {
      "k": "contrast",
@@ -8538,7 +8788,12 @@
       "It suits the briny, acidic oysters"
      ],
      "why": "A dry martini is a classic partner for oysters.",
-     "id": "c-silk-stone-martini#4"
+     "id": "c-silk-stone-martini#4",
+     "wrong": [
+      "Rich and heavy, which gives the delicate oysters some weight.",
+      "Sweet and fruity, so it softens the sharp, briny edge.",
+      "Smoky and bold, which adds depth to the fresh oysters."
+     ]
     },
     {
      "k": "contrast",
@@ -8653,7 +8908,12 @@
       "The smoke matches the charred, rich lamb"
      ],
      "why": "Smoky Scotch complements charred, herby lamb.",
-     "id": "c-dr-mario#4"
+     "id": "c-dr-mario#4",
+     "wrong": [
+      "Light and delicate, so it never overpowers the lamb.",
+      "Very sweet and syrupy, which balances the rich meat.",
+      "Fresh and fruity, which lifts the lamb and lightens it."
+     ]
     },
     {
      "k": "contrast",
@@ -8768,7 +9028,12 @@
       "It keeps the tomato-and-herb pizza feeling fresh"
      ],
      "why": "A light spritz is an easy match for a simple pizza.",
-     "id": "c-summer-blush#4"
+     "id": "c-summer-blush#4",
+     "wrong": [
+      "Rich and full-bodied, so it stands up to the pizza.",
+      "Dry and bitter, which cuts through the melted cheese.",
+      "Smoky and spiced, which adds depth to the tomato sauce."
+     ]
     },
     {
      "k": "contrast",
@@ -8884,7 +9149,12 @@
       "Goes well with the tomato-and-herb pizza"
      ],
      "why": "Its light fruitiness and bubbles suit a simple pizza and a guest wanting something gentle.",
-     "id": "c-rose-alla-fragola#4"
+     "id": "c-rose-alla-fragola#4",
+     "wrong": [
+      "Rich and full-bodied, so it holds its own with the pizza.",
+      "Dry and bitter, which cuts through the melted cheese.",
+      "Smoky and savoury, which adds depth to the tomato and herbs."
+     ]
     },
     {
      "k": "contrast",
@@ -8997,7 +9267,12 @@
       "Refreshing against the spicy, smoky potatoes"
      ],
      "why": "Its bubbles and fruit cool the spice, and the bitterness keeps it interesting.",
-     "id": "c-paradise-spritz#4"
+     "id": "c-paradise-spritz#4",
+     "wrong": [
+      "Rich and heavy, which gives the potatoes some real weight.",
+      "Very sweet and syrupy, which calms the spicy sauce completely.",
+      "Smoky and savoury, which echoes the paprika in the potatoes."
+     ]
     },
     {
      "k": "contrast",
@@ -9112,7 +9387,12 @@
       "Pinch of salt, $20 a glass"
      ],
      "why": "The mezcal's smoke echoes the grilled chorizo while the citrus cuts its richness.",
-     "id": "c-brasa-roja-mezcal#4"
+     "id": "c-brasa-roja-mezcal#4",
+     "wrong": [
+      "Light and delicate, so it keeps the chorizo gentle.",
+      "Very sweet and syrupy, which softens the spicy, rich sausage.",
+      "Creamy and mellow, which coats the palate after the chorizo."
+     ]
     },
     {
      "k": "contrast",
@@ -9227,7 +9507,12 @@
       "$20 a glass"
      ],
      "why": "The Red Velvet is juicy raspberry and tart lime with agave sweetness and a salty edge, priced at $20 a glass.",
-     "id": "c-red-velvet#4"
+     "id": "c-red-velvet#4",
+     "wrong": [
+      "Creamy chocolate and vanilla with a rich, smooth finish",
+      "Rich and heavy with dark cherry and warm baking spice",
+      "Dry and bitter with a long finish, around $14 a glass"
+     ]
     },
     {
      "k": "contrast",
@@ -9345,7 +9630,12 @@
       "Fruit and coconut cool the heat"
      ],
      "why": "The sweet, cooling fruit and spicy rim both work with crisp, spicy squid.",
-     "id": "c-costa-coco#4"
+     "id": "c-costa-coco#4",
+     "wrong": [
+      "Light and delicate, almost like a gentle fruit juice",
+      "Dry and sharply sour, with no sweetness from the pineapple",
+      "Rich creamy coconut that coats the calamari and softens the crunch"
+     ]
     },
     {
      "k": "contrast",
@@ -9462,7 +9752,12 @@
       "Crisp and not too strong, suits briny oysters"
      ],
      "why": "Its crisp, fruity style lifts the briny oysters.",
-     "id": "c-sangria-blanca#4"
+     "id": "c-sangria-blanca#4",
+     "wrong": [
+      "Rich and full-bodied, a heavy spirit-led cocktail like a strong martini",
+      "Dry and bitter with firm tannin that grips the oysters",
+      "Heavy sweet peach that smothers the delicate flavour of the oysters"
+     ]
     },
     {
      "k": "contrast",
@@ -9576,7 +9871,12 @@
       "$19 a glass"
      ],
      "why": "The Sangria Rosa is ripe red berries and orange with grapefruit tang and a little sparkle, at $19 a glass.",
-     "id": "c-sangria-rosa#4"
+     "id": "c-sangria-rosa#4",
+     "wrong": [
+      "Rich and heavy with dark chocolate and a long, warming finish",
+      "Very dry and bitter with grippy tannin and little fruit",
+      "Creamy vanilla and caramel with a smoky edge, around $15 a glass"
+     ]
     },
     {
      "k": "contrast",
@@ -9693,7 +9993,12 @@
       "$19 a glass"
      ],
      "why": "Sangria Tinta's smooth red wine, dark berries and brandy warmth sit well with grilled beef.",
-     "id": "c-sangria-tinta#4"
+     "id": "c-sangria-tinta#4",
+     "wrong": [
+      "Light and delicate, like a gentle spritz with a pale colour",
+      "Sharp, sour and very acidic, with lemon and no real sweetness",
+      "Smoky chocolate and coffee that match the char on the filet"
+     ]
     },
     {
      "k": "contrast",
@@ -9810,7 +10115,12 @@
       "Bittersweet with ginger and rosemary, which suits salty, garlicky snacks"
      ],
      "why": "The drink gives the spritz feel with no alcohol and balances salty, garlicky food.",
-     "id": "c-rossa-muse#4"
+     "id": "c-rossa-muse#4",
+     "wrong": [
+      "Rich and boozy with a heavy body, like a strong aperitivo",
+      "Dry and sour with sharp lemon and no sweetness at all",
+      "Creamy coconut and vanilla that mellow the garlic and olives"
+     ]
     },
     {
      "k": "contrast",
@@ -9925,7 +10235,12 @@
       "Bright raspberry and lemon with soda suits the tangy salad"
      ],
      "why": "The fruity, citrusy fizz complements the tangy cheese and needs no alcohol.",
-     "id": "c-spring-spritz#4"
+     "id": "c-spring-spritz#4",
+     "wrong": [
+      "Heavy and rich with a full body and a spirit-led finish",
+      "Very dry and bitter with firm tannin and no sweetness",
+      "Creamy chocolate and toasted nuts that mellow the tangy goat cheese"
+     ]
     },
     {
      "k": "contrast",

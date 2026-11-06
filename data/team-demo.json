@@ -1459,7 +1459,12 @@
       "Mention it's English sparkling, from Sussex"
      ],
      "why": "The wine's crisp freshness suits oysters and it's available by the glass.",
-     "id": "w-nyetimber-classic-cuvee#4"
+     "id": "w-nyetimber-classic-cuvee#4",
+     "wrong": [
+      "Its full, creamy body stands up to the richness of the oysters.",
+      "Its soft, gentle acidity keeps the oysters' brininess calm and rounded.",
+      "Its sweet, ripe fruit flavour takes the edge off the salty oysters."
+     ]
     },
     {
      "k": "contrast",
@@ -1583,7 +1588,12 @@
       "Say its acidity lifts the rich crab mayonnaise"
      ],
      "why": "It's a bottle-only English sparkling whose freshness suits the delicate crab.",
-     "id": "w-gusbourne-blanc-de-blancs#4"
+     "id": "w-gusbourne-blanc-de-blancs#4",
+     "wrong": [
+      "Its rich, full body matches the weight of the crab mayonnaise.",
+      "Its gentle, low acidity lets the creamy crab mayonnaise take centre stage.",
+      "Its toasty, buttery flavour echoes the crab and makes it richer."
+     ]
     },
     {
      "k": "contrast",
@@ -1707,7 +1717,12 @@
       "Explain it suits delicate white fish and lifts the dish"
      ],
      "why": "A good answer links the fresh style to the delicate fish.",
-     "id": "w-domaine-laroche-chablis-saint-martin#4"
+     "id": "w-domaine-laroche-chablis-saint-martin#4",
+     "wrong": [
+      "Its full, weighty body gives the cod plenty of heft.",
+      "Its soft, mellow acidity keeps the delicate fish gentle and smooth.",
+      "Its oaky, buttery flavour wraps the cod in a richer, creamier taste."
+     ]
     },
     {
      "k": "contrast",
@@ -1830,7 +1845,12 @@
       "Link the wine to the creamy chicken dish"
      ],
      "why": "A good answer gives price, tier and a plain match to the creamy dish.",
-     "id": "w-william-fevre-chablis-premier-cru-montmains#4"
+     "id": "w-william-fevre-chablis-premier-cru-montmains#4",
+     "wrong": [
+      "Its light, delicate body keeps the creamy morel sauce from feeling heavy.",
+      "Its gentle tannin gives the morels a firm, grippy backbone.",
+      "Its sweet ripe fruit softens the earthiness of the morels."
+     ]
     },
     {
      "k": "contrast",
@@ -1954,7 +1974,12 @@
       "Mention it is £62 a bottle"
      ],
      "why": "Goat's cheese is one of the best partners for Sauvignon Blanc, and the price is £62 for the bottle.",
-     "id": "w-pascal-jolivet-sancerre#4"
+     "id": "w-pascal-jolivet-sancerre#4",
+     "wrong": [
+      "Its full, rounded body matches the richness of the goat's cheese tart.",
+      "Its soft, low acidity lets the creamy goat's cheese stay mellow.",
+      "Its sweet, tropical fruit flavour sweetens the tangy goat's cheese."
+     ]
     },
     {
      "k": "contrast",
@@ -2077,7 +2102,12 @@
       "Mention it is £12 a glass"
      ],
      "why": "Riesling suits pork, and acidity balances rich, fried food.",
-     "id": "w-trimbach-riesling#4"
+     "id": "w-trimbach-riesling#4",
+     "wrong": [
+      "Its full, rich body stands up to the weight of the fried pork.",
+      "Its gentle tannin grips the crispy pork and cleans the palate.",
+      "Its honeyed sweetness softens the rich pork and apple sauce together."
+     ]
     },
     {
      "k": "contrast",
@@ -2200,7 +2230,12 @@
       "It is bottle only at £58, no glass"
      ],
      "why": "The pairing is based on acidity and pork, and this wine is only sold by the bottle.",
-     "id": "w-donnhoff-riesling-trocken#4"
+     "id": "w-donnhoff-riesling-trocken#4",
+     "wrong": [
+      "Its full, creamy body gives the rich fried pork a matching weight.",
+      "Its sweetness balances the salty crispy pork and calms its richness.",
+      "Its oaky, buttery flavour deepens the rich pork and rounds everything off."
+     ]
     },
     {
      "k": "contrast",
@@ -2323,7 +2358,12 @@
       "It is £11 a glass"
      ],
      "why": "Grüner suits Asian dishes and this wine comes by the glass.",
-     "id": "w-brundlmayer-gruner-veltliner-kamptal-terrassen#4"
+     "id": "w-brundlmayer-gruner-veltliner-kamptal-terrassen#4",
+     "wrong": [
+      "Its full, weighty body gives the delicate aubergine more substance.",
+      "Its gentle tannin grips the miso and softens its saltiness.",
+      "Its sweet, tropical fruit flavour softens the savoury miso and sesame."
+     ]
     },
     {
      "k": "contrast",
@@ -2445,7 +2485,12 @@
       "£13 a glass"
      ],
      "why": "The pairing works on acidity and the grape's affinity with goat's cheese, and the wine is sold by the glass.",
-     "id": "w-cloudy-bay-sauvignon-blanc#4"
+     "id": "w-cloudy-bay-sauvignon-blanc#4",
+     "wrong": [
+      "Its full, creamy body matches the weight of the tart pastry",
+      "Its gentle sweetness softens the sharp goat's cheese and onion marmalade",
+      "Its oak and butter flavours deepen the richness of the tart"
+     ]
     },
     {
      "k": "contrast",
@@ -2568,7 +2613,12 @@
       "Offer the Minuty at £12 a glass with a dish it suits, such as the burrata with heritage tomatoes and basil"
      ],
      "why": "A light rosé does not stand up to rich braised lamb, but it suits fresh, herby dishes like the burrata.",
-     "id": "w-chateau-minuty-m-de-minuty-cotes-de-provence#4"
+     "id": "w-chateau-minuty-m-de-minuty-cotes-de-provence#4",
+     "wrong": [
+      "Its full body stands up well to rich braised lamb",
+      "Its firm tannin cuts through the fat of the lamb shoulder",
+      "Its bold, smoky fruit deepens the roasted flavours of the lamb"
+     ]
     },
     {
      "k": "contrast",
@@ -2691,7 +2741,12 @@
       "Offer the Château de Selle at £78 a bottle (bottle only) with something lighter, such as the oysters or the pan-roast cod"
      ],
      "why": "A pale rosé is too light for harissa-spiced lamb, so guide the guest to a red and keep the rosé for lighter dishes.",
-     "id": "w-domaines-ott-chateau-de-selle-cotes-de-provence-rose#4"
+     "id": "w-domaines-ott-chateau-de-selle-cotes-de-provence-rose#4",
+     "wrong": [
+      "Its full, weighty body matches the richness of the lamb rump",
+      "Its off-dry sweetness calms the heat of the harissa spice",
+      "Its big tannic grip tames the smoky char on the lamb"
+     ]
     },
     {
      "k": "contrast",
@@ -2812,7 +2867,12 @@
       "It is light and soft so it won't overpower the delicate trout"
      ],
      "why": "The wine is light, fits the budget and suits fish.",
-     "id": "w-chateau-musar-jeune-rose#4"
+     "id": "w-chateau-musar-jeune-rose#4",
+     "wrong": [
+      "Its full body gives the delicate trout some real weight",
+      "Its grippy tannin cleanses the richness of the cured fish",
+      "Its bold, jammy fruit brings out the saltiness of the trout"
+     ]
     },
     {
      "k": "contrast",
@@ -2933,7 +2993,12 @@
       "Decant for about 30 minutes; bottle only at £125"
      ],
      "why": "Steak and Cabernet is the classic match, and a decant lets this wine open up.",
-     "id": "w-chateau-haut-bages-liberal-pauillac#4"
+     "id": "w-chateau-haut-bages-liberal-pauillac#4",
+     "wrong": [
+      "Its light body keeps the rich sirloin from feeling heavy",
+      "Its sweetness balances the charred, savoury crust of the steak",
+      "Its soft, jammy fruit gives the beef a sweet vanilla finish"
+     ]
     },
     {
      "k": "contrast",
@@ -3056,7 +3121,12 @@
       "Decant for about 30 minutes, serve at 16-18°C"
      ],
      "why": "The wine fits the dish and the budget, and decanting helps it open up.",
-     "id": "w-chateau-pichon-baron-les-griffons-de-pichon-baron#4"
+     "id": "w-chateau-pichon-baron-les-griffons-de-pichon-baron#4",
+     "wrong": [
+      "Its light, delicate body keeps the rich lamb feeling fresh",
+      "Its low tannin lets the soft lamb flavours come through",
+      "Its sweet, ripe fruit gives the braised lamb a sweet glaze"
+     ]
     },
     {
      "k": "contrast",
@@ -3178,7 +3248,12 @@
       "Serve at 16-18°C, decant about 30 minutes"
      ],
      "why": "Game and Mourvèdre echo each other, and a decant helps the firm wine open.",
-     "id": "w-domaine-tempier-bandol#4"
+     "id": "w-domaine-tempier-bandol#4",
+     "wrong": [
+      "Its light, silky body keeps the venison tasting delicate",
+      "Its soft, low tannin leaves the lean venison tender and juicy",
+      "Its bright, sweet berry fruit hides the gamey flavour of the loin"
+     ]
     },
     {
      "k": "contrast",
@@ -3299,7 +3374,12 @@
       "Ripe black plum and blackberry, no need to decant"
      ],
      "why": "It is a classic pairing and the only one of these four reds sold by the glass.",
-     "id": "w-catena-malbec#4"
+     "id": "w-catena-malbec#4",
+     "wrong": [
+      "Its light body keeps the sirloin from feeling heavy",
+      "Its sharp acidity and firm tannin cut through the beef fat",
+      "Its crisp citrus and herb flavours lift the steak"
+     ]
     },
     {
      "k": "contrast",
@@ -3420,7 +3500,12 @@
       "Tannin and cherry-plum fruit balance the richness; it is £72 a bottle only, not by the glass"
      ],
      "why": "It links the wine's flavours and structure to the dish and gives the right price format.",
-     "id": "w-la-rioja-alta-vina-ardanza-reserva#4"
+     "id": "w-la-rioja-alta-vina-ardanza-reserva#4",
+     "wrong": [
+      "Light, delicate body means it will never overwhelm the lamb.",
+      "Zesty acidity and a touch of sweetness lift the braised lamb.",
+      "Bright lemony freshness cleanses the palate between each rich bite."
+     ]
     },
     {
      "k": "contrast",
@@ -3541,7 +3626,12 @@
       "Bottle only at £78, not by the glass"
      ],
      "why": "It links structure to the dish and gives the correct price format.",
-     "id": "w-cvne-imperial-reserva#4"
+     "id": "w-cvne-imperial-reserva#4",
+     "wrong": [
+      "Light, delicate body keeps the sirloin from feeling heavy.",
+      "Soft, gentle tannin and sweet fruit mellow the beef's char.",
+      "Sweet jammy fruit and sparkling freshness refresh the palate after beef."
+     ]
     },
     {
      "k": "contrast",
@@ -3662,7 +3752,12 @@
       "Suggest decanting and warn it is grippy; bottle only at £92"
      ],
      "why": "Rich, fatty meat softens Nebbiolo's tannin.",
-     "id": "w-g-d-vajra-barolo-albe#4"
+     "id": "w-g-d-vajra-barolo-albe#4",
+     "wrong": [
+      "Light, easy body means it never overpowers the lamb.",
+      "Low tannin and soft acidity keep it smooth for nervous guests.",
+      "Sweet ripe fruit and vanilla oak sweeten the lamb's richness."
+     ]
     },
     {
      "k": "contrast",
@@ -3783,7 +3878,12 @@
       "Bottle only at £76"
      ],
      "why": "Nebbiolo's savoury character works with earthy, creamy dishes and the price fits.",
-     "id": "w-produttori-del-barbaresco-barbaresco#4"
+     "id": "w-produttori-del-barbaresco-barbaresco#4",
+     "wrong": [
+      "Full, heavy body wraps around the creamy rice like a blanket.",
+      "Low tannin and mellow acidity keep it soft with creamy risotto.",
+      "Sweet, jammy fruit adds a pleasing contrast to the earthy mushrooms."
+     ]
     },
     {
      "k": "contrast",
@@ -3904,7 +4004,12 @@
       "Explain it is fresh enough to cut through the creamy risotto without drowning the mushrooms"
      ],
      "why": "A light, fresh red suits the creamy, earthy risotto and fits the guest's wish for something gentle.",
-     "id": "w-allegrini-valpolicella-classico#4"
+     "id": "w-allegrini-valpolicella-classico#4",
+     "wrong": [
+      "Full, powerful body stands up well to the creamy risotto.",
+      "Firm tannin and a touch of sweetness cling to the rice.",
+      "Rich raisined fruit adds a warming, sweet depth to the mushrooms."
+     ]
     },
     {
      "k": "contrast",
@@ -4029,7 +4134,12 @@
       "Mention it is £130 a bottle only, with no glass option, and offer the Valpolicella by the glass if they want something lighter"
      ],
      "why": "A rich braised dish suits Amarone, but it is bottle only, so a lighter by-the-glass alternative is worth offering.",
-     "id": "w-allegrini-amarone-della-valpolicella-classico#4"
+     "id": "w-allegrini-amarone-della-valpolicella-classico#4",
+     "wrong": [
+      "Light, fresh body means it will never weigh down the lamb.",
+      "Zingy acidity and low tannin keep the pairing bright and easy.",
+      "Sweet vanilla flavour brings out the lamb's natural sweetness."
+     ]
     },
     {
      "k": "contrast",
@@ -4153,7 +4263,12 @@
       "Only sold by the bottle at £70, with a glass option elsewhere such as the Louis Jadot Pinot Noir"
      ],
      "why": "It matches the dish and the guest's wish, and the list shows it is bottle only.",
-     "id": "w-au-bon-climat-santa-barbara-county-pinot-noir#4"
+     "id": "w-au-bon-climat-santa-barbara-county-pinot-noir#4",
+     "wrong": [
+      "Full, rich body gives the duck a satisfying weight to match.",
+      "Firm, grippy tannin cuts through the fat of the duck.",
+      "Sweet jammy fruit and vanilla oak overpower the cherries in the dish."
+     ]
     },
     {
      "k": "contrast",
@@ -4274,7 +4389,12 @@
       "Offer a glass of Louis Jadot Pinot Noir at £14 as a same-grape alternative"
      ],
      "why": "It matches the dish and handles the glass request using the list.",
-     "id": "w-felton-road-bannockburn-pinot-noir#4"
+     "id": "w-felton-road-bannockburn-pinot-noir#4",
+     "wrong": [
+      "Full, weighty body matches the creamy richness of the risotto.",
+      "Grippy tannin and low acidity keep it smooth with the rice.",
+      "Sweet raisined fruit and vanilla flavour mask the mushrooms' earthiness."
+     ]
     },
     {
      "k": "contrast",
@@ -4396,7 +4516,12 @@
       "The half-bottle is £55 if they want to share"
      ],
      "why": "It is sold by the glass and in a small bottle, so it suits both a single drink and sharing.",
-     "id": "w-chateau-suduiraut-lions-de-suduiraut-sauternes#4"
+     "id": "w-chateau-suduiraut-lions-de-suduiraut-sauternes#4",
+     "wrong": [
+      "Its light, delicate body keeps the cheese from feeling heavy on the palate.",
+      "Firm tannins cut through the richness of the cheese and cleanse the mouth.",
+      "Its savoury, nutty flavour mirrors the cheese and deepens its saltiness."
+     ]
     },
     {
      "k": "contrast",
@@ -4518,7 +4643,12 @@
       "The bottle is 50cl at £42"
      ],
      "why": "It is our cheapest sweet wine and matches cheese well.",
-     "id": "w-disznoko-tokaji-late-harvest#4"
+     "id": "w-disznoko-tokaji-late-harvest#4",
+     "wrong": [
+      "Its full, heavy body stands up to strong cheeses and coats the palate.",
+      "Its gentle, soft acidity lets the creamy cheese stay the star of the plate.",
+      "Its dry, mineral flavour sharpens the cheese and brings out its saltiness."
+     ]
     },
     {
      "k": "contrast",
@@ -4641,7 +4771,12 @@
       "Mention its sweetness matches the rich, sweet delice"
      ],
      "why": "Port with chocolate is a classic match, and this fits the dessert and the price.",
-     "id": "w-taylor-s-10-year-old-tawny-port#4"
+     "id": "w-taylor-s-10-year-old-tawny-port#4",
+     "wrong": [
+      "Its light, airy body keeps the rich chocolate from feeling too heavy.",
+      "Its high acidity cuts the chocolate and leaves the palate sharp and clean.",
+      "Its fresh, zesty citrus flavour lifts the chocolate and lightens each mouthful."
+     ]
     },
     {
      "k": "contrast",
@@ -4763,7 +4898,12 @@
       "Describe it as a rich Port with dark fruit"
      ],
      "why": "It is a sweet Port at £7 a glass that suits a very sweet dessert.",
-     "id": "w-graham-s-late-bottled-vintage-port#4"
+     "id": "w-graham-s-late-bottled-vintage-port#4",
+     "wrong": [
+      "It's a light, delicate wine that sits gently alongside a rich pudding.",
+      "Its high acidity makes it taste crisp and refreshing after the pudding.",
+      "Its dry, savoury flavour balances out the sugary toffee in the pudding."
+     ]
     },
     {
      "k": "contrast",
@@ -4887,7 +5027,12 @@
       "The bubbles cleanse the palate after salty, delicate oysters"
      ],
      "why": "A sharp, bubbly Champagne suits salty, acidic, delicate food.",
-     "id": "w-billecart-salmon-brut-reserve#4"
+     "id": "w-billecart-salmon-brut-reserve#4",
+     "wrong": [
+      "Its full, heavy body gives the delicate oysters weight and richness.",
+      "Its soft sweetness rounds off the sharp vinegar and calms the shallots.",
+      "Its toasty, oaky flavour adds a warm richness that deepens the oysters."
+     ]
     },
     {
      "k": "contrast",
@@ -5011,7 +5156,12 @@
       "Its earthy, forest-floor notes echo the mushrooms"
      ],
      "why": "A light, earthy red suits an earthy, creamy dish.",
-     "id": "w-louis-jadot-bourgogne-pinot-noir-couvent-des-jacobins#4"
+     "id": "w-louis-jadot-bourgogne-pinot-noir-couvent-des-jacobins#4",
+     "wrong": [
+      "It's a full, powerful red that gives the risotto real weight.",
+      "Its firm, grippy tannins cut through the creamy rice and refresh the palate.",
+      "Its bold, peppery spice lifts the mushrooms and adds a smoky kick."
+     ]
     },
     {
      "k": "contrast",
