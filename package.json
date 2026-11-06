@@ -24,7 +24,8 @@
     "match:backtest": "node scripts/match-backtest.mjs",
     "trailer": "node scripts/trailer.mjs",
     "tts:check": "node scripts/tts-check.mjs",
-    "team:dishes": "node scripts/team-dishes.mjs"
+    "team:dishes": "node scripts/team-dishes.mjs",
+    "team:audit": "node scripts/team-audit.mjs"
   },
   "keywords": [
     "wine",

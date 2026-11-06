@@ -289,7 +289,7 @@ const TeamData = {
      chip and the console. The demo restaurant runs offline, so it's only counted there. */
   /* The check in words for the job chip: "180 questions checked · 6 rewritten". */
   checkedLine(){ const c=(this.get().venue||{}).checked; if(!c) return 'Training is up to date';
-    return `${c.asked} questions checked${c.fixed?` · ${c.fixed} rewritten`:''}${c.left?` · ${c.left} held back`:''}`; },
+    return `${c.asked} questions checked${c.fixed?` · ${c.fixed} rewritten`:''}${c.left?` · ${c.left} held back`:''}${c.flagged?` · ${c.flagged} to look at`:''}`; },
   FIX_BATCH:8, FIX_ROUNDS:2,
   async checkQuestions(ids,onStep){
     const all=ids||this.wines().map(w=>w.id), asked=all.reduce((n,id)=>n+((this.card(id)||{}).qs||[]).length,0);
@@ -322,7 +322,9 @@ const TeamData = {
       const still=new Set(TeamLearn.audit([...new Set(failed.map(f=>f.wine))]).map(f=>f.q.id));
       fixed=failed.filter(f=>!still.has(f.q.id)).length;
     }
-    const d=this.get(); d.venue.checked={at:Date.now(),asked,failed:failed.length,fixed,left:failed.length-fixed}; this.save(d);
+    // Then the review of every question as the drill shows it (TeamLearn.review), listed on the console's Wines section.
+    let flagged=0; try{ flagged=TeamLearn.review().length; }catch(e){}
+    const d=this.get(); d.venue.checked={at:Date.now(),asked,failed:failed.length,fixed,left:failed.length-fixed,flagged}; this.save(d);
     return d.venue.checked;
   },
 

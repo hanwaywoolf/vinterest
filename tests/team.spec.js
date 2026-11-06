@@ -1861,3 +1861,21 @@ test('a wine card: where you stand near the top, sections that fold and stay fol
   await page.getByTestId('team-wine-row').nth(1).click();
   await expect(page.getByTestId('fold-wine-taste')).toHaveAttribute('data-folded', '1'); // remembered on this phone
 });
+
+// The app's own review (TeamLearn.review, `npm run team:audit`): every question of every restaurant, as the drill shows
+// it, against the faults found by hand: a wrong answer about another dish, answers of mixed kinds, a table request that
+// gives the answer away, an answer screen that repeats the answer or runs long, duplicates, length cues, giveaway words.
+test('the review finds nothing to fix on any restaurant in the build', async ({ context, page }) => {
+  await stubNetwork(context);
+  for (const seed of ['demo', 'sample', 'social']) {
+    await page.goto(`${BASE}/team/?seed=${seed}`);
+    await page.waitForFunction(() => window.TeamLearn && TeamData.wines().length > 0);
+    const flags = await page.evaluate(() => TeamLearn.review().map((f) => `[${f.code}] ${f.q.q.slice(0, 80)}: ${f.note}`));
+    expect(flags, seed).toEqual([]);
+  }
+  // It catches what it's for: a dish's change answered about another dish is flagged.
+  const caught = await page.evaluate(() => { const d = TeamData.dishes()[0], o = TeamData.dishes()[1], q = TeamLearn.dishQs(d.id).find((x) => /#mod$/.test(x.id)) || null;
+    if (!q) return 'none'; const bad = { ...q, pills: { ...q.pills, opts: q.pills.opts.map((x, i) => q.pills.right.includes(i) ? x : `The ${o.name} is served as it comes.`) } };
+    const was = TeamLearn.dishQs; TeamLearn.dishQs = (id) => id === d.id ? [bad] : []; const r = TeamLearn.review().some((f) => f.code === 'offsubject'); TeamLearn.dishQs = was; return r; });
+  expect(caught).toBe(true); // on The Social Corner, whose dishes have notes
+});

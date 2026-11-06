@@ -410,6 +410,15 @@ function _CWines({open,goUpload}){ const T=useTheme(), cr=T.lift(C.cr), ws=TeamD
   const groups=[]; ws.forEach(w=>{ const s=w.section||'The list'; let g=groups.find(x=>x.s===s); if(!g) groups.push(g={s,ws:[]}); g.ws.push(w); });
   return <div data-testid="console-wines">{_cH(T,'Wines',`${ws.length} on the list · ${ws.filter(TeamData.byGlass).length} by the glass · ${cov.glass.covered+cov.bottle.covered} covered by the floor`,<Btn small onClick={goUpload}>Upload a new list</Btn>)}
     {!ws.length&&<Card><div style={{fontSize:14,color:T.mid,fontFamily:C.P}}>No list yet. Upload one and it appears here with who knows what.</div></Card>}
+    {(()=>{ const rv=TeamLearn.review(); if(!rv.length) return null;
+      // The app's own review of every question as the drill shows it: what a reviewer would catch, before anyone drills it.
+      const WORD={offsubject:'Off the subject',kind:'Mixed kinds',request:'Gives the answer away',echo:'Repeats the answer',long:'Too long to read',dupe:'Same option twice',cue:'Length gives it away',giveaway:'Gives the answer away'};
+      return <Card style={{marginBottom:14}}><div data-testid="console-review">{_cLabel(T,`The app's review · ${rv.length} to fix`)}
+        {rv.slice(0,10).map((f,i)=>{ const w=f.q.wine&&TeamData.wine(f.q.wine), d=f.q.dish&&TeamData.dish(f.q.dish);
+          return <div key={f.q.id+f.code+i} role="button" onClick={()=>w?open({view:'wine',id:w.id}):d&&open({view:'dish',id:d.id})} style={{padding:'9px 0',borderTop:i?`1px solid ${T.line}`:'none',cursor:'pointer'}}>
+            <div style={{display:'flex',justifyContent:'space-between',gap:10,alignItems:'baseline'}}><span style={{fontSize:14,color:T.ink,fontFamily:C.P,lineHeight:1.45}}>{f.q.q}</span>{_cChip(T,WORD[f.code]||f.code,T.amber)}</div>
+            <div style={{fontSize:12,color:T.mid,fontFamily:C.P,marginTop:2}}>{w?TeamData.short(w):d?d.name:''} · {f.note}</div></div>; })}
+        {_cNote(T,'Every question is checked the way the drill shows it. The next publish sends these back to be rewritten; until then they are still asked.')}</div></Card>; })()}
     {(()=>{ const hs=TeamLearn.questionHealth(); if(!hs.length) return null; const pct=x=>Math.round(x*100)+'%';
       return <Card style={{marginBottom:14}}><div data-testid="console-question-health">{_cLabel(T,'Questions to look at')}
         {hs.slice(0,8).map((h,i)=>{ const w=h.q.wine&&TeamData.wine(h.q.wine), d=h.q.dish&&TeamData.dish(h.q.dish);
