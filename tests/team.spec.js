@@ -1090,3 +1090,77 @@ test('a wine card says how to pronounce the wine, and Say it speaks it', async (
   await expect.poll(() => page.evaluate(() => window.__spoken.join('|'))).toContain('DURN-hoff');
   expect(errors).toEqual([]);
 });
+
+// Training levels (TeamLearn.LEVELS): management sets Low, Medium or High for the restaurant, with a level
+// per role over it. A level filters the written cards and questions, never rewrites them: Low is one thing to
+// say, what it pours with and a fact to read; Medium adds grape, place and taste; High is everything.
+test('training levels: the console sets them, cards and drills follow, a role can differ, nothing is rewritten', async ({ browser }) => {
+  const ctx = await browser.newContext({ viewport: { width: 1280, height: 800 } });
+  const page = await ctx.newPage();
+  const errors = []; page.on('pageerror', (e) => errors.push(e.message));
+  await stubNetwork(ctx);
+  await page.goto(`${BASE}/team/?seed=demo&view=console`);
+  await expect(page.getByTestId('team-console')).toBeVisible();
+  const counts = await page.evaluate(() => {
+    const ws = TeamData.wines(), n = {}, ids = {};
+    for (const lv of TeamLearn.LEVELS) { const qs = ws.flatMap((w) => TeamLearn.levelQs(w.id, lv)); n[lv] = qs.length; ids[lv] = qs.map((q) => q.id); }
+    const lowQs = ws.flatMap((w) => TeamLearn.levelQs(w.id, 'low')), medQs = ws.flatMap((w) => TeamLearn.levelQs(w.id, 'medium'));
+    return { n, level: TeamLearn.level(),
+      mediumInHigh: ids.medium.every((id) => ids.high.includes(id)),
+      kindsLow: [...new Set(lowQs.map((q) => q.k))].sort(), kindsMed: [...new Set(medQs.map((q) => q.k))].sort(),
+      lightOnlyLow: lowQs.filter((q) => q.light).length > 0 && !medQs.some((q) => q.light),
+      medRules: medQs.filter((q) => q.k !== 'apply' && TeamLearn.HIGH_ONLY.test(q.q)).length, // a table question may mention a vintage; it's asked at every level
+      pair: lowQs.find((q) => q.id.endsWith('#pair')), wines: ws.length };
+  });
+  expect(counts.level).toBe('high'); // a restaurant starts where the app has always been
+  expect(counts.n.low).toBeLessThan(counts.n.high);
+  expect(counts.n.medium).toBeLessThan(counts.n.high);
+  expect(counts.mediumInHigh).toBe(true); // Medium only filters what High asks
+  expect(counts.kindsLow).toEqual(['apply', 'recognise']); // one thing to say, what it pours with, at the table
+  expect(counts.kindsMed).toEqual(['apply', 'recall', 'recognise']); // no "tell them apart" below High
+  expect(counts.lightOnlyLow).toBe(true);
+  expect(counts.medRules).toBe(0);
+  // Low's pairing question: one of the wine's own dishes against three from this menu it isn't poured with.
+  const pair = counts.pair;
+  expect(pair.opts).toHaveLength(4);
+  const own = await page.evaluate((id) => TeamData.card(id).dishes.map((d) => d.dish), pair.wine);
+  expect(own).toContain(pair.opts[pair.a]);
+  expect(pair.opts.filter((o, i) => i !== pair.a && own.includes(o))).toHaveLength(0);
+
+  // The console's Team section sets the restaurant to Low and the sommelier back to High.
+  await page.getByTestId('console-nav-team').click();
+  await page.getByTestId('console-level-low').click();
+  await expect(page.getByTestId('console-level-about')).toContainText('One thing to say');
+  await page.locator('[data-testid="console-role-level"]').filter({ hasText: 'High' }).nth(2).click(); // server, bartender, sommelier
+  const after = await page.evaluate(() => {
+    const ppl = TeamLearn.people(), som = ppl.find((p) => p.role === 'sommelier'), srv = ppl.find((p) => p.role === 'server'), w = TeamData.wines()[0];
+    const drill = TeamLearn.drill(srv.id, 40);
+    return { level: TeamLearn.level(), server: TeamLearn.level('server'), som: TeamLearn.level('sommelier'),
+      srvQs: TeamLearn.qsFor('server', w.id).length, somQs: TeamLearn.qsFor('sommelier', w.id).length,
+      drillHigh: drill.filter((q) => !q.dish && !TeamLearn.levelQs(q.wine, 'low').some((x) => x.id === q.id)).length,
+      card: TeamData.card(w.id).qs.length };
+  });
+  expect(after).toMatchObject({ level: 'low', server: 'low', som: 'high', drillHigh: 0, card: 6 });
+  expect(after.somQs).toBeGreaterThan(after.srvQs);
+
+  // A server's card at Low: what to say, one thing to know and the dishes; no grape-and-region or drinking window.
+  await page.getByTestId('console-who').click();
+  await page.evaluate(() => { const s = TeamLearn.people().find((p) => p.role === 'server'); TeamLearn.setMe(s.id); });
+  await page.reload();
+  await page.getByTestId('team-tab-wines').click();
+  await page.getByTestId('team-wine-row').first().click();
+  await expect(page.getByTestId('team-pitch')).toBeVisible();
+  await expect(page.getByTestId('team-fact')).toBeVisible();
+  await expect(page.getByTestId('team-grape-region')).toHaveCount(0);
+  await expect(page.getByTestId('team-window')).toHaveCount(0);
+  await expect(page.locator('#root')).toContainText('With our menu');
+  // Back to High: the full card again, and the answers held were never touched.
+  await page.evaluate(() => TeamLearn.setLevel('high'));
+  await page.reload();
+  await page.getByTestId('team-tab-wines').click();
+  await page.getByTestId('team-wine-row').first().click();
+  await expect(page.getByTestId('team-grape-region')).toBeVisible();
+  await expect(page.getByTestId('team-fact')).toHaveCount(0);
+  expect(errors).toEqual([]);
+  await ctx.close();
+});

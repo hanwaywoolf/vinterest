@@ -234,6 +234,18 @@ function _CTeam({open,refresh}){ const T=useTheme(), cr=T.lift(C.cr);
         {['server','bartender','sommelier','buyer','manager'].map(rk=>{ const n=TeamLearn.need(rk); return <div key={rk} style={{display:'flex',alignItems:'center',gap:8,flexWrap:'wrap',marginBottom:8}}><div style={{width:92,fontSize:14,fontWeight:700,color:T.ink,fontFamily:C.P}}>{TeamLearn.ROLES[rk].label}</div>
           {Object.keys(TeamLearn.PART_LABEL).filter(k=>TeamLearn.ROLES[rk].need[k]>0).map(k=><div key={k} role="button" data-testid="console-need" onClick={()=>{ const v=n[k]>=0.95?0.5:Math.round((n[k]+0.1)*10)/10; TeamLearn.setNeed(rk,k,v); bump(); refresh&&refresh(); }} style={{padding:'4px 9px',borderRadius:9,border:`1px solid ${T.line}`,fontSize:13,color:T.ink2,fontFamily:C.P,cursor:'pointer'}}>{TeamLearn.PART_LABEL[k]} {Math.round(n[k]*100)}%</div>)}</div>; })}
         <div style={{fontSize:12,color:T.mid,fontFamily:C.P}}>Tap a figure to raise it by ten points (it wraps back to 50%). Readiness is recomputed against the new minimum at once.</div></Card>
+      <Card style={{gridColumn:'1 / -1'}}><div data-testid="console-level">{_cLabel(T,'Training level')}
+        {(()=>{ const chip=(on,label,onClick,tid)=><div key={label} role="button" data-testid={tid} aria-pressed={on} onClick={()=>{ onClick(); bump(); refresh&&refresh(); }} style={{padding:'5px 11px',borderRadius:9,border:`1px solid ${on?T.lift(C.cr):T.line}`,background:on?_alpha(T.lift(C.cr),0.14):'transparent',fontSize:13,fontWeight:on?700:500,color:on?T.ink:T.ink2,fontFamily:C.P,cursor:'pointer'}}>{label}</div>;
+          const lv=TeamLearn.level();
+          return <>
+            <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>{TeamLearn.LEVELS.map(k=>chip(lv===k,TeamLearn.LEVEL_LABEL[k],()=>TeamLearn.setLevel(k),'console-level-'+k))}</div>
+            <div data-testid="console-level-about" style={{fontSize:14,color:T.ink2,fontFamily:C.P,lineHeight:1.5,margin:'8px 0 12px'}}>{TeamLearn.LEVEL_ABOUT[lv]}</div>
+            {['server','bartender','sommelier','buyer','manager'].map(rk=>{ const own=TeamLearn.roleLevel(rk); return <div key={rk} style={{display:'flex',alignItems:'center',gap:8,flexWrap:'wrap',marginBottom:8}}>
+              <div style={{width:92,fontSize:14,fontWeight:700,color:T.ink,fontFamily:C.P}}>{TeamLearn.ROLES[rk].label}</div>
+              {chip(!own,'Same as the restaurant',()=>TeamLearn.setRoleLevel(rk,null),'console-role-level')}
+              {TeamLearn.LEVELS.map(k=>chip(own===k,TeamLearn.LEVEL_LABEL[k],()=>TeamLearn.setRoleLevel(rk,k),'console-role-level'))}</div>; })}
+            <div style={{fontSize:12,color:T.mid,fontFamily:C.P,lineHeight:1.5}}>Changes the cards staff see and what they're asked, at once. Nothing is rewritten and no answer is lost: moving up adds questions, moving down sets some aside until you move back. Readiness is recomputed straight away.</div></>; })()}
+      </div></Card>
     </div>
   </div>; }
 /* One person: readiness by part, then every wine their role sells with its rungs, then the dishes. */

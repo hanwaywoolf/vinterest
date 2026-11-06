@@ -77,6 +77,16 @@ wine without being caught out.
   the next new question in list order (by the glass first). About one in ten is an unannounced
   re-ask of something known, which measures retention honestly; the Team tab shows the rate.
 
+### Training levels (built)
+
+Restaurants differ in how much their staff need to know. A neighbourhood spot wants something to say about each wine and what it goes with; a wine-led dining room wants the grapes, the regions and the rules. Management picks a level for the restaurant in the console's Team section (`console-level`), and can set a different one for a role (the sommelier at High while servers are at Low). It's the first thing to settle with a new restaurant in discovery, then adjust.
+
+- **Low**: one thing to say about each wine and what it pours with. Two questions per wine are built from its card with no Claude call (`TeamLearn.lightQs`): which line you'd tell a guest (its taste line against three other wines of the same kind) and which dish you'd suggest it with (one of its own dishes against three from the menu it isn't poured with). The card's table question is kept. The card shows what to say, one fact to know (the producer, else the place, else the grape: `cardFact`), how it tastes and its dishes. A cocktail adds its base spirit and its story as the fact.
+- **Medium**: Low's table question, plus recognising it, its grape, where it's from and how it tastes (`MEDIUM_TOPICS`; a cocktail's spirit, what's in it, its flavours and who created it). Rules, classifications, ageing minimums and vintages stay at High (`HIGH_ONLY`), and there's no "tell them apart". The card adds the style bars, grape and region, serving and Offer instead.
+- **High**: everything the card asks, as before. A restaurant starts here.
+
+A level only filters what's already written (`TeamLearn.levelQs`, `qsFor(role, id)`, `cardShows`), so changing it takes effect at once, nothing is rewritten and no answer is lost: readiness, the drill, Vinny's test and the wine's standing all read the role's questions at its level. The console's own wine panel always shows the full card.
+
 ## Vinny in the staff app (built)
 
 A Vinny tab (between Today and Wines) and a row on Today, all in `team-vinny.js` (logic) and `team-vinny.jsx` (screens):

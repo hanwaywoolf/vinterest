@@ -480,13 +480,13 @@ const TeamDemo = {
   seedProgress(){
     const now=Date.now(), ppl=TeamLearn.people(), by=role=>ppl.find(p=>p.role===role), srv=ppl.filter(p=>p.role==='server');
     const P=TeamLearn._batchP=TeamLearn._all(); // every answer below lands here; saved once at the end
-    const learn=(pid,wines,kinds,at,sure='sure')=>wines.forEach(w=>TeamLearn.wineQs(w.id).filter(q=>kinds.includes(q.k)).forEach(q=>TeamLearn.record(pid,q,true,sure,at)));
+    const learn=(pid,wines,kinds,at,sure='sure')=>wines.forEach(w=>[...TeamLearn.wineQs(w.id),...TeamLearn.lightQs(w.id)].filter(q=>kinds.includes(q.k)).forEach(q=>TeamLearn.record(pid,q,true,sure,at)));
     // Dishes learned at `at` and kept fresh since (a single old answer would have faded by today).
     const dishes=(pid,xs,at,keep=true)=>xs.forEach(x=>TeamLearn.dishQs(x.id).forEach(q=>{ let t=at, it=TeamLearn.record(pid,q,true,'sure',t);
       for(let i=0;keep&&i<12&&it.due<now+this.DAY;i++){ t=Math.min(now-this.DAY/2,it.due); it=TeamLearn.record(pid,q,true,'sure',t); } }));
     const all=TeamData.wines(), glass=all.filter(TeamData.byGlass), bottle=all.filter(w=>!TeamData.byGlass(w)), menu=TeamData.dishes();
     const spaced=(pid,wines,kinds,firstDaysAgo,steps)=>{ // learned long ago and refreshed on schedule, so it's known today
-      wines.forEach(w=>TeamLearn.wineQs(w.id).filter(q=>kinds.includes(q.k)).forEach(q=>{ let t=now-firstDaysAgo*this.DAY, it=null;
+      wines.forEach(w=>[...TeamLearn.wineQs(w.id),...TeamLearn.lightQs(w.id)].filter(q=>kinds.includes(q.k)).forEach(q=>{ let t=now-firstDaysAgo*this.DAY, it=null;
         for(let i=0;i<12&&(i<steps||(it&&it.due<now+this.DAY));i++){ it=TeamLearn.record(pid,q,true,'sure',t); t=Math.min(now-this.DAY/2,it.due); } })); };
     const check=(pid,n,okShare)=>{ const m=TeamLearn._mine(P,pid); for(let i=0;i<n;i++) m.checks.push({at:now-Math.round(Math.random()*25)*this.DAY,ok:i<Math.round(n*okShare),id:'x'+i}); };
     // Claire, head sommelier: ready, the whole list at every rung, kept fresh.

@@ -29,6 +29,41 @@ const TeamLearn = {
   },
   // drinks: the cocktails and other mixed drinks, a part only where the list has any.
   PART_LABEL:{glass:'By the glass',bottle:'Bottles',drinks:'Cocktails',dishes:'Menu pairings'},
+  /* Training levels: how much each wine asks of the staff, set by management for the restaurant (`level`)
+     with a level per role over it (`roleLevels`), kept in vbiz_team_v1 beside the minimums. A level only
+     filters what's already written (cards, questions), never rewrites it, so a restaurant moves between
+     levels at once and keeps every answer it holds.
+     low: one thing to say about it and what it pours with (lightQs, built from the card, no Claude call),
+       the card's table questions, and one fact to read; a cocktail adds its base spirit.
+     medium: low's table questions plus recognising it, its grape, where it's from and how it tastes
+       (a cocktail: its spirit, what's in it, its flavours, who created it).
+     high: every question the card has, rules, methods, vintages and telling similar wines apart. */
+  LEVELS:['low','medium','high'],
+  LEVEL_LABEL:{low:'Low',medium:'Medium',high:'High'},
+  LEVEL_ABOUT:{low:"One thing to say about each wine, what it pours with, and one fact to know.",medium:"Adds each wine's grape, where it's from and how it tastes.",high:"Everything: rules, how it's made, vintages and telling similar wines apart."},
+  level(role){ const t=this.team(), r=role&&(t.roleLevels||{})[role]; return this.LEVELS.includes(r)?r:this.LEVELS.includes(t.level)?t.level:'high'; },
+  roleLevel(role){ const r=(this.team().roleLevels||{})[role]; return this.LEVELS.includes(r)?r:null; },
+  setLevel(lv){ if(!this.LEVELS.includes(lv)) return; const t=this.team(); t.level=lv; this._saveTeam(t); },
+  setRoleLevel(role,lv){ const t=this.team(); t.roleLevels={...(t.roleLevels||{})}; if(this.LEVELS.includes(lv)) t.roleLevels[role]=lv; else delete t.roleLevels[role]; this._saveTeam(t); },
+  // What a card shows at a level: staff are only asked about what they've been shown.
+  cardShows(lv){ const hi=lv==='high', mid=hi||lv==='medium';
+    return {fact:lv==='low',grapes:mid,style:mid,grape:mid,place:mid,serve:mid,alts:mid,spec:mid,story:mid,producer:hi,window:hi,usually:hi}; },
+  // Low's one fact to read: the producer, else the place, else the grape; a cocktail's story.
+  cardFact(id){ const w=TeamData.wine(id), c=TeamData.card(id); if(!c) return null; if(TeamData.isDrink(w)) return c.story||null; return c.producer||c.place||c.grape||null; },
+  MEDIUM_TOPICS:new Set(['wine','grape','place','flavour']),
+  MEDIUM_DRINK:new Set(['spirit','ingredient','flavour','creator']),
+  HIGH_ONLY:/classif|\btiers?\b|quality (label|level)|\brules?\b|\blaws?\b|\bminimum\b|designation|appellation|\blees\b|\bvintage\b|\bmonths\b|\byears\b/i,
+  atLevel(q,lv,drink){ if(lv==='high'||q.dish) return true; if(q.k==='contrast') return false; if(q.k==='apply') return true;
+    const t=this._topic(q.q,drink);
+    if(lv==='low') return drink?t==='spirit':t==='wine';
+    if(drink) return this.MEDIUM_DRINK.has(t);
+    if(this.HIGH_ONLY.test(q.q)) return false; // rules and systems stay at High, whatever they mention
+    if(this.MEDIUM_TOPICS.has(t)) return true;
+    return q.k==='recognise'&&!t&&/describ|style|best fits|which of these/i.test(q.q); },
+  levelQs(id,lv){ const base=this.wineQs(id); if(lv==='high') return base; const drink=TeamData.isDrink(TeamData.wine(id));
+    const kept=base.filter(q=>this.atLevel(q,lv,drink)); return lv==='low'?[...this.lightQs(id),...kept]:kept; },
+  // A role's questions on a wine: its level, then the rungs the role climbs.
+  qsFor(role,id){ const kinds=this.ROLES[role].kinds; return this.levelQs(id,this.level(role)).filter(q=>kinds.includes(q.k)); },
 
   team(){ const raw=Store.get(this.KEY); if(raw!==null&&raw===this._teamRaw) return this._teamVal;
     const t=raw?Store.getJSON(this.KEY,null):null, v=t&&t.people?t:{people:{},me:null,targets:{}}; this._teamRaw=raw; this._teamVal=v; return v; },
@@ -61,6 +96,27 @@ const TeamLearn = {
   _buildQs(id){ const c=TeamData.card(id); return (c&&c.qs||[]).map(q=>this._unspoil({...q,wine:id})).filter(Boolean).map(x=>{ if(x.k!=='recognise') return x;
     x=this._sameKind(x); if(!x||this.givesAway(x)) return null;
     const order=this._shuffle(x.opts.map((_,i)=>i),x.id); return {...x,opts:order.map(i=>this._cap(x.opts[i])),a:order.indexOf(x.a)}; }).filter(Boolean); },
+  /* Low's own questions, built from the card with no Claude call: which line you'd tell a guest about it
+     (its taste line against three other wines of the same kind, as unlike it as the list allows) and which
+     dish you'd suggest it with (one of its own dishes against three it doesn't suit). Kept per document
+     like wineQs, with ids of their own so progress on them is theirs. */
+  lightQs(id){ const doc=TeamData.get(); let m=this._qsCache.get(doc); if(!m){ m=new Map(); this._qsCache.set(doc,m); }
+    const k='light:'+id; if(!m.has(k)) m.set(k,this._buildLight(id)); return m.get(k).map(q=>({...q})); },
+  _buildLight(id){ const w=TeamData.wine(id), c=TeamData.card(id); if(!w||!c) return []; const out=[], name=TeamData.short(w), drink=TeamData.isDrink(w), kind=this.kindOf(w);
+    const st=c.style||{}, gap=o=>{ const s=(TeamData.card(o.id)||{}).style||{}; return Object.keys(st).reduce((a,k)=>a+Math.abs((st[k]||0)-(s[k]||0)),0); };
+    const others=TeamData.wines().filter(o=>o.id!==id&&this.kindOf(o)===kind&&(TeamData.card(o.id)||{}).taste).sort((a,b)=>gap(b)-gap(a)||(a.id<b.id?-1:1));
+    const tastes=[]; for(const o of others){ const t=TeamData.card(o.id).taste; if(this._norm(t)!==this._norm(c.taste)&&!tastes.some(x=>this._norm(x)===this._norm(t))) tastes.push(t); if(tastes.length===3) break; }
+    if(c.taste&&tastes.length===3) out.push(this._light(id+'#say',`Which of these would you tell a guest about the ${name}?`,[c.taste,...tastes],c.pitch,id));
+    const menu=TeamData.dishes(), byName=n=>menu.find(x=>this._norm(x.name)===this._norm(n));
+    const mine=(c.dishes||[]).map(x=>({d:byName(x.dish),why:x.why})).filter(x=>x.d);
+    if(mine.length){ const own=new Set(mine.map(x=>x.d.id));
+      const picks=x=>{ const p=TeamData.pairing(x.id)||{}; return [...(p.best||[]).map(b=>b.id),p.glass&&p.glass.id,p.cocktail&&p.cocktail.id].filter(Boolean); };
+      const notFor=menu.filter(x=>!own.has(x.id)&&!picks(x).includes(id));
+      const rank=x=>drink?0:this.tableFit(id,x.id)==='good'?1:0; // dishes it plainly doesn't suit first
+      const wrong=this._shuffle(notFor,id).sort((a,b)=>rank(a)-rank(b)).slice(0,3);
+      if(wrong.length===3) out.push(this._light(id+'#pair',`Which dish on our menu would you suggest the ${name} with?`,[mine[0].d.name,...wrong.map(x=>x.name)],mine[0].why,id)); }
+    return out.filter(q=>!this.givesAway(q)); },
+  _light(qid,q,opts,why,wine){ const order=this._shuffle(opts.map((_,i)=>i),qid); return {id:qid,k:'recognise',q,opts:order.map(i=>this._cap(opts[i])),a:order.indexOf(0),why,wine,light:true}; },
   /* A server always knows what kind of wine it is (the list says so), so a wrong answer describing another
      kind ("Full-bodied oaky white" for a rosé, "Golden with honey" for a Barolo) gives the answer away.
      Each one is swapped for a description of the same kind with this wine's style turned round
@@ -206,7 +262,7 @@ const TeamLearn = {
     for(let r=0;r<idx;r++){ const k=this.LADDER[r]; if(!kinds.includes(k)) continue; const below=qs.filter(q=>q.k===k); if(below.some(q=>!(items[q.id]&&items[q.id].reps))) return false; }
     return true;
   },
-  knowsWine(pid,role,id,items){ const kinds=this.ROLES[role].kinds, qs=this.wineQs(id).filter(q=>kinds.includes(q.k)); return qs.length>0&&qs.every(q=>this.known(items[q.id])); },
+  knowsWine(pid,role,id,items){ const qs=this.qsFor(role,id); return qs.length>0&&qs.every(q=>this.known(items[q.id])); },
   knowsDish(pid,id,items){ const qs=this.dishQs(id); return qs.length>0&&qs.every(q=>this.known(items[q.id])); },
   /* How much of a wine (the role's questions) or a dish they hold today: {known, total, rungs:[{k,label,done}]}.
      The drill's summary shows it per wine, and readiness counts it as partial credit. */
@@ -214,8 +270,8 @@ const TeamLearn = {
     const person=this.person(pid); if(!person) return {known:0,total:0,rungs:[]};
     const items=this._mine(this._all(),pid).items;
     if(dish){ const qs=this.dishQs(id); return {known:qs.filter(q=>this.known(items[q.id])).length,total:qs.length,rungs:[]}; }
-    const kinds=this.ROLES[person.role].kinds, qs=this.wineQs(id).filter(q=>kinds.includes(q.k));
-    const rungs=this.LADDER.filter(k=>kinds.includes(k)).map(k=>{ const rq=qs.filter(q=>q.k===k); return {k,label:this.KIND_LABEL[k],done:rq.length>0&&rq.every(q=>this.known(items[q.id]))}; });
+    const kinds=this.ROLES[person.role].kinds, qs=this.qsFor(person.role,id);
+    const rungs=this.LADDER.filter(k=>kinds.includes(k)&&qs.some(q=>q.k===k)).map(k=>{ const rq=qs.filter(q=>q.k===k); return {k,label:this.KIND_LABEL[k],done:rq.length>0&&rq.every(q=>this.known(items[q.id]))}; });
     return {known:qs.filter(q=>this.known(items[q.id])).length,total:qs.length,rungs};
   },
   KIND_LABEL:{recognise:'Recognise',recall:'Recall',apply:'At the table',contrast:'Tell them apart'},
@@ -224,7 +280,7 @@ const TeamLearn = {
   standing(pid,id){
     const person=this.person(pid); if(!person) return null;
     const pr=this.progress(pid,id), items=this._mine(this._all(),pid).items, now=Date.now();
-    const qs=this.wineQs(id).filter(q=>this.ROLES[person.role].kinds.includes(q.k));
+    const qs=this.qsFor(person.role,id);
     const seen=qs.filter(q=>items[q.id]&&items[q.id].reps).length, due=qs.filter(q=>{ const it=items[q.id]; return it&&it.reps&&(it.wrong||it.due<=now); }).length;
     const next=pr.rungs.find(r=>!r.done)||null, nextDue=qs.map(q=>items[q.id]).filter(it=>it&&it.reps&&!it.wrong&&it.due>now).reduce((a,it)=>Math.min(a,it.due),Infinity);
     const state=!seen?'new':pr.total&&pr.known===pr.total?'known':due?'fading':'learning';
@@ -263,15 +319,15 @@ const TeamLearn = {
     const role=person.role, kinds=this.ROLES[role].kinds, mine=this._mine(this._all(),pid), items=mine.items, now=Date.now();
     const sc0=this.scope(role), sc=part?{glass:part==='glass'?sc0.glass:[],bottle:part==='bottle'?sc0.bottle:[],drinks:part==='drinks'?sc0.drinks:[],dishes:part==='dishes'?sc0.dishes:[]}:sc0, wines=[...sc.glass,...sc.bottle,...sc.drinks], dishes=sc.dishes;
     const inPart=key=>!part||(key.startsWith('w:')?wines.some(w=>w.id===key.slice(2)):dishes.some(x=>x.id===key.slice(2)));
-    const qsFor=w=>this.wineQs(w.id), out=[], has=id=>out.some(q=>q.id===id);
+    const qsFor=w=>this.qsFor(role,w.id), out=[], has=id=>out.some(q=>q.id===id);
     const nextFor=(qs)=>{ // the lowest open rung's first question not yet answered right
       for(const k of this.LADDER){ if(!this._open(qs,items,k,kinds)) continue; const q=qs.find(q=>q.k===k&&!(items[q.id]&&items[q.id].reps)); if(q) return q; }
       return null;
     };
     const assigned=Object.entries(mine.assigned||{}).filter(([,a])=>!a.done).sort((a,b)=>a[1].due-b[1].due);
     assigned.forEach(([key])=>{ if(out.length>=size||!inPart(key)) return; const [t,id]=[key.slice(0,1),key.slice(2)];
-      const q=nextFor(t==='w'?qsFor({id}).filter(q=>kinds.includes(q.k)):this.dishQs(id)); if(q&&!has(q.id)) out.push(q); });
-    const pool=[...wines.flatMap(qsFor),...dishes.flatMap(x=>this.dishQs(x.id))].filter(q=>kinds.includes(q.k)||q.dish);
+      const q=nextFor(t==='w'?qsFor({id}):this.dishQs(id)); if(q&&!has(q.id)) out.push(q); });
+    const pool=[...wines.flatMap(qsFor),...dishes.flatMap(x=>this.dishQs(x.id))];
     const byId=Object.fromEntries(pool.map(q=>[q.id,q]));
     Object.entries(items).filter(([id,it])=>byId[id]&&it.reps&&(it.wrong||it.due<=now)).sort((a,b)=>this.recall(a[1],now)-this.recall(b[1],now))
       .forEach(([id])=>{ if(out.length<size&&!has(id)) out.push(byId[id]); });
@@ -279,7 +335,7 @@ const TeamLearn = {
       const knownIds=Object.entries(items).filter(([id,it])=>byId[id]&&this.known(it,now)).map(([id])=>id);
       if(knownIds.length&&Math.random()<this.CHECK_SHARE*size){ const id=knownIds[Math.floor(Math.random()*knownIds.length)]; if(!has(id)) out.push({...byId[id],check:true}); }
     }
-    for(const w of [...wines.map(w=>({qs:qsFor(w).filter(q=>kinds.includes(q.k))})),...dishes.map(x=>({qs:this.dishQs(x.id)}))]){
+    for(const w of [...wines.map(w=>({qs:qsFor(w)})),...dishes.map(x=>({qs:this.dishQs(x.id)}))]){
       if(out.length>=size) break; const q=nextFor(w.qs); if(q&&!has(q.id)) out.push(q);
     }
     return out.slice(0,size);
