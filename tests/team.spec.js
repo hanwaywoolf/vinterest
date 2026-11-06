@@ -1249,7 +1249,8 @@ test('table questions: the choice first, wrong answers that are believable and c
           if (g.label === 'What do you suggest?' && dish) wrong.forEach((o) => {
             const ow = TeamData.wines().find((x) => o.startsWith('The ' + TeamData.short(x) + ','));
             if (!ow) return out.wrongWine.push('not on the list: ' + o);
-            if (!TeamLearn.clearlyWrong(ow.id, dish.id)) out.wrongWine.push(`${dish.name}: ${TeamData.short(ow)}`);
+            // clearly wrong for the dish, or failing what the guest asked for ("under £120", "isn't heavy"), which the right wine meets
+            if (!TeamLearn.tableWrong(ow, TeamData.wine(q.wine), dish, wish, TeamLearn.wishStyle(q.q, dish))) out.wrongWine.push(`${dish.name}: ${TeamData.short(ow)}`);
             if (wish.kind && TeamLearn.kindOf(ow) !== wish.kind) out.wish.push(`${wish.kind} asked: ${TeamData.short(ow)}`);
             if (wish.side === 'glass' && !ow.glass) out.wish.push(`glass asked: ${TeamData.short(ow)}`);
           });
@@ -1263,7 +1264,7 @@ test('table questions: the choice first, wrong answers that are believable and c
     expect(r.tooFew).toEqual([]); // no choice of one or two
     expect(r.lengthCue).toEqual([]);
     expect(r.sameClaim).toEqual([]);
-    expect(r.wrongWine).toEqual([]); // every wrong wine is on the list and clearly wrong for the dish
+    expect(r.wrongWine).toEqual([]); // every wrong wine is on the list and wrong for this table
     expect(r.wish).toEqual([]); // and is what the guest asked for: a white for a white, by the glass for a glass
     expect(r.decided).toBeGreaterThanOrEqual(r.total / 8); // a floor: only where the list allows a fair choice (demo 11 of 29, Social Corner 11 of 63)
   }

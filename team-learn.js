@@ -166,10 +166,39 @@ const TeamLearn = {
   wishIn(text){ const t=String(text||'').toLowerCase();
     const kind=/\bcocktail|\bmocktail|\bspritz\b/.test(t)?'cocktail':/\bsparkling|\bfizz|\bbubbl|champagne/.test(t)?'sparkling':/\bros[eé]\b/.test(t)?'rosé':/\bwhite\b/.test(t)?'white':/\bred\b/.test(t)?'red':/\bsweet\b|\bdessert wine|\bsticky\b/.test(t)?'sweet':/\bport\b|\bsherry\b|fortified/.test(t)?'fortified':null;
     return {kind,side:/\bglass\b/.test(t)?'glass':/\bbottle\b/.test(t)?'bottle':null}; },
-  tableDecoys(rw,dish,seed,fit=()=>0,wish={}){ const pr=TeamData.pairing(dish.id)||{}, picks=new Set([...(pr.best||[]).map(b=>b.id),pr.glass&&pr.glass.id,pr.cocktail&&pr.cocktail.id].filter(Boolean));
-    const order=wish.kind?[wish.kind]:(this.NEAR[this.kindOf(rw)]||[this.kindOf(rw)]), plaus=w=>order.indexOf(this.kindOf(w));
-    const sold=w=>wish.side==='glass'?!!w.glass:wish.side==='bottle'?!!w.bottle:true;
-    return this._shuffle(TeamData.wines().filter(w=>w.id!==rw.id&&plaus(w)>=0&&sold(w)&&!picks.has(w.id)&&this.clearlyWrong(w.id,dish.id)),seed).sort((a,b)=>plaus(a)-plaus(b)||fit(a)-fit(b)).slice(0,3); },
+  /* What the guest's request rules out beyond the dish, read from the scenario with the dish's own words taken
+     out (so "fresh oysters" isn't a wish for something fresh): a style ("isn't heavy", "crisp", "soft", "dry",
+     "sweet") and a price limit ("under $60"). breaksWish says whether a wine on the list fails it, by its card's
+     figures and the list's own price; a wine that fails the request is a wrong answer however well it suits the
+     dish, which is what makes "a red that isn't heavy, with the duck" a real choice among reds. */
+  wishStyle(text,dish){ let t=' '+String(text||'').toLowerCase()+' ';
+    if(dish) this._words(dish.name+' '+(dish.desc||'')).forEach(w=>{ t=t.split(w).join(' '); });
+    const lim=t.match(/(?:under|below|less than|up to|no more than|at most)\s*[£$€]?\s*(\d+)/);
+    return {light:/n['’]?t (too )?heavy|not (too )?heavy|\blight(er)?\b|won['’]?t overpower|not overpower|delicate|easy[- ]drinking/.test(t),
+      full:/\bfull(-bodied)?\b|\bbold\b|\bbig\b|stands? up|\bpowerful\b|\brobust\b/.test(t),
+      soft:/\bsoft\b|\bsmooth\b|not (too )?tannic|n['’]?t (too )?tannic|gentle tannin|\bsilky\b/.test(t),
+      crisp:/\bcrisp\b|\bzesty\b|\brefreshing\b|\bzingy\b/.test(t),
+      dry:/\bdry\b|not sweet|n['’]?t sweet/.test(t),
+      sweet:/\bsweet\b/.test(t)&&!/not sweet|n['’]?t sweet/.test(t),
+      under:lim?Number(lim[1]):null}; },
+  breaksWish(w,ws,side){ const st=(TeamData.card(w.id)||{}).style||{}, v=k=>typeof st[k]==='number'?st[k]:null;
+    const price=s=>{ const m=String(s||'').replace(/,/g,'').match(/(\d+(?:\.\d+)?)/); return m?Number(m[1]):null; };
+    const cost=side==='glass'?price(w.glass):side==='bottle'?price(w.bottle):(price(w.bottle)!=null?price(w.bottle):price(w.glass));
+    return !!((ws.light&&v('body')!=null&&v('body')>=4)||(ws.full&&v('body')!=null&&v('body')<=2)||(ws.soft&&v('tannin')!=null&&v('tannin')>=4)
+      ||(ws.crisp&&v('acid')!=null&&v('acid')<=2)||(ws.dry&&v('sweet')!=null&&v('sweet')>=3)||(ws.sweet&&v('sweet')!=null&&v('sweet')<=1)
+      ||(ws.under!=null&&cost!=null&&cost>ws.under)); },
+  // A wrong wine for this table: on the list, of the kind asked for and sold as asked, none of the dish's picks,
+  // and either clearly wrong for the dish or failing what the guest asked for (which the right wine meets).
+  tableWrong(w,rw,dish,wish,ws){ const pr=TeamData.pairing(dish.id)||{}, picks=new Set([...(pr.best||[]).map(b=>b.id),pr.glass&&pr.glass.id,pr.cocktail&&pr.cocktail.id].filter(Boolean));
+    if(!w||w.id===rw.id||picks.has(w.id)||TeamData.isDrink(w)!==TeamData.isDrink(rw)) return false;
+    if(wish.kind&&this.kindOf(w)!==wish.kind) return false; if(wish.side==='glass'&&!w.glass) return false; if(wish.side==='bottle'&&!w.bottle) return false;
+    return this.clearlyWrong(w.id,dish.id)||(!!ws&&!this.breaksWish(rw,ws,wish.side)&&this.breaksWish(w,ws,wish.side)); },
+  tableDecoys(rw,dish,seed,fit=()=>0,wish={},text='',authored=[]){
+    const order=wish.kind?[wish.kind]:(this.NEAR[this.kindOf(rw)]||[this.kindOf(rw)]), plaus=w=>order.indexOf(this.kindOf(w)), ws=this.wishStyle(text,dish);
+    // The card writer's own wrong wines first (`decoys`), each checked the same way.
+    const own=(authored||[]).map(d=>TeamData.wine(d&&d.id)).filter((w,i,a)=>w&&a.indexOf(w)===i&&this.tableWrong(w,rw,dish,wish,ws));
+    const rest=this._shuffle(TeamData.wines().filter(w=>plaus(w)>=0&&!own.includes(w)&&this.tableWrong(w,rw,dish,wish,ws)),seed).sort((a,b)=>plaus(a)-plaus(b)||fit(a)-fit(b));
+    return [...own,...rest].slice(0,3); },
   _decide(q){ const w=TeamData.wine(q.wine); if(!w) return q;
     const names=[TeamData.short(w),w.name].filter(Boolean).map(n=>this._norm(n)), names_in=s=>names.some(n=>n.length>3&&this._norm(s).includes(n));
     const sents=(String(q.q).match(/[^.?!]+[.?!]*/g)||[q.q]).map(x=>x.trim()).filter(Boolean);
@@ -177,7 +206,7 @@ const TeamLearn = {
     const others=TeamData.wines().filter(o=>o.id!==w.id).map(o=>this._norm(TeamData.short(o))).filter(n=>n.length>3);
     if((q.key||[]).some(k=>others.some(n=>this._norm(k).includes(n)))) return q;
     const kept=sents.filter(x=>!names_in(x)); if(!kept.length) return q;
-    const scen=kept.join(' ').replace(/[,;:\s]+$/,''), d=this.dishIn(scen); if(!d||this.tableFit(w.id,d.id)!=='good'||this.tableDecoys(w,d,q.id,undefined,this.wishIn(scen)).length<2) return q;
+    const scen=kept.join(' ').replace(/[,;:\s]+$/,''), d=this.dishIn(scen); if(!d||this.tableFit(w.id,d.id)!=='good'||this.tableDecoys(w,d,q.id,undefined,this.wishIn(scen),scen,q.decoys).length<2) return q;
     return {...q,q:`${/[.?!]$/.test(scen)?scen:scen+'.'} What would you suggest, and why?`,decided:true}; },
   /* A server always knows what kind of wine it is (the list says so), so a wrong answer describing another
      kind ("Full-bodied oaky white" for a rosé, "Golden with honey" for a Barolo) gives the answer away.
@@ -197,7 +226,7 @@ const TeamLearn = {
       const un=this._unspoil(q); if(!un) return fail('giveaway',/\bor\b/i.test(q.q)?'it offers its own answer as one of two choices in the question':'the answer is in the question');
       if(q.k==='recognise'){ const k=this._sameKind(un); if(!k) return fail('giveaway','the wrong answers are another kind of wine'); if(this.givesAway(k)) return fail('giveaway','a word in the question is only in the right answer');
         if(this.lengthCue(k)) return fail('cue','the right answer stands out by its length: make every option about as long'); return; }
-      let c2=null; try{ c2=this.choices(un); }catch(e){}
+      let c2=null; try{ c2=this.choices(un.k==='apply'?this._decide(un):un); }catch(e){}
       const wrong=c2?c2.opts.length-c2.right.length:0;
       if(!c2||wrong<this.MIN_WRONG) return fail('thin','too few believable wrong answers');
       // A guest at a dish this wine doesn't suit is fine when the key already steers them to another wine
@@ -205,6 +234,9 @@ const TeamLearn = {
       if(q.k==='apply'){ const d=this.dishIn(q.q); if(d&&this.tableFit(id,d.id)!=='good'){ const others=TeamData.wines().filter(w=>w.id!==id).map(w=>this._norm(TeamData.short(w)));
         const steers=(q.key||[]).some(k=>{ const t=this._norm(k); return /\b(steer|instead|rather)\b/.test(t)&&others.some(n=>n.length>3&&t.includes(n)); });
         if(!steers) return fail('mismatch',`the guest's dish, the ${d.name}, doesn't suit this wine`); } }
+      // A table question that hands over its wine (or whose request every wine of the kind on the list meets)
+      // tests only the reason: it goes back to be set as a real choice.
+      if(q.k==='apply'&&!c2.steer&&!(c2.groups&&c2.groups[0].label==='What do you suggest?')) return fail('nochoice','it names its wine, or nothing on the list of the kind asked for is wrong for this guest, so it tests only the reason');
     }); });
     return out; },
   // The right option much longer or much shorter than every wrong one picks itself out.
@@ -808,7 +840,7 @@ const TeamLearn = {
     // picks, which a sommelier would pour too), of the nearest kind so it's a mistake a server could make.
     const tableDish=this.dishIn(q.q), pr0=tableDish?TeamData.pairing(tableDish.id)||{}:{}, picks0=new Set([...(pr0.best||[]).map(b=>b.id),pr0.glass&&pr0.glass.id,pr0.cocktail&&pr0.cocktail.id].filter(Boolean));
     const ruledOut=w=>!tableDish||(!picks0.has(w.id)&&this.tableFit(w.id,tableDish.id)!=='good');
-    const listDecoys=(tableDish?this.tableDecoys(rw,tableDish,this._seed(q)+'o',fit,this.wishIn(q.q)):this._shuffle(wines.filter(w=>w.id!==rw.id&&dist(w)<=1),this._seed(q)+'o').sort((a,b)=>dist(a)-dist(b)||fit(a)-fit(b)).slice(0,3)).map(w=>({x:offer(w),ok:false}));
+    const listDecoys=(tableDish?this.tableDecoys(rw,tableDish,this._seed(q)+'o',fit,this.wishIn(q.q),q.q,q.decoys):this._shuffle(wines.filter(w=>w.id!==rw.id&&dist(w)<=1),this._seed(q)+'o').sort((a,b)=>dist(a)-dist(b)||fit(a)-fit(b)).slice(0,3)).map(w=>({x:offer(w),ok:false}));
     // Too few wines of the kind on the list, away from a table: a well-known bottle that isn't on it, priced
     // like the list's own. At a table the list's own ruled-out wines are enough; three options beat an invented one.
     const priceLike=side==='glass'&&rw.glass?`${rw.glass} a glass`:rw.bottle?`${rw.bottle} a bottle`:'';

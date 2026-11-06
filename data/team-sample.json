@@ -377,17 +377,31 @@
     },
     {
      "k": "apply",
-     "q": "A guest wants a glass of something sparkling while they look at the menu, and says they don't like sweet wine. What do you suggest and how do you describe it?",
+     "q": "A guest at table six is starting with the Burrata, heritage tomatoes, basil. They'd like a sparkling wine by the glass, nothing over £10, and they tell you they don't like anything sweet. What would you suggest, and why?",
      "key": [
-      "the Nino Franco Rustico Prosecco by the glass",
-      "it is dry",
-      "fresh green apple and pear"
+      "Nino Franco Rustico Valdobbiadene Prosecco Superiore, £9 a glass",
+      "It's dry, with fresh green apple and pear, so it suits a guest who doesn't like sweet wine, and it's the one sparkling we pour by the glass at that price",
+      "It's light with a bright, fresh lift and fine bubbles, which keeps the creamy burrata and tomatoes tasting clean"
      ],
-     "why": "Rustico is dry and fresh, the ideal aperitif for someone avoiding sweetness.",
+     "why": "It's the dry, fresh sparkling by the glass under £10, with green apple and fine bubbles that suit the burrata and tomatoes.",
      "wrong": [
-      "Its full, creamy body makes it a rich glass to start with.",
-      "Its gentle sweetness and soft finish suit guests who like it off-dry.",
-      "Its ripe tropical fruit and toasty oak give it plenty of richness."
+      "It's a full, rich style, which stands up to the creamy burrata",
+      "It has plenty of grip from tannin that balances the richness of the cheese",
+      "It has ripe, sweet tropical fruit that echoes the sweetness of the tomatoes"
+     ],
+     "decoys": [
+      {
+       "id": "w-lions-suduiraut",
+       "why": "It's a sparkling-free dessert wine, but if a new server reaches for a 'bubbly-feeling' glass at £9 they'd be offering a very sweet Sauternes, the opposite of what this guest wants."
+      },
+      {
+       "id": "w-minuty-m",
+       "why": "It's a dry, light rosé at £12 a glass, but it isn't sparkling and it's over the £10 the guest set."
+      },
+      {
+       "id": "w-brundlmayer-gruner",
+       "why": "It's fresh and dry and goes well with burrata, but it's a still white, not the sparkling wine the guest asked for, and £11 is over their limit."
+      }
      ]
     },
     {
@@ -490,17 +504,31 @@
     },
     {
      "k": "apply",
-     "q": "A guest ordering the scallops asks for a white that won't overpower them. What do you recommend and why?",
+     "q": "A guest ordering the Seared scallops, cauliflower, brown butter asks for a glass of white that is crisp, light on oak and won't overpower the dish, and they're happy to spend up to £13. What would you suggest, and why?",
      "key": [
-      "the Domaine Laroche Chablis",
-      "crisp acidity cuts the brown butter",
-      "light enough not to overpower the scallops"
+      "Domaine Laroche Chablis Saint Martin, £13 a glass",
+      "It's crisp and cuts through the brown butter, cleansing the palate between bites",
+      "It's lemony and mineral with no oaky vanilla, so it doesn't overpower the delicate scallops"
      ],
-     "why": "Chablis's freshness meets the brown butter without masking delicate scallops.",
+     "why": "Its crisp lemony freshness and lack of oak cut the brown butter and let the scallops shine, and it's available by the glass.",
      "wrong": [
-      "It has a full, buttery body that matches the richness of the scallops.",
-      "Its gentle sweetness balances the brown butter and the scallops' saltiness.",
-      "Its vanilla oak and toasty notes add depth to the sweet scallops."
+      "It's a full-bodied white with rich oak that matches the brown butter",
+      "It has soft tannin that gives the scallops some structure",
+      "It has sweet, ripe fruit that complements the sweetness of the scallops"
+     ],
+     "decoys": [
+      {
+       "id": "w-jolivet-sancerre",
+       "why": "It's crisp and goes with scallops, but it isn't sold by the glass, and its sharp grapefruit and gooseberry would be more assertive than the guest wants."
+      },
+      {
+       "id": "w-brundlmayer-gruner",
+       "why": "It's fresh and dry by the glass, but its green apple and white pepper character is better with the burrata or goat's cheese tart than with scallops in brown butter."
+      },
+      {
+       "id": "w-lions-suduiraut",
+       "why": "It's a glass of white-coloured wine, but it's a rich, very sweet Sauternes, far from crisp and it would overpower the scallops."
+      }
      ]
     },
     {
@@ -600,17 +628,31 @@
     },
     {
      "k": "apply",
-     "q": "A guest ordering the goat's cheese tart wants a bottle of white. What do you suggest and what do you say about it?",
+     "q": "A guest ordering the Goat's cheese tart, red onion marmalade wants a bottle of white that is really zesty and sharp, and they'd like to keep it to £65 or under. What would you suggest, and why?",
      "key": [
-      "the Pascal Jolivet Sancerre",
-      "its acidity meets the tang of the goat's cheese",
-      "zesty citrus and gooseberry"
+      "Pascal Jolivet Sancerre, £62 a bottle",
+      "It's very zesty and sharp, with grapefruit, lime and gooseberry and a flinty finish, just the style the guest wants",
+      "Its sharp freshness meets the tang of the goat's cheese and cuts through the sweetness of the marmalade"
      ],
-     "why": "Sancerre's acidity and the cheese's tang are made for each other.",
+     "why": "It's the sharpest, zestiest white on the list within the guest's budget, and it cuts the tang and sweetness of the tart.",
      "wrong": [
-      "It is a rich, full-bodied white that holds its own against the tart.",
-      "Its soft, low acidity mellows the sharpness of the goat's cheese.",
-      "Its toasty oak and butter flavours soften the tang of the cheese."
+      "It's a rich, full-bodied white that stands up to the strong goat's cheese",
+      "It has gentle tannin that softens the tang of the cheese",
+      "It has soft, ripe, sweet fruit that matches the sweetness of the marmalade"
+     ],
+     "decoys": [
+      {
+       "id": "w-laroche-chablis",
+       "why": "It's crisp and a good white, but it's softer and more mineral than zesty and sharp, and at £58 it doesn't give the sharpness this guest is after."
+      },
+      {
+       "id": "w-brundlmayer-gruner",
+       "why": "It's fresh and goes with goat's cheese, but it's rounder, with a gentle white pepper note, rather than zesty and sharp."
+      },
+      {
+       "id": "w-lions-suduiraut",
+       "why": "It's a white-coloured wine, but it's rich and very sweet, so it clashes with the tart and is nothing like zesty and sharp."
+      }
      ]
     },
     {
@@ -712,17 +754,31 @@
     },
     {
      "k": "apply",
-     "q": "A guest who usually drinks Pinot Grigio wants to try something new by the glass with the burrata. What do you suggest and how do you sell it?",
+     "q": "A guest who usually drinks Pinot Grigio is having the Burrata, heritage tomatoes, basil. They want to try something different by the glass, but still fresh, dry and light, and nothing over £12. What would you suggest, and why?",
      "key": [
-      "the Bründlmayer Grüner Veltliner",
-      "fresh and crisp like Pinot Grigio but with more character",
-      "green apple and a twist of white pepper"
+      "Bründlmayer Grüner Veltliner Kamptal Terrassen, £11 a glass",
+      "It's fresh, dry and light like Pinot Grigio, but with a bit more character from a hint of white pepper",
+      "Its green apple and lemon freshness suits the creamy burrata and tomatoes, and it's under £12 by the glass"
      ],
-     "why": "Grüner is the easy step up from Pinot Grigio: just as fresh, with more flavour.",
+     "why": "It's a fresh, dry, light white by the glass at £11 with a touch more character than Pinot Grigio, and it suits the burrata.",
      "wrong": [
-      "It is a full, creamy white with far more weight than Pinot Grigio.",
-      "Its soft, rounded sweetness is smoother than Pinot Grigio on the palate.",
-      "Its ripe tropical fruit and vanilla oak make the burrata taste richer."
+      "It's a rich, full-bodied white that gives the burrata some weight",
+      "It has firm tannin that adds grip alongside the creamy cheese",
+      "It has ripe, sweet tropical flavours that make it very different from Pinot Grigio"
+     ],
+     "decoys": [
+      {
+       "id": "w-laroche-chablis",
+       "why": "It's fresh and dry, but at £13 a glass it's over the guest's limit."
+      },
+      {
+       "id": "w-jolivet-sancerre",
+       "why": "It's crisp and dry, but it isn't sold by the glass and it's sharper than a Pinot Grigio drinker would want."
+      },
+      {
+       "id": "w-lions-suduiraut",
+       "why": "It's by the glass at £9, but it's a rich, very sweet dessert wine, not fresh, dry and light, and no match for the burrata."
+      }
      ]
     },
     {
@@ -821,17 +877,31 @@
     },
     {
      "k": "apply",
-     "q": "A guest worries rosé will be sweet but wants a pink wine with the burrata. What do you say?",
+     "q": "A guest ordering the Burrata, heritage tomatoes, basil says they'd love a pink wine by the glass but are worried it will be sweet, and want something light and dry. What would you suggest, and why?",
      "key": [
-      "the M de Minuty Côtes de Provence",
-      "it is dry",
-      "fresh strawberry and citrus that suits tomatoes and burrata"
+      "Château Minuty M de Minuty Côtes de Provence, £12 a glass",
+      "It's light and dry, so it answers the worry about sweetness, and it's the pink we pour by the glass",
+      "Its strawberry, peach and citrus with gentle freshness suit the tomatoes and creamy burrata"
      ],
-     "why": "Reassure them: Provence rosé is dry, and its freshness suits the starter.",
+     "why": "It's a light, dry pink by the glass whose red-berry and citrus freshness suits the burrata and tomatoes and calms the guest's worry about sweetness.",
      "wrong": [
-      "It is a full, rich rosé with weight that suits creamy burrata.",
-      "Its soft tannin and gentle sweetness balance the acidity of the tomatoes.",
-      "Its ripe jammy berry and vanilla flavours make the burrata taste richer."
+      "It's a full-bodied rosé with real weight for the creamy burrata",
+      "It has noticeable tannin that gives structure against the cheese",
+      "It's lightly sweet, with candied fruit that echoes the ripe tomatoes"
+     ],
+     "decoys": [
+      {
+       "id": "w-laroche-chablis",
+       "why": "It's dry and fresh by the glass, but it's a white, not the pink wine the guest asked for."
+      },
+      {
+       "id": "w-brundlmayer-gruner",
+       "why": "It's light, dry and good with burrata, but it's a white, not a pink wine."
+      },
+      {
+       "id": "w-nino-franco-rustico",
+       "why": "It's dry and goes well with burrata, but it's a sparkling white wine, not the pink the guest wants."
+      }
      ]
     },
     {
@@ -933,17 +1003,31 @@
     },
     {
      "k": "apply",
-     "q": "A guest having the roast chicken wants a red but says big reds are too heavy for them. What do you suggest and why?",
+     "q": "A guest having the Roast chicken, morels, tarragon cream tells you she'd like a red that isn't too heavy and isn't harsh or grippy on the tongue, and she'd like it by the glass. What would you suggest, and why?",
      "key": [
-      "the Louis Jadot Bourgogne Pinot Noir",
-      "light with soft tannin",
-      "its earthy notes suit the morels"
+      "Louis Jadot Bourgogne Pinot Noir Couvent des Jacobins",
+      "It's a light, silky red with soft tannin, so it won't feel heavy or harsh, and it's £14 by the glass",
+      "Its red cherry and raspberry fruit is gentle enough not to overpower the chicken and tarragon cream, and its freshness cuts through the cream"
      ],
-     "why": "Pinot Noir is light and silky, and its earthiness meets the morels.",
+     "why": "It is the one red by the glass that is light and silky with soft tannin, which suits both her request and the delicate chicken and cream.",
      "wrong": [
-      "It is a full, powerful red with plenty of weight for the chicken.",
-      "Its firm, grippy tannin cuts through the richness of the cream sauce.",
-      "Its smoky oak and black plum flavours bring out the roast chicken's char."
+      "It's a full-bodied red that will give the chicken real weight and richness",
+      "Its firm tannin will grip the morels and stand up to the cream sauce",
+      "Its ripe plum and blackberry fruit will bring a sweet, jammy note that the tarragon needs"
+     ],
+     "decoys": [
+      {
+       "id": "w-catena-malbec",
+       "why": "It is by the glass at £12, but it's a big, full red with firm tannin, which is too heavy and grippy for this guest and would overpower the chicken."
+      },
+      {
+       "id": "w-guigal-cdr",
+       "why": "It's a medium-bodied red with firm tannin, so not the soft, light style she wants, and it isn't sold by the glass."
+      },
+      {
+       "id": "w-ardanza-reserva",
+       "why": "It's a full, mellow red with real tannin, far too heavy for chicken and cream, and it isn't sold by the glass."
+      }
      ]
     },
     {
@@ -1043,17 +1127,31 @@
     },
     {
      "k": "apply",
-     "q": "A guest ordering the sirloin asks for a red by the glass. What do you suggest and how do you describe it?",
+     "q": "A guest ordering the 28-day sirloin, chips, béarnaise wants a big, full-bodied red, and he'd like to order it by the glass and keep it under £13 a glass. What would you suggest, and why?",
      "key": [
-      "the Catena Malbec by the glass",
-      "rich and smooth with plum and blackberry",
-      "stands up to the steak"
+      "Catena Malbec",
+      "It's a full-bodied red with firm tannin, the big red he asked for, and at £12 a glass it fits his budget",
+      "Its plum, blackberry and violet fruit is smooth and rich, and the tannin stands up to the beef and the richness of the béarnaise"
      ],
-     "why": "Malbec's dark fruit and tannin match the steak, and it's by the glass.",
+     "why": "It is a full-bodied red with firm tannin that is poured by the glass at £12, so it gives him the big red for sirloin within his price.",
      "wrong": [
-      "It is a light, delicate red that keeps the steak from feeling heavy.",
-      "Its sharp, high acidity and bright tartness cut through the sirloin's fat.",
-      "Its pale, subtle fruit and herbal notes soften the beef's flavour."
+      "It's a light, delicate red so it won't overpower the béarnaise",
+      "Its high acidity will cut through the sauce like a crisp white would",
+      "Its soft, almost non-existent tannin keeps the steak tender on the palate"
+     ],
+     "decoys": [
+      {
+       "id": "w-jadot-bourgogne",
+       "why": "It's by the glass at £14, over his limit, and it's a light, silky red that steak would overwhelm."
+      },
+      {
+       "id": "w-guigal-cdr",
+       "why": "It's a sound match for red meat, but it's only medium-bodied rather than the big red he wants, and it isn't sold by the glass."
+      },
+      {
+       "id": "w-ardanza-reserva",
+       "why": "It's full-bodied and would suit the sirloin, but it isn't sold by the glass and at £72 a bottle it's well out of what he's asked for."
+      }
      ]
     },
     {
@@ -1153,17 +1251,31 @@
     },
     {
      "k": "apply",
-     "q": "A table having the lamb shoulder wants a red bottle under £50. What do you suggest and why?",
+     "q": "A table having the Braised lamb shoulder, white beans, rosemary wants a red bottle under £50, medium-bodied and nothing too heavy. What would you suggest, and why?",
      "key": [
-      "the Guigal Côtes du Rhône at £46",
-      "pepper and herbs echo the rosemary",
-      "soft enough for slow-cooked lamb"
+      "E. Guigal Côtes du Rhône Rouge",
+      "At £46 a bottle it's under £50, and it's medium-bodied, so not too heavy",
+      "Its black pepper and dried herb notes echo the rosemary, and its tannin is firm enough to stand up to slow-cooked lamb without being heavy"
      ],
-     "why": "It's under £50 and its herbs and spice suit the lamb.",
+     "why": "It is the red under £50 that is medium-bodied with peppery, herby notes that echo the rosemary and tannin to match the lamb.",
      "wrong": [
-      "It is a light, delicate red that keeps the slow-cooked lamb feeling fresh.",
-      "Its firm, drying tannin and sharp acidity cut right through the fatty lamb.",
-      "Its sweet jammy fruit and vanilla soften the savoury flavour of the lamb."
+      "It's a full-bodied, powerful red that gives the lamb real weight",
+      "Its silky, almost tannin-free style keeps the lamb from tasting heavy",
+      "Its sweet vanilla and ripe plum fruit balance the richness of the beans"
+     ],
+     "decoys": [
+      {
+       "id": "w-catena-malbec",
+       "why": "At £50 a bottle it isn't under £50, and it's a big, full-bodied red, heavier than they want."
+      },
+      {
+       "id": "w-jadot-bourgogne",
+       "why": "At £60 a bottle it's over their budget, and it's a light, silky red that's too delicate for braised lamb."
+      },
+      {
+       "id": "w-ardanza-reserva",
+       "why": "At £72 it's well over £50, and it's a full-bodied red, heavier than they asked for."
+      }
      ]
     },
     {
@@ -1266,17 +1378,31 @@
     },
     {
      "k": "apply",
-     "q": "A table celebrating with the lamb shoulder want a special red bottle. What do you suggest and how do you describe it?",
+     "q": "A table celebrating with the Braised lamb shoulder, white beans, rosemary want a special aged red bottle, rich and mellow, and they say the price is not a worry. What would you suggest, and why?",
      "key": [
-      "the Viña Ardanza Reserva",
-      "an aged Rioja: mellow, smooth, vanilla and spice",
-      "a classic match for lamb"
+      "La Rioja Alta Viña Ardanza Reserva",
+      "It's a full-bodied, aged red that is smooth and mellow, and at £72 a bottle it's the special bottle for a celebration",
+      "Its dried red cherry, vanilla, sweet spice and leather suit the rosemary-scented lamb, and it has the body and tannin to stand up to the meat"
      ],
-     "why": "Rioja Reserva and lamb is a classic, and Ardanza is the list's special red.",
+     "why": "It is a rich, mellow, aged red with the body and tannin for braised lamb and the price and standing of a celebration bottle.",
      "wrong": [
-      "Its light, delicate body keeps the lamb shoulder from feeling too heavy.",
-      "Its firm, grippy tannin cuts through the fat like a sharp knife.",
-      "Its fresh berry fruit lifts the lamb and keeps the meat tasting bright."
+      "Its bright, high acidity will freshen the lamb and the beans",
+      "It's a light-bodied red, so it won't overwhelm the delicate rosemary",
+      "Its fresh, juicy blackberry fruit is a young, vibrant style that suits a celebration"
+     ],
+     "decoys": [
+      {
+       "id": "w-catena-malbec",
+       "why": "It's full and smooth with fresh young fruit, but it's not aged or mellow and at £50 it isn't the special-occasion bottle they want."
+      },
+      {
+       "id": "w-guigal-cdr",
+       "why": "It's a good everyday match for the lamb, but it's medium-bodied and peppery rather than rich and mellow, and at £46 it isn't a celebration bottle."
+      },
+      {
+       "id": "w-jadot-bourgogne",
+       "why": "It's light and silky, so it lacks the richness and weight they want and would be overpowered by the lamb."
+      }
      ]
     },
     {
@@ -1367,17 +1493,31 @@
     },
     {
      "k": "apply",
-     "q": "A guest ordering the lemon tart asks if there's a wine to go with it. What do you suggest and why?",
+     "q": "A guest ordering the Lemon tart, crème fraîche wants a glass of something properly sweet to go with it, a proper dessert wine, nothing dry, and nothing that will taste thin next to the tart. What would you suggest, and why?",
      "key": [
-      "the Lions de Suduiraut Sauternes by the glass",
-      "it must be as sweet as the dessert",
-      "its acidity matches the lemon"
+      "Château Suduiraut Lions de Suduiraut Sauternes",
+      "It's a properly sweet, rich dessert wine, £9 for a 75ml glass, so it's as sweet as the tart and won't taste thin or sour next to it",
+      "Its fresh acidity matches the lemon, and the honey, apricot and candied orange complement the tart and crème fraîche"
      ],
-     "why": "A dessert wine should be at least as sweet as the dessert; Sauternes's acidity meets the lemon.",
+     "why": "It is the proper sweet dessert wine by the glass, rich enough to match the tart and fresh enough to keep up with the lemon.",
      "wrong": [
-      "It is a light, delicate wine that sits gently beside the tart.",
-      "Its low acidity keeps the lemon tart tasting soft and rounded.",
-      "Its savoury, earthy flavours bring out the pastry and hide the lemon."
+      "It's a light, dry style that will refresh the palate after the cream",
+      "Its firm tannin will balance the richness of the crème fraîche",
+      "Its bone-dry, zesty finish will echo the lemon without adding any sweetness"
+     ],
+     "decoys": [
+      {
+       "id": "w-nino-franco-rustico",
+       "why": "It's the sparkling by the glass and its bubbles are refreshing, but it's light and only lightly sweet, so it would taste thin next to the tart."
+      },
+      {
+       "id": "w-minuty-m",
+       "why": "It's a dry, light rosé, not a dessert wine, and it would taste sour against the lemon tart."
+      },
+      {
+       "id": "w-brundlmayer-gruner",
+       "why": "It's a crisp, dry white by the glass, so it's nothing like the sweet dessert wine the guest wants and would taste sharp next to the tart."
+      }
      ]
     },
     {
