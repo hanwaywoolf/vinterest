@@ -1131,7 +1131,20 @@ test('training levels: the console sets them, cards and drills follow, a role ca
   await page.getByTestId('console-nav-team').click();
   await page.getByTestId('console-level-low').click();
   await expect(page.getByTestId('console-level-about')).toContainText('One thing to say');
-  await page.locator('[data-testid="console-role-level"]').filter({ hasText: 'High' }).nth(2).click(); // server, bartender, sommelier
+  await page.locator('[data-testid="console-role-level"]').filter({ hasText: /^High$/ }).nth(2).click(); // server, bartender, sommelier
+  // The minimums are a grid: a step down on the server's bottles moves it by ten points.
+  const before = await page.evaluate(() => TeamLearn.need('server').bottle);
+  await page.getByTestId('console-minimums').locator('tr').nth(1).getByLabel('Lower').nth(1).click();
+  expect(await page.evaluate(() => TeamLearn.need('server').bottle)).toBeCloseTo(before - 0.1, 5);
+  // Add someone: a button in the header opens a dialog over the console.
+  await page.getByTestId('console-add-person').click();
+  await expect(page.getByTestId('console-add-dialog')).toBeVisible();
+  await page.getByTestId('console-add-dialog').getByLabel('Name').fill('Rosa Ferreira');
+  await page.getByTestId('console-add-role-bartender').click();
+  await page.getByTestId('console-add-save').click();
+  await expect(page.getByTestId('console-add-dialog')).toHaveCount(0);
+  await expect(page.getByTestId('team-table')).toContainText('Rosa Ferreira');
+  expect(await page.evaluate(() => TeamLearn.people().find((p) => p.name === 'Rosa Ferreira').role)).toBe('bartender');
   const after = await page.evaluate(() => {
     const ppl = TeamLearn.people(), som = ppl.find((p) => p.role === 'sommelier'), srv = ppl.find((p) => p.role === 'server'), w = TeamData.wines()[0];
     const drill = TeamLearn.drill(srv.id, 40);

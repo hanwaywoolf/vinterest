@@ -213,40 +213,67 @@ function _CSales({open,setSection,sales,demo}){ const T=useTheme(), cr=T.lift(C.
   </div>; }
 
 /* ── Team ── */
-function _CTeam({open,refresh}){ const T=useTheme(), cr=T.lift(C.cr);
-  const ps=TeamReport.people().sort((a,b)=>a.r.pct-b.r.pct), [name,setName]=React.useState(''), [role,setRole]=React.useState('server'), [,bump]=React.useReducer(x=>x+1,0);
-  const add=()=>{ if(!name.trim()) return; TeamLearn.addPerson(name.trim(),role,null); setName(''); refresh&&refresh(); };
+const _CONSOLE_ROLES=['server','bartender','sommelier','buyer','manager'];
+/* A row of joined buttons, one of them on: the training level for the restaurant or for a role. */
+function _CSeg({options,value,onPick,testid,label}){ const T=useTheme(), cr=T.lift(C.cr);
+  return <div role="radiogroup" aria-label={label} style={{display:'inline-flex',border:`1px solid ${T.line}`,borderRadius:10,overflow:'hidden',flexWrap:'wrap'}}>
+    {options.map(([k,text],i)=>{ const on=value===k; return <div key={k} role="radio" aria-checked={on} data-testid={typeof testid==='function'?testid(k):testid} onClick={()=>onPick(k)}
+      style={{padding:'6px 12px',borderLeft:i?`1px solid ${T.line}`:'none',background:on?_alpha(cr,0.18):'transparent',color:on?T.ink:T.ink2,fontWeight:on?700:500,fontSize:13,fontFamily:C.P,cursor:'pointer',whiteSpace:'nowrap'}}>{text}</div>; })}</div>; }
+/* Adding someone: a dialog over the console, their name and role, then they're on the team with the
+   whole list and menu as their first assignment. */
+function _CAddPerson({close,done}){ const T=useTheme(), cr=T.lift(C.cr), [name,setName]=React.useState(''), [role,setRole]=React.useState('server'), ref=React.useRef(null);
+  React.useEffect(()=>{ ref.current&&ref.current.focus(); const k=e=>{ if(e.key==='Escape') close(); }; window.addEventListener('keydown',k); return ()=>window.removeEventListener('keydown',k); },[]);
+  const add=()=>{ if(!name.trim()) return; TeamLearn.addPerson(name.trim(),role,null); done(); };
+  const about={server:'The list by the glass and bottle, and the menu.',bartender:'By the glass and the cocktails.',sommelier:'Every wine, at every rung.',buyer:'Every wine, at every rung.',manager:'The list by the glass and bottle, and the menu.'};
+  return <div onClick={close} style={{position:'fixed',inset:0,zIndex:50,background:'rgba(0,0,0,0.55)',display:'flex',alignItems:'center',justifyContent:'center',padding:16}}>
+    <div role="dialog" aria-modal="true" aria-label="Add someone" data-testid="console-add-dialog" onClick={e=>e.stopPropagation()} style={{width:'min(460px, 100%)',background:T.card,border:`1px solid ${T.line}`,borderRadius:16,boxShadow:T.shadow,padding:'18px 20px 20px'}}>
+      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:14}}><div style={{fontSize:19,fontWeight:800,color:T.ink,fontFamily:C.P}}>Add someone</div>
+        <div role="button" aria-label="Close" onClick={close} style={{width:30,height:30,borderRadius:15,border:`1px solid ${T.line}`,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',color:T.ink,fontSize:16}}>×</div></div>
+      <label style={{display:'block',fontSize:13,fontWeight:600,color:T.mid,fontFamily:C.P}}>Name
+        <input ref={ref} aria-label="Name" placeholder="First and last name" value={name} onChange={e=>setName(e.target.value)} onKeyDown={e=>{ if(e.key==='Enter') add(); }} style={_cInput(T,{display:'block',width:'100%',marginTop:6})}/></label>
+      <div style={{fontSize:13,fontWeight:600,color:T.mid,fontFamily:C.P,margin:'14px 0 6px'}}>Role</div>
+      <div style={{display:'flex',flexDirection:'column',gap:6}}>{_CONSOLE_ROLES.map(k=>{ const on=role===k; return <div key={k} role="radio" aria-checked={on} data-testid={'console-add-role-'+k} onClick={()=>setRole(k)}
+        style={{display:'flex',alignItems:'center',gap:10,padding:'9px 12px',borderRadius:10,border:`1px solid ${on?cr:T.line}`,background:on?_alpha(cr,0.12):'transparent',cursor:'pointer'}}>
+        <span style={{width:14,height:14,borderRadius:7,border:`2px solid ${on?cr:T.mid}`,background:on?cr:'transparent',flexShrink:0}}/>
+        <span style={{minWidth:0}}><span style={{display:'block',fontSize:15,fontWeight:700,color:T.ink,fontFamily:C.P}}>{TeamLearn.ROLES[k].label}</span><span style={{display:'block',fontSize:12,color:T.mid,fontFamily:C.P}}>{about[k]} Trains at {TeamLearn.LEVEL_LABEL[TeamLearn.level(k)]}.</span></span></div>; })}</div>
+      <div style={{fontSize:12,color:T.mid,fontFamily:C.P,marginTop:12,lineHeight:1.5}}>Their whole list and menu becomes their first assignment, due in {TeamData.get().settings.dueDays||7} days. In the pilot everyone trains on this device; their own phone comes with accounts.</div>
+      <div style={{display:'flex',justifyContent:'flex-end',gap:8,marginTop:16}}><Btn small onClick={close}>Cancel</Btn><span data-testid="console-add-save" style={{opacity:name.trim()?1:0.5}}><Btn small primary onClick={add}>Add to the team</Btn></span></div>
+    </div></div>; }
+function _CTeam({open,refresh}){ const T=useTheme(), cr=T.lift(C.cr), phone=useLayoutSize()==='phone';
+  const ps=TeamReport.people().sort((a,b)=>a.r.pct-b.r.pct), [adding,setAdding]=React.useState(false), [,bump]=React.useReducer(x=>x+1,0);
+  const changed=()=>{ bump(); refresh&&refresh(); };
   const remove=p=>{ if(confirm(`Remove ${p.name} and their training on this device?`)){ TeamLearn.removePerson(p.id); refresh&&refresh(); } };
-  return <div data-testid="console-team">{_cH(T,'Team',`${ps.length} people · ${ps.filter(x=>x.r.state==='ready').length} ready`)}
+  const lv=TeamLearn.level(), levelOpts=TeamLearn.LEVELS.map(k=>[k,TeamLearn.LEVEL_LABEL[k]]);
+  const parts=Object.keys(TeamLearn.PART_LABEL).filter(k=>k!=='drinks'||TeamData.wines().some(w=>TeamData.isDrink(w)));
+  const step=(rk,k,d)=>{ const v=Math.round(Math.max(0.5,Math.min(1,TeamLearn.need(rk)[k]+d))*10)/10; TeamLearn.setNeed(rk,k,v); changed(); };
+  const cellBtn=(label,onClick,off)=><div role="button" aria-label={label} onClick={off?undefined:onClick} style={{width:26,height:26,borderRadius:13,border:`1px solid ${T.line}`,display:'flex',alignItems:'center',justifyContent:'center',cursor:off?'default':'pointer',color:off?T.line:T.ink,fontSize:15,fontFamily:C.P,userSelect:'none'}}>{label==='Lower'?'−':'+'}</div>;
+  const th={fontSize:12,fontWeight:700,color:T.mid,fontFamily:C.P,letterSpacing:'0.06em',textTransform:'uppercase',padding:'0 8px 8px',textAlign:'center',whiteSpace:'nowrap'};
+  return <div data-testid="console-team">{_cH(T,'Team',`${ps.length} people · ${ps.filter(x=>x.r.state==='ready').length} ready`,<span data-testid="console-add-person"><Btn primary small onClick={()=>setAdding(true)}>+ Add someone</Btn></span>)}
     <Card style={{padding:'6px 8px'}}><_CTable testid="team-table" cols={[{h:'Person',w:'30%'},{h:'Readiness',w:'30%'},{h:'Overdue',align:'center',w:80},{h:'Fading',align:'center',w:80},{h:'Last drill',align:'center',w:110},{h:'Re-checks',align:'center',w:100},{h:'',w:36,align:'right'}]}
       rows={ps.map(x=>({key:x.person.id,testid:'team-row',onClick:()=>open({view:'person',id:x.person.id}),cells:[
         <div style={{display:'flex',alignItems:'center',gap:10,minWidth:0}}><TeamFace person={x.person} size={34} ring={_tState[x.r.state].col}/><div style={{minWidth:0}}><div style={{fontWeight:700,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{x.person.name}</div><div style={{fontSize:12,color:T.mid}}>{TeamLearn.ROLES[x.r.role].label}</div></div></div>,
         <div style={{minWidth:150}}><div style={{display:'flex',alignItems:'center',gap:8}}><Prog val={x.r.pct/100} col={_tState[x.r.state].col} h={8} style={{flex:1}}/><span style={{width:40,textAlign:'right',fontWeight:600}}>{x.r.pct}%</span></div><div style={{marginTop:4,whiteSpace:'nowrap'}}><_CState r={x.r}/></div></div>,
         <span style={{color:x.r.overdue?T.tone.bad:T.mid}}>{x.r.overdue||'—'}</span>,<span style={{color:x.r.due?T.amber:T.mid}}>{x.r.due||'—'}</span>,<span style={{color:T.mid,whiteSpace:'nowrap'}}>{_cAgo(x.lastDrill)}</span>,<span style={{color:T.mid}}>{x.checks.asked?`${x.checks.right} of ${x.checks.asked}`:'—'}</span>,
         <span role="button" aria-label={`Remove ${x.person.name}`} onClick={e=>{ e.stopPropagation(); remove(x.person); }} style={{color:T.mid,cursor:'pointer',padding:'0 4px',display:'inline-flex'}}><Icon n="trash" sz={14} col={T.mid}/></span>]}))}/></Card>
-    <div style={{display:'grid',gridTemplateColumns:useLayoutSize()==='phone'?'1fr':'1fr 1fr',gap:14,marginTop:14,alignItems:'start'}}>
-      <Card>{_cLabel(T,'Add someone')}<div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
-        <input aria-label="Name" placeholder="Name" value={name} onChange={e=>setName(e.target.value)} style={_cInput(T,{flex:'1 1 140px'})}/>
-        <select aria-label="Role" value={role} onChange={e=>setRole(e.target.value)} style={_cInput(T,{background:T.card,colorScheme:'dark'})}>{Object.entries(TeamLearn.ROLES).map(([k,r])=><option key={k} value={k}>{r.label}</option>)}</select>
-        <Btn primary small onClick={add}>Add</Btn></div>
-        <div style={{fontSize:12,color:T.mid,fontFamily:C.P,marginTop:8,lineHeight:1.5}}>Their whole list and menu becomes their first assignment, due in {TeamData.get().settings.dueDays||7} days. Inviting someone to their own phone needs accounts, which come next; in the pilot everyone trains on this device.</div></Card>
-      <Card>{_cLabel(T,'Minimum to work the floor')}
-        {['server','bartender','sommelier','buyer','manager'].map(rk=>{ const n=TeamLearn.need(rk); return <div key={rk} style={{display:'flex',alignItems:'center',gap:8,flexWrap:'wrap',marginBottom:8}}><div style={{width:92,fontSize:14,fontWeight:700,color:T.ink,fontFamily:C.P}}>{TeamLearn.ROLES[rk].label}</div>
-          {Object.keys(TeamLearn.PART_LABEL).filter(k=>TeamLearn.ROLES[rk].need[k]>0).map(k=><div key={k} role="button" data-testid="console-need" onClick={()=>{ const v=n[k]>=0.95?0.5:Math.round((n[k]+0.1)*10)/10; TeamLearn.setNeed(rk,k,v); bump(); refresh&&refresh(); }} style={{padding:'4px 9px',borderRadius:9,border:`1px solid ${T.line}`,fontSize:13,color:T.ink2,fontFamily:C.P,cursor:'pointer'}}>{TeamLearn.PART_LABEL[k]} {Math.round(n[k]*100)}%</div>)}</div>; })}
-        <div style={{fontSize:12,color:T.mid,fontFamily:C.P}}>Tap a figure to raise it by ten points (it wraps back to 50%). Readiness is recomputed against the new minimum at once.</div></Card>
-      <Card style={{gridColumn:'1 / -1'}}><div data-testid="console-level">{_cLabel(T,'Training level')}
-        {(()=>{ const chip=(on,label,onClick,tid)=><div key={label} role="button" data-testid={tid} aria-pressed={on} onClick={()=>{ onClick(); bump(); refresh&&refresh(); }} style={{padding:'5px 11px',borderRadius:9,border:`1px solid ${on?T.lift(C.cr):T.line}`,background:on?_alpha(T.lift(C.cr),0.14):'transparent',fontSize:13,fontWeight:on?700:500,color:on?T.ink:T.ink2,fontFamily:C.P,cursor:'pointer'}}>{label}</div>;
-          const lv=TeamLearn.level();
-          return <>
-            <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>{TeamLearn.LEVELS.map(k=>chip(lv===k,TeamLearn.LEVEL_LABEL[k],()=>TeamLearn.setLevel(k),'console-level-'+k))}</div>
-            <div data-testid="console-level-about" style={{fontSize:14,color:T.ink2,fontFamily:C.P,lineHeight:1.5,margin:'8px 0 12px'}}>{TeamLearn.LEVEL_ABOUT[lv]}</div>
-            {['server','bartender','sommelier','buyer','manager'].map(rk=>{ const own=TeamLearn.roleLevel(rk); return <div key={rk} style={{display:'flex',alignItems:'center',gap:8,flexWrap:'wrap',marginBottom:8}}>
-              <div style={{width:92,fontSize:14,fontWeight:700,color:T.ink,fontFamily:C.P}}>{TeamLearn.ROLES[rk].label}</div>
-              {chip(!own,'Same as the restaurant',()=>TeamLearn.setRoleLevel(rk,null),'console-role-level')}
-              {TeamLearn.LEVELS.map(k=>chip(own===k,TeamLearn.LEVEL_LABEL[k],()=>TeamLearn.setRoleLevel(rk,k),'console-role-level'))}</div>; })}
-            <div style={{fontSize:12,color:T.mid,fontFamily:C.P,lineHeight:1.5}}>Changes the cards staff see and what they're asked, at once. Nothing is rewritten and no answer is lost: moving up adds questions, moving down sets some aside until you move back. Readiness is recomputed straight away.</div></>; })()}
-      </div></Card>
-    </div>
+    <Card style={{marginTop:14}}><div data-testid="console-level">{_cLabel(T,'Training level')}
+      <div style={{display:'flex',alignItems:'center',gap:12,flexWrap:'wrap'}}><_CSeg label="Training level for the restaurant" options={levelOpts} value={lv} onPick={k=>{ TeamLearn.setLevel(k); changed(); }} testid={k=>'console-level-'+k}/>
+        <div data-testid="console-level-about" style={{fontSize:14,color:T.ink2,fontFamily:C.P,lineHeight:1.5,flex:'1 1 240px'}}>{TeamLearn.LEVEL_ABOUT[lv]}</div></div>
+      <div style={{marginTop:14,borderTop:`1px solid ${T.line}`}}>{_CONSOLE_ROLES.map(rk=>{ const own=TeamLearn.roleLevel(rk); return <div key={rk} style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:10,flexWrap:'wrap',padding:'9px 0',borderBottom:`1px solid ${T.line}`}}>
+        <div style={{fontSize:14,fontWeight:700,color:T.ink,fontFamily:C.P,minWidth:96}}>{TeamLearn.ROLES[rk].label}</div>
+        <_CSeg label={`Training level for ${TeamLearn.ROLES[rk].label}`} options={[['same',`Same (${TeamLearn.LEVEL_LABEL[lv]})`],...levelOpts]} value={own||'same'} onPick={k=>{ TeamLearn.setRoleLevel(rk,k==='same'?null:k); changed(); }} testid="console-role-level"/></div>; })}</div>
+      {_cNote(T,"Changes the cards staff see and what they're asked, at once. Nothing is rewritten and no answer is lost: moving up adds questions, moving down sets some aside until you move back.")}
+    </div></Card>
+    <Card style={{marginTop:14}}><div data-testid="console-minimums">{_cLabel(T,'Minimum to work the floor')}
+      <div style={{overflowX:'auto'}}><table style={{width:'100%',borderCollapse:'collapse',minWidth:phone?520:0}}>
+        <thead><tr><th style={{...th,textAlign:'left',paddingLeft:0}}>Role</th>{parts.map(k=><th key={k} style={th}>{TeamLearn.PART_LABEL[k]}</th>)}</tr></thead>
+        <tbody>{_CONSOLE_ROLES.map(rk=>{ const n=TeamLearn.need(rk); return <tr key={rk} style={{borderTop:`1px solid ${T.line}`}}>
+          <td style={{padding:'10px 8px 10px 0',fontSize:14,fontWeight:700,color:T.ink,fontFamily:C.P,whiteSpace:'nowrap'}}>{TeamLearn.ROLES[rk].label}</td>
+          {parts.map(k=><td key={k} style={{padding:'8px'}}>{TeamLearn.ROLES[rk].need[k]>0?<div data-testid="console-need" style={{display:'flex',alignItems:'center',justifyContent:'center',gap:8}}>
+            {cellBtn('Lower',()=>step(rk,k,-0.1),n[k]<=0.5)}<span style={{width:44,textAlign:'center',fontSize:15,fontWeight:700,color:T.ink,fontFamily:C.P}}>{Math.round(n[k]*100)}%</span>{cellBtn('Raise',()=>step(rk,k,0.1),n[k]>=1)}</div>
+            :<div style={{textAlign:'center',fontSize:13,color:T.mid,fontFamily:C.P}}>Not needed</div>}</td>)}</tr>; })}</tbody></table></div>
+      {_cNote(T,'The share of each part someone must know to be Ready, from 50% to 100% in steps of ten. Readiness is recomputed against the new minimum at once.')}
+    </div></Card>
+    {adding&&<_CAddPerson close={()=>setAdding(false)} done={()=>{ setAdding(false); refresh&&refresh(); }}/>}
   </div>; }
 /* One person: readiness by part, then every wine their role sells with its rungs, then the dishes. */
 function _CPerson({id,open}){ const T=useTheme(), p=TeamLearn.person(id), r=TeamLearn.readiness(id); if(!p||!r) return null;
