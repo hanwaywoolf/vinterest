@@ -102,19 +102,30 @@ const TeamLearn = {
      like wineQs, with ids of their own so progress on them is theirs. */
   lightQs(id){ const doc=TeamData.get(); let m=this._qsCache.get(doc); if(!m){ m=new Map(); this._qsCache.set(doc,m); }
     const k='light:'+id; if(!m.has(k)) m.set(k,this._buildLight(id)); return m.get(k).map(q=>({...q})); },
+  /* Each question has to have one answer a trained server would stand behind, so the wrong ones are
+     plainly wrong: another wine's line only when that wine is clearly different (SAY_GAP apart in style and
+     sharing few words), a dish only when the pairings say this wine doesn't suit it (tableFit). Without three
+     such wrong answers the question isn't asked. */
+  SAY_GAP:4, SAY_OVERLAP:0.4,
+  _overlap(a,b){ const A=new Set(this._words(a).filter(x=>x.length>3)), B=new Set(this._words(b).filter(x=>x.length>3)); let n=0; A.forEach(x=>{ if(B.has(x)) n++; }); return n/Math.max(1,Math.min(A.size,B.size)); },
+  // Where a wine stands at a dish: 0 its first pick, 1 its second…, 99 not one of its picks.
+  rankAt(wineId,dishId){ const p=TeamData.pairing(dishId)||{}; const i=(p.best||[]).findIndex(b=>b.id===wineId); if(i>=0) return i; if(p.cocktail&&p.cocktail.id===wineId) return 0; if(p.glass&&p.glass.id===wineId) return 1; return 99; },
   _buildLight(id){ const w=TeamData.wine(id), c=TeamData.card(id); if(!w||!c) return []; const out=[], name=TeamData.short(w), drink=TeamData.isDrink(w), kind=this.kindOf(w);
     const st=c.style||{}, gap=o=>{ const s=(TeamData.card(o.id)||{}).style||{}; return Object.keys(st).reduce((a,k)=>a+Math.abs((st[k]||0)-(s[k]||0)),0); };
     const others=TeamData.wines().filter(o=>o.id!==id&&this.kindOf(o)===kind&&(TeamData.card(o.id)||{}).taste).sort((a,b)=>gap(b)-gap(a)||(a.id<b.id?-1:1));
-    const tastes=[]; for(const o of others){ const t=TeamData.card(o.id).taste; if(this._norm(t)!==this._norm(c.taste)&&!tastes.some(x=>this._norm(x)===this._norm(t))) tastes.push(t); if(tastes.length===3) break; }
+    const tastes=[]; for(const o of others){ const t=TeamData.card(o.id).taste; if(gap(o)<this.SAY_GAP) break;
+      if(this._overlap(t,c.taste)<this.SAY_OVERLAP&&!tastes.some(x=>this._overlap(x,t)>=0.5)) tastes.push(t); if(tastes.length===3) break; }
     if(c.taste&&tastes.length===3) out.push(this._light(id+'#say',`Which of these would you tell a guest about the ${name}?`,[c.taste,...tastes],c.pitch,id));
+    // What it pours with: the dish it ranks highest at in the pairings (its first pick if it is one), against
+    // three the pairings say it doesn't suit.
     const menu=TeamData.dishes(), byName=n=>menu.find(x=>this._norm(x.name)===this._norm(n));
-    const mine=(c.dishes||[]).map(x=>({d:byName(x.dish),why:x.why})).filter(x=>x.d);
-    if(mine.length){ const own=new Set(mine.map(x=>x.d.id));
-      const picks=x=>{ const p=TeamData.pairing(x.id)||{}; return [...(p.best||[]).map(b=>b.id),p.glass&&p.glass.id,p.cocktail&&p.cocktail.id].filter(Boolean); };
-      const notFor=menu.filter(x=>!own.has(x.id)&&!picks(x).includes(id));
-      const rank=x=>drink?0:this.tableFit(id,x.id)==='good'?1:0; // dishes it plainly doesn't suit first
-      const wrong=this._shuffle(notFor,id).sort((a,b)=>rank(a)-rank(b)).slice(0,3);
-      if(wrong.length===3) out.push(this._light(id+'#pair',`Which dish on our menu would you suggest the ${name} with?`,[mine[0].d.name,...wrong.map(x=>x.name)],mine[0].why,id)); }
+    const own=new Set((c.dishes||[]).map(x=>byName(x.dish)).filter(Boolean).map(x=>x.id));
+    const ranked=menu.filter(x=>this.rankAt(id,x.id)<99).sort((a,b)=>this.rankAt(id,a.id)-this.rankAt(id,b.id)||((TeamData.pairing(a.id)||{}).best||[]).length-((TeamData.pairing(b.id)||{}).best||[]).length||this._hash(id+a.id)-this._hash(id+b.id));
+    const top=ranked[0]||menu.find(x=>own.has(x.id));
+    if(top){ const p=TeamData.pairing(top.id)||{}, pick=[...(p.best||[]),p.cocktail,p.glass].filter(Boolean).find(b=>b.id===id), cw=(c.dishes||[]).find(x=>byName(x.dish)===top);
+      const wrongFor=x=>x.id!==top.id&&!own.has(x.id)&&this.rankAt(id,x.id)===99&&(drink||this.tableFit(id,x.id)!=='good');
+      const wrong=this._shuffle(menu.filter(wrongFor),id).slice(0,3);
+      if(wrong.length===3) out.push(this._light(id+'#pair',`Which dish on our menu is the best match for the ${name}?`,[top.name,...wrong.map(x=>x.name)],(pick&&pick.why)||(cw&&cw.why)||'',id)); }
     return out.filter(q=>!this.givesAway(q)); },
   _light(qid,q,opts,why,wine){ const order=this._shuffle(opts.map((_,i)=>i),qid); return {id:qid,k:'recognise',q,opts:order.map(i=>this._cap(opts[i])),a:order.indexOf(0),why,wine,light:true}; },
   /* A server always knows what kind of wine it is (the list says so), so a wrong answer describing another
@@ -221,13 +232,15 @@ const TeamLearn = {
   dishQs(id){
     const x=TeamData.dish(id), p=TeamData.pairing(id); if(!x||!p||!p.best||!p.best.length) return [];
     const best=TeamData.wine(p.best[0].id); if(!best) return [];
-    const others=TeamData.wines().filter(w=>!p.best.some(b=>b.id===w.id));
-    const pick=[...(p.avoid&&TeamData.wine(p.avoid.id)?[TeamData.wine(p.avoid.id)]:[]),...others.filter(w=>w.type===best.type),...others]
+    // Wrong wines are ones a sommelier would steer away from here (the dish's avoid, then wines tableFit
+    // calls a steer), wines and cocktails kept apart; none of its picks, so "best" has one answer.
+    const drink=TeamData.isDrink(best), picks=new Set([...p.best.map(b=>b.id),p.glass&&p.glass.id,p.cocktail&&p.cocktail.id].filter(Boolean));
+    const clear=TeamData.wines().filter(w=>!picks.has(w.id)&&TeamData.isDrink(w)===drink&&this.tableFit(w.id,id)!=='good');
+    const pick=[...(p.avoid&&TeamData.wine(p.avoid.id)&&!picks.has(p.avoid.id)?[TeamData.wine(p.avoid.id)]:[]),...this._shuffle(clear.filter(w=>w.type===best.type),id),...this._shuffle(clear,id+'x')]
       .filter((w,i,a)=>a.indexOf(w)===i).slice(0,3);
-    if(pick.length<3) return [];
     const opts=[best,...pick].map(w=>TeamData.short(w)), order=this._shuffle([0,1,2,3],id);
     return [
-      {id:'d:'+id+'#0',dish:id,k:'recognise',q:`A guest orders the ${x.name}. Which wine on our list suits it best?`,opts:order.map(i=>opts[i]),a:order.indexOf(0),why:p.best[0].why},
+      ...(pick.length===3?[{id:'d:'+id+'#0',dish:id,k:'recognise',q:`A guest orders the ${x.name}. Which wine on our list suits it best?`,opts:order.map(i=>opts[i]),a:order.indexOf(0),why:p.best[0].why}]:[]),
       {id:'d:'+id+'#1',dish:id,k:'recall',q:`Name a wine from our list for a guest having the ${x.name}.`,ans:TeamData.short(best),acc:p.best.map(b=>TeamData.wine(b.id)).filter(Boolean).flatMap(w=>[TeamData.short(w),w.name]),why:p.best.map(b=>{ const w=TeamData.wine(b.id); return w?`${TeamData.short(w)}: ${b.why}`:''; }).filter(Boolean).join(' ')},
     ];
   },
@@ -244,6 +257,26 @@ const TeamLearn = {
   _seed(q){ return q.id+(q.deal?':'+q.deal:''); },
   deal(q,nonce){ const d={...q,deal:String(nonce)}; if(q.k!=='recognise'||!q.opts) return d;
     const order=this._shuffle(q.opts.map((_,i)=>i),this._seed(d)); return {...d,opts:order.map(i=>q.opts[i]),a:order.indexOf(q.a)}; },
+  /* Putting a set of questions together (Vinny's test, the drill): never the same right answer twice, and
+     no two in a row on the same wine or dish, of the same shape (its "what would you say", its dish, a grape
+     question, a table) or with the same answer. Candidates arrive in priority order; the first `size` with
+     different answers are kept, then dealt so each one differs from the one before. */
+  answerKey(q){ if(q.opts&&q.a!=null) return 'o:'+this._norm(q.opts[q.a]); if(q.k==='apply'){ const d=this.dishIn(q.q); return d?'dish:'+d.id:'q:'+q.id; } return 'a:'+this._norm(q.ans||q.id); },
+  // The shape is what a question asks about: a grape, a place, a flavour, a dish, a table; recognise and recall
+  // of one topic count as the same shape, since "Which grape…" twice in a row reads as a repeat either way.
+  shapeKey(q){ if(q.light) return q.id.split('#')[1]; if(q.dish) return 'dish'; if(q.k==='apply'||q.k==='contrast') return q.k;
+    const t=this._topic(q.q,TeamData.isDrink(TeamData.wine(q.wine))); return t?'t-'+t:/describ|style|tastes? like|best fits/i.test(q.q)?'t-style':q.k; },
+  answerText(q){ return q.opts&&q.a!=null?q.opts[q.a]:q.ans||''; },
+  subjectKey(q){ return q.dish?'d:'+q.dish:'w:'+q.wine; },
+  spread(cands,size){
+    const keep=[], seen=new Set();
+    // Two answers that say nearly the same thing ("Tar and rose petal aromas…" for a Barolo and a Barbaresco) count as one.
+    const alike=q=>{ const t=this.answerText(q); return t.split(/\s+/).length>=4&&keep.some(k=>this._overlap(this.answerText(k),t)>=0.6); };
+    for(const q of cands){ if(keep.length>=size) break; const a=this.answerKey(q); if(seen.has(a)||alike(q)) continue; seen.add(a); keep.push(q); }
+    for(const q of cands){ if(keep.length>=size) break; if(!keep.includes(q)) keep.push(q); } // a short list repeats an answer rather than ask fewer
+    const out=[], pool=[...keep], differs=(q,p,all)=>!p||(this.subjectKey(q)!==this.subjectKey(p)&&(!all||(this.shapeKey(q)!==this.shapeKey(p)&&this.answerKey(q)!==this.answerKey(p))));
+    while(pool.length){ const prev=out[out.length-1]; let i=pool.findIndex(q=>differs(q,prev,true)); if(i<0) i=pool.findIndex(q=>differs(q,prev,false)); if(i<0) i=0; out.push(pool.splice(i,1)[0]); }
+    return out; },
   allQs(){ return [...TeamData.wines().flatMap(w=>this.wineQs(w.id)),...TeamData.dishes().flatMap(x=>this.dishQs(x.id))]; },
 
   /* How likely they are to remember a question now: 1 just after a right answer, RETAIN at its due date. */
@@ -314,7 +347,8 @@ const TeamLearn = {
      remembered first), then the next new questions in list order (by the glass first), and now and
      then an unannounced re-ask of something they know (a retention check). */
   // `part` ('glass' | 'bottle' | 'dishes') drills one part of the role's minimum alone, from Today's rows.
-  drill(pid,size=this.DRILL_SIZE,part=null){
+  drill(pid,size=this.DRILL_SIZE,part=null){ return this.spread(this._drillPool(pid,size*2,part),size); },
+  _drillPool(pid,size,part){
     const person=this.person(pid); if(!person) return [];
     const role=person.role, kinds=this.ROLES[role].kinds, mine=this._mine(this._all(),pid), items=mine.items, now=Date.now();
     const sc0=this.scope(role), sc=part?{glass:part==='glass'?sc0.glass:[],bottle:part==='bottle'?sc0.bottle:[],drinks:part==='drinks'?sc0.drinks:[],dishes:part==='dishes'?sc0.dishes:[]}:sc0, wines=[...sc.glass,...sc.bottle,...sc.drinks], dishes=sc.dishes;
@@ -467,11 +501,14 @@ const TeamLearn = {
     // A wine for a dish: the other wines on the list, the one to steer away from first, then the nearest
     // styles; never one of the dish's own pairings, which would be right too.
     if(topic==='wine'){
-      const p=q.dish?TeamData.pairing(q.dish):null, ok=new Set([...(p&&p.best||[]).map(b=>b.id),p&&p.glass&&p.glass.id].filter(Boolean));
+      const p=q.dish?TeamData.pairing(q.dish):null, ok=new Set([...(p&&p.best||[]).map(b=>b.id),p&&p.glass&&p.glass.id,p&&p.cocktail&&p.cocktail.id].filter(Boolean));
       const rw=wines.find(w=>right.some(r=>norm(r)===norm(TeamData.short(w)))), near=['sparkling','white','rosé','orange','red','sweet','fortified'];
       const dist=w=>rw?Math.abs(near.indexOf(w.type)-near.indexOf(rw.type)):0;
       const avoid=p&&p.avoid&&TeamData.wine(p.avoid.id); if(avoid&&!ok.has(avoid.id)) add(TeamData.short(avoid));
-      this._shuffle(wines.filter(w=>!ok.has(w.id)&&w.id!==q.wine),this._seed(q)+'n').sort((a,b)=>dist(a)-dist(b)).forEach(w=>add(TeamData.short(w)));
+      // Only wines this dish plainly doesn't suit (tableFit), so a wine that would also work never sits among the
+      // wrong answers; a short list is made up from well-known bottles that aren't on it.
+      const drinkQ=rw?TeamData.isDrink(rw):false;
+      this._shuffle(wines.filter(w=>!ok.has(w.id)&&w.id!==q.wine&&TeamData.isDrink(w)===drinkQ&&(!q.dish||this.tableFit(w.id,q.dish)!=='good')),this._seed(q)+'n').sort((a,b)=>dist(a)-dist(b)).forEach(w=>add(TeamData.short(w)));
       if(pool.length<4) this.offList(rw?this.kindOf(rw):'red',4-pool.length,this._seed(q)+'f').forEach(add);
       const keep=pool.slice(0,7), all=[...right.map(x=>({x,ok:true})),...keep.map(x=>({x,ok:false}))], order=this._shuffle(all.map((_,i)=>i),this._seed(q)+'c');
       return {opts:order.map(i=>this._cap(all[i].x)),right:order.map((i,j)=>all[i].ok?j:-1).filter(j=>j>=0),n:right.length};

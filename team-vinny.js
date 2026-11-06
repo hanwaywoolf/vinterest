@@ -83,10 +83,12 @@ const TeamVinny = {
       const rank=(faded.length?0:sells.includes(t.id)?1:assigned.has(t.id)?2:inShort(t)?3:4)*1000+order;
       return {...t,faded,unknown:unknown.filter(q=>!faded.includes(q)),known,rank};
     }).filter(t=>t.faded.length||t.unknown.length||t.known.length).sort((a,b)=>a.rank-b.rank);
-    const out=[], has=id=>out.some(q=>q.id===id), take=key=>{ let added=true; while(out.length<size&&added){ added=false; for(const t of things){ if(out.length>=size) break; const q=t[key].find(q=>!has(q.id)); if(q){ out.push(q); added=true; } } } };
+    // Three candidates for every question asked, in priority order; TeamLearn.spread keeps one per right
+    // answer and deals them so no two in a row share a wine, a dish, a shape or an answer.
+    const cap=size*3, out=[], has=id=>out.some(q=>q.id===id), take=key=>{ let added=true; while(out.length<cap&&added){ added=false; for(const t of things){ if(out.length>=cap) break; const q=t[key].find(q=>!has(q.id)); if(q){ out.push(q); added=true; } } } };
     take('faded'); take('unknown');
-    const review=out.length===0; take('known'); // nothing to learn or refresh: the ones asked longest ago, as review
-    const qs=out.slice(0,size);
+    const review=out.length===0; if(out.length<cap) take('known'); // nothing to learn or refresh: the ones asked longest ago, as review
+    const qs=TeamLearn.spread(out,size);
     return {qs,title:n?`Vinny's test: ${n.label}`:'Vinny\'s test',why:this.why(c,qs,{n,short,sells,review}),none:!qs.length};
   },
   /* The reason, in a sentence or two: what it covers and why these. */

@@ -1123,9 +1123,12 @@ test('training levels: the console sets them, cards and drills follow, a role ca
   // Low's pairing question: one of the wine's own dishes against three from this menu it isn't poured with.
   const pair = counts.pair;
   expect(pair.opts).toHaveLength(4);
-  const own = await page.evaluate((id) => TeamData.card(id).dishes.map((d) => d.dish), pair.wine);
-  expect(own).toContain(pair.opts[pair.a]);
-  expect(pair.opts.filter((o, i) => i !== pair.a && own.includes(o))).toHaveLength(0);
+  // The right dish is the one the pairings rank this wine highest at; every wrong one is a dish it isn't a pick for
+  // and plainly doesn't suit, so the question has one answer a sommelier would stand behind.
+  const ranks = await page.evaluate((q) => q.opts.map((o) => { const d = TeamData.dishes().find((x) => x.name === o); return { r: TeamLearn.rankAt(q.wine, d.id), fit: TeamLearn.tableFit(q.wine, d.id) }; }), pair);
+  const best = Math.min(...(await page.evaluate((id) => TeamData.dishes().map((d) => TeamLearn.rankAt(id, d.id)), pair.wine)));
+  expect(ranks[pair.a].r).toBe(best);
+  ranks.forEach((x, i) => { if (i !== pair.a) { expect(x.r).toBe(99); expect(x.fit).not.toBe('good'); } });
 
   // The console's Team section sets the restaurant to Low and the sommelier back to High.
   await page.getByTestId('console-nav-team').click();
@@ -1177,4 +1180,33 @@ test('training levels: the console sets them, cards and drills follow, a role ca
   await expect(page.getByTestId('team-fact')).toHaveCount(0);
   expect(errors).toEqual([]);
   await ctx.close();
+});
+
+// Vinny's test and the drill (TeamLearn.spread): ten questions never ask for the same right answer twice, and no
+// two in a row share a wine or dish, a shape or an answer; wrong answers are ones the pairings rule out.
+test('a test mixes its questions: no answer twice, nothing grouped, and wrong pairings that are plainly wrong', async ({ context, page }) => {
+  await stubNetwork(context);
+  await page.goto(`${BASE}/team/?seed=demo`);
+  await expect(page.getByTestId('team-state')).toBeVisible();
+  const r = await page.evaluate(() => {
+    const out = {};
+    for (const lv of ['low', 'medium', 'high']) {
+      TeamLearn.setLevel(lv);
+      const s = TeamLearn.people().find((p) => p.role === 'server'), qs = TeamVinny.test(s.id, { ask: 'reds' }).qs;
+      const ans = qs.map((q) => TeamLearn.answerKey(q)), subj = qs.map((q) => TeamLearn.subjectKey(q)), shape = qs.map((q) => TeamLearn.shapeKey(q));
+      out[lv] = { n: qs.length, distinctAnswers: new Set(ans).size, sameSubjectInARow: subj.filter((x, i) => i && x === subj[i - 1]).length,
+        sameShapeInARow: shape.filter((x, i) => i && x === shape[i - 1]).length };
+    }
+    TeamLearn.setLevel('high');
+    // Every "which wine suits this dish best" offers its first pick against wines the dish plainly doesn't suit.
+    const bad = TeamData.dishes().flatMap((d) => TeamLearn.dishQs(d.id).filter((q) => q.opts).flatMap((q) => q.opts.filter((o, i) => i !== q.a).map((o) => TeamData.wines().find((w) => TeamData.short(w) === o)).filter((w) => w && TeamLearn.tableFit(w.id, d.id) === 'good').map((w) => d.name + ': ' + TeamData.short(w))));
+    return { out, bad };
+  });
+  for (const lv of ['low', 'medium', 'high']) {
+    expect(r.out[lv].n).toBe(10);
+    expect(r.out[lv].distinctAnswers).toBe(10);
+    expect(r.out[lv].sameSubjectInARow).toBe(0);
+    expect(r.out[lv].sameShapeInARow).toBeLessThanOrEqual(3); // a new server has only the first rung open, so a level with two kinds of question can run out of one
+  }
+  expect(r.bad).toEqual([]);
 });

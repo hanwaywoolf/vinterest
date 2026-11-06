@@ -87,6 +87,12 @@ Restaurants differ in how much their staff need to know. A neighbourhood spot wa
 
 A level only filters what's already written (`TeamLearn.levelQs`, `qsFor(role, id)`, `cardShows`), so changing it takes effect at once, nothing is rewritten and no answer is lost: readiness, the drill, Vinny's test and the wine's standing all read the role's questions at its level. The console's own wine panel always shows the full card.
 
+### One answer you'd stand behind, and a mix that teaches (built)
+
+A question is only worth asking if a trained sommelier would stand behind its answer, so wrong answers are ones the pairings rule out, never another reasonable choice. "A guest orders the sirloin: which wine suits it best?" offers the dish's first pick against wines the dish plainly doesn't suit (`tableFit`), never the other reds it also lists. Low's "Which dish is the best match for this wine?" uses the dish the pairings rank the wine highest at (`rankAt`), so five reds that all go with the sirloin don't all answer "the sirloin". Low's "What would you say about it?" only sets a wine's line against wines that are clearly different in style and wording. Without three such wrong answers, the question isn't asked.
+
+Ten questions also have to read as ten different things. `TeamLearn.spread` keeps one question per right answer (near-identical answers count as one) and deals them so no two in a row are about the same wine or dish, ask about the same thing (a grape, a place, a flavour, a dish, a table) or share an answer. Vinny's test draws three candidates per question and the drill two, in priority order, so faded and missed answers still lead.
+
 ## Vinny in the staff app (built)
 
 A Vinny tab (between Today and Wines) and a row on Today, all in `team-vinny.js` (logic) and `team-vinny.jsx` (screens):
