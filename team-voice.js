@@ -25,22 +25,27 @@ const TeamVoice = {
   _save(d){ Store.setJSON(this.KEY,d); },
   native(){ const n=window.VinterestNative||{}; return {tts:n.TextToSpeech||null,sr:n.SpeechRecognition||null}; },
   _SR(){ return window.SpeechRecognition||window.webkitSpeechRecognition||null; },
-  canListen(){ return !!(this.native().sr||this._SR()); },
+  // Cloud listening (ElevenLabs' speech-to-text through the Worker's /stt) when the server has it and the browser can
+  // record; otherwise the phone's or browser's own recognition.
+  _canRecord(){ try{ return !!(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia&&window.MediaRecorder); }catch(e){ return false; } },
+  cloudListen(){ return !!this._stt&&this._canRecord(); },
+  canListen(){ return !!(this.cloudListen()||this.native().sr||this._SR()); },
   canSpeak(){ return !!(this.native().tts||window.speechSynthesis||this._cloud); },
   on(){ const d=this._doc(); return d.on==null?this.canListen():!!d.on; },
   setOn(v){ const d=this._doc(); d.on=!!v; this._save(d); if(!v) this.stop(); },
   noticeSeen(){ return !!this._doc().notice; },
   markNotice(){ const d=this._doc(); d.notice=Date.now(); this._save(d); },
   // Where the words go, said plainly once: the phone's or browser's speech service turns them into text.
-  where(){ if(this.native().sr) return 'Your phone turns what you say into text. Vinterest keeps only the words, never the recording.';
+  where(){ if(this.cloudListen()) return 'Your reply is recorded and sent to ElevenLabs to be turned into text, then discarded. Vinterest keeps only the words.';
+    if(this.native().sr) return 'Your phone turns what you say into text. Vinterest keeps only the words, never the recording.';
     const ua=navigator.userAgent||''; const who=/Chrome|CriOS|Android/.test(ua)&&!/Edg\//.test(ua)?'Google':/Safari/.test(ua)?'Apple':'your browser\'s speech service';
     return `Your browser turns what you say into text using ${who}. Vinterest keeps only the words, never the recording.`; },
 
   /* ── Speaking ── */
-  _cloud:null, _audio:null, _cache:{},
+  _cloud:null, _stt:false, _audio:null, _cache:{},
   async cloudReady(){
     if(this._cloud!=null) return this._cloud;
-    try{ const r=await fetch(Platform.api('/config')); const j=await r.json(); this._cloud=!!(j&&j.tts); }catch(e){ this._cloud=false; }
+    try{ const r=await fetch(Platform.api('/config')); const j=await r.json(); this._cloud=!!(j&&j.tts); this._stt=!!(j&&j.stt); }catch(e){ this._cloud=false; }
     return this._cloud; },
   // A tap is needed before a phone will play sound; the first tap at a table calls this.
   unlock(){ try{ if(!this._audio){ this._audio=new Audio(); this._audio.playsInline=true; }
@@ -53,13 +58,14 @@ const TeamVoice = {
   stop(){ try{ this._audio&&this._audio.pause(); }catch(e){} try{ window.speechSynthesis&&speechSynthesis.cancel(); }catch(e){} try{ const t=this.native().tts; t&&t.stop&&t.stop(); }catch(e){} },
   _lang(){ return (navigator.language||'en-GB').startsWith('en')?navigator.language||'en-GB':'en-GB'; },
   /* Says text; resolves when it has been said (or couldn't be). voice: 0-3, a table's diner. */
-  async speak(text,{voice=0,cloud=true}={}){
+  // pace 'slow' for a name said on its own (Say it, the names check), so it can be heard and copied.
+  async speak(text,{voice=0,cloud=true,pace}={}){
     const t=String(text||'').trim(); if(!t) return;
     this.stop();
     if(cloud&&await this.cloudReady()){
       try{
-        const key=voice+'|'+t; let url=this._cache[key];
-        if(!url){ const r=await fetch(Platform.api('/tts'),{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({text:t,voice})});
+        const key=voice+'|'+(pace||'')+'|'+t; let url=this._cache[key];
+        if(!url){ const r=await fetch(Platform.api('/tts'),{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({text:t,voice,pace})});
           if(r.status===404) this._cloud=false; if(!r.ok) throw new Error('tts '+r.status);
           url=URL.createObjectURL(await r.blob()); this._cache[key]=url; }
         if(!this._audio){ this._audio=new Audio(); this._audio.playsInline=true; }
@@ -69,9 +75,9 @@ const TeamVoice = {
       }catch(e){ /* fall through to the phone's own voice */ }
     }
     const n=this.native().tts;
-    if(n){ try{ await n.speak({text:t,lang:this._lang(),rate:1.0,pitch:1.0,volume:1.0,category:'playback'}); return; }catch(e){} }
+    if(n){ try{ await n.speak({text:t,lang:this._lang(),rate:pace==='slow'?0.8:0.9,pitch:1.0,volume:1.0,category:'playback'}); return; }catch(e){} }
     if(window.speechSynthesis){
-      await new Promise(res=>{ try{ const u=new SpeechSynthesisUtterance(t); u.lang=this._lang(); u.rate=1; u.onend=res; u.onerror=res;
+      await new Promise(res=>{ try{ const u=new SpeechSynthesisUtterance(t); u.lang=this._lang(); u.rate=pace==='slow'?0.8:0.9; u.onend=res; u.onerror=res;
         const vs=speechSynthesis.getVoices().filter(v=>v.lang&&v.lang.startsWith('en')); if(vs.length) u.voice=vs[voice%vs.length];
         speechSynthesis.speak(u); setTimeout(res,Math.max(4000,t.length*90)); }catch(e){ res(); } });
     }
@@ -81,8 +87,35 @@ const TeamVoice = {
      listen({onWords}) starts the microphone and returns {stop(): Promise<{text, firstAt, lastAt, startedAt}>}.
      onWords(text) is called as words are heard. firstAt/lastAt are when the first and last words came, for pace. */
   listen({onWords}={}){
+    if(this.cloudListen()) return this._listenCloud({onWords});
+    return this._listenLocal({onWords}); },
+  /* Records the reply and, on stop, has /stt write it down: {text, firstAt, lastAt, startedAt} with the first and last
+     words' times from the service's own timestamps. No words appear while they speak; `pending` is true from the
+     tap to the answer. If the service fails the reply comes back empty with `error`, and listening falls back to the
+     phone's own recognition for the rest of the visit. */
+  _listenCloud({onWords}={}){
+    let rec=null, stream=null, chunks=[], startedAt=Date.now(), ready=null;
+    const type=['audio/webm;codecs=opus','audio/webm','audio/mp4','audio/ogg'].find(t=>{ try{ return MediaRecorder.isTypeSupported(t); }catch(e){ return false; } })||'';
+    ready=(async()=>{ try{ stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true}});
+        rec=new MediaRecorder(stream,type?{mimeType:type,audioBitsPerSecond:32000}:{audioBitsPerSecond:32000});
+        rec.ondataavailable=e=>{ if(e.data&&e.data.size) chunks.push(e.data); }; startedAt=Date.now(); rec.start(); return true; }
+      catch(e){ return false; } })();
+    const release=()=>{ try{ stream&&stream.getTracks().forEach(t=>t.stop()); }catch(e){} };
+    return {cloud:true, stop:async()=>{
+      const ok=await ready; if(!ok||!rec){ release(); this._stt=false; return {text:'',firstAt:0,lastAt:0,startedAt,error:'mic'}; }
+      await new Promise(res=>{ rec.onstop=res; try{ rec.stop(); }catch(e){ res(); } });
+      release();
+      const blob=new Blob(chunks,{type:(rec.mimeType||type||'audio/webm')});
+      try{ const r=await fetch(Platform.api('/stt'),{method:'POST',headers:{'content-type':(blob.type||'audio/webm').split(';')[0]},body:blob});
+        if(r.status===404) this._stt=false; if(!r.ok) throw new Error('stt '+r.status);
+        const j=await r.json(), text=this.dedupe(j.text||''), ws=j.words||[];
+        onWords&&onWords(text);
+        return {text,firstAt:ws.length?startedAt+ws[0].start*1000:(text?startedAt:0),lastAt:ws.length?startedAt+ws[ws.length-1].end*1000:0,startedAt}; }
+      catch(e){ this._stt=false; return {text:'',firstAt:0,lastAt:0,startedAt,error:'stt'}; } }};
+  },
+  _listenLocal({onWords}={}){
     const startedAt=Date.now(); let firstAt=0, lastAt=0, text='', finals='', done=null, stopped=false;
-    const heard=(t)=>{ const now=Date.now(); if(!firstAt&&t.trim()) firstAt=now; if(t.trim()) lastAt=now; text=t; onWords&&onWords(t); };
+    const heard=(t)=>{ t=this.dedupe(t); const now=Date.now(); if(!firstAt&&t.trim()) firstAt=now; if(t.trim()) lastAt=now; text=t; onWords&&onWords(t); };
     // When the words come back in one piece there's no last-word time, so the moment they stopped speaking counts.
     const finish=()=>({text:text.trim(),firstAt,lastAt:lastAt>firstAt?lastAt:(firstAt?Date.now():0),startedAt});
     const n=this.native().sr;
@@ -96,12 +129,31 @@ const TeamVoice = {
     }
     const SR=this._SR(); if(!SR) return {stop:async()=>finish(),unsupported:true};
     const rec=new SR(); rec.lang=this._lang(); rec.interimResults=true; rec.continuous=true; rec.maxAlternatives=1;
-    rec.onresult=e=>{ let interim=''; for(let i=e.resultIndex;i<e.results.length;i++){ const r=e.results[i]; if(r.isFinal) finals+=r[0].transcript+' '; else interim+=r[0].transcript; } heard((finals+interim).replace(/\s+/g,' ')); };
-    rec.onend=()=>{ if(done){ done(finish()); done=null; } else if(!stopped){ try{ rec.start(); }catch(e){} } };  // Chrome stops after a pause; keep listening until they tap
+    // Each event is read whole (every result of this session, rebuilt from scratch), never added onto the last: Android
+    // Chrome sends every result as the whole utterance so far and repeats finals, and summing them ("finals +=")
+    // filled the box with the same sentence twenty times over. A result that grows the one before replaces it.
+    let session='';
+    rec.onresult=e=>{ session=this.joinResults(Array.from(e.results).map(r=>r[0]&&r[0].transcript||'')); heard((finals+' '+session).replace(/\s+/g,' ').trim()); };
+    rec.onend=()=>{ finals=(finals+' '+session).trim(); session='';  // what this session heard is kept when Chrome restarts it
+      if(done){ done(finish()); done=null; } else if(!stopped){ try{ rec.start(); }catch(e){} } };  // Chrome stops after a pause; keep listening until they tap
     rec.onerror=()=>{};
     try{ rec.start(); }catch(e){}
     return {stop:()=>new Promise(res=>{ stopped=true; done=res; try{ rec.stop(); }catch(e){ res(finish()); } setTimeout(()=>{ if(done){ done(finish()); done=null; } },1500); })};
   },
+
+  /* The results of one recognition session as one line: a result that starts with (or repeats) what came before
+     replaces or is dropped rather than appended, so a recogniser that sends cumulative text doesn't duplicate it. */
+  joinResults(parts){ let acc=''; for(const raw of parts){ const t=String(raw||'').trim(); if(!t) continue; const a=this._norm(acc), b=this._norm(t);
+      if(!a||b.startsWith(a)) acc=t; else if(a.endsWith(b)||a.includes(b)) continue; else acc=acc+' '+t; }
+    return acc.trim(); },
+  /* Takes out a run of words said again straight after itself ("it's about 67 dollars a bottle it's about 67 dollars a
+     bottle"), longest first, so a recogniser's echo never reaches the guest or the delivery coaching. */
+  dedupe(text){ let w=String(text||'').split(/\s+/).filter(Boolean); if(w.length<6||w.length>600) return w.join(' ');
+    const n=x=>x.toLowerCase().replace(/[^a-z0-9']/g,'');
+    for(let changed=true;changed;){ changed=false;
+      outer: for(let k=Math.floor(w.length/2);k>=3;k--) for(let i=0;i+2*k<=w.length;i++){ let same=true; for(let j=0;j<k;j++) if(n(w[i+j])!==n(w[i+k+j])){ same=false; break; }
+          if(same){ w.splice(i+k,k); changed=true; break outer; } } }
+    return w.join(' '); },
 
   /* ── Delivery ── */
   _norm(s){ return String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[^a-z0-9' ]+/g,' ').replace(/\s+/g,' ').trim(); },

@@ -60,7 +60,7 @@ test('the price search stays on Sonnet 4.6 while CLAUDE_MODEL is on trial', asyn
   expect(upstream[0].body.thinking).toBeUndefined();
 });
 
-// The guest's voice at the table (Vinterest for teams): /tts with a cloud voice, or off without a key.
+// The guest's voice at the table (Vinterest Teams): /tts with a cloud voice, or off without a key.
 async function tts(env, body, origin = 'https://vinterest.pages.dev') {
   const worker = await loadWorker();
   const upstream = [], realFetch = global.fetch;
@@ -82,6 +82,7 @@ test('/tts: ElevenLabs when its key is set, a diner\'s voice per table, the key 
   expect(r.type).toBe('audio/mpeg');
   expect(r.upstream[0].url).toContain('api.elevenlabs.io/v1/text-to-speech/pNInz6obpgDQGcFmaJgB');
   expect(r.upstream[0].headers['xi-api-key']).toBe('k');
+  expect(r.upstream[0].body.model_id).toBe('eleven_v4'); // the default, chosen by ear
   expect(r.upstream[0].body.text).toBe('Evening! What would you pour with the cod?');
 });
 test('/tts: OpenAI\'s speech model with only its key; long text cut short; other origins refused', async () => {
@@ -91,4 +92,71 @@ test('/tts: OpenAI\'s speech model with only its key; long text cut short; other
   expect(r.upstream[0].body.input.length).toBe(600);
   const denied = await tts({ OPENAI_API_KEY: 'o' }, { text: 'Hi' }, 'https://evil.example');
   expect(denied.status).toBe(403);
+});
+
+test('TEAM_MODEL moves only the staff-training purposes, with room for Opus to think on the long writing', async () => {
+  const env = { CLAUDE_MODEL: 'claude-sonnet-5-5', TEAM_MODEL: 'claude-opus-5-5' };
+  const { upstream } = await run(env, [msg('team_cards'), msg('team_pairings'), msg('team_vinny'), msg('label_scan'), msg('learn_article'), msg('wine_qa')]);
+  expect(upstream.map((u) => u.body.model)).toEqual(['claude-opus-5-5', 'claude-opus-5-5', 'claude-opus-5-5', 'claude-sonnet-5-5', 'claude-sonnet-5-5', 'claude-sonnet-5-5']);
+  // Opus always thinks: no thinking setting sent, effort by purpose, fallbacks on, long caps doubled.
+  expect(upstream[0].body.thinking).toBeUndefined();
+  expect(upstream[0].body).toMatchObject({ output_config: { effort: 'medium' }, fallbacks: 'default', max_tokens: 24576 });
+  expect(upstream[1].body.max_tokens).toBe(16384);
+  // A short answer (Ask Vinny) gets room to think too: at 500 the thinking used it all and the answer came back cut off.
+  expect(upstream[2].body.max_tokens).toBe(4096);
+  // The consumer app's calls are exactly what they were.
+  expect(upstream[3].body).toMatchObject({ thinking: { type: 'between_tools' }, max_tokens: 4096 });
+  // Without TEAM_MODEL the team purposes follow CLAUDE_MODEL as before.
+  const plain = await run({ CLAUDE_MODEL: 'claude-sonnet-5-5' }, [msg('team_cards')]);
+  expect(plain.upstream[0].body).toMatchObject({ model: 'claude-sonnet-5-5', max_tokens: 12288 });
+});
+// data/tts-say.json as deployed: a name the voice gets wrong is swapped for a spelling it reads right, whole words
+// only and the longest first, before it's sent; the model is chosen by ELEVENLABS_MODEL.
+test('/tts: names are said as data/tts-say.json spells them, and ELEVENLABS_MODEL picks the model', async () => {
+  const say = { say: { Jolivet: 'zho-lee-VAY', 'Pascal Jolivet': 'pas-KAL zho-lee-VAY' } };
+  const ASSETS = { fetch: async (req) => new URL(req.url).pathname === '/data/tts-say.json' ? new Response(JSON.stringify(say)) : new Response('', { status: 404 }) };
+  const r = await tts({ ELEVENLABS_API_KEY: 'k', ELEVENLABS_MODEL: 'eleven_multilingual_v2', ASSETS }, { text: 'The Pascal Jolivet, or another Jolivet? Not the Jolivets.' });
+  expect(r.upstream[0].body.text).toBe('The pas-KAL zho-lee-VAY, or another zho-lee-VAY? Not the Jolivets.');
+  expect(r.upstream[0].body.model_id).toBe('eleven_multilingual_v2');
+});
+// The voice teaches, so it's unhurried: 0.9 for a guest's line, 0.8 for a name said on its own, both settable.
+test('/tts: an unhurried pace, slower still for a name on its own', async () => {
+  const line = await tts({ ELEVENLABS_API_KEY: 'k' }, { text: 'Evening!' });
+  expect(line.upstream[0].body.voice_settings).toMatchObject({ speed: 0.9, stability: 0.6 });
+  const name = await tts({ ELEVENLABS_API_KEY: 'k' }, { text: 'Veuve Clicquot Brut', pace: 'slow' });
+  expect(name.upstream[0].body.voice_settings.speed).toBe(0.8);
+  const set = await tts({ ELEVENLABS_API_KEY: 'k', TTS_SPEED: '0.85', TTS_SLOW: '0.5' }, { text: 'Hi', pace: 'slow' });
+  expect(set.upstream[0].body.voice_settings.speed).toBe(0.7); // clamped to what ElevenLabs takes
+  const oa = await tts({ OPENAI_API_KEY: 'o' }, { text: 'Evening!' });
+  expect(oa.upstream[0].body.speed).toBe(0.9);
+});
+// A restaurant's demo address: its root opens the staff app, and its pages may call the voice and Claude.
+test('socialcorner.vinterest.team opens the staff app and is an allowed origin', async () => {
+  const worker = await loadWorker();
+  const r = await worker.fetch(new Request('https://socialcorner.vinterest.team/'), {}, { waitUntil() {} });
+  expect(r.status).toBe(302);
+  expect(r.headers.get('location')).toBe('https://socialcorner.vinterest.team/team/');
+  const ok = await tts({ ELEVENLABS_API_KEY: 'k' }, { text: 'Hi' }, 'https://socialcorner.vinterest.team');
+  expect(ok.status).toBe(200);
+  const no = await tts({ ELEVENLABS_API_KEY: 'k' }, { text: 'Hi' }, 'https://socialcorner.vinterest.team.evil.example');
+  expect(no.status).toBe(403);
+});
+// /stt: the recording goes to ElevenLabs' speech-to-text with word times; the words come back, nothing is kept.
+test('/stt: a recording written down by ElevenLabs, off without its key, other origins refused', async () => {
+  const worker = await loadWorker();
+  const post = (env, origin = 'https://vinterest.pages.dev', type = 'audio/webm') => worker.fetch(new Request('https://vinterest.pages.dev/stt', { method: 'POST', headers: { 'content-type': type, origin }, body: new Uint8Array([1, 2, 3, 4]) }), env, { waitUntil() {} });
+  const realFetch = global.fetch, up = [];
+  global.fetch = async (url, init) => { up.push({ url: String(url), init, form: init.body }); return new Response(JSON.stringify({ text: 'The Grüner by the glass', language_code: 'en', words: [{ text: 'The', start: 0.2, end: 0.3, type: 'word' }, { text: ' ', type: 'spacing' }, { text: 'Grüner', start: 0.4, end: 0.8, type: 'word' }] }), { status: 200 }); };
+  try {
+    const r = await post({ ELEVENLABS_API_KEY: 'k' });
+    expect(r.status).toBe(200);
+    expect(await r.json()).toEqual({ text: 'The Grüner by the glass', words: [{ text: 'The', start: 0.2, end: 0.3 }, { text: 'Grüner', start: 0.4, end: 0.8 }], language: 'en' });
+    expect(up[0].url).toBe('https://api.elevenlabs.io/v1/speech-to-text');
+    expect(up[0].init.headers['xi-api-key']).toBe('k');
+    expect(up[0].form.get('model_id')).toBe('scribe_v1');
+    expect(up[0].form.get('timestamps_granularity')).toBe('word');
+    expect((await post({})).status).toBe(404);
+    expect((await post({ ELEVENLABS_API_KEY: 'k' }, 'https://evil.example')).status).toBe(403);
+    expect((await post({ ELEVENLABS_API_KEY: 'k' }, undefined, 'text/plain')).status).toBe(400);
+  } finally { global.fetch = realFetch; }
 });

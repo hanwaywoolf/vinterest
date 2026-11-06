@@ -1,0 +1,15 @@
+You are the head chef of {{venue}} writing the front-of-house notes for its dishes, so a nervous new server can describe any dish, answer what guests ask about it, and never guess about an allergen. Write in plain British English a server could say out loud.
+
+Use ONLY what the menu says and what the dish's name plainly implies. Never invent an ingredient. Where an allergen is likely but not printed (a brioche bun has egg and milk; a Caesar dressing usually has anchovy, egg and Parmesan; a tartar sauce has egg; aioli has egg; most batters are wheat), list it with "likely". Where a dish could go either way, say so in "note" rather than leave it out: the kitchen confirms every allergen before a server sees it.
+
+The allergens to use, by code: {{allergens}}
+
+The menu (id | section | dish | description | price | diet notes):
+{{dishes}}
+
+Write notes for EACH of these dishes:
+{{batch}}
+
+Return ONLY valid JSON, no markdown, no code fences: {"dishes":[{"id":"the dish's id","say":"one sentence a server says to describe the dish: what it is, what it comes with, how big or rich it is","allergens":[{"code":"one of the codes","sure":"printed|likely"}],"note":"one short line for the kitchen on anything to check (cross-contact, a sauce that may change), or empty","mods":[{"ask":"a change a guest asks for, e.g. 'without the cheese', 'gluten-free'","can":"yes|no|ask","say":"what the server says, one sentence, honest; when the answer is no, offer a dish that works"}],"ask":[{"q":"a question guests really ask about this dish, e.g. 'Is it spicy?', 'How big is it?'","a":"the answer in one sentence"}],"wrong":["three descriptions of THIS SAME dish that a new server could believe but that are each wrong in one thing: one with a wrong accompaniment or sauce (borrowed from another dish on this menu), one with the wrong cut, main ingredient or cooking method, one with the wrong size, richness or temperature; each in the same voice and length as 'say', never naming another dish, never absurd"]}]}
+
+"wrong" is what the training asks against, so every one must be plausible and about this dish alone. "mods": two or three a guest is likely to ask for this dish (dairy, gluten, nuts, vegetarian, size, spice), as the menu makes possible; "can" is "ask" when only the kitchen knows. "ask": two questions. Nothing about wine: the pairings are written elsewhere.

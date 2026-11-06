@@ -82,19 +82,23 @@ const TeamSales = {
     const wines=TeamData.wines(); if(!wines.length) return 0;
     const ppl=TeamLearn.people(), by=role=>ppl.filter(p=>p.role===role), first=n=>ppl.find(p=>p.name.split(' ')[0]===n);
     const claire=first('Claire')||by('sommelier')[0], marco=first('Marco')||by('bartender')[0], dani=first('Dani')||by('server')[0], priya=first('Priya')||by('server')[1], amara=first('Amara')||by('server')[2];
+    // The Social Corner (open every day, two busy rooms, CAD prices) or The Larkspur (closed Mondays).
+    const social=TeamSample.social((TeamData.get().venue||{}).sample), venue=TeamData.get().venue.name||'the restaurant';
     let s=0x5eed; const rnd=()=>{ s=(s+0x6d2b79f5)|0; let t=Math.imul(s^(s>>>15),1|s); t=(t+Math.imul(t^(t>>>7),61|t))^t; return ((t^(t>>>14))>>>0)/4294967296; };
     const pick=(items,weights)=>{ const tot=weights.reduce((a,b)=>a+b,0); let r=rnd()*tot; for(let i=0;i<items.length;i++){ r-=weights[i]; if(r<=0) return items[i]; } return items[items.length-1]; };
     const money=x=>{ const m=/\d+(?:\.\d+)?/.exec(String(x||'')); return m?+m[0]:0; }; // "£55 (37.5cl)" is 55
     const all=TeamLearn._all(), knows=(p,w)=>!!p&&TeamLearn.knowsWine(p.id,p.role,w.id,(all[p.id]||{items:{}}).items);
     const glass=wines.filter(TeamData.byGlass), bottle=wines.filter(w=>money(w.bottle)>0);
     // How much each wine would sell on its own merits: cheaper and by the glass sell more, sweet wines least.
-    const merit=(w,size)=>{ const price=money(size==='glass'?w.glass:w.bottle)||20; let m=(size==='glass'?60:160)/Math.max(6,price); if(/sweet|fortif/i.test(w.section)) m*=0.35; if(w.type==='rosé'||w.type==='orange') m*=0.7; const sellers=ppl.filter(p=>['server','bartender','sommelier'].includes(p.role)); if(sellers.length&&!sellers.some(p=>knows(p,w))) m*=0.55; return m; };
+    const merit=(w,size)=>{ const price=money(size==='glass'?w.glass:w.bottle)||20; let m=(size==='glass'?60:160)/Math.max(6,price); if(/sweet|fortif|dessert/i.test(w.section)||/fortified|dessert/.test(w.type)) m*=0.35; if(w.type==='rosé'||w.type==='orange') m*=0.7; const sellers=ppl.filter(p=>['server','bartender','sommelier'].includes(p.role)); if(sellers.length&&!sellers.some(p=>knows(p,w))) m*=0.55; return m; };
     const rows=[], nights={}; const now=new Date(); now.setHours(0,0,0,0);
     for(let d=weeks*7;d>=1;d--){
-      const day=new Date(now.getTime()-d*this.DAY), dow=day.getDay(); if(dow===1) continue; // closed Mondays
+      const day=new Date(now.getTime()-d*this.DAY), dow=day.getDay(); if(dow===1&&!social) continue; // the Larkspur closes Mondays
       // The last week is a busy one with the sommelier on form: more covers and bottles, slightly less wine per guest, so the deltas show both ways.
-      const base=Math.round([90,0,55,65,80,105,120][dow]*(0.85+rnd()*0.3)), covers=Math.round(base*(d<=7?1.18:1)), key=this.night(day.getTime());
+      const base=Math.round((social?[150,95,105,115,135,190,210]:[90,0,55,65,80,105,120])[dow]*(0.85+rnd()*0.3)), covers=Math.round(base*(d<=7?1.18:1)), key=this.night(day.getTime());
       const shifts=[]; if(dani&&dow!==2) shifts.push(dani); if(priya&&dow!==0) shifts.push(priya); if(amara&&d<=4) shifts.push(amara); if(claire&&dow>=3) shifts.push(claire); if(marco) shifts.push(marco);
+      // David serves at The Social Corner (at the Larkspur he's the buyer, never on the floor): five nights a week.
+      const david=first('David'); if(david&&david.role==='server'&&dow!==3&&dow!==4) shifts.push(david);
       nights[key]={covers,shifts:shifts.map(p=>p.id)};
       const servers=shifts.filter(p=>p.role==='server');
       const agg={}; const add=(w,size,p,qty,price,item)=>{ const k=`${item}|${p?p.id:'-'}`; const x=agg[k]||(agg[k]={w,size,p,qty:0,price,item}); x.qty+=qty; };
@@ -104,7 +108,7 @@ const TeamSales = {
       for(let i=0;i<glassLines;i++){
         const w=pick(glass,glass.map(x=>merit(x,'glass'))); const bar=rnd()<barShare;
         let p=bar?marco:servers.length?pick(servers,servers.map(x=>(x===priya?0.7:1)*(knows(x,w)?1.45:1))):null;
-        const ml=rnd()<0.15?125:175, price=money(w.glass)*(ml===125?0.72:1);
+        const oz8=social?money(String(w.other||'').replace(/^8oz/i,'')):0, big=oz8>0&&rnd()<0.25, ml=social?(big?'8oz':'5oz'):(rnd()<0.15?125:175), price=big?oz8:money(w.glass)*(ml===125?0.72:1); // a Social Corner 8oz pour at its own price
         add(w,'glass',p,1,Math.round(price*100)/100,`${TeamData.short(w)} ${ml}`);
       }
       // Bottles: the sommelier sells most of them when she's on.
@@ -115,12 +119,13 @@ const TeamSales = {
         add(w,'bottle',p,1,money(w.bottle),`${TeamData.short(w)} Btl`);
       }
       // A wine the till knows and the list doesn't: the kitchen's new Picpoul, on since last week.
-      if(d<=10){ const n=1+Math.floor(rnd()*4); for(let i=0;i<n;i++) add(null,'glass',servers[0]||marco,1,9.5,'Picpoul de Pinet 175'); }
+      // (The Social Corner's: its happy-hour white, The Hatch B. Yanco at $42 a bottle, which the main list doesn't carry.)
+      if(d<=10){ const n=1+Math.floor(rnd()*4); for(let i=0;i<n;i++) social?add(null,'bottle',servers[0]||marco,1,42,'The Hatch B. Yanco Btl (Happy Hour)'):add(null,'glass',servers[0]||marco,1,9.5,'Picpoul de Pinet 175'); }
       Object.values(agg).forEach((x,k)=>rows.push({i:`demo-${key}-${k}`,t:day.getTime()+19*3600000+Math.floor(rnd()*4*3600000),n:x.item,w:x.w?x.w.id:null,s:x.size,q:x.qty,p:x.price,v:x.p?x.p.id:null}));
     }
     const d=this._empty(); d.map={}; rows.forEach(r=>{ if(r.w) d.map[r.n]=r.w; }); // the demo's map is confirmed, bar the Picpoul
     this.save(d);
-    return this.ingest(rows,{source:{kind:'demo',label:'Demo data (invented)',note:'Eight weeks of invented sales for The Larkspur, shaped for the demo. Nothing here came from a till.'},nights});
+    return this.ingest(rows,{source:{kind:'demo',label:'Demo data (invented)',note:`Eight weeks of invented sales for ${venue}, shaped for the demo. Nothing here came from a POS.`},nights});
   },
 };
 Object.assign(window,{TeamSales});
