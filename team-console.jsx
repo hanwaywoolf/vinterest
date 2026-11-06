@@ -221,23 +221,27 @@ function _CSeg({options,value,onPick,testid,label}){ const T=useTheme(), cr=T.li
       style={{padding:'6px 12px',borderLeft:i?`1px solid ${T.line}`:'none',background:on?_alpha(cr,0.18):'transparent',color:on?T.ink:T.ink2,fontWeight:on?700:500,fontSize:13,fontFamily:C.P,cursor:'pointer',whiteSpace:'nowrap'}}>{text}</div>; })}</div>; }
 /* Adding someone: a dialog over the console, their name and role, then they're on the team with the
    whole list and menu as their first assignment. */
-function _CAddPerson({close,done}){ const T=useTheme(), cr=T.lift(C.cr), [name,setName]=React.useState(''), [role,setRole]=React.useState('server'), ref=React.useRef(null);
+function _CAddPerson({close,done}){ const T=useTheme(), cr=T.lift(C.cr), [first,setFirst]=React.useState(''), [last,setLast]=React.useState(''), [role,setRole]=React.useState('server'), ref=React.useRef(null);
   React.useEffect(()=>{ ref.current&&ref.current.focus(); const k=e=>{ if(e.key==='Escape') close(); }; window.addEventListener('keydown',k); return ()=>window.removeEventListener('keydown',k); },[]);
-  const add=()=>{ if(!name.trim()) return; TeamLearn.addPerson(name.trim(),role,null); done(); };
+  const name=[first.trim(),last.trim()].filter(Boolean).join(' ');
+  const add=()=>{ if(!first.trim()) return; TeamLearn.addPerson(name,role,null); done(); };
   const about={server:'The list by the glass and bottle, and the menu.',bartender:'By the glass and the cocktails.',sommelier:'Every wine, at every rung.',buyer:'Every wine, at every rung.',manager:'The list by the glass and bottle, and the menu.'};
   return <div onClick={close} style={{position:'fixed',inset:0,zIndex:50,background:'rgba(0,0,0,0.55)',display:'flex',alignItems:'center',justifyContent:'center',padding:16}}>
     <div role="dialog" aria-modal="true" aria-label="Add someone" data-testid="console-add-dialog" onClick={e=>e.stopPropagation()} style={{width:'min(460px, 100%)',background:T.card,border:`1px solid ${T.line}`,borderRadius:16,boxShadow:T.shadow,padding:'18px 20px 20px'}}>
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:14}}><div style={{fontSize:19,fontWeight:800,color:T.ink,fontFamily:C.P}}>Add someone</div>
         <div role="button" aria-label="Close" onClick={close} style={{width:30,height:30,borderRadius:15,border:`1px solid ${T.line}`,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',color:T.ink,fontSize:16}}>×</div></div>
-      <label style={{display:'block',fontSize:13,fontWeight:600,color:T.mid,fontFamily:C.P}}>Name
-        <input ref={ref} aria-label="Name" placeholder="First and last name" value={name} onChange={e=>setName(e.target.value)} onKeyDown={e=>{ if(e.key==='Enter') add(); }} style={_cInput(T,{display:'block',width:'100%',marginTop:6})}/></label>
+      <div style={{display:'flex',gap:10,flexWrap:'wrap'}}>
+        <label style={{flex:'1 1 150px',fontSize:13,fontWeight:600,color:T.mid,fontFamily:C.P}}>First name
+          <input ref={ref} aria-label="First name" value={first} onChange={e=>setFirst(e.target.value)} onKeyDown={e=>{ if(e.key==='Enter') add(); }} autoComplete="off" style={_cInput(T,{display:'block',width:'100%',marginTop:6})}/></label>
+        <label style={{flex:'1 1 150px',fontSize:13,fontWeight:600,color:T.mid,fontFamily:C.P}}>Last name
+          <input aria-label="Last name" value={last} onChange={e=>setLast(e.target.value)} onKeyDown={e=>{ if(e.key==='Enter') add(); }} autoComplete="off" style={_cInput(T,{display:'block',width:'100%',marginTop:6})}/></label></div>
       <div style={{fontSize:13,fontWeight:600,color:T.mid,fontFamily:C.P,margin:'14px 0 6px'}}>Role</div>
       <div style={{display:'flex',flexDirection:'column',gap:6}}>{_CONSOLE_ROLES.map(k=>{ const on=role===k; return <div key={k} role="radio" aria-checked={on} data-testid={'console-add-role-'+k} onClick={()=>setRole(k)}
         style={{display:'flex',alignItems:'center',gap:10,padding:'9px 12px',borderRadius:10,border:`1px solid ${on?cr:T.line}`,background:on?_alpha(cr,0.12):'transparent',cursor:'pointer'}}>
         <span style={{width:14,height:14,borderRadius:7,border:`2px solid ${on?cr:T.mid}`,background:on?cr:'transparent',flexShrink:0}}/>
         <span style={{minWidth:0}}><span style={{display:'block',fontSize:15,fontWeight:700,color:T.ink,fontFamily:C.P}}>{TeamLearn.ROLES[k].label}</span><span style={{display:'block',fontSize:12,color:T.mid,fontFamily:C.P}}>{about[k]} Trains at {TeamLearn.LEVEL_LABEL[TeamLearn.level(k)]}.</span></span></div>; })}</div>
       <div style={{fontSize:12,color:T.mid,fontFamily:C.P,marginTop:12,lineHeight:1.5}}>Their whole list and menu becomes their first assignment, due in {TeamData.get().settings.dueDays||7} days. In the pilot everyone trains on this device; their own phone comes with accounts.</div>
-      <div style={{display:'flex',justifyContent:'flex-end',gap:8,marginTop:16}}><Btn small onClick={close}>Cancel</Btn><span data-testid="console-add-save" style={{opacity:name.trim()?1:0.5}}><Btn small primary onClick={add}>Add to the team</Btn></span></div>
+      <div style={{display:'flex',justifyContent:'flex-end',gap:8,marginTop:16}}><Btn small onClick={close}>Cancel</Btn><span data-testid="console-add-save" style={{opacity:first.trim()?1:0.5}}><Btn small primary onClick={add}>Add to the team</Btn></span></div>
     </div></div>; }
 function _CTeam({open,refresh}){ const T=useTheme(), cr=T.lift(C.cr), phone=useLayoutSize()==='phone';
   const ps=TeamReport.people().sort((a,b)=>a.r.pct-b.r.pct), [adding,setAdding]=React.useState(false), [,bump]=React.useReducer(x=>x+1,0);

@@ -1139,7 +1139,8 @@ test('training levels: the console sets them, cards and drills follow, a role ca
   // Add someone: a button in the header opens a dialog over the console.
   await page.getByTestId('console-add-person').click();
   await expect(page.getByTestId('console-add-dialog')).toBeVisible();
-  await page.getByTestId('console-add-dialog').getByLabel('Name').fill('Rosa Ferreira');
+  await page.getByTestId('console-add-dialog').getByLabel('First name').fill('Rosa');
+  await page.getByTestId('console-add-dialog').getByLabel('Last name').fill('Ferreira');
   await page.getByTestId('console-add-role-bartender').click();
   await page.getByTestId('console-add-save').click();
   await expect(page.getByTestId('console-add-dialog')).toHaveCount(0);
