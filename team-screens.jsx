@@ -40,13 +40,14 @@ function TeamKpiStrip({open}){ const T=useTheme(), o=TeamReport.overview(), s=Te
     <div style={{fontSize:14,color:T.mid,fontFamily:C.P}}>{label}</div><div style={{fontSize:22,fontWeight:700,color:col||T.ink,fontFamily:C.P,lineHeight:1.1,marginTop:2}}>{value}</div>{sub&&<div style={{fontSize:11,color:T.mid,fontFamily:C.P,marginTop:2,lineHeight:1.35}}>{sub}</div>}</div>;
   return <div data-testid="team-kpis" style={{marginBottom:14}}>
     <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
-      {tile('Team readiness',`${o.avg}%`,`${o.ready} of ${o.total} ready`,null,()=>open({tab:'team'}),'kpi-readiness')}
-      {tile('Behind',o.behind,o.behind?'past their wave':'all on track',o.behind?T.tone.bad:null,()=>open({tab:'team'}))}
-      {tile('Slipping',o.slipping,o.slipping?'were ready':'none',o.slipping?T.amber:null,()=>open({tab:'team'}))}
-      {o.adoption.length>0&&tile('New on the list',o.adoption.length,`${o.adoption.filter(a=>a.knows<a.of).length} not yet known by all`,null,()=>open({tab:'wines'}))}
-      {s&&tile('Wine sales, 7 nights',TeamData.money(Math.round(s.revenue)),`${s.delta.revenue==null?'':(s.delta.revenue>0?'▲':'▼')+Math.abs(s.delta.revenue)+'% · '}${TeamSales.demo()?'demo data':'from your POS'}`,null,()=>open({tab:'team'}),'kpi-sales')}
+      {tile('Team readiness',`${o.avg}%`,`${o.ready} of ${o.total} ready`,null,()=>open({console:'team'}),'kpi-readiness')}
+      {tile('Behind',o.behind,o.behind?'past their wave':'all on track',o.behind?T.tone.bad:null,()=>open({console:'team'}))}
+      {tile('Slipping',o.slipping,o.slipping?'were ready':'none',o.slipping?T.amber:null,()=>open({console:'team'}))}
+      {o.adoption.length>0&&tile('New on the list',o.adoption.length,`${o.adoption.filter(a=>a.knows<a.of).length} not yet known by all`,null,()=>open({console:'wines'}))}
+      {s&&tile('Wine sales, 7 nights',TeamData.money(Math.round(s.revenue)),`${s.delta.revenue==null?'':(s.delta.revenue>0?'▲':'▼')+Math.abs(s.delta.revenue)+'% · '}${TeamSales.demo()?'demo data':'from your POS'}`,null,()=>open({console:'sales'}),'kpi-sales')}
     </div>
-    <div style={{fontSize:14,color:T.mid,fontFamily:C.P,marginTop:6}}>Open this on a tablet or a laptop for the whole console.</div>
+    {/* Each figure opens its part of the console; the console works on a phone too, and wider on a tablet or laptop. */}
+    <div data-testid="kpi-console" style={{marginTop:10}}><Btn small primary onClick={()=>open({console:'dash'})}>Open the console</Btn></div>
   </div>; }
 
 /* The installed restaurant's own logo (venue.brand): its wordmark in white on the dark stage. */
@@ -148,8 +149,8 @@ function TeamToday({pid,open}){ const T=useTheme(), cr=T.lift(C.cr);
   return <div>
     <div style={{display:'flex',alignItems:'center',gap:14,marginBottom:12}}><TeamFace person={person} size={64} ring={st.col}/>
       <div><div style={{fontSize:22,fontWeight:800,color:T.ink,fontFamily:C.P,lineHeight:1.2}}>Hi {person.name.split(' ')[0]}</div><div style={{fontSize:14,color:T.mid,fontFamily:C.P,marginTop:3}}>{TeamLearn.ROLES[person.role].label} at {TeamData.get().venue.name||'your restaurant'}</div></div></div>
-    {!empty&&<TeamTonightCard pid={pid} open={open} manage={TeamLearn.manages(person.role)}/>}
-    {!empty&&TeamLearn.manages(person.role)&&<TeamKpiStrip open={open}/>}
+    {!empty&&<TeamTonightCard pid={pid} open={open} manage={TeamLearn.canConsole(person)}/>}
+    {!empty&&TeamLearn.canConsole(person)&&<TeamKpiStrip open={open}/>}
     {empty?<Card><div style={{fontSize:15,color:T.ink2,fontFamily:C.P,lineHeight:1.5}}>No wine list yet. {TeamLearn.ROLES[person.role].label==='Manager'||person.role==='buyer'?'Upload it from the Upload tab and your training is written from it.':'Your manager uploads it, then your training appears here.'}</div></Card>:<>
     {fresh?<div data-testid="team-plan"><Card style={{borderColor:_alpha(cr,0.6)}}>
       <div style={{fontSize:12,fontWeight:700,color:cr,fontFamily:C.P,letterSpacing:'0.1em',textTransform:'uppercase'}}>Your first {pl.current.days} days</div>
@@ -194,6 +195,7 @@ function TeamToday({pid,open}){ const T=useTheme(), cr=T.lift(C.cr);
 
 /* The drill: one question at a time, how sure they are, then what's right and why. */
 function TeamDrill({pid,only,part,given,intro,back,open}){ const T=useTheme(), cr=T.lift(C.cr);
+  const asideRef=React.useRef({}); // the line shown after each answer, kept so a drill never repeats one
   // given: questions chosen elsewhere (Vinny's test, team-vinny.js), with intro {title, why} over the first.
   // Every drill deals its questions afresh, so a question seen before comes back in a new order.
   const [qs]=React.useState(()=>{ const raw=given&&given.length?given:only?TeamLearn.qsFor(TeamLearn.person(pid).role,only):TeamLearn.drill(pid,undefined,part||null);
@@ -299,7 +301,8 @@ function TeamDrill({pid,only,part,given,intro,back,open}){ const T=useTheme(), c
             <div style={{display:'flex',flexDirection:'column',gap:6}}>{rights.map(k=><div key={k} style={{fontSize:15,color:T.ink,fontFamily:C.P,lineHeight:1.4}}><span style={{color:'#5FD48F',fontWeight:800}}>✓ </span>{ch.opts[k]}{!picks.includes(k)&&<span style={{fontSize:14,color:'#F2B84B',fontWeight:700}}> · you missed this one</span>}</div>)}
               {wrongs.map(k=><div key={k} style={{fontSize:14,color:T.mid,fontFamily:C.P,lineHeight:1.4}}><span style={{color:'#F28B7D',fontWeight:800}}>✗ </span><s>{ch.opts[k]}</s></div>)}</div></div>; })}</div>}
         {res.say&&<div style={{fontSize:15,color:T.ink,fontFamily:C.P,marginTop:12,lineHeight:1.5}}>{res.say}</div>}
-        {(()=>{ const ax=TeamLearn.aside(q,multi?ch.right.map(k=>ch.opts[k]).join(' '):q.opts&&q.a!=null?q.opts[q.a]:q.ans); if(!ax) return null;
+        {(()=>{ const seen=asideRef.current; if(!(i in seen)) seen[i]=TeamLearn.aside(q,multi?ch.right.map(k=>ch.opts[k]).join(' '):q.opts&&q.a!=null?q.opts[q.a]:q.ans,new Set(Object.values(seen).map(a=>a&&(a.text||'')).filter(Boolean)));
+          const ax=seen[i]; if(!ax) return null;
           return <div data-testid="drill-aside" style={{marginTop:12,paddingTop:12,borderTop:`1px solid ${T.line}`}}>
             {ax.label&&<div style={{fontSize:12,fontWeight:700,color:T.mid,fontFamily:C.P,letterSpacing:'0.08em',textTransform:'uppercase',marginBottom:6}}>{ax.label}</div>}
             {ax.list?<div style={{display:'flex',flexDirection:'column',gap:8}}>{ax.list.map((x,k)=><div key={k} style={{fontSize:15,color:T.ink2,fontFamily:C.P,lineHeight:1.45}}><b style={{color:T.ink}}>{x.name}</b> · {x.text}</div>)}</div>
@@ -429,7 +432,7 @@ function TeamWine({id,pid,open,manage}){ const T=useTheme(), w=TeamData.wine(id)
   const [editing,setEditing]=React.useState(false), [pitch,setPitch]=React.useState('');
   // No card yet: nothing on this screen writes one by itself. A manager writes this one here; anyone
   // else is told who does. A failed write says so, never a wait that doesn't end.
-  const me=TeamLearn.person?TeamLearn.person(pid):null, manager=me&&TeamLearn.manages(me.role);
+  const me=TeamLearn.person?TeamLearn.person(pid):null, manager=me&&TeamLearn.canConsole(me);
   // The card shows what the person's training level asks about (TeamLearn.cardShows); the console shows it all.
   const sh=TeamLearn.cardShows(manage?'high':TeamLearn.level(me&&me.role)), fact=sh.fact&&TeamLearn.cardFact(id);
   const [busy,setBusy]=React.useState(false), [err,setErr]=React.useState(''), [,bump]=React.useReducer(x=>x+1,0);

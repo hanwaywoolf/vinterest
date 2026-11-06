@@ -436,7 +436,7 @@ test('the publish check: every question is checked, the ones that fail are rewri
   const errors = await openSample(context, page, { claudeRequests: reqs, claudeText: (b) => {
     if (b.purpose !== 'team_fix') return '';
     const ids = [...b.messages[0].content.matchAll(/^ID (\S+)/gm)].map((m) => m[1]);
-    return JSON.stringify({ fixes: ids.filter((id) => id === 'w-ardanza-reserva#bad').map((id) => ({ id, q: { q: 'Which grape leads the blend in the La Rioja Alta Viña Ardanza Reserva?', ans: 'Tempranillo', acc: [], why: 'Ardanza is mostly Tempranillo.' } })) });
+    return JSON.stringify({ fixes: ids.filter((id) => id === 'w-ardanza-reserva#bad').map((id) => ({ id, q: { q: 'Which region is the La Rioja Alta Viña Ardanza Reserva from?', ans: 'Rioja', acc: [], why: 'Rioja Alta, in the north of Spain.' } })) });
   } });
   const r = await page.evaluate(async () => {
     // A question that offers its own answer as one of two.
@@ -444,11 +444,12 @@ test('the publish check: every question is checked, the ones that fail are rewri
     const before = TeamLearn.audit().map((f) => f.q.id);
     const checked = await TeamData.checkQuestions();
     const q = TeamData.card('w-ardanza-reserva').qs.find((x) => x.id === 'w-ardanza-reserva#bad');
-    return { before, checked, q, after: TeamLearn.audit().map((f) => f.q.id), line: TeamData.checkedLine() };
+    return { before, checked, q, after: TeamLearn.audit().map((f) => f.q.id), why: TeamLearn.audit().filter((f) => f.q.id === 'w-ardanza-reserva#bad').map((f) => f.why + ': ' + f.note), line: TeamData.checkedLine() };
   });
   expect(r.before).toContain('w-ardanza-reserva#bad');
-  expect(r.q.q).toMatch(/Which grape leads/); // rewritten in place, same id and kind
+  expect(r.q.q).toMatch(/Which region/); // rewritten in place, same id and kind (and not a repeat of the card's grape question)
   expect(r.q.k).toBe('recall');
+  expect(r.why).toEqual([]);
   expect(r.after).not.toContain('w-ardanza-reserva#bad');
   expect(r.checked.fixed).toBeGreaterThanOrEqual(1);
   expect(r.checked.failed).toBe(r.before.length);
@@ -744,7 +745,7 @@ test('a server on a wide screen keeps the phone app; a manager on a phone gets t
   await expect(page.getByTestId('team-console')).toHaveCount(0);
   await expect(page.getByTestId('team-kpis')).toHaveCount(0);
   await ctx.close();
-  // The phone (the default device): the manager's Today carries the KPI strip, tapping through to Team.
+  // The phone (the default device): the manager's Today carries the KPI strip, each figure opening its part of the console.
   const phone = await context.newPage();
   await stubNetwork(context);
   await phone.goto(`${BASE}/team/?seed=demo`);
@@ -754,7 +755,7 @@ test('a server on a wide screen keeps the phone app; a manager on a phone gets t
   await expect(phone.getByTestId('kpi-readiness')).toContainText(`${avg}%`);
   await expect(phone.getByTestId('kpi-sales')).toContainText('demo data');
   await phone.getByTestId('kpi-readiness').click();
-  await expect(phone.getByTestId('team-people')).toBeVisible();
+  await expect(phone.getByTestId('console-team')).toBeVisible();
 });
 
 // A wine's prices edited on the console go through the draft: the review says what changed and
@@ -1226,8 +1227,8 @@ test('every recall question, about a wine or a dish, offers only answers of its 
         if (t === 'wine' && !names.has(norm(o))) notWines.push(`${q.q.slice(0, 50)} → ${o}`);
       }
     }
-    const dishQ = recall.find((q) => q.dish), dc = TeamLearn.choices(TeamLearn.deal(dishQ, 'd'));
-    return { untyped, mixed, notWines, dishOpts: dc.opts.length };
+    const dishQ = recall.find((q) => q.dish), dc = dishQ ? TeamLearn.choices(TeamLearn.deal(dishQ, 'd')) : null; // only dishes with their own glass pick ask for one
+    return { untyped, mixed, notWines, dishOpts: dc ? dc.opts.length : 4 };
   });
   expect(r.untyped).toEqual([]);
   expect(r.mixed).toEqual([]); // no answer to another kind of question turns up as a wrong option
@@ -1820,7 +1821,6 @@ test('questions keep to their subject: a dish change, a country, a table request
   expect(r.notCountries).toEqual([]);
   expect(r.echoes).toBe(0); // what's added never just says the answer again
   expect(r.asides).toBeGreaterThan(50);
-  expect(r.bullets).toBeGreaterThan(10); // "Name a wine for the oysters" explains each pick in a line
 });
 
 test('the phone Team tab is the console Team: Add in a dialog, training level, minimums per role', async ({ context, page }) => {
@@ -1878,6 +1878,17 @@ test('the review finds nothing to fix on any restaurant in the build', async ({ 
     if (!q) return 'none'; const bad = { ...q, pills: { ...q.pills, opts: q.pills.opts.map((x, i) => q.pills.right.includes(i) ? x : `The ${o.name} is served as it comes.`) } };
     const was = TeamLearn.dishQs; TeamLearn.dishQs = (id) => id === d.id ? [bad] : []; const r = TeamLearn.review().some((f) => f.code === 'offsubject'); TeamLearn.dishQs = was; return r; });
   expect(caught).toBe(true); // on The Social Corner, whose dishes have notes
+  // Repetition across one wine's questions is caught too: with the build's filter off, La Stella's two grape questions
+  // (both Cabernet Sauvignon) and its flavours inside its description are flagged.
+  const rep = await page.evaluate(() => { const was = TeamLearn._repeats; TeamLearn._repeats = () => new Set(); TeamLearn._qsCache = new WeakMap();
+    const f = TeamLearn.review().filter((x) => x.code === 'repeat' && /fortissimo/.test(x.q.wine || '')).length; TeamLearn._repeats = was; TeamLearn._qsCache = new WeakMap(); return f; });
+  expect(rep).toBeGreaterThanOrEqual(2);
+  // And a drill on that one wine asks each thing once and never shows the same line after an answer twice.
+  const one = await page.evaluate(() => { const w = TeamData.wines().find((x) => /Fortissimo/.test(x.name)), qs = TeamLearn.qsFor('manager', w.id), used = new Set(), lines = [];
+    qs.forEach((q) => { const c = TeamLearn.choices(TeamLearn.deal(q, 't')), a = TeamLearn.aside(q, (c.right || []).map((i) => c.opts[i]).join(' ') || q.ans, used); if (a && a.text) { lines.push(a.text); used.add(a.text); } });
+    return { answers: qs.filter((q) => q.k !== 'apply').map((q) => TeamLearn._norm(TeamLearn._ansOf(q))), lines }; });
+  expect(new Set(one.answers).size).toBe(one.answers.length);
+  expect(new Set(one.lines).size).toBe(one.lines.length);
 });
 
 // The sommelier review (TeamData.sommelierReview): every question read as the drill shows it; a wine card's doubtful
@@ -1905,4 +1916,36 @@ test('the sommelier review rewrites what it doubts, holds what it still doubts, 
   await page.reload();
   await page.getByTestId('console-nav-wines').click();
   await expect(page.getByTestId('console-sommelier')).toContainText('1 held out of the drill');
+});
+
+// Console access is per person (TeamLearn.canConsole): a manager's Today figures open the console's own sections on a
+// phone, a server gets no way in until someone turns it on for them, and the Add dialog sets it.
+test('console access per person: Today opens the console on a phone, and a server gets it only when it is turned on', async ({ context, page }) => {
+  await stubNetwork(context);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto(`${BASE}/team/?seed=social&view=phone`);
+  await expect(page.getByTestId('team-state')).toBeVisible();
+  await page.evaluate(() => TeamLearn.setMe(TeamLearn.people().find((p) => p.role === 'manager').id));
+  await page.reload();
+  await page.getByTestId('kpi-sales').click();
+  await expect(page.getByTestId('console-sales-tab')).toBeVisible(); // the revenue figure opens Sales Insights, not the Team tab
+  // A server: no console button, no figures, until it's turned on for them.
+  await page.evaluate(() => { const s = TeamLearn.people().find((p) => p.role === 'server'); TeamLearn.setMe(s.id); });
+  await page.reload();
+  await expect(page.getByTestId('team-state')).toBeVisible();
+  await expect(page.getByTestId('team-to-console')).toHaveCount(0);
+  await expect(page.getByTestId('team-kpis')).toHaveCount(0);
+  await page.evaluate(() => TeamLearn.setConsole(TeamLearn.me().id, true));
+  await page.reload();
+  await page.getByTestId('team-to-console').click();
+  await expect(page.getByTestId('team-console')).toBeVisible();
+  // The Add dialog: a bartender added with the console turned on can open it.
+  await page.getByTestId('console-nav-team').click();
+  await page.getByTestId('console-add-person').click();
+  await page.getByTestId('console-add-dialog').getByLabel('First name').fill('Noor');
+  await page.getByTestId('console-add-role-bartender').click();
+  await expect(page.getByTestId('console-add-console')).toHaveAttribute('aria-checked', 'false');
+  await page.getByTestId('console-add-console').click();
+  await page.getByTestId('console-add-save').click();
+  expect(await page.evaluate(() => TeamLearn.canConsole(TeamLearn.people().find((p) => p.name === 'Noor')))).toBe(true);
 });

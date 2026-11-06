@@ -24,6 +24,11 @@ const TeamLearn = {
   // phone, the team figures on Today, and may edit what to say on a card. Everyone else gets the training app.
   MANAGES:['manager','buyer','sommelier'],
   manages(role){ return this.MANAGES.includes(role); },
+  /* Who may open the management console, person by person: set when they're added or on their row in the console's
+     Team section (`console` on the person), else what their role allows (MANAGES). The console's Upload and Team tabs
+     on the phone, Today's team figures and the way into the console all follow it. */
+  canConsole(p){ return !!p&&(typeof p.console==='boolean'?p.console:this.manages(p.role)); },
+  setConsole(pid,on){ const t=this.team(); if(!t.people[pid]) return; t.people[pid]={...t.people[pid],console:!!on}; this._saveTeam(t); },
   ROLES:{
     server:{label:'Server',kinds:['recognise','recall','apply'],need:{glass:0.8,bottle:0.6,dishes:0.8,cocktails:0.5,allergens:1}},
     bartender:{label:'Bartender',kinds:['recognise','recall','apply'],cocktailKinds:['recognise','recall','apply','contrast'],need:{glass:0.9,bottle:0,dishes:0.5,cocktails:0.9,allergens:1}},
@@ -81,8 +86,8 @@ const TeamLearn = {
   people(){ return Object.values(this.team().people).sort((a,b)=>a.created-b.created); },
   person(id){ return this.team().people[id]||null; },
   me(){ const t=this.team(); return t.people[t.me]||null; },
-  addPerson(name,role,photo){ const t=this.team(), id='p'+Date.now().toString(36)+Math.random().toString(36).slice(2,5);
-    t.people[id]={id,name:String(name).trim(),role,photo:photo||null,created:Date.now()}; if(!t.me) t.me=id; this._saveTeam(t);
+  addPerson(name,role,photo,console){ const t=this.team(), id='p'+Date.now().toString(36)+Math.random().toString(36).slice(2,5);
+    t.people[id]={id,name:String(name).trim(),role,photo:photo||null,created:Date.now(),...(typeof console==='boolean'?{console}:{})}; if(!t.me) t.me=id; this._saveTeam(t);
     this.assignExisting(id); return id; },
   removePerson(id){ const t=this.team(); delete t.people[id]; if(t.me===id) t.me=Object.keys(t.people)[0]||null; this._saveTeam(t); const p=this._all(); delete p[id]; this._saveAll(p); },
   setMe(id){ const t=this.team(); t.me=id; this._saveTeam(t); },
@@ -117,7 +122,18 @@ const TeamLearn = {
      guest). Everywhere else the drill reads confidence from how fast a right answer came (TeamDrill), so a grape
      question is one tap, not two. */
   asksConfidence(q){ return !!(q&&(q.conf||(q.k==='recall'&&/[£$€]/.test(String(q.ans||'')))||q.allergen)); },
-  _buildQs(id){ const c=TeamData.card(id); return (c&&c.qs||[]).map(q=>this._unspoil({...q,wine:id})).filter(Boolean).map(x=>{
+  /* A card question that asks what an earlier one on the same card already asks: the same answer ("What grape…" and
+     "Which grape… 2021", both Cabernet Sauvignon), or an answer that sits inside an earlier one ("Blackcurrant and cedar"
+     after "Full and weighty, firmly grippy, with blackcurrant and cedar"). Left out of the drill; the publish check
+     sends it back to be rewritten about something else (reason `repeat`). Set of question ids. */
+  _ansOf(q){ return String(q.opts&&q.a!=null?q.opts[q.a]:q.k==='apply'?'':q.ans||''); },
+  _repeats(id){ const c=TeamData.card(id); return c?this._repeatsIn(c.qs||[],id):new Set(); },
+  _repeatsIn(qs,id){ const seen=[], out=new Set();
+    qs.forEach((q,i)=>{ const a=this._ansOf(q), n=this._norm(a), ws=this._words(a).filter(w=>w.length>2); if(!n){ return; }
+      const dup=seen.some(p=>p.n===n||(ws.length>=2&&ws.every(w=>p.ws.includes(w)))||(p.ws.length>=2&&p.ws.every(w=>ws.includes(w))));
+      if(dup) out.add(q.id||`${id}#${i}`); else seen.push({n,ws}); });
+    return out; },
+  _buildQs(id){ const rep=this._repeats(id); const c=TeamData.card(id); return (c&&c.qs||[]).filter(q=>!rep.has(q.id)).map(q=>this._unspoil({...q,wine:id})).filter(Boolean).map(x=>{
     // A table question whose answers can't be built from what the list says (too few believable wrong ones)
     // isn't asked; the publish check sends it back to be rewritten.
     if(x.k==='apply'){ const d=this._decide(x); let c=null; try{ c=this._applyChoices(d); }catch(e){ return d; } if(!c) return null;
@@ -145,18 +161,17 @@ const TeamLearn = {
   /* What the answer screen adds under a right or wrong answer (TeamDrill): something the server can use that the
      answer didn't already say. The question's own why when it adds to the answer; when it only says the answer again
      ("It's usually a fresh white with citrus…" under "Fresh and savoury, with citrus…"), the card's hook, a dish to
-     pour it with, how to serve it or a term explained instead. "Name a wine for the oysters" lists each pick in one
-     short line rather than a paragraph per wine. {label, text} | {label, list:[{name, text}]} | null */
+     pour it with, how to serve it or a term explained instead. Never a line already shown in the same drill (`used`). {label, text} | null */
   _first(t,max=22){ const one=(String(t||'').match(/^[^.!?]+[.!?]?/)||[''])[0].trim(), w=one.split(/\s+/);
     return w.length>max?w.slice(0,max).join(' ').replace(/[,;:]$/,'')+'…':one; },
-  aside(q,answer){
+  // `used`: the lines already shown in this drill, so the same dish or fact never comes up twice in a row of questions;
+  // the first choice also turns with the question, so two questions on one wine start from different lines.
+  aside(q,answer,used=new Set()){
     if(!q) return null; const ans=String(answer||q.ans||(q.opts&&q.a!=null?q.opts[q.a]:'')||'');
     const adds=t=>t&&this._overlap(t,ans)<0.45&&!this._norm(t).includes(this._norm(ans));
-    if(q.dish&&/#1$/.test(q.id)){ const p=TeamData.pairing(q.dish)||{};
-      const list=(p.best||[]).map(b=>{ const w=TeamData.wine(b.id); return w&&{name:TeamData.short(w),text:this._first(b.why)}; }).filter(Boolean);
-      if(list.length) return {label:'Why each one works',list}; }
     const trim=t=>{ const ss=String(t).match(/[^.!?]+[.!?]*/g)||[String(t)]; let o=''; for(const x of ss){ if((o+x).split(/\s+/).filter(Boolean).length>this.REVIEW_WORDS) break; o+=x; } return (o||this._first(t,this.REVIEW_WORDS)).trim(); };
-    if(q.why&&adds(q.why)) return {label:null,text:trim(q.why)};
+    const fresh=t=>!used.has(trim(t))&&![...used].some(u=>this._overlap(u,t)>=0.6);
+    if(q.why&&adds(q.why)&&fresh(q.why)) return {label:null,text:trim(q.why)};
     const more=[];
     if(q.wine){ const c=TeamData.card(q.wine)||{};
       if(c.hook) more.push(c.hook);
@@ -167,7 +182,8 @@ const TeamLearn = {
       (c.explain||[]).forEach(e=>e&&e.term&&more.push(`${e.term}: ${e.means}`));
       (c.dishes||[]).forEach(d=>d&&d.dish&&more.push(`Good with the ${d.dish}: ${this._first(d.why).replace(/^./,ch=>ch.toLowerCase())}`)); }
     if(q.dish){ const c=TeamData.dishCard(q.dish)||{}; (c.ask||[]).forEach(a=>a&&a.q&&more.push(`Guests ask "${a.q}" ${a.a}`)); }
-    const pick=more.map(t=>String(t).trim()).filter(Boolean).find(t=>adds(t)&&(!q.why||this._overlap(t,q.why)<0.45));
+    const cand=more.map(t=>String(t).trim()).filter(Boolean).filter(t=>adds(t)&&(!q.why||this._overlap(t,q.why)<0.45)&&fresh(t)), off=cand.length?Math.abs(this._hash(String(q.id)))%cand.length:0;
+    const pick=cand.length?cand[off]:null;
     return pick?{label:'Good to know',text:trim(pick)}:null; },
   _overlap(a,b){ const A=new Set(this._words(a).filter(x=>x.length>3)), B=new Set(this._words(b).filter(x=>x.length>3)); let n=0; A.forEach(x=>{ if(B.has(x)) n++; }); return n/Math.max(1,Math.min(A.size,B.size)); },
   // Where a wine stands at a dish: 0 its first pick, 1 its second…, 99 not one of its picks.
@@ -295,6 +311,7 @@ const TeamLearn = {
   audit(ids){ const out=[];
     (ids||TeamData.wines().map(w=>w.id)).forEach(id=>{ const c=TeamData.card(id); (c&&c.qs||[]).forEach(raw=>{ const q={...raw,wine:id};
       const fail=(why,note)=>out.push({wine:id,q:raw,why,note});
+      if(this._repeats(id).has(raw.id)) return fail('repeat','it asks what another question on this card already asks (the same answer, or one inside it): ask about something else about this wine');
       const un=this._unspoil(q); if(!un) return fail('giveaway',/\bor\b/i.test(q.q)?'it offers its own answer as one of two choices in the question':'the answer is in the question');
       if(q.k==='recognise'){ const k=this._sameKind(un); if(!k) return fail('giveaway','the wrong answers are another kind of wine'); if(this.givesAway(k)) return fail('giveaway','a word in the question is only in the right answer');
         if(this.lengthCue(k)) return fail('cue','the right answer stands out by its length: make every option about as long'); return; }
@@ -323,9 +340,11 @@ const TeamLearn = {
        long        the extra line is too long to read and keep (over REVIEW_WORDS words, or a list line over 30)
        dupe        two options that say the same thing
        cue         the right option stands out by its length (four options)
-       giveaway    a telling word of the question is in the right option alone (four options) */
+       giveaway    a telling word of the question is in the right option alone (four options)
+       repeat      two questions on the same wine, dish or cocktail with the same answer, or one inside the other
+       aside       the line after the answer comes round again within one wine's questions */
   REVIEW_WORDS:45,
-  review(){ const out=[], flag=(q,code,note)=>out.push({q,code,note});
+  review(){ const out=[]; let flag=(q,code,note)=>out.push({q,code,note});
     const dishes=TeamData.dishes(), names=dishes.map(d=>d.name), wines=TeamData.wines();
     const countries=new Set([...wines.map(w=>w.country),...this.DECOYS.country].filter(Boolean).map(x=>this._norm(x)));
     const words=t=>String(t||'').split(/\s+/).filter(Boolean).length;
@@ -346,6 +365,18 @@ const TeamLearn = {
       if(ax&&ax.text){ if(this._overlap(ax.text,ans)>=0.45) flag(q,'echo','The line after the answer says the answer again.'); if(words(ax.text)>this.REVIEW_WORDS) flag(q,'long',`The line after the answer is ${words(ax.text)} words.`); }
       if(ax&&ax.list) ax.list.forEach(x=>{ if(words(x.text)>30) flag(q,'long',`"${x.name}" has ${words(x.text)} words.`); });
     }
+    // Repetition across a set, as someone practising one wine (or dish, or cocktail) meets it: two questions with the
+    // same answer or one inside another (`repeat`), and the line after the answer coming round again (`aside`).
+    // Each wine and cocktail at each training level (Low's own questions and High's are never asked together), each dish as it is.
+    const groups=[...wines.flatMap(w=>this.LEVELS.map(lv=>this.levelQs(w.id,lv))),...TeamData.cocktails().flatMap(c=>this.LEVELS.map(lv=>this.levelQs(c.id,lv))),...dishes.map(d=>this.dishQs(d.id))];
+    const once=new Set(), flag0=flag; flag=(q,code,note)=>{ const k=q.id+code; if(once.has(k)) return; once.add(k); flag0(q,code,note); };
+    groups.forEach(g=>{ const seen=[];
+      g.forEach(q=>{ if(q.k==='apply'||q.pills) return; const a=this._ansOf(q), n=this._norm(a), ws=this._words(a).filter(w=>w.length>2); if(!n) return;
+        const hit=seen.find(p=>p.n===n||(ws.length>=2&&ws.every(w=>p.ws.includes(w)))||(p.ws.length>=2&&p.ws.every(w=>ws.includes(w))));
+        if(hit) flag(q,'repeat',`Asks what "${hit.q.q.slice(0,60)}" already asks (${a}).`); else seen.push({n,ws,q}); });
+      const used=new Set(); g.forEach(q=>{ const d=this.deal(q,'review'); let c=null; try{ c=this.choices(d); }catch(e){} const o=c&&c.opts||d.opts||[], r=c&&c.right||(d.a!=null?[d.a]:[]);
+        const ax=this.aside(d,r.map(i=>o[i]).join(' ')||d.ans,used); if(!ax||!ax.text) return;
+        if([...used].some(u=>u===ax.text||this._overlap(u,ax.text)>=0.6)) flag(q,'aside','The line after the answer repeats one shown earlier for the same thing.'); used.add(ax.text); }); });
     return out; },
   // Length only gives an answer away when it's long enough to read as a sentence and clearly apart from every wrong one:
   // "Blanco tequila" beside "Gin" is two names, not a cue.
@@ -440,7 +471,8 @@ const TeamLearn = {
      wrong ones from this bar's own other cocktails, so they're asked as written (mc), shuffled by their id. */
   cocktailQs(id,{all=false}={}){ const doc=TeamData.get(); let m=this._qsCache.get(doc); if(!m){ m=new Map(); this._qsCache.set(doc,m); }
     if(!m.has(id)){ const c=TeamData.cocktailCard(id);
-      m.set(id,(c&&c.qs||[]).filter(q=>q&&q.q&&Array.isArray(q.opts)&&q.opts.length===4&&q.opts[q.a]!=null).map(q=>({...q,cocktail:id,mc:true}))
+      const cq=(c&&c.qs||[]).filter(q=>q&&q.q&&Array.isArray(q.opts)&&q.opts.length===4&&q.opts[q.a]!=null), rp=this._repeatsIn(cq,id);
+      m.set(id,cq.filter(q=>!rp.has(q.id)).map(q=>({...q,cocktail:id,mc:true}))
         .filter(q=>!this.givesAway(q)&&!this.lengthCue(q)).map(q=>{ const order=this._shuffle(q.opts.map((_,i)=>i),q.id); return {...q,opts:order.map(i=>this._cap(q.opts[i])),a:order.indexOf(q.a)}; })); }
     return this._keep(m.get(id).map(q=>({...q})),all); },
   /* A dish's ladder (docs/business.md, "The menu"): know it (what it is, from the dish notes), its allergens (a
@@ -481,7 +513,10 @@ const TeamLearn = {
     const opts=[best,...pick].map(w=>TeamData.short(w)), order=this._shuffle([0,1,2,3],id);
     out.push(
       {id:'d:'+id+'#0',dish:id,k:'recognise',q:`A guest orders the ${x.name}. Which wine on our list suits it best?`,opts:order.map(i=>opts[i]),a:order.indexOf(0),why:p.best[0].why},
-      {id:'d:'+id+'#1',dish:id,k:'recall',q:`Name a wine from our list for a guest having the ${x.name}.`,ans:TeamData.short(best),acc:p.best.map(b=>TeamData.wine(b.id)).filter(Boolean).flatMap(w=>[TeamData.short(w),w.name]),why:p.best.map(b=>{ const w=TeamData.wine(b.id); return w?`${TeamData.short(w)}: ${b.why}`:''; }).filter(Boolean).join(' ')},
+      // Name a wine for it asks for the glass pick: "which wine suits it best" already asks for the first one, and asking
+      // for it twice is a repeat (without a separate glass pick it isn't asked). Any of the dish's picks is accepted.
+      ...((()=>{ const gw=p.glass&&TeamData.wine(p.glass.id); if(!gw||gw.id===best.id) return [];
+        return [{id:'d:'+id+'#1',dish:id,k:'recall',q:`Name a wine by the glass for a guest having the ${x.name}.`,ans:TeamData.short(gw),acc:[gw,...p.best.map(b=>TeamData.wine(b.id))].filter(w=>w&&w.glass).flatMap(w=>[TeamData.short(w),w.name]),why:p.glass.why}]; })()),
     );
     return out;
   },
