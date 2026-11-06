@@ -664,3 +664,14 @@ const TeamBrand = {
   apply(){ if(this._crimson==null) this._crimson=C.cr; const b=this.get(); C.cr=b&&b.accent?b.accent:this._crimson; return b; },
 };
 Object.assign(window,{TeamBrand});
+
+/* Which sections of a wine's or cocktail's card this person keeps folded, on this device (vbiz_fold_v1, never
+   synced): someone checking a price or a pairing in service gets straight to it, and the sections they never use
+   stay out of the way. {section key: true when folded}; a section not yet touched takes its default. */
+const TeamFold = {
+  KEY:'vbiz_fold_v1',
+  _all(){ return Store.getJSON(this.KEY,{})||{}; },
+  folded(k,def=false){ const v=this._all()[k]; return typeof v==='boolean'?v:def; },
+  set(k,v){ const a=this._all(); a[k]=!!v; Store.setJSON(this.KEY,a); },
+};
+Object.assign(window,{TeamFold});

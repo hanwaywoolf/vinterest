@@ -558,6 +558,8 @@ test('the demo restaurant: 30 wines, photos, and a wine added from its label upd
   expect(reqs.filter((r) => r.purpose === 'team_cards')).toHaveLength(1);
   await page.getByTestId('team-tab-wines').click();
   await page.getByText('Prunotto Barolo Bussia').click();
+  await expect(page.getByTestId('team-window')).toContainText('Still young'); // folded to its one line
+  await page.getByTestId('fold-wine-life').getByRole('button').first().click();
   await expect(page.getByTestId('team-window')).toContainText('Best from 2027 to 2036');
 });
 
@@ -1586,6 +1588,9 @@ test('table questions: the choice first, wrong answers that are believable and c
             if (picks.includes(ow.id) || (!named.some((x) => x.id === ow.id) && !TeamLearn.tableWrong(ow, TeamData.wine(q.wine), dish, wish, TeamLearn.wishStyle(q.q, dish)))) out.wrongWine.push(`${dish.name}: ${TeamData.short(ow)}`);
             if (wish.kind && TeamLearn.kindOf(ow) !== wish.kind) out.wish.push(`${wish.kind} asked: ${TeamData.short(ow)}`);
             if (wish.side === 'glass' && !ow.glass) out.wish.push(`glass asked: ${TeamData.short(ow)}`);
+            // what the guest said out loud never rules a wrong wine out: none over their price, none of another kind
+            if (TeamLearn.overPrice(ow, TeamLearn.wishStyle(q.q, dish), wish.side)) out.wish.push(`over the price asked: ${TeamData.short(ow)}`);
+            if (!wish.kind && TeamLearn.kindOf(ow) !== TeamLearn.kindOf(TeamData.wine(q.wine))) out.wish.push(`another kind: ${TeamData.short(ow)}`);
           });
         });
       }));
@@ -1599,7 +1604,9 @@ test('table questions: the choice first, wrong answers that are believable and c
     expect(r.sameClaim).toEqual([]);
     expect(r.wrongWine).toEqual([]); // every wrong wine is on the list and wrong for this table
     expect(r.wish).toEqual([]); // and is what the guest asked for: a white for a white, by the glass for a glass
-    expect(r.decided).toBeGreaterThanOrEqual(r.total * 0.7); // table questions are written as choices (demo 23 of 30, Social Corner 54 of 63)
+    // Table questions are written as choices; one is asked as a choice only where wrong wines meet the guest's request
+    // (kind, glass, price) and the dish alone rules them out, else it names the wine and asks why (demo 15 of 30, Social Corner 27 of 41).
+    expect(r.decided).toBeGreaterThanOrEqual(r.total * 0.45);
   }
   // The Bandol with the venison asks for the wine, then why; the question no longer names it.
   await page.goto(`${BASE}/team/?seed=demo`);
@@ -1786,4 +1793,71 @@ test('both restaurants: the drill answers in the same phases and at the same tex
   expect(seen.social.q).toBe(seen.demo.q);
   expect(seen.social.opt).toBe(seen.demo.opt);
   expect(seen.demo.opt).toBeGreaterThanOrEqual(15);
+});
+
+// Carey's review of a drill on The Social Corner: every wrong answer belongs to its question, the answer screen adds
+// something new, and the guest's request never gives a table question away.
+test('questions keep to their subject: a dish change, a country, a table request, and an answer screen that adds something', async ({ context, page }) => {
+  await stubNetwork(context);
+  await page.goto(`${BASE}/team/?seed=social`);
+  await page.waitForFunction(() => window.TeamLearn && TeamData.dishes().length > 0);
+  const r = await page.evaluate(() => {
+    const out = { modOther: [], notCountries: [], echoes: 0, asides: 0, bullets: 0 };
+    const dishNames = TeamData.dishes().map((d) => d.name);
+    TeamData.dishes().forEach((d) => TeamLearn.dishQs(d.id).forEach((q) => {
+      if (/#mod$/.test(q.id)) q.pills.opts.filter((o, i) => !q.pills.right.includes(i)).forEach((o) => { const other = dishNames.find((n) => n !== d.name && !d.name.includes(n) && o.includes(n)); if (other) out.modOther.push(`${d.name}: ${o}`); });
+      if (/#1$/.test(q.id)) { const a = TeamLearn.aside(q); if (a && a.list) out.bullets++; }
+    }));
+    const countries = new Set([...TeamData.wines().map((w) => w.country), ...TeamLearn.DECOYS.country].filter(Boolean));
+    TeamData.wines().forEach((w) => TeamLearn.wineQs(w.id).forEach((q) => {
+      if (q.k === 'recall' && TeamLearn._topic(q.q) === 'country') TeamLearn.choices(q).opts.forEach((o) => { if (!countries.has(o)) out.notCountries.push(`${q.q} → ${o}`); });
+      const ans = q.opts && q.a != null ? q.opts[q.a] : q.ans, a = TeamLearn.aside(q, ans);
+      if (a && a.text) { out.asides++; if (TeamLearn._overlap(a.text, ans) >= 0.45) out.echoes++; }
+    }));
+    return out;
+  });
+  expect(r.modOther).toEqual([]); // "the Lemon tart without the crème fraîche" is never answered about the venison
+  expect(r.notCountries).toEqual([]);
+  expect(r.echoes).toBe(0); // what's added never just says the answer again
+  expect(r.asides).toBeGreaterThan(50);
+  expect(r.bullets).toBeGreaterThan(10); // "Name a wine for the oysters" explains each pick in a line
+});
+
+test('the phone Team tab is the console Team: Add in a dialog, training level, minimums per role', async ({ context, page }) => {
+  await stubNetwork(context);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto(`${BASE}/team/?seed=social&view=phone`);
+  await expect(page.getByTestId('team-state')).toBeVisible();
+  await page.evaluate(() => { const m = TeamLearn.people().find((p) => p.role === 'manager'); TeamLearn.setMe(m.id); });
+  await page.reload();
+  await page.getByTestId('team-tab-team').click();
+  await expect(page.getByTestId('console-level')).toBeVisible();
+  await expect(page.getByTestId('console-minimums')).toBeVisible();
+  await expect(page.locator('#root')).not.toContainText('overdue');
+  // The minimums are a list per role on a phone, never a table wider than the screen.
+  expect(await page.getByTestId('console-minimums').evaluate((el) => el.scrollWidth <= el.clientWidth + 1)).toBe(true);
+  await page.getByTestId('console-add-person').click();
+  await page.getByTestId('console-add-dialog').getByLabel('First name').fill('Noor');
+  await page.getByTestId('console-add-dialog').getByLabel('Last name').fill('Haddad');
+  await page.getByTestId('console-add-save').click();
+  await expect(page.getByTestId('team-people')).toContainText('Noor Haddad');
+});
+
+test('a wine card: where you stand near the top, sections that fold and stay folded', async ({ context, page }) => {
+  await stubNetwork(context);
+  await page.goto(`${BASE}/team/?seed=social&view=phone`);
+  await expect(page.getByTestId('team-state')).toBeVisible();
+  await page.getByTestId('team-tab-wines').click();
+  await page.getByTestId('team-wine-row').first().click();
+  const top = async (id) => page.getByTestId(id).first().evaluate((el) => el.getBoundingClientRect().top);
+  expect(await top('team-standing')).toBeLessThan(await top('team-pitch'));
+  await expect(page.getByText('Practise this wine', { exact: true })).toHaveCount(0); // the standing card's button is the one
+  const taste = page.getByTestId('fold-wine-taste');
+  await expect(taste).toHaveAttribute('data-folded', '0');
+  await taste.getByRole('button').first().click();
+  await expect(taste).toHaveAttribute('data-folded', '1');
+  await page.reload();
+  await page.getByTestId('team-tab-wines').click();
+  await page.getByTestId('team-wine-row').nth(1).click();
+  await expect(page.getByTestId('fold-wine-taste')).toHaveAttribute('data-folded', '1'); // remembered on this phone
 });
