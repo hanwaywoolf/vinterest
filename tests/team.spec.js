@@ -853,6 +853,12 @@ test('at the table, wrong reasons are about this dish and wrong for this wine, a
       else { const authored = new Set(((TeamData.card(w.id) || {}).qs || []).flatMap((x) => x.wrong || []).map((t) => TeamLearn._norm(t)));
         wrong.forEach((o) => { if (!authored.has(TeamLearn._norm(o)) && !TeamLearn.contradicts(o, (TeamData.card(w.id) || {}).style || {}, TeamLearn.kindOf(w)) && !/^Steer|^Pour/.test(o)) out.notWrong.push(TeamData.short(w) + ': ' + o); }); }
     }));
+    // A guest asking for a wine that doesn't suit their dish is a steer (the restaurants' own table questions are
+    // now written as choices, so the steer is checked on one written the old way).
+    const mw = TeamData.wines().find((w) => /Minuty/.test(w.producer + w.name));
+    const sq = { id: 'x#steer', k: 'apply', wine: mw.id, q: `A guest ordering the braised lamb shoulder wants a glass of the ${TeamData.short(mw)}. How do you respond?`, key: ['the ' + TeamData.short(mw), 'it is dry and fresh'] };
+    const sc = TeamLearn.choices(sq), sg = sc.groups[0];
+    out.steers.push({ wine: TeamData.short(mw), dish: 'Braised lamb shoulder', right: sc.right.map((i) => sc.opts[i]), wrong: sc.opts.filter((o, i) => !sc.right.includes(i)), steer: sc.steer, label: sg.label });
     out.fit = TeamLearn.tableFit(TeamData.wines().find((w) => /Minuty/.test(w.producer + w.name)).id, TeamLearn.dishIn('braised lamb shoulder').id);
     out.barolo = TeamLearn.tableFit(TeamData.wines().find((w) => /Barolo/.test(w.name)).id, TeamLearn.dishIn('braised lamb shoulder').id);
     out.cod = TeamLearn.dishIn('A guest orders the pan-roast cod').name;
@@ -1235,7 +1241,7 @@ test('table questions: the choice first, wrong answers that are believable and c
       const out = { tooFew: [], lengthCue: [], sameClaim: [], wrongWine: [], wish: [], decided: 0, total: 0 };
       TeamData.wines().forEach((w) => TeamLearn.wineQs(w.id).filter((q) => q.k === 'apply').forEach((q) => {
         out.total++;
-        const c = TeamLearn.choices(q), dish = TeamLearn.dishIn(q.q), wish = TeamLearn.wishIn(q.q);
+        const c = TeamLearn.choices(q), dish = TeamLearn.dishIn(q.q), wish = TeamLearn.wishIn(q.q, TeamData.wine(q.wine));
         if (c.steer || c.groups[0].label === 'What do you suggest?') out.decided++; // the server makes the call
         c.groups.forEach((g) => {
           const opts = c.opts.slice(g.from, g.to), right = opts.filter((o, i) => c.right.includes(g.from + i)), wrong = opts.filter((o, i) => !c.right.includes(g.from + i));
@@ -1247,10 +1253,13 @@ test('table questions: the choice first, wrong answers that are believable and c
             if (ks.length - new Set(ks).size > 1) out.sameClaim.push(q.q.slice(0, 60));
           }
           if (g.label === 'What do you suggest?' && dish) wrong.forEach((o) => {
-            const ow = TeamData.wines().find((x) => o.startsWith('The ' + TeamData.short(x) + ','));
+            const ow = TeamData.wines().find((x) => { const n = TeamData.short(x); return o.startsWith((/^the /i.test(n) ? '' : 'The ') + n + ',') || o === (/^the /i.test(n) ? '' : 'The ') + n || o.startsWith((/^the /i.test(n) ? '' : 'The ') + n + ' '); });
             if (!ow) return out.wrongWine.push('not on the list: ' + o);
             // clearly wrong for the dish, or failing what the guest asked for ("under £120", "isn't heavy"), which the right wine meets
-            if (!TeamLearn.tableWrong(ow, TeamData.wine(q.wine), dish, wish, TeamLearn.wishStyle(q.q, dish))) out.wrongWine.push(`${dish.name}: ${TeamData.short(ow)}`);
+            // or one the card writer named as wrong for this guest (`decoys`), never one of the dish's picks
+            const pr = TeamData.pairing(dish.id) || {}, picks = [...(pr.best || []).map((b) => b.id), pr.glass && pr.glass.id].filter(Boolean);
+            const named = ((((TeamData.card(q.wine) || {}).qs || [])[Number(String(q.id).split('#').pop())]) || {}).decoys || [];
+            if (picks.includes(ow.id) || (!named.some((x) => x.id === ow.id) && !TeamLearn.tableWrong(ow, TeamData.wine(q.wine), dish, wish, TeamLearn.wishStyle(q.q, dish)))) out.wrongWine.push(`${dish.name}: ${TeamData.short(ow)}`);
             if (wish.kind && TeamLearn.kindOf(ow) !== wish.kind) out.wish.push(`${wish.kind} asked: ${TeamData.short(ow)}`);
             if (wish.side === 'glass' && !ow.glass) out.wish.push(`glass asked: ${TeamData.short(ow)}`);
           });
@@ -1266,7 +1275,7 @@ test('table questions: the choice first, wrong answers that are believable and c
     expect(r.sameClaim).toEqual([]);
     expect(r.wrongWine).toEqual([]); // every wrong wine is on the list and wrong for this table
     expect(r.wish).toEqual([]); // and is what the guest asked for: a white for a white, by the glass for a glass
-    expect(r.decided).toBeGreaterThanOrEqual(r.total / 8); // a floor: only where the list allows a fair choice (demo 11 of 29, Social Corner 11 of 63)
+    expect(r.decided).toBeGreaterThanOrEqual(r.total * 0.7); // table questions are written as choices (demo 23 of 30, Social Corner 54 of 63)
   }
   // The Bandol with the venison asks for the wine, then why; the question no longer names it.
   await page.goto(`${BASE}/team/?seed=demo`);

@@ -154,6 +154,9 @@ const TeamLearn = {
      never offered as wrong. */
   DECOY_GAP:5,
   clearlyWrong(wineId,dishId){ const pr=TeamData.pairing(dishId); if(!pr) return false; if(pr.avoid&&pr.avoid.id===wineId) return true;
+    // A cocktail is never "another colour" from the dish's wine picks: only a drink the writer named as wrong, or
+    // one that fails what the guest asked for, is a wrong cocktail.
+    if(TeamData.isDrink(TeamData.wine(wineId))) return false;
     const picks=[...(pr.best||[]).map(b=>b.id),pr.glass&&pr.glass.id].filter(Boolean); if(!picks.length||picks.includes(wineId)) return false;
     const st=id=>(TeamData.card(id)||{}).style||{}, a=st(wineId); if(a.body==null) return false;
     const gap=Math.min(...picks.map(id=>{ const b=st(id); return b.body==null?99:Math.abs(a.body-b.body)+Math.abs((a.tannin||0)-(b.tannin||0))+Math.abs((a.sweet||0)-(b.sweet||0)); }));
@@ -163,7 +166,7 @@ const TeamLearn = {
     return gap>=this.DECOY_GAP||otherColour; },
   // What the guest asked for, read from the question: a colour or kind, and a glass or a bottle. Every wrong
   // wine honours it, or the request alone would point at the answer.
-  wishIn(text){ const t=String(text||'').toLowerCase();
+  wishIn(text,rw){ const t=String(text||'').toLowerCase(); if(rw&&TeamData.isDrink(rw)) return {kind:'cocktail',side:null};
     const kind=/\bcocktail|\bmocktail|\bspritz\b/.test(t)?'cocktail':/\bsparkling|\bfizz|\bbubbl|champagne/.test(t)?'sparkling':/\bros[eé]\b/.test(t)?'rosé':/\bwhite\b/.test(t)?'white':/\bred\b/.test(t)?'red':/\bsweet\b|\bdessert wine|\bsticky\b/.test(t)?'sweet':/\bport\b|\bsherry\b|fortified/.test(t)?'fortified':null;
     return {kind,side:/\bglass\b/.test(t)?'glass':/\bbottle\b/.test(t)?'bottle':null}; },
   /* What the guest's request rules out beyond the dish, read from the scenario with the dish's own words taken
@@ -175,11 +178,11 @@ const TeamLearn = {
     if(dish) this._words(dish.name+' '+(dish.desc||'')).forEach(w=>{ t=t.split(w).join(' '); });
     const lim=t.match(/(?:under|below|less than|up to|no more than|at most)\s*[£$€]?\s*(\d+)/);
     return {light:/n['’]?t (too )?heavy|not (too )?heavy|\blight(er)?\b|won['’]?t overpower|not overpower|delicate|easy[- ]drinking/.test(t),
-      full:/\bfull(-bodied)?\b|\bbold\b|\bbig\b|stands? up|\bpowerful\b|\brobust\b/.test(t),
+      full:/\bfull(-bodied)?\b|\bfuller\b|\bbold\b|\bbig\b|stands? up|\bpowerful\b|\brobust\b|\bricher\b|\brounder\b|(some|real|more|plenty of|with) body\b/.test(t),
       soft:/\bsoft\b|\bsmooth\b|not (too )?tannic|n['’]?t (too )?tannic|gentle tannin|\bsilky\b/.test(t),
       crisp:/\bcrisp\b|\bzesty\b|\brefreshing\b|\bzingy\b/.test(t),
-      dry:/\bdry\b|not sweet|n['’]?t sweet/.test(t),
-      sweet:/\bsweet\b/.test(t)&&!/not sweet|n['’]?t sweet/.test(t),
+      dry:/\bdry\b|not (too )?sweet|n['’]?t (too )?sweet|nothing (too )?sweet|too sweet/.test(t),
+      sweet:/\bsweet\b/.test(t)&&!/not (too )?sweet|n['’]?t (too )?sweet|nothing (too )?sweet|too sweet|sweeter than/.test(t),
       under:lim?Number(lim[1]):null}; },
   breaksWish(w,ws,side){ const st=(TeamData.card(w.id)||{}).style||{}, v=k=>typeof st[k]==='number'?st[k]:null;
     const price=s=>{ const m=String(s||'').replace(/,/g,'').match(/(\d+(?:\.\d+)?)/); return m?Number(m[1]):null; };
@@ -196,7 +199,19 @@ const TeamLearn = {
   tableDecoys(rw,dish,seed,fit=()=>0,wish={},text='',authored=[]){
     const order=wish.kind?[wish.kind]:(this.NEAR[this.kindOf(rw)]||[this.kindOf(rw)]), plaus=w=>order.indexOf(this.kindOf(w)), ws=this.wishStyle(text,dish);
     // The card writer's own wrong wines first (`decoys`), each checked the same way.
-    const own=(authored||[]).map(d=>TeamData.wine(d&&d.id)).filter((w,i,a)=>w&&a.indexOf(w)===i&&this.tableWrong(w,rw,dish,wish,ws));
+    // The writer's wrong wines are trusted for a reason the request reader can't see ("that's the everyday
+    // bottle, they want a special one") only within hard limits: on the list, of the kind asked for and sold as
+    // asked, none of the dish's picks, and clearly apart from the right wine in style or price.
+    const pr=TeamData.pairing(dish.id)||{}, picks=new Set([...(pr.best||[]).map(b=>b.id),pr.glass&&pr.glass.id,pr.cocktail&&pr.cocktail.id].filter(Boolean));
+    const num=s=>{ const m=String(s||'').replace(/,/g,'').match(/(\d+(?:\.\d+)?)/); return m?Number(m[1]):null; };
+    const apart=w=>{ const a=(TeamData.card(w.id)||{}).style||{}, b=(TeamData.card(rw.id)||{}).style||{};
+      const gap=Object.keys(a).filter(k=>typeof a[k]==='number'&&typeof b[k]==='number').reduce((n,k)=>n+Math.abs(a[k]-b[k]),0); // a wine's body, acid, tannin, sweet; a cocktail's sweet, sour, bitter, strong
+      const pa=num(wish.side==='glass'?w.glass:w.bottle||w.glass), pb=num(wish.side==='glass'?rw.glass:rw.bottle||rw.glass);
+      return gap>=2||(pa&&pb&&Math.abs(pa-pb)/Math.min(pa,pb)>=0.25); };
+    const kindOk=w=>wish.kind?this.kindOf(w)===wish.kind:this.kindOf(w)===this.kindOf(rw);
+    const writerOk=w=>w&&w.id!==rw.id&&!picks.has(w.id)&&TeamData.isDrink(w)===TeamData.isDrink(rw)&&kindOk(w)&&(wish.side!=='glass'||w.glass)&&(wish.side!=='bottle'||w.bottle)
+      &&!(ws&&this.breaksWish(rw,ws,wish.side))&&(this.tableWrong(w,rw,dish,wish,ws)||apart(w));
+    const own=(authored||[]).map(d=>TeamData.wine(d&&d.id)).filter((w,i,a)=>w&&a.indexOf(w)===i&&writerOk(w));
     const rest=this._shuffle(TeamData.wines().filter(w=>plaus(w)>=0&&!own.includes(w)&&this.tableWrong(w,rw,dish,wish,ws)),seed).sort((a,b)=>plaus(a)-plaus(b)||fit(a)-fit(b));
     return [...own,...rest].slice(0,3); },
   _decide(q){ const w=TeamData.wine(q.wine); if(!w) return q;
@@ -206,7 +221,7 @@ const TeamLearn = {
     const others=TeamData.wines().filter(o=>o.id!==w.id).map(o=>this._norm(TeamData.short(o))).filter(n=>n.length>3);
     if((q.key||[]).some(k=>others.some(n=>this._norm(k).includes(n)))) return q;
     const kept=sents.filter(x=>!names_in(x)); if(!kept.length) return q;
-    const scen=kept.join(' ').replace(/[,;:\s]+$/,''), d=this.dishIn(scen); if(!d||this.tableFit(w.id,d.id)!=='good'||this.tableDecoys(w,d,q.id,undefined,this.wishIn(scen),scen,q.decoys).length<2) return q;
+    const scen=kept.join(' ').replace(/[,;:\s]+$/,''), d=this.dishIn(scen); if(!d||this.tableFit(w.id,d.id)!=='good'||this.tableDecoys(w,d,q.id,undefined,this.wishIn(scen,w),scen,q.decoys).length<2) return q;
     return {...q,q:`${/[.?!]$/.test(scen)?scen:scen+'.'} What would you suggest, and why?`,decided:true}; },
   /* A server always knows what kind of wine it is (the list says so), so a wrong answer describing another
      kind ("Full-bodied oaky white" for a rosé, "Golden with honey" for a Barolo) gives the answer away.
@@ -830,7 +845,7 @@ const TeamLearn = {
     // "£8 (75ml)" reads "£8 a glass (75ml)": the measure after the unit, never inside it.
     const per=(p,u)=>{ const m=String(p).match(/^(.*?)\s*(\([^)]*\))\s*$/); return m?`${m[1]} a ${u} ${m[2]}`:`${p} a ${u}`; };
     const offer=w=>{ const pr=TeamData.isDrink(w)?String(w.glass||'').replace(/\s*\([^)]*\)\s*$/,''):side==='glass'&&w.glass?per(w.glass,'glass'):w.bottle?`${per(w.bottle,'bottle')}${side==='glass'?', not by the glass':''}`:w.glass?per(w.glass,'glass'):'';
-      return `The ${TeamData.short(w)}${pr?`, ${pr}`:''}`; };
+      const nm=TeamData.short(w); return `${/^the\s/i.test(nm)?'':'The '}${nm}${pr?`, ${pr}`:''}`; };
     // Decoys a guest could believe: the nearest styles first (sparkling beside white, rosé beside both), and
     // for a glass, wines poured by the glass, so the price alone never gives the right one away.
     // A cocktail is offered among cocktails and a wine among wines, never one for the other.
@@ -840,7 +855,7 @@ const TeamLearn = {
     // picks, which a sommelier would pour too), of the nearest kind so it's a mistake a server could make.
     const tableDish=this.dishIn(q.q), pr0=tableDish?TeamData.pairing(tableDish.id)||{}:{}, picks0=new Set([...(pr0.best||[]).map(b=>b.id),pr0.glass&&pr0.glass.id,pr0.cocktail&&pr0.cocktail.id].filter(Boolean));
     const ruledOut=w=>!tableDish||(!picks0.has(w.id)&&this.tableFit(w.id,tableDish.id)!=='good');
-    const listDecoys=(tableDish?this.tableDecoys(rw,tableDish,this._seed(q)+'o',fit,this.wishIn(q.q),q.q,q.decoys):this._shuffle(wines.filter(w=>w.id!==rw.id&&dist(w)<=1),this._seed(q)+'o').sort((a,b)=>dist(a)-dist(b)||fit(a)-fit(b)).slice(0,3)).map(w=>({x:offer(w),ok:false}));
+    const listDecoys=(tableDish?this.tableDecoys(rw,tableDish,this._seed(q)+'o',fit,this.wishIn(q.q,rw),q.q,q.decoys):this._shuffle(wines.filter(w=>w.id!==rw.id&&dist(w)<=1),this._seed(q)+'o').sort((a,b)=>dist(a)-dist(b)||fit(a)-fit(b)).slice(0,3)).map(w=>({x:offer(w),ok:false}));
     // Too few wines of the kind on the list, away from a table: a well-known bottle that isn't on it, priced
     // like the list's own. At a table the list's own ruled-out wines are enough; three options beat an invented one.
     const priceLike=side==='glass'&&rw.glass?`${rw.glass} a glass`:rw.bottle?`${rw.bottle} a bottle`:'';
@@ -896,21 +911,23 @@ const TeamLearn = {
       const ks=claimKey(t); if(kind!=='cocktail'&&offKind(ks)) return; if(ks.length&&ks.every(k=>claimed.has(k))) return; ks.forEach(k=>claimed.add(k)); seen.add(norm(t)); kept.push(t); wrongs.push(t); };
     // Wrong reasons the card writer authored for this question (`wrong`, each a different mistake), checked like
     // any other: never alike to a right one, never a claim no wine of this kind could make.
-    (q.wrong||[]).forEach(t=>{ if(wrongs.length<4) take(String(t)); });
-    const authored=wrongs.length>=3; // written for this question: no template lines beside them
+    (q.wrong||[]).forEach(t=>{ if(wrongs.length<4) take(this._cap(String(t).replace(/^(say|mention|tell them|explain|point out)\s+(that\s+)?/i,''))); });
+    // Written for this question and passing the checks: nothing borrowed from other tables or templates beside
+    // them, since a reason lifted from another dish ("a step up in finesse…") reads as out of place.
+    const authored=wrongs.length>=3;
     const borrowed=[];
     const sameSide=b=>{ const w=TeamData.wine(b.id); return w&&TeamData.isDrink(w)===TeamData.isDrink(rw); };
     here.forEach(d=>{ const pr=TeamData.pairing(d.id)||{}; [...(pr.best||[]),pr.glass,pr.cocktail].filter(Boolean).forEach(b=>{ if(b.id!==rw.id&&b.why&&sameSide(b)) borrowed.push(b.why); }); });
     wines.filter(w=>w.id!==rw.id).forEach(w=>((TeamData.card(w.id)||{}).qs||[]).forEach(o=>{ if(o.k==='apply'&&here.some(d=>this._words(d.name).some(x=>x.length>3&&norm(o.q).split(' ').includes(x)))) (o.key||[]).forEach(k=>borrowed.push(k)); }));
-    this._shuffle(borrowed,this._seed(q)+'r').forEach(k=>{ if(wrongs.length>=4) return; const t=reason(k); if(t&&!offTable(t)&&wrongFor(t)) take(t); });
+    if(!authored) this._shuffle(borrowed,this._seed(q)+'r').forEach(k=>{ if(wrongs.length>=4) return; const t=reason(k); if(t&&!offTable(t)&&wrongFor(t)) take(t); });
     // Then what other wines of the same kind are said to do anywhere on the menu, where it names no other food
     // and claims a style this wine doesn't have: real reasons in a server's words, wrong only for this wine.
-    if(wrongs.length<4){ const wide=[]; wines.filter(w=>w.id!==rw.id&&this.kindOf(w)===kind).forEach(w=>{ ((TeamData.card(w.id)||{}).qs||[]).forEach(o=>{ if(o.k==='apply') (o.key||[]).forEach(k=>wide.push(k)); });
+    if(wrongs.length<4&&!authored){ const wide=[]; wines.filter(w=>w.id!==rw.id&&this.kindOf(w)===kind).forEach(w=>{ ((TeamData.card(w.id)||{}).qs||[]).forEach(o=>{ if(o.k==='apply') (o.key||[]).forEach(k=>wide.push(k)); });
         TeamData.dishes().forEach(d=>{ const pr=TeamData.pairing(d.id)||{}; [...(pr.best||[]),pr.glass,pr.cocktail].filter(Boolean).forEach(b=>{ if(b.id===w.id&&b.why) wide.push(b.why); }); }); });
       this._shuffle(wide,this._seed(q)+'v').forEach(k=>{ if(wrongs.length>=4) return; const t=reason(k); if(t&&!offTable(t)&&wrongFor(t)) take(t); }); }
     // A cocktail is also told apart by how it tastes: the taste lines of drinks clearly unlike it (3 or more
     // apart on sweet, sour, bitter and strong together) are wrong descriptions of this one.
-    if(kind==='cocktail'&&wrongs.length<4){ const gap=o=>['sweet','sour','bitter','strong'].reduce((a,k)=>a+Math.abs((o[k]||0)-(style[k]||0)),0);
+    if(kind==='cocktail'&&wrongs.length<4&&!authored){ const gap=o=>['sweet','sour','bitter','strong'].reduce((a,k)=>a+Math.abs((o[k]||0)-(style[k]||0)),0);
       this._shuffle(wines.filter(w=>w.id!==rw.id&&TeamData.isDrink(w)),this._seed(q)+'k').forEach(w=>{ const c=TeamData.card(w.id); if(wrongs.length>=4||!c||!c.taste||!c.style||gap(c.style)<3) return;
         // Taste words ("lemon", "coffee") are on the menu too, so only another dish's name rules a line out here.
         const t=String(c.taste).replace(/\.\s*$/,''), dishNames=new Set(dishes.filter(x=>!here.includes(x)).flatMap(x=>this._words(String(x.name).split(',')[0])).filter(x=>x.length>3));
