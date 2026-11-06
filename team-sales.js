@@ -120,7 +120,7 @@ const TeamSales = {
     }
     const d=this._empty(); d.map={}; rows.forEach(r=>{ if(r.w) d.map[r.n]=r.w; }); // the demo's map is confirmed, bar the Picpoul
     this.save(d);
-    return this.ingest(rows,{source:{kind:'demo',label:'Demo data (invented)',note:'Eight weeks of invented sales for The Larkspur, shaped for the demo. Nothing here came from a till.'},nights});
+    return this.ingest(rows,{source:{kind:'demo',label:'Demo data (invented)',note:'Eight weeks of invented sales for The Larkspur, shaped for the demo. Nothing here came from a POS.'},nights});
   },
 };
 Object.assign(window,{TeamSales});
