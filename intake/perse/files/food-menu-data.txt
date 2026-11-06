@@ -1,0 +1,111 @@
+const raw=`
+
+tapas|Fresh Oysters|MP|Red wine vinegar mignonette, piccante and horseradish.||
+tapas|Fire-Charred Lamb Chops|27|Two grilled Mediterranean-style, house-marinated New Zealand lamb chops with kaffir lime mint yogurt.|Extra lamb chop +14|
+tapas|Jamón Ibérico de Bellota|39|48-month 100% Spanish pata negra cured ham, served with pan con tomate.||
+tapas|Ibérico Meatballs|28|Spanish-inspired meatballs, San Marzano marinara and Parmigiano Reggiano.||
+tapas|Patatas Bravas|19|Double-cooked Spanish-style potatoes, spicy marinara, smoked paprika and vegan aioli.||vegan-friendly,vegetarian
+tapas|Lobster & Crab Ravioli|24|Fresh stuffed raviolo, roasted red peppers, chipotle and coconut milk reduction.||
+tapas|Hummus|22|Garbanzo beans, extra virgin olive oil, tahini, fresh lemon and garlic confit, served with house forno flatbread.|Carrots & celery +5; Gluten-free bread +4|vegan-friendly,vegetarian,gluten-friendly
+tapas|Beets e Burrata|36|Murgella burrata di Puglia, local beets, radicchio, arugula, grilled ciabatta and Italian sherry vinaigrette.|Prosciutto +14|vegetarian
+tapas|Wagyu Beef Carpaccio|29|Tajima Wagyu, Parmigiano-infused EVOO, smoked aioli, arugula, balsamico di Modena and grilled oregano flatbread.||
+tapas|Boga Boga (Cioppino)|39|Fresh mussels, clams, tiger prawns, squid and scallops in a roasted garlic, San Marzano tomato and white wine sauce, served with sourdough bread.|Sliced Spanish chorizo +11|
+tapas|Mediterranean Olives|12|Warm house-marinated mixed olives, citrus and herbs.||vegan-friendly,vegetarian
+tapas|Charcutería & Formaggi|44|Selected premium cured meats, imported cheeses, candied walnuts and gherkins, served with 72-hour fermented flatbread. Serves 2–3.|Burrata Pugliese +14|
+tapas|Calamari di Mamma|27|Lightly battered and flash-fried baby squid, sliced jalapeño, house-made tartar and chipotle aioli.||gluten-friendly
+tapas|Oyster Duo|23|San Marzano, horseradish, shallots and sturgeon caviar.||
+tapas|Charred Chorizo|26|Grilled Ibérico de pata negra chorizo, kaffir lime mint yogurt and 72-hour fermented flatbread.||
+tapas|Truffle Fries|15|Parmigiano Reggiano and truffle aioli.||vegetarian
+tapas|Garlic Flatbread|12|72-hour fermented dough baked in an open-flame brick forno with garlic confit.|Burrata Pugliese +14|vegan-friendly,vegetarian
+
+pasta|Lobster & Crab Ravioli|47|Fresh stuffed raviolo, roasted red peppers, chipotle and coconut milk reduction.|Tiger prawns +15|
+pasta|Gnocchi al Pomodoro|36|Fresh gnocchi, San Marzano marinara, Parmigiano Reggiano, fresh basil and Sicilian extra virgin olive oil.|Burrata Pugliese +14; Spanish chorizo +11|vegetarian
+pasta|Linguine ai Frutti di Mare|49|Fresh mussels, clams, baby squid, tiger prawns, scallops, roasted garlic, cherry tomatoes and house-made pasta.|Spanish chorizo +11; Gluten-free pasta +4|gluten-friendly
+pasta|Rigatone Bolognese|43|Nonna's recipe with San Marzano, premium ground beef, brasato, house-made pasta and Grana Padano.|Burrata Pugliese +14|
+pasta|Medaglioni al Tartufo e Funghi|44|Fresh pasta stuffed with mushrooms, ricotta, mozzarella, black truffle crema and Parmigiano Reggiano.|Braised beef +8; Burrata Pugliese +14|vegetarian
+
+greens|Goat Cheese Salad|26|Crispy goat cheese, cherry tomatoes, candied walnuts and heritage greens in house-made pear truffle vinaigrette with Parmigiano Reggiano.|Grilled Kuterra salmon +16|vegetarian
+greens|Social Corner Caesar|24|Baby romaine lettuce, house-made Caesar dressing, brioche Parmigiano croutons and Parmigiano Reggiano.|Organic chicken breast +14|
+greens|Insalata Verde di Casa|20|Mixed heritage greens and kale with cherry tomatoes, carrots, shaved cucumber, crispy cipollini flakes and house-made balsamic vinaigrette.|Certified Angus striploin +16|vegetarian
+greens|Crema di Pomodori|21|San Marzano tomatoes, crema, mascarpone and Sicilian extra virgin olive oil, served with 72-hour fermented flatbread.||vegetarian
+
+/* PIZZA - EXACT PDF ROW ORDER */
+
+pizza|Burratina|42|San Marzano, Murgella burrata di Puglia, Calabrian chili, soppressata, Italian Ezzo pepperoni, caramelized pear, fior di latte and drop peppers.||gluten-friendly
+pizza|Criminale|35|San Marzano tomato sauce, fior di latte, prosciutto cotto, soppressata piccante, applewood smoked bacon and sliced red onions.||gluten-friendly
+pizza|Black Truffle|38|Bianco sauce, black truffle paste, caramelized Modena onions, oven-roasted organic mushrooms, Kalamata olives, fior di latte, fontina and Parmigiano Reggiano.||gluten-friendly
+pizza|Tartufina|32|Bianco sauce, oven-roasted pears, gorgonzola, candied walnuts, fior di latte and truffle-infused EVOO.|Soppressata spicy salami +7|vegetarian,gluten-friendly
+pizza|Carbonara|33|Bianco sauce, guanciale riserva, fontina, local free-range eggs, fior di latte and Pecorino Romano.||gluten-friendly
+pizza|Margherita|27|San Marzano tomato sauce, fresh basil, fior di latte, Pecorino Romano and cold-pressed extra virgin olive oil.||vegetarian,gluten-friendly
+pizza|Forza Italia|35|San Marzano tomato sauce, fior di latte, arugula, 24-month Prosciutto di Parma, Parmigiano Reggiano and EVOO.||gluten-friendly
+pizza|Capricciosa|33|San Marzano tomato sauce, fior di latte, prosciutto cotto, artichoke hearts, oregano, black Mediterranean olives and capers.||gluten-friendly
+pizza|Funghi|32|Bianco sauce, oven-roasted organic mushrooms, fior di latte and Pecorino Romano.|Crumbled bacon +5|vegetarian,gluten-friendly
+pizza|Spicy Vodka & Stracciatella|33|Spicy vodka sauce, fior di latte, fresh Italian stracciatella, peperoncino and Parmigiano Reggiano.||vegetarian,gluten-friendly
+pizza|Marinara|20|San Marzano tomato sauce, confit garlic, herb-infused olive oil and crispy garlic.|Burrata Pugliese +14|vegan-friendly,vegetarian,gluten-friendly
+pizza|Pepperoni e Ricotta|35|Bianco sauce, pepperoni Italiano, dehydrated ricotta, fior di latte and chili-infused honey.||gluten-friendly
+
+/* ENTREES - EXACT PDF ROW ORDER */
+
+entrees|Chicken Paella|69|Slow-braised and flash-fried half chicken, saffron-lemon marinade, bomba rice, pata negra chorizo, confit garlic, saffron aioli and charred lemon. Serves two.|Tiger prawns +15|
+entrees|The Burger|39|8 oz in-house hand-ground organic Alberta beef, brioche bun, fontina cheese, truffle aioli, Syrah caramelized onions and crispy shallots. Limited quantity.|Crumbled bacon +5; Sautéed mushrooms +5; Québec foie gras grade A +26|
+entrees|Seafood Paella|82|Fresh clams, mussels, tiger prawns, squid, scallops, Spanish bomba rice, saffron aioli and charred lemon. Serves two.|Sliced Spanish chorizo +11; Half chicken saffron-marinated +33|
+entrees|Fire-Charred Lamb Chops|59|Grilled Mediterranean-style, house-marinated New Zealand lamb rack, saffron risotto and Sicilian herbs.||
+entrees|Bone-In New York Paella|159|22 oz Certified Angus striploin on toasted Spanish bomba rice with brasato, artichokes, organic mushrooms and saffron aioli. Serves 2–3.|Québec foie gras +26|
+entrees|Half Chicken & Frites|48|Half chicken saffron-lemon marinade, braised and flash-fried, served with brava marinara sauce, saffron aioli and hand-cut fries.||
+entrees|Branzino Frito|69|Whole Spanish-style lemon-herb-marinated fresh branzino, charred lemon, broccolini and risotto aglio olio e peperoncino. Serves two.||
+entrees|22 oz Bone-In NY Striploin|139|Certified Angus striploin with hand-cut fries.|Choice of saffron aioli, peppercorn sauce or chimichurri|
+entrees|Risotto Burro e Sablefish|52|Smoked honey-glazed filet on Arborio risotto with grilled radicchio, balsamico di Modena and Parmigiano Reggiano.||
+entrees|10 oz Striploin|89|Australian Tajima Wagyu with hand-cut fries.|Choice of saffron aioli, peppercorn sauce or chimichurri|
+entrees|8 oz Filet|78|Alberta premium AAA tenderloin with hand-cut fries.|Choice of saffron aioli, peppercorn sauce or chimichurri; Québec foie gras +26|
+
+sides|Grilled Lamb Chop|14|À la carte side.||
+sides|Patatas Bravas|19|À la carte side.||vegan-friendly,vegetarian
+sides|Chili Tossed Broccolini|14|À la carte side.||
+sides|Fries|12|À la carte side.||
+sides|Tiger Prawns|15|À la carte side.||
+sides|Truffle Fries|15|À la carte side.||vegetarian
+sides|Half Chicken Saffron-Marinated|33|À la carte side.||
+sides|Québec Foie Gras Grade A|26|À la carte side.||
+sides|Crispy Goat Cheese|6|À la carte add-on.||vegetarian
+
+caviar|Sturgeon Caviar · Baerii Bump (5 g)|15|Baerii sturgeon caviar, 5 g bump.||
+caviar|Sturgeon Caviar · Oscietra Bump (5 g)|20|Oscietra sturgeon caviar, 5 g bump.||
+caviar|Sturgeon Caviar · Baerii (30 g)|90|Baerii sturgeon caviar, 30 g.||
+caviar|Sturgeon Caviar · Oscietra (30 g)|100|Oscietra sturgeon caviar, 30 g.||
+caviar|Sturgeon Caviar · Baerii (50 g)|130|Baerii sturgeon caviar, 50 g.||
+caviar|Sturgeon Caviar · Oscietra (50 g)|140|Oscietra sturgeon caviar, 50 g.||
+`;
+const addonRaw=`
+Cheese|Feta Cheese|5|vegetarian
+Cheese|Crispy Goat Cheese|6|vegetarian
+Cheese|Burrata Pugliese|14|vegetarian
+Vegetables|Avocado|4|vegan-friendly,vegetarian
+Vegetables|Red Beets|5|vegan-friendly,vegetarian
+Seafood|Garlic Tiger Prawns|15|
+Seafood|Kuterra Salmon|16|
+Meat|Organic Chicken Breast|14|
+Meat|Certified Angus Striploin|16|
+Meat|Sliced Spanish Chorizo|11|
+Meat|Grilled Lamb Chop|14|
+Meat|Half Chicken Saffron-Marinated|33|
+Pizza Toppings: Cheese|Fior di Latte|5|vegetarian
+Pizza Toppings: Cheese|Goat Cheese|5|vegetarian
+Pizza Toppings: Cheese|Burrata Pugliese|14|vegetarian
+Pizza Toppings: Cheese|Gorgonzola|5|vegetarian
+Pizza Toppings: Cheese|Parmigiano Reggiano|3|vegetarian
+Pizza Toppings: Cheese|Feta Cheese|5|vegetarian
+Pizza Toppings: Vegetables|Artichoke|4|vegan-friendly,vegetarian
+Pizza Toppings: Vegetables|Arugula|4|vegan-friendly,vegetarian
+Pizza Toppings: Vegetables|Mushroom|5|vegan-friendly,vegetarian
+Pizza Toppings: Vegetables|Black Olives|3|vegan-friendly,vegetarian
+Pizza Toppings: Vegetables|Capers|3|vegan-friendly,vegetarian
+Pizza Toppings: Seafood|Garlic Tiger Prawn|15|
+Pizza Toppings: Meat|Bacon|5|
+Pizza Toppings: Meat|Soppressata|7|
+Pizza Toppings: Meat|Sliced Spanish Chorizo|11|
+Pizza Toppings: Meat|Braised Beef|8|
+Pizza Toppings: Meat|Grilled Chicken Breast|14|
+Pizza Toppings: Meat|Prosciutto di Parma|14|
+Pizza Toppings: Meat|Prosciutto Cotto|7|
+Pizza Toppings: Meat|Italian Ezzo Pepperoni|7|
+`;

@@ -27,6 +27,7 @@ test('dist/app.js has no synchronous XHR and inlines every loader path', async (
   expect(team).not.toContain('XMLHttpRequest');
   const inlined = assets(app), teamInlined = assets(team);
   for (const file of fs.readdirSync(path.join(ROOT, 'data'))) {
+    if (file === 'tts-say.json') continue; // read by the Worker as deployed (ttsApply), never by the app
     const own = file.startsWith('team-') ? teamInlined : inlined;
     expect(own[`data/${file}`], `data/${file}`).toBe(fs.readFileSync(path.join(ROOT, 'data', file), 'utf8'));
   }

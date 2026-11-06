@@ -24,7 +24,7 @@ const TeamVinny = {
   _ctx(pid){
     const person=TeamLearn.person(pid); if(!person) return null;
     const role=person.role, kinds=TeamLearn.ROLES[role].kinds, items=TeamLearn._mine(TeamLearn._all(),pid).items, sc=TeamLearn.scope(role);
-    return {person,role,kinds,items,sc,wines:[...sc.glass,...sc.bottle,...(sc.drinks||[])],dishes:sc.dishes,now:Date.now()};
+    return {person,role,kinds,items,sc,wines:[...sc.glass,...sc.bottle],dishes:sc.dishes,now:Date.now()};
   },
   // The questions on a wine or dish this person may be asked now: rungs open to them, unknown first.
   _qsFor(c,{wine,dish}){
@@ -49,8 +49,8 @@ const TeamVinny = {
     else if(/\bbottles?\b/.test(a)){ wines=wines.filter(w=>!TeamData.byGlass(w)); dishes=[]; label.push('the bottles'); }
     const under=a.match(/(?:under|below|less than|up to)\s*[£$€]?\s*(\d+)/), over=a.match(/(?:over|above|more than)\s*[£$€]?\s*(\d+)/);
     const cost=w=>this._price(w.bottle)||this._price(w.glass);
-    if(under){ wines=wines.filter(w=>cost(w)!=null&&cost(w)<=+under[1]); dishes=[]; label.push(`under ${TeamData.currency().sym||'£'}${under[1]}`); }
-    if(over){ wines=wines.filter(w=>cost(w)!=null&&cost(w)>=+over[1]); dishes=[]; label.push(`over ${TeamData.currency().sym||'£'}${over[1]}`); }
+    if(under){ wines=wines.filter(w=>cost(w)!=null&&cost(w)<=+under[1]); dishes=[]; label.push(`under ${TeamData.money(+under[1])}`); }
+    if(over){ wines=wines.filter(w=>cost(w)!=null&&cost(w)>=+over[1]); dishes=[]; label.push(`over ${TeamData.money(+over[1])}`); }
     if(/\bnew\b|\bassigned\b|\bjust arrived\b/.test(a)){ const as=new Set(TeamLearn.assignments(c.person.id).map(x=>x.id)); wines=wines.filter(w=>as.has(w.id)); dishes=dishes.filter(x=>as.has(x.id)); label.push('what\'s new'); }
     if(wantMenu){ wines=[]; label.push('the menu'); }
     // Names: a producer, wine, grape, region, country or section word; a dish's words.
@@ -71,7 +71,7 @@ const TeamVinny = {
     const c=this._ctx(pid); if(!c) return {qs:[],none:true,why:'Pick who you are first.'};
     const n=this.narrow(c,ask), wines=n?n.wines:c.wines, dishes=n?n.dishes:c.dishes;
     if(n&&!wines.length&&!dishes.length) return {qs:[],none:true,title:'Vinny\'s test',why:`Nothing you sell matches "${ask.trim()}". Try a type, a price, a grape or a dish.`};
-    const r=TeamLearn.readiness(pid), short=Object.entries(r.parts).filter(([,p])=>p.share<p.need).map(([k])=>k);
+    const r=TeamLearn.readiness(pid), short=Object.entries(r.parts).filter(([k,p])=>p.share<p.need&&k!=='cocktails').map(([k])=>k); // Vinny's test is the wine list and menu; cocktails drill on Today
     const inShort=x=>!n&&short.length?(short.includes('dishes')&&x.dish)||(x.wine&&((short.includes('glass')&&TeamData.byGlass(x.wine))||(short.includes('bottle')&&!TeamData.byGlass(x.wine)))):true;
     const assigned=new Set(TeamLearn.assignments(pid).map(a=>a.id));
     const sells=(!n&&typeof TeamSales!=='undefined'&&TeamSales.has()&&typeof TeamReport!=='undefined')?TeamReport.priority(28,10).map(x=>x.wine.id):[];
@@ -108,6 +108,42 @@ const TeamVinny = {
     return (lead.charAt(0).toUpperCase()+lead.slice(1)+why2).trim();
   },
 
+  /* ── The practice hub ──
+     The one thing to do now, chosen for this person, so the Vinny tab leads with a decision made rather than three
+     doors of equal weight: today's drill until it's done; then a guest table aimed at what they're weakest on
+     (TeamVinny.scenario's why); then the test when answers have faded; else another table. {kind, title, why, cta, open}. */
+  next(pid){
+    const person=TeamLearn.person(pid); if(!person||!TeamData.wines().length) return null;
+    const r=TeamLearn.readiness(pid), as=TeamLearn.assignments(pid), done=TeamLearn.doneToday(pid);
+    if(!done){ const parts=[]; if(r&&r.due) parts.push(`${r.due} answer${r.due===1?' is':'s are'} due`); if(as.length) parts.push(`${as.length} ${as.length===1?'thing is':'things are'} new to you`);
+      return {kind:'drill',title:"Today's drill · 5 questions",why:parts.length?parts.join(' and ')+'. Two to three minutes.':'Nothing is due; five questions keep it fresh. Two to three minutes.',cta:'Start',open:{view:'drill'}}; }
+    const sc=this.scenario(pid); const t=this.test(pid);
+    if(sc){ const dish=String(sc.dishName||'').split(',')[0].trim(); const why=(sc.why||[]).length?sc.why.join(', and ')+'.':'Answer as you would at the table.';
+      return {kind:'guest',title:`A guest having the ${dish}`,why:why.charAt(0).toUpperCase()+why.slice(1),cta:'Take the table',open:{view:'guest'}}; }
+    if(t&&!t.none) return {kind:'test',title:`Vinny's test · ${t.qs.length} questions`,why:t.why,cta:'Start',open:{view:'drill',qs:t.qs,intro:{title:t.title,why:t.why}}};
+    return null;
+  },
+  /* Three suggestions for the Ask screen, each short and about a different thing: tonight's feature or an 86'd dish
+     once the venue sets them (status on an item), the top seller they haven't learnt, a dish, a price. Never two about
+     the same wine, never a long name: a wine with more than four words goes by its producer. */
+  _nick(w){ return TeamData.nick(w); },
+  suggest(pid){
+    const ws=TeamData.wines(), ds=TeamData.dishes(), out=[], used=new Set();
+    const add=(s,id)=>{ if(out.length>=3||!s||(id&&used.has(id))) return; if(id) used.add(id); out.push(s); };
+    const tn=TeamData.tonight(), feat=ws.find(w=>tn.feature.includes(w.id)), off=ds.find(x=>tn.off.includes(x.id));
+    if(feat) add(`What do I say about the ${this._nick(feat)}?`,feat.id);
+    if(off) add(`What's off tonight?`);
+    let sells=[]; try{ if(TeamSales.has()) sells=TeamReport.priority(28,4).map(x=>x.wine); }catch(e){}
+    const me=pid&&TeamLearn.person(pid), items=me?TeamLearn._mine(TeamLearn._all(),pid).items:{};
+    const unknown=sells.find(w=>!me||!TeamLearn.knowsWine(pid,me.role,w.id,items)); if(unknown) add(`How do I sell the ${this._nick(unknown)}?`,unknown.id);
+    const main=ds.find(x=>/main/i.test(x.section||''))||ds[Math.floor(ds.length/2)]||ds[0]; if(main) add(`What goes with the ${main.name.split(',')[0]}?`);
+    const glass=ws.filter(w=>TeamData.byGlass(w)).map(w=>this._price(w.glass)).filter(Boolean).sort((a,b)=>a-b);
+    if(glass.length) add(`By the glass under ${TeamData.money(Math.ceil(glass[Math.floor(glass.length/2)]))}?`);
+    const reds=ws.filter(w=>w.type==='red'&&this._price(w.bottle)); if(reds.length) add(`Reds under ${TeamData.money(Math.ceil(this._price(reds.sort((a,b)=>this._price(a.bottle)-this._price(b.bottle))[Math.floor(reds.length/2)].bottle)/10)*10)}?`);
+    add('What should I say about our house red?');
+    return out.slice(0,3);
+  },
+
   /* ── Ask Vinny ── */
   recent(){ return (Store.getJSON(this.KEY,{})||{}).recent||[]; },
   remember(q){ const d=Store.getJSON(this.KEY,{})||{}; d.recent=[q,...(d.recent||[]).filter(x=>x.toLowerCase()!==q.toLowerCase())].slice(0,5); Store.setJSON(this.KEY,d); },
@@ -115,7 +151,7 @@ const TeamVinny = {
   suggestions(){
     const ws=TeamData.wines(), ds=TeamData.dishes(), sym=TeamData.currency().sym||'£', out=[];
     const glass=ws.filter(w=>TeamData.byGlass(w)).map(w=>this._price(w.glass)).filter(Boolean).sort((a,b)=>a-b);
-    if(glass.length) out.push(`What's by the glass under ${sym}${Math.ceil(glass[Math.floor(glass.length/2)])}?`);
+    if(glass.length) out.push(`What's by the glass under ${TeamData.money(Math.ceil(glass[Math.floor(glass.length/2)]))}?`);
     const main=ds.find(x=>/main/i.test(x.section||''))||ds[0]; if(main) out.push(`What goes with the ${main.name.split(',')[0].toLowerCase()}?`);
     const sp=ws.find(w=>w.type==='sparkling'); if(sp) out.push(`How do I serve the ${TeamData.short(sp)}?`);
     const reds=ws.filter(w=>w.type==='red'&&w.vintage); if(reds.length) out.push('Which of our reds are ready to drink?');
@@ -129,8 +165,11 @@ const TeamVinny = {
     const sym=TeamData.currency().sym||'£', ws=TeamData.wines().slice(0,this.LIST_MAX), ds=TeamData.dishes();
     const wl=ws.map((w,i)=>{ const win=TeamData.window(w); return `W${i+1} ${TeamData.short(w)} ${w.vintage||'NV'} · ${w.type}${w.section?` · ${w.section}`:''} · ${[w.region,w.country].filter(Boolean).join(', ')}${(w.grapes||[]).length?` · ${w.grapes.join(', ')}`:''}${w.glass?` · glass ${w.glass}`:''}${w.bottle?` · bottle ${w.bottle}`:''}${win?` · ${win.word} (${win.line})`:''}`; });
     const tag=id=>{ const i=ws.findIndex(w=>w.id===id); return i>=0?`W${i+1}`:''; };
-    const dl=ds.map((x,i)=>{ const p=TeamData.pairing(x.id), nm=id=>{ const w=TeamData.wine(id); return w?`${TeamData.short(w)} (${tag(id)})`:''; };
-      return `D${i+1} ${x.name}${x.section?` · ${x.section}`:''}${x.price?` · ${x.price}`:''}${x.desc?` · ${x.desc}`:''}${p&&p.best&&p.best.length?` · best with ${p.best.map(b=>nm(b.id)).filter(Boolean).join('; ')}`:''}${p&&p.glass?` · by the glass ${nm(p.glass.id)}`:''}${p&&p.avoid?` · steer away from ${nm(p.avoid.id)}`:''}`; });
+    // A dish's pairing names one by-the-glass pick, which Vinny once read as the only glass that goes
+    // ("nothing else comes by the glass", with another glass among the best). So each wine in "best
+    // with" says whether it's poured by the glass, and the pick is labelled the first choice.
+    const dl=ds.map((x,i)=>{ const p=TeamData.pairing(x.id), nm=(id,mark)=>{ const w=TeamData.wine(id); return w?`${TeamData.short(w)} (${tag(id)})${mark&&TeamData.byGlass(w)?' also by the glass':''}`:''; };
+      return `D${i+1} ${x.name}${x.section?` · ${x.section}`:''}${x.price?` · ${x.price}`:''}${x.desc?` · ${x.desc}`:''}${p&&p.best&&p.best.length?` · best with ${p.best.map(b=>nm(b.id,true)).filter(Boolean).join('; ')}`:''}${p&&p.glass?` · first pick by the glass ${nm(p.glass.id)}`:''}${p&&p.avoid?` · steer away from ${nm(p.avoid.id)}`:''}`; });
     return {ws,ds,text:`WINE LIST (${sym}):\n${wl.join('\n')}\n\nMENU:\n${dl.join('\n')}`,sym};
   },
   // The wines a question is about: named in it, or paired with a dish named in it.
@@ -159,7 +198,8 @@ const TeamVinny = {
     const text=await window.claude.complete({purpose:'team_vinny',messages:[{role:'user',content:this.prompt(question,turns)}]});
     const {ws,ds}=this._lines(); let j=null; try{ j=TeamData._json(text); }catch(e){}
     const ids=(tags,arr,p)=>[...new Set((tags||[]).map(t=>{ const m=String(t).match(new RegExp('^'+p+'(\\d+)$','i')); return m&&arr[+m[1]-1]?arr[+m[1]-1].id:null; }).filter(Boolean))];
-    const answer=this.clean((j&&j.answer)||text);
+    // An answer cut off before its JSON closed still shows its words, never the raw {"answer": … (TeamVinny.loose).
+    const answer=this.clean((j&&j.answer)||this.loose(text,'answer')||text);
     this.remember(question);
     return {answer,wines:ids(j&&j.wines,ws,'W'),dishes:ids(j&&j.dishes,ds,'D')};
   },
@@ -169,6 +209,16 @@ const TeamVinny = {
   /* A table aimed at this person (tableWhy says why it was picked). Every dish they serve, with every
      request it allows, is a possible table; each is scored on what this person needs (pickTable), and one of
      the best few is taken, so it stays varied. {dish, wish, guest, key, wines:[id], why:[…], help}. */
+  /* A field's text from JSON that was cut off before it closed: {"answer": "Our list… → Our list… */
+  loose(text,field){ const m=new RegExp('"'+field+'"\\s*:\\s*"((?:[^"\\\\]|\\\\.)*)').exec(String(text||'')); if(!m) return '';
+    try{ return JSON.parse('"'+m[1].replace(/\\$/,'')+'"'); }catch(e){ return m[1]; } },
+  /* The listening check in the app: every wine, cocktail and dish as a guest would say it, numbered in the order
+     scripts/tts-check.mjs uses (wines, cocktails, dishes), so a number heard here is the number to fix. */
+  sayLines(){ let n=0; const out=[];
+    TeamData.wines().forEach(w=>{ const nm=TeamData.short(w); out.push({n:++n,kind:'Wines',name:nm,line:`Could we get a bottle of the ${nm}, please?`,hint:(TeamData.card(w.id)||{}).say||''}); });
+    TeamData.cocktails().forEach(c=>out.push({n:++n,kind:'Cocktails',name:c.name,line:`I'll start with a ${c.name}.`,hint:''}));
+    TeamData.dishes().forEach(d=>out.push({n:++n,kind:'Dishes',name:d.name,line:`I'm having the ${d.name}.`,hint:''}));
+    return out; },
   scenario(pid,seed=Date.now()){
     const c=this._ctx(pid); if(!c) return null;
     const pool=c.dishes.map(x=>({x,p:TeamData.pairing(x.id)})).filter(d=>d.p&&d.p.best&&d.p.best.length);
@@ -237,7 +287,7 @@ const TeamVinny = {
     const avoid=p.avoid&&TeamData.wine(p.avoid.id), glass=p.glass&&TeamData.wine(p.glass.id);
     let guest, key, wines;
     if(wish==='budget'){ const ok=best.filter(b=>b.w.bottle).sort((a,b)=>cost(a.w)-cost(b.w)); const cap=ok.length?Math.ceil((cost(ok[0].w)+5)/5)*5:null;
-      guest=`A table of two, ordering the ${x.name}; they want a bottle${cap?` and don't want to spend more than about ${sym}${cap}`:''}.`;
+      guest=`A table of two, ordering the ${x.name}; they want a bottle${cap?` and don't want to spend more than about ${TeamData.money(cap)}`:''}.`;
       const fit=ok.filter(b=>!cap||cost(b.w)<=cap); wines=fit.map(b=>b.w.id);
       key=[`Recommend ${fit.map(b=>`${TeamData.short(b.w)} (bottle ${b.w.bottle})`).join(' or ')}`,`Say why it suits the dish: ${fit[0].why}`,'Stay within their budget']; }
     else if(wish==='light'){ const lt=[...best].sort((a,b)=>((TeamData.card(a.id)||{}).style||{}).body-((TeamData.card(b.id)||{}).style||{}).body)[0];
@@ -327,14 +377,29 @@ const TeamVinny = {
     const wines=okWine?[{id:okWine.id,ok:true,note:''},...decoys.slice(0,2)]:[];
     // Three orders, so the right one isn't always in the same place.
     const order=[[0,1,2],[1,0,2],[2,0,1],[1,2,0]][Math.abs(seed)%4].filter(i=>i<wines.length);
-    const pickedWines=order.map(i=>wines[i]);
-    // Reasons: the pairing's own reason for the right wine, and two from other dishes' pairings.
+    // Step one asks what the guest's request asks. A guest who has named a wine that doesn't suit gets
+    // "They want the Hito: what do you suggest?", with the wine they named as one answer ("Go with it, as they asked")
+    // and the others offered in its place; never "Which wine?" as if they hadn't asked for one.
+    const named=sc.wish==='avoid'&&avoid?TeamData.short(avoid):'';
+    const pickedWines=order.map(i=>wines[i]).map(o=>named?{...o,label:o.id===avoid.id?`Go with the ${named}, as they asked`:`Suggest the ${short(o.id)} instead`}:o);
+    const ask=named?`They want the ${named}. What do you suggest?`:({budget:'Which bottle fits their budget?',light:'Which lighter wine?',bottle:'Which bottle for the table?',glass:'Which wine by the glass?'}[sc.wish]||'Which wine?');
+    const askWhy=named?`Why is it better with the ${x.name}?`:`Why does it suit the ${x.name}?`;
+    // Reasons, all about the wine they picked: the pairing's own reason for it, and two that sound right but its own
+    // card rules out at this dish (TeamLearn.styleWrong: light where it's full, no tannin where it's firm), so the
+    // second step is about the first answer, never another wine's reason from another dish.
     const whyRight=(()=>{ if(!okWine) return ''; if(sc.wish==='glass'&&p.glass) return p.glass.why; const b=best.find(b=>b.id===okWine.id); return b?b.why:''; })();
     // Wrong reasons from the same course first (a main against other mains), so they can't be ruled out at a glance.
     const whysOf=ds=>ds.flatMap(d=>{ const q=TeamData.pairing(d.id); return q?[...(q.best||[]),q.glass].filter(Boolean).map(b=>b.why):[]; }).filter(w=>w&&w!==whyRight);
     const others2=TeamData.dishes().filter(d=>d.id!==x.id), same=others2.filter(d=>d.section&&d.section===x.section);
     const otherWhys=[...new Set([...rot(whysOf(same),seed>>1),...rot(whysOf(others2.filter(d=>!same.includes(d))),seed>>1)])].slice(0,2);
-    const reasons=whyRight?[{text:whyRight,ok:true},...otherWhys.map(t=>({text:t,ok:false}))]:[];
+    const card=okWine&&TeamData.card(okWine.id), st=(card&&card.style)||{};
+    const sentence=t=>{ const s=String(t||'').trim(); return s?s.charAt(0).toUpperCase()+s.slice(1)+(/[.!?]$/.test(s)?'':'.'):''; };
+    const notTrue=card&&card.taste?`Not the ${short(okWine.id)}: its card says "${card.taste.replace(/\.$/,'')}".`:`That isn't how the ${short(okWine.id)} tastes: check its card.`;
+    // Then the reasons its card's own table questions were written to be wrong with (`wrong`), still about this wine.
+    const authored=card?(card.qs||[]).filter(q=>q.k==='apply').flatMap(q=>q.wrong||[]):[];
+    const ownWrong=okWine?[...new Set([...TeamLearn.styleWrong(st,TeamLearn.kindOf(okWine),x.name,seed),...rot(authored,seed>>2)].map(sentence))].filter(t=>t&&t!==whyRight):[];
+    const wrongs=[...ownWrong.map(t=>({text:t,ok:false,note:notTrue})),...otherWhys.map(t=>({text:t,ok:false,note:'That reason is about another wine and dish on the menu.'}))].slice(0,2);
+    const reasons=whyRight?[{text:whyRight,ok:true},...wrongs]:[];
     const rOrder=[[1,0,2],[0,2,1],[2,1,0]][Math.abs(seed>>1)%3].filter(i=>i<reasons.length);
     const wishLine={budget:`They want a bottle and have a budget: keep under it.`,light:'They want something lighter: think body, not colour.',bottle:'One bottle for the whole table: pick the one that works with most of it, and say it with confidence.',avoid:`They've named a wine that doesn't suit the ${x.name}: steer them, kindly, and offer something better.`,glass:'Just a glass: look at what\'s poured by the glass.'}[sc.wish];
     const look=rot(pickedWines.map(w=>short(w.id)),0).filter(Boolean);
@@ -342,23 +407,38 @@ const TeamVinny = {
     const say=(id,reason)=>{ const w=TeamData.wine(id); if(!w) return ''; const pr=priceOf(w);
       const steer=sc.wish==='avoid'&&avoid?`I'd steer you away from the ${TeamData.short(avoid)} with this. `:'';
       return `${steer}I'd go for the ${TeamData.short(w)}${pr?` at ${pr}`:''}.${reason?` ${reason}`:''}`; };
-    return {wines:pickedWines,reasons:rOrder.map(i=>reasons[i]),hints,say};
+    return {wines:pickedWines,reasons:rOrder.map(i=>reasons[i]),hints,say,ask,askWhy};
   },
   /* One turn: the guest's next line, and once the table's served, the mark. turns: [{who:'guest'|'you', text}].
      {line, done, mark:{score, verdict, good, missing, better}|null} */
-  async guest(sc,turns){
+  /* Help on a follow-up line, written with it (the opening line's help is built from the pairing, _GuestChoices):
+     choices, three replies the server could give, one right and two believable but weaker, each with why; hints,
+     one nudge toward a good reply. Never for the opening line or a closing one. */
+  _HELP:{
+    choices:'The server is learning with choices. With every line except your opening and closing ones, also write three short replies the server could give to it, in the server\'s voice: exactly one is a good answer (it uses a wine from the list with its real price where it matters, and answers what you just asked, from the staff cards), and two are believable but weaker (the wrong wine for what you asked, a price or fact that isn\'t right, or one that doesn\'t answer the question). Give each one line on why it works or doesn\'t, as a trainer would say it.',
+    hints:'The server is learning with hints. With every line except your opening and closing ones, also write one short hint that points them toward a good reply to it (what to mention, from the staff cards and the list), without writing the reply for them.',
+  },
+  _HELPFIELDS:{ choices:', "replies": [{"text": "a reply", "ok": true, "why": "why it works"}, {"text": "…", "ok": false, "why": "why it falls short"}, {"text": "…", "ok": false, "why": "…"}]', hints:', "hint": "the hint"' },
+  async guest(sc,turns,level){
     const tpl=_loadTextSync('prompts/team-guest.txt'), {text}=this._lines();
     const yours=turns.filter(t=>t.who==='you').length, last=yours>=this.GUEST_TURNS;
     const script=turns.map(t=>`${t.who==='guest'?'GUEST':'SERVER'}: ${t.text}`).join('\n');
     const content=tpl.replace('{{venue}}',TeamData.get().venue.name||'the restaurant').replace('{{about}}',TeamData.about()).replace('{{list}}',text)
       .replace('{{cards}}',sc.wines.map(id=>TeamData.wine(id)).filter(Boolean).map(w=>this._cardText(w)).join('\n\n')||'(none)')
       .replace('{{scenario}}',sc.guest).replace('{{key}}',sc.key.map(k=>`- ${k}`).join('\n'))
-      .replace('{{transcript}}',script||'(the guest hasn\'t spoken yet)').replace('{{last}}',last?'This was the server\'s last reply: end the table now and mark it.':'');
+      .replace('{{transcript}}',script||'(the guest hasn\'t spoken yet)').replace('{{last}}',last?'This was the server\'s last reply: end the table now and mark it.':'')
+      .replace('{{help}}',yours&&!last&&this._HELP[level]?this._HELP[level]:'').replace('{{helpfields}}',yours&&!last&&this._HELPFIELDS[level]?this._HELPFIELDS[level]:'');
     const raw=await window.claude.complete({purpose:'team_guest',messages:[{role:'user',content}]});
     let j=null; try{ j=TeamData._json(raw); }catch(e){}
     if(!j) return {line:String(raw||'').trim(),done:last,mark:null};
     const m=j.mark&&typeof j.mark==='object'?{score:Math.max(0,Math.min(1,Number(j.mark.score)||0)),verdict:j.mark.verdict||'',good:j.mark.good||'',missing:j.mark.missing||'',better:j.mark.better||''}:null;
-    return {line:String(j.guest||'').trim(),done:!!(j.done||last||m),mark:m};
+    const done=!!(j.done||last||m);
+    // A follow-up's help, kept only when it's whole: three replies with exactly one right, shuffled; or a hint.
+    let replies=null, hint=null;
+    if(!done&&Array.isArray(j.replies)){ const rs=j.replies.filter(r=>r&&String(r.text||'').trim()).map(r=>({text:String(r.text).trim(),ok:!!r.ok,why:String(r.why||'').trim()}));
+      if(rs.length>=2&&rs.filter(r=>r.ok).length===1) replies=TeamLearn._shuffle(rs,sc.seed+':'+turns.length); }
+    if(!done&&j.hint) hint=String(j.hint).trim()||null;
+    return {line:String(j.guest||'').trim(),done,mark:m,replies,hint};
   },
 };
 Object.assign(window,{TeamVinny});

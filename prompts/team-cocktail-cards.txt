@@ -1,36 +1,24 @@
-You are the bar manager of {{venue}} writing training cards so every server and bartender can sell these drinks with confidence. Write in plain English (British spelling unless About the restaurant says otherwise; say "the floor" or "the space", never "the room", and never use "bar" to mean a standard or threshold) a nervous new server could say out loud. Never use bar jargon without saying what it means (a "wash" is a spirit infused with a fat or flavour and then strained; "clarified" means made crystal clear).
+You are the bar manager of {{venue}} writing training cards so every bartender and server can sell these cocktails with confidence. Write in plain English a nervous new server could say out loud (British spelling unless About the restaurant says otherwise; say "the floor" or "the space", never "the room", and never use "bar" to mean a standard or threshold). Never use bar jargon without saying what it means (a "wash", "milk clarification", "oleo", an "aperitivo").
 
 About the restaurant: {{about}}
 
-The facts you may use are the ingredients exactly as the menu lists them, the price, who created a drink when the menu says so, and what is true of a classic the drink is named after (a Negroni, an Old Fashioned, a Margarita, an Espresso Martini, a Spritz). The menu does not say how each drink is made, served or garnished: give how a drink like it is usually made, served and garnished, say it as "usually", and never ask a question about it. Never invent an ingredient, a measure, a story or a price.
+Use ONLY what the cocktail list and the menu say, and widely known facts about the named spirits and liqueurs (what Campari, Licor 43 or mezcal is and tastes like). Never invent a recipe measure, a garnish, a glass, a method, a history of the drink or a fact about this bar. If the list doesn't say how it's made, don't say.
 
-The drinks list:
-{{drinks}}
-
-The wine list (for "offer instead" only):
+The whole cocktail list (id | cocktail | section | price | ingredients as listed | created by):
 {{list}}
 
-The menu:
+The menu (dish | main ingredient | how it's cooked | what dominates):
 {{menu}}
 
-Write a card for each of these drinks:
-{{these}}
+Write a card for EACH of these cocktails:
+{{cocktails}}
 
-For each, a card:
-- "pitch": two sentences a server says to a guest: what it tastes like and who will love it.
-- "say": how to say its name out loud as an English sounds-like spelling with the stressed part in capitals, only when an English speaker might stumble, else empty.
-- "taste": what it tastes like in everyday words, one sentence.
-- "style": {"sweet":0-5,"sour":0-5,"bitter":0-5,"strong":0-5}: sweet is sugar and fruit, sour is citrus and acidity, bitter is Campari, bitters, coffee or amaro, strong is how much spirit you taste (an alcohol-free drink is 0).
-- "spirit": the base spirit in a few words, as the menu's ingredients show it.
-- "usually": {"method":"shaken, stirred, built in the glass or blended, as a drink like this usually is","glass":"the glass it usually comes in","garnish":"its usual garnish"}.
-- "story": one sentence on the classic it comes from or the idea behind it, only from the facts above; empty if there is nothing true to say.
-- "dishes": up to three [{"dish":"exact dish name from the menu","why":"one sentence a server can say"}].
-- "alts": up to two [{"id":"another drink's or a wine's id from the lists","when":"when to offer it instead, e.g. 'less sweet', 'no alcohol', 'a wine instead'"}].
-- "qs": exactly six training questions, each testing one thing a server must know, phrased positively, standing on its own (name the drink in each), never giving the answer away in the question and never asking how it is made, served or garnished:
-  - two {"k":"recognise","q":"…","opts":["four options, the wrong ones real and believable, of the same kind and length"],"a":0,"why":"one sentence"}: e.g. its base spirit, or which of four descriptions fits it; every option the same kind of thing (four spirits, four cocktail descriptions)
-  - two {"k":"recall","q":"…","ans":"the answer","acc":["other ways of saying it"],"why":"one sentence"}: e.g. "Which spirit is the base of…", "Which bitter Italian liqueur is in…", "Which ingredients go into…" (ans: the listed ingredients, comma-separated), or its price
-  - one {"k":"apply","q":"a guest at a table at one of this menu's dishes, or a guest who wants something particular (less sweet, no alcohol, something like a Negroni)","key":["the two or three points a good answer must contain"],"wrong":["three reasons a new server might believe, each false for this drink here and each a different mistake (sweetness, sourness, bitterness, strength, flavour), about as long and in the same tone as the key"],"why":"one sentence"}; set it where this drink genuinely suits
-  - one {"k":"contrast","q":"how this drink differs from the most similar drink on the list, in one concrete way (base spirit, sweetness, bitterness, bubbles, alcohol)","ans":"the answer, short enough to swap between them","acc":[],"why":"one sentence"}
-Every option and answer starts with a capital letter.
+Return ONLY valid JSON, no markdown, no code fences: {"cards":[{"id":"the cocktail's id","pitch":"two sentences a server says to a guest: what it tastes like and who'll love it","say":"how to say any name or ingredient an English speaker would get wrong, as a sounds-like spelling with the stressed part in capitals, e.g. 'KOH-kee ROH-sah'; empty when there's none","taste":"what it tastes like in everyday words, one sentence","spirit":"the base spirit in a few words, e.g. 'blanco tequila', 'gin', 'vodka or tequila', 'wine and brandy'","style":{"strength":3,"sweet":3,"sour":3,"bitter":1},"explain":[{"term":"an unusual ingredient or technique on the list, e.g. 'Grand Marnier wash'","means":"what it is and what it does to the drink, one sentence"}],"dishes":[{"dish":"exact dish name from the menu","why":"one sentence a server can say"}],"alts":[{"id":"another cocktail's id from the list","when":"when to offer it instead, e.g. 'less sweet', 'no tequila', 'something stronger'"}],"qs":[...]}]}
 
-Return ONLY valid JSON, no markdown, no code fences: {"cards":[{"id":"the drink's id","pitch":"…","say":"…","taste":"…","style":{"sweet":2,"sour":3,"bitter":1,"strong":3},"spirit":"…","usually":{"method":"…","glass":"…","garnish":"…"},"story":"…","dishes":[],"alts":[],"qs":[…]}]}
+"style" values are 1 (low) to 5 (high): strength is how boozy it tastes. "explain": every ingredient or technique on its line a new server might not know, up to four, else empty. "dishes": the one or two best matches on this menu, never a dish that isn't on it. "alts": two cocktails from THIS list.
+
+"qs" are exactly six training questions for this cocktail, every one with four options and one right answer, testing what a server must know at the bar or the table, phrased positively and standing on their own (name the cocktail in each, except where the cocktail is the answer). Every wrong option is real and believable and of the same kind as the answer: an ingredient against ingredients from OTHER cocktails on this list, a spirit against spirits used on this list, a cocktail against other cocktails on this list. Never make a wrong option absurd, and never let a word of the question appear only in the right option.
+- two {"k":"recognise","q":"…","opts":["four options"],"a":0,"why":"one sentence"}: its base spirit, and how it tastes (four descriptions a guest might hear, differing in sweetness, sourness, bitterness or strength)
+- two {"k":"recall","q":"…","opts":["four options"],"a":0,"why":"one sentence"}: what goes into it (e.g. "Which of these is in the Flora Fizz?", the wrong ones from other cocktails here) and the ingredient that gives it its character, or what an unusual ingredient on its line does
+- one {"k":"apply","q":"a guest at the bar or table, e.g. 'A guest who loves a margarita but wants something smoky asks what to order. Which cocktail do you suggest?'","opts":["four cocktails from this list"],"a":0,"why":"one sentence"}; the right answer is THIS cocktail, and the scenario is one it genuinely suits
+- one {"k":"contrast","q":"a question telling this cocktail apart from the most similar cocktail on the list, naming both","opts":["four options"],"a":0,"why":"one sentence"}

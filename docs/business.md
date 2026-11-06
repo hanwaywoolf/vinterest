@@ -48,6 +48,46 @@ wine as `peak`), and `TeamData.window` says where a wine is today: Still young, 
 Past its best, on the Wines tab and the card. A dated wine without one gets the consumer app's estimate, said
 to be one.
 
+## The Social Corner install
+
+`/team/?seed=social` opens The Social Corner (Vancouver, Italian and Spanish; Per Se Hospitality Group), the
+first install for a real restaurant, built from its website (`intake/perse/`: the site's copy, every menu
+transcribed with its prices, its logos and photos). `data/team-social-list.json` holds its 41 wines (the
+drinks page's sparkling, rosé, white and red, 5oz price as the glass, 8oz under "other", plus the Moscatel on
+the dessert menu) and 62 dishes (tapas, pasta, greens and soup, pizza, entrées, caviar, brunch and dessert;
+sides and add-ons are left out, the Lobster & Crab Ravioli is one dish at both its prices, and the entrée lamb
+is "Lamb Rack, Saffron Risotto" so it isn't the tapas chops). The venue carries its city, its currency (`$`,
+CAD, so `TeamData.currency()` reads the venue's before the device's) and its branding: `venue.brand` {logo,
+logoDark, mark, accent}, the white "per se SOCIAL CORNER" wordmark in place of the restaurant's name in the
+header and the console, the circle emblem in place of the Vinterest logo, and the gold accent (#A88963) in the
+header's glow (`TeamVenueLogo`, files in `team/brand/social-corner/`). Primary buttons stay crimson. For the
+demo it carries a team (`staff` in the list file): the Larkspur's people and photos in Social Corner roles, Elena
+Ruiz the manager it opens as, Claire Whitfield sommelier, Marco Delgado bartender, and Dani Haddad, Priya Nair,
+Amara Okafor and David Chen serving. `TeamDemo.seedProgress` gives them the Larkspur's stories (Claire ready, wines
+and cocktails; Marco slipping, most of the cocktails; Dani part way; Priya overdue; Amara in her first week; David
+steady on the glass list) and `TeamSales.seedDemo` eight weeks of invented till sales, labelled Demo data: open
+every day, busier than the Larkspur, 5oz and 8oz pours at the list's own dollar prices, and the happy-hour white
+(The Hatch B. Yanco, $42) as the till item the list doesn't carry. Without that `staff` an install opens on
+`TeamSetup`'s installed form, where whoever opens it becomes the manager. Its training (`data/team-social.json`: every card, pairing and drinking window)
+was written once through the branch preview's Worker on Claude Opus 5.5 (`TEAM_MODEL`), then exported; until
+that file holds it, the list and menu load alone and Upload's "Write them now" writes it.
+
+**Cocktails.** A restaurant can have a cocktail list beside its wines: The Social Corner's 20 from its drinks page
+(Signatures, Inspired Cocktails, Spritzes, Margaritas, Sangria; the three sangrias named "Sangria Blanca" and so on),
+ingredients exactly as listed, the bartender credited where the list credits one. Each gets a card
+(`TeamData.writeCocktailCards`, `prompts/team-cocktail-cards.txt`, purpose `team_cocktails`, four a call with the
+whole cocktail list and the menu): what to say, the base spirit, every unusual ingredient or technique explained
+(a "wash", "milk clarification", Licor 43), strength, sweetness, sourness and bitterness, one or two dishes and two
+cocktails to offer instead. It never invents a measure, garnish, glass or method the list doesn't give. Its six
+questions are all four options with one right (`q.mc`), the wrong ones drawn from the bar's own other cocktails (an
+ingredient against ingredients, a spirit against spirits), so they're asked as written rather than through the
+wine pills; `TeamLearn.givesAway` still drops any whose name gives the answer (the Brasa-Roja **Mezcal**). Cocktails
+are their own part of readiness (`PART_LABEL.cocktails`: bartender 90% on all four rungs, `cocktailKinds`; server,
+manager and sommelier 50%; buyer none), assigned, drilled and recorded like wines (`TeamLearn.qsOf`, `kindsFor`,
+keys `c:`), listed in their own section: on the phone a Wines | Cocktails switch at the top of the list tab (`_TListSwitch`, `TeamCocktailList`, `TeamCocktail`), in the console a Cocktails section beside Wines with price, base spirit, who knows each and its card (`_CCocktails` over `TeamReport.cocktailCoverage`), both only where there are cocktails and shown on every dish their cards name
+("Cocktails with it", `TeamData.cocktailsFor`). A restaurant with no cocktails has no cocktail part anywhere.
+Vinny's test stays on the wine list and menu.
+
 ## How staff learn
 
 Built for retention rather than points. No XP or streaks: the motivation is being able to sell the
@@ -105,6 +145,56 @@ The rules every question is held to, and checked against in code and in `tests/t
 
 Every table question is now written as a real choice. The card prompt (and the publish check's rewrite, reason `nochoice`) sets the guest at a dish the wine is a pick for, with a request that rules out other wines of the same kind on the list ("a red that isn't too heavy", "something crisp", "under $60 a bottle", by the glass), never names the wine, and names three wrong wines (`decoys`) with why. The drill checks each one (`tableWrong`: of the kind asked for and sold as asked, none of the dish's picks, and either clearly wrong for the dish or failing the request, read by `wishStyle` against the card's figures and the list's prices, while the right wine meets it), adds any other wine on the list that qualifies, and leaves out any that don't. The writer's own wrong wines are trusted for reasons the request reader can't see ("that's the everyday bottle, they want a special one") only within hard limits: on the list, of the kind asked for and sold as asked, none of the dish's picks, and clearly apart from the right wine in style or price. The restaurants already in the repo were rewritten once by `scripts/team-tables.mjs`, keeping every question's id: 23 of the Larkspur's 30 table questions and 54 of Social Corner's 63 now ask for the choice; the rest name the wine and ask why, and the publish check (`nochoice`) sends questions like them back when a list is next published.
 
+## V2: what the audit changed (built, November 2026)
+
+The V2 audit (docs/audit/teams-v2-audit.html) found the learning model sound and the front of it hard to
+use: 13px text on a dark stage, a Vinny tab with two text fields and three jobs, a new server shown four
+zeros and "Not ready yet" on day one, 123 "overdue" on day eight, a recall question with eight pills and a
+confidence tap on every question, nothing about what learning is worth, and no menu module beyond pairings.
+Wave 1 and 2 of its roadmap are built, on The Social Corner and the demo alike.
+
+- **Type.** Nothing visible under 12px on the staff phone, body 14 to 16, list rows a 16px name over
+  the one fact a server needs (the price, in white), the vintage and region on the card.
+- **The Vinny tab is a practice hub.** One card with the thing to do now (`TeamVinny.next`: today's
+  drill until it's done, then a guest table aimed at what they're weakest on, then the test), a line on
+  what knowing the list is worth here (`TeamReport.worth`: from the till's known-against-unknown gap on
+  the top sellers, as a tip range per shift with its caveat; the research figure, said as research,
+  until there are 28 nights), then three doors, each its own screen: Ask Vinny (three short suggestions,
+  `TeamVinny.suggest`, tonight's feature and 86'd first), a guest at the table, Vinny's test.
+- **The drill recipe.** One question per wine, dish or cocktail; due first, least remembered first; at
+  most `NEW_MAX` (2) new things once anything is due, in the till's order and one per list section; a
+  re-check never takes a wine's place. A recall question is the right answers plus at most `WRONG_MAX`
+  (4) wrong pills; a grape question offers only grapes. "How sure are you?" is asked on a price or an
+  allergen alone (`TeamLearn.asksConfidence`); elsewhere a right answer inside four seconds reads as
+  sure. The summary says what they now know in words (`knownLine`), when it comes back (`comesBack`)
+  and what the drilled wine sells here (`TeamReport.sellsLine`), the mechanism behind a tap.
+- **Waves, not a cliff.** Someone new learns in waves (`TeamLearn.WAVES`: the glass list in ten days,
+  then allergens in seven, then bottles, the menu, cocktails; a bartender starts on cocktails), each
+  with its own window. Today shows a person who hasn't drilled yet the plan (`TeamLearn.plan`), then
+  the wave they're on as one line; the console says Behind (people past their wave) in place of an
+  overdue count.
+- **Tonight.** What's 86'd and what's on feature, set for the day by whoever runs the floor (the
+  manager's Today or the console's Tonight card, which leads the dashboard; `TeamData.tonight`), on
+  everyone's Today with the two by-the-glass wines that person should look at before service
+  (`TeamLearn.slippingOn`), each with a line to say and Say it. Never scored.
+- **The menu.** Every dish gets front-of-house notes (`prompts/team-dish-cards.txt`, purpose
+  `team_dishes`, `TeamData.writeDishCards`, written at a menu publish or by `npm run team:dishes` for a
+  seed): the dish in a sentence, its allergens as a draft against the venue's statutory list
+  (`TeamData.ALLERGENS`: Canada's eleven, the UK's fourteen, the US's nine, by `venue.country` or the
+  currency), what can change (`mods`, each yes, no or ask) and what guests ask. The draft is never
+  shown as fact: the kitchen confirms each dish's allergens on the console's Menu tab
+  (`TeamData.confirmAllergens`), which assigns the dish's allergen question to everyone. A dish's ladder
+  is then know it (the dish's own sentence against three near-misses of the same dish that the notes
+  write, `wrong`: a borrowed sauce, the wrong cut or cooking, the wrong richness; never another dish's
+  description, which the question's own name gave away), allergens (a choose-all against the list with
+  confidence, a miss back within the shift), a change a guest asks for, and its pairings. Allergens are their own readiness part at 100%
+  for every role, the one hard gate; the Team tab's sign-off register (`TeamReport.allergenRegister`,
+  Export CSV) says who holds every confirmed dish and when it falls due.
+- **The wine card** leads with the price as a guest hears it, a hook (one telling detail, from the
+  card prompt, for cards written from now on), the pitch with a Say it that speaks it, the menu with
+  the reasons first and the dish to steer away from, the alternatives with their price, then where
+  they stand and the reference material.
+
 ## Vinny in the staff app (built)
 
 A Vinny tab (between Today and Wines) and a row on Today, all in `team-vinny.js` (logic) and `team-vinny.jsx` (screens):
@@ -127,7 +217,9 @@ A Vinny tab (between Today and Wines) and a row on Today, all in `team-vinny.js`
   dish named in it). It never invents a wine, dish or price; the answer names its wines and dishes by tag,
   shown as chips that open their cards. The last two turns go with a follow-up.
 - **A guest at your table** (`TeamVinny.scenario`, `TeamVinny.guest`, purpose `team_guest`,
-  `prompts/team-guest.txt`): Vinny plays a diner. The table is built here from the dish's pairing so there's
+  `prompts/team-guest.txt`): Vinny plays a diner, on a screen of its own over the app (no header or tabs:
+  a bar with the dish and Voice, the conversation scrolling, the mic and reply box pinned to the foot;
+  `team-app.jsx` mounts it as a layer, kept under a wine it opens). The table is built here from the dish's pairing so there's
   a right answer: a dish and a wish (a bottle under a budget, something lighter, one bottle for four, a glass
   at the bar, or the guest's own wrong idea to steer away from, with the wine offered for another dish
   instead). Tables are picked for the person, not dealt the same to everyone (`pickTable`): every dish they
@@ -143,7 +235,7 @@ A Vinny tab (between Today and Wines) and a row on Today, all in `team-vinny.js`
 
   Help at the table follows the person (`TeamVinny.level`, `noteTable`). **Choices**: three wines to pick
   from (the right one, the table's wrong idea or a near miss, and one that doesn't pair), each wrong pick
-  saying why, then three reasons (the pairing's own and two from dishes in the same course), built into a
+  saying why, the first step put as the guest's request puts it (a guest who named a wine that doesn't suit is "They want the Hito. What do you suggest?", with going along with them as one of the answers), then three reasons (the pairing's own for the wine picked and two claims its own card rules out at this dish, so the second step is about the first answer), built into a
   reply they can change before saying it. **Hints**: up to three, asked for one at a time: what the guest
   wants, the wines worth a look, the reason to give. **On your own**: nothing. A sommelier or buyer starts on
   their own; anyone else starts from readiness (choices under 40%, hints to 75%, then on their own). Two
@@ -169,12 +261,17 @@ The guest can be heard and answered out loud, so staff work on how they say it a
 - **The guest speaks.** Each guest line is said aloud, with a replay button beside it. With a voice key on the
   server, a cloud voice reads it (the Worker's `POST /tts`: ElevenLabs when `ELEVENLABS_API_KEY` is set, else
   OpenAI's speech model with `OPENAI_API_KEY`; four diners' voices so tables don't all sound alike;
-  `ELEVENLABS_VOICES` takes a comma-separated list of voice ids to use instead; clips cached by their words,
+  `ELEVENLABS_VOICES` takes a comma-separated list of voice ids to use instead; `ELEVENLABS_MODEL` picks the model (default `eleven_v4`, which says French, Italian and Spanish names inside an English sentence far better than flash or multilingual v2); names it still gets wrong go in `data/tts-say.json` as the name and a spelling it reads right, found with the listening check, `npm run tts:check`, which has the deployed voice say every name on the list into one page; clips cached by their words,
   nothing stored). Without a key `/tts` answers 404 and the phone's own voice reads it. Setting one up: add
   the key as a Cloudflare secret on the vinterest Pages project and redeploy; `/config` then says `tts: true`.
 - **The server answers.** "Tap and speak to the guest" turns what they say into words in the reply box, to
-  check (a misheard name can be fixed) and send with Say. On the web the browser does it (Chrome uses
-  Google's service, Safari Apple's), and the screen says so the first time. Only the words are kept.
+  check (a misheard name can be fixed) and send with Say. With `ELEVENLABS_API_KEY` set, the reply is recorded
+  and written down by ElevenLabs' speech-to-text (Scribe) through the Worker's `POST /stt`: better with wine names
+  than a phone's recognition, the same on every phone, and with a time for every word for the coaching. The
+  words land a second or two after they tap to finish ("Writing down what you said…"); the recording is passed
+  straight through and never kept, and the screen says so the first time. Without the key, or if the service
+  fails (said on the screen), the browser does it instead (Chrome uses Google's service, Safari Apple's), and
+  only the words are kept.
 - **Delivery.** Each spoken reply is coached from its words and timings, with no Claude call
   (`TeamVoice.delivery`): pace in words a minute (`PACE`), how long before they started after the guest
   finished asking (`WAIT_SLOW_MS`), fillers and hedges ("um", "sort of", "I think", "maybe"), length, and
@@ -185,7 +282,8 @@ The guest can be heard and answered out loud, so staff work on how they say it a
   mark or the help level, and the console doesn't show it.
 - **Saying the names.** Every card carries `say`, a sounds-like spelling of the producer and wine
   ("doh-MEN la-ROSH, sha-BLEE"), written with the card (`prompts/team-cards.txt`) and, for the demo, by hand.
-  The wine card's "Say it" speaks it; a plain voice reading the spelling gets the name right.
+  It shows on the wine card's "Say it" as a guide; the button speaks the name itself, which the cloud voice says
+  better than it reads a respelling.
 - **In the phone apps.** Their web views have no speech recognition, so `TeamVoice` uses the Capacitor
   plugins when they're there (`window.VinterestNative.SpeechRecognition`, `.TextToSpeech`:
   `@capacitor-community/speech-recognition` and `@capacitor-community/text-to-speech`) and the browser's
@@ -202,17 +300,22 @@ the Worker's per-IP limit. They go into `PRO_ONLY` (with `TEAM_PRO`) once restau
 and the Upload tab's sign-in card comes back with them. Roughly, on Sonnet 4.6: a staff card with its questions is 3 cents, a
 250-wine list from scratch about $8, a menu's pairings $1.40, a marked answer under a cent.
 
+The team purposes can run on their own model: `TEAM_MODEL` on Cloudflare (e.g. `claude-opus-5-5`) moves
+only `team_*` calls, so the consumer app stays on `CLAUDE_MODEL`. Opus 5.5 is $4/$20 per million tokens
+against Sonnet 5.5's $2/$10 and always thinks, so a list's training costs roughly two to three times as
+much; it's written once at publish, so for a 40-wine list that's a few dollars.
+
 ## The management console (built)
 
 The phone is for the person learning. A manager wants the whole floor at once, so the same `/team/`
 app lays itself out as a console on a tablet or a laptop browser from 768px (`useLayoutSize`, the
-consumer app's iPad rule): a manager or buyer gets it, staff keep the phone app whatever the screen,
+consumer app's iPad rule): a manager, buyer or sommelier (whoever runs the wine programme) gets it, staff keep the phone app whatever the screen,
 and `?view=console` forces it on a narrow window so it can be checked on a phone. One build, one store:
 every figure on it is a function in `TeamReport` (`team-report.js`) over `TeamLearn`, `TeamData` and
 `TeamSales`; the screens (`team-console.jsx`) compute nothing. Every number opens the people or wines
 behind it in a drawer (a wine's card, a dish's pairings, a person's ladder). "Train on the phone view"
 in the sidebar shows the phone app inside the console (for a drill as someone), and Console brings it
-back. The phone's Today, for a manager or buyer, carries a strip of the figures that matter on the move
+back. The phone's Today, for a manager, buyer or sommelier, carries a strip of the figures that matter on the move
 (`TeamKpiStrip`: team readiness, overdue, slipping, new on the list, this week's wine sales), each
 tapping through to Team.
 

@@ -22,12 +22,133 @@ async function openSample(context, page, opts = {}) {
   return errors;
 }
 
-test('the setup screen offers The Larkspur only, a device left on The Copper Pan goes back to it, and Change restaurant returns there', async ({ context, page }) => {
+// The Social Corner (Vancouver), installed from its website (intake/perse/): /team/?seed=social opens its own
+// list and menu with its logo and Canadian dollars, and no invented staff: whoever opens it becomes its manager.
+test('The Social Corner opens from ?seed=social on its own team, logo, dollars and invented sales', async ({ context, page }) => {
+  const errors = [];
+  page.on('pageerror', (e) => errors.push(e.message));
+  await stubNetwork(context);
+  await page.goto(`${BASE}/team/?seed=social`);
+  await expect(page.getByTestId('team-venue-logo')).toHaveAttribute('src', 'brand/social-corner/wordmark-white.png');
+  const logo = await page.request.get(`${BASE}/team/brand/social-corner/wordmark-white.png`);
+  expect(logo.status()).toBe(200);
+  const st = await page.evaluate(() => {
+    const ppl = TeamLearn.people(), state = (n) => TeamLearn.readiness(ppl.find((p) => p.name.startsWith(n)).id).state;
+    const rows = TeamSales.get().rows;
+    return { me: TeamLearn.me().name, people: ppl.map((p) => [p.name, p.role]), sym: TeamData.currency().sym, venue: TeamData.get().venue,
+      claire: state('Claire'), marco: state('Marco'), demo: TeamSales.demo(), rows: rows.length,
+      sellers: [...new Set(rows.map((r) => r.v).filter(Boolean))].map((id) => TeamLearn.person(id).name.split(' ')[0]).sort(),
+      happy: rows.some((r) => /Hatch B\. Yanco/.test(r.n) && !r.w) };
+  });
+  expect(st.me).toBe('Elena Ruiz');
+  expect(st.people).toEqual([['Elena Ruiz', 'manager'], ['Claire Whitfield', 'sommelier'], ['Marco Delgado', 'bartender'], ['Dani Haddad', 'server'], ['Priya Nair', 'server'], ['Amara Okafor', 'server'], ['David Chen', 'server']]);
+  expect(st.sym).toBe('$');
+  expect(st.venue).toMatchObject({ name: 'The Social Corner', city: 'Vancouver', sample: 'social', brand: { accent: '#A88963' } });
+  expect(st).toMatchObject({ claire: 'ready', marco: 'slipping', demo: true, happy: true });
+  expect(st.rows).toBeGreaterThan(1000);
+  expect(st.sellers).toEqual(['Amara', 'Claire', 'Dani', 'David', 'Marco', 'Priya']);
+  await page.getByTestId('team-tab-wines').click();
+  await expect(page.locator('#root')).toContainText('Antinori Tignanello');
+  await expect(page.locator('#root')).toContainText('bottle $350');
+  await expect(page.locator('#root')).not.toContainText('£');
+  await page.reload(); // stays put, with its team
+  await expect(page.getByTestId('team-venue-logo')).toBeVisible();
+  expect(await page.evaluate(() => TeamLearn.people().length)).toBe(7);
+  expect(errors).toEqual([]);
+});
+
+// A device that opened The Social Corner from an older build (here: before its team and sales, set up by whoever
+// opened it) reloads it from ?seed=social once the list file has moved on, though the training file is the same.
+test('a device holding an older Social Corner takes the new one, with or without ?seed=social, keeping who was there and their progress', async ({ context, page }) => {
+  await stubNetwork(context);
+  await page.goto(`${BASE}/team/?seed=social`);
+  await page.evaluate(() => { const d = TeamData.get(); d.venue.seeded = 'an older copy'; TeamData.save(d);
+    Store.remove(TeamLearn.KEY); TeamLearn.resetProgress(); TeamSales.clear(); TeamLearn.setMe(TeamLearn.addPerson('Alex Morgan', 'manager')); });
+  await page.goto(`${BASE}/team/`); // even without ?seed
+
+  // The new copy's team joins the person already here, who stays signed in; the demo sales are written.
+  await expect.poll(() => page.evaluate(() => TeamLearn.people().length)).toBe(8);
+  expect(await page.evaluate(() => [TeamLearn.me().name, TeamLearn.people().some((p) => p.name === 'Elena Ruiz'), TeamSales.get().rows.length > 1000])).toEqual(['Alex Morgan', true, true]);
+  expect(await page.evaluate(() => TeamSample.current('social'))).toBe(true);
+  await page.reload(); // and keeps it after that
+  expect(await page.evaluate(() => TeamLearn.people().length)).toBe(8);
+});
+
+test('The Social Corner opens from the setup screen, for a phone whose link lost ?seed=social', async ({ context, page }) => {
+  await stubNetwork(context);
+  await page.goto(`${BASE}/team/`);
+  await page.getByTestId('team-load-social').click();
+  await expect(page.getByTestId('team-venue-logo')).toBeVisible();
+  expect(await page.evaluate(() => [TeamLearn.me().name, TeamLearn.people().length, TeamSales.get().rows.length > 1000])).toEqual(['Elena Ruiz', 7, true]);
+});
+
+test('?view=phone keeps the phone app on a wide screen, for the manager too', async ({ context, page }) => {
+  await stubNetwork(context);
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto(`${BASE}/team/?seed=social&view=phone`);
+  await expect(page.getByTestId('team-tab-today')).toBeVisible();
+  await expect(page.getByTestId('console-nav-dash')).toHaveCount(0);
+  await page.goto(`${BASE}/team/`); // without it, the manager on a wide screen gets the console
+  await expect(page.getByTestId('console-nav-dash')).toBeVisible();
+});
+
+test('The Social Corner cocktails: cards, their own part of readiness, drilled, and on the dishes they suit', async ({ context, page }) => {
+  await stubNetwork(context);
+  await page.goto(`${BASE}/team/?seed=social`);
+  // A fresh person, so the cocktail they answer below starts unknown (the demo team has its own progress).
+  await page.evaluate(() => { TeamLearn.setMe(TeamLearn.addPerson('Sam Reyes', 'manager')); });
+  const st = await page.evaluate(() => {
+    const me = TeamLearn.me();
+    const cs = TeamData.cocktails(), qs = TeamLearn.cocktailQs(cs[0].id);
+    return { n: cs.length, cards: cs.filter((c) => TeamData.cocktailCard(c.id)).length, mc: qs.every((q) => q.mc && q.opts.length === 4 && q.opts[q.a]),
+      parts: Object.keys(TeamLearn.readiness(me.id).parts), barKinds: TeamLearn.kindsFor('bartender', cs[0].id), barNeed: TeamLearn.readiness(TeamLearn.people().find((p) => p.role === 'bartender').id).parts.cocktails.need };
+  });
+  expect(st).toMatchObject({ n: 20, cards: 20, mc: true, barNeed: 0.9 });
+  expect(st.parts).toContain('cocktails');
+  expect(st.barKinds).toEqual(['recognise', 'recall', 'apply', 'contrast']);
+  // Answering every question on one cocktail right makes it known, and the part moves.
+  const moved = await page.evaluate(() => {
+    const me = TeamLearn.me(), id = TeamData.cocktails()[0].id, before = TeamLearn.readiness(me.id).parts.cocktails.partial;
+    TeamLearn.qsOf(id).filter((q) => TeamLearn.kindsFor(me.role, id).includes(q.k)).forEach((q) => TeamLearn.record(me.id, q, true, 'sure'));
+    return { before, after: TeamLearn.readiness(me.id).parts.cocktails.partial, known: TeamLearn.knowsWine(me.id, me.role, id, TeamLearn._all()[me.id].items) };
+  });
+  expect(moved.known).toBe(true);
+  expect(moved.after).toBeGreaterThan(moved.before);
+  // The list and a card on screen.
+  await page.getByTestId('team-tab-wines').click();
+  await expect(page.getByTestId('team-cocktail-row')).toHaveCount(0); // wines first
+  await page.getByTestId('team-list-cocktails').click();
+  await expect(page.getByTestId('team-cocktail-row')).toHaveCount(20);
+  await page.getByTestId('team-cocktail-row').filter({ hasText: 'The Negroni' }).click();
+  await expect(page.getByTestId('team-cocktail')).toContainText('Roku Gin');
+  await expect(page.getByTestId('team-pitch')).not.toBeEmpty();
+  // Anything that stands on its own starts with a capital, however the card was written: pills, the base spirit, "Offer instead".
+  const lower = await page.getByTestId('team-cocktail').locator('[data-pill]').evaluateAll((els) => els.map((e) => e.textContent.trim()).filter((t) => /^[a-z]/.test(t)));
+  expect(lower).toEqual([]);
+  await expect(page.getByTestId('team-cocktail')).toContainText('Gin');
+  // The drill asks a cocktail question as four options.
+  await page.getByText(/Practise this cocktail|Start this cocktail/).click();
+  await expect(page.getByTestId('drill-opt')).toHaveCount(4);
+  // The console has a Cocktails section beside Wines.
+  await page.goto(`${BASE}/team/?view=console`);
+  await page.getByTestId('console-nav-cocktails').click();
+  await expect(page.getByTestId('cocktails-row')).toHaveCount(20);
+  // The Larkspur has no cocktail part.
+  await page.goto(`${BASE}/team/?seed=demo`);
+  const demo = await page.evaluate(() => ({ n: TeamData.cocktails().length, parts: TeamLearn.people().map((p) => Object.keys(TeamLearn.readiness(p.id).parts)).flat() }));
+  expect(demo.n).toBe(0);
+  expect(demo.parts).not.toContain('cocktails');
+  await expect(page.getByTestId('team-list-switch')).toHaveCount(0);
+});
+
+test('the setup screen offers The Social Corner and The Larkspur, a device left on The Copper Pan goes back to it, and Change restaurant returns there', async ({ context, page }) => {
   await openSample(context, page);
   await page.goto(`${BASE}/team/`); // no seed: the Copper Pan is retired
   await expect(page.getByTestId('team-load-demo')).toBeVisible();
   await expect(page.getByText('Look around with a sample restaurant')).toHaveCount(0);
   await expect(page.getByTestId('team-load-demo')).toContainText(/Open The Larkspur: 30 wines, 27 dishes, a team of \w+/);
+  await expect(page.getByTestId('team-load-social')).toContainText('Open The Social Corner');
+  await expect(page.getByTestId('team-load-social')).toContainText('41 wines, 20 cocktails, 62 dishes, a team of 7');
   await page.getByTestId('team-load-demo').click();
   await expect(page.locator('#root')).toContainText('The Larkspur');
   await page.reload(); // The Larkspur stays put
@@ -38,77 +159,33 @@ test('the setup screen offers The Larkspur only, a device left on The Copper Pan
   await expect(page.getByTestId('team-load-demo')).toBeVisible();
 });
 
-test('a pilot restaurant opens from its link in its own look: Social Corner, staff join by name and role, prices in Canadian dollars', async ({ context, page }) => {
+test('?seed=perse opens The Social Corner in its own accent, prices in Canadian dollars, its description in what Claude writes from', async ({ context, page }) => {
   const reqs = [];
   await stubNetwork(context, { claudeRequests: reqs, claudeText: () => '{"cards":[]}' });
   await page.goto(`${BASE}/team/?seed=perse`);
-  await expect(page.getByTestId('team-join')).toContainText('Join the Social Corner team.');
-  await expect(page.getByTestId('team-join')).toContainText('41 wines, 22 cocktails and 54 dishes');
-  await page.getByLabel('Your name').fill('Martin');
-  await page.getByTestId('team-role-manager').click();
-  await page.getByText('Join', { exact: true }).click();
-  await expect(page.getByTestId('team-state')).toBeVisible();
-  await expect(page.getByTestId('team-brand')).toHaveAttribute('src', /brands\/perse\/wordmark-white\.png/);
-  const r = await page.evaluate(() => ({ cur: TeamData.currency(), me: TeamLearn.me(), accent: C.cr, about: TeamData.about(), tig: TeamData.wines().find((w) => /Tignanello/.test(w.name)) }));
+  await page.waitForFunction(() => window.TeamData && TeamData.wines().length > 0);
+  const r = await page.evaluate(() => ({ sample: TeamData.get().venue.sample, cur: TeamData.currency(), accent: C.cr, about: TeamData.about() }));
+  expect(r.sample).toBe('social');
   expect(r.cur).toMatchObject({ sym: '$', code: 'CAD' });
-  expect(r.me).toMatchObject({ name: 'Martin', role: 'manager' });
   expect(r.accent).toBe('#A88963');
   expect(r.about).toMatch(/Canadian English/);
-  expect(r.tig.bottle).toBe('$350');
-  // Their description reaches what Claude writes from.
-  await page.evaluate(() => TeamData.writeCards([TeamData.wines()[0].id]).catch(() => {}));
+  await page.evaluate(() => { TeamData.writeCards([TeamData.wines()[0].id]).catch(() => {}); });
+  await expect.poll(() => reqs.filter((x) => x.purpose === 'team_cards').length).toBeGreaterThan(0);
   expect(reqs.find((x) => x.purpose === 'team_cards').messages[0].content).toMatch(/About the restaurant: Social Corner/);
   // Another restaurant puts Vinterest's crimson back.
-  await page.goto(`${BASE}/team/?seed=demo`);
-  await expect(page.getByTestId('team-state')).toBeVisible();
-  expect(await page.evaluate(() => C.cr)).not.toBe('#A88963');
-});
-
-test('cocktails: their own card, their own part of readiness, and answers that stay among cocktails', async ({ context, page }) => {
-  await stubNetwork(context);
-  await page.goto(`${BASE}/team/?seed=perse`);
-  await page.getByLabel('Your name').fill('Sam');
-  await page.getByTestId('team-role-bartender').click();
-  await page.getByText('Join', { exact: true }).click();
-  await expect(page.getByTestId('team-state')).toBeVisible();
-  const r = await page.evaluate(() => {
-    const id = 'c-the-negroni', d = TeamData.get();
-    d.cards[id] = { id, pitch: 'Bitter, stirred and grown-up.', taste: 'Bitter orange, herbs and a sweet finish.', style: { sweet: 2, sour: 0, bitter: 5, strong: 4 }, spirit: 'Gin', usually: { method: 'Stirred', glass: 'A rocks glass', garnish: 'An orange peel' }, story: 'A classic from Florence.', dishes: [{ dish: 'Charred Chorizo', why: 'Bitterness cuts the fat.' }], alts: [],
-      qs: [
-        { id: id + '#0', k: 'recall', q: 'Which spirit is the base of The Negroni?', ans: 'Gin', acc: [], why: 'Roku Gin.' },
-        { id: id + '#1', k: 'recall', q: 'Which bitter Italian liqueur is in The Negroni?', ans: 'Campari', acc: [], why: 'Campari.' },
-        { id: id + '#2', k: 'recall', q: 'What does The Negroni cost?', ans: '$22', acc: [], why: '$22.' },
-        { id: id + '#3', k: 'apply', q: 'A guest having the Charred Chorizo wants a cocktail with a bitter edge. What do you suggest and why?', key: ['Offer The Negroni', 'Its bitterness cuts the richness of the chorizo', 'Gin and Campari, stirred'], why: 'x' },
-      ] };
-    TeamData.save(d);
-    const qs = TeamLearn.wineQs(id), ch = (n) => { const c = TeamLearn.choices(qs[n]); return { opts: c.opts, right: c.right.map((i) => c.opts[i]), groups: c.groups }; };
-    const me = TeamLearn.me();
-    return { parts: Object.keys(TeamLearn.readiness(me.id).parts), drinks: TeamLearn.scope('bartender').drinks.length, glass: TeamLearn.scope('bartender').glass.some((w) => TeamData.isDrink(w)),
-      spirit: ch(0), liqueur: ch(1), price: ch(2), apply: ch(3), kind: TeamLearn.kindOf(TeamData.wine(id)), spec: TeamData.wine(id).spec };
-  });
-  expect(r.parts).toContain('drinks');
-  expect(r.drinks).toBe(22);
-  expect(r.glass).toBe(false); // cocktails aren't counted as wines by the glass
-  expect(r.kind).toBe('cocktail');
-  const spirits = ['Gin', 'Vodka', 'White rum', 'Aged rum', 'Blanco tequila', 'Mezcal', 'Bourbon', 'Rye whiskey', 'Scotch whisky', 'Cognac', 'Pisco', 'Tequila', 'Rum', 'Whisky', 'Tequila or vodka', 'Elderflower and Prosecco', 'Wine and brandy', 'None (alcohol-free)'];
-  for (const o of r.spirit.opts) expect(spirits.includes(o) || /gin|vodka|rum|tequila|mezcal|whisk|scotch|bourbon|cognac|pisco|brandy|glenfiddich|laphroaig|johnnie|teremana|patron|grey goose|ketel|roku|appleton|flor de|seventh|traveller|alcohol-free|elderflower|wine/i.test(o)).toBe(true); // every option is a spirit
-  for (const o of r.liqueur.opts) if (o !== 'Campari') expect(r.spec).not.toContain(o); // nothing that's in the drink is a wrong answer
-  for (const o of r.price.opts) expect(o).toMatch(/^\$\d+$/);
-  const offers = r.apply.groups.length === 2 ? r.apply.opts.slice(0, r.apply.groups[0].to) : [];
-  for (const o of offers) expect(o).not.toMatch(/Tignanello|Barolo|Prosecco DOC|Riesling/); // cocktails offered among cocktails
-  const reasons = r.apply.opts.slice(r.apply.groups[r.apply.groups.length - 1].from);
-  expect(reasons.some((x) => /bitter|chorizo/i.test(x))).toBe(true);
-  await page.getByTestId('team-tab-wines').click();
-  await page.getByText('The Negroni').click();
-  await expect(page.getByTestId('team-drink')).toContainText('Roku Gin');
-  await expect(page.getByTestId('team-usually')).toContainText('check with the bar');
+  const p2 = await context.newPage();
+  await p2.goto(`${BASE}/team/?seed=demo`);
+  await expect(p2.getByTestId('team-state')).toBeVisible();
+  expect(await p2.evaluate(() => C.cr)).not.toBe('#A88963');
 });
 
 test('the sample restaurant opens on Today: not ready yet, with every wine and dish to learn', async ({ context, page }) => {
   const errors = await openSample(context, page);
-  await expect(page.getByTestId('team-state')).toHaveText('Not ready yet');
+  // Someone who hasn't drilled yet is shown a plan, not a verdict: the first wave (the glass list) with its days.
+  await expect(page.getByTestId('team-plan')).toContainText('Your first 10 days');
+  await expect(page.getByTestId('team-state')).toHaveText('The 7 wines by the glass');
   await expect(page.locator('#root')).toContainText('0 of 7 known · need 80%'); // seven wines by the glass, a manager's minimum
-  await expect(page.locator('#root')).toContainText('New to learn (17)'); // ten wines and seven dishes
+  await expect(page.locator('#root')).toContainText('This wave: by the glass (7 to go)'); // the bottles and dishes come in later waves
   await page.getByTestId('team-tab-wines').click();
   await expect(page.getByTestId('team-wine-row')).toHaveCount(10);
   await page.getByText('Viña Ardanza Reserva').first().click();
@@ -205,18 +282,153 @@ test('a typed answer is marked locally when it plainly matches, and by Claude ag
   expect(reqs.filter((r) => r.purpose === 'team_grade')).toHaveLength(1);
 });
 
+// The drill recipe (TeamLearn.drill): one question per wine or dish; what's due first; at most NEW_MAX new things once
+// anything is due, dealt one per list section; a recall question five pills (seven for a three-grape blend); a grape
+// question never offers a wine's name; "How sure are you?" asked on a price alone.
+test('the drill deals one question per wine, caps new things once answers are due, keeps recall to five pills and asks confidence on prices only', async ({ context, page }) => {
+  await stubNetwork(context);
+  await page.goto(`${BASE}/team/?seed=social`);
+  await expect(page.getByTestId('team-state')).toBeVisible();
+  const r = await page.evaluate(() => {
+    const who = (n) => TeamLearn.people().find((p) => p.name.startsWith(n)).id, item = (q) => q.wine || q.dish || q.cocktail;
+    const amara = who('Amara'), priya = who('Priya'), items = TeamLearn._all();
+    const dueFor = (pid) => Object.values((items[pid] || { items: {} }).items).filter((it) => it.reps && (it.wrong || it.due <= Date.now())).length;
+    const d = TeamLearn.drill(priya), ids = d.map(item);
+    const fresh = d.filter((q) => !(items[priya].items[q.id] && items[priya].items[q.id].reps) && !q.check).length;
+    // A new server with nothing due: five new things from different sections of the list.
+    const fresh2 = TeamLearn.addPerson('Sam New', 'server'); const d2 = TeamLearn.drill(fresh2);
+    const secs = d2.map((q) => (TeamData.wine(q.wine) || TeamData.dish(q.dish) || {}).section);
+    const sizes = {}; let wineAsGrape = 0, conf = 0, money = 0;
+    TeamData.wines().forEach((w) => TeamLearn.wineQs(w.id).forEach((q) => { if (q.k === 'recognise') return; const c = TeamLearn.choices(q);
+      if (q.k === 'recall') { sizes[c.opts.length] = (sizes[c.opts.length] || 0) + 1; if (TeamLearn._topic(q.q) === 'grape') c.opts.forEach((o) => { if (TeamData.wines().some((x) => TeamLearn._norm(o).includes(TeamLearn._norm(TeamData.short(x))))) wineAsGrape++; }); }
+      if (TeamLearn.asksConfidence(q)) { conf++; if (/[£$€]/.test(String(q.ans || ''))) money++; } }));
+    TeamLearn.removePerson(fresh2);
+    return { due: dueFor(priya), n: d.length, distinct: new Set(ids).size, fresh, secs: new Set(secs).size, sizes, wineAsGrape, conf, money };
+  });
+  expect(r.n).toBe(5);
+  expect(r.distinct).toBe(5); // one per wine or dish
+  expect(r.due).toBeGreaterThan(0); expect(r.fresh).toBeLessThanOrEqual(2); // new things capped once anything is due
+  expect(r.secs).toBeGreaterThanOrEqual(3); // a first drill spreads over the list's sections
+  expect(Math.max(...Object.keys(r.sizes).map(Number))).toBeLessThanOrEqual(7); expect(Math.min(...Object.keys(r.sizes).map(Number))).toBeGreaterThanOrEqual(4);
+  expect(r.wineAsGrape).toBe(0);
+  expect(r.conf).toBeGreaterThan(0); expect(r.conf).toBe(r.money); // confidence is asked on prices, nowhere else yet
+});
+
+// Tonight (TeamData.tonight): a manager 86s a dish and puts a wine on feature; every Today shows it until the day ends,
+// with the two by-the-glass wines that person should look at; Vinny's suggestions pick it up; nothing is scored.
+test('tonight: 86d and the feature set by a manager show on everyone\'s Today with two wines to look at, and clear tomorrow', async ({ context, page }) => {
+  await stubNetwork(context);
+  await page.goto(`${BASE}/team/?seed=social`);
+  await expect(page.getByTestId('team-state')).toBeVisible();
+  await expect(page.getByTestId('team-tonight')).toContainText('Set tonight'); // the manager sees the card empty, with the way in
+  await page.getByTestId('tonight-edit').click();
+  await page.getByTestId('tonight-off').filter({ hasText: 'Fresh Oysters' }).click();
+  await page.getByTestId('tonight-feature').filter({ hasText: 'Lambrusco' }).click();
+  await page.getByText('Done', { exact: true }).click();
+  await expect(page.getByTestId('tonight-off')).toContainText('Fresh Oysters');
+  await expect(page.getByTestId('tonight-feature')).toBeVisible();
+  await expect(page.getByTestId('team-tonight')).toContainText('Lambrusco');
+  // A server sees the same, plus two wines to look at before service, each with Say it.
+  await page.getByTestId('team-who').click(); await page.getByText('Priya ·').click();
+  await expect(page.getByTestId('team-tonight')).toContainText("86'd: Fresh Oysters");
+  await expect(page.getByTestId('tonight-look')).toBeVisible();
+  expect(await page.getByLabel(/^Say /).count()).toBeGreaterThanOrEqual(3);
+  await expect(page.getByTestId('tonight-edit')).toHaveCount(0);
+  const r = await page.evaluate(() => ({ sugg: TeamVinny.suggest(TeamLearn.me().id), tomorrow: TeamData.tonight(Date.now() + 86400000), off: TeamData.isOff('d-fresh-oysters') }));
+  expect(r.sugg[0]).toMatch(/Lambrusco|Medici/); expect(r.sugg).toContain("What's off tonight?");
+  expect(r.tomorrow.off).toEqual([]); expect(r.tomorrow.feature).toEqual([]); expect(r.off).toBe(true);
+});
+
+// The menu module (docs/business.md, "The menu"): a dish's notes say what it is, what can change and what guests ask; its
+// allergens are a draft until the kitchen confirms them on the console, and only then are they shown on the dish, asked
+// in the drill (choose all, with confidence, a miss back within the shift), counted in readiness (the Allergens part, at
+// 100%) and entered in the sign-off register.
+test('the menu module: allergens are drafted, confirmed by the kitchen, then shown, drilled and registered', async ({ browser }) => {
+  const ctx = await browser.newContext({ viewport: { width: 1280, height: 800 } }), page = await ctx.newPage();
+  await stubNetwork(ctx);
+  await page.goto(`${BASE}/team/?seed=social&view=console`);
+  await expect(page.getByTestId('console-dash')).toBeVisible();
+  const before = await page.evaluate(() => ({ notes: Object.keys(TeamData.get().dishCards || {}).length, conf: TeamData.allergensOf('d-fresh-oysters'), parts: Object.keys(TeamLearn.readiness(TeamLearn.me().id).parts), qs: TeamLearn.dishQs('d-fresh-oysters').map((q) => q.id),
+    know: TeamLearn.dishQs('d-fresh-oysters').find((q) => /#know$/.test(q.id)), others: TeamData.dishes().filter((x) => x.id !== 'd-fresh-oysters').map((x) => (TeamData.dishCard(x.id) || {}).say).filter(Boolean) }));
+  expect(before.notes).toBeGreaterThan(30); expect(before.conf).toBeNull();
+  // Know it asks the dish's own sentence against near-misses of the same dish, never another dish's description
+  // (the question names the dish, so "the lamb shoulder" against "a lemon tart" taught nothing).
+  expect(before.know.opts).toHaveLength(4); expect(before.know.opts.filter((o) => /oysters/i.test(o)).length).toBeGreaterThanOrEqual(3);
+  before.know.opts.forEach((o) => expect(before.others).not.toContain(o));
+  expect(before.parts).not.toContain('allergens'); // no allergen part until the kitchen has confirmed a dish
+  expect(before.qs.some((id) => /#allergen$/.test(id))).toBe(false); expect(before.qs.some((id) => /#know$/.test(id))).toBe(true);
+  // The kitchen confirms the oysters on the Menu tab: the draft is offered, one chip is dropped, Confirm.
+  await page.getByText('Menu', { exact: true }).first().click();
+  await expect(page.getByTestId('menu-allergen-todo')).toContainText('allergens to confirm');
+  const row = page.getByTestId('menu-row').filter({ hasText: 'Fresh Oysters' });
+  await expect(row.getByTestId('menu-allergens')).toContainText('Draft');
+  await row.getByTestId('menu-confirm').click();
+  const pressed = page.getByTestId('menu-allergen-toggle').filter({ has: page.locator('[aria-pressed="true"]') });
+  await page.getByTestId('menu-allergen-toggle').filter({ hasText: 'Sulphites' }).click(); // not in it, says the chef
+  await page.getByText('Confirm these').click();
+  const after = await page.evaluate(() => ({ conf: TeamData.allergensOf('d-fresh-oysters'), by: TeamData.dishCard('d-fresh-oysters').allergens.by, parts: Object.keys(TeamLearn.readiness(TeamLearn.me().id).parts),
+    q: TeamLearn.allergenQ('d-fresh-oysters'), assigned: TeamLearn.people().every((p) => TeamLearn.assignments(p.id).some((a) => a.kind === 'allergen' && a.id === 'd-fresh-oysters')) }));
+  expect(after.conf).toEqual(['shellfish']); expect(after.by).toBe('Elena Ruiz'); expect(after.parts).toContain('allergens'); expect(after.assigned).toBe(true);
+  expect(after.q.conf).toBe(true); expect(after.q.pills.groups[0].all).toBe(true); expect(after.q.pills.opts[after.q.pills.right[0]]).toBe('Crustaceans and molluscs');
+  await expect(row.getByTestId('menu-allergens')).toContainText('Crustaceans and molluscs');
+  // The register on the Team tab now counts one confirmed dish, nobody holding it yet; the CSV has a row per person.
+  await page.getByText('Team', { exact: true }).first().click();
+  await expect(page.getByTestId('register-table')).toBeVisible();
+  await expect(page.getByTestId('register-row').first()).toContainText('0 of 1');
+  const csv = await page.evaluate(() => TeamReport.allergenCsv());
+  expect(csv.split('\n')[0]).toBe('Venue,Person,Role,Dishes confirmed,Held now,Passed on,Falls due'); expect(csv.split('\n').filter(Boolean).length).toBe(8);
+  // On the phone, as Priya: the dish shows the confirmed allergens (never the draft), the Allergens part has its own bar,
+  // and practising it asks the choose-all question with How sure; a right answer passes her in the register.
+  await page.evaluate(() => { TeamLearn.setMe(TeamLearn.people().find((p) => p.name.startsWith('Priya')).id); });
+  await page.goto(`${BASE}/team/?view=phone`);
+  await expect(page.getByTestId('team-state')).toBeVisible();
+  await expect(page.getByTestId('team-part').filter({ hasText: 'Allergens' })).toContainText('0 of 1 known · need 100%');
+  await page.getByTestId('team-tab-menu').click();
+  await page.getByText('Fresh Oysters', { exact: true }).first().click();
+  await expect(page.getByTestId('dish-allergens')).toContainText('Crustaceans and molluscs');
+  await expect(page.getByTestId('dish-allergens')).not.toContainText('Sulphites');
+  await expect(page.getByTestId('dish-say')).toContainText(/oysters/i);
+  await expect(page.getByTestId('dish-mod').first()).toBeVisible();
+  await page.getByLabel('Back').click();
+  await page.getByTestId('team-tab-today').click();
+  await page.getByTestId('team-part').filter({ hasText: 'Allergens' }).getByTestId('team-part-practise').click();
+  await expect(page.getByTestId('drill-q')).toContainText('Which of these are in the Fresh Oysters?');
+  await expect(page.getByTestId('drill-choose')).toContainText('Choose all that apply');
+  await expect(page.getByTestId('drill-sure')).toBeVisible();
+  await page.getByTestId('drill-opt').filter({ hasText: 'Crustaceans and molluscs' }).click();
+  await page.getByText('Sure', { exact: true }).click();
+  await page.getByText('Check', { exact: true }).click();
+  await expect(page.getByTestId('drill-result')).toContainText('Right');
+  const reg = await page.evaluate(() => TeamReport.allergenRegister().find((x) => x.person.name.startsWith('Priya')));
+  expect(reg.state).toBe('passed'); expect(reg.known).toBe(1);
+  await ctx.close();
+});
+
 test('the drill on screen: pick, say how sure, see the answer and why, then the summary', async ({ context, page }) => {
   await openSample(context, page);
   await page.getByText(/Start today's drill/).click();
   for (let i = 0; i < 5; i++) {
     await expect(page.getByTestId('drill-q')).toBeVisible();
     await page.getByTestId('drill-opt').first().click();
-    await page.getByText('Sure', { exact: true }).click();
+    const sure = page.getByText('Sure', { exact: true }); if (await sure.isVisible().catch(() => false)) await sure.click(); // asked on a price question only
     await page.getByText('Check', { exact: true }).click();
     await expect(page.getByTestId('drill-result')).toBeVisible();
+    // As in the consumer quiz, the options have gone: the answer and its context are what's left.
+    await expect(page.getByTestId('drill-opt')).toHaveCount(0);
+    await expect(page.getByTestId('drill-answer')).toBeVisible();
     await page.getByText(i < 4 ? 'Next' : 'Finish', { exact: true }).click();
   }
   await expect(page.getByTestId('drill-done')).toContainText('of 5 right');
+  // A newer copy of the restaurant (a new build's training) keeps everyone's progress and the day's drill.
+  const kept = await page.evaluate(() => { const pid = TeamLearn.me().id, was = JSON.stringify(TeamLearn._all()[pid].items); TeamSample.load('sample');
+    return { same: JSON.stringify((TeamLearn._all()[pid] || {}).items) === was, me: TeamLearn.me().id === pid }; });
+  expect(kept).toEqual({ same: true, me: true });
+  // Back on Today, the drill reads as done for the day, with more on offer rather than asked for again.
+  await page.getByText('Done', { exact: true }).click();
+  await expect(page.getByTestId('today-done')).toContainText("Today's drill done");
+  await expect(page.getByText(/Start today's drill/)).toHaveCount(0);
+  await page.getByText('Do another 5 questions').click();
+  await expect(page.getByTestId('drill-q')).toBeVisible();
 });
 
 test('the publish check: every question is checked, the ones that fail are rewritten under the same id, and the demo is only counted', async ({ context, page }) => {
@@ -420,7 +632,7 @@ test('the drill asks typed questions as pills, keeps the wine out of the header 
   });
   // The Nyetimber's table (oysters, a glass of sparkling) has nothing sparkling on the list that's clearly wrong
   // with oysters, so there's no fair choice of wine: it names the wine and asks why, two right reasons among wrong ones.
-  expect(r).toMatchObject({ recallN: 3, recallOpts: 10, recallRight: ['Chardonnay', 'Pinot Meunier', 'Pinot Noir'], applyN: 2, ok: true, partly: 'partly' });
+  expect(r).toMatchObject({ recallN: 3, recallOpts: 7, recallRight: ['Chardonnay', 'Pinot Meunier', 'Pinot Noir'], applyN: 2, ok: true, partly: 'partly' });
   expect(r.applyOpts).toBeGreaterThanOrEqual(5);
   // Drill Nyetimber alone as Dani (a server: recognise, recall, apply): the apply question's header must not name it.
   await page.evaluate(() => { const dani = TeamLearn.people().find((p) => p.name.startsWith('Dani')); TeamLearn.setMe(dani.id); });
@@ -479,11 +691,21 @@ test('the console: dashboard figures from TeamReport, the demo sales labelled, a
   await stubNetwork(ctx);
   await page.goto(`${BASE}/team/?seed=demo&view=console`);
   await expect(page.getByTestId('team-console')).toBeVisible();
-  const want = await page.evaluate(() => { const o = TeamReport.overview(), s = TeamReport.salesSummary(7); return { avg: o.avg, overdue: o.overdue, revenue: Math.round(s.revenue), rows: TeamSales.get().rows.length, lift: TeamReport.trainedLift(28).pct, unmapped: TeamSales.unmapped().map((x) => x.item) }; });
+  const want = await page.evaluate(() => { const o = TeamReport.overview(), s = TeamReport.salesSummary(7); return { avg: o.avg, overdue: o.behind, revenue: Math.round(s.revenue), rows: TeamSales.get().rows.length, lift: TeamReport.trainedLift(28).pct, unmapped: TeamSales.unmapped().map((x) => x.item) }; });
   expect(want.rows).toBeGreaterThan(1000);
   await expect(page.getByTestId('dash-readiness')).toHaveText(`${want.avg}%`);
   await expect(page.getByTestId('dash-overdue')).toHaveText(String(want.overdue));
-  await expect(page.getByTestId('sales-revenue')).toContainText(String(want.revenue));
+  // The dashboard rolls sales up into a tile and three lines; the detail is on Sales Insights.
+  await expect(page.getByTestId('dash-sales')).toContainText(want.revenue.toLocaleString('en-US'));
+  await expect(page.getByTestId('dash-sales-brief').getByTestId('sales-brief')).toHaveCount(3);
+  await expect(page.getByTestId('console-sales')).toHaveCount(0);
+  await page.getByTestId('dash-open-sales').click();
+  await expect(page.getByTestId('console-sales-tab')).toBeVisible();
+  expect(await page.getByTestId('sales-brief-list').getByTestId('sales-brief').count()).toBeGreaterThan(3);
+  // Money is written in full with its thousands grouped: $8,774, never $8774 or 8.8k.
+  await expect(page.getByTestId('sales-revenue')).toContainText(want.revenue.toLocaleString('en-US'));
+  const m = await page.evaluate(() => ({ sym: TeamData.currency().sym, out: [TeamData.money(8774), TeamData.money(12480), TeamData.money(1250.5, { dp: 2 }), TeamData.money(-42)] }));
+  expect(m.out).toEqual([`${m.sym}8,774`, `${m.sym}12,480`, `${m.sym}1,250.50`, `-${m.sym}42`]);
   await expect(page.getByTestId('sales-lift')).toContainText(`${want.lift}%`);
   // The till knows a Picpoul the list doesn't: the "new on the list?" signal.
   expect(want.unmapped).toEqual(['Picpoul de Pinet 175']);
@@ -493,7 +715,7 @@ test('the console: dashboard figures from TeamReport, the demo sales labelled, a
   const marco = await page.evaluate(() => { const m = TeamLearn.people().find((p) => p.name.startsWith('Marco')); const t = TeamReport.serverTrend(m.id, 8).filter((x) => x.shifts); return { first: t[0].perShift, last: t[t.length - 1].perShift }; });
   expect(marco.last).toBeLessThan(marco.first * 0.7);
   // Every section opens; a row opens its detail in the panel.
-  for (const s of ['team', 'wines', 'menu', 'upload', 'pos', 'admin']) { await page.getByTestId(`console-nav-${s}`).click(); await expect(page.getByTestId(`console-${s}`)).toBeVisible(); }
+  for (const s of ['dash', 'sales', 'team', 'wines', 'menu', 'upload', 'pos', 'admin']) { await page.getByTestId(`console-nav-${s}`).click(); await expect(page.getByTestId(s === 'sales' ? 'console-sales-tab' : `console-${s}`)).toBeVisible(); }
   await page.getByTestId('console-nav-team').click();
   await page.getByTestId('team-row').first().click();
   await expect(page.getByTestId('console-person')).toBeVisible();
@@ -639,6 +861,10 @@ async function asMarco(context, page, opts = {}) {
 test("Vinny's test aims at what this person needs, and a request narrows it", async ({ context, page }) => {
   const errors = await asMarco(context, page);
   await page.getByTestId('team-tab-vinny').click();
+  // The hub leads with the next thing to do and says what the list is worth here, then the three doors.
+  await expect(page.getByTestId('vinny-next')).toBeVisible();
+  await expect(page.getByTestId('vinny-worth')).toContainText(/a shift|more wine/);
+  await page.getByTestId('vinny-door-test').click();
   await expect(page.getByTestId('vinny-test-why')).toContainText(/faded|new to you/); // Marco's demo answers have faded
   await page.getByTestId('vinny-test-ask').fill('the moon');
   await expect(page.getByTestId('vinny-test-asked')).toContainText('Nothing you sell matches');
@@ -659,6 +885,11 @@ test('Ask Vinny answers from the list and menu, and opens the wines it names', a
     return JSON.stringify({ answer: `The Grüner by the glass (${tag}) at £11: peppery and fresh, and it loves the salt (D1) .`, wines: [tag], dishes: ['D1'] });
   } });
   await page.getByTestId('team-tab-vinny').click();
+  await page.getByTestId('vinny-door-ask').click();
+  await expect(page.getByTestId('vinny-sugg')).toHaveCount(await page.getByTestId('vinny-sugg').count()); // three short suggestions, none repeating a wine
+  const sugg = await page.getByTestId('vinny-sugg').allTextContents();
+  expect(sugg.length).toBeGreaterThanOrEqual(3); expect(sugg.length).toBeLessThanOrEqual(4);
+  sugg.forEach((s) => expect(s.split(/\s+/).length).toBeLessThanOrEqual(9));
   await page.getByTestId('vinny-input').fill('What goes with the olives by the glass?');
   await page.getByLabel('Ask', { exact: true }).click();
   await expect(page.getByTestId('vinny-answer')).toContainText('Grüner by the glass');
@@ -681,7 +912,7 @@ test('a guest at the table: Vinny opens, the server answers, and the table is ma
     return JSON.stringify({ guest: 'Perfect, we will have that.', done: true, mark: { score: 0.8, verdict: 'right', good: 'You named the wine and why.', missing: '', better: 'Try the Grüner at £11.' } });
   } });
   await page.getByTestId('team-tab-vinny').click();
-  await page.getByText('Take a table').click();
+  await page.getByTestId('vinny-door-guest').click();
   await expect(page.getByTestId('guest-line')).toContainText('What would you pour');
   await page.getByTestId('guest-reply').fill('The Grüner by the glass, it is peppery and fresh.');
   await page.getByText('Say', { exact: true }).click();
@@ -708,7 +939,7 @@ test('a guest at the table comes with choices, hints or none, and two tables tha
   expect(starts.som).toBe('own');
 
   await page.getByTestId('team-tab-vinny').click();
-  await page.getByText('Take a table').click();
+  await page.getByTestId('vinny-door-guest').click();
   await expect(page.getByTestId('guest-line')).toBeVisible();
   await page.getByTestId('guest-help-choices').click();
   // Three wines; a wrong one says why and the right one opens the reasons.
@@ -788,7 +1019,7 @@ test('tables are picked for the person: wines they don\'t know, requests they\'v
   expect(r.repeats).toBe(0);
   expect(r.missedWhy[0]).toMatch(/steering a guest away from a wine hasn't landed for you 2 times lately/);
   await page.getByTestId('team-tab-vinny').click();
-  await page.getByText('Take a table').click();
+  await page.getByTestId('vinny-door-guest').click();
   await expect(page.getByTestId('guest-why')).toContainText('Picked for you:');
   expect(errors).toEqual([]);
 });
@@ -965,6 +1196,9 @@ test('scrolling: the next question opens at its top, a new screen opens at its t
   await expect(page.getByTestId('drill-q')).toBeVisible();
   await page.getByTestId('drill-opt').first().click();
   await page.getByText('Check', { exact: true }).click();
+  // The answer replaces the options, so a short screen is what makes it scroll.
+  await expect(page.getByTestId('drill-result')).toBeVisible();
+  await page.setViewportSize({ width: 390, height: 360 });
   await scroller.evaluate((el) => { el.scrollTop = el.scrollHeight; });
   expect(await top()).toBeGreaterThan(0);
   await page.getByText(/^(Next|Finish)$/).first().click();
@@ -1061,6 +1295,94 @@ test('delivery: pace, time to start, fillers, hedges and whether the wine\'s nam
   expect(errors).toEqual([]);
 });
 
+// The guest's follow-up comes with its own help: replies to pick from (one right, two weaker, each saying why) with
+// choices, a hint with hints; the opening line's help is the pairing's, and the closing line has none.
+test('a guest follow-up comes with replies to pick from, or a hint, so choices last the whole table', async ({ context, page }) => {
+  const reqs = [];
+  const follow = { guest: 'Sounds nice. Is it very dry?', done: false,
+    replies: [{ text: 'Not bone dry: it is fresh and peppery, with a little fruit.', ok: true, why: 'Answers the question from the card.' },
+      { text: 'It is very sweet, like a dessert wine.', ok: false, why: 'The card says it is dry.' },
+      { text: 'Let me get the Amarone instead.', ok: false, why: 'Does not answer what they asked.' }],
+    hint: 'Say how dry it is, from its card.' };
+  const errors = await asMarco(context, page, { claudeRequests: reqs, claudeText: (b) => {
+    if (b.purpose !== 'team_guest') return '';
+    const c = b.messages[0].content, n = (c.match(/SERVER:/g) || []).length;
+    if (!n) return '{"guest":"Evening! What would you pour with this?","done":false}';
+    if (n === 1) return JSON.stringify(follow);
+    return JSON.stringify({ guest: 'Lovely.', done: true, mark: { score: 0.8, verdict: 'right', good: 'Answered it.', missing: '', better: '' } });
+  } });
+  await page.getByTestId('team-tab-vinny').click();
+  await page.getByTestId('vinny-door-guest').click();
+  await page.getByTestId('guest-help-choices').click();
+  await expect(page.getByTestId('guest-choices')).toBeVisible();
+  await page.getByTestId('guest-reply').fill('The Grüner by the glass, peppery and fresh.');
+  await page.getByText('Say', { exact: true }).click();
+  // The follow-up's own choices: a weaker reply says why and stays out; the right one fills the box.
+  await expect(page.getByTestId('guest-follow')).toHaveCount(3);
+  await expect(page.getByTestId('guest-choices')).toHaveCount(0);
+  const weak = page.getByTestId('guest-follow').filter({ hasText: 'very sweet' });
+  await weak.click();
+  await expect(weak).toContainText('The card says it is dry.');
+  await expect(page.getByTestId('guest-reply')).toHaveValue('');
+  await page.getByTestId('guest-follow').filter({ hasText: 'Not bone dry' }).click();
+  await expect(page.getByTestId('guest-reply')).toHaveValue(/Not bone dry/);
+  // The request asked for them, and only after the server had spoken.
+  const gs = reqs.filter((r) => r.purpose === 'team_guest').map((r) => r.messages[0].content);
+  expect(gs[0]).not.toContain('three short replies');
+  expect(gs[1]).toContain('three short replies');
+  await page.getByText('Say', { exact: true }).click();
+  await expect(page.getByTestId('guest-mark')).toBeVisible();
+  await expect(page.getByTestId('guest-follow')).toHaveCount(0);
+  // With hints: the follow-up has one, shown when asked.
+  await page.getByText('Another table').click();
+  await page.getByTestId('guest-help-hints').click();
+  await page.getByTestId('guest-reply').fill('The Grüner by the glass.');
+  await page.getByText('Say', { exact: true }).click();
+  await expect(page.getByTestId('guest-follow')).toHaveCount(0);
+  await page.getByTestId('guest-hint-btn').click();
+  await expect(page.getByTestId('guest-hint')).toHaveText('Say how dry it is, from its card.');
+  expect(errors).toEqual([]);
+});
+
+// "Why does it suit?" is about the wine they just picked: the wrong reasons are claims its own card rules out at
+// this dish, never another wine's reason from another dish; and Ask Vinny cut off mid-JSON still shows its words.
+test('the guest\'s reasons are all about the chosen wine, and a cut-off Vinny answer shows words, not JSON', async ({ context, page }) => {
+  const errors = await asMarco(context, page);
+  const r = await page.evaluate(async () => {
+    const out = [];
+    for (let i = 0; i < 12; i++) {
+      const sc = TeamVinny.scenario(TeamLearn.me().id, 1000 + i * 7919);
+      if (!sc) continue;
+      const h = sc.help;
+      if (!h || !h.reasons || !h.reasons.length) continue;
+      const card = TeamData.card(h.wines.find((w) => w.ok).id);
+      const otherWhys = TeamData.dishes().filter((d) => d.name !== sc.dish).flatMap((d) => { const q = TeamData.pairing(d.id); return q ? [...(q.best || []), q.glass].filter(Boolean).map((b) => b.why) : []; });
+      out.push({ wrong: h.reasons.filter((x) => !x.ok), fromOther: h.reasons.filter((x) => !x.ok && otherWhys.includes(x.text)).length, taste: card && card.taste });
+    }
+    const cut = TeamVinny.loose('{"answer": "Our list doesn\'t mark a house red, but the Road 13 Cabernet', 'answer');
+    return { out, cut };
+  });
+  expect(r.out.length).toBeGreaterThan(3);
+  for (const o of r.out) {
+    expect(o.wrong.length).toBe(2);
+    expect(o.fromOther).toBe(0);
+    for (const w of o.wrong) expect(w.note).toMatch(/^Not the .+: its card says/);
+  }
+  // A guest who has named a wine that doesn't suit is asked about as such: what do you suggest instead?
+  const steer = await page.evaluate(() => {
+    const pid = TeamLearn.me().id;
+    for (let s = 1; s <= 400; s++) { const sc = TeamVinny.scenario(pid, s * 104729); if (sc && sc.wish === 'avoid') return { ask: sc.help.ask, why: sc.help.askWhy, labels: sc.help.wines.map((w) => w.label), dish: sc.dishName }; }
+    return null;
+  });
+  expect(steer).not.toBeNull();
+  expect(steer.ask).toMatch(/^They want the .+\. What do you suggest\?$/);
+  expect(steer.why).toBe(`Why is it better with the ${steer.dish}?`);
+  expect(steer.labels.filter((l) => /as they asked$/.test(l))).toHaveLength(1);
+  expect(steer.labels.filter((l) => /^Suggest the .+ instead$/.test(l))).toHaveLength(2);
+  expect(r.cut).toBe("Our list doesn't mark a house red, but the Road 13 Cabernet");
+  expect(errors).toEqual([]);
+});
+
 test('a spoken table: the guest is said aloud, the reply is spoken into the box, and the result coaches the delivery', async ({ context, page }) => {
   // Stand-ins for the browser's speech engines: the voice finishes at once; the microphone "hears" a reply.
   await context.addInitScript(() => {
@@ -1076,7 +1398,7 @@ test('a spoken table: the guest is said aloud, the reply is spoken into the box,
     return JSON.stringify({ guest: 'Lovely, thank you.', done: true, mark: { score: 0.8, verdict: 'right', good: 'Named it and why.', missing: '', better: '' } });
   } });
   await page.getByTestId('team-tab-vinny').click();
-  await page.getByText('Take a table').click();
+  await page.getByTestId('vinny-door-guest').click();
   await expect(page.getByTestId('guest-line')).toContainText('olives');
   await expect(page.getByTestId('guest-voice')).toHaveAttribute('aria-checked', 'true');
   await expect.poll(() => page.evaluate(() => window.__spoken.join('|'))).toContain('What would you pour'); // the guest said aloud
@@ -1097,14 +1419,16 @@ test('a spoken table: the guest is said aloud, the reply is spoken into the box,
   expect(errors).toEqual([]);
 });
 
-test('a wine card says how to pronounce the wine, and Say it speaks it', async ({ context, page }) => {
+test('a wine card shows how to pronounce the wine, and Say it speaks the name itself', async ({ context, page }) => {
   await context.addInitScript(() => { window.__spoken = []; Object.defineProperty(window, 'speechSynthesis', { configurable: true, value: { speak(u) { window.__spoken.push(u.text); setTimeout(() => u.onend && u.onend(), 5); }, cancel() {}, getVoices() { return []; } } }); window.SpeechSynthesisUtterance = function (t) { this.text = t; }; });
   const errors = await asMarco(context, page);
   await page.getByTestId('team-tab-wines').click();
   await page.getByText(/Dönnhoff/).first().click();
   await expect(page.getByTestId('team-say')).toContainText('DURN-hoff');
   await page.getByTestId('team-say').click();
-  await expect.poll(() => page.evaluate(() => window.__spoken.join('|'))).toContain('DURN-hoff');
+  // The spelling is shown as a guide; the voice is given the wine's own name, which it says better than a respelling.
+  await expect.poll(() => page.evaluate(() => window.__spoken.join('|'))).toContain('Dönnhoff');
+  expect(await page.evaluate(() => window.__spoken.join('|'))).not.toContain('DURN-hoff');
   expect(errors).toEqual([]);
 });
 
@@ -1268,7 +1592,7 @@ test('table questions: the choice first, wrong answers that are believable and c
       return out;
     });
   };
-  for (const seed of ['demo', 'perse']) {
+  for (const seed of ['demo', 'social']) {
     const r = await check(seed);
     expect(r.tooFew).toEqual([]); // no choice of one or two
     expect(r.lengthCue).toEqual([]);
@@ -1292,4 +1616,174 @@ test('table questions: the choice first, wrong answers that are believable and c
     const hs = TeamLearn.questionHealth(); return { easy: (hs.find((x) => x.q.id === easy.id) || {}).flag, hard: (hs.find((x) => x.q.id === hard.id) || {}).flag };
   });
   expect(h).toEqual({ easy: 'easy', hard: 'missed' });
+});
+
+// The names check in the app: every wine, cocktail and dish in the order the script numbers them, each played
+// through the same voice as a table.
+test('the names check plays each name through the guest voice, numbered like the listening check', async ({ context, page }) => {
+  const errors = await asMarco(context, page);
+  await page.getByTestId('team-tab-vinny').click();
+  await page.getByTestId('vinny-say-check').click();
+  await expect(page.getByTestId('say-check')).toBeVisible();
+  const n = await page.evaluate(() => TeamData.wines().length + TeamData.cocktails().length + TeamData.dishes().length);
+  await expect(page.getByTestId('say-row')).toHaveCount(n);
+  const said = await page.evaluate(async () => { const got = []; const was = TeamVoice.speak; TeamVoice.speak = async (t) => { got.push(t); }; return got; });
+  await page.evaluate(() => { window.__said = []; TeamVoice.speak = async (t) => { window.__said.push(t); }; });
+  await page.getByTestId('say-row').first().click();
+  const first = await page.evaluate(() => [window.__said[0], TeamData.short(TeamData.wines()[0])]);
+  expect(first[0]).toBe(`Could we get a bottle of the ${first[1]}, please?`);
+  expect(said).toEqual([]);
+  expect(errors).toEqual([]);
+});
+
+test('a restaurant demo address names its restaurant, and nowhere else does', async ({ context, page }) => {
+  await asMarco(context, page);
+  expect(await page.evaluate(() => [TeamSample.hostSeed('socialcorner.vinterest.team'), TeamSample.hostSeed('SocialCorner.vinterest.team'), TeamSample.hostSeed('vinterest.pages.dev'), TeamSample.hostSeed()])).toEqual(['social', 'social', null, null]);
+});
+
+// Android Chrome sends every result as the whole utterance so far and repeats finals; the reply must come out once.
+test('a spoken reply comes out once, however the phone repeats its results', async ({ context, page }) => {
+  await asMarco(context, page);
+  const r = await page.evaluate(() => {
+    const said = "I'd suggest the Black Swift Curtain Vineyard Riesling, it's about 67 dollars a bottle and pairs nicely with the hint of sweetness";
+    const cum = said.split(' ').map((_, i, a) => a.slice(0, i + 1).join(' ')).filter((_, i) => i % 4 === 3);
+    const loop = Array(12).fill('it\'s about 67 dollars a bottle and pairs nicely with the hint of sweetness').join(' ');
+    return { android: TeamVoice.joinResults(cum.concat([said, said])), desktop: TeamVoice.joinResults(["I'd suggest the Riesling", "it's about 67 dollars a bottle"]),
+      loop: TeamVoice.dedupe('Black Swift ' + loop), real: TeamVoice.dedupe('Very very good, a good good wine') };
+  });
+  expect(r.android).toBe("I'd suggest the Black Swift Curtain Vineyard Riesling, it's about 67 dollars a bottle and pairs nicely with the hint of sweetness");
+  expect(r.desktop).toBe("I'd suggest the Riesling it's about 67 dollars a bottle");
+  expect(r.loop).toBe("Black Swift it's about 67 dollars a bottle and pairs nicely with the hint of sweetness");
+  expect(r.real).toBe('Very very good, a good good wine'); // short repeats people really say are left alone
+});
+
+// Vinny once said "nothing else comes by the glass" with another glass among the olives' best: each
+// dish's line now marks which of its best wines are poured by the glass, and names the first pick.
+test("Vinny's menu lines mark every by-the-glass wine in a dish's pairing", async ({ context, page }) => {
+  await stubNetwork(context);
+  await page.goto(`${BASE}/team/?seed=demo`);
+  await expect(page.getByTestId('team-state')).toBeVisible();
+  const line = await page.evaluate(() => TeamVinny._lines().text.split('\n').find((l) => /Gordal olives/.test(l)));
+  expect(line).toMatch(/best with [^·]*Nyetimber Classic Cuvée \(W\d+\) also by the glass/);
+  expect(line).toMatch(/first pick by the glass Bründlmayer/);
+  expect(line).not.toMatch(/Sancerre \(W\d+\) also by the glass/);
+  const prompt = await page.evaluate(() => _loadTextSync('prompts/team-vinny.txt'));
+  expect(prompt).toContain('not the only one');
+});
+
+// With the server's speech-to-text on, the reply is recorded and written down by ElevenLabs through /stt: the words
+// land in the box once they've finished, the privacy line says the recording is sent, and the delivery uses the
+// service's own word times.
+test('a spoken reply is written down by the server when it has speech to text', async ({ context, page }) => {
+  await context.addInitScript(() => {
+    Object.defineProperty(window, 'speechSynthesis', { configurable: true, value: { speak(u) { setTimeout(() => u.onend && u.onend(), 5); }, cancel() {}, getVoices() { return []; } } });
+    window.SpeechSynthesisUtterance = function (t) { this.text = t; };
+    window.SpeechRecognition = class { start() { window.__local = true; } stop() {} };
+    navigator.mediaDevices.getUserMedia = async () => ({ getTracks: () => [{ stop() { window.__released = true; } }] });
+    window.MediaRecorder = class { static isTypeSupported(t) { return t.startsWith('audio/webm'); } constructor(s, o) { this.mimeType = o.mimeType; }
+      start() {} stop() { this.ondataavailable({ data: new Blob(['fake audio'], { type: 'audio/webm' }) }); setTimeout(() => this.onstop(), 5); } };
+  });
+  const sent = [];
+  await context.route('**/config', (r) => r.fulfill({ json: { tts: false, stt: true } }));
+  await context.route('**/stt', async (r) => { sent.push(r.request().headers()['content-type']); await r.fulfill({ json: { text: "I'd go for the Grüner by the glass, it's peppery and fresh", words: [{ text: "I'd", start: 0.9, end: 1.1 }, { text: 'fresh', start: 4.2, end: 4.6 }] } }); });
+  const errors = await asMarco(context, page, { claudeText: (b) => b.purpose === 'team_guest' ? (/SERVER:/.test(b.messages[0].content) ? JSON.stringify({ guest: 'Lovely.', done: true, mark: { score: 0.8, verdict: 'right', good: 'Named it.', missing: '', better: '' } }) : '{"guest":"Evening! What would you pour with the olives?","done":false}') : '' });
+  await page.getByTestId('team-tab-vinny').click();
+  await page.getByTestId('vinny-door-guest').click();
+  await expect(page.getByTestId('guest-line')).toContainText('olives');
+  await page.getByTestId('guest-mic').click();
+  await expect(page.getByTestId('voice-notice')).toContainText('ElevenLabs');
+  await page.getByTestId('guest-mic').click(); // finished
+  await expect(page.getByTestId('guest-reply')).toHaveValue(/Grüner by the glass/);
+  expect(sent).toEqual(['audio/webm']);
+  expect(await page.evaluate(() => [!!window.__released, !!window.__local])).toEqual([true, false]);
+  // The service failing says so and hands the next reply to the phone's own recognition.
+  await context.unroute('**/stt');
+  await context.route('**/stt', (r) => r.fulfill({ status: 502, json: { error: 'down' } }));
+  await page.getByTestId('guest-mic').click();
+  await page.getByTestId('guest-mic').click();
+  await expect(page.getByTestId('voice-error')).toContainText("didn't come through");
+  await page.getByTestId('guest-mic').click();
+  expect(await page.evaluate(() => window.__local)).toBe(true);
+  expect(errors.filter((e) => !/502/.test(e))).toEqual([]);
+});
+
+test('a dish has Say it too, speaking its own name slowly', async ({ context, page }) => {
+  await context.addInitScript(() => { window.__spoken = []; Object.defineProperty(window, 'speechSynthesis', { configurable: true, value: { speak(u) { window.__spoken.push([u.text, u.rate]); setTimeout(() => u.onend && u.onend(), 5); }, cancel() {}, getVoices() { return []; } } }); window.SpeechSynthesisUtterance = function (t) { this.text = t; }; });
+  const errors = await asMarco(context, page);
+  await page.getByTestId('team-tab-menu').click();
+  const name = await page.evaluate(() => TeamData.dishes()[0].name);
+  await page.getByText(name, { exact: true }).first().click();
+  await page.getByTestId('team-dish').getByTestId('team-say').click();
+  await expect.poll(() => page.evaluate(() => JSON.stringify(window.__spoken))).toContain(name);
+  expect(await page.evaluate((n) => window.__spoken.find((x) => x[0] === n)[1], name)).toBe(0.8);
+  expect(errors).toEqual([]);
+});
+
+// The dashboard is the person's own: a card folds to one line, Edit layout moves a card to the top, and both
+// survive a reload; Reset puts the default back.
+test('the console dashboard folds and reorders, and remembers it', async ({ browser }) => {
+  const ctx = await browser.newContext({ viewport: { width: 1280, height: 800 } });
+  const page = await ctx.newPage();
+  await stubNetwork(ctx);
+  await page.goto(`${BASE}/team/?seed=demo&view=console`);
+  await expect(page.getByTestId('console-dash')).toBeVisible();
+  const order = () => page.getByTestId('dash-card').evaluateAll((els) => els.map((e) => e.dataset.card));
+  expect((await order())[0]).toBe('tonight'); // Tonight leads the dashboard
+  await page.getByTestId('dash-fold-people').click();
+  await expect(page.locator('[data-card="people"]').getByTestId('dash-summary')).toContainText('ready');
+  await page.getByTestId('dash-edit').click();
+  await page.getByTestId('dash-top-learn').click();
+  await page.getByTestId('dash-down-learn').click();
+  expect((await order()).slice(0, 2)).toEqual(['tonight', 'learn']);
+  await page.getByTestId('dash-edit').click();
+  await page.reload();
+  await expect(page.getByTestId('console-dash')).toBeVisible();
+  expect((await order()).slice(0, 2)).toEqual(['tonight', 'learn']);
+  await expect(page.locator('[data-card="people"]').getByTestId('dash-summary')).toBeVisible();
+  await page.getByTestId('dash-edit').click();
+  await page.getByTestId('dash-reset').click();
+  expect((await order())[1]).toBe('glance');
+  await expect(page.locator('[data-card="people"]').getByTestId('dash-summary')).toHaveCount(0);
+  await ctx.close();
+});
+
+test('the sommelier runs the wine programme too: the console on a wide screen, Upload and Team on the phone', async ({ browser }) => {
+  const ctx = await browser.newContext({ viewport: { width: 1280, height: 800 } });
+  const page = await ctx.newPage();
+  await stubNetwork(ctx);
+  await page.goto(`${BASE}/team/?seed=demo`);
+  await page.evaluate(() => { TeamLearn.setMe(TeamLearn.people().find((p) => p.role === 'sommelier').id); });
+  await page.reload();
+  await expect(page.getByTestId('team-console')).toBeVisible();
+  await page.goto(`${BASE}/team/?view=phone`);
+  await expect(page.getByTestId('team-tab-upload')).toBeVisible();
+  await expect(page.getByTestId('team-tab-team')).toBeVisible();
+  expect(await page.evaluate(() => [TeamLearn.manages('sommelier'), TeamLearn.manages('server'), TeamLearn.manages('bartender')])).toEqual([true, false, false]);
+  await ctx.close();
+});
+
+// Every restaurant runs the same Teams (CLAUDE.md): The Larkspur and The Social Corner answer a drill question the
+// same way (the options leave, the answer rises in their place) and at the same text sizes.
+test('both restaurants: the drill answers in the same phases and at the same text sizes', async ({ context, page }) => {
+  await stubNetwork(context);
+  const seen = {};
+  for (const seed of ['demo', 'social']) {
+    await page.goto(`${BASE}/team/?seed=${seed}&view=phone`);
+    await expect(page.getByTestId('team-state')).toBeVisible();
+    await page.getByText(/Start today's drill|Do another 5 questions/).first().click();
+    await expect(page.getByTestId('drill-q')).toBeVisible();
+    const size = (id) => page.getByTestId(id).first().evaluate((el) => parseFloat(getComputedStyle(el).fontSize));
+    const q = await size('drill-q'), opt = await size('drill-opt');
+    await page.getByTestId('drill-opt').first().click();
+    const sure = page.getByText('Sure', { exact: true }); if (await sure.isVisible().catch(() => false)) await sure.click();
+    await page.getByText('Check', { exact: true }).click();
+    await expect(page.getByTestId('drill-result')).toBeVisible();
+    await expect(page.getByTestId('drill-opt')).toHaveCount(0);
+    await expect(page.getByTestId('drill-answer').first()).toBeVisible();
+    seen[seed] = { q, opt, venue: await page.evaluate(() => TeamData.get().venue.sample) };
+  }
+  expect(seen.social.venue).toBe('social');
+  expect(seen.social.q).toBe(seen.demo.q);
+  expect(seen.social.opt).toBe(seen.demo.opt);
+  expect(seen.demo.opt).toBeGreaterThanOrEqual(15);
 });

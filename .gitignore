@@ -42,9 +42,11 @@ screens-*.jsx
 /ios/
 /android/
 /site-dist/
+/site-teams-dist/
 
 # Rendered films (npm run site:video)
 /video/
 model-trial.md
 lcbo-check.md
 feed-report-*.md
+tts-check/

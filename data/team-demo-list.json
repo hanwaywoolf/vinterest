@@ -2,8 +2,17 @@
  "venue": {
   "name": "The Larkspur",
   "city": "Bristol",
-  "style": "Modern British"
+  "style": "Modern British",
+  "brand": {
+   "logo": "brand/larkspur/wordmark-white.png",
+   "logoDark": "brand/larkspur/wordmark-dark.png",
+   "mark": "brand/larkspur/mark.png",
+   "full": "brand/larkspur/logo-white.png",
+   "accent": "#C9A96E",
+   "scale": 1.6
+  }
  },
+ "rev": "2026-11-04-larkspur-logo",
  "wines": [
   {
    "id": "w-nyetimber-classic-cuvee",

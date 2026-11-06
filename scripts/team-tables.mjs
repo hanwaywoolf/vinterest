@@ -25,7 +25,9 @@ async function call(prompt) {
 for (const f of process.argv.slice(2)) {
   const d = JSON.parse(fs.readFileSync(f, 'utf8'));
   const wines = Array.isArray(d.wines) ? d.wines : Object.values(d.wines || {}), dishes = Array.isArray(d.dishes) ? d.dishes : Object.values(d.dishes || {});
-  const about = (d.venue && (d.venue.about || d.venue.name)) || 'a restaurant';
+  // A restaurant's description lives on its list file (data/team-<name>-list.json), beside its currency and brand.
+  const lf = f.replace(/\.json$/, '-list.json'), lv = fs.existsSync(lf) ? (JSON.parse(fs.readFileSync(lf, 'utf8')).venue || {}) : {};
+  const about = lv.about || (d.venue && (d.venue.about || d.venue.name)) || 'a restaurant';
   const st = (id) => ((d.cards || {})[id] || {}).style || {};
   const list = wines.map((w) => `${w.id} | ${short(w)} | ${kindOf(w)} | ${w.glass ? 'glass ' + w.glass : 'not by the glass'} | ${w.bottle ? 'bottle ' + w.bottle : ''} | style ${JSON.stringify(st(w.id))}`).join('\n');
   const picksFor = (id) => dishes.filter((x) => { const p = (d.pairings || {})[x.id] || {}; return [...(p.best || []), p.glass, p.cocktail].filter(Boolean).some((b) => b.id === id); }).map((x) => x.name);
