@@ -106,9 +106,13 @@ const TeamLearn = {
   // A wine's questions as the drill asks them, built once per version of the restaurant's data (TeamData.get
   // keeps one parsed document until the stored text changes) and handed out as copies.
   _qsCache:new WeakMap(),
-  wineQs(id){ const doc=TeamData.get(); let m=this._qsCache.get(doc); if(!m){ m=new Map(); this._qsCache.set(doc,m); }
+  // Questions the sommelier review still doubts (TeamData.reviewed().held) stay out of the drill until the next review;
+  // {all:true} is the review's own view of everything.
+  _held(){ const r=typeof TeamData!=='undefined'&&TeamData.reviewed&&TeamData.reviewed(); return new Set(r&&r.held||[]); },
+  _keep(qs,all){ if(all) return qs; const h=this._held(); return h.size?qs.filter(q=>!h.has(q.id)):qs; },
+  wineQs(id,{all=false}={}){ const doc=TeamData.get(); let m=this._qsCache.get(doc); if(!m){ m=new Map(); this._qsCache.set(doc,m); }
     if(!m.has(id)) m.set(id,this._buildQs(id));
-    return m.get(id).map(q=>({...q})); },
+    return this._keep(m.get(id).map(q=>({...q})),all); },
   /* Which questions ask how sure they are: a price (a wrong price reaches the bill), an allergen (a wrong one reaches a
      guest). Everywhere else the drill reads confidence from how fast a right answer came (TeamDrill), so a grape
      question is one tap, not two. */
@@ -131,8 +135,8 @@ const TeamLearn = {
      (its taste line against three other wines of the same kind, as unlike it as the list allows) and which
      dish you'd suggest it with (one of its own dishes against three it doesn't suit). Kept per document
      like wineQs, with ids of their own so progress on them is theirs. */
-  lightQs(id){ const doc=TeamData.get(); let m=this._qsCache.get(doc); if(!m){ m=new Map(); this._qsCache.set(doc,m); }
-    const k='light:'+id; if(!m.has(k)) m.set(k,this._buildLight(id)); return m.get(k).map(q=>({...q})); },
+  lightQs(id,{all=false}={}){ const doc=TeamData.get(); let m=this._qsCache.get(doc); if(!m){ m=new Map(); this._qsCache.set(doc,m); }
+    const k='light:'+id; if(!m.has(k)) m.set(k,this._buildLight(id)); return this._keep(m.get(k).map(q=>({...q})),all); },
   /* Each question has to have one answer a trained server would stand behind, so the wrong ones are
      plainly wrong: another wine's line only when that wine is clearly different (SAY_GAP apart in style and
      sharing few words), a dish only when the pairings say this wine doesn't suit it (tableFit). Without three
@@ -434,16 +438,17 @@ const TeamLearn = {
   },
   /* A cocktail's questions (prompts/team-cocktail-cards.txt): every one four options with one right, the
      wrong ones from this bar's own other cocktails, so they're asked as written (mc), shuffled by their id. */
-  cocktailQs(id){ const doc=TeamData.get(); let m=this._qsCache.get(doc); if(!m){ m=new Map(); this._qsCache.set(doc,m); }
+  cocktailQs(id,{all=false}={}){ const doc=TeamData.get(); let m=this._qsCache.get(doc); if(!m){ m=new Map(); this._qsCache.set(doc,m); }
     if(!m.has(id)){ const c=TeamData.cocktailCard(id);
       m.set(id,(c&&c.qs||[]).filter(q=>q&&q.q&&Array.isArray(q.opts)&&q.opts.length===4&&q.opts[q.a]!=null).map(q=>({...q,cocktail:id,mc:true}))
         .filter(q=>!this.givesAway(q)&&!this.lengthCue(q)).map(q=>{ const order=this._shuffle(q.opts.map((_,i)=>i),q.id); return {...q,opts:order.map(i=>this._cap(q.opts[i])),a:order.indexOf(q.a)}; })); }
-    return m.get(id).map(q=>({...q})); },
+    return this._keep(m.get(id).map(q=>({...q})),all); },
   /* A dish's ladder (docs/business.md, "The menu"): know it (what it is, from the dish notes), its allergens (a
      choose-all against the venue's list, only once the kitchen has confirmed them; asked with confidence, a miss back
      within the shift), a change a guest asks for (what do you say), then its pairings (which wine, name a wine).
      Pills on the allergen and change questions are built here (q.pills), so choices() hands them straight back. */
-  dishQs(id,{allergen=true}={}){
+  dishQs(id,{allergen=true,all=false}={}){ return this._keep(this._dishQs(id,{allergen}),all); },
+  _dishQs(id,{allergen=true}={}){
     const x=TeamData.dish(id); if(!x) return [];
     const out=[], c=TeamData.dishCard(id), dishes=TeamData.dishes();
     // Know it: the dish's own sentence against three near-misses of the same dish (a wrong sauce, cut or richness,

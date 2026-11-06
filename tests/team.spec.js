@@ -1879,3 +1879,30 @@ test('the review finds nothing to fix on any restaurant in the build', async ({ 
     const was = TeamLearn.dishQs; TeamLearn.dishQs = (id) => id === d.id ? [bad] : []; const r = TeamLearn.review().some((f) => f.code === 'offsubject'); TeamLearn.dishQs = was; return r; });
   expect(caught).toBe(true); // on The Social Corner, whose dishes have notes
 });
+
+// The sommelier review (TeamData.sommelierReview): every question read as the drill shows it; a wine card's doubtful
+// question is rewritten and read again, a list-built one is held out of the drill, and the console says so.
+test('the sommelier review rewrites what it doubts, holds what it still doubts, and the drill leaves it out', async ({ context, page }) => {
+  let round = 0; const seen = [];
+  await stubNetwork(context, { claudeText: (b) => {
+    const text = b.messages[0].content, ids = [...text.matchAll(/^ID (\S+)$/gm)].map((m) => m[1]);
+    if (b.purpose === 'team_review') { round++; seen.push(...ids);
+      return JSON.stringify({ reviews: ids.map((id) => (id === window_card || id === window_dish) && seen.filter((x) => x === id).length === 1 ? { id, fit: false, problem: 'two_right', note: 'A wrong option also suits.' } : { id, fit: true }) }); }
+    if (b.purpose === 'team_fix') return JSON.stringify({ fixes: ids.map((id) => ({ id, q: { k: 'recall', q: 'Which grape is the Veuve Clicquot Brut mostly made from?', ans: 'Pinot Noir', acc: [], why: 'Pinot Noir leads the blend.' } })) });
+    return ''; } });
+  await page.goto(`${BASE}/team/?seed=social&view=console`);
+  await page.waitForFunction(() => window.TeamLearn && TeamData.wines().length > 0);
+  const ids = await page.evaluate(() => { const w = TeamData.wines()[0], card = TeamLearn.wineQs(w.id).find((q) => q.k === 'recall'), dish = TeamLearn.dishQs(TeamData.dishes()[0].id)[0]; return { card: card.id, dish: dish.id }; });
+  var window_card = ids.card, window_dish = ids.dish; // read by the stub above
+  const r = await page.evaluate(async () => { const r = await TeamData.sommelierReview(); return r; });
+  expect(r.doubted).toBe(2);
+  expect(r.fixed).toBe(1); // the card's question was rewritten and passed the second read
+  expect(r.held).toEqual([ids.dish]); // the dish's question is built from the list, so it's held
+  const out = await page.evaluate((ids) => ({ inDrill: TeamLearn.dishQs(TeamData.dishes()[0].id).some((q) => q.id === ids.dish), rewritten: TeamLearn.wineQs(TeamData.wines()[0].id).find((q) => q.id === ids.card).q, line: TeamData.checkedLine() }), ids);
+  expect(out.inDrill).toBe(false);
+  expect(out.rewritten).toMatch(/mostly made from/);
+  expect(seen.length).toBeGreaterThan(300); // every question was read
+  await page.reload();
+  await page.getByTestId('console-nav-wines').click();
+  await expect(page.getByTestId('console-sommelier')).toContainText('1 held out of the drill');
+});

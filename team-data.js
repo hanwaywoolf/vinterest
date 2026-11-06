@@ -289,7 +289,60 @@ const TeamData = {
      chip and the console. The demo restaurant runs offline, so it's only counted there. */
   /* The check in words for the job chip: "180 questions checked · 6 rewritten". */
   checkedLine(){ const c=(this.get().venue||{}).checked; if(!c) return 'Training is up to date';
-    return `${c.asked} questions checked${c.fixed?` · ${c.fixed} rewritten`:''}${c.left?` · ${c.left} held back`:''}${c.flagged?` · ${c.flagged} to look at`:''}`; },
+    return `${c.asked} questions checked${c.fixed?` · ${c.fixed} rewritten`:''}${c.left?` · ${c.left} held back`:''}${c.flagged?` · ${c.flagged} to look at`:''}${(()=>{ const r=this.reviewed(); return r?` · sommelier: ${r.fixed} rewritten${r.held.length?`, ${r.held.length} held`:''}`:''; })()}`; },
+  /* One batch of rewrites (prompts/team-fix.txt): each {q, wine, why, note} sent back with the wine's card and the dishes
+     it suits; a rewrite takes the question's place under the same id and kind, so nobody's progress moves. */
+  async _rewrite(part,tpl,venue){
+        const items=part.map(f=>{ const w=this.wine(f.wine), c=this.card(f.wine)||{};
+          const suits=this.dishes().filter(x=>{ const p=this.pairing(x.id); return p&&[...(p.best||[]),p.glass].filter(Boolean).some(b=>b.id===w.id); }).map(x=>x.name);
+          return `ID ${f.q.id}\nWINE ${this.label(w)} | ${w.type} | ${w.region}, ${w.country} | grapes: ${(w.grapes||[]).join(', ')||'unknown'} | ${[w.glass&&'glass '+w.glass,w.bottle&&'bottle '+w.bottle].filter(Boolean).join(', ')}\nCARD taste: ${c.taste||''} | style: body ${(c.style||{}).body}/5, acidity ${(c.style||{}).acid}/5, tannin ${(c.style||{}).tannin}/5, sweetness ${(c.style||{}).sweet}/5 | grape: ${c.grape||''} | place: ${c.place||''}\nDISHES IT SUITS ${suits.join('; ')||'none listed'}\nPROBLEM ${f.why}: ${f.note}\nQUESTION ${JSON.stringify(f.q)}`; }).join('\n\n');
+        const prompt=tpl.replace(/\{\{venue\}\}/g,venue).replace('{{about}}',this.about()).replace('{{facts}}',[...new Set(part.map(f=>f.wine))].map(id=>this.facts(this.wine(id))).join('\n'))
+          .replace('{{list}}',this._listLines()).replace('{{menu}}',this._menuLines()).replace('{{items}}',items);
+        let j=null; try{ j=this._json(await window.claude.complete({purpose:'team_fix',messages:[{role:'user',content:prompt}]})); }catch(e){}
+        const d=this.get();
+        (j&&j.fixes||[]).forEach(fx=>{ const f=part.find(x=>x.q.id===fx.id); if(!f||!fx.q) return; const c=d.cards[f.wine]; if(!c) return;
+          const nq={...fx.q,k:f.q.k,id:f.q.id};
+          const ok=nq.q&&(nq.k==='recognise'?Array.isArray(nq.opts)&&nq.opts.length===4&&nq.opts[nq.a]:nq.k==='apply'?Array.isArray(nq.key)&&nq.key.length:!!nq.ans);
+          if(ok) c.qs=c.qs.map(q=>q.id===f.q.id?nq:q); });
+        this.save(d);
+  },
+  /* The sommelier review (prompts/team-review.txt, purpose team_review): after the rule check, a head sommelier reads
+     every question exactly as the drill shows it (the question, the options as dealt, the one marked right, the line
+     after the answer) and says whether it's fit to ask: no second right answer, no wrong answer marked right, no false
+     fact, no giveaway, nothing off the subject, nothing unclear or useless. A wine card's question it doubts goes back to
+     be rewritten (team_fix, problem `sommelier`, its note) and is read again; anything still doubted, and any question
+     built from the list (a dish's, a cocktail's, Low's) it doubts, is held out of the drill (`venue.reviewed.held`)
+     until the next review. The pre-handover gate for a new install (docs/business.md, "Handing over an install"):
+     `npm run team:review` runs it on a seed and writes the result into its file. The demo restaurant is never sent. */
+  REVIEW_BATCH:10,
+  _reviewItem(q){ const d=TeamLearn.deal(q,'review'); let c=null; try{ c=TeamLearn.choices(d); }catch(e){}
+    const opts=c&&c.opts||d.opts||[], right=c&&c.right||(d.a!=null?[d.a]:[]);
+    const about=q.wine?`WINE ${this.label(this.wine(q.wine)||{})}`:q.cocktail?`COCKTAIL ${(this.cocktail(q.cocktail)||{}).name||''}`:q.dish?`DISH ${(this.dish(q.dish)||{}).name||''}`:'';
+    const ax=TeamLearn.aside(d,right.map(i=>opts[i]).join(' ')||d.ans);
+    const groups=c&&c.groups&&c.groups.length>1?' (in '+c.groups.map(g=>`"${g.label}": choose ${g.n}`).join(', ')+')':c&&c.n>1?` (choose ${c.n})`:'';
+    return `ID ${q.id}\n${about}\nQUESTION ${d.q}${groups}\nOPTIONS\n${opts.map((o,i)=>`${right.includes(i)?'[marked right]':'[wrong]'} ${o}`).join('\n')}${opts.length?'':`\nANSWER ${d.ans||''}`}\nAFTER ${ax?(ax.text||ax.list.map(x=>`${x.name}: ${x.text}`).join(' / ')):'(nothing)'}`; },
+  async sommelierReview({onStep,only}={}){
+    const all=[...this.wines().flatMap(w=>[...TeamLearn.wineQs(w.id,{all:true}),...TeamLearn.lightQs(w.id,{all:true})]),...this.cocktails().flatMap(c=>TeamLearn.cocktailQs(c.id,{all:true})),...this.dishes().flatMap(x=>TeamLearn.dishQs(x.id,{all:true}))]
+      .filter(q=>!only||only.includes(q.id));
+    if(this.isDemo()) return null;
+    const tpl=_loadTextSync('prompts/team-review.txt'), venue=this.get().venue.name||'the restaurant';
+    const cock=this.cocktails().length?`The cocktail list:\n${this._drinkLines()}`:'';
+    const ask=async qs=>{ const out={}; for(let i=0;i<qs.length;i+=this.REVIEW_BATCH){ const part=qs.slice(i,i+this.REVIEW_BATCH);
+        const prompt=tpl.replace(/\{\{venue\}\}/g,venue).replace('{{about}}',this.about()).replace('{{list}}',this._listLines()).replace('{{menu}}',this._menuLines()).replace('{{cocktails}}',cock).replace('{{items}}',part.map(q=>this._reviewItem(q)).join('\n\n'));
+        let j=null; try{ j=this._json(await this._callRetry('team_review',prompt)); }catch(e){}
+        (j&&j.reviews||[]).forEach(r=>{ if(r&&r.id&&part.some(q=>q.id===r.id)) out[r.id]=r; });
+        onStep&&onStep(Math.min(qs.length,i+this.REVIEW_BATCH),qs.length); }
+      return out; };
+    const first=await ask(all), doubted=all.filter(q=>first[q.id]&&first[q.id].fit===false);
+    // A wine card's own question is rewritten and read again; the rest are built from the list and can only be held.
+    const card=doubted.filter(q=>q.wine&&!q.light&&!q.dish), fixTpl=_loadTextSync('prompts/team-fix.txt');
+    for(let i=0;i<card.length;i+=this.FIX_BATCH) await this._rewrite(card.slice(i,i+this.FIX_BATCH).map(q=>({q,wine:q.wine,why:'sommelier',note:`${first[q.id].problem}: ${first[q.id].note}`})),fixTpl,venue);
+    const again=card.length?await ask(card.map(q=>TeamLearn.wineQs(q.wine,{all:true}).find(x=>x.id===q.id)).filter(Boolean)):{};
+    const held=doubted.filter(q=>!(card.includes(q)&&again[q.id]&&again[q.id].fit!==false)).map(q=>q.id);
+    const d=this.get(); d.venue.reviewed={at:Date.now(),asked:all.length,doubted:doubted.length,fixed:doubted.length-held.length,held,
+      notes:Object.fromEntries(held.map(id=>[id,{problem:(again[id]||first[id]).problem,note:(again[id]||first[id]).note}]))};
+    this.save(d); return d.venue.reviewed; },
+  reviewed(){ return (this.get().venue||{}).reviewed||null; },
   FIX_BATCH:8, FIX_ROUNDS:2,
   async checkQuestions(ids,onStep){
     const all=ids||this.wines().map(w=>w.id), asked=all.reduce((n,id)=>n+((this.card(id)||{}).qs||[]).length,0);
@@ -303,18 +356,7 @@ const TeamData = {
       for(let round=0;round<this.FIX_ROUNDS&&todo.length;round++){
       for(let i=0;i<todo.length;i+=this.FIX_BATCH){
         const part=todo.slice(i,i+this.FIX_BATCH);
-        const items=part.map(f=>{ const w=this.wine(f.wine), c=this.card(f.wine)||{};
-          const suits=this.dishes().filter(x=>{ const p=this.pairing(x.id); return p&&[...(p.best||[]),p.glass].filter(Boolean).some(b=>b.id===w.id); }).map(x=>x.name);
-          return `ID ${f.q.id}\nWINE ${this.label(w)} | ${w.type} | ${w.region}, ${w.country} | grapes: ${(w.grapes||[]).join(', ')||'unknown'} | ${[w.glass&&'glass '+w.glass,w.bottle&&'bottle '+w.bottle].filter(Boolean).join(', ')}\nCARD taste: ${c.taste||''} | style: body ${(c.style||{}).body}/5, acidity ${(c.style||{}).acid}/5, tannin ${(c.style||{}).tannin}/5, sweetness ${(c.style||{}).sweet}/5 | grape: ${c.grape||''} | place: ${c.place||''}\nDISHES IT SUITS ${suits.join('; ')||'none listed'}\nPROBLEM ${f.why}: ${f.note}\nQUESTION ${JSON.stringify(f.q)}`; }).join('\n\n');
-        const prompt=tpl.replace(/\{\{venue\}\}/g,venue).replace('{{about}}',this.about()).replace('{{facts}}',[...new Set(part.map(f=>f.wine))].map(id=>this.facts(this.wine(id))).join('\n'))
-          .replace('{{list}}',this._listLines()).replace('{{menu}}',this._menuLines()).replace('{{items}}',items);
-        let j=null; try{ j=this._json(await window.claude.complete({purpose:'team_fix',messages:[{role:'user',content:prompt}]})); }catch(e){}
-        const d=this.get();
-        (j&&j.fixes||[]).forEach(fx=>{ const f=part.find(x=>x.q.id===fx.id); if(!f||!fx.q) return; const c=d.cards[f.wine]; if(!c) return;
-          const nq={...fx.q,k:f.q.k,id:f.q.id};
-          const ok=nq.q&&(nq.k==='recognise'?Array.isArray(nq.opts)&&nq.opts.length===4&&nq.opts[nq.a]:nq.k==='apply'?Array.isArray(nq.key)&&nq.key.length:!!nq.ans);
-          if(ok) c.qs=c.qs.map(q=>q.id===f.q.id?nq:q); });
-        this.save(d);
+        await this._rewrite(part,tpl,venue);
         if(!round) onStep&&onStep(Math.min(failed.length,i+this.FIX_BATCH),failed.length);
       }
       const ids2=new Set(todo.map(f=>f.q.id)); todo=TeamLearn.audit([...new Set(todo.map(f=>f.wine))]).filter(f=>ids2.has(f.q.id));
@@ -409,6 +451,8 @@ const TeamData = {
     // Last, once the pairings are in (a table question is checked against them): every question checked
     // and the ones that fail rewritten, before anyone is assigned them.
     if(typeof TeamLearn!=='undefined'&&this.wines().length) await this.checkQuestions(null,(a,b)=>onStep&&onStep('Checking every question',a,b));
+    // Then the sommelier's read of every question as the drill shows it; anything still doubted is held out of the drill.
+    if(typeof TeamLearn!=='undefined'&&this.wines().length) await this.sommelierReview({onStep:(a,b)=>onStep&&onStep('A sommelier is reading every question',a,b)});
     if(typeof TeamLearn!=='undefined') TeamLearn.assign(res);
   },
   /* The drinking window for each dated wine (the consumer app's vintage_info, open to every account),
@@ -442,7 +486,7 @@ const TeamData = {
   async exportFile(){
     const d=this.get();
     const out={venue:{name:d.venue.name},wines:Object.values(d.wines).filter(w=>w.onList).sort((a,b)=>a.order-b.order),dishes:Object.values(d.dishes).filter(x=>x.onMenu).sort((a,b)=>a.order-b.order),cards:d.cards,pairings:d.pairings,
-      ...(this.cocktails().length?{cocktails:this.cocktails(),cocktailCards:d.cocktailCards||{}}:{}),...(Object.keys(d.dishCards||{}).length?{dishCards:d.dishCards}:{}),exported:new Date().toISOString()};
+      ...(this.cocktails().length?{cocktails:this.cocktails(),cocktailCards:d.cocktailCards||{}}:{}),...(Object.keys(d.dishCards||{}).length?{dishCards:d.dishCards}:{}),...(d.venue.reviewed?{reviewed:d.venue.reviewed}:{}),exported:new Date().toISOString()};
     const name=`vinterest-team-${this._slug(d.venue.name||'restaurant')}.json`;
     try{ await Platform.saveFile(name,JSON.stringify(out,null,1)); }catch(e){ const a=document.createElement('a'); a.href='data:application/json;charset=utf-8,'+encodeURIComponent(JSON.stringify(out)); a.download=name; a.click(); }
     return out;
@@ -513,7 +557,8 @@ const TeamSample = {
     // The installed restaurant's own details (city, style, currency, brand) come with it; the list file is
     // where they're kept, so a training file exported later doesn't need to carry them.
     const meta=(this.list(which)||{}).venue||{};
-    d.venue={...meta,name:s.venue.name,created:now,sample:which,seeded:this.stamp(which)}; // seeded: which copy of the files this is, so a newer build reloads it
+    d.venue={...meta,name:s.venue.name,created:now,sample:which,seeded:this.stamp(which)};
+    if(s.reviewed) d.venue.reviewed=s.reviewed; // the sommelier review the file was handed over with (npm run team:review) // seeded: which copy of the files this is, so a newer build reloads it
     s.wines.forEach((w,i)=>{ d.wines[w.id]={...w,onList:true,order:i,addedAt:now-30*86400000}; });
     s.dishes.forEach((x,i)=>{ d.dishes[x.id]={...x,onMenu:true,order:i,addedAt:now}; });
     Object.values(s.cards).forEach(c=>{ d.cards[c.id]={...TeamData._cleanCard(c,d),at:now}; });

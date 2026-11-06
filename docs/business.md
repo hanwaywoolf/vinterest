@@ -253,6 +253,16 @@ Every staff card's questions are written by Claude, and a model slips: a questio
 
 `TeamData.checkQuestions` runs after the cards and pairings are written and before anyone is assigned anything. `TeamLearn.audit` puts every question through exactly what the drill does with it and names the failures: giveaway, thin or mismatch. Only the failures go back to Claude (`team_fix`, eight a call), each with the reason, the wine's card and the dishes it suits, and each comes back rewritten under the same id and kind, so nobody's progress shifts. The rewrite is checked again; anything that still fails stays out of the drill. The publish chip says what happened ("180 questions checked · 6 rewritten · 1 held back"). On the demo list it costs nothing: The Larkspur's questions were checked and rewritten before it shipped, and the demo restaurant is counted, never sent.
 
+### Handing over an install (built)
+
+A restaurant's questions pass three checks before its staff see them, and the last two are the gate before an install is handed to the customer.
+
+1. **The rule check at publish** (`TeamLearn.audit`, `TeamData.checkQuestions`): giveaways, too few believable wrong answers, a guest at a dish the wine doesn't suit, length cues, table questions that aren't a real choice. Failures go back to Claude to be rewritten (`team_fix`).
+2. **The app's review** (`TeamLearn.review`, `npm run team:audit`): every question as the drill shows it, against every fault found by hand in testing (a wrong answer about another dish, answers of mixed kinds, a table request that gives the answer away, an answer screen that repeats the answer or runs long, duplicate options, length cues, giveaway words). It runs in the tests on every restaurant, so a flag fails the build. A fault found by hand becomes a rule here, so it's caught for every restaurant after.
+3. **The sommelier review** (`TeamData.sommelierReview`, `prompts/team-review.txt`, purpose `team_review`): Claude, as the restaurant's head sommelier, reads every question exactly as a server will (the options as dealt, the one marked right, the line after the answer) and says whether it's fit to ask: no second right answer, no wrong answer marked right, no false fact, no giveaway, nothing off the subject, nothing unclear or useless. A wine card's doubtful question is rewritten (`team_fix`, problem `sommelier`) and read again; anything still doubted, and any doubted question built from the list (a dish's, a cocktail's, Low's), is held out of every drill until the next review (`venue.reviewed.held`). It runs at the end of every publish, and the console's Wines section shows the result ("Sommelier review": read, rewritten, held and why).
+
+Before handing over: `npm run team:audit` must show nothing flagged, then `npm run team:review -- <restaurant>` runs the sommelier review and writes the rewrites and the held list into the restaurant's file, so the install opens with them. It calls the deployed Worker for real (roughly one call per ten questions, plus rewrites; The Social Corner's 600 questions is about 60 calls). Read the held list: each note says what's wrong, and a held question is a gap the next list or card rewrite should fill.
+
 ## Vinny's voice at the table (built)
 
 The guest can be heard and answered out loud, so staff work on how they say it as well as what they say

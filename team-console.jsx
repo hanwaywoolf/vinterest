@@ -410,6 +410,15 @@ function _CWines({open,goUpload}){ const T=useTheme(), cr=T.lift(C.cr), ws=TeamD
   const groups=[]; ws.forEach(w=>{ const s=w.section||'The list'; let g=groups.find(x=>x.s===s); if(!g) groups.push(g={s,ws:[]}); g.ws.push(w); });
   return <div data-testid="console-wines">{_cH(T,'Wines',`${ws.length} on the list · ${ws.filter(TeamData.byGlass).length} by the glass · ${cov.glass.covered+cov.bottle.covered} covered by the floor`,<Btn small onClick={goUpload}>Upload a new list</Btn>)}
     {!ws.length&&<Card><div style={{fontSize:14,color:T.mid,fontFamily:C.P}}>No list yet. Upload one and it appears here with who knows what.</div></Card>}
+    {(()=>{ const r=TeamData.reviewed(); if(!r) return null; const qs=TeamLearn.allQs ? [...TeamData.wines().flatMap(w=>[...TeamLearn.wineQs(w.id,{all:true}),...TeamLearn.lightQs(w.id,{all:true})]),...TeamData.cocktails().flatMap(c=>TeamLearn.cocktailQs(c.id,{all:true})),...TeamData.dishes().flatMap(x=>TeamLearn.dishQs(x.id,{all:true}))] : [];
+      // The sommelier's read before handover: how many questions, how many rewritten, and what's held out of the drill and why.
+      return <Card style={{marginBottom:14}}><div data-testid="console-sommelier">{_cLabel(T,'Sommelier review',<span style={{fontSize:11,color:T.mid,fontFamily:C.P,textTransform:'none',letterSpacing:0,fontWeight:500}}>{new Date(r.at).toLocaleDateString(undefined,{day:'numeric',month:'short'})}</span>)}
+        <div style={{fontSize:14,color:T.ink2,fontFamily:C.P,lineHeight:1.5}}>{r.asked} questions read as a server sees them · {r.fixed} rewritten · {r.held.length?<b style={{color:T.amber}}>{r.held.length} held out of the drill</b>:'nothing held'}</div>
+        {r.held.slice(0,10).map((id,i)=>{ const q=qs.find(x=>x.id===id), n=r.notes[id]||{}, w=q&&q.wine&&TeamData.wine(q.wine), d=q&&q.dish&&TeamData.dish(q.dish);
+          return <div key={id} role="button" onClick={()=>w?open({view:'wine',id:w.id}):d&&open({view:'dish',id:d.id})} style={{padding:'9px 0',borderTop:`1px solid ${T.line}`,cursor:'pointer',marginTop:i?0:8}}>
+            <div style={{fontSize:14,color:T.ink,fontFamily:C.P,lineHeight:1.45}}>{q?q.q:id}</div>
+            <div style={{fontSize:12,color:T.mid,fontFamily:C.P,marginTop:2}}>{w?TeamData.short(w):d?d.name:''} · {n.note||n.problem}</div></div>; })}
+        {_cNote(T,'Held questions are left out of every drill until the next review, when they are read again.')}</div></Card>; })()}
     {(()=>{ const rv=TeamLearn.review(); if(!rv.length) return null;
       // The app's own review of every question as the drill shows it: what a reviewer would catch, before anyone drills it.
       const WORD={offsubject:'Off the subject',kind:'Mixed kinds',request:'Gives the answer away',echo:'Repeats the answer',long:'Too long to read',dupe:'Same option twice',cue:'Length gives it away',giveaway:'Gives the answer away'};
