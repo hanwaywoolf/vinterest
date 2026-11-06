@@ -529,7 +529,7 @@ const TeamJobs = {
 };
 Object.assign(window,{TeamDemo,TeamJobs});
 /* A restaurant's own look (venue.brand from its list file): its accent in place of Vinterest's crimson,
-   its wordmark in the header, a photo of the room on the join screen. apply() runs on every render of
+   its wordmark in the header, a photo of the space on the join screen. apply() runs on every render of
    the team app, so changing restaurant changes the look at once; with no brand it puts the crimson back. */
 const TeamBrand = {
   _crimson:null,

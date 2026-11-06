@@ -115,7 +115,7 @@ function TeamToday({pid,open}){ const T=useTheme(), cr=T.lift(C.cr);
         <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginTop:6}}><span style={{fontSize:12,color:T.mid,fontFamily:C.P}}>{Math.round(p.partial*100)}% of the answers held</span>
           <span role="button" data-testid="team-part-practise" onClick={()=>open({view:'drill',part:k})} style={{fontSize:13,fontWeight:700,color:cr,fontFamily:C.P,cursor:'pointer'}}>Practise {TeamLearn.PART_LABEL[k].toLowerCase()} →</span></div>
       </div>)}
-      <div style={{fontSize:12,color:T.mid,fontFamily:C.P,lineHeight:1.45}}>A wine or dish is known once every question on it is right and still fresh; the bar fills with every answer you hold.</div>
+      <div style={{fontSize:12,color:T.mid,fontFamily:C.P,lineHeight:1.45}}>A wine or dish is known once every question on it is right and still fresh; the line fills with every answer you hold.</div>
       {ret.asked>=3&&<div style={{fontSize:13,color:T.mid,fontFamily:C.P}}>Surprise re-checks this month: {ret.right} of {ret.asked} remembered.</div>}
     </Card>
     <Btn primary full style={{marginTop:14}} onClick={()=>open({view:'drill'})}>{r.due||as.length?`Start today's drill`:'Practise'} · 5 questions</Btn>
