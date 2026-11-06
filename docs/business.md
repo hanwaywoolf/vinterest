@@ -1,4 +1,4 @@
-# Vinterest for teams
+# Vinterest Teams
 
 A second app in this repository that trains a restaurant's servers, bartenders, sommeliers and buyer
 on the restaurant's own wine list and menu. It shares the consumer app's checked wine facts

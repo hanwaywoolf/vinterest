@@ -60,7 +60,7 @@ test('the price search stays on Sonnet 4.6 while CLAUDE_MODEL is on trial', asyn
   expect(upstream[0].body.thinking).toBeUndefined();
 });
 
-// The guest's voice at the table (Vinterest for teams): /tts with a cloud voice, or off without a key.
+// The guest's voice at the table (Vinterest Teams): /tts with a cloud voice, or off without a key.
 async function tts(env, body, origin = 'https://vinterest.pages.dev') {
   const worker = await loadWorker();
   const upstream = [], realFetch = global.fetch;

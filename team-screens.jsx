@@ -79,7 +79,7 @@ function TeamSetup({onDone}){ const T=useTheme(), cr=T.lift(C.cr);
     if(sample) TeamSample.load(sample); else { TeamData.setVenue({name:venue.trim()}); TeamLearn.addPerson(name.trim(),'manager'); }
     onDone(); };
   return <div style={{padding:'calc(env(safe-area-inset-top) + 28px) 20px 24px',maxWidth:520,margin:'0 auto'}}>
-    <div style={{fontSize:13,fontWeight:700,color:cr,fontFamily:C.P,letterSpacing:'0.1em',textTransform:'uppercase'}}>Vinterest for teams</div>
+    <div style={{fontSize:13,fontWeight:700,color:cr,fontFamily:C.P,letterSpacing:'0.1em',textTransform:'uppercase'}}>Vinterest Teams</div>
     {_tH(T,'Train your floor on your own wines.','Upload your wine list and menu. Every wine gets a staff card and pairings with your dishes, and everyone drills what their role sells until they know it, and keeps knowing it.')}
     <div style={{display:'flex',flexDirection:'column',gap:10,marginTop:14}}>
       <input aria-label="Restaurant name" placeholder="Restaurant name" value={venue} onChange={e=>setVenue(e.target.value)} style={field}/>

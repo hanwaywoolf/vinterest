@@ -239,7 +239,7 @@ export default {
   }
 };
 
-/* A guest's line said aloud by a cloud voice (Vinterest for teams: Vinny at the table, team-voice.js).
+/* A guest's line said aloud by a cloud voice (Vinterest Teams: Vinny at the table, team-voice.js).
    ElevenLabs when ELEVENLABS_API_KEY is set, else OpenAI's speech model with OPENAI_API_KEY; without either
    it answers 404 {enabled:false} and the app speaks with the browser's own voice. The key never leaves the
    Worker; the text is short (TTS_MAX_CHARS), the same origins and per-IP limit as /claude apply, and each
@@ -405,7 +405,7 @@ const FAIR_USE = {
 /* The team purposes (team_list, team_menu, team_cards, team_pairings, team_grade, team_vinny, team_guest, team_fix) are open while the
    pilot is two people on one laptop: no sign-in, metered only by the per-IP limit. Add them here
    with TEAM_PRO once restaurants have accounts. */
-const TEAM_PRO = "Vinterest for teams needs a Pro account while it's in pilot.";
+const TEAM_PRO = "Vinterest Teams needs a Pro account while it's in pilot.";
 const PRO_ONLY = { list_scan: "Wine list scanning is part of Vinterest Pro.", lcbo: "LCBO stock near you is part of Vinterest Pro." };
 /* Pro-only purposes any signed-in account may use anyway (metered by FAIR_USE.free). None: list
    scanning and LCBO stock need Pro, from a subscription or a promo code. */
