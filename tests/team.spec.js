@@ -2015,3 +2015,21 @@ test('an older copy of the demo restaurant is replaced whole', async ({ context,
   expect(after.sales).toBeGreaterThan(0);
   expect(after.logo).toMatch(/story\d+/);
 });
+
+// The Social Corner keeps its team's progress between deploys, but a changed demo story re-invents its sales.
+test('a changed demo story re-invents The Social Corner sales and keeps its progress', async ({ context, page }) => {
+  await stubNetwork(context);
+  await page.goto(`${BASE}/team/?seed=social`);
+  await expect(page.getByTestId('team-state')).toBeVisible();
+  const before = await page.evaluate(() => {
+    const d = TeamData.get(); d.venue.seeded = 'old|old|story1'; TeamData.save(d);
+    const s = TeamSales.get(); s.rows = s.rows.slice(0, 3); TeamSales.save(s);
+    return { people: TeamLearn.people().map((p) => p.name) };
+  });
+  await page.goto(`${BASE}/team/?seed=social`);
+  await expect(page.getByTestId('team-state')).toBeVisible();
+  const after = await page.evaluate(() => ({ current: TeamSample.current('social'), rows: TeamSales.get().rows.length, people: TeamLearn.people().map((p) => p.name) }));
+  expect(after.current).toBe(true);
+  expect(after.rows).toBeGreaterThan(3);
+  expect(after.people).toEqual(before.people);
+});

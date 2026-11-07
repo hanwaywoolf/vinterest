@@ -561,6 +561,8 @@ const TeamSample = {
     // The Larkspur is invented from end to end, so an older copy of it is replaced whole (its team, progress and
     // sales seeded again): a visitor from the website always meets the demo as it now is.
     const keep=which!=='demo'&&(TeamData.get().venue||{}).sample===which&&TeamLearn.people().length>0;
+    // A changed demo story (TeamDemo.STORY) re-invents a kept restaurant's sales, which are demo data too; its team's progress stays.
+    const story=s=>(String(s||'').match(/\|story(\d+)$/)||[])[1]||null, newStory=keep&&story((TeamData.get().venue||{}).seeded)!==String(TeamDemo.STORY);
     // The installed restaurant's own details (city, style, currency, brand) come with it; the list file is
     // where they're kept, so a training file exported later doesn't need to carry them.
     const meta=(this.list(which)||{}).venue||{};
@@ -582,6 +584,7 @@ const TeamSample = {
       const have=new Set(TeamLearn.people().map(p=>p.name.toLowerCase()));
       (s.staff||(this.social(which)?(this.list(which)||{}).staff||[]:[])).filter(p=>!have.has(String(p.name).toLowerCase())).forEach(p=>TeamLearn.addPerson(p.name,p.role,p.photo||null));
       TeamLearn.people().forEach(p=>TeamLearn.assignExisting(p.id));
+      if(newStory&&typeof TeamSales!=='undefined') TeamSales.clear();
       if((which==='demo'||this.social(which))&&typeof TeamSales!=='undefined'&&!(TeamSales.get().rows||[]).length) TeamSales.seedDemo();
       return true; }
     Store.remove(TeamLearn.KEY); TeamLearn.resetProgress(); if(typeof TeamSales!=='undefined') TeamSales.clear();
