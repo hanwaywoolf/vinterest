@@ -20,7 +20,7 @@ function TeamFace({person,size=36,ring}){ const T=useTheme();
   const st={width:size,height:size,borderRadius:size/2,flexShrink:0,boxShadow:ring?`0 0 0 2px ${ring}`:'none'};
   return person&&person.photo?<img src={person.photo} alt="" width={size} height={size} style={{...st,objectFit:'cover',display:'block'}}/>
     :<div aria-hidden="true" style={{...st,background:T.soft,border:`1px solid ${T.line}`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:size*0.38+'px',fontWeight:700,color:T.ink2,fontFamily:C.P}}>{init}</div>; }
-function _tDays(ms){ const d=Math.round((ms-Date.now())/86400000); return d<0?`${-d} day${d===-1?'':'s'} overdue`:d===0?'due today':`due in ${d} day${d===1?'':'s'}`; }
+function _tDays(ms){ const d=Math.round((ms-Date.now())/86400000); return d<0?`${-d} day${d===-1?'':'s'} behind`:d===0?'due today':`due in ${d} day${d===1?'':'s'}`; }
 /* The background job after a publish (TeamJobs): re-renders on every step. */
 function useTeamJob(){ const [,bump]=React.useReducer(x=>x+1,0); React.useEffect(()=>{ window.addEventListener('vbiz:job',bump); return ()=>window.removeEventListener('vbiz:job',bump); },[]); return TeamJobs.current(); }
 /* Where the writing is, as a strip the manager can leave alone: the step and its count with a thin bar

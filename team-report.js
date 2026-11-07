@@ -122,7 +122,7 @@ const TeamReport = {
       extra+=gap*price; n++; });
     if(!n) return null;
     return {perShift:extra,tipLow:extra*this.TIP_LOW,tipHigh:extra*this.TIP_HIGH,wines:n,demo:TeamSales.demo(),
-      caveat:`From this restaurant's sales data over ${days} nights: what servers who know each of your top sellers sell of it per shift, against those who don't, over the ${n} you don't know yet. Sections and nights vary; some of it replaces other sales. Not a promise.`}; },
+      caveat:`From this restaurant's sales data over ${days} nights: what servers who know each of your best-selling wines sell of it per shift, against those who don't, over the ${n} you don't know yet. Sections and nights vary; some of it replaces other sales. Not a promise.`}; },
   /* The allergen sign-off register (docs/business.md, "The menu"): for each person, how many of the kitchen-confirmed
      dishes' allergen questions they hold now, when they last held them all (passed), and the soonest one falls due;
      plus the register as CSV for an inspector or HR. Only the kitchen's confirmed allergens are ever counted. */
@@ -146,9 +146,9 @@ const TeamReport = {
     out.push({k:'week',tone:d==null?'note':d>=0?'good':'bad',title:`${m(s.revenue)} of wine over 7 nights`,text:d==null?`${s.lines} glasses and bottles to ${s.covers} guests.`:`${d>=0?'Up':'Down'} ${Math.abs(d)}% on the week before (${m(s.prev.revenue||0)}), ${s.lines} glasses and bottles to ${s.covers} guests.`});
     if(s.perCover!=null) out.push({k:'cover',tone:s.delta.attach==null?'note':s.delta.attach>=0?'good':'bad',title:`${m(s.perCover)} of wine per guest`,text:`${s.attach.toFixed(2)} glasses or bottles each${s.delta.attach==null?'':`, ${s.delta.attach>=0?'up':'down'} ${Math.abs(s.delta.attach)}% on the week before`}; ${Math.round(100*(s.bottleShare||0))}% of wine sold by the bottle.`});
     const top=byWine[0];
-    if(top) out.push({k:'top',tone:top.of&&top.knows<top.of?'bad':'good',title:`Best seller: ${TeamData.short(top.wine)}`,text:`${m(top.revenue)} over 28 nights, ${Math.round(100*top.share)}% of wine sales. ${top.of?(top.knows<top.of?`Only ${top.knows} of the ${top.of} people who sell it know it.`:`Everyone who sells it knows it.`):''}`,open:{view:'wine',id:top.wine.id}});
+    if(top) out.push({k:'top',tone:top.of&&top.knows<top.of?'bad':'good',title:`Best seller: ${TeamData.short(top.wine)}`,text:`${m(top.revenue)} over 28 nights, ${Math.round(100*top.share)}% of wine sales. ${top.of?(top.knows<top.of?`Only ${top.knows} of the ${top.of} on the team who serve it know it.`:`Everyone on the team who serves it knows it.`):''}`,open:{view:'wine',id:top.wine.id}});
     const gaps=byWine.slice(0,8).filter(x=>x.of&&x.knows<Math.ceil(x.of/2));
-    if(gaps.length) out.push({k:'gaps',tone:'bad',title:`${gaps.length} of your 8 best-selling wines: most of the staff who sell them don't know them`,text:gaps.slice(0,3).map(x=>`${TeamData.short(x.wine)}, known by ${x.knows} of the ${x.of} who sell it`).join('; ')+'. Drill these first.',open:{view:'wine',id:gaps[0].wine.id}});
+    if(gaps.length) out.push({k:'gaps',tone:'bad',title:`${gaps.length} of your 8 best-selling wines: most of the team who serve them don't know them yet`,text:gaps.slice(0,3).map(x=>`${TeamData.short(x.wine)}, known by ${x.knows} of the ${x.of} on the team who serve it`).join('; ')+'. Drill these first.',open:{view:'wine',id:gaps[0].wine.id}});
     if(lift.pct!=null&&lift.wines) out.push({k:'lift',tone:lift.pct>0?'good':'note',title:lift.pct>0?`Training is worth ${lift.pct}% more sales`:`No sales lift from training yet`,text:lift.pct>0?`A server sells ${lift.known.toFixed(2)} of a wine per shift once they know it, against ${lift.unknown.toFixed(2)} before. Shifts and sections affect this too, so read it as a pointer.`:`Across ${lift.wines} wines, servers who know a wine don't yet sell more of it.`});
     const seller=this.salesByServer(28).filter(x=>x.shifts>0&&['server','bartender'].includes(x.person.role));
     if(seller.length>2){ const low=[...seller].sort((a,b)=>(a.perShift||0)-(b.perShift||0))[0];
@@ -157,7 +157,7 @@ const TeamReport = {
     // fix there, so it points at the price, the pour or where it sits on the list.
     const glassAll=this.slowMovers(28,Infinity), mid=glassAll.length?glassAll[Math.floor(glassAll.length/2)].perNight:0;
     const known=glassAll.find(x=>x.of>=3&&x.knows>=Math.ceil(x.of/2)&&x.perNight<mid);
-    if(known) out.push({k:'known',tone:'note',title:`${TeamData.short(known.wine)}: known, but not selling`,text:`${known.knows} of the ${known.of} who sell it know it, and it sells ${known.perNight.toFixed(1)} a night. The floor can talk about it, so look at its price, its pour or where it sits on the list.`,open:{view:'wine',id:known.wine.id}});
+    if(known) out.push({k:'known',tone:'note',title:`${TeamData.short(known.wine)}: known, but not selling`,text:`${known.knows} of the ${known.of} on the team who serve it know it, and it sells ${known.perNight.toFixed(1)} a night. The floor can talk about it, so look at its price, its pour or where it sits on the list.`,open:{view:'wine',id:known.wine.id}});
     const dead=slow.filter(x=>x.perNight<0.5&&(!known||x.wine.id!==known.wine.id));
     if(dead.length) out.push({k:'slow',tone:'note',title:`${dead.length} by-the-glass wine${dead.length===1?'':'s'} barely moving`,text:dead.slice(0,3).map(x=>TeamData.short(x.wine)).join(', ')+`: under one glass every two nights. Give the floor the line to say, or rethink the pour.`,open:{view:'wine',id:dead[0].wine.id}});
     if(till.length) out.push({k:'till',tone:'note',title:`${till.length} POS item${till.length===1?'':'s'} not matched to the list`,text:`${till.slice(0,2).map(x=>x.item).join(', ')}: a new arrival nobody has uploaded, or a name to map.`,open:{tab:'pos'}});
