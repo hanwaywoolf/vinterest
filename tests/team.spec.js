@@ -1528,7 +1528,7 @@ test('training levels: the console sets them, cards and drills follow, a role ca
 
 // Vinny's test and the drill (TeamLearn.spread): ten questions never ask for the same right answer twice, and no
 // two in a row share a wine or dish, a shape or an answer; wrong answers are ones the pairings rule out.
-test('a test mixes its questions: no answer twice, nothing grouped, and wrong pairings that are plainly wrong', async ({ context, page }) => {
+test('a test mixes its questions: no answer twice, nothing grouped, and wrong pairings the pairings rule out', async ({ context, page }) => {
   await stubNetwork(context);
   await page.goto(`${BASE}/team/?seed=demo`);
   await expect(page.getByTestId('team-state')).toBeVisible();
@@ -1542,8 +1542,10 @@ test('a test mixes its questions: no answer twice, nothing grouped, and wrong pa
         sameShapeInARow: shape.filter((x, i) => i && x === shape[i - 1]).length };
     }
     TeamLearn.setLevel('high');
-    // Every "which wine suits this dish best" offers its first pick against wines that are clearly wrong for the dish.
-    const bad = TeamData.dishes().flatMap((d) => TeamLearn.dishQs(d.id).filter((q) => q.opts).flatMap((q) => q.opts.filter((o, i) => i !== q.a).map((o) => TeamData.wines().find((w) => TeamData.short(w) === o)).filter((w) => w && !TeamLearn.clearlyWrong(w.id, d.id)).map((w) => d.name + ': ' + TeamData.short(w))));
+    // Every "which wine suits this dish best" offers its first pick against wines the pairings rule out for the dish
+    // (never one of its picks, never a wine tableFit calls good), so a sommelier stands behind one answer.
+    const bad = TeamData.dishes().flatMap((d) => { const pr = TeamData.pairing(d.id) || {}, picks = new Set([...(pr.best || []).map((b) => b.id), pr.glass && pr.glass.id].filter(Boolean));
+      return TeamLearn.dishQs(d.id).filter((q) => q.opts).flatMap((q) => q.opts.filter((o, i) => i !== q.a).map((o) => TeamData.wines().find((w) => TeamData.short(w) === o)).filter((w) => w && (picks.has(w.id) || TeamLearn.tableFit(w.id, d.id) === 'good')).map((w) => d.name + ': ' + TeamData.short(w))); });
     return { out, bad };
   });
   for (const lv of ['low', 'medium', 'high']) {
