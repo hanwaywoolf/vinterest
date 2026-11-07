@@ -211,9 +211,10 @@ const TeamLearn = {
     const ranked=menu.filter(x=>this.rankAt(id,x.id)<99).sort((a,b)=>this.rankAt(id,a.id)-this.rankAt(id,b.id)||((TeamData.pairing(a.id)||{}).best||[]).length-((TeamData.pairing(b.id)||{}).best||[]).length||this._hash(id+a.id)-this._hash(id+b.id));
     const top=ranked[0]||menu.find(x=>own.has(x.id));
     if(top){ const p=TeamData.pairing(top.id)||{}, pick=[...(p.best||[]),p.cocktail,p.glass].filter(Boolean).find(b=>b.id===id), cw=(c.dishes||[]).find(x=>byName(x.dish)===top);
-      const wrongFor=x=>x.id!==top.id&&!own.has(x.id)&&this.rankAt(id,x.id)===99&&(drink||this.clearlyWrong(id,x.id));
-      // The wrong dishes nearest the right one in the length of their names, so the answer never stands out by length.
-      const wrong=this._shuffle(menu.filter(wrongFor),id).sort((a,b)=>Math.abs(a.name.length-top.name.length)-Math.abs(b.name.length-top.name.length)).slice(0,3);
+      const wrongFor=x=>x.id!==top.id&&!own.has(x.id)&&this.rankAt(id,x.id)===99&&(drink||this.tableFit(id,x.id)!=='good');
+      // Dishes it doesn't suit but a server might try (the nearest the pairings still rule out, so never desserts for a
+      // dry wine against one savoury dish), then names near the right one's length so it never stands out by length.
+      const wrong=this._shuffle(menu.filter(wrongFor),id).sort((a,b)=>(drink?0:this._gapAt(id,a.id)-this._gapAt(id,b.id))||Math.abs(a.name.length-top.name.length)-Math.abs(b.name.length-top.name.length)).slice(0,3);
       if(wrong.length===3) out.push(this._light(id+'#pair',`Which dish on our menu is the best match for the ${name}?`,[top.name,...wrong.map(x=>x.name)],(pick&&pick.why)||(cw&&cw.why)||'',id)); }
     return out.filter(q=>!this.givesAway(q)&&!this.lengthCue(q)); },
   _light(qid,q,opts,why,wine){ const order=this._shuffle(opts.map((_,i)=>i),qid); return {id:qid,k:'recognise',q,opts:order.map(i=>this._cap(opts[i])),a:order.indexOf(0),why,wine,light:true}; },
@@ -450,7 +451,8 @@ const TeamLearn = {
   GIVEAWAY_SKIP:new Set(['wine','wines','which','what','does','best','describes','description','fits','this','that','usually','style','guest','would','your','list','made','from','with','they','colour','smell','smells','taste','tastes','flavour','flavours','describe','would']),
   givesAway(q){ if(!q.opts||q.a==null) return false; const stem=new Set(this._words(q.q).filter(w=>w.length>3&&!this.GIVEAWAY_SKIP.has(w)));
     const ws=o=>new Set(this._words(o)), right=ws(q.opts[q.a]), wrong=q.opts.filter((_,i)=>i!==q.a).map(ws);
-    return [...right].some(w=>stem.has(w)&&!wrong.some(x=>x.has(w))); },
+    const shares=(w,set)=>[...set].some(x=>x===w||(Math.min(x.length,w.length)>=4&&(x.startsWith(w)||w.startsWith(x))));
+    return [...right].some(w=>shares(w,stem)&&!wrong.some(x=>shares(w,x))); },
   KIND_TAGS:[
     ['red',/\breds?\b(?!\s*(berr|fruit|cherr|currant|apple|onion|pepper|plum|flower|meat|wine vinegar))|\bdeep purple\b|\bruby\b/],
     ['white',/\bwhites?\b(?!\s*(pepper|flower|peach|fruit|truffle|blossom|stone|meat|fish))|\bgolden\b|\bstraw[- ]coloured\b/],
@@ -536,7 +538,10 @@ const TeamLearn = {
     const out=[], c=TeamData.dishCard(id), dishes=TeamData.dishes();
     // Know it: the dish's own sentence against three near-misses of the same dish (a wrong sauce, cut or richness,
     // written with the notes). Never another dish's description: the dish is named in the question, so that taught nothing.
-    if(c&&c.say&&(c.wrong||[]).length>=3){ const opts=[c.say,...c.wrong.slice(0,3)], order=this._shuffle([0,1,2,3],id+'k');
+    // Prices and add-ons ("…, and you can add burrata for $14") belong to the menu-change questions: off every option, so
+    // the right one is never the only one with a price tail.
+    const plain=t=>{ const parts=String(t||'').replace(/\.\s*$/,'').split(/;\s*|,\s*(?=and\b)/); const k=parts.filter(x=>!/[£$€]\s?\d|\b\d+\s*dollars\b|\byou can add\b/i.test(x)); return (k.length?k:parts).join('; ').replace(/;\s*and\b/,', and').trim()+'.'; };
+    if(c&&c.say&&(c.wrong||[]).length>=3){ const opts=[c.say,...c.wrong.slice(0,3)].map(plain), order=this._shuffle([0,1,2,3],id+'k');
       out.push({id:'d:'+id+'#know',dish:id,k:'recognise',q:`A guest asks what ${this._the(x.name)} is.`,opts:order.map(i=>opts[i]),a:order.indexOf(0),why:x.desc?`The menu says: ${x.desc}.`:''}); }
     const conf=TeamData.allergensOf(id);
     if(allergen&&conf){ const list=TeamData.allergenList(), names=conf.map(code=>TeamData.allergenName(code));
@@ -547,23 +552,28 @@ const TeamLearn = {
     if(c&&(c.mods||[]).length){ const m=c.mods.find(z=>z.can!=='ask')||c.mods[0];
       // Every wrong answer is about this dish and this change: the two stances the kitchen didn't take, and
       // guessing on the kitchen's behalf (never right). Never another dish's change, which the name gives away.
-      const ask=m.ask, stance={yes:`Of course, the kitchen can do ${this._the(x.name)} ${ask}.`,no:`I'm afraid the kitchen can't do ${this._the(x.name)} ${ask}.`,
-        ask:`Let me check with the kitchen whether they can do it ${ask}, and I'll come straight back to you.`};
-      const wrongs=[...Object.keys(stance).filter(k=>k!==(m.can||'ask')).map(k=>stance[k]),`It should be fine; I'll put it through ${ask} and let the kitchen sort it out.`];
-      const all=[{x:m.say,ok:true},...wrongs.map(t=>({x:t,ok:false}))], order=this._shuffle(all.map((_,i)=>i),id+'c'), opts=order.map(i=>this._cap(all[i].x));
+      // Four answers in one form (yes, no, ask the kitchen, guess for the kitchen), so the right one is picked by knowing
+      // the dish, not by being the only natural or specific sentence; what the kitchen actually says is the why.
+      const stance={yes:'Yes, the kitchen can do that for you.',no:"I'm sorry, the kitchen can't do that one.",ask:'Let me check with the kitchen and come straight back to you.',
+        guess:"That should be fine; I'll put it through and let the kitchen sort it out."};
+      const rk=m.can==='yes'||m.can==='no'?m.can:'ask';
+      const all=Object.keys(stance).map(k=>({x:stance[k],ok:k===rk})), order=this._shuffle(all.map((_,i)=>i),id+'c'), opts=order.map(i=>all[i].x);
       out.push({id:'d:'+id+'#mod',dish:id,k:'apply',q:`A guest asks for ${this._the(x.name)} ${m.ask}. What do you say?`,key:[m.say],ans:m.say,
-        pills:{opts,right:order.map((i,j)=>all[i].ok?j:-1).filter(j=>j>=0),n:1,groups:[{label:'What do you say?',from:0,to:opts.length,n:1}]},why:m.can==='no'?'It can\'t change, so say so plainly and offer something that works; never guess for the kitchen.':m.can==='yes'?'The kitchen can do it; say so and say what changes.':'Only the kitchen knows: say you\'ll ask, and come back with the answer.'}); }
+        pills:{opts,right:order.map((i,j)=>all[i].ok?j:-1).filter(j=>j>=0),n:1,groups:[{label:'What do you say?',from:0,to:opts.length,n:1}]},why:`${this._cap(String(m.say).replace(/\.?\s*$/,'.'))} ${m.can==='no'?'Say so plainly and offer something that works; never guess for the kitchen.':m.can==='yes'?'Say so, and say what changes.':'Only the kitchen knows: say you\'ll ask, and come back with the answer.'}`}); }
     const p=TeamData.pairing(id); if(!p||!p.best||!p.best.length) return out;
     const best=TeamData.wine(p.best[0].id); if(!best) return out;
     const drink=TeamData.isDrink(best), picks=new Set([...p.best.map(b=>b.id),p.glass&&p.glass.id,p.cocktail&&p.cocktail.id].filter(Boolean));
-    const clear=TeamData.wines().filter(w=>!picks.has(w.id)&&TeamData.isDrink(w)===drink&&this.clearlyWrong(w.id,id));
-    const bl=TeamData.short(best).length, near=(a,b)=>Math.abs(TeamData.short(a).length-bl)-Math.abs(TeamData.short(b).length-bl); // names near the right one's length
-    const pick=[...(p.avoid&&TeamData.wine(p.avoid.id)&&!picks.has(p.avoid.id)?[TeamData.wine(p.avoid.id)]:[]),...this._shuffle(clear.filter(w=>w.type===best.type),id).sort(near),...this._shuffle(clear,id+'x').sort(near)]
+    // Wrong wines a server could reach for: ones the pairings rule out (STEER_GAP or more from every pick, or the dish's
+    // avoid), of the same kind as the right one first and the nearest of those first, so three big reds against the
+    // only white for oysters never give it away; a drink is never offered against wines.
+    const clear=TeamData.wines().filter(w=>!picks.has(w.id)&&TeamData.isDrink(w)===drink&&(drink?this.clearlyWrong(w.id,id):this.tableFit(w.id,id)!=='good'));
+    const bk=this.kindOf(best), bl=TeamData.short(best).length, byGap=(a,b)=>this._gapAt(a.id,id)-this._gapAt(b.id,id)||Math.abs(TeamData.short(a).length-bl)-Math.abs(TeamData.short(b).length-bl);
+    const pick=[...(p.avoid&&TeamData.wine(p.avoid.id)&&!picks.has(p.avoid.id)&&this.kindOf(TeamData.wine(p.avoid.id))===bk?[TeamData.wine(p.avoid.id)]:[]),...this._shuffle(clear.filter(w=>this.kindOf(w)===bk),id).sort(byGap),...this._shuffle(clear.filter(w=>this.kindOf(w)!==bk),id+'x').sort(byGap)]
       .filter((w,i,a)=>a.indexOf(w)===i).slice(0,3);
     if(pick.length<3) return out;
     const opts=[best,...pick].map(w=>TeamData.short(w)), order=this._shuffle([0,1,2,3],id);
     out.push(
-      {id:'d:'+id+'#0',dish:id,k:'recognise',q:`A guest orders ${this._the(x.name)}. Which wine on our list suits it best?`,opts:order.map(i=>opts[i]),a:order.indexOf(0),why:p.best[0].why},
+      ...[{id:'d:'+id+'#0',dish:id,k:'recognise',q:`A guest orders ${this._the(x.name)}. Which wine on our list suits it best?`,opts:order.map(i=>opts[i]),a:order.indexOf(0),why:p.best[0].why}].filter(q=>!this.lengthCue(q)),
       // Name a wine for it asks for the glass pick: "which wine suits it best" already asks for the first one, and asking
       // for it twice is a repeat (without a separate glass pick it isn't asked). Any of the dish's picks is accepted.
       ...((()=>{ const gw=p.glass&&TeamData.wine(p.glass.id); if(!gw||gw.id===best.id) return [];
@@ -976,6 +986,11 @@ const TeamLearn = {
     if(/month/i.test(right[0])){ const m=pool.filter(x=>/month/i.test(x)); pool.length=0; pool.push(...m); }
     if(inC){ const keep=pool.filter(x=>this._placeCountry(x)===inC); pool.length=0; pool.push(...keep); }
     else if(topic==='place'&&/valley/i.test(right[0])){ ['The Rhône Valley','The Douro Valley','The Napa Valley','The Mosel Valley','The Barossa Valley'].forEach(add); const v=pool.filter(x=>/valley/i.test(x)); pool.length=0; pool.push(...v); }
+    // "Region and country" asked and answered that way: every wrong region written the same way, one per region.
+    if(topic==='place'&&right.every(r=>/,/.test(r))){ const regs=new Set(right.map(r=>norm(String(r).split(',')[0]))), done=new Set();
+      const keep=pool.map(x=>{ if(/,/.test(x)) return x; const c=this._placeCountry(x); return c?`${String(x).replace(/^the\s+/i,'')}, ${c}`:null; })
+        .filter(x=>{ if(!x) return false; const r=norm(String(x).split(',')[0]); if(regs.has(r)||done.has(r)) return false; done.add(r); return true; });
+      pool.length=0; pool.push(...keep); }
     // A flavour pill that shares a word with a right one ("Black cherry" beside "Red cherry") would be unfair either way.
     const wrong=this._shuffle(pool.filter(x=>topic!=='flavour'||!this._words(x).some(w=>rightWords.has(w))),this._seed(q)+'t');
     if(wrong.length<3) return null;
@@ -1012,7 +1027,11 @@ const TeamLearn = {
     const fa=forms(A), fb=forms(B);
     // Unnamed in the answers: the producer's surname ("Fèvre", "Jadot").
     const nick=(w,f)=>f[0]||String(w.producer||'').split(/\s+/).filter(x=>!GENERIC.has(norm(x))).pop()||words(w).find(x=>!GENERIC.has(norm(x))&&!shared.has(norm(x)))||TeamData.short(w);
-    const a=nick(A,fa), b=nick(B,fb), sym=TeamData.currency().sym||'£', price=w=>this._num(w.bottle)||this._num(w.glass);
+    let a=nick(A,fa), b=nick(B,fb);
+    // Two wines from one house ("Jolivet" and "Jolivet", "Clicquot" and "Clicquot"): each called by a word the other's name lacks.
+    const own=(w,o)=>{ const ow=new Set(words(o).map(norm)); return words(w).filter(x=>!GENERIC.has(norm(x))&&!ow.has(norm(x))).join(' ')||TeamData.short(w); };
+    if(norm(TeamData.short(B)).split(' ').includes(norm(a))||norm(TeamData.short(A)).split(' ').includes(norm(b))||norm(a)===norm(b)){ a=own(A,B); b=own(B,A); }
+    const sym=TeamData.currency().sym||'£', price=w=>this._num(w.bottle)||this._num(w.glass);
     const place=w=>[w.region,w.country].filter(Boolean)[0]||'', grapes=w=>(w.grapes||[]).join(' and ');
     const wrong=[];
     if(place(A)&&place(B)&&norm(place(A))!==norm(place(B))) wrong.push(`${a} is from ${place(B)}; ${b} is from ${place(A)}`,`They're both from ${place(A)}`);
@@ -1033,13 +1052,16 @@ const TeamLearn = {
     // needs 26"): the same point, the same words, turned the wrong way round.
     const esc=x=>x.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'), alts=[...fa.map(f=>[f,b]),...fb.map(f=>[f,a])].sort((x,y)=>y[0].length-x[0].length);
     const swap=t=>{ if(!alts.length) return t; const re=new RegExp(`(?<![\\p{L}])(${alts.map(x=>esc(x[0])).join('|')})(?![\\p{L}])`,'gu'); return t.replace(re,m=>(alts.find(x=>x[0]===m)||[0,m])[1]); };
-    const swapped=forms0.map(swap).filter(t=>!forms0.some(r=>norm(r)===norm(t)));
+    // One swap: the card's own answer turned round. Its other wordings turned round are the same mistake again.
+    const swapped=forms0.slice(0,1).map(swap).filter(t=>!forms0.some(r=>norm(r)===norm(t))&&!/(?<![\p{L}])(\p{L}{3,})\s+\1(?![\p{L}])/iu.test(t));
     // Only decoys about what the question asks: its grapes, its place, its price, how it's sold, its age.
     const ASPECT={style:/style|taste|flavour|body|bodied|rich|lighter|tannin|acid|sweet|dry/,grape:/grape|blend|variet/,place:/origin|where|place|region|country|come from|comes from/,price:/price|cost|cheap|dear|expensive|spend/,sold:/sold|glass|bottle|bought|pour/,age:/vintage|older|younger|age/};
     const want=Object.keys(ASPECT).filter(k=>ASPECT[k].test(norm(q.q)));
     const aspectOf=t=>{ const n=norm(t); return /bodied|tannic|tannin|acidity|sweeter|drier/.test(n)?'style':/grape/.test(n)?'grape':/ from |both from/.test(' '+n)?'place':/cheaper|costs more/.test(n)?'price':/glass|bottle only/.test(n)?'sold':/vintage/.test(n)?'age':'type'; };
     // A question about something the list can't speak to (style, legal ageing) gets its swaps alone.
-    const onTopic=want.length?wrong.filter(t=>want.includes(aspectOf(t))):(swapped.length>=2?[]:wrong);
+    // The list's own swap of the aspect the answer is about ("A is from B's place") is the answer's swap again: left out.
+    const swappedAsp=new Set(swapped.map(aspectOf)), listSwap=t=>/;/.test(t)&&swappedAsp.has(aspectOf(t));
+    const onTopic=(want.length?wrong.filter(t=>want.includes(aspectOf(t))):(swapped.length>=2?[]:wrong)).filter(t=>!listSwap(t));
     // Nor two wrong answers that say the same thing: one whose words all sit inside another's is the same claim.
     // (Against the other wrong answers only: a swap has the right answer's words by design.)
     const kept=[], st=t=>this._stems(t).filter(w=>w.length>2), inside=(x,y)=>{ const b=new Set(st(y)); const a=st(x); return a.length&&a.every(w=>b.has(w)); };
@@ -1155,6 +1177,10 @@ const TeamLearn = {
      them), 'avoid' (the one to steer from) or 'steer' (body, tannin and sweetness together STEER_GAP or more
      from the nearest of its picks, as a pale rosé is from the reds a braised lamb shoulder wants). */
   STEER_GAP:3,
+  // How far a wine's style sits from the nearest of a dish's picks (body, tannin and sweetness together); 99 when unknown.
+  _gapAt(wineId,dishId){ const pr=TeamData.pairing(dishId)||{}, picks=[...(pr.best||[]).map(b=>b.id),pr.glass&&pr.glass.id].filter(Boolean);
+    const st=id=>(TeamData.card(id)||{}).style||{}, a=st(wineId); if(a.body==null||!picks.length) return 99;
+    return Math.min(...picks.map(id=>{ const b=st(id); return b.body==null?99:Math.abs(a.body-b.body)+Math.abs((a.tannin||0)-(b.tannin||0))+Math.abs((a.sweet||0)-(b.sweet||0)); })); },
   tableFit(wineId,dishId){ const pr=TeamData.pairing(dishId); if(!pr) return 'good';
     if(pr.avoid&&pr.avoid.id===wineId) return 'avoid';
     const picks=[...(pr.best||[]).map(b=>b.id),pr.glass&&pr.glass.id].filter(Boolean); if(!picks.length||picks.includes(wineId)) return 'good';

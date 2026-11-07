@@ -26,10 +26,13 @@ const tpl = readFileSync('prompts/team-dish-cards.txt', 'utf8');
 const line = (x) => `${x.id} | ${x.section || ''} | ${x.name} | ${x.desc || ''} | ${x.price || ''} | ${(x.diet || []).join(', ')}`;
 console.log(`${todo.length} dishes to write for ${list.venue.name} (${country}: ${allergens.length} allergens) via ${base}`);
 train.dishCards = train.dishCards || {};
-for (let i = 0; i < todo.length; i += 8) {
-  const xs = todo.slice(i, i + 8);
+// Four dishes a call: eight on Opus ran past the Worker's time limit (524). A failed call is tried once more.
+const BATCH = Number(arg('batch', 4));
+for (let i = 0; i < todo.length; i += BATCH) {
+  const xs = todo.slice(i, i + BATCH);
   const prompt = tpl.replace(/\{\{venue\}\}/g, list.venue.name).replace('{{allergens}}', allergens.map(([c, n]) => `${c} (${n})`).join(', ')).replace('{{dishes}}', dishes.map(line).join('\n')).replace('{{batch}}', xs.map(line).join('\n'));
-  const out = execFileSync('curl', ['-sS', '-X', 'POST', `${base}/claude`, '-H', 'content-type: application/json', '-H', `origin: ${base}`, '--data-binary', JSON.stringify({ purpose: 'team_dishes', messages: [{ role: 'user', content: prompt }] })], { encoding: 'utf8', maxBuffer: 1 << 24 });
+  const call = () => execFileSync('curl', ['-sS', '-X', 'POST', `${base}/claude`, '-H', 'content-type: application/json', '-H', `origin: ${base}`, '--data-binary', JSON.stringify({ purpose: 'team_dishes', messages: [{ role: 'user', content: prompt }] })], { encoding: 'utf8', maxBuffer: 1 << 24 });
+  let out = call(); if (!/^\s*\{/.test(out) || /"error"/.test(out.slice(0, 200))) out = call();
   let j; try { j = JSON.parse(out); } catch (e) { throw new Error('Not JSON from /claude: ' + out.slice(0, 200)); }
   if (j.error) throw new Error(j.error);
   const text = (j.content || []).map((c) => c.text || '').join('') || j.text || '';
@@ -44,6 +47,6 @@ for (let i = 0; i < todo.length; i += 8) {
       allergens: { ...(train.dishCards[c.id] && train.dishCards[c.id].allergens && train.dishCards[c.id].allergens.confirmed ? { confirmed: train.dishCards[c.id].allergens.confirmed, confirmedAt: train.dishCards[c.id].allergens.confirmedAt, by: train.dishCards[c.id].allergens.by } : { confirmed: null }), draft, note: String(c.note || '').trim() }, at: Date.now(), model: j.model || '' }; });
   train.exported = new Date().toISOString();
   writeFileSync(trainFile, JSON.stringify(train, null, 1) + '\n');
-  console.log(`  ${Math.min(i + 8, todo.length)} of ${todo.length} · ${j.model || ''} · ${j.ms ? Math.round(j.ms / 1000) + 's' : ''}`);
+  console.log(`  ${Math.min(i + BATCH, todo.length)} of ${todo.length} · ${j.model || ''} · ${j.ms ? Math.round(j.ms / 1000) + 's' : ''}`);
 }
 console.log(`Wrote ${Object.keys(train.dishCards).length} dish notes into ${trainFile}`);
