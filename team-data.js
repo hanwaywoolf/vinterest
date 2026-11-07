@@ -629,6 +629,11 @@ const TeamSample = {
    readiness, Slipping, overdue assignments and the retention checks all show something true. */
 const TeamDemo = {
   DAY:86400000,
+  /* A list in the order a restaurant teaches it and pushes it: dry before sweet, cheapest first. The demo's
+     sales favour the first half (TeamSales.seedDemo), so the house pours sell most and are the ones a
+     working team already knows. */
+  house(list,k){ const price=w=>{ const m=/\d+(?:\.\d+)?/.exec(String(w[k]||'')); return m?+m[0]:999; }, sweet=w=>/sweet|fortif|dessert/i.test(w.section||'')||/fortified|dessert/.test(w.type||'');
+    return [...list].sort((a,b)=>(sweet(a)-sweet(b))||(price(a)-price(b))); },
   seedProgress(){
     const now=Date.now(), ppl=TeamLearn.people(), by=role=>ppl.find(p=>p.role===role), srv=ppl.filter(p=>p.role==='server');
     const P=TeamLearn._batchP=TeamLearn._all(); // every answer below lands here; saved once at the end
@@ -636,7 +641,9 @@ const TeamDemo = {
     // Dishes learned at `at` and kept fresh since (a single old answer would have faded by today).
     const dishes=(pid,xs,at,keep=true)=>xs.forEach(x=>TeamLearn.dishQs(x.id).forEach(q=>{ let t=at, it=TeamLearn.record(pid,q,true,'sure',t);
       for(let i=0;keep&&i<12&&it.due<now+this.DAY;i++){ t=Math.min(now-this.DAY/2,it.due); it=TeamLearn.record(pid,q,true,'sure',t); } }));
-    const all=TeamData.wines(), glass=all.filter(TeamData.byGlass), bottle=all.filter(w=>!TeamData.byGlass(w)), menu=TeamData.dishes();
+    // Each list in the order a restaurant teaches it: the house pours first (dry before sweet, cheapest first, as
+    // they sell most), so whoever has started knows the best sellers before the rest, as a working team would.
+    const all=TeamData.wines(), glass=this.house(all.filter(TeamData.byGlass),'glass'), bottle=this.house(all.filter(w=>!TeamData.byGlass(w)),'bottle'), menu=TeamData.dishes();
     const spaced=(pid,wines,kinds,firstDaysAgo,steps)=>{ // learned long ago and refreshed on schedule, so it's known today
       wines.forEach(w=>[...TeamLearn.wineQs(w.id),...TeamLearn.lightQs(w.id)].filter(q=>kinds.includes(q.k)).forEach(q=>{ let t=now-firstDaysAgo*this.DAY, it=null;
         for(let i=0;i<12&&(i<steps||(it&&it.due<now+this.DAY));i++){ it=TeamLearn.record(pid,q,true,'sure',t); t=Math.min(now-this.DAY/2,it.due); } })); };
@@ -647,7 +654,8 @@ const TeamDemo = {
     const david=by('buyer'); if(david){ spaced(david.id,all.filter(w=>!/sweet|fortif/i.test(w.section)).slice(0,38),['recognise','recall','apply','contrast'],50,3); dishes(david.id,menu.slice(0,20),now-8*this.DAY); check(david.id,9,0.78); }
     // Marco, bartender: was ready; kept half the glass list fresh, learned the rest 24 days ago and hasn't
     // drilled it since, so he's slipping at about half.
-    const marco=by('bartender'); if(marco){ const half=Math.ceil(glass.length/2); spaced(marco.id,glass.slice(0,half),['recognise','recall','apply'],40,3); learn(marco.id,glass.slice(half),['recognise','recall','apply'],now-24*this.DAY);
+    const marco=by('bartender'); if(marco){ const half=Math.ceil(glass.length/2), dry=glass.filter(w=>!/sweet|fortif|dessert/i.test(w.section||'')), top=dry[dry.length-1]; // and the dearest dry glass, which he pours at the bar
+      const fresh=[...glass.slice(0,half),...(top&&!glass.slice(0,half).includes(top)?[top]:[])]; spaced(marco.id,fresh,['recognise','recall','apply'],40,3); learn(marco.id,glass.filter(w=>!fresh.includes(w)),['recognise','recall','apply'],now-24*this.DAY);
       dishes(marco.id,menu.slice(0,8),now-6*this.DAY); dishes(marco.id,menu.slice(8,14),now-24*this.DAY,false);
       TeamLearn._mine(P,marco.id).wasReady=now-20*this.DAY; check(marco.id,6,0.5); }
     // Dani: about 60% through, drilling daily.

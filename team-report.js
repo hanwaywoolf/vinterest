@@ -136,7 +136,8 @@ const TeamReport = {
     return rows.map(r=>r.map(v=>/[",\n]/.test(String(v))?'"'+String(v).replace(/"/g,'""')+'"':String(v)).join(',')).join('\n')+'\n'; },
   newOnTill(){ return TeamSales.has()?TeamSales.unmapped():[]; },
   /* What a manager needs to know from the till, in a few sentences, most telling first: the week against the one
-     before, wine per guest, the best seller and whether the floor knows it, top sellers known by too few, slow glasses,
+     before, wine per guest, the best seller and whether the floor knows it, top sellers known by too few, a glass the floor
+     knows that still doesn't sell, slow glasses,
      what training is worth in sales, who to drill, till items with no wine behind them. Each {k, tone: good|bad|note,
      title, text, open?} where open is what tapping it should show. Never moves readiness; null without sales. */
   salesBrief(){ if(!TeamSales.has()) return null; const s=this.salesSummary(7); if(!s) return null;
@@ -152,7 +153,12 @@ const TeamReport = {
     const seller=this.salesByServer(28).filter(x=>x.shifts>0&&['server','bartender'].includes(x.person.role));
     if(seller.length>2){ const low=[...seller].sort((a,b)=>(a.perShift||0)-(b.perShift||0))[0];
       if(low&&low.readiness&&low.readiness.state!=='ready') out.push({k:'drill',tone:'bad',title:`${low.person.name.split(' ')[0]} sells the least wine per shift`,text:`${(low.perShift||0).toFixed(1)} glasses and bottles a shift, and ${low.readiness.pct}% ready. A few drills on what sells is the quickest lift.`,open:{view:'person',id:low.person.id}}); }
-    const dead=slow.filter(x=>x.perNight<0.5);
+    // The other way round: a glass most of its sellers can talk about that still sells little. Training isn't the
+    // fix there, so it points at the price, the pour or where it sits on the list.
+    const glassAll=this.slowMovers(28,Infinity), mid=glassAll.length?glassAll[Math.floor(glassAll.length/2)].perNight:0;
+    const known=glassAll.find(x=>x.of>=3&&x.knows>=Math.ceil(x.of/2)&&x.perNight<mid);
+    if(known) out.push({k:'known',tone:'note',title:`${TeamData.short(known.wine)}: known, but not selling`,text:`${known.knows} of the ${known.of} who sell it know it, and it sells ${known.perNight.toFixed(1)} a night. The floor can talk about it, so look at its price, its pour or where it sits on the list.`,open:{view:'wine',id:known.wine.id}});
+    const dead=slow.filter(x=>x.perNight<0.5&&(!known||x.wine.id!==known.wine.id));
     if(dead.length) out.push({k:'slow',tone:'note',title:`${dead.length} by-the-glass wine${dead.length===1?'':'s'} barely moving`,text:dead.slice(0,3).map(x=>TeamData.short(x.wine)).join(', ')+`: under one glass every two nights. Give the floor the line to say, or rethink the pour.`,open:{view:'wine',id:dead[0].wine.id}});
     if(till.length) out.push({k:'till',tone:'note',title:`${till.length} POS item${till.length===1?'':'s'} not matched to the list`,text:`${till.slice(0,2).map(x=>x.item).join(', ')}: a new arrival nobody has uploaded, or a name to map.`,open:{tab:'pos'}});
     return out; },

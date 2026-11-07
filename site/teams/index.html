@@ -240,7 +240,7 @@ const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 function player(stage, W, H, dir, mode) {
   let run = 0, raf = 0;
   const wait = (ms, token) => new Promise((r) => { const t0 = performance.now(); const tick = (t) => { if (token !== run || t - t0 >= ms) return r(); raf = requestAnimationFrame(tick); }; raf = requestAnimationFrame(tick); });
-  const layer = (l) => { const img = document.createElement('img'); img.className = 'ly'; img.src = dir + l.img + '.jpg'; img.alt = ''; img.style.left = (l.x / W * 100) + '%'; img.style.top = ((l.y || 0) / H * 100) + '%'; img.style.width = (l.w / W * 100) + '%'; stage.appendChild(img); return img; };
+  const layer = (l) => { const img = document.createElement('img'); img.className = 'ly'; img.src = dir + l.img + '.jpg?v=%%IMG_V%%'; img.alt = ''; img.style.left = (l.x / W * 100) + '%'; img.style.top = ((l.y || 0) / H * 100) + '%'; img.style.width = (l.w / W * 100) + '%'; stage.appendChild(img); return img; };
   async function step(st, token) {
     let pan = st.keep ? stage.querySelector('.ly[data-pan]') : null;
     if (!pan) { const old = Array.from(stage.querySelectorAll('.ly')); (st.frames || []).forEach(layer); pan = layer(st.pan); pan.dataset.pan = '1'; (st.over || []).forEach(layer); old.forEach((o) => { o.classList.add('out'); setTimeout(() => o.remove(), 450); }); }

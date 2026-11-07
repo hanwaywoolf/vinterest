@@ -66,6 +66,10 @@ export function build() {
   for (const f of ['site.css', 'site.js']) fs.copyFileSync(path.join(SRC, f), path.join(OUT, f));
   vars.CSS_V = hash(fs.readFileSync(path.join(SRC, 'site.css'), 'utf8'));
   vars.JS_V = hash(fs.readFileSync(path.join(SRC, 'site.js'), 'utf8'));
+  // Images keep their names when retaken, so every reference carries a hash of the whole img folder:
+  // a new screenshot can never be served from a phone's earlier copy.
+  const imgs = (d) => fs.readdirSync(d, { withFileTypes: true }).flatMap((e) => e.isDirectory() ? imgs(path.join(d, e.name)) : [path.join(d, e.name)]);
+  vars.IMG_V = hash(imgs(path.join(SRC, 'img')).sort().map((f) => f + hash(fs.readFileSync(f))).join());
   vars.TEST = part('test');
   vars.FOOTER = fill(part('footer'), vars);
   const pages = fs.readdirSync(SRC).filter((f) => f.endsWith('.html') && !f.startsWith('_')).sort();
@@ -73,7 +77,8 @@ export function build() {
   for (const f of pages) {
     const slug = f === 'index.html' ? '' : f.replace(/\.html$/, '');
     const nav = fill(part('nav'), vars).replace(`href="/${slug}"`, (m) => slug ? `${m} aria-current="page"` : m);
-    const html = fill(fs.readFileSync(path.join(SRC, f), 'utf8'), { ...vars, NAV: nav });
+    let html = fill(fs.readFileSync(path.join(SRC, f), 'utf8'), { ...vars, NAV: nav });
+    html = html.replace(/(src="img\/[^"?]+)"/g, `$1?v=${vars.IMG_V}"`);
     if (!html.includes('</body>')) throw new Error(`site-teams: ${f} has no </body>`);
     fs.writeFileSync(path.join(OUT, f), html.replace('</body>', `${vars.ANALYTICS}</body>`));
   }

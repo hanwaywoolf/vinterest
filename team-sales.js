@@ -74,7 +74,7 @@ const TeamSales = {
   },
 
   /* The demo's invented sales (docs/business.md): eight weeks at The Larkspur, shaped so the console
-     tells a true story about this team: Claire sells more bottles than anyone, wines nobody has learnt
+     tells a true story about this team: the house pours sell most and are the ones the team knows, Claire sells more bottles than anyone, wines nobody has learnt
      don't move, Marco's by-the-glass sales dipped the weeks he stopped drilling, Priya sells less wine
      per cover than Dani, Amara has only worked her first nights, and a Picpoul the till knows that the
      list doesn't. Seeded, so it's the same every time. */
@@ -89,8 +89,10 @@ const TeamSales = {
     const money=x=>{ const m=/\d+(?:\.\d+)?/.exec(String(x||'')); return m?+m[0]:0; }; // "£55 (37.5cl)" is 55
     const all=TeamLearn._all(), knows=(p,w)=>!!p&&TeamLearn.knowsWine(p.id,p.role,w.id,(all[p.id]||{items:{}}).items);
     const glass=wines.filter(TeamData.byGlass), bottle=wines.filter(w=>money(w.bottle)>0);
+    // The house pours (TeamDemo.house: the first half of each list, the half a working team learns first) are pushed and sell most.
+    const pushed=new Set([...TeamDemo.house(glass,'glass').slice(0,Math.ceil(glass.length/2)),...TeamDemo.house(wines.filter(w=>!TeamData.byGlass(w)),'bottle').slice(0,5)].map(w=>w.id));
     // How much each wine would sell on its own merits: cheaper and by the glass sell more, sweet wines least.
-    const merit=(w,size)=>{ const price=money(size==='glass'?w.glass:w.bottle)||20; let m=(size==='glass'?60:160)/Math.max(6,price); if(/sweet|fortif|dessert/i.test(w.section)||/fortified|dessert/.test(w.type)) m*=0.35; if(w.type==='rosé'||w.type==='orange') m*=0.7; const sellers=ppl.filter(p=>['server','bartender','sommelier'].includes(p.role)); if(sellers.length&&!sellers.some(p=>knows(p,w))) m*=0.55; return m; };
+    const merit=(w,size)=>{ const price=money(size==='glass'?w.glass:w.bottle)||20; let m=(size==='glass'?60:160)/Math.max(6,price); if(/sweet|fortif|dessert/i.test(w.section)||/fortified|dessert/.test(w.type)) m*=0.35; if(w.type==='rosé'||w.type==='orange') m*=0.7; if(pushed.has(w.id)) m*=size==='glass'?1.7:1.6; const sellers=ppl.filter(p=>['server','bartender','sommelier'].includes(p.role)); if(sellers.length&&!sellers.some(p=>knows(p,w))) m*=0.55; return m; };
     const rows=[], nights={}; const now=new Date(); now.setHours(0,0,0,0);
     for(let d=weeks*7;d>=1;d--){
       const day=new Date(now.getTime()-d*this.DAY), dow=day.getDay(); if(dow===1&&!social) continue; // the Larkspur closes Mondays
@@ -107,7 +109,7 @@ const TeamSales = {
       const glassLines=Math.round(base*(0.5+rnd()*0.12)), barShare=marco?(d<=21?0.2:0.34):0;
       for(let i=0;i<glassLines;i++){
         const w=pick(glass,glass.map(x=>merit(x,'glass'))); const bar=rnd()<barShare;
-        let p=bar?marco:servers.length?pick(servers,servers.map(x=>(x===priya?0.7:1)*(knows(x,w)?1.45:1))):null;
+        let p=bar?marco:servers.length?pick(servers,servers.map(x=>(x===priya?0.7:1)*(knows(x,w)?1.25:1))):null;
         const oz8=social?money(String(w.other||'').replace(/^8oz/i,'')):0, big=oz8>0&&rnd()<0.25, ml=social?(big?'8oz':'5oz'):(rnd()<0.15?125:175), price=big?oz8:money(w.glass)*(ml===125?0.72:1); // a Social Corner 8oz pour at its own price
         add(w,'glass',p,1,Math.round(price*100)/100,`${TeamData.short(w)} ${ml}`);
       }
@@ -115,7 +117,7 @@ const TeamSales = {
       const bottleLines=Math.round(base*(0.1+rnd()*0.05)*(d<=7?1.3:1));
       for(let i=0;i<bottleLines;i++){
         const w=pick(bottle,bottle.map(x=>merit(x,'bottle'))); const som=claire&&shifts.includes(claire)&&rnd()<0.45;
-        const p=som?claire:servers.length?pick(servers,servers.map(x=>(x===priya?0.6:1)*(knows(x,w)?1.6:1))):null;
+        const p=som?claire:servers.length?pick(servers,servers.map(x=>(x===priya?0.6:1)*(knows(x,w)?1.35:1))):null;
         add(w,'bottle',p,1,money(w.bottle),`${TeamData.short(w)} Btl`);
       }
       // A wine the till knows and the list doesn't: the kitchen's new Picpoul, on since last week.

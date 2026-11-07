@@ -1906,3 +1906,19 @@ test('the sommelier review rewrites what it doubts, holds what it still doubts, 
   await page.getByTestId('console-nav-wines').click();
   await expect(page.getByTestId('console-sommelier')).toContainText('1 held out of the drill');
 });
+
+// The demo tells the story a working team would: the house pours sell most and are the ones the team knows, so
+// most best sellers are known; and one glass most of its sellers know still sells little, which points at its
+// price or pour rather than training.
+test('the demo sales: best sellers mostly known, and a glass known but not selling', async ({ context, page }) => {
+  await stubNetwork(context);
+  await page.goto(`${BASE}/team/?seed=demo`);
+  await expect(page.getByTestId('team-state')).toBeVisible();
+  const brief = await page.evaluate(() => TeamReport.salesBrief());
+  const gaps = brief.find((x) => x.k === 'gaps');
+  expect(!gaps || /^[12] of your 8 best-selling wines/.test(gaps.title)).toBe(true);
+  const known = brief.find((x) => x.k === 'known');
+  expect(known && known.title).toMatch(/: known, but not selling$/);
+  const row = await page.evaluate((id) => TeamReport.slowMovers(28, Infinity).find((x) => x.wine.id === id), known.open.id);
+  expect(row.knows).toBeGreaterThanOrEqual(Math.ceil(row.of / 2));
+});
