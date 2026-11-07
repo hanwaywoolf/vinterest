@@ -29,7 +29,7 @@ test('The Social Corner opens from ?seed=social on its own team, logo, dollars a
   page.on('pageerror', (e) => errors.push(e.message));
   await stubNetwork(context);
   await page.goto(`${BASE}/team/?seed=social`);
-  await expect(page.getByTestId('team-venue-logo')).toHaveAttribute('src', 'brand/social-corner/wordmark-white.png');
+  await expect(page.getByTestId('team-venue-logo')).toHaveAttribute('src', /^brand\/social-corner\/wordmark-white\.png\?v=/); // stamped, so a new logo is never shown from an old copy
   const logo = await page.request.get(`${BASE}/team/brand/social-corner/wordmark-white.png`);
   expect(logo.status()).toBe(200);
   const st = await page.evaluate(() => {
@@ -1993,4 +1993,25 @@ test('what the reviewers read is what the drill shows: four options as dealt, re
   expect(r.abroad).toEqual([]); // "Which Italian region…" never offers the Rhône or the Okanagan
   expect(r.notWines).toEqual([]); // "Name a wine by the glass for…" never offers Rioja or the Loire
   expect(r.contrastRight).toEqual([]);
+});
+
+// A device that opened The Larkspur before the demo's story changed meets the new one: the old copy's team,
+// progress and sales are replaced whole (it's invented), where The Social Corner keeps them between deploys.
+test('an older copy of the demo restaurant is replaced whole', async ({ context, page }) => {
+  await stubNetwork(context);
+  await page.goto(`${BASE}/team/?seed=demo`);
+  await expect(page.getByTestId('team-state')).toBeVisible();
+  const before = await page.evaluate(() => {
+    const d = TeamData.get(); d.venue.seeded = 'an older build'; TeamData.save(d);   // as a phone that opened it before
+    TeamLearn.addPerson('Old Visitor', 'server');
+    return { current: TeamSample.current('demo'), people: TeamLearn.people().length };
+  });
+  expect(before.current).toBe(false);
+  await page.goto(`${BASE}/team/?seed=demo`);
+  await expect(page.getByTestId('team-state')).toBeVisible();
+  const after = await page.evaluate(() => ({ current: TeamSample.current('demo'), names: TeamLearn.people().map((p) => p.name), sales: (TeamSales.get().rows || []).length, logo: TeamData.brand().logo }));
+  expect(after.current).toBe(true);
+  expect(after.names).not.toContain('Old Visitor');
+  expect(after.sales).toBeGreaterThan(0);
+  expect(after.logo).toMatch(/story\d+/);
 });

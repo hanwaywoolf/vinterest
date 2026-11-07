@@ -41,7 +41,11 @@ const TeamData = {
     return (v<0?'-':'')+sym+Math.abs(v).toLocaleString('en-US',{minimumFractionDigits:dp,maximumFractionDigits:dp}); },
   currency(){ const c=(this.get().venue||{}).currency; if(c&&c.sym) return c; try{ return Regional.current(); }catch(e){ return {sym:'£',code:'GBP'}; } },
   /* The restaurant's own branding when it was installed with it (venue.brand: logo, logoDark, mark, accent). */
-  brand(){ return (this.get().venue||{}).brand||null; },
+  brand(){ const v=this.get().venue||{}, b=v.brand; if(!b) return null;
+    // The images keep their names when a restaurant's logo changes, so each address carries the seed's stamp:
+    // a new logo is never shown from a browser's earlier copy.
+    const tag=v.seeded?'?v='+encodeURIComponent(v.seeded):'', at=x=>x&&!/[?]/.test(x)?x+tag:x;
+    return {...b,logo:at(b.logo),logoDark:at(b.logoDark),mark:at(b.mark),full:at(b.full)}; },
   /* What the training is written for: the restaurant in its own words, for every prompt's {{about}}. */
   about(){ const v=this.get().venue||{}; return v.about||[v.name,v.style,v.city].filter(Boolean).join(', ')||'A restaurant. Write in British English.'; },
 
@@ -554,7 +558,9 @@ const TeamSample = {
     // A newer copy of the restaurant already on this phone (a build with rewritten training or a new list) replaces
     // the list, cards and pairings but keeps the team, everyone's progress and the sales: answers are keyed by wine
     // and question id, which a new copy keeps, so testing carries on where it was instead of starting again.
-    const keep=(TeamData.get().venue||{}).sample===which&&TeamLearn.people().length>0;
+    // The Larkspur is invented from end to end, so an older copy of it is replaced whole (its team, progress and
+    // sales seeded again): a visitor from the website always meets the demo as it now is.
+    const keep=which!=='demo'&&(TeamData.get().venue||{}).sample===which&&TeamLearn.people().length>0;
     // The installed restaurant's own details (city, style, currency, brand) come with it; the list file is
     // where they're kept, so a training file exported later doesn't need to carry them.
     const meta=(this.list(which)||{}).venue||{};
@@ -607,7 +613,7 @@ const TeamSample = {
      the list file's `rev` too, since its team, cocktails and staff live there (a new team with the same training
      must still reload a device that opened the old one). */
   stamp(which){ const s=this.file(which), base=(s&&s.exported)||null; if(!this.social(which)&&which!=='demo') return base;
-    const rev=(this.list(which)||{}).rev||null; return base||rev?`${base||''}|${rev||''}`:null; },
+    const rev=(this.list(which)||{}).rev||null; return `${base||''}|${rev||''}|story${TeamDemo.STORY}`; },
   /* The demo's prepared new arrivals (data/team-demo-arrivals.json, photos in team/labels/): two real
      bottles whose label reading, staff card, pairings and drinking window were written once through
      the Worker, so "Add a wine from its label" can run with no network and in seconds. Live reading
@@ -630,6 +636,10 @@ const TeamSample = {
    readiness, Slipping, overdue assignments and the retention checks all show something true. */
 const TeamDemo = {
   DAY:86400000,
+  /* The demo story's own version, part of every demo seed's stamp (TeamSample.stamp). Raise it whenever the code
+     that seeds a demo changes what it shows (who has learnt what, the sales, the logo files), since only a
+     changed stamp reloads a device that already has the restaurant. */
+  STORY:2,
   /* A list in the order a restaurant teaches it and pushes it: dry before sweet, cheapest first. The demo's
      sales favour the first half (TeamSales.seedDemo), so the house pours sell most and are the ones a
      working team already knows. */
