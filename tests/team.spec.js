@@ -456,7 +456,7 @@ test('the publish check: every question is checked, the ones that fail are rewri
   expect(r.line).toMatch(/questions checked · \d+ rewritten/);
   const fix = reqs.filter((x) => x.purpose === 'team_fix');
   expect(fix.length).toBeGreaterThan(0);
-  expect(fix[0].messages[0].content).toMatch(/PROBLEM giveaway/);
+  expect(fix.map((x) => x.messages[0].content).join('\n')).toMatch(/PROBLEM giveaway/);
   // The demo restaurant runs offline: it's counted, never sent.
   await page.goto(`${BASE}/team/?seed=demo`);
   await expect(page.getByTestId('team-state')).toBeVisible();
@@ -1948,4 +1948,29 @@ test('console access per person: Today opens the console on a phone, and a serve
   await page.getByTestId('console-add-console').click();
   await page.getByTestId('console-add-save').click();
   expect(await page.evaluate(() => TeamLearn.canConsole(TeamLearn.people().find((p) => p.name === 'Noor')))).toBe(true);
+});
+
+test('what the reviewers read is what the drill shows: four options as dealt, regions of the country asked, wines for a dish, one right answer when telling two wines apart', async ({ context, page }) => {
+  await stubNetwork(context);
+  await page.goto(`${BASE}/team/?seed=social`);
+  await page.waitForFunction(() => window.TeamLearn && TeamData.dishes().length > 0);
+  const r = await page.evaluate(() => {
+    const out = { empty: [], abroad: [], notWines: [], contrastRight: [] };
+    const all = [...TeamData.wines().flatMap((w) => [...TeamLearn.wineQs(w.id, { all: true }), ...TeamLearn.lightQs(w.id, { all: true })]), ...TeamData.dishes().flatMap((d) => TeamLearn.dishQs(d.id, { all: true }))];
+    const names = TeamData.wines().map((w) => TeamLearn._norm(TeamData.short(w)));
+    all.forEach((q) => {
+      const s = TeamLearn.shown(TeamLearn.deal(q, 't'));
+      if (!s.opts.length || !s.right.length) out.empty.push(q.id);
+      if (!/OPTIONS\n\[/.test(TeamData._reviewItem(q))) out.empty.push('review:' + q.id);
+      const c = TeamLearn._countryIn(q.q);
+      if (q.k === 'recall' && TeamLearn._topic(q.q) === 'place' && c) s.opts.filter((o, i) => !s.right.includes(i)).forEach((o) => { const oc = TeamLearn._placeCountry(o); if (oc && oc !== c) out.abroad.push(`${q.q} → ${o}`); });
+      if (q.dish && /#1$/.test(q.id)) s.opts.forEach((o) => { if (!names.some((n) => TeamLearn._norm(o).includes(n))) out.notWines.push(`${q.q} → ${o}`); });
+      if (q.k === 'contrast' && s.right.length !== 1) out.contrastRight.push(q.id);
+    });
+    return out;
+  });
+  expect(r.empty).toEqual([]);
+  expect(r.abroad).toEqual([]); // "Which Italian region…" never offers the Rhône or the Okanagan
+  expect(r.notWines).toEqual([]); // "Name a wine by the glass for…" never offers Rioja or the Loire
+  expect(r.contrastRight).toEqual([]);
 });

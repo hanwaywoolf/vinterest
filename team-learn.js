@@ -117,7 +117,13 @@ const TeamLearn = {
   _keep(qs,all){ if(all) return qs; const h=this._held(); return h.size?qs.filter(q=>!h.has(q.id)):qs; },
   wineQs(id,{all=false}={}){ const doc=TeamData.get(); let m=this._qsCache.get(doc); if(!m){ m=new Map(); this._qsCache.set(doc,m); }
     if(!m.has(id)) m.set(id,this._buildQs(id));
-    return this._keep(m.get(id).map(q=>({...q})),all); },
+    // A recall or comparison question with nothing of its own to offer as wrong answers (only the mixed pool) isn't
+    // asked: the publish check sends it back as thin. Worked out once per list, outside the choices it calls.
+    if(!m.has('pool:'+id)&&!this._poolBusy){ this._poolBusy=true;
+      try{ m.set('pool:'+id,new Set(m.get(id).filter(q=>q.k==='recall'||q.k==='contrast').filter(q=>{ try{ const c=this.choices(q); return c&&c.via==='pool'; }catch(e){ return false; } }).map(q=>q.id))); }
+      finally{ this._poolBusy=false; } }
+    const pooled=m.get('pool:'+id)||new Set();
+    return this._keep(m.get(id).filter(q=>all||!pooled.has(q.id)).map(q=>({...q})),all); },
   /* Which questions ask how sure they are: a price (a wrong price reaches the bill), an allergen (a wrong one reaches a
      guest). Everywhere else the drill reads confidence from how fast a right answer came (TeamDrill), so a grape
      question is one tap, not two. */
@@ -133,7 +139,7 @@ const TeamLearn = {
       const dup=seen.some(p=>p.n===n||(ws.length>=2&&ws.every(w=>p.ws.includes(w)))||(p.ws.length>=2&&p.ws.every(w=>ws.includes(w))));
       if(dup) out.add(q.id||`${id}#${i}`); else seen.push({n,ws}); });
     return out; },
-  _buildQs(id){ const rep=this._repeats(id); const c=TeamData.card(id); return (c&&c.qs||[]).filter(q=>!rep.has(q.id)).map(q=>this._unspoil({...q,wine:id})).filter(Boolean).map(x=>{
+  _buildQs(id){ const rep=this._repeats(id); const c=TeamData.card(id); return (c&&c.qs||[]).filter(q=>!rep.has(q.id)).map(q=>this._unspoil({...q,wine:id})).filter(Boolean).map(q=>this._plainPlace(q)).map(x=>{
     // A table question whose answers can't be built from what the list says (too few believable wrong ones)
     // isn't asked; the publish check sends it back to be rewritten.
     if(x.k==='apply'){ const d=this._decide(x); let c=null; try{ c=this._applyChoices(d); }catch(e){ return d; } if(!c) return null;
@@ -318,6 +324,7 @@ const TeamLearn = {
       let c2=null; try{ c2=this.choices(un.k==='apply'?this._decide(un):un); }catch(e){}
       const wrong=c2?c2.opts.length-c2.right.length:0;
       if(!c2||wrong<this.MIN_WRONG) return fail('thin','too few believable wrong answers');
+      if(c2.via==='pool') return fail('thin','nothing on the list or in the card gives wrong answers of its kind, so they would come from other wines\' questions: ask about something with answers of its own kind (a grape, a place, a flavour, a price)');
       // A guest at a dish this wine doesn't suit is fine when the key already steers them to another wine
       // on the list; it fails only where the card set it as a good match.
       if(q.k==='apply'){ const d=this.dishIn(q.q); if(d&&this.tableFit(id,d.id)!=='good'){ const others=TeamData.wines().filter(w=>w.id!==id).map(w=>this._norm(TeamData.short(w)));
@@ -342,18 +349,25 @@ const TeamLearn = {
        cue         the right option stands out by its length (four options)
        giveaway    a telling word of the question is in the right option alone (four options)
        repeat      two questions on the same wine, dish or cocktail with the same answer, or one inside the other
-       aside       the line after the answer comes round again within one wine's questions */
+       aside       the line after the answer comes round again within one wine's questions
+       empty       nothing to show: no options or no right answer
+       pool        wrong answers drawn from whatever other wines were asked (the "mixed pool") */
   REVIEW_WORDS:45,
   review(){ const out=[]; let flag=(q,code,note)=>out.push({q,code,note});
     const dishes=TeamData.dishes(), names=dishes.map(d=>d.name), wines=TeamData.wines();
     const countries=new Set([...wines.map(w=>w.country),...this.DECOYS.country].filter(Boolean).map(x=>this._norm(x)));
     const words=t=>String(t||'').split(/\s+/).filter(Boolean).length;
     const qs=[...wines.flatMap(w=>[...this.wineQs(w.id),...this.lightQs(w.id)]),...TeamData.cocktails().flatMap(c=>this.cocktailQs(c.id)),...dishes.flatMap(d=>this.dishQs(d.id))];
-    for(const q0 of qs){ let c; const q=this.deal(q0,'review'); try{ c=this.choices(q); }catch(e){ continue; }
-      const opts=c&&c.opts?c.opts:q.opts||[], right=c&&c.right?c.right:q.a!=null?[q.a]:[], wrong=opts.filter((o,i)=>!right.includes(i));
+    for(const q0 of qs){ const q=this.deal(q0,'review'), c=this.shown(q);
+      const opts=c.opts, right=c.right, wrong=opts.filter((o,i)=>!right.includes(i));
+      if(!opts.length||!right.length){ flag(q,'empty','No options or no right answer to show.'); continue; }
+      if(c.via==='pool') flag(q,'pool','Its wrong answers come from other wines\' questions, not about this one.');
       const n=opts.map(o=>this._norm(o)); if(new Set(n).size<n.length) flag(q,'dupe','Two options say the same thing.');
       if(q.dish&&/#(mod|know)$/.test(q.id)){ const d=TeamData.dish(q.dish); wrong.forEach(o=>{ const other=names.find(x=>x!==d.name&&!d.name.includes(x)&&o.includes(x)); if(other) flag(q,'offsubject',`A wrong answer is about the ${other}: "${o}"`); }); }
+      if(q.k==='recall'&&this._topic(q.q,TeamData.isDrink(TeamData.wine(q.wine)))==='wine'){ const names=[...wines.map(w=>TeamData.short(w)),...Object.values(this.OFF_LIST).flat()].map(x=>this._norm(x).replace(/^the /,''));
+        wrong.forEach(o=>{ const n=this._norm(o); if(!names.some(x=>n.includes(x))) flag(q,'kind',`Not a wine: "${o}"`); }); }
       if(q.k==='recall'&&!q.dish){ const t=this._topic(q.q,TeamData.isDrink(TeamData.wine(q.wine)));
+        const inC=this._countryIn(q.q); if(t==='place'&&inC) wrong.forEach(o=>{ const oc=this._placeCountry(o); if(oc&&oc!==inC) flag(q,'kind',`Not in ${inC}: "${o}"`); });
         if(t==='country') opts.forEach(o=>{ if(!countries.has(this._norm(o))) flag(q,'kind',`Not a country: "${o}"`); });
         if(t==='place') opts.forEach(o=>{ if(countries.has(this._norm(o))) flag(q,'kind',`A country among regions: "${o}"`); }); }
       if(q.k==='apply'&&q.wine&&c&&c.groups&&c.groups[0]&&c.groups[0].label==='What do you suggest?'){ const rw=TeamData.wine(q.wine), dish=this.dishIn(q.q), wish=this.wishIn(q.q,rw), ws=this.wishStyle(q.q,dish);
@@ -374,7 +388,7 @@ const TeamLearn = {
       g.forEach(q=>{ if(q.k==='apply'||q.pills) return; const a=this._ansOf(q), n=this._norm(a), ws=this._words(a).filter(w=>w.length>2); if(!n) return;
         const hit=seen.find(p=>p.n===n||(ws.length>=2&&ws.every(w=>p.ws.includes(w)))||(p.ws.length>=2&&p.ws.every(w=>ws.includes(w))));
         if(hit) flag(q,'repeat',`Asks what "${hit.q.q.slice(0,60)}" already asks (${a}).`); else seen.push({n,ws,q}); });
-      const used=new Set(); g.forEach(q=>{ const d=this.deal(q,'review'); let c=null; try{ c=this.choices(d); }catch(e){} const o=c&&c.opts||d.opts||[], r=c&&c.right||(d.a!=null?[d.a]:[]);
+      const used=new Set(); g.forEach(q=>{ const d=this.deal(q,'review'), c=this.shown(d), o=c.opts, r=c.right;
         const ax=this.aside(d,r.map(i=>o[i]).join(' ')||d.ans,used); if(!ax||!ax.text) return;
         if([...used].some(u=>u===ax.text||this._overlap(u,ax.text)>=0.6)) flag(q,'aside','The line after the answer repeats one shown earlier for the same thing.'); used.add(ax.text); }); });
     return out; },
@@ -730,6 +744,10 @@ const TeamLearn = {
   CHOICES:10, WRONG_MAX:4, // pills on a recall question: the right ones plus at most WRONG_MAX wrong (five for one answer; ten was eight 13px pills to read for one grape)
   /* The pills a question offers, never the same thing twice: a spelling with and without its accent ("Bründlmayer",
      "Brundlmayer") is one pill, the first kept (a right one before a wrong one); groups and the right indexes follow. */
+  /* What the drill puts on screen for a dealt question: a four-option one as it is, anything else through choices().
+     The review and the sommelier review read questions through this, so they see what a person sees. */
+  shown(q){ if(q.k==='recognise'||q.mc) return {opts:q.opts||[],right:q.a!=null?[q.a]:[],n:1};
+    let c=null; try{ c=this.choices(q); }catch(e){} return c&&c.opts&&c.opts.length?c:{opts:[],right:[],n:0}; },
   choices(q){ const c=this._choices(q); if(!c||!c.opts) return c;
     const key=o=>this._norm(o).replace(/^the /,''), keep=[], seen=new Map();
     c.opts.forEach((o,i)=>{ const k=key(o); if(!seen.has(k)){ seen.set(k,keep.length); keep.push(i); } else if(c.right.includes(i)&&!c.right.includes(keep[seen.get(k)])) keep[seen.get(k)]=i; });
@@ -789,7 +807,7 @@ const TeamLearn = {
       if(/liqueur|bitter|amaro|vermouth|ingredient|goes into|made with|what's in|what is in|syrup|juice|purée|cordial|tincture|foam/.test(t)) return 'ingredient';
       if(/flavou?r|aroma|\btaste|\bnotes?\b/.test(t)) return 'flavour';
       return null; }
-    if(/\bname a wine\b|\bwhich (famous |other )?wines?\b|\bwhat wine\b|\bwine (from|on) (our|the) list\b/.test(t)) return 'wine';
+    if(/\bname a wine\b|\bwhich (famous |other )?wines?\b(?! (region|country|area|valley|county|grape|style|term|word))|\bwhat wine\b(?! (region|country|area|valley|county|grape|style|term|word))|\bwine (from|on) (our|the) list\b/.test(t)) return 'wine';
     if(/\b(which|what) country\b|\bcountry (is|does)\b/.test(t)&&!/\bregion\b|\barea\b/.test(t)) return 'country'; // before 'valley': "Which country is the Similkameen Valley Syrah from?"
     if(/\bword for\b/.test(t)) return 'word';
     if(/vintage year|which year|what year/.test(t)) return 'year';
@@ -810,6 +828,25 @@ const TeamLearn = {
   // Only lists of names are split into one pill each ("Chardonnay, Pinot Noir and Pinot Meunier"); a
   // climate, a meaning or a change is one answer, commas and all.
   SPLIT_TOPICS:['grape','flavour','ingredient'],
+  COUNTRY_WORDS:{Italian:'Italy',French:'France',Spanish:'Spain',Portuguese:'Portugal',German:'Germany',Austrian:'Austria',American:'United States',Canadian:'Canada',Argentine:'Argentina',Argentinian:'Argentina',Chilean:'Chile',Australian:'Australia','New Zealand':'New Zealand','South African':'South Africa',Hungarian:'Hungary',Greek:'Greece'},
+  // The country a question names ("Which Italian region…", "…region of Italy"), else null.
+  // "Name the Argentine region…" where the list and the guide know too few other Argentine regions for fair wrong answers:
+  // the question loses the country word ("Name the region…"), so its wrong regions can come from anywhere.
+  _plainPlace(q){ if(q.k!=='recall'||this._topic(q.q)!=='place') return q; const c=this._countryIn(q.q); if(!c) return q;
+    const ans=this._norm(q.ans||''), others=new Set(this._regionsOf(c).map(x=>this._norm(x)).filter(x=>x&&!ans.includes(x)&&!x.includes(ans)));
+    if(others.size>=3) return q;
+    const word=Object.keys(this.COUNTRY_WORDS).find(w=>this.COUNTRY_WORDS[w]===c&&new RegExp(`\\b${w}\\b`).test(q.q));
+    const text=word?q.q.replace(new RegExp(`\\b${word} `),''):q.q.replace(new RegExp(`\\s*(wine )?region of ${c}\\b`),' wine region').replace(/\s+/g,' ');
+    return {...q,q:text}; },
+  _countryIn(text){ const t=String(text||''); for(const [w,c] of Object.entries(this.COUNTRY_WORDS)) if(new RegExp(`\\b${w}\\b`).test(t)) return c;
+    const m=t.match(/\bregion of ([A-Z][a-z]+(?: [A-Z][a-z]+)?)/); return m&&Object.values(this.COUNTRY_WORDS).includes(m[1])?m[1]:null; },
+  // Which country a place is in: the list's own wines first, then the regions guide (its names and aliases).
+  _placeCountry(x){ const n=this._norm(x).replace(/^the /,''); const w=TeamData.wines().find(w=>w.region&&this._norm(w.region).replace(/^the /,'')===n); if(w&&w.country) return w.country;
+    const K=(typeof KNOWLEDGE!=='undefined'&&KNOWLEDGE&&KNOWLEDGE.regions)||{};
+    for(const [name,r] of Object.entries(K)) if(this._norm(name)===n||(r.aliases||[]).some(a=>this._norm(a)===n)) return r.country||null;
+    return null; },
+  _regionsOf(country){ const K=(typeof KNOWLEDGE!=='undefined'&&KNOWLEDGE&&KNOWLEDGE.regions)||{};
+    return [...TeamData.wines().filter(w=>w.country===country&&w.region).map(w=>w.region),...Object.entries(K).filter(([,r])=>r.country===country).map(([n])=>n)]; },
   DECOYS:{
     country:['France','Italy','Spain','Portugal','Germany','Austria','United States','Canada','Argentina','Chile','Australia','New Zealand','South Africa'],
     flavour:['Blackcurrant','Cedar','Lemon','Green apple','Peach','Black pepper','Plum','Honey','Toast','Gooseberry','Leather','Vanilla','Violet','Grapefruit','Dried fig','Liquorice','Mint','Smoke','Pineapple','Chocolate'],
@@ -850,7 +887,8 @@ const TeamLearn = {
     const own=TeamData.wine(q.wine), drink=TeamData.isDrink(own);
     // Nothing that's in this drink is offered as a wrong answer about it, even when the question asks for one part.
     if(drink&&topic==='ingredient') (own.spec||[]).forEach(x=>seen.add(norm(x)));
-    for(const w of wines){ if(w.id===q.wine||TeamData.isDrink(w)!==drink) continue; for(const o of this.wineQs(w.id)) if(o.k==='recall'&&this._topic(o.q,drink)===topic) sp(o.ans).forEach(add); }
+    // (A wine for a dish draws only wines, below: other questions' "which wines" answers are as often places.)
+    if(topic!=='wine') for(const w of wines){ if(w.id===q.wine||TeamData.isDrink(w)!==drink) continue; for(const o of this.wineQs(w.id)) if(o.k==='recall'&&this._topic(o.q,drink)===topic) sp(o.ans).forEach(add); }
     if(drink&&topic==='ingredient') wines.filter(w=>TeamData.isDrink(w)&&w.id!==q.wine).flatMap(w=>w.spec||[]).forEach(add);
     if(drink&&topic==='spirit') wines.filter(w=>TeamData.isDrink(w)&&w.id!==q.wine).map(w=>w.spirit).filter(Boolean).forEach(add);
     if(drink&&topic==='creator') wines.filter(w=>w.credit&&w.id!==q.wine).map(w=>w.credit).forEach(add);
@@ -872,13 +910,16 @@ const TeamLearn = {
     if(topic==='year'){ const y=this._num(right[0]); if(y) [y-1,y+1,y-2,y+2,y-3,y+3].forEach(v=>add(String(v))); }
     if(topic==='duration'&&/month/i.test(right[0])) ['6 months','12 months','18 months','24 months','36 months'].forEach(add);
     if(topic==='place') wines.map(w=>w.region).filter(Boolean).forEach(add); // regions against regions; a country question has its own kind
+    // "Which Italian region…": the wrong regions are Italian too (the list's, then the guide's), never Rhône or Okanagan.
+    const inC=topic==='place'&&this._countryIn(q.q); if(inC) this._regionsOf(inC).forEach(add);
     if(topic==='grape') wines.flatMap(w=>w.grapes||[]).forEach(add);
     if(topic==='country') wines.filter(w=>w.id!==q.wine).map(w=>w.country).filter(Boolean).forEach(add);
     (this.DECOYS[topic]||[]).forEach(add);
     if(topic==='grape'){ const known=new Set([...wines.flatMap(w=>w.grapes||[]),...(typeof GRAPE_ALLOWLIST!=='undefined'?GRAPE_ALLOWLIST:[])].map(norm)); const g=pool.map(x=>String(x).replace(/^(usually|mostly|mainly)\s+/i,'')).filter(x=>known.has(norm(x))); pool.length=0; pool.push(...[...new Set(g)]); }
     // Like for like within a kind: a months answer against months, a valley against valleys.
     if(/month/i.test(right[0])){ const m=pool.filter(x=>/month/i.test(x)); pool.length=0; pool.push(...m); }
-    if(topic==='place'&&/valley/i.test(right[0])){ ['The Rhône Valley','The Douro Valley','The Napa Valley','The Mosel Valley','The Barossa Valley'].forEach(add); const v=pool.filter(x=>/valley/i.test(x)); pool.length=0; pool.push(...v); }
+    if(inC){ const keep=pool.filter(x=>this._placeCountry(x)===inC); pool.length=0; pool.push(...keep); }
+    else if(topic==='place'&&/valley/i.test(right[0])){ ['The Rhône Valley','The Douro Valley','The Napa Valley','The Mosel Valley','The Barossa Valley'].forEach(add); const v=pool.filter(x=>/valley/i.test(x)); pool.length=0; pool.push(...v); }
     // A flavour pill that shares a word with a right one ("Black cherry" beside "Red cherry") would be unfair either way.
     const wrong=this._shuffle(pool.filter(x=>topic!=='flavour'||!this._words(x).some(w=>rightWords.has(w))),this._seed(q)+'t');
     if(wrong.length<3) return null;
@@ -894,10 +935,14 @@ const TeamLearn = {
     const norm=x=>this._norm(x), A=TeamData.wine(q.wine); if(!A) return null;
     // The second wine is the one the question names as the list does (producer and name), never a bare
     // grape ("Riesling" is Trimbach's name too).
-    const text=norm(q.q), B=TeamData.wines().filter(w=>w.id!==A.id&&text.includes(norm(TeamData.short(w)))).sort((x,y)=>TeamData.short(y).length-TeamData.short(x).length)[0];
+    // Its list name with or without a quoted or bracketed part ("Faustino Rioja Crianza" for 'Faustino Rioja Crianza "Art Collection"').
+    const callsB=w=>[TeamData.short(w),w.name,TeamData.short(w).replace(/\s*["“(][^"”)]*["”)]\s*/g,' ')].filter(Boolean).map(x=>norm(x)).filter(x=>x.split(' ').length>=2);
+    const text=norm(q.q), B=TeamData.wines().filter(w=>w.id!==A.id&&callsB(w).some(x=>text.includes(x))).sort((x,y)=>TeamData.short(y).length-TeamData.short(x).length)[0];
     if(!B) return null;
-    const right=[...new Set([q.ans,...(q.acc||[])].filter(Boolean).map(x=>String(x).trim()))].slice(0,3);
-    const said=' '+norm(right.join(' '))+' ', GENERIC=new Set(['chateau','domaine','domaines','bodegas','tenuta','weingut','maison','cave','the','les','des','del','della','de','du','la','le','classico','reserva','riserva','premier','cru','grand','late','harvest','old','year','brut','reserve','nv']);
+    // One right answer: the card's own. Its other wordings (acc) are for marking a typed answer; as pills they were the
+    // same fact three times over ("choose 3"), with the wrong ones the same swap three times.
+    const forms0=[...new Set([q.ans,...(q.acc||[])].filter(Boolean).map(x=>String(x).trim()))].slice(0,3), right=forms0.slice(0,1);
+    const said=' '+norm(forms0.join(' '))+' ', GENERIC=new Set(['chateau','domaine','domaines','bodegas','tenuta','weingut','maison','cave','the','les','des','del','della','de','du','la','le','classico','reserva','riserva','premier','cru','grand','late','harvest','old','year','brut','reserve','nv']);
     // Every way the card calls each wine ("Cloudy Bay", "Louis Jadot", "Jadot"): runs of words from its name that
     // appear in the answers, longest first, leaving out words both names share ("Pinot Noir") or that say nothing alone.
     const words=w=>TeamData.short(w).split(/\s+/);
@@ -930,14 +975,20 @@ const TeamLearn = {
     // needs 26"): the same point, the same words, turned the wrong way round.
     const esc=x=>x.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'), alts=[...fa.map(f=>[f,b]),...fb.map(f=>[f,a])].sort((x,y)=>y[0].length-x[0].length);
     const swap=t=>{ if(!alts.length) return t; const re=new RegExp(`(?<![\\p{L}])(${alts.map(x=>esc(x[0])).join('|')})(?![\\p{L}])`,'gu'); return t.replace(re,m=>(alts.find(x=>x[0]===m)||[0,m])[1]); };
-    const swapped=right.map(swap).filter(t=>!right.some(r=>norm(r)===norm(t)));
+    const swapped=forms0.map(swap).filter(t=>!forms0.some(r=>norm(r)===norm(t)));
     // Only decoys about what the question asks: its grapes, its place, its price, how it's sold, its age.
     const ASPECT={style:/style|taste|flavour|body|bodied|rich|lighter|tannin|acid|sweet|dry/,grape:/grape|blend|variet/,place:/origin|where|place|region|country|come from|comes from/,price:/price|cost|cheap|dear|expensive|spend/,sold:/sold|glass|bottle|bought|pour/,age:/vintage|older|younger|age/};
     const want=Object.keys(ASPECT).filter(k=>ASPECT[k].test(norm(q.q)));
     const aspectOf=t=>{ const n=norm(t); return /bodied|tannic|tannin|acidity|sweeter|drier/.test(n)?'style':/grape/.test(n)?'grape':/ from |both from/.test(' '+n)?'place':/cheaper|costs more/.test(n)?'price':/glass|bottle only/.test(n)?'sold':/vintage/.test(n)?'age':'type'; };
     // A question about something the list can't speak to (style, legal ageing) gets its swaps alone.
     const onTopic=want.length?wrong.filter(t=>want.includes(aspectOf(t))):(swapped.length>=2?[]:wrong);
-    const seen=new Set(right.map(norm)), wr=[...swapped,...onTopic,...(onTopic.length+swapped.length<2?wrong:[])].filter(x=>{ const n=norm(x); if(seen.has(n)) return false; seen.add(n); return true; });
+    // Nor two wrong answers that say the same thing: one whose words all sit inside another's is the same claim.
+    // (Against the other wrong answers only: a swap has the right answer's words by design.)
+    const kept=[], st=t=>this._stems(t).filter(w=>w.length>2), inside=(x,y)=>{ const b=new Set(st(y)); const a=st(x); return a.length&&a.every(w=>b.has(w)); };
+    const seen=new Set(right.map(norm)), take=x=>{ const n=norm(x); if(seen.has(n)) return false;
+      if(kept.some(k=>inside(x,k)||inside(k,x))) return false; seen.add(n); kept.push(x); return true; };
+    let wr=[...swapped,...onTopic,...(onTopic.length+swapped.length<2?wrong:[])].filter(take);
+    if(wr.length<2) wr=[...wr,...wrong.filter(take)]; // short of distinct claims: the list's facts turned round make up the rest
     if(wr.length<2) return null;
     const keep=[...wr.slice(0,swapped.length),...this._shuffle(wr.slice(swapped.length),this._seed(q)+'x')].slice(0,Math.max(3,6-right.length));
     const all=[...right.map(x=>({x,ok:true})),...keep.map(x=>({x,ok:false}))], order=this._shuffle(all.map((_,i)=>i),this._seed(q)+'c');

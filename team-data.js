@@ -315,8 +315,7 @@ const TeamData = {
      until the next review. The pre-handover gate for a new install (docs/business.md, "Handing over an install"):
      `npm run team:review` runs it on a seed and writes the result into its file. The demo restaurant is never sent. */
   REVIEW_BATCH:10,
-  _reviewItem(q){ const d=TeamLearn.deal(q,'review'); let c=null; try{ c=TeamLearn.choices(d); }catch(e){}
-    const opts=c&&c.opts||d.opts||[], right=c&&c.right||(d.a!=null?[d.a]:[]);
+  _reviewItem(q){ const d=TeamLearn.deal(q,'review'), c=TeamLearn.shown(d), opts=c.opts, right=c.right;
     const about=q.wine?`WINE ${this.label(this.wine(q.wine)||{})}`:q.cocktail?`COCKTAIL ${(this.cocktail(q.cocktail)||{}).name||''}`:q.dish?`DISH ${(this.dish(q.dish)||{}).name||''}`:'';
     const ax=TeamLearn.aside(d,right.map(i=>opts[i]).join(' ')||d.ans);
     const groups=c&&c.groups&&c.groups.length>1?' (in '+c.groups.map(g=>`"${g.label}": choose ${g.n}`).join(', ')+')':c&&c.n>1?` (choose ${c.n})`:'';
