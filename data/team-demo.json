@@ -1452,14 +1452,33 @@
     },
     {
      "k": "apply",
-     "q": "A guest has ordered the oysters and asks for a glass of something sparkling that won't cost a fortune. What would you offer from the list, and what do you say about why it works?",
+     "q": "A guest on the floor has ordered the Oysters, shallot vinegar and asks for a glass of something sparkling, not a champagne price. What would you suggest, and why?",
      "key": [
-      "Offer the Nyetimber Classic Cuvée at £14 a glass",
-      "Its high acidity and freshness suit the salty, delicate, acidic oysters",
-      "Mention it's English sparkling, from Sussex"
+      "Nyetimber Classic Cuvée",
+      "It's crisp and zesty, with a lively freshness that cuts through the salty brine and the sharpness of the shallot vinegar",
+      "It's £14 a glass, so the guest gets proper sparkling by the glass without paying champagne prices"
      ],
-     "why": "The wine's crisp freshness suits oysters and it's available by the glass.",
-     "id": "w-nyetimber-classic-cuvee#4"
+     "why": "It is the sparkling by the glass at a modest price whose crisp, zesty freshness suits oysters and shallot vinegar.",
+     "id": "w-nyetimber-classic-cuvee#4",
+     "wrong": [
+      "It's a big, full-bodied sparkling that stands up to the richness of the dish",
+      "It's soft and gentle on the palate, with the acidity turned right down",
+      "It's rich and toasty with deep ripe fruit that matches the oysters"
+     ],
+     "decoys": [
+      {
+       "id": "w-billecart-salmon-brut-reserve",
+       "why": "It is by the glass, but at £18 it is the dearer glass and the guest wanted to keep the price down; it is also rounder and fuller, less zippy against the oysters."
+      },
+      {
+       "id": "w-gusbourne-blanc-de-blancs",
+       "why": "It would suit the oysters, but it is not sold by the glass, so it fails the request."
+      },
+      {
+       "id": "w-domaine-laroche-chablis-saint-martin",
+       "why": "This is a still white, not a sparkling, so it ignores what the guest asked for."
+      }
+     ]
     },
     {
      "k": "contrast",
@@ -1576,14 +1595,33 @@
     },
     {
      "k": "apply",
-     "q": "A guest ordering the crab on toast wants a special bottle of English sparkling wine for the table. What do you suggest and how do you describe it?",
+     "q": "A guest on the floor has ordered the Crab on toast, brown crab mayonnaise and wants a bottle of crisp, lemony English sparkling for the table, happy to spend a little more for a special occasion. What would you suggest, and why?",
      "key": [
-      "Suggest the Gusbourne Blanc de Blancs 2019 at £95 a bottle",
-      "Describe it as crisp and citrusy, made only from Chardonnay",
-      "Say its acidity lifts the rich crab mayonnaise"
+      "Gusbourne Blanc de Blancs",
+      "It's crisp and lemony, with a bright freshness that lifts the rich brown crab mayonnaise",
+      "At £95 a bottle it's a special English sparkling for the table, made from Chardonnay alone"
      ],
-     "why": "It's a bottle-only English sparkling whose freshness suits the delicate crab.",
-     "id": "w-gusbourne-blanc-de-blancs#4"
+     "why": "It is the special English sparkling whose crisp, lemony freshness cuts through the rich crab mayonnaise.",
+     "id": "w-gusbourne-blanc-de-blancs#4",
+     "wrong": [
+      "It's rich and full-bodied, so it matches the weight of the crab mayonnaise",
+      "It's soft and low in acidity, so it won't compete with the dish",
+      "It's sweet and fruity, which balances the saltiness of the crab"
+     ],
+     "decoys": [
+      {
+       "id": "w-nyetimber-classic-cuvee",
+       "why": "It is English and crisp too, but at £68 it is the everyday bottle rather than the special one the guest is after."
+      },
+      {
+       "id": "w-billecart-salmon-brut-reserve",
+       "why": "It is a special bottle, but it is champagne, not English, and its rounder, fuller style is less crisp for the crab."
+      },
+      {
+       "id": "w-domaine-laroche-chablis-saint-martin",
+       "why": "This is a still white, not a sparkling, so it does not answer the request."
+      }
+     ]
     },
     {
      "k": "contrast",
@@ -1700,14 +1738,33 @@
     },
     {
      "k": "apply",
-     "q": "A guest orders the pan-roast cod and wants a white by the glass. How do you present the Domaine Laroche Chablis Saint Martin?",
+     "q": "A guest on the floor has ordered the Pan-roast cod, brown shrimp, samphire and wants a glass of dry white that is fresh but has a bit more body than something very sharp. What would you suggest, and why?",
      "key": [
-      "Name the wine and its £13 glass price",
-      "Say it's dry, fresh and citrusy",
-      "Explain it suits delicate white fish and lifts the dish"
+      "Domaine Laroche Chablis Saint Martin",
+      "It's dry and fresh with crisp citrus, a clean finish that lifts the delicate cod and samphire without overpowering them",
+      "It has a bit more body than the sharpest whites and it's £13 a glass"
      ],
-     "why": "A good answer links the fresh style to the delicate fish.",
-     "id": "w-domaine-laroche-chablis-saint-martin#4"
+     "why": "It is a dry, fresh white by the glass with a touch more body, and its crisp citrus suits delicate pan-roast cod.",
+     "id": "w-domaine-laroche-chablis-saint-martin#4",
+     "wrong": [
+      "It's very light and sharp, the zestiest white on the list, to cut through the dish",
+      "It's soft and rounded with sweet ripe fruit, so it won't clash with the shrimp",
+      "It's rich and oaky, with the weight to stand up to the butter"
+     ],
+     "decoys": [
+      {
+       "id": "w-trimbach-riesling",
+       "why": "It is by the glass and dry, but it is very sharp and light, not the extra body the guest wants."
+      },
+      {
+       "id": "w-cloudy-bay-sauvignon-blanc",
+       "why": "It is by the glass, but it is zesty and sharp, lighter in feel than the guest wanted, and its grassy flavours don't suit the cod as well."
+      },
+      {
+       "id": "w-william-fevre-chablis-premier-cru-montmains",
+       "why": "It would suit the dish, but it is not sold by the glass, so it fails the request."
+      }
+     ]
     },
     {
      "k": "contrast",
@@ -1823,14 +1880,33 @@
     },
     {
      "k": "apply",
-     "q": "A guest orders the roast chicken with morels and asks for a special white bottle. How do you suggest the William Fèvre Chablis Premier Cru Montmains?",
+     "q": "A guest on the floor has ordered the Roast chicken, morels, tarragon cream and wants a special bottle of dry white with a fuller, more layered feel than a simple crisp one. What would you suggest, and why?",
      "key": [
-      "Name the wine and its £89 bottle price",
-      "Say it's a higher-tier Premier Cru Chablis, dry and elegant",
-      "Link the wine to the creamy chicken dish"
+      "William Fèvre Chablis Premier Cru Montmains",
+      "It's dry and elegant with citrus freshness, but fuller and more layered, so it keeps up with the creamy tarragon sauce and morels",
+      "At £89 a bottle it's a Premier Cru, a proper special bottle for the occasion"
      ],
-     "why": "A good answer gives price, tier and a plain match to the creamy dish.",
-     "id": "w-william-fevre-chablis-premier-cru-montmains#4"
+     "why": "It is the fuller, more layered, special-occasion dry white that suits creamy chicken and morels.",
+     "id": "w-william-fevre-chablis-premier-cru-montmains#4",
+     "wrong": [
+      "It's a big, heavy white with strong tannin to match the morels",
+      "It's very sharp and zippy, the sharpest white on the list, to cut the cream",
+      "It's sweet and fruity, which sets off the tarragon"
+     ],
+     "decoys": [
+      {
+       "id": "w-domaine-laroche-chablis-saint-martin",
+       "why": "It would be a nice white with the chicken, but at £58 it is the simpler, everyday Chablis, not the special bottle with extra layers."
+      },
+      {
+       "id": "w-pascal-jolivet-sancerre",
+       "why": "It is very zesty and light with a grassy edge, so it lacks the fuller feel the guest wants and is less suited to the cream and morels."
+      },
+      {
+       "id": "w-trimbach-riesling",
+       "why": "It is sharp and light, not fuller or layered, and doesn't suit the creamy chicken as well."
+      }
+     ]
     },
     {
      "k": "contrast",
@@ -1947,14 +2023,33 @@
     },
     {
      "k": "apply",
-     "q": "A guest has ordered the goat's cheese tart and asks you for a bottle of something fresh. How would you pitch the Pascal Jolivet Sancerre?",
+     "q": "A guest on the floor has ordered the Goat's cheese tart, red onion marmalade and asks for a bottle of something crisp, zesty and fresh, with a grassy edge, around £60. What would you suggest, and why?",
      "key": [
-      "Say it is a crisp, zesty Sauvignon Blanc from the Loire",
-      "Explain that goat's cheese and Sauvignon Blanc pair classically",
-      "Mention it is £62 a bottle"
+      "Pascal Jolivet Sancerre",
+      "It's dry and zesty with citrus and gooseberry fruit and a fresh, grassy edge that cuts the richness of the goat's cheese and suits the marmalade",
+      "At £62 a bottle it's right around the guest's budget"
      ],
-     "why": "Goat's cheese is one of the best partners for Sauvignon Blanc, and the price is £62 for the bottle.",
-     "id": "w-pascal-jolivet-sancerre#4"
+     "why": "It is the crisp, zesty, grassy white around £60 that is the classic partner for goat's cheese.",
+     "id": "w-pascal-jolivet-sancerre#4",
+     "wrong": [
+      "It's a full-bodied white with the weight to match the pastry",
+      "It's soft and low in acidity, so it won't fight the sweet onion marmalade",
+      "It's sweet and fruity, which balances the tang of the goat's cheese"
+     ],
+     "decoys": [
+      {
+       "id": "w-cloudy-bay-sauvignon-blanc",
+       "why": "It is crisp and zesty too, but at £60 it is by the glass and bottle and tends to be less grassy and flinty, so it is the weaker answer here."
+      },
+      {
+       "id": "w-trimbach-riesling",
+       "why": "It is crisp and under budget, but it has no grassy edge, so it doesn't suit the goat's cheese as well."
+      },
+      {
+       "id": "w-domaine-laroche-chablis-saint-martin",
+       "why": "It is dry and fresh but rounder and fuller, not the zesty, grassy style the guest asked for."
+      }
+     ]
     },
     {
      "k": "contrast",
@@ -2070,14 +2165,33 @@
     },
     {
      "k": "apply",
-     "q": "A guest orders the crispy pig's head with apple sauce and asks for a glass of white wine. How would you recommend the Trimbach Riesling?",
+     "q": "A guest orders the crispy pig's head, apple sauce, and asks for a glass of something crisp and white, with lots of zing, to cut through the richness. What would you suggest, and why?",
      "key": [
-      "Say it is a fresh, aromatic Riesling from Alsace",
-      "Explain that its high acidity cuts through rich fried pork",
-      "Mention it is £12 a glass"
+      "Trimbach Riesling",
+      "It's fresh and zingy, so the sharpness cuts through the rich fried pork and goes well with the apple sauce",
+      "It's poured by the glass at £12, so it fits exactly what they asked for"
      ],
-     "why": "Riesling suits pork, and acidity balances rich, fried food.",
-     "id": "w-trimbach-riesling#4"
+     "why": "Its zingy freshness cuts through the rich crispy pig's head and it is available by the glass at £12.",
+     "id": "w-trimbach-riesling#4",
+     "wrong": [
+      "It's a full, rounded white with enough weight to stand up to the fried pork",
+      "It has a gentle, soft texture that keeps it from clashing with the apple sauce",
+      "It's an oaky, buttery white that matches the richness of the pig's head"
+     ],
+     "decoys": [
+      {
+       "id": "w-cloudy-bay-sauvignon-blanc",
+       "why": "It is crisp and by the glass at £13, but it is a pick for the burrata, goat's cheese tart and lemon sole, not the pig's head; its gooseberry and cut-grass character doesn't suit fried pork with apple."
+      },
+      {
+       "id": "w-brundlmayer-gruner-veltliner-kamptal-terrassen",
+       "why": "It is by the glass at £11 but is gentler and more savoury, with white pepper, and is not a pick for the pig's head, so it lacks the sharpness to cut the richness."
+      },
+      {
+       "id": "w-domaine-laroche-chablis-saint-martin",
+       "why": "It is by the glass at £13 but it is rounder and fuller, less zingy, so it won't cut through the fried pork as well, and it is not a pick for this dish."
+      }
+     ]
     },
     {
      "k": "contrast",
@@ -2193,14 +2307,33 @@
     },
     {
      "k": "apply",
-     "q": "A guest orders the crispy pig's head and asks for a white wine to go with it. How would you suggest the Dönnhoff Riesling Trocken, and can they have it by the glass?",
+     "q": "A guest orders the pork belly, black pudding, apple and asks for a dry, zesty white that's under £60 a bottle, with lots of freshness for the richness of the dish. What would you suggest, and why?",
      "key": [
-      "The wine's high acidity cuts through the rich fried pork",
-      "Riesling goes well with pork",
-      "It is bottle only at £58, no glass"
+      "Dönnhoff Riesling Trocken",
+      "It's zesty and dry with a clean finish, so it cuts through the rich pork belly and black pudding and lifts the apple",
+      "At £58 a bottle it comes in under their budget, though it is bottle only, not by the glass"
      ],
-     "why": "The pairing is based on acidity and pork, and this wine is only sold by the bottle.",
-     "id": "w-donnhoff-riesling-trocken#4"
+     "why": "It is a zesty, dry, fresh Riesling at £58 a bottle, a pick for the pork belly, black pudding and apple that keeps within their budget.",
+     "id": "w-donnhoff-riesling-trocken#4",
+     "wrong": [
+      "It's a rich, full-bodied white that matches the weight of the black pudding",
+      "It has a soft, off-dry sweetness that echoes the apple",
+      "It's a tannic white with the grip to stand up to the pork"
+     ],
+     "decoys": [
+      {
+       "id": "w-trimbach-riesling",
+       "why": "It is also fresh and under £60, but it is not a pick for the pork belly dish as written and the aim here is the bottle; a server choosing for a bottle should reach for the pick for this dish."
+      },
+      {
+       "id": "w-pascal-jolivet-sancerre",
+       "why": "It is crisp, but at £62 a bottle it is over their £60 limit, and it is not a pick for the pork belly."
+      },
+      {
+       "id": "w-william-fevre-chablis-premier-cru-montmains",
+       "why": "At £89 a bottle it is well over budget, and it is rounder rather than zesty, so it doesn't give the sharp freshness they want."
+      }
+     ]
     },
     {
      "k": "contrast",
@@ -2316,14 +2449,33 @@
     },
     {
      "k": "apply",
-     "q": "A guest chooses the aubergine with miso and sesame and wants a glass of white. How do you suggest the Bründlmayer Grüner Veltliner Kamptal Terrassen?",
+     "q": "A guest chooses the aubergine, miso, sesame and wants a glass of white for under £12, something light and peppery rather than sharp. What would you suggest, and why?",
      "key": [
-      "Grüner Veltliner suits Asian-style dishes",
-      "Its freshness and white pepper work with the umami miso",
-      "It is £11 a glass"
+      "Bründlmayer Grüner Veltliner Kamptal Terrassen",
+      "Its zesty citrus and white pepper work well with the savoury miso and sesame without overpowering the aubergine",
+      "It's £11 a glass, so it fits their budget by the glass"
      ],
-     "why": "Grüner suits Asian dishes and this wine comes by the glass.",
-     "id": "w-brundlmayer-gruner-veltliner-kamptal-terrassen#4"
+     "why": "Its citrus and white pepper suit the miso and sesame aubergine, and at £11 a glass it is the one that meets their budget.",
+     "id": "w-brundlmayer-gruner-veltliner-kamptal-terrassen#4",
+     "wrong": [
+      "It's a sweet, fruity white that balances the saltiness of the miso",
+      "It's a full, creamy white that gives the aubergine more body",
+      "It has the sharpest acidity of the whites to cut through the sesame"
+     ],
+     "decoys": [
+      {
+       "id": "w-trimbach-riesling",
+       "why": "It is a pick for the aubergine and by the glass, but at £12 it is not under £12, and it is sharper and more zingy than the soft, peppery style they want."
+      },
+      {
+       "id": "w-cloudy-bay-sauvignon-blanc",
+       "why": "At £13 a glass it is over their budget, and it isn't a pick for the aubergine; its gooseberry and cut-grass character is sharper than they asked."
+      },
+      {
+       "id": "w-domaine-laroche-chablis-saint-martin",
+       "why": "At £13 a glass it is over budget, and it is rounder and not a pick for the aubergine."
+      }
+     ]
     },
     {
      "k": "contrast",
@@ -2438,14 +2590,33 @@
     },
     {
      "k": "apply",
-     "q": "A guest orders the goat's cheese tart and asks for a glass of white. How do you suggest the Cloudy Bay Sauvignon Blanc?",
+     "q": "A guest orders the whole lemon sole, caper butter, and asks for a glass of something crisp and zingy, with fresh, green flavours. What would you suggest, and why?",
      "key": [
-      "Sauvignon Blanc goes well with goat's cheese",
-      "High acidity balances the sweet onion marmalade",
-      "£13 a glass"
+      "Cloudy Bay Sauvignon Blanc",
+      "It's zingy and fresh with gooseberry and cut grass, which lifts the buttery sauce and sits well with the capers and lemon",
+      "It's available by the glass at £13, as they asked"
      ],
-     "why": "The pairing works on acidity and the grape's affinity with goat's cheese, and the wine is sold by the glass.",
-     "id": "w-cloudy-bay-sauvignon-blanc#4"
+     "why": "Its zingy, green freshness lifts the caper butter on the lemon sole, and it is available by the glass at £13.",
+     "id": "w-cloudy-bay-sauvignon-blanc#4",
+     "wrong": [
+      "It's a full, creamy white that matches the richness of the caper butter",
+      "It's lightly sweet, which softens the saltiness of the capers",
+      "It's an oaked white with enough weight for the fish"
+     ],
+     "decoys": [
+      {
+       "id": "w-trimbach-riesling",
+       "why": "It is crisp and by the glass at £12, but it is not a pick for the lemon sole, and its aromatic style is less green and herbal than they want."
+      },
+      {
+       "id": "w-brundlmayer-gruner-veltliner-kamptal-terrassen",
+       "why": "It is by the glass but is softer and more peppery, not zingy, and is not a pick for the lemon sole."
+      },
+      {
+       "id": "w-domaine-laroche-chablis-saint-martin",
+       "why": "It is by the glass at £13 and suits fish, but it is rounder and less zingy, and it is not the pick for this dish."
+      }
+     ]
     },
     {
      "k": "contrast",
@@ -2561,14 +2732,33 @@
     },
     {
      "k": "apply",
-     "q": "A guest ordering the braised lamb shoulder wants a glass of the Château Minuty M de Minuty Côtes de Provence 2023. How do you respond?",
+     "q": "A guest orders the burrata, heritage tomatoes, basil and asks for a glass of rosé, something dry and light, no more than £12. What would you suggest, and why?",
      "key": [
-      "Explain that this pale, light, dry rosé is too delicate for a rich, braised lamb dish and would be overpowered",
-      "Steer them to a more structured red from the list, such as the Domaine Tempier Bandol 2019 at £96 a bottle, for the lamb",
-      "Offer the Minuty at £12 a glass with a dish it suits, such as the burrata with heritage tomatoes and basil"
+      "Château Minuty M de Minuty Côtes de Provence",
+      "It's dry and light with soft red berries and a touch of white pepper, so it goes well with the creamy burrata and sweet tomatoes without overpowering them",
+      "It's £12 a glass, so it fits their limit by the glass"
      ],
-     "why": "A light rosé does not stand up to rich braised lamb, but it suits fresh, herby dishes like the burrata.",
-     "id": "w-chateau-minuty-m-de-minuty-cotes-de-provence#4"
+     "why": "It is a dry, light rosé that suits the burrata and tomatoes and is poured by the glass at £12.",
+     "id": "w-chateau-minuty-m-de-minuty-cotes-de-provence#4",
+     "wrong": [
+      "It's a full, rich rosé with the weight to stand up to the cheese",
+      "It's lightly sweet, which balances the acidity of the tomatoes",
+      "It has firm tannin that cleans the creaminess from the burrata"
+     ],
+     "decoys": [
+      {
+       "id": "w-domaines-ott-chateau-de-selle-cotes-de-provence-rose",
+       "why": "It is a similar dry, light rosé, but it is bottle only at £78, so it can't be had by the glass or within their £12."
+      },
+      {
+       "id": "w-chateau-musar-jeune-rose",
+       "why": "It is a dry, light rosé by the glass at £10, but it is not a pick for the burrata, so it isn't the one to choose for this dish."
+      },
+      {
+       "id": "w-domaines-ott-chateau-de-selle-cotes-de-provence-rose",
+       "why": "Its price and bottle-only service rule it out for a single glass at this budget."
+      }
+     ]
     },
     {
      "k": "contrast",
@@ -2684,14 +2874,33 @@
     },
     {
      "k": "apply",
-     "q": "A guest ordering the lamb rump with harissa asks for the Domaines Ott Château de Selle Côtes de Provence Rosé 2022. What do you say?",
+     "q": "A guest ordering the 28-day sirloin, chips, béarnaise says they don't want a red tonight. They'd like a rosé, dry and fresh, and they're happy to spend up to £80 a bottle. What would you suggest, and why?",
      "key": [
-      "Explain that this pale, light, dry rosé would be overpowered by rich, spicy, smoky lamb",
-      "Steer them to a more structured red from the list, such as the Domaine Tempier Bandol 2019 at £96 a bottle",
-      "Offer the Château de Selle at £78 a bottle (bottle only) with something lighter, such as the oysters or the pan-roast cod"
+      "Domaines Ott Château de Selle Côtes de Provence Rosé",
+      "It's a dry, fresh rosé with red berries and a touch of white pepper, so it gives the guest the pink wine they asked for and the pepper sits nicely with the steak",
+      "At £78 a bottle it's inside their budget, and it's light enough not to fight the béarnaise, with enough freshness to cut through the richness of the sauce"
      ],
-     "why": "A pale rosé is too light for harissa-spiced lamb, so guide the guest to a red and keep the rosé for lighter dishes.",
-     "id": "w-domaines-ott-chateau-de-selle-cotes-de-provence-rose#4"
+     "why": "It is a dry, fresh rosé that fits the guest's budget and is a sommelier's pick with the 28-day sirloin.",
+     "id": "w-domaines-ott-chateau-de-selle-cotes-de-provence-rose#4",
+     "wrong": [
+      "It's a full-bodied rosé with the weight to stand up to a big cut of beef",
+      "It has firm tannin, so it will grip the meat the way a red would",
+      "It's sweet and ripe, so it will soften the pepper and richness of the béarnaise"
+     ],
+     "decoys": [
+      {
+       "id": "w-chateau-musar-jeune-rose",
+       "why": "It's soft, gentle and easy-drinking, which is too delicate for a steak with béarnaise; it would taste thin beside the beef and the sauce."
+      },
+      {
+       "id": "w-chateau-minuty-m-de-minuty-cotes-de-provence",
+       "why": "It's a lovely rosé, but it's the lighter-weight option and it isn't one of the sommelier's picks for the sirloin, so it doesn't give the guest the same pairing."
+      },
+      {
+       "id": "w-chateau-musar-jeune-rose",
+       "why": "Placeholder removed"
+      }
+     ]
     },
     {
      "k": "contrast",
@@ -2805,14 +3014,33 @@
     },
     {
      "k": "apply",
-     "q": "A guest ordering the cured sea trout wants a glass of rosé under £11. Which wine do you suggest and why?",
+     "q": "A guest ordering the Cured sea trout, cucumber, dill would like a glass of rosé, and wants to keep it under £11 a glass. What would you suggest, and why?",
      "key": [
-      "Suggest the Château Musar Jeune Rosé 2022 at £10 a glass",
-      "Rosé goes with fish and salads",
-      "It is light and soft so it won't overpower the delicate trout"
+      "Château Musar Jeune Rosé",
+      "It's soft and gentle with light red berries, so it won't overpower the delicate trout and dill",
+      "It's £10 a glass, which keeps the guest under their limit"
      ],
-     "why": "The wine is light, fits the budget and suits fish.",
-     "id": "w-chateau-musar-jeune-rose#4"
+     "why": "It's the rosé by the glass under £11, and its soft, light style suits the delicate cured sea trout.",
+     "id": "w-chateau-musar-jeune-rose#4",
+     "wrong": [
+      "It's a crisp, high-acid rosé that will cut through the cure on the trout",
+      "It has some tannin, which will give the fish structure",
+      "It's a rich, full rosé that will stand up to the dill and cucumber"
+     ],
+     "decoys": [
+      {
+       "id": "w-chateau-minuty-m-de-minuty-cotes-de-provence",
+       "why": "It's a good rosé by the glass, but at £12 it's over the guest's £11 limit."
+      },
+      {
+       "id": "w-domaines-ott-chateau-de-selle-cotes-de-provence-rose",
+       "why": "It's bottle only at £78, so it can't be offered by the glass and is well over what the guest wants to spend."
+      },
+      {
+       "id": "w-chateau-minuty-m-de-minuty-cotes-de-provence",
+       "why": "Placeholder removed"
+      }
+     ]
     },
     {
      "k": "contrast",
@@ -2926,14 +3154,33 @@
     },
     {
      "k": "apply",
-     "q": "A guest orders the 28-day sirloin and wants a bottle with it. How would you recommend the Château Haut-Bages Libéral Pauillac 2016 and say how to serve it?",
+     "q": "A guest ordering the 28-day sirloin, chips, béarnaise wants a bottle of red with real structure and grip, a classic red to go with a special steak, and says the price isn't a worry. What would you suggest, and why?",
      "key": [
-      "Grilled fatty red meat softens its tannin",
-      "Serve at 16-18°C in a large red glass",
-      "Decant for about 30 minutes; bottle only at £125"
+      "Château Haut-Bages Libéral Pauillac",
+      "It has blackcurrant and cedar with firm, grippy tannin, which is just the structured classic red the guest wants for a steak",
+      "The richness of the beef and béarnaise softens that grip, and the freshness in the wine keeps the sauce from feeling heavy"
      ],
-     "why": "Steak and Cabernet is the classic match, and a decant lets this wine open up.",
-     "id": "w-chateau-haut-bages-liberal-pauillac#4"
+     "why": "It's the structured classic red the guest wants, and it's a sommelier's pick with the 28-day sirloin.",
+     "id": "w-chateau-haut-bages-liberal-pauillac#4",
+     "wrong": [
+      "It's a light, soft red that won't overwhelm the steak",
+      "It's low in tannin, so it will be smooth and easy with the béarnaise",
+      "It's gamey and earthy, which matches the char on the beef"
+     ],
+     "decoys": [
+      {
+       "id": "w-chateau-pichon-baron-les-griffons-de-pichon-baron",
+       "why": "It's a firm, structured Bordeaux, but it's the sommelier's pick for the lamb and venison, not the sirloin."
+      },
+      {
+       "id": "w-g-d-vajra-barolo-albe",
+       "why": "It's structured, but it's a tough, tannic Piedmont red that suits other dishes better and is not the classic steak match."
+      },
+      {
+       "id": "w-catena-malbec",
+       "why": "It's a softer, easier red and doesn't give the firm grip the guest is asking for."
+      }
+     ]
     },
     {
      "k": "contrast",
@@ -3049,14 +3296,33 @@
     },
     {
      "k": "apply",
-     "q": "A guest orders the braised lamb shoulder and asks for something Bordeaux under £120. How would you suggest the Château Pichon Baron Les Griffons de Pichon Baron 2018?",
+     "q": "A guest ordering the Braised lamb shoulder, white beans, rosemary wants a bold, structured red from Bordeaux, and wants to stay under £120 a bottle. What would you suggest, and why?",
      "key": [
-      "Lamb's richness softens the tannin",
-      "It is £110, bottle only",
-      "Decant for about 30 minutes, serve at 16-18°C"
+      "Château Pichon Baron Les Griffons de Pichon Baron",
+      "It's a Bordeaux with blackcurrant and cedar and firm tannin, and the richness of the braised lamb softens that grip nicely",
+      "At £110 a bottle it's under their limit"
      ],
-     "why": "The wine fits the dish and the budget, and decanting helps it open up.",
-     "id": "w-chateau-pichon-baron-les-griffons-de-pichon-baron#4"
+     "why": "It's the Bordeaux under £120 that suits the lamb shoulder.",
+     "id": "w-chateau-pichon-baron-les-griffons-de-pichon-baron#4",
+     "wrong": [
+      "It's a light, fruity red that won't swamp the beans and rosemary",
+      "It's low in acidity, so it will sit softly with the rich lamb",
+      "It's earthy and gamey from the Mediterranean, which echoes the rosemary"
+     ],
+     "decoys": [
+      {
+       "id": "w-chateau-haut-bages-liberal-pauillac",
+       "why": "It's a Bordeaux of a similar style, but at £125 it's over the guest's limit and it's picked for the sirloin rather than the lamb."
+      },
+      {
+       "id": "w-domaine-tempier-bandol",
+       "why": "It's a fine match for the lamb, but it's from Provence, not Bordeaux as the guest asked."
+      },
+      {
+       "id": "w-catena-malbec",
+       "why": "It's well priced, but it's an Argentine red, not Bordeaux, and it's lighter in grip than the guest wants."
+      }
+     ]
     },
     {
      "k": "contrast",
@@ -3171,14 +3437,33 @@
     },
     {
      "k": "apply",
-     "q": "A guest is having the venison loin and wants a bottle with character. How would you recommend the Domaine Tempier Bandol 2019?",
+     "q": "A guest ordering the Lamb rump, harissa, aubergine wants a bottle of red with character, something earthy and a bit gamey rather than just fruity. What would you suggest, and why?",
      "key": [
-      "Gamey, earthy notes suit game",
-      "It is £96, bottle only",
-      "Serve at 16-18°C, decant about 30 minutes"
+      "Domaine Tempier Bandol",
+      "It's dark fruit with earthy, gamey, leathery notes, which is the character the guest is after and which suits lamb",
+      "Its firm tannin is softened by the richness of the lamb, and it stands up to the spice of the harissa"
      ],
-     "why": "Game and Mourvèdre echo each other, and a decant helps the firm wine open.",
-     "id": "w-domaine-tempier-bandol#4"
+     "why": "It's the earthy, gamey red with character that suits the lamb rump and harissa.",
+     "id": "w-domaine-tempier-bandol#4",
+     "wrong": [
+      "It's a light, soft red so it won't fight the harissa",
+      "It's high in acidity, which will cut through the spice",
+      "It's a ripe, sweet-fruited red that will cool the heat of the dish"
+     ],
+     "decoys": [
+      {
+       "id": "w-catena-malbec",
+       "why": "It's a rounder, fruit-led red with less earthy character, so it misses the gamey note the guest wants."
+      },
+      {
+       "id": "w-allegrini-valpolicella-classico",
+       "why": "It's a light, easy red that would be overpowered by the harissa and lacks the character the guest asked for."
+      },
+      {
+       "id": "w-chateau-haut-bages-liberal-pauillac",
+       "why": "It's a structured Bordeaux of blackcurrant and cedar, not earthy or gamey, and it's picked for the sirloin rather than the lamb."
+      }
+     ]
     },
     {
      "k": "contrast",
@@ -3292,14 +3577,33 @@
     },
     {
      "k": "apply",
-     "q": "A guest orders the 28-day sirloin and wants just one glass of red. How would you recommend the Catena Malbec 2021?",
+     "q": "A guest orders the 28-day sirloin, chips, béarnaise. They only want one glass of red, and it needs some weight to stand up to the steak. They don't want to spend more than £13 a glass. What would you suggest, and why?",
      "key": [
-      "Grilled beef is the classic Malbec match",
-      "£12 by the glass",
-      "Ripe black plum and blackberry, no need to decant"
+      "Catena Malbec",
+      "Full, ripe black plum and blackberry fruit has the weight to stand up to the charred sirloin and the rich béarnaise.",
+      "It's poured by the glass at £12, so it fits their budget, and it needs no decanting."
      ],
-     "why": "It is a classic pairing and the only one of these four reds sold by the glass.",
-     "id": "w-catena-malbec#4"
+     "why": "It is the only red by the glass with the weight and ripe dark fruit to match the sirloin, at £12.",
+     "id": "w-catena-malbec#4",
+     "wrong": [
+      "It's a light, delicate red that won't get in the way of the steak.",
+      "Its sharp, zesty freshness will cut through the béarnaise.",
+      "It's smoky and peppery, which is why it works with the charred beef."
+     ],
+     "decoys": [
+      {
+       "id": "w-louis-jadot-bourgogne-pinot-noir-couvent-des-jacobins",
+       "why": "At £14 a glass it is over their limit, and it is a lighter red that the sirloin would overpower."
+      },
+      {
+       "id": "w-allegrini-valpolicella-classico",
+       "why": "It is in budget by the glass, but it is light and soft, so it lacks the weight to go with a steak."
+      },
+      {
+       "id": "w-chateau-haut-bages-liberal-pauillac",
+       "why": "It is a big red that suits beef, but it is bottle only at £125, so it can't be had by the glass."
+      }
+     ]
     },
     {
      "k": "contrast",
@@ -3413,14 +3717,33 @@
     },
     {
      "k": "apply",
-     "q": "A guest orders the braised lamb shoulder and asks what red to pair. How do you recommend La Rioja Alta Viña Ardanza Reserva 2016?",
+     "q": "A guest orders the Braised lamb shoulder, white beans, rosemary and asks for a red. They want a proper full-bodied wine with good grip, nothing sharp, and they'd like to spend between £70 and £75 on the bottle. What would you suggest, and why?",
      "key": [
-      "Rioja pairs classically with lamb",
-      "Savoury leather and tobacco notes suit the rich, herby dish",
-      "Tannin and cherry-plum fruit balance the richness; it is £72 a bottle only, not by the glass"
+      "La Rioja Alta Viña Ardanza Reserva",
+      "Savoury leather and tobacco notes suit the rich, herby lamb, and the red cherry and plum fruit keeps it warm rather than sharp.",
+      "Its firm tannin balances the richness of the braise, and at £72 a bottle it sits in their range."
      ],
-     "why": "It links the wine's flavours and structure to the dish and gives the right price format.",
-     "id": "w-la-rioja-alta-vina-ardanza-reserva#4"
+     "why": "It is the full, grippy but not sharp red at £72, with savoury notes that suit the braised lamb.",
+     "id": "w-la-rioja-alta-vina-ardanza-reserva#4",
+     "wrong": [
+      "It's a light, delicate red that won't overwhelm the lamb.",
+      "It has very sharp acidity that will cut through the richness.",
+      "It's sweet and jammy, which is why it suits the rosemary."
+     ],
+     "decoys": [
+      {
+       "id": "w-au-bon-climat-santa-barbara-county-pinot-noir",
+       "why": "At £70 it is in their range, but it is a light, soft Pinot that the braised lamb would swamp."
+      },
+      {
+       "id": "w-cvne-imperial-reserva",
+       "why": "It is a similar style, but at £78 a bottle it is over their budget."
+      },
+      {
+       "id": "w-produttori-del-barbaresco-barbaresco",
+       "why": "At £76 it is over their budget, and its sharp freshness and heavy grip are not the soft, savoury style they asked for."
+      }
+     ]
     },
     {
      "k": "contrast",
@@ -3534,14 +3857,33 @@
     },
     {
      "k": "apply",
-     "q": "A guest has ordered the 28-day sirloin and wants a red that works with it. How do you present CVNE Imperial Reserva 2018, and can they have it by the glass?",
+     "q": "A guest orders the Lamb rump, harissa, aubergine and wants a full-bodied red that isn't sharp. They are happy to spend between £75 and £80 on a bottle. What would you suggest, and why?",
      "key": [
-      "Tannin cuts through the rich, charred beef",
-      "Red cherry and plum fruit with savoury leather notes",
-      "Bottle only at £78, not by the glass"
+      "CVNE Imperial Reserva",
+      "Firm tannin and savoury leather and tobacco notes stand up to the spiced lamb and the smoky aubergine.",
+      "Soft red cherry and plum fruit keeps it rounded rather than sharp, and at £78 a bottle it fits their budget."
      ],
-     "why": "It links structure to the dish and gives the correct price format.",
-     "id": "w-cvne-imperial-reserva#4"
+     "why": "It is the full, savoury red that isn't sharp, at £78, with the grip and flavour to match the spiced lamb.",
+     "id": "w-cvne-imperial-reserva#4",
+     "wrong": [
+      "It's a light, delicate red that won't fight the harissa.",
+      "It has bright, zesty acidity that cools the heat of the spice.",
+      "It's sweet and jammy, which tames the harissa."
+     ],
+     "decoys": [
+      {
+       "id": "w-la-rioja-alta-vina-ardanza-reserva",
+       "why": "It is a similar style, but at £72 a bottle it is below the range they gave."
+      },
+      {
+       "id": "w-produttori-del-barbaresco-barbaresco",
+       "why": "At £76 it is in their range, but it is sharp and very grippy, not the rounded style they asked for."
+      },
+      {
+       "id": "w-domaine-tempier-bandol",
+       "why": "It is full and suits lamb, but at £96 a bottle it is well over their budget."
+      }
+     ]
     },
     {
      "k": "contrast",
@@ -3655,14 +3997,33 @@
     },
     {
      "k": "apply",
-     "q": "A guest orders the Braised lamb shoulder and wants a bold Italian red but worries about tannin. How do you recommend the G.D. Vajra Barolo Albe?",
+     "q": "A guest orders the 28-day sirloin, chips, béarnaise and wants a bold Italian red with real grip and freshness. They want to spend £90 or more, but under £100 a bottle. What would you suggest, and why?",
      "key": [
-      "Rich lamb softens the high tannin",
-      "Savoury depth suits the dish",
-      "Suggest decanting and warn it is grippy; bottle only at £92"
+      "G.D. Vajra Barolo Albe",
+      "Firm tannin and sharp freshness cut through the rich beef and the buttery béarnaise.",
+      "Tar and rose petal aromas give savoury depth; warn them it is grippy and suggest decanting, at £92 a bottle."
      ],
-     "why": "Rich, fatty meat softens Nebbiolo's tannin.",
-     "id": "w-g-d-vajra-barolo-albe#4"
+     "why": "It is the firm, fresh Italian red at £92, with the structure to cut through sirloin and béarnaise.",
+     "id": "w-g-d-vajra-barolo-albe#4",
+     "wrong": [
+      "It's a soft, light red that won't overpower the steak.",
+      "Its low acidity and gentle tannin make it easy drinking with beef.",
+      "It's sweet, ripe and jammy, which pairs with the béarnaise."
+     ],
+     "decoys": [
+      {
+       "id": "w-produttori-del-barbaresco-barbaresco",
+       "why": "It is firm and fresh too, but at £76 it is below the range they gave."
+      },
+      {
+       "id": "w-allegrini-amarone-della-valpolicella-classico",
+       "why": "At £130 it is over their budget, and it is rich and slightly sweet rather than fresh and firm."
+      },
+      {
+       "id": "w-allegrini-valpolicella-classico",
+       "why": "It is Italian, but it is light and soft, and at £44 a bottle it is far below the price and style they asked for."
+      }
+     ]
     },
     {
      "k": "contrast",
@@ -3776,14 +4137,33 @@
     },
     {
      "k": "apply",
-     "q": "A guest orders the Wild mushroom risotto and asks for a red at under £80. How do you pitch the Produttori del Barbaresco Barbaresco?",
+     "q": "A guest orders the Venison loin, celeriac, blackberries and wants an Italian red with real structure and freshness, under £80 a bottle. What would you suggest, and why?",
      "key": [
-      "Earthy mushrooms and Parmesan suit the savoury tar and rose notes",
-      "Freshness keeps the creamy rice from feeling heavy",
-      "Bottle only at £76"
+      "Produttori del Barbaresco Barbaresco",
+      "Earthy tar and rose petal notes suit the gamey venison, and its freshness lifts the sweetness of the blackberries.",
+      "Firm tannin gives the structure they want, and at £76 a bottle it is under their limit."
      ],
-     "why": "Nebbiolo's savoury character works with earthy, creamy dishes and the price fits.",
-     "id": "w-produttori-del-barbaresco-barbaresco#4"
+     "why": "It is the firm, fresh Italian red under £80 at £76, with earthy savoury notes that suit venison.",
+     "id": "w-produttori-del-barbaresco-barbaresco#4",
+     "wrong": [
+      "It's a light, gentle red that won't overpower the venison.",
+      "It's low in acidity and soft, so it won't clash with the blackberries.",
+      "It's full of sweet vanilla and coconut from oak."
+     ],
+     "decoys": [
+      {
+       "id": "w-allegrini-valpolicella-classico",
+       "why": "It is Italian and well under £80, but it is light and soft, so it lacks the structure for venison."
+      },
+      {
+       "id": "w-g-d-vajra-barolo-albe",
+       "why": "It is firm and fresh, but at £92 a bottle it is over their limit."
+      },
+      {
+       "id": "w-allegrini-amarone-della-valpolicella-classico",
+       "why": "At £130 it is over their budget, and it is rich and slightly sweet rather than fresh."
+      }
+     ]
     },
     {
      "k": "contrast",
@@ -3897,14 +4277,33 @@
     },
     {
      "k": "apply",
-     "q": "A guest orders the wild mushroom risotto and asks for a glass of red that won't overpower it. What do you suggest, and how do you pitch it?",
+     "q": "A guest is having the Beef tartare, egg yolk, sourdough crisps and asks for a glass of red that's light and soft, not too tannic, and under £12 a glass. What would you suggest, and why?",
      "key": [
-      "Suggest the Allegrini Valpolicella Classico, available by the glass at £10",
-      "Say it is light with tart cherry fruit and gentle grip",
-      "Explain it is fresh enough to cut through the creamy risotto without drowning the mushrooms"
+      "Allegrini Valpolicella Classico",
+      "Light and juicy with tart cherry fruit, so it won't smother the raw beef and yolk",
+      "Soft, gentle grip, and it's £10 by the glass, so it fits the budget"
      ],
-     "why": "A light, fresh red suits the creamy, earthy risotto and fits the guest's wish for something gentle.",
-     "id": "w-allegrini-valpolicella-classico#4"
+     "why": "It's the light, soft red on the list that comes by the glass for under £12, and its tart cherry freshness suits raw beef and egg yolk.",
+     "id": "w-allegrini-valpolicella-classico#4",
+     "wrong": [
+      "It's a big, full-bodied red with the weight to stand up to the beef",
+      "It's firmly tannic, and that grip will cut through the rich egg yolk",
+      "It has dark, raisined fruit that gives the tartare a sweet contrast"
+     ],
+     "decoys": [
+      {
+       "id": "w-louis-jadot-bourgogne-pinot-noir-couvent-des-jacobins",
+       "why": "It's a light red by the glass, but at £14 a glass it's over the guest's £12 limit."
+      },
+      {
+       "id": "w-catena-malbec",
+       "why": "At £12 a glass it doesn't come in under £12, and it's a bigger, grippier red that would overpower the tartare."
+      },
+      {
+       "id": "w-au-bon-climat-santa-barbara-county-pinot-noir",
+       "why": "It's soft and light, but it's only sold by the bottle at £70, so it fails the request for a glass."
+      }
+     ]
     },
     {
      "k": "contrast",
@@ -4022,14 +4421,33 @@
     },
     {
      "k": "apply",
-     "q": "A guest is having the braised lamb shoulder and wants a special bottle and asks if the Allegrini Amarone della Valpolicella Classico 2018 is right. What do you tell them?",
+     "q": "A guest is having the Dark chocolate delice, salted caramel and would like a rich, full-bodied red to go with it, something special, and doesn't mind spending over £100 a bottle. What would you suggest, and why?",
      "key": [
-      "Say yes, it suits slow-braised meat",
-      "Explain it is rich and concentrated because the grapes are dried before fermenting",
-      "Mention it is £130 a bottle only, with no glass option, and offer the Valpolicella by the glass if they want something lighter"
+      "Allegrini Amarone della Valpolicella Classico",
+      "Rich and full with dark, raisined fruit that matches the chocolate and caramel",
+      "A warming, concentrated wine at £130 a bottle, a proper special-occasion pour"
      ],
-     "why": "A rich braised dish suits Amarone, but it is bottle only, so a lighter by-the-glass alternative is worth offering.",
-     "id": "w-allegrini-amarone-della-valpolicella-classico#4"
+     "why": "It's the rich, full-bodied red with raisined fruit that echoes dark chocolate and caramel, and it's priced in the special-bottle range the guest has in mind.",
+     "id": "w-allegrini-amarone-della-valpolicella-classico#4",
+     "wrong": [
+      "It's light and delicate, so it won't overpower the dessert",
+      "It's bone dry and tart, which cuts through the sweetness of the caramel",
+      "It's packed with firm tannin that stands up to the dark chocolate"
+     ],
+     "decoys": [
+      {
+       "id": "w-chateau-haut-bages-liberal-pauillac",
+       "why": "It's a big red over £100, but it's dry and firmly tannic, and it would taste harsh against the chocolate and caramel."
+      },
+      {
+       "id": "w-chateau-pichon-baron-les-griffons-de-pichon-baron",
+       "why": "It's a full, serious red at £110, but its tannin would clash with the dessert and it has no raisined fruit to match the sweetness."
+      },
+      {
+       "id": "w-g-d-vajra-barolo-albe",
+       "why": "It's a big red at £92, under the guest's budget, and its tannin and sharp freshness would fight the delice."
+      }
+     ]
     },
     {
      "k": "contrast",
@@ -4146,14 +4564,33 @@
     },
     {
      "k": "apply",
-     "q": "A guest orders the duck breast with cherries and asks for a red that isn't heavy. How would you suggest the Au Bon Climat Santa Barbara County Pinot Noir, and can they have it by the glass?",
+     "q": "A guest is having the Duck breast, cherries, turnip and wants a red that isn't heavy, soft rather than tannic, in the region of £70 a bottle. What would you suggest, and why?",
      "key": [
-      "Light, fresh red with cherry fruit that suits duck and the cherries in the dish",
-      "Not heavy because it is low in tannin",
-      "Only sold by the bottle at £70, with a glass option elsewhere such as the Louis Jadot Pinot Noir"
+      "Au Bon Climat Santa Barbara County Pinot Noir",
+      "Light and fresh with red cherry fruit that echoes the cherries with the duck",
+      "Soft with very little grip, so it won't overpower the duck, and it's £70 a bottle"
      ],
-     "why": "It matches the dish and the guest's wish, and the list shows it is bottle only.",
-     "id": "w-au-bon-climat-santa-barbara-county-pinot-noir#4"
+     "why": "It's the soft, light red with cherry fruit that suits the duck and cherries and sits right at the guest's £70.",
+     "id": "w-au-bon-climat-santa-barbara-county-pinot-noir#4",
+     "wrong": [
+      "It's a full-bodied red with the weight to match rich duck",
+      "It has firm tannin that cuts through the fat of the duck",
+      "It's very sweet and jammy, which suits the cherries in the dish"
+     ],
+     "decoys": [
+      {
+       "id": "w-louis-jadot-bourgogne-pinot-noir-couvent-des-jacobins",
+       "why": "It's a light red at £60, but it has a bit more grip, so it's not the softest option for a guest who wants it gentle."
+      },
+      {
+       "id": "w-allegrini-valpolicella-classico",
+       "why": "It's light and juicy, but it's a simpler, lighter red than the guest wants for duck, and at £44 it's well below the price they had in mind."
+      },
+      {
+       "id": "w-felton-road-bannockburn-pinot-noir",
+       "why": "It's a soft Pinot that suits duck, but at £98 it's well over the £70 the guest mentioned."
+      }
+     ]
     },
     {
      "k": "contrast",
@@ -4267,14 +4704,33 @@
     },
     {
      "k": "apply",
-     "q": "A guest is having the wild mushroom risotto and wants a red by the glass. What would you say about the Felton Road Bannockburn Pinot Noir?",
+     "q": "A guest is having the Venison loin, celeriac, blackberries and wants a light, soft red that isn't tannic, and says they'd happily spend £90 or more on the bottle. What would you suggest, and why?",
      "key": [
-      "Earthy, forest-floor notes suit mushrooms",
-      "Bottle only at £98, not by the glass",
-      "Offer a glass of Louis Jadot Pinot Noir at £14 as a same-grape alternative"
+      "Felton Road Bannockburn Pinot Noir",
+      "Light and fresh with red cherry fruit and an earthy, forest-floor note that suits venison and blackberries",
+      "Soft, not tannic, so it won't overwhelm the venison, and at £98 a bottle it's in the guest's range"
      ],
-     "why": "It matches the dish and handles the glass request using the list.",
-     "id": "w-felton-road-bannockburn-pinot-noir#4"
+     "why": "It's the soft, light red with an earthy note that suits venison and blackberries, and it fits a guest who wants to spend £90 or more.",
+     "id": "w-felton-road-bannockburn-pinot-noir#4",
+     "wrong": [
+      "It's a big, full-bodied red to match the game",
+      "It's heavily tannic, which stands up to the venison",
+      "It's rich and raisined, a sweet match for the blackberries"
+     ],
+     "decoys": [
+      {
+       "id": "w-au-bon-climat-santa-barbara-county-pinot-noir",
+       "why": "It's soft and light, but at £70 it's below the £90 the guest is happy to spend, and it's the lesser pick for venison."
+      },
+      {
+       "id": "w-louis-jadot-bourgogne-pinot-noir-couvent-des-jacobins",
+       "why": "It's a lighter red at £60, with more grip, and it's not at the level the guest is asking for."
+      },
+      {
+       "id": "w-g-d-vajra-barolo-albe",
+       "why": "It's in the right price range at £92, but it's powerfully tannic, which is the opposite of the soft red the guest wants."
+      }
+     ]
     },
     {
      "k": "contrast",
@@ -4389,14 +4845,33 @@
     },
     {
      "k": "apply",
-     "q": "A guest has ordered the British cheeses and would like something sweet with it, but only wants a small drink. How do you sell the Château Suduiraut Lions de Suduiraut Sauternes 2019?",
+     "q": "A guest is having the British cheeses, oatcakes, quince and would like something rich and honeyed, sweet and silky, but only a small glass, under £10. What would you suggest, and why?",
      "key": [
-      "Sweet, honeyed wine balances the salty, rich cheese",
-      "Offer it by the glass at £9 (75ml)",
-      "The half-bottle is £55 if they want to share"
+      "Château Suduiraut Lions de Suduiraut Sauternes",
+      "Rich honey and a silky sweetness that balance the salty cheeses and the quince",
+      "£9 for a 75ml glass, so it's a small pour under £10"
      ],
-     "why": "It is sold by the glass and in a small bottle, so it suits both a single drink and sharing.",
-     "id": "w-chateau-suduiraut-lions-de-suduiraut-sauternes#4"
+     "why": "It's the rich, honeyed, silky sweet wine available as a small £9 glass, and it balances salty cheese and quince beautifully.",
+     "id": "w-chateau-suduiraut-lions-de-suduiraut-sauternes#4",
+     "wrong": [
+      "It's a dry, crisp wine that cuts through the salty cheese",
+      "It's tannic and grippy, which suits the strong cheeses",
+      "It's light and delicate so it won't overpower the quince"
+     ],
+     "decoys": [
+      {
+       "id": "w-taylor-s-10-year-old-tawny-port",
+       "why": "It's £8 a glass and goes with cheese, but it's nutty and not honeyed or silky, so it misses the style the guest asked for."
+      },
+      {
+       "id": "w-graham-s-late-bottled-vintage-port",
+       "why": "It's £7 a glass, but it's a grippy, dark-fruited port rather than a honeyed, silky one."
+      },
+      {
+       "id": "w-disznoko-tokaji-late-harvest",
+       "why": "It's £8 a glass and sweet, but it's lighter and sharper, not the rich, silky honey the guest wants."
+      }
+     ]
     },
     {
      "k": "contrast",
@@ -4511,14 +4986,33 @@
     },
     {
      "k": "apply",
-     "q": "A guest wants a sweet wine with the British cheeses but wants to spend as little as possible. How do you offer the Disznókő Tokaji Late Harvest 2021?",
+     "q": "A guest is having the British cheeses, oatcakes, quince and would like a sweet wine with them, by the glass, as the cheapest way to pair it. What would you suggest, and why?",
      "key": [
-      "Sweet, honeyed wine balances salty, creamy cheese",
-      "£8 a glass (75ml)",
-      "The bottle is 50cl at £42"
+      "Disznókő Tokaji Late Harvest",
+      "Its honeyed, orchard-fruit sweetness sits well against the salty, creamy cheese, and the quince",
+      "It's £8 a glass, and it finishes fresh rather than heavy, so the cheese board still tastes lively"
      ],
-     "why": "It is our cheapest sweet wine and matches cheese well.",
-     "id": "w-disznoko-tokaji-late-harvest#4"
+     "why": "It is a fresh, honeyed sweet wine that suits the cheeses and is available by the glass at £8.",
+     "id": "w-disznoko-tokaji-late-harvest#4",
+     "wrong": [
+      "It's the lightest-bodied wine on the list, so it won't weigh down the cheese",
+      "It has a bit of tannin to cut through the creamy cheese",
+      "It's a dry, savoury wine that suits salty cheese better than a sweet one"
+     ],
+     "decoys": [
+      {
+       "id": "w-taylor-s-10-year-old-tawny-port",
+       "why": "Also £8 a glass and a fine match for cheese, but it is a deep, mellow, aged Port, not the fresh, orchard-fruit style the guest is after; it is a different answer, so only reach for it if they ask for Port."
+      },
+      {
+       "id": "w-graham-s-late-bottled-vintage-port",
+       "why": "£7 a glass is cheaper, but it is a rich, dark-fruit Port that is heavy against the lighter quince and oatcakes, and it isn't a sommelier's pick for the cheeses."
+      },
+      {
+       "id": "w-chateau-suduiraut-lions-de-suduiraut-sauternes",
+       "why": "A lovely sweet wine, but at £9 a glass it is dearer than the guest's brief allows, and it is rich and full rather than fresh."
+      }
+     ]
     },
     {
      "k": "contrast",
@@ -4634,14 +5128,33 @@
     },
     {
      "k": "apply",
-     "q": "A guest has ordered the dark chocolate delice and wants something to drink with it by the glass. How would you suggest the Taylor's 10 Year Old Tawny Port?",
+     "q": "A guest has ordered the Dark chocolate delice, salted caramel and would like a glass of something smooth and mellow with it, nothing too sharp or fruity-fresh. What would you suggest, and why?",
      "key": [
-      "Say it's £8 a glass (75ml)",
-      "Explain Port and chocolate are a classic pairing",
-      "Mention its sweetness matches the rich, sweet delice"
+      "Taylor's 10 Year Old Tawny Port",
+      "Its sweet, smooth, mellow flavours from long ageing in barrel match the rich chocolate and salted caramel",
+      "It's £8 a glass (75ml), and the softness means it won't clash with the bitterness of dark chocolate"
      ],
-     "why": "Port with chocolate is a classic match, and this fits the dessert and the price.",
-     "id": "w-taylor-s-10-year-old-tawny-port#4"
+     "why": "Its smooth, mellow, barrel-aged sweetness is a classic match for the chocolate delice and the guest's brief.",
+     "id": "w-taylor-s-10-year-old-tawny-port#4",
+     "wrong": [
+      "It's light and delicate so it won't overpower the delice",
+      "It has high acidity that cuts through the rich caramel",
+      "It's tannic and grippy, like a young red, which pairs with dark chocolate"
+     ],
+     "decoys": [
+      {
+       "id": "w-disznoko-tokaji-late-harvest",
+       "why": "Sweet and £8 a glass, but it is fresh and sharp with orchard fruit, not smooth and mellow, and it isn't a pick for the chocolate."
+      },
+      {
+       "id": "w-chateau-suduiraut-lions-de-suduiraut-sauternes",
+       "why": "Sweet and by the glass, but its honeyed, lush style suits lighter desserts and it isn't one of the picks for the chocolate delice."
+      },
+      {
+       "id": "w-graham-s-late-bottled-vintage-port",
+       "why": "A good match for the delice, so it would also be acceptable, but its dark-fruit richness is not the smooth, aged mellowness asked for."
+      }
+     ]
     },
     {
      "k": "contrast",
@@ -4756,14 +5269,33 @@
     },
     {
      "k": "apply",
-     "q": "A guest has finished the sticky toffee pudding and asks for a dessert wine under £10 a glass. How would you suggest the Graham's Late Bottled Vintage Port 2018?",
+     "q": "A guest is having the Dark chocolate delice, salted caramel and would like a rich dessert wine by the glass, under £8. What would you suggest, and why?",
      "key": [
-      "Say it's £7 a glass (75ml)",
-      "Explain it's sweet enough for the pudding",
-      "Describe it as a rich Port with dark fruit"
+      "Graham's Late Bottled Vintage Port",
+      "It's a sweet, rich Port with deep dark fruit, which stands up to the dark chocolate and salted caramel",
+      "It's £7 a glass (75ml), so it fits under £8"
      ],
-     "why": "It is a sweet Port at £7 a glass that suits a very sweet dessert.",
-     "id": "w-graham-s-late-bottled-vintage-port#4"
+     "why": "It is the rich, dark-fruited Port that suits the delice and is the one that comes in under £8 a glass at £7.",
+     "id": "w-graham-s-late-bottled-vintage-port#4",
+     "wrong": [
+      "It's light and fresh, so it won't overwhelm the chocolate",
+      "It's lively and sharp, which cuts the sweetness of the caramel",
+      "It's smooth, mellow and barrel-aged, with nutty flavours"
+     ],
+     "decoys": [
+      {
+       "id": "w-taylor-s-10-year-old-tawny-port",
+       "why": "A fine match for the delice, but at £8 a glass it is not under £8."
+      },
+      {
+       "id": "w-disznoko-tokaji-late-harvest",
+       "why": "£8 a glass, so not under £8, and its fresh, honeyed style is a better fit for lighter puddings and cheese than for dark chocolate."
+      },
+      {
+       "id": "w-chateau-suduiraut-lions-de-suduiraut-sauternes",
+       "why": "£9 a glass is over the guest's limit, and it is a honeyed style that isn't a pick for the chocolate."
+      }
+     ]
     },
     {
      "k": "contrast",
@@ -4880,14 +5412,33 @@
     },
     {
      "k": "apply",
-     "q": "A guest has ordered the oysters with shallot vinegar and asks for a glass of something to go with them. What do you suggest and why?",
+     "q": "A guest has ordered the Seared scallops, cauliflower, brown butter and would like a glass of fizz with them, something crisp but with a little more roundness and fullness than a very lean one. What would you suggest, and why?",
      "key": [
-      "Suggest the Billecart-Salmon Brut Réserve NV, £18 a glass",
-      "Its freshness matches the vinegar",
-      "The bubbles cleanse the palate after salty, delicate oysters"
+      "Billecart-Salmon Brut Réserve",
+      "It's crisp and fresh, which cuts through the brown butter, with a rounder, fuller feel from its time resting on the yeast that suits the sweet scallops",
+      "It's £18 a glass, and the bubbles keep the rich, buttery dish feeling light"
      ],
-     "why": "A sharp, bubbly Champagne suits salty, acidic, delicate food.",
-     "id": "w-billecart-salmon-brut-reserve#4"
+     "why": "Its freshness cuts the brown butter while its rounder, fuller feel suits the scallops, and it comes by the glass.",
+     "id": "w-billecart-salmon-brut-reserve#4",
+     "wrong": [
+      "It's the lightest, leanest fizz on the list, so it won't overwhelm delicate scallops",
+      "It's soft and low in acidity, so it matches the creamy butter",
+      "It's sweet, with ripe fruit that echoes the cauliflower"
+     ],
+     "decoys": [
+      {
+       "id": "w-nyetimber-classic-cuvee",
+       "why": "Also by the glass at £14 and crisp, but it is leaner and sharper, without the rounder, fuller feel the guest wants, and it isn't a pick for the scallops."
+      },
+      {
+       "id": "w-gusbourne-blanc-de-blancs",
+       "why": "It isn't sold by the glass, so you can't serve it as asked, and it is a lean, sharp style."
+      },
+      {
+       "id": "w-domaine-laroche-chablis-saint-martin",
+       "why": "A white, not a fizz, so it doesn't meet the guest's request for a sparkling."
+      }
+     ]
     },
     {
      "k": "contrast",
@@ -5004,14 +5555,33 @@
     },
     {
      "k": "apply",
-     "q": "A guest orders the wild mushroom risotto and wants a glass of red that won't overpower it. What do you suggest and why?",
+     "q": "A guest orders the Wild mushroom risotto, aged Parmesan and would like a glass of red that isn't too heavy and is soft, not too tannic. What would you suggest, and why?",
      "key": [
-      "Suggest the Louis Jadot Bourgogne Pinot Noir, £14 a glass",
-      "It's light with low tannin so it won't overpower the dish",
-      "Its earthy, forest-floor notes echo the mushrooms"
+      "Louis Jadot Bourgogne Pinot Noir Couvent des Jacobins",
+      "It's light and fresh with very little tannin, so it won't overpower the risotto",
+      "Its earthy, forest-floor notes and red cherry fruit echo the mushrooms, and it's £14 a glass"
      ],
-     "why": "A light, earthy red suits an earthy, creamy dish.",
-     "id": "w-louis-jadot-bourgogne-pinot-noir-couvent-des-jacobins#4"
+     "why": "It is a light, soft, earthy red by the glass that matches the mushrooms without overpowering the risotto.",
+     "id": "w-louis-jadot-bourgogne-pinot-noir-couvent-des-jacobins#4",
+     "wrong": [
+      "It's full-bodied and powerful, so it holds up to the Parmesan",
+      "It has firm tannin that cuts through the creamy rice",
+      "It's soft and low in acidity, so it won't clash with the dish"
+     ],
+     "decoys": [
+      {
+       "id": "w-allegrini-valpolicella-classico",
+       "why": "Light and by the glass at £10, so it would also be a good answer; it is not a decoy to use here."
+      },
+      {
+       "id": "w-catena-malbec",
+       "why": "By the glass at £12, but it is full-bodied and tannic, so it would overpower the risotto and isn't soft."
+      },
+      {
+       "id": "w-au-bon-climat-santa-barbara-county-pinot-noir",
+       "why": "Light and soft, but it isn't sold by the glass, so you can't serve it as asked."
+      }
+     ]
     },
     {
      "k": "contrast",
@@ -5707,5 +6277,1432 @@
    "at": 1793386414232
   }
  },
- "exported": "2026-11-02T15:00:11Z"
+ "exported": "2026-11-06T20:43:41.727Z",
+ "dishCards": {
+  "d-gordal-olives-orange-zest": {
+   "say": "These are big, meaty Gordal olives marinated with orange zest and rosemary, a small bowl to nibble while you look at the menu, and they're vegan.",
+   "mods": [
+    {
+     "ask": "vegan",
+     "can": "yes",
+     "say": "Yes, the olives are vegan just as they come."
+    },
+    {
+     "ask": "gluten-free",
+     "can": "ask",
+     "say": "Nothing in them should contain gluten, but let me confirm the marinade with the kitchen before I promise."
+    },
+    {
+     "ask": "without the orange",
+     "can": "ask",
+     "say": "They're marinated ahead of time with the zest, so I'll ask the kitchen whether they can do a plain bowl."
+    }
+   ],
+   "ask": [
+    {
+     "q": "Do they have stones in?",
+     "a": "Let me check with the kitchen whether they're pitted today, so you know before you bite."
+    },
+    {
+     "q": "Are they spicy?",
+     "a": "No, there's no chilli in them; it's orange zest and rosemary, so they're fresh and fragrant rather than hot."
+    }
+   ],
+   "wrong": [
+    "These are big, meaty Gordal olives marinated with orange zest and chilli, a small bowl to nibble while you look at the menu, and they're vegan.",
+    "These are small black Kalamata olives marinated with orange zest and rosemary, a small bowl to nibble while you look at the menu, and they're vegan.",
+    "These are big, meaty Gordal olives marinated with orange zest and rosemary, a large sharing platter that would do four people as a starter, and they're vegan."
+   ],
+   "allergens": {
+    "confirmed": null,
+    "draft": [],
+    "note": "Confirm what goes into the marinade (oil, any vinegar or wine, which would bring sulphites) and whether the olives are pitted today."
+   },
+   "at": 1793881950230,
+   "model": "claude-opus-5-5"
+  },
+  "d-crispy-pig-s-head-apple-sauce": {
+   "say": "These are crispy crumbed croquettes made from pig's head meat, served with Bramley apple sauce and mustard; a rich, savoury snack to start.",
+   "mods": [
+    {
+     "ask": "gluten-free",
+     "can": "no",
+     "say": "I'm afraid not, they're coated in breadcrumbs, but the oysters or the olives would work for you."
+    },
+    {
+     "ask": "without the mustard",
+     "can": "ask",
+     "say": "I'll ask the kitchen whether they can leave the mustard off the plate."
+    },
+    {
+     "ask": "vegetarian",
+     "can": "no",
+     "say": "No, these are made from pork, but the olives or the sourdough with butter are both vegetarian."
+    }
+   ],
+   "ask": [
+    {
+     "q": "What actually is pig's head?",
+     "a": "It's the meat from the pig's head, cooked until tender, shaped into croquettes, crumbed and fried until crisp."
+    },
+    {
+     "q": "Is it rich?",
+     "a": "Yes, it's a rich, porky bite, and the sharp Bramley apple sauce and mustard are there to cut through it."
+    }
+   ],
+   "wrong": [
+    "These are crispy crumbed croquettes made from pig's head meat, served with shallot vinegar and mustard; a rich, savoury snack to start.",
+    "These are crispy crumbed croquettes made from ham hock, served with Bramley apple sauce and mustard; a rich, savoury snack to start.",
+    "These are crispy crumbed croquettes made from pig's head meat, served with Bramley apple sauce and mustard; a generous plate that's really a full main course."
+   ],
+   "allergens": {
+    "confirmed": null,
+    "draft": [
+     {
+      "code": "mustard",
+      "sure": "printed"
+     },
+     {
+      "code": "gluten",
+      "sure": "likely"
+     },
+     {
+      "code": "egg",
+      "sure": "likely"
+     }
+    ],
+    "note": "Confirm the crumb and coating (wheat, egg wash), whether the filling has milk, and whether the braise uses celery or wine; check the fryer is shared."
+   },
+   "at": 1793881950230,
+   "model": "claude-opus-5-5"
+  },
+  "d-oysters-shallot-vinegar": {
+   "say": "That's six Carlingford oysters served with shallot vinegar and lemon, fresh and briny, a light snack to share or have on your own.",
+   "mods": [
+    {
+     "ask": "without the shallot vinegar",
+     "can": "yes",
+     "say": "Of course, you can have them with just lemon."
+    },
+    {
+     "ask": "three instead of six",
+     "can": "ask",
+     "say": "They're served as six, but I'll ask the kitchen whether they can do a smaller plate."
+    },
+    {
+     "ask": "cooked",
+     "can": "no",
+     "say": "I'm afraid they're only served raw, but the seared scallops are a lovely cooked shellfish starter."
+    }
+   ],
+   "ask": [
+    {
+     "q": "Are they raw?",
+     "a": "Yes, they're served raw, opened to order, so they're not one for anyone avoiding raw shellfish."
+    },
+    {
+     "q": "Where are they from?",
+     "a": "They're Carlingford oysters, from the Irish coast, known for being clean and briny."
+    }
+   ],
+   "wrong": [
+    "That's six Carlingford oysters served with brown butter and lemon, fresh and briny, a light snack to share or have on your own.",
+    "That's six Carlingford oysters, grilled and served with shallot vinegar and lemon, fresh and briny, a light snack to share or have on your own.",
+    "That's a dozen Carlingford oysters served with shallot vinegar and lemon, fresh and briny, a light snack to share or have on your own."
+   ],
+   "allergens": {
+    "confirmed": null,
+    "draft": [
+     {
+      "code": "mollusc",
+      "sure": "printed"
+     },
+     {
+      "code": "sulphite",
+      "sure": "likely"
+     }
+    ],
+    "note": "Confirm the oysters are served raw and the vinegar type (wine vinegar brings sulphites); keep away from shellfish-allergy orders."
+   },
+   "at": 1793881950230,
+   "model": "claude-opus-5-5"
+  },
+  "d-sourdough-cultured-butter": {
+   "say": "It's our own house-baked sourdough with cultured butter and Maldon salt, a simple snack to share at the start of the meal.",
+   "mods": [
+    {
+     "ask": "dairy-free",
+     "can": "ask",
+     "say": "The butter is dairy, so I'll ask the kitchen whether they can serve the bread without it, or with something else."
+    },
+    {
+     "ask": "gluten-free",
+     "can": "no",
+     "say": "I'm afraid our bread isn't gluten-free, but the olives make a good snack instead."
+    },
+    {
+     "ask": "vegan",
+     "can": "ask",
+     "say": "The butter isn't vegan, so I'll check with the kitchen whether the bread can come plain or with an alternative."
+    }
+   ],
+   "ask": [
+    {
+     "q": "Is the bread made here?",
+     "a": "Yes, it's our house sourdough, baked here."
+    },
+    {
+     "q": "What's cultured butter?",
+     "a": "It's butter made from cream that's been lightly fermented first, so it tastes richer and a little tangy."
+    }
+   ],
+   "wrong": [
+    "It's our own house-baked sourdough with cultured butter and fig chutney, a simple snack to share at the start of the meal.",
+    "It's our own house-baked rye bread with cultured butter and Maldon salt, a simple snack to share at the start of the meal.",
+    "It's our own house-baked sourdough with cultured butter and Maldon salt, a whole large loaf that's enough for the full table and then some."
+   ],
+   "allergens": {
+    "confirmed": null,
+    "draft": [
+     {
+      "code": "milk",
+      "sure": "printed"
+     },
+     {
+      "code": "gluten",
+      "sure": "likely"
+     }
+    ],
+    "note": "Confirm the flours in the sourdough (wheat, possibly rye) and whether any seeds go on the crust."
+   },
+   "at": 1793881950230,
+   "model": "claude-opus-5-5"
+  },
+  "d-burrata-heritage-tomatoes-basil": {
+   "say": "It's a whole burrata, a soft fresh cheese with a creamy centre, served with heritage tomatoes, basil oil and aged balsamic; fresh, creamy and vegetarian.",
+   "mods": [
+    {
+     "ask": "dairy-free",
+     "can": "no",
+     "say": "I'm afraid not, the burrata is the heart of the dish, but the olives are dairy-free and the aubergine main is vegan."
+    },
+    {
+     "ask": "without the balsamic",
+     "can": "yes",
+     "say": "Yes, the kitchen can leave the balsamic off."
+    },
+    {
+     "ask": "gluten-free",
+     "can": "ask",
+     "say": "There's no bread on the plate, but I'll confirm with the kitchen that everything on it is gluten-free."
+    }
+   ],
+   "ask": [
+    {
+     "q": "What is burrata?",
+     "a": "It's a fresh Italian-style cheese, like mozzarella on the outside with a soft, creamy centre that spills out when you cut it."
+    },
+    {
+     "q": "Is it big enough to share?",
+     "a": "It's a starter for one, but it's rich enough that two could share it alongside something else."
+    }
+   ],
+   "wrong": [
+    "It's a whole burrata, a soft fresh cheese with a creamy centre, served with heritage tomatoes, basil oil and toasted hazelnuts; fresh, creamy and vegetarian.",
+    "It's a ball of buffalo mozzarella, served with heritage tomatoes, basil oil and aged balsamic; fresh, creamy and vegetarian.",
+    "It's a whole burrata, a soft fresh cheese with a creamy centre, baked and served bubbling hot with heritage tomatoes, basil oil and aged balsamic; rich and vegetarian."
+   ],
+   "allergens": {
+    "confirmed": null,
+    "draft": [
+     {
+      "code": "milk",
+      "sure": "printed"
+     },
+     {
+      "code": "sulphite",
+      "sure": "likely"
+     }
+    ],
+    "note": "Confirm the burrata uses vegetarian rennet and check the balsamic for sulphites and any added caramel or thickener."
+   },
+   "at": 1793881950230,
+   "model": "claude-opus-5-5"
+  },
+  "d-seared-scallops-cauliflower-brown-butter": {
+   "say": "These are hand-dived scallops, seared and served on cauliflower purée with brown butter, capers and raisins; a rich, sweet-and-salty starter.",
+   "mods": [
+    {
+     "ask": "dairy-free",
+     "can": "ask",
+     "say": "The brown butter is dairy, and the purée may be too, so I'll ask the kitchen what they can do."
+    },
+    {
+     "ask": "without the raisins",
+     "can": "yes",
+     "say": "Yes, the kitchen can leave the raisins off."
+    },
+    {
+     "ask": "gluten-free",
+     "can": "ask",
+     "say": "Nothing on the plate should contain gluten, but I'll confirm with the kitchen before I promise."
+    }
+   ],
+   "ask": [
+    {
+     "q": "What does hand-dived mean?",
+     "a": "It means divers pick the scallops by hand rather than dragging the seabed, so they're kinder to it and usually in better condition."
+    },
+    {
+     "q": "Is it a rich starter?",
+     "a": "Yes, fairly rich, with the brown butter and smooth purée, though the capers and raisins add a sharp, sweet lift."
+    }
+   ],
+   "wrong": [
+    "These are hand-dived scallops, seared and served on cauliflower purée with salsa verde, capers and raisins; a rich, sweet-and-salty starter.",
+    "These are hand-dived scallops, deep-fried in batter and served on cauliflower purée with brown butter, capers and raisins; a rich, sweet-and-salty starter.",
+    "These are hand-dived scallops, seared and served on cauliflower purée with capers and raisins; a light, clean starter with no butter at all."
+   ],
+   "allergens": {
+    "confirmed": null,
+    "draft": [
+     {
+      "code": "mollusc",
+      "sure": "printed"
+     },
+     {
+      "code": "milk",
+      "sure": "printed"
+     },
+     {
+      "code": "sulphite",
+      "sure": "likely"
+     }
+    ],
+    "note": "Raisins and capers often carry sulphites; confirm whether the purée has cream and check the pan isn't shared with crustaceans."
+   },
+   "at": 1793881950230,
+   "model": "claude-opus-5-5"
+  },
+  "d-beef-tartare-egg-yolk-sourdough-crisps": {
+   "say": "It's hand-cut raw Hereford beef with a cured egg yolk and cornichons, served with sourdough crisps to scoop it up; a rich, savoury starter.",
+   "mods": [
+    {
+     "ask": "gluten-free",
+     "can": "ask",
+     "say": "The sourdough crisps contain gluten, so I'll ask the kitchen whether they can leave them off or swap them."
+    },
+    {
+     "ask": "without the egg yolk",
+     "can": "ask",
+     "say": "I'll check with the kitchen whether they can leave the cured yolk off."
+    },
+    {
+     "ask": "cooked",
+     "can": "no",
+     "say": "I'm afraid it's only served raw, but the 28-day sirloin is cooked to order if you'd like beef."
+    }
+   ],
+   "ask": [
+    {
+     "q": "Is the beef raw?",
+     "a": "Yes, it's raw Hereford beef cut by hand, so not one for anyone avoiding raw meat or egg."
+    },
+    {
+     "q": "Is it spicy?",
+     "a": "Nothing on the menu says spicy; it's savoury and sharp from the cornichons, but I'll check today's seasoning if you'd like."
+    }
+   ],
+   "wrong": [
+    "It's hand-cut raw Hereford beef with a cured egg yolk and fig chutney, served with sourdough crisps to scoop it up; a rich, savoury starter.",
+    "It's thinly sliced seared Hereford beef with a cured egg yolk and cornichons, served with sourdough crisps to scoop it up; a rich, savoury starter.",
+    "It's hand-cut raw Hereford beef with a cured egg yolk and cornichons, served with sourdough crisps; a generous main-course portion."
+   ],
+   "allergens": {
+    "confirmed": null,
+    "draft": [
+     {
+      "code": "egg",
+      "sure": "printed"
+     },
+     {
+      "code": "gluten",
+      "sure": "likely"
+     },
+     {
+      "code": "sulphite",
+      "sure": "likely"
+     }
+    ],
+    "note": "Tartare dressings often include mustard and Worcestershire sauce (fish); confirm today's seasoning and the vinegar in the cornichons."
+   },
+   "at": 1793881950230,
+   "model": "claude-opus-5-5"
+  },
+  "d-goat-s-cheese-tart-red-onion-marmalade": {
+   "say": "It's a goat's cheese tart in thyme pastry with sweet red onion marmalade and a little rocket; tangy, savoury and vegetarian.",
+   "mods": [
+    {
+     "ask": "gluten-free",
+     "can": "no",
+     "say": "I'm afraid the pastry has gluten, but the burrata has no bread or pastry and I can confirm it with the kitchen."
+    },
+    {
+     "ask": "without the rocket",
+     "can": "yes",
+     "say": "Yes, the kitchen can leave the rocket off."
+    },
+    {
+     "ask": "vegan",
+     "can": "no",
+     "say": "No, the cheese and pastry aren't vegan, but the olives are, and so is the aubergine main."
+    }
+   ],
+   "ask": [
+    {
+     "q": "Is the goat's cheese strong?",
+     "a": "It's tangy rather than fierce, and the sweet red onion marmalade softens it."
+    },
+    {
+     "q": "How big is it?",
+     "a": "It's a starter-sized tart for one person."
+    }
+   ],
+   "wrong": [
+    "It's a goat's cheese tart in thyme pastry with fig chutney and a little rocket; tangy, savoury and vegetarian.",
+    "It's a goat's cheese tart in puff pastry with sweet red onion marmalade and a little rocket; tangy, savoury and vegetarian.",
+    "It's a large goat's cheese tart in thyme pastry with sweet red onion marmalade and a little rocket, sliced at the table for everyone to share."
+   ],
+   "allergens": {
+    "confirmed": null,
+    "draft": [
+     {
+      "code": "milk",
+      "sure": "printed"
+     },
+     {
+      "code": "gluten",
+      "sure": "likely"
+     },
+     {
+      "code": "egg",
+      "sure": "likely"
+     },
+     {
+      "code": "sulphite",
+      "sure": "likely"
+     }
+    ],
+    "note": "Confirm the pastry recipe (wheat, butter, egg), vinegar or wine in the marmalade, and that the goat's cheese uses vegetarian rennet."
+   },
+   "at": 1793881950230,
+   "model": "claude-opus-5-5"
+  },
+  "d-cured-sea-trout-cucumber-dill": {
+   "say": "This is sea trout cured with beetroot and served cold, with pickled cucumber, a dill crème fraîche and rye bread, a fresh, light starter.",
+   "mods": [
+    {
+     "ask": "gluten-free",
+     "can": "ask",
+     "say": "The rye contains gluten, so I'll ask the kitchen whether they can serve it without and keep it clear of crumbs."
+    },
+    {
+     "ask": "without the crème fraîche, dairy-free",
+     "can": "ask",
+     "say": "The dill crème fraîche is the dairy here, so I'll check with the kitchen whether they can leave it off and that nothing else on the plate has dairy."
+    }
+   ],
+   "ask": [
+    {
+     "q": "Is the fish cooked?",
+     "a": "No, it's cured rather than cooked, so it's served cold, a bit like smoked salmon in texture."
+    },
+    {
+     "q": "Is it a big starter?",
+     "a": "It's a light starter, so it's a good choice if you're having a rich main."
+    }
+   ],
+   "wrong": [
+    "This is sea trout cured with beetroot and served cold, with pickled cucumber, a whipped feta and rye bread, a fresh, light starter.",
+    "This is hot-smoked sea trout, flaked and served cold, with pickled cucumber, a dill crème fraîche and rye bread, a fresh, light starter.",
+    "This is sea trout cured with beetroot and served warm, with pickled cucumber, a dill crème fraîche and rye bread, a rich, hearty starter."
+   ],
+   "allergens": {
+    "confirmed": null,
+    "draft": [
+     {
+      "code": "fish",
+      "sure": "printed"
+     },
+     {
+      "code": "milk",
+      "sure": "printed"
+     },
+     {
+      "code": "gluten",
+      "sure": "printed"
+     }
+    ],
+    "note": "Check the rye for added wheat or seeds, and whether the cucumber pickle uses a sulphited vinegar or mustard seed."
+   },
+   "at": 1793882027279,
+   "model": "claude-opus-5-5"
+  },
+  "d-chicken-liver-parfait-brioche": {
+   "say": "This is a smooth chicken liver parfait served with toasted brioche and a fig chutney, a rich starter.",
+   "mods": [
+    {
+     "ask": "gluten-free",
+     "can": "ask",
+     "say": "The brioche contains gluten, so I'll ask the kitchen whether they have something gluten-free to serve with the parfait."
+    },
+    {
+     "ask": "dairy-free",
+     "can": "no",
+     "say": "I'm sorry, the parfait and the brioche are both very likely made with dairy, so I'd suggest the Gordal olives to start instead."
+    }
+   ],
+   "ask": [
+    {
+     "q": "Is it like a pâté?",
+     "a": "Yes, it's in the same family, but a parfait is smoother and silkier, so it spreads easily on the brioche."
+    },
+    {
+     "q": "Is it very rich?",
+     "a": "Yes, it's one of the richer starters, and the fig chutney is there to cut through it."
+    }
+   ],
+   "wrong": [
+    "This is a smooth chicken liver parfait served with toasted brioche and a red onion marmalade, a rich starter.",
+    "This is a smooth duck liver parfait served with toasted brioche and a fig chutney, a rich starter.",
+    "This is a smooth chicken liver parfait served with toasted brioche and a fig chutney, a light, delicate starter."
+   ],
+   "allergens": {
+    "confirmed": null,
+    "draft": [
+     {
+      "code": "gluten",
+      "sure": "likely"
+     },
+     {
+      "code": "egg",
+      "sure": "likely"
+     },
+     {
+      "code": "milk",
+      "sure": "likely"
+     }
+    ],
+    "note": "Confirm whether the parfait has butter, cream, egg or fortified wine, and whether the fig chutney uses a sulphited vinegar."
+   },
+   "at": 1793882027279,
+   "model": "claude-opus-5-5"
+  },
+  "d-roast-beetroot-whipped-feta-hazelnuts": {
+   "say": "This is salt-baked beetroot with whipped feta, toasted hazelnuts and a drizzle of honey, a vegetarian starter that's fresh rather than heavy.",
+   "mods": [
+    {
+     "ask": "without the hazelnuts, nut allergy",
+     "can": "ask",
+     "say": "I'll ask the kitchen whether they can leave the hazelnuts off and keep it clear of nuts, because they're toasted in the same kitchen."
+    },
+    {
+     "ask": "vegan",
+     "can": "no",
+     "say": "I'm sorry, the feta and the honey mean it isn't vegan, but the miso-glazed aubergine is vegan as a main, or the Gordal olives as a snack."
+    },
+    {
+     "ask": "without the feta, dairy-free",
+     "can": "ask",
+     "say": "The whipped feta is the dairy here, so I'll check with the kitchen whether they can make it without."
+    }
+   ],
+   "ask": [
+    {
+     "q": "Is it vegetarian?",
+     "a": "Yes, it's on the menu as vegetarian, but it isn't vegan because of the feta and honey."
+    },
+    {
+     "q": "What does salt-baked mean?",
+     "a": "The beetroot is baked in salt, which cooks it gently, and I can check with the kitchen how it's seasoned if you're watching your salt."
+    }
+   ],
+   "wrong": [
+    "This is salt-baked beetroot with whipped goat's cheese, toasted hazelnuts and a drizzle of honey, a vegetarian starter that's fresh rather than heavy.",
+    "This is pickled beetroot with whipped feta, toasted hazelnuts and a drizzle of honey, a vegetarian starter that's fresh rather than heavy.",
+    "This is salt-baked beetroot with whipped feta, toasted hazelnuts and a drizzle of honey, a vegetarian dish that's as big and filling as a main."
+   ],
+   "allergens": {
+    "confirmed": null,
+    "draft": [
+     {
+      "code": "milk",
+      "sure": "printed"
+     },
+     {
+      "code": "treenut",
+      "sure": "printed"
+     }
+    ],
+    "note": "Check for cross-contact with other nuts where the hazelnuts are toasted."
+   },
+   "at": 1793882027279,
+   "model": "claude-opus-5-5"
+  },
+  "d-crab-on-toast-brown-crab-mayonnaise": {
+   "say": "This is Devon crab on toasted sourdough with a brown crab mayonnaise and a little chilli, a rich, generous starter.",
+   "mods": [
+    {
+     "ask": "without the chilli",
+     "can": "ask",
+     "say": "I'll ask the kitchen whether they can leave the chilli out for you."
+    },
+    {
+     "ask": "gluten-free",
+     "can": "ask",
+     "say": "The sourdough contains gluten, so I'll ask the kitchen whether they can serve the crab without the toast or on something gluten-free."
+    }
+   ],
+   "ask": [
+    {
+     "q": "Is it spicy?",
+     "a": "There's chilli in it, so it has some warmth, but I'll check how hot the kitchen is making it today."
+    },
+    {
+     "q": "What is brown crab mayonnaise?",
+     "a": "It's mayonnaise made with the brown meat of the crab, which gives it a deeper, richer crab flavour."
+    }
+   ],
+   "wrong": [
+    "This is Devon crab on toasted sourdough with a dill crème fraîche and a little chilli, a rich, generous starter.",
+    "This is Devon lobster on toasted sourdough with a brown crab mayonnaise and a little chilli, a rich, generous starter.",
+    "This is Devon crab on toasted sourdough with a brown crab mayonnaise and a little chilli, a large sharing plate for the table."
+   ],
+   "allergens": {
+    "confirmed": null,
+    "draft": [
+     {
+      "code": "crustacean",
+      "sure": "printed"
+     },
+     {
+      "code": "egg",
+      "sure": "likely"
+     },
+     {
+      "code": "gluten",
+      "sure": "likely"
+     }
+    ],
+    "note": "Confirm whether the mayonnaise has mustard and whether the toast is buttered."
+   },
+   "at": 1793882027279,
+   "model": "claude-opus-5-5"
+  },
+  "d-roast-chicken-morels-tarragon-cream": {
+   "say": "This is roast free-range chicken with morel mushrooms in a tarragon cream sauce, served with buttered greens, a rich and comforting main.",
+   "mods": [
+    {
+     "ask": "dairy-free",
+     "can": "ask",
+     "say": "The cream sauce and the buttered greens both have dairy, so I'll ask the kitchen what they can do."
+    },
+    {
+     "ask": "gluten-free",
+     "can": "ask",
+     "say": "I'll check with the kitchen whether the sauce is thickened with flour before I promise it's gluten-free."
+    },
+    {
+     "ask": "without the mushrooms",
+     "can": "ask",
+     "say": "I'll ask the kitchen whether they can serve it without the morels."
+    }
+   ],
+   "ask": [
+    {
+     "q": "What are morels?",
+     "a": "They're a prized wild mushroom with a honeycomb-looking cap and a deep, earthy flavour."
+    },
+    {
+     "q": "Is it rich?",
+     "a": "Yes, the tarragon cream sauce makes it one of the richer mains."
+    }
+   ],
+   "wrong": [
+    "This is roast free-range chicken with morel mushrooms in a cider jus, served with buttered greens, a rich and comforting main.",
+    "This is roast free-range chicken with chanterelle mushrooms in a tarragon cream sauce, served with buttered greens, a rich and comforting main.",
+    "This is roast free-range chicken with morel mushrooms in a tarragon cream sauce, served with buttered greens, a light, lunch-sized plate."
+   ],
+   "allergens": {
+    "confirmed": null,
+    "draft": [
+     {
+      "code": "milk",
+      "sure": "printed"
+     }
+    ],
+    "note": "Confirm whether the cream sauce has wine (sulphites), flour or a stock containing celery."
+   },
+   "at": 1793882027279,
+   "model": "claude-opus-5-5"
+  },
+  "d-braised-lamb-shoulder-white-beans-rosemary": {
+   "say": "This is lamb shoulder braised for eight hours until it's very tender, with white beans, rosemary and a salsa verde, a hearty, generous main.",
+   "mods": [
+    {
+     "ask": "without the salsa verde",
+     "can": "ask",
+     "say": "I'll ask the kitchen whether they can serve it without the salsa verde."
+    },
+    {
+     "ask": "gluten-free",
+     "can": "ask",
+     "say": "I'll check with the kitchen whether anything in the braise has gluten before I say yes."
+    },
+    {
+     "ask": "vegetarian",
+     "can": "no",
+     "say": "I'm sorry, it's built around the lamb, but the wild mushroom risotto is a vegetarian main."
+    }
+   ],
+   "ask": [
+    {
+     "q": "Is it tender?",
+     "a": "Yes, it's braised for eight hours, so it's very soft and comes away easily."
+    },
+    {
+     "q": "How big is it?",
+     "a": "It's a hearty, filling main with the beans, so you won't need much on the side."
+    }
+   ],
+   "wrong": [
+    "This is lamb shoulder braised for eight hours until it's very tender, with white beans, rosemary and harissa, a hearty, generous main.",
+    "This is leg of lamb roasted for eight hours until it's very tender, with white beans, rosemary and a salsa verde, a hearty, generous main.",
+    "This is lamb shoulder braised for eight hours until it's very tender, with white beans, rosemary and a salsa verde, a small, light main."
+   ],
+   "allergens": {
+    "confirmed": null,
+    "draft": [
+     {
+      "code": "fish",
+      "sure": "likely"
+     },
+     {
+      "code": "mustard",
+      "sure": "likely"
+     }
+    ],
+    "note": "Confirm whether the salsa verde has anchovy, mustard or vinegar, and whether the braise uses wine, flour or celery."
+   },
+   "at": 1793882027279,
+   "model": "claude-opus-5-5"
+  },
+  "d-28-day-sirloin-chips-b-arnaise": {
+   "say": "This is a 28-day aged Hereford sirloin steak with triple-cooked chips, béarnaise sauce and watercress, a rich, substantial main.",
+   "mods": [
+    {
+     "ask": "cooked to my liking",
+     "can": "ask",
+     "say": "I'll ask how you'd like it cooked and pass that to the kitchen."
+    },
+    {
+     "ask": "without the béarnaise, dairy-free",
+     "can": "ask",
+     "say": "The béarnaise is made with butter and egg, so I'll ask the kitchen whether they can leave it off or offer something else."
+    },
+    {
+     "ask": "gluten-free",
+     "can": "ask",
+     "say": "I'll check with the kitchen whether the chips are fried in a shared fryer before I say they're gluten-free."
+    }
+   ],
+   "ask": [
+    {
+     "q": "What does 28-day aged mean?",
+     "a": "The beef is aged for 28 days before it's cooked, which deepens the flavour and makes it more tender."
+    },
+    {
+     "q": "What is béarnaise?",
+     "a": "It's a rich, warm butter sauce made with egg yolk and tarragon, a classic with steak."
+    }
+   ],
+   "wrong": [
+    "This is a 28-day aged Hereford sirloin steak with triple-cooked chips, salsa verde and watercress, a rich, substantial main.",
+    "This is a 28-day aged Hereford ribeye steak with triple-cooked chips, béarnaise sauce and watercress, a rich, substantial main.",
+    "This is a 28-day aged Hereford sirloin steak with triple-cooked chips, béarnaise sauce and watercress, a light, lean main."
+   ],
+   "allergens": {
+    "confirmed": null,
+    "draft": [
+     {
+      "code": "egg",
+      "sure": "likely"
+     },
+     {
+      "code": "milk",
+      "sure": "likely"
+     },
+     {
+      "code": "sulphite",
+      "sure": "likely"
+     }
+    ],
+    "note": "Check fryer cross-contact for the chips and whether the béarnaise reduction uses wine or wine vinegar."
+   },
+   "at": 1793882027279,
+   "model": "claude-opus-5-5"
+  },
+  "d-pan-roast-cod-brown-shrimp-samphire": {
+   "say": "This is pan-roast Cornish cod with a brown shrimp butter, samphire and new potatoes, a generous main that's buttery and fresh.",
+   "mods": [
+    {
+     "ask": "without the shrimp, shellfish allergy",
+     "can": "ask",
+     "say": "The shrimp are in the butter, so I'll ask the kitchen whether they can make it completely without shellfish."
+    },
+    {
+     "ask": "dairy-free",
+     "can": "ask",
+     "say": "The shrimp butter is the dairy here, so I'll ask the kitchen whether they can cook it without butter."
+    },
+    {
+     "ask": "gluten-free",
+     "can": "ask",
+     "say": "Nothing on the menu description has gluten, but I'll confirm with the kitchen before I say yes."
+    }
+   ],
+   "ask": [
+    {
+     "q": "What is samphire?",
+     "a": "It's a sea vegetable with a crisp texture and a naturally salty taste, lovely with fish."
+    },
+    {
+     "q": "Is it a heavy dish?",
+     "a": "It's buttery but not heavy, with the samphire and new potatoes keeping it fresh."
+    }
+   ],
+   "wrong": [
+    "This is pan-roast Cornish cod with a caper and parsley butter, samphire and new potatoes, a generous main that's buttery and fresh.",
+    "This is deep-fried Cornish cod with a brown shrimp butter, samphire and new potatoes, a generous main that's buttery and fresh.",
+    "This is pan-roast Cornish cod with a brown shrimp butter, samphire and new potatoes, a small, starter-sized plate."
+   ],
+   "allergens": {
+    "confirmed": null,
+    "draft": [
+     {
+      "code": "fish",
+      "sure": "printed"
+     },
+     {
+      "code": "crustacean",
+      "sure": "printed"
+     },
+     {
+      "code": "milk",
+      "sure": "printed"
+     }
+    ],
+    "note": "Check that cod, samphire and potatoes don't share a pan or butter with the shrimp if a guest asks for it without."
+   },
+   "at": 1793882027279,
+   "model": "claude-opus-5-5"
+  },
+  "d-pork-belly-black-pudding-apple": {
+   "say": "This is slow-roast pork belly with black pudding, apple purée, a cider jus and a piece of crackling, a rich and hearty main.",
+   "mods": [
+    {
+     "ask": "without the black pudding",
+     "can": "ask",
+     "say": "I'll ask the kitchen whether they can leave the black pudding off for you."
+    },
+    {
+     "ask": "gluten-free",
+     "can": "ask",
+     "say": "Black pudding often contains oats or barley, so I'll check with the kitchen before I promise anything."
+    },
+    {
+     "ask": "dairy-free",
+     "can": "ask",
+     "say": "Nothing on the menu description is dairy, but I'll confirm with the kitchen how the purée and jus are made."
+    }
+   ],
+   "ask": [
+    {
+     "q": "What is black pudding?",
+     "a": "It's a traditional British blood sausage, savoury and slightly spiced, served here alongside the pork."
+    },
+    {
+     "q": "Is the crackling crunchy?",
+     "a": "Yes, the crackling is the crisp roasted pork skin, served as the crunchy part of the dish."
+    }
+   ],
+   "wrong": [
+    "This is slow-roast pork belly with black pudding, apple purée, a salsa verde and a piece of crackling, a rich and hearty main.",
+    "This is pan-fried pork loin with black pudding, apple purée, a cider jus and a piece of crackling, a rich and hearty main.",
+    "This is slow-roast pork belly with black pudding, apple purée, a cider jus and a piece of crackling, a light and delicate small plate."
+   ],
+   "allergens": {
+    "confirmed": null,
+    "draft": [
+     {
+      "code": "gluten",
+      "sure": "likely"
+     },
+     {
+      "code": "sulphite",
+      "sure": "likely"
+     },
+     {
+      "code": "celery",
+      "sure": "likely"
+     }
+    ],
+    "note": "Check the black pudding recipe for oats or barley, and check the cider jus for stock with celery and for sulphites from the cider."
+   },
+   "at": 1793882081215,
+   "model": "claude-opus-5-5"
+  },
+  "d-venison-loin-celeriac-blackberries": {
+   "say": "This is roe deer loin with a celeriac purée, fresh blackberries and a juniper jus, a lean, rich and gamey main.",
+   "mods": [
+    {
+     "ask": "dairy-free",
+     "can": "ask",
+     "say": "The celeriac purée may have butter or cream in it, so I'll check with the kitchen."
+    },
+    {
+     "ask": "celery-free",
+     "can": "no",
+     "say": "I'm sorry, the celeriac purée is a form of celery and is central to the dish, so you might prefer the duck breast, which I'll check with the kitchen for you."
+    },
+    {
+     "ask": "cooked well done",
+     "can": "ask",
+     "say": "Venison loin is best served pink, but I'll ask the kitchen what they can do for you."
+    }
+   ],
+   "ask": [
+    {
+     "q": "What is roe deer?",
+     "a": "Roe deer is a small British deer, and its venison is lean with a mild, gamey flavour."
+    },
+    {
+     "q": "What does juniper taste like?",
+     "a": "Juniper berries have a piney, aromatic flavour, the same one you find in gin, and they suit venison well."
+    }
+   ],
+   "wrong": [
+    "This is roe deer loin with a cauliflower purée, fresh blackberries and a juniper jus, a lean, rich and gamey main.",
+    "This is braised roe deer shoulder with a celeriac purée, fresh blackberries and a juniper jus, a lean, rich and gamey main.",
+    "This is roe deer loin with a celeriac purée, fresh blackberries and a juniper jus, served chilled as a light starter-sized plate."
+   ],
+   "allergens": {
+    "confirmed": null,
+    "draft": [
+     {
+      "code": "celery",
+      "sure": "printed"
+     },
+     {
+      "code": "milk",
+      "sure": "likely"
+     },
+     {
+      "code": "sulphite",
+      "sure": "likely"
+     }
+    ],
+    "note": "Celeriac counts as celery; check the purée for butter or cream and the juniper jus for wine and celery stock."
+   },
+   "at": 1793882081215,
+   "model": "claude-opus-5-5"
+  },
+  "d-wild-mushroom-risotto-aged-parmesan": {
+   "say": "This is a Carnaroli rice risotto with wild mushrooms, aged Parmesan and a drizzle of truffle oil, a creamy, rich vegetarian main.",
+   "mods": [
+    {
+     "ask": "vegan or dairy-free",
+     "can": "no",
+     "say": "I'm sorry, the Parmesan and the creamy finish make this one dairy-based, but the miso-glazed aubergine is vegan."
+    },
+    {
+     "ask": "without the truffle oil",
+     "can": "yes",
+     "say": "Of course, the truffle oil is drizzled on at the end, so the kitchen can leave it off."
+    },
+    {
+     "ask": "gluten-free",
+     "can": "ask",
+     "say": "Risotto rice doesn't contain gluten, but I'll confirm with the kitchen that nothing else in it does."
+    }
+   ],
+   "ask": [
+    {
+     "q": "Is it vegetarian?",
+     "a": "It's listed as vegetarian, and I'll double-check with the kitchen that the Parmesan is a vegetarian one if that matters to you."
+    },
+    {
+     "q": "Is it heavy?",
+     "a": "It's a rich, creamy risotto with plenty of cheese, so it's quite filling."
+    }
+   ],
+   "wrong": [
+    "This is a Carnaroli rice risotto with wild mushrooms, aged Parmesan and a drizzle of basil oil, a creamy, rich vegetarian main.",
+    "This is a baked rice dish with wild mushrooms, aged Parmesan and a drizzle of truffle oil, a creamy, rich vegetarian main.",
+    "This is a Carnaroli rice risotto with wild mushrooms, aged Parmesan and a drizzle of truffle oil, a light, brothy vegetarian starter."
+   ],
+   "allergens": {
+    "confirmed": null,
+    "draft": [
+     {
+      "code": "milk",
+      "sure": "printed"
+     },
+     {
+      "code": "sulphite",
+      "sure": "likely"
+     },
+     {
+      "code": "celery",
+      "sure": "likely"
+     }
+    ],
+    "note": "Confirm the Parmesan is a vegetarian hard cheese made without animal rennet, and check the risotto for wine and for vegetable stock containing celery."
+   },
+   "at": 1793882081215,
+   "model": "claude-opus-5-5"
+  },
+  "d-duck-breast-cherries-turnip": {
+   "say": "This is Gressingham duck breast with a cherry sauce, glazed turnip and a duck fat potato, a rich and generous main.",
+   "mods": [
+    {
+     "ask": "cooked well done",
+     "can": "ask",
+     "say": "Duck breast is usually served pink, but I'll ask the kitchen what they can do."
+    },
+    {
+     "ask": "dairy-free",
+     "can": "ask",
+     "say": "The glazed turnip may be finished with butter, so I'll check with the kitchen."
+    },
+    {
+     "ask": "gluten-free",
+     "can": "ask",
+     "say": "Nothing in the description contains gluten, but I'll confirm the cherry sauce with the kitchen."
+    }
+   ],
+   "ask": [
+    {
+     "q": "What is Gressingham duck?",
+     "a": "Gressingham is a well-known English duck breed with tender, full-flavoured meat."
+    },
+    {
+     "q": "Is the cherry sauce sweet?",
+     "a": "It has some fruity sweetness, which balances the richness of the duck."
+    }
+   ],
+   "wrong": [
+    "This is Gressingham duck breast with a cider jus, glazed turnip and a duck fat potato, a rich and generous main.",
+    "This is confit Gressingham duck leg with a cherry sauce, glazed turnip and a duck fat potato, a rich and generous main.",
+    "This is Gressingham duck breast with a cherry sauce, glazed turnip and a duck fat potato, a small, light plate for sharing."
+   ],
+   "allergens": {
+    "confirmed": null,
+    "draft": [
+     {
+      "code": "milk",
+      "sure": "likely"
+     },
+     {
+      "code": "sulphite",
+      "sure": "likely"
+     },
+     {
+      "code": "celery",
+      "sure": "likely"
+     }
+    ],
+    "note": "Check the turnip glaze for butter and the cherry sauce for wine and stock with celery."
+   },
+   "at": 1793882081215,
+   "model": "claude-opus-5-5"
+  },
+  "d-whole-lemon-sole-caper-butter": {
+   "say": "This is a whole lemon sole, grilled on the bone, with a caper and parsley butter and spinach, a generous but delicate fish main.",
+   "mods": [
+    {
+     "ask": "dairy-free",
+     "can": "ask",
+     "say": "The caper butter is dairy, so I'll ask the kitchen whether they can serve the sole with olive oil instead."
+    },
+    {
+     "ask": "filleted or off the bone",
+     "can": "ask",
+     "say": "It comes whole on the bone, but I'll ask the kitchen whether they can fillet it for you."
+    },
+    {
+     "ask": "gluten-free",
+     "can": "ask",
+     "say": "Nothing in the description contains gluten, but I'll confirm with the kitchen how the fish is prepared."
+    }
+   ],
+   "ask": [
+    {
+     "q": "Does it have bones?",
+     "a": "Yes, it's served whole on the bone, so there will be bones to work around."
+    },
+    {
+     "q": "What does lemon sole taste like?",
+     "a": "It's a mild, delicate flat fish with soft, sweet flesh."
+    }
+   ],
+   "wrong": [
+    "This is a whole lemon sole, grilled on the bone, with a brown shrimp butter and spinach, a generous but delicate fish main.",
+    "This is a fillet of lemon sole, deep-fried in batter, with a caper and parsley butter and spinach, a generous but delicate fish main.",
+    "This is a whole lemon sole, grilled on the bone, with a caper and parsley butter and spinach, a small starter portion served cold."
+   ],
+   "allergens": {
+    "confirmed": null,
+    "draft": [
+     {
+      "code": "fish",
+      "sure": "printed"
+     },
+     {
+      "code": "milk",
+      "sure": "printed"
+     }
+    ],
+    "note": "Check whether the sole is dusted in flour before grilling and whether the spinach is buttered."
+   },
+   "at": 1793882081215,
+   "model": "claude-opus-5-5"
+  },
+  "d-lamb-rump-harissa-aubergine": {
+   "say": "This is grilled lamb rump with harissa, smoked aubergine, yoghurt and mint, a gently spiced, hearty main.",
+   "mods": [
+    {
+     "ask": "less spicy",
+     "can": "ask",
+     "say": "I'll ask the kitchen whether they can go lighter on the harissa or serve it on the side."
+    },
+    {
+     "ask": "dairy-free",
+     "can": "ask",
+     "say": "The yoghurt can likely be left off, but I'll confirm with the kitchen that nothing else contains dairy."
+    },
+    {
+     "ask": "cooked well done",
+     "can": "ask",
+     "say": "Lamb rump is usually served pink, but I'll ask the kitchen what they can do."
+    }
+   ],
+   "ask": [
+    {
+     "q": "Is it spicy?",
+     "a": "Harissa is a chilli paste, so it has some warmth, and the yoghurt and mint help cool it down."
+    },
+    {
+     "q": "What is lamb rump?",
+     "a": "It's a tender, flavourful cut from the back of the lamb, grilled here."
+    }
+   ],
+   "wrong": [
+    "This is grilled lamb rump with harissa, smoked aubergine, salsa verde and mint, a gently spiced, hearty main.",
+    "This is lamb shoulder braised overnight with harissa, smoked aubergine, yoghurt and mint, a gently spiced, hearty main.",
+    "This is grilled lamb rump with harissa, smoked aubergine, yoghurt and mint, a fiercely hot dish that is very spicy."
+   ],
+   "allergens": {
+    "confirmed": null,
+    "draft": [
+     {
+      "code": "milk",
+      "sure": "printed"
+     }
+    ],
+    "note": "Check whether the smoked aubergine is made with tahini, which is sesame, and check the harissa recipe."
+   },
+   "at": 1793882081215,
+   "model": "claude-opus-5-5"
+  },
+  "d-aubergine-miso-sesame": {
+   "say": "This is miso-glazed aubergine with sesame and spring onion, served with steamed rice, a savoury, satisfying vegan main.",
+   "mods": [
+    {
+     "ask": "gluten-free",
+     "can": "ask",
+     "say": "Some miso and soy glazes contain wheat or barley, so I'll check with the kitchen."
+    },
+    {
+     "ask": "without sesame",
+     "can": "ask",
+     "say": "I'll ask whether the kitchen can leave off the sesame and check that the glaze has none in it."
+    },
+    {
+     "ask": "soya-free",
+     "can": "no",
+     "say": "I'm sorry, miso is made from soya and is the heart of the dish, so you might prefer the risotto, which I'll check with the kitchen for you."
+    }
+   ],
+   "ask": [
+    {
+     "q": "Is it vegan?",
+     "a": "Yes, it's listed as vegan."
+    },
+    {
+     "q": "What does miso taste like?",
+     "a": "Miso is a fermented soya paste with a deep, salty, savoury flavour that caramelises nicely on the aubergine."
+    }
+   ],
+   "wrong": [
+    "This is miso-glazed aubergine with sesame and spring onion, served with new potatoes, a savoury, satisfying vegan main.",
+    "This is deep-fried aubergine in tempura batter with sesame and spring onion, served with steamed rice, a savoury, satisfying vegan main.",
+    "This is miso-glazed aubergine with sesame and spring onion, served with steamed rice, a small, cold side dish."
+   ],
+   "allergens": {
+    "confirmed": null,
+    "draft": [
+     {
+      "code": "soy",
+      "sure": "printed"
+     },
+     {
+      "code": "sesame",
+      "sure": "printed"
+     },
+     {
+      "code": "gluten",
+      "sure": "likely"
+     }
+    ],
+    "note": "Check whether the miso is made with barley and whether the glaze contains soy sauce with wheat."
+   },
+   "at": 1793882081215,
+   "model": "claude-opus-5-5"
+  },
+  "d-lemon-tart-cr-me-fra-che": {
+   "say": "This is a lemon tart served with crème fraîche and candied lemon zest, a sharp, zesty dessert that's lighter than most.",
+   "mods": [
+    {
+     "ask": "without the crème fraîche",
+     "can": "yes",
+     "say": "Of course, the crème fraîche is served alongside, so the kitchen can leave it off."
+    },
+    {
+     "ask": "gluten-free",
+     "can": "no",
+     "say": "I'm sorry, the tart has a pastry case, so I'll check with the kitchen which dessert could work for you instead."
+    },
+    {
+     "ask": "dairy-free",
+     "can": "ask",
+     "say": "Even without the crème fraîche the pastry or filling may contain butter, so I'll check with the kitchen."
+    }
+   ],
+   "ask": [
+    {
+     "q": "Is it very sharp?",
+     "a": "It's tangy and zesty, and the crème fraîche softens the sharpness."
+    },
+    {
+     "q": "Is it a light dessert?",
+     "a": "It's one of the fresher, lighter desserts on the menu."
+    }
+   ],
+   "wrong": [
+    "This is a lemon tart served with clotted cream and candied lemon zest, a sharp, zesty dessert that's lighter than most.",
+    "This is a lemon cheesecake served with crème fraîche and candied lemon zest, a sharp, zesty dessert that's lighter than most.",
+    "This is a lemon tart served warm with crème fraîche and candied lemon zest, a heavy, rich dessert for sharing."
+   ],
+   "allergens": {
+    "confirmed": null,
+    "draft": [
+     {
+      "code": "milk",
+      "sure": "printed"
+     },
+     {
+      "code": "gluten",
+      "sure": "likely"
+     },
+     {
+      "code": "egg",
+      "sure": "likely"
+     }
+    ],
+    "note": "Check the pastry for wheat and butter and confirm the lemon filling is made with egg."
+   },
+   "at": 1793882081215,
+   "model": "claude-opus-5-5"
+  },
+  "d-dark-chocolate-delice-salted-caramel": {
+   "say": "It's a dark chocolate delice, which is a rich, smooth, set chocolate dessert, served with salted caramel and crunchy hazelnut praline, so it's on the indulgent side.",
+   "mods": [
+    {
+     "ask": "without the nuts",
+     "can": "ask",
+     "say": "I'll check with the kitchen whether they can leave the hazelnut praline off and whether there's any nut contact in the delice itself, so I can't promise it's nut-safe until they confirm."
+    },
+    {
+     "ask": "dairy-free",
+     "can": "no",
+     "say": "I'm afraid the delice and the salted caramel almost certainly contain dairy, and every dessert on our menu has dairy in it, so let me ask the kitchen whether they can offer you anything instead."
+    },
+    {
+     "ask": "gluten-free",
+     "can": "ask",
+     "say": "Let me check with the kitchen, because it depends on whether the delice has a base, and I'd rather they confirm than guess."
+    }
+   ],
+   "ask": [
+    {
+     "q": "How rich is it?",
+     "a": "It's very rich, a dense, smooth dark chocolate dessert, so it's a good one to share if you're feeling full."
+    },
+    {
+     "q": "Does it have nuts in it?",
+     "a": "Yes, it comes with hazelnut praline, and I'll ask the kitchen whether nuts are anywhere else in the dish."
+    }
+   ],
+   "wrong": [
+    "It's a dark chocolate delice, which is a rich, smooth, set chocolate dessert, served with salted caramel and a spoonful of clotted cream, so it's on the indulgent side.",
+    "It's a warm dark chocolate fondant with a soft melting middle, served with salted caramel and crunchy hazelnut praline, so it's on the indulgent side.",
+    "It's a dark chocolate delice, a light and airy little chocolate dessert, served with salted caramel and crunchy hazelnut praline, so it's a nice small finish if you don't want anything heavy."
+   ],
+   "allergens": {
+    "confirmed": null,
+    "draft": [
+     {
+      "code": "treenut",
+      "sure": "printed"
+     },
+     {
+      "code": "milk",
+      "sure": "likely"
+     },
+     {
+      "code": "egg",
+      "sure": "likely"
+     },
+     {
+      "code": "soy",
+      "sure": "likely"
+     },
+     {
+      "code": "gluten",
+      "sure": "likely"
+     }
+    ],
+    "note": "Confirm whether the delice has a biscuit or crunchy base (gluten), whether the chocolate contains soya lecithin, and whether there is peanut cross-contact in the praline."
+   },
+   "at": 1793882114855,
+   "model": "claude-opus-5-5"
+  },
+  "d-sticky-toffee-pudding-clotted-cream": {
+   "say": "It's our sticky toffee pudding, a warm, soft sponge soaked in toffee sauce and served with a dollop of clotted cream, so it's a proper rich, comforting pudding.",
+   "mods": [
+    {
+     "ask": "without the clotted cream",
+     "can": "yes",
+     "say": "Of course, we can serve it with just the toffee sauce, but the sponge and sauce still contain dairy."
+    },
+    {
+     "ask": "dairy-free",
+     "can": "no",
+     "say": "I'm sorry, the toffee sauce and the pudding itself will contain dairy, and every dessert on our menu has dairy in it, so let me ask the kitchen whether they can offer you anything instead."
+    },
+    {
+     "ask": "gluten-free",
+     "can": "no",
+     "say": "I'm afraid the sponge is very likely made with wheat flour, so it isn't suitable, but I can check with the kitchen about the cheese plate without the oatcakes."
+    }
+   ],
+   "ask": [
+    {
+     "q": "Is it served hot?",
+     "a": "It's served warm, with the toffee sauce over it and cold clotted cream on the side."
+    },
+    {
+     "q": "Is it very sweet?",
+     "a": "Yes, it's a sweet, sticky, rich pudding, so it's perfect if you have a sweet tooth."
+    }
+   ],
+   "wrong": [
+    "It's our sticky toffee pudding, a warm, soft sponge soaked in toffee sauce and served with a spoonful of crème fraîche, so it's a proper rich, comforting pudding.",
+    "It's our sticky toffee pudding, a warm, soft chocolate sponge soaked in toffee sauce and served with a dollop of clotted cream, so it's a proper rich, comforting pudding.",
+    "It's our sticky toffee pudding, a chilled, set slice soaked in toffee sauce and served with a dollop of clotted cream, so it's a light, refreshing way to finish."
+   ],
+   "allergens": {
+    "confirmed": null,
+    "draft": [
+     {
+      "code": "milk",
+      "sure": "printed"
+     },
+     {
+      "code": "gluten",
+      "sure": "likely"
+     },
+     {
+      "code": "egg",
+      "sure": "likely"
+     }
+    ],
+    "note": "Check whether the dates in the sponge contain sulphites, and confirm there are no nuts in the sponge or nut cross-contact."
+   },
+   "at": 1793882114855,
+   "model": "claude-opus-5-5"
+  },
+  "d-british-cheeses-oatcakes-quince": {
+   "say": "It's a plate of three British cheeses, Montgomery Cheddar, Stichelton, a blue, and Tunworth, a soft one, served with oatcakes and quince paste, which is a good size to share.",
+   "mods": [
+    {
+     "ask": "gluten-free",
+     "can": "ask",
+     "say": "I'll ask the kitchen whether they can serve the cheeses without the oatcakes and keep them away from any crumbs, as the oatcakes contain gluten."
+    },
+    {
+     "ask": "without the blue cheese",
+     "can": "ask",
+     "say": "Let me check with the kitchen whether they can leave the Stichelton off or swap it for more of the other two."
+    },
+    {
+     "ask": "a smaller portion",
+     "can": "ask",
+     "say": "I'll ask the kitchen whether they can do a smaller plate with just one or two of the cheeses."
+    }
+   ],
+   "ask": [
+    {
+     "q": "Is it suitable if I'm pregnant?",
+     "a": "Some traditional cheeses are made with unpasteurised milk, so I'll check with the kitchen exactly which ones are before you order."
+    },
+    {
+     "q": "Is it enough to share?",
+     "a": "Yes, with three cheeses, oatcakes and quince paste, it works well shared between two at the end of a meal."
+    }
+   ],
+   "wrong": [
+    "It's a plate of three British cheeses, Montgomery Cheddar, Stichelton, a blue, and Tunworth, a soft one, served with oatcakes and fig chutney, which is a good size to share.",
+    "It's a plate of three British cheeses, Montgomery Cheddar, Stichelton, a blue, and Tunworth, a soft one, served with toasted sourdough and quince paste, which is a good size to share.",
+    "It's a plate of three British cheeses, Montgomery Cheddar, Stichelton, a blue, and Tunworth, a soft one, served with oatcakes and quince paste, which is a small taster portion, just right for one."
+   ],
+   "allergens": {
+    "confirmed": null,
+    "draft": [
+     {
+      "code": "milk",
+      "sure": "printed"
+     },
+     {
+      "code": "gluten",
+      "sure": "printed"
+     }
+    ],
+    "note": "Oats count as a gluten cereal and oatcakes often have wheat too, so confirm the recipe; confirm the rennet in each cheese for strict vegetarians, and which cheeses are unpasteurised."
+   },
+   "at": 1793882114855,
+   "model": "claude-opus-5-5"
+  }
+ }
 }

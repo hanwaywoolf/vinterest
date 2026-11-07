@@ -92,6 +92,7 @@ site above and from the app, so it can carry its own domain.
 | Build command | `npm ci && npm run site:teams:build` |
 | Build output directory | `site-teams-dist` |
 | Production branch | `main` |
+| Preview branches | All non-Production branches (Settings → Build → Branch control), so a branch's changes can be seen before they're merged |
 | Custom domain | `vinterest.team` (and `www`, redirected to it) |
 
 Setup, once: Workers & Pages → Create → Pages → Connect to Git → the vinterest repository (a second
@@ -107,7 +108,7 @@ filled in at build time: `_nav.html`, `_test.html`, `_footer.html`. A new page i
 in `site/teams/`: the build picks it up, adds it to the sitemap, and `tests/teams-site.spec.js`
 should list it in `PAGES`.
 
-The project is `vinterest-teams`: production at https://vinterest-teams.pages.dev, and every push of a branch deploys a preview at `https://<branch with / as ->.vinterest-teams.pages.dev`. While the site lives on `claude/teams-site`, that branch is set as the production branch; set it back to `main` at the merge.
+The project is `vinterest-teams`: production at https://vinterest-teams.pages.dev, and every push of a branch deploys a preview at `https://<branch with / as ->.vinterest-teams.pages.dev` (only with preview branches switched on, as above; without it the address answers "Deployment Not Found"). The production branch is `main`, so vinterest.team changes only when something is merged.
 
 Build variables (all optional):
 

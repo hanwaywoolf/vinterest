@@ -1,0 +1,892 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Teams V2 Audit</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Instrument+Serif&display=swap">
+<style>
+:root{
+  --bg:#faf6f2;--card:#ffffff;--card2:#f3ece6;--ink:#231c1e;--mid:#6f6266;--faint:#9c8f92;--line:#e6dcd6;
+  --acc:#8b1a2f;--acc-ink:#ffffff;--ok:#1f8a4c;--warn:#b7791f;--bad:#b3261e;--tint:#f6e3e7;
+  --stage:#141012;--glass:rgba(255,255,255,.07);--glass-line:rgba(255,255,255,.12);--s-ink:#f4ece6;--s-mid:#b3a69f;--s-acc:#e0607a;--s-ok:#5fd48f;--s-warn:#f0b35a;
+  --sans:"Poppins",system-ui,-apple-system,"Segoe UI",sans-serif;--serif:"Instrument Serif",Georgia,serif;
+  --radius:14px;color-scheme:light;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#141012;--card:#1e191b;--card2:#272022;--ink:#f4ece6;--mid:#b3a69f;--faint:#80747a;--line:#3a3134;--acc:#e0607a;--acc-ink:#1a0d11;--ok:#5fd48f;--warn:#f0b35a;--bad:#ff7b72;--tint:#3a1f27;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#141012;--card:#1e191b;--card2:#272022;--ink:#f4ece6;--mid:#b3a69f;--faint:#80747a;--line:#3a3134;--acc:#e0607a;--acc-ink:#1a0d11;--ok:#5fd48f;--warn:#f0b35a;--bad:#ff7b72;--tint:#3a1f27;color-scheme:dark}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 var(--sans);-webkit-font-smoothing:antialiased}
+main{max-width:1040px;margin:0 auto;padding-block:24px 96px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+h1{font-family:var(--serif);font-weight:400;font-size:clamp(34px,6vw,54px);line-height:1.05;margin:0 0 10px;letter-spacing:-.01em;text-wrap:balance}
+h2{font-size:clamp(24px,3.4vw,32px);line-height:1.15;margin:0 0 8px;letter-spacing:-.01em;text-wrap:balance;scroll-margin-top:72px}
+h3{font-size:19px;margin:28px 0 8px;line-height:1.25}
+h4{font-size:16px;margin:18px 0 6px}
+p{margin:0 0 12px;max-width:72ch}
+p.lede{font-size:19px;color:var(--mid);max-width:60ch;line-height:1.5}
+a{color:var(--acc)}
+section{padding:40px 0 8px;border-top:1px solid var(--line)}
+section:first-of-type{border-top:none;padding-top:8px}
+.kicker{font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--acc);margin:0 0 8px}
+.meta{color:var(--mid);font-size:14px}
+.grid{display:grid;gap:14px}
+.g2{grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
+.g3{grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px}
+.card h4{margin-top:0}.g3>.card>b{display:block;margin:6px 0 2px;line-height:1.3}.g3>.card>.meta{display:block}
+.card.acc{border-color:var(--acc);background:var(--tint)}
+.num{font-family:var(--serif);font-size:44px;line-height:1;color:var(--acc)}
+.tag{display:inline-block;font-size:12px;font-weight:700;padding:2px 9px;border-radius:999px;border:1px solid var(--line);color:var(--mid);margin:2px 4px 2px 0;vertical-align:middle}
+.tag.ok{color:var(--ok);border-color:var(--ok)}.tag.warn{color:var(--warn);border-color:var(--warn)}.tag.bad{color:var(--bad);border-color:var(--bad)}.tag.acc{color:var(--acc);border-color:var(--acc)}
+ul,ol{padding-left:22px;margin:0 0 12px}li{margin:0 0 6px;max-width:72ch}
+table{border-collapse:collapse;width:100%;font-size:14px;margin:8px 0 16px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--mid);font-weight:700}
+.twrap{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:0 -16px;padding:0 16px}
+.y{color:var(--ok);font-weight:700}.n{color:var(--faint)}.p{color:var(--warn);font-weight:700}
+nav.toc{position:sticky;top:0;z-index:5;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid var(--line);margin:0 -16px 8px;padding:8px 16px;overflow-x:auto;white-space:nowrap;scrollbar-width:none}
+nav.toc::-webkit-scrollbar{display:none}
+nav.toc a{display:inline-block;font-size:13px;font-weight:600;color:var(--mid);text-decoration:none;padding:6px 10px;border-radius:999px;margin-right:2px}
+nav.toc a:hover,nav.toc a.on{color:var(--acc);background:var(--tint)}
+/* findings */
+.finding{display:grid;grid-template-columns:28px 1fr;gap:10px;padding:10px 0;border-bottom:1px dashed var(--line)}
+.finding:last-child{border-bottom:none}
+.finding .sev{width:26px;height:26px;border-radius:8px;display:grid;place-items:center;font-size:12px;font-weight:800;color:#fff}
+.sev.s1{background:var(--bad)}.sev.s2{background:var(--warn)}.sev.s3{background:var(--faint)}
+.finding b{display:block}.finding span{color:var(--mid);font-size:14px}
+/* screenshots */
+.shot{display:grid;grid-template-columns:minmax(200px,260px) 1fr;gap:18px;align-items:start;margin:14px 0 22px}
+.shot img{width:100%;border-radius:18px;border:1px solid var(--line);display:block;background:#000}
+.shot.wide{grid-template-columns:1fr}
+.shot.wide img{border-radius:10px}
+.shot figcaption{font-size:13px;color:var(--mid);margin-top:6px}
+@media (max-width:640px){.shot{grid-template-columns:1fr}.shot img{max-width:320px}}
+/* phone frame */
+.phone{width:320px;max-width:100%;aspect-ratio:390/780;background:var(--stage);border-radius:34px;border:6px solid #2b2426;box-shadow:0 20px 50px rgba(0,0,0,.35);overflow:hidden;position:relative;color:var(--s-ink);font-family:var(--sans);margin:0 auto;display:flex;flex-direction:column}
+.phone .bar{height:34px;display:flex;align-items:center;justify-content:space-between;padding:0 18px;font-size:12px;font-weight:600;color:var(--s-mid)}
+.phone .body{flex:1;overflow:auto;padding:0 14px 14px;scrollbar-width:none}
+.phone .body::-webkit-scrollbar{display:none}
+.phone .nav{height:62px;border-top:1px solid var(--glass-line);display:grid;grid-template-columns:repeat(4,1fr);align-items:center;text-align:center;font-size:11px;font-weight:600;color:var(--s-mid);background:#0f0c0d}
+.phone .nav div.on{color:var(--s-acc)}
+.phone .nav i{display:block;font-style:normal;font-size:18px;margin-bottom:2px}
+.ph-h{font-size:24px;font-weight:700;margin:6px 0 2px;letter-spacing:-.01em}
+.ph-sub{font-size:14px;color:var(--s-mid);margin:0 0 14px}
+.gl{background:var(--glass);border:1px solid var(--glass-line);border-radius:14px;padding:14px;margin:0 0 12px}
+.gl.hi{border-color:var(--s-acc);box-shadow:0 0 0 1px rgba(224,96,122,.25),0 0 30px rgba(224,96,122,.12)}
+.gl h5{margin:0 0 4px;font-size:17px;line-height:1.25}
+.gl p{font-size:15px;color:var(--s-mid);margin:0 0 10px;line-height:1.4}
+.gl .cta{display:inline-block;background:var(--s-acc);color:#1a0d11;font-weight:700;font-size:15px;padding:10px 16px;border-radius:999px}
+.gl .cta.ghost{background:transparent;color:var(--s-ink);border:1px solid var(--glass-line)}
+.row{display:flex;align-items:center;gap:12px;padding:13px 2px;border-bottom:1px solid var(--glass-line);font-size:16px;font-weight:600}
+.row:last-child{border-bottom:none}
+.row small{display:block;font-weight:400;font-size:14px;color:var(--s-mid)}
+.row .ic{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;background:rgba(224,96,122,.15);color:var(--s-acc);font-weight:800;flex:none}
+.row .chev{margin-left:auto;color:var(--s-mid)}
+.chip{display:inline-block;border:1px solid var(--glass-line);border-radius:999px;padding:8px 13px;font-size:15px;margin:0 6px 8px 0;color:var(--s-ink)}
+.chip.sm{font-size:13px;padding:6px 10px}
+.lbl{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--s-mid);font-weight:700;margin:14px 0 8px}
+.opt{display:block;width:100%;text-align:left;background:var(--glass);border:1px solid var(--glass-line);color:var(--s-ink);font:inherit;font-size:16px;line-height:1.35;padding:13px 14px;border-radius:12px;margin:0 0 8px;cursor:pointer}
+.opt.on{border-color:var(--s-acc);background:rgba(224,96,122,.14)}
+.opt.ok{border-color:var(--s-ok);background:rgba(95,212,143,.14)}
+.opt.bad{border-color:#ff7b72;background:rgba(255,123,114,.14)}
+.pbtn{display:inline-block;background:var(--s-acc);color:#1a0d11;font-weight:700;font-size:15px;padding:11px 18px;border-radius:999px;border:none;font-family:inherit;cursor:pointer}
+.pbtn.ghost{background:transparent;color:var(--s-ink);border:1px solid var(--glass-line)}
+.pbtn.ok{background:var(--s-ok)}
+.ring{width:84px;height:84px;border-radius:50%;display:grid;place-items:center;margin:8px auto;font-size:22px;font-weight:800;background:conic-gradient(var(--s-ok) var(--v,70%),rgba(255,255,255,.1) 0);position:relative}
+.ring::after{content:"";position:absolute;inset:7px;border-radius:50%;background:var(--stage)}
+.ring b{position:relative;z-index:1}
+/* page controls */
+.ctl{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:10px 0 14px}
+.ctl button,.seg button{font:inherit;font-size:14px;font-weight:600;padding:8px 14px;border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer}
+.ctl button.on,.seg button.on{background:var(--acc);color:var(--acc-ink);border-color:var(--acc)}
+.seg{display:inline-flex;gap:0;border:1px solid var(--line);border-radius:999px;overflow:hidden}
+.seg button{border:none;border-radius:0}
+label.f{display:block;font-size:13px;font-weight:600;color:var(--mid);margin:10px 0 2px}
+input[type=range]{width:100%;accent-color:var(--acc)}
+input[type=number],select{font:inherit;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);width:100%}
+.out{font-family:var(--serif);font-size:38px;line-height:1;color:var(--acc)}
+.cav{font-size:13px;color:var(--mid);border-left:3px solid var(--warn);padding:6px 10px;margin:10px 0}
+.proto{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:22px;align-items:start}.proto>div,.grid>*{min-width:0}
+@media (max-width:760px){.proto{grid-template-columns:1fr}}
+.story{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:12px 0 18px}
+.story .fr{background:var(--stage);color:var(--s-ink);border-radius:14px;padding:12px;min-height:200px;font-size:12.5px;line-height:1.35;position:relative;border:1px solid #2b2426}
+.story .fr b{display:block;font-size:13px;margin-bottom:6px;color:var(--s-acc)}
+.story .fr .cap{position:absolute;left:0;right:0;bottom:0;padding:8px 12px;font-size:11.5px;color:var(--s-mid);border-top:1px solid var(--glass-line);background:#0f0c0d;border-radius:0 0 14px 14px}
+.story .fr .n{position:absolute;top:8px;right:10px;font-size:11px;color:var(--s-mid)}
+.mini{background:var(--glass);border:1px solid var(--glass-line);border-radius:9px;padding:7px 9px;margin:0 0 6px;font-size:12px}
+.mini.acc{border-color:var(--s-acc)}
+.bars{display:grid;gap:7px;margin:8px 0 14px}
+.bars div{display:grid;grid-template-columns:150px 1fr 48px;gap:10px;align-items:center;font-size:13px}
+.bars i{display:block;height:14px;border-radius:7px;background:var(--line);overflow:hidden}
+.bars i b{display:block;height:100%;background:var(--acc);border-radius:7px}
+.bars em{font-style:normal;font-weight:700;text-align:right;font-variant-numeric:tabular-nums}
+.cover{min-width:560px;display:grid;grid-template-columns:140px repeat(6,1fr);gap:4px;font-size:12px;align-items:center}
+.cover .h{font-size:11px;color:var(--mid);font-weight:700;text-align:center;line-height:1.15;padding-bottom:4px}
+.cover .nm{font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px}
+.cover .nm input{accent-color:var(--acc)}
+.cover .d{height:26px;border-radius:7px;display:grid;place-items:center;font-size:11px;font-weight:700;color:#fff}
+.d.r{background:var(--ok)}.d.s{background:var(--warn)}.d.x{background:var(--bad);opacity:.85}.d.off{background:var(--line);color:var(--faint)}
+.price{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px;margin:14px 0}
+.price .card{position:relative}
+.price .card.rec{border-color:var(--acc);box-shadow:0 0 0 1px var(--acc) inset}
+.price .big{font-family:var(--serif);font-size:40px;line-height:1;margin:8px 0 2px}
+.price small{color:var(--mid)}
+.price ul{font-size:14px;padding-left:18px;margin-top:10px}
+.road{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px}
+.road .card{padding-top:12px}
+.road ol{padding-left:18px;font-size:14.5px}
+.road .card h4{color:var(--acc)}
+.callout{background:var(--tint);border:1px solid var(--acc);border-radius:var(--radius);padding:14px 18px;margin:14px 0}
+details{border:1px solid var(--line);border-radius:12px;padding:10px 14px;margin:8px 0;background:var(--card)}
+summary{cursor:pointer;font-weight:600}
+.ok-x{font-weight:700}
+.hero{display:grid;grid-template-columns:1fr;gap:12px;margin:12px 0 18px}
+kbd{font:600 12px var(--sans);background:var(--card2);padding:2px 7px;border-radius:6px;border:1px solid var(--line)}
+.fs{display:inline-block;padding:0 6px;border-radius:6px;background:var(--card2);font-weight:600;font-size:13px}
+.cmp td:first-child{font-weight:600;white-space:nowrap}
+.sr{position:absolute;left:-9999px}
+.chat{display:flex;flex-direction:column;gap:8px}
+.bub{max-width:88%;padding:10px 13px;border-radius:16px;font-size:15px;line-height:1.4}
+.bub.me{align-self:flex-end;background:rgba(224,96,122,.2);border-bottom-right-radius:4px}
+.bub.v{align-self:flex-start;background:var(--glass);border:1px solid var(--glass-line);border-bottom-left-radius:4px}
+.bub .src{display:block;font-size:12px;color:var(--s-mid);margin-top:6px}
+.inp{display:flex;align-items:center;gap:8px;background:var(--glass);border:1px solid var(--glass-line);border-radius:999px;padding:6px 6px 6px 14px;margin-top:10px;font-size:15px;color:var(--s-mid)}
+.inp b{margin-left:auto;width:36px;height:36px;border-radius:50%;background:var(--s-acc);display:grid;place-items:center;color:#1a0d11}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:13px;color:var(--mid);margin:6px 0}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:4px;vertical-align:-1px;margin-right:5px}
+.sched{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;font-size:11px;text-align:center}
+.sched div{padding:6px 2px;border-radius:7px;background:var(--card2)}
+.sched div.on{background:var(--tint);color:var(--acc);font-weight:700}
+.sched div.off{opacity:.45}
+@media (prefers-reduced-motion:no-preference){.fade{animation:fd .35s ease}}
+@keyframes fd{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+</style></head><body>
+<main>
+<nav class="toc" aria-label="Sections">
+<a href="#summary">Summary</a><a href="#phone">Phone audit</a><a href="#vinny">Vinny tab</a><a href="#console">Console</a><a href="#training">Training</a><a href="#menu">Menu module</a><a href="#money">Incentives</a><a href="#coaching">Coaching</a><a href="#measure">Measurement</a><a href="#cards">Wine cards</a><a href="#market">Competitors</a><a href="#pricing">Pricing</a><a href="#roadmap">Roadmap</a>
+</nav>
+
+<section id="top">
+<p class="kicker">Vinterest for Teams · V2 audit · 4 November 2026</p>
+<h1>What a server needs from us, and what we give them today</h1>
+<p class="lede">An end-to-end audit of the staff app, the console, the training model and the market, with mockups and working prototypes of the changes that matter most. Built against The Social Corner's real install: 41 wines, 62 dishes, 20 cocktails, 7 staff, 246 card questions.</p>
+<p class="meta">Every phone screen was captured at 390px as Elena (manager) and Priya (server), every console page at 1366px. Font sizes are measured from the rendered DOM, not eyeballed. Competitor prices are from their public pages this week; where a vendor hides pricing it says so. The prototypes below are static HTML in the app's own look, so they show the idea, not the code.</p>
+</section>
+
+<section id="summary">
+<p class="kicker">Executive summary</p>
+<h2>The product teaches well and reads badly</h2>
+<p>The learning model under Vinterest for Teams is better than anything on the market: a per-wine ladder, review dates from each answer's own stability, readiness measured against the role and tied to the till, a question check that catches giveaways before a server sees them, a guest who speaks. Nobody else has that combination (the competitor matrix below is explicit about it). The problems are in front of it: text too small to read on a shift, screens that stack three jobs where one belongs, and no answer to the question every server asks silently, "why should I do this?"</p>
+
+<div class="grid g3" style="margin:18px 0">
+<div class="card"><div class="num">68%</div><b>of the Vinny tab's text is under 14px</b><span class="meta">The worst screen after Wines (81%) and Team (75%). Body on the dark stage needs 15px minimum.</span></div>
+<div class="card"><div class="num">2</div><b>text inputs on one tab</b><span class="meta">Ask Vinny and "Test me on…" both live on the Vinny tab, with the guest card under them. Three jobs, one screen.</span></div>
+<div class="card"><div class="num">0</div><b>places the app says what learning is worth</b><span class="meta">Readiness is shown; money never is. The till data to say it is already in Sales Insights.</span></div>
+<div class="card"><div class="num">0</div><b>allergen questions</b><span class="meta">Dishes carry <code>diet</code> but no allergens; the menu "module" is pairings only. Allergens are the one thing a venue is legally required to train.</span></div>
+<div class="card"><div class="num">8</div><b>options on a "choose one" recall question</b><span class="meta">Eight 13px pills for one answer, and "How sure are you?" on every question. Fewer, larger, confidence only where it changes the stakes.</span></div>
+<div class="card"><div class="num">$79–149</div><b>per venue per month is the band</b><span class="meta">Flat per venue, unlimited staff. Nobody in wine training charges per venue with voice and till included; the general LMSs charge $3–7 per user without wine.</span></div>
+</div>
+
+<h3>Ten things to do, in order</h3>
+<ol>
+<li><b>Readability pass on the dark stage.</b> Body 15px, secondary 14px, caps labels 12px, 24px touch rows. Hierarchy by weight and colour, not by shrinking. One change, every screen. (Section: <a href="#phone">Phone audit</a>)</li>
+<li><b>Rebuild the Vinny tab as a practice hub.</b> One card that says what to do now, three doors (Ask, Guest, Test), the chat and the test on their own screens. (<a href="#vinny">Vinny tab</a>, prototype included)</li>
+<li><b>"What this is worth to you."</b> A per-shift range from the venue's own till, with the caveats, on Today and on the drill summary. Not points, not a leaderboard. (<a href="#money">Incentives</a>, calculator included)</li>
+<li><b>Menu training module.</b> Allergens with sign-off, 86'd tonight, modifications, "why it works" for pairings. Dishes get the same ladder wines have. (<a href="#menu">Menu module</a>, prototype included)</li>
+<li><b>Pre-shift mode.</b> A 90-second card at clock-in: tonight's 86'd, the two wines you're slipping on, one thing to say about the feature. (<a href="#training">Training</a>)</li>
+<li><b>Drill recipe v2.</b> Weakest-overdue first, one question per wine, at most two new, confusable wines interleaved in contrast rungs, days off pause the clock. (<a href="#training">Training</a>)</li>
+<li><b>Coaching, one item per person per week.</b> A leech (missed three times) becomes a manager's card with a done-tap and a two-week check. (<a href="#coaching">Coaching</a>)</li>
+<li><b>Who can sell what tonight.</b> Roster × top sellers on the console and on the manager's phone. (<a href="#measure">Measurement</a>, prototype included)</li>
+<li><b>Wine card v2.</b> One telling detail at the top, the price as guests hear it, the name said aloud from the card, taste bars, a one-line story. (<a href="#cards">Wine cards</a>)</li>
+<li><b>Price it per venue.</b> Starter US$79, Pro US$149 (voice, STT, till), Group from US$99 per venue at five venues on annual. 14-day trial, no card. (<a href="#pricing">Pricing</a>)</li>
+</ol>
+
+<div class="callout"><b>What not to do.</b> Streaks (they punish the rota, not the person). First-to-last leaderboards (two people compete, five disengage). Money inside the app as a reward (FLSA and tip-pool trouble, and it cheapens the real number). A red backlog counter. Confidence ratings on every question. Each of these shows up in a competitor and each has evidence against it in the <a href="#training">training</a> section.</div>
+</section>
+<section id="phone">
+<p class="kicker">Screen by screen · the staff phone</p>
+<h2>Readability is the first fix, and it's one fix</h2>
+<p>The histogram below is measured: every visible text node on each screen at 390px wide, grouped by computed font size. The dark stage makes it worse than the numbers say, since 13px at 70% grey on near-black is harder to read than 13px black on white. A server reads this between tables, in a dim room, at arm's length.</p>
+
+<div class="card">
+<h4>Share of visible text under 14px, by screen</h4>
+<div class="bars" id="fontbars"></div>
+<p class="meta">Source: computed <code>font-size</code> of every text node, The Social Corner, Elena and Priya. Counts, not characters, so a long paragraph at 15px counts once and a chip at 13px counts once.</p>
+</div>
+
+<h3>The type scale to adopt</h3>
+<div class="grid g2">
+<div class="card"><h4>Now</h4><ul>
+<li>Body and chips <span class="fs">13px</span>, secondary <span class="fs">11px</span> caps labels, 15px for the few headings inside cards.</li>
+<li>Hierarchy made by shrinking: the less important a line, the smaller it gets.</li>
+<li>Price, region, vintage, flag and drinking window share one 13px line in list rows.</li>
+<li>Options in a drill are 15px, fine; their count (8) is the problem.</li>
+</ul></div>
+<div class="card acc"><h4>V2</h4><ul>
+<li>Body <span class="fs">16px</span> on reading screens, <span class="fs">15px</span> in rows and chips; secondary <span class="fs">14px</span>; caps labels <span class="fs">12px</span> with letter-spacing; nothing visible under 12.</li>
+<li>Hierarchy by weight and colour (white 600 against 70% grey 400), and by whitespace, never by going below 14.</li>
+<li>Rows carry two lines, not one: name; then the one fact that matters for that screen (price on Wines, the pairing on Menu). The rest is on the card.</li>
+<li>Touch targets 44pt; chips 36pt tall at least, so a chip is a button, not a label.</li>
+<li>The consumer app's text-size setting (Standard, Large, Extra large) exposed on the staff app's person switcher. It's already in <code>pwa-textsize.js</code>.</li>
+</ul></div>
+</div>
+
+<h3>Today</h3>
+<figure class="shot"><img src="img/p-today-server.jpg" alt="Today screen for Priya, a server: a 0% ring saying Not ready yet, then four meters, By the glass, Bottles, Menu pairings, Cocktails, each at 0 with a green Practise button"><div>
+<div class="finding"><div class="sev s1">1</div><div><b>A new server's first screen is four zeros and "Not ready yet".</b><span>Priya has done nothing wrong and the app already says she's below the minimum four times. Day one should be a plan, not a verdict: "Your first ten days: the 23 wines by the glass. Day 1: the sparkling." The readiness ring arrives once there's something to measure (after the first drill).</span></div></div>
+<div class="finding"><div class="sev s2">2</div><div><b>Four Practise buttons compete with "Start today's drill".</b><span>The green outlined buttons are good, but a server scrolling sees five calls to action. Keep one primary (today's drill, which already chooses what matters) and fold the four parts into one row each with a small "Practise" link.</span></div></div>
+<div class="finding"><div class="sev s2">3</div><div><b>Nothing says why.</b><span>No line about what this is worth to them, no mention of tonight. Two lines belong here: "Tonight: 86'd the ravioli; the feature is the Lambrusco" and "Servers who know the glass list sell about 0.9 wines a shift against 0.3" (from the till, see <a href="#money">Incentives</a>).</span></div></div>
+<div class="finding"><div class="sev s3">4</div><div><b>Manager's Today carries the KPI strip at 11–13px.</b><span>Fine on the console; on a phone it needs the same two-line rows as everything else, and "Overdue 123" should never be a number a manager sees in a tile (below).</span></div></div>
+</div></figure>
+
+<h3>Wines and the wine card</h3>
+<figure class="shot"><img src="img/p-wines.jpg" alt="Wine list: Sparkling section, rows with name, NV, flag, region, glass and bottle prices"><div>
+<div class="finding"><div class="sev s2">2</div><div><b>81% of the list is 13px.</b><span>Each row packs NV · flag · region · glass · bottle (and a green drinking-window line on some) into one grey line. For a server the price is the fact; region and vintage can go to the card. Two lines: name 16px/600, then "glass $15 · bottle $69" 15px with the price in white.</span></div></div>
+<div class="finding"><div class="sev s2">2</div><div><b>No sense of what to learn first.</b><span>The list is in menu order. A "For you" sort (your weakest sellers first, then what's assigned) and a dot per row for where you stand would make the list a study list, not a reference.</span></div></div>
+<div class="finding"><div class="sev s3">3</div><div><b>No search.</b><span>41 wines is already a scroll; a guest is waiting. A search field at the top (name, grape, region, "under $60", "Italian") doubles as the quickest Ask Vinny.</span></div></div>
+</div></figure>
+<figure class="shot"><img src="img/p-wine.jpg" alt="Veuve Clicquot Brut card: Say it line, price and grape pills, Where you stand, Say it to a guest, What it tastes like"><div>
+<div class="finding"><div class="sev s3">3</div><div><b>Price pills look like grape pills.</b><span>"Glass $29" and "Pinot Noir" are the same shape and colour. Price belongs on its own line, said the way a guest hears it ("$29 a glass, $175 a bottle"), and the grapes stay as pills.</span></div></div>
+<div class="finding"><div class="sev s3">3</div><div><b>"Where you stand" leads; the pitch should.</b><span>The card's job on a shift is "what do I say". Lead with the 40-word pitch and one telling detail in bold; put readiness in a slim strip under the title (see <a href="#cards">Wine cards</a> for the full v2 layout).</span></div></div>
+<div class="finding"><div class="sev s3">3</div><div><b>Say it is good; make it the whole name, slowly, then the sentence.</b><span>The respelling guide helps, but the thing they'll copy is the voice. Two taps: the name alone, then "Could I suggest the Veuve Clicquot Brut?" as they'd say it.</span></div></div>
+</div></figure>
+
+<h3>The drill</h3>
+<figure class="shot"><img src="img/p-drill-q.jpg" alt="Recall question: What grape is the Mionetto Prosecco DOC Treviso made from? Choose 1, eight options including Barolo (the Fontanafredda Barolo), then How sure are you? Sure, Think so, Guessing"><div>
+<div class="finding"><div class="sev s1">1</div><div><b>Eight options for "Choose 1", and one of them is a wine.</b><span>"Barolo (the Fontanafredda Barolo)" is offered as a grape. The decoy pool for grape questions is pulling a wine's name through <code>_topicChoices</code>. Cap recall at five options; the research on recognition tests is clear that beyond four or five, extra distractors add time and guessing, not discrimination.</span></div></div>
+<div class="finding"><div class="sev s2">2</div><div><b>"How sure are you?" on every question.</b><span>Confidence-based assessment is worth it where being wrong costs something (allergens, prices, "can it be made without nuts"). On grape recall it's a tax of one extra tap times five questions times every day. Ask it on allergen and price questions only; elsewhere infer confidence from response time.</span></div></div>
+<div class="finding"><div class="sev s1">1</div><div><b>A new person's first drill is five sparkling wines in list order.</b><span>Mionetto, Mionetto Rosé, Lambrusco, Veuve Brut, Veuve Rosé: the first five rows of the list. New items should be dealt from <code>TeamReport.priority</code> (what sells, what's assigned), one per section, and never more than two new items per drill once anything is due.</span></div></div>
+<div class="finding"><div class="sev s3">3</div><div><b>The question's wine is named in the kicker and the stem.</b><span>Fine for recall. For recognise ("which of these is the dry one") it's the same wine, so a server learns to pattern-match the name. Rotate the stem so the wine is sometimes the answer, sometimes the subject.</span></div></div>
+</div></figure>
+<figure class="shot"><img src="img/p-drill-done.jpg" alt="Drill summary: 0 of 5 right, readiness 0% to 0%, five wines each with Recognise, Recall, At the table chips"><div>
+<div class="finding"><div class="sev s2">2</div><div><b>The summary explains the mechanism, not the result.</b><span>"Each answer now has its own review date" is true and nobody on a shift cares. The two things to say: what they got right in plain words ("You know the Lambrusco's grape now"), and when it comes back ("Two of these come back Thursday"). The mechanism can sit behind a "How this works" link once.</span></div></div>
+<div class="finding"><div class="sev s3">3</div><div><b>Rung chips repeat five times at 13px.</b><span>One compact strip per wine (three dots, lit where held) says the same in a quarter of the space and at readable size.</span></div></div>
+<div class="finding"><div class="sev s3">3</div><div><b>No "worth" line.</b><span>The drill summary is the moment to connect effort to money: "The Veuve Brut sells 40 glasses a week here; its sellers who know it sell twice as many." See <a href="#money">Incentives</a>.</span></div></div>
+</div></figure>
+
+<h3>Menu and dishes</h3>
+<figure class="shot"><img src="img/p-menu.jpg" alt="Menu: Tapas section, each dish with one Best with wine"><div>
+<div class="finding"><div class="sev s1">1</div><div><b>The menu is a pairing list, not a menu module.</b><span>Each dish shows one "Best with", no price, no allergens, no diet marks, nothing about tonight. The <code>diet</code> field exists in the data and isn't shown. Allergens aren't in the data at all. This is the biggest content gap: see <a href="#menu">Menu module</a>.</span></div></div>
+<div class="finding"><div class="sev s2">2</div><div><b>Dish pages have no "what is it".</b><span>A server needs the dish's own line ("Red wine vinegar mignonette, piccante and horseradish") before the wine. The desc is in the data; the page leads with Say it and the pairings.</span></div></div>
+<div class="finding"><div class="sev s3">3</div><div><b>"Best with Chateau de Maligny Petit Chablis "Jean Durup"" wraps at 13px.</b><span>On the list show the wine's short name (the card's <code>say</code> or a short form), the full name on the dish page.</span></div></div>
+</div></figure>
+
+<h3>Guest at the table</h3>
+<figure class="shot"><img src="img/p-guest.jpg" alt="A guest at your table in Choices mode: the guest's line, then a choice of three wines with prices, Tap and speak to the guest, and a What do you say? field"><div>
+<div class="finding"><div class="sev s3">3</div><div><b>This is the best screen in the product.</b><span>A real dish, a real request, prices as the guest hears them, the mark separate from the help level. Keep it. Three things would lift it: the help segment (Choices / Hints / On your own) explained once rather than on every table; the guest's bubble spoken automatically with Voice on (it is), with the text at 16px; "Tap and speak" and the typed field merged into one bar (mic on the left, text in the middle, Say on the right) so the screen has one way to answer.</span></div></div>
+<div class="finding"><div class="sev s3">3</div><div><b>No replay.</b><span>After the mark, a server should be able to hear a model answer (the key, spoken) and say it again. That's the drill that moves delivery, and the STT and TTS to do it are already there.</span></div></div>
+</div></figure>
+
+<h3>Team, Upload, Cocktails</h3>
+<div class="grid g3">
+<div class="card"><h4>Team (phone) · 75% under 14px</h4><p>A manager's phone version of the console table, in 13px. It should be the console's "What needs attention" list: one person per row, one tag, one tap to their drawer. The add-person form belongs on the console only.</p></div>
+<div class="card"><h4>Upload · 66% under 14px</h4><p>Instructions in 11–13px around a camera button. Keep: one sentence, one button, the draft diff when there is one. The "two pages a call" and job steps are console material.</p></div>
+<div class="card"><h4>Cocktails · 67% under 14px</h4><p>Same row fix as Wines. The cocktail card is the best-shaped card in the app (method, glass, garnish, the three-line pitch); copy its shape to the dish page.</p></div>
+</div>
+</section>
+<section id="vinny">
+<p class="kicker">The Vinny tab</p>
+<h2>Three jobs on one screen, in 13px</h2>
+<p>The Vinny tab is where a server practises, and it's the tab with the least room to read. It holds Ask Vinny (a text field and six suggestion chips), Vinny's test (a card with its own text field) and A guest at your table, stacked. Two text inputs on one screen is a sign the screen is two screens. The chips repeat long wine names ("Mionetto Prosecco DOC Treviso or Mionetto Prosecco DOC Rosé: the difference?") at 13px across two lines, and the thing the person should do today has no more weight than the thing they could do.</p>
+
+<figure class="shot"><img src="img/p-vinny.jpg" alt="The current Vinny tab: Ask Vinny field, six suggestion chips, Vinny's test card with Start button and a Test me on field, then A guest at your table below the fold"><div>
+<div class="finding"><div class="sev s1">1</div><div><b>68% of the text is under 14px.</b><span>13px chips (13 of them across the tab), 11px caps labels, 14px body in the test card. The one 22px element is the word "Vinny".</span></div></div>
+<div class="finding"><div class="sev s1">1</div><div><b>Two inputs, no priority.</b><span>"Ask about the list…" and "Test me on…" are both free text. A server opening the tab has to decide what kind of practice to do before doing any. The app already knows what they need (<code>TeamVinny.test</code> aims at faded and missed answers and what sells); it should lead with that.</span></div></div>
+<div class="finding"><div class="sev s2">2</div><div><b>Suggestions are generated, not chosen.</b><span>Six chips, two about the same Prosecco, one that is 14 words long. Three suggestions, each under eight words, each about a different thing, one of them about tonight.</span></div></div>
+<div class="finding"><div class="sev s2">2</div><div><b>The guest is below the fold.</b><span>The strongest feature in the product is the third section on the tab, after a card about a test. It should be a door at the top.</span></div></div>
+<div class="finding"><div class="sev s3">3</div><div><b>The header repeats.</b><span>"Vinny · Your sommelier on shift, for The Social Corner" takes 90px to say what the tab label says. One line, or none: the venue logo is already in the header.</span></div></div>
+</div></figure>
+
+<h3>The redesign: a practice hub with three doors</h3>
+<p>One card at the top says the one thing to do now, chosen by the app (today's drill if not done; a guest table if the drill is done; a refresher if something's fading). Under it, three rows: Ask Vinny, A guest at your table, Vinny's test. Each opens its own screen, where the input lives. The chat has the suggestions inside it (three, short), the test has its "Test me on…" inside it. Body text 16px, rows 16px, nothing under 14. The prototype is clickable: tap the rows and the chips.</p>
+
+<div class="proto">
+<div>
+<div class="ctl"><span class="meta">Compare:</span> <div class="seg"><button class="on" data-vmode="after">Redesign</button><button data-vmode="before">Today</button></div></div>
+<div id="vinny-notes">
+<div class="card"><h4>What changed and why</h4>
+<ul>
+<li><b>One next thing.</b> The top card is <code>LearnNext</code> for staff: today's drill until it's done, then a guest table aimed at what they're weakest on, then a refresher. It shows the reason in a sentence ("12 answers are fading, mostly sparkling").</li>
+<li><b>Doors, not sections.</b> Ask, Guest and Test are rows with an icon, a title and one line of what's inside. Tapping one opens a screen with the input. No field on the hub.</li>
+<li><b>Suggestions inside the chat.</b> Three, chosen from tonight (an 86'd item, the feature, a top seller they don't know yet), each under eight words. Typing replaces them.</li>
+<li><b>Guest first.</b> It's the feature competitors can't match, so it's the second row and the hub's hero image when the drill is done.</li>
+<li><b>Type scale.</b> Hub rows 16px/600, descriptions 14px, chat bubbles 15px, chips 15px, caps labels 12px. The one thing under 14 is the nav.</li>
+<li><b>"Worth" line on the hub.</b> One sentence from the till under the next-thing card, with its caveat on tap. This is the only place money appears on the staff app besides the drill summary.</li>
+</ul></div>
+<details><summary>Where it lands in the code</summary><p style="margin-top:8px">The hub replaces the body of <code>TeamVinnyTab</code> in <code>team-vinny.jsx</code>; Ask becomes a screen (<code>vinny-ask</code>) with the current input and <code>_VinnyAnswers</code>; the test's "Test me on…" and Start move into a <code>vinny-test</code> screen; the guest keeps its screen. The next-thing card is a new pure function, <code>TeamLearn.next(person)</code>, over <code>drillDone</code>, <code>readiness</code>, the fading count and <code>TeamVinny.pickTable</code>, so Today and the hub say the same. Suggestions become <code>TeamVinny.suggest(person, tonight)</code>: three strings, deduped by wine, ordered 86'd → feature → weakest top seller → generic.</p></details>
+</div>
+</div>
+<div>
+<div class="phone" id="vphone">
+<div class="bar"><span>9:41</span><span>●●●</span></div>
+<div class="body" id="vbody"></div>
+<div class="nav"><div><i>⌂</i>Today</div><div class="on"><i>V</i>Vinny</div><div><i>🍷</i>Wines</div><div><i>🍴</i>Menu</div></div>
+</div>
+<p class="meta" style="text-align:center;margin-top:8px">Clickable. Rows open their screens; ← returns.</p>
+</div>
+</div>
+
+<h3>Storyboard: a server's five minutes before service</h3>
+<div class="story">
+<div class="fr"><span class="n">1</span><b>Clock in, open Today</b><div class="mini">Tonight · 86'd: Lobster Ravioli · Feature: Lambrusco</div><div class="mini acc">Your 5 for today · 2 min</div><div class="mini">You know 14 of 23 by the glass</div><div class="cap">Tonight's line first; the drill second; readiness third.</div></div>
+<div class="fr"><span class="n">2</span><b>The drill</b><div class="mini">1/5 · Recall · Lambrusco</div><div class="mini">What stops the fizz being sweet?</div><div class="mini acc">4 options, 16px, no confidence tap</div><div class="cap">Weakest-overdue first, one per wine, two new at most.</div></div>
+<div class="fr"><span class="n">3</span><b>Summary</b><div class="mini">4 of 5 · You know the Lambrusco's method now</div><div class="mini">Two come back Thursday</div><div class="mini acc">Lambrusco sells 31 glasses a week here</div><div class="cap">Result in words, next date, one worth line.</div></div>
+<div class="fr"><span class="n">4</span><b>Vinny hub</b><div class="mini acc">Next: a guest having the oysters</div><div class="mini">Ask · Guest · Test</div><div class="cap">The hub now suggests the guest since the drill is done.</div></div>
+<div class="fr"><span class="n">5</span><b>Guest, spoken</b><div class="mini">"Something crisp with the oysters, not Champagne prices?"</div><div class="mini acc">🎤 "I'd go with the Petit Chablis, $16 a glass…"</div><div class="cap">One answer bar: mic, text, Say. Then the model answer to copy.</div></div>
+<div class="fr"><span class="n">6</span><b>Back on the floor</b><div class="mini">Pre-shift card pinned on Today</div><div class="mini">Say it: Petit Chablis 🔊</div><div class="cap">The three things from tonight stay one tap away all shift.</div></div>
+</div>
+</section>
+<section id="console">
+<p class="kicker">The management console</p>
+<h2>Right numbers, wrong verbs</h2>
+<p>The console is in good shape structurally: a dashboard of foldable cards in the manager's own order, Sales Insights that reads like a briefing, a team table, drawers per person. The faults are in what the numbers ask a manager to do. "Overdue 123" is a number nobody can act on; "Training is worth 185% more sales" is a correlation said as a cause; and the dashboard has no "tonight".</p>
+
+<figure class="shot wide"><img src="img/c-dash.jpg" alt="Console dashboard: At a glance tiles (Team readiness 35%, Overdue 123, Slipping 1, Re-checks 83%, Glass list 12 of 23, Wine sales $27,145), What needs attention list of people with tags, Sales at a glance"><figcaption>Dashboard as Elena, the manager. The layout and fold controls are from this week's work and they hold up.</figcaption></figure>
+
+<div class="grid g2">
+<div class="card"><h4>Findings</h4>
+<div class="finding"><div class="sev s1">1</div><div><b>"Overdue 123".</b><span>Adding a person assigns the whole list and menu due in 7 days, so every new server is 123 overdue by day 8. A backlog counter in red is the single most demotivating pattern in this category (Duolingo's own research moved away from it; Axonify never shows one). Assign in waves: the glass list in the first ten days, bottles in the next, pairings after. Show "on track / behind by N days" per person, never a count of items.</span></div></div>
+<div class="finding"><div class="sev s1">1</div><div><b>"Training is worth 185% more sales".</b><span>Servers who know a wine sell 0.86 of it a shift against 0.30. True, and the ones who know it are the ones who were already selling it. The caveat is there in small text; the headline should carry it: "Servers sell about 3× more of a wine once they know it (sections and shifts affect this too)". Section <a href="#measure">Measurement</a> proposes the difference-in-differences version that can say "lift".</span></div></div>
+<div class="finding"><div class="sev s2">2</div><div><b>No tonight.</b><span>The dashboard has 7-night and 28-night views and nothing for the next four hours. "Tonight: 5 on shift, 3 can sell the feature, nobody on knows the Nebbiolo" is the card a manager reads at 4pm (prototype in <a href="#measure">Measurement</a>).</span></div></div>
+<div class="finding"><div class="sev s2">2</div><div><b>Re-checks 83% means nothing to a manager.</b><span>"29 of 35 surprise re-asks remembered" is a retention measure; label it so: "Retention: 83% of what the team learnt a month ago, they still know."</span></div></div>
+<div class="finding"><div class="sev s3">3</div><div><b>What needs attention lists people, not actions.</b><span>Each row has tags (67 faded, 2 new wines). The row's right edge should be a verb: "Ask Marco to refresh the sparkling" with a done-tap. That's the coaching loop in <a href="#coaching">Coaching</a>.</span></div></div>
+</div>
+<div class="card"><h4>What works, keep it</h4>
+<ul>
+<li>Sales Insights' "What you need to know": seven sentences, each opening what it's about. This is the right shape for every console page and for the weekly email.</li>
+<li>The readiness bar per person with the state word (Ready, Slipping, Not ready yet). The states are the vocabulary; use them everywhere, including the phone.</li>
+<li>Minimum to work the floor as role chips. Make them editable here (they're constants in <code>TeamLearn.ROLES</code>).</li>
+<li>Demo data tags. Honest, and they should stay until the till is connected.</li>
+<li>The venue's own logo over the sidebar, Vinterest at the foot. A manager showing this to their owner sees their restaurant.</li>
+</ul></div>
+</div>
+
+<figure class="shot wide"><img src="img/c-sales.jpg" alt="Sales Insights: What you need to know, seven lines; From the till tiles; Wine sales by week; What sells"><figcaption>Sales Insights. "5 of your top 8 sellers known by fewer than half their sellers" is the most useful line in the product; it should also be a push to the manager on Monday morning.</figcaption></figure>
+<figure class="shot wide"><img src="img/c-team.jpg" alt="Team table: person, readiness bar and state, overdue, fading, last drill, re-checks; Add someone; Minimum to work the floor"><figcaption>Team. Columns Overdue and Fading are counts; a manager needs "behind" and "slipping" as states and a reason on hover.</figcaption></figure>
+
+<h3>Console V2 in one list</h3>
+<ol>
+<li><b>Tonight card</b> on the dashboard: roster (from the rota or picked by hand), 86'd, feature, who can sell what.</li>
+<li><b>Waves instead of a 7-day cliff</b>: assignment plans per role, editable, with a per-person "on track" state.</li>
+<li><b>Coaching queue</b>: one item per person per week, generated from leeches and sales, done-tap, two-week check (prototype in <a href="#coaching">Coaching</a>).</li>
+<li><b>Allergen sign-off register</b>: who passed the allergen set, when, exportable as CSV (an EHO asks for it; UK Natasha's Law and Canada's labelling rules make the venue liable).</li>
+<li><b>Certificates and exports</b>: "Ready for the floor" per person as a dated PDF, a CSV of readiness by week. Every LMS competitor has this and HR asks for it.</li>
+<li><b>Roles and minimums editable</b> on Admin, with a preview of who changes state.</li>
+<li><b>Weekly email</b> to managers: the seven lines of Sales Insights, the coaching queue, who went Ready. The Worker already sends mail for the consumer side through Resend.</li>
+<li><b>Till connectors</b>: Square first (OAuth, Orders API), then Toast and Lightspeed. Until then the CSV import stays and the item map is the manager's job; show unmatched items as a task, not a stat.</li>
+</ol>
+</section>
+<section id="training">
+<p class="kicker">Training structure</p>
+<h2>The ladder is right. The deal, the dose and the tone need work.</h2>
+<p>What's there: a ladder per wine (recognise → recall → apply → contrast), roles needing different rungs, a review date per answer from its own stability (longer when right, more when late and right, shorter on a miss, a confident miss back within hours), readiness against the role minimum with partial credit, a five-question drill, unannounced re-checks, and a question check that rewrote 18 of 22 failing questions at The Social Corner before anyone saw them. That is a spaced-retrieval system on the venue's own list, which none of the eleven wine-training products surveyed has.</p>
+<p>What the learning-science review says to change, with the evidence behind each:</p>
+
+<div class="grid g2">
+<div class="card"><h4>1 · The deal</h4><p>Today: assignments, then due, then new, with re-checks mixed in. Recommended order: <b>weakest-overdue first</b> (the due answer with the lowest stability), then due, then at most <b>two new</b> items, with <b>one question per wine</b> per drill and the new items dealt from what sells (<code>TeamReport.priority</code>), one per list section. Cap the dues at the drill length and roll the rest forward, so a day off doesn't produce a 40-question Monday. Days off pause the clock (a review due on a day with no shift is due the next shift, not "late").</p><p class="meta">Cepeda et al. 2008 on optimal gaps; Kornell & Bjork on interleaving; the "ease hell" pattern in Anki communities when overdue items stack.</p></div>
+<div class="card"><h4>2 · Contrast rungs pair confusable wines</h4><p>The contrast rung asks about two wines. Pick the pair the till confuses or the list makes confusable: the two Mionettos, the two Veuves, Barolo against Langhe Nebbiolo, the two Rieslings. Confusable-pair interleaving is where the biggest gains in category learning come from, and it's free: the pairs are in the list.</p><p class="meta">Carvalho & Goldstone 2014; Birnbaum et al. 2013.</p></div>
+<div class="card"><h4>3 · Confidence only where it changes stakes</h4><p>Drop "How sure are you?" from grape, place and style questions. Keep it (and make it count double) on allergens, prices and "can this be made without…". For everything else, response time under four seconds on a correct answer is a fine proxy for "sure".</p><p class="meta">Dunlosky & Rawson 2012 on confidence calibration; Axonify asks confidence on every question and it's the most-skipped control in their reviews.</p></div>
+<div class="card"><h4>4 · Explain-to-guest as a rung</h4><p>Apply questions pick pills. Add a spoken (or typed) "explain it to the guest in one sentence" step on the apply rung for wines in the role's minimum, marked by the key words the card holds (<code>TeamLearn.gradeChoices</code> already does keyword marking). Generation beats recognition for retention by a wide margin, and it's the skill the job needs.</p><p class="meta">Testing effect meta-analysis, Adesope et al. 2017; Chi's self-explanation work.</p></div>
+<div class="card"><h4>5 · Leeches become coaching</h4><p>A question missed three times running stops being dealt and becomes a line on the manager's coaching queue ("Priya can't place the Nebbiolo: taste it with her"). The app stops asking; a person helps; the app re-checks in two weeks. Anki calls these leeches and suspends them; we can do better than suspend.</p></div>
+<div class="card"><h4>6 · Pre-shift mode</h4><p>A 90-second card at clock-in, no questions: tonight's 86'd, the feature with its one line to say, the two wines you're slipping on with their pitch, each with Say it. Operators already do this on paper at line-up; the app's version is personal and spoken. It isn't scored.</p><p class="meta">Trade practice: pre-shift tastings and one-page sheets are the common thread in every operator interview in the research.</p></div>
+<div class="card"><h4>7 · Tone of the mark</h4><p>"0 of 5 right · Not ready yet · no change" on a first drill is three negatives in a row. Mark the drill in words about what's now known, show the next date, keep the readiness ring for the Today screen once it's moving. Self-determination theory: competence feedback that's informational ("you now know X") sustains effort; controlling feedback ("you are below the minimum") doesn't.</p><p class="meta">Deci & Ryan; Hattie & Timperley 2007 on feedback levels.</p></div>
+<div class="card"><h4>8 · Session length</h4><p>Five questions is right (3–5 minutes). Add a "one more round" that deals five more from the same recipe, never a 20-question option. Make the drill resumable mid-way (a table arrives).</p></div>
+</div>
+
+<h3>Question formats to add</h3>
+<div class="twrap"><table>
+<tr><th>Format</th><th>Rung</th><th>What it trains</th><th>Example at The Social Corner</th></tr>
+<tr><td>Recognise, 4 options (today: 4)</td><td>recognise</td><td>The wine's kind and style</td><td>Which of these is the off-dry one?</td></tr>
+<tr><td>Recall, 5 options max (today: up to 10 pills)</td><td>recall</td><td>Grape, place, method, price</td><td>What grape is the Lambrusco Reggiano?</td></tr>
+<tr><td><b>Price ladder</b> (new)</td><td>recall</td><td>Where the wine sits on the list</td><td>Put these four glasses in price order.</td></tr>
+<tr><td><b>Explain to the guest</b> (new, spoken or typed)</td><td>apply</td><td>The pitch in their own words</td><td>"The guest asks what the Petit Chablis is like. Say it."</td></tr>
+<tr><td>At the table, pick + reason (today)</td><td>apply</td><td>Pairing and steer</td><td>Guest wants the Barolo with oysters. What do you say?</td></tr>
+<tr><td><b>Steer</b> with a budget (new variant)</td><td>apply</td><td>Trading down gracefully</td><td>"Something like the Veuve but under $100?"</td></tr>
+<tr><td>Contrast, confusable pair (today, repaired)</td><td>contrast</td><td>Telling two apart</td><td>Mionetto Treviso vs Mionetto Rosé: which is drier?</td></tr>
+<tr><td><b>Allergen check</b> (new, confidence on)</td><td>menu</td><td>What's in the dish</td><td>Which of these contain shellfish? (choose all)</td></tr>
+<tr><td><b>Modification</b> (new)</td><td>menu</td><td>What the kitchen can change</td><td>Can the Calamari be made gluten-free? What do you say?</td></tr>
+<tr><td><b>Tonight</b> (new, pre-shift, unscored)</td><td>—</td><td>Service awareness</td><td>What's 86'd tonight?</td></tr>
+</table></div>
+
+<h3>The drill recipe, stated</h3>
+<div class="card"><ol style="margin:0">
+<li>Overdue answers, lowest stability first (one per wine or dish).</li>
+<li>Answers due today, oldest first (one per wine or dish).</li>
+<li>Assigned items not yet started, from <code>TeamReport.priority</code>, at most two, from different sections.</li>
+<li>If fewer than five: review items whose date is nearest, as today.</li>
+<li>One in five drills swaps a due item for a surprise re-check (<code>CHECK_SHARE</code>), as today.</li>
+<li>Never more than five; a sixth-and-beyond due rolls forward without becoming "late".</li>
+<li>On a day with no shift, nothing comes due.</li>
+</ol></div>
+</section>
+<section id="menu">
+<p class="kicker">Menu training module</p>
+<h2>Dishes need the ladder wines have</h2>
+<p>Today a dish is a pairing target: the menu screen shows "Best with", the dish page shows the wines and a Say it. The data has <code>desc</code>, <code>main</code>, <code>cook</code>, <code>flav</code> and <code>diet</code>, and the drill never asks about any of it. A server is asked about dishes far more than wines ("what's in it", "is it spicy", "can I have it without the cheese", "does it have nuts"), and one of those questions carries legal weight. Allergen training is the one thing a venue must be able to prove.</p>
+
+<div class="grid g2">
+<div class="card"><h4>Data to add to each dish</h4>
+<ul>
+<li><b>allergens</b>: the local statutory list (UK/EU 14, Canada 11, US 9) as codes, plus "may contain". The upload's menu reader (<code>team_menu</code> purpose) can draft them from the description and the kitchen confirms on the console, dish by dish, with a sign-off date. Never auto-published.</li>
+<li><b>mods</b>: what can change ("no cheese: yes", "gluten-free: no, the batter"), as short pairs the kitchen writes once.</li>
+<li><b>ask</b>: the two questions guests ask about this dish ("is it spicy", "how big is it"), from the server's experience, editable on the console.</li>
+<li><b>status</b>: tonight's 86'd, special, feature, with a time. Set from the console or the manager's phone at 4pm, or later from the till.</li>
+<li><b>say</b>: the dish in a sentence, as the card already has for wines.</li>
+</ul></div>
+<div class="card"><h4>The dish ladder</h4>
+<ol>
+<li><b>Know it</b>: what it is, main ingredient, how it's cooked, size.</li>
+<li><b>Allergens</b>: choose-all with confidence, counts double, a miss comes back within the shift.</li>
+<li><b>Changes</b>: can it be made without X; what to say when it can't.</li>
+<li><b>Pair it</b>: the wine (today's apply question) and why it works (today's reasons).</li>
+<li><b>Cocktail</b> where the venue has them (today's "Cocktails with it").</li>
+</ol>
+<p>Readiness gets a part, <b>Menu</b>, beside Menu pairings: a server needs the allergen rung on every dish at 100% before they're Ready, whatever else they know. That's the one hard gate in the product, and it's the right one.</p></div>
+</div>
+
+<h3>Prototype: a menu drill</h3>
+<p>Four question types, each marked. The allergen question asks for confidence; the others don't. Tap through.</p>
+<div class="proto">
+<div>
+<div class="card"><h4>Design notes</h4>
+<ul>
+<li>Choose-all questions show a "N of M" count and a Check button; single-answer ones mark on tap, as the wine drill does.</li>
+<li>The allergen verdict says the consequence, not the mechanism: "Fish sauce is in the dressing. A guest with a fish allergy needs to know."</li>
+<li>Modifications are a "what do you say" with three replies, the same shape as the steer in the guest flow, so the muscle is the same.</li>
+<li>The 86'd question is pre-shift only and never scored; it appears on the Tonight card, not in the drill.</li>
+<li>The pairing-why answer options are the dish's real pairing reasons and the contradictions from other wines' cards (<code>TeamLearn.styleWrong</code>), as the wine drill builds them.</li>
+</ul>
+<p class="meta">Dish and allergen content below is illustrative for The Social Corner's menu; the kitchen confirms the real allergens.</p></div>
+<div class="card" style="margin-top:14px"><h4>Sign-off register (console)</h4>
+<div class="twrap"><table><tr><th>Person</th><th>Allergen set</th><th>Passed</th><th>Re-check</th></tr>
+<tr><td>Claire Whitfield</td><td>62 of 62</td><td class="y">12 Oct 2026</td><td>12 Jan 2027</td></tr>
+<tr><td>Marco Delgado</td><td>58 of 62</td><td class="p">4 outstanding</td><td>—</td></tr>
+<tr><td>Priya Nair</td><td>20 of 62</td><td class="n">in progress</td><td>—</td></tr></table></div>
+<p class="meta">Exportable as CSV and a dated PDF per person. The quarterly re-check is a setting.</p></div>
+</div>
+<div>
+<div class="phone"><div class="bar"><span>9:41</span><span>●●●</span></div><div class="body" id="mbody"></div><div class="nav"><div><i>⌂</i>Today</div><div><i>V</i>Vinny</div><div><i>🍷</i>Wines</div><div class="on"><i>🍴</i>Menu</div></div></div>
+<p class="meta" style="text-align:center;margin-top:8px">Clickable. Four questions, then a summary.</p>
+</div>
+</div>
+
+<h3>The dish page, v2</h3>
+<div class="story">
+<div class="fr"><span class="n">1</span><b>Lobster &amp; Crab Ravioli</b><div class="mini">Mains · $34 · 86'd tonight</div><div class="mini">House pasta, bisque butter, chive. Rich, about 8 ravioli.</div><div class="mini acc">⚠ Shellfish · Gluten · Dairy · Egg</div><div class="cap">What it is, price, allergens, status: the first screen.</div></div>
+<div class="fr"><span class="n">2</span><b>Can it change?</b><div class="mini">No cheese · yes</div><div class="mini">Gluten-free · no (the pasta)</div><div class="mini">Smaller portion · yes, as a starter</div><div class="cap">Kitchen-written pairs. The drill asks these.</div></div>
+<div class="fr"><span class="n">3</span><b>Guests ask</b><div class="mini">"Is it heavy?" → rich but not large</div><div class="mini">"What's bisque butter?" → shellfish stock whisked into butter</div><div class="cap">The two questions servers actually get.</div></div>
+<div class="fr"><span class="n">4</span><b>Pour with it</b><div class="mini acc">Black Swift Riesling · $14 glass</div><div class="mini">Why: acidity against the butter, a touch of sweetness with the crab</div><div class="mini">Steer away from: the Barolo</div><div class="cap">Today's pairing, with the reason first.</div></div>
+</div>
+</section>
+<section id="money">
+<p class="kicker">Incentives</p>
+<h2>Say what it's worth, in their money, from their till</h2>
+<p>The research is consistent: specific floor recommendations move wine sales (Wansink 2006: +12% on a featured wine when the server recommends it, +7.6% with a pairing suggestion; Dewald 2008: 76% vs 70% of tables order wine with a sommelier present, average check $62 vs $55), while generic certification doesn't (Orlowski 2022: knowledge rose, sales didn't). The staff app never says any of this. A server who understands that the glass list is their tips, not the manager's homework, trains differently.</p>
+<p>The right form is a <b>range per shift from the venue's own till</b>, with the caveat visible, never a promise, and never money paid inside the app. Pay stays with the venue's own bonus scheme (which has FLSA overtime and tip-pool rules in the US and tronc rules in the UK that we should stay well away from).</p>
+
+<div class="proto">
+<div>
+<div class="card"><h4>What this is worth to you</h4>
+<label class="f">Covers you serve a shift</label><input type="range" id="w-covers" min="20" max="120" value="45"><div class="meta" id="w-covers-v">45 covers</div>
+<label class="f">Wine sold per guest now (from the till)</label><input type="range" id="w-wpg" min="10" max="40" value="23"><div class="meta" id="w-wpg-v">$23 per guest</div>
+<label class="f">Lift when a server recommends (research range 7–12%)</label><input type="range" id="w-lift" min="4" max="15" value="8"><div class="meta" id="w-lift-v">8%</div>
+<label class="f">Tip rate</label><input type="range" id="w-tip" min="10" max="22" value="18"><div class="meta" id="w-tip-v">18%</div>
+<label class="f">Shifts a week</label><input type="range" id="w-shifts" min="2" max="6" value="4"><div class="meta" id="w-shifts-v">4 shifts</div>
+</div>
+</div>
+<div>
+<div class="card acc"><div class="meta">Extra wine sold, per shift</div><div class="out" id="w-sales">$83</div>
+<div class="meta" style="margin-top:12px">Extra in tips, per shift (range)</div><div class="out" id="w-tips">$12–19</div>
+<div class="meta" style="margin-top:12px">Per week</div><div class="out" id="w-week">$48–76</div>
+<div class="cav" id="w-cav">A range from this restaurant's till: wine per guest is $23 now. The lift is what research found when servers recommend a specific wine; sections and nights vary. Not a promise.</div>
+</div>
+<p class="meta" style="margin-top:10px">Where it shows: one line on the Vinny hub ("Knowing the glass list is worth about $12–19 a shift in tips here"), expanded on tap to this card; one line on the drill summary about the wine just learnt ("The Lambrusco sells 31 glasses a week here"). Floor: four weeks of till data and at least two servers a side, else the line uses the research numbers and says so.</p>
+</div>
+</div>
+
+<h3>Recognition that works, and what to avoid</h3>
+<div class="grid g2">
+<div class="card"><h4>Do</h4>
+<ul>
+<li><b>Team recognition</b>: "The team went from 35% to 60% Ready this month" on the dashboard and in the weekly email. Group progress is the gamification element with consistent positive evidence.</li>
+<li><b>Wine of the week</b>, a venue ritual the app supports: the feature gets a pre-shift card, a drill question, a sales line on Monday ("Lambrusco: 48 glasses, up from 31").</li>
+<li><b>Contests run by the venue</b>, with the app as the scoreboard: the till sales of the feature by server, for a week, a prize the venue chooses. Avero's operator reports +$45k on a wine contest; the Ranch's +14%. The app shows the board only while the contest runs, and the manager opts in.</li>
+<li><b>Ready badge and certificate</b>: a dated "Ready for the floor" per person, and the allergen pass, exportable. HR and the person both want it.</li>
+<li><b>Milestones in words</b>: "You know every wine by the glass" once, not a points total forever.</li>
+</ul></div>
+<div class="card"><h4>Avoid</h4>
+<ul>
+<li><b>Streaks.</b> A server works four days a week; a streak counts the rota against them. Duolingo's streak works for a daily habit a person controls.</li>
+<li><b>First-to-last leaderboards.</b> Two people at the top compete; the five below stop looking. Opt-in team or section boards only, and only during a contest.</li>
+<li><b>Points and coins.</b> They substitute for the real number (tips) and lose to it.</li>
+<li><b>Money paid through the app.</b> Legal exposure (FLSA regular-rate rules, tip pools, tronc), and it makes us a payroll vendor.</li>
+<li><b>Red backlog counts.</b> "123 overdue" on day eight. Waves and "on track" instead.</li>
+<li><b>Confidence on every question.</b> One extra tap times every question is how daily use dies.</li>
+</ul></div>
+</div>
+</section>
+<section id="coaching">
+<p class="kicker">Coaching</p>
+<h2>One item, one person, one week</h2>
+<p>The app can tell a manager far more than a manager can act on. The coaching loop should give each person one thing a week, chosen from what the app can't fix by asking again: a leech (missed three times), a wine they sell least of among the top sellers, a delivery habit from the guest tables (fillers, a name lost), an allergen set not passed. The manager taps done when they've had the conversation; the app re-checks in two weeks and says whether it moved.</p>
+<div class="proto">
+<div>
+<div class="card"><h4>How it's built</h4>
+<ul>
+<li><code>TeamReport.coaching()</code>: for each person, candidates scored by (sales weight × how stuck) with a tie-break for the oldest; one picked per person per week; stored in <code>vbiz_coaching_v1</code> as {person, item, why, at, done, check}.</li>
+<li>Candidates: leeches from <code>TeamLearn</code> (three misses running), bottom seller among the top eight (<code>TeamSales</code>), delivery trends (<code>TeamVinny.deliveryTrend</code>, only the trend, never the transcript), allergen rung incomplete, no drill in 10 days.</li>
+<li>The check: two weeks after done, the same measure is read again and the card says "moved" or "still stuck" with the number.</li>
+<li>On the manager's phone the queue is the Today screen's second card; on the console it's the first card of What needs attention.</li>
+<li>Delivery coaching stays private to the person by default (as now); the manager sees a trend only when the person shares it from their own screen.</li>
+</ul></div>
+</div>
+<div>
+<div class="phone"><div class="bar"><span>9:41</span><span>●●●</span></div><div class="body">
+<div class="ph-h" style="font-size:20px">This week's coaching</div><div class="ph-sub">One thing per person. Tap done after you've talked.</div>
+<div class="gl"><div class="lbl" style="margin-top:0">Priya · Server</div><h5>Taste the Langhe Nebbiolo with her</h5><p>Missed its grape three drills running. It's your fourth seller and she's sold two glasses in a month.</p><span class="cta">Done</span> <span class="cta ghost">Skip this week</span></div>
+<div class="gl"><div class="lbl" style="margin-top:0">Marco · Bartender</div><h5>Refresh the sparkling with him</h5><p>67 answers fading, 40 of them sparkling. The Mionetto Rosé is the bar's top glass.</p><span class="cta">Done</span> <span class="cta ghost">Skip</span></div>
+<div class="gl"><div class="lbl" style="margin-top:0">Dani · Server</div><h5>Allergens: 6 dishes left</h5><p>Can't be Ready until the set is passed. Ten minutes with the kitchen's sheet.</p><span class="cta">Done</span> <span class="cta ghost">Skip</span></div>
+<div class="gl" style="border-style:dashed"><div class="lbl" style="margin-top:0">Checked · two weeks ago</div><h5 style="color:var(--s-ok)">David · the Petit Chablis moved</h5><p>You talked on 20 Oct. He's sold 9 glasses since, from 1.</p></div>
+</div><div class="nav"><div class="on"><i>⌂</i>Today</div><div><i>V</i>Vinny</div><div><i>🍷</i>Wines</div><div><i>🍴</i>Menu</div></div></div>
+</div>
+</div>
+</section>
+<section id="measure">
+<p class="kicker">Measurement, dashboards, database</p>
+<h2>Measure readiness in time, sales in lift, and tonight in people</h2>
+<p>The console measures readiness as a level. V2 should measure it as a <b>rate</b> (how long to Ready, how fast it decays, how often a re-check holds) and tie training to sales honestly. Three metrics carry most of the value:</p>
+<div class="grid g3">
+<div class="card"><h4>Time to Ready</h4><p>Days from first drill to Ready, per person and per role. The number a manager quotes to an owner ("new servers are floor-ready in 12 days"), and the one that shows whether waves and the recipe work.</p></div>
+<div class="card"><h4>Retention at 30 days</h4><p>Share of re-checks held (today's "Re-checks 83%", relabelled). Falls when the review intervals are too long; rises with the pre-shift card.</p></div>
+<div class="card"><h4>Lift, diff-in-diff</h4><p>For each wine: sales per shift by servers who learnt it, before and after they learnt it, against servers who haven't, same weeks. Says "Priya's Nebbiolo sales went from 0.3 to 1.1 a shift after she learnt it; the others stayed at 0.4", with a line that sections and nights confound it. Needs four weeks and two servers a side; otherwise the card says "not enough yet".</p></div>
+</div>
+
+<h3>Prototype: who can sell what tonight</h3>
+<p>Tick who's on. The grid is the top sellers against the roster; the sentence under it is what the manager reads at 4pm. Green: Ready on that wine (every rung the role needs, fresh). Amber: slipping (held, but fading). Red: not yet.</p>
+<div class="card">
+<div class="twrap"><div class="cover" id="cover"></div></div>
+<div class="legend"><span><i style="background:var(--ok)"></i>Ready</span><span><i style="background:var(--warn)"></i>Slipping</span><span><i style="background:var(--bad)"></i>Not yet</span><span><i style="background:var(--line)"></i>Off tonight</span></div>
+<p id="cover-line" style="font-weight:600;margin-top:10px"></p>
+<p class="meta">Built from <code>TeamLearn.progress</code> per person per wine and <code>TeamReport.priority</code> for the wines. The roster comes from a tap on the manager's phone for the pilot, from 7shifts/Deputy later. The same grid, one row, is the pre-shift card on a server's phone: "Tonight you can sell: …".</p>
+</div>
+
+<h3>Database for V2</h3>
+<p>The pilot keeps one venue on one device (<code>vbiz_*</code> through <code>Store</code>). V2 means accounts, several phones and several venues, which means Supabase tables with row-level security by venue, the same way the consumer app's <code>wines</code> and <code>user_docs</code> work. Proposed, in the order they're needed:</p>
+<div class="twrap"><table>
+<tr><th>Table</th><th>Holds</th><th>Notes</th></tr>
+<tr><td><code>venues</code></td><td>name, brand, currency, country, allergen list code, settings (roles and minimums, waves, contest)</td><td>Row per restaurant; group accounts reference several.</td></tr>
+<tr><td><code>members</code></td><td>venue, user, role, name, photo, active, hired_at</td><td>A user can belong to several venues (a group's sommelier).</td></tr>
+<tr><td><code>items</code></td><td>venue, kind (wine, cocktail, dish), the list fields, status (live, 86'd, feature, retired), version</td><td>Replaces the three arrays; the draft/publish diff is a version column.</td></tr>
+<tr><td><code>cards</code></td><td>item, the card JSON, say, questions, written_at, model</td><td>Questions keep their ids across rewrites, as now.</td></tr>
+<tr><td><code>pairings</code></td><td>dish, best, glass, avoid, cocktails, reasons</td><td>As now.</td></tr>
+<tr><td><code>answers</code></td><td>member, question, right, confidence, ms, at, kind (drill, recheck, guest, test)</td><td>The event log everything else is computed from; never updated, only appended.</td></tr>
+<tr><td><code>states</code></td><td>member, question, stability, due, misses, leech</td><td>The scheduler's view; recomputable from answers.</td></tr>
+<tr><td><code>tables</code></td><td>member, dish, wish, help level, reply, mark, delivery (private)</td><td>Guest role-plays. Delivery readable by the member only (RLS).</td></tr>
+<tr><td><code>sales_lines</code></td><td>venue, at, till item, item (mapped), qty, amount, server (mapped), shift</td><td>From CSV now, Square later. Mapping lives in <code>item_map</code>.</td></tr>
+<tr><td><code>shifts</code></td><td>venue, member, date, section</td><td>From the rota or by hand; drives "tonight" and pauses the clock.</td></tr>
+<tr><td><code>coaching</code></td><td>venue, member, item, why, at, done_at, check_at, moved</td><td>The loop above.</td></tr>
+<tr><td><code>signoffs</code></td><td>member, set (allergens), passed_at, expires_at, exported_at</td><td>The register.</td></tr>
+</table></div>
+<p>The Worker gains a <code>/team</code> namespace of routes that read and write with the service key under the member's venue, with the per-week fair-use counting the consumer side already has. Content generation (cards, pairings, fixes) moves server-side as jobs, so a publish no longer depends on the manager's phone staying awake; <code>TeamJobs</code> becomes a status reader.</p>
+
+<h3>Dashboards, V2</h3>
+<ul>
+<li><b>Dashboard</b>: Tonight card first; then At a glance with Time to Ready, Retention, Team readiness; then coaching queue; then Sales at a glance.</li>
+<li><b>Sales Insights</b>: as now, plus a Lift section per wine (diff-in-diff with its caveat) and the contest board when one runs.</li>
+<li><b>Team</b>: states instead of counts (On track / Behind 3 days / Slipping), a person drawer with their ladder, their coaching history, their sign-offs, and an export.</li>
+<li><b>Menu</b>: the allergen sign-off matrix (dish × confirmed), 86'd toggles, mods editing.</li>
+<li><b>Group view</b> (multi-venue): readiness and wine per guest per venue, one row each, for the ops director.</li>
+</ul>
+</section>
+<section id="cards">
+<p class="kicker">Wine cards and menu items</p>
+<h2>The card's job on a shift is "what do I say"</h2>
+<p>The current card leads with Say it, then price and grape pills, then Where you stand, then the pitch, then taste with bars, then style, grape, place, producer, serve, dishes, alternatives. That's complete, and it's a study page. The trade practice from every operator interviewed says the same thing: one telling detail, plain words, the price as guests hear it, a line to say, the name said aloud. Reorder around that.</p>
+<div class="proto">
+<div>
+<div class="card"><h4>Card v2, top to bottom</h4>
+<ol>
+<li><b>Name, said.</b> Title, the 🔊 that says the name slowly, the sounds-like under it in 14px grey.</li>
+<li><b>The price line.</b> "$29 a glass · $175 a bottle", 16px white. A guest's first question.</li>
+<li><b>One telling detail</b>, bold, 17px: the one thing a server can say that sounds like they know the wine ("Champagne's biggest house; the yellow label is the one on every wedding table"). Written by the card prompt as its own field, <code>hook</code>, max 18 words.</li>
+<li><b>Say it to a guest</b>: the 40-word pitch, with a 🔊 that says the sentence as they'd say it.</li>
+<li><b>Taste bars</b> (body, acidity, sweetness, tannin for reds, bubbles), with the one-line meanings from <code>Palate.HOW</code>: the consumer app's "teach while asking" rule applied here.</li>
+<li><b>With the menu</b>: three dishes with the reason first, and the one to steer away from.</li>
+<li><b>If they want something else</b>: the two alternatives with how they differ in a phrase ("drier and cheaper", "the same house, pink").</li>
+<li><b>Where you stand</b>: a slim strip, three dots, "Practise this wine" as a text link, not a crimson button.</li>
+<li><b>The rest</b>, folded: grape, place, producer, serving, the story.</li>
+</ol>
+<p class="meta">The card prompt (<code>prompts/team-cards.txt</code>) gains <code>hook</code>; the respelling guide moves under the title. Nothing else is new content: it's the same card, reordered for a shift.</p>
+</div>
+<div class="card" style="margin-top:14px"><h4>Menu items, the same rule</h4><p>A dish page leads with what it is in a sentence, its price, its allergen strip and tonight's status; then what can change; then the two things guests ask; then the wines with reasons; then cocktails. Prototype in the <a href="#menu">Menu module</a> section.</p></div>
+</div>
+<div>
+<div class="phone"><div class="bar"><span>9:41</span><span>●●●</span></div><div class="body">
+<div class="lbl" style="margin-top:8px;color:#8fc4ff">Sparkling · Champagne</div>
+<div class="ph-h" style="font-size:22px;line-height:1.15">Veuve Clicquot Brut <span style="color:var(--s-acc);font-size:18px">🔊</span></div>
+<div style="font-size:14px;color:var(--s-mid);margin:0 0 8px">VURV klee-KOH, BROOT</div>
+<div style="font-size:16px;font-weight:600;margin:0 0 12px">$29 a glass · $175 a bottle</div>
+<div class="gl hi"><div style="font-size:17px;font-weight:700;line-height:1.3">Champagne's biggest house. The yellow label is the one on every wedding table.</div></div>
+<div class="gl"><div class="lbl" style="margin-top:0">Say it to a guest <span style="color:var(--s-acc)">🔊</span></div><p style="color:var(--s-ink);font-size:16px;margin:0">"Dry, crisp and fine, with lively bubbles. It's the one for celebrating, and it's wonderful with the oysters."</p></div>
+<div class="gl"><div class="lbl" style="margin-top:0">How it tastes</div>
+<div style="font-size:14px;display:grid;grid-template-columns:76px 1fr 24px;gap:8px;align-items:center;margin:4px 0"><span>Body</span><i style="display:block;height:8px;border-radius:4px;background:rgba(255,255,255,.12)"><b style="display:block;width:55%;height:100%;background:#8fc4ff;border-radius:4px"></b></i><span>3</span></div>
+<div style="font-size:14px;display:grid;grid-template-columns:76px 1fr 24px;gap:8px;align-items:center;margin:4px 0"><span>Acidity</span><i style="display:block;height:8px;border-radius:4px;background:rgba(255,255,255,.12)"><b style="display:block;width:85%;height:100%;background:#8fc4ff;border-radius:4px"></b></i><span>4</span></div>
+<div style="font-size:14px;display:grid;grid-template-columns:76px 1fr 24px;gap:8px;align-items:center;margin:4px 0"><span>Sweetness</span><i style="display:block;height:8px;border-radius:4px;background:rgba(255,255,255,.12)"><b style="display:block;width:15%;height:100%;background:#8fc4ff;border-radius:4px"></b></i><span>1</span></div>
+<p style="font-size:13px;margin:6px 0 0">Acidity is the mouth-watering edge: lemon juice, not milk.</p></div>
+<div class="gl"><div class="lbl" style="margin-top:0">With the menu</div>
+<div class="row" style="padding:8px 0"><div><b>Fresh Oysters</b><small>Bubbles and salt; the acidity lifts the mignonette</small></div></div>
+<div class="row" style="padding:8px 0"><div><b>Jamón Ibérico</b><small>Fat against fine bubbles, the classic</small></div></div>
+<div class="row" style="padding:8px 0;color:var(--s-warn)"><div><b>Steer away: Lamb Chops</b><small>Too light for the char</small></div></div></div>
+<div class="gl"><div class="lbl" style="margin-top:0">If they want something else</div><div class="row" style="padding:8px 0"><div><b>Lanson Black Label</b><small>Same style, $35 less a bottle</small></div></div><div class="row" style="padding:8px 0"><div><b>Veuve Clicquot Rosé</b><small>Same house, pink, $10 more a glass</small></div></div></div>
+<div style="display:flex;align-items:center;gap:10px;font-size:14px;color:var(--s-mid);padding:6px 2px"><span style="color:var(--s-ok)">●</span><span style="color:var(--s-ok)">●</span><span>○</span> You hold 2 of 3 rungs · <span style="color:var(--s-acc);font-weight:600">Practise this wine</span></div>
+</div><div class="nav"><div><i>⌂</i>Today</div><div><i>V</i>Vinny</div><div class="on"><i>🍷</i>Wines</div><div><i>🍴</i>Menu</div></div></div>
+</div>
+</div>
+</section>
+<section id="market">
+<p class="kicker">Competitors</p>
+<h2>Nobody else puts the venue's own list, spoken practice and the till in one product</h2>
+<p>Eleven products were looked at in detail: five wine-specific trainers, four hospitality LMSs, two generic microlearning platforms that sell into restaurants, plus the scheduling and POS vendors adding training. The table shows what each has against what the job needs.</p>
+<div class="twrap"><table class="cmp">
+<tr><th>Product</th><th>Own list</th><th>Spaced review</th><th>Spoken role-play</th><th>Pronunciation</th><th>Till link</th><th>Dishes &amp; cocktails</th><th>Question QC</th><th>Leaderboard</th><th>Certificates</th><th>Price</th></tr>
+<tr><td>Vinterest Teams (today)</td><td class="y">✓</td><td class="y">✓ per answer</td><td class="y">✓ marked, coached</td><td class="y">✓ voice + check</td><td class="y">✓ CSV</td><td class="y">✓ all three</td><td class="y">✓ 246 checked</td><td class="n">—</td><td class="n">—</td><td>pilot</td></tr>
+<tr><td>ShiftTrained</td><td class="y">✓ PDF upload</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="p">menu sync Toast/Square</td><td class="p">menu quiz</td><td class="n">—</td><td class="y">✓</td><td class="y">Wine Test</td><td>$29 / $49 / $99 mo</td></tr>
+<tr><td>WineView</td><td class="y">✓ synced to Toast</td><td class="n">weekly courses</td><td class="n">—</td><td class="n">—</td><td class="y">✓ Toast partner</td><td class="n">wine only</td><td class="n">—</td><td class="p">manager report</td><td class="n">—</td><td>undisclosed</td></tr>
+<tr><td>Winebite</td><td class="p">partly</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="y">✓</td><td>$119–289 per member</td></tr>
+<tr><td>Quenchable (UK)</td><td class="n">generic</td><td class="p">daily drops</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="y">✓</td><td class="n">—</td><td>~£4 / user / mo</td></tr>
+<tr><td>Wine With Seth (teams)</td><td class="n">generic</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="y">✓</td><td>$59 / seat</td></tr>
+<tr><td>Typsy</td><td class="n">video library</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="p">courses</td><td class="n">—</td><td class="n">—</td><td class="y">✓</td><td>$20 / $75 per user mo</td></tr>
+<tr><td>Axonify</td><td class="p">custom content</td><td class="y">✓ daily 3–5 Qs, confidence</td><td class="n">—</td><td class="n">—</td><td class="p">via integration</td><td class="n">—</td><td class="n">—</td><td class="y">✓ opt-in</td><td class="y">✓</td><td>$3–7 / user / mo</td></tr>
+<tr><td>Attensi</td><td class="p">built per client</td><td class="n">—</td><td class="y">RealTalk voice</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="y">✓</td><td class="y">✓</td><td>enterprise</td></tr>
+<tr><td>1Huddle</td><td class="p">custom games</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="y">✓ central</td><td class="y">✓</td><td>$2.5–3K / mo</td></tr>
+<tr><td>Trail / Flow / Mapal</td><td class="n">compliance</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="p">ops data</td><td class="y">food safety</td><td class="n">—</td><td class="n">—</td><td class="y">✓ audit-ready</td><td>£38–82 / site / mo</td></tr>
+<tr><td>7shifts Employee Training</td><td class="p">upload</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="y">✓ with 7shifts POS</td><td class="p">any</td><td class="n">—</td><td class="n">—</td><td class="y">✓</td><td>~$150 / location (Premium)</td></tr>
+<tr><td>Opus</td><td class="p">custom</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="n">—</td><td class="y">SMS delivery, 100 languages</td><td class="n">—</td><td class="n">—</td><td class="y">✓</td><td>~$5 / user / mo</td></tr>
+</table></div>
+
+<div class="grid g2">
+<div class="card"><h4>What they do well that we don't</h4>
+<ul>
+<li><b>Certificates and exports</b> (everyone). HR asks for a dated record; we have readiness and no document.</li>
+<li><b>No-install delivery</b> (Opus by SMS, ShiftTrained by link, 7shifts inside the app staff already open). Ours needs the device in the pilot and the native app later; a web link per person that opens the staff app signed in would remove the biggest adoption step.</li>
+<li><b>Multi-language</b> (Opus 100+, Axonify). Kitchens and some floors are bilingual; the cards could be written twice by the same prompt.</li>
+<li><b>Assignments with due dates and completion %</b> as a manager's primary view (Axonify, Trail). Ours has them underneath; the waves proposal brings them forward.</li>
+<li><b>Compliance content</b> (Trail, Flow: allergens, food safety, licensing). The menu module's allergen rung is our version; the rest we shouldn't build.</li>
+<li><b>Menu sync from the POS</b> (ShiftTrained, WineView): the list updates itself. Our upload is a photo; Square's catalog API makes it a button.</li>
+<li><b>Push and SMS nudges</b> (all). We have the consumer app's push; the staff app needs its own: "your five for today", "the Lambrusco is on feature tonight".</li>
+<li><b>Video and skills libraries</b> (Typsy). Not worth building; worth linking to from guides.</li>
+</ul></div>
+<div class="card"><h4>What they get wrong that we should keep getting right</h4>
+<ul>
+<li><b>Generic content.</b> Quenchable, Typsy, Wine With Seth teach wine; nobody at the table asks about wine, they ask about the Nebbiolo on the list. The Orlowski result (certification raises knowledge, not sales) is the whole case against generic.</li>
+<li><b>Per-user pricing.</b> Turnover in restaurants runs 70–100% a year; per-seat pricing punishes exactly the venues that need training most, and managers ration seats. Charge the venue.</li>
+<li><b>Leaderboards as the engagement model.</b> ShiftTrained, Quenchable, 1Huddle all lead with them. The evidence for competitive leaderboards is mixed at best and negative for the bottom half.</li>
+<li><b>Questions nobody checked.</b> AI-generated quizzes from a PDF (ShiftTrained) ship giveaways; our question check caught 22 in 246 before a server saw one.</li>
+<li><b>Knowledge measured as completion.</b> Trail and Flow count modules done; a module done in March is forgotten in May. Readiness that decays is the honest number.</li>
+<li><b>Nothing spoken.</b> Only Attensi has voice role-play, at enterprise prices and not for wine. Saying the name and the pitch out loud is the job.</li>
+</ul></div>
+</div>
+
+<h3>Certification and study apps, for context</h3>
+<p>WSET Level 2 runs $398–595, Level 3 $1,099–1,258; CMS Introductory $649–949; GuildSomm $120 a year; Wine Folly+ $99 a year; Cork Dork $50 a year. These are what a sommelier buys for themselves. None are venue products and none of their users are the servers a venue needs trained. The one borrow: GuildSomm's question of the day and Wine Folly's taste bars and maps per wine, both of which fit the card.</p>
+</section>
+<section id="pricing">
+<p class="kicker">Pricing</p>
+<h2>Per venue, unlimited staff, three tiers</h2>
+<p>The band in wine-specific products is $29–99 a month for a tool without voice or a till, and $120–290 per member for the ones with a human behind them. General LMSs charge $3–7 per user and need the venue to write the content. A product that writes the content from the venue's own list, checks it, speaks the guest and ties readiness to the till sits above ShiftTrained and below BinWise ($249). Charge the venue, not the head; that's what makes a manager add the dishwasher who wants to move to the floor.</p>
+<div class="ctl"><div class="seg"><button class="on" data-bill="m">Monthly</button><button data-bill="y">Annual (2 months free)</button></div><span class="meta">Venues in a group:</span><input type="number" id="p-venues" value="1" min="1" max="200" style="width:84px"></div>
+<div class="price" id="price"></div>
+<p class="meta">US dollars; UK prices at roughly 0.8× (£59 / £119), Canada at 1.3×. AI costs per venue (cards, pairings, fixes, Vinny, voice) run well under $10 a month at Sonnet prices, so no per-question charges and no AI metering, which is what venues fear most about AI products.</p>
+<div class="grid g2">
+<div class="card"><h4>Principles</h4><ul>
+<li>14-day trial, no card, the venue's own list uploaded on day one (the first hour is the sale).</li>
+<li>Unlimited staff on every tier. Turnover is the venue's problem, not a billing event.</li>
+<li>Voice, speech-to-text and the till are what separate Pro; Starter is still the whole learning model.</li>
+<li>Groups buy annual, per venue, with a group console. The first group (five sites) is worth more than twenty singles for the reference.</li>
+<li>An onboarding fee only for a done-for-you list and menu check by a person (US$250), optional.</li>
+</ul></div>
+<div class="card"><h4>Tiers by feature</h4><div class="twrap"><table>
+<tr><th></th><th>Starter</th><th>Pro</th><th>Group</th></tr>
+<tr><td>List, menu, cocktails, cards, pairings, question check</td><td class="y">✓</td><td class="y">✓</td><td class="y">✓</td></tr>
+<tr><td>Daily drill, ladder, readiness, re-checks</td><td class="y">✓</td><td class="y">✓</td><td class="y">✓</td></tr>
+<tr><td>Allergen module and sign-off register</td><td class="y">✓</td><td class="y">✓</td><td class="y">✓</td></tr>
+<tr><td>Ask Vinny, guest at the table (typed)</td><td class="y">✓</td><td class="y">✓</td><td class="y">✓</td></tr>
+<tr><td>Guest spoken (TTS + STT), delivery coaching, Say it</td><td class="n">—</td><td class="y">✓</td><td class="y">✓</td></tr>
+<tr><td>Till import, Sales Insights, lift, "worth to you"</td><td class="n">—</td><td class="y">✓</td><td class="y">✓</td></tr>
+<tr><td>Coaching queue, certificates, exports, weekly email</td><td class="p">certificates</td><td class="y">✓</td><td class="y">✓</td></tr>
+<tr><td>POS connectors (Square, Toast, Lightspeed)</td><td class="n">—</td><td class="y">✓</td><td class="y">✓</td></tr>
+<tr><td>Group console, shared lists, SSO</td><td class="n">—</td><td class="n">—</td><td class="y">✓</td></tr>
+</table></div></div>
+</div>
+</section>
+<section id="roadmap">
+<p class="kicker">Roadmap</p>
+<h2>V2 in four waves</h2>
+<div class="road">
+<div class="card"><h4>Wave 1 · Readable and aimed (2–3 weeks)</h4><ol>
+<li>Type scale pass on every staff screen; rows to two lines; price lines.</li>
+<li>Vinny hub with three doors; Ask and Test on their own screens; three suggestions.</li>
+<li>Drill: 5 options max, confidence only on price; new items from priority; one per wine; days-off pause.</li>
+<li>Drill summary in words; "worth" line from the till with its floor.</li>
+<li>Day-one plan instead of four zeros; waves instead of a 7-day cliff.</li>
+<li>Pre-shift card on Today (86'd, feature, two slipping wines, Say it).</li>
+</ol><p class="meta">All in the existing files: <code>team-screens.jsx</code>, <code>team-vinny.jsx</code>, <code>team-learn.js</code>, <code>team-report.js</code>. No schema change.</p></div>
+<div class="card"><h4>Wave 2 · The menu (3–4 weeks)</h4><ol>
+<li>Allergens, mods, ask, status on dishes; the kitchen confirms on the console.</li>
+<li>Dish ladder and the Menu readiness part with the allergen gate.</li>
+<li>Dish page v2; menu list with price, marks and tonight.</li>
+<li>Sign-off register and CSV/PDF export.</li>
+<li>Wine card v2 (hook, price line, reorder, spoken pitch).</li>
+</ol></div>
+<div class="card"><h4>Wave 3 · Accounts and the loop (4–6 weeks)</h4><ol>
+<li>Supabase tables and RLS per venue; sign-in by emailed code (the consumer app's); a link per person.</li>
+<li>Content jobs server-side; publish survives the phone sleeping.</li>
+<li>Coaching queue with done-tap and two-week check.</li>
+<li>Tonight card and the coverage grid; roster by hand.</li>
+<li>Staff push ("your five for today"); weekly manager email.</li>
+<li>Certificates; Ready badge.</li>
+</ol></div>
+<div class="card"><h4>Wave 4 · Money and scale (6+ weeks)</h4><ol>
+<li>Square connector (catalog + orders), then Toast, Lightspeed; menu sync.</li>
+<li>Lift (diff-in-diff) and contests as a venue-run scoreboard.</li>
+<li>Explain-to-guest rung, spoken, marked by key words; replay the model answer.</li>
+<li>Group console; billing through Stripe per venue; trials.</li>
+<li>Second language for cards.</li>
+</ol></div>
+</div>
+
+<h3>Quick wins I can build this week</h3>
+<ul>
+<li>The type-scale pass and the two-line rows (one PR, every screen, tests at Extra large).</li>
+<li>The Vinny hub exactly as prototyped, with <code>TeamLearn.next</code> and three suggestions.</li>
+<li>Recall capped at five options and the wine-name-as-grape decoy fixed in <code>_topicChoices</code>.</li>
+<li>New items dealt from <code>TeamReport.priority</code>, one per section, two per drill.</li>
+<li>Confidence asked on price questions only.</li>
+<li>The drill summary rewritten in words, with the "sells N glasses a week here" line.</li>
+<li>Day-one plan on Today for a person with no drills yet.</li>
+<li>Waves: glass list first ten days, bottles next ten, pairings after; "on track" per person on the console.</li>
+</ul>
+
+<h3>Appendix: every screen captured</h3>
+<p class="meta">Phone at 390px, console at 1366px, The Social Corner. Tap to open full size.</p>
+<div class="grid g3" id="gallery"></div>
+</section>
+</main>
+<script>
+(function(){
+// ---------- font histogram ----------
+var fonts={"Wines list":{"11":4,"13":192,"14":3,"15":41,"22":1},"Team":{"11":6,"13":66,"14":12,"15":11,"22":1},"Vinny tab":{"11":4,"13":13,"14":2,"15":4,"17":1,"22":1},"Cocktails":{"11":4,"13":45,"14":3,"15":20,"22":1},"Upload":{"11":6,"13":4,"14":1,"16":3,"22":1},"Menu":{"11":4,"13":70,"14":1,"15":62,"22":1},"Wine card":{"13":31,"14":8,"15":19,"22":1},"Drill summary":{"13":18,"14":4,"15":12,"22":1},"Guest":{"13":10,"14":1,"15":7,"16":2,"22":1},"Today (manager)":{"11":6,"13":27,"14":31,"15":13,"17":1,"22":5},"Today (server)":{"11":4,"13":16,"14":31,"15":13,"17":1,"22":2},"Dish":{"13":12,"14":16,"15":8,"22":1},"Drill question":{"13":4,"14":3,"15":9,"19":1}};
+var fb=document.getElementById('fontbars');
+Object.keys(fonts).map(function(k){var h=fonts[k],t=0,s=0;Object.keys(h).forEach(function(sz){t+=h[sz];if(+sz<14)s+=h[sz]});return {k:k,p:Math.round(100*s/t)}}).sort(function(a,b){return b.p-a.p}).forEach(function(r){
+  var d=document.createElement('div');d.innerHTML='<span>'+r.k+'</span><i><b style="width:'+r.p+'%"></b></i><em>'+r.p+'%</em>';fb.appendChild(d);});
+
+// ---------- Vinny prototype ----------
+var vb=document.getElementById('vbody'),vmode='after',vscreen='hub';
+function H(s){return s}
+function vHub(){return H(
+ '<div class="ph-h">Practise</div><div class="ph-sub">What to do now, then three ways to practise.</div>'+
+ '<div class="gl hi"><div class="lbl" style="margin-top:0;color:var(--s-acc)">Next for you · 3 min</div><h5>A guest having the oysters</h5><p>Your drill is done. You\'re slipping on the sparkling, and that\'s what the oysters want.</p><span class="cta" data-v="guest">Take the table</span></div>'+
+ '<div style="font-size:14px;color:var(--s-mid);padding:0 2px 12px;line-height:1.4">Knowing the glass list is worth about <b style="color:var(--s-ink)">$12–19 a shift</b> in tips here. <span style="color:var(--s-acc);white-space:nowrap">How we know ›</span></div>'+
+ '<div class="row" data-v="ask"><div class="ic">V</div><div>Ask Vinny<small>The list, a bottle, the menu, tonight</small></div><span class="chev">›</span></div>'+
+ '<div class="row" data-v="guest"><div class="ic">🗣</div><div>A guest at your table<small>Spoken. Marked. 4 tables this week</small></div><span class="chev">›</span></div>'+
+ '<div class="row" data-v="test"><div class="ic">10</div><div>Vinny\'s test<small>Ten on what\'s fading, mostly sparkling</small></div><span class="chev">›</span></div>');}
+function vAsk(){return H(
+ '<div style="display:flex;align-items:center;gap:10px;margin:8px 0 10px"><span data-v="hub" style="font-size:22px;cursor:pointer">‹</span><div class="ph-h" style="margin:0;font-size:20px">Ask Vinny</div></div>'+
+ '<div class="chat"><div class="bub v">Ask me about the list, a bottle, the menu or tonight.</div>'+
+ '<div id="vchat"></div></div>'+
+ '<div id="vsug"><div class="lbl">Tonight</div><span class="chip" data-q="What\'s the feature tonight?">What\'s the feature tonight?</span><span class="chip" data-q="What goes with the oysters?">What goes with the oysters?</span><span class="chip" data-q="Reds under $60?">Reds under $60?</span></div>'+
+ '<div class="inp">Type a question<b>→</b></div>');}
+function vAskAnswer(q){var a={"What's the feature tonight?":"The Lambrusco Reggiano, $17 a glass. Dry, red and fizzy, from Emilia-Romagna: say \"it's the one with the patatas bravas\". Lobster Ravioli is 86'd.","What goes with the oysters?":"The Petit Chablis \"Jean Durup\", $16 a glass: lean and salty, the classic. If they want bubbles, the Mionetto Treviso at $15. Steer away from the reds.","Reds under $60?":"Four: Salentein Portillo Pinot Noir $48, Batasiolo Langhe Nebbiolo $56, Santa Carolina Reserva Cabernet $52, Vanessa Syrah $58. The Nebbiolo is the one guests come back for."}[q];
+ document.getElementById('vsug').style.display='none';document.getElementById('vchat').innerHTML='<div class="bub me">'+q+'</div><div class="bub v">'+a+'<span class="src">From the list and tonight\'s notes · <u>Open the card</u></span></div>';}
+function vGuest(){return H(
+ '<div style="display:flex;align-items:center;gap:10px;margin:8px 0 10px"><span data-v="hub" style="font-size:22px;cursor:pointer">‹</span><div class="ph-h" style="margin:0;font-size:20px">Table 12</div><span class="chip sm" style="margin-left:auto">Hints</span></div>'+
+ '<p class="ph-sub" style="margin-bottom:10px">Two guests, the Fresh Oysters to start. Answer as you would at the table.</p>'+
+ '<div class="chat"><div class="bub v" style="font-size:16px">"We\'d love a glass of something crisp with the oysters, but not Champagne prices. What would you pour?" <span class="src">🔊 Spoken · tap to hear again</span></div></div>'+
+ '<div class="gl" style="margin-top:12px"><div class="lbl" style="margin-top:0">Hint</div><p style="margin:0">"Not Champagne prices" is a budget. Two glasses fit: a lean white or the cheaper bubbles.</p></div>'+
+ '<div class="inp" style="padding-left:8px"><span style="width:36px;height:36px;border-radius:50%;background:rgba(224,96,122,.2);display:grid;place-items:center;color:var(--s-acc)">🎤</span>Say it or type it<b>Say</b></div>'+
+ '<p style="font-size:13px;color:var(--s-mid);margin-top:8px">After the mark you can hear a model answer and say it again.</p>');}
+function vTest(){return H(
+ '<div style="display:flex;align-items:center;gap:10px;margin:8px 0 10px"><span data-v="hub" style="font-size:22px;cursor:pointer">‹</span><div class="ph-h" style="margin:0;font-size:20px">Vinny\'s test</div></div>'+
+ '<div class="gl"><h5>Ten on what you need</h5><p>Ten answers have faded or were missed, mostly on the sparkling. What sells most and you know least comes first.</p><span class="cta">Start</span></div>'+
+ '<div class="lbl">Or ask for one</div><span class="chip">The reds under $50</span><span class="chip">The dessert wines</span><span class="chip">The menu</span><span class="chip">What\'s new</span>'+
+ '<div class="inp">Test me on…<b>→</b></div>');}
+function vBefore(){return '<img src="img/p-vinny.jpg" alt="The current Vinny tab" style="width:calc(100% + 28px);margin:0 -14px;display:block">';}
+function vDraw(){vb.innerHTML=vmode==='before'?vBefore():({hub:vHub,ask:vAsk,guest:vGuest,test:vTest})[vscreen]();vb.scrollTop=0;vb.classList.remove('fade');void vb.offsetWidth;vb.classList.add('fade');}
+vb.addEventListener('click',function(e){var t=e.target.closest('[data-v]');if(t){vscreen=t.getAttribute('data-v');vDraw();return;}var q=e.target.closest('[data-q]');if(q)vAskAnswer(q.getAttribute('data-q'));});
+document.querySelectorAll('[data-vmode]').forEach(function(b){b.addEventListener('click',function(){document.querySelectorAll('[data-vmode]').forEach(function(x){x.classList.remove('on')});b.classList.add('on');vmode=b.getAttribute('data-vmode');vscreen='hub';vDraw();});});
+vDraw();
+
+// ---------- Menu drill prototype ----------
+var mb=document.getElementById('mbody');
+var MQ=[
+ {kind:'allergen',conf:true,title:'Allergens · Calamari di Mamma',q:'Which of these are in the Calamari di Mamma? Choose all.',opts:['Gluten (the batter)','Molluscs (squid)','Egg (the aioli)','Peanuts'],right:[0,1,2],why:'Squid is a mollusc, the batter is wheat flour and the aioli has egg. A guest with a mollusc allergy can\'t have it even without the batter.'},
+ {kind:'mod',title:'Changes · Calamari di Mamma',q:'A guest asks for the calamari gluten-free. What do you say?',opts:['"Of course, I\'ll ask the kitchen to use a different flour."','"The batter is wheat, so it can\'t be made gluten-free. The Fresh Oysters and the Jamón are, if you\'d like."','"It\'s only a light batter, it should be fine."'],right:[1],why:'The batter can\'t change. Say so plainly and offer two dishes that work; never guess for the kitchen.'},
+ {kind:'know',title:'Know it · Beets e Burrata',q:'A guest asks what burrata is.',opts:['A firm aged cheese, like pecorino','Fresh mozzarella with a creamy centre','A cured meat from Puglia','A kind of ricotta baked with herbs'],right:[1],why:'Burrata is mozzarella with cream and curd inside. Say "mozzarella with a soft, creamy middle"; it sells the dish.'},
+ {kind:'why',title:'Pair it · Lobster & Crab Ravioli',q:'You\'ve suggested the Black Swift Riesling with the ravioli. Why does it work?',opts:['Its acidity cuts the bisque butter and a touch of sweetness suits the crab','Its firm tannin stands up to the richness','It\'s the most expensive white, so it matches a $34 dish'],right:[0],why:'Acid against butter is the rule. Riesling has no tannin, and price is never a pairing reason.'}
+];
+var mi=0,mpick=[],mconf=null,mdone=[];
+function mDraw(){
+ if(mi>=MQ.length){var r=mdone.filter(Boolean).length;mb.innerHTML='<div class="ph-h">'+r+' of '+MQ.length+' right</div><div class="ph-sub">You know the calamari\'s allergens now and what to say when it can\'t change.</div><div class="ring" style="--v:'+Math.round(100*r/MQ.length)+'%"><b>'+Math.round(100*r/MQ.length)+'%</b></div>'+
+  '<div class="gl"><div class="lbl" style="margin-top:0">Comes back</div><p style="margin:0">'+(mdone[0]?'Allergens on the calamari: 7 days.':'Allergens on the calamari: <b style="color:var(--s-warn)">this shift</b>, since it was missed.')+' The burrata: 14 days.</p></div>'+
+  '<div class="gl"><div class="lbl" style="margin-top:0">Worth knowing</div><p style="margin:0">The ravioli sells 22 a week here; its Riesling pairing is the glass servers who know it sell most.</p></div>'+
+  '<button class="pbtn" data-m="again">Again</button>';return;}
+ var Q=MQ[mi],multi=Q.right.length>1;
+ var h='<div style="display:flex;gap:4px;margin:8px 0 10px">'+MQ.map(function(_,i){return '<i style="flex:1;height:4px;border-radius:2px;background:'+(i<mi?(mdone[i]?'var(--s-ok)':'#ff7b72'):i===mi?'var(--s-ink)':'rgba(255,255,255,.15)')+'"></i>'}).join('')+'</div>';
+ h+='<div class="lbl" style="margin-top:0;color:#8fc4ff">'+Q.title+'</div><div style="font-size:19px;font-weight:700;line-height:1.3;margin:0 0 12px">'+Q.q+'</div>';
+ h+='<div style="font-size:13px;color:var(--s-mid);margin-bottom:8px">'+(multi?'Choose all that apply':'Choose one')+'</div>';
+ h+=Q.opts.map(function(o,i){return '<button class="opt'+(mpick.indexOf(i)>=0?' on':'')+'" data-o="'+i+'">'+o+'</button>'}).join('');
+ if(Q.conf){h+='<div class="lbl">How sure are you? <span style="font-weight:400;text-transform:none;letter-spacing:0">(counts double on allergens)</span></div><div style="display:flex;gap:6px">'+['Sure','Think so','Guessing'].map(function(c,i){return '<button class="pbtn ghost" data-c="'+i+'" style="flex:1;'+(mconf===i?'border-color:var(--s-acc);color:var(--s-acc)':'')+'">'+c+'</button>'}).join('')+'</div>';}
+ h+='<div style="margin-top:14px"><button class="pbtn" data-m="check" style="width:100%" '+(mpick.length&&(!Q.conf||mconf!==null)?'':'disabled style="opacity:.5;width:100%"')+'>Check</button></div>';
+ mb.innerHTML=h;mb.scrollTop=0;}
+function mCheck(){var Q=MQ[mi];var ok=Q.right.length===mpick.length&&Q.right.every(function(r){return mpick.indexOf(r)>=0});mdone[mi]=ok;
+ var h='<div class="lbl" style="margin-top:12px;color:#8fc4ff">'+Q.title+'</div><div style="font-size:17px;font-weight:600;line-height:1.3;margin:0 0 12px;color:var(--s-mid)">'+Q.q+'</div>';
+ h+=Q.opts.map(function(o,i){var c=Q.right.indexOf(i)>=0?' ok':(mpick.indexOf(i)>=0?' bad':'');return '<div class="opt'+c+'" style="cursor:default">'+(Q.right.indexOf(i)>=0?'✓ ':mpick.indexOf(i)>=0?'✗ ':'')+o+'</div>'}).join('');
+ h+='<div class="gl" style="margin-top:12px;border-color:'+(ok?'var(--s-ok)':'#ff7b72')+'"><div style="font-size:18px;font-weight:700;color:'+(ok?'var(--s-ok)':'#ff7b72')+'">'+(ok?'Right':'Not quite')+(Q.conf&&!ok&&mconf===0?' · you were sure, so this comes back this shift':'')+'</div><p style="margin:6px 0 0;color:var(--s-ink);font-size:16px">'+Q.why+'</p></div>';
+ h+='<button class="pbtn" data-m="next" style="width:100%">Next</button>';mb.innerHTML=h;mb.scrollTop=0;}
+mb.addEventListener('click',function(e){var o=e.target.closest('[data-o]');if(o){var i=+o.getAttribute('data-o'),Q=MQ[mi];if(Q.right.length>1){var k=mpick.indexOf(i);k>=0?mpick.splice(k,1):mpick.push(i);}else mpick=[i];mDraw();return;}
+ var c=e.target.closest('[data-c]');if(c){mconf=+c.getAttribute('data-c');mDraw();return;}
+ var m=e.target.closest('[data-m]');if(!m)return;var a=m.getAttribute('data-m');if(a==='check'&&!m.disabled)mCheck();else if(a==='next'){mi++;mpick=[];mconf=null;mDraw();}else if(a==='again'){mi=0;mpick=[];mconf=null;mdone=[];mDraw();}});
+mDraw();
+
+// ---------- earnings calculator ----------
+var ids=['covers','wpg','lift','tip','shifts'];
+function wCalc(){var v={};ids.forEach(function(k){v[k]=+document.getElementById('w-'+k).value});
+ document.getElementById('w-covers-v').textContent=v.covers+' covers';document.getElementById('w-wpg-v').textContent='$'+v.wpg+' per guest';document.getElementById('w-lift-v').textContent=v.lift+'%';document.getElementById('w-tip-v').textContent=v.tip+'%';document.getElementById('w-shifts-v').textContent=v.shifts+' shifts';
+ var sales=v.covers*v.wpg*v.lift/100,lo=sales*0.6*v.tip/100,hi=sales*1.0*v.tip/100;
+ var f=function(n){return '$'+Math.round(n)};
+ document.getElementById('w-sales').textContent=f(sales);document.getElementById('w-tips').textContent=f(lo)+'–'+f(hi);document.getElementById('w-week').textContent=f(lo*v.shifts)+'–'+f(hi*v.shifts);
+ document.getElementById('w-cav').textContent='A range from this restaurant\'s till: wine per guest is $'+v.wpg+' now. The low end assumes some of the extra wine replaces other sales (Wansink found most tasting-driven lift was cannibalised); the high end assumes none. Sections and nights vary. Not a promise.';}
+ids.forEach(function(k){document.getElementById('w-'+k).addEventListener('input',wCalc)});wCalc();
+
+// ---------- coverage grid ----------
+var wines=['Santa Carolina Cab','La Stella Fortissimo','Langhe Nebbiolo','Mionetto Rosé','Petit Chablis','Lambrusco (feature)'];
+var staff=[{n:'Claire',r:'Somm',on:true,s:'rrrrrr'},{n:'Marco',r:'Bar',on:true,s:'ssxrsr'},{n:'Dani',r:'Server',on:true,s:'rxsxrs'},{n:'David',r:'Server',on:false,s:'rsxsrr'},{n:'Priya',r:'Server',on:true,s:'xxxxsx'},{n:'Amara',r:'Server',on:true,s:'sxxrxx'},{n:'Elena',r:'Mgr',on:false,s:'rrsrrr'}];
+var cv=document.getElementById('cover');
+function cDraw(){var h='<div></div>'+wines.map(function(w){return '<div class="h">'+w+'</div>'}).join('');
+ staff.forEach(function(p,i){h+='<label class="nm"><input type="checkbox" data-p="'+i+'"'+(p.on?' checked':'')+'>'+p.n+' <span style="color:var(--mid);font-weight:400">'+p.r+'</span></label>'+p.s.split('').map(function(c){return '<div class="d '+(p.on?c:'off')+'">'+(p.on?{r:'✓',s:'~',x:'–'}[c]:'')+'</div>'}).join('');});
+ cv.innerHTML=h;
+ var on=staff.filter(function(p){return p.on});var lines=[];
+ wines.forEach(function(w,j){var ready=on.filter(function(p){return p.s[j]==='r'}).length;if(ready===0)lines.push('nobody on tonight is ready on the '+w);});
+ var feat=on.filter(function(p){return p.s[5]==='r'}).length;
+ document.getElementById('cover-line').textContent='Tonight: '+on.length+' on shift · '+feat+' of '+on.length+' can sell the feature'+(lines.length?' · '+lines.join('; '):' · every top seller is covered')+'.';}
+cv.addEventListener('change',function(e){var i=e.target.getAttribute('data-p');if(i!=null){staff[+i].on=e.target.checked;cDraw();}});cDraw();
+
+// ---------- pricing ----------
+var bill='m';
+function pDraw(){var n=Math.max(1,+document.getElementById('p-venues').value||1);var y=bill==='y';
+ var tiers=[{n:'Starter',m:79,f:['The whole learning model','Cards, pairings, question check','Allergen module and register','Typed Vinny and guest','Unlimited staff']},
+  {n:'Pro',m:149,rec:true,f:['Everything in Starter','Spoken guest, delivery coaching, Say it','Till import, Sales Insights, lift','Coaching queue, exports, weekly email','POS connectors']},
+  {n:'Group',m:99,grp:true,f:['Pro for every venue','Group console and shared lists','From 5 venues, annual','SSO and an onboarding call','A named contact']}];
+ document.getElementById('price').innerHTML=tiers.map(function(t){var per=y?Math.round(t.m*10/12):t.m;var venues=t.grp?Math.max(n,5):n;var tot=per*venues*(y?12:1);
+  return '<div class="card'+(t.rec?' rec':'')+'">'+(t.rec?'<span class="tag acc">Most venues</span>':t.grp?'<span class="tag">5+ venues</span>':'<span class="tag">Single venue</span>')+'<h4 style="margin-top:8px">'+t.n+'</h4><div class="big">$'+per+'</div><small>per venue per month'+(y?', billed annually':'')+'</small>'+(n>1||t.grp?'<div class="meta" style="margin-top:6px">'+venues+' venue'+(venues>1?'s':'')+': $'+tot.toLocaleString()+(y?' a year':' a month')+'</div>':'')+'<ul>'+t.f.map(function(x){return '<li>'+x+'</li>'}).join('')+'</ul></div>';}).join('');}
+document.querySelectorAll('[data-bill]').forEach(function(b){b.addEventListener('click',function(){document.querySelectorAll('[data-bill]').forEach(function(x){x.classList.remove('on')});b.classList.add('on');bill=b.getAttribute('data-bill');pDraw();})});
+document.getElementById('p-venues').addEventListener('input',pDraw);pDraw();
+
+// ---------- gallery ----------
+var shots=[['p-today-server','Today, server'],['p-today-manager','Today, manager'],['p-today-after-drill','Today after a drill'],['p-vinny','Vinny tab'],['p-vinny-answer','Vinny, an answer'],['p-guest','Guest, Choices'],['p-guest-choices','Guest, choices open'],['p-guest-choices-picked','Guest, a pick'],['p-wines','Wine list'],['p-wine','Wine card'],['p-cocktails','Cocktails'],['p-cocktail','Cocktail card'],['p-menu','Menu'],['p-dish','Dish page'],['p-drill-q','Drill question'],['p-drill-answer','Drill answer'],['p-drill-done','Drill summary'],['p-upload','Upload'],['p-team','Team (phone)'],['p-setup','Setup'],['c-dash','Console · Dashboard'],['c-sales','Console · Sales Insights'],['c-team','Console · Team'],['c-person','Console · Person drawer'],['c-wines','Console · Wines'],['c-cocktails','Console · Cocktails'],['c-menu','Console · Menu'],['c-upload','Console · Upload'],['c-pos','Console · Integrations'],['c-admin','Console · Admin']];
+document.getElementById('gallery').innerHTML=shots.map(function(s){return '<a href="img/'+s[0]+'.jpg" target="_blank" rel="noopener" style="text-decoration:none;color:inherit"><img src="img/'+s[0]+'.jpg" loading="lazy" alt="'+s[1]+'" style="width:100%;border-radius:10px;border:1px solid var(--line);display:block;aspect-ratio:'+(s[0][0]==='c'?'3/2':'1/2')+';object-fit:cover;object-position:top"><div class="meta" style="margin-top:4px">'+s[1]+'</div></a>'}).join('');
+
+// ---------- toc highlight ----------
+var links=[].slice.call(document.querySelectorAll('nav.toc a'));
+if('IntersectionObserver' in window){var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){links.forEach(function(l){l.classList.toggle('on',l.getAttribute('href')==='#'+e.target.id)})}})},{rootMargin:'-20% 0px -70% 0px'});links.forEach(function(l){var s=document.querySelector(l.getAttribute('href'));if(s)io.observe(s)});}
+})();
+</script>
+</body></html>

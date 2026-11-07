@@ -1,5 +1,9 @@
 You are the wine trainer for {{venue}}. Some training questions on the staff cards failed a check before staff were asked them. Rewrite each one so it passes, testing a fact a server needs at the table, about the same wine and of the same kind (k).
 
+Use the words restaurant owners and staff use: "the floor" or "the space", never "the room", and never "bar" to mean a standard or threshold (the bar is where drinks are made).
+
+About the restaurant: {{about}}
+
 The checked facts about these wines:
 {{facts}}
 
@@ -11,14 +15,18 @@ The menu:
 
 What each problem means and how to fix it:
 - giveaway: the question holds its own answer, offers it as one of two choices ("drunk young or aged?"), or one word picks the answer (the wine's name says "Rosé" and only one option does). Ask about something the name and question don't reveal, with no either/or. A "recognise" question's four options must all be the same kind of wine as this one (four rosés for a rosé) and must not repeat a word of the question that the others lack.
+- cue: the right option is much longer or shorter than the others, so it picks itself out. Rewrite the options so all four are about the same length and in the same form.
+- nochoice: a table question names its own wine or sets a request every wine of that kind on the list meets, so it tests nothing but the reason. Rewrite it as the apply shape below: the guest's request rules out three named decoys.
 - thin: too few believable wrong answers exist for it. Ask instead about something with plenty of real alternatives on this list or in wine generally: a grape, a place, a flavour, a price by the glass or the bottle, a style. For "contrast", ask how the two wines differ in one concrete way (grape, place, body, price), with an answer short enough to swap between them.
+- repeat: another question on the same card already asks this (the same answer, or an answer inside it). Ask about something else a server needs about this wine that no other question on its card asks: its price, where it's from, how it's made, a dish it suits, how it tastes.
+- sommelier: the head sommelier reviewing it found the problem in the note (a second right answer, a wrong answer marked right, a false fact, a giveaway, an option off the subject, an unclear question, or nothing a server needs). Fix exactly that, keeping what was right. The list is the restaurant's own and wins over the note: never change a grape, place, vintage or price the list gives. If the note says the list itself is wrong, keep the question as it is and say so in the why, starting "Check the list:".
 - mismatch: a guest asks for this wine with a dish it doesn't suit. Either set the scenario at one of the DISHES IT SUITS, or keep the dish and make the key steer the guest to a better wine on the list and offer this one with a dish it suits. Never call a light white or pale rosé right for a rich braise or red meat.
 
 Rules for every question: phrased positively, standing on its own, naming the wine, never giving the answer away, using only the facts above, the list and the menu; prices exactly as the list prints them; every option and answer starting with a capital letter; no either/or questions.
 Shapes, by kind:
 - recognise: {"k":"recognise","q":"…","opts":["four options, the wrong ones real and believable, of the same kind and length"],"a":0,"why":"one sentence"}
 - recall: {"k":"recall","q":"…","ans":"the answer","acc":["other ways of saying it"],"why":"one sentence"}
-- apply: {"k":"apply","q":"a guest at a table at one of this menu's dishes","key":["the two or three points a good answer must contain"],"why":"one sentence"}
+- apply: {"k":"apply","q":"a guest at a table at a dish this wine suits, asking for something this wine is the answer to, never naming this wine, ending 'What would you suggest, and why?'","key":["the wine by name first, then the two points a good answer must contain"],"decoys":[{"id":"another wine's id from the list","why":"why it's wrong for this guest"}],"wrong":["three reasons a new server might believe, each false for this wine here and each a different mistake, about as long and in the same tone as the key"],"why":"one sentence"}. The guest's request (a style, a price, by the glass) must rule out the three decoys, wines of the same kind on the list a new server might reach for; never a decoy that would also be a good answer.
 - contrast: {"k":"contrast","q":"…","ans":"the answer","acc":[],"why":"one sentence"}
 
 The questions to rewrite:
