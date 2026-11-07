@@ -1978,3 +1978,29 @@ test('what the reviewers read is what the drill shows: four options as dealt, re
   expect(r.notWines).toEqual([]); // "Name a wine by the glass for…" never offers Rioja or the Loire
   expect(r.contrastRight).toEqual([]);
 });
+
+test('the faults the sommelier review found stay fixed on every restaurant: grape colours, "the The", cut-off lines, one claim per comparison', async ({ context, page }) => {
+  await stubNetwork(context);
+  for (const seed of ['social', 'demo']) {
+    await page.goto(`${BASE}/team/?seed=${seed}`);
+    await page.waitForFunction(() => window.TeamLearn && TeamData.wines().length > 0);
+    const r = await page.evaluate(() => {
+      const out = { colour: [], theThe: [], cut: [], claims: [], faults: [] };
+      TeamData.wines().forEach((w) => [...TeamLearn.wineQs(w.id), ...TeamLearn.lightQs(w.id)].forEach((q) => {
+        const s = TeamLearn.shown(TeamLearn.deal(q, 't')), wrong = s.opts.filter((o, i) => !s.right.includes(i));
+        const col = TeamLearn._wineSkin(w);
+        if (q.k === 'recall' && col && TeamLearn._topic(q.q) === 'grape') wrong.forEach((o) => { if (TeamLearn._grapeSkin(o) === TeamLearn._otherSkin(col)) out.colour.push(`${w.name}: ${o}`); });
+        if (q.k === 'contrast') { const seen = new Set(); wrong.forEach((o) => TeamLearn._styleAxes(o).forEach((a) => { if (seen.has(a)) out.claims.push(q.id); seen.add(a); })); }
+        const a = TeamLearn.aside(q, s.right.map((i) => s.opts[i]).join(' ')); if (a && a.text && /…$/.test(a.text)) out.cut.push(q.id);
+        if (TeamLearn._fault(q)) out.faults.push(q.id);
+      }));
+      TeamData.dishes().forEach((d) => TeamLearn.dishQs(d.id, { all: true }).forEach((q) => { const t = [q.q, ...(q.opts || []), ...((q.pills || {}).opts || [])].join(' '); if (/\bthe The\b/.test(t)) out.theThe.push(q.id); }));
+      return out;
+    });
+    expect(r.colour, seed).toEqual([]); // a still white is never asked against Syrah, a red never against Riesling
+    expect(r.theThe, seed).toEqual([]);
+    expect(r.cut, seed).toEqual([]); // the line after an answer is whole sentences or nothing
+    expect(r.claims, seed).toEqual([]); // "Veuve is lighter" and "Lanson is fuller" are one mistake, offered once
+    expect(r.faults, seed).toEqual([]); // nothing the drill asks is thin, pooled or picked out by the length of its reasons
+  }
+});
