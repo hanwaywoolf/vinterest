@@ -315,8 +315,7 @@ const TeamData = {
      until the next review. The pre-handover gate for a new install (docs/business.md, "Handing over an install"):
      `npm run team:review` runs it on a seed and writes the result into its file. The demo restaurant is never sent. */
   REVIEW_BATCH:10,
-  _reviewItem(q){ const d=TeamLearn.deal(q,'review'); let c=null; try{ c=TeamLearn.choices(d); }catch(e){}
-    const opts=c&&c.opts||d.opts||[], right=c&&c.right||(d.a!=null?[d.a]:[]);
+  _reviewItem(q){ const d=TeamLearn.deal(q,'review'), c=TeamLearn.shown(d), opts=c.opts, right=c.right;
     const about=q.wine?`WINE ${this.label(this.wine(q.wine)||{})}`:q.cocktail?`COCKTAIL ${(this.cocktail(q.cocktail)||{}).name||''}`:q.dish?`DISH ${(this.dish(q.dish)||{}).name||''}`:'';
     const ax=TeamLearn.aside(d,right.map(i=>opts[i]).join(' ')||d.ans);
     const groups=c&&c.groups&&c.groups.length>1?' (in '+c.groups.map(g=>`"${g.label}": choose ${g.n}`).join(', ')+')':c&&c.n>1?` (choose ${c.n})`:'';
@@ -338,7 +337,9 @@ const TeamData = {
     const card=doubted.filter(q=>q.wine&&!q.light&&!q.dish), fixTpl=_loadTextSync('prompts/team-fix.txt');
     for(let i=0;i<card.length;i+=this.FIX_BATCH) await this._rewrite(card.slice(i,i+this.FIX_BATCH).map(q=>({q,wine:q.wine,why:'sommelier',note:`${first[q.id].problem}: ${first[q.id].note}`})),fixTpl,venue);
     const again=card.length?await ask(card.map(q=>TeamLearn.wineQs(q.wine,{all:true}).find(x=>x.id===q.id)).filter(Boolean)):{};
-    const held=doubted.filter(q=>!(card.includes(q)&&again[q.id]&&again[q.id].fit!==false)).map(q=>q.id);
+    // A rewrite that disputes the list ("Check the list:") isn't a fix: it stays held, with the note, for the manager.
+    const disputes=q=>{ const n=TeamLearn.wineQs(q.wine,{all:true}).find(x=>x.id===q.id); return !!(n&&/^check the list:/i.test(String(n.why||''))); };
+    const held=doubted.filter(q=>!(card.includes(q)&&again[q.id]&&again[q.id].fit!==false&&!disputes(q))).map(q=>q.id);
     const d=this.get(); d.venue.reviewed={at:Date.now(),asked:all.length,doubted:doubted.length,fixed:doubted.length-held.length,held,
       notes:Object.fromEntries(held.map(id=>[id,{problem:(again[id]||first[id]).problem,note:(again[id]||first[id]).note}]))};
     this.save(d); return d.venue.reviewed; },

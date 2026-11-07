@@ -20,9 +20,14 @@ let held = 0;
 try {
   for (const seed of seeds) {
     const page = await browser.newPage();
+    // Sent with curl, which follows the machine's proxy settings (Node's own fetch doesn't); a failed call answers 502 so
+    // the review records it as unread rather than stopping.
     await page.route('**/claude', async (route) => {
-      const r = await fetch(`${API}/claude`, { method: 'POST', headers: { 'Content-Type': 'application/json', Origin: API }, body: route.request().postData() });
-      await route.fulfill({ status: r.status, headers: { 'content-type': 'application/json' }, body: await r.text() });
+      try {
+        const out = await new Promise((res, rej) => { const c = spawn('curl', ['-sS', '-m', '180', '-X', 'POST', `${API}/claude`, '-H', 'Content-Type: application/json', '-H', `Origin: ${API}`, '--data-binary', '@-', '-w', '\n%{http_code}']);
+          let o = ''; c.stdout.on('data', (d) => { o += d; }); c.on('close', (code) => code ? rej(new Error('curl ' + code)) : res(o)); c.stdin.end(route.request().postData()); });
+        const i = out.lastIndexOf('\n'); await route.fulfill({ status: Number(out.slice(i + 1)) || 502, headers: { 'content-type': 'application/json' }, body: out.slice(0, i) });
+      } catch (e) { await route.fulfill({ status: 502, headers: { 'content-type': 'application/json' }, body: JSON.stringify({ error: e.message }) }); }
     });
     page.on('console', (m) => { if (/review:/.test(m.text())) process.stdout.write('\r' + m.text().padEnd(60)); });
     await page.goto(`http://localhost:${port}/team/?seed=${seed}`);
@@ -30,6 +35,7 @@ try {
     const rules = await page.evaluate(() => TeamLearn.review().length);
     if (rules) { console.error(`\n${seed}: ${rules} questions fail the rule review; run npm run team:audit and fix those first.`); process.exitCode = 1; continue; }
     const r = await page.evaluate(async () => {
+      await TeamData.checkQuestions(null, (a, b) => console.log(`review: rule rewrites ${a} of ${b}`)); // repeats and giveaways rewritten first
       const res = await TeamData.sommelierReview({ onStep: (a, b) => console.log(`review: ${a} of ${b}`) });
       if (!res) return null;
       const d = TeamData.get();
