@@ -348,8 +348,8 @@ test('the menu module: allergens are drafted, confirmed by the kitchen, then sho
   await stubNetwork(ctx);
   await page.goto(`${BASE}/team/?seed=social&view=console`);
   await expect(page.getByTestId('console-dash')).toBeVisible();
-  const before = await page.evaluate(() => ({ notes: Object.keys(TeamData.get().dishCards || {}).length, conf: TeamData.allergensOf('d-fresh-oysters'), parts: Object.keys(TeamLearn.readiness(TeamLearn.me().id).parts), qs: TeamLearn.dishQs('d-fresh-oysters').map((q) => q.id),
-    know: TeamLearn.dishQs('d-fresh-oysters').find((q) => /#know$/.test(q.id)), others: TeamData.dishes().filter((x) => x.id !== 'd-fresh-oysters').map((x) => (TeamData.dishCard(x.id) || {}).say).filter(Boolean) }));
+  const before = await page.evaluate(() => ({ notes: Object.keys(TeamData.get().dishCards || {}).length, conf: TeamData.allergensOf('d-fresh-oysters'), parts: Object.keys(TeamLearn.readiness(TeamLearn.me().id).parts), qs: TeamLearn.dishQs('d-fresh-oysters', { all: true }).map((q) => q.id),
+    know: TeamLearn.dishQs('d-fresh-oysters', { all: true }).find((q) => /#know$/.test(q.id)), others: TeamData.dishes().filter((x) => x.id !== 'd-fresh-oysters').map((x) => (TeamData.dishCard(x.id) || {}).say).filter(Boolean) }));
   expect(before.notes).toBeGreaterThan(30); expect(before.conf).toBeNull();
   // Know it asks the dish's own sentence against near-misses of the same dish, never another dish's description
   // (the question names the dish, so "the lamb shoulder" against "a lemon tart" taught nothing).
@@ -1866,6 +1866,7 @@ test('a wine card: where you stand near the top, sections that fold and stay fol
 // it, against the faults found by hand: a wrong answer about another dish, answers of mixed kinds, a table request that
 // gives the answer away, an answer screen that repeats the answer or runs long, duplicates, length cues, giveaway words.
 test('the review finds nothing to fix on any restaurant in the build', async ({ context, page }) => {
+  test.setTimeout(120000); // the whole review of three restaurants, twice over
   await stubNetwork(context);
   for (const seed of ['demo', 'sample', 'social']) {
     await page.goto(`${BASE}/team/?seed=${seed}`);
@@ -1874,14 +1875,17 @@ test('the review finds nothing to fix on any restaurant in the build', async ({ 
     expect(flags, seed).toEqual([]);
   }
   // It catches what it's for: a dish's change answered about another dish is flagged.
-  const caught = await page.evaluate(() => { const d = TeamData.dishes()[0], o = TeamData.dishes()[1], q = TeamLearn.dishQs(d.id).find((x) => /#mod$/.test(x.id)) || null;
+  const caught = await page.evaluate(() => { const d = TeamData.dishes()[0], o = TeamData.dishes()[1], q = TeamLearn.dishQs(d.id, { all: true }).find((x) => /#mod$/.test(x.id)) || null;
     if (!q) return 'none'; const bad = { ...q, pills: { ...q.pills, opts: q.pills.opts.map((x, i) => q.pills.right.includes(i) ? x : `The ${o.name} is served as it comes.`) } };
     const was = TeamLearn.dishQs; TeamLearn.dishQs = (id) => id === d.id ? [bad] : []; const r = TeamLearn.review().some((f) => f.code === 'offsubject'); TeamLearn.dishQs = was; return r; });
   expect(caught).toBe(true); // on The Social Corner, whose dishes have notes
-  // Repetition across one wine's questions is caught too: with the build's filter off, La Stella's two grape questions
-  // (both Cabernet Sauvignon) and its flavours inside its description are flagged.
-  const rep = await page.evaluate(() => { const was = TeamLearn._repeats; TeamLearn._repeats = () => new Set(); TeamLearn._qsCache = new WeakMap();
-    const f = TeamLearn.review().filter((x) => x.code === 'repeat' && /fortissimo/.test(x.q.wine || '')).length; TeamLearn._repeats = was; TeamLearn._qsCache = new WeakMap(); return f; });
+  // Repetition across one wine's questions is caught too: with the build's filter off, a second grape question on La Stella
+  // (Cabernet Sauvignon again, as an earlier card had) and flavours that sit inside its description are flagged.
+  const rep = await page.evaluate(() => { const d = TeamData.get(), qs = d.cards['w-la-stella-fortissimo'].qs, desc = qs.find((q) => /#0$/.test(q.id));
+    qs.push({ id: 'w-la-stella-fortissimo#t1', k: 'recall', q: 'Which grape is the La Stella Fortissimo 2021 made from?', ans: 'Cabernet Sauvignon', acc: [], why: 'x' },
+      { id: 'w-la-stella-fortissimo#t2', k: 'recall', q: 'Which flavours would you describe to a guest?', ans: desc.opts[desc.a].split(/, with /).pop(), acc: [], why: 'x' }); TeamData.save(d);
+    const was = TeamLearn._repeats, held = TeamLearn._held; TeamLearn._repeats = () => new Set(); TeamLearn._held = () => new Set(); TeamLearn._qsCache = new WeakMap();
+    const f = TeamLearn.review().filter((x) => x.code === 'repeat' && /fortissimo/.test(x.q.wine || '')).length; TeamLearn._repeats = was; TeamLearn._held = held; qs.splice(-2); TeamData.save(d); TeamLearn._qsCache = new WeakMap(); return f; });
   expect(rep).toBeGreaterThanOrEqual(2);
   // And a drill on that one wine asks each thing once and never shows the same line after an answer twice.
   const one = await page.evaluate(() => { const w = TeamData.wines().find((x) => /Fortissimo/.test(x.name)), qs = TeamLearn.qsFor('manager', w.id), used = new Set(), lines = [];

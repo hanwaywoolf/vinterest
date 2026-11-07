@@ -337,7 +337,9 @@ const TeamData = {
     const card=doubted.filter(q=>q.wine&&!q.light&&!q.dish), fixTpl=_loadTextSync('prompts/team-fix.txt');
     for(let i=0;i<card.length;i+=this.FIX_BATCH) await this._rewrite(card.slice(i,i+this.FIX_BATCH).map(q=>({q,wine:q.wine,why:'sommelier',note:`${first[q.id].problem}: ${first[q.id].note}`})),fixTpl,venue);
     const again=card.length?await ask(card.map(q=>TeamLearn.wineQs(q.wine,{all:true}).find(x=>x.id===q.id)).filter(Boolean)):{};
-    const held=doubted.filter(q=>!(card.includes(q)&&again[q.id]&&again[q.id].fit!==false)).map(q=>q.id);
+    // A rewrite that disputes the list ("Check the list:") isn't a fix: it stays held, with the note, for the manager.
+    const disputes=q=>{ const n=TeamLearn.wineQs(q.wine,{all:true}).find(x=>x.id===q.id); return !!(n&&/^check the list:/i.test(String(n.why||''))); };
+    const held=doubted.filter(q=>!(card.includes(q)&&again[q.id]&&again[q.id].fit!==false&&!disputes(q))).map(q=>q.id);
     const d=this.get(); d.venue.reviewed={at:Date.now(),asked:all.length,doubted:doubted.length,fixed:doubted.length-held.length,held,
       notes:Object.fromEntries(held.map(id=>[id,{problem:(again[id]||first[id]).problem,note:(again[id]||first[id]).note}]))};
     this.save(d); return d.venue.reviewed; },
