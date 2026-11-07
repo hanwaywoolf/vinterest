@@ -4,7 +4,7 @@
 //
 //   site/teams/*.html           the pages (templates: %%TOKENS%% are filled in below); each is served
 //                               without its .html (/pricing), index.html at /
-//   site/teams/_*.html          parts every page shares: %%NAV%%, %%TEST%% (the Test Your List
+//   site/teams/_*.html          parts every page shares: %%NAV%%, %%PILOT%% (the pilot sign-up
 //                               form), %%FOOTER%%; the nav marks the page it's on
 //   site/teams/site.css, site.js  shared styles and the form's script
 //   site/teams/img/             the product screens
@@ -70,7 +70,7 @@ export function build() {
   // a new screenshot can never be served from a phone's earlier copy.
   const imgs = (d) => fs.readdirSync(d, { withFileTypes: true }).flatMap((e) => e.isDirectory() ? imgs(path.join(d, e.name)) : [path.join(d, e.name)]);
   vars.IMG_V = hash(imgs(path.join(SRC, 'img')).sort().map((f) => f + hash(fs.readFileSync(f))).join());
-  vars.TEST = part('test');
+  vars.PILOT = part('pilot');
   vars.FOOTER = fill(part('footer'), vars);
   const pages = fs.readdirSync(SRC).filter((f) => f.endsWith('.html') && !f.startsWith('_')).sort();
   if (!pages.includes('index.html')) throw new Error('site-teams: no index.html');
@@ -86,6 +86,7 @@ export function build() {
   fs.copyFileSync(path.join(ROOT, 'logo.png'), path.join(OUT, 'logo.png'));
   fs.copyFileSync(path.join(ROOT, 'site/_headers'), path.join(OUT, '_headers'));
   fs.copyFileSync(path.join(SRC, '_redirects'), path.join(OUT, '_redirects')); // www to the apex
+  fs.copyFileSync(path.join(SRC, '_worker.js'), path.join(OUT, '_worker.js')); // POST /api/pilot, then the static pages
   fs.writeFileSync(path.join(OUT, 'robots.txt'), `User-agent: *\nAllow: /\nSitemap: ${origin}/sitemap.xml\n`);
   fs.writeFileSync(path.join(OUT, 'sitemap.xml'),
     `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${pages.map((f) => `  <url><loc>${origin}/${f === 'index.html' ? '' : f.replace(/\.html$/, '')}</loc></url>`).join('\n')}\n</urlset>\n`);

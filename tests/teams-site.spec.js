@@ -9,6 +9,7 @@ const PAGES = ['/', '/restaurants', '/groups', '/wineries', '/pricing'];
 for (const width of [390, 1024, 1440]) {
   test(`every page renders cleanly at ${width}px`, async ({ browser }) => {
     const page = await browser.newPage({ viewport: { width, height: 900 } });
+    await page.route('**/api/country', (r) => r.fulfill({ contentType: 'application/json', body: '{"country":""}' })); // the site's Worker answers this
     const errors = [];
     page.on('pageerror', (e) => errors.push(e.message));
     page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
@@ -17,7 +18,7 @@ for (const width of [390, 1024, 1440]) {
       expect(res.status(), p).toBe(200);
       await expect(page.locator('h1')).toHaveCount(1);
       await expect(page.locator('footer')).toBeVisible();
-      await expect(page.locator('#testForm')).toHaveCount(1);
+      await expect(page.locator('#pilotForm')).toHaveCount(1);
       // No template token left unfilled, no sideways scroll.
       expect(await page.content(), p).not.toContain('%%');
       expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth), p).toBeLessThanOrEqual(0);
@@ -113,4 +114,70 @@ test('the demo opens full screen over the page and closes again', async ({ brows
   await page.locator('header .doors a', { hasText: 'Try Restaurant Demo' }).click();
   await expect(page.locator('#demoBox')).toBeVisible();
   await page.close();
+});
+
+// The pilot form: every page carries it, "Other" asks what, and it posts the answers to /api/pilot and
+// thanks them in place.
+test('the pilot form asks what it needs and sends it', async ({ browser }) => {
+  const page = await browser.newPage({ viewport: { width: 390, height: 900 } });
+  let sent = null;
+  await page.route('**/api/pilot', (r) => { sent = JSON.parse(r.request().postData()); r.fulfill({ contentType: 'application/json', body: '{"ok":true}' }); });
+  await page.route('**/api/country', (r) => r.fulfill({ contentType: 'application/json', body: '{"country":"CA"}' }));
+  await page.goto(BASE + '/restaurants');
+  await expect(page.locator('header .doors a', { hasText: 'Sign up for a pilot' })).toHaveAttribute('href', '#pilot');
+  await expect(page.locator('#p-country')).toHaveValue('CA');
+  const f = page.locator('#pilotForm');
+  await f.locator('button[type=submit]').click();
+  await expect(page.locator('#pilotNote')).toContainText('First name');
+  expect(sent).toBeNull();
+  await f.locator('#p-first').fill('Martin'); await f.locator('#p-last').fill('Lee'); await f.locator('#p-email').fill('martin@example.com');
+  await f.locator('#p-company').fill('The Larkspur'); await f.locator('#p-city').fill('Toronto');
+  await f.locator('#p-type').selectOption('wine_bar'); await f.locator('#p-sites').selectOption('1'); await f.locator('#p-team').selectOption('10–25');
+  await expect(f.locator('#p-pos-other')).toBeHidden();
+  await f.locator('#p-pos').selectOption('other');
+  await expect(f.locator('#p-pos-other')).toBeVisible();
+  await f.locator('#p-wines').selectOption('50–150');
+  await f.locator('button[type=submit]').click();
+  await expect(page.locator('#pilotNote')).toContainText('Which POS');
+  await f.locator('#p-pos-other').fill('TouchBistro');
+  await f.locator('button[type=submit]').click();
+  await expect(page.getByTestId('pilot-done')).toContainText('The Larkspur');
+  expect(sent).toMatchObject({ first_name: 'Martin', company: 'The Larkspur', city: 'Toronto', country: 'CA', venue_type: 'wine_bar', pos: 'other', pos_other: 'TouchBistro', list_size: '50–150' });
+  await page.close();
+});
+
+// The site's Worker: a request is checked, saved with the server key, and two emails go out (the
+// confirmation to them, the request to us); bots, other sites and a missing setup are refused.
+test('the site Worker saves a pilot request and emails both sides', async () => {
+  const fs = require('node:fs'), os = require('node:os'), path = require('node:path');
+  const copy = path.join(os.tmpdir(), `worker-teams-site-${process.pid}.mjs`);
+  fs.copyFileSync(path.join(__dirname, '..', 'site', 'teams', '_worker.js'), copy);
+  const mod = await import(require('node:url').pathToFileURL(copy).href + `?t=${Date.now()}`);
+  const good = { first_name: 'Ada', last_name: 'L', email: 'Ada@Example.com', company: 'The Larkspur', city: 'Bristol', country: 'GB', venue_type: 'restaurant', sites: '1', team_size: '10–25', pos: 'square', list_size: '50–150', notes: 'Soon,\nplease' };
+  expect(mod.readPilot({ ...good, venue_type: 'pub' }).error).toMatch(/type of business/);
+  expect(mod.readPilot({ ...good, pos: 'other' }).error).toMatch(/which POS/);
+  expect(mod.readPilot({ ...good, venue_type: 'other', venue_type_other: 'Hotel bar' }).row.venue_type_other).toBe('Hotel bar');
+  expect(mod.readPilot({ ...good, pos_other: 'ignored' }).row.pos_other).toBeNull();
+  const calls = [], real = global.fetch;
+  global.fetch = async (url, init) => { calls.push({ url: String(url), init }); return new Response('[]', { status: 201 }); };
+  try {
+    const env = { SUPABASE_URL: 'https://x.supabase.co', SUPABASE_SECRET_KEY: 'sk', RESEND_API_KEY: 're', PILOT_NOTIFY: 'carey@example.com' };
+    const post = (body, h = {}) => new Request('https://vinterest.team/api/pilot', { method: 'POST', headers: { 'content-type': 'application/json', origin: 'https://vinterest.team', 'cf-connecting-ip': String(Math.random()), ...h }, body: JSON.stringify(body) });
+    let res = await mod.handlePilot(post(good), env);
+    expect(res.status).toBe(200);
+    const db = calls.find((c) => c.url.includes('/rest/v1/pilot_requests'));
+    expect(db.init.headers.apikey).toBe('sk');
+    expect(JSON.parse(db.init.body)).toMatchObject({ email: 'ada@example.com', company: 'The Larkspur', pos: 'square', notes: 'Soon,\nplease' });
+    const mails = calls.filter((c) => c.url.includes('resend')).map((c) => JSON.parse(c.init.body));
+    expect(mails.map((m) => m.to[0]).sort()).toEqual(['ada@example.com', 'carey@example.com']);
+    expect(mails.find((m) => m.to[0] === 'carey@example.com')).toMatchObject({ reply_to: 'ada@example.com', subject: 'Pilot request: The Larkspur, Bristol' });
+    calls.length = 0;
+    expect((await (await mod.handlePilot(post({ ...good, website: 'x' }), env)).json()).ok).toBe(true); // the honeypot
+    expect((await mod.handlePilot(post(good, { origin: 'https://evil.example' }), env)).status).toBe(403);
+    expect((await mod.handlePilot(post({ ...good, email: 'nope' }), env)).status).toBe(400);
+    expect((await mod.handlePilot(post(good), {})).status).toBe(503);
+    expect(calls).toEqual([]);
+    const r = await mod.default.fetch(new Request('https://www.vinterest.team/pricing'), {});
+    expect(r.status).toBe(301); expect(r.headers.get('location')).toBe('https://vinterest.team/pricing');
+  } finally { global.fetch = real; }
 });

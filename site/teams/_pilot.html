@@ -1,0 +1,48 @@
+<section class="test pilot" id="pilot">
+  <div class="wrap">
+    <div>
+      <div class="eyebrow">Pilot</div>
+      <h2>Train your floor on your list, with us beside you.</h2>
+      <p class="lead">We're setting Vinterest Teams up with a small number of restaurants, wine bars, groups and wineries. Tell us about yours and we'll come back within two working days.</p>
+      <div class="pts">
+        <div>Your list and menu loaded, with cards and pairings written and checked before your team sees them.</div>
+        <div>Your sales connected or imported, so what sells is learnt first.</div>
+        <div>A pilot rate, and a say in what the product becomes.</div>
+      </div>
+    </div>
+    <form class="card form" id="pilotForm" novalidate>
+      <div class="row2">
+        <div class="f"><label for="p-first">First name</label><input type="text" id="p-first" name="first_name" autocomplete="given-name" maxlength="80" required></div>
+        <div class="f"><label for="p-last">Last name</label><input type="text" id="p-last" name="last_name" autocomplete="family-name" maxlength="80" required></div>
+      </div>
+      <div class="f"><label for="p-email">Work email</label><input type="email" id="p-email" name="email" autocomplete="email" maxlength="254" placeholder="you@restaurant.com" required></div>
+      <div class="row2">
+        <div class="f"><label for="p-company">Business name</label><input type="text" id="p-company" name="company" autocomplete="organization" maxlength="120" required></div>
+        <div class="f"><label for="p-role">Your role <small>optional</small></label><input type="text" id="p-role" name="role" autocomplete="organization-title" maxlength="80" placeholder="Owner, GM, head sommelier…"></div>
+      </div>
+      <div class="row2">
+        <div class="f"><label for="p-city">City</label><input type="text" id="p-city" name="city" autocomplete="address-level2" maxlength="80" required></div>
+        <div class="f"><label for="p-country">Country</label><select id="p-country" name="country" autocomplete="country" required><option value="">Select</option></select></div>
+      </div>
+      <div class="f"><label for="p-type">Type of business</label><select id="p-type" name="venue_type" required>
+        <option value="">Select</option><option value="restaurant">Restaurant</option><option value="fine_dining">Fine dining restaurant</option><option value="wine_bar">Wine bar</option><option value="group">Restaurant group</option><option value="winery">Winery or tasting room</option><option value="other">Other</option>
+      </select></div>
+      <div class="f" data-other="p-type" hidden><label for="p-type-other">Tell us what kind</label><input type="text" id="p-type-other" name="venue_type_other" maxlength="120"></div>
+      <div class="row2">
+        <div class="f"><label for="p-sites">Locations</label><select id="p-sites" name="sites" required><option value="">Select</option><option>1</option><option>2–5</option><option>6–20</option><option>More than 20</option></select></div>
+        <div class="f"><label for="p-team">Front-of-house team</label><select id="p-team" name="team_size" required><option value="">Select</option><option>Under 10</option><option>10–25</option><option>26–50</option><option>More than 50</option></select></div>
+      </div>
+      <div class="row2">
+        <div class="f"><label for="p-pos">POS system</label><select id="p-pos" name="pos" required>
+          <option value="">Select</option><option value="square">Square</option><option value="toast">Toast</option><option value="clover">Clover</option><option value="lightspeed">Lightspeed</option><option value="zonal">Zonal (Aztec)</option><option value="tevalis">Tevalis</option><option value="eposnow">Epos Now</option><option value="micros">Oracle Micros Simphony</option><option value="aloha">NCR Aloha</option><option value="other">Other</option><option value="none">None or not sure</option>
+        </select></div>
+        <div class="f"><label for="p-wines">Wines on the list</label><select id="p-wines" name="list_size" required><option value="">Select</option><option>Under 50</option><option>50–150</option><option>150–400</option><option>More than 400</option></select></div>
+      </div>
+      <div class="f" data-other="p-pos" hidden><label for="p-pos-other">Which POS?</label><input type="text" id="p-pos-other" name="pos_other" maxlength="80"></div>
+      <div class="f"><label for="p-notes">Anything else? <small>optional</small></label><textarea id="p-notes" name="notes" rows="3" maxlength="1000" placeholder="When you'd like to start, what you'd most like your team to know…"></textarea></div>
+      <div class="hp" aria-hidden="true"><label for="p-website">Website</label><input type="text" id="p-website" name="website" tabindex="-1" autocomplete="off"></div>
+      <button class="btn primary" type="submit">Sign up for a pilot</button>
+      <p class="fine" id="pilotNote" role="status">We use these details only to set up and run your pilot, never sold or shared.</p>
+    </form>
+  </div>
+</section>

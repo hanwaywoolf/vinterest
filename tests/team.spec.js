@@ -1923,7 +1923,7 @@ test('the sommelier review rewrites what it doubts, holds what it still doubts, 
 });
 
 // The demo tells the story a working team would: the house pours sell most and are the ones the team knows, so
-// most best sellers are known; and one glass most of its sellers know still sells little, which points at its
+// most best sellers are known; and one glass most of the team who serve it know still sells little, which points at its
 // price or pour rather than training.
 test('the demo sales: best sellers mostly known, and a glass known but not selling', async ({ context, page }) => {
   await stubNetwork(context);
