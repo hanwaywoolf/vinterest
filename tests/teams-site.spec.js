@@ -4,7 +4,7 @@
 const { test, expect } = require('@playwright/test');
 
 const BASE = 'http://localhost:4176';
-const PAGES = ['/', '/restaurants', '/groups', '/wineries', '/pricing'];
+const PAGES = ['/', '/restaurants', '/groups', '/wineries', '/pricing', '/privacy'];
 
 for (const width of [390, 1024, 1440]) {
   test(`every page renders cleanly at ${width}px`, async ({ browser }) => {
