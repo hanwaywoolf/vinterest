@@ -29,7 +29,7 @@ test('The Social Corner opens from ?seed=social on its own team, logo, dollars a
   page.on('pageerror', (e) => errors.push(e.message));
   await stubNetwork(context);
   await page.goto(`${BASE}/team/?seed=social`);
-  await expect(page.getByTestId('team-venue-logo')).toHaveAttribute('src', 'brand/social-corner/wordmark-white.png');
+  await expect(page.getByTestId('team-venue-logo')).toHaveAttribute('src', /^brand\/social-corner\/wordmark-white\.png\?v=/); // stamped, so a new logo is never shown from an old copy
   const logo = await page.request.get(`${BASE}/team/brand/social-corner/wordmark-white.png`);
   expect(logo.status()).toBe(200);
   const st = await page.evaluate(() => {
@@ -1677,7 +1677,7 @@ test('the names check plays each name through the guest voice, numbered like the
 
 test('a restaurant demo address names its restaurant, and nowhere else does', async ({ context, page }) => {
   await asMarco(context, page);
-  expect(await page.evaluate(() => [TeamSample.hostSeed('socialcorner.vinterest.team'), TeamSample.hostSeed('SocialCorner.vinterest.team'), TeamSample.hostSeed('princessroyal.vinterest.team'), TeamSample.hostSeed('vinterest.pages.dev'), TeamSample.hostSeed()])).toEqual(['social', 'social', 'princess-royal', null, null]);
+  expect(await page.evaluate(() => [TeamSample.hostSeed('socialcorner.vinterest.team'), TeamSample.hostSeed('SocialCorner.vinterest.team'), TeamSample.hostSeed('princessroyal.vinterest.team'), TeamSample.hostSeed('vinterest.pages.dev'), TeamSample.hostSeed(), TeamSample.hostSeed('demo.vinterest.team')])).toEqual(['social', 'social', 'princess-royal', null, null, 'demo']);
 });
 
 // Android Chrome sends every result as the whole utterance so far and repeats finals; the reply must come out once.
@@ -1969,6 +1969,24 @@ test('the demo sales: best sellers mostly known, and a glass known but not selli
   expect(row.knows).toBeGreaterThanOrEqual(Math.ceil(row.of / 2));
 });
 
+// Glasses and bottles are counted apart everywhere Sales Insights reports what sold: a bottle is several glasses' takings.
+test('sales insights count glasses and bottles apart', async ({ context, page }) => {
+  await stubNetwork(context);
+  await page.goto(`${BASE}/team/?seed=demo`);
+  await expect(page.getByTestId('team-state')).toBeVisible();
+  const r = await page.evaluate(() => { const s = TeamReport.salesSummary(7), b = TeamReport.salesBrief(); return { s, text: b.map((x) => x.title + ' ' + x.text).join(' ') }; });
+  expect(r.s.glasses + r.s.bottles).toBe(r.s.lines);
+  expect(r.text).not.toMatch(/glasses (or|and) bottles/);
+  expect(r.text).toContain(`${r.s.glasses} glasses and ${r.s.bottles} bottles`);
+  expect(r.text).toMatch(/\d\.\d\d glasses and \d\.\d\d bottles a guest/);
+  await page.goto(`${BASE}/team/?view=console`);
+  await page.getByTestId('console-nav-sales').click();
+  await expect(page.getByTestId('sales-glasses')).toHaveText(/^\d\.\d\d/);
+  await expect(page.getByTestId('sales-bottles')).toHaveText(/^\d\.\d\d/);
+  await expect(page.getByTestId('console-sales')).toContainText('Glasses per guest');
+  await expect(page.getByTestId('console-sales')).toContainText('Bottles per guest');
+});
+
 // Console access is per person (TeamLearn.canConsole): a manager's Today figures open the console's own sections on a
 // phone, a server gets no way in until someone turns it on for them, and the Add dialog sets it.
 test('console access per person: Today opens the console on a phone, and a server gets it only when it is turned on', async ({ context, page }) => {
@@ -2024,4 +2042,43 @@ test('what the reviewers read is what the drill shows: four options as dealt, re
   expect(r.abroad).toEqual([]); // "Which Italian region…" never offers the Rhône or the Okanagan
   expect(r.notWines).toEqual([]); // "Name a wine by the glass for…" never offers Rioja or the Loire
   expect(r.contrastRight).toEqual([]);
+});
+
+// A device that opened The Larkspur before the demo's story changed meets the new one: the old copy's team,
+// progress and sales are replaced whole (it's invented), where The Social Corner keeps them between deploys.
+test('an older copy of the demo restaurant is replaced whole', async ({ context, page }) => {
+  await stubNetwork(context);
+  await page.goto(`${BASE}/team/?seed=demo`);
+  await expect(page.getByTestId('team-state')).toBeVisible();
+  const before = await page.evaluate(() => {
+    const d = TeamData.get(); d.venue.seeded = 'an older build'; TeamData.save(d);   // as a phone that opened it before
+    TeamLearn.addPerson('Old Visitor', 'server');
+    return { current: TeamSample.current('demo'), people: TeamLearn.people().length };
+  });
+  expect(before.current).toBe(false);
+  await page.goto(`${BASE}/team/?seed=demo`);
+  await expect(page.getByTestId('team-state')).toBeVisible();
+  const after = await page.evaluate(() => ({ current: TeamSample.current('demo'), names: TeamLearn.people().map((p) => p.name), sales: (TeamSales.get().rows || []).length, logo: TeamData.brand().logo }));
+  expect(after.current).toBe(true);
+  expect(after.names).not.toContain('Old Visitor');
+  expect(after.sales).toBeGreaterThan(0);
+  expect(after.logo).toMatch(/story\d+/);
+});
+
+// The Social Corner keeps its team's progress between deploys, but a changed demo story re-invents its sales.
+test('a changed demo story re-invents The Social Corner sales and keeps its progress', async ({ context, page }) => {
+  await stubNetwork(context);
+  await page.goto(`${BASE}/team/?seed=social`);
+  await expect(page.getByTestId('team-state')).toBeVisible();
+  const before = await page.evaluate(() => {
+    const d = TeamData.get(); d.venue.seeded = 'old|old|story1'; TeamData.save(d);
+    const s = TeamSales.get(); s.rows = s.rows.slice(0, 3); TeamSales.save(s);
+    return { people: TeamLearn.people().map((p) => p.name) };
+  });
+  await page.goto(`${BASE}/team/?seed=social`);
+  await expect(page.getByTestId('team-state')).toBeVisible();
+  const after = await page.evaluate(() => ({ current: TeamSample.current('social'), rows: TeamSales.get().rows.length, people: TeamLearn.people().map((p) => p.name) }));
+  expect(after.current).toBe(true);
+  expect(after.rows).toBeGreaterThan(3);
+  expect(after.people).toEqual(before.people);
 });
