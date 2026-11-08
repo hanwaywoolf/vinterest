@@ -101,6 +101,17 @@ Princess Royal's list that is about 50 calls on Sonnet against about 500 on Opus
 carries `teaser` {wines, at}. Once the restaurant signs, the same command without `--teaser` brings the rest of the list
 back and writes what's missing on `TEAM_MODEL`, keeping the teaser's cards, then `team:review` runs as for any install.
 
+## Prompt caching
+
+Every Teams prompt that writes or checks a restaurant's training (`prompts/team-cards.txt`, `team-fix`, `team-review`,
+`team-pairings`, `team-cocktail-cards`, `team-dish-cards`) puts what's the same for every call of a publish first (the
+instructions, the restaurant, the wine list and the menu) and marks where it ends with a line `[[cache-above]]`; what one
+call is about (its wines and their checked facts, its dishes, its questions) comes after. The Worker (`cacheSplit` in
+`_worker.js`) sends the part above as its own block marked for Anthropic's prompt cache and drops the marker, so the second
+and later calls of a run read the list and menu back at a twentieth of the input price on Opus 5.5. Measured on The
+Princess Royal's review: about 12,400 tokens read from the cache per call, the call about three-quarters cheaper. A new
+prompt that should be cached needs the marker, and `tests/worker-model.spec.js` fails if a per-call placeholder sits above it.
+
 ## The Princess Royal install
 
 `/team/?seed=princess` (the seed is `princess-royal`) opens The Princess Royal, a Cubitt House pub and boutique hotel in
