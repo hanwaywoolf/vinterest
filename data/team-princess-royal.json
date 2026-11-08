@@ -8959,6 +8959,862 @@
     }
    ],
    "at": 1794142581498
+  },
+  "w-jean-marc-burgaud-beaujolais-villages-blanc": {
+   "id": "w-jean-marc-burgaud-beaujolais-villages-blanc",
+   "hook": "Chardonnay from Beaujolais, just south of Burgundy and a touch warmer, so the fruit gets riper.",
+   "pitch": "It's a dry white made from Chardonnay, with ripe apple and citrus fruit and a fresh, mouth-watering finish. If you like white Burgundy, this is a slightly sunnier, rounder take on the same grape from just down the road.",
+   "say": "zhon-mark bur-GOH, boh-zhuh-LAY vee-LAHZH BLONH",
+   "taste": "Dry and medium-bodied, with ripe apple and lemon fruit and a fresh, clean finish.",
+   "style": {
+    "body": 3,
+    "acid": 3,
+    "tannin": 0,
+    "sweet": 1
+   },
+   "grape": "Chardonnay is a fairly neutral grape that takes on the winemaker's choices, so here it shows the ripe, rounded fruit of a slightly warmer spot.",
+   "place": "Beaujolais sits just south of Burgundy and is a little warmer, and Beaujolais-Villages is the middle of its three quality levels, between plain Beaujolais and the ten crus, its top named villages.",
+   "producer": "",
+   "serve": {
+    "temp": "10-12°C",
+    "glass": "standard white wine glass",
+    "decant": "no"
+   },
+   "dishes": [
+    {
+     "dish": "Half Chicken",
+     "why": "Roast chicken and rounded Chardonnay are a classic pairing, and the fresh finish keeps each mouthful lively."
+    },
+    {
+     "dish": "Hake, Mussels, Cannellini Beans, Leeks",
+     "why": "The ripe fruit matches the creamy beans and leeks without drowning the delicate fish."
+    },
+    {
+     "dish": "Delica Squash Risotto, Brown Butter, Pumpkin Seed Relish",
+     "why": "A rounder white sits nicely with the creamy, nutty risotto, and the freshness stops it feeling heavy."
+    }
+   ],
+   "alts": [
+    {
+     "id": "w-domaine-perraud-macon-villages-maison-cubitt",
+     "when": "by the glass, same grape from southern Burgundy"
+    },
+    {
+     "id": "w-prieure-saint-come-chablis",
+     "when": "crisper, leaner Chardonnay for oysters or raw fish"
+    },
+    {
+     "id": "w-bruno-clair-marsannay-blanc",
+     "when": "a step up into Burgundy proper"
+    }
+   ],
+   "qs": [
+    {
+     "k": "recognise",
+     "q": "Which description best fits the Jean-Marc Burgaud Beaujolais Villages Blanc?",
+     "opts": [
+      "Dry and medium-bodied, with ripe apple, lemon and a fresh finish",
+      "Light and bone-dry, with sharp green lime and salty sea-spray notes",
+      "Full-bodied and sweet, with honey, apricot and marmalade flavours",
+      "Very perfumed and off-dry, with lychee, rose petal and ginger"
+     ],
+     "a": 0,
+     "why": "It's Chardonnay from a slightly warmer spot than Burgundy, so it's dry with ripe, rounded fruit and freshness.",
+     "id": "w-jean-marc-burgaud-beaujolais-villages-blanc#0"
+    },
+    {
+     "k": "recognise",
+     "q": "Where is the region of the Jean-Marc Burgaud Beaujolais Villages Blanc, compared with Burgundy?",
+     "opts": [
+      "Just south of Burgundy, and a touch warmer",
+      "Just north of Burgundy, and a touch cooler",
+      "Far west of Burgundy, on the Atlantic coast",
+      "Far east of Burgundy, high in the Alps"
+     ],
+     "a": 0,
+     "why": "Beaujolais lies just south of Burgundy and has a slightly warmer climate.",
+     "id": "w-jean-marc-burgaud-beaujolais-villages-blanc#1"
+    },
+    {
+     "k": "recall",
+     "q": "What grape is the Jean-Marc Burgaud Beaujolais Villages Blanc made from?",
+     "ans": "Chardonnay",
+     "acc": [
+      "Chardonnay grapes",
+      "100% Chardonnay"
+     ],
+     "why": "Guests who know white Burgundy will relax when they hear it's the same grape.",
+     "id": "w-jean-marc-burgaud-beaujolais-villages-blanc#2"
+    },
+    {
+     "k": "recall",
+     "q": "Where does Beaujolais-Villages, as on the Jean-Marc Burgaud Beaujolais Villages Blanc, sit among Beaujolais quality levels?",
+     "ans": "The middle level, between plain Beaujolais and the ten crus",
+     "acc": [
+      "in the middle",
+      "middle tier",
+      "above Beaujolais, below the crus"
+     ],
+     "why": "Beaujolais has three levels: plain Beaujolais, Beaujolais-Villages, then the ten crus at the top.",
+     "id": "w-jean-marc-burgaud-beaujolais-villages-blanc#3"
+    },
+    {
+     "k": "apply",
+     "q": "A guest ordering the Half Chicken says: 'We love Chardonnay but always end up drinking Burgundy. Can we try a bottle from somewhere a bit different, under £60?' What would you suggest, and why?",
+     "key": [
+      "Jean-Marc Burgaud Beaujolais Villages Blanc",
+      "It's Chardonnay from Beaujolais, just south of Burgundy, at £58 a bottle, so it fits the budget",
+      "Its ripe, rounded fruit and fresh finish suit roast chicken without overpowering it"
+     ],
+     "decoys": [
+      {
+       "id": "w-domaine-perraud-macon-villages-maison-cubitt",
+       "why": "It's Chardonnay from Burgundy, which is exactly what the guest wants a change from."
+      },
+      {
+       "id": "w-bakestones-cellars-chardonnay",
+       "why": "At £70 it's over the guest's £60 budget."
+      },
+      {
+       "id": "w-prieure-saint-come-chablis",
+       "why": "It's Burgundy again, and at £68 it's over budget."
+      }
+     ],
+     "wrong": [
+      "It's a big, heavy white that needs a rich meat dish to stand up to it",
+      "Its firm, grippy tannin, like a red's, cuts through the crispy chicken skin",
+      "It's so sharp and lean that it only really works with raw shellfish"
+     ],
+     "why": "It's the only Chardonnay on the list under £60 that isn't from Burgundy, and rounded Chardonnay is a natural with roast chicken.",
+     "id": "w-jean-marc-burgaud-beaujolais-villages-blanc#4"
+    },
+    {
+     "k": "contrast",
+     "q": "A guest wants a glass of Chardonnay: can you pour the Jean-Marc Burgaud Beaujolais Villages Blanc or the Domaine Perraud Mâcon-Villages, Maison Cubitt?",
+     "ans": "Only the Maison Cubitt Mâcon-Villages, at £13.50 a glass; the Burgaud is bottle only",
+     "acc": [
+      "the Mâcon-Villages",
+      "the Maison Cubitt",
+      "the Domaine Perraud"
+     ],
+     "why": "Both are £58 Chardonnays, but only the house Mâcon-Villages is sold by the glass.",
+     "id": "w-jean-marc-burgaud-beaujolais-villages-blanc#5"
+    }
+   ],
+   "at": 1794142590137
+  },
+  "w-david-moret-aligote-le-grand-a": {
+   "id": "w-david-moret-aligote-le-grand-a",
+   "hook": "Aligoté, Burgundy's other white grape, by David Moret, who also makes our Meursault and Saint-Romain.",
+   "pitch": "It's a crisp, dry white from Burgundy made from Aligoté rather than Chardonnay, with bright lemony freshness that makes your mouth water. It's a brilliant wake-up wine with oysters and raw fish, and a fun change for anyone who usually orders Chablis.",
+   "say": "da-VEED mo-RAY, a-lee-go-TAY, luh gron AH",
+   "taste": "Dry, light to medium-bodied and crisp, with lemony, mouth-watering freshness.",
+   "style": {
+    "body": 2,
+    "acid": 4,
+    "tannin": 0,
+    "sweet": 1
+   },
+   "grape": "Aligoté is Burgundy's other white grape, usually known for brisk, lemony freshness rather than richness, and that zing is what this wine is about.",
+   "place": "Burgundy has a cool continental climate, meaning inland with warm summers and cold winters, so wines stay fresh and each year's weather really shows.",
+   "producer": "",
+   "serve": {
+    "temp": "8-10°C",
+    "glass": "standard white wine glass",
+    "decant": "no"
+   },
+   "dishes": [
+    {
+     "dish": "Seasonal Oysters, Mignonette",
+     "why": "A crisp, lemony white is like a squeeze of lemon over a salty oyster."
+    },
+    {
+     "dish": "Sea Bream Crudo, Preserved Lemon, Dill",
+     "why": "Its zesty freshness echoes the preserved lemon and doesn't swamp the delicate raw fish."
+    },
+    {
+     "dish": "Smoked Mackerel Pâté",
+     "why": "The sharp freshness cuts through the rich, smoky fish and refreshes the mouth."
+    }
+   ],
+   "alts": [
+    {
+     "id": "w-sylvain-cathiard-aligote",
+     "when": "same grape, a special-occasion step up"
+    },
+    {
+     "id": "w-michel-delhommeau-muscadet-sevre-et-maine-sur-lie",
+     "when": "under £55, another crisp white for oysters"
+    },
+    {
+     "id": "w-david-moret-saint-romain",
+     "when": "by the glass, same producer, Burgundy Chardonnay"
+    }
+   ],
+   "qs": [
+    {
+     "k": "recognise",
+     "q": "Which description best fits the David Moret Aligoté, Le Grand A?",
+     "opts": [
+      "Light to medium-bodied, dry and crisp, with lemony, mouth-watering zing",
+      "Full-bodied and creamy, with butter, vanilla and toasted oak flavours",
+      "Off-dry and perfumed, with ripe peach, apricot and floral notes",
+      "Rich and sweet, with honey, dried fruit and marmalade flavours"
+     ],
+     "a": 0,
+     "why": "Aligoté is usually all about brisk, lemony freshness rather than richness.",
+     "id": "w-david-moret-aligote-le-grand-a#0"
+    },
+    {
+     "k": "recognise",
+     "q": "What kind of climate does the David Moret Le Grand A come from?",
+     "opts": [
+      "Cool continental, with big differences from one year to the next",
+      "Hot Mediterranean, with very steady weather from one year to the next",
+      "Mild maritime, with gentle rain falling all through the year",
+      "Warm semi-desert, with vines needing watering every summer"
+     ],
+     "a": 0,
+     "why": "Burgundy is cool and continental, so vintages vary a lot and prices follow them.",
+     "id": "w-david-moret-aligote-le-grand-a#1"
+    },
+    {
+     "k": "recall",
+     "q": "What grape is the David Moret Le Grand A made from?",
+     "ans": "Aligoté",
+     "acc": [
+      "Aligote",
+      "Aligoté grapes"
+     ],
+     "why": "It's Burgundy's other white grape, which makes it a talking point for Chardonnay drinkers.",
+     "id": "w-david-moret-aligote-le-grand-a#2"
+    },
+    {
+     "k": "recall",
+     "q": "How much is a bottle of the David Moret Aligoté, Le Grand A?",
+     "ans": "£68",
+     "acc": [
+      "68 pounds",
+      "sixty-eight pounds"
+     ],
+     "why": "Knowing the price lets you offer it confidently to a guest with a budget.",
+     "id": "w-david-moret-aligote-le-grand-a#3"
+    },
+    {
+     "k": "apply",
+     "q": "A guest ordering the Seasonal Oysters, Mignonette says: 'We always have Chablis with oysters. Could we try a crisp Burgundy white that isn't Chardonnay, for under £70 a bottle?' What would you suggest, and why?",
+     "key": [
+      "David Moret Aligoté, Le Grand A",
+      "It's Aligoté, Burgundy's other white grape, at £68 so within budget",
+      "Its crisp, lemony freshness works like a squeeze of lemon with salty oysters"
+     ],
+     "decoys": [
+      {
+       "id": "w-prieure-saint-come-chablis",
+       "why": "It's Chablis, which is Chardonnay and exactly what the guest wants a change from."
+      },
+      {
+       "id": "w-sylvain-cathiard-aligote",
+       "why": "Right grape, but at £97 it's well over the £70 budget."
+      },
+      {
+       "id": "w-domaine-perraud-macon-villages-maison-cubitt",
+       "why": "It's Chardonnay, which the guest has ruled out."
+      }
+     ],
+     "wrong": [
+      "It's a rich, full-bodied white that stands up to the weight of the oysters",
+      "Its firm tannin grips the oyster and stops it tasting too fishy",
+      "Its smoky, toasty oak flavours make the oysters taste richer and creamier"
+     ],
+     "why": "It's the only non-Chardonnay Burgundy white under £70, and crisp, lemony whites are a classic with oysters.",
+     "id": "w-david-moret-aligote-le-grand-a#4"
+    },
+    {
+     "k": "contrast",
+     "q": "Both the David Moret Aligoté, Le Grand A and the Sylvain Cathiard Aligoté are Burgundy Aligoté: which is the 2023 at the lower price?",
+     "ans": "The David Moret, 2023 at £68 (the Cathiard is 2022 at £97)",
+     "acc": [
+      "David Moret",
+      "the Moret",
+      "Le Grand A"
+     ],
+     "why": "Same grape, so vintage and price are what tell them apart at the table.",
+     "id": "w-david-moret-aligote-le-grand-a#5"
+    }
+   ],
+   "at": 1794142590137
+  },
+  "w-domaine-des-hates-chablis-1er-cru-vau-de-vey": {
+   "id": "w-domaine-des-hates-chablis-1er-cru-vau-de-vey",
+   "hook": "A Premier Cru Chablis: Burgundy's second-highest quality tier, just below Grand Cru, from a cool continental climate.",
+   "pitch": "This is Chardonnay from Chablis in Burgundy, where the cool weather keeps it dry, fresh and lively, with clean citrus flavours. It's a Premier Cru, one step below the very top, so you get real quality without paying Grand Cru prices.",
+   "say": "doh-MEN day AHT, sha-BLEE pruh-MYAY KROO, voh duh VAY",
+   "taste": "Dry, fresh and lively, with citrus fruit and a clean, crisp finish.",
+   "style": {
+    "body": 3,
+    "acid": 5,
+    "tannin": 0,
+    "sweet": 1
+   },
+   "grape": "Chardonnay is a fairly neutral grape that takes on the winemaker's choices, and in Chablis's cool climate it shows bright freshness and citrus.",
+   "place": "Chablis is in Burgundy, France, where the cool continental climate (cold winters, warm but not hot summers) keeps the wine fresh and the weather can change a lot from year to year.",
+   "producer": "",
+   "serve": {
+    "temp": "10-12°C",
+    "glass": "white wine glass",
+    "decant": "no"
+   },
+   "dishes": [
+    {
+     "dish": "Seasonal Oysters, Mignonette",
+     "why": "Chablis and oysters are a classic pairing: the wine's crisp freshness cuts through the salty oysters and the sharp mignonette."
+    },
+    {
+     "dish": "Sea Bream Crudo, Preserved Lemon, Dill",
+     "why": "The wine's citrus freshness picks up the preserved lemon and won't overpower delicate raw fish."
+    },
+    {
+     "dish": "Hake, Mussels, Cannellini Beans, Leeks",
+     "why": "A fresh white like this suits white fish and shellfish, and its lively acidity keeps the creamy beans and leeks from feeling heavy."
+    }
+   ],
+   "alts": [
+    {
+     "id": "w-prieure-saint-come-chablis",
+     "when": "same village, lower price, under £70"
+    },
+    {
+     "id": "w-domaine-laroche-chablis-grand-cru-les-blanchots",
+     "when": "a special occasion: Grand Cru, the top tier of Chablis"
+    },
+    {
+     "id": "w-david-moret-saint-romain",
+     "when": "Burgundy white by the glass"
+    }
+   ],
+   "qs": [
+    {
+     "k": "recognise",
+     "q": "Which description best fits the Domaine des Hâtes Chablis 1er Cru, 'Vau de Vey' 2023?",
+     "opts": [
+      "Dry and lively, with citrus fruit and a clean, crisp finish",
+      "Sweet and honeyed, with gentle acidity and a sticky finish",
+      "Light and aromatic, with grapefruit, cut grass and a green finish",
+      "Full and heavy, with ripe tropical fruit and a soft, oily finish"
+     ],
+     "a": 0,
+     "why": "Chablis's cool continental climate gives a dry, fresh white with citrus and crisp acidity.",
+     "id": "w-domaine-des-hates-chablis-1er-cru-vau-de-vey#0"
+    },
+    {
+     "k": "recognise",
+     "q": "Where does the Domaine des Hâtes Chablis 1er Cru, 'Vau de Vey' 2023 sit among the four Burgundy quality tiers?",
+     "opts": [
+      "Second from the top, just below Grand Cru",
+      "At the very top, above every other level",
+      "Third from the top, at village level",
+      "At the very bottom, at regional level"
+     ],
+     "a": 0,
+     "why": "Burgundy's tiers run Grand Cru, Premier Cru, Village, Regional, and 1er Cru means Premier Cru, the second tier.",
+     "id": "w-domaine-des-hates-chablis-1er-cru-vau-de-vey#1"
+    },
+    {
+     "k": "recall",
+     "q": "What grape is the Domaine des Hâtes Chablis 1er Cru, 'Vau de Vey' 2023 made from?",
+     "ans": "Chardonnay",
+     "acc": [
+      "Chardonnay grapes",
+      "100% Chardonnay"
+     ],
+     "why": "Chablis is white Burgundy made from Chardonnay, and that's what the label tells us.",
+     "id": "w-domaine-des-hates-chablis-1er-cru-vau-de-vey#2"
+    },
+    {
+     "k": "recall",
+     "q": "Which French wine region is the Domaine des Hâtes Chablis 1er Cru, 'Vau de Vey' 2023 from?",
+     "ans": "Burgundy",
+     "acc": [
+      "Chablis, in Burgundy",
+      "Bourgogne",
+      "Chablis"
+     ],
+     "why": "Chablis is part of Burgundy, in France.",
+     "id": "w-domaine-des-hates-chablis-1er-cru-vau-de-vey#3"
+    },
+    {
+     "k": "apply",
+     "q": "A guest has ordered the Seasonal Oysters, Mignonette and says: 'I'd love a Chablis, but a step up from the basic one, and I want to keep it under £100 a bottle.' What would you suggest, and why?",
+     "key": [
+      "Domaine des Hâtes Chablis 1er Cru, 'Vau de Vey' 2023 at £90",
+      "It's a Premier Cru, one tier above village Chablis, and it comes in under £100",
+      "Its dry, crisp freshness from Burgundy's cool climate cuts through the salty oysters and sharp mignonette"
+     ],
+     "decoys": [
+      {
+       "id": "w-prieure-saint-come-chablis",
+       "why": "It's a village-level Chablis, so it isn't the step up the guest asked for."
+      },
+      {
+       "id": "w-domaine-laroche-chablis-grand-cru-les-blanchots",
+       "why": "It's a Grand Cru at £200, double the guest's budget."
+      },
+      {
+       "id": "w-sandhi-chardonnay-sta-rita-hills",
+       "why": "It's Chardonnay, but from California, not Chablis."
+      }
+     ],
+     "wrong": [
+      "It's too light and thin to stand up to oysters, so a fuller, richer white would be better",
+      "It has firm, grippy tannin that would clash with raw shellfish and make them taste metallic",
+      "Its flavour is too rich and tropical for oysters, so a sharper, greener white would suit them better"
+     ],
+     "why": "It's the only Chablis on the list that is a step above village level and under £100, and crisp Chablis is a classic with oysters.",
+     "id": "w-domaine-des-hates-chablis-1er-cru-vau-de-vey#4"
+    },
+    {
+     "k": "contrast",
+     "q": "What sets the Domaine des Hâtes Chablis 1er Cru, 'Vau de Vey' 2023 apart from the Prieuré Saint-Côme Chablis 2024?",
+     "ans": "The Domaine des Hâtes is a Premier Cru, one quality tier above the village-level Prieuré Saint-Côme",
+     "acc": [
+      "It's Premier Cru, the other is village level",
+      "Higher Burgundy tier",
+      "1er Cru versus plain Chablis"
+     ],
+     "why": "Both are Chablis made from Chardonnay, but Premier Cru sits higher in Burgundy's quality tiers, which is why it costs £90 against £68.",
+     "id": "w-domaine-des-hates-chablis-1er-cru-vau-de-vey#5"
+    }
+   ],
+   "at": 1794142594519
+  },
+  "w-sandhi-chardonnay-sta-rita-hills": {
+   "id": "w-sandhi-chardonnay-sta-rita-hills",
+   "hook": "Chardonnay from Sta. Rita Hills, on California's Central Coast, where the vineyards are cooled by the Pacific.",
+   "pitch": "This is a Californian Chardonnay from Sta. Rita Hills, where cool air off the Pacific keeps it fresh rather than heavy. If you like white Burgundy but fancy trying something from the New World, it's a lovely choice.",
+   "say": "SAN-dee, SAN-tuh REE-tuh HILLS",
+   "taste": "Dry and medium-bodied, with fresh citrus fruit and a lively finish.",
+   "style": {
+    "body": 3,
+    "acid": 4,
+    "tannin": 0,
+    "sweet": 1
+   },
+   "grape": "Chardonnay is a fairly neutral grape that takes on the winemaker's choices, and here the cool, sea-influenced climate keeps it fresh.",
+   "place": "Sta. Rita Hills is an AVA, an official American wine area, on California's Central Coast, where the Pacific keeps the southern vineyards cool and the wines fresh.",
+   "producer": "",
+   "serve": {
+    "temp": "10-12°C",
+    "glass": "large white wine glass",
+    "decant": "no"
+   },
+   "dishes": [
+    {
+     "dish": "Half Chicken",
+     "why": "Chardonnay is a classic match for roast chicken, with enough body for the meat and enough freshness to keep each mouthful lively."
+    },
+    {
+     "dish": "Hake, Mussels, Cannellini Beans, Leeks",
+     "why": "It has the body to match the creamy beans and leeks, but enough freshness for the delicate fish."
+    },
+    {
+     "dish": "Delica Squash Risotto, Brown Butter, Pumpkin Seed Relish",
+     "why": "The wine's medium body sits nicely with a creamy risotto, and its freshness lifts the rich brown butter."
+    }
+   ],
+   "alts": [
+    {
+     "id": "w-domaine-des-hates-chablis-1er-cru-vau-de-vey",
+     "when": "same grape, French, crisper, slightly cheaper"
+    },
+    {
+     "id": "w-crystallum-chardonnay-the-agnes",
+     "when": "same grape, under £90"
+    },
+    {
+     "id": "w-domaine-perraud-macon-villages-maison-cubitt",
+     "when": "Chardonnay by the glass"
+    }
+   ],
+   "qs": [
+    {
+     "k": "recognise",
+     "q": "Which description best fits the Sandhi Chardonnay, Sta. Rita Hills 2024?",
+     "opts": [
+      "Dry and medium-bodied, with fresh citrus and a lively finish",
+      "Sweet and honeyed, with gentle acidity and a sticky finish",
+      "Light and aromatic, with grapefruit, cut grass and a green finish",
+      "Full and heavy, with ripe tropical fruit and a soft, oily finish"
+     ],
+     "a": 0,
+     "why": "Sta. Rita Hills is cooled by the Pacific, which keeps the Chardonnay dry and fresh rather than heavy.",
+     "id": "w-sandhi-chardonnay-sta-rita-hills#0"
+    },
+    {
+     "k": "recognise",
+     "q": "What kind of climate shapes the vineyards behind the Sandhi Chardonnay, Sta. Rita Hills 2024?",
+     "opts": [
+      "Cool, with fresh air coming in off the Pacific",
+      "Hot and dry, far inland with no cooling air",
+      "Cool continental, with cold winters and no sea",
+      "Warm Mediterranean, sheltered and sunny all year"
+     ],
+     "a": 0,
+     "why": "The southern Central Coast, where Sta. Rita Hills sits, is cooled by the Pacific.",
+     "id": "w-sandhi-chardonnay-sta-rita-hills#1"
+    },
+    {
+     "k": "recall",
+     "q": "What grape is the Sandhi from Sta. Rita Hills made from?",
+     "ans": "Chardonnay",
+     "acc": [
+      "Chardonnay grapes",
+      "100% Chardonnay"
+     ],
+     "why": "The label names the grape as Chardonnay.",
+     "id": "w-sandhi-chardonnay-sta-rita-hills#2"
+    },
+    {
+     "k": "recall",
+     "q": "Which wider California wine region is the Sandhi Chardonnay, Sta. Rita Hills 2024 from?",
+     "ans": "The Central Coast",
+     "acc": [
+      "Central Coast",
+      "California's Central Coast"
+     ],
+     "why": "Sta. Rita Hills is one of the Central Coast's official wine areas, called AVAs.",
+     "id": "w-sandhi-chardonnay-sta-rita-hills#3"
+    },
+    {
+     "k": "apply",
+     "q": "A guest has ordered the Half Chicken and says: 'I'd like an American white tonight, something to go with the chicken, and under £100 a bottle.' What would you suggest, and why?",
+     "key": [
+      "Sandhi Chardonnay, Sta. Rita Hills 2024 at £95",
+      "It's from California's Central Coast, so it's American, and it's under £100",
+      "Chardonnay is a classic with roast chicken: it has the body for the meat and Pacific-cooled freshness to keep it lively"
+     ],
+     "decoys": [
+      {
+       "id": "w-domaine-des-hates-chablis-1er-cru-vau-de-vey",
+       "why": "It's a lovely Chardonnay, but it's from Burgundy in France, not America."
+      },
+      {
+       "id": "w-domaine-perraud-macon-villages-maison-cubitt",
+       "why": "It's our own-label Burgundy white, so it's French, not American."
+      },
+      {
+       "id": "w-david-moret-meursault-sous-la-velle",
+       "why": "It's from Burgundy and costs £220, so it fails both the country and the budget."
+      }
+     ],
+     "wrong": [
+      "It's too light and delicate for roast chicken, so a red would be a better match",
+      "It has drying tannin that would make the chicken taste tough and dry",
+      "Its flavour is too sharp and green for a roast, so a sweet white would suit better"
+     ],
+     "why": "It's the American white on the list under £100, and Chardonnay is a classic with roast chicken.",
+     "id": "w-sandhi-chardonnay-sta-rita-hills#4"
+    },
+    {
+     "k": "contrast",
+     "q": "The Sandhi Chardonnay, Sta. Rita Hills 2024 and the Domaine des Hâtes Chablis 1er Cru, 'Vau de Vey' 2023 are both Chardonnay. What sets their climates apart?",
+     "ans": "Sandhi grows in California, cooled by the Pacific; the Domaine des Hâtes grows in Burgundy's cool continental climate",
+     "acc": [
+      "Pacific-cooled California versus continental Burgundy",
+      "Sea-cooled versus inland continental",
+      "California versus Burgundy climate"
+     ],
+     "why": "Same grape, but one is cooled by the ocean in California and the other by Burgundy's cool continental weather.",
+     "id": "w-sandhi-chardonnay-sta-rita-hills#5"
+    }
+   ],
+   "at": 1794142594519
+  },
+  "w-sylvain-cathiard-aligote": {
+   "id": "w-sylvain-cathiard-aligote",
+   "hook": "A white Burgundy made from Aligoté, Burgundy's other white grape, rather than Chardonnay.",
+   "pitch": "This is a crisp, lemony white from Burgundy, made from Aligoté instead of the usual Chardonnay, so it feels bright and mouth-watering rather than rich. If you love fresh, zesty whites with seafood, this is a really interesting Burgundy to try.",
+   "say": "sil-VAN ka-tee-AR, a-lee-GOH-tay",
+   "taste": "Expect a light, crisp white with lemon and green apple and a clean, mouth-watering finish.",
+   "style": {
+    "body": 2,
+    "acid": 5,
+    "tannin": 0,
+    "sweet": 1
+   },
+   "grape": "Aligoté is Burgundy's other white grape, and it shows bright, lemony freshness here rather than the roundness of Chardonnay.",
+   "place": "Burgundy in France has a cool climate that keeps its whites fresh, and the weather changes so much from year to year that each vintage (the year the grapes were picked) tastes different.",
+   "producer": "",
+   "serve": {
+    "temp": "9-11°C",
+    "glass": "standard white wine glass",
+    "decant": "no"
+   },
+   "dishes": [
+    {
+     "dish": "Seasonal Oysters, Mignonette",
+     "why": "Its sharp, lemony freshness works like a squeeze of lemon on salty, delicate oysters."
+    },
+    {
+     "dish": "Sea Bream Crudo, Preserved Lemon, Dill",
+     "why": "A light, crisp white won't swamp the delicate raw fish, and its citrus echoes the preserved lemon."
+    },
+    {
+     "dish": "Smoked Mackerel Pâté",
+     "why": "Its zippy freshness cuts through the rich, smoky pâté and keeps every bite tasting clean."
+    }
+   ],
+   "alts": [
+    {
+     "id": "w-david-moret-aligote-le-grand-a",
+     "when": "same grape from Burgundy, under £70"
+    },
+    {
+     "id": "w-prieure-saint-come-chablis",
+     "when": "crisp white Burgundy made from Chardonnay, under £70"
+    },
+    {
+     "id": "w-michel-delhommeau-muscadet-sevre-et-maine-sur-lie",
+     "when": "classic crisp oyster white, under £55"
+    }
+   ],
+   "qs": [
+    {
+     "k": "recognise",
+     "q": "Which description best fits the Sylvain Cathiard Aligoté?",
+     "opts": [
+      "Full and rich, with buttery vanilla from oak barrels",
+      "Light and crisp, with lemon and a mouth-watering finish",
+      "Off-dry and floral, with soft peach and apricot",
+      "Medium and rounded, with ripe tropical pineapple fruit"
+     ],
+     "a": 1,
+     "why": "Aligoté from cool Burgundy gives a light, crisp, lemony white, not a rich, sweet or tropical one.",
+     "id": "w-sylvain-cathiard-aligote#0"
+    },
+    {
+     "k": "recognise",
+     "q": "Where in the world is the Sylvain Cathiard Aligoté from?",
+     "opts": [
+      "Loire Valley, France",
+      "Alsace, France",
+      "Burgundy, France",
+      "Rhône Valley, France"
+     ],
+     "a": 2,
+     "why": "The list places it in Burgundy, France, where Aligoté is grown alongside Chardonnay.",
+     "id": "w-sylvain-cathiard-aligote#1"
+    },
+    {
+     "k": "recall",
+     "q": "What grape is the Sylvain Cathiard Aligoté made from?",
+     "ans": "Aligoté",
+     "acc": [
+      "100% Aligoté",
+      "Aligote",
+      "Aligoté grape"
+     ],
+     "why": "The grape is on the label, and it's what makes this Burgundy white different from the Chardonnays around it.",
+     "id": "w-sylvain-cathiard-aligote#2"
+    },
+    {
+     "k": "recall",
+     "q": "How much is a bottle of the Sylvain Cathiard Aligoté on our list?",
+     "ans": "£97",
+     "acc": [
+      "97 pounds",
+      "£97 a bottle",
+      "ninety-seven pounds"
+     ],
+     "why": "It's sold by the bottle only, at £97.",
+     "id": "w-sylvain-cathiard-aligote#3"
+    },
+    {
+     "k": "apply",
+     "q": "A guest ordering the Seasonal Oysters, Mignonette asks for a crisp white Burgundy that isn't Chardonnay, and they're happy to spend between £80 and £100 a bottle. What would you suggest, and why?",
+     "key": [
+      "Sylvain Cathiard Aligoté, £97 a bottle",
+      "It's a white Burgundy made from Aligoté, not Chardonnay, and it's within their budget",
+      "Its crisp, lemony freshness works like a squeeze of lemon on the salty oysters"
+     ],
+     "decoys": [
+      {
+       "id": "w-david-moret-aligote-le-grand-a",
+       "why": "It's also a Burgundy Aligoté, but at £68 it sits below the £80 to £100 the guest wants to spend."
+      },
+      {
+       "id": "w-domaine-des-hates-chablis-1er-cru-vau-de-vey",
+       "why": "It's in budget and good with oysters, but Chablis is made from Chardonnay, which the guest wants to avoid."
+      },
+      {
+       "id": "w-bruno-clair-marsannay-blanc",
+       "why": "It's a white Burgundy made from Chardonnay, so it doesn't meet the guest's request."
+      }
+     ],
+     "wrong": [
+      "Its full, weighty body stands up to the oysters and gives the meal some real richness",
+      "Its soft, gentle freshness lets the salty oysters take the lead without any sharpness",
+      "Its toasty, buttery oak flavour adds a creamy richness to the delicate raw oysters"
+     ],
+     "why": "The Cathiard is the only white Burgundy on the list that isn't Chardonnay and costs between £80 and £100, and its crisp freshness suits oysters.",
+     "id": "w-sylvain-cathiard-aligote#4"
+    },
+    {
+     "k": "contrast",
+     "q": "What tells the Sylvain Cathiard Aligoté apart from the David Moret Aligoté, Le Grand A on our list?",
+     "ans": "Same grape, but the Cathiard is the 2022 at £97 and the Moret is the 2023 at £68",
+     "acc": [
+      "Different producer, vintage and price",
+      "Cathiard is 2022 and £97; Moret is 2023 and £68",
+      "The Cathiard is older and more expensive"
+     ],
+     "why": "Both are Burgundy Aligoté, so the producer, the year and the price are what set them apart.",
+     "id": "w-sylvain-cathiard-aligote#5"
+    }
+   ],
+   "at": 1794142594948
+  },
+  "w-david-moret-saint-romain": {
+   "id": "w-david-moret-saint-romain",
+   "hook": "Our only fine white Burgundy by the glass, from the village of Saint-Romain.",
+   "pitch": "This is a Chardonnay from the Burgundy village of Saint-Romain, with fresh citrus and apple and a smooth, rounded feel. It's a lovely way to try a fine white Burgundy without committing to a whole bottle, as we pour it by the 125ml glass or 375ml carafe.",
+   "say": "da-VEED mo-RAY, san-roh-MAN",
+   "taste": "Expect a medium-bodied, fresh white with lemon, apple and a smooth, rounded finish.",
+   "style": {
+    "body": 3,
+    "acid": 4,
+    "tannin": 0,
+    "sweet": 1
+   },
+   "grape": "Chardonnay is a fairly neutral grape that takes on the winemaker's choices, and here it gives clean citrus and apple fruit with a smooth texture.",
+   "place": "Saint-Romain is a village in Burgundy, and a wine named after its village sits above plain 'Bourgogne' on Burgundy's quality ladder, while the cool climate keeps the Chardonnay fresh.",
+   "producer": "",
+   "serve": {
+    "temp": "11-13°C",
+    "glass": "large white wine glass",
+    "decant": "no"
+   },
+   "dishes": [
+    {
+     "dish": "Half Chicken",
+     "why": "Roast chicken is a classic match for Chardonnay, and this one has enough body for the savoury meat while staying fresh."
+    },
+    {
+     "dish": "Hake, Mussels, Cannellini Beans, Leeks",
+     "why": "Its citrus freshness suits the delicate white fish, and its smooth feel matches the creamy beans and leeks."
+    },
+    {
+     "dish": "Delica Squash Risotto, Brown Butter, Pumpkin Seed Relish",
+     "why": "Its rounded texture sits nicely with the creamy risotto, and its freshness stops the brown butter feeling heavy."
+    }
+   ],
+   "alts": [
+    {
+     "id": "w-domaine-perraud-macon-villages-maison-cubitt",
+     "when": "house white Burgundy by the glass, under £15"
+    },
+    {
+     "id": "w-domaine-du-chateau-philippe-le-hardi-saint-aubin-en-vesveau",
+     "when": "another village white Burgundy, by the bottle at a similar price"
+    },
+    {
+     "id": "w-david-moret-meursault-sous-la-velle",
+     "when": "same producer, a special-occasion step up"
+    }
+   ],
+   "qs": [
+    {
+     "k": "recognise",
+     "q": "Which description best fits the David Moret Saint-Romain?",
+     "opts": [
+      "Light and sharp, with grassy gooseberry notes",
+      "Medium and fresh, with citrus, apple and a smooth finish",
+      "Off-dry and perfumed, with lychee and rose petal",
+      "Very heavy, with tropical fruit and strong sweet vanilla"
+     ],
+     "a": 1,
+     "why": "It's a fresh, medium-bodied Burgundy Chardonnay, not a grassy, perfumed or heavy white.",
+     "id": "w-david-moret-saint-romain#0"
+    },
+    {
+     "k": "recognise",
+     "q": "In what measures can a guest order the David Moret Saint-Romain by the glass?",
+     "opts": [
+      "175ml glass or 500ml carafe",
+      "250ml glass only",
+      "125ml glass or 375ml carafe",
+      "100ml glass only"
+     ],
+     "a": 2,
+     "why": "Our fine wines by the glass come as 125ml glasses or 375ml carafes.",
+     "id": "w-david-moret-saint-romain#1"
+    },
+    {
+     "k": "recall",
+     "q": "What grape is the David Moret Saint-Romain made from?",
+     "ans": "Chardonnay",
+     "acc": [
+      "100% Chardonnay",
+      "Chardonnay grape"
+     ],
+     "why": "The grape is on the label, and Chardonnay is Burgundy's main white grape.",
+     "id": "w-david-moret-saint-romain#2"
+    },
+    {
+     "k": "recall",
+     "q": "How much is a glass of the David Moret Saint-Romain?",
+     "ans": "£22",
+     "acc": [
+      "22 pounds",
+      "£22 a glass",
+      "twenty-two pounds"
+     ],
+     "why": "It's £22 for a 125ml glass, or £130 for the bottle.",
+     "id": "w-david-moret-saint-romain#3"
+    },
+    {
+     "k": "apply",
+     "q": "A guest ordering the Half Chicken wants a glass of white Burgundy with more depth than the house Mâcon. What would you suggest, and why?",
+     "key": [
+      "David Moret Saint-Romain, £22 a glass",
+      "It's a Chardonnay from the Burgundy village of Saint-Romain, a step up from the house Mâcon, poured by the 125ml glass",
+      "Its medium body and freshness suit savoury roast chicken without overpowering it"
+     ],
+     "decoys": [
+      {
+       "id": "w-domaine-perraud-macon-villages-maison-cubitt",
+       "why": "It's the house Mâcon the guest wants to move beyond."
+      },
+      {
+       "id": "w-chateau-grand-village-bordeaux-blanc",
+       "why": "It's poured by the glass, but it comes from Bordeaux, not Burgundy."
+      },
+      {
+       "id": "w-la-giustiniana-gavi-di-gavi-lugarara",
+       "why": "It's poured by the glass, but it's an Italian white, not a Burgundy."
+      }
+     ],
+     "wrong": [
+      "Its heavy, full body is needed to match the weight of the roast chicken",
+      "Its low, soft freshness keeps it mellow next to the rich chicken",
+      "Its grassy, gooseberry flavours lift the chicken like a fresh herb sauce"
+     ],
+     "why": "The Saint-Romain is the only fine white Burgundy we pour by the glass, and fresh, medium-bodied Chardonnay is a classic match for roast chicken.",
+     "id": "w-david-moret-saint-romain#4"
+    },
+    {
+     "k": "contrast",
+     "q": "What is the difference between the David Moret Saint-Romain and the Domaine Perraud Mâcon-Villages, Maison Cubitt by the glass?",
+     "ans": "The Saint-Romain is a fine Burgundy at £22 for 125ml; the Mâcon is our house white Burgundy at £13.50 for 175ml",
+     "acc": [
+      "Saint-Romain is the finer, pricier glass at £22; the Mâcon is the house wine at £13.50",
+      "The Mâcon is our own-label house Burgundy, the Saint-Romain is a fine wine served in a smaller glass"
+     ],
+     "why": "Both are Burgundy Chardonnay by the glass, so the step up in quality, price and glass size is what sets them apart.",
+     "id": "w-david-moret-saint-romain#5"
+    }
+   ],
+   "at": 1794142594948
   }
  },
  "pairings": {},
@@ -9302,5 +10158,5 @@
   }
  ],
  "cocktailCards": {},
- "exported": "2026-11-08T12:56:21.506Z"
+ "exported": "2026-11-08T12:56:34.956Z"
 }

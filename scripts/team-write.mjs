@@ -4,7 +4,7 @@
 // rest) and prompts. Then `npm run team:audit -- <name>` and `npm run team:review -- <name>` before it's handed over.
 // Calls the deployed Worker's /claude for real (billed, on its TEAM_MODEL): VINTEREST_API_ORIGIN picks which (default the
 // production site). It saves after every step and skips what the file already holds, so a run that stops can be run again.
-// Usage: npm run team:write -- princess-royal   [--lanes 4] [--batch 2]
+// Usage: npm run team:write -- princess-royal   [--lanes 4] [--batch 2] [--out file]
 import fs from 'node:fs';
 import { spawn, execSync } from 'node:child_process';
 import { chromium } from 'playwright';
@@ -15,7 +15,8 @@ const opt = (k, d) => { const i = args.indexOf('--' + k); return i >= 0 ? Number
 const lanes = opt('lanes', 4), batch = opt('batch', 2);
 if (!seed) { console.error('Name a restaurant: npm run team:write -- princess-royal'); process.exit(2); }
 const API = process.env.VINTEREST_API_ORIGIN || 'https://vinterest.pages.dev';
-const file = `data/team-${seed}.json`;
+// --out writes somewhere else (a scratch copy while a long run goes on); copy it into data/ once it's done.
+const outArg = args[args.indexOf('--out') + 1], file = args.includes('--out') ? outArg : `data/team-${seed}.json`;
 execSync('node scripts/build.mjs', { stdio: 'ignore' });
 const port = 4198, server = spawn('node', ['scripts/serve.mjs', 'dist', String(port)], { stdio: 'ignore' });
 await new Promise((r) => setTimeout(r, 800));
