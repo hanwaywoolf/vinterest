@@ -4,7 +4,7 @@
 const { test, expect } = require('@playwright/test');
 
 const BASE = 'http://localhost:4176';
-const PAGES = ['/', '/restaurants', '/groups', '/wineries', '/pricing', '/privacy'];
+const PAGES = ['/', '/restaurants', '/groups', '/wineries', '/pricing', '/privacy', '/mise-en-place'];
 
 for (const width of [390, 1024, 1440]) {
   test(`every page renders cleanly at ${width}px`, async ({ browser }) => {
@@ -30,15 +30,33 @@ for (const width of [390, 1024, 1440]) {
 
 test('the nav goes to each page and marks the one it is on', async ({ browser }) => {
   const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+  await page.route('**/api/country', (r) => r.fulfill({ contentType: 'application/json', body: '{"country":""}' }));
   await page.goto(BASE + '/');
-  for (const name of ['Restaurants', 'Groups', 'Wineries', 'Pricing']) {
-    await page.locator('header nav a', { hasText: name }).click();
-    await expect(page).toHaveURL(new RegExp(`/${name.toLowerCase()}$`));
-    await expect(page.locator('header nav a[aria-current="page"]')).toHaveText(name);
+  // Grouped links open from their group's name; the rest sit in the nav itself.
+  for (const [group, name, path] of [['Who it\'s for', 'Restaurants and wine bars', '/restaurants'], ['Who it\'s for', 'Restaurant groups', '/groups'], ['Who it\'s for', 'Wineries and tasting rooms', '/wineries'], [null, 'Mise en place', '/mise-en-place'], [null, 'Pricing', '/pricing']]) {
+    if (group) { await page.locator('header nav .ddb', { hasText: group }).click(); await expect(page.locator('header nav .dd.on .ddm')).toBeVisible(); }
+    await page.locator('header nav a', { hasText: name }).first().click();
+    await expect(page).toHaveURL(new RegExp(`${path}$`));
+    await expect(page.locator('header nav a[aria-current="page"]')).toContainText(name);
   }
   // Every in-site link leads somewhere that exists.
   const hrefs = await page.evaluate(() => [...document.querySelectorAll('a[href^="/"]')].map((a) => a.getAttribute('href').split('#')[0]));
   for (const h of new Set(hrefs)) expect((await page.request.get(BASE + h)).status(), h).toBe(200);
+  await page.close();
+});
+
+// On a phone the nav is behind a menu button, with every group shown.
+test('on a phone the menu button opens the whole nav', async ({ browser }) => {
+  const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
+  await page.route('**/api/country', (r) => r.fulfill({ contentType: 'application/json', body: '{"country":""}' }));
+  await page.goto(BASE + '/');
+  await expect(page.locator('header nav')).toBeHidden();
+  await page.locator('header .menub').click();
+  await expect(page.locator('header nav a', { hasText: 'Restaurant groups' })).toBeVisible();
+  await expect(page.locator('header nav a', { hasText: 'Mise en place' })).toBeVisible();
+  await page.locator('header nav a', { hasText: 'Mise en place' }).click();
+  await expect(page).toHaveURL(/\/mise-en-place$/);
+  await expect(page.locator('h1')).toContainText('Mise en place');
   await page.close();
 });
 

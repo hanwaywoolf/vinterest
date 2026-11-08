@@ -41,3 +41,21 @@
     if ((e.key === 'Enter' || e.key === ' ') && e.target.matches && e.target.matches('.lid[data-demo-open]')) { e.preventDefault(); open(); }
   });
 })();
+
+// The nav: a group opens on a tap (hover and focus open it with a mouse, in the CSS), one at a time, and
+// closes on Esc or a tap elsewhere; on a phone the menu button shows the whole nav as a panel.
+(function () {
+  const top = document.querySelector('header.top'); if (!top) return;
+  const groups = Array.from(top.querySelectorAll('.dd')), menu = top.querySelector('.menub');
+  const shut = (except) => groups.forEach((g) => { if (g !== except) { g.classList.remove('on'); g.querySelector('.ddb').setAttribute('aria-expanded', 'false'); } });
+  groups.forEach((g) => g.querySelector('.ddb').addEventListener('click', () => {
+    if (top.classList.contains('open')) return; // the phone panel shows every group already
+    const on = !g.classList.contains('on'); shut(g); g.classList.toggle('on', on); g.querySelector('.ddb').setAttribute('aria-expanded', on ? 'true' : 'false');
+  }));
+  if (menu) menu.addEventListener('click', () => { const on = !top.classList.contains('open'); top.classList.toggle('open', on); menu.setAttribute('aria-expanded', on ? 'true' : 'false'); shut(); });
+  document.addEventListener('click', (e) => {
+    if (!top.contains(e.target)) { shut(); if (top.classList.contains('open')) { top.classList.remove('open'); if (menu) menu.setAttribute('aria-expanded', 'false'); } }
+    else if (e.target.closest('nav a')) { shut(); top.classList.remove('open'); if (menu) menu.setAttribute('aria-expanded', 'false'); }
+  });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { shut(); top.classList.remove('open'); if (menu) menu.setAttribute('aria-expanded', 'false'); } });
+})();

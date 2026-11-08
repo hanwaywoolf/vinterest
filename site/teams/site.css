@@ -51,9 +51,26 @@ h3 { font-size: 19px; letter-spacing: -.01em; line-height: 1.3; }
 .dark .tlogo .mark img, footer .tlogo .mark img { filter: invert(1); }
 .tlogo .word { margin-left: calc(var(--w) * .02); width: calc(var(--w) * .96); display: flex; justify-content: space-between; font-size: calc(var(--h) * .55); font-weight: 700; color: var(--cr); line-height: 1; margin-top: 3px; }
 .dark .tlogo .word, footer .tlogo .word { color: var(--neon); }
-.top nav { display: flex; justify-content: center; gap: 28px; }
-.top nav a { font-size: 14px; font-weight: 500; color: var(--ink-2); text-decoration: none; }
-.top nav a:hover { color: var(--ink); }
+.top nav { display: flex; justify-content: center; align-items: center; gap: 26px; }
+.top nav .nl, .top nav .ddb { font: inherit; font-size: 14px; font-weight: 500; color: var(--ink-2); text-decoration: none; background: none; border: 0; padding: 8px 0; cursor: pointer; }
+.top nav .nl:hover, .top nav .ddb:hover, .top nav .dd.on .ddb { color: var(--ink); }
+/* A group opens under its name on hover, focus or a tap (site.js keeps aria-expanded in step). */
+.top nav .dd { position: relative; }
+.top nav .ddb::after { content: ''; display: inline-block; width: 6px; height: 6px; margin-left: 7px; border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor; transform: translateY(-3px) rotate(45deg); }
+.top nav .ddm { position: absolute; top: calc(100% + 6px); left: 50%; transform: translateX(-50%); width: 320px; background: #fff; border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 18px 40px rgba(15, 15, 15, .12); padding: 8px; display: none; }
+.top nav .ddm::before { content: ''; position: absolute; left: 0; right: 0; top: -10px; height: 10px; }
+.top nav .dd.on .ddm { display: grid; }
+@media (hover: hover) { .top nav .dd:hover .ddm, .top nav .dd:focus-within .ddm { display: grid; } }
+.top nav .ddm a { display: grid; gap: 2px; padding: 10px 12px; border-radius: 10px; text-decoration: none; }
+.top nav .ddm a:hover, .top nav .ddm a:focus-visible { background: var(--bg-2); }
+.top nav .ddm b { font-size: 14px; color: var(--ink); font-weight: 600; }
+.top nav .ddm span { font-size: 12.5px; color: var(--mute); line-height: 1.4; }
+.top nav .dd:has(a[aria-current]) .ddb { color: var(--ink); font-weight: 600; }
+.top .menub { display: none; width: 44px; height: 44px; border-radius: 12px; border: 1px solid var(--line); background: #fff; cursor: pointer; flex-direction: column; align-items: center; justify-content: center; gap: 4px; }
+.top .menub i { display: block; width: 18px; height: 2px; border-radius: 1px; background: var(--ink); transition: transform .2s, opacity .2s; }
+.top.open .menub i:nth-child(1) { transform: translateY(6px) rotate(45deg); }
+.top.open .menub i:nth-child(2) { opacity: 0; }
+.top.open .menub i:nth-child(3) { transform: translateY(-6px) rotate(-45deg); }
 .top .doors { display: flex; gap: 8px; }
 
 /* Hero: the line, the sub-line, the two doors, the console in a laptop over a wash of colour. */
@@ -294,6 +311,15 @@ footer a { text-decoration: none; }
   :root { --g: 20px; }
   .top .wrap { grid-template-columns: auto 1fr; }
   .top nav { display: none; }
+  /* On a phone the nav is a panel under the header, every group open. */
+  .top .menub { display: inline-flex; }
+  .top.open nav { display: grid; position: absolute; top: 64px; left: 0; right: 0; max-height: calc(100svh - 64px); overflow-y: auto; background: #fff; border-bottom: 1px solid var(--line); box-shadow: 0 18px 40px rgba(15, 15, 15, .12); padding: 8px var(--g) 20px; gap: 0; justify-content: stretch; }
+  .top.open nav .ddb { width: 100%; text-align: left; padding: 14px 0 6px; font-size: 12px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--mute); cursor: default; }
+  .top.open nav .ddb::after { display: none; }
+  .top.open nav .ddm { position: static; display: grid; transform: none; width: auto; box-shadow: none; border: 0; padding: 0; }
+  .top.open nav .ddm a { padding: 10px 0; }
+  .top.open nav .nl { padding: 14px 0; font-size: 16px; font-weight: 600; color: var(--ink); border-top: 1px solid var(--line); }
+  .top .doors { align-items: center; }
   .top .doors { justify-self: end; }
   .top .doors .ghost { display: none; }
   .hero { padding: 48px 0 0; }
@@ -318,7 +344,8 @@ footer a { text-decoration: none; }
   .night, .calc, .how, .mgr, .rooms, .faq, .test { padding: 64px 0; }
   .out { grid-template-columns: 1fr; }
 }
-.top nav a[aria-current="page"] { color: var(--ink); font-weight: 600; }
+.top nav .nl[aria-current="page"] { color: var(--ink); font-weight: 600; }
+.top nav .ddm a[aria-current="page"] b { color: var(--cr); }
 
 /* Inner pages (Restaurants, Groups, Wineries, Pricing): a short hero with one picture, then
    sections that alternate text and a screen, on white, the warm grey and the dark stage. */
@@ -441,3 +468,36 @@ html.dlg-open, html.dlg-open body { overflow: hidden; }
 .legal p + p { margin-top: 12px; }
 .legal ul { padding-left: 20px; display: grid; gap: 6px; }
 .legal a { color: var(--cr); }
+
+/* Mise en place: the launch as a timeline, on the home page (short) and its own page (in full). */
+.mise { padding: 96px 0; background: var(--bg-2); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.mise .head { max-width: 760px; }
+.tl { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; margin-top: 44px; position: relative; }
+.tl::before { content: ''; position: absolute; left: 16px; right: 16px; top: 15px; height: 2px; background: var(--line); }
+.tl .s { position: relative; }
+.tl .s .n { position: relative; z-index: 1; display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 50%; background: var(--c, var(--cr)); color: #fff; font-size: 13px; font-weight: 800; box-shadow: 0 0 0 6px var(--bg-2); }
+.tl .s .when { display: block; margin-top: 14px; font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--c, var(--cr)); }
+.tl .s h3 { margin-top: 4px; font-size: 18px; }
+.tl .s p { margin-top: 6px; font-size: 14px; color: var(--ink-2); }
+.mise .more { margin-top: 32px; }
+@media (max-width: 860px) {
+  .tl { grid-template-columns: 1fr; gap: 22px; }
+  .tl::before { left: 15px; right: auto; top: 16px; bottom: 16px; width: 2px; height: auto; }
+  .tl .s { display: grid; grid-template-columns: 32px 1fr; column-gap: 16px; }
+  .tl .s .n { grid-row: span 3; }
+  .tl .s .when { margin-top: 0; }
+  .mise { padding: 64px 0; }
+}
+/* The full page: each step a row with its timing, a summary and what it covers. */
+.stepsfull { display: grid; gap: 18px; margin-top: 8px; }
+.sf { display: grid; grid-template-columns: 200px 1fr; gap: 32px; padding: 32px; border: 1px solid var(--line); border-radius: 18px; background: #fff; }
+.sf .side .n { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 50%; background: var(--c, var(--cr)); color: #fff; font-size: 14px; font-weight: 800; }
+.sf .side .when { display: block; margin-top: 12px; font-size: 12px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--c, var(--cr)); }
+.sf h2 { font-size: 26px; }
+.sf .sum { margin-top: 10px; font-size: 17px; color: var(--ink-2); max-width: 46em; }
+.sf ul { margin-top: 16px; padding-left: 0; list-style: none; display: grid; grid-template-columns: 1fr 1fr; gap: 10px 28px; }
+.sf li { position: relative; padding-left: 18px; font-size: 15px; color: var(--ink-2); line-height: 1.55; }
+.sf li::before { content: ''; position: absolute; left: 0; top: 9px; width: 7px; height: 7px; border-radius: 50%; background: var(--c, var(--cr)); }
+.sf li b { color: var(--ink); font-weight: 600; }
+.sf .note { margin-top: 16px; font-size: 14px; color: var(--mute); }
+@media (max-width: 860px) { .sf { grid-template-columns: 1fr; gap: 14px; padding: 22px; } .sf ul { grid-template-columns: 1fr; } .sf h2 { font-size: 22px; } }
