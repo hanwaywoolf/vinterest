@@ -7820,6 +7820,1145 @@
     }
    ],
    "at": 1794142512961
+  },
+  "w-boulevard-napoleon-grenache-gris": {
+   "id": "w-boulevard-napoleon-grenache-gris",
+   "hook": "Gris is French for grey, after the grape's greyish skin. It's grown in the hot, dry Languedoc.",
+   "pitch": "This is a fuller, rounder white from the sunny south of France, with ripe pear and soft yellow fruit rather than sharp citrus. If you like a white with a bit of weight that holds its own next to richer dishes, you'll really enjoy it.",
+   "say": "boo-luh-VAR na-po-lay-ON, gren-ASH GREE",
+   "taste": "Ripe pear and soft yellow fruit, with a rounded, gently warm feel and a smooth, dry finish.",
+   "style": {
+    "body": 4,
+    "acid": 2,
+    "tannin": 0,
+    "sweet": 1
+   },
+   "grape": "Grenache Gris is the grey-skinned form of Grenache, and here it makes a rounder, fuller white rather than a sharp, zingy one.",
+   "place": "The Languedoc in southern France has a hot, dry Mediterranean climate that ripens grapes fully, which usually gives whites more weight and a softer freshness.",
+   "producer": "",
+   "serve": {
+    "temp": "10-12°C",
+    "glass": "white wine glass",
+    "decant": "no"
+   },
+   "dishes": [
+    {
+     "dish": "Monkfish, Cavolo Nero, Devilled Butter",
+     "why": "Monkfish is a meaty fish, and this full white has the weight to match it and the spicy butter."
+    },
+    {
+     "dish": "Delica Squash Risotto, Brown Butter, Pumpkin Seed Relish",
+     "why": "The wine's round, ripe fruit sits comfortably with the creamy, sweet squash and nutty brown butter."
+    },
+    {
+     "dish": "Half Chicken",
+     "why": "Roast chicken loves a fuller white, and this one has the body to go with the rich, savoury meat."
+    }
+   ],
+   "alts": [
+    {
+     "id": "w-famille-perrin-viognier-maison-les-alexandrins",
+     "when": "under £55, still full and rounded but more perfumed"
+    },
+    {
+     "id": "w-domaine-perraud-macon-villages-maison-cubitt",
+     "when": "by the glass, a rounded house Chardonnay"
+    },
+    {
+     "id": "w-raul-perez-godello-ultreia",
+     "when": "under £65, a different full-flavoured white from Spain"
+    }
+   ],
+   "qs": [
+    {
+     "k": "recognise",
+     "q": "Which description best fits the Boulevard Napoléon Grenache Gris 2023?",
+     "opts": [
+      "Light and sharp, with lemon and a salty finish",
+      "Medium-bodied, grassy and zesty, with gooseberry",
+      "Full and rounded, with ripe pear and soft freshness",
+      "Off-dry and floral, with lime and a honeyed edge"
+     ],
+     "a": 2,
+     "why": "Grenache Gris from the hot Languedoc makes a fuller, rounder white with ripe fruit rather than a sharp or grassy one.",
+     "id": "w-boulevard-napoleon-grenache-gris#0"
+    },
+    {
+     "k": "recognise",
+     "q": "Which part of France does the Boulevard Napoléon Grenache Gris 2023 come from?",
+     "opts": [
+      "Languedoc",
+      "Loire Valley",
+      "Burgundy",
+      "Alsace"
+     ],
+     "a": 0,
+     "why": "It comes from the Languedoc, in the hot, dry Mediterranean south of France.",
+     "id": "w-boulevard-napoleon-grenache-gris#1"
+    },
+    {
+     "k": "recall",
+     "q": "What kind of climate does the Languedoc, home of the Boulevard Napoléon Grenache Gris 2023, have?",
+     "ans": "Hot, dry Mediterranean",
+     "acc": [
+      "Hot and dry",
+      "Mediterranean",
+      "Warm and dry Mediterranean"
+     ],
+     "why": "The hot, dry climate ripens the grapes fully, which is why this white feels full and rounded.",
+     "id": "w-boulevard-napoleon-grenache-gris#2"
+    },
+    {
+     "k": "recall",
+     "q": "How is the Boulevard Napoléon Grenache Gris 2023 sold on our list, and at what price?",
+     "ans": "By the bottle only, £75",
+     "acc": [
+      "£75 a bottle",
+      "Bottle only at £75",
+      "£75, not by the glass"
+     ],
+     "why": "It isn't poured by the glass, so offer it as a bottle at £75.",
+     "id": "w-boulevard-napoleon-grenache-gris#3"
+    },
+    {
+     "k": "apply",
+     "q": "A guest has ordered the Monkfish, Cavolo Nero, Devilled Butter and wants a full, rounded white from the Languedoc, nothing thin or sharp. What would you suggest, and why?",
+     "key": [
+      "Boulevard Napoléon Grenache Gris 2023",
+      "it is a full, rounded white from the hot, dry Languedoc, just as they asked",
+      "its weight and ripe fruit stand up to the meaty monkfish and the spicy, rich devilled butter"
+     ],
+     "decoys": [
+      {
+       "id": "w-lauriers-picpoul-de-pinet-paredaux",
+       "why": "It is a light, crisp, lemony white, so it's the thin, sharp style the guest doesn't want."
+      },
+      {
+       "id": "w-famille-perrin-viognier-maison-les-alexandrins",
+       "why": "It is rounded, but it isn't from the Languedoc, and its strong perfume isn't what was asked for."
+      },
+      {
+       "id": "w-tinpot-hut-sauvignon-blanc",
+       "why": "It is sharp and grassy, and too lean to carry the rich butter on the monkfish."
+      }
+     ],
+     "wrong": [
+      "It's a light, delicate white, so it won't drown out the fish",
+      "Its firm, grippy tannin cuts through the rich devilled butter",
+      "Its sharp, lemony bite slices cleanly through the spice"
+     ],
+     "why": "A full, rounded Languedoc white is exactly the weight the monkfish and devilled butter need.",
+     "id": "w-boulevard-napoleon-grenache-gris#4"
+    },
+    {
+     "k": "contrast",
+     "q": "Between the Boulevard Napoléon Grenache Gris 2023 and the Lauriers Picpoul de Pinet, Paredaux 2025, which is the fuller, rounder white?",
+     "ans": "The Boulevard Napoléon Grenache Gris",
+     "acc": [
+      "Grenache Gris",
+      "Boulevard Napoléon",
+      "The Grenache Gris at £75"
+     ],
+     "why": "The Picpoul is light, crisp and lemony, while the Grenache Gris is fuller and softer.",
+     "id": "w-boulevard-napoleon-grenache-gris#5"
+    }
+   ],
+   "at": 1794142520752
+  },
+  "w-chateau-grand-village-bordeaux-blanc": {
+   "id": "w-chateau-grand-village-bordeaux-blanc",
+   "hook": "A Bordeaux white, usually Sauvignon Blanc with Sémillon, from a climate cooled by the Gironde estuary.",
+   "pitch": "It's fresh and zesty, with gooseberry, passion fruit and a cut-grass note, so it wakes up the palate and makes food taste brighter. If you like a crisp white that loves seafood, salads and herbs, this is a lovely choice, and you can have it by the glass.",
+   "say": "sha-TOH gron vee-LAHZH, bor-DOH BLONK",
+   "taste": "Zesty and fresh, with gooseberry, passion fruit and a cut-grass note, and a slightly rounder middle.",
+   "style": {
+    "body": 3,
+    "acid": 4,
+    "tannin": 0,
+    "sweet": 1
+   },
+   "grape": "It is usually led by Sauvignon Blanc, which brings the mouth-watering freshness (high acidity) plus gooseberry and grassy notes, with Sémillon usually blended in alongside it.",
+   "place": "Bordeaux has a maritime climate, kept mild by the sea and the wide Gironde estuary, which helps the wine keep its freshness.",
+   "producer": "",
+   "serve": {
+    "temp": "8-10°C",
+    "glass": "white wine glass",
+    "decant": "no"
+   },
+   "dishes": [
+    {
+     "dish": "Seasonal Oysters, Mignonette",
+     "why": "Sauvignon Blanc and shellfish are a classic match, and its zesty freshness keeps up with the sharp mignonette, the vinegar and shallot dressing."
+    },
+    {
+     "dish": "Sea Bream Crudo, Preserved Lemon, Dill",
+     "why": "The wine's grassy, herby side picks up the dill, and its freshness matches the preserved lemon."
+    },
+    {
+     "dish": "Celeriac, Apple, Kale, Hazelnut Vinaigrette",
+     "why": "Sauvignon Blanc loves salads, and its crispness stands up to the tangy vinaigrette."
+    }
+   ],
+   "alts": [
+    {
+     "id": "w-tinpot-hut-sauvignon-blanc",
+     "when": "by the glass for less, all Sauvignon Blanc"
+    },
+    {
+     "id": "w-lucien-crochet-sancerre",
+     "when": "same Sauvignon Blanc grape, from the Loire, by the bottle for less"
+    },
+    {
+     "id": "w-lauriers-picpoul-de-pinet-paredaux",
+     "when": "under £50, lighter and more lemony"
+    }
+   ],
+   "qs": [
+    {
+     "k": "recognise",
+     "q": "Which description best fits the Château Grand Village Bordeaux Blanc 2023?",
+     "opts": [
+      "Full and buttery, with ripe peach and vanilla",
+      "Fresh and zesty, with gooseberry, passion fruit and cut grass",
+      "Light and salty, with green apple and almonds",
+      "Off-dry and floral, with apricot and honey"
+     ],
+     "a": 1,
+     "why": "Sauvignon Blanc usually leads this wine, giving its zesty freshness, gooseberry, passion fruit and grassy notes.",
+     "id": "w-chateau-grand-village-bordeaux-blanc#0"
+    },
+    {
+     "k": "recognise",
+     "q": "Which pair of grapes usually goes into a white Bordeaux like the Château Grand Village 2023?",
+     "opts": [
+      "Chenin Blanc and Chardonnay",
+      "Grenache Blanc and Viognier",
+      "Sauvignon Blanc and Sémillon",
+      "Pinot Blanc and Riesling"
+     ],
+     "a": 2,
+     "why": "White Bordeaux is usually a blend of Sauvignon Blanc and Sémillon.",
+     "id": "w-chateau-grand-village-bordeaux-blanc#1"
+    },
+    {
+     "k": "recall",
+     "q": "What kind of climate shapes the Château Grand Village Bordeaux Blanc 2023?",
+     "ans": "Maritime, moderated by the Gironde estuary",
+     "acc": [
+      "Maritime",
+      "Mild, sea-influenced",
+      "Cooled by the Gironde estuary"
+     ],
+     "why": "The sea and the estuary keep Bordeaux mild, which helps the wine stay fresh.",
+     "id": "w-chateau-grand-village-bordeaux-blanc#2"
+    },
+    {
+     "k": "recall",
+     "q": "What does a glass of the Château Grand Village Bordeaux Blanc 2023 cost, and how big is the glass?",
+     "ans": "£13 for 175ml",
+     "acc": [
+      "£13, 175ml",
+      "£13 a 175ml glass",
+      "£13"
+     ],
+     "why": "Still wines by the glass are 175ml, and this one is £13.",
+     "id": "w-chateau-grand-village-bordeaux-blanc#3"
+    },
+    {
+     "k": "apply",
+     "q": "A guest has ordered the Sea Bream Crudo, Preserved Lemon, Dill and wants a crisp, herby French white by the glass, under £15. What would you suggest, and why?",
+     "key": [
+      "Château Grand Village Bordeaux Blanc 2023, £13 a glass",
+      "it is a crisp, zesty French white by the glass, within their budget",
+      "its grassy, herby freshness matches the dill and its acidity keeps up with the preserved lemon on the raw fish"
+     ],
+     "decoys": [
+      {
+       "id": "w-domaine-perraud-macon-villages-maison-cubitt",
+       "why": "It is French and by the glass, but it's a rounder Chardonnay without the herby, zesty edge they asked for."
+      },
+      {
+       "id": "w-david-moret-saint-romain",
+       "why": "It is a French white by the glass, but at £22 it's over their £15 limit."
+      },
+      {
+       "id": "w-cassara-grillo",
+       "why": "It is good value by the glass, but Grillo is a Sicilian grape, so it isn't the French white they asked for."
+      }
+     ],
+     "wrong": [
+      "It's a big, rich white that stands up to the raw fish",
+      "Its gentle tannin softens the sharp preserved lemon",
+      "Its low, soft acidity calms the tang of the lemon"
+     ],
+     "why": "Sauvignon-led white Bordeaux is crisp and herby, which suits delicate raw fish with lemon and dill.",
+     "id": "w-chateau-grand-village-bordeaux-blanc#4"
+    },
+    {
+     "k": "contrast",
+     "q": "Which grape usually goes into the Château Grand Village Bordeaux Blanc 2023 that the Tinpot Hut Sauvignon Blanc 2025 doesn't name on its label?",
+     "ans": "Sémillon",
+     "acc": [
+      "Sémillon grapes",
+      "Semillon",
+      "A blend with Sémillon"
+     ],
+     "why": "The Tinpot Hut is labelled as Sauvignon Blanc, while white Bordeaux is usually a blend of Sauvignon Blanc and Sémillon.",
+     "id": "w-chateau-grand-village-bordeaux-blanc#5"
+    }
+   ],
+   "at": 1794142520752
+  },
+  "w-kientzler-riesling-classic": {
+   "id": "w-kientzler-riesling-classic",
+   "hook": "Alsace is unusual in France: wines are labelled by grape, so Riesling sits on the label.",
+   "pitch": "This is a Riesling from Alsace, a sheltered corner of eastern France that stays dry in the shadow of the Vosges mountains, and it's fragrant with a lively, mouthwatering freshness. Riesling is almost never aged in oak barrels, so it lifts rich or spicy food like our Ibérico pork or curried crab rather than weighing it down.",
+   "say": "KEENTS-ler REES-ling",
+   "taste": "Fragrant and aromatic, with high, mouthwatering acidity (the zingy freshness that makes your mouth water) and a clean finish with no oaky vanilla.",
+   "style": {
+    "body": 2,
+    "acid": 5,
+    "tannin": 0,
+    "sweet": 1
+   },
+   "grape": "Riesling is naturally high in acidity and very aromatic, and in a young 2025 like this it shows its freshness rather than the honey and 'petrol' notes Riesling can grow into after many years in bottle.",
+   "place": "Alsace has a cool climate but sits sheltered and dry behind the Vosges mountains, which suits fresh, fragrant whites like this one.",
+   "producer": "",
+   "serve": {
+    "temp": "8-10°C",
+    "glass": "white wine glass",
+    "decant": "no"
+   },
+   "dishes": [
+    {
+     "dish": "Ibérico Pork",
+     "why": "Riesling is a classic with pork, and its fresh acidity cuts through the richness while its fragrance suits the pork's sweetness."
+    },
+    {
+     "dish": "Curried Crab on Malt Rye & Beer Bread",
+     "why": "Riesling is a great match for spicy food, and its zip refreshes your mouth between bites of the curried crab."
+    },
+    {
+     "dish": "Duck & Pancetta Terrine, Spiced Pear Chutney, Toast",
+     "why": "The lively acidity cuts through the rich terrine and sits nicely with the sweet-and-sour spiced pear chutney."
+    }
+   ],
+   "alts": [
+    {
+     "id": "w-carl-loewen-riesling-alte-reben",
+     "when": "same grape, by the glass, a little cheaper"
+    },
+    {
+     "id": "w-rosner-gruner-veltliner",
+     "when": "another crisp, fresh white from a cool climate"
+    },
+    {
+     "id": "w-lucien-crochet-sancerre",
+     "when": "a French white with a greener, herbier style for oysters and fish"
+    }
+   ],
+   "qs": [
+    {
+     "k": "recognise",
+     "q": "Which description best fits the Kientzler Riesling Classic 2025?",
+     "opts": [
+      "Fragrant and aromatic with high, mouthwatering acidity and no oak",
+      "Rich and creamy with toasty oak and soft, gentle acidity",
+      "Full and buttery with low acidity and sweet vanilla notes",
+      "Neutral and mild with light acidity and a nutty, oaky finish"
+     ],
+     "a": 0,
+     "why": "Riesling is high in acid and very aromatic, and it is almost never aged in oak.",
+     "id": "w-kientzler-riesling-classic#0"
+    },
+    {
+     "k": "recognise",
+     "q": "Which wine region is the Kientzler Riesling Classic 2025 from?",
+     "opts": [
+      "Alsace",
+      "Loire Valley",
+      "Burgundy",
+      "Champagne"
+     ],
+     "a": 0,
+     "why": "It comes from Alsace, the region that labels its wines by grape, which is unusual for France.",
+     "id": "w-kientzler-riesling-classic#1"
+    },
+    {
+     "k": "recall",
+     "q": "Which mountains shelter the vineyards that the Kientzler Riesling Classic 2025 comes from?",
+     "ans": "The Vosges",
+     "acc": [
+      "Vosges",
+      "the Vosges mountains",
+      "Vosges mountains"
+     ],
+     "why": "Alsace sits in the rain shadow of the Vosges, which keeps it sheltered and dry.",
+     "id": "w-kientzler-riesling-classic#2"
+    },
+    {
+     "k": "recall",
+     "q": "What is unusual for France about the way Alsace wines such as the Kientzler Riesling Classic 2025 are labelled?",
+     "ans": "They are labelled by grape",
+     "acc": [
+      "by grape variety",
+      "the grape is on the label",
+      "labelled by grape name"
+     ],
+     "why": "Most French wines are named after the place, but Alsace puts the grape on the label.",
+     "id": "w-kientzler-riesling-classic#3"
+    },
+    {
+     "k": "apply",
+     "q": "A guest has ordered the Ibérico Pork and asks for a fragrant, crisp French white under £60 a bottle. What would you suggest, and why?",
+     "key": [
+      "Kientzler Riesling Classic 2025",
+      "its high, fresh acidity cuts through the richness of the pork",
+      "Riesling is aromatic and a classic match for pork, suiting its sweetness"
+     ],
+     "decoys": [
+      {
+       "id": "w-michel-delhommeau-muscadet-sevre-et-maine-sur-lie",
+       "why": "It is crisp but quite neutral rather than fragrant, so it misses the guest's request and is a little lean for rich pork."
+      },
+      {
+       "id": "w-lauriers-picpoul-de-pinet-paredaux",
+       "why": "It is fresh but not especially fragrant, and it is better with seafood than rich roast pork."
+      },
+      {
+       "id": "w-domaine-perraud-macon-villages-maison-cubitt",
+       "why": "It is a Chardonnay, rounder and not aromatic, so it does not give the fragrant style the guest asked for."
+      }
+     ],
+     "wrong": [
+      "It works because it is full-bodied and oaky enough to match roasted meat.",
+      "It works because its soft, low acidity keeps it gentle beside the pork.",
+      "It works because its firm tannin grips the meat like a red would."
+     ],
+     "why": "Riesling's high acidity and aromatic character make it the classic white with rich, slightly sweet pork.",
+     "id": "w-kientzler-riesling-classic#4"
+    },
+    {
+     "k": "contrast",
+     "q": "The Kientzler Riesling Classic 2025 and the Carl Loewen Riesling, Alte Reben 2025 are both Riesling; which one comes from France?",
+     "ans": "The Kientzler Riesling Classic",
+     "acc": [
+      "Kientzler",
+      "the Kientzler, from Alsace",
+      "Kientzler Riesling"
+     ],
+     "why": "The Kientzler is from Alsace in France, while the Carl Loewen is the one you can pour by the glass.",
+     "id": "w-kientzler-riesling-classic#5"
+    }
+   ],
+   "at": 1794142539721
+  },
+  "w-lucien-crochet-sancerre": {
+   "id": "w-lucien-crochet-sancerre",
+   "hook": "Sancerre is the Loire's Sauvignon Blanc: citrus and a struck-stone 'flinty' edge, made for drinking young.",
+   "pitch": "This is Sancerre from the Loire Valley, made from Sauvignon Blanc: crisp and zesty, with citrus, a fresh cut-grass, herby note and a 'flinty' edge, a bit like the smell of struck stone. It's made to be enjoyed young and fresh, so it's brilliant with our oysters, the sea bream crudo or a bright salad.",
+   "say": "loo-SYAN kro-SHAY, son-SAIR",
+   "taste": "Crisp and zesty, with citrus, cut grass, green herbs and a clean, stony 'flinty' finish.",
+   "style": {
+    "body": 2,
+    "acid": 5,
+    "tannin": 0,
+    "sweet": 1
+   },
+   "grape": "Sauvignon Blanc brings high acidity and a herby, grassy freshness, sometimes with hints of gooseberry or passion fruit, and it is usually fermented cold in steel tanks to keep those aromas bright.",
+   "place": "Sancerre sits in the Loire Valley, where a cool climate along the river keeps the wine crisp, and the local style is citrus and flint, made to drink young.",
+   "producer": "",
+   "serve": {
+    "temp": "8-10°C",
+    "glass": "white wine glass",
+    "decant": "no"
+   },
+   "dishes": [
+    {
+     "dish": "Seasonal Oysters, Mignonette",
+     "why": "Sauvignon Blanc is a classic with shellfish, and its crisp citrus freshness is like a squeeze of lemon on the oysters."
+    },
+    {
+     "dish": "Sea Bream Crudo, Preserved Lemon, Dill",
+     "why": "Its herby, citrusy character echoes the dill and preserved lemon without smothering the delicate raw fish."
+    },
+    {
+     "dish": "Celeriac, Apple, Kale, Hazelnut Vinaigrette",
+     "why": "Sauvignon Blanc loves salads, and its high acidity stands up to the sharp vinaigrette."
+    }
+   ],
+   "alts": [
+    {
+     "id": "w-tinpot-hut-sauvignon-blanc",
+     "when": "same grape, by the glass, under £55 a bottle"
+    },
+    {
+     "id": "w-michel-delhommeau-muscadet-sevre-et-maine-sur-lie",
+     "when": "also from the Loire, lighter and cheaper, great with oysters"
+    },
+    {
+     "id": "w-prieure-saint-come-chablis",
+     "when": "similar price, crisp French white that is less herby"
+    }
+   ],
+   "qs": [
+    {
+     "k": "recognise",
+     "q": "Which description best matches the Lucien Crochet Sancerre 2023?",
+     "opts": [
+      "Crisp and zesty with citrus, cut grass and a struck-stone edge",
+      "Rich and rounded with ripe peach, vanilla and toasty oak",
+      "Soft and honeyed with apricot and a gentle, low acidity",
+      "Fragrant and floral with lychee, rose and a softer finish"
+     ],
+     "a": 0,
+     "why": "Sancerre is a high-acid Sauvignon Blanc in a citrus, grassy and flinty style.",
+     "id": "w-lucien-crochet-sancerre#0"
+    },
+    {
+     "k": "recognise",
+     "q": "Which grape is the Lucien Crochet Sancerre 2023 made from?",
+     "opts": [
+      "Sauvignon Blanc",
+      "Chardonnay",
+      "Chenin Blanc",
+      "Riesling"
+     ],
+     "a": 0,
+     "why": "Sancerre is made from Sauvignon Blanc, which gives its crisp, grassy, citrus style.",
+     "id": "w-lucien-crochet-sancerre#1"
+    },
+    {
+     "k": "recall",
+     "q": "Which French river valley does the Lucien Crochet Sancerre 2023 come from?",
+     "ans": "The Loire Valley",
+     "acc": [
+      "Loire",
+      "the Loire",
+      "Loire Valley"
+     ],
+     "why": "Sancerre is in the Loire Valley, with a cool climate along the river.",
+     "id": "w-lucien-crochet-sancerre#2"
+    },
+    {
+     "k": "recall",
+     "q": "Is the Lucien Crochet Sancerre 2023 a wine to drink young or one to keep for many years?",
+     "ans": "Drink it young",
+     "acc": [
+      "young",
+      "drink young and fresh",
+      "enjoy it young"
+     ],
+     "why": "Sancerre's flint-and-citrus style is meant to be enjoyed young and fresh.",
+     "id": "w-lucien-crochet-sancerre#3"
+    },
+    {
+     "k": "apply",
+     "q": "A guest is starting with the Sea Bream Crudo, Preserved Lemon, Dill and wants a crisp, herby French white under £75 a bottle. What would you suggest, and why?",
+     "key": [
+      "Lucien Crochet Sancerre 2023",
+      "its high, crisp acidity matches the preserved lemon and keeps the raw bream tasting fresh",
+      "its herby, cut-grass Sauvignon Blanc character echoes the dill"
+     ],
+     "decoys": [
+      {
+       "id": "w-famille-perrin-viognier-maison-les-alexandrins",
+       "why": "It is French and under £75 but rich, perfumed and softer, so it would swamp the delicate raw fish and isn't herby."
+      },
+      {
+       "id": "w-domaine-perraud-macon-villages-maison-cubitt",
+       "why": "It is a Chardonnay, rounder and without the green, herby freshness the guest asked for."
+      },
+      {
+       "id": "w-chateau-grand-village-bordeaux-blanc",
+       "why": "It is over the guest's £75 budget at £80 a bottle."
+      }
+     ],
+     "wrong": [
+      "It works because it is full-bodied enough to carry a rich, heavy dish.",
+      "It works because its soft, low acidity calms the sharp preserved lemon.",
+      "It works because toasty oak and vanilla add warmth to the raw fish."
+     ],
+     "why": "Sancerre's crisp acidity and herby Sauvignon Blanc character are a natural match for citrus, dill and delicate raw fish.",
+     "id": "w-lucien-crochet-sancerre#4"
+    },
+    {
+     "k": "contrast",
+     "q": "A guest wants Sauvignon Blanc but only a glass, not a bottle of the Lucien Crochet Sancerre 2023; which wine do you pour?",
+     "ans": "Tinpot Hut Sauvignon Blanc",
+     "acc": [
+      "Tinpot Hut",
+      "the Tinpot Hut",
+      "Tinpot Hut Sauvignon Blanc 2025"
+     ],
+     "why": "The Tinpot Hut is the same grape and comes by the glass at £12, while the Sancerre is by the bottle only at £72.",
+     "id": "w-lucien-crochet-sancerre#5"
+    }
+   ],
+   "at": 1794142539722
+  },
+  "w-sugrue-bonkers": {
+   "id": "w-sugrue-bonkers",
+   "hook": "Listed with our whites, not our fizz: an English white from the South Downs, usually Chardonnay.",
+   "pitch": "This is an English white from the South Downs, usually made from Chardonnay, a grape that picks up whatever the winemaker does with it. If you fancy drinking something English with your fish, it's a lovely choice and a bit of a talking point.",
+   "say": "SOO-groo BON-kers",
+   "taste": "Expect a white from cool English hills, so think fresh and citrusy rather than heavy, but taste it before service so you can describe this bottle in your own words.",
+   "style": {
+    "body": 3,
+    "acid": 4,
+    "tannin": 0,
+    "sweet": 1
+   },
+   "grape": "It is usually Chardonnay, a fairly neutral grape that takes on the winemaker's choices: oak barrels give it vanilla and butter, while steel tanks keep it lean and citrusy.",
+   "place": "It comes from the South Downs in southern England, a cool part of the world that generally keeps white wines fresh and lively.",
+   "producer": "",
+   "serve": {
+    "temp": "10-12°C",
+    "glass": "white wine glass",
+    "decant": "no"
+   },
+   "dishes": [
+    {
+     "dish": "Hake, Mussels, Cannellini Beans, Leeks",
+     "why": "Chardonnay is a classic partner for delicate white fish and a creamy sauce, so it sits happily with the hake and mussels."
+    },
+    {
+     "dish": "Sea Bream Crudo, Preserved Lemon, Dill",
+     "why": "A fresh white like this suits delicate raw fish and the lemon and dill."
+    },
+    {
+     "dish": "Fish & Chips, Crushed Peas, Tartare Sauce",
+     "why": "A fresh English white cuts through the batter and makes a proper British pairing."
+    }
+   ],
+   "alts": [
+    {
+     "id": "w-domaine-perraud-macon-villages-maison-cubitt",
+     "when": "by the glass, or under £60 a bottle"
+    },
+    {
+     "id": "w-gusbourne-blanc-de-blancs",
+     "when": "English, but with bubbles"
+    },
+    {
+     "id": "w-prieure-saint-come-chablis",
+     "when": "a French Chardonnay at a similar price"
+    }
+   ],
+   "qs": [
+    {
+     "k": "recognise",
+     "q": "What is the Sugrue Bonkers on our list?",
+     "opts": [
+      "A white from the South Downs in England, usually made from Chardonnay",
+      "A white from the Loire Valley in France, made from Sauvignon Blanc",
+      "A white from Sicily in Italy, made from the Grillo grape",
+      "A white from Galicia in Spain, made from the Albariño grape"
+     ],
+     "a": 0,
+     "why": "The Sugrue Bonkers comes from the South Downs in England and is usually Chardonnay.",
+     "id": "w-sugrue-bonkers#0"
+    },
+    {
+     "k": "recognise",
+     "q": "How is the Sugrue Bonkers sold on our list?",
+     "opts": [
+      "By the bottle only, at £69",
+      "By the glass at £13.50 or the bottle at £58",
+      "By the glass at £14 or the bottle at £82",
+      "By the bottle only, at £90"
+     ],
+     "a": 0,
+     "why": "The Sugrue Bonkers is sold by the bottle only, at £69.",
+     "id": "w-sugrue-bonkers#1"
+    },
+    {
+     "k": "recall",
+     "q": "What grape is the Sugrue Bonkers usually made from?",
+     "ans": "Chardonnay",
+     "acc": [
+      "usually Chardonnay",
+      "Chard"
+     ],
+     "why": "The Sugrue Bonkers is usually made from Chardonnay.",
+     "id": "w-sugrue-bonkers#2"
+    },
+    {
+     "k": "recall",
+     "q": "Where does the Sugrue Bonkers come from?",
+     "ans": "The South Downs, England",
+     "acc": [
+      "South Downs",
+      "England",
+      "southern England"
+     ],
+     "why": "The Sugrue Bonkers is from the South Downs in England.",
+     "id": "w-sugrue-bonkers#3"
+    },
+    {
+     "k": "apply",
+     "q": "A guest ordering the Hake, Mussels, Cannellini Beans, Leeks wants a bottle of white wine from England, not a sparkling wine, and ideally Chardonnay. What would you suggest, and why?",
+     "key": [
+      "The Sugrue Bonkers, £69 a bottle",
+      "It is an English white from the South Downs, usually Chardonnay, listed with our whites rather than our sparkling wines",
+      "Chardonnay is a classic match for delicate white fish and a creamy sauce like the hake and mussels"
+     ],
+     "decoys": [
+      {
+       "id": "w-gusbourne-blanc-de-blancs",
+       "why": "It is English, but it is a sparkling wine, and the guest asked for a white without bubbles."
+      },
+      {
+       "id": "w-domaine-perraud-macon-villages-maison-cubitt",
+       "why": "It is a Chardonnay, but it comes from France, not England."
+      },
+      {
+       "id": "w-bakestones-cellars-chardonnay",
+       "why": "It is a Chardonnay, but it comes from California, not England."
+      }
+     ],
+     "wrong": [
+      "Skip the Sugrue Bonkers, because its tannin, the drying grip you get in red wine, will clash with the mussels",
+      "Skip the Sugrue Bonkers, because a fresh English white is too sharp for a creamy sauce and will taste sour",
+      "Offer a big, full-bodied red instead, because delicate fish needs a heavy wine to stand up to it"
+     ],
+     "why": "The Sugrue Bonkers is the English white on our list, usually Chardonnay, and Chardonnay suits delicate white fish in a creamy sauce.",
+     "id": "w-sugrue-bonkers#4"
+    },
+    {
+     "k": "contrast",
+     "q": "The Sugrue Bonkers and the Gusbourne Blanc de Blancs are both English. Which one is on our list as a white, and which as a sparkling wine?",
+     "ans": "The Sugrue Bonkers is a white; the Gusbourne Blanc de Blancs is sparkling",
+     "acc": [
+      "Sugrue Bonkers is the white",
+      "Gusbourne is the sparkling one",
+      "Sugrue is still, Gusbourne has bubbles"
+     ],
+     "why": "The Sugrue Bonkers sits with our whites at £69, while the Gusbourne Blanc de Blancs is in the sparkling section.",
+     "id": "w-sugrue-bonkers#5"
+    }
+   ],
+   "at": 1794142579465
+  },
+  "w-bakestones-cellars-chardonnay": {
+   "id": "w-bakestones-cellars-chardonnay",
+   "hook": "A 2023 California Chardonnay, a neutral grape that takes on whatever the winemaker does.",
+   "pitch": "This is a Chardonnay from California, a sunny part of the world that generally gives the grape riper fruit. If you like a rounder white with your chicken or a creamy dish, it's a really easy one to enjoy.",
+   "say": "",
+   "taste": "Expect a riper, rounder Chardonnay than our cooler-climate ones, but taste it before service so you can describe this bottle in your own words.",
+   "style": {
+    "body": 4,
+    "acid": 3,
+    "tannin": 0,
+    "sweet": 1
+   },
+   "grape": "Chardonnay is a fairly neutral grape that takes on the winemaker's choices: oak barrels give it vanilla and butter, while steel tanks keep it lean and citrusy.",
+   "place": "It comes from California in the USA, where the warm, sunny weather generally gives Chardonnay riper fruit and more body.",
+   "producer": "",
+   "serve": {
+    "temp": "11-13°C",
+    "glass": "white wine glass",
+    "decant": "no"
+   },
+   "dishes": [
+    {
+     "dish": "Half Chicken",
+     "why": "Roast chicken is one of the classic matches for a fuller Chardonnay."
+    },
+    {
+     "dish": "Delica Squash Risotto, Brown Butter, Pumpkin Seed Relish",
+     "why": "A rounder Chardonnay suits a creamy, buttery risotto."
+    },
+    {
+     "dish": "Hake, Mussels, Cannellini Beans, Leeks",
+     "why": "Chardonnay goes beautifully with white fish in a creamy sauce."
+    }
+   ],
+   "alts": [
+    {
+     "id": "w-sandhi-chardonnay-sta-rita-hills",
+     "when": "another California Chardonnay, if they want to spend more"
+    },
+    {
+     "id": "w-domaine-perraud-macon-villages-maison-cubitt",
+     "when": "by the glass, or a French Chardonnay under £60"
+    },
+    {
+     "id": "w-crystallum-chardonnay-the-agnes",
+     "when": "same grape, from a different country, at £85"
+    }
+   ],
+   "qs": [
+    {
+     "k": "recognise",
+     "q": "Where does the Bakestones Cellars Chardonnay on our list come from?",
+     "opts": [
+      "California, in the USA",
+      "The South Downs, in England",
+      "Burgundy, in France",
+      "Marlborough, in New Zealand"
+     ],
+     "a": 0,
+     "why": "The Bakestones Cellars Chardonnay comes from California in the USA.",
+     "id": "w-bakestones-cellars-chardonnay#0"
+    },
+    {
+     "k": "recognise",
+     "q": "How is the Bakestones Cellars Chardonnay sold on our list?",
+     "opts": [
+      "By the bottle only, at £70",
+      "By the glass at £13.50 or the bottle at £58",
+      "By the bottle only, at £95",
+      "By the glass at £14 or the bottle at £84"
+     ],
+     "a": 0,
+     "why": "The Bakestones Cellars Chardonnay is sold by the bottle only, at £70.",
+     "id": "w-bakestones-cellars-chardonnay#1"
+    },
+    {
+     "k": "recall",
+     "q": "Which vintage of the Bakestones Cellars Chardonnay is on our list?",
+     "ans": "2023",
+     "acc": [
+      "the 2023",
+      "twenty twenty-three"
+     ],
+     "why": "The list shows the Bakestones Cellars Chardonnay as the 2023.",
+     "id": "w-bakestones-cellars-chardonnay#2"
+    },
+    {
+     "k": "recall",
+     "q": "Which US state does the Bakestones Cellars Chardonnay come from?",
+     "ans": "California",
+     "acc": [
+      "Cali",
+      "California, USA"
+     ],
+     "why": "The Bakestones Cellars Chardonnay is from California.",
+     "id": "w-bakestones-cellars-chardonnay#3"
+    },
+    {
+     "k": "apply",
+     "q": "A guest ordering the Half Chicken wants a Chardonnay from California but doesn't want to spend more than £75 on the bottle. What would you suggest, and why?",
+     "key": [
+      "The Bakestones Cellars Chardonnay, £70 a bottle",
+      "It is a California Chardonnay that comes in under their £75 budget",
+      "Roast chicken is a classic match for a rounder Chardonnay from a sunny place like California"
+     ],
+     "decoys": [
+      {
+       "id": "w-sandhi-chardonnay-sta-rita-hills",
+       "why": "It is a California Chardonnay, but at £95 it is over the guest's budget."
+      },
+      {
+       "id": "w-domaine-perraud-macon-villages-maison-cubitt",
+       "why": "It is a Chardonnay under £75, but it comes from France, not California."
+      },
+      {
+       "id": "w-sugrue-bonkers",
+       "why": "It is usually Chardonnay and under £75, but it comes from England, not California."
+      }
+     ],
+     "wrong": [
+      "Skip the Bakestones, because its tannin, the drying grip you get in red wine, will make the chicken taste bitter",
+      "Skip the Bakestones, because a California Chardonnay is far too light and thin for roast chicken",
+      "Skip the Bakestones, because Chardonnay has no flavour of its own and will vanish next to the chicken"
+     ],
+     "why": "The Bakestones Cellars Chardonnay is the only California Chardonnay on our list under £75, and roast chicken is a classic match for the grape.",
+     "id": "w-bakestones-cellars-chardonnay#4"
+    },
+    {
+     "k": "contrast",
+     "q": "The Bakestones Cellars Chardonnay and the Sandhi Chardonnay, Sta. Rita Hills are both California Chardonnays. Which one costs less by the bottle?",
+     "ans": "The Bakestones Cellars Chardonnay, at £70",
+     "acc": [
+      "Bakestones",
+      "Bakestones at £70",
+      "the Bakestones is cheaper"
+     ],
+     "why": "The Bakestones Cellars Chardonnay is £70 a bottle, while the Sandhi is £95.",
+     "id": "w-bakestones-cellars-chardonnay#5"
+    }
+   ],
+   "at": 1794142579465
+  },
+  "w-bruno-clair-marsannay-blanc": {
+   "id": "w-bruno-clair-marsannay-blanc",
+   "hook": "White Burgundy from Marsannay: Chardonnay from a cool region where every vintage tastes a little different.",
+   "pitch": "This is a dry white Burgundy made from Chardonnay, medium-bodied and fresh, from one of France's cooler wine regions. If you like a white with some weight that still feels lively, it's a lovely match for our roast chicken or the hake.",
+   "say": "BROO-noh CLAIR, mar-sa-NAY BLON",
+   "taste": "A dry, medium-bodied Chardonnay with the fresh, lively acidity (the mouth-watering tang) you'd expect from Burgundy's cool climate.",
+   "style": {
+    "body": 3,
+    "acid": 4,
+    "tannin": 0,
+    "sweet": 1
+   },
+   "grape": "Chardonnay is quite a neutral grape that takes on the winemaker's choices, so it's the place and the cellar that shape how this one tastes.",
+   "place": "Burgundy has a cool continental climate (cold winters, warm summers), so the weather of each year changes the wine a lot, and prices follow the quality of the year.",
+   "producer": "",
+   "serve": {
+    "temp": "10-12°C",
+    "glass": "white wine glass",
+    "decant": "no"
+   },
+   "dishes": [
+    {
+     "dish": "Half Chicken",
+     "why": "Chardonnay with a bit of body is a classic with roast chicken, matching its savoury richness without smothering it."
+    },
+    {
+     "dish": "Hake, Mussels, Cannellini Beans, Leeks",
+     "why": "Chardonnay suits white fish, and this wine's freshness keeps the creamy beans and leeks tasting light."
+    }
+   ],
+   "alts": [
+    {
+     "id": "w-domaine-perraud-macon-villages-maison-cubitt",
+     "when": "by the glass or under £60, our own-label white Burgundy"
+    },
+    {
+     "id": "w-david-moret-saint-romain",
+     "when": "white Burgundy by the glass at a step up in price"
+    },
+    {
+     "id": "w-crystallum-chardonnay-the-agnes",
+     "when": "same grape from South Africa instead of France"
+    }
+   ],
+   "qs": [
+    {
+     "k": "recognise",
+     "q": "Which description best fits the Bruno Clair Marsannay Blanc?",
+     "opts": [
+      "Dry Chardonnay from cool Burgundy, fresh and medium-bodied",
+      "Off-dry Riesling from Germany, light and floral",
+      "Ripe Viognier from the Rhône, rich and low in acidity",
+      "Grüner Veltliner from Austria, peppery and light"
+     ],
+     "a": 0,
+     "why": "It's a dry Chardonnay from Burgundy, whose cool climate keeps it fresh.",
+     "id": "w-bruno-clair-marsannay-blanc#0"
+    },
+    {
+     "k": "recognise",
+     "q": "Why can two vintages of the Bruno Clair Marsannay Blanc taste and cost quite differently?",
+     "opts": [
+      "Burgundy's cool climate makes each year's weather really matter",
+      "The producer switches to a different grape every single year",
+      "Burgundy law sets a new barrel-ageing time for each year",
+      "The wine is blended from grapes grown in several countries"
+     ],
+     "a": 0,
+     "why": "Burgundy is cool and continental, so vintages vary a lot and prices track them.",
+     "id": "w-bruno-clair-marsannay-blanc#1"
+    },
+    {
+     "k": "recall",
+     "q": "What grape is the Bruno Clair Marsannay Blanc made from?",
+     "ans": "Chardonnay",
+     "acc": [
+      "Chardonnay grapes",
+      "100% Chardonnay"
+     ],
+     "why": "It's a white Burgundy made from Chardonnay.",
+     "id": "w-bruno-clair-marsannay-blanc#2"
+    },
+    {
+     "k": "recall",
+     "q": "Which wine region of France does the Bruno Clair Marsannay Blanc come from?",
+     "ans": "Burgundy",
+     "acc": [
+      "Bourgogne",
+      "Burgundy, France"
+     ],
+     "why": "Marsannay is in Burgundy, which is why it sits in our Burgundy whites.",
+     "id": "w-bruno-clair-marsannay-blanc#3"
+    },
+    {
+     "k": "apply",
+     "q": "A guest ordering the Half Chicken wants a white Burgundy that's a step up from the house Mâcon, priced between £70 and £80 a bottle. What would you suggest, and why?",
+     "key": [
+      "Bruno Clair Marsannay Blanc",
+      "It's a Chardonnay from Burgundy at £78, right inside the guest's price",
+      "Chardonnay with some body is a classic with roast chicken and matches its savoury richness"
+     ],
+     "decoys": [
+      {
+       "id": "w-crystallum-chardonnay-the-agnes",
+       "why": "It's Chardonnay but from South Africa, not Burgundy, and at £85 it's over budget."
+      },
+      {
+       "id": "w-sylvain-cathiard-aligote",
+       "why": "It's Aligoté rather than Chardonnay, and at £97 it's well over the guest's price."
+      },
+      {
+       "id": "w-domaine-perraud-macon-villages-maison-cubitt",
+       "why": "That's the house Mâcon the guest wants to move up from, and it's under their range."
+      }
+     ],
+     "wrong": [
+      "Its firm tannins grip the chicken and cut through the fatty skin",
+      "It's a very light, watery white, so it stays out of the chicken's way",
+      "It's soft and low in acidity, so it feels gentle next to the chicken"
+     ],
+     "why": "It's the only white Burgundy Chardonnay between £70 and £80, and Chardonnay is a natural partner for roast chicken.",
+     "id": "w-bruno-clair-marsannay-blanc#4"
+    },
+    {
+     "k": "contrast",
+     "q": "The Bruno Clair Marsannay Blanc and the Crystallum Chardonnay, The Agnes are both Chardonnay: where does each one come from?",
+     "ans": "Bruno Clair is from Burgundy, France; Crystallum is from the Western Cape, South Africa",
+     "acc": [
+      "Bruno Clair France, Crystallum South Africa",
+      "Burgundy and Western Cape"
+     ],
+     "why": "Same grape, different countries, so the place is the quickest way to tell them apart for a guest.",
+     "id": "w-bruno-clair-marsannay-blanc#5"
+    }
+   ],
+   "at": 1794142581498
+  },
+  "w-crystallum-chardonnay-the-agnes": {
+   "id": "w-crystallum-chardonnay-the-agnes",
+   "hook": "A South African Chardonnay from the Western Cape, made from a grape that reflects its winemaker's choices.",
+   "pitch": "This is a dry, medium-bodied Chardonnay from the Western Cape in South Africa, a fresh, modern alternative to white Burgundy. If you enjoy Chardonnay, it's a lovely partner for the roast chicken, the hake or the squash risotto.",
+   "say": "kris-TAL-um, the AG-ness",
+   "taste": "A dry, medium-bodied white with fresh acidity (the mouth-watering tang), shaped by how the winemaker chose to make it.",
+   "style": {
+    "body": 3,
+    "acid": 3,
+    "tannin": 0,
+    "sweet": 1
+   },
+   "grape": "Chardonnay is quite a neutral grape that takes on winemaking choices readily: oak gives vanilla and butter, steel tanks keep it lean and citrusy.",
+   "place": "It comes from the Western Cape in South Africa, so it's a New World take on a grape most guests know from Burgundy.",
+   "producer": "",
+   "serve": {
+    "temp": "10-12°C",
+    "glass": "white wine glass",
+    "decant": "no"
+   },
+   "dishes": [
+    {
+     "dish": "Half Chicken",
+     "why": "Chardonnay with some body is a classic with roast chicken and matches its savoury richness."
+    },
+    {
+     "dish": "Hake, Mussels, Cannellini Beans, Leeks",
+     "why": "Chardonnay suits white fish, and its weight sits nicely with the creamy beans and leeks."
+    },
+    {
+     "dish": "Delica Squash Risotto, Brown Butter, Pumpkin Seed Relish",
+     "why": "A Chardonnay with some body stands up to a creamy, nutty risotto without overpowering it."
+    }
+   ],
+   "alts": [
+    {
+     "id": "w-bruno-clair-marsannay-blanc",
+     "when": "same grape from Burgundy, under £80"
+    },
+    {
+     "id": "w-sandhi-chardonnay-sta-rita-hills",
+     "when": "same grape from Sta. Rita Hills, a step up in price"
+    },
+    {
+     "id": "w-domaine-perraud-macon-villages-maison-cubitt",
+     "when": "Chardonnay by the glass or under £60"
+    }
+   ],
+   "qs": [
+    {
+     "k": "recognise",
+     "q": "Which description best fits the Crystallum, The Agnes?",
+     "opts": [
+      "Dry white from South Africa's Western Cape, medium-bodied",
+      "Off-dry white from Germany, light, floral and delicate",
+      "Bone-dry white from the Loire, very light and salty",
+      "Rich white from the Rhône, low in acidity and perfumed"
+     ],
+     "a": 0,
+     "why": "It's a dry, medium-bodied Chardonnay from the Western Cape.",
+     "id": "w-crystallum-chardonnay-the-agnes#0"
+    },
+    {
+     "k": "recognise",
+     "q": "Which statement about the grape behind Crystallum's The Agnes is true?",
+     "opts": [
+      "It's fairly neutral and takes on the winemaker's choices",
+      "It's always strongly perfumed, whatever the winemaker does",
+      "It always tastes sweet because it ripens so easily",
+      "It can only be grown in South Africa and nowhere else"
+     ],
+     "a": 0,
+     "why": "Chardonnay is a neutral grape: oak gives vanilla and butter, steel keeps it lean and citrusy.",
+     "id": "w-crystallum-chardonnay-the-agnes#1"
+    },
+    {
+     "k": "recall",
+     "q": "Which country does the Crystallum Chardonnay, The Agnes come from?",
+     "ans": "South Africa",
+     "acc": [
+      "Western Cape, South Africa",
+      "Western Cape"
+     ],
+     "why": "It's from the Western Cape in South Africa.",
+     "id": "w-crystallum-chardonnay-the-agnes#2"
+    },
+    {
+     "k": "recall",
+     "q": "How much is a bottle of the Crystallum Chardonnay, The Agnes on our list?",
+     "ans": "£85",
+     "acc": [
+      "85 pounds",
+      "£85 a bottle"
+     ],
+     "why": "It's sold by the bottle only, at £85.",
+     "id": "w-crystallum-chardonnay-the-agnes#3"
+    },
+    {
+     "k": "apply",
+     "q": "A guest ordering the Half Chicken wants a Chardonnay from outside France, priced over £80 but under £90 a bottle. What would you suggest, and why?",
+     "key": [
+      "Crystallum Chardonnay, The Agnes",
+      "It's a South African Chardonnay at £85, inside the guest's price and not French",
+      "Chardonnay with some body is a classic with roast chicken and matches its savoury richness"
+     ],
+     "decoys": [
+      {
+       "id": "w-sandhi-chardonnay-sta-rita-hills",
+       "why": "It's a non-French Chardonnay but at £95 it's over the guest's budget."
+      },
+      {
+       "id": "w-bruno-clair-marsannay-blanc",
+       "why": "It's Chardonnay but from Burgundy in France, which the guest wants to avoid, and it's under £80."
+      },
+      {
+       "id": "w-david-nadia-chenin-blanc",
+       "why": "It's in the price range but it's Chenin Blanc, not the Chardonnay the guest asked for."
+      }
+     ],
+     "wrong": [
+      "Its firm tannins grip the chicken and cut through the fatty skin",
+      "It's a very light, watery white, so it stays out of the chicken's way",
+      "It's soft and low in acidity, so it feels gentle next to the chicken"
+     ],
+     "why": "It's the only Chardonnay from outside France between £80 and £90, and Chardonnay is a natural partner for roast chicken.",
+     "id": "w-crystallum-chardonnay-the-agnes#4"
+    },
+    {
+     "k": "contrast",
+     "q": "The Crystallum Chardonnay, The Agnes and the Sandhi Chardonnay, Sta. Rita Hills are both non-French Chardonnays: where does each come from?",
+     "ans": "Crystallum is from the Western Cape, South Africa; Sandhi is from Sta. Rita Hills",
+     "acc": [
+      "Crystallum South Africa, Sandhi Sta. Rita Hills",
+      "Western Cape and Sta. Rita Hills"
+     ],
+     "why": "Same grape, different places, and the Crystallum is also £10 cheaper at £85 against £95.",
+     "id": "w-crystallum-chardonnay-the-agnes#5"
+    }
+   ],
+   "at": 1794142581498
   }
  },
  "pairings": {},
@@ -8163,5 +9302,5 @@
   }
  ],
  "cocktailCards": {},
- "exported": "2026-11-08T12:55:12.970Z"
+ "exported": "2026-11-08T12:56:21.506Z"
 }
