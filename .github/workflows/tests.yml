@@ -14,7 +14,7 @@ concurrency:
   cancel-in-progress: true
 jobs:
   chrome:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04 # Playwright 1.56 has no build for ubuntu-latest (26.04) yet
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
@@ -28,7 +28,7 @@ jobs:
         env:
           CI: '1'
   iphone-ipad:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04 # Playwright 1.56 has no build for ubuntu-latest (26.04) yet
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
