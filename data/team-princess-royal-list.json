@@ -1,5 +1,5 @@
 {
- "rev": "2026-11-08-logo",
+ "rev": "2026-11-08-tiers",
  "venue": {
   "name": "The Princess Royal",
   "city": "London",
@@ -18,6 +18,12 @@
    "name": "House Prosecco 125 (Events)",
    "size": "glass",
    "price": 9
+  },
+  "training": {
+   "tier": "essentials",
+   "roleTiers": {
+    "sommelier": "master"
+   }
   }
  },
  "wines": [

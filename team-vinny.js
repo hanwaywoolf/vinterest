@@ -28,8 +28,8 @@ const TeamVinny = {
   },
   // The questions on a wine or dish this person may be asked now: rungs open to them, unknown first.
   _qsFor(c,{wine,dish}){
-    const qs=wine?TeamLearn.qsFor(c.role,wine.id):TeamLearn.dishQs(dish.id);
-    const open=qs.filter(q=>q.dish||TeamLearn._open(qs,c.items,q.k,c.kinds));
+    const qs=wine?TeamLearn.qsFor(c.role,wine.id):TeamLearn.dishQsFor(c.role,dish.id);
+    const open=qs.filter(q=>q.dish||TeamLearn._open(qs,c.items,q.k,c.kinds,TeamLearn.tier(c.role)));
     const unknown=open.filter(q=>!TeamLearn.known(c.items[q.id],c.now)), known=open.filter(q=>TeamLearn.known(c.items[q.id],c.now));
     return {unknown,known:known.sort((a,b)=>(c.items[a.id].last||0)-(c.items[b.id].last||0))};
   },

@@ -159,15 +159,15 @@ function TeamToday({pid,open}){ const T=useTheme(), cr=T.lift(C.cr);
     </Card></div>:<Card style={{display:'flex',gap:14,alignItems:'center'}}>
       <TeamRing pct={r.pct} col={st.col}/>
       <div style={{flex:1,minWidth:0}}>
-        <div data-testid="team-state" data-pct={r.pct} style={{fontSize:17,fontWeight:800,color:st.col,fontFamily:C.P}}>{st.label}</div>
-        <div style={{fontSize:14,color:T.mid,fontFamily:C.P,lineHeight:1.45,marginTop:2}}>{r.state==='ready'?'You know what your role sells. Keep the daily drill going so it stays that way.':r.state==='slipping'?'Some answers have faded or new wines arrived. A few drills puts you back.':'Your minimum for working the floor, below.'}</div>
+        <div data-testid="team-state" data-pct={r.pct} style={{fontSize:17,fontWeight:800,color:r.tier==='essentials'?T.ink:st.col,fontFamily:C.P}}>{r.tier==='essentials'?`You know ${r.count.known} of ${r.count.total}`:st.label}</div>
+        <div style={{fontSize:14,color:T.mid,fontFamily:C.P,lineHeight:1.45,marginTop:2}}>{r.tier==='essentials'?(r.count.known>=r.count.total&&r.count.total?'Every wine and dish you sell. Keep the daily drill going so it stays that way.':'Five questions a day, what sells most first. A wine or dish counts once every question on it is right.'):r.state==='ready'?'You know what your role sells. Keep the daily drill going so it stays that way.':r.state==='slipping'?'Some answers have faded or new wines arrived. A few drills puts you back.':'Your minimum for working the floor, below.'}</div>
       </div>
     </Card>}
     {!fresh&&waveLine&&<div data-testid="team-wave" style={{fontSize:14,color:pl.behind?'#F28B7D':T.mid,fontFamily:C.P,margin:'10px 2px 0',lineHeight:1.4}}>{waveLine}{pl.behind?` · ${pl.behind} day${pl.behind===1?'':'s'} behind`:' · on track'}</div>}
     <Card style={{marginTop:10}}>
       {Object.entries(r.parts).map(([k,p])=><div key={k} data-testid="team-part" style={{marginBottom:18}}>
-        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:8,fontSize:14,fontFamily:C.P,color:T.ink2}}><span style={{fontWeight:700,color:T.ink}}>{TeamLearn.PART_LABEL[k]}</span><span>{p.known} of {p.total} known · need {Math.round(p.need*100)}%</span></div>
-        <div style={{position:'relative',marginTop:5}}><Prog val={p.partial} col={p.share>=p.need?'#5FD48F':cr} h={6}/><div style={{position:'absolute',left:`${p.need*100}%`,top:-3,width:2,height:12,background:T.ink,opacity:0.6}}/></div>
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:8,fontSize:14,fontFamily:C.P,color:T.ink2}}><span style={{fontWeight:700,color:T.ink}}>{TeamLearn.PART_LABEL[k]}</span><span>{p.known} of {p.total} known{r.tier==='essentials'&&k!=='allergens'?'':` · need ${Math.round(p.need*100)}%`}</span></div>
+        <div style={{position:'relative',marginTop:5}}><Prog val={p.partial} col={r.tier==='essentials'&&k!=='allergens'?'#5FD48F':p.share>=p.need?'#5FD48F':cr} h={6}/>{!(r.tier==='essentials'&&k!=='allergens')&&<div style={{position:'absolute',left:`${p.need*100}%`,top:-3,width:2,height:12,background:T.ink,opacity:0.6}}/>}</div>
         <div style={{fontSize:14,color:T.mid,fontFamily:C.P,marginTop:6}}>{Math.round(p.partial*100)}% of the answers held</div>
         {/* A clear button per part: a green outline with white text, so practising one part is an obvious next step. */}
         <div role="button" data-testid="team-part-practise" onClick={()=>open({view:'drill',part:k})} style={{display:'flex',alignItems:'center',justifyContent:'center',gap:8,marginTop:8,padding:'11px 14px',borderRadius:12,border:'1.5px solid #5FD48F',background:_alpha('#5FD48F',0.1),color:T.ink,fontSize:15,fontWeight:700,fontFamily:C.P,cursor:'pointer'}}>Practise {TeamLearn.PART_LABEL[k].toLowerCase()}<span style={{color:'#5FD48F'}}>→</span></div>
@@ -240,9 +240,9 @@ function TeamDrill({pid,only,part,given,intro,back,open}){ const T=useTheme(), c
       <Card>
         <div style={{display:'flex',gap:14,alignItems:'center'}}><TeamRing pct={r.pct} col={_tState[r.state].col} size={64}/>
           <div><div data-testid="drill-readiness" style={{fontSize:15,fontWeight:700,color:_tState[r.state].col,fontFamily:C.P}}>{_tState[r.state].label}</div>
-            <div style={{fontSize:15,color:T.ink2,fontFamily:C.P,marginTop:2}}>Readiness {before.pct}% → {r.pct}%{rise>0?<span style={{color:'#5FD48F',fontWeight:700}}> ▲{rise}</span>:rise<0?<span style={{color:'#F28B7D',fontWeight:700}}> ▼{-rise}</span>:' · no change'}</div></div></div>
+            <div style={{fontSize:15,color:T.ink2,fontFamily:C.P,marginTop:2}}>{r.tier==='essentials'?`You know ${r.count.known} of ${r.count.total}`:`Readiness ${before.pct}% → ${r.pct}%`}{rise>0?<span style={{color:'#5FD48F',fontWeight:700}}> ▲{rise}</span>:rise<0?<span style={{color:'#F28B7D',fontWeight:700}}> ▼{-rise}</span>:' · no change'}</div></div></div>
         <div role="button" data-testid="drill-how" onClick={()=>setHow(x=>!x)} style={{fontSize:14,fontWeight:600,color:T.lift(C.cr),fontFamily:C.P,marginTop:10,cursor:'pointer'}}>{how?'Less':'How this works ›'}</div>
-        {how&&<div style={{fontSize:14,color:T.mid,fontFamily:C.P,marginTop:6,lineHeight:1.45}}>Each answer has its own review date: the ones you miss come back soonest, and the ones you hold come back later each time. Every answer you hold counts a little toward readiness; a wine counts in full for the minimum once every rung is right and still fresh.</div>}
+        {how&&<div style={{fontSize:14,color:T.mid,fontFamily:C.P,marginTop:6,lineHeight:1.45}}>{r.tier==='essentials'?'Each question comes back after a while to check it has stuck: the ones you miss soonest, the ones you hold later each time. A wine or dish counts as known once every question on it is right and still fresh.':'Each answer has its own review date: the ones you miss come back soonest, and the ones you hold come back later each time. Every answer you hold counts a little toward readiness; a wine counts in full for the minimum once every rung is right and still fresh.'}</div>}
       </Card>
       {_tLabel(T,'In this drill')}
       <Card style={{padding:0}}>{rows.map((x,k)=><div key={x.id} data-testid="drill-item" role={open?'button':undefined} onClick={()=>open&&open({view:x.mix?'cocktail':x.dish?'dish':'wine',id:x.id})} style={{padding:'11px 14px',borderTop:k?`1px solid ${T.line}`:'none',cursor:open?'pointer':'default'}}>
@@ -257,13 +257,13 @@ function TeamDrill({pid,only,part,given,intro,back,open}){ const T=useTheme(), c
   const names=w&&new RegExp(TeamData.short(w).replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'i').test(q.q);
   const submit=async()=>{ if(busy) return; if(multi?!picks.length:ans===null) return;
     setBusy(true); const g=multi?TeamLearn.gradeChoices(q,picks):await TeamLearn.grade(q,ans); setBusy(false);
-    const asks=TeamLearn.asksConfidence(q), quick=Date.now()-shownAt.current<_T_QUICK_MS;
+    const asks=TeamLearn.asksConfidence(q,TeamLearn.tier((TeamLearn.person(pid)||{}).role)), quick=Date.now()-shownAt.current<_T_QUICK_MS;
     if(!g.offline) TeamLearn.record(pid,q,g.ok,asks?sure:(g.ok&&quick?'sure':'think'));
     if(g.ok) rightRef.current.push(q);
     setRes(g); setTally(t=>({right:t.right+(g.ok?1:0),of:t.of+1})); reveal(); };
   const next=()=>{ timers.current.forEach(clearTimeout); timers.current=[]; setI(i+1); setAns(null); setPicks([]); setRes(null); setSure('think'); setPhase('q'); shownAt.current=Date.now(); };
   const sp=_tQuizSpeed(), fb=phase==='feedback';
-  const kindLabel=TeamLearn.KIND_LABEL[q.k];
+  const tier=TeamLearn.tier((TeamLearn.person(pid)||{}).role), kindLabel=TeamLearn.rungLabel(q,tier);
   // An option: while answering it's a choice; at the reveal the picks turn green or red and the right ones show, the
   // rest dim; then they slide out to the left one after another.
   const opt=(label,k,{picked,right,wrong,onClick,n=0})=><div key={k} role="button" aria-pressed={picked} data-testid="drill-opt" onClick={onClick} style={{padding:'12px 14px',borderRadius:12,border:`1.5px solid ${right?'#5FD48F':wrong?'#F28B7D':picked?cr:T.line}`,background:right?_alpha('#5FD48F',0.12):wrong?_alpha('#F28B7D',0.12):picked?T.soft:'transparent',color:T.ink,fontSize:16,fontFamily:C.P,cursor:res?'default':'pointer',lineHeight:1.35,
@@ -286,7 +286,7 @@ function TeamDrill({pid,only,part,given,intro,back,open}){ const T=useTheme(), c
     </>}
     {!res&&<>
       {/* Only a price or an allergen asks how sure they are (TeamLearn.asksConfidence): a wrong one reaches the bill or a guest, and it counts double. */}
-      {TeamLearn.asksConfidence(q)&&<div data-testid="drill-sure"><div style={{fontSize:14,color:T.mid,fontFamily:C.P,margin:'14px 0 6px'}}>How sure are you? <span style={{color:T.faint||T.mid}}>{q.allergen?'A wrong allergen comes back this shift.':'A wrong price counts double.'}</span></div>
+      {TeamLearn.asksConfidence(q,tier)&&<div data-testid="drill-sure"><div style={{fontSize:14,color:T.mid,fontFamily:C.P,margin:'14px 0 6px'}}>How sure are you? <span style={{color:T.faint||T.mid}}>{q.allergen?'A wrong allergen comes back this shift.':'A wrong price counts double.'}</span></div>
       <div style={{display:'flex',gap:6}}>{[['sure','Sure'],['think','Think so'],['guess','Guessing']].map(([k,l])=><div key={k} role="button" onClick={()=>setSure(k)} style={{flex:1,textAlign:'center',padding:'10px 0',borderRadius:10,border:`1px solid ${sure===k?cr:T.line}`,background:sure===k?T.soft:'transparent',color:sure===k?T.ink:T.mid,fontSize:15,fontFamily:C.P,cursor:'pointer'}}>{l}</div>)}</div></div>}
       <Btn primary full style={{marginTop:14,opacity:(multi?picks.length:ans!==null)?1:0.45}} onClick={submit}>{busy?'Marking…':'Check'}</Btn>
     </>}
@@ -398,7 +398,7 @@ const _DRINK_HOW={sweet:'Sugar and fruit: syrups, liqueurs, juice.',sour:'Citrus
 function TeamDrink({id,pid,open,manage}){ const T=useTheme(), w=TeamData.wine(id), c=TeamData.card(id), cr=T.lift(C.cr);
   if(!w) return null; const st=TeamLearn.standing(pid,id), me=TeamLearn.person(pid);
   // The card shows what the person's training level asks about (TeamLearn.cardShows); the console shows it all.
-  const sh=TeamLearn.cardShows(manage?'high':TeamLearn.level(me&&me.role)), fact=sh.fact&&TeamLearn.cardFact(id);
+  const sh=TeamLearn.cardShows(manage?'high':TeamLearn.contentLevel(me&&me.role)), fact=sh.fact&&TeamLearn.cardFact(id);
   const bar=(k,label)=>{ const v=c&&c.style&&c.style[k]; return v==null?null:<div key={k} style={{marginBottom:10}}><div style={{display:'flex',justifyContent:'space-between',fontSize:15,fontFamily:C.P,color:T.ink}}><span style={{fontWeight:600}}>{label}</span><span style={{color:T.mid}}>{v}/5</span></div>
     <div style={{height:6,borderRadius:3,background:T.line,marginTop:4}}><div style={{width:(v/5*100)+'%',height:'100%',borderRadius:3,background:cr}}/></div><div style={{fontSize:13,color:T.mid,fontFamily:C.P,marginTop:3}}>{_DRINK_HOW[k]}</div></div>; };
   return <div data-testid="team-drink">
@@ -434,7 +434,7 @@ function TeamWine({id,pid,open,manage}){ const T=useTheme(), w=TeamData.wine(id)
   // else is told who does. A failed write says so, never a wait that doesn't end.
   const me=TeamLearn.person?TeamLearn.person(pid):null, manager=me&&TeamLearn.canConsole(me);
   // The card shows what the person's training level asks about (TeamLearn.cardShows); the console shows it all.
-  const sh=TeamLearn.cardShows(manage?'high':TeamLearn.level(me&&me.role)), fact=sh.fact&&TeamLearn.cardFact(id);
+  const sh=TeamLearn.cardShows(manage?'high':TeamLearn.contentLevel(me&&me.role)), fact=sh.fact&&TeamLearn.cardFact(id);
   const [busy,setBusy]=React.useState(false), [err,setErr]=React.useState(''), [,bump]=React.useReducer(x=>x+1,0);
   const writeIt=async()=>{ setBusy(true); setErr(''); try{ await TeamData.writeCards([id]); if(w.vintage&&!w.peak) await TeamData.writeWindows([id]); }catch(x){ setErr(x.message||'Stopped.'); } setBusy(false); bump(); };
   if(!w) return null; const col=_tTypeCol(T,w.type);

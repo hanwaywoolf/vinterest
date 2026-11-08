@@ -595,7 +595,11 @@ const TeamSample = {
     d.versions.push({kind:'list',at:now,added:Object.keys(d.wines),removed:[],changed:[]});
     if(mixes.length) d.versions.push({kind:'cocktails',at:now,added:Object.keys(d.cocktails),removed:[],changed:[]});
     TeamData.save(d);
+    // The install's training depth (venue.training in its list file: the tier, and a tier per role) applies to a
+    // restaurant that hasn't set one yet, on a fresh load or a kept team alike; a manager's own choice is never undone.
+    const training=meta.training||{}; const applyTier=()=>{ if(TeamLearn.team().tier!=null) return; if(training.tier) TeamLearn.setTier(training.tier); Object.entries(training.roleTiers||{}).forEach(([r,t])=>TeamLearn.setRoleTier(r,t)); };
     if(keep){ // anyone the new copy's team adds joins (by name), and the demo sales are written if there are none
+      applyTier();
       const have=new Set(TeamLearn.people().map(p=>p.name.toLowerCase()));
       (s.staff||(this.social(which)?(this.list(which)||{}).staff||[]:[])).filter(p=>!have.has(String(p.name).toLowerCase())).forEach(p=>TeamLearn.addPerson(p.name,p.role,p.photo||null));
       TeamLearn.people().forEach(p=>TeamLearn.assignExisting(p.id));
@@ -605,6 +609,7 @@ const TeamSample = {
     Store.remove(TeamLearn.KEY); TeamLearn.resetProgress(); if(typeof TeamSales!=='undefined') TeamSales.clear();
     // The Social Corner's demo team is the Larkspur's people and photos in its own roles (data/team-social-list.json staff).
     (s.staff||(this.social(which)?(this.list(which)||{}).staff||[]:this.DEMO_STAFF)).forEach(p=>TeamLearn.addPerson(p.name,p.role,p.photo||null));
+    applyTier();
     if((which==='demo'||this.social(which))&&Object.keys(d.cards).length) TeamDemo.seedProgress();
     return true;
   },

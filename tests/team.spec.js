@@ -1886,6 +1886,71 @@ test('after a miss the answer is explained, menu pairings practice asks pairings
   expect(line).toBe("You'll get the two questions you got right again tomorrow, to check they've stuck.");
 });
 
+test('training depth: Essentials asks four options with no ladder and counts what is known, Service two rungs and one reason from three, Master is unchanged', async ({ browser }) => {
+  const ctx = await browser.newContext({ viewport: { width: 1280, height: 800 } });
+  const page = await ctx.newPage();
+  const errors = []; page.on('pageerror', (e) => errors.push(e.message));
+  await stubNetwork(ctx);
+  // The Princess Royal's list file sets its start: servers on Essentials, the sommelier on Master.
+  await page.goto(`${BASE}/team/?seed=princess&view=console`);
+  await expect(page.getByTestId('team-console')).toBeVisible();
+  const r = await page.evaluate(() => {
+    const ws = TeamData.wines(), ds = TeamData.dishes(), srv = TeamLearn.people().find((p) => p.role === 'server'), som = TeamLearn.people().find((p) => p.role === 'sommelier');
+    const all = (role) => [...ws.flatMap((w) => TeamLearn.qsFor(role, w.id)), ...ds.flatMap((d) => TeamLearn.dishQsFor(role, d.id))];
+    const ess = all('server'), mas = all('sommelier');
+    const four = ess.filter((q) => !q.allergen).every((q) => (q.k === 'recognise' || q.mc) && q.opts.length <= 4 && q.opts.length >= 3);
+    const ids = new Set(mas.map((q) => q.id).concat(ws.flatMap((w) => TeamLearn.lightQs(w.id).map((q) => q.id))));
+    const table = ess.find((q) => q.k === 'apply' && q.wine);
+    const priced = ws.filter((w) => w.glass || w.bottle).filter((w) => TeamLearn.qsFor('server', w.id).some((q) => /[£$€]/.test(String(q.ans || '')))).length;
+    const rd = TeamLearn.readiness(srv.id), essRungs = TeamLearn.progress(srv.id, ws[0].id).rungs.length, somRungs = TeamLearn.progress(som.id, ws[0].id).rungs.map((x) => x.label);
+    TeamLearn.setTier('service'); TeamLearn.setRoleTier('sommelier', null);
+    const svc = all('server'), svcTable = svc.find((q) => q.k === 'apply' && q.wine && q.pills && q.pills.groups.length === 2);
+    const svcFour = svc.filter((q) => !q.allergen && !q.pills).every((q) => (q.k === 'recognise' || q.mc) && q.opts.length <= 4);
+    TeamLearn.setTier('master'); const back = all('server').map((q) => q.id).join(), masterNow = all('sommelier').map((q) => q.id).join();
+    return { tiers: [TeamLearn.tier(), TeamLearn.tier('sommelier')], four, essN: ess.length, masN: mas.length, idsKept: ess.every((q) => ids.has(q.id)),
+      noContrast: !ess.some((q) => q.k === 'contrast'), noMod: !ess.some((q) => q.dish && /#(mod|1)$/.test(q.id)), allergenKept: (() => { const a = { id: 'd:x#allergen', dish: 'x', k: 'recall', allergen: true, pills: { opts: ['Milk', 'Eggs', 'None of these'], right: [0, 1], n: 2 } }; return TeamLearn.tierQ(a, 'essentials') === a; })(), // The Princess Royal's kitchen hasn't confirmed allergens yet: the shape is checked on one
+      table: table && { opts: table.opts.length, why: !!table.why, mc: table.mc }, priced, pricedOf: ws.filter((w) => w.glass || w.bottle).length,
+      rungs: essRungs, somRungs, ready: { tier: rd.tier, count: rd.count, pct: rd.pct },
+      label: TeamLearn.rungLabel(ess.find((q) => q.wine && q.k !== 'apply'), 'essentials'), svcRungs: TeamLearn.rungsFor('service', ['recognise', 'recall', 'apply']).map((x) => x.label),
+      svcTable: svcTable && svcTable.pills.groups.map((g) => g.to - g.from), svcFour, masterSame: back === masterNow && masterNow === mas.map((q) => q.id).join(),
+      conf: [TeamLearn.asksConfidence({ k: 'recall', ans: '£9 a glass' }, 'essentials'), TeamLearn.asksConfidence({ k: 'recall', ans: '£9 a glass' }, 'service')] };
+  });
+  expect(r.tiers).toEqual(['master', 'master']); // after the test put them back
+  expect(r.four).toBe(true); // every Essentials question is four options (three where the list offers no more)
+  expect(r.essN).toBeLessThan(r.masN / 1.5);
+  expect(r.idsKept).toBe(true); // a question keeps its id in every shape
+  expect(r.noContrast).toBe(true); expect(r.noMod).toBe(true); expect(r.allergenKept).toBe(true);
+  expect(r.table).toMatchObject({ mc: true, why: true }); expect(r.table.opts).toBeGreaterThanOrEqual(3);
+  expect(r.priced).toBeGreaterThan(r.pricedOf * 0.8); // nearly every priced wine asks its price at Essentials
+  expect(r.rungs).toBe(0); expect(r.somRungs).toEqual(['Recognise', 'Recall', 'At the table']);
+  expect(r.ready.tier).toBe('essentials'); expect(r.ready.count.total).toBeGreaterThan(100); expect(r.ready.pct).toBe(Math.round(100 * r.ready.count.known / r.ready.count.total));
+  expect(r.label).toBe('Our wines');
+  expect(r.svcRungs).toEqual(['Know it', 'At the table']);
+  expect(r.svcTable).toEqual([expect.any(Number), 3]); expect(r.svcFour).toBe(true);
+  expect(r.masterSame).toBe(true); // Master is what it has always been
+  expect(r.conf).toEqual([false, true]);
+  // The console: the depth card, a role's own depth, and the level row only while someone is on Master.
+  await page.getByTestId('console-nav-team').click();
+  await page.evaluate(() => { TeamLearn.setTier('essentials'); TeamLearn.setRoleTier('sommelier', 'master'); });
+  await page.getByTestId('console-tier-service').click();
+  await expect(page.getByTestId('console-tier-about')).toContainText('one reason from three');
+  await expect(page.getByTestId('console-level')).toBeVisible(); // the sommelier is still on Master
+  await page.locator('[data-testid="console-role-tier"]').filter({ hasText: /^Same/ }).nth(2).click(); // the sommelier follows the restaurant
+  await expect(page.getByTestId('console-level')).toHaveCount(0); // nobody on Master: no level row
+  await page.getByTestId('console-tier-essentials').click();
+  // A server on Essentials: Today counts what they know, the drill shows four options under a plain heading and no "how sure".
+  await page.evaluate(() => { const s = TeamLearn.people().find((p) => p.role === 'server'); TeamLearn.setMe(s.id); });
+  await page.goto(`${BASE}/team/?seed=princess&view=phone`);
+  await expect(page.getByTestId('team-state')).toContainText(/You know \d+ of \d+/);
+  await page.getByText(/Start today's drill|Do another 5 questions|Practise/).first().click();
+  await expect(page.getByTestId('drill-q')).toBeVisible();
+  expect(await page.getByTestId('drill-opt').count()).toBeLessThanOrEqual(4);
+  await expect(page.getByTestId('drill-sure')).toHaveCount(0);
+  await expect(page.getByTestId('team-drill')).not.toContainText(/RECOGNISE|RECALL/);
+  expect(errors).toEqual([]);
+  await ctx.close();
+});
+
 test('the phone Team tab is the console Team: Add in a dialog, training level, minimums per role', async ({ context, page }) => {
   await stubNetwork(context);
   await page.setViewportSize({ width: 390, height: 844 });

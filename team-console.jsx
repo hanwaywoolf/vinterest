@@ -344,16 +344,27 @@ function _CTeam({open,refresh}){ const T=useTheme(), cr=T.lift(C.cr), phone=useL
 /* The restaurant's training level with a level per role, and the minimum each role needs to work the floor: the same
    cards on the console's Team section and the phone's Team tab. On a phone the minimums are a list per role, not a
    table that scrolls sideways. */
-function TeamLevelCard({changed}){ const T=useTheme(), lv=TeamLearn.level(), levelOpts=TeamLearn.LEVELS.map(k=>[k,TeamLearn.LEVEL_LABEL[k]]);
+/* Training depth (the tier) for the restaurant and per role, and inside Master the level (Low, Medium, High) for the
+   restaurant and per role; the level row shows only while the restaurant, or that role, is on Master. */
+function TeamLevelCard({changed}){ const T=useTheme(), lv=TeamLearn.level(), tr=TeamLearn.tier(), levelOpts=TeamLearn.LEVELS.map(k=>[k,TeamLearn.LEVEL_LABEL[k]]), tierOpts=TeamLearn.TIERS.map(k=>[k,TeamLearn.TIER_LABEL[k]]);
+  const anyMaster=tr==='master'||_CONSOLE_ROLES.some(rk=>TeamLearn.tier(rk)==='master');
   return <>
-    <Card style={{marginTop:14}}><div data-testid="console-level">{_cLabel(T,'Training level')}
+    <Card style={{marginTop:14}}><div data-testid="console-tier">{_cLabel(T,'Training depth')}
+      <div style={{display:'flex',alignItems:'center',gap:12,flexWrap:'wrap'}}><_CSeg label="Training depth for the restaurant" options={tierOpts} value={tr} onPick={k=>{ TeamLearn.setTier(k); changed(); }} testid={k=>'console-tier-'+k}/>
+        <div data-testid="console-tier-about" style={{fontSize:14,color:T.ink2,fontFamily:C.P,lineHeight:1.5,flex:'1 1 240px'}}>{TeamLearn.TIER_ABOUT[tr]}</div></div>
+      <div style={{marginTop:14,borderTop:`1px solid ${T.line}`}}>{_CONSOLE_ROLES.map(rk=>{ const own=TeamLearn.roleTier(rk); return <div key={rk} style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:10,flexWrap:'wrap',padding:'9px 0',borderBottom:`1px solid ${T.line}`}}>
+        <div style={{fontSize:14,fontWeight:700,color:T.ink,fontFamily:C.P,minWidth:96}}>{TeamLearn.ROLES[rk].label}</div>
+        <_CSeg label={`Training depth for ${TeamLearn.ROLES[rk].label}`} options={[['same',`Same (${TeamLearn.TIER_LABEL[tr]})`],...tierOpts]} value={own||'same'} onPick={k=>{ TeamLearn.setRoleTier(rk,k==='same'?null:k); changed(); }} testid="console-role-tier"/></div>; })}</div>
+      {_cNote(T,"Changes the cards staff see, what they're asked and how, at once. Nothing is rewritten and no answer is lost: a question keeps its place in every depth, so moving up adds questions and moving down sets some aside until you move back.")}
+    </div></Card>
+    {anyMaster&&<Card style={{marginTop:14}}><div data-testid="console-level">{_cLabel(T,'Level inside Master')}
       <div style={{display:'flex',alignItems:'center',gap:12,flexWrap:'wrap'}}><_CSeg label="Training level for the restaurant" options={levelOpts} value={lv} onPick={k=>{ TeamLearn.setLevel(k); changed(); }} testid={k=>'console-level-'+k}/>
         <div data-testid="console-level-about" style={{fontSize:14,color:T.ink2,fontFamily:C.P,lineHeight:1.5,flex:'1 1 240px'}}>{TeamLearn.LEVEL_ABOUT[lv]}</div></div>
-      <div style={{marginTop:14,borderTop:`1px solid ${T.line}`}}>{_CONSOLE_ROLES.map(rk=>{ const own=TeamLearn.roleLevel(rk); return <div key={rk} style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:10,flexWrap:'wrap',padding:'9px 0',borderBottom:`1px solid ${T.line}`}}>
+      <div style={{marginTop:14,borderTop:`1px solid ${T.line}`}}>{_CONSOLE_ROLES.filter(rk=>TeamLearn.tier(rk)==='master').map(rk=>{ const own=TeamLearn.roleLevel(rk); return <div key={rk} style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:10,flexWrap:'wrap',padding:'9px 0',borderBottom:`1px solid ${T.line}`}}>
         <div style={{fontSize:14,fontWeight:700,color:T.ink,fontFamily:C.P,minWidth:96}}>{TeamLearn.ROLES[rk].label}</div>
         <_CSeg label={`Training level for ${TeamLearn.ROLES[rk].label}`} options={[['same',`Same (${TeamLearn.LEVEL_LABEL[lv]})`],...levelOpts]} value={own||'same'} onPick={k=>{ TeamLearn.setRoleLevel(rk,k==='same'?null:k); changed(); }} testid="console-role-level"/></div>; })}</div>
-      {_cNote(T,"Changes the cards staff see and what they're asked, at once. Nothing is rewritten and no answer is lost: moving up adds questions, moving down sets some aside until you move back.")}
-    </div></Card>
+      {_cNote(T,"Only roles on Master have a level. Moving up adds questions, moving down sets some aside until you move back.")}
+    </div></Card>}
   </>; }
 function TeamMinimumsCard({changed}){ const T=useTheme(), phone=useLayoutSize()==='phone';
   const parts=Object.keys(TeamLearn.PART_LABEL).filter(k=>(k!=='cocktails'||TeamData.cocktails().length)&&(k!=='allergens'||TeamData.dishes().some(x=>TeamData.allergensOf(x.id)!=null)));
