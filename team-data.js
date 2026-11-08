@@ -15,10 +15,12 @@ const TeamData = {
   _empty(){ return {venue:{name:'',created:Date.now()},wines:{},dishes:{},cards:{},pairings:{},cocktails:{},cocktailCards:{},dishCards:{},versions:[],draft:null,settings:{dueDays:7}}; },
   DISH_BATCH:8,       // dishes per dish-notes call
   /* The venue is one 300KB document once the cards are written, and the screens and TeamLearn read
-     it many times a render, so the parsed copy is kept until the stored text changes (the text is
-     compared, never trusted by reference, so a write from anywhere else is seen). */
-  get(){ const raw=Store.get(this.KEY); if(raw!==null&&raw===this._raw) return this._val;
-    const d=raw?Store.getJSON(this.KEY,null):null, v=d&&d.wines?d:this._empty(); this._raw=raw; this._val=v; return v; },
+     it many times a render, so the parsed copy is kept until the key is written (Store.gen), then the
+     stored text is compared, so a write from anywhere else is seen. */
+  // Kept until Store says the key was written (Store.gen: a write here or from another tab), so the 300KB text isn't read on every call.
+  get(){ const g=Store.gen(this.KEY); if(this._val&&this._gen===g) return this._val;
+    const raw=Store.get(this.KEY); if(raw!==null&&raw===this._raw){ this._gen=g; return this._val; }
+    const d=raw?Store.getJSON(this.KEY,null):null, v=d&&d.wines?d:this._empty(); this._raw=raw; this._val=v; this._gen=g; return v; },
   save(d){ Store.setJSON(this.KEY,d); try{ window.dispatchEvent(new Event('vbiz:data')); }catch(e){} },
   reset(){ Store.remove(this.KEY); try{ window.dispatchEvent(new Event('vbiz:data')); }catch(e){} },
   setVenue(fields){ const d=this.get(); d.venue={...d.venue,...fields}; this.save(d); },
