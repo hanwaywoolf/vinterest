@@ -1,1 +1,5029 @@
-{"pending":true}
+{
+ "venue": {
+  "name": "The Princess Royal"
+ },
+ "wines": [
+  {
+   "section": "Champagne",
+   "producer": "Charles Heidsieck",
+   "name": "Brut Réserve",
+   "vintage": null,
+   "type": "sparkling",
+   "region": "Champagne",
+   "country": "France",
+   "grapes": [
+    "Chardonnay",
+    "Pinot Noir",
+    "Pinot Meunier"
+   ],
+   "grapes_basis": "known",
+   "glass": "£17.50",
+   "bottle": "£99",
+   "other": "Magnum (150cl) £195",
+   "bin": "",
+   "id": "w-charles-heidsieck-brut-reserve"
+  },
+  {
+   "section": "Champagne",
+   "producer": "Pierre Paillard",
+   "name": "Les Parcelles XX, Grand Cru Bouzy",
+   "vintage": null,
+   "type": "sparkling",
+   "region": "Champagne",
+   "country": "France",
+   "grapes": [
+    "Pinot Noir",
+    "Chardonnay"
+   ],
+   "grapes_basis": "known",
+   "glass": "",
+   "bottle": "£125",
+   "other": "",
+   "bin": "",
+   "id": "w-pierre-paillard-les-parcelles-xx-grand-cru-bouzy"
+  },
+  {
+   "section": "Champagne",
+   "producer": "Saint-Sauveur",
+   "name": "Blanc de Blancs Premier Cru",
+   "vintage": null,
+   "type": "sparkling",
+   "region": "Champagne",
+   "country": "France",
+   "grapes": [
+    "Chardonnay"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "£135",
+   "other": "",
+   "bin": "",
+   "id": "w-saint-sauveur-blanc-de-blancs-premier-cru"
+  },
+  {
+   "section": "Champagne",
+   "producer": "Philipponnat",
+   "name": "Rosé Brut",
+   "vintage": null,
+   "type": "sparkling",
+   "region": "Champagne",
+   "country": "France",
+   "grapes": [
+    "Pinot Noir",
+    "Chardonnay",
+    "Pinot Meunier"
+   ],
+   "grapes_basis": "known",
+   "glass": "",
+   "bottle": "£145",
+   "other": "",
+   "bin": "",
+   "id": "w-philipponnat-rose-brut"
+  },
+  {
+   "section": "Champagne",
+   "producer": "Philipponnat",
+   "name": "Blanc de Noirs Extra Brut",
+   "vintage": 2018,
+   "type": "sparkling",
+   "region": "Champagne",
+   "country": "France",
+   "grapes": [
+    "Pinot Noir"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "£160",
+   "other": "",
+   "bin": "",
+   "id": "w-philipponnat-blanc-de-noirs-extra-brut"
+  },
+  {
+   "section": "Champagne",
+   "producer": "Bollinger",
+   "name": "Special Cuvée Brut",
+   "vintage": null,
+   "type": "sparkling",
+   "region": "Champagne",
+   "country": "France",
+   "grapes": [
+    "Pinot Noir",
+    "Chardonnay",
+    "Pinot Meunier"
+   ],
+   "grapes_basis": "known",
+   "glass": "",
+   "bottle": "£170",
+   "other": "",
+   "bin": "",
+   "id": "w-bollinger-special-cuvee-brut"
+  },
+  {
+   "section": "Champagne",
+   "producer": "Charles Heidsieck",
+   "name": "Brut Rosé",
+   "vintage": null,
+   "type": "sparkling",
+   "region": "Champagne",
+   "country": "France",
+   "grapes": [
+    "Pinot Noir",
+    "Chardonnay",
+    "Pinot Meunier"
+   ],
+   "grapes_basis": "known",
+   "glass": "",
+   "bottle": "£175",
+   "other": "",
+   "bin": "",
+   "id": "w-charles-heidsieck-brut-rose"
+  },
+  {
+   "section": "Champagne",
+   "producer": "Charles Heidsieck",
+   "name": "Vintage Brut",
+   "vintage": 2013,
+   "type": "sparkling",
+   "region": "Champagne",
+   "country": "France",
+   "grapes": [
+    "Pinot Noir",
+    "Chardonnay"
+   ],
+   "grapes_basis": "known",
+   "glass": "",
+   "bottle": "£230",
+   "other": "",
+   "bin": "",
+   "id": "w-charles-heidsieck-vintage-brut"
+  },
+  {
+   "section": "Champagne",
+   "producer": "Charles Heidsieck",
+   "name": "Blanc des Millénaires",
+   "vintage": 2007,
+   "type": "sparkling",
+   "region": "Champagne",
+   "country": "France",
+   "grapes": [
+    "Chardonnay"
+   ],
+   "grapes_basis": "known",
+   "glass": "",
+   "bottle": "£310",
+   "other": "",
+   "bin": "",
+   "id": "w-charles-heidsieck-blanc-des-millenaires"
+  },
+  {
+   "section": "Sparkling",
+   "producer": "Vignoble Guillaume",
+   "name": "Crémant La Flûte Enchantée",
+   "vintage": null,
+   "type": "sparkling",
+   "region": "Franche-Comté",
+   "country": "France",
+   "grapes": [
+    "Chardonnay"
+   ],
+   "grapes_basis": "typical",
+   "glass": "",
+   "bottle": "£65",
+   "other": "",
+   "bin": "",
+   "id": "w-vignoble-guillaume-cremant-la-flute-enchantee"
+  },
+  {
+   "section": "Sparkling",
+   "producer": "Terra da Marca",
+   "name": "Cava Brut Natura",
+   "vintage": 2021,
+   "type": "sparkling",
+   "region": "Penedès",
+   "country": "Spain",
+   "grapes": [
+    "Xarel·lo",
+    "Macabeo",
+    "Parellada"
+   ],
+   "grapes_basis": "typical",
+   "glass": "",
+   "bottle": "£76",
+   "other": "",
+   "bin": "",
+   "id": "w-terra-da-marca-cava-brut-natura"
+  },
+  {
+   "section": "Sparkling",
+   "producer": "Coates & Seely",
+   "name": "Brut Reserve",
+   "vintage": null,
+   "type": "sparkling",
+   "region": "Hampshire",
+   "country": "England",
+   "grapes": [
+    "Chardonnay",
+    "Pinot Noir",
+    "Pinot Meunier"
+   ],
+   "grapes_basis": "known",
+   "glass": "£14",
+   "bottle": "£82",
+   "other": "125ml glass",
+   "bin": "",
+   "id": "w-coates-seely-brut-reserve"
+  },
+  {
+   "section": "Sparkling",
+   "producer": "Sugrue",
+   "name": "Rock Story",
+   "vintage": null,
+   "type": "sparkling",
+   "region": "South Downs",
+   "country": "England",
+   "grapes": [
+    "Chardonnay",
+    "Pinot Noir"
+   ],
+   "grapes_basis": "typical",
+   "glass": "",
+   "bottle": "£90",
+   "other": "Multi-vintage (MV)",
+   "bin": "",
+   "id": "w-sugrue-rock-story"
+  },
+  {
+   "section": "Sparkling",
+   "producer": "Gusbourne",
+   "name": "Blanc de Blancs",
+   "vintage": 2020,
+   "type": "sparkling",
+   "region": "Kent",
+   "country": "England",
+   "grapes": [
+    "Chardonnay"
+   ],
+   "grapes_basis": "label",
+   "glass": "£15.50",
+   "bottle": "£90",
+   "other": "125ml glass",
+   "bin": "",
+   "id": "w-gusbourne-blanc-de-blancs"
+  },
+  {
+   "section": "Sparkling",
+   "producer": "Coates & Seely",
+   "name": "Brut Rosé",
+   "vintage": null,
+   "type": "sparkling",
+   "region": "Hampshire",
+   "country": "England",
+   "grapes": [
+    "Pinot Noir",
+    "Chardonnay",
+    "Pinot Meunier"
+   ],
+   "grapes_basis": "known",
+   "glass": "£16",
+   "bottle": "£92",
+   "other": "125ml glass",
+   "bin": "",
+   "id": "w-coates-seely-brut-rose"
+  },
+  {
+   "section": "Sparkling",
+   "producer": "Gusbourne",
+   "name": "Rosé Brut",
+   "vintage": 2020,
+   "type": "sparkling",
+   "region": "Kent",
+   "country": "England",
+   "grapes": [
+    "Pinot Noir",
+    "Chardonnay",
+    "Pinot Meunier"
+   ],
+   "grapes_basis": "known",
+   "glass": "",
+   "bottle": "£96",
+   "other": "",
+   "bin": "",
+   "id": "w-gusbourne-rose-brut"
+  },
+  {
+   "section": "Fresh, Coastal Whites",
+   "producer": "Borgo Selene",
+   "name": "Catarratto/Inzolia",
+   "vintage": 2025,
+   "type": "white",
+   "region": "Sicily",
+   "country": "Italy",
+   "grapes": [
+    "Catarratto",
+    "Inzolia"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "£32",
+   "other": "",
+   "bin": "",
+   "id": "w-borgo-selene-catarratto-inzolia"
+  },
+  {
+   "section": "Fresh, Coastal Whites",
+   "producer": "Adega de Monção",
+   "name": "Vinho Verde, Fresco",
+   "vintage": 2025,
+   "type": "white",
+   "region": "Vinho Verde",
+   "country": "Portugal",
+   "grapes": [
+    "Alvarinho",
+    "Trajadura"
+   ],
+   "grapes_basis": "typical",
+   "glass": "£11",
+   "bottle": "£44",
+   "other": "",
+   "bin": "",
+   "id": "w-adega-de-moncao-vinho-verde-fresco"
+  },
+  {
+   "section": "Fresh, Coastal Whites",
+   "producer": "Lauriers",
+   "name": "Picpoul de Pinet, Paredaux",
+   "vintage": 2025,
+   "type": "white",
+   "region": "Languedoc",
+   "country": "France",
+   "grapes": [
+    "Picpoul"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "£48",
+   "other": "",
+   "bin": "",
+   "id": "w-lauriers-picpoul-de-pinet-paredaux"
+  },
+  {
+   "section": "Fresh, Coastal Whites",
+   "producer": "Michel Delhommeau",
+   "name": "Muscadet Sèvre-et-Maine Sur Lie",
+   "vintage": 2025,
+   "type": "white",
+   "region": "Loire Valley",
+   "country": "France",
+   "grapes": [
+    "Melon de Bourgogne"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "£53",
+   "other": "",
+   "bin": "",
+   "id": "w-michel-delhommeau-muscadet-sevre-et-maine-sur-lie"
+  },
+  {
+   "section": "Fresh, Coastal Whites",
+   "producer": "Bodegas Gallegas",
+   "name": "Albariño Sentidiño",
+   "vintage": 2025,
+   "type": "white",
+   "region": "Rías Baixas",
+   "country": "Spain",
+   "grapes": [
+    "Albariño"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "£58",
+   "other": "",
+   "bin": "",
+   "id": "w-bodegas-gallegas-albarino-sentidino"
+  },
+  {
+   "section": "Zesty, Aromatic Whites",
+   "producer": "Cassara",
+   "name": "Grillo",
+   "vintage": 2025,
+   "type": "white",
+   "region": "Sicily",
+   "country": "Italy",
+   "grapes": [
+    "Grillo"
+   ],
+   "grapes_basis": "label",
+   "glass": "£8.50",
+   "bottle": "£38",
+   "other": "",
+   "bin": "",
+   "id": "w-cassara-grillo"
+  },
+  {
+   "section": "Zesty, Aromatic Whites",
+   "producer": "Tinpot Hut",
+   "name": "Sauvignon Blanc",
+   "vintage": 2025,
+   "type": "white",
+   "region": "Marlborough",
+   "country": "New Zealand",
+   "grapes": [
+    "Sauvignon Blanc"
+   ],
+   "grapes_basis": "label",
+   "glass": "£12",
+   "bottle": "£51",
+   "other": "",
+   "bin": "",
+   "id": "w-tinpot-hut-sauvignon-blanc"
+  },
+  {
+   "section": "Zesty, Aromatic Whites",
+   "producer": "Carl Loewen",
+   "name": "Riesling, Alte Reben",
+   "vintage": 2025,
+   "type": "white",
+   "region": "Mosel",
+   "country": "Germany",
+   "grapes": [
+    "Riesling"
+   ],
+   "grapes_basis": "label",
+   "glass": "£12.50",
+   "bottle": "£54",
+   "other": "",
+   "bin": "",
+   "id": "w-carl-loewen-riesling-alte-reben"
+  },
+  {
+   "section": "Zesty, Aromatic Whites",
+   "producer": "Kientzler",
+   "name": "Riesling Classic",
+   "vintage": 2025,
+   "type": "white",
+   "region": "Alsace",
+   "country": "France",
+   "grapes": [
+    "Riesling"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "£58",
+   "other": "",
+   "bin": "",
+   "id": "w-kientzler-riesling-classic"
+  },
+  {
+   "section": "Zesty, Aromatic Whites",
+   "producer": "Lucien Crochet",
+   "name": "Sancerre",
+   "vintage": 2023,
+   "type": "white",
+   "region": "Loire Valley",
+   "country": "France",
+   "grapes": [
+    "Sauvignon Blanc"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "£72",
+   "other": "",
+   "bin": "",
+   "id": "w-lucien-crochet-sancerre"
+  },
+  {
+   "section": "Mineral Whites",
+   "producer": "Pieropan",
+   "name": "Soave Classico",
+   "vintage": 2025,
+   "type": "white",
+   "region": "Veneto",
+   "country": "Italy",
+   "grapes": [
+    "Garganega"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "£48",
+   "other": "",
+   "bin": "",
+   "id": "w-pieropan-soave-classico"
+  },
+  {
+   "section": "Mineral Whites",
+   "producer": "La Giustiniana",
+   "name": "Gavi di Gavi, Lugarara",
+   "vintage": 2025,
+   "type": "white",
+   "region": "Piedmont",
+   "country": "Italy",
+   "grapes": [
+    "Cortese"
+   ],
+   "grapes_basis": "label",
+   "glass": "£14",
+   "bottle": "£58",
+   "other": "",
+   "bin": "",
+   "id": "w-la-giustiniana-gavi-di-gavi-lugarara"
+  },
+  {
+   "section": "Mineral Whites",
+   "producer": "Rosner",
+   "name": "Grüner Veltliner",
+   "vintage": 2024,
+   "type": "white",
+   "region": "Langenlois",
+   "country": "Austria",
+   "grapes": [
+    "Grüner Veltliner"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "£60",
+   "other": "",
+   "bin": "",
+   "id": "w-rosner-gruner-veltliner"
+  },
+  {
+   "section": "Mineral Whites",
+   "producer": "Prieuré Saint-Côme",
+   "name": "Chablis",
+   "vintage": 2024,
+   "type": "white",
+   "region": "Burgundy",
+   "country": "France",
+   "grapes": [
+    "Chardonnay"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "£68",
+   "other": "",
+   "bin": "",
+   "id": "w-prieure-saint-come-chablis"
+  },
+  {
+   "section": "Sun-Soaked Whites",
+   "producer": "Famille Perrin",
+   "name": "Viognier, Maison Les Alexandrins",
+   "vintage": 2025,
+   "type": "white",
+   "region": "Rhône Valley",
+   "country": "France",
+   "grapes": [
+    "Viognier"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "£50",
+   "other": "",
+   "bin": "",
+   "id": "w-famille-perrin-viognier-maison-les-alexandrins"
+  },
+  {
+   "section": "Sun-Soaked Whites",
+   "producer": "Raúl Pérez",
+   "name": "Godello, Ultreia",
+   "vintage": 2023,
+   "type": "white",
+   "region": "Bierzo",
+   "country": "Spain",
+   "grapes": [
+    "Godello"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "£62",
+   "other": "",
+   "bin": "",
+   "id": "w-raul-perez-godello-ultreia"
+  },
+  {
+   "section": "Sun-Soaked Whites",
+   "producer": "Antonella Corda",
+   "name": "Vermentino di Sardegna",
+   "vintage": 2024,
+   "type": "white",
+   "region": "Sardinia",
+   "country": "Italy",
+   "grapes": [
+    "Vermentino"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "£64",
+   "other": "",
+   "bin": "",
+   "id": "w-antonella-corda-vermentino-di-sardegna"
+  },
+  {
+   "section": "Sun-Soaked Whites",
+   "producer": "Villota",
+   "name": "Rioja Blanco, 'Selvanevada'",
+   "vintage": 2025,
+   "type": "white",
+   "region": "Rioja",
+   "country": "Spain",
+   "grapes": [
+    "Viura"
+   ],
+   "grapes_basis": "typical",
+   "glass": "",
+   "bottle": "£65",
+   "other": "",
+   "bin": "",
+   "id": "w-villota-rioja-blanco-selvanevada"
+  },
+  {
+   "section": "Sun-Soaked Whites",
+   "producer": "Boulevard Napoléon",
+   "name": "Grenache Gris",
+   "vintage": 2023,
+   "type": "white",
+   "region": "Languedoc",
+   "country": "France",
+   "grapes": [
+    "Grenache Gris"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "£75",
+   "other": "",
+   "bin": "",
+   "id": "w-boulevard-napoleon-grenache-gris"
+  },
+  {
+   "section": "Sun-Soaked Whites",
+   "producer": "Château Grand Village",
+   "name": "Bordeaux Blanc",
+   "vintage": 2023,
+   "type": "white",
+   "region": "Bordeaux",
+   "country": "France",
+   "grapes": [
+    "Sauvignon Blanc",
+    "Sémillon"
+   ],
+   "grapes_basis": "typical",
+   "glass": "£13",
+   "bottle": "£80",
+   "other": "125ml glass; carafe (375ml) £38",
+   "bin": "",
+   "id": "w-chateau-grand-village-bordeaux-blanc"
+  },
+  {
+   "section": "Sun-Soaked Whites",
+   "producer": "David & Nadia",
+   "name": "Chenin Blanc",
+   "vintage": 2024,
+   "type": "white",
+   "region": "Swartland",
+   "country": "South Africa",
+   "grapes": [
+    "Chenin Blanc"
+   ],
+   "grapes_basis": "label",
+   "glass": "£14",
+   "bottle": "£84",
+   "other": "125ml glass; carafe (375ml) £42",
+   "bin": "",
+   "id": "w-david-nadia-chenin-blanc"
+  },
+  {
+   "section": "White Burgundy & Friends",
+   "producer": "Domaine Perraud",
+   "name": "Mâcon-Villages, Maison Cubitt",
+   "vintage": 2024,
+   "type": "white",
+   "region": "Burgundy",
+   "country": "France",
+   "grapes": [
+    "Chardonnay"
+   ],
+   "grapes_basis": "known",
+   "glass": "£13.50",
+   "bottle": "£58",
+   "other": "Magnum (150cl) £110",
+   "bin": "",
+   "id": "w-domaine-perraud-macon-villages-maison-cubitt"
+  },
+  {
+   "section": "White Burgundy & Friends",
+   "producer": "Jean-Marc Burgaud",
+   "name": "Beaujolais Villages Blanc",
+   "vintage": 2023,
+   "type": "white",
+   "region": "Beaujolais",
+   "country": "France",
+   "grapes": [
+    "Chardonnay"
+   ],
+   "grapes_basis": "known",
+   "glass": "",
+   "bottle": "£58",
+   "other": "",
+   "bin": "",
+   "id": "w-jean-marc-burgaud-beaujolais-villages-blanc"
+  },
+  {
+   "section": "White Burgundy & Friends",
+   "producer": "David Moret",
+   "name": "Aligoté, Le Grand A",
+   "vintage": 2023,
+   "type": "white",
+   "region": "Burgundy",
+   "country": "France",
+   "grapes": [
+    "Aligoté"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "£68",
+   "other": "",
+   "bin": "",
+   "id": "w-david-moret-aligote-le-grand-a"
+  },
+  {
+   "section": "White Burgundy & Friends",
+   "producer": "Sugrue",
+   "name": "Bonkers",
+   "vintage": null,
+   "type": "white",
+   "region": "South Downs",
+   "country": "England",
+   "grapes": [
+    "Chardonnay"
+   ],
+   "grapes_basis": "typical",
+   "glass": "",
+   "bottle": "£69",
+   "other": "Multi-vintage (MV)",
+   "bin": "",
+   "id": "w-sugrue-bonkers"
+  },
+  {
+   "section": "White Burgundy & Friends",
+   "producer": "Bakestones Cellars",
+   "name": "Chardonnay",
+   "vintage": 2023,
+   "type": "white",
+   "region": "California",
+   "country": "USA",
+   "grapes": [
+    "Chardonnay"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "£70",
+   "other": "",
+   "bin": "",
+   "id": "w-bakestones-cellars-chardonnay"
+  },
+  {
+   "section": "White Burgundy & Friends",
+   "producer": "Bruno Clair",
+   "name": "Marsannay Blanc",
+   "vintage": 2023,
+   "type": "white",
+   "region": "Burgundy",
+   "country": "France",
+   "grapes": [
+    "Chardonnay"
+   ],
+   "grapes_basis": "known",
+   "glass": "",
+   "bottle": "£78",
+   "other": "",
+   "bin": "",
+   "id": "w-bruno-clair-marsannay-blanc"
+  },
+  {
+   "section": "White Burgundy & Friends",
+   "producer": "Crystallum",
+   "name": "Chardonnay, The Agnes",
+   "vintage": 2025,
+   "type": "white",
+   "region": "Western Cape",
+   "country": "South Africa",
+   "grapes": [
+    "Chardonnay"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "£85",
+   "other": "",
+   "bin": "",
+   "id": "w-crystallum-chardonnay-the-agnes"
+  },
+  {
+   "section": "White Burgundy & Friends",
+   "producer": "Domaine des Hâtes",
+   "name": "Chablis 1er Cru, 'Vau de Vey'",
+   "vintage": 2023,
+   "type": "white",
+   "region": "Burgundy",
+   "country": "France",
+   "grapes": [
+    "Chardonnay"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "£90",
+   "other": "",
+   "bin": "",
+   "id": "w-domaine-des-hates-chablis-1er-cru-vau-de-vey"
+  },
+  {
+   "section": "White Burgundy & Friends",
+   "producer": "Sandhi",
+   "name": "Chardonnay, Sta. Rita Hills",
+   "vintage": 2024,
+   "type": "white",
+   "region": "California",
+   "country": "USA",
+   "grapes": [
+    "Chardonnay"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "£95",
+   "other": "",
+   "bin": "",
+   "id": "w-sandhi-chardonnay-sta-rita-hills"
+  },
+  {
+   "section": "White Burgundy & Friends",
+   "producer": "Sylvain Cathiard",
+   "name": "Aligoté",
+   "vintage": 2022,
+   "type": "white",
+   "region": "Burgundy",
+   "country": "France",
+   "grapes": [
+    "Aligoté"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "£97",
+   "other": "",
+   "bin": "",
+   "id": "w-sylvain-cathiard-aligote"
+  },
+  {
+   "section": "White Burgundy & Friends",
+   "producer": "David Moret",
+   "name": "Saint-Romain",
+   "vintage": 2023,
+   "type": "white",
+   "region": "Burgundy",
+   "country": "France",
+   "grapes": [
+    "Chardonnay"
+   ],
+   "grapes_basis": "label",
+   "glass": "£22",
+   "bottle": "£130",
+   "other": "125ml glass; carafe (375ml) £66",
+   "bin": "",
+   "id": "w-david-moret-saint-romain"
+  },
+  {
+   "section": "White Burgundy & Friends",
+   "producer": "Domaine du Château Philippe le Hardi",
+   "name": "Saint-Aubin, En Vesveau",
+   "vintage": 2022,
+   "type": "white",
+   "region": "Burgundy",
+   "country": "France",
+   "grapes": [
+    "Chardonnay"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "£135",
+   "other": "",
+   "bin": "",
+   "id": "w-domaine-du-chateau-philippe-le-hardi-saint-aubin-en-vesveau"
+  },
+  {
+   "section": "White Burgundy & Friends",
+   "producer": "Jean-Noël Gagnard",
+   "name": "Chassagne-Montrachet, Les Masures",
+   "vintage": 2023,
+   "type": "white",
+   "region": "Burgundy",
+   "country": "France",
+   "grapes": [
+    "Chardonnay"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "£155",
+   "other": "",
+   "bin": "",
+   "id": "w-jean-noel-gagnard-chassagne-montrachet-les-masures"
+  },
+  {
+   "section": "White Burgundy & Friends",
+   "producer": "Génot-Boulanger",
+   "name": "Puligny-Montrachet, Les Nosroyes",
+   "vintage": 2023,
+   "type": "white",
+   "region": "Burgundy",
+   "country": "France",
+   "grapes": [
+    "Chardonnay"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "£185",
+   "other": "",
+   "bin": "",
+   "id": "w-genot-boulanger-puligny-montrachet-les-nosroyes"
+  },
+  {
+   "section": "White Burgundy & Friends",
+   "producer": "Domaine Laroche",
+   "name": "Chablis Grand Cru, Les Blanchots",
+   "vintage": 2023,
+   "type": "white",
+   "region": "Burgundy",
+   "country": "France",
+   "grapes": [
+    "Chardonnay"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "£200",
+   "other": "",
+   "bin": "",
+   "id": "w-domaine-laroche-chablis-grand-cru-les-blanchots"
+  },
+  {
+   "section": "White Burgundy & Friends",
+   "producer": "David Moret",
+   "name": "Meursault, Sous la Velle",
+   "vintage": 2023,
+   "type": "white",
+   "region": "Burgundy",
+   "country": "France",
+   "grapes": [
+    "Chardonnay"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "£220",
+   "other": "",
+   "bin": "",
+   "id": "w-david-moret-meursault-sous-la-velle"
+  },
+  {
+   "section": "Rosé",
+   "producer": "Famille Perrin",
+   "name": "Luberon Rosé",
+   "vintage": 2025,
+   "type": "rosé",
+   "region": "Rhône Valley",
+   "country": "France",
+   "grapes": [
+    "Grenache",
+    "Syrah",
+    "Cinsault"
+   ],
+   "grapes_basis": "typical",
+   "glass": "£9",
+   "bottle": "£38",
+   "other": "",
+   "bin": "",
+   "id": "w-famille-perrin-luberon-rose"
+  },
+  {
+   "section": "Rosé",
+   "producer": "Amie",
+   "name": "Amie x Organic Rosé",
+   "vintage": 2025,
+   "type": "rosé",
+   "region": "South of France",
+   "country": "France",
+   "grapes": [
+    "Grenache",
+    "Cinsault"
+   ],
+   "grapes_basis": "typical",
+   "glass": "£12.50",
+   "bottle": "£49",
+   "other": "",
+   "bin": "",
+   "id": "w-amie-amie-x-organic-rose"
+  },
+  {
+   "section": "Rosé",
+   "producer": "Château du Rouët",
+   "name": "Maison Cubitt Rosé",
+   "vintage": 2025,
+   "type": "rosé",
+   "region": "Côtes de Provence",
+   "country": "France",
+   "grapes": [
+    "Grenache",
+    "Cinsault"
+   ],
+   "grapes_basis": "typical",
+   "glass": "£13",
+   "bottle": "£53",
+   "other": "Magnum (150cl) £100",
+   "bin": "",
+   "id": "w-chateau-du-rouet-maison-cubitt-rose"
+  },
+  {
+   "section": "Rosé",
+   "producer": "Mirabeau",
+   "name": "Pure",
+   "vintage": 2025,
+   "type": "rosé",
+   "region": "Côtes de Provence",
+   "country": "France",
+   "grapes": [
+    "Grenache",
+    "Syrah",
+    "Cinsault"
+   ],
+   "grapes_basis": "typical",
+   "glass": "£14",
+   "bottle": "£55",
+   "other": "Magnum (150cl, 2024) £108",
+   "bin": "",
+   "id": "w-mirabeau-pure"
+  },
+  {
+   "section": "Rosé",
+   "producer": "Tormaresca",
+   "name": "Negroamaro Rosato, Calafuria",
+   "vintage": 2023,
+   "type": "rosé",
+   "region": "Salento",
+   "country": "Italy",
+   "grapes": [
+    "Negroamaro"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "£55",
+   "other": "",
+   "bin": "",
+   "id": "w-tormaresca-negroamaro-rosato-calafuria"
+  },
+  {
+   "section": "Rosé",
+   "producer": "Mirabeau",
+   "name": "Etoile",
+   "vintage": 2024,
+   "type": "rosé",
+   "region": "Côtes de Provence",
+   "country": "France",
+   "grapes": [
+    "Grenache",
+    "Cinsault"
+   ],
+   "grapes_basis": "typical",
+   "glass": "£16",
+   "bottle": "£65",
+   "other": "",
+   "bin": "",
+   "id": "w-mirabeau-etoile"
+  },
+  {
+   "section": "Rosé",
+   "producer": "Domaine Ott",
+   "name": "By Ott",
+   "vintage": 2024,
+   "type": "rosé",
+   "region": "Côtes de Provence",
+   "country": "France",
+   "grapes": [
+    "Grenache",
+    "Cinsault",
+    "Syrah"
+   ],
+   "grapes_basis": "typical",
+   "glass": "",
+   "bottle": "£80",
+   "other": "",
+   "bin": "",
+   "id": "w-domaine-ott-by-ott"
+  },
+  {
+   "section": "Rosé",
+   "producer": "Domaine de la Bégude",
+   "name": "Bandol Rosé",
+   "vintage": 2024,
+   "type": "rosé",
+   "region": "Provence",
+   "country": "France",
+   "grapes": [
+    "Mourvèdre",
+    "Grenache",
+    "Cinsault"
+   ],
+   "grapes_basis": "typical",
+   "glass": "",
+   "bottle": "£89",
+   "other": "",
+   "bin": "",
+   "id": "w-domaine-de-la-begude-bandol-rose"
+  },
+  {
+   "section": "Sun-Soaked Reds",
+   "producer": "Il Barroccio",
+   "name": "Nero d'Avola",
+   "vintage": 2023,
+   "type": "red",
+   "region": "Sicily",
+   "country": "Italy",
+   "grapes": [
+    "Nero d'Avola"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "£32",
+   "other": "",
+   "bin": "",
+   "id": "w-il-barroccio-nero-d-avola"
+  },
+  {
+   "section": "Sun-Soaked Reds",
+   "producer": "Baron de Badassière",
+   "name": "Syrah",
+   "vintage": 2024,
+   "type": "red",
+   "region": "Languedoc",
+   "country": "France",
+   "grapes": [
+    "Syrah"
+   ],
+   "grapes_basis": "label",
+   "glass": "£9",
+   "bottle": "£38",
+   "other": "",
+   "bin": "",
+   "id": "w-baron-de-badassiere-syrah"
+  },
+  {
+   "section": "Sun-Soaked Reds",
+   "producer": "Pacheco Pereda",
+   "name": "Malbec",
+   "vintage": 2023,
+   "type": "red",
+   "region": "Mendoza",
+   "country": "Argentina",
+   "grapes": [
+    "Malbec"
+   ],
+   "grapes_basis": "label",
+   "glass": "£10.50",
+   "bottle": "£43",
+   "other": "",
+   "bin": "",
+   "id": "w-pacheco-pereda-malbec"
+  },
+  {
+   "section": "Sun-Soaked Reds",
+   "producer": "Jasci & Marchesani",
+   "name": "Montepulciano",
+   "vintage": 2024,
+   "type": "red",
+   "region": "Abruzzo",
+   "country": "Italy",
+   "grapes": [
+    "Montepulciano"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "£49",
+   "other": "",
+   "bin": "",
+   "id": "w-jasci-marchesani-montepulciano"
+  },
+  {
+   "section": "Sun-Soaked Reds",
+   "producer": "Amie",
+   "name": "Amie Red, Carignan",
+   "vintage": 2025,
+   "type": "red",
+   "region": "South of France",
+   "country": "France",
+   "grapes": [
+    "Carignan"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "£50",
+   "other": "",
+   "bin": "",
+   "id": "w-amie-amie-red-carignan"
+  },
+  {
+   "section": "Sun-Soaked Reds",
+   "producer": "La Ligière",
+   "name": "Côtes du Rhône, Sud Absolu",
+   "vintage": 2022,
+   "type": "red",
+   "region": "Rhône Valley",
+   "country": "France",
+   "grapes": [
+    "Grenache",
+    "Syrah"
+   ],
+   "grapes_basis": "typical",
+   "glass": "",
+   "bottle": "£55",
+   "other": "",
+   "bin": "",
+   "id": "w-la-ligiere-cotes-du-rhone-sud-absolu"
+  },
+  {
+   "section": "Sun-Soaked Reds",
+   "producer": "Willunga 100",
+   "name": "Grenache, McLaren Vale",
+   "vintage": 2024,
+   "type": "red",
+   "region": "South Australia",
+   "country": "Australia",
+   "grapes": [
+    "Grenache"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "£52",
+   "other": "",
+   "bin": "",
+   "id": "w-willunga-100-grenache-mclaren-vale"
+  },
+  {
+   "section": "Sun-Soaked Reds",
+   "producer": "Señorío de P. Peciña",
+   "name": "Rioja Crianza",
+   "vintage": 2019,
+   "type": "red",
+   "region": "Rioja",
+   "country": "Spain",
+   "grapes": [
+    "Tempranillo"
+   ],
+   "grapes_basis": "typical",
+   "glass": "",
+   "bottle": "£58",
+   "other": "",
+   "bin": "",
+   "id": "w-senorio-de-p-pecina-rioja-crianza"
+  },
+  {
+   "section": "Sun-Soaked Reds",
+   "producer": "Domaine Montirius",
+   "name": "Vacqueyras, Le Village",
+   "vintage": 2022,
+   "type": "red",
+   "region": "Southern Rhône",
+   "country": "France",
+   "grapes": [
+    "Grenache",
+    "Syrah"
+   ],
+   "grapes_basis": "typical",
+   "glass": "",
+   "bottle": "£65",
+   "other": "",
+   "bin": "",
+   "id": "w-domaine-montirius-vacqueyras-le-village"
+  },
+  {
+   "section": "Sun-Soaked Reds",
+   "producer": "Château Mont-Redon",
+   "name": "Lirac",
+   "vintage": 2024,
+   "type": "red",
+   "region": "Rhône Valley",
+   "country": "France",
+   "grapes": [
+    "Grenache",
+    "Syrah",
+    "Mourvèdre"
+   ],
+   "grapes_basis": "typical",
+   "glass": "£16",
+   "bottle": "£67",
+   "other": "",
+   "bin": "",
+   "id": "w-chateau-mont-redon-lirac"
+  },
+  {
+   "section": "Sun-Soaked Reds",
+   "producer": "Frog's Leap",
+   "name": "Zinfandel",
+   "vintage": 2022,
+   "type": "red",
+   "region": "Napa Valley",
+   "country": "USA",
+   "grapes": [
+    "Zinfandel"
+   ],
+   "grapes_basis": "label",
+   "glass": "£15",
+   "bottle": "£87",
+   "other": "125ml glass; carafe (375ml) £44",
+   "bin": "",
+   "id": "w-frog-s-leap-zinfandel"
+  },
+  {
+   "section": "Sun-Soaked Reds",
+   "producer": "Bosquet des Papes",
+   "name": "Châteauneuf-du-Pape",
+   "vintage": 2022,
+   "type": "red",
+   "region": "Southern Rhône",
+   "country": "France",
+   "grapes": [
+    "Grenache",
+    "Syrah",
+    "Mourvèdre"
+   ],
+   "grapes_basis": "typical",
+   "glass": "",
+   "bottle": "£105",
+   "other": "",
+   "bin": "",
+   "id": "w-bosquet-des-papes-chateauneuf-du-pape"
+  },
+  {
+   "section": "Sun-Soaked Reds",
+   "producer": "R. López de Heredia",
+   "name": "Rioja Viña Tondonia, Tinto Reserva",
+   "vintage": 2013,
+   "type": "red",
+   "region": "Rioja",
+   "country": "Spain",
+   "grapes": [
+    "Tempranillo",
+    "Garnacha",
+    "Graciano",
+    "Mazuelo"
+   ],
+   "grapes_basis": "known",
+   "glass": "",
+   "bottle": "£110",
+   "other": "",
+   "bin": "",
+   "id": "w-r-lopez-de-heredia-rioja-vina-tondonia-tinto-reserva"
+  },
+  {
+   "section": "Red Bordeaux & Friends",
+   "producer": "L'Étendard de Château Valade",
+   "name": "Cubitt Claret",
+   "vintage": 2019,
+   "type": "red",
+   "region": "Saint-Émilion Grand Cru, Bordeaux",
+   "country": "France",
+   "grapes": [
+    "Merlot",
+    "Cabernet Franc"
+   ],
+   "grapes_basis": "typical",
+   "glass": "£14.50",
+   "bottle": "£62",
+   "other": "",
+   "bin": "",
+   "id": "w-l-etendard-de-chateau-valade-cubitt-claret"
+  },
+  {
+   "section": "Red Bordeaux & Friends",
+   "producer": "Château Capbern",
+   "name": "Château Capbern",
+   "vintage": 2018,
+   "type": "red",
+   "region": "Saint-Estèphe, Bordeaux",
+   "country": "France",
+   "grapes": [
+    "Cabernet Sauvignon",
+    "Merlot"
+   ],
+   "grapes_basis": "known",
+   "glass": "",
+   "bottle": "£78",
+   "other": "Magnum (150cl, 2019) £150",
+   "bin": "",
+   "id": "w-chateau-capbern-chateau-capbern"
+  },
+  {
+   "section": "Red Bordeaux & Friends",
+   "producer": "No Fine Print",
+   "name": "Cabernet Sauvignon",
+   "vintage": 2023,
+   "type": "red",
+   "region": "California",
+   "country": "USA",
+   "grapes": [
+    "Cabernet Sauvignon"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "£80",
+   "other": "",
+   "bin": "",
+   "id": "w-no-fine-print-cabernet-sauvignon"
+  },
+  {
+   "section": "Red Bordeaux & Friends",
+   "producer": "Château Haut-Chaigneau",
+   "name": "Château Haut-Chaigneau",
+   "vintage": 2019,
+   "type": "red",
+   "region": "Lalande-de-Pomerol, Bordeaux",
+   "country": "France",
+   "grapes": [
+    "Merlot",
+    "Cabernet Franc"
+   ],
+   "grapes_basis": "typical",
+   "glass": "",
+   "bottle": "£86",
+   "other": "",
+   "bin": "",
+   "id": "w-chateau-haut-chaigneau-chateau-haut-chaigneau"
+  },
+  {
+   "section": "Red Bordeaux & Friends",
+   "producer": "Domaine de Saint-Guirons",
+   "name": "Domaine de Saint-Guirons",
+   "vintage": 2016,
+   "type": "red",
+   "region": "Pauillac, Bordeaux",
+   "country": "France",
+   "grapes": [
+    "Cabernet Sauvignon",
+    "Merlot"
+   ],
+   "grapes_basis": "typical",
+   "glass": "",
+   "bottle": "£93",
+   "other": "",
+   "bin": "",
+   "id": "w-domaine-de-saint-guirons-domaine-de-saint-guirons"
+  },
+  {
+   "section": "Red Bordeaux & Friends",
+   "producer": "Château Haut-Bergey",
+   "name": "Château Haut-Bergey",
+   "vintage": 2010,
+   "type": "red",
+   "region": "Pessac-Léognan, Bordeaux",
+   "country": "France",
+   "grapes": [
+    "Cabernet Sauvignon",
+    "Merlot"
+   ],
+   "grapes_basis": "typical",
+   "glass": "",
+   "bottle": "£98",
+   "other": "",
+   "bin": "",
+   "id": "w-chateau-haut-bergey-chateau-haut-bergey"
+  },
+  {
+   "section": "Red Bordeaux & Friends",
+   "producer": "Château Smith Haut Lafitte",
+   "name": "Le Petit Smith Haut Lafitte",
+   "vintage": 2019,
+   "type": "red",
+   "region": "Pessac-Léognan, Bordeaux",
+   "country": "France",
+   "grapes": [
+    "Cabernet Sauvignon",
+    "Merlot"
+   ],
+   "grapes_basis": "typical",
+   "glass": "",
+   "bottle": "£100",
+   "other": "",
+   "bin": "",
+   "id": "w-chateau-smith-haut-lafitte-le-petit-smith-haut-lafitte"
+  },
+  {
+   "section": "Red Bordeaux & Friends",
+   "producer": "Château Léoville Barton",
+   "name": "La Réserve de Léoville Barton",
+   "vintage": 2018,
+   "type": "red",
+   "region": "Saint-Julien, Bordeaux",
+   "country": "France",
+   "grapes": [
+    "Cabernet Sauvignon",
+    "Merlot"
+   ],
+   "grapes_basis": "typical",
+   "glass": "",
+   "bottle": "£105",
+   "other": "",
+   "bin": "",
+   "id": "w-chateau-leoville-barton-la-reserve-de-leoville-barton"
+  },
+  {
+   "section": "Red Bordeaux & Friends",
+   "producer": "Château Rauzan-Ségla",
+   "name": "Ségla",
+   "vintage": 2016,
+   "type": "red",
+   "region": "Margaux, Bordeaux",
+   "country": "France",
+   "grapes": [
+    "Cabernet Sauvignon",
+    "Merlot"
+   ],
+   "grapes_basis": "typical",
+   "glass": "",
+   "bottle": "£120",
+   "other": "Magnum (150cl) £235",
+   "bin": "",
+   "id": "w-chateau-rauzan-segla-segla"
+  },
+  {
+   "section": "Red Bordeaux & Friends",
+   "producer": "Château Léoville-Poyferré",
+   "name": "Pavillon de Léoville Poyferré",
+   "vintage": 2019,
+   "type": "red",
+   "region": "Saint-Julien, Bordeaux",
+   "country": "France",
+   "grapes": [
+    "Cabernet Sauvignon",
+    "Merlot"
+   ],
+   "grapes_basis": "typical",
+   "glass": "",
+   "bottle": "£135",
+   "other": "",
+   "bin": "",
+   "id": "w-chateau-leoville-poyferre-pavillon-de-leoville-poyferre"
+  },
+  {
+   "section": "Red Bordeaux & Friends",
+   "producer": "Dominus Estate",
+   "name": "Othello",
+   "vintage": 2016,
+   "type": "red",
+   "region": "Napa Valley",
+   "country": "USA",
+   "grapes": [
+    "Cabernet Sauvignon",
+    "Merlot",
+    "Cabernet Franc"
+   ],
+   "grapes_basis": "typical",
+   "glass": "",
+   "bottle": "£140",
+   "other": "",
+   "bin": "",
+   "id": "w-dominus-estate-othello"
+  },
+  {
+   "section": "Earthy, Spicy Reds",
+   "producer": "Telmo Rodríguez",
+   "name": "Monastrell, 'Al Muvedre'",
+   "vintage": 2024,
+   "type": "red",
+   "region": "Alicante",
+   "country": "Spain",
+   "grapes": [
+    "Monastrell"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "£45",
+   "other": "",
+   "bin": "",
+   "id": "w-telmo-rodriguez-monastrell-al-muvedre"
+  },
+  {
+   "section": "Earthy, Spicy Reds",
+   "producer": "Tenuta Buontalenti",
+   "name": "Cubitt Chianti",
+   "vintage": 2025,
+   "type": "red",
+   "region": "Tuscany",
+   "country": "Italy",
+   "grapes": [
+    "Sangiovese"
+   ],
+   "grapes_basis": "typical",
+   "glass": "£12",
+   "bottle": "£51",
+   "other": "Magnum (150cl, 2023) £100",
+   "bin": "",
+   "id": "w-tenuta-buontalenti-cubitt-chianti"
+  },
+  {
+   "section": "Earthy, Spicy Reds",
+   "producer": "Quinta de Vale de Pios",
+   "name": "Excomungado",
+   "vintage": 2020,
+   "type": "red",
+   "region": "Douro",
+   "country": "Portugal",
+   "grapes": [
+    "Touriga Nacional",
+    "Touriga Franca",
+    "Tinta Roriz"
+   ],
+   "grapes_basis": "typical",
+   "glass": "",
+   "bottle": "£52",
+   "other": "",
+   "bin": "",
+   "id": "w-quinta-de-vale-de-pios-excomungado"
+  },
+  {
+   "section": "Earthy, Spicy Reds",
+   "producer": "Azelia",
+   "name": "Dolcetto d'Alba, Bricco dell'Oriolo",
+   "vintage": 2021,
+   "type": "red",
+   "region": "Piedmont",
+   "country": "Italy",
+   "grapes": [
+    "Dolcetto"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "£55",
+   "other": "",
+   "bin": "",
+   "id": "w-azelia-dolcetto-d-alba-bricco-dell-oriolo"
+  },
+  {
+   "section": "Earthy, Spicy Reds",
+   "producer": "Raúl Pérez",
+   "name": "Mencía, Ultreia Saint Jacques",
+   "vintage": 2022,
+   "type": "red",
+   "region": "Bierzo",
+   "country": "Spain",
+   "grapes": [
+    "Mencía"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "£59",
+   "other": "",
+   "bin": "",
+   "id": "w-raul-perez-mencia-ultreia-saint-jacques"
+  },
+  {
+   "section": "Earthy, Spicy Reds",
+   "producer": "Boulevard Napoléon",
+   "name": "Cinsault",
+   "vintage": 2023,
+   "type": "red",
+   "region": "Languedoc",
+   "country": "France",
+   "grapes": [
+    "Cinsault"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "£60",
+   "other": "",
+   "bin": "",
+   "id": "w-boulevard-napoleon-cinsault"
+  },
+  {
+   "section": "Earthy, Spicy Reds",
+   "producer": "Corte Giara",
+   "name": "Valpolicella Ripasso",
+   "vintage": 2023,
+   "type": "red",
+   "region": "Veneto",
+   "country": "Italy",
+   "grapes": [
+    "Corvina",
+    "Rondinella"
+   ],
+   "grapes_basis": "typical",
+   "glass": "",
+   "bottle": "£68",
+   "other": "",
+   "bin": "",
+   "id": "w-corte-giara-valpolicella-ripasso"
+  },
+  {
+   "section": "Earthy, Spicy Reds",
+   "producer": "G.D. Vajra",
+   "name": "Langhe Nebbiolo, Claré J.C.",
+   "vintage": 2023,
+   "type": "red",
+   "region": "Piedmont",
+   "country": "Italy",
+   "grapes": [
+    "Nebbiolo"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "£69",
+   "other": "",
+   "bin": "",
+   "id": "w-g-d-vajra-langhe-nebbiolo-clare-j-c"
+  },
+  {
+   "section": "Earthy, Spicy Reds",
+   "producer": "Craven",
+   "name": "Syrah, The Firs Vineyard",
+   "vintage": 2023,
+   "type": "red",
+   "region": "Stellenbosch",
+   "country": "South Africa",
+   "grapes": [
+    "Syrah"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "£75",
+   "other": "",
+   "bin": "",
+   "id": "w-craven-syrah-the-firs-vineyard"
+  },
+  {
+   "section": "Earthy, Spicy Reds",
+   "producer": "La Ragnaie",
+   "name": "Rosso di Montalcino",
+   "vintage": 2022,
+   "type": "red",
+   "region": "Tuscany",
+   "country": "Italy",
+   "grapes": [
+    "Sangiovese"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "£85",
+   "other": "",
+   "bin": "",
+   "id": "w-la-ragnaie-rosso-di-montalcino"
+  },
+  {
+   "section": "Earthy, Spicy Reds",
+   "producer": "Casa Ferreirinha",
+   "name": "'Quinta de Leda', Douro Tinto",
+   "vintage": 2022,
+   "type": "red",
+   "region": "Douro",
+   "country": "Portugal",
+   "grapes": [
+    "Touriga Nacional",
+    "Touriga Franca",
+    "Tinta Roriz"
+   ],
+   "grapes_basis": "typical",
+   "glass": "£21",
+   "bottle": "£125",
+   "other": "125ml glass; carafe (375ml) £63",
+   "bin": "",
+   "id": "w-casa-ferreirinha-quinta-de-leda-douro-tinto"
+  },
+  {
+   "section": "Earthy, Spicy Reds",
+   "producer": "Ridolfi",
+   "name": "Brunello di Montalcino",
+   "vintage": 2017,
+   "type": "red",
+   "region": "Tuscany",
+   "country": "Italy",
+   "grapes": [
+    "Sangiovese"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "£128",
+   "other": "",
+   "bin": "",
+   "id": "w-ridolfi-brunello-di-montalcino"
+  },
+  {
+   "section": "Earthy, Spicy Reds",
+   "producer": "René Rostaing",
+   "name": "Côte-Rôtie, Ampodium",
+   "vintage": 2021,
+   "type": "red",
+   "region": "Northern Rhône",
+   "country": "France",
+   "grapes": [
+    "Syrah"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "£145",
+   "other": "",
+   "bin": "",
+   "id": "w-rene-rostaing-cote-rotie-ampodium"
+  },
+  {
+   "section": "Earthy, Spicy Reds",
+   "producer": "G.D. Vajra",
+   "name": "Barolo Coste di Rose",
+   "vintage": 2020,
+   "type": "red",
+   "region": "Piedmont",
+   "country": "Italy",
+   "grapes": [
+    "Nebbiolo"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "£150",
+   "other": "",
+   "bin": "",
+   "id": "w-g-d-vajra-barolo-coste-di-rose"
+  },
+  {
+   "section": "Pinot Noir & Friends",
+   "producer": "Domaine Morel",
+   "name": "Chiroubles",
+   "vintage": 2024,
+   "type": "red",
+   "region": "Beaujolais",
+   "country": "France",
+   "grapes": [
+    "Gamay"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "£50",
+   "other": "",
+   "bin": "",
+   "id": "w-domaine-morel-chiroubles"
+  },
+  {
+   "section": "Pinot Noir & Friends",
+   "producer": "Domaine Perraud",
+   "name": "Bourgogne Pinot Noir, Maison Cubitt",
+   "vintage": 2024,
+   "type": "red",
+   "region": "Burgundy",
+   "country": "France",
+   "grapes": [
+    "Pinot Noir"
+   ],
+   "grapes_basis": "label",
+   "glass": "£14.50",
+   "bottle": "£62",
+   "other": "Magnum (150cl) £120",
+   "bin": "",
+   "id": "w-domaine-perraud-bourgogne-pinot-noir-maison-cubitt"
+  },
+  {
+   "section": "Pinot Noir & Friends",
+   "producer": "Adams Wein",
+   "name": "Spätburgunder, Ingelheim",
+   "vintage": 2021,
+   "type": "red",
+   "region": "Rheinhessen",
+   "country": "Germany",
+   "grapes": [
+    "Pinot Noir"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "£65",
+   "other": "",
+   "bin": "",
+   "id": "w-adams-wein-spatburgunder-ingelheim"
+  },
+  {
+   "section": "Pinot Noir & Friends",
+   "producer": "Thorne & Daughters",
+   "name": "Pinot Noir, Copper Pot",
+   "vintage": 2024,
+   "type": "red",
+   "region": "Western Cape",
+   "country": "South Africa",
+   "grapes": [
+    "Pinot Noir"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "£69",
+   "other": "",
+   "bin": "",
+   "id": "w-thorne-daughters-pinot-noir-copper-pot"
+  },
+  {
+   "section": "Pinot Noir & Friends",
+   "producer": "Vieux Collège",
+   "name": "Bourgogne Rouge Côte d'Or",
+   "vintage": 2022,
+   "type": "red",
+   "region": "Burgundy",
+   "country": "France",
+   "grapes": [
+    "Pinot Noir"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "£80",
+   "other": "",
+   "bin": "",
+   "id": "w-vieux-college-bourgogne-rouge-cote-d-or"
+  },
+  {
+   "section": "Pinot Noir & Friends",
+   "producer": "Crystallum",
+   "name": "Pinot Noir, Peter Max",
+   "vintage": 2024,
+   "type": "red",
+   "region": "Cape South Coast",
+   "country": "South Africa",
+   "grapes": [
+    "Pinot Noir"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "£90",
+   "other": "",
+   "bin": "",
+   "id": "w-crystallum-pinot-noir-peter-max"
+  },
+  {
+   "section": "Pinot Noir & Friends",
+   "producer": "Domaine Desvignes",
+   "name": "Givry, Les Cheneaults",
+   "vintage": 2021,
+   "type": "red",
+   "region": "Burgundy",
+   "country": "France",
+   "grapes": [
+    "Pinot Noir"
+   ],
+   "grapes_basis": "label",
+   "glass": "£15.50",
+   "bottle": "£92",
+   "other": "125ml glass; carafe (375ml) £46.50",
+   "bin": "",
+   "id": "w-domaine-desvignes-givry-les-cheneaults"
+  },
+  {
+   "section": "Pinot Noir & Friends",
+   "producer": "Walter Scott",
+   "name": "Pinot Noir, La Combe Verte",
+   "vintage": 2021,
+   "type": "red",
+   "region": "Oregon",
+   "country": "USA",
+   "grapes": [
+    "Pinot Noir"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "£97",
+   "other": "",
+   "bin": "",
+   "id": "w-walter-scott-pinot-noir-la-combe-verte"
+  },
+  {
+   "section": "Pinot Noir & Friends",
+   "producer": "Chanin",
+   "name": "Pinot Noir, Sta. Rita Hills",
+   "vintage": 2023,
+   "type": "red",
+   "region": "California",
+   "country": "USA",
+   "grapes": [
+    "Pinot Noir"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "£105",
+   "other": "",
+   "bin": "",
+   "id": "w-chanin-pinot-noir-sta-rita-hills"
+  },
+  {
+   "section": "Pinot Noir & Friends",
+   "producer": "Domaine Tollot-Beaut",
+   "name": "Chorey-lès-Beaune",
+   "vintage": 2023,
+   "type": "red",
+   "region": "Burgundy",
+   "country": "France",
+   "grapes": [
+    "Pinot Noir"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "£110",
+   "other": "",
+   "bin": "",
+   "id": "w-domaine-tollot-beaut-chorey-les-beaune"
+  },
+  {
+   "section": "Pinot Noir & Friends",
+   "producer": "Château de Marsannay",
+   "name": "Marsannay, Clos du Jeu",
+   "vintage": 2016,
+   "type": "red",
+   "region": "Burgundy",
+   "country": "France",
+   "grapes": [
+    "Pinot Noir"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "£125",
+   "other": "",
+   "bin": "",
+   "id": "w-chateau-de-marsannay-marsannay-clos-du-jeu"
+  },
+  {
+   "section": "Pinot Noir & Friends",
+   "producer": "Domaine Coillot",
+   "name": "Gevrey-Chambertin Vieilles Vignes",
+   "vintage": 2022,
+   "type": "red",
+   "region": "Burgundy",
+   "country": "France",
+   "grapes": [
+    "Pinot Noir"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "£130",
+   "other": "",
+   "bin": "",
+   "id": "w-domaine-coillot-gevrey-chambertin-vieilles-vignes"
+  },
+  {
+   "section": "Pinot Noir & Friends",
+   "producer": "Felton Road",
+   "name": "Pinot Noir, Bannockburn",
+   "vintage": 2023,
+   "type": "red",
+   "region": "Central Otago",
+   "country": "New Zealand",
+   "grapes": [
+    "Pinot Noir"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "£135",
+   "other": "",
+   "bin": "",
+   "id": "w-felton-road-pinot-noir-bannockburn"
+  },
+  {
+   "section": "Pinot Noir & Friends",
+   "producer": "Domaine de Montille",
+   "name": "Beaune 1er Cru, Les Sizies",
+   "vintage": 2023,
+   "type": "red",
+   "region": "Burgundy",
+   "country": "France",
+   "grapes": [
+    "Pinot Noir"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "£145",
+   "other": "",
+   "bin": "",
+   "id": "w-domaine-de-montille-beaune-1er-cru-les-sizies"
+  },
+  {
+   "section": "Pinot Noir & Friends",
+   "producer": "Robert Chevillon",
+   "name": "Nuits-Saint-Georges Vieilles Vignes",
+   "vintage": 2021,
+   "type": "red",
+   "region": "Burgundy",
+   "country": "France",
+   "grapes": [
+    "Pinot Noir"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "£180",
+   "other": "",
+   "bin": "",
+   "id": "w-robert-chevillon-nuits-saint-georges-vieilles-vignes"
+  },
+  {
+   "section": "Pinot Noir & Friends",
+   "producer": "Domaine Jean-Marc Boillot",
+   "name": "Volnay 1er Cru, 'Carelle sous la Chapelle'",
+   "vintage": 2023,
+   "type": "red",
+   "region": "Burgundy",
+   "country": "France",
+   "grapes": [
+    "Pinot Noir"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "£220",
+   "other": "",
+   "bin": "",
+   "id": "w-domaine-jean-marc-boillot-volnay-1er-cru-carelle-sous-la-cha"
+  },
+  {
+   "section": "Magnums",
+   "producer": "Domaine Laroche",
+   "name": "Chablis, Saint Martin",
+   "vintage": 2024,
+   "type": "white",
+   "region": "Burgundy",
+   "country": "France",
+   "grapes": [
+    "Chardonnay"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "",
+   "other": "Magnum (150cl) £150",
+   "bin": "",
+   "id": "w-domaine-laroche-chablis-saint-martin"
+  },
+  {
+   "section": "Magnums",
+   "producer": "Famille Perrin",
+   "name": "Côtes du Rhône Réserve",
+   "vintage": 2023,
+   "type": "red",
+   "region": "Rhône Valley",
+   "country": "France",
+   "grapes": [
+    "Grenache",
+    "Syrah",
+    "Mourvèdre"
+   ],
+   "grapes_basis": "typical",
+   "glass": "",
+   "bottle": "",
+   "other": "Magnum (150cl) £110",
+   "bin": "",
+   "id": "w-famille-perrin-cotes-du-rhone-reserve"
+  },
+  {
+   "section": "Magnums",
+   "producer": "Famille Perrin",
+   "name": "Morgon, Côte du Py",
+   "vintage": 2023,
+   "type": "red",
+   "region": "Beaujolais",
+   "country": "France",
+   "grapes": [
+    "Gamay"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "",
+   "other": "Magnum (150cl) £145",
+   "bin": "",
+   "id": "w-famille-perrin-morgon-cote-du-py"
+  },
+  {
+   "section": "Magnums",
+   "producer": "Château Larose Perganson",
+   "name": "Château Larose Perganson",
+   "vintage": 2023,
+   "type": "red",
+   "region": "Haut-Médoc, Bordeaux",
+   "country": "France",
+   "grapes": [
+    "Cabernet Sauvignon",
+    "Merlot"
+   ],
+   "grapes_basis": "typical",
+   "glass": "",
+   "bottle": "",
+   "other": "Magnum (150cl) £180",
+   "bin": "",
+   "id": "w-chateau-larose-perganson-chateau-larose-perganson"
+  },
+  {
+   "section": "Dessert & Fortified",
+   "producer": "Doisy-Védrines",
+   "name": "Château Petit Védrines",
+   "vintage": 2019,
+   "type": "dessert",
+   "region": "Sauternes, Bordeaux",
+   "country": "France",
+   "grapes": [
+    "Sémillon",
+    "Sauvignon Blanc"
+   ],
+   "grapes_basis": "typical",
+   "glass": "£11",
+   "bottle": "£40 (37.5cl)",
+   "other": "100ml glass; half bottle (37.5cl)",
+   "bin": "",
+   "id": "w-doisy-vedrines-chateau-petit-vedrines"
+  },
+  {
+   "section": "Dessert & Fortified",
+   "producer": "Corte Giara",
+   "name": "Recioto della Valpolicella",
+   "vintage": 2024,
+   "type": "dessert",
+   "region": "Veneto",
+   "country": "Italy",
+   "grapes": [
+    "Corvina",
+    "Rondinella"
+   ],
+   "grapes_basis": "typical",
+   "glass": "£14",
+   "bottle": "£70 (37.5cl)",
+   "other": "100ml glass; half bottle (37.5cl)",
+   "bin": "",
+   "id": "w-corte-giara-recioto-della-valpolicella"
+  },
+  {
+   "section": "Dessert & Fortified",
+   "producer": "Dobogó",
+   "name": "Tokaji, Noble Late Harvest 'Mylitta'",
+   "vintage": 2022,
+   "type": "dessert",
+   "region": "Tokaj",
+   "country": "Hungary",
+   "grapes": [
+    "Furmint"
+   ],
+   "grapes_basis": "typical",
+   "glass": "£15.50",
+   "bottle": "£56 (37.5cl)",
+   "other": "100ml glass; half bottle (37.5cl)",
+   "bin": "",
+   "id": "w-dobogo-tokaji-noble-late-harvest-mylitta"
+  },
+  {
+   "section": "Dessert & Fortified",
+   "producer": "Selvapiana",
+   "name": "Vin Santo del Chianti Rufina",
+   "vintage": 2015,
+   "type": "dessert",
+   "region": "Tuscany",
+   "country": "Italy",
+   "grapes": [
+    "Trebbiano",
+    "Malvasia"
+   ],
+   "grapes_basis": "typical",
+   "glass": "£17",
+   "bottle": "",
+   "other": "100ml glass",
+   "bin": "",
+   "id": "w-selvapiana-vin-santo-del-chianti-rufina"
+  },
+  {
+   "section": "Dessert & Fortified",
+   "producer": "Inniskillin",
+   "name": "Vidal Icewine 'Gold'",
+   "vintage": 2024,
+   "type": "dessert",
+   "region": "Ontario",
+   "country": "Canada",
+   "grapes": [
+    "Vidal"
+   ],
+   "grapes_basis": "label",
+   "glass": "£27",
+   "bottle": "£90 (37.5cl)",
+   "other": "100ml glass; half bottle (37.5cl)",
+   "bin": "",
+   "id": "w-inniskillin-vidal-icewine-gold"
+  },
+  {
+   "section": "Dessert & Fortified",
+   "producer": "Valdespino",
+   "name": "Manzanilla Deliciosa",
+   "vintage": null,
+   "type": "fortified",
+   "region": "Jerez",
+   "country": "Spain",
+   "grapes": [
+    "Palomino"
+   ],
+   "grapes_basis": "typical",
+   "glass": "£8",
+   "bottle": "£30 (37.5cl)",
+   "other": "100ml glass; half bottle (37.5cl)",
+   "bin": "",
+   "id": "w-valdespino-manzanilla-deliciosa"
+  },
+  {
+   "section": "Dessert & Fortified",
+   "producer": "Graham's",
+   "name": "LBV Port",
+   "vintage": 2019,
+   "type": "fortified",
+   "region": "Douro",
+   "country": "Portugal",
+   "grapes": [
+    "Touriga Nacional",
+    "Touriga Franca"
+   ],
+   "grapes_basis": "typical",
+   "glass": "£9",
+   "bottle": "£60",
+   "other": "",
+   "bin": "",
+   "id": "w-graham-s-lbv-port"
+  },
+  {
+   "section": "Dessert & Fortified",
+   "producer": "Niepoort",
+   "name": "Dry White Port, White Rabbit",
+   "vintage": null,
+   "type": "fortified",
+   "region": "Douro",
+   "country": "Portugal",
+   "grapes": [],
+   "grapes_basis": "typical",
+   "glass": "£11",
+   "bottle": "£65",
+   "other": "",
+   "bin": "",
+   "id": "w-niepoort-dry-white-port-white-rabbit"
+  },
+  {
+   "section": "Dessert & Fortified",
+   "producer": "Niepoort",
+   "name": "Tawny Port, Tawny Dee",
+   "vintage": null,
+   "type": "fortified",
+   "region": "Douro",
+   "country": "Portugal",
+   "grapes": [],
+   "grapes_basis": "typical",
+   "glass": "£12",
+   "bottle": "£40 (37.5cl)",
+   "other": "100ml glass; half bottle (37.5cl)",
+   "bin": "",
+   "id": "w-niepoort-tawny-port-tawny-dee"
+  },
+  {
+   "section": "Dessert & Fortified",
+   "producer": "Sandeman",
+   "name": "Tawny Port, 10-Year-Old",
+   "vintage": null,
+   "type": "fortified",
+   "region": "Douro",
+   "country": "Portugal",
+   "grapes": [],
+   "grapes_basis": "typical",
+   "glass": "£16",
+   "bottle": "",
+   "other": "100ml glass",
+   "bin": "",
+   "id": "w-sandeman-tawny-port-10-year-old"
+  },
+  {
+   "section": "Non-Alcoholic",
+   "producer": "Amie",
+   "name": "Non-Alcoholic Rosé",
+   "vintage": null,
+   "type": "sparkling",
+   "region": "South of France",
+   "country": "France",
+   "grapes": [],
+   "grapes_basis": "typical",
+   "glass": "£6",
+   "bottle": "£36",
+   "other": "125ml glass; alcohol-free sparkling rosé",
+   "bin": "",
+   "id": "w-amie-non-alcoholic-rose"
+  },
+  {
+   "section": "Non-Alcoholic",
+   "producer": "Wednesday's Domaine",
+   "name": "Piquant",
+   "vintage": null,
+   "type": "white",
+   "region": "La Mancha",
+   "country": "Spain",
+   "grapes": [],
+   "grapes_basis": "typical",
+   "glass": "",
+   "bottle": "£38",
+   "other": "Alcohol-free white",
+   "bin": "",
+   "id": "w-wednesday-s-domaine-piquant"
+  },
+  {
+   "section": "Non-Alcoholic",
+   "producer": "Wednesday's Domaine",
+   "name": "Vignette",
+   "vintage": null,
+   "type": "red",
+   "region": "La Mancha",
+   "country": "Spain",
+   "grapes": [],
+   "grapes_basis": "typical",
+   "glass": "",
+   "bottle": "£38",
+   "other": "Alcohol-free red",
+   "bin": "",
+   "id": "w-wednesday-s-domaine-vignette"
+  }
+ ],
+ "dishes": [
+  {
+   "id": "d-house-bread-kefir-butter",
+   "section": "Nibbles",
+   "name": "House Bread, Kefir Butter",
+   "desc": "House bread with kefir butter",
+   "price": "£5",
+   "main": "bread",
+   "cook": "baked",
+   "flav": [
+    "savoury",
+    "creamy"
+   ],
+   "diet": []
+  },
+  {
+   "id": "d-rosemary-lemon-grissini",
+   "section": "Nibbles",
+   "name": "Rosemary & Lemon Grissini",
+   "desc": "Rosemary and lemon breadsticks",
+   "price": "£3",
+   "main": "grissini",
+   "cook": "baked",
+   "flav": [
+    "savoury",
+    "herbal"
+   ],
+   "diet": []
+  },
+  {
+   "id": "d-house-pickles",
+   "section": "Nibbles",
+   "name": "House Pickles",
+   "desc": "The kitchen's own pickles",
+   "price": "£3",
+   "main": "pickles",
+   "cook": "pickled",
+   "flav": [
+    "acidic",
+    "salty"
+   ],
+   "diet": []
+  },
+  {
+   "id": "d-cheese",
+   "section": "Nibbles",
+   "name": "Cheese",
+   "desc": "Cheese, priced by the piece",
+   "price": "£6 each",
+   "main": "cheese",
+   "cook": "",
+   "flav": [
+    "rich",
+    "salty"
+   ],
+   "diet": []
+  },
+  {
+   "id": "d-seasonal-oysters-mignonette",
+   "section": "Nibbles",
+   "name": "Seasonal Oysters, Mignonette",
+   "desc": "Seasonal oysters with mignonette; by the oyster or the half dozen",
+   "price": "£5 each / £27.50 half dozen",
+   "main": "oysters",
+   "cook": "raw",
+   "flav": [
+    "salty",
+    "acidic",
+    "delicate"
+   ],
+   "diet": []
+  },
+  {
+   "id": "d-fried-mozzarella-marinara-sauce",
+   "section": "Nibbles",
+   "name": "Fried Mozzarella, Marinara Sauce",
+   "desc": "Fried mozzarella with marinara sauce",
+   "price": "£9",
+   "main": "mozzarella",
+   "cook": "fried",
+   "flav": [
+    "creamy",
+    "rich",
+    "acidic"
+   ],
+   "diet": []
+  },
+  {
+   "id": "d-black-pudding-scotch-egg-chop-sauce",
+   "section": "Nibbles",
+   "name": "Black Pudding Scotch Egg, Chop Sauce",
+   "desc": "Scotch egg made with black pudding, served with chop sauce",
+   "price": "£9.50",
+   "main": "black pudding",
+   "cook": "fried",
+   "flav": [
+    "rich",
+    "savoury",
+    "spicy"
+   ],
+   "diet": []
+  },
+  {
+   "id": "d-smoked-mackerel-pate",
+   "section": "Nibbles",
+   "name": "Smoked Mackerel Pâté",
+   "desc": "Smoked mackerel pâté",
+   "price": "£9",
+   "main": "mackerel",
+   "cook": "smoked",
+   "flav": [
+    "smoky",
+    "rich",
+    "salty"
+   ],
+   "diet": []
+  },
+  {
+   "id": "d-venison-tartare-pickled-walnut-horseradish-crisps",
+   "section": "Starters",
+   "name": "Venison Tartare, Pickled Walnut, Horseradish, Crisps",
+   "desc": "Raw venison tartare with pickled walnut, horseradish and crisps",
+   "price": "£15",
+   "main": "venison",
+   "cook": "raw",
+   "flav": [
+    "savoury",
+    "earthy",
+    "spicy"
+   ],
+   "diet": []
+  },
+  {
+   "id": "d-sea-bream-crudo-preserved-lemon-dill",
+   "section": "Starters",
+   "name": "Sea Bream Crudo, Preserved Lemon, Dill",
+   "desc": "Raw sea bream with preserved lemon and dill",
+   "price": "£14",
+   "main": "sea bream",
+   "cook": "raw",
+   "flav": [
+    "delicate",
+    "acidic",
+    "herbal"
+   ],
+   "diet": []
+  },
+  {
+   "id": "d-curried-crab-on-malt-rye-beer-bread",
+   "section": "Starters",
+   "name": "Curried Crab on Malt Rye & Beer Bread",
+   "desc": "Curried crab on malt rye and beer bread",
+   "price": "£18",
+   "main": "crab",
+   "cook": "",
+   "flav": [
+    "spicy",
+    "rich",
+    "delicate"
+   ],
+   "diet": []
+  },
+  {
+   "id": "d-duck-pancetta-terrine-spiced-pear-chutney-toast",
+   "section": "Starters",
+   "name": "Duck & Pancetta Terrine, Spiced Pear Chutney, Toast",
+   "desc": "Duck and pancetta terrine with spiced pear chutney and toast",
+   "price": "£15",
+   "main": "duck",
+   "cook": "",
+   "flav": [
+    "rich",
+    "savoury",
+    "sweet"
+   ],
+   "diet": []
+  },
+  {
+   "id": "d-roasted-figs-tardivo-gorgonzola",
+   "section": "Salads",
+   "name": "Roasted Figs, Tardivo, Gorgonzola",
+   "desc": "Roasted figs with tardivo radicchio and gorgonzola",
+   "price": "£17",
+   "main": "figs",
+   "cook": "roasted",
+   "flav": [
+    "sweet",
+    "bitter",
+    "salty"
+   ],
+   "diet": []
+  },
+  {
+   "id": "d-celeriac-apple-kale-hazelnut-vinaigrette",
+   "section": "Salads",
+   "name": "Celeriac, Apple, Kale, Hazelnut Vinaigrette",
+   "desc": "Celeriac, apple and kale salad with hazelnut vinaigrette",
+   "price": "£16",
+   "main": "celeriac",
+   "cook": "",
+   "flav": [
+    "fresh",
+    "acidic",
+    "earthy"
+   ],
+   "diet": []
+  },
+  {
+   "id": "d-stracciatella-beetroot-smoked-almond",
+   "section": "Salads",
+   "name": "Stracciatella, Beetroot, Smoked Almond",
+   "desc": "Stracciatella with beetroot and smoked almond",
+   "price": "£17",
+   "main": "stracciatella",
+   "cook": "",
+   "flav": [
+    "creamy",
+    "earthy",
+    "smoky"
+   ],
+   "diet": []
+  },
+  {
+   "id": "d-delica-squash-risotto-brown-butter-pumpkin-seed-relish",
+   "section": "Mains",
+   "name": "Delica Squash Risotto, Brown Butter, Pumpkin Seed Relish",
+   "desc": "Delica squash risotto with brown butter and pumpkin seed relish; a starter or a main",
+   "price": "£12 / £23",
+   "main": "squash",
+   "cook": "simmered",
+   "flav": [
+    "creamy",
+    "sweet",
+    "nutty"
+   ],
+   "diet": []
+  },
+  {
+   "id": "d-jerusalem-artichokes-parsnip-truffle-gratin",
+   "section": "Mains",
+   "name": "Jerusalem Artichokes, Parsnip & Truffle Gratin",
+   "desc": "Jerusalem artichokes with a parsnip and truffle gratin",
+   "price": "£20",
+   "main": "Jerusalem artichoke",
+   "cook": "baked",
+   "flav": [
+    "earthy",
+    "creamy",
+    "rich"
+   ],
+   "diet": []
+  },
+  {
+   "id": "d-steak-burger-ogleshield-pickles",
+   "section": "Mains",
+   "name": "Steak Burger, Ogleshield, Pickles",
+   "desc": "Steak burger with Ogleshield cheese and pickles",
+   "price": "£19.75",
+   "main": "beef",
+   "cook": "grilled",
+   "flav": [
+    "rich",
+    "savoury",
+    "salty"
+   ],
+   "diet": []
+  },
+  {
+   "id": "d-fish-chips-crushed-peas-tartare-sauce",
+   "section": "Mains",
+   "name": "Fish & Chips, Crushed Peas, Tartare Sauce",
+   "desc": "Fish and chips with crushed peas and tartare sauce",
+   "price": "£21.75",
+   "main": "white fish",
+   "cook": "fried",
+   "flav": [
+    "rich",
+    "salty",
+    "acidic"
+   ],
+   "diet": []
+  },
+  {
+   "id": "d-hake-mussels-cannellini-beans-leeks",
+   "section": "Mains",
+   "name": "Hake, Mussels, Cannellini Beans, Leeks",
+   "desc": "Hake with mussels, cannellini beans and leeks",
+   "price": "£33",
+   "main": "hake",
+   "cook": "pan-fried",
+   "flav": [
+    "delicate",
+    "savoury",
+    "creamy"
+   ],
+   "diet": []
+  },
+  {
+   "id": "d-monkfish-cavolo-nero-devilled-butter",
+   "section": "Mains",
+   "name": "Monkfish, Cavolo Nero, Devilled Butter",
+   "desc": "Monkfish with cavolo nero and devilled butter",
+   "price": "£38",
+   "main": "monkfish",
+   "cook": "roasted",
+   "flav": [
+    "rich",
+    "spicy",
+    "savoury"
+   ],
+   "diet": []
+  },
+  {
+   "id": "d-chicken-milanese-brown-butter-capers-anchovies",
+   "section": "Mains",
+   "name": "Chicken Milanese, Brown Butter, Capers, Anchovies",
+   "desc": "Breaded chicken Milanese with brown butter, capers and anchovies",
+   "price": "£24",
+   "main": "chicken",
+   "cook": "fried",
+   "flav": [
+    "rich",
+    "salty",
+    "acidic"
+   ],
+   "diet": []
+  },
+  {
+   "id": "d-grilled-venison-celeriac-blackberries",
+   "section": "Mains",
+   "name": "Grilled Venison, Celeriac, Blackberries",
+   "desc": "Grilled venison with celeriac and blackberries",
+   "price": "£34",
+   "main": "venison",
+   "cook": "grilled",
+   "flav": [
+    "earthy",
+    "savoury",
+    "fruity"
+   ],
+   "diet": []
+  },
+  {
+   "id": "d-hereford-short-rib-brisket-bone-marrow-pie",
+   "section": "Mains",
+   "name": "Hereford Short Rib, Brisket & Bone Marrow Pie",
+   "desc": "For two to share, served with mash potato and gravy",
+   "price": "£54",
+   "main": "beef",
+   "cook": "braised",
+   "flav": [
+    "rich",
+    "savoury",
+    "earthy"
+   ],
+   "diet": []
+  },
+  {
+   "id": "d-hereford-beef-rump",
+   "section": "Sunday Roasts",
+   "name": "Hereford Beef Rump",
+   "desc": "Sunday roast: Hereford beef rump with roast potatoes, seasonal greens, Yorkshire pudding and Madeira gravy",
+   "price": "£35",
+   "main": "beef",
+   "cook": "roasted",
+   "flav": [
+    "rich",
+    "savoury"
+   ],
+   "diet": []
+  },
+  {
+   "id": "d-iberico-pork",
+   "section": "Sunday Roasts",
+   "name": "Ibérico Pork",
+   "desc": "Sunday roast: Ibérico pork with roast potatoes, seasonal greens, Yorkshire pudding and Madeira gravy",
+   "price": "£26",
+   "main": "pork",
+   "cook": "roasted",
+   "flav": [
+    "rich",
+    "savoury",
+    "sweet"
+   ],
+   "diet": []
+  },
+  {
+   "id": "d-half-chicken",
+   "section": "Sunday Roasts",
+   "name": "Half Chicken",
+   "desc": "Sunday roast: half a chicken with roast potatoes, seasonal greens, Yorkshire pudding and Madeira gravy",
+   "price": "£25",
+   "main": "chicken",
+   "cook": "roasted",
+   "flav": [
+    "savoury",
+    "rich"
+   ],
+   "diet": []
+  },
+  {
+   "id": "d-homity-pie",
+   "section": "Sunday Roasts",
+   "name": "Homity Pie",
+   "desc": "Sunday roast: homity pie with roast potatoes, seasonal greens, Yorkshire pudding and Madeira gravy",
+   "price": "£26",
+   "main": "potato and cheese pie",
+   "cook": "baked",
+   "flav": [
+    "savoury",
+    "creamy",
+    "rich"
+   ],
+   "diet": []
+  },
+  {
+   "id": "d-pear-honey-walnut-millefeuille",
+   "section": "Puddings",
+   "name": "Pear, Honey & Walnut Millefeuille",
+   "desc": "Pear, honey and walnut millefeuille",
+   "price": "£10",
+   "main": "pear",
+   "cook": "baked",
+   "flav": [
+    "sweet",
+    "nutty"
+   ],
+   "diet": []
+  },
+  {
+   "id": "d-fig-almond-tart-mascarpone",
+   "section": "Puddings",
+   "name": "Fig Almond Tart, Mascarpone",
+   "desc": "Fig and almond tart with mascarpone",
+   "price": "£10",
+   "main": "fig",
+   "cook": "baked",
+   "flav": [
+    "sweet",
+    "nutty",
+    "creamy"
+   ],
+   "diet": []
+  },
+  {
+   "id": "d-soft-baked-chocolate-sour-cherry-cookie-sour-cream-ice-cream",
+   "section": "Puddings",
+   "name": "Soft Baked Chocolate & Sour Cherry Cookie, Sour Cream Ice Cream",
+   "desc": "Soft baked chocolate and sour cherry cookie with sour cream ice cream",
+   "price": "£10",
+   "main": "chocolate",
+   "cook": "baked",
+   "flav": [
+    "sweet",
+    "rich",
+    "acidic"
+   ],
+   "diet": []
+  },
+  {
+   "id": "d-soft-serve-sticky-toffee-apple-spiced-cookie",
+   "section": "Puddings",
+   "name": "Soft Serve Sticky Toffee Apple, Spiced Cookie",
+   "desc": "Sticky toffee apple soft serve with a spiced cookie",
+   "price": "£10",
+   "main": "toffee apple",
+   "cook": "",
+   "flav": [
+    "sweet",
+    "creamy",
+    "spicy"
+   ],
+   "diet": []
+  },
+  {
+   "id": "d-white-chocolate-pistachio-fudge",
+   "section": "Puddings",
+   "name": "White Chocolate & Pistachio Fudge",
+   "desc": "White chocolate and pistachio fudge",
+   "price": "£4",
+   "main": "white chocolate",
+   "cook": "",
+   "flav": [
+    "sweet",
+    "rich",
+    "nutty"
+   ],
+   "diet": []
+  },
+  {
+   "id": "d-baker-s-basket",
+   "section": "Breakfast",
+   "name": "Baker's Basket",
+   "desc": "Fruit muffin, sourdough toast, fresh baked pastry, butter and preserves",
+   "price": "£10",
+   "main": "pastry",
+   "cook": "baked",
+   "flav": [
+    "sweet",
+    "savoury"
+   ],
+   "diet": []
+  },
+  {
+   "id": "d-whipped-greek-yoghurt-house-granola-seasonal-berries-raw-hon",
+   "section": "Breakfast",
+   "name": "Whipped Greek Yoghurt, House Granola, Seasonal Berries, Raw Honey",
+   "desc": "Whipped Greek yoghurt with house granola, seasonal berries and raw honey",
+   "price": "£9.50",
+   "main": "yoghurt",
+   "cook": "",
+   "flav": [
+    "creamy",
+    "sweet",
+    "fresh"
+   ],
+   "diet": []
+  },
+  {
+   "id": "d-brioche-french-toast-mascarpone-seasonal-poached-fruits",
+   "section": "Breakfast",
+   "name": "Brioche French Toast, Mascarpone, Seasonal Poached Fruits",
+   "desc": "Brioche French toast with mascarpone and seasonal poached fruits",
+   "price": "£11.50",
+   "main": "brioche",
+   "cook": "fried",
+   "flav": [
+    "sweet",
+    "rich",
+    "creamy"
+   ],
+   "diet": []
+  },
+  {
+   "id": "d-westcombe-cheddar-omelette-chives",
+   "section": "Breakfast",
+   "name": "Westcombe Cheddar Omelette, Chives",
+   "desc": "Westcombe Cheddar omelette with chives; eggs from Cacklebean Farm in the Cotswolds",
+   "price": "£11",
+   "main": "eggs",
+   "cook": "pan-fried",
+   "flav": [
+    "savoury",
+    "creamy"
+   ],
+   "diet": []
+  },
+  {
+   "id": "d-oyster-mushrooms-scrambled-eggs-truffle-toast",
+   "section": "Breakfast",
+   "name": "Oyster Mushrooms, Scrambled Eggs, Truffle, Toast",
+   "desc": "Oyster mushrooms and scrambled eggs with truffle on toast",
+   "price": "£13",
+   "main": "eggs",
+   "cook": "pan-fried",
+   "flav": [
+    "earthy",
+    "creamy",
+    "savoury"
+   ],
+   "diet": []
+  },
+  {
+   "id": "d-avocado-poached-eggs-toast",
+   "section": "Breakfast",
+   "name": "Avocado, Poached Eggs, Toast",
+   "desc": "Avocado and poached eggs on toast",
+   "price": "£12.50",
+   "main": "eggs",
+   "cook": "poached",
+   "flav": [
+    "creamy",
+    "fresh"
+   ],
+   "diet": []
+  },
+  {
+   "id": "d-eggs-royale-hot-smoked-chalk-stream-trout",
+   "section": "Breakfast",
+   "name": "Eggs Royale, Hot Smoked Chalk Stream Trout",
+   "desc": "Eggs Royale with hot smoked Chalk Stream trout",
+   "price": "£16.50",
+   "main": "trout",
+   "cook": "poached",
+   "flav": [
+    "smoky",
+    "rich",
+    "creamy"
+   ],
+   "diet": []
+  },
+  {
+   "id": "d-eggs-benedict-ham-hock",
+   "section": "Breakfast",
+   "name": "Eggs Benedict, Ham Hock",
+   "desc": "Eggs Benedict with ham hock",
+   "price": "£16.50",
+   "main": "ham hock",
+   "cook": "poached",
+   "flav": [
+    "rich",
+    "salty",
+    "creamy"
+   ],
+   "diet": []
+  },
+  {
+   "id": "d-the-full-princess",
+   "section": "Breakfast",
+   "name": "The Full Princess",
+   "desc": "Cumberland sausage, bacon, fried egg, black pudding, hash brown, baked beans, mushrooms, roasted tomato and sourdough toast",
+   "price": "£18.50",
+   "main": "sausage and bacon",
+   "cook": "fried",
+   "flav": [
+    "savoury",
+    "salty",
+    "rich"
+   ],
+   "diet": []
+  },
+  {
+   "id": "d-the-vegetarian-princess",
+   "section": "Breakfast",
+   "name": "The Vegetarian Princess",
+   "desc": "Two fried eggs, hash brown, avocado, baked beans, mushrooms, roasted tomato and sourdough toast",
+   "price": "£16",
+   "main": "eggs",
+   "cook": "fried",
+   "flav": [
+    "savoury",
+    "creamy"
+   ],
+   "diet": []
+  },
+  {
+   "id": "d-charcuterie",
+   "section": "Festive Feasting",
+   "name": "Charcuterie",
+   "desc": "A Festive Feasting starter (Menu Two and the Full Festive Feast), served family style",
+   "price": "",
+   "main": "cured meats",
+   "cook": "cured",
+   "flav": [
+    "salty",
+    "savoury",
+    "rich"
+   ],
+   "diet": []
+  },
+  {
+   "id": "d-roast-norfolk-bronze-turkey-sage-chestnut-stuffing-pigs-in-b",
+   "section": "Festive Feasting",
+   "name": "Roast Norfolk Bronze Turkey, Sage & Chestnut Stuffing, Pigs in Blankets, Cranberry Sauce",
+   "desc": "Festive Feasting Menu One main (£72 per person, served family style)",
+   "price": "",
+   "main": "turkey",
+   "cook": "roasted",
+   "flav": [
+    "savoury",
+    "rich",
+    "sweet"
+   ],
+   "diet": []
+  },
+  {
+   "id": "d-roast-yorkshire-beef-rump-wild-mushrooms-gravy",
+   "section": "Festive Feasting",
+   "name": "Roast Yorkshire Beef Rump, Wild Mushrooms & Gravy",
+   "desc": "Festive Feasting Menu One main (£72 per person, served family style)",
+   "price": "",
+   "main": "beef",
+   "cook": "roasted",
+   "flav": [
+    "rich",
+    "savoury",
+    "earthy"
+   ],
+   "diet": []
+  },
+  {
+   "id": "d-roast-creedy-carver-duck-orange-sauce",
+   "section": "Festive Feasting",
+   "name": "Roast Creedy Carver Duck, Orange Sauce",
+   "desc": "Festive Feasting Menu Two and Full Festive Feast main, served family style",
+   "price": "",
+   "main": "duck",
+   "cook": "roasted",
+   "flav": [
+    "rich",
+    "sweet",
+    "acidic"
+   ],
+   "diet": []
+  },
+  {
+   "id": "d-grilled-wing-rib-bone-marrow-parsley-butter",
+   "section": "Festive Feasting",
+   "name": "Grilled Wing Rib, Bone Marrow, Parsley Butter",
+   "desc": "Festive Feasting Menu Two and Full Festive Feast main, served family style",
+   "price": "",
+   "main": "beef",
+   "cook": "grilled",
+   "flav": [
+    "rich",
+    "savoury"
+   ],
+   "diet": []
+  },
+  {
+   "id": "d-celeriac-beetroot-chard-pithivier-vegetable-gravy",
+   "section": "Festive Feasting",
+   "name": "Celeriac, Beetroot & Chard Pithivier, Vegetable Gravy",
+   "desc": "The festive menus' individually plated option for vegetarian guests",
+   "price": "",
+   "main": "celeriac",
+   "cook": "baked",
+   "flav": [
+    "earthy",
+    "savoury",
+    "rich"
+   ],
+   "diet": []
+  },
+  {
+   "id": "d-pump-street-dark-white-chocolate-mousse-salted-caramel-feuil",
+   "section": "Festive Feasting",
+   "name": "Pump Street Dark & White Chocolate Mousse, Salted Caramel, Feuilletine",
+   "desc": "Festive Feasting Menu One pudding",
+   "price": "",
+   "main": "chocolate",
+   "cook": "",
+   "flav": [
+    "sweet",
+    "rich",
+    "creamy"
+   ],
+   "diet": []
+  },
+  {
+   "id": "d-bramley-apple-pie-custard-soft-serve",
+   "section": "Festive Feasting",
+   "name": "Bramley Apple Pie, Custard & Soft Serve",
+   "desc": "Festive Feasting Menu Two and Full Festive Feast pudding",
+   "price": "",
+   "main": "apple",
+   "cook": "baked",
+   "flav": [
+    "sweet",
+    "acidic",
+    "creamy"
+   ],
+   "diet": []
+  },
+  {
+   "id": "d-christmas-pudding-madeleines-brandy-sauce",
+   "section": "Festive Feasting",
+   "name": "Christmas Pudding Madeleines, Brandy Sauce",
+   "desc": "Pudding on every festive menu",
+   "price": "",
+   "main": "Christmas pudding",
+   "cook": "baked",
+   "flav": [
+    "sweet",
+    "spicy",
+    "rich"
+   ],
+   "diet": []
+  },
+  {
+   "id": "d-neal-s-yard-cheese-board-boozy-fruit-chutney-oat-cakes-malt-",
+   "section": "Festive Feasting",
+   "name": "Neal's Yard Cheese Board, Boozy Fruit Chutney, Oat Cakes & Malt Loaf",
+   "desc": "A festive bolt-on; serves four to six",
+   "price": "£75",
+   "main": "cheese",
+   "cook": "",
+   "flav": [
+    "rich",
+    "salty",
+    "sweet"
+   ],
+   "diet": []
+  },
+  {
+   "id": "d-christmas-pudding-brandy-custard",
+   "section": "Festive Feasting",
+   "name": "Christmas Pudding, Brandy Custard",
+   "desc": "A festive bolt-on; serves six to eight",
+   "price": "£40",
+   "main": "Christmas pudding",
+   "cook": "steamed",
+   "flav": [
+    "sweet",
+    "spicy",
+    "rich"
+   ],
+   "diet": []
+  },
+  {
+   "id": "d-mince-pies-clotted-cream",
+   "section": "Festive Feasting",
+   "name": "Mince Pies, Clotted Cream",
+   "desc": "A festive bolt-on, priced by the piece",
+   "price": "£5 each",
+   "main": "mince pie",
+   "cook": "baked",
+   "flav": [
+    "sweet",
+    "spicy",
+    "creamy"
+   ],
+   "diet": []
+  }
+ ],
+ "cards": {
+  "w-terra-da-marca-cava-brut-natura": {
+   "id": "w-terra-da-marca-cava-brut-natura",
+   "hook": "Bone dry with no sugar added, from Penedès, where most of Spain's Cava is made.",
+   "pitch": "This is a properly dry Spanish fizz, crisp and light with citrus and apple, and 'Brut Natura' means no sugar is added at the end, so it's as dry as sparkling wine gets. If you like your fizz clean and refreshing rather than soft or sweet, it's perfect with oysters and anything from the sea.",
+   "say": "TEH-rah dah MAR-kah, KAH-vah broot nah-TOO-rah",
+   "taste": "Bone dry, crisp and light, with lemon, green apple and a gentle savoury, bready edge.",
+   "style": {
+    "body": 2,
+    "acid": 4,
+    "tannin": 0,
+    "sweet": 1
+   },
+   "grape": "It is usually a blend of Spain's Cava grapes Xarel·lo, Macabeo and Parellada, which give it a fresh, crisp, citrusy and slightly savoury character.",
+   "place": "It comes from Penedès in Spain, where most Cava is made, and the Mediterranean warmth, cooler inland, ripens the grapes while keeping them fresh.",
+   "producer": "",
+   "serve": {
+    "temp": "6-8°C",
+    "glass": "tulip or white wine glass",
+    "decant": "no"
+   },
+   "dishes": [
+    {
+     "dish": "Seasonal Oysters, Mignonette",
+     "why": "A bone-dry, crisp fizz is the classic match for salty raw oysters and the sharp vinegar dressing."
+    },
+    {
+     "dish": "Sea Bream Crudo, Preserved Lemon, Dill",
+     "why": "It's light enough not to swamp the delicate raw fish, and its citrus freshness echoes the lemon and dill."
+    },
+    {
+     "dish": "Fish & Chips, Crushed Peas, Tartare Sauce",
+     "why": "The crisp acidity and bubbles cut through the fried batter like a squeeze of lemon."
+    }
+   ],
+   "alts": [
+    {
+     "id": "w-vignoble-guillaume-cremant-la-flute-enchantee",
+     "when": "under £70, French fizz rather than Spanish"
+    },
+    {
+     "id": "w-coates-seely-brut-reserve",
+     "when": "by the glass, English and a touch fuller"
+    },
+    {
+     "id": "w-philipponnat-blanc-de-noirs-extra-brut",
+     "when": "very dry Champagne for a bigger occasion"
+    }
+   ],
+   "qs": [
+    {
+     "k": "recognise",
+     "q": "Which description best fits the Terra da Marca Cava Brut Natura 2021?",
+     "opts": [
+      "Soft and off-dry, with ripe peach and gentle fizz",
+      "Bone dry, crisp and light, with lemon and apple",
+      "Rich and full, with honey and baked apple",
+      "Sweet and grapey, with low acidity and floral notes"
+     ],
+     "a": 1,
+     "why": "Brut Natura means no sugar is added, so it is bone dry, crisp and light.",
+     "id": "w-terra-da-marca-cava-brut-natura#0"
+    },
+    {
+     "k": "recognise",
+     "q": "What does 'Brut Natura' on the Terra da Marca Cava label tell a guest?",
+     "opts": [
+      "Lightly sweet, made for pudding",
+      "Made only from red grapes",
+      "Bone dry, with no sugar added",
+      "Aged for years in oak barrels"
+     ],
+     "a": 2,
+     "why": "Brut Natura is the driest style of sparkling wine, with no sugar added at the end.",
+     "id": "w-terra-da-marca-cava-brut-natura#1"
+    },
+    {
+     "k": "recall",
+     "q": "Which Spanish region does the Terra da Marca Cava Brut Natura 2021 come from?",
+     "ans": "Penedès",
+     "acc": [
+      "Penedès, Spain",
+      "Penedes",
+      "Penedès in Spain"
+     ],
+     "why": "Penedès is where most Cava is made.",
+     "id": "w-terra-da-marca-cava-brut-natura#2"
+    },
+    {
+     "k": "recall",
+     "q": "How long, at the very least, must the Terra da Marca Cava Brut Natura age on its lees (the spent yeast) before release?",
+     "ans": "9 months",
+     "acc": [
+      "nine months",
+      "at least nine months",
+      "at least 9 months"
+     ],
+     "why": "Cava must age at least 9 months on its lees, which adds texture.",
+     "id": "w-terra-da-marca-cava-brut-natura#3"
+    },
+    {
+     "k": "apply",
+     "q": "A guest ordering the Seasonal Oysters, Mignonette wants a bone-dry bottle of fizz with no sugar added, and asks to keep it under £80. What would you suggest, and why?",
+     "key": [
+      "Terra da Marca Cava Brut Natura 2021",
+      "Brut Natura means bone dry with no sugar added, and at £76 it's under their budget",
+      "Its crisp acidity and light body cut through the salty oysters and sharp mignonette without swamping them"
+     ],
+     "decoys": [
+      {
+       "id": "w-coates-seely-brut-reserve",
+       "why": "At £82 it's over budget, and Brut has a little sugar added, so it isn't the driest choice."
+      },
+      {
+       "id": "w-philipponnat-blanc-de-noirs-extra-brut",
+       "why": "It's very dry, but at £160 it's double the guest's budget."
+      },
+      {
+       "id": "w-amie-non-alcoholic-rose",
+       "why": "It's a pink, alcohol-free sparkler, not the bone-dry fizz the guest asked for."
+      }
+     ],
+     "wrong": [
+      "It's a big, full-bodied fizz that stands up to the weight of the oysters",
+      "Its soft, low acidity calms down the sharp vinegar in the mignonette",
+      "Its rich honey and vanilla oak flavours give the oysters extra depth"
+     ],
+     "why": "The Cava is the bone-dry, no-sugar-added fizz under £80, and its light, crisp style is made for oysters.",
+     "id": "w-terra-da-marca-cava-brut-natura#4"
+    },
+    {
+     "k": "contrast",
+     "q": "Which is drier, the Terra da Marca Cava Brut Natura or the Coates & Seely Brut Reserve, and why?",
+     "ans": "The Cava: Brut Natura has no sugar added, Brut has a little",
+     "acc": [
+      "the Terra da Marca Cava",
+      "the Cava, no added sugar",
+      "Brut Natura is drier than Brut"
+     ],
+     "why": "Brut Natura is the driest style, while Brut has a small amount of sugar added, though it still tastes dry.",
+     "id": "w-terra-da-marca-cava-brut-natura#5"
+    }
+   ],
+   "at": 1794142339580
+  },
+  "w-coates-seely-brut-reserve": {
+   "id": "w-coates-seely-brut-reserve",
+   "hook": "English fizz from Hampshire, grown on the same chalk seam that runs under Champagne.",
+   "pitch": "This is English sparkling wine from Hampshire, made from the same three grapes as Champagne, crisp and lively with apple, lemon and a gentle bready note. It's our English fizz by the glass, so it's an easy way to try something local that's bright, refreshing and brilliant with fried food.",
+   "say": "",
+   "taste": "Crisp and lively, with green apple, lemon and a soft, bready, toasty note.",
+   "style": {
+    "body": 3,
+    "acid": 5,
+    "tannin": 0,
+    "sweet": 1
+   },
+   "grape": "It's a blend of Chardonnay, Pinot Noir and Pinot Meunier, the Champagne grapes, with Chardonnay bringing lean citrus freshness.",
+   "place": "Hampshire's cool, maritime climate sits on the same chalk seam as Champagne, and it gives English fizz its high, mouthwatering acidity.",
+   "producer": "",
+   "serve": {
+    "temp": "6-8°C",
+    "glass": "tulip or white wine glass",
+    "decant": "no"
+   },
+   "dishes": [
+    {
+     "dish": "Fish & Chips, Crushed Peas, Tartare Sauce",
+     "why": "The high acidity and bubbles cut through the batter like a squeeze of lemon."
+    },
+    {
+     "dish": "Fried Mozzarella, Marinara Sauce",
+     "why": "Its crispness freshens up the rich, creamy cheese and keeps pace with the tangy tomato sauce."
+    },
+    {
+     "dish": "Smoked Mackerel Pâté",
+     "why": "The sharp acidity slices through the rich, smoky, salty pâté and leaves your mouth feeling clean."
+    }
+   ],
+   "alts": [
+    {
+     "id": "w-gusbourne-blanc-de-blancs",
+     "when": "by the glass, English, made only from white grapes"
+    },
+    {
+     "id": "w-coates-seely-brut-rose",
+     "when": "same house, pink, by the glass"
+    },
+    {
+     "id": "w-charles-heidsieck-brut-reserve",
+     "when": "Champagne by the glass"
+    }
+   ],
+   "qs": [
+    {
+     "k": "recognise",
+     "q": "Which description best fits the Coates & Seely Brut Reserve NV?",
+     "opts": [
+      "Crisp and lively, with apple, lemon and a bready note",
+      "Soft and sweet, with ripe pear and gentle fizz",
+      "Heavy and rich, with honey and dried fruit",
+      "Light and grapey, with low acidity and flowers"
+     ],
+     "a": 0,
+     "why": "English fizz rides on high acidity, so it's crisp and lively with citrus and apple.",
+     "id": "w-coates-seely-brut-reserve#0"
+    },
+    {
+     "k": "recognise",
+     "q": "Which grapes make the Coates & Seely Brut Reserve NV?",
+     "opts": [
+      "Xarel·lo, Macabeo and Parellada",
+      "Riesling, Pinot Gris and Muscat",
+      "Chenin Blanc, Sémillon and Viognier",
+      "Chardonnay, Pinot Noir and Pinot Meunier"
+     ],
+     "a": 3,
+     "why": "It's made from the three Champagne grapes: Chardonnay, Pinot Noir and Pinot Meunier.",
+     "id": "w-coates-seely-brut-reserve#1"
+    },
+    {
+     "k": "recall",
+     "q": "Which English county does the Coates & Seely Brut Reserve NV come from?",
+     "ans": "Hampshire",
+     "acc": [
+      "Hampshire, England",
+      "Hants"
+     ],
+     "why": "It's English sparkling wine from Hampshire.",
+     "id": "w-coates-seely-brut-reserve#2"
+    },
+    {
+     "k": "recall",
+     "q": "What does 'NV' mean on the Coates & Seely Brut Reserve label?",
+     "ans": "Non-vintage, a blend of different years",
+     "acc": [
+      "non-vintage",
+      "no single year",
+      "blend of years"
+     ],
+     "why": "NV means it isn't from one single harvest, so the house can keep its style the same each year.",
+     "id": "w-coates-seely-brut-reserve#3"
+    },
+    {
+     "k": "apply",
+     "q": "A guest having the Fish & Chips, Crushed Peas, Tartare Sauce wants a glass of English sparkling wine, not pink, for under £15. What would you suggest, and why?",
+     "key": [
+      "Coates & Seely Brut Reserve NV",
+      "It's English fizz by the glass at £14, under their budget",
+      "Its high acidity and bubbles cut through the fried batter and rich tartare sauce like a squeeze of lemon"
+     ],
+     "decoys": [
+      {
+       "id": "w-gusbourne-blanc-de-blancs",
+       "why": "It's English, but at £15.50 a glass it's over the guest's budget."
+      },
+      {
+       "id": "w-coates-seely-brut-rose",
+       "why": "It's pink and £16 a glass, so it fails on both counts."
+      },
+      {
+       "id": "w-charles-heidsieck-brut-reserve",
+       "why": "It's Champagne, not English, and £17.50 a glass."
+      }
+     ],
+     "wrong": [
+      "It's a heavy, full-bodied wine that matches the weight of the fried fish",
+      "Its soft, low acidity keeps things gentle against the tartare sauce",
+      "Its smoky, oaky flavour echoes the crunchy fried batter"
+     ],
+     "why": "It's the only English, non-pink fizz by the glass under £15, and its sharp acidity is made for fried fish.",
+     "id": "w-coates-seely-brut-reserve#4"
+    },
+    {
+     "k": "contrast",
+     "q": "How does the Coates & Seely Brut Reserve differ from the Coates & Seely Brut Rosé on the glass list?",
+     "ans": "The Brut Reserve is white and £14 a glass; the Rosé is pink and £16",
+     "acc": [
+      "Reserve is white, Rosé is pink",
+      "the Brut Reserve is white and cheaper",
+      "£14 white versus £16 pink"
+     ],
+     "why": "Same English house, but the Brut Reserve is the white fizz and the cheaper glass.",
+     "id": "w-coates-seely-brut-reserve#5"
+    }
+   ],
+   "at": 1794142339580
+  },
+  "w-charles-heidsieck-brut-rose": {
+   "id": "w-charles-heidsieck-brut-rose",
+   "hook": "Pink Champagne made from all three Champagne grapes: Pinot Noir, Chardonnay and Pinot Meunier.",
+   "pitch": "This is a pink Champagne that's dry and crisp, with red cherry fruit from the Pinot Noir in the blend. It's fresh enough to start the evening with, and has enough fruit to keep going with the duck terrine or the charcuterie.",
+   "say": "SHARL ed-SEEK, broot roh-ZAY",
+   "taste": "Dry and refreshing, with a gentle red cherry fruitiness and a clean, lively finish.",
+   "style": {
+    "body": 3,
+    "acid": 4,
+    "tannin": 0,
+    "sweet": 1
+   },
+   "grape": "Pinot Noir brings red cherry fruit, while Chardonnay and Pinot Meunier round out the blend, so you get a pink fizz that is fruity but still crisp.",
+   "place": "Champagne in northern France is so cool that the grapes only just ripen, and that gives the sharp, fresh base wine (high in acidity, so mouth-watering) that makes great sparkling wine.",
+   "producer": "",
+   "serve": {
+    "temp": "8-10°C",
+    "glass": "white wine glass or flute",
+    "decant": "no"
+   },
+   "dishes": [
+    {
+     "dish": "Duck & Pancetta Terrine, Spiced Pear Chutney, Toast",
+     "why": "Pinot Noir loves duck, and the bubbles and freshness cut through the richness of the terrine."
+    },
+    {
+     "dish": "Charcuterie",
+     "why": "The crisp, fresh taste cleans up the salt and fat of the cured meats, and the red fruit goes well with them."
+    },
+    {
+     "dish": "Eggs Royale, Hot Smoked Chalk Stream Trout",
+     "why": "Pinot Noir is a classic match for salmon-style fish, so a pink Champagne with smoked trout makes a lovely brunch treat."
+    }
+   ],
+   "alts": [
+    {
+     "id": "w-philipponnat-rose-brut",
+     "when": "another pink Champagne, £30 less a bottle"
+    },
+    {
+     "id": "w-coates-seely-brut-rose",
+     "when": "pink fizz by the glass, or an English sparkling wine"
+    },
+    {
+     "id": "w-gusbourne-rose-brut",
+     "when": "English pink sparkling wine under £100"
+    }
+   ],
+   "qs": [
+    {
+     "k": "recognise",
+     "q": "Which description best fits the Charles Heidsieck Brut Rosé NV?",
+     "opts": [
+      "Dry and crisp, with red cherry fruit",
+      "Sweet and soft, with candied strawberry",
+      "Very lean and sharp, with hardly any fruit",
+      "Rich and sweet, with jammy dark plum"
+     ],
+     "a": 0,
+     "why": "Brut means dry, Champagne's cool climate gives it crispness, and the Pinot Noir in the blend brings red cherry fruit.",
+     "id": "w-charles-heidsieck-brut-rose#0"
+    },
+    {
+     "k": "recognise",
+     "q": "Where does the Charles Heidsieck Brut Rosé NV come from?",
+     "opts": [
+      "Champagne, France",
+      "Kent, England",
+      "Loire Valley, France",
+      "Penedès, Spain"
+     ],
+     "a": 0,
+     "why": "It's a Champagne, so it comes from the Champagne region in northern France, where grapes only just ripen.",
+     "id": "w-charles-heidsieck-brut-rose#1"
+    },
+    {
+     "k": "recall",
+     "q": "What grapes is the Charles Heidsieck Brut Rosé NV made from?",
+     "ans": "Pinot Noir, Chardonnay and Pinot Meunier",
+     "acc": [
+      "Pinot Noir, Chardonnay, Meunier",
+      "the three Champagne grapes",
+      "Chardonnay, Pinot Noir and Pinot Meunier"
+     ],
+     "why": "It uses all three Champagne grapes, with Pinot Noir giving the red cherry fruit.",
+     "id": "w-charles-heidsieck-brut-rose#2"
+    },
+    {
+     "k": "recall",
+     "q": "As a non-vintage Champagne, how long must the Charles Heidsieck Brut Rosé NV spend at least on its lees (the spent yeast left after the bubbles form)?",
+     "ans": "15 months",
+     "acc": [
+      "fifteen months",
+      "at least 15 months",
+      "12 months by law, 15 months in practice"
+     ],
+     "why": "Champagne rules say non-vintage spends at least 15 months on its lees (12 by law), which adds depth to the wine.",
+     "id": "w-charles-heidsieck-brut-rose#3"
+    },
+    {
+     "k": "apply",
+     "q": "A guest eating the Duck & Pancetta Terrine had a glass of the Charles Heidsieck Brut Réserve and loved it, and now wants a bottle of pink Champagne from the same house. What would you suggest, and why?",
+     "key": [
+      "Charles Heidsieck Brut Rosé NV",
+      "It's from the same Champagne house as the Brut Réserve they enjoyed, just the pink version",
+      "Its crisp freshness cuts through the rich terrine, and the Pinot Noir's red cherry fruit suits duck"
+     ],
+     "decoys": [
+      {
+       "id": "w-philipponnat-rose-brut",
+       "why": "A good pink Champagne, but it's from a different house, not the one they asked for."
+      },
+      {
+       "id": "w-coates-seely-brut-rose",
+       "why": "It's English sparkling wine from a different producer, not a Charles Heidsieck Champagne."
+      },
+      {
+       "id": "w-gusbourne-rose-brut",
+       "why": "It's English sparkling wine, not a pink Champagne from the house they enjoyed."
+      }
+     ],
+     "wrong": [
+      "It's a heavy, full-bodied wine that would smother the terrine, so steer them to something lighter.",
+      "Its grippy tannins would clash with the pear chutney, so it's the wrong choice here.",
+      "It's too soft and low in acidity to cope with a rich terrine like this one."
+     ],
+     "why": "It's the only pink Champagne on the list from Charles Heidsieck, and its freshness and red fruit genuinely suit duck.",
+     "id": "w-charles-heidsieck-brut-rose#4"
+    },
+    {
+     "k": "contrast",
+     "q": "Which costs more by the bottle, the Charles Heidsieck Brut Rosé NV or the Philipponnat Rosé Brut NV, and by how much?",
+     "ans": "The Charles Heidsieck, by £30 (£175 against £145)",
+     "acc": [
+      "Charles Heidsieck, £30 more",
+      "the Charles Heidsieck at £175",
+      "£30 more for the Charles Heidsieck"
+     ],
+     "why": "Both are pink Champagnes, so knowing the price gap helps you offer the Philipponnat to a guest who wants to spend a little less.",
+     "id": "w-charles-heidsieck-brut-rose#5"
+    }
+   ],
+   "at": 1794142346922
+  },
+  "w-charles-heidsieck-vintage-brut": {
+   "id": "w-charles-heidsieck-vintage-brut",
+   "hook": "Every grape comes from the 2013 harvest, and vintage Champagne must age at least three years.",
+   "pitch": "This is a vintage Champagne, meaning all the grapes come from one year, 2013, and it's made from Pinot Noir and Chardonnay. It's dry and crisp, with the extra depth that comes from longer ageing, so it's a real celebration bottle that's brilliant with oysters or crab.",
+   "say": "SHARL ed-SEEK, VIN-tij broot",
+   "taste": "Dry and crisp, with fresh fruit and a deeper, more layered taste than a younger Champagne.",
+   "style": {
+    "body": 3,
+    "acid": 4,
+    "tannin": 0,
+    "sweet": 1
+   },
+   "grape": "Pinot Noir gives it a bit of weight and red fruit, and Chardonnay keeps it bright and fresh.",
+   "place": "Champagne in northern France is so cool that the grapes only just ripen, which keeps the wine sharp and fresh, just right for fizz that can age.",
+   "producer": "",
+   "serve": {
+    "temp": "8-10°C",
+    "glass": "white wine glass or flute",
+    "decant": "no"
+   },
+   "dishes": [
+    {
+     "dish": "Seasonal Oysters, Mignonette",
+     "why": "The crisp, fresh taste matches the salty oysters and stands up to the sharp shallot vinegar."
+    },
+    {
+     "dish": "Curried Crab on Malt Rye & Beer Bread",
+     "why": "The bubbles and freshness lift the rich crab and calm the gentle spice."
+    },
+    {
+     "dish": "Fish & Chips, Crushed Peas, Tartare Sauce",
+     "why": "Champagne with fish and chips is a classic: the bubbles and freshness cut right through the batter."
+    }
+   ],
+   "alts": [
+    {
+     "id": "w-charles-heidsieck-brut-reserve",
+     "when": "same house, by the glass or a lower price"
+    },
+    {
+     "id": "w-philipponnat-blanc-de-noirs-extra-brut",
+     "when": "another vintage Champagne, younger and £70 less"
+    },
+    {
+     "id": "w-charles-heidsieck-blanc-des-millenaires",
+     "when": "same house, older vintage, a bigger treat"
+    }
+   ],
+   "qs": [
+    {
+     "k": "recognise",
+     "q": "What does the 2013 on the Charles Heidsieck Vintage Brut tell a guest?",
+     "opts": [
+      "All the grapes were picked in that one year",
+      "The house was founded in that year",
+      "It was bottled that year from several harvests",
+      "The vines were planted in that year"
+     ],
+     "a": 0,
+     "why": "A vintage Champagne is made only from grapes picked in one year, here 2013.",
+     "id": "w-charles-heidsieck-vintage-brut#0"
+    },
+    {
+     "k": "recognise",
+     "q": "Which description best fits the Charles Heidsieck Vintage Brut 2013?",
+     "opts": [
+      "Dry and crisp, with depth from longer ageing",
+      "Sweet and light, with soft grapey fruit",
+      "Dry and simple, made to drink young",
+      "Rich and sweet, like a dessert wine"
+     ],
+     "a": 0,
+     "why": "Brut means dry, Champagne's cool climate keeps it crisp, and vintage Champagne must age at least three years, which adds depth.",
+     "id": "w-charles-heidsieck-vintage-brut#1"
+    },
+    {
+     "k": "recall",
+     "q": "What grapes is the Charles Heidsieck Vintage Brut 2013 made from?",
+     "ans": "Pinot Noir and Chardonnay",
+     "acc": [
+      "Chardonnay and Pinot Noir",
+      "Pinot Noir, Chardonnay"
+     ],
+     "why": "It's a blend of Pinot Noir for weight and Chardonnay for freshness.",
+     "id": "w-charles-heidsieck-vintage-brut#2"
+    },
+    {
+     "k": "recall",
+     "q": "What is the minimum ageing for a vintage Champagne like the Charles Heidsieck Vintage Brut 2013?",
+     "ans": "3 years",
+     "acc": [
+      "three years",
+      "at least three years",
+      "a minimum of 3 years"
+     ],
+     "why": "Champagne rules require vintage wines to age at least three years, much longer than non-vintage.",
+     "id": "w-charles-heidsieck-vintage-brut#3"
+    },
+    {
+     "k": "apply",
+     "q": "A guest with the Seasonal Oysters, Mignonette wants a Champagne made from a single harvest at least ten years ago, but wants to keep it under £250. What would you suggest, and why?",
+     "key": [
+      "Charles Heidsieck Vintage Brut 2013",
+      "It's from the single 2013 harvest, well over ten years ago, and at £230 it's under their limit",
+      "Its dry, crisp freshness matches the salty oysters and the sharp mignonette"
+     ],
+     "decoys": [
+      {
+       "id": "w-philipponnat-blanc-de-noirs-extra-brut",
+       "why": "It's a single-harvest Champagne within budget, but 2018 is not ten years ago."
+      },
+      {
+       "id": "w-charles-heidsieck-blanc-des-millenaires",
+       "why": "The 2007 is old enough, but at £310 it's well over their £250 limit."
+      },
+      {
+       "id": "w-gusbourne-blanc-de-blancs",
+       "why": "It's an English sparkling wine from 2020, so it's neither Champagne nor ten years old."
+      }
+     ],
+     "wrong": [
+      "It's too heavy and full-bodied, so it would swamp delicate raw oysters.",
+      "Its tannins would taste metallic with raw oysters, so avoid it here.",
+      "It's too low in acidity to stand up to the vinegar in the mignonette."
+     ],
+     "why": "It's the only Champagne on the list from a single harvest over ten years old that costs under £250, and its crispness is a classic match for oysters.",
+     "id": "w-charles-heidsieck-vintage-brut#4"
+    },
+    {
+     "k": "contrast",
+     "q": "What is the main difference between the Charles Heidsieck Vintage Brut 2013 and the Charles Heidsieck Brut Réserve NV?",
+     "ans": "The Vintage is from the 2013 harvest only; the Brut Réserve is non-vintage, a blend of several years",
+     "acc": [
+      "one year's grapes versus a blend of years",
+      "vintage versus non-vintage",
+      "the Vintage is all from 2013, the Brut Réserve blends years"
+     ],
+     "why": "Both come from the same house, but the vintage comes from one year and ages for longer, while the non-vintage blends years and is also sold by the glass.",
+     "id": "w-charles-heidsieck-vintage-brut#5"
+    }
+   ],
+   "at": 1794142346922
+  },
+  "w-philipponnat-blanc-de-noirs-extra-brut": {
+   "id": "w-philipponnat-blanc-de-noirs-extra-brut",
+   "hook": "A white Champagne made only from black Pinot Noir grapes, all from the single 2018 harvest.",
+   "pitch": "This is a very dry Champagne made entirely from Pinot Noir, so it's crisp and refreshing with a little red-cherry depth behind the bubbles. It comes from one year, 2018, and it's brilliant with oysters or anything salty and fresh.",
+   "say": "fee-lee-po-NAH, blonk duh NWAR, EX-truh BROOT",
+   "taste": "Very dry and crisp, with a hint of red cherry from the Pinot Noir and a clean, refreshing finish.",
+   "style": {
+    "body": 3,
+    "acid": 5,
+    "tannin": 0,
+    "sweet": 1
+   },
+   "grape": "It is all Pinot Noir, a black grape known for high acidity and red-cherry flavour, pressed gently so the wine stays white (that's what 'Blanc de Noirs', white from black, means).",
+   "place": "Champagne is a cool region where the grapes barely ripen, which keeps them sharp and fresh, just right for sparkling wine.",
+   "producer": "",
+   "serve": {
+    "temp": "8-10°C",
+    "glass": "tulip or white wine glass",
+    "decant": "no"
+   },
+   "dishes": [
+    {
+     "dish": "Seasonal Oysters, Mignonette",
+     "why": "It's very dry and fresh, so it matches the salty oysters and the sharp shallot vinegar without tasting thin."
+    },
+    {
+     "dish": "Sea Bream Crudo, Preserved Lemon, Dill",
+     "why": "The crisp acidity (the mouth-watering freshness) sits nicely alongside the lemon and keeps the delicate raw fish tasting clean."
+    },
+    {
+     "dish": "Oyster Mushrooms, Scrambled Eggs, Truffle, Toast",
+     "why": "Pinot Noir loves mushrooms, and the bubbles freshen up the creamy eggs between bites."
+    }
+   ],
+   "alts": [
+    {
+     "id": "w-charles-heidsieck-vintage-brut",
+     "when": "another vintage Champagne, a little less dry, older"
+    },
+    {
+     "id": "w-bollinger-special-cuvee-brut",
+     "when": "a blend of grapes from a classic house, not quite as dry"
+    },
+    {
+     "id": "w-charles-heidsieck-brut-reserve",
+     "when": "Champagne by the glass"
+    }
+   ],
+   "qs": [
+    {
+     "k": "recognise",
+     "q": "Which description best fits the Philipponnat Blanc de Noirs Extra Brut 2018?",
+     "opts": [
+      "Very crisp sparkling with a hint of red cherry",
+      "Soft, sweet sparkling with ripe peach and honey",
+      "Gentle, off-sweet sparkling with pear and blossom",
+      "Creamy, sweet sparkling with lemon curd and vanilla"
+     ],
+     "a": 0,
+     "why": "Extra Brut means very dry, and the Pinot Noir gives a hint of red cherry.",
+     "id": "w-philipponnat-blanc-de-noirs-extra-brut#0"
+    },
+    {
+     "k": "recognise",
+     "q": "What does 'Blanc de Noirs' on the label of the Philipponnat Blanc de Noirs Extra Brut 2018 tell you?",
+     "opts": [
+      "A white wine made from black grapes",
+      "A white wine made from white grapes",
+      "A pink wine made from mixed grapes",
+      "A white wine aged in old oak barrels"
+     ],
+     "a": 0,
+     "why": "'Blanc de Noirs' means white from black: here, white Champagne made from black Pinot Noir grapes.",
+     "id": "w-philipponnat-blanc-de-noirs-extra-brut#1"
+    },
+    {
+     "k": "recall",
+     "q": "What grape is the Philipponnat Blanc de Noirs Extra Brut 2018 made from?",
+     "ans": "Pinot Noir",
+     "acc": [
+      "100% Pinot Noir",
+      "only Pinot Noir",
+      "all Pinot Noir"
+     ],
+     "why": "The label says Pinot Noir, and Blanc de Noirs means it's made from black grapes.",
+     "id": "w-philipponnat-blanc-de-noirs-extra-brut#2"
+    },
+    {
+     "k": "recall",
+     "q": "As a vintage Champagne, what is the minimum ageing the Philipponnat Blanc de Noirs Extra Brut 2018 must have before release?",
+     "ans": "3 years",
+     "acc": [
+      "three years",
+      "at least 3 years",
+      "minimum three years"
+     ],
+     "why": "Champagne rules set a minimum of 3 years for vintage wines, against 15 months for non-vintage.",
+     "id": "w-philipponnat-blanc-de-noirs-extra-brut#3"
+    },
+    {
+     "k": "apply",
+     "q": "A guest at a table with the Seasonal Oysters, Mignonette wants a bottle of vintage Champagne (one from a single year) that is as dry as possible, and they want to stay under £200. What would you suggest, and why?",
+     "key": [
+      "Philipponnat Blanc de Noirs Extra Brut 2018",
+      "Extra Brut means very dry with high acidity, which matches the salty oysters and sharp mignonette",
+      "It's a single-year 2018 vintage at £160, under their £200 limit"
+     ],
+     "decoys": [
+      {
+       "id": "w-charles-heidsieck-vintage-brut",
+       "why": "It is vintage, but at £230 it's over their limit and Brut is less dry than Extra Brut."
+      },
+      {
+       "id": "w-charles-heidsieck-blanc-des-millenaires",
+       "why": "At £310 it's well over the guest's £200 limit."
+      },
+      {
+       "id": "w-bollinger-special-cuvee-brut",
+       "why": "It's non-vintage, a blend of years, and Brut rather than the driest style."
+      }
+     ],
+     "wrong": [
+      "Its grippy tannin from the black grapes stands up to the salty oysters",
+      "Its soft, low acidity calms the sharp vinegar in the mignonette",
+      "Its smoky, oaky flavour matches the briny taste of the oysters"
+     ],
+     "why": "It's the only vintage Champagne under £200 on the list, and it's the driest style, perfect with oysters.",
+     "id": "w-philipponnat-blanc-de-noirs-extra-brut#4"
+    },
+    {
+     "k": "contrast",
+     "q": "Which is drier, the Philipponnat Blanc de Noirs Extra Brut 2018 or the Bollinger Special Cuvée Brut NV?",
+     "ans": "The Philipponnat Blanc de Noirs Extra Brut",
+     "acc": [
+      "Philipponnat",
+      "the Philipponnat",
+      "the Extra Brut"
+     ],
+     "why": "Extra Brut is a drier style than Brut.",
+     "id": "w-philipponnat-blanc-de-noirs-extra-brut#5"
+    }
+   ],
+   "at": 1794142348429
+  },
+  "w-bollinger-special-cuvee-brut": {
+   "id": "w-bollinger-special-cuvee-brut",
+   "hook": "Bollinger is one of Champagne's classic houses, named alongside Krug and Veuve Clicquot.",
+   "pitch": "This is Bollinger's house Champagne, a dry blend led by Pinot Noir with Chardonnay and Pinot Meunier, so it's fresh and lively with a little red-fruit depth. It's a famous name that tastes as good as it sounds, and it's lovely with fish and chips.",
+   "say": "BOLL-in-jer, spe-SYAL koo-VAY BROOT",
+   "taste": "Dry and crisp, with a hint of red cherry from the Pinot Noir and a fresh, lively sparkle.",
+   "style": {
+    "body": 3,
+    "acid": 4,
+    "tannin": 0,
+    "sweet": 1
+   },
+   "grape": "It's a blend of Pinot Noir, Chardonnay and Pinot Meunier, with the Pinot Noir bringing high acidity and a touch of red-cherry fruit.",
+   "place": "Champagne is a cool region where the grapes barely ripen, which keeps them fresh and sharp, just right for sparkling wine.",
+   "producer": "Bollinger is one of the classic Champagne producers, alongside Krug and Veuve Clicquot.",
+   "serve": {
+    "temp": "8-10°C",
+    "glass": "tulip or white wine glass",
+    "decant": "no"
+   },
+   "dishes": [
+    {
+     "dish": "Fish & Chips, Crushed Peas, Tartare Sauce",
+     "why": "The bubbles and crisp acidity (the mouth-watering freshness) cut through the fried batter and keep every bite tasting fresh."
+    },
+    {
+     "dish": "Eggs Royale, Hot Smoked Chalk Stream Trout",
+     "why": "Pinot Noir loves smoked fish, and the fresh sparkle lifts the rich, creamy hollandaise."
+    },
+    {
+     "dish": "Smoked Mackerel Pâté",
+     "why": "Its freshness cleans up the rich, smoky, salty pâté so you want another bite."
+    }
+   ],
+   "alts": [
+    {
+     "id": "w-charles-heidsieck-brut-reserve",
+     "when": "by the glass, or under £100 a bottle"
+    },
+    {
+     "id": "w-philipponnat-blanc-de-noirs-extra-brut",
+     "when": "drier, all Pinot Noir, a single vintage"
+    },
+    {
+     "id": "w-coates-seely-brut-reserve",
+     "when": "English sparkling, under £90"
+    }
+   ],
+   "qs": [
+    {
+     "k": "recognise",
+     "q": "Which description best fits the Bollinger Special Cuvée Brut NV?",
+     "opts": [
+      "Dry and crisp, with red-fruit hints and a fresh finish",
+      "Sweet and soft, with ripe peach and a honeyed finish",
+      "Off-dry and gentle, with pear and a floral finish",
+      "Sweet and creamy, with tropical fruit and a vanilla finish"
+     ],
+     "a": 0,
+     "why": "Brut means dry, and the Pinot Noir in the blend brings fresh acidity and red-fruit hints.",
+     "id": "w-bollinger-special-cuvee-brut#0"
+    },
+    {
+     "k": "recognise",
+     "q": "What does 'NV' on the Bollinger Special Cuvée Brut NV label mean?",
+     "opts": [
+      "Non-vintage: a blend of wines from several years",
+      "New vintage: made only from the latest harvest",
+      "Natural vinification: made with no added yeast",
+      "Noble variety: made only from Pinot Noir grapes"
+     ],
+     "a": 0,
+     "why": "NV means non-vintage, a blend of years rather than a single harvest.",
+     "id": "w-bollinger-special-cuvee-brut#1"
+    },
+    {
+     "k": "recall",
+     "q": "Which three grapes go into the Bollinger Special Cuvée Brut NV?",
+     "ans": "Pinot Noir, Chardonnay and Pinot Meunier",
+     "acc": [
+      "Pinot Noir, Chardonnay, Meunier",
+      "Chardonnay, Pinot Noir and Pinot Meunier",
+      "Pinot Noir, Pinot Meunier and Chardonnay"
+     ],
+     "why": "It's a blend of the three Champagne grapes, led by Pinot Noir.",
+     "id": "w-bollinger-special-cuvee-brut#2"
+    },
+    {
+     "k": "recall",
+     "q": "What is the minimum time a non-vintage Champagne like the Bollinger Special Cuvée Brut NV spends on its lees (the spent yeast) before release?",
+     "ans": "15 months",
+     "acc": [
+      "fifteen months",
+      "12 months by law, 15 in practice",
+      "at least 15 months"
+     ],
+     "why": "The law says 12 months, but house minimums run higher, at 15 months.",
+     "id": "w-bollinger-special-cuvee-brut#3"
+    },
+    {
+     "k": "apply",
+     "q": "A guest at a table with the Fish & Chips, Crushed Peas, Tartare Sauce wants a white non-vintage Champagne from one of the famous classic houses, and is happy to spend over £150. What would you suggest, and why?",
+     "key": [
+      "Bollinger Special Cuvée Brut NV",
+      "Its crisp acidity and bubbles cut through the fried batter and refresh the palate",
+      "Bollinger is one of the classic Champagne houses, and at £170 it fits their budget"
+     ],
+     "decoys": [
+      {
+       "id": "w-charles-heidsieck-brut-rose",
+       "why": "It's a pink Champagne, and the guest wants white."
+      },
+      {
+       "id": "w-philipponnat-blanc-de-noirs-extra-brut",
+       "why": "It's a 2018 vintage, not the non-vintage the guest asked for."
+      },
+      {
+       "id": "w-charles-heidsieck-brut-reserve",
+       "why": "At £99 it's well under the over-£150 bottle the guest wants."
+      }
+     ],
+     "wrong": [
+      "Its firm tannin grips the fried batter and cleans the palate",
+      "Its soft, low acidity keeps it gentle beside the tartare sauce",
+      "Its smoky, oaky flavour matches the malt vinegar on the chips"
+     ],
+     "why": "It's the only white non-vintage Champagne on the list over £150, from a classic house, and its freshness suits fried fish.",
+     "id": "w-bollinger-special-cuvee-brut#4"
+    },
+    {
+     "k": "contrast",
+     "q": "How do the grapes in the Bollinger Special Cuvée Brut NV differ from those in the Philipponnat Blanc de Noirs Extra Brut 2018?",
+     "ans": "Bollinger blends Pinot Noir with Chardonnay and Pinot Meunier; the Philipponnat is Pinot Noir only",
+     "acc": [
+      "Bollinger is a blend, Philipponnat is all Pinot Noir",
+      "Bollinger has Chardonnay and Meunier as well",
+      "Philipponnat is only Pinot Noir"
+     ],
+     "why": "Both lean on Pinot Noir, but only the Bollinger adds Chardonnay and Pinot Meunier.",
+     "id": "w-bollinger-special-cuvee-brut#5"
+    }
+   ],
+   "at": 1794142348429
+  },
+  "w-charles-heidsieck-blanc-des-millenaires": {
+   "id": "w-charles-heidsieck-blanc-des-millenaires",
+   "hook": "A 2007 vintage Champagne made only from Chardonnay, and the oldest Champagne on our list.",
+   "pitch": "This is pure Chardonnay Champagne from a single year, 2007, so it has had many years to gain nutty, toasty depth while staying fresh and lemony. If you're marking something special, this is the most remarkable bottle of bubbles we pour.",
+   "say": "SHARL HIDE-seck, blon day mee-lay-NAIR",
+   "taste": "Expect lemony freshness wrapped in nutty, toasty notes from age and a creamy texture from long resting on the yeast.",
+   "style": {
+    "body": 3,
+    "acid": 4,
+    "tannin": 0,
+    "sweet": 1
+   },
+   "grape": "Chardonnay is a neutral grape that takes on how it is made and aged, and with years in bottle it gains the nutty, toasty notes you find here.",
+   "place": "Champagne is a cool region where grapes barely ripen, which keeps the wine sharp and fresh, and vintage Champagne must age at least three years before release.",
+   "producer": "",
+   "serve": {
+    "temp": "8-10°C",
+    "glass": "white wine glass or tulip-shaped flute",
+    "decant": "no"
+   },
+   "dishes": [
+    {
+     "dish": "Seasonal Oysters, Mignonette",
+     "why": "Chardonnay without oak is a classic match for oysters, and the wine's freshness lifts their salty, delicate taste."
+    },
+    {
+     "dish": "Sea Bream Crudo, Preserved Lemon, Dill",
+     "why": "Its lemony acidity mirrors the preserved lemon, while the toasty depth gives the raw fish a richer frame."
+    },
+    {
+     "dish": "Hake, Mussels, Cannellini Beans, Leeks",
+     "why": "White fish suits Chardonnay, and the wine's creamy texture sits nicely with the creamy beans and leeks."
+    }
+   ],
+   "alts": [
+    {
+     "id": "w-charles-heidsieck-vintage-brut",
+     "when": "same house, younger vintage, under £250"
+    },
+    {
+     "id": "w-saint-sauveur-blanc-de-blancs-premier-cru",
+     "when": "all white grapes, younger and under £150"
+    },
+    {
+     "id": "w-gusbourne-blanc-de-blancs",
+     "when": "English fizz by the glass"
+    }
+   ],
+   "qs": [
+    {
+     "k": "recognise",
+     "q": "Which description best fits the Charles Heidsieck Blanc des Millénaires 2007?",
+     "opts": [
+      "Dry and mature, with toasty, nutty notes and a creamy texture",
+      "Light and young, with simple green apple and fast-fading fizz",
+      "Medium-sweet and grapey, with gentle fizz and low acidity",
+      "Full and oaky, with heavy vanilla and a broad, buttery finish"
+     ],
+     "a": 0,
+     "why": "Long ageing gives Chardonnay nutty, toasty notes, and time on the yeast adds a creamy texture, while the cool climate keeps it dry and fresh.",
+     "id": "w-charles-heidsieck-blanc-des-millenaires#0"
+    },
+    {
+     "k": "recognise",
+     "q": "What does the year 2007 on the Charles Heidsieck Blanc des Millénaires label tell a guest?",
+     "opts": [
+      "All its grapes were picked in that one harvest",
+      "The house first opened its doors in that year",
+      "It was blended from several harvests up to then",
+      "That was the year it first went on sale"
+     ],
+     "a": 0,
+     "why": "A year on a Champagne label means it is a vintage wine, made from a single year's harvest.",
+     "id": "w-charles-heidsieck-blanc-des-millenaires#1"
+    },
+    {
+     "k": "recall",
+     "q": "What grape is the Charles Heidsieck Blanc des Millénaires 2007 made from?",
+     "ans": "Chardonnay",
+     "acc": [
+      "100% Chardonnay",
+      "only Chardonnay",
+      "Chardonnay only"
+     ],
+     "why": "It is made only from Chardonnay, a white grape.",
+     "id": "w-charles-heidsieck-blanc-des-millenaires#2"
+    },
+    {
+     "k": "recall",
+     "q": "What is the minimum ageing for a vintage Champagne such as the Charles Heidsieck Blanc des Millénaires 2007?",
+     "ans": "At least three years",
+     "acc": [
+      "three years",
+      "3 years",
+      "minimum three years"
+     ],
+     "why": "Champagne rules require vintage wines to age at least three years, against 15 months for non-vintage.",
+     "id": "w-charles-heidsieck-blanc-des-millenaires#3"
+    },
+    {
+     "k": "apply",
+     "q": "A couple sharing the Seasonal Oysters, Mignonette are celebrating and want the oldest single-vintage Champagne you have, made only from white grapes, and price is no worry. What would you suggest, and why?",
+     "key": [
+      "Charles Heidsieck Blanc des Millénaires 2007",
+      "it is all Chardonnay from 2007, the oldest vintage Champagne on our list",
+      "its bright acidity and toasty, creamy depth suit the salty, delicate oysters"
+     ],
+     "decoys": [
+      {
+       "id": "w-philipponnat-blanc-de-noirs-extra-brut",
+       "why": "Blanc de noirs means made from black grapes, and 2018 is far younger than they asked for."
+      },
+      {
+       "id": "w-saint-sauveur-blanc-de-blancs-premier-cru",
+       "why": "It is white grapes only but non-vintage, so not a single old year."
+      },
+      {
+       "id": "w-bollinger-special-cuvee-brut",
+       "why": "It is a non-vintage blend, so it can't be the old single-vintage bottle they want."
+      }
+     ],
+     "wrong": [
+      "It is full and heavy enough to smother the oysters' saltiness",
+      "Its firm tannin grips the oysters and cuts the mignonette",
+      "Its low acidity keeps the sharp mignonette from clashing"
+     ],
+     "why": "It is the only Champagne on the list that is all Chardonnay and from as old a vintage as 2007, and unoaked Chardonnay suits oysters.",
+     "id": "w-charles-heidsieck-blanc-des-millenaires#4"
+    },
+    {
+     "k": "contrast",
+     "q": "Between the Charles Heidsieck Blanc des Millénaires 2007 and the Charles Heidsieck Vintage Brut 2013, which comes from the older harvest?",
+     "ans": "The Blanc des Millénaires, from 2007, six years older",
+     "acc": [
+      "Blanc des Millénaires",
+      "the 2007",
+      "the Millénaires"
+     ],
+     "why": "Both are vintage wines from the same house, but the Blanc des Millénaires is from 2007 and costs £310 against £230.",
+     "id": "w-charles-heidsieck-blanc-des-millenaires#5"
+    }
+   ],
+   "at": 1794142350095
+  },
+  "w-vignoble-guillaume-cremant-la-flute-enchantee": {
+   "id": "w-vignoble-guillaume-cremant-la-flute-enchantee",
+   "hook": "French sparkling wine from Franche-Comté, usually Chardonnay, and our least expensive French bottle of fizz.",
+   "pitch": "This is French sparkling wine from outside Champagne, crisp and lemony with lively bubbles. It gives you a proper celebration bottle at £65, a lot less than Champagne.",
+   "say": "veen-YOH-bluh ghee-OHM, kray-MON la FLOOT on-shon-TAY",
+   "taste": "Expect crisp, lemony fruit and lively bubbles, usually lean and fresh rather than toasty.",
+   "style": {
+    "body": 2,
+    "acid": 4,
+    "tannin": 0,
+    "sweet": 1
+   },
+   "grape": "It is usually made from Chardonnay, a neutral grape that stays lean and citrusy when kept out of oak.",
+   "place": "Crémant is the French name for sparkling wine made outside Champagne, and this one comes from Franche-Comté in eastern France, so you get French fizz at a gentler price.",
+   "producer": "",
+   "serve": {
+    "temp": "6-8°C",
+    "glass": "flute or white wine glass",
+    "decant": "no"
+   },
+   "dishes": [
+    {
+     "dish": "Seasonal Oysters, Mignonette",
+     "why": "Crisp, unoaked Chardonnay is a classic partner for oysters and their sharp mignonette."
+    },
+    {
+     "dish": "Fish & Chips, Crushed Peas, Tartare Sauce",
+     "why": "The bubbles and fresh acidity cut through the batter and keep each mouthful feeling light."
+    },
+    {
+     "dish": "Sea Bream Crudo, Preserved Lemon, Dill",
+     "why": "Its lemony freshness echoes the preserved lemon and doesn't overpower the delicate raw fish."
+    }
+   ],
+   "alts": [
+    {
+     "id": "w-coates-seely-brut-reserve",
+     "when": "by the glass"
+    },
+    {
+     "id": "w-terra-da-marca-cava-brut-natura",
+     "when": "another fizz from outside Champagne, from Spain"
+    },
+    {
+     "id": "w-charles-heidsieck-brut-reserve",
+     "when": "step up to Champagne, also by the glass"
+    }
+   ],
+   "qs": [
+    {
+     "k": "recognise",
+     "q": "Which description best fits the Vignoble Guillaume Crémant La Flûte Enchantée NV?",
+     "opts": [
+      "Crisp, fresh and lemony, with lively bubbles and a clean finish",
+      "Deep and mature, with toasty, nutty notes from many years' ageing",
+      "Soft and sweet, with grapey fruit, gentle fizz and low acidity",
+      "Rich and oaky, with heavy vanilla and a broad, buttery finish"
+     ],
+     "a": 0,
+     "why": "Chardonnay kept away from oak stays lean and citrusy, giving a crisp, lemony sparkling wine.",
+     "id": "w-vignoble-guillaume-cremant-la-flute-enchantee#0"
+    },
+    {
+     "k": "recognise",
+     "q": "What does the word Crémant in Vignoble Guillaume Crémant La Flûte Enchantée tell a guest?",
+     "opts": [
+      "French sparkling wine made outside the Champagne region",
+      "A sweet sparkling wine made to serve with dessert",
+      "Champagne made from a single grower's own vines",
+      "A still white wine with a creamy, buttery texture"
+     ],
+     "a": 0,
+     "why": "Crémant is the French name for sparkling wine made outside Champagne.",
+     "id": "w-vignoble-guillaume-cremant-la-flute-enchantee#1"
+    },
+    {
+     "k": "recall",
+     "q": "Which French region is the Vignoble Guillaume Crémant La Flûte Enchantée from?",
+     "ans": "Franche-Comté",
+     "acc": [
+      "Franche-Comté, France",
+      "Franche Comte",
+      "eastern France, Franche-Comté"
+     ],
+     "why": "The list places it in Franche-Comté, France, outside Champagne.",
+     "id": "w-vignoble-guillaume-cremant-la-flute-enchantee#2"
+    },
+    {
+     "k": "recall",
+     "q": "What grape is the Vignoble Guillaume Crémant La Flûte Enchantée usually made from?",
+     "ans": "Chardonnay",
+     "acc": [
+      "usually Chardonnay",
+      "mostly Chardonnay"
+     ],
+     "why": "Chardonnay is the typical grape for this wine, so we say usually.",
+     "id": "w-vignoble-guillaume-cremant-la-flute-enchantee#3"
+    },
+    {
+     "k": "apply",
+     "q": "A guest having the Fish & Chips, Crushed Peas, Tartare Sauce wants a bottle of proper sparkling wine with alcohol, under £70. What would you suggest, and why?",
+     "key": [
+      "Vignoble Guillaume Crémant La Flûte Enchantée",
+      "at £65 it is our only sparkling wine with alcohol under £70",
+      "its crisp acidity and bubbles cut through the batter and refresh after the tartare sauce"
+     ],
+     "decoys": [
+      {
+       "id": "w-terra-da-marca-cava-brut-natura",
+       "why": "At £76 a bottle it is over the guest's £70 limit."
+      },
+      {
+       "id": "w-coates-seely-brut-reserve",
+       "why": "At £82 a bottle it is well over budget."
+      },
+      {
+       "id": "w-amie-non-alcoholic-rose",
+       "why": "It is non-alcoholic, and the guest asked for sparkling wine with alcohol."
+      }
+     ],
+     "wrong": [
+      "Its full, heavy body matches the weight of the fried fish",
+      "Its tannin scrubs the oil from the batter",
+      "Its soft, low acidity keeps the tartare sauce from tasting sharp"
+     ],
+     "why": "It is the only alcoholic fizz under £70, and its crisp freshness is exactly what fried fish needs.",
+     "id": "w-vignoble-guillaume-cremant-la-flute-enchantee#4"
+    },
+    {
+     "k": "contrast",
+     "q": "Between the Vignoble Guillaume Crémant La Flûte Enchantée NV and the Terra da Marca Cava Brut Natura 2021, which is the cheaper bottle, and by how much?",
+     "ans": "The Crémant, £65 against £76, so £11 less",
+     "acc": [
+      "the Crémant, by £11",
+      "Crémant, £11 cheaper",
+      "the Flûte Enchantée, £11 less"
+     ],
+     "why": "Both are sparkling wines from outside Champagne, but the Crémant is French at £65 and the Cava is £76.",
+     "id": "w-vignoble-guillaume-cremant-la-flute-enchantee#5"
+    }
+   ],
+   "at": 1794142350095
+  },
+  "w-charles-heidsieck-brut-reserve": {
+   "id": "w-charles-heidsieck-brut-reserve",
+   "hook": "Our only Champagne by the glass: Chardonnay, Pinot Noir and Pinot Meunier, rested at least a year on its yeast.",
+   "pitch": "It's a dry, fresh Champagne with crisp citrus, a hint of red cherry and a creamy feel from time spent resting on its yeast. It's the one Champagne we pour by the glass, so you can have proper Champagne without committing to a whole bottle.",
+   "say": "SHARL HIDE-sek, broot ray-ZAIRV",
+   "taste": "Dry and lively, with crisp citrus and a touch of red cherry, and a soft, creamy texture under the bubbles.",
+   "style": {
+    "body": 3,
+    "acid": 4,
+    "tannin": 0,
+    "sweet": 1
+   },
+   "grape": "It's a blend of three grapes: Chardonnay gives citrus freshness, while Pinot Noir and Pinot Meunier bring red-fruit depth.",
+   "place": "Champagne is so cool that the grapes barely ripen, and that keeps the acidity, the mouth-watering freshness, high, which is exactly what makes good sparkling wine.",
+   "producer": "",
+   "serve": {
+    "temp": "6-8°C",
+    "glass": "tulip-shaped Champagne glass or white wine glass",
+    "decant": "no"
+   },
+   "dishes": [
+    {
+     "dish": "Seasonal Oysters, Mignonette",
+     "why": "Crisp, citrusy Chardonnay is a classic partner for oysters, and the freshness matches their salty, sea-fresh taste."
+    },
+    {
+     "dish": "Fish & Chips, Crushed Peas, Tartare Sauce",
+     "why": "The bubbles and sharp freshness cut straight through the crispy batter, so every mouthful tastes as good as the first."
+    },
+    {
+     "dish": "Smoked Mackerel Pâté",
+     "why": "The fresh acidity lifts the rich, smoky, salty pâté and keeps it from feeling heavy."
+    }
+   ],
+   "alts": [
+    {
+     "id": "w-coates-seely-brut-reserve",
+     "when": "by the glass for less, and an English sparkling wine"
+    },
+    {
+     "id": "w-bollinger-special-cuvee-brut",
+     "when": "a famous Champagne house, by the bottle, for a celebration"
+    },
+    {
+     "id": "w-charles-heidsieck-brut-rose",
+     "when": "same house, but they'd like a pink Champagne"
+    }
+   ],
+   "qs": [
+    {
+     "k": "recognise",
+     "q": "Which description best fits the Charles Heidsieck Brut Réserve NV?",
+     "opts": [
+      "Dry and crisp, with citrus, a hint of red cherry and a creamy texture",
+      "Sweet and grapey, very light, with gentle fizz and low alcohol",
+      "Lean and simple, with sharp green apple and a thin, watery finish",
+      "Soft and fruity, with ripe peach, honey and a noticeably sweet finish"
+     ],
+     "a": 0,
+     "why": "It's a dry Champagne. Its Chardonnay gives citrus, its Pinots give red fruit, and resting on the yeast gives a creamy texture.",
+     "id": "w-charles-heidsieck-brut-reserve#0"
+    },
+    {
+     "k": "recognise",
+     "q": "What does 'NV' on the label of the Charles Heidsieck Brut Réserve tell a guest?",
+     "opts": [
+      "Non-vintage: wine from several years blended together, aged at least a year",
+      "Natural vinification: made without adding any yeast or other help",
+      "New vineyard: made from young vines planted in the last few years",
+      "Nouveau: bottled and sold in the same year the grapes were picked"
+     ],
+     "a": 0,
+     "why": "NV means non-vintage: a blend of years. By law it rests at least 12 months on its yeast, and houses often go longer.",
+     "id": "w-charles-heidsieck-brut-reserve#1"
+    },
+    {
+     "k": "recall",
+     "q": "What grapes is the Charles Heidsieck Brut Réserve NV made from?",
+     "ans": "Chardonnay, Pinot Noir and Pinot Meunier",
+     "acc": [
+      "Chardonnay, Pinot Noir, Meunier",
+      "the three Champagne grapes",
+      "Pinot Noir, Pinot Meunier and Chardonnay"
+     ],
+     "why": "It blends all three main Champagne grapes, so it has both citrus freshness and red-fruit depth.",
+     "id": "w-charles-heidsieck-brut-reserve#2"
+    },
+    {
+     "k": "recall",
+     "q": "What size is a glass of Charles Heidsieck Brut Réserve NV, and what does it cost?",
+     "ans": "125ml for £17.50",
+     "acc": [
+      "125ml, £17.50",
+      "£17.50 for 125ml"
+     ],
+     "why": "Sparkling wine is served in 125ml glasses, and this is our only Champagne by the glass.",
+     "id": "w-charles-heidsieck-brut-reserve#3"
+    },
+    {
+     "k": "apply",
+     "q": "A guest has ordered the Seasonal Oysters, Mignonette and wants just a glass of proper French Champagne, not a whole bottle. What would you suggest, and why?",
+     "key": [
+      "Charles Heidsieck Brut Réserve NV, at £17.50 for a 125ml glass",
+      "it's the only Champagne we pour by the glass",
+      "its crisp acidity and citrus freshness suit raw, salty oysters"
+     ],
+     "decoys": [
+      {
+       "id": "w-coates-seely-brut-reserve",
+       "why": "It comes by the glass, but it's English sparkling wine, not Champagne."
+      },
+      {
+       "id": "w-gusbourne-blanc-de-blancs",
+       "why": "It comes by the glass, but it's English sparkling wine, not Champagne."
+      },
+      {
+       "id": "w-bollinger-special-cuvee-brut",
+       "why": "It's Champagne, but we only sell it by the bottle."
+      }
+     ],
+     "wrong": [
+      "Its firm tannin, the drying grip you get in red wine, cleans the palate after each oyster.",
+      "Its low acidity keeps it gentle beside the sharp mignonette dressing.",
+      "Its smoky, earthy flavours match a smokiness in the oysters."
+     ],
+     "why": "It's the only Champagne by the glass, and crisp, citrusy Champagne is a classic partner for raw oysters.",
+     "id": "w-charles-heidsieck-brut-reserve#4"
+    },
+    {
+     "k": "contrast",
+     "q": "How does ordering the Charles Heidsieck Brut Réserve NV differ from ordering the Bollinger Special Cuvée Brut NV?",
+     "ans": "Charles Heidsieck comes by the glass (£17.50) or bottle (£99); Bollinger is bottle only at £170",
+     "acc": [
+      "Charles Heidsieck is available by the glass and is cheaper",
+      "Bollinger is bottle only and costs more",
+      "only the Charles Heidsieck is sold by the glass"
+     ],
+     "why": "Both are non-vintage Champagne, but only the Charles Heidsieck is poured by the glass, and it's the cheaper bottle.",
+     "id": "w-charles-heidsieck-brut-reserve#5"
+    }
+   ],
+   "at": 1794142353139
+  },
+  "w-pierre-paillard-les-parcelles-xx-grand-cru-bouzy": {
+   "id": "w-pierre-paillard-les-parcelles-xx-grand-cru-bouzy",
+   "hook": "Pinot Noir and Chardonnay from Bouzy, a Grand Cru village, meaning top-rated in Champagne.",
+   "pitch": "It's a dry, fresh Champagne with real depth: red cherry from Pinot Noir and citrus lift from Chardonnay. The grapes come from Bouzy, one of Champagne's top-rated Grand Cru villages, so it's a serious bottle that can stay at the table through the meal.",
+   "say": "pee-AIR pie-YAR, lay par-SELL, grahn KROO boo-ZEE",
+   "taste": "Dry and fresh, with red cherry depth and a citrus edge, carried by fine bubbles.",
+   "style": {
+    "body": 3,
+    "acid": 4,
+    "tannin": 0,
+    "sweet": 1
+   },
+   "grape": "Pinot Noir brings red cherry and depth, and Chardonnay adds crisp citrus freshness.",
+   "place": "It comes from Bouzy, a Grand Cru (top-rated) village in Champagne, where the cool climate means the grapes barely ripen and keep the fresh acidity that sparkling wine needs.",
+   "producer": "",
+   "serve": {
+    "temp": "8-10°C",
+    "glass": "tulip-shaped Champagne glass or white wine glass",
+    "decant": "no"
+   },
+   "dishes": [
+    {
+     "dish": "Duck & Pancetta Terrine, Spiced Pear Chutney, Toast",
+     "why": "Pinot Noir is a classic match for duck, and the bubbles and freshness cut through the rich terrine."
+    },
+    {
+     "dish": "Oyster Mushrooms, Scrambled Eggs, Truffle, Toast",
+     "why": "Pinot Noir loves mushrooms, and the freshness lifts the creamy eggs."
+    },
+    {
+     "dish": "Half Chicken",
+     "why": "Roast chicken is a natural partner for Pinot Noir, and the Champagne has enough depth to stand up to it."
+    }
+   ],
+   "alts": [
+    {
+     "id": "w-charles-heidsieck-brut-reserve",
+     "when": "by the glass, or a bottle under £100"
+    },
+    {
+     "id": "w-philipponnat-blanc-de-noirs-extra-brut",
+     "when": "a vintage Champagne made only from black grapes, for even more depth"
+    },
+    {
+     "id": "w-saint-sauveur-blanc-de-blancs-premier-cru",
+     "when": "leaner and more citrusy, made only from white grapes"
+    }
+   ],
+   "qs": [
+    {
+     "k": "recognise",
+     "q": "Which description best fits the Pierre Paillard Les Parcelles XX, Grand Cru Bouzy NV?",
+     "opts": [
+      "Dry and fresh, with red cherry depth and a crisp citrus edge",
+      "Sweet and grapey, very light, with gentle fizz and low alcohol",
+      "Lean and sharp, all lemon and green apple, with little depth",
+      "Soft and fruity, with ripe peach, honey and a sweet finish"
+     ],
+     "a": 0,
+     "why": "Its Pinot Noir gives red cherry depth, its Chardonnay adds citrus, and it's a dry Champagne.",
+     "id": "w-pierre-paillard-les-parcelles-xx-grand-cru-bouzy#0"
+    },
+    {
+     "k": "recognise",
+     "q": "What does 'Grand Cru' in the Pierre Paillard Les Parcelles XX name tell a guest?",
+     "opts": [
+      "The grapes come from a village rated in Champagne's very top tier",
+      "The wine has spent at least ten years ageing in the cellar",
+      "This is the producer's sweetest and richest style of wine",
+      "The wine has been made from one single grape variety only"
+     ],
+     "a": 0,
+     "why": "Grand Cru means the grapes come from a top-rated village, in this case Bouzy.",
+     "id": "w-pierre-paillard-les-parcelles-xx-grand-cru-bouzy#1"
+    },
+    {
+     "k": "recall",
+     "q": "What grapes is the Pierre Paillard Les Parcelles XX, Grand Cru Bouzy NV made from?",
+     "ans": "Pinot Noir and Chardonnay",
+     "acc": [
+      "Chardonnay and Pinot Noir",
+      "Pinot and Chardonnay"
+     ],
+     "why": "Pinot Noir gives red-fruit depth and Chardonnay gives citrus freshness.",
+     "id": "w-pierre-paillard-les-parcelles-xx-grand-cru-bouzy#2"
+    },
+    {
+     "k": "recall",
+     "q": "Which Champagne village do the grapes for the Pierre Paillard Les Parcelles XX come from?",
+     "ans": "Bouzy",
+     "acc": [
+      "Bouzy, a Grand Cru village",
+      "Bouzy in Champagne"
+     ],
+     "why": "Bouzy is in the name: it's a Grand Cru, top-rated, village in Champagne.",
+     "id": "w-pierre-paillard-les-parcelles-xx-grand-cru-bouzy#3"
+    },
+    {
+     "k": "apply",
+     "q": "A guest starting with the Duck & Pancetta Terrine, Spiced Pear Chutney, Toast wants a bottle of Champagne with enough depth for the duck, spending more than £100 but no more than £130. What would you suggest, and why?",
+     "key": [
+      "Pierre Paillard Les Parcelles XX, Grand Cru Bouzy NV, at £125",
+      "its Pinot Noir gives red cherry depth, and Pinot Noir is a classic match for duck",
+      "its crisp acidity and bubbles cut through the rich terrine"
+     ],
+     "decoys": [
+      {
+       "id": "w-charles-heidsieck-brut-reserve",
+       "why": "At £99 a bottle it's under the guest's £100 to £130 range."
+      },
+      {
+       "id": "w-saint-sauveur-blanc-de-blancs-premier-cru",
+       "why": "At £135 it's over budget, and with white grapes only it's leaner, with less depth for duck."
+      },
+      {
+       "id": "w-philipponnat-rose-brut",
+       "why": "At £145 it's well over the guest's £130 limit."
+      }
+     ],
+     "wrong": [
+      "Its firm tannin, the drying grip of red wine, holds on to the duck fat.",
+      "Its low acidity lets the sweet pear chutney take centre stage.",
+      "Its tropical, pineapple-like fruit echoes the spiced pear chutney."
+     ],
+     "why": "It's the only Champagne in the price range, and its Pinot Noir depth and fresh acidity suit rich duck.",
+     "id": "w-pierre-paillard-les-parcelles-xx-grand-cru-bouzy#4"
+    },
+    {
+     "k": "contrast",
+     "q": "What is the key difference between the Pierre Paillard Les Parcelles XX, Grand Cru Bouzy NV and the Philipponnat Blanc de Noirs Extra Brut 2018?",
+     "ans": "Pierre Paillard is a non-vintage blend of Pinot Noir and Chardonnay; Philipponnat is a 2018 vintage made from black grapes only",
+     "acc": [
+      "Pierre Paillard includes Chardonnay, Philipponnat is black grapes only",
+      "Philipponnat is a single vintage, Pierre Paillard is a blend of years",
+      "Paillard is non-vintage with Chardonnay; Philipponnat is vintage blanc de noirs"
+     ],
+     "why": "Both have Pinot Noir depth, but 'blanc de noirs' means white wine made only from black grapes, and the Philipponnat comes from a single year.",
+     "id": "w-pierre-paillard-les-parcelles-xx-grand-cru-bouzy#5"
+    }
+   ],
+   "at": 1794142353139
+  }
+ },
+ "pairings": {},
+ "cocktails": [
+  {
+   "id": "c-cubitt-elderflower-spritz",
+   "section": "Spritz",
+   "name": "Cubitt Elderflower Spritz",
+   "price": "£14",
+   "ingredients": [
+    "Hayman's Vibrant Citrus Gin",
+    "elderflower",
+    "Prosecco",
+    "lemon",
+    "Double Dutch Skinny Tonic"
+   ],
+   "by": "",
+   "note": ""
+  },
+  {
+   "id": "c-fruit-cup-spritz",
+   "section": "Spritz",
+   "name": "Fruit Cup Spritz",
+   "price": "£14",
+   "ingredients": [
+    "Asterley Bros English White Vermouth",
+    "Asterley Bros Estate Red Vermouth",
+    "High Fidelity Triple Sec",
+    "Prosecco",
+    "Double Dutch Soda Water"
+   ],
+   "by": "",
+   "note": ""
+  },
+  {
+   "id": "c-reina-spritz",
+   "section": "Spritz",
+   "name": "Reina Spritz",
+   "price": "£15",
+   "ingredients": [
+    "Reina Ensemble Espadín/Tobasiche mezcal",
+    "Aperol Aperitivo",
+    "lime",
+    "Double Dutch Ginger Beer"
+   ],
+   "by": "",
+   "note": ""
+  },
+  {
+   "id": "c-dirty-martini-spritz",
+   "section": "Spritz",
+   "name": "Dirty Martini Spritz",
+   "price": "£15",
+   "ingredients": [
+    "Respirited British Sustainable Vodka",
+    "Asterley Bros English White Vermouth",
+    "olive brine",
+    "lemon",
+    "sugar",
+    "Double Dutch Skinny Tonic"
+   ],
+   "by": "",
+   "note": ""
+  },
+  {
+   "id": "c-vibrant-basil-gimlet",
+   "section": "House",
+   "name": "Vibrant Basil Gimlet",
+   "price": "£14",
+   "ingredients": [
+    "Hayman's Vibrant Citrus Gin",
+    "homemade lime cordial",
+    "lime",
+    "fresh basil"
+   ],
+   "by": "",
+   "note": ""
+  },
+  {
+   "id": "c-naked-famous",
+   "section": "House",
+   "name": "Naked & Famous",
+   "price": "£15",
+   "ingredients": [
+    "Lost Explorer Mezcal Espadín",
+    "Green Chartreuse",
+    "Aperol Aperitivo",
+    "lime"
+   ],
+   "by": "",
+   "note": ""
+  },
+  {
+   "id": "c-ruby-whisky-smash",
+   "section": "House",
+   "name": "Ruby Whisky Smash",
+   "price": "£14",
+   "ingredients": [
+    "Johnnie Walker Black Ruby Whisky",
+    "lime",
+    "sugar",
+    "mint"
+   ],
+   "by": "",
+   "note": ""
+  },
+  {
+   "id": "c-paloma-botanica",
+   "section": "House",
+   "name": "Paloma Botanica",
+   "price": "£14",
+   "ingredients": [
+    "Don Julio Reposado",
+    "lime",
+    "mint",
+    "Double Dutch Pink Grapefruit Soda"
+   ],
+   "by": "",
+   "note": ""
+  },
+  {
+   "id": "c-beet-around-the-bush",
+   "section": "House",
+   "name": "Beet Around The Bush",
+   "price": "£14",
+   "ingredients": [
+    "Vapoura Chapter One Spiced Rum",
+    "beetroot & ginger cheong",
+    "lime",
+    "mint",
+    "Double Dutch Soda Water"
+   ],
+   "by": "",
+   "note": ""
+  },
+  {
+   "id": "c-notting-hill-negroni",
+   "section": "House",
+   "name": "Notting Hill Negroni",
+   "price": "£15",
+   "ingredients": [
+    "Hayman's London Dry Gin",
+    "Asterley Bros English Red Vermouth",
+    "Campari",
+    "Double Dutch Ginger Beer"
+   ],
+   "by": "",
+   "note": ""
+  },
+  {
+   "id": "c-blood-orange-mezcal-margarita",
+   "section": "Margaritas",
+   "name": "Blood Orange Mezcal Margarita",
+   "price": "£15",
+   "ingredients": [
+    "Lost Explorer Mezcal Espadín",
+    "High Fidelity Triple Sec",
+    "blood orange",
+    "lime",
+    "agave"
+   ],
+   "by": "",
+   "note": ""
+  },
+  {
+   "id": "c-ginger-margarita",
+   "section": "Margaritas",
+   "name": "Ginger Margarita",
+   "price": "£15",
+   "ingredients": [
+    "Cazcabel Reposado",
+    "High Fidelity Triple Sec",
+    "Kaveri Ginger Liqueur",
+    "lime",
+    "agave"
+   ],
+   "by": "",
+   "note": ""
+  },
+  {
+   "id": "c-basil-jalapeno-margarita",
+   "section": "Margaritas",
+   "name": "Basil & Jalapeño Margarita",
+   "price": "£15",
+   "ingredients": [
+    "Cazcabel Blanco",
+    "High Fidelity Triple Sec",
+    "lime",
+    "basil",
+    "jalapeño",
+    "agave"
+   ],
+   "by": "",
+   "note": ""
+  },
+  {
+   "id": "c-freezer-martinez",
+   "section": "Martinis & Friends",
+   "name": "Freezer Martinez",
+   "price": "£14",
+   "ingredients": [
+    "Moatwood Gin",
+    "Asterley Bros Estate Red Vermouth",
+    "Luxardo Maraschino Liqueur"
+   ],
+   "by": "",
+   "note": "Also as Just a Sip, £5"
+  },
+  {
+   "id": "c-freezer-cubitt-martini",
+   "section": "Martinis & Friends",
+   "name": "Freezer Cubitt Martini",
+   "price": "£15",
+   "ingredients": [
+    "58 & Co London Dry Gin",
+    "Asterley Bros English White Vermouth"
+   ],
+   "by": "",
+   "note": "Also as Just a Sip, £5"
+  },
+  {
+   "id": "c-roasted-ginger-espresso-martini",
+   "section": "Martinis & Friends",
+   "name": "Roasted Ginger Espresso Martini",
+   "price": "£15",
+   "ingredients": [
+    "Merser Signature Rum",
+    "Mr Black Coffee Liqueur",
+    "Kaveri Ginger Liqueur",
+    "espresso",
+    "honey"
+   ],
+   "by": "",
+   "note": ""
+  },
+  {
+   "id": "c-fresh-basil-gimlet",
+   "section": "Mid-Strength",
+   "name": "Fresh Basil Gimlet",
+   "price": "£10",
+   "ingredients": [
+    "Hayman's London Light (12.5%)",
+    "lime",
+    "fresh basil"
+   ],
+   "by": "",
+   "note": "Mid-strength"
+  },
+  {
+   "id": "c-tommy-s-margarita",
+   "section": "Mid-Strength",
+   "name": "Tommy's Margarita",
+   "price": "£10",
+   "ingredients": [
+    "Quarter Proof Blanco Agave Spirit (15%)",
+    "lime",
+    "agave"
+   ],
+   "by": "",
+   "note": "Mid-strength"
+  },
+  {
+   "id": "c-coastal-spritz",
+   "section": "No & Low",
+   "name": "Coastal Spritz",
+   "price": "£12",
+   "ingredients": [
+    "Pentire Coastal Spritz non-alcoholic aperitif",
+    "Double Dutch Skinny Tonic",
+    "fresh orange",
+    "rosemary"
+   ],
+   "by": "",
+   "note": "Non-alcoholic"
+  },
+  {
+   "id": "c-pentire-paloma",
+   "section": "No & Low",
+   "name": "Pentire Paloma",
+   "price": "£10",
+   "ingredients": [
+    "Pentire Seaward",
+    "lime",
+    "Double Dutch Pink Grapefruit Soda"
+   ],
+   "by": "",
+   "note": "Non-alcoholic"
+  },
+  {
+   "id": "c-spicy-margarita",
+   "section": "No & Low",
+   "name": "Spicy Margarita",
+   "price": "£10",
+   "ingredients": [
+    "Pentire Adrift",
+    "lime",
+    "homemade spicy agave"
+   ],
+   "by": "",
+   "note": "Non-alcoholic"
+  },
+  {
+   "id": "c-porto-tonica",
+   "section": "Sharpeners",
+   "name": "Porto Tonica",
+   "price": "£6",
+   "ingredients": [],
+   "by": "",
+   "note": "A sharpener; the menu doesn't print its recipe"
+  },
+  {
+   "id": "c-negroni",
+   "section": "Sharpeners",
+   "name": "Negroni",
+   "price": "£6",
+   "ingredients": [],
+   "by": "",
+   "note": "A sharpener; the menu doesn't print its recipe"
+  },
+  {
+   "id": "c-spicy-bloody-mary",
+   "section": "Sharpeners",
+   "name": "Spicy Bloody Mary",
+   "price": "£6",
+   "ingredients": [],
+   "by": "",
+   "note": "A sharpener; the menu doesn't print its recipe"
+  },
+  {
+   "id": "c-festive-bellini",
+   "section": "Festive",
+   "name": "Festive Bellini",
+   "price": "",
+   "ingredients": [
+    "Hayman's Sloe Gin",
+    "lemon",
+    "Prosecco"
+   ],
+   "by": "",
+   "note": "The Full Festive Feast's welcome cocktail"
+  }
+ ],
+ "cocktailCards": {},
+ "exported": "2026-11-08T12:52:33.146Z"
+}
