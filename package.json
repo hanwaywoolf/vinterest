@@ -25,6 +25,7 @@
     "trailer": "node scripts/trailer.mjs",
     "tts:check": "node scripts/tts-check.mjs",
     "team:dishes": "node scripts/team-dishes.mjs",
+    "team:write": "node scripts/team-write.mjs",
     "team:audit": "node scripts/team-audit.mjs",
     "team:review": "node scripts/team-review.mjs"
   },

@@ -88,6 +88,24 @@ keys `c:`), listed in their own section: on the phone a Wines | Cocktails switch
 ("Cocktails with it", `TeamData.cocktailsFor`). A restaurant with no cocktails has no cocktail part anywhere.
 Vinny's test stays on the wine list and menu.
 
+## The Princess Royal install
+
+`/team/?seed=princess` (the seed is `princess-royal`) opens The Princess Royal, a Cubitt House pub and boutique hotel in
+Notting Hill, built for a sales pitch the same way The Social Corner was: from the menus and wine list on its site
+(`intake/princess-royal/`: the PDFs as downloaded, and `menus.md`, which says what went in and what was corrected).
+`data/team-princess-royal-list.json` holds its 132 wines (the whole wine list: by the glass and by the bottle as one wine,
+carafes, half bottles and magnums in `other`, the four magnum-only wines with no bottle price), 55 dishes (à la carte,
+Sunday roasts and puddings, breakfast, the Festive Feasting dishes) and 25 cocktails, in pounds (`venue.currency` GBP,
+`venue.country` GB, so the UK's fourteen allergens). No logo: the name is shown in words until they supply one. It
+carries The Social Corner's invented team and `TeamSales.seedDemo`'s eight weeks of invented sales, labelled Demo data:
+pours are 175ml and 125ml (ounces only where the venue counts in dollars), and the POS item the list doesn't carry is the
+venue's own `offList` ("House Prosecco 125 (Events)"). Its training (`data/team-princess-royal.json`) was written through
+the branch preview's Worker on Claude Opus 5.5 by `npm run team:write -- princess-royal` (`scripts/team-write.mjs`: the
+app's own writers for cards, cocktail cards, pairings, drinking windows and dish notes, saved after each step), then put
+through `npm run team:audit` and `npm run team:review -- princess-royal`. Its demo address is
+princessroyal.vinterest.team (`TeamSample.HOSTS`, the Worker's `VENUE_HOSTS`), a custom domain on the vinterest Pages
+project.
+
 ## How staff learn
 
 Built for retention rather than points. No XP or streaks: the motivation is being able to sell the

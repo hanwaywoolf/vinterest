@@ -534,17 +534,18 @@ const TeamSample = {
   /* `social`: The Social Corner, Vancouver (Per Se Hospitality Group), a real restaurant's install from its
      website (intake/perse/): its list and menu (data/team-social-list.json), its branding and currency, and
      its training once written and exported (data/team-social.json). No invented staff: whoever opens it
-     sets themselves up as its manager (TeamSetup). */
+     sets themselves up as its manager (TeamSetup). `princess-royal`: The Princess Royal, Notting Hill (Cubitt House), the
+     same kind of install from the menus and wine list on its site (intake/princess-royal/), in pounds, for a sales pitch. */
   /* Every seed the build carries. `kind` is how it behaves (a real install's copy, 'social', or a demo, 'demo'); the
      paths are literal in file() and list() because the build collects _loadJSON's paths by scanning for them. */
-  SEEDS:{sample:{kind:'sample'},demo:{kind:'demo'},social:{kind:'social',label:'The Social Corner'}},
+  SEEDS:{sample:{kind:'sample'},demo:{kind:'demo'},social:{kind:'social',label:'The Social Corner'},'princess-royal':{kind:'social',label:'The Princess Royal'}},
   kind(which){ return (this.SEEDS[which]||{}).kind||null; },
   social(which){ return this.kind(which)==='social'; },
-  file(which){ return which==='demo'?_loadJSON('data/team-demo.json'):which==='social'?_loadJSON('data/team-social.json'):_loadJSON('data/team-sample.json'); },
+  file(which){ return which==='demo'?_loadJSON('data/team-demo.json'):which==='social'?_loadJSON('data/team-social.json'):which==='princess-royal'?_loadJSON('data/team-princess-royal.json'):_loadJSON('data/team-sample.json'); },
   /* The list file: where an installed restaurant's venue details, cocktails and staff live. */
-  list(which){ return which==='demo'?_loadJSON('data/team-demo-list.json'):which==='social'?_loadJSON('data/team-social-list.json'):null; },
-  // ?seed=perse was this restaurant's first name on another branch; it opens The Social Corner.
-  ALIAS:{perse:'social'},
+  list(which){ return which==='demo'?_loadJSON('data/team-demo-list.json'):which==='social'?_loadJSON('data/team-social-list.json'):which==='princess-royal'?_loadJSON('data/team-princess-royal-list.json'):null; },
+  // ?seed=perse was The Social Corner's first name on another branch; ?seed=princess is The Princess Royal's short address.
+  ALIAS:{perse:'social',princess:'princess-royal'},
   load(which='sample'){ which=this.ALIAS[which]||which;
     let s=this.file(which);
     if(which==='demo'&&(!s||s.pending)) s={..._loadJSON('data/team-demo-list.json'),cards:{},pairings:{},staff:null};
@@ -598,7 +599,7 @@ const TeamSample = {
   // The Larkspur's team (photos in team/faces/). The manager is first, so the demo opens as her.
   /* The restaurant a demo address opens (socialcorner.vinterest.team → The Social Corner), as ?seed would; the
      Worker's VENUE_HOSTS sends that address's root to /team/. Null anywhere else. */
-  HOSTS:{'socialcorner.vinterest.team':'social'},
+  HOSTS:{'socialcorner.vinterest.team':'social','princessroyal.vinterest.team':'princess-royal'},
   hostSeed(host){ try{ return this.HOSTS[String(host==null?location.hostname:host).toLowerCase()]||null; }catch(e){ return null; } },
   /* Whether the restaurant on the device is this seed as the build now carries it. */
   current(which){ which=this.ALIAS[which]||which; const v=TeamData.get().venue||{}; if(v.sample!==which) return false;

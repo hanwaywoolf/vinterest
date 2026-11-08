@@ -57,6 +57,36 @@ test('The Social Corner opens from ?seed=social on its own team, logo, dollars a
   expect(errors).toEqual([]);
 });
 
+// The Princess Royal (Notting Hill, Cubitt House), installed from the menus and wine list on its site
+// (intake/princess-royal/): ?seed=princess opens it in pounds on the same invented team and sales as The Social Corner,
+// with its name in words (no logo) and the POS item its list doesn't carry.
+test('The Princess Royal opens from ?seed=princess on its own team, pounds and invented sales', async ({ context, page }) => {
+  const errors = [];
+  page.on('pageerror', (e) => errors.push(e.message));
+  await stubNetwork(context);
+  await page.goto(`${BASE}/team/?seed=princess`);
+  await expect(page.getByTestId('team-state')).toBeVisible();
+  const st = await page.evaluate(() => {
+    const ppl = TeamLearn.people(), rows = TeamSales.get().rows;
+    return { me: TeamLearn.me().name, people: ppl.length, sym: TeamData.currency().sym, venue: TeamData.get().venue, allergens: TeamData.allergenCountry(),
+      wines: TeamData.wines().length, cards: TeamData.wines().filter((w) => TeamData.card(w.id)).length, dishes: TeamData.dishes().length, cocktails: TeamData.cocktails().length,
+      demo: TeamSales.demo(), rows: rows.length, pours: [...new Set(rows.filter((r) => r.s === 'glass' && r.w).map((r) => r.n.split(' ').pop()))].sort(),
+      offList: rows.some((r) => /House Prosecco 125/.test(r.n) && !r.w) };
+  });
+  expect(st.me).toBe('Elena Ruiz');
+  expect(st.people).toBe(7);
+  expect(st.sym).toBe('£');
+  expect(st.allergens).toBe('GB');
+  expect(st.venue).toMatchObject({ name: 'The Princess Royal', city: 'London', sample: 'princess-royal' });
+  expect(st.venue.brand).toBeUndefined();
+  expect(st).toMatchObject({ wines: 132, cards: 132, dishes: 55, cocktails: 25, demo: true, offList: true });
+  expect(st.pours).toEqual(['125', '175']);
+  expect(st.rows).toBeGreaterThan(1000);
+  await expect(page.locator('#root')).toContainText('The Princess Royal');
+  await expect(page.locator('#root')).not.toContainText('$');
+  expect(errors).toEqual([]);
+});
+
 // A device that opened The Social Corner from an older build (here: before its team and sales, set up by whoever
 // opened it) reloads it from ?seed=social once the list file has moved on, though the training file is the same.
 test('a device holding an older Social Corner takes the new one, with or without ?seed=social, keeping who was there and their progress', async ({ context, page }) => {
@@ -1598,7 +1628,7 @@ test('table questions: the choice first, wrong answers that are believable and c
       return out;
     });
   };
-  for (const seed of ['demo', 'social']) {
+  for (const seed of ['demo', 'social', 'princess-royal']) {
     const r = await check(seed);
     expect(r.tooFew).toEqual([]); // no choice of one or two
     expect(r.lengthCue).toEqual([]);
@@ -1646,7 +1676,7 @@ test('the names check plays each name through the guest voice, numbered like the
 
 test('a restaurant demo address names its restaurant, and nowhere else does', async ({ context, page }) => {
   await asMarco(context, page);
-  expect(await page.evaluate(() => [TeamSample.hostSeed('socialcorner.vinterest.team'), TeamSample.hostSeed('SocialCorner.vinterest.team'), TeamSample.hostSeed('vinterest.pages.dev'), TeamSample.hostSeed()])).toEqual(['social', 'social', null, null]);
+  expect(await page.evaluate(() => [TeamSample.hostSeed('socialcorner.vinterest.team'), TeamSample.hostSeed('SocialCorner.vinterest.team'), TeamSample.hostSeed('princessroyal.vinterest.team'), TeamSample.hostSeed('vinterest.pages.dev'), TeamSample.hostSeed()])).toEqual(['social', 'social', 'princess-royal', null, null]);
 });
 
 // Android Chrome sends every result as the whole utterance so far and repeats finals; the reply must come out once.
@@ -1775,7 +1805,7 @@ test('the sommelier runs the wine programme too: the console on a wide screen, U
 test('both restaurants: the drill answers in the same phases and at the same text sizes', async ({ context, page }) => {
   await stubNetwork(context);
   const seen = {};
-  for (const seed of ['demo', 'social']) {
+  for (const seed of ['demo', 'social', 'princess-royal']) {
     await page.goto(`${BASE}/team/?seed=${seed}&view=phone`);
     await expect(page.getByTestId('team-state')).toBeVisible();
     await page.getByText(/Start today's drill|Do another 5 questions/).first().click();
@@ -1791,8 +1821,8 @@ test('both restaurants: the drill answers in the same phases and at the same tex
     seen[seed] = { q, opt, venue: await page.evaluate(() => TeamData.get().venue.sample) };
   }
   expect(seen.social.venue).toBe('social');
-  expect(seen.social.q).toBe(seen.demo.q);
-  expect(seen.social.opt).toBe(seen.demo.opt);
+  expect(seen['princess-royal'].venue).toBe('princess-royal');
+  for (const seed of ['social', 'princess-royal']) { expect(seen[seed].q).toBe(seen.demo.q); expect(seen[seed].opt).toBe(seen.demo.opt); }
   expect(seen.demo.opt).toBeGreaterThanOrEqual(15);
 });
 
@@ -1866,9 +1896,9 @@ test('a wine card: where you stand near the top, sections that fold and stay fol
 // it, against the faults found by hand: a wrong answer about another dish, answers of mixed kinds, a table request that
 // gives the answer away, an answer screen that repeats the answer or runs long, duplicates, length cues, giveaway words.
 test('the review finds nothing to fix on any restaurant in the build', async ({ context, page }) => {
-  test.setTimeout(120000); // the whole review of three restaurants, twice over
+  test.setTimeout(240000); // the whole review of four restaurants, twice over
   await stubNetwork(context);
-  for (const seed of ['demo', 'sample', 'social']) {
+  for (const seed of ['demo', 'sample', 'social', 'princess-royal']) {
     await page.goto(`${BASE}/team/?seed=${seed}`);
     await page.waitForFunction(() => window.TeamLearn && TeamData.wines().length > 0);
     const flags = await page.evaluate(() => TeamLearn.review().map((f) => `[${f.code}] ${f.q.q.slice(0, 80)}: ${f.note}`));

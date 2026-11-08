@@ -84,6 +84,11 @@ const TeamSales = {
     const claire=first('Claire')||by('sommelier')[0], marco=first('Marco')||by('bartender')[0], dani=first('Dani')||by('server')[0], priya=first('Priya')||by('server')[1], amara=first('Amara')||by('server')[2];
     // The Social Corner (open every day, two busy rooms, CAD prices) or The Larkspur (closed Mondays).
     const social=TeamSample.social((TeamData.get().venue||{}).sample), venue=TeamData.get().venue.name||'the restaurant';
+    // Pours in ounces where the restaurant counts in dollars (The Social Corner's 5oz and 8oz); 175ml and 125ml elsewhere.
+    const oz=['CAD','USD'].includes(TeamData.currency().code);
+    // The till item the list doesn't carry: the restaurant's own (venue.offList in its list file), else The Social Corner's
+    // happy-hour white or the Larkspur's new Picpoul.
+    const extra=(TeamData.get().venue||{}).offList||(social?{name:'The Hatch B. Yanco Btl (Happy Hour)',size:'bottle',price:42}:{name:'Picpoul de Pinet 175',size:'glass',price:9.5});
     let s=0x5eed; const rnd=()=>{ s=(s+0x6d2b79f5)|0; let t=Math.imul(s^(s>>>15),1|s); t=(t+Math.imul(t^(t>>>7),61|t))^t; return ((t^(t>>>14))>>>0)/4294967296; };
     const pick=(items,weights)=>{ const tot=weights.reduce((a,b)=>a+b,0); let r=rnd()*tot; for(let i=0;i<items.length;i++){ r-=weights[i]; if(r<=0) return items[i]; } return items[items.length-1]; };
     const money=x=>{ const m=/\d+(?:\.\d+)?/.exec(String(x||'')); return m?+m[0]:0; }; // "£55 (37.5cl)" is 55
@@ -110,7 +115,7 @@ const TeamSales = {
       for(let i=0;i<glassLines;i++){
         const w=pick(glass,glass.map(x=>merit(x,'glass'))); const bar=rnd()<barShare;
         let p=bar?marco:servers.length?pick(servers,servers.map(x=>(x===priya?0.7:1)*(knows(x,w)?1.25:1))):null;
-        const oz8=social?money(String(w.other||'').replace(/^8oz/i,'')):0, big=oz8>0&&rnd()<0.25, ml=social?(big?'8oz':'5oz'):(rnd()<0.15?125:175), price=big?oz8:money(w.glass)*(ml===125?0.72:1); // a Social Corner 8oz pour at its own price
+        const oz8=oz&&/^8oz/i.test(w.other||'')?money(String(w.other).replace(/^8oz/i,'')):0, big=oz8>0&&rnd()<0.25, ml=oz?(big?'8oz':'5oz'):(rnd()<0.15?125:175), price=big?oz8:money(w.glass)*(ml===125?0.72:1); // a Social Corner 8oz pour at its own price
         add(w,'glass',p,1,Math.round(price*100)/100,`${TeamData.short(w)} ${ml}`);
       }
       // Bottles: the sommelier sells most of them when she's on.
@@ -122,7 +127,7 @@ const TeamSales = {
       }
       // A wine the till knows and the list doesn't: the kitchen's new Picpoul, on since last week.
       // (The Social Corner's: its happy-hour white, The Hatch B. Yanco at $42 a bottle, which the main list doesn't carry.)
-      if(d<=10){ const n=1+Math.floor(rnd()*4); for(let i=0;i<n;i++) social?add(null,'bottle',servers[0]||marco,1,42,'The Hatch B. Yanco Btl (Happy Hour)'):add(null,'glass',servers[0]||marco,1,9.5,'Picpoul de Pinet 175'); }
+      if(d<=10){ const n=1+Math.floor(rnd()*4); for(let i=0;i<n;i++) add(null,extra.size,servers[0]||marco,1,extra.price,extra.name); }
       Object.values(agg).forEach((x,k)=>rows.push({i:`demo-${key}-${k}`,t:day.getTime()+19*3600000+Math.floor(rnd()*4*3600000),n:x.item,w:x.w?x.w.id:null,s:x.size,q:x.qty,p:x.price,v:x.p?x.p.id:null}));
     }
     const d=this._empty(); d.map={}; rows.forEach(r=>{ if(r.w) d.map[r.n]=r.w; }); // the demo's map is confirmed, bar the Picpoul
