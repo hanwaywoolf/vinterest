@@ -261,16 +261,22 @@ const TeamLearn = {
      dish, which is what makes "a red that isn't heavy, with the duck" a real choice among reds. */
   wishStyle(text,dish){ let t=' '+String(text||'').toLowerCase()+' ';
     if(dish) this._words(dish.name+' '+(dish.desc||'')).forEach(w=>{ t=t.split(w).join(' '); });
-    const lim=t.match(/(?:under|below|less than|up to|no more than|at most|(?:spend|pay|go) more than|max(?:imum)?(?: of)?)\s*[£$€]?\s*(\d+)/);
+    // A range ("between £100 and £130", "happy to spend more than £100 but no more than £130") has a floor as well as a
+    // ceiling: a wrong wine under the floor is ruled out by the price alone (the sommelier review held those).
+    const betw=t.match(/between\s*[£$€]?\s*(\d+)\s*(?:and|to|-)\s*[£$€]?\s*(\d+)/);
+    const lim=betw?[null,betw[2]]:t.match(/(?:under|below|less than|up to|no more than|not more than|at most|(?:n['’]?t|not|never)\s+(?:want to |wish to |like to )?(?:spend|pay|go) (?:more than|over)|max(?:imum)?(?: of)?)\s*[£$€]?\s*(\d+)/)
+      ||(!/(?:happy|willing|keen|glad|prepared) to (?:spend|pay|go) more than/.test(t)&&t.match(/(?:spend|pay|go) more than\s*[£$€]?\s*(\d+)/));
+    const floor=betw?[null,betw[1]]:t.match(/(?:(?:happy|willing|keen|glad|prepared) to (?:spend|pay|go) (?:more than|over)|at least|(?<!no |not |n['’]t )more than|\bover|\babove)\s*[£$€]?\s*(\d+)/);
     return {light:/n['’]?t (too )?heavy|not (too )?heavy|\blight(er)?\b|won['’]?t overpower|not overpower|delicate|easy[- ]drinking/.test(t),
       full:/\bfull(-bodied)?\b|\bfuller\b|\bbold\b|\bbig\b|stands? up|\bpowerful\b|\brobust\b|\bricher\b|\brounder\b|(some|real|more|plenty of|with) body\b/.test(t),
       soft:/\bsoft\b|\bsmooth\b|not (too )?tannic|n['’]?t (too )?tannic|gentle tannin|\bsilky\b/.test(t),
       crisp:/\bcrisp\b|\bzesty\b|\brefreshing\b|\bzingy\b/.test(t),
       dry:/\bdry\b|not (too )?sweet|n['’]?t (too )?sweet|nothing (too )?sweet|too sweet/.test(t),
       sweet:/\bsweet\b/.test(t)&&!/not (too )?sweet|n['’]?t (too )?sweet|nothing (too )?sweet|too sweet|sweeter than/.test(t),
-      under:lim?Number(lim[1]):null}; },
-  overPrice(w,ws,side){ if(!ws||ws.under==null) return false; const price=s=>{ const m=String(s||'').replace(/,/g,'').match(/(\d+(?:\.\d+)?)/); return m?Number(m[1]):null; };
-    const cost=side==='glass'?price(w.glass):side==='bottle'?price(w.bottle):(price(w.bottle)!=null?price(w.bottle):price(w.glass)); return cost!=null&&cost>ws.under; },
+      under:lim?Number(lim[1]):null, over:floor&&!(lim&&floor[1]===lim[1])?Number(floor[1]):null}; },
+  // Outside the guest's price: over their ceiling or, where they gave one, under their floor.
+  overPrice(w,ws,side){ if(!ws||(ws.under==null&&ws.over==null)) return false; const price=s=>{ const m=String(s||'').replace(/,/g,'').match(/(\d+(?:\.\d+)?)/); return m?Number(m[1]):null; };
+    const cost=side==='glass'?price(w.glass):side==='bottle'?price(w.bottle):(price(w.bottle)!=null?price(w.bottle):price(w.glass)); return cost!=null&&((ws.under!=null&&cost>ws.under)||(ws.over!=null&&cost<ws.over)); },
   breaksWish(w,ws,side){ const st=(TeamData.card(w.id)||{}).style||{}, v=k=>typeof st[k]==='number'?st[k]:null;
     const price=s=>{ const m=String(s||'').replace(/,/g,'').match(/(\d+(?:\.\d+)?)/); return m?Number(m[1]):null; };
     const cost=side==='glass'?price(w.glass):side==='bottle'?price(w.bottle):(price(w.bottle)!=null?price(w.bottle):price(w.glass));
@@ -422,7 +428,7 @@ const TeamLearn = {
         if(t==='place') opts.forEach(o=>{ if(countries.has(this._norm(o))) flag(q,'kind',`A country among regions: "${o}"`); }); }
       if(q.k==='apply'&&q.wine&&c&&c.groups&&c.groups[0]&&c.groups[0].label==='What do you suggest?'){ const rw=TeamData.wine(q.wine), dish=this.dishIn(q.q), wish=this.wishIn(q.q,rw), ws=this.wishStyle(q.q,dish);
         const g=c.groups[0]; c.opts.slice(g.from,g.to).forEach((o,i)=>{ if(c.right.includes(g.from+i)) return; const ow=wines.find(w=>{ const nm=TeamData.short(w); return o.startsWith((/^the /i.test(nm)?'':'The ')+nm)||o.startsWith(nm); }); if(!ow) return;
-          if(this.overPrice(ow,ws,wish.side)) flag(q,'request',`${TeamData.short(ow)} is over the guest's price`);
+          if(this.overPrice(ow,ws,wish.side)) flag(q,'request',`${TeamData.short(ow)} is outside the guest's price`);
           const k=wish.kind||this.kindOf(rw); if(this.kindOf(ow)!==k) flag(q,'request',`${TeamData.short(ow)} isn't the kind asked for`); }); }
       if((q.k==='recognise'||q.mc)&&q.opts&&q.a!=null){ if(this.lengthCue(q)) flag(q,'cue','The right option stands out by its length.'); if(this.givesAway(q)) flag(q,'giveaway','A word of the question is in the right option alone.'); }
       const ans=right.map(i=>opts[i]).join(' ')||q.ans, ax=this.aside(q,ans);
@@ -897,6 +903,8 @@ const TeamLearn = {
     if(/\briver\b|\bwinds?\b|\binfluence\b|\bcools?\b|moderates|what gives/.test(t)) return 'influence';
     if(/climate/.test(t)) return 'climate';
     if(/\bferment|keep the sweetness|stays sweet|\bstop/.test(t)) return 'method';
+    // "Which Champagne village do the grapes come from?" asks for a village, not a grape.
+    if(/\b(which|what) ([a-zà-ÿ'-]+ )?(village|commune|grand cru village|premier cru village)\b/.test(t)) return 'village';
     if(/\bgrapes?\b/.test(t)) return 'grape';
     if(/\bcountry\b|which nation/.test(t)&&!/\bregion\b|\barea\b|\bvalley\b/.test(t)) return 'country'; // countries against countries, never a region among them
     if(/\bregion\b|\bcountry\b|\bvalley\b|\barea\b|\bcounty\b|\bwhere\b/.test(t)) return 'place';
@@ -936,6 +944,10 @@ const TeamLearn = {
     return null; },
   _regionsOf(country){ const K=(typeof KNOWLEDGE!=='undefined'&&KNOWLEDGE&&KNOWLEDGE.regions)||{};
     return [...TeamData.wines().filter(w=>w.country===country&&w.region).map(w=>w.region),...Object.entries(K).filter(([,r])=>r.country===country).map(([n])=>n)]; },
+  // Villages a server could mistake for one another, by region (checked: Champagne's Grand Cru villages, Burgundy's
+  // best-known village appellations), for "Which Champagne village…" questions.
+  VILLAGES:{Champagne:['Aÿ','Bouzy','Ambonnay','Verzenay','Cramant','Avize','Le Mesnil-sur-Oger','Oger','Chouilly'],
+    Burgundy:['Meursault','Puligny-Montrachet','Chassagne-Montrachet','Gevrey-Chambertin','Volnay','Pommard','Nuits-Saint-Georges','Vosne-Romanée','Chambolle-Musigny','Saint-Aubin','Saint-Romain','Beaune']},
   DECOYS:{
     country:['France','Italy','Spain','Portugal','Germany','Austria','United States','Canada','Argentina','Chile','Australia','New Zealand','South Africa'],
     flavour:['Blackcurrant','Cedar','Lemon','Green apple','Peach','Black pepper','Plum','Honey','Toast','Gooseberry','Leather','Vanilla','Violet','Grapefruit','Dried fig','Liquorice','Mint','Smoke','Pineapple','Chocolate'],
@@ -950,6 +962,8 @@ const TeamLearn = {
     bank:['The Right Bank','Entre-Deux-Mers','The Graves'],
     // The grapes sparkling wines are made from, for a sparkling wine's grape question.
     sparklingGrape:['Chardonnay','Pinot Noir','Pinot Meunier','Pinot Blanc','Chenin Blanc','Glera','Xarel·lo','Macabeo','Parellada','Arbane','Petit Meslier'],
+    sparklingBlack:['Pinot Noir','Pinot Meunier','Gamay','Grolleau','Poulsard','Trousseau','Trepat','Garnacha'],
+    sparklingWhite:['Chardonnay','Pinot Blanc','Chenin Blanc','Arbane','Petit Meslier','Xarel·lo','Macabeo','Parellada','Glera','Savagnin'],
     // Cocktails: checked general answers of each kind, after the list's own.
     spirit:['Gin','Vodka','White rum','Aged rum','Blanco tequila','Mezcal','Bourbon','Rye whiskey','Scotch whisky','Cognac','Pisco'],
     ingredient:['Campari','Aperol','Sweet vermouth','Dry vermouth','Cointreau','Elderflower liqueur','Simple syrup','Fresh lime juice','Fresh lemon juice','Egg white','Angostura bitters','Soda water','Prosecco','Ginger beer','Agave syrup','Grenadine','Coffee liqueur','Maraschino liqueur'],
@@ -1000,6 +1014,10 @@ const TeamLearn = {
       const keep=pool.slice(0,this.WRONG_MAX), all=[...right.map(x=>({x,ok:true})),...keep.map(x=>({x,ok:false}))], order=this._shuffle(all.map((_,i)=>i),this._seed(q)+'c');
       return {opts:order.map(i=>this._cap(all[i].x)),right:order.map((i,j)=>all[i].ok?j:-1).filter(j=>j>=0),n:right.length};
     }
+    // A village against villages of the same region: the regions guide's own villages, towns and crus, then a checked few.
+    if(topic==='village'){ const K=(typeof KNOWLEDGE!=='undefined'&&KNOWLEDGE&&KNOWLEDGE.regions)||{}, here=norm([own&&own.region,own&&own.name,q.q].join(' '));
+      Object.entries(K).filter(([n,r])=>here.includes(norm(n))||(r.aliases||[]).some(a=>here.includes(norm(a)))).forEach(([n,r])=>{ (r.places||[]).filter(x=>/village|cru|town|commune/.test(x.kind)).forEach(x=>add(x.name)); (this.VILLAGES[n]||[]).forEach(add); });
+      Object.entries(this.VILLAGES).forEach(([n,vs])=>{ if(here.includes(norm(n))) vs.forEach(add); }); }
     if(topic==='year'){ const y=this._num(right[0]); if(y) [y-1,y+1,y-2,y+2,y-3,y+3].forEach(v=>add(String(v))); }
     if(topic==='duration'&&/month/i.test(right[0])) ['6 months','12 months','18 months','24 months','36 months'].forEach(add);
     if(topic==='place') wines.map(w=>w.region).filter(Boolean).forEach(add); // regions against regions; a country question has its own kind
@@ -1018,7 +1036,10 @@ const TeamLearn = {
     // A sparkling wine (which the colour rule above leaves alone) is asked against the grapes sparkling wines are made from:
     // the sommelier review held a Champagne asked against Montepulciano and Tempranillo.
     if(topic==='grape'&&!drink&&own&&own.type==='sparkling'){
-      const sp=new Set([...this.DECOYS.sparklingGrape,...wines.filter(w=>w.type==='sparkling').flatMap(w=>w.grapes||[])].map(norm));
+      // A Blanc de Noirs is asked among black grapes and a Blanc de Blancs among white ones, or the name gives it away.
+      const bdn=/blanc de noirs/i.test(own.name), bdb=/blanc de blancs/i.test(own.name);
+      const sp=new Set([...(bdn?this.DECOYS.sparklingBlack:bdb?this.DECOYS.sparklingWhite:this.DECOYS.sparklingGrape),...(bdn||bdb?[]:wines.filter(w=>w.type==='sparkling').flatMap(w=>w.grapes||[]))].map(norm));
+      (bdn?this.DECOYS.sparklingBlack:bdb?this.DECOYS.sparklingWhite:[]).forEach(add);
       this.DECOYS.sparklingGrape.forEach(add); const f=pool.filter(x=>sp.has(norm(x))&&!right.some(r=>norm(r)===norm(x))); if(f.length>=3){ pool.length=0; pool.push(...[...new Set(f)]); } }
     // Like for like within a kind: a months answer against months, a valley against valleys.
     if(/month/i.test(right[0])){ const m=pool.filter(x=>/month/i.test(x)); pool.length=0; pool.push(...m); }
@@ -1103,7 +1124,7 @@ const TeamLearn = {
     // One swap: the card's own answer turned round. Its other wordings turned round are the same mistake again.
     const swapped=forms0.slice(0,1).map(swap).filter(t=>!forms0.some(r=>norm(r)===norm(t))&&!/(?<![\p{L}])(\p{L}{3,})\s+\1(?![\p{L}])/iu.test(t));
     // Only decoys about what the question asks: its grapes, its place, its price, how it's sold, its age.
-    const ASPECT={style:/style|taste|flavour|body|bodied|rich|lighter|tannin|acid|sweet|dry/,grape:/grape|blend|variet/,place:/origin|where|place|region|country|come from|comes from/,price:/price|cost|cheap|dear|expensive|spend/,sold:/sold|glass|bottle|bought|pour/,age:/vintage|older|younger|age/};
+    const ASPECT={style:/style|taste|flavour|body|bodied|rich|lighter|tannin|acid|sweet|dry/,grape:/grape|blend|variet/,place:/origin|where|place|region|country|come from|comes from/,price:/price|cost|cheap|dear|expensive|spend/,sold:/sold|glass|bottle|bought|pour|\border\b|ordered|ordering/,age:/vintage|older|younger|age/};
     const want=Object.keys(ASPECT).filter(k=>ASPECT[k].test(norm(q.q)));
     const aspectOf=t=>{ const n=norm(t); return /bodied|tannic|tannin|acidity|sweeter|drier/.test(n)?'style':/grape/.test(n)?'grape':/ from |both from/.test(' '+n)?'place':/cheaper|costs more/.test(n)?'price':/glass|bottle only/.test(n)?'sold':/vintage/.test(n)?'age':'type'; };
     // A question about something the list can't speak to (style, legal ageing) gets its swaps alone.
@@ -1143,7 +1164,9 @@ const TeamLearn = {
     const sym=TeamData.currency().sym||'£', drink=TeamData.isDrink(TeamData.wine(q.wine)), wines=TeamData.wines().filter(w=>TeamData.isDrink(w)===drink);
     const side=drink?'glass':/\bglass\b/i.test(q.q)?'glass':/\bbottle\b/i.test(q.q)?'bottle':/glass/i.test(right[0])?'glass':'bottle';
     // A cocktail's price is just its price ("$22"), against the other cocktails' prices.
-    const fmt=n=>drink?TeamData.money(n,{dp:n%1?2:0}):`${TeamData.money(n,{dp:n%1?2:0})} a ${side}`, n=this._num(right[0]); if(n==null) return null;
+    // The price is the number after the currency sign: "£17.50 for a 125ml glass" is 17.50, never 125.
+    const cur=String(right[0]||'').replace(/,/g,'').match(/[£$€]\s*(\d+(?:\.\d+)?)/);
+    const fmt=n=>drink?TeamData.money(n,{dp:n%1?2:0}):`${TeamData.money(n,{dp:n%1?2:0})} a ${side}`, n=cur?Number(cur[1]):this._num(right[0]); if(n==null) return null;
     // A glass question about a wine sold only by the bottle has that as its answer, said in words.
     const own=TeamData.wine(q.wine), bottleOnly=side==='glass'&&own&&!own.glass&&/bottle|not by the glass/i.test(right[0]);
     const rightText=bottleOnly?`Not by the glass: ${TeamData.money(n,{dp:n%1?2:0})} a bottle`:fmt(n);

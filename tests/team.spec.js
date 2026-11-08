@@ -1639,8 +1639,9 @@ test('table questions: the choice first, wrong answers that are believable and c
     expect(r.wrongWine).toEqual([]); // every wrong wine is on the list and wrong for this table
     expect(r.wish).toEqual([]); // and is what the guest asked for: a white for a white, by the glass for a glass
     // Table questions are written as choices; one is asked as a choice only where wrong wines meet the guest's request
-    // (kind, glass, price) and the dish alone rules them out, else it names the wine and asks why (demo 15 of 30, Social Corner 27 of 41).
-    expect(r.decided).toBeGreaterThanOrEqual(r.total * 0.45);
+    // (kind, glass, price) and the dish alone rules them out, else it names the wine and asks why (demo 11 of 27, Social Corner 27 of 41;
+    // fewer since a guest's floor counts too: "between £75 and £80" leaves few wrong wines that price alone doesn't rule out).
+    expect(r.decided).toBeGreaterThanOrEqual(r.total * 0.4);
   }
   // The Bandol with the venison asks for the wine, then why; the question no longer names it.
   await page.goto(`${BASE}/team/?seed=demo`);
