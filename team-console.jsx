@@ -411,6 +411,24 @@ function _CCocktails({open}){ const T=useTheme(), cov=TeamReport.cocktailCoverag
           <span style={{color:x.of&&x.knows<Math.ceil(x.of/2)?T.tone.bad:T.ink2,whiteSpace:'nowrap'}}>{x.knows} of {x.of}</span>,
           x.card?<Icon n="check" sz={14} col={T.green} style={{display:'inline-block',verticalAlign:'middle'}}/>:<span style={{color:T.mid}}>—</span>]}; })}/></Card></div>)}
   </div>; }
+/* The app's own review of every question as the drill shows it (TeamLearn.reviewKept), on the Wines section, run when asked
+   ("Check every question"): on a long list it takes seconds (The Princess Royal's 1,000 questions held the page for two),
+   and every publish and npm run team:audit run it anyway. Once worked out it's kept until the list changes. */
+function _CReview({open}){ const T=useTheme(), cr=T.lift(C.cr);
+  const [rv,setRv]=React.useState(()=>TeamLearn.reviewIfKept()), [busy,setBusy]=React.useState(false);
+  const run=()=>{ setBusy(true); setTimeout(()=>{ setRv(TeamLearn.reviewKept()); setBusy(false); },30); };
+  if(!rv) return <Card style={{marginBottom:14}}><div data-testid="console-review-run">{_cLabel(T,"The app's review")}
+    <div style={{fontSize:14,color:T.ink2,fontFamily:C.P,lineHeight:1.5,marginBottom:10}}>Every question is checked the way the drill shows it at each publish. Check them again now, after editing a card.</div>
+    <Btn small onClick={run}>{busy?'Checking every question…':'Check every question'}</Btn></div></Card>;
+  if(!rv.length) return <Card style={{marginBottom:14}}><div data-testid="console-review">{_cLabel(T,"The app's review")}<div style={{fontSize:14,color:T.ink2,fontFamily:C.P}}>Every question checked: nothing to fix.</div></div></Card>;
+      // The app's own review of every question as the drill shows it: what a reviewer would catch, before anyone drills it.
+      const WORD={offsubject:'Off the subject',kind:'Mixed kinds',request:'Gives the answer away',echo:'Repeats the answer',long:'Too long to read',dupe:'Same option twice',cue:'Length gives it away',giveaway:'Gives the answer away'};
+      return <Card style={{marginBottom:14}}><div data-testid="console-review">{_cLabel(T,`The app's review · ${rv.length} to fix`)}
+        {rv.slice(0,10).map((f,i)=>{ const w=f.q.wine&&TeamData.wine(f.q.wine), d=f.q.dish&&TeamData.dish(f.q.dish);
+          return <div key={f.q.id+f.code+i} role="button" onClick={()=>w?open({view:'wine',id:w.id}):d&&open({view:'dish',id:d.id})} style={{padding:'9px 0',borderTop:i?`1px solid ${T.line}`:'none',cursor:'pointer'}}>
+            <div style={{display:'flex',justifyContent:'space-between',gap:10,alignItems:'baseline'}}><span style={{fontSize:14,color:T.ink,fontFamily:C.P,lineHeight:1.45}}>{f.q.q}</span>{_cChip(T,WORD[f.code]||f.code,T.amber)}</div>
+            <div style={{fontSize:12,color:T.mid,fontFamily:C.P,marginTop:2}}>{w?TeamData.short(w):d?d.name:''} · {f.note}</div></div>; })}
+        {_cNote(T,'Every question is checked the way the drill shows it. The next publish sends these back to be rewritten; until then they are still asked.')}</div></Card>; }
 function _CWines({open,goUpload}){ const T=useTheme(), cr=T.lift(C.cr), ws=TeamData.wines(), cov=TeamReport.coverage(), by=Object.fromEntries(cov.rows.map(x=>[x.wine.id,x]));
   const [edit,setEdit]=React.useState(null); // {id, glass, bottle, section}
   const secs=[...new Set(ws.map(w=>w.section).filter(Boolean))];
@@ -429,15 +447,7 @@ function _CWines({open,goUpload}){ const T=useTheme(), cr=T.lift(C.cr), ws=TeamD
             <div style={{fontSize:14,color:T.ink,fontFamily:C.P,lineHeight:1.45}}>{q?q.q:id}</div>
             <div style={{fontSize:12,color:T.mid,fontFamily:C.P,marginTop:2}}>{w?TeamData.short(w):d?d.name:''} · {n.note||n.problem}</div></div>; })}
         {_cNote(T,'Held questions are left out of every drill until the next review, when they are read again.')}</div></Card>; })()}
-    {(()=>{ const rv=TeamLearn.review(); if(!rv.length) return null;
-      // The app's own review of every question as the drill shows it: what a reviewer would catch, before anyone drills it.
-      const WORD={offsubject:'Off the subject',kind:'Mixed kinds',request:'Gives the answer away',echo:'Repeats the answer',long:'Too long to read',dupe:'Same option twice',cue:'Length gives it away',giveaway:'Gives the answer away'};
-      return <Card style={{marginBottom:14}}><div data-testid="console-review">{_cLabel(T,`The app's review · ${rv.length} to fix`)}
-        {rv.slice(0,10).map((f,i)=>{ const w=f.q.wine&&TeamData.wine(f.q.wine), d=f.q.dish&&TeamData.dish(f.q.dish);
-          return <div key={f.q.id+f.code+i} role="button" onClick={()=>w?open({view:'wine',id:w.id}):d&&open({view:'dish',id:d.id})} style={{padding:'9px 0',borderTop:i?`1px solid ${T.line}`:'none',cursor:'pointer'}}>
-            <div style={{display:'flex',justifyContent:'space-between',gap:10,alignItems:'baseline'}}><span style={{fontSize:14,color:T.ink,fontFamily:C.P,lineHeight:1.45}}>{f.q.q}</span>{_cChip(T,WORD[f.code]||f.code,T.amber)}</div>
-            <div style={{fontSize:12,color:T.mid,fontFamily:C.P,marginTop:2}}>{w?TeamData.short(w):d?d.name:''} · {f.note}</div></div>; })}
-        {_cNote(T,'Every question is checked the way the drill shows it. The next publish sends these back to be rewritten; until then they are still asked.')}</div></Card>; })()}
+    <_CReview open={open}/>
     {(()=>{ const hs=TeamLearn.questionHealth(); if(!hs.length) return null; const pct=x=>Math.round(x*100)+'%';
       return <Card style={{marginBottom:14}}><div data-testid="console-question-health">{_cLabel(T,'Questions to look at')}
         {hs.slice(0,8).map((h,i)=>{ const w=h.q.wine&&TeamData.wine(h.q.wine), d=h.q.dish&&TeamData.dish(h.q.dish);

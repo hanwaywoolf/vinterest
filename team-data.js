@@ -17,8 +17,14 @@ const TeamData = {
   /* The venue is one 300KB document once the cards are written, and the screens and TeamLearn read
      it many times a render, so the parsed copy is kept until the stored text changes (the text is
      compared, never trusted by reference, so a write from anywhere else is seen). */
-  get(){ const raw=Store.get(this.KEY); if(raw!==null&&raw===this._raw) return this._val;
-    const d=raw?Store.getJSON(this.KEY,null):null, v=d&&d.wines?d:this._empty(); this._raw=raw; this._val=v; return v; },
+  // Kept until the stored text is written again: every write goes through Store, which says so (Store.subscribe), and
+  // another tab's write arrives as a storage event. Comparing the whole stored text on every call, as before, cost
+  // seconds a screen on a long list (The Princess Royal's restaurant is over a megabyte, read thousands of times).
+  get(){ if(this._fresh&&this._val) return this._val;
+    const raw=Store.get(this.KEY);
+    if(raw!==null&&raw===this._raw&&this._val){ this._fresh=true; return this._val; }
+    const d=raw?Store.getJSON(this.KEY,null):null, v=d&&d.wines?d:this._empty(); this._raw=raw; this._val=v; this._fresh=raw!==null; return v; },
+  _fresh:false,
   save(d){ Store.setJSON(this.KEY,d); try{ window.dispatchEvent(new Event('vbiz:data')); }catch(e){} },
   reset(){ Store.remove(this.KEY); try{ window.dispatchEvent(new Event('vbiz:data')); }catch(e){} },
   setVenue(fields){ const d=this.get(); d.venue={...d.venue,...fields}; this.save(d); },
@@ -534,6 +540,8 @@ const TeamData = {
 };
 /* The sample restaurant (data/team-sample.json): a ten-wine list, a seven-dish menu, their staff cards
    and pairings written ahead, and four staff, so the app can be shown without an upload or a call. */
+// TeamData.get's kept copy is dropped whenever its key is written, here or in another tab.
+try{ Store.subscribe(k=>{ if(k===TeamData.KEY) TeamData._fresh=false; }); window.addEventListener('storage',e=>{ if(!e.key||e.key===TeamData.KEY) TeamData._fresh=false; }); }catch(e){}
 const TeamSample = {
   /* `which`: 'sample' (The Copper Pan, small, written by hand) or 'demo' (The Larkspur, 60 wines and 27
      dishes for the wine-show demo: data/team-demo.json once it has been written by a publish and
