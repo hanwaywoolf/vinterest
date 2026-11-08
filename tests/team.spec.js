@@ -59,7 +59,7 @@ test('The Social Corner opens from ?seed=social on its own team, logo, dollars a
 
 // The Princess Royal (Notting Hill, Cubitt House), installed from the menus and wine list on its site
 // (intake/princess-royal/): ?seed=princess opens it in pounds on the same invented team and sales as The Social Corner,
-// with its name in words (no logo) and the POS item its list doesn't carry.
+// with its own one-line logo (white, supplied by Carey) and the POS item its list doesn't carry.
 test('The Princess Royal opens from ?seed=princess on its own team, pounds and invented sales', async ({ context, page }) => {
   const errors = [];
   page.on('pageerror', (e) => errors.push(e.message));
@@ -78,11 +78,11 @@ test('The Princess Royal opens from ?seed=princess on its own team, pounds and i
   expect(st.sym).toBe('£');
   expect(st.allergens).toBe('GB');
   expect(st.venue).toMatchObject({ name: 'The Princess Royal', city: 'London', sample: 'princess-royal' });
-  expect(st.venue.brand).toBeUndefined();
+  await expect(page.getByTestId('team-venue-logo')).toHaveAttribute('src', 'brand/princess-royal/wordmark-white.svg');
+  expect((await page.request.get(`${BASE}/team/brand/princess-royal/wordmark-white.svg`)).status()).toBe(200);
   expect(st).toMatchObject({ wines: 132, cards: 132, dishes: 55, cocktails: 25, demo: true, offList: true });
   expect(st.pours).toEqual(['125', '175']);
   expect(st.rows).toBeGreaterThan(1000);
-  await expect(page.locator('#root')).toContainText('The Princess Royal');
   await expect(page.locator('#root')).not.toContainText('$');
   expect(errors).toEqual([]);
 });

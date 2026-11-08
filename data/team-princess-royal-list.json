@@ -1,5 +1,5 @@
 {
- "rev": "2026-11-08-first-install",
+ "rev": "2026-11-08-logo",
  "venue": {
   "name": "The Princess Royal",
   "city": "London",
@@ -8,6 +8,10 @@
   "currency": {
    "sym": "£",
    "code": "GBP"
+  },
+  "brand": {
+   "logo": "brand/princess-royal/wordmark-white.svg",
+   "source": "cubitthouse.co.uk (supplied by Carey)"
   },
   "about": "The Princess Royal is a Cubitt House pub and boutique hotel at 47 Hereford Road, Notting Hill, London W2. Seasonal modern British cooking from a pub kitchen: nibbles and oysters, starters, salads and mains (a short rib, brisket and bone marrow pie for two, fish and chips, venison, monkfish), Sunday roasts with Yorkshire pudding and Madeira gravy, breakfast for hotel guests and anyone passing, and Festive Feasting menus served family style. The wine list is Cubitt House's group list with its own-label wines (Maison Cubitt Mâcon-Villages, Bourgogne Pinot Noir and Rosé, Cubitt Chianti, Cubitt Claret), English sparkling wine, Champagne, a deep Burgundy section, magnums and dessert and fortified wines; sections are named by style (Fresh, Coastal Whites; Sun-Soaked Reds; Earthy, Spicy Reds). Glasses are 175ml (sparkling 125ml); the fine wines by the glass are 125ml glasses or 375ml carafes; dessert and fortified wines are 100ml. Staff are in London: write in British English, and give prices in pounds exactly as the list prints them.",
   "offList": {

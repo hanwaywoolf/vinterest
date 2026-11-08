@@ -27,4 +27,4 @@
 
 **Demo team and sales.** The same invented team as The Social Corner (the Larkspur's people and photos) and eight weeks of invented sales in pounds, labelled Demo data. The POS item the list doesn't carry is "House Prosecco 125 (Events)" (`venue.offList`), invented.
 
-**Branding.** None: the venue's name in words. Use their logo only if they supply it.
+**Branding.** Carey supplied the one-line white logo (`brand/logo-liner-the-princess-royal-boutique-hotel-notting-hill.svg`), copied to `team/brand/princess-royal/wordmark-white.svg` and set as `venue.brand.logo`. No mark or accent colour: the header keeps the Vinterest mark.

@@ -96,7 +96,7 @@ Notting Hill, built for a sales pitch the same way The Social Corner was: from t
 `data/team-princess-royal-list.json` holds its 132 wines (the whole wine list: by the glass and by the bottle as one wine,
 carafes, half bottles and magnums in `other`, the four magnum-only wines with no bottle price), 55 dishes (à la carte,
 Sunday roasts and puddings, breakfast, the Festive Feasting dishes) and 25 cocktails, in pounds (`venue.currency` GBP,
-`venue.country` GB, so the UK's fourteen allergens). No logo: the name is shown in words until they supply one. It
+`venue.country` GB, so the UK's fourteen allergens). Its logo is the one-line white wordmark Carey supplied (`team/brand/princess-royal/wordmark-white.svg`, `venue.brand.logo`), with no mark or accent of its own. It
 carries The Social Corner's invented team and `TeamSales.seedDemo`'s eight weeks of invented sales, labelled Demo data:
 pours are 175ml and 125ml (ounces only where the venue counts in dollars), and the POS item the list doesn't carry is the
 venue's own `offList` ("House Prosecco 125 (Events)"). Its training (`data/team-princess-royal.json`) was written through
