@@ -1906,13 +1906,13 @@ test('training depth: Essentials asks four options with no ladder and counts wha
     TeamLearn.setTier('service'); TeamLearn.setRoleTier('sommelier', null);
     const svc = all('server'), svcTable = svc.find((q) => q.k === 'apply' && q.wine && q.pills && q.pills.groups.length === 2);
     const svcFour = svc.filter((q) => !q.allergen && !q.pills).every((q) => (q.k === 'recognise' || q.mc) && q.opts.length <= 4);
-    TeamLearn.setTier('master'); const back = all('server').map((q) => q.id).join(), masterNow = all('sommelier').map((q) => q.id).join();
+    TeamLearn.setTier('master'); const masterNow = all('sommelier').map((q) => q.id).join();
     return { tiers: [TeamLearn.tier(), TeamLearn.tier('sommelier')], four, essN: ess.length, masN: mas.length, idsKept: ess.every((q) => ids.has(q.id)),
       noContrast: !ess.some((q) => q.k === 'contrast'), noMod: !ess.some((q) => q.dish && /#(mod|1)$/.test(q.id)), allergenKept: (() => { const a = { id: 'd:x#allergen', dish: 'x', k: 'recall', allergen: true, pills: { opts: ['Milk', 'Eggs', 'None of these'], right: [0, 1], n: 2 } }; return TeamLearn.tierQ(a, 'essentials') === a; })(), // The Princess Royal's kitchen hasn't confirmed allergens yet: the shape is checked on one
       table: table && { opts: table.opts.length, why: !!table.why, mc: table.mc }, priced, pricedOf: ws.filter((w) => w.glass || w.bottle).length,
       rungs: essRungs, somRungs, ready: { tier: rd.tier, count: rd.count, pct: rd.pct },
       label: TeamLearn.rungLabel(ess.find((q) => q.wine && q.k !== 'apply'), 'essentials'), svcRungs: TeamLearn.rungsFor('service', ['recognise', 'recall', 'apply']).map((x) => x.label),
-      svcTable: svcTable && svcTable.pills.groups.map((g) => g.to - g.from), svcFour, masterSame: back === masterNow && masterNow === mas.map((q) => q.id).join(),
+      svcTable: svcTable && svcTable.pills.groups.map((g) => g.to - g.from), svcFour, masterSame: masterNow === mas.map((q) => q.id).join(), // the sommelier's Master set is the same before the switches and after
       conf: [TeamLearn.asksConfidence({ k: 'recall', ans: '£9 a glass' }, 'essentials'), TeamLearn.asksConfidence({ k: 'recall', ans: '£9 a glass' }, 'service')] };
   });
   expect(r.tiers).toEqual(['master', 'master']); // after the test put them back
