@@ -155,7 +155,10 @@ const TeamReport = {
     const top=byWine[0];
     if(top) out.push({k:'top',tone:top.of&&top.knows<top.of?'bad':'good',title:`Best seller: ${TeamData.short(top.wine)}`,text:`${m(top.revenue)} over 28 nights, ${Math.round(100*top.share)}% of wine sales. ${top.of?(top.knows<top.of?`Only ${top.knows} of the ${top.of} on the team who serve it know it.`:`Everyone on the team who serves it knows it.`):''}`,open:{view:'wine',id:top.wine.id}});
     const gaps=byWine.slice(0,8).filter(x=>x.of&&x.knows<Math.ceil(x.of/2));
-    if(gaps.length) out.push({k:'gaps',tone:'bad',title:gaps.length===1?`1 of your 8 best-selling wines: most of the team who serve it don't know it yet`:`${gaps.length} of your 8 best-selling wines: most of the team who serve them don't know them yet`,text:gaps.slice(0,3).map(x=>`${TeamData.short(x.wine)}, known by ${x.knows} of the ${x.of} on the team who serve it`).join('; ')+(gaps.length===1?'. Drill it first.':'. Drill these first.'),open:{view:'wine',id:gaps[0].wine.id}});
+    // One row per wine (its name, then how many of those who serve it know it), not one long sentence of them.
+    if(gaps.length) out.push({k:'gaps',tone:'bad',title:gaps.length===1?`1 of your top 8 sellers isn't known yet`:`${gaps.length} of your top 8 sellers aren't known yet`,
+      text:`Most of the team who serve ${gaps.length===1?'it don\'t know it':'them don\'t know them'}. Drill ${gaps.length===1?'it':'these'} first.`,
+      rows:gaps.map(x=>({label:TeamData.short(x.wine),value:`${x.knows} of ${x.of} know it`,open:{view:'wine',id:x.wine.id}})),open:{view:'wine',id:gaps[0].wine.id}});
     if(lift.pct!=null&&lift.wines) out.push({k:'lift',tone:lift.pct>0?'good':'note',title:lift.pct>0?`Training is worth ${lift.pct}% more sales`:`No sales lift from training yet`,text:lift.pct>0?`A server sells ${TeamData.money(lift.known,{dp:2})} of a wine a shift once they know it, against ${TeamData.money(lift.unknown,{dp:2})} before. Shifts and sections affect this too, so read it as a pointer.`:`Across ${lift.wines} wines, servers who know a wine don't yet sell more of it.`});
     const seller=this.salesByServer(28).filter(x=>x.shifts>0&&['server','bartender'].includes(x.person.role));
     if(seller.length>2){ const low=[...seller].sort((a,b)=>(a.revenuePerShift||0)-(b.revenuePerShift||0))[0];

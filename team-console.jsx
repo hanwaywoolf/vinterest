@@ -224,10 +224,16 @@ function _CDash({open,setSection,me}){ const T=useTheme(), cr=T.lift(C.cr), size
   </div>; }
 /* One line of the sales briefing: a dot in its tone, the headline, the sentence; a tap opens what it's about. */
 function _CBrief({b,open}){ const T=useTheme(), col=b.tone==='good'?T.green:b.tone==='bad'?T.tone.bad:T.amber;
-  return <div role={b.open?'button':undefined} data-testid="sales-brief" data-tone={b.tone} onClick={b.open?()=>open(b.open):undefined} style={{display:'flex',gap:10,padding:'9px 0',borderTop:`1px solid ${T.line}`,cursor:b.open?'pointer':'default'}}>
+  const whole=b.open&&!b.rows; // with rows, each row opens its own wine
+  return <div role={whole?'button':undefined} data-testid="sales-brief" data-tone={b.tone} onClick={whole?()=>open(b.open):undefined} style={{display:'flex',gap:10,padding:'9px 0',borderTop:`1px solid ${T.line}`,cursor:whole?'pointer':'default'}}>
     <span style={{width:9,height:9,borderRadius:5,background:col,flexShrink:0,marginTop:6}}/>
-    <div style={{minWidth:0,flex:1}}><div style={{fontSize:14,fontWeight:700,color:T.ink,fontFamily:C.P,lineHeight:1.35}}>{b.title}</div><div style={{fontSize:13,color:T.ink2,fontFamily:C.P,lineHeight:1.45,marginTop:2}}>{b.text}</div></div>
-    {b.open&&<Icon n="chevron" sz={12} col={T.mid}/>}</div>; }
+    <div style={{minWidth:0,flex:1}}><div style={{fontSize:14,fontWeight:700,color:T.ink,fontFamily:C.P,lineHeight:1.35}}>{b.title}</div><div style={{fontSize:13,color:T.ink2,fontFamily:C.P,lineHeight:1.45,marginTop:2}}>{b.text}</div>
+      {/* A list of wines: one row each, the name on the left and its figure on the right, each opening its wine. */}
+      {b.rows&&<div data-testid="sales-brief-rows" style={{marginTop:6}}>{b.rows.map((r,i)=><div key={i} role={r.open?'button':undefined} onClick={r.open?e=>{e.stopPropagation();open(r.open);}:undefined}
+        style={{display:'flex',alignItems:'baseline',gap:12,padding:'5px 0',borderTop:i?`1px solid ${T.line}`:'none',cursor:r.open?'pointer':'default'}}>
+        <span style={{flex:1,minWidth:0,fontSize:13,fontWeight:600,color:T.ink,fontFamily:C.P,lineHeight:1.35}}>{r.label}</span>
+        <span style={{flexShrink:0,fontSize:13,fontWeight:700,color:col,fontFamily:C.P,whiteSpace:'nowrap'}}>{r.value}</span></div>)}</div>}</div>
+    {b.open&&!b.rows&&<Icon n="chevron" sz={12} col={T.mid}/>}</div>; }
 /* Sales Insights: what a manager needs to know first, in sentences, then the detail from the till. */
 function _CSalesTab({open,setSection}){ const T=useTheme(), cr=T.lift(C.cr), sales=TeamReport.salesSummary(7), brief=TeamReport.salesBrief(), demo=TeamSales.demo();
   return <div data-testid="console-sales-tab">{_cH(T,'Sales Insights',sales?`${demo?'Demo data':(TeamSales.source()||{}).label||'From your POS'} · the last 7 nights against the 7 before, and 28 nights of detail`:'Connect your POS to see what sells')}

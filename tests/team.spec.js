@@ -1558,7 +1558,7 @@ test('training levels: the console sets them, cards and drills follow, a role ca
 
 // Vinny's test and the drill (TeamLearn.spread): ten questions never ask for the same right answer twice, and no
 // two in a row share a wine or dish, a shape or an answer; wrong answers are ones the pairings rule out.
-test('a test mixes its questions: no answer twice, nothing grouped, and wrong pairings that are plainly wrong', async ({ context, page }) => {
+test('a test mixes its questions: no answer twice, nothing grouped, and wrong pairings the pairings rule out', async ({ context, page }) => {
   await stubNetwork(context);
   await page.goto(`${BASE}/team/?seed=demo`);
   await expect(page.getByTestId('team-state')).toBeVisible();
@@ -1572,8 +1572,10 @@ test('a test mixes its questions: no answer twice, nothing grouped, and wrong pa
         sameShapeInARow: shape.filter((x, i) => i && x === shape[i - 1]).length };
     }
     TeamLearn.setLevel('high');
-    // Every "which wine suits this dish best" offers its first pick against wines that are clearly wrong for the dish.
-    const bad = TeamData.dishes().flatMap((d) => TeamLearn.dishQs(d.id).filter((q) => q.opts).flatMap((q) => q.opts.filter((o, i) => i !== q.a).map((o) => TeamData.wines().find((w) => TeamData.short(w) === o)).filter((w) => w && !TeamLearn.clearlyWrong(w.id, d.id)).map((w) => d.name + ': ' + TeamData.short(w))));
+    // Every "which wine suits this dish best" offers its first pick against wines the pairings rule out for the dish
+    // (never one of its picks, never a wine tableFit calls good), so a sommelier stands behind one answer.
+    const bad = TeamData.dishes().flatMap((d) => { const pr = TeamData.pairing(d.id) || {}, picks = new Set([...(pr.best || []).map((b) => b.id), pr.glass && pr.glass.id].filter(Boolean));
+      return TeamLearn.dishQs(d.id).filter((q) => q.opts).flatMap((q) => q.opts.filter((o, i) => i !== q.a).map((o) => TeamData.wines().find((w) => TeamData.short(w) === o)).filter((w) => w && (picks.has(w.id) || TeamLearn.tableFit(w.id, d.id) === 'good')).map((w) => d.name + ': ' + TeamData.short(w))); });
     return { out, bad };
   });
   for (const lv of ['low', 'medium', 'high']) {
@@ -1962,7 +1964,9 @@ test('the demo sales: best sellers mostly known, and a glass known but not selli
   await expect(page.getByTestId('team-state')).toBeVisible();
   const brief = await page.evaluate(() => TeamReport.salesBrief());
   const gaps = brief.find((x) => x.k === 'gaps');
-  expect(!gaps || /^[12] of your 8 best-selling wines/.test(gaps.title)).toBe(true);
+  expect(!gaps || /^[12] of your top 8 sellers (isn't|aren't) known yet$/.test(gaps.title)).toBe(true);
+  // One row per wine, its figure on the right, never one long sentence of names.
+  if (gaps) { expect(gaps.rows.length).toBeGreaterThan(0); gaps.rows.forEach((r) => { expect(r.value).toMatch(/^\d+ of \d+ know it$/); expect(r.open.view).toBe('wine'); }); expect(gaps.text.length).toBeLessThan(80); }
   const known = brief.find((x) => x.k === 'known');
   expect(known && known.title).toMatch(/: known, but not selling$/);
   const row = await page.evaluate((id) => TeamReport.slowMovers(28, Infinity).find((x) => x.wine.id === id), known.open.id);
@@ -2082,4 +2086,30 @@ test('a changed demo story re-invents The Social Corner sales and keeps its prog
   expect(after.current).toBe(true);
   expect(after.rows).toBeGreaterThan(3);
   expect(after.people).toEqual(before.people);
+});
+
+test('the faults the sommelier review found stay fixed on every restaurant: grape colours, "the The", cut-off lines, one claim per comparison', async ({ context, page }) => {
+  await stubNetwork(context);
+  for (const seed of ['social', 'demo']) {
+    await page.goto(`${BASE}/team/?seed=${seed}`);
+    await page.waitForFunction(() => window.TeamLearn && TeamData.wines().length > 0);
+    const r = await page.evaluate(() => {
+      const out = { colour: [], theThe: [], cut: [], claims: [], faults: [] };
+      TeamData.wines().forEach((w) => [...TeamLearn.wineQs(w.id), ...TeamLearn.lightQs(w.id)].forEach((q) => {
+        const s = TeamLearn.shown(TeamLearn.deal(q, 't')), wrong = s.opts.filter((o, i) => !s.right.includes(i));
+        const col = TeamLearn._wineSkin(w);
+        if (q.k === 'recall' && col && TeamLearn._topic(q.q) === 'grape') wrong.forEach((o) => { if (TeamLearn._grapeSkin(o) === TeamLearn._otherSkin(col)) out.colour.push(`${w.name}: ${o}`); });
+        if (q.k === 'contrast') { const seen = new Set(); wrong.forEach((o) => TeamLearn._styleAxes(o).forEach((a) => { if (seen.has(a)) out.claims.push(q.id); seen.add(a); })); }
+        const a = TeamLearn.aside(q, s.right.map((i) => s.opts[i]).join(' ')); if (a && a.text && /…$/.test(a.text)) out.cut.push(q.id);
+        if (TeamLearn._fault(q)) out.faults.push(q.id);
+      }));
+      TeamData.dishes().forEach((d) => TeamLearn.dishQs(d.id, { all: true }).forEach((q) => { const t = [q.q, ...(q.opts || []), ...((q.pills || {}).opts || [])].join(' '); if (/\bthe The\b/.test(t)) out.theThe.push(q.id); }));
+      return out;
+    });
+    expect(r.colour, seed).toEqual([]); // a still white is never asked against Syrah, a red never against Riesling
+    expect(r.theThe, seed).toEqual([]);
+    expect(r.cut, seed).toEqual([]); // the line after an answer is whole sentences or nothing
+    expect(r.claims, seed).toEqual([]); // "Veuve is lighter" and "Lanson is fuller" are one mistake, offered once
+    expect(r.faults, seed).toEqual([]); // nothing the drill asks is thin, pooled or picked out by the length of its reasons
+  }
 });
