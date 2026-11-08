@@ -848,7 +848,7 @@ const TeamLearn = {
   // Only lists of names are split into one pill each ("Chardonnay, Pinot Noir and Pinot Meunier"); a
   // climate, a meaning or a change is one answer, commas and all.
   SPLIT_TOPICS:['grape','flavour','ingredient'],
-  COUNTRY_WORDS:{Italian:'Italy',French:'France',Spanish:'Spain',Portuguese:'Portugal',German:'Germany',Austrian:'Austria',American:'United States',Canadian:'Canada',Argentine:'Argentina',Argentinian:'Argentina',Chilean:'Chile',Australian:'Australia','New Zealand':'New Zealand','South African':'South Africa',Hungarian:'Hungary',Greek:'Greece'},
+  COUNTRY_WORDS:{English:'England',British:'England',Italian:'Italy',French:'France',Spanish:'Spain',Portuguese:'Portugal',German:'Germany',Austrian:'Austria',American:'United States',Canadian:'Canada',Argentine:'Argentina',Argentinian:'Argentina',Chilean:'Chile',Australian:'Australia','New Zealand':'New Zealand','South African':'South Africa',Hungarian:'Hungary',Greek:'Greece'},
   // The country a question names ("Which Italian region…", "…region of Italy"), else null.
   // "Name the Argentine region…" where the list and the guide know too few other Argentine regions for fair wrong answers:
   // the question loses the country word ("Name the region…"), so its wrong regions can come from anywhere.
@@ -879,6 +879,8 @@ const TeamLearn = {
     duration:['Drunk young','A decade or more','Two to three years','Twenty years or more','Within a year of the vintage','Five to eight years'],
     change:['It softens','It gets more tannic','It turns sweeter','It loses its fruit within a year','It turns savoury and gamey','It gets darker in colour'],
     bank:['The Right Bank','Entre-Deux-Mers','The Graves'],
+    // The grapes sparkling wines are made from, for a sparkling wine's grape question.
+    sparklingGrape:['Chardonnay','Pinot Noir','Pinot Meunier','Pinot Blanc','Chenin Blanc','Glera','Xarel·lo','Macabeo','Parellada','Arbane','Petit Meslier'],
     // Cocktails: checked general answers of each kind, after the list's own.
     spirit:['Gin','Vodka','White rum','Aged rum','Blanco tequila','Mezcal','Bourbon','Rye whiskey','Scotch whisky','Cognac','Pisco'],
     ingredient:['Campari','Aperol','Sweet vermouth','Dry vermouth','Cointreau','Elderflower liqueur','Simple syrup','Fresh lime juice','Fresh lemon juice','Egg white','Angostura bitters','Soda water','Prosecco','Ginger beer','Agave syrup','Grenadine','Coffee liqueur','Maraschino liqueur'],
@@ -936,8 +938,23 @@ const TeamLearn = {
     if(topic==='country') wines.filter(w=>w.id!==q.wine).map(w=>w.country).filter(Boolean).forEach(add);
     (this.DECOYS[topic]||[]).forEach(add);
     if(topic==='grape'){ const known=new Set([...wines.flatMap(w=>w.grapes||[]),...(typeof GRAPE_ALLOWLIST!=='undefined'?GRAPE_ALLOWLIST:[])].map(norm)); const g=pool.map(x=>String(x).replace(/^(usually|mostly|mainly)\s+/i,'')).filter(x=>known.has(norm(x))); pool.length=0; pool.push(...[...new Set(g)]); }
+    // Grapes a server could believe for this wine (the sommelier review held a Champagne asked against Montepulciano and
+    // Tempranillo): for a sparkling wine, the grapes sparkling wines are made from; otherwise grapes of the same skin
+    // colour as the right ones (red against red, white against white), as the list's own wines and the grape guide say.
+    if(topic==='grape'&&!drink&&own){
+      const skin={}, mark=(g,c)=>{ const n=norm(g); if(!skin[n]) skin[n]=c; };
+      wines.forEach(w=>(w.grapes||[]).forEach(g=>{ if(w.type==='red') mark(g,'red'); else if(w.type==='white') mark(g,'white'); }));
+      const skinOf=g=>skin[norm(g)]||(typeof grapeSkin==='function'&&typeof GRAPE_TYPES!=='undefined'&&GRAPE_TYPES[g]?(grapeSkin(g)==='red'?'red':'white'):null);
+      let fit=null;
+      if(own.type==='sparkling'){ const sp=new Set([...this.DECOYS.sparklingGrape,...wines.filter(w=>w.type==='sparkling').flatMap(w=>w.grapes||[])].map(norm)); this.DECOYS.sparklingGrape.forEach(add); fit=x=>sp.has(norm(x)); }
+      else { const want=new Set(right.map(skinOf).filter(Boolean)); if(want.size===1){ const c=[...want][0]; fit=x=>skinOf(x)===c; } }
+      if(fit){ const f=pool.filter(fit); if(f.length>=3){ pool.length=0; pool.push(...f); } }
+    }
     // Like for like within a kind: a months answer against months, a valley against valleys.
     if(/month/i.test(right[0])){ const m=pool.filter(x=>/month/i.test(x)); pool.length=0; pool.push(...m); }
+    // A place inside a place ("Lalande-de-Pomerol, Bordeaux") isn't offered against a whole region ("The Loire Valley"),
+    // or the other way round: a question asking for a region gets regions, one asking for a commune gets communes.
+    if(topic==='place'){ const inner=x=>/,/.test(String(x)), r0=inner(right[0]), f=pool.filter(x=>inner(x)===r0); if(f.length>=3){ pool.length=0; pool.push(...f); } }
     if(inC){ const keep=pool.filter(x=>this._placeCountry(x)===inC); pool.length=0; pool.push(...keep); }
     else if(topic==='place'&&/valley/i.test(right[0])){ ['The Rhône Valley','The Douro Valley','The Napa Valley','The Mosel Valley','The Barossa Valley'].forEach(add); const v=pool.filter(x=>/valley/i.test(x)); pool.length=0; pool.push(...v); }
     // A flavour pill that shares a word with a right one ("Black cherry" beside "Red cherry") would be unfair either way.
@@ -957,7 +974,13 @@ const TeamLearn = {
     // grape ("Riesling" is Trimbach's name too).
     // Its list name with or without a quoted or bracketed part ("Faustino Rioja Crianza" for 'Faustino Rioja Crianza "Art Collection"').
     const callsB=w=>[TeamData.short(w),w.name,TeamData.short(w).replace(/\s*["“(][^"”)]*["”)]\s*/g,' ')].filter(Boolean).map(x=>norm(x)).filter(x=>x.split(' ').length>=2);
-    const text=norm(q.q), B=TeamData.wines().filter(w=>w.id!==A.id&&callsB(w).some(x=>text.includes(x))).sort((x,y)=>TeamData.short(y).length-TeamData.short(x).length)[0];
+    // By its full list name first: a bare name ("Brut Rosé") sits inside other wines' names ("Coates & Seely Brut Rosé"),
+    // and once picked Charles Heidsieck's for a question about Gusbourne and Coates & Seely. A bare name counts only where
+    // it isn't part of this wine's own name or another wine's full name in the question.
+    const text=norm(q.q), others=TeamData.wines().filter(w=>w.id!==A.id);
+    const byShort=others.filter(w=>text.includes(norm(TeamData.short(w)))).sort((x,y)=>TeamData.short(y).length-TeamData.short(x).length)[0];
+    const fulls=[A,...others].filter(w=>text.includes(norm(TeamData.short(w)))).map(w=>norm(TeamData.short(w)));
+    const B=byShort||others.filter(w=>callsB(w).some(x=>{ if(!text.includes(x)) return false; return !fulls.some(f=>f.includes(x)&&f!==x); })).sort((x,y)=>TeamData.short(y).length-TeamData.short(x).length)[0];
     if(!B) return null;
     // One right answer: the card's own. Its other wordings (acc) are for marking a typed answer; as pills they were the
     // same fact three times over ("choose 3"), with the wrong ones the same swap three times.
@@ -981,7 +1004,8 @@ const TeamLearn = {
     const wrong=[];
     if(place(A)&&place(B)&&norm(place(A))!==norm(place(B))) wrong.push(`${a} is from ${place(B)}; ${b} is from ${place(A)}`,`They're both from ${place(A)}`);
     if(grapes(A)&&grapes(B)&&norm(grapes(A))!==norm(grapes(B))) wrong.push(`${a} is ${grapes(B)}; ${b} is ${grapes(A)}`,`They're made from the same grapes`);
-    if(price(A)&&price(B)&&price(A)!==price(B)) wrong.push(price(A)>price(B)?`${a} is the cheaper of the two`:`${a} costs more than ${b}`);
+    if(price(A)&&price(B)&&price(A)!==price(B)){ const hi=price(A)>price(B)?a:b, lo=hi===a?b:a, gap=Math.abs(price(A)-price(B));
+      wrong.push(price(A)>price(B)?`${a} is the cheaper of the two`:`${a} costs more than ${b}`,`${lo} costs ${sym}${gap} more than ${hi}`,`They cost the same`); }
     if(!!A.glass!==!!B.glass) wrong.push(A.glass?`${a} is bottle only; ${b} is poured by the glass`:`${a} is poured by the glass; ${b} is bottle only`);
     else wrong.push(A.glass?`Only ${b} is poured by the glass`:`Both are poured by the glass`);
     const ya=this._num(A.vintage), yb=this._num(B.vintage);
@@ -1007,8 +1031,10 @@ const TeamLearn = {
     const kept=[], st=t=>this._stems(t).filter(w=>w.length>2), inside=(x,y)=>{ const b=new Set(st(y)); const a=st(x); return a.length&&a.every(w=>b.has(w)); };
     const seen=new Set(right.map(norm)), take=x=>{ const n=norm(x); if(seen.has(n)) return false;
       if(kept.some(k=>inside(x,k)||inside(k,x))) return false; seen.add(n); kept.push(x); return true; };
-    let wr=[...swapped,...onTopic,...(onTopic.length+swapped.length<2?wrong:[])].filter(take);
-    if(wr.length<2) wr=[...wr,...wrong.filter(take)]; // short of distinct claims: the list's facts turned round make up the rest
+    // A question about one thing (price, how it's sold) is never made up with answers about another (grapes): the
+    // sommelier review held those as off the subject. Only a question about nothing the list can speak to borrows them.
+    let wr=[...swapped,...onTopic,...(!want.length&&onTopic.length+swapped.length<2?wrong:[])].filter(take);
+    if(wr.length<2&&!want.length) wr=[...wr,...wrong.filter(take)]; // short of distinct claims: the list's facts turned round make up the rest
     if(wr.length<2) return null;
     const keep=[...wr.slice(0,swapped.length),...this._shuffle(wr.slice(swapped.length),this._seed(q)+'x')].slice(0,Math.max(3,6-right.length));
     const all=[...right.map(x=>({x,ok:true})),...keep.map(x=>({x,ok:false}))], order=this._shuffle(all.map((_,i)=>i),this._seed(q)+'c');
@@ -1184,7 +1210,7 @@ const TeamLearn = {
     const choose=offers.length>=3;
     // A reason as something to say: "Say it's dry" → "It's dry"; price clauses and offers dropped.
     // Serving notes (decant, temperature) and bare instructions ("Link the wine to the dish") aren't reasons.
-    const reason=s=>{ if(/^(offer|suggest|recommend|pour|go for|link|name|serve)\b/i.test(s)||/\bdecant|°C|\bserve at\b/i.test(s)||named(s).length) return '';
+    const reason=s=>{ if(/^(offer|suggest|recommend|pour|go for|link|name|serve)\b/i.test(s)||/\bdecant|°C|\bserve at\b/i.test(s)||/^if they('re| are)? (want|fancy|feel)|treat (themselves|yourself)/i.test(s)||named(s).length) return '';
       let t=s.split(/;\s*/).filter(p=>!/[£$€]\s?\d/.test(p)).join('; ').trim();
       t=t.replace(/^describe it as\s+/i,"It's ").replace(/^(say|mention|explain|tell them|point out|add)\s+(that\s+)?/i,'').trim();
       return norm(t).split(' ').length>=3?this._cap(t):''; };
@@ -1261,7 +1287,9 @@ const TeamLearn = {
     const chosenW=this._shuffle(wrongs,this._seed(q)+'w').sort((a,b)=>Math.abs(a.length-L)-Math.abs(b.length-L)).slice(0,6-rights.length);
     // A right reason under half the length of every wrong one is a clue in itself; with another right one to
     // stand on, it's left out.
-    const minW=Math.min(...chosenW.map(x=>x.length)), keepR=rights.filter(x=>x.length>=0.5*minW), rs=keepR.length?keepR:rights;
+    // Nor one far longer than every wrong one (the review held "If they want to treat themselves, this Champagne's toasty,
+    // bready richness…" beside three short reasons).
+    const minW=Math.min(...chosenW.map(x=>x.length)), maxW=Math.max(...chosenW.map(x=>x.length)), keepR=rights.filter(x=>x.length>=0.5*minW&&x.length<=1.8*maxW), rs=keepR.length?keepR:rights;
     const reasons=[...rs.map(x=>({x,ok:true})),...chosenW.map(x=>({x,ok:false}))];
     const o1=inQ||!choose?[]:this._shuffle(offers.map((_,i)=>i),this._seed(q)+'c1').map(i=>offers[i]), o2=this._shuffle(reasons.map((_,i)=>i),this._seed(q)+'c2').map(i=>reasons[i]);
     const all=[...o1,...o2];

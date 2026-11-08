@@ -4,12 +4,13 @@
 // its cards and `reviewed`), so the install opens with it. The rule review (npm run team:audit) must pass first.
 // Calls the deployed Worker's /claude for real (billed): VINTEREST_API_ORIGIN picks which (default production; a
 // branch preview while team_review is only there).
-// Usage: npm run team:review -- social   [--dry]   (--dry: report only, write nothing)
+// Usage: npm run team:review -- social   [--dry] [--held]   (--dry: report only, write nothing; --held: read again only what
+// the last review held, and merge)
 import fs from 'node:fs';
 import { spawn, execSync } from 'node:child_process';
 import { chromium } from 'playwright';
 
-const args = process.argv.slice(2), dry = args.includes('--dry'), seeds = args.filter((a) => !a.startsWith('--'));
+const args = process.argv.slice(2), dry = args.includes('--dry'), heldOnly = args.includes('--held'), seeds = args.filter((a) => !a.startsWith('--'));
 if (!seeds.length) { console.error('Name a restaurant: npm run team:review -- social'); process.exit(2); }
 const API = process.env.VINTEREST_API_ORIGIN || 'https://vinterest.pages.dev';
 execSync('node scripts/build.mjs', { stdio: 'ignore' });
@@ -39,13 +40,20 @@ try {
     // A long list's review in parallel and in smaller batches, so each answer comes back inside the Worker's time to
     // Anthropic: REVIEW_LANES (default 6) at a time, REVIEW_BATCH (default 6) questions each.
     await page.evaluate(([lanes, batch]) => { TeamData.REVIEW_AT_ONCE = lanes; TeamData.REVIEW_BATCH = batch; }, [Number(process.env.REVIEW_LANES) || 6, Number(process.env.REVIEW_BATCH) || 6]);
-    const r = await page.evaluate(async () => {
-      await TeamData.checkQuestions(null, (a, b) => console.log(`review: rule rewrites ${a} of ${b}`)); // repeats and giveaways rewritten first
-      const res = await TeamData.sommelierReview({ onStep: (a, b) => console.log(`review: ${a} of ${b}`) });
+    // --held: only the questions the last review held are read again (after a rule change, say), and the result is merged
+    // into the last review: what now passes comes back into the drill, what's still doubted stays held with its new note.
+    const before = heldOnly ? await page.evaluate(() => TeamData.reviewed()) : null;
+    if (heldOnly && !(before && before.held && before.held.length)) { console.log(`${seed}: nothing held to read again.`); continue; }
+    const r = await page.evaluate(async (only) => {
+      if (!only) await TeamData.checkQuestions(null, (a, b) => console.log(`review: rule rewrites ${a} of ${b}`)); // repeats and giveaways rewritten first
+      const res = await TeamData.sommelierReview({ only: only || undefined, onStep: (a, b) => console.log(`review: ${a} of ${b}`) });
       if (!res) return null;
       const d = TeamData.get();
       return { res, cards: d.cards, notes: res.held.map((id) => ({ id, ...res.notes[id] })), name: d.venue.name };
-    });
+    }, heldOnly ? before.held : null);
+    if (r && heldOnly) { const back = before.held.filter((id) => !r.res.held.includes(id));
+      console.log(`\n${r.name}: ${before.held.length} held questions read again, ${back.length} back in the drill, ${r.res.held.length} still held`);
+      r.res = { ...before, at: r.res.at, fixed: before.fixed + back.length, held: r.res.held, notes: r.res.notes, reread: { at: r.res.at, read: before.held.length, back: back.length } }; }
     console.log('');
     if (!r) { console.log(`${seed}: the demo restaurant isn't sent for review.`); continue; }
     held += r.res.held.length;

@@ -254,6 +254,9 @@ const TeamData = {
   // The drinks list as the cocktail prompts see it: every ingredient as the menu lists it, and the price.
   _drinkLines(){ return this.cocktails().map(c=>`${c.id} | ${c.name} | ${c.section||''} | base: ${c.spirit||'not given'} | ${(c.ingredients||[]).join(', ')} | ${c.price||''}${c.by?` | created by ${c.by}`:''}`).join('\n')||'(no cocktails)'; },
   _menuLines(){ return this.dishes().map(x=>`${x.name} | ${x.main} | ${x.cook} | ${(x.flav||[]).join(', ')}`).join('\n')||'(no menu uploaded yet)'; },
+  // The menu as printed (section, description, price) for the sommelier review, which checks prices and what a dish is:
+  // given only the short lines above it held The Princess Royal's fudge for a £4 price it couldn't see.
+  _menuFull(){ return this.dishes().map(x=>`${x.name} | ${x.section||''} | ${x.desc||''} | ${x.price||'no price printed'}`).join('\n')||'(no menu uploaded yet)'; },
 
   /* One Claude call, tried a second time after a short pause if the first fails. */
   // A busy moment upstream comes back as a 502; it passes in seconds, so the waits grow (RETRY_WAITS).
@@ -339,7 +342,7 @@ const TeamData = {
     // REVIEW_AT_ONCE batches are read at the same time (one on a phone; npm run team:review raises it for a long list).
     const ask=async qs=>{ const out={}, starts=[]; for(let i=0;i<qs.length;i+=this.REVIEW_BATCH) starts.push(i); let done=0;
       const lane=async()=>{ while(starts.length){ const i=starts.shift(), part=qs.slice(i,i+this.REVIEW_BATCH);
-        const prompt=tpl.replace(/\{\{venue\}\}/g,venue).replace('{{about}}',this.about()).replace('{{list}}',this._listLines()).replace('{{menu}}',this._menuLines()).replace('{{cocktails}}',cock).replace('{{items}}',part.map(q=>this._reviewItem(q)).join('\n\n'));
+        const prompt=tpl.replace(/\{\{venue\}\}/g,venue).replace('{{about}}',this.about()).replace('{{list}}',this._listLines()).replace('{{menu}}',this._menuFull()).replace('{{cocktails}}',cock).replace('{{items}}',part.map(q=>this._reviewItem(q)).join('\n\n'));
         let j=null; try{ j=this._json(await this._callRetry('team_review',prompt)); }catch(e){}
         (j&&j.reviews||[]).forEach(r=>{ if(r&&r.id&&part.some(q=>q.id===r.id)) out[r.id]=r; });
         done+=part.length; onStep&&onStep(done,qs.length); } };

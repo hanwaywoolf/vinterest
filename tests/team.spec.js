@@ -2034,7 +2034,8 @@ test('what the reviewers read is what the drill shows: four options as dealt, re
       const c = TeamLearn._countryIn(q.q);
       if (q.k === 'recall' && TeamLearn._topic(q.q) === 'place' && c) s.opts.filter((o, i) => !s.right.includes(i)).forEach((o) => { const oc = TeamLearn._placeCountry(o); if (oc && oc !== c) out.abroad.push(`${q.q} → ${o}`); });
       if (q.dish && /#1$/.test(q.id)) s.opts.forEach((o) => { if (!names.some((n) => TeamLearn._norm(o).includes(n))) out.notWines.push(`${q.q} → ${o}`); });
-      if (q.k === 'contrast' && s.right.length !== 1) out.contrastRight.push(q.id);
+      // (A comparison with no wrong answers about what it asks borrows other wines' answers, isn't asked, and goes back at publish.)
+      if (q.k === 'contrast' && s.via !== 'pool' && s.right.length !== 1) out.contrastRight.push(q.id);
     });
     return out;
   });
