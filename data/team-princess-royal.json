@@ -31516,7 +31516,9 @@
    "d:d-neal-s-yard-cheese-board-boozy-fruit-chutney-oat-cakes-malt-#0",
    "d:d-christmas-pudding-brandy-custard#mod",
    "d:d-christmas-pudding-brandy-custard#1",
-   "d:d-mince-pies-clotted-cream#0"
+   "d:d-mince-pies-clotted-cream#0",
+   "w-pierre-paillard-les-parcelles-xx-grand-cru-bouzy#4",
+   "w-philipponnat-blanc-de-noirs-extra-brut#4"
   ],
   "notes": {
    "w-charles-heidsieck-brut-reserve#0": {
@@ -33138,6 +33140,14 @@
    "d:d-mince-pies-clotted-cream#0": {
     "problem": "false_fact",
     "note": "The line after says 'Ten years in barrel', but a 10-Year-Old tawny is a blend whose age statement gives the average age and style rather than a literal ten years in cask; reword to something like 'a blend aged to show the character of ten years in wood'."
+   },
+   "w-pierre-paillard-les-parcelles-xx-grand-cru-bouzy#4": {
+    "problem": "request",
+    "note": "The app's own check after the review's rewrite: Bollinger Special Cuvée Brut is over the guest's price, so price alone rules it out. Held until the card is rewritten."
+   },
+   "w-philipponnat-blanc-de-noirs-extra-brut#4": {
+    "problem": "request",
+    "note": "The app's own check after the review's rewrite: Charles Heidsieck Vintage Brut is over the guest's price, so price alone rules it out. Held until the card is rewritten."
    }
   }
  }
