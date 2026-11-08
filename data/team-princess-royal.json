@@ -4682,6 +4682,2004 @@
     }
    ],
    "at": 1794142353139
+  },
+  "w-saint-sauveur-blanc-de-blancs-premier-cru": {
+   "id": "w-saint-sauveur-blanc-de-blancs-premier-cru",
+   "hook": "Champagne made only from Chardonnay, a white grape. That's what Blanc de Blancs means.",
+   "pitch": "This is a crisp, lean Champagne made only from Chardonnay, with fresh citrus and a creamy feel from time spent resting on its yeast. It's lovely with oysters or anything from the sea, and Premier Cru on the label means the grapes come from villages rated in Champagne's second-highest tier.",
+   "say": "san soh-VUR, blonk duh BLONK, prem-YAY KROO",
+   "taste": "Fresh lemony citrus and sharp, mouth-watering freshness, with a soft, creamy texture under the bubbles.",
+   "style": {
+    "body": 2,
+    "acid": 5,
+    "tannin": 0,
+    "sweet": 1
+   },
+   "grape": "Chardonnay is a fairly neutral grape that takes on how it's made. Here it shows lean citrus freshness, with a creamy texture from time on the lees (the spent yeast left after fermentation).",
+   "place": "Champagne has a cool climate where the grapes barely ripen, which keeps them sharp and fresh, just right for sparkling wine.",
+   "producer": "",
+   "serve": {
+    "temp": "8-10°C",
+    "glass": "white wine glass or flute",
+    "decant": "no"
+   },
+   "dishes": [
+    {
+     "dish": "Seasonal Oysters, Mignonette",
+     "why": "Lean, citrusy Chardonnay is a classic with oysters, and the fresh bubbles match their salty, sea-fresh taste."
+    },
+    {
+     "dish": "Sea Bream Crudo, Preserved Lemon, Dill",
+     "why": "Its crisp citrus freshness echoes the preserved lemon and doesn't swamp the delicate raw fish."
+    },
+    {
+     "dish": "Fish & Chips, Crushed Peas, Tartare Sauce",
+     "why": "The bubbles and sharp freshness cut through the batter and make every bite feel lighter."
+    }
+   ],
+   "alts": [
+    {
+     "id": "w-gusbourne-blanc-de-blancs",
+     "when": "by the glass, also made only from white grapes"
+    },
+    {
+     "id": "w-charles-heidsieck-brut-reserve",
+     "when": "Champagne by the glass"
+    },
+    {
+     "id": "w-charles-heidsieck-vintage-brut",
+     "when": "a special occasion: a single-year Champagne aged at least three years"
+    }
+   ],
+   "qs": [
+    {
+     "k": "recognise",
+     "q": "Which description best fits the Saint-Sauveur Blanc de Blancs Premier Cru NV?",
+     "opts": [
+      "Crisp and lean, with lemony citrus and a creamy texture",
+      "Soft and sweet, with ripe peach and runny honey",
+      "Rich and broad, with red cherry and strawberry fruit",
+      "Deep and heavy, with dark plum and warm spice"
+     ],
+     "a": 0,
+     "why": "It's made only from Chardonnay in cool-climate Champagne, so it's lean and citrusy, and its time on the lees gives it a creamy texture.",
+     "id": "w-saint-sauveur-blanc-de-blancs-premier-cru#0"
+    },
+    {
+     "k": "recognise",
+     "q": "What does 'Blanc de Blancs' on the Saint-Sauveur Premier Cru label tell a guest?",
+     "opts": [
+      "It is made only from white grapes, here Chardonnay",
+      "It is made only from black grapes, pressed gently",
+      "It is made from one single year's harvest only",
+      "It is made with no sugar added at the very end"
+     ],
+     "a": 0,
+     "why": "Blanc de Blancs means 'white from whites': a white wine made only from white grapes, and here that grape is Chardonnay.",
+     "id": "w-saint-sauveur-blanc-de-blancs-premier-cru#1"
+    },
+    {
+     "k": "recall",
+     "q": "What grape is the Saint-Sauveur Blanc de Blancs Premier Cru made from?",
+     "ans": "Chardonnay",
+     "acc": [
+      "Chardonnay only",
+      "100% Chardonnay",
+      "just Chardonnay"
+     ],
+     "why": "The label says Blanc de Blancs, and the grape is Chardonnay.",
+     "id": "w-saint-sauveur-blanc-de-blancs-premier-cru#2"
+    },
+    {
+     "k": "recall",
+     "q": "As a non-vintage Champagne, at least how long must the Saint-Sauveur Blanc de Blancs Premier Cru NV rest on its lees (the spent yeast) before release?",
+     "ans": "At least 15 months (the legal minimum is 12)",
+     "acc": [
+      "15 months",
+      "fifteen months",
+      "a year and three months",
+      "12 months by law, 15 in practice"
+     ],
+     "why": "The rules for non-vintage Champagne set at least 15 months on the lees, with 12 the legal minimum and many houses going longer.",
+     "id": "w-saint-sauveur-blanc-de-blancs-premier-cru#3"
+    },
+    {
+     "k": "apply",
+     "q": "A guest at the oysters says: 'We'd like a bottle of Champagne made only from white grapes, and we'd rather stay under £150.' What would you suggest, and why?",
+     "key": [
+      "Saint-Sauveur Blanc de Blancs Premier Cru NV",
+      "It is a Champagne made only from Chardonnay, a white grape, at £135, under their £150 limit",
+      "Its lean, crisp citrus freshness suits salty raw oysters, as unoaked Chardonnay does"
+     ],
+     "decoys": [
+      {
+       "id": "w-philipponnat-blanc-de-noirs-extra-brut",
+       "why": "Blanc de Noirs means it is made from black grapes, not white, and at £160 it is over their limit."
+      },
+      {
+       "id": "w-philipponnat-rose-brut",
+       "why": "It is a pink Champagne that blends black grapes with Chardonnay, so it isn't made only from white grapes."
+      },
+      {
+       "id": "w-charles-heidsieck-blanc-des-millenaires",
+       "why": "At £310 it is more than twice what they want to spend."
+      }
+     ],
+     "wrong": [
+      "Its full, heavy body stands up well to the richness of the oysters",
+      "Its firm, grippy tannin holds its own against the salty oysters",
+      "Its red cherry and forest-floor flavours match the oysters' sea saltiness"
+     ],
+     "why": "It's the only Champagne under £150 on the list that is made only from white grapes, and lean Chardonnay is a classic with oysters.",
+     "id": "w-saint-sauveur-blanc-de-blancs-premier-cru#4"
+    },
+    {
+     "k": "contrast",
+     "q": "What is the difference between the Saint-Sauveur Blanc de Blancs Premier Cru NV and the Philipponnat Blanc de Noirs Extra Brut 2018?",
+     "ans": "Saint-Sauveur is made from white grapes (Chardonnay) and is non-vintage; the Philipponnat is made from black grapes and comes from a single year, 2018.",
+     "acc": [
+      "white grapes versus black grapes",
+      "Blanc de Blancs is from white grapes, Blanc de Noirs from black grapes",
+      "Saint-Sauveur is a blend of years, Philipponnat is from 2018"
+     ],
+     "why": "Blanc de Blancs means white from white grapes and Blanc de Noirs means white from black grapes, and NV means a blend of years while 2018 is one harvest.",
+     "id": "w-saint-sauveur-blanc-de-blancs-premier-cru#5"
+    }
+   ],
+   "at": 1794142365806
+  },
+  "w-philipponnat-rose-brut": {
+   "id": "w-philipponnat-rose-brut",
+   "hook": "A pink Champagne blending Pinot Noir, Chardonnay and Pinot Meunier, grown in Champagne's barely-ripening cool climate.",
+   "pitch": "This is a dry pink Champagne with red cherry fruit from Pinot Noir and a crisp, fresh finish. It's lively enough to start the meal but has the fruit to stand up to duck, roast chicken or trout.",
+   "say": "fee-lee-poh-NAH, roh-ZAY BROOT",
+   "taste": "Red cherry and berry fruit with crisp, mouth-watering freshness and a dry, clean finish.",
+   "style": {
+    "body": 3,
+    "acid": 4,
+    "tannin": 0,
+    "sweet": 1
+   },
+   "grape": "Pinot Noir leads with its red cherry fruit, while Chardonnay and Pinot Meunier join it in the blend.",
+   "place": "Champagne has a cool climate where the grapes barely ripen, which keeps them sharp and fresh, just right for sparkling wine.",
+   "producer": "",
+   "serve": {
+    "temp": "8-10°C",
+    "glass": "white wine glass or flute",
+    "decant": "no"
+   },
+   "dishes": [
+    {
+     "dish": "Duck & Pancetta Terrine, Spiced Pear Chutney, Toast",
+     "why": "Pinot Noir is a natural with duck, and the bubbles and freshness cut through the rich terrine."
+    },
+    {
+     "dish": "Half Chicken",
+     "why": "The red cherry fruit suits roast chicken, the same way a light Pinot Noir does."
+    },
+    {
+     "dish": "Eggs Royale, Hot Smoked Chalk Stream Trout",
+     "why": "Pinot Noir goes well with salmon-like fish, and the crisp bubbles lift the rich, creamy eggs."
+    }
+   ],
+   "alts": [
+    {
+     "id": "w-coates-seely-brut-rose",
+     "when": "pink sparkling by the glass"
+    },
+    {
+     "id": "w-charles-heidsieck-brut-rose",
+     "when": "another pink Champagne, from a different house"
+    },
+    {
+     "id": "w-philipponnat-blanc-de-noirs-extra-brut",
+     "when": "same house, white not pink, a single year and very dry"
+    }
+   ],
+   "qs": [
+    {
+     "k": "recognise",
+     "q": "Which description best fits the Philipponnat Rosé Brut NV?",
+     "opts": [
+      "Fresh and medium-bodied, with red cherry fruit and a dry finish",
+      "Soft and sweet, with candied strawberry and a sugary finish",
+      "Lean and very light, with lemon peel and a salty finish",
+      "Heavy and full, with dark plum and a firm, grippy finish"
+     ],
+     "a": 0,
+     "why": "Pinot Noir gives it red cherry fruit, Champagne's cool climate keeps it fresh, and Brut means it is dry.",
+     "id": "w-philipponnat-rose-brut#0"
+    },
+    {
+     "k": "recognise",
+     "q": "Which three grapes go into the Philipponnat Rosé NV?",
+     "opts": [
+      "Pinot Noir, Chardonnay and Pinot Meunier",
+      "Grenache, Syrah and Cinsault",
+      "Sauvignon Blanc, Sémillon and Muscadelle",
+      "Merlot, Cabernet Franc and Malbec"
+     ],
+     "a": 0,
+     "why": "It blends Champagne's three main grapes: Pinot Noir, Chardonnay and Pinot Meunier.",
+     "id": "w-philipponnat-rose-brut#1"
+    },
+    {
+     "k": "recall",
+     "q": "What does the word 'Brut' on the Philipponnat Rosé label tell a guest?",
+     "ans": "That it is dry",
+     "acc": [
+      "dry",
+      "it's a dry style",
+      "not sweet"
+     ],
+     "why": "Brut on a sparkling wine label means a dry style, so guests shouldn't expect a sweet pink fizz.",
+     "id": "w-philipponnat-rose-brut#2"
+    },
+    {
+     "k": "recall",
+     "q": "How much is a bottle of the Philipponnat Rosé Brut NV?",
+     "ans": "£145",
+     "acc": [
+      "145 pounds",
+      "£145 a bottle"
+     ],
+     "why": "It is sold by the bottle only, at £145.",
+     "id": "w-philipponnat-rose-brut#3"
+    },
+    {
+     "k": "apply",
+     "q": "A guest having the Duck & Pancetta Terrine says: 'We'd love a bottle of pink Champagne, but we'd like to keep it under £150.' What would you suggest, and why?",
+     "key": [
+      "Philipponnat Rosé Brut NV",
+      "It is a pink Champagne at £145, under their £150 limit",
+      "Its red cherry fruit from Pinot Noir suits duck, and its freshness cuts through the rich terrine"
+     ],
+     "decoys": [
+      {
+       "id": "w-charles-heidsieck-brut-rose",
+       "why": "It is a pink Champagne, but at £175 it is over their limit."
+      },
+      {
+       "id": "w-philipponnat-blanc-de-noirs-extra-brut",
+       "why": "It is a white Champagne, not pink, and at £160 it is over their limit."
+      },
+      {
+       "id": "w-saint-sauveur-blanc-de-blancs-premier-cru",
+       "why": "It is white, not pink, and being made only from Chardonnay it lacks the red fruit that suits duck."
+      }
+     ],
+     "wrong": [
+      "Its heavy, full body matches the weight of the terrine",
+      "Its firm, grippy tannin cuts through the fatty pancetta",
+      "Its soft, low acidity keeps the pear chutney from tasting sharp"
+     ],
+     "why": "It's the only pink Champagne on the list under £150, and Pinot Noir's red fruit is a classic match for duck.",
+     "id": "w-philipponnat-rose-brut#4"
+    },
+    {
+     "k": "contrast",
+     "q": "Both are from Philipponnat: how does the Philipponnat Rosé Brut NV differ from the Philipponnat Blanc de Noirs Extra Brut 2018?",
+     "ans": "The Rosé is pink, non-vintage and blends Pinot Noir, Chardonnay and Pinot Meunier; the Blanc de Noirs is a white Champagne made from black grapes, from the 2018 harvest.",
+     "acc": [
+      "the Rosé is pink, the Blanc de Noirs is white",
+      "the Rosé is a blend of years, the Blanc de Noirs is from 2018",
+      "the Rosé includes Chardonnay, the Blanc de Noirs is only from black grapes"
+     ],
+     "why": "Same house, but one is a pink blend of several years and the other is a white wine from black grapes, all from one year.",
+     "id": "w-philipponnat-rose-brut#5"
+    }
+   ],
+   "at": 1794142365806
+  },
+  "w-lauriers-picpoul-de-pinet-paredaux": {
+   "id": "w-lauriers-picpoul-de-pinet-paredaux",
+   "hook": "Picpoul is the grape, and it comes from Languedoc, on France's hot, dry Mediterranean coast.",
+   "pitch": "This is a light, crisp, dry white with a fresh lemony edge, the kind of wine that wakes up your palate. It's lovely with oysters, raw fish or fish and chips, and at £48 a bottle it's a great-value French white.",
+   "say": "lor-YAY, PEEK-pool duh pee-NAY, pa-ruh-DOH",
+   "taste": "Light and dry, with zesty lemon and fresh, clean fruit that leaves your mouth watering.",
+   "style": {
+    "body": 2,
+    "acid": 4,
+    "tannin": 0,
+    "sweet": 1
+   },
+   "grape": "Picpoul, named on the label, gives a bright, crisp white with a lemony freshness rather than richness.",
+   "place": "It comes from Languedoc in the south of France, which has a hot, dry Mediterranean climate and an AOC, France's system of protected place names guaranteeing where a wine comes from.",
+   "producer": "",
+   "serve": {
+    "temp": "8-10°C",
+    "glass": "white wine glass",
+    "decant": "no"
+   },
+   "dishes": [
+    {
+     "dish": "Seasonal Oysters, Mignonette",
+     "why": "The crisp, lemony freshness works like a squeeze of lemon on a salty oyster."
+    },
+    {
+     "dish": "Sea Bream Crudo, Preserved Lemon, Dill",
+     "why": "It's light enough not to swamp delicate raw fish, and its citrus edge matches the preserved lemon."
+    },
+    {
+     "dish": "Fish & Chips, Crushed Peas, Tartare Sauce",
+     "why": "The fresh acidity cuts through the crispy batter and keeps every mouthful tasting clean."
+    }
+   ],
+   "alts": [
+    {
+     "id": "w-michel-delhommeau-muscadet-sevre-et-maine-sur-lie",
+     "when": "similar crisp seafood white with a little more texture"
+    },
+    {
+     "id": "w-adega-de-moncao-vinho-verde-fresco",
+     "when": "by the glass"
+    },
+    {
+     "id": "w-cassara-grillo",
+     "when": "under £40, or by the glass"
+    }
+   ],
+   "qs": [
+    {
+     "k": "recognise",
+     "q": "Which description best fits the Lauriers Picpoul de Pinet, Paredaux?",
+     "opts": [
+      "Full, rich and buttery with toasty oak",
+      "Off-dry and aromatic with peach and apricot",
+      "Light, crisp and dry with lemony freshness",
+      "Medium-bodied and nutty with soft acidity"
+     ],
+     "a": 2,
+     "why": "It's a light, crisp, dry white with lemony freshness, not a rich, sweet or soft one.",
+     "id": "w-lauriers-picpoul-de-pinet-paredaux#0"
+    },
+    {
+     "k": "recognise",
+     "q": "Which part of France does the Lauriers Picpoul de Pinet, Paredaux come from?",
+     "opts": [
+      "Loire Valley",
+      "Languedoc",
+      "Burgundy",
+      "Bordeaux"
+     ],
+     "a": 1,
+     "why": "It comes from Languedoc, in the hot, dry Mediterranean south of France.",
+     "id": "w-lauriers-picpoul-de-pinet-paredaux#1"
+    },
+    {
+     "k": "recall",
+     "q": "What grape is the Lauriers Picpoul de Pinet, Paredaux made from?",
+     "ans": "Picpoul",
+     "acc": [
+      "Picpoul grape",
+      "Piquepoul"
+     ],
+     "why": "The grape is named on the label: Picpoul.",
+     "id": "w-lauriers-picpoul-de-pinet-paredaux#2"
+    },
+    {
+     "k": "recall",
+     "q": "How much is a bottle of the Lauriers Picpoul de Pinet, Paredaux?",
+     "ans": "£48",
+     "acc": [
+      "48 pounds",
+      "forty-eight pounds"
+     ],
+     "why": "The list prices it at £48 a bottle; it's sold by the bottle only.",
+     "id": "w-lauriers-picpoul-de-pinet-paredaux#3"
+    },
+    {
+     "k": "apply",
+     "q": "A guest has ordered the Seasonal Oysters, Mignonette and asks for a crisp, dry French white, but under £50 a bottle. What would you suggest, and why?",
+     "key": [
+      "Lauriers Picpoul de Pinet, Paredaux",
+      "it's a French white from Languedoc at £48, so it's under £50",
+      "its crisp, lemony freshness works like a squeeze of lemon on the salty oysters"
+     ],
+     "decoys": [
+      {
+       "id": "w-michel-delhommeau-muscadet-sevre-et-maine-sur-lie",
+       "why": "It would suit oysters, but at £53 it's over the guest's £50 limit."
+      },
+      {
+       "id": "w-famille-perrin-viognier-maison-les-alexandrins",
+       "why": "At £50 it isn't under £50, and it's not the crisp, lemony style the guest wants."
+      },
+      {
+       "id": "w-adega-de-moncao-vinho-verde-fresco",
+       "why": "It's crisp and under £50, but it's Portuguese, not French."
+      }
+     ],
+     "wrong": [
+      "It's a full, rich white that stands up to the weight of the oysters.",
+      "Its firm tannin gives a pleasant grip against the oysters' soft texture.",
+      "Its soft, low acidity keeps it from clashing with the sharp mignonette."
+     ],
+     "why": "It's the only crisp, dry French white on the list under £50, and its zesty freshness suits salty, delicate oysters.",
+     "id": "w-lauriers-picpoul-de-pinet-paredaux#4"
+    },
+    {
+     "k": "contrast",
+     "q": "The Lauriers Picpoul de Pinet, Paredaux and the Michel Delhommeau Muscadet Sèvre-et-Maine Sur Lie are both crisp French whites; which one comes from a hot, dry climate?",
+     "ans": "The Picpoul, from Languedoc",
+     "acc": [
+      "Picpoul",
+      "Lauriers Picpoul",
+      "the Languedoc one"
+     ],
+     "why": "The Picpoul comes from hot, dry Mediterranean Languedoc, while the Muscadet comes from the cool Loire Valley.",
+     "id": "w-lauriers-picpoul-de-pinet-paredaux#5"
+    }
+   ],
+   "at": 1794142423163
+  },
+  "w-michel-delhommeau-muscadet-sevre-et-maine-sur-lie": {
+   "id": "w-michel-delhommeau-muscadet-sevre-et-maine-sur-lie",
+   "hook": "'Sur lie' means it rests on its spent yeast after fermentation, giving extra texture and a slight spritz.",
+   "pitch": "This is a light, bone-dry white with sharp, refreshing acidity, a gentle softness from resting on its yeast, and a faint prickle on the tongue. It's the classic French wine for oysters and shellfish, so it's perfect with our oysters or the hake with mussels.",
+   "say": "mee-SHELL duh-loh-MOH, MUSS-kuh-day SEV-ruh ay MEN, soor LEE",
+   "taste": "Light and bone-dry, with crisp, mouthwatering acidity, a subtle smooth texture and a faint prickle of spritz.",
+   "style": {
+    "body": 2,
+    "acid": 4,
+    "tannin": 0,
+    "sweet": 1
+   },
+   "grape": "Melon de Bourgogne is neutral and high in acid on its own, so here it gives a clean, crisp backbone, and the texture comes from resting on its lees (the spent yeast left after fermentation).",
+   "place": "It comes from the Loire Valley, whose cool, river-influenced climate keeps the wine fresh and crisp; it's made for drinking young, though the best can age.",
+   "producer": "",
+   "serve": {
+    "temp": "8-10°C",
+    "glass": "white wine glass",
+    "decant": "no"
+   },
+   "dishes": [
+    {
+     "dish": "Seasonal Oysters, Mignonette",
+     "why": "Muscadet is the classic oyster wine: its crisp acidity and clean, salty-fresh feel suit raw shellfish perfectly."
+    },
+    {
+     "dish": "Hake, Mussels, Cannellini Beans, Leeks",
+     "why": "Light enough for delicate hake and mussels, with a gentle texture that matches the creamy beans."
+    },
+    {
+     "dish": "Sea Bream Crudo, Preserved Lemon, Dill",
+     "why": "Its neutral, crisp style lets the delicate raw fish shine while matching the lemony sharpness."
+    }
+   ],
+   "alts": [
+    {
+     "id": "w-lauriers-picpoul-de-pinet-paredaux",
+     "when": "similar crisp seafood white, under £50"
+    },
+    {
+     "id": "w-adega-de-moncao-vinho-verde-fresco",
+     "when": "by the glass"
+    },
+    {
+     "id": "w-prieure-saint-come-chablis",
+     "when": "a little more weight and polish, around £70"
+    }
+   ],
+   "qs": [
+    {
+     "k": "recognise",
+     "q": "Which description best fits the Michel Delhommeau Muscadet Sèvre-et-Maine Sur Lie?",
+     "opts": [
+      "Full and creamy, with ripe tropical fruit and oak",
+      "Light and bone-dry, with sharp acidity and a faint prickle",
+      "Medium-sweet and floral, with honeyed stone fruit",
+      "Soft and round, with low acidity and ripe pear"
+     ],
+     "a": 1,
+     "why": "It's a light, bone-dry, high-acid white, and the time on its lees gives a faint spritz.",
+     "id": "w-michel-delhommeau-muscadet-sevre-et-maine-sur-lie#0"
+    },
+    {
+     "k": "recognise",
+     "q": "What does the 'Sur Lie' on the Michel Delhommeau Muscadet label tell you about how it was made?",
+     "opts": [
+      "It was aged in new oak barrels for richness",
+      "It was made from late-picked, extra-ripe grapes",
+      "It was aged on its lees, the spent yeast, for texture",
+      "It was blended from several different grape varieties"
+     ],
+     "a": 2,
+     "why": "'Sur lie' means aged on its lees, the spent yeast, which gives texture and a slight spritz.",
+     "id": "w-michel-delhommeau-muscadet-sevre-et-maine-sur-lie#1"
+    },
+    {
+     "k": "recall",
+     "q": "What grape is the Michel Delhommeau Muscadet Sèvre-et-Maine Sur Lie made from?",
+     "ans": "Melon de Bourgogne",
+     "acc": [
+      "Melon",
+      "Melon grape"
+     ],
+     "why": "Melon de Bourgogne is the grape behind Muscadet.",
+     "id": "w-michel-delhommeau-muscadet-sevre-et-maine-sur-lie#2"
+    },
+    {
+     "k": "recall",
+     "q": "Which wine region of France does the Michel Delhommeau Muscadet Sèvre-et-Maine Sur Lie come from?",
+     "ans": "The Loire Valley",
+     "acc": [
+      "Loire",
+      "Loire Valley"
+     ],
+     "why": "Muscadet comes from the Loire Valley, which has a cool climate along the river.",
+     "id": "w-michel-delhommeau-muscadet-sevre-et-maine-sur-lie#3"
+    },
+    {
+     "k": "apply",
+     "q": "A couple sharing the Hake, Mussels, Cannellini Beans, Leeks ask for a crisp white from the Loire Valley, but under £60 a bottle. What would you suggest, and why?",
+     "key": [
+      "Michel Delhommeau Muscadet Sèvre-et-Maine Sur Lie",
+      "it's a Loire Valley white at £53, so under £60",
+      "its crisp acidity and light body suit the delicate hake and mussels, and its gentle texture from lees ageing matches the creamy beans"
+     ],
+     "decoys": [
+      {
+       "id": "w-lucien-crochet-sancerre",
+       "why": "It's from the Loire, but at £72 it's over the £60 limit."
+      },
+      {
+       "id": "w-lauriers-picpoul-de-pinet-paredaux",
+       "why": "It's crisp and good with seafood, but it's from Languedoc, not the Loire."
+      },
+      {
+       "id": "w-prieure-saint-come-chablis",
+       "why": "It's from Burgundy, not the Loire, and at £68 it's over budget."
+      }
+     ],
+     "wrong": [
+      "It's a big, full-bodied white that stands up to the hearty beans.",
+      "Its gentle tannin gives a nice grip against the soft mussels.",
+      "Its rich oak and vanilla flavours echo the sweetness of the leeks."
+     ],
+     "why": "It's the only Loire white under £60, and Muscadet is a classic match for shellfish like mussels.",
+     "id": "w-michel-delhommeau-muscadet-sevre-et-maine-sur-lie#4"
+    },
+    {
+     "k": "contrast",
+     "q": "The Michel Delhommeau Muscadet Sèvre-et-Maine Sur Lie and the Lauriers Picpoul de Pinet, Paredaux are both crisp French whites; what on the Muscadet's label explains its extra texture and slight spritz?",
+     "ans": "'Sur lie': it's aged on its lees",
+     "acc": [
+      "sur lie",
+      "aged on its lees",
+      "lees ageing",
+      "aged on the spent yeast"
+     ],
+     "why": "'Sur lie' means the Muscadet was aged on its lees, the spent yeast, which gives it texture and a slight spritz.",
+     "id": "w-michel-delhommeau-muscadet-sevre-et-maine-sur-lie#5"
+    }
+   ],
+   "at": 1794142423163
+  },
+  "w-bodegas-gallegas-albarino-sentidino": {
+   "id": "w-bodegas-gallegas-albarino-sentidino",
+   "hook": "Albariño from Rías Baixas, on Spain's cool, wet Atlantic coast, a classic with shellfish.",
+   "pitch": "It's a crisp, fresh white with citrus, stone fruit like peach and a salty, sea-air edge. If you're having oysters, crab or any fish, it's a natural match, like a squeeze of lemon in a glass.",
+   "say": "boh-DAY-gas ga-YAY-gas, al-ba-REEN-yo sen-tee-DEEN-yo",
+   "taste": "Zesty lemon and juicy peach with a lick of salt on the finish, clean and refreshing.",
+   "style": {
+    "body": 3,
+    "acid": 4,
+    "tannin": 0,
+    "sweet": 1
+   },
+   "grape": "Albariño gives this wine high acidity (the mouth-watering freshness), a medium body that is neither thin nor heavy, citrus and stone-fruit flavours, and a salty, coastal edge.",
+   "place": "Rías Baixas, a DO (Spain's official quality-controlled wine region) on the cool, wet Atlantic coast, gives wines that stay fresh and bright, mostly made to drink young.",
+   "producer": "",
+   "serve": {
+    "temp": "8-10°C",
+    "glass": "white wine glass",
+    "decant": "no"
+   },
+   "dishes": [
+    {
+     "dish": "Seasonal Oysters, Mignonette",
+     "why": "Albariño is a classic with shellfish, and its salty, lemony freshness matches the oysters and the sharp mignonette, the vinegar and shallot dressing."
+    },
+    {
+     "dish": "Hake, Mussels, Cannellini Beans, Leeks",
+     "why": "The mussels make this a shellfish dish, and the wine's crisp citrus keeps the creamy beans and leeks tasting light."
+    },
+    {
+     "dish": "Sea Bream Crudo, Preserved Lemon, Dill",
+     "why": "Delicate raw fish needs a fresh, unoaked white, and the wine's citrus picks up the preserved lemon."
+    }
+   ],
+   "alts": [
+    {
+     "id": "w-adega-de-moncao-vinho-verde-fresco",
+     "when": "by the glass, at £11"
+    },
+    {
+     "id": "w-michel-delhommeau-muscadet-sevre-et-maine-sur-lie",
+     "when": "a French alternative for oysters, at £53"
+    },
+    {
+     "id": "w-lauriers-picpoul-de-pinet-paredaux",
+     "when": "crisp seafood white under £50"
+    }
+   ],
+   "qs": [
+    {
+     "k": "recognise",
+     "q": "Which description best fits the Bodegas Gallegas Albariño Sentidiño 2025?",
+     "opts": [
+      "Crisp and medium-bodied, with citrus, peach and a salty, sea-air edge",
+      "Rich and full-bodied, with toasty oak, butter and baked apple flavours",
+      "Light and off-dry, with honey, lime and a gentle touch of sweetness",
+      "Soft and low in acid, with ripe apricot and heady, perfumed flowers"
+     ],
+     "a": 0,
+     "why": "Albariño is high in acid and medium in body, with citrus, stone fruit and a distinct salty, coastal character.",
+     "id": "w-bodegas-gallegas-albarino-sentidino#0"
+    },
+    {
+     "k": "recognise",
+     "q": "Which wine region is the Bodegas Gallegas Albariño Sentidiño 2025 from?",
+     "opts": [
+      "Rías Baixas, Spain",
+      "Rioja, Spain",
+      "Vinho Verde, Portugal",
+      "Rueda, Spain"
+     ],
+     "a": 0,
+     "why": "It comes from Rías Baixas, a DO on Spain's cool, wet Atlantic coast.",
+     "id": "w-bodegas-gallegas-albarino-sentidino#1"
+    },
+    {
+     "k": "recall",
+     "q": "What is the climate like where the Bodegas Gallegas Albariño Sentidiño 2025 is grown?",
+     "ans": "Cool and wet, Atlantic",
+     "acc": [
+      "cool and wet",
+      "cool Atlantic",
+      "wet Atlantic climate",
+      "cool, wet and by the Atlantic"
+     ],
+     "why": "Rías Baixas has a cool, wet Atlantic climate, which keeps the wine fresh and crisp.",
+     "id": "w-bodegas-gallegas-albarino-sentidino#2"
+    },
+    {
+     "k": "recall",
+     "q": "What is wine like the Bodegas Gallegas Albariño Sentidiño 2025 usually fermented in, and why?",
+     "ans": "Steel tanks, to keep it fresh",
+     "acc": [
+      "stainless steel",
+      "steel, for freshness",
+      "steel tanks to keep it fresh and crisp"
+     ],
+     "why": "Albariño is usually fermented in steel rather than oak to keep its fresh citrus and salty character.",
+     "id": "w-bodegas-gallegas-albarino-sentidino#3"
+    },
+    {
+     "k": "apply",
+     "q": "A guest ordering the Seasonal Oysters, Mignonette wants a bottle of crisp Spanish white, under £60. What would you suggest, and why?",
+     "key": [
+      "Bodegas Gallegas Albariño Sentidiño 2025",
+      "It's a crisp Spanish white at £58, with high acidity that stands up to the sharp mignonette",
+      "Its citrus and salty, sea-air character echo the oysters, and Albariño is a classic with shellfish"
+     ],
+     "decoys": [
+      {
+       "id": "w-raul-perez-godello-ultreia",
+       "why": "It's Spanish, but at £62 it's over the guest's £60 limit."
+      },
+      {
+       "id": "w-villota-rioja-blanco-selvanevada",
+       "why": "It's Spanish, but at £65 it's over the guest's £60 limit."
+      },
+      {
+       "id": "w-cassara-grillo",
+       "why": "It's under £60, but it's from Sicily, not Spain, and it isn't the shellfish classic the Albariño is."
+      }
+     ],
+     "wrong": [
+      "It's a big, full-bodied white with the weight to stand up to rich oysters",
+      "Its soft, low acidity rounds off the sharp vinegar in the mignonette",
+      "Its toasty, oaky flavour adds warmth and depth to cold, raw oysters"
+     ],
+     "why": "The Albariño is the only Spanish white under £60 on the list, and its crisp, salty freshness is made for shellfish.",
+     "id": "w-bodegas-gallegas-albarino-sentidino#4"
+    },
+    {
+     "k": "contrast",
+     "q": "A guest wants just one glass of crisp white with their fish: which can you pour by the glass, the Bodegas Gallegas Albariño Sentidiño 2025 or the Adega de Monção Vinho Verde, Fresco 2025?",
+     "ans": "The Vinho Verde, at £11 a glass; the Albariño is bottle only",
+     "acc": [
+      "the Vinho Verde",
+      "Adega de Monção",
+      "Vinho Verde, £11"
+     ],
+     "why": "The Albariño is sold by the bottle only at £58, while the Vinho Verde comes by the glass at £11 or the bottle at £44.",
+     "id": "w-bodegas-gallegas-albarino-sentidino#5"
+    }
+   ],
+   "at": 1794142423194
+  },
+  "w-cassara-grillo": {
+   "id": "w-cassara-grillo",
+   "hook": "A Sicilian white from a hot Mediterranean island, and our lowest-priced white by the glass.",
+   "pitch": "It's a fresh, easy-going dry white from Sicily, usually with lemon and ripe fruit and a clean finish. At £8.50 a glass it's great value and lovely with anything fried, like the fish and chips.",
+   "say": "kas-SAH-ra GREEL-lo",
+   "taste": "Usually dry and fresh, with lemon, ripe orchard fruit and a clean, easy finish.",
+   "style": {
+    "body": 3,
+    "acid": 3,
+    "tannin": 0,
+    "sweet": 1
+   },
+   "grape": "Grillo is a Sicilian white grape that usually makes a dry, medium-bodied wine with citrus and ripe fruit flavours.",
+   "place": "Sicily has a hot Mediterranean climate, cooler only up high on Mount Etna, so its whites usually have ripe, sunny fruit.",
+   "producer": "",
+   "serve": {
+    "temp": "8-10°C",
+    "glass": "white wine glass",
+    "decant": "no"
+   },
+   "dishes": [
+    {
+     "dish": "Fish & Chips, Crushed Peas, Tartare Sauce",
+     "why": "A fresh, dry white refreshes your mouth between bites of crispy batter and goes nicely with the tartare sauce."
+    },
+    {
+     "dish": "Fried Mozzarella, Marinara Sauce",
+     "why": "An Italian white with Italian flavours, and its freshness cuts through the rich, melting cheese."
+    },
+    {
+     "dish": "Chicken Milanese, Brown Butter, Capers, Anchovies",
+     "why": "Its clean citrus lifts the fried chicken and sits happily with the salty capers and anchovies."
+    }
+   ],
+   "alts": [
+    {
+     "id": "w-borgo-selene-catarratto-inzolia",
+     "when": "cheapest white bottle on the list, at £32"
+    },
+    {
+     "id": "w-adega-de-moncao-vinho-verde-fresco",
+     "when": "lighter and crisper, by the glass at £11"
+    },
+    {
+     "id": "w-antonella-corda-vermentino-di-sardegna",
+     "when": "another Italian island white, a step up at £64"
+    }
+   ],
+   "qs": [
+    {
+     "k": "recognise",
+     "q": "What kind of climate does the home of the Cassara Grillo 2025 have?",
+     "opts": [
+      "Hot Mediterranean, cooler up on Mount Etna",
+      "Cool and wet, shaped by the Atlantic Ocean",
+      "Cold continental, with long freezing winters",
+      "Mild maritime, with steady rain all year"
+     ],
+     "a": 0,
+     "why": "The Grillo is from Sicily, which is hot and Mediterranean, cooler only at altitude on Mount Etna.",
+     "id": "w-cassara-grillo#0"
+    },
+    {
+     "k": "recognise",
+     "q": "How much is a 175ml glass of the Cassara Grillo 2025?",
+     "opts": [
+      "£8.50",
+      "£11",
+      "£12",
+      "£13.50"
+     ],
+     "a": 0,
+     "why": "At £8.50 a glass it's the lowest-priced white we pour by the glass.",
+     "id": "w-cassara-grillo#1"
+    },
+    {
+     "k": "recall",
+     "q": "Which Italian island is the Cassara Grillo 2025 from?",
+     "ans": "Sicily",
+     "acc": [
+      "Sicilia",
+      "Sicily, Italy"
+     ],
+     "why": "The Grillo comes from Sicily, in the far south of Italy.",
+     "id": "w-cassara-grillo#2"
+    },
+    {
+     "k": "recall",
+     "q": "What size is a standard glass of the Cassara Grillo 2025?",
+     "ans": "175ml",
+     "acc": [
+      "175",
+      "175 millilitres",
+      "175 ml"
+     ],
+     "why": "Our still wines by the glass are 175ml pours.",
+     "id": "w-cassara-grillo#3"
+    },
+    {
+     "k": "apply",
+     "q": "A guest having the Fish & Chips, Crushed Peas, Tartare Sauce wants a glass of dry white, under £10. What would you suggest, and why?",
+     "key": [
+      "Cassara Grillo 2025",
+      "It's our only white by the glass under £10, at £8.50 for 175ml",
+      "It's a fresh, dry white that refreshes your mouth between bites of fried batter and suits the tartare sauce"
+     ],
+     "decoys": [
+      {
+       "id": "w-adega-de-moncao-vinho-verde-fresco",
+       "why": "It would suit the fish, but at £11 a glass it's over the guest's £10 limit."
+      },
+      {
+       "id": "w-tinpot-hut-sauvignon-blanc",
+       "why": "At £12 a glass it's over the guest's £10 limit."
+      },
+      {
+       "id": "w-carl-loewen-riesling-alte-reben",
+       "why": "At £12.50 a glass it's over the guest's £10 limit."
+      }
+     ],
+     "wrong": [
+      "It's a heavy, oaky white that matches the weight of the batter",
+      "Its tannin grips the fried batter and cuts through the oil",
+      "Its soft, low acidity calms the vinegar on the chips"
+     ],
+     "why": "The Grillo is the only white we pour by the glass under £10, and a fresh, dry white is just right with fried fish.",
+     "id": "w-cassara-grillo#4"
+    },
+    {
+     "k": "contrast",
+     "q": "Which can a guest order by the glass: the Cassara Grillo 2025 or the Borgo Selene Catarratto/Inzolia 2025?",
+     "ans": "The Cassara Grillo, at £8.50 a glass",
+     "acc": [
+      "the Grillo",
+      "Cassara",
+      "Cassara Grillo"
+     ],
+     "why": "The Borgo Selene is bottle only at £32, while the Grillo comes by the glass at £8.50 or the bottle at £38.",
+     "id": "w-cassara-grillo#5"
+    }
+   ],
+   "at": 1794142423194
+  },
+  "w-borgo-selene-catarratto-inzolia": {
+   "id": "w-borgo-selene-catarratto-inzolia",
+   "hook": "Our best-value white at £32: a Sicilian blend of two local grapes, Catarratto and Inzolia.",
+   "pitch": "This is an easy, light dry white from Sicily, with gentle citrus and orchard-fruit flavours and nothing heavy or showy about it. It's a great-value bottle to share over nibbles or lighter dishes, and it's the most affordable white we have.",
+   "say": "BOR-go seh-LEH-neh, ka-ta-RAT-oh in-ZOH-lee-ah",
+   "taste": "A light, dry, easy-drinking white with soft lemony freshness and gentle apple and pear fruit.",
+   "style": {
+    "body": 2,
+    "acid": 3,
+    "tannin": 0,
+    "sweet": 1
+   },
+   "grape": "Catarratto and Inzolia are two white grapes widely grown in Sicily, and here they're blended into a soft, easy, everyday white.",
+   "place": "Sicily has a hot Mediterranean climate, so the fruit tastes ripe and sunny rather than sharp or green.",
+   "producer": "",
+   "serve": {
+    "temp": "7-10°C",
+    "glass": "standard white wine glass",
+    "decant": "no"
+   },
+   "dishes": [
+    {
+     "dish": "Fried Mozzarella, Marinara Sauce",
+     "why": "An easy Italian white with fried cheese and tomato sauce: it freshens your mouth between bites without fighting the marinara."
+    },
+    {
+     "dish": "Fish & Chips, Crushed Peas, Tartare Sauce",
+     "why": "Light and dry, it cuts through the batter and keeps the whole plate tasting fresh."
+    },
+    {
+     "dish": "Hake, Mussels, Cannellini Beans, Leeks",
+     "why": "A gentle white that sits nicely with delicate fish and mussels and doesn't drown them."
+    }
+   ],
+   "alts": [
+    {
+     "id": "w-cassara-grillo",
+     "when": "by the glass, still a light, easy white"
+    },
+    {
+     "id": "w-lauriers-picpoul-de-pinet-paredaux",
+     "when": "more zing, for oysters and seafood, under £50"
+    },
+    {
+     "id": "w-pieropan-soave-classico",
+     "when": "another Italian white, a step up in price"
+    }
+   ],
+   "qs": [
+    {
+     "k": "recognise",
+     "q": "Which description best fits the Borgo Selene Catarratto/Inzolia?",
+     "opts": [
+      "Light, dry and easy, with soft citrus and orchard fruit",
+      "Rich and creamy, with toasty oak and vanilla",
+      "Very sharp and steely, with a flinty, smoky edge",
+      "Off-dry and perfumed, with honey and lychee"
+     ],
+     "a": 0,
+     "why": "It's a light, easy-drinking dry Sicilian white, not oaky, steely or perfumed.",
+     "id": "w-borgo-selene-catarratto-inzolia#0"
+    },
+    {
+     "k": "recognise",
+     "q": "Which part of Italy does the Borgo Selene Catarratto/Inzolia come from?",
+     "opts": [
+      "Sardinia",
+      "Piedmont",
+      "Sicily",
+      "Puglia"
+     ],
+     "a": 2,
+     "why": "It's from Sicily, an island with a hot Mediterranean climate.",
+     "id": "w-borgo-selene-catarratto-inzolia#1"
+    },
+    {
+     "k": "recall",
+     "q": "Which two grapes is the Borgo Selene Catarratto/Inzolia made from?",
+     "ans": "Catarratto and Inzolia",
+     "acc": [
+      "Inzolia and Catarratto",
+      "Catarratto, Inzolia"
+     ],
+     "why": "Both grapes are named on the label.",
+     "id": "w-borgo-selene-catarratto-inzolia#2"
+    },
+    {
+     "k": "recall",
+     "q": "How much is a bottle of the Borgo Selene Catarratto/Inzolia, and can you sell it by the glass?",
+     "ans": "£32, bottle only",
+     "acc": [
+      "£32 a bottle, not by the glass",
+      "32 pounds, bottle only"
+     ],
+     "why": "It's only sold by the bottle, at £32, our lowest-priced white.",
+     "id": "w-borgo-selene-catarratto-inzolia#3"
+    },
+    {
+     "k": "apply",
+     "q": "A couple sharing the Fried Mozzarella, Marinara Sauce want a light, easy white and would like to spend under £35 on the bottle. What would you suggest, and why?",
+     "key": [
+      "Borgo Selene Catarratto/Inzolia, £32 a bottle",
+      "It's the only white bottle on our list under £35, so it fits their budget",
+      "It's light and dry, so it freshens the mouth after the fried cheese and sits happily with the tomato sauce"
+     ],
+     "decoys": [
+      {
+       "id": "w-cassara-grillo",
+       "why": "At £38 a bottle it's over their £35 limit."
+      },
+      {
+       "id": "w-wednesday-s-domaine-piquant",
+       "why": "At £38 a bottle it's over their £35 limit."
+      },
+      {
+       "id": "w-adega-de-moncao-vinho-verde-fresco",
+       "why": "At £44 a bottle it's well over their £35 limit."
+      }
+     ],
+     "wrong": [
+      "It's too light for fried cheese, so they'd really need a heavier red",
+      "Tomato sauce needs a red with grippy tannin, so a white won't hold up",
+      "Its freshness will make the marinara taste sour and sharp"
+     ],
+     "why": "It meets their price, it's light and easy, and it suits fried mozzarella with tomato sauce.",
+     "id": "w-borgo-selene-catarratto-inzolia#4"
+    },
+    {
+     "k": "contrast",
+     "q": "How do the Borgo Selene Catarratto/Inzolia and the Cassara Grillo differ in how you can sell them?",
+     "ans": "Borgo Selene is bottle only at £32; Cassara Grillo is also by the glass at £8.50 (£38 a bottle)",
+     "acc": [
+      "Only the Cassara Grillo comes by the glass",
+      "Borgo Selene is bottle only, Grillo is by the glass too"
+     ],
+     "why": "If a guest wants just a glass of something light and easy, the Grillo is the one to offer.",
+     "id": "w-borgo-selene-catarratto-inzolia#5"
+    }
+   ],
+   "at": 1794142428850
+  },
+  "w-adega-de-moncao-vinho-verde-fresco": {
+   "id": "w-adega-de-moncao-vinho-verde-fresco",
+   "hook": "Grown in Portugal's cool, rainy Atlantic climate and made to drink young, just as 'Fresco' on the label promises.",
+   "pitch": "This is a light, zesty white from Portugal, with lemon and lime, a touch of peach and a salty, sea-breeze edge. It's brilliant with oysters and shellfish, and it's lovely by the glass to start a meal.",
+   "say": "a-DAY-ga deh mon-SOWNG, VEEN-yo VAIR-day, FRESH-koo",
+   "taste": "Crisp and mouth-watering, with citrus, a little peach and a light salty finish like a sea breeze.",
+   "style": {
+    "body": 2,
+    "acid": 4,
+    "tannin": 0,
+    "sweet": 1
+   },
+   "grape": "Vinho Verde is usually made from Alvarinho (the grape Spain calls Albariño) with Trajadura, which gives zingy, mouth-watering freshness, stone fruit, citrus and a salty, coastal taste.",
+   "place": "Vinho Verde has a cool, rainy Atlantic climate, which keeps the wine light and fresh, and these wines are usually drunk young.",
+   "producer": "",
+   "serve": {
+    "temp": "7-9°C",
+    "glass": "standard white wine glass",
+    "decant": "no"
+   },
+   "dishes": [
+    {
+     "dish": "Seasonal Oysters, Mignonette",
+     "why": "Its salty, citrusy freshness tastes like it belongs next to an oyster."
+    },
+    {
+     "dish": "Sea Bream Crudo, Preserved Lemon, Dill",
+     "why": "Light and lemony, it matches the delicate raw fish and the preserved lemon without drowning them."
+    },
+    {
+     "dish": "Hake, Mussels, Cannellini Beans, Leeks",
+     "why": "This style is made for shellfish, and its freshness lifts the creamy sauce."
+    }
+   ],
+   "alts": [
+    {
+     "id": "w-bodegas-gallegas-albarino-sentidino",
+     "when": "same grape from Spain, a bottle-only step up"
+    },
+    {
+     "id": "w-michel-delhommeau-muscadet-sevre-et-maine-sur-lie",
+     "when": "a classic bottle for a tray of oysters"
+    },
+    {
+     "id": "w-cassara-grillo",
+     "when": "cheaper glass, £8.50"
+    }
+   ],
+   "qs": [
+    {
+     "k": "recognise",
+     "q": "Which description best fits the Adega de Monção Vinho Verde, Fresco?",
+     "opts": [
+      "Full and creamy, with ripe tropical fruit and vanilla",
+      "Light and zesty, with citrus and a salty sea-breeze edge",
+      "Soft and round, with peach and very gentle acidity",
+      "Perfumed and floral, with rose petal and lychee"
+     ],
+     "a": 1,
+     "why": "It's light and zingy, with citrus and a salty, coastal taste.",
+     "id": "w-adega-de-moncao-vinho-verde-fresco#0"
+    },
+    {
+     "k": "recognise",
+     "q": "What sort of climate does the Adega de Monção Vinho Verde, Fresco come from?",
+     "opts": [
+      "Hot and dry Mediterranean",
+      "Sunny high-altitude desert",
+      "Cool and rainy Atlantic",
+      "Warm inland with cold winters"
+     ],
+     "a": 2,
+     "why": "Vinho Verde has a cool, rainy Atlantic climate, which keeps the wine light and fresh.",
+     "id": "w-adega-de-moncao-vinho-verde-fresco#1"
+    },
+    {
+     "k": "recall",
+     "q": "Which country is the Adega de Monção Vinho Verde, Fresco from?",
+     "ans": "Portugal",
+     "acc": [
+      "Portuguese",
+      "Vinho Verde, Portugal"
+     ],
+     "why": "Vinho Verde is a wine region in Portugal.",
+     "id": "w-adega-de-moncao-vinho-verde-fresco#2"
+    },
+    {
+     "k": "recall",
+     "q": "How much is a glass of the Adega de Monção Vinho Verde, Fresco?",
+     "ans": "£11 for a 175ml glass",
+     "acc": [
+      "£11",
+      "11 pounds"
+     ],
+     "why": "It's £11 a glass and £44 a bottle.",
+     "id": "w-adega-de-moncao-vinho-verde-fresco#3"
+    },
+    {
+     "k": "apply",
+     "q": "A guest with the Seasonal Oysters, Mignonette wants a light, zingy white by the glass that tastes of the sea, and would like to spend under £12. What would you suggest, and why?",
+     "key": [
+      "Adega de Monção Vinho Verde, Fresco, £11 a glass",
+      "Its mouth-watering citrus and salty, coastal taste match the oysters' briny saltiness",
+      "It's light, from a cool Atlantic climate, so it won't drown the delicate oyster or clash with the mignonette"
+     ],
+     "decoys": [
+      {
+       "id": "w-tinpot-hut-sauvignon-blanc",
+       "why": "At £12 a glass it isn't under their £12 limit."
+      },
+      {
+       "id": "w-carl-loewen-riesling-alte-reben",
+       "why": "At £12.50 a glass it's over their budget."
+      },
+      {
+       "id": "w-domaine-perraud-macon-villages-maison-cubitt",
+       "why": "At £13.50 a glass it's over budget, and it's a rounder white rather than a salty, sea-breezy one."
+      }
+     ],
+     "wrong": [
+      "It's too light for oysters, which need a fuller, richer white",
+      "Its sharp freshness will clash with the vinegar in the mignonette",
+      "Its citrus flavours are too strong and will drown the delicate oyster"
+     ],
+     "why": "It fits the price by the glass, and its light, salty, citrusy style is a classic match for oysters.",
+     "id": "w-adega-de-moncao-vinho-verde-fresco#4"
+    },
+    {
+     "k": "contrast",
+     "q": "Which of the Adega de Monção Vinho Verde, Fresco and the Bodegas Gallegas Albariño Sentidiño can you sell by the glass?",
+     "ans": "Only the Vinho Verde, at £11; the Albariño is bottle only at £58",
+     "acc": [
+      "The Vinho Verde",
+      "Adega de Monção, by the glass"
+     ],
+     "why": "Both suit seafood, but only the Vinho Verde comes by the glass.",
+     "id": "w-adega-de-moncao-vinho-verde-fresco#5"
+    }
+   ],
+   "at": 1794142428850
+  },
+  "w-coates-seely-brut-rose": {
+   "id": "w-coates-seely-brut-rose",
+   "hook": "English pink fizz from Hampshire, grown on the same chalk seam that runs under Champagne.",
+   "pitch": "This is a dry English sparkling rosé from Hampshire, light and crisp with red cherry fruit and lively bubbles. It's one of our few pink sparklings by the glass, so it's a lovely way to start a meal or toast something without committing to a bottle.",
+   "say": "COATES and SEELY, broot roh-ZAY",
+   "taste": "Dry, light and zingy, with red cherry and red berry fruit and fine, lively bubbles.",
+   "style": {
+    "body": 2,
+    "acid": 5,
+    "tannin": 0,
+    "sweet": 1
+   },
+   "grape": "It's a blend of Pinot Noir, Chardonnay and Pinot Meunier. The two red grapes, Pinot Noir and Pinot Meunier, give the pink colour, and Pinot Noir brings the red cherry fruit.",
+   "place": "Hampshire in southern England is cool and close to the sea, on the same chalk seam as Champagne, and that cool weather keeps the wine fresh with high acidity, meaning that mouth-watering, zesty feel.",
+   "producer": "",
+   "serve": {
+    "temp": "6-8°C",
+    "glass": "flute or tulip-shaped white wine glass",
+    "decant": "no"
+   },
+   "dishes": [
+    {
+     "dish": "Duck & Pancetta Terrine, Spiced Pear Chutney, Toast",
+     "why": "Pinot Noir is a classic match for duck, and the fresh bubbles cut through the richness of the terrine."
+    },
+    {
+     "dish": "Fish & Chips, Crushed Peas, Tartare Sauce",
+     "why": "The crisp acidity and bubbles clean up the fried batter like a squeeze of lemon."
+    },
+    {
+     "dish": "Smoked Mackerel Pâté",
+     "why": "The zesty freshness lifts the rich, smoky pâté, and the red fruit works well with oily fish."
+    }
+   ],
+   "alts": [
+    {
+     "id": "w-gusbourne-rose-brut",
+     "when": "a bottle of English pink fizz from a single year, 2020"
+    },
+    {
+     "id": "w-charles-heidsieck-brut-rose",
+     "when": "a guest who wants pink Champagne rather than English"
+    },
+    {
+     "id": "w-coates-seely-brut-reserve",
+     "when": "same house, white sparkling, a little cheaper by the glass"
+    }
+   ],
+   "qs": [
+    {
+     "k": "recognise",
+     "q": "Which description best fits the Coates & Seely Brut Rosé NV?",
+     "opts": [
+      "Dry, light and crisp, with red cherry fruit and lively bubbles",
+      "Sweet, soft and gentle, with candied strawberry and low acidity",
+      "Rich and full, with heavy oak and toasted vanilla notes",
+      "Dry and soft, with low acidity and dark plum fruit"
+     ],
+     "a": 0,
+     "why": "It's a dry, light English sparkling rosé with high acidity and red cherry fruit from Pinot Noir.",
+     "id": "w-coates-seely-brut-rose#0"
+    },
+    {
+     "k": "recognise",
+     "q": "Where is the Coates & Seely Brut Rosé NV from?",
+     "opts": [
+      "Hampshire, England",
+      "Kent, England",
+      "Champagne, France",
+      "Sussex, England"
+     ],
+     "a": 0,
+     "why": "It comes from Hampshire in southern England, on the same chalk seam as Champagne.",
+     "id": "w-coates-seely-brut-rose#1"
+    },
+    {
+     "k": "recall",
+     "q": "Which three grapes go into the Coates & Seely Brut Rosé NV?",
+     "ans": "Pinot Noir, Chardonnay and Pinot Meunier",
+     "acc": [
+      "Pinot Noir, Pinot Meunier and Chardonnay",
+      "Chardonnay, Pinot Noir, Meunier",
+      "the three Champagne grapes"
+     ],
+     "why": "It uses the same three grapes as Champagne, with the red Pinots giving the pink colour.",
+     "id": "w-coates-seely-brut-rose#2"
+    },
+    {
+     "k": "recall",
+     "q": "How much is a glass of the Coates & Seely Brut Rosé NV, and how big is the pour?",
+     "ans": "£16 for a 125ml glass",
+     "acc": [
+      "£16, 125ml",
+      "sixteen pounds for 125ml"
+     ],
+     "why": "Sparkling wines are poured in 125ml glasses, and this one is £16.",
+     "id": "w-coates-seely-brut-rose#3"
+    },
+    {
+     "k": "apply",
+     "q": "A guest having the Duck & Pancetta Terrine, Spiced Pear Chutney, Toast wants just a glass of English sparkling with some red fruit to it. What would you suggest, and why?",
+     "key": [
+      "Coates & Seely Brut Rosé NV",
+      "it's a pink English sparkling poured by the glass at £16, with red cherry fruit from Pinot Noir",
+      "its high acidity and bubbles cut through the rich terrine, and Pinot Noir is a classic match for duck"
+     ],
+     "decoys": [
+      {
+       "id": "w-gusbourne-blanc-de-blancs",
+       "why": "It's English and by the glass, but it's a white sparkling with no red-fruit character."
+      },
+      {
+       "id": "w-coates-seely-brut-reserve",
+       "why": "Same house and by the glass, but it's the white sparkling, not the pink red-fruited one the guest wants."
+      },
+      {
+       "id": "w-charles-heidsieck-brut-reserve",
+       "why": "It's by the glass but it's a white Champagne from France, not English and not red-fruited."
+      }
+     ],
+     "wrong": [
+      "It's full-bodied enough to match the weight of the terrine",
+      "Its firm tannin grips the fat in the terrine and pancetta",
+      "Its soft, low acidity keeps it gentle next to the chutney"
+     ],
+     "why": "It's the only alcoholic pink sparkling we pour by the glass, and its freshness and red fruit suit duck.",
+     "id": "w-coates-seely-brut-rose#4"
+    },
+    {
+     "k": "contrast",
+     "q": "A guest wants an English sparkling rosé by the glass: is it the Coates & Seely Brut Rosé NV or the Gusbourne Rosé Brut 2020?",
+     "ans": "The Coates & Seely Brut Rosé",
+     "acc": [
+      "Coates & Seely",
+      "the Coates and Seely, £16 a glass"
+     ],
+     "why": "The Coates & Seely is poured by the glass at £16, while the Gusbourne Rosé is by the bottle only at £96.",
+     "id": "w-coates-seely-brut-rose#5"
+    }
+   ],
+   "at": 1794142435914
+  },
+  "w-gusbourne-rose-brut": {
+   "id": "w-gusbourne-rose-brut",
+   "hook": "A single-year 2020 pink fizz from Kent, by one of England's classic sparkling houses.",
+   "pitch": "This is a dry English sparkling rosé from Kent, all from the 2020 harvest, crisp and fresh with red cherry fruit. Gusbourne is one of England's classic sparkling producers, so it's a great bottle for a celebration or to show off what English wine can do.",
+   "say": "GUS-born, roh-ZAY broot",
+   "taste": "Dry, light and crisp, with red cherry and red berry fruit and fine, lively bubbles.",
+   "style": {
+    "body": 2,
+    "acid": 5,
+    "tannin": 0,
+    "sweet": 1
+   },
+   "grape": "It's a blend of Pinot Noir, Chardonnay and Pinot Meunier, with the red grapes, Pinot Noir and Pinot Meunier, giving the pink colour and Pinot Noir bringing red cherry fruit.",
+   "place": "Kent in south-east England is cool and close to the sea, on the same chalk seam as Champagne, and that cool climate gives the wine its high, mouth-watering acidity.",
+   "producer": "Gusbourne is one of the classic producers of English sparkling wine, alongside Nyetimber and Ridgeview.",
+   "serve": {
+    "temp": "6-8°C",
+    "glass": "flute or tulip-shaped white wine glass",
+    "decant": "no"
+   },
+   "dishes": [
+    {
+     "dish": "Eggs Royale, Hot Smoked Chalk Stream Trout",
+     "why": "Pinot Noir loves salmon-like fish such as trout, and the crisp bubbles cut through the creamy hollandaise."
+    },
+    {
+     "dish": "Sea Bream Crudo, Preserved Lemon, Dill",
+     "why": "It's light and zesty enough not to swamp the delicate raw fish, and its acidity matches the lemon."
+    },
+    {
+     "dish": "Duck & Pancetta Terrine, Spiced Pear Chutney, Toast",
+     "why": "Duck and Pinot Noir are a classic pair, and the bubbles refresh the palate after each rich mouthful."
+    }
+   ],
+   "alts": [
+    {
+     "id": "w-coates-seely-brut-rose",
+     "when": "by the glass, or a little cheaper by the bottle"
+    },
+    {
+     "id": "w-philipponnat-rose-brut",
+     "when": "a guest who wants pink Champagne rather than English"
+    },
+    {
+     "id": "w-gusbourne-blanc-de-blancs",
+     "when": "same house and year, white sparkling, and by the glass"
+    }
+   ],
+   "qs": [
+    {
+     "k": "recognise",
+     "q": "Which description best fits the Gusbourne Rosé Brut 2020?",
+     "opts": [
+      "Dry, light and crisp, with red cherry fruit and lively bubbles",
+      "Sweet, soft and gentle, with candied strawberry and low acidity",
+      "Rich and full, with heavy oak and toasted vanilla notes",
+      "Dry and soft, with low acidity and dark plum fruit"
+     ],
+     "a": 0,
+     "why": "It's a dry, light English sparkling rosé with high acidity and red cherry fruit from Pinot Noir.",
+     "id": "w-gusbourne-rose-brut#0"
+    },
+    {
+     "k": "recognise",
+     "q": "Where is the Gusbourne Rosé Brut 2020 from?",
+     "opts": [
+      "Kent, England",
+      "Hampshire, England",
+      "Champagne, France",
+      "Sussex, England"
+     ],
+     "a": 0,
+     "why": "Gusbourne is in Kent, in south-east England.",
+     "id": "w-gusbourne-rose-brut#1"
+    },
+    {
+     "k": "recall",
+     "q": "Which year's harvest is the Gusbourne Rosé Brut made from?",
+     "ans": "2020",
+     "acc": [
+      "the 2020 vintage",
+      "twenty twenty"
+     ],
+     "why": "It's a vintage wine, meaning all the grapes come from one year's harvest, 2020.",
+     "id": "w-gusbourne-rose-brut#2"
+    },
+    {
+     "k": "recall",
+     "q": "Which three grapes go into the Gusbourne Rosé Brut 2020?",
+     "ans": "Pinot Noir, Chardonnay and Pinot Meunier",
+     "acc": [
+      "Pinot Noir, Pinot Meunier and Chardonnay",
+      "Chardonnay, Pinot Noir, Meunier",
+      "the three Champagne grapes"
+     ],
+     "why": "It uses the same three grapes as Champagne, with the red Pinots giving the pink colour.",
+     "id": "w-gusbourne-rose-brut#3"
+    },
+    {
+     "k": "apply",
+     "q": "A table celebrating at brunch with the Eggs Royale, Hot Smoked Chalk Stream Trout want a bottle of English pink sparkling from a single year's harvest. What would you suggest, and why?",
+     "key": [
+      "Gusbourne Rosé Brut 2020",
+      "it's an English sparkling rosé from one harvest, 2020, at £96, from one of England's classic houses",
+      "its high acidity and bubbles cut the creamy hollandaise, and Pinot Noir's red fruit suits smoked trout"
+     ],
+     "decoys": [
+      {
+       "id": "w-coates-seely-brut-rose",
+       "why": "It's English pink fizz, but it's non-vintage, a blend of years, so it isn't from a single harvest."
+      },
+      {
+       "id": "w-gusbourne-blanc-de-blancs",
+       "why": "Same house and same 2020 year, but it's a white sparkling, not pink."
+      },
+      {
+       "id": "w-philipponnat-rose-brut",
+       "why": "It's a pink sparkling, but it's Champagne from France and non-vintage, not English from one year."
+      }
+     ],
+     "wrong": [
+      "It's full-bodied enough to stand up to the rich hollandaise",
+      "Its firm tannin cuts through the egg yolk and butter",
+      "Its soft, low acidity keeps it gentle next to the smoky fish"
+     ],
+     "why": "It's our only English sparkling rosé from a single year, and its freshness and red fruit suit smoked trout and eggs.",
+     "id": "w-gusbourne-rose-brut#4"
+    },
+    {
+     "k": "contrast",
+     "q": "Which is made from a single year's harvest: the Gusbourne Rosé Brut 2020 or the Coates & Seely Brut Rosé NV?",
+     "ans": "The Gusbourne Rosé Brut",
+     "acc": [
+      "Gusbourne",
+      "the Gusbourne 2020"
+     ],
+     "why": "The Gusbourne is a vintage wine from 2020, while the Coates & Seely is NV, non-vintage, a blend of different years.",
+     "id": "w-gusbourne-rose-brut#5"
+    }
+   ],
+   "at": 1794142435914
+  },
+  "w-tinpot-hut-sauvignon-blanc": {
+   "id": "w-tinpot-hut-sauvignon-blanc",
+   "hook": "Marlborough's sunny days and cold nights lock in the zingy freshness and cut-grass smell.",
+   "pitch": "This is a zesty New Zealand Sauvignon Blanc, full of gooseberry, passionfruit and that fresh cut-grass smell, with mouth-watering acidity (the lively, refreshing tang that makes your mouth water). If you like a crisp, fresh white that wakes up your food, especially seafood, salads and anything with green herbs, you'll love it.",
+   "say": "",
+   "taste": "Zesty and fresh, with gooseberry, passionfruit and a smell of freshly cut grass.",
+   "style": {
+    "body": 2,
+    "acid": 5,
+    "tannin": 0,
+    "sweet": 1
+   },
+   "grape": "Sauvignon Blanc shows high acidity, gooseberry and passionfruit, and natural compounds called pyrazines give it that grassy, cut-grass note.",
+   "place": "Marlborough in New Zealand has sunny days, cold nights and cooling sea air, which lock in high acidity and grassy aromas, and its wines are made to drink young and fresh.",
+   "producer": "",
+   "serve": {
+    "temp": "7-10°C",
+    "glass": "white wine glass",
+    "decant": "no"
+   },
+   "dishes": [
+    {
+     "dish": "Seasonal Oysters, Mignonette",
+     "why": "Sauvignon Blanc is a classic with shellfish, and its zingy freshness matches the salty oysters and the sharp mignonette, a vinegar and shallot dressing."
+    },
+    {
+     "dish": "Sea Bream Crudo, Preserved Lemon, Dill",
+     "why": "The wine's high acidity keeps up with the preserved lemon, and its grassy, herby side picks up the dill."
+    },
+    {
+     "dish": "Celeriac, Apple, Kale, Hazelnut Vinaigrette",
+     "why": "Sauvignon Blanc loves salads, and its freshness stands up to the tangy vinaigrette without tasting flat."
+    }
+   ],
+   "alts": [
+    {
+     "id": "w-lucien-crochet-sancerre",
+     "when": "same grape from the Loire in France, for a guest happy to take a bottle"
+    },
+    {
+     "id": "w-adega-de-moncao-vinho-verde-fresco",
+     "when": "by the glass and a little cheaper, still light and fresh"
+    },
+    {
+     "id": "w-lauriers-picpoul-de-pinet-paredaux",
+     "when": "under £50 a bottle, a crisp white for the oysters"
+    }
+   ],
+   "qs": [
+    {
+     "k": "recognise",
+     "q": "Which description best fits the Tinpot Hut Sauvignon Blanc 2025?",
+     "opts": [
+      "Zesty and fresh, with gooseberry, passionfruit and cut grass",
+      "Rich and buttery, with toasted oak, vanilla and baked apple",
+      "Soft and peachy, with apricot, blossom and gentle acidity",
+      "Nutty and salty, with bruised apple and a dry, tangy finish"
+     ],
+     "a": 0,
+     "why": "Marlborough Sauvignon Blanc is high in acidity with gooseberry, passionfruit and a cut-grass smell, not oaky, soft or nutty.",
+     "id": "w-tinpot-hut-sauvignon-blanc#0"
+    },
+    {
+     "k": "recognise",
+     "q": "How is a white like the Tinpot Hut Sauvignon Blanc usually made to keep its fresh aromas?",
+     "opts": [
+      "Aged for two years in new oak barrels",
+      "Fermented cold in stainless steel tanks",
+      "Grapes dried on straw mats before pressing",
+      "Fortified with grape spirit before bottling"
+     ],
+     "a": 1,
+     "why": "Sauvignon Blanc is usually fermented cold in steel, which keeps its fresh, grassy, fruity smells.",
+     "id": "w-tinpot-hut-sauvignon-blanc#1"
+    },
+    {
+     "k": "recall",
+     "q": "Which region of New Zealand does the Tinpot Hut Sauvignon Blanc come from?",
+     "ans": "Marlborough",
+     "acc": [
+      "Marlborough, New Zealand",
+      "Marlborough GI"
+     ],
+     "why": "Marlborough's sunny days and cold nights give the wine its high acidity and grassy aromas.",
+     "id": "w-tinpot-hut-sauvignon-blanc#2"
+    },
+    {
+     "k": "recall",
+     "q": "How much is a 175ml glass of the Tinpot Hut Sauvignon Blanc?",
+     "ans": "£12",
+     "acc": [
+      "12 pounds",
+      "twelve pounds"
+     ],
+     "why": "It's £12 a glass and £51 a bottle, so you can offer it either way.",
+     "id": "w-tinpot-hut-sauvignon-blanc#3"
+    },
+    {
+     "k": "apply",
+     "q": "A guest eating the Sea Bream Crudo, Preserved Lemon, Dill wants a glass of white under £13 that smells of cut grass and gooseberry, to go with the herbs. What would you suggest, and why?",
+     "key": [
+      "Tinpot Hut Sauvignon Blanc 2025, £12 a glass",
+      "its high acidity matches the preserved lemon and keeps the raw fish tasting fresh",
+      "its grassy, gooseberry Sauvignon Blanc character is exactly what they asked for and picks up the dill"
+     ],
+     "decoys": [
+      {
+       "id": "w-carl-loewen-riesling-alte-reben",
+       "why": "It's aromatic and under £13, but it's Riesling, so it doesn't have the cut-grass and gooseberry smell the guest asked for."
+      },
+      {
+       "id": "w-chateau-grand-village-bordeaux-blanc",
+       "why": "At £13 a glass it isn't under the guest's £13 limit."
+      },
+      {
+       "id": "w-cassara-grillo",
+       "why": "It's well under £13, but it isn't the grassy, gooseberry style the guest wants."
+      }
+     ],
+     "wrong": [
+      "It's a full, rich white that stands up to oily, heavy fish",
+      "Its firm tannin grips the raw fish and cleans your mouth",
+      "Its soft, low acidity won't clash with the preserved lemon"
+     ],
+     "why": "The guest asked for the cut-grass, gooseberry smell by the glass under £13, and only the Tinpot Hut gives them that, with the acidity to match the lemon.",
+     "id": "w-tinpot-hut-sauvignon-blanc#4"
+    },
+    {
+     "k": "contrast",
+     "q": "The Tinpot Hut Sauvignon Blanc and the Lucien Crochet Sancerre are both Sauvignon Blanc; which one can a guest order by the glass?",
+     "ans": "The Tinpot Hut Sauvignon Blanc",
+     "acc": [
+      "Tinpot Hut",
+      "the New Zealand one",
+      "the Tinpot Hut, at £12 a glass"
+     ],
+     "why": "The Tinpot Hut is £12 a glass or £51 a bottle, while the Sancerre is bottle only at £72.",
+     "id": "w-tinpot-hut-sauvignon-blanc#5"
+    }
+   ],
+   "at": 1794142436863
+  },
+  "w-carl-loewen-riesling-alte-reben": {
+   "id": "w-carl-loewen-riesling-alte-reben",
+   "hook": "'Alte Reben' is German for old vines; Mosel Riesling grows on steep slate slopes above the river.",
+   "pitch": "This is a German Riesling from the Mosel: bright and aromatic, never tastes of oak, and has the high, mouth-watering acidity (the lively tang that makes your mouth water) Riesling is loved for. It's brilliant with spicy food and pork, and it keeps everything tasting fresh between bites.",
+   "say": "karl LUR-ven, REES-ling, AL-tuh RAY-ben",
+   "taste": "Bright and aromatic, with lively, mouth-watering acidity and no oak flavour.",
+   "style": {
+    "body": 2,
+    "acid": 5,
+    "tannin": 0,
+    "sweet": 2
+   },
+   "grape": "Riesling is very aromatic and high in acidity, and it can be made anywhere from bone-dry to very sweet, so check the label: 'trocken' means dry.",
+   "place": "The Mosel in Germany is cool, but its steep slate slopes above the river catch the sun, which helps the grapes ripen while keeping their fresh acidity.",
+   "producer": "",
+   "serve": {
+    "temp": "8-10°C",
+    "glass": "white wine glass",
+    "decant": "no"
+   },
+   "dishes": [
+    {
+     "dish": "Curried Crab on Malt Rye & Beer Bread",
+     "why": "Riesling is a classic with spicy food, and its freshness cools the curry heat and cuts through the rich crab."
+    },
+    {
+     "dish": "Ibérico Pork",
+     "why": "Riesling and pork are a classic match, and its acidity cuts the richness while its aromatic fruit suits the pork's sweetness."
+    },
+    {
+     "dish": "Duck & Pancetta Terrine, Spiced Pear Chutney, Toast",
+     "why": "Its high acidity cuts through the rich terrine and sits happily with the sweet, spiced chutney."
+    }
+   ],
+   "alts": [
+    {
+     "id": "w-kientzler-riesling-classic",
+     "when": "same grape from a different producer, for a guest happy to take a bottle"
+    },
+    {
+     "id": "w-rosner-gruner-veltliner",
+     "when": "a different crisp, unoaked white for a guest who has had Riesling and wants something new"
+    },
+    {
+     "id": "w-tinpot-hut-sauvignon-blanc",
+     "when": "by the glass, a little cheaper, and grassier, for a guest who wants herby rather than aromatic"
+    }
+   ],
+   "qs": [
+    {
+     "k": "recognise",
+     "q": "Which description best fits the Carl Loewen Riesling, Alte Reben 2025?",
+     "opts": [
+      "Grassy and zesty, with gooseberry and passionfruit",
+      "Rich and creamy, with toasted oak and vanilla",
+      "Bright and aromatic, with high acidity and no oak",
+      "Soft and round, with low acidity and ripe melon"
+     ],
+     "a": 2,
+     "why": "Riesling is aromatic and high in acidity, and it is almost never oaked.",
+     "id": "w-carl-loewen-riesling-alte-reben#0"
+    },
+    {
+     "k": "recognise",
+     "q": "On a German Riesling label like the Carl Loewen, what does the word 'trocken' tell a guest?",
+     "opts": [
+      "The wine is dry",
+      "The wine is sparkling",
+      "The wine is very sweet",
+      "The wine is lightly oaked"
+     ],
+     "a": 0,
+     "why": "On German labels 'trocken' means dry, which helps when a guest asks whether a Riesling is sweet.",
+     "id": "w-carl-loewen-riesling-alte-reben#1"
+    },
+    {
+     "k": "recall",
+     "q": "Which German wine region does the Carl Loewen Riesling, Alte Reben come from?",
+     "ans": "The Mosel",
+     "acc": [
+      "Mosel",
+      "Mosel, Germany"
+     ],
+     "why": "The Mosel is a cool region where steep slate slopes above the river catch the sun.",
+     "id": "w-carl-loewen-riesling-alte-reben#2"
+    },
+    {
+     "k": "recall",
+     "q": "How much is a 175ml glass of the Carl Loewen Riesling, Alte Reben?",
+     "ans": "£12.50",
+     "acc": [
+      "12.50",
+      "twelve pounds fifty",
+      "£12.50 a glass"
+     ],
+     "why": "It's £12.50 a glass and £54 a bottle, so you can offer it either way.",
+     "id": "w-carl-loewen-riesling-alte-reben#3"
+    },
+    {
+     "k": "apply",
+     "q": "A guest with the Curried Crab on Malt Rye & Beer Bread wants an aromatic white by the glass, under £13, that isn't grassy and can cope with the curry spice. What would you suggest, and why?",
+     "key": [
+      "Carl Loewen Riesling, Alte Reben 2025, £12.50 a glass",
+      "Riesling is aromatic rather than grassy and is a classic match for spicy food",
+      "its high acidity cuts through the rich crab and refreshes after the spice"
+     ],
+     "decoys": [
+      {
+       "id": "w-tinpot-hut-sauvignon-blanc",
+       "why": "It's under £13, but its cut-grass Sauvignon Blanc smell is exactly the grassy style the guest wants to avoid."
+      },
+      {
+       "id": "w-la-giustiniana-gavi-di-gavi-lugarara",
+       "why": "At £14 a glass it's over the guest's £13 limit."
+      },
+      {
+       "id": "w-domaine-perraud-macon-villages-maison-cubitt",
+       "why": "At £13.50 a glass it's over the guest's limit, and it isn't the aromatic style they asked for."
+      }
+     ],
+     "wrong": [
+      "It's a heavy, oaky white that smothers the curry heat",
+      "Its tannin grips the crab meat and tames the spice",
+      "Its low, soft acidity keeps it gentle against the curry"
+     ],
+     "why": "Riesling is the aromatic, unoaked, high-acid white that loves spice, and it's £12.50 a glass, which fits what the guest asked for.",
+     "id": "w-carl-loewen-riesling-alte-reben#4"
+    },
+    {
+     "k": "contrast",
+     "q": "The Carl Loewen Riesling, Alte Reben and the Kientzler Riesling Classic are both Riesling; which one can a guest order by the glass?",
+     "ans": "The Carl Loewen Riesling, Alte Reben",
+     "acc": [
+      "Carl Loewen",
+      "the Mosel one",
+      "the Carl Loewen, at £12.50 a glass"
+     ],
+     "why": "The Carl Loewen is £12.50 a glass or £54 a bottle, while the Kientzler is bottle only at £58.",
+     "id": "w-carl-loewen-riesling-alte-reben#5"
+    }
+   ],
+   "at": 1794142436863
+  },
+  "w-sugrue-rock-story": {
+   "id": "w-sugrue-rock-story",
+   "hook": "South Downs English fizz, usually Chardonnay and Pinot Noir, from England's chalk seam shared with Champagne.",
+   "pitch": "This is an English sparkling wine from the South Downs, fresh and lively with mouthwatering acidity and fine bubbles. If you like Champagne, you'll enjoy it: it comes from the same chalky ground and cool climate, and it's brilliant with anything fried or salty.",
+   "say": "SHOO-groo, ROCK STOR-ee",
+   "taste": "Crisp and lively, with citrusy freshness, mouthwatering acidity and fine, creamy bubbles.",
+   "style": {
+    "body": 3,
+    "acid": 5,
+    "tannin": 0,
+    "sweet": 1
+   },
+   "grape": "It is usually a blend of Chardonnay and Pinot Noir, and Chardonnay takes on whatever the winemaker does to it, so in English fizz it gives a fresh, citrusy backbone.",
+   "place": "The South Downs in England is cool and close to the sea, and England sits on the same chalk seam as Champagne, so its sparkling wines carry high, refreshing acidity.",
+   "producer": "",
+   "serve": {
+    "temp": "6-8°C",
+    "glass": "white wine glass or flute",
+    "decant": "no"
+   },
+   "dishes": [
+    {
+     "dish": "Fish & Chips, Crushed Peas, Tartare Sauce",
+     "why": "The bubbles and sharp freshness cut through the crispy batter the way vinegar does on chips."
+    },
+    {
+     "dish": "Smoked Mackerel Pâté",
+     "why": "The lively acidity lifts the rich, smoky, salty pâté and keeps every bite tasting fresh."
+    },
+    {
+     "dish": "Fried Mozzarella, Marinara Sauce",
+     "why": "Fizz and acidity clean the creamy, fried cheese off your palate and stand up to the tangy tomato sauce."
+    }
+   ],
+   "alts": [
+    {
+     "id": "w-gusbourne-blanc-de-blancs",
+     "when": "by the glass, or for a guest who wants English fizz made only from Chardonnay"
+    },
+    {
+     "id": "w-coates-seely-brut-reserve",
+     "when": "English sparkling by the glass, or a bottle under £90"
+    },
+    {
+     "id": "w-charles-heidsieck-brut-reserve",
+     "when": "the guest wants Champagne from France rather than English fizz"
+    }
+   ],
+   "qs": [
+    {
+     "k": "recognise",
+     "q": "Which description best fits Sugrue Rock Story NV?",
+     "opts": [
+      "A crisp English sparkling wine, usually Chardonnay and Pinot Noir, with lively acidity",
+      "A sweet Italian sparkling wine, soft and grapey, with gentle, low acidity",
+      "A rich French sparkling rosé, deep pink, with red berry flavours and soft acidity",
+      "A bone-dry Spanish sparkling wine with no added sugar and earthy flavours"
+     ],
+     "a": 0,
+     "why": "Sugrue Rock Story is English fizz, usually a Chardonnay and Pinot Noir blend, with the high acidity England's cool climate gives.",
+     "id": "w-sugrue-rock-story#0"
+    },
+    {
+     "k": "recognise",
+     "q": "Where is Sugrue Rock Story NV made?",
+     "opts": [
+      "South Downs, England",
+      "Kent, England",
+      "Champagne, France",
+      "Loire Valley, France"
+     ],
+     "a": 0,
+     "why": "Sugrue Rock Story comes from the South Downs in England; Gusbourne is the one from Kent.",
+     "id": "w-sugrue-rock-story#1"
+    },
+    {
+     "k": "recall",
+     "q": "What grapes usually go into Sugrue Rock Story NV?",
+     "ans": "Chardonnay and Pinot Noir",
+     "acc": [
+      "Chardonnay with Pinot Noir",
+      "Pinot Noir and Chardonnay",
+      "a Chardonnay and Pinot Noir blend"
+     ],
+     "why": "It is usually a blend of the two classic sparkling grapes, Chardonnay and Pinot Noir.",
+     "id": "w-sugrue-rock-story#2"
+    },
+    {
+     "k": "recall",
+     "q": "How can a guest order Sugrue Rock Story NV on our list, and at what price?",
+     "ans": "By the bottle only, £90",
+     "acc": [
+      "bottle only at £90",
+      "£90 a bottle, not by the glass",
+      "only as a £90 bottle"
+     ],
+     "why": "Sugrue Rock Story is not poured by the glass; offer Gusbourne Blanc de Blancs or Coates & Seely if they want a glass.",
+     "id": "w-sugrue-rock-story#3"
+    },
+    {
+     "k": "apply",
+     "q": "A couple sharing the Fish & Chips, Crushed Peas, Tartare Sauce say they've been walking on the South Downs and want a bottle of white English fizz from there, not a rosé, with some Pinot Noir in it. What would you suggest, and why?",
+     "key": [
+      "Sugrue Rock Story NV",
+      "It's white English sparkling from the South Downs, usually Chardonnay blended with Pinot Noir",
+      "Its high acidity and bubbles cut through the batter and freshen the palate, like vinegar on chips"
+     ],
+     "decoys": [
+      {
+       "id": "w-gusbourne-blanc-de-blancs",
+       "why": "It's from Kent, not the South Downs, and it's made only from Chardonnay, with no Pinot Noir."
+      },
+      {
+       "id": "w-coates-seely-brut-rose",
+       "why": "It's a rosé, and the guests asked for a white sparkling."
+      },
+      {
+       "id": "w-gusbourne-rose-brut",
+       "why": "It's a rosé from Kent, so it misses both the colour and the place they asked for."
+      }
+     ],
+     "wrong": [
+      "It's too light for battered fish, so a full-bodied red would suit them better",
+      "Its tannin would clash with the fish and make the tartare sauce taste bitter",
+      "Its acidity is too low to cut through the rich, fried batter of the fish"
+     ],
+     "why": "Sugrue Rock Story is the South Downs English sparkling with Pinot Noir usually in the blend, and its fresh acidity is a classic match for fried fish.",
+     "id": "w-sugrue-rock-story#4"
+    },
+    {
+     "k": "contrast",
+     "q": "What is the main grape difference between Sugrue Rock Story NV and Gusbourne Blanc de Blancs 2020?",
+     "ans": "Sugrue usually blends Chardonnay with Pinot Noir; Gusbourne is made only from Chardonnay",
+     "acc": [
+      "Gusbourne is all Chardonnay, Sugrue is usually a blend with Pinot Noir",
+      "Sugrue has Pinot Noir in it, Gusbourne doesn't",
+      "Sugrue is a blend, Gusbourne is just Chardonnay"
+     ],
+     "why": "Both are £90 English sparkling wines, but Blanc de Blancs means white grapes only, here Chardonnay, while Sugrue usually brings in Pinot Noir too.",
+     "id": "w-sugrue-rock-story#5"
+    }
+   ],
+   "at": 1794142443415
+  },
+  "w-gusbourne-blanc-de-blancs": {
+   "id": "w-gusbourne-blanc-de-blancs",
+   "hook": "Gusbourne is one of England's classic sparkling houses; this is all Chardonnay, from Kent's 2020 harvest.",
+   "pitch": "This is English sparkling wine from Kent, made only from Chardonnay, so it's crisp, citrusy and really refreshing. It comes from one of England's best-known sparkling wine producers, and you can have it by the glass, which makes it perfect with oysters or to start the evening.",
+   "say": "GUS-born, blon duh BLON",
+   "taste": "Crisp, lean and citrusy, with mouthwatering freshness and fine, lively bubbles.",
+   "style": {
+    "body": 2,
+    "acid": 5,
+    "tannin": 0,
+    "sweet": 1
+   },
+   "grape": "Blanc de Blancs means 'white from whites', and here that white grape is only Chardonnay, which in cool English fizz shows as fresh citrus carried on high acidity.",
+   "place": "Kent is cool and close to the sea, only just warm enough to ripen grapes, and it sits on the same chalk seam as Champagne, which gives the wine its high, refreshing acidity.",
+   "producer": "Gusbourne is one of England's classic sparkling wine producers, alongside Nyetimber and Ridgeview.",
+   "serve": {
+    "temp": "6-8°C",
+    "glass": "white wine glass or flute",
+    "decant": "no"
+   },
+   "dishes": [
+    {
+     "dish": "Seasonal Oysters, Mignonette",
+     "why": "Crisp Chardonnay fizz and salty, delicate oysters are a classic match, and its acidity is as sharp as the mignonette."
+    },
+    {
+     "dish": "Sea Bream Crudo, Preserved Lemon, Dill",
+     "why": "Its citrus freshness echoes the preserved lemon without smothering the delicate raw fish."
+    },
+    {
+     "dish": "Fish & Chips, Crushed Peas, Tartare Sauce",
+     "why": "The bubbles and high acidity cut through the batter and keep each mouthful tasting fresh."
+    }
+   ],
+   "alts": [
+    {
+     "id": "w-coates-seely-brut-reserve",
+     "when": "English sparkling by the glass for a little less, £14"
+    },
+    {
+     "id": "w-sugrue-rock-story",
+     "when": "same price by the bottle, usually with Pinot Noir blended in"
+    },
+    {
+     "id": "w-saint-sauveur-blanc-de-blancs-premier-cru",
+     "when": "a guest who wants another Blanc de Blancs and has a bigger bottle budget"
+    }
+   ],
+   "qs": [
+    {
+     "k": "recognise",
+     "q": "Which description best fits Gusbourne Blanc de Blancs 2020?",
+     "opts": [
+      "Crisp English sparkling made only from Chardonnay, lean and citrusy with high acidity",
+      "Sweet Italian sparkling made from Muscat, soft and grapey with low acidity",
+      "Rich French sparkling made only from Pinot Noir, full and fruity with soft acidity",
+      "Pale English sparkling rosé, light and strawberry-scented with gentle acidity"
+     ],
+     "a": 0,
+     "why": "Gusbourne Blanc de Blancs is all Chardonnay from cool Kent, so it's crisp and citrusy with high acidity.",
+     "id": "w-gusbourne-blanc-de-blancs#0"
+    },
+    {
+     "k": "recognise",
+     "q": "What do the words 'Blanc de Blancs' on the Gusbourne 2020 label tell a guest?",
+     "opts": [
+      "Made only from white grapes, here Chardonnay",
+      "Made only from black grapes, pressed gently",
+      "Made from a mix of white and black grapes",
+      "Made pink by adding a little red wine"
+     ],
+     "a": 0,
+     "why": "Blanc de Blancs means 'white from whites': a white wine made only from white grapes, which for Gusbourne is Chardonnay.",
+     "id": "w-gusbourne-blanc-de-blancs#1"
+    },
+    {
+     "k": "recall",
+     "q": "Which English county does Gusbourne Blanc de Blancs 2020 come from?",
+     "ans": "Kent",
+     "acc": [
+      "Kent, England",
+      "it's from Kent"
+     ],
+     "why": "Gusbourne Blanc de Blancs is from Kent, in England's cool, chalky south.",
+     "id": "w-gusbourne-blanc-de-blancs#2"
+    },
+    {
+     "k": "recall",
+     "q": "How big is a glass of Gusbourne Blanc de Blancs 2020, and what does it cost?",
+     "ans": "125ml, £15.50",
+     "acc": [
+      "£15.50 for 125ml",
+      "a 125ml glass at £15.50"
+     ],
+     "why": "Sparkling wine is poured in 125ml glasses, and Gusbourne Blanc de Blancs is £15.50 a glass (£90 a bottle).",
+     "id": "w-gusbourne-blanc-de-blancs#3"
+    },
+    {
+     "k": "apply",
+     "q": "A guest ordering the Seasonal Oysters, Mignonette says she loves Chablis and wants just a glass of English fizz made only from Chardonnay. What would you suggest, and why?",
+     "key": [
+      "Gusbourne Blanc de Blancs 2020",
+      "It's English sparkling made only from Chardonnay and we pour it by the glass",
+      "Its crisp citrus and high acidity suit the salty oysters and match the sharp mignonette"
+     ],
+     "decoys": [
+      {
+       "id": "w-coates-seely-brut-rose",
+       "why": "It's a rosé, not a Chardonnay-only white fizz."
+      },
+      {
+       "id": "w-sugrue-rock-story",
+       "why": "It's bottle only and usually has Pinot Noir in the blend, so it fails both requests."
+      },
+      {
+       "id": "w-charles-heidsieck-brut-reserve",
+       "why": "It's French Champagne, not English fizz as she asked."
+      }
+     ],
+     "wrong": [
+      "It's too full-bodied for raw oysters, so a light still white would suit her better",
+      "Its tannin would make the oysters taste metallic, so a softer wine is safer",
+      "Its acidity would clash with the vinegar in the mignonette and taste harsh"
+     ],
+     "why": "Gusbourne Blanc de Blancs is the only all-Chardonnay English sparkling by the glass, and crisp Chardonnay fizz is a classic with oysters.",
+     "id": "w-gusbourne-blanc-de-blancs#4"
+    },
+    {
+     "k": "contrast",
+     "q": "Gusbourne Blanc de Blancs 2020 and Gusbourne Rosé Brut 2020 are from the same producer and year. How do they differ for a guest?",
+     "ans": "The Blanc de Blancs is white, all Chardonnay and sold by the glass; the Rosé Brut is pink and bottle only",
+     "acc": [
+      "Blanc de Blancs is white Chardonnay fizz by the glass, the rosé is pink and only by the bottle",
+      "one is white and by the glass, the other is pink and bottle only at £96",
+      "Blanc de Blancs is white and £15.50 a glass; Rosé Brut is a pink £96 bottle"
+     ],
+     "why": "Same house and vintage, but the Blanc de Blancs is white Chardonnay fizz poured by the glass, while the Rosé Brut is pink and only comes as a £96 bottle.",
+     "id": "w-gusbourne-blanc-de-blancs#5"
+    }
+   ],
+   "at": 1794142443415
   }
  },
  "pairings": {},
@@ -5025,5 +7023,5 @@
   }
  ],
  "cocktailCards": {},
- "exported": "2026-11-08T12:52:33.146Z"
+ "exported": "2026-11-08T12:54:03.423Z"
 }
