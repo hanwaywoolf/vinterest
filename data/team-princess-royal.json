@@ -31352,7 +31352,9 @@
    "d:d-grilled-wing-rib-bone-marrow-parsley-butter#know",
    "d:d-pump-street-dark-white-chocolate-mousse-salted-caramel-feuil#know",
    "d:d-christmas-pudding-brandy-custard#mod",
-   "d:d-mince-pies-clotted-cream#0"
+   "d:d-mince-pies-clotted-cream#0",
+   "w-philipponnat-blanc-de-noirs-extra-brut#4",
+   "w-niepoort-dry-white-port-white-rabbit#4"
   ],
   "notes": {
    "w-charles-heidsieck-brut-reserve#3": {
@@ -32286,6 +32288,14 @@
    "d:d-mince-pies-clotted-cream#0": {
     "problem": "false_fact",
     "note": "The line after says 'Ten years in barrel', but '10-Year-Old' on a tawny is the age style of a blend of wines, not ten literal years in barrel; reword it to 'a blend aged in barrel to an average of around ten years' and keep the rest."
+   },
+   "w-philipponnat-blanc-de-noirs-extra-brut#4": {
+    "problem": "request",
+    "note": "The app's own check: Charles Heidsieck Vintage Brut is over the guest's price"
+   },
+   "w-niepoort-dry-white-port-white-rabbit#4": {
+    "problem": "request",
+    "note": "The app's own check: Niepoort Tawny Port, Tawny Dee isn't the kind asked for"
    }
   },
   "reread": {

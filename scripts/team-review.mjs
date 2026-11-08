@@ -59,6 +59,14 @@ try {
     held += r.res.held.length;
     console.log(`${r.name}: ${r.res.asked} questions read, ${r.res.doubted} doubted, ${r.res.fixed} rewritten, ${r.res.held.length} held`);
     for (const n of r.notes) console.log(`  [${n.problem}] ${n.id}: ${n.note}`);
+    // Last, the app's own check (TeamLearn.review, what npm run team:audit runs) over the result: a rewrite can pass the
+    // sommelier and still fail a rule, and a question released by a --held read may be one held by hand for a rule. Anything
+    // it flags is held too, so the file this writes always passes the audit.
+    const flagged = await page.evaluate((res) => { const d = TeamData.get(); d.venue.reviewed = res; TeamData.save(d);
+      return TeamLearn.review().map((f) => ({ id: f.q.id, code: f.code, note: f.note })); }, r.res);
+    const extra = flagged.filter((f, i, a) => !r.res.held.includes(f.id) && a.findIndex((x) => x.id === f.id) === i);
+    if (extra.length) { r.res = { ...r.res, held: [...r.res.held, ...extra.map((f) => f.id)], notes: { ...r.res.notes, ...Object.fromEntries(extra.map((f) => [f.id, { problem: f.code, note: `The app's own check: ${f.note}` }])) } };
+      console.log(`  ${extra.length} more held by the app's own check:`); extra.forEach((f) => console.log(`  [${f.code}] ${f.id}: ${f.note}`)); }
     if (!dry) {
       const file = `data/team-${seed}.json`, doc = JSON.parse(fs.readFileSync(file, 'utf8'));
       doc.cards = r.cards; doc.reviewed = r.res; doc.exported = new Date().toISOString();
