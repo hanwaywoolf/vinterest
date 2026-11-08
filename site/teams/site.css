@@ -501,3 +501,24 @@ html.dlg-open, html.dlg-open body { overflow: hidden; }
 .sf li b { color: var(--ink); font-weight: 600; }
 .sf .note { margin-top: 16px; font-size: 14px; color: var(--mute); }
 @media (max-width: 860px) { .sf { grid-template-columns: 1fr; gap: 14px; padding: 22px; } .sf ul { grid-template-columns: 1fr; } .sf h2 { font-size: 22px; } }
+
+/* The header on black: white words, the mark in white as in the footer, dropdowns and the phone panel dark to match. */
+.top { background: rgba(12, 12, 12, .94); border-bottom-color: rgba(255, 255, 255, .08); }
+.top .tlogo .mark img { filter: invert(1); }
+.top .tlogo .word { color: var(--neon); }
+.top nav .nl, .top nav .ddb { color: rgba(255, 255, 255, .72); }
+.top nav .nl:hover, .top nav .ddb:hover, .top nav .dd.on .ddb, .top nav .nl[aria-current="page"], .top nav .dd:has(a[aria-current]) .ddb { color: #fff; }
+.top nav .ddm { background: #161616; border-color: rgba(255, 255, 255, .1); box-shadow: 0 18px 40px rgba(0, 0, 0, .45); }
+.top nav .ddm a:hover, .top nav .ddm a:focus-visible { background: rgba(255, 255, 255, .06); }
+.top nav .ddm b { color: #fff; }
+.top nav .ddm span { color: rgba(255, 255, 255, .55); }
+.top nav .ddm a[aria-current="page"] b { color: var(--neon); }
+.top .btn.ghost { background: rgba(255, 255, 255, .06); border-color: rgba(255, 255, 255, .18); color: #fff; }
+.top .btn.ghost:hover { border-color: #fff; }
+.top .menub { background: rgba(255, 255, 255, .06); border-color: rgba(255, 255, 255, .18); }
+.top .menub i { background: #fff; }
+@media (max-width: 860px) {
+  .top.open nav { background: #121212; border-bottom-color: rgba(255, 255, 255, .08); box-shadow: 0 18px 40px rgba(0, 0, 0, .5); }
+  .top.open nav .ddb { color: rgba(255, 255, 255, .5); }
+  .top.open nav .nl { color: #fff; border-top-color: rgba(255, 255, 255, .1); }
+}
