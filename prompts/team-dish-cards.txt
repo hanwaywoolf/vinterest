@@ -7,6 +7,8 @@ The allergens to use, by code: {{allergens}}
 The menu (id | section | dish | description | price | diet notes):
 {{dishes}}
 
+[[cache-above]]
+
 Write notes for EACH of these dishes:
 {{batch}}
 

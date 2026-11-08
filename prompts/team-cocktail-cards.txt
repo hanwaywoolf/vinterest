@@ -10,6 +10,8 @@ The whole cocktail list (id | cocktail | section | price | ingredients as listed
 The menu (dish | main ingredient | how it's cooked | what dominates):
 {{menu}}
 
+[[cache-above]]
+
 Write a card for EACH of these cocktails:
 {{cocktails}}
 

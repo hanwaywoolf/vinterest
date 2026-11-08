@@ -25,5 +25,7 @@ Judge only what is written. Never mark a question unfit for being easy, for styl
 
 Return ONLY valid JSON, no markdown: {"reviews":[{"id":"the question's id","fit":true}, {"id":"…","fit":false,"problem":"one of the codes above","note":"one sentence saying exactly what's wrong and what would make it right, naming the option"}]}. Every question below gets one review, in the same order.
 
+[[cache-above]]
+
 The questions:
 {{items}}
