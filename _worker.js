@@ -105,7 +105,12 @@ function modelOptions(model, purpose, env) {
 
 /* The staff-training app (team_*) can run on its own model, TEAM_MODEL, so its cards and pairings can be
    written by a stronger model without the consumer app's scans, articles and Vinny changing with it. */
-function modelFor(purpose, env) {
+// A team call marked `draft` (npm run team:write -- --teaser: a quick teaser install for a prospective restaurant)
+// is written by TEAM_DRAFT_MODEL, default Claude Sonnet 5.5, whatever TEAM_MODEL says. It can only make a call
+// cheaper, so the request may ask for it; the model itself still never comes from the request.
+const TEAM_DRAFT_DEFAULT = "claude-sonnet-5-5";
+function modelFor(purpose, env, draft) {
+  if (draft && /^team_/.test(purpose)) return env.TEAM_DRAFT_MODEL || TEAM_DRAFT_DEFAULT;
   if (env.TEAM_MODEL && /^team_/.test(purpose)) return env.TEAM_MODEL;
   return env.CLAUDE_MODEL || "claude-sonnet-4-6";
 }
@@ -483,8 +488,8 @@ async function handleClaude(request, env, ctx) {
     return json(400, { error: "Request must include a non-empty messages[] array.", code: "invalid_messages" });
   }
 
-  // The model always comes from the environment — never from the request.
-  const model = modelFor(purpose, env);
+  // The model always comes from the environment — never from the request (a team draft only picks the cheaper one).
+  const model = modelFor(purpose, env, payload.draft === true);
   const cap = thinkingCap(model, purpose, purposeCap);
   const max_tokens = Math.min(Number(payload.max_tokens) || cap, cap);
 

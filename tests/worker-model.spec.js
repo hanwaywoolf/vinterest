@@ -110,6 +110,16 @@ test('TEAM_MODEL moves only the staff-training purposes, with room for Opus to t
   const plain = await run({ CLAUDE_MODEL: 'claude-sonnet-5-5' }, [msg('team_cards')]);
   expect(plain.upstream[0].body).toMatchObject({ model: 'claude-sonnet-5-5', max_tokens: 12288 });
 });
+// A teaser install (npm run team:write -- --teaser) marks its calls `draft`: a team call then runs on the cheaper
+// draft model whatever TEAM_MODEL says, and a draft flag on any other purpose changes nothing.
+test('a draft team call runs on TEAM_DRAFT_MODEL (Sonnet 5.5 by default), and only a team call', async () => {
+  const env = { CLAUDE_MODEL: 'claude-sonnet-4-6', TEAM_MODEL: 'claude-opus-5-5' };
+  const draft = (p) => ({ ...msg(p), draft: true });
+  const { upstream } = await run(env, [draft('team_cards'), msg('team_cards'), draft('label_scan')]);
+  expect(upstream.map((u) => u.body.model)).toEqual(['claude-sonnet-5-5', 'claude-opus-5-5', 'claude-sonnet-4-6']);
+  const set = await run({ ...env, TEAM_DRAFT_MODEL: 'claude-haiku-5-5' }, [draft('team_pairings')]);
+  expect(set.upstream[0].body.model).toBe('claude-haiku-5-5');
+});
 // data/tts-say.json as deployed: a name the voice gets wrong is swapped for a spelling it reads right, whole words
 // only and the longest first, before it's sent; the model is chosen by ELEVENLABS_MODEL.
 test('/tts: names are said as data/tts-say.json spells them, and ELEVENLABS_MODEL picks the model', async () => {

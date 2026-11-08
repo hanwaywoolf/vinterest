@@ -88,6 +88,19 @@ keys `c:`), listed in their own section: on the phone a Wines | Cocktails switch
 ("Cocktails with it", `TeamData.cocktailsFor`). A restaurant with no cocktails has no cocktail part anywhere.
 Vinny's test stays on the wine list and menu.
 
+## Teaser installs
+
+A teaser is a quick, cheap install to show a prospective restaurant before anything is signed: `npm run team:write --
+<restaurant> --teaser` (`scripts/team-write.mjs`) from the same list file a full install uses. It trains a slice of the
+list, the wines sold by the glass (or `--wines id,id,…` picked by hand), at most `--max` (30) in list order, with every dish
+and cocktail; the rest of the list isn't shown. Every call is marked `draft`, so the Worker writes it on `TEAM_DRAFT_MODEL`
+(Claude Sonnet 5.5 unless set) whatever `TEAM_MODEL` is (`modelFor` in `_worker.js`); a draft can only make a call cheaper,
+so the request may ask for it. Drinking windows are left to the app's own estimate, labelled as one, and the sommelier
+review isn't run: `npm run team:audit` (free, no network) is the check. `--no-dish-notes` drops the dish notes too. On The
+Princess Royal's list that is about 50 calls on Sonnet against about 500 on Opus for the full install. The training file
+carries `teaser` {wines, at}. Once the restaurant signs, the same command without `--teaser` brings the rest of the list
+back and writes what's missing on `TEAM_MODEL`, keeping the teaser's cards, then `team:review` runs as for any install.
+
 ## The Princess Royal install
 
 `/team/?seed=princess` (the seed is `princess-royal`) opens The Princess Royal, a Cubitt House pub and boutique hotel in

@@ -78,7 +78,7 @@ test('The Princess Royal opens from ?seed=princess on its own team, pounds and i
   expect(st.sym).toBe('£');
   expect(st.allergens).toBe('GB');
   expect(st.venue).toMatchObject({ name: 'The Princess Royal', city: 'London', sample: 'princess-royal' });
-  await expect(page.getByTestId('team-venue-logo')).toHaveAttribute('src', 'brand/princess-royal/wordmark-white.svg');
+  await expect(page.getByTestId('team-venue-logo')).toHaveAttribute('src', /^brand\/princess-royal\/wordmark-white\.svg(\?v=|$)/);
   expect((await page.request.get(`${BASE}/team/brand/princess-royal/wordmark-white.svg`)).status()).toBe(200);
   expect(st).toMatchObject({ wines: 132, cards: 132, dishes: 55, cocktails: 25, demo: true, offList: true });
   expect(st.pours).toEqual(['125', '175']);
