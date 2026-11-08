@@ -181,3 +181,23 @@ test('the site Worker saves a pilot request and emails both sides', async () => 
     expect(r.status).toBe(301); expect(r.headers.get('location')).toBe('https://vinterest.team/pricing');
   } finally { global.fetch = real; }
 });
+
+// The laptop's console demo: whichever section is picked opens at the top of its page and rests there
+// before it scrolls, and so does a wine's card when it opens.
+test('each console scene, and the wine card, opens at the top of its page', async ({ browser }) => {
+  const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+  await page.route('**/api/country', (r) => r.fulfill({ contentType: 'application/json', body: '{"country":""}' }));
+  await page.goto(BASE + '/');
+  await page.locator('#demo').scrollIntoViewIfNeeded();
+  const pan = () => page.evaluate(() => { const e = document.querySelector('#stage .ly[data-pan]'); return e && { img: e.src.split('/').pop().split('?')[0], y: e.style.transform || 'none' }; });
+  for (const k of ['sales', 'team', 'cards', 'ready', 'menu']) {
+    await page.click(`[data-scene=${k}]`);
+    await page.waitForTimeout(1200);
+    expect((await pan()).y, k).toMatch(/^(none|translateY\(0px\))$/);
+  }
+  await page.click('[data-scene=cards]');
+  await expect.poll(async () => (await pan()).img, { timeout: 6000 }).toBe('card.jpg');
+  await page.waitForTimeout(800);
+  expect((await pan()).y).toMatch(/^(none|translateY\(0px\))$/);
+  await page.close();
+});

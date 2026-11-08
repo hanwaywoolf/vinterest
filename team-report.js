@@ -47,7 +47,7 @@ const TeamReport = {
 
   /* ── Sales (TeamSales): what sold, who sold it, and what that says about what to learn first. ── */
   _money(x){ const m=/\d+(?:\.\d+)?/.exec(String(x||'')); return m?+m[0]:0; },
-  _sum(rows){ return rows.reduce((a,r)=>({revenue:a.revenue+r.q*r.p,lines:a.lines+r.q,glasses:a.glasses+(r.s==='glass'?r.q:0),bottles:a.bottles+(r.s==='bottle'?r.q:0)}),{revenue:0,lines:0,glasses:0,bottles:0}); },
+  _sum(rows){ return rows.reduce((a,r)=>({revenue:a.revenue+r.q*r.p,lines:a.lines+r.q,glasses:a.glasses+(r.s==='glass'?r.q:0),bottles:a.bottles+(r.s==='bottle'?r.q:0),bottleRevenue:a.bottleRevenue+(r.s==='bottle'?r.q*r.p:0)}),{revenue:0,lines:0,glasses:0,bottles:0,bottleRevenue:0}); },
   _covers(nights){ return nights.reduce((a,n)=>a+(n.covers||0),0); },
   /* This period against the one before it. */
   // Windows end at last midnight, so "the last 7 nights" is seven whole days against the seven before, never a part-night.
@@ -55,8 +55,12 @@ const TeamReport = {
     const cut=(from,to)=>rows.filter(r=>r.t>=from&&r.t<to), nk=(from,to)=>nights.filter(n=>{ const t=new Date(n.night).getTime(); return t>=from&&t<to; });
     const a=cut(now-days*this.DAY,now), b=cut(now-2*days*this.DAY,now-days*this.DAY), sa=this._sum(a), sb=this._sum(b), ca=this._covers(nk(now-days*this.DAY,now)), cb=this._covers(nk(now-2*days*this.DAY,now-days*this.DAY));
     const pct=(x,y)=>y>0?Math.round(100*(x-y)/y):null;
-    return {days,...sa,covers:ca,nights:nk(now-days*this.DAY,now).length,attach:ca?sa.lines/ca:null,bottleShare:sa.lines?sa.bottles/sa.lines:null,perCover:ca?sa.revenue/ca:null,
-      delta:{revenue:pct(sa.revenue,sb.revenue),lines:pct(sa.lines,sb.lines),attach:ca&&cb?pct(sa.lines/ca,sb.lines/cb):null,bottles:pct(sa.bottles,sb.bottles)},prev:{...sb,covers:cb}}; },
+    // Glasses and bottles are counted apart everywhere: a bottle is several glasses' revenue, so one blended count of
+    // "glasses or bottles" hides what moved.
+    const per=(x,c)=>c?x/c:null;
+    return {days,...sa,covers:ca,nights:nk(now-days*this.DAY,now).length,attach:per(sa.lines,ca),glassesPerCover:per(sa.glasses,ca),bottlesPerCover:per(sa.bottles,ca),bottleShare:sa.lines?sa.bottles/sa.lines:null,bottleTakings:sa.revenue?sa.bottleRevenue/sa.revenue:null,perCover:per(sa.revenue,ca),
+      delta:{revenue:pct(sa.revenue,sb.revenue),lines:pct(sa.lines,sb.lines),attach:ca&&cb?pct(sa.lines/ca,sb.lines/cb):null,glasses:pct(sa.glasses,sb.glasses),bottles:pct(sa.bottles,sb.bottles),
+        perCover:ca&&cb?pct(sa.revenue/ca,sb.revenue/cb):null,glassesPerCover:ca&&cb?pct(sa.glasses/ca,sb.glasses/cb):null,bottlesPerCover:ca&&cb?pct(sa.bottles/ca,sb.bottles/cb):null},prev:{...sb,covers:cb}}; },
   /* Each wine's sales, with how many of its sellers know it beside it. */
   salesByWine(days=28){ const rows=TeamSales.rows(days), by={};
     rows.forEach(r=>{ if(!r.w) return; const x=by[r.w]||(by[r.w]={id:r.w,qty:0,revenue:0,glasses:0,bottles:0}); x.qty+=r.q; x.revenue+=r.q*r.p; if(r.s==='glass') x.glasses+=r.q; else x.bottles+=r.q; });
@@ -78,7 +82,8 @@ const TeamReport = {
     let kn={q:0,s:0}, un={q:0,s:0}, wines=0;
     TeamData.wines().forEach(w=>{ const k=servers.filter(p=>shifts[p.id]&&TeamLearn.knowsWine(p.id,p.role,w.id,(all[p.id]||{items:{}}).items)), u=servers.filter(p=>shifts[p.id]&&!k.includes(p));
       if(!k.length||!u.length) return; wines++;
-      const q=ps=>rows.filter(r=>r.w===w.id&&ps.some(p=>p.id===r.v)).reduce((a,r)=>a+r.q,0), s=ps=>ps.reduce((a,p)=>a+shifts[p.id],0);
+      // In money, not lines: a bottle and a glass of the same wine are different sales.
+      const q=ps=>rows.filter(r=>r.w===w.id&&ps.some(p=>p.id===r.v)).reduce((a,r)=>a+r.q*r.p,0), s=ps=>ps.reduce((a,p)=>a+shifts[p.id],0);
       kn.q+=q(k); kn.s+=s(k); un.q+=q(u); un.s+=s(u); });
     const a=kn.s?kn.q/kn.s:0, b=un.s?un.q/un.s:0;
     return {wines,known:a,unknown:b,pct:b>0?Math.round(100*(a-b)/b):null}; },
@@ -96,10 +101,10 @@ const TeamReport = {
   weeklyTrend(weeks=8){ const rows=TeamSales.rows(0), now=Date.now(), out=[];
     for(let i=weeks-1;i>=0;i--){ const to=now-i*7*this.DAY, from=to-7*this.DAY, rs=rows.filter(r=>r.t>=from&&r.t<to), s=this._sum(rs); out.push({from,to,...s}); }
     return out; },
-  /* Each person's by-the-glass lines per shift, week by week: the shape of Marco's dip. */
+  /* Each person's glasses per shift, week by week (bottles apart, as everywhere): the shape of Marco's dip. */
   serverTrend(pid,weeks=8){ const rows=TeamSales.rows(0), nights=TeamSales.nights(0), now=Date.now(), out=[];
     for(let i=weeks-1;i>=0;i--){ const to=now-i*7*this.DAY, from=to-7*this.DAY; const sh=nights.filter(n=>{ const t=new Date(n.night).getTime(); return t>=from&&t<to&&(n.shifts||[]).includes(pid); }).length;
-      const q=rows.filter(r=>r.v===pid&&r.t>=from&&r.t<to).reduce((a,r)=>a+r.q,0); out.push({from,to,shifts:sh,lines:q,perShift:sh?q/sh:null}); }
+      const q=rows.filter(r=>r.v===pid&&r.s!=='bottle'&&r.t>=from&&r.t<to).reduce((a,r)=>a+r.q,0); out.push({from,to,shifts:sh,lines:q,perShift:sh?q/sh:null}); }
     return out; },
   /* What knowing the list is worth to one person, in their own money, from this venue's till: the wines among the top
      sellers they don't yet know, each at the gap between what a server sells of it per shift when they know it and when
@@ -143,21 +148,23 @@ const TeamReport = {
   salesBrief(){ if(!TeamSales.has()) return null; const s=this.salesSummary(7); if(!s) return null;
     const out=[], m=n=>TeamData.money(Math.round(n)), byWine=this.salesByWine(28), slow=this.slowMovers(28,5), lift=this.trainedLift(28), till=this.newOnTill();
     const d=s.delta.revenue;
-    out.push({k:'week',tone:d==null?'note':d>=0?'good':'bad',title:`${m(s.revenue)} of wine over 7 nights`,text:d==null?`${s.lines} glasses and bottles to ${s.covers} guests.`:`${d>=0?'Up':'Down'} ${Math.abs(d)}% on the week before (${m(s.prev.revenue||0)}), ${s.lines} glasses and bottles to ${s.covers} guests.`});
-    if(s.perCover!=null) out.push({k:'cover',tone:s.delta.attach==null?'note':s.delta.attach>=0?'good':'bad',title:`${m(s.perCover)} of wine per guest`,text:`${s.attach.toFixed(2)} glasses or bottles each${s.delta.attach==null?'':`, ${s.delta.attach>=0?'up':'down'} ${Math.abs(s.delta.attach)}% on the week before`}; ${Math.round(100*(s.bottleShare||0))}% of wine sold by the bottle.`});
+    const gb=(g,b)=>`${g} glass${g===1?'':'es'} and ${b} bottle${b===1?'':'s'}`, dl=x=>x==null?'':`${x>=0?'up':'down'} ${Math.abs(x)}%`;
+    out.push({k:'week',tone:d==null?'note':d>=0?'good':'bad',title:`${m(s.revenue)} of wine over 7 nights`,text:d==null?`${gb(s.glasses,s.bottles)} to ${s.covers} guests.`:`${d>=0?'Up':'Down'} ${Math.abs(d)}% on the week before (${m(s.prev.revenue||0)}): ${gb(s.glasses,s.bottles)} to ${s.covers} guests.`});
+    if(s.perCover!=null){ const dg=s.delta.glassesPerCover, db=s.delta.bottlesPerCover;
+      out.push({k:'cover',tone:s.delta.perCover==null?'note':s.delta.perCover>=0?'good':'bad',title:`${m(s.perCover)} of wine per guest`,text:`${s.glassesPerCover.toFixed(2)} glasses and ${s.bottlesPerCover.toFixed(2)} bottles a guest${dg==null&&db==null?'':` (glasses ${dl(dg)}, bottles ${dl(db)} on the week before)`}; bottles bring in ${Math.round(100*(s.bottleTakings||0))}% of wine takings.`}); }
     const top=byWine[0];
     if(top) out.push({k:'top',tone:top.of&&top.knows<top.of?'bad':'good',title:`Best seller: ${TeamData.short(top.wine)}`,text:`${m(top.revenue)} over 28 nights, ${Math.round(100*top.share)}% of wine sales. ${top.of?(top.knows<top.of?`Only ${top.knows} of the ${top.of} on the team who serve it know it.`:`Everyone on the team who serves it knows it.`):''}`,open:{view:'wine',id:top.wine.id}});
     const gaps=byWine.slice(0,8).filter(x=>x.of&&x.knows<Math.ceil(x.of/2));
-    if(gaps.length) out.push({k:'gaps',tone:'bad',title:`${gaps.length} of your 8 best-selling wines: most of the team who serve them don't know them yet`,text:gaps.slice(0,3).map(x=>`${TeamData.short(x.wine)}, known by ${x.knows} of the ${x.of} on the team who serve it`).join('; ')+'. Drill these first.',open:{view:'wine',id:gaps[0].wine.id}});
-    if(lift.pct!=null&&lift.wines) out.push({k:'lift',tone:lift.pct>0?'good':'note',title:lift.pct>0?`Training is worth ${lift.pct}% more sales`:`No sales lift from training yet`,text:lift.pct>0?`A server sells ${lift.known.toFixed(2)} of a wine per shift once they know it, against ${lift.unknown.toFixed(2)} before. Shifts and sections affect this too, so read it as a pointer.`:`Across ${lift.wines} wines, servers who know a wine don't yet sell more of it.`});
+    if(gaps.length) out.push({k:'gaps',tone:'bad',title:gaps.length===1?`1 of your 8 best-selling wines: most of the team who serve it don't know it yet`:`${gaps.length} of your 8 best-selling wines: most of the team who serve them don't know them yet`,text:gaps.slice(0,3).map(x=>`${TeamData.short(x.wine)}, known by ${x.knows} of the ${x.of} on the team who serve it`).join('; ')+(gaps.length===1?'. Drill it first.':'. Drill these first.'),open:{view:'wine',id:gaps[0].wine.id}});
+    if(lift.pct!=null&&lift.wines) out.push({k:'lift',tone:lift.pct>0?'good':'note',title:lift.pct>0?`Training is worth ${lift.pct}% more sales`:`No sales lift from training yet`,text:lift.pct>0?`A server sells ${TeamData.money(lift.known,{dp:2})} of a wine a shift once they know it, against ${TeamData.money(lift.unknown,{dp:2})} before. Shifts and sections affect this too, so read it as a pointer.`:`Across ${lift.wines} wines, servers who know a wine don't yet sell more of it.`});
     const seller=this.salesByServer(28).filter(x=>x.shifts>0&&['server','bartender'].includes(x.person.role));
-    if(seller.length>2){ const low=[...seller].sort((a,b)=>(a.perShift||0)-(b.perShift||0))[0];
-      if(low&&low.readiness&&low.readiness.state!=='ready') out.push({k:'drill',tone:'bad',title:`${low.person.name.split(' ')[0]} sells the least wine per shift`,text:`${(low.perShift||0).toFixed(1)} glasses and bottles a shift, and ${low.readiness.pct}% ready. A few drills on what sells is the quickest lift.`,open:{view:'person',id:low.person.id}}); }
+    if(seller.length>2){ const low=[...seller].sort((a,b)=>(a.revenuePerShift||0)-(b.revenuePerShift||0))[0];
+      if(low&&low.readiness&&low.readiness.state!=='ready') out.push({k:'drill',tone:'bad',title:`${low.person.name.split(' ')[0]} sells the least wine per shift`,text:`${m(low.revenuePerShift||0)} a shift: ${[(low.glassesPerShift||0)>=0.05?`${low.glassesPerShift.toFixed(1)} glasses`:'',(low.bottlesPerShift||0)>=0.05?`${low.bottlesPerShift.toFixed(1)} bottles`:''].filter(Boolean).join(' and ')||'nothing yet'}, and ${low.readiness.pct}% ready. A few drills on what sells is the quickest lift.`,open:{view:'person',id:low.person.id}}); }
     // The other way round: a glass most of its sellers can talk about that still sells little. Training isn't the
     // fix there, so it points at the price, the pour or where it sits on the list.
     const glassAll=this.slowMovers(28,Infinity), mid=glassAll.length?glassAll[Math.floor(glassAll.length/2)].perNight:0;
     const known=glassAll.find(x=>x.of>=3&&x.knows>=Math.ceil(x.of/2)&&x.perNight<mid);
-    if(known) out.push({k:'known',tone:'note',title:`${TeamData.short(known.wine)}: known, but not selling`,text:`${known.knows} of the ${known.of} on the team who serve it know it, and it sells ${known.perNight.toFixed(1)} a night. The floor can talk about it, so look at its price, its pour or where it sits on the list.`,open:{view:'wine',id:known.wine.id}});
+    if(known) out.push({k:'known',tone:'note',title:`${TeamData.short(known.wine)}: known, but not selling`,text:`${known.knows} of the ${known.of} on the team who serve it know it, and it sells ${known.perNight.toFixed(1)} glasses a night. The floor can talk about it, so look at its price, its pour or where it sits on the list.`,open:{view:'wine',id:known.wine.id}});
     const dead=slow.filter(x=>x.perNight<0.5&&(!known||x.wine.id!==known.wine.id));
     if(dead.length) out.push({k:'slow',tone:'note',title:`${dead.length} by-the-glass wine${dead.length===1?'':'s'} barely moving`,text:dead.slice(0,3).map(x=>TeamData.short(x.wine)).join(', ')+`: under one glass every two nights. Give the floor the line to say, or rethink the pour.`,open:{view:'wine',id:dead[0].wine.id}});
     if(till.length) out.push({k:'till',tone:'note',title:`${till.length} POS item${till.length===1?'':'s'} not matched to the list`,text:`${till.slice(0,2).map(x=>x.item).join(', ')}: a new arrival nobody has uploaded, or a name to map.`,open:{tab:'pos'}});

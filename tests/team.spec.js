@@ -1646,7 +1646,7 @@ test('the names check plays each name through the guest voice, numbered like the
 
 test('a restaurant demo address names its restaurant, and nowhere else does', async ({ context, page }) => {
   await asMarco(context, page);
-  expect(await page.evaluate(() => [TeamSample.hostSeed('socialcorner.vinterest.team'), TeamSample.hostSeed('SocialCorner.vinterest.team'), TeamSample.hostSeed('vinterest.pages.dev'), TeamSample.hostSeed()])).toEqual(['social', 'social', null, null]);
+  expect(await page.evaluate(() => [TeamSample.hostSeed('socialcorner.vinterest.team'), TeamSample.hostSeed('SocialCorner.vinterest.team'), TeamSample.hostSeed('vinterest.pages.dev'), TeamSample.hostSeed(), TeamSample.hostSeed('demo.vinterest.team')])).toEqual(['social', 'social', null, null, 'demo']);
 });
 
 // Android Chrome sends every result as the whole utterance so far and repeats finals; the reply must come out once.
@@ -1936,6 +1936,24 @@ test('the demo sales: best sellers mostly known, and a glass known but not selli
   expect(known && known.title).toMatch(/: known, but not selling$/);
   const row = await page.evaluate((id) => TeamReport.slowMovers(28, Infinity).find((x) => x.wine.id === id), known.open.id);
   expect(row.knows).toBeGreaterThanOrEqual(Math.ceil(row.of / 2));
+});
+
+// Glasses and bottles are counted apart everywhere Sales Insights reports what sold: a bottle is several glasses' takings.
+test('sales insights count glasses and bottles apart', async ({ context, page }) => {
+  await stubNetwork(context);
+  await page.goto(`${BASE}/team/?seed=demo`);
+  await expect(page.getByTestId('team-state')).toBeVisible();
+  const r = await page.evaluate(() => { const s = TeamReport.salesSummary(7), b = TeamReport.salesBrief(); return { s, text: b.map((x) => x.title + ' ' + x.text).join(' ') }; });
+  expect(r.s.glasses + r.s.bottles).toBe(r.s.lines);
+  expect(r.text).not.toMatch(/glasses (or|and) bottles/);
+  expect(r.text).toContain(`${r.s.glasses} glasses and ${r.s.bottles} bottles`);
+  expect(r.text).toMatch(/\d\.\d\d glasses and \d\.\d\d bottles a guest/);
+  await page.goto(`${BASE}/team/?view=console`);
+  await page.getByTestId('console-nav-sales').click();
+  await expect(page.getByTestId('sales-glasses')).toHaveText(/^\d\.\d\d/);
+  await expect(page.getByTestId('sales-bottles')).toHaveText(/^\d\.\d\d/);
+  await expect(page.getByTestId('console-sales')).toContainText('Glasses per guest');
+  await expect(page.getByTestId('console-sales')).toContainText('Bottles per guest');
 });
 
 // Console access is per person (TeamLearn.canConsole): a manager's Today figures open the console's own sections on a

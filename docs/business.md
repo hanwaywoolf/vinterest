@@ -339,7 +339,7 @@ Sections, in sidebar order:
    the people who sell it, and at least two, know it; the holes are by-the-glass wines under that);
    and "learn first" (`priority`: sells most, known least) once the till is in. Then the sales row
    (`_CSales`): wine sales for the last seven nights against the seven before, wine per cover, bottles
-   and their share, the trained lift (what a server sells of a wine per shift when they know it against
+   and their share, the trained lift (the money a server takes on a wine per shift when they know it against
    when they don't, with the caveat that shifts and sections confound it), the weekly trend, what sells,
    who sells (lines per shift, compared within a role), slow movers by the glass with the card's line
    to say, and items on the till with no wine on the list behind them.
