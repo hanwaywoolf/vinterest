@@ -6680,6 +6680,1146 @@
     }
    ],
    "at": 1794142443415
+  },
+  "w-pieropan-soave-classico": {
+   "id": "w-pieropan-soave-classico",
+   "hook": "Pieropan is one of the Veneto's classic names, and Garganega gives it almond and citrus blossom notes.",
+   "pitch": "This is a dry Italian white with soft almond and citrus blossom flavours and a gentle freshness, so it is easy to drink without being sharp. It suits anyone who wants a white that goes with food and won't overpower fish, risotto or a plate of charcuterie.",
+   "say": "pyeh-roh-PAN, soh-AH-veh KLASS-ee-koh",
+   "taste": "Dry, light to medium in weight, with almond and citrus blossom flavours and a gentle mouth-watering freshness.",
+   "style": {
+    "body": 2,
+    "acid": 3,
+    "tannin": 0,
+    "sweet": 1
+   },
+   "grape": "Garganega, the main grape behind Soave, gives this wine its almond and citrus blossom notes and a medium level of acidity, meaning it is refreshing but not sharp.",
+   "place": "It comes from the Veneto in north-east Italy, where Lake Garda and the Adriatic Sea soften a continental climate (warm summers, cold winters), which helps keep the wine fresh rather than heavy.",
+   "producer": "Pieropan is one of the classic producers of the Veneto, named alongside Quintarelli and Allegrini.",
+   "serve": {
+    "temp": "8-10°C",
+    "glass": "standard white wine glass",
+    "decant": "no"
+   },
+   "dishes": [
+    {
+     "dish": "Hake, Mussels, Cannellini Beans, Leeks",
+     "why": "Its gentle freshness and soft almond flavour sit nicely with delicate hake and creamy beans without drowning them."
+    },
+    {
+     "dish": "Delica Squash Risotto, Brown Butter, Pumpkin Seed Relish",
+     "why": "Soave is a natural partner for risotto, and its almond notes echo the nutty brown butter and pumpkin seeds."
+    },
+    {
+     "dish": "Charcuterie",
+     "why": "Soave is a classic wine with Italian-style cured meats, and its freshness cuts through the salt."
+    }
+   ],
+   "alts": [
+    {
+     "id": "w-la-giustiniana-gavi-di-gavi-lugarara",
+     "when": "by the glass, or crisper and more lemony"
+    },
+    {
+     "id": "w-cassara-grillo",
+     "when": "Italian white under £40, or by the glass"
+    },
+    {
+     "id": "w-antonella-corda-vermentino-di-sardegna",
+     "when": "another Italian white, a step up in price"
+    }
+   ],
+   "qs": [
+    {
+     "k": "recognise",
+     "q": "Which description best fits the Pieropan Soave Classico?",
+     "opts": [
+      "Dry, light to medium weight, gentle freshness, almond and citrus blossom",
+      "Full-bodied and buttery, with toasted oak, vanilla and ripe peach",
+      "Very sharp and lean, with grapefruit, gooseberry and cut grass",
+      "Off-dry and aromatic, with lime, honey and a hint of petrol"
+     ],
+     "a": 0,
+     "why": "Garganega gives Soave almond and citrus blossom notes with a medium, not sharp, freshness.",
+     "id": "w-pieropan-soave-classico#0"
+    },
+    {
+     "k": "recognise",
+     "q": "Which Italian region does the Pieropan Soave Classico come from?",
+     "opts": [
+      "Piedmont",
+      "Tuscany",
+      "Veneto",
+      "Sicily"
+     ],
+     "a": 2,
+     "why": "Soave is made in the Veneto in north-east Italy, and Pieropan is one of the region's classic producers.",
+     "id": "w-pieropan-soave-classico#1"
+    },
+    {
+     "k": "recall",
+     "q": "What grape is the Pieropan Soave Classico made from?",
+     "ans": "Garganega",
+     "acc": [
+      "Garganega grape",
+      "gar-ga-NEH-ga"
+     ],
+     "why": "Garganega is the main grape behind Soave and gives its almond and citrus blossom notes.",
+     "id": "w-pieropan-soave-classico#2"
+    },
+    {
+     "k": "recall",
+     "q": "Which lake helps soften the climate where the Pieropan Soave Classico is made?",
+     "ans": "Lake Garda",
+     "acc": [
+      "Garda",
+      "Lago di Garda"
+     ],
+     "why": "Lake Garda and the Adriatic moderate the Veneto's continental climate, helping keep the wine fresh.",
+     "id": "w-pieropan-soave-classico#3"
+    },
+    {
+     "k": "apply",
+     "q": "A guest ordering the Hake, Mussels, Cannellini Beans, Leeks wants a bottle of white from northern Italy, under £50. What would you suggest, and why?",
+     "key": [
+      "Pieropan Soave Classico",
+      "it's from the Veneto in northern Italy and is £48 a bottle",
+      "its gentle freshness and almond notes suit delicate hake and creamy beans without overpowering them"
+     ],
+     "decoys": [
+      {
+       "id": "w-la-giustiniana-gavi-di-gavi-lugarara",
+       "why": "It is from northern Italy but costs £58 a bottle, over the guest's limit."
+      },
+      {
+       "id": "w-cassara-grillo",
+       "why": "It is under £50 but comes from Sicily in the south, not northern Italy."
+      },
+      {
+       "id": "w-antonella-corda-vermentino-di-sardegna",
+       "why": "It is from Sardinia, not northern Italy, and costs £64, over the limit."
+      }
+     ],
+     "wrong": [
+      "Avoid it, because firm tannin from the skins will make the mussels taste metallic.",
+      "Avoid it, because it is a heavy, full white that will smother the delicate hake.",
+      "Avoid it, because its very sharp acidity will clash with the creamy beans and leeks."
+     ],
+     "why": "The Soave is the only northern Italian white under £50 on the list, and its gentle, nutty freshness flatters a delicate fish dish.",
+     "id": "w-pieropan-soave-classico#4"
+    },
+    {
+     "k": "contrast",
+     "q": "How do the Pieropan Soave Classico and the La Giustiniana Gavi di Gavi differ in grape and region?",
+     "ans": "The Soave is Garganega from the Veneto; the Gavi is Cortese from Piedmont.",
+     "acc": [
+      "Garganega from Veneto versus Cortese from Piedmont",
+      "Soave: Garganega, Veneto; Gavi: Cortese, Piedmont"
+     ],
+     "why": "Both are dry northern Italian whites, so knowing the grape and region is the quickest way to tell them apart at the table.",
+     "id": "w-pieropan-soave-classico#5"
+    }
+   ],
+   "at": 1794142507768
+  },
+  "w-la-giustiniana-gavi-di-gavi-lugarara": {
+   "id": "w-la-giustiniana-gavi-di-gavi-lugarara",
+   "hook": "From Piedmont, home of our Vajra Barolo, but this is crisp white Cortese, and it's by the glass.",
+   "pitch": "This is a dry, crisp Italian white with clean lemony freshness that wakes up the palate. It's lovely with oysters, raw fish or anything fried, and you can try it by the glass at £14.",
+   "say": "la joo-stee-nee-AH-nah, GAH-vee dee GAH-vee, loo-gah-RAH-rah",
+   "taste": "Dry, light and crisp, with citrus freshness that makes your mouth water.",
+   "style": {
+    "body": 2,
+    "acid": 4,
+    "tannin": 0,
+    "sweet": 1
+   },
+   "grape": "Cortese, the grape named on the label, gives a light, dry white with crisp, citrusy freshness.",
+   "place": "It comes from Piedmont in north-west Italy, a region with a cool continental climate (cold winters, warm summers), which helps keep the wine fresh and crisp.",
+   "producer": "",
+   "serve": {
+    "temp": "8-10°C",
+    "glass": "standard white wine glass",
+    "decant": "no"
+   },
+   "dishes": [
+    {
+     "dish": "Seasonal Oysters, Mignonette",
+     "why": "Its crisp, lemony freshness works like a squeeze of lemon on salty oysters and stands up to the sharp mignonette."
+    },
+    {
+     "dish": "Sea Bream Crudo, Preserved Lemon, Dill",
+     "why": "A light, crisp white matches delicate raw fish and holds its own against the preserved lemon."
+    },
+    {
+     "dish": "Fish & Chips, Crushed Peas, Tartare Sauce",
+     "why": "Its freshness cuts through the batter and keeps every mouthful feeling light."
+    }
+   ],
+   "alts": [
+    {
+     "id": "w-pieropan-soave-classico",
+     "when": "softer and nuttier, cheaper by the bottle"
+    },
+    {
+     "id": "w-michel-delhommeau-muscadet-sevre-et-maine-sur-lie",
+     "when": "classic French oyster white, under £55"
+    },
+    {
+     "id": "w-lauriers-picpoul-de-pinet-paredaux",
+     "when": "crisp white under £50"
+    }
+   ],
+   "qs": [
+    {
+     "k": "recognise",
+     "q": "Which description best fits the La Giustiniana Gavi di Gavi, Lugarara?",
+     "opts": [
+      "Full-bodied and buttery, with toasted oak, vanilla and ripe peach",
+      "Rich and perfumed, with apricot, honeysuckle and a soft finish",
+      "Off-dry and aromatic, with lime, honey and a hint of petrol",
+      "Dry, light and crisp, with lemony freshness and a clean finish"
+     ],
+     "a": 3,
+     "why": "Cortese from Piedmont makes a light, dry, crisp white, not a rich, oaky or sweet one.",
+     "id": "w-la-giustiniana-gavi-di-gavi-lugarara#0"
+    },
+    {
+     "k": "recognise",
+     "q": "Which Italian region does the La Giustiniana Gavi di Gavi, Lugarara come from?",
+     "opts": [
+      "Piedmont",
+      "Veneto",
+      "Tuscany",
+      "Sardinia"
+     ],
+     "a": 0,
+     "why": "Gavi is from Piedmont in north-west Italy, the same region as the Vajra Barolo on our list.",
+     "id": "w-la-giustiniana-gavi-di-gavi-lugarara#1"
+    },
+    {
+     "k": "recall",
+     "q": "What grape is the La Giustiniana Gavi di Gavi, Lugarara made from?",
+     "ans": "Cortese",
+     "acc": [
+      "Cortese grape",
+      "kor-TEH-zeh"
+     ],
+     "why": "Cortese is the grape named on the label and gives the wine its light, crisp style.",
+     "id": "w-la-giustiniana-gavi-di-gavi-lugarara#2"
+    },
+    {
+     "k": "recall",
+     "q": "How much is a glass of the La Giustiniana Gavi di Gavi, Lugarara?",
+     "ans": "£14",
+     "acc": [
+      "14 pounds",
+      "fourteen pounds",
+      "£14 for 175ml"
+     ],
+     "why": "It is on the list at £14 a glass and £58 a bottle, so guests can try it without committing to a bottle.",
+     "id": "w-la-giustiniana-gavi-di-gavi-lugarara#3"
+    },
+    {
+     "k": "apply",
+     "q": "A guest ordering the Seasonal Oysters, Mignonette wants a crisp white from northern Italy, by the glass. What would you suggest, and why?",
+     "key": [
+      "La Giustiniana Gavi di Gavi, Lugarara",
+      "it's a northern Italian white from Piedmont, £14 a glass",
+      "its crisp, lemony freshness matches the salty oysters and sharp mignonette"
+     ],
+     "decoys": [
+      {
+       "id": "w-pieropan-soave-classico",
+       "why": "It is from northern Italy but is only sold by the bottle, not by the glass."
+      },
+      {
+       "id": "w-cassara-grillo",
+       "why": "It is an Italian white by the glass, but from Sicily in the south, not northern Italy."
+      },
+      {
+       "id": "w-domaine-perraud-macon-villages-maison-cubitt",
+       "why": "It is by the glass but is a French Chardonnay from Burgundy, not a northern Italian white."
+      }
+     ],
+     "wrong": [
+      "Avoid it, because its tannin will make the raw oysters taste bitter and metallic.",
+      "Avoid it, because it is too full and heavy for something as delicate as an oyster.",
+      "Avoid it, because its smoky oak flavour will drown out the fresh taste of the sea."
+     ],
+     "why": "The Gavi is the only northern Italian white by the glass on the list, and its crisp freshness is exactly what salty oysters need.",
+     "id": "w-la-giustiniana-gavi-di-gavi-lugarara#4"
+    },
+    {
+     "k": "contrast",
+     "q": "Which of the La Giustiniana Gavi di Gavi, Lugarara and the Pieropan Soave Classico can a guest order by the glass?",
+     "ans": "The Gavi",
+     "acc": [
+      "La Giustiniana Gavi",
+      "the Gavi di Gavi",
+      "the Gavi, at £14 a glass"
+     ],
+     "why": "The Gavi is £14 a glass, while the Soave is only sold by the bottle at £48.",
+     "id": "w-la-giustiniana-gavi-di-gavi-lugarara#5"
+    }
+   ],
+   "at": 1794142507768
+  },
+  "w-rosner-gruner-veltliner": {
+   "id": "w-rosner-gruner-veltliner",
+   "hook": "Austrian Grüner Veltliner from Langenlois, known for a twist of white pepper over citrus.",
+   "pitch": "It's a crisp, refreshing Austrian white with citrus, a little twist of white pepper and a gentle savoury note. If you like a dry white that wakes up your food, this is a lovely change from Sauvignon or Chardonnay.",
+   "say": "ROHZ-ner GROO-ner felt-LEE-ner",
+   "taste": "Zesty citrus with a pinch of white pepper and a soft savoury edge, a bit like cooked lentils, finishing fresh and dry.",
+   "style": {
+    "body": 2,
+    "acid": 4,
+    "tannin": 0,
+    "sweet": 1
+   },
+   "grape": "Grüner Veltliner brings high acidity (the mouth-watering freshness), citrus, white pepper and a savoury, lentil-like note, and here it shows as a dry, lively white.",
+   "place": "It comes from Langenlois in Austria, and Austria is where Grüner Veltliner made its name, in styles from light everyday whites to rich bottles that can age.",
+   "producer": "",
+   "serve": {
+    "temp": "8-10°C",
+    "glass": "standard white wine glass",
+    "decant": "no"
+   },
+   "dishes": [
+    {
+     "dish": "Chicken Milanese, Brown Butter, Capers, Anchovies",
+     "why": "Grüner is the classic wine with schnitzel, and its fresh acidity cuts through the crispy crumb and brown butter."
+    },
+    {
+     "dish": "Celeriac, Apple, Kale, Hazelnut Vinaigrette",
+     "why": "Grüner is famously good with salads, and its citrus freshness matches the apple and the sharp vinaigrette."
+    },
+    {
+     "dish": "Curried Crab on Malt Rye & Beer Bread",
+     "why": "Grüner suits spiced, Asian-style flavours, and its peppery, zesty character lifts the curry and the sweet crab."
+    }
+   ],
+   "alts": [
+    {
+     "id": "w-carl-loewen-riesling-alte-reben",
+     "when": "by the glass"
+    },
+    {
+     "id": "w-pieropan-soave-classico",
+     "when": "crisp dry white under £50"
+    },
+    {
+     "id": "w-kientzler-riesling-classic",
+     "when": "another crisp, dry white at a similar price"
+    }
+   ],
+   "qs": [
+    {
+     "k": "recognise",
+     "q": "Which description best fits the Rosner Grüner Veltliner 2024?",
+     "opts": [
+      "Crisp and zesty, with citrus, white pepper and a savoury edge",
+      "Rich and buttery, with vanilla, toast and baked apple",
+      "Soft and off-dry, with ripe peach, honey and apricot",
+      "Perfumed and floral, with lychee, rose and ginger"
+     ],
+     "a": 0,
+     "why": "Grüner Veltliner is high in acidity with citrus, white pepper and a lentil-like savoury note.",
+     "id": "w-rosner-gruner-veltliner#0"
+    },
+    {
+     "k": "recognise",
+     "q": "Which main on our menu is closest to the schnitzel that the Rosner Grüner Veltliner classically partners?",
+     "opts": [
+      "Chicken Milanese",
+      "Ibérico Pork",
+      "Hereford Beef Rump",
+      "Half Chicken"
+     ],
+     "a": 0,
+     "why": "Chicken Milanese is a crumbed, fried cutlet just like schnitzel, the textbook match for Grüner Veltliner.",
+     "id": "w-rosner-gruner-veltliner#1"
+    },
+    {
+     "k": "recall",
+     "q": "Which Austrian town is the Rosner Grüner Veltliner from?",
+     "ans": "Langenlois",
+     "acc": [
+      "Langenlois, Austria",
+      "Langenlois in Austria"
+     ],
+     "why": "The wine comes from Langenlois in Austria.",
+     "id": "w-rosner-gruner-veltliner#2"
+    },
+    {
+     "k": "recall",
+     "q": "Which spice do people often pick out when tasting the Rosner Grüner Veltliner?",
+     "ans": "White pepper",
+     "acc": [
+      "pepper",
+      "a peppery note",
+      "white peppery"
+     ],
+     "why": "A twist of white pepper is one of the signature flavours of Grüner Veltliner.",
+     "id": "w-rosner-gruner-veltliner#3"
+    },
+    {
+     "k": "apply",
+     "q": "A guest ordering the Chicken Milanese wants a crisp, dry white bottle at around £60 with a peppery edge, and says they're bored of Sauvignon Blanc and Chardonnay. What would you suggest, and why?",
+     "key": [
+      "Rosner Grüner Veltliner 2024",
+      "Its high acidity cuts through the fried crumb and brown butter, and Grüner is the classic wine with schnitzel-style dishes",
+      "It's neither Sauvignon nor Chardonnay and has the white pepper and citrus they're after, which also stands up to the capers and anchovies"
+     ],
+     "decoys": [
+      {
+       "id": "w-tinpot-hut-sauvignon-blanc",
+       "why": "It's a Sauvignon Blanc, which the guest has said they're bored of."
+      },
+      {
+       "id": "w-prieure-saint-come-chablis",
+       "why": "Chablis is Chardonnay, which the guest wants to avoid, and it doesn't have the peppery edge."
+      },
+      {
+       "id": "w-david-moret-meursault-sous-la-velle",
+       "why": "It's Chardonnay and, at £220, far beyond the guest's budget."
+      }
+     ],
+     "wrong": [
+      "Choose it because it's a big, full-bodied white that matches the weight of fried chicken.",
+      "Choose it because its soft, low acidity keeps things gentle against the sharp capers.",
+      "Choose it because its buttery vanilla and toasty oak echo the brown butter sauce."
+     ],
+     "why": "A crisp, peppery Grüner Veltliner at £60 fits the request exactly and is the classic partner for a crumbed cutlet.",
+     "id": "w-rosner-gruner-veltliner#4"
+    },
+    {
+     "k": "contrast",
+     "q": "Which of these two can a guest order by the glass: the Rosner Grüner Veltliner or the Carl Loewen Riesling, Alte Reben?",
+     "ans": "The Carl Loewen Riesling, Alte Reben",
+     "acc": [
+      "Carl Loewen",
+      "the Riesling",
+      "Carl Loewen Riesling"
+     ],
+     "why": "The Carl Loewen Riesling is £12.50 a glass, while the Rosner Grüner Veltliner is sold by the bottle only at £60.",
+     "id": "w-rosner-gruner-veltliner#5"
+    }
+   ],
+   "at": 1794142508550
+  },
+  "w-prieure-saint-come-chablis": {
+   "id": "w-prieure-saint-come-chablis",
+   "hook": "Chardonnay from cool-climate Chablis, the step below our Premier Cru and Grand Cru Chablis.",
+   "pitch": "This is Chablis, which is Chardonnay from the cool north of Burgundy, so think crisp, clean and citrusy rather than rich and buttery. It's a classic with oysters and white fish, and a really elegant way to start a meal.",
+   "say": "pree-ur-RAY san KOHM, sha-BLEE",
+   "taste": "Clean and crisp, with lemony citrus and a fresh, lean, dry finish.",
+   "style": {
+    "body": 2,
+    "acid": 4,
+    "tannin": 0,
+    "sweet": 1
+   },
+   "grape": "Chardonnay is a fairly neutral grape that takes on the winemaker's choices, and in a lean Chablis style it shows citrus and freshness rather than vanilla and butter.",
+   "place": "Chablis is in Burgundy, France, where the cool continental climate keeps whites fresh and crisp, and where the weather changes a lot from year to year.",
+   "producer": "",
+   "serve": {
+    "temp": "8-10°C",
+    "glass": "standard white wine glass",
+    "decant": "no"
+   },
+   "dishes": [
+    {
+     "dish": "Seasonal Oysters, Mignonette",
+     "why": "Crisp, unoaked-style Chardonnay is the classic wine for oysters, matching their salty freshness and the sharp mignonette (a vinegar and shallot dressing)."
+    },
+    {
+     "dish": "Sea Bream Crudo, Preserved Lemon, Dill",
+     "why": "Its lemony freshness mirrors the preserved lemon without drowning the delicate raw fish."
+    },
+    {
+     "dish": "Hake, Mussels, Cannellini Beans, Leeks",
+     "why": "A lean Chardonnay suits white fish, and its freshness keeps the creamy beans and leeks tasting light."
+    }
+   ],
+   "alts": [
+    {
+     "id": "w-domaine-des-hates-chablis-1er-cru-vau-de-vey",
+     "when": "a step up: Premier Cru Chablis"
+    },
+    {
+     "id": "w-domaine-perraud-macon-villages-maison-cubitt",
+     "when": "Burgundy Chardonnay by the glass"
+    },
+    {
+     "id": "w-michel-delhommeau-muscadet-sevre-et-maine-sur-lie",
+     "when": "crisp white with oysters, under £55"
+    }
+   ],
+   "qs": [
+    {
+     "k": "recognise",
+     "q": "Which description best fits the Prieuré Saint-Côme Chablis 2024?",
+     "opts": [
+      "Lean and crisp, with lemony citrus and a dry finish",
+      "Rich and buttery, with vanilla, toast and baked apple",
+      "Soft and off-dry, with ripe peach, honey and apricot",
+      "Perfumed and floral, with lychee, rose and ginger"
+     ],
+     "a": 0,
+     "why": "Chablis comes from cool northern Burgundy and is known as the lean, crisp, citrusy side of Chardonnay.",
+     "id": "w-prieure-saint-come-chablis#0"
+    },
+    {
+     "k": "recognise",
+     "q": "Which French wine region is the Prieuré Saint-Côme Chablis from?",
+     "opts": [
+      "Burgundy",
+      "Loire Valley",
+      "Bordeaux",
+      "Alsace"
+     ],
+     "a": 0,
+     "why": "Chablis is part of Burgundy, France.",
+     "id": "w-prieure-saint-come-chablis#1"
+    },
+    {
+     "k": "recall",
+     "q": "What grape is the Prieuré Saint-Côme Chablis made from?",
+     "ans": "Chardonnay",
+     "acc": [
+      "100% Chardonnay",
+      "Chardonnay grapes"
+     ],
+     "why": "Chablis is made from Chardonnay.",
+     "id": "w-prieure-saint-come-chablis#2"
+    },
+    {
+     "k": "recall",
+     "q": "What kind of climate does Burgundy, home of the Prieuré Saint-Côme Chablis, have?",
+     "ans": "Cool continental",
+     "acc": [
+      "cool",
+      "cool climate",
+      "continental"
+     ],
+     "why": "Burgundy has a cool continental climate, which keeps its whites fresh and means vintages vary a lot.",
+     "id": "w-prieure-saint-come-chablis#3"
+    },
+    {
+     "k": "apply",
+     "q": "A guest starting with the Seasonal Oysters, Mignonette wants a crisp French Chardonnay, nothing rich or buttery, at between £60 and £70 a bottle. What would you suggest, and why?",
+     "key": [
+      "Prieuré Saint-Côme Chablis 2024",
+      "It's lean, citrusy Chardonnay from cool northern Burgundy, crisp rather than buttery, and at £68 it sits within their budget",
+      "Crisp, unoaked-style Chardonnay is the classic match for oysters, its freshness matching the salty oysters and sharp mignonette"
+     ],
+     "decoys": [
+      {
+       "id": "w-domaine-des-hates-chablis-1er-cru-vau-de-vey",
+       "why": "It would suit the oysters, but at £90 it's well over the guest's budget."
+      },
+      {
+       "id": "w-sandhi-chardonnay-sta-rita-hills",
+       "why": "It's Californian, not French, and at £95 it's over budget."
+      },
+      {
+       "id": "w-david-moret-meursault-sous-la-velle",
+       "why": "At £220 it's far beyond the budget and a much grander bottle than they asked for."
+      }
+     ],
+     "wrong": [
+      "Choose it because it's a big, full-bodied white that stands up to the weight of oysters.",
+      "Choose it because its soft, low acidity calms down the sharp vinegar in the mignonette.",
+      "Choose it because its buttery vanilla oak brings out the creaminess of the oysters."
+     ],
+     "why": "It's the only French Chardonnay on the list between £60 and £70, and lean Chardonnay is the textbook oyster wine.",
+     "id": "w-prieure-saint-come-chablis#4"
+    },
+    {
+     "k": "contrast",
+     "q": "Which sits higher in Burgundy's classification: the Prieuré Saint-Côme Chablis or the Domaine des Hâtes Chablis 1er Cru, 'Vau de Vey'?",
+     "ans": "The Domaine des Hâtes Chablis 1er Cru, 'Vau de Vey'",
+     "acc": [
+      "Domaine des Hâtes",
+      "the Premier Cru",
+      "the 1er Cru",
+      "Vau de Vey"
+     ],
+     "why": "Burgundy ranks its sites in tiers, and Premier Cru (1er Cru) sits above plain Chablis, just below Grand Cru.",
+     "id": "w-prieure-saint-come-chablis#5"
+    }
+   ],
+   "at": 1794142508551
+  },
+  "w-famille-perrin-viognier-maison-les-alexandrins": {
+   "id": "w-famille-perrin-viognier-maison-les-alexandrins",
+   "hook": "A Rhône Viognier: full-bodied, low in acidity and heavily perfumed with apricot and honeysuckle.",
+   "pitch": "This is a rich, rounded white that smells of apricot, honeysuckle and ripe stone fruit, and it feels soft rather than sharp. If you like a white with plenty of flavour and perfume, especially with gently spiced food, you'll love it.",
+   "say": "fa-MEE-yuh peh-RAN, vee-oh-NYAY, may-ZON lay zah-lex-AHN-dran",
+   "taste": "Ripe apricot, honeysuckle and stone fruit in a full, soft, rounded white with gentle acidity (it isn't tangy or sharp).",
+   "style": {
+    "body": 4,
+    "acid": 2,
+    "tannin": 0,
+    "sweet": 1
+   },
+   "grape": "Viognier is low in acidity (the tangy, mouth-watering freshness), full-bodied and heavily perfumed with apricot, honeysuckle and stone fruit, and it is best drunk young while that perfume is fresh.",
+   "place": "It comes from the Rhône Valley in France, which is warm and Mediterranean in the south and more continental in the north, so the grapes ripen fully.",
+   "producer": "",
+   "serve": {
+    "temp": "10-12°C",
+    "glass": "white wine glass",
+    "decant": "no"
+   },
+   "dishes": [
+    {
+     "dish": "Curried Crab on Malt Rye & Beer Bread",
+     "why": "Viognier loves mild spice and creamy curries, and its apricot perfume sits beautifully with the rich, delicate crab."
+    },
+    {
+     "dish": "Monkfish, Cavolo Nero, Devilled Butter",
+     "why": "Its full body matches the rich monkfish, and the perfumed fruit softens the gentle heat of the devilled butter."
+    },
+    {
+     "dish": "Delica Squash Risotto, Brown Butter, Pumpkin Seed Relish",
+     "why": "A soft, full white like this matches the creamy, sweet squash and the nutty brown butter."
+    }
+   ],
+   "alts": [
+    {
+     "id": "w-domaine-perraud-macon-villages-maison-cubitt",
+     "when": "by the glass"
+    },
+    {
+     "id": "w-carl-loewen-riesling-alte-reben",
+     "when": "by the glass, fresher and sharper"
+    },
+    {
+     "id": "w-boulevard-napoleon-grenache-gris",
+     "when": "another full southern French white, higher price"
+    }
+   ],
+   "qs": [
+    {
+     "k": "recognise",
+     "q": "Which description fits the Famille Perrin Viognier, Maison Les Alexandrins 2025?",
+     "opts": [
+      "Full-bodied and soft, with apricot and honeysuckle perfume",
+      "Light and sharp, with lemon and crunchy green apple",
+      "Medium-bodied and crisp, with grapefruit and cut grass",
+      "Lean and steely, with lime zest and chalky minerals"
+     ],
+     "a": 0,
+     "why": "Viognier is full-bodied, low in acidity and heavily perfumed with apricot, honeysuckle and stone fruit.",
+     "id": "w-famille-perrin-viognier-maison-les-alexandrins#0"
+    },
+    {
+     "k": "recognise",
+     "q": "How much acidity does the Famille Perrin Viognier, Maison Les Alexandrins 2025 have?",
+     "opts": [
+      "Low, so it feels soft and round",
+      "High, so it feels sharp and zesty",
+      "Very high, so it feels tart and lean",
+      "Medium, so it feels crisp and bright"
+     ],
+     "a": 0,
+     "why": "Viognier is a low-acid grape, which is why this wine feels soft and rounded rather than tangy.",
+     "id": "w-famille-perrin-viognier-maison-les-alexandrins#1"
+    },
+    {
+     "k": "recall",
+     "q": "What grape is the Famille Perrin Viognier, Maison Les Alexandrins 2025 made from?",
+     "ans": "Viognier",
+     "acc": [
+      "100% Viognier",
+      "Viognier grapes"
+     ],
+     "why": "The grape is on the label: it is a Viognier.",
+     "id": "w-famille-perrin-viognier-maison-les-alexandrins#2"
+    },
+    {
+     "k": "recall",
+     "q": "Which French wine region does the Famille Perrin Viognier, Maison Les Alexandrins 2025 come from?",
+     "ans": "The Rhône Valley",
+     "acc": [
+      "Rhône",
+      "Rhone",
+      "Rhône Valley, France"
+     ],
+     "why": "It is a Rhône Valley white, from the same region as Châteauneuf-du-Pape and Hermitage.",
+     "id": "w-famille-perrin-viognier-maison-les-alexandrins#3"
+    },
+    {
+     "k": "apply",
+     "q": "A guest ordering the Curried Crab on Malt Rye & Beer Bread asks for a full, rich white with lots of perfume, nothing sharp, under £55 a bottle. What would you suggest, and why?",
+     "key": [
+      "Famille Perrin Viognier, Maison Les Alexandrins 2025",
+      "its full body and low acidity match the rich crab and keep it soft rather than sharp",
+      "its apricot and honeysuckle perfume suits mild curry spice, which is a classic match for Viognier"
+     ],
+     "decoys": [
+      {
+       "id": "w-adega-de-moncao-vinho-verde-fresco",
+       "why": "Vinho Verde is usually light, sharp and zippy, the opposite of the full, soft white the guest wants."
+      },
+      {
+       "id": "w-michel-delhommeau-muscadet-sevre-et-maine-sur-lie",
+       "why": "Muscadet is usually lean, crisp and salty, made for oysters rather than rich, spiced crab."
+      },
+      {
+       "id": "w-tinpot-hut-sauvignon-blanc",
+       "why": "Sauvignon Blanc is usually zesty and green-tasting, so it is sharper and less rounded than the guest asked for."
+      }
+     ],
+     "wrong": [
+      "Its light, delicate body won't overpower the crab",
+      "Its high, zesty acidity cuts straight through the curry",
+      "Its grassy, green-pepper flavours lift the crab"
+     ],
+     "why": "The guest asked for full, perfumed and soft, and Viognier is exactly that, plus it is a natural match for mild spice.",
+     "id": "w-famille-perrin-viognier-maison-les-alexandrins#4"
+    },
+    {
+     "k": "contrast",
+     "q": "A guest wants a white by the glass: can you pour the Famille Perrin Viognier, Maison Les Alexandrins or the Domaine Perraud Mâcon-Villages, Maison Cubitt by the glass, and at what price?",
+     "ans": "The Mâcon-Villages, at £13.50 a glass; the Viognier is bottle only, at £50.",
+     "acc": [
+      "The Mâcon-Villages, £13.50",
+      "Domaine Perraud Mâcon-Villages by the glass at £13.50"
+     ],
+     "why": "The list only offers the Viognier by the bottle, so for a single glass the Mâcon-Villages is the one to offer.",
+     "id": "w-famille-perrin-viognier-maison-les-alexandrins#5"
+    }
+   ],
+   "at": 1794142508743
+  },
+  "w-raul-perez-godello-ultreia": {
+   "id": "w-raul-perez-godello-ultreia",
+   "hook": "A Godello from Bierzo, in north-west Spain, the Spanish white grape many guests haven't tried yet.",
+   "pitch": "This is a dry Spanish white made from Godello, a grape that usually gives citrus and orchard fruit with a fresh, slightly stony edge and a bit more weight than a light, zippy white. If you enjoy Albariño or white Burgundy and fancy trying something new, this is a lovely discovery.",
+   "say": "rah-OOL PEH-reth, go-DAY-yo, ool-TRAY-ah",
+   "taste": "Usually dry and medium-bodied, with lemon, pear and stone fruit, fresh acidity (that tangy, mouth-watering feel) and a stony finish.",
+   "style": {
+    "body": 3,
+    "acid": 3,
+    "tannin": 0,
+    "sweet": 1
+   },
+   "grape": "Godello is a white grape from north-west Spain that usually makes dry wines with some weight, fresh acidity and citrus and orchard-fruit flavours.",
+   "place": "Bierzo is a wine region in north-west Spain, next to Galicia, and its greener, hilly setting usually helps keep its whites fresh.",
+   "producer": "",
+   "serve": {
+    "temp": "10-12°C",
+    "glass": "white wine glass",
+    "decant": "no"
+   },
+   "dishes": [
+    {
+     "dish": "Hake, Mussels, Cannellini Beans, Leeks",
+     "why": "It has enough body for the creamy beans and enough freshness for the hake and mussels."
+    },
+    {
+     "dish": "Sea Bream Crudo, Preserved Lemon, Dill",
+     "why": "Its citrus freshness echoes the preserved lemon without swamping the delicate raw fish."
+    },
+    {
+     "dish": "Chicken Milanese, Brown Butter, Capers, Anchovies",
+     "why": "Its fresh acidity cuts through the fried crumb and brown butter and stands up to the salty capers and anchovies."
+    }
+   ],
+   "alts": [
+    {
+     "id": "w-bodegas-gallegas-albarino-sentidino",
+     "when": "lighter and zestier, under £60"
+    },
+    {
+     "id": "w-la-giustiniana-gavi-di-gavi-lugarara",
+     "when": "by the glass"
+    },
+    {
+     "id": "w-raul-perez-mencia-ultreia-saint-jacques",
+     "when": "same producer, if they want red"
+    }
+   ],
+   "qs": [
+    {
+     "k": "recognise",
+     "q": "Which country does the Raúl Pérez Godello, Ultreia 2023 come from?",
+     "opts": [
+      "Spain",
+      "Portugal",
+      "Italy",
+      "France"
+     ],
+     "a": 0,
+     "why": "It comes from Bierzo, a wine region in north-west Spain.",
+     "id": "w-raul-perez-godello-ultreia#0"
+    },
+    {
+     "k": "recognise",
+     "q": "Which description best fits the Raúl Pérez Godello, Ultreia 2023?",
+     "opts": [
+      "Dry and medium-bodied, with fresh citrus, pear and a stony edge",
+      "Dry and very light, with sharp lime and a salty, briny tang",
+      "Dry and heavy, with low acidity and thick apricot perfume",
+      "Off-dry and light, with grapey, floral, gently sweet fruit"
+     ],
+     "a": 0,
+     "why": "Godello usually makes dry whites with some weight, fresh acidity and citrus and orchard fruit.",
+     "id": "w-raul-perez-godello-ultreia#1"
+    },
+    {
+     "k": "recall",
+     "q": "Which Spanish wine region is the Raúl Pérez Godello, Ultreia 2023 from?",
+     "ans": "Bierzo",
+     "acc": [
+      "Bierzo, Spain",
+      "Bierzo in north-west Spain"
+     ],
+     "why": "Bierzo is the region on the list for this wine.",
+     "id": "w-raul-perez-godello-ultreia#2"
+    },
+    {
+     "k": "recall",
+     "q": "How much is a bottle of the Raúl Pérez Godello, Ultreia 2023?",
+     "ans": "£62",
+     "acc": [
+      "62 pounds",
+      "sixty-two pounds"
+     ],
+     "why": "The list prices it at £62 a bottle; it isn't offered by the glass.",
+     "id": "w-raul-perez-godello-ultreia#3"
+    },
+    {
+     "k": "apply",
+     "q": "A guest ordering the Hake, Mussels, Cannellini Beans, Leeks asks for a dry white from north-west Spain with a bit more body than an Albariño. What would you suggest, and why?",
+     "key": [
+      "Raúl Pérez Godello, Ultreia 2023",
+      "it's a Godello from Bierzo in north-west Spain, with more weight than a light, zesty white",
+      "its fresh acidity and citrus character suit the hake and mussels, while its body handles the creamy beans"
+     ],
+     "decoys": [
+      {
+       "id": "w-bodegas-gallegas-albarino-sentidino",
+       "why": "The guest has specifically asked for more body than an Albariño."
+      },
+      {
+       "id": "w-villota-rioja-blanco-selvanevada",
+       "why": "It is Spanish, but Rioja isn't in north-west Spain, so it doesn't fit the request."
+      },
+      {
+       "id": "w-adega-de-moncao-vinho-verde-fresco",
+       "why": "Vinho Verde is Portuguese, not Spanish, and usually lighter than the guest wants."
+      }
+     ],
+     "wrong": [
+      "Its very light, delicate body lets the hake do all the talking",
+      "Its firm tannin grips the creamy beans and mussels",
+      "Its soft, low acidity lets the creamy sauce take over"
+     ],
+     "why": "Godello from Bierzo is the north-west Spanish white with extra weight, and its freshness suits fish and shellfish.",
+     "id": "w-raul-perez-godello-ultreia#4"
+    },
+    {
+     "k": "contrast",
+     "q": "Between the Raúl Pérez Godello, Ultreia 2023 and the Bodegas Gallegas Albariño Sentidiño 2025, which is the pricier bottle, and by how much?",
+     "ans": "The Godello, at £62 against £58, so £4 more",
+     "acc": [
+      "Godello, £4 more",
+      "The Raúl Pérez Godello at £62"
+     ],
+     "why": "Both are Spanish whites sold by the bottle, and the Godello costs £4 more on the list.",
+     "id": "w-raul-perez-godello-ultreia#5"
+    }
+   ],
+   "at": 1794142508743
+  },
+  "w-antonella-corda-vermentino-di-sardegna": {
+   "id": "w-antonella-corda-vermentino-di-sardegna",
+   "hook": "A classic Mediterranean seafood white from Sardinia, usually fermented in steel tanks to keep it fresh.",
+   "pitch": "It's light and crisp, with citrus and herbs and a faint bitter almond note at the end. If you're having oysters, crudo or any fish, it's the classic Mediterranean seafood white and keeps every mouthful fresh.",
+   "say": "an-toh-NELL-a COR-da, ver-men-TEE-noh dee sar-DEN-ya",
+   "taste": "Light and crisp, with lemony citrus, fresh herbs and a faint bitter almond finish.",
+   "style": {
+    "body": 2,
+    "acid": 4,
+    "tannin": 0,
+    "sweet": 1
+   },
+   "grape": "Vermentino gives this wine high acidity (a mouth-watering freshness), a light body, citrus and herbal flavours, and a faint bitter almond finish.",
+   "place": "It's from Sardinia, the Italian island, and it's a classic Mediterranean seafood white, made fresh to drink young.",
+   "producer": "",
+   "serve": {
+    "temp": "8-10°C",
+    "glass": "white wine glass",
+    "decant": "no"
+   },
+   "dishes": [
+    {
+     "dish": "Seasonal Oysters, Mignonette",
+     "why": "The crisp acidity and citrus work like a squeeze of lemon on salty oysters."
+    },
+    {
+     "dish": "Sea Bream Crudo, Preserved Lemon, Dill",
+     "why": "The wine's citrus and herbal notes echo the preserved lemon and dill without swamping the delicate fish."
+    },
+    {
+     "dish": "Hake, Mussels, Cannellini Beans, Leeks",
+     "why": "It's a light seafood white, so it freshens up the creamy beans and leeks and loves the mussels."
+    }
+   ],
+   "alts": [
+    {
+     "id": "w-cassara-grillo",
+     "when": "by the glass, another Italian island white"
+    },
+    {
+     "id": "w-lauriers-picpoul-de-pinet-paredaux",
+     "when": "under £50, crisp seafood white"
+    },
+    {
+     "id": "w-bodegas-gallegas-albarino-sentidino",
+     "when": "under £60, another crisp white for seafood"
+    }
+   ],
+   "qs": [
+    {
+     "k": "recognise",
+     "q": "Which description best fits the Antonella Corda Vermentino di Sardegna 2024?",
+     "opts": [
+      "Light-bodied and crisp, with citrus, herbs and a faint bitter almond finish",
+      "Full-bodied and creamy, with ripe peach, apricot and a soft rounded finish",
+      "Medium-bodied and off-dry, with lime, honey and a gently sweet finish",
+      "Light-bodied and grassy, with gooseberry, cut grass and a sharp green finish"
+     ],
+     "a": 0,
+     "why": "Vermentino here is high in acid and light in body, with citrus and herbal notes and a faint bitter almond finish.",
+     "id": "w-antonella-corda-vermentino-di-sardegna#0"
+    },
+    {
+     "k": "recognise",
+     "q": "What winemaking approach is usual for the Antonella Corda Vermentino di Sardegna?",
+     "opts": [
+      "Fermented in steel and kept fresh for drinking young",
+      "Fermented in new oak barrels and aged for extra richness",
+      "Left on grape skins for weeks for colour and grip",
+      "Pressed from dried grapes to concentrate sugar and weight"
+     ],
+     "a": 0,
+     "why": "It's usually fermented in steel and made fresh, for drinking young.",
+     "id": "w-antonella-corda-vermentino-di-sardegna#1"
+    },
+    {
+     "k": "recall",
+     "q": "What grape is the Antonella Corda Vermentino di Sardegna made from?",
+     "ans": "Vermentino",
+     "acc": [
+      "Vermentino grape",
+      "100% Vermentino"
+     ],
+     "why": "The grape is on the label: Vermentino.",
+     "id": "w-antonella-corda-vermentino-di-sardegna#2"
+    },
+    {
+     "k": "recall",
+     "q": "Which island does the Antonella Corda Vermentino di Sardegna come from?",
+     "ans": "Sardinia",
+     "acc": [
+      "Sardegna",
+      "Sardinia, Italy"
+     ],
+     "why": "It's a Sardinian wine, which is what 'di Sardegna' on the label means.",
+     "id": "w-antonella-corda-vermentino-di-sardegna#3"
+    },
+    {
+     "k": "apply",
+     "q": "A guest at a table having the Seasonal Oysters, Mignonette says: 'We'd love a bottle of crisp, light white from one of the Italian islands, and we're happy to spend over £60 on something a bit special.' What would you suggest, and why?",
+     "key": [
+      "Antonella Corda Vermentino di Sardegna 2024, £64 a bottle, from Sardinia",
+      "its high acidity and citrus cut through the salty oysters and sharp mignonette like a squeeze of lemon",
+      "its light body and herbal notes don't swamp the delicate oysters, and it's a classic Mediterranean seafood white"
+     ],
+     "decoys": [
+      {
+       "id": "w-cassara-grillo",
+       "why": "It's an Italian island white, but at £38 a bottle it's well under the special bottle over £60 they asked for."
+      },
+      {
+       "id": "w-borgo-selene-catarratto-inzolia",
+       "why": "It's an Italian island white, but at £32 it's far below the spend they asked for."
+      },
+      {
+       "id": "w-la-giustiniana-gavi-di-gavi-lugarara",
+       "why": "It's a crisp Italian white, but it's from mainland Italy, not an island, and £58 is under their spend."
+      }
+     ],
+     "wrong": [
+      "It's a big, full-bodied white with enough weight to stand up to the oysters' richness",
+      "Its firm tannin gives grip that holds up against the oysters' slippery texture",
+      "Its rich, buttery oak flavours add some needed weight to the plain raw oysters"
+     ],
+     "why": "The Vermentino is the only Italian island white on the list over £60, and its crisp, light, citrus style is made for raw shellfish.",
+     "id": "w-antonella-corda-vermentino-di-sardegna#4"
+    },
+    {
+     "k": "contrast",
+     "q": "Of the Antonella Corda Vermentino di Sardegna and the Cassara Grillo, which can a guest order by the glass?",
+     "ans": "The Cassara Grillo, at £8.50 a glass",
+     "acc": [
+      "Cassara Grillo",
+      "The Grillo",
+      "Grillo"
+     ],
+     "why": "Both are Italian island whites, but the Vermentino is bottle only, at £64, while the Grillo is £8.50 a glass or £38 a bottle.",
+     "id": "w-antonella-corda-vermentino-di-sardegna#5"
+    }
+   ],
+   "at": 1794142512961
+  },
+  "w-villota-rioja-blanco-selvanevada": {
+   "id": "w-villota-rioja-blanco-selvanevada",
+   "hook": "White Rioja from Spain's top-tier DOCa region, where the Ebro valley tempers the climate with Atlantic air.",
+   "pitch": "This is the white side of Rioja, a young 2025 usually made from the Viura grape, dry and fresh. If you love red Rioja, it's a lovely way to try the same region with fish, chicken or a salad.",
+   "say": "vee-YOH-ta ree-OH-ha BLAN-coh, sel-va-neh-VAH-da",
+   "taste": "Usually dry and fresh, light to medium in body, with gentle orchard fruit and a clean finish.",
+   "style": {
+    "body": 2,
+    "acid": 3,
+    "tannin": 0,
+    "sweet": 1
+   },
+   "grape": "White Rioja is usually made from Viura (also called Macabeo), which gives a dry white with gentle fruit and freshness.",
+   "place": "Rioja is a DOCa, the top tier of Spain's wine classifications, with an inland continental climate (hot summers, cold winters) that the Atlantic softens via the Ebro river valley.",
+   "producer": "",
+   "serve": {
+    "temp": "8-10°C",
+    "glass": "white wine glass",
+    "decant": "no"
+   },
+   "dishes": [
+    {
+     "dish": "Chicken Milanese, Brown Butter, Capers, Anchovies",
+     "why": "A fresh, dry white cuts through the fried crumb and brown butter and is happy alongside the salty capers and anchovies."
+    },
+    {
+     "dish": "Fish & Chips, Crushed Peas, Tartare Sauce",
+     "why": "Its freshness keeps the batter and chips feeling light, the way a squeeze of lemon would."
+    },
+    {
+     "dish": "Celeriac, Apple, Kale, Hazelnut Vinaigrette",
+     "why": "A dry, gentle white sits nicely with the fresh apple and earthy celeriac without fighting the vinaigrette."
+    }
+   ],
+   "alts": [
+    {
+     "id": "w-raul-perez-godello-ultreia",
+     "when": "another Spanish white, slightly cheaper at £62"
+    },
+    {
+     "id": "w-bodegas-gallegas-albarino-sentidino",
+     "when": "under £60, crisper Spanish white for seafood"
+    },
+    {
+     "id": "w-adega-de-moncao-vinho-verde-fresco",
+     "when": "by the glass, light and fresh"
+    }
+   ],
+   "qs": [
+    {
+     "k": "recognise",
+     "q": "What quality classification does the Villota Rioja Blanco 'Selvanevada' come under?",
+     "opts": [
+      "DOCa (Denominación de Origen Calificada)",
+      "DO (Denominación de Origen)",
+      "Vino de la Tierra (a regional wine)",
+      "Vino de Pago (a single estate)"
+     ],
+     "a": 0,
+     "why": "Rioja is a DOCa, Spain's top-tier classification.",
+     "id": "w-villota-rioja-blanco-selvanevada#0"
+    },
+    {
+     "k": "recognise",
+     "q": "Which climate shapes the vineyards behind the Villota Rioja Blanco 'Selvanevada'?",
+     "opts": [
+      "Continental, tempered by the Atlantic via the Ebro valley",
+      "Hot Mediterranean, cooled only by breezes off the nearby coast",
+      "Cool maritime, with Atlantic rain falling all year round",
+      "Hot and dry desert, watered by rivers from the mountains"
+     ],
+     "a": 0,
+     "why": "Rioja's climate is continental, tempered by the Atlantic via the Ebro valley.",
+     "id": "w-villota-rioja-blanco-selvanevada#1"
+    },
+    {
+     "k": "recall",
+     "q": "What grape is a white Rioja like the Villota 'Selvanevada' usually made from?",
+     "ans": "Viura",
+     "acc": [
+      "Macabeo",
+      "Macabeu",
+      "Mostly Viura"
+     ],
+     "why": "Viura, also called Macabeo, is the usual grape for white Rioja.",
+     "id": "w-villota-rioja-blanco-selvanevada#2"
+    },
+    {
+     "k": "recall",
+     "q": "Which river valley carries Atlantic influence into the vineyards of the Villota Rioja Blanco 'Selvanevada'?",
+     "ans": "The Ebro valley",
+     "acc": [
+      "Ebro",
+      "The Ebro",
+      "River Ebro"
+     ],
+     "why": "Rioja's continental climate is tempered by the Atlantic via the Ebro valley.",
+     "id": "w-villota-rioja-blanco-selvanevada#3"
+    },
+    {
+     "k": "apply",
+     "q": "A guest at a table ordering the Chicken Milanese, Brown Butter, Capers, Anchovies says: 'We always drink red Rioja at home, but tonight we'd like to try a white from that same region.' What would you suggest, and why?",
+     "key": [
+      "Villota Rioja Blanco 'Selvanevada' 2025, £65 a bottle",
+      "it's a white from Rioja, usually made from Viura, so it's the white side of the region they already love",
+      "it's a young, dry, fresh white that cuts through the fried crumb and brown butter and suits the capers and anchovies"
+     ],
+     "decoys": [
+      {
+       "id": "w-raul-perez-godello-ultreia",
+       "why": "It's a good Spanish white, but it's a Godello and isn't from Rioja, which is what they asked for."
+      },
+      {
+       "id": "w-bodegas-gallegas-albarino-sentidino",
+       "why": "It's a crisp Spanish white, but it's an Albariño, not a Rioja."
+      },
+      {
+       "id": "w-adega-de-moncao-vinho-verde-fresco",
+       "why": "It's a fresh white, but it's a Portuguese Vinho Verde, not a white from Rioja."
+      }
+     ],
+     "wrong": [
+      "It's a heavy, full-bodied white built to match the richness of the brown butter",
+      "It has the firm tannin of a red Rioja, which grips the fried crumb",
+      "Its long oak ageing gives vanilla flavours that echo the brown butter"
+     ],
+     "why": "The Villota is the only white Rioja on the list, and its fresh, dry style suits a rich, salty fried dish.",
+     "id": "w-villota-rioja-blanco-selvanevada#4"
+    },
+    {
+     "k": "contrast",
+     "q": "Of the Villota Rioja Blanco 'Selvanevada' and the Raúl Pérez Godello, Ultreia, which is usually made from Viura?",
+     "ans": "The Villota Rioja Blanco 'Selvanevada'",
+     "acc": [
+      "Villota",
+      "The Rioja Blanco",
+      "Selvanevada"
+     ],
+     "why": "Both are Spanish whites at about the same price, but white Rioja is usually Viura, while the Raúl Pérez is made from Godello.",
+     "id": "w-villota-rioja-blanco-selvanevada#5"
+    }
+   ],
+   "at": 1794142512961
   }
  },
  "pairings": {},
@@ -7023,5 +8163,5 @@
   }
  ],
  "cocktailCards": {},
- "exported": "2026-11-08T12:54:03.423Z"
+ "exported": "2026-11-08T12:55:12.970Z"
 }
