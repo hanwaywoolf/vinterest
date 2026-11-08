@@ -56,7 +56,10 @@ await page.goto(`http://localhost:${port}/team/?seed=${seed}`);
     const parts = Array.from({ length: lanes }, (_, k) => ids.filter((_, i) => Math.floor(i / TeamData.CARD_BATCH) % lanes === k));
     await Promise.all(parts.map((p) => TeamData.writeCards(p, (a) => { if (a) console.log(`write: cards ${Object.keys(TeamData.get().cards).length} of ${TeamData.wines().length}`); }).catch((e) => console.log('write: a lane of cards stopped: ' + e.message)))); });
   await step('Cocktail cards', async () => { const ids = TeamData.cocktails().filter((c) => !TeamData.cocktailCard(c.id)).map((c) => c.id); if (ids.length) await TeamData.writeCocktailCards(ids); });
-  await step('Pairings', async () => { const ids = TeamData.dishes().filter((x) => !TeamData.pairing(x.id)).map((x) => x.id); if (ids.length) await TeamData.writePairings(ids); });
+  // A batch at a time, tried again if its answer doesn't parse, so one bad answer doesn't stop the rest.
+  await step('Pairings', async () => { const ids = TeamData.dishes().filter((x) => !TeamData.pairing(x.id)).map((x) => x.id), n = TeamData.PAIR_BATCH;
+    const parts = []; for (let i = 0; i < ids.length; i += n) parts.push(ids.slice(i, i + n));
+    await Promise.all(parts.map(async (p) => { for (let t = 0; t < 3; t++) { try { await TeamData.writePairings(p.filter((id) => !TeamData.pairing(id))); console.log(`write: pairings ${TeamData.dishes().filter((x) => TeamData.pairing(x.id)).length} of ${TeamData.dishes().length}`); return; } catch (e) { console.log('write: a pairing batch failed, trying again: ' + e.message); } } })); });
   await step('Drinking windows', async () => { const ids = TeamData.wines().filter((w) => w.vintage && !w.peak).map((w) => w.id); if (ids.length) await TeamData.writeWindows(ids, (a, b) => console.log(`write: windows ${a} of ${b}`)); });
   await step('Dish notes', async () => { const ids = TeamData.dishes().filter((x) => !TeamData.dishCard(x.id)).map((x) => x.id); if (ids.length) await TeamData.writeDishCards(ids, (a, b) => console.log(`write: dish notes ${a} of ${b}`)); });
   const left = await page.evaluate(() => TeamData.pending());
