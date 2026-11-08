@@ -15,12 +15,16 @@ const TeamData = {
   _empty(){ return {venue:{name:'',created:Date.now()},wines:{},dishes:{},cards:{},pairings:{},cocktails:{},cocktailCards:{},dishCards:{},versions:[],draft:null,settings:{dueDays:7}}; },
   DISH_BATCH:8,       // dishes per dish-notes call
   /* The venue is one 300KB document once the cards are written, and the screens and TeamLearn read
-     it many times a render, so the parsed copy is kept until the key is written (Store.gen), then the
-     stored text is compared, so a write from anywhere else is seen. */
-  // Kept until Store says the key was written (Store.gen: a write here or from another tab), so the 300KB text isn't read on every call.
-  get(){ const g=Store.gen(this.KEY); if(this._val&&this._gen===g) return this._val;
-    const raw=Store.get(this.KEY); if(raw!==null&&raw===this._raw){ this._gen=g; return this._val; }
-    const d=raw?Store.getJSON(this.KEY,null):null, v=d&&d.wines?d:this._empty(); this._raw=raw; this._val=v; this._gen=g; return v; },
+     it many times a render, so the parsed copy is kept until the stored text changes (the text is
+     compared, never trusted by reference, so a write from anywhere else is seen). */
+  // Kept until the stored text is written again: every write goes through Store, which says so (Store.subscribe), and
+  // another tab's write arrives as a storage event. Comparing the whole stored text on every call, as before, cost
+  // seconds a screen on a long list (The Princess Royal's restaurant is over a megabyte, read thousands of times).
+  get(){ if(this._fresh&&this._val) return this._val;
+    const raw=Store.get(this.KEY);
+    if(raw!==null&&raw===this._raw&&this._val){ this._fresh=true; return this._val; }
+    const d=raw?Store.getJSON(this.KEY,null):null, v=d&&d.wines?d:this._empty(); this._raw=raw; this._val=v; this._fresh=raw!==null; return v; },
+  _fresh:false,
   save(d){ Store.setJSON(this.KEY,d); try{ window.dispatchEvent(new Event('vbiz:data')); }catch(e){} },
   reset(){ Store.remove(this.KEY); try{ window.dispatchEvent(new Event('vbiz:data')); }catch(e){} },
   setVenue(fields){ const d=this.get(); d.venue={...d.venue,...fields}; this.save(d); },
@@ -536,6 +540,8 @@ const TeamData = {
 };
 /* The sample restaurant (data/team-sample.json): a ten-wine list, a seven-dish menu, their staff cards
    and pairings written ahead, and four staff, so the app can be shown without an upload or a call. */
+// TeamData.get's kept copy is dropped whenever its key is written, here or in another tab.
+try{ Store.subscribe(k=>{ if(k===TeamData.KEY) TeamData._fresh=false; }); window.addEventListener('storage',e=>{ if(!e.key||e.key===TeamData.KEY) TeamData._fresh=false; }); }catch(e){}
 const TeamSample = {
   /* `which`: 'sample' (The Copper Pan, small, written by hand) or 'demo' (The Larkspur, 60 wines and 27
      dishes for the wine-show demo: data/team-demo.json once it has been written by a publish and

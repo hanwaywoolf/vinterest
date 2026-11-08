@@ -115,7 +115,11 @@ const TeamLearn = {
   _qsCache:new WeakMap(),
   // Questions the sommelier review still doubts (TeamData.reviewed().held) stay out of the drill until the next review;
   // {all:true} is the review's own view of everything.
-  _held(){ const r=typeof TeamData!=='undefined'&&TeamData.reviewed&&TeamData.reviewed(), h=r&&r.held||[]; if(this._heldOf===h) return this._heldSet; this._heldOf=h; return this._heldSet=new Set(h); },
+  // The held questions as a set, made once per review result (TeamData.get keeps the same object until the data is written):
+  // the demo's sales setup asks for it hundreds of thousands of times, and The Princess Royal holds 407.
+  _held(){ const r=typeof TeamData!=='undefined'&&TeamData.reviewed&&TeamData.reviewed();
+    if(this._heldFor&&this._heldFor.r===r) return this._heldFor.set;
+    const set=new Set(r&&r.held||[]); this._heldFor={r,set}; return set; },
   _keep(qs,all){ if(all) return qs; const h=this._held(); return h.size?qs.filter(q=>!h.has(q.id)):qs; },
   wineQs(id,{all=false}={}){ const doc=TeamData.get(); let m=this._qsCache.get(doc); if(!m){ m=new Map(); this._qsCache.set(doc,m); }
     if(!m.has(id)){ this._building=(this._building||0)+1; try{ m.set(id,this._buildQs(id)); } finally{ this._building--; } }
@@ -375,6 +379,14 @@ const TeamLearn = {
        claim       two wrong answers on a comparison making the same style claim
        cut         the line after the answer stops mid-sentence */
   REVIEW_WORDS:45,
+  /* The review as the console's Wines section shows it: worked out once and kept until the restaurant's list, cards or
+     training levels change (TeamData.get and team() hand back the same objects until their stored text does), since a
+     long list's review takes seconds and the section redraws on every click. */
+  _reviewKept:null,
+  reviewIfKept(){ const k=this._reviewKept; return k&&k.doc===TeamData.get()&&k.team===this.team()?k.out:null; },
+  reviewKept(){ const doc=TeamData.get(), team=this.team(), k=this._reviewKept;
+    if(k&&k.doc===doc&&k.team===team) return k.out;
+    const out=this.review(); this._reviewKept={doc,team,out}; return out; },
   review(){ const out=[]; let flag=(q,code,note)=>out.push({q,code,note});
     const dishes=TeamData.dishes(), names=dishes.map(d=>d.name), wines=TeamData.wines();
     const countries=new Set([...wines.map(w=>w.country),...this.DECOYS.country].filter(Boolean).map(x=>this._norm(x)));
@@ -534,7 +546,10 @@ const TeamLearn = {
      choose-all against the venue's list, only once the kitchen has confirmed them; asked with confidence, a miss back
      within the shift), a change a guest asks for (what do you say), then its pairings (which wine, name a wine).
      Pills on the allergen and change questions are built here (q.pills), so choices() hands them straight back. */
-  dishQs(id,{allergen=true,all=false}={}){ return this._keep(this._dishQs(id,{allergen}),all); },
+  // Kept per restaurant document, as wineQs is: the dashboard asks for every dish's questions once per person.
+  dishQs(id,{allergen=true,all=false}={}){ const doc=TeamData.get(); let m=this._qsCache.get(doc); if(!m){ m=new Map(); this._qsCache.set(doc,m); }
+    const k=`dish:${id}:${allergen?1:0}`; if(!m.has(k)) m.set(k,this._dishQs(id,{allergen}));
+    return this._keep(m.get(k),all); },
   _dishQs(id,{allergen=true}={}){
     const x=TeamData.dish(id); if(!x) return [];
     const out=[], c=TeamData.dishCard(id), dishes=TeamData.dishes();
@@ -779,9 +794,12 @@ const TeamLearn = {
 
   /* Marks a typed answer: locally when it plainly matches the answer or a wording that counts,
      else by Claude against the key (prompts/team-grade.txt). {ok, score, verdict, say, missing}. */
-  // The same names are normalised thousands of times while a list's options are built: kept once each.
-  _norm(s){ const k=String(s||''), M=this._normMemo||(this._normMemo=new Map()); let v=M.get(k); if(v!==undefined) return v;
-    v=k.normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[^a-z0-9 ]+/g,' ').replace(/\s+/g,' ').trim(); if(M.size>50000) M.clear(); M.set(k,v); return v; },
+  // Remembered: the review and the table questions clean the same wine names and reasons many thousands of times on a
+  // long list (The Princess Royal's 132 wines took 10 seconds here when the console's Wines section opened).
+  _normMemo:new Map(),
+  _norm(s){ const k=String(s||''), m=this._normMemo; let v=m.get(k); if(v!==undefined) return v;
+    v=k.normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[^a-z0-9 ]+/g,' ').replace(/\s+/g,' ').trim();
+    if(m.size>50000) m.clear(); m.set(k,v); return v; },
   _lev(a,b){ const m=a.length,n=b.length, d=Array.from({length:m+1},(_,i)=>[i]); for(let j=1;j<=n;j++) d[0][j]=j;
     for(let i=1;i<=m;i++) for(let j=1;j<=n;j++) d[i][j]=Math.min(d[i-1][j]+1,d[i][j-1]+1,d[i-1][j-1]+(a[i-1]===b[j-1]?0:1)); return d[m][n]; },
   localMatch(q,answer){
@@ -1230,8 +1248,8 @@ const TeamLearn = {
     const wines=TeamData.wines(), norm=x=>this._norm(x), key=(q.key||[]).map(String);
     // A sentence offers a wine when it names the wine as the list does (producer and name); a grape alone
     // ("Sauvignon Blanc", "Malbec") is a reason's word, not an offer.
-    const wn=wines.map(w=>[w,norm(TeamData.short(w))]).filter(([,n])=>n.length>3);
-    const named=s=>{ const t=norm(s); return wn.filter(([,n])=>t.includes(n)).map(([w])=>w); };
+    const shorts=wines.map(w=>[w,norm(TeamData.short(w))]).filter(([,n])=>n.length>3);
+    const named=s=>{ const t=norm(s); return shorts.filter(([,n])=>t.includes(n)).map(([w])=>w); };
     const own=TeamData.wine(q.wine), offered=key.flatMap(named).filter(w=>w.id!==q.wine);
     // The question naming its own wine ("…wants a glass of the Minuty") makes it that wine, whatever other
     // wine the key steers to.
