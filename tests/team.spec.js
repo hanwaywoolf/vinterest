@@ -1938,6 +1938,24 @@ test('the demo sales: best sellers mostly known, and a glass known but not selli
   expect(row.knows).toBeGreaterThanOrEqual(Math.ceil(row.of / 2));
 });
 
+// Glasses and bottles are counted apart everywhere Sales Insights reports what sold: a bottle is several glasses' takings.
+test('sales insights count glasses and bottles apart', async ({ context, page }) => {
+  await stubNetwork(context);
+  await page.goto(`${BASE}/team/?seed=demo`);
+  await expect(page.getByTestId('team-state')).toBeVisible();
+  const r = await page.evaluate(() => { const s = TeamReport.salesSummary(7), b = TeamReport.salesBrief(); return { s, text: b.map((x) => x.title + ' ' + x.text).join(' ') }; });
+  expect(r.s.glasses + r.s.bottles).toBe(r.s.lines);
+  expect(r.text).not.toMatch(/glasses (or|and) bottles/);
+  expect(r.text).toContain(`${r.s.glasses} glasses and ${r.s.bottles} bottles`);
+  expect(r.text).toMatch(/\d\.\d\d glasses and \d\.\d\d bottles a guest/);
+  await page.goto(`${BASE}/team/?view=console`);
+  await page.getByTestId('console-nav-sales').click();
+  await expect(page.getByTestId('sales-glasses')).toHaveText(/^\d\.\d\d/);
+  await expect(page.getByTestId('sales-bottles')).toHaveText(/^\d\.\d\d/);
+  await expect(page.getByTestId('console-sales')).toContainText('Glasses per guest');
+  await expect(page.getByTestId('console-sales')).toContainText('Bottles per guest');
+});
+
 // Console access is per person (TeamLearn.canConsole): a manager's Today figures open the console's own sections on a
 // phone, a server gets no way in until someone turns it on for them, and the Add dialog sets it.
 test('console access per person: Today opens the console on a phone, and a server gets it only when it is turned on', async ({ context, page }) => {
