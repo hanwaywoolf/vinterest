@@ -314,7 +314,7 @@ const TeamData = {
      built from the list (a dish's, a cocktail's, Low's) it doubts, is held out of the drill (`venue.reviewed.held`)
      until the next review. The pre-handover gate for a new install (docs/business.md, "Handing over an install"):
      `npm run team:review` runs it on a seed and writes the result into its file. The demo restaurant is never sent. */
-  REVIEW_BATCH:10,
+  REVIEW_BATCH:10, REVIEW_AT_ONCE:1,
   _reviewItem(q){ const d=TeamLearn.deal(q,'review'), c=TeamLearn.shown(d), opts=c.opts, right=c.right;
     const about=q.wine?`WINE ${this.label(this.wine(q.wine)||{})}`:q.cocktail?`COCKTAIL ${(this.cocktail(q.cocktail)||{}).name||''}`:q.dish?`DISH ${(this.dish(q.dish)||{}).name||''}`:'';
     const ax=TeamLearn.aside(d,right.map(i=>opts[i]).join(' ')||d.ans);
@@ -326,11 +326,14 @@ const TeamData = {
     if(this.isDemo()) return null;
     const tpl=_loadTextSync('prompts/team-review.txt'), venue=this.get().venue.name||'the restaurant';
     const cock=this.cocktails().length?`The cocktail list:\n${this._drinkLines()}`:'';
-    const ask=async qs=>{ const out={}; for(let i=0;i<qs.length;i+=this.REVIEW_BATCH){ const part=qs.slice(i,i+this.REVIEW_BATCH);
+    // REVIEW_AT_ONCE batches are read at the same time (one on a phone; npm run team:review raises it for a long list).
+    const ask=async qs=>{ const out={}, starts=[]; for(let i=0;i<qs.length;i+=this.REVIEW_BATCH) starts.push(i); let done=0;
+      const lane=async()=>{ while(starts.length){ const i=starts.shift(), part=qs.slice(i,i+this.REVIEW_BATCH);
         const prompt=tpl.replace(/\{\{venue\}\}/g,venue).replace('{{about}}',this.about()).replace('{{list}}',this._listLines()).replace('{{menu}}',this._menuLines()).replace('{{cocktails}}',cock).replace('{{items}}',part.map(q=>this._reviewItem(q)).join('\n\n'));
         let j=null; try{ j=this._json(await this._callRetry('team_review',prompt)); }catch(e){}
         (j&&j.reviews||[]).forEach(r=>{ if(r&&r.id&&part.some(q=>q.id===r.id)) out[r.id]=r; });
-        onStep&&onStep(Math.min(qs.length,i+this.REVIEW_BATCH),qs.length); }
+        done+=part.length; onStep&&onStep(done,qs.length); } };
+      await Promise.all(Array.from({length:Math.max(1,Math.min(this.REVIEW_AT_ONCE||1,starts.length))},lane));
       return out; };
     const first=await ask(all), doubted=all.filter(q=>first[q.id]&&first[q.id].fit===false);
     // A wine card's own question is rewritten and read again; the rest are built from the list and can only be held.

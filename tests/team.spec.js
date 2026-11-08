@@ -1590,6 +1590,7 @@ test('a test mixes its questions: no answer twice, nothing grouped, and wrong pa
 // away by its length, by being the only one of its colour asked for, or by three wrong answers making the
 // same claim; and question health flags what's answered right by everyone at once or missed by most.
 test('table questions: the choice first, wrong answers that are believable and clearly wrong, and question health', async ({ context, page }) => {
+  test.setTimeout(90000); // three restaurants' table questions
   await stubNetwork(context);
   const check = async (seed) => {
     await page.goto(`${BASE}/team/?seed=${seed}`);
@@ -1898,7 +1899,7 @@ test('a wine card: where you stand near the top, sections that fold and stay fol
 test('the review finds nothing to fix on any restaurant in the build', async ({ context, page }) => {
   test.setTimeout(240000); // the whole review of four restaurants, twice over
   await stubNetwork(context);
-  for (const seed of ['demo', 'sample', 'social', 'princess-royal']) {
+  for (const seed of ['demo', 'sample', 'princess-royal', 'social']) { // The Social Corner last: the checks below are on it
     await page.goto(`${BASE}/team/?seed=${seed}`);
     await page.waitForFunction(() => window.TeamLearn && TeamData.wines().length > 0);
     const flags = await page.evaluate(() => TeamLearn.review().map((f) => `[${f.code}] ${f.q.q.slice(0, 80)}: ${f.note}`));

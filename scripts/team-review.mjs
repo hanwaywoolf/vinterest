@@ -26,14 +26,19 @@ try {
       try {
         const out = await new Promise((res, rej) => { const c = spawn('curl', ['-sS', '-m', '180', '-X', 'POST', `${API}/claude`, '-H', 'Content-Type: application/json', '-H', `Origin: ${API}`, '--data-binary', '@-', '-w', '\n%{http_code}']);
           let o = ''; c.stdout.on('data', (d) => { o += d; }); c.on('close', (code) => code ? rej(new Error('curl ' + code)) : res(o)); c.stdin.end(route.request().postData()); });
-        const i = out.lastIndexOf('\n'); await route.fulfill({ status: Number(out.slice(i + 1)) || 502, headers: { 'content-type': 'application/json' }, body: out.slice(0, i) });
+        const i = out.lastIndexOf('\n'), status = Number(out.slice(i + 1)) || 502;
+        if (status !== 200) console.log(`\n  /claude answered ${status}: ${out.slice(0, Math.min(i, 160))}`);
+        await route.fulfill({ status, headers: { 'content-type': 'application/json' }, body: out.slice(0, i) });
       } catch (e) { await route.fulfill({ status: 502, headers: { 'content-type': 'application/json' }, body: JSON.stringify({ error: e.message }) }); }
     });
-    page.on('console', (m) => { if (/review:/.test(m.text())) process.stdout.write('\r' + m.text().padEnd(60)); });
+    page.on('console', (m) => { if (/review:/.test(m.text())) console.log(m.text()); });
     await page.goto(`http://localhost:${port}/team/?seed=${seed}`);
     await page.waitForFunction(() => window.TeamLearn && TeamData.wines().length > 0);
     const rules = await page.evaluate(() => TeamLearn.review().length);
     if (rules) { console.error(`\n${seed}: ${rules} questions fail the rule review; run npm run team:audit and fix those first.`); process.exitCode = 1; continue; }
+    // A long list's review in parallel and in smaller batches, so each answer comes back inside the Worker's time to
+    // Anthropic: REVIEW_LANES (default 6) at a time, REVIEW_BATCH (default 6) questions each.
+    await page.evaluate(([lanes, batch]) => { TeamData.REVIEW_AT_ONCE = lanes; TeamData.REVIEW_BATCH = batch; }, [Number(process.env.REVIEW_LANES) || 6, Number(process.env.REVIEW_BATCH) || 6]);
     const r = await page.evaluate(async () => {
       await TeamData.checkQuestions(null, (a, b) => console.log(`review: rule rewrites ${a} of ${b}`)); // repeats and giveaways rewritten first
       const res = await TeamData.sommelierReview({ onStep: (a, b) => console.log(`review: ${a} of ${b}`) });
