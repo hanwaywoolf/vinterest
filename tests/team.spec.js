@@ -1857,6 +1857,35 @@ test('questions keep to their subject: a dish change, a country, a table request
   expect(r.asides).toBeGreaterThan(50);
 });
 
+test('after a miss the answer is explained, menu pairings practice asks pairings, table reasons are about the wine, and the summary says which questions come back', async ({ context, page }) => {
+  await stubNetwork(context);
+  await page.goto(`${BASE}/team/?seed=princess`);
+  await page.waitForFunction(() => window.TeamLearn && TeamData.wines().length > 0 && TeamLearn.people().length > 0);
+  const r = await page.evaluate(() => {
+    const out = { pours: [], orders: [], missedWhy: 0, missedPlace: 0 };
+    TeamData.wines().forEach((w) => TeamLearn.wineQs(w.id, { all: true }).forEach((q) => {
+      const ans = q.opts && q.a != null ? q.opts[q.a] : q.ans;
+      // A place question missed is followed by where it's from, never a dish to pour it with.
+      if (q.k !== 'apply' && /^(place|country)$/.test(TeamLearn._topic(q.q))) { const a = TeamLearn.aside(q, ans, new Set(), { missed: true }); if (a) { out.missedPlace++; if (/^Pour it with/.test(a.text)) out.pours.push(q.q); } }
+      if (q.k === 'apply') TeamLearn.choices(q).opts.forEach((o) => { if (/^(pour|avoid|suggest|recommend) the\b/i.test(o)) out.orders.push(o); });
+    }));
+    const pid = (TeamLearn.people().find((x) => x.role === 'server') || TeamLearn.people()[0]).id;
+    out.practice = TeamLearn.drill(pid, 5, 'dishes').map((q) => q.id);
+    const badassiere = TeamLearn.wineQs('w-baron-de-badassiere-syrah', { all: true }).find((q) => /part of France/.test(q.q));
+    out.explained = (TeamLearn.aside(badassiere, 'Languedoc', new Set(), { missed: true }) || {}).text;
+    return out;
+  });
+  expect(r.missedPlace).toBeGreaterThan(20);
+  expect(r.pours).toEqual([]);
+  expect(r.orders).toEqual([]); // "Pour the La Giustiniana Gavi, because…" is never a reason under Why it works
+  expect(r.explained).toMatch(/Languedoc/);
+  expect(r.practice.length).toBe(5);
+  expect(r.practice.every((id) => /#\d+$/.test(id))).toBe(true); // which wine suits it, not what's in it
+  const line = await page.evaluate(() => { const pid = TeamLearn.people()[0].id, items = TeamLearn._mine(TeamLearn._all(), pid).items, day = Date.now() + 86400000;
+    ['zz#0', 'zz#1'].forEach((id) => { items[id] = { reps: 1, due: day }; }); return TeamLearn.comesBack(pid, [{ id: 'zz#0' }, { id: 'zz#1' }]); });
+  expect(line).toBe("You'll get the two questions you got right again tomorrow, to check they've stuck.");
+});
+
 test('the phone Team tab is the console Team: Add in a dialog, training level, minimums per role', async ({ context, page }) => {
   await stubNetwork(context);
   await page.setViewportSize({ width: 390, height: 844 });

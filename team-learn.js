@@ -180,25 +180,37 @@ const TeamLearn = {
   _whole(t,max=30){ const one=(String(t||'').match(/^[^.!?]+[.!?]?/)||[''])[0].trim(); return one&&one.split(/\s+/).length<=max?one:''; },
   // `used`: the lines already shown in this drill, so the same dish or fact never comes up twice in a row of questions;
   // the first choice also turns with the question, so two questions on one wine start from different lines.
-  aside(q,answer,used=new Set()){
+  // `missed`: they got it wrong, so the line explains the right answer: the question's why even where it names the
+  // answer (that's the explanation), as long as it says more than the answer alone.
+  aside(q,answer,used=new Set(),{missed=false}={}){
     if(!q) return null; const ans=String(answer||q.ans||(q.opts&&q.a!=null?q.opts[q.a]:'')||'');
     const adds=t=>t&&this._overlap(t,ans)<0.45&&!this._norm(t).includes(this._norm(ans));
+    const aw=new Set(this._words(ans).filter(x=>x.length>3)), more2=t=>this._words(t).filter(x=>x.length>3&&!aw.has(x)).length>=4;
     // Whole sentences up to REVIEW_WORDS; a first sentence longer than that isn't shown at all.
     const trim=t=>{ const ss=String(t).match(/[^.!?]+[.!?]*/g)||[String(t)]; let o=''; for(const x of ss){ if((o+x).split(/\s+/).filter(Boolean).length>this.REVIEW_WORDS) break; o+=x; } return o.trim(); };
     const fresh=t=>!used.has(trim(t))&&![...used].some(u=>this._overlap(u,t)>=0.6);
-    if(q.why&&trim(q.why)&&adds(q.why)&&fresh(q.why)) return {label:null,text:trim(q.why)};
-    const more=[];
+    if(q.why&&trim(q.why)&&(adds(q.why)||missed&&more2(q.why))&&fresh(q.why)) return {label:null,text:trim(q.why)};
+    // Otherwise a line on the question's own subject first (where it's from for a place question, the grape for a
+    // grape question, the taste for a taste question); a dish to pour it with only on a question about the table, or
+    // when there's nothing else, since a pairing under "Which part of France…" explains nothing about the answer.
+    const more=[], near=[], pours=[], topic=q.q?this._topic(q.q,!!q.cocktail):'', table=q.k==='apply'||!!q.dish;
     if(q.wine){ const c=TeamData.card(q.wine)||{};
+      const place=c.place&&this._whole(c.place,30), grape=c.grape&&this._whole(c.grape,30);
+      if(/^(place|country|village|climate|influence)$/.test(topic)){ if(place) near.push(place); }
+      else if(topic==='grape'){ if(grape) near.push(grape); }
+      else if(topic==='flavour'||q.k==='recognise'){ if(c.hook) near.push(c.hook); if(grape) near.push(grape); }
       if(c.hook) more.push(c.hook);
       // Not on a question whose answer is a dish: a line about another dish there reads as the answer to it.
-      if(!/#pair$/.test(q.id)) (c.dishes||[]).forEach(d=>{ const w=d&&d.dish&&this._whole(d.why,24); if(w) more.push(`Pour it with the ${d.dish}: ${w.replace(/^./,ch=>ch.toLowerCase())}`); });
+      if(!/#pair$/.test(q.id)) (c.dishes||[]).forEach(d=>{ const w=d&&d.dish&&this._whole(d.why,24); if(w) pours.push(`Pour it with the ${d.dish}: ${w.replace(/^./,ch=>ch.toLowerCase())}`); });
       if(c.serve&&(c.serve.temp||c.serve.glass)) more.push(`Serve it ${[c.serve.temp,c.serve.glass&&`in ${c.serve.glass.replace(/^an? /i,'a ')}`].filter(Boolean).join(', ')}.`);
-      if(c.place) more.push(this._whole(c.place,30)); if(c.grape) more.push(this._whole(c.grape,30)); }
+      if(place) more.push(place); if(grape) more.push(grape); }
     if(q.cocktail){ const c=TeamData.cocktailCard(q.cocktail)||{};
       (c.explain||[]).forEach(e=>e&&e.term&&more.push(`${e.term}: ${e.means}`));
       (c.dishes||[]).forEach(d=>{ const w=d&&d.dish&&this._whole(d.why,24); if(w) more.push(`Good with the ${d.dish}: ${w.replace(/^./,ch=>ch.toLowerCase())}`); }); }
     if(q.dish){ const c=TeamData.dishCard(q.dish)||{}; (c.ask||[]).forEach(a=>a&&a.q&&more.push(`Guests ask "${a.q}" ${a.a}`)); }
-    const cand=more.map(t=>String(t).trim()).filter(t=>t&&trim(t)).filter(t=>adds(t)&&(!q.why||this._overlap(t,q.why)<0.45)&&fresh(t)), off=cand.length?Math.abs(this._hash(String(q.id)))%cand.length:0;
+    const ok=l=>l.map(t=>String(t).trim()).filter(t=>t&&trim(t)).filter(t=>adds(t)&&(!q.why||this._overlap(t,q.why)<0.45)&&fresh(t));
+    const tiers=table?[near,[...pours,...more]]:[near,more,pours];
+    const cand=tiers.map(ok).find(l=>l.length)||[], off=cand.length?Math.abs(this._hash(String(q.id)))%cand.length:0;
     const pick=cand.length?cand[off]:null;
     return pick?{label:'Good to know',text:trim(pick)}:null; },
   _overlap(a,b){ const A=new Set(this._words(a).filter(x=>x.length>3)), B=new Set(this._words(b).filter(x=>x.length>3)); let n=0; A.forEach(x=>{ if(B.has(x)) n++; }); return n/Math.max(1,Math.min(A.size,B.size)); },
@@ -732,7 +744,10 @@ const TeamLearn = {
     const role=person.role, kinds=this.ROLES[role].kinds, mine=this._mine(this._all(),pid), items=mine.items, now=Date.now();
     const sc0=this.scope(role), sc=part?{glass:part==='glass'?sc0.glass:[],bottle:part==='bottle'?sc0.bottle:[],dishes:part==='dishes'||part==='allergens'?sc0.dishes:[],cocktails:part==='cocktails'?sc0.cocktails:[]}:sc0, wines=[...sc.glass,...sc.bottle], dishes=sc.dishes, cocktails=sc.cocktails||[];
     // A part's practice is its questions alone: allergens drills the allergen question of every confirmed dish, dishes everything else.
-    const dqs=x=>part==='allergens'?this.dishQs(x.id).filter(q=>q.allergen):part==='dishes'?this.dishQs(x.id,{allergen:false}):this.dishQs(x.id);
+    // Practising "Menu pairings" leads with each dish's pairing questions, then what it is and the changes guests ask
+    // for: one question per dish a drill, so with what-it-is first the pairings never came up in practice.
+    const pairFirst=qs=>[...qs.filter(q=>/#\d+$/.test(q.id)),...qs.filter(q=>!/#\d+$/.test(q.id))];
+    const dqs=x=>part==='allergens'?this.dishQs(x.id).filter(q=>q.allergen):part==='dishes'?pairFirst(this.dishQs(x.id,{allergen:false})):this.dishQs(x.id);
     const inPart=key=>{ if(!part) return true; const t=key[0]; if(part==='allergens') return t==='a'; if(t==='a') return false; return t==='w'?wines.some(w=>w.id===key.slice(2)):t==='c'?cocktails.some(c=>c.id===key.slice(2)):dishes.some(x=>x.id===key.slice(2)); };
     // A wine's or a cocktail's questions at the rungs this role needs for it.
     const qsFor=w=>this.qsFor(role,w.id), out=[], used=new Set();
@@ -752,7 +767,7 @@ const TeamLearn = {
     due.forEach(([id])=>push(byId[id]));
     // 2. New: assigned and not started, capped once anything is due, in the till's order, one per section.
     const assigned=Object.entries(mine.assigned||{}).filter(([k,a])=>!a.done&&inPart(k));
-    const qsOfKey=k=>{ const [t,id]=[k.slice(0,1),k.slice(2)]; return t==='a'?this.dishQs(id).filter(q=>q.allergen):t==='d'?this.dishQs(id,{allergen:false}):qsFor({id}); };
+    const qsOfKey=k=>{ const [t,id]=[k.slice(0,1),k.slice(2)]; return t==='a'?this.dishQs(id).filter(q=>q.allergen):t==='d'?(part==='dishes'?pairFirst:(x=>x))(this.dishQs(id,{allergen:false})):qsFor({id}); };
     const started=k=>qsOfKey(k).some(q=>items[q.id]&&items[q.id].reps);
     let rank={}; try{ if(typeof TeamReport!=='undefined'&&typeof TeamSales!=='undefined'&&TeamSales.has()) TeamReport.priority(28,12).forEach((x,i)=>{ rank['w:'+x.wine.id]=i; }); }catch(e){}
     const fresh=assigned.filter(([k])=>!started(k)).sort((a,b)=>((rank[a[0]]??99)-(rank[b[0]]??99))||(a[1].at-b[1].at)||(a[1].due-b[1].due));
@@ -796,7 +811,11 @@ const TeamLearn = {
     const dues=right.map(q=>items[q.id]&&items[q.id].due).filter(d=>d&&d>now).sort((a,b)=>a-b); if(!dues.length) return '';
     const first=dues[0], days=Math.round((first-now)/this.DAY), same=dues.filter(d=>Math.round((d-now)/this.DAY)===days).length;
     const when=days<=0?'later today':days===1?'tomorrow':days<7?`on ${new Date(first).toLocaleDateString(undefined,{weekday:'long'})}`:`in ${days} days`;
-    return `${same===1?'One of these comes':same===right.length?'They come':`${['','One','Two','Three','Four','Five'][same]||same} of these come`} back ${when}.`; },
+    // Said about the questions, never "they": "They come back tomorrow" read as the person coming back.
+    const n=right.length, num=x=>['','one','two','three','four','five','six','seven','eight','nine','ten'][x]||String(x);
+    return n===1?`You'll get this question again ${when}, to check it's stuck.`
+      :same===n?`You'll get the ${num(n)} questions you got right again ${when}, to check they've stuck.`
+      :`${this._cap(num(same))} of the questions you got right ${same===1?'comes':'come'} back ${when}; the rest later.`; },
 
   /* Marks a typed answer: locally when it plainly matches the answer or a wording that counts,
      else by Claude against the key (prompts/team-grade.txt). {ok, score, verdict, say, missing}. */
@@ -1367,7 +1386,13 @@ const TeamLearn = {
       const ks=claimKey(t); if(kind!=='cocktail'&&offKind(ks)) return; if(ks.length&&ks.every(k=>claimed.has(k))) return; ks.forEach(k=>claimed.add(k)); seen.add(norm(t)); kept.push(t); wrongs.push(t); };
     // Wrong reasons the card writer authored for this question (`wrong`, each a different mistake), checked like
     // any other: never alike to a right one, never a claim no wine of this kind could make.
-    (q.wrong||[]).forEach(t=>{ if(wrongs.length<4) take(this._cap(String(t).replace(/^(say|mention|tell them|explain|point out)\s+(that\s+)?/i,''))); });
+    // Never an instruction ("Pour the La Giustiniana Gavi, because…", "Avoid the Soave, because…") or a line naming
+    // another wine: under Why it works every option is a reason about the wine picked above, and an instruction there
+    // reads as a second wine choice.
+    const order=/^(pour|avoid|suggest|recommend|offer|steer|go with|try|choose|pick|skip|swap|sell|serve)\s+the\b/i;
+    const others=wines.filter(w=>w.id!==rw.id).map(w=>norm(TeamData.short(w))).filter(n=>n.split(' ').length>=2);
+    const namesOther=t=>{ const n=' '+norm(t)+' '; return others.some(o=>n.includes(' '+o+' ')); };
+    (q.wrong||[]).forEach(t=>{ if(wrongs.length>=4) return; const x=this._cap(String(t).replace(/^(say|mention|tell them|explain|point out)\s+(that\s+)?/i,'')); if(order.test(x)||namesOther(x)) return; take(x); });
     // Written for this question and passing the checks: nothing borrowed from other tables or templates beside
     // them, since a reason lifted from another dish ("a step up in finesse…") reads as out of place.
     const authored=wrongs.length>=3;

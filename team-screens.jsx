@@ -301,7 +301,7 @@ function TeamDrill({pid,only,part,given,intro,back,open}){ const T=useTheme(), c
             <div style={{display:'flex',flexDirection:'column',gap:6}}>{rights.map(k=><div key={k} style={{fontSize:15,color:T.ink,fontFamily:C.P,lineHeight:1.4}}><span style={{color:'#5FD48F',fontWeight:800}}>✓ </span>{ch.opts[k]}{!picks.includes(k)&&<span style={{fontSize:14,color:'#F2B84B',fontWeight:700}}> · you missed this one</span>}</div>)}
               {wrongs.map(k=><div key={k} style={{fontSize:14,color:T.mid,fontFamily:C.P,lineHeight:1.4}}><span style={{color:'#F28B7D',fontWeight:800}}>✗ </span><s>{ch.opts[k]}</s></div>)}</div></div>; })}</div>}
         {res.say&&<div style={{fontSize:15,color:T.ink,fontFamily:C.P,marginTop:12,lineHeight:1.5}}>{res.say}</div>}
-        {(()=>{ const seen=asideRef.current; if(!(i in seen)) seen[i]=TeamLearn.aside(q,multi?ch.right.map(k=>ch.opts[k]).join(' '):q.opts&&q.a!=null?q.opts[q.a]:q.ans,new Set(Object.values(seen).map(a=>a&&(a.text||'')).filter(Boolean)));
+        {(()=>{ const seen=asideRef.current; if(!(i in seen)) seen[i]=TeamLearn.aside(q,multi?ch.right.map(k=>ch.opts[k]).join(' '):q.opts&&q.a!=null?q.opts[q.a]:q.ans,new Set(Object.values(seen).map(a=>a&&(a.text||'')).filter(Boolean)),{missed:!res.ok});
           const ax=seen[i]; if(!ax) return null;
           return <div data-testid="drill-aside" style={{marginTop:12,paddingTop:12,borderTop:`1px solid ${T.line}`}}>
             {ax.label&&<div style={{fontSize:12,fontWeight:700,color:T.mid,fontFamily:C.P,letterSpacing:'0.08em',textTransform:'uppercase',marginBottom:6}}>{ax.label}</div>}
