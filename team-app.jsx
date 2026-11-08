@@ -31,8 +31,9 @@ function TeamApp(){
   // restaurant the device holds unless it's already this build's copy of it (so a reload keeps progress, and a
   // new build with more written in replaces a stale one).
   React.useEffect(()=>{ try{ const q=new URLSearchParams(location.search), host=TeamSample.hostSeed();
-    // A restaurant's demo address (socialcorner.vinterest.team) opens that restaurant as ?seed would, every time.
-    if(host&&!q.get('seed')){ if(!TeamLearn.me()||!TeamSample.current(host)) TeamSample.load(host); refresh(); return; }
+    // A restaurant's own address (demo.vinterest.team, socialcorner.vinterest.team) opens that restaurant every time, whatever
+    // ?seed the link carries or the device last held; a ?seed is dropped from the address.
+    if(host){ if(!TeamLearn.me()||!TeamSample.current(host)) TeamSample.load(host); if(q.get('seed')){ q.delete('seed'); const rest=q.toString(); history.replaceState(null,'',location.pathname+(rest?'?'+rest:'')); } refresh(); return; }
     const seed=q.get('seed'); if(!seed&&TeamSample.retire()) refresh();
     // The Social Corner is a demo install: a device holding an older copy of its files takes the new one, with or without ?seed.
     const held=(TeamData.get().venue||{}).sample; if(!seed&&(TeamSample.social(held)||held==='demo')&&!TeamSample.current(held)){ TeamSample.load(held); refresh(); } if(seed){ if(!TeamLearn.me()||!TeamSample.current(seed)) TeamSample.load(seed); q.delete('seed'); const rest=q.toString(); history.replaceState(null,'',location.pathname+(rest?'?'+rest:'')); refresh(); } }catch(e){} },[]);
@@ -76,7 +77,7 @@ function TeamApp(){
       </div>}
       {switching&&<div style={{padding:'8px 16px',borderBottom:`1px solid ${T.line}`,display:'flex',gap:6,flexWrap:'wrap'}}>
         {TeamLearn.people().map(p=><div key={p.id} role="button" onClick={()=>{ TeamLearn.setMe(p.id); setSwitching(false); setStack([]); if(!TeamLearn.canConsole(p)&&['upload','team'].includes(tab)) setTab('today'); refresh(); }} style={{display:'flex',alignItems:'center',gap:6,padding:'4px 10px 4px 4px',borderRadius:16,border:`1px solid ${p.id===me.id?cr:T.line}`,fontSize:13,fontFamily:C.P,color:T.ink,cursor:'pointer'}}><TeamFace person={p} size={24}/>{p.name.split(' ')[0]} · {TeamLearn.ROLES[p.role].label}</div>)}
-        <div role="button" onClick={()=>{ if(confirm('Change restaurant? This clears this restaurant and everyone\'s training on this device, and goes back to the start.')){ TeamData.reset(); Store.remove(TeamLearn.KEY); TeamLearn.resetProgress(); if(typeof TeamSales!=='undefined') TeamSales.clear(); setSwitching(false); setStack([]); setTab('today'); refresh(); } }} data-testid="team-change-restaurant" style={{padding:'4px 12px',borderRadius:16,border:`1px solid ${T.line}`,fontSize:13,fontFamily:C.P,color:T.ink2,cursor:'pointer'}}>Change restaurant</div>
+        {!TeamSample.hostSeed()&&<div role="button" onClick={()=>{ if(confirm('Change restaurant? This clears this restaurant and everyone\'s training on this device, and goes back to the start.')){ TeamData.reset(); Store.remove(TeamLearn.KEY); TeamLearn.resetProgress(); if(typeof TeamSales!=='undefined') TeamSales.clear(); setSwitching(false); setStack([]); setTab('today'); refresh(); } }} data-testid="team-change-restaurant" style={{padding:'4px 12px',borderRadius:16,border:`1px solid ${T.line}`,fontSize:13,fontFamily:C.P,color:T.ink2,cursor:'pointer'}}>Change restaurant</div>}
       </div>}
       <div ref={scrollRef} data-scroll style={{flex:1,overflowY:'auto',padding:'16px 16px 24px'}}><div style={{maxWidth:720,margin:'0 auto'}}>{set&&<TeamJobChip onOpen={()=>{ if(manager){ setTab('upload'); setStack([]); } }}/>}<ScreenErrorBoundary>{body}</ScreenErrorBoundary></div></div>
       {set&&!top&&<div style={{display:'flex',borderTop:`1px solid ${T.line}`,background:T.bg,paddingBottom:'env(safe-area-inset-bottom)'}}>
