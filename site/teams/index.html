@@ -243,7 +243,7 @@ function player(stage, W, H, dir, mode) {
   const layer = (l) => { const img = document.createElement('img'); img.className = 'ly'; img.src = dir + l.img + '.jpg?v=%%IMG_V%%'; img.alt = ''; img.style.left = (l.x / W * 100) + '%'; img.style.top = ((l.y || 0) / H * 100) + '%'; img.style.width = (l.w / W * 100) + '%'; stage.appendChild(img); return img; };
   async function step(st, token) {
     let pan = st.keep ? stage.querySelector('.ly[data-pan]') : null;
-    if (!pan) { const old = Array.from(stage.querySelectorAll('.ly')); (st.frames || []).forEach(layer); pan = layer(st.pan); pan.dataset.pan = '1'; (st.over || []).forEach(layer); old.forEach((o) => { o.classList.add('out'); setTimeout(() => o.remove(), 450); }); }
+    if (!pan) { const old = Array.from(stage.querySelectorAll('.ly')); (st.frames || []).forEach(layer); pan = layer(st.pan); pan.dataset.pan = '1'; (st.over || []).forEach(layer); old.forEach((o) => { delete o.dataset.pan; o.classList.add('out'); setTimeout(() => o.remove(), 450); }); }
     const scale = stage.clientWidth / W, top = (st.pan.y || 0) * scale, room = stage.clientHeight - top - (st.pan.below || 0) * scale, travel = Math.max(0, st.pan.h * scale - room);
     const { from, to, ms } = st.pan;
     const setY = (f) => { pan.style.transform = `translateY(${-f * travel}px)`; };
@@ -280,13 +280,15 @@ function player(stage, W, H, dir, mode) {
 // The laptop: the console's pages, one scene per tab.
 const SW = 1440, SH = 900, SB = 220;
 const side = (k) => [{ img: 'sidebar-' + k, x: 0, w: SB, h: SH }];
+// Every scene and every card that opens rests on the top of its page first (TOP ms), then scrolls.
+const TOP = 2200;
 const SCENES = {
   tonight: { steps: [{ frames: side('dash'), pan: { img: 'dash', x: SB, w: SW - SB, h: 2844, from: 0, to: 0, ms: 7000 } }] },
-  ready: { steps: [{ frames: side('dash'), pan: { img: 'dash', x: SB, w: SW - SB, h: 2844, from: 0, to: .27, ms: 2500 } }, { pan: { img: 'dash', x: SB, w: SW - SB, h: 2844, from: .27, to: .58, ms: 7000 }, keep: true }] },
-  sales: { steps: [{ frames: side('sales'), pan: { img: 'sales', x: SB, w: SW - SB, h: 2333, from: 0, to: 0, ms: 3000 } }, { pan: { img: 'sales', x: SB, w: SW - SB, h: 2333, from: 0, to: 1, ms: 9000 }, keep: true }] },
-  team: { steps: [{ frames: side('team'), pan: { img: 'team', x: SB, w: SW - SB, h: 1553, from: 0, to: 0, ms: 2500 } }, { pan: { img: 'team', x: SB, w: SW - SB, h: 1553, from: 0, to: 1, ms: 6000 }, keep: true }] },
-  cards: { steps: [{ frames: side('wines'), pan: { img: 'wines', x: SB, w: SW - SB, h: 2322, from: 0, to: .25, ms: 3500 } }, { frames: side('wines'), pan: { img: 'wines', x: SB, w: SW - SB, h: 2322, from: 0, to: 0, ms: 1200 }, tap: { x: 400, y: 173 } }, { frames: [{ img: 'card-bg', x: 0, w: SW, h: SH }], pan: { img: 'card', x: 840, w: 600, h: 1450, from: 0, to: 1, ms: 8000 } }] },
-  menu: { steps: [{ frames: side('menu'), pan: { img: 'menu', x: SB, w: SW - SB, h: 2870, from: 0, to: .3, ms: 5000 } }, { frames: side('menu'), pan: { img: 'menu', x: SB, w: SW - SB, h: 2870, from: 0, to: 0, ms: 1200 }, tap: { x: 390, y: 281 } }, { frames: [{ img: 'dish-bg', x: 0, w: SW, h: SH }], pan: { img: 'dish', x: 840, w: 600, h: 1197, from: 0, to: 1, ms: 6000 } }] },
+  ready: { steps: [{ frames: side('dash'), pan: { img: 'dash', x: SB, w: SW - SB, h: 2844, from: 0, to: 0, ms: TOP } }, { pan: { img: 'dash', x: SB, w: SW - SB, h: 2844, from: 0, to: .58, ms: 8000 }, keep: true }] },
+  sales: { steps: [{ frames: side('sales'), pan: { img: 'sales', x: SB, w: SW - SB, h: 2333, from: 0, to: 0, ms: TOP + 800 } }, { pan: { img: 'sales', x: SB, w: SW - SB, h: 2333, from: 0, to: 1, ms: 9000 }, keep: true }] },
+  team: { steps: [{ frames: side('team'), pan: { img: 'team', x: SB, w: SW - SB, h: 1553, from: 0, to: 0, ms: TOP } }, { pan: { img: 'team', x: SB, w: SW - SB, h: 1553, from: 0, to: 1, ms: 6000 }, keep: true }] },
+  cards: { steps: [{ frames: side('wines'), pan: { img: 'wines', x: SB, w: SW - SB, h: 2322, from: 0, to: 0, ms: TOP }, tap: { x: 400, y: 173 } }, { frames: [{ img: 'card-bg', x: 0, w: SW, h: SH }], pan: { img: 'card', x: 840, w: 600, h: 1450, from: 0, to: 0, ms: TOP } }, { pan: { img: 'card', x: 840, w: 600, h: 1450, from: 0, to: 1, ms: 8000 }, keep: true }] },
+  menu: { steps: [{ frames: side('menu'), pan: { img: 'menu', x: SB, w: SW - SB, h: 2870, from: 0, to: 0, ms: TOP }, tap: { x: 390, y: 281 } }, { frames: [{ img: 'dish-bg', x: 0, w: SW, h: SH }], pan: { img: 'dish', x: 840, w: 600, h: 1197, from: 0, to: 0, ms: TOP } }, { pan: { img: 'dish', x: 840, w: 600, h: 1197, from: 0, to: 1, ms: 6000 }, keep: true }] },
 };
 const stage = document.getElementById('stage'), tabs = Array.from(document.querySelectorAll('#tabs [role=tab]')), cap = document.getElementById('cap');
 const order = tabs.map((t) => t.dataset.scene), lap = player(stage, SW, SH, 'img/scenes/', 'wheel');
