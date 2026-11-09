@@ -933,6 +933,15 @@ test('Ask Vinny answers from the list and menu, and opens the wines it names', a
   expect(prompt).toMatch(/Bründlmayer[^\n]*say "/); // with the card of the wine the dish pairs with
   await page.getByTestId('vinny-chip').first().click();
   await expect(page.getByTestId('team-pitch')).toBeVisible();
+  // "Quiz me on our red wines" is a test, not a question: Vinny's test narrowed to the reds opens as a drill, with no call.
+  await page.getByLabel('Back').first().click();
+  const calls = reqs.filter((r) => r.purpose === 'team_vinny').length;
+  await page.getByTestId('vinny-input').fill('Quiz me on our red wines');
+  await page.getByLabel('Ask', { exact: true }).click();
+  await expect(page.getByTestId('team-drill')).toBeVisible();
+  await expect(page.getByTestId('drill-intro')).toContainText(/reds/i);
+  expect(reqs.filter((r) => r.purpose === 'team_vinny').length).toBe(calls);
+  expect(await page.evaluate(() => [TeamVinny.quizAsk('Quiz me on our red wines'), TeamVinny.quizAsk('test me'), TeamVinny.quizAsk('Ask me a few questions about the Malbec'), TeamVinny.quizAsk('What goes with the olives?')])).toEqual(['red wines', '', 'Malbec', null]);
   expect(errors).toEqual([]);
 });
 

@@ -147,6 +147,13 @@ const TeamVinny = {
 
   /* ── Ask Vinny ── */
   recent(){ return (Store.getJSON(this.KEY,{})||{}).recent||[]; },
+  /* A request to be quizzed, typed into Ask Vinny ("Quiz me on our red wines", "test me on the glass pours", "ask me about
+     the Malbec"): what's left once the asking words are taken off, for Vinny's test to read (narrow), or null when the
+     question isn't one. Ask Vinny opens the test on it rather than sending it to Claude, which answered its own question
+     in one breath. */
+  quizAsk(text){ const t=String(text||'').trim(); if(!t) return null;
+    const m=t.match(/^(?:can you |could you |please |vinny,? )*(?:quiz|test|drill|grill|question|examine)\s+(?:me|us)\b(?:\s+(?:on|about|with)\b)?\s*(.*)$/i)||t.match(/^(?:can you |could you |please |vinny,? )*(?:ask|give)\s+(?:me|us)\s+(?:a |some |a few |five |ten )?(?:quiz|test|questions?|drill)\b(?:\s+(?:on|about)\b)?\s*(.*)$/i);
+    if(!m) return null; return m[1].replace(/^(?:our|the|my)\s+/i,'').replace(/[?.!\s]+$/,'').trim(); },
   remember(q){ const d=Store.getJSON(this.KEY,{})||{}; d.recent=[q,...(d.recent||[]).filter(x=>x.toLowerCase()!==q.toLowerCase())].slice(0,5); Store.setJSON(this.KEY,d); },
   /* Questions to suggest, from this list and menu. */
   suggestions(){

@@ -57,7 +57,11 @@ function TeamVinnyTab({pid,open}){ const T=useTheme(), cr=T.lift(C.cr), wide=use
 function TeamVinnyAsk({pid,open}){ const T=useTheme();
   const [q,setQ]=React.useState(''), [turns,setTurns]=React.useState([]), [busy,setBusy]=React.useState(false);
   const sugg=React.useMemo(()=>TeamVinny.suggest(pid),[pid]), recent=TeamVinny.recent();
-  const send=async(text)=>{ const t=String(text||q).trim(); if(!t||busy) return; setQ(''); setBusy(true);
+  const send=async(text)=>{ const t=String(text||q).trim(); if(!t||busy) return; setQ('');
+    // "Quiz me on our reds" is a test, not a question: Vinny's test narrowed to the request opens as a drill (no call).
+    // Only when nothing they sell matches the request does the line go to Vinny as a question.
+    const quiz=TeamVinny.quizAsk(t); if(quiz!==null){ const vt=TeamVinny.test(pid,{ask:quiz}); if(vt.qs.length){ TeamVinny.remember&&TeamVinny.remember(t); open({view:'drill',qs:vt.qs,intro:{title:vt.title,why:vt.why}}); return; } }
+    setBusy(true);
     const prior=turns; setTurns(ts=>[...ts,{q:t}]);
     try{ const r=await TeamVinny.ask(t,prior); setTurns(ts=>ts.map((x,i)=>i===ts.length-1?{...x,a:r.answer,wines:r.wines,dishes:r.dishes}:x)); }
     catch(e){ setTurns(ts=>ts.map((x,i)=>i===ts.length-1?{...x,err:(e&&e.message)||'Couldn\'t reach Vinny.'}:x)); }
