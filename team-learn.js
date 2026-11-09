@@ -147,6 +147,16 @@ const TeamLearn = {
     const opts=[...wines.map(i=>c.opts[i]),...rOpts], right=[wines.indexOf(rw),wines.length+ro.indexOf(0)];
     return {...q,pills:{opts,right,n:2,groups:[{label:g1.label,from:0,to:wines.length,n:1},{label:g2.label,from:wines.length,to:opts.length,n:1}]}};
   },
+  /* A question in a drill about one wine (Practise this wine, a test narrowed to it): "which wine?" is given away by
+     the drill itself, so a table question keeps only its reason, asked as "You suggest the X. Why does it work?" (the
+     same wording a card gets when it names its own wine); at Essentials, where the reason isn't tested, the table
+     question isn't asked there (null). The id never changes, so the answer counts as the same question. */
+  oneWine(q){ if(!q||q.k!=='apply'||!q.wine) return q; const w=TeamData.wine(q.wine); if(!w) return q;
+    if(q.mc) return null;
+    let c=null; try{ c=this.choices(q); }catch(e){ return q; } const gs=c&&c.groups||[], g2=gs.find(g=>/why/i.test(g.label||'')); if(!g2||gs.length<2) return q;
+    const idx=[...Array(Math.max(0,g2.to-g2.from)).keys()].map(j=>g2.from+j), opts=idx.map(i=>c.opts[i]), right=idx.map((i,j)=>c.right.includes(i)?j:-1).filter(j=>j>=0); if(!right.length) return q;
+    const scen=String(q.q).replace(/\s*What (would|do) you suggest(, and why)?\?\s*$/i,'').trim();
+    return {...q,q:`${scen} You suggest the ${TeamData.short(w)}. Why does it work?`,pills:{opts,right,n:right.length,groups:[{label:g2.label,from:0,to:opts.length,n:right.length}]}}; },
   /* The rungs a tier climbs for a role's kinds: Master the four of LADDER, Service two (Know it: recognise and recall;
      At the table: apply), Essentials none. [{k, kinds, label}] */
   rungsFor(tier,kinds){

@@ -2029,6 +2029,42 @@ for (const [name, viewport] of [['landscape', { width: 1180, height: 820 }], ['p
   });
 }
 
+test('a drill about one wine never asks which wine: its table question asks only the reason', async ({ context, page }) => {
+  await stubNetwork(context);
+  await page.goto(`${BASE}/team/?seed=princess&view=phone`);
+  await page.waitForFunction(() => window.TeamLearn && TeamLearn.people().length > 0);
+  const r = await page.evaluate(() => {
+    const som = TeamLearn.people().find((p) => p.role === 'sommelier'), srv = TeamLearn.people().find((p) => p.role === 'server');
+    // Master: every wine with a two-step table question, practised alone, asks the reason only.
+    const bad = [], reworded = [];
+    TeamData.wines().forEach((w) => TeamLearn.qsFor('sommelier', w.id).filter((q) => q.k === 'apply').forEach((q) => {
+      const c = TeamLearn.choices(q); if (!(c.groups || []).some((g) => /suggest/i.test(g.label))) return;
+      const o = TeamLearn.oneWine(q); if (!o) { bad.push(q.q); return; }
+      const oc = TeamLearn.choices(o); if ((oc.groups || []).some((g) => /suggest/i.test(g.label)) || /What would you suggest/.test(o.q)) bad.push(o.q); else reworded.push(o.q);
+    }));
+    // Essentials: the wine-only table question isn't asked alone; a narrowed test on one wine carries no "which wine".
+    const ess = TeamData.wines().flatMap((w) => TeamLearn.qsFor('server', w.id).filter((q) => q.k === 'apply' && q.mc));
+    const essGone = ess.every((q) => TeamLearn.oneWine(q) === null);
+    const t = TeamVinny.test(som.id, { ask: 'Tondonia' });
+    return { bad, reworded: reworded.length, sample: reworded[0], essN: ess.length, essGone, test: t.qs.map((q) => q.q), title: t.title };
+  });
+  expect(r.bad).toEqual([]);
+  expect(r.reworded).toBeGreaterThan(20);
+  expect(r.sample).toMatch(/You suggest the .+\. Why does it work\?$/);
+  expect(r.essN).toBeGreaterThan(20); expect(r.essGone).toBe(true);
+  expect(r.test.some((q) => /What would you suggest/.test(q))).toBe(false);
+  // On the screen: Practise this wine from a card with a table question.
+  await page.evaluate(() => { const s = TeamLearn.people().find((p) => p.role === 'sommelier'); TeamLearn.setMe(s.id); });
+  await page.reload();
+  await page.getByTestId('team-tab-wines').click();
+  await page.getByTestId('team-wine-row').filter({ hasText: 'Tondonia' }).first().click();
+  await page.getByText(/Start this wine|Practise this wine/).click();
+  await expect(page.getByTestId('drill-q')).toBeVisible();
+  const seen = await page.evaluate(() => [...document.querySelectorAll('[data-testid="team-drill"]')].length);
+  expect(seen).toBe(1);
+  expect(await page.evaluate(() => TeamLearn.qsFor('sommelier', TeamData.wines().find((w) => /Tondonia/.test(w.name)).id).map((q) => TeamLearn.oneWine(q)).filter(Boolean).some((q) => /What would you suggest/.test(q.q)))).toBe(false);
+});
+
 test('the phone Team tab is the console Team: Add in a dialog, training level, minimums per role', async ({ context, page }) => {
   await stubNetwork(context);
   await page.setViewportSize({ width: 390, height: 844 });

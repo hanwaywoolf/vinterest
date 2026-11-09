@@ -89,7 +89,9 @@ const TeamVinny = {
     const cap=size*3, out=[], has=id=>out.some(q=>q.id===id), take=key=>{ let added=true; while(out.length<cap&&added){ added=false; for(const t of things){ if(out.length>=cap) break; const q=t[key].find(q=>!has(q.id)); if(q){ out.push(q); added=true; } } } };
     take('faded'); take('unknown');
     const review=out.length===0; if(out.length<cap) take('known'); // nothing to learn or refresh: the ones asked longest ago, as review
-    const qs=TeamLearn.spread(out,size);
+    // A test on one wine alone ("quiz me on the Tondonia"): its table question asks only the reason (TeamLearn.oneWine).
+    const one=n&&wines.length===1&&!dishes.length;
+    const qs=TeamLearn.spread(one?out.map(q=>TeamLearn.oneWine(q)).filter(Boolean):out,size);
     return {qs,title:n?`Vinny's test: ${n.label}`:'Vinny\'s test',why:this.why(c,qs,{n,short,sells,review}),none:!qs.length};
   },
   /* The reason, in a sentence or two: what it covers and why these. */

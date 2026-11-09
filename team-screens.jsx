@@ -207,7 +207,7 @@ function TeamDrill({pid,only,part,given,intro,back,open}){ const T=useTheme(), c
   const asideRef=React.useRef({}); // the line shown after each answer, kept so a drill never repeats one
   // given: questions chosen elsewhere (Vinny's test, team-vinny.js), with intro {title, why} over the first.
   // Every drill deals its questions afresh, so a question seen before comes back in a new order.
-  const [qs]=React.useState(()=>{ const raw=given&&given.length?given:only?TeamLearn.qsFor(TeamLearn.person(pid).role,only):TeamLearn.drill(pid,undefined,part||null);
+  const [qs]=React.useState(()=>{ const raw=given&&given.length?given:only?TeamLearn.qsFor(TeamLearn.person(pid).role,only).map(q=>TeamLearn.oneWine(q)).filter(Boolean):TeamLearn.drill(pid,undefined,part||null);
     const nonce=Date.now().toString(36); return raw.map((q,i)=>TeamLearn.deal(q,nonce+i)); });
   // Where they stood as the drill began, so the summary can say what moved.
   const [before]=React.useState(()=>{ const r=TeamLearn.readiness(pid); const items={};
