@@ -282,8 +282,22 @@ function TeamGuest({pid,back,open}){ const T=useTheme(), cr=T.lift(C.cr);
         <div style={{fontSize:12,fontWeight:700,color:T.mid,fontFamily:C.P,letterSpacing:'0.08em',textTransform:'uppercase'}}>Your delivery</div>
         {lastDel.notes.map((n,i)=><div key={i} data-testid="delivery-note" data-good={n.good?'1':'0'} style={{fontSize:14,color:T.ink2,fontFamily:C.P,marginTop:5,lineHeight:1.45}}><b style={{color:n.good?'#5FD48F':'#F2B84B'}}>{n.good?'✓ ':'→ '}</b>{n.text}</div>)}
         {trend&&<div data-testid="delivery-trend" style={{fontSize:14,color:T.mid,fontFamily:C.P,marginTop:8}}>{trend}</div>}
-        <div style={{fontSize:14,color:T.mid,fontFamily:C.P,marginTop:6}}>Only you see this. It doesn't change your readiness.</div>
+        <div style={{fontSize:14,color:T.mid,fontFamily:C.P,marginTop:6}}>Only you see this. How you said it isn't part of readiness.</div>
       </div>}
+      {/* What this table did for them (TeamVinny.noteTable): whether it counted, the wine's standing and readiness before and
+          after, their last ten tables and how the help has moved. */}
+      {moved&&moved.before&&(()=>{ const b=moved.before, a=moved.after, w=TeamData.wine(sc.wines[0]), nm=w?TeamData.short(w):'the wine';
+        const word=x=>!x?'':x.state==='known'?'known':x.state==='new'?'not started':`${x.known} of ${x.total} answers`;
+        const ready=x=>x.tier==='essentials'&&x.count?`${x.count.known} of ${x.count.total} known`:`${x.pct}%`;
+        const up=(x,y)=>x!==y?<span style={{color:'#5FD48F',fontWeight:700}}> ▲</span>:null;
+        const lv=moved.levels||[], first=lv[0], last=lv[lv.length-1], help=first&&last&&first!==last?` · Help: ${TeamVinny.LEVEL_LABEL[first].toLowerCase()} → ${TeamVinny.LEVEL_LABEL[last].toLowerCase()}`:'';
+        return <div data-testid="guest-progress" style={{marginTop:12,paddingTop:10,borderTop:`1px solid ${T.line}`}}>
+          <div style={{fontSize:12,fontWeight:700,color:T.mid,fontFamily:C.P,letterSpacing:'0.08em',textTransform:'uppercase'}}>Your progress</div>
+          <div data-testid="guest-counted" style={{fontSize:14,color:T.ink2,fontFamily:C.P,marginTop:5,lineHeight:1.45}}>{moved.counted?`This counts: the ${nm}'s At-the-table question is right from this table.`:moved.score>=TeamVinny.LAND?(moved.level==='choices'||level==='choices'?`With choices a table doesn't count toward readiness: land one with hints or on your own and it does.`:`With ${moved.hints} hints it doesn't count toward readiness: one hint at most, or none, and it does.`):`A table that doesn't land never lowers readiness. Another go, or practise the ${nm} in the drill.`}</div>
+          {b.wine&&a.wine&&<div style={{fontSize:14,color:T.ink2,fontFamily:C.P,marginTop:4,lineHeight:1.45}}>{nm}: {word(b.wine)}{b.wine.state!==a.wine.state||b.wine.known!==a.wine.known?<> → <b style={{color:T.ink}}>{word(a.wine)}</b>{up(0,1)}</>:''}</div>}
+          <div style={{fontSize:14,color:T.ink2,fontFamily:C.P,marginTop:4,lineHeight:1.45}}>{b.tier==='essentials'?'You know':'Readiness'} {ready(b)}{ready(a)!==ready(b)?<> → <b style={{color:T.ink}}>{ready(a)}</b>{up(ready(a),ready(b))}</>:' · no change'}</div>
+          <div style={{fontSize:14,color:T.mid,fontFamily:C.P,marginTop:4,lineHeight:1.45}}>Landed {moved.recent.landed} of your last {moved.recent.of===1?'table':`${moved.recent.of} tables`}{help}</div>
+        </div>; })()}
       {movedLine&&<div data-testid="guest-moved" style={{fontSize:14,fontWeight:600,color:moved.moved==='up'?'#5FD48F':T.ink2,fontFamily:C.P,marginTop:12,lineHeight:1.45}}>{movedLine}</div>}
       <_TVChips wines={sc.wines} dishes={[sc.dish]} open={open}/>
     </Card></div>}

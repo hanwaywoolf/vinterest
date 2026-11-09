@@ -283,7 +283,12 @@ A Vinny tab (between Today and Wines) and a row on Today, all in `team-vinny.js`
   varied, and the table says why under its heading ("Picked for you: you haven't started on the Bründlmayer
   yet, and it's on your list to learn"; `tableWhy`). The guest opens, the server types a reply, the guest answers, and after
   the server has recommended (or three replies) the table is marked against the key: what worked, what was
-  missing, and a line they could have said. It never moves readiness, which comes only from drills.
+  missing, and a line they could have said. A table landed with hints or on your own counts as the wine's At-the-table
+  question answered right (`TeamVinny.noteTable`: the card's table question at this dish where there is one), so
+  readiness and the wine's standing move and the progress card under the mark says so (`guest-progress`: the wine
+  before and after, readiness or the Essentials count before and after, tables landed out of the last ten, how the
+  help has moved); a table landed with choices doesn't count, since the wine was handed to them, and a miss never
+  lowers readiness, since the mark is Claude's on a free reply.
 
   Help at the table follows the person (`TeamVinny.level`, `noteTable`). **Choices**: three wines to pick
   from (the right one, the table's wrong idea or a near miss, and one that doesn't pair), each wrong pick

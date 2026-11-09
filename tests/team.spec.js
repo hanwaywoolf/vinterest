@@ -984,6 +984,9 @@ test('a guest at the table comes with choices, hints or none, and two tables tha
   await page.getByText('Say', { exact: true }).click();
   await expect(page.getByTestId('guest-help-used')).toHaveText('With choices');
   await expect(page.getByTestId('guest-moved')).toHaveCount(0);
+  // A table landed with choices doesn't count toward readiness, and the progress card says so.
+  await expect(page.getByTestId('guest-counted')).toContainText("doesn't count");
+  await expect(page.getByTestId('guest-progress')).toContainText(/Landed 1 of your last table/);
 
   // A second table that lands at the same step moves them up to hints.
   await page.getByText('Another table').click();
@@ -1003,12 +1006,22 @@ test('a guest at the table comes with choices, hints or none, and two tables tha
   await page.getByTestId('guest-reply').fill('The Grüner by the glass.');
   await page.getByText('Say', { exact: true }).click();
   await expect(page.getByTestId('guest-help-used')).toHaveText('With 3 hints');
+  await expect(page.getByTestId('guest-counted')).toContainText("With 3 hints it doesn't count");
 
   // On your own: no choices and no hints.
   await page.getByText('Another table').click();
   await page.getByTestId('guest-help-own').click();
   await expect(page.getByTestId('guest-choices')).toHaveCount(0);
   await expect(page.getByTestId('guest-hints')).toHaveCount(0);
+  // Landed on their own: the wine's At-the-table question is right from it, and readiness moves.
+  const before = await page.evaluate(() => { const pid = TeamLearn.me().id, sc = TeamVinny.scenario(pid); return { pct: TeamLearn.readiness(pid).pct, known: TeamLearn.progress(pid, sc.wines[0]).known }; });
+  await page.getByTestId('guest-reply').fill('The Grüner by the glass, peppery and fresh with the dish.');
+  await page.getByText('Say', { exact: true }).click();
+  await expect(page.getByTestId('guest-help-used')).toHaveText('On your own');
+  await expect(page.getByTestId('guest-counted')).toContainText('This counts');
+  const after = await page.evaluate(() => { const pid = TeamLearn.me().id; const log = TeamVinny.tableState(pid).log, last = log[log.length - 1]; return { pct: TeamLearn.readiness(pid).pct, known: TeamLearn.progress(pid, last.wines[0]).known, counted: true }; });
+  expect(after.known).toBeGreaterThanOrEqual(1);
+  await expect(page.getByTestId('guest-progress')).toContainText(/Landed \d of your last 4 tables/);
   expect(errors).toEqual([]);
 });
 
