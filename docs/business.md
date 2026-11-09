@@ -159,6 +159,10 @@ wine without being caught out.
   the next new question in list order (by the glass first). About one in ten is an unannounced
   re-ask of something known, which measures retention honestly; the Team tab shows the rate.
 
+### The staff app on a tablet (built)
+
+Staff and prospects test on iPads as much as phones, so from 768px wide (`useLayoutSize`, the consumer app's breakpoint) the staff app uses the width instead of one centred phone column: the tabs are a rail down the left (`team-rail`; the bottom bar is the phone's), the page runs to 1000px, Today is two columns (`WideColumns`: readiness, its parts and the drill on the left; Tonight, the figures and what's new on the right), Practise shows its three doors across, and on Wines and Menu a wine, cocktail or dish opens beside its list (`team-split-list`, the list with its own scroll and the open row tinted, `aria-current`; another row replaces the one open rather than stacking on it, and Back returns to the list alone). Anything deeper (a drill from the wine, the guest, Ask Vinny) takes the width as a single column, and the phone layout never changes. `tests/team.spec.js` ("the staff app on an iPad") runs it at 1180×820 and 820×1180 and keeps a screenshot of each screen.
+
 ### Training depth (built)
 
 The ladder, readiness against a minimum, two-part table questions and ten-pill recall were written for a wine-led dining room, and even its Low level kept that shape. A pub or a neighbourhood restaurant needs less, so training depth is three tiers (`TeamLearn.TIERS`), set for the restaurant in the console's Team section (`console-tier`) with a tier per role over it (`roleTiers`; the sommelier at Master while servers are on Essentials). A restaurant starts at Master, where the app has always been; an install's list file can carry its own (`venue.training: {tier, roleTiers}`, applied by `TeamSample.load` to a restaurant that hasn't set one, so The Princess Royal opens with servers on Essentials and the sommelier on Master).

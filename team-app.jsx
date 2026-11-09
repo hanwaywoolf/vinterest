@@ -24,6 +24,10 @@ function TeamApp(){
   // the phone app inside it, and the header's Console button comes back.
   // ?view=phone is the opposite: the phone app on any screen, for trying the staff's own view on a laptop or tablet.
   const viewParam=(()=>{ try{ return new URLSearchParams(location.search).get('view'); }catch(e){ return null; } })(), size=useLayoutSize(), forceConsole=viewParam==='console';
+  // The staff app on an iPad (768px and up, the consumer app's useLayoutSize): the tabs become a rail down the left, the
+  // page runs to 1000px with Today and Practise in two columns, and Wines and Menu open a wine or dish beside the
+  // list rather than over it (docs/business.md "The staff app on a tablet"). The phone layout never changes.
+  const wide=size!=='phone';
   const [phoneView,setPhoneView]=React.useState(viewParam==='phone'||viewParam==='say'), [section,setSection]=React.useState('dash'), [wantConsole,setWantConsole]=React.useState(false);
   React.useEffect(()=>{ const h=()=>refresh(); window.addEventListener('vbiz:data',h); window.addEventListener('vinterest:account',h);
     return ()=>{ window.removeEventListener('vbiz:data',h); window.removeEventListener('vinterest:account',h); }; },[]);
@@ -44,7 +48,11 @@ function TeamApp(){
   const goTab=k=>{ posRef.current=[]; pendRef.current=0; setTab(k); setStack([]); };
   // The console on any screen for someone allowed it (TeamLearn.canConsole): Today's figures open their own section of it.
   const toConsole=sec=>{ setSection(sec||'dash'); setWantConsole(true); setPhoneView(false); setStack([]); };
-  const open=v=>{ if(v.console){ if(manager) toConsole(v.console); return; } if(v.tab){ goTab(v.tab); return; } posRef.current[stack.length]=scrollNow(); pendRef.current=0; setStack(s=>[...s,v]); };
+  const DETAIL=['wine','cocktail','dish'], LISTS=['wines','menu'];
+  const open=v=>{ if(v.console){ if(manager) toConsole(v.console); return; } if(v.tab){ goTab(v.tab); return; }
+    // Beside the list on a tablet, another row replaces the one open rather than stacking on it.
+    const t0=stack[stack.length-1]; if(wide&&stack.length===1&&t0&&DETAIL.includes(t0.view)&&DETAIL.includes(v.view)&&LISTS.includes(tab)){ pendRef.current=0; setStack([v]); return; }
+    posRef.current[stack.length]=scrollNow(); pendRef.current=0; setStack(s=>[...s,v]); };
   const consoleOn=set&&manager&&(forceConsole||wantConsole||size!=='phone')&&!phoneView;
   const toPhone=v=>{ setPhoneView(true); setWantConsole(false); setStack([]); if(v&&v.pid&&TeamLearn.person(v.pid)) TeamLearn.setMe(v.pid); if(v&&v.tab) setTab(v.tab); else setTab('today'); if(v&&v.view==='drill') setStack([{view:'drill',only:v.only,part:v.part}]); refresh(); };
   if(consoleOn) return <DeckTheme.Provider value={_DECK_DARK}><div data-gen={gen} style={{position:'absolute',inset:0,color:T.ink}}><ScreenErrorBoundary><TeamConsole me={me} onPhone={toPhone} refresh={refresh} section={section} setSection={setSection}/></ScreenErrorBoundary></div></DeckTheme.Provider>;
@@ -79,11 +87,20 @@ function TeamApp(){
         {TeamLearn.people().map(p=><div key={p.id} role="button" onClick={()=>{ TeamLearn.setMe(p.id); setSwitching(false); setStack([]); if(!TeamLearn.canConsole(p)&&['upload','team'].includes(tab)) setTab('today'); refresh(); }} style={{display:'flex',alignItems:'center',gap:6,padding:'4px 10px 4px 4px',borderRadius:16,border:`1px solid ${p.id===me.id?cr:T.line}`,fontSize:13,fontFamily:C.P,color:T.ink,cursor:'pointer'}}><TeamFace person={p} size={24}/>{p.name.split(' ')[0]} · {TeamLearn.ROLES[p.role].label}</div>)}
         {!TeamSample.hostSeed()&&<div role="button" onClick={()=>{ if(confirm('Change restaurant? This clears this restaurant and everyone\'s training on this device, and goes back to the start.')){ TeamData.reset(); Store.remove(TeamLearn.KEY); TeamLearn.resetProgress(); if(typeof TeamSales!=='undefined') TeamSales.clear(); setSwitching(false); setStack([]); setTab('today'); refresh(); } }} data-testid="team-change-restaurant" style={{padding:'4px 12px',borderRadius:16,border:`1px solid ${T.line}`,fontSize:13,fontFamily:C.P,color:T.ink2,cursor:'pointer'}}>Change restaurant</div>}
       </div>}
-      <div ref={scrollRef} data-scroll style={{flex:1,overflowY:'auto',padding:'16px 16px 24px'}}><div style={{maxWidth:720,margin:'0 auto'}}>{set&&<TeamJobChip onOpen={()=>{ if(manager){ setTab('upload'); setStack([]); } }}/>}<ScreenErrorBoundary>{body}</ScreenErrorBoundary></div></div>
-      {set&&!top&&<div style={{display:'flex',borderTop:`1px solid ${T.line}`,background:T.bg,paddingBottom:'env(safe-area-inset-bottom)'}}>
-        {tabs.map(t=><div key={t.k} role="button" data-testid={'team-tab-'+t.k} onClick={()=>goTab(t.k)} style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',gap:3,padding:'9px 0 8px',cursor:'pointer'}}>
-          {t.k==='vinny'?<div style={{width:20,height:20,borderRadius:10,background:tab===t.k?cr:T.mid,display:'flex',alignItems:'center',justifyContent:'center'}}><span style={{fontSize:'11px',fontWeight:800,color:T.bg,fontFamily:C.P,lineHeight:1}}>V</span></div>:<Icon n={t.icon} sz={20} col={tab===t.k?cr:T.mid}/>}<span style={{fontSize:'11px',fontWeight:600,fontFamily:C.P,color:tab===t.k?cr:T.mid}}>{t.label}</span></div>)}
-      </div>}
+      {(()=>{
+        // One tab, drawn in the bottom bar on a phone and on the rail on a tablet (where the active one carries a tint).
+        const tabBtn=(t,rail)=><div key={t.k} role="button" data-testid={'team-tab-'+t.k} aria-current={tab===t.k?'page':undefined} onClick={()=>goTab(t.k)} style={{flex:rail?'none':1,display:'flex',flexDirection:'column',alignItems:'center',gap:3,padding:rail?'12px 0 10px':'9px 0 8px',margin:rail?'0 10px 4px':0,borderRadius:rail?14:0,background:rail&&tab===t.k?_alpha(cr,0.14):'transparent',cursor:'pointer'}}>
+          {t.k==='vinny'?<div style={{width:20,height:20,borderRadius:10,background:tab===t.k?cr:T.mid,display:'flex',alignItems:'center',justifyContent:'center'}}><span style={{fontSize:'11px',fontWeight:800,color:T.bg,fontFamily:C.P,lineHeight:1}}>V</span></div>:<Icon n={t.icon} sz={20} col={tab===t.k?cr:T.mid}/>}<span style={{fontSize:'11px',fontWeight:600,fontFamily:C.P,color:tab===t.k?cr:T.mid}}>{t.label}</span></div>;
+        // On a tablet a wine, cocktail or dish opened from its list sits beside the list (the list keeps its own scroll); deeper views (a drill from the wine) take the width.
+        const split=wide&&set&&!!top&&stack.length===1&&DETAIL.includes(top.view)&&LISTS.includes(tab);
+        return <>
+          <div style={{flex:1,minHeight:0,display:'flex'}}>
+            {set&&wide&&<div data-testid="team-rail" style={{width:84,flexShrink:0,borderRight:`1px solid ${T.line}`,display:'flex',flexDirection:'column',paddingTop:10,paddingBottom:'env(safe-area-inset-bottom)'}}>{tabs.map(t=>tabBtn(t,true))}</div>}
+            {split&&<div data-testid="team-split-list" style={{width:'38%',minWidth:300,maxWidth:440,flexShrink:0,borderRight:`1px solid ${T.line}`,overflowY:'auto',padding:'16px 14px 24px'}}>{tab==='wines'?<TeamWines pid={me.id} open={open} selected={top.id}/>:<TeamMenu open={open} selected={top.id}/>}</div>}
+            <div ref={scrollRef} data-scroll data-split={split?'1':undefined} style={{flex:1,minWidth:0,overflowY:'auto',padding:'16px 16px 24px'}}><div style={{maxWidth:wide?(split?760:top?760:1000):720,margin:'0 auto'}}>{set&&<TeamJobChip onOpen={()=>{ if(manager){ setTab('upload'); setStack([]); } }}/>}<ScreenErrorBoundary>{body}</ScreenErrorBoundary></div></div>
+          </div>
+          {set&&!top&&!wide&&<div style={{display:'flex',borderTop:`1px solid ${T.line}`,background:T.bg,paddingBottom:'env(safe-area-inset-bottom)'}}>{tabs.map(t=>tabBtn(t,false))}</div>}
+        </>; })()}
       {/* A guest at the table (TeamGuest) covers the header and tabs: a chat wants the whole screen. It stays mounted
           under a wine or dish it opened, and comes back when that is popped. */}
       {set&&stack.map((v,i)=>v.view==='guest'&&<div key={i} style={{position:'absolute',inset:0,zIndex:20,display:i===stack.length-1?'block':'none'}}><ScreenErrorBoundary><TeamGuest pid={me.id} back={back} open={open}/></ScreenErrorBoundary></div>)}

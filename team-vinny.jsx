@@ -15,13 +15,13 @@ function _TVChips({wines,dishes,open}){ const T=useTheme();
 /* The Vinny tab is a practice hub: one card with the thing to do now (TeamVinny.next), a line on what knowing the
    list is worth here (TeamReport.worth, from the till), then three doors, each its own screen: Ask Vinny, a guest at
    the table, Vinny's test. No text field on the hub; the inputs live where they're used. */
-function TeamVinnyTab({pid,open}){ const T=useTheme(), cr=T.lift(C.cr);
+function TeamVinnyTab({pid,open}){ const T=useTheme(), cr=T.lift(C.cr), wide=useLayoutSize()!=='phone';
   const empty=!TeamData.wines().length;
   const nx=React.useMemo(()=>empty?null:TeamVinny.next(pid),[pid,empty]);
   const worth=React.useMemo(()=>{ try{ return empty?null:TeamReport.worth(pid); }catch(e){ return null; } },[pid,empty]);
   const [worthOpen,setWorthOpen]=React.useState(false);
   const test=React.useMemo(()=>empty?null:TeamVinny.test(pid),[pid,empty]);
-  const door=(key,icon,title,sub,view)=><div key={key} role="button" data-testid={'vinny-door-'+key} onClick={()=>{ if(view.view==='guest') TeamVoice.unlock(); open(view); }} style={{display:'flex',alignItems:'center',gap:12,padding:'14px 2px',borderTop:`1px solid ${T.line}`,cursor:'pointer'}}>
+  const door=(key,icon,title,sub,view)=><div key={key} role="button" data-testid={'vinny-door-'+key} onClick={()=>{ if(view.view==='guest') TeamVoice.unlock(); open(view); }} style={wide?{display:'flex',alignItems:'center',gap:12,padding:'16px 14px',border:`1px solid ${T.line}`,borderRadius:16,background:T.glass,cursor:'pointer'}:{display:'flex',alignItems:'center',gap:12,padding:'14px 2px',borderTop:`1px solid ${T.line}`,cursor:'pointer'}}>
     <div aria-hidden="true" style={{width:40,height:40,borderRadius:12,background:_alpha(cr,0.16),color:cr,display:'flex',alignItems:'center',justifyContent:'center',fontSize:16,fontWeight:800,fontFamily:C.P,flexShrink:0}}>{icon}</div>
     <div style={{flex:1,minWidth:0}}><div style={{fontSize:16,fontWeight:700,color:T.ink,fontFamily:C.P,lineHeight:1.3}}>{title}</div><div style={{fontSize:14,color:T.mid,fontFamily:C.P,lineHeight:1.4,marginTop:1}}>{sub}</div></div>
     <Icon n="chevron" sz={12} col={T.mid}/></div>;
@@ -42,7 +42,8 @@ function TeamVinnyTab({pid,open}){ const T=useTheme(), cr=T.lift(C.cr);
         :<>When a server recommends a wine by name, tables buy about <b style={{color:T.ink}}>8–12% more wine</b> (research, not measured here yet). Knowing the list is how that starts.</>}
       {worthOpen&&worth&&<div style={{marginTop:6,fontSize:14,color:T.mid,fontFamily:C.P,lineHeight:1.45,borderLeft:`3px solid ${T.amber}`,paddingLeft:10}}>{worth.caveat}</div>}
     </div>
-    <div style={{borderBottom:`1px solid ${T.line}`,marginTop:4}}>
+    {/* The three ways to practise: a list on a phone, three cards across on a tablet. */}
+    <div data-testid="vinny-doors" style={wide?{display:'grid',gridTemplateColumns:'repeat(3,minmax(0,1fr))',gap:12,marginTop:10}:{borderBottom:`1px solid ${T.line}`,marginTop:4}}>
       {door('ask','V','Ask Vinny','The list, a bottle, the menu, a price',{view:'ask'})}
       {door('guest','🗣','A guest at your table','Spoken. Marked. Help if you want it',{view:'guest'})}
       {door('test','10',"Vinny's test",faded||'Ten questions on what you need',{view:'vtest'})}

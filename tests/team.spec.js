@@ -1964,6 +1964,62 @@ test('training depth: Essentials asks four options with no ladder and counts wha
   await ctx.close();
 });
 
+// The staff app on an iPad (docs/business.md "The staff app on a tablet"): a rail of tabs down the left, Today and Practise
+// in two columns, a wine or dish open beside its list, nothing off the side; a screenshot of each is kept to look at.
+for (const [name, viewport] of [['landscape', { width: 1180, height: 820 }], ['portrait', { width: 820, height: 1180 }]]) {
+  test(`the staff app on an iPad (${name}): a rail, two columns, the wine beside the list`, async ({ browser }, info) => {
+    const ctx = await browser.newContext({ viewport });
+    const page = await ctx.newPage();
+    const errors = []; page.on('pageerror', (e) => errors.push(e.message));
+    await stubNetwork(ctx);
+    await page.goto(`${BASE}/team/?seed=princess&view=phone`);
+    await page.waitForFunction(() => window.TeamLearn && TeamLearn.people().length > 0);
+    await page.evaluate(() => { const s = TeamLearn.people().find((p) => p.role === 'server'); TeamLearn.setMe(s.id); });
+    await page.reload();
+    await expect(page.getByTestId('team-state')).toBeVisible();
+    const noOverflow = () => page.evaluate(() => { const vw = document.documentElement.clientWidth; return [...document.querySelectorAll('#root *')].filter((el) => { const r = el.getBoundingClientRect(); return r.width > 0 && r.right > vw + 1; }).length; });
+    // The rail replaces the bottom bar, and Today runs in two columns with Tonight on the right.
+    await expect(page.getByTestId('team-rail')).toBeVisible();
+    expect(await page.locator('[data-wide-columns]').count()).toBe(1);
+    const cols = page.locator('[data-wide-columns] > div');
+    const [a, b] = [await cols.nth(0).boundingBox(), await cols.nth(1).boundingBox()];
+    expect(b.x).toBeGreaterThan(a.x + 200); expect(Math.abs(a.y - b.y)).toBeLessThan(10);
+    expect(await cols.nth(1).locator('[role="button"]').count()).toBeGreaterThan(0); // what's new to learn, on the right (Tonight too, when the day has an 86'd or a feature)
+    await expect(page.getByText(/Start today's drill|Practise · 5|Do another 5/).first()).toBeVisible();
+    expect(await noOverflow()).toBe(0);
+    await page.screenshot({ path: info.outputPath(`tablet-team-today-${name}.png`) });
+    // Practise: the three doors across.
+    await page.getByTestId('team-rail').getByTestId('team-tab-vinny').click();
+    const doors = page.getByTestId('vinny-doors').locator('[data-testid^="vinny-door-"]');
+    const [d0, d1] = [await doors.nth(0).boundingBox(), await doors.nth(1).boundingBox()];
+    expect(Math.abs(d0.y - d1.y)).toBeLessThan(4);
+    // Wines: a wine opens beside the list, another row replaces it, Back returns to the list alone.
+    await page.getByTestId('team-rail').getByTestId('team-tab-wines').click();
+    await page.getByTestId('team-wine-row').nth(3).click();
+    await expect(page.getByTestId('team-split-list')).toBeVisible();
+    await expect(page.getByTestId('team-pitch')).toBeVisible();
+    const name3 = await page.getByTestId('team-split-list').getByTestId('team-wine-row').nth(3).getAttribute('aria-current');
+    expect(name3).toBe('true');
+    await page.getByTestId('team-split-list').getByTestId('team-wine-row').nth(5).click();
+    await expect(page.getByTestId('team-split-list').getByTestId('team-wine-row').nth(5)).toHaveAttribute('aria-current', 'true');
+    expect(await page.evaluate(() => document.querySelectorAll('[data-testid="team-pitch"]').length)).toBe(1);
+    expect(await noOverflow()).toBe(0);
+    await page.screenshot({ path: info.outputPath(`tablet-team-wine-${name}.png`) });
+    await page.getByLabel('Back').first().click();
+    await expect(page.getByTestId('team-split-list')).toHaveCount(0);
+    await expect(page.getByTestId('team-wine-row').first()).toBeVisible();
+    // Menu: the same, and the rail stays while a dish is open.
+    await page.getByTestId('team-rail').getByTestId('team-tab-menu').click();
+    await page.getByTestId('team-dish-row').nth(4).click();
+    await expect(page.getByTestId('team-split-list')).toBeVisible();
+    await expect(page.getByTestId('team-rail')).toBeVisible();
+    expect(await noOverflow()).toBe(0);
+    await page.screenshot({ path: info.outputPath(`tablet-team-dish-${name}.png`) });
+    expect(errors).toEqual([]);
+    await ctx.close();
+  });
+}
+
 test('the phone Team tab is the console Team: Add in a dialog, training level, minimums per role', async ({ context, page }) => {
   await stubNetwork(context);
   await page.setViewportSize({ width: 390, height: 844 });
