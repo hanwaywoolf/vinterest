@@ -53,7 +53,7 @@ function TeamKpiStrip({open}){ const T=useTheme(), o=TeamReport.overview(), s=Te
 /* The installed restaurant's own logo (venue.brand): its wordmark in white on the dark stage. */
 // brand.scale sizes a taller logo up from the line it sits in (The Larkspur's is 2:1, The Social Corner's 9:1).
 function TeamVenueLogo({height=22,style}){ const b=TeamData.brand(); if(!b||!b.logo) return null; height=Math.round(height*(b.scale||1));
-  return <img data-testid="team-venue-logo" src={b.logo} alt={TeamData.get().venue.name||''} style={{height,maxWidth:'min(100%, 480px)',objectFit:'contain',display:'block',...style}} onError={e=>{ e.target.style.display='none'; }}/>; }
+  return <img data-testid="team-venue-logo" src={b.logo} alt={TeamData.get().venue.name||''} style={{height,maxWidth:'min(100%, 300px)',objectFit:'contain',display:'block',...style}} onError={e=>{ e.target.style.display='none'; }}/>; }
 
 /* A ring for a readiness figure. */
 function TeamRing({pct,col,size=88}){ const T=useTheme(), r=size/2-7, c=2*Math.PI*r;
