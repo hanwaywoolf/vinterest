@@ -298,9 +298,16 @@ const TeamLearn = {
   _buildLight(id){ const w=TeamData.wine(id), c=TeamData.card(id); if(!w||!c) return []; const out=[], name=TeamData.short(w), drink=TeamData.isDrink(w), kind=this.kindOf(w);
     const st=c.style||{}, gap=o=>{ const s=(TeamData.card(o.id)||{}).style||{}; return Object.keys(st).reduce((a,k)=>a+Math.abs((st[k]||0)-(s[k]||0)),0); };
     const others=TeamData.wines().filter(o=>o.id!==id&&this.kindOf(o)===kind&&(TeamData.card(o.id)||{}).taste).sort((a,b)=>gap(b)-gap(a)||(a.id<b.id?-1:1));
+    // "Which of these would you tell a guest": every line has to be one you could say to a guest about this wine. A
+    // taste line written as advice to staff ("Expect a riper Chardonnay than our cooler ones, but taste it before
+    // service…") is out, and so is one that names a grape this wine isn't made from or another wine on the list,
+    // which rules it out at a glance.
+    const ownG=new Set((w.grapes||[]).flatMap(g=>this._words(g))), grapeWords=new Set(TeamData.wines().flatMap(o=>(o.grapes||[]).flatMap(g=>this._words(g))).filter(x=>x.length>3&&!ownG.has(x)));
+    const names=TeamData.wines().filter(o=>o.id!==id).map(o=>this._norm(TeamData.short(o))).filter(n=>n.split(' ').length>=2);
+    const sayable=t=>{ const n=' '+this._norm(t)+' '; return !/^\s*expect\b/i.test(t)&&!/\b(taste it|before service|in your own words|our (other|cooler|warmer)|than our)\b/i.test(t)&&!this._words(t).some(x=>grapeWords.has(x))&&!names.some(nm=>n.includes(' '+nm+' ')); };
     const tastes=[]; for(const o of others){ const t=TeamData.card(o.id).taste; if(gap(o)<this.SAY_GAP) break;
-      if(this._overlap(t,c.taste)<this.SAY_OVERLAP&&!tastes.some(x=>this._overlap(x,t)>=0.5)) tastes.push(t); if(tastes.length===3) break; }
-    if(c.taste&&tastes.length===3) out.push(this._light(id+'#say',`Which of these would you tell a guest about the ${name}?`,[c.taste,...tastes],c.pitch,id));
+      if(sayable(t)&&this._overlap(t,c.taste)<this.SAY_OVERLAP&&!tastes.some(x=>this._overlap(x,t)>=0.5)) tastes.push(t); if(tastes.length===3) break; }
+    if(c.taste&&sayable(c.taste)&&tastes.length===3) out.push(this._light(id+'#say',`Which of these would you tell a guest about the ${name}?`,[c.taste,...tastes],c.pitch,id));
     // What it pours with: the dish it ranks highest at in the pairings (its first pick if it is one), against
     // three the pairings say it doesn't suit.
     const menu=TeamData.dishes(), byName=n=>menu.find(x=>this._norm(x.name)===this._norm(n));

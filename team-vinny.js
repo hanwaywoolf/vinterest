@@ -285,8 +285,8 @@ const TeamVinny = {
     const sym=TeamData.currency().sym||'£';
     const best=p.best.map(b=>({...b,w:TeamData.wine(b.id)})).filter(b=>b.w), cost=w=>this._price(w.bottle)||this._price(w.glass)||0;
     const avoid=p.avoid&&TeamData.wine(p.avoid.id), glass=p.glass&&TeamData.wine(p.glass.id);
-    let guest, key, wines;
-    if(wish==='budget'){ const ok=best.filter(b=>b.w.bottle).sort((a,b)=>cost(a.w)-cost(b.w)); const cap=ok.length?Math.ceil((cost(ok[0].w)+5)/5)*5:null;
+    let guest, key, wines, cap=null;
+    if(wish==='budget'){ const ok=best.filter(b=>b.w.bottle).sort((a,b)=>cost(a.w)-cost(b.w)); cap=ok.length?Math.ceil((cost(ok[0].w)+5)/5)*5:null;
       guest=`A table of two, ordering the ${x.name}; they want a bottle${cap?` and don't want to spend more than about ${TeamData.money(cap)}`:''}.`;
       const fit=ok.filter(b=>!cap||cost(b.w)<=cap); wines=fit.map(b=>b.w.id);
       key=[`Recommend ${fit.map(b=>`${TeamData.short(b.w)} (bottle ${b.w.bottle})`).join(' or ')}`,`Say why it suits the dish: ${fit[0].why}`,'Stay within their budget']; }
@@ -302,7 +302,7 @@ const TeamVinny = {
       const alt=TeamData.dishes().find(d=>{ const q=TeamData.pairing(d.id); return q&&(q.best||[]).some(b=>b.id===avoid.id); }); if(alt) key[2]=`Suggest the ${TeamData.short(avoid)} with the ${alt.name} instead, so it isn't a no`; }
     else { guest=`A guest at the bar with the ${x.name}; they'd like just a glass of something that goes with it.`;
       wines=[glass.id]; key=[`Offer the ${TeamData.short(glass)} by the glass (${glass.glass})`,`Say why: ${p.glass.why}`,'Keep it short: one line on the taste']; }
-    const sc={dish:x.id,dishName:x.name,wish,guest,key,wines,seed};
+    const sc={dish:x.id,dishName:x.name,wish,guest,key,wines,seed,...(cap?{cap}:{})};
     return {...sc,help:this._help(sc,{x,p,best,avoid,glass,cost,sym,seed})};
   },
 
@@ -362,10 +362,20 @@ const TeamVinny = {
     const priceOf=w=>sc.wish==='glass'||(sc.wish==='light'&&w.glass)?(w.glass?`${w.glass} a glass`:''):(w.bottle?`${w.bottle} a bottle`:w.glass?`${w.glass} a glass`:'');
     const bestIds=new Set(best.map(b=>b.id)), all=TeamData.wines();
     const rot=(arr,n)=>arr.length?arr.map((_,i)=>arr[(i+Math.abs(n))%arr.length]):arr;
-    // Decoys: first the wrong idea this table holds, then a near miss, then something that doesn't suit.
+    // Decoys: wines that meet what the guest asked for out loud (within their budget, poured by the glass, as light)
+    // but don't suit the dish, so the dish decides and not the request, which gave the right one away at a glance
+    // when only one bottle fitted the budget. The wrong idea the table holds (the bottle over budget, the fuller
+    // wine) comes only when the list hasn't two such wines.
     const decoys=[];
     const add=(w,note)=>{ if(w&&!rightIds.includes(w.id)&&!decoys.some(d=>d.id===w.id)) decoys.push({id:w.id,ok:false,note}); };
     if(sc.wish==='avoid'&&avoid) add(avoid,`This is the one to steer them away from: ${p.avoid.why}`);
+    if(right&&sc.wish!=='avoid'){ const rb=((TeamData.card(right.id)||{}).style||{}).body;
+      const meets=w=>sc.wish==='budget'?!!w.bottle&&(!sc.cap||cost(w)<=sc.cap):sc.wish==='glass'?!!w.glass:sc.wish==='light'?(typeof rb!=='number'||(((TeamData.card(w.id)||{}).style||{}).body||rb)<=rb+1):!!(w.bottle||w.glass);
+      // The same kind of wine that doesn't suit the dish first; then another kind that meets the request and plainly
+      // doesn't suit it (a red within budget at the fish and chips: the guest never said white, so it's a real decision).
+      const pool=all.filter(w=>!bestIds.has(w.id)&&(!avoid||w.id!==avoid.id)&&!TeamData.isDrink(w)&&meets(w)&&TeamLearn.tableFit(w.id,x.id)!=='good');
+      const fits=[...rot(pool.filter(w=>w.type===right.type),seed),...rot(pool.filter(w=>w.type!==right.type&&TeamLearn.clearlyWrong(w.id,x.id)),seed>>1)];
+      fits.forEach(w=>{ if(decoys.length<2) add(w,`It ${sc.wish==='budget'?'is within their budget':sc.wish==='glass'?'is poured by the glass':'fits what they asked for'}, but it isn't a wine for the ${x.name}.`); }); }
     if(sc.wish==='budget'){ const over=best.filter(b=>b.w.bottle&&!rightIds.includes(b.id)).sort((a,b)=>cost(b.w)-cost(a.w))[0]; if(over) add(over.w,`It suits the dish, but at ${over.w.bottle} it's over what they want to spend.`); }
     if(sc.wish==='light'){ const heavy=best.filter(b=>!rightIds.includes(b.id))[0]; if(heavy) add(heavy.w,'It suits the dish, but it\'s the fuller choice; they asked for something lighter.'); }
     if(sc.wish==='glass'){ const btl=best.find(b=>!b.w.glass); if(btl) add(btl.w,'It suits the dish, but it isn\'t poured by the glass.'); }
@@ -382,12 +392,16 @@ const TeamVinny = {
     // and the others offered in its place; never "Which wine?" as if they hadn't asked for one.
     const named=sc.wish==='avoid'&&avoid?TeamData.short(avoid):'';
     const pickedWines=order.map(i=>wines[i]).map(o=>named?{...o,label:o.id===avoid.id?`Go with the ${named}, as they asked`:`Suggest the ${short(o.id)} instead`}:o);
-    const ask=named?`They want the ${named}. What do you suggest?`:({budget:'Which bottle fits their budget?',light:'Which lighter wine?',bottle:'Which bottle for the table?',glass:'Which wine by the glass?'}[sc.wish]||'Which wine?');
+    const ask=named?`They want the ${named}. What do you suggest?`:({budget:'Which bottle for them, within their budget?',light:'Which lighter wine?',bottle:'Which bottle for the table?',glass:'Which wine by the glass?'}[sc.wish]||'Which wine?');
     const askWhy=named?`Why is it better with the ${x.name}?`:`Why does it suit the ${x.name}?`;
     // Reasons, all about the wine they picked: the pairing's own reason for it, and two that sound right but its own
     // card rules out at this dish (TeamLearn.styleWrong: light where it's full, no tannin where it's firm), so the
     // second step is about the first answer, never another wine's reason from another dish.
-    const whyRight=(()=>{ if(!okWine) return ''; if(sc.wish==='glass'&&p.glass) return p.glass.why; const b=best.find(b=>b.id===okWine.id); return b?b.why:''; })();
+    // The price never sits inside the reason (the reply says it once, "at £59 a bottle"), and the wrong reasons are
+    // the two nearest the right one in length, so a long considered right answer beside two short ones doesn't pick
+    // itself out.
+    const noPrice=t=>String(t||'').replace(/\s*\([£$€]\s?\d[^)]*\)/g,'').replace(/[;,]?\s*(and\s+)?(it's|it is|at|for)\s+(just\s+|only\s+)?[£$€]\s?\d[^.;]*/i,'').replace(/\s+([.;,])/g,'$1').replace(/[;,]\s*$/,'').trim().replace(/([^.!?])$/,'$1.');
+    const whyRight=(()=>{ if(!okWine) return ''; if(sc.wish==='glass'&&p.glass) return noPrice(p.glass.why); const b=best.find(b=>b.id===okWine.id); return b?noPrice(b.why):''; })();
     // Wrong reasons from the same course first (a main against other mains), so they can't be ruled out at a glance.
     const whysOf=ds=>ds.flatMap(d=>{ const q=TeamData.pairing(d.id); return q?[...(q.best||[]),q.glass].filter(Boolean).map(b=>b.why):[]; }).filter(w=>w&&w!==whyRight);
     const others2=TeamData.dishes().filter(d=>d.id!==x.id), same=others2.filter(d=>d.section&&d.section===x.section);
@@ -398,8 +412,31 @@ const TeamVinny = {
     // Then the reasons its card's own table questions were written to be wrong with (`wrong`), still about this wine.
     const authored=card?(card.qs||[]).filter(q=>q.k==='apply').flatMap(q=>q.wrong||[]):[];
     const ownWrong=okWine?[...new Set([...TeamLearn.styleWrong(st,TeamLearn.kindOf(okWine),x.name,seed),...rot(authored,seed>>2)].map(sentence))].filter(t=>t&&t!==whyRight):[];
-    const wrongs=[...ownWrong.map(t=>({text:t,ok:false,note:notTrue})),...otherWhys.map(t=>({text:t,ok:false,note:'That reason is about another wine and dish on the menu.'}))].slice(0,2);
-    const reasons=whyRight?[{text:whyRight,ok:true},...wrongs]:[];
+    // All the wrong candidates together, the two nearest the right one in length (its own card's first on a tie);
+    // then, if the right one still runs over 1.6× the longer wrong, it's cut back a clause at a time to a whole sentence.
+    // This wine's own wrong reasons (its card's authored ones, its style turned round) come before another dish's
+    // pairing reason, which names that dish's food and gives itself away at this table.
+    const byLen=xs=>[...xs].sort((a,b)=>Math.abs(a.text.length-whyRight.length)-Math.abs(b.text.length-whyRight.length));
+    // A pairing's reason runs to two clauses ("lean, salty and lemony, it cuts through the batter and sits happily with
+    // the fish"); the style-turned-round lines are one. When the right reason runs long, two of those lines making
+    // different claims (TeamLearn.claimsIn: one about acidity, one about body) are joined into one sentence of the
+    // same length and register, so the right answer isn't the long one.
+    const claimKey=t=>{ const c=TeamLearn.claimsIn(t); return Object.keys(c).filter(k=>c[k]).sort().join('+'); };
+    const join=(a,b)=>`${a.replace(/\.$/,'')}, and ${b.charAt(0).toLowerCase()+b.slice(1).replace(/\.$/,'')}.`;
+    const singles=ownWrong.filter(t=>t.length<0.6*whyRight.length), joined=[];
+    for(let i=0;i<singles.length&&joined.length<3;i++) for(let j=i+1;j<singles.length;j++){ const ka=claimKey(singles[i]), kb=claimKey(singles[j]); if(ka&&kb&&ka!==kb&&!ka.split('+').some(k=>kb.split('+').includes(k))){ joined.push(join(singles[i],singles[j])); break; } }
+    const own2=byLen([...ownWrong,...joined].map(t=>({text:noPrice(t),ok:false,note:notTrue}))), other2=byLen(otherWhys.map(t=>({text:noPrice(t),ok:false,note:'That reason is about another wine and dish on the menu.'})));
+    // The two wrong ones never share a clause (two joined lines can start from the same one).
+    const clauses=t=>String(t).toLowerCase().replace(/\.$/,'').split(/, and |, so /).map(x=>x.trim());
+    const wrongs=[]; for(const c of [...own2,...other2]){ if(wrongs.length>=2) break; if(!wrongs.some(w=>clauses(w.text).some(x=>clauses(c.text).includes(x)))) wrongs.push(c); }
+    // Cut at a clause boundary (", and", ", so", a semicolon or colon) while what's left still reads whole.
+    // Never at a colon (what follows it is the reason itself), and never to under three fifths of the text: then it stays whole.
+    // A preamble before a colon ("Muscadet is the classic seaside white: lean, salty and lemony, it cuts…") goes first,
+    // since the reason is what follows it.
+    const trimTo=(t,max)=>{ let base=String(t).replace(/\.$/,''); const m=base.match(/^[^:]{8,60}:\s+(.{40,})$/); if(m) base=m[1].charAt(0).toUpperCase()+m[1].slice(1);
+      const parts=base.split(/,\s(?=(?:and|so|which|while|but|with|giving|leaving)\s)|;\s/); let o=parts[0]; for(const x of parts.slice(1)){ if((o+', '+x).length>max) break; o+=', '+x; } o=o.replace(/[,;:\s]+$/,''); return o.length<0.6*base.length?base+'.':o+'.'; };
+    const longest=Math.max(0,...wrongs.map(w=>w.text.length)), rightText=longest&&whyRight.length>1.8*longest?trimTo(whyRight,Math.max(1.8*longest,60)):whyRight;
+    const reasons=whyRight?[{text:rightText,ok:true},...wrongs]:[];
     const rOrder=[[1,0,2],[0,2,1],[2,1,0]][Math.abs(seed>>1)%3].filter(i=>i<reasons.length);
     const wishLine={budget:`They want a bottle and have a budget: keep under it.`,light:'They want something lighter: think body, not colour.',bottle:'One bottle for the whole table: pick the one that works with most of it, and say it with confidence.',avoid:`They've named a wine that doesn't suit the ${x.name}: steer them, kindly, and offer something better.`,glass:'Just a glass: look at what\'s poured by the glass.'}[sc.wish];
     const look=rot(pickedWines.map(w=>short(w.id)),0).filter(Boolean);
