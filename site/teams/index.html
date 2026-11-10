@@ -137,7 +137,7 @@
         <div class="eyebrow" style="--c:var(--rose)">On the floor</div>
         <h2 style="font-size:clamp(26px,3vw,36px)">Everything a server needs, in their pocket.</h2>
         <div class="fcap" id="fcap" aria-live="polite"><h3 id="ftitle">The drill</h3><p id="fdesc">Five questions before service, on your wines and your dishes. A wrong answer is where it teaches, and readiness moves with every one.</p></div>
-        <p class="ftry" id="ftry">This one plays by itself. <a href="%%DEMO_PHONE_URL%%" target="_blank" rel="noopener" data-demo-direct>Do the drill yourself →</a></p>
+        <p class="ftry" id="ftry">This one plays by itself. <a href="%%DEMO_PHONE_URL%%" target="_blank" rel="noopener" data-demo-direct data-live-open>Try it yourself →</a></p>
         <div class="fnav"><button class="arrow" id="fprev" aria-label="Previous screen">←</button><div class="fdots" id="fdots"></div><button class="arrow" id="fnext" aria-label="Next screen">→</button></div>
       </div>
       <div class="orbit" id="orbit">
@@ -347,7 +347,7 @@ if (pstage) {
   const conn = navigator.connection || {};
   if (pstage.clientWidth && !reduced && !conn.saveData && !/(^|-)2g$/.test(conn.effectiveType || '') && !/[?&]live=off/.test(location.search)) {
     const go = () => { const sc = document.createElement('script'); sc.src = '/live.js?v=%%LIVE_V%%'; sc.async = true;
-      sc.onload = () => { try { window.TeamsLive.mount(pstage, { who: 'Dani', onReady: () => ph.stop() }); } catch (e) {} }; document.head.appendChild(sc); };
+      sc.onload = () => { try { window.TeamsLive.mount(pstage, { who: 'Dani', onReady: () => ph.stop() }); pstage.closest('.phone').addEventListener('click', () => TeamsLive.open()); } catch (e) {} }; document.head.appendChild(sc); };
     const idle = () => (window.requestIdleCallback ? requestIdleCallback(go, { timeout: 4000 }) : setTimeout(go, 1500));
     if (document.readyState === 'complete') idle(); else addEventListener('load', idle, { once: true });
   }
@@ -380,7 +380,8 @@ function fturn() { clearInterval(ftimer); if (reduced) return; ftimer = setInter
 function fhold() { clearInterval(ftimer); ftimer = 0; }
 document.getElementById('fprev').addEventListener('click', () => { fgo(fi - 1); fhold(); });
 document.getElementById('fnext').addEventListener('click', () => { fgo(fi + 1); fhold(); });
-slots.forEach((sl, i) => sl.addEventListener('click', () => { fgo(i); fhold(); }));
+// A tap on the drill's phone while it's the real app opens that app full screen, to use by hand.
+slots.forEach((sl, i) => sl.addEventListener('click', () => { if (i === 0 && fi === 0 && flive && window.TeamsLive) { TeamsLive.open(); return; } fgo(i); fhold(); }));
 // Where the hero has no phone (a narrow screen), the drill's phone here is the real app (live.js, as the hero's is
 // on a wide one), loaded as the section comes near. One phone a page runs it: they'd share one restaurant.
 const fstage = document.getElementById('fstage'), fconn = navigator.connection || {};

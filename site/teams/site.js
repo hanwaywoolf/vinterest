@@ -116,3 +116,6 @@
   const io = new IntersectionObserver((es) => { if (es.some((x) => x.isIntersecting)) { io.disconnect(); play(); } }, { threshold: 0.35 });
   io.observe(grid);
 })();
+
+// "Try it yourself": where the live phone's app is loaded (live.js), it opens full screen on the page; otherwise the link goes to the demo.
+document.addEventListener('click', (e) => { const a = e.target.closest('[data-live-open]'); if (!a || !window.TeamsLive || e.metaKey || e.ctrlKey || e.shiftKey || e.button) return; e.preventDefault(); window.TeamsLive.open(); });

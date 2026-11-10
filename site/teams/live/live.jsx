@@ -24,7 +24,36 @@ const TeamsLive = (() => {
     if (p) TeamLearn.setMe(p.id);
   }
 
+  // The page's phone (one a page), kept so trying it by hand can stop it and start it again afterwards.
+  let last = null, full = null;
+  // Change restaurant leads to restaurants this bundle doesn't carry, so the app is told it's at the demo's own address.
+  TeamSample.hostSeed = () => 'demo';
+
+  /* The same app, full screen and theirs to use: the playing phone stops, the restaurant is put back as seeded
+     for the same person, and the app is drawn at its real size under a bar with Close. Closing (the button, Esc
+     or the phone's Back) starts the page's phone playing again. */
+  function open(o = {}) {
+    if (full) return; const who = o.who || (last && last.opts.who) || 'Dani', from = document.activeElement;
+    if (last && last.handle) { last.handle.stop(); last.handle = null; }
+    seed(who);
+    const box = document.createElement('div'); box.className = 'live-full'; box.setAttribute('role', 'dialog'); box.setAttribute('aria-modal', 'true'); box.setAttribute('aria-label', 'The demo restaurant, to try yourself');
+    box.innerHTML = '<div class="live-full-in"><div class="live-full-bar"><span>The Larkspur · a demo restaurant</span><button type="button" data-live-close>Close ✕</button></div><div class="live-full-app"></div></div>';
+    document.body.appendChild(box); document.documentElement.classList.add('dlg-open');
+    const root = ReactDOM.createRoot(box.querySelector('.live-full-app')); root.render(<TeamApp />);
+    const close = (popped) => { if (!full) return; full = null; removeEventListener('keydown', key); removeEventListener('popstate', pop);
+      try { root.unmount(); } catch (e) {} if (box.parentNode) box.parentNode.removeChild(box); document.documentElement.classList.remove('dlg-open');
+      if (!popped && history.state && history.state.teamsLive) history.back();
+      if (from && from.focus) try { from.focus(); } catch (e) {}
+      if (last) last.handle = mount(last.el, last.opts); };
+    const key = (e) => { if (e.key === 'Escape') close(); }, pop = () => close(true);
+    addEventListener('keydown', key); addEventListener('popstate', pop);
+    try { history.pushState({ teamsLive: 1 }, ''); } catch (e) {}
+    box.querySelector('[data-live-close]').addEventListener('click', () => close()); box.querySelector('[data-live-close]').focus();
+    full = { close };
+  }
+
   function mount(el, opts = {}) {
+    if (!last || last.el !== el) last = { el, opts, handle: null };
     const who = opts.who || 'Dani', speed = opts.speed || Number(window.TEAMS_LIVE_SPEED) || 1;
     let alive = true, seen = true, root = null;
     el.classList.add('live-on');
@@ -99,9 +128,11 @@ const TeamsLive = (() => {
         stage.style.opacity = '0'; await wait(500);
       }
     }
+    const handle = { stop() { alive = false; ro.disconnect(); io.disconnect(); try { if (root) root.unmount(); } catch (e) {} if (stage.parentNode) stage.parentNode.removeChild(stage); el.classList.remove('live-on'); } };
+    Promise.resolve().then(() => { if (last && last.el === el && !last.handle) last.handle = handle; });
     play().catch((e) => { if (alive && e && e.message !== 'stopped') { stage.style.opacity = '0'; el.classList.remove('live-on'); if (opts.onFail) opts.onFail(e); } });
-    return { stop() { alive = false; ro.disconnect(); io.disconnect(); try { if (root) root.unmount(); } catch (e) {} if (stage.parentNode) stage.parentNode.removeChild(stage); el.classList.remove('live-on'); } };
+    return handle;
   }
-  return { mount };
+  return { mount, open, get running() { return !!(last && last.handle); } };
 })();
 window.TeamsLive = TeamsLive;

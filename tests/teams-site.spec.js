@@ -281,6 +281,19 @@ test('on a phone the floor carousel runs the real drill', async ({ page }) => {
   await expect(app.locator('[data-testid=drill-result]')).toBeVisible({ timeout: 30000 });
   await expect(app.locator('[data-testid=drill-done]')).toBeVisible({ timeout: 40000 });
   await expect(page.locator('#ftitle')).toHaveText('The card', { timeout: 15000 }); // one run, then the carousel turns
+  // Tapped, the phone opens full screen as the app itself, theirs to use: a drill started and answered by hand.
+  await page.locator('#fdots button').first().click();
+  await page.locator('#orbit .slot').first().locator('.phone').click();
+  const full = page.locator('.live-full');
+  await expect(full.getByText('Hi Dani')).toBeVisible();
+  await expect(page.locator('#fstage .live-app')).toHaveCount(0);                   // the playing phone has stopped
+  await full.getByText(/Start today's drill|Practise · 5/).first().click();
+  await full.locator('[data-testid=drill-opt]').first().click();
+  await full.getByText('Check', { exact: true }).click();
+  await expect(full.locator('[data-testid=drill-result]')).toBeVisible();
+  await full.locator('[data-live-close]').click();
+  await expect(full).toHaveCount(0);
+  await expect(page.locator('#fstage .live-app')).toHaveCount(1);                   // and plays again once closed
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   expect(errors).toEqual([]);
 });

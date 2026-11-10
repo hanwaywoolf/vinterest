@@ -555,3 +555,13 @@ html.dlg-open, html.dlg-open body { overflow: hidden; }
 .phone .scr .lstage > img { flex: 1; }
 .lstage.live-on > img { display: none; }
 .ftry { margin-top: 10px; font-size: 15px; color: var(--mute); } .ftry a { color: var(--cr); font-weight: 700; text-decoration: none; white-space: nowrap; } .ftry[hidden] { display: block; visibility: hidden; }
+/* The live phone, opened to use by hand (TeamsLive.open): the app at its real size over the page, a bar with Close above it. */
+.live-on { cursor: pointer; }
+.live-on::after { content: 'Tap to try it'; position: absolute; z-index: 6; left: 50%; bottom: 10px; transform: translateX(-50%); white-space: nowrap; font: 700 11px/1 var(--sans); letter-spacing: .04em; color: #fff; background: rgba(15, 15, 15, .78); border: 1px solid rgba(255, 255, 255, .28); border-radius: 999px; padding: 7px 12px; pointer-events: none; }
+.live-full { position: fixed; inset: 0; z-index: 200; background: rgba(8, 8, 8, .92); display: flex; justify-content: center; align-items: center; }
+.live-full-in { width: 100%; height: 100%; max-width: 430px; max-height: 932px; display: flex; flex-direction: column; background: #0f0f0f; overflow: hidden; }
+.live-full-bar { flex: none; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: calc(env(safe-area-inset-top) + 8px) 12px 8px 16px; background: #1b1b1b; border-bottom: 1px solid rgba(255, 255, 255, .12); color: rgba(255, 255, 255, .7); font-size: 13px; font-weight: 600; }
+.live-full-bar button { font: 700 13px/1 var(--sans); color: #fff; background: rgba(255, 255, 255, .1); border: 1px solid rgba(255, 255, 255, .22); border-radius: 999px; padding: 9px 14px; cursor: pointer; }
+.live-full-app { position: relative; flex: 1; min-height: 0; }
+.live-full-app img { max-width: none; }
+@media (min-width: 620px) { .live-full-in { border-radius: 28px; border: 1px solid rgba(255, 255, 255, .16); height: calc(100% - 48px); } }
