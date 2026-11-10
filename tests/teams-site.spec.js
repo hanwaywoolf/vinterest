@@ -269,6 +269,43 @@ test('a private page is hidden from search and adds up', async ({ page, request 
   expect(errors).toEqual([]);
 });
 
+// Eloise's page (Toronto): the same private page on its own list, in Canadian dollars, built from the seed's two files.
+test("Eloise's private page is hidden from search and adds up in dollars", async ({ page }) => {
+  const errors = [];
+  page.on('pageerror', (e) => errors.push(String(e)));
+  await page.goto(BASE + '/for/eloise');
+  await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', /noindex/);
+  await expect(page.locator('h1')).toContainText('76 wines');
+  await expect(page.locator('.pr-pair .them')).toHaveAttribute('src', /\/img\/for\/eloise\.svg/);
+  expect(await page.locator('.pr-pair .them').evaluate((i) => i.complete && i.naturalWidth > 0)).toBe(true);
+  const box = page.locator('#prCalc');
+  await expect(box.locator('[data-t="day"]')).toHaveText('$339');       // 3 × $65 + 5 × $16 + 4 × $16
+  await expect(box.locator('[data-t="week"]')).toHaveText('$2,034');    // six days
+  await expect(box.locator('[data-t="year"]')).toHaveText('$105,768');
+  await box.locator('[data-in="up"]').fill('0');
+  await expect(box.locator('[data-t="day"]')).toHaveText('$144');
+  await expect(page.locator('.cellar-grid i')).toHaveCount(76);
+  await page.locator('.cellar-tabs [data-mode="bottle"]').click();
+  await expect(page.locator('.cellar-tabs [data-mode="bottle"] b')).toHaveText('64');
+  await expect(page.locator('.cellar-grid i.off')).toHaveCount(12);
+  await expect(page.locator('.cellar-tabs [data-mode="top"]')).toContainText('$150 and over');
+  await expect(page.locator('.cellar-tabs [data-mode="top"] b')).toHaveText('31');
+  // the most expensive bottle on the list (the magnum-only wines come after it) opens its card
+  const staglin = page.locator('.cellar-grid i').nth(74);
+  await staglin.click();
+  const card = page.locator('dialog.wcard');
+  await expect(card.locator('h3')).toContainText('Staglin Family');
+  await expect(card.locator('.price')).toHaveText('$930 a bottle · bottle only');
+  await expect(card.getByText('What to say at the table')).toBeVisible();
+  await card.locator('.wcard-x').click();
+  await expect(card).toBeHidden();
+  await expect(page.locator('.pr-foot')).toContainText('Vinterest is independent of Eloise');
+  await expect(page.locator('body')).not.toContainText('£');
+  for (const a of await page.locator('a[data-demo]').all()) await expect(a).toHaveAttribute('href', /seed=eloise/);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  expect(errors).toEqual([]);
+});
+
 // The hero's phone is the Teams app itself (live.js, the app's sources): it opens on Today, starts the day's
 // drill and answers it, so the site can't show a drill the app no longer has.
 test('the hero phone runs the real drill', async ({ page }) => {
