@@ -12,8 +12,12 @@
   "training": {
    "tier": "essentials"
   },
-  "about": "The Barbary, London: North African and Middle Eastern cooking over fire, with a dinner menu that changes daily (this one is dated 10 November) of snacks, breads and dips, small plates, and mains to share up to a Hereford côte de boeuf. The wine list (November) runs to more than 300 bottles, strongest in Spain and its islands, Greece, Lebanon, Italy, Burgundy and the Jura, with about 40 wines by the glass and carafe.",
-  "source": "Wine list (November), dinner menu dated 10 November and dessert menu, supplied by Carey"
+  "about": "The Barbary Notting Hill, 112 Westbourne Grove, London W11 (open since 2024; the first Barbary is in Neal’s Yard): North African and Middle Eastern cooking over fire, with a dinner menu that changes daily (this one is dated 10 November) of snacks, breads and dips, small plates, and mains to share up to a Hereford côte de boeuf. The wine list (November) runs to more than 300 bottles, strongest in Spain and its islands, Greece, Lebanon, Italy, Burgundy and the Jura, with about 40 wines by the glass and carafe.",
+  "source": "Wine list (November), dinner menu dated 10 November and dessert menu, supplied by Carey",
+  "brand": {
+   "logo": "brand/barbary/wordmark-white.svg",
+   "source": "thebarbary.co.uk/notting-hill (pointed to by Carey)"
+  }
  },
  "wines": [
   {
