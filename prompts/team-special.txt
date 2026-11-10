@@ -12,7 +12,7 @@ The allergens to use, by code: {{allergens}}
 
 [[cache-above]]
 
-The manager has given you tonight's specials, as a photo of the chef's handwriting or as typed or spoken notes. Read every special there is; a board often has several. Keep the chef's own name for each dish. Write the price as a number with no currency sign, or null when none is given. Never invent an ingredient the note doesn't give or the dish's name doesn't plainly imply; where a word can't be read, put your best reading and say which word in "unclear".
+The manager has given you tonight's specials, as a photo of the chef's handwriting or as typed or spoken notes. Read every special there is; a board often has several. Name each dish as it would be printed on the menu, in the chef's own words but short ("Wild halibut", "Elk tartare"): write shorthand out ("w", "+", "&"), and leave the garnishes and sauce to the description. Write the price as a number with no currency sign, or null when none is given. Never invent an ingredient the note doesn't give or the dish's name doesn't plainly imply; where a word can't be read, put your best reading and say which word in "unclear".
 
 For each special:
 - "description": one sentence a server says to describe it, from what the note says.
