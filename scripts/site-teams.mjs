@@ -82,15 +82,25 @@ export function build() {
     if (!html.includes('</body>')) throw new Error(`site-teams: ${f} has no </body>`);
     fs.writeFileSync(path.join(OUT, f), html.replace('</body>', `${vars.ANALYTICS}</body>`));
   }
+  // Private pages written for one prospect (site/teams/for/<name>.html, served at /for/<name>): built like the
+  // others but with no nav, never in the sitemap, and kept out of search (their own noindex, robots.txt, and the
+  // Worker's X-Robots-Tag). Nothing on the site links to them.
+  const forDir = path.join(SRC, 'for'), priv = fs.existsSync(forDir) ? fs.readdirSync(forDir).filter((f) => f.endsWith('.html')).sort() : [];
+  if (priv.length) fs.mkdirSync(path.join(OUT, 'for'), { recursive: true });
+  for (const f of priv) {
+    const html = fill(fs.readFileSync(path.join(forDir, f), 'utf8'), vars);
+    if (!/<meta name="robots" content="noindex/.test(html)) throw new Error(`site-teams: for/${f} must carry <meta name="robots" content="noindex, nofollow">`);
+    fs.writeFileSync(path.join(OUT, 'for', f), html);
+  }
   fs.cpSync(path.join(SRC, 'img'), path.join(OUT, 'img'), { recursive: true });
   fs.copyFileSync(path.join(ROOT, 'logo.png'), path.join(OUT, 'logo.png'));
   fs.copyFileSync(path.join(ROOT, 'site/_headers'), path.join(OUT, '_headers'));
   fs.copyFileSync(path.join(SRC, '_redirects'), path.join(OUT, '_redirects')); // www to the apex
   fs.copyFileSync(path.join(SRC, '_worker.js'), path.join(OUT, '_worker.js')); // POST /api/pilot, then the static pages
-  fs.writeFileSync(path.join(OUT, 'robots.txt'), `User-agent: *\nAllow: /\nSitemap: ${origin}/sitemap.xml\n`);
+  fs.writeFileSync(path.join(OUT, 'robots.txt'), `User-agent: *\nAllow: /\nDisallow: /for/\nSitemap: ${origin}/sitemap.xml\n`);
   fs.writeFileSync(path.join(OUT, 'sitemap.xml'),
     `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${pages.map((f) => `  <url><loc>${origin}/${f === 'index.html' ? '' : f.replace(/\.html$/, '')}</loc></url>`).join('\n')}\n</urlset>\n`);
-  console.log(`Built site-teams-dist/ (${pages.length} pages) — demo at ${demo}${token ? ', analytics on' : ', no analytics token'}`);
+  console.log(`Built site-teams-dist/ (${pages.length} pages${priv.length ? `, ${priv.length} private` : ''}) — demo at ${demo}${token ? ', analytics on' : ', no analytics token'}`);
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {

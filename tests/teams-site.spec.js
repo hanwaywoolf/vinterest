@@ -219,3 +219,23 @@ test('each console scene, and the wine card, opens at the top of its page', asyn
   expect((await pan()).y).toMatch(/^(none|translateY\(0px\))$/);
   await page.close();
 });
+
+// A page written for one restaurant: reachable by its address, never listed, and its sums are its own prices.
+test('a private page is hidden from search and adds up', async ({ page, request }) => {
+  const errors = [];
+  page.on('pageerror', (e) => errors.push(String(e)));
+  await page.goto(BASE + '/for/princess-royal');
+  await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', /noindex/);
+  await expect(page.locator('h1')).toContainText('132 wines');
+  expect(await (await request.get(BASE + '/sitemap.xml')).text()).not.toContain('/for/');
+  expect(await (await request.get(BASE + '/robots.txt')).text()).toContain('Disallow: /for/');
+  const box = page.locator('#prCalc');
+  await expect(box.locator('[data-t="day"]')).toHaveText('£203');       // 3 × £27 + 5 × £14 + 4 × £13
+  await expect(box.locator('[data-t="week"]')).toHaveText('£1,421');
+  await expect(box.locator('[data-t="year"]')).toHaveText('£73,892');
+  await box.locator('[data-in="up"]').fill('0');
+  await expect(box.locator('[data-t="day"]')).toHaveText('£122');
+  for (const a of await page.locator('a[data-demo]').all()) await expect(a).toHaveAttribute('href', /seed=princess-royal/);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  expect(errors).toEqual([]);
+});

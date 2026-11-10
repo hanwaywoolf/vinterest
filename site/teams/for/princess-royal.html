@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>For The Princess Royal | Vinterest Teams</title>
+<meta name="description" content="What The Princess Royal's own wine list says, and what a team that knows it could be worth.">
+<link rel="stylesheet" href="/fonts/fonts.css?v=%%FONTS_V%%">
+<link rel="stylesheet" href="/site.css?v=%%CSS_V%%">
+<style>
+/* A page written for one restaurant: its own header (no site nav), a dark opening, their figures, a calculator on their prices. */
+.pr-top { position: sticky; top: 0; z-index: 40; background: rgba(12, 12, 12, .94); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-bottom: 1px solid rgba(255, 255, 255, .08); }
+.pr-top .wrap { height: 64px; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.pr-top .tlogo .mark img { filter: invert(1); } .pr-top .tlogo .word { color: var(--neon); }
+.pr-top .btn.ghost { background: rgba(255, 255, 255, .06); border-color: rgba(255, 255, 255, .18); color: #fff; }
+.pr-hero { background: #0F0F0F; color: #fff; padding: 72px 0 80px; position: relative; overflow: clip; }
+.pr-hero::before { content: ''; position: absolute; right: -10%; top: -20%; width: 60%; height: 140%; background: radial-gradient(50% 50% at 50% 50%, rgba(232, 83, 107, .22), transparent 70%); pointer-events: none; }
+.pr-hero .wrap { position: relative; }
+.pr-for { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; font-size: 12px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: rgba(255, 255, 255, .6); }
+.pr-for img { height: 13px; width: auto; max-width: 100%; }
+.pr-hero h1 { font-size: clamp(34px, 5.2vw, 64px); line-height: 1.04; letter-spacing: -.02em; margin-top: 28px; max-width: 15em; }
+.pr-hero h1 em { font-style: normal; color: var(--neon); }
+.pr-hero .lead { color: rgba(255, 255, 255, .72); max-width: 40em; font-size: 19px; }
+.pr-hero .cta { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 28px; }
+.pr-hero .btn.ghost { background: rgba(255, 255, 255, .06); border-color: rgba(255, 255, 255, .18); color: #fff; }
+.pr-facts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 40px; }
+.pr-fact { border: 1px solid var(--line); border-radius: 16px; padding: 22px; background: #fff; border-top: 3px solid var(--c, var(--cr)); }
+.pr-fact b { display: block; font-size: 40px; font-weight: 800; letter-spacing: -.02em; line-height: 1; color: var(--ink); }
+.pr-fact h3 { font-size: 16px; margin-top: 10px; }
+.pr-fact p { font-size: 14px; color: var(--ink-2); margin-top: 6px; }
+.pr-moves { display: grid; gap: 10px; margin-top: 24px; }
+.pr-move { display: grid; grid-template-columns: 1fr auto; gap: 4px 16px; align-items: baseline; padding: 14px 0; border-top: 1px solid var(--line); }
+.pr-move b { font-size: 16px; } .pr-move span { grid-column: 1; font-size: 14px; color: var(--ink-2); }
+.pr-move i { grid-row: 1 / span 2; grid-column: 2; font-style: normal; font-weight: 800; font-size: 20px; color: var(--cr); align-self: center; }
+.pr-calc .fld label small { display: block; font-weight: 500; color: var(--mute); font-size: 12px; }
+.pr-out { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 18px; }
+.pr-out div { border-radius: 12px; background: var(--bg-2); padding: 12px; }
+.pr-out div.pick { background: var(--cr-soft); border: 1px solid color-mix(in srgb, var(--cr) 30%, transparent); }
+.pr-out small { display: block; font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--mute); }
+.pr-out b { display: block; font-size: 22px; font-weight: 800; margin-top: 4px; letter-spacing: -.01em; }
+.pr-out .pick b { color: var(--cr); }
+.pr-sum { font-size: 13px; color: var(--ink-2); margin-top: 12px; }
+.pr-say { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; margin-top: 36px; }
+.pr-dish { border: 1px solid var(--dline); border-radius: 16px; padding: 22px; background: rgba(255, 255, 255, .04); }
+.pr-dish .d { font-size: 12px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--neon); }
+.pr-dish h3 { font-size: 19px; margin-top: 8px; color: #fff; }
+.pr-dish .w { font-size: 14px; color: rgba(255, 255, 255, .6); margin-top: 4px; }
+.pr-dish blockquote { margin: 14px 0 0; padding-left: 14px; border-left: 2px solid var(--neon); font-size: 15px; line-height: 1.55; color: rgba(255, 255, 255, .86); }
+.pr-in { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 28px; }
+.pr-in div { border: 1px solid var(--line); border-radius: 14px; padding: 16px; background: #fff; }
+.pr-in b { display: block; font-size: 28px; font-weight: 800; } .pr-in span { font-size: 13px; color: var(--ink-2); }
+.pr-foot { padding: 32px 0 48px; font-size: 13px; color: var(--mute); }
+.pr-foot p + p { margin-top: 8px; } .pr-foot a { color: inherit; }
+@media (max-width: 860px) { .pr-facts, .pr-say { grid-template-columns: 1fr; } .pr-out, .pr-in { grid-template-columns: repeat(2, 1fr); } .pr-top .btn.ghost { display: none; } .pr-hero { padding: 48px 0 56px; } }
+</style>
+</head>
+<body>
+
+<header class="pr-top">
+  <div class="wrap">
+    <a class="tlogo" href="https://vinterest.team" aria-label="Vinterest Teams"><div class="mark"><img src="/logo.png" alt=""></div><div class="word"><span>T</span><span>E</span><span>A</span><span>M</span><span>S</span></div></a>
+    <div style="display:flex;gap:8px"><a class="btn ghost small" href="#worth">What it's worth</a><a class="btn primary small" data-demo href="https://claude-princess-royal.vinterest.pages.dev/team/?seed=princess-royal&amp;view=console" target="_blank" rel="noopener">Open your demo</a></div>
+  </div>
+</header>
+
+<section class="pr-hero">
+  <div class="wrap">
+    <div class="pr-for"><span>Prepared for</span><img src="/img/for/princess-royal.svg?v=%%IMG_V%%" alt="The Princess Royal, Boutique Hotel, Notting Hill"></div>
+    <h1>132 wines on your list. <em>94 of them only sell if someone recommends them.</em></h1>
+    <p class="lead">We read The Princess Royal's wine list and menus, and built your team's training from them. This page is what your own list says, what a team that knows it could be worth, and a working demo with your wines and dishes in it.</p>
+    <div class="cta"><a class="btn primary" data-demo href="https://claude-princess-royal.vinterest.pages.dev/team/?seed=princess-royal&amp;view=console" target="_blank" rel="noopener">Open your demo</a><a class="btn ghost" href="#worth">See what it's worth</a></div>
+  </div>
+</section>
+
+<section class="band">
+  <div class="wrap">
+    <div class="head">
+      <div class="eyebrow" style="--c:var(--plum)">Your list, in numbers</div>
+      <h2>A serious list asks a lot of the people selling it.</h2>
+      <p class="lead">From your May 2026 wine list and your autumn and winter menus.</p>
+    </div>
+    <div class="pr-facts">
+      <div class="pr-fact" style="--c:var(--cr)"><b>71%</b><h3>Bottle only</h3><p>94 of your 132 wines can't be poured by the glass. Nobody tastes their way into them; they sell when someone on the floor can say why.</p></div>
+      <div class="pr-fact" style="--c:var(--plum)"><b>60</b><h3>Grape varieties</h3><p>From 108 producers in 14 countries, in sections from Fresh, Coastal Whites to Red Bordeaux &amp; Friends. A lot for a new starter to hold.</p></div>
+      <div class="pr-fact" style="--c:var(--gold)"><b>£78</b><h3>Your median bottle</h3><p>33 bottles are £100 or more, up to the £310 Charles Heidsieck Blanc des Millénaires. One bottle of everything comes to £10,594.</p></div>
+      <div class="pr-fact" style="--c:var(--sky)"><b>1 in 3</b><h3>Best matches are bottle only</h3><p>Of the three best wines for each of your 55 dishes, 56 of 165 aren't sold by the glass. For 11 dishes, the best match of all is one of them.</p></div>
+      <div class="pr-fact" style="--c:var(--green)"><b>10</b><h3>Sweet and fortified by the glass</h3><p>From an £8 Manzanilla to a £27 Icewine, with five puddings to pour them beside. They're rarely ordered unless someone offers.</p></div>
+      <div class="pr-fact" style="--c:var(--rose)"><b>6</b><h3>English sparkling wines</h3><p>Coates &amp; Seely, Gusbourne and Sugrue, three of them by the glass from £14. A story guests like to hear, if the team can tell it.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="calc pr-calc" id="worth" style="--c:var(--cr)">
+  <div class="wrap">
+    <div>
+      <div class="eyebrow">What it's worth</div>
+      <h2>Three small moves, at <em style="font-style:normal;color:var(--cr)">your prices.</em></h2>
+      <p class="lead">On your list a bottle costs about what its four glasses do, so turning glasses into the same bottle earns little. The money is in three moves that only happen when the team knows the list.</p>
+      <div class="pr-moves">
+        <div class="pr-move"><b>A table trades up to a bottle-only wine</b><i>+£27</i><span>Your wines sold by the glass have a median bottle of £53; your bottle-only wines, £80.</span></div>
+        <div class="pr-move"><b>A glass of English fizz to start</b><i>+£14</i><span>Coates &amp; Seely Brut Reserve, your least expensive sparkling glass.</span></div>
+        <div class="pr-move"><b>A sweet or fortified glass with pudding</b><i>+£13</i><span>The median of your ten, from Manzanilla to Tokaji.</span></div>
+      </div>
+    </div>
+    <div class="card" id="prCalc">
+      <div class="fld"><label>Tables trading up to a bottle-only wine<small>more a day, at +£27 each</small></label><div class="v" data-out="up">3</div><input type="range" min="0" max="15" step="1" value="3" data-in="up" aria-label="Tables trading up a day"></div>
+      <div class="fld"><label>Glasses of fizz to start<small>more a day, at £14 each</small></label><div class="v" data-out="fizz">5</div><input type="range" min="0" max="30" step="1" value="5" data-in="fizz" aria-label="Glasses of fizz a day"></div>
+      <div class="fld"><label>Glasses with pudding<small>more a day, at £13 each</small></label><div class="v" data-out="sweet">4</div><input type="range" min="0" max="30" step="1" value="4" data-in="sweet" aria-label="Glasses with pudding a day"></div>
+      <div class="fld"><label>Days open a week</label><div class="v" data-out="days">7</div><input type="range" min="1" max="7" step="1" value="7" data-in="days" aria-label="Days open a week"></div>
+      <div class="pr-out">
+        <div><small>A day</small><b data-t="day">£0</b></div>
+        <div><small>A week</small><b data-t="week">£0</b></div>
+        <div><small>A month</small><b data-t="month">£0</b></div>
+        <div class="pick"><small>A year</small><b data-t="year">£0</b></div>
+      </div>
+      <p class="pr-sum" id="prSum"></p>
+      <p class="assume">Illustrative: extra wine revenue from the counts you set, at prices on your May 2026 list. We don't know your covers, so nothing here is a forecast. Once your sales data is in, the console measures the real change.</p>
+    </div>
+  </div>
+</section>
+
+<section class="band dark">
+  <div class="wrap">
+    <div class="head">
+      <div class="eyebrow">Already written for your team</div>
+      <h2>Your dishes, the wine, and the line to say.</h2>
+      <p class="lead">Every wine on your list has a card, and every dish has its wines. These are four of them, as your team would learn them. The pairings are ours, written from your list and menu; you can change any of them before anyone sees them.</p>
+    </div>
+    <div class="pr-say">
+      <div class="pr-dish"><div class="d">Mains · £54 for two</div><h3>Hereford Short Rib, Brisket &amp; Bone Marrow Pie</h3><div class="w">Château Capbern 2018, Saint-Estèphe · £78 a bottle · bottle only</div><blockquote>"It's a firm, serious red with blackcurrant and cedar, and that drying grip, like strong tea, is exactly what a big plate of beef needs."</blockquote></div>
+      <div class="pr-dish"><div class="d">Mains · £34</div><h3>Grilled Venison, Celeriac, Blackberries</h3><div class="w">Raúl Pérez Mencía, Ultreia Saint Jacques 2022 · £59 a bottle · bottle only</div><blockquote>"It's lively and medium-bodied rather than heavy or oaky, so it's lovely with the venison or the Ibérico pork without wearing you out."</blockquote></div>
+      <div class="pr-dish"><div class="d">Mains · £21.75</div><h3>Fish &amp; Chips, Crushed Peas, Tartare Sauce</h3><div class="w">Coates &amp; Seely Brut Reserve · £14 a glass · £82 a bottle</div><blockquote>"It's our English fizz by the glass, so it's an easy way to try something local that's bright, refreshing and brilliant with fried food."</blockquote></div>
+      <div class="pr-dish"><div class="d">Puddings · £10</div><h3>Fig Almond Tart, Mascarpone</h3><div class="w">Selvapiana Vin Santo del Chianti Rufina 2015 · £17 a glass</div><blockquote>"It is lovely with our almond and fig puddings or with cheese, and a small glass is a gentle, grown-up way to end the meal."</blockquote></div>
+    </div>
+  </div>
+</section>
+
+<section class="band alt">
+  <div class="wrap">
+    <div class="head">
+      <div class="eyebrow" style="--c:var(--green)">Your demo</div>
+      <h2>The Princess Royal, ready to try.</h2>
+      <p class="lead">Your list and menus are loaded into a working demo: the app your team would train on, and the console your managers would run it from. The team and the sales figures in it are invented, and labelled as demo data.</p>
+    </div>
+    <div class="pr-in">
+      <div><b>132</b><span>wine cards, each with what to say to a guest</span></div>
+      <div><b>792</b><span>questions on your wines, checked before anyone sees them</span></div>
+      <div><b>55</b><span>dishes paired, with notes and what the kitchen can change</span></div>
+      <div><b>25</b><span>cocktails from your drinks list</span></div>
+    </div>
+    <div class="cta" style="display:flex;gap:10px;flex-wrap:wrap;margin-top:28px"><a class="btn primary" data-demo href="https://claude-princess-royal.vinterest.pages.dev/team/?seed=princess-royal&amp;view=console" target="_blank" rel="noopener">Open your demo</a><a class="btn ghost" href="mailto:hello@vinterest.app?subject=The%20Princess%20Royal%20and%20Vinterest%20Teams">Book a 20-minute walkthrough</a><a class="btn ghost" href="https://vinterest.team/mise-en-place">How we'd launch with you</a></div>
+  </div>
+</section>
+
+<footer class="pr-foot">
+  <div class="wrap">
+    <p>Prepared by Vinterest Teams for The Princess Royal, 47 Hereford Road, Notting Hill. This page is private: it isn't linked from our site or listed in search.</p>
+    <p>Wines and prices are from your wine list dated May 2026, dishes and drinks from your current menus (autumn and winter 2026, Sunday, breakfast and festive), as published on cubitthouse.co.uk; if anything has changed since, the demo updates from a new copy. Pairings and staff lines are Vinterest's own, written from those lists. Vinterest is independent of Cubitt House. <a href="https://vinterest.team/privacy">Privacy</a> · <a href="mailto:hello@vinterest.app">hello@vinterest.app</a></p>
+  </div>
+</footer>
+
+<script>
+// The calculator: three moves at The Princess Royal's own prices, by the counts set, over a day, week, month and year.
+(function () {
+  const PRICE = { up: 27, fizz: 14, sweet: 13 }, box = document.getElementById('prCalc');
+  const money = (n) => '£' + Math.round(n).toLocaleString('en-GB');
+  const val = (k) => +box.querySelector(`[data-in="${k}"]`).value;
+  function draw() {
+    ['up', 'fizz', 'sweet', 'days'].forEach((k) => { box.querySelector(`[data-out="${k}"]`).textContent = val(k); });
+    const day = val('up') * PRICE.up + val('fizz') * PRICE.fizz + val('sweet') * PRICE.sweet, week = day * val('days'), year = week * 52;
+    box.querySelector('[data-t="day"]').textContent = money(day);
+    box.querySelector('[data-t="week"]').textContent = money(week);
+    box.querySelector('[data-t="month"]').textContent = money(year / 12);
+    box.querySelector('[data-t="year"]').textContent = money(year);
+    document.getElementById('prSum').textContent = `${val('up')} × £27 + ${val('fizz')} × £14 + ${val('sweet')} × £13 = ${money(day)} a day, ${val('days')} day${val('days') === 1 ? '' : 's'} a week.`;
+  }
+  box.addEventListener('input', draw); draw();
+})();
+</script>
+%%ANALYTICS%%
+</body>
+</html>
