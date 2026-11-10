@@ -410,6 +410,7 @@ test('the page generator reads a seed and drafts a page the build accepts', asyn
   expect(c.dailyMenu).toBe(true);
   expect(c.picks[0]).toMatchObject({ dish: 'Hereford Côte De Boeuf' });
   const page = render(c, { seed: 'barbary', slug: 'x', demo: 'https://example.com/', source: '', logo: '', aspect: 0 });
+  expect(page).toContain('48 questions (about 1,880 across all 313 in a full install)');       // eight wines trained in full, six questions each
   expect(page).toContain('data-per="week"'); expect(page).toContain("Today's menu, paired before service."); expect(page).not.toMatch(/undefined|NaN/);
   expect(render(a, { seed: 'social', slug: 'x', demo: 'https://example.com/', source: '', logo: '', aspect: 0 })).not.toContain('paired before service');
 });
