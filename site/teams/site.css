@@ -674,3 +674,62 @@ html.dlg-open, html.dlg-open body { overflow: hidden; }
 .calc .listcard .cellar { --cols: 15; --cols-m: 15; }
 .calc .listcard .cellar-grid { gap: 8px 6px; }
 .calc .listcard .cellar-cap { font-size: 15px; }
+
+/* A private page for one prospect (site/teams/for/): its own header (no site nav), a dark opening, their figures,
+   a calculator on their prices (data-moves, site.js). */
+.pr-top { position: sticky; top: 0; z-index: 40; background: rgba(12, 12, 12, .94); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-bottom: 1px solid rgba(255, 255, 255, .08); }
+.pr-top .wrap { height: 64px; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.pr-top .tlogo .mark img { filter: invert(1); } .pr-top .tlogo .word { color: var(--neon); }
+.pr-top .btn.ghost { background: rgba(255, 255, 255, .06); border-color: rgba(255, 255, 255, .18); color: #fff; }
+.pr-hero { background: #0F0F0F; color: #fff; padding: 72px 0 80px; position: relative; overflow: clip; }
+.pr-hero::before { content: ''; position: absolute; right: -10%; top: -20%; width: 60%; height: 140%; background: radial-gradient(50% 50% at 50% 50%, rgba(232, 83, 107, .22), transparent 70%); pointer-events: none; }
+.pr-hero .wrap { position: relative; display: grid; grid-template-columns: 1.1fr .9fr; gap: 64px; align-items: center; }
+.pr-hero .cellar { max-width: 520px; width: 100%; justify-self: end; }
+.pr-for { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; font-size: 12px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: rgba(255, 255, 255, .6); }
+.pr-for img { height: 9px; width: auto; max-width: 100%; opacity: .92; }
+/* The header: our logo × theirs, as two brands side by side. */
+.pr-pair { display: flex; align-items: center; gap: 14px; min-width: 0; }
+.pr-top .acts { display: flex; gap: 8px; flex: none; }
+.pr-pair .x { font-size: 19px; font-weight: 400; line-height: 1; color: rgba(255, 255, 255, .5); }
+.pr-pair .them { height: 8px; width: auto; min-width: 0; opacity: .92; }
+@media (max-width: 760px) { .pr-top .acts { display: none; } .pr-pair { gap: 10px; } .pr-pair .them { height: auto; width: 100%; max-width: 190px; flex: 0 1 190px; } }
+.pr-hero h1 { font-size: clamp(34px, 5.2vw, 64px); line-height: 1.04; letter-spacing: -.02em; margin-top: 28px; max-width: 15em; }
+.pr-hero h1 em { font-style: normal; color: var(--neon); }
+.pr-hero .lead { color: rgba(255, 255, 255, .72); max-width: 40em; font-size: 19px; }
+.pr-hero .cta { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 28px; }
+.pr-hero .btn.ghost { background: rgba(255, 255, 255, .06); border-color: rgba(255, 255, 255, .18); color: #fff; }
+.pr-facts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 40px; }
+.pr-fact { border: 1px solid var(--line); border-radius: 16px; padding: 22px; background: #fff; border-top: 3px solid var(--c, var(--cr)); }
+.pr-fact b { display: block; font-size: 40px; font-weight: 800; letter-spacing: -.02em; line-height: 1; color: var(--ink); }
+.pr-fact h3 { font-size: 16px; margin-top: 10px; }
+.pr-fact p { font-size: 14px; color: var(--ink-2); margin-top: 6px; }
+.pr-moves { display: grid; gap: 10px; margin-top: 24px; }
+.pr-move { display: grid; grid-template-columns: 1fr auto; gap: 4px 16px; align-items: baseline; padding: 14px 0; border-top: 1px solid var(--line); }
+.pr-move b { font-size: 16px; } .pr-move span { grid-column: 1; font-size: 14px; color: var(--ink-2); }
+.pr-move i { grid-row: 1 / span 2; grid-column: 2; font-style: normal; font-weight: 800; font-size: 20px; color: var(--cr); align-self: center; }
+.pr-calc .fld label small { display: block; font-weight: 500; color: var(--mute); font-size: 12px; }
+.pr-out { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 18px; }
+.pr-out div { border-radius: 12px; background: var(--bg-2); padding: 12px; }
+.pr-out div.pick { background: var(--cr-soft); border: 1px solid color-mix(in srgb, var(--cr) 30%, transparent); }
+.pr-out small { display: block; font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--mute); }
+.pr-out b { display: block; font-size: 22px; font-weight: 800; margin-top: 4px; letter-spacing: -.01em; }
+.pr-out .pick b { color: var(--cr); }
+.pr-sum { font-size: 13px; color: var(--ink-2); margin-top: 12px; }
+.pr-say { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; margin-top: 36px; }
+.pr-dish { border: 1px solid var(--dline); border-radius: 16px; padding: 22px; background: rgba(255, 255, 255, .04); }
+.pr-dish .d { font-size: 12px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--neon); }
+.pr-dish h3 { font-size: 19px; margin-top: 8px; color: #fff; }
+.pr-dish .w { font-size: 14px; color: rgba(255, 255, 255, .6); margin-top: 4px; }
+.pr-dish blockquote { margin: 14px 0 0; padding-left: 14px; border-left: 2px solid var(--neon); font-size: 15px; line-height: 1.55; color: rgba(255, 255, 255, .86); }
+.pr-in { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 28px; }
+.pr-in div { border: 1px solid var(--line); border-radius: 14px; padding: 16px; background: #fff; }
+.pr-in b { display: block; font-size: 28px; font-weight: 800; } .pr-in span { font-size: 13px; color: var(--ink-2); }
+.pr-foot { padding: 32px 0 48px; font-size: 13px; color: var(--mute); }
+.pr-foot p + p { margin-top: 8px; } .pr-foot a { color: inherit; }
+@media (max-width: 860px) { .pr-facts, .pr-say { grid-template-columns: 1fr; } .pr-out, .pr-in { grid-template-columns: repeat(2, 1fr); } .pr-top .btn.ghost { display: none; } .pr-hero { padding: 48px 0 56px; } }
+@media (max-width: 980px) { .pr-hero .wrap { grid-template-columns: 1fr; gap: 36px; } .pr-hero .cellar { justify-self: start; } }
+.pr-bar { display: flex; height: 10px; border-radius: 999px; overflow: hidden; background: var(--bg-2); margin-top: 16px; gap: 2px; }
+.pr-bar i { display: block; background: var(--k); flex: 0 0 0%; transition: flex-basis .45s cubic-bezier(.2, .8, .2, 1); min-width: 0; }
+.pr-sum { display: flex; flex-wrap: wrap; gap: 4px 16px; }
+.pr-sum span::before { content: ''; display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--k); margin-right: 6px; }
+@media (prefers-reduced-motion: reduce) { .pr-bar i { transition: none; } }

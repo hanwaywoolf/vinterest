@@ -101,6 +101,12 @@ export function cellarOf(list, train) {
   return { rows: all.map((x) => x.row), cards: all.map((x) => x.card) };
 }
 
+// The private pages whose restaurant has a seed in the repo: [its list file, its training file].
+const FOR_SEEDS = {
+  'princess-royal': ['data/team-princess-royal-list.json', 'data/team-princess-royal.json'],
+  'social-corner': ['data/team-social-list.json', 'data/team-social.json'],
+};
+
 export async function build() {
   const origin = (process.env.SITE_ORIGIN || 'https://vinterest.team').replace(/\/+$/, '');
   const demo = process.env.TEAM_DEMO_URL || demoUrl(process.env.CF_PAGES_BRANCH);
@@ -154,7 +160,15 @@ export async function build() {
   const forDir = path.join(SRC, 'for'), priv = fs.existsSync(forDir) ? fs.readdirSync(forDir).filter((f) => f.endsWith('.html')).sort() : [];
   if (priv.length) fs.mkdirSync(path.join(OUT, 'for'), { recursive: true });
   for (const f of priv) {
-    const html = fill(fs.readFileSync(path.join(forDir, f), 'utf8'), vars);
+    // A page for a restaurant whose demo is in the repo takes its list and cards from that seed's own files
+    // (FOR_SEEDS): %%LIST%% is the bottles' rows, and <name>.cards.json is written beside the page (%%CARDS_V%%).
+    const name = f.replace(/\.html$/, ''), seed = FOR_SEEDS[name], own = {};
+    if (seed) {
+      const made = cellarOf(JSON.parse(fs.readFileSync(path.join(ROOT, seed[0]), 'utf8')), JSON.parse(fs.readFileSync(path.join(ROOT, seed[1]), 'utf8')));
+      own.LIST = JSON.stringify(made.rows).replace(/</g, '\\u003c'); own.CARDS_V = hash(JSON.stringify(made.cards));
+      fs.writeFileSync(path.join(OUT, 'for', `${name}.cards.json`), JSON.stringify(made.cards));
+    }
+    const html = fill(fs.readFileSync(path.join(forDir, f), 'utf8'), { ...vars, ...own });
     if (!/<meta name="robots" content="noindex/.test(html)) throw new Error(`site-teams: for/${f} must carry <meta name="robots" content="noindex, nofollow">`);
     fs.writeFileSync(path.join(OUT, 'for', f), html);
   }

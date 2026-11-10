@@ -209,3 +209,29 @@ document.addEventListener('click', (e) => { const a = e.target.closest('[data-li
   // Scrolled away mid-table, it pauses instead of talking to nobody.
   if ('IntersectionObserver' in window) new IntersectionObserver((es) => { if (!es[0].isIntersecting && el.classList.contains('playing')) btn.click(); }, { threshold: 0 }).observe(el);
 })();
+
+// A calculator of moves at a restaurant's own prices: <div data-moves data-sym="£"> holding sliders
+// (input[data-in][data-price], and input[data-in="days"]), their readouts ([data-out]), four totals
+// ([data-t="day|week|month|year"]), a bar of what each move brings in ([data-b]) and its key ([data-p]).
+// A total counts to its new figure (at once with reduced motion).
+(function () {
+  const box = document.querySelector('[data-moves]'); if (!box) return;
+  const sym = box.dataset.sym || '£', still = window.matchMedia('(prefers-reduced-motion: reduce)').matches, shown = {};
+  const money = (n) => sym + Math.round(n).toLocaleString('en-GB');
+  const ins = Array.from(box.querySelectorAll('input[data-in]')), val = (k) => +box.querySelector(`[data-in="${k}"]`).value;
+  function count(k, to) {
+    const out = box.querySelector(`[data-t="${k}"]`), from = shown[k] ? shown[k].now : 0, t0 = performance.now();
+    if (shown[k]) cancelAnimationFrame(shown[k].raf);
+    const s = shown[k] = { now: from };
+    if (still || from === to) { s.now = to; out.textContent = money(to); return; }
+    (function step(t) { const p = Math.min(1, (t - t0) / 350), e = 1 - Math.pow(1 - p, 3); s.now = from + (to - from) * e; out.textContent = money(s.now); if (p < 1) s.raf = requestAnimationFrame(step); else s.now = to; })(t0);
+  }
+  function draw() {
+    const part = {}; let day = 0;
+    ins.forEach((i) => { const k = i.dataset.in, out = box.querySelector(`[data-out="${k}"]`); if (out) out.textContent = i.value; if (i.dataset.price) { part[k] = +i.value * +i.dataset.price; day += part[k]; } });
+    const week = day * val('days'), year = week * 52;
+    count('day', day); count('week', week); count('month', year / 12); count('year', year);
+    Object.keys(part).forEach((k) => { const b = box.querySelector(`[data-b="${k}"]`), p = box.querySelector(`[data-p="${k}"]`); if (b) b.style.flexBasis = (day ? part[k] / day * 100 : 0) + '%'; if (p) p.textContent = money(part[k]) + ' a day'; });
+  }
+  box.addEventListener('input', draw); draw();
+})();

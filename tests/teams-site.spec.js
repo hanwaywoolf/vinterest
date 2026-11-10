@@ -356,3 +356,29 @@ test('the table plays its lines and ends on the mark', async ({ page, request })
   await expect(table.locator('.t-mark')).toContainText('That landed');
   expect(errors).toEqual([]);
 });
+
+// The Social Corner's page takes its list and cards from the seed's own files at build time, in Canadian dollars.
+test("The Social Corner's private page is built from its seed and adds up", async ({ page, request }) => {
+  const errors = [];
+  page.on('pageerror', (e) => errors.push(String(e)));
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto(BASE + '/for/social-corner');
+  await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', /noindex/);
+  await expect(page.locator('h1')).toContainText('41 wines');
+  expect(await (await request.get(BASE + '/sitemap.xml')).text()).not.toContain('/for/');
+  const list = page.locator('.cellar');
+  await expect(list.locator('.cellar-grid i')).toHaveCount(41);
+  await list.locator('.cellar-tabs [data-mode="bottle"]').click();
+  await expect(list.locator('.cellar-tabs [data-mode="bottle"] b')).toHaveText('18');
+  await expect(list.locator('.cellar-tabs [data-mode="top"] b')).toHaveText('13');
+  await list.locator('.cellar-grid i').last().click();
+  const card = page.locator('dialog.wcard');
+  await expect(card.locator('h3')).toContainText('Tignanello');
+  await expect(card.locator('.price')).toHaveText('$350 a bottle · bottle only');
+  await card.locator('.wcard-x').click();
+  const box = page.locator('#scCalc');
+  await expect(box.locator('[data-t="day"]')).toHaveText('$359');        // 3 × $42 + 10 × $11 + 5 × $15 + 4 × $12
+  await expect(box.locator('[data-t="year"]')).toHaveText('$130,676');
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  expect(errors).toEqual([]);
+});

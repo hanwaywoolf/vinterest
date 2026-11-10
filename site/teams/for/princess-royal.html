@@ -8,72 +8,13 @@
 <meta name="description" content="What The Princess Royal's own wine list says, and what a team that knows it could be worth.">
 <link rel="stylesheet" href="/fonts/fonts.css?v=%%FONTS_V%%">
 <link rel="stylesheet" href="/site.css?v=%%CSS_V%%">
-<style>
-/* A page written for one restaurant: its own header (no site nav), a dark opening, their figures, a calculator on their prices. */
-.pr-top { position: sticky; top: 0; z-index: 40; background: rgba(12, 12, 12, .94); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-bottom: 1px solid rgba(255, 255, 255, .08); }
-.pr-top .wrap { height: 64px; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
-.pr-top .tlogo .mark img { filter: invert(1); } .pr-top .tlogo .word { color: var(--neon); }
-.pr-top .btn.ghost { background: rgba(255, 255, 255, .06); border-color: rgba(255, 255, 255, .18); color: #fff; }
-.pr-hero { background: #0F0F0F; color: #fff; padding: 72px 0 80px; position: relative; overflow: clip; }
-.pr-hero::before { content: ''; position: absolute; right: -10%; top: -20%; width: 60%; height: 140%; background: radial-gradient(50% 50% at 50% 50%, rgba(232, 83, 107, .22), transparent 70%); pointer-events: none; }
-.pr-hero .wrap { position: relative; display: grid; grid-template-columns: 1.1fr .9fr; gap: 64px; align-items: center; }
-.pr-hero .cellar { max-width: 520px; width: 100%; justify-self: end; }
-.pr-for { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; font-size: 12px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: rgba(255, 255, 255, .6); }
-.pr-for img { height: 9px; width: auto; max-width: 100%; opacity: .92; }
-/* The header: our logo × theirs, as two brands side by side. */
-.pr-pair { display: flex; align-items: center; gap: 14px; min-width: 0; }
-.pr-top .acts { display: flex; gap: 8px; flex: none; }
-.pr-pair .x { font-size: 19px; font-weight: 400; line-height: 1; color: rgba(255, 255, 255, .5); }
-.pr-pair .them { height: 8px; width: auto; min-width: 0; opacity: .92; }
-@media (max-width: 760px) { .pr-top .acts { display: none; } .pr-pair { gap: 10px; } .pr-pair .them { height: auto; width: 100%; max-width: 190px; flex: 0 1 190px; } }
-.pr-hero h1 { font-size: clamp(34px, 5.2vw, 64px); line-height: 1.04; letter-spacing: -.02em; margin-top: 28px; max-width: 15em; }
-.pr-hero h1 em { font-style: normal; color: var(--neon); }
-.pr-hero .lead { color: rgba(255, 255, 255, .72); max-width: 40em; font-size: 19px; }
-.pr-hero .cta { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 28px; }
-.pr-hero .btn.ghost { background: rgba(255, 255, 255, .06); border-color: rgba(255, 255, 255, .18); color: #fff; }
-.pr-facts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 40px; }
-.pr-fact { border: 1px solid var(--line); border-radius: 16px; padding: 22px; background: #fff; border-top: 3px solid var(--c, var(--cr)); }
-.pr-fact b { display: block; font-size: 40px; font-weight: 800; letter-spacing: -.02em; line-height: 1; color: var(--ink); }
-.pr-fact h3 { font-size: 16px; margin-top: 10px; }
-.pr-fact p { font-size: 14px; color: var(--ink-2); margin-top: 6px; }
-.pr-moves { display: grid; gap: 10px; margin-top: 24px; }
-.pr-move { display: grid; grid-template-columns: 1fr auto; gap: 4px 16px; align-items: baseline; padding: 14px 0; border-top: 1px solid var(--line); }
-.pr-move b { font-size: 16px; } .pr-move span { grid-column: 1; font-size: 14px; color: var(--ink-2); }
-.pr-move i { grid-row: 1 / span 2; grid-column: 2; font-style: normal; font-weight: 800; font-size: 20px; color: var(--cr); align-self: center; }
-.pr-calc .fld label small { display: block; font-weight: 500; color: var(--mute); font-size: 12px; }
-.pr-out { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 18px; }
-.pr-out div { border-radius: 12px; background: var(--bg-2); padding: 12px; }
-.pr-out div.pick { background: var(--cr-soft); border: 1px solid color-mix(in srgb, var(--cr) 30%, transparent); }
-.pr-out small { display: block; font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--mute); }
-.pr-out b { display: block; font-size: 22px; font-weight: 800; margin-top: 4px; letter-spacing: -.01em; }
-.pr-out .pick b { color: var(--cr); }
-.pr-sum { font-size: 13px; color: var(--ink-2); margin-top: 12px; }
-.pr-say { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; margin-top: 36px; }
-.pr-dish { border: 1px solid var(--dline); border-radius: 16px; padding: 22px; background: rgba(255, 255, 255, .04); }
-.pr-dish .d { font-size: 12px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--neon); }
-.pr-dish h3 { font-size: 19px; margin-top: 8px; color: #fff; }
-.pr-dish .w { font-size: 14px; color: rgba(255, 255, 255, .6); margin-top: 4px; }
-.pr-dish blockquote { margin: 14px 0 0; padding-left: 14px; border-left: 2px solid var(--neon); font-size: 15px; line-height: 1.55; color: rgba(255, 255, 255, .86); }
-.pr-in { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 28px; }
-.pr-in div { border: 1px solid var(--line); border-radius: 14px; padding: 16px; background: #fff; }
-.pr-in b { display: block; font-size: 28px; font-weight: 800; } .pr-in span { font-size: 13px; color: var(--ink-2); }
-.pr-foot { padding: 32px 0 48px; font-size: 13px; color: var(--mute); }
-.pr-foot p + p { margin-top: 8px; } .pr-foot a { color: inherit; }
-@media (max-width: 860px) { .pr-facts, .pr-say { grid-template-columns: 1fr; } .pr-out, .pr-in { grid-template-columns: repeat(2, 1fr); } .pr-top .btn.ghost { display: none; } .pr-hero { padding: 48px 0 56px; } }
-@media (max-width: 980px) { .pr-hero .wrap { grid-template-columns: 1fr; gap: 36px; } .pr-hero .cellar { justify-self: start; } }
-.pr-bar { display: flex; height: 10px; border-radius: 999px; overflow: hidden; background: var(--bg-2); margin-top: 16px; gap: 2px; }
-.pr-bar i { display: block; background: var(--k); flex: 0 0 0%; transition: flex-basis .45s cubic-bezier(.2, .8, .2, 1); min-width: 0; }
-.pr-sum { display: flex; flex-wrap: wrap; gap: 4px 16px; }
-.pr-sum span::before { content: ''; display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--k); margin-right: 6px; }
-@media (prefers-reduced-motion: reduce) { .pr-bar i { transition: none; } }
-</style>
 </head>
 <body>
 
 <header class="pr-top">
   <div class="wrap">
     <div class="pr-pair"><a class="tlogo" href="https://vinterest.team" aria-label="Vinterest Teams"><div class="mark"><img src="/logo.png" alt=""></div><div class="word"><span>T</span><span>E</span><span>A</span><span>M</span><span>S</span></div></a><span class="x" aria-hidden="true">×</span><img class="them" src="/img/for/princess-royal.svg?v=%%IMG_V%%" alt="The Princess Royal"></div>
-    <div class="acts"><a class="btn ghost small" href="#worth">What it's worth</a><a class="btn primary small" data-demo href="https://claude-princess-royal.vinterest.pages.dev/team/?seed=princess-royal&amp;view=console" target="_blank" rel="noopener">Open your demo</a></div>
+    <div class="acts"><a class="btn ghost small" href="#worth">What it's worth</a><a class="btn primary small" data-demo href="https://vinterest.pages.dev/team/?seed=princess-royal&amp;view=console" target="_blank" rel="noopener">Open your demo</a></div>
   </div>
 </header>
 
@@ -83,12 +24,12 @@
     <div class="pr-for"><span>Prepared for</span><img src="/img/for/princess-royal.svg?v=%%IMG_V%%" alt="The Princess Royal, Boutique Hotel, Notting Hill"></div>
     <h1>132 wines. <em>94 need a recommendation.</em></h1>
     <p class="lead">Seven in ten of your wines are bottle only, so they sell when someone on the floor can say why. Here's what your list says, what knowing it could be worth, and a working demo built from it.</p>
-    <div class="cta"><a class="btn primary" data-demo href="https://claude-princess-royal.vinterest.pages.dev/team/?seed=princess-royal&amp;view=console" target="_blank" rel="noopener">Open your demo</a><a class="btn ghost" href="#worth">See what it's worth</a></div>
+    <div class="cta"><a class="btn primary" data-demo href="https://vinterest.pages.dev/team/?seed=princess-royal&amp;view=console" target="_blank" rel="noopener">Open your demo</a><a class="btn ghost" href="#worth">See what it's worth</a></div>
     </div>
-    <div class="cellar" data-cellar="prList" data-sym="£" data-top="100" data-cards="/for/princess-royal.cards.json?v=%%IMG_V%%" data-cards-demo="https://claude-princess-royal.vinterest.pages.dev/team/?seed=princess-royal&amp;view=console"></div>
+    <div class="cellar" data-cellar="prList" data-sym="£" data-top="100" data-cards="/for/princess-royal.cards.json?v=%%CARDS_V%%" data-cards-demo="https://vinterest.pages.dev/team/?seed=princess-royal&amp;view=console"></div>
   </div>
 </section>
-<script type="application/json" id="prList">[["Valdespino, Manzanilla Deliciosa",30,8,"d"],["Borgo Selene, Catarratto/Inzolia 2025",32,0,"w"],["Il Barroccio, Nero d'Avola 2023",32,0,"r"],["Amie, Non-Alcoholic Rosé",36,6,"s"],["Cassara, Grillo 2025",38,8.5,"w"],["Famille Perrin, Luberon Rosé 2025",38,9,"p"],["Baron de Badassière, Syrah 2024",38,9,"r"],["Wednesday's Domaine, Piquant",38,0,"w"],["Wednesday's Domaine, Vignette",38,0,"r"],["Doisy-Védrines, Château Petit Védrines 2019",40,11,"d"],["Niepoort, Tawny Port, Tawny Dee",40,12,"d"],["Pacheco Pereda, Malbec 2023",43,10.5,"r"],["Adega de Monção, Vinho Verde, Fresco 2025",44,11,"w"],["Telmo Rodríguez, Monastrell, 'Al Muvedre' 2024",45,0,"r"],["Lauriers, Picpoul de Pinet, Paredaux 2025",48,0,"w"],["Pieropan, Soave Classico 2025",48,0,"w"],["Amie x Organic Rosé 2025",49,12.5,"p"],["Jasci & Marchesani, Montepulciano 2024",49,0,"r"],["Famille Perrin, Viognier, Maison Les Alexandrins 2025",50,0,"w"],["Amie Red, Carignan 2025",50,0,"r"],["Domaine Morel, Chiroubles 2024",50,0,"r"],["Tinpot Hut, Sauvignon Blanc 2025",51,12,"w"],["Tenuta Buontalenti, Cubitt Chianti 2025",51,12,"r"],["Willunga 100, Grenache, McLaren Vale 2024",52,0,"r"],["Quinta de Vale de Pios, Excomungado 2020",52,0,"r"],["Michel Delhommeau, Muscadet Sèvre-et-Maine Sur Lie 2025",53,0,"w"],["Château du Rouët, Maison Cubitt Rosé 2025",53,13,"p"],["Carl Loewen, Riesling, Alte Reben 2025",54,12.5,"w"],["Mirabeau, Pure 2025",55,14,"p"],["Tormaresca, Negroamaro Rosato, Calafuria 2023",55,0,"p"],["La Ligière, Côtes du Rhône, Sud Absolu 2022",55,0,"r"],["Azelia, Dolcetto d'Alba, Bricco dell'Oriolo 2021",55,0,"r"],["Dobogó, Tokaji, Noble Late Harvest 'Mylitta' 2022",56,15.5,"d"],["Bodegas Gallegas, Albariño Sentidiño 2025",58,0,"w"],["Kientzler, Riesling Classic 2025",58,0,"w"],["La Giustiniana, Gavi di Gavi, Lugarara 2025",58,14,"w"],["Domaine Perraud, Mâcon-Villages, Maison Cubitt 2024",58,13.5,"w"],["Jean-Marc Burgaud, Beaujolais Villages Blanc 2023",58,0,"w"],["Señorío de P. Peciña, Rioja Crianza 2019",58,0,"r"],["Raúl Pérez, Mencía, Ultreia Saint Jacques 2022",59,0,"r"],["Rosner, Grüner Veltliner 2024",60,0,"w"],["Boulevard Napoléon, Cinsault 2023",60,0,"r"],["Graham's, LBV Port 2019",60,9,"d"],["Raúl Pérez, Godello, Ultreia 2023",62,0,"w"],["L'Étendard de Château Valade, Cubitt Claret 2019",62,14.5,"r"],["Domaine Perraud, Bourgogne Pinot Noir, Maison Cubitt 2024",62,14.5,"r"],["Antonella Corda, Vermentino di Sardegna 2024",64,0,"w"],["Vignoble Guillaume, Crémant La Flûte Enchantée",65,0,"s"],["Villota, Rioja Blanco, 'Selvanevada' 2025",65,0,"w"],["Mirabeau, Etoile 2024",65,16,"p"],["Domaine Montirius, Vacqueyras, Le Village 2022",65,0,"r"],["Adams Wein, Spätburgunder, Ingelheim 2021",65,0,"r"],["Niepoort, Dry White Port, White Rabbit",65,11,"d"],["Château Mont-Redon, Lirac 2024",67,16,"r"],["Prieuré Saint-Côme, Chablis 2024",68,0,"w"],["David Moret, Aligoté, Le Grand A 2023",68,0,"w"],["Corte Giara, Valpolicella Ripasso 2023",68,0,"r"],["Sugrue, Bonkers",69,0,"w"],["G.D. Vajra, Langhe Nebbiolo, Claré J.C. 2023",69,0,"r"],["Thorne & Daughters, Pinot Noir, Copper Pot 2024",69,0,"r"],["Bakestones Cellars, Chardonnay 2023",70,0,"w"],["Corte Giara, Recioto della Valpolicella 2024",70,14,"d"],["Lucien Crochet, Sancerre 2023",72,0,"w"],["Boulevard Napoléon, Grenache Gris 2023",75,0,"w"],["Craven, Syrah, The Firs Vineyard 2023",75,0,"r"],["Terra da Marca, Cava Brut Natura 2021",76,0,"s"],["Bruno Clair, Marsannay Blanc 2023",78,0,"w"],["Château Capbern 2018",78,0,"r"],["Château Grand Village, Bordeaux Blanc 2023",80,13,"w"],["Domaine Ott, By Ott 2024",80,0,"p"],["No Fine Print, Cabernet Sauvignon 2023",80,0,"r"],["Vieux Collège, Bourgogne Rouge Côte d'Or 2022",80,0,"r"],["Coates & Seely, Brut Reserve",82,14,"s"],["David & Nadia, Chenin Blanc 2024",84,14,"w"],["Crystallum, Chardonnay, The Agnes 2025",85,0,"w"],["La Ragnaie, Rosso di Montalcino 2022",85,0,"r"],["Château Haut-Chaigneau 2019",86,0,"r"],["Frog's Leap, Zinfandel 2022",87,15,"r"],["Domaine de la Bégude, Bandol Rosé 2024",89,0,"p"],["Sugrue, Rock Story",90,0,"s"],["Gusbourne, Blanc de Blancs 2020",90,15.5,"s"],["Domaine des Hâtes, Chablis 1er Cru, 'Vau de Vey' 2023",90,0,"w"],["Crystallum, Pinot Noir, Peter Max 2024",90,0,"r"],["Inniskillin, Vidal Icewine 'Gold' 2024",90,27,"d"],["Coates & Seely, Brut Rosé",92,16,"s"],["Domaine Desvignes, Givry, Les Cheneaults 2021",92,15.5,"r"],["Domaine de Saint-Guirons 2016",93,0,"r"],["Sandhi, Chardonnay, Sta. Rita Hills 2024",95,0,"w"],["Gusbourne, Rosé Brut 2020",96,0,"s"],["Sylvain Cathiard, Aligoté 2022",97,0,"w"],["Walter Scott, Pinot Noir, La Combe Verte 2021",97,0,"r"],["Château Haut-Bergey 2010",98,0,"r"],["Charles Heidsieck, Brut Réserve",99,17.5,"s"],["Château Smith Haut Lafitte, Le Petit Smith Haut Lafitte 2019",100,0,"r"],["Bosquet des Papes, Châteauneuf-du-Pape 2022",105,0,"r"],["Château Léoville Barton, La Réserve de Léoville Barton 2018",105,0,"r"],["Chanin, Pinot Noir, Sta. Rita Hills 2023",105,0,"r"],["R. López de Heredia, Rioja Viña Tondonia, Tinto Reserva 2013",110,0,"r"],["Domaine Tollot-Beaut, Chorey-lès-Beaune 2023",110,0,"r"],["Famille Perrin, Côtes du Rhône Réserve 2023",110,0,"r",1],["Château Rauzan-Ségla, Ségla 2016",120,0,"r"],["Sandeman, Tawny Port, 10-Year-Old",0,16,"d"],["Pierre Paillard, Les Parcelles XX, Grand Cru Bouzy",125,0,"s"],["Casa Ferreirinha, 'Quinta de Leda', Douro Tinto 2022",125,21,"r"],["Château de Marsannay, Marsannay, Clos du Jeu 2016",125,0,"r"],["Selvapiana, Vin Santo del Chianti Rufina 2015",0,17,"d"],["Ridolfi, Brunello di Montalcino 2017",128,0,"r"],["David Moret, Saint-Romain 2023",130,22,"w"],["Domaine Coillot, Gevrey-Chambertin Vieilles Vignes 2022",130,0,"r"],["Saint-Sauveur, Blanc de Blancs Premier Cru",135,0,"s"],["Domaine du Château Philippe le Hardi, Saint-Aubin, En Vesveau 2022",135,0,"w"],["Château Léoville-Poyferré, Pavillon de Léoville Poyferré 2019",135,0,"r"],["Felton Road, Pinot Noir, Bannockburn 2023",135,0,"r"],["Dominus Estate, Othello 2016",140,0,"r"],["Philipponnat, Rosé Brut",145,0,"s"],["René Rostaing, Côte-Rôtie, Ampodium 2021",145,0,"r"],["Domaine de Montille, Beaune 1er Cru, Les Sizies 2023",145,0,"r"],["Famille Perrin, Morgon, Côte du Py 2023",145,0,"r",1],["G.D. Vajra, Barolo Coste di Rose 2020",150,0,"r"],["Domaine Laroche, Chablis, Saint Martin 2024",150,0,"w",1],["Jean-Noël Gagnard, Chassagne-Montrachet, Les Masures 2023",155,0,"w"],["Philipponnat, Blanc de Noirs Extra Brut 2018",160,0,"s"],["Bollinger, Special Cuvée Brut",170,0,"s"],["Charles Heidsieck, Brut Rosé",175,0,"s"],["Robert Chevillon, Nuits-Saint-Georges Vieilles Vignes 2021",180,0,"r"],["Château Larose Perganson 2023",180,0,"r",1],["Génot-Boulanger, Puligny-Montrachet, Les Nosroyes 2023",185,0,"w"],["Domaine Laroche, Chablis Grand Cru, Les Blanchots 2023",200,0,"w"],["David Moret, Meursault, Sous la Velle 2023",220,0,"w"],["Domaine Jean-Marc Boillot, Volnay 1er Cru, 'Carelle sous la Chapelle' 2023",220,0,"r"],["Charles Heidsieck, Vintage Brut 2013",230,0,"s"],["Charles Heidsieck, Blanc des Millénaires 2007",310,0,"s"]]</script>
+<script type="application/json" id="prList">%%LIST%%</script>
 
 <section class="band">
   <div class="wrap">
@@ -120,10 +61,10 @@
         <div class="pr-move"><b>A sweet or fortified glass with pudding</b><i>+£13</i><span>The median of your ten, from Manzanilla to Tokaji.</span></div>
       </div>
     </div>
-    <div class="card" id="prCalc">
-      <div class="fld"><label>Tables trading up to a bottle-only wine<small>more a day, at +£27 each</small></label><div class="v" data-out="up">3</div><input type="range" min="0" max="15" step="1" value="3" data-in="up" aria-label="Tables trading up a day"></div>
-      <div class="fld"><label>Glasses of fizz to start<small>more a day, at £14 each</small></label><div class="v" data-out="fizz">5</div><input type="range" min="0" max="30" step="1" value="5" data-in="fizz" aria-label="Glasses of fizz a day"></div>
-      <div class="fld"><label>Glasses with pudding<small>more a day, at £13 each</small></label><div class="v" data-out="sweet">4</div><input type="range" min="0" max="30" step="1" value="4" data-in="sweet" aria-label="Glasses with pudding a day"></div>
+    <div class="card" id="prCalc" data-moves data-sym="£">
+      <div class="fld"><label>Tables trading up to a bottle-only wine<small>more a day, at +£27 each</small></label><div class="v" data-out="up">3</div><input type="range" min="0" max="15" step="1" value="3" data-in="up" data-price="27" aria-label="Tables trading up a day"></div>
+      <div class="fld"><label>Glasses of fizz to start<small>more a day, at £14 each</small></label><div class="v" data-out="fizz">5</div><input type="range" min="0" max="30" step="1" value="5" data-in="fizz" data-price="14" aria-label="Glasses of fizz a day"></div>
+      <div class="fld"><label>Glasses with pudding<small>more a day, at £13 each</small></label><div class="v" data-out="sweet">4</div><input type="range" min="0" max="30" step="1" value="4" data-in="sweet" data-price="13" aria-label="Glasses with pudding a day"></div>
       <div class="fld"><label>Days open a week</label><div class="v" data-out="days">7</div><input type="range" min="1" max="7" step="1" value="7" data-in="days" aria-label="Days open a week"></div>
       <div class="pr-out">
         <div><small>A day</small><b data-t="day">£0</b></div>
@@ -167,7 +108,7 @@
       <div><b>55</b><span>dishes paired, with notes and what the kitchen can change</span></div>
       <div><b>25</b><span>cocktails from your drinks list</span></div>
     </div>
-    <div class="cta" style="display:flex;gap:10px;flex-wrap:wrap;margin-top:28px"><a class="btn primary" data-demo href="https://claude-princess-royal.vinterest.pages.dev/team/?seed=princess-royal&amp;view=console" target="_blank" rel="noopener">Open your demo</a><a class="btn ghost" href="mailto:hello@vinterest.app?subject=The%20Princess%20Royal%20and%20Vinterest%20Teams">Book a 20-minute walkthrough</a><a class="btn ghost" href="https://vinterest.team/mise-en-place">How we'd launch with you</a></div>
+    <div class="cta" style="display:flex;gap:10px;flex-wrap:wrap;margin-top:28px"><a class="btn primary" data-demo href="https://vinterest.pages.dev/team/?seed=princess-royal&amp;view=console" target="_blank" rel="noopener">Open your demo</a><a class="btn ghost" href="mailto:hello@vinterest.app?subject=The%20Princess%20Royal%20and%20Vinterest%20Teams">Book a 20-minute walkthrough</a><a class="btn ghost" href="https://vinterest.team/mise-en-place">How we'd launch with you</a></div>
   </div>
 </section>
 
@@ -177,32 +118,6 @@
     <p>Wines and prices are from your wine list dated May 2026, dishes and drinks from your current menus (autumn and winter 2026, Sunday, breakfast and festive), as published on cubitthouse.co.uk; if anything has changed since, the demo updates from a new copy. Pairings and staff lines are Vinterest's own, written from those lists. Vinterest is independent of Cubitt House. <a href="https://vinterest.team/privacy">Privacy</a> · <a href="mailto:hello@vinterest.app">hello@vinterest.app</a></p>
   </div>
 </footer>
-
-<script>
-// The calculator: three moves at The Princess Royal's own prices, by the counts set, over a day, week, month and year.
-// A total counts to its new figure and the bar shows how much of the day comes from each move.
-(function () {
-  const PRICE = { up: 27, fizz: 14, sweet: 13 }, box = document.getElementById('prCalc');
-  const still = window.matchMedia('(prefers-reduced-motion: reduce)').matches, shown = {};
-  const money = (n) => '£' + Math.round(n).toLocaleString('en-GB');
-  const val = (k) => +box.querySelector(`[data-in="${k}"]`).value;
-  function count(k, to) {
-    const out = box.querySelector(`[data-t="${k}"]`), from = shown[k] && shown[k].now || 0, t0 = performance.now();
-    if (shown[k]) cancelAnimationFrame(shown[k].raf);
-    const s = shown[k] = { now: from };
-    if (still || from === to) { s.now = to; out.textContent = money(to); return; }
-    (function step(t) { const p = Math.min(1, (t - t0) / 350), e = 1 - Math.pow(1 - p, 3); s.now = from + (to - from) * e; out.textContent = money(s.now); if (p < 1) s.raf = requestAnimationFrame(step); else s.now = to; })(t0);
-  }
-  function draw() {
-    ['up', 'fizz', 'sweet', 'days'].forEach((k) => { box.querySelector(`[data-out="${k}"]`).textContent = val(k); });
-    const part = { up: val('up') * PRICE.up, fizz: val('fizz') * PRICE.fizz, sweet: val('sweet') * PRICE.sweet };
-    const day = part.up + part.fizz + part.sweet, week = day * val('days'), year = week * 52;
-    count('day', day); count('week', week); count('month', year / 12); count('year', year);
-    Object.keys(part).forEach((k) => { box.querySelector(`[data-b="${k}"]`).style.flexBasis = (day ? part[k] / day * 100 : 0) + '%'; box.querySelector(`[data-p="${k}"]`).textContent = money(part[k]) + ' a day'; });
-  }
-  box.addEventListener('input', draw); draw();
-})();
-</script>
 <script src="/site.js?v=%%JS_V%%" defer></script>
 %%ANALYTICS%%
 </body>
