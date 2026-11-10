@@ -1,0 +1,4653 @@
+{
+ "venue": {
+  "name": "Eloise"
+ },
+ "wines": [
+  {
+   "section": "Sparkling",
+   "producer": "Tarlant",
+   "name": "Brut Réserve",
+   "vintage": null,
+   "type": "sparkling",
+   "region": "Champagne",
+   "country": "France",
+   "grapes": [
+    "Chardonnay",
+    "Pinot Noir",
+    "Pinot Meunier"
+   ],
+   "grapes_basis": "known",
+   "glass": "",
+   "bottle": "$125",
+   "other": "",
+   "bin": "",
+   "id": "w-tarlant-brut-reserve"
+  },
+  {
+   "section": "Sparkling",
+   "producer": "André Chemin",
+   "name": "Brut Premier Cru",
+   "vintage": null,
+   "type": "sparkling",
+   "region": "Champagne",
+   "country": "France",
+   "grapes": [
+    "Pinot Noir",
+    "Chardonnay"
+   ],
+   "grapes_basis": "typical",
+   "glass": "",
+   "bottle": "$140",
+   "other": "",
+   "bin": "",
+   "id": "w-andre-chemin-brut-premier-cru"
+  },
+  {
+   "section": "Sparkling",
+   "producer": "Bollinger",
+   "name": "Special Cuvée",
+   "vintage": null,
+   "type": "sparkling",
+   "region": "Champagne",
+   "country": "France",
+   "grapes": [
+    "Pinot Noir",
+    "Chardonnay",
+    "Pinot Meunier"
+   ],
+   "grapes_basis": "known",
+   "glass": "",
+   "bottle": "$215",
+   "other": "Magnum (1.5L) $460",
+   "bin": "",
+   "id": "w-bollinger-special-cuvee"
+  },
+  {
+   "section": "Sparkling",
+   "producer": "André Chemin",
+   "name": "Brut Rosé",
+   "vintage": null,
+   "type": "sparkling",
+   "region": "Champagne",
+   "country": "France",
+   "grapes": [
+    "Pinot Noir",
+    "Chardonnay"
+   ],
+   "grapes_basis": "typical",
+   "glass": "",
+   "bottle": "$142",
+   "other": "",
+   "bin": "",
+   "id": "w-andre-chemin-brut-rose"
+  },
+  {
+   "section": "Sparkling",
+   "producer": "Serenissima",
+   "name": "Prosecco Millesimato",
+   "vintage": null,
+   "type": "sparkling",
+   "region": "Veneto",
+   "country": "Italy",
+   "grapes": [
+    "Glera"
+   ],
+   "grapes_basis": "label",
+   "glass": "$16",
+   "bottle": "$75",
+   "other": "",
+   "bin": "",
+   "id": "w-serenissima-prosecco-millesimato"
+  },
+  {
+   "section": "Sparkling",
+   "producer": "Ca' del Bosco",
+   "name": "Franciacorta Cuvée Prestige Brut",
+   "vintage": null,
+   "type": "sparkling",
+   "region": "Franciacorta, Lombardy",
+   "country": "Italy",
+   "grapes": [
+    "Chardonnay",
+    "Pinot Nero",
+    "Pinot Bianco"
+   ],
+   "grapes_basis": "known",
+   "glass": "",
+   "bottle": "$126",
+   "other": "",
+   "bin": "",
+   "id": "w-ca-del-bosco-franciacorta-cuvee-prestige-brut"
+  },
+  {
+   "section": "Rosé",
+   "producer": "Domaine Montirius",
+   "name": "La Muse Papilles, Côtes du Rhône Rosé",
+   "vintage": 2023,
+   "type": "rosé",
+   "region": "Rhône Valley",
+   "country": "France",
+   "grapes": [
+    "Grenache",
+    "Syrah"
+   ],
+   "grapes_basis": "typical",
+   "glass": "",
+   "bottle": "$75",
+   "other": "",
+   "bin": "",
+   "id": "w-domaine-montirius-la-muse-papilles-cotes-du-rhone-rose"
+  },
+  {
+   "section": "Rosé",
+   "producer": "St. John",
+   "name": "Beausoleil Rosé, Côtes de Thau IGP",
+   "vintage": 2024,
+   "type": "rosé",
+   "region": "Languedoc",
+   "country": "France",
+   "grapes": [
+    "Grenache",
+    "Cinsault",
+    "Syrah"
+   ],
+   "grapes_basis": "typical",
+   "glass": "$16",
+   "bottle": "$84",
+   "other": "8oz $26",
+   "bin": "",
+   "id": "w-st-john-beausoleil-rose-cotes-de-thau-igp"
+  },
+  {
+   "section": "Rosé",
+   "producer": "Feudi di San Gregorio",
+   "name": "Ros'Aura",
+   "vintage": 2024,
+   "type": "rosé",
+   "region": "Campania",
+   "country": "Italy",
+   "grapes": [
+    "Aglianico"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "$70",
+   "other": "",
+   "bin": "",
+   "id": "w-feudi-di-san-gregorio-ros-aura"
+  },
+  {
+   "section": "Rosé",
+   "producer": "Two Sisters",
+   "name": "Margo Rosé",
+   "vintage": 2023,
+   "type": "rosé",
+   "region": "Niagara-on-the-Lake VQA, Ontario",
+   "country": "Canada",
+   "grapes": [
+    "Merlot"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "$75",
+   "other": "",
+   "bin": "",
+   "id": "w-two-sisters-margo-rose"
+  },
+  {
+   "section": "Orange (Skin Contact)",
+   "producer": "Antonutti",
+   "name": "Pinot Grigio Ramato",
+   "vintage": 2024,
+   "type": "orange",
+   "region": "Veneto",
+   "country": "Italy",
+   "grapes": [
+    "Pinot Grigio"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "$75",
+   "other": "",
+   "bin": "",
+   "id": "w-antonutti-pinot-grigio-ramato"
+  },
+  {
+   "section": "White",
+   "producer": "Domaine Huet",
+   "name": "Vouvray Le Haut-Lieu Sec",
+   "vintage": 2023,
+   "type": "white",
+   "region": "Vouvray, Loire Valley",
+   "country": "France",
+   "grapes": [
+    "Chenin Blanc"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "$152",
+   "other": "",
+   "bin": "",
+   "id": "w-domaine-huet-vouvray-le-haut-lieu-sec"
+  },
+  {
+   "section": "White",
+   "producer": "Pascal Jolivet",
+   "name": "Sancerre",
+   "vintage": 2024,
+   "type": "white",
+   "region": "Sancerre, Loire Valley",
+   "country": "France",
+   "grapes": [
+    "Sauvignon Blanc"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "$163",
+   "other": "",
+   "bin": "",
+   "id": "w-pascal-jolivet-sancerre"
+  },
+  {
+   "section": "White",
+   "producer": "Domaine des Hâtes",
+   "name": "Chablis",
+   "vintage": 2024,
+   "type": "white",
+   "region": "Chablis, Burgundy",
+   "country": "France",
+   "grapes": [
+    "Chardonnay"
+   ],
+   "grapes_basis": "label",
+   "glass": "$23",
+   "bottle": "$110",
+   "other": "8oz $38",
+   "bin": "",
+   "id": "w-domaine-des-hates-chablis"
+  },
+  {
+   "section": "White",
+   "producer": "Olivier Leflaive",
+   "name": "Bourgogne Les Sétilles",
+   "vintage": 2022,
+   "type": "white",
+   "region": "Burgundy",
+   "country": "France",
+   "grapes": [
+    "Chardonnay"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "$150",
+   "other": "",
+   "bin": "",
+   "id": "w-olivier-leflaive-bourgogne-les-setilles"
+  },
+  {
+   "section": "White",
+   "producer": "Jean-Luc Colombo",
+   "name": "La Belle de Mai, Saint-Péray",
+   "vintage": 2023,
+   "type": "white",
+   "region": "Saint-Péray, Rhône Valley",
+   "country": "France",
+   "grapes": [
+    "Roussanne"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "$148",
+   "other": "",
+   "bin": "",
+   "id": "w-jean-luc-colombo-la-belle-de-mai-saint-peray"
+  },
+  {
+   "section": "White",
+   "producer": "Tiefenbrunner",
+   "name": "Pinot Grigio",
+   "vintage": 2025,
+   "type": "white",
+   "region": "Alto Adige",
+   "country": "Italy",
+   "grapes": [
+    "Pinot Grigio"
+   ],
+   "grapes_basis": "label",
+   "glass": "$15",
+   "bottle": "$75",
+   "other": "8oz $23",
+   "bin": "",
+   "id": "w-tiefenbrunner-pinot-grigio"
+  },
+  {
+   "section": "White",
+   "producer": "Manni Nössing",
+   "name": "Grüner Veltliner",
+   "vintage": 2023,
+   "type": "white",
+   "region": "Alto Adige",
+   "country": "Italy",
+   "grapes": [
+    "Grüner Veltliner"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "$131",
+   "other": "",
+   "bin": "",
+   "id": "w-manni-nossing-gruner-veltliner"
+  },
+  {
+   "section": "White",
+   "producer": "Antonutti",
+   "name": "Sauvignon Blanc",
+   "vintage": 2024,
+   "type": "white",
+   "region": "Friuli-Venezia Giulia",
+   "country": "Italy",
+   "grapes": [
+    "Sauvignon Blanc"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "$80",
+   "other": "",
+   "bin": "",
+   "id": "w-antonutti-sauvignon-blanc"
+  },
+  {
+   "section": "White",
+   "producer": "Lis Neris",
+   "name": "Jurosa Chardonnay",
+   "vintage": 2021,
+   "type": "white",
+   "region": "Friuli-Venezia Giulia",
+   "country": "Italy",
+   "grapes": [
+    "Chardonnay"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "$169",
+   "other": "",
+   "bin": "",
+   "id": "w-lis-neris-jurosa-chardonnay"
+  },
+  {
+   "section": "White",
+   "producer": "Ottella",
+   "name": "Lugana Le Creete",
+   "vintage": 2023,
+   "type": "white",
+   "region": "Lugana, Lombardy",
+   "country": "Italy",
+   "grapes": [
+    "Turbiana"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "$125",
+   "other": "",
+   "bin": "",
+   "id": "w-ottella-lugana-le-creete"
+  },
+  {
+   "section": "White",
+   "producer": "Tessari",
+   "name": "Grisela, Soave Classico",
+   "vintage": 2023,
+   "type": "white",
+   "region": "Soave, Veneto",
+   "country": "Italy",
+   "grapes": [
+    "Garganega"
+   ],
+   "grapes_basis": "label",
+   "glass": "$16",
+   "bottle": "$84",
+   "other": "8oz $26",
+   "bin": "",
+   "id": "w-tessari-grisela-soave-classico"
+  },
+  {
+   "section": "White",
+   "producer": "Tenuta Santomè",
+   "name": "Tai Bianco Parcel #368",
+   "vintage": 2017,
+   "type": "white",
+   "region": "Veneto",
+   "country": "Italy",
+   "grapes": [
+    "Tai (Friulano)"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "$110",
+   "other": "",
+   "bin": "",
+   "id": "w-tenuta-santome-tai-bianco-parcel-368"
+  },
+  {
+   "section": "White",
+   "producer": "Maria Donata Bianchi",
+   "name": "Pigato",
+   "vintage": 2023,
+   "type": "white",
+   "region": "Liguria",
+   "country": "Italy",
+   "grapes": [
+    "Pigato"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "$157",
+   "other": "",
+   "bin": "",
+   "id": "w-maria-donata-bianchi-pigato"
+  },
+  {
+   "section": "White",
+   "producer": "Tiberio",
+   "name": "Trebbiano d'Abruzzo",
+   "vintage": 2023,
+   "type": "white",
+   "region": "Abruzzo",
+   "country": "Italy",
+   "grapes": [
+    "Trebbiano Abruzzese"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "$83",
+   "other": "",
+   "bin": "",
+   "id": "w-tiberio-trebbiano-d-abruzzo"
+  },
+  {
+   "section": "White",
+   "producer": "Feudi di San Gregorio",
+   "name": "Greco di Tufo",
+   "vintage": 2023,
+   "type": "white",
+   "region": "Campania",
+   "country": "Italy",
+   "grapes": [
+    "Greco"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "$80",
+   "other": "",
+   "bin": "",
+   "id": "w-feudi-di-san-gregorio-greco-di-tufo"
+  },
+  {
+   "section": "White",
+   "producer": "Antonella Corda",
+   "name": "Vermentino di Sardegna",
+   "vintage": 2024,
+   "type": "white",
+   "region": "Sardinia",
+   "country": "Italy",
+   "grapes": [
+    "Vermentino"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "$98",
+   "other": "",
+   "bin": "",
+   "id": "w-antonella-corda-vermentino-di-sardegna"
+  },
+  {
+   "section": "White",
+   "producer": "Vietti",
+   "name": "Roero Arneis",
+   "vintage": 2024,
+   "type": "white",
+   "region": "Roero, Piedmont",
+   "country": "Italy",
+   "grapes": [
+    "Arneis"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "$104",
+   "other": "",
+   "bin": "",
+   "id": "w-vietti-roero-arneis"
+  },
+  {
+   "section": "White",
+   "producer": "Pardevalles",
+   "name": "Albarín Blanco",
+   "vintage": 2025,
+   "type": "white",
+   "region": "Tierra de León",
+   "country": "Spain",
+   "grapes": [
+    "Albarín Blanco"
+   ],
+   "grapes_basis": "label",
+   "glass": "$18",
+   "bottle": "$94",
+   "other": "8oz $29",
+   "bin": "",
+   "id": "w-pardevalles-albarin-blanco"
+  },
+  {
+   "section": "White",
+   "producer": "Serra & Barceló",
+   "name": "Aucalà, Terra Alta",
+   "vintage": 2021,
+   "type": "white",
+   "region": "Terra Alta, Catalonia",
+   "country": "Spain",
+   "grapes": [
+    "Garnacha Blanca"
+   ],
+   "grapes_basis": "typical",
+   "glass": "",
+   "bottle": "$100",
+   "other": "",
+   "bin": "",
+   "id": "w-serra-barcelo-aucala-terra-alta"
+  },
+  {
+   "section": "White",
+   "producer": "Pardas",
+   "name": "Rupestris Xarel-lo",
+   "vintage": 2023,
+   "type": "white",
+   "region": "Penedès, Catalonia",
+   "country": "Spain",
+   "grapes": [
+    "Xarel-lo"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "$109",
+   "other": "",
+   "bin": "",
+   "id": "w-pardas-rupestris-xarel-lo"
+  },
+  {
+   "section": "White",
+   "producer": "Two Sisters",
+   "name": "Riesling",
+   "vintage": 2023,
+   "type": "white",
+   "region": "Niagara River VQA, Ontario",
+   "country": "Canada",
+   "grapes": [
+    "Riesling"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "$79",
+   "other": "",
+   "bin": "",
+   "id": "w-two-sisters-riesling"
+  },
+  {
+   "section": "White",
+   "producer": "Nautilus",
+   "name": "Sauvignon Blanc",
+   "vintage": 2024,
+   "type": "white",
+   "region": "Marlborough",
+   "country": "New Zealand",
+   "grapes": [
+    "Sauvignon Blanc"
+   ],
+   "grapes_basis": "label",
+   "glass": "$16",
+   "bottle": "$84",
+   "other": "8oz $26",
+   "bin": "",
+   "id": "w-nautilus-sauvignon-blanc"
+  },
+  {
+   "section": "White",
+   "producer": "Pewsey Vale",
+   "name": "Riesling",
+   "vintage": 2023,
+   "type": "white",
+   "region": "Eden Valley",
+   "country": "Australia",
+   "grapes": [
+    "Riesling"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "$109",
+   "other": "",
+   "bin": "",
+   "id": "w-pewsey-vale-riesling"
+  },
+  {
+   "section": "Red",
+   "producer": "Violot-Guillemard",
+   "name": "Pommard",
+   "vintage": 2023,
+   "type": "red",
+   "region": "Pommard, Burgundy",
+   "country": "France",
+   "grapes": [
+    "Pinot Noir"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "$263",
+   "other": "",
+   "bin": "",
+   "id": "w-violot-guillemard-pommard"
+  },
+  {
+   "section": "Red",
+   "producer": "Olivier Leflaive",
+   "name": "Volnay Premier Cru Clos des Angles",
+   "vintage": 2018,
+   "type": "red",
+   "region": "Volnay, Burgundy",
+   "country": "France",
+   "grapes": [
+    "Pinot Noir"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "$322",
+   "other": "",
+   "bin": "",
+   "id": "w-olivier-leflaive-volnay-premier-cru-clos-des-angles"
+  },
+  {
+   "section": "Red",
+   "producer": "Domaine M & C Lapierre",
+   "name": "Château Cambon",
+   "vintage": 2023,
+   "type": "red",
+   "region": "Beaujolais",
+   "country": "France",
+   "grapes": [
+    "Gamay"
+   ],
+   "grapes_basis": "label",
+   "glass": "$23",
+   "bottle": "$120",
+   "other": "8oz $37",
+   "bin": "",
+   "id": "w-domaine-m-c-lapierre-chateau-cambon"
+  },
+  {
+   "section": "Red",
+   "producer": "Château Camino Salva",
+   "name": "Haut-Médoc",
+   "vintage": 2020,
+   "type": "red",
+   "region": "Haut-Médoc, Bordeaux",
+   "country": "France",
+   "grapes": [
+    "Cabernet Sauvignon",
+    "Merlot"
+   ],
+   "grapes_basis": "typical",
+   "glass": "$16",
+   "bottle": "$84",
+   "other": "8oz $26",
+   "bin": "",
+   "id": "w-chateau-camino-salva-haut-medoc"
+  },
+  {
+   "section": "Red",
+   "producer": "Château Tour Sieujean",
+   "name": "Pauillac",
+   "vintage": 2018,
+   "type": "red",
+   "region": "Pauillac, Bordeaux",
+   "country": "France",
+   "grapes": [
+    "Cabernet Sauvignon",
+    "Merlot"
+   ],
+   "grapes_basis": "typical",
+   "glass": "",
+   "bottle": "$174",
+   "other": "",
+   "bin": "",
+   "id": "w-chateau-tour-sieujean-pauillac"
+  },
+  {
+   "section": "Red",
+   "producer": "Château La Haye",
+   "name": "Fief de la Haye",
+   "vintage": 2020,
+   "type": "red",
+   "region": "Saint-Estèphe, Bordeaux",
+   "country": "France",
+   "grapes": [
+    "Cabernet Sauvignon",
+    "Merlot"
+   ],
+   "grapes_basis": "typical",
+   "glass": "",
+   "bottle": "$178",
+   "other": "",
+   "bin": "",
+   "id": "w-chateau-la-haye-fief-de-la-haye"
+  },
+  {
+   "section": "Red",
+   "producer": "Château Le Crock",
+   "name": "Saint-Estèphe",
+   "vintage": 2019,
+   "type": "red",
+   "region": "Saint-Estèphe, Bordeaux",
+   "country": "France",
+   "grapes": [
+    "Cabernet Sauvignon",
+    "Merlot"
+   ],
+   "grapes_basis": "typical",
+   "glass": "",
+   "bottle": "$180",
+   "other": "",
+   "bin": "",
+   "id": "w-chateau-le-crock-saint-estephe"
+  },
+  {
+   "section": "Red",
+   "producer": "Château Grand-Puy Ducasse",
+   "name": "Pauillac",
+   "vintage": 2020,
+   "type": "red",
+   "region": "Pauillac, Bordeaux",
+   "country": "France",
+   "grapes": [
+    "Cabernet Sauvignon",
+    "Merlot"
+   ],
+   "grapes_basis": "typical",
+   "glass": "",
+   "bottle": "$257",
+   "other": "",
+   "bin": "",
+   "id": "w-chateau-grand-puy-ducasse-pauillac"
+  },
+  {
+   "section": "Red",
+   "producer": "Château La Fleur Pourret",
+   "name": "Saint-Émilion Grand Cru",
+   "vintage": 2018,
+   "type": "red",
+   "region": "Saint-Émilion, Bordeaux",
+   "country": "France",
+   "grapes": [
+    "Merlot",
+    "Cabernet Franc"
+   ],
+   "grapes_basis": "typical",
+   "glass": "",
+   "bottle": "$217",
+   "other": "",
+   "bin": "",
+   "id": "w-chateau-la-fleur-pourret-saint-emilion-grand-cru"
+  },
+  {
+   "section": "Red",
+   "producer": "Jean-Luc Colombo",
+   "name": "Cornas Terres Brûlées",
+   "vintage": 2019,
+   "type": "red",
+   "region": "Cornas, Rhône Valley",
+   "country": "France",
+   "grapes": [
+    "Syrah"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "$218",
+   "other": "",
+   "bin": "",
+   "id": "w-jean-luc-colombo-cornas-terres-brulees"
+  },
+  {
+   "section": "Red",
+   "producer": "Domaine Roger Perrin",
+   "name": "Châteauneuf-du-Pape",
+   "vintage": 2022,
+   "type": "red",
+   "region": "Châteauneuf-du-Pape, Rhône Valley",
+   "country": "France",
+   "grapes": [
+    "Grenache",
+    "Syrah",
+    "Mourvèdre"
+   ],
+   "grapes_basis": "typical",
+   "glass": "",
+   "bottle": "$163",
+   "other": "",
+   "bin": "",
+   "id": "w-domaine-roger-perrin-chateauneuf-du-pape"
+  },
+  {
+   "section": "Large Format",
+   "producer": "Paul Jaboulet Aîné",
+   "name": "Hermitage La Chapelle",
+   "vintage": 2018,
+   "type": "red",
+   "region": "Hermitage, Rhône Valley",
+   "country": "France",
+   "grapes": [
+    "Syrah"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "",
+   "other": "Magnum (1.5L) only, $1,187",
+   "bin": "",
+   "id": "w-paul-jaboulet-aine-hermitage-la-chapelle"
+  },
+  {
+   "section": "Large Format",
+   "producer": "Fontodi",
+   "name": "Flaccianello della Pieve",
+   "vintage": 2021,
+   "type": "red",
+   "region": "Tuscany",
+   "country": "Italy",
+   "grapes": [
+    "Sangiovese"
+   ],
+   "grapes_basis": "known",
+   "glass": "",
+   "bottle": "",
+   "other": "Magnum (1.5L) only, $737",
+   "bin": "",
+   "id": "w-fontodi-flaccianello-della-pieve"
+  },
+  {
+   "section": "Red",
+   "producer": "Frecciarossa",
+   "name": "Giorgio Odero Pinot Nero",
+   "vintage": 2016,
+   "type": "red",
+   "region": "Oltrepò Pavese, Lombardy",
+   "country": "Italy",
+   "grapes": [
+    "Pinot Nero"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "$163",
+   "other": "",
+   "bin": "",
+   "id": "w-frecciarossa-giorgio-odero-pinot-nero"
+  },
+  {
+   "section": "Red",
+   "producer": "Giorgi",
+   "name": "Buttafuoco Storico",
+   "vintage": 2018,
+   "type": "red",
+   "region": "Oltrepò Pavese, Lombardy",
+   "country": "Italy",
+   "grapes": [
+    "Barbera",
+    "Croatina",
+    "Uva Rara"
+   ],
+   "grapes_basis": "typical",
+   "glass": "",
+   "bottle": "$181",
+   "other": "",
+   "bin": "",
+   "id": "w-giorgi-buttafuoco-storico"
+  },
+  {
+   "section": "Red",
+   "producer": "Dissegna",
+   "name": "Pinot Nero",
+   "vintage": 2025,
+   "type": "red",
+   "region": "Veneto",
+   "country": "Italy",
+   "grapes": [
+    "Pinot Nero"
+   ],
+   "grapes_basis": "label",
+   "glass": "$15",
+   "bottle": "$75",
+   "other": "8oz $23",
+   "bin": "",
+   "id": "w-dissegna-pinot-nero"
+  },
+  {
+   "section": "Red",
+   "producer": "Scarpetta",
+   "name": "Barbera del Monferrato",
+   "vintage": 2023,
+   "type": "red",
+   "region": "Monferrato, Piedmont",
+   "country": "Italy",
+   "grapes": [
+    "Barbera"
+   ],
+   "grapes_basis": "label",
+   "glass": "$17",
+   "bottle": "$91",
+   "other": "8oz $28",
+   "bin": "",
+   "id": "w-scarpetta-barbera-del-monferrato"
+  },
+  {
+   "section": "Red",
+   "producer": "Produttori del Barbaresco",
+   "name": "Barbaresco",
+   "vintage": 2022,
+   "type": "red",
+   "region": "Barbaresco, Piedmont",
+   "country": "Italy",
+   "grapes": [
+    "Nebbiolo"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "$145",
+   "other": "",
+   "bin": "",
+   "id": "w-produttori-del-barbaresco-barbaresco"
+  },
+  {
+   "section": "Red",
+   "producer": "Borgogno",
+   "name": "No Name",
+   "vintage": 2023,
+   "type": "red",
+   "region": "Piedmont",
+   "country": "Italy",
+   "grapes": [
+    "Nebbiolo"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "$174",
+   "other": "",
+   "bin": "",
+   "id": "w-borgogno-no-name"
+  },
+  {
+   "section": "Red",
+   "producer": "Pio Cesare",
+   "name": "Barolo",
+   "vintage": 2021,
+   "type": "red",
+   "region": "Barolo, Piedmont",
+   "country": "Italy",
+   "grapes": [
+    "Nebbiolo"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "$230",
+   "other": "",
+   "bin": "",
+   "id": "w-pio-cesare-barolo"
+  },
+  {
+   "section": "Red",
+   "producer": "Serradenari",
+   "name": "Barolo",
+   "vintage": 2020,
+   "type": "red",
+   "region": "Barolo, Piedmont",
+   "country": "Italy",
+   "grapes": [
+    "Nebbiolo"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "$287",
+   "other": "",
+   "bin": "",
+   "id": "w-serradenari-barolo"
+  },
+  {
+   "section": "Red",
+   "producer": "Vietti",
+   "name": "Barolo Monvigliero",
+   "vintage": 2020,
+   "type": "red",
+   "region": "Barolo, Piedmont",
+   "country": "Italy",
+   "grapes": [
+    "Nebbiolo"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "$620",
+   "other": "",
+   "bin": "",
+   "id": "w-vietti-barolo-monvigliero"
+  },
+  {
+   "section": "Red",
+   "producer": "Travignoli",
+   "name": "Chianti Rùfina",
+   "vintage": 2023,
+   "type": "red",
+   "region": "Chianti Rùfina, Tuscany",
+   "country": "Italy",
+   "grapes": [
+    "Sangiovese"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "$70",
+   "other": "",
+   "bin": "",
+   "id": "w-travignoli-chianti-rufina"
+  },
+  {
+   "section": "Red",
+   "producer": "Fontodi",
+   "name": "Chianti Classico",
+   "vintage": 2022,
+   "type": "red",
+   "region": "Chianti Classico, Tuscany",
+   "country": "Italy",
+   "grapes": [
+    "Sangiovese"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "$150",
+   "other": "",
+   "bin": "",
+   "id": "w-fontodi-chianti-classico"
+  },
+  {
+   "section": "Red",
+   "producer": "Cordella",
+   "name": "Rosso di Montalcino",
+   "vintage": 2024,
+   "type": "red",
+   "region": "Montalcino, Tuscany",
+   "country": "Italy",
+   "grapes": [
+    "Sangiovese"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "$95",
+   "other": "",
+   "bin": "",
+   "id": "w-cordella-rosso-di-montalcino"
+  },
+  {
+   "section": "Red",
+   "producer": "Cordella",
+   "name": "Brunello di Montalcino",
+   "vintage": 2018,
+   "type": "red",
+   "region": "Montalcino, Tuscany",
+   "country": "Italy",
+   "grapes": [
+    "Sangiovese"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "$181",
+   "other": "",
+   "bin": "",
+   "id": "w-cordella-brunello-di-montalcino"
+  },
+  {
+   "section": "Red",
+   "producer": "Valdicava",
+   "name": "Brunello di Montalcino Riserva Madonna del Piano",
+   "vintage": 2010,
+   "type": "red",
+   "region": "Montalcino, Tuscany",
+   "country": "Italy",
+   "grapes": [
+    "Sangiovese"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "$820",
+   "other": "",
+   "bin": "",
+   "id": "w-valdicava-brunello-di-montalcino-riserva-madonna-del-piano"
+  },
+  {
+   "section": "Red",
+   "producer": "Sette Ponti",
+   "name": "Rosso di Orma",
+   "vintage": 2023,
+   "type": "red",
+   "region": "Tuscany",
+   "country": "Italy",
+   "grapes": [
+    "Sangiovese",
+    "Cabernet Sauvignon"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "$87",
+   "other": "",
+   "bin": "",
+   "id": "w-sette-ponti-rosso-di-orma"
+  },
+  {
+   "section": "Red",
+   "producer": "Cocci Grifoni",
+   "name": "Rosso Piceno",
+   "vintage": 2023,
+   "type": "red",
+   "region": "Marche",
+   "country": "Italy",
+   "grapes": [
+    "Montepulciano",
+    "Sangiovese"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "$70",
+   "other": "",
+   "bin": "",
+   "id": "w-cocci-grifoni-rosso-piceno"
+  },
+  {
+   "section": "Red",
+   "producer": "Masciarelli",
+   "name": "Marina Cvetic Montepulciano d'Abruzzo",
+   "vintage": 2021,
+   "type": "red",
+   "region": "Abruzzo",
+   "country": "Italy",
+   "grapes": [
+    "Montepulciano"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "$160",
+   "other": "",
+   "bin": "",
+   "id": "w-masciarelli-marina-cvetic-montepulciano-d-abruzzo"
+  },
+  {
+   "section": "Red",
+   "producer": "Antonella Corda",
+   "name": "Cannonau di Sardegna",
+   "vintage": 2022,
+   "type": "red",
+   "region": "Sardinia",
+   "country": "Italy",
+   "grapes": [
+    "Grenache (Cannonau)"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "$98",
+   "other": "",
+   "bin": "",
+   "id": "w-antonella-corda-cannonau-di-sardegna"
+  },
+  {
+   "section": "Red",
+   "producer": "Fedellos do Couto",
+   "name": "As Xaras",
+   "vintage": 2022,
+   "type": "red",
+   "region": "Ribeira Sacra",
+   "country": "Spain",
+   "grapes": [
+    "Mencía"
+   ],
+   "grapes_basis": "typical",
+   "glass": "",
+   "bottle": "$153",
+   "other": "",
+   "bin": "",
+   "id": "w-fedellos-do-couto-as-xaras"
+  },
+  {
+   "section": "Red",
+   "producer": "Envínate",
+   "name": "Lousas Viña de Aldea",
+   "vintage": 2022,
+   "type": "red",
+   "region": "Ribeira Sacra",
+   "country": "Spain",
+   "grapes": [
+    "Mencía"
+   ],
+   "grapes_basis": "typical",
+   "glass": "",
+   "bottle": "$173",
+   "other": "",
+   "bin": "",
+   "id": "w-envinate-lousas-vina-de-aldea"
+  },
+  {
+   "section": "Red",
+   "producer": "Envínate",
+   "name": "La Santa de Úrsula",
+   "vintage": 2022,
+   "type": "red",
+   "region": "Canary Islands",
+   "country": "Spain",
+   "grapes": [
+    "Listán Negro",
+    "Negramoll"
+   ],
+   "grapes_basis": "typical",
+   "glass": "",
+   "bottle": "$196",
+   "other": "",
+   "bin": "",
+   "id": "w-envinate-la-santa-de-ursula"
+  },
+  {
+   "section": "Red",
+   "producer": "Sokol Blosser",
+   "name": "Orchard Block Pinot Noir",
+   "vintage": 2021,
+   "type": "red",
+   "region": "Dundee Hills, Oregon",
+   "country": "United States",
+   "grapes": [
+    "Pinot Noir"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "$249",
+   "other": "",
+   "bin": "",
+   "id": "w-sokol-blosser-orchard-block-pinot-noir"
+  },
+  {
+   "section": "Red",
+   "producer": "Crown Point",
+   "name": "Cabernet Sauvignon",
+   "vintage": 2016,
+   "type": "red",
+   "region": "Happy Canyon of Santa Barbara, California",
+   "country": "United States",
+   "grapes": [
+    "Cabernet Sauvignon"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "$460",
+   "other": "",
+   "bin": "",
+   "id": "w-crown-point-cabernet-sauvignon"
+  },
+  {
+   "section": "Red",
+   "producer": "Staglin Family",
+   "name": "Cabernet Sauvignon",
+   "vintage": 2014,
+   "type": "red",
+   "region": "Napa Valley, California",
+   "country": "United States",
+   "grapes": [
+    "Cabernet Sauvignon"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "$930",
+   "other": "",
+   "bin": "",
+   "id": "w-staglin-family-cabernet-sauvignon"
+  },
+  {
+   "section": "Red",
+   "producer": "Two Sisters",
+   "name": "Eleventh Post",
+   "vintage": 2019,
+   "type": "red",
+   "region": "Niagara River VQA, Ontario",
+   "country": "Canada",
+   "grapes": [
+    "Merlot",
+    "Cabernet Franc",
+    "Cabernet Sauvignon"
+   ],
+   "grapes_basis": "typical",
+   "glass": "",
+   "bottle": "$103",
+   "other": "",
+   "bin": "",
+   "id": "w-two-sisters-eleventh-post"
+  },
+  {
+   "section": "Red",
+   "producer": "Two Sisters",
+   "name": "Cabernet Franc",
+   "vintage": 2020,
+   "type": "red",
+   "region": "Niagara River VQA, Ontario",
+   "country": "Canada",
+   "grapes": [
+    "Cabernet Franc"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "$125",
+   "other": "",
+   "bin": "",
+   "id": "w-two-sisters-cabernet-franc"
+  },
+  {
+   "section": "Red",
+   "producer": "Stratus",
+   "name": "Syrah",
+   "vintage": 2020,
+   "type": "red",
+   "region": "Niagara-on-the-Lake VQA, Ontario",
+   "country": "Canada",
+   "grapes": [
+    "Syrah"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "$134",
+   "other": "",
+   "bin": "",
+   "id": "w-stratus-syrah"
+  },
+  {
+   "section": "Red",
+   "producer": "Piattelli Vineyards",
+   "name": "Alto Molino Malbec",
+   "vintage": 2025,
+   "type": "red",
+   "region": "Mendoza",
+   "country": "Argentina",
+   "grapes": [
+    "Malbec"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "$70",
+   "other": "",
+   "bin": "",
+   "id": "w-piattelli-vineyards-alto-molino-malbec"
+  },
+  {
+   "section": "Dessert Wine",
+   "producer": "Château Nairac",
+   "name": "Esquisse de Nairac, Sauternes",
+   "vintage": 2006,
+   "type": "dessert",
+   "region": "Sauternes, Bordeaux",
+   "country": "France",
+   "grapes": [
+    "Sémillon",
+    "Sauvignon Blanc"
+   ],
+   "grapes_basis": "typical",
+   "glass": "$16",
+   "bottle": "",
+   "other": "2oz glass",
+   "bin": "",
+   "id": "w-chateau-nairac-esquisse-de-nairac-sauternes"
+  }
+ ],
+ "dishes": [
+  {
+   "id": "d-seared-scallop",
+   "section": "Appetizers",
+   "name": "Seared Scallop",
+   "desc": "Crispy pancetta, butter bean, parsley",
+   "price": "$29",
+   "main": "scallop",
+   "cook": "seared",
+   "flav": [
+    "delicate",
+    "salty",
+    "rich"
+   ],
+   "diet": []
+  },
+  {
+   "id": "d-mushroom-parfait",
+   "section": "Appetizers",
+   "name": "Mushroom Parfait",
+   "desc": "Pickled shallot, sourdough",
+   "price": "$23",
+   "main": "mushroom",
+   "cook": "",
+   "flav": [
+    "earthy",
+    "creamy",
+    "rich"
+   ],
+   "diet": []
+  },
+  {
+   "id": "d-tuna-carpaccio",
+   "section": "Appetizers",
+   "name": "Tuna Carpaccio",
+   "desc": "Ponzu, caper, eggplant miso",
+   "price": "$27",
+   "main": "tuna",
+   "cook": "raw",
+   "flav": [
+    "delicate",
+    "acidic",
+    "salty"
+   ],
+   "diet": []
+  },
+  {
+   "id": "d-burrata-tomato",
+   "section": "Appetizers",
+   "name": "Burrata & Tomato",
+   "desc": "Tomato, chili oil, pistachio, sourdough",
+   "price": "$28",
+   "main": "burrata",
+   "cook": "",
+   "flav": [
+    "creamy",
+    "fresh",
+    "spicy"
+   ],
+   "diet": []
+  },
+  {
+   "id": "d-eloise-wedge-salad",
+   "section": "Appetizers",
+   "name": "Eloise Wedge Salad",
+   "desc": "Gorgonzola, kalamata olive, roasted pepper",
+   "price": "$23",
+   "main": "lettuce",
+   "cook": "",
+   "flav": [
+    "fresh",
+    "salty",
+    "creamy"
+   ],
+   "diet": []
+  },
+  {
+   "id": "d-caesar-salad",
+   "section": "Appetizers",
+   "name": "Caesar Salad",
+   "desc": "Garlic crouton, parmigiano",
+   "price": "$21",
+   "main": "lettuce",
+   "cook": "",
+   "flav": [
+    "fresh",
+    "salty",
+    "savoury"
+   ],
+   "diet": []
+  },
+  {
+   "id": "d-shrimp-linguine",
+   "section": "Pasta",
+   "name": "Shrimp Linguine",
+   "desc": "Caper, tomato, lemon, 'nduja",
+   "price": "$32",
+   "main": "shrimp",
+   "cook": "",
+   "flav": [
+    "spicy",
+    "acidic",
+    "savoury"
+   ],
+   "diet": []
+  },
+  {
+   "id": "d-beef-cheek-pappardelle",
+   "section": "Pasta",
+   "name": "Beef Cheek Pappardelle",
+   "desc": "Rosemary, parmigiano, pangrattato",
+   "price": "$36",
+   "main": "beef",
+   "cook": "braised",
+   "flav": [
+    "rich",
+    "savoury",
+    "herbal"
+   ],
+   "diet": []
+  },
+  {
+   "id": "d-squash-ravioli",
+   "section": "Pasta",
+   "name": "Squash Ravioli",
+   "desc": "Brown butter, crispy sage, toasted pumpkin seed",
+   "price": "$32",
+   "main": "squash",
+   "cook": "",
+   "flav": [
+    "sweet",
+    "nutty",
+    "rich"
+   ],
+   "diet": []
+  },
+  {
+   "id": "d-10oz-steak-frites",
+   "section": "Mains",
+   "name": "10oz Steak Frites",
+   "desc": "Peppercorn sauce",
+   "price": "$58",
+   "main": "beef",
+   "cook": "grilled",
+   "flav": [
+    "rich",
+    "savoury",
+    "spicy"
+   ],
+   "diet": []
+  },
+  {
+   "id": "d-roasted-cauliflower",
+   "section": "Mains",
+   "name": "Roasted Cauliflower",
+   "desc": "Crispy chickpea, pomegranate, chili oil, labneh",
+   "price": "$28",
+   "main": "cauliflower",
+   "cook": "roasted",
+   "flav": [
+    "earthy",
+    "spicy",
+    "creamy"
+   ],
+   "diet": []
+  },
+  {
+   "id": "d-charcoal-roasted-chicken",
+   "section": "Mains",
+   "name": "Charcoal Roasted Chicken",
+   "desc": "Black kale, oyster mushroom, guajillo",
+   "price": "$40",
+   "main": "chicken",
+   "cook": "roasted",
+   "flav": [
+    "smoky",
+    "savoury",
+    "earthy"
+   ],
+   "diet": []
+  },
+  {
+   "id": "d-42oz-cote-de-boeuf",
+   "section": "Mains",
+   "name": "42oz Côte de Boeuf",
+   "desc": "Red wine and mustard jus",
+   "price": "$185",
+   "main": "beef",
+   "cook": "grilled",
+   "flav": [
+    "rich",
+    "savoury",
+    "smoky"
+   ],
+   "diet": []
+  },
+  {
+   "id": "d-seared-rainbow-trout",
+   "section": "Mains",
+   "name": "Seared Rainbow Trout",
+   "desc": "Piquillo pepper, kalamata olive, basil",
+   "price": "$46",
+   "main": "trout",
+   "cook": "seared",
+   "flav": [
+    "delicate",
+    "salty",
+    "herbal"
+   ],
+   "diet": []
+  },
+  {
+   "id": "d-citrus-parfait",
+   "section": "Desserts",
+   "name": "Citrus Parfait",
+   "desc": "Orange, meringue, Earl Grey jelly. Serves 2",
+   "price": "$14",
+   "main": "citrus",
+   "cook": "",
+   "flav": [
+    "sweet",
+    "acidic",
+    "fresh"
+   ],
+   "diet": []
+  },
+  {
+   "id": "d-chocolate-tart",
+   "section": "Desserts",
+   "name": "Chocolate Tart",
+   "desc": "Crème anglaise, fleur de sel. Serves 2",
+   "price": "$14",
+   "main": "chocolate",
+   "cook": "baked",
+   "flav": [
+    "sweet",
+    "rich",
+    "bitter"
+   ],
+   "diet": []
+  },
+  {
+   "id": "d-sticky-coffee-pudding",
+   "section": "Desserts",
+   "name": "Sticky Coffee Pudding",
+   "desc": "Walnut, vanilla ice cream, coffee caramel. Serves 2",
+   "price": "$14",
+   "main": "coffee",
+   "cook": "baked",
+   "flav": [
+    "sweet",
+    "rich",
+    "nutty"
+   ],
+   "diet": []
+  }
+ ],
+ "cards": {
+  "w-serenissima-prosecco-millesimato": {
+   "id": "w-serenissima-prosecco-millesimato",
+   "hook": "Made from the Glera grape in Italy's Veneto, it's the only sparkling wine we pour by the glass.",
+   "pitch": "It's light and fresh, with lively bubbles and soft pear and apple fruit, so it's an easy, cheerful way to start a meal. At $16 a glass, you can have bubbles without committing to a whole bottle.",
+   "say": "seh-reh-NEE-see-mah pro-SEK-oh mee-leh-zee-MAH-toh",
+   "taste": "Light, frothy and fresh, usually with pear, green apple and a soft, gently fruity finish.",
+   "style": {
+    "body": 2,
+    "acid": 3,
+    "tannin": 0,
+    "sweet": 2
+   },
+   "grape": "Glera, the grape on the label, gives this wine its light body and fresh, fruity, easy-drinking character.",
+   "place": "It comes from the Veneto in northeast Italy, where Lake Garda and the Adriatic Sea soften the weather, which helps keep the fruit fresh.",
+   "producer": "",
+   "serve": {
+    "temp": "6-8°C",
+    "glass": "white wine glass or flute",
+    "decant": "no"
+   },
+   "dishes": [
+    {
+     "dish": "Burrata & Tomato",
+     "why": "The fresh bubbles cut through the creamy burrata, and the fruit sits nicely with the tomato."
+    },
+    {
+     "dish": "Tuna Carpaccio",
+     "why": "It's light enough not to cover up the delicate raw tuna, and its freshness matches the dish's sharp, salty bite."
+    },
+    {
+     "dish": "Shrimp Linguine",
+     "why": "Light, cool bubbles calm the spice and refresh your mouth between bites of shrimp."
+    }
+   ],
+   "alts": [
+    {
+     "id": "w-ca-del-bosco-franciacorta-cuvee-prestige-brut",
+     "when": "Italian bubbles with more depth and richness, by the bottle ($126)"
+    },
+    {
+     "id": "w-tarlant-brut-reserve",
+     "when": "a Champagne by the bottle for a celebration ($125)"
+    },
+    {
+     "id": "w-tiefenbrunner-pinot-grigio",
+     "when": "a light, fresh white by the glass without bubbles ($15)"
+    }
+   ],
+   "qs": [
+    {
+     "k": "recognise",
+     "q": "Which description best fits the Serenissima Prosecco Millesimato?",
+     "opts": [
+      "Light, frothy and fresh, with soft pear and apple fruit",
+      "Rich and toasty, with bready notes and fine, firm bubbles",
+      "Very sweet and grapey, low in alcohol, like a dessert",
+      "Bone-dry and steely, with sharp lemon and chalky notes"
+     ],
+     "a": 0,
+     "why": "It's a light, fresh, fruity sparkling wine, not a rich, toasty, very sweet or steely one.",
+     "id": "w-serenissima-prosecco-millesimato#0"
+    },
+    {
+     "k": "recognise",
+     "q": "Which Italian region is the Serenissima Prosecco Millesimato from?",
+     "opts": [
+      "Veneto",
+      "Piedmont",
+      "Tuscany",
+      "Lombardy"
+     ],
+     "a": 0,
+     "why": "It comes from the Veneto in northeast Italy, where the weather is softened by Lake Garda and the Adriatic Sea.",
+     "id": "w-serenissima-prosecco-millesimato#1"
+    },
+    {
+     "k": "recall",
+     "q": "What grape is the Serenissima Prosecco Millesimato made from?",
+     "ans": "Glera",
+     "acc": [
+      "Glera grape",
+      "100% Glera"
+     ],
+     "why": "Glera is the grape named on the label.",
+     "id": "w-serenissima-prosecco-millesimato#2"
+    },
+    {
+     "k": "recall",
+     "q": "What size and price is a glass of the Serenissima Prosecco Millesimato?",
+     "ans": "5oz only, $16",
+     "acc": [
+      "5 ounces for $16",
+      "$16 for a 5oz glass",
+      "only the 5oz pour, $16"
+     ],
+     "why": "Our other wines by the glass come in 5oz and 8oz, but the Prosecco is poured as a 5oz glass only.",
+     "id": "w-serenissima-prosecco-millesimato#3"
+    },
+    {
+     "k": "apply",
+     "q": "A guest starting with the Burrata & Tomato wants a single glass of something sparkling and light. What would you suggest, and why?",
+     "key": [
+      "Serenissima Prosecco Millesimato",
+      "It's the only sparkling wine we pour by the glass, at $16 for 5oz",
+      "Its light, fresh fruit and bubbles cut through the creamy burrata and suit the tomato"
+     ],
+     "decoys": [
+      {
+       "id": "w-ca-del-bosco-franciacorta-cuvee-prestige-brut",
+       "why": "It's sold by the bottle only, so it can't be poured as a single glass."
+      },
+      {
+       "id": "w-tarlant-brut-reserve",
+       "why": "It's a Champagne sold by the bottle only, not by the glass."
+      },
+      {
+       "id": "w-bollinger-special-cuvee",
+       "why": "It's bottle only at $215, far more than a guest wanting one glass expects."
+      }
+     ],
+     "wrong": [
+      "Its heavy, full body stands up to the richness of the cheese.",
+      "Its firm tannin grips the creamy burrata and cleans it away.",
+      "Its soft, low acidity lets the sweet tomato take over."
+     ],
+     "why": "The guest asked for one glass of light bubbles, and the Prosecco is the only sparkling wine on the list poured by the glass.",
+     "id": "w-serenissima-prosecco-millesimato#4"
+    },
+    {
+     "k": "contrast",
+     "q": "What grapes go into the Serenissima Prosecco Millesimato, compared with the Ca' del Bosco Franciacorta Cuvée Prestige Brut?",
+     "ans": "The Prosecco is Glera; the Franciacorta is Chardonnay, Pinot Nero and Pinot Bianco",
+     "acc": [
+      "Glera versus Chardonnay, Pinot Nero and Pinot Bianco",
+      "Prosecco is Glera, Franciacorta is mostly Chardonnay with Pinot Nero and Pinot Bianco"
+     ],
+     "why": "Both are Italian sparkling wines, but they're made from different grapes, and that's a big part of why the Prosecco tastes lighter and fruitier.",
+     "id": "w-serenissima-prosecco-millesimato#5"
+    }
+   ],
+   "at": 1794330599041
+  },
+  "w-ca-del-bosco-franciacorta-cuvee-prestige-brut": {
+   "id": "w-ca-del-bosco-franciacorta-cuvee-prestige-brut",
+   "hook": "Ca' del Bosco is a classic Franciacorta house, made like Champagne and aged at least 18 months.",
+   "pitch": "It's dry and crisp, with fine bubbles and a creamy, lightly toasty depth that feels a step up from Prosecco. If you love Champagne, this is Italy's answer, and it's wonderful with seafood.",
+   "say": "KAH del BOSS-koh, fran-chah-KOR-tah, koo-VAY press-TEEZH BROOT",
+   "taste": "Dry and crisp, with fine bubbles, lemon and apple fruit, and a creamy, lightly toasty finish.",
+   "style": {
+    "body": 3,
+    "acid": 4,
+    "tannin": 0,
+    "sweet": 1
+   },
+   "grape": "It's a blend of Chardonnay, Pinot Nero (Pinot Noir) and Pinot Bianco, and the Chardonnay is a grape that soaks up the creamy, toasty character that comes from long ageing.",
+   "place": "Franciacorta in Lombardy, northern Italy, has a mild climate softened by Lake Iseo, and its rules say it can only make sparkling wine in the traditional method, where the second fermentation that makes the bubbles happens in the bottle, just like Champagne.",
+   "producer": "Ca' del Bosco is one of the classic producers of Franciacorta, alongside Bellavista and Berlucchi.",
+   "serve": {
+    "temp": "8-10°C",
+    "glass": "white wine glass or tulip-shaped flute",
+    "decant": "no"
+   },
+   "dishes": [
+    {
+     "dish": "Seared Scallop",
+     "why": "Its crisp freshness and bubbles cut through the rich, salty scallop, and its creamy side matches the sweet sear."
+    },
+    {
+     "dish": "Seared Rainbow Trout",
+     "why": "It's dry and fresh enough for delicate fish, with enough depth to stand up to the crisp seared skin and herbs."
+    },
+    {
+     "dish": "Mushroom Parfait",
+     "why": "The toasty, creamy notes from ageing suit the earthy mushroom, and the bubbles clean up the richness."
+    }
+   ],
+   "alts": [
+    {
+     "id": "w-andre-chemin-brut-premier-cru",
+     "when": "a Champagne of a similar style ($140)"
+    },
+    {
+     "id": "w-serenissima-prosecco-millesimato",
+     "when": "lighter and fruitier, or by the glass ($16)"
+    },
+    {
+     "id": "w-bollinger-special-cuvee",
+     "when": "a famous Champagne house for a big celebration ($215)"
+    }
+   ],
+   "qs": [
+    {
+     "k": "recognise",
+     "q": "Which description best fits the Ca' del Bosco Franciacorta Cuvée Prestige Brut?",
+     "opts": [
+      "Dry and crisp, with fine bubbles and creamy, toasty depth",
+      "Soft and frothy, light, with simple pear fruit and sweetness",
+      "Sweet and grapey, low in alcohol, best with fruit desserts",
+      "Lean and bone-dry, with only sharp green apple and no depth"
+     ],
+     "a": 0,
+     "why": "Brut means dry, and at least 18 months resting on its lees (the spent yeast) gives it a creamy, toasty depth.",
+     "id": "w-ca-del-bosco-franciacorta-cuvee-prestige-brut#0"
+    },
+    {
+     "k": "recognise",
+     "q": "What is the shortest time a non-vintage Franciacorta like the Ca' del Bosco Cuvée Prestige Brut must age on its lees?",
+     "opts": [
+      "18 months",
+      "9 months",
+      "36 months",
+      "60 months"
+     ],
+     "a": 0,
+     "why": "Franciacorta rules say non-vintage wines need at least 18 months on the lees (the spent yeast), which adds texture.",
+     "id": "w-ca-del-bosco-franciacorta-cuvee-prestige-brut#1"
+    },
+    {
+     "k": "recall",
+     "q": "Which three grapes go into the Ca' del Bosco Franciacorta Cuvée Prestige Brut?",
+     "ans": "Chardonnay, Pinot Nero and Pinot Bianco",
+     "acc": [
+      "Chardonnay, Pinot Noir and Pinot Blanc",
+      "Chardonnay, Pinot Nero, Pinot Bianco"
+     ],
+     "why": "It's a blend of these three grapes, with Chardonnay giving much of its creamy character.",
+     "id": "w-ca-del-bosco-franciacorta-cuvee-prestige-brut#2"
+    },
+    {
+     "k": "recall",
+     "q": "Which lake softens the climate where the Ca' del Bosco Franciacorta Cuvée Prestige Brut is grown?",
+     "ans": "Lake Iseo",
+     "acc": [
+      "Iseo",
+      "Lago d'Iseo"
+     ],
+     "why": "Franciacorta's mild climate comes from Lake Iseo and the low hills south of it.",
+     "id": "w-ca-del-bosco-franciacorta-cuvee-prestige-brut#3"
+    },
+    {
+     "k": "apply",
+     "q": "A guest ordering the Seared Scallop wants a bottle of dry Italian sparkling wine with some richness, under $130. What would you suggest, and why?",
+     "key": [
+      "Ca' del Bosco Franciacorta Cuvée Prestige Brut",
+      "It's dry, Italian and $126, made like Champagne with at least 18 months on its lees for a creamy, toasty richness",
+      "Its crisp freshness and fine bubbles cut through the scallop's richness and salt"
+     ],
+     "decoys": [
+      {
+       "id": "w-serenissima-prosecco-millesimato",
+       "why": "It's Italian and well under budget, but it's light and simple rather than rich, so it doesn't match what the guest asked for."
+      },
+      {
+       "id": "w-tarlant-brut-reserve",
+       "why": "It fits the budget at $125, but it's a French Champagne, not Italian."
+      },
+      {
+       "id": "w-bollinger-special-cuvee",
+       "why": "It's French and $215, well over the guest's budget."
+      }
+     ],
+     "wrong": [
+      "Its light, thin body keeps out of the way of the scallop.",
+      "Its firm tannin grips the seared crust of the scallop.",
+      "Its bold red-berry flavour stands up to the sear."
+     ],
+     "why": "It's the only dry Italian sparkling wine on the list with real richness under $130, and its crisp freshness and bubbles suit the rich, salty scallop.",
+     "id": "w-ca-del-bosco-franciacorta-cuvee-prestige-brut#4"
+    },
+    {
+     "k": "contrast",
+     "q": "Where is the Ca' del Bosco Franciacorta Cuvée Prestige Brut from, compared with the André Chemin Brut Premier Cru?",
+     "ans": "Ca' del Bosco is from Franciacorta in Lombardy, Italy; André Chemin is a French Champagne",
+     "acc": [
+      "Italy versus Champagne in France",
+      "Franciacorta, Italy, not Champagne",
+      "Lombardy in Italy versus Champagne"
+     ],
+     "why": "Both are dry sparkling wines sold by the bottle at similar prices ($126 and $140), so where they come from is the clearest way to tell them apart for a guest.",
+     "id": "w-ca-del-bosco-franciacorta-cuvee-prestige-brut#5"
+    }
+   ],
+   "at": 1794330599041
+  },
+  "w-tarlant-brut-reserve": {
+   "id": "w-tarlant-brut-reserve",
+   "hook": "Real Champagne from Chardonnay, Pinot Noir and Pinot Meunier, aged at least 15 months on its yeast.",
+   "pitch": "This is a true Champagne: dry, crisp and lively, with fine bubbles and a soft, creamy feel from long ageing on its yeast. It wakes up your palate and makes salty, rich starters taste even better, and at $125 it's our friendliest Champagne by the bottle.",
+   "say": "tar-LAHN, broot ray-ZERV",
+   "taste": "Dry and crisp, with fresh citrus, fine bubbles and a smooth, creamy texture from resting on its yeast.",
+   "style": {
+    "body": 2,
+    "acid": 5,
+    "tannin": 0,
+    "sweet": 1
+   },
+   "grape": "A blend of Chardonnay, Pinot Noir and Pinot Meunier; Chardonnay is a fairly neutral grape that takes on the winemaker's choices, so here it brings a clean, fresh backbone.",
+   "place": "Champagne in France has a cool climate where grapes barely ripen, which keeps the acidity (the mouth-watering freshness) high, and that is exactly what good sparkling wine needs.",
+   "producer": "",
+   "serve": {
+    "temp": "6-8°C",
+    "glass": "white wine glass or flute",
+    "decant": "no"
+   },
+   "dishes": [
+    {
+     "dish": "Seared Scallop",
+     "why": "The crisp freshness and bubbles cut through the scallop's richness and love its saltiness."
+    },
+    {
+     "dish": "Tuna Carpaccio",
+     "why": "A light, dry sparkling wine stays delicate next to raw tuna and matches its bright, zesty dressing."
+    },
+    {
+     "dish": "Seared Rainbow Trout",
+     "why": "Clean, crisp Champagne suits delicate white fish and lifts the salt and herbs."
+    }
+   ],
+   "alts": [
+    {
+     "id": "w-andre-chemin-brut-premier-cru",
+     "when": "another Champagne, usually built on Pinot Noir and Chardonnay, at $140"
+    },
+    {
+     "id": "w-bollinger-special-cuvee",
+     "when": "a famous classic Champagne house for a special occasion, $215"
+    },
+    {
+     "id": "w-serenissima-prosecco-millesimato",
+     "when": "by the glass, or a lighter, cheaper sparkling at $16 a glass"
+    }
+   ],
+   "qs": [
+    {
+     "k": "recognise",
+     "q": "Which description best fits the Tarlant Brut Réserve NV?",
+     "opts": [
+      "Dry and crisp, with fine bubbles",
+      "Sweet and grapey, with soft bubbles",
+      "Off-dry and peachy, with frothy bubbles",
+      "Rich and honeyed, with gentle bubbles"
+     ],
+     "a": 0,
+     "why": "It is a Brut Champagne, so it is dry, with high acidity and fine bubbles.",
+     "id": "w-tarlant-brut-reserve#0"
+    },
+    {
+     "k": "recognise",
+     "q": "On the Tarlant Brut Réserve NV label, what does the word 'Brut' tell the guest?",
+     "opts": [
+      "The wine is dry",
+      "The wine is sweet",
+      "The wine is pink",
+      "The wine is aged"
+     ],
+     "a": 0,
+     "why": "Brut is the French label term for a dry sparkling wine.",
+     "id": "w-tarlant-brut-reserve#1"
+    },
+    {
+     "k": "recall",
+     "q": "Which three grapes go into the Tarlant Brut Réserve NV?",
+     "ans": "Chardonnay, Pinot Noir and Pinot Meunier",
+     "acc": [
+      "Chardonnay, Pinot Noir, Meunier",
+      "Pinot Noir, Pinot Meunier and Chardonnay",
+      "the three Champagne grapes: Chardonnay, Pinot Noir, Pinot Meunier"
+     ],
+     "why": "The Tarlant uses all three grapes, which a server can mention to sound knowledgeable.",
+     "id": "w-tarlant-brut-reserve#2"
+    },
+    {
+     "k": "recall",
+     "q": "By law, at least how long must a non-vintage Champagne like the Tarlant Brut Réserve NV rest on its lees (the spent yeast)?",
+     "ans": "12 months",
+     "acc": [
+      "twelve months",
+      "one year",
+      "a year"
+     ],
+     "why": "The law says 12 months, though the usual minimum in practice is 15 months, and that time on the yeast adds a creamy texture.",
+     "id": "w-tarlant-brut-reserve#3"
+    },
+    {
+     "k": "apply",
+     "q": "A guest has ordered the Seared Scallop and asks for a bottle of real Champagne from France, spending under $130. What would you suggest, and why?",
+     "key": [
+      "Tarlant Brut Réserve NV",
+      "it is genuine Champagne at $125, inside the guest's budget",
+      "its crisp acidity and fine bubbles cut through the scallop's richness and suit its saltiness"
+     ],
+     "decoys": [
+      {
+       "id": "w-andre-chemin-brut-premier-cru",
+       "why": "It is a lovely Champagne, but at $140 it is over the guest's budget."
+      },
+      {
+       "id": "w-bollinger-special-cuvee",
+       "why": "At $215 it is far over the guest's budget."
+      },
+      {
+       "id": "w-ca-del-bosco-franciacorta-cuvee-prestige-brut",
+       "why": "It is priced close, at $126, but it is Italian Franciacorta, not Champagne."
+      }
+     ],
+     "wrong": [
+      "Its heavy, full body stands up to the buttery richness of the scallop",
+      "Its firm tannin grips the scallop and balances out its natural sweetness",
+      "Its soft, low acidity keeps the delicate scallop feeling gentle and calm"
+     ],
+     "why": "The Tarlant is the only Champagne on the list under $130, and its light body and high acidity are what make it work with the scallop.",
+     "id": "w-tarlant-brut-reserve#4"
+    },
+    {
+     "k": "contrast",
+     "q": "Which grape is in the Tarlant Brut Réserve NV that is not one of the usual grapes in the André Chemin Brut Premier Cru NV?",
+     "ans": "Pinot Meunier",
+     "acc": [
+      "Meunier",
+      "Pinot Meunier is in the Tarlant"
+     ],
+     "why": "The Tarlant uses all three Champagne grapes, while the André Chemin is usually just Pinot Noir and Chardonnay.",
+     "id": "w-tarlant-brut-reserve#5"
+    }
+   ],
+   "at": 1794330603006
+  },
+  "w-andre-chemin-brut-premier-cru": {
+   "id": "w-andre-chemin-brut-premier-cru",
+   "hook": "Champagne usually built on Pinot Noir and Chardonnay, kept bright and crisp by a cool climate.",
+   "pitch": "This is a dry, crisp Champagne with fine bubbles and a little more depth from Pinot Noir, a red grape that's usually in the blend. It's elegant enough for a celebration and just as good with mushrooms, fish or roast chicken.",
+   "say": "ahn-DRAY sheh-MAN, broot preh-MYAY KROO",
+   "taste": "Dry and crisp, with fine bubbles, fresh citrus and a soft hint of red cherry.",
+   "style": {
+    "body": 3,
+    "acid": 5,
+    "tannin": 0,
+    "sweet": 1
+   },
+   "grape": "Usually Pinot Noir, a thin-skinned red grape known for red cherry and earthy notes, with Chardonnay, which keeps the wine clean and fresh.",
+   "place": "Champagne in France has a cool climate where grapes barely ripen, which keeps the acidity (the mouth-watering freshness) high, and that is just what sparkling wine needs.",
+   "producer": "",
+   "serve": {
+    "temp": "6-8°C",
+    "glass": "white wine glass or flute",
+    "decant": "no"
+   },
+   "dishes": [
+    {
+     "dish": "Mushroom Parfait",
+     "why": "The bubbles and crispness cut the creamy richness, and Pinot Noir, usually in the blend, is a classic match for mushrooms."
+    },
+    {
+     "dish": "Charcoal Roasted Chicken",
+     "why": "Pinot Noir is a natural partner for roast chicken, and the freshness keeps each bite lively."
+    },
+    {
+     "dish": "Seared Rainbow Trout",
+     "why": "A crisp, dry Champagne suits delicate fish and brightens up the salt and herbs."
+    }
+   ],
+   "alts": [
+    {
+     "id": "w-tarlant-brut-reserve",
+     "when": "a Champagne for less, at $125"
+    },
+    {
+     "id": "w-andre-chemin-brut-rose",
+     "when": "the guest wants pink Champagne from the same name, $142"
+    },
+    {
+     "id": "w-bollinger-special-cuvee",
+     "when": "a famous classic Champagne house for a big occasion, $215"
+    }
+   ],
+   "qs": [
+    {
+     "k": "recognise",
+     "q": "Which description best fits the André Chemin Brut Premier Cru NV?",
+     "opts": [
+      "Dry and crisp, with a hint of red cherry",
+      "Sweet and grapey, with a hint of peach",
+      "Off-dry and soft, with a hint of melon",
+      "Rich and honeyed, with a hint of apricot"
+     ],
+     "a": 0,
+     "why": "It is a dry Brut Champagne, and Pinot Noir, usually in the blend, adds a touch of red cherry.",
+     "id": "w-andre-chemin-brut-premier-cru#0"
+    },
+    {
+     "k": "recognise",
+     "q": "Why does the climate of Champagne suit the André Chemin Brut Premier Cru NV?",
+     "opts": [
+      "Grapes barely ripen, so the acidity stays high",
+      "Grapes ripen fully, so the fruit turns sweet",
+      "Grapes dry on the vine, so the wine gets richer",
+      "Grapes ripen early, so the acidity stays low"
+     ],
+     "a": 0,
+     "why": "Champagne is a cool climate where grapes barely ripen, giving the high-acid base wine that sparkling wine needs.",
+     "id": "w-andre-chemin-brut-premier-cru#1"
+    },
+    {
+     "k": "recall",
+     "q": "Which two grapes usually go into the André Chemin Brut Premier Cru NV?",
+     "ans": "Pinot Noir and Chardonnay",
+     "acc": [
+      "Chardonnay and Pinot Noir",
+      "Pinot Noir, Chardonnay"
+     ],
+     "why": "These are the usual grapes in this wine, so say 'usually' when telling guests.",
+     "id": "w-andre-chemin-brut-premier-cru#2"
+    },
+    {
+     "k": "recall",
+     "q": "What is the bottle price of the André Chemin Brut Premier Cru NV?",
+     "ans": "$140",
+     "acc": [
+      "140 dollars",
+      "$140 a bottle"
+     ],
+     "why": "It is sold by the bottle only, at $140.",
+     "id": "w-andre-chemin-brut-premier-cru#3"
+    },
+    {
+     "k": "apply",
+     "q": "A guest starting with the Mushroom Parfait wants a bottle of Champagne that isn't pink, somewhere between $130 and $150. What would you suggest, and why?",
+     "key": [
+      "André Chemin Brut Premier Cru NV",
+      "it is a white (not pink) Champagne at $140, inside the guest's range",
+      "its crisp acidity and bubbles cut the parfait's richness, and Pinot Noir, usually in the blend, loves mushrooms"
+     ],
+     "decoys": [
+      {
+       "id": "w-andre-chemin-brut-rose",
+       "why": "It is in the price range, but it is pink, which the guest doesn't want."
+      },
+      {
+       "id": "w-tarlant-brut-reserve",
+       "why": "It is a good Champagne, but at $125 it falls below the range the guest asked for."
+      },
+      {
+       "id": "w-bollinger-special-cuvee",
+       "why": "At $215 it is well over the guest's range."
+      }
+     ],
+     "wrong": [
+      "Its heavy, full body matches the parfait's creaminess weight for weight",
+      "Its grippy tannin is what cuts through the richness of the parfait",
+      "Its soft, low acidity lets the creamy parfait feel smooth and gentle"
+     ],
+     "why": "It is the only non-pink Champagne in the guest's range, and its acidity and bubbles, not tannin or weight, are what cut through the creamy parfait.",
+     "id": "w-andre-chemin-brut-premier-cru#4"
+    },
+    {
+     "k": "contrast",
+     "q": "How can a server tell the André Chemin Brut Premier Cru NV apart from the André Chemin Brut Rosé NV in the glass?",
+     "ans": "The Brut Premier Cru is white (pale); the Rosé is pink",
+     "acc": [
+      "one is white, the other is pink",
+      "the rosé is pink",
+      "Premier Cru is pale, rosé is pink"
+     ],
+     "why": "Both are André Chemin Champagnes at almost the same price ($140 and $142), so the colour is the quickest way to tell them apart.",
+     "id": "w-andre-chemin-brut-premier-cru#5"
+    }
+   ],
+   "at": 1794330603006
+  },
+  "w-bollinger-special-cuvee": {
+   "id": "w-bollinger-special-cuvee",
+   "hook": "Bollinger is one of Champagne's classic houses, named alongside Krug and Veuve Clicquot.",
+   "pitch": "This is a dry, crisp Champagne from one of the great classic houses, with fine bubbles and a little red-fruit depth from the Pinot Noir in the blend. It makes a real occasion of a celebration, and it's fresh enough to carry on right through the scallop or the tuna.",
+   "say": "bo-lahn-ZHAY, spay-SYAL koo-VAY",
+   "taste": "Dry and crisp, with fine bubbles, fresh citrus and apple, and a touch of red-cherry depth.",
+   "style": {
+    "body": 3,
+    "acid": 4,
+    "tannin": 0,
+    "sweet": 1
+   },
+   "grape": "It's a blend of Pinot Noir, Chardonnay and Pinot Meunier, and the Pinot Noir, a light, high-acid red grape, adds a hint of red-cherry fruit.",
+   "place": "Champagne in France has a cool climate where the grapes only just ripen, and that keeps the wine's acidity (its fresh, mouth-watering quality) high, which is exactly what good sparkling wine needs.",
+   "producer": "Bollinger is one of the classic Champagne producers, named in the same breath as Veuve Clicquot and Krug.",
+   "serve": {
+    "temp": "8-10°C",
+    "glass": "white wine glass or tulip glass",
+    "decant": "no"
+   },
+   "dishes": [
+    {
+     "dish": "Seared Scallop",
+     "why": "The crisp acidity and fine bubbles cut through the rich, salty sear and keep each bite tasting fresh."
+    },
+    {
+     "dish": "Tuna Carpaccio",
+     "why": "It's delicate enough not to swamp the raw tuna, and its freshness matches the dish's bright, salty edge."
+    },
+    {
+     "dish": "Mushroom Parfait",
+     "why": "The bubbles and acidity lift the rich, creamy parfait, and the Pinot Noir in the blend loves earthy mushroom flavours."
+    }
+   ],
+   "alts": [
+    {
+     "id": "w-andre-chemin-brut-premier-cru",
+     "when": "another Champagne at a lower price, $140 a bottle"
+    },
+    {
+     "id": "w-tarlant-brut-reserve",
+     "when": "the least expensive Champagne on the list, $125 a bottle"
+    },
+    {
+     "id": "w-serenissima-prosecco-millesimato",
+     "when": "bubbles by the glass, $16 for 5oz"
+    }
+   ],
+   "qs": [
+    {
+     "k": "recognise",
+     "q": "Which description best fits the Bollinger Special Cuvée NV?",
+     "opts": [
+      "Dry and crisp, with red-fruit depth and a long, fresh finish",
+      "Sweet and light, with soft grapey flavour and very gentle fizz",
+      "Off-dry and soft, with ripe peach and quite low acidity",
+      "Rich and buttery, with heavy vanilla oak and a soft finish"
+     ],
+     "a": 0,
+     "why": "Bollinger Special Cuvée is a dry (Brut) Champagne with high acidity, and the Pinot Noir in the blend adds red-fruit depth.",
+     "id": "w-bollinger-special-cuvee#0"
+    },
+    {
+     "k": "recognise",
+     "q": "What does the climate in Champagne do to the grapes that go into Bollinger Special Cuvée NV?",
+     "opts": [
+      "They barely ripen, keeping the high acidity good sparkling wine needs",
+      "They ripen fully, giving lots of sugar and rich, jammy fruit",
+      "They shrivel on the vine, concentrating sweetness for dessert wine",
+      "They ripen very early, giving low acidity and soft, round fruit"
+     ],
+     "a": 0,
+     "why": "Champagne is a cool region where grapes only just ripen, which is what makes the base wine right for sparkling.",
+     "id": "w-bollinger-special-cuvee#1"
+    },
+    {
+     "k": "recall",
+     "q": "Which three grapes go into Bollinger Special Cuvée NV?",
+     "ans": "Pinot Noir, Chardonnay and Pinot Meunier",
+     "acc": [
+      "Pinot Noir, Chardonnay, Meunier",
+      "Chardonnay, Pinot Noir and Pinot Meunier",
+      "Pinot Noir, Pinot Meunier and Chardonnay"
+     ],
+     "why": "Guests often ask what's in a Champagne, and these are the three grapes in this blend.",
+     "id": "w-bollinger-special-cuvee#2"
+    },
+    {
+     "k": "recall",
+     "q": "By law, how long must a non-vintage Champagne such as Bollinger Special Cuvée NV rest on its lees (the spent yeast left after the second fermentation)?",
+     "ans": "At least 12 months",
+     "acc": [
+      "12 months",
+      "a year",
+      "one year minimum"
+     ],
+     "why": "The law says 12 months for non-vintage Champagne, and many houses go longer, at least 15 months.",
+     "id": "w-bollinger-special-cuvee#3"
+    },
+    {
+     "k": "apply",
+     "q": "A couple celebrating an anniversary are starting with the Seared Scallop. They want a bottle of Champagne from one of the famous, classic houses, and they don't want a rosé. What would you suggest, and why?",
+     "key": [
+      "Bollinger Special Cuvée NV, $215 a bottle",
+      "Bollinger is one of Champagne's classic houses, named alongside Krug and Veuve Clicquot",
+      "Its crisp, high acidity and fine bubbles cut through the rich, salty sear on the scallop"
+     ],
+     "decoys": [
+      {
+       "id": "w-tarlant-brut-reserve",
+       "why": "It's a Champagne, but it isn't one of the classic big houses the guests are asking for."
+      },
+      {
+       "id": "w-andre-chemin-brut-premier-cru",
+       "why": "A good Champagne with the scallop, but it isn't one of the famous classic houses."
+      },
+      {
+       "id": "w-andre-chemin-brut-rose",
+       "why": "It's a rosé, which the guests have said they don't want."
+      }
+     ],
+     "wrong": [
+      "Its heavy, full body matches the weight of the seared scallop",
+      "Its firm tannin grips the crust that the sear puts on the scallop",
+      "Its low acidity stops it fighting with the scallop's natural sweetness"
+     ],
+     "why": "Bollinger is the only classic Champagne house on the list, and its crisp acidity is what makes it work with a rich, salty scallop.",
+     "id": "w-bollinger-special-cuvee#4"
+    },
+    {
+     "k": "contrast",
+     "q": "What sets the Bollinger Special Cuvée NV apart from the André Chemin Brut Premier Cru NV on our list?",
+     "ans": "Bollinger is one of Champagne's famous classic houses, and it costs $215 a bottle against $140",
+     "acc": [
+      "Bollinger is the big classic house and costs more",
+      "Bollinger is the famous house; André Chemin is cheaper at $140",
+      "Bollinger is $215, André Chemin is $140"
+     ],
+     "why": "Both are white Champagnes, so the name of the house and the price are what a guest is choosing between.",
+     "id": "w-bollinger-special-cuvee#5"
+    }
+   ],
+   "at": 1794330607741
+  },
+  "w-andre-chemin-brut-rose": {
+   "id": "w-andre-chemin-brut-rose",
+   "hook": "A true pink Champagne: non-vintage, so by law it rests at least 12 months on its yeast.",
+   "pitch": "This is a dry pink Champagne, crisp and fresh with the red-cherry fruit of the Pinot Noir it's usually made with. It's a lovely way to start a meal, and it has enough fruit to carry on through the trout or the roast chicken.",
+   "say": "ahn-DRAY sheh-MAN, broot roh-ZAY",
+   "taste": "Dry and crisp, with fine bubbles and fresh red-cherry and red-berry fruit.",
+   "style": {
+    "body": 3,
+    "acid": 4,
+    "tannin": 0,
+    "sweet": 1
+   },
+   "grape": "It's usually a blend of Pinot Noir and Chardonnay, and the Pinot Noir, a light, high-acid red grape, brings the red-cherry fruit.",
+   "place": "Champagne in France has a cool climate where the grapes only just ripen, which keeps the wine fresh and mouth-watering, just right for sparkling wine.",
+   "producer": "",
+   "serve": {
+    "temp": "8-10°C",
+    "glass": "white wine glass or tulip glass",
+    "decant": "no"
+   },
+   "dishes": [
+    {
+     "dish": "Seared Rainbow Trout",
+     "why": "Pinot Noir is a classic match for fish like salmon and trout, and the bubbles keep the delicate, salty fish tasting fresh."
+    },
+    {
+     "dish": "Charcoal Roasted Chicken",
+     "why": "Pinot Noir loves roast chicken, and the red-cherry fruit stands up nicely to the smoky, savoury skin."
+    },
+    {
+     "dish": "Tuna Carpaccio",
+     "why": "Its crisp acidity matches the bright, salty dressing without overpowering the delicate raw tuna."
+    }
+   ],
+   "alts": [
+    {
+     "id": "w-st-john-beausoleil-rose-cotes-de-thau-igp",
+     "when": "a still pink wine by the glass, $16 for 5oz"
+    },
+    {
+     "id": "w-andre-chemin-brut-premier-cru",
+     "when": "a white Champagne with the same name on the label, $140 a bottle"
+    },
+    {
+     "id": "w-bollinger-special-cuvee",
+     "when": "a white Champagne from a famous classic house, $215 a bottle"
+    }
+   ],
+   "qs": [
+    {
+     "k": "recognise",
+     "q": "Which description best fits the André Chemin Brut Rosé NV?",
+     "opts": [
+      "Dry and crisp, with red-cherry fruit and a fresh finish",
+      "Sweet and soft, with candied strawberry and gentle fizz",
+      "Off-dry and fruity, with ripe watermelon and low acidity",
+      "Rich and heavy, with dark plum and a long, smoky finish"
+     ],
+     "a": 0,
+     "why": "It's a dry Champagne with high acidity, and the Pinot Noir gives it red-cherry fruit.",
+     "id": "w-andre-chemin-brut-rose#0"
+    },
+    {
+     "k": "recognise",
+     "q": "On the label of the André Chemin Brut Rosé NV, what does the word 'Brut' tell a guest?",
+     "opts": [
+      "It is dry, with little or no sweetness",
+      "It is sweet, made to go with dessert",
+      "It is still, with no bubbles at all",
+      "It has been aged in new oak barrels"
+     ],
+     "a": 0,
+     "why": "'Brut' on a sparkling wine means it's dry.",
+     "id": "w-andre-chemin-brut-rose#1"
+    },
+    {
+     "k": "recall",
+     "q": "Which two grapes is the André Chemin Brut Rosé NV usually made from?",
+     "ans": "Pinot Noir and Chardonnay",
+     "acc": [
+      "Chardonnay and Pinot Noir",
+      "Pinot Noir, Chardonnay"
+     ],
+     "why": "Pink Champagne is usually a blend of Pinot Noir and Chardonnay, so say 'usually' at the table.",
+     "id": "w-andre-chemin-brut-rose#2"
+    },
+    {
+     "k": "recall",
+     "q": "How much is a bottle of André Chemin Brut Rosé NV on our list?",
+     "ans": "$142",
+     "acc": [
+      "142 dollars",
+      "$142 a bottle"
+     ],
+     "why": "It's sold by the bottle only, so guests will want to know the bottle price.",
+     "id": "w-andre-chemin-brut-rose#3"
+    },
+    {
+     "k": "apply",
+     "q": "A guest has ordered the Seared Rainbow Trout and asks for something pink with bubbles to drink with it. What would you suggest, and why?",
+     "key": [
+      "André Chemin Brut Rosé NV, $142 a bottle",
+      "It's the only pink sparkling wine on the list, a dry rosé Champagne",
+      "Its crisp acidity and red-cherry fruit lift the delicate, salty trout without covering it"
+     ],
+     "decoys": [
+      {
+       "id": "w-st-john-beausoleil-rose-cotes-de-thau-igp",
+       "why": "It's pink, but it's a still wine with no bubbles."
+      },
+      {
+       "id": "w-two-sisters-margo-rose",
+       "why": "It's pink, but it's still, not sparkling."
+      },
+      {
+       "id": "w-feudi-di-san-gregorio-ros-aura",
+       "why": "It's a still rosé, so it doesn't give the guest the bubbles they asked for."
+      }
+     ],
+     "wrong": [
+      "Its full, heavy body stands up to the richness of the trout",
+      "Its firm tannin holds up against the crisp, seared skin",
+      "Its low acidity keeps the herbs on the trout from tasting sharp"
+     ],
+     "why": "It's the only sparkling rosé on the list, and its freshness and red fruit suit a delicate, salty fish.",
+     "id": "w-andre-chemin-brut-rose#4"
+    },
+    {
+     "k": "contrast",
+     "q": "What is the difference between the André Chemin Brut Rosé NV and the St. John Beausoleil Rosé on our list?",
+     "ans": "The André Chemin is a sparkling Champagne sold by the bottle only; the St. John is a still rosé also poured by the glass",
+     "acc": [
+      "André Chemin has bubbles, St. John doesn't",
+      "André Chemin is sparkling, St. John is still and by the glass",
+      "St. John is by the glass and still; André Chemin is bottle-only Champagne"
+     ],
+     "why": "Both are pink, so bubbles and whether it comes by the glass are what guide the guest's choice.",
+     "id": "w-andre-chemin-brut-rose#5"
+    }
+   ],
+   "at": 1794330607741
+  },
+  "w-feudi-di-san-gregorio-ros-aura": {
+   "id": "w-feudi-di-san-gregorio-ros-aura",
+   "hook": "Campania's big red grape, Aglianico, made pink by one of the region's classic producers.",
+   "pitch": "This is a fresh, lively Italian rosé from Campania, made from Aglianico, a southern grape best known for powerful reds. It's our lowest-priced rosé bottle at $70, and it has enough flavour to stand up to tomato, spice and the grill.",
+   "say": "FAY-oo-dee dee san greh-GOR-ee-oh, roh-ZOW-rah",
+   "taste": "Expect a crisp, refreshing pink with red-fruit flavour and a bright, mouth-watering finish.",
+   "style": {
+    "body": 2,
+    "acid": 4,
+    "tannin": 0,
+    "sweet": 1
+   },
+   "grape": "Aglianico (say al-YAH-nee-koh) is naturally high in acid, the fresh, mouth-watering quality in wine, which here gives the rosé its lively edge.",
+   "place": "It comes from Campania in southern Italy, which has a warm Mediterranean climate that is cooler in the hills around Avellino.",
+   "producer": "Feudi di San Gregorio is one of the classic producers of Campania, alongside Mastroberardino and Montevetrano.",
+   "serve": {
+    "temp": "8-10°C",
+    "glass": "white wine glass",
+    "decant": "no"
+   },
+   "dishes": [
+    {
+     "dish": "Burrata & Tomato",
+     "why": "Its fresh acidity cuts through the creamy burrata and keeps up with the tomato."
+    },
+    {
+     "dish": "Shrimp Linguine",
+     "why": "A bright, crisp pink handles the spice and the acidity in the sauce without overpowering the shrimp."
+    },
+    {
+     "dish": "Charcoal Roasted Chicken",
+     "why": "It has enough flavour for the smoky, savoury chicken but stays light and refreshing."
+    }
+   ],
+   "alts": [
+    {
+     "id": "w-st-john-beausoleil-rose-cotes-de-thau-igp",
+     "when": "by the glass"
+    },
+    {
+     "id": "w-domaine-montirius-la-muse-papilles-cotes-du-rhone-rose",
+     "when": "a French rosé from the Rhône instead of an Italian one"
+    },
+    {
+     "id": "w-antonutti-pinot-grigio-ramato",
+     "when": "something different: an Italian orange wine"
+    }
+   ],
+   "qs": [
+    {
+     "k": "recognise",
+     "q": "Which description best fits the Feudi di San Gregorio Ros'Aura 2024?",
+     "opts": [
+      "Crisp, lively pink from southern Italy, made from Aglianico",
+      "Soft, plummy pink from Niagara, made from Merlot",
+      "Sweet, low-acid pink from California, made from Zinfandel",
+      "Pale, delicate pink from Provence, made from Grenache"
+     ],
+     "a": 0,
+     "why": "The Ros'Aura is a fresh Campania rosé made from Aglianico, a grape high in acid.",
+     "id": "w-feudi-di-san-gregorio-ros-aura#0"
+    },
+    {
+     "k": "recognise",
+     "q": "Which Italian region does the Feudi di San Gregorio Ros'Aura 2024 come from?",
+     "opts": [
+      "Piedmont",
+      "Tuscany",
+      "Campania",
+      "Veneto"
+     ],
+     "a": 2,
+     "why": "Feudi di San Gregorio is one of the classic producers of Campania in southern Italy.",
+     "id": "w-feudi-di-san-gregorio-ros-aura#1"
+    },
+    {
+     "k": "recall",
+     "q": "What grape is the Feudi di San Gregorio Ros'Aura 2024 made from?",
+     "ans": "Aglianico",
+     "acc": [
+      "100% Aglianico",
+      "Aglianico grapes"
+     ],
+     "why": "The label names Aglianico, a red grape from southern Italy, here made into a rosé.",
+     "id": "w-feudi-di-san-gregorio-ros-aura#2"
+    },
+    {
+     "k": "recall",
+     "q": "What does a bottle of the Feudi di San Gregorio Ros'Aura 2024 cost at Eloise?",
+     "ans": "$70",
+     "acc": [
+      "70 dollars",
+      "$70 a bottle",
+      "seventy dollars"
+     ],
+     "why": "At $70 it is the lowest-priced rosé bottle on our list, and it is sold by the bottle only.",
+     "id": "w-feudi-di-san-gregorio-ros-aura#3"
+    },
+    {
+     "k": "apply",
+     "q": "A table sharing the Burrata & Tomato wants a bottle of rosé but would like to stay under $72. What would you suggest, and why?",
+     "key": [
+      "Feudi di San Gregorio Ros'Aura 2024, at $70 the bottle",
+      "It is the only rosé bottle on the list under $72",
+      "Its fresh acidity cuts through the creamy burrata and matches the tomato"
+     ],
+     "decoys": [
+      {
+       "id": "w-two-sisters-margo-rose",
+       "why": "It is $75 a bottle, over the guest's limit."
+      },
+      {
+       "id": "w-domaine-montirius-la-muse-papilles-cotes-du-rhone-rose",
+       "why": "It is $75 a bottle, over the guest's limit."
+      },
+      {
+       "id": "w-st-john-beausoleil-rose-cotes-de-thau-igp",
+       "why": "It is $84 a bottle, well over the guest's limit."
+      }
+     ],
+     "wrong": [
+      "Its firm, grippy tannin, like a red Aglianico, holds up to the rich cheese",
+      "It is heavy and full-bodied, so it smothers the cream in the burrata",
+      "Its soft, low acidity keeps it from clashing with the tomato"
+     ],
+     "why": "The Ros'Aura is the one rosé bottle under $72, and its bright acidity is exactly what creamy burrata and tomato need.",
+     "id": "w-feudi-di-san-gregorio-ros-aura#4"
+    },
+    {
+     "k": "contrast",
+     "q": "The Feudi di San Gregorio Ros'Aura and the Two Sisters Margo Rosé are both rosés made from one red grape; which one is made from Aglianico?",
+     "ans": "The Feudi di San Gregorio Ros'Aura",
+     "acc": [
+      "Ros'Aura",
+      "Feudi di San Gregorio",
+      "the Italian one"
+     ],
+     "why": "The Ros'Aura is Aglianico from Campania, Italy, while the Margo is Merlot from Niagara, Ontario.",
+     "id": "w-feudi-di-san-gregorio-ros-aura#5"
+    }
+   ],
+   "at": 1794330667633
+  },
+  "w-two-sisters-margo-rose": {
+   "id": "w-two-sisters-margo-rose",
+   "hook": "An Ontario rosé made from Merlot, grown in Niagara, where Lake Ontario softens the climate.",
+   "pitch": "This is a local rosé from Niagara-on-the-Lake, made from Merlot, so expect soft, plummy fruit with a refreshing, cool-climate lift. It's easy to like, and it's a great pick for anyone who wants to drink something from right here in Ontario.",
+   "say": "",
+   "taste": "Expect soft plum and red-berry fruit, smooth and easy, with a fresh finish.",
+   "style": {
+    "body": 2,
+    "acid": 3,
+    "tannin": 0,
+    "sweet": 1
+   },
+   "grape": "Merlot is a gentle, plummy red grape, and made as a rosé it gives soft, round fruit that is easy to enjoy.",
+   "place": "It's from the Niagara Peninsula, a cool region where Lake Ontario softens the climate, which helps keep the wine fresh.",
+   "producer": "",
+   "serve": {
+    "temp": "8-10°C",
+    "glass": "white wine glass",
+    "decant": "no"
+   },
+   "dishes": [
+    {
+     "dish": "Charcoal Roasted Chicken",
+     "why": "Its soft plummy fruit sits nicely with the smoky, savoury chicken without overpowering it."
+    },
+    {
+     "dish": "Mushroom Parfait",
+     "why": "Merlot loves mushroom dishes, and the fresh finish cuts the richness of the parfait."
+    },
+    {
+     "dish": "Seared Rainbow Trout",
+     "why": "A gentle pink is light enough for the delicate trout but has more fruit than most whites."
+    }
+   ],
+   "alts": [
+    {
+     "id": "w-st-john-beausoleil-rose-cotes-de-thau-igp",
+     "when": "by the glass"
+    },
+    {
+     "id": "w-two-sisters-cabernet-franc",
+     "when": "same Ontario house, but they want a red"
+    },
+    {
+     "id": "w-two-sisters-riesling",
+     "when": "same Ontario house, but they want a white"
+    }
+   ],
+   "qs": [
+    {
+     "k": "recognise",
+     "q": "Which description best fits the Two Sisters Margo Rosé 2023?",
+     "opts": [
+      "Crisp, lively pink from southern Italy, made from Aglianico",
+      "Pale, delicate pink from Provence, made from Grenache",
+      "Sweet, low-acid pink from California, made from Zinfandel",
+      "Soft, plummy pink from Niagara, made from Merlot"
+     ],
+     "a": 3,
+     "why": "The Margo is a Merlot rosé from Niagara, so its fruit is soft and plummy.",
+     "id": "w-two-sisters-margo-rose#0"
+    },
+    {
+     "k": "recognise",
+     "q": "Which official quality designation appears on the Two Sisters Margo Rosé 2023?",
+     "opts": [
+      "DOCG",
+      "AOC",
+      "VQA",
+      "DO"
+     ],
+     "a": 2,
+     "why": "It is a VQA wine from Niagara-on-the-Lake; VQA is Ontario's quality system.",
+     "id": "w-two-sisters-margo-rose#1"
+    },
+    {
+     "k": "recall",
+     "q": "What grape is the Two Sisters Margo Rosé 2023 made from?",
+     "ans": "Merlot",
+     "acc": [
+      "100% Merlot",
+      "Merlot grapes"
+     ],
+     "why": "The label names Merlot, a soft, plummy red grape, here made into a rosé.",
+     "id": "w-two-sisters-margo-rose#2"
+    },
+    {
+     "k": "recall",
+     "q": "Which wine region is the Two Sisters Margo Rosé 2023 from?",
+     "ans": "Niagara-on-the-Lake, Ontario",
+     "acc": [
+      "Niagara",
+      "Niagara Peninsula",
+      "Ontario",
+      "Niagara, Canada"
+     ],
+     "why": "It is a VQA wine from Niagara-on-the-Lake, in Ontario's Niagara Peninsula.",
+     "id": "w-two-sisters-margo-rose#3"
+    },
+    {
+     "k": "apply",
+     "q": "A guest having the Charcoal Roasted Chicken wants a bottle of rosé made here in Ontario. What would you suggest, and why?",
+     "key": [
+      "Two Sisters Margo Rosé 2023, $75 the bottle",
+      "It is the only Ontario rosé on the list, from Niagara-on-the-Lake",
+      "Its soft, plummy Merlot fruit suits the smoky, savoury chicken without overpowering it"
+     ],
+     "decoys": [
+      {
+       "id": "w-feudi-di-san-gregorio-ros-aura",
+       "why": "It is from Campania in Italy, not Ontario."
+      },
+      {
+       "id": "w-domaine-montirius-la-muse-papilles-cotes-du-rhone-rose",
+       "why": "It is from the Rhône in France, not Ontario."
+      },
+      {
+       "id": "w-st-john-beausoleil-rose-cotes-de-thau-igp",
+       "why": "It is from the south of France, not Ontario."
+      }
+     ],
+     "wrong": [
+      "Its firm, grippy tannin, like a red Merlot, holds up to the charred skin",
+      "It is heavy and full-bodied, so it outweighs the smoke on the chicken",
+      "Its sharp, searing acidity slices straight through the char"
+     ],
+     "why": "The Margo is the only Ontario rosé we pour, and its gentle plummy fruit is a natural match for smoky roast chicken.",
+     "id": "w-two-sisters-margo-rose#4"
+    },
+    {
+     "k": "contrast",
+     "q": "The Two Sisters Margo Rosé and the Domaine Montirius La Muse Papilles are both $75 rosé bottles; which one is from Ontario?",
+     "ans": "The Two Sisters Margo Rosé",
+     "acc": [
+      "Margo",
+      "Two Sisters",
+      "the Margo Rosé"
+     ],
+     "why": "The Margo is a Niagara Merlot rosé, while the Montirius is a Côtes du Rhône rosé from France.",
+     "id": "w-two-sisters-margo-rose#5"
+    }
+   ],
+   "at": 1794330667633
+  },
+  "w-olivier-leflaive-bourgogne-les-setilles": {
+   "id": "w-olivier-leflaive-bourgogne-les-setilles",
+   "hook": "It's white Burgundy, so it's Chardonnay, from a cool region where each vintage tastes a little different.",
+   "pitch": "This is white Burgundy, which means Chardonnay from a cool part of France, so it's fresh and clean with citrus fruit and a medium weight in the mouth. It's polished without being heavy, so it's lovely with the roast chicken, the trout or the scallop.",
+   "say": "oh-lee-VYAY luh-FLEV, boor-GOHN-yuh lay say-TEE",
+   "taste": "Fresh citrus and green apple with a mouth-watering zing, and a smooth, medium weight that never feels heavy.",
+   "style": {
+    "body": 3,
+    "acid": 4,
+    "tannin": 0,
+    "sweet": 1
+   },
+   "grape": "Chardonnay is a fairly neutral grape that takes on how it's made: oak barrels give it vanilla and butter, while steel tanks keep it lean and citrusy, so it carries the freshness of where it's grown.",
+   "place": "Burgundy has a cool continental climate (warm summers, cold winters), which keeps the wine fresh, and 'Bourgogne' on the label means it sits on Burgundy's broad regional level of the quality ladder.",
+   "producer": "",
+   "serve": {
+    "temp": "10-12°C",
+    "glass": "white wine glass",
+    "decant": "no"
+   },
+   "dishes": [
+    {
+     "dish": "Charcoal Roasted Chicken",
+     "why": "Burgundy Chardonnay and roast chicken are a classic match, and its fresh zing keeps the smoky, savoury bird feeling lively."
+    },
+    {
+     "dish": "Seared Rainbow Trout",
+     "why": "Chardonnay suits white fish, and its citrus freshness works like a squeeze of lemon on the salty, herby trout."
+    },
+    {
+     "dish": "Seared Scallop",
+     "why": "Its smooth weight sits nicely with the rich scallop while the freshness cuts through the salt."
+    }
+   ],
+   "alts": [
+    {
+     "id": "w-domaine-des-hates-chablis",
+     "when": "by the glass"
+    },
+    {
+     "id": "w-lis-neris-jurosa-chardonnay",
+     "when": "same grape, from Italy"
+    },
+    {
+     "id": "w-tiefenbrunner-pinot-grigio",
+     "when": "lighter, by the glass and under $80 a bottle"
+    }
+   ],
+   "qs": [
+    {
+     "k": "recognise",
+     "q": "Which description best fits the Olivier Leflaive Bourgogne Les Sétilles?",
+     "opts": [
+      "Dry and medium-bodied, with fresh acidity and citrus fruit",
+      "Off-dry and light, with soft acidity and peach and honey",
+      "Dry and very light, with sharp acidity and grassy green notes",
+      "Sweet and full, with low acidity and apricot and marmalade"
+     ],
+     "a": 0,
+     "why": "It's a dry Chardonnay from cool Burgundy, so it's fresh and citrusy with a medium weight.",
+     "id": "w-olivier-leflaive-bourgogne-les-setilles#0"
+    },
+    {
+     "k": "recognise",
+     "q": "Which level of Burgundy's quality ladder does the Olivier Leflaive Bourgogne Les Sétilles sit on?",
+     "opts": [
+      "Regional",
+      "Village",
+      "Premier Cru",
+      "Grand Cru"
+     ],
+     "a": 0,
+     "why": "'Bourgogne' on the label is Burgundy's broad regional level, below Village, Premier Cru and Grand Cru.",
+     "id": "w-olivier-leflaive-bourgogne-les-setilles#1"
+    },
+    {
+     "k": "recall",
+     "q": "What grape is the Olivier Leflaive Bourgogne Les Sétilles made from?",
+     "ans": "Chardonnay",
+     "acc": [
+      "100% Chardonnay",
+      "Chard"
+     ],
+     "why": "White Burgundy is Chardonnay, and the label names it.",
+     "id": "w-olivier-leflaive-bourgogne-les-setilles#2"
+    },
+    {
+     "k": "recall",
+     "q": "What kind of climate does the region of the Olivier Leflaive Bourgogne Les Sétilles have?",
+     "ans": "Cool continental",
+     "acc": [
+      "Cool",
+      "Cool, with big differences between vintages",
+      "Continental"
+     ],
+     "why": "Burgundy's cool continental climate keeps the wine fresh and makes each vintage a little different.",
+     "id": "w-olivier-leflaive-bourgogne-les-setilles#3"
+    },
+    {
+     "k": "apply",
+     "q": "A guest at the Charcoal Roasted Chicken has just finished a glass of the Domaine des Hâtes Chablis and now wants a bottle of white Burgundy Chardonnay that isn't the Chablis. What would you suggest, and why?",
+     "key": [
+      "Olivier Leflaive Bourgogne Les Sétilles 2022, $150 a bottle",
+      "It is Chardonnay from Burgundy, exactly what they asked for, and it isn't the Chablis",
+      "Its medium body and fresh acidity stand up to the smoky, savoury chicken without overpowering it"
+     ],
+     "decoys": [
+      {
+       "id": "w-domaine-des-hates-chablis",
+       "why": "It's the Chablis they've just had and asked to move on from."
+      },
+      {
+       "id": "w-lis-neris-jurosa-chardonnay",
+       "why": "It is Chardonnay, but it's from Italy, not Burgundy."
+      },
+      {
+       "id": "w-jean-luc-colombo-la-belle-de-mai-saint-peray",
+       "why": "It is a Roussanne from the Rhône, not a Burgundy Chardonnay."
+      }
+     ],
+     "wrong": [
+      "It is a very light, watery white, so it simply stays out of the chicken's way.",
+      "Its firm tannin grips the charred chicken skin the way a red would.",
+      "Its low, soft acidity means it can't clash with the smoky chicken."
+     ],
+     "why": "It's the only Burgundy Chardonnay on the list besides the Chablis, and fresh, medium-bodied Chardonnay is a classic with roast chicken.",
+     "id": "w-olivier-leflaive-bourgogne-les-setilles#4"
+    },
+    {
+     "k": "contrast",
+     "q": "Which can a guest order by the glass: the Olivier Leflaive Bourgogne Les Sétilles or the Domaine des Hâtes Chablis?",
+     "ans": "The Domaine des Hâtes Chablis",
+     "acc": [
+      "The Chablis",
+      "Domaine des Hâtes",
+      "Only the Chablis"
+     ],
+     "why": "The Chablis is poured by the glass at $23, while the Olivier Leflaive comes by the bottle only, at $150.",
+     "id": "w-olivier-leflaive-bourgogne-les-setilles#5"
+    }
+   ],
+   "at": 1794330670388
+  },
+  "w-jean-luc-colombo-la-belle-de-mai-saint-peray": {
+   "id": "w-jean-luc-colombo-la-belle-de-mai-saint-peray",
+   "hook": "It's Roussanne from Saint-Péray in the northern Rhône: pear, herbal tea and a touch of honey.",
+   "pitch": "This is a white from the Rhône Valley made from Roussanne, with pear, herbal tea and a little honey, and a round, smooth feel that still tastes fresh. If you like a white with some richness that isn't Chardonnay, it's beautiful with the roast chicken or the scallop.",
+   "say": "zhahn-LOOK koh-lom-BOH, lah BELL duh MAY, san pay-RAY",
+   "taste": "Ripe pear, herbal tea and a hint of honey, with a round, smooth texture and enough freshness to keep it lively.",
+   "style": {
+    "body": 4,
+    "acid": 3,
+    "tannin": 0,
+    "sweet": 1
+   },
+   "grape": "Roussanne is a fragrant white grape with pear, herbal tea and honey notes, and it's often fermented in oak barrels, which gives the wine a fuller, smoother feel.",
+   "place": "Saint-Péray is in the northern Rhône Valley, where the climate is continental (warm summers, cold winters), which helps give a white with both richness and freshness.",
+   "producer": "",
+   "serve": {
+    "temp": "11-13°C",
+    "glass": "large white wine glass",
+    "decant": "no"
+   },
+   "dishes": [
+    {
+     "dish": "Charcoal Roasted Chicken",
+     "why": "Roussanne is a natural with poultry, and its pear and honey notes love the smoky, savoury chicken."
+    },
+    {
+     "dish": "Seared Scallop",
+     "why": "Its round, rich feel matches the rich scallop while the freshness handles the salt."
+    },
+    {
+     "dish": "Seared Rainbow Trout",
+     "why": "Roussanne suits fish with some richness, and its herbal tea notes pick up the trout's herbs."
+    }
+   ],
+   "alts": [
+    {
+     "id": "w-olivier-leflaive-bourgogne-les-setilles",
+     "when": "similar price, Chardonnay from Burgundy"
+    },
+    {
+     "id": "w-domaine-des-hates-chablis",
+     "when": "by the glass"
+    },
+    {
+     "id": "w-jean-luc-colombo-cornas-terres-brulees",
+     "when": "same producer, a red"
+    }
+   ],
+   "qs": [
+    {
+     "k": "recognise",
+     "q": "Which description best fits the Jean-Luc Colombo La Belle de Mai, Saint-Péray?",
+     "opts": [
+      "Dry and fairly full, with pear, herbal tea and a hint of honey",
+      "Dry and very light, with lime, cut grass and sharp acidity",
+      "Sweet and rich, with apricot, marmalade and low acidity",
+      "Off-dry and light, with peach, flowers and soft acidity"
+     ],
+     "a": 0,
+     "why": "Roussanne gives pear, herbal tea and honey notes, and this one has a fuller, rounder feel.",
+     "id": "w-jean-luc-colombo-la-belle-de-mai-saint-peray#0"
+    },
+    {
+     "k": "recognise",
+     "q": "Which part of France is the Jean-Luc Colombo La Belle de Mai, Saint-Péray from?",
+     "opts": [
+      "The Rhône Valley",
+      "Burgundy",
+      "The Loire Valley",
+      "Bordeaux"
+     ],
+     "a": 0,
+     "why": "Saint-Péray is in the northern Rhône Valley.",
+     "id": "w-jean-luc-colombo-la-belle-de-mai-saint-peray#1"
+    },
+    {
+     "k": "recall",
+     "q": "What grape is the Jean-Luc Colombo La Belle de Mai, Saint-Péray made from?",
+     "ans": "Roussanne",
+     "acc": [
+      "100% Roussanne"
+     ],
+     "why": "The label names Roussanne as the grape.",
+     "id": "w-jean-luc-colombo-la-belle-de-mai-saint-peray#2"
+    },
+    {
+     "k": "recall",
+     "q": "Name the three flavour notes to mention for the Jean-Luc Colombo La Belle de Mai, Saint-Péray.",
+     "ans": "Pear, herbal tea and honey",
+     "acc": [
+      "Pear, honey and herbal tea",
+      "Pear, tea and honey"
+     ],
+     "why": "Those are the classic Roussanne notes a guest will recognise in the glass.",
+     "id": "w-jean-luc-colombo-la-belle-de-mai-saint-peray#3"
+    },
+    {
+     "k": "apply",
+     "q": "A guest having the Charcoal Roasted Chicken loved a Rhône red on holiday and now wants a bottle of white from the Rhône Valley with a bit of richness. What would you suggest, and why?",
+     "key": [
+      "Jean-Luc Colombo La Belle de Mai, Saint-Péray 2023, $148 a bottle",
+      "It is our only white from the Rhône Valley, a Roussanne with pear, herbal tea and honey notes",
+      "Roussanne suits poultry, and its round texture and freshness match the smoky, savoury chicken"
+     ],
+     "decoys": [
+      {
+       "id": "w-olivier-leflaive-bourgogne-les-setilles",
+       "why": "It's a good white with chicken, but it's from Burgundy, not the Rhône."
+      },
+      {
+       "id": "w-pascal-jolivet-sancerre",
+       "why": "It's from the Loire Valley, not the Rhône, and it's crisper rather than rich."
+      },
+      {
+       "id": "w-domaine-huet-vouvray-le-haut-lieu-sec",
+       "why": "It's from the Loire Valley, not the Rhône, so it doesn't answer the request."
+      }
+     ],
+     "wrong": [
+      "Its firm tannin cuts through the chicken's charred, smoky skin.",
+      "It is a very light, thin white that slips quietly under the chicken.",
+      "Its sharp lime and cut-grass flavours make the chicken's smoke pop."
+     ],
+     "why": "It's the only Rhône white on the list, and rich, smooth Roussanne is a natural partner for roast chicken.",
+     "id": "w-jean-luc-colombo-la-belle-de-mai-saint-peray#4"
+    },
+    {
+     "k": "contrast",
+     "q": "What grape tells the Jean-Luc Colombo La Belle de Mai, Saint-Péray apart from the Olivier Leflaive Bourgogne Les Sétilles?",
+     "ans": "La Belle de Mai is Roussanne; Les Sétilles is Chardonnay",
+     "acc": [
+      "Roussanne versus Chardonnay",
+      "The Colombo is Roussanne",
+      "Roussanne"
+     ],
+     "why": "Both are French whites around $150, but the Colombo is Rhône Roussanne and the Leflaive is Burgundy Chardonnay.",
+     "id": "w-jean-luc-colombo-la-belle-de-mai-saint-peray#5"
+    }
+   ],
+   "at": 1794330670388
+  },
+  "w-pascal-jolivet-sancerre": {
+   "id": "w-pascal-jolivet-sancerre",
+   "hook": "Sancerre is Sauvignon Blanc from the Loire Valley: a flint-and-citrus style made to drink young.",
+   "pitch": "It's crisp and zesty, with lemon and lime, a fresh cut-grass smell and a stony, flinty edge. If you like a bright, refreshing white that wakes up seafood and salads, this is the classic.",
+   "say": "pas-KAL zho-lee-VAY, sahn-SAIR",
+   "taste": "Zesty citrus, gooseberry and passionfruit, fresh-cut grass and a clean, stony finish.",
+   "style": {
+    "body": 2,
+    "acid": 5,
+    "tannin": 0,
+    "sweet": 1
+   },
+   "grape": "Sauvignon Blanc gives this wine its high acidity (the mouth-watering freshness), its gooseberry and passionfruit fruit and its grassy, cut-grass smell.",
+   "place": "Sancerre is in France's Loire Valley, where the cool climate along the river keeps the wine crisp, and the local style is flint and citrus, meant to be enjoyed young.",
+   "producer": "",
+   "serve": {
+    "temp": "8-10°C",
+    "glass": "white wine glass",
+    "decant": "no"
+   },
+   "dishes": [
+    {
+     "dish": "Seared Rainbow Trout",
+     "why": "The wine's grassy, herby freshness picks up the herbs on the trout and its zesty citrus lifts the salty, delicate fish."
+    },
+    {
+     "dish": "Seared Scallop",
+     "why": "Sancerre is a classic with shellfish, and its crisp acidity cuts through the richness of the seared scallop."
+    },
+    {
+     "dish": "Tuna Carpaccio",
+     "why": "The carpaccio is bright and tangy, and a wine this zesty keeps up with it without covering the delicate raw tuna."
+    }
+   ],
+   "alts": [
+    {
+     "id": "w-nautilus-sauvignon-blanc",
+     "when": "same grape, by the glass and at a lower price"
+    },
+    {
+     "id": "w-antonutti-sauvignon-blanc",
+     "when": "same grape, under $100 a bottle"
+    },
+    {
+     "id": "w-domaine-des-hates-chablis",
+     "when": "another crisp French white, available by the glass"
+    }
+   ],
+   "qs": [
+    {
+     "k": "recognise",
+     "q": "Which description best fits the Pascal Jolivet Sancerre 2024?",
+     "opts": [
+      "Crisp and zesty, with citrus, cut grass and a flinty edge",
+      "Rich and creamy, with vanilla, butter and toasted oak",
+      "Soft and off-dry, with ripe peach, honey and melon",
+      "Full and round, with baked apple and warm spice"
+     ],
+     "a": 0,
+     "why": "Sancerre is a flint-and-citrus style of Sauvignon Blanc, a grape known for high acidity and a grassy, cut-grass note.",
+     "id": "w-pascal-jolivet-sancerre#0"
+    },
+    {
+     "k": "recognise",
+     "q": "When is the Pascal Jolivet Sancerre 2024 at its best?",
+     "opts": [
+      "Young, while it is fresh and zesty",
+      "After ten or more years in the cellar",
+      "After at least two hours of decanting",
+      "Once age has made it nutty and toasty"
+     ],
+     "a": 0,
+     "why": "Sancerre has no ageing rule and is a flint-and-citrus style meant to be enjoyed young.",
+     "id": "w-pascal-jolivet-sancerre#1"
+    },
+    {
+     "k": "recall",
+     "q": "What grape is the Pascal Jolivet Sancerre 2024 made from?",
+     "ans": "Sauvignon Blanc",
+     "acc": [
+      "Sauv Blanc",
+      "Sauvignon"
+     ],
+     "why": "Sancerre is made from Sauvignon Blanc, and the label confirms it.",
+     "id": "w-pascal-jolivet-sancerre#2"
+    },
+    {
+     "k": "recall",
+     "q": "Which French wine region is the Pascal Jolivet Sancerre 2024 from?",
+     "ans": "The Loire Valley",
+     "acc": [
+      "Loire",
+      "the Loire",
+      "Sancerre in the Loire Valley"
+     ],
+     "why": "Sancerre is a village wine area in France's Loire Valley.",
+     "id": "w-pascal-jolivet-sancerre#3"
+    },
+    {
+     "k": "apply",
+     "q": "A guest having the Seared Rainbow Trout wants a crisp, grassy white from France to go with the herbs on the dish. What would you suggest, and why?",
+     "key": [
+      "Pascal Jolivet Sancerre 2024",
+      "It is Sauvignon Blanc with high acidity and a grassy, cut-grass note that echoes the herbs on the trout",
+      "Its crisp citrus freshness cuts through the salty, delicate fish without covering it"
+     ],
+     "decoys": [
+      {
+       "id": "w-domaine-des-hates-chablis",
+       "why": "It is a crisp French white, but it is Chardonnay, so it doesn't have the grassy note the guest asked for."
+      },
+      {
+       "id": "w-olivier-leflaive-bourgogne-les-setilles",
+       "why": "It is a French Chardonnay from Burgundy, not a grassy Sauvignon Blanc style."
+      },
+      {
+       "id": "w-domaine-huet-vouvray-le-haut-lieu-sec",
+       "why": "It is a French white from the Loire, but it isn't a grassy Sauvignon Blanc style, which is what the guest wants."
+      }
+     ],
+     "wrong": [
+      "It is a full, rich white with the weight to match a heavy dish",
+      "It is soft and low in acid, so it won't fight the salty fish",
+      "Its buttery, vanilla flavour from oak suits the seared skin"
+     ],
+     "why": "Only the Sancerre is a crisp, grassy French white, and its acidity and herby freshness suit a delicate, herbal fish.",
+     "id": "w-pascal-jolivet-sancerre#4"
+    },
+    {
+     "k": "contrast",
+     "q": "Which of the Pascal Jolivet Sancerre 2024 and the Nautilus Sauvignon Blanc 2024 can a guest order by the glass?",
+     "ans": "The Nautilus Sauvignon Blanc",
+     "acc": [
+      "Nautilus",
+      "the Nautilus, at $16 a glass"
+     ],
+     "why": "The Nautilus is poured by the glass at $16, while the Sancerre comes by the bottle only, at $163.",
+     "id": "w-pascal-jolivet-sancerre#5"
+    }
+   ],
+   "at": 1794330679377
+  },
+  "w-domaine-des-hates-chablis": {
+   "id": "w-domaine-des-hates-chablis",
+   "hook": "Chablis is Chardonnay from Burgundy's cool climate, and it's one of our by-the-glass whites.",
+   "pitch": "It's clean and crisp, with fresh citrus and a lean, refreshing finish. It's a lovely glass with seafood if you want something bright rather than heavy.",
+   "say": "doh-MEN day AHT, sha-BLEE",
+   "taste": "Clean and crisp, with lemon and fresh citrus and a lean, refreshing finish.",
+   "style": {
+    "body": 2,
+    "acid": 4,
+    "tannin": 0,
+    "sweet": 1
+   },
+   "grape": "Chardonnay is a fairly neutral grape that takes on how it's made, and here it shows clean citrus freshness.",
+   "place": "Chablis is in Burgundy, France, where the cool climate gives crisp, fresh whites and the weather varies a lot from year to year.",
+   "producer": "",
+   "serve": {
+    "temp": "9-11°C",
+    "glass": "white wine glass",
+    "decant": "no"
+   },
+   "dishes": [
+    {
+     "dish": "Seared Scallop",
+     "why": "Its crisp freshness lifts the rich, salty scallop and keeps each bite tasting clean."
+    },
+    {
+     "dish": "Seared Rainbow Trout",
+     "why": "A lean, citrusy Chardonnay is a natural with white fish and lets the delicate trout shine."
+    },
+    {
+     "dish": "Tuna Carpaccio",
+     "why": "The wine's bright citrus matches the tangy dressing without covering the delicate raw tuna."
+    }
+   ],
+   "alts": [
+    {
+     "id": "w-olivier-leflaive-bourgogne-les-setilles",
+     "when": "same grape, also from Burgundy, by the bottle"
+    },
+    {
+     "id": "w-pascal-jolivet-sancerre",
+     "when": "another crisp French white, zestier and more grassy"
+    },
+    {
+     "id": "w-tiefenbrunner-pinot-grigio",
+     "when": "by the glass at a lower price"
+    }
+   ],
+   "qs": [
+    {
+     "k": "recognise",
+     "q": "Which grape is the Domaine des Hâtes Chablis 2024 made from?",
+     "opts": [
+      "Chardonnay",
+      "Sauvignon Blanc",
+      "Chenin Blanc",
+      "Pinot Grigio"
+     ],
+     "a": 0,
+     "why": "Chablis is made from Chardonnay, and the label confirms it.",
+     "id": "w-domaine-des-hates-chablis#0"
+    },
+    {
+     "k": "recognise",
+     "q": "Which description best fits the Domaine des Hâtes Chablis 2024?",
+     "opts": [
+      "Crisp and lean, with citrus and a clean, fresh finish",
+      "Grassy and zesty, with gooseberry and passionfruit",
+      "Soft and off-dry, with ripe peach and honey",
+      "Heavy and warm, with baked apple and sweet spice"
+     ],
+     "a": 0,
+     "why": "Burgundy's cool climate gives this Chardonnay a crisp, citrusy freshness; grassy gooseberry is Sauvignon Blanc.",
+     "id": "w-domaine-des-hates-chablis#1"
+    },
+    {
+     "k": "recall",
+     "q": "Which French region is the Domaine des Hâtes Chablis 2024 from?",
+     "ans": "Burgundy",
+     "acc": [
+      "Bourgogne",
+      "Chablis in Burgundy"
+     ],
+     "why": "Chablis is part of Burgundy in France.",
+     "id": "w-domaine-des-hates-chablis#2"
+    },
+    {
+     "k": "recall",
+     "q": "How much is a glass of the Domaine des Hâtes Chablis 2024 on our list?",
+     "ans": "$23",
+     "acc": [
+      "23 dollars",
+      "twenty-three dollars"
+     ],
+     "why": "The list prints the Chablis at $23 a glass and $110 a bottle.",
+     "id": "w-domaine-des-hates-chablis#3"
+    },
+    {
+     "k": "apply",
+     "q": "A guest with the Seared Scallop wants just one glass of a crisp French white. What would you suggest, and why?",
+     "key": [
+      "Domaine des Hâtes Chablis 2024, our only French white by the glass",
+      "Its crisp, citrusy freshness from Burgundy's cool climate lifts the rich, salty scallop",
+      "It is a lean Chardonnay that suits shellfish and white fish without covering their delicate flavour"
+     ],
+     "decoys": [
+      {
+       "id": "w-olivier-leflaive-bourgogne-les-setilles",
+       "why": "It is a French Chardonnay, but it comes by the bottle only, and the guest wants a glass."
+      },
+      {
+       "id": "w-pascal-jolivet-sancerre",
+       "why": "It is a crisp French white, but it is sold by the bottle only."
+      },
+      {
+       "id": "w-tessari-grisela-soave-classico",
+       "why": "It is poured by the glass, but it is an Italian Soave, not the French white the guest asked for."
+      }
+     ],
+     "wrong": [
+      "Its full, heavy body is what a rich scallop needs",
+      "It is soft and low in acid, so it won't fight the salt",
+      "Its grassy, passionfruit flavour echoes the seared crust"
+     ],
+     "why": "The Chablis is the only French white we pour by the glass, and its crisp, lean freshness suits a delicate, rich scallop.",
+     "id": "w-domaine-des-hates-chablis#4"
+    },
+    {
+     "k": "contrast",
+     "q": "Which of the Domaine des Hâtes Chablis 2024 and the Olivier Leflaive Bourgogne Les Sétilles 2022 can a guest order by the glass?",
+     "ans": "The Domaine des Hâtes Chablis",
+     "acc": [
+      "the Chablis",
+      "Domaine des Hâtes, at $23 a glass"
+     ],
+     "why": "Both are Burgundy Chardonnay, but only the Chablis is poured by the glass; the Les Sétilles is bottle only, at $150.",
+     "id": "w-domaine-des-hates-chablis#5"
+    }
+   ],
+   "at": 1794330679377
+  },
+  "w-antonutti-pinot-grigio-ramato": {
+   "id": "w-antonutti-pinot-grigio-ramato",
+   "hook": "Ramato means copper in Italian: this is Pinot Grigio from the Veneto made as an orange wine.",
+   "pitch": "This is Pinot Grigio from the Veneto made as an orange wine, which means white grapes left in contact with their skins, so it has a copper colour and a little more grip than a usual white. It's crisp and dry with pear and citrus, a fun step beyond everyday Pinot Grigio, and lovely with our tuna carpaccio or shrimp linguine.",
+   "say": "an-toh-NOO-tee, PEE-noh GREE-joh rah-MAH-toh",
+   "taste": "Crisp and dry, with pear and citrus, a copper-orange colour and a light grip on the finish from the grape skins.",
+   "style": {
+    "body": 2,
+    "acid": 4,
+    "tannin": 1,
+    "sweet": 1
+   },
+   "grape": "Pinot Grigio brings high acidity and pear and citrus flavours, and contact with the skins adds colour and a little texture.",
+   "place": "The Veneto in northeast Italy has a continental climate (warm summers, cold winters) softened by Lake Garda and the Adriatic Sea.",
+   "producer": "",
+   "serve": {
+    "temp": "10-12°C",
+    "glass": "white wine glass",
+    "decant": "no"
+   },
+   "dishes": [
+    {
+     "dish": "Tuna Carpaccio",
+     "why": "Its crisp acidity and pear and citrus freshness suit the raw, delicate, salty tuna."
+    },
+    {
+     "dish": "Shrimp Linguine",
+     "why": "It's fresh enough to match the acidity in the dish, and the light grip stands up to the spice."
+    },
+    {
+     "dish": "Burrata & Tomato",
+     "why": "The bright acidity cuts through the creamy burrata and keeps the plate feeling fresh."
+    }
+   ],
+   "alts": [
+    {
+     "id": "w-tiefenbrunner-pinot-grigio",
+     "when": "by the glass, same grape made as a classic crisp white"
+    },
+    {
+     "id": "w-st-john-beausoleil-rose-cotes-de-thau-igp",
+     "when": "by the glass, for a guest who wants something pink"
+    },
+    {
+     "id": "w-feudi-di-san-gregorio-ros-aura",
+     "when": "a rosé, slightly cheaper at $70 a bottle"
+    }
+   ],
+   "qs": [
+    {
+     "k": "recognise",
+     "q": "Which description best fits the Antonutti Pinot Grigio Ramato 2024?",
+     "opts": [
+      "Deep amber, heavy and very grippy, with dried apricot and tea",
+      "Copper-tinted, crisp and dry, with pear, citrus and a light grip",
+      "Pale orange, sweet and syrupy, with honey and candied peel",
+      "Dark amber, soft and low in acid, with nutty, sherry-like notes"
+     ],
+     "a": 1,
+     "why": "It is a crisp, dry Pinot Grigio with pear and citrus, and its time on the skins gives a copper colour and only a light grip.",
+     "id": "w-antonutti-pinot-grigio-ramato#0"
+    },
+    {
+     "k": "recognise",
+     "q": "Which Italian region does the Antonutti Pinot Grigio Ramato 2024 come from?",
+     "opts": [
+      "Piedmont",
+      "Tuscany",
+      "Veneto",
+      "Abruzzo"
+     ],
+     "a": 2,
+     "why": "It comes from the Veneto in northeast Italy, where Lake Garda and the Adriatic soften the climate.",
+     "id": "w-antonutti-pinot-grigio-ramato#1"
+    },
+    {
+     "k": "recall",
+     "q": "What grape is the Antonutti Pinot Grigio Ramato made from?",
+     "ans": "Pinot Grigio",
+     "acc": [
+      "Pinot Gris",
+      "Pinot Grigio grapes"
+     ],
+     "why": "The label names Pinot Grigio; it is made as an orange wine, but the grape is white.",
+     "id": "w-antonutti-pinot-grigio-ramato#2"
+    },
+    {
+     "k": "recall",
+     "q": "How much is a bottle of the Antonutti Pinot Grigio Ramato 2024 at Eloise?",
+     "ans": "$75",
+     "acc": [
+      "75 dollars",
+      "$75 a bottle",
+      "seventy-five dollars"
+     ],
+     "why": "It is $75 a bottle and is sold by the bottle only, not by the glass.",
+     "id": "w-antonutti-pinot-grigio-ramato#3"
+    },
+    {
+     "k": "apply",
+     "q": "A guest ordering the Tuna Carpaccio says: 'I'd like something more interesting than a standard white, made from white grapes but with a bit of colour and grip, under $80 a bottle.' What would you suggest, and why?",
+     "key": [
+      "Antonutti Pinot Grigio Ramato 2024 ($75)",
+      "It's an orange wine: white Pinot Grigio grapes left in contact with their skins, which gives a copper colour and a light grip",
+      "Its crisp acidity and pear and citrus freshness suit the raw, delicate, salty tuna"
+     ],
+     "decoys": [
+      {
+       "id": "w-tiefenbrunner-pinot-grigio",
+       "why": "It's a classic crisp white without skin contact, so it lacks the colour and grip the guest asked for."
+      },
+      {
+       "id": "w-antonutti-sauvignon-blanc",
+       "why": "It's a straight white with no skin contact, and at $80 it isn't under the guest's $80 limit."
+      },
+      {
+       "id": "w-lis-neris-jurosa-chardonnay",
+       "why": "At $169 it is far over budget, it's a straight white, and it's a richer style than delicate raw tuna needs."
+      }
+     ],
+     "wrong": [
+      "Its heavy, full body stands up to the raw tuna",
+      "Its strong, drying tannins cut through the fish",
+      "Its soft, low acidity calms the sharp dressing"
+     ],
+     "why": "The Ramato is the only orange wine on the list and is under $80, and its crisp freshness flatters delicate raw tuna, while it is light in body, only lightly grippy and high in acidity.",
+     "id": "w-antonutti-pinot-grigio-ramato#4"
+    },
+    {
+     "k": "contrast",
+     "q": "Both the Antonutti Pinot Grigio Ramato and the Tiefenbrunner Pinot Grigio are made from Pinot Grigio; which of the two is poured by the glass at Eloise?",
+     "ans": "The Tiefenbrunner Pinot Grigio",
+     "acc": [
+      "Tiefenbrunner",
+      "the Tiefenbrunner, $15 a glass"
+     ],
+     "why": "The Tiefenbrunner is $15 a glass or $75 a bottle; the Ramato is an orange wine sold only by the bottle at $75.",
+     "id": "w-antonutti-pinot-grigio-ramato#5"
+    }
+   ],
+   "at": 1794330694570
+  },
+  "w-domaine-huet-vouvray-le-haut-lieu-sec": {
+   "id": "w-domaine-huet-vouvray-le-haut-lieu-sec",
+   "hook": "A dry Chenin Blanc from Vouvray in the Loire; 'Sec' on the label means dry.",
+   "pitch": "This is Chenin Blanc from Vouvray in France's Loire Valley, made dry, with quince, a light touch of honey and really bright, mouth-watering freshness. It has more weight than a simple crisp white, so it's wonderful with our charcoal roasted chicken or the seared scallop.",
+   "say": "doh-MEN WETT, voo-VRAY, luh oh-LYUH SEK",
+   "taste": "Dry and very fresh, with quince and a light honeyed note, and a fuller feel than an everyday crisp white.",
+   "style": {
+    "body": 3,
+    "acid": 5,
+    "tannin": 0,
+    "sweet": 1
+   },
+   "grape": "Chenin Blanc has very high acidity and notes of quince and honey, and here it is made fully dry (sec).",
+   "place": "Vouvray sits along the Loire River in France, where the cool climate, with some influence from the Atlantic Ocean, keeps the acidity bright.",
+   "producer": "",
+   "serve": {
+    "temp": "10-12°C",
+    "glass": "white wine glass",
+    "decant": "no"
+   },
+   "dishes": [
+    {
+     "dish": "Charcoal Roasted Chicken",
+     "why": "Chenin Blanc is a classic match for chicken, and its bright acidity and fuller feel hold up to the smoky, savoury bird."
+    },
+    {
+     "dish": "Seared Scallop",
+     "why": "Its freshness cuts the richness of the scallop, while its weight matches the sweet, seared flesh."
+    },
+    {
+     "dish": "Seared Rainbow Trout",
+     "why": "The high acidity works like a squeeze of lemon on the delicate, salty trout."
+    }
+   ],
+   "alts": [
+    {
+     "id": "w-pascal-jolivet-sancerre",
+     "when": "also from the Loire, a zesty Sancerre (usually Sauvignon Blanc) for a guest who wants it sharper"
+    },
+    {
+     "id": "w-domaine-des-hates-chablis",
+     "when": "by the glass, a crisp French white"
+    },
+    {
+     "id": "w-pewsey-vale-riesling",
+     "when": "another very fresh, high-acid white for less, at $109"
+    }
+   ],
+   "qs": [
+    {
+     "k": "recognise",
+     "q": "Which description best fits the Domaine Huet Vouvray Le Haut-Lieu Sec 2023?",
+     "opts": [
+      "Sweet and syrupy, with candied apricot and marmalade",
+      "Soft and low in acid, with buttery vanilla and toasted oak",
+      "Light and zesty, with cut grass, green pepper and gooseberry",
+      "Dry, fresh and fairly full, with quince and a honeyed touch"
+     ],
+     "a": 3,
+     "why": "It is a dry Chenin Blanc with very high acidity, quince and a light honeyed note, and more weight than a simple crisp white.",
+     "id": "w-domaine-huet-vouvray-le-haut-lieu-sec#0"
+    },
+    {
+     "k": "recognise",
+     "q": "What does the word 'Sec' on the Domaine Huet Vouvray Le Haut-Lieu label tell a guest?",
+     "opts": [
+      "It is made dry",
+      "It is made off-dry",
+      "It is made sweet",
+      "It is made sparkling"
+     ],
+     "a": 0,
+     "why": "Sec means dry; Vouvray's Chenin Blanc is also made off-dry (demi-sec), sweet (moelleux) and sparkling, so the word matters.",
+     "id": "w-domaine-huet-vouvray-le-haut-lieu-sec#1"
+    },
+    {
+     "k": "recall",
+     "q": "What grape is the Domaine Huet Vouvray Le Haut-Lieu Sec made from?",
+     "ans": "Chenin Blanc",
+     "acc": [
+      "Chenin",
+      "Chenin Blanc grapes"
+     ],
+     "why": "The label names Chenin Blanc, the grape of Vouvray.",
+     "id": "w-domaine-huet-vouvray-le-haut-lieu-sec#2"
+    },
+    {
+     "k": "recall",
+     "q": "Which wine region of France does the Domaine Huet Vouvray Le Haut-Lieu Sec come from?",
+     "ans": "The Loire Valley",
+     "acc": [
+      "Loire",
+      "Vouvray in the Loire",
+      "Vouvray, Loire Valley"
+     ],
+     "why": "Vouvray is in France's Loire Valley, with a cool climate along the river.",
+     "id": "w-domaine-huet-vouvray-le-haut-lieu-sec#3"
+    },
+    {
+     "k": "apply",
+     "q": "A guest ordering the Charcoal Roasted Chicken says: 'I'd love a dry white from the Loire Valley, but something rounder and fuller than a Sancerre.' What would you suggest, and why?",
+     "key": [
+      "Domaine Huet Vouvray Le Haut-Lieu Sec 2023 ($152)",
+      "It's a dry Chenin Blanc from Vouvray in the Loire, fuller than Sancerre, with quince and a honeyed touch",
+      "Its high acidity keeps it fresh, and Chenin Blanc is a classic match for chicken"
+     ],
+     "decoys": [
+      {
+       "id": "w-pascal-jolivet-sancerre",
+       "why": "It is the Sancerre itself, the zesty style the guest wants to move away from."
+      },
+      {
+       "id": "w-domaine-des-hates-chablis",
+       "why": "It is from Chablis in Burgundy, not the Loire, and it is a crisp, lean style rather than a rounder one."
+      },
+      {
+       "id": "w-olivier-leflaive-bourgogne-les-setilles",
+       "why": "It is a Burgundy white, not from the Loire as the guest asked."
+      }
+     ],
+     "wrong": [
+      "Its firm tannins grip the charred chicken skin",
+      "Its soft, low acidity keeps it gentle with the chicken",
+      "Its grassy, green-pepper flavour echoes the herbs"
+     ],
+     "why": "The Huet is the dry Loire white on the list that is fuller than Sancerre, and its high acidity and fruit suit roast chicken; it has no tannin, very high acidity and quince and honey notes rather than grassy ones.",
+     "id": "w-domaine-huet-vouvray-le-haut-lieu-sec#4"
+    },
+    {
+     "k": "contrast",
+     "q": "The Domaine Huet Vouvray Le Haut-Lieu Sec and the Pascal Jolivet Sancerre are both Loire Valley whites; what grape is each one made from?",
+     "ans": "The Huet is Chenin Blanc; the Sancerre is usually Sauvignon Blanc",
+     "acc": [
+      "Chenin Blanc for the Huet, Sauvignon Blanc for the Jolivet",
+      "Huet is Chenin, Jolivet is Sauvignon"
+     ],
+     "why": "The Huet is fuller, with quince and honey notes, while the Sancerre is the zesty, flint-and-citrus Loire style meant to be drunk young.",
+     "id": "w-domaine-huet-vouvray-le-haut-lieu-sec#5"
+    }
+   ],
+   "at": 1794330694570
+  },
+  "w-tiefenbrunner-pinot-grigio": {
+   "id": "w-tiefenbrunner-pinot-grigio",
+   "hook": "Grown in the Alps of Alto Adige, where sunny days and cool nights keep it crisp and fresh.",
+   "pitch": "This is a light, crisp Italian white with gentle pear and citrus and a clean, mouth-watering finish. It's easy to enjoy on its own or with lighter dishes, and at $15 it's our most affordable white by the glass.",
+   "say": "TEE-fen-broo-ner, PEE-noh GREE-joh",
+   "taste": "Light and clean, with pear and lemony citrus and a fresh, mouth-watering finish.",
+   "style": {
+    "body": 2,
+    "acid": 4,
+    "tannin": 0,
+    "sweet": 1
+   },
+   "grape": "Pinot Grigio is fairly neutral to lightly scented, with high acidity (the fresh, mouth-watering quality) and pear and citrus flavours; in Italy it is usually picked early and made lean and crisp.",
+   "place": "Alto Adige is in the Italian Alps, and its sunny days and cool nights help whites keep their fresh, crisp feel.",
+   "producer": "",
+   "serve": {
+    "temp": "7-9°C",
+    "glass": "white wine glass",
+    "decant": "no"
+   },
+   "dishes": [
+    {
+     "dish": "Tuna Carpaccio",
+     "why": "It's light and crisp, so it won't cover up the delicate raw tuna, and its freshness keeps pace with the tangy, salty dressing."
+    },
+    {
+     "dish": "Seared Rainbow Trout",
+     "why": "Its gentle pear and citrus suit the delicate trout and herbs, much like a squeeze of lemon."
+    },
+    {
+     "dish": "Caesar Salad",
+     "why": "Its crisp freshness cuts through the salty, savoury dressing and keeps each bite tasting clean."
+    }
+   ],
+   "alts": [
+    {
+     "id": "w-tessari-grisela-soave-classico",
+     "when": "another light Italian white by the glass, $16"
+    },
+    {
+     "id": "w-nautilus-sauvignon-blanc",
+     "when": "by the glass, for a guest who wants more aroma and zing"
+    },
+    {
+     "id": "w-antonutti-pinot-grigio-ramato",
+     "when": "same grape, made as an orange wine, by the bottle"
+    }
+   ],
+   "qs": [
+    {
+     "k": "recognise",
+     "q": "Which description best fits the Tiefenbrunner Pinot Grigio?",
+     "opts": [
+      "Light and crisp, with pear and citrus",
+      "Full and buttery, with vanilla and toast",
+      "Off-dry and floral, with honey and peach",
+      "Rich and oily, with ripe tropical fruit"
+     ],
+     "a": 0,
+     "why": "Italian Pinot Grigio like this one is usually made lean and crisp, with pear and citrus flavours.",
+     "id": "w-tiefenbrunner-pinot-grigio#0"
+    },
+    {
+     "k": "recognise",
+     "q": "What kind of climate shapes the Tiefenbrunner Pinot Grigio?",
+     "opts": [
+      "Alpine, with sunny days and cool nights",
+      "Hot and dry, with warm, still nights",
+      "Mild and coastal, with sea breezes",
+      "Humid and warm, with frequent rain"
+     ],
+     "a": 0,
+     "why": "Alto Adige sits in the Alps, with sunny days and cool nights that keep the wine fresh.",
+     "id": "w-tiefenbrunner-pinot-grigio#1"
+    },
+    {
+     "k": "recall",
+     "q": "What grape is the Tiefenbrunner Pinot Grigio made from?",
+     "ans": "Pinot Grigio",
+     "acc": [
+      "Pinot Gris",
+      "Pinot Grigio grapes"
+     ],
+     "why": "The grape is named on the label.",
+     "id": "w-tiefenbrunner-pinot-grigio#2"
+    },
+    {
+     "k": "recall",
+     "q": "Which region of Italy does the Tiefenbrunner Pinot Grigio come from?",
+     "ans": "Alto Adige",
+     "acc": [
+      "Trentino-Alto Adige",
+      "Südtirol",
+      "South Tyrol",
+      "the Italian Alps"
+     ],
+     "why": "It's from Alto Adige, in the Trentino-Alto Adige region of northern Italy.",
+     "id": "w-tiefenbrunner-pinot-grigio#3"
+    },
+    {
+     "k": "apply",
+     "q": "A guest having the Tuna Carpaccio wants a light, crisp white by the glass and asks for the most affordable one. What would you suggest, and why?",
+     "key": [
+      "Tiefenbrunner Pinot Grigio",
+      "it's light and crisp with pear and citrus, so it suits the delicate raw tuna and its tangy, salty dressing",
+      "it's our least expensive white by the glass at $15"
+     ],
+     "decoys": [
+      {
+       "id": "w-domaine-des-hates-chablis",
+       "why": "It's crisp, but at $23 a glass it's not the most affordable white by the glass."
+      },
+      {
+       "id": "w-pardevalles-albarin-blanco",
+       "why": "At $18 a glass it costs more than the guest asked for."
+      },
+      {
+       "id": "w-nautilus-sauvignon-blanc",
+       "why": "It costs more at $16 a glass and is usually more strongly flavoured than this delicate dish needs."
+      }
+     ],
+     "wrong": [
+      "Its rich, heavy body stands up to the raw tuna.",
+      "It is soft and low in acid, so it calms the dressing.",
+      "Its strong white-pepper spice matches the salty tuna."
+     ],
+     "why": "A light, crisp, affordable glass that won't overpower delicate raw fish is exactly what this guest wants.",
+     "id": "w-tiefenbrunner-pinot-grigio#4"
+    },
+    {
+     "k": "contrast",
+     "q": "Both the Tiefenbrunner Pinot Grigio and the Antonutti Pinot Grigio Ramato use the same grape; how do they differ on our list?",
+     "ans": "The Tiefenbrunner is a white poured by the glass; the Antonutti Ramato is an orange wine sold by the bottle only.",
+     "acc": [
+      "Tiefenbrunner is white, Ramato is orange",
+      "Tiefenbrunner by the glass, Ramato bottle only",
+      "one is a white wine, the other an orange wine"
+     ],
+     "why": "Same grape, but the list sells them as different styles and only the Tiefenbrunner comes by the glass.",
+     "id": "w-tiefenbrunner-pinot-grigio#5"
+    }
+   ],
+   "at": 1794330727552
+  },
+  "w-manni-nossing-gruner-veltliner": {
+   "id": "w-manni-nossing-gruner-veltliner",
+   "hook": "Grüner Veltliner from Alto Adige: think citrus with a white-pepper kick and a savoury, lentil-like note.",
+   "pitch": "This is a crisp, zesty white with citrus and a little white-pepper spice, plus a savoury edge that makes it more interesting than a simple fruity white. It's lovely with salads, fish and anything with a bit of spice, and it stays fresh right through a meal.",
+   "say": "MAH-nee NUH-sing, GROO-ner VELT-lee-ner",
+   "taste": "Crisp and zesty, with lemony citrus, a white-pepper tingle and a savoury, almost lentil-like note.",
+   "style": {
+    "body": 3,
+    "acid": 4,
+    "tannin": 0,
+    "sweet": 1
+   },
+   "grape": "Grüner Veltliner has high acidity (a fresh, mouth-watering quality), citrus and white-pepper flavours and a savoury, lentil-like note.",
+   "place": "Alto Adige is in the Italian Alps, where sunny days and cool nights help keep the wine fresh and crisp.",
+   "producer": "",
+   "serve": {
+    "temp": "8-10°C",
+    "glass": "white wine glass",
+    "decant": "no"
+   },
+   "dishes": [
+    {
+     "dish": "Eloise Wedge Salad",
+     "why": "Its crisp freshness cuts through the creamy dressing, and its peppery edge loves the salty toppings."
+    },
+    {
+     "dish": "Seared Rainbow Trout",
+     "why": "Its citrus and savoury, peppery notes suit the delicate trout and pick up the herbs."
+    },
+    {
+     "dish": "Shrimp Linguine",
+     "why": "Its zesty freshness keeps up with the tangy sauce, and its white-pepper note sits happily with the spice."
+    }
+   ],
+   "alts": [
+    {
+     "id": "w-tiefenbrunner-pinot-grigio",
+     "when": "same region, lighter and more neutral, by the glass"
+    },
+    {
+     "id": "w-pewsey-vale-riesling",
+     "when": "another crisp, high-acid white bottle, a bit cheaper"
+    },
+    {
+     "id": "w-vietti-roero-arneis",
+     "when": "an Italian white bottle at a lower price"
+    }
+   ],
+   "qs": [
+    {
+     "k": "recognise",
+     "q": "Which description best fits the Manni Nössing Grüner Veltliner?",
+     "opts": [
+      "Crisp and zesty, with citrus and a white-pepper bite",
+      "Soft and buttery, with ripe apple and vanilla",
+      "Light and neutral, with gentle pear and lemon",
+      "Off-dry and floral, with lychee and rose"
+     ],
+     "a": 0,
+     "why": "Grüner Veltliner is known for high acidity, citrus and white pepper, with a savoury note.",
+     "id": "w-manni-nossing-gruner-veltliner#0"
+    },
+    {
+     "k": "recognise",
+     "q": "Which flavour is the grape in the Manni Nössing Grüner Veltliner best known for?",
+     "opts": [
+      "White pepper",
+      "Toasted oak",
+      "Black cherry",
+      "Lychee"
+     ],
+     "a": 0,
+     "why": "White pepper is the signature note of Grüner Veltliner.",
+     "id": "w-manni-nossing-gruner-veltliner#1"
+    },
+    {
+     "k": "recall",
+     "q": "What grape is the Manni Nössing Grüner Veltliner made from?",
+     "ans": "Grüner Veltliner",
+     "acc": [
+      "Gruner Veltliner",
+      "Grüner",
+      "Gruner"
+     ],
+     "why": "The grape is named on the label.",
+     "id": "w-manni-nossing-gruner-veltliner#2"
+    },
+    {
+     "k": "recall",
+     "q": "Which region of Italy does the Manni Nössing Grüner Veltliner come from?",
+     "ans": "Alto Adige",
+     "acc": [
+      "Trentino-Alto Adige",
+      "Südtirol",
+      "South Tyrol",
+      "the Italian Alps"
+     ],
+     "why": "It's from Alto Adige, in the Trentino-Alto Adige region of northern Italy.",
+     "id": "w-manni-nossing-gruner-veltliner#3"
+    },
+    {
+     "k": "apply",
+     "q": "A guest ordering the Eloise Wedge Salad wants a bottle of crisp white with a peppery, savoury edge rather than lots of fruit. What would you suggest, and why?",
+     "key": [
+      "Manni Nössing Grüner Veltliner",
+      "it's crisp and zesty with a white-pepper, savoury note rather than big fruit",
+      "its freshness cuts through the creamy dressing and suits the salty toppings"
+     ],
+     "decoys": [
+      {
+       "id": "w-nautilus-sauvignon-blanc",
+       "why": "It's crisp, but usually led by fruit and green herbs rather than pepper and savoury notes."
+      },
+      {
+       "id": "w-lis-neris-jurosa-chardonnay",
+       "why": "Chardonnay is usually fuller and rounder, without the peppery, savoury edge the guest wants."
+      },
+      {
+       "id": "w-two-sisters-riesling",
+       "why": "Riesling is usually led by fruit and floral notes, not pepper and savoury character."
+      }
+     ],
+     "wrong": [
+      "Its rich, heavy weight matches the creamy dressing.",
+      "It is soft and low in acid, so the salad stays gentle.",
+      "Its ripe tropical fruit sweetens the salty bites."
+     ],
+     "why": "Grüner Veltliner is the white on our list known for white pepper and a savoury note, with the freshness to handle a creamy, salty salad.",
+     "id": "w-manni-nossing-gruner-veltliner#4"
+    },
+    {
+     "k": "contrast",
+     "q": "Both the Manni Nössing Grüner Veltliner and the Tiefenbrunner Pinot Grigio come from Alto Adige; how do they differ in taste?",
+     "ans": "The Grüner has white pepper and a savoury, lentil-like note; the Pinot Grigio is more neutral, with pear and citrus.",
+     "acc": [
+      "Grüner is peppery and savoury, Pinot Grigio is neutral with pear",
+      "the Grüner is spicier and more savoury",
+      "the Pinot Grigio is lighter and more neutral"
+     ],
+     "why": "Same place, but the grapes give different flavours: pepper and savoury notes versus simple pear and citrus.",
+     "id": "w-manni-nossing-gruner-veltliner#5"
+    }
+   ],
+   "at": 1794330727552
+  },
+  "w-tenuta-santome-tai-bianco-parcel-368": {
+   "id": "w-tenuta-santome-tai-bianco-parcel-368",
+   "hook": "Tai is the Veneto name for Friulano, and this 2017 is the oldest white on our list.",
+   "pitch": "This is a dry, medium-bodied white from the Veneto made from Tai, which is the local name for Friulano, and you can expect pear, almond and a gently bitter, nutty finish. It's a 2017, so it has had several years in bottle, and that gives it a softer, rounder feel than the young whites on the list.",
+   "say": "teh-NOO-tah san-toh-MEH, TY bee-AHN-koh",
+   "taste": "Expect a dry white with ripe pear, almond and white flowers, a smooth, rounded feel and a gently bitter, nutty finish.",
+   "style": {
+    "body": 3,
+    "acid": 3,
+    "tannin": 0,
+    "sweet": 1
+   },
+   "grape": "Tai, also called Friulano, usually gives a medium-bodied white with pear and almond flavours and a slightly bitter finish, and here a few years in bottle should round it out.",
+   "place": "It comes from the Veneto in north-east Italy, where a continental climate (hot summers, cold winters) is softened by Lake Garda and the Adriatic Sea, which helps the grapes ripen evenly without losing freshness.",
+   "producer": "",
+   "serve": {
+    "temp": "10-12°C",
+    "glass": "standard white wine glass",
+    "decant": "no"
+   },
+   "dishes": [
+    {
+     "dish": "Squash Ravioli",
+     "why": "The wine's almond, nutty side sits beautifully with the sweet, nutty squash, and it has enough body to match the richness of the pasta."
+    },
+    {
+     "dish": "Seared Scallop",
+     "why": "Its rounded, smooth feel suits the rich, delicate scallop without drowning it out."
+    },
+    {
+     "dish": "Seared Rainbow Trout",
+     "why": "It's gentle enough for the delicate fish and has enough fruit to stand up to the salty, herby seasoning."
+    }
+   ],
+   "alts": [
+    {
+     "id": "w-tessari-grisela-soave-classico",
+     "when": "another Veneto white, younger and by the glass"
+    },
+    {
+     "id": "w-ottella-lugana-le-creete",
+     "when": "another northern Italian white, younger and fresher"
+    },
+    {
+     "id": "w-feudi-di-san-gregorio-greco-di-tufo",
+     "when": "an Italian white for under $100 a bottle"
+    }
+   ],
+   "qs": [
+    {
+     "k": "recognise",
+     "q": "Which description best fits the Tenuta Santomè Tai Bianco Parcel #368?",
+     "opts": [
+      "Light and very crisp, with sharp lime and green apple",
+      "Full and buttery, with vanilla and toasted oak",
+      "Medium-bodied and dry, with pear, almond and a nutty finish",
+      "Off-dry and perfumed, with lychee and rose petal"
+     ],
+     "a": 2,
+     "why": "Tai (Friulano) usually makes a dry, medium-bodied white with pear and almond, and this 2017 has had time in bottle to round out.",
+     "id": "w-tenuta-santome-tai-bianco-parcel-368#0"
+    },
+    {
+     "k": "recognise",
+     "q": "Which region of Italy does the Tenuta Santomè Tai Bianco Parcel #368 come from?",
+     "opts": [
+      "Liguria",
+      "Piedmont",
+      "Veneto",
+      "Sardinia"
+     ],
+     "a": 2,
+     "why": "It's from the Veneto in north-east Italy, where Lake Garda and the Adriatic soften the climate.",
+     "id": "w-tenuta-santome-tai-bianco-parcel-368#1"
+    },
+    {
+     "k": "recall",
+     "q": "What grape is the Tenuta Santomè Tai Bianco Parcel #368 made from?",
+     "ans": "Tai, also called Friulano",
+     "acc": [
+      "Tai",
+      "Friulano",
+      "Tai Bianco",
+      "Tocai Friulano"
+     ],
+     "why": "Tai is the Veneto name for the grape known as Friulano.",
+     "id": "w-tenuta-santome-tai-bianco-parcel-368#2"
+    },
+    {
+     "k": "recall",
+     "q": "What vintage is the Tenuta Santomè Tai Bianco Parcel #368 on our list?",
+     "ans": "2017",
+     "acc": [
+      "17",
+      "twenty seventeen"
+     ],
+     "why": "It's the oldest white on the list, which is a selling point for guests who like whites with some bottle age.",
+     "id": "w-tenuta-santome-tai-bianco-parcel-368#3"
+    },
+    {
+     "k": "apply",
+     "q": "A guest ordering the Squash Ravioli says: 'I'd love a white with real bottle age, at least six years old, and nothing over $120 a bottle.' What would you suggest, and why?",
+     "key": [
+      "Tenuta Santomè Tai Bianco Parcel #368",
+      "It's a 2017, the oldest white on our list, at $110 a bottle",
+      "Its almond, nutty character and medium body suit the sweet, nutty, rich ravioli"
+     ],
+     "decoys": [
+      {
+       "id": "w-serra-barcelo-aucala-terra-alta",
+       "why": "It's within budget, but as a 2021 it doesn't have the six years of bottle age the guest asked for."
+      },
+      {
+       "id": "w-lis-neris-jurosa-chardonnay",
+       "why": "At $169 it's over the guest's budget, and as a 2021 it's younger than they want."
+      },
+      {
+       "id": "w-tessari-grisela-soave-classico",
+       "why": "It's a young 2023, so it has none of the bottle age the guest is after."
+      }
+     ],
+     "wrong": [
+      "Its firm tannin gives the soft pasta some welcome grip",
+      "It is a light, delicate white that stays out of the dish's way",
+      "Its bold tropical fruit echoes the sweetness of the squash"
+     ],
+     "why": "Only the 2017 Tai Bianco meets both the age and price request, and its nutty, rounded style suits the ravioli.",
+     "id": "w-tenuta-santome-tai-bianco-parcel-368#4"
+    },
+    {
+     "k": "contrast",
+     "q": "What sets the Tenuta Santomè Tai Bianco Parcel #368 apart from the Tessari Grisela Soave Classico, since both are Veneto whites?",
+     "ans": "The Tai Bianco is an older 2017 made from Tai (Friulano) and sold by the bottle only; the Soave is a young 2023 we pour by the glass.",
+     "acc": [
+      "The Tai Bianco is older and bottle only; the Soave is younger and by the glass",
+      "Tai Bianco is 2017 Friulano, Soave is 2023 by the glass"
+     ],
+     "why": "Knowing the age and the by-the-glass difference helps you steer guests who want something mature or just a single glass.",
+     "id": "w-tenuta-santome-tai-bianco-parcel-368#5"
+    }
+   ],
+   "at": 1794330743555
+  },
+  "w-maria-donata-bianchi-pigato": {
+   "id": "w-maria-donata-bianchi-pigato",
+   "hook": "Pigato is Liguria's own grape, a close cousin of Vermentino, grown along the Italian Riviera.",
+   "pitch": "This is a dry white from Liguria, on Italy's Riviera coast, and you can expect herbs, citrus peel and a lovely salty, savoury edge. It has a bit of weight and texture, so it feels generous with seafood while staying fresh.",
+   "say": "ma-REE-ah doh-NAH-tah bee-AHN-kee, pee-GAH-toh",
+   "taste": "Expect a dry white with fresh herbs, lemon peel and stone fruit, a slightly oily, textured feel and a salty, savoury finish.",
+   "style": {
+    "body": 3,
+    "acid": 3,
+    "tannin": 0,
+    "sweet": 1
+   },
+   "grape": "Pigato is a close relative of Vermentino and usually gives a dry, herby white with a little more weight and texture, which shows here as a savoury, slightly oily feel.",
+   "place": "It comes from Liguria, the narrow coastal strip of north-west Italy known as the Italian Riviera, and wines from here often have a salty, herby, seaside edge.",
+   "producer": "",
+   "serve": {
+    "temp": "8-10°C",
+    "glass": "standard white wine glass",
+    "decant": "no"
+   },
+   "dishes": [
+    {
+     "dish": "Seared Rainbow Trout",
+     "why": "Its herby, salty side matches the herbs and salt on the trout, and its texture suits the seared skin."
+    },
+    {
+     "dish": "Tuna Carpaccio",
+     "why": "It's fresh enough for the delicate raw tuna and its salty edge picks up the seasoning."
+    },
+    {
+     "dish": "Shrimp Linguine",
+     "why": "Its savoury, herby character and fresh acidity (the mouth-watering freshness) stand up to the spicy, tangy sauce."
+    }
+   ],
+   "alts": [
+    {
+     "id": "w-antonella-corda-vermentino-di-sardegna",
+     "when": "closely related grape, under $100 a bottle"
+    },
+    {
+     "id": "w-pardevalles-albarin-blanco",
+     "when": "by the glass"
+    },
+    {
+     "id": "w-tiberio-trebbiano-d-abruzzo",
+     "when": "a lighter Italian white under $90 a bottle"
+    }
+   ],
+   "qs": [
+    {
+     "k": "recognise",
+     "q": "Which description best fits the Maria Donata Bianchi Pigato?",
+     "opts": [
+      "Light and off-dry, with peach, honey and a soft finish",
+      "Dry and savoury, with herbs, citrus peel and a salty edge",
+      "Full and oaky, with butter, vanilla and toasted nuts",
+      "Lean and very tart, with green pepper and gooseberry"
+     ],
+     "a": 1,
+     "why": "Pigato usually makes a dry, herby, savoury white with a salty, seaside edge.",
+     "id": "w-maria-donata-bianchi-pigato#0"
+    },
+    {
+     "k": "recognise",
+     "q": "Which region of Italy does the Maria Donata Bianchi Pigato come from?",
+     "opts": [
+      "Veneto",
+      "Liguria",
+      "Sardinia",
+      "Abruzzo"
+     ],
+     "a": 1,
+     "why": "It's from Liguria, the coastal strip of north-west Italy known as the Italian Riviera.",
+     "id": "w-maria-donata-bianchi-pigato#1"
+    },
+    {
+     "k": "recall",
+     "q": "What grape is the Maria Donata Bianchi Pigato made from?",
+     "ans": "Pigato",
+     "acc": [
+      "Pigato grape",
+      "100% Pigato"
+     ],
+     "why": "Pigato is Liguria's own grape and a close relative of Vermentino.",
+     "id": "w-maria-donata-bianchi-pigato#2"
+    },
+    {
+     "k": "recall",
+     "q": "What is the bottle price of the Maria Donata Bianchi Pigato on our list?",
+     "ans": "$157",
+     "acc": [
+      "157",
+      "157 dollars",
+      "$157 a bottle"
+     ],
+     "why": "It's sold by the bottle only, so knowing the price helps you offer it with confidence.",
+     "id": "w-maria-donata-bianchi-pigato#3"
+    },
+    {
+     "k": "apply",
+     "q": "A guest ordering the Seared Rainbow Trout says: 'I want a herby, savoury white from the Italian Riviera, the kind you'd drink by the sea there.' What would you suggest, and why?",
+     "key": [
+      "Maria Donata Bianchi Pigato",
+      "It's made from Pigato, Liguria's own grape, from the Italian Riviera",
+      "Its herby, salty, savoury character matches the herbs and salt on the trout"
+     ],
+     "decoys": [
+      {
+       "id": "w-antonella-corda-vermentino-di-sardegna",
+       "why": "It's a related grape, but it's from Sardinia, not the Riviera the guest asked for."
+      },
+      {
+       "id": "w-vietti-roero-arneis",
+       "why": "It's from Piedmont, inland, so it isn't the Riviera white the guest wants."
+      },
+      {
+       "id": "w-feudi-di-san-gregorio-greco-di-tufo",
+       "why": "It's from Campania in southern Italy, not the Riviera."
+      }
+     ],
+     "wrong": [
+      "It is a heavy, full-bodied white built for rich meat dishes",
+      "Its firm tannin cuts through the oil in the trout's skin",
+      "Its ripe tropical fruit and vanilla soften the trout's herbs"
+     ],
+     "why": "Only the Pigato comes from the Italian Riviera, and its herby, salty style is a natural match for the trout.",
+     "id": "w-maria-donata-bianchi-pigato#4"
+    },
+    {
+     "k": "contrast",
+     "q": "How is the Maria Donata Bianchi Pigato different from the Antonella Corda Vermentino di Sardegna, given the grapes are close relatives?",
+     "ans": "The Pigato is from Liguria on the Italian Riviera at $157; the Vermentino is from Sardinia at $98.",
+     "acc": [
+      "Pigato is Ligurian and pricier; Vermentino is Sardinian and cheaper",
+      "Liguria versus Sardinia, $157 versus $98"
+     ],
+     "why": "Knowing the region and price difference lets you offer the Vermentino as a similar, lower-priced choice.",
+     "id": "w-maria-donata-bianchi-pigato#5"
+    }
+   ],
+   "at": 1794330743555
+  },
+  "w-ottella-lugana-le-creete": {
+   "id": "w-ottella-lugana-le-creete",
+   "hook": "It's made from Turbiana, the white grape of Lugana in Lombardy, and you rarely see it on lists.",
+   "pitch": "This is a dry, crisp Italian white with fresh citrus and orchard-fruit flavours and a clean finish. If you like Pinot Grigio or Chablis but want something a little more interesting, this is a lovely bottle to discover.",
+   "say": "oh-TELL-ah loo-GAH-nah, leh KREH-teh",
+   "taste": "Dry and crisp, with lemon and green apple flavours and a fresh, clean finish.",
+   "style": {
+    "body": 3,
+    "acid": 4,
+    "tannin": 0,
+    "sweet": 1
+   },
+   "grape": "Turbiana is the local white grape of Lugana and gives a dry, fresh wine with a lively, mouth-watering crispness.",
+   "place": "Lugana is a small white-wine area in Lombardy, in northern Italy, and its name on the label tells you the wine is made from Turbiana.",
+   "producer": "",
+   "serve": {
+    "temp": "8-10°C",
+    "glass": "white wine glass",
+    "decant": "no"
+   },
+   "dishes": [
+    {
+     "dish": "Seared Rainbow Trout",
+     "why": "Its crisp freshness suits the delicate, salty, herby trout without covering it up."
+    },
+    {
+     "dish": "Seared Scallop",
+     "why": "The wine's clean crispness balances the richness of the scallop and lets its sweetness come through."
+    },
+    {
+     "dish": "Tuna Carpaccio",
+     "why": "A dry, fresh white keeps up with the citrus and salt on the raw tuna and doesn't overpower it."
+    }
+   ],
+   "alts": [
+    {
+     "id": "w-tessari-grisela-soave-classico",
+     "when": "by the glass, or a lower-priced Italian white bottle"
+    },
+    {
+     "id": "w-vietti-roero-arneis",
+     "when": "another northern Italian white from a local grape, a little cheaper"
+    },
+    {
+     "id": "w-domaine-des-hates-chablis",
+     "when": "a crisp French white by the glass"
+    }
+   ],
+   "qs": [
+    {
+     "k": "recognise",
+     "q": "Which description fits the Ottella Lugana Le Creete?",
+     "opts": [
+      "Dry and crisp, with lemon, green apple and a fresh finish",
+      "Rich and buttery, with vanilla, toast and a creamy finish",
+      "Off-dry and perfumed, with lychee, rose and a soft finish",
+      "Soft and mellow, with ripe peach, melon and a gentle finish"
+     ],
+     "a": 0,
+     "why": "Lugana is a dry, crisp white with fresh citrus and orchard-fruit flavours, not a buttery, sweet or soft one.",
+     "id": "w-ottella-lugana-le-creete#0"
+    },
+    {
+     "k": "recognise",
+     "q": "Where does the Ottella Lugana Le Creete come from?",
+     "opts": [
+      "Lugana, in Lombardy",
+      "Soave, in the Veneto",
+      "Chablis, in Burgundy",
+      "Roero, in Piedmont"
+     ],
+     "a": 0,
+     "why": "The wine is named after Lugana, a white-wine area in Lombardy in northern Italy.",
+     "id": "w-ottella-lugana-le-creete#1"
+    },
+    {
+     "k": "recall",
+     "q": "What grape is the Ottella Lugana Le Creete made from?",
+     "ans": "Turbiana",
+     "acc": [
+      "Turbiana grape",
+      "It's Turbiana"
+     ],
+     "why": "The label names Turbiana, the local white grape of Lugana.",
+     "id": "w-ottella-lugana-le-creete#2"
+    },
+    {
+     "k": "recall",
+     "q": "How much is a bottle of the Ottella Lugana Le Creete on our list?",
+     "ans": "$125",
+     "acc": [
+      "125 dollars",
+      "$125 a bottle"
+     ],
+     "why": "It's sold by the bottle only, at $125.",
+     "id": "w-ottella-lugana-le-creete#3"
+    },
+    {
+     "k": "apply",
+     "q": "A guest ordering the Seared Rainbow Trout wants a bottle of crisp, dry Italian white, nothing oaky, priced between $115 and $130. What would you suggest, and why?",
+     "key": [
+      "Ottella Lugana Le Creete",
+      "It's a crisp, dry Italian white at $125, right in their price range",
+      "Its fresh crispness suits the delicate, salty, herby trout without covering it up"
+     ],
+     "decoys": [
+      {
+       "id": "w-lis-neris-jurosa-chardonnay",
+       "why": "At $169 it's well over their budget and a richer style than they asked for."
+      },
+      {
+       "id": "w-maria-donata-bianchi-pigato",
+       "why": "At $157 it's over the price range the guest gave."
+      },
+      {
+       "id": "w-tenuta-santome-tai-bianco-parcel-368",
+       "why": "At $110 it's under their range, and as a 2017 it's an older wine than the fresh, crisp white they want."
+      }
+     ],
+     "wrong": [
+      "Its heavy, full body stands up to the richness of the trout",
+      "Its firm tannin grips the crispy skin of the trout",
+      "Its soft, low acidity keeps the herbs from tasting sharp"
+     ],
+     "why": "Only the Ottella Lugana is a crisp, dry Italian white in that price range, and its freshness flatters a delicate fish.",
+     "id": "w-ottella-lugana-le-creete#4"
+    },
+    {
+     "k": "contrast",
+     "q": "Which can a guest order by the glass, the Ottella Lugana Le Creete or the Tessari Grisela, Soave Classico?",
+     "ans": "The Tessari Grisela, Soave Classico",
+     "acc": [
+      "The Soave",
+      "Tessari",
+      "The Tessari Soave, at $16 a glass"
+     ],
+     "why": "The Soave is poured by the glass at $16; the Lugana is sold by the bottle only.",
+     "id": "w-ottella-lugana-le-creete#5"
+    }
+   ],
+   "at": 1794330750455
+  },
+  "w-tessari-grisela-soave-classico": {
+   "id": "w-tessari-grisela-soave-classico",
+   "hook": "Garganega is the main grape behind Soave, and it gives gentle almond and citrus blossom notes.",
+   "pitch": "This is a dry Italian white with soft citrus blossom and a light almond note, fresh without being sharp. It's an easy, food-friendly glass that's lovely with pasta, starters and fish.",
+   "say": "teh-SAH-ree gree-ZEH-lah, soh-AH-veh KLASS-ee-koh",
+   "taste": "Dry and gently fresh, with citrus blossom, lemon and a soft almond note.",
+   "style": {
+    "body": 2,
+    "acid": 3,
+    "tannin": 0,
+    "sweet": 1
+   },
+   "grape": "Garganega, the main grape behind Soave, has medium acidity, meaning it's fresh but not sharp, with almond and citrus blossom notes.",
+   "place": "Soave is in the Veneto in north-east Italy, where the climate is continental (warm summers, cold winters) but softened by Lake Garda and the Adriatic Sea, which helps keep the wine fresh.",
+   "producer": "",
+   "serve": {
+    "temp": "8-10°C",
+    "glass": "white wine glass",
+    "decant": "no"
+   },
+   "dishes": [
+    {
+     "dish": "Squash Ravioli",
+     "why": "The wine's almond note picks up the nutty side of the ravioli, and its freshness lifts the richness."
+    },
+    {
+     "dish": "Burrata & Tomato",
+     "why": "Soave is a classic match for Italian starters, and its gentle freshness suits the creamy burrata and tomato."
+    },
+    {
+     "dish": "Seared Rainbow Trout",
+     "why": "It's light enough to let the delicate, herby trout shine, and Soave is a natural partner for fish."
+    }
+   ],
+   "alts": [
+    {
+     "id": "w-tiefenbrunner-pinot-grigio",
+     "when": "another Italian white by the glass, slightly cheaper"
+    },
+    {
+     "id": "w-ottella-lugana-le-creete",
+     "when": "a bottle with more crispness and a little more weight"
+    },
+    {
+     "id": "w-feudi-di-san-gregorio-greco-di-tufo",
+     "when": "another Italian white bottle at a similar price"
+    }
+   ],
+   "qs": [
+    {
+     "k": "recognise",
+     "q": "Which description fits the Tessari Grisela, Soave Classico?",
+     "opts": [
+      "Dry and gently fresh, with almond and citrus blossom",
+      "Full and buttery, with vanilla, toast and oak",
+      "Off-dry and perfumed, with lychee and rose",
+      "Sharp and grassy, with green pepper and lime"
+     ],
+     "a": 0,
+     "why": "Garganega gives Soave medium acidity with almond and citrus blossom notes, not oak, sweetness or grassiness.",
+     "id": "w-tessari-grisela-soave-classico#0"
+    },
+    {
+     "k": "recognise",
+     "q": "Which Italian region does the Tessari Grisela, Soave Classico come from?",
+     "opts": [
+      "Veneto",
+      "Lombardy",
+      "Piedmont",
+      "Tuscany"
+     ],
+     "a": 0,
+     "why": "Soave is in the Veneto, in north-east Italy.",
+     "id": "w-tessari-grisela-soave-classico#1"
+    },
+    {
+     "k": "recall",
+     "q": "What is the main grape in the Tessari Grisela, Soave Classico?",
+     "ans": "Garganega",
+     "acc": [
+      "Garganega grape",
+      "It's Garganega"
+     ],
+     "why": "Garganega is the main grape behind Soave, and the label names it.",
+     "id": "w-tessari-grisela-soave-classico#2"
+    },
+    {
+     "k": "recall",
+     "q": "What does a glass of the Tessari Grisela, Soave Classico cost on our list?",
+     "ans": "$16",
+     "acc": [
+      "16 dollars",
+      "$16 a glass"
+     ],
+     "why": "The list prints it at $16 a glass and $84 a bottle.",
+     "id": "w-tessari-grisela-soave-classico#3"
+    },
+    {
+     "k": "apply",
+     "q": "A guest ordering the Squash Ravioli wants an Italian white by the glass with a gentle nutty touch, fresh but not sharp. What would you suggest, and why?",
+     "key": [
+      "Tessari Grisela, Soave Classico",
+      "It's an Italian white poured by the glass, at $16",
+      "Its almond note suits the sweet, nutty ravioli, and its medium acidity freshens without being sharp"
+     ],
+     "decoys": [
+      {
+       "id": "w-tiefenbrunner-pinot-grigio",
+       "why": "It's an Italian white by the glass, but it doesn't have the almond note the guest is after."
+      },
+      {
+       "id": "w-nautilus-sauvignon-blanc",
+       "why": "It's from New Zealand, not Italy, and its zesty style is sharper than the guest wants."
+      },
+      {
+       "id": "w-domaine-des-hates-chablis",
+       "why": "It's a French white, not Italian, and its crisp style isn't the nutty touch they asked for."
+      }
+     ],
+     "wrong": [
+      "Its full, oaky body matches the richness of the ravioli",
+      "Its firm tannin balances the sweetness of the squash",
+      "Its very sharp, high acidity cuts straight through the sweetness"
+     ],
+     "why": "The Soave is the Italian white by the glass whose almond notes and gentle freshness suit a sweet, nutty pasta.",
+     "id": "w-tessari-grisela-soave-classico#4"
+    },
+    {
+     "k": "contrast",
+     "q": "Which of our two Italian whites by the glass has almond and citrus blossom notes, the Tessari Grisela, Soave Classico or the Tiefenbrunner Pinot Grigio?",
+     "ans": "The Tessari Grisela, Soave Classico",
+     "acc": [
+      "The Soave",
+      "Tessari",
+      "The Tessari Soave"
+     ],
+     "why": "Almond and citrus blossom come from Garganega, the grape in the Soave.",
+     "id": "w-tessari-grisela-soave-classico#5"
+    }
+   ],
+   "at": 1794330750455
+  }
+ },
+ "pairings": {},
+ "cocktails": [
+  {
+   "id": "c-espresso-ghost",
+   "section": "House Cocktails",
+   "name": "Espresso Ghost",
+   "price": "$25",
+   "ingredients": [
+    "brown butter-washed Absolut Vodka",
+    "coffee distillate",
+    "hazelnut",
+    "chocolate"
+   ],
+   "by": "",
+   "note": "2.5oz"
+  },
+  {
+   "id": "c-melon-highball",
+   "section": "House Cocktails",
+   "name": "Melon Highball",
+   "price": "$23",
+   "ingredients": [
+    "Beefeater Gin",
+    "Tio Pepe Fino Sherry",
+    "melon",
+    "lime",
+    "seltzer"
+   ],
+   "by": "",
+   "note": "2oz"
+  },
+  {
+   "id": "c-fresh-peach",
+   "section": "House Cocktails",
+   "name": "Fresh Peach",
+   "price": "$23",
+   "ingredients": [
+    "Planteray 3 Stars rum",
+    "acid-adjusted peach cordial",
+    "vanilla"
+   ],
+   "by": "",
+   "note": "2oz"
+  },
+  {
+   "id": "c-pineapple-negroni",
+   "section": "House Cocktails",
+   "name": "Pineapple Negroni",
+   "price": "$22",
+   "ingredients": [
+    "Planteray Stiggins' Fancy rum",
+    "toasted coconut",
+    "Luxardo Bitter Bianco",
+    "Cocchi Vermouth di Torino"
+   ],
+   "by": "",
+   "note": "3oz"
+  },
+  {
+   "id": "c-margarita",
+   "section": "Classics",
+   "name": "Margarita",
+   "price": "$20",
+   "ingredients": [
+    "Altos Blanco Tequila",
+    "orange liqueur",
+    "agave",
+    "lime"
+   ],
+   "by": "",
+   "note": "2oz"
+  },
+  {
+   "id": "c-french-75",
+   "section": "Classics",
+   "name": "French 75",
+   "price": "$20",
+   "ingredients": [
+    "Beefeater London Dry Gin",
+    "lemon",
+    "prosecco"
+   ],
+   "by": "",
+   "note": "3oz"
+  },
+  {
+   "id": "c-paloma",
+   "section": "Classics",
+   "name": "Paloma",
+   "price": "$19",
+   "ingredients": [
+    "Altos Blanco Tequila",
+    "grapefruit",
+    "lime",
+    "seltzer"
+   ],
+   "by": "",
+   "note": "2oz"
+  },
+  {
+   "id": "c-classic-martini",
+   "section": "Classics",
+   "name": "Classic Martini",
+   "price": "$20",
+   "ingredients": [
+    "gin or vodka (guest's choice)",
+    "vermouth"
+   ],
+   "by": "",
+   "note": "3oz"
+  },
+  {
+   "id": "c-cucumber-garden-fizz",
+   "section": "Zero-Proof",
+   "name": "Cucumber Garden Fizz",
+   "price": "$18",
+   "ingredients": [
+    "Noa Garden Gin (non-alcoholic)",
+    "elderflower cordial",
+    "lemon",
+    "cucumber tonic"
+   ],
+   "by": "",
+   "note": "Non-alcoholic"
+  },
+  {
+   "id": "c-miss-fire",
+   "section": "Zero-Proof",
+   "name": "Miss Fire",
+   "price": "$15",
+   "ingredients": [
+    "Lyre's Aperitivo (non-alcoholic)",
+    "pomegranate",
+    "lemon"
+   ],
+   "by": "",
+   "note": "Non-alcoholic"
+  }
+ ],
+ "cocktailCards": {},
+ "exported": "2026-11-10T17:12:30.461Z"
+}

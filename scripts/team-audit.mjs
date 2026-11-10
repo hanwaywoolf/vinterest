@@ -6,7 +6,7 @@
 import { spawn, execSync } from 'node:child_process';
 import { chromium } from 'playwright';
 
-const seeds = process.argv.slice(2).length ? process.argv.slice(2) : ['demo', 'social', 'princess-royal', 'sample'];
+const seeds = process.argv.slice(2).length ? process.argv.slice(2) : ['demo', 'social', 'princess-royal', 'eloise', 'sample'];
 execSync('node scripts/build.mjs', { stdio: 'ignore' });
 const port = 4199, server = spawn('node', ['scripts/serve.mjs', 'dist', String(port)], { stdio: 'ignore' });
 await new Promise((r) => setTimeout(r, 800));
