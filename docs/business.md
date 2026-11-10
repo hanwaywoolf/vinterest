@@ -142,7 +142,8 @@ restaurant). `data/team-eloise-list.json` holds its 76 wines (by the glass and b
 filled white (`team/brand/eloise/wordmark-white.svg`). It carries the same invented team and eight weeks of invented
 sales, labelled Demo data, with its own `offList` POS item ("House Prosecco (Events)"). Its training
 (`data/team-eloise.json`) was written through the production Worker by `npm run team:write -- eloise`, then put
-through `npm run team:audit` and `npm run team:review -- eloise`. Its demo address is eloise.vinterest.team
+through `npm run team:audit` (nothing flagged) and `npm run team:review -- eloise`, then `--held` once more: 695
+questions read, 139 rewritten, 140 held out of the drill (120 on wines, 6 on cocktails, 14 on dishes). Its demo address is eloise.vinterest.team
 (`TeamSample.HOSTS`, the Worker's `VENUE_HOSTS`), which needs adding as a custom domain on the vinterest Pages project.
 The page written for the restaurant is `site/teams/for/eloise.html` (vinterest.team/for/eloise, private), its list and
 cards made from the seed's two files with `cellarOf`.
