@@ -618,3 +618,51 @@ html.dlg-open, html.dlg-open body { overflow: hidden; }
   .stepsfull.tl-js { padding-left: 26px; } .stepsfull.tl-js::before, .stepsfull.tl-js::after { left: 5px; top: 36px; bottom: 36px; }
   .stepsfull.tl-js .sf::before { left: -27px; top: 29px; width: 12px; height: 12px; }
 }
+
+/* Hear a table (data-table, site.js): a scripted guest and server, spoken. Each line lights as it's said, its words
+   following the voice; then Vinny's mark arrives. Before it plays the whole exchange shows, dimmed, to read. */
+.table { margin-top: 64px; display: grid; grid-template-columns: .8fr 1.2fr; gap: 40px; align-items: start; background: #111; color: #fff; border-radius: 24px; padding: 40px; position: relative; overflow: hidden; }
+.table::before { content: ''; position: absolute; left: -10%; top: -40%; width: 60%; height: 120%; background: radial-gradient(50% 50% at 50% 50%, rgba(232, 83, 107, .2), transparent 70%); pointer-events: none; }
+.table > * { position: relative; }
+.t-head h3 { font-size: clamp(24px, 2.6vw, 32px); line-height: 1.15; margin-top: 12px; }
+.t-head p { margin-top: 12px; font-size: 16px; color: rgba(255, 255, 255, .72); }
+.t-head .t-note { font-size: 13px; color: rgba(255, 255, 255, .5); margin-top: 18px; }
+.t-play { margin-top: 24px; display: inline-flex; align-items: center; gap: 14px; text-align: left; font: inherit; color: #fff; background: rgba(255, 255, 255, .07); border: 1px solid rgba(255, 255, 255, .2); border-radius: 999px; padding: 8px 22px 8px 8px; cursor: pointer; transition: background .2s, border-color .2s; }
+.t-play:hover { background: rgba(255, 255, 255, .12); border-color: rgba(255, 255, 255, .34); }
+.t-play .ico { width: 48px; height: 48px; border-radius: 50%; background: var(--neon); flex: none; position: relative; box-shadow: 0 0 0 0 rgba(232, 83, 107, .5); }
+.table:not(.playing):not(.done) .t-play .ico { animation: t-ring 2.2s ease-out infinite; }
+.t-play .ico::before { content: ''; position: absolute; left: 19px; top: 15px; border-style: solid; border-width: 9px 0 9px 14px; border-color: transparent transparent transparent #1a0508; }
+.table.playing .t-play .ico::before { left: 16px; top: 15px; width: 5px; height: 18px; border: 0; border-left: 5px solid #1a0508; border-right: 5px solid #1a0508; box-sizing: content-box; }
+.t-play b { display: block; font-size: 16px; font-weight: 700; } .t-play small { display: block; font-size: 12px; color: rgba(255, 255, 255, .6); }
+@keyframes t-ring { 0% { box-shadow: 0 0 0 0 rgba(232, 83, 107, .5); } 100% { box-shadow: 0 0 0 16px rgba(232, 83, 107, 0); } }
+.t-stage { display: grid; gap: 12px; }
+.t-setup { font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: rgba(255, 255, 255, .5); }
+.t-line { display: grid; gap: 5px; max-width: 86%; opacity: .38; transition: opacity .4s ease, transform .4s cubic-bezier(.2, .8, .2, 1); }
+.t-line.server { justify-self: end; }
+.t-line .who { font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: rgba(255, 255, 255, .55); display: flex; align-items: center; gap: 8px; }
+.t-line.server .who { justify-content: flex-end; color: var(--neon); }
+.t-line .bub { background: rgba(255, 255, 255, .08); border: 1px solid rgba(255, 255, 255, .12); border-radius: 4px 18px 18px 18px; padding: 12px 16px; }
+.t-line.server .bub { background: rgba(232, 83, 107, .14); border-color: rgba(232, 83, 107, .34); border-radius: 18px 4px 18px 18px; }
+.t-line p { font-size: 15px; line-height: 1.5; color: #fff; }
+.t-line .wave { display: none; align-items: center; gap: 3px; height: 14px; margin-bottom: 6px; }
+.t-line.talk .wave { display: flex; }
+.t-line .wave i { width: 3px; height: 100%; border-radius: 2px; background: currentColor; color: var(--neon); transform-origin: 50% 50%; animation: t-wave .9s ease-in-out infinite; }
+.t-line .wave i:nth-child(2) { animation-delay: -.6s; } .t-line .wave i:nth-child(3) { animation-delay: -.3s; } .t-line .wave i:nth-child(4) { animation-delay: -.75s; } .t-line .wave i:nth-child(5) { animation-delay: -.15s; }
+@keyframes t-wave { 0%, 100% { transform: scaleY(.25); } 50% { transform: scaleY(1); } }
+.table.playing .t-line, .table.done .t-line { opacity: 0; transform: translateY(10px); }
+.table.playing .t-line.on, .table.done .t-line.on { opacity: 1; transform: none; }
+.t-line p span { transition: opacity .18s; } .t-line.talk p span:not(.said) { opacity: .28; }
+.t-mark { margin-top: 6px; border: 1px solid rgba(95, 212, 143, .35); background: rgba(95, 212, 143, .08); border-radius: 16px; padding: 16px 18px; opacity: .38; transition: opacity .5s ease, transform .5s cubic-bezier(.2, .8, .2, 1); }
+.table.playing .t-mark, .table.done .t-mark { opacity: 0; transform: translateY(12px); }
+.table .t-mark.on { opacity: 1; transform: none; }
+.t-mark .v { display: flex; align-items: center; gap: 10px; font-size: 17px; color: #5FD48F; }
+.t-mark .v .tick { width: 26px; height: 26px; border-radius: 50%; background: #5FD48F; color: #0F1A13; font-weight: 800; font-size: 14px; display: inline-flex; align-items: center; justify-content: center; }
+.t-mark .v .by { margin-left: auto; font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: rgba(255, 255, 255, .5); }
+.t-mark .row { margin-top: 12px; opacity: 1; transition: opacity .45s ease, transform .45s ease; }
+.t-mark .row > span { display: block; font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: rgba(255, 255, 255, .5); }
+.t-mark .row p { margin-top: 3px; font-size: 14px; line-height: 1.5; color: rgba(255, 255, 255, .86); }
+.t-mark .chips { display: flex; flex-wrap: wrap; gap: 6px; } .t-mark .chips i { font-style: normal; font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 999px; background: rgba(255, 255, 255, .08); border: 1px solid rgba(255, 255, 255, .14); }
+.t-mark.on .row { animation: t-row .5s ease both; } .t-mark.on .row:nth-of-type(3) { animation-delay: .25s; } .t-mark.on .row:nth-of-type(4) { animation-delay: .5s; }
+@keyframes t-row { from { opacity: 0; transform: translateY(8px); } }
+@media (max-width: 900px) { .table { grid-template-columns: 1fr; padding: 26px 20px; gap: 28px; margin-top: 44px; } .t-line { max-width: 94%; } }
+@media (prefers-reduced-motion: reduce) { .t-line, .t-mark, .t-line p span { transition: none; } .t-play .ico, .t-line .wave i, .t-mark.on .row { animation: none !important; } }

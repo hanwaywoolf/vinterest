@@ -326,3 +326,25 @@ test('the Mise en place timeline lights its steps as the page scrolls', async ({
   await page.goto(BASE + '/mise-en-place');
   await expect(page.locator('.stepsfull.tl-js')).toHaveCount(0);
 });
+
+// Hear a table: nothing sounds until Play; then each line is said in turn and Vinny's mark arrives.
+test('the table plays its lines and ends on the mark', async ({ page, request }) => {
+  const errors = [];
+  page.on('pageerror', (e) => errors.push(String(e)));
+  await page.addInitScript(() => { window.TEAMS_TABLE_SPEED = 8; });
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto(BASE + '/?live=off');
+  const table = page.locator('[data-table]');
+  await expect(table.locator('.t-line')).toHaveCount(4);
+  for (const src of await table.locator('.t-line').evaluateAll((ls) => ls.map((l) => l.dataset.src))) {
+    const r = await request.get(BASE + src); expect(r.status()).toBe(200); expect(r.headers()['content-type']).toContain('audio');
+  }
+  await expect(table).not.toHaveClass(/playing/);
+  await table.locator('[data-table-play]').click();
+  await expect(table.locator('.t-line.on').first()).toBeVisible();
+  await expect(table.locator('.t-mark.on')).toBeVisible({ timeout: 20000 });
+  await expect(table.locator('.t-line.on')).toHaveCount(4);
+  await expect(table.locator('[data-table-play] .lbl')).toHaveText('Play it again');
+  await expect(table.locator('.t-mark')).toContainText('That landed');
+  expect(errors).toEqual([]);
+});

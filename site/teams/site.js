@@ -167,3 +167,44 @@ document.addEventListener('click', (e) => { const a = e.target.closest('[data-li
   const ask = () => { if (!queued) { queued = true; requestAnimationFrame(draw); } };
   addEventListener('scroll', ask, { passive: true }); addEventListener('resize', ask); draw();
 })();
+
+// Hear a table: <div data-table> with lines (.t-line[data-src], each a spoken clip), a mark (.t-mark) and a play
+// button ([data-table-play]). Pressed, each line is said in turn, its words lighting with the voice, then the mark
+// arrives; pressed again it pauses, and after the end it plays again. Sound only ever starts on that press. A clip
+// that can't play is given its reading time, so the exchange still runs.
+(function () {
+  const el = document.querySelector('[data-table]'); if (!el) return;
+  const btn = el.querySelector('[data-table-play]'), lbl = btn.querySelector('.lbl'), lines = Array.from(el.querySelectorAll('.t-line')), mark = el.querySelector('.t-mark');
+  const speed = Number(window.TEAMS_TABLE_SPEED) || 1, audio = new Audio(); audio.preload = 'auto';
+  lines.forEach((l) => { const p = l.querySelector('p'); p.innerHTML = p.textContent.split(/\s+/).map((w) => `<span>${w.replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]))}</span>`).join(' '); });
+  let run = 0, at = 0, paused = false, raf = 0, silent = null;
+  const words = (l) => Array.from(l.querySelectorAll('p span'));
+  const say = (l, f) => { const ws = words(l), n = Math.round(Math.min(1, f) * ws.length); ws.forEach((w, i) => w.classList.toggle('said', i < n)); };
+  const reset = () => { lines.forEach((l) => { l.classList.remove('on', 'talk'); say(l, 0); }); mark.classList.remove('on'); };
+  const state = (s) => { el.classList.toggle('playing', s === 'playing'); el.classList.toggle('done', s === 'done' || s === 'paused'); lbl.textContent = s === 'playing' ? 'Pause' : s === 'paused' ? 'Carry on' : s === 'done' ? 'Play it again' : 'Play the table'; btn.setAttribute('aria-pressed', String(s === 'playing')); };
+  const sleep = (ms, token) => new Promise((r) => { const t0 = performance.now(); let spent = 0, last = t0; (function tick(t) { if (token !== run) return r(false); if (!paused) spent += t - last; last = t; if (spent >= ms / speed) return r(true); requestAnimationFrame(tick); })(t0); });
+  function line(l, token) {
+    return new Promise((done) => {
+      l.classList.add('on', 'talk'); l.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      const end = () => { cancelAnimationFrame(raf); audio.onended = audio.onerror = null; say(l, 1); l.classList.remove('talk'); done(token === run); };
+      // Without the clip the line takes its reading time.
+      const mute = async () => { silent = l; const ws = words(l).length, ms = ws * 330; const t0 = performance.now(); let spent = 0, last = t0;
+        (function tick(t) { if (token !== run) return end(); if (!paused) spent += (t - last) * speed; last = t; say(l, spent / ms); if (spent >= ms) { silent = null; return end(); } raf = requestAnimationFrame(tick); })(t0); };
+      audio.src = l.dataset.src; audio.playbackRate = speed; audio.onended = end; audio.onerror = mute;
+      (function tick() { if (token !== run) return; if (audio.duration) say(l, (audio.currentTime + 0.12) / audio.duration); raf = requestAnimationFrame(tick); })();
+      const p = audio.play(); if (p && p.catch) p.catch(() => { if (token === run && !paused) { cancelAnimationFrame(raf); mute(); } });
+    });
+  }
+  async function play() {
+    run += 1; const token = run; paused = false; reset(); state('playing');
+    for (at = 0; at < lines.length; at++) { if (!(await line(lines[at], token))) return; if (!(await sleep(380, token))) return; }
+    mark.classList.add('on'); mark.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); state('done');
+  }
+  btn.addEventListener('click', () => {
+    if (el.classList.contains('playing')) { paused = true; if (!silent) audio.pause(); state('paused'); lines.forEach((l) => l.classList.contains('on') || l.classList.remove('talk')); return; }
+    if (paused) { paused = false; state('playing'); if (!silent) { const p = audio.play(); if (p && p.catch) p.catch(() => {}); } return; }
+    play();
+  });
+  // Scrolled away mid-table, it pauses instead of talking to nobody.
+  if ('IntersectionObserver' in window) new IntersectionObserver((es) => { if (!es[0].isIntersecting && el.classList.contains('playing')) btn.click(); }, { threshold: 0 }).observe(el);
+})();
