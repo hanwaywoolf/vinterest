@@ -137,6 +137,7 @@
         <div class="eyebrow" style="--c:var(--rose)">On the floor</div>
         <h2 style="font-size:clamp(26px,3vw,36px)">Everything a server needs, in their pocket.</h2>
         <div class="fcap" id="fcap" aria-live="polite"><h3 id="ftitle">The drill</h3><p id="fdesc">Five questions before service, on your wines and your dishes. A wrong answer is where it teaches, and readiness moves with every one.</p></div>
+        <p class="ftry" id="ftry">This one plays by itself. <a href="%%DEMO_PHONE_URL%%" target="_blank" rel="noopener" data-demo-direct>Do the drill yourself →</a></p>
         <div class="fnav"><button class="arrow" id="fprev" aria-label="Previous screen">←</button><div class="fdots" id="fdots"></div><button class="arrow" id="fnext" aria-label="Next screen">→</button></div>
       </div>
       <div class="orbit" id="orbit">
@@ -371,7 +372,7 @@ slots.forEach((_, i) => { const d = document.createElement('button'); d.setAttri
 function fgo(i) {
   fi = (i + slots.length) % slots.length;
   slots.forEach((sl, k) => { let d = k - fi; if (d > slots.length / 2) d -= slots.length; if (d < -slots.length / 2) d += slots.length; sl.dataset.pos = Math.abs(d) <= 2 ? String(d) : 'x'; });
-  document.getElementById('ftitle').textContent = slots[fi].dataset.title; document.getElementById('fdesc').textContent = slots[fi].dataset.desc;
+  document.getElementById('ftry').hidden = fi !== 0; document.getElementById('ftitle').textContent = slots[fi].dataset.title; document.getElementById('fdesc').textContent = slots[fi].dataset.desc;
   Array.from(fdots.children).forEach((d, k) => d.setAttribute('aria-current', k === fi ? 'true' : 'false'));
 }
 let flive = false; // the drill's phone is running the real app: the carousel waits on it for one run, then turns

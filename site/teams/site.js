@@ -32,7 +32,7 @@
   const open = () => { back = document.activeElement; if (!frame.src) frame.src = frame.dataset.src; box.hidden = false; document.documentElement.classList.add('dlg-open'); box.querySelector('[data-demo-close]').focus(); };
   const close = () => { box.hidden = true; document.documentElement.classList.remove('dlg-open'); if (back && back.focus) back.focus(); };
   document.addEventListener('click', (e) => {
-    const t = e.target.closest('[data-demo-open], a[href*="seed=demo"]');
+    const t = e.target.closest('[data-demo-open], a[href*="seed=demo"]:not([data-demo-direct])');
     if (t && !box.contains(t)) { if (t.tagName === 'A' && (e.metaKey || e.ctrlKey || e.shiftKey || e.button)) return; e.preventDefault(); open(); }
     if (e.target.closest('[data-demo-close]')) close();
   });

@@ -554,3 +554,4 @@ html.dlg-open, html.dlg-open body { overflow: hidden; }
 .phone .scr .lstage { position: relative; flex: 1; min-height: 0; overflow: hidden; background: #0f0f0f; display: flex; }
 .phone .scr .lstage > img { flex: 1; }
 .lstage.live-on > img { display: none; }
+.ftry { margin-top: 10px; font-size: 15px; color: var(--mute); } .ftry a { color: var(--cr); font-weight: 700; text-decoration: none; white-space: nowrap; } .ftry[hidden] { display: block; visibility: hidden; }

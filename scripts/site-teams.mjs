@@ -96,6 +96,7 @@ export async function build() {
       ? `<script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "${token}"}'></script>`
       : '',
   };
+  vars.DEMO_PHONE_URL = demo.replace('view=console', 'view=phone').replace(/&/g, '&amp;'); // the same demo as the staff see it, to try by hand
   const live = await buildLive();
   fs.writeFileSync(path.join(OUT, 'live.js'), live);
   vars.LIVE_V = hash(live);

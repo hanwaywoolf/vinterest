@@ -276,6 +276,7 @@ test('on a phone the floor carousel runs the real drill', async ({ page }) => {
   await expect(page.locator('#pstage .live-app')).toHaveCount(0);
   await page.locator('#orbit').scrollIntoViewIfNeeded();
   await expect(page.locator('#ftitle')).toHaveText('The drill');
+  await expect(page.locator('#ftry a')).toHaveAttribute('href', /view=phone/); // the phone plays by itself; this opens the app to try by hand
   const app = page.locator('#fstage .live-app');
   await expect(app.locator('[data-testid=drill-result]')).toBeVisible({ timeout: 30000 });
   await expect(app.locator('[data-testid=drill-done]')).toBeVisible({ timeout: 40000 });
