@@ -101,12 +101,6 @@ export function cellarOf(list, train) {
   return { rows: all.map((x) => x.row), cards: all.map((x) => x.card) };
 }
 
-// The private pages whose restaurant has a seed in the repo: [its list file, its training file].
-const FOR_SEEDS = {
-  'princess-royal': ['data/team-princess-royal-list.json', 'data/team-princess-royal.json'],
-  'social-corner': ['data/team-social-list.json', 'data/team-social.json'],
-};
-
 export async function build() {
   const origin = (process.env.SITE_ORIGIN || 'https://vinterest.team').replace(/\/+$/, '');
   const demo = process.env.TEAM_DEMO_URL || demoUrl(process.env.CF_PAGES_BRANCH);
@@ -160,15 +154,18 @@ export async function build() {
   const forDir = path.join(SRC, 'for'), priv = fs.existsSync(forDir) ? fs.readdirSync(forDir).filter((f) => f.endsWith('.html')).sort() : [];
   if (priv.length) fs.mkdirSync(path.join(OUT, 'for'), { recursive: true });
   for (const f of priv) {
-    // A page for a restaurant whose demo is in the repo takes its list and cards from that seed's own files
-    // (FOR_SEEDS): %%LIST%% is the bottles' rows, and <name>.cards.json is written beside the page (%%CARDS_V%%).
-    const name = f.replace(/\.html$/, ''), seed = FOR_SEEDS[name], own = {};
+    // A page for a restaurant whose demo is in the repo names its seed (<meta name="seed" content="social">) and takes
+    // its list and cards from that seed's own files, data/team-<seed>-list.json and data/team-<seed>.json: %%LIST%% is
+    // the bottles' rows, and <name>.cards.json is written beside the page (%%CARDS_V%%). scripts/site-teams-for.mjs
+    // drafts such a page from the same two files.
+    const src = fs.readFileSync(path.join(forDir, f), 'utf8');
+    const name = f.replace(/\.html$/, ''), seed = (/<meta name="seed" content="([a-z0-9-]+)">/.exec(src) || [])[1], own = {};
     if (seed) {
-      const made = cellarOf(JSON.parse(fs.readFileSync(path.join(ROOT, seed[0]), 'utf8')), JSON.parse(fs.readFileSync(path.join(ROOT, seed[1]), 'utf8')));
+      const made = cellarOf(JSON.parse(fs.readFileSync(path.join(ROOT, `data/team-${seed}-list.json`), 'utf8')), JSON.parse(fs.readFileSync(path.join(ROOT, `data/team-${seed}.json`), 'utf8')));
       own.LIST = JSON.stringify(made.rows).replace(/</g, '\\u003c'); own.CARDS_V = hash(JSON.stringify(made.cards));
       fs.writeFileSync(path.join(OUT, 'for', `${name}.cards.json`), JSON.stringify(made.cards));
     }
-    const html = fill(fs.readFileSync(path.join(forDir, f), 'utf8'), { ...vars, ...own });
+    const html = fill(src, { ...vars, ...own });
     if (!/<meta name="robots" content="noindex/.test(html)) throw new Error(`site-teams: for/${f} must carry <meta name="robots" content="noindex, nofollow">`);
     fs.writeFileSync(path.join(OUT, 'for', f), html);
   }

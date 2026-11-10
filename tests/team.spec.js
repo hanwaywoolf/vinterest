@@ -2433,3 +2433,31 @@ test('the pre-shift briefing: a special read, paired and approved, a gate everyo
   expect(r.live).not.toContain('Halibut'); expect(r.past).toContain('Halibut'); expect(r.gate).toBe(false); expect(r.far).toBe(0);
   expect(errors).toEqual([]);
 });
+
+// A pitch demo's short card (docs/business.md "Pitch demos"): written from its own prompt with no questions, more wines a
+// call, and enough for the app to build its Essentials questions, so every wine on the list still counts and can be drilled.
+test('a short card has no written questions and the app still builds Essentials questions from it', async ({ context, page }) => {
+  const asked = [];
+  const errors = await openSample(context, page, { claudeRequests: asked, claudeText: (body) => {
+    const text = JSON.stringify(body), ids = [...new Set((text.slice(text.lastIndexOf('Write a card for EACH of these wines')).match(/w-[a-z0-9-]+(?= \|)/g)) || [])];
+    return JSON.stringify({ cards: ids.map((id) => ({ id, hook: 'From the house on the list.', pitch: 'It is fresh and bright. You will enjoy it with the fish.', say: '', taste: 'Fresh, bright and dry.', style: { body: 2, acid: 4, tannin: 0, sweet: 1 }, serve: { temp: '8-10°C', glass: 'white wine glass', decant: 'no' }, dishes: [], alts: [] })) }); } });
+  const out = await page.evaluate(async () => {
+    const ids = TeamData.wines().map((w) => w.id), d = TeamData.get(), dishes = {};
+    ids.forEach((id) => { dishes[id] = (d.cards[id] || {}).dishes || []; }); d.cards = {}; TeamData.save(d);
+    await TeamData.writeCards(ids, null, { short: true });
+    const now = TeamData.get(); ids.forEach((id) => { now.cards[id].dishes = dishes[id]; }); TeamData.save(now); // the dishes a real answer would carry
+    TeamLearn.setTier('essentials');
+    const server = TeamLearn.people().find((p) => p.role === 'server') || TeamLearn.me();
+    return { wines: ids.length, cards: Object.keys(TeamData.get().cards).length, written: Object.values(TeamData.get().cards).reduce((n, c) => n + (c.qs || []).length, 0),
+      built: ids.map((id) => TeamLearn.qsFor(server.role, id).length), drill: TeamLearn.drill(server.id).length, readiness: !!TeamLearn.readiness(server.id) };
+  });
+  expect(out.cards).toBe(out.wines);
+  expect(out.written).toBe(0);                                   // nothing written to ask
+  expect(Math.min(...out.built)).toBeGreaterThanOrEqual(1);      // and still something to ask of every wine
+  expect(out.drill).toBeGreaterThan(0);
+  expect(out.readiness).toBe(true);
+  const calls = asked.filter((b) => b.purpose === 'team_cards');
+  expect(calls.length).toBe(Math.ceil(out.wines / 8));           // eight wines a call, not four
+  expect(JSON.stringify(calls[0])).toContain('Write nothing else for a wine');
+  expect(errors).toEqual([]);
+});

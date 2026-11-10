@@ -238,9 +238,9 @@ test('a private page is hidden from search and adds up', async ({ page, request 
   expect(await (await request.get(BASE + '/sitemap.xml')).text()).not.toContain('/for/');
   expect(await (await request.get(BASE + '/robots.txt')).text()).toContain('Disallow: /for/');
   const box = page.locator('#prCalc');
-  await expect(box.locator('[data-t="day"]')).toHaveText('£203');       // 3 × £27 + 5 × £14 + 4 × £13
-  await expect(box.locator('[data-t="week"]')).toHaveText('£1,421');
-  await expect(box.locator('[data-t="year"]')).toHaveText('£73,892');
+  await expect(box.locator('[data-t="day"]')).toHaveText('£191');       // 3 × £23 + 5 × £14 + 4 × £13
+  await expect(box.locator('[data-t="week"]')).toHaveText('£1,337');
+  await expect(box.locator('[data-t="year"]')).toHaveText('£69,524');
   await box.locator('[data-in="up"]').fill('0');
   await expect(box.locator('[data-t="day"]')).toHaveText('£122');
   // the list as bottles: one per wine, and the filters count what the page says
@@ -381,4 +381,25 @@ test("The Social Corner's private page is built from its seed and adds up", asyn
   await expect(box.locator('[data-t="year"]')).toHaveText('$130,676');
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   expect(errors).toEqual([]);
+});
+
+// A prospect's page is drafted from its seed's two files (scripts/site-teams-for.mjs); the analysis holds to them.
+test('the page generator reads a seed and drafts a page the build accepts', async () => {
+  const fs = require('node:fs'), path = require('node:path'), root = path.join(__dirname, '..');
+  const { analyse, render } = await import(require('node:url').pathToFileURL(path.join(root, 'scripts', 'site-teams-for.mjs')).href);
+  const read = (f) => JSON.parse(fs.readFileSync(path.join(root, f), 'utf8'));
+  const a = analyse(read('data/team-social-list.json'), read('data/team-social.json'));
+  expect([a.figures.wines, a.figures.bottleOnly, a.figures.byGlass]).toEqual([41, 18, 23]);
+  expect(a.moves.map((m) => [m.k, m.price])).toEqual([['up', 42], ['pour', 11], ['fizz', 15], ['sweet', 12]]);
+  expect(a.facts.length).toBeGreaterThanOrEqual(6);
+  expect(a.picks).toHaveLength(4);
+  for (const p of a.picks) expect(p.line.length).toBeGreaterThan(20);                       // each dish has the line from its wine's card
+  const html = render(a, { seed: 'social', slug: 'x', demo: 'https://example.com/', source: '', logo: '', aspect: 0 });
+  expect(html).toContain('<meta name="robots" content="noindex, nofollow">');
+  expect(html).toContain('<meta name="seed" content="social">');
+  expect(html).toContain('41 wines. <em>18 need a recommendation.</em>');
+  expect(html).not.toMatch(/undefined|NaN/);
+  // A list of non-alcoholic bottles and magnums doesn't bend the figures (The Princess Royal's has both).
+  const b = analyse(read('data/team-princess-royal-list.json'), read('data/team-princess-royal.json'));
+  expect(b.moves.find((m) => m.k === 'fizz').why).not.toMatch(/non-alc/i);
 });

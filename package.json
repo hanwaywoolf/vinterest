@@ -11,6 +11,7 @@
     "test:db": "node scripts/test-db.mjs",
     "site:build": "node scripts/site.mjs",
     "site:teams:build": "node scripts/site-teams.mjs",
+    "site:teams:for": "node scripts/site-teams-for.mjs",
     "site:teams:serve": "npm run site:teams:build && node scripts/serve.mjs site-teams-dist 4176",
     "site:capture": "node scripts/site-capture.mjs",
     "site:og": "node scripts/site-og.mjs",
