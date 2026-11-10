@@ -539,8 +539,11 @@ html.dlg-open, html.dlg-open body { overflow: hidden; }
 .cellar.ready .cellar-grid i { transition-delay: calc(var(--i) * 3ms); }
 .cellar.ready .cellar-grid i.off { opacity: .14; transform: scale(.92); filter: saturate(.3); }
 .cellar.ready .cellar-grid i.pick { transform: translateY(-3px) scale(1.12); transition-delay: 0s; }
-.cellar-cap { margin-top: 16px; font-size: 17px; font-weight: 600; line-height: 1.4; min-height: 2.8em; }
-.cellar-pick { font-size: 13px; color: rgba(255, 255, 255, .6); min-height: 1.5em; margin-top: 2px; }
+.cellar-cap { margin-top: 16px; font-size: 17px; font-weight: 600; line-height: 1.4; height: 2.8em; }
+/* Two lines are kept for the caption and for the wine's name, and no more shown, so naming a bottle never moves anything around it. */
+.cellar-cap, .cellar-pick { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
+.cellar-pick { font-size: 13px; line-height: 1.5; color: rgba(255, 255, 255, .6); height: 3em; margin-top: 4px; }
+.cellar[data-cards] .cellar-grid i { cursor: pointer; }
 .cellar-key { display: flex; flex-wrap: wrap; gap: 4px 14px; margin-top: 10px; font-size: 12px; color: rgba(255, 255, 255, .55); }
 .cellar-key span::before { content: ''; display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--k); margin-right: 6px; }
 @media (prefers-reduced-motion: reduce) { .cellar-grid i { transition: none !important; } }
@@ -565,3 +568,28 @@ html.dlg-open, html.dlg-open body { overflow: hidden; }
 .live-full-app { position: relative; flex: 1; min-height: 0; }
 .live-full-app img { max-width: none; }
 @media (min-width: 620px) { .live-full-in { border-radius: 28px; border: 1px solid rgba(255, 255, 255, .16); height: calc(100% - 48px); } }
+/* A wine's card, opened from its bottle in the list (data-cards on the cellar): what the team would learn of it. */
+.wcard { border: 0; padding: 0; background: transparent; color: #fff; width: min(560px, calc(100vw - 24px)); max-height: calc(100dvh - 24px); margin: auto; overflow: visible; }
+.wcard::backdrop { background: rgba(8, 8, 8, .72); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); }
+.wcard[open] { animation: wcard-in .28s cubic-bezier(.2, .8, .2, 1); }
+@keyframes wcard-in { from { opacity: 0; transform: translateY(14px) scale(.98); } }
+.wcard-in { position: relative; background: #151515; border: 1px solid rgba(255, 255, 255, .14); border-top: 3px solid var(--k, var(--neon)); border-radius: 20px; padding: 26px 26px 22px; max-height: calc(100dvh - 24px); overflow-y: auto; box-shadow: 0 40px 80px -20px rgba(0, 0, 0, .7); }
+.wcard-x { position: absolute; top: 14px; right: 14px; width: 36px; height: 36px; border-radius: 50%; border: 1px solid rgba(255, 255, 255, .2); background: rgba(255, 255, 255, .06); color: #fff; font-size: 16px; cursor: pointer; }
+.wcard .sec { font-size: 11px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--k, var(--neon)); padding-right: 44px; }
+.wcard h3 { font-size: 23px; line-height: 1.2; margin-top: 8px; padding-right: 30px; }
+.wcard .meta { font-size: 14px; color: rgba(255, 255, 255, .62); margin-top: 6px; }
+.wcard .price { display: inline-block; margin-top: 12px; font-size: 15px; font-weight: 700; padding: 6px 12px; border-radius: 999px; background: rgba(255, 255, 255, .08); border: 1px solid rgba(255, 255, 255, .14); }
+.wcard .say { font-size: 13px; color: rgba(255, 255, 255, .5); margin-top: 10px; }
+.wcard .lab { font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: rgba(255, 255, 255, .5); margin: 20px 0 8px; }
+.wcard p { font-size: 15px; line-height: 1.55; color: rgba(255, 255, 255, .86); }
+.wcard blockquote { margin: 0; padding-left: 14px; border-left: 2px solid var(--k, var(--neon)); font-size: 16px; line-height: 1.55; color: #fff; }
+.wcard .bars { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px 20px; margin-top: 12px; }
+.wcard .bar span { display: flex; justify-content: space-between; font-size: 12px; color: rgba(255, 255, 255, .62); } .wcard .bar span b { color: #fff; font-weight: 600; }
+.wcard .bar i { display: block; height: 5px; border-radius: 3px; background: rgba(255, 255, 255, .12); margin-top: 5px; overflow: hidden; }
+.wcard .bar i::after { content: ''; display: block; height: 100%; width: var(--w); background: var(--k, var(--neon)); border-radius: 3px; }
+.wcard .dish { padding: 10px 0; border-top: 1px solid rgba(255, 255, 255, .1); } .wcard .dish:first-of-type { border-top: 0; padding-top: 0; }
+.wcard .dish b { display: block; font-size: 15px; } .wcard .dish span { font-size: 14px; color: rgba(255, 255, 255, .66); line-height: 1.5; }
+.wcard .foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; margin-top: 22px; padding-top: 16px; border-top: 1px solid rgba(255, 255, 255, .12); font-size: 13px; color: rgba(255, 255, 255, .55); }
+@media (max-width: 520px) { .wcard-in { padding: 22px 18px 18px; } .wcard .bars { grid-template-columns: 1fr; } }
+@media (prefers-reduced-motion: reduce) { .wcard[open] { animation: none; } }
+.wcard, .wcard-in { outline: none; }

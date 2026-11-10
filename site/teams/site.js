@@ -86,7 +86,7 @@
   key.innerHTML = [['r', '#C9344F', 'Red'], ['w', '#E9D98C', 'White'], ['p', '#F0A3B4', 'Rosé'], ['s', '#F6F1DF', 'Sparkling'], ['d', '#E9A93C', 'Sweet and fortified']]
     .filter((k) => data.some((w) => w[3] === k[0])).map((k) => `<span style="--k:${k[1]}">${k[2]}</span>`).join('');
   el.append(tabs, grid, cap, pick, key);
-  const bottles = Array.from(grid.children), HINT = 'Touch a bottle to see which wine it is.';
+  const bottles = Array.from(grid.children), HINT = el.dataset.cards ? 'Touch a bottle to see which wine it is. Click it for its card.' : 'Touch a bottle to see which wine it is.';
   let timers = [], held = null;
   const set = (m) => {
     tabs.querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.mode === m)));
@@ -102,6 +102,30 @@
   };
   tabs.addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) { stop(); set(b.dataset.mode); } });
   grid.addEventListener('pointerover', (e) => { if (e.target.dataset.i) show(e.target); });
+  // With data-cards (a JSON file of cards in the list's order), a bottle opens its wine's card: what the team would
+  // learn of it. The file is fetched once, on the first bottle touched; data-cards-demo is where the card's link goes.
+  let cards = null; const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const getCards = () => cards || (cards = fetch(el.dataset.cards).then((r) => (r.ok ? r.json() : Promise.reject(new Error('no cards')))).catch(() => { cards = null; return null; }));
+  const KIND = { r: '#C9344F', w: '#E9D98C', p: '#F0A3B4', s: '#F6F1DF', d: '#E9A93C' }, LEVEL = ['None', 'Low', 'Light', 'Medium', 'Full', 'High'];
+  const TRAIT = [['body', 'Body', 'how heavy it feels'], ['acid', 'Acidity', 'how mouth-watering'], ['tannin', 'Tannin', 'the drying grip'], ['sweet', 'Sweetness', 'sugar you can taste']];
+  async function card(i) {
+    const all = await getCards(), c = all && all[i], w = data[i]; if (!c) return;
+    let dlg = document.querySelector('dialog.wcard');
+    if (!dlg) { dlg = document.createElement('dialog'); dlg.className = 'wcard'; document.body.appendChild(dlg); dlg.addEventListener('click', (e) => { if (e.target === dlg || e.target.closest('.wcard-x')) dlg.close(); }); }
+    const price = [w[2] ? `${sym}${w[2]} a glass` : '', w[1] ? `${sym}${w[1]} a ${w[4] ? 'magnum' : c.half ? 'half bottle' : 'bottle'}` : ''].filter(Boolean).join(' · ') + (w[2] ? '' : ' · bottle only');
+    const bars = TRAIT.filter((t) => c.style && c.style[t[0]] != null && !(t[0] === 'tannin' && !c.style.tannin)).map((t) => `<div class="bar"><span><b>${t[1]}</b>${t[2]}</span><i style="--w:${Math.max(4, c.style[t[0]] / 5 * 100)}%" title="${LEVEL[c.style[t[0]]] || ''}"></i></div>`).join('');
+    dlg.innerHTML = `<div class="wcard-in" style="--k:${KIND[w[3]] || ''}"><button type="button" class="wcard-x" aria-label="Close">✕</button>
+      <div class="sec">${esc(c.section)}</div><h3>${esc(w[0])}</h3><div class="meta">${esc([c.where, c.grapes].filter(Boolean).join(' · '))}</div>
+      <div class="price">${esc(price)}</div>${c.say ? `<div class="say">Say it: ${esc(c.say)}</div>` : ''}
+      ${c.hook ? `<p style="margin-top:16px">${esc(c.hook)}</p>` : ''}
+      ${c.pitch ? `<div class="lab">What to say at the table</div><blockquote>${esc(c.pitch)}</blockquote>` : ''}
+      ${c.taste ? `<div class="lab">How it tastes</div><p>${esc(c.taste)}</p>` : ''}${bars ? `<div class="bars">${bars}</div>` : ''}
+      ${c.dishes && c.dishes.length ? `<div class="lab">Pour it with</div>${c.dishes.map((d) => `<div class="dish"><b>${esc(d.dish)}</b><span>${esc(d.why)}</span></div>`).join('')}` : ''}
+      ${c.serve ? `<div class="lab">Serve</div><p>${esc(c.serve)}</p>` : ''}
+      <div class="foot"><span>The card your team would learn from.</span>${el.dataset.cardsDemo ? `<a class="btn primary small" href="${esc(el.dataset.cardsDemo)}" target="_blank" rel="noopener" data-demo-direct>Open your demo</a>` : ''}</div></div>`;
+    if (!dlg.open) dlg.showModal(); dlg.querySelector('.wcard-in').scrollTop = 0;
+  }
+  if (el.dataset.cards) grid.addEventListener('click', (e) => { if (e.target.dataset.i) { stop(); card(+e.target.dataset.i); } });
   grid.addEventListener('pointerleave', () => show(null));
   set('all'); show(null);
   const play = () => {

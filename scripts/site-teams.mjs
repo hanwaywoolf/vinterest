@@ -133,6 +133,8 @@ export async function build() {
     if (!/<meta name="robots" content="noindex/.test(html)) throw new Error(`site-teams: for/${f} must carry <meta name="robots" content="noindex, nofollow">`);
     fs.writeFileSync(path.join(OUT, 'for', f), html);
   }
+  // A private page's data (the cards its list opens), served beside it.
+  if (fs.existsSync(path.join(SRC, 'for'))) for (const f of fs.readdirSync(path.join(SRC, 'for')).filter((x) => x.endsWith('.json'))) fs.copyFileSync(path.join(SRC, 'for', f), path.join(OUT, 'for', f));
   fs.cpSync(path.join(SRC, 'img'), path.join(OUT, 'img'), { recursive: true });
   fs.copyFileSync(path.join(ROOT, 'logo.png'), path.join(OUT, 'logo.png'));
   fs.copyFileSync(path.join(ROOT, 'site/_headers'), path.join(OUT, '_headers'));

@@ -242,6 +242,20 @@ test('a private page is hidden from search and adds up', async ({ page, request 
   await expect(page.locator('.cellar-grid i.off')).toHaveCount(38);
   await expect(page.locator('.cellar-tabs [data-mode="top"] b')).toHaveText('33');
   await expect(page.locator('.cellar-cap')).toContainText('94 are bottle only');
+  // naming a bottle moves nothing; clicking it opens that wine's card
+  const tops = () => page.evaluate(() => ['.cellar-cap', 'h1', '.cellar-key', '.pr-facts'].map((q) => Math.round(document.querySelector(q).getBoundingClientRect().top + scrollY)));
+  const before = await tops();
+  const last = page.locator('.cellar-grid i').last();
+  await last.hover();
+  await expect(page.locator('.cellar-pick')).toContainText('Blanc des Millénaires');
+  expect(await tops()).toEqual(before);
+  await last.click();
+  const card = page.locator('dialog.wcard');
+  await expect(card.locator('h3')).toContainText('Blanc des Millénaires');
+  await expect(card.locator('.price')).toHaveText('£310 a bottle · bottle only');
+  await expect(card.getByText('What to say at the table')).toBeVisible();
+  await card.locator('.wcard-x').click();
+  await expect(card).toBeHidden();
   for (const a of await page.locator('a[data-demo]').all()) await expect(a).toHaveAttribute('href', /seed=princess-royal/);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   expect(errors).toEqual([]);
