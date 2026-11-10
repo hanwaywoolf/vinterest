@@ -26,7 +26,7 @@ const TeamData = {
     const d=raw?Store.getJSON(this.KEY,null):null, v=d&&d.wines?d:this._empty(); this._raw=raw; this._val=v; this._fresh=raw!==null; return v; },
   _fresh:false,
   save(d){ this._relist(); Store.setJSON(this.KEY,d); try{ window.dispatchEvent(new Event('vbiz:data')); }catch(e){} },
-  reset(){ Store.remove(this.KEY); Store.remove(this.TONIGHT); try{ window.dispatchEvent(new Event('vbiz:data')); }catch(e){} },
+  reset(){ Store.remove(this.KEY); Store.remove(this.TONIGHT); if(typeof TeamShift!=='undefined') TeamShift.reset(); try{ window.dispatchEvent(new Event('vbiz:data')); }catch(e){} },
   setVenue(fields){ const d=this.get(); d.venue={...d.venue,...fields}; this.save(d); },
   setSetting(k,v){ const d=this.get(); d.settings={...(d.settings||{}),[k]:v}; this.save(d); },
   isDemo(){ return (this.get().venue||{}).sample==='demo'; },
@@ -618,7 +618,7 @@ const TeamSample = {
       if(newStory&&typeof TeamSales!=='undefined') TeamSales.clear();
       if((which==='demo'||this.social(which))&&typeof TeamSales!=='undefined'&&!(TeamSales.get().rows||[]).length) TeamSales.seedDemo();
       return true; }
-    Store.remove(TeamLearn.KEY); TeamLearn.resetProgress(); if(typeof TeamSales!=='undefined') TeamSales.clear();
+    Store.remove(TeamLearn.KEY); TeamLearn.resetProgress(); if(typeof TeamSales!=='undefined') TeamSales.clear(); Store.remove(TeamData.TONIGHT); if(typeof TeamShift!=='undefined') TeamShift.reset();
     // The Social Corner's demo team is the Larkspur's people and photos in its own roles (data/team-social-list.json staff).
     (s.staff||(this.social(which)?(this.list(which)||{}).staff||[]:this.DEMO_STAFF)).forEach(p=>TeamLearn.addPerson(p.name,p.role,p.photo||null));
     applyTier();

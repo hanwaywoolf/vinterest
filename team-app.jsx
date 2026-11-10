@@ -65,7 +65,8 @@ function TeamApp(){
   else if(top) body=stack.map((v,i)=><div key={i} style={{display:i===stack.length-1?'block':'none'}}>{v.view==='wine'?<TeamWine id={v.id} pid={me.id} open={open}/>:v.view==='cocktail'?<TeamCocktail id={v.id} pid={me.id} open={open}/>:v.view==='dish'?<TeamDish id={v.id} pid={me.id} open={open}/>
     :v.view==='guest'?null /* the table is a layer over the whole app, below */
     :v.view==='ask'?<TeamVinnyAsk pid={me.id} open={open}/>
-    :v.view==='tonight'?<TeamTonightEdit back={back}/>
+    :v.view==='tonight'?<TeamTonightEdit back={back} pid={me.id} open={open}/>
+    :v.view==='briefing'?<TeamBriefing pid={me.id}/>
     :v.view==='vtest'?<TeamVinnyTest pid={me.id} open={open}/>
     :v.view==='say'?<TeamSayCheck/>
     :<TeamDrill pid={me.id} only={v.only} part={v.part} given={v.qs} intro={v.intro} back={back} open={open}/>}</div>);
@@ -103,6 +104,9 @@ function TeamApp(){
         </>; })()}
       {/* A guest at the table (TeamGuest) covers the header and tabs: a chat wants the whole screen. It stays mounted
           under a wine or dish it opened, and comes back when that is popped. */}
+      {/* The pre-shift briefing (TeamShift.needsAck): sent today and not yet accepted by this person, it covers the whole
+          app until they tap Got it. */}
+      {set&&TeamShift.needsAck(me.id)&&<div style={{position:'absolute',inset:0,zIndex:30}}><ScreenErrorBoundary><TeamBriefing pid={me.id} onAck={()=>{ TeamShift.ack(me.id); refresh(); }}/></ScreenErrorBoundary></div>}
       {set&&stack.map((v,i)=>v.view==='guest'&&<div key={i} style={{position:'absolute',inset:0,zIndex:20,display:i===stack.length-1?'block':'none'}}><ScreenErrorBoundary><TeamGuest pid={me.id} back={back} open={open}/></ScreenErrorBoundary></div>)}
     </div>
   </DeckTheme.Provider>;

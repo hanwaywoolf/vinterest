@@ -251,6 +251,58 @@ Wave 1 and 2 of its roadmap are built, on The Social Corner and the demo alike.
   the reasons first and the dish to steer away from, the alternatives with their price, then where
   they stand and the reference material.
 
+## The pre-shift briefing and specials (built, November 2026)
+
+What management decides before service reaches every member of staff as one page they read and accept before
+the app opens for them that day. It replaces the pre-shift huddle's "did everyone hear that?" with a record.
+
+**What goes in.** The dishes that are 86'd, the wines and cocktails on feature, a note from the manager, and
+tonight's specials. All of it is set in one place: the Tonight card on the console's dashboard, or Tonight on
+the manager's phone (the same component, `TeamShiftManage`).
+
+**Adding a special.** One button, three ways in, because a manager at 4.45pm has a chef's scribble and no time:
+
+- A photo of the chef's board or note. One call reads the handwriting and returns every special on it.
+- A typed line, as loose as "halibut, brown butter, capers 34".
+- Say it, with the speech-to-text the guest at the table already uses.
+
+The same call pairs each special from the restaurant's own list: a bottle, a pick by the glass, two alternatives
+of another style or price, and a line to say at the table. It also lists the allergens the dish states or very
+likely contains. With no connection, a typed line is kept as it is and the manager picks the wine.
+
+**Approval.** A special is a draft until the manager approves it. The draft is one card: fix the name or price,
+correct the description, add or remove allergens, swap either wine, choose how long it runs (tonight, through
+Sunday, until taken off). Approve stays off until "The kitchen has confirmed these allergens" is ticked, since
+the allergen line is the part of a special that can hurt someone. Nothing unapproved reaches the team.
+
+**The briefing.** Compiled from that, with no call: what's off, each special with its price, description,
+allergens and pour, what we're pushing with its price and one line, the manager's note, and for each person the
+two wines they should look at before service. "Send briefing" makes it version 1.
+
+**The gate.** Once sent, the app opens on the briefing for every person, over everything, until they tap "Got
+it". Whoever sent it has read it. The console shows "5 of 7 have read it" and who is still to read.
+
+**Changes during service.**
+
+- Sold out is one tap on the special. It shows on every Today at once with the time, and nobody accepts anything
+  again: it takes something away, it doesn't add a risk.
+- A new special, a changed allergen or wine, another dish 86'd: the manager sends the update, and everyone accepts
+  the briefing again with what's new marked "New".
+
+**Expiry.** A special ends with its run. Ended specials are offered under "Bring back", so Friday's fish is one
+tap next week with its pairing kept; the kitchen confirms the allergens afresh. The briefing ends with the day.
+
+**What a special is not.** It isn't on the list or the menu, it's never drilled and it never counts towards
+readiness. It lasts a night; the briefing is how it's learnt. Ask Vinny and the guest at the table do know
+tonight's specials and 86'd dishes.
+
+**One device for now.** The pilot keeps a restaurant on one device, so in a demo restaurant the rest of the team
+accept over the next few minutes after a send (two never do, so the register has someone to chase), labelled
+Demo data, and the person switcher shows any one person's gate. A live install is each person on their own
+phone in the native app: the shift, its specials and the acknowledgements become rows in Supabase once
+restaurants have accounts (they are already shaped as rows in `vbiz_shift_v1`), and push tells the team
+"Tonight's briefing is ready" and "The halibut is sold out" (the consumer app's Worker already sends push).
+
 ## Vinny in the staff app (built)
 
 A Vinny tab (between Today and Wines) and a row on Today, all in `team-vinny.js` (logic) and `team-vinny.jsx` (screens):

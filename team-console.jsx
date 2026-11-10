@@ -37,7 +37,10 @@ function _CRow({lead,label,value,share,col,sub,right,onClick,testid}){ const T=u
 /* Tonight on the dashboard shows what's set (the dishes 86'd and the wines on feature, each a tap to clear it) and opens the
    picker of the whole menu and list only on "Change tonight", remembered on this device (TeamFold), so it never takes the
    first screen of the dashboard. */
-function _CTonight({tn,bump}){ const T=useTheme();
+function _CTonight({tn,bump,me}){ const T=useTheme(), sps=TeamShift.specials(), drafts=TeamShift.drafts(), st=TeamShift.status(), reg=TeamShift.register(), [prev,setPrev]=React.useState(false);
+  // What the briefing holds beyond the chips, in a line, while the card is compact.
+  const shiftLine=[sps.length&&`${sps.length} special${sps.length>1?'s':''}${sps.some(s=>s.status==='soldout')?` (${sps.filter(s=>s.status==='soldout').length} sold out)`:''}`,drafts.length&&`${drafts.length} to approve`,st.empty?null:!st.sent?'briefing not sent':st.changed?'briefing changed since it was sent':`briefing read by ${reg.read} of ${reg.total}`].filter(Boolean).join(' · ');
+  const preview=prev&&<div style={{position:'fixed',inset:0,zIndex:60}}><TeamBriefing pid={me.id} preview onAck={()=>setPrev(false)}/></div>;
   const chip=(kind,id,name,on,col)=><span key={kind+id} role="button" data-testid={`dash-tonight-${kind}`} aria-pressed={on} onClick={()=>{ TeamData.toggleTonight(kind,id); bump(); }} style={{display:'inline-block',padding:'5px 11px',borderRadius:12,border:`1px solid ${on?col:T.line}`,background:on?_alpha(col,0.14):'transparent',color:on?T.ink:T.mid,fontSize:13,fontFamily:C.P,cursor:'pointer',margin:'0 6px 6px 0'}}>{name}</span>;
   const [more,setMore]=React.useState(false), [pick,setPick]=React.useState(()=>!TeamFold.folded('dash-tonight-pick',true)), ds=TeamData.dishes(), ws=TeamData.wines();
   const togglePick=()=>setPick(p=>{ TeamFold.set('dash-tonight-pick',p); return !p; });
@@ -48,13 +51,14 @@ function _CTonight({tn,bump}){ const T=useTheme();
       <div>{_cLabel(T,"86'd tonight")}<div>{offD.length?offD.map(x=>chip('off',x.id,x.name,true,'#F28B7D')):<span style={{fontSize:13,color:T.mid,fontFamily:C.P}}>Nothing 86'd</span>}</div></div>
       <div>{_cLabel(T,'On feature')}<div>{featW.length?featW.map(x=>chip('feature',x.id,TeamData.short(x),true,'#5FD48F')):<span style={{fontSize:13,color:T.mid,fontFamily:C.P}}>Nothing on feature</span>}</div></div></div>
     :<div style={{fontSize:14,color:T.ink2,fontFamily:C.P,marginBottom:8}}>Nothing 86'd or on feature tonight.</div>}
+    {shiftLine&&<div data-testid="dash-shift-line" style={{fontSize:14,color:drafts.length||(!st.empty&&(!st.sent||st.changed))?T.amber:T.ink2,fontFamily:C.P,marginBottom:8}}>{shiftLine.charAt(0).toUpperCase()+shiftLine.slice(1)}</div>}
     {btn}</div>;
-  return <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:14}}>
+  return <div>{preview}<div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:14}}>
     <div>{_cLabel(T,"86'd tonight")}<div>{(more?ds:[...offD,...ds.filter(x=>!tn.off.includes(x.id))].slice(0,10)).map(x=>chip('off',x.id,x.name,tn.off.includes(x.id),'#F28B7D'))}</div></div>
     <div>{_cLabel(T,'On feature')}<div>{(more?ws:[...featW,...ws.filter(x=>!tn.feature.includes(x.id))].slice(0,10)).map(x=>chip('feature',x.id,TeamData.short(x),tn.feature.includes(x.id),'#5FD48F'))}</div></div>
     <div role="button" onClick={()=>setMore(x=>!x)} style={{fontSize:13,fontWeight:700,color:cr,fontFamily:C.P,cursor:'pointer'}}>{more?'Fewer':'Show the whole list and menu'}</div>
     <div style={{textAlign:'right'}}>{btn}</div>
-  </div>; }
+  </div><TeamShiftManage pid={me.id} preview={()=>setPrev(true)}/></div>; }
 function _CDemoTag(){ const T=useTheme(); if(!TeamSales.demo()) return null; return <span data-testid="demo-tag" style={{fontSize:11,fontWeight:700,fontFamily:C.P,color:T.amber,border:`1px solid ${T.amber}66`,borderRadius:6,padding:'1px 6px',letterSpacing:'0.04em'}}>Demo data</span>; }
 /* A stat tile: label, value, an optional signed delta against the period before, and a line under it. */
 function _CStat({label,value,delta,up='good',sub,onClick,testid,hero,demo}){ const T=useTheme();
@@ -169,9 +173,9 @@ function _CDash({open,setSection,me}){ const T=useTheme(), cr=T.lift(C.cr), size
   const pid=(me&&me.id)||'console', [edit,setEdit]=React.useState(false), [,bump]=React.useReducer(x=>x+1,0), [drag,setDrag]=React.useState(null);
   const tn=TeamData.tonight(), [,bumpT]=React.useReducer(x=>x+1,0);
   const cards={
-    tonight:{title:'Tonight',wide:true,summary:tn.off.length||tn.feature.length?`${tn.off.length} 86'd · ${tn.feature.length} on feature`:'Nothing set yet',body:<div data-testid="dash-tonight">
-      <_CTonight tn={tn} bump={bumpT}/>
-      {_cNote(T,"What's 86'd and what's on feature, on every Today until the end of the day, with the two wines each person should look at before service. Never scored.")}</div>},
+    tonight:{title:'Tonight',wide:true,summary:(()=>{ const sp=TeamShift.specials().length, st=TeamShift.status(), rg=TeamShift.register(); return st.empty?'Nothing set yet':`${tn.off.length} 86'd · ${sp} special${sp===1?'':'s'} · ${tn.feature.length} on feature · ${!st.sent?'briefing not sent':st.changed?'briefing changed, not re-sent':`briefing read by ${rg.read} of ${rg.total}`}`; })(),body:<div data-testid="dash-tonight">
+      <_CTonight tn={tn} bump={bumpT} me={me}/>
+      {_cNote(T,"What's 86'd, tonight's specials and what's on feature go out as the briefing: everyone reads and accepts it before the app opens for them today, with the two wines each should look at before service. Never scored.")}</div>},
     glance:{title:'At a glance',wide:true,summary:`${o.avg}% ready · ${o.behind} behind · ${o.slipping} slipping${sales?` · ${_cMoney(sales.revenue)} wine this week`:''}`,body:<div style={grid(sales?3:5)}>
       <_CStat hero label="Team readiness" value={`${o.avg}%`} sub={`${o.ready} of ${o.total} ready · ${byRole.filter(r=>r.n>1||r.role==='server').map(r=>`${r.label}s ${r.avg}%`).slice(0,2).join(' · ')}`} testid="dash-readiness" onClick={()=>setSection('team')}/>
       <_CStat label="Behind" value={o.behind} sub={o.behind?`${o.behind===1?'person is':'people are'} past the wave they're on`:'everyone on track with their waves'} testid="dash-overdue" onClick={()=>setSection('team')}/>

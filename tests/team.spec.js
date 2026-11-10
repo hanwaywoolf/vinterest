@@ -2359,3 +2359,77 @@ test('the faults the sommelier review found stay fixed on every restaurant: grap
     expect(r.faults, seed).toEqual([]); // nothing the drill asks is thin, pooled or picked out by the length of its reasons
   }
 });
+
+// The pre-shift briefing (TeamShift, docs/business.md "The pre-shift briefing"): a manager adds a special by typing it,
+// one call reads and pairs it from the list, nothing reaches the team until it's approved with the allergens
+// confirmed, and the briefing sent is a gate every person accepts before the app opens. Sold out shows at once with
+// no second acceptance; a new special is an update with what's new marked. A special is gone when its run ends.
+test('the pre-shift briefing: a special read, paired and approved, a gate everyone accepts, sold out, an update, expiry', async ({ context, page }) => {
+  const asked = [];
+  const special = (name, price) => JSON.stringify({ specials: [{ name, description: 'Pan-roasted, with brown butter and capers.', price, section: 'main',
+    allergens: [{ code: 'fish', sure: 'stated' }, { code: 'milk', sure: 'likely' }, { code: 'not-a-code', sure: 'likely' }],
+    bottle: { id: 'w-jolivet-sancerre', why: 'Its sharp citrus cuts the butter.' }, glass: { id: 'w-jolivet-sancerre', why: 'Not sold by the glass, so this is dropped.' },
+    alts: [{ id: 'w-laroche-chablis', why: 'Steely and clean beside the fish.' }, { id: 'w-not-on-the-list', why: 'Invented.' }], say: `Tonight's special is the ${name}, lovely with our Sancerre.` }] });
+  const errors = await openSample(context, page, { claudeRequests: asked, claudeText: (b) => (b.purpose === 'team_special' ? special(/turbot/i.test(JSON.stringify(b.messages)) ? 'Turbot' : 'Halibut', 34) : '') });
+  // The manager: 86 a dish, then add a special by typing it.
+  await page.getByTestId('tonight-edit').click();
+  await page.getByTestId('tonight-off').first().click();
+  await expect(page.getByTestId('shift-status')).toContainText('Not sent yet');
+  await page.getByTestId('special-add-open').click();
+  await page.getByTestId('special-text').fill('halibut, brown butter, capers 34');
+  await page.getByTestId('special-read').click();
+  const draft = page.getByTestId('special-draft');
+  await expect(draft).toBeVisible();
+  expect(asked.filter((b) => b.purpose === 'team_special')).toHaveLength(1);
+  // What came back is made safe: only allergens on the restaurant's list, only wines on it, a glass pick only if it's poured by the glass.
+  await expect(draft.getByTestId('special-name')).toHaveValue('Halibut');
+  await expect(draft.getByTestId('special-allergen')).toHaveCount(2);
+  await expect(draft).toContainText('Sancerre'); await expect(draft).toContainText('By the glass: none picked');
+  expect(await page.evaluate(() => TeamShift.drafts()[0].pairing.alts.map((a) => a.id))).toEqual(['w-laroche-chablis']);
+  // Not approved until the kitchen has confirmed the allergens; the team sees nothing meanwhile.
+  await draft.getByTestId('special-approve').click();
+  expect(await page.evaluate(() => TeamShift.specials().length)).toBe(0);
+  // Swap the glass pick for one that is poured by the glass, confirm, approve.
+  await draft.getByText('Pick one').click();
+  await draft.getByTestId('special-wine-option').filter({ hasText: 'Chablis' }).click();
+  await draft.getByTestId('special-confirm').click();
+  await draft.getByTestId('special-approve').click();
+  await expect(page.getByTestId('special-live')).toContainText('Halibut');
+  await page.getByTestId('shift-send-btn').click();
+  await expect(page.getByTestId('shift-status')).toContainText('Sent at');
+  await expect(page.getByTestId('shift-register')).toContainText('have read it');
+  // Whoever sent it isn't asked to accept it; a server is, before anything else opens.
+  await expect(page.getByTestId('briefing-ack')).toHaveCount(0);
+  await page.getByLabel('Back').click();
+  await expect(page.getByTestId('tonight-specials')).toContainText('Halibut');
+  await page.evaluate(() => { const d = TeamShift.get(); Object.keys(d.acks).forEach((k) => { if (d.acks[k].demo) delete d.acks[k]; }); TeamLearn.setMe(TeamLearn.people().find((p) => p.name === 'Sam').id); TeamShift.save(d); });
+  const gate = page.getByTestId('team-briefing');
+  await expect(gate).toBeVisible();
+  await expect(gate.getByTestId('briefing-off')).toBeVisible();
+  await expect(gate.getByTestId('briefing-special')).toContainText('Halibut');
+  await expect(gate.getByTestId('briefing-allergens')).toContainText('Fish');
+  await expect(gate.getByTestId('briefing-special')).toContainText('Chablis');
+  expect(await page.evaluate(() => TeamShift.register().waiting.map((p) => p.name))).toContain('Sam');
+  await page.getByTestId('briefing-ack').click();
+  await expect(gate).toHaveCount(0);
+  await expect(page.getByTestId('tonight-specials')).toContainText('Halibut');
+  expect(await page.evaluate(() => TeamShift.register().waiting.map((p) => p.name))).not.toContain('Sam');
+  // Sold out: on Today at once, and no second acceptance.
+  await page.evaluate(() => { TeamShift.soldOut(TeamShift.specials()[0].id, true); });
+  await expect(page.getByTestId('tonight-soldout')).toContainText('Halibut');
+  await expect(page.getByTestId('team-briefing')).toHaveCount(0);
+  // A second special, read from a photo, approved and sent as an update: accepted again, with what's new marked.
+  await page.evaluate(async () => { const [s] = await TeamShift.read({ b64: 'AAAA', text: 'turbot' }); TeamShift.update(s.id, { confirmed: true, run: 'week' }); TeamShift.approve(s.id); });
+  expect(await page.evaluate(() => TeamShift.status().changed)).toBe(true);
+  expect(asked.filter((b) => b.purpose === 'team_special')[1].messages[0].content.some((c) => c.type === 'image')).toBe(true);
+  await page.evaluate(() => { TeamShift.send(TeamLearn.people()[0].id); const d = TeamShift.get(); Object.keys(d.acks).forEach((k) => { if (d.acks[k].demo) delete d.acks[k]; }); TeamShift.save(d); });
+  await expect(page.getByTestId('team-briefing')).toContainText("Tonight's briefing has changed");
+  await expect(page.getByTestId('briefing-special').filter({ hasText: 'Turbot' })).toContainText('New');
+  await expect(page.getByTestId('briefing-special').filter({ hasText: 'Halibut' })).not.toContainText('New');
+  await page.getByTestId('briefing-ack').click();
+  // Tomorrow: tonight's special has run out and can be brought back; the one that runs through Sunday may still be on,
+  // and nobody is held at yesterday's briefing.
+  const r = await page.evaluate(() => { const t = Date.now() + 86400000, me = TeamLearn.me().id; return { live: TeamShift.specials(t).map((s) => s.name), past: TeamShift.past(t).map((s) => s.name), gate: TeamShift.needsAck(me, t), far: TeamShift.specials(Date.now() + 8 * 86400000).length }; });
+  expect(r.live).not.toContain('Halibut'); expect(r.past).toContain('Halibut'); expect(r.gate).toBe(false); expect(r.far).toBe(0);
+  expect(errors).toEqual([]);
+});

@@ -180,7 +180,11 @@ const TeamVinny = {
     // with" says whether it's poured by the glass, and the pick is labelled the first choice.
     const dl=ds.map((x,i)=>{ const p=TeamData.pairing(x.id), nm=(id,mark)=>{ const w=TeamData.wine(id); return w?`${TeamData.short(w)} (${tag(id)})${mark&&TeamData.byGlass(w)?' also by the glass':''}`:''; };
       return `D${i+1} ${x.name}${x.section?` · ${x.section}`:''}${x.price?` · ${x.price}`:''}${x.desc?` · ${x.desc}`:''}${p&&p.best&&p.best.length?` · best with ${p.best.map(b=>nm(b.id,true)).filter(Boolean).join('; ')}`:''}${p&&p.glass?` · first pick by the glass ${nm(p.glass.id)}`:''}${p&&p.avoid?` · steer away from ${nm(p.avoid.id)}`:''}`; });
-    return {ws,ds,text:`WINE LIST (${sym}):\n${wl.join('\n')}\n\nMENU:\n${dl.join('\n')}`,sym};
+    // Tonight, as the briefing has it (TeamShift): what's 86'd and the specials with their allergens and pour, so Vinny
+    // never offers a dish that's off and can answer "what's the special?" with the wine the manager approved.
+    const sh=typeof TeamShift!=='undefined'?TeamShift.content():null, wn=id=>{ const w=TeamData.wine(id); return w?TeamData.short(w):''; };
+    const tonight=sh&&!TeamShift.empty(sh)?`\n\nTONIGHT:${sh.off.length?`\n86'd, not available: ${sh.off.map(x=>x.name).join('; ')}`:''}${sh.specials.map(s=>`\nSpecial: ${s.name}${s.status==='soldout'?' (SOLD OUT)':''}${s.price!=null?` · ${s.price}`:''}${s.description?` · ${s.description}`:''} · allergens confirmed by the kitchen: ${TeamShift.allergenLine(s)||'none of the listed ones'}${wn((s.pairing.glass||{}).id)?` · by the glass ${wn(s.pairing.glass.id)}`:''}${wn((s.pairing.bottle||{}).id)?` · bottle ${wn(s.pairing.bottle.id)}`:''}`).join('')}${sh.feature.length?`\nOn feature: ${sh.feature.map(f=>f.item.producer?TeamData.short(f.item):f.item.name).join('; ')}`:''}`:'';
+    return {ws,ds,text:`WINE LIST (${sym}):\n${wl.join('\n')}\n\nMENU:\n${dl.join('\n')}${tonight}`,sym};
   },
   // The wines a question is about: named in it, or paired with a dish named in it.
   _about(q,ws,ds){
