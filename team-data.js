@@ -25,8 +25,8 @@ const TeamData = {
     if(raw!==null&&raw===this._raw&&this._val){ this._fresh=true; return this._val; }
     const d=raw?Store.getJSON(this.KEY,null):null, v=d&&d.wines?d:this._empty(); this._raw=raw; this._val=v; this._fresh=raw!==null; return v; },
   _fresh:false,
-  save(d){ Store.setJSON(this.KEY,d); try{ window.dispatchEvent(new Event('vbiz:data')); }catch(e){} },
-  reset(){ Store.remove(this.KEY); try{ window.dispatchEvent(new Event('vbiz:data')); }catch(e){} },
+  save(d){ this._relist(); Store.setJSON(this.KEY,d); try{ window.dispatchEvent(new Event('vbiz:data')); }catch(e){} },
+  reset(){ Store.remove(this.KEY); Store.remove(this.TONIGHT); try{ window.dispatchEvent(new Event('vbiz:data')); }catch(e){} },
   setVenue(fields){ const d=this.get(); d.venue={...d.venue,...fields}; this.save(d); },
   setSetting(k,v){ const d=this.get(); d.settings={...(d.settings||{}),[k]:v}; this.save(d); },
   isDemo(){ return (this.get().venue||{}).sample==='demo'; },
@@ -34,9 +34,12 @@ const TeamData = {
      floor (the manager's phone or the console) and gone at the end of the phone's calendar day. Nothing here is scored:
      it feeds the Tonight card on every Today, Vinny's suggestions and the guest's tables, not readiness. */
   _day(now=Date.now()){ const x=new Date(now); return `${x.getFullYear()}-${x.getMonth()+1}-${x.getDate()}`; },
-  tonight(now=Date.now()){ const t=(this.get().tonight)||null; const empty={day:this._day(now),off:[],feature:[],note:''};
-    if(!t||t.day!==this._day(now)) return empty; return {...empty,...t,off:(t.off||[]).filter(id=>this.dishes().some(x=>x.id===id)),feature:(t.feature||[]).filter(id=>this.wines().some(w=>w.id===id)||this.cocktails().some(c=>c.id===id))}; },
-  setTonight(fields,now=Date.now()){ const doc=this.get(), t=this.tonight(now); doc.tonight={...t,...fields,day:this._day(now),at:now}; this.save(doc); },
+  /* Tonight has a key of its own (vbiz_tonight_v1): kept on the venue's document, every tap rewrote and re-read the
+     whole list (300KB at The Princess Royal) and threw away everything worked out from it, 2 to 5 seconds a tap. */
+  TONIGHT:'vbiz_tonight_v1',
+  tonight(now=Date.now()){ const d=this.get(), t=Store.getJSON(this.TONIGHT,null)||d.tonight||null; const empty={day:this._day(now),off:[],feature:[],note:''};
+    if(!t||t.day!==this._day(now)) return empty; return {...empty,...t,off:(t.off||[]).filter(id=>(d.dishes[id]||{}).onMenu),feature:(t.feature||[]).filter(id=>(d.wines[id]||{}).onList||((d.cocktails||{})[id]||{}).onList)}; },
+  setTonight(fields,now=Date.now()){ const t=this.tonight(now); Store.setJSON(this.TONIGHT,{...t,...fields,day:this._day(now),at:now}); try{ window.dispatchEvent(new Event('vbiz:data')); }catch(e){} },
   toggleTonight(kind,id,now=Date.now()){ const t=this.tonight(now), list=[...(t[kind]||[])], i=list.indexOf(id); if(i>=0) list.splice(i,1); else list.push(id); this.setTonight({[kind]:list},now); return i<0; },
   isOff(dishId){ return this.tonight().off.includes(dishId); },
   isFeature(id){ return this.tonight().feature.includes(id); },
@@ -55,15 +58,24 @@ const TeamData = {
   /* What the training is written for: the restaurant in its own words, for every prompt's {{about}}. */
   about(){ const v=this.get().venue||{}; return v.about||[v.name,v.style,v.city].filter(Boolean).join(', ')||'A restaurant. Write in British English.'; },
 
-  wines(){ return Object.values(this.get().wines).filter(w=>w.onList).sort((a,b)=>a.order-b.order); },
-  dishes(){ return Object.values(this.get().dishes).filter(x=>x.onMenu).sort((a,b)=>a.order-b.order); },
+  /* What's on the list, in order. Kept per parsed document until the end of the running task (a redraw asks hundreds
+     of times, and nothing between two saves changes it in between); a copy each time, since callers sort and filter
+     what they're given. A function that changes the document in place and reads the list before saving calls _relist. */
+  _listMemo:new WeakMap(), _listTick:false,
+  _relist(){ this._listMemo=new WeakMap(); },
+  _listed(key,flag){ const d=this.get(); let m=this._listMemo.get(d); if(!m){ m={}; this._listMemo.set(d,m); }
+    if(!this._listTick){ this._listTick=true; Promise.resolve().then(()=>{ this._listTick=false; this._relist(); }); }
+    if(!m[key]) m[key]=Object.values(d[key]||{}).filter(x=>x[flag]).sort((a,b)=>a.order-b.order);
+    return m[key].slice(); },
+  wines(){ return this._listed('wines','onList'); },
+  dishes(){ return this._listed('dishes','onMenu'); },
   wine(id){ return this.get().wines[id]||null; },
   dish(id){ return this.get().dishes[id]||null; },
   card(id){ return this.get().cards[id]||null; },
   pairing(dishId){ return this.get().pairings[dishId]||null; },
   /* The cocktail list, where the restaurant has one (The Social Corner's, from its drinks page): each with its
      ingredients as the list prints them, and a card written by prompts/team-cocktail-cards.txt. */
-  cocktails(){ return Object.values(this.get().cocktails||{}).filter(c=>c.onList).sort((a,b)=>a.order-b.order); },
+  cocktails(){ return this._listed('cocktails','onList'); },
   cocktail(id){ return (this.get().cocktails||{})[id]||null; },
   cocktailCard(id){ return (this.get().cocktailCards||{})[id]||null; },
   /* A dish's front-of-house notes (prompts/team-dish-cards.txt, purpose team_dishes): the dish in a sentence (with three near-miss descriptions of the same dish, `wrong`, for the know-it question), its
