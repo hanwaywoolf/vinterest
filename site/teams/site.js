@@ -59,3 +59,60 @@
   });
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { shut(); top.classList.remove('open'); if (menu) menu.setAttribute('aria-expanded', 'false'); } });
 })();
+
+// The list as bottles: <div class="cellar" data-cellar="<id of a JSON script>" data-sym="£" data-top="100">.
+// Each row of the data is [name, bottle price, glass price or 0, kind (r w p s d), 1 for a magnum]. In view, the
+// bottles arrive in price order, then the story plays once (by the glass, then bottle only); a filter or a
+// bottle touched stops it. Reduced motion shows the last state at once.
+(function () {
+  const el = document.querySelector('[data-cellar]'); if (!el) return;
+  const data = JSON.parse(document.getElementById(el.dataset.cellar).textContent), sym = el.dataset.sym || '£', top = +el.dataset.top || 100;
+  const still = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const MODES = {
+    all: { label: 'All', has: () => true, cap: (n) => `${n} wines on your list, from the least expensive to the most.` },
+    glass: { label: 'By the glass', has: (w) => w[2] > 0, cap: (n) => `${n} are poured by the glass. A guest can try one before they commit.` },
+    bottle: { label: 'Bottle only', has: (w) => !w[2], cap: (n) => `${n} are bottle only. They sell when someone on the floor recommends them.` },
+    top: { label: `${sym}${top} and over`, has: (w) => w[1] >= top && !w[4], cap: (n) => `${n} bottles at ${sym}${top} or more: the ones a confident recommendation sells.` },
+  };
+  const count = (m) => data.filter(MODES[m].has).length;
+  const tabs = document.createElement('div'); tabs.className = 'cellar-tabs';
+  tabs.innerHTML = Object.keys(MODES).map((m) => `<button type="button" data-mode="${m}" aria-pressed="false"><b>${count(m)}</b>${MODES[m].label}</button>`).join('');
+  const grid = document.createElement('div'); grid.className = 'cellar-grid'; grid.setAttribute('role', 'img');
+  grid.setAttribute('aria-label', `${data.length} wines: ${count('glass')} poured by the glass, ${count('bottle')} bottle only.`);
+  grid.innerHTML = data.map((w, i) => `<i class="${w[3]}" style="--i:${i}" data-i="${i}"></i>`).join('');
+  const cap = document.createElement('p'); cap.className = 'cellar-cap'; cap.setAttribute('aria-live', 'polite');
+  const pick = document.createElement('p'); pick.className = 'cellar-pick';
+  const key = document.createElement('div'); key.className = 'cellar-key';
+  key.innerHTML = [['r', '#C9344F', 'Red'], ['w', '#E9D98C', 'White'], ['p', '#F0A3B4', 'Rosé'], ['s', '#F6F1DF', 'Sparkling'], ['d', '#E9A93C', 'Sweet and fortified']]
+    .filter((k) => data.some((w) => w[3] === k[0])).map((k) => `<span style="--k:${k[1]}">${k[2]}</span>`).join('');
+  el.append(tabs, grid, cap, pick, key);
+  const bottles = Array.from(grid.children), HINT = 'Touch a bottle to see which wine it is.';
+  let timers = [], held = null;
+  const set = (m) => {
+    tabs.querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.mode === m)));
+    bottles.forEach((b, i) => b.classList.toggle('off', !MODES[m].has(data[i])));
+    cap.textContent = MODES[m].cap(count(m)); el.dataset.mode = m;
+  };
+  const stop = () => { timers.forEach(clearTimeout); timers = []; };
+  const show = (b) => {
+    if (held) held.classList.remove('pick'); held = b || null;
+    if (!b) { pick.textContent = HINT; return; }
+    const w = data[+b.dataset.i]; b.classList.add('pick');
+    pick.textContent = w[0] + ' · ' + (w[1] ? `${sym}${w[1]} a ${w[4] ? 'magnum' : 'bottle'}` : '') + (w[1] && w[2] ? ' · ' : '') + (w[2] ? `${sym}${w[2]} a glass` : ' · bottle only');
+  };
+  tabs.addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) { stop(); set(b.dataset.mode); } });
+  grid.addEventListener('pointerover', (e) => { if (e.target.dataset.i) show(e.target); });
+  grid.addEventListener('pointerleave', () => show(null));
+  set('all'); show(null);
+  const play = () => {
+    el.classList.add('in');
+    if (still) { el.classList.add('ready'); set('bottle'); return; }
+    const k = +el.dataset.speed || 1, after = (ms, fn) => timers.push(setTimeout(fn, ms / k));
+    setTimeout(() => el.classList.add('ready'), (data.length * 9 + 600) / k);
+    after(data.length * 9 + 1500, () => set('glass'));
+    after(data.length * 9 + 4700, () => set('bottle'));
+  };
+  if (!('IntersectionObserver' in window)) { play(); return; }
+  const io = new IntersectionObserver((es) => { if (es.some((x) => x.isIntersecting)) { io.disconnect(); play(); } }, { threshold: 0.35 });
+  io.observe(grid);
+})();

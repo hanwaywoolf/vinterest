@@ -235,6 +235,13 @@ test('a private page is hidden from search and adds up', async ({ page, request 
   await expect(box.locator('[data-t="year"]')).toHaveText('£73,892');
   await box.locator('[data-in="up"]').fill('0');
   await expect(box.locator('[data-t="day"]')).toHaveText('£122');
+  // the list as bottles: one per wine, and the filters count what the page says
+  await expect(page.locator('.cellar-grid i')).toHaveCount(132);
+  await page.locator('.cellar-tabs [data-mode="bottle"]').click();
+  await expect(page.locator('.cellar-tabs [data-mode="bottle"] b')).toHaveText('94');
+  await expect(page.locator('.cellar-grid i.off')).toHaveCount(38);
+  await expect(page.locator('.cellar-tabs [data-mode="top"] b')).toHaveText('33');
+  await expect(page.locator('.cellar-cap')).toContainText('94 are bottle only');
   for (const a of await page.locator('a[data-demo]').all()) await expect(a).toHaveAttribute('href', /seed=princess-royal/);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   expect(errors).toEqual([]);
