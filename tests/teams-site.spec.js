@@ -4,7 +4,7 @@
 const { test, expect } = require('@playwright/test');
 
 const BASE = 'http://localhost:4176';
-const PAGES = ['/', '/restaurants', '/groups', '/wineries', '/pricing', '/privacy'];
+const PAGES = ['/', '/restaurants', '/groups', '/wineries', '/pricing', '/privacy', '/mise-en-place'];
 
 for (const width of [390, 1024, 1440]) {
   test(`every page renders cleanly at ${width}px`, async ({ browser }) => {
@@ -30,15 +30,33 @@ for (const width of [390, 1024, 1440]) {
 
 test('the nav goes to each page and marks the one it is on', async ({ browser }) => {
   const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+  await page.route('**/api/country', (r) => r.fulfill({ contentType: 'application/json', body: '{"country":""}' }));
   await page.goto(BASE + '/');
-  for (const name of ['Restaurants', 'Groups', 'Wineries', 'Pricing']) {
-    await page.locator('header nav a', { hasText: name }).click();
-    await expect(page).toHaveURL(new RegExp(`/${name.toLowerCase()}$`));
-    await expect(page.locator('header nav a[aria-current="page"]')).toHaveText(name);
+  // Grouped links open from their group's name; the rest sit in the nav itself.
+  for (const [group, name, path] of [['Who it\'s for', 'Restaurants and wine bars', '/restaurants'], ['Who it\'s for', 'Restaurant groups', '/groups'], ['Who it\'s for', 'Wineries and tasting rooms', '/wineries'], [null, 'Mise en place', '/mise-en-place'], [null, 'Pricing', '/pricing']]) {
+    if (group) { await page.locator('header nav .ddb', { hasText: group }).click(); await expect(page.locator('header nav .dd.on .ddm')).toBeVisible(); }
+    await page.locator('header nav a', { hasText: name }).first().click();
+    await expect(page).toHaveURL(new RegExp(`${path}$`));
+    await expect(page.locator('header nav a[aria-current="page"]')).toContainText(name);
   }
   // Every in-site link leads somewhere that exists.
   const hrefs = await page.evaluate(() => [...document.querySelectorAll('a[href^="/"]')].map((a) => a.getAttribute('href').split('#')[0]));
   for (const h of new Set(hrefs)) expect((await page.request.get(BASE + h)).status(), h).toBe(200);
+  await page.close();
+});
+
+// On a phone the nav is behind a menu button, with every group shown.
+test('on a phone the menu button opens the whole nav', async ({ browser }) => {
+  const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
+  await page.route('**/api/country', (r) => r.fulfill({ contentType: 'application/json', body: '{"country":""}' }));
+  await page.goto(BASE + '/');
+  await expect(page.locator('header nav')).toBeHidden();
+  await page.locator('header .menub').click();
+  await expect(page.locator('header nav a', { hasText: 'Restaurant groups' })).toBeVisible();
+  await expect(page.locator('header nav a', { hasText: 'Mise en place' })).toBeVisible();
+  await page.locator('header nav a', { hasText: 'Mise en place' }).click();
+  await expect(page).toHaveURL(/\/mise-en-place$/);
+  await expect(page.locator('h1')).toContainText('Mise en place');
   await page.close();
 });
 
@@ -51,6 +69,14 @@ test('the calculator follows the inputs', async ({ browser }) => {
   await expect(five).not.toHaveText(before);
   // 300 covers × (0.5 × £9 + 0.1 × £42) × 6 nights × 52 weeks × 5%
   await expect(five).toHaveText('£40,716');
+  // The demo restaurant's list beside it, as bottles, made at build time from the app's own files; a bottle opens its card.
+  const list = page.locator('.calc .cellar');
+  await expect(list.locator('.cellar-grid i')).toHaveCount(30);
+  await list.locator('.cellar-tabs [data-mode="bottle"]').click();
+  await expect(list.locator('.cellar-cap')).toContainText('15 are bottle only');
+  await list.locator('.cellar-grid i').last().click();
+  await expect(page.locator('dialog.wcard h3')).toBeVisible();
+  await expect(page.locator('dialog.wcard')).toContainText('What to say at the table');
   await page.close();
 });
 
@@ -200,4 +226,133 @@ test('each console scene, and the wine card, opens at the top of its page', asyn
   await page.waitForTimeout(800);
   expect((await pan()).y).toMatch(/^(none|translateY\(0px\))$/);
   await page.close();
+});
+
+// A page written for one restaurant: reachable by its address, never listed, and its sums are its own prices.
+test('a private page is hidden from search and adds up', async ({ page, request }) => {
+  const errors = [];
+  page.on('pageerror', (e) => errors.push(String(e)));
+  await page.goto(BASE + '/for/princess-royal');
+  await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', /noindex/);
+  await expect(page.locator('h1')).toContainText('132 wines');
+  expect(await (await request.get(BASE + '/sitemap.xml')).text()).not.toContain('/for/');
+  expect(await (await request.get(BASE + '/robots.txt')).text()).toContain('Disallow: /for/');
+  const box = page.locator('#prCalc');
+  await expect(box.locator('[data-t="day"]')).toHaveText('£203');       // 3 × £27 + 5 × £14 + 4 × £13
+  await expect(box.locator('[data-t="week"]')).toHaveText('£1,421');
+  await expect(box.locator('[data-t="year"]')).toHaveText('£73,892');
+  await box.locator('[data-in="up"]').fill('0');
+  await expect(box.locator('[data-t="day"]')).toHaveText('£122');
+  // the list as bottles: one per wine, and the filters count what the page says
+  await expect(page.locator('.cellar-grid i')).toHaveCount(132);
+  await page.locator('.cellar-tabs [data-mode="bottle"]').click();
+  await expect(page.locator('.cellar-tabs [data-mode="bottle"] b')).toHaveText('94');
+  await expect(page.locator('.cellar-grid i.off')).toHaveCount(38);
+  await expect(page.locator('.cellar-tabs [data-mode="top"] b')).toHaveText('33');
+  await expect(page.locator('.cellar-cap')).toContainText('94 are bottle only');
+  // naming a bottle moves nothing; clicking it opens that wine's card
+  const tops = () => page.evaluate(() => ['.cellar-cap', 'h1', '.cellar-key', '.pr-facts'].map((q) => Math.round(document.querySelector(q).getBoundingClientRect().top + scrollY)));
+  const before = await tops();
+  const last = page.locator('.cellar-grid i').last();
+  await last.hover();
+  await expect(page.locator('.cellar-pick')).toContainText('Blanc des Millénaires');
+  expect(await tops()).toEqual(before);
+  await last.click();
+  const card = page.locator('dialog.wcard');
+  await expect(card.locator('h3')).toContainText('Blanc des Millénaires');
+  await expect(card.locator('.price')).toHaveText('£310 a bottle · bottle only');
+  await expect(card.getByText('What to say at the table')).toBeVisible();
+  await card.locator('.wcard-x').click();
+  await expect(card).toBeHidden();
+  for (const a of await page.locator('a[data-demo]').all()) await expect(a).toHaveAttribute('href', /seed=princess-royal/);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  expect(errors).toEqual([]);
+});
+
+// The hero's phone is the Teams app itself (live.js, the app's sources): it opens on Today, starts the day's
+// drill and answers it, so the site can't show a drill the app no longer has.
+test('the hero phone runs the real drill', async ({ page }) => {
+  const errors = [];
+  page.on('pageerror', (e) => errors.push(String(e)));
+  await page.addInitScript(() => { window.TEAMS_LIVE_SPEED = 6; });
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto(BASE + '/');
+  const app = page.locator('#pstage .live-app');
+  await expect(app.locator('[data-scroll]')).toBeAttached({ timeout: 20000 });
+  await expect(page.locator('#pstage > img.ly').first()).toBeHidden();          // the pictures have handed over
+  await expect(app.locator('[data-testid=team-drill]')).toBeVisible({ timeout: 15000 });
+  await expect(app.locator('[data-testid=drill-result]')).toBeVisible({ timeout: 15000 }); // an answer marked by the app
+  await expect(app.locator('[data-testid=drill-done]')).toBeVisible({ timeout: 40000 });
+  await expect(app.locator('[data-testid=drill-done]')).toContainText(/of 5 right/);
+  expect(await page.evaluate(() => Object.keys(localStorage).filter((k) => /^(vbiz|vinterest)_/.test(k)))).toEqual([]); // nothing left on the visitor's device
+  expect(errors).toEqual([]);
+});
+
+// On a phone the hero has no phone, so the drill in "On the floor" is the live one, loaded as the section nears.
+test('on a phone the floor carousel runs the real drill', async ({ page }) => {
+  const errors = [];
+  page.on('pageerror', (e) => errors.push(String(e)));
+  await page.addInitScript(() => { window.TEAMS_LIVE_SPEED = 6; });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto(BASE + '/');
+  await expect(page.locator('#pstage .live-app')).toHaveCount(0);
+  await page.locator('#orbit').scrollIntoViewIfNeeded();
+  await expect(page.locator('#ftitle')).toHaveText('The drill');
+  await expect(page.locator('#ftry a')).toHaveAttribute('href', /view=phone/); // the phone plays by itself; this opens the app to try by hand
+  const app = page.locator('#fstage .live-app');
+  await expect(app.locator('[data-testid=drill-result]')).toBeVisible({ timeout: 30000 });
+  await expect(app.locator('[data-testid=drill-done]')).toBeVisible({ timeout: 40000 });
+  await expect(page.locator('#ftitle')).toHaveText('The card', { timeout: 15000 }); // one run, then the carousel turns
+  // Tapped, the phone opens full screen as the app itself, theirs to use: a drill started and answered by hand.
+  await page.locator('#fdots button').first().click();
+  await page.locator('#orbit .slot').first().locator('.phone').click();
+  const full = page.locator('.live-full');
+  await expect(full.getByText('Hi Dani')).toBeVisible();
+  await expect(page.locator('#fstage .live-app')).toHaveCount(0);                   // the playing phone has stopped
+  await full.getByText(/Start today's drill|Practise · 5/).first().click();
+  await full.locator('[data-testid=drill-opt]').first().click();
+  await full.getByText('Check', { exact: true }).click();
+  await expect(full.locator('[data-testid=drill-result]')).toBeVisible();
+  await full.locator('[data-live-close]').click();
+  await expect(full).toHaveCount(0);
+  await expect(page.locator('#fstage .live-app')).toHaveCount(1);                   // and plays again once closed
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  expect(errors).toEqual([]);
+});
+
+// The launch timeline draws itself with the scroll: nothing lit above it, every step lit once it has passed.
+test('the Mise en place timeline lights its steps as the page scrolls', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  for (const [url, line, step, n] of [['/?live=off', '.tl', '.s', 5], ['/mise-en-place', '.stepsfull', '.sf', 5]]) {
+    await page.goto(BASE + url);
+    if (url !== '/mise-en-place') await expect(page.locator(`${line} ${step}.on`)).toHaveCount(0);
+    await page.evaluate((q) => { const r = document.querySelector(q).getBoundingClientRect(); scrollTo(0, r.bottom + scrollY - 200); }, line);
+    await expect(page.locator(`${line} ${step}.on`)).toHaveCount(n);
+  }
+  // Reduced motion: no drawing, every step as written.
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.goto(BASE + '/mise-en-place');
+  await expect(page.locator('.stepsfull.tl-js')).toHaveCount(0);
+});
+
+// Hear a table: nothing sounds until Play; then each line is said in turn and Vinny's mark arrives.
+test('the table plays its lines and ends on the mark', async ({ page, request }) => {
+  const errors = [];
+  page.on('pageerror', (e) => errors.push(String(e)));
+  await page.addInitScript(() => { window.TEAMS_TABLE_SPEED = 8; });
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto(BASE + '/?live=off');
+  const table = page.locator('[data-table]');
+  await expect(table.locator('.t-line')).toHaveCount(4);
+  for (const src of await table.locator('.t-line').evaluateAll((ls) => ls.map((l) => l.dataset.src))) {
+    const r = await request.get(BASE + src); expect(r.status()).toBe(200); expect(r.headers()['content-type']).toContain('audio');
+  }
+  await expect(table).not.toHaveClass(/playing/);
+  await table.locator('[data-table-play]').click();
+  await expect(table.locator('.t-line.on').first()).toBeVisible();
+  await expect(table.locator('.t-mark.on')).toBeVisible({ timeout: 20000 });
+  await expect(table.locator('.t-line.on')).toHaveCount(4);
+  await expect(table.locator('[data-table-play] .lbl')).toHaveText('Play it again');
+  await expect(table.locator('.t-mark')).toContainText('That landed');
+  expect(errors).toEqual([]);
 });

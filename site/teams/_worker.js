@@ -169,6 +169,7 @@ export default {
     // fonts are kept, and images carry a version too.
     if (/text\/html|javascript|text\/css/.test(type)) out.headers.set("cache-control", "no-cache, must-revalidate");
     else if (/^\/fonts\//.test(url.pathname)) out.headers.set("cache-control", "public, max-age=2592000");
+    if (url.pathname.startsWith("/for/")) out.headers.set("x-robots-tag", "noindex, nofollow"); // private pages for one prospect
     out.headers.set("x-content-type-options", "nosniff");
     out.headers.set("referrer-policy", "strict-origin-when-cross-origin");
     return out;
