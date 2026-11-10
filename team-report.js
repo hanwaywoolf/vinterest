@@ -86,7 +86,8 @@ const TeamReport = {
       const q=ps=>rows.filter(r=>r.w===w.id&&ps.some(p=>p.id===r.v)).reduce((a,r)=>a+r.q*r.p,0), s=ps=>ps.reduce((a,p)=>a+shifts[p.id],0);
       kn.q+=q(k); kn.s+=s(k); un.q+=q(u); un.s+=s(u); });
     const a=kn.s?kn.q/kn.s:0, b=un.s?un.q/un.s:0;
-    return {wines,known:a,unknown:b,pct:b>0?Math.round(100*(a-b)/b):null}; },
+    // `x`: how many times as much a server who knows a wine takes on it as one who doesn't (3.1×), the plainer figure.
+    return {wines,known:a,unknown:b,pct:b>0?Math.round(100*(a-b)/b):null,x:b>0?Math.round(10*a/b)/10:null}; },
   /* What to learn first: the wines that sell most and that the fewest of their sellers know. */
   priority(days=28,n=6){ const sold=Object.fromEntries(this.salesByWine(days).map(x=>[x.id,x]));
     return TeamData.wines().map(w=>{ const s=sold[w.id], sel=this._sellers(w), gap=sel.of?1-sel.knows/sel.of:0; return {wine:w,qty:s?s.qty:0,...sel,gap,score:(s?s.qty:0)*(0.25+gap)}; })
@@ -159,7 +160,9 @@ const TeamReport = {
     if(gaps.length) out.push({k:'gaps',tone:'bad',title:gaps.length===1?`1 of your top 8 sellers isn't known yet`:`${gaps.length} of your top 8 sellers aren't known yet`,
       text:`Most of the team who serve ${gaps.length===1?'it don\'t know it':'them don\'t know them'}. Drill ${gaps.length===1?'it':'these'} first.`,
       rows:gaps.map(x=>({label:TeamData.short(x.wine),value:`${x.knows} of ${x.of} know it`,open:{view:'wine',id:x.wine.id}})),open:{view:'wine',id:gaps[0].wine.id}});
-    if(lift.pct!=null&&lift.wines) out.push({k:'lift',tone:lift.pct>0?'good':'note',title:lift.pct>0?`Training is worth ${lift.pct}% more sales`:`No sales lift from training yet`,text:lift.pct>0?`A server sells ${TeamData.money(lift.known,{dp:2})} of a wine a shift once they know it, against ${TeamData.money(lift.unknown,{dp:2})} before. Shifts and sections affect this too, so read it as a pointer.`:`Across ${lift.wines} wines, servers who know a wine don't yet sell more of it.`});
+    // Said as what was compared: servers who know a wine against servers who don't, on the same wine, per shift; never
+    // "before", since it isn't the same person before and after training.
+    if(lift.pct!=null&&lift.wines) out.push({k:'lift',tone:lift.pct>0?'good':'note',title:lift.pct>0?`Servers who know a wine sell ${lift.x}× as much of it`:`No sales lift from training yet`,text:lift.pct>0?`Over the last 28 nights, across the ${lift.wines} wines that some of the team know and some don't: a server who knows a wine takes ${TeamData.money(lift.known,{dp:2})} of it a shift, one who doesn't ${TeamData.money(lift.unknown,{dp:2})}. That's known against not known across people, not before and after, and shifts and sections play a part, so read it as a pointer.`:`Across ${lift.wines} wines, servers who know a wine don't yet sell more of it.`});
     const seller=this.salesByServer(28).filter(x=>x.shifts>0&&['server','bartender'].includes(x.person.role));
     if(seller.length>2){ const low=[...seller].sort((a,b)=>(a.revenuePerShift||0)-(b.revenuePerShift||0))[0];
       if(low&&low.readiness&&low.readiness.state!=='ready') out.push({k:'drill',tone:'bad',title:`${low.person.name.split(' ')[0]} sells the least wine per shift`,text:`${m(low.revenuePerShift||0)} a shift: ${[(low.glassesPerShift||0)>=0.05?`${low.glassesPerShift.toFixed(1)} glasses`:'',(low.bottlesPerShift||0)>=0.05?`${low.bottlesPerShift.toFixed(1)} bottles`:''].filter(Boolean).join(' and ')||'nothing yet'}, and ${low.readiness.pct}% ready. A few drills on what sells is the quickest lift.`,open:{view:'person',id:low.person.id}}); }
