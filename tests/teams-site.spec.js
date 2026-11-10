@@ -246,3 +246,22 @@ test('a private page is hidden from search and adds up', async ({ page, request 
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   expect(errors).toEqual([]);
 });
+
+// The hero's phone is the Teams app itself (live.js, the app's sources): it opens on Today, starts the day's
+// drill and answers it, so the site can't show a drill the app no longer has.
+test('the hero phone runs the real drill', async ({ page }) => {
+  const errors = [];
+  page.on('pageerror', (e) => errors.push(String(e)));
+  await page.addInitScript(() => { window.TEAMS_LIVE_SPEED = 6; });
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto(BASE + '/');
+  const app = page.locator('#pstage .live-app');
+  await expect(app.locator('[data-scroll]')).toBeAttached({ timeout: 20000 });
+  await expect(page.locator('#pstage > img.ly').first()).toBeHidden();          // the pictures have handed over
+  await expect(app.locator('[data-testid=team-drill]')).toBeVisible({ timeout: 15000 });
+  await expect(app.locator('[data-testid=drill-result]')).toBeVisible({ timeout: 15000 }); // an answer marked by the app
+  await expect(app.locator('[data-testid=drill-done]')).toBeVisible({ timeout: 40000 });
+  await expect(app.locator('[data-testid=drill-done]')).toContainText(/of 5 right/);
+  expect(await page.evaluate(() => Object.keys(localStorage).filter((k) => /^(vbiz|vinterest)_/.test(k)))).toEqual([]); // nothing left on the visitor's device
+  expect(errors).toEqual([]);
+});

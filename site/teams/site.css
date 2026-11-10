@@ -544,3 +544,9 @@ html.dlg-open, html.dlg-open body { overflow: hidden; }
 .cellar-key { display: flex; flex-wrap: wrap; gap: 4px 14px; margin-top: 10px; font-size: 12px; color: rgba(255, 255, 255, .55); }
 .cellar-key span::before { content: ''; display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--k); margin-right: 6px; }
 @media (prefers-reduced-motion: reduce) { .cellar-grid i { transition: none !important; } }
+
+/* The live phone (live.js, site/teams/live/): the real app drawn over a phone's stage, with a dot where it taps.
+   The pictures it replaces go once it is up. */
+.live-on > .ly, .live-on > .cursor, .live-on > .thumb { display: none; }
+.live-tap { position: absolute; z-index: 5; width: 22px; height: 22px; margin: -11px 0 0 -11px; border-radius: 50%; border: 2px solid #fff; background: rgba(232, 83, 107, .55); pointer-events: none; animation: tap .9s ease-out both; }
+.phone .scr .live-app img { flex: 0 0 auto; width: auto; min-height: 0; max-width: none; object-fit: fill; }
