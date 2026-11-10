@@ -143,3 +143,27 @@
 
 // "Try it yourself": where the live phone's app is loaded (live.js), it opens full screen on the page; otherwise the link goes to the demo.
 document.addEventListener('click', (e) => { const a = e.target.closest('[data-live-open]'); if (!a || !window.TeamsLive || e.metaKey || e.ctrlKey || e.shiftKey || e.button) return; e.preventDefault(); window.TeamsLive.open(); });
+
+// A timeline that draws itself: <div data-timeline=".s"> (the selector of its steps). As the page scrolls, --p (0 to 1)
+// is how far the line has come, across a row of steps or down a column of them, and a step gets .on once the line
+// reaches it. Reduced motion, or no script, shows every step lit.
+(function () {
+  const lines = Array.from(document.querySelectorAll('[data-timeline]')); if (!lines.length) return;
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const clamp = (x) => Math.max(0, Math.min(1, x));
+  const rows = lines.map((el) => { el.classList.add('tl-js'); return { el, steps: Array.from(el.querySelectorAll(el.dataset.timeline)) }; });
+  let queued = false;
+  function draw() {
+    queued = false; const vh = window.innerHeight;
+    rows.forEach(({ el, steps }) => {
+      if (steps.length < 2) return; const r = el.getBoundingClientRect(), a = steps[0].getBoundingClientRect(), b = steps[1].getBoundingClientRect(), across = Math.abs(a.top - b.top) < 8;
+      // A row is all on screen at once, so it draws over a short stretch of scroll; a column draws at reading pace.
+      const p = across ? clamp((vh * 0.82 - r.top) / (vh * 0.42)) : clamp((vh * 0.62 - r.top) / Math.max(1, r.height));
+      el.style.setProperty('--p', p.toFixed(4));
+      const len = across ? r.width : r.height;
+      steps.forEach((s) => { const q = s.getBoundingClientRect(), at = across ? q.left - r.left : q.top - r.top; s.classList.toggle('on', p > 0 && (s === steps[0] || at <= p * len - (across ? 0 : 20))); });
+    });
+  }
+  const ask = () => { if (!queued) { queued = true; requestAnimationFrame(draw); } };
+  addEventListener('scroll', ask, { passive: true }); addEventListener('resize', ask); draw();
+})();

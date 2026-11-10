@@ -311,3 +311,18 @@ test('on a phone the floor carousel runs the real drill', async ({ page }) => {
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   expect(errors).toEqual([]);
 });
+
+// The launch timeline draws itself with the scroll: nothing lit above it, every step lit once it has passed.
+test('the Mise en place timeline lights its steps as the page scrolls', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  for (const [url, line, step, n] of [['/?live=off', '.tl', '.s', 5], ['/mise-en-place', '.stepsfull', '.sf', 5]]) {
+    await page.goto(BASE + url);
+    if (url !== '/mise-en-place') await expect(page.locator(`${line} ${step}.on`)).toHaveCount(0);
+    await page.evaluate((q) => { const r = document.querySelector(q).getBoundingClientRect(); scrollTo(0, r.bottom + scrollY - 200); }, line);
+    await expect(page.locator(`${line} ${step}.on`)).toHaveCount(n);
+  }
+  // Reduced motion: no drawing, every step as written.
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.goto(BASE + '/mise-en-place');
+  await expect(page.locator('.stepsfull.tl-js')).toHaveCount(0);
+});

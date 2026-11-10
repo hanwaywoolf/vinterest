@@ -593,3 +593,28 @@ html.dlg-open, html.dlg-open body { overflow: hidden; }
 @media (max-width: 520px) { .wcard-in { padding: 22px 18px 18px; } .wcard .bars { grid-template-columns: 1fr; } }
 @media (prefers-reduced-motion: reduce) { .wcard[open] { animation: none; } }
 .wcard, .wcard-in { outline: none; }
+
+/* A timeline that draws itself (data-timeline, site.js): a coloured line follows the scroll (--p, 0 to 1) along the
+   grey one, and each step lights as the line reaches it. Without the script, or with reduced motion, every step
+   shows lit, as written above. */
+.tl.tl-js::after { content: ''; position: absolute; left: 16px; right: 16px; top: 15px; height: 2px; background: linear-gradient(90deg, var(--sky), var(--plum) 28%, var(--cr) 52%, var(--gold) 76%, var(--green)); clip-path: inset(0 calc(100% - var(--p, 0) * 100%) 0 0); }
+.tl-js .s .n, .tl-js .sf .side .n { background: #fff; color: var(--mute); box-shadow: 0 0 0 6px var(--bg-2), inset 0 0 0 2px var(--line); transition: background .35s, color .35s, box-shadow .35s; }
+.tl-js .s.on .n, .tl-js .sf.on .side .n { background: var(--c, var(--cr)); color: #fff; box-shadow: 0 0 0 6px var(--bg-2), 0 0 0 0 transparent; animation: tl-pop .5s cubic-bezier(.2, .8, .2, 1); }
+.tl-js .s > :not(.n) { opacity: .3; transform: translateY(8px); transition: opacity .5s ease, transform .5s cubic-bezier(.2, .8, .2, 1); }
+.tl-js .s.on > :not(.n) { opacity: 1; transform: none; }
+.tl-js .s.on > h3 { transition-delay: .06s; } .tl-js .s.on > p { transition-delay: .12s; }
+@keyframes tl-pop { 0% { transform: scale(.7); } 60% { transform: scale(1.14); } 100% { transform: scale(1); } }
+/* The launch page's steps: a rail down the left of the cards, a dot at each, the line drawn down as the page scrolls. */
+.stepsfull.tl-js { position: relative; padding-left: 44px; }
+.stepsfull.tl-js::before, .stepsfull.tl-js::after { content: ''; position: absolute; left: 13px; top: 50px; bottom: 50px; width: 2px; border-radius: 1px; background: var(--line); }
+.stepsfull.tl-js::after { background: linear-gradient(180deg, var(--sky), var(--plum) 28%, var(--cr) 52%, var(--gold) 76%, var(--green)); clip-path: inset(0 0 calc(100% - var(--p, 0) * 100%) 0); }
+.stepsfull.tl-js .sf { position: relative; transition: border-color .5s, box-shadow .5s, opacity .5s, transform .5s cubic-bezier(.2, .8, .2, 1); opacity: .55; transform: translateY(10px); }
+.stepsfull.tl-js .sf.on { opacity: 1; transform: none; border-color: color-mix(in srgb, var(--c) 35%, var(--line)); box-shadow: 0 18px 40px -28px color-mix(in srgb, var(--c) 60%, transparent); }
+.stepsfull.tl-js .sf::before { content: ''; position: absolute; z-index: 1; left: -38px; top: 43px; width: 14px; height: 14px; border-radius: 50%; background: #fff; box-shadow: inset 0 0 0 2px var(--line), 0 0 0 4px #fff; transition: background .35s, box-shadow .35s; }
+.stepsfull.tl-js .sf.on::before { background: var(--c); box-shadow: inset 0 0 0 0 transparent, 0 0 0 4px #fff; animation: tl-pop .5s cubic-bezier(.2, .8, .2, 1); }
+.stepsfull.tl-js .sf .side .n { box-shadow: inset 0 0 0 2px var(--line); } .stepsfull.tl-js .sf.on .side .n { box-shadow: none; }
+@media (max-width: 860px) {
+  .tl.tl-js::after { left: 15px; right: auto; top: 16px; bottom: 16px; width: 2px; height: auto; background: linear-gradient(180deg, var(--sky), var(--plum) 28%, var(--cr) 52%, var(--gold) 76%, var(--green)); clip-path: inset(0 0 calc(100% - var(--p, 0) * 100%) 0); }
+  .stepsfull.tl-js { padding-left: 26px; } .stepsfull.tl-js::before, .stepsfull.tl-js::after { left: 5px; top: 36px; bottom: 36px; }
+  .stepsfull.tl-js .sf::before { left: -27px; top: 29px; width: 12px; height: 12px; }
+}
