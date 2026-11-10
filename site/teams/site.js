@@ -60,7 +60,8 @@
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { shut(); top.classList.remove('open'); if (menu) menu.setAttribute('aria-expanded', 'false'); } });
 })();
 
-// The list as bottles: <div class="cellar" data-cellar="<id of a JSON script>" data-sym="£" data-top="100">.
+// The list as bottles: <div class="cellar" data-cellar="<id of a JSON script>" data-sym="£" data-top="100"> (data-whose
+// names the list in the caption, "your list" without it).
 // Each row of the data is [name, bottle price, glass price or 0, kind (r w p s d), 1 for a magnum]. In view, the
 // bottles arrive in price order, then the story plays once (by the glass, then bottle only); a filter or a
 // bottle touched stops it. Reduced motion shows the last state at once.
@@ -69,7 +70,7 @@
   const data = JSON.parse(document.getElementById(el.dataset.cellar).textContent), sym = el.dataset.sym || '£', top = +el.dataset.top || 100;
   const still = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const MODES = {
-    all: { label: 'All', has: () => true, cap: (n) => `${n} wines on your list, from the least expensive to the most.` },
+    all: { label: 'All', has: () => true, cap: (n) => `${n} wines on ${el.dataset.whose || 'your list'}, from the least expensive to the most.` },
     glass: { label: 'By the glass', has: (w) => w[2] > 0, cap: (n) => `${n} are poured by the glass. A guest can try one before they commit.` },
     bottle: { label: 'Bottle only', has: (w) => !w[2], cap: (n) => `${n} are bottle only. They sell when someone on the floor recommends them.` },
     top: { label: `${sym}${top} and over`, has: (w) => w[1] >= top && !w[4], cap: (n) => `${n} bottles at ${sym}${top} or more: the ones a confident recommendation sells.` },
@@ -122,7 +123,7 @@
       ${c.taste ? `<div class="lab">How it tastes</div><p>${esc(c.taste)}</p>` : ''}${bars ? `<div class="bars">${bars}</div>` : ''}
       ${c.dishes && c.dishes.length ? `<div class="lab">Pour it with</div>${c.dishes.map((d) => `<div class="dish"><b>${esc(d.dish)}</b><span>${esc(d.why)}</span></div>`).join('')}` : ''}
       ${c.serve ? `<div class="lab">Serve</div><p>${esc(c.serve)}</p>` : ''}
-      <div class="foot"><span>The card your team would learn from.</span>${el.dataset.cardsDemo ? `<a class="btn primary small" href="${esc(el.dataset.cardsDemo)}" target="_blank" rel="noopener" data-demo-direct>Open your demo</a>` : ''}</div></div>`;
+      <div class="foot"><span>${esc(el.dataset.cardsNote || 'The card your team would learn from.')}</span>${el.dataset.cardsDemo ? `<a class="btn primary small" href="${esc(el.dataset.cardsDemo)}" target="_blank" rel="noopener" data-demo-direct>Open your demo</a>` : ''}</div></div>`;
     if (!dlg.open) dlg.showModal(); dlg.querySelector('.wcard-in').scrollTop = 0;
   }
   if (el.dataset.cards) grid.addEventListener('click', (e) => { if (e.target.dataset.i) { stop(); card(+e.target.dataset.i); } });

@@ -77,6 +77,10 @@
         <div>A poor bottle choice by the diner is corrected by suggesting an alternative that suits the mains.</div>
         <div>A pairing printed beside the dish gets sold by someone who can explain it.</div>
       </div>
+      <div class="listcard">
+        <div class="lk">The Larkspur, our demo restaurant</div>
+        <div class="cellar" data-cellar="larkList" data-sym="£" data-top="80" data-whose="The Larkspur's list" data-cards="/larkspur.cards.json?v=%%LARKSPUR_V%%" data-cards-note="The card The Larkspur's team learn from." data-cards-demo="%%DEMO_URL%%"></div>
+      </div>
     </div>
     <div class="card" id="calcCard">
       <div class="own lead"><span>Your guess at the lift</span><input type="range" min="0" max="30" step="1" value="5" data-in="lift" aria-label="Your lift" id="liftIn"><b data-out="lift">5%</b></div>
@@ -462,6 +466,13 @@ if (!matchMedia('(prefers-reduced-motion: reduce)').matches) {
 const card = document.getElementById('calcCard'), money = (n) => '£' + Math.round(n).toLocaleString('en-GB');
 let mode = 'basic';
 card.querySelectorAll('.mode button').forEach((b) => b.addEventListener('click', () => { mode = b.dataset.mode; card.querySelectorAll('.mode button').forEach((x) => x.setAttribute('aria-pressed', x === b ? 'true' : 'false')); card.querySelectorAll('[data-basic]').forEach((f) => f.hidden = mode !== 'basic'); card.querySelectorAll('[data-precise]').forEach((f) => f.hidden = mode !== 'precise'); calc(); }));
+// A total counts to its new figure instead of jumping (at once with reduced motion).
+function count(out, to) {
+  const from = out._now || 0; cancelAnimationFrame(out._raf);
+  if (reduced || from === to) { out._now = to; out.textContent = money(to); return; }
+  const t0 = performance.now();
+  (function step(t) { const p = Math.min(1, (t - t0) / 380), e = 1 - Math.pow(1 - p, 3); out._now = from + (to - from) * e; out.textContent = money(out._now); if (p < 1) out._raf = requestAnimationFrame(step); else out._now = to; })(t0);
+}
 function calc() {
   const v = {}; card.querySelectorAll('[data-in]').forEach((i) => v[i.dataset.in] = Number(i.value));
   card.querySelector('[data-out=covers]').textContent = v.covers; card.querySelector('[data-out=nights]').textContent = v.nights;
@@ -473,12 +484,13 @@ function calc() {
   else { night = v.glasses * v.glass + v.bottles * v.bottle; note = `From your figures: about <b>${money(night)} of wine a night</b>, ${money(night / v.covers)} per cover.`; }
   document.getElementById('assume').innerHTML = note;
   const year = night * v.nights * 52;
-  [2, 5, 10].forEach((p) => { card.querySelector(`[data-sc="${p}"]`).textContent = money(year * p / 100); card.querySelector(`[data-scw="${p}"]`).textContent = money(night * v.nights * p / 100) + ' a week'; });
+  [2, 5, 10].forEach((p) => { count(card.querySelector(`[data-sc="${p}"]`), year * p / 100); card.querySelector(`[data-scw="${p}"]`).textContent = money(night * v.nights * p / 100) + ' a week'; });
   document.getElementById('ownOut').innerHTML = `At ${v.lift}%: <b>${money(year * v.lift / 100)} a year</b>, ${money(night * v.nights * v.lift / 100)} a week. Illustrative, from your inputs.`;
 }
 card.addEventListener('input', calc); calc();
 
 </script>
+<script type="application/json" id="larkList">%%LARKSPUR_LIST%%</script>
 <script src="/site.js?v=%%JS_V%%" defer></script>
 </body>
 </html>

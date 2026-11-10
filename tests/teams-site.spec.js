@@ -69,6 +69,14 @@ test('the calculator follows the inputs', async ({ browser }) => {
   await expect(five).not.toHaveText(before);
   // 300 covers × (0.5 × £9 + 0.1 × £42) × 6 nights × 52 weeks × 5%
   await expect(five).toHaveText('£40,716');
+  // The demo restaurant's list beside it, as bottles, made at build time from the app's own files; a bottle opens its card.
+  const list = page.locator('.calc .cellar');
+  await expect(list.locator('.cellar-grid i')).toHaveCount(30);
+  await list.locator('.cellar-tabs [data-mode="bottle"]').click();
+  await expect(list.locator('.cellar-cap')).toContainText('15 are bottle only');
+  await list.locator('.cellar-grid i').last().click();
+  await expect(page.locator('dialog.wcard h3')).toBeVisible();
+  await expect(page.locator('dialog.wcard')).toContainText('What to say at the table');
   await page.close();
 });
 
