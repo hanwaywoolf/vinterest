@@ -185,10 +185,10 @@ export function render(a, o) {
   const them = o.logo ? `<img class="them" src="/img/for/${o.logo}?v=%%IMG_V%%" alt="${esc(a.name)}">` : `<b class="them-name">${esc(a.name)}</b>`;
   const priceOf = (p) => [p.glass && `${p.glass} a glass`, p.bottle && `${p.bottle} a bottle`, p.bottleOnly && 'bottle only'].filter(Boolean).join(' · ');
   const cols14 = f.wines <= 48 ? Math.ceil(f.wines / 3) : 22, colsM = f.wines <= 48 ? Math.ceil(f.wines / 4) : 16;
-  const preview = a.pitch ? ` It's a preview: every wine has its card, and ${say(f.full)} of them carry the full training with questions. A full install writes them for all ${f.wines}, about ${est.toLocaleString('en-GB')} questions, each checked before anyone sees it.` : '';
   // A preview trains a few wines in full. What the whole list would hold is estimated from those: the questions written
   // per wine here (six where none are), times the list, to the nearest ten. An estimate, and the page says about.
   const est = Math.round((f.full ? f.questions / f.full : 6) * f.wines / 10) * 10;
+  const preview = a.pitch ? ` It's a preview: every wine has its card, and ${say(f.full)} of them carry the full training with questions. A full install writes them for all ${f.wines}, about ${est.toLocaleString('en-GB')} questions, each checked before anyone sees it.` : '';
   const stats = [[f.cards, 'wine cards, each with what to say to a guest'], [f.paired, 'dishes paired from your own list'],
     a.pitch ? [f.full, `wines with the full training to try: ${f.questions} questions (about ${est.toLocaleString('en-GB')} across all ${f.wines} in a full install)`] : [f.questions, 'questions on your wines'],
     f.cocktailCards ? [f.cocktailCards, 'cocktail cards, with what\'s in each and what it suits'] : [f.wines, 'wines on the list your managers see in the console']];
