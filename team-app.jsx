@@ -59,7 +59,9 @@ function TeamApp(){
   const back=()=>{ pendRef.current=posRef.current[stack.length-1]||0; setStack(s=>s.slice(0,-1)); };
   const top=stack[stack.length-1];
   let body;
-  if(!set) body=<TeamSetup onDone={refresh}/>;
+  // A restaurant's own address (demo.vinterest.team is The Larkspur and nothing else) never shows the setup screen, which
+  // offers the other restaurants: its seed loads straight after the first draw.
+  if(!set) body=TeamSample.hostSeed()?null:<TeamSetup onDone={refresh}/>;
   // Every view on the stack stays mounted under the one on top (hidden), so a drill's summary is still there,
   // with its answers, when Back returns from a wine it opened.
   else if(top) body=stack.map((v,i)=><div key={i} style={{display:i===stack.length-1?'block':'none'}}>{v.view==='wine'?<TeamWine id={v.id} pid={me.id} open={open}/>:v.view==='cocktail'?<TeamCocktail id={v.id} pid={me.id} open={open}/>:v.view==='dish'?<TeamDish id={v.id} pid={me.id} open={open}/>
