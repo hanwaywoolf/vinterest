@@ -1793,6 +1793,18 @@ test('the console dashboard folds and reorders, and remembers it', async ({ brow
   await expect(page.getByTestId('console-dash')).toBeVisible();
   const order = () => page.getByTestId('dash-card').evaluateAll((els) => els.map((e) => e.dataset.card));
   expect((await order())[0]).toBe('tonight'); // Tonight leads the dashboard
+  // Tonight shows only what's set, never the whole menu and list, until Set tonight opens the picker; the picker's
+  // open or closed state is remembered, and a dish 86'd there shows on its own once it closes.
+  await expect(page.getByTestId('dash-tonight-off')).toHaveCount(0);
+  await expect(page.getByTestId('dash-tonight-set')).toContainText("Nothing 86'd or on feature tonight");
+  await page.getByTestId('dash-tonight-change').click();
+  await page.getByTestId('dash-tonight-off').first().click();
+  await page.reload();
+  await expect(page.getByTestId('dash-tonight-off')).toHaveCount(10); // the picker stayed open
+  await page.getByTestId('dash-tonight-change').click();
+  await expect(page.getByTestId('dash-tonight-off')).toHaveCount(1); // closed: only the dish that's 86'd
+  await page.reload();
+  await expect(page.getByTestId('dash-tonight-set')).toBeVisible();
   await page.getByTestId('dash-fold-people').click();
   await expect(page.locator('[data-card="people"]').getByTestId('dash-summary')).toContainText('ready');
   await page.getByTestId('dash-edit').click();
